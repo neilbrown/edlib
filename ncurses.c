@@ -242,7 +242,7 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	struct cmd_info ci = {0};
 
 	if (keytype == KEY_CODE_YES)
-		c = FK(c);
+		c = FUNC_KEY(c);
 	c |= dd->modifiers;
 	dd->savemod = dd->modifiers;
 	dd->modifiers = 0;

@@ -13,6 +13,19 @@ void key_add_range(struct map *map, int first, int last,
 		   struct command *comm);
 struct command *key_register_mod(char *name, int *bit);
 
+
+/*
+ * 0 - 10FFFF are Unicode keystrokes (or keyboard input at least)
+ * edlib extra events are assigned from 1FFFFFF downwards.
+ * 1FFFxx are function keys using ncurses definitions
+ * 1FFExx are mouse press/release/click and movement
+ * 1FFDxx are ad-hoc functions that don't subdivide,
+ *        like "search" or "replace"
+ * 1FFCxx are movement commands, allowing different abstract units
+ */
+
+#define	FUNC_KEY(k)	((k) | 0x1FFF00)
+
 /* mouse numbers are:
  *  0-4 for button 0
  *  5-9 for button 1
@@ -25,10 +38,46 @@ struct command *key_register_mod(char *name, int *bit);
  *  3 - double-click
  *  4 - triple-click
  */
-#define	M_PRESS(b)	((b)*5+0)
-#define	M_RELEASE(b)	((b)*5+1)
-#define	M_CLICK(b)	((b)*5+2)
-#define	M_DCLICK(b)	((b)*5+3)
-#define	M_TCLICK(b)	((b)*5+4)
-#define	M_MOVE		33
-#define	FK(k)		((k) | 0x1FFF00)
+#define	M_KEY(ev)	((ev) | 0x1FFE00)
+#define	M_PRESS(b)	M_KEY((b)*5+0)
+#define	M_RELEASE(b)	M_KEY((b)*5+1)
+#define	M_CLICK(b)	M_KEY((b)*5+2)
+#define	M_DCLICK(b)	M_KEY((b)*5+3)
+#define	M_TCLICK(b)	M_KEY((b)*5+4)
+#define	M_MOVE		M_KEY(33)
+
+#define	EV_SEARCH	(0x1FFD00)
+#define	EV_REPLACE	(0x1FFD01)
+
+
+#define	EV_MOVE(m)	((m)|0x1FFC00)
+#define	MV_CHAR		EV_MOVE(0)
+#define	MV_WORD		EV_MOVE(1)
+#define	MV_WORD2	EV_MOVE(2)
+#define	MV_EOL		EV_MOVE(3)
+#define	MV_LINE		EV_MOVE(4) /* Move line, but stay in column */
+#define	MV_SENTENCE	EV_MOVE(5)
+#define	MV_PARAGRAPH	EV_MOVE(6)
+#define	MV_SECTION	EV_MOVE(7)
+#define	MV_CHAPTER	EV_MOVE(8)
+#define	MV_UNIT		EV_MOVE(9) /* structural unit at current level */
+#define	MV_LEVEL	EV_MOVE(10) /* Move to different level of units */
+
+/* Each event (above) is accompanied by a cmd_info structure.
+ * 'key' and 'focus' are always present, others only if relevant.
+ * Repeat is present for 'key' and 'move'.  MAX_INT means no number was
+ *   requested so is usually treated like '1'.  Negative numbers are quite
+ *   possible.
+ * x,y are present for mouse events
+ * 'str' is inserted by 'replace' and sought by 'search'
+ * 'mark' is moved by 'move' and 'replace' deletes between point and mark.
+ */
+struct cmd_info {
+	wint_t		key;
+	struct pane	*focus;
+	int		repeat;
+	int		x,y;
+	char		*str;
+	struct mark	*mark;
+};
+

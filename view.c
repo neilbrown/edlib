@@ -162,9 +162,9 @@ static struct command comm_eol = { view_eol, "end-of-line" };
 void view_register(struct map *m)
 {
 	key_add(m, 'F'-64, &comm_next);
-	key_add(m, FK(KEY_RIGHT), &comm_next);
+	key_add(m, FUNC_KEY(KEY_RIGHT), &comm_next);
 	key_add(m, 'B'-64, &comm_prev);
-	key_add(m, FK(KEY_LEFT), &comm_prev);
+	key_add(m, FUNC_KEY(KEY_LEFT), &comm_prev);
 	key_add(m, 'A'-64, &comm_sol);
 	key_add(m, 'E'-64, &comm_eol);
 }

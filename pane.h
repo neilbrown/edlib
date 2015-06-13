@@ -45,11 +45,3 @@ int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h);
 
 struct pane *ncurses_init(struct event_base *base, struct map *keymap);
 void ncurses_end(void);
-
-struct cmd_info {
-	wint_t		key;
-	struct pane	*focus;
-	int		x,y;
-	char		*insert;
-	struct mark	*delete;
-};
