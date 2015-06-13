@@ -13,6 +13,7 @@
 #include <curses.h>
 #include <string.h>
 #include <wchar.h>
+#include <wctype.h>
 
 #include "list.h"
 #include "text.h"
@@ -20,6 +21,7 @@
 #include "mark.h"
 #include "keymap.h"
 
+#define ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 struct view_data {
 	struct text	*text;
 	struct point	*point;
@@ -89,82 +91,334 @@ struct pane *view_attach(struct pane *par, struct text *t)
 	return p;
 }
 
-static int view_next(struct command *c, int key, struct cmd_info *ci)
+static int view_char(struct command *c, int key, struct cmd_info *ci)
 {
 	struct view_data *vd;
 	struct pane *p = ci->focus;
+	int rpt = ci->repeat;
 	while (p && p->refresh != view_refresh)
 		p = p->parent;
 	if (!p)
 		return 0;
 	vd = p->data;
-	mark_next(vd->text, mark_of_point(vd->point));
-	pane_focus(p);
-	return 1;
-}
-static struct command comm_next = { view_next, "next-char" };
+	if (rpt == INT_MAX)
+		rpt = 1;
+	while (rpt > 0) {
+		if (mark_next(vd->text, ci->mark) == WEOF)
+			break;
+		rpt -= 1;
+	}
+	while (rpt < 0) {
+		if (mark_prev(vd->text, ci->mark) == WEOF)
+			break;
+		rpt += 1;
+	}
 
-static int view_prev(struct command *c, int key, struct cmd_info *ci)
-{
-	struct view_data *vd;
-	struct pane *p = ci->focus;
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	vd = p->data;
-	mark_prev(vd->text, mark_of_point(vd->point));
-	pane_focus(p);
 	return 1;
 }
-static struct command comm_prev = { view_prev, "prev-char" };
+static struct command comm_char = { view_char, "move-char" };
 
-static int view_sol(struct command *c, int key, struct cmd_info *ci)
+
+static int view_word(struct command *c, int key, struct cmd_info *ci)
 {
 	struct view_data *vd;
 	struct pane *p = ci->focus;
-	wint_t ch;
+	int rpt = ci->repeat;
 	while (p && p->refresh != view_refresh)
 		p = p->parent;
 	if (!p)
 		return 0;
 	vd = p->data;
-	while ((ch = mark_prev(vd->text, mark_of_point(vd->point))) != WEOF &&
-	       ch != '\n')
-		;
-	if (ch == '\n')
-		mark_next(vd->text, mark_of_point(vd->point));
-	pane_focus(p);
+	if (rpt == INT_MAX)
+		rpt = 1;
+	/* We skip spaces, then either alphanum or non-space/alphanum */
+	while (rpt > 0) {
+		while (iswspace(mark_following(vd->text, ci->mark)))
+			mark_next(vd->text, ci->mark);
+		if (iswalnum(mark_following(vd->text, ci->mark))) {
+			while (iswalnum(mark_following(vd->text, ci->mark)))
+				mark_next(vd->text, ci->mark);
+		} else {
+			wint_t wi;
+			while ((wi=mark_following(vd->text, ci->mark)) != WEOF &&
+			       !iswspace(wi) && !iswalnum(wi))
+				mark_next(vd->text, ci->mark);
+		}
+		rpt -= 1;
+	}
+	while (rpt < 0) {
+		while (iswspace(mark_prior(vd->text, ci->mark)))
+			mark_prev(vd->text, ci->mark);
+		if (iswalnum(mark_prior(vd->text, ci->mark))) {
+			while (iswalnum(mark_prior(vd->text, ci->mark)))
+				mark_prev(vd->text, ci->mark);
+		} else {
+			wint_t wi;
+			while ((wi=mark_prior(vd->text, ci->mark)) != WEOF &&
+			       !iswspace(wi) && !iswalnum(wi))
+				mark_prev(vd->text, ci->mark);
+		}
+		rpt += 1;
+	}
+
 	return 1;
 }
-static struct command comm_sol = { view_sol, "start-of-line" };
+static struct command comm_word = { view_word, "move-word" };
+
+static int view_WORD(struct command *c, int key, struct cmd_info *ci)
+{
+	struct view_data *vd;
+	struct pane *p = ci->focus;
+	int rpt = ci->repeat;
+	while (p && p->refresh != view_refresh)
+		p = p->parent;
+	if (!p)
+		return 0;
+	vd = p->data;
+	if (rpt == INT_MAX)
+		rpt = 1;
+	/* We skip spaces, then non-spaces */
+	while (rpt > 0) {
+		wint_t wi;
+		while (iswspace(mark_following(vd->text, ci->mark)))
+			mark_next(vd->text, ci->mark);
+
+		while ((wi=mark_following(vd->text, ci->mark)) != WEOF &&
+		       !iswspace(wi))
+			mark_next(vd->text, ci->mark);
+		rpt -= 1;
+	}
+	while (rpt < 0) {
+		wint_t wi;
+		while (iswspace(mark_prior(vd->text, ci->mark)))
+			mark_prev(vd->text, ci->mark);
+		while ((wi=mark_prior(vd->text, ci->mark)) != WEOF &&
+		       !iswspace(wi))
+			mark_prev(vd->text, ci->mark);
+		rpt += 1;
+	}
+
+	return 1;
+}
+static struct command comm_WORD = { view_WORD, "move-WORD" };
+
 
 static int view_eol(struct command *c, int key, struct cmd_info *ci)
 {
 	struct view_data *vd;
 	struct pane *p = ci->focus;
-	wint_t ch;
+	wint_t ch = 1;
+	int rpt = ci->repeat;
 	while (p && p->refresh != view_refresh)
 		p = p->parent;
 	if (!p)
 		return 0;
 	vd = p->data;
-	while ((ch = mark_next(vd->text, mark_of_point(vd->point))) != WEOF &&
-	       ch != '\n')
-		;
-	if (ch == '\n')
-		mark_prev(vd->text, mark_of_point(vd->point));
-	pane_focus(p);
+	if (rpt == INT_MAX)
+		rpt = 1;
+	while (rpt > 0 && ch != WEOF) {
+		while ((ch = mark_next(vd->text, ci->mark)) != WEOF &&
+		       ch != '\n')
+			;
+		rpt -= 1;
+	}
+	while (rpt < 0 && ch != WEOF) {
+		while ((ch = mark_prev(vd->text, ci->mark)) != WEOF &&
+		       ch != '\n')
+			;
+		rpt += 1;
+	}
+	if (ch == '\n') {
+		if (ci->repeat > 0)
+			mark_prev(vd->text, ci->mark);
+		else if (ci->repeat < 0)
+			mark_next(vd->text, ci->mark);
+	}
 	return 1;
 }
-static struct command comm_eol = { view_eol, "end-of-line" };
+static struct command comm_eol = { view_eol, "move-end-of-line" };
+
+
+static int view_line(struct command *c, int key, struct cmd_info *ci)
+{
+	struct view_data *vd;
+	struct pane *p = ci->focus;
+	wint_t ch = 1;
+	int rpt = ci->repeat;
+	while (p && p->refresh != view_refresh)
+		p = p->parent;
+	if (!p)
+		return 0;
+	vd = p->data;
+	if (rpt == INT_MAX)
+		rpt = 1;
+	while (rpt > 0 && ch != WEOF) {
+		while ((ch = mark_next(vd->text, ci->mark)) != WEOF &&
+		       ch != '\n')
+			;
+		rpt -= 1;
+	}
+	while (rpt < 0 && ch != WEOF) {
+		while ((ch = mark_prev(vd->text, ci->mark)) != WEOF &&
+		       ch != '\n')
+			;
+		rpt += 1;
+	}
+	return 1;
+}
+static struct command comm_line = { view_line, "move-by-line" };
+
+static int view_file(struct command *c, int key, struct cmd_info *ci)
+{
+	struct view_data *vd;
+	struct pane *p = ci->focus;
+	wint_t ch = 1;
+	int rpt = ci->repeat;
+	while (p && p->refresh != view_refresh)
+		p = p->parent;
+	if (!p)
+		return 0;
+	vd = p->data;
+	if (rpt == INT_MAX)
+		rpt = 1;
+	while (rpt > 0 && ch != WEOF) {
+		while ((ch = mark_next(vd->text, ci->mark)) != WEOF)
+			;
+		rpt = 0;
+	}
+	while (rpt < 0 && ch != WEOF) {
+		while ((ch = mark_prev(vd->text, ci->mark)) != WEOF)
+			;
+		rpt = 0;
+	}
+	return 1;
+}
+static struct command comm_file = { view_file, "move-end-of-file" };
+
+static int view_page(struct command *c, int key, struct cmd_info *ci)
+{
+	struct view_data *vd;
+	struct pane *p = ci->focus;
+	wint_t ch = 1;
+	int rpt = ci->repeat;
+	while (p && p->refresh != view_refresh)
+		p = p->parent;
+	if (!p)
+		return 0;
+	vd = p->data;
+	if (rpt == INT_MAX)
+		rpt = 1;
+	rpt *= ci->focus->h-2;
+	while (rpt > 0 && ch != WEOF) {
+		while ((ch = mark_next(vd->text, ci->mark)) != WEOF &&
+		       ch != '\n')
+			;
+		rpt -= 1;
+	}
+	while (rpt < 0 && ch != WEOF) {
+		while ((ch = mark_prev(vd->text, ci->mark)) != WEOF &&
+		       ch != '\n')
+			;
+		rpt += 1;
+	}
+	return 1;
+}
+static struct command comm_page = { view_page, "move-page" };
+
+static int view_move(struct command *c, int key, struct cmd_info *ci);
+
+#define CTRL(X) (X & 0x3f)
+#define META(X) (X | (1<<31))
+static struct move_command {
+	struct command	cmd;
+	int		type;
+	int		direction;
+	wint_t		k1, k2, k3;
+} move_commands[] = {
+	{{view_move, "forward-char"}, MV_CHAR, 1,
+	 CTRL('F'), FUNC_KEY(KEY_RIGHT), 0},
+	{{view_move, "backward-char"}, MV_CHAR, -1,
+	 CTRL('B'), FUNC_KEY(KEY_LEFT), 0},
+	{{view_move, "forward_word"}, MV_WORD, 1,
+	 META('f'), META(FUNC_KEY(KEY_RIGHT)), 0},
+	{{view_move, "backward-word"}, MV_WORD, -1,
+	 META('b'), META(FUNC_KEY(KEY_LEFT)), 0},
+	{{view_move, "forward_WORD"}, MV_WORD2, 1,
+	 META('F'), 0, 0},
+	{{view_move, "backward-WORD"}, MV_WORD2, -1,
+	 META('B'), 0, 0},
+	{{view_move, "end-of-line"}, MV_EOL, 1,
+	 CTRL('E'), 0, 0},
+	{{view_move, "start-of-line"}, MV_EOL, -1,
+	 CTRL('A'), 0, 0},
+	{{view_move, "prev-line"}, MV_LINE, -1,
+	 CTRL('P'), FUNC_KEY(KEY_UP), 0},
+	{{view_move, "next-line"}, MV_LINE, 1,
+	 CTRL('N'), FUNC_KEY(KEY_DOWN), 0},
+	{{view_move, "end-of-file"}, MV_FILE, 1,
+	 META('>'), 0, 0},
+	{{view_move, "start-of-file"}, MV_FILE, -1,
+	 META('<'), 0, 0},
+	{{view_move, "page-down"}, MV_PAGE, 1,
+	 FUNC_KEY(KEY_NPAGE), 0, 0},
+	{{view_move, "page-up"}, MV_PAGE, -1,
+	 FUNC_KEY(KEY_PPAGE), 0, 0},
+};
+static int view_move(struct command *c, int key, struct cmd_info *ci)
+{
+	struct move_command *mv = container_of(c, struct move_command, cmd);
+	struct view_data *vd;
+	struct pane *p = ci->focus;
+	struct cmd_info ci2;
+	int ret = 0;
+
+	while (p && p->refresh != view_refresh)
+		p = p->parent;
+	if (!p)
+		return 0;
+	vd = p->data;
+	ci2.focus = ci->focus;
+	ci2.key = mv->type;
+	ci2.repeat = mv->direction * ci->repeat;
+	ci2.mark = mark_of_point(vd->point);
+	p = ci->focus;
+	while (ret == 0 && p) {
+		if (p->keymap)
+			ret = key_lookup(p->keymap, ci2.key, &ci2);
+		p = p->parent;
+	}
+	if (ret)
+		pane_focus(ci->focus);
+
+	return ret;
+}
 
 void view_register(struct map *m)
 {
-	key_add(m, 'F'-64, &comm_next);
-	key_add(m, FUNC_KEY(KEY_RIGHT), &comm_next);
-	key_add(m, 'B'-64, &comm_prev);
-	key_add(m, FUNC_KEY(KEY_LEFT), &comm_prev);
-	key_add(m, 'A'-64, &comm_sol);
-	key_add(m, 'E'-64, &comm_eol);
+	int meta;
+	struct command *cmd = key_register_mod("meta", &meta);
+	unsigned int i;
+
+	key_add(m, '['-64, cmd);
+	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
+		struct move_command *mc = &move_commands[i];
+		if (mc->k1 == META(mc->k1))
+			mc->k1 = (mc->k1 & ((1<<22)-1)) | meta;
+		if (mc->k2 == META(mc->k2))
+			mc->k2 = (mc->k2 & ((1<<22)-1)) | meta;
+		if (mc->k3 == META(mc->k3))
+			mc->k3 = (mc->k3 & ((1<<22)-1)) | meta;
+		key_add(m, mc->k1, &mc->cmd);
+		if (mc->k2)
+			key_add(m, mc->k2, &mc->cmd);
+		if (mc->k3)
+			key_add(m, mc->k3, &mc->cmd);
+	}
+	key_add(m, MV_CHAR, &comm_char);
+	key_add(m, MV_WORD, &comm_word);
+	key_add(m, MV_WORD2, &comm_WORD);
+	key_add(m, MV_EOL, &comm_eol);
+	key_add(m, MV_LINE, &comm_line);
+	key_add(m, MV_FILE, &comm_file);
+	key_add(m, MV_PAGE, &comm_page);
 }

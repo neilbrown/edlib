@@ -1,3 +1,4 @@
+#include <limits.h>
 struct pane;
 struct cmd_info;
 
@@ -62,10 +63,12 @@ struct command *key_register_mod(char *name, int *bit);
 #define	MV_CHAPTER	EV_MOVE(8)
 #define	MV_UNIT		EV_MOVE(9) /* structural unit at current level */
 #define	MV_LEVEL	EV_MOVE(10) /* Move to different level of units */
+#define	MV_FILE		EV_MOVE(11) /* Start or End of file */
+#define	MV_PAGE		EV_MOVE(12) /* screen unit, not doc unit */
 
 /* Each event (above) is accompanied by a cmd_info structure.
  * 'key' and 'focus' are always present, others only if relevant.
- * Repeat is present for 'key' and 'move'.  MAX_INT means no number was
+ * Repeat is present for 'key' and 'move'.  INT_MAX means no number was
  *   requested so is usually treated like '1'.  Negative numbers are quite
  *   possible.
  * x,y are present for mouse events

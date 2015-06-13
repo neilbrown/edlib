@@ -71,6 +71,7 @@ struct pane *pane_register(struct pane *parent, int z,
 		p->z = z;
 	p->refresh = refresh;
 	p->data = data;
+	p->keymap = NULL;
 	return p;
 }
 

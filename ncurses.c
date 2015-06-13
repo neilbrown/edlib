@@ -241,8 +241,18 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	struct display_data *dd = p->data;
 	struct cmd_info ci = {0};
 
-	if (keytype == KEY_CODE_YES)
-		c = FUNC_KEY(c);
+	if (keytype == KEY_CODE_YES) {
+		switch(c) {
+		case 01057: c = FUNC_KEY(KEY_PPAGE) | (1<<21); break;
+		case 01051: c = FUNC_KEY(KEY_NPAGE) | (1<<21); break;
+		case 01072: c = FUNC_KEY(KEY_UP)    | (1<<21); break;
+		case 01061: c = FUNC_KEY(KEY_DOWN)  | (1<<21); break;
+		case 01042: c = FUNC_KEY(KEY_LEFT)  | (1<<21); break;
+		case 01064: c = FUNC_KEY(KEY_RIGHT) | (1<<21); break;
+		default:
+			c = FUNC_KEY(c);
+		}
+	}
 	c |= dd->modifiers;
 	dd->savemod = dd->modifiers;
 	dd->modifiers = 0;
@@ -251,6 +261,7 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 		p = p->focus;
 	ci.focus = p;
 	ci.key = c;
+	ci.repeat = 1;
 	while (ret == 0 && p){
 		if (p->keymap)
 			ret = key_lookup(p->keymap, c, &ci);
