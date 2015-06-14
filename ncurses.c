@@ -141,6 +141,8 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 	keypad(w, TRUE);
 
 	dd->scr = NULL;
+	dd->modifiers = 0;
+	dd->savemod = 0;
 	current_screen = NULL;
 	dd->base = base;
 	p = pane_register(NULL, 0, ncurses_refresh, dd, NULL);

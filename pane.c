@@ -47,6 +47,7 @@ static void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->focus = NULL;
 	p->refresh = NULL;
 	p->data = NULL;
+	p->damaged = 0;
 }
 
 void pane_damaged(struct pane *p, int type)
