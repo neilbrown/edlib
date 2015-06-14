@@ -167,7 +167,7 @@ struct pane *pane_to_root(struct pane *p, int *x, int *y, int *w, int *h)
 		if (w && *x + *w > p->w)
 			*w = p->w - *x;
 		if (h && *y + *h > p->h)
-			*h = p->h -= *y;
+			*h = p->h - *y;
 		*x += p->x;
 		*y += p->y;
 		if (!p->parent)
