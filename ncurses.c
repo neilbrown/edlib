@@ -128,6 +128,7 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 	struct pane *p;
 	struct event *l;
 	struct display_data *dd = malloc(sizeof(*dd));
+	int c_x;
 
 	start_color();
 	use_default_colors();
@@ -145,7 +146,8 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 	p = pane_register(NULL, 0, ncurses_refresh, dd, NULL);
 	p->keymap = map;
 
-	key_add(map, 'q', &comm_abort);
+	key_register_mod("C-x", &c_x);
+	key_add(map, c_x|3, &comm_abort);
 	key_add(map, 12, &comm_refresh);
 
 	getmaxyx(stdscr, p->h, p->w); p->h-=1;

@@ -200,7 +200,7 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 				start->o = 0;
 			}
 			pos->c = c;
-			pos->o = 0;
+			pos->o = c->start;
 		} else {
 			c->txt = pos->c->txt;
 			c->start = pos->o;
@@ -225,7 +225,7 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 				start->o = 0;
 			}
 			pos->c = c;
-			pos->o = 0;
+			pos->o = c->start;
 		}
 		/* Make sure we have some space in 'a' */
 		if (a->size - a->free < len &&
@@ -335,6 +335,7 @@ void text_del(struct text *t, struct text_ref *pos, int len)
 			/* If the start of the chunk is deleted, just update */
 			struct attrset *s;
 			c->start += len;
+			pos->o = c->start;
 			s = attr_copy_tail(c->attrs, c->start);
 			attr_free(&c->attrs);
 			c->attrs = s;
@@ -350,7 +351,7 @@ void text_del(struct text *t, struct text_ref *pos, int len)
 			text_add_edit(t, c, &first_edit, 0, -diff);
 			if (c->lst.next != &t->text) {
 				pos->c = list_next_entry(c, lst);
-				pos->o = 0;
+				pos->o = pos->c->start;
 			} else
 				len = 0;
 		} else {
@@ -366,6 +367,7 @@ void text_del(struct text *t, struct text_ref *pos, int len)
 			attr_trim(&c->attrs, c->end);
 			list_add(&c2->lst, &c->lst);
 			text_add_edit(t, c2, &first_edit, 1, c2->end - c2->start);
+			len = 0;
 		}
 	}
 }

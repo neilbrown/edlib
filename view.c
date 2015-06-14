@@ -326,6 +326,7 @@ static int view_page(struct command *c, int key, struct cmd_info *ci)
 static struct command comm_page = { view_page, "move-page" };
 
 static int view_move(struct command *c, int key, struct cmd_info *ci);
+static int view_delete(struct command *c, int key, struct cmd_info *ci);
 
 #define CTRL(X) (X & 0x3f)
 #define META(X) (X | (1<<31))
@@ -363,7 +364,19 @@ static struct move_command {
 	 FUNC_KEY(KEY_NPAGE), 0, 0},
 	{{view_move, "page-up"}, MV_PAGE, -1,
 	 FUNC_KEY(KEY_PPAGE), 0, 0},
+
+	{{view_delete, "delete-next"}, MV_CHAR, 1,
+	 CTRL('D'), FUNC_KEY(KEY_DC), 0x7f},
+	{{view_delete, "delete-back"}, MV_CHAR, -1,
+	 CTRL('H'), FUNC_KEY(KEY_BACKSPACE), 0},
+	{{view_delete, "delete-word"}, MV_WORD, 1,
+	 META('d'), 0, 0},
+	{{view_delete, "delete-back-word"}, MV_WORD, -1,
+	 META(CTRL('H')), META(FUNC_KEY(KEY_BACKSPACE)), 0},
+	{{view_delete, "delete-eol"}, MV_EOL, 1,
+	 CTRL('K'), 0, 0},
 };
+
 static int view_move(struct command *c, int key, struct cmd_info *ci)
 {
 	struct move_command *mv = container_of(c, struct move_command, cmd);
@@ -393,6 +406,121 @@ static int view_move(struct command *c, int key, struct cmd_info *ci)
 	return ret;
 }
 
+static int view_delete(struct command *c, int key, struct cmd_info *ci)
+{
+	struct move_command *mv = container_of(c, struct move_command, cmd);
+	struct pane *p = ci->focus;
+	struct view_data *vd;
+	struct cmd_info ci2;
+	int ret = 0;
+	struct mark *m;
+
+	while (p && p->refresh != view_refresh)
+		p = p->parent;
+	if (!p)
+		return 0;
+	vd = p->data;
+	m = mark_at_point(vd->point, MARK_UNGROUPED);
+	ci2.focus = ci->focus;
+	ci2.key = mv->type;
+	ci2.repeat = mv->direction * ci->repeat;
+	ci2.mark = m;
+	p = ci->focus;
+	while (ret == 0 && p) {
+		if (p->keymap)
+			ret = key_lookup(p->keymap, ci2.key, &ci2);
+		p = p->parent;
+	}
+	if (!ret) {
+		mark_delete(m);
+		return 0;
+	}
+	ci2.focus = ci->focus;
+	ci2.key = EV_REPLACE;
+	ci2.repeat = 1;
+	ci2.mark = m;
+	ci2.str = NULL;
+	p = ci->focus;
+	ret = 0;
+	while (ret == 0 && p) {
+		if (p->keymap)
+			ret = key_lookup(p->keymap, ci2.key, &ci2);
+		p = p->parent;
+	}
+	mark_delete(m);
+	if (ret)
+		pane_focus(ci->focus);
+
+	return ret;
+}
+
+static int view_insert(struct command *c, int key, struct cmd_info *ci)
+{
+	struct pane *p = ci->focus;
+	struct view_data *vd;
+	char str[2];
+	struct cmd_info ci2;
+	int ret = 0;
+
+	while (p && p->refresh != view_refresh)
+		p = p->parent;
+	if (!p)
+		return 0;
+	vd = p->data;
+	ci2.focus = ci->focus;
+	ci2.key = EV_REPLACE;
+	ci2.repeat = 1;
+	ci2.mark = mark_of_point(vd->point);
+	str[0] = key;
+	str[1] = 0;
+	ci2.str = str;
+	p = ci->focus;
+	while (ret == 0 && p) {
+		if (p->keymap)
+			ret = key_lookup(p->keymap, ci2.key, &ci2);
+		p = p->parent;
+	}
+	if (ret)
+		pane_focus(ci->focus);
+
+	return ret;
+}
+static struct command comm_insert = {view_insert, "insert-key"};
+
+static int view_replace(struct command *c, int key, struct cmd_info *ci)
+{
+	struct pane *p = ci->focus;
+	struct view_data *vd;
+
+	while (p && p->refresh != view_refresh)
+		p = p->parent;
+	if (!p)
+		return 0;
+	vd = p->data;
+	if (!mark_same(ci->mark, mark_of_point(vd->point))) {
+		int cnt = 0;
+		/* Something here do delete.  For now I need to count it. */
+		if (!mark_ordered(mark_of_point(vd->point), ci->mark)) {
+			/* deleting backwards, move point */
+			while (!mark_same(ci->mark, mark_of_point(vd->point))) {
+				mark_prev(vd->text, mark_of_point(vd->point));
+				cnt++;
+			}
+		} else {
+			/* deleting forwards, move mark */
+			while (!mark_same(ci->mark, mark_of_point(vd->point))) {
+				mark_prev(vd->text, ci->mark);
+				cnt++;
+			}
+		}
+		point_delete_text(vd->text, vd->point, cnt);
+	}
+	if (ci->str)
+		point_insert_text(vd->text, vd->point, ci->str);
+	return 1;
+}
+static struct command comm_replace = {view_replace, "do-replace"};
+
 void view_register(struct map *m)
 {
 	int meta;
@@ -421,4 +549,8 @@ void view_register(struct map *m)
 	key_add(m, MV_LINE, &comm_line);
 	key_add(m, MV_FILE, &comm_file);
 	key_add(m, MV_PAGE, &comm_page);
+
+	key_add_range(m, ' ', '~', &comm_insert);
+	key_add(m, '\n', &comm_insert);
+	key_add(m, EV_REPLACE, &comm_replace);
 }

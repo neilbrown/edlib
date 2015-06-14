@@ -177,8 +177,10 @@ struct command *key_register_mod(char *name, int *bit)
 				free = i;
 			continue;
 		}
-		if (strcmp(modmap[i].name, name) == 0)
+		if (strcmp(modmap[i].name, name) == 0) {
+			*bit = 1 << (i + 21);
 			return &modmap[i].comm;
+		}
 	}
 	if (free < 0)
 		return NULL;
