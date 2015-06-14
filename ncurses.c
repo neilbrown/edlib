@@ -132,7 +132,7 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 
 	start_color();
 	use_default_colors();
-	cbreak();
+	raw();
 	noecho();
 	nonl();
 	timeout(0);
