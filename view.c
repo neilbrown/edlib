@@ -93,7 +93,7 @@ struct pane *view_attach(struct pane *par, struct text *t)
 	return p;
 }
 
-static int view_char(struct command *c, int key, struct cmd_info *ci)
+static int view_char(struct command *c, struct cmd_info *ci)
 {
 	struct view_data *vd;
 	struct pane *p = ci->focus;
@@ -121,7 +121,7 @@ static int view_char(struct command *c, int key, struct cmd_info *ci)
 static struct command comm_char = { view_char, "move-char" };
 
 
-static int view_word(struct command *c, int key, struct cmd_info *ci)
+static int view_word(struct command *c, struct cmd_info *ci)
 {
 	struct view_data *vd;
 	struct pane *p = ci->focus;
@@ -167,7 +167,7 @@ static int view_word(struct command *c, int key, struct cmd_info *ci)
 }
 static struct command comm_word = { view_word, "move-word" };
 
-static int view_WORD(struct command *c, int key, struct cmd_info *ci)
+static int view_WORD(struct command *c, struct cmd_info *ci)
 {
 	struct view_data *vd;
 	struct pane *p = ci->focus;
@@ -205,7 +205,7 @@ static int view_WORD(struct command *c, int key, struct cmd_info *ci)
 static struct command comm_WORD = { view_WORD, "move-WORD" };
 
 
-static int view_eol(struct command *c, int key, struct cmd_info *ci)
+static int view_eol(struct command *c, struct cmd_info *ci)
 {
 	struct view_data *vd;
 	struct pane *p = ci->focus;
@@ -241,7 +241,7 @@ static int view_eol(struct command *c, int key, struct cmd_info *ci)
 static struct command comm_eol = { view_eol, "move-end-of-line" };
 
 
-static int view_line(struct command *c, int key, struct cmd_info *ci)
+static int view_line(struct command *c, struct cmd_info *ci)
 {
 	struct view_data *vd;
 	struct pane *p = ci->focus;
@@ -270,7 +270,7 @@ static int view_line(struct command *c, int key, struct cmd_info *ci)
 }
 static struct command comm_line = { view_line, "move-by-line" };
 
-static int view_file(struct command *c, int key, struct cmd_info *ci)
+static int view_file(struct command *c, struct cmd_info *ci)
 {
 	struct view_data *vd;
 	struct pane *p = ci->focus;
@@ -297,7 +297,7 @@ static int view_file(struct command *c, int key, struct cmd_info *ci)
 }
 static struct command comm_file = { view_file, "move-end-of-file" };
 
-static int view_page(struct command *c, int key, struct cmd_info *ci)
+static int view_page(struct command *c, struct cmd_info *ci)
 {
 	struct view_data *vd;
 	struct pane *p = ci->focus;
@@ -327,8 +327,8 @@ static int view_page(struct command *c, int key, struct cmd_info *ci)
 }
 static struct command comm_page = { view_page, "move-page" };
 
-static int view_move(struct command *c, int key, struct cmd_info *ci);
-static int view_delete(struct command *c, int key, struct cmd_info *ci);
+static int view_move(struct command *c, struct cmd_info *ci);
+static int view_delete(struct command *c, struct cmd_info *ci);
 
 #define CTRL(X) (X & 0x3f)
 #define META(X) (X | (1<<31))
@@ -379,7 +379,7 @@ static struct move_command {
 	 CTRL('K'), 0, 0},
 };
 
-static int view_move(struct command *c, int key, struct cmd_info *ci)
+static int view_move(struct command *c, struct cmd_info *ci)
 {
 	struct move_command *mv = container_of(c, struct move_command, cmd);
 	struct view_data *vd;
@@ -407,7 +407,7 @@ static int view_move(struct command *c, int key, struct cmd_info *ci)
 	p = ci->focus;
 	while (ret == 0 && p) {
 		if (p->keymap)
-			ret = key_lookup(p->keymap, ci2.key, &ci2);
+			ret = key_lookup(p->keymap, &ci2);
 		p = p->parent;
 	}
 	if (!ret)
@@ -425,7 +425,7 @@ static int view_move(struct command *c, int key, struct cmd_info *ci)
 			ci2.y = 0;
 		else
 			ci2.y = view_pane->h-1;
-		key_lookup(view_pane->keymap, ci2.key, &ci2);
+		key_lookup(view_pane->keymap, &ci2);
 	}
 
 	pane_focus(ci->focus);
@@ -433,7 +433,7 @@ static int view_move(struct command *c, int key, struct cmd_info *ci)
 	return ret;
 }
 
-static int view_delete(struct command *c, int key, struct cmd_info *ci)
+static int view_delete(struct command *c, struct cmd_info *ci)
 {
 	struct move_command *mv = container_of(c, struct move_command, cmd);
 	struct pane *p = ci->focus;
@@ -455,7 +455,7 @@ static int view_delete(struct command *c, int key, struct cmd_info *ci)
 	p = ci->focus;
 	while (ret == 0 && p) {
 		if (p->keymap)
-			ret = key_lookup(p->keymap, ci2.key, &ci2);
+			ret = key_lookup(p->keymap, &ci2);
 		p = p->parent;
 	}
 	if (!ret) {
@@ -471,7 +471,7 @@ static int view_delete(struct command *c, int key, struct cmd_info *ci)
 	ret = 0;
 	while (ret == 0 && p) {
 		if (p->keymap)
-			ret = key_lookup(p->keymap, ci2.key, &ci2);
+			ret = key_lookup(p->keymap, &ci2);
 		p = p->parent;
 	}
 	mark_delete(m);
@@ -481,7 +481,7 @@ static int view_delete(struct command *c, int key, struct cmd_info *ci)
 	return ret;
 }
 
-static int view_insert(struct command *c, int key, struct cmd_info *ci)
+static int view_insert(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	struct view_data *vd;
@@ -498,13 +498,13 @@ static int view_insert(struct command *c, int key, struct cmd_info *ci)
 	ci2.key = EV_REPLACE;
 	ci2.repeat = 1;
 	ci2.mark = mark_of_point(vd->point);
-	str[0] = key;
+	str[0] = ci->key;
 	str[1] = 0;
 	ci2.str = str;
 	p = ci->focus;
 	while (ret == 0 && p) {
 		if (p->keymap)
-			ret = key_lookup(p->keymap, ci2.key, &ci2);
+			ret = key_lookup(p->keymap, &ci2);
 		p = p->parent;
 	}
 	if (ret)
@@ -514,7 +514,7 @@ static int view_insert(struct command *c, int key, struct cmd_info *ci)
 }
 static struct command comm_insert = {view_insert, "insert-key"};
 
-static int view_replace(struct command *c, int key, struct cmd_info *ci)
+static int view_replace(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	struct view_data *vd;
@@ -548,7 +548,7 @@ static int view_replace(struct command *c, int key, struct cmd_info *ci)
 }
 static struct command comm_replace = {view_replace, "do-replace"};
 
-static int view_click(struct command *c, int key, struct cmd_info *ci)
+static int view_click(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	int mid = (p->h-1)/2;
@@ -582,7 +582,7 @@ static int view_click(struct command *c, int key, struct cmd_info *ci)
 		return 0;
 	while (ret == 0 && p) {
 		if (p->keymap)
-			ret = key_lookup(p->keymap, ci2.key, &ci2);
+			ret = key_lookup(p->keymap, &ci2);
 		p = p->parent;
 	}
 	return ret;

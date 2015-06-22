@@ -72,7 +72,7 @@ static void ncurses_flush(int fd, short ev, void *P)
 	refresh();
 }
 
-int nc_abort(struct command *c, int key, struct cmd_info *ci)
+int nc_abort(struct command *c, struct cmd_info *ci)
 {
 	struct display_data *dd;
 	struct pane *p = ci->focus;
@@ -88,7 +88,7 @@ int nc_abort(struct command *c, int key, struct cmd_info *ci)
 }
 struct command comm_abort = { nc_abort, "abort", };
 
-int nc_refresh(struct command *c, int key, struct cmd_info *ci)
+int nc_refresh(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	while (p && p->refresh != ncurses_refresh)
@@ -270,7 +270,7 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	ci.repeat = 1;
 	while (ret == 0 && p){
 		if (p->keymap)
-			ret = key_lookup(p->keymap, c, &ci);
+			ret = key_lookup(p->keymap, &ci);
 		p = p->parent;
 	}
 }
@@ -280,6 +280,7 @@ static void do_send_mouse(struct pane *p, int x, int y, int cmd)
 	struct cmd_info ci;
 	int ret = 0;
 
+	ci.key = cmd;
 	ci.x = x;
 	ci.y = y;
 	ci.focus = p;
@@ -288,7 +289,7 @@ static void do_send_mouse(struct pane *p, int x, int y, int cmd)
 	ci.mark = NULL;
 	while (!ret && p) {
 		if (p->keymap)
-			ret = key_lookup(p->keymap, cmd, &ci);
+			ret = key_lookup(p->keymap, &ci);
 		p = p->parent;
 	}
 }

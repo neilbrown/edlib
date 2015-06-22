@@ -3,14 +3,14 @@ struct pane;
 struct cmd_info;
 
 struct command {
-	int	(*func)(struct command *comm, int key, struct cmd_info *ci);
+	int	(*func)(struct command *comm, struct cmd_info *ci);
 	char	*name;
 };
 
 struct map *key_alloc(void);
-int key_lookup(struct map *m, int key, struct cmd_info *p);
-void key_add(struct map *map, int k, struct command *comm);
-void key_add_range(struct map *map, int first, int last,
+int key_lookup(struct map *m, struct cmd_info *p);
+void key_add(struct map *map, wint_t k, struct command *comm);
+void key_add_range(struct map *map, wint_t first, wint_t last,
 		   struct command *comm);
 struct command *key_register_mod(char *name, int *bit);
 

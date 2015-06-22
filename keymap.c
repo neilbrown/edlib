@@ -31,7 +31,7 @@
 
 struct map {
 	int	size;
-	int	*keys;
+	wint_t	*keys;
 	struct command **comms;
 };
 
@@ -54,7 +54,7 @@ struct map *key_alloc(void)
 }
 
 /* Find first entry >= k */
-static int key_find(struct map *map, int k)
+static int key_find(struct map *map, wint_t k)
 {
 	int lo = 0;
 	int hi = map->size;
@@ -73,7 +73,7 @@ static int key_find(struct map *map, int k)
 	return hi;
 }
 
-void key_add(struct map *map, int k, struct command *comm)
+void key_add(struct map *map, wint_t k, struct command *comm)
 {
 	int size = size2alloc(map->size + 1);
 	int pos;
@@ -104,7 +104,7 @@ void key_add(struct map *map, int k, struct command *comm)
 	map->size += 1;
 }
 
-void key_add_range(struct map *map, int first, int last,
+void key_add_range(struct map *map, wint_t first, wint_t last,
 		   struct command *comm)
 {
 	int size = size2alloc(map->size + 2);
@@ -143,7 +143,7 @@ void key_add_range(struct map *map, int first, int last,
 	map->size += 2;
 }
 
-void key_del(struct map *map, int k)
+void key_del(struct map *map, wint_t k)
 {
 	int pos;
 
@@ -158,7 +158,7 @@ void key_del(struct map *map, int k)
 	map->size -= 1;
 }
 
-static int key_modify(struct command *comm, int key, struct cmd_info *ci)
+static int key_modify(struct command *comm, struct cmd_info *ci)
 {
 	struct modmap *m = container_of(comm, struct modmap, comm);
 	int i = m - modmap;
@@ -191,9 +191,9 @@ struct command *key_register_mod(char *name, int *bit)
 	return &modmap[free].comm;
 }
 
-int key_lookup(struct map *m, int key, struct cmd_info *ci)
+int key_lookup(struct map *m, struct cmd_info *ci)
 {
-	int pos = key_find(m, key);
+	int pos = key_find(m, ci->key);
 	struct command *comm;
 
 	if (pos >= m->size)
@@ -201,9 +201,9 @@ int key_lookup(struct map *m, int key, struct cmd_info *ci)
 	if (m->comms[pos] == NULL &&
 	    pos > 0)
 		comm = m->comms[pos-1];
-	else if (m->keys[pos] == key)
+	else if (m->keys[pos] == ci->key)
 		comm = m->comms[pos];
 	else
 		return 0;
-	return comm->func(comm, key, ci);
+	return comm->func(comm, ci);
 }

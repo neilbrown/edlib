@@ -417,7 +417,7 @@ int tile_grow(struct pane *p, int horiz, int size)
 	return 1;
 }
 
-static int tile_next(struct command *c, int key, struct cmd_info *ci)
+static int tile_next(struct command *c, struct cmd_info *ci)
 {
 	struct tileinfo *ti;
 	struct tileinfo *next;
@@ -435,7 +435,7 @@ static int tile_next(struct command *c, int key, struct cmd_info *ci)
 }
 static struct command comm_next = { tile_next, "next-tile" };
 
-static int tile_prev(struct command *c, int key, struct cmd_info *ci)
+static int tile_prev(struct command *c, struct cmd_info *ci)
 {
 	struct tileinfo *ti;
 	struct tileinfo *prev;
@@ -454,7 +454,7 @@ static int tile_prev(struct command *c, int key, struct cmd_info *ci)
 }
 static struct command comm_prev = { tile_prev, "prev-tile" };
 
-static int tile_higher(struct command *c, int key, struct cmd_info *ci)
+static int tile_higher(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 
@@ -469,7 +469,7 @@ static int tile_higher(struct command *c, int key, struct cmd_info *ci)
 }
 static struct command comm_higher = {tile_higher, "enlarge-tile"};
 
-static int tile_wider(struct command *c, int key, struct cmd_info *ci)
+static int tile_wider(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 

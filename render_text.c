@@ -235,7 +235,7 @@ void render_text_attach(struct pane *p)
 	p->keymap = rt_map;
 }
 
-static int render_text_move(struct command *c, int key, struct cmd_info *ci)
+static int render_text_move(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	int rpt = ci->repeat;
@@ -252,7 +252,7 @@ static int render_text_move(struct command *c, int key, struct cmd_info *ci)
 		return 0;
 	if (rpt == INT_MAX)
 		rpt = 1;
-	if (key == MV_VIEW_LARGE)
+	if (ci->key == MV_VIEW_LARGE)
 		rpt *= p->h - 2;
 	rt->ignore_point = 1;
 	if (rpt < 0) {
@@ -269,7 +269,7 @@ static int render_text_move(struct command *c, int key, struct cmd_info *ci)
 }
 static struct command comm_move = {render_text_move, "move-view"};
 
-static int render_text_follow_point(struct command *c, int key, struct cmd_info *ci)
+static int render_text_follow_point(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	struct rt_data *rt;
@@ -279,13 +279,13 @@ static int render_text_follow_point(struct command *c, int key, struct cmd_info 
 		return 0;
 	rt = p->data;
 	rt->ignore_point = 0;
-	if (key != MV_LINE)
+	if (ci->key != MV_LINE)
 		rt->target_x = -1;
 	return 0;
 }
 static struct command comm_follow = {render_text_follow_point, "follow-point"};
 
-static int render_text_set_cursor(struct command *c, int key, struct cmd_info *ci)
+static int render_text_set_cursor(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	struct rt_data *rt;
@@ -306,7 +306,7 @@ static int render_text_set_cursor(struct command *c, int key, struct cmd_info *c
 }
 static struct command comm_cursor = {render_text_set_cursor, "set-cursor"};
 
-static int render_text_move_line(struct command *c, int key, struct cmd_info *ci)
+static int render_text_move_line(struct command *c, struct cmd_info *ci)
 {
 	/* MV_EOL repeatedly, then move to match cursor */
 	struct pane *p = ci->focus;
@@ -343,7 +343,7 @@ static int render_text_move_line(struct command *c, int key, struct cmd_info *ci
 	p = ci->focus;
 	while (ret == 0 && p) {
 		if (p->keymap)
-			ret = key_lookup(p->keymap, ci2.key, &ci2);
+			ret = key_lookup(p->keymap, &ci2);
 		p = p->parent;
 	}
 	if (!ret)
