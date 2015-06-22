@@ -24,6 +24,7 @@ struct rt_data {
 	struct view_data *v;
 	struct mark	*top;
 	int		ignore_point;
+	int		target_x;
 };
 
 static struct map *rt_map;
@@ -228,6 +229,7 @@ void render_text_attach(struct pane *p)
 	rt->v = p->data;
 	rt->top = NULL;
 	rt->ignore_point = 0;
+	rt->target_x = -1;
 	p->data = rt;
 	p->refresh = render_text_refresh;
 	p->keymap = rt_map;
@@ -277,6 +279,8 @@ static int render_text_follow_point(struct command *c, int key, struct cmd_info 
 		return 0;
 	rt = p->data;
 	rt->ignore_point = 0;
+	if (key != MV_LINE)
+		rt->target_x = -1;
 	return 0;
 }
 static struct command comm_follow = {render_text_follow_point, "follow-point"};
@@ -302,6 +306,67 @@ static int render_text_set_cursor(struct command *c, int key, struct cmd_info *c
 }
 static struct command comm_cursor = {render_text_set_cursor, "set-cursor"};
 
+static int render_text_move_line(struct command *c, int key, struct cmd_info *ci)
+{
+	/* MV_EOL repeatedly, then move to match cursor */
+	struct pane *p = ci->focus;
+	struct pane *rtpane;
+	struct rt_data *rt;
+	struct cmd_info ci2;
+	struct mark *m;
+	int ret = 0;
+	int x, y;
+	int target_x;
+
+	while (p && p->refresh != render_text_refresh) {
+		ci->x += p->x;
+		ci->y += p->y;
+		p = p->parent;
+	}
+	if (!p)
+		return 0;
+	rt = p->data;
+	rtpane = p;
+
+	if (rt->target_x < 0)
+		rt->target_x = rtpane->cx;
+	target_x = rt->target_x;
+
+	ci2.focus = ci->focus;
+	ci2.key = MV_EOL;
+	if (ci->repeat < 0)
+		ci2.repeat = ci->repeat-1;
+	else
+		ci2.repeat = ci->repeat;
+	m = mark_of_point(rt->v->point);
+	ci2.mark = m;
+	p = ci->focus;
+	while (ret == 0 && p) {
+		if (p->keymap)
+			ret = key_lookup(p->keymap, ci2.key, &ci2);
+		p = p->parent;
+	}
+	if (!ret)
+		return 0;
+	rt->target_x = target_x; // MV_EOL might have changed it
+	if (ci->repeat > 0)
+		mark_next(rt->v->text, m);
+
+	if (target_x == 0)
+		return 1;
+	x = 0; y = 0;
+	while (rt_fore(rt->v->text, rtpane, m, &x, &y, 0) == 1) {
+		if (y > 0 || x > target_x) {
+			/* too far */
+			mark_prev(rt->v->text, m);
+			break;
+		}
+	}
+	pane_focus(rtpane);
+	return 1;
+}
+static struct command comm_line = {render_text_move_line, "move-line"};
+
 void render_text_register(struct map *m)
 {
 	rt_map = key_alloc();
@@ -311,7 +376,9 @@ void render_text_register(struct map *m)
 	key_add(rt_map, MV_CURSOR_XY, &comm_cursor);
 	key_add(rt_map, M_CLICK(0), &comm_cursor);
 	key_add(rt_map, M_PRESS(0), &comm_cursor);
+	key_add(rt_map, MV_LINE, &comm_line);
 
-	key_add_range(rt_map, MV_CHAR, MV_FILE, &comm_follow);
+	key_add_range(rt_map, MV_CHAR, MV_LINE-1, &comm_follow);
+	key_add_range(rt_map, MV_LINE+1, MV_FILE, &comm_follow);
 	key_add(rt_map, EV_REPLACE, &comm_follow);
 }
