@@ -29,6 +29,10 @@ struct rt_data {
 
 static struct map *rt_map;
 
+static int render_text_refresh(struct pane  *p, int damage);
+#define	CMD(func, name) {func, name, render_text_refresh}
+#define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
+
 static int rt_fore(struct text *t, struct pane *p, struct mark *m, int *x, int *y, int draw)
 {
 	wint_t ch = mark_next(t, m);
@@ -197,7 +201,7 @@ static struct mark *find_top(struct text *t, struct point *pt, struct pane *p,
 	return start;
 }
 
-int render_text_refresh(struct pane  *p, int damage)
+static int render_text_refresh(struct pane  *p, int damage)
 {
 	struct rt_data *rt = p->data;
 	struct mark *end = NULL, *top;
@@ -239,15 +243,10 @@ static int render_text_move(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	int rpt = ci->repeat;
-	struct rt_data *rt;
+	struct rt_data *rt = p->data;
 	int x = 0;
 	int y = 0;
 
-	while (p && p->refresh != render_text_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	rt = p->data;
 	if (!rt->top)
 		return 0;
 	if (rpt == INT_MAX)
@@ -267,69 +266,47 @@ static int render_text_move(struct command *c, struct cmd_info *ci)
 	pane_focus(p);
 	return 1;
 }
-static struct command comm_move = {render_text_move, "move-view"};
+DEF_CMD(comm_move, render_text_move, "move-view");
 
 static int render_text_follow_point(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
-	struct rt_data *rt;
-	while (p && p->refresh != render_text_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	rt = p->data;
+	struct rt_data *rt = p->data;
+
 	rt->ignore_point = 0;
 	if (ci->key != MV_LINE)
 		rt->target_x = -1;
 	return 0;
 }
-static struct command comm_follow = {render_text_follow_point, "follow-point"};
+DEF_CMD(comm_follow, render_text_follow_point, "follow-point");
 
 static int render_text_set_cursor(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
-	struct rt_data *rt;
+	struct rt_data *rt = p->data;
 	struct mark *m;
-	while (p && p->refresh != render_text_refresh) {
-		ci->x += p->x;
-		ci->y += p->y;
-		p = p->parent;
-	}
-	if (!p)
-		return 0;
-	rt = p->data;
+
 	m = find_pos(rt->v->text, p, ci->x, ci->y);
 	point_to_mark(rt->v->text, rt->v->point, m);
 	mark_delete(m); free(m);
 	pane_focus(p);
 	return 1;
 }
-static struct command comm_cursor = {render_text_set_cursor, "set-cursor"};
+DEF_CMD(comm_cursor, render_text_set_cursor, "set-cursor");
 
 static int render_text_move_line(struct command *c, struct cmd_info *ci)
 {
-	/* MV_EOL repeatedly, then move to match cursor */
 	struct pane *p = ci->focus;
-	struct pane *rtpane;
-	struct rt_data *rt;
+	/* MV_EOL repeatedly, then move to match cursor */
+	struct rt_data *rt = p->data;
 	struct cmd_info ci2;
 	struct mark *m;
 	int ret = 0;
 	int x, y;
 	int target_x;
 
-	while (p && p->refresh != render_text_refresh) {
-		ci->x += p->x;
-		ci->y += p->y;
-		p = p->parent;
-	}
-	if (!p)
-		return 0;
-	rt = p->data;
-	rtpane = p;
-
 	if (rt->target_x < 0)
-		rt->target_x = rtpane->cx;
+		rt->target_x = p->cx;
 	target_x = rt->target_x;
 
 	ci2.focus = ci->focus;
@@ -340,7 +317,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 		ci2.repeat = ci->repeat;
 	m = mark_of_point(rt->v->point);
 	ci2.mark = m;
-	ret = key_handle(&ci2);
+	ret = key_handle_focus(&ci2);
 
 	if (!ret)
 		return 0;
@@ -351,17 +328,17 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 	if (target_x == 0)
 		return 1;
 	x = 0; y = 0;
-	while (rt_fore(rt->v->text, rtpane, m, &x, &y, 0) == 1) {
+	while (rt_fore(rt->v->text, p, m, &x, &y, 0) == 1) {
 		if (y > 0 || x > target_x) {
 			/* too far */
 			mark_prev(rt->v->text, m);
 			break;
 		}
 	}
-	pane_focus(rtpane);
+	pane_focus(p);
 	return 1;
 }
-static struct command comm_line = {render_text_move_line, "move-line"};
+DEF_CMD(comm_line, render_text_move_line, "move-line");
 
 void render_text_register(struct map *m)
 {

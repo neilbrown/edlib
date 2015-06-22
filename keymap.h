@@ -5,6 +5,7 @@ struct cmd_info;
 struct command {
 	int	(*func)(struct command *comm, struct cmd_info *ci);
 	char	*name;
+	refresh_fn type;  /* pane of this type is provided as 'target' */
 };
 
 struct map *key_alloc(void);

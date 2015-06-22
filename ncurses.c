@@ -44,7 +44,10 @@ static void set_screen(SCREEN *scr)
 }
 
 static void input_handle(int fd, short ev, void *P);
-int ncurses_refresh(struct pane *p, int damage);
+static int ncurses_refresh(struct pane *p, int damage);
+#define CMD(func, name) {func, name, ncurses_refresh}
+#define DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
+
 
 static void move_cursor(struct pane *p)
 {
@@ -74,35 +77,25 @@ static void ncurses_flush(int fd, short ev, void *P)
 
 int nc_abort(struct command *c, struct cmd_info *ci)
 {
-	struct display_data *dd;
 	struct pane *p = ci->focus;
+	struct display_data *dd = p->data;
 
-	while (p && p->refresh != ncurses_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-
-	dd = p->data;
 	event_base_loopbreak(dd->base);
 	return 1;
 }
-struct command comm_abort = { nc_abort, "abort", };
+DEF_CMD(comm_abort, nc_abort, "abort");
 
 int nc_refresh(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
-	while (p && p->refresh != ncurses_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
 	clear();
 	pane_damaged(p,  DAMAGED_CONTENT);
 	pane_refresh(p);
 	return 1;
 }
-struct command comm_refresh = { nc_refresh, "refresh", };
+DEF_CMD(comm_refresh, nc_refresh, "refresh");
 
-int ncurses_refresh(struct pane *p, int damage)
+static int ncurses_refresh(struct pane *p, int damage)
 {
 	struct display_data *dd = p->data;
 	struct event *l;

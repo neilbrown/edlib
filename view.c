@@ -49,6 +49,9 @@ int view_refresh(struct pane *p, int damage)
 	return 0;
 }
 
+#define	CMD(func, name) {func, name, view_refresh}
+#define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
+
 static int view_null(struct pane *p, int damage)
 {
 	struct view_data *vd = p->data;
@@ -95,14 +98,10 @@ struct pane *view_attach(struct pane *par, struct text *t)
 
 static int view_char(struct command *c, struct cmd_info *ci)
 {
-	struct view_data *vd;
 	struct pane *p = ci->focus;
+	struct view_data *vd = p->data;
 	int rpt = ci->repeat;
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	vd = p->data;
+
 	if (rpt == INT_MAX)
 		rpt = 1;
 	while (rpt > 0) {
@@ -118,19 +117,14 @@ static int view_char(struct command *c, struct cmd_info *ci)
 
 	return 1;
 }
-static struct command comm_char = { view_char, "move-char" };
-
+DEF_CMD(comm_char, view_char, "move-char");
 
 static int view_word(struct command *c, struct cmd_info *ci)
 {
-	struct view_data *vd;
 	struct pane *p = ci->focus;
+	struct view_data *vd = p->data;
 	int rpt = ci->repeat;
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	vd = p->data;
+
 	if (rpt == INT_MAX)
 		rpt = 1;
 	/* We skip spaces, then either alphanum or non-space/alphanum */
@@ -165,18 +159,14 @@ static int view_word(struct command *c, struct cmd_info *ci)
 
 	return 1;
 }
-static struct command comm_word = { view_word, "move-word" };
+DEF_CMD(comm_word, view_word, "move-word");
 
 static int view_WORD(struct command *c, struct cmd_info *ci)
 {
-	struct view_data *vd;
 	struct pane *p = ci->focus;
+	struct view_data *vd = p->data;
 	int rpt = ci->repeat;
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	vd = p->data;
+
 	if (rpt == INT_MAX)
 		rpt = 1;
 	/* We skip spaces, then non-spaces */
@@ -202,20 +192,15 @@ static int view_WORD(struct command *c, struct cmd_info *ci)
 
 	return 1;
 }
-static struct command comm_WORD = { view_WORD, "move-WORD" };
-
+DEF_CMD(comm_WORD, view_WORD, "move-WORD");
 
 static int view_eol(struct command *c, struct cmd_info *ci)
 {
-	struct view_data *vd;
 	struct pane *p = ci->focus;
+	struct view_data *vd = p->data;
 	wint_t ch = 1;
 	int rpt = ci->repeat;
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	vd = p->data;
+
 	if (rpt == INT_MAX)
 		rpt = 1;
 	while (rpt > 0 && ch != WEOF) {
@@ -238,20 +223,15 @@ static int view_eol(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-static struct command comm_eol = { view_eol, "move-end-of-line" };
-
+DEF_CMD(comm_eol, view_eol, "move-end-of-line");
 
 static int view_line(struct command *c, struct cmd_info *ci)
 {
-	struct view_data *vd;
 	struct pane *p = ci->focus;
+	struct view_data *vd = p->data;
 	wint_t ch = 1;
 	int rpt = ci->repeat;
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	vd = p->data;
+
 	if (rpt == INT_MAX)
 		rpt = 1;
 	while (rpt > 0 && ch != WEOF) {
@@ -268,19 +248,15 @@ static int view_line(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-static struct command comm_line = { view_line, "move-by-line" };
+DEF_CMD(comm_line, view_line, "move-by-line");
 
 static int view_file(struct command *c, struct cmd_info *ci)
 {
-	struct view_data *vd;
 	struct pane *p = ci->focus;
+	struct view_data *vd = p->data;
 	wint_t ch = 1;
 	int rpt = ci->repeat;
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	vd = p->data;
+
 	if (rpt == INT_MAX)
 		rpt = 1;
 	while (rpt > 0 && ch != WEOF) {
@@ -295,19 +271,15 @@ static int view_file(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-static struct command comm_file = { view_file, "move-end-of-file" };
+DEF_CMD(comm_file, view_file, "move-end-of-file");
 
 static int view_page(struct command *c, struct cmd_info *ci)
 {
-	struct view_data *vd;
 	struct pane *p = ci->focus;
+	struct view_data *vd = p->data;
 	wint_t ch = 1;
 	int rpt = ci->repeat;
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	vd = p->data;
+
 	if (rpt == INT_MAX)
 		rpt = 1;
 	rpt *= ci->focus->h-2;
@@ -325,7 +297,7 @@ static int view_page(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-static struct command comm_page = { view_page, "move-page" };
+DEF_CMD(comm_page, view_page, "move-page");
 
 static int view_move(struct command *c, struct cmd_info *ci);
 static int view_delete(struct command *c, struct cmd_info *ci);
@@ -338,73 +310,65 @@ static struct move_command {
 	int		direction;
 	wint_t		k1, k2, k3;
 } move_commands[] = {
-	{{view_move, "forward-char"}, MV_CHAR, 1,
+	{CMD(view_move, "forward-char"), MV_CHAR, 1,
 	 CTRL('F'), FUNC_KEY(KEY_RIGHT), 0},
-	{{view_move, "backward-char"}, MV_CHAR, -1,
+	{CMD(view_move, "backward-char"), MV_CHAR, -1,
 	 CTRL('B'), FUNC_KEY(KEY_LEFT), 0},
-	{{view_move, "forward_word"}, MV_WORD, 1,
+	{CMD(view_move, "forward_word"), MV_WORD, 1,
 	 META('f'), META(FUNC_KEY(KEY_RIGHT)), 0},
-	{{view_move, "backward-word"}, MV_WORD, -1,
+	{CMD(view_move, "backward-word"), MV_WORD, -1,
 	 META('b'), META(FUNC_KEY(KEY_LEFT)), 0},
-	{{view_move, "forward_WORD"}, MV_WORD2, 1,
+	{CMD(view_move, "forward_WORD"), MV_WORD2, 1,
 	 META('F'), 0, 0},
-	{{view_move, "backward-WORD"}, MV_WORD2, -1,
+	{CMD(view_move, "backward-WORD"), MV_WORD2, -1,
 	 META('B'), 0, 0},
-	{{view_move, "end-of-line"}, MV_EOL, 1,
+	{CMD(view_move, "end-of-line"), MV_EOL, 1,
 	 CTRL('E'), 0, 0},
-	{{view_move, "start-of-line"}, MV_EOL, -1,
+	{CMD(view_move, "start-of-line"), MV_EOL, -1,
 	 CTRL('A'), 0, 0},
-	{{view_move, "prev-line"}, MV_LINE, -1,
+	{CMD(view_move, "prev-line"), MV_LINE, -1,
 	 CTRL('P'), FUNC_KEY(KEY_UP), 0},
-	{{view_move, "next-line"}, MV_LINE, 1,
+	{CMD(view_move, "next-line"), MV_LINE, 1,
 	 CTRL('N'), FUNC_KEY(KEY_DOWN), 0},
-	{{view_move, "end-of-file"}, MV_FILE, 1,
+	{CMD(view_move, "end-of-file"), MV_FILE, 1,
 	 META('>'), 0, 0},
-	{{view_move, "start-of-file"}, MV_FILE, -1,
+	{CMD(view_move, "start-of-file"), MV_FILE, -1,
 	 META('<'), 0, 0},
-	{{view_move, "page-down"}, MV_VIEW_LARGE, 1,
+	{CMD(view_move, "page-down"), MV_VIEW_LARGE, 1,
 	 FUNC_KEY(KEY_NPAGE), 0, 0},
-	{{view_move, "page-up"}, MV_VIEW_LARGE, -1,
+	{CMD(view_move, "page-up"), MV_VIEW_LARGE, -1,
 	 FUNC_KEY(KEY_PPAGE), 0, 0},
 
-	{{view_delete, "delete-next"}, MV_CHAR, 1,
+	{CMD(view_delete, "delete-next"), MV_CHAR, 1,
 	 CTRL('D'), FUNC_KEY(KEY_DC), 0x7f},
-	{{view_delete, "delete-back"}, MV_CHAR, -1,
+	{CMD(view_delete, "delete-back"), MV_CHAR, -1,
 	 CTRL('H'), FUNC_KEY(KEY_BACKSPACE), 0},
-	{{view_delete, "delete-word"}, MV_WORD, 1,
+	{CMD(view_delete, "delete-word"), MV_WORD, 1,
 	 META('d'), 0, 0},
-	{{view_delete, "delete-back-word"}, MV_WORD, -1,
+	{CMD(view_delete, "delete-back-word"), MV_WORD, -1,
 	 META(CTRL('H')), META(FUNC_KEY(KEY_BACKSPACE)), 0},
-	{{view_delete, "delete-eol"}, MV_EOL, 1,
+	{CMD(view_delete, "delete-eol"), MV_EOL, 1,
 	 CTRL('K'), 0, 0},
 };
 
 static int view_move(struct command *c, struct cmd_info *ci)
 {
-	struct move_command *mv = container_of(c, struct move_command, cmd);
-	struct view_data *vd;
 	struct pane *p = ci->focus;
-	struct pane *view_pane;
+	struct move_command *mv = container_of(c, struct move_command, cmd);
+	struct view_data *vd = p->data;
+	struct pane *view_pane = p->focus;
 	int old_x = -1;
 	struct cmd_info ci2;
 	int ret = 0;
 
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
+	if (view_pane)
+		old_x = view_pane->cx;
 
-	if (p->focus) {
-		old_x = p->focus->cx;
-		view_pane = p->focus;
-	}
-
-	vd = p->data;
 	ci2.focus = ci->focus;
 	ci2.key = mv->type;
 	ci2.repeat = mv->direction * ci->repeat;
 	ci2.mark = mark_of_point(vd->point);
-	ret = key_handle(&ci2);
+	ret = key_handle_focus(&ci2);
 
 	if (!ret)
 		return 0;
@@ -431,24 +395,19 @@ static int view_move(struct command *c, struct cmd_info *ci)
 
 static int view_delete(struct command *c, struct cmd_info *ci)
 {
-	struct move_command *mv = container_of(c, struct move_command, cmd);
 	struct pane *p = ci->focus;
-	struct view_data *vd;
+	struct move_command *mv = container_of(c, struct move_command, cmd);
+	struct view_data *vd = p->data;
 	struct cmd_info ci2;
 	int ret = 0;
 	struct mark *m;
 
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	vd = p->data;
 	m = mark_at_point(vd->point, MARK_UNGROUPED);
 	ci2.focus = ci->focus;
 	ci2.key = mv->type;
 	ci2.repeat = mv->direction * ci->repeat;
 	ci2.mark = m;
-	ret = key_handle(&ci2);
+	ret = key_handle_focus(&ci2);
 	if (!ret) {
 		mark_delete(m);
 		return 0;
@@ -458,7 +417,7 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 	ci2.repeat = 1;
 	ci2.mark = m;
 	ci2.str = NULL;
-	ret = key_handle(&ci2);
+	ret = key_handle_focus(&ci2);
 	mark_delete(m);
 	if (ret)
 		pane_focus(ci->focus);
@@ -469,16 +428,11 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 static int view_insert(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
-	struct view_data *vd;
+	struct view_data *vd = p->data;
 	char str[2];
 	struct cmd_info ci2;
 	int ret;
 
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	vd = p->data;
 	ci2.focus = ci->focus;
 	ci2.key = EV_REPLACE;
 	ci2.repeat = 1;
@@ -486,24 +440,19 @@ static int view_insert(struct command *c, struct cmd_info *ci)
 	str[0] = ci->key;
 	str[1] = 0;
 	ci2.str = str;
-	ret = key_handle(&ci2);
+	ret = key_handle_focus(&ci2);
 	if (ret)
 		pane_focus(ci->focus);
 
 	return ret;
 }
-static struct command comm_insert = {view_insert, "insert-key"};
+DEF_CMD(comm_insert, view_insert, "insert-key");
 
 static int view_replace(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
-	struct view_data *vd;
+	struct view_data *vd = p->data;
 
-	while (p && p->refresh != view_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-	vd = p->data;
 	if (!mark_same(ci->mark, mark_of_point(vd->point))) {
 		int cnt = 0;
 		/* Something here do delete.  For now I need to count it. */
@@ -526,7 +475,7 @@ static int view_replace(struct command *c, struct cmd_info *ci)
 		point_insert_text(vd->text, vd->point, ci->str);
 	return 1;
 }
-static struct command comm_replace = {view_replace, "do-replace"};
+DEF_CMD(comm_replace, view_replace, "do-replace");
 
 static int view_click(struct command *c, struct cmd_info *ci)
 {
@@ -534,8 +483,6 @@ static int view_click(struct command *c, struct cmd_info *ci)
 	int mid = (p->h-1)/2;
 	struct cmd_info ci2;
 
-	if (p->refresh != view_refresh)
-		return 0;
 	if (ci->x != 0)
 		return 0;
 
@@ -559,10 +506,9 @@ static int view_click(struct command *c, struct cmd_info *ci)
 		ci2.key = MV_VIEW_LARGE;
 	} else
 		return 0;
-	return key_handle(&ci2);
+	return key_handle_focus(&ci2);
 }
-
-static struct command comm_click = {view_click, "view-click"};
+DEF_CMD(comm_click, view_click, "view-click");
 
 void view_register(struct map *m)
 {

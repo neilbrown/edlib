@@ -52,6 +52,8 @@ static int tile_refresh(struct pane *p, int damage)
 	}
 	return 0;
 }
+#define	CMD(func, name) {func, name, tile_refresh}
+#define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
 struct pane *tile_init(struct pane *display)
 {
@@ -419,70 +421,45 @@ int tile_grow(struct pane *p, int horiz, int size)
 
 static int tile_next(struct command *c, struct cmd_info *ci)
 {
-	struct tileinfo *ti;
-	struct tileinfo *next;
 	struct pane *p = ci->focus;
+	struct tileinfo *ti = p->data;
+	struct tileinfo *next;
 
-	while (p && p->refresh != tile_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-
-	ti = p->data;
 	next = list_next_entry(ti, tiles);
 	pane_focus(next->p);
 	return 1;
 }
-static struct command comm_next = { tile_next, "next-tile" };
+DEF_CMD(comm_next, tile_next, "next-tile");
 
 static int tile_prev(struct command *c, struct cmd_info *ci)
 {
-	struct tileinfo *ti;
-	struct tileinfo *prev;
 	struct pane *p = ci->focus;
+	struct tileinfo *ti = p->data;
+	struct tileinfo *prev;
 
-	while (p && p->refresh != tile_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-
-	ti = p->data;
 	prev = list_prev_entry(ti, tiles);
-
 	pane_focus(prev->p);
 	return 1;
 }
-static struct command comm_prev = { tile_prev, "prev-tile" };
+DEF_CMD(comm_prev, tile_prev, "prev-tile");
 
 static int tile_higher(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
-
-	while (p && p->refresh != tile_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-
 	tile_grow(p, 0, 1);
 	pane_focus(p);
 	return 1;
 }
-static struct command comm_higher = {tile_higher, "enlarge-tile"};
+DEF_CMD(comm_higher, tile_higher, "enlarge-tile");
 
 static int tile_wider(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
-
-	while (p && p->refresh != tile_refresh)
-		p = p->parent;
-	if (!p)
-		return 0;
-
 	tile_grow(p, 1, 1);
 	pane_focus(p);
 	return 1;
 }
-static struct command comm_wider = {tile_wider, "enlarge-tile-horiz"};
+DEF_CMD(comm_wider, tile_wider, "enlarge-tile-horiz");
 
 void tile_register(struct map *m)
 {

@@ -187,6 +187,7 @@ struct command *key_register_mod(char *name, int *bit)
 	modmap[free].name = strdup(name);
 	modmap[free].comm.func = key_modify;
 	modmap[free].comm.name = name;
+	modmap[free].comm.type = NULL;
 	*bit  = 1 << (free+21);
 	return &modmap[free].comm;
 }
@@ -195,31 +196,44 @@ static int key_lookup(struct map *m, struct cmd_info *ci)
 {
 	int pos = key_find(m, ci->key);
 	struct command *comm;
+	struct pane *target = ci->focus;
+	struct cmd_info ci2 = *ci;
 
 	if (pos >= m->size)
 		return 0;
 	if (m->comms[pos] == NULL &&
 	    pos > 0)
 		comm = m->comms[pos-1];
-	else if (m->keys[pos] == ci->key)
+	else if (m->keys[pos] == ci2.key)
 		comm = m->comms[pos];
 	else
 		return 0;
-	return comm->func(comm, ci);
+	while (target && comm->type && comm->type != target->refresh) {
+		if (ci2.x >= 0)
+			ci2.x += target->x;
+		if (ci2.y >= 0)
+			ci2.y += target->y;
+		target = target->parent;
+	}
+	if (!target)
+		return 0;
+	ci2.focus = target;
+	return comm->func(comm, &ci2);
 }
 
 int key_handle(struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	int ret = 0;
+	struct cmd_info ci2 = *ci;
 
 	while (ret == 0 && p) {
 		if (p->keymap)
-			ret = key_lookup(p->keymap, ci);
-		if (ci->x >= 0)
-			ci->x += p->x;
-		if (ci->y >= 0)
-			ci->y += p->y;
+			ret = key_lookup(p->keymap, &ci2);
+		if (ci2.x >= 0)
+			ci2.x += p->x;
+		if (ci2.y >= 0)
+			ci2.y += p->y;
 		p = p->parent;
 	}
 	return ret;
