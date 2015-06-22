@@ -30,6 +30,7 @@ struct view_data {
 int view_refresh(struct pane *p, int damage)
 {
 	int i;
+	int mid = (p->h-1)/2;
 
 	if (damage & DAMAGED_SIZE) {
 		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
@@ -38,10 +39,11 @@ int view_refresh(struct pane *p, int damage)
 
 	for (i = 0; i < p->h-1; i++)
 		pane_text(p, '|', A_STANDOUT, 0, i);
-	pane_text(p, '^', 0, 0, p->h/2-1);
-	pane_text(p, '#', A_STANDOUT, 0, p->h/2);
-	pane_text(p, 'v', 0, 0, p->h/2+1);
+	pane_text(p, '^', 0, 0, mid-1);
+	pane_text(p, '#', A_STANDOUT, 0, mid);
+	pane_text(p, 'v', 0, 0, mid+1);
 	pane_text(p, '+', A_STANDOUT, 0, p->h-1);
+	p->cx = 0; p->cy = p->h - 1;
 	for (i = 1; i < p->w; i++)
 		pane_text(p, '=', A_STANDOUT, i, p->h-1);
 	return 0;
@@ -360,9 +362,9 @@ static struct move_command {
 	 META('>'), 0, 0},
 	{{view_move, "start-of-file"}, MV_FILE, -1,
 	 META('<'), 0, 0},
-	{{view_move, "page-down"}, MV_PAGE, 1,
+	{{view_move, "page-down"}, MV_VIEW_LARGE, 1,
 	 FUNC_KEY(KEY_NPAGE), 0, 0},
-	{{view_move, "page-up"}, MV_PAGE, -1,
+	{{view_move, "page-up"}, MV_VIEW_LARGE, -1,
 	 FUNC_KEY(KEY_PPAGE), 0, 0},
 
 	{{view_delete, "delete-next"}, MV_CHAR, 1,
@@ -382,6 +384,8 @@ static int view_move(struct command *c, int key, struct cmd_info *ci)
 	struct move_command *mv = container_of(c, struct move_command, cmd);
 	struct view_data *vd;
 	struct pane *p = ci->focus;
+	struct pane *view_pane;
+	int old_x = -1;
 	struct cmd_info ci2;
 	int ret = 0;
 
@@ -389,6 +393,12 @@ static int view_move(struct command *c, int key, struct cmd_info *ci)
 		p = p->parent;
 	if (!p)
 		return 0;
+
+	if (p->focus) {
+		old_x = p->focus->cx;
+		view_pane = p->focus;
+	}
+
 	vd = p->data;
 	ci2.focus = ci->focus;
 	ci2.key = mv->type;
@@ -400,8 +410,25 @@ static int view_move(struct command *c, int key, struct cmd_info *ci)
 			ret = key_lookup(p->keymap, ci2.key, &ci2);
 		p = p->parent;
 	}
-	if (ret)
-		pane_focus(ci->focus);
+	if (!ret)
+		return 0;
+
+	if (mv->type == MV_VIEW_LARGE && old_x >= 0) {
+		/* Might have lost the cursor - place it at top or
+		 * bottom of view
+		 */
+		ci2.focus = ci->focus;
+		ci2.key = MV_CURSOR_XY;
+		ci2.repeat = 1;
+		ci2.x = old_x;
+		if (mv->direction == 1)
+			ci2.y = 0;
+		else
+			ci2.y = view_pane->h-1;
+		key_lookup(view_pane->keymap, ci2.key, &ci2);
+	}
+
+	pane_focus(ci->focus);
 
 	return ret;
 }
@@ -521,6 +548,48 @@ static int view_replace(struct command *c, int key, struct cmd_info *ci)
 }
 static struct command comm_replace = {view_replace, "do-replace"};
 
+static int view_click(struct command *c, int key, struct cmd_info *ci)
+{
+	struct pane *p = ci->focus;
+	int mid = (p->h-1)/2;
+	struct cmd_info ci2;
+	int ret = 0;
+
+	if (p->refresh != view_refresh)
+		return 0;
+	if (ci->x != 0)
+		return 0;
+
+	ci2.focus = p->focus;
+	ci2.key = MV_VIEW_SMALL;
+	ci2.repeat = ci->repeat;
+	if (ci2.repeat == INT_MAX)
+		ci2.repeat = 1;
+	ci2.mark = NULL;
+	p = p->focus;
+	if (ci->y == mid-1) {
+		/* scroll up */
+		ci2.repeat = -ci2.repeat;
+	} else if (ci->y < mid-1) {
+		/* big scroll up */
+		ci2.repeat = -ci2.repeat;
+		ci2.key = MV_VIEW_LARGE;
+	} else if (ci->y == mid+1) {
+		/* scroll down */
+	} else if (ci->y > mid+1 && ci->y < p->h-1) {
+		ci2.key = MV_VIEW_LARGE;
+	} else
+		return 0;
+	while (ret == 0 && p) {
+		if (p->keymap)
+			ret = key_lookup(p->keymap, ci2.key, &ci2);
+		p = p->parent;
+	}
+	return ret;
+}
+
+static struct command comm_click = {view_click, "view-click"};
+
 void view_register(struct map *m)
 {
 	int meta;
@@ -548,9 +617,12 @@ void view_register(struct map *m)
 	key_add(m, MV_EOL, &comm_eol);
 	key_add(m, MV_LINE, &comm_line);
 	key_add(m, MV_FILE, &comm_file);
-	key_add(m, MV_PAGE, &comm_page);
+	key_add(m, MV_VIEW_LARGE, &comm_page);
 
 	key_add_range(m, ' ', '~', &comm_insert);
 	key_add(m, '\n', &comm_insert);
 	key_add(m, EV_REPLACE, &comm_replace);
+
+	key_add(m, M_CLICK(0), &comm_click);
+	key_add(m, M_PRESS(0), &comm_click);
 }

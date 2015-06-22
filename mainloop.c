@@ -19,6 +19,7 @@
 #include "keymap.h"
 
 void render_text_attach(struct pane *p);
+void render_text_register(struct map *m);
 
 static void attach_file(struct pane *p, char *fname)
 {
@@ -57,6 +58,7 @@ int main(int argc, char *argv[])
 	root = ncurses_init(base, global_map);
 	tile_register(global_map);
 	view_register(global_map);
+	render_text_register(global_map);
 
 	b1 = tile_init(root);
 	b2 = tile_split(b1, 0, 0);

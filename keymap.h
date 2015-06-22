@@ -64,7 +64,12 @@ struct command *key_register_mod(char *name, int *bit);
 #define	MV_UNIT		EV_MOVE(9) /* structural unit at current level */
 #define	MV_LEVEL	EV_MOVE(10) /* Move to different level of units */
 #define	MV_FILE		EV_MOVE(11) /* Start or End of file */
-#define	MV_PAGE		EV_MOVE(12) /* screen unit, not doc unit */
+
+#define	MV_VIEW_SMALL	EV_MOVE(32) /* move view in lines, cursor stationary */
+#define	MV_VIEW_LARGE	EV_MOVE(33) /* move view in pages */
+#define	MV_VIEW_ABSOLUTE EV_MOVE(34) /* repeat is a percentage, or other fraction */
+
+#define	MV_CURSOR_XY	EV_MOVE(64)
 
 /* Each event (above) is accompanied by a cmd_info structure.
  * 'key' and 'focus' are always present, others only if relevant.

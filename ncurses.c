@@ -60,8 +60,9 @@ static void move_cursor(struct pane *p)
 		p = p->focus;
 		ox += p->x;
 		oy += p->y;
+		if (p->cx >= 0 && p->cy >= 0)
+			move(oy+p->cy, ox+p->cx);
 	}
-	move(oy+p->cy, ox+p->cx);
 }
 
 static void ncurses_flush(int fd, short ev, void *P)
@@ -139,6 +140,7 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 	set_escdelay(100);
 	intrflush(w, FALSE);
 	keypad(w, TRUE);
+	mousemask(ALL_MOUSE_EVENTS, NULL);
 
 	dd->scr = NULL;
 	dd->modifiers = 0;
@@ -273,21 +275,17 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	}
 }
 
-static void do_send_mouse(struct pane *p, MEVENT *mev, int cmd)
+static void do_send_mouse(struct pane *p, int x, int y, int cmd)
 {
-	struct display_data *dd = p->data;
 	struct cmd_info ci;
-	int x = mev->x;
-	int y = mev->y;
 	int ret = 0;
-
-	cmd |= dd->modifiers;
-	dd->savemod = dd->modifiers;
-	dd->modifiers = 0;
 
 	ci.x = x;
 	ci.y = y;
 	ci.focus = p;
+	ci.repeat = INT_MAX;
+	ci.str = NULL;
+	ci.mark = NULL;
 	while (!ret && p) {
 		if (p->keymap)
 			ret = key_lookup(p->keymap, cmd, &ci);
@@ -300,7 +298,9 @@ static void send_mouse(MEVENT *mev, struct pane *p)
 	int x = mev->x + p->x;
 	int y = mev->y + p->y;
 	struct pane *chld = p;
+	struct display_data *dd = p->data;
 	int b;
+	int mod = dd->modifiers;
 
 	while (chld) {
 		struct pane *t;
@@ -320,19 +320,19 @@ static void send_mouse(MEVENT *mev, struct pane *p)
 	/* MEVENT has lots of bits.  We want a few numbers */
 	for (b = 0 ; b < 4; b++) {
 		mmask_t s = mev->bstate;
-		if (BUTTON_PRESS(s, b))
-			do_send_mouse(p, mev, M_PRESS(b));
-		if (BUTTON_RELEASE(s, b))
-			do_send_mouse(p, mev, M_RELEASE(b));
-		if (BUTTON_CLICK(s, b))
-			do_send_mouse(p, mev, M_CLICK(b));
-		else if (BUTTON_DOUBLE_CLICK(s, b))
-			do_send_mouse(p, mev, M_DCLICK(b));
-		else if (BUTTON_TRIPLE_CLICK(s, b))
-			do_send_mouse(p, mev, M_TCLICK(b));
+		if (BUTTON_PRESS(s, b+1))
+			do_send_mouse(p, x, y, mod | M_PRESS(b));
+		if (BUTTON_RELEASE(s, b+1))
+			do_send_mouse(p, x, y, mod | M_RELEASE(b));
+		if (BUTTON_CLICK(s, b+1))
+			do_send_mouse(p, x, y, mod | M_CLICK(b));
+		else if (BUTTON_DOUBLE_CLICK(s, b+1))
+			do_send_mouse(p, x, y, mod | M_DCLICK(b));
+		else if (BUTTON_TRIPLE_CLICK(s, b+1))
+			do_send_mouse(p, x, y, mod | M_TCLICK(b));
 	}
 	if (mev->bstate & REPORT_MOUSE_POSITION)
-		do_send_mouse(p, mev, M_MOVE);
+		do_send_mouse(p, x, y, mod | M_MOVE);
 }
 
 static void input_handle(int fd, short ev, void *P)
