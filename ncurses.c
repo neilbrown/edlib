@@ -262,12 +262,10 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	dd->savemod = dd->modifiers;
 	dd->modifiers = 0;
 
-	while (p->focus)
-		p = p->focus;
 	ci.focus = p;
 	ci.key = c;
 	ci.repeat = 1;
-	key_handle(&ci);
+	key_handle_focus(&ci);
 }
 
 static void do_send_mouse(struct pane *p, int x, int y, int cmd)
@@ -281,33 +279,17 @@ static void do_send_mouse(struct pane *p, int x, int y, int cmd)
 	ci.repeat = INT_MAX;
 	ci.str = NULL;
 	ci.mark = NULL;
-	key_handle(&ci);
+	key_handle_xy(&ci);
 }
 
 static void send_mouse(MEVENT *mev, struct pane *p)
 {
-	int x = mev->x + p->x;
-	int y = mev->y + p->y;
-	struct pane *chld = p;
+	int x = mev->x;
+	int y = mev->y;
 	struct display_data *dd = p->data;
 	int b;
 	int mod = dd->modifiers;
 
-	while (chld) {
-		struct pane *t;
-		x -= chld->x;
-		y -= chld->y;
-		p = chld;
-		chld = NULL;
-		list_for_each_entry(t, &p->children, siblings) {
-			if (x < t->x || x >= t->x + t->w)
-				continue;
-			if (y < t->y || y >= t->y + t->h)
-				continue;
-			if (chld == NULL || t->z > chld->z)
-				chld = t;
-		}
-	}
 	/* MEVENT has lots of bits.  We want a few numbers */
 	for (b = 0 ; b < 4; b++) {
 		mmask_t s = mev->bstate;

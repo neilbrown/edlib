@@ -9,6 +9,8 @@ struct command {
 
 struct map *key_alloc(void);
 int key_handle(struct cmd_info *ci);
+int key_handle_focus(struct cmd_info *ci);
+int key_handle_xy(struct cmd_info *ci);
 void key_add(struct map *map, wint_t k, struct command *comm);
 void key_add_range(struct map *map, wint_t first, wint_t last,
 		   struct command *comm);

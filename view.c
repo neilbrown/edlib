@@ -421,7 +421,7 @@ static int view_move(struct command *c, struct cmd_info *ci)
 			ci2.y = 0;
 		else
 			ci2.y = view_pane->h-1;
-		key_handle(&ci2);
+		key_handle_xy(&ci2);
 	}
 
 	pane_focus(ci->focus);

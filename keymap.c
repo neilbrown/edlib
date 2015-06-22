@@ -224,3 +224,44 @@ int key_handle(struct cmd_info *ci)
 	}
 	return ret;
 }
+
+int key_handle_focus(struct cmd_info *ci)
+{
+	/* Handle this in the focus pane, so x,y are irrelevant */
+	ci->x = -1;
+	ci->y = -1;
+	while (ci->focus->focus)
+		ci->focus = ci->focus->focus;
+	return key_handle(ci);
+}
+
+int key_handle_xy(struct cmd_info *ci)
+{
+	/* Handle this in child with x,y co-ords */
+	struct pane *p = ci->focus;
+	int x = ci->x;
+	int y = ci->y;
+
+	while (1) {
+		struct pane *t, *chld = NULL;
+
+		list_for_each_entry(t, &p->children, siblings) {
+			if (x < t->x || x >= t->x + t->w)
+				continue;
+			if (y < t->y || y >= t->y + t->h)
+				continue;
+			if (chld == NULL || t->z > chld->z)
+				chld = t;
+		}
+		/* descend into chld */
+		if (!chld)
+			break;
+		x -= chld->x;
+		y -= chld->y;
+		p = chld;
+	}
+	ci->x = x;
+	ci->y = y;
+	ci->focus = p;
+	return key_handle(ci);
+}
