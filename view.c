@@ -404,12 +404,8 @@ static int view_move(struct command *c, struct cmd_info *ci)
 	ci2.key = mv->type;
 	ci2.repeat = mv->direction * ci->repeat;
 	ci2.mark = mark_of_point(vd->point);
-	p = ci->focus;
-	while (ret == 0 && p) {
-		if (p->keymap)
-			ret = key_lookup(p->keymap, &ci2);
-		p = p->parent;
-	}
+	ret = key_handle(&ci2);
+
 	if (!ret)
 		return 0;
 
@@ -425,7 +421,7 @@ static int view_move(struct command *c, struct cmd_info *ci)
 			ci2.y = 0;
 		else
 			ci2.y = view_pane->h-1;
-		key_lookup(view_pane->keymap, &ci2);
+		key_handle(&ci2);
 	}
 
 	pane_focus(ci->focus);
@@ -452,12 +448,7 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 	ci2.key = mv->type;
 	ci2.repeat = mv->direction * ci->repeat;
 	ci2.mark = m;
-	p = ci->focus;
-	while (ret == 0 && p) {
-		if (p->keymap)
-			ret = key_lookup(p->keymap, &ci2);
-		p = p->parent;
-	}
+	ret = key_handle(&ci2);
 	if (!ret) {
 		mark_delete(m);
 		return 0;
@@ -467,13 +458,7 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 	ci2.repeat = 1;
 	ci2.mark = m;
 	ci2.str = NULL;
-	p = ci->focus;
-	ret = 0;
-	while (ret == 0 && p) {
-		if (p->keymap)
-			ret = key_lookup(p->keymap, &ci2);
-		p = p->parent;
-	}
+	ret = key_handle(&ci2);
 	mark_delete(m);
 	if (ret)
 		pane_focus(ci->focus);
@@ -487,7 +472,7 @@ static int view_insert(struct command *c, struct cmd_info *ci)
 	struct view_data *vd;
 	char str[2];
 	struct cmd_info ci2;
-	int ret = 0;
+	int ret;
 
 	while (p && p->refresh != view_refresh)
 		p = p->parent;
@@ -501,12 +486,7 @@ static int view_insert(struct command *c, struct cmd_info *ci)
 	str[0] = ci->key;
 	str[1] = 0;
 	ci2.str = str;
-	p = ci->focus;
-	while (ret == 0 && p) {
-		if (p->keymap)
-			ret = key_lookup(p->keymap, &ci2);
-		p = p->parent;
-	}
+	ret = key_handle(&ci2);
 	if (ret)
 		pane_focus(ci->focus);
 
@@ -553,7 +533,6 @@ static int view_click(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	int mid = (p->h-1)/2;
 	struct cmd_info ci2;
-	int ret = 0;
 
 	if (p->refresh != view_refresh)
 		return 0;
@@ -580,12 +559,7 @@ static int view_click(struct command *c, struct cmd_info *ci)
 		ci2.key = MV_VIEW_LARGE;
 	} else
 		return 0;
-	while (ret == 0 && p) {
-		if (p->keymap)
-			ret = key_lookup(p->keymap, &ci2);
-		p = p->parent;
-	}
-	return ret;
+	return key_handle(&ci2);
 }
 
 static struct command comm_click = {view_click, "view-click"};

@@ -340,12 +340,8 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 		ci2.repeat = ci->repeat;
 	m = mark_of_point(rt->v->point);
 	ci2.mark = m;
-	p = ci->focus;
-	while (ret == 0 && p) {
-		if (p->keymap)
-			ret = key_lookup(p->keymap, &ci2);
-		p = p->parent;
-	}
+	ret = key_handle(&ci2);
+
 	if (!ret)
 		return 0;
 	rt->target_x = target_x; // MV_EOL might have changed it

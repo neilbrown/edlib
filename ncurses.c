@@ -243,7 +243,6 @@ void pane_text(struct pane *p, wchar_t ch, int attr, int x, int y)
 
 static void send_key(int keytype, wint_t c, struct pane *p)
 {
-	int ret = 0;
 	struct display_data *dd = p->data;
 	struct cmd_info ci = {0};
 
@@ -268,17 +267,12 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	ci.focus = p;
 	ci.key = c;
 	ci.repeat = 1;
-	while (ret == 0 && p){
-		if (p->keymap)
-			ret = key_lookup(p->keymap, &ci);
-		p = p->parent;
-	}
+	key_handle(&ci);
 }
 
 static void do_send_mouse(struct pane *p, int x, int y, int cmd)
 {
 	struct cmd_info ci;
-	int ret = 0;
 
 	ci.key = cmd;
 	ci.x = x;
@@ -287,11 +281,7 @@ static void do_send_mouse(struct pane *p, int x, int y, int cmd)
 	ci.repeat = INT_MAX;
 	ci.str = NULL;
 	ci.mark = NULL;
-	while (!ret && p) {
-		if (p->keymap)
-			ret = key_lookup(p->keymap, &ci);
-		p = p->parent;
-	}
+	key_handle(&ci);
 }
 
 static void send_mouse(MEVENT *mev, struct pane *p)
