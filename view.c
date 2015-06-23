@@ -450,6 +450,29 @@ static int view_insert(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_insert, view_insert, "insert-key");
 
+static int view_insert_nl(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ci->focus;
+	struct view_data *vd = p->data;
+	char str[2];
+	struct cmd_info ci2;
+	int ret;
+
+	ci2.focus = ci->focus;
+	ci2.key = EV_REPLACE;
+	ci2.repeat = 1;
+	ci2.mark = mark_of_point(vd->point);
+	str[0] = '\n';
+	str[1] = 0;
+	ci2.str = str;
+	ret = key_handle_focus(&ci2);
+	if (ret)
+		pane_damaged(ci->focus, DAMAGED_CONTENT);
+
+	return ret;
+}
+DEF_CMD(comm_insert_nl, view_insert_nl, "insert-nl");
+
 static int view_replace(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
@@ -542,7 +565,9 @@ void view_register(struct map *m)
 	key_add(m, MV_VIEW_LARGE, &comm_page);
 
 	key_add_range(m, ' ', '~', &comm_insert);
+	key_add(m, '\t', &comm_insert);
 	key_add(m, '\n', &comm_insert);
+	key_add(m, '\r', &comm_insert_nl);
 	key_add(m, EV_REPLACE, &comm_replace);
 
 	key_add(m, M_CLICK(0), &comm_click);
