@@ -225,15 +225,10 @@ int key_handle(struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	int ret = 0;
-	struct cmd_info ci2 = *ci;
 
 	while (ret == 0 && p) {
 		if (p->keymap)
-			ret = key_lookup(p->keymap, &ci2);
-		if (ci2.x >= 0)
-			ci2.x += p->x;
-		if (ci2.y >= 0)
-			ci2.y += p->y;
+			ret = key_lookup(p->keymap, ci);
 		p = p->parent;
 	}
 	return ret;
