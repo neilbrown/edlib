@@ -136,9 +136,11 @@ static struct mark *find_pos(struct text *t, struct pane *p, int px, int py)
 	}
 	while (y < p->h) {
 		if (y > py)
+			break;
+		if (y == py && x == px)
 			return m;
-		if (y == py && x >= px)
-			return m;
+		if (y == py && x > px)
+			break;
 
 		if (rt_fore(t, p, m, &x, &y, 0) == 0)
 			break;
