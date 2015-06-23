@@ -88,11 +88,13 @@ struct pane *view_attach(struct pane *par, struct text *t)
 
 	pane_resize(p, 0, 0, par->w, par->h);
 	p = pane_register(p, 0, view_null, vd, NULL);
+	p->parent->focus = p;
 	pane_resize(p, 1, 0, par->w-1, par->h-1);
-	pane_focus(p);
+	pane_damaged(p, DAMAGED_SIZE);
 	/* It is expected that some other handler will take
 	 * over this pane
 	 */
+	pane_focus(p);
 	return p;
 }
 
@@ -388,7 +390,7 @@ static int view_move(struct command *c, struct cmd_info *ci)
 		key_handle_xy(&ci2);
 	}
 
-	pane_focus(ci->focus);
+	pane_damaged(ci->focus, DAMAGED_CURSOR);
 
 	return ret;
 }
@@ -420,7 +422,7 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 	ret = key_handle_focus(&ci2);
 	mark_delete(m);
 	if (ret)
-		pane_focus(ci->focus);
+		pane_damaged(ci->focus, DAMAGED_CONTENT);
 
 	return ret;
 }
@@ -442,7 +444,7 @@ static int view_insert(struct command *c, struct cmd_info *ci)
 	ci2.str = str;
 	ret = key_handle_focus(&ci2);
 	if (ret)
-		pane_focus(ci->focus);
+		pane_damaged(ci->focus, DAMAGED_CONTENT);
 
 	return ret;
 }

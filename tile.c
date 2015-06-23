@@ -447,7 +447,7 @@ static int tile_higher(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	tile_grow(p, 0, 1);
-	pane_focus(p);
+	pane_damaged(p, DAMAGED_SIZE);
 	return 1;
 }
 DEF_CMD(comm_higher, tile_higher, "enlarge-tile");
@@ -456,7 +456,7 @@ static int tile_wider(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	tile_grow(p, 1, 1);
-	pane_focus(p);
+	pane_damaged(p, DAMAGED_SIZE);
 	return 1;
 }
 DEF_CMD(comm_wider, tile_wider, "enlarge-tile-horiz");

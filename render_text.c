@@ -263,7 +263,7 @@ static int render_text_move(struct command *c, struct cmd_info *ci)
 		while (rt_fore(rt->v->text, p, rt->top, &x, &y, 0) && y < rpt)
 			;
 	}
-	pane_focus(p);
+	pane_damaged(p, DAMAGED_CURSOR);
 	return 1;
 }
 DEF_CMD(comm_move, render_text_move, "move-view");
@@ -335,7 +335,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 			break;
 		}
 	}
-	pane_focus(p);
+	pane_damaged(p, DAMAGED_CURSOR);
 	return 1;
 }
 DEF_CMD(comm_line, render_text_move_line, "move-line");

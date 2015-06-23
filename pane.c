@@ -94,6 +94,7 @@ static void __pane_refresh(struct pane *p, int damage)
 
 void pane_refresh(struct pane *p)
 {
+	pane_damaged(p, DAMAGED_CURSOR);
 	__pane_refresh(p, 0);
 }
 
@@ -178,9 +179,9 @@ struct pane *pane_to_root(struct pane *p, int *x, int *y, int *w, int *h)
 
 void pane_focus(struct pane *p)
 {
+	pane_damaged(p, DAMAGED_CURSOR);
 	while (p->parent) {
 		p->parent->focus = p;
 		p = p->parent;
 	}
-	pane_damaged(p, DAMAGED_CURSOR);
 }
