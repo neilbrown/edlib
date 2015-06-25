@@ -22,10 +22,15 @@ struct text_ref text_find_ref(struct text *t, int index);
 int text_load_file(struct text *t, int fd);
 void text_add_str(struct text *t, struct text_ref *pos, char *str,
 		  struct text_ref *start);
+void text_add_char(struct text *t, struct text_ref *pos, wchar_t ch);
 void text_del(struct text *t, struct text_ref *pos, int len);
 wint_t text_next(struct text *t, struct text_ref *r);
 wint_t text_prev(struct text *t, struct text_ref *r);
 int text_ref_same(struct text_ref *r1, struct text_ref *r2);
+void text_undo(struct text *t);
+void text_redo(struct text *t);
+int text_str_cmp(struct text *t, struct text_ref *r, char *s);
+
 
 int text_update_following_after_add(struct text *t, struct text_ref *ipos,
 				    struct text_ref *pos);

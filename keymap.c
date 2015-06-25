@@ -143,6 +143,7 @@ void key_add_range(struct map *map, wint_t first, wint_t last,
 	map->size += 2;
 }
 
+#if 0
 void key_del(struct map *map, wint_t k)
 {
 	int pos;
@@ -157,6 +158,7 @@ void key_del(struct map *map, wint_t k)
 		(map->size-pos-1) * sizeof(struct command *));
 	map->size -= 1;
 }
+#endif
 
 static int key_modify(struct command *comm, struct cmd_info *ci)
 {

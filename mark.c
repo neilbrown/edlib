@@ -382,7 +382,7 @@ wint_t mark_prev(struct text *t, struct mark *m)
  * Then update 'all' list, text ref and seq number.
  */
 
-void point_forward_to_mark(struct text *t, struct point *p, struct mark *m)
+static void point_forward_to_mark(struct text *t, struct point *p, struct mark *m)
 {
 	struct mark *mtmp, *mnear;
 	struct point *ptmp, *pnear;
@@ -422,7 +422,7 @@ void point_forward_to_mark(struct text *t, struct point *p, struct mark *m)
 	assign_seq(&p->m, hlist_prev_entry(&p->m, all)->seq);
 }
 
-void point_backward_to_mark(struct text *t, struct point *p, struct mark *m)
+static void point_backward_to_mark(struct text *t, struct point *p, struct mark *m)
 {
 	struct mark *mtmp, *mnear;
 	struct point *ptmp, *pnear;

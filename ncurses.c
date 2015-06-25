@@ -75,7 +75,7 @@ static void ncurses_flush(int fd, short ev, void *P)
 	refresh();
 }
 
-int nc_abort(struct command *c, struct cmd_info *ci)
+static int nc_abort(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	struct display_data *dd = p->data;
@@ -85,7 +85,7 @@ int nc_abort(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_abort, nc_abort, "abort");
 
-int nc_refresh(struct command *c, struct cmd_info *ci)
+static int nc_refresh(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	clear();

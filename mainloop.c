@@ -17,9 +17,7 @@
 #include "mark.h"
 #include "view.h"
 #include "keymap.h"
-
-void render_text_attach(struct pane *p);
-void render_text_register(struct map *m);
+#include "render_text.h"
 
 static void attach_file(struct pane *p, char *fname)
 {

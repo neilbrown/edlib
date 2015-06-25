@@ -27,7 +27,7 @@ struct view_data {
 	struct point	*point;
 };
 
-int view_refresh(struct pane *p, int damage)
+static int view_refresh(struct pane *p, int damage)
 {
 	int i;
 	int mid = (p->h-1)/2;
