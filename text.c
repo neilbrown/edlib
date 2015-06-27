@@ -257,18 +257,20 @@ void text_add_char(struct text *t, struct text_ref *pos, wchar_t ch, int *first_
 	}
 }
 
-/* Text insertion and deletion can modify chunks which various
+/* Text insertion, deletion, and undo can modify chunks which various
  * marks point to - so those marks will need to be updated.
  * Modification include splitting a chunk, inserting chunks,
- * or deleting chunks.
- * When a chunk is split, the original because the first part.
+ * or deleting chunks and recombining chunks (for undo)
+ * When a chunk is split, the original becomes the first part.
  * So any mark pointing past the end of that original must be moved
- * the new new chunks.
+ * to the new chunk.
  * When a chunk is deleted, any mark pointing to a deleted chunk
  * must be redirected to the (new) point of deletion.
  * When a chunk is inserted, marks before the insertion mark must remain
  * before the inserted chunk, marks after must remain after the insertion
  * point.
+ * When two chunks are recombined it will appear that the second chunk
+ * was deleted.  If
  *
  * So text_update_prior_after_change() is called on marks before the
  * mark-of-change in reverse order until the function returns zero.
@@ -312,7 +314,13 @@ int text_update_following_after_change(struct text *t, struct text_ref *pos,
 
 	if (pos->c->start >= pos->c->end) {
 		/* This chunk was deleted */
-		*pos = *epos;
+		if (pos->c->txt == epos->c->txt &&
+		    pos->o >= epos->c->start &&
+		    pos->o < epos->c->end)
+			/* chunks were rejoined */
+			pos->c = epos->c;
+		else
+			*pos = *epos;
 		return 1;
 	}
 	if (pos->o > pos->c->end) {
