@@ -420,53 +420,63 @@ void text_del(struct text *t, struct text_ref *pos, int len, int *first_edit)
 	}
 }
 
-void text_undo(struct text *t)
+/* text_undo and text_redo return:
+ * 0 - there are no more changes to do
+ * 1 - A change has been do, there are no more parts to it.
+ * 2 - A change has been partially undone - call again to undo more.
+ */
+int text_undo(struct text *t)
 {
-	struct text_edit *e;
+	struct text_edit *e = t->undo;
 
-	while ((e = t->undo) != NULL) {
+	if (!e)
+		return 0;
 
-		if (e->target->end == e->target->start) {
-			/* need to re-link */
-			struct list_head *l = e->target->lst.prev;
-			list_add(&e->target->lst, l);
-		}
-		if (e->at_start)
-			e->target->start -= e->len;
-		else
-			e->target->end -= e->len;
-		t->undo = e->next;
-		e->next = t->redo;
-		t->redo = e;
-		if (e->target->start == e->target->end)
-			__list_del(e->target->lst.prev, e->target->lst.next);
-		if (e->first)
-			break;
+	if (e->target->end == e->target->start) {
+		/* need to re-link */
+		struct list_head *l = e->target->lst.prev;
+		list_add(&e->target->lst, l);
 	}
+	if (e->at_start)
+		e->target->start -= e->len;
+	else
+		e->target->end -= e->len;
+	t->undo = e->next;
+	e->next = t->redo;
+	t->redo = e;
+	if (e->target->start == e->target->end)
+		__list_del(e->target->lst.prev, e->target->lst.next);
+	if (e->first)
+		return 1;
+	else
+		return 2;
 }
 
-void text_redo(struct text *t)
+int text_redo(struct text *t)
 {
-	struct text_edit *e;
+	struct text_edit *e = t->redo;
 
-	while ((e = t->redo) != NULL) {
-		if (e->target->end == e->target->start) {
-			/* need to re-link */
-			struct list_head *l = e->target->lst.prev;
-			list_add(&e->target->lst, l);
-		}
-		if (e->at_start)
-			e->target->start += e->len;
-		else
-			e->target->end += e->len;
-		t->redo = e->next;
-		e->next = t->undo;
-		t->undo = e;
-		if (e->target->start == e->target->end)
-			__list_del(e->target->lst.prev, e->target->lst.next);
-		if (t->redo && t->redo->first)
-			break;
+	if (!e)
+		return 0;
+
+	if (e->target->end == e->target->start) {
+		/* need to re-link */
+		struct list_head *l = e->target->lst.prev;
+		list_add(&e->target->lst, l);
 	}
+	if (e->at_start)
+		e->target->start += e->len;
+	else
+		e->target->end += e->len;
+	t->redo = e->next;
+	e->next = t->undo;
+	t->undo = e;
+	if (e->target->start == e->target->end)
+		__list_del(e->target->lst.prev, e->target->lst.next);
+	if (t->redo && t->redo->first)
+		return 1;
+	else
+		return 2;
 }
 
 static int common_prefix(char *a, char *b, int l)
@@ -705,9 +715,9 @@ int main(int argc, char *argv[])
 				goto out;
 			}
 		} else if (test[i].pos == -2) {
-			text_undo(&t);
+			while (text_undo(&t) == 2);
 		} else if (test[i].pos == -3) {
-			text_redo(&t);
+			while (text_redo(&t) == 2);
 		} else if (test[i].str[0] == '-')
 			text_del(&t, &r, strlen(test[i].str), &first);
 		else
