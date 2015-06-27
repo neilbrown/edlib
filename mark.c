@@ -480,12 +480,13 @@ void point_insert_text(struct text *t, struct point *p, char *s)
 	m = &p->m;
 	text_add_str(t, &p->m.ref, s, &start);
 	hlist_for_each_entry_continue_reverse(m, &t->marks, all)
-		if (text_update_prior_after_add(t, &p->m.ref,
-						&m->ref, &start) == 0)
+		if (text_update_prior_after_change(t, &m->ref,
+						   &start, &p->m.ref) == 0)
 			break;
 	m = &p->m;
 	hlist_for_each_entry_continue(m, all)
-		if (text_update_following_after_add(t, &p->m.ref, &m->ref) == 0)
+		if (text_update_following_after_change(t, &m->ref,
+						       &start, &p->m.ref) == 0)
 			break;
 
 	for (i = 0; i < p->size; i++) {
@@ -507,11 +508,13 @@ void point_delete_text(struct text *t, struct point *p, int len)
 	text_del(t, &p->m.ref, len);
 	m = &p->m;
 	hlist_for_each_entry_continue_reverse(m, &t->marks, all)
-		if (text_update_prior_after_del(t, &p->m.ref, &m->ref) == 0)
+		if (text_update_prior_after_change(t, &m->ref,
+						   &p->m.ref, &p->m.ref) == 0)
 			break;
 	m = &p->m;
 	hlist_for_each_entry_continue(m, all)
-		if (text_update_following_after_del(t, &p->m.ref, &m->ref) == 0)
+		if (text_update_following_after_change(t, &m->ref,
+						       &p->m.ref, &p->m.ref) == 0)
 			break;
 
 	for (i = 0; i < p->size; i++) {

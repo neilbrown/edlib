@@ -255,46 +255,85 @@ void text_add_char(struct text *t, struct text_ref *pos, wchar_t ch)
 	}
 }
 
-/* Text insertion may have split a chunk, or may have
- * inserted a chunk before the target.
- * In first case any ref to the later half of the split chunk
- * needs to be redirected.  This is done by calling
- * text_update_following_after_add() on refs that follow the insertion point.
- * In the second any prior refs must be moved to the start
- * of the inserted region.  This is done by calling
- * text_update_prior_after_add() on refs that preceed the insertion point.
+/* Text insertion and deletion can modify chunks which various
+ * marks point to - so those marks will need to be updated.
+ * Modification include splitting a chunk, inserting chunks,
+ * or deleting chunks.
+ * When a chunk is split, the original because the first part.
+ * So any mark pointing past the end of that original must be moved
+ * the new new chunks.
+ * When a chunk is deleted, any mark pointing to a deleted chunk
+ * must be redirected to the (new) point of deletion.
+ * When a chunk is inserted, marks before the insertion mark must remain
+ * before the inserted chunk, marks after must remain after the insertion
+ * point.
+ *
+ * So text_update_prior_after_change() is called on marks before the
+ * mark-of-change in reverse order until the function returns zero.
+ * If it finds a mark pointing to a deleted chunk, that mark changes to
+ * point the same place as the mark-of-change.
+ * If it finds a mark at, or immediately after, the mark-of-change,
+ * that mark is moved to point to the start of insert.
+ *
+ * Then text_update_following_after_change() is called on marks after
+ * the mark-of-change in order until that function returns zero.
+ * If a mark points outside the range of a chunk, the other half of the
+ * chunk is found (by walking forward) and the pointer is updated.
+ * If a deleted chunk is found, that mark is redirected to the mark-of-change.
+ * If a location at the start is found, it is move to the end.
  */
 
-int text_update_following_after_add(struct text *t, struct text_ref *ipos,
-				     struct text_ref *pos)
+int text_update_prior_after_change(struct text *t, struct text_ref *pos,
+				   struct text_ref *spos, struct text_ref *epos)
 {
-	struct text_chunk *c;
 
-	if (pos->o <= pos->c->end)
-		/* This wasn't split, so nothing more to do */
-		return 0;
-	c = ipos->c;
-	list_for_each_entry_from(c, &t->text, lst) {
-		if (c->txt == pos->c->txt &&
-		    c->start <= pos->o &&
-		    c->end >= pos->o) {
-			pos->c = c;
-			break;
-		}
-	}
-	return 1;
-}
-
-int text_update_prior_after_add(struct text *t, struct text_ref *ipos,
-				struct text_ref *pos, struct text_ref *start)
-{
-	/* If 'pos' same as ipos, change it to start */
-	if (pos->o == pos->c->start &&
-	    ipos->o == ipos->c->end &&
-	    list_next_entry(ipos->c, lst) == pos->c) {
-		*pos = *start;
+	if (pos->c->start >= pos->c->end) {
+		/* This chunk was deleted */
+		*pos = *epos;
 		return 1;
 	}
+	if (text_ref_same(pos, epos)) {
+		*pos = *spos;
+		return 1;
+	}
+	/* no insert or delete here, so all done */
+	return 0;
+}
+
+int text_update_following_after_change(struct text *t, struct text_ref *pos,
+				       struct text_ref *spos, struct text_ref *epos)
+{
+	/* A change has happened between spos and epos. pos should be at or after
+	 * epos.
+	 */
+	struct text_chunk *c;
+
+	if (pos->c->start >= pos->c->end) {
+		/* This chunk was deleted */
+		*pos = *epos;
+		return 1;
+	}
+	if (pos->o > pos->c->end) {
+		/* This was split */
+
+		c = epos->c;
+		list_for_each_entry_from(c, &t->text, lst) {
+			if (c->txt == pos->c->txt &&
+			    c->start <= pos->o &&
+			    c->end >= pos->o) {
+				pos->c = c;
+				break;
+			}
+		}
+		return 1;
+	}
+	if (text_ref_same(pos, spos)) {
+		*pos = *epos;
+		return 1;
+	}
+	/* This is beyond the change point and no deletion or split
+	 * happened here, so all done.
+	 */
 	return 0;
 }
 
@@ -370,34 +409,6 @@ void text_del(struct text *t, struct text_ref *pos, int len)
 			len = 0;
 		}
 	}
-}
-
-/* Text deletion may have split a chunk, may have removed chunks.
- * and may have introduced a new empty chunk if everything was deleted.
- * Any mark in a removed chunk must have current ref copied in.
- * Any mark in the split chunk must be updated to the second half.
- */
-int text_update_prior_after_del(struct text *t, struct text_ref *dpos,
-				struct text_ref *pos)
-{
-	if (pos->c->start >= pos->c->end) {
-		/* This chunk was deleted */
-		*pos = *dpos;
-		return 1;
-	}
-	/* Handle possible split just like with 'add' */
-	return text_update_following_after_add(t, dpos, pos);
-}
-
-int text_update_following_after_del(struct text *t, struct text_ref *dpos,
-				    struct text_ref *pos)
-{
-	if (pos->c->start <= pos->c->end) {
-		/* This chunk was deleted */
-		*pos = *dpos;
-		return 1;
-	}
-	return 0;
 }
 
 void text_undo(struct text *t)

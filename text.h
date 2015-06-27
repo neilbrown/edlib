@@ -32,11 +32,7 @@ void text_redo(struct text *t);
 int text_str_cmp(struct text *t, struct text_ref *r, char *s);
 
 
-int text_update_following_after_add(struct text *t, struct text_ref *ipos,
-				    struct text_ref *pos);
-int text_update_prior_after_add(struct text *t, struct text_ref *ipos,
-				struct text_ref *pos, struct text_ref *start);
-int text_update_prior_after_del(struct text *t, struct text_ref *dpos,
-				struct text_ref *pos);
-int text_update_following_after_del(struct text *t, struct text_ref *dpos,
-				    struct text_ref *pos);
+int text_update_prior_after_change(struct text *t, struct text_ref *pos,
+				   struct text_ref *spos, struct text_ref *epos);
+int text_update_following_after_change(struct text *t, struct text_ref *pos,
+				       struct text_ref *spos, struct text_ref *epos);
