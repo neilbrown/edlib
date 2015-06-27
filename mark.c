@@ -476,9 +476,10 @@ void point_insert_text(struct text *t, struct point *p, char *s)
 	struct mark *m;
 	struct text_ref start;
 	int i;
+	int first = 1;
 
 	m = &p->m;
-	text_add_str(t, &p->m.ref, s, &start);
+	text_add_str(t, &p->m.ref, s, &start, &first);
 	hlist_for_each_entry_continue_reverse(m, &t->marks, all)
 		if (text_update_prior_after_change(t, &m->ref,
 						   &start, &p->m.ref) == 0)
@@ -504,8 +505,9 @@ void point_delete_text(struct text *t, struct point *p, int len)
 {
 	struct mark *m;
 	int i;
+	int first = 1;
 
-	text_del(t, &p->m.ref, len);
+	text_del(t, &p->m.ref, len, &first);
 	m = &p->m;
 	hlist_for_each_entry_continue_reverse(m, &t->marks, all)
 		if (text_update_prior_after_change(t, &m->ref,

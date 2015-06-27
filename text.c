@@ -148,7 +148,7 @@ static void text_add_edit(struct text *t, struct text_chunk *target,
 }
 
 void text_add_str(struct text *t, struct text_ref *pos, char *str,
-		  struct text_ref *start)
+		  struct text_ref *start, int *first_edit)
 {
 	/* Text is added to the end of the referenced chunk, or
 	 * in new chunks which are added afterwards.  This allows
@@ -166,7 +166,6 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 	 */
 	struct text_alloc *a = t->alloc;
 	int len = strlen(str);
-	int first_edit = 1;
 
 	if (start)
 		*start = *pos;
@@ -181,7 +180,7 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 		pos->c->end += len;
 		pos->o += len;
 		str += len;
-		text_add_edit(t, pos->c, &first_edit, 0, len);
+		text_add_edit(t, pos->c, first_edit, 0, len);
 		len = strlen(str);
 	}
 	if (!len)
@@ -212,8 +211,8 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 			attr_trim(&pos->c->attrs, c->start);
 			pos->c->end = pos->o;
 			list_add(&c->lst, &pos->c->lst);
-			text_add_edit(t, c, &first_edit, 0, c->end - c->start);
-			text_add_edit(t, pos->c, &first_edit, 0, -c->start - c->end);
+			text_add_edit(t, c, first_edit, 0, c->end - c->start);
+			text_add_edit(t, pos->c, first_edit, 0, -c->start - c->end);
 		}
 	}
 	while ((len = strlen(str)) > 0) {
@@ -242,19 +241,19 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 		pos->c->end = len;
 		pos->o = len;
 		memcpy(a->text + a->free, str, len);
-		text_add_edit(t, pos->c, &first_edit, 0, len);
+		text_add_edit(t, pos->c, first_edit, 0, len);
 		a->free += len;
 		str += len;
 	}
 }
 
-void text_add_char(struct text *t, struct text_ref *pos, wchar_t ch)
+void text_add_char(struct text *t, struct text_ref *pos, wchar_t ch, int *first_edit)
 {
 	char str[MB_CUR_MAX+1];
 	int l = wctomb(str, ch);
 	if (l > 0) {
 		str[l] = 0;
-		text_add_str(t, pos, str, NULL);
+		text_add_str(t, pos, str, NULL, first_edit);
 	}
 }
 
@@ -340,9 +339,8 @@ int text_update_following_after_change(struct text *t, struct text_ref *pos,
 	return 0;
 }
 
-void text_del(struct text *t, struct text_ref *pos, int len)
+void text_del(struct text *t, struct text_ref *pos, int len, int *first_edit)
 {
-	int first_edit = 1;
 	while (len) {
 		struct text_chunk *c = pos->c;
 		if (pos->o == pos->c->start &&
@@ -365,12 +363,12 @@ void text_del(struct text *t, struct text_ref *pos, int len)
 			}
 			__list_del(c->lst.prev, c->lst.next); /* no poison, retain place in list */
 			attr_free(&c->attrs);
-			text_add_edit(t, c, &first_edit, 0, c->start - c->end);
+			text_add_edit(t, c, first_edit, 0, c->start - c->end);
 			len -= c->end - c->start;
 			c->end = c->start;
 			if (pos->c->txt == NULL) {
 				list_add(&c->lst, &t->text);
-				text_add_edit(t, c, &first_edit, 0, 0);
+				text_add_edit(t, c, first_edit, 0, 0);
 				len = 0;
 			}
 		} else if (pos->o == pos->c->start) {
@@ -381,7 +379,7 @@ void text_del(struct text *t, struct text_ref *pos, int len)
 			s = attr_copy_tail(c->attrs, c->start);
 			attr_free(&c->attrs);
 			c->attrs = s;
-			text_add_edit(t, c, &first_edit, 1, len);
+			text_add_edit(t, c, first_edit, 1, len);
 			len = 0;
 		} else if (c->end - pos->o <= len) {
 			/* If the end of the chunk is deleted, just update
@@ -390,7 +388,7 @@ void text_del(struct text *t, struct text_ref *pos, int len)
 			len -= diff;
 			c->end = pos->o;
 			attr_trim(&c->attrs, c->end);
-			text_add_edit(t, c, &first_edit, 0, -diff);
+			text_add_edit(t, c, first_edit, 0, -diff);
 			if (c->lst.next != &t->text) {
 				pos->c = list_next_entry(c, lst);
 				pos->o = pos->c->start;
@@ -408,7 +406,7 @@ void text_del(struct text *t, struct text_ref *pos, int len)
 			c2->attrs = attr_copy_tail(c->attrs, c2->start);
 			attr_trim(&c->attrs, c->end);
 			list_add(&c2->lst, &c->lst);
-			text_add_edit(t, c2, &first_edit, 1, c2->end - c2->start);
+			text_add_edit(t, c2, first_edit, 1, c2->end - c2->start);
 			len = 0;
 		}
 	}
@@ -670,6 +668,7 @@ int main(int argc, char *argv[])
 	list_add(&c->lst, &t.text);
 
 	for (i = 0; i < sizeof(test) / sizeof(test[0]); i++) {
+		int first = 1;
 		int cnt = test[i].pos;
 		list_for_each_entry(c, &t.text, lst) {
 			if (c->end - c->start >= cnt)
@@ -702,9 +701,9 @@ int main(int argc, char *argv[])
 		} else if (test[i].pos == -3) {
 			text_redo(&t);
 		} else if (test[i].str[0] == '-')
-			text_del(&t, &r, strlen(test[i].str));
+			text_del(&t, &r, strlen(test[i].str)), &first;
 		else
-			text_add_str(&t, &r, test[i].str, NULL);
+			text_add_str(&t, &r, test[i].str, NULL, &first);
 
 		cnt = 0;
 		for (e = t.undo; e; e = e->next)

@@ -29,9 +29,10 @@ static void attach_file(struct pane *p, char *fname)
 	if (fd >= 0)
 		text_load_file(t, fd);
 	else {
-		text_add_str(t, &r, "File not found: ", NULL);
-		text_add_str(t, &r, fname, NULL);
-		text_add_str(t, &r, "\n", NULL);
+		int first=1;
+		text_add_str(t, &r, "File not found: ", NULL, &first);
+		text_add_str(t, &r, fname, NULL, &first);
+		text_add_str(t, &r, "\n", NULL, &first);
 	}
 	p = view_attach(p, t);
 	{
