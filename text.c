@@ -133,8 +133,11 @@ int text_load_file(struct text *t, int fd)
 static void text_add_edit(struct text *t, struct text_chunk *target,
 			  int *first, int at_start, int len)
 {
-	struct text_edit *e = malloc(sizeof(*e));
+	struct text_edit *e;
 
+	if (len == 0)
+		return;
+	e = malloc(sizeof(*e));
 	e->target = target;
 	e->first = *first;
 	e->at_start = at_start;
