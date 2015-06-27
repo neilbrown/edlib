@@ -709,7 +709,7 @@ int main(int argc, char *argv[])
 		} else if (test[i].pos == -3) {
 			text_redo(&t);
 		} else if (test[i].str[0] == '-')
-			text_del(&t, &r, strlen(test[i].str)), &first;
+			text_del(&t, &r, strlen(test[i].str), &first);
 		else
 			text_add_str(&t, &r, test[i].str, NULL, &first);
 
