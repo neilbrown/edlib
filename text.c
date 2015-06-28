@@ -199,7 +199,7 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 
 			if (start && start->c == pos->c && start->o == pos->o) {
 				start->c = c;
-				start->o = 0;
+				start->o = c->start;
 			}
 			pos->c = c;
 			pos->o = c->start;
@@ -212,7 +212,7 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 			pos->c->end = pos->o;
 			list_add(&c->lst, &pos->c->lst);
 			text_add_edit(t, c, first_edit, 0, c->end - c->start);
-			text_add_edit(t, pos->c, first_edit, 0, -c->start - c->end);
+			/* this implicitly truncates pos->c, so don't need to record that. */
 		}
 	}
 	while ((len = strlen(str)) > 0) {
@@ -444,8 +444,17 @@ int text_undo(struct text *t)
 	t->undo = e->next;
 	e->next = t->redo;
 	t->redo = e;
-	if (e->target->start == e->target->end)
+	if (e->target->start == e->target->end) {
 		__list_del(e->target->lst.prev, e->target->lst.next);
+		/* If this was created for a split, we need to extend the other half */
+		if (e->target->lst.prev != &t->text) {
+			struct text_chunk *c = list_prev_entry(e->target, lst);
+			if (c->txt == e->target->txt &&
+			    c->end == e->target->start &&
+			    !e->at_start)
+				c->end += e->len;
+		}
+	}
 	if (e->first)
 		return 1;
 	else
@@ -463,6 +472,13 @@ int text_redo(struct text *t)
 		/* need to re-link */
 		struct list_head *l = e->target->lst.prev;
 		list_add(&e->target->lst, l);
+		/* If this is a split, need to truncate prior */
+		if (e->target->lst.prev != &t->text) {
+			struct text_chunk *c = list_prev_entry(e->target, lst);
+			if (c->txt == e->target->txt &&
+			    c->end > e->target->start)
+				c->end = e->target->start;
+		}
 	}
 	if (e->at_start)
 		e->target->start += e->len;
@@ -652,20 +668,20 @@ struct { char *str; int pos; int undo_check; } test[] = {
 	{ "Hello", 0, 1},
 	{ "Worldαβγ", 5, 2},
 	{ "HelloWorldαβγ", -1, 2},
-	{ " ", 5, 5},
-	{ "--", 3, 6},
-	{ "p me to the", 3, 7},
-	{ "---", 1, 9},
-	{ "H me to the Worldαβγ", -1, 9},
-	{ "old", 1, 10},
-	{ "", -2, 9},
-	{ "", -2, 7},
+	{ " ", 5, 4},
+	{ "--", 3, 5},
+	{ "p me to the", 3, 6},
+	{ "---", 1, 8},
+	{ "H me to the Worldαβγ", -1, 8},
+	{ "old", 1, 9},
+	{ "", -2, 8},
 	{ "", -2, 6},
 	{ "", -2, 5},
-	{ "Hello Worldαβγ", -1, 5},
+	{ "", -2, 4},
+	{ "Hello Worldαβγ", -1, 4},
+	{ "", -3, 5},
 	{ "", -3, 6},
-	{ "", -3, 7},
-	{ "Help me to the Worldαβγ", -1, 7},
+	{ "Help me to the Worldαβγ", -1, 6},
 };
 int main(int argc, char *argv[])
 {
