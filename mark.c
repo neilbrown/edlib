@@ -200,6 +200,22 @@ struct point *point_new(struct text *t, struct point **owner)
 	return ret;
 }
 
+static void point_reset(struct text *t, struct point *p)
+{
+	int i;
+	/* move point to start of text */
+	p->m.ref = text_find_ref(t, 0);
+	hlist_del(&p->m.all);
+	hlist_add_head(&p->m.all, &t->marks);
+	tlist_del(&p->m.group);
+	tlist_add(&p->m.group, GRP_MARK, &t->points);
+	for (i = 0; i < p->size; i++) {
+		tlist_del(&p->lists[i]);
+		tlist_add(&p->lists[i], GRP_LIST, &t->groups[i]);
+	}
+	assign_seq(&p->m, 0);
+}
+
 struct text_ref point_ref(struct point *p)
 {
 	return p->m.ref;
@@ -530,3 +546,63 @@ void point_delete_text(struct text *t, struct point *p, int len)
 	}
 }
 
+void point_undo(struct text *t, struct point *p)
+{
+	struct text_ref start, end;
+	int i = 2;
+	int first = 1;
+
+	while (i != 1 && (i = text_undo(t, &start, &end)) != 0) {
+		struct mark *m;
+		int where;
+		if (first) {
+			/* Not nearby, look from the start */
+			point_reset(t, p);
+			where = 1;
+			first = 0;
+		} else
+			where = text_locate(t, &p->m.ref, &end);
+		if (!where)
+			break;
+
+		if (where == 1) {
+			do {
+				i = text_advance_towards(t, &p->m.ref, &end);
+				if (i == 0)
+					break;
+				while ((m = next_mark(t, &p->m)) != NULL &&
+				       m->ref.c == p->m.ref.c &&
+				       m->ref.o < p->m.ref.o)
+					fore_mark(&p->m, m);
+			} while (i == 2);
+		} else {
+			do {
+				i = text_retreat_towards(t, &p->m.ref, &end);
+				if (i == 0)
+					break;
+				while ((m = prev_mark(t, &p->m)) != NULL &&
+				       m->ref.c == p->m.ref.c &&
+				       m->ref.o > p->m.ref.o)
+					back_mark(&p->m, m);
+			} while (i == 2);
+		}
+
+		if (!text_ref_same(t, &p->m.ref, &end))
+			/* eek! */
+			break;
+		/* point is now at location of undo */
+
+		m = &p->m;
+		hlist_for_each_entry_continue_reverse(m, &t->marks, all)
+			if (text_update_prior_after_change(t, &m->ref,
+							   &start, &end) == 0)
+				break;
+		m = &p->m;
+		hlist_for_each_entry_continue(m, all)
+			if (text_update_following_after_change(t, &m->ref,
+							       &start, &end) == 0)
+				break;
+	}
+	// notify marks of change
+
+}

@@ -29,3 +29,4 @@ void point_insert_text(struct text *t, struct point *p, char *s);
 void point_delete_text(struct text *t, struct point *p, int len);
 void point_to_mark(struct text *t, struct point *p, struct mark *m);
 struct point *point_dup(struct point *p, struct point **owner);
+void point_undo(struct text *t, struct point *p);

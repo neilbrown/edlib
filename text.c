@@ -427,7 +427,7 @@ void text_del(struct text *t, struct text_ref *pos, int len, int *first_edit)
 
 /* text_undo and text_redo return:
  * 0 - there are no more changes to do
- * 1 - A change has been do, there are no more parts to it.
+ * 1 - A change has been done, there are no more parts to it.
  * 2 - A change has been partially undone - call again to undo more.
  *
  * The 'start' and 'end' reported identify the range changed.  For a reversed insertion
@@ -713,6 +713,100 @@ struct text_ref text_find_ref(struct text *t, int index)
 	       text_next(t, &ret) != WEOF)
 		index -= 1;
 	return ret;
+}
+
+int text_advance_towards(struct text *t, struct text_ref *ref, struct text_ref *target)
+{
+	/* Move 'ref' towards 'target'.
+	 * If at end of chunk, step to next chunk, then
+	 * advance to 'target' or to end of chunk, whichever comes first.
+	 * return:
+	 * 0 - reached end of text
+	 * 1 - found target
+	 * 2 - on a new chunk, keep looking.
+	 */
+	if (ref->c == NULL)
+		return 0;
+	if (ref->o >= ref->c->end) {
+		if (ref->c->lst.next == &t->text)
+			return 0;
+		ref->c = list_next_entry(ref->c, lst);
+		ref->o = ref->c->start;
+	}
+	if (ref->c == target->c) {
+		ref->o = target->o;
+		return 1;
+	}
+	ref->o = ref->c->end;
+	return 2;
+}
+
+int text_retreat_towards(struct text *t, struct text_ref *ref, struct text_ref *target)
+{
+	/* Move 'ref' towards 'target'.
+	 * If at end of chunk, step to next chunk, then
+	 * advance to 'target' or to end of chunk, whichever comes first.
+	 * return:
+	 * 0 - reached start of text
+	 * 1 - found target
+	 * 2 - on a new chunk, keep looking.
+	 */
+	if (ref->c == NULL) {
+		if (list_empty(&t->text))
+			return 0;
+		ref->c = list_entry(t->text.prev, struct text_chunk, lst);
+		ref->o = ref->c->end;
+	}
+	if (ref->o <= ref->c->start) {
+		if (ref->c->lst.prev == &t->text)
+			return 0;
+		ref->c = list_prev_entry(ref->c, lst);
+		ref->o = ref->c->end;
+	}
+	if (ref->c == target->c) {
+		ref->o = target->o;
+		return 1;
+	}
+	ref->o = ref->c->start;
+	return 2;
+}
+
+int text_locate(struct text *t, struct text_ref *r, struct text_ref *dest)
+{
+	/* move back/forward a little from 'r' looking for 'dest'.
+	 * return 0 if not found, -1 if dest found before r.
+	 * return 1 if dest found after or at r.
+	 */
+	struct text_chunk *next, *prev;
+
+	if (r->c == NULL) {
+		if (dest->c == NULL)
+			return 1;
+		else
+			return -1;
+	}
+	if (dest->c == NULL)
+		return 1;
+	if (r->c == dest->c) {
+		if (dest->o < r->o)
+			return -1;
+		else
+			return 1;
+	}
+	next = (r->c->lst.next == &t->text) ? NULL : list_next_entry(r->c, lst);
+	prev = (r->c->lst.prev == &t->text) ? NULL : list_prev_entry(r->c, lst);
+	if (next == dest->c)
+		return 1;
+	if (prev == dest->c)
+		return -1;
+
+	next = (next == NULL || next->lst.next == &t->text) ? NULL : list_next_entry(next, lst);
+	prev = (prev == NULL || prev->lst.prev == &t->text) ? NULL : list_prev_entry(prev, lst);
+	if (next == dest->c)
+		return 1;
+	if (prev == dest->c)
+		return -1;
+	return 0;
 }
 
 #ifdef TEST_TEXT

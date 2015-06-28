@@ -30,6 +30,9 @@ int text_ref_same(struct text *t, struct text_ref *r1, struct text_ref *r2);
 int text_undo(struct text *t, struct text_ref *start, struct text_ref *end);
 int text_redo(struct text *t, struct text_ref *start, struct text_ref *end);
 int text_str_cmp(struct text *t, struct text_ref *r, char *s);
+int text_retreat_towards(struct text *t, struct text_ref *ref, struct text_ref *target);
+int text_advance_towards(struct text *t, struct text_ref *ref, struct text_ref *target);
+int text_locate(struct text *t, struct text_ref *r, struct text_ref *dest);
 
 
 int text_update_prior_after_change(struct text *t, struct text_ref *pos,
