@@ -535,6 +535,16 @@ static int view_click(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_click, view_click, "view-click");
 
+static int view_undo(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ci->focus;
+	struct view_data *vd = p->data;
+	point_undo(vd->text, vd->point);
+	pane_damaged(p, DAMAGED_CONTENT);
+	return 1;
+}
+DEF_CMD(comm_undo, view_undo, "undo");
+
 void view_register(struct map *m)
 {
 	int meta;
@@ -572,4 +582,6 @@ void view_register(struct map *m)
 
 	key_add(m, M_CLICK(0), &comm_click);
 	key_add(m, M_PRESS(0), &comm_click);
+
+	key_add(m, '_'&0x1f, &comm_undo);
 }
