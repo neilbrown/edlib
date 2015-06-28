@@ -478,18 +478,18 @@ static int view_replace(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct view_data *vd = p->data;
 
-	if (!mark_same(ci->mark, mark_of_point(vd->point))) {
+	if (!mark_same(vd->text, ci->mark, mark_of_point(vd->point))) {
 		int cnt = 0;
 		/* Something here do delete.  For now I need to count it. */
 		if (!mark_ordered(mark_of_point(vd->point), ci->mark)) {
 			/* deleting backwards, move point */
-			while (!mark_same(ci->mark, mark_of_point(vd->point))) {
+			while (!mark_same(vd->text, ci->mark, mark_of_point(vd->point))) {
 				mark_prev(vd->text, mark_of_point(vd->point));
 				cnt++;
 			}
 		} else {
 			/* deleting forwards, move mark */
-			while (!mark_same(ci->mark, mark_of_point(vd->point))) {
+			while (!mark_same(vd->text, ci->mark, mark_of_point(vd->point))) {
 				mark_prev(vd->text, ci->mark);
 				cnt++;
 			}

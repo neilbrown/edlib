@@ -31,9 +31,11 @@
  * empty it is removed from the chunk list.  The 'prev' pointer is preserved
  * so when an undo make it non-empty, it knows where to be added back.
  *
- * A text always has a least one allocation, and at least one chunk.
- * Also, the ->txt pointer of a chunk is immutable once set.
- * So when a text becomes empty, a new chunk with ->txt of NULL is created.
+ * A text always has a least one allocation which is created with the text.
+ * If the text is empty, there will not be any chunks though, so all text refs
+ * will point to NULL.  The NULL chunk is at the end of the text.
+ * The ->txt pointer of chunk never changes.  It is set when the chunk is created
+ * and then only start and end are changed.
  */
 
 #include <unistd.h>
@@ -113,7 +115,7 @@ int text_load_file(struct text *t, int fd)
 {
 	off_t size = lseek(fd, 0, SEEK_END);
 	struct text_alloc *a;
-	struct text_chunk *c;
+	struct text_chunk *c = malloc(sizeof(*c));
 	if (size < 0)
 		return 0;
 	lseek(fd, 0, SEEK_SET);
@@ -123,10 +125,11 @@ int text_load_file(struct text *t, int fd)
 	// FIXME should I loop??
 	a->free = read(fd, a->text, size);
 
-	c = list_first_entry(&t->text, struct text_chunk, lst);
 	c->txt = a->text;
+	c->attrs = NULL;
 	c->start = 0;
 	c->end = size;
+	list_add(&c->lst, &t->text);
 	return 1;
 }
 
@@ -170,7 +173,7 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 	if (start)
 		*start = *pos;
 
-	if (pos->o == pos->c->end &&
+	if (pos->c && pos->o == pos->c->end &&
 	    pos->c->txt + pos->o == a->text + a->free &&
 	    (a->size - a->free >= len ||
 	     (len = text_round_len(str, a->size - a->free)) > 0)) {
@@ -187,15 +190,20 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 		return;
 	/* Need a new chunk.  Might need to split the current chunk first.
 	 * Old chunk must be first to simplify updating of pointers */
-	if (pos->o < pos->c->end) {
+	if (pos->c == NULL || pos->o < pos->c->end) {
 		struct text_chunk *c = malloc(sizeof(*c));
-		if (pos->o == pos->c->start) {
+		if (pos->c == NULL || pos->o == pos->c->start) {
 			/* At the start of a chunk, so create a new one here */
 			c->txt = NULL;
 			c->start = c->end = 0;
-			c->attrs = attr_collect(pos->c->attrs, pos->o, 0);
-			attr_trim(&c->attrs, 0);
-			list_add_tail(&c->lst, &pos->c->lst);
+			if (pos->c) {
+				c->attrs = attr_collect(pos->c->attrs, pos->o, 0);
+				attr_trim(&c->attrs, 0);
+				list_add_tail(&c->lst, &pos->c->lst);
+			} else {
+				c->attrs = NULL;
+				list_add_tail(&c->lst, &t->text);
+			}
 
 			if (start && start->c == pos->c && start->o == pos->o) {
 				start->c = c;
@@ -291,12 +299,15 @@ int text_update_prior_after_change(struct text *t, struct text_ref *pos,
 				   struct text_ref *spos, struct text_ref *epos)
 {
 
+	if (pos->c == NULL)
+		return 0;
+
 	if (pos->c->start >= pos->c->end) {
 		/* This chunk was deleted */
 		*pos = *epos;
 		return 1;
 	}
-	if (text_ref_same(pos, epos)) {
+	if (text_ref_same(t, pos, epos)) {
 		*pos = *spos;
 		return 1;
 	}
@@ -337,7 +348,7 @@ int text_update_following_after_change(struct text *t, struct text_ref *pos,
 		}
 		return 1;
 	}
-	if (text_ref_same(pos, spos)) {
+	if (text_ref_same(t, pos, spos)) {
 		*pos = *epos;
 		return 1;
 	}
@@ -351,6 +362,9 @@ void text_del(struct text *t, struct text_ref *pos, int len, int *first_edit)
 {
 	while (len) {
 		struct text_chunk *c = pos->c;
+		if (c == NULL)
+			/* nothing more to delete */
+			break;
 		if (pos->o == pos->c->start &&
 		    len >= pos->c->end - pos->c->start) {
 			/* The whole chunk is deleted, simply disconnect it */
@@ -362,11 +376,7 @@ void text_del(struct text *t, struct text_ref *pos, int len, int *first_edit)
 				pos->o = pos->c->end;
 			} else {
 				/* Deleted final chunk */
-				pos->c = malloc(sizeof(*pos->c));
-				pos->c->txt = NULL;
-				pos->c->start = 0;
-				pos->c->end = 0;
-				pos->c->attrs = 0;
+				pos->c = NULL;
 				pos->o = 0;
 			}
 			__list_del(c->lst.prev, c->lst.next); /* no poison, retain place in list */
@@ -374,11 +384,6 @@ void text_del(struct text *t, struct text_ref *pos, int len, int *first_edit)
 			text_add_edit(t, c, first_edit, 0, c->start - c->end);
 			len -= c->end - c->start;
 			c->end = c->start;
-			if (pos->c->txt == NULL) {
-				list_add(&c->lst, &t->text);
-				text_add_edit(t, c, first_edit, 0, 0);
-				len = 0;
-			}
 		} else if (pos->o == pos->c->start) {
 			/* If the start of the chunk is deleted, just update */
 			struct attrset *s;
@@ -514,6 +519,9 @@ int text_str_cmp(struct text *t, struct text_ref *r, char *s)
 	int o = r->o;
 	int matched = 0;
 
+	if (c == NULL)
+		return 0;
+
 	list_for_each_entry_from(c, &t->text, lst) {
 		int l = strlen(s);
 		if (o == 0)
@@ -541,6 +549,9 @@ wint_t text_next(struct text *t, struct text_ref *r)
 	int err;
 	mbstate_t ps = {0};
 
+	if (r->c == NULL)
+		return WEOF;
+
 	if (r->o >= r->c->end) {
 		if (r->c->lst.next == &t->text)
 			return WEOF;
@@ -563,6 +574,13 @@ wint_t text_prev(struct text *t, struct text_ref *r)
 	int err;
 	mbstate_t ps = {0};
 
+	if (r->c == NULL) {
+		if (list_empty(&t->text))
+			return WEOF;
+		r->c = list_entry(t->text.prev, struct text_chunk, lst);
+		r->o = r->c->end;
+	}
+
 	if (r->o <= r->c->start) {
 		if (r->c->lst.prev == &t->text)
 			return WEOF;
@@ -579,11 +597,20 @@ wint_t text_prev(struct text *t, struct text_ref *r)
 	return ret;
 }
 
-int text_ref_same(struct text_ref *r1, struct text_ref *r2)
+int text_ref_same(struct text *t, struct text_ref *r1, struct text_ref *r2)
 {
 	if (r1->c == r2->c) {
 		return r1->o == r2->o;
 	}
+	if (r1->c == NULL) {
+		return (r2->o == r2->c->end &&
+			r2->c->lst.next == &t->text);
+	}
+	if (r2->c == NULL) {
+		return (r1->o == r1->c->end &&
+			r1->c->lst.next == &t->text);
+	}
+
 	if (r1->o == r1->c->end &&
 	    r2->o == r2->c->start &&
 	    list_next_entry(r1->c, lst) == r2->c)
@@ -598,7 +625,6 @@ int text_ref_same(struct text_ref *r1, struct text_ref *r2)
 struct text *text_new(void)
 {
 	struct text *t = malloc(sizeof(*t));
-	struct text_chunk *c = malloc(sizeof(*c));
 	text_new_alloc(t, 0);
 	INIT_LIST_HEAD(&t->text);
 	t->undo = t->redo = NULL;
@@ -606,10 +632,6 @@ struct text *text_new(void)
 	INIT_TLIST_HEAD(&t->points, 0);
 	t->groups = NULL;
 	t->ngroups = 0;
-
-	c->start = c->end = 0;
-	c->attrs = NULL;
-	list_add(&c->lst, &t->text);
 	return t;
 }
 

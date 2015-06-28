@@ -111,7 +111,7 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 	}
 	while (y < p->h) {
 		last_vis = m;
-		if (mark_same(m, mark_of_point(pt))) {
+		if (mark_same(t, m, mark_of_point(pt))) {
 			p->cx = x;
 			p->cy = y;
 		}
@@ -169,10 +169,10 @@ static struct mark *find_top(struct text *t, struct point *pt, struct pane *p,
 	start = mark_at_point(pt, MARK_UNGROUPED);
 	end = mark_at_point(pt, MARK_UNGROUPED);
 	if (bot &&
-	    (mark_ordered(start, bot) && ! mark_same(start, bot)))
+	    (mark_ordered(start, bot) && ! mark_same(t, start, bot)))
 		bot = NULL;
 	if (top &&
-	    (mark_ordered(top, end) && ! mark_same(top, end)))
+	    (mark_ordered(top, end) && ! mark_same(t, top, end)))
 		top = NULL;
 	while (!((found_start && found_end) || ey-sy >= p->h-1)) {
 		if (!found_start) {

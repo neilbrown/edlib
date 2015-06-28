@@ -26,7 +26,7 @@ void text_add_char(struct text *t, struct text_ref *pos, wchar_t ch, int *first_
 void text_del(struct text *t, struct text_ref *pos, int len, int *first_edit);
 wint_t text_next(struct text *t, struct text_ref *r);
 wint_t text_prev(struct text *t, struct text_ref *r);
-int text_ref_same(struct text_ref *r1, struct text_ref *r2);
+int text_ref_same(struct text *t, struct text_ref *r1, struct text_ref *r2);
 int text_undo(struct text *t);
 int text_redo(struct text *t);
 int text_str_cmp(struct text *t, struct text_ref *r, char *s);

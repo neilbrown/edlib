@@ -210,9 +210,9 @@ int mark_ordered(struct mark *m1, struct mark *m2)
 	return m1->seq < m2->seq;
 }
 
-int mark_same(struct mark *m1, struct mark *m2)
+int mark_same(struct text *t, struct mark *m1, struct mark *m2)
 {
-	return text_ref_same(&m1->ref, &m2->ref);
+	return text_ref_same(t, &m1->ref, &m2->ref);
 }
 
 struct mark *mark_of_point(struct point *p)
