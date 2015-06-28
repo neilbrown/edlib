@@ -429,8 +429,13 @@ void text_del(struct text *t, struct text_ref *pos, int len, int *first_edit)
  * 0 - there are no more changes to do
  * 1 - A change has been do, there are no more parts to it.
  * 2 - A change has been partially undone - call again to undo more.
+ *
+ * The 'start' and 'end' reported identify the range changed.  For a reversed insertion
+ * they will be the same.  If the undo results in the buffer being empty,
+ * both start and end will point to a NULL chunk.
+ * When undoing a split, both will be at the point of the split.
  */
-int text_undo(struct text *t)
+int text_undo(struct text *t, struct text_ref *start, struct text_ref *end)
 {
 	struct text_edit *e = t->undo;
 
@@ -442,18 +447,50 @@ int text_undo(struct text *t)
 		struct list_head *l = e->target->lst.prev;
 		list_add(&e->target->lst, l);
 	}
-	if (e->at_start)
+	start->c = end->c = e->target;
+	start->o = e->target->end; // incase was deletion at end
+	end->o = e->target->start; // incase was deletion at start
+	if (e->at_start) {
 		e->target->start -= e->len;
-	else
+		if (e->len > 0)
+			/* was deletion, this is insertion */
+			start->o = e->target->start;
+		else
+			/* was insertion - not really possible */
+			start->o = end->o = e->target->start;
+	} else {
 		e->target->end -= e->len;
+		if (e->len > 0)
+			/* Was insertion, now deleting */
+			start->o = end->o = e->target->end;
+		else
+			/* Was deletion, now inserting */
+			end->o = e->target->end;
+	}
 	t->undo = e->next;
 	e->next = t->redo;
 	t->redo = e;
 	if (e->target->start == e->target->end) {
+		/* The undo deletes this chunk, so it must have been inserted,
+		 * either as new text or for a chunk-split.
+		 * If new text, leave start/end pointing just past the chunk.
+		 * if split, leave them at the point of splitting.
+		 */
+		if (e->target->lst.next == &t->text) {
+			end->c = NULL;
+			end->o = 0;
+		} else {
+			end->c = list_next_entry(e->target, lst);
+			end->o = end->c->start;
+		}
+		*start = *end;
+
 		__list_del(e->target->lst.prev, e->target->lst.next);
 		/* If this was created for a split, we need to extend the other half */
 		if (e->target->lst.prev != &t->text) {
 			struct text_chunk *c = list_prev_entry(e->target, lst);
+			start->c = end->c = c;
+			start->o = end->o = c->end;
 			if (c->txt == e->target->txt &&
 			    c->end == e->target->start &&
 			    !e->at_start)
@@ -466,9 +503,10 @@ int text_undo(struct text *t)
 		return 2;
 }
 
-int text_redo(struct text *t)
+int text_redo(struct text *t, struct text_ref *start, struct text_ref *end)
 {
 	struct text_edit *e = t->redo;
+	int is_split = 0;
 
 	if (!e)
 		return 0;
@@ -481,19 +519,50 @@ int text_redo(struct text *t)
 		if (e->target->lst.prev != &t->text) {
 			struct text_chunk *c = list_prev_entry(e->target, lst);
 			if (c->txt == e->target->txt &&
-			    c->end > e->target->start)
+			    c->end > e->target->start) {
 				c->end = e->target->start;
+				is_split = 1;
+			}
 		}
 	}
-	if (e->at_start)
+	start->c = end->c = e->target;
+	end->o = e->target->start; // incase is insertion at start
+	start->o = e->target->end; // incase inserting at end
+	if (e->at_start) {
 		e->target->start += e->len;
-	else
+		if (e->len > 0)
+			/* deletion at start */
+			start->o = end->o = e->target->start;
+		else
+			/* Insertion at start, not currently possible */
+			start->o = e->target->start;
+	} else {
 		e->target->end += e->len;
+		if (e->len > 0)
+			/* Insertion at end */
+			end->o = e->target->end;
+		else if (is_split)
+			start->o = end->o = e->target->start;
+		else
+			/* Deletion at end */
+			start->o = end->o = e->target->end;
+	}
 	t->redo = e->next;
 	e->next = t->undo;
 	t->undo = e;
-	if (e->target->start == e->target->end)
+	if (e->target->start == e->target->end) {
+		/* This chunk is deleted, so leave start/end pointing beyond it */
+		if (e->target->lst.next == &t->text) {
+			end->c = NULL;
+			end->o = 0;
+		} else {
+			end->c = list_next_entry(e->target, lst);
+			end->o = end->c->start;
+		}
+		*start = *end;
+
 		__list_del(e->target->lst.prev, e->target->lst.next);
+	}
 	if (t->redo && t->redo->first)
 		return 1;
 	else
@@ -710,7 +779,7 @@ int main(int argc, char *argv[])
 	int rv = 1;
 	struct text t = {0};
 	struct text_chunk *c = malloc(sizeof(*c));
-	struct text_ref r;
+	struct text_ref r, start, end;
 	int i;
 	struct text_edit *e;
 	wchar_t w;
@@ -753,9 +822,9 @@ int main(int argc, char *argv[])
 				goto out;
 			}
 		} else if (test[i].pos == -2) {
-			while (text_undo(&t) == 2);
+			while (text_undo(&t, &start, &end) == 2);
 		} else if (test[i].pos == -3) {
-			while (text_redo(&t) == 2);
+			while (text_redo(&t, &start, &end) == 2);
 		} else if (test[i].str[0] == '-')
 			text_del(&t, &r, strlen(test[i].str), &first);
 		else
