@@ -82,6 +82,8 @@ struct point {
 	struct tlist_head	lists[];
 };
 
+static void mark_check_consistent(struct text *t);
+
 /* seq numbers added to the end are given a gap of 128.
  * seq numbers at other locations are placed at mean of before and after.
  * If there is no room, seq add 256 to the 'next' seq, 255 to the one
@@ -506,6 +508,8 @@ void point_insert_text(struct text *t, struct point *p, char *s)
 						       &start, &p->m.ref) == 0)
 			break;
 
+	mark_check_consistent(t);
+
 	for (i = 0; i < p->size; i++) {
 		struct tlist_head *tl = &t->groups[i];
 		while (TLIST_TYPE(tl) == GRP_LIST)
@@ -534,6 +538,8 @@ void point_delete_text(struct text *t, struct point *p, int len)
 		if (text_update_following_after_change(t, &m->ref,
 						       &p->m.ref, &p->m.ref) == 0)
 			break;
+
+	mark_check_consistent(t);
 
 	for (i = 0; i < p->size; i++) {
 		struct tlist_head *tl = &t->groups[i];
@@ -602,7 +608,41 @@ void point_undo(struct text *t, struct point *p)
 			if (text_update_following_after_change(t, &m->ref,
 							       &start, &end) == 0)
 				break;
+		mark_check_consistent(t);
 	}
 	// notify marks of change
 
+}
+
+static void mark_check_consistent(struct text *t)
+{
+	/* Check consistency of marks, and abort if not.
+	 * Check:
+	 * - text itself is consistent
+	 * - every mark points to a valid chunk with valid offset
+	 * - all marks are in seq order and text order
+	 * - Maybe should check various mark lists too.
+	 */
+	struct mark *m, *prev;
+	int seq = 0;
+	text_check_consistent(t);
+	hlist_for_each_entry(m, &t->marks, all)
+		text_ref_consistent(t, &m->ref);
+	hlist_for_each_entry(m, &t->marks, all) {
+		if (m->seq < seq)
+			abort();
+		seq = m->seq + 1;
+	}
+	prev = NULL;
+	hlist_for_each_entry(m, &t->marks, all) {
+		if (prev) {
+			struct text_ref r = prev->ref;
+			int i;
+			while ((i = text_advance_towards(t, &r, &m->ref)) != 1) {
+				if (i == 0)
+					abort();
+			}
+		}
+		prev = m;
+	}
 }

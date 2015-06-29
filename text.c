@@ -77,8 +77,8 @@ struct text_chunk {
 struct text_edit {
 	struct text_chunk	*target;
 	struct text_edit	*next;
-	int			first:1;
-	int			at_start:1;
+	unsigned int		first:1;
+	unsigned int		at_start:1;
 	int			len:30; // bytes add, -ve for removed.
 };
 
@@ -268,7 +268,8 @@ void text_add_char(struct text *t, struct text_ref *pos, wchar_t ch, int *first_
 /* Text insertion, deletion, and undo can modify chunks which various
  * marks point to - so those marks will need to be updated.
  * Modification include splitting a chunk, inserting chunks,
- * or deleting chunks and recombining chunks (for undo)
+ * or deleting chunks and recombining chunks (for undo).
+ * Also reducing or increasing the range of a chunk.
  * When a chunk is split, the original becomes the first part.
  * So any mark pointing past the end of that original must be moved
  * to the new chunk.
@@ -278,7 +279,10 @@ void text_add_char(struct text *t, struct text_ref *pos, wchar_t ch, int *first_
  * before the inserted chunk, marks after must remain after the insertion
  * point.
  * When two chunks are recombined it will appear that the second chunk
- * was deleted.  If
+ * was deleted.
+ * When range is reduced, offset must be moved back into range.
+ * When range is increased, and this mark is after change, offset in this mark
+ * need to line up with changed point.
  *
  * So text_update_prior_after_change() is called on marks before the
  * mark-of-change in reverse order until the function returns zero.
@@ -311,6 +315,16 @@ int text_update_prior_after_change(struct text *t, struct text_ref *pos,
 		*pos = *spos;
 		return 1;
 	}
+	if (pos->o < pos->c->start) {
+		/* Text deleted from under me */
+		pos->o = pos->c->start;
+		return 1;
+	}
+	if (pos->o > pos->c->end) {
+		/* Text deleted under me */
+		pos->o = pos->c->end;
+		return 1;
+	}
 	/* no insert or delete here, so all done */
 	return 0;
 }
@@ -334,8 +348,19 @@ int text_update_following_after_change(struct text *t, struct text_ref *pos,
 			*pos = *epos;
 		return 1;
 	}
+	if (pos->c == epos->c &&
+	    pos->o < epos->o) {
+		/* Text inserted, need to push forward. */
+		pos->o = epos->o;
+		return 1;
+	}
+	if (pos->o < pos->c->start) {
+		/* must have been deleted... */
+		pos->o = pos->c->start;
+		return 1;
+	}
 	if (pos->o > pos->c->end) {
-		/* This was split */
+		/* This was split, or text was deleted off the end */
 
 		c = epos->c;
 		list_for_each_entry_from(c, &t->text, lst) {
@@ -346,6 +371,9 @@ int text_update_following_after_change(struct text *t, struct text_ref *pos,
 				break;
 			}
 		}
+		if (pos->o > pos->c->end)
+			/* no split found, so just a delete */
+			pos->o = pos->c->end;
 		return 1;
 	}
 	if (text_ref_same(t, pos, spos)) {
@@ -419,7 +447,8 @@ void text_del(struct text *t, struct text_ref *pos, int len, int *first_edit)
 			c2->attrs = attr_copy_tail(c->attrs, c2->start);
 			attr_trim(&c->attrs, c->end);
 			list_add(&c2->lst, &c->lst);
-			text_add_edit(t, c2, first_edit, 1, c2->end - c2->start);
+			text_add_edit(t, c2, first_edit, 0, c2->end - c2->start);
+			text_add_edit(t, c, first_edit, 0, -len);
 			len = 0;
 		}
 	}
@@ -727,6 +756,13 @@ int text_advance_towards(struct text *t, struct text_ref *ref, struct text_ref *
 	 */
 	if (ref->c == NULL)
 		return 0;
+	if (ref->c == target->c) {
+		if (ref->o > target->o)
+			/* will never find it */
+			return 0;
+		ref->o = target->o;
+		return 1;
+	}
 	if (ref->o >= ref->c->end) {
 		if (ref->c->lst.next == &t->text)
 			return 0;
@@ -734,6 +770,9 @@ int text_advance_towards(struct text *t, struct text_ref *ref, struct text_ref *
 		ref->o = ref->c->start;
 	}
 	if (ref->c == target->c) {
+		if (ref->o > target->o)
+			/* will never find it */
+			return 0;
 		ref->o = target->o;
 		return 1;
 	}
@@ -807,6 +846,60 @@ int text_locate(struct text *t, struct text_ref *r, struct text_ref *dest)
 	if (prev == dest->c)
 		return -1;
 	return 0;
+}
+
+static void check_allocated(struct text *t, char *buf, int len)
+{
+	struct text_alloc *ta = t->alloc;
+	for (ta = t->alloc; ta; ta = ta->next) {
+		if (buf >= ta->text && buf+len <= ta->text + ta->free)
+			return;
+	}
+	abort();
+}
+
+void text_check_consistent(struct text *t)
+{
+	/* make sure text is consistent, and abort if not.
+	 * - each chunk points to allocated space
+	 * - no two chunks overlap
+	 * - no chunks are empty
+	 */
+	struct text_chunk *c;
+
+	list_for_each_entry(c, &t->text, lst) {
+		check_allocated(t, c->txt, c->end);
+		if (c->start >= c->end)
+			abort();
+		if (c->start < 0)
+			abort();
+	}
+	list_for_each_entry(c, &t->text, lst) {
+		struct text_chunk *c2;
+		list_for_each_entry(c2, &t->text, lst) {
+			if (c2 == c ||
+			    c2->txt != c->txt)
+				continue;
+			if (c->start >= c2->end)
+				continue;
+			if (c2->start >= c->end)
+				continue;
+			abort();
+		}
+	}
+}
+
+void text_ref_consistent(struct text *t, struct text_ref *r)
+{
+	struct text_chunk *c;
+	if (r->o > r->c->end)
+		abort();
+	if (r->o < r->c->start)
+		abort();
+	list_for_each_entry(c, &t->text, lst)
+		if (r->c == c)
+			return;
+	abort();
 }
 
 #ifdef TEST_TEXT

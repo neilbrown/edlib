@@ -39,3 +39,6 @@ int text_update_prior_after_change(struct text *t, struct text_ref *pos,
 				   struct text_ref *spos, struct text_ref *epos);
 int text_update_following_after_change(struct text *t, struct text_ref *pos,
 				       struct text_ref *spos, struct text_ref *epos);
+
+void text_check_consistent(struct text *t);
+void text_ref_consistent(struct text *t, struct text_ref *r);
