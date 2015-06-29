@@ -552,15 +552,22 @@ void point_delete_text(struct text *t, struct point *p, int len)
 	}
 }
 
-void point_undo(struct text *t, struct point *p)
+void point_undo(struct text *t, struct point *p, int redo)
 {
 	struct text_ref start, end;
 	int i = 2;
 	int first = 1;
 
-	while (i != 1 && (i = text_undo(t, &start, &end)) != 0) {
+	while (i != 1) {
 		struct mark *m;
 		int where;
+		if (redo)
+			i = text_redo(t, &start, &end);
+		else
+			i = text_undo(t, &start, &end);
+		if (i == 0)
+			break;
+
 		if (first) {
 			/* Not nearby, look from the start */
 			point_reset(t, p);

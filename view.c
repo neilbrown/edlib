@@ -304,8 +304,8 @@ DEF_CMD(comm_page, view_page, "move-page");
 static int view_move(struct command *c, struct cmd_info *ci);
 static int view_delete(struct command *c, struct cmd_info *ci);
 
-#define CTRL(X) (X & 0x3f)
-#define META(X) (X | (1<<31))
+#define CTRL(X) ((X) & 0x1f)
+#define META(X) ((X) | (1<<31))
 static struct move_command {
 	struct command	cmd;
 	int		type;
@@ -539,11 +539,21 @@ static int view_undo(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	struct view_data *vd = p->data;
-	point_undo(vd->text, vd->point);
+	point_undo(vd->text, vd->point, 0);
 	pane_damaged(p, DAMAGED_CONTENT);
 	return 1;
 }
 DEF_CMD(comm_undo, view_undo, "undo");
+
+static int view_redo(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ci->focus;
+	struct view_data *vd = p->data;
+	point_undo(vd->text, vd->point, 1);
+	pane_damaged(p, DAMAGED_CONTENT);
+	return 1;
+}
+DEF_CMD(comm_redo, view_redo, "redo");
 
 void view_register(struct map *m)
 {
@@ -583,5 +593,7 @@ void view_register(struct map *m)
 	key_add(m, M_CLICK(0), &comm_click);
 	key_add(m, M_PRESS(0), &comm_click);
 
-	key_add(m, '_'&0x1f, &comm_undo);
+	key_add(m, CTRL('_'), &comm_undo);
+	key_add(m, CTRL('_') | meta, &comm_redo);
+
 }
