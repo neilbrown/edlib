@@ -25,6 +25,7 @@
 struct view_data {
 	struct text	*text;
 	struct point	*point;
+	int		first_change;
 };
 
 static int view_refresh(struct pane *p, int damage)
@@ -83,6 +84,7 @@ struct pane *view_attach(struct pane *par, struct text *t)
 
 	vd = malloc(sizeof(*vd));
 	vd->text = t;
+	vd->first_change = 1;
 	point_new(t, &vd->point);
 	p = pane_register(par, 0, view_refresh, vd, NULL);
 
@@ -391,6 +393,7 @@ static int view_move(struct command *c, struct cmd_info *ci)
 	}
 
 	pane_damaged(ci->focus, DAMAGED_CURSOR);
+	vd->first_change = 1;
 
 	return ret;
 }
@@ -468,7 +471,7 @@ static int view_insert_nl(struct command *c, struct cmd_info *ci)
 	ret = key_handle_focus(&ci2);
 	if (ret)
 		pane_damaged(ci->focus, DAMAGED_CONTENT);
-
+	vd->first_change = 1;
 	return ret;
 }
 DEF_CMD(comm_insert_nl, view_insert_nl, "insert-nl");
@@ -494,10 +497,10 @@ static int view_replace(struct command *c, struct cmd_info *ci)
 				cnt++;
 			}
 		}
-		point_delete_text(vd->text, vd->point, cnt);
+		point_delete_text(vd->text, vd->point, cnt, &vd->first_change);
 	}
 	if (ci->str)
-		point_insert_text(vd->text, vd->point, ci->str);
+		point_insert_text(vd->text, vd->point, ci->str, &vd->first_change);
 	return 1;
 }
 DEF_CMD(comm_replace, view_replace, "do-replace");

@@ -489,15 +489,14 @@ void point_to_mark(struct text *t, struct point *p, struct mark *m)
 		point_backward_to_mark(t, p, m);
 }
 
-void point_insert_text(struct text *t, struct point *p, char *s)
+void point_insert_text(struct text *t, struct point *p, char *s, int *first)
 {
 	struct mark *m;
 	struct text_ref start;
 	int i;
-	int first = 1;
 
 	m = &p->m;
-	text_add_str(t, &p->m.ref, s, &start, &first);
+	text_add_str(t, &p->m.ref, s, &start, first);
 	hlist_for_each_entry_continue_reverse(m, &t->marks, all)
 		if (text_update_prior_after_change(t, &m->ref,
 						   &start, &p->m.ref) == 0)
@@ -521,13 +520,12 @@ void point_insert_text(struct text *t, struct point *p, char *s)
 	}
 }
 
-void point_delete_text(struct text *t, struct point *p, int len)
+void point_delete_text(struct text *t, struct point *p, int len, int *first)
 {
 	struct mark *m;
 	int i;
-	int first = 1;
 
-	text_del(t, &p->m.ref, len, &first);
+	text_del(t, &p->m.ref, len, first);
 	m = &p->m;
 	hlist_for_each_entry_continue_reverse(m, &t->marks, all)
 		if (text_update_prior_after_change(t, &m->ref,
@@ -555,17 +553,19 @@ void point_delete_text(struct text *t, struct point *p, int len)
 void point_undo(struct text *t, struct point *p, int redo)
 {
 	struct text_ref start, end;
-	int i = 2;
+	int did_do = 2;
 	int first = 1;
 
-	while (i != 1) {
+	while (did_do != 1) {
 		struct mark *m;
 		int where;
+		int i;
+
 		if (redo)
-			i = text_redo(t, &start, &end);
+			did_do = text_redo(t, &start, &end);
 		else
-			i = text_undo(t, &start, &end);
-		if (i == 0)
+			did_do = text_undo(t, &start, &end);
+		if (did_do == 0)
 			break;
 
 		if (first) {
