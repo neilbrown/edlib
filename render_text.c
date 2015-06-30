@@ -41,27 +41,31 @@ static int rt_fore(struct text *t, struct pane *p, struct mark *m, int *x, int *
 	if (ch == '\n') {
 		*x = 0;
 		*y += 1;
-	} else if (ch == '\t') {
-		*x += 8;
-		*x -= (*x)%8;
-	} else{
-		if (*x > p->w - 1) {
+	} else {
+		int w = 1;
+		if (ch == '\t')
+			w = 8 - (*x)%8;
+		else if (ch < ' ')
+			w = 2;
+		else
+			w = 1;
+		if (*x + w >= p->w) {
 			if (draw)
-				pane_text(p, '\\', A_UNDERLINE, *x, *y);
+				pane_text(p, '\\', A_UNDERLINE, p->w-1, *y);
 			*y += 1;
 			*x = 0;
 		}
-		if (ch < ' ') {
-			if (draw) {
+		if (draw) {
+			if (ch == '\t')
+				;
+			else if (ch < ' ') {
 				pane_text(p, '^', A_UNDERLINE, *x, *y);
 				pane_text(p, ch+'@', A_UNDERLINE, 1+*x, *y);
-			}
-			*x += 2;
-		} else {
-			if (draw)
+			} else {
 				pane_text(p, ch, 0, *x, *y);
-			*x += 1;
+			}
 		}
+		*x += w;
 	}
 	return 1;
 }
@@ -75,13 +79,13 @@ static int rt_back(struct text *t, struct pane *p, struct mark *m, int *x, int *
 		*x = 0;
 		*y -= 1;
 	} else if (ch == '\t') {
-		/* tricky... */
-		*x += 6;
+		/* tricky err too large. */
+		*x += 8;
 	} else if (ch < ' ') {
 		*x += 2;
 	} else
 		*x += 1;
-	if (*x > p->w) {
+	if (*x >= p->w-1) {
 		*x = 0;
 		*y -= 1;
 	}
@@ -99,7 +103,7 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 	pane_clear(p, 0, 0, 0, 0, 0);
 
 	m = mark_dup(rd->top, 1);
-	last_vis = m;
+	last_vis = mark_dup(m, 1);
 
 	p->cx = -1;
 	p->cy = -1;
@@ -110,7 +114,8 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 		x += 1;
 	}
 	while (y < p->h) {
-		last_vis = m;
+		mark_delete(last_vis);
+		last_vis = mark_dup(m, 1);
 		if (mark_same(t, m, mark_of_point(pt))) {
 			p->cx = x;
 			p->cy = y;
@@ -118,6 +123,7 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 		if (rt_fore(t, p, m, &x, &y, 1) == 0)
 			break;
 	}
+	mark_delete(m);
 	return last_vis;
 }
 
