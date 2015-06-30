@@ -303,8 +303,11 @@ int text_update_prior_after_change(struct text *t, struct text_ref *pos,
 				   struct text_ref *spos, struct text_ref *epos)
 {
 
-	if (pos->c == NULL)
+	if (pos->c == NULL) {
+		/* Was at the end, now must be at the start of the change */
+		*pos = *spos;
 		return 0;
+	}
 
 	if (pos->c->start >= pos->c->end) {
 		/* This chunk was deleted */
@@ -337,9 +340,13 @@ int text_update_following_after_change(struct text *t, struct text_ref *pos,
 	 */
 	struct text_chunk *c;
 
+	if (pos->c == NULL)
+		return 0;
+
 	if (pos->c->start >= pos->c->end) {
 		/* This chunk was deleted */
-		if (pos->c->txt == epos->c->txt &&
+		if (epos->c &&
+		    pos->c->txt == epos->c->txt &&
 		    pos->o >= epos->c->start &&
 		    pos->o < epos->c->end)
 			/* chunks were rejoined */
@@ -363,14 +370,15 @@ int text_update_following_after_change(struct text *t, struct text_ref *pos,
 		/* This was split, or text was deleted off the end */
 
 		c = epos->c;
-		list_for_each_entry_from(c, &t->text, lst) {
-			if (c->txt == pos->c->txt &&
-			    c->start <= pos->o &&
-			    c->end >= pos->o) {
-				pos->c = c;
-				break;
+		if (c)
+			list_for_each_entry_from(c, &t->text, lst) {
+				if (c->txt == pos->c->txt &&
+				    c->start <= pos->o &&
+				    c->end >= pos->o) {
+					pos->c = c;
+					break;
+				}
 			}
-		}
 		if (pos->o > pos->c->end)
 			/* no split found, so just a delete */
 			pos->o = pos->c->end;
@@ -754,14 +762,18 @@ int text_advance_towards(struct text *t, struct text_ref *ref, struct text_ref *
 	 * 1 - found target
 	 * 2 - on a new chunk, keep looking.
 	 */
-	if (ref->c == NULL)
-		return 0;
 	if (ref->c == target->c) {
 		if (ref->o > target->o)
 			/* will never find it */
 			return 0;
 		ref->o = target->o;
 		return 1;
+	}
+	if (ref->c == NULL) {
+		if (target->c->lst.next == &t->text &&
+		    target->o == target->c->end)
+			return 1;
+		return 0;
 	}
 	if (ref->o >= ref->c->end) {
 		if (ref->c->lst.next == &t->text)
@@ -892,6 +904,11 @@ void text_check_consistent(struct text *t)
 void text_ref_consistent(struct text *t, struct text_ref *r)
 {
 	struct text_chunk *c;
+	if (r->c == NULL) {
+		if (r->o)
+			abort();
+		return;
+	}
 	if (r->o > r->c->end)
 		abort();
 	if (r->o < r->c->start)
