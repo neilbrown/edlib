@@ -124,6 +124,9 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 			break;
 	}
 	mark_delete(m);
+	if (mark_ordered(mark_of_point(pt), rd->top))
+		/* point is before mark, cannot possibly see cursor */
+		p->cx = p->cy = -1;
 	return last_vis;
 }
 
