@@ -20,19 +20,24 @@
 #include "pane.h"
 #include "mark.h"
 #include "keymap.h"
+#include "popup.h"
 
 #define ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 struct view_data {
 	struct text	*text;
 	struct point	*point;
 	int		first_change;
+	int		border;
 };
 
 static int view_refresh(struct pane *p, int damage)
 {
 	int i;
 	int mid = (p->h-1)/2;
+	struct view_data *vd = p->data;
 
+	if (!vd->border)
+		return 0;
 	if (damage & DAMAGED_SIZE) {
 		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
 		pane_resize(p->focus, 1, 0, p->w-1, p->h-1);
@@ -47,6 +52,7 @@ static int view_refresh(struct pane *p, int damage)
 	p->cx = 0; p->cy = p->h - 1;
 	for (i = 1; i < p->w; i++)
 		pane_text(p, '=', A_STANDOUT, i, p->h-1);
+
 	return 0;
 }
 
@@ -77,7 +83,7 @@ static int view_null(struct pane *p, int damage)
 	}
 }
 
-struct pane *view_attach(struct pane *par, struct text *t)
+struct pane *view_attach(struct pane *par, struct text *t, int border)
 {
 	struct view_data *vd;
 	struct pane *p;
@@ -85,13 +91,17 @@ struct pane *view_attach(struct pane *par, struct text *t)
 	vd = malloc(sizeof(*vd));
 	vd->text = t;
 	vd->first_change = 1;
+	vd->border = border;
 	point_new(t, &vd->point);
 	p = pane_register(par, 0, view_refresh, vd, NULL);
 
 	pane_resize(p, 0, 0, par->w, par->h);
 	p = pane_register(p, 0, view_null, vd, NULL);
 	p->parent->focus = p;
-	pane_resize(p, 1, 0, par->w-1, par->h-1);
+	if (vd->border)
+		pane_resize(p, 1, 0, par->w-1, par->h-1);
+	else
+		pane_resize(p, 0, 0, par->w, par->h);
 	pane_damaged(p, DAMAGED_SIZE);
 	/* It is expected that some other handler will take
 	 * over this pane
@@ -261,6 +271,8 @@ static int view_file(struct command *c, struct cmd_info *ci)
 	wint_t ch = 1;
 	int rpt = ci->repeat;
 
+	if (ci->mark == NULL)
+		ci->mark = mark_of_point(vd->point);
 	if (rpt == INT_MAX)
 		rpt = 1;
 	while (rpt > 0 && ch != WEOF) {
@@ -558,9 +570,16 @@ static int view_redo(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_redo, view_redo, "redo");
 
+static int view_findfile(struct command *c, struct cmd_info *ci)
+{
+	popup_register(ci->focus, "Find File", "/home/neilb/", EV_USER_DEF(1));
+	return 1;
+}
+DEF_CMD(comm_findfile, view_findfile, "find-file");
+
 void view_register(struct map *m)
 {
-	int meta;
+	int meta, c_x;
 	struct command *cmd = key_register_mod("meta", &meta);
 	unsigned int i;
 
@@ -599,4 +618,6 @@ void view_register(struct map *m)
 	key_add(m, CTRL('_'), &comm_undo);
 	key_add(m, CTRL('_') | meta, &comm_redo);
 
+	key_register_mod("C-x", &c_x);
+	key_add(m, 'f' | c_x, &comm_findfile);
 }

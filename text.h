@@ -42,3 +42,5 @@ int text_update_following_after_change(struct text *t, struct text_ref *pos,
 
 void text_check_consistent(struct text *t);
 void text_ref_consistent(struct text *t, struct text_ref *r);
+
+char *text_getstr(struct text *t);

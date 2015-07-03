@@ -741,9 +741,32 @@ struct text *text_new(void)
 	return t;
 }
 
+char *text_getstr(struct text *t)
+{
+	struct text_chunk *c;
+	char *ret;
+	int l = 0;
+
+	list_for_each_entry(c, &t->text, lst)
+		l += c->end - c->start;
+	ret = malloc(l+1);
+	l = 0;
+	list_for_each_entry(c, &t->text, lst) {
+		memcpy(ret+l, c->txt + c->start, c->end - c->start);
+		l += c->end - c->start;
+	}
+	ret[l] = 0;
+	return ret;
+}
+
 struct text_ref text_find_ref(struct text *t, int index)
 {
 	struct text_ref ret;
+	if (list_empty(&t->text)) {
+		ret.c = NULL;
+		ret.o = 0;
+		return ret;
+	}
 	ret.c = list_first_entry(&t->text, struct text_chunk, lst);
 	ret.o = ret.c->start;
 	while (index > 0 &&
@@ -776,8 +799,11 @@ int text_advance_towards(struct text *t, struct text_ref *ref, struct text_ref *
 		return 0;
 	}
 	if (ref->o >= ref->c->end) {
-		if (ref->c->lst.next == &t->text)
+		if (ref->c->lst.next == &t->text) {
+			if (target->c == NULL)
+				return 1;
 			return 0;
+		}
 		ref->c = list_next_entry(ref->c, lst);
 		ref->o = ref->c->start;
 	}

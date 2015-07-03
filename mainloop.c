@@ -18,6 +18,7 @@
 #include "view.h"
 #include "keymap.h"
 #include "render_text.h"
+#include "popup.h"
 
 static void attach_file(struct pane *p, char *fname)
 {
@@ -34,7 +35,7 @@ static void attach_file(struct pane *p, char *fname)
 		text_add_str(t, &r, fname, NULL, &first);
 		text_add_str(t, &r, "\n", NULL, &first);
 	}
-	p = view_attach(p, t);
+	p = view_attach(p, t, 1);
 	{
 		struct view_data *vd = p->data;
 		int i;
@@ -58,6 +59,7 @@ int main(int argc, char *argv[])
 	tile_register(global_map);
 	view_register(global_map);
 	render_text_register(global_map);
+	popup_init();
 
 	b1 = tile_init(root);
 	b2 = tile_split(b1, 0, 0);

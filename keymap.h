@@ -74,6 +74,8 @@ struct command *key_register_mod(char *name, int *bit);
 
 #define	MV_CURSOR_XY	EV_MOVE(64)
 
+#define	EV_USER_DEF(x)	(0x1FFB00 | ((x) & 0xff))
+
 /* Each event (above) is accompanied by a cmd_info structure.
  * 'key' and 'focus' are always present, others only if relevant.
  * Repeat is present for 'key' and 'move'.  INT_MAX means no number was
