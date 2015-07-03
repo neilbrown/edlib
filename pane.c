@@ -138,21 +138,39 @@ void pane_free(struct pane *p)
 
 int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)
 {
+	/* Test if this pane, or its children, mask this location.
+	 * i.e. they have a higher 'z' and might draw here.
+	 * If 'w' and 'h' are set then reduce them to confirm that
+	 * everything from x to x+w and y to y+h is not masked.
+	 * This allows cases where there is no masking to be handled
+	 * efficiently.
+	 */
 	struct pane *c;
+	/* calculate the upper bounds */
+	int xh = x + (w ? *w : 1);
+	int yh = y + (h ? *h : 1);
+
+	if (x > p->x+p->w || y > p->y+p->h)
+		/* x,y is beyond this pane, no overlap possible */
+		return 0;
+	if (xh <= p->x || yh <= p->y)
+		/* area is before this pane, no over lap possible */
+		return 0;
+
 	if (p->z > z) {
-		if (w &&
-		    x < p->x + p->w &&
-		    x + *w > p->x + p->w)
-			*w = p->x + p->w - x;
-		if (h &&
-		    y < p->y + p->h &&
-		    y + *h > p->y + p->h)
-			*h = p->y + p->h - x;
-		if (p->x > x || p->x + p->w < x)
-			return 0;
-		if (p->y > y || p->y + p->h < y)
-			return 0;
+		/* This pane does mask some of the region */
+		if (x >= p->x || y >= p->y)
+			/* pane masks x,y itself */
+			return 1;
+		/* pane must just mask some of the region beyond x,y */
+		if (w)
+			*w = p->x - x;
+		if (h)
+			*h = p->y - y;
+
+		return 0;
 	}
+	/* This pane doesn't mask (same z level) but a child still could */
 	x -= p->x;
 	y -= p->y;
 	list_for_each_entry(c, &p->children, siblings)

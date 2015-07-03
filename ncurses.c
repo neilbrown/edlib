@@ -209,7 +209,7 @@ void pane_clear(struct pane *p, int attr, int x, int y, int w, int h)
 	attrset(attr);
 	for (r = y; r < y+h; r++)
 		for (c = x; c < x+w; c++)
-			if ((r < w0 && y < h0) || !pane_masked(p, c, r, z, NULL, NULL))
+			if ((r < y+h0 && c < x+w0) || !pane_masked(p, c, r, z, NULL, NULL))
 				mvaddch(r, c, ' ');
 }
 
