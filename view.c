@@ -374,7 +374,7 @@ static int view_move(struct command *c, struct cmd_info *ci)
 	struct view_data *vd = p->data;
 	struct pane *view_pane = p->focus;
 	int old_x = -1;
-	struct cmd_info ci2;
+	struct cmd_info ci2 = {0};
 	int ret = 0;
 
 	if (view_pane)
@@ -415,7 +415,7 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct move_command *mv = container_of(c, struct move_command, cmd);
 	struct view_data *vd = p->data;
-	struct cmd_info ci2;
+	struct cmd_info ci2 = {0};
 	int ret = 0;
 	struct mark *m;
 
@@ -447,7 +447,7 @@ static int view_insert(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct view_data *vd = p->data;
 	char str[2];
-	struct cmd_info ci2;
+	struct cmd_info ci2 = {0};
 	int ret;
 
 	ci2.focus = ci->focus;
@@ -470,7 +470,7 @@ static int view_insert_nl(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct view_data *vd = p->data;
 	char str[2];
-	struct cmd_info ci2;
+	struct cmd_info ci2 = {0};
 	int ret;
 
 	ci2.focus = ci->focus;
@@ -521,7 +521,7 @@ static int view_click(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	int mid = (p->h-1)/2;
-	struct cmd_info ci2;
+	struct cmd_info ci2 = {0};
 
 	if (ci->x != 0)
 		return 0;

@@ -310,7 +310,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	/* MV_EOL repeatedly, then move to match cursor */
 	struct rt_data *rt = p->data;
-	struct cmd_info ci2;
+	struct cmd_info ci2 = {0};
 	struct mark *m;
 	int ret = 0;
 	int x, y;

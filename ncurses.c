@@ -263,7 +263,7 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 
 static void do_send_mouse(struct pane *p, int x, int y, int cmd)
 {
-	struct cmd_info ci;
+	struct cmd_info ci = {0};
 
 	ci.key = cmd;
 	ci.x = x;

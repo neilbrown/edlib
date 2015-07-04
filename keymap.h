@@ -92,5 +92,6 @@ struct cmd_info {
 	int		x,y;
 	char		*str;
 	struct mark	*mark;
+	struct text	*text;
 };
 

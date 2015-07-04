@@ -65,6 +65,8 @@
 #include "text.h"
 #include "attr.h"
 #include "mark.h"
+#include "pane.h"
+#include "keymap.h"
 
 struct mark {
 	struct text_ref		ref;
@@ -489,11 +491,36 @@ void point_to_mark(struct text *t, struct point *p, struct mark *m)
 		point_backward_to_mark(t, p, m);
 }
 
+static void point_notify_change(struct point *p, struct text *t)
+{
+	struct cmd_info ci;
+	int i;
+
+	ci.key = EV_REPLACE;
+	ci.focus = NULL;
+	ci.repeat = 1;
+	ci.x = ci.y = -1;
+	ci.str = NULL;
+	ci.text = t;
+	for (i = 0; i < p->size; i++) {
+		struct tlist_head *tl = &p->lists[i];
+		struct command *c = t->groups[i].notify;
+		if (!c)
+			continue;
+		while (TLIST_TYPE(tl) == GRP_LIST)
+			tl = TLIST_PTR(tl->prev);
+		if (TLIST_TYPE(tl) == GRP_MARK)
+			ci.mark = tlist_entry(tl, struct mark, group);
+		else
+			ci.mark = NULL;
+		c->func(c, &ci);
+	}
+}
+
 void point_insert_text(struct text *t, struct point *p, char *s, int *first)
 {
 	struct mark *m;
 	struct text_ref start;
-	int i;
 
 	m = &p->m;
 	text_add_str(t, &p->m.ref, s, &start, first);
@@ -509,21 +536,12 @@ void point_insert_text(struct text *t, struct point *p, char *s, int *first)
 
 	mark_check_consistent(t);
 
-	for (i = 0; i < p->size; i++) {
-		struct tlist_head *tl = &t->groups[i].head;
-		while (TLIST_TYPE(tl) == GRP_LIST)
-			tl = TLIST_PTR(tl->prev);
-		if (TLIST_TYPE(tl) == GRP_MARK) {
-			m = tlist_entry(tl, struct mark, group);
-//			notify_change(t, m);
-		}
-	}
+	point_notify_change(p, t);
 }
 
 void point_delete_text(struct text *t, struct point *p, int len, int *first)
 {
 	struct mark *m;
-	int i;
 
 	text_del(t, &p->m.ref, len, first);
 	m = &p->m;
@@ -539,15 +557,7 @@ void point_delete_text(struct text *t, struct point *p, int len, int *first)
 
 	mark_check_consistent(t);
 
-	for (i = 0; i < p->size; i++) {
-		struct tlist_head *tl = &t->groups[i].head;
-		while (TLIST_TYPE(tl) == GRP_LIST)
-			tl = TLIST_PTR(tl->prev);
-		if (TLIST_TYPE(tl) == GRP_MARK) {
-			m = tlist_entry(tl, struct mark, group);
-//			notify_change(t, m);
-		}
-	}
+	point_notify_change(p, t);
 }
 
 void point_undo(struct text *t, struct point *p, int redo)
