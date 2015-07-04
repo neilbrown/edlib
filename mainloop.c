@@ -20,7 +20,7 @@
 #include "render_text.h"
 #include "popup.h"
 
-static void attach_file(struct pane *p, char *fname)
+static struct text *attach_file(struct pane *p, char *fname)
 {
 	int fd = open(fname, O_RDONLY);
 	struct text *t = text_new();
@@ -43,13 +43,14 @@ static void attach_file(struct pane *p, char *fname)
 			mark_next(vd->text, mark_of_point(vd->point));
 	}
 	render_text_attach(p);
+	return t;
 }
 
 int main(int argc, char *argv[])
 {
 	struct event_base *base;
 	struct pane *root;
-	struct pane *b1, *b2, *b3;
+	struct pane *b1, *b2, *b3, *b4;
 	struct map *global_map;
 
 	base = event_base_new();
@@ -66,7 +67,10 @@ int main(int argc, char *argv[])
 	b3 = tile_split(b1, 1, 1);
 	attach_file(b3, "mark.c");
 	attach_file(b1, "mainloop.c");
-	attach_file(b2, "text.c");
+	struct text *t = attach_file(b2, "text.c");
+
+	b4 = tile_split(b2, 1, 0);
+	render_text_attach(view_attach(b4, t, 1));
 
 	pane_refresh(root);
 	event_base_dispatch(base);
