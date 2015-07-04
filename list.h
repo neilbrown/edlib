@@ -498,7 +498,7 @@ static inline void __tlist_add(struct tlist_head *new, int type,
  */
 static inline void tlist_add(struct tlist_head *new, int type, struct tlist_head *head)
 {
-	__tlist_add(new, type, head, head->next);
+	__tlist_add(new, type, head, TLIST_PTR(head->next));
 }
 
 /**
@@ -512,7 +512,7 @@ static inline void tlist_add(struct tlist_head *new, int type, struct tlist_head
  */
 static inline void tlist_add_tail(struct tlist_head *new, int type, struct tlist_head *head)
 {
-	__tlist_add(new, type, head->prev, head);
+	__tlist_add(new, type, TLIST_PTR(head->prev), head);
 }
 
 /*
@@ -524,9 +524,10 @@ static inline void tlist_add_tail(struct tlist_head *new, int type, struct tlist
  */
 static inline void __tlist_del(struct tlist_head * prev, struct tlist_head * next)
 {
-	int t = __TLIST_TYPE(prev, next);
-	next->prev = TLIST_PREV(TLIST_PTR(prev), t);
-	prev->next = TLIST_NEXT(TLIST_PTR(next), t);
+	int nt = TLIST_TYPE(next);
+	int pt = TLIST_TYPE(prev);
+	next->prev = TLIST_PREV(TLIST_PTR(prev), nt);
+	prev->next = TLIST_NEXT(TLIST_PTR(next), pt);
 }
 
 /**
@@ -537,7 +538,7 @@ static inline void __tlist_del(struct tlist_head * prev, struct tlist_head * nex
  */
 static inline void tlist_del(struct tlist_head *entry)
 {
-	__tlist_del(entry->prev, entry->next);
+	__tlist_del(TLIST_PTR(entry->prev), TLIST_PTR(entry->next));
 	entry->next = LIST_POISON1;
 	entry->prev = LIST_POISON2;
 }
@@ -549,7 +550,7 @@ static inline void tlist_del(struct tlist_head *entry)
 static inline void tlist_del_init(struct tlist_head *entry)
 {
 	int type = TLIST_TYPE(entry);
-	__tlist_del(entry->prev, entry->next);
+	__tlist_del(TLIST_PTR(entry->prev), TLIST_PTR(entry->next));
 	INIT_TLIST_HEAD(entry, type);
 }
 
