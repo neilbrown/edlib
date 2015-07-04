@@ -45,7 +45,9 @@
 #include <locale.h>
 #include <wchar.h>
 
+#include "list.h"
 #include "text.h"
+#include "mark.h"
 #include "attr.h"
 
 struct text_alloc {
@@ -739,6 +741,25 @@ struct text *text_new(void)
 	t->groups = NULL;
 	t->ngroups = 0;
 	return t;
+}
+
+int text_add_type(struct text *t, struct command *c)
+{
+	struct grp *g;
+	int ret = t->ngroups++;
+	int i;
+
+	g = malloc(sizeof(*g) * (t->ngroups));
+	for (i = 0; i < ret; i++) {
+		tlist_add(&g[i].head, GRP_HEAD, &t->groups[i].head);
+		tlist_del(&t->groups[i].head);
+		g[i].notify = t->groups[i].notify;
+	}
+	g[ret].notify = c;
+	INIT_TLIST_HEAD(&g[ret].head, GRP_HEAD);
+	free(t->groups);
+	t->groups = g;
+	return ret;
 }
 
 char *text_getstr(struct text *t)

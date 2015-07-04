@@ -15,7 +15,7 @@ struct text {
 	struct text_edit	*undo, *redo;
 	struct hlist_head	marks;
 	struct tlist_head	points;
-	struct {
+	struct grp {
 		struct tlist_head head;
 		struct command	  *notify;
 	} *groups;
@@ -49,3 +49,4 @@ void text_check_consistent(struct text *t);
 void text_ref_consistent(struct text *t, struct text_ref *r);
 
 char *text_getstr(struct text *t);
+int text_add_type(struct text *t, struct command *c);
