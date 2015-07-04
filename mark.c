@@ -196,7 +196,7 @@ struct point *point_new(struct text *t, struct point **owner)
 	ret->size = t->ngroups;
 	tlist_add(&ret->m.group, GRP_MARK, &t->points);
 	for (i = 0; i < ret->size; i++)
-		tlist_add(&ret->lists[i], GRP_LIST, &t->groups[i]);
+		tlist_add(&ret->lists[i], GRP_LIST, &t->groups[i].head);
 	ret->owner = owner;
 	*owner = ret;
 	return ret;
@@ -213,7 +213,7 @@ static void point_reset(struct text *t, struct point *p)
 	tlist_add(&p->m.group, GRP_MARK, &t->points);
 	for (i = 0; i < p->size; i++) {
 		tlist_del(&p->lists[i]);
-		tlist_add(&p->lists[i], GRP_LIST, &t->groups[i]);
+		tlist_add(&p->lists[i], GRP_LIST, &t->groups[i].head);
 	}
 	assign_seq(&p->m, 0);
 }
@@ -423,7 +423,7 @@ static void point_forward_to_mark(struct text *t, struct point *p, struct mark *
 
 	for (i = 0; i < p->size; i++) {
 		mtmp = mnear = &pnear->m;
-		tlist_for_each_entry_continue(mtmp, &t->groups[i], group) {
+		tlist_for_each_entry_continue(mtmp, &t->groups[i].head, group) {
 			if (mtmp->seq < m->seq)
 				mnear = mtmp;
 			else
@@ -463,7 +463,7 @@ static void point_backward_to_mark(struct text *t, struct point *p, struct mark 
 
 	for (i = 0; i < p->size; i++) {
 		mtmp = mnear = &pnear->m;
-		tlist_for_each_entry_continue_reverse(mtmp, &t->groups[i],
+		tlist_for_each_entry_continue_reverse(mtmp, &t->groups[i].head,
 						      group) {
 			if (mtmp->seq > m->seq)
 				mnear = mtmp;
@@ -510,7 +510,7 @@ void point_insert_text(struct text *t, struct point *p, char *s, int *first)
 	mark_check_consistent(t);
 
 	for (i = 0; i < p->size; i++) {
-		struct tlist_head *tl = &t->groups[i];
+		struct tlist_head *tl = &t->groups[i].head;
 		while (TLIST_TYPE(tl) == GRP_LIST)
 			tl = TLIST_PTR(tl->prev);
 		if (TLIST_TYPE(tl) == GRP_MARK) {
@@ -540,7 +540,7 @@ void point_delete_text(struct text *t, struct point *p, int len, int *first)
 	mark_check_consistent(t);
 
 	for (i = 0; i < p->size; i++) {
-		struct tlist_head *tl = &t->groups[i];
+		struct tlist_head *tl = &t->groups[i].head;
 		while (TLIST_TYPE(tl) == GRP_LIST)
 			tl = TLIST_PTR(tl->prev);
 		if (TLIST_TYPE(tl) == GRP_MARK) {

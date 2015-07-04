@@ -3,6 +3,7 @@
 struct text_chunk;
 struct text_alloc;
 struct text_edit;
+struct command;
 
 struct text_ref {
 	struct text_chunk *c;
@@ -13,7 +14,11 @@ struct text {
 	struct list_head	text;
 	struct text_edit	*undo, *redo;
 	struct hlist_head	marks;
-	struct tlist_head	points, *groups;
+	struct tlist_head	points;
+	struct {
+		struct tlist_head head;
+		struct command	  *notify;
+	} *groups;
 	int			ngroups;
 };
 
