@@ -587,6 +587,32 @@ static inline void tlist_del_init(struct tlist_head *entry)
 	for (pos = TLIST_PTR((head)->next); pos != (head); pos = TLIST_PTR(pos->next))
 
 /**
+ * tlist_for_each_continue - continue iteration over tlist
+ * @pos:	the struct tlist_head * to use as a loop cursor.
+ * @head:	the head for your list.
+ *
+ * Continue to iterate over tlist, continuing after
+ * the current position.
+ */
+#define tlist_for_each_continue(pos, head)			\
+	for (pos = TLIST_PTR(pos->next);			\
+	     pos != (head);					\
+	     pos = TLIST_PTR(pos->next))
+
+/**
+ * list_for_each_continue_reverse - iterate backwards from the given point
+ * @pos:	the struct tlist_head * to use as a loop cursor.
+ * @head:	the head for your list.
+ *
+ * Start to iterate over list of given type backwards, continuing after
+ * the current position.
+ */
+#define tlist_for_each_continue_reverse(pos, head)		\
+	for (pos = TLIST_PTR(pos->prev);			\
+	     pos != (head);					\
+	     pos = TLIST_PTR(pos->prev))
+
+/**
  * tlist_for_each_entry -  iterate over list of given type
  * @pos:	the type * to use as a loop cursor.
  * @head:	the head for your list.

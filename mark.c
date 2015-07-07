@@ -455,7 +455,6 @@ wint_t mark_prev(struct text *t, struct mark *m)
 
 static void point_forward_to_mark(struct text *t, struct point *p, struct mark *m)
 {
-	struct mark *mtmp, *mnear;
 	struct point *ptmp, *pnear;
 	int i;
 
@@ -468,27 +467,39 @@ static void point_forward_to_mark(struct text *t, struct point *p, struct mark *
 			break;
 	}
 	/* pnear is the nearest point to m that is before m. So
-	 * move p after pnear */
+	 * move p after pnear in the point list. */
 	if (p != pnear) {
 		tlist_del(&p->m.group);
 		tlist_add(&p->m.group, GRP_MARK, &pnear->m.group);
 	}
 
+	/* Now move 'p' in the various mark lists */
 	for (i = 0; i < p->size; i++) {
+		struct mark *mnear = NULL;
+		struct tlist_head *tl;
+
 		if (!t->groups[i].notify)
 			continue;
-		mtmp = mnear = &pnear->m;
-		tlist_for_each_entry_continue(mtmp, &t->groups[i].head, group) {
+		tl = &pnear->lists[i];
+		tlist_for_each_continue(tl,  &t->groups[i].head) {
+			struct mark *mtmp;
+			if (TLIST_TYPE(tl) != GRP_MARK)
+				break;
+			mtmp = container_of(tl, struct mark, group);
 			if (mtmp->seq < m->seq)
 				mnear = mtmp;
 			else
 				break;
 		}
-		if (mnear != &p->m) {
+		if (mnear) {
 			tlist_del(&p->lists[i]);
 			tlist_add(&p->lists[i], GRP_LIST, &mnear->group);
+		} else if (p != pnear) {
+			tlist_del(&p->lists[i]);
+			tlist_add(&p->lists[i], GRP_LIST, &pnear->lists[i]);
 		}
 	}
+	/* finally move in the overall list */
 	hlist_del(&p->m.all);
 	hlist_add_before(&p->m.all, &m->all);
 	p->m.ref = m->ref;
@@ -497,7 +508,6 @@ static void point_forward_to_mark(struct text *t, struct point *p, struct mark *
 
 static void point_backward_to_mark(struct text *t, struct point *p, struct mark *m)
 {
-	struct mark *mtmp, *mnear;
 	struct point *ptmp, *pnear;
 	int i;
 
@@ -510,28 +520,39 @@ static void point_backward_to_mark(struct text *t, struct point *p, struct mark 
 			break;
 	}
 	/* pnear is the nearest point to m that is after m. So
-	 * move p after pnear */
+	 * move p before pnear in the point list */
 	if (p != pnear) {
 		tlist_del(&p->m.group);
 		tlist_add_tail(&p->m.group, GRP_MARK, &pnear->m.group);
 	}
 
+	/* Now move 'p' in the various mark lists */
 	for (i = 0; i < p->size; i++) {
+		struct mark *mnear = NULL;
+		struct tlist_head *tl;
+
 		if (!t->groups[i].notify)
 			continue;
-		mtmp = mnear = &pnear->m;
-		tlist_for_each_entry_continue_reverse(mtmp, &t->groups[i].head,
-						      group) {
+		tl = &pnear->lists[i];
+		tlist_for_each_continue_reverse(tl, &t->groups[i].head) {
+			struct mark *mtmp;
+			if (TLIST_TYPE(tl) != GRP_MARK)
+				break;
+			mtmp = container_of(tl, struct mark, group);
 			if (mtmp->seq > m->seq)
 				mnear = mtmp;
 			else
 				break;
 		}
-		if (mnear != &p->m) {
+		if (mnear) {
 			tlist_del(&p->lists[i]);
 			tlist_add_tail(&p->lists[i], GRP_LIST, &mnear->group);
+		} else if (p != pnear) {
+			tlist_del(&p->lists[i]);
+			tlist_add_tail(&p->lists[i], GRP_LIST, &pnear->lists[i]);
 		}
 	}
+	/* finally move in the overall list */
 	hlist_del(&p->m.all);
 	hlist_add_after(&m->all, &p->m.all);
 	p->m.ref = m->ref;
