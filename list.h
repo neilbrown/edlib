@@ -579,6 +579,14 @@ static inline void tlist_del_init(struct tlist_head *entry)
 	tlist_entry((pos)->member.prev, typeof(*(pos)), member)
 
 /**
+ * tlist_for_each	-	iterate over a tlist
+ * @pos:	the &struct tlist_head to use as a loop cursor.
+ * @head:	the head for your tlist.
+ */
+#define tlist_for_each(pos, head) \
+	for (pos = TLIST_PTR((head)->next); pos != (head); pos = TLIST_PTR(pos->next))
+
+/**
  * tlist_for_each_entry -  iterate over list of given type
  * @pos:	the type * to use as a loop cursor.
  * @head:	the head for your list.

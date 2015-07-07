@@ -199,6 +199,13 @@ void points_resize(struct text *t)
 	}
 }
 
+void points_attach(struct text *t, int type)
+{
+	struct point *p;
+	tlist_for_each_entry(p, &t->points, m.group)
+		tlist_add_tail(&p->lists[type], GRP_LIST, &t->groups[type].head);
+}
+
 struct mark *mark_dup(struct mark *m, int notype)
 {
 	struct mark *ret = malloc(sizeof(*ret));
@@ -232,6 +239,8 @@ struct point *point_new(struct text *t, struct point **owner)
 	for (i = 0; i < ret->size; i++)
 		if (t->groups[i].notify)
 			tlist_add(&ret->lists[i], GRP_LIST, &t->groups[i].head);
+		else
+			INIT_TLIST_HEAD(&ret->lists[i], GRP_LIST);
 	ret->owner = owner;
 	*owner = ret;
 	return ret;
@@ -344,7 +353,7 @@ static void fore_mark(struct mark *m, struct mark *m2)
 	} else if (m2->type == MARK_POINT) {
 		/* stepping a mark over a point */
 		struct point *p = container_of(m2, struct point, m);
-		if (m2->type >= 0) {
+		if (m->type >= 0) {
 			tlist_del(&m->group);
 			tlist_add(&m->group, GRP_MARK, &p->lists[m->type]);
 		}
@@ -680,6 +689,7 @@ static void mark_check_consistent(struct text *t)
 	 */
 	struct mark *m, *prev;
 	int seq = 0;
+	int i;
 	text_check_consistent(t);
 	hlist_for_each_entry(m, &t->marks, all)
 		text_ref_consistent(t, &m->ref);
@@ -700,4 +710,28 @@ static void mark_check_consistent(struct text *t)
 		}
 		prev = m;
 	}
+	for (i = 0; i < t->ngroups; i++)
+		if (t->groups[i].notify == NULL) {
+			if (!tlist_empty(&t->groups[i].head)) abort();
+		} else {
+			struct tlist_head *tl;
+			struct point *p;
+			seq = 0;
+			tlist_for_each(tl, &t->groups[i].head) {
+				switch(TLIST_TYPE(tl)) {
+				case GRP_HEAD: abort();
+				case GRP_MARK:
+					m = container_of(tl, struct mark, group);
+					break;
+				case GRP_LIST:
+					p = container_of(tl, struct point, lists[i]);
+					m = &p->m;
+					break;
+				default: abort();
+				}
+				if (m->seq < seq)
+					abort();
+				seq = m->seq + 1;
+			}
+		}
 }

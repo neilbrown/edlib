@@ -5,6 +5,8 @@
  * there wrapping as needed.  If we don't find point,
  * we then need to walk out from point until we reach
  * the size of viewport.
+ * We keep 'top' and 'bot' as types marks so we get notified
+ * when there is a change, and know to
  *
  */
 
@@ -22,9 +24,12 @@
 
 struct rt_data {
 	struct view_data *v;
-	struct mark	*top;
+	struct mark	*top, *bot;
 	int		ignore_point;
 	int		target_x;
+	struct command	type;
+	int		typenum;
+	struct pane	*pane;
 };
 
 static struct map *rt_map;
@@ -102,8 +107,8 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 
 	pane_clear(p, 0, 0, 0, 0, 0);
 
-	m = mark_dup(rd->top, 1);
-	last_vis = mark_dup(m, 1);
+	m = mark_dup(rd->top, 0);
+	last_vis = mark_dup(m, 0);
 
 	p->cx = -1;
 	p->cy = -1;
@@ -115,7 +120,7 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 	}
 	while (y < p->h) {
 		mark_delete(last_vis);
-		last_vis = mark_dup(m, 1);
+		last_vis = mark_dup(m, 0);
 		if (mark_same(t, m, mark_of_point(pt))) {
 			p->cx = x;
 			p->cy = y;
@@ -170,13 +175,14 @@ static struct mark *find_top(struct text *t, struct point *pt, struct pane *p,
 	 * When number of lines reaches height of pane, both top moving.
 	 * At this point, 'start' is the new 'top'.
 	 */
+	struct rt_data *rt = p->data;
 	struct mark *start, *end;
 	int found_start = 0, found_end = 0;
 	int sx=0, sy=0, ex=0, ey=0;
 	wint_t ch;
 
-	start = mark_at_point(pt, MARK_UNGROUPED);
-	end = mark_at_point(pt, MARK_UNGROUPED);
+	start = mark_at_point(pt, rt->typenum);
+	end = mark_at_point(pt, rt->typenum);
 	if (bot &&
 	    (mark_ordered(start, bot) && ! mark_same(t, start, bot)))
 		bot = NULL;
@@ -219,11 +225,9 @@ static int render_text_refresh(struct pane  *p, int damage)
 
 	if (rt->top) {
 		end = render(rt->v->text, rt->v->point, p);
-		if (rt->ignore_point || p->cx >= 0) {
+		if (rt->ignore_point || p->cx >= 0)
 			/* Found the cursor! */
-			mark_delete(end);
-			return 0;
-		}
+			goto found;
 	}
 	top = find_top(rt->v->text, rt->v->point, p,
 		       rt->top, end);
@@ -233,7 +237,22 @@ static int render_text_refresh(struct pane  *p, int damage)
 		mark_delete(end);
 	rt->top = top;
 	end = render(rt->v->text, rt->v->point, p);
-	mark_delete(end);
+found:
+	if (rt->bot)
+		mark_delete(rt->bot);
+	rt->bot = end;
+	return 0;
+}
+
+static int render_text_notify(struct command *c, struct cmd_info *ci)
+{
+	struct rt_data *rt;
+	if (ci->key != EV_REPLACE)
+		return 0;
+	rt = container_of(c, struct rt_data, type);
+	if (ci->mark == rt->top)
+		/* A change in the text between top and bot */
+		pane_damaged(rt->pane, DAMAGED_CONTENT);
 	return 0;
 }
 
@@ -242,9 +261,15 @@ void render_text_attach(struct pane *p)
 	struct rt_data *rt = malloc(sizeof(*rt));
 
 	rt->v = p->data;
+	rt->pane = p;
 	rt->top = NULL;
+	rt->bot = NULL;
 	rt->ignore_point = 0;
 	rt->target_x = -1;
+	rt->type.func = render_text_notify;
+	rt->type.name = "render_text_notify";
+	rt->type.type = NULL;
+	rt->typenum = text_add_type(rt->v->text, &rt->type);
 	p->data = rt;
 	p->refresh = render_text_refresh;
 	p->keymap = rt_map;

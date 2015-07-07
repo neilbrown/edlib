@@ -761,7 +761,7 @@ int text_add_type(struct text *t, struct command *c)
 			tlist_del(&t->groups[i].head);
 			g[i].notify = t->groups[i].notify;
 		}
-		for (; i <t->ngroups; i++) {
+		for (; i < t->ngroups; i++) {
 			INIT_TLIST_HEAD(&g[i].head, GRP_HEAD);
 			g[i].notify = NULL;
 		}
@@ -770,7 +770,8 @@ int text_add_type(struct text *t, struct command *c)
 		/* now resize all the points */
 		points_resize(t);
 	}
-	t->groups[i].notify = c;
+	points_attach(t, ret);
+	t->groups[ret].notify = c;
 	return ret;
 }
 
