@@ -24,7 +24,7 @@ wchar_t mark_prior(struct text *t, struct mark *m);
 struct mark *mark_of_point(struct point *p);
 int mark_ordered(struct mark *m1, struct mark *m2);
 struct mark *mark_dup(struct mark *m, int notype);
-void mark_delete(struct mark *m);
+void mark_free(struct mark *m);
 struct mark *mark_at_point(struct point *p, int type);
 int mark_same(struct text *, struct mark *m1, struct mark *m2);
 void point_insert_text(struct text *t, struct point *p, char *s, int *first);

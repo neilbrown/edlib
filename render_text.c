@@ -119,7 +119,7 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 		x += 1;
 	}
 	while (y < p->h) {
-		mark_delete(last_vis);
+		mark_free(last_vis);
 		last_vis = mark_dup(m, 0);
 		if (mark_same(t, m, mark_of_point(pt))) {
 			p->cx = x;
@@ -128,7 +128,7 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 		if (rt_fore(t, p, m, &x, &y, 1) == 0)
 			break;
 	}
-	mark_delete(m);
+	mark_free(m);
 	if (mark_ordered(mark_of_point(pt), rd->top))
 		/* point is before mark, cannot possibly see cursor */
 		p->cx = p->cy = -1;
@@ -214,7 +214,7 @@ static struct mark *find_top(struct text *t, struct point *pt, struct pane *p,
 	if (ch == '\n')
 		mark_next(t, start);
 	/* I wonder if we should round off to a newline?? */
-	mark_delete(end);
+	mark_free(end);
 	return start;
 }
 
@@ -231,15 +231,12 @@ static int render_text_refresh(struct pane  *p, int damage)
 	}
 	top = find_top(rt->v->text, rt->v->point, p,
 		       rt->top, end);
-	if (rt->top)
-		mark_delete(rt->top);
-	if (end)
-		mark_delete(end);
+	mark_free(rt->top);
+	mark_free(end);
 	rt->top = top;
 	end = render(rt->v->text, rt->v->point, p);
 found:
-	if (rt->bot)
-		mark_delete(rt->bot);
+	mark_free(rt->bot);
 	rt->bot = end;
 	return 0;
 }
@@ -324,7 +321,7 @@ static int render_text_set_cursor(struct command *c, struct cmd_info *ci)
 
 	m = find_pos(rt->v->text, p, ci->x, ci->y);
 	point_to_mark(rt->v->text, rt->v->point, m);
-	mark_delete(m); free(m);
+	mark_free(m);
 	pane_focus(p);
 	return 1;
 }

@@ -426,7 +426,7 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 	ci2.mark = m;
 	ret = key_handle_focus(&ci2);
 	if (!ret) {
-		mark_delete(m);
+		mark_free(m);
 		return 0;
 	}
 	ci2.focus = ci->focus;
@@ -435,7 +435,7 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 	ci2.mark = m;
 	ci2.str = NULL;
 	ret = key_handle_focus(&ci2);
-	mark_delete(m);
+	mark_free(m);
 
 	return ret;
 }

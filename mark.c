@@ -113,20 +113,28 @@ static void assign_seq(struct mark *m, int prev)
 	m->seq = prev + 128;
 }
 
-void mark_delete(struct mark *m)
+static void mark_delete(struct mark *m)
 {
 	hlist_del_init(&m->all);
 	if (m->type != MARK_UNGROUPED)
 		tlist_del_init(&m->group);
 	attr_free(&m->attrs);
 }
+void mark_free(struct mark *m)
+{
+	if (m) {
+		mark_delete(m);
+		free(m);
+	}
+}
 
-void point_delete(struct point *p)
+void point_free(struct point *p)
 {
 	int i;
 	for (i = 0; i < p->size; i++)
 		tlist_del_init(&p->lists[i]);
 	mark_delete(&p->m);
+	free(p);
 }
 
 static void dup_mark(struct mark *orig, struct mark *new)
