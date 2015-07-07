@@ -50,3 +50,4 @@ void text_ref_consistent(struct text *t, struct text_ref *r);
 
 char *text_getstr(struct text *t);
 int text_add_type(struct text *t, struct command *c);
+void text_del_type(struct text *t, struct command *c);

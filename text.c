@@ -774,6 +774,26 @@ int text_add_type(struct text *t, struct command *c)
 	return ret;
 }
 
+void text_del_type(struct text *t, struct command *c)
+{
+	/* this type should only have points on the list, not typed
+	 * marks.  Just delete everything and clear the 'notify' pointer
+	 */
+	int i;
+	for (i = 0; i < t->ngroups; i++)
+		if (t->groups[i].notify == c)
+			break;
+	if (i >= t->ngroups)
+		return;
+	t->groups[i].notify = NULL;
+	while (!tlist_empty(&t->groups[i].head)) {
+		struct tlist_head *tl = t->groups[i].head.next;
+		if (TLIST_TYPE(tl) != GRP_LIST)
+			abort();
+		tlist_del_init(tl);
+	}
+}
+
 char *text_getstr(struct text *t)
 {
 	struct text_chunk *c;
