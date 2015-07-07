@@ -462,6 +462,14 @@ struct tlist_head {
 	(ptr)->prev = TLIST_PREV((ptr),(type));	\
 } while (0)
 
+/**
+ * tlist_empty - tests whether a tlist is empty
+ * @head: the list to test.
+ */
+static inline int tlist_empty(struct tlist_head *head)
+{
+	return TLIST_PTR(head->next) == head;
+}
 /*
  * Insert a new entry between two known consecutive entries.
  *
@@ -569,6 +577,19 @@ static inline void tlist_del_init(struct tlist_head *entry)
  */
 #define tlist_prev_entry(pos, member) \
 	tlist_entry((pos)->member.prev, typeof(*(pos)), member)
+
+/**
+ * tlist_for_each_entry -  iterate over list of given type
+ * @pos:	the type * to use as a loop cursor.
+ * @head:	the head for your list.
+ * @member:	the name of the tlist_head within the struct.
+ *
+ * Iterate over list of given type.
+ */
+#define tlist_for_each_entry(pos, head, member)		\
+	for (pos = list_entry((head)->next, typeof(*(pos)), member);	\
+	     &pos->member != (head);					\
+	     pos = tlist_next_entry(pos, member))
 
 /**
  * tlist_for_each_entry_continue - continue iteration over list of given type

@@ -746,19 +746,31 @@ struct text *text_new(void)
 int text_add_type(struct text *t, struct command *c)
 {
 	struct grp *g;
-	int ret = t->ngroups++;
+	int ret;
 	int i;
 
-	g = malloc(sizeof(*g) * (t->ngroups));
-	for (i = 0; i < ret; i++) {
-		tlist_add(&g[i].head, GRP_HEAD, &t->groups[i].head);
-		tlist_del(&t->groups[i].head);
-		g[i].notify = t->groups[i].notify;
+	for (ret = 0; ret < t->ngroups; ret++)
+		if (t->groups[ret].notify == NULL)
+			break;
+	if (ret == t->ngroups) {
+		/* Resize the group list */
+		t->ngroups += 4;
+		g = malloc(sizeof(*g) * t->ngroups);
+		for (i = 0; i < ret; i++) {
+			tlist_add(&g[i].head, GRP_HEAD, &t->groups[i].head);
+			tlist_del(&t->groups[i].head);
+			g[i].notify = t->groups[i].notify;
+		}
+		for (; i <t->ngroups; i++) {
+			INIT_TLIST_HEAD(&g[i].head, GRP_HEAD);
+			g[i].notify = NULL;
+		}
+		free(t->groups);
+		t->groups = g;
+		/* now resize all the points */
+		points_resize(t);
 	}
-	g[ret].notify = c;
-	INIT_TLIST_HEAD(&g[ret].head, GRP_HEAD);
-	free(t->groups);
-	t->groups = g;
+	t->groups[i].notify = c;
 	return ret;
 }
 

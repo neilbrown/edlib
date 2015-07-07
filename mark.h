@@ -14,6 +14,7 @@ enum {
 };
 
 struct point *point_new(struct text *t, struct point **owner);
+void points_resize(struct text *t);
 struct text_ref point_ref(struct point *p);
 wint_t mark_next(struct text *t, struct mark *m);
 wint_t mark_prev(struct text *t, struct mark *m);

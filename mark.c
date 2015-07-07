@@ -154,17 +154,49 @@ struct point *point_dup(struct point *p, struct point **owner)
 {
 	int i;
 	struct point *ret = malloc(sizeof(*ret) +
-				   p->size * sizeof(p->lists[0]));
+				   p->size * sizeof(ret->lists[0]));
 
 	dup_mark(&p->m, &ret->m);
 	ret->m.type = MARK_POINT;
 	ret->size = p->size;
 	tlist_add(&ret->m.group, GRP_MARK, &p->m.group);
 	for (i = 0; i < ret->size; i++)
-		tlist_add(&ret->lists[i], GRP_LIST, &p->lists[i]);
+		if (tlist_empty(&p->lists[i]))
+			INIT_TLIST_HEAD(&ret->lists[i], GRP_LIST);
+		else
+			tlist_add(&ret->lists[i], GRP_LIST, &p->lists[i]);
 	ret->owner = owner;
 	*owner = ret;
 	return ret;
+}
+
+void points_resize(struct text *t)
+{
+	struct point *p;
+	tlist_for_each_entry(p, &t->points, m.group) {
+		int i;
+		struct point *new = malloc(sizeof(*new) +
+					   t->ngroups * sizeof(new->lists[0]));
+		new->m.ref = p->m.ref;
+		new->m.attrs = p->m.attrs;
+		new->m.seq = p->m.seq;
+		new->m.type = p->m.type;
+		hlist_add_after(&p->m.all, &new->m.all);
+		hlist_del(&p->m.all);
+		tlist_add(&new->m.group, GRP_MARK, &p->m.group);
+		tlist_del(&p->m.group);
+
+		new->owner = p->owner;
+		*(new->owner) = new;
+		new->size = t->ngroups;
+		for (i = 0; i < p->size; i++) {
+			tlist_add(&new->lists[i], GRP_LIST, &p->lists[i]);
+			tlist_del(&p->lists[i]);
+		}
+		for (; i < new->size; i++)
+			INIT_TLIST_HEAD(&new->lists[i], GRP_HEAD);
+		p = new;
+	}
 }
 
 struct mark *mark_dup(struct mark *m, int notype)
@@ -198,7 +230,8 @@ struct point *point_new(struct text *t, struct point **owner)
 	ret->size = t->ngroups;
 	tlist_add(&ret->m.group, GRP_MARK, &t->points);
 	for (i = 0; i < ret->size; i++)
-		tlist_add(&ret->lists[i], GRP_LIST, &t->groups[i].head);
+		if (t->groups[i].notify)
+			tlist_add(&ret->lists[i], GRP_LIST, &t->groups[i].head);
 	ret->owner = owner;
 	*owner = ret;
 	return ret;
@@ -213,10 +246,11 @@ static void point_reset(struct text *t, struct point *p)
 	hlist_add_head(&p->m.all, &t->marks);
 	tlist_del(&p->m.group);
 	tlist_add(&p->m.group, GRP_MARK, &t->points);
-	for (i = 0; i < p->size; i++) {
-		tlist_del(&p->lists[i]);
-		tlist_add(&p->lists[i], GRP_LIST, &t->groups[i].head);
-	}
+	for (i = 0; i < p->size; i++)
+		if (t->groups[i].notify) {
+			tlist_del(&p->lists[i]);
+			tlist_add(&p->lists[i], GRP_LIST, &t->groups[i].head);
+		}
 	assign_seq(&p->m, 0);
 }
 
@@ -424,6 +458,8 @@ static void point_forward_to_mark(struct text *t, struct point *p, struct mark *
 	}
 
 	for (i = 0; i < p->size; i++) {
+		if (!t->groups[i].notify)
+			continue;
 		mtmp = mnear = &pnear->m;
 		tlist_for_each_entry_continue(mtmp, &t->groups[i].head, group) {
 			if (mtmp->seq < m->seq)
@@ -464,6 +500,8 @@ static void point_backward_to_mark(struct text *t, struct point *p, struct mark 
 	}
 
 	for (i = 0; i < p->size; i++) {
+		if (!t->groups[i].notify)
+			continue;
 		mtmp = mnear = &pnear->m;
 		tlist_for_each_entry_continue_reverse(mtmp, &t->groups[i].head,
 						      group) {
