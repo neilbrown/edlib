@@ -50,6 +50,10 @@ static void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->damaged = 0;
 }
 
+/*
+ * pane_damaged: mark a pane as being 'damaged', and make
+ * sure all parents know about it.
+ */
 void pane_damaged(struct pane *p, int type)
 {
 	while (p) {
@@ -83,11 +87,11 @@ static void __pane_refresh(struct pane *p, int damage)
 	damage |= p->damaged;
 	if (!damage)
 		return;
+	if (damage == DAMAGED_CHILD)
+		damage = 0;
+	else
+		damage = p->refresh(p, damage) | (damage & DAMAGED_FORCE);
 	p->damaged = 0;
-	if (damage & ~DAMAGED_CHILD) {
-		if (p->refresh(p, damage))
-			damage = 0;
-	}
 	list_for_each_entry(c, &p->children, siblings)
 		__pane_refresh(c, damage);
 }
@@ -103,7 +107,7 @@ void pane_resize(struct pane *p, int x, int y, int w, int h)
 	int damage = 0;
 	if (x >= 0 &&
 	    (p->x != x || p->y != y)) {
-		damage |= DAMAGED_CONTENT;
+		damage |= DAMAGED_POSN;
 		p->x = x;
 		p->y = y;
 	}

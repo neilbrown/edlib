@@ -404,7 +404,7 @@ static int view_move(struct command *c, struct cmd_info *ci)
 		key_handle_xy(&ci2);
 	}
 
-	pane_damaged(ci->focus, DAMAGED_CURSOR);
+	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
 	vd->first_change = 1;
 
 	return ret;
@@ -436,8 +436,6 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 	ci2.str = NULL;
 	ret = key_handle_focus(&ci2);
 	mark_delete(m);
-	if (ret)
-		pane_damaged(ci->focus, DAMAGED_CONTENT);
 
 	return ret;
 }
@@ -458,8 +456,6 @@ static int view_insert(struct command *c, struct cmd_info *ci)
 	str[1] = 0;
 	ci2.str = str;
 	ret = key_handle_focus(&ci2);
-	if (ret)
-		pane_damaged(ci->focus, DAMAGED_CONTENT);
 
 	return ret;
 }
@@ -481,8 +477,6 @@ static int view_insert_nl(struct command *c, struct cmd_info *ci)
 	str[1] = 0;
 	ci2.str = str;
 	ret = key_handle_focus(&ci2);
-	if (ret)
-		pane_damaged(ci->focus, DAMAGED_CONTENT);
 	vd->first_change = 1;
 	return ret;
 }
@@ -555,7 +549,6 @@ static int view_undo(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct view_data *vd = p->data;
 	point_undo(vd->text, vd->point, 0);
-	pane_damaged(p, DAMAGED_CONTENT);
 	return 1;
 }
 DEF_CMD(comm_undo, view_undo, "undo");
@@ -565,7 +558,6 @@ static int view_redo(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct view_data *vd = p->data;
 	point_undo(vd->text, vd->point, 1);
-	pane_damaged(p, DAMAGED_CONTENT);
 	return 1;
 }
 DEF_CMD(comm_redo, view_redo, "redo");

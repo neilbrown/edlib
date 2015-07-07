@@ -222,7 +222,7 @@ static int render_text_refresh(struct pane  *p, int damage)
 		if (rt->ignore_point || p->cx >= 0) {
 			/* Found the cursor! */
 			mark_delete(end);
-			return 1;
+			return 0;
 		}
 	}
 	top = find_top(rt->v->text, rt->v->point, p,
@@ -234,7 +234,7 @@ static int render_text_refresh(struct pane  *p, int damage)
 	rt->top = top;
 	end = render(rt->v->text, rt->v->point, p);
 	mark_delete(end);
-	return 1;
+	return 0;
 }
 
 void render_text_attach(struct pane *p)

@@ -89,7 +89,7 @@ static int nc_refresh(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	clear();
-	pane_damaged(p,  DAMAGED_CONTENT);
+	pane_damaged(p,  DAMAGED_FORCE);
 	pane_refresh(p);
 	return 1;
 }
@@ -112,7 +112,7 @@ static int ncurses_refresh(struct pane *p, int damage)
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 	event_add(l, &tv);
-	return 0;
+	return damage & DAMAGED_SIZE;
 }
 
 static void handle_winch(int sig, short ev, void *null);
@@ -154,7 +154,7 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 	l = event_new(base, SIGWINCH, EV_SIGNAL|EV_PERSIST,
 		      handle_winch, p);
 	event_add(l, NULL);
-	pane_damaged(p, DAMAGED_SIZE | DAMAGED_CONTENT);
+	pane_damaged(p, DAMAGED_SIZE | DAMAGED_FORCE);
 	return p;
 }
 
@@ -172,7 +172,7 @@ static void handle_winch(int sig, short ev, void *vpane)
 	resize_term(size.ws_row, size.ws_col);
 
 	clear();
-	pane_damaged(p, DAMAGED_SIZE);
+	pane_damaged(p, DAMAGED_SIZE|DAMAGED_FORCE);
 	pane_refresh(p);
 }
 

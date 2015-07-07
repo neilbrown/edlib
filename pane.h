@@ -23,9 +23,11 @@ struct pane {
 
 enum {
 	DAMAGED_CHILD	= 1,
-	DAMAGED_SIZE	= 2,
-	DAMAGED_CONTENT	= 4,
-	DAMAGED_CURSOR	= 8,
+	DAMAGED_CURSOR	= 2,
+	DAMAGED_SIZE	= 4,
+	DAMAGED_POSN	= 8,
+	DAMAGED_CONTENT	= 16,
+	DAMAGED_FORCE	= 32, // redraw pane an children even if nothing has changed
 };
 
 struct pane *pane_register(struct pane *parent, int z,
