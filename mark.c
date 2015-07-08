@@ -747,10 +747,10 @@ void point_undo(struct text *t, struct point *p, int redo)
 			if (text_update_following_after_change(t, &m->ref,
 							       &start, &end) == 0)
 				break;
+		point_notify_change(p, t);
+
 		mark_check_consistent(t);
 	}
-	// notify marks of change
-
 }
 
 static void mark_check_consistent(struct text *t)
