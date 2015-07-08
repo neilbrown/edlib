@@ -6,7 +6,7 @@ CFLAGS=-g -Wall -Werror -Wstrict-prototypes -Wextra -Wno-unused-parameter
 all:edlib checksym
 
 OBJ = ncurses.o view.o tile.o mainloop.o text.o mark.o attr.o render_text.o keymap.o pane.o \
-	popup.o
+	popup.o line_count.o
 H = list.h text.h pane.h mark.h attr.h tile.h view.h keymap.h render_text.h popup.h
 edlib: $(OBJ)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o edlib $(OBJ) $(LDLIBS)

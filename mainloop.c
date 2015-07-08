@@ -5,6 +5,7 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <locale.h>
 #include <fcntl.h>
 #include <event.h>
 #include <curses.h>
@@ -53,6 +54,8 @@ int main(int argc, char *argv[])
 	struct pane *b1, *b2, *b3, *b4;
 	struct map *global_map;
 
+	setlocale(LC_ALL, "");
+	setlocale(LC_CTYPE, "enUS.UTF-8");
 	base = event_base_new();
 	event_base_priority_init(base, 2);
 	global_map = key_alloc();

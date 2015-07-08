@@ -795,6 +795,15 @@ void text_del_type(struct text *t, struct command *c)
 	}
 }
 
+int text_find_type(struct text *t, struct command *c)
+{
+	int i;
+	for (i = 0 ; i < t->ngroups; i++)
+		if (t->groups[i].notify == c)
+			return i;
+	return -1;
+}
+
 char *text_getstr(struct text *t)
 {
 	struct text_chunk *c;

@@ -291,6 +291,52 @@ struct mark *mark_of_point(struct point *p)
 	return &p->m;
 }
 
+struct attrset **mark_attr(struct mark *m)
+{
+	return &m->attrs;
+}
+
+struct mark *text_first_mark(struct text *t, int type)
+{
+	struct tlist_head *tl;
+	if (type < 0 || type >= t->ngroups || t->groups[type].notify == NULL)
+		return NULL;
+	if (tlist_empty(&t->groups[type].head))
+		return NULL;
+	tlist_for_each(tl, &t->groups[type].head)
+		if (TLIST_TYPE(tl) == GRP_MARK)
+			return tlist_entry(tl, struct mark, group);
+	return NULL;
+}
+
+struct mark *text_next_mark(struct text *t, struct mark *m)
+{
+	int type = m->type;
+	struct tlist_head *tl = &m->group;
+
+	tlist_for_each_continue(tl, &t->groups[type].head)
+		if (TLIST_TYPE(tl) == GRP_MARK)
+			return tlist_entry(tl, struct mark, group);
+	return NULL;
+}
+
+struct mark *text_new_mark(struct text *t, int type)
+{
+	struct mark *ret;
+
+	if (type < 0 || type >= t->ngroups || t->groups[type].notify == NULL)
+		return NULL;
+	ret = malloc(sizeof(*ret));
+	ret->ref = text_find_ref(t, 0);
+	ret->attrs = NULL;
+	hlist_add_head(&ret->all, &t->marks);
+	assign_seq(ret, 0);
+	ret->type = type;
+	tlist_add(&ret->group, GRP_MARK, &t->groups[type].head);
+	return ret;
+}
+
+
 /* Movement of points and marks.
  *
  * Both points and marks can move.
@@ -302,13 +348,13 @@ struct mark *mark_of_point(struct point *p)
  * point easily but to move to mark they must walk one mark at a time.
  *
  */
-wchar_t mark_following(struct text *t, struct mark *m)
+wint_t mark_following(struct text *t, struct mark *m)
 {
 	struct text_ref r = m->ref;
 	return text_next(t, &r);
 }
 
-wchar_t mark_prior(struct text *t, struct mark *m)
+wint_t mark_prior(struct text *t, struct mark *m)
 {
 	struct text_ref r = m->ref;
 	return text_prev(t, &r);

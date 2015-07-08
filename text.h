@@ -51,3 +51,7 @@ void text_ref_consistent(struct text *t, struct text_ref *r);
 char *text_getstr(struct text *t);
 int text_add_type(struct text *t, struct command *c);
 void text_del_type(struct text *t, struct command *c);
+int text_find_type(struct text *t, struct command *c);
+struct mark *text_first_mark(struct text *t, int type);
+struct mark *text_next_mark(struct text *t, struct mark *m);
+struct mark *text_new_mark(struct text *t, int type);
