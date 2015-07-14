@@ -549,6 +549,7 @@ static int view_undo(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct view_data *vd = p->data;
 	point_undo(vd->text, vd->point, 0);
+	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
 	return 1;
 }
 DEF_CMD(comm_undo, view_undo, "undo");
@@ -558,6 +559,7 @@ static int view_redo(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct view_data *vd = p->data;
 	point_undo(vd->text, vd->point, 1);
+	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
 	return 1;
 }
 DEF_CMD(comm_redo, view_redo, "redo");
