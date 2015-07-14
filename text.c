@@ -281,7 +281,8 @@ void text_add_char(struct text *t, struct text_ref *pos, wchar_t ch, int *first_
  * before the inserted chunk, marks after must remain after the insertion
  * point.
  * When two chunks are recombined it will appear that the second chunk
- * was deleted.
+ * was deleted.  In this case though, references to the second chunk need
+ * to be repositioned in the first.
  * When range is reduced, offset must be moved back into range.
  * When range is increased, and this mark is after change, offset in this mark
  * need to line up with changed point.
@@ -350,7 +351,7 @@ int text_update_following_after_change(struct text *t, struct text_ref *pos,
 		if (epos->c &&
 		    pos->c->txt == epos->c->txt &&
 		    pos->o >= epos->c->start &&
-		    pos->o < epos->c->end)
+		    pos->o <= epos->c->end)
 			/* chunks were rejoined */
 			pos->c = epos->c;
 		else
