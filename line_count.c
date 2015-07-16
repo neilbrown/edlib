@@ -27,6 +27,7 @@
 #include "attr.h"
 #include "pane.h"
 #include "keymap.h"
+#include "extras.h"
 
 static void do_count(struct text *t, struct mark *start, struct mark *end,
 		     int *linep, int *wordp, int *charp, int add_marks)

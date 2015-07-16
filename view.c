@@ -20,7 +20,8 @@
 #include "pane.h"
 #include "mark.h"
 #include "keymap.h"
-#include "popup.h"
+
+#include "extras.h"
 
 #define ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 struct view_data {
@@ -28,6 +29,9 @@ struct view_data {
 	struct point	*point;
 	int		first_change;
 	int		border;
+	struct command	ch_notify;
+	int		ch_notify_num;
+	struct pane	*pane;
 };
 
 static int view_refresh(struct pane *p, int damage)
@@ -35,6 +39,8 @@ static int view_refresh(struct pane *p, int damage)
 	int i;
 	int mid = (p->h-1)/2;
 	struct view_data *vd = p->data;
+	int l,w,c;
+	char msg[60];
 
 	if (!vd->border)
 		return 0;
@@ -53,6 +59,10 @@ static int view_refresh(struct pane *p, int damage)
 	for (i = 1; i < p->w; i++)
 		pane_text(p, '=', A_STANDOUT, i, p->h-1);
 
+	count_calculate(vd->text, NULL, NULL, &l, &w,  &c);
+	snprintf(msg, sizeof(msg), "L%d W%d C%d", l,w,c);
+	for (i = 0; msg[i] && i+4 < p->w; i++)
+		pane_text(p, msg[i], A_STANDOUT, i+4, p->h-1);
 	return 0;
 }
 
@@ -83,6 +93,17 @@ static int view_null(struct pane *p, int damage)
 	}
 }
 
+static int view_notify(struct command *c, struct cmd_info *ci)
+{
+	struct view_data *vd;
+	if (ci->key != EV_REPLACE)
+		return 0;
+
+	vd = container_of(c, struct view_data, ch_notify);
+	pane_damaged(vd->pane, DAMAGED_CONTENT);
+	return 0;
+}
+
 struct pane *view_attach(struct pane *par, struct text *t, int border)
 {
 	struct view_data *vd;
@@ -92,8 +113,14 @@ struct pane *view_attach(struct pane *par, struct text *t, int border)
 	vd->text = t;
 	vd->first_change = 1;
 	vd->border = border;
+	vd->ch_notify.func = view_notify;
+	vd->ch_notify.name = "view-notify";
+	vd->ch_notify.type = NULL;
+	vd->ch_notify_num = text_add_type(t, &vd->ch_notify);
+
 	point_new(t, &vd->point);
 	p = pane_register(par, 0, view_refresh, vd, NULL);
+	vd->pane = p;
 
 	pane_resize(p, 0, 0, par->w, par->h);
 	p = pane_register(p, 0, view_null, vd, NULL);

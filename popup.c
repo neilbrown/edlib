@@ -28,6 +28,7 @@
 #include "view.h"
 #include "render_text.h"
 
+#include "extra.h"
 
 struct popup_info {
 	char		*name;
