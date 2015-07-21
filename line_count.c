@@ -38,7 +38,9 @@ static void do_count(struct text *t, struct mark *start, struct mark *end,
 	int chars = 0;
 	int inword = 0;
 	wint_t ch;
-	struct mark *m = mark_dup(start, !add_marks);
+	struct mark *m;
+
+	m = mark_dup(start, !add_marks);
 
 	*linep = 0;
 	*wordp = 0;
@@ -164,7 +166,7 @@ int count_calculate(struct text *t, struct mark *start, struct mark *end,
 	 * start to end.
 	 */
 	if (end && !mark_ordered(m, end)) {
-		do_count(t, start, end, linep, wordp, charp, 0);
+		do_count(t, start?:m, end, linep, wordp, charp, 0);
 		return 0;
 	}
 

@@ -222,6 +222,7 @@ struct mark *mark_dup(struct mark *m, int notype)
 		ret->type = MARK_UNGROUPED;
 		INIT_TLIST_HEAD(&ret->group, GRP_MARK);
 	} else {
+		if (m->type == MARK_POINT) abort();
 		ret->type = m->type;
 		if (ret->type == MARK_UNGROUPED)
 			INIT_TLIST_HEAD(&ret->group, GRP_MARK);
@@ -324,7 +325,7 @@ struct mark *text_new_mark(struct text *t, int type)
 {
 	struct mark *ret;
 
-	if (type < 0 || type >= t->ngroups || t->groups[type].notify == NULL)
+	if (type == MARK_POINT || type >= t->ngroups || t->groups[type].notify == NULL)
 		return NULL;
 	ret = malloc(sizeof(*ret));
 	ret->ref = text_find_ref(t, 0);
@@ -332,7 +333,8 @@ struct mark *text_new_mark(struct text *t, int type)
 	hlist_add_head(&ret->all, &t->marks);
 	assign_seq(ret, 0);
 	ret->type = type;
-	tlist_add(&ret->group, GRP_MARK, &t->groups[type].head);
+	if (type >= 0)
+		tlist_add(&ret->group, GRP_MARK, &t->groups[type].head);
 	return ret;
 }
 

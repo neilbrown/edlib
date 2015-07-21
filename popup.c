@@ -26,9 +26,8 @@
 #include "keymap.h"
 #include "text.h"
 #include "view.h"
-#include "render_text.h"
 
-#include "extra.h"
+#include "extras.h"
 
 struct popup_info {
 	char		*name;

@@ -39,7 +39,7 @@ static int view_refresh(struct pane *p, int damage)
 	int i;
 	int mid = (p->h-1)/2;
 	struct view_data *vd = p->data;
-	int l,w,c;
+	int ln, l,w,c;
 	char msg[60];
 
 	if (!vd->border)
@@ -49,8 +49,11 @@ static int view_refresh(struct pane *p, int damage)
 		pane_resize(p->focus, 1, 0, p->w-1, p->h-1);
 	}
 
+	count_calculate(vd->text, NULL, mark_of_point(vd->point), &ln, &w, &c);
+	count_calculate(vd->text, NULL, NULL, &l, &w,  &c);
 	for (i = 0; i < p->h-1; i++)
 		pane_text(p, '|', A_STANDOUT, 0, i);
+	mid = 1 + (p->h-4) * ln / l;
 	pane_text(p, '^', 0, 0, mid-1);
 	pane_text(p, '#', A_STANDOUT, 0, mid);
 	pane_text(p, 'v', 0, 0, mid+1);
@@ -59,7 +62,6 @@ static int view_refresh(struct pane *p, int damage)
 	for (i = 1; i < p->w; i++)
 		pane_text(p, '=', A_STANDOUT, i, p->h-1);
 
-	count_calculate(vd->text, NULL, NULL, &l, &w,  &c);
 	snprintf(msg, sizeof(msg), "L%d W%d C%d", l,w,c);
 	for (i = 0; msg[i] && i+4 < p->w; i++)
 		pane_text(p, msg[i], A_STANDOUT, i+4, p->h-1);

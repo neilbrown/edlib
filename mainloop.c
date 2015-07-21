@@ -18,8 +18,8 @@
 #include "mark.h"
 #include "view.h"
 #include "keymap.h"
-#include "render_text.h"
-#include "popup.h"
+
+#include "extras.h"
 
 static struct text *attach_file(struct pane *p, char *fname)
 {
@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
 	tile_register(global_map);
 	view_register(global_map);
 	render_text_register(global_map);
+	render_hex_register(global_map);
 	popup_init();
 
 	b1 = tile_init(root);
@@ -73,7 +74,7 @@ int main(int argc, char *argv[])
 	struct text *t = attach_file(b2, "text.c");
 
 	b4 = tile_split(b2, 1, 0);
-	render_text_attach(view_attach(b4, t, 1));
+	render_hex_attach(view_attach(b4, t, 1));
 
 	pane_refresh(root);
 	event_base_dispatch(base);
