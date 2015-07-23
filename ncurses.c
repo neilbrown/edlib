@@ -16,13 +16,12 @@
 #include <curses.h>
 #include <string.h>
 #include <locale.h>
-#include <wchar.h>
 #include <ctype.h>
 #include <event.h>
 #include <signal.h>
 #include <sys/ioctl.h>
 
-#include "list.h"
+#include "core.h"
 #include "pane.h"
 #include "tile.h"
 #include "keymap.h"

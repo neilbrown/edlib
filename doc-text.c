@@ -1,4 +1,14 @@
 /*
+ * Generic text document.
+ *
+ * This allows for a file to be read in, and edited by creating
+ * a linked list of chunks of text - the original isn't changed.
+ * This means that pointers outside of the edit region are mostly
+ * left untouched.
+ *
+ * Indefinite undo is kept as a record of changes to the list of chunks.
+ * New text is added to the end of a list of allocations.
+ *
  * Text.
  *
  * The text of a document is stored in a collection of allocations
@@ -38,20 +48,36 @@
  * and then only start and end are changed.
  */
 
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <memory.h>
 #include <locale.h>
-#include <wchar.h>
 
-#include "list.h"
-#include "text.h"
-#include "mark.h"
+/* A doc_ref is treated as a pointer to a chunk, and an offset
+ * from the start of 'txt'.  So 'o' must be between c->start and
+ * c->end inclusive.
+ */
+#define PRIVATE_DOC_REF
+
+struct doc_ref {
+	struct text_chunk *c;
+	int o;
+};
+
+#include "core.h"
 #include "attr.h"
 
+/* text is allocated is large blocks - possibly a whole
+ * file or some other large unit being added to a document.
+ * For small additions (normal typing) the default allocation
+ * size of 4K.
+ * When more is allocated than needed, extra can be added on to
+ * the end - 'free' is the next index with free space.
+ */
 struct text_alloc {
-	struct text_alloc *next;
+	struct text_alloc *prev;
 	int size;
 	int free;
 	char text[];
@@ -59,6 +85,10 @@ struct text_alloc {
 
 #define DEFAULT_SIZE (4096 - sizeof(struct text_alloc))
 
+/* The text document is a list of text_chunk.
+ * The 'txt' pointer is the text[] of a text_alloc.
+ * 'start' and 'end' narrow that.
+ */
 struct text_chunk {
 	char			*txt;
 	int			start;
@@ -73,27 +103,59 @@ struct text_chunk {
  * popping of the 'redo' list, we pop a first, then any following
  * non-first entries.
  * Each entry identifies a chunk. If 'at_start' is set, the 'len' is
- * added to the 'txt' pointer and subtracted from the len.  Otherwise
- * the len is set.  If this is zero, the chunk is removed from the list.
+ * added to the 'start' pointer (subtracted for undo).  Otherwise
+ * the len added to the end.  If the resulting length is zero, the
+ * chunk is removed from the list.
  */
 struct text_edit {
 	struct text_chunk	*target;
 	struct text_edit	*next;
-	unsigned int		first:1;
-	unsigned int		at_start:1;
+	bool			first:1;
+	bool			at_start:1;
 	int			len:30; // bytes add, -ve for removed.
 };
 
+/* A text document is a document with allocations, a list
+ * of chunks, and some undo info.
+ */
+struct text {
+	struct doc		doc;
+
+	struct text_alloc	*alloc;
+	struct list_head	text;
+	struct text_edit	*undo, *redo;
+};
+
+static int text_advance_towards(struct text *t, struct doc_ref *ref, struct doc_ref *target);
+static int text_retreat_towards(struct text *t, struct doc_ref *ref, struct doc_ref *target);
+static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2);
+static int text_locate(struct text *t, struct doc_ref *r, struct doc_ref *dest);
+static struct doc_operations text_ops;
+
 /*
- * Given a UTF-8 string and a max len, return a largest len not more
- * than that which does not include a partial code point.
+ * A text will mostly hold utf-8 so we try to align chunk breaks with
+ * Unicode points.  This particularly affects adding new strings to
+ * allocations.
+ * There is no guarantee that a byte strings is UTF-8 though, so
+ * We only adjust the length if we can find an end-of-code-point in
+ * the last 4 bytes. (longest UTF-8 encoding of 21bit unicode is 4 bytes).
  */
 static int text_round_len(char *text, int len)
 {
-	while (len > 0 &&
-	       (text[len] & 0xC0) == 0x80)
-		/* Next byte is in the middle of a code-point */
-		len--;
+	/* The string at 'text' is *longer* than 'len', or
+	 * at least text[len] is defined - it can be nul.  If
+	 * len doesn't mark the end of a UTF-8 codepoint,
+	 * and there is an end marker in the previous 4 bytes,
+	 * move back to there.
+	 */
+	int i;
+	while (i < len && i <=4)
+		if ((text[len-i] & 0xC0) == 0x80)
+		/* next byte is a continuation, so this isn't a good
+		 * spot to end. Try further back */
+			i += 1;
+		else
+			return len-i;
 	return len;
 }
 
@@ -106,37 +168,44 @@ text_new_alloc(struct text *t, int size)
 	new = malloc(size + sizeof(struct text_alloc));
 	if (!new)
 		return NULL;
-	new->next = t->alloc;
+	new->prev = t->alloc;
 	t->alloc = new;
 	new->size = size;
 	new->free = 0;
 	return new;
 }
 
-int text_load_file(struct text *t, int fd)
+static int text_load_file(struct doc *d, struct point *pos, int fd)
 {
 	off_t size = lseek(fd, 0, SEEK_END);
 	struct text_alloc *a;
 	struct text_chunk *c = malloc(sizeof(*c));
+	int len;
+	struct text *t = container_of(d, struct text, doc);
+
 	if (size < 0)
-		return 0;
+		goto err;
 	lseek(fd, 0, SEEK_SET);
 	a = text_new_alloc(t, size);
 	if (!a)
-		return 0;
-	// FIXME should I loop??
-	a->free = read(fd, a->text, size);
+		goto err;
+	while (a->free < size &&
+	       (len = read(fd, a->text + a->free, size - a->free)) > 0)
+		a->free += len;
 
 	c->txt = a->text;
 	c->attrs = NULL;
 	c->start = 0;
-	c->end = size;
+	c->end = a->free;
 	list_add(&c->lst, &t->text);
 	return 1;
+err:
+	free(c);
+	return 0;
 }
 
 static void text_add_edit(struct text *t, struct text_chunk *target,
-			  int *first, int at_start, int len)
+			  bool *first, int at_start, int len)
 {
 	struct text_edit *e;
 
@@ -152,15 +221,14 @@ static void text_add_edit(struct text *t, struct text_chunk *target,
 	t->undo = e;
 }
 
-void text_add_str(struct text *t, struct text_ref *pos, char *str,
-		  struct text_ref *start, int *first_edit)
+static void text_add_str(struct text *t, struct doc_ref *pos, char *str,
+			 struct doc_ref *start, bool *first_edit)
 {
 	/* Text is added to the end of the referenced chunk, or
 	 * in new chunks which are added afterwards.  This allows
 	 * the caller to reliably updated any pointers to accommodate
 	 * changes.
-	 * The attributes of the added text are copied from the preceding
-	 * character.  Text added at start of buffer gets no attributes.
+	 * The added text has no attributes.
 	 *
 	 * 'pos' is moved to point to the end of the inserted text.
 	 * 'start' is set to point to the start which may be the
@@ -198,14 +266,11 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 			/* At the start of a chunk, so create a new one here */
 			c->txt = NULL;
 			c->start = c->end = 0;
-			if (pos->c) {
-				c->attrs = attr_collect(pos->c->attrs, pos->o, 0);
-				attr_trim(&c->attrs, 0);
+			c->attrs = NULL;
+			if (pos->c)
 				list_add_tail(&c->lst, &pos->c->lst);
-			} else {
-				c->attrs = NULL;
+			else
 				list_add_tail(&c->lst, &t->text);
-			}
 
 			if (start && start->c == pos->c && start->o == pos->o) {
 				start->c = c;
@@ -230,7 +295,7 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 		if (pos->c->end > pos->c->start) {
 			struct text_chunk *c = malloc(sizeof(*c));
 			c->start = c->end = 0;
-			c->attrs = attr_collect(pos->c->attrs, pos->c->end, 0);
+			c->attrs = NULL;
 			list_add(&c->lst, &pos->c->lst);
 			if (start && start->c == pos->c && start->o == pos->o) {
 				start->c = c;
@@ -254,16 +319,6 @@ void text_add_str(struct text *t, struct text_ref *pos, char *str,
 		text_add_edit(t, pos->c, first_edit, 0, len);
 		a->free += len;
 		str += len;
-	}
-}
-
-void text_add_char(struct text *t, struct text_ref *pos, wchar_t ch, int *first_edit)
-{
-	char str[MB_CUR_MAX+1];
-	int l = wctomb(str, ch);
-	if (l > 0) {
-		str[l] = 0;
-		text_add_str(t, pos, str, NULL, first_edit);
 	}
 }
 
@@ -302,8 +357,8 @@ void text_add_char(struct text *t, struct text_ref *pos, wchar_t ch, int *first_
  * If a location at the start is found, it is move to the end.
  */
 
-int text_update_prior_after_change(struct text *t, struct text_ref *pos,
-				   struct text_ref *spos, struct text_ref *epos)
+static int text_update_prior_after_change(struct text *t, struct doc_ref *pos,
+					  struct doc_ref *spos, struct doc_ref *epos)
 {
 
 	if (pos->c == NULL) {
@@ -335,8 +390,8 @@ int text_update_prior_after_change(struct text *t, struct text_ref *pos,
 	return 0;
 }
 
-int text_update_following_after_change(struct text *t, struct text_ref *pos,
-				       struct text_ref *spos, struct text_ref *epos)
+static int text_update_following_after_change(struct text *t, struct doc_ref *pos,
+					      struct doc_ref *spos, struct doc_ref *epos)
 {
 	/* A change has happened between spos and epos. pos should be at or after
 	 * epos.
@@ -397,7 +452,7 @@ int text_update_following_after_change(struct text *t, struct text_ref *pos,
 	return 0;
 }
 
-void text_del(struct text *t, struct text_ref *pos, int len, int *first_edit)
+static void text_del(struct text *t, struct doc_ref *pos, int len, bool *first_edit)
 {
 	while (len) {
 		struct text_chunk *c = pos->c;
@@ -475,7 +530,7 @@ void text_del(struct text *t, struct text_ref *pos, int len, int *first_edit)
  * both start and end will point to a NULL chunk.
  * When undoing a split, both will be at the point of the split.
  */
-int text_undo(struct text *t, struct text_ref *start, struct text_ref *end)
+static int text_undo(struct text *t, struct doc_ref *start, struct doc_ref *end)
 {
 	struct text_edit *e = t->undo;
 
@@ -543,7 +598,7 @@ int text_undo(struct text *t, struct text_ref *start, struct text_ref *end)
 		return 2;
 }
 
-int text_redo(struct text *t, struct text_ref *start, struct text_ref *end)
+static int text_redo(struct text *t, struct doc_ref *start, struct doc_ref *end)
 {
 	struct text_edit *e = t->redo;
 	int is_split = 0;
@@ -609,6 +664,81 @@ int text_redo(struct text *t, struct text_ref *start, struct text_ref *end)
 		return 2;
 }
 
+static int text_reundo(struct doc *d, struct point *p, bool redo)
+{
+	struct doc_ref start, end;
+	int did_do = 2;
+	bool first = 1;
+	struct text *t = container_of(d, struct text, doc);
+
+	while (did_do != 1) {
+		struct mark *m;
+		int where;
+		int i;
+
+		if (redo)
+			did_do = text_redo(t, &start, &end);
+		else
+			did_do = text_undo(t, &start, &end);
+		if (did_do == 0)
+			break;
+
+		if (first) {
+			/* Not nearby, look from the start */
+			point_reset(&t->doc, p);
+			where = 1;
+			first = 0;
+		} else
+			where = text_locate(t, &mark_of_point(p)->ref, &end);
+		if (!where)
+			break;
+
+		if (where == 1) {
+			do {
+				i = text_advance_towards(t, &mark_of_point(p)->ref, &end);
+				if (i == 0)
+					break;
+				while ((m = doc_next_mark_all(d, mark_of_point(p))) != NULL &&
+				       m->ref.c == mark_of_point(p)->ref.c &&
+				       m->ref.o < mark_of_point(p)->ref.o)
+					mark_forward_over(mark_of_point(p), m);
+			} while (i == 2);
+		} else {
+			do {
+				i = text_retreat_towards(t, &mark_of_point(p)->ref, &end);
+				if (i == 0)
+					break;
+				while ((m = doc_prev_mark_all(d, mark_of_point(p))) != NULL &&
+				       m->ref.c == mark_of_point(p)->ref.c &&
+				       m->ref.o > mark_of_point(p)->ref.o)
+					mark_backward_over(mark_of_point(p), m);
+			} while (i == 2);
+		}
+
+		if (!text_ref_same(t, &mark_of_point(p)->ref, &end))
+			/* eek! */
+			break;
+		/* point is now at location of undo */
+
+		m = mark_of_point(p);
+		hlist_for_each_entry_continue_reverse(m, &t->doc.marks, all)
+			if (text_update_prior_after_change(t, &m->ref,
+							   &start, &end) == 0)
+				break;
+		m = mark_of_point(p);
+		hlist_for_each_entry_continue(m, all)
+			if (text_update_following_after_change(t, &m->ref,
+							       &start, &end) == 0)
+				break;
+		point_notify_change(&t->doc, p);
+
+		doc_check_consistent(&t->doc);
+	}
+	return did_do;
+}
+
+#ifdef DEBUG
+
 static int common_prefix(char *a, char *b, int l)
 {
 	int i = 0;
@@ -622,7 +752,7 @@ static int common_prefix(char *a, char *b, int l)
  * Update the ref passed all matching chars.
  * Return length that was matched.
  */
-int text_str_cmp(struct text *t, struct text_ref *r, char *s)
+static int text_str_cmp(struct text *t, struct doc_ref *r, char *s)
 {
 	struct text_chunk *c = r->c;
 	int o = r->o;
@@ -651,8 +781,9 @@ int text_str_cmp(struct text *t, struct text_ref *r, char *s)
 	r->o = o;
 	return matched;
 }
+#endif
 
-wint_t text_next(struct text *t, struct text_ref *r)
+static wint_t text_next(struct text *t, struct doc_ref *r)
 {
 	wchar_t ret;
 	int err;
@@ -677,7 +808,7 @@ wint_t text_next(struct text *t, struct text_ref *r)
 	return ret;
 }
 
-wint_t text_prev(struct text *t, struct text_ref *r)
+static wint_t text_prev(struct text *t, struct doc_ref *r)
 {
 	wchar_t ret;
 	int err;
@@ -706,7 +837,23 @@ wint_t text_prev(struct text *t, struct text_ref *r)
 	return ret;
 }
 
-int text_ref_same(struct text *t, struct text_ref *r1, struct text_ref *r2)
+static wint_t text_step(struct doc *d, struct mark *m, bool forward, bool move)
+{
+	struct text *t = container_of(d, struct text, doc);
+	struct doc_ref r;
+	wint_t ret;
+
+	r = m->ref;
+	if (forward)
+		ret = text_next(t, &r);
+	else
+		ret = text_prev(t, &r);
+	if (ret != WEOF && move)
+		m->ref = *(struct doc_ref*)&r;
+	return ret;
+}
+
+static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2)
 {
 	if (r1->c == r2->c) {
 		return r1->o == r2->o;
@@ -731,115 +878,117 @@ int text_ref_same(struct text *t, struct text_ref *r1, struct text_ref *r2)
 	return 0;
 }
 
-struct text *text_new(void)
+static int text_sameref(struct doc *d, struct mark *a, struct mark *b)
+{
+	struct text *t = container_of(d, struct text, doc);
+	return text_ref_same(t, &a->ref, &b->ref);
+}
+
+static struct doc *text_new(void)
 {
 	struct text *t = malloc(sizeof(*t));
 	text_new_alloc(t, 0);
 	INIT_LIST_HEAD(&t->text);
 	t->undo = t->redo = NULL;
-	INIT_HLIST_HEAD(&t->marks);
-	INIT_TLIST_HEAD(&t->points, 0);
-	t->groups = NULL;
-	t->ngroups = 0;
-	return t;
+	doc_init(&t->doc);
+	t->doc.ops = &text_ops;
+	return &t->doc;
 }
 
-int text_add_type(struct text *t, struct command *c)
+static int count_bytes(struct text *t, struct mark *from, struct mark *to)
 {
-	struct grp *g;
-	int ret;
-	int i;
+	struct text_chunk *c, *first, *last;
+	int l = 0, head, tail;
 
-	for (ret = 0; ret < t->ngroups; ret++)
-		if (t->groups[ret].notify == NULL)
-			break;
-	if (ret == t->ngroups) {
-		/* Resize the group list */
-		t->ngroups += 4;
-		g = malloc(sizeof(*g) * t->ngroups);
-		for (i = 0; i < ret; i++) {
-			tlist_add(&g[i].head, GRP_HEAD, &t->groups[i].head);
-			tlist_del(&t->groups[i].head);
-			g[i].notify = t->groups[i].notify;
-		}
-		for (; i < t->ngroups; i++) {
-			INIT_TLIST_HEAD(&g[i].head, GRP_HEAD);
-			g[i].notify = NULL;
-		}
-		free(t->groups);
-		t->groups = g;
-		/* now resize all the points */
-		points_resize(t);
+	first = list_first_entry_or_null(&t->text, struct text_chunk, lst);
+	head = 0;
+	if (from && from->ref.c) {
+		first = from->ref.c;
+		head = from->ref.o - first->start;
 	}
-	points_attach(t, ret);
-	t->groups[ret].notify = c;
-	return ret;
-}
-
-void text_del_type(struct text *t, struct command *c)
-{
-	/* this type should only have points on the list, not typed
-	 * marks.  Just delete everything and clear the 'notify' pointer
-	 */
-	int i;
-	for (i = 0; i < t->ngroups; i++)
-		if (t->groups[i].notify == c)
-			break;
-	if (i >= t->ngroups)
-		return;
-	t->groups[i].notify = NULL;
-	while (!tlist_empty(&t->groups[i].head)) {
-		struct tlist_head *tl = t->groups[i].head.next;
-		if (TLIST_TYPE(tl) != GRP_LIST)
-			abort();
-		tlist_del_init(tl);
+	last = NULL;
+	tail = 0;
+	if (to && to->ref.c) {
+		last = to->ref.c;
+		tail = last->end - to->ref.o;
 	}
-}
-
-int text_find_type(struct text *t, struct command *c)
-{
-	int i;
-	for (i = 0 ; i < t->ngroups; i++)
-		if (t->groups[i].notify == c)
-			return i;
-	return -1;
-}
-
-char *text_getstr(struct text *t)
-{
-	struct text_chunk *c;
-	char *ret;
-	int l = 0;
-
-	list_for_each_entry(c, &t->text, lst)
+	c = first;
+	list_for_each_entry_from(c, &t->text, lst) {
 		l += c->end - c->start;
+		if (c == first)
+			l -= head;
+		if (c == last) {
+			l -= tail;
+			break;
+		}
+	}
+	return l;
+}
+
+static char *text_getstr(struct doc *d, struct mark *from, struct mark *to)
+{
+	struct text *t = container_of(d, struct text, doc);
+	struct text_chunk *c, *first, *last;
+	char *ret;
+	int l = 0, head, tail;
+
+	first = list_first_entry_or_null(&t->text, struct text_chunk, lst);
+	head = 0;
+	if (from && from->ref.c) {
+		first = from->ref.c;
+		head = from->ref.o - first->start;
+	}
+	last = NULL;
+	tail = 0;
+	if (to && to->ref.c) {
+		last = to->ref.c;
+		tail = last->end - to->ref.o;
+	}
+	c = first;
+	list_for_each_entry_from(c, &t->text, lst) {
+		l += c->end - c->start;
+		if (c == first)
+			l -= head;
+		if (c == last) {
+			l -= tail;
+			break;
+		}
+	}
 	ret = malloc(l+1);
 	l = 0;
-	list_for_each_entry(c, &t->text, lst) {
-		memcpy(ret+l, c->txt + c->start, c->end - c->start);
-		l += c->end - c->start;
+	c = first;
+	list_for_each_entry_from(c, &t->text, lst) {
+		char *s = c->txt + c->start;
+		int ln = c->end - c->start;
+		if (c == first) {
+			s += head;
+			ln -= head;
+		}
+		if (c == last)
+			ln -= tail;
+		memcpy(ret+l, s, ln);
+		l += ln;
+		if (c == last)
+			break;
 	}
 	ret[l] = 0;
 	return ret;
 }
 
-struct text_ref text_find_ref(struct text *t, int index)
+static void text_setref(struct doc *d, struct mark *m, bool start)
 {
-	struct text_ref ret;
-	if (list_empty(&t->text)) {
-		ret.c = NULL;
-		ret.o = 0;
-		return ret;
+	struct text *t = container_of(d, struct text, doc);
+
+	if (list_empty(&t->text) || !start) {
+		m->ref.c = NULL;
+		m->ref.o = 0;
+		return;
 	}
-	ret.c = list_first_entry(&t->text, struct text_chunk, lst);
-	ret.o = ret.c->start;
-	while (index > 0 &&
-	       text_next(t, &ret) != WEOF)
-		index -= 1;
-	return ret;
+	m->ref.c = list_first_entry(&t->text, struct text_chunk, lst);
+	m->ref.o = m->ref.c->start;
 }
 
-int text_advance_towards(struct text *t, struct text_ref *ref, struct text_ref *target)
+static int text_advance_towards(struct text *t, struct doc_ref *ref, struct doc_ref *target)
 {
 	/* Move 'ref' towards 'target'.
 	 * If at end of chunk, step to next chunk, then
@@ -882,7 +1031,7 @@ int text_advance_towards(struct text *t, struct text_ref *ref, struct text_ref *
 	return 2;
 }
 
-int text_retreat_towards(struct text *t, struct text_ref *ref, struct text_ref *target)
+static int text_retreat_towards(struct text *t, struct doc_ref *ref, struct doc_ref *target)
 {
 	/* Move 'ref' towards 'target'.
 	 * If at end of chunk, step to next chunk, then
@@ -912,7 +1061,7 @@ int text_retreat_towards(struct text *t, struct text_ref *ref, struct text_ref *
 	return 2;
 }
 
-int text_locate(struct text *t, struct text_ref *r, struct text_ref *dest)
+static int text_locate(struct text *t, struct doc_ref *r, struct doc_ref *dest)
 {
 	/* move back/forward a little from 'r' looking for 'dest'.
 	 * return 0 if not found, -1 if dest found before r.
@@ -953,21 +1102,44 @@ int text_locate(struct text *t, struct text_ref *r, struct text_ref *dest)
 static void check_allocated(struct text *t, char *buf, int len)
 {
 	struct text_alloc *ta = t->alloc;
-	for (ta = t->alloc; ta; ta = ta->next) {
+	for (ta = t->alloc; ta; ta = ta->prev) {
 		if (buf >= ta->text && buf+len <= ta->text + ta->free)
 			return;
 	}
 	abort();
 }
 
-void text_check_consistent(struct text *t)
+static void text_ref_consistent(struct text *t, struct doc_ref *r)
+{
+	struct text_chunk *c;
+
+	if (r->c == NULL) {
+		if (r->o)
+			abort();
+		return;
+	}
+	if (r->o > r->c->end)
+		abort();
+	if (r->o < r->c->start)
+		abort();
+	list_for_each_entry(c, &t->text, lst)
+		if (r->c == c)
+			return;
+	abort();
+}
+
+static void text_check_consistent(struct text *t)
 {
 	/* make sure text is consistent, and abort if not.
 	 * - each chunk points to allocated space
 	 * - no two chunks overlap
 	 * - no chunks are empty
+	 * - every mark points to a valid chunk with valid offset
+	 * - all marks are in text order
 	 */
 	struct text_chunk *c;
+	struct mark *m, *prev;
+	struct  doc *d = &t->doc;
 
 	list_for_each_entry(c, &t->text, lst) {
 		check_allocated(t, c->txt, c->end);
@@ -989,163 +1161,86 @@ void text_check_consistent(struct text *t)
 			abort();
 		}
 	}
-}
 
-void text_ref_consistent(struct text *t, struct text_ref *r)
-{
-	struct text_chunk *c;
-	if (r->c == NULL) {
-		if (r->o)
-			abort();
-		return;
-	}
-	if (r->o > r->c->end)
-		abort();
-	if (r->o < r->c->start)
-		abort();
-	list_for_each_entry(c, &t->text, lst)
-		if (r->c == c)
-			return;
-	abort();
-}
+	for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(d, m))
+		text_ref_consistent(t, &m->ref);
 
-#ifdef TEST_TEXT
+	prev = NULL;
+	for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(d, m)) {
+		if (prev) {
+			struct doc_ref r = prev->ref;
+			int i;
 
-#include <stdlib.h>
-#include <stdio.h>
-
-static void text_dump(struct text *t)
-{
-	struct text_alloc *a;
-	struct text_chunk *c;
-	struct text_edit *e;
-	printf("TEXT:\n");
-	printf(" Allocs:\n");
-	for (a = t->alloc; a; a = a->next){
-		printf("  0x%016p: %d %d\n", a->text, a->size, a->free);
-	}
-	printf(" Chunks\n");
-	list_for_each_entry(c, &t->text, lst) {
-		printf("  0x%016p: %.*s (%d-%d)\n",
-		       c->txt,
-		       c->end - c->start, c->txt + c->start,
-		       c->start, c->end);
-	}
-	printf(" Undo:\n");
-	for (e = t->undo; e; e = e->next){
-		printf("  %c 0x%016p %c%d\n",
-		       e->first?'\\':' ',
-		       e->target->txt,
-		       e->at_start?'+':' ',
-		       e->len);
-	}
-	printf(" Redo:\n");
-	for (e = t->redo; e; e = e->next){
-		printf("  %c 0x%016p %c%d\n",
-		       e->first?'/':' ',
-		       e->target->txt,
-		       e->at_start?'+':' ',
-		       e->len);
-	}
-}
-
-struct { char *str; int pos; int undo_check; } test[] = {
-	{ "Hello", 0, 1},
-	{ "Worldαβγ", 5, 2},
-	{ "HelloWorldαβγ", -1, 2},
-	{ " ", 5, 4},
-	{ "--", 3, 5},
-	{ "p me to the", 3, 6},
-	{ "---", 1, 8},
-	{ "H me to the Worldαβγ", -1, 8},
-	{ "old", 1, 9},
-	{ "", -2, 8},
-	{ "", -2, 6},
-	{ "", -2, 5},
-	{ "", -2, 4},
-	{ "Hello Worldαβγ", -1, 4},
-	{ "", -3, 5},
-	{ "", -3, 6},
-	{ "Help me to the Worldαβγ", -1, 6},
-};
-int main(int argc, char *argv[])
-{
-	int rv = 1;
-	struct text t = {0};
-	struct text_chunk *c = malloc(sizeof(*c));
-	struct text_ref r, start, end;
-	int i;
-	struct text_edit *e;
-	wchar_t w;
-
-	setlocale(LC_ALL, "");
-	setlocale(LC_CTYPE, "enUS.UTF-8");
-	text_new_alloc(&t, 0);
-	c->start = c->end = 0;
-	c->attrs = NULL;
-	INIT_LIST_HEAD(&t.text);
-	list_add(&c->lst, &t.text);
-
-	for (i = 0; i < sizeof(test) / sizeof(test[0]); i++) {
-		int first = 1;
-		int cnt = test[i].pos;
-		list_for_each_entry(c, &t.text, lst) {
-			if (c->end - c->start >= cnt)
-				break;
-			cnt -= c->end - c->start;
-		}
-		if (c == NULL) {
-			printf("c == NULL at i=%d\n", i);
-			goto out;
-		}
-		if (c->end - c->start < cnt) {
-			printf("c->len = %d < %d == cnt\n",
-			       c->end-c->start, cnt);
-			goto out;
-		}
-		r.c = c;
-		r.o = c->start + cnt;
-		if (test[i].pos == -1) {
-			int m;
-			r.o = c->start;
-			m = text_str_cmp(&t, &r, test[i].str);
-			if (test[i].str[m] ||
-			    text_next(&t, &r) != WEOF) {
-				printf("Text doesn't match at %d: %s\n",
-				       i, test[i].str);
-				goto out;
+			while ((i = text_advance_towards(t, &r, &m->ref)) != 1) {
+				if (i == 0)
+					abort();
 			}
-		} else if (test[i].pos == -2) {
-			while (text_undo(&t, &start, &end) == 2);
-		} else if (test[i].pos == -3) {
-			while (text_redo(&t, &start, &end) == 2);
-		} else if (test[i].str[0] == '-')
-			text_del(&t, &r, strlen(test[i].str), &first);
-		else
-			text_add_str(&t, &r, test[i].str, NULL, &first);
-
-		cnt = 0;
-		for (e = t.undo; e; e = e->next)
-			cnt++;
-		if (test[i].undo_check != cnt) {
-			printf("at %i, undo cnt = %d, not %d\n",
-			       i, cnt, test[i].undo_check);
-			goto out;
 		}
+		prev = m;
 	}
-	rv = 0;
-	r.c = list_first_entry(&t.text, struct text_chunk, lst);
-	r.o = 0;
-	while ((w = text_next(&t, &r)) != WEOF) {
-		printf("%lc", w); printf("<%x>", w);
-	}
-	printf("\n");
-	while ((w = text_prev(&t, &r)) != WEOF) {
-		printf("%lc", w); printf("<%x>", w);
-	}
-	printf("\n");
-out:
-	text_dump(&t);
-	exit(rv);
+	doc_check_consistent(d);
 }
-#endif
+
+static void text_replace(struct doc *d, struct point *pos, struct mark *end,
+			 char *str, bool *first)
+{
+	struct text *t = container_of(d, struct text, doc);
+	struct mark *pm = mark_of_point(pos);
+
+	/* First delete, then insert */
+	if (end && !text_ref_same(t, &pm->ref, &end->ref)) {
+		struct mark *myend, *m;
+		int l;
+
+		if (!mark_ordered(pm, end)) {
+			myend = mark_dup(pm, 1);
+			point_to_mark(d, pos, end);
+		} else
+			myend = mark_dup(end, 1);
+		l = count_bytes(t, mark_of_point(pos), myend);
+		mark_free(myend);
+		text_del(t, &pm->ref, l, first);
+
+		for (m = doc_prev_mark_all(d, pm);
+		     m && text_update_prior_after_change(t, &m->ref, &pm->ref, &pm->ref);
+		     m = doc_prev_mark_all(d, m))
+			;
+		for (m = doc_next_mark_all(d, pm);
+		     m && text_update_following_after_change(t, &m->ref, &pm->ref, &pm->ref);
+		     m = doc_next_mark_all(d, m))
+			;
+		text_check_consistent(t);
+	}
+	if (str) {
+		struct doc_ref start;
+		struct mark *m;
+
+		text_add_str(t, &pm->ref, str, &start, first);
+		for (m = doc_prev_mark_all(d, pm);
+		     m && text_update_prior_after_change(t, &m->ref, &start, &pm->ref);
+		     m = doc_prev_mark_all(d, m))
+			;
+		for (m = doc_next_mark_all(d, pm);
+		     m && text_update_following_after_change(t, &m->ref, &start, &pm->ref);
+		     m = doc_next_mark_all(d, m))
+			;
+		text_check_consistent(t);
+
+	}
+	point_notify_change(d, pos);
+}
+
+static struct doc_operations text_ops = {
+	.replace   = text_replace,
+	.load_file = text_load_file,
+	.reundo    = text_reundo,
+	.step      = text_step,
+	.get_str   = text_getstr,
+	.set_ref   = text_setref,
+	.same_ref  = text_sameref,
+};
+
+void text_register(void)
+{
+	doc_register_type("text", text_new);
+}

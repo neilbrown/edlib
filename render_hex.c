@@ -12,9 +12,7 @@
 #include <wchar.h>
 #include <curses.h>
 
-#include "list.h"
-#include "text.h"
-#include "mark.h"
+#include "core.h"
 #include "pane.h"
 #include "view.h"
 #include "keymap.h"
@@ -47,7 +45,7 @@ static int put_str(struct pane *p, char *buf, int attr, int x, int y)
 	return len;
 }
 
-static struct mark *render(struct text *t, struct point *pt, struct pane *p)
+static struct mark *render(struct doc *d, struct point *pt, struct pane *p)
 {
 	struct he_data *he = p->data;
 	int x = 0, y = 0;
@@ -56,7 +54,7 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 
 	pane_clear(p, 0, 0, 0, 0, 0);
 
-	count_calculate(he->v->text, NULL, he->top, &l , &w, &c);
+	count_calculate(he->v->doc, NULL, he->top, &l , &w, &c);
 
 	m = mark_dup(he->top, 0);
 
@@ -71,10 +69,10 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 		sprintf(buf, "%08x: ", c);
 		xcol += put_str(p, buf, 0, xcol, y);
 		for (x = 0; x < 16; x++) {
-			wint_t ch = mark_next(t, m);
+			wint_t ch = mark_next(d, m);
 			if (ch == WEOF)
 				break;
-			if (mark_same(t, m, mark_of_point(pt))) {
+			if (mark_same(d, m, mark_of_point(pt))) {
 				p->cx = xcol;
 				p->cy = y;
 			}
@@ -99,7 +97,7 @@ static struct mark *render(struct text *t, struct point *pt, struct pane *p)
 	return m;
 }
 
-static struct mark *find_top(struct text *t, struct point *pt, struct pane *p,
+static struct mark *find_top(struct doc *d, struct point *pt, struct pane *p,
 			     struct mark *top, struct mark *bot)
 {
 	/* top and bot might be NULL, else they record what is currently
@@ -114,13 +112,13 @@ static struct mark *find_top(struct text *t, struct point *pt, struct pane *p,
 	int ppos, tpos, bpos, pos, tpos2;
 	struct he_data *he = p->data;
 
-	count_calculate(t, NULL, mark_of_point(pt), &l, &w, &ppos);
+	count_calculate(d, NULL, mark_of_point(pt), &l, &w, &ppos);
 	if (top)
-		count_calculate(t, NULL, top, &l, &w, &tpos);
+		count_calculate(d, NULL, top, &l, &w, &tpos);
 	else
 		tpos = ppos;
 	if (bot)
-		count_calculate(t, NULL, bot, &l, &w, &bpos);
+		count_calculate(d, NULL, bot, &l, &w, &bpos);
 	else
 		bpos = ppos;
 	tpos2 = tpos;
@@ -149,7 +147,7 @@ static struct mark *find_top(struct text *t, struct point *pt, struct pane *p,
 	m = mark_at_point(pt, he->typenum);
 
 	while (pos < tpos2) {
-		mark_prev(t, m);
+		mark_prev(d, m);
 		tpos2 -= 1;
 	}
 	return m;
@@ -161,15 +159,15 @@ static int render_hex_refresh(struct pane *p, int damage)
 	struct mark *end = NULL, *top;
 
 	if (he->top) {
-		end = render(he->v->text, he->v->point, p);
+		end = render(he->v->doc, he->v->point, p);
 		if (he->ignore_point || p->cx >= 0)
 			goto found;
 	}
-	top = find_top(he->v->text, he->v->point, p, he->top, end);
+	top = find_top(he->v->doc, he->v->point, p, he->top, end);
 	mark_free(he->top);
 	mark_free(end);
 	he->top = top;
-	end = render(he->v->text, he->v->point, p);
+	end = render(he->v->doc, he->v->point, p);
 found:
 	mark_free(he->bot);
 	he->bot = end;
@@ -200,7 +198,7 @@ void render_hex_attach(struct pane *p)
 	he->type.func = render_hex_notify;
 	he->type.name = "render_hex_notify";
 	he->type.type = NULL;
-	he->typenum = text_add_type(he->v->text, &he->type);
+	he->typenum = doc_add_type(he->v->doc, &he->type);
 	p->data = he;
 	p->refresh = render_hex_refresh;
 	p->keymap = he_map;

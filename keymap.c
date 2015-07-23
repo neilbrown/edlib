@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-#include "list.h"
+#include "core.h"
 #include "pane.h"
 #include "keymap.h"
 

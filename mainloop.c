@@ -11,42 +11,41 @@
 #include <curses.h>
 #include <wchar.h>
 
-#include "list.h"
+#include "core.h"
 #include "pane.h"
 #include "tile.h"
-#include "text.h"
-#include "mark.h"
 #include "view.h"
 #include "keymap.h"
 
 #include "extras.h"
 
-static struct text *attach_file(struct pane *p, char *fname)
+static struct doc *attach_file(struct pane *p, char *fname)
 {
 	int fd = open(fname, O_RDONLY);
-	struct text *t = text_new();
-	struct text_ref r;
+	struct doc *d = doc_new("text");
+	struct view_data *vd;
+	int i;
 
-	r = text_find_ref(t, 0);
+	p = view_attach(p, d, 1);
+	vd = p->data;
 	if (fd >= 0)
-		text_load_file(t, fd);
+		doc_load_file(d, vd->point, fd);
 	else {
-		int first=1;
-		text_add_str(t, &r, "File not found: ", NULL, &first);
-		text_add_str(t, &r, fname, NULL, &first);
-		text_add_str(t, &r, "\n", NULL, &first);
+		bool first=1;
+		doc_replace(d, vd->point, NULL, "File not found: ", &first);
+		doc_replace(d, vd->point, NULL, fname, &first);
+		doc_replace(d, vd->point, NULL, "\n", &first);
 	}
-	p = view_attach(p, t, 1);
-	{
-		struct view_data *vd = p->data;
-		int i;
-		for (i=0 ; i<2000; i++)
-			mark_next(vd->text, mark_of_point(vd->point));
-	}
+
+	point_reset(d, vd->point);
+	for (i=0 ; i<2000; i++)
+		mark_next(vd->doc, mark_of_point(vd->point));
+
 	render_text_attach(p);
-	return t;
+	return d;
 }
 
+void text_register(void);
 int main(int argc, char *argv[])
 {
 	struct event_base *base;
@@ -62,6 +61,7 @@ int main(int argc, char *argv[])
 	root = ncurses_init(base, global_map);
 	tile_register(global_map);
 	view_register(global_map);
+	text_register();
 	render_text_register(global_map);
 	render_hex_register(global_map);
 	popup_init();
@@ -69,12 +69,13 @@ int main(int argc, char *argv[])
 	b1 = tile_init(root);
 	b2 = tile_split(b1, 0, 0);
 	b3 = tile_split(b1, 1, 1);
-	attach_file(b3, "mark.c");
+	attach_file(b3, "core-mark.c");
 	attach_file(b1, "mainloop.c");
-	struct text *t = attach_file(b2, "text.c");
+
+	struct doc *d = attach_file(b2, "doc-text.c");
 
 	b4 = tile_split(b2, 1, 0);
-	render_hex_attach(view_attach(b4, t, 1));
+	render_hex_attach(view_attach(b4, d, 1));
 
 	pane_refresh(root);
 	event_base_dispatch(base);

@@ -60,22 +60,10 @@
 
 #include <unistd.h>
 #include <stdlib.h>
-#include <wchar.h>
-#include "list.h"
-#include "text.h"
-#include "attr.h"
-#include "mark.h"
-#include "pane.h"
+
+#include "core.h"
 #include "keymap.h"
 
-struct mark {
-	struct text_ref		ref;
-	struct hlist_node	all;
-	struct tlist_head	group;
-	struct attrset		*attrs;
-	int			seq;
-	int			type;
-};
 
 struct point {
 	struct mark		m;
@@ -83,8 +71,6 @@ struct point {
 	int			size;
 	struct tlist_head	lists[];
 };
-
-static void mark_check_consistent(struct text *t);
 
 /* seq numbers added to the end are given a gap of 128.
  * seq numbers at other locations are placed at mean of before and after.
@@ -116,8 +102,8 @@ static void assign_seq(struct mark *m, int prev)
 static void mark_delete(struct mark *m)
 {
 	hlist_del_init(&m->all);
-	if (m->type != MARK_UNGROUPED)
-		tlist_del_init(&m->group);
+	if (m->viewnum != MARK_UNGROUPED)
+		tlist_del_init(&m->view);
 	attr_free(&m->attrs);
 }
 void mark_free(struct mark *m)
@@ -145,16 +131,16 @@ static void dup_mark(struct mark *orig, struct mark *new)
 	assign_seq(new, orig->seq);
 }
 
-struct mark *mark_at_point(struct point *p, int type)
+struct mark *mark_at_point(struct point *p, int view)
 {
 	struct mark *ret = malloc(sizeof(*ret));
 
 	dup_mark(&p->m, ret);
-	ret->type = type;
-	if (type >= 0)
-		tlist_add(&ret->group, GRP_MARK, &p->lists[type]);
+	ret->viewnum = view;
+	if (view >= 0)
+		tlist_add(&ret->view, GRP_MARK, &p->lists[view]);
 	else
-		INIT_TLIST_HEAD(&ret->group, GRP_MARK);
+		INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	return ret;
 }
 
@@ -165,9 +151,9 @@ struct point *point_dup(struct point *p, struct point **owner)
 				   p->size * sizeof(ret->lists[0]));
 
 	dup_mark(&p->m, &ret->m);
-	ret->m.type = MARK_POINT;
+	ret->m.viewnum = MARK_POINT;
 	ret->size = p->size;
-	tlist_add(&ret->m.group, GRP_MARK, &p->m.group);
+	tlist_add(&ret->m.view, GRP_MARK, &p->m.view);
 	for (i = 0; i < ret->size; i++)
 		if (tlist_empty(&p->lists[i]))
 			INIT_TLIST_HEAD(&ret->lists[i], GRP_LIST);
@@ -178,25 +164,25 @@ struct point *point_dup(struct point *p, struct point **owner)
 	return ret;
 }
 
-void points_resize(struct text *t)
+void points_resize(struct doc *d)
 {
 	struct point *p;
-	tlist_for_each_entry(p, &t->points, m.group) {
+	tlist_for_each_entry(p, &d->points, m.view) {
 		int i;
 		struct point *new = malloc(sizeof(*new) +
-					   t->ngroups * sizeof(new->lists[0]));
+					   d->nviews * sizeof(new->lists[0]));
 		new->m.ref = p->m.ref;
 		new->m.attrs = p->m.attrs;
 		new->m.seq = p->m.seq;
-		new->m.type = p->m.type;
+		new->m.viewnum = p->m.viewnum;
 		hlist_add_after(&p->m.all, &new->m.all);
 		hlist_del(&p->m.all);
-		tlist_add(&new->m.group, GRP_MARK, &p->m.group);
-		tlist_del(&p->m.group);
+		tlist_add(&new->m.view, GRP_MARK, &p->m.view);
+		tlist_del(&p->m.view);
 
 		new->owner = p->owner;
 		*(new->owner) = new;
-		new->size = t->ngroups;
+		new->size = d->nviews;
 		for (i = 0; i < p->size; i++) {
 			tlist_add(&new->lists[i], GRP_LIST, &p->lists[i]);
 			tlist_del(&p->lists[i]);
@@ -207,11 +193,11 @@ void points_resize(struct text *t)
 	}
 }
 
-void points_attach(struct text *t, int type)
+void points_attach(struct doc *d, int view)
 {
 	struct point *p;
-	tlist_for_each_entry(p, &t->points, m.group)
-		tlist_add_tail(&p->lists[type], GRP_LIST, &t->groups[type].head);
+	tlist_for_each_entry(p, &d->points, m.view)
+		tlist_add_tail(&p->lists[view], GRP_LIST, &d->views[view].head);
 }
 
 struct mark *mark_dup(struct mark *m, int notype)
@@ -219,35 +205,35 @@ struct mark *mark_dup(struct mark *m, int notype)
 	struct mark *ret = malloc(sizeof(*ret));
 	dup_mark(m, ret);
 	if (notype) {
-		ret->type = MARK_UNGROUPED;
-		INIT_TLIST_HEAD(&ret->group, GRP_MARK);
+		ret->viewnum = MARK_UNGROUPED;
+		INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	} else {
-		if (m->type == MARK_POINT) abort();
-		ret->type = m->type;
-		if (ret->type == MARK_UNGROUPED)
-			INIT_TLIST_HEAD(&ret->group, GRP_MARK);
+		if (m->viewnum == MARK_POINT) abort();
+		ret->viewnum = m->viewnum;
+		if (ret->viewnum == MARK_UNGROUPED)
+			INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 		else
-			tlist_add(&ret->group, GRP_MARK, &m->group);
+			tlist_add(&ret->view, GRP_MARK, &m->view);
 	}
 	return ret;
 }
 
-struct point *point_new(struct text *t, struct point **owner)
+struct point *point_new(struct doc *d, struct point **owner)
 {
 	int i;
 	struct point *ret = malloc(sizeof(*ret) +
-				   t->ngroups * sizeof(ret->lists[0]));
+				   d->nviews * sizeof(ret->lists[0]));
 
-	ret->m.ref = text_find_ref(t, 0);
+	d->ops->set_ref(d, &ret->m, 1);
 	ret->m.attrs = NULL;
-	hlist_add_head(&ret->m.all, &t->marks);
+	hlist_add_head(&ret->m.all, &d->marks);
 	assign_seq(&ret->m, 0);
-	ret->m.type = MARK_POINT;
-	ret->size = t->ngroups;
-	tlist_add(&ret->m.group, GRP_MARK, &t->points);
+	ret->m.viewnum = MARK_POINT;
+	ret->size = d->nviews;
+	tlist_add(&ret->m.view, GRP_MARK, &d->points);
 	for (i = 0; i < ret->size; i++)
-		if (t->groups[i].notify)
-			tlist_add(&ret->lists[i], GRP_LIST, &t->groups[i].head);
+		if (d->views[i].notify)
+			tlist_add(&ret->lists[i], GRP_LIST, &d->views[i].head);
 		else
 			INIT_TLIST_HEAD(&ret->lists[i], GRP_LIST);
 	ret->owner = owner;
@@ -255,36 +241,26 @@ struct point *point_new(struct text *t, struct point **owner)
 	return ret;
 }
 
-static void point_reset(struct text *t, struct point *p)
+void point_reset(struct doc *d, struct point *p)
 {
 	int i;
 	/* move point to start of text */
-	p->m.ref = text_find_ref(t, 0);
+	d->ops->set_ref(d, &p->m, 1);
 	hlist_del(&p->m.all);
-	hlist_add_head(&p->m.all, &t->marks);
-	tlist_del(&p->m.group);
-	tlist_add(&p->m.group, GRP_MARK, &t->points);
+	hlist_add_head(&p->m.all, &d->marks);
+	tlist_del(&p->m.view);
+	tlist_add(&p->m.view, GRP_MARK, &d->points);
 	for (i = 0; i < p->size; i++)
-		if (t->groups[i].notify) {
+		if (d->views[i].notify) {
 			tlist_del(&p->lists[i]);
-			tlist_add(&p->lists[i], GRP_LIST, &t->groups[i].head);
+			tlist_add(&p->lists[i], GRP_LIST, &d->views[i].head);
 		}
 	assign_seq(&p->m, 0);
 }
 
-struct text_ref point_ref(struct point *p)
+struct doc_ref point_ref(struct point *p)
 {
 	return p->m.ref;
-}
-
-int mark_ordered(struct mark *m1, struct mark *m2)
-{
-	return m1->seq < m2->seq;
-}
-
-int mark_same(struct text *t, struct mark *m1, struct mark *m2)
-{
-	return text_ref_same(t, &m1->ref, &m2->ref);
 }
 
 struct mark *mark_of_point(struct point *p)
@@ -292,49 +268,67 @@ struct mark *mark_of_point(struct point *p)
 	return &p->m;
 }
 
-struct attrset **mark_attr(struct mark *m)
-{
-	return &m->attrs;
-}
-
-struct mark *text_first_mark(struct text *t, int type)
+struct mark *doc_first_mark(struct doc *d, int view)
 {
 	struct tlist_head *tl;
-	if (type < 0 || type >= t->ngroups || t->groups[type].notify == NULL)
+
+	if (view < 0 || view >= d->nviews || d->views[view].notify == NULL)
 		return NULL;
-	if (tlist_empty(&t->groups[type].head))
+	if (tlist_empty(&d->views[view].head))
 		return NULL;
-	tlist_for_each(tl, &t->groups[type].head)
+	tlist_for_each(tl, &d->views[view].head)
 		if (TLIST_TYPE(tl) == GRP_MARK)
-			return tlist_entry(tl, struct mark, group);
+			return tlist_entry(tl, struct mark, view);
 	return NULL;
 }
 
-struct mark *text_next_mark(struct text *t, struct mark *m)
+struct mark *doc_next_mark(struct doc *d, struct mark *m)
 {
-	int type = m->type;
-	struct tlist_head *tl = &m->group;
+	int view = m->viewnum;
+	struct tlist_head *tl = &m->view;
 
-	tlist_for_each_continue(tl, &t->groups[type].head)
+	tlist_for_each_continue(tl, &d->views[view].head)
 		if (TLIST_TYPE(tl) == GRP_MARK)
-			return tlist_entry(tl, struct mark, group);
+			return tlist_entry(tl, struct mark, view);
 	return NULL;
 }
 
-struct mark *text_new_mark(struct text *t, int type)
+struct mark *doc_first_mark_all(struct doc *d)
+{
+	if (d->marks.first)
+		return hlist_first_entry(&d->marks, struct mark, all);
+	return NULL;
+}
+
+struct mark *doc_next_mark_all(struct doc *d, struct mark *m)
+{
+	if (m->all.next)
+		return hlist_next_entry(m, all);
+	return NULL;
+}
+
+struct mark *doc_prev_mark_all(struct doc *d, struct mark *m)
+{
+	if (d->marks.first != &m->all)
+		return hlist_prev_entry(m, all);
+	return NULL;
+}
+
+
+struct mark *doc_new_mark(struct doc *d, int view)
 {
 	struct mark *ret;
 
-	if (type == MARK_POINT || type >= t->ngroups || t->groups[type].notify == NULL)
+	if (view == MARK_POINT || view >= d->nviews || d->views[view].notify == NULL)
 		return NULL;
 	ret = malloc(sizeof(*ret));
-	ret->ref = text_find_ref(t, 0);
+	d->ops->set_ref(d, ret, 1);
 	ret->attrs = NULL;
-	hlist_add_head(&ret->all, &t->marks);
+	hlist_add_head(&ret->all, &d->marks);
 	assign_seq(ret, 0);
-	ret->type = type;
-	if (type >= 0)
-		tlist_add(&ret->group, GRP_MARK, &t->groups[type].head);
+	ret->viewnum = view;
+	if (view >= 0)
+		tlist_add(&ret->view, GRP_MARK, &d->views[view].head);
 	return ret;
 }
 
@@ -350,27 +344,16 @@ struct mark *text_new_mark(struct text *t, int type)
  * point easily but to move to mark they must walk one mark at a time.
  *
  */
-wint_t mark_following(struct text *t, struct mark *m)
-{
-	struct text_ref r = m->ref;
-	return text_next(t, &r);
-}
 
-wint_t mark_prior(struct text *t, struct mark *m)
-{
-	struct text_ref r = m->ref;
-	return text_prev(t, &r);
-}
-
-static struct mark *next_mark(struct text *t, struct mark *m)
+static struct mark *next_mark(struct doc *d, struct mark *m)
 {
 	if (m->all.next == NULL)
 		return NULL;
 	return hlist_next_entry(m, all);
 }
-static struct mark *prev_mark(struct text *t, struct mark *m)
+static struct mark *prev_mark(struct doc *d, struct mark *m)
 {
-	if (m->all.pprev == &t->marks.first)
+	if (m->all.pprev == &d->marks.first)
 		return NULL;
 	return hlist_prev_entry(m, all);
 }
@@ -384,34 +367,34 @@ static void swap_lists(struct point *p1, struct point *p2)
 	}
 }
 
-static void fore_mark(struct mark *m, struct mark *m2)
+void mark_forward_over(struct mark *m, struct mark *m2)
 {
 	int seq;
 
 	hlist_del(&m->all);
 	hlist_add_after(&m2->all, &m->all);
-	if (m->type == m2->type && m->type != MARK_UNGROUPED) {
-		tlist_del(&m->group);
-		tlist_add(&m->group, GRP_MARK, &m2->group);
+	if (m->viewnum == m2->viewnum && m->viewnum != MARK_UNGROUPED) {
+		tlist_del(&m->view);
+		tlist_add(&m->view, GRP_MARK, &m2->view);
 	}
-	if (m->type == MARK_POINT && m2->type == MARK_POINT) {
+	if (m->viewnum == MARK_POINT && m2->viewnum == MARK_POINT) {
 		/* moving a point over a point */
 		struct point *p = container_of(m, struct point, m);
 		struct point *p2 = container_of(m2, struct point, m);
 		swap_lists(p, p2);
-	} else if (m->type == MARK_POINT) {
+	} else if (m->viewnum == MARK_POINT) {
 		/* Moving a point over a mark */
 		struct point *p = container_of(m, struct point, m);
-		if (m2->type >= 0) {
-			tlist_del(&m2->group);
-			tlist_add_tail(&m2->group, GRP_MARK, &p->lists[m2->type]);
+		if (m2->viewnum >= 0) {
+			tlist_del(&m2->view);
+			tlist_add_tail(&m2->view, GRP_MARK, &p->lists[m2->viewnum]);
 		}
-	} else if (m2->type == MARK_POINT) {
+	} else if (m2->viewnum == MARK_POINT) {
 		/* stepping a mark over a point */
 		struct point *p = container_of(m2, struct point, m);
-		if (m->type >= 0) {
-			tlist_del(&m->group);
-			tlist_add(&m->group, GRP_MARK, &p->lists[m->type]);
+		if (m->viewnum >= 0) {
+			tlist_del(&m->view);
+			tlist_add(&m->view, GRP_MARK, &p->lists[m->viewnum]);
 		}
 	}
 	seq = m->seq;
@@ -419,34 +402,34 @@ static void fore_mark(struct mark *m, struct mark *m2)
 	m2->seq = seq;
 }
 
-static void back_mark(struct mark *m, struct mark *mp)
+void mark_backward_over(struct mark *m, struct mark *mp)
 {
 	int seq;
 
 	hlist_del(&m->all);
 	hlist_add_before(&m->all, &mp->all);
-	if (m->type == mp->type && m->type != MARK_UNGROUPED) {
-		tlist_del(&m->group);
-		tlist_add_tail(&m->group, GRP_MARK, &mp->group);
+	if (m->viewnum == mp->viewnum && m->viewnum != MARK_UNGROUPED) {
+		tlist_del(&m->view);
+		tlist_add_tail(&m->view, GRP_MARK, &mp->view);
 	}
-	if (m->type == MARK_POINT && mp->type == MARK_POINT) {
+	if (m->viewnum == MARK_POINT && mp->viewnum == MARK_POINT) {
 		/* moving a point over a point */
 		struct point *p = container_of(m, struct point, m);
 		struct point *pp = container_of(mp, struct point, m);
 		swap_lists(pp, p);
-	} else if (m->type == MARK_POINT) {
+	} else if (m->viewnum == MARK_POINT) {
 		/* Moving a point over a mark */
 		struct point *p = container_of(m, struct point, m);
-		if (mp->type >= 0) {
-			tlist_del(&mp->group);
-			tlist_add(&mp->group, GRP_MARK, &p->lists[mp->type]);
+		if (mp->viewnum >= 0) {
+			tlist_del(&mp->view);
+			tlist_add(&mp->view, GRP_MARK, &p->lists[mp->viewnum]);
 		}
-	} else if (mp->type == MARK_POINT) {
+	} else if (mp->viewnum == MARK_POINT) {
 		/* Step back over a point */
 		struct point *p = container_of(mp, struct point, m);
-		if (m->type >= 0) {
-			tlist_del(&m->group);
-			tlist_add_tail(&m->group, GRP_MARK, &p->lists[m->type]);
+		if (m->viewnum >= 0) {
+			tlist_del(&m->view);
+			tlist_add_tail(&m->view, GRP_MARK, &p->lists[m->viewnum]);
 		}
 	}
 	seq = m->seq;
@@ -454,41 +437,39 @@ static void back_mark(struct mark *m, struct mark *mp)
 	mp->seq = seq;
 }
 
-wint_t mark_next(struct text *t, struct mark *m)
+wint_t mark_next(struct doc *d, struct mark *m)
 {
 	wint_t ret;
 	struct mark *m2 = NULL;
-	while ((m2 = next_mark(t, m)) != NULL &&
-	       m2->ref.c == m->ref.c &&
-	       m2->ref.o <= m->ref.o)
-		fore_mark(m, m2);
+	while ((m2 = next_mark(d, m)) != NULL &&
+	       mark_same(d, m, m2))
+		mark_forward_over(m, m2);
 
-	ret = text_next(t, &m->ref);
+	ret = d->ops->step(d, m, 1, 1);
 	if (ret == WEOF)
 		return ret;
 
-	while ((m2 = next_mark(t, m)) != NULL &&
-	       m2->ref.c == m->ref.c &&
-	       m2->ref.o < m->ref.o)
-			fore_mark(m, m2);
+/* FIXME do I need to do this - is it precise enough? */
+	while ((m2 = next_mark(d, m)) != NULL &&
+	       mark_same(d, m, m2))
+		mark_forward_over(m, m2);
 	return ret;
 }
 
-wint_t mark_prev(struct text *t, struct mark *m)
+wint_t mark_prev(struct doc *d, struct mark *m)
 {
 	wint_t ret;
 	struct mark *mp = NULL;
-	while ((mp = prev_mark(t, m)) != NULL &&
-	       mp->ref.c == m->ref.c &&
-	       mp->ref.o >= m->ref.o)
-		back_mark(m, mp);
-	ret = text_prev(t, &m->ref);
+	while ((mp = prev_mark(d, m)) != NULL &&
+	       mark_same(d, m, mp))
+		mark_backward_over(m, mp);
+
+	ret = d->ops->step(d, m, 0, 1);
 	if (ret == WEOF)
 		return ret;
-	while ((mp = prev_mark(t, m)) != NULL &&
-	       mp->ref.c == m->ref.c &&
-	       mp->ref.o > m->ref.o)
-		back_mark(m, mp);
+	while ((mp = prev_mark(d, m)) != NULL &&
+	       mark_same(d, m, mp))
+		mark_backward_over(m, mp);
 	return ret;
 }
 
@@ -501,14 +482,14 @@ wint_t mark_prev(struct text *t, struct mark *m)
  * Then update 'all' list, text ref and seq number.
  */
 
-static void point_forward_to_mark(struct text *t, struct point *p, struct mark *m)
+static void point_forward_to_mark(struct doc *d, struct point *p, struct mark *m)
 {
 	struct point *ptmp, *pnear;
 	int i;
 
 	pnear = p;
 	ptmp = p;
-	tlist_for_each_entry_continue(ptmp, &t->points, m.group) {
+	tlist_for_each_entry_continue(ptmp, &d->points, m.view) {
 		if (ptmp->m.seq < m->seq)
 			pnear = ptmp;
 		else
@@ -517,8 +498,8 @@ static void point_forward_to_mark(struct text *t, struct point *p, struct mark *
 	/* pnear is the nearest point to m that is before m. So
 	 * move p after pnear in the point list. */
 	if (p != pnear) {
-		tlist_del(&p->m.group);
-		tlist_add(&p->m.group, GRP_MARK, &pnear->m.group);
+		tlist_del(&p->m.view);
+		tlist_add(&p->m.view, GRP_MARK, &pnear->m.view);
 	}
 
 	/* Now move 'p' in the various mark lists */
@@ -526,14 +507,14 @@ static void point_forward_to_mark(struct text *t, struct point *p, struct mark *
 		struct mark *mnear = NULL;
 		struct tlist_head *tl;
 
-		if (!t->groups[i].notify)
+		if (!d->views[i].notify)
 			continue;
 		tl = &pnear->lists[i];
-		tlist_for_each_continue(tl,  &t->groups[i].head) {
+		tlist_for_each_continue(tl,  &d->views[i].head) {
 			struct mark *mtmp;
 			if (TLIST_TYPE(tl) != GRP_MARK)
 				break;
-			mtmp = container_of(tl, struct mark, group);
+			mtmp = container_of(tl, struct mark, view);
 			if (mtmp->seq < m->seq)
 				mnear = mtmp;
 			else
@@ -541,7 +522,7 @@ static void point_forward_to_mark(struct text *t, struct point *p, struct mark *
 		}
 		if (mnear) {
 			tlist_del(&p->lists[i]);
-			tlist_add(&p->lists[i], GRP_LIST, &mnear->group);
+			tlist_add(&p->lists[i], GRP_LIST, &mnear->view);
 		} else if (p != pnear) {
 			tlist_del(&p->lists[i]);
 			tlist_add(&p->lists[i], GRP_LIST, &pnear->lists[i]);
@@ -554,14 +535,14 @@ static void point_forward_to_mark(struct text *t, struct point *p, struct mark *
 	assign_seq(&p->m, hlist_prev_entry(&p->m, all)->seq);
 }
 
-static void point_backward_to_mark(struct text *t, struct point *p, struct mark *m)
+static void point_backward_to_mark(struct doc *d, struct point *p, struct mark *m)
 {
 	struct point *ptmp, *pnear;
 	int i;
 
 	pnear = p;
 	ptmp = p;
-	tlist_for_each_entry_continue_reverse(ptmp, &t->points, m.group) {
+	tlist_for_each_entry_continue_reverse(ptmp, &d->points, m.view) {
 		if (ptmp->m.seq > m->seq)
 			pnear = ptmp;
 		else
@@ -570,8 +551,8 @@ static void point_backward_to_mark(struct text *t, struct point *p, struct mark 
 	/* pnear is the nearest point to m that is after m. So
 	 * move p before pnear in the point list */
 	if (p != pnear) {
-		tlist_del(&p->m.group);
-		tlist_add_tail(&p->m.group, GRP_MARK, &pnear->m.group);
+		tlist_del(&p->m.view);
+		tlist_add_tail(&p->m.view, GRP_MARK, &pnear->m.view);
 	}
 
 	/* Now move 'p' in the various mark lists */
@@ -579,14 +560,14 @@ static void point_backward_to_mark(struct text *t, struct point *p, struct mark 
 		struct mark *mnear = NULL;
 		struct tlist_head *tl;
 
-		if (!t->groups[i].notify)
+		if (!d->views[i].notify)
 			continue;
 		tl = &pnear->lists[i];
-		tlist_for_each_continue_reverse(tl, &t->groups[i].head) {
+		tlist_for_each_continue_reverse(tl, &d->views[i].head) {
 			struct mark *mtmp;
 			if (TLIST_TYPE(tl) != GRP_MARK)
 				break;
-			mtmp = container_of(tl, struct mark, group);
+			mtmp = container_of(tl, struct mark, view);
 			if (mtmp->seq > m->seq)
 				mnear = mtmp;
 			else
@@ -594,7 +575,7 @@ static void point_backward_to_mark(struct text *t, struct point *p, struct mark 
 		}
 		if (mnear) {
 			tlist_del(&p->lists[i]);
-			tlist_add_tail(&p->lists[i], GRP_LIST, &mnear->group);
+			tlist_add_tail(&p->lists[i], GRP_LIST, &mnear->view);
 		} else if (p != pnear) {
 			tlist_del(&p->lists[i]);
 			tlist_add_tail(&p->lists[i], GRP_LIST, &pnear->lists[i]);
@@ -607,15 +588,15 @@ static void point_backward_to_mark(struct text *t, struct point *p, struct mark 
 	assign_seq(&p->m, m->seq);
 }
 
-void point_to_mark(struct text *t, struct point *p, struct mark *m)
+void point_to_mark(struct doc *d, struct point *p, struct mark *m)
 {
 	if (p->m.seq < m->seq)
-		point_forward_to_mark(t, p, m);
+		point_forward_to_mark(d, p, m);
 	else if (p->m.seq > m->seq)
-		point_backward_to_mark(t, p, m);
+		point_backward_to_mark(d, p, m);
 }
 
-static void point_notify_change(struct point *p, struct text *t)
+void point_notify_change(struct doc *d, struct point *p)
 {
 	struct cmd_info ci;
 	int i;
@@ -625,180 +606,50 @@ static void point_notify_change(struct point *p, struct text *t)
 	ci.repeat = 1;
 	ci.x = ci.y = -1;
 	ci.str = NULL;
-	ci.text = t;
+	ci.doc = d;
 	for (i = 0; i < p->size; i++) {
 		struct tlist_head *tl = &p->lists[i];
-		struct command *c = t->groups[i].notify;
+		struct command *c = d->views[i].notify;
 		if (!c)
 			continue;
 		while (TLIST_TYPE(tl) == GRP_LIST)
 			tl = TLIST_PTR(tl->prev);
 		if (TLIST_TYPE(tl) == GRP_MARK)
-			ci.mark = tlist_entry(tl, struct mark, group);
+			ci.mark = tlist_entry(tl, struct mark, view);
 		else
 			ci.mark = NULL;
 		c->func(c, &ci);
 	}
 }
 
-void point_insert_text(struct text *t, struct point *p, char *s, int *first)
-{
-	struct mark *m;
-	struct text_ref start;
-
-	m = &p->m;
-	text_add_str(t, &p->m.ref, s, &start, first);
-	hlist_for_each_entry_continue_reverse(m, &t->marks, all)
-		if (text_update_prior_after_change(t, &m->ref,
-						   &start, &p->m.ref) == 0)
-			break;
-	m = &p->m;
-	hlist_for_each_entry_continue(m, all)
-		if (text_update_following_after_change(t, &m->ref,
-						       &start, &p->m.ref) == 0)
-			break;
-
-	mark_check_consistent(t);
-
-	point_notify_change(p, t);
-}
-
-void point_delete_text(struct text *t, struct point *p, int len, int *first)
-{
-	struct mark *m;
-
-	text_del(t, &p->m.ref, len, first);
-	m = &p->m;
-	hlist_for_each_entry_continue_reverse(m, &t->marks, all)
-		if (text_update_prior_after_change(t, &m->ref,
-						   &p->m.ref, &p->m.ref) == 0)
-			break;
-	m = &p->m;
-	hlist_for_each_entry_continue(m, all)
-		if (text_update_following_after_change(t, &m->ref,
-						       &p->m.ref, &p->m.ref) == 0)
-			break;
-
-	mark_check_consistent(t);
-
-	point_notify_change(p, t);
-}
-
-void point_undo(struct text *t, struct point *p, int redo)
-{
-	struct text_ref start, end;
-	int did_do = 2;
-	int first = 1;
-
-	while (did_do != 1) {
-		struct mark *m;
-		int where;
-		int i;
-
-		if (redo)
-			did_do = text_redo(t, &start, &end);
-		else
-			did_do = text_undo(t, &start, &end);
-		if (did_do == 0)
-			break;
-
-		if (first) {
-			/* Not nearby, look from the start */
-			point_reset(t, p);
-			where = 1;
-			first = 0;
-		} else
-			where = text_locate(t, &p->m.ref, &end);
-		if (!where)
-			break;
-
-		if (where == 1) {
-			do {
-				i = text_advance_towards(t, &p->m.ref, &end);
-				if (i == 0)
-					break;
-				while ((m = next_mark(t, &p->m)) != NULL &&
-				       m->ref.c == p->m.ref.c &&
-				       m->ref.o < p->m.ref.o)
-					fore_mark(&p->m, m);
-			} while (i == 2);
-		} else {
-			do {
-				i = text_retreat_towards(t, &p->m.ref, &end);
-				if (i == 0)
-					break;
-				while ((m = prev_mark(t, &p->m)) != NULL &&
-				       m->ref.c == p->m.ref.c &&
-				       m->ref.o > p->m.ref.o)
-					back_mark(&p->m, m);
-			} while (i == 2);
-		}
-
-		if (!text_ref_same(t, &p->m.ref, &end))
-			/* eek! */
-			break;
-		/* point is now at location of undo */
-
-		m = &p->m;
-		hlist_for_each_entry_continue_reverse(m, &t->marks, all)
-			if (text_update_prior_after_change(t, &m->ref,
-							   &start, &end) == 0)
-				break;
-		m = &p->m;
-		hlist_for_each_entry_continue(m, all)
-			if (text_update_following_after_change(t, &m->ref,
-							       &start, &end) == 0)
-				break;
-		point_notify_change(p, t);
-
-		mark_check_consistent(t);
-	}
-}
-
-static void mark_check_consistent(struct text *t)
+void doc_check_consistent(struct doc *d)
 {
 	/* Check consistency of marks, and abort if not.
 	 * Check:
-	 * - text itself is consistent
-	 * - every mark points to a valid chunk with valid offset
-	 * - all marks are in seq order and text order
-	 * - Maybe should check various mark lists too.
+	 * - all marks are in seq order
+	 * - all view lists are in seq order
 	 */
-	struct mark *m, *prev;
+	struct mark *m;
 	int seq = 0;
 	int i;
-	text_check_consistent(t);
-	hlist_for_each_entry(m, &t->marks, all)
-		text_ref_consistent(t, &m->ref);
-	hlist_for_each_entry(m, &t->marks, all) {
+
+	hlist_for_each_entry(m, &d->marks, all) {
 		if (m->seq < seq)
 			abort();
 		seq = m->seq + 1;
 	}
-	prev = NULL;
-	hlist_for_each_entry(m, &t->marks, all) {
-		if (prev) {
-			struct text_ref r = prev->ref;
-			int i;
-			while ((i = text_advance_towards(t, &r, &m->ref)) != 1) {
-				if (i == 0)
-					abort();
-			}
-		}
-		prev = m;
-	}
-	for (i = 0; i < t->ngroups; i++)
-		if (t->groups[i].notify == NULL) {
-			if (!tlist_empty(&t->groups[i].head)) abort();
+	for (i = 0; i < d->nviews; i++)
+		if (d->views[i].notify == NULL) {
+			if (!tlist_empty(&d->views[i].head)) abort();
 		} else {
 			struct tlist_head *tl;
 			struct point *p;
 			seq = 0;
-			tlist_for_each(tl, &t->groups[i].head) {
+			tlist_for_each(tl, &d->views[i].head) {
 				switch(TLIST_TYPE(tl)) {
 				case GRP_HEAD: abort();
 				case GRP_MARK:
-					m = container_of(tl, struct mark, group);
+					m = container_of(tl, struct mark, view);
 					break;
 				case GRP_LIST:
 					p = container_of(tl, struct point, lists[i]);

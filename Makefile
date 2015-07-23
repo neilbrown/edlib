@@ -5,10 +5,13 @@ CFLAGS=-g -Wall -Werror -Wstrict-prototypes -Wextra -Wno-unused-parameter
 
 all:edlib checksym
 
-OBJ = ncurses.o view.o tile.o mainloop.o text.o mark.o attr.o keymap.o pane.o \
+OBJ = ncurses.o view.o tile.o mainloop.o attr.o keymap.o pane.o \
 	render_text.o render_hex.o \
-	popup.o line_count.o
-H = list.h text.h pane.h mark.h attr.h tile.h view.h keymap.h extras.h
+	popup.o line_count.o \
+	core-mark.o core-doc.o \
+	doc-text.o
+
+H = list.h pane.h attr.h tile.h view.h keymap.h extras.h core.h
 edlib: $(OBJ)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o edlib $(OBJ) $(LDLIBS)
 
@@ -26,3 +29,6 @@ test:
 
 checksym:
 	@nm edlib  | awk '$$2 == "T" {print $$3}' | while read a; do grep $$a *.h > /dev/null || echo  $$a; done | grep -vE '^(_.*|main)$$' ||:
+
+clean:
+	rm -f edlib $(OBJ)

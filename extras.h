@@ -1,4 +1,4 @@
-int count_calculate(struct text *t, struct mark *start, struct mark *end,
+int count_calculate(struct doc *d, struct mark *start, struct mark *end,
 		    int *linep, int *wordp, int *charp);
 
 

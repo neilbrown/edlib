@@ -22,14 +22,13 @@
 #include <wchar.h>
 #include <wctype.h>
 
-#include "text.h"
-#include "mark.h"
+#include "core.h"
 #include "attr.h"
 #include "pane.h"
 #include "keymap.h"
 #include "extras.h"
 
-static void do_count(struct text *t, struct mark *start, struct mark *end,
+static void do_count(struct doc *d, struct mark *start, struct mark *end,
 		     int *linep, int *wordp, int *charp, int add_marks)
 {
 	/* if 'end' is NULL, go all the way to EOF */
@@ -45,8 +44,8 @@ static void do_count(struct text *t, struct mark *start, struct mark *end,
 	*linep = 0;
 	*wordp = 0;
 	*charp = 0;
-	while ((end == NULL || (mark_ordered(m, end) && !mark_same(t, m, end))) &&
-	       (ch = mark_next(t, m)) != WEOF) {
+	while ((end == NULL || (mark_ordered(m, end) && !mark_same(d, m, end))) &&
+	       (ch = mark_next(d, m)) != WEOF) {
 		chars += 1;
 		if (ch == '\n')
 			lines += 1;
@@ -56,7 +55,7 @@ static void do_count(struct text *t, struct mark *start, struct mark *end,
 		} else if (inword && !(iswprint(ch) && !iswspace(ch)))
 			inword = 0;
 		if (add_marks && lines >= 50 &&
-		    (end == NULL || (mark_ordered(m, end) && !mark_same(t, m, end)))) {
+		    (end == NULL || (mark_ordered(m, end) && !mark_same(d, m, end)))) {
 			/* leave a mark here and keep going */
 			attr_set_int(mark_attr(start), "lines", lines);
 			attr_set_int(mark_attr(start), "words", words);
@@ -94,7 +93,7 @@ static int count_notify(struct command *c, struct cmd_info *ci)
 }
 static struct command count_cmd = {count_notify, "count-notify", NULL};
 
-static int need_recalc(struct text *t, struct mark *m)
+static int need_recalc(struct doc *d, struct mark *m)
 {
 	struct mark *next;
 	int ret = 0;
@@ -103,10 +102,10 @@ static int need_recalc(struct text *t, struct mark *m)
 	if (!attr_find(*mark_attr(m), "lines"))
 		ret = 1;
 	while (1) {
-		next = text_next_mark(t, m);
+		next = doc_next_mark(d, m);
 		if (!next)
 			break;
-		if (mark_prior(t, next) == '\n' &&
+		if (doc_prior(d, next) == '\n' &&
 		    attr_find_int(*mark_attr(next), "lines") > 10)
 			break;
 		/* discard next - we'll find or create another */
@@ -116,26 +115,26 @@ static int need_recalc(struct text *t, struct mark *m)
 	return ret;
 }
 
-int count_calculate(struct text *t, struct mark *start, struct mark *end,
+int count_calculate(struct doc *d, struct mark *start, struct mark *end,
 		    int *linep, int *wordp, int *charp)
 {
-	int type = text_find_type(t, &count_cmd);
+	int type = doc_find_type(d, &count_cmd);
 	int lines, words, chars, l, w, c;
 	struct mark *m, *m2;
 
 	if (type < 0)
-		type = text_add_type(t, &count_cmd);
+		type = doc_add_type(d, &count_cmd);
 
-	m = text_first_mark(t, type);
+	m = doc_first_mark(d, type);
 	if (m == NULL) {
 		/* No marks yet, let's make some */
-		m = text_new_mark(t, type);
-		do_count(t, m, NULL, &l, &w, &c, 1);
+		m = doc_new_mark(d, type);
+		do_count(d, m, NULL, &l, &w, &c, 1);
 	}
-	if (mark_prior(t, m) != WEOF) {
+	if (doc_prior(d, m) != WEOF) {
 		/* no mark at start of file */
-		m2 = text_new_mark(t, type);
-		do_count(t, m2, m, &l, &w, &c, 1);
+		m2 = doc_new_mark(d, type);
+		do_count(d, m2, m, &l, &w, &c, 1);
 		m = m2;
 	}
 
@@ -143,30 +142,30 @@ int count_calculate(struct text *t, struct mark *start, struct mark *end,
 		/* find the first mark that isn't before 'start', and count
 		 * from there.
 		 */
-		while (m && mark_ordered(m, start) && !mark_same(t, m, start)) {
+		while (m && mark_ordered(m, start) && !mark_same(d, m, start)) {
 			/* Force and update to make sure spacing stays sensible */
-			if (need_recalc(t, m))
+			if (need_recalc(d, m))
 				/* need to update this one */
-				do_count(t, m, text_next_mark(t, m), &l, &w, &c, 1);
+				do_count(d, m, doc_next_mark(d, m), &l, &w, &c, 1);
 
-			m = text_next_mark(t, m);
+			m = doc_next_mark(d, m);
 		}
 		if (!m) {
 			/* fell off the end, just count directly */
-			do_count(t, start, end, linep, wordp, charp, 0);
+			do_count(d, start, end, linep, wordp, charp, 0);
 			return 1;
 		}
 	}
-	if (need_recalc(t, m))
+	if (need_recalc(d, m))
 		/* need to update this one */
-		do_count(t, m, text_next_mark(t, m), &l, &w, &c, 1);
+		do_count(d, m, doc_next_mark(d, m), &l, &w, &c, 1);
 
 	/* 'm' is not before 'start', it might be after.
 	 * if 'm' is not before 'end' either, just count from
 	 * start to end.
 	 */
 	if (end && !mark_ordered(m, end)) {
-		do_count(t, start?:m, end, linep, wordp, charp, 0);
+		do_count(d, start?:m, end, linep, wordp, charp, 0);
 		return 0;
 	}
 
@@ -174,27 +173,27 @@ int count_calculate(struct text *t, struct mark *start, struct mark *end,
 	 * So count from start to m, then add totals from m and subsequent.
 	 * Then count to 'end'.
 	 */
-	if (!start || mark_same(t, m, start))
+	if (!start || mark_same(d, m, start))
 		lines = words = chars = 0;
 	else
-		do_count(t, start, m, &lines, &words, &chars, 0);
-	while ((m2 = text_next_mark(t, m)) != NULL &&
+		do_count(d, start, m, &lines, &words, &chars, 0);
+	while ((m2 = doc_next_mark(d, m)) != NULL &&
 	       (!end || mark_ordered(m2, end))) {
 		/* Need everything from m to m2 */
 		lines += attr_find_int(*mark_attr(m), "lines");
 		words += attr_find_int(*mark_attr(m), "words");
 		chars += attr_find_int(*mark_attr(m), "chars");
 		m = m2;
-		if (need_recalc(t, m))
-			do_count(t, m, text_next_mark(t, m), &l, &w, &c, 1);
+		if (need_recalc(d, m))
+			do_count(d, m, doc_next_mark(d, m), &l, &w, &c, 1);
 	}
 	/* m is the last mark before end */
 	if (!end) {
 		lines += attr_find_int(*mark_attr(m), "lines");
 		words += attr_find_int(*mark_attr(m), "words");
 		chars += attr_find_int(*mark_attr(m), "chars");
-	} else if (!mark_same(t, m, end)) {
-		do_count(t, m, end, &l, &w, &c, 0);
+	} else if (!mark_same(d, m, end)) {
+		do_count(d, m, end, &l, &w, &c, 0);
 		lines += l;
 		words += w;
 		chars += c;

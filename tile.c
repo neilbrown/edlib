@@ -16,7 +16,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <curses.h>
-#include "list.h"
+
+#include "core.h"
 #include "pane.h"
 #include "keymap.h"
 

@@ -1,21 +1,4 @@
 #include <limits.h>
-struct pane;
-struct cmd_info;
-
-struct command {
-	int	(*func)(struct command *comm, struct cmd_info *ci);
-	char	*name;
-	refresh_fn type;  /* pane of this type is provided as 'target' */
-};
-
-struct map *key_alloc(void);
-int key_handle(struct cmd_info *ci);
-int key_handle_focus(struct cmd_info *ci);
-int key_handle_xy(struct cmd_info *ci);
-void key_add(struct map *map, wint_t k, struct command *comm);
-void key_add_range(struct map *map, wint_t first, wint_t last,
-		   struct command *comm);
-struct command *key_register_mod(char *name, int *bit);
 
 
 /*
@@ -76,22 +59,4 @@ struct command *key_register_mod(char *name, int *bit);
 
 #define	EV_USER_DEF(x)	(0x1FFB00 | ((x) & 0xff))
 
-/* Each event (above) is accompanied by a cmd_info structure.
- * 'key' and 'focus' are always present, others only if relevant.
- * Repeat is present for 'key' and 'move'.  INT_MAX means no number was
- *   requested so is usually treated like '1'.  Negative numbers are quite
- *   possible.
- * x,y are present for mouse events
- * 'str' is inserted by 'replace' and sought by 'search'
- * 'mark' is moved by 'move' and 'replace' deletes between point and mark.
- */
-struct cmd_info {
-	wint_t		key;
-	struct pane	*focus;
-	int		repeat;
-	int		x,y;
-	char		*str;
-	struct mark	*mark;
-	struct text	*text;
-};
 

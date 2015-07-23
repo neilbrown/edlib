@@ -21,10 +21,9 @@
 #include <memory.h>
 #include <ncurses.h>
 
-#include "list.h"
+#include "core.h"
 #include "pane.h"
 #include "keymap.h"
-#include "text.h"
 #include "view.h"
 
 #include "extras.h"
@@ -33,7 +32,7 @@ struct popup_info {
 	char		*name;
 	struct pane	*target;
 	wint_t		key;
-	struct text	*text;
+	struct doc	*doc;
 };
 
 static int popup_refresh(struct pane  *p, int damage);
@@ -77,10 +76,10 @@ struct pane *popup_register(struct pane *p, char *name, char *content, wint_t ke
 	/* attach to root, center, one line of content, half width of pane */
 	struct pane *ret, *root, *p2;
 	struct popup_info *ppi = malloc(sizeof(*ppi));
-	struct text *t;
-	struct text_ref r;
-	int first = 1;
+	struct doc *d;
+	bool first = 1;
 	struct cmd_info ci;
+	struct view_data *vd;
 
 	root = p;
 	while (root->parent)
@@ -93,11 +92,11 @@ struct pane *popup_register(struct pane *p, char *name, char *content, wint_t ke
 	pane_resize(p, root->w/4, root->h/2-2, root->w/2, 3);
 	p = pane_register(p, 0, popup_no_refresh, NULL, NULL);
 	pane_resize(p, 1, 1, p->parent->w-2, 1);
-	t = text_new();
-	ppi->text = t;
-	r = text_find_ref(t, 0);
-	text_add_str(t, &r, content, NULL, &first);
-	p2 = view_attach(p, t, 0);
+	d = doc_new("text");
+	ppi->doc = d;
+	p2 = view_attach(p, d, 0);
+	vd = p2->data;
+	doc_replace(d, vd->point, NULL, content, &first);
 	render_text_attach(p2);
 	ret = pane_register(p2, 0, popup_no_refresh, NULL, NULL);
 	pane_resize(ret, 0, 0, p2->w, p2->h);
@@ -120,7 +119,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 	ci2.focus = ppi->target;
 	ci2.key = ppi->key;
 	ci2.repeat = 1;
-	ci2.str = text_getstr(ppi->text);
+	ci2.str = doc_getstr(ppi->doc, NULL, NULL);
 	ci2.mark = NULL;
 	key_handle_focus(&ci2);
 	free(ci2.str);
