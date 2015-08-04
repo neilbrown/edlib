@@ -18,6 +18,7 @@
 #include "core.h"
 #include "pane.h"
 #include "keymap.h"
+#include "attr.h"
 
 #include "extras.h"
 
@@ -36,7 +37,7 @@ static int view_refresh(struct pane *p, struct pane *point_pane, int damage)
 	int mid = (p->h-1)/2;
 	struct view_data *vd = p->data;
 	struct point *pt = p->point;
-	int ln, l,w,c;
+	int ln, l, w, c;
 	char msg[60];
 
 	if (!vd->border)
@@ -46,8 +47,12 @@ static int view_refresh(struct pane *p, struct pane *point_pane, int damage)
 		pane_resize(p->focus, 1, 0, p->w-1, p->h-1);
 	}
 
-	count_calculate(pt->doc, NULL, mark_of_point(pt), &ln, &w, &c);
-	count_calculate(pt->doc, NULL, NULL, &l, &w,  &c);
+	count_calculate(pt->doc, NULL, mark_of_point(pt));
+	count_calculate(pt->doc, NULL, NULL);
+	ln = attr_find_int(*mark_attr(mark_of_point(pt)), "lines");
+	l = attr_find_int(pt->doc->attrs, "lines");
+	w = attr_find_int(pt->doc->attrs, "words");
+	c = attr_find_int(pt->doc->attrs, "chars");
 
 	for (i = 0; i < p->h-1; i++)
 		pane_text(p, '|', A_STANDOUT, 0, i);

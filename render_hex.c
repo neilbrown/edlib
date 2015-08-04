@@ -16,6 +16,7 @@
 #include "pane.h"
 #include "view.h"
 #include "keymap.h"
+#include "attr.h"
 
 #include "extras.h"
 
@@ -50,11 +51,12 @@ static struct mark *render(struct point *pt, struct pane *p)
 	struct doc *d = pt->doc;
 	int x = 0, y = 0;
 	struct mark *m;
-	int l,w,c;
+	int c;
 
 	pane_clear(p, 0, 0, 0, 0, 0);
 
-	count_calculate(pt->doc, NULL, he->top, &l , &w, &c);
+	count_calculate(pt->doc, NULL, he->top);
+	c = attr_find_int(*mark_attr(he->top), "chars");
 
 	m = mark_dup(he->top, 0);
 
@@ -107,21 +109,22 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 	 * top must be a multiple of 16, must keep point on the pane,
 	 * and should leave old values as unchanged as possible.
 	 */
-	int l,w;
 	struct mark *m;
 	int ppos, tpos, bpos, pos, tpos2;
 	struct he_data *he = p->data;
 	struct doc *d = pt->doc;
 
-	count_calculate(d, NULL, mark_of_point(pt), &l, &w, &ppos);
-	if (top)
-		count_calculate(d, NULL, top, &l, &w, &tpos);
-	else
-		tpos = ppos;
-	if (bot)
-		count_calculate(d, NULL, bot, &l, &w, &bpos);
-	else
-		bpos = ppos;
+	count_calculate(d, NULL, mark_of_point(pt));
+	ppos = attr_find_int(*mark_attr(mark_of_point(pt)), "chars");
+	tpos = bpos = ppos;
+	if (top) {
+		count_calculate(d, NULL, top);
+		tpos = attr_find_int(*mark_attr(top), "chars");
+	}
+	if (bot) {
+		count_calculate(d, NULL, bot);
+		bpos = attr_find_int(*mark_attr(bot), "chars");
+	}
 	tpos2 = tpos;
 	ppos -= ppos % 16;
 	tpos -= tpos % 16;

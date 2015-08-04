@@ -39,6 +39,7 @@ struct doc {
 		struct tlist_head head;
 		struct command	  *notify;
 	} *views;
+	struct attrset		*attrs;
 	int			nviews;
 	struct doc_operations	*ops;
 };

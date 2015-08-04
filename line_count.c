@@ -115,12 +115,12 @@ static int need_recalc(struct doc *d, struct mark *m)
 	return ret;
 }
 
-int count_calculate(struct doc *d, struct mark *start, struct mark *end,
-		    int *linep, int *wordp, int *charp)
+void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 {
 	int type = doc_find_view(d, &count_cmd);
 	int lines, words, chars, l, w, c;
 	struct mark *m, *m2;
+	struct attrset **attrs;
 
 	if (type < 0)
 		type = doc_add_view(d, &count_cmd);
@@ -152,8 +152,8 @@ int count_calculate(struct doc *d, struct mark *start, struct mark *end,
 		}
 		if (!m) {
 			/* fell off the end, just count directly */
-			do_count(d, start, end, linep, wordp, charp, 0);
-			return 1;
+			do_count(d, start, end, &lines, &words, &chars, 0);
+			goto done;
 		}
 	}
 	if (need_recalc(d, m))
@@ -165,8 +165,8 @@ int count_calculate(struct doc *d, struct mark *start, struct mark *end,
 	 * start to end.
 	 */
 	if (end && !mark_ordered(m, end)) {
-		do_count(d, start?:m, end, linep, wordp, charp, 0);
-		return 0;
+		do_count(d, start?:m, end, &lines, &words, &chars, 0);
+		goto done;
 	}
 
 	/* OK, 'm' is between 'start' and 'end'.
@@ -198,8 +198,12 @@ int count_calculate(struct doc *d, struct mark *start, struct mark *end,
 		words += w;
 		chars += c;
 	}
-	*linep = lines;
-	*wordp = words;
-	*charp = chars;
-	return 1;
+done:
+	if (end)
+		attrs = &end->attrs;
+	else
+		attrs = &d->attrs;
+	attr_set_int(attrs, "lines", lines);
+	attr_set_int(attrs, "words", words);
+	attr_set_int(attrs, "chars", chars);
 }

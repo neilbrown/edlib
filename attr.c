@@ -208,7 +208,7 @@ int attr_del(struct attrset **setp, char *key)
 	return 1;
 }
 
-int attr_set(struct attrset **setp, char *key, char *val, int min)
+int attr_set_str(struct attrset **setp, char *key, char *val, int min)
 {
 	int offset = 0;
 	int cmp;
@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
 		char *v;
 		switch(a->act) {
 		case Add:
-			attr_set(&set, a->key, a->val, 0); continue;
+			attr_set_str(&set, a->key, a->val, 0); continue;
 		case Remove:
 			if (attr_del(&set, a->key) == 0) {
 				printf("Action %d: Remove %s: failed\n",
@@ -368,7 +368,7 @@ int attr_set_int(struct attrset **setp, char *key, int val)
 	char sval[22];
 
 	sprintf(sval, "%d", val);
-	return attr_set(setp, key, sval, 0);
+	return attr_set_str(setp, key, sval, 0);
 }
 
 #ifdef TEST_ATTR_INT
@@ -448,7 +448,7 @@ struct attrset *attr_copy_tail(struct attrset *set, int nkey)
 
 			if (n <= nkey && *v == '\0')
 				v = NULL;
-			attr_set(&newset, k, v, nkey);
+			attr_set_str(&newset, k, v, nkey);
 		}
 	}
 
@@ -485,7 +485,7 @@ struct attrset *attr_collect(struct attrset *set, unsigned int pos,
 			}
 			if (*v == '\0')
 				v = NULL;
-			attr_set(&newset, e, v, 0);
+			attr_set_str(&newset, e, v, 0);
 		}
 	}
 done:
@@ -507,7 +507,7 @@ int main(int argc, char *argv[])
 	struct attrset *newset, *new2;
 
 	for (i = 0; i < sizeof(keys)/sizeof(keys[0]); i++)
-		attr_set(&set, keys[i], keys[i], 0);
+		attr_set_str(&set, keys[i], keys[i], 0);
 
 	newset = attr_copy_tail(set, 5);
 	attr_trim(&set, 5);

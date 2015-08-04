@@ -69,6 +69,7 @@ void doc_init(struct doc *d)
 {
 	INIT_HLIST_HEAD(&d->marks);
 	INIT_TLIST_HEAD(&d->points, 0);
+	d->attrs = NULL;
 	d->views = NULL;
 	d->nviews = 0;
 }
