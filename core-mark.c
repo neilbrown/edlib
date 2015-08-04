@@ -153,6 +153,7 @@ struct point *point_dup(struct point *p, struct pane *owner)
 		else
 			tlist_add(&ret->lists[i], GRP_LIST, &p->lists[i]);
 	owner->point = ret;
+	ret->owner = owner;
 	return ret;
 }
 
