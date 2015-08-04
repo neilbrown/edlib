@@ -499,7 +499,7 @@ static int view_click(struct command *c, struct cmd_info *ci)
 	ci2.focus = p->focus;
 	ci2.key = MV_VIEW_SMALL;
 	ci2.numeric = RPT_NUM(ci);
-	ci2.mark = NULL;
+	ci2.mark = mark_of_point(ci->point_pane->point);
 	p = p->focus;
 	if (ci->y == mid-1) {
 		/* scroll up */
