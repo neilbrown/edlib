@@ -174,7 +174,6 @@ void points_resize(struct doc *d)
 		tlist_del(&p->m.view);
 
 		new->doc = p->doc;
-		new->view_num = p->view_num;
 		new->owner = p->owner;
 		new->owner->point = new;
 		new->size = d->nviews;

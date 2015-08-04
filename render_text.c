@@ -264,7 +264,7 @@ void render_text_attach(struct pane *p, struct point *pt)
 	rt->type.func = render_text_notify;
 	rt->type.name = "render_text_notify";
 	rt->type.type = NULL;
-	rt->typenum = doc_add_type(pt->doc, &rt->type);
+	rt->typenum = doc_add_view(pt->doc, &rt->type);
 	p->data = rt;
 	p->refresh = render_text_refresh;
 	p->keymap = rt_map;

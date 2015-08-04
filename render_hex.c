@@ -199,7 +199,7 @@ void render_hex_attach(struct pane *p)
 	he->type.func = render_hex_notify;
 	he->type.name = "render_hex_notify";
 	he->type.type = NULL;
-	he->typenum = doc_add_type(p->parent->point->doc, &he->type);
+	he->typenum = doc_add_view(p->parent->point->doc, &he->type);
 	p->data = he;
 	p->refresh = render_hex_refresh;
 	p->keymap = he_map;

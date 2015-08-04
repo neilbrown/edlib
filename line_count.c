@@ -118,12 +118,12 @@ static int need_recalc(struct doc *d, struct mark *m)
 int count_calculate(struct doc *d, struct mark *start, struct mark *end,
 		    int *linep, int *wordp, int *charp)
 {
-	int type = doc_find_type(d, &count_cmd);
+	int type = doc_find_view(d, &count_cmd);
 	int lines, words, chars, l, w, c;
 	struct mark *m, *m2;
 
 	if (type < 0)
-		type = doc_add_type(d, &count_cmd);
+		type = doc_add_view(d, &count_cmd);
 
 	m = doc_first_mark(d, type);
 	if (m == NULL) {

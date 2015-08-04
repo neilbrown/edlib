@@ -97,7 +97,7 @@ struct pane *view_attach(struct pane *par, struct doc *d, int border)
 	vd->ch_notify.func = view_notify;
 	vd->ch_notify.name = "view-notify";
 	vd->ch_notify.type = NULL;
-	vd->ch_notify_num = doc_add_type(d, &vd->ch_notify);
+	vd->ch_notify_num = doc_add_view(d, &vd->ch_notify);
 
 	p = pane_register(par, 0, view_refresh, vd, NULL);
 	point_new(d, p);

@@ -4,7 +4,7 @@
 #include "core.h"
 
 
-int doc_add_type(struct doc *d, struct command *c)
+int doc_add_view(struct doc *d, struct command *c)
 {
 	struct docview *g;
 	int ret;
@@ -56,7 +56,7 @@ void doc_del_type(struct doc *d, struct command *c)
 	}
 }
 
-int doc_find_type(struct doc *d, struct command *c)
+int doc_find_view(struct doc *d, struct command *c)
 {
 	int i;
 	for (i = 0 ; i < d->nviews; i++)
