@@ -29,7 +29,8 @@
 struct display_data {
 	SCREEN			*scr;
 	struct event_base	*base;
-	int			modifiers, savemod;
+	/* mode and next_mode are already shifted */
+	int			mode, next_mode, numeric, extra;
 };
 
 static SCREEN *current_screen;
@@ -43,7 +44,7 @@ static void set_screen(SCREEN *scr)
 }
 
 static void input_handle(int fd, short ev, void *P);
-static int ncurses_refresh(struct pane *p, int damage);
+static int ncurses_refresh(struct pane *p, struct pane *point_pane, int damage);
 #define CMD(func, name) {func, name, ncurses_refresh}
 #define DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
@@ -94,7 +95,7 @@ static int nc_refresh(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_refresh, nc_refresh, "refresh");
 
-static int ncurses_refresh(struct pane *p, int damage)
+static int ncurses_refresh(struct pane *p, struct pane *point_pane, int damage)
 {
 	struct display_data *dd = p->data;
 	struct event *l;
@@ -135,15 +136,18 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 	mousemask(ALL_MOUSE_EVENTS, NULL);
 
 	dd->scr = NULL;
-	dd->modifiers = 0;
-	dd->savemod = 0;
+	dd->mode = 0;
+	dd->next_mode = 0;
+	dd->numeric = NO_NUMERIC;
+	dd->extra = 0;
+
 	current_screen = NULL;
 	dd->base = base;
 	p = pane_register(NULL, 0, ncurses_refresh, dd, NULL);
 	p->keymap = map;
 
-	key_register_mod("C-x", &c_x);
-	key_add(map, c_x|3, &comm_abort);
+	key_register_mode("C-x", &c_x);
+	key_add(map, K_MOD(c_x, 3), &comm_abort);
 	key_add(map, 12, &comm_refresh);
 
 	getmaxyx(stdscr, p->h, p->w); p->h-=1;
@@ -175,7 +179,7 @@ static void handle_winch(int sig, short ev, void *vpane)
 	pane_refresh(p);
 }
 
-void pane_set_modifier(struct pane *p, int mod)
+void pane_set_mode(struct pane *p, int mode, int transient)
 {
 	struct display_data *dd;
 	while (p->parent)
@@ -183,8 +187,31 @@ void pane_set_modifier(struct pane *p, int mod)
 	if (p->refresh != ncurses_refresh)
 		return;
 	dd = p->data;
-	dd->modifiers |= dd->savemod | mod;
-	dd->savemod = 0;
+	dd->mode = mode;
+	if (!transient)
+		dd->next_mode = mode;
+}
+
+void pane_set_numeric(struct pane *p, int numeric)
+{
+	struct display_data *dd;
+	while (p->parent)
+		p = p->parent;
+	if (p->refresh != ncurses_refresh)
+		return;
+	dd = p->data;
+	dd->numeric = numeric;
+}
+
+void pane_set_extra(struct pane *p, int extra)
+{
+	struct display_data *dd;
+	while (p->parent)
+		p = p->parent;
+	if (p->refresh != ncurses_refresh)
+		return;
+	dd = p->data;
+	dd->extra = extra;
 }
 
 void pane_clear(struct pane *p, int attr, int x, int y, int w, int h)
@@ -240,37 +267,44 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 
 	if (keytype == KEY_CODE_YES) {
 		switch(c) {
-		case 01057: c = FUNC_KEY(KEY_PPAGE) | (1<<21); break;
-		case 01051: c = FUNC_KEY(KEY_NPAGE) | (1<<21); break;
-		case 01072: c = FUNC_KEY(KEY_UP)    | (1<<21); break;
-		case 01061: c = FUNC_KEY(KEY_DOWN)  | (1<<21); break;
-		case 01042: c = FUNC_KEY(KEY_LEFT)  | (1<<21); break;
-		case 01064: c = FUNC_KEY(KEY_RIGHT) | (1<<21); break;
+		case 01057: c = META(FUNC_KEY(KEY_PPAGE)); break;
+		case 01051: c = META(FUNC_KEY(KEY_NPAGE)); break;
+		case 01072: c = META(FUNC_KEY(KEY_UP)); break;
+		case 01061: c = META(FUNC_KEY(KEY_DOWN)); break;
+		case 01042: c = META(FUNC_KEY(KEY_LEFT)); break;
+		case 01064: c = META(FUNC_KEY(KEY_RIGHT)); break;
 		default:
 			c = FUNC_KEY(c);
 		}
 	}
-	c |= dd->modifiers;
-	dd->savemod = dd->modifiers;
-	dd->modifiers = 0;
 
+	ci.key = dd->mode | c;
 	ci.focus = p;
-	ci.key = c;
-	ci.repeat = 1;
+	ci.numeric = dd->numeric;
+	ci.extra = dd->extra;
+	ci.x = ci.y = -1;
+	// FIXME find doc
+	dd->mode = dd->next_mode;
+	dd->numeric = NO_NUMERIC;
+	dd->extra = 0;
 	key_handle_focus(&ci);
 }
 
 static void do_send_mouse(struct pane *p, int x, int y, int cmd)
 {
+	struct display_data *dd = p->data;
 	struct cmd_info ci = {0};
 
-	ci.key = cmd;
+	ci.key = dd->mode | cmd;
+	ci.focus = p;
+	ci.numeric = dd->numeric;
+	ci.extra = dd->extra;
 	ci.x = x;
 	ci.y = y;
-	ci.focus = p;
-	ci.repeat = INT_MAX;
-	ci.str = NULL;
-	ci.mark = NULL;
+	// FIXME find doc
+	dd->mode = dd->next_mode;
+	dd->numeric = NO_NUMERIC;
+	dd->extra = 0;
 	key_handle_xy(&ci);
 }
 
@@ -278,26 +312,24 @@ static void send_mouse(MEVENT *mev, struct pane *p)
 {
 	int x = mev->x;
 	int y = mev->y;
-	struct display_data *dd = p->data;
 	int b;
-	int mod = dd->modifiers;
 
 	/* MEVENT has lots of bits.  We want a few numbers */
 	for (b = 0 ; b < 4; b++) {
 		mmask_t s = mev->bstate;
 		if (BUTTON_PRESS(s, b+1))
-			do_send_mouse(p, x, y, mod | M_PRESS(b));
+			do_send_mouse(p, x, y, M_PRESS(b));
 		if (BUTTON_RELEASE(s, b+1))
-			do_send_mouse(p, x, y, mod | M_RELEASE(b));
+			do_send_mouse(p, x, y, M_RELEASE(b));
 		if (BUTTON_CLICK(s, b+1))
-			do_send_mouse(p, x, y, mod | M_CLICK(b));
+			do_send_mouse(p, x, y, M_CLICK(b));
 		else if (BUTTON_DOUBLE_CLICK(s, b+1))
-			do_send_mouse(p, x, y, mod | M_DCLICK(b));
+			do_send_mouse(p, x, y, M_DCLICK(b));
 		else if (BUTTON_TRIPLE_CLICK(s, b+1))
-			do_send_mouse(p, x, y, mod | M_TCLICK(b));
+			do_send_mouse(p, x, y, M_TCLICK(b));
 	}
 	if (mev->bstate & REPORT_MOUSE_POSITION)
-		do_send_mouse(p, x, y, mod | M_MOVE);
+		do_send_mouse(p, x, y, M_MOVE);
 }
 
 static void input_handle(int fd, short ev, void *P)

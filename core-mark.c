@@ -22,8 +22,9 @@
  * A 'point' is on all lists.  This allows nearby marks on any list to be
  * found quickly.  A cost is that a point will be reallocated when
  * a new list is created.  So stable refs to a point are not possible.
- * Each point has one reference from a window (where it is the cursor)
+ * Each point has one reference from a window/pane (where it is the cursor)
  * and that can be found through the ->owner link.
+ * Each point knows which document it points to - a mark doesn't.
  *
  * As the 'group' lists can hold either marks or points, and with a
  * different anchor in each, we use 'tlist_head'.  Pointers in a
@@ -63,14 +64,6 @@
 
 #include "core.h"
 #include "keymap.h"
-
-
-struct point {
-	struct mark		m;
-	struct point		**owner;
-	int			size;
-	struct tlist_head	lists[];
-};
 
 /* seq numbers added to the end are given a gap of 128.
  * seq numbers at other locations are placed at mean of before and after.
@@ -144,7 +137,7 @@ struct mark *mark_at_point(struct point *p, int view)
 	return ret;
 }
 
-struct point *point_dup(struct point *p, struct point **owner)
+struct point *point_dup(struct point *p, struct pane *owner)
 {
 	int i;
 	struct point *ret = malloc(sizeof(*ret) +
@@ -159,8 +152,7 @@ struct point *point_dup(struct point *p, struct point **owner)
 			INIT_TLIST_HEAD(&ret->lists[i], GRP_LIST);
 		else
 			tlist_add(&ret->lists[i], GRP_LIST, &p->lists[i]);
-	ret->owner = owner;
-	*owner = ret;
+	owner->point = ret;
 	return ret;
 }
 
@@ -180,8 +172,10 @@ void points_resize(struct doc *d)
 		tlist_add(&new->m.view, GRP_MARK, &p->m.view);
 		tlist_del(&p->m.view);
 
+		new->doc = p->doc;
+		new->view_num = p->view_num;
 		new->owner = p->owner;
-		*(new->owner) = new;
+		new->owner->point = new;
 		new->size = d->nviews;
 		for (i = 0; i < p->size; i++) {
 			tlist_add(&new->lists[i], GRP_LIST, &p->lists[i]);
@@ -218,7 +212,7 @@ struct mark *mark_dup(struct mark *m, int notype)
 	return ret;
 }
 
-struct point *point_new(struct doc *d, struct point **owner)
+struct point *point_new(struct doc *d, struct pane *owner)
 {
 	int i;
 	struct point *ret = malloc(sizeof(*ret) +
@@ -237,7 +231,8 @@ struct point *point_new(struct doc *d, struct point **owner)
 		else
 			INIT_TLIST_HEAD(&ret->lists[i], GRP_LIST);
 	ret->owner = owner;
-	*owner = ret;
+	ret->doc = d;
+	owner->point = ret;
 	return ret;
 }
 
@@ -603,10 +598,10 @@ void point_notify_change(struct doc *d, struct point *p)
 
 	ci.key = EV_REPLACE;
 	ci.focus = NULL;
-	ci.repeat = 1;
+	ci.numeric = 1;
 	ci.x = ci.y = -1;
 	ci.str = NULL;
-	ci.doc = d;
+	ci.point_pane = p->owner;
 	for (i = 0; i < p->size; i++) {
 		struct tlist_head *tl = &p->lists[i];
 		struct command *c = d->views[i].notify;

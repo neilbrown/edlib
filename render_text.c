@@ -21,7 +21,6 @@
 #include "keymap.h"
 
 struct rt_data {
-	struct view_data *v;
 	struct mark	*top, *bot;
 	int		ignore_point;
 	int		target_x;
@@ -32,7 +31,7 @@ struct rt_data {
 
 static struct map *rt_map;
 
-static int render_text_refresh(struct pane  *p, int damage);
+static int render_text_refresh(struct pane  *p, struct pane *point_pane, int damage);
 #define	CMD(func, name) {func, name, render_text_refresh}
 #define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
@@ -216,23 +215,23 @@ static struct mark *find_top(struct doc *d, struct point *pt, struct pane *p,
 	return start;
 }
 
-static int render_text_refresh(struct pane  *p, int damage)
+static int render_text_refresh(struct pane  *p, struct pane *point_pane, int damage)
 {
 	struct rt_data *rt = p->data;
 	struct mark *end = NULL, *top;
+	struct point *pt = point_pane->point;
 
 	if (rt->top) {
-		end = render(rt->v->doc, rt->v->point, p);
+		end = render(pt->doc, pt, p);
 		if (rt->ignore_point || p->cx >= 0)
 			/* Found the cursor! */
 			goto found;
 	}
-	top = find_top(rt->v->doc, rt->v->point, p,
-		       rt->top, end);
+	top = find_top(pt->doc, pt, p, rt->top, end);
 	mark_free(rt->top);
 	mark_free(end);
 	rt->top = top;
-	end = render(rt->v->doc, rt->v->point, p);
+	end = render(pt->doc, pt, p);
 found:
 	mark_free(rt->bot);
 	rt->bot = end;
@@ -251,11 +250,10 @@ static int render_text_notify(struct command *c, struct cmd_info *ci)
 	return 0;
 }
 
-void render_text_attach(struct pane *p)
+void render_text_attach(struct pane *p, struct point *pt)
 {
 	struct rt_data *rt = malloc(sizeof(*rt));
 
-	rt->v = p->data;
 	rt->pane = p;
 	rt->top = NULL;
 	rt->bot = NULL;
@@ -264,7 +262,7 @@ void render_text_attach(struct pane *p)
 	rt->type.func = render_text_notify;
 	rt->type.name = "render_text_notify";
 	rt->type.type = NULL;
-	rt->typenum = doc_add_type(rt->v->doc, &rt->type);
+	rt->typenum = doc_add_type(pt->doc, &rt->type);
 	p->data = rt;
 	p->refresh = render_text_refresh;
 	p->keymap = rt_map;
@@ -273,25 +271,24 @@ void render_text_attach(struct pane *p)
 static int render_text_move(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
-	int rpt = ci->repeat;
+	int rpt = RPT_NUM(ci);
 	struct rt_data *rt = p->data;
+	struct point *pt = ci->point_pane->point;
 	int x = 0;
 	int y = 0;
 
 	if (!rt->top)
 		return 0;
-	if (rpt == INT_MAX)
-		rpt = 1;
 	if (ci->key == MV_VIEW_LARGE)
 		rpt *= p->h - 2;
 	rt->ignore_point = 1;
 	if (rpt < 0) {
-		while (rt_back(rt->v->doc, p, rt->top, &x, &y) && -y < 1-rpt)
+		while (rt_back(pt->doc, p, rt->top, &x, &y) && -y < 1-rpt)
 			;
 		if (-y >= 1-rpt)
-			rt_fore(rt->v->doc, p, rt->top, &x, &y, 0);
+			rt_fore(pt->doc, p, rt->top, &x, &y, 0);
 	} else if (rpt > 0) {
-		while (rt_fore(rt->v->doc, p, rt->top, &x, &y, 0) && y < rpt)
+		while (rt_fore(pt->doc, p, rt->top, &x, &y, 0) && y < rpt)
 			;
 	}
 	pane_damaged(p, DAMAGED_CURSOR);
@@ -314,11 +311,11 @@ DEF_CMD(comm_follow, render_text_follow_point, "follow-point");
 static int render_text_set_cursor(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
-	struct rt_data *rt = p->data;
+	struct point *pt = ci->point_pane->point;
 	struct mark *m;
 
-	m = find_pos(rt->v->doc, p, ci->x, ci->y);
-	point_to_mark(rt->v->doc, rt->v->point, m);
+	m = find_pos(pt->doc, p, ci->x, ci->y);
+	point_to_mark(pt->doc, pt, m);
 	mark_free(m);
 	pane_focus(p);
 	return 1;
@@ -330,6 +327,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	/* MV_EOL repeatedly, then move to match cursor */
 	struct rt_data *rt = p->data;
+	struct point *pt = ci->point_pane->point;
 	struct cmd_info ci2 = {0};
 	struct mark *m;
 	int ret = 0;
@@ -342,27 +340,27 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 
 	ci2.focus = ci->focus;
 	ci2.key = MV_EOL;
-	if (ci->repeat < 0)
-		ci2.repeat = ci->repeat-1;
-	else
-		ci2.repeat = ci->repeat;
-	m = mark_of_point(rt->v->point);
+	ci2.numeric = RPT_NUM(ci);
+	if (ci2.numeric < 0)
+		ci2.numeric -= 1;
+	m = mark_of_point(pt);
 	ci2.mark = m;
+	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
 
 	if (!ret)
 		return 0;
 	rt->target_x = target_x; // MV_EOL might have changed it
-	if (ci->repeat > 0)
-		mark_next(rt->v->doc, m);
+	if (RPT_NUM(ci) > 0)
+		mark_next(pt->doc, m);
 
 	if (target_x == 0)
 		return 1;
 	x = 0; y = 0;
-	while (rt_fore(rt->v->doc, p, m, &x, &y, 0) == 1) {
+	while (rt_fore(pt->doc, p, m, &x, &y, 0) == 1) {
 		if (y > 0 || x > target_x) {
 			/* too far */
-			mark_prev(rt->v->doc, m);
+			mark_prev(pt->doc, m);
 			break;
 		}
 	}

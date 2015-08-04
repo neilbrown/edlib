@@ -35,12 +35,12 @@ struct popup_info {
 	struct doc	*doc;
 };
 
-static int popup_refresh(struct pane  *p, int damage);
+static int popup_refresh(struct pane  *p, struct pane *point_pane, int damage);
 #define	CMD(func, name) {func, name, popup_refresh}
 #define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 static struct map *pp_map;
 
-static int popup_refresh(struct pane *p, int damage)
+static int popup_refresh(struct pane *p, struct pane *point_pane, int damage)
 {
 	struct popup_info *ppi = p->data;
 	int i;
@@ -66,7 +66,7 @@ static int popup_refresh(struct pane *p, int damage)
 		pane_text(p, ppi->name[i], A_STANDOUT, label+i, 0);
 	return 0;
 }
-static int popup_no_refresh(struct pane *p, int damage)
+static int popup_no_refresh(struct pane *p, struct pane *point_pane, int damage)
 {
 	return 0;
 }
@@ -79,7 +79,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, wint_t ke
 	struct doc *d;
 	bool first = 1;
 	struct cmd_info ci;
-	struct view_data *vd;
+	struct point *pt;
 
 	root = p;
 	while (root->parent)
@@ -95,18 +95,19 @@ struct pane *popup_register(struct pane *p, char *name, char *content, wint_t ke
 	d = doc_new("text");
 	ppi->doc = d;
 	p2 = view_attach(p, d, 0);
-	vd = p2->data;
-	doc_replace(d, vd->point, NULL, content, &first);
-	render_text_attach(p2);
+	pt = p2->parent->point;
+	doc_replace(d, pt, NULL, content, &first);
+	render_text_attach(p2, pt);
 	ret = pane_register(p2, 0, popup_no_refresh, NULL, NULL);
 	pane_resize(ret, 0, 0, p2->w, p2->h);
 	ret->cx = ret->cy = -1;
 	ret->keymap = pp_map;
 	pane_focus(ret);
 	ci.key = MV_FILE;
-	ci.repeat =1;
+	ci.numeric =1;
 	ci.focus = ret;
 	ci.mark = NULL;
+	ci.point_pane = p2->parent;
 	key_handle_focus(&ci);
 	return ret;
 }
@@ -118,7 +119,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 	struct cmd_info ci2;
 	ci2.focus = ppi->target;
 	ci2.key = ppi->key;
-	ci2.repeat = 1;
+	ci2.numeric = 1;
 	ci2.str = doc_getstr(ppi->doc, NULL, NULL);
 	ci2.mark = NULL;
 	key_handle_focus(&ci2);

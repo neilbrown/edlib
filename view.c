@@ -23,8 +23,6 @@
 
 #define ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 struct view_data {
-	struct doc	*doc;
-	struct point	*point;
 	bool		first_change;
 	int		border;
 	struct command	ch_notify;
@@ -32,11 +30,12 @@ struct view_data {
 	struct pane	*pane;
 };
 
-static int view_refresh(struct pane *p, int damage)
+static int view_refresh(struct pane *p, struct pane *point_pane, int damage)
 {
 	int i;
 	int mid = (p->h-1)/2;
 	struct view_data *vd = p->data;
+	struct point *pt = p->point;
 	int ln, l,w,c;
 	char msg[60];
 
@@ -47,8 +46,8 @@ static int view_refresh(struct pane *p, int damage)
 		pane_resize(p->focus, 1, 0, p->w-1, p->h-1);
 	}
 
-	count_calculate(vd->doc, NULL, mark_of_point(vd->point), &ln, &w, &c);
-	count_calculate(vd->doc, NULL, NULL, &l, &w,  &c);
+	count_calculate(pt->doc, NULL, mark_of_point(pt), &ln, &w, &c);
+	count_calculate(pt->doc, NULL, NULL, &l, &w,  &c);
 
 	for (i = 0; i < p->h-1; i++)
 		pane_text(p, '|', A_STANDOUT, 0, i);
@@ -70,30 +69,10 @@ static int view_refresh(struct pane *p, int damage)
 #define	CMD(func, name) {func, name, view_refresh}
 #define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
-static int view_null(struct pane *p, int damage)
+static int view_null(struct pane *p, struct pane *point_pane, int damage)
 {
 
 	return 0;
-
-#if 0
-	{
-	struct view_data *vd = p->data;
-	struct doc_ref ref = point_ref(vd->point);
-	int r = 0, c = 0;
-	wint_t wi;
-	while (r < p->h-2 && (wi = doc_next(vd->doc, &ref)) != WEOF) {
-		if (wi == '\n') {
-			r += 1;
-			c = 0;
-		} else if (wi == '\t') {
-			c = (c+9)/8 * 8;
-		}  else {
-			pane_text(p, wi, 0, c+1, r);
-			c += 1;
-		}
-	}
-	}
-#endif
 }
 
 static int view_notify(struct command *c, struct cmd_info *ci)
@@ -113,7 +92,6 @@ struct pane *view_attach(struct pane *par, struct doc *d, int border)
 	struct pane *p;
 
 	vd = malloc(sizeof(*vd));
-	vd->doc = d;
 	vd->first_change = 1;
 	vd->border = border;
 	vd->ch_notify.func = view_notify;
@@ -121,8 +99,8 @@ struct pane *view_attach(struct pane *par, struct doc *d, int border)
 	vd->ch_notify.type = NULL;
 	vd->ch_notify_num = doc_add_type(d, &vd->ch_notify);
 
-	point_new(d, &vd->point);
 	p = pane_register(par, 0, view_refresh, vd, NULL);
+	point_new(d, p);
 	vd->pane = p;
 
 	pane_resize(p, 0, 0, par->w, par->h);
@@ -142,19 +120,16 @@ struct pane *view_attach(struct pane *par, struct doc *d, int border)
 
 static int view_char(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
-	int rpt = ci->repeat;
+	struct point *pt = ci->point_pane->point;
+	int rpt = RPT_NUM(ci);
 
-	if (rpt == INT_MAX)
-		rpt = 1;
 	while (rpt > 0) {
-		if (mark_next(vd->doc, ci->mark) == WEOF)
+		if (mark_next(pt->doc, ci->mark) == WEOF)
 			break;
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		if (mark_prev(vd->doc, ci->mark) == WEOF)
+		if (mark_prev(pt->doc, ci->mark) == WEOF)
 			break;
 		rpt += 1;
 	}
@@ -165,38 +140,35 @@ DEF_CMD(comm_char, view_char, "move-char");
 
 static int view_word(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
-	int rpt = ci->repeat;
+	struct point *pt = ci->point_pane->point;
+	int rpt = RPT_NUM(ci);
 
-	if (rpt == INT_MAX)
-		rpt = 1;
 	/* We skip spaces, then either alphanum or non-space/alphanum */
 	while (rpt > 0) {
-		while (iswspace(doc_following(vd->doc, ci->mark)))
-			mark_next(vd->doc, ci->mark);
-		if (iswalnum(doc_following(vd->doc, ci->mark))) {
-			while (iswalnum(doc_following(vd->doc, ci->mark)))
-				mark_next(vd->doc, ci->mark);
+		while (iswspace(doc_following(pt->doc, ci->mark)))
+			mark_next(pt->doc, ci->mark);
+		if (iswalnum(doc_following(pt->doc, ci->mark))) {
+			while (iswalnum(doc_following(pt->doc, ci->mark)))
+				mark_next(pt->doc, ci->mark);
 		} else {
 			wint_t wi;
-			while ((wi=doc_following(vd->doc, ci->mark)) != WEOF &&
+			while ((wi=doc_following(pt->doc, ci->mark)) != WEOF &&
 			       !iswspace(wi) && !iswalnum(wi))
-				mark_next(vd->doc, ci->mark);
+				mark_next(pt->doc, ci->mark);
 		}
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		while (iswspace(doc_prior(vd->doc, ci->mark)))
-			mark_prev(vd->doc, ci->mark);
-		if (iswalnum(doc_prior(vd->doc, ci->mark))) {
-			while (iswalnum(doc_prior(vd->doc, ci->mark)))
-				mark_prev(vd->doc, ci->mark);
+		while (iswspace(doc_prior(pt->doc, ci->mark)))
+			mark_prev(pt->doc, ci->mark);
+		if (iswalnum(doc_prior(pt->doc, ci->mark))) {
+			while (iswalnum(doc_prior(pt->doc, ci->mark)))
+				mark_prev(pt->doc, ci->mark);
 		} else {
 			wint_t wi;
-			while ((wi=doc_prior(vd->doc, ci->mark)) != WEOF &&
+			while ((wi=doc_prior(pt->doc, ci->mark)) != WEOF &&
 			       !iswspace(wi) && !iswalnum(wi))
-				mark_prev(vd->doc, ci->mark);
+				mark_prev(pt->doc, ci->mark);
 		}
 		rpt += 1;
 	}
@@ -207,30 +179,27 @@ DEF_CMD(comm_word, view_word, "move-word");
 
 static int view_WORD(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
-	int rpt = ci->repeat;
+	struct point *pt = ci->point_pane->point;
+	int rpt = RPT_NUM(ci);
 
-	if (rpt == INT_MAX)
-		rpt = 1;
 	/* We skip spaces, then non-spaces */
 	while (rpt > 0) {
 		wint_t wi;
-		while (iswspace(doc_following(vd->doc, ci->mark)))
-			mark_next(vd->doc, ci->mark);
+		while (iswspace(doc_following(pt->doc, ci->mark)))
+			mark_next(pt->doc, ci->mark);
 
-		while ((wi=doc_following(vd->doc, ci->mark)) != WEOF &&
+		while ((wi=doc_following(pt->doc, ci->mark)) != WEOF &&
 		       !iswspace(wi))
-			mark_next(vd->doc, ci->mark);
+			mark_next(pt->doc, ci->mark);
 		rpt -= 1;
 	}
 	while (rpt < 0) {
 		wint_t wi;
-		while (iswspace(doc_prior(vd->doc, ci->mark)))
-			mark_prev(vd->doc, ci->mark);
-		while ((wi=doc_prior(vd->doc, ci->mark)) != WEOF &&
+		while (iswspace(doc_prior(pt->doc, ci->mark)))
+			mark_prev(pt->doc, ci->mark);
+		while ((wi=doc_prior(pt->doc, ci->mark)) != WEOF &&
 		       !iswspace(wi))
-			mark_prev(vd->doc, ci->mark);
+			mark_prev(pt->doc, ci->mark);
 		rpt += 1;
 	}
 
@@ -240,30 +209,27 @@ DEF_CMD(comm_WORD, view_WORD, "move-WORD");
 
 static int view_eol(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
+	struct point *pt = ci->point_pane->point;
 	wint_t ch = 1;
-	int rpt = ci->repeat;
+	int rpt = RPT_NUM(ci);
 
-	if (rpt == INT_MAX)
-		rpt = 1;
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(vd->doc, ci->mark)) != WEOF &&
+		while ((ch = mark_next(pt->doc, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(vd->doc, ci->mark)) != WEOF &&
+		while ((ch = mark_prev(pt->doc, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt += 1;
 	}
 	if (ch == '\n') {
-		if (ci->repeat > 0)
-			mark_prev(vd->doc, ci->mark);
-		else if (ci->repeat < 0)
-			mark_next(vd->doc, ci->mark);
+		if (RPT_NUM(ci) > 0)
+			mark_prev(pt->doc, ci->mark);
+		else if (RPT_NUM(ci) < 0)
+			mark_next(pt->doc, ci->mark);
 	}
 	return 1;
 }
@@ -271,21 +237,18 @@ DEF_CMD(comm_eol, view_eol, "move-end-of-line");
 
 static int view_line(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
+	struct point *pt = ci->point_pane->point;
 	wint_t ch = 1;
-	int rpt = ci->repeat;
+	int rpt = RPT_NUM(ci);
 
-	if (rpt == INT_MAX)
-		rpt = 1;
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(vd->doc, ci->mark)) != WEOF &&
+		while ((ch = mark_next(pt->doc, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(vd->doc, ci->mark)) != WEOF &&
+		while ((ch = mark_prev(pt->doc, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt += 1;
@@ -296,22 +259,19 @@ DEF_CMD(comm_line, view_line, "move-by-line");
 
 static int view_file(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
+	struct point *pt = ci->point_pane->point;
 	wint_t ch = 1;
-	int rpt = ci->repeat;
+	int rpt = RPT_NUM(ci);
 
 	if (ci->mark == NULL)
-		ci->mark = mark_of_point(vd->point);
-	if (rpt == INT_MAX)
-		rpt = 1;
+		ci->mark = mark_of_point(pt);
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(vd->doc, ci->mark)) != WEOF)
+		while ((ch = mark_next(pt->doc, ci->mark)) != WEOF)
 			;
 		rpt = 0;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(vd->doc, ci->mark)) != WEOF)
+		while ((ch = mark_prev(pt->doc, ci->mark)) != WEOF)
 			;
 		rpt = 0;
 	}
@@ -321,22 +281,19 @@ DEF_CMD(comm_file, view_file, "move-end-of-file");
 
 static int view_page(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
+	struct point *pt = ci->point_pane->point;
 	wint_t ch = 1;
-	int rpt = ci->repeat;
+	int rpt = RPT_NUM(ci);
 
-	if (rpt == INT_MAX)
-		rpt = 1;
 	rpt *= ci->focus->h-2;
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(vd->doc, ci->mark)) != WEOF &&
+		while ((ch = mark_next(pt->doc, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(vd->doc, ci->mark)) != WEOF &&
+		while ((ch = mark_prev(pt->doc, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt += 1;
@@ -349,7 +306,6 @@ static int view_move(struct command *c, struct cmd_info *ci);
 static int view_delete(struct command *c, struct cmd_info *ci);
 
 #define CTRL(X) ((X) & 0x1f)
-#define META(X) ((X) | (1<<31))
 static struct move_command {
 	struct command	cmd;
 	int		type;
@@ -403,6 +359,7 @@ static int view_move(struct command *c, struct cmd_info *ci)
 	struct move_command *mv = container_of(c, struct move_command, cmd);
 	struct view_data *vd = p->data;
 	struct pane *view_pane = p->focus;
+	struct point *pt = ci->point_pane->point;
 	int old_x = -1;
 	struct cmd_info ci2 = {0};
 	int ret = 0;
@@ -412,8 +369,9 @@ static int view_move(struct command *c, struct cmd_info *ci)
 
 	ci2.focus = ci->focus;
 	ci2.key = mv->type;
-	ci2.repeat = mv->direction * ci->repeat;
-	ci2.mark = mark_of_point(vd->point);
+	ci2.numeric = mv->direction * RPT_NUM(ci);
+	ci2.mark = mark_of_point(pt);
+	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
 
 	if (!ret)
@@ -425,12 +383,13 @@ static int view_move(struct command *c, struct cmd_info *ci)
 		 */
 		ci2.focus = ci->focus;
 		ci2.key = MV_CURSOR_XY;
-		ci2.repeat = 1;
+		ci2.numeric = 1;
 		ci2.x = old_x;
 		if (mv->direction == 1)
 			ci2.y = 0;
 		else
 			ci2.y = view_pane->h-1;
+		ci2.point_pane = ci->point_pane;
 		key_handle_xy(&ci2);
 	}
 
@@ -442,18 +401,17 @@ static int view_move(struct command *c, struct cmd_info *ci)
 
 static int view_delete(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
 	struct move_command *mv = container_of(c, struct move_command, cmd);
-	struct view_data *vd = p->data;
 	struct cmd_info ci2 = {0};
 	int ret = 0;
 	struct mark *m;
 
-	m = mark_at_point(vd->point, MARK_UNGROUPED);
+	m = mark_at_point(ci->point_pane->point, MARK_UNGROUPED);
 	ci2.focus = ci->focus;
 	ci2.key = mv->type;
-	ci2.repeat = mv->direction * ci->repeat;
+	ci2.numeric = mv->direction * RPT_NUM(ci);
 	ci2.mark = m;
+	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
 	if (!ret) {
 		mark_free(m);
@@ -461,9 +419,10 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 	}
 	ci2.focus = ci->focus;
 	ci2.key = EV_REPLACE;
-	ci2.repeat = 1;
+	ci2.numeric = 1;
 	ci2.mark = m;
 	ci2.str = NULL;
+	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
 	mark_free(m);
 
@@ -472,19 +431,18 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 
 static int view_insert(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
 	char str[2];
 	struct cmd_info ci2 = {0};
 	int ret;
 
 	ci2.focus = ci->focus;
 	ci2.key = EV_REPLACE;
-	ci2.repeat = 1;
-	ci2.mark = mark_of_point(vd->point);
+	ci2.numeric = 1;
+	ci2.mark = mark_of_point(ci->point_pane->point);
 	str[0] = ci->key;
 	str[1] = 0;
 	ci2.str = str;
+	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
 
 	return ret;
@@ -501,11 +459,12 @@ static int view_insert_nl(struct command *c, struct cmd_info *ci)
 
 	ci2.focus = ci->focus;
 	ci2.key = EV_REPLACE;
-	ci2.repeat = 1;
-	ci2.mark = mark_of_point(vd->point);
+	ci2.numeric = 1;
+	ci2.mark = mark_of_point(ci->point_pane->point);
 	str[0] = '\n';
 	str[1] = 0;
 	ci2.str = str;
+	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
 	vd->first_change = 1;
 	return ret;
@@ -516,8 +475,9 @@ static int view_replace(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	struct view_data *vd = p->data;
+	struct point *pt = ci->point_pane->point;
 
-	doc_replace(vd->doc, vd->point, ci->mark, ci->str, &vd->first_change);
+	doc_replace(pt->doc, pt, ci->mark, ci->str, &vd->first_change);
 	return 1;
 }
 DEF_CMD(comm_replace, view_replace, "do-replace");
@@ -533,17 +493,15 @@ static int view_click(struct command *c, struct cmd_info *ci)
 
 	ci2.focus = p->focus;
 	ci2.key = MV_VIEW_SMALL;
-	ci2.repeat = ci->repeat;
-	if (ci2.repeat == INT_MAX)
-		ci2.repeat = 1;
+	ci2.numeric = RPT_NUM(ci);
 	ci2.mark = NULL;
 	p = p->focus;
 	if (ci->y == mid-1) {
 		/* scroll up */
-		ci2.repeat = -ci2.repeat;
+		ci2.numeric = -ci2.numeric;
 	} else if (ci->y < mid-1) {
 		/* big scroll up */
-		ci2.repeat = -ci2.repeat;
+		ci2.numeric = -ci2.numeric;
 		ci2.key = MV_VIEW_LARGE;
 	} else if (ci->y == mid+1) {
 		/* scroll down */
@@ -551,15 +509,15 @@ static int view_click(struct command *c, struct cmd_info *ci)
 		ci2.key = MV_VIEW_LARGE;
 	} else
 		return 0;
+	ci2.point_pane = ci->point_pane;
 	return key_handle_focus(&ci2);
 }
 DEF_CMD(comm_click, view_click, "view-click");
 
 static int view_undo(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
-	doc_undo(vd->doc, vd->point, 0);
+	struct point *pt = ci->point_pane->point;
+	doc_undo(pt->doc, pt, 0);
 	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
 	return 1;
 }
@@ -567,9 +525,8 @@ DEF_CMD(comm_undo, view_undo, "undo");
 
 static int view_redo(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
-	doc_undo(vd->doc, vd->point, 1);
+	struct point *pt = ci->point_pane->point;
+	doc_undo(pt->doc, pt, 1);
 	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
 	return 1;
 }
@@ -582,21 +539,24 @@ static int view_findfile(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_findfile, view_findfile, "find-file");
 
+static int view_meta(struct command *c, struct cmd_info *ci)
+{
+	pane_set_mode(ci->focus, META(Kmod(ci->key)), 1);
+	pane_set_numeric(ci->focus, ci->numeric);
+	pane_set_extra(ci->focus, ci->extra);
+	return 1;
+}
+DEF_CMD(comm_meta, view_meta, "meta");
+
 void view_register(struct map *m)
 {
-	int meta, c_x;
-	struct command *cmd = key_register_mod("meta", &meta);
+	int c_x;
 	unsigned int i;
 
-	key_add(m, '['-64, cmd);
+	key_add(m, '['-64, &comm_meta);
+
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
 		struct move_command *mc = &move_commands[i];
-		if (mc->k1 == META(mc->k1))
-			mc->k1 = (mc->k1 & ((1<<22)-1)) | meta;
-		if (mc->k2 == META(mc->k2))
-			mc->k2 = (mc->k2 & ((1<<22)-1)) | meta;
-		if (mc->k3 == META(mc->k3))
-			mc->k3 = (mc->k3 & ((1<<22)-1)) | meta;
 		key_add(m, mc->k1, &mc->cmd);
 		if (mc->k2)
 			key_add(m, mc->k2, &mc->cmd);
@@ -621,8 +581,8 @@ void view_register(struct map *m)
 	key_add(m, M_PRESS(0), &comm_click);
 
 	key_add(m, CTRL('_'), &comm_undo);
-	key_add(m, CTRL('_') | meta, &comm_redo);
+	key_add(m, META(CTRL('_')), &comm_redo);
 
-	key_register_mod("C-x", &c_x);
-	key_add(m, 'f' | c_x, &comm_findfile);
+	key_register_mode("C-x", &c_x);
+	key_add(m, K_MOD(c_x, 'f'), &comm_findfile);
 }

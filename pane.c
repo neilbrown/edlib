@@ -48,6 +48,8 @@ static void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->refresh = NULL;
 	p->data = NULL;
 	p->damaged = 0;
+	p->point = NULL;
+	p->keymap = NULL;
 }
 
 /*
@@ -76,30 +78,31 @@ struct pane *pane_register(struct pane *parent, int z,
 		p->z = z;
 	p->refresh = refresh;
 	p->data = data;
-	p->keymap = NULL;
 	return p;
 }
 
-static void __pane_refresh(struct pane *p, int damage)
+static void __pane_refresh(struct pane *p, struct pane *point_pane, int damage)
 {
 	struct pane *c;
 
+	if (p->point)
+		point_pane = p;
 	damage |= p->damaged;
 	if (!damage)
 		return;
 	if (damage == DAMAGED_CHILD)
 		damage = 0;
 	else
-		damage = p->refresh(p, damage) | (damage & DAMAGED_FORCE);
+		damage = p->refresh(p, point_pane, damage) | (damage & DAMAGED_FORCE);
 	p->damaged = 0;
 	list_for_each_entry(c, &p->children, siblings)
-		__pane_refresh(c, damage);
+		__pane_refresh(c, point_pane, damage);
 }
 
 void pane_refresh(struct pane *p)
 {
 	pane_damaged(p, DAMAGED_CURSOR);
-	__pane_refresh(p, 0);
+	__pane_refresh(p, NULL, 0);
 }
 
 void pane_resize(struct pane *p, int x, int y, int w, int h)

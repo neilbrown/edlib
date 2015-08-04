@@ -3,23 +3,6 @@
 
 struct pane;
 struct map;
-union event_info;
-typedef int (*refresh_fn)(struct pane *p, int damage);
-struct pane {
-	struct pane		*parent;
-	struct list_head	siblings;
-	struct list_head	children;
-	int			x,y,z;
-	int			h,w;
-	struct pane		*focus;
-	int			cx, cy;	/* cursor position */
-
-	int			damaged;
-
-	struct map		*keymap;
-	refresh_fn		refresh;
-	void			*data;
-};
 
 enum {
 	DAMAGED_CHILD	= 1,
@@ -44,6 +27,9 @@ void pane_set_modifier(struct pane *p, int mod);
 void pane_damaged(struct pane *p, int type);
 struct pane *pane_to_root(struct pane *p, int *x, int *y, int *w, int *h);
 int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h);
+void pane_set_mode(struct pane *p, int mode, int transient);
+void pane_set_numeric(struct pane *p, int numeric);
+void pane_set_extra(struct pane *p, int extra);
 
 struct pane *ncurses_init(struct event_base *base, struct map *keymap);
 void ncurses_end(void);

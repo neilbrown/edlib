@@ -109,6 +109,15 @@ struct mark {
 	int			viewnum;
 };
 
+struct point {
+	struct mark		m;
+	struct doc		*doc;
+	struct pane		*owner;
+	int			view_num;
+	int			size;
+	struct tlist_head	lists[];
+};
+
 struct mark *mark_of_point(struct point *p);
 struct mark *mark_dup(struct mark *m, int notype);
 void mark_free(struct mark *m);
@@ -126,7 +135,7 @@ void point_notify_change(struct doc *d, struct point *p);
 void doc_check_consistent(struct doc *d);
 void point_to_mark(struct doc *d, struct point *p, struct mark *m);
 /*??*/struct doc_ref point_ref(struct point *p);
-struct point *point_new(struct doc *d, struct point **owner);
+struct point *point_new(struct doc *d, struct pane *owner);
 wint_t mark_next(struct doc *d, struct mark *m);
 wint_t mark_prev(struct doc *d, struct mark *m);
 struct mark *mark_at_point(struct point *p, int view);
@@ -152,7 +161,7 @@ void attr_free(struct attrset **setp);
 
 
 /* Commands */
-/* FIXME */ typedef int (*refresh_fn)(struct pane *p, int damage);
+/* FIXME */ typedef int (*refresh_fn)(struct pane *p, struct pane *point_pane, int damage);
 
 struct command {
 	int	(*func)(struct command *comm, struct cmd_info *ci);
@@ -161,7 +170,7 @@ struct command {
 };
 /* Each event (above) is accompanied by a cmd_info structure.
  * 'key' and 'focus' are always present, others only if relevant.
- * Repeat is present for 'key' and 'move'.  INT_MAX means no number was
+ * Numeric is present for 'key' and 'move'.  INT_MAX/2 means no number was
  *   requested so is usually treated like '1'.  Negative numbers are quite
  *   possible.
  * x,y are present for mouse events
@@ -171,19 +180,39 @@ struct command {
 struct cmd_info {
 	wint_t		key;
 	struct pane	*focus;
-	int		repeat;
+	int		numeric, extra;
 	int		x,y;
 	char		*str;
 	struct mark	*mark;
-	struct doc	*doc;
+	struct pane	*point_pane;
 };
-
+#define	NO_NUMERIC	(INT_MAX/2)
+#define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric)
 
 struct map *key_alloc(void);
 int key_handle(struct cmd_info *ci);
 int key_handle_focus(struct cmd_info *ci);
 int key_handle_xy(struct cmd_info *ci);
-void key_add(struct map *map, wint_t k, struct command *comm);
-void key_add_range(struct map *map, wint_t first, wint_t last,
+int key_add(struct map *map, wint_t k, struct command *comm);
+int key_add_range(struct map *map, wint_t first, wint_t last,
 		   struct command *comm);
-struct command *key_register_mod(char *name, int *bit);
+struct command *key_register_mode(char *name, int *mode);
+
+
+/* pane */
+struct pane {
+	struct pane		*parent;
+	struct list_head	siblings;
+	struct list_head	children;
+	int			x,y,z;
+	int			h,w;
+	struct pane		*focus;
+	int			cx, cy;	/* cursor position */
+
+	int			damaged;
+
+	struct map		*keymap;
+	refresh_fn		refresh;
+	void			*data;
+	struct point		*point;
+};

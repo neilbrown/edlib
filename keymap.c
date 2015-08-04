@@ -3,21 +3,25 @@
  *
  * A keymap maps a key to a command.
  * Keys are ordered for fast binary-search lookup.
- * A "key" includes and modifiers which can be registered separately.
+ * A "key" includes a mode which can be registered separately, and
+ * two modifier bits: alt/meta and super.
  * 21 bits represent a particular key.  This covers all of Unicode
  * and a bit more.  1FFFxx is used for function keys with numbers
  * aligning with curses KEY_*codes.  1FFExx is used for mouse button.
- * This leaves 11 bits in a u32 for modifiers.
- * e.g. meta shift control C-x C-c etc.
+ * 1 bit is used for 'META' aka 'ALT'.  1 for 'super'.
+ * Shift and Ctrl are included in the key itself in different ways.
+ * Remaining 9 bits identify a mode or modifier such as 'emacs' or 'vi'
+ * or 'C-x' or 'C-c' or 'VI-insert' etc
  *
  * A 'command' is a struct provided by any of various
  * modules.
  *
- * Modifiers are global and can be registered.  Doing so returns
+ * Modes are global and can be registered.  Doing so returns
  * a command which can be then bound to a key to effect that
- * modifier.
+ * mode.  Modifies are either transient or stable.  Stable
+ * modifiers must be explicitly 'replaced'.
  *
- * A range can be stored by starting first and last, and having
+ * A range can be stored by stating first and last, and having
  * a NULL command for the last.
  */
 
@@ -36,9 +40,10 @@ struct map {
 };
 
 static struct modmap {
-	char *name;
+	char	*name;
+	bool	transient;
 	struct command comm;
-} modmap[11] = {{0}};
+} modmap[512] = {{0}};
 
 static int size2alloc(int size)
 {
@@ -73,21 +78,21 @@ static int key_find(struct map *map, wint_t k)
 	return hi;
 }
 
-void key_add(struct map *map, wint_t k, struct command *comm)
+int key_add(struct map *map, wint_t k, struct command *comm)
 {
 	int size = size2alloc(map->size + 1);
 	int pos;
 
 	if (!comm)
-		return;
+		return 0;
 
 	pos = key_find(map, k);
 	if (pos < map->size && map->keys[pos] == k)
 		/* Ignore duplicate */
-		return;
+		return 0;
 	if (pos < map->size && map->comms[pos] == NULL)
 		/* in middle of a range */
-		return;
+		return 0;
 
 	if (size2alloc(map->size) != size) {
 		map->keys = realloc(map->keys, size * sizeof(int));
@@ -102,29 +107,30 @@ void key_add(struct map *map, wint_t k, struct command *comm)
 	map->keys[pos] = k;
 	map->comms[pos] = comm;
 	map->size += 1;
+	return 1;
 }
 
-void key_add_range(struct map *map, wint_t first, wint_t last,
+int key_add_range(struct map *map, wint_t first, wint_t last,
 		   struct command *comm)
 {
 	int size = size2alloc(map->size + 2);
 	int pos, pos2;
 
 	if (!comm)
-		return;
+		return 0;
 
 	pos = key_find(map, first);
 	if (pos < map->size && map->keys[pos] == first)
 		/* Ignore duplicate */
-		return;
+		return 0;
 	if (pos < map->size && map->comms[pos] == NULL)
 		/* in middle of a range */
-		return;
+		return 0;
 
 	pos2 = key_find(map, last);
 	if (pos != pos2)
 		/* Overlaps existing keys */
-		return;
+		return 0;
 
 	if (size2alloc(map->size) != size) {
 		map->keys = realloc(map->keys, size * sizeof(int));
@@ -141,6 +147,7 @@ void key_add_range(struct map *map, wint_t first, wint_t last,
 	map->keys[pos+1] = last;
 	map->comms[pos+1] = NULL;
 	map->size += 2;
+	return 1;
 }
 
 #if 0
@@ -160,37 +167,38 @@ void key_del(struct map *map, wint_t k)
 }
 #endif
 
-static int key_modify(struct command *comm, struct cmd_info *ci)
+static int key_mode(struct command *comm, struct cmd_info *ci)
 {
 	struct modmap *m = container_of(comm, struct modmap, comm);
 	int i = m - modmap;
 
-	pane_set_modifier(ci->focus, 1<<(i+21));
+	pane_set_mode(ci->focus, K_MOD(i, 0), m->transient);
 	return 1;
 }
 
-struct command *key_register_mod(char *name, int *bit)
+struct command *key_register_mode(char *name, int *mode)
 {
 	int i;
-	int free = -1;
-	for (i = 0; i < 11; i++) {
+	int free = 0;
+	for (i = 1; i < 512; i++) {
 		if (!modmap[i].name) {
-			if (free < 0)
+			if (!free)
 				free = i;
 			continue;
 		}
 		if (strcmp(modmap[i].name, name) == 0) {
-			*bit = 1 << (i + 21);
+			*mode = i;
 			return &modmap[i].comm;
 		}
 	}
-	if (free < 0)
+	if (!free)
 		return NULL;
 	modmap[free].name = strdup(name);
-	modmap[free].comm.func = key_modify;
+	modmap[free].transient = 1;
+	modmap[free].comm.func = key_mode;
 	modmap[free].comm.name = name;
 	modmap[free].comm.type = NULL;
-	*bit  = 1 << (free+21);
+	*mode = free;
 	return &modmap[free].comm;
 }
 
@@ -241,8 +249,13 @@ int key_handle_focus(struct cmd_info *ci)
 	/* Handle this in the focus pane, so x,y are irrelevant */
 	ci->x = -1;
 	ci->y = -1;
-	while (ci->focus->focus)
+	if (ci->focus->point)
+		ci->point_pane = ci->focus;
+	while (ci->focus->focus) {
 		ci->focus = ci->focus->focus;
+		if (ci->focus->point)
+			ci->point_pane = ci->focus;
+	}
 	return key_handle(ci);
 }
 
@@ -253,6 +266,8 @@ int key_handle_xy(struct cmd_info *ci)
 	int x = ci->x;
 	int y = ci->y;
 
+	if (p->point)
+		ci->point_pane = p;
 	while (1) {
 		struct pane *t, *chld = NULL;
 
@@ -270,6 +285,8 @@ int key_handle_xy(struct cmd_info *ci)
 		x -= chld->x;
 		y -= chld->y;
 		p = chld;
+		if (p->point)
+			ci->point_pane = p;
 	}
 	ci->x = x;
 	ci->y = y;

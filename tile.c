@@ -42,7 +42,7 @@ struct tileinfo {
 static void tile_adjust(struct pane *p);
 static void tile_avail(struct pane *p, struct pane *ignore);
 
-static int tile_refresh(struct pane *p, int damage)
+static int tile_refresh(struct pane *p, struct pane *point_pane, int damage)
 {
 	struct tileinfo *ti = p->data;
 
@@ -465,11 +465,11 @@ DEF_CMD(comm_wider, tile_wider, "enlarge-tile-horiz");
 void tile_register(struct map *m)
 {
 	int c_x;
-	struct command *cmd = key_register_mod("C-x", &c_x);
+	struct command *cmd = key_register_mode("C-x", &c_x);
 
 	key_add(m, 'X'-64, cmd);
-	key_add(m, c_x | 'o', &comm_next);
-	key_add(m, c_x | 'O', &comm_prev);
-	key_add(m, c_x | '^', &comm_higher);
-	key_add(m, c_x | '}', &comm_wider);
+	key_add(m, K_MOD(c_x, 'o'), &comm_next);
+	key_add(m, K_MOD(c_x, 'O'), &comm_prev);
+	key_add(m, K_MOD(c_x, '^'), &comm_higher);
+	key_add(m, K_MOD(c_x, '}'), &comm_wider);
 }

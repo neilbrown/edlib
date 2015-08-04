@@ -20,7 +20,6 @@
 #include "extras.h"
 
 struct he_data {
-	struct view_data *v;
 	struct mark	*top, *bot;
 	int		ignore_point;
 	struct command	type;
@@ -30,7 +29,7 @@ struct he_data {
 
 static struct map *he_map;
 
-static int render_hex_refresh(struct pane *p, int damage);
+static int render_hex_refresh(struct pane *p, struct pane *point_pane, int damage);
 #define	CMD(func, name) {func, name, render_hex_refresh}
 #define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
@@ -54,7 +53,7 @@ static struct mark *render(struct doc *d, struct point *pt, struct pane *p)
 
 	pane_clear(p, 0, 0, 0, 0, 0);
 
-	count_calculate(he->v->doc, NULL, he->top, &l , &w, &c);
+	count_calculate(pt->doc, NULL, he->top, &l , &w, &c);
 
 	m = mark_dup(he->top, 0);
 
@@ -153,21 +152,22 @@ static struct mark *find_top(struct doc *d, struct point *pt, struct pane *p,
 	return m;
 }
 
-static int render_hex_refresh(struct pane *p, int damage)
+static int render_hex_refresh(struct pane *p, struct pane *point_pane, int damage)
 {
 	struct he_data *he = p->data;
 	struct mark *end = NULL, *top;
+	struct point *pt = point_pane->point;
 
 	if (he->top) {
-		end = render(he->v->doc, he->v->point, p);
+		end = render(pt->doc, pt, p);
 		if (he->ignore_point || p->cx >= 0)
 			goto found;
 	}
-	top = find_top(he->v->doc, he->v->point, p, he->top, end);
+	top = find_top(pt->doc, pt, p, he->top, end);
 	mark_free(he->top);
 	mark_free(end);
 	he->top = top;
-	end = render(he->v->doc, he->v->point, p);
+	end = render(pt->doc, pt, p);
 found:
 	mark_free(he->bot);
 	he->bot = end;
@@ -190,7 +190,6 @@ void render_hex_attach(struct pane *p)
 {
 	struct he_data *he = malloc(sizeof(*he));
 
-	he->v = p->data;
 	he->pane = p;
 	he->top = NULL;
 	he->bot = NULL;
@@ -198,7 +197,7 @@ void render_hex_attach(struct pane *p)
 	he->type.func = render_hex_notify;
 	he->type.name = "render_hex_notify";
 	he->type.type = NULL;
-	he->typenum = doc_add_type(he->v->doc, &he->type);
+	he->typenum = doc_add_type(p->parent->point->doc, &he->type);
 	p->data = he;
 	p->refresh = render_hex_refresh;
 	p->keymap = he_map;

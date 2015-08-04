@@ -23,25 +23,25 @@ static struct doc *attach_file(struct pane *p, char *fname)
 {
 	int fd = open(fname, O_RDONLY);
 	struct doc *d = doc_new("text");
-	struct view_data *vd;
+	struct point *pt;
 	int i;
 
 	p = view_attach(p, d, 1);
-	vd = p->data;
+	pt = p->parent->point;
 	if (fd >= 0)
-		doc_load_file(d, vd->point, fd);
+		doc_load_file(d, pt, fd);
 	else {
 		bool first=1;
-		doc_replace(d, vd->point, NULL, "File not found: ", &first);
-		doc_replace(d, vd->point, NULL, fname, &first);
-		doc_replace(d, vd->point, NULL, "\n", &first);
+		doc_replace(d, pt, NULL, "File not found: ", &first);
+		doc_replace(d, pt, NULL, fname, &first);
+		doc_replace(d, pt, NULL, "\n", &first);
 	}
 
-	point_reset(d, vd->point);
+	point_reset(d, pt);
 	for (i=0 ; i<2000; i++)
-		mark_next(vd->doc, mark_of_point(vd->point));
+		mark_next(pt->doc, mark_of_point(pt));
 
-	render_text_attach(p);
+	render_text_attach(p, pt);
 	return d;
 }
 
