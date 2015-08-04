@@ -29,15 +29,15 @@ static struct doc *attach_file(struct pane *p, char *fname)
 	p = view_attach(p, d, 1);
 	pt = p->parent->point;
 	if (fd >= 0)
-		doc_load_file(d, pt, fd);
+		doc_load_file(pt, fd);
 	else {
 		bool first=1;
-		doc_replace(d, pt, NULL, "File not found: ", &first);
-		doc_replace(d, pt, NULL, fname, &first);
-		doc_replace(d, pt, NULL, "\n", &first);
+		doc_replace(pt, NULL, "File not found: ", &first);
+		doc_replace(pt, NULL, fname, &first);
+		doc_replace(pt, NULL, "\n", &first);
 	}
 
-	point_reset(d, pt);
+	point_reset(pt);
 	for (i=0 ; i<2000; i++)
 		mark_next(pt->doc, mark_of_point(pt));
 

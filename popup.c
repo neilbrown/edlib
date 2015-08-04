@@ -96,7 +96,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, wint_t ke
 	ppi->doc = d;
 	p2 = view_attach(p, d, 0);
 	pt = p2->parent->point;
-	doc_replace(d, pt, NULL, content, &first);
+	doc_replace(pt, NULL, content, &first);
 	render_text_attach(p2, pt);
 	ret = pane_register(p2, 0, popup_no_refresh, NULL, NULL);
 	pane_resize(ret, 0, 0, p2->w, p2->h);

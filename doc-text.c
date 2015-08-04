@@ -175,12 +175,13 @@ text_new_alloc(struct text *t, int size)
 	return new;
 }
 
-static int text_load_file(struct doc *d, struct point *pos, int fd)
+static int text_load_file(struct point *pos, int fd)
 {
 	off_t size = lseek(fd, 0, SEEK_END);
 	struct text_alloc *a;
 	struct text_chunk *c = malloc(sizeof(*c));
 	int len;
+	struct doc *d = pos->doc;
 	struct text *t = container_of(d, struct text, doc);
 
 	if (size < 0)
@@ -664,11 +665,12 @@ static int text_redo(struct text *t, struct doc_ref *start, struct doc_ref *end)
 		return 2;
 }
 
-static int text_reundo(struct doc *d, struct point *p, bool redo)
+static int text_reundo(struct point *p, bool redo)
 {
 	struct doc_ref start, end;
 	int did_do = 2;
 	bool first = 1;
+	struct doc *d = p->doc;
 	struct text *t = container_of(d, struct text, doc);
 
 	while (did_do != 1) {
@@ -685,7 +687,7 @@ static int text_reundo(struct doc *d, struct point *p, bool redo)
 
 		if (first) {
 			/* Not nearby, look from the start */
-			point_reset(&t->doc, p);
+			point_reset(p);
 			where = 1;
 			first = 0;
 		} else
@@ -730,7 +732,7 @@ static int text_reundo(struct doc *d, struct point *p, bool redo)
 			if (text_update_following_after_change(t, &m->ref,
 							       &start, &end) == 0)
 				break;
-		point_notify_change(&t->doc, p);
+		point_notify_change(p);
 
 		doc_check_consistent(&t->doc);
 	}
@@ -1181,9 +1183,10 @@ static void text_check_consistent(struct text *t)
 	doc_check_consistent(d);
 }
 
-static void text_replace(struct doc *d, struct point *pos, struct mark *end,
+static void text_replace(struct point *pos, struct mark *end,
 			 char *str, bool *first)
 {
+	struct doc *d = pos->doc;
 	struct text *t = container_of(d, struct text, doc);
 	struct mark *pm = mark_of_point(pos);
 
@@ -1194,7 +1197,7 @@ static void text_replace(struct doc *d, struct point *pos, struct mark *end,
 
 		if (!mark_ordered(pm, end)) {
 			myend = mark_dup(pm, 1);
-			point_to_mark(d, pos, end);
+			point_to_mark(pos, end);
 		} else
 			myend = mark_dup(end, 1);
 		l = count_bytes(t, mark_of_point(pos), myend);
@@ -1227,7 +1230,7 @@ static void text_replace(struct doc *d, struct point *pos, struct mark *end,
 		text_check_consistent(t);
 
 	}
-	point_notify_change(d, pos);
+	point_notify_change(pos);
 }
 
 static struct doc_operations text_ops = {

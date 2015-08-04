@@ -44,9 +44,10 @@ static int put_str(struct pane *p, char *buf, int attr, int x, int y)
 	return len;
 }
 
-static struct mark *render(struct doc *d, struct point *pt, struct pane *p)
+static struct mark *render(struct point *pt, struct pane *p)
 {
 	struct he_data *he = p->data;
+	struct doc *d = pt->doc;
 	int x = 0, y = 0;
 	struct mark *m;
 	int l,w,c;
@@ -96,7 +97,7 @@ static struct mark *render(struct doc *d, struct point *pt, struct pane *p)
 	return m;
 }
 
-static struct mark *find_top(struct doc *d, struct point *pt, struct pane *p,
+static struct mark *find_top(struct point *pt, struct pane *p,
 			     struct mark *top, struct mark *bot)
 {
 	/* top and bot might be NULL, else they record what is currently
@@ -110,6 +111,7 @@ static struct mark *find_top(struct doc *d, struct point *pt, struct pane *p,
 	struct mark *m;
 	int ppos, tpos, bpos, pos, tpos2;
 	struct he_data *he = p->data;
+	struct doc *d = pt->doc;
 
 	count_calculate(d, NULL, mark_of_point(pt), &l, &w, &ppos);
 	if (top)
@@ -159,15 +161,15 @@ static int render_hex_refresh(struct pane *p, struct pane *point_pane, int damag
 	struct point *pt = point_pane->point;
 
 	if (he->top) {
-		end = render(pt->doc, pt, p);
+		end = render(pt, p);
 		if (he->ignore_point || p->cx >= 0)
 			goto found;
 	}
-	top = find_top(pt->doc, pt, p, he->top, end);
+	top = find_top(pt, p, he->top, end);
 	mark_free(he->top);
 	mark_free(end);
 	he->top = top;
-	end = render(pt->doc, pt, p);
+	end = render(pt, p);
 found:
 	mark_free(he->bot);
 	he->bot = end;

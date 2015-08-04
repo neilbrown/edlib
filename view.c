@@ -477,7 +477,7 @@ static int view_replace(struct command *c, struct cmd_info *ci)
 	struct view_data *vd = p->data;
 	struct point *pt = ci->point_pane->point;
 
-	doc_replace(pt->doc, pt, ci->mark, ci->str, &vd->first_change);
+	doc_replace(pt, ci->mark, ci->str, &vd->first_change);
 	return 1;
 }
 DEF_CMD(comm_replace, view_replace, "do-replace");
@@ -517,7 +517,7 @@ DEF_CMD(comm_click, view_click, "view-click");
 static int view_undo(struct command *c, struct cmd_info *ci)
 {
 	struct point *pt = ci->point_pane->point;
-	doc_undo(pt->doc, pt, 0);
+	doc_undo(pt, 0);
 	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
 	return 1;
 }
@@ -526,7 +526,7 @@ DEF_CMD(comm_undo, view_undo, "undo");
 static int view_redo(struct command *c, struct cmd_info *ci)
 {
 	struct point *pt = ci->point_pane->point;
-	doc_undo(pt->doc, pt, 1);
+	doc_undo(pt, 1);
 	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
 	return 1;
 }

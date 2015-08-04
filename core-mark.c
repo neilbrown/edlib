@@ -236,9 +236,10 @@ struct point *point_new(struct doc *d, struct pane *owner)
 	return ret;
 }
 
-void point_reset(struct doc *d, struct point *p)
+void point_reset(struct point *p)
 {
 	int i;
+	struct doc *d = p->doc;
 	/* move point to start of text */
 	d->ops->set_ref(d, &p->m, 1);
 	hlist_del(&p->m.all);
@@ -477,10 +478,11 @@ wint_t mark_prev(struct doc *d, struct mark *m)
  * Then update 'all' list, text ref and seq number.
  */
 
-static void point_forward_to_mark(struct doc *d, struct point *p, struct mark *m)
+static void point_forward_to_mark(struct point *p, struct mark *m)
 {
 	struct point *ptmp, *pnear;
 	int i;
+	struct doc *d = p->doc;
 
 	pnear = p;
 	ptmp = p;
@@ -530,9 +532,10 @@ static void point_forward_to_mark(struct doc *d, struct point *p, struct mark *m
 	assign_seq(&p->m, hlist_prev_entry(&p->m, all)->seq);
 }
 
-static void point_backward_to_mark(struct doc *d, struct point *p, struct mark *m)
+static void point_backward_to_mark(struct point *p, struct mark *m)
 {
 	struct point *ptmp, *pnear;
+	struct doc *d = p->doc;
 	int i;
 
 	pnear = p;
@@ -583,17 +586,18 @@ static void point_backward_to_mark(struct doc *d, struct point *p, struct mark *
 	assign_seq(&p->m, m->seq);
 }
 
-void point_to_mark(struct doc *d, struct point *p, struct mark *m)
+void point_to_mark(struct point *p, struct mark *m)
 {
 	if (p->m.seq < m->seq)
-		point_forward_to_mark(d, p, m);
+		point_forward_to_mark(p, m);
 	else if (p->m.seq > m->seq)
-		point_backward_to_mark(d, p, m);
+		point_backward_to_mark(p, m);
 }
 
-void point_notify_change(struct doc *d, struct point *p)
+void point_notify_change(struct point *p)
 {
 	struct cmd_info ci;
+	struct doc *d = p->doc;
 	int i;
 
 	ci.key = EV_REPLACE;

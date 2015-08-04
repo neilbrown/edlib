@@ -94,11 +94,12 @@ static int rt_back(struct doc *d, struct pane *p, struct mark *m, int *x, int *y
 	return 1;
 }
 
-static struct mark *render(struct doc *d, struct point *pt, struct pane *p)
+static struct mark *render(struct point *pt, struct pane *p)
 {
 	struct mark *m;
 	struct mark *last_vis;
 	struct rt_data *rd = p->data;
+	struct doc *d = pt->doc;
 	int x = 0, y = 0;
 	wint_t ch;
 
@@ -160,7 +161,7 @@ static struct mark *find_pos(struct doc *d, struct pane *p, int px, int py)
 	return m;
 }
 
-static struct mark *find_top(struct doc *d, struct point *pt, struct pane *p,
+static struct mark *find_top(struct point *pt, struct pane *p,
 			     struct mark *top, struct mark *bot)
 {
 	/* top and bot might be NULL, else they record what is currently
@@ -174,6 +175,7 @@ static struct mark *find_top(struct doc *d, struct point *pt, struct pane *p,
 	 */
 	struct rt_data *rt = p->data;
 	struct mark *start, *end;
+	struct doc *d = pt->doc;
 	int found_start = 0, found_end = 0;
 	int sx=0, sy=0, ex=0, ey=0;
 	wint_t ch;
@@ -222,16 +224,16 @@ static int render_text_refresh(struct pane  *p, struct pane *point_pane, int dam
 	struct point *pt = point_pane->point;
 
 	if (rt->top) {
-		end = render(pt->doc, pt, p);
+		end = render(pt, p);
 		if (rt->ignore_point || p->cx >= 0)
 			/* Found the cursor! */
 			goto found;
 	}
-	top = find_top(pt->doc, pt, p, rt->top, end);
+	top = find_top(pt, p, rt->top, end);
 	mark_free(rt->top);
 	mark_free(end);
 	rt->top = top;
-	end = render(pt->doc, pt, p);
+	end = render(pt, p);
 found:
 	mark_free(rt->bot);
 	rt->bot = end;
@@ -315,7 +317,7 @@ static int render_text_set_cursor(struct command *c, struct cmd_info *ci)
 	struct mark *m;
 
 	m = find_pos(pt->doc, p, ci->x, ci->y);
-	point_to_mark(pt->doc, pt, m);
+	point_to_mark(pt, m);
 	mark_free(m);
 	pane_focus(p);
 	return 1;

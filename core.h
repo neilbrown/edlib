@@ -44,10 +44,10 @@ struct doc {
 };
 
 struct doc_operations {
-	void		(*replace)(struct doc *d, struct point *pos, struct mark *end,
+	void		(*replace)(struct point *pos, struct mark *end,
 				   char *str, bool *first);
-	int		(*load_file)(struct doc *d, struct point *pos, int fd);
-	int		(*reundo)(struct doc *d, struct point *pos, bool undo);
+	int		(*load_file)(struct point *pos, int fd);
+	int		(*reundo)(struct point *pos, bool undo);
 	wint_t		(*step)(struct doc *d, struct mark *m, bool forward, bool move);
 	char		*(*get_str)(struct doc *d, struct mark *from, struct mark *to);
 	void		(*set_ref)(struct doc *d, struct mark *m, bool start);
@@ -59,33 +59,6 @@ int doc_add_type(struct doc *d, struct command *c);
 int doc_find_type(struct doc *d, struct command *c);
 struct doc *doc_new(char *type);
 void doc_register_type(char *type, struct doc *(*new)(void));
-
-static inline wint_t doc_following(struct doc *d, struct mark *m)
-{
-	return d->ops->step(d, m, 1, 0);
-}
-static inline wint_t doc_prior(struct doc *d, struct mark *m)
-{
-	return d->ops->step(d, m, 0, 0);
-}
-static inline void doc_replace(struct doc *d, struct point *p, struct mark *m,
-			       char *str, bool *first)
-{
-	d->ops->replace(d, p, m, str, first);
-}
-static inline int doc_undo(struct doc *d, struct point *p, bool redo)
-{
-	return d->ops->reundo(d, p, redo);
-}
-static inline int doc_load_file(struct doc *d, struct point *p, int fd)
-{
-	return d->ops->load_file(d, p, fd);
-}
-static inline char *doc_getstr(struct doc *d, struct mark *from, struct mark *to)
-{
-	return d->ops->get_str(d, from, to);
-}
-
 
 /* Points and Marks */
 
@@ -128,12 +101,12 @@ struct mark *doc_prev_mark_all(struct doc *d, struct mark *m);
 struct mark *doc_first_mark(struct doc *d, int viewnum);
 struct mark *doc_next_mark(struct doc *d, struct mark *m);
 struct mark *doc_prev_mark(struct doc *d, struct mark *m);
-void point_reset(struct doc *d, struct point *p);
+void point_reset(struct point *p);
 void mark_forward_over(struct mark *m, struct mark *m2);
 void mark_backward_over(struct mark *m, struct mark *mp);
-void point_notify_change(struct doc *d, struct point *p);
+void point_notify_change(struct point *p);
 void doc_check_consistent(struct doc *d);
-void point_to_mark(struct doc *d, struct point *p, struct mark *m);
+void point_to_mark(struct point *p, struct mark *m);
 /*??*/struct doc_ref point_ref(struct point *p);
 struct point *point_new(struct doc *d, struct pane *owner);
 wint_t mark_next(struct doc *d, struct mark *m);
@@ -216,3 +189,33 @@ struct pane {
 	void			*data;
 	struct point		*point;
 };
+
+
+/* Inlines */
+
+static inline wint_t doc_following(struct doc *d, struct mark *m)
+{
+	return d->ops->step(d, m, 1, 0);
+}
+static inline wint_t doc_prior(struct doc *d, struct mark *m)
+{
+	return d->ops->step(d, m, 0, 0);
+}
+static inline void doc_replace(struct point *p, struct mark *m,
+			       char *str, bool *first)
+{
+	p->doc->ops->replace(p, m, str, first);
+}
+static inline int doc_undo(struct point *p, bool redo)
+{
+	return p->doc->ops->reundo(p, redo);
+}
+static inline int doc_load_file(struct point *p, int fd)
+{
+	return p->doc->ops->load_file(p, fd);
+}
+static inline char *doc_getstr(struct doc *d, struct mark *from, struct mark *to)
+{
+	return d->ops->get_str(d, from, to);
+}
+
