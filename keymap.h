@@ -34,6 +34,8 @@
 #define SUPER(X)	((X) | (1<<22))
 #define	FUNC_KEY(k)	((k) | 0x1FFF00)
 
+#define KCTRL(X) ((X) & 0x1f)
+
 /* mouse numbers are:
  *  0-4 for button 0
  *  5-9 for button 1

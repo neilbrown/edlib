@@ -31,8 +31,6 @@ struct he_data {
 static struct map *he_map;
 
 static int render_hex_refresh(struct pane *p, struct pane *point_pane, int damage);
-#define	CMD(func, name) {func, name, render_hex_refresh}
-#define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
 static int put_str(struct pane *p, char *buf, int attr, int x, int y)
 {

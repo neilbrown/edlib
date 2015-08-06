@@ -9,6 +9,7 @@ OBJ = ncurses.o view.o tile.o mainloop.o attr.o keymap.o pane.o \
 	render_text.o render_hex.o \
 	popup.o line_count.o \
 	core-mark.o core-doc.o \
+	mode-emacs.o \
 	doc-text.o
 
 H = list.h pane.h attr.h tile.h view.h keymap.h extras.h core.h

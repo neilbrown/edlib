@@ -35,8 +35,6 @@ struct popup_info {
 	struct doc	*doc;
 };
 
-#define	CMD(func, name) {func, name}
-#define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 static struct map *pp_map;
 
 static int popup_refresh(struct pane *p, struct pane *point_pane, int damage)
@@ -97,7 +95,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, wint_t ke
 	pt = p2->parent->point;
 	doc_replace(pt, NULL, content, &first);
 	render_text_attach(p2, pt);
-	ret = pane_register(p2, 0, popup_no_refresh, NULL, NULL);
+	ret = pane_register(p2, 0, popup_no_refresh, ppi, NULL);
 	pane_resize(ret, 0, 0, p2->w, p2->h);
 	ret->cx = ret->cy = -1;
 	ret->keymap = pp_map;
@@ -116,6 +114,10 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct popup_info *ppi = p->data;
 	struct cmd_info ci2;
+
+	if (ci->str == NULL || ci->str[0] != '\n')
+		return 0;
+
 	ci2.focus = ppi->target;
 	ci2.key = ppi->key;
 	ci2.numeric = 1;
@@ -132,5 +134,5 @@ void popup_init(void)
 {
 	pp_map = key_alloc();
 
-	key_add(pp_map, '\r', &comm_done);
+	key_add(pp_map, EV_REPLACE, &comm_done);
 }

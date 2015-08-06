@@ -54,8 +54,6 @@ static int tile_refresh(struct pane *p, struct pane *point_pane, int damage)
 	}
 	return 0;
 }
-#define	CMD(func, name) {func, name}
-#define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
 struct pane *tile_init(struct pane *display)
 {
@@ -469,11 +467,10 @@ DEF_CMD(comm_wider, tile_wider, "enlarge-tile-horiz");
 void tile_register(struct map *m)
 {
 	int c_x;
-	struct command *cmd = key_register_mode("C-x", &c_x);
 
+	key_register_mode("C-x", &c_x);
 	tile_map = key_alloc();
 
-	key_add(m, 'X'-64, cmd);
 	key_add(tile_map, K_MOD(c_x, 'o'), &comm_next);
 	key_add(tile_map, K_MOD(c_x, 'O'), &comm_prev);
 	key_add(tile_map, K_MOD(c_x, '^'), &comm_higher);

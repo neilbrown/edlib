@@ -44,9 +44,6 @@ static void set_screen(SCREEN *scr)
 }
 
 static void input_handle(int fd, short ev, void *P);
-#define CMD(func, name) {func, name}
-#define DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
-
 
 static void move_cursor(struct pane *p)
 {

@@ -31,9 +31,6 @@ struct rt_data {
 
 static struct map *rt_map;
 
-#define	CMD(func, name) {func, name}
-#define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
-
 static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y, int draw)
 {
 	wint_t ch = mark_next(d, m);

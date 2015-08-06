@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
 	struct pane *root;
 	struct pane *b1, *b2, *b3, *b4;
 	struct map *global_map;
+	int emacs;
 
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
@@ -65,6 +66,9 @@ int main(int argc, char *argv[])
 	render_text_register(global_map);
 	render_hex_register(global_map);
 	popup_init();
+	emacs_register(global_map);
+	key_register_mode("emacs", &emacs);
+	pane_set_mode(root, K_MOD(emacs, 0), 0);
 
 	b1 = tile_init(root);
 	b2 = tile_split(b1, 0, 0);

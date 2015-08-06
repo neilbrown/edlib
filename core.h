@@ -140,6 +140,11 @@ struct command {
 	int	(*func)(struct command *comm, struct cmd_info *ci);
 	char	*name;
 };
+
+#define	CMD(func, name) {func, name}
+#define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
+#define	ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
+
 /* Each event (above) is accompanied by a cmd_info structure.
  * 'key' and 'focus' are always present, others only if relevant.
  * Numeric is present for 'key' and 'move'.  INT_MAX/2 means no number was

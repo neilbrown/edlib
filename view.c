@@ -22,7 +22,6 @@
 
 #include "extras.h"
 
-#define ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 struct view_data {
 	int		border;
 	struct command	ch_notify;
@@ -71,9 +70,6 @@ static int view_refresh(struct pane *p, struct pane *point_pane, int damage)
 		pane_text(p, msg[i], A_STANDOUT, i+4, p->h-1);
 	return 0;
 }
-
-#define	CMD(func, name) {func, name}
-#define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
 static int view_null(struct pane *p, struct pane *point_pane, int damage)
 {
@@ -307,177 +303,6 @@ static int view_page(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_page, view_page, "move-page");
 
-static int view_move(struct command *c, struct cmd_info *ci);
-static int view_delete(struct command *c, struct cmd_info *ci);
-
-#define CTRL(X) ((X) & 0x1f)
-static struct move_command {
-	struct command	cmd;
-	int		type;
-	int		direction;
-	wint_t		k1, k2, k3;
-} move_commands[] = {
-	{CMD(view_move, "forward-char"), MV_CHAR, 1,
-	 CTRL('F'), FUNC_KEY(KEY_RIGHT), 0},
-	{CMD(view_move, "backward-char"), MV_CHAR, -1,
-	 CTRL('B'), FUNC_KEY(KEY_LEFT), 0},
-	{CMD(view_move, "forward_word"), MV_WORD, 1,
-	 META('f'), META(FUNC_KEY(KEY_RIGHT)), 0},
-	{CMD(view_move, "backward-word"), MV_WORD, -1,
-	 META('b'), META(FUNC_KEY(KEY_LEFT)), 0},
-	{CMD(view_move, "forward_WORD"), MV_WORD2, 1,
-	 META('F'), 0, 0},
-	{CMD(view_move, "backward-WORD"), MV_WORD2, -1,
-	 META('B'), 0, 0},
-	{CMD(view_move, "end-of-line"), MV_EOL, 1,
-	 CTRL('E'), 0, 0},
-	{CMD(view_move, "start-of-line"), MV_EOL, -1,
-	 CTRL('A'), 0, 0},
-	{CMD(view_move, "prev-line"), MV_LINE, -1,
-	 CTRL('P'), FUNC_KEY(KEY_UP), 0},
-	{CMD(view_move, "next-line"), MV_LINE, 1,
-	 CTRL('N'), FUNC_KEY(KEY_DOWN), 0},
-	{CMD(view_move, "end-of-file"), MV_FILE, 1,
-	 META('>'), 0, 0},
-	{CMD(view_move, "start-of-file"), MV_FILE, -1,
-	 META('<'), 0, 0},
-	{CMD(view_move, "page-down"), MV_VIEW_LARGE, 1,
-	 FUNC_KEY(KEY_NPAGE), 0, 0},
-	{CMD(view_move, "page-up"), MV_VIEW_LARGE, -1,
-	 FUNC_KEY(KEY_PPAGE), 0, 0},
-
-	{CMD(view_delete, "delete-next"), MV_CHAR, 1,
-	 CTRL('D'), FUNC_KEY(KEY_DC), 0x7f},
-	{CMD(view_delete, "delete-back"), MV_CHAR, -1,
-	 CTRL('H'), FUNC_KEY(KEY_BACKSPACE), 0},
-	{CMD(view_delete, "delete-word"), MV_WORD, 1,
-	 META('d'), 0, 0},
-	{CMD(view_delete, "delete-back-word"), MV_WORD, -1,
-	 META(CTRL('H')), META(FUNC_KEY(KEY_BACKSPACE)), 0},
-	{CMD(view_delete, "delete-eol"), MV_EOL, 1,
-	 CTRL('K'), 0, 0},
-};
-
-static int view_move(struct command *c, struct cmd_info *ci)
-{
-	struct pane *p = ci->focus;
-	struct move_command *mv = container_of(c, struct move_command, cmd);
-	struct pane *view_pane = p->focus;
-	struct point *pt = ci->point_pane->point;
-	int old_x = -1;
-	struct cmd_info ci2 = {0};
-	int ret = 0;
-
-	if (view_pane)
-		old_x = view_pane->cx;
-
-	ci2.focus = ci->focus;
-	ci2.key = mv->type;
-	ci2.numeric = mv->direction * RPT_NUM(ci);
-	ci2.mark = mark_of_point(pt);
-	ci2.point_pane = ci->point_pane;
-	ret = key_handle_focus(&ci2);
-
-	if (!ret)
-		return 0;
-
-	if (mv->type == MV_VIEW_LARGE && old_x >= 0) {
-		/* Might have lost the cursor - place it at top or
-		 * bottom of view
-		 */
-		ci2.focus = ci->focus;
-		ci2.key = MV_CURSOR_XY;
-		ci2.numeric = 1;
-		ci2.x = old_x;
-		if (mv->direction == 1)
-			ci2.y = 0;
-		else
-			ci2.y = view_pane->h-1;
-		ci2.point_pane = ci->point_pane;
-		key_handle_xy(&ci2);
-	}
-
-	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
-
-	return ret;
-}
-
-static int view_delete(struct command *c, struct cmd_info *ci)
-{
-	struct move_command *mv = container_of(c, struct move_command, cmd);
-	struct cmd_info ci2 = {0};
-	int ret = 0;
-	struct mark *m;
-
-	m = mark_at_point(ci->point_pane->point, MARK_UNGROUPED);
-	ci2.focus = ci->focus;
-	ci2.key = mv->type;
-	ci2.numeric = mv->direction * RPT_NUM(ci);
-	ci2.mark = m;
-	ci2.point_pane = ci->point_pane;
-	ret = key_handle_focus(&ci2);
-	if (!ret) {
-		mark_free(m);
-		return 0;
-	}
-	ci2.focus = ci->focus;
-	ci2.key = EV_REPLACE;
-	ci2.numeric = 1;
-	ci2.extra = ci->extra;
-	ci2.mark = m;
-	ci2.str = NULL;
-	ci2.point_pane = ci->point_pane;
-	ret = key_handle_focus(&ci2);
-	mark_free(m);
-	pane_set_extra(ci->focus, 1);
-
-	return ret;
-}
-
-static int view_insert(struct command *c, struct cmd_info *ci)
-{
-	char str[2];
-	struct cmd_info ci2 = {0};
-	int ret;
-
-	ci2.focus = ci->focus;
-	ci2.key = EV_REPLACE;
-	ci2.numeric = 1;
-	ci2.extra = ci->extra;
-	ci2.mark = mark_of_point(ci->point_pane->point);
-	str[0] = ci->key;
-	str[1] = 0;
-	ci2.str = str;
-	ci2.point_pane = ci->point_pane;
-	ret = key_handle_focus(&ci2);
-	pane_set_extra(ci->focus, 1);
-
-	return ret;
-}
-DEF_CMD(comm_insert, view_insert, "insert-key");
-
-static int view_insert_nl(struct command *c, struct cmd_info *ci)
-{
-	struct pane *p = ci->focus;
-	char str[2];
-	struct cmd_info ci2 = {0};
-	int ret;
-
-	ci2.focus = ci->focus;
-	ci2.key = EV_REPLACE;
-	ci2.numeric = 1;
-	ci2.extra = ci->extra;
-	ci2.mark = mark_of_point(ci->point_pane->point);
-	str[0] = '\n';
-	str[1] = 0;
-	ci2.str = str;
-	ci2.point_pane = ci->point_pane;
-	ret = key_handle_focus(&ci2);
-	pane_set_extra(p, 0); /* A newline starts a new undo */
-	return ret;
-}
-DEF_CMD(comm_insert_nl, view_insert_nl, "insert-nl");
-
 static int view_replace(struct command *c, struct cmd_info *ci)
 {
 	struct point *pt = ci->point_pane->point;
@@ -520,56 +345,10 @@ static int view_click(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_click, view_click, "view-click");
 
-static int view_undo(struct command *c, struct cmd_info *ci)
-{
-	struct point *pt = ci->point_pane->point;
-	doc_undo(pt, 0);
-	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
-	return 1;
-}
-DEF_CMD(comm_undo, view_undo, "undo");
-
-static int view_redo(struct command *c, struct cmd_info *ci)
-{
-	struct point *pt = ci->point_pane->point;
-	doc_undo(pt, 1);
-	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
-	return 1;
-}
-DEF_CMD(comm_redo, view_redo, "redo");
-
-static int view_findfile(struct command *c, struct cmd_info *ci)
-{
-	popup_register(ci->focus, "Find File", "/home/neilb/", EV_USER_DEF(1));
-	return 1;
-}
-DEF_CMD(comm_findfile, view_findfile, "find-file");
-
-static int view_meta(struct command *c, struct cmd_info *ci)
-{
-	pane_set_mode(ci->focus, META(Kmod(ci->key)), 1);
-	pane_set_numeric(ci->focus, ci->numeric);
-	pane_set_extra(ci->focus, ci->extra);
-	return 1;
-}
-DEF_CMD(comm_meta, view_meta, "meta");
-
 void view_register(struct map *m)
 {
-	int c_x;
-	unsigned int i;
-
 	view_map = key_alloc();
-	key_add(m, '['-64, &comm_meta);
 
-	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
-		struct move_command *mc = &move_commands[i];
-		key_add(view_map, mc->k1, &mc->cmd);
-		if (mc->k2)
-			key_add(view_map, mc->k2, &mc->cmd);
-		if (mc->k3)
-			key_add(view_map, mc->k3, &mc->cmd);
-	}
 	key_add(m, MV_CHAR, &comm_char);
 	key_add(m, MV_WORD, &comm_word);
 	key_add(m, MV_WORD2, &comm_WORD);
@@ -578,18 +357,9 @@ void view_register(struct map *m)
 	key_add(m, MV_FILE, &comm_file);
 	key_add(m, MV_VIEW_LARGE, &comm_page);
 
-	key_add_range(m, ' ', '~', &comm_insert);
-	key_add(m, '\t', &comm_insert);
-	key_add(m, '\n', &comm_insert);
-	key_add(view_map, '\r', &comm_insert_nl);
 	key_add(view_map, EV_REPLACE, &comm_replace);
 
 	key_add(m, M_CLICK(0), &comm_click);
 	key_add(m, M_PRESS(0), &comm_click);
 
-	key_add(m, CTRL('_'), &comm_undo);
-	key_add(m, META(CTRL('_')), &comm_redo);
-
-	key_register_mode("C-x", &c_x);
-	key_add(m, K_MOD(c_x, 'f'), &comm_findfile);
 }

@@ -9,3 +9,4 @@ void render_text_register(struct map *m);
 void render_hex_register(struct map *m);
 void render_hex_attach(struct pane *p);
 
+void emacs_register(struct map *m);
