@@ -139,7 +139,6 @@ void attr_free(struct attrset **setp);
 struct command {
 	int	(*func)(struct command *comm, struct cmd_info *ci);
 	char	*name;
-	refresh_fn type;  /* pane of this type is provided as 'target' */
 };
 /* Each event (above) is accompanied by a cmd_info structure.
  * 'key' and 'focus' are always present, others only if relevant.

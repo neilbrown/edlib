@@ -39,6 +39,7 @@ struct tileinfo {
 	struct pane			*p;
 };
 
+static struct map *tile_map;
 static void tile_adjust(struct pane *p);
 static void tile_avail(struct pane *p, struct pane *ignore);
 
@@ -53,13 +54,14 @@ static int tile_refresh(struct pane *p, struct pane *point_pane, int damage)
 	}
 	return 0;
 }
-#define	CMD(func, name) {func, name, tile_refresh}
+#define	CMD(func, name) {func, name}
 #define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
 struct pane *tile_init(struct pane *display)
 {
 	struct tileinfo *ti = malloc(sizeof(*ti));
 	struct pane *p = pane_register(display, 0, tile_refresh, ti, NULL);
+	p->keymap = tile_map;
 	ti->p = p;
 	ti->direction = Neither;
 	INIT_LIST_HEAD(&ti->tiles);
@@ -99,6 +101,7 @@ struct pane *tile_split(struct pane *p, int horiz, int after)
 		ti2->direction = ti->direction;
 		INIT_LIST_HEAD(&ti2->tiles);
 		p2 = pane_register(p->parent, 0, tile_refresh, ti2, &p->siblings);
+		p2->keymap = tile_map;
 		ti2->p = p2;
 		pane_resize(p2, p->x, p->y, p->w, p->h);
 		pane_reparent(p, p2, NULL);
@@ -110,6 +113,7 @@ struct pane *tile_split(struct pane *p, int horiz, int after)
 	ti2->direction = ti->direction;
 	list_add(&ti2->tiles, &ti->tiles);
 	ret = pane_register(p->parent, 0, tile_refresh, ti2, here);
+	ret->keymap = tile_map;
 	ti2->p = ret;
 	switch (!!horiz + 2 * !!after) {
 	case 0: /* vert before */
@@ -467,9 +471,11 @@ void tile_register(struct map *m)
 	int c_x;
 	struct command *cmd = key_register_mode("C-x", &c_x);
 
+	tile_map = key_alloc();
+
 	key_add(m, 'X'-64, cmd);
-	key_add(m, K_MOD(c_x, 'o'), &comm_next);
-	key_add(m, K_MOD(c_x, 'O'), &comm_prev);
-	key_add(m, K_MOD(c_x, '^'), &comm_higher);
-	key_add(m, K_MOD(c_x, '}'), &comm_wider);
+	key_add(tile_map, K_MOD(c_x, 'o'), &comm_next);
+	key_add(tile_map, K_MOD(c_x, 'O'), &comm_prev);
+	key_add(tile_map, K_MOD(c_x, '^'), &comm_higher);
+	key_add(tile_map, K_MOD(c_x, '}'), &comm_wider);
 }

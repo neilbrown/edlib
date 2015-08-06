@@ -44,8 +44,7 @@ static void set_screen(SCREEN *scr)
 }
 
 static void input_handle(int fd, short ev, void *P);
-static int ncurses_refresh(struct pane *p, struct pane *point_pane, int damage);
-#define CMD(func, name) {func, name, ncurses_refresh}
+#define CMD(func, name) {func, name}
 #define DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
 

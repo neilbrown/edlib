@@ -35,8 +35,7 @@ struct popup_info {
 	struct doc	*doc;
 };
 
-static int popup_refresh(struct pane  *p, struct pane *point_pane, int damage);
-#define	CMD(func, name) {func, name, popup_refresh}
+#define	CMD(func, name) {func, name}
 #define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 static struct map *pp_map;
 

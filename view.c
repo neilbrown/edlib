@@ -31,6 +31,8 @@ struct view_data {
 	struct pane	*pane;
 };
 
+static struct map *view_map;
+
 static int view_refresh(struct pane *p, struct pane *point_pane, int damage)
 {
 	int i;
@@ -71,7 +73,7 @@ static int view_refresh(struct pane *p, struct pane *point_pane, int damage)
 	return 0;
 }
 
-#define	CMD(func, name) {func, name, view_refresh}
+#define	CMD(func, name) {func, name}
 #define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
 static int view_null(struct pane *p, struct pane *point_pane, int damage)
@@ -101,10 +103,10 @@ struct pane *view_attach(struct pane *par, struct doc *d, int border)
 	vd->border = border;
 	vd->ch_notify.func = view_notify;
 	vd->ch_notify.name = "view-notify";
-	vd->ch_notify.type = NULL;
 	vd->ch_notify_num = doc_add_view(d, &vd->ch_notify);
 
 	p = pane_register(par, 0, view_refresh, vd, NULL);
+	p->keymap = view_map;
 	point_new(d, p);
 	vd->pane = p;
 
@@ -558,15 +560,16 @@ void view_register(struct map *m)
 	int c_x;
 	unsigned int i;
 
+	view_map = key_alloc();
 	key_add(m, '['-64, &comm_meta);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
 		struct move_command *mc = &move_commands[i];
-		key_add(m, mc->k1, &mc->cmd);
+		key_add(view_map, mc->k1, &mc->cmd);
 		if (mc->k2)
-			key_add(m, mc->k2, &mc->cmd);
+			key_add(view_map, mc->k2, &mc->cmd);
 		if (mc->k3)
-			key_add(m, mc->k3, &mc->cmd);
+			key_add(view_map, mc->k3, &mc->cmd);
 	}
 	key_add(m, MV_CHAR, &comm_char);
 	key_add(m, MV_WORD, &comm_word);
@@ -579,8 +582,8 @@ void view_register(struct map *m)
 	key_add_range(m, ' ', '~', &comm_insert);
 	key_add(m, '\t', &comm_insert);
 	key_add(m, '\n', &comm_insert);
-	key_add(m, '\r', &comm_insert_nl);
-	key_add(m, EV_REPLACE, &comm_replace);
+	key_add(view_map, '\r', &comm_insert_nl);
+	key_add(view_map, EV_REPLACE, &comm_replace);
 
 	key_add(m, M_CLICK(0), &comm_click);
 	key_add(m, M_PRESS(0), &comm_click);

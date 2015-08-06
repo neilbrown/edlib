@@ -31,8 +31,7 @@ struct rt_data {
 
 static struct map *rt_map;
 
-static int render_text_refresh(struct pane  *p, struct pane *point_pane, int damage);
-#define	CMD(func, name) {func, name, render_text_refresh}
+#define	CMD(func, name) {func, name}
 #define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
 
 static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y, int draw)
@@ -263,7 +262,6 @@ void render_text_attach(struct pane *p, struct point *pt)
 	rt->target_x = -1;
 	rt->type.func = render_text_notify;
 	rt->type.name = "render_text_notify";
-	rt->type.type = NULL;
 	rt->typenum = doc_add_view(pt->doc, &rt->type);
 	p->data = rt;
 	p->refresh = render_text_refresh;

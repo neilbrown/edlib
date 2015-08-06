@@ -197,7 +197,6 @@ struct command *key_register_mode(char *name, int *mode)
 	modmap[free].transient = 1;
 	modmap[free].comm.func = key_mode;
 	modmap[free].comm.name = name;
-	modmap[free].comm.type = NULL;
 	*mode = free;
 	return &modmap[free].comm;
 }
@@ -206,7 +205,6 @@ static int key_lookup(struct map *m, struct cmd_info *ci)
 {
 	int pos = key_find(m, ci->key);
 	struct command *comm;
-	struct pane *target = ci->focus;
 	struct cmd_info ci2 = *ci;
 
 	if (pos >= m->size)
@@ -218,16 +216,6 @@ static int key_lookup(struct map *m, struct cmd_info *ci)
 		comm = m->comms[pos];
 	else
 		return 0;
-	while (target && comm->type && comm->type != target->refresh) {
-		if (ci2.x >= 0)
-			ci2.x += target->x;
-		if (ci2.y >= 0)
-			ci2.y += target->y;
-		target = target->parent;
-	}
-	if (!target)
-		return 0;
-	ci2.focus = target;
 	return comm->func(comm, &ci2);
 }
 
@@ -237,8 +225,10 @@ int key_handle(struct cmd_info *ci)
 	int ret = 0;
 
 	while (ret == 0 && p) {
-		if (p->keymap)
+		if (p->keymap) {
+			ci->focus = p;
 			ret = key_lookup(p->keymap, ci);
+		}
 		p = p->parent;
 	}
 	return ret;
