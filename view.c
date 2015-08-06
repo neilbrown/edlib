@@ -24,7 +24,6 @@
 
 #define ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 struct view_data {
-	bool		first_change;
 	int		border;
 	struct command	ch_notify;
 	int		ch_notify_num;
@@ -99,7 +98,6 @@ struct pane *view_attach(struct pane *par, struct doc *d, int border)
 	struct pane *p;
 
 	vd = malloc(sizeof(*vd));
-	vd->first_change = 1;
 	vd->border = border;
 	vd->ch_notify.func = view_notify;
 	vd->ch_notify.name = "view-notify";
@@ -364,7 +362,6 @@ static int view_move(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	struct move_command *mv = container_of(c, struct move_command, cmd);
-	struct view_data *vd = p->data;
 	struct pane *view_pane = p->focus;
 	struct point *pt = ci->point_pane->point;
 	int old_x = -1;
@@ -401,7 +398,6 @@ static int view_move(struct command *c, struct cmd_info *ci)
 	}
 
 	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
-	vd->first_change = 1;
 
 	return ret;
 }
@@ -427,11 +423,13 @@ static int view_delete(struct command *c, struct cmd_info *ci)
 	ci2.focus = ci->focus;
 	ci2.key = EV_REPLACE;
 	ci2.numeric = 1;
+	ci2.extra = ci->extra;
 	ci2.mark = m;
 	ci2.str = NULL;
 	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
 	mark_free(m);
+	pane_set_extra(ci->focus, 1);
 
 	return ret;
 }
@@ -445,12 +443,14 @@ static int view_insert(struct command *c, struct cmd_info *ci)
 	ci2.focus = ci->focus;
 	ci2.key = EV_REPLACE;
 	ci2.numeric = 1;
+	ci2.extra = ci->extra;
 	ci2.mark = mark_of_point(ci->point_pane->point);
 	str[0] = ci->key;
 	str[1] = 0;
 	ci2.str = str;
 	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
+	pane_set_extra(ci->focus, 1);
 
 	return ret;
 }
@@ -459,7 +459,6 @@ DEF_CMD(comm_insert, view_insert, "insert-key");
 static int view_insert_nl(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
 	char str[2];
 	struct cmd_info ci2 = {0};
 	int ret;
@@ -467,24 +466,24 @@ static int view_insert_nl(struct command *c, struct cmd_info *ci)
 	ci2.focus = ci->focus;
 	ci2.key = EV_REPLACE;
 	ci2.numeric = 1;
+	ci2.extra = ci->extra;
 	ci2.mark = mark_of_point(ci->point_pane->point);
 	str[0] = '\n';
 	str[1] = 0;
 	ci2.str = str;
 	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
-	vd->first_change = 1;
+	pane_set_extra(p, 0); /* A newline starts a new undo */
 	return ret;
 }
 DEF_CMD(comm_insert_nl, view_insert_nl, "insert-nl");
 
 static int view_replace(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
-	struct view_data *vd = p->data;
 	struct point *pt = ci->point_pane->point;
+	bool first_change = (ci->extra == 0);
 
-	doc_replace(pt, ci->mark, ci->str, &vd->first_change);
+	doc_replace(pt, ci->mark, ci->str, &first_change);
 	return 1;
 }
 DEF_CMD(comm_replace, view_replace, "do-replace");
