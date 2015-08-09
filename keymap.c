@@ -229,6 +229,10 @@ int key_handle(struct cmd_info *ci)
 			ci->focus = p;
 			ret = key_lookup(p->keymap, ci);
 		}
+		if (ci->x >= 0) {
+			ci->x += p->x;
+			ci->y += p->y;
+		}
 		p = p->parent;
 	}
 	return ret;

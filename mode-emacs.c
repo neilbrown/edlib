@@ -252,6 +252,18 @@ static int emacs_meta(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_meta, emacs_meta, "meta");
 
+static int emacs_raw(struct command *c, struct cmd_info *ci)
+{
+	struct cmd_info ci2 = *ci;
+
+	ci2.key = Kkey(ci->key);
+	if (ci->x >= 0)
+		return key_handle_xy(&ci2);
+	else
+		return key_handle_focus(&ci2);
+}
+DEF_CMD(comm_raw, emacs_raw, "modeless-passthrough");
+
 void emacs_register(struct map *m)
 {
 	unsigned i;
@@ -286,4 +298,7 @@ void emacs_register(struct map *m)
 	key_add(m, K_MOD(emacs, META(KCTRL('_'))), &comm_redo);
 
 	key_add(m, K_MOD(c_x, KCTRL('f')), &comm_findfile);
+
+	/* A simple mouse click just gets resent without a mode */
+	key_add(m, K_MOD(emacs, M_CLICK(0)), &comm_raw);
 }

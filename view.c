@@ -359,7 +359,7 @@ void view_register(struct map *m)
 
 	key_add(view_map, EV_REPLACE, &comm_replace);
 
-	key_add(m, M_CLICK(0), &comm_click);
-	key_add(m, M_PRESS(0), &comm_click);
+	key_add(view_map, M_CLICK(0), &comm_click);
+	key_add(view_map, M_PRESS(0), &comm_click);
 
 }
