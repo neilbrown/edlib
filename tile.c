@@ -16,10 +16,14 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <curses.h>
+#include <string.h>
 
 #include "core.h"
 #include "pane.h"
+#include "view.h"
 #include "keymap.h"
+
+#include "extras.h"
 
 struct tileinfo {
 	/* If direction is Horiz, this and siblings are stacked
@@ -131,6 +135,8 @@ struct pane *tile_split(struct pane *p, int horiz, int after)
 		pane_resize(p, -1, -1, p->w/2, p->h);
 		break;
 	}
+	tile_adjust(ret);
+	tile_adjust(p);
 	return ret;
 }
 
@@ -422,57 +428,51 @@ int tile_grow(struct pane *p, int horiz, int size)
 	return 1;
 }
 
-static int tile_next(struct command *c, struct cmd_info *ci)
+static int tile_command(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
+	struct pane *p2;
 	struct tileinfo *ti = p->data;
-	struct tileinfo *next;
+	struct tileinfo *t2;
 
-	next = list_next_entry(ti, tiles);
-	pane_focus(next->p);
+	if (!ci->str)
+		return 0;
+	if (strcmp(ci->str, "next")==0) {
+		t2 = list_next_entry(ti, tiles);
+		pane_focus(t2->p);
+	} else if (strcmp(ci->str, "prev")==0) {
+		t2 = list_prev_entry(ti, tiles);
+		pane_focus(t2->p);
+	} else if (strcmp(ci->str, "x+")==0) {
+		tile_grow(p, 1, RPT_NUM(ci));
+		pane_damaged(p, DAMAGED_SIZE);
+	} else if (strcmp(ci->str, "x-")==0) {
+		tile_grow(p, 1, -RPT_NUM(ci));
+		pane_damaged(p, DAMAGED_SIZE);
+	} else if (strcmp(ci->str, "y+")==0) {
+		tile_grow(p, 0, RPT_NUM(ci));
+		pane_damaged(p, DAMAGED_SIZE);
+	} else if (strcmp(ci->str, "y-")==0) {
+		tile_grow(p, 0, -RPT_NUM(ci));
+		pane_damaged(p, DAMAGED_SIZE);
+	} else if (strcmp(ci->str, "split-x")==0) {
+		p2 = tile_split(p, 1, 1);
+		render_text_attach(view_attach(p2, ci->point_pane->point->doc, 1),
+				   ci->point_pane->point);
+	} else if (strcmp(ci->str, "split-y")==0) {
+		p2 = tile_split(p, 0, 1);
+		render_text_attach(view_attach(p2, ci->point_pane->point->doc, 1),
+				   ci->point_pane->point);
+	} else if (strcmp(ci->str, "close")==0) {
+	} else
+		return 0;
 	return 1;
 }
-DEF_CMD(comm_next, tile_next, "next-tile");
-
-static int tile_prev(struct command *c, struct cmd_info *ci)
-{
-	struct pane *p = ci->focus;
-	struct tileinfo *ti = p->data;
-	struct tileinfo *prev;
-
-	prev = list_prev_entry(ti, tiles);
-	pane_focus(prev->p);
-	return 1;
-}
-DEF_CMD(comm_prev, tile_prev, "prev-tile");
-
-static int tile_higher(struct command *c, struct cmd_info *ci)
-{
-	struct pane *p = ci->focus;
-	tile_grow(p, 0, 1);
-	pane_damaged(p, DAMAGED_SIZE);
-	return 1;
-}
-DEF_CMD(comm_higher, tile_higher, "enlarge-tile");
-
-static int tile_wider(struct command *c, struct cmd_info *ci)
-{
-	struct pane *p = ci->focus;
-	tile_grow(p, 1, 1);
-	pane_damaged(p, DAMAGED_SIZE);
-	return 1;
-}
-DEF_CMD(comm_wider, tile_wider, "enlarge-tile-horiz");
+DEF_CMD(comm_tile, tile_command, "tile-command");
 
 void tile_register(struct map *m)
 {
-	int c_x;
-
-	key_register_mode("C-x", &c_x);
 	tile_map = key_alloc();
 
-	key_add(tile_map, K_MOD(c_x, 'o'), &comm_next);
-	key_add(tile_map, K_MOD(c_x, 'O'), &comm_prev);
-	key_add(tile_map, K_MOD(c_x, '^'), &comm_higher);
-	key_add(tile_map, K_MOD(c_x, '}'), &comm_wider);
+	key_add(tile_map, EV_WINDOW, &comm_tile);
 }

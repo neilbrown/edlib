@@ -91,7 +91,7 @@ static int count_notify(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-static struct command count_cmd = {count_notify, "count-notify", NULL};
+static struct command count_cmd = {count_notify, "count-notify"};
 
 static int need_recalc(struct doc *d, struct mark *m)
 {

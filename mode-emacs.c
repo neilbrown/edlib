@@ -146,6 +146,34 @@ static int emacs_delete(struct command *c, struct cmd_info *ci)
 	return ret;
 }
 
+static int emacs_str(struct command *c, struct cmd_info *ci);
+static struct str_command {
+	struct command	cmd;
+	int		type;
+	char		*str;
+	wint_t		k;
+} str_commands[] = {
+	{CMD(emacs_str, "pane-next"), EV_WINDOW, "next", 'o'},
+	{CMD(emacs_str, "pane-prev"), EV_WINDOW, "prev", 'O'},
+	{CMD(emacs_str, "pane-wider"), EV_WINDOW, "x+", '}'},
+	{CMD(emacs_str, "pane-narrower"), EV_WINDOW, "x-", '{'},
+	{CMD(emacs_str, "pane-taller"), EV_WINDOW, "y+", '^'},
+	{CMD(emacs_str, "pane-split-below"), EV_WINDOW, "split-y", '2'},
+	{CMD(emacs_str, "pane-split-right"), EV_WINDOW, "split-x", '3'},
+	{CMD(emacs_str, "pane-close"), EV_WINDOW, "close", '0'},
+};
+
+static int emacs_str(struct command *c, struct cmd_info *ci)
+{
+	struct str_command *sc = container_of(c, struct str_command, cmd);
+	struct cmd_info ci2;
+
+	ci2 = *ci;
+	ci2.key = sc->type;
+	ci2.str = sc->str;
+	return key_handle_focus(&ci2);
+}
+
 static int emacs_insert(struct command *c, struct cmd_info *ci)
 {
 	char str[2];
@@ -243,6 +271,12 @@ void emacs_register(struct map *m)
 		if (mc->k3)
 			key_add(m, K_MOD(emacs, mc->k3), &mc->cmd);
 	}
+
+	for (i = 0; i < ARRAY_SIZE(str_commands); i++) {
+		struct str_command *sc = &str_commands[i];
+		key_add(m, K_MOD(c_x, sc->k), &sc->cmd);
+	}
+
 	key_add_range(m, K_MOD(emacs, ' '), K_MOD(emacs, '~'), &comm_insert);
 	key_add(m, K_MOD(emacs, '\t'), &comm_insert);
 	key_add(m, K_MOD(emacs, '\n'), &comm_insert);

@@ -59,6 +59,8 @@
 #define	EV_SEARCH	(0x1FFD00)
 #define	EV_REPLACE	(0x1FFD01)
 
+#define	EV_WINDOW	(0x1FFD10)	/* str is name of window command */
+
 
 #define	EV_MOVE(m)	((m)|0x1FFC00)
 #define	MV_CHAR		EV_MOVE(0)
