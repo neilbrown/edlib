@@ -69,13 +69,14 @@ static struct mark *render(struct point *pt, struct pane *p)
 		sprintf(buf, "%08x: ", c);
 		xcol += put_str(p, buf, 0, xcol, y);
 		for (x = 0; x < 16; x++) {
-			wint_t ch = mark_next(d, m);
-			if (ch == WEOF)
-				break;
+			wint_t ch;
 			if (mark_same(d, m, mark_of_point(pt))) {
 				p->cx = xcol;
 				p->cy = y;
 			}
+			ch = mark_next(d, m);
+			if (ch == WEOF)
+				break;
 			sprintf(buf, "%02x ", ch & 0xff);
 			xcol += put_str(p, buf, 0, xcol, y);
 			if (x == 7)
@@ -204,7 +205,84 @@ void render_hex_attach(struct pane *p)
 	p->keymap = he_map;
 }
 
+static int render_hex_move(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ci->focus;
+	int rpt = RPT_NUM(ci);
+	struct he_data *he = p->data;
+	struct point *pt = ci->point_pane->point;
+
+	if (!he->top)
+		return 0;
+	if (ci->key == MV_VIEW_LARGE)
+		rpt *= p->h - 2;
+	rpt *= 16;
+	he->ignore_point = 1;
+
+	while (rpt < 0 && mark_prev(pt->doc, he->top) != WEOF)
+		rpt += 1;
+	while (rpt > 0 && mark_next(pt->doc, he->top) != WEOF)
+		rpt -= 1;
+	pane_damaged(p, DAMAGED_CURSOR);
+	return 1;
+}
+DEF_CMD(comm_move, render_hex_move, "move-view");
+
+static int render_hex_set_cursor(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ci->focus;
+	struct point *pt = ci->point_pane->point;
+	struct he_data *he = p->data;
+	struct mark *m;
+	int n, x;
+
+	if (!he->top)
+		return 0;
+
+	if (ci->x < 10)
+		x = 0;
+	else if (ci->x < 10 + 8*3)
+		x = (ci->x - 10) / 3;
+	else if (ci->x < 10 + 1 + 16*3)
+		x = (ci->x - 11) / 3;
+	else if (ci->x < 10 + 1 + 2 + 16*3 + 8)
+		x = ci->x - (10+1+2+16*3);
+	else if (ci->x < 10 + 1 + 2 + 16*3 + 8 + 1 + 8)
+		x = ci->x - (10+1+2+16*3 + 1);
+	else
+		x = 15;
+	n = ci->y * 16 + x;
+	m = mark_dup(he->top, 1);
+	while (n > 0 && mark_next(pt->doc, m) != WEOF)
+		n -= 1;
+	point_to_mark(pt, m);
+	mark_free(m);
+	pane_focus(p);
+	return 1;
+}
+DEF_CMD(comm_cursor, render_hex_set_cursor, "set-cursor");
+
+static int render_hex_move_line(struct command *c, struct cmd_info *ci)
+{
+	/* MV_CHAR 16 times repeat count */
+	struct cmd_info ci2 = {0};
+
+	ci2 = *ci;
+	ci2.key = MV_CHAR;
+	ci2.numeric = RPT_NUM(ci) * 16;
+	return key_handle_focus(&ci2);
+
+}
+DEF_CMD(comm_line, render_hex_move_line, "move-line");
+
 void render_hex_register(struct map *m)
 {
 	he_map = key_alloc();
+
+	key_add(he_map, MV_VIEW_SMALL, &comm_move);
+	key_add(he_map, MV_VIEW_LARGE, &comm_move);
+	key_add(he_map, MV_CURSOR_XY, &comm_cursor);
+	key_add(he_map, M_CLICK(0), &comm_cursor);
+	key_add(he_map, M_PRESS(0), &comm_cursor);
+	key_add(he_map, MV_LINE, &comm_line);
 }
