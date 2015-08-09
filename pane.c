@@ -62,7 +62,7 @@ void pane_damaged(struct pane *p, int type)
 		if ((p->damaged | type) == p->damaged)
 			return;
 		p->damaged |= type;
-		type = DAMAGED_CHILD;
+		type = DAMAGED_CHILD | (type & DAMAGED_CURSOR);
 		p = p->parent;
 	}
 }
