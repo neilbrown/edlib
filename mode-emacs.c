@@ -151,16 +151,19 @@ static struct str_command {
 	struct command	cmd;
 	int		type;
 	char		*str;
+	int		c_x;
 	wint_t		k;
 } str_commands[] = {
-	{CMD(emacs_str, "pane-next"), EV_WINDOW, "next", 'o'},
-	{CMD(emacs_str, "pane-prev"), EV_WINDOW, "prev", 'O'},
-	{CMD(emacs_str, "pane-wider"), EV_WINDOW, "x+", '}'},
-	{CMD(emacs_str, "pane-narrower"), EV_WINDOW, "x-", '{'},
-	{CMD(emacs_str, "pane-taller"), EV_WINDOW, "y+", '^'},
-	{CMD(emacs_str, "pane-split-below"), EV_WINDOW, "split-y", '2'},
-	{CMD(emacs_str, "pane-split-right"), EV_WINDOW, "split-x", '3'},
-	{CMD(emacs_str, "pane-close"), EV_WINDOW, "close", '0'},
+	{CMD(emacs_str, "pane-next"), EV_WINDOW, "next", 1, 'o'},
+	{CMD(emacs_str, "pane-prev"), EV_WINDOW, "prev", 1, 'O'},
+	{CMD(emacs_str, "pane-wider"), EV_WINDOW, "x+", 1, '}'},
+	{CMD(emacs_str, "pane-narrower"), EV_WINDOW, "x-", 1, '{'},
+	{CMD(emacs_str, "pane-taller"), EV_WINDOW, "y+", 1, '^'},
+	{CMD(emacs_str, "pane-split-below"), EV_WINDOW, "split-y", 1, '2'},
+	{CMD(emacs_str, "pane-split-right"), EV_WINDOW, "split-x", 1, '3'},
+	{CMD(emacs_str, "pane-close"), EV_WINDOW, "close", 1, '0'},
+	{CMD(emacs_str, "abort"), EV_MISC, "exit", 1, KCTRL('c')},
+	{CMD(emacs_str, "redraw"), EV_MISC, "refresh", 0, KCTRL('l')},
 };
 
 static int emacs_str(struct command *c, struct cmd_info *ci)
@@ -286,7 +289,10 @@ void emacs_register(struct map *m)
 
 	for (i = 0; i < ARRAY_SIZE(str_commands); i++) {
 		struct str_command *sc = &str_commands[i];
-		key_add(m, K_MOD(c_x, sc->k), &sc->cmd);
+		if (sc->c_x)
+			key_add(m, K_MOD(c_x, sc->k), &sc->cmd);
+		else
+			key_add(m, K_MOD(emacs, sc->k), &sc->cmd);
 	}
 
 	key_add_range(m, K_MOD(emacs, ' '), K_MOD(emacs, '~'), &comm_insert);

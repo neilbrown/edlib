@@ -71,25 +71,22 @@ static void ncurses_flush(int fd, short ev, void *P)
 	refresh();
 }
 
-static int nc_abort(struct command *c, struct cmd_info *ci)
+static int nc_misc(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	struct display_data *dd = p->data;
 
-	event_base_loopbreak(dd->base);
+	if (strcmp(ci->str, "exit") == 0)
+		event_base_loopbreak(dd->base);
+	else if (strcmp(ci->str, "refresh") == 0) {
+		clear();
+		pane_damaged(p,  DAMAGED_FORCE);
+		pane_refresh(p);
+	} else
+		return 0;
 	return 1;
 }
-DEF_CMD(comm_abort, nc_abort, "abort");
-
-static int nc_refresh(struct command *c, struct cmd_info *ci)
-{
-	struct pane *p = ci->focus;
-	clear();
-	pane_damaged(p,  DAMAGED_FORCE);
-	pane_refresh(p);
-	return 1;
-}
-DEF_CMD(comm_refresh, nc_refresh, "refresh");
+DEF_CMD(comm_misc, nc_misc, "misc");
 
 static int ncurses_refresh(struct pane *p, struct pane *point_pane, int damage)
 {
@@ -118,7 +115,6 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 	struct pane *p;
 	struct event *l;
 	struct display_data *dd = malloc(sizeof(*dd));
-	int c_x;
 
 	start_color();
 	use_default_colors();
@@ -142,9 +138,7 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 	p = pane_register(NULL, 0, ncurses_refresh, dd, NULL);
 	p->keymap = map;
 
-	key_register_mode("C-x", &c_x);
-	key_add(map, K_MOD(c_x, 3), &comm_abort);
-	key_add(map, 12, &comm_refresh);
+	key_add(map, EV_MISC, &comm_misc);
 
 	getmaxyx(stdscr, p->h, p->w); p->h-=1;
 
