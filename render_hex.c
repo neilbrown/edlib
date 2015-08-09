@@ -108,13 +108,13 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 	 * and should leave old values as unchanged as possible.
 	 */
 	struct mark *m;
-	int ppos, tpos, bpos, pos, tpos2;
+	int ppos, tpos, bpos, pos, point_pos;
 	struct he_data *he = p->data;
 	struct doc *d = pt->doc;
 
 	count_calculate(d, NULL, mark_of_point(pt));
-	ppos = attr_find_int(*mark_attr(mark_of_point(pt)), "chars");
-	tpos = bpos = ppos;
+	point_pos = attr_find_int(*mark_attr(mark_of_point(pt)), "chars");
+	tpos = bpos = ppos = point_pos;
 	if (top) {
 		count_calculate(d, NULL, top);
 		tpos = attr_find_int(*mark_attr(top), "chars");
@@ -123,7 +123,6 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 		count_calculate(d, NULL, bot);
 		bpos = attr_find_int(*mark_attr(bot), "chars");
 	}
-	tpos2 = tpos;
 	ppos -= ppos % 16;
 	tpos -= tpos % 16;
 	bpos -= bpos % 16;
@@ -148,9 +147,9 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 	}
 	m = mark_at_point(pt, he->typenum);
 
-	while (pos < tpos2) {
+	while (pos < point_pos) {
 		mark_prev(d, m);
-		tpos2 -= 1;
+		point_pos -= 1;
 	}
 	return m;
 }
