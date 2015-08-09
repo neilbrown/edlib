@@ -267,6 +267,19 @@ static int emacs_raw(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_raw, emacs_raw, "modeless-passthrough");
 
+static int emacs_num(struct command *c, struct cmd_info *ci)
+{
+	int rpt = RPT_NUM(ci);
+
+	if (ci->numeric == NO_NUMERIC)
+		rpt = 0;
+	rpt = rpt * 10 + Kkey(ci->key) - '0';
+	pane_set_numeric(ci->focus, rpt);
+	pane_set_extra(ci->focus, ci->extra);
+	return 1;
+}
+DEF_CMD(comm_num, emacs_num, "numeric-prefix");
+
 void emacs_register(struct map *m)
 {
 	unsigned i;
@@ -307,4 +320,6 @@ void emacs_register(struct map *m)
 
 	/* A simple mouse click just gets resent without a mode */
 	key_add(m, K_MOD(emacs, M_CLICK(0)), &comm_raw);
+
+	key_add_range(m, K_MOD(emacs, META('0')), K_MOD(emacs, META('9')), &comm_num);
 }
