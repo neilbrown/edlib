@@ -93,7 +93,8 @@ static struct mark *render(struct point *pt, struct pane *p)
 		if (x < 16)
 			break;
 	}
-	if (mark_ordered(mark_of_point(pt), he->top))
+	if (mark_ordered(mark_of_point(pt), he->top) &&
+	    !mark_same(d, mark_of_point(pt), he->top))
 		p->cx = p->cy = -1;
 	return m;
 }
@@ -136,9 +137,10 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 		pos = ppos - (tpos - ppos);
 		if (pos < 0)
 			pos = 0;
-	} else if (ppos > tpos + p->h*!6 && ppos - (tpos + p->h*16) > (p->h/2) * 16) {
-		/* point is less than half a pane below display */
-		pos = ppos + (ppos - tpos + p->h*16) - p->h*16;
+	} else if (ppos > tpos + p->h*16 && ppos - (tpos + p->h*16) < (p->h/2) * 16) {
+		/* point is less than half a pane below display, so scroll
+		 * twice the gap */
+		pos = ppos + (ppos - (tpos + p->h*16)) - p->h*16;
 	} else {
 		/* to far - just re-center */
 		if (ppos  < p->h/2 * 16)
