@@ -277,6 +277,39 @@ static int render_hex_move_line(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_line, render_hex_move_line, "move-line");
 
+static int render_hex_eol(struct command *c, struct cmd_info *ci)
+{
+	struct point *pt = ci->point_pane->point;
+	wint_t ch = 1;
+	int rpt = RPT_NUM(ci);
+	int pos;
+
+	pos = attr_find_int(*mark_attr(ci->mark), "chars");
+	while (rpt > 0 && ch != WEOF) {
+		while ((pos & 15) != 15 &&
+		       (ch = mark_next(pt->doc, ci->mark)) != WEOF)
+			pos += 1;
+		rpt -= 1;
+		if (rpt) {
+			ch = mark_next(pt->doc, ci->mark);
+			pos += 1;
+		}
+	}
+	while (rpt < 0 && ch != WEOF) {
+		while ((pos & 15) != 0 &&
+		       (ch = mark_prev(pt->doc, ci->mark)) != WEOF)
+			pos -= 1;
+		rpt += 1;
+		if (rpt) {
+			ch = mark_prev(pt->doc, ci->mark);
+			pos -= 1;
+		}
+	}
+
+	return 1;
+}
+DEF_CMD(comm_eol, render_hex_eol, "move-end-of-line");
+
 void render_hex_register(struct map *m)
 {
 	he_map = key_alloc();
@@ -287,4 +320,6 @@ void render_hex_register(struct map *m)
 	key_add(he_map, M_CLICK(0), &comm_cursor);
 	key_add(he_map, M_PRESS(0), &comm_cursor);
 	key_add(he_map, MV_LINE, &comm_line);
+
+	key_add(he_map, MV_EOL, &comm_eol);
 }
