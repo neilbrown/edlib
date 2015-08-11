@@ -56,6 +56,9 @@ static int do_tile_refresh(struct command *c, struct cmd_info *ci)
 	if (ci->key != EV_REFRESH)
 		return 0;
 
+	if (p->focus == NULL && !list_empty(&p->children))
+		p->focus = list_first_entry(&p->children, struct pane, siblings);
+
 	if ((damage & DAMAGED_SIZE) && ti->direction == Neither) {
 		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
 		tile_avail(p, NULL);

@@ -46,6 +46,8 @@ static int do_popup_refresh(struct command *c, struct cmd_info *ci)
 
 	if (ci->key != EV_REFRESH)
 		return 0;
+	if (p->focus == NULL && !list_empty(&p->children))
+		p->focus = list_first_entry(&p->children, struct pane, siblings);
 
 	for (i = 0; i < p->h-1; i++) {
 		pane_text(p, '|', A_STANDOUT, 0, i);
@@ -71,6 +73,10 @@ DEF_CMD(popup_refresh, do_popup_refresh, "popup-refresh");
 
 static int do_popup_no_refresh(struct command *c, struct cmd_info *ci)
 {
+	struct pane *p = ci->focus;
+
+	if (p->focus == NULL && !list_empty(&p->children))
+		p->focus = list_first_entry(&p->children, struct pane, siblings);
 	return 0;
 }
 DEF_CMD(popup_no_refresh, do_popup_no_refresh, "popup-no-refresh");
@@ -132,6 +138,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 	ci2.mark = NULL;
 	key_handle_focus(&ci2);
 	free(ci2.str);
+	pane_close(ci->point_pane->parent->parent);
 	/* tear down the popup */
 	return 1;
 }

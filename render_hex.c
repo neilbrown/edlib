@@ -162,9 +162,23 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 	struct mark *end = NULL, *top;
 	struct point *pt = ci->point_pane->point;
 
+	if (ci->key == EV_CLOSE) {
+		struct point *pt = ci->point_pane->point;
+		struct pane *p = he->pane;
+		mark_free(he->top);
+		mark_free(he->bot);
+		doc_del_view(pt->doc, &he->type);
+		p->data = NULL;
+		p->refresh = NULL;
+		p->keymap = NULL;
+		free(he);
+		return 1;
+	}
 	if (ci->key != EV_REFRESH)
 		return 0;
 
+	if (p->focus == NULL && !list_empty(&p->children))
+		p->focus = list_first_entry(&p->children, struct pane, siblings);
 	if (he->top) {
 		end = render(pt, p);
 		if (he->ignore_point || p->cx >= 0)
@@ -184,10 +198,10 @@ DEF_CMD(render_hex_refresh, do_render_hex_refresh, "render-hex-refresh");
 
 static int render_hex_notify(struct command *c, struct cmd_info *ci)
 {
-	struct he_data *he;
+	struct he_data *he = container_of(c, struct he_data, type);
+
 	if (ci->key != EV_REPLACE)
 		return 0;
-	he = container_of(c, struct he_data, type);
 	if (ci->mark == he->top)
 		/* A change in the text between top and bot */
 		pane_damaged(he->pane, DAMAGED_CONTENT);

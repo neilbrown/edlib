@@ -106,6 +106,15 @@ static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
 	if (ci->key != EV_REFRESH)
 		return 0;
 
+	if (p->focus == NULL) {
+		/* Choose child with largest z */
+		struct pane *c;
+		list_for_each_entry(c, &p->children, siblings)
+			if (p->focus == NULL ||
+			    c->z > p->focus->z)
+				p->focus = c;
+	}
+
 	set_screen(dd->scr);
 
 	if (damage & DAMAGED_SIZE) {

@@ -20,6 +20,7 @@ void pane_reparent(struct pane *p, struct pane *newparent, struct list_head *her
 void pane_free(struct pane *p);
 void pane_text(struct pane *p, wchar_t ch, int attr, int x, int y);
 void pane_clear(struct pane *p, int attr, int x, int y, int w, int h);
+void pane_close(struct pane *p);
 void pane_resize(struct pane *p, int x, int y, int w, int h);
 void pane_refresh(struct pane *p);
 void pane_focus(struct pane *p);

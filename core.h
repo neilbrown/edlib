@@ -57,6 +57,7 @@ struct doc_operations {
 
 void doc_init(struct doc *d);
 int doc_add_view(struct doc *d, struct command *c);
+void doc_del_view(struct doc *d, struct command *c);
 int doc_find_view(struct doc *d, struct command *c);
 struct doc *doc_new(char *type);
 void doc_register_type(char *type, struct doc *(*new)(void));

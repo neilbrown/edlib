@@ -36,9 +36,9 @@ int doc_add_view(struct doc *d, struct command *c)
 	return ret;
 }
 
-void doc_del_type(struct doc *d, struct command *c)
+void doc_del_view(struct doc *d, struct command *c)
 {
-	/* this type should only have points on the list, not typed
+	/* This view should only have points on the list, not typed
 	 * marks.  Just delete everything and clear the 'notify' pointer
 	 */
 	int i;

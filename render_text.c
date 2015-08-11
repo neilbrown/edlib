@@ -220,9 +220,23 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 	struct mark *end = NULL, *top;
 	struct point *pt = ci->point_pane->point;
 
+	if (ci->key == EV_CLOSE) {
+		struct point *pt = ci->point_pane->point;
+		struct pane *p = rt->pane;
+		mark_free(rt->top);
+		mark_free(rt->bot);
+		doc_del_view(pt->doc, &rt->type);
+		p->data = NULL;
+		p->keymap = NULL;
+		p->refresh = NULL;
+		free(rt);
+		return 0;
+	}
 	if (ci->key != EV_REFRESH)
 		return 0;
 
+	if (p->focus == NULL && !list_empty(&p->children))
+		p->focus = list_first_entry(&p->children, struct pane, siblings);
 	if (rt->top) {
 		end = render(pt, p);
 		if (rt->ignore_point || p->cx >= 0)
@@ -243,10 +257,10 @@ DEF_CMD(render_text_refresh, do_render_text_refresh, "render-text-refresh");
 
 static int render_text_notify(struct command *c, struct cmd_info *ci)
 {
-	struct rt_data *rt;
+	struct rt_data *rt = container_of(c, struct rt_data, type);
+
 	if (ci->key != EV_REPLACE)
 		return 0;
-	rt = container_of(c, struct rt_data, type);
 	if (ci->mark == rt->top)
 		/* A change in the text between top and bot */
 		pane_damaged(rt->pane, DAMAGED_CONTENT);

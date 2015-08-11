@@ -43,8 +43,15 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	int ln, l, w, c;
 	char msg[60];
 
+	if (ci->key == EV_CLOSE) {
+		doc_del_view(pt->doc, &vd->ch_notify);
+		free(vd);
+		return 1;
+	}
 	if (ci->key != EV_REFRESH)
 		return 0;
+	if (p->focus == NULL && !list_empty(&p->children))
+		p->focus = list_first_entry(&p->children, struct pane, siblings);
 
 	if (!vd->border)
 		return 0;

@@ -120,6 +120,25 @@ void pane_refresh(struct pane *p)
 	__pane_refresh(&ci);
 }
 
+void pane_close(struct pane *p)
+{
+	struct cmd_info ci = {0};
+	struct pane *c, *pp;
+	struct list_head *n;
+	list_for_each_entry_safe(c, n, &p->children, siblings)
+		pane_close(c);
+	ci.key = EV_CLOSE;
+	ci.focus = p;
+	pp = p;
+	while (pp && !pp->point)
+		pp = pp->parent;
+	ci.point_pane = pp;
+	if (p->refresh)
+		p->refresh->func(p->refresh, &ci);
+	pane_damaged(p->parent, DAMAGED_FORCE|DAMAGED_CURSOR);
+	pane_free(p);
+}
+
 void pane_resize(struct pane *p, int x, int y, int w, int h)
 {
 	int damage = 0;

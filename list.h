@@ -238,6 +238,18 @@ static inline int list_empty(struct list_head *head)
 	     pos = list_next_entry(pos, member))
 
 /**
+ * list_for_each_entry_safe	-	iterate over list of given type
+ * @pos:	the type * to use as a loop cursor.
+ * @n:		&struct list_node temp pointer.
+ * @head:	the head for your list.
+ * @member:	the name of the list_head within the struct.
+ */
+#define list_for_each_entry_safe(pos, n, head, member)			\
+	for (pos = list_first_entry(head, typeof(*pos), member);	\
+	     &pos->member != (head) && ({n = pos->member.next; 1;});	\
+	     pos = list_entry(n, typeof(*pos), member))
+
+/**
  * list_for_each_entry_continue - continue iteration over list of given type
  * @pos:	the type * to use as a loop cursor.
  * @head:	the head for your list.
