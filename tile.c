@@ -47,9 +47,14 @@ static struct map *tile_map;
 static void tile_adjust(struct pane *p);
 static void tile_avail(struct pane *p, struct pane *ignore);
 
-static int tile_refresh(struct pane *p, struct pane *point_pane, int damage)
+static int do_tile_refresh(struct command *c, struct cmd_info *ci)
 {
+	struct pane *p = ci->focus;
+	int damage = ci->extra;
 	struct tileinfo *ti = p->data;
+
+	if (ci->key != EV_REFRESH)
+		return 0;
 
 	if ((damage & DAMAGED_SIZE) && ti->direction == Neither) {
 		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
@@ -58,11 +63,12 @@ static int tile_refresh(struct pane *p, struct pane *point_pane, int damage)
 	}
 	return 0;
 }
+DEF_CMD(tile_refresh, do_tile_refresh, "tile-refresh");
 
 struct pane *tile_init(struct pane *display)
 {
 	struct tileinfo *ti = malloc(sizeof(*ti));
-	struct pane *p = pane_register(display, 0, tile_refresh, ti, NULL);
+	struct pane *p = pane_register(display, 0, &tile_refresh, ti, NULL);
 	p->keymap = tile_map;
 	ti->p = p;
 	ti->direction = Neither;
@@ -102,7 +108,7 @@ struct pane *tile_split(struct pane *p, int horiz, int after)
 		ti2 = malloc(sizeof(*ti2));
 		ti2->direction = ti->direction;
 		INIT_LIST_HEAD(&ti2->tiles);
-		p2 = pane_register(p->parent, 0, tile_refresh, ti2, &p->siblings);
+		p2 = pane_register(p->parent, 0, &tile_refresh, ti2, &p->siblings);
 		p2->keymap = tile_map;
 		ti2->p = p2;
 		pane_resize(p2, p->x, p->y, p->w, p->h);
@@ -114,7 +120,7 @@ struct pane *tile_split(struct pane *p, int horiz, int after)
 	ti2 = malloc(sizeof(*ti2));
 	ti2->direction = ti->direction;
 	list_add(&ti2->tiles, &ti->tiles);
-	ret = pane_register(p->parent, 0, tile_refresh, ti2, here);
+	ret = pane_register(p->parent, 0, &tile_refresh, ti2, here);
 	ret->keymap = tile_map;
 	ti2->p = ret;
 	switch (!!horiz + 2 * !!after) {
@@ -229,7 +235,7 @@ static void tile_avail(struct pane *p, struct pane *ignore)
 #if 0
 	if (ti->direction == Neither) {
 		t = list_first_entry(&p->children, struct pane, siblings);
-		if (t->refresh == tile_refresh) {
+		if (t->refresh == &tile_refresh) {
 			p = t;
 			ti = p->data;
 		}

@@ -31,14 +31,20 @@ struct view_data {
 
 static struct map *view_map;
 
-static int view_refresh(struct pane *p, struct pane *point_pane, int damage)
+static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 {
+	struct pane *p = ci->focus;
+	struct pane *point_pane = ci->point_pane;
+	int damage = ci->extra;
 	int i;
 	int mid = (p->h-1)/2;
 	struct view_data *vd = p->data;
-	struct point *pt = p->point;
+	struct point *pt = point_pane->point;
 	int ln, l, w, c;
 	char msg[60];
+
+	if (ci->key != EV_REFRESH)
+		return 0;
 
 	if (!vd->border)
 		return 0;
@@ -70,12 +76,13 @@ static int view_refresh(struct pane *p, struct pane *point_pane, int damage)
 		pane_text(p, msg[i], A_STANDOUT, i+4, p->h-1);
 	return 0;
 }
+DEF_CMD(view_refresh, do_view_refresh, "view-refresh");
 
-static int view_null(struct pane *p, struct pane *point_pane, int damage)
+static int do_view_null(struct command *c, struct cmd_info *ci)
 {
-
 	return 0;
 }
+DEF_CMD(view_null, do_view_null, "view-no-refresh");
 
 static int view_notify(struct command *c, struct cmd_info *ci)
 {
@@ -99,13 +106,13 @@ struct pane *view_attach(struct pane *par, struct doc *d, int border)
 	vd->ch_notify.name = "view-notify";
 	vd->ch_notify_num = doc_add_view(d, &vd->ch_notify);
 
-	p = pane_register(par, 0, view_refresh, vd, NULL);
+	p = pane_register(par, 0, &view_refresh, vd, NULL);
 	p->keymap = view_map;
 	point_new(d, p);
 	vd->pane = p;
 
 	pane_resize(p, 0, 0, par->w, par->h);
-	p = pane_register(p, 0, view_null, vd, NULL);
+	p = pane_register(p, 0, &view_null, vd, NULL);
 	p->parent->focus = p;
 	if (vd->border)
 		pane_resize(p, 1, 0, par->w-1, par->h-1);

@@ -213,11 +213,15 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 	return start;
 }
 
-static int render_text_refresh(struct pane  *p, struct pane *point_pane, int damage)
+static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 {
+	struct pane *p = ci->focus;
 	struct rt_data *rt = p->data;
 	struct mark *end = NULL, *top;
-	struct point *pt = point_pane->point;
+	struct point *pt = ci->point_pane->point;
+
+	if (ci->key != EV_REFRESH)
+		return 0;
 
 	if (rt->top) {
 		end = render(pt, p);
@@ -235,6 +239,7 @@ found:
 	rt->bot = end;
 	return 0;
 }
+DEF_CMD(render_text_refresh, do_render_text_refresh, "render-text-refresh");
 
 static int render_text_notify(struct command *c, struct cmd_info *ci)
 {
@@ -261,7 +266,7 @@ void render_text_attach(struct pane *p, struct point *pt)
 	rt->type.name = "render_text_notify";
 	rt->typenum = doc_add_view(pt->doc, &rt->type);
 	p->data = rt;
-	p->refresh = render_text_refresh;
+	p->refresh = &render_text_refresh;
 	p->keymap = rt_map;
 }
 

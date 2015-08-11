@@ -68,7 +68,7 @@ void pane_damaged(struct pane *p, int type)
 }
 
 struct pane *pane_register(struct pane *parent, int z,
-			   refresh_fn refresh, void *data, struct list_head *here)
+			   struct command *refresh, void *data, struct list_head *here)
 {
 	struct pane *p = malloc(sizeof(*p));
 	pane_init(p, parent, here);
@@ -81,28 +81,43 @@ struct pane *pane_register(struct pane *parent, int z,
 	return p;
 }
 
-static void __pane_refresh(struct pane *p, struct pane *point_pane, int damage)
+static void __pane_refresh(struct cmd_info *ci)
 {
 	struct pane *c;
+	int damage = ci->extra;
+	struct pane *p = ci->focus;
+	struct pane *pp;
 
 	if (p->point)
-		point_pane = p;
+		ci->point_pane = p;
+	pp = ci->point_pane;
 	damage |= p->damaged;
 	if (!damage)
 		return;
 	if (damage == DAMAGED_CHILD)
 		damage = 0;
-	else
-		damage = p->refresh(p, point_pane, damage) | (damage & DAMAGED_FORCE);
+	else {
+		ci->extra = damage;
+		damage &= DAMAGED_FORCE;
+		if (p->refresh->func(p->refresh, ci))
+			damage |= ci->extra;
+	}
 	p->damaged = 0;
-	list_for_each_entry(c, &p->children, siblings)
-		__pane_refresh(c, point_pane, damage);
+	list_for_each_entry(c, &p->children, siblings) {
+		ci->point_pane = pp;
+		ci->extra = damage;
+		ci->focus = c;
+		__pane_refresh(ci);
+	}
 }
 
 void pane_refresh(struct pane *p)
 {
+	struct cmd_info ci = {0};
 	pane_damaged(p, DAMAGED_CURSOR);
-	__pane_refresh(p, NULL, 0);
+	ci.focus = p;
+	ci.key = EV_REFRESH;
+	__pane_refresh(&ci);
 }
 
 void pane_resize(struct pane *p, int x, int y, int w, int h)

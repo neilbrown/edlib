@@ -58,6 +58,7 @@
 
 #define	EV_SEARCH	(0x1FFD00)
 #define	EV_REPLACE	(0x1FFD01)
+#define	EV_REFRESH	(0x1FFD02)	/* Sent to pane to ask it to refresh */
 
 #define	EV_WINDOW	(0x1FFD10)	/* str is name of window command */
 #define	EV_MISC		(0x1FFD11)	/* exit, refresh, ... */

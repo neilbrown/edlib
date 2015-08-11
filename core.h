@@ -134,8 +134,6 @@ void attr_free(struct attrset **setp);
 
 
 /* Commands */
-/* FIXME */ typedef int (*refresh_fn)(struct pane *p, struct pane *point_pane, int damage);
-
 struct command {
 	int	(*func)(struct command *comm, struct cmd_info *ci);
 	char	*name;
@@ -189,7 +187,7 @@ struct pane {
 	int			damaged;
 
 	struct map		*keymap;
-	refresh_fn		refresh;
+	struct command		*refresh;
 	void			*data;
 	struct point		*point;
 };

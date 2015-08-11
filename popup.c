@@ -37,11 +37,15 @@ struct popup_info {
 
 static struct map *pp_map;
 
-static int popup_refresh(struct pane *p, struct pane *point_pane, int damage)
+static int do_popup_refresh(struct command *c, struct cmd_info *ci)
 {
+	struct pane *p = ci->focus;
 	struct popup_info *ppi = p->data;
 	int i;
 	int label;
+
+	if (ci->key != EV_REFRESH)
+		return 0;
 
 	for (i = 0; i < p->h-1; i++) {
 		pane_text(p, '|', A_STANDOUT, 0, i);
@@ -63,10 +67,13 @@ static int popup_refresh(struct pane *p, struct pane *point_pane, int damage)
 		pane_text(p, ppi->name[i], A_STANDOUT, label+i, 0);
 	return 0;
 }
-static int popup_no_refresh(struct pane *p, struct pane *point_pane, int damage)
+DEF_CMD(popup_refresh, do_popup_refresh, "popup-refresh");
+
+static int do_popup_no_refresh(struct command *c, struct cmd_info *ci)
 {
 	return 0;
 }
+DEF_CMD(popup_no_refresh, do_popup_no_refresh, "popup-no-refresh");
 
 struct pane *popup_register(struct pane *p, char *name, char *content, wint_t key)
 {
@@ -84,10 +91,10 @@ struct pane *popup_register(struct pane *p, char *name, char *content, wint_t ke
 	ppi->name = name;
 	ppi->target = p;
 	ppi->key = key;
-	p = pane_register(root, 1, popup_refresh, ppi, NULL);
+	p = pane_register(root, 1, &popup_refresh, ppi, NULL);
 
 	pane_resize(p, root->w/4, root->h/2-2, root->w/2, 3);
-	p = pane_register(p, 0, popup_no_refresh, NULL, NULL);
+	p = pane_register(p, 0, &popup_no_refresh, NULL, NULL);
 	pane_resize(p, 1, 1, p->parent->w-2, 1);
 	d = doc_new("text");
 	ppi->doc = d;
@@ -95,7 +102,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, wint_t ke
 	pt = p2->parent->point;
 	doc_replace(pt, NULL, content, &first);
 	render_text_attach(p2, pt);
-	ret = pane_register(p2, 0, popup_no_refresh, ppi, NULL);
+	ret = pane_register(p2, 0, &popup_no_refresh, ppi, NULL);
 	pane_resize(ret, 0, 0, p2->w, p2->h);
 	ret->cx = ret->cy = -1;
 	ret->keymap = pp_map;

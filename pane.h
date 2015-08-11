@@ -14,7 +14,7 @@ enum {
 };
 
 struct pane *pane_register(struct pane *parent, int z,
-			   refresh_fn refresh, void *data,
+			   struct command *refresh, void *data,
 			   struct list_head *here);
 void pane_reparent(struct pane *p, struct pane *newparent, struct list_head *here);
 void pane_free(struct pane *p);

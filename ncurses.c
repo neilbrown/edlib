@@ -95,11 +95,16 @@ static int nc_misc(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_misc, nc_misc, "misc");
 
-static int ncurses_refresh(struct pane *p, struct pane *point_pane, int damage)
+static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
 {
+	struct pane *p = ci->focus;
+	int damage = ci->extra;
 	struct display_data *dd = p->data;
 	struct event *l;
 	struct timeval tv;
+
+	if (ci->key != EV_REFRESH)
+		return 0;
 
 	set_screen(dd->scr);
 
@@ -112,8 +117,10 @@ static int ncurses_refresh(struct pane *p, struct pane *point_pane, int damage)
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 	event_add(l, &tv);
-	return damage & DAMAGED_SIZE;
+	ci->extra &= DAMAGED_SIZE;
+	return 1;
 }
+DEF_CMD(ncurses_refresh, do_ncurses_refresh, "ncurses-refresh");
 
 static void handle_winch(int sig, short ev, void *null);
 struct pane *ncurses_init(struct event_base *base, struct map *map)
@@ -142,7 +149,7 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 
 	current_screen = NULL;
 	dd->base = base;
-	p = pane_register(NULL, 0, ncurses_refresh, dd, NULL);
+	p = pane_register(NULL, 0, &ncurses_refresh, dd, NULL);
 	p->keymap = map;
 
 	key_add(map, EV_MISC, &comm_misc);
@@ -181,7 +188,7 @@ void pane_set_mode(struct pane *p, int mode, int transient)
 	struct display_data *dd;
 	while (p->parent)
 		p = p->parent;
-	if (p->refresh != ncurses_refresh)
+	if (p->refresh != &ncurses_refresh)
 		return;
 	dd = p->data;
 	dd->mode = mode;
@@ -194,7 +201,7 @@ void pane_set_numeric(struct pane *p, int numeric)
 	struct display_data *dd;
 	while (p->parent)
 		p = p->parent;
-	if (p->refresh != ncurses_refresh)
+	if (p->refresh != &ncurses_refresh)
 		return;
 	dd = p->data;
 	dd->numeric = numeric;
@@ -205,7 +212,7 @@ void pane_set_extra(struct pane *p, int extra)
 	struct display_data *dd;
 	while (p->parent)
 		p = p->parent;
-	if (p->refresh != ncurses_refresh)
+	if (p->refresh != &ncurses_refresh)
 		return;
 	dd = p->data;
 	dd->extra = extra;
