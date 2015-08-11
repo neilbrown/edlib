@@ -9,10 +9,12 @@
 #include <stdlib.h>
 #include <curses.h>
 #include <wchar.h>
+#include <fcntl.h>
 
 #include "core.h"
 #include "keymap.h"
 #include "pane.h"
+#include "view.h"
 
 #include "extras.h"
 
@@ -241,7 +243,31 @@ DEF_CMD(comm_redo, emacs_redo, "redo");
 
 static int emacs_findfile(struct command *c, struct cmd_info *ci)
 {
-	popup_register(ci->focus, "Find File", "/home/neilb/", EV_USER_DEF(1));
+	int fd;
+	struct doc *d;
+	struct point *pt;
+	struct pane *p;
+
+	if (ci->key != EV_USER_DEF(1)) {
+		popup_register(ci->point_pane, "Find File", "/home/neilb/", EV_USER_DEF(1));
+		return 1;
+	}
+	fd = open(ci->str, O_RDONLY);
+	d = doc_new("text");
+	p = ci->point_pane->parent;
+	pane_close(ci->point_pane);
+	p = view_attach(p, d, 1);
+	pt = p->parent->point;
+	if (fd >= 0)
+		doc_load_file(pt, fd);
+	else {
+		bool first=1;
+		doc_replace(pt, NULL, "File not found: ", &first);
+		doc_replace(pt, NULL, ci->str, &first);
+		doc_replace(pt, NULL, "\n", &first);
+	}
+	point_reset(pt);
+	render_text_attach(p, pt);
 	return 1;
 }
 DEF_CMD(comm_findfile, emacs_findfile, "find-file");
@@ -317,6 +343,7 @@ void emacs_register(struct map *m)
 	key_add(m, K_MOD(emacs, META(KCTRL('_'))), &comm_redo);
 
 	key_add(m, K_MOD(c_x, KCTRL('f')), &comm_findfile);
+	key_add(m, EV_USER_DEF(1), &comm_findfile);
 
 	/* A simple mouse click just gets resent without a mode */
 	key_add(m, K_MOD(emacs, M_CLICK(0)), &comm_raw);
