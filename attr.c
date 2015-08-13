@@ -17,13 +17,7 @@
  * non-digit character the char comes first.
  *
  * Attributes for text are stored in one list for a section of text.
- * Each attribute is prefixed by the offset where the change takes place.
- * So:
- *   "0 bold=true, 0 underline=false, 5 underline=true, 6 bold=false"
- * means that the first 5 chars are bold, not underline.  The next is
- * bold and underline, subsequent chars are underline but not bold.
- * The section of text has a 'start' and 'end'.  Offsets are in that
- * range and so may not start at zero.
+ * Each attribute is prefixed by the offset where the attribute applies.
  *
  * The offsets are really byte offsets - the text is utf-8.
  *
@@ -83,25 +77,22 @@ static int getcmptok(char **ap)
 }
 
 /* Compare 'a' and 'b' treating strings of digits as numbers.
- * Any leading numbers less that 'min' are treated as though
- * they were 'min'.
+ * If bnum >= 0, it is used as a leading number on 'b'.
  */
-static int attr_cmp(char *a, char *b, int min)
+static int attr_cmp(char *a, char *b, int bnum)
 {
-
 	while (*a && *b) {
 		int ai, bi;
 		ai = getcmptok(&a);
-		bi = getcmptok(&b);
-		if (ai >= 256 && ai < min+256)
-			ai = min + 256;
-		if (bi >= 256 && bi < min+256)
-			bi = min + 256;
+		if (bnum >= 0) {
+			bi = bnum + 256;
+			bnum = -1;
+		} else
+			bi = getcmptok(&b);
 		if (ai < bi)
 			return -1;
 		if (ai > bi)
 			return 1;
-		min = 0;
 	}
 	if (*a)
 		return 1;
@@ -124,13 +115,13 @@ int main(int argc, char *argv[])
 	int i;
 	int rv = 0;
 	for (i = 0; i < sizeof(test)/sizeof(test[0]); i++) {
-		if (attr_cmp(test[i].a, test[i].b, 0) == test[i].result)
+		if (attr_cmp(test[i].a, test[i].b, -1) == test[i].result)
 			printf("%s <-> %s = %d OK\n",
 			       test[i].a, test[i].b, test[i].result);
 		else {
 			printf("%s <-> %s = %d, not %d\n",
 			       test[i].a, test[i].b, attr_cmp(test[i].a,
-							      test[i].b, 0),
+							      test[i].b, -1),
 			       test[i].result);
 			rv = 1;
 		}
@@ -140,7 +131,7 @@ int main(int argc, char *argv[])
 
 #endif
 
-int __attr_find(struct attrset ***setpp, char *key, int *offsetp, int min)
+int __attr_find(struct attrset ***setpp, char *key, int *offsetp, int keynum)
 {
 	struct attrset **setp = *setpp;
 	struct attrset *set = *setp;
@@ -150,15 +141,15 @@ int __attr_find(struct attrset ***setpp, char *key, int *offsetp, int min)
 		return -1;
 	*offsetp = 0;
 	while (set->next &&
-	       attr_cmp(key, set->next->attrs, min) >= 0) {
+	       attr_cmp(set->next->attrs, key, keynum) <= 0) {
 		setp = &set->next;
 		set = *setp;
 	}
 	*setpp = setp;
 
 	for (i = 0; i < set->len; ) {
-		int cmp = attr_cmp(key, set->attrs + i, min);
-		if (cmp <= 0) {
+		int cmp = attr_cmp(set->attrs + i, key, keynum);
+		if (cmp >= 0) {
 			*offsetp = i;
 			*setpp = setp;
 			return cmp;
@@ -170,18 +161,6 @@ int __attr_find(struct attrset ***setpp, char *key, int *offsetp, int min)
 	return 1;
 }
 
-char *attr_find(struct attrset *set, char *key)
-{
-	int offset = 0;
-	struct attrset **setp = &set;
-	int cmp = __attr_find(&setp, key, &offset, 0);
-	if (cmp != 0)
-		return NULL;
-	set = *setp;
-	offset += strlen(set->attrs + offset) + 1;
-	return set->attrs + offset;
-}
-
 int attr_del(struct attrset **setp, char *key)
 {
 	int offset = 0;
@@ -189,7 +168,7 @@ int attr_del(struct attrset **setp, char *key)
 	int len;
 	struct attrset *set;
 
-	cmp = __attr_find(&setp, key, &offset, 0);
+	cmp = __attr_find(&setp, key, &offset, -1);
 
 	if (cmp)
 		/* Not found */
@@ -208,14 +187,34 @@ int attr_del(struct attrset **setp, char *key)
 	return 1;
 }
 
-int attr_set_str(struct attrset **setp, char *key, char *val, int min)
+char *attr_get_str(struct attrset *set, char *key, int keynum)
+{
+	struct attrset **setp = &set;
+	int offset = 0;
+	int cmp = __attr_find(&setp, key, &offset, keynum);
+
+	if (cmp != 0)
+		return NULL;
+	set = *setp;
+	offset += strlen(set->attrs + offset) + 1;
+	return set->attrs + offset;
+}
+
+char *attr_find(struct attrset *set, char *key)
+{
+	return attr_get_str(set, key, -1);
+}
+
+int attr_set_str(struct attrset **setp, char *key, char *val, int keynum)
 {
 	int offset = 0;
 	int cmp;
 	struct attrset *set;
 	unsigned int len;
+	char nkey[22];
+	int nkeylen = 0;
 
-	cmp = __attr_find(&setp, key, &offset, min);
+	cmp = __attr_find(&setp, key, &offset, keynum);
 
 	if (cmp == 0) {
 		/* Remove old value */
@@ -230,7 +229,11 @@ int attr_set_str(struct attrset **setp, char *key, char *val, int min)
 	if (!val)
 		return cmp;
 	set = *setp;
-	len = strlen(key) + 1 + strlen(val) + 1;
+	if (keynum >= 0) {
+		snprintf(nkey, sizeof(nkey), "%d ", keynum);
+		nkeylen = strlen(nkey);
+	}
+	len = nkeylen + strlen(key) + 1 + strlen(val) + 1;
 	if (set == NULL || set->len + len > set->size) {
 		/* Need to re-alloc or alloc new */
 		if (!set) {
@@ -265,8 +268,9 @@ int attr_set_str(struct attrset **setp, char *key, char *val, int min)
 		}
 	}
 	memmove(set->attrs + offset + len, set->attrs + offset, set->len - offset);
-	strcpy(set->attrs + offset, key);
-	strcpy(set->attrs + offset + strlen(key) + 1, val);
+	strncpy(set->attrs + offset, nkey, nkeylen);
+	strcpy(set->attrs + offset + nkeylen, key);
+	strcpy(set->attrs + offset + nkeylen + strlen(key) + 1, val);
 	set->len += len;
 	return cmp;
 }
@@ -322,7 +326,7 @@ int main(int argc, char *argv[])
 		char *v;
 		switch(a->act) {
 		case Add:
-			attr_set_str(&set, a->key, a->val, 0); continue;
+			attr_set_str(&set, a->key, a->val, -1); continue;
 		case Remove:
 			if (attr_del(&set, a->key) == 0) {
 				printf("Action %d: Remove %s: failed\n",
@@ -368,7 +372,7 @@ int attr_set_int(struct attrset **setp, char *key, int val)
 	char sval[22];
 
 	sprintf(sval, "%d", val);
-	return attr_set_str(setp, key, sval, 0);
+	return attr_set_str(setp, key, sval, -1);
 }
 
 #ifdef TEST_ATTR_INT
@@ -485,7 +489,7 @@ struct attrset *attr_collect(struct attrset *set, unsigned int pos,
 			}
 			if (*v == '\0')
 				v = NULL;
-			attr_set_str(&newset, e, v, 0);
+			attr_set_str(&newset, e, v, -1);
 		}
 	}
 done:
@@ -507,7 +511,7 @@ int main(int argc, char *argv[])
 	struct attrset *newset, *new2;
 
 	for (i = 0; i < sizeof(keys)/sizeof(keys[0]); i++)
-		attr_set_str(&set, keys[i], keys[i], 0);
+		attr_set_str(&set, keys[i], keys[i], -1);
 
 	newset = attr_copy_tail(set, 5);
 	attr_trim(&set, 5);

@@ -19,7 +19,7 @@ edlib: $(OBJ)
 $(OBJ) : $(H)
 
 
-CSRC= attr.c text.c
+CSRC= attr.c
 
 test:
 	@for f in $(CSRC); do sed -n -e 's/^#ifdef TEST_\(.*\)$$/\1/p' $$f | \

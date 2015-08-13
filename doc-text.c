@@ -1233,6 +1233,45 @@ static void text_replace(struct point *pos, struct mark *end,
 	point_notify_change(pos);
 }
 
+
+static char *text_get_attr(struct doc *d, struct mark *m, char *attr)
+{
+	struct text_chunk *c = m->ref.c;
+	struct text *t = container_of(d, struct text, doc);
+	int o = m->ref.o;
+
+	if (!c)
+		/* EOF */
+		return NULL;
+	if (o >= c->end) {
+		/* End of chunk, need to look at next */
+		if (c->lst.next == &t->text)
+			return NULL;
+		c = list_next_entry(c, lst);
+		o = c->start;
+	}
+	return attr_get_str(c->attrs, attr, o);
+}
+
+static int text_set_attr(struct point *p, char *attr, char *val)
+{
+	struct text_chunk *c = p->m.ref.c;
+	struct text *t = container_of(p->doc, struct text, doc);
+	int o = p->m.ref.o;
+
+	if (!c)
+		/* EOF */
+		return -1;
+	if (o >= c->end) {
+		/* End of chunk, need to look at next */
+		if (c->lst.next == &t->text)
+			return -1;
+		c = list_next_entry(c, lst);
+		o = c->start;
+	}
+	return attr_set_str(&c->attrs, attr, val, o);
+}
+
 static struct doc_operations text_ops = {
 	.replace   = text_replace,
 	.load_file = text_load_file,
@@ -1241,6 +1280,8 @@ static struct doc_operations text_ops = {
 	.get_str   = text_getstr,
 	.set_ref   = text_setref,
 	.same_ref  = text_sameref,
+	.get_attr  = text_get_attr,
+	.set_attr  = text_set_attr,
 };
 
 void text_register(void)

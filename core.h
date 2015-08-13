@@ -53,6 +53,11 @@ struct doc_operations {
 	char		*(*get_str)(struct doc *d, struct mark *from, struct mark *to);
 	void		(*set_ref)(struct doc *d, struct mark *m, bool start);
 	int		(*same_ref)(struct doc *d, struct mark *a, struct mark *b);
+	/* get/set attr operate on the attributes of the char immediately
+	 * after the point/mark.  They fail at EOF.
+	 */
+	char		*(*get_attr)(struct doc *d, struct mark *m, char *attr);
+	int		(*set_attr)(struct point *pos, char *attr, char *val);
 };
 
 void doc_init(struct doc *d);
