@@ -66,7 +66,8 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	l = attr_find_int(pt->doc->attrs, "lines");
 	w = attr_find_int(pt->doc->attrs, "words");
 	c = attr_find_int(pt->doc->attrs, "chars");
-
+	if (l <= 0)
+		l = 1;
 	for (i = 0; i < p->h-1; i++)
 		pane_text(p, '|', A_STANDOUT, 0, i);
 	mid = 1 + (p->h-4) * ln / l;
