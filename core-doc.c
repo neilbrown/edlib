@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "core.h"
 
@@ -74,12 +75,17 @@ void doc_init(struct doc *d)
 	d->nviews = 0;
 }
 
-static struct doc *(*text_new)(void);
-void doc_register_type(char *type, struct doc *(*new)(void))
+static LIST_HEAD(doctypes);
+void doc_register_type(struct doctype *t)
 {
-	text_new = new;
+	list_add(&t->lst, &doctypes);
 }
+
 struct doc *doc_new(char *type)
 {
-	return text_new();
+	struct doctype *dt;
+	list_for_each_entry(dt, &doctypes, lst)
+		if (strcmp(dt->name, type) == 0)
+			return dt->new(dt);
+	return NULL;
 }

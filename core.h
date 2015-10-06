@@ -43,6 +43,11 @@ struct doc {
 	int			nviews;
 	struct doc_operations	*ops;
 };
+struct doctype {
+	char			*name;
+	struct doc		*(*new)(struct doctype *);
+	struct list_head	lst;
+};
 
 struct doc_operations {
 	void		(*replace)(struct point *pos, struct mark *end,
@@ -65,7 +70,7 @@ int doc_add_view(struct doc *d, struct command *c);
 void doc_del_view(struct doc *d, struct command *c);
 int doc_find_view(struct doc *d, struct command *c);
 struct doc *doc_new(char *type);
-void doc_register_type(char *type, struct doc *(*new)(void));
+void doc_register_type(struct doctype *dt);
 
 /* Points and Marks */
 

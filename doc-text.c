@@ -886,7 +886,7 @@ static int text_sameref(struct doc *d, struct mark *a, struct mark *b)
 	return text_ref_same(t, &a->ref, &b->ref);
 }
 
-static struct doc *text_new(void)
+static struct doc *text_new(struct doctype *dt)
 {
 	struct text *t = malloc(sizeof(*t));
 	text_new_alloc(t, 0);
@@ -1284,7 +1284,12 @@ static struct doc_operations text_ops = {
 	.set_attr  = text_set_attr,
 };
 
+struct doctype text_type = {
+	name: "text",
+	new: text_new
+};
+
 void text_register(void)
 {
-	doc_register_type("text", text_new);
+	doc_register_type(&text_type);
 }
