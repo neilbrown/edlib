@@ -267,23 +267,6 @@ static int render_text_notify(struct command *c, struct cmd_info *ci)
 	return 0;
 }
 
-void render_text_attach(struct pane *p, struct point *pt)
-{
-	struct rt_data *rt = malloc(sizeof(*rt));
-
-	rt->pane = p;
-	rt->top = NULL;
-	rt->bot = NULL;
-	rt->ignore_point = 0;
-	rt->target_x = -1;
-	rt->type.func = render_text_notify;
-	rt->type.name = "render_text_notify";
-	rt->typenum = doc_add_view(pt->doc, &rt->type);
-	p->data = rt;
-	p->refresh = &render_text_refresh;
-	p->keymap = rt_map;
-}
-
 static int render_text_move(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
@@ -385,7 +368,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_line, render_text_move_line, "move-line");
 
-void render_text_register(struct map *m)
+static void render_text_register(void)
 {
 	rt_map = key_alloc();
 
@@ -399,4 +382,23 @@ void render_text_register(struct map *m)
 	key_add_range(rt_map, MV_CHAR, MV_LINE-1, &comm_follow);
 	key_add_range(rt_map, MV_LINE+1, MV_FILE, &comm_follow);
 	key_add(rt_map, EV_REPLACE, &comm_follow);
+}
+
+void render_text_attach(struct pane *p, struct point *pt)
+{
+	struct rt_data *rt = malloc(sizeof(*rt));
+
+	rt->pane = p;
+	rt->top = NULL;
+	rt->bot = NULL;
+	rt->ignore_point = 0;
+	rt->target_x = -1;
+	rt->type.func = render_text_notify;
+	rt->type.name = "render_text_notify";
+	rt->typenum = doc_add_view(pt->doc, &rt->type);
+	p->data = rt;
+	p->refresh = &render_text_refresh;
+	if (!rt_map)
+		render_text_register();
+	p->keymap = rt_map;
 }

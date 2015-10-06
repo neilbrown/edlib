@@ -208,22 +208,6 @@ static int render_hex_notify(struct command *c, struct cmd_info *ci)
 	return 0;
 }
 
-void render_hex_attach(struct pane *p)
-{
-	struct he_data *he = malloc(sizeof(*he));
-
-	he->pane = p;
-	he->top = NULL;
-	he->bot = NULL;
-	he->ignore_point = 0;
-	he->type.func = render_hex_notify;
-	he->type.name = "render_hex_notify";
-	he->typenum = doc_add_view(p->parent->point->doc, &he->type);
-	p->data = he;
-	p->refresh = &render_hex_refresh;
-	p->keymap = he_map;
-}
-
 static int render_hex_move(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
@@ -327,7 +311,7 @@ static int render_hex_eol(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_eol, render_hex_eol, "move-end-of-line");
 
-void render_hex_register(struct map *m)
+static void render_hex_register(void)
 {
 	he_map = key_alloc();
 
@@ -339,4 +323,22 @@ void render_hex_register(struct map *m)
 	key_add(he_map, MV_LINE, &comm_line);
 
 	key_add(he_map, MV_EOL, &comm_eol);
+}
+
+void render_hex_attach(struct pane *p)
+{
+	struct he_data *he = malloc(sizeof(*he));
+
+	he->pane = p;
+	he->top = NULL;
+	he->bot = NULL;
+	he->ignore_point = 0;
+	he->type.func = render_hex_notify;
+	he->type.name = "render_hex_notify";
+	he->typenum = doc_add_view(p->parent->point->doc, &he->type);
+	p->data = he;
+	p->refresh = &render_hex_refresh;
+	if (!he_map)
+		render_hex_register();
+	p->keymap = he_map;
 }

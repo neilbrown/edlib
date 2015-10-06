@@ -63,8 +63,6 @@ int main(int argc, char *argv[])
 	tile_register(global_map);
 	view_register(global_map);
 	text_register();
-	render_text_register(global_map);
-	render_hex_register(global_map);
 	popup_init();
 	emacs_register(global_map);
 	key_register_mode("emacs", &emacs);
