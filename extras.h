@@ -5,5 +5,6 @@ void popup_init(void);
 
 void render_text_attach(struct pane *p, struct point *pt);
 void render_hex_attach(struct pane *p);
+void render_dir_attach(struct pane *p, struct point *pt);
 
 void emacs_register(struct map *m);

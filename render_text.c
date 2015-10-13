@@ -166,7 +166,7 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 	 * or cross top (from above) or bot (from below).
 	 * When end hits EOF or start crosses bot, end stops moving.
 	 * When start hits SOF or end crosses top, start stops moving.
-	 * When number of lines reaches height of pane, both top moving.
+	 * When number of lines reaches height of pane, both stop moving.
 	 * At this point, 'start' is the new 'top'.
 	 */
 	struct rt_data *rt = p->data;

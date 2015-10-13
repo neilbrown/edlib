@@ -45,7 +45,31 @@ static struct doc *attach_file(struct pane *p, char *fname)
 	return d;
 }
 
+static struct doc *attach_dir(struct pane *p, char *fname)
+{
+	int fd = open(fname, O_RDONLY|O_DIRECTORY);
+	struct doc *d = doc_new("dir");
+	struct point *pt;
+
+	p = view_attach(p, d, 1);
+	pt = p->parent->point;
+	if (fd >= 0)
+		doc_load_file(pt, fd);
+	else {
+		bool first=1;
+		doc_replace(pt, NULL, "Dir not found: ", &first);
+		doc_replace(pt, NULL, fname, &first);
+		doc_replace(pt, NULL, "\n", &first);
+	}
+
+	point_reset(pt);
+
+	render_dir_attach(p, pt);
+	return d;
+}
+
 void text_register(void);
+void doc_dir_register(void);
 int main(int argc, char *argv[])
 {
 	struct event_base *base;
@@ -63,6 +87,7 @@ int main(int argc, char *argv[])
 	tile_register(global_map);
 	view_register(global_map);
 	text_register();
+	doc_dir_register();
 	popup_init();
 	emacs_register(global_map);
 	key_register_mode("emacs", &emacs);
@@ -72,7 +97,7 @@ int main(int argc, char *argv[])
 	b2 = tile_split(b1, 0, 0);
 	b3 = tile_split(b1, 1, 1);
 	attach_file(b3, "core-mark.c");
-	attach_file(b1, "mainloop.c");
+	attach_dir(b1, ".");
 
 	struct doc *d = attach_file(b2, "doc-text.c");
 
