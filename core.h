@@ -61,7 +61,7 @@ struct doc_operations {
 	/* get/set attr operate on the attributes of the char immediately
 	 * after the point/mark.  They fail at EOF.
 	 */
-	char		*(*get_attr)(struct doc *d, struct mark *m, char *attr);
+	char		*(*get_attr)(struct doc *d, struct mark *m, bool forward, char *attr);
 	int		(*set_attr)(struct point *pos, char *attr, char *val);
 };
 
@@ -231,4 +231,7 @@ static inline char *doc_getstr(struct doc *d, struct mark *from, struct mark *to
 {
 	return d->ops->get_str(d, from, to);
 }
-
+static inline char *doc_attr(struct doc *d, struct mark *m, bool forward, char *attr)
+{
+	return d->ops->get_attr(d, m, forward, attr);
+}

@@ -1234,21 +1234,38 @@ static void text_replace(struct point *pos, struct mark *end,
 }
 
 
-static char *text_get_attr(struct doc *d, struct mark *m, char *attr)
+static char *text_get_attr(struct doc *d, struct mark *m,
+			   bool forward, char *attr)
 {
 	struct text_chunk *c = m->ref.c;
 	struct text *t = container_of(d, struct text, doc);
 	int o = m->ref.o;
 
-	if (!c)
-		/* EOF */
-		return NULL;
-	if (o >= c->end) {
-		/* End of chunk, need to look at next */
-		if (c->lst.next == &t->text)
+	if (forward) {
+		if (!c)
+			/* EOF */
 			return NULL;
-		c = list_next_entry(c, lst);
-		o = c->start;
+		if (o >= c->end) {
+			/* End of chunk, need to look at next */
+			if (c->lst.next == &t->text)
+				return NULL;
+			c = list_next_entry(c, lst);
+			o = c->start;
+		}
+	} else {
+		if (!c) {
+			if (list_empty(&t->text))
+				return NULL;
+			c = list_entry(t->text.prev, struct text_chunk, lst);
+			o = c->end;
+		}
+		if (o == 0) {
+			if (c->lst.prev == &t->text)
+				return NULL;
+			c = list_entry(c->lst.prev, struct text_chunk, lst);
+			o = c->end;
+		}
+		o -= 1;
 	}
 	return attr_get_str(c->attrs, attr, o);
 }
