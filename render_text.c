@@ -14,11 +14,11 @@
 #include <stdlib.h>
 #include <wchar.h>
 #include <curses.h>
+#include <string.h>
 
 #include "core.h"
 #include "pane.h"
 #include "view.h"
-#include "keymap.h"
 
 struct rt_data {
 	struct mark	*top, *bot;
@@ -220,7 +220,7 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 	struct mark *end = NULL, *top;
 	struct point *pt = ci->point_pane->point;
 
-	if (ci->key == EV_CLOSE) {
+	if (strcmp(ci->key, "Close") == 0) {
 		struct point *pt = ci->point_pane->point;
 		struct pane *p = rt->pane;
 		mark_free(rt->top);
@@ -232,7 +232,7 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 		free(rt);
 		return 0;
 	}
-	if (ci->key != EV_REFRESH)
+	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
 	if (p->focus == NULL && !list_empty(&p->children))
@@ -259,7 +259,7 @@ static int render_text_notify(struct command *c, struct cmd_info *ci)
 {
 	struct rt_data *rt = container_of(c, struct rt_data, type);
 
-	if (ci->key != EV_REPLACE)
+	if (strcmp(ci->key, "Replace") != 0)
 		return 0;
 	if (ci->mark == rt->top)
 		/* A change in the text between top and bot */
@@ -278,7 +278,7 @@ static int render_text_move(struct command *c, struct cmd_info *ci)
 
 	if (!rt->top)
 		return 0;
-	if (ci->key == MV_VIEW_LARGE)
+	if (strcmp(ci->key, "Move-View-Large") == 0)
 		rpt *= p->h - 2;
 	rt->ignore_point = 1;
 	if (rpt < 0) {
@@ -301,7 +301,7 @@ static int render_text_follow_point(struct command *c, struct cmd_info *ci)
 	struct rt_data *rt = p->data;
 
 	rt->ignore_point = 0;
-	if (ci->key != MV_LINE)
+	if (strcmp(ci->key, "Move-Line") != 0)
 		rt->target_x = -1;
 	return 0;
 }
@@ -338,7 +338,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 	target_x = rt->target_x;
 
 	ci2.focus = ci->focus;
-	ci2.key = MV_EOL;
+	ci2.key = "Move-EOL";
 	ci2.numeric = RPT_NUM(ci);
 	if (ci2.numeric < 0)
 		ci2.numeric -= 1;
@@ -372,16 +372,16 @@ static void render_text_register(void)
 {
 	rt_map = key_alloc();
 
-	key_add(rt_map, MV_VIEW_SMALL, &comm_move);
-	key_add(rt_map, MV_VIEW_LARGE, &comm_move);
-	key_add(rt_map, MV_CURSOR_XY, &comm_cursor);
-	key_add(rt_map, M_CLICK(0), &comm_cursor);
-	key_add(rt_map, M_PRESS(0), &comm_cursor);
-	key_add(rt_map, MV_LINE, &comm_line);
-
-	key_add_range(rt_map, MV_CHAR, MV_LINE-1, &comm_follow);
-	key_add_range(rt_map, MV_LINE+1, MV_FILE, &comm_follow);
-	key_add(rt_map, EV_REPLACE, &comm_follow);
+	key_add(rt_map, "Move-View-Small", &comm_move);
+	key_add(rt_map, "Move-View-Large", &comm_move);
+	key_add(rt_map, "Move-CursorXY", &comm_cursor);
+	key_add(rt_map, "Click-1", &comm_cursor);
+	key_add(rt_map, "Press-1", &comm_cursor);
+	key_add(rt_map, "Move-Line", &comm_line);
+/* FIXME */
+	key_add_range(rt_map, "Move-", "Move-Lind", &comm_follow);
+	key_add_range(rt_map, "Move-Linf", "Move-V", &comm_follow);
+	key_add(rt_map, "Replace", &comm_follow);
 }
 
 void render_text_attach(struct pane *p, struct point *pt)

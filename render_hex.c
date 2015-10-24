@@ -10,12 +10,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <wchar.h>
-#include <curses.h>
+#include <string.h>
 
 #include "core.h"
 #include "pane.h"
 #include "view.h"
-#include "keymap.h"
 #include "attr.h"
 
 #include "extras.h"
@@ -162,7 +161,7 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 	struct mark *end = NULL, *top;
 	struct point *pt = ci->point_pane->point;
 
-	if (ci->key == EV_CLOSE) {
+	if (strcmp(ci->key, "Close") == 0) {
 		struct point *pt = ci->point_pane->point;
 		struct pane *p = he->pane;
 		mark_free(he->top);
@@ -174,7 +173,7 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 		free(he);
 		return 1;
 	}
-	if (ci->key != EV_REFRESH)
+	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
 	if (p->focus == NULL && !list_empty(&p->children))
@@ -200,7 +199,7 @@ static int render_hex_notify(struct command *c, struct cmd_info *ci)
 {
 	struct he_data *he = container_of(c, struct he_data, type);
 
-	if (ci->key != EV_REPLACE)
+	if (strcmp(ci->key, "Replace") != 0)
 		return 0;
 	if (ci->mark == he->top)
 		/* A change in the text between top and bot */
@@ -217,7 +216,7 @@ static int render_hex_move(struct command *c, struct cmd_info *ci)
 
 	if (!he->top)
 		return 0;
-	if (ci->key == MV_VIEW_LARGE)
+	if (strcmp(ci->key, "Move-View-Large") == 0)
 		rpt *= p->h - 2;
 	rpt *= 16;
 	he->ignore_point = 1;
@@ -271,7 +270,7 @@ static int render_hex_move_line(struct command *c, struct cmd_info *ci)
 	struct cmd_info ci2 = {0};
 
 	ci2 = *ci;
-	ci2.key = MV_CHAR;
+	ci2.key = "Move-Char";
 	ci2.numeric = RPT_NUM(ci) * 16;
 	return key_handle_focus(&ci2);
 
@@ -315,14 +314,14 @@ static void render_hex_register(void)
 {
 	he_map = key_alloc();
 
-	key_add(he_map, MV_VIEW_SMALL, &comm_move);
-	key_add(he_map, MV_VIEW_LARGE, &comm_move);
-	key_add(he_map, MV_CURSOR_XY, &comm_cursor);
-	key_add(he_map, M_CLICK(0), &comm_cursor);
-	key_add(he_map, M_PRESS(0), &comm_cursor);
-	key_add(he_map, MV_LINE, &comm_line);
+	key_add(he_map, "Move-View-Small", &comm_move);
+	key_add(he_map, "Move-View-Large", &comm_move);
+	key_add(he_map, "Move-CursorXY", &comm_cursor);
+	key_add(he_map, "Click-1", &comm_cursor);
+	key_add(he_map, "Press-1", &comm_cursor);
+	key_add(he_map, "Move-Line", &comm_line);
 
-	key_add(he_map, MV_EOL, &comm_eol);
+	key_add(he_map, "Move-EOL", &comm_eol);
 }
 
 void render_hex_attach(struct pane *p)

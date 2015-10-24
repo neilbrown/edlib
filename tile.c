@@ -21,7 +21,6 @@
 #include "core.h"
 #include "pane.h"
 #include "view.h"
-#include "keymap.h"
 
 #include "extras.h"
 
@@ -53,7 +52,7 @@ static int do_tile_refresh(struct command *c, struct cmd_info *ci)
 	int damage = ci->extra;
 	struct tileinfo *ti = p->data;
 
-	if (ci->key != EV_REFRESH)
+	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
 	if (p->focus == NULL && !list_empty(&p->children))
@@ -483,5 +482,5 @@ void tile_register(struct map *m)
 {
 	tile_map = key_alloc();
 
-	key_add(tile_map, EV_WINDOW, &comm_tile);
+	key_add(tile_map, "WindowOP", &comm_tile);
 }

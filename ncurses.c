@@ -24,13 +24,12 @@
 #include "core.h"
 #include "pane.h"
 #include "tile.h"
-#include "keymap.h"
 
 struct display_data {
 	SCREEN			*scr;
 	struct event_base	*base;
-	/* mode and next_mode are already shifted */
-	int			mode, next_mode, numeric, extra;
+	char			*mode, *next_mode;
+	int			numeric, extra;
 };
 
 static SCREEN *current_screen;
@@ -103,7 +102,7 @@ static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
 	struct event *l;
 	struct timeval tv;
 
-	if (ci->key != EV_REFRESH)
+	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
 	if (p->focus == NULL) {
@@ -161,7 +160,7 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 	p = pane_register(NULL, 0, &ncurses_refresh, dd, NULL);
 	p->keymap = map;
 
-	key_add(map, EV_MISC, &comm_misc);
+	key_add(map, "Misc", &comm_misc);
 
 	getmaxyx(stdscr, p->h, p->w); p->h-=1;
 
@@ -192,7 +191,7 @@ static void handle_winch(int sig, short ev, void *vpane)
 	pane_refresh(p);
 }
 
-void pane_set_mode(struct pane *p, int mode, int transient)
+void pane_set_mode(struct pane *p, char *mode, int transient)
 {
 	struct display_data *dd;
 	while (p->parent)
@@ -273,25 +272,84 @@ void pane_text(struct pane *p, wchar_t ch, int attr, int x, int y)
 	mvadd_wch(y, x, &cc);
 }
 
+static struct namelist {
+	wint_t key;
+	char *name;
+} key_names[] = {
+	{KEY_DOWN, "Down"},
+	{KEY_UP, "Up"},
+	{KEY_LEFT, "Left"},
+	{KEY_RIGHT, "Right"},
+	{KEY_HOME, "Home"},
+	{KEY_BACKSPACE, "Backspace"},
+	{KEY_DL, "DelLine"},
+	{KEY_IL, "InsLine"},
+	{KEY_DC, "Del"},
+	{KEY_IC, "Ins"},
+	{KEY_ENTER, "Enter"},
+	{KEY_END, "End"},
+
+	{KEY_NPAGE, "Next"},
+	{KEY_PPAGE, "Prior"},
+
+	{KEY_SDC, "S-Del"},
+	{KEY_SDL, "S-DelLine"},
+	{KEY_SEND, "S-End"},
+	{KEY_SHOME, "S-Home"},
+	{KEY_SLEFT, "S-Left"},
+	{KEY_SRIGHT, "S-Right"},
+	{KEY_BTAB, "S-Tab"},
+
+	{ 01057, "M-Prior"},
+	{ 01051, "M-Next"},
+	{ 01072, "M-Up"},
+	{ 01061, "M-Down"},
+	{ 01042, "M-Left"},
+	{ 01064, "M-Right"},
+	{0, NULL}
+}, char_names[] = {
+	{'\e', "ESC"},
+	{'\n', "LF"},
+	{'\r', "Return"},
+	{'\t', "Tab"},
+	{0, NULL}
+};
+
+static char *find_name (struct namelist *l, wint_t c)
+{
+	int i;
+	for (i = 0; l[i].name; i++)
+		if (l[i].key == c)
+			return l[i].name;
+	return NULL;
+}
+
 static void send_key(int keytype, wint_t c, struct pane *p)
 {
 	struct display_data *dd = p->data;
 	struct cmd_info ci = {0};
+	char *k, *n;
+	char buf[100];/* FIXME */
 
+	strcpy(buf, dd->mode);
+	k = buf + strlen(buf);
 	if (keytype == KEY_CODE_YES) {
-		switch(c) {
-		case 01057: c = META(FUNC_KEY(KEY_PPAGE)); break;
-		case 01051: c = META(FUNC_KEY(KEY_NPAGE)); break;
-		case 01072: c = META(FUNC_KEY(KEY_UP)); break;
-		case 01061: c = META(FUNC_KEY(KEY_DOWN)); break;
-		case 01042: c = META(FUNC_KEY(KEY_LEFT)); break;
-		case 01064: c = META(FUNC_KEY(KEY_RIGHT)); break;
-		default:
-			c = FUNC_KEY(c);
-		}
+		n = find_name(key_names, c);
+		if (!n)
+			sprintf(k, "Ncurs-%o", c);
+		else
+			strcpy(k, n);
+	} else {
+		n = find_name(char_names, c);
+		if (n)
+			strcpy(k, n);
+		else if (c < ' ')
+			sprintf(k, "C-Chr-%c", c+64);
+		else
+			sprintf(k, "Chr-%c", c);
 	}
 
-	ci.key = dd->mode | c;
+	ci.key = buf;
 	ci.focus = p;
 	ci.numeric = dd->numeric;
 	ci.extra = dd->extra;
@@ -303,12 +361,13 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	key_handle_focus(&ci);
 }
 
-static void do_send_mouse(struct pane *p, int x, int y, int cmd)
+static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
 {
 	struct display_data *dd = p->data;
 	struct cmd_info ci = {0};
+	char buf[100];/* FIXME */
 
-	ci.key = dd->mode | cmd;
+	ci.key = strcat(strcpy(buf, dd->mode), cmd);
 	ci.focus = p;
 	ci.numeric = dd->numeric;
 	ci.extra = dd->extra;
@@ -326,23 +385,29 @@ static void send_mouse(MEVENT *mev, struct pane *p)
 	int x = mev->x;
 	int y = mev->y;
 	int b;
+	char buf[100];
 
 	/* MEVENT has lots of bits.  We want a few numbers */
-	for (b = 0 ; b < 4; b++) {
+	for (b = 1 ; b <= 4; b++) {
 		mmask_t s = mev->bstate;
-		if (BUTTON_PRESS(s, b+1))
-			do_send_mouse(p, x, y, M_PRESS(b));
-		if (BUTTON_RELEASE(s, b+1))
-			do_send_mouse(p, x, y, M_RELEASE(b));
-		if (BUTTON_CLICK(s, b+1))
-			do_send_mouse(p, x, y, M_CLICK(b));
-		else if (BUTTON_DOUBLE_CLICK(s, b+1))
-			do_send_mouse(p, x, y, M_DCLICK(b));
-		else if (BUTTON_TRIPLE_CLICK(s, b+1))
-			do_send_mouse(p, x, y, M_TCLICK(b));
+		char *action;
+		if (BUTTON_PRESS(s, b))
+			action = "Press-%d";
+		if (BUTTON_RELEASE(s, b))
+			action = "Release-%d";
+		if (BUTTON_CLICK(s, b))
+			action = "Click-%d";
+		else if (BUTTON_DOUBLE_CLICK(s, b))
+			action = "DClick-%d";
+		else if (BUTTON_TRIPLE_CLICK(s, b))
+			action = "TClick-%d";
+		else
+			continue;
+		sprintf(buf, action, b);
+		do_send_mouse(p, x, y, buf);
 	}
 	if (mev->bstate & REPORT_MOUSE_POSITION)
-		do_send_mouse(p, x, y, M_MOVE);
+		do_send_mouse(p, x, y, "MouseMove");
 }
 
 static void input_handle(int fd, short ev, void *P)

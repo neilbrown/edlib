@@ -11,6 +11,7 @@
  */
 
 #include <wchar.h>
+#include <limits.h>
 #include "list.h"
 
 #undef bool
@@ -164,7 +165,7 @@ struct command {
  * 'mark' is moved by 'move' and 'replace' deletes between point and mark.
  */
 struct cmd_info {
-	wint_t		key;
+	char		*key;
 	struct pane	*focus;
 	int		numeric, extra;
 	int		x,y;
@@ -179,10 +180,10 @@ struct map *key_alloc(void);
 int key_handle(struct cmd_info *ci);
 int key_handle_focus(struct cmd_info *ci);
 int key_handle_xy(struct cmd_info *ci);
-int key_add(struct map *map, wint_t k, struct command *comm);
-int key_add_range(struct map *map, wint_t first, wint_t last,
+int key_add(struct map *map, char *k, struct command *comm);
+int key_add_range(struct map *map, char *first, char *last,
 		   struct command *comm);
-struct command *key_register_mode(char *name, int *mode);
+struct command *key_register_mode(char *name);
 
 
 /* pane */

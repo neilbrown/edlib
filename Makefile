@@ -12,7 +12,7 @@ OBJ = ncurses.o view.o tile.o mainloop.o attr.o keymap.o pane.o \
 	mode-emacs.o \
 	doc-text.o doc-dir.o
 
-H = list.h pane.h attr.h tile.h view.h keymap.h extras.h core.h
+H = list.h pane.h attr.h tile.h view.h extras.h core.h
 edlib: $(OBJ)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o edlib $(OBJ) $(LDLIBS)
 

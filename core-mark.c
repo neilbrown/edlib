@@ -63,7 +63,6 @@
 #include <stdlib.h>
 
 #include "core.h"
-#include "keymap.h"
 
 /* seq numbers added to the end are given a gap of 128.
  * seq numbers at other locations are placed at mean of before and after.
@@ -600,7 +599,7 @@ void point_notify_change(struct point *p)
 	struct doc *d = p->doc;
 	int i;
 
-	ci.key = EV_REPLACE;
+	ci.key = "Replace";
 	ci.focus = NULL;
 	ci.numeric = 1;
 	ci.x = ci.y = -1;

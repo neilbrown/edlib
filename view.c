@@ -17,7 +17,6 @@
 
 #include "core.h"
 #include "pane.h"
-#include "keymap.h"
 #include "attr.h"
 
 #include "extras.h"
@@ -43,12 +42,12 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	int ln, l, w, c;
 	char msg[60];
 
-	if (ci->key == EV_CLOSE) {
+	if (strcmp(ci->key, "Close") == 0) {
 		doc_del_view(pt->doc, &vd->ch_notify);
 		free(vd);
 		return 1;
 	}
-	if (ci->key != EV_REFRESH)
+	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
@@ -95,7 +94,7 @@ DEF_CMD(view_null, do_view_null, "view-no-refresh");
 static int view_notify(struct command *c, struct cmd_info *ci)
 {
 	struct view_data *vd;
-	if (ci->key != EV_REPLACE)
+	if (strcmp(ci->key, "Replace") != 0)
 		return 0;
 
 	vd = container_of(c, struct view_data, ch_notify);
@@ -338,7 +337,7 @@ static int view_click(struct command *c, struct cmd_info *ci)
 		return 0;
 
 	ci2.focus = p->focus;
-	ci2.key = MV_VIEW_SMALL;
+	ci2.key = "Move-View-Small";
 	ci2.numeric = RPT_NUM(ci);
 	ci2.mark = mark_of_point(ci->point_pane->point);
 	p = p->focus;
@@ -348,11 +347,11 @@ static int view_click(struct command *c, struct cmd_info *ci)
 	} else if (ci->y < mid-1) {
 		/* big scroll up */
 		ci2.numeric = -ci2.numeric;
-		ci2.key = MV_VIEW_LARGE;
+		ci2.key = "Move-View-Large";
 	} else if (ci->y == mid+1) {
 		/* scroll down */
 	} else if (ci->y > mid+1 && ci->y < p->h-1) {
-		ci2.key = MV_VIEW_LARGE;
+		ci2.key = "Move-View-Large";
 	} else
 		return 0;
 	ci2.point_pane = ci->point_pane;
@@ -364,17 +363,17 @@ void view_register(struct map *m)
 {
 	view_map = key_alloc();
 
-	key_add(m, MV_CHAR, &comm_char);
-	key_add(m, MV_WORD, &comm_word);
-	key_add(m, MV_WORD2, &comm_WORD);
-	key_add(m, MV_EOL, &comm_eol);
-	key_add(m, MV_LINE, &comm_line);
-	key_add(m, MV_FILE, &comm_file);
-	key_add(m, MV_VIEW_LARGE, &comm_page);
+	key_add(m, "Move-Char", &comm_char);
+	key_add(m, "Move-Word", &comm_word);
+	key_add(m, "Move-WORD", &comm_WORD);
+	key_add(m, "Move-EOL", &comm_eol);
+	key_add(m, "Move-Line", &comm_line);
+	key_add(m, "Move-File", &comm_file);
+	key_add(m, "Move-View-Large", &comm_page);
 
-	key_add(view_map, EV_REPLACE, &comm_replace);
+	key_add(view_map, "Replace", &comm_replace);
 
-	key_add(view_map, M_CLICK(0), &comm_click);
-	key_add(view_map, M_PRESS(0), &comm_click);
+	key_add(view_map, "Click-1", &comm_click);
+	key_add(view_map, "Press-1", &comm_click);
 
 }

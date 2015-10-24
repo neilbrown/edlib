@@ -15,7 +15,6 @@
 #include "pane.h"
 #include "tile.h"
 #include "view.h"
-#include "keymap.h"
 
 #include "extras.h"
 
@@ -76,7 +75,6 @@ int main(int argc, char *argv[])
 	struct pane *root;
 	struct pane *b1, *b2, *b3, *b4;
 	struct map *global_map;
-	int emacs;
 
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
@@ -90,8 +88,7 @@ int main(int argc, char *argv[])
 	doc_dir_register();
 	popup_init();
 	emacs_register(global_map);
-	key_register_mode("emacs", &emacs);
-	pane_set_mode(root, K_MOD(emacs, 0), 0);
+	pane_set_mode(root, "emacs-", 0);
 
 	b1 = tile_init(root);
 	b2 = tile_split(b1, 0, 0);

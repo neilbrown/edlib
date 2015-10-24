@@ -31,11 +31,10 @@
 
 #include "core.h"
 #include "pane.h"
-#include "keymap.h"
 
 struct map {
 	int	size;
-	wint_t	*keys;
+	char	**keys;
 	struct command **comms;
 };
 
@@ -59,7 +58,7 @@ struct map *key_alloc(void)
 }
 
 /* Find first entry >= k */
-static int key_find(struct map *map, wint_t k)
+static int key_find(struct map *map, char *k)
 {
 	int lo = 0;
 	int hi = map->size;
@@ -70,7 +69,7 @@ static int key_find(struct map *map, wint_t k)
 	 */
 	while (hi > lo) {
 		int mid = (hi + lo)/ 2;
-		if (map->keys[mid] < k)
+		if (strcmp(map->keys[mid], k) < 0)
 			lo = mid+1;
 		else
 			hi = mid;
@@ -78,7 +77,7 @@ static int key_find(struct map *map, wint_t k)
 	return hi;
 }
 
-int key_add(struct map *map, wint_t k, struct command *comm)
+int key_add(struct map *map, char *k, struct command *comm)
 {
 	int size = size2alloc(map->size + 1);
 	int pos;
@@ -87,7 +86,7 @@ int key_add(struct map *map, wint_t k, struct command *comm)
 		return 0;
 
 	pos = key_find(map, k);
-	if (pos < map->size && map->keys[pos] == k)
+	if (pos < map->size && strcmp(map->keys[pos], k) == 0)
 		/* Ignore duplicate */
 		return 0;
 	if (pos < map->size && map->comms[pos] == NULL)
@@ -95,13 +94,13 @@ int key_add(struct map *map, wint_t k, struct command *comm)
 		return 0;
 
 	if (size2alloc(map->size) != size) {
-		map->keys = realloc(map->keys, size * sizeof(int));
+		map->keys = realloc(map->keys, size * sizeof(map->keys[0]));
 		map->comms = realloc(map->comms,
 				     size * sizeof(struct command *));
 	}
 
 	memmove(map->keys+pos+1, map->keys+pos,
-		(map->size - pos) * sizeof(int));
+		(map->size - pos) * sizeof(map->keys[0]));
 	memmove(map->comms+pos+1, map->comms+pos,
 		(map->size - pos) * sizeof(struct command *));
 	map->keys[pos] = k;
@@ -110,7 +109,7 @@ int key_add(struct map *map, wint_t k, struct command *comm)
 	return 1;
 }
 
-int key_add_range(struct map *map, wint_t first, wint_t last,
+int key_add_range(struct map *map, char *first, char *last,
 		   struct command *comm)
 {
 	int size = size2alloc(map->size + 2);
@@ -120,7 +119,7 @@ int key_add_range(struct map *map, wint_t first, wint_t last,
 		return 0;
 
 	pos = key_find(map, first);
-	if (pos < map->size && map->keys[pos] == first)
+	if (pos < map->size && strcmp(map->keys[pos], first) == 0)
 		/* Ignore duplicate */
 		return 0;
 	if (pos < map->size && map->comms[pos] == NULL)
@@ -133,13 +132,13 @@ int key_add_range(struct map *map, wint_t first, wint_t last,
 		return 0;
 
 	if (size2alloc(map->size) != size) {
-		map->keys = realloc(map->keys, size * sizeof(int));
+		map->keys = realloc(map->keys, size * sizeof(map->keys[0]));
 		map->comms = realloc(map->comms,
 				     size * sizeof(struct command *));
 	}
 
 	memmove(map->keys+pos+2, map->keys+pos,
-		(map->size - pos) * sizeof(int));
+		(map->size - pos) * sizeof(map->keys[0]));
 	memmove(map->comms+pos+2, map->comms+pos,
 		(map->size - pos) * sizeof(struct command *));
 	map->keys[pos] = first;
@@ -156,11 +155,11 @@ void key_del(struct map *map, wint_t k)
 	int pos;
 
 	pos = key_find(map, k);
-	if (pos >= map->size || map->keys[pos] != k)
+	if (pos >= map->size || strcmp(map->keys[pos], k) == 0)
 		return;
 
 	memmove(map->keys+pos, map->keys+pos+1,
-		(map->size-pos-1) * sizeof(int));
+		(map->size-pos-1) * sizeof(map->keys[0]));
 	memmove(map->comms+pos, map->comms+pos+1,
 		(map->size-pos-1) * sizeof(struct command *));
 	map->size -= 1;
@@ -170,13 +169,12 @@ void key_del(struct map *map, wint_t k)
 static int key_mode(struct command *comm, struct cmd_info *ci)
 {
 	struct modmap *m = container_of(comm, struct modmap, comm);
-	int i = m - modmap;
 
-	pane_set_mode(ci->focus, K_MOD(i, 0), m->transient);
+	pane_set_mode(ci->focus, m->name, m->transient);
 	return 1;
 }
 
-struct command *key_register_mode(char *name, int *mode)
+struct command *key_register_mode(char *name)
 {
 	int i;
 	int free = 0;
@@ -186,10 +184,8 @@ struct command *key_register_mode(char *name, int *mode)
 				free = i;
 			continue;
 		}
-		if (strcmp(modmap[i].name, name) == 0) {
-			*mode = i;
+		if (strcmp(modmap[i].name, name) == 0)
 			return &modmap[i].comm;
-		}
 	}
 	if (!free)
 		return NULL;
@@ -197,7 +193,6 @@ struct command *key_register_mode(char *name, int *mode)
 	modmap[free].transient = 1;
 	modmap[free].comm.func = key_mode;
 	modmap[free].comm.name = name;
-	*mode = free;
 	return &modmap[free].comm;
 }
 
@@ -212,7 +207,7 @@ static int key_lookup(struct map *m, struct cmd_info *ci)
 	if (m->comms[pos] == NULL &&
 	    pos > 0)
 		comm = m->comms[pos-1];
-	else if (m->keys[pos] == ci2.key)
+	else if (strcmp(m->keys[pos], ci2.key) == 0)
 		comm = m->comms[pos];
 	else
 		return 0;

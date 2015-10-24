@@ -7,12 +7,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <wchar.h>
-#include <curses.h>
+#include <string.h>
 
 #include "core.h"
 #include "pane.h"
 #include "view.h"
-#include "keymap.h"
 #include "attr.h"
 
 #include "extras.h"
@@ -149,7 +148,7 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 	struct mark *end = NULL, *top;
 	struct point *pt = ci->point_pane->point;
 
-	if (ci->key == EV_CLOSE) {
+	if (strcmp(ci->key, "Close") == 0) {
 		struct pane *p = dd->pane;
 		mark_free(dd->top);
 		mark_free(dd->bot);
@@ -160,7 +159,7 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 		free(dd);
 		return 1;
 	}
-	if (ci->key != EV_REFRESH)
+	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
 	if (p->focus == NULL && !list_empty(&p->children))
@@ -186,7 +185,7 @@ static int render_dir_notify(struct command *c, struct cmd_info *ci)
 {
 	struct dir_data *dd = container_of(c, struct dir_data, type);
 
-	if (ci->key != EV_REPLACE)
+	if (strcmp(ci->key, "Replace") != 0)
 		return 0;
 	if (ci->mark == dd->top)
 		/* A change in the text between top and bot */
@@ -203,7 +202,7 @@ static int render_dir_move(struct command *c, struct cmd_info *ci)
 
 	if (!dd->top)
 		return 0;
-	if (ci->key == MV_VIEW_LARGE)
+	if (strcmp(ci->key, "Move-View-Large") == 0)
 		rpt *= p->h - 2;
 	dd->ignore_point = 1;
 	while (rpt > 0) {
@@ -271,16 +270,17 @@ static void render_dir_register(void)
 {
 	dr_map = key_alloc();
 
-	key_add(dr_map, MV_VIEW_SMALL, &comm_move);
-	key_add(dr_map, MV_VIEW_LARGE, &comm_move);
-	key_add(dr_map, MV_CURSOR_XY, &comm_cursor);
-	key_add(dr_map, M_CLICK(0), &comm_cursor);
-	key_add(dr_map, M_PRESS(0), &comm_cursor);
-	key_add(dr_map, MV_LINE, &comm_line);
+	key_add(dr_map, "Move-View-Small", &comm_move);
+	key_add(dr_map, "Move-View-Large", &comm_move);
+	key_add(dr_map, "Move-CursorXY", &comm_cursor);
+	key_add(dr_map, "Click-0", &comm_cursor);
+	key_add(dr_map, "Press-0", &comm_cursor);
+	key_add(dr_map, "Move-Line", &comm_line);
 
-	key_add_range(dr_map, MV_CHAR, MV_LINE-1, &comm_follow);
-	key_add_range(dr_map, MV_LINE+1, MV_FILE, &comm_follow);
-	key_add(dr_map, EV_REPLACE, &comm_follow);
+/* FIXME */
+	key_add_range(dr_map, "Move-", "Move-Lind", &comm_follow);
+	key_add_range(dr_map, "Move-Linf", "Move-V", &comm_follow);
+	key_add(dr_map, "Replace", &comm_follow);
 }
 
 void render_dir_attach(struct pane *p, struct point *pt)

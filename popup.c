@@ -23,7 +23,6 @@
 
 #include "core.h"
 #include "pane.h"
-#include "keymap.h"
 #include "view.h"
 
 #include "extras.h"
@@ -31,7 +30,7 @@
 struct popup_info {
 	char		*name;
 	struct pane	*target;
-	wint_t		key;
+	char		*key;
 	struct doc	*doc;
 };
 
@@ -44,7 +43,7 @@ static int do_popup_refresh(struct command *c, struct cmd_info *ci)
 	int i;
 	int label;
 
-	if (ci->key != EV_REFRESH)
+	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
@@ -81,7 +80,7 @@ static int do_popup_no_refresh(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(popup_no_refresh, do_popup_no_refresh, "popup-no-refresh");
 
-struct pane *popup_register(struct pane *p, char *name, char *content, wint_t key)
+struct pane *popup_register(struct pane *p, char *name, char *content, char *key)
 {
 	/* attach to root, center, one line of content, half width of pane */
 	struct pane *ret, *root, *p2;
@@ -113,7 +112,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, wint_t ke
 	ret->cx = ret->cy = -1;
 	ret->keymap = pp_map;
 	pane_focus(ret);
-	ci.key = MV_FILE;
+	ci.key = "Move-File";
 	ci.numeric =1;
 	ci.focus = ret;
 	ci.mark = NULL;
@@ -148,5 +147,5 @@ void popup_init(void)
 {
 	pp_map = key_alloc();
 
-	key_add(pp_map, EV_REPLACE, &comm_done);
+	key_add(pp_map, "Replace", &comm_done);
 }

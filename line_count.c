@@ -21,11 +21,11 @@
 #include <stdlib.h>
 #include <wchar.h>
 #include <wctype.h>
+#include <string.h>
 
 #include "core.h"
 #include "attr.h"
 #include "pane.h"
-#include "keymap.h"
 #include "extras.h"
 
 static void do_count(struct doc *d, struct mark *start, struct mark *end,
@@ -81,7 +81,7 @@ static void do_count(struct doc *d, struct mark *start, struct mark *end,
 
 static int count_notify(struct command *c, struct cmd_info *ci)
 {
-	if (ci->key != EV_REPLACE)
+	if (strcmp(ci->key, "Replace") != 0)
 		return 0;
 
 	if (ci->mark != NULL) {
