@@ -26,8 +26,8 @@
 #include "tile.h"
 
 struct display_data {
+	struct display		dpy;
 	SCREEN			*scr;
-	struct event_base	*base;
 	char			*mode, *next_mode;
 	int			numeric, extra;
 };
@@ -83,7 +83,7 @@ static int nc_misc(struct command *c, struct cmd_info *ci)
 	struct display_data *dd = p->data;
 
 	if (strcmp(ci->str, "exit") == 0)
-		event_base_loopbreak(dd->base);
+		event_base_loopbreak(dd->dpy.ed->base);
 	else if (strcmp(ci->str, "refresh") == 0) {
 		clear();
 		pane_damaged(p,  DAMAGED_FORCE);
@@ -120,7 +120,7 @@ static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
 		getmaxyx(stdscr, p->h, p->w);
 		p->h -= 1;
 	}
-	l = event_new(dd->base, -1, EV_TIMEOUT, ncurses_flush, p);
+	l = event_new(dd->dpy.ed->base, -1, EV_TIMEOUT, ncurses_flush, p);
 	event_priority_set(l, 0);
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
@@ -131,7 +131,7 @@ static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
 DEF_CMD(ncurses_refresh, do_ncurses_refresh, "ncurses-refresh");
 
 static void handle_winch(int sig, short ev, void *null);
-struct pane *ncurses_init(struct event_base *base, struct map *map)
+struct pane *ncurses_init(struct editor *ed, struct map *map)
 {
 	WINDOW *w = initscr();
 	struct pane *p;
@@ -149,6 +149,7 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 	keypad(w, TRUE);
 	mousemask(ALL_MOUSE_EVENTS, NULL);
 
+	dd->dpy.ed = ed;
 	dd->scr = NULL;
 	dd->mode = 0;
 	dd->next_mode = 0;
@@ -156,7 +157,6 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 	dd->extra = 0;
 
 	current_screen = NULL;
-	dd->base = base;
 	p = pane_register(NULL, 0, &ncurses_refresh, dd, NULL);
 	p->keymap = map;
 
@@ -164,9 +164,9 @@ struct pane *ncurses_init(struct event_base *base, struct map *map)
 
 	getmaxyx(stdscr, p->h, p->w); p->h-=1;
 
-	l = event_new(base, 0, EV_READ|EV_PERSIST, input_handle, p);
+	l = event_new(ed->base, 0, EV_READ|EV_PERSIST, input_handle, p);
 	event_add(l, NULL);
-	l = event_new(base, SIGWINCH, EV_SIGNAL|EV_PERSIST,
+	l = event_new(ed->base, SIGWINCH, EV_SIGNAL|EV_PERSIST,
 		      handle_winch, p);
 	event_add(l, NULL);
 	pane_damaged(p, DAMAGED_SIZE | DAMAGED_FORCE);

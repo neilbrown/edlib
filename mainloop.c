@@ -21,7 +21,7 @@
 static struct doc *attach_file(struct pane *p, char *fname)
 {
 	int fd = open(fname, O_RDONLY);
-	struct doc *d = doc_new("text");
+	struct doc *d = doc_new(pane2ed(p), "text");
 	struct point *pt;
 	int i;
 
@@ -47,7 +47,7 @@ static struct doc *attach_file(struct pane *p, char *fname)
 static struct doc *attach_dir(struct pane *p, char *fname)
 {
 	int fd = open(fname, O_RDONLY|O_DIRECTORY);
-	struct doc *d = doc_new("dir");
+	struct doc *d = doc_new(pane2ed(p), "dir");
 	struct point *pt;
 
 	p = view_attach(p, d, 1);
@@ -67,25 +67,27 @@ static struct doc *attach_dir(struct pane *p, char *fname)
 	return d;
 }
 
-void text_register(void);
-void doc_dir_register(void);
+void text_register(struct editor *ed);
+void doc_dir_register(struct editor *ed);
 int main(int argc, char *argv[])
 {
 	struct event_base *base;
 	struct pane *root;
 	struct pane *b1, *b2, *b3, *b4;
 	struct map *global_map;
+	struct editor *ed = editor_new();
 
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 	base = event_base_new();
 	event_base_priority_init(base, 2);
 	global_map = key_alloc();
-	root = ncurses_init(base, global_map);
+	ed->base = base;
+	root = ncurses_init(ed, global_map);
 	tile_register(global_map);
 	view_register(global_map);
-	text_register();
-	doc_dir_register();
+	text_register(ed);
+	doc_dir_register(ed);
 	popup_init();
 	emacs_register(global_map);
 	pane_set_mode(root, "emacs-", 0);

@@ -33,6 +33,25 @@ struct doc_ref {
 	int	i;
 };
 #endif
+
+/* The 'editor' contains (by reference) everything else.
+ * This captures and documents the global states, and allows
+ * multiple "editors" in the one process, should that be valuable.
+ *
+ * Each document and each display contains a reference to the editor.
+ * The root pane of a pane tree must have a display as the 'data', which allows
+ * the editor to be found from any pane or point.
+ */
+struct editor {
+	struct list_head	doctypes;
+	struct event_base	*base;
+};
+struct editor *editor_new(void);
+
+struct display {
+	struct editor		*ed;
+};
+
 struct doc {
 	struct hlist_head	marks;
 	struct tlist_head	points;
@@ -42,12 +61,12 @@ struct doc {
 	} *views;
 	struct attrset		*attrs;
 	int			nviews;
+	struct editor		*ed;
 	struct doc_operations	*ops;
 };
+
 struct doctype {
-	char			*name;
-	struct doc		*(*new)(struct doctype *);
-	struct list_head	lst;
+	struct doc *(*new)(struct doctype*);
 };
 
 struct doc_operations {
@@ -70,8 +89,8 @@ void doc_init(struct doc *d);
 int doc_add_view(struct doc *d, struct command *c);
 void doc_del_view(struct doc *d, struct command *c);
 int doc_find_view(struct doc *d, struct command *c);
-struct doc *doc_new(char *type);
-void doc_register_type(struct doctype *dt);
+struct doc *doc_new(struct editor *ed, char *type);
+void doc_register_type(struct editor *ed, char *name, struct doctype *dt);
 
 /* Points and Marks */
 

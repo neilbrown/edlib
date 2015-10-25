@@ -266,7 +266,7 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 		return 1;
 	}
 	fd = open(ci->str, O_RDONLY);
-	d = doc_new("text");
+	d = doc_new(pane2ed(ci->point_pane), "text");
 	p = ci->point_pane->parent;
 	pane_close(ci->point_pane);
 	p = view_attach(p, d, 1);

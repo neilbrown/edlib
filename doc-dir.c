@@ -259,11 +259,10 @@ static struct doc_operations dir_ops = {
 };
 
 static struct doctype dirtype = {
-name: "dir",
-new: dir_new,
+	.new = dir_new,
 };
 
-void doc_dir_register(void)
+void doc_dir_register(struct editor *ed)
 {
-	doc_register_type(&dirtype);
+	doc_register_type(ed, "dir", &dirtype);
 }

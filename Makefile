@@ -8,7 +8,7 @@ all:edlib checksym
 OBJ = ncurses.o view.o tile.o mainloop.o attr.o keymap.o pane.o \
 	render_text.o render_hex.o render_dir.o \
 	popup.o line_count.o \
-	core-mark.o core-doc.o \
+	core-mark.o core-doc.o core-editor.o \
 	mode-emacs.o \
 	doc-text.o doc-dir.o
 

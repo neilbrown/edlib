@@ -243,3 +243,12 @@ void pane_focus(struct pane *p)
 		p = p->parent;
 	}
 }
+
+struct editor *pane2ed(struct pane *p)
+{
+	struct display *dpy;
+	while (p->parent)
+		p = p->parent;
+	dpy = p->data;
+	return dpy->ed;
+}

@@ -75,17 +75,25 @@ void doc_init(struct doc *d)
 	d->nviews = 0;
 }
 
-static LIST_HEAD(doctypes);
-void doc_register_type(struct doctype *t)
+struct doctype_list {
+	char			*name;
+	struct doctype		*type;
+	struct list_head	lst;
+};
+
+void doc_register_type(struct editor *ed, char *name, struct doctype *type)
 {
-	list_add(&t->lst, &doctypes);
+	struct doctype_list *t = malloc(sizeof(*t));
+	t->name = name;
+	t->type = type;
+	list_add(&t->lst, &ed->doctypes);
 }
 
-struct doc *doc_new(char *type)
+struct doc *doc_new(struct editor *ed, char *type)
 {
-	struct doctype *dt;
-	list_for_each_entry(dt, &doctypes, lst)
+	struct doctype_list *dt;
+	list_for_each_entry(dt, &ed->doctypes, lst)
 		if (strcmp(dt->name, type) == 0)
-			return dt->new(dt);
+			return dt->type->new(dt->type);
 	return NULL;
 }
