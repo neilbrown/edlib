@@ -620,6 +620,65 @@ void point_notify_change(struct point *p)
 	}
 }
 
+/* doc_notify_change is slower than point_notify_change, but only
+ * requires a mark, not a point.
+ */
+void doc_notify_change(struct doc *d, struct mark *m)
+{
+	struct cmd_info ci;
+	char *done = alloca(d->nviews);
+	int i;
+	int remaining = d->nviews;
+
+	for (i = 0; i < d->nviews; i++)
+		done[i] = 0;
+	ci.key = "Replace";
+	ci.focus = NULL;
+	ci.numeric = 1;
+	ci.x = ci.y = -1;
+	ci.str = NULL;
+	ci.point_pane = NULL;
+	while (remaining) {
+		if (m->viewnum == MARK_POINT) {
+			/* This is a point so we can notify all remaining easily. */
+			struct point *p = container_of(m, struct point, m);
+			for (i = 0; i < p->size; i++) {
+				struct tlist_head *tl = &p->lists[i];
+				struct command *c = d->views[i].notify;
+				if (done[i])
+					continue;
+				done[i] = 1;
+				remaining -= 1;
+				if (!c)
+					continue;
+				while (TLIST_TYPE(tl) == GRP_LIST)
+					tl = TLIST_PTR(tl->prev);
+				if (TLIST_TYPE(tl) == GRP_MARK)
+					ci.mark = tlist_entry(tl, struct mark, view);
+				else
+					ci.mark = NULL;
+				c->func(c, &ci);
+			}
+			break;
+		}
+		if (m->viewnum != MARK_UNGROUPED &&
+		    !done[m->viewnum]) {
+			/* Just notify this one */
+			struct command *c = d->views[m->viewnum].notify;
+			done[m->viewnum] = 1;
+			remaining -= 1;
+			if (c) {
+				ci.mark = m;
+				c->func(c, &ci);
+			}
+		}
+		if (m->all.pprev == &d->marks.first)
+			break;
+		m = hlist_prev_entry(m, all);
+	}
+}
+
+
 void doc_check_consistent(struct doc *d)
 {
 	/* Check consistency of marks, and abort if not.
