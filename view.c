@@ -26,6 +26,7 @@ struct view_data {
 	struct command	ch_notify;
 	int		ch_notify_num;
 	struct pane	*pane;
+	int		scroll_bar_y;
 };
 
 static struct map *view_map;
@@ -36,7 +37,7 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	struct pane *point_pane = ci->point_pane;
 	int damage = ci->extra;
 	int i;
-	int mid = (p->h-1)/2;
+	int mid;
 	struct view_data *vd = p->data;
 	struct point *pt = point_pane->point;
 	int ln, l, w, c;
@@ -81,6 +82,7 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	snprintf(msg, sizeof(msg), "L%d W%d C%d", l,w,c);
 	for (i = 0; msg[i] && i+4 < p->w; i++)
 		pane_text(p, msg[i], A_STANDOUT, i+4, p->h-1);
+	vd->scroll_bar_y = mid;
 	return 0;
 }
 DEF_CMD(view_refresh, do_view_refresh, "view-refresh");
@@ -330,7 +332,8 @@ DEF_CMD(comm_replace, view_replace, "do-replace");
 static int view_click(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
-	int mid = (p->h-1)/2;
+	struct view_data *vd = p->data;
+	int mid = vd->scroll_bar_y;
 	struct cmd_info ci2 = {0};
 
 	if (ci->x != 0)
@@ -340,6 +343,7 @@ static int view_click(struct command *c, struct cmd_info *ci)
 	ci2.key = "Move-View-Small";
 	ci2.numeric = RPT_NUM(ci);
 	ci2.mark = mark_of_point(ci->point_pane->point);
+	ci2.point_pane = ci->point_pane;
 	p = p->focus;
 	if (ci->y == mid-1) {
 		/* scroll up */
@@ -354,7 +358,6 @@ static int view_click(struct command *c, struct cmd_info *ci)
 		ci2.key = "Move-View-Large";
 	} else
 		return 0;
-	ci2.point_pane = ci->point_pane;
 	return key_handle_focus(&ci2);
 }
 DEF_CMD(comm_click, view_click, "view-click");

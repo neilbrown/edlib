@@ -379,7 +379,7 @@ static void render_text_register(void)
 	key_add(rt_map, "Press-1", &comm_cursor);
 	key_add(rt_map, "Move-Line", &comm_line);
 /* FIXME */
-	key_add_range(rt_map, "Move-", "Move-Lind", &comm_follow);
+	key_add_range(rt_map, "Move-D", "Move-Lind", &comm_follow);
 	key_add_range(rt_map, "Move-Linf", "Move-V", &comm_follow);
 	key_add(rt_map, "Replace", &comm_follow);
 }

@@ -54,9 +54,9 @@ static struct move_command {
 	{CMD(emacs_move, "start-of-file"), "Move-File", -1,
 	 "emacs-M-Chr-<", "emacs-S-Home", NULL},
 	{CMD(emacs_move, "page-down"), "Move-View-Large", 1,
-	 "emacs-Next", NULL, NULL},
+	 "emacs-Next", "emacs-C-Chr-V", NULL},
 	{CMD(emacs_move, "page-up"), "Move-View-Large", -1,
-	 "emacs-Prior", NULL, NULL},
+	 "emacs-Prior", "emacs-M-Chr-v", NULL},
 
 	{CMD(emacs_delete, "delete-next"), "Move-Char", 1,
 	 "emacs-C-Chr-D", "emacs-Del", "emacs-del"},
@@ -79,7 +79,7 @@ static int emacs_move(struct command *c, struct cmd_info *ci)
 	struct cmd_info ci2 = {0};
 	int ret = 0;
 
-	old_x = view_pane->cx;
+	old_x = view_pane->focus->cx;
 
 	ci2.focus = ci->focus;
 	ci2.key = mv->type;
@@ -95,14 +95,14 @@ static int emacs_move(struct command *c, struct cmd_info *ci)
 		/* Might have lost the cursor - place it at top or
 		 * bottom of view
 		 */
-		ci2.focus = ci->focus;
+		ci2.focus = view_pane->focus;
 		ci2.key = "Move-CursorXY";
 		ci2.numeric = 1;
 		ci2.x = old_x;
 		if (mv->direction == 1)
 			ci2.y = 0;
 		else
-			ci2.y = view_pane->h-1;
+			ci2.y = view_pane->focus->h - 1;
 		ci2.point_pane = ci->point_pane;
 		key_handle_xy(&ci2);
 	}
