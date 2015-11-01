@@ -200,8 +200,8 @@ struct map *key_alloc(void);
 int key_handle(struct cmd_info *ci);
 int key_handle_focus(struct cmd_info *ci);
 int key_handle_xy(struct cmd_info *ci);
-int key_add(struct map *map, char *k, struct command *comm);
-int key_add_range(struct map *map, char *first, char *last,
+void key_add(struct map *map, char *k, struct command *comm);
+void key_add_range(struct map *map, char *first, char *last,
 		   struct command *comm);
 struct command *key_register_mode(char *name);
 

@@ -270,6 +270,7 @@ static void render_dir_register(void)
 {
 	dr_map = key_alloc();
 
+	key_add_range(dr_map, "Move-", "Move-\377", &comm_follow);
 	key_add(dr_map, "Move-View-Small", &comm_move);
 	key_add(dr_map, "Move-View-Large", &comm_move);
 	key_add(dr_map, "Move-CursorXY", &comm_cursor);
@@ -277,9 +278,6 @@ static void render_dir_register(void)
 	key_add(dr_map, "Press-0", &comm_cursor);
 	key_add(dr_map, "Move-Line", &comm_line);
 
-/* FIXME */
-	key_add_range(dr_map, "Move-", "Move-Lind", &comm_follow);
-	key_add_range(dr_map, "Move-Linf", "Move-V", &comm_follow);
 	key_add(dr_map, "Replace", &comm_follow);
 }
 
