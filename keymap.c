@@ -30,10 +30,9 @@
  * exact matches.  The second instance has 'lsb set' and is used for everything
  * after.
  *
- * Modes are global and can be registered.  Doing so returns
- * a command which can be then bound to a key to effect that
- * mode.  Modifiers are either transient or stable.  Stable
- * modifiers must be explicitly 'replaced'.
+ * A 'prefix' can be registered which creates a command which temporarily
+ * enabled the given prefix.  It is applied to the next command, but is
+ * discarded after that.  This is just a convenience function.
  *
  */
 
@@ -227,7 +226,7 @@ void key_del(struct map *map, wint_t k)
 }
 #endif
 
-static int key_mode(struct command *comm, struct cmd_info *ci)
+static int key_prefix(struct command *comm, struct cmd_info *ci)
 {
 	struct modmap *m = container_of(comm, struct modmap, comm);
 
@@ -235,7 +234,7 @@ static int key_mode(struct command *comm, struct cmd_info *ci)
 	return 1;
 }
 
-struct command *key_register_mode(char *name)
+struct command *key_register_prefix(char *name)
 {
 	int i;
 	int free = 0;
@@ -252,7 +251,7 @@ struct command *key_register_mode(char *name)
 		return NULL;
 	modmap[free].name = strdup(name);
 	modmap[free].transient = 1;
-	modmap[free].comm.func = key_mode;
+	modmap[free].comm.func = key_prefix;
 	modmap[free].comm.name = name;
 	return &modmap[free].comm;
 }

@@ -203,7 +203,7 @@ int key_handle_xy(struct cmd_info *ci);
 void key_add(struct map *map, char *k, struct command *comm);
 void key_add_range(struct map *map, char *first, char *last,
 		   struct command *comm);
-struct command *key_register_mode(char *name);
+struct command *key_register_prefix(char *name);
 
 
 /* pane */

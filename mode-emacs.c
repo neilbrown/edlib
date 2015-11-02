@@ -325,7 +325,7 @@ DEF_CMD(comm_num, emacs_num, "numeric-prefix");
 void emacs_register(struct map *m)
 {
 	unsigned i;
-	struct command *cx_cmd = key_register_mode("emCX-");
+	struct command *cx_cmd = key_register_prefix("emCX-");
 
 	key_add(m, "emacs-C-Chr-X", cx_cmd);
 	key_add(m, "emacs-ESC", &comm_meta);
