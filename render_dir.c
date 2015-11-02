@@ -277,8 +277,8 @@ static void render_dir_register(void)
 	key_add(dr_map, "Move-View-Small", &comm_move);
 	key_add(dr_map, "Move-View-Large", &comm_move);
 	key_add(dr_map, "Move-CursorXY", &comm_cursor);
-	key_add(dr_map, "Click-0", &comm_cursor);
-	key_add(dr_map, "Press-0", &comm_cursor);
+	key_add(dr_map, "Click-1", &comm_cursor);
+	key_add(dr_map, "Press-1", &comm_cursor);
 	key_add(dr_map, "Move-Line", &comm_line);
 
 	key_add(dr_map, "Replace", &comm_follow);
