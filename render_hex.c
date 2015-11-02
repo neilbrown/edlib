@@ -230,6 +230,16 @@ static int render_hex_move(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_move, render_hex_move, "move-view");
 
+static int render_hex_follow_point(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ci->focus;
+	struct he_data *he = p->data;
+
+	he->ignore_point = 0;
+	return 0;
+}
+DEF_CMD(comm_follow, render_hex_follow_point, "follow-point");
+
 static int render_hex_set_cursor(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
@@ -283,6 +293,7 @@ static int render_hex_eol(struct command *c, struct cmd_info *ci)
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 	int pos;
+	struct he_data *he = ci->focus->data;
 
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 	while (rpt > 0 && ch != WEOF) {
@@ -305,7 +316,7 @@ static int render_hex_eol(struct command *c, struct cmd_info *ci)
 			pos -= 1;
 		}
 	}
-
+	he->ignore_point = 0;
 	return 1;
 }
 DEF_CMD(comm_eol, render_hex_eol, "move-end-of-line");
@@ -314,6 +325,7 @@ static void render_hex_register(void)
 {
 	he_map = key_alloc();
 
+	key_add_range(he_map, "Move-", "Move-\377", &comm_follow);
 	key_add(he_map, "Move-View-Small", &comm_move);
 	key_add(he_map, "Move-View-Large", &comm_move);
 	key_add(he_map, "Move-CursorXY", &comm_cursor);
@@ -322,6 +334,7 @@ static void render_hex_register(void)
 	key_add(he_map, "Move-Line", &comm_line);
 
 	key_add(he_map, "Move-EOL", &comm_eol);
+	key_add(he_map, "Replace", &comm_follow);
 }
 
 void render_hex_attach(struct pane *p)
