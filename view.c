@@ -125,7 +125,6 @@ struct pane *view_attach(struct pane *par, struct doc *d, int border)
 
 	pane_resize(p, 0, 0, par->w, par->h);
 	p = pane_register(p, 0, &view_null, vd, NULL);
-	p->parent->focus = p;
 	if (vd->border)
 		pane_resize(p, 1, 0, par->w-1, par->h-1);
 	else
@@ -134,7 +133,6 @@ struct pane *view_attach(struct pane *par, struct doc *d, int border)
 	/* It is expected that some other handler will take
 	 * over this pane
 	 */
-	pane_focus(p);
 	return p;
 }
 

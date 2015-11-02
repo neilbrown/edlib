@@ -77,6 +77,8 @@ struct pane *pane_register(struct pane *parent, int z,
 		p->z = z;
 	p->refresh = refresh;
 	p->data = data;
+	if (parent && parent->focus == NULL)
+		parent->focus = p;
 	return p;
 }
 
@@ -164,8 +166,10 @@ void pane_reparent(struct pane *p, struct pane *newparent, struct list_head *her
 {
 	list_del(&p->siblings);
 	if (p->parent->focus == p)
-		p->parent->focus = NULL;
+		p->parent->focus = newparent;
 	p->parent = newparent;
+	if (newparent->focus == NULL)
+		newparent->focus = p;
 	if (!here)
 		here = &newparent->children;
 	list_add(&p->siblings, here);

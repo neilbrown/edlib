@@ -131,7 +131,10 @@ struct pane *tile_split(struct pane *p, int horiz, int after)
 	here = after ? &p->siblings : p->siblings.prev;
 	ti2 = malloc(sizeof(*ti2));
 	ti2->direction = ti->direction;
-	list_add(&ti2->tiles, &ti->tiles);
+	if (after)
+		list_add(&ti2->tiles, &ti->tiles);
+	else
+		list_add_tail(&ti2->tiles, &ti->tiles);
 	ret = pane_register(p->parent, 0, &tile_refresh, ti2, here);
 	ret->keymap = tile_map;
 	ti2->p = ret;
@@ -192,7 +195,7 @@ static int tile_destroy(struct pane *p)
 	/* There is always a sibling of a non-root */
 	ASSERT(remaining > 0);
 	if (prev == NULL) {
-		/* next gets the space */
+		/* next gets the space and focus*/
 		if (ti->direction == Horiz)
 			pane_resize(next, p->x, next->y,
 				    p->w + next->w, next->h);
@@ -200,23 +203,41 @@ static int tile_destroy(struct pane *p)
 			pane_resize(next, next->x, p->y,
 				    next->w, p->h + next->h);
 		tile_adjust(next);
+		p->parent->focus = next;
 	} else if (next == NULL) {
-		/* prev gets the space */
+		/* prev gets the space and focus */
 		if (ti->direction == Horiz)
 			pane_resize(prev, -1, -1, prev->w + p->w, prev->h);
 		else
 			pane_resize(prev, -1, -1, prev->w, prev->h + p->h);
 		tile_adjust(prev);
+		p->parent->focus = prev;
 	} else {
-		/* share the space */
+		/* space to the smallest, else share the space */
+		/* Focus goes to prev, unless next is small */
+		p->parent->focus = prev;
 		if (ti->direction == Horiz) {
 			int w = p->w / 2;
+			if (prev->w < next->w*2/3)
+				/* prev is much smaller, it gets all */
+				w = p->w;
+			else if (next->w < prev->w*2/3) {
+				w = 0;
+				p->parent->focus = next;
+			}
 			pane_resize(prev, -1, -1, prev->w + w, prev->h);
 			w = p->w - w;
 			pane_resize(next, prev->x + prev->w, next->y,
 				    next->w + w, next->h);
 		} else {
 			int h = p->h / 2;
+			if (prev->h < next->h*2/3)
+				/* prev is much smaller, it gets all */
+				h = p->h;
+			else if (next->h < prev->h*2/3) {
+				h = 0;
+				p->parent->focus = next;
+			}
 			pane_resize(prev, -1, -1, prev->w, prev->h + h);
 			h = p->h - h;
 			pane_resize(next, next->x, prev->y + prev->h,
