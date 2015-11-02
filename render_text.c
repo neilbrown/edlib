@@ -300,9 +300,13 @@ static int render_text_follow_point(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct rt_data *rt = p->data;
 
-	rt->ignore_point = 0;
-	if (strcmp(ci->key, "Move-Line") != 0)
-		rt->target_x = -1;
+	if (rt->ignore_point) {
+		pane_damaged(p, DAMAGED_CURSOR);
+		rt->ignore_point = 0;
+
+		if (strcmp(ci->key, "Move-Line") != 0)
+			rt->target_x = -1;
+	}
 	return 0;
 }
 DEF_CMD(comm_follow, render_text_follow_point, "follow-point");

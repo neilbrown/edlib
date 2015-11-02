@@ -10,7 +10,7 @@ enum {
 	DAMAGED_SIZE	= 4,
 	DAMAGED_POSN	= 8,
 	DAMAGED_CONTENT	= 16,
-	DAMAGED_FORCE	= 32, // redraw pane an children even if nothing has changed
+	DAMAGED_FORCE	= 32, // redraw pane and children even if nothing has changed
 };
 
 struct pane *pane_register(struct pane *parent, int z,

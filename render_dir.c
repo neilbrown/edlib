@@ -225,7 +225,10 @@ static int render_dir_follow_point(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct dir_data *dd = p->data;
 
-	dd->ignore_point = 0;
+	if (dd->ignore_point) {
+		dd->ignore_point = 0;
+		pane_damaged(p, DAMAGED_CURSOR);
+	}
 	return 0;
 }
 DEF_CMD(comm_follow, render_dir_follow_point, "follow-point");

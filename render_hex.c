@@ -235,7 +235,10 @@ static int render_hex_follow_point(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct he_data *he = p->data;
 
-	he->ignore_point = 0;
+	if (he->ignore_point) {
+		pane_damaged(p, DAMAGED_CURSOR);
+		he->ignore_point = 0;
+	}
 	return 0;
 }
 DEF_CMD(comm_follow, render_hex_follow_point, "follow-point");
