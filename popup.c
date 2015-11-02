@@ -43,6 +43,12 @@ static int do_popup_refresh(struct command *c, struct cmd_info *ci)
 	int i;
 	int label;
 
+	if (strcmp(ci->key, "Close") == 0) {
+		free(ppi);
+		/* FIXME : drop reference on ppi->doc ?? */
+		return 1;
+	}
+
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 	if (p->focus == NULL && !list_empty(&p->children))

@@ -102,6 +102,9 @@ static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
 	struct event *l;
 	struct timeval tv;
 
+	if (strcmp(ci->key, "Close") == 0) {
+		/* FIXME */
+	}
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 

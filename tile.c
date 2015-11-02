@@ -52,6 +52,10 @@ static int do_tile_refresh(struct command *c, struct cmd_info *ci)
 	int damage = ci->extra;
 	struct tileinfo *ti = p->data;
 
+	if (strcmp(ci->key, "Close") == 0) {
+		/* FIXME */
+	}
+
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
