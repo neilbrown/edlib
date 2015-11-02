@@ -43,6 +43,9 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	int ln, l, w, c;
 	char msg[60];
 
+	if (vd->pane != p)
+		vd->pane = p; /* FIXME having to do this is horrible */
+
 	if (strcmp(ci->key, "Close") == 0) {
 		doc_del_view(pt->doc, &vd->ch_notify);
 		free(vd);

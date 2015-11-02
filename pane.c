@@ -123,18 +123,22 @@ void pane_close(struct pane *p)
 {
 	struct cmd_info ci = {0};
 	struct pane *c, *pp;
-	struct list_head *n;
-	list_for_each_entry_safe(c, n, &p->children, siblings)
+
+	while (!list_empty(&p->children)) {
+		c = list_first_entry(&p->children, struct pane, siblings);
 		pane_close(c);
+	}
 	ci.key = "Close";
 	ci.focus = p;
 	pp = p;
 	while (pp && !pp->point)
 		pp = pp->parent;
 	ci.point_pane = pp;
+	list_del_init(&p->siblings);
 	if (p->refresh)
 		p->refresh->func(p->refresh, &ci);
 	pane_damaged(p->parent, DAMAGED_FORCE|DAMAGED_CURSOR);
+/* FIXME who destroys 'point'*/
 	pane_free(p);
 }
 
@@ -167,10 +171,48 @@ void pane_reparent(struct pane *p, struct pane *newparent, struct list_head *her
 	list_add(&p->siblings, here);
 }
 
+void pane_subsume(struct pane *p, struct pane *parent)
+{
+	/* move all content from p into parent, which must be empty,
+	 * except possibly for 'p'.
+	 * 'data', 'point' and 'refresh' are swapped.
+	 * After this, p can be freed
+	 */
+	void *data;
+	struct command *refresh;
+	struct point *point;
+	struct pane *c;
+
+	list_del_init(&p->siblings);
+	while (!list_empty(&p->children)) {
+		c = list_first_entry(&p->children, struct pane, siblings);
+		list_move(&c->siblings, &parent->children);
+		c->parent = parent;
+	}
+	parent->focus = p->focus;
+	parent->keymap = p->keymap;
+
+	refresh = parent->refresh;
+	parent->refresh = p->refresh;
+	p->refresh = refresh;
+
+	data = parent->data;
+	parent->data = p->data;
+	p->data = data;
+
+	point = parent->point;
+	parent->point = p->point;
+	p->point = point;
+	if (parent->point)
+		parent->point->owner = parent;
+	if (p->point)
+		p->point->owner = p;
+}
+
 void pane_free(struct pane *p)
 {
 	ASSERT(list_empty(&p->children));
-	list_del(&p->siblings);
+	list_del_init(&p->siblings);
 	if (p->parent->focus == p)
 		p->parent->focus = NULL;
 	free(p);

@@ -17,6 +17,7 @@ struct pane *pane_register(struct pane *parent, int z,
 			   struct command *refresh, void *data,
 			   struct list_head *here);
 void pane_reparent(struct pane *p, struct pane *newparent, struct list_head *here);
+void pane_subsume(struct pane *p, struct pane *parent);
 void pane_free(struct pane *p);
 void pane_text(struct pane *p, wchar_t ch, int attr, int x, int y);
 void pane_clear(struct pane *p, int attr, int x, int y, int w, int h);

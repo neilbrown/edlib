@@ -28,7 +28,9 @@ struct tileinfo {
 	/* If direction is Horiz, this and siblings are stacked
 	 * left to right.  Y co-ordinate is zero.
 	 * If direction is Vert, siblings are stacked top to bottom.
-	 * x co-ordinate is zero.
+	 * X co-ordinate is zero.
+	 * The root of a tree of panes has direction of Neither.  All
+	 * other panes are either Horiz or Vert.
 	 *
 	 * avail_inline is how much this tile can shrink in the direction
 	 * of stacking.  Add these for parent.
@@ -38,13 +40,16 @@ struct tileinfo {
 	enum {Neither, Horiz, Vert}	direction;
 	int				avail_inline;
 	int				avail_perp;
-	struct list_head		tiles;
+	struct list_head		tiles; /* headless ordered list of all tiles
+						* in the tree.  Used for next/prev
+						*/
 	struct pane			*p;
 };
 
 static struct map *tile_map;
 static void tile_adjust(struct pane *p);
 static void tile_avail(struct pane *p, struct pane *ignore);
+static int tile_destroy(struct pane *p);
 
 static int do_tile_refresh(struct command *c, struct cmd_info *ci)
 {
@@ -53,7 +58,8 @@ static int do_tile_refresh(struct command *c, struct cmd_info *ci)
 	struct tileinfo *ti = p->data;
 
 	if (strcmp(ci->key, "Close") == 0) {
-		/* FIXME */
+		tile_destroy(p);
+		return 0;
 	}
 
 	if (strcmp(ci->key, "Refresh") != 0)
@@ -152,76 +158,89 @@ struct pane *tile_split(struct pane *p, int horiz, int after)
 	return ret;
 }
 
-int tile_destroy(struct pane *p)
+static int tile_destroy(struct pane *p)
 {
 	struct tileinfo *ti = p->data;
 	struct pane *prev = NULL, *next = NULL;
 	struct pane *t, *remain;
 	int pos, prevpos, nextpos;
+	int remaining = 0;
 
 	if (ti->direction == Neither)
 		/* Cannot destroy root (yet) */
 		return 0;
 
 	if (ti->direction == Vert)
-		pos = p->x;
-	else
 		pos = p->y;
+	else
+		pos = p->x;
 	prevpos = nextpos = -1;
 	list_for_each_entry(t, &p->parent->children, siblings) {
 		int pos2;
 		if (ti->direction == Vert)
-			pos2 = t->x;
-		else
 			pos2 = t->y;
+		else
+			pos2 = t->x;
 		if (pos2 < pos && (prev == NULL || prevpos < pos2))
 			prev = t;
 		if (pos2 > pos && (next == NULL || nextpos > pos2))
 			next = t;
-		if (t != p)
-			remain = t;
+
+		remaining += 1;
+		remain = t;
 	}
+	/* There is always a sibling of a non-root */
+	ASSERT(remaining > 0);
 	if (prev == NULL) {
 		/* next gets the space */
-		if (ti->direction == Vert)
+		if (ti->direction == Horiz)
 			pane_resize(next, p->x, next->y,
 				    p->w + next->w, next->h);
 		else
 			pane_resize(next, next->x, p->y,
 				    next->w, p->h + next->h);
+		tile_adjust(next);
 	} else if (next == NULL) {
 		/* prev gets the space */
-		if (ti->direction == Vert)
+		if (ti->direction == Horiz)
 			pane_resize(prev, -1, -1, prev->w + p->w, prev->h);
 		else
 			pane_resize(prev, -1, -1, prev->w, prev->h + p->h);
+		tile_adjust(prev);
 	} else {
 		/* share the space */
-		if (ti->direction == Vert) {
-			int h = p->w / 2;
-			pane_resize(prev, -1, -1, prev->w + h, prev->h);
-			h = p->w - h;
+		if (ti->direction == Horiz) {
+			int w = p->w / 2;
+			pane_resize(prev, -1, -1, prev->w + w, prev->h);
+			w = p->w - w;
 			pane_resize(next, prev->x + prev->w, next->y,
-				    next->w + h, next->h);
+				    next->w + w, next->h);
 		} else {
 			int h = p->h / 2;
 			pane_resize(prev, -1, -1, prev->w, prev->h + h);
 			h = p->h - h;
-			pane_resize(next, next->y, prev->y + prev->h,
+			pane_resize(next, next->x, prev->y + prev->h,
 				    next->w , next->h + h);
 		}
+		tile_adjust(next);
+		tile_adjust(prev);
 	}
-
 	list_del(&ti->tiles);
 	free(ti);
-	pane_free(p);
-	if (list_first_entry(&remain->parent->children, struct pane, siblings)
-	    == remain) {
-		/* Only one child left, must move it into parent. */
+	if (remaining == 1) {
+		struct tileinfo *ti2;
+		/* Only one child left, must move it into parent.
+		 * Cannot destroy the parent, so bring child into parent */
 		p = remain->parent;
-		pane_reparent(remain, p->parent, &p->siblings);
-		pane_resize(remain, p->x, p->y, 0, 0);
-		pane_free(p);
+
+		ti = remain->data;
+		ti2 = p->data;
+		ti->direction = ti2->direction;
+
+		pane_subsume(remain, p);
+		ti->p = p;
+		ti2->p = remain;
+		pane_free(remain);
 	}
 	return 1;
 }
@@ -476,6 +495,8 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 		render_text_attach(view_attach(p2, ci->point_pane->point->doc, 1),
 				   ci->point_pane->point);
 	} else if (strcmp(ci->str, "close")==0) {
+		if (ti->direction != Neither)
+			pane_close(p);
 	} else
 		return 0;
 	return 1;
