@@ -1,7 +1,7 @@
 #ifndef __LIST_H__
 #define __LIST_H__
 
-#define ASSERT(x) do { if (x) abort();} while (0)
+#define ASSERT(x) do { if (!x) abort();} while (0)
 
 /*Taken from various places in linux kernel */
 

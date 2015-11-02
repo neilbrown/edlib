@@ -169,7 +169,7 @@ void pane_reparent(struct pane *p, struct pane *newparent, struct list_head *her
 
 void pane_free(struct pane *p)
 {
-	ASSERT(!list_empty(&p->children));
+	ASSERT(list_empty(&p->children));
 	list_del(&p->siblings);
 	if (p->parent->focus == p)
 		p->parent->focus = NULL;
