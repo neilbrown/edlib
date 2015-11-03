@@ -53,7 +53,7 @@ static int tile_destroy(struct pane *p);
 
 static int do_tile_refresh(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	int damage = ci->extra;
 	struct tileinfo *ti = p->data;
 
@@ -482,7 +482,7 @@ int tile_grow(struct pane *p, int horiz, int size)
 
 static int tile_command(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct pane *p2;
 	struct tileinfo *ti = p->data;
 	struct tileinfo *t2;

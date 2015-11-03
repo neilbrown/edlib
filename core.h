@@ -177,7 +177,7 @@ struct command {
 #define	ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 
 /* Each event (above) is accompanied by a cmd_info structure.
- * 'key' and 'focus' are always present, others only if relevant.
+ * 'key' and 'home' are always present, others only if relevant.
  * Numeric is present for 'key' and 'move'.  INT_MAX/2 means no number was
  *   requested so is usually treated like '1'.  Negative numbers are quite
  *   possible.
@@ -187,7 +187,7 @@ struct command {
  */
 struct cmd_info {
 	char		*key;
-	struct pane	*focus;
+	struct pane	*home;
 	int		numeric, extra;
 	int		x,y;
 	char		*str;

@@ -71,7 +71,7 @@ static void ncurses_flush(int fd, short ev, void *P)
 
 static int nc_misc(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
 
 	if (strcmp(ci->str, "exit") == 0)
@@ -88,7 +88,7 @@ DEF_CMD(comm_misc, nc_misc, "misc");
 
 static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	int damage = ci->extra;
 	struct display_data *dd = p->data;
 	struct event *l;
@@ -348,7 +348,7 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	}
 
 	ci.key = buf;
-	ci.focus = p;
+	ci.home = p;
 	ci.numeric = dd->numeric;
 	ci.extra = dd->extra;
 	ci.x = ci.y = -1;
@@ -366,7 +366,7 @@ static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
 	char buf[100];/* FIXME */
 
 	ci.key = strcat(strcpy(buf, dd->mode), cmd);
-	ci.focus = p;
+	ci.home = p;
 	ci.numeric = dd->numeric;
 	ci.extra = dd->extra;
 	ci.x = x;

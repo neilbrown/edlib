@@ -157,7 +157,7 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 
 static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct he_data *he = p->data;
 	struct mark *end = NULL, *top;
 	struct point *pt;
@@ -227,7 +227,7 @@ static int render_hex_notify(struct command *c, struct cmd_info *ci)
 
 static int render_hex_move(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
 	struct he_data *he = p->data;
 	struct point *pt = ci->point_pane->point;
@@ -250,7 +250,7 @@ DEF_CMD(comm_move, render_hex_move, "move-view");
 
 static int render_hex_follow_point(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct he_data *he = p->data;
 
 	if (he->ignore_point) {
@@ -263,7 +263,7 @@ DEF_CMD(comm_follow, render_hex_follow_point, "follow-point");
 
 static int render_hex_set_cursor(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct point *pt = ci->point_pane->point;
 	struct he_data *he = p->data;
 	struct mark *m;
@@ -314,7 +314,7 @@ static int render_hex_eol(struct command *c, struct cmd_info *ci)
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 	int pos;
-	struct he_data *he = ci->focus->data;
+	struct he_data *he = ci->home->data;
 
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 	while (rpt > 0 && ch != WEOF) {

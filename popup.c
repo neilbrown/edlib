@@ -38,7 +38,7 @@ static struct map *pp_map;
 
 static int do_popup_refresh(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct popup_info *ppi = p->data;
 	int i;
 	int label;
@@ -83,7 +83,7 @@ DEF_CMD(popup_refresh, do_popup_refresh, "popup-refresh");
 
 static int do_popup_no_refresh(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
@@ -127,7 +127,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	pane_focus(ret);
 	ci.key = "Move-File";
 	ci.numeric =1;
-	ci.focus = ret;
+	ci.home = ret;
 	ci.mark = NULL;
 	ci.point_pane = p2->parent;
 	key_handle_focus(&ci);
@@ -136,7 +136,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 
 static int popup_done(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct popup_info *ppi = p->data;
 	struct cmd_info ci2;
 
@@ -144,7 +144,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 		return 0;
 
 	pane_focus(ppi->target);
-	ci2.focus = ppi->target;
+	ci2.home = ppi->target;
 	ci2.key = ppi->key;
 	ci2.numeric = 1;
 	ci2.str = doc_getstr(ppi->doc, NULL, NULL);

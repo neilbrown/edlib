@@ -73,7 +73,7 @@ static struct move_command {
 static int emacs_move(struct command *c, struct cmd_info *ci)
 {
 	struct move_command *mv = container_of(c, struct move_command, cmd);
-	struct pane *cursor_pane = pane_with_cursor(ci->focus, NULL, NULL);
+	struct pane *cursor_pane = pane_with_cursor(ci->home, NULL, NULL);
 	struct point *pt = ci->point_pane->point;
 	int old_x = -1;
 	struct cmd_info ci2 = {0};
@@ -83,7 +83,7 @@ static int emacs_move(struct command *c, struct cmd_info *ci)
 		return 0;
 	old_x = cursor_pane->cx;
 
-	ci2.focus = ci->focus;
+	ci2.home = ci->home;
 	ci2.key = mv->type;
 	ci2.numeric = mv->direction * RPT_NUM(ci);
 	ci2.mark = mark_of_point(pt);
@@ -97,7 +97,7 @@ static int emacs_move(struct command *c, struct cmd_info *ci)
 		/* Might have lost the cursor - place it at top or
 		 * bottom of view
 		 */
-		ci2.focus = cursor_pane;
+		ci2.home = cursor_pane;
 		ci2.key = "Move-CursorXY";
 		ci2.numeric = 1;
 		ci2.x = old_x;
@@ -123,7 +123,7 @@ static int emacs_delete(struct command *c, struct cmd_info *ci)
 	struct doc *d = ci->point_pane->point->doc;
 
 	m = mark_at_point(ci->point_pane->point, MARK_UNGROUPED);
-	ci2.focus = ci->focus;
+	ci2.home = ci->home;
 	ci2.key = mv->type;
 	ci2.numeric = mv->direction * RPT_NUM(ci);
 	if (strcmp(mv->type, "Move-EOL") == 0 && ci2.numeric == 1 &&
@@ -136,7 +136,7 @@ static int emacs_delete(struct command *c, struct cmd_info *ci)
 		mark_free(m);
 		return 0;
 	}
-	ci2.focus = ci->focus;
+	ci2.home = ci->home;
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
@@ -145,7 +145,7 @@ static int emacs_delete(struct command *c, struct cmd_info *ci)
 	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
 	mark_free(m);
-	pane_set_extra(ci->focus, 1);
+	pane_set_extra(ci->home, 1);
 
 	return ret;
 }
@@ -186,7 +186,7 @@ static int emacs_insert(struct command *c, struct cmd_info *ci)
 	struct cmd_info ci2 = {0};
 	int ret;
 
-	ci2.focus = ci->focus;
+	ci2.home = ci->home;
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
@@ -196,7 +196,7 @@ static int emacs_insert(struct command *c, struct cmd_info *ci)
 	ci2.str = str;
 	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
-	pane_set_extra(ci->focus, 1);
+	pane_set_extra(ci->home, 1);
 
 	return ret;
 }
@@ -214,12 +214,12 @@ static struct {
 
 static int emacs_insert_other(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct cmd_info ci2 = {0};
 	int ret;
 	int i;
 
-	ci2.focus = ci->focus;
+	ci2.home = ci->home;
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
@@ -242,7 +242,7 @@ static int emacs_undo(struct command *c, struct cmd_info *ci)
 {
 	struct point *pt = ci->point_pane->point;
 	doc_undo(pt, 0);
-	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
+	pane_damaged(ci->home->focus, DAMAGED_CURSOR);
 	return 1;
 }
 DEF_CMD(comm_undo, emacs_undo, "undo");
@@ -251,7 +251,7 @@ static int emacs_redo(struct command *c, struct cmd_info *ci)
 {
 	struct point *pt = ci->point_pane->point;
 	doc_undo(pt, 1);
-	pane_damaged(ci->focus->focus, DAMAGED_CURSOR);
+	pane_damaged(ci->home->focus, DAMAGED_CURSOR);
 	return 1;
 }
 DEF_CMD(comm_redo, emacs_redo, "redo");
@@ -264,13 +264,13 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	struct pane *p;
 
 	if (strcmp(ci->key, "File Found") != 0) {
-		p = pane_with_cursor(ci->focus, NULL, NULL);
+		p = pane_with_cursor(ci->home, NULL, NULL);
 		popup_register(p, "Find File", "/home/neilb/", "File Found");
 		return 1;
 	}
 	fd = open(ci->str, O_RDONLY);
-	d = doc_new(pane2ed(ci->focus), "text");
-	p = pane_with_cursor(ci->focus, NULL, NULL);
+	d = doc_new(pane2ed(ci->home), "text");
+	p = pane_with_cursor(ci->home, NULL, NULL);
 	p = p->parent->parent->parent;
 	/* p is the tile */
 	pane_close(p->focus);
@@ -292,9 +292,9 @@ DEF_CMD(comm_findfile, emacs_findfile, "find-file");
 
 static int emacs_meta(struct command *c, struct cmd_info *ci)
 {
-	pane_set_mode(ci->focus, "emacs-M-", 1);
-	pane_set_numeric(ci->focus, ci->numeric);
-	pane_set_extra(ci->focus, ci->extra);
+	pane_set_mode(ci->home, "emacs-M-", 1);
+	pane_set_numeric(ci->home, ci->numeric);
+	pane_set_extra(ci->home, ci->extra);
 	return 1;
 }
 DEF_CMD(comm_meta, emacs_meta, "meta");
@@ -321,8 +321,8 @@ static int emacs_num(struct command *c, struct cmd_info *ci)
 	if (ci->numeric == NO_NUMERIC)
 		rpt = 0;
 	rpt = rpt * 10 + *last - '0';
-	pane_set_numeric(ci->focus, rpt);
-	pane_set_extra(ci->focus, ci->extra);
+	pane_set_numeric(ci->home, rpt);
+	pane_set_extra(ci->home, ci->extra);
 	return 1;
 }
 DEF_CMD(comm_num, emacs_num, "numeric-prefix");

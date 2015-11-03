@@ -230,7 +230,7 @@ static int key_prefix(struct command *comm, struct cmd_info *ci)
 {
 	struct modmap *m = container_of(comm, struct modmap, comm);
 
-	pane_set_mode(ci->focus, m->name, m->transient);
+	pane_set_mode(ci->home, m->name, m->transient);
 	return 1;
 }
 
@@ -277,12 +277,12 @@ static int key_lookup(struct map *m, struct cmd_info *ci)
 
 int key_handle(struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	int ret = 0;
 
 	while (ret == 0 && p) {
 		if (p->keymap) {
-			ci->focus = p;
+			ci->home = p;
 			ret = key_lookup(p->keymap, ci);
 		}
 		if (ci->x >= 0) {
@@ -299,12 +299,12 @@ int key_handle_focus(struct cmd_info *ci)
 	/* Handle this in the focus pane, so x,y are irrelevant */
 	ci->x = -1;
 	ci->y = -1;
-	if (ci->focus->point)
-		ci->point_pane = ci->focus;
-	while (ci->focus->focus) {
-		ci->focus = ci->focus->focus;
-		if (ci->focus->point)
-			ci->point_pane = ci->focus;
+	if (ci->home->point)
+		ci->point_pane = ci->home;
+	while (ci->home->focus) {
+		ci->home = ci->home->focus;
+		if (ci->home->point)
+			ci->point_pane = ci->home;
 	}
 	return key_handle(ci);
 }
@@ -312,7 +312,7 @@ int key_handle_focus(struct cmd_info *ci)
 int key_handle_xy(struct cmd_info *ci)
 {
 	/* Handle this in child with x,y co-ords */
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	int x = ci->x;
 	int y = ci->y;
 
@@ -340,6 +340,6 @@ int key_handle_xy(struct cmd_info *ci)
 	}
 	ci->x = x;
 	ci->y = y;
-	ci->focus = p;
+	ci->home = p;
 	return key_handle(ci);
 }

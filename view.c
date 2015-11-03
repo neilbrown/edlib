@@ -34,7 +34,7 @@ struct pane *view_attach(struct pane *par, struct doc *d, struct point *pt, int 
 
 static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct pane *point_pane = ci->point_pane;
 	int damage = ci->extra;
 	int i;
@@ -317,7 +317,7 @@ static int view_page(struct command *c, struct cmd_info *ci)
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
-	rpt *= ci->focus->h-2;
+	rpt *= ci->home->h-2;
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next(pt->doc, ci->mark)) != WEOF &&
 		       ch != '\n')
@@ -346,7 +346,7 @@ DEF_CMD(comm_replace, view_replace, "do-replace");
 
 static int view_click(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
 	int mid = vd->scroll_bar_y;
 	struct cmd_info ci2 = {0};
@@ -354,7 +354,7 @@ static int view_click(struct command *c, struct cmd_info *ci)
 	if (ci->x != 0)
 		return 0;
 
-	ci2.focus = p->focus;
+	ci2.home = p->focus;
 	ci2.key = "Move-View-Small";
 	ci2.numeric = RPT_NUM(ci);
 	ci2.mark = mark_of_point(ci->point_pane->point);

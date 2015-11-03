@@ -216,7 +216,7 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 
 static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct rt_data *rt = p->data;
 	struct mark *end = NULL, *top;
 	struct point *pt;
@@ -286,7 +286,7 @@ static int render_text_notify(struct command *c, struct cmd_info *ci)
 
 static int render_text_move(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
 	struct rt_data *rt = p->data;
 	struct point *pt = ci->point_pane->point;
@@ -314,7 +314,7 @@ DEF_CMD(comm_move, render_text_move, "move-view");
 
 static int render_text_follow_point(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct rt_data *rt = p->data;
 
 	if (rt->ignore_point) {
@@ -330,7 +330,7 @@ DEF_CMD(comm_follow, render_text_follow_point, "follow-point");
 
 static int render_text_set_cursor(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	struct point *pt = ci->point_pane->point;
 	struct mark *m;
 
@@ -344,7 +344,7 @@ DEF_CMD(comm_cursor, render_text_set_cursor, "set-cursor");
 
 static int render_text_move_line(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	/* MV_EOL repeatedly, then move to match cursor */
 	struct rt_data *rt = p->data;
 	struct point *pt = ci->point_pane->point;
@@ -358,7 +358,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 		rt->target_x = p->cx;
 	target_x = rt->target_x;
 
-	ci2.focus = ci->focus;
+	ci2.home = ci->home;
 	ci2.key = "Move-EOL";
 	ci2.numeric = RPT_NUM(ci);
 	if (ci2.numeric < 0)

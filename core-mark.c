@@ -601,7 +601,7 @@ void point_notify_change(struct point *p)
 	int i;
 
 	ci.key = "Replace";
-	ci.focus = NULL;
+	ci.home = NULL;
 	ci.numeric = 1;
 	ci.x = ci.y = -1;
 	ci.str = NULL;
@@ -634,7 +634,7 @@ void doc_notify_change(struct doc *d, struct mark *m)
 	for (i = 0; i < d->nviews; i++)
 		done[i] = 0;
 	ci.key = "Replace";
-	ci.focus = NULL;
+	ci.home = NULL;
 	ci.numeric = 1;
 	ci.x = ci.y = -1;
 	ci.str = NULL;
