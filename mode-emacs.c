@@ -269,7 +269,7 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	d = doc_new(pane2ed(ci->point_pane), "text");
 	p = ci->point_pane->parent;
 	pane_close(ci->point_pane);
-	p = view_attach(p, d, 1);
+	p = view_attach(p, d, NULL, 1);
 	pt = p->parent->point;
 	if (fd >= 0)
 		doc_load_file(pt, fd);

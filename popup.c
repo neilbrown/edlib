@@ -116,7 +116,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	pane_resize(p, 1, 1, p->parent->w-2, 1);
 	d = doc_new(pane2ed(root), "text");
 	ppi->doc = d;
-	p2 = view_attach(p, d, 0);
+	p2 = view_attach(p, d, NULL, 0);
 	pt = p2->parent->point;
 	doc_replace(pt, NULL, content, &first);
 	render_text_attach(p2, pt);

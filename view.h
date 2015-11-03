@@ -1,3 +1,3 @@
 
-struct pane *view_attach(struct pane *par, struct doc *t, int border);
+struct pane *view_attach(struct pane *par, struct doc *t, struct point *pt, int border);
 void view_register(struct map *m);

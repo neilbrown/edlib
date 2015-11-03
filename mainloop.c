@@ -25,7 +25,7 @@ static struct doc *attach_file(struct pane *p, char *fname)
 	struct point *pt;
 	int i;
 
-	p = view_attach(p, d, 1);
+	p = view_attach(p, d, NULL, 1);
 	pt = p->parent->point;
 	if (fd >= 0)
 		doc_load_file(pt, fd);
@@ -50,7 +50,7 @@ static struct doc *attach_dir(struct pane *p, char *fname)
 	struct doc *d = doc_new(pane2ed(p), "dir");
 	struct point *pt;
 
-	p = view_attach(p, d, 1);
+	p = view_attach(p, d, NULL, 1);
 	pt = p->parent->point;
 	if (fd >= 0)
 		doc_load_file(pt, fd);
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 	struct doc *d = attach_file(b2, "doc-text.c");
 
 	b4 = tile_split(b2, 1, 0);
-	v = view_attach(b4, d, 1);
+	v = view_attach(b4, d, NULL, 1);
 	render_hex_attach(v, v->parent->point);
 
 	pane_refresh(root);
