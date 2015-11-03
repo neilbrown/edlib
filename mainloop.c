@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 {
 	struct event_base *base;
 	struct pane *root;
-	struct pane *b1, *b2, *b3, *b4;
+	struct pane *b1, *b2, *b3, *b4, *v;
 	struct map *global_map;
 	struct editor *ed = editor_new();
 
@@ -101,7 +101,8 @@ int main(int argc, char *argv[])
 	struct doc *d = attach_file(b2, "doc-text.c");
 
 	b4 = tile_split(b2, 1, 0);
-	render_hex_attach(view_attach(b4, d, 1));
+	v = view_attach(b4, d, 1);
+	render_hex_attach(v, v->parent->point);
 
 	pane_refresh(root);
 	event_base_dispatch(base);

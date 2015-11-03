@@ -235,6 +235,8 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
+	pane_check_size(p);
+
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
 	if (rt->top) {
@@ -387,11 +389,11 @@ static void render_text_register(void)
 	key_add(rt_map, "Replace", &comm_follow);
 }
 
-void render_text_attach(struct pane *p, struct point *pt)
+void render_text_attach(struct pane *parent, struct point *pt)
 {
 	struct rt_data *rt = malloc(sizeof(*rt));
+	struct pane *p;
 
-	rt->pane = p;
 	rt->top = NULL;
 	rt->bot = NULL;
 	rt->ignore_point = 0;
@@ -399,8 +401,9 @@ void render_text_attach(struct pane *p, struct point *pt)
 	rt->type.func = render_text_notify;
 	rt->type.name = "render_text_notify";
 	rt->typenum = doc_add_view(pt->doc, &rt->type);
-	p->data = rt;
-	p->refresh = &render_text_refresh;
+	p = pane_register(parent, 0, &render_text_refresh, rt, NULL);
+	rt->pane = p;
+
 	if (!rt_map)
 		render_text_register();
 	p->keymap = rt_map;

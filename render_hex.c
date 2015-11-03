@@ -176,6 +176,8 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
+	pane_check_size(p);
+
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
 	if (he->top) {
@@ -340,19 +342,20 @@ static void render_hex_register(void)
 	key_add(he_map, "Replace", &comm_follow);
 }
 
-void render_hex_attach(struct pane *p)
+void render_hex_attach(struct pane *parent, struct point *pt)
 {
 	struct he_data *he = malloc(sizeof(*he));
+	struct pane *p;
 
-	he->pane = p;
 	he->top = NULL;
 	he->bot = NULL;
 	he->ignore_point = 0;
 	he->type.func = render_hex_notify;
 	he->type.name = "render_hex_notify";
-	he->typenum = doc_add_view(p->parent->point->doc, &he->type);
-	p->data = he;
-	p->refresh = &render_hex_refresh;
+	he->typenum = doc_add_view(pt->doc, &he->type);
+	p = pane_register(parent, 0, &render_hex_refresh, he, NULL);
+	he->pane = p;
+
 	if (!he_map)
 		render_hex_register();
 	p->keymap = he_map;

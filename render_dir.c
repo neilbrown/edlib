@@ -162,6 +162,8 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
+	pane_check_size(p);
+
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
 	if (dd->top) {
@@ -284,19 +286,20 @@ static void render_dir_register(void)
 	key_add(dr_map, "Replace", &comm_follow);
 }
 
-void render_dir_attach(struct pane *p, struct point *pt)
+void render_dir_attach(struct pane *parent, struct point *pt)
 {
 	struct dir_data *dd = malloc(sizeof(*dd));
+	struct pane *p;
 
-	dd->pane = p;
 	dd->top = NULL;
 	dd->bot = NULL;
 	dd->ignore_point = 0;
 	dd->type.func = render_dir_notify;
 	dd->type.name = "render_dir_notify";
 	dd->typenum = doc_add_view(pt->doc, &dd->type);
-	p->data = dd;
-	p->refresh = &render_dir_refresh;
+	p = pane_register(parent, 0, &render_dir_refresh, dd, NULL);
+	dd->pane = p;
+
 	if (!dr_map)
 		render_dir_register();
 	p->keymap = dr_map;

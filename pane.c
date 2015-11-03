@@ -99,7 +99,7 @@ static void __pane_refresh(struct cmd_info *ci)
 		damage = 0;
 	else {
 		ci->extra = damage;
-		damage &= DAMAGED_FORCE;
+		damage &= DAMAGED_FORCE | DAMAGED_SIZE | DAMAGED_CURSOR;
 		if (p->refresh->func(p->refresh, ci))
 			damage |= ci->extra;
 	}
@@ -160,6 +160,13 @@ void pane_resize(struct pane *p, int x, int y, int w, int h)
 		p->h = h;
 	}
 	pane_damaged(p, damage);
+}
+
+void pane_check_size(struct pane *p)
+{
+	/* match pane to parent */
+	if (p->parent)
+		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
 }
 
 void pane_reparent(struct pane *p, struct pane *newparent, struct list_head *here)

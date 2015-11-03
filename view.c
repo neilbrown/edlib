@@ -56,12 +56,15 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
 
+	if (damage & DAMAGED_SIZE) {
+		pane_check_size(p);
+		if (vd->border)
+			pane_resize(p->focus, 1, 0, p->w-1, p->h-1);
+		else
+			pane_check_size(p->focus);
+	}
 	if (!vd->border)
 		return 0;
-	if (damage & DAMAGED_SIZE) {
-		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
-		pane_resize(p->focus, 1, 0, p->w-1, p->h-1);
-	}
 
 	count_calculate(pt->doc, NULL, mark_of_point(pt));
 	count_calculate(pt->doc, NULL, NULL);
@@ -130,9 +133,6 @@ struct pane *view_attach(struct pane *par, struct doc *d, int border)
 	else
 		pane_resize(p, 0, 0, par->w, par->h);
 	pane_damaged(p, DAMAGED_SIZE);
-	/* It is expected that some other handler will take
-	 * over this pane
-	 */
 	return p;
 }
 

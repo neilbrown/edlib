@@ -51,8 +51,13 @@ static int do_popup_refresh(struct command *c, struct cmd_info *ci)
 
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
+
+	pane_resize(p, p->parent->w/4, p->parent->h/2-2, p->parent->w/2, 3);
+
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
+
+	pane_resize(p->focus, 1, 1, p->w-2, 1);
 
 	for (i = 0; i < p->h-1; i++) {
 		pane_text(p, '|', A_STANDOUT, 0, i);
@@ -82,6 +87,8 @@ static int do_popup_no_refresh(struct command *c, struct cmd_info *ci)
 
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
+	if (p->data != NULL && strcmp(ci->key, "Refresh") == 0)
+		pane_check_size(p);
 	return 0;
 }
 DEF_CMD(popup_no_refresh, do_popup_no_refresh, "popup-no-refresh");
@@ -113,8 +120,8 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	pt = p2->parent->point;
 	doc_replace(pt, NULL, content, &first);
 	render_text_attach(p2, pt);
-	ret = pane_register(p2, 0, &popup_no_refresh, ppi, NULL);
-	pane_resize(ret, 0, 0, p2->w, p2->h);
+	ret = pane_register(p2->focus, 0, &popup_no_refresh, ppi, NULL);
+	pane_check_size(ret);
 	ret->cx = ret->cy = -1;
 	ret->keymap = pp_map;
 	pane_focus(ret);
