@@ -145,7 +145,7 @@ static int emacs_delete(struct command *c, struct cmd_info *ci)
 	ci2.point_pane = ci->point_pane;
 	ret = key_handle_focus(&ci2);
 	mark_free(m);
-	pane_set_extra(ci->point_pane, 1);
+	pane_set_extra(ci->focus, 1);
 
 	return ret;
 }
@@ -264,13 +264,16 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	struct pane *p;
 
 	if (strcmp(ci->key, "File Found") != 0) {
-		popup_register(ci->point_pane, "Find File", "/home/neilb/", "File Found");
+		p = pane_with_cursor(ci->focus, NULL, NULL);
+		popup_register(p, "Find File", "/home/neilb/", "File Found");
 		return 1;
 	}
 	fd = open(ci->str, O_RDONLY);
-	d = doc_new(pane2ed(ci->point_pane), "text");
-	p = ci->point_pane->parent;
-	pane_close(ci->point_pane);
+	d = doc_new(pane2ed(ci->focus), "text");
+	p = pane_with_cursor(ci->focus, NULL, NULL);
+	p = p->parent->parent->parent;
+	/* p is the tile */
+	pane_close(p->focus);
 	p = view_attach(p, d, NULL, 1);
 	pt = p->parent->point;
 	if (fd >= 0)

@@ -143,6 +143,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 	if (ci->str == NULL || ci->str[0] != '\n')
 		return 0;
 
+	pane_focus(ppi->target);
 	ci2.focus = ppi->target;
 	ci2.key = ppi->key;
 	ci2.numeric = 1;
@@ -150,7 +151,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 	ci2.mark = NULL;
 	key_handle_focus(&ci2);
 	free(ci2.str);
-	pane_close(ci->point_pane->parent->parent);
+	pane_close(p->parent->parent->parent->parent->parent);
 	/* tear down the popup */
 	return 1;
 }
