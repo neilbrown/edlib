@@ -22,6 +22,7 @@ void pane_free(struct pane *p);
 void pane_text(struct pane *p, wchar_t ch, int attr, int x, int y);
 void pane_clear(struct pane *p, int attr, int x, int y, int w, int h);
 void pane_close(struct pane *p);
+int pane_clone(struct pane *from, struct pane *parent);
 void pane_resize(struct pane *p, int x, int y, int w, int h);
 void pane_check_size(struct pane *p);
 void pane_refresh(struct pane *p);

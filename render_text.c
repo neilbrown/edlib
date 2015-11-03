@@ -30,6 +30,7 @@ struct rt_data {
 };
 
 static struct map *rt_map;
+void render_text_attach(struct pane *p, struct point *pt);
 
 static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y, int draw)
 {
@@ -218,7 +219,7 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct rt_data *rt = p->data;
 	struct mark *end = NULL, *top;
-	struct point *pt = ci->point_pane->point;
+	struct point *pt;
 
 	if (strcmp(ci->key, "Close") == 0) {
 		struct point *pt = ci->point_pane->point;
@@ -232,10 +233,24 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 		free(rt);
 		return 0;
 	}
+	if (strcmp(ci->key, "Clone") == 0) {
+		struct pane *parent = ci->point_pane;
+		struct pane *pp = parent;
+		while (pp && pp->point == NULL)
+			pp = pp->parent;
+		if (!pp)
+			return 0;
+		render_text_attach(parent, pp->point);
+		if (p->focus)
+			return pane_clone(p->focus, parent->focus);
+		return 1;
+	}
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
 	pane_check_size(p);
+
+	pt = ci->point_pane->point;
 
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);

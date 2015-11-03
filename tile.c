@@ -509,12 +509,12 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 		pane_damaged(p, DAMAGED_SIZE);
 	} else if (strcmp(ci->str, "split-x")==0) {
 		p2 = tile_split(p, 1, 1);
-		render_text_attach(view_attach(p2, ci->point_pane->point->doc, 1),
-				   ci->point_pane->point);
+		if (!pane_clone(p->focus, p2))
+			pane_close(p2);
 	} else if (strcmp(ci->str, "split-y")==0) {
 		p2 = tile_split(p, 0, 1);
-		render_text_attach(view_attach(p2, ci->point_pane->point->doc, 1),
-				   ci->point_pane->point);
+		if (!pane_clone(p->focus, p2))
+			pane_close(p2);
 	} else if (strcmp(ci->str, "close")==0) {
 		if (ti->direction != Neither)
 			pane_close(p);

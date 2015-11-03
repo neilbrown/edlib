@@ -25,6 +25,7 @@ struct dir_data {
 };
 
 static struct map *dr_map;
+void render_dir_attach(struct pane *parent, struct point *pt);
 
 static int put_str(struct pane *p, char *buf, int attr, int x, int y)
 {
@@ -146,10 +147,11 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct dir_data *dd = p->data;
 	struct mark *end = NULL, *top;
-	struct point *pt = ci->point_pane->point;
+	struct point *pt;
 
 	if (strcmp(ci->key, "Close") == 0) {
 		struct pane *p = dd->pane;
+		pt = ci->point_pane->point;
 		mark_free(dd->top);
 		mark_free(dd->bot);
 		doc_del_view(pt->doc, &dd->type);
@@ -159,9 +161,22 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 		free(dd);
 		return 1;
 	}
+	if (strcmp(ci->key, "Clone") == 0) {
+		struct pane *parent = ci->point_pane;
+		struct pane *pp = parent;
+		while (pp && pp->point == NULL)
+			pp = pp->parent;
+		if (!pp)
+			return 0;
+		render_dir_attach(parent, pp->point);
+		if (p->focus)
+			return pane_clone(p->focus, parent->focus);
+		return 1;
+	}
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
+	pt = ci->point_pane->point;
 	pane_check_size(p);
 
 	if (p->focus == NULL && !list_empty(&p->children))

@@ -28,6 +28,7 @@ struct he_data {
 };
 
 static struct map *he_map;
+void render_hex_attach(struct pane *parent, struct point *pt);
 
 static int put_str(struct pane *p, char *buf, int attr, int x, int y)
 {
@@ -159,7 +160,7 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	struct he_data *he = p->data;
 	struct mark *end = NULL, *top;
-	struct point *pt = ci->point_pane->point;
+	struct point *pt;
 
 	if (strcmp(ci->key, "Close") == 0) {
 		struct point *pt = ci->point_pane->point;
@@ -173,9 +174,24 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 		free(he);
 		return 1;
 	}
+	if (strcmp(ci->key, "Clone") == 0) {
+		struct pane *parent = ci->point_pane;
+		struct pane *pp = parent;
+		while (pp && pp->point == NULL)
+			pp = pp->parent;
+		if (!pp)
+			return 0;
+		render_hex_attach(parent, pp->point);
+		if (p->focus)
+			return pane_clone(p->focus, parent->focus);
+		return 1;
+	}
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
+	if (!ci->point_pane)
+		return 0;
+	pt = ci->point_pane->point;
 	pane_check_size(p);
 
 	if (p->focus == NULL && !list_empty(&p->children))

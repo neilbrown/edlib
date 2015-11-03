@@ -30,6 +30,7 @@ struct view_data {
 };
 
 static struct map *view_map;
+struct pane *view_attach(struct pane *par, struct doc *d, int border);
 
 static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 {
@@ -50,6 +51,14 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 		doc_del_view(pt->doc, &vd->ch_notify);
 		free(vd);
 		return 1;
+	}
+	if (strcmp(ci->key, "Clone") == 0) {
+		struct pane *parent = ci->point_pane;
+		struct pane *p2;
+		if (!p->point)
+			return 0;
+		p2 = view_attach(parent, p->point->doc, 1);
+		return pane_clone(p->focus->focus, p2);
 	}
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
