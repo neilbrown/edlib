@@ -271,6 +271,9 @@ void pane_text(struct pane *p, wchar_t ch, int attr, int x, int y)
 	cc.attr = attr;
 	cc.chars[0] = ch;
 	cc.chars[1] = 0;
+	#ifdef NCURSES_EXT_COLORS
+	cc.ext_color = 0;
+	#endif
 
 	mvadd_wch(y, x, &cc);
 }
