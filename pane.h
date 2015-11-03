@@ -27,6 +27,7 @@ void pane_resize(struct pane *p, int x, int y, int w, int h);
 void pane_check_size(struct pane *p);
 void pane_refresh(struct pane *p);
 void pane_focus(struct pane *p);
+struct pane *pane_with_cursor(struct pane *p, int *ox, int *oy);
 void pane_damaged(struct pane *p, int type);
 struct pane *pane_to_root(struct pane *p, int *x, int *y, int *w, int *h);
 int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h);

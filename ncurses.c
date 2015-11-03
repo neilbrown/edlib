@@ -49,24 +49,16 @@ static void move_cursor(struct pane *p)
 	int ox;
 	int oy;
 
-	while (p->parent)
-		p = p->parent;
+	p = pane_with_cursor(p, &ox, &oy);
 
-	ox = p->x;
-	oy = p->y;
-	while (p->focus) {
-		p = p->focus;
-		ox += p->x;
-		oy += p->y;
-		if (p->cx >= 0 && p->cy >= 0) {
-			int cx = p->cx;
-			int cy = p->cy;
-			if (cx >= p->w)
-				cx = p->w - 1;
-			if (cy >= p->h)
-				cy = p->h - 1;
-			move(oy+cy, ox+cx);
-		}
+	if (p) {
+		int cx = p->cx;
+		int cy = p->cy;
+		if (cx >= p->w)
+			cx = p->w - 1;
+		if (cy >= p->h)
+			cy = p->h - 1;
+		move(oy+cy, ox+cx);
 	}
 }
 

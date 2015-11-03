@@ -41,7 +41,7 @@ static void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 		INIT_LIST_HEAD(&p->siblings);
 	INIT_LIST_HEAD(&p->children);
 	p->x = p->y = p->z = 0;
-	p->cx = p->cy = 0;
+	p->cx = p->cy = -1;
 	p->h = p->w = 0;
 	p->focus = NULL;
 	p->refresh = NULL;
@@ -324,4 +324,28 @@ struct editor *pane2ed(struct pane *p)
 		p = p->parent;
 	dpy = p->data;
 	return dpy->ed;
+}
+
+struct pane *pane_with_cursor(struct pane *p, int *oxp, int *oyp)
+{
+	struct pane *ret = p;
+	int ox = 0, oy = 0;
+	if (oxp) {
+		*oxp = 0;
+		*oyp = 0;
+	}
+	while (p) {
+		ox += p->x;
+		oy += p->y;
+
+		if (p->cx >= 0 && p->cy >= 0) {
+			ret = p;
+			if (oxp) {
+				*oxp = ox;
+				*oyp = oy;
+			}
+		}
+		p = p->focus;
+	}
+	return ret;
 }

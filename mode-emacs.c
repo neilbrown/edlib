@@ -73,13 +73,15 @@ static struct move_command {
 static int emacs_move(struct command *c, struct cmd_info *ci)
 {
 	struct move_command *mv = container_of(c, struct move_command, cmd);
-	struct pane *view_pane = ci->point_pane;
-	struct point *pt = view_pane->point;
+	struct pane *cursor_pane = pane_with_cursor(ci->focus, NULL, NULL);
+	struct point *pt = ci->point_pane->point;
 	int old_x = -1;
 	struct cmd_info ci2 = {0};
 	int ret = 0;
 
-	old_x = view_pane->focus->cx;
+	if (!cursor_pane)
+		return 0;
+	old_x = cursor_pane->cx;
 
 	ci2.focus = ci->focus;
 	ci2.key = mv->type;
@@ -95,19 +97,19 @@ static int emacs_move(struct command *c, struct cmd_info *ci)
 		/* Might have lost the cursor - place it at top or
 		 * bottom of view
 		 */
-		ci2.focus = view_pane->focus;
+		ci2.focus = cursor_pane;
 		ci2.key = "Move-CursorXY";
 		ci2.numeric = 1;
 		ci2.x = old_x;
 		if (mv->direction == 1)
 			ci2.y = 0;
 		else
-			ci2.y = view_pane->focus->h - 1;
+			ci2.y = cursor_pane->h - 1;
 		ci2.point_pane = ci->point_pane;
 		key_handle_xy(&ci2);
 	}
 
-	pane_damaged(ci->point_pane->focus, DAMAGED_CURSOR);
+	pane_damaged(cursor_pane, DAMAGED_CURSOR);
 
 	return ret;
 }
