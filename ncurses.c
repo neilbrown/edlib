@@ -348,7 +348,7 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	}
 
 	ci.key = buf;
-	ci.home = p;
+	ci.focus = ci.home = p;
 	ci.numeric = dd->numeric;
 	ci.extra = dd->extra;
 	ci.x = ci.y = -1;
@@ -366,7 +366,7 @@ static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
 	char buf[100];/* FIXME */
 
 	ci.key = strcat(strcpy(buf, dd->mode), cmd);
-	ci.home = p;
+	ci.focus = ci.home = p;
 	ci.numeric = dd->numeric;
 	ci.extra = dd->extra;
 	ci.x = x;

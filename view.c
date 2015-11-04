@@ -354,7 +354,7 @@ static int view_click(struct command *c, struct cmd_info *ci)
 	if (ci->x != 0)
 		return 0;
 
-	ci2.home = p->focus;
+	ci2.focus = ci2.home = p->focus;
 	ci2.key = "Move-View-Small";
 	ci2.numeric = RPT_NUM(ci);
 	ci2.mark = mark_of_point(ci->point_pane->point);

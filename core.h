@@ -187,7 +187,7 @@ struct command {
  */
 struct cmd_info {
 	char		*key;
-	struct pane	*home;
+	struct pane	*home, *focus;
 	int		numeric, extra;
 	int		x,y;
 	char		*str;
@@ -198,7 +198,6 @@ struct cmd_info {
 #define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric)
 
 struct map *key_alloc(void);
-int key_handle(struct cmd_info *ci);
 int key_handle_focus(struct cmd_info *ci);
 int key_handle_xy(struct cmd_info *ci);
 void key_add(struct map *map, char *k, struct command *comm);

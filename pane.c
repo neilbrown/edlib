@@ -116,7 +116,7 @@ void pane_refresh(struct pane *p)
 {
 	struct cmd_info ci = {0};
 	pane_damaged(p, DAMAGED_CURSOR);
-	ci.home = p;
+	ci.focus = ci.home = p;
 	ci.key = "Refresh";
 	__pane_refresh(&ci);
 }
@@ -131,7 +131,7 @@ void pane_close(struct pane *p)
 		pane_close(c);
 	}
 	ci.key = "Close";
-	ci.home = p;
+	ci.focus = ci.home = p;
 	pp = p;
 	while (pp && !pp->point)
 		pp = pp->parent;
@@ -157,7 +157,7 @@ int pane_clone(struct pane *from, struct pane *parent)
 	if (!from || !parent)
 		return 0;
 	ci.key = "Clone";
-	ci.home = from;
+	ci.focus = ci.home = from;
 	ci.point_pane = parent;
 	if (from->refresh)
 		return from->refresh->func(from->refresh, &ci);

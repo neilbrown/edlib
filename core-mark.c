@@ -596,15 +596,13 @@ void point_to_mark(struct point *p, struct mark *m)
 
 void point_notify_change(struct point *p)
 {
-	struct cmd_info ci;
+	struct cmd_info ci = {0};
 	struct doc *d = p->doc;
 	int i;
 
 	ci.key = "Replace";
-	ci.home = NULL;
 	ci.numeric = 1;
 	ci.x = ci.y = -1;
-	ci.str = NULL;
 	ci.point_pane = p->owner;
 	for (i = 0; i < p->size; i++) {
 		struct tlist_head *tl = &p->lists[i];
@@ -626,7 +624,7 @@ void point_notify_change(struct point *p)
  */
 void doc_notify_change(struct doc *d, struct mark *m)
 {
-	struct cmd_info ci;
+	struct cmd_info ci = {0};
 	char *done = alloca(d->nviews);
 	int i;
 	int remaining = d->nviews;
@@ -634,11 +632,8 @@ void doc_notify_change(struct doc *d, struct mark *m)
 	for (i = 0; i < d->nviews; i++)
 		done[i] = 0;
 	ci.key = "Replace";
-	ci.home = NULL;
 	ci.numeric = 1;
 	ci.x = ci.y = -1;
-	ci.str = NULL;
-	ci.point_pane = NULL;
 	while (remaining) {
 		if (m->viewnum == MARK_POINT) {
 			/* This is a point so we can notify all remaining easily. */

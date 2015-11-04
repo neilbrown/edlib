@@ -127,7 +127,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	pane_focus(ret);
 	ci.key = "Move-File";
 	ci.numeric =1;
-	ci.home = ret;
+	ci.focus = ci.home = ret;
 	ci.mark = NULL;
 	ci.point_pane = p2->parent;
 	key_handle_focus(&ci);
@@ -144,7 +144,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 		return 0;
 
 	pane_focus(ppi->target);
-	ci2.home = ppi->target;
+	ci2.focus = ci2.home = ppi->target;
 	ci2.key = ppi->key;
 	ci2.numeric = 1;
 	ci2.str = doc_getstr(ppi->doc, NULL, NULL);

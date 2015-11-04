@@ -359,6 +359,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 	target_x = rt->target_x;
 
 	ci2.home = ci->home;
+	ci2.focus = ci->focus;
 	ci2.key = "Move-EOL";
 	ci2.numeric = RPT_NUM(ci);
 	if (ci2.numeric < 0)

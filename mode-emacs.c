@@ -84,6 +84,7 @@ static int emacs_move(struct command *c, struct cmd_info *ci)
 	old_x = cursor_pane->cx;
 
 	ci2.home = ci->home;
+	ci2.focus = ci->focus;
 	ci2.key = mv->type;
 	ci2.numeric = mv->direction * RPT_NUM(ci);
 	ci2.mark = mark_of_point(pt);
@@ -97,7 +98,7 @@ static int emacs_move(struct command *c, struct cmd_info *ci)
 		/* Might have lost the cursor - place it at top or
 		 * bottom of view
 		 */
-		ci2.home = cursor_pane;
+		ci2.focus = cursor_pane;
 		ci2.key = "Move-CursorXY";
 		ci2.numeric = 1;
 		ci2.x = old_x;
@@ -124,6 +125,7 @@ static int emacs_delete(struct command *c, struct cmd_info *ci)
 
 	m = mark_at_point(ci->point_pane->point, MARK_UNGROUPED);
 	ci2.home = ci->home;
+	ci2.focus = ci->focus;
 	ci2.key = mv->type;
 	ci2.numeric = mv->direction * RPT_NUM(ci);
 	if (strcmp(mv->type, "Move-EOL") == 0 && ci2.numeric == 1 &&
@@ -137,6 +139,7 @@ static int emacs_delete(struct command *c, struct cmd_info *ci)
 		return 0;
 	}
 	ci2.home = ci->home;
+	ci2.focus = ci->focus;
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
@@ -187,6 +190,7 @@ static int emacs_insert(struct command *c, struct cmd_info *ci)
 	int ret;
 
 	ci2.home = ci->home;
+	ci2.focus = ci->focus;
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
@@ -220,6 +224,7 @@ static int emacs_insert_other(struct command *c, struct cmd_info *ci)
 	int i;
 
 	ci2.home = ci->home;
+	ci2.focus = ci->focus;
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
