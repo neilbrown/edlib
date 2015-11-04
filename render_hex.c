@@ -163,7 +163,7 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 	struct point *pt;
 
 	if (strcmp(ci->key, "Close") == 0) {
-		struct point *pt = ci->point_pane->point;
+		struct point *pt = *ci->pointp;
 		struct pane *p = he->pane;
 		mark_free(he->top);
 		mark_free(he->bot);
@@ -189,9 +189,9 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
-	if (!ci->point_pane)
+	if (!ci->pointp)
 		return 0;
-	pt = ci->point_pane->point;
+	pt = *ci->pointp;
 	pane_check_size(p);
 
 	if (p->focus == NULL && !list_empty(&p->children))
@@ -230,7 +230,7 @@ static int render_hex_move(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
 	struct he_data *he = p->data;
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 
 	if (!he->top)
 		return 0;
@@ -264,7 +264,7 @@ DEF_CMD(comm_follow, render_hex_follow_point, "follow-point");
 static int render_hex_set_cursor(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	struct he_data *he = p->data;
 	struct mark *m;
 	int n, x;
@@ -310,7 +310,7 @@ DEF_CMD(comm_line, render_hex_move_line, "move-line");
 
 static int render_hex_eol(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 	int pos;

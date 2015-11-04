@@ -35,7 +35,6 @@ struct pane *view_attach(struct pane *par, struct doc *d, struct point *pt, int 
 static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
-	struct pane *point_pane = ci->point_pane;
 	int damage = ci->extra;
 	int i;
 	int mid;
@@ -48,7 +47,7 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 		vd->pane = p; /* FIXME having to do this is horrible */
 
 	if (strcmp(ci->key, "Close") == 0) {
-		pt = point_pane->point;
+		pt = *ci->pointp;
 		doc_del_view(pt->doc, &vd->ch_notify);
 		free(vd);
 		return 1;
@@ -63,7 +62,7 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	}
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
-	pt = point_pane->point;
+	pt = *ci->pointp;
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
 
@@ -137,9 +136,9 @@ struct pane *view_attach(struct pane *par, struct doc *d, struct point *pt, int 
 	p = pane_register(par, 0, &view_refresh, vd, NULL);
 	p->keymap = view_map;
 	if (pt)
-		point_dup(pt, p);
+		point_dup(pt, &p->point);
 	else
-		point_new(d, p);
+		point_new(d, &p->point);
 	vd->pane = p;
 
 	pane_resize(p, 0, 0, par->w, par->h);
@@ -154,7 +153,7 @@ struct pane *view_attach(struct pane *par, struct doc *d, struct point *pt, int 
 
 static int view_char(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	int rpt = RPT_NUM(ci);
 
 	while (rpt > 0) {
@@ -174,7 +173,7 @@ DEF_CMD(comm_char, view_char, "move-char");
 
 static int view_word(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	int rpt = RPT_NUM(ci);
 
 	/* We skip spaces, then either alphanum or non-space/alphanum */
@@ -213,7 +212,7 @@ DEF_CMD(comm_word, view_word, "move-word");
 
 static int view_WORD(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	int rpt = RPT_NUM(ci);
 
 	/* We skip spaces, then non-spaces */
@@ -243,7 +242,7 @@ DEF_CMD(comm_WORD, view_WORD, "move-WORD");
 
 static int view_eol(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -271,7 +270,7 @@ DEF_CMD(comm_eol, view_eol, "move-end-of-line");
 
 static int view_line(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -293,7 +292,7 @@ DEF_CMD(comm_line, view_line, "move-by-line");
 
 static int view_file(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -315,7 +314,7 @@ DEF_CMD(comm_file, view_file, "move-end-of-file");
 
 static int view_page(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -338,7 +337,7 @@ DEF_CMD(comm_page, view_page, "move-page");
 
 static int view_replace(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	bool first_change = (ci->extra == 0);
 
 	doc_replace(pt, ci->mark, ci->str, &first_change);
@@ -359,8 +358,8 @@ static int view_click(struct command *c, struct cmd_info *ci)
 	ci2.focus = ci2.home = p->focus;
 	ci2.key = "Move-View-Small";
 	ci2.numeric = RPT_NUM(ci);
-	ci2.mark = mark_of_point(ci->point_pane->point);
-	ci2.point_pane = ci->point_pane;
+	ci2.mark = mark_of_point(*ci->pointp);
+	ci2.pointp = ci->pointp;
 	p = p->focus;
 	if (ci->y == mid-1) {
 		/* scroll up */

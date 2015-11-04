@@ -23,7 +23,8 @@
  * found quickly.  A cost is that a point will be reallocated when
  * a new list is created.  So stable refs to a point are not possible.
  * Each point has one reference from a window/pane (where it is the cursor)
- * and that can be found through the ->owner link.
+ * or some other object (for background updates) and that can be found
+ * through the ->owner link.
  * Each point knows which document it points to - a mark doesn't.
  *
  * As the 'group' lists can hold either marks or points, and with a
@@ -136,7 +137,7 @@ struct mark *mark_at_point(struct point *p, int view)
 	return ret;
 }
 
-struct point *point_dup(struct point *p, struct pane *owner)
+struct point *point_dup(struct point *p, struct point **owner)
 {
 	int i;
 	struct point *ret = malloc(sizeof(*ret) +
@@ -151,7 +152,7 @@ struct point *point_dup(struct point *p, struct pane *owner)
 			INIT_TLIST_HEAD(&ret->lists[i], GRP_LIST);
 		else
 			tlist_add(&ret->lists[i], GRP_LIST, &p->lists[i]);
-	owner->point = ret;
+	*owner = ret;
 	ret->owner = owner;
 	ret->doc = p->doc;
 	return ret;
@@ -175,7 +176,7 @@ void points_resize(struct doc *d)
 
 		new->doc = p->doc;
 		new->owner = p->owner;
-		new->owner->point = new;
+		*new->owner = new;
 		new->size = d->nviews;
 		for (i = 0; i < p->size; i++) {
 			tlist_add(&new->lists[i], GRP_LIST, &p->lists[i]);
@@ -212,7 +213,7 @@ struct mark *mark_dup(struct mark *m, int notype)
 	return ret;
 }
 
-struct point *point_new(struct doc *d, struct pane *owner)
+struct point *point_new(struct doc *d, struct point **owner)
 {
 	int i;
 	struct point *ret = malloc(sizeof(*ret) +
@@ -232,7 +233,7 @@ struct point *point_new(struct doc *d, struct pane *owner)
 			INIT_TLIST_HEAD(&ret->lists[i], GRP_LIST);
 	ret->owner = owner;
 	ret->doc = d;
-	owner->point = ret;
+	*owner = ret;
 	return ret;
 }
 
@@ -603,7 +604,7 @@ void point_notify_change(struct point *p)
 	ci.key = "Replace";
 	ci.numeric = 1;
 	ci.x = ci.y = -1;
-	ci.point_pane = p->owner;
+	ci.pointp = p->owner;
 	for (i = 0; i < p->size; i++) {
 		struct tlist_head *tl = &p->lists[i];
 		struct command *c = d->views[i].notify;

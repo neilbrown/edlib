@@ -117,7 +117,7 @@ struct mark {
 struct point {
 	struct mark		m;
 	struct doc		*doc;
-	struct pane		*owner;
+	struct point		**owner;
 	int			size;
 	struct tlist_head	lists[];
 };
@@ -140,8 +140,8 @@ void doc_notify_change(struct doc *d, struct mark *m);
 void doc_check_consistent(struct doc *d);
 void point_to_mark(struct point *p, struct mark *m);
 /*??*/struct doc_ref point_ref(struct point *p);
-struct point *point_new(struct doc *d, struct pane *owner);
-struct point *point_dup(struct point *p, struct pane *owner);
+struct point *point_new(struct doc *d, struct point **owner);
+struct point *point_dup(struct point *p, struct point **owner);
 wint_t mark_next(struct doc *d, struct mark *m);
 wint_t mark_prev(struct doc *d, struct mark *m);
 struct mark *mark_at_point(struct point *p, int view);
@@ -192,7 +192,7 @@ struct cmd_info {
 	int		x,y;
 	char		*str;
 	struct mark	*mark;
-	struct pane	*point_pane;
+	struct point	**pointp;
 };
 #define	NO_NUMERIC	(INT_MAX/2)
 #define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric)

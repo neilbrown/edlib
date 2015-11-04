@@ -222,7 +222,7 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 	struct point *pt;
 
 	if (strcmp(ci->key, "Close") == 0) {
-		struct point *pt = ci->point_pane->point;
+		struct point *pt = *ci->pointp;
 		struct pane *p = rt->pane;
 		mark_free(rt->top);
 		mark_free(rt->bot);
@@ -250,7 +250,7 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 
 	pane_check_size(p);
 
-	pt = ci->point_pane->point;
+	pt = *ci->pointp;
 
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
@@ -289,7 +289,7 @@ static int render_text_move(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
 	struct rt_data *rt = p->data;
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	int x = 0;
 	int y = 0;
 
@@ -331,7 +331,7 @@ DEF_CMD(comm_follow, render_text_follow_point, "follow-point");
 static int render_text_set_cursor(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	struct mark *m;
 
 	m = find_pos(pt->doc, p, ci->x, ci->y);
@@ -347,7 +347,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->home;
 	/* MV_EOL repeatedly, then move to match cursor */
 	struct rt_data *rt = p->data;
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	struct cmd_info ci2 = {0};
 	struct mark *m;
 	int ret = 0;
@@ -366,7 +366,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 		ci2.numeric -= 1;
 	m = mark_of_point(pt);
 	ci2.mark = m;
-	ci2.point_pane = ci->point_pane;
+	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);
 
 	if (!ret)

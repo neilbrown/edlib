@@ -151,7 +151,7 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 
 	if (strcmp(ci->key, "Close") == 0) {
 		struct pane *p = dd->pane;
-		pt = ci->point_pane->point;
+		pt = *ci->pointp;
 		mark_free(dd->top);
 		mark_free(dd->bot);
 		doc_del_view(pt->doc, &dd->type);
@@ -176,7 +176,7 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
-	pt = ci->point_pane->point;
+	pt = *ci->pointp;
 	pane_check_size(p);
 
 	if (p->focus == NULL && !list_empty(&p->children))
@@ -215,7 +215,7 @@ static int render_dir_move(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
 	struct dir_data *dd = p->data;
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 
 	if (!dd->top)
 		return 0;
@@ -253,7 +253,7 @@ DEF_CMD(comm_follow, render_dir_follow_point, "follow-point");
 static int render_dir_set_cursor(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	struct mark *m;
 
 	m = find_pos(pt->doc, p, ci->x, ci->y);
@@ -266,7 +266,7 @@ DEF_CMD(comm_cursor, render_dir_set_cursor, "set-cursor");
 
 static int render_dir_move_line(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	struct dir_data *dd = ci->home->data;
 	int rpt = RPT_NUM(ci);
 

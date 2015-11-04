@@ -129,7 +129,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	ci.numeric =1;
 	ci.focus = ci.home = ret;
 	ci.mark = NULL;
-	ci.point_pane = p2->parent;
+	ci.pointp = &p2->parent->point;
 	key_handle_focus(&ci);
 	return ret;
 }

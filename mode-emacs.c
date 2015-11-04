@@ -74,7 +74,7 @@ static int emacs_move(struct command *c, struct cmd_info *ci)
 {
 	struct move_command *mv = container_of(c, struct move_command, cmd);
 	struct pane *cursor_pane = pane_with_cursor(ci->home, NULL, NULL);
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	int old_x = -1;
 	struct cmd_info ci2 = {0};
 	int ret = 0;
@@ -88,7 +88,7 @@ static int emacs_move(struct command *c, struct cmd_info *ci)
 	ci2.key = mv->type;
 	ci2.numeric = mv->direction * RPT_NUM(ci);
 	ci2.mark = mark_of_point(pt);
-	ci2.point_pane = ci->point_pane;
+	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);
 
 	if (!ret)
@@ -106,7 +106,7 @@ static int emacs_move(struct command *c, struct cmd_info *ci)
 			ci2.y = 0;
 		else
 			ci2.y = cursor_pane->h - 1;
-		ci2.point_pane = ci->point_pane;
+		ci2.pointp = ci->pointp;
 		key_handle_xy(&ci2);
 	}
 
@@ -121,9 +121,9 @@ static int emacs_delete(struct command *c, struct cmd_info *ci)
 	struct cmd_info ci2 = {0};
 	int ret = 0;
 	struct mark *m;
-	struct doc *d = ci->point_pane->point->doc;
+	struct doc *d = ci->pointp[0]->doc;
 
-	m = mark_at_point(ci->point_pane->point, MARK_UNGROUPED);
+	m = mark_at_point(*ci->pointp, MARK_UNGROUPED);
 	ci2.home = ci->home;
 	ci2.focus = ci->focus;
 	ci2.key = mv->type;
@@ -132,7 +132,7 @@ static int emacs_delete(struct command *c, struct cmd_info *ci)
 	    doc_following(d, m) == '\n')
 		ci2.key = "Move-Char";
 	ci2.mark = m;
-	ci2.point_pane = ci->point_pane;
+	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);
 	if (!ret) {
 		mark_free(m);
@@ -145,7 +145,7 @@ static int emacs_delete(struct command *c, struct cmd_info *ci)
 	ci2.extra = ci->extra;
 	ci2.mark = m;
 	ci2.str = NULL;
-	ci2.point_pane = ci->point_pane;
+	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);
 	mark_free(m);
 	pane_set_extra(ci->home, 1);
@@ -194,11 +194,11 @@ static int emacs_insert(struct command *c, struct cmd_info *ci)
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
-	ci2.mark = mark_of_point(ci->point_pane->point);
+	ci2.mark = mark_of_point(*ci->pointp);
 	strncpy(str,ci->key+6+4, sizeof(str));
 	str[4] = 0;
 	ci2.str = str;
-	ci2.point_pane = ci->point_pane;
+	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);
 	pane_set_extra(ci->home, 1);
 
@@ -228,7 +228,7 @@ static int emacs_insert_other(struct command *c, struct cmd_info *ci)
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
-	ci2.mark = mark_of_point(ci->point_pane->point);
+	ci2.mark = mark_of_point(*ci->pointp);
 	for (i = 0; other_inserts[i].key; i++)
 		if (strcmp(other_inserts[i].key, ci->key+6) == 0)
 			break;
@@ -236,7 +236,7 @@ static int emacs_insert_other(struct command *c, struct cmd_info *ci)
 		return 0;
 
 	ci2.str = other_inserts[i].insert;
-	ci2.point_pane = ci->point_pane;
+	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);
 	pane_set_extra(p, 0); /* A newline starts a new undo */
 	return ret;
@@ -245,7 +245,7 @@ DEF_CMD(comm_insert_other, emacs_insert_other, "insert-other");
 
 static int emacs_undo(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	doc_undo(pt, 0);
 	pane_damaged(ci->home->focus, DAMAGED_CURSOR);
 	return 1;
@@ -254,7 +254,7 @@ DEF_CMD(comm_undo, emacs_undo, "undo");
 
 static int emacs_redo(struct command *c, struct cmd_info *ci)
 {
-	struct point *pt = ci->point_pane->point;
+	struct point *pt = *ci->pointp;
 	doc_undo(pt, 1);
 	pane_damaged(ci->home->focus, DAMAGED_CURSOR);
 	return 1;

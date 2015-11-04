@@ -87,11 +87,11 @@ static void __pane_refresh(struct cmd_info *ci)
 	struct pane *c;
 	int damage = ci->extra;
 	struct pane *p = ci->home;
-	struct pane *pp;
+	struct point  **pp;
 
 	if (p->point)
-		ci->point_pane = p;
-	pp = ci->point_pane;
+		ci->pointp = &p->point;
+	pp = ci->pointp;
 	damage |= p->damaged;
 	if (!damage)
 		return;
@@ -105,7 +105,7 @@ static void __pane_refresh(struct cmd_info *ci)
 	}
 	p->damaged = 0;
 	list_for_each_entry(c, &p->children, siblings) {
-		ci->point_pane = pp;
+		ci->pointp = pp;
 		ci->extra = damage;
 		ci->home = c;
 		__pane_refresh(ci);
@@ -135,7 +135,8 @@ void pane_close(struct pane *p)
 	pp = p;
 	while (pp && !pp->point)
 		pp = pp->parent;
-	ci.point_pane = pp;
+	if (pp)
+		ci.pointp = &pp->point;
 	list_del_init(&p->siblings);
 	if (p->refresh)
 		p->refresh->func(p->refresh, &ci);
@@ -234,9 +235,9 @@ void pane_subsume(struct pane *p, struct pane *parent)
 	parent->point = p->point;
 	p->point = point;
 	if (parent->point)
-		parent->point->owner = parent;
+		parent->point->owner = &parent->point;
 	if (p->point)
-		p->point->owner = p;
+		p->point->owner = &p->point;
 }
 
 void pane_free(struct pane *p)

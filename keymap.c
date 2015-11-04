@@ -301,11 +301,11 @@ int key_handle_focus(struct cmd_info *ci)
 	ci->x = -1;
 	ci->y = -1;
 	if (p->point)
-		ci->point_pane = p;
+		ci->pointp = &p->point;
 	while (p->focus) {
 		p = p->focus;
 		if (p->point)
-			ci->point_pane = p;
+			ci->pointp = &p->point;
 	}
 	ci->focus = p;
 	return key_handle(ci);
@@ -319,7 +319,7 @@ int key_handle_xy(struct cmd_info *ci)
 	int y = ci->y;
 
 	if (p->point)
-		ci->point_pane = p;
+		ci->pointp = &p->point;
 	while (1) {
 		struct pane *t, *chld = NULL;
 
@@ -338,7 +338,7 @@ int key_handle_xy(struct cmd_info *ci)
 		y -= chld->y;
 		p = chld;
 		if (p->point)
-			ci->point_pane = p;
+			ci->pointp = &p->point;
 	}
 	ci->x = x;
 	ci->y = y;
