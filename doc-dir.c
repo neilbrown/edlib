@@ -73,7 +73,7 @@ static int add_ent(struct directory *dr, struct dirent *de)
 	dre->st.st_mode = 0;
 	if (strcmp(de->d_name, ".") == 0)
 		dre->ch = '.';
-	else if (strcmp(de->d_name, ".") == 0)
+	else if (strcmp(de->d_name, "..") == 0)
 		dre->ch = ':';
 	else switch (de->d_type) {
 		case DT_BLK: dre->ch = 'b'; break;
