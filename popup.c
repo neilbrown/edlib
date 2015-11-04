@@ -29,7 +29,7 @@
 
 struct popup_info {
 	char		*name;
-	struct pane	*target;
+	struct pane	*target, *popup;
 	char		*key;
 	struct doc	*doc;
 };
@@ -110,6 +110,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	ppi->target = p;
 	ppi->key = key;
 	p = pane_register(root, 1, &popup_refresh, ppi, NULL);
+	ppi->popup = p;
 
 	pane_resize(p, root->w/4, root->h/2-2, root->w/2, 3);
 	p = pane_register(p, 0, &popup_no_refresh, NULL, NULL);
@@ -143,7 +144,6 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 	if (ci->str == NULL || ci->str[0] != '\n')
 		return 0;
 
-	pane_focus(ppi->target);
 	ci2.focus = ci2.home = ppi->target;
 	ci2.key = ppi->key;
 	ci2.numeric = 1;
@@ -151,8 +151,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 	ci2.mark = NULL;
 	key_handle_focus(&ci2);
 	free(ci2.str);
-	pane_close(p->parent->parent->parent->parent->parent);
-	/* tear down the popup */
+	pane_close(ppi->popup);
 	return 1;
 }
 DEF_CMD(comm_done, popup_done, "popup-done");

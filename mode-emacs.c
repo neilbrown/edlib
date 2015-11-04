@@ -266,20 +266,24 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	int fd;
 	struct doc *d;
 	struct point *pt;
-	struct pane *p;
+	struct pane *p, *par;
 
 	if (strcmp(ci->key, "File Found") != 0) {
-		p = pane_with_cursor(ci->home, NULL, NULL);
-		popup_register(p, "Find File", "/home/neilb/", "File Found");
+		popup_register(ci->focus, "Find File", "/home/neilb/", "File Found");
 		return 1;
 	}
+	p = ci->focus;
+	while (p && !p->point)
+		p = p->parent;
+	if (!p || !p->parent)
+		return 0;
+	par = p->parent;
+	/* par is the tile */
+	pane_close(p);
+
 	fd = open(ci->str, O_RDONLY);
 	d = doc_new(pane2ed(ci->home), "text");
-	p = pane_with_cursor(ci->home, NULL, NULL);
-	p = p->parent->parent->parent;
-	/* p is the tile */
-	pane_close(p->focus);
-	p = view_attach(p, d, NULL, 1);
+	p = view_attach(par, d, NULL, 1);
 	pt = p->parent->point;
 	if (fd >= 0)
 		doc_load_file(pt, fd);
@@ -291,6 +295,7 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	}
 	point_reset(pt);
 	render_text_attach(p, pt);
+	pane_focus(p);
 	return 1;
 }
 DEF_CMD(comm_findfile, emacs_findfile, "find-file");
