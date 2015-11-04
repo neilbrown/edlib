@@ -394,7 +394,7 @@ static int text_update_prior_after_change(struct text *t, struct doc_ref *pos,
 	if (pos->c == NULL) {
 		/* Was at the end, now must be at the start of the change */
 		*pos = *spos;
-		return 0;
+		return 1;
 	}
 
 	if (pos->c->start >= pos->c->end) {
