@@ -509,11 +509,11 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 		pane_damaged(p, DAMAGED_SIZE);
 	} else if (strcmp(ci->str, "split-x")==0) {
 		p2 = tile_split(p, 1, 1);
-		if (!pane_clone(p->focus, p2))
+		if (p2 && !pane_clone(p->focus, p2))
 			pane_close(p2);
 	} else if (strcmp(ci->str, "split-y")==0) {
 		p2 = tile_split(p, 0, 1);
-		if (!pane_clone(p->focus, p2))
+		if (p2 && !pane_clone(p->focus, p2))
 			pane_close(p2);
 	} else if (strcmp(ci->str, "close")==0) {
 		if (ti->direction != Neither)
