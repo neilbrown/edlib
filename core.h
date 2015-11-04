@@ -78,7 +78,8 @@ struct doctype {
 struct doc_operations {
 	void		(*replace)(struct point *pos, struct mark *end,
 				   char *str, bool *first);
-	int		(*load_file)(struct doc *d, struct point *pos, int fd);
+	int		(*load_file)(struct doc *d, struct point *pos,
+				     int fd, char *name);
 	int		(*same_file)(struct doc *d, int fd, struct stat *stb);
 	int		(*reundo)(struct point *pos, bool undo);
 	wint_t		(*step)(struct doc *d, struct mark *m, bool forward, bool move);
@@ -260,9 +261,10 @@ static inline int doc_undo(struct point *p, bool redo)
 {
 	return p->doc->ops->reundo(p, redo);
 }
-static inline int doc_load_file(struct doc *d, struct point *p, int fd)
+static inline int doc_load_file(struct doc *d, struct point *p,
+				int fd, char *name)
 {
-	return d->ops->load_file(d, p, fd);
+	return d->ops->load_file(d, p, fd, name);
 }
 static inline char *doc_getstr(struct doc *d, struct mark *from, struct mark *to)
 {

@@ -122,7 +122,8 @@ static void dir_replace(struct point *pos, struct mark *end,
 {
 }
 
-static int dir_load_file(struct doc *d, struct point *pos, int fd)
+static int dir_load_file(struct doc *d, struct point *pos,
+			 int fd, char *name)
 {
 	struct directory *dr = container_of(d, struct directory, doc);
 	load_dir(dr, fd);

@@ -131,7 +131,7 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 			render = "dir";
 	} else
 		return NULL;
-	doc_load_file(d, NULL, fd);
+	doc_load_file(d, NULL, fd, name);
 	p = view_attach(parent, d, NULL, 1);
 	render_attach(render, p, p->parent->point);
 	return p;
