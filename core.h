@@ -12,6 +12,7 @@
 
 #include <wchar.h>
 #include <limits.h>
+#include <sys/stat.h>
 #include "list.h"
 
 #undef bool
@@ -76,6 +77,7 @@ struct doc_operations {
 	void		(*replace)(struct point *pos, struct mark *end,
 				   char *str, bool *first);
 	int		(*load_file)(struct point *pos, int fd);
+	int		(*same_file)(struct doc *d, int fd, struct stat *stb);
 	int		(*reundo)(struct point *pos, bool undo);
 	wint_t		(*step)(struct doc *d, struct mark *m, bool forward, bool move);
 	char		*(*get_str)(struct doc *d, struct mark *from, struct mark *to);

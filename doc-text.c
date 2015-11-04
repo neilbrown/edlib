@@ -124,6 +124,9 @@ struct text {
 	struct text_alloc	*alloc;
 	struct list_head	text;
 	struct text_edit	*undo, *redo;
+
+	struct stat		stat;
+	char			*fname;
 };
 
 static int text_advance_towards(struct text *t, struct doc_ref *ref, struct doc_ref *target);
@@ -202,6 +205,18 @@ static int text_load_file(struct point *pos, int fd)
 	return 1;
 err:
 	free(c);
+	return 0;
+}
+
+static int text_same_file(struct doc *d, int fd, struct stat *stb)
+{
+	struct text *t = container_of(d, struct text, doc);
+
+	if (t->fname == NULL)
+		return 0;
+	if (t->stat.st_ino == stb->st_ino &&
+	    t->stat.st_dev == stb->st_dev)
+		return 1;
 	return 0;
 }
 
@@ -894,6 +909,7 @@ static struct doc *text_new(struct doctype *dt)
 	t->undo = t->redo = NULL;
 	doc_init(&t->doc);
 	t->doc.ops = &text_ops;
+	t->fname = NULL;
 	return &t->doc;
 }
 
@@ -1292,6 +1308,7 @@ static int text_set_attr(struct point *p, char *attr, char *val)
 static struct doc_operations text_ops = {
 	.replace   = text_replace,
 	.load_file = text_load_file,
+	.same_file = text_same_file,
 	.reundo    = text_reundo,
 	.step      = text_step,
 	.get_str   = text_getstr,

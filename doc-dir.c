@@ -54,6 +54,9 @@ struct dir_ent {
 struct directory {
 	struct doc		doc;
 	struct list_head	ents;
+
+	struct stat		stat;
+	char			*fname;
 };
 static struct doc_operations dir_ops;
 
@@ -110,6 +113,7 @@ static struct doc *dir_new(struct doctype *dt)
 	doc_init(&dr->doc);
 	dr->doc.ops = &dir_ops;
 	INIT_LIST_HEAD(&dr->ents);
+	dr->fname = NULL;
 	return &dr->doc;
 }
 
@@ -124,6 +128,16 @@ static int dir_load_file(struct point *pos, int fd)
 	struct directory *dr = container_of(d, struct directory, doc);
 	load_dir(dr, fd);
 	return 1;
+}
+
+static int dir_same_file(struct doc *d, int fd, struct stat *stb)
+{
+	struct directory *dr = container_of(d, struct directory, doc);
+
+	if (!dr->fname)
+		return 0;
+	return (dr->stat.st_ino == stb->st_ino &&
+		dr->stat.st_dev == stb->st_dev);
 }
 
 static int dir_reundo(struct point *p, bool redo)
@@ -249,6 +263,7 @@ static int dir_set_attr(struct point *p, char *attr, char *val)
 static struct doc_operations dir_ops = {
 	.replace   = dir_replace,
 	.load_file = dir_load_file,
+	.same_file = dir_same_file,
 	.reundo    = dir_reundo,
 	.step      = dir_step,
 	.get_str   = dir_getstr,
