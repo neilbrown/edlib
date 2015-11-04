@@ -202,6 +202,20 @@ static int text_load_file(struct doc *d, struct point *pos,
 	c->start = 0;
 	c->end = a->free;
 	list_add(&c->lst, &t->text);
+
+	if (name && !pos) {
+		char *dname;
+
+		fstat(fd, &t->stat);
+		free(t->fname);
+		t->fname = strdup(name);
+		dname = strrchr(name, '/');
+		if (dname)
+			dname += 1;
+		else
+			dname = name;
+		doc_set_name(d, dname);
+	}
 	return 1;
 err:
 	free(c);

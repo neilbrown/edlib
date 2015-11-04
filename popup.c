@@ -116,6 +116,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	p = pane_register(p, 0, &popup_no_refresh, NULL, NULL);
 	pane_resize(p, 1, 1, p->parent->w-2, 1);
 	d = doc_new(pane2ed(root), "text");
+	doc_set_name(d, "*find-file*");
 	ppi->doc = d;
 	p2 = view_attach(p, d, NULL, 0);
 	pt = p2->parent->point;

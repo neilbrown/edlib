@@ -109,8 +109,12 @@ struct doc *doc_new(struct editor *ed, char *type)
 {
 	struct doctype_list *dt;
 	list_for_each_entry(dt, &ed->doctypes, lst)
-		if (strcmp(dt->type->name, type) == 0)
-			return dt->type->new(dt->type);
+		if (strcmp(dt->type->name, type) == 0) {
+			struct doc *d = dt->type->new(dt->type);
+			if (d)
+				d->ed = ed;
+			return d;
+		}
 	return NULL;
 }
 
@@ -143,8 +147,34 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	struct doc *d = doc_new(pane2ed(parent), "text");
 	struct pane *p = view_attach(parent, d, NULL, 1);
 	struct point *pt = p->parent->point;
+	doc_set_name(d, "Error");
 	doc_replace(pt, NULL, text, &first);
 	point_reset(pt);
 	render_attach("text", p, pt);
 	return p;
+}
+
+void doc_set_name(struct doc *d, char *name)
+{
+	char *nname = malloc(strlen(name) + sizeof("<xxx>"));
+	int unique = 0;
+	int conflict = 1;
+
+	while (conflict && unique < 1000) {
+		struct doc *d2;
+		conflict = 0;
+		if (unique)
+			sprintf(nname, "%s<%d>", name, unique);
+		else
+			strcpy(nname, name);
+		list_for_each_entry(d2, &d->ed->documents, list) {
+			if (d != d2 && strcmp(nname, d2->name) == 0) {
+				conflict = 1;
+				unique += 1;
+				break;
+			}
+		}
+	}
+	free(d->name);
+	d->name = nname;
 }

@@ -126,7 +126,21 @@ static int dir_load_file(struct doc *d, struct point *pos,
 			 int fd, char *name)
 {
 	struct directory *dr = container_of(d, struct directory, doc);
+
 	load_dir(dr, fd);
+	if (name && !pos) {
+		char *dname;
+
+		fstat(fd, &dr->stat);
+		free(dr->fname);
+		dr->fname = strdup(name);
+		dname = strrchr(name, '/');
+		if (dname)
+			dname += 1;
+		else
+			dname = name;
+		doc_set_name(d, dname);
+	}
 	return 1;
 }
 
