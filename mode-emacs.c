@@ -281,7 +281,7 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	p = view_attach(par, d, NULL, 1);
 	pt = p->parent->point;
 	if (fd >= 0) {
-		doc_load_file(pt, fd);
+		doc_load_file(d, pt, fd);
 		close(fd);
 	} else {
 		bool first=1;

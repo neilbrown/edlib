@@ -178,13 +178,12 @@ text_new_alloc(struct text *t, int size)
 	return new;
 }
 
-static int text_load_file(struct point *pos, int fd)
+static int text_load_file(struct doc *d, struct point *pos, int fd)
 {
 	off_t size = lseek(fd, 0, SEEK_END);
 	struct text_alloc *a;
 	struct text_chunk *c = malloc(sizeof(*c));
 	int len;
-	struct doc *d = pos->doc;
 	struct text *t = container_of(d, struct text, doc);
 
 	if (size < 0)

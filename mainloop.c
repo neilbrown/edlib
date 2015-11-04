@@ -28,7 +28,7 @@ static struct doc *attach_file(struct pane *p, char *fname)
 	p = view_attach(p, d, NULL, 1);
 	pt = p->parent->point;
 	if (fd >= 0) {
-		doc_load_file(pt, fd);
+		doc_load_file(d, pt, fd);
 		close(fd);
 	} else {
 		bool first=1;
@@ -54,7 +54,7 @@ static struct doc *attach_dir(struct pane *p, char *fname)
 	p = view_attach(p, d, NULL, 1);
 	pt = p->parent->point;
 	if (fd >= 0) {
-		doc_load_file(pt, fd);
+		doc_load_file(d, pt, fd);
 		close(fd);
 	} else {
 		bool first=1;
