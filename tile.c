@@ -104,9 +104,9 @@ struct pane *tile_split(struct pane *p, int horiz, int after)
 	struct list_head *here;
 	struct tileinfo *ti2;
 	if (horiz)
-		space = p->h;
-	else
 		space = p->w;
+	else
+		space = p->h;
 
 	/* FIXME ask the leafs */
 	if (space < 8)
