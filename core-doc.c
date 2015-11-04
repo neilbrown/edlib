@@ -19,7 +19,8 @@
 #include <string.h>
 
 #include "core.h"
-
+#include "pane.h"
+#include "view.h"
 
 int doc_add_view(struct doc *d, struct command *c)
 {
@@ -111,4 +112,39 @@ struct doc *doc_new(struct editor *ed, char *type)
 		if (strcmp(dt->type->name, type) == 0)
 			return dt->type->new(dt->type);
 	return NULL;
+}
+
+struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
+{
+	struct stat stb;
+	struct doc *d;
+	struct pane *p;
+
+	fstat(fd, &stb);
+	if ((stb.st_mode & S_IFMT) == S_IFREG) {
+		d = doc_new(pane2ed(parent), "text");
+		if (!render)
+			render = "text";
+	} else if ((stb.st_mode & S_IFMT) == S_IFDIR) {
+		d = doc_new(pane2ed(parent), "dir");
+		if (!render)
+			render = "dir";
+	} else
+		return NULL;
+	doc_load_file(d, NULL, fd);
+	p = view_attach(parent, d, NULL, 1);
+	render_attach(render, p, p->parent->point);
+	return p;
+}
+
+struct pane *doc_from_text(struct pane *parent, char *name, char *text)
+{
+	bool first = 1;
+	struct doc *d = doc_new(pane2ed(parent), "text");
+	struct pane *p = view_attach(parent, d, NULL, 1);
+	struct point *pt = p->parent->point;
+	doc_replace(pt, NULL, text, &first);
+	point_reset(pt);
+	render_attach("text", p, pt);
+	return p;
 }

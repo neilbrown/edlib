@@ -18,7 +18,7 @@
 
 #include "extras.h"
 
-static struct doc *attach_file(struct pane *p, char *fname)
+static struct doc *attach_file(struct pane *p, char *fname, char *render)
 {
 	int fd = open(fname, O_RDONLY);
 	struct doc *d = doc_new(pane2ed(p), "text");
@@ -26,48 +26,16 @@ static struct doc *attach_file(struct pane *p, char *fname)
 	int i;
 
 	if (fd >= 0) {
-		doc_load_file(d, NULL, fd);
+		p = doc_open(p, fd, fname, render);
 		close(fd);
+	} else {
+		p = doc_from_text(p, fname, "File not found");
 	}
-	p = view_attach(p, d, NULL, 1);
 	pt = p->parent->point;
-	if (fd < 0) {
-		bool first=1;
-		doc_replace(pt, NULL, "File not found: ", &first);
-		doc_replace(pt, NULL, fname, &first);
-		doc_replace(pt, NULL, "\n", &first);
-	}
-
 	point_reset(pt);
 	for (i=0 ; i<2000; i++)
 		mark_next(pt->doc, mark_of_point(pt));
 
-	render_attach("text",p, pt);
-	return d;
-}
-
-static struct doc *attach_dir(struct pane *p, char *fname)
-{
-	int fd = open(fname, O_RDONLY|O_DIRECTORY);
-	struct doc *d = doc_new(pane2ed(p), "dir");
-	struct point *pt;
-
-	if (fd >= 0) {
-		doc_load_file(d, NULL, fd);
-		close(fd);
-	}
-	p = view_attach(p, d, NULL, 1);
-	pt = p->parent->point;
-	if (fd < 0) {
-		bool first=1;
-		doc_replace(pt, NULL, "Dir not found: ", &first);
-		doc_replace(pt, NULL, fname, &first);
-		doc_replace(pt, NULL, "\n", &first);
-	}
-
-	point_reset(pt);
-
-	render_attach("dir", p, pt);
 	return d;
 }
 
@@ -80,7 +48,7 @@ int main(int argc, char *argv[])
 {
 	struct event_base *base;
 	struct pane *root;
-	struct pane *b1, *b2, *b3, *b4, *v;
+	struct pane *b1, *b2, *b3, *b4;
 	struct map *global_map;
 	struct editor *ed = editor_new();
 
@@ -105,14 +73,12 @@ int main(int argc, char *argv[])
 	b1 = tile_init(root);
 	b2 = tile_split(b1, 0, 0);
 	b3 = tile_split(b1, 1, 1);
-	attach_file(b3, "core-mark.c");
-	attach_dir(b1, ".");
-
-	struct doc *d = attach_file(b2, "doc-text.c");
+	attach_file(b3, "core-mark.c", NULL);
+	attach_file(b1, ".", NULL);
+	attach_file(b2, "doc-text.c", NULL);
 
 	b4 = tile_split(b2, 1, 0);
-	v = view_attach(b4, d, NULL, 1);
-	render_attach("hex", v, v->parent->point);
+	attach_file(b4, "doc-text.c", "hex");
 
 	pane_refresh(root);
 	event_base_dispatch(base);

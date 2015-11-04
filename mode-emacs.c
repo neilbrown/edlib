@@ -259,8 +259,6 @@ DEF_CMD(comm_redo, emacs_redo, "redo");
 static int emacs_findfile(struct command *c, struct cmd_info *ci)
 {
 	int fd;
-	struct doc *d;
-	struct point *pt;
 	struct pane *p, *par;
 
 	if (strcmp(ci->key, "File Found") != 0) {
@@ -277,21 +275,10 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	pane_close(p);
 
 	fd = open(ci->str, O_RDONLY);
-	d = doc_new(pane2ed(ci->home), "text");
-	if (fd >= 0) {
-		doc_load_file(d, NULL, fd);
-		close(fd);
-	}
-	p = view_attach(par, d, NULL, 1);
-	pt = p->parent->point;
-	if (fd < 0) {
-		bool first=1;
-		doc_replace(pt, NULL, "File not found: ", &first);
-		doc_replace(pt, NULL, ci->str, &first);
-		doc_replace(pt, NULL, "\n", &first);
-		point_reset(pt);
-	}
-	render_attach("text", p, pt);
+	if (fd >= 0)
+		p = doc_open(par, fd, ci->str, NULL);
+	else
+		p = doc_from_text(par, ci->str, "File not found\n");
 	pane_focus(p);
 	return 1;
 }

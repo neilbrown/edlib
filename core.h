@@ -98,6 +98,8 @@ void doc_del_view(struct doc *d, struct command *c);
 int doc_find_view(struct doc *d, struct command *c);
 struct doc *doc_new(struct editor *ed, char *type);
 void doc_register_type(struct editor *ed, struct doctype *dt);
+struct pane *doc_from_text(struct pane *parent, char *name, char *text);
+struct pane *doc_open(struct pane *parent, int fd, char *name, char *render);
 
 struct rendertype {
 	char	*name;
