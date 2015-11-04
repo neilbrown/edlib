@@ -68,6 +68,7 @@ struct doc {
 	struct doc_operations	*ops;
 	struct list_head	list;	/* ed->documents */
 	char			*name;
+	char			*default_render;
 };
 
 struct doctype {

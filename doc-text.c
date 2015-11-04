@@ -922,6 +922,7 @@ static struct doc *text_new(struct doctype *dt)
 	INIT_LIST_HEAD(&t->text);
 	t->undo = t->redo = NULL;
 	doc_init(&t->doc);
+	t->doc.default_render = "text";
 	t->doc.ops = &text_ops;
 	t->fname = NULL;
 	return &t->doc;

@@ -127,25 +127,20 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 
 	fstat(fd, &stb);
 	list_for_each_entry(d, &pane2ed(parent)->documents, list)
-		if (d->ops->same_file(d, fd, &stb)) {
-			if (!render) render = ((stb.st_mode & S_IFMT) == S_IFDIR)
-					     ? "dir": "text";
+		if (d->ops->same_file(d, fd, &stb))
 			goto found;
-		}
 
 	if ((stb.st_mode & S_IFMT) == S_IFREG) {
 		d = doc_new(pane2ed(parent), "text");
-		if (!render)
-			render = "text";
 	} else if ((stb.st_mode & S_IFMT) == S_IFDIR) {
 		d = doc_new(pane2ed(parent), "dir");
-		if (!render)
-			render = "dir";
 	} else
 		return NULL;
 	doc_load_file(d, NULL, fd, name);
 found:
 	p = view_attach(parent, d, NULL, 1);
+	if (!render)
+		render = d->default_render;
 	render_attach(render, p, p->parent->point);
 	return p;
 }
@@ -159,7 +154,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	doc_set_name(d, "Error");
 	doc_replace(pt, NULL, text, &first);
 	point_reset(pt);
-	render_attach("text", p, pt);
+	render_attach(d->default_render, p, pt);
 	return p;
 }
 

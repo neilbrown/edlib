@@ -111,6 +111,7 @@ static struct doc *dir_new(struct doctype *dt)
 {
 	struct directory *dr = malloc(sizeof(*dr));
 	doc_init(&dr->doc);
+	dr->doc.default_render = "dir";
 	dr->doc.ops = &dir_ops;
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
