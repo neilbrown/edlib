@@ -30,7 +30,7 @@ struct rt_data {
 };
 
 static struct map *rt_map;
-void render_text_attach(struct pane *p, struct point *pt);
+static void render_text_attach(struct pane *p, struct point *pt);
 
 static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y, int draw)
 {
@@ -389,7 +389,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_line, render_text_move_line, "move-line");
 
-static void render_text_register(void)
+static void render_text_register_map(void)
 {
 	rt_map = key_alloc();
 
@@ -404,7 +404,7 @@ static void render_text_register(void)
 	key_add(rt_map, "Replace", &comm_follow);
 }
 
-void render_text_attach(struct pane *parent, struct point *pt)
+static void render_text_attach(struct pane *parent, struct point *pt)
 {
 	struct rt_data *rt = malloc(sizeof(*rt));
 	struct pane *p;
@@ -420,6 +420,16 @@ void render_text_attach(struct pane *parent, struct point *pt)
 	rt->pane = p;
 
 	if (!rt_map)
-		render_text_register();
+		render_text_register_map();
 	p->keymap = rt_map;
+}
+
+struct rendertype render_text = {
+	.name	= "text",
+	.attach	= render_text_attach,
+};
+
+void render_text_register(struct editor *ed)
+{
+	render_register_type(ed, &render_text);
 }

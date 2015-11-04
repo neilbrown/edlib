@@ -120,7 +120,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	p2 = view_attach(p, d, NULL, 0);
 	pt = p2->parent->point;
 	doc_replace(pt, NULL, content, &first);
-	render_text_attach(p2, pt);
+	render_attach("text", p2, pt);
 	ret = pane_register(p2->focus, 0, &popup_no_refresh, ppi, NULL);
 	pane_check_size(ret);
 	ret->cx = ret->cy = -1;

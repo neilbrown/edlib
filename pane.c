@@ -349,3 +349,26 @@ struct pane *pane_with_cursor(struct pane *p, int *oxp, int *oyp)
 	}
 	return ret;
 }
+
+struct rendertype_list {
+	struct rendertype	*type;
+	struct list_head	lst;
+};
+
+void render_register_type(struct editor *ed, struct rendertype *type)
+{
+	struct rendertype_list *t = malloc(sizeof(*t));
+	t->type = type;
+	list_add(&t->lst, &ed->rendertypes);
+}
+
+int render_attach(char *name, struct pane *parent, struct point *pt)
+{
+	struct rendertype_list *rt;
+	list_for_each_entry(rt, &pane2ed(parent)->rendertypes, lst)
+		if (strcmp(rt->type->name, name) == 0) {
+			rt->type->attach(parent, pt);
+			return 1;
+		}
+	return 0;
+}

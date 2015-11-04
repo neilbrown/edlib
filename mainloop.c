@@ -42,7 +42,7 @@ static struct doc *attach_file(struct pane *p, char *fname)
 	for (i=0 ; i<2000; i++)
 		mark_next(pt->doc, mark_of_point(pt));
 
-	render_text_attach(p, pt);
+	render_attach("text",p, pt);
 	return d;
 }
 
@@ -67,12 +67,15 @@ static struct doc *attach_dir(struct pane *p, char *fname)
 
 	point_reset(pt);
 
-	render_dir_attach(p, pt);
+	render_attach("dir", p, pt);
 	return d;
 }
 
 void text_register(struct editor *ed);
 void doc_dir_register(struct editor *ed);
+void render_text_register(struct editor *ed);
+void render_hex_register(struct editor *ed);
+void render_dir_register(struct editor *ed);
 int main(int argc, char *argv[])
 {
 	struct event_base *base;
@@ -92,6 +95,9 @@ int main(int argc, char *argv[])
 	view_register(global_map);
 	text_register(ed);
 	doc_dir_register(ed);
+	render_dir_register(ed);
+	render_text_register(ed);
+	render_hex_register(ed);
 	popup_init();
 	emacs_register(global_map);
 	pane_set_mode(root, "emacs-", 0);
@@ -106,7 +112,7 @@ int main(int argc, char *argv[])
 
 	b4 = tile_split(b2, 1, 0);
 	v = view_attach(b4, d, NULL, 1);
-	render_hex_attach(v, v->parent->point);
+	render_attach("hex", v, v->parent->point);
 
 	pane_refresh(root);
 	event_base_dispatch(base);

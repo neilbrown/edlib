@@ -25,7 +25,7 @@ struct dir_data {
 };
 
 static struct map *dr_map;
-void render_dir_attach(struct pane *parent, struct point *pt);
+static void render_dir_attach(struct pane *parent, struct point *pt);
 
 static int put_str(struct pane *p, char *buf, int attr, int x, int y)
 {
@@ -286,7 +286,7 @@ static int render_dir_move_line(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_line, render_dir_move_line, "move-line");
 
-static void render_dir_register(void)
+static void render_dir_register_map(void)
 {
 	dr_map = key_alloc();
 
@@ -301,7 +301,7 @@ static void render_dir_register(void)
 	key_add(dr_map, "Replace", &comm_follow);
 }
 
-void render_dir_attach(struct pane *parent, struct point *pt)
+static void render_dir_attach(struct pane *parent, struct point *pt)
 {
 	struct dir_data *dd = malloc(sizeof(*dd));
 	struct pane *p;
@@ -316,6 +316,16 @@ void render_dir_attach(struct pane *parent, struct point *pt)
 	dd->pane = p;
 
 	if (!dr_map)
-		render_dir_register();
+		render_dir_register_map();
 	p->keymap = dr_map;
+}
+
+struct rendertype render_dir = {
+	.name	= "dir",
+	.attach	= render_dir_attach,
+};
+
+void render_dir_register(struct editor *ed)
+{
+	render_register_type(ed, &render_dir);
 }

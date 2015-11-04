@@ -28,7 +28,7 @@ struct he_data {
 };
 
 static struct map *he_map;
-void render_hex_attach(struct pane *parent, struct point *pt);
+static void render_hex_attach(struct pane *parent, struct point *pt);
 
 static int put_str(struct pane *p, char *buf, int attr, int x, int y)
 {
@@ -342,7 +342,7 @@ static int render_hex_eol(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_eol, render_hex_eol, "move-end-of-line");
 
-static void render_hex_register(void)
+static void render_hex_register_map(void)
 {
 	he_map = key_alloc();
 
@@ -358,7 +358,7 @@ static void render_hex_register(void)
 	key_add(he_map, "Replace", &comm_follow);
 }
 
-void render_hex_attach(struct pane *parent, struct point *pt)
+static void render_hex_attach(struct pane *parent, struct point *pt)
 {
 	struct he_data *he = malloc(sizeof(*he));
 	struct pane *p;
@@ -373,6 +373,16 @@ void render_hex_attach(struct pane *parent, struct point *pt)
 	he->pane = p;
 
 	if (!he_map)
-		render_hex_register();
+		render_hex_register_map();
 	p->keymap = he_map;
+}
+
+struct rendertype render_hex = {
+	.name	= "hex",
+	.attach	= render_hex_attach,
+};
+
+void render_hex_register(struct editor *ed)
+{
+	render_register_type(ed, &render_hex);
 }

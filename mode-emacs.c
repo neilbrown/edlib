@@ -291,7 +291,7 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 		doc_replace(pt, NULL, "\n", &first);
 		point_reset(pt);
 	}
-	render_text_attach(p, pt);
+	render_attach("text", p, pt);
 	pane_focus(p);
 	return 1;
 }

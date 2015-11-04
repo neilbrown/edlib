@@ -45,6 +45,7 @@ struct doc_ref {
  */
 struct editor {
 	struct list_head	doctypes;
+	struct list_head	rendertypes;
 	struct event_base	*base;
 	struct list_head	documents;
 };
@@ -97,6 +98,13 @@ void doc_del_view(struct doc *d, struct command *c);
 int doc_find_view(struct doc *d, struct command *c);
 struct doc *doc_new(struct editor *ed, char *type);
 void doc_register_type(struct editor *ed, struct doctype *dt);
+
+struct rendertype {
+	char	*name;
+	void	(*attach)(struct pane *parent, struct point *pt);
+};
+void render_register_type(struct editor *ed, struct rendertype *dt);
+int render_attach(char *name, struct pane *parent, struct point *pt);
 
 /* Points and Marks */
 
