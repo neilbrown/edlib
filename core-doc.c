@@ -182,3 +182,13 @@ void doc_set_name(struct doc *d, char *name)
 	free(d->name);
 	d->name = nname;
 }
+
+struct doc *doc_find(struct editor *ed, char *name)
+{
+	struct doc *d;
+
+	list_for_each_entry(d, &ed->documents, list)
+		if (strcmp(name, d->name) == 0)
+			return d;
+	return NULL;
+}

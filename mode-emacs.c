@@ -284,6 +284,34 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_findfile, emacs_findfile, "find-file");
 
+static int emacs_finddoc(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p, *par;
+	struct doc *d;
+
+	if (strcmp(ci->key, "Doc Found") != 0) {
+		popup_register(ci->focus, "Find Document", "", "Doc Found");
+		return 1;
+	}
+
+	p = ci->focus;
+	while (p && !p->point)
+		p = p->parent;
+	if (!p || !p->parent)
+		return 0;
+	par = p->parent;
+	/* par is the tile */
+
+	d = doc_find(pane2ed(p), ci->str);
+	if (!d)
+		return 1;
+	pane_close(p);
+	p = view_attach(par, d, NULL, 1);
+	render_attach(d->default_render, p, p->parent->point);
+	return 1;
+}
+DEF_CMD(comm_finddoc, emacs_finddoc, "find-doc");
+
 static int emacs_meta(struct command *c, struct cmd_info *ci)
 {
 	pane_set_mode(ci->home, "emacs-M-", 1);
@@ -353,6 +381,9 @@ void emacs_register(struct map *m)
 
 	key_add(m, "emCX-C-Chr-F", &comm_findfile);
 	key_add(m, "File Found", &comm_findfile);
+
+	key_add(m, "emCX-Chr-b", &comm_finddoc);
+	key_add(m, "Doc Found", &comm_finddoc);
 
 	/* A simple mouse click just gets resent without a mode */
 	key_add(m, "emacs-Click-1", &comm_raw);
