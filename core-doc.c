@@ -1,3 +1,19 @@
+/*
+ * All content managed in edlib is stored in documents.
+ * There can be multiple document handlers which export the
+ * doc_operations interface to provide access to a particular
+ * style of document storage.
+ * A document has a list of marks and points (managed in core-mark.c)
+ * and some attributes (managed in attr.c).
+ * It has a list of 'views' which are notified when the document changes.
+ * Those are managed here.
+ *
+ * Finally all documents are kept in a single list which itself is
+ * used as the basis for a document: the document-list.  The list is
+ * kept in most-recently-used order.  Each document has a unique name
+ * in this list.
+ */
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -70,6 +86,7 @@ void doc_init(struct doc *d)
 {
 	INIT_HLIST_HEAD(&d->marks);
 	INIT_TLIST_HEAD(&d->points, 0);
+	INIT_LIST_HEAD(&d->list);
 	d->attrs = NULL;
 	d->views = NULL;
 	d->nviews = 0;

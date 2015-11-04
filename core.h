@@ -45,6 +45,7 @@ struct doc_ref {
 struct editor {
 	struct list_head	doctypes;
 	struct event_base	*base;
+	struct list_head	documents;
 };
 struct editor *editor_new(void);
 
@@ -63,6 +64,8 @@ struct doc {
 	int			nviews;
 	struct editor		*ed;
 	struct doc_operations	*ops;
+	struct list_head	list;	/* ed->documents */
+	char			*name;
 };
 
 struct doctype {

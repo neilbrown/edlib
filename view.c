@@ -127,6 +127,7 @@ struct pane *view_attach(struct pane *par, struct doc *d, struct point *pt, int 
 
 	if (!d)
 		d = pt->doc;
+	list_move(&d->list, &pane2ed(par)->documents);
 	vd = malloc(sizeof(*vd));
 	vd->border = border;
 	vd->ch_notify.func = view_notify;
