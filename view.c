@@ -41,7 +41,7 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	struct view_data *vd = p->data;
 	struct point *pt;
 	int ln, l, w, c;
-	char msg[60];
+	char msg[100];
 
 	if (vd->pane != p)
 		vd->pane = p; /* FIXME having to do this is horrible */
@@ -95,7 +95,7 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	for (i = 1; i < p->w; i++)
 		pane_text(p, '=', A_STANDOUT, i, p->h-1);
 
-	snprintf(msg, sizeof(msg), "L%d W%d C%d", l,w,c);
+	snprintf(msg, sizeof(msg), "L%d W%d C%d D:%s", l,w,c, pt->doc->name);
 	for (i = 0; msg[i] && i+4 < p->w; i++)
 		pane_text(p, msg[i], A_STANDOUT, i+4, p->h-1);
 	vd->scroll_bar_y = mid;

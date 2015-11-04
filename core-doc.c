@@ -91,6 +91,7 @@ void doc_init(struct doc *d)
 	d->attrs = NULL;
 	d->views = NULL;
 	d->nviews = 0;
+	d->name = NULL;
 }
 
 struct doctype_list {
@@ -125,6 +126,13 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 	struct pane *p;
 
 	fstat(fd, &stb);
+	list_for_each_entry(d, &pane2ed(parent)->documents, list)
+		if (d->ops->same_file(d, fd, &stb)) {
+			if (!render) render = ((stb.st_mode & S_IFMT) == S_IFDIR)
+					     ? "dir": "text";
+			goto found;
+		}
+
 	if ((stb.st_mode & S_IFMT) == S_IFREG) {
 		d = doc_new(pane2ed(parent), "text");
 		if (!render)
@@ -136,6 +144,7 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 	} else
 		return NULL;
 	doc_load_file(d, NULL, fd, name);
+found:
 	p = view_attach(parent, d, NULL, 1);
 	render_attach(render, p, p->parent->point);
 	return p;
@@ -157,13 +166,13 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 void doc_set_name(struct doc *d, char *name)
 {
 	char *nname = malloc(strlen(name) + sizeof("<xxx>"));
-	int unique = 0;
+	int unique = 1;
 	int conflict = 1;
 
 	while (conflict && unique < 1000) {
 		struct doc *d2;
 		conflict = 0;
-		if (unique)
+		if (unique > 1)
 			sprintf(nname, "%s<%d>", name, unique);
 		else
 			strcpy(nname, name);
