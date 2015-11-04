@@ -1,4 +1,5 @@
 *.o
+edlib
 core
 test_*
 TAGS
