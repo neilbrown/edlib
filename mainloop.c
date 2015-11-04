@@ -27,9 +27,10 @@ static struct doc *attach_file(struct pane *p, char *fname)
 
 	p = view_attach(p, d, NULL, 1);
 	pt = p->parent->point;
-	if (fd >= 0)
+	if (fd >= 0) {
 		doc_load_file(pt, fd);
-	else {
+		close(fd);
+	} else {
 		bool first=1;
 		doc_replace(pt, NULL, "File not found: ", &first);
 		doc_replace(pt, NULL, fname, &first);
@@ -52,9 +53,10 @@ static struct doc *attach_dir(struct pane *p, char *fname)
 
 	p = view_attach(p, d, NULL, 1);
 	pt = p->parent->point;
-	if (fd >= 0)
+	if (fd >= 0) {
 		doc_load_file(pt, fd);
-	else {
+		close(fd);
+	} else {
 		bool first=1;
 		doc_replace(pt, NULL, "Dir not found: ", &first);
 		doc_replace(pt, NULL, fname, &first);

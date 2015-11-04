@@ -280,9 +280,10 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	d = doc_new(pane2ed(ci->home), "text");
 	p = view_attach(par, d, NULL, 1);
 	pt = p->parent->point;
-	if (fd >= 0)
+	if (fd >= 0) {
 		doc_load_file(pt, fd);
-	else {
+		close(fd);
+	} else {
 		bool first=1;
 		doc_replace(pt, NULL, "File not found: ", &first);
 		doc_replace(pt, NULL, ci->str, &first);
