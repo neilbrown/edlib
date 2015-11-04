@@ -1318,10 +1318,11 @@ static struct doc_operations text_ops = {
 };
 
 struct doctype text_type = {
+	.name = "text",
 	.new = text_new,
 };
 
 void text_register(struct editor *ed)
 {
-	doc_register_type(ed, "text", &text_type);
+	doc_register_type(ed, &text_type);
 }

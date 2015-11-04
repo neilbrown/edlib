@@ -70,7 +70,8 @@ struct doc {
 };
 
 struct doctype {
-	struct doc *(*new)(struct doctype*);
+	char		*name;
+	struct doc	*(*new)(struct doctype*);
 };
 
 struct doc_operations {
@@ -95,7 +96,7 @@ int doc_add_view(struct doc *d, struct command *c);
 void doc_del_view(struct doc *d, struct command *c);
 int doc_find_view(struct doc *d, struct command *c);
 struct doc *doc_new(struct editor *ed, char *type);
-void doc_register_type(struct editor *ed, char *name, struct doctype *dt);
+void doc_register_type(struct editor *ed, struct doctype *dt);
 
 /* Points and Marks */
 

@@ -93,15 +93,13 @@ void doc_init(struct doc *d)
 }
 
 struct doctype_list {
-	char			*name;
 	struct doctype		*type;
 	struct list_head	lst;
 };
 
-void doc_register_type(struct editor *ed, char *name, struct doctype *type)
+void doc_register_type(struct editor *ed, struct doctype *type)
 {
 	struct doctype_list *t = malloc(sizeof(*t));
-	t->name = name;
 	t->type = type;
 	list_add(&t->lst, &ed->doctypes);
 }
@@ -110,7 +108,7 @@ struct doc *doc_new(struct editor *ed, char *type)
 {
 	struct doctype_list *dt;
 	list_for_each_entry(dt, &ed->doctypes, lst)
-		if (strcmp(dt->name, type) == 0)
+		if (strcmp(dt->type->name, type) == 0)
 			return dt->type->new(dt->type);
 	return NULL;
 }
