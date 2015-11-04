@@ -149,16 +149,15 @@ int pane_clone(struct pane *from, struct pane *parent)
 	/* Create a clone of 'from' as a child of 'parent'.
 	 * We send a 'Clone' message to 'from' which may
 	 * well call pane_clone() recursively on children.
-	 * 'parent' is passed as the 'point_pane', which is a
-	 * white lie (hopefully it remains white).
+	 * 'parent' is passed as the 'focus'.
 	 */
 	struct cmd_info ci = {0};
 
 	if (!from || !parent)
 		return 0;
 	ci.key = "Clone";
-	ci.focus = ci.home = from;
-	ci.point_pane = parent;
+	ci.focus = parent;
+	ci.home = from;
 	if (from->refresh)
 		return from->refresh->func(from->refresh, &ci);
 	return 0;

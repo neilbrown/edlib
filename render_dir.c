@@ -162,7 +162,7 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 		return 1;
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
-		struct pane *parent = ci->point_pane;
+		struct pane *parent = ci->focus;
 		struct pane *pp = parent;
 		while (pp && pp->point == NULL)
 			pp = pp->parent;

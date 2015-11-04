@@ -40,7 +40,7 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	int i;
 	int mid;
 	struct view_data *vd = p->data;
-	struct point *pt = point_pane->point;
+	struct point *pt;
 	int ln, l, w, c;
 	char msg[60];
 
@@ -48,12 +48,13 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 		vd->pane = p; /* FIXME having to do this is horrible */
 
 	if (strcmp(ci->key, "Close") == 0) {
+		pt = point_pane->point;
 		doc_del_view(pt->doc, &vd->ch_notify);
 		free(vd);
 		return 1;
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
-		struct pane *parent = ci->point_pane;
+		struct pane *parent = ci->focus;
 		struct pane *p2;
 		if (!p->point)
 			return 0;
@@ -62,6 +63,7 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	}
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
+	pt = point_pane->point;
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
 
