@@ -22,6 +22,7 @@ struct dir_data {
 	struct command	type;
 	int		typenum;
 	struct pane	*pane;
+	int		header;
 };
 
 static struct map *dr_map;
@@ -45,8 +46,17 @@ static struct mark *render(struct point *pt, struct pane *p)
 	struct dir_data *dd = p->data;
 	struct doc *d = pt->doc;
 	int x = 0, y = 0;
+	char *hdr;
 
 	pane_clear(p, 0, 0, 0, 0, 0);
+
+	hdr = doc_attr(d, NULL, 0, "heading");
+	if (hdr) {
+		put_str(p, hdr, 1<<(8+13), x, y);
+		y += 1;
+		dd->header = 1;
+	} else
+		dd->header = 0;
 
 	m = mark_dup(dd->top, 0);
 	last_vis = mark_dup(m, 00);
@@ -82,6 +92,8 @@ static struct mark *find_pos(struct doc *d, struct pane *p, int px, int py)
 	struct mark *m;
 	struct dir_data *dd = p->data;
 
+	if (dd->header)
+		py -= 1;
 	m = mark_dup(dd->top, 1);
 	while (py > 0) {
 		mark_next(d, m);
@@ -104,6 +116,7 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 	struct mark *start, *end;
 	struct doc *d = pt->doc;
 	int found_start = 0, found_end = 0;
+	int ph = p->h - dd->header;
 	int height = 0;
 
 	start = mark_at_point(pt, dd->typenum);
@@ -116,7 +129,7 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 	    (mark_ordered(top, end) && ! mark_same(d, top, end)))
 		/* We can never cross top from above */
 		top = NULL;
-	while (!((found_start && found_end) || height >= p->h-1)) {
+	while (!((found_start && found_end) || height >= ph-1)) {
 		if (!found_start) {
 			if (doc_prior(d, start) == WEOF)
 				found_start = 1;

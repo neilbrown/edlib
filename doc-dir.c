@@ -233,9 +233,15 @@ static char *fmt_num(struct dir_ent *de, long num)
 static char *dir_get_attr(struct doc *d, struct mark *m,
 			  bool forward, char *attr)
 {
-	struct dir_ent *de = m->ref.d;
+	struct dir_ent *de;
 	struct directory *dr = container_of(d, struct directory, doc);
 
+	if (!m) {
+		if (strcmp(attr, "heading") == 0)
+			return "File Name";
+		return attr_get_str(d->attrs, attr, -1);
+	}
+	de = m->ref.d;
 	if (!forward) {
 		if (!de)
 			de = list_last_entry(&dr->ents, struct dir_ent, lst);

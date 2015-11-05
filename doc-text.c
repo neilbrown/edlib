@@ -1268,10 +1268,15 @@ static void text_replace(struct point *pos, struct mark *end,
 static char *text_get_attr(struct doc *d, struct mark *m,
 			   bool forward, char *attr)
 {
-	struct text_chunk *c = m->ref.c;
+	struct text_chunk *c;
 	struct text *t = container_of(d, struct text, doc);
-	int o = m->ref.o;
+	int o;
 
+	if (!m)
+		return attr_get_str(d->attrs, attr, -1);
+
+	c = m->ref.c;
+	o = m->ref.o;
 	if (forward) {
 		if (!c)
 			/* EOF */

@@ -279,8 +279,12 @@ static int docs_sameref(struct doc *d, struct mark *a, struct mark *b)
 static char *docs_get_attr(struct doc *doc, struct mark *m,
 			  bool forward, char *attr)
 {
-	struct doc *d = m->ref.d;
+	struct doc *d;
 
+	if (!m) {
+		return attr_get_str(doc->attrs, attr, -1);
+	}
+	d = m->ref.d;
 	if (!forward) {
 		if (!d)
 			d = list_last_entry(&doc->ed->documents, struct doc, list);
