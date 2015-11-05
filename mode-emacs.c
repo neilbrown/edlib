@@ -328,9 +328,10 @@ static int emacs_raw(struct command *c, struct cmd_info *ci)
 	if (strncmp(ci->key, "emacs-", 6) != 0)
 		return 0;
 	ci2.key = ci->key + 6;
-	if (ci->x >= 0)
+	if (ci->x >= 0) {
+		ci2.focus = ci->home;
 		return key_handle_xy(&ci2);
-	else
+	} else
 		return key_handle_focus(&ci2);
 }
 DEF_CMD(comm_raw, emacs_raw, "modeless-passthrough");
