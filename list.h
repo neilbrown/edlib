@@ -272,7 +272,7 @@ static inline int list_empty(struct list_head *head)
  * Iterate over list of given type, continuing from current position.
  */
 #define list_for_each_entry_from(pos, head, member)			\
-	for (; &pos->member != (head);					\
+	for (; pos && &pos->member != (head);				\
 	     pos = list_next_entry(pos, member))
 
 struct hlist_head {
