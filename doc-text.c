@@ -134,6 +134,7 @@ static int text_retreat_towards(struct text *t, struct doc_ref *ref, struct doc_
 static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2);
 static int text_locate(struct text *t, struct doc_ref *r, struct doc_ref *dest);
 static struct doc_operations text_ops;
+static void text_check_consistent(struct text *t);
 
 /*
  * A text will mostly hold utf-8 so we try to align chunk breaks with
@@ -706,6 +707,7 @@ static int text_reundo(struct point *p, bool redo)
 
 	while (did_do != 1) {
 		struct mark *m;
+		struct mark *early = NULL;
 		int where;
 		int i;
 
@@ -763,10 +765,16 @@ static int text_reundo(struct point *p, bool redo)
 			if (text_update_following_after_change(t, &m->ref,
 							       &start, &end) == 0)
 				break;
-		point_notify_change(p);
 
-		doc_check_consistent(&t->doc);
+		early = doc_prev_mark_all(d, mark_of_point(p));
+		if (early && !text_ref_same(t, &early->ref, &start))
+			early = NULL;
+
+		point_notify_change(p, early);
+
+		text_check_consistent(t);
 	}
+	text_check_consistent(t);
 	return did_do;
 }
 
@@ -1229,6 +1237,7 @@ static void text_replace(struct point *pos, struct mark *end,
 	struct doc *d = pos->doc;
 	struct text *t = container_of(d, struct text, doc);
 	struct mark *pm = mark_of_point(pos);
+	struct mark *early = NULL;
 
 	/* First delete, then insert */
 	if (end && !text_ref_same(t, &pm->ref, &end->ref)) {
@@ -1254,6 +1263,10 @@ static void text_replace(struct point *pos, struct mark *end,
 			;
 		text_check_consistent(t);
 	}
+	early = doc_prev_mark_all(d, pm);
+	if (early && !mark_same(d, early, pm))
+		early = NULL;
+
 	if (str) {
 		struct doc_ref start;
 		struct mark *m;
@@ -1270,7 +1283,7 @@ static void text_replace(struct point *pos, struct mark *end,
 		text_check_consistent(t);
 
 	}
-	point_notify_change(pos);
+	point_notify_change(pos, early);
 }
 
 

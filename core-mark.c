@@ -595,8 +595,13 @@ void point_to_mark(struct point *p, struct mark *m)
 		point_backward_to_mark(p, m);
 }
 
-void point_notify_change(struct point *p)
+void point_notify_change(struct point *p, struct mark *m)
 {
+	/* Notify of changes from m (might be NULL) to p.
+	 * Notify the last mark which is before p or m,
+	 * and all marks with the same ref as p or m.
+	 * There will be none in between.
+	 */
 	struct cmd_info ci = {0};
 	struct doc *d = p->doc;
 	int i;
@@ -605,9 +610,12 @@ void point_notify_change(struct point *p)
 	ci.numeric = 1;
 	ci.x = ci.y = -1;
 	ci.pointp = p->owner;
+	if (!m)
+		m = mark_of_point(p);
 	for (i = 0; i < p->size; i++) {
 		struct tlist_head *tl = &p->lists[i];
 		struct command *c = d->views[i].notify;
+
 		if (!c)
 			continue;
 		while (TLIST_TYPE(tl) == GRP_LIST)
@@ -617,6 +625,30 @@ void point_notify_change(struct point *p)
 		else
 			ci.mark = NULL;
 		c->func(c, &ci);
+		while (TLIST_TYPE(tl) == GRP_MARK &&
+		       (mark_ordered(m, ci.mark) || mark_same(d, m, ci.mark))) {
+			do
+				tl = TLIST_PTR(tl->prev);
+			while (TLIST_TYPE(tl) == GRP_LIST);
+
+			if (TLIST_TYPE(tl) == GRP_MARK) {
+				ci.mark = tlist_entry(tl, struct mark, view);
+				c->func(c, &ci);
+			}
+		}
+
+		/* Now any relevant marks after point but at the same ref */
+		tl = &p->lists[i];
+		while (TLIST_TYPE(tl) != GRP_HEAD) {
+			if (TLIST_TYPE(tl) == GRP_MARK) {
+				ci.mark = tlist_entry(tl, struct mark, view);
+				if (mark_same(d, ci.mark, mark_of_point(p)))
+					c->func(c, &ci);
+				else
+					break;
+			}
+			tl = TLIST_PTR(tl->next);
+		}
 	}
 }
 
