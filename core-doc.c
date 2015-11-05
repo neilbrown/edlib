@@ -192,3 +192,8 @@ struct doc *doc_find(struct editor *ed, char *name)
 			return d;
 	return NULL;
 }
+
+void doc_promote(struct doc *d)
+{
+	list_move(&d->list, &d->ed->documents);
+}
