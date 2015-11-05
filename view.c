@@ -101,13 +101,13 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	vd->scroll_bar_y = mid;
 	return 0;
 }
-DEF_CMD(view_refresh, do_view_refresh, "view-refresh");
+DEF_CMD(view_refresh, do_view_refresh);
 
 static int do_view_null(struct command *c, struct cmd_info *ci)
 {
 	return 0;
 }
-DEF_CMD(view_null, do_view_null, "view-no-refresh");
+DEF_CMD(view_null, do_view_null);
 
 static int view_notify(struct command *c, struct cmd_info *ci)
 {
@@ -132,7 +132,6 @@ struct pane *view_attach(struct pane *par, struct doc *d, struct point *pt, int 
 	vd = malloc(sizeof(*vd));
 	vd->border = border;
 	vd->ch_notify.func = view_notify;
-	vd->ch_notify.name = "view-notify";
 	vd->ch_notify_num = doc_add_view(d, &vd->ch_notify);
 
 	p = pane_register(par, 0, &view_refresh, vd, NULL);
@@ -171,7 +170,7 @@ static int view_char(struct command *c, struct cmd_info *ci)
 
 	return 1;
 }
-DEF_CMD(comm_char, view_char, "move-char");
+DEF_CMD(comm_char, view_char);
 
 static int view_word(struct command *c, struct cmd_info *ci)
 {
@@ -210,7 +209,7 @@ static int view_word(struct command *c, struct cmd_info *ci)
 
 	return 1;
 }
-DEF_CMD(comm_word, view_word, "move-word");
+DEF_CMD(comm_word, view_word);
 
 static int view_WORD(struct command *c, struct cmd_info *ci)
 {
@@ -240,7 +239,7 @@ static int view_WORD(struct command *c, struct cmd_info *ci)
 
 	return 1;
 }
-DEF_CMD(comm_WORD, view_WORD, "move-WORD");
+DEF_CMD(comm_WORD, view_WORD);
 
 static int view_eol(struct command *c, struct cmd_info *ci)
 {
@@ -268,7 +267,7 @@ static int view_eol(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-DEF_CMD(comm_eol, view_eol, "move-end-of-line");
+DEF_CMD(comm_eol, view_eol);
 
 static int view_line(struct command *c, struct cmd_info *ci)
 {
@@ -290,7 +289,7 @@ static int view_line(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-DEF_CMD(comm_line, view_line, "move-by-line");
+DEF_CMD(comm_line, view_line);
 
 static int view_file(struct command *c, struct cmd_info *ci)
 {
@@ -312,7 +311,7 @@ static int view_file(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-DEF_CMD(comm_file, view_file, "move-end-of-file");
+DEF_CMD(comm_file, view_file);
 
 static int view_page(struct command *c, struct cmd_info *ci)
 {
@@ -335,7 +334,7 @@ static int view_page(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-DEF_CMD(comm_page, view_page, "move-page");
+DEF_CMD(comm_page, view_page);
 
 static int view_replace(struct command *c, struct cmd_info *ci)
 {
@@ -345,7 +344,7 @@ static int view_replace(struct command *c, struct cmd_info *ci)
 	doc_replace(pt, ci->mark, ci->str, &first_change);
 	return 1;
 }
-DEF_CMD(comm_replace, view_replace, "do-replace");
+DEF_CMD(comm_replace, view_replace);
 
 static int view_click(struct command *c, struct cmd_info *ci)
 {
@@ -378,7 +377,7 @@ static int view_click(struct command *c, struct cmd_info *ci)
 		return 0;
 	return key_handle_focus(&ci2);
 }
-DEF_CMD(comm_click, view_click, "view-click");
+DEF_CMD(comm_click, view_click);
 
 void view_register(struct map *m)
 {

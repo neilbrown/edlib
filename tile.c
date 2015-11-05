@@ -75,7 +75,7 @@ static int do_tile_refresh(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(tile_refresh, do_tile_refresh, "tile-refresh");
+DEF_CMD(tile_refresh, do_tile_refresh);
 
 struct pane *tile_init(struct pane *display)
 {
@@ -522,7 +522,7 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 		return 0;
 	return 1;
 }
-DEF_CMD(comm_tile, tile_command, "tile-command");
+DEF_CMD(comm_tile, tile_command);
 
 void tile_register(struct map *m)
 {

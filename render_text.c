@@ -270,7 +270,7 @@ found:
 	rt->bot = end;
 	return 0;
 }
-DEF_CMD(render_text_refresh, do_render_text_refresh, "render-text-refresh");
+DEF_CMD(render_text_refresh, do_render_text_refresh);
 
 static int render_text_notify(struct command *c, struct cmd_info *ci)
 {
@@ -310,7 +310,7 @@ static int render_text_move(struct command *c, struct cmd_info *ci)
 	pane_damaged(p, DAMAGED_CURSOR);
 	return 1;
 }
-DEF_CMD(comm_move, render_text_move, "move-view");
+DEF_CMD(comm_move, render_text_move);
 
 static int render_text_follow_point(struct command *c, struct cmd_info *ci)
 {
@@ -326,7 +326,7 @@ static int render_text_follow_point(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(comm_follow, render_text_follow_point, "follow-point");
+DEF_CMD(comm_follow, render_text_follow_point);
 
 static int render_text_set_cursor(struct command *c, struct cmd_info *ci)
 {
@@ -340,7 +340,7 @@ static int render_text_set_cursor(struct command *c, struct cmd_info *ci)
 	pane_focus(p);
 	return 1;
 }
-DEF_CMD(comm_cursor, render_text_set_cursor, "set-cursor");
+DEF_CMD(comm_cursor, render_text_set_cursor);
 
 static int render_text_move_line(struct command *c, struct cmd_info *ci)
 {
@@ -387,7 +387,7 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 	pane_damaged(p, DAMAGED_CURSOR);
 	return 1;
 }
-DEF_CMD(comm_line, render_text_move_line, "move-line");
+DEF_CMD(comm_line, render_text_move_line);
 
 static void render_text_register_map(void)
 {
@@ -414,7 +414,6 @@ static void render_text_attach(struct pane *parent, struct point *pt)
 	rt->ignore_point = 0;
 	rt->target_x = -1;
 	rt->type.func = render_text_notify;
-	rt->type.name = "render_text_notify";
 	rt->typenum = doc_add_view(pt->doc, &rt->type);
 	p = pane_register(parent, 0, &render_text_refresh, rt, NULL);
 	rt->pane = p;

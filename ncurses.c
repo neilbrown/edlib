@@ -84,7 +84,7 @@ static int nc_misc(struct command *c, struct cmd_info *ci)
 		return 0;
 	return 1;
 }
-DEF_CMD(comm_misc, nc_misc, "misc");
+DEF_CMD(comm_misc, nc_misc);
 
 static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
 {
@@ -123,7 +123,7 @@ static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
 	ci->extra &= DAMAGED_SIZE;
 	return 1;
 }
-DEF_CMD(ncurses_refresh, do_ncurses_refresh, "ncurses-refresh");
+DEF_CMD(ncurses_refresh, do_ncurses_refresh);
 
 static void handle_winch(int sig, short ev, void *null);
 struct pane *ncurses_init(struct editor *ed, struct map *map)

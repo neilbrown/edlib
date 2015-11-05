@@ -192,11 +192,10 @@ void attr_free(struct attrset **setp);
 /* Commands */
 struct command {
 	int	(*func)(struct command *comm, struct cmd_info *ci);
-	char	*name;
 };
 
-#define	CMD(func, name) {func, name}
-#define	DEF_CMD(comm, func, name) static struct command comm = CMD(func, name)
+#define	CMD(func) {func}
+#define	DEF_CMD(comm, func) static struct command comm = CMD(func)
 #define	ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 
 /* Each event (above) is accompanied by a cmd_info structure.

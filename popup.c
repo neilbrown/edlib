@@ -79,7 +79,7 @@ static int do_popup_refresh(struct command *c, struct cmd_info *ci)
 		pane_text(p, ppi->name[i], A_STANDOUT, label+i, 0);
 	return 0;
 }
-DEF_CMD(popup_refresh, do_popup_refresh, "popup-refresh");
+DEF_CMD(popup_refresh, do_popup_refresh);
 
 static int do_popup_no_refresh(struct command *c, struct cmd_info *ci)
 {
@@ -91,7 +91,7 @@ static int do_popup_no_refresh(struct command *c, struct cmd_info *ci)
 		pane_check_size(p);
 	return 0;
 }
-DEF_CMD(popup_no_refresh, do_popup_no_refresh, "popup-no-refresh");
+DEF_CMD(popup_no_refresh, do_popup_no_refresh);
 
 struct pane *popup_register(struct pane *p, char *name, char *content, char *key)
 {
@@ -155,7 +155,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 	pane_close(ppi->popup);
 	return 1;
 }
-DEF_CMD(comm_done, popup_done, "popup-done");
+DEF_CMD(comm_done, popup_done);
 
 void popup_init(void)
 {

@@ -29,44 +29,44 @@ static struct move_command {
 	int		direction;
 	char		*k1, *k2, *k3;
 } move_commands[] = {
-	{CMD(emacs_move, "forward-char"), "Move-Char", 1,
+	{CMD(emacs_move), "Move-Char", 1,
 	 "emacs-C-Chr-F", "emacs-Right", NULL},
-	{CMD(emacs_move, "backward-char"), "Move-Char", -1,
+	{CMD(emacs_move), "Move-Char", -1,
 	 "emacs-C-Chr-B", "emacs-Left", NULL},
-	{CMD(emacs_move, "forward_word"), "Move-Word", 1,
+	{CMD(emacs_move), "Move-Word", 1,
 	 "emacs-M-Chr-f", "emacs-M-Right", NULL},
-	{CMD(emacs_move, "backward-word"), "Move-Word", -1,
+	{CMD(emacs_move), "Move-Word", -1,
 	 "emacs-M-Chr-b", "emacs-M-Left", NULL},
-	{CMD(emacs_move, "forward_WORD"), "Move-WORD", 1,
+	{CMD(emacs_move), "Move-WORD", 1,
 	 "emacs-M-Chr-F", NULL, NULL},
-	{CMD(emacs_move, "backward-WORD"), "Move-WORD", -1,
+	{CMD(emacs_move), "Move-WORD", -1,
 	 "emacs-M-Chr-B", NULL, NULL},
-	{CMD(emacs_move, "end-of-line"), "Move-EOL", 1,
+	{CMD(emacs_move), "Move-EOL", 1,
 	 "emacs-C-Chr-E", "emacs-End", NULL},
-	{CMD(emacs_move, "start-of-line"), "Move-EOL", -1,
+	{CMD(emacs_move), "Move-EOL", -1,
 	 "emacs-C-Chr-A", "emacs-Home", NULL},
-	{CMD(emacs_move, "prev-line"), "Move-Line", -1,
+	{CMD(emacs_move), "Move-Line", -1,
 	 "emacs-C-Chr-P", "emacs-Up", NULL},
-	{CMD(emacs_move, "next-line"), "Move-Line", 1,
+	{CMD(emacs_move), "Move-Line", 1,
 	 "emacs-C-Chr-N", "emacs-Down", NULL},
-	{CMD(emacs_move, "end-of-file"), "Move-File", 1,
+	{CMD(emacs_move), "Move-File", 1,
 	 "emacs-M-Chr->", "emacs-S-End", NULL},
-	{CMD(emacs_move, "start-of-file"), "Move-File", -1,
+	{CMD(emacs_move), "Move-File", -1,
 	 "emacs-M-Chr-<", "emacs-S-Home", NULL},
-	{CMD(emacs_move, "page-down"), "Move-View-Large", 1,
+	{CMD(emacs_move), "Move-View-Large", 1,
 	 "emacs-Next", "emacs-C-Chr-V", NULL},
-	{CMD(emacs_move, "page-up"), "Move-View-Large", -1,
+	{CMD(emacs_move), "Move-View-Large", -1,
 	 "emacs-Prior", "emacs-M-Chr-v", NULL},
 
-	{CMD(emacs_delete, "delete-next"), "Move-Char", 1,
+	{CMD(emacs_delete), "Move-Char", 1,
 	 "emacs-C-Chr-D", "emacs-Del", "emacs-del"},
-	{CMD(emacs_delete, "delete-back"), "Move-Char", -1,
+	{CMD(emacs_delete), "Move-Char", -1,
 	 "emacs-C-Chr-H", "emacs-Backspace", NULL},
-	{CMD(emacs_delete, "delete-word"), "Move-Word", 1,
+	{CMD(emacs_delete), "Move-Word", 1,
 	 "emacs-M-Chr-d", NULL, NULL},
-	{CMD(emacs_delete, "delete-back-word"), "Move-Word", -1,
+	{CMD(emacs_delete), "Move-Word", -1,
 	 "emacs-M-C-Chr-H", "emacs-M-Backspace", NULL},
-	{CMD(emacs_delete, "delete-eol"), "Move-EOL", 1,
+	{CMD(emacs_delete), "Move-EOL", 1,
 	 "emacs-C-Chr-K", NULL, NULL},
 };
 
@@ -157,16 +157,16 @@ static struct str_command {
 	char		*str;
 	char		*k;
 } str_commands[] = {
-	{CMD(emacs_str, "pane-next"), "WindowOP", "next", "emCX-Chr-o"},
-	{CMD(emacs_str, "pane-prev"), "WindowOP", "prev", "emCX-Chr-O"},
-	{CMD(emacs_str, "pane-wider"), "WindowOP", "x+", "emCX-Chr-}"},
-	{CMD(emacs_str, "pane-narrower"), "WindowOP", "x-", "emCX-Chr-{"},
-	{CMD(emacs_str, "pane-taller"), "WindowOP", "y+", "emCX-Chr-^"},
-	{CMD(emacs_str, "pane-split-below"), "WindowOP", "split-y", "emCX-Chr-2"},
-	{CMD(emacs_str, "pane-split-right"), "WindowOP", "split-x", "emCX-Chr-3"},
-	{CMD(emacs_str, "pane-close"), "WindowOP", "close", "emCX-Chr-0"},
-	{CMD(emacs_str, "abort"), "Misc", "exit", "emCX-C-Chr-C"},
-	{CMD(emacs_str, "redraw"), "Misc", "refresh", "C-Chr-L"},
+	{CMD(emacs_str), "WindowOP", "next", "emCX-Chr-o"},
+	{CMD(emacs_str), "WindowOP", "prev", "emCX-Chr-O"},
+	{CMD(emacs_str), "WindowOP", "x+", "emCX-Chr-}"},
+	{CMD(emacs_str), "WindowOP", "x-", "emCX-Chr-{"},
+	{CMD(emacs_str), "WindowOP", "y+", "emCX-Chr-^"},
+	{CMD(emacs_str), "WindowOP", "split-y", "emCX-Chr-2"},
+	{CMD(emacs_str), "WindowOP", "split-x", "emCX-Chr-3"},
+	{CMD(emacs_str), "WindowOP", "close", "emCX-Chr-0"},
+	{CMD(emacs_str), "Misc", "exit", "emCX-C-Chr-C"},
+	{CMD(emacs_str), "Misc", "refresh", "C-Chr-L"},
 };
 
 static int emacs_str(struct command *c, struct cmd_info *ci)
@@ -200,7 +200,7 @@ static int emacs_insert(struct command *c, struct cmd_info *ci)
 
 	return ret;
 }
-DEF_CMD(comm_insert, emacs_insert, "insert-key");
+DEF_CMD(comm_insert, emacs_insert);
 
 static struct {
 	char *key;
@@ -236,7 +236,7 @@ static int emacs_insert_other(struct command *c, struct cmd_info *ci)
 	pane_set_extra(p, 0); /* A newline starts a new undo */
 	return ret;
 }
-DEF_CMD(comm_insert_other, emacs_insert_other, "insert-other");
+DEF_CMD(comm_insert_other, emacs_insert_other);
 
 static int emacs_undo(struct command *c, struct cmd_info *ci)
 {
@@ -245,7 +245,7 @@ static int emacs_undo(struct command *c, struct cmd_info *ci)
 	pane_damaged(ci->home->focus, DAMAGED_CURSOR);
 	return 1;
 }
-DEF_CMD(comm_undo, emacs_undo, "undo");
+DEF_CMD(comm_undo, emacs_undo);
 
 static int emacs_redo(struct command *c, struct cmd_info *ci)
 {
@@ -254,7 +254,7 @@ static int emacs_redo(struct command *c, struct cmd_info *ci)
 	pane_damaged(ci->home->focus, DAMAGED_CURSOR);
 	return 1;
 }
-DEF_CMD(comm_redo, emacs_redo, "redo");
+DEF_CMD(comm_redo, emacs_redo);
 
 static int emacs_findfile(struct command *c, struct cmd_info *ci)
 {
@@ -282,7 +282,7 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	pane_focus(p);
 	return 1;
 }
-DEF_CMD(comm_findfile, emacs_findfile, "find-file");
+DEF_CMD(comm_findfile, emacs_findfile);
 
 static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 {
@@ -310,7 +310,7 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 	render_attach(d->default_render, p, p->parent->point);
 	return 1;
 }
-DEF_CMD(comm_finddoc, emacs_finddoc, "find-doc");
+DEF_CMD(comm_finddoc, emacs_finddoc);
 
 static int emacs_viewdocs(struct command *c, struct cmd_info *ci)
 {
@@ -333,7 +333,7 @@ static int emacs_viewdocs(struct command *c, struct cmd_info *ci)
 	render_attach(d->default_render, p, p->parent->point);
 	return 1;
 }
-DEF_CMD(comm_viewdocs, emacs_viewdocs, "view-doc");
+DEF_CMD(comm_viewdocs, emacs_viewdocs);
 
 static int emacs_meta(struct command *c, struct cmd_info *ci)
 {
@@ -342,7 +342,7 @@ static int emacs_meta(struct command *c, struct cmd_info *ci)
 	pane_set_extra(ci->home, ci->extra);
 	return 1;
 }
-DEF_CMD(comm_meta, emacs_meta, "meta");
+DEF_CMD(comm_meta, emacs_meta);
 
 static int emacs_raw(struct command *c, struct cmd_info *ci)
 {
@@ -357,7 +357,7 @@ static int emacs_raw(struct command *c, struct cmd_info *ci)
 	} else
 		return key_handle_focus(&ci2);
 }
-DEF_CMD(comm_raw, emacs_raw, "modeless-passthrough");
+DEF_CMD(comm_raw, emacs_raw);
 
 static int emacs_num(struct command *c, struct cmd_info *ci)
 {
@@ -371,7 +371,7 @@ static int emacs_num(struct command *c, struct cmd_info *ci)
 	pane_set_extra(ci->home, ci->extra);
 	return 1;
 }
-DEF_CMD(comm_num, emacs_num, "numeric-prefix");
+DEF_CMD(comm_num, emacs_num);
 
 void emacs_register(struct map *m)
 {

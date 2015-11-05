@@ -269,7 +269,7 @@ found:
 	dd->bot = end;
 	return 0;
 }
-DEF_CMD(render_dir_refresh, do_render_dir_refresh, "rendier-dir-refresh");
+DEF_CMD(render_dir_refresh, do_render_dir_refresh);
 
 static int render_dir_notify(struct command *c, struct cmd_info *ci)
 {
@@ -308,7 +308,7 @@ static int render_dir_move(struct command *c, struct cmd_info *ci)
 	pane_damaged(p, DAMAGED_CURSOR);
 	return 1;
 }
-DEF_CMD(comm_move, render_dir_move, "move-view");
+DEF_CMD(comm_move, render_dir_move);
 
 static int render_dir_follow_point(struct command *c, struct cmd_info *ci)
 {
@@ -321,7 +321,7 @@ static int render_dir_follow_point(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(comm_follow, render_dir_follow_point, "follow-point");
+DEF_CMD(comm_follow, render_dir_follow_point);
 
 static int render_dir_set_cursor(struct command *c, struct cmd_info *ci)
 {
@@ -335,7 +335,7 @@ static int render_dir_set_cursor(struct command *c, struct cmd_info *ci)
 	pane_focus(p);
 	return 1;
 }
-DEF_CMD(comm_cursor, render_dir_set_cursor, "set-cursor");
+DEF_CMD(comm_cursor, render_dir_set_cursor);
 
 static int render_dir_move_line(struct command *c, struct cmd_info *ci)
 {
@@ -357,7 +357,7 @@ static int render_dir_move_line(struct command *c, struct cmd_info *ci)
 
 	return 1;
 }
-DEF_CMD(comm_line, render_dir_move_line, "move-line");
+DEF_CMD(comm_line, render_dir_move_line);
 
 static void render_dir_register_map(void)
 {
@@ -383,7 +383,6 @@ static void render_dir_attach(struct pane *parent, struct point *pt)
 	dd->bot = NULL;
 	dd->ignore_point = 0;
 	dd->type.func = render_dir_notify;
-	dd->type.name = "render_dir_notify";
 	dd->typenum = doc_add_view(pt->doc, &dd->type);
 	p = pane_register(parent, 0, &render_dir_refresh, dd, NULL);
 	dd->pane = p;

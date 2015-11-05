@@ -211,7 +211,7 @@ found:
 	he->bot = end;
 	return 0;
 }
-DEF_CMD(render_hex_refresh, do_render_hex_refresh, "render-hex-refresh");
+DEF_CMD(render_hex_refresh, do_render_hex_refresh);
 
 static int render_hex_notify(struct command *c, struct cmd_info *ci)
 {
@@ -246,7 +246,7 @@ static int render_hex_move(struct command *c, struct cmd_info *ci)
 	pane_damaged(p, DAMAGED_CURSOR);
 	return 1;
 }
-DEF_CMD(comm_move, render_hex_move, "move-view");
+DEF_CMD(comm_move, render_hex_move);
 
 static int render_hex_follow_point(struct command *c, struct cmd_info *ci)
 {
@@ -259,7 +259,7 @@ static int render_hex_follow_point(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(comm_follow, render_hex_follow_point, "follow-point");
+DEF_CMD(comm_follow, render_hex_follow_point);
 
 static int render_hex_set_cursor(struct command *c, struct cmd_info *ci)
 {
@@ -293,7 +293,7 @@ static int render_hex_set_cursor(struct command *c, struct cmd_info *ci)
 	pane_focus(p);
 	return 1;
 }
-DEF_CMD(comm_cursor, render_hex_set_cursor, "set-cursor");
+DEF_CMD(comm_cursor, render_hex_set_cursor);
 
 static int render_hex_move_line(struct command *c, struct cmd_info *ci)
 {
@@ -306,7 +306,7 @@ static int render_hex_move_line(struct command *c, struct cmd_info *ci)
 	return key_handle_focus(&ci2);
 
 }
-DEF_CMD(comm_line, render_hex_move_line, "move-line");
+DEF_CMD(comm_line, render_hex_move_line);
 
 static int render_hex_eol(struct command *c, struct cmd_info *ci)
 {
@@ -340,7 +340,7 @@ static int render_hex_eol(struct command *c, struct cmd_info *ci)
 	he->ignore_point = 0;
 	return 1;
 }
-DEF_CMD(comm_eol, render_hex_eol, "move-end-of-line");
+DEF_CMD(comm_eol, render_hex_eol);
 
 static void render_hex_register_map(void)
 {
@@ -367,7 +367,6 @@ static void render_hex_attach(struct pane *parent, struct point *pt)
 	he->bot = NULL;
 	he->ignore_point = 0;
 	he->type.func = render_hex_notify;
-	he->type.name = "render_hex_notify";
 	he->typenum = doc_add_view(pt->doc, &he->type);
 	p = pane_register(parent, 0, &render_hex_refresh, he, NULL);
 	he->pane = p;

@@ -252,7 +252,6 @@ struct command *key_register_prefix(char *name)
 	modmap[free].name = strdup(name);
 	modmap[free].transient = 1;
 	modmap[free].comm.func = key_prefix;
-	modmap[free].comm.name = name;
 	return &modmap[free].comm;
 }
 
