@@ -127,6 +127,11 @@ static struct mark *render(struct point *pt, struct pane *p)
 	if (mark_ordered(mark_of_point(pt), rd->top))
 		/* point is before mark, cannot possibly see cursor */
 		p->cx = p->cy = -1;
+	while (mark_ordered(last_vis, mark_of_point(pt)) &&
+	       mark_same(d, last_vis, mark_of_point(pt)))
+		/* point is at end of visible region - need to include it */
+		mark_forward_over(last_vis, doc_next_mark_all(d, last_vis));
+
 	return last_vis;
 }
 
