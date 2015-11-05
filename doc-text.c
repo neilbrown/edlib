@@ -432,7 +432,7 @@ static int text_update_following_after_change(struct text *t, struct doc_ref *po
 	struct text_chunk *c;
 
 	if (pos->c == NULL)
-		return 0;
+		return 1;
 
 	if (pos->c->start >= pos->c->end) {
 		/* This chunk was deleted */
