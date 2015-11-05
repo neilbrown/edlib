@@ -22,6 +22,7 @@
 
 struct rt_data {
 	struct mark	*top, *bot;
+	int		top_sol; /* true when 'top' is at a start-of-line */
 	int		ignore_point;
 	int		target_x;
 	struct command	type;
@@ -259,6 +260,12 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
+	if (rt->top && rt->top_sol &&
+	    doc_prior(pt->doc, rt->top) != '\n' && doc_prior(pt->doc, rt->top) != WEOF) {
+		top = find_top(pt, p, rt->top, end);
+		mark_free(rt->top);
+		rt->top = top;
+	}
 	if (rt->top) {
 		end = render(pt, p);
 		if (rt->ignore_point || p->cx >= 0)
@@ -269,6 +276,8 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 	mark_free(rt->top);
 	mark_free(end);
 	rt->top = top;
+	rt->top_sol = (doc_prior(pt->doc, rt->top) == '\n' ||
+		       doc_prior(pt->doc, rt->top) == WEOF);
 	end = render(pt, p);
 found:
 	mark_free(rt->bot);
