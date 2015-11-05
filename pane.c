@@ -99,7 +99,7 @@ static void __pane_refresh(struct cmd_info *ci)
 		damage = 0;
 	else {
 		ci->extra = damage;
-		damage &= DAMAGED_FORCE | DAMAGED_SIZE | DAMAGED_CURSOR;
+		damage &= DAMAGED_FORCE | DAMAGED_SIZE;
 		if (p->refresh->func(p->refresh, ci))
 			damage |= ci->extra;
 	}
