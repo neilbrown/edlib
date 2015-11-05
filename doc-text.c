@@ -1052,8 +1052,11 @@ static int text_advance_towards(struct text *t, struct doc_ref *ref, struct doc_
 	}
 	if (ref->o >= ref->c->end) {
 		if (ref->c->lst.next == &t->text) {
-			if (target->c == NULL)
+			if (target->c == NULL) {
+				ref->c = NULL;
+				ref->o = 0;
 				return 1;
+			}
 			return 0;
 		}
 		ref->c = list_next_entry(ref->c, lst);
