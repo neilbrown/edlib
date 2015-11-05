@@ -237,9 +237,14 @@ static char *dir_get_attr(struct doc *d, struct mark *m,
 	struct directory *dr = container_of(d, struct directory, doc);
 
 	if (!m) {
+		char *a = attr_get_str(d->attrs, attr, -1);
+		if (a)
+			return a;
 		if (strcmp(attr, "heading") == 0)
-			return "File Name";
-		return attr_get_str(d->attrs, attr, -1);
+			return "    Mtime       Owner  File Name";
+		if (strcmp(attr, "line-format") == 0)
+			return "  %mtime:11 %owner:-8 %name";
+		return NULL;
 	}
 	de = m->ref.d;
 	if (!forward) {

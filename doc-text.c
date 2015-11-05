@@ -1272,8 +1272,15 @@ static char *text_get_attr(struct doc *d, struct mark *m,
 	struct text *t = container_of(d, struct text, doc);
 	int o;
 
-	if (!m)
-		return attr_get_str(d->attrs, attr, -1);
+	if (!m) {
+		char *a = attr_get_str(d->attrs, attr, -1);
+		if (a)
+			return a;
+		if (strcmp(attr, "filename") == 0)
+			return t->fname;
+		return NULL;
+	}
+
 
 	c = m->ref.c;
 	o = m->ref.o;

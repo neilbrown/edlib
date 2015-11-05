@@ -282,7 +282,14 @@ static char *docs_get_attr(struct doc *doc, struct mark *m,
 	struct doc *d;
 
 	if (!m) {
-		return attr_get_str(doc->attrs, attr, -1);
+		char *a = attr_get_str(doc->attrs, attr, -1);
+		if (a)
+			return a;
+		if (strcmp(attr, "heading") == 0)
+			return "  Document             File";
+		if (strcmp(attr, "line-format") == 0)
+			return "  %name:20 %filename";
+		return NULL;
 	}
 	d = m->ref.d;
 	if (!forward) {
@@ -297,7 +304,7 @@ static char *docs_get_attr(struct doc *doc, struct mark *m,
 		return NULL;
 	if (strcmp(attr, "name") == 0)
 		return d->name;
-	return attr_get_str(d->attrs, attr, -1);
+	return doc_attr(d, NULL, 0, attr);
 }
 
 static int docs_set_attr(struct point *p, char *attr, char *val)

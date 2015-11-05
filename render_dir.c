@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <wchar.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "core.h"
 #include "pane.h"
@@ -47,16 +48,20 @@ static struct mark *render(struct point *pt, struct pane *p)
 	struct doc *d = pt->doc;
 	int x = 0, y = 0;
 	char *hdr;
+	char *body;
 
 	pane_clear(p, 0, 0, 0, 0, 0);
 
 	hdr = doc_attr(d, NULL, 0, "heading");
+	body = doc_attr(d, NULL, 0, "line-format");
 	if (hdr) {
 		put_str(p, hdr, 1<<(8+13), x, y);
 		y += 1;
 		dd->header = 1;
 	} else
 		dd->header = 0;
+	if (!body)
+		body = "%name";
 
 	m = mark_dup(dd->top, 0);
 	last_vis = mark_dup(m, 00);
@@ -66,7 +71,7 @@ static struct mark *render(struct point *pt, struct pane *p)
 
 	while (y < p->h) {
 		wint_t ch;
-		char *name;
+		char *name, *n;
 
 		mark_free(last_vis);
 		last_vis = mark_dup(m, 0);
@@ -77,9 +82,64 @@ static struct mark *render(struct point *pt, struct pane *p)
 		ch = mark_next(d, m);
 		if (ch == WEOF)
 			break;
-		name = doc_attr(d, m, 0, "name");
-		put_str(p, name, 0, x, y);
+		n = body;
+		while (*n) {
+			char buf[40], *b;
+			int w, adjust, l;
+
+			if (*n != '%') {
+				pane_text(p, *n, 0, x, y);
+				x += 1;
+				n += 1;
+				continue;
+			}
+			n += 1;
+			b = buf;
+			while (*n == '-' || *n == '_' || isalnum(*n)) {
+				if (b < buf + sizeof(buf) - 2)
+					*b++ = *n;
+				n += 1;
+			}
+			*b = 0;
+			name = doc_attr(d, m, 0, buf);
+			if (!name)
+				name = "-";
+			if (*n != ':') {
+				x += put_str(p, name, 0, x, y);
+				continue;
+			}
+			w = 0;
+			adjust=0;
+			n += 1;
+			while (*n) {
+				if (isdigit(*n))
+					w = w * 10 + (*n - '0');
+				else if (w == 0 && *n == '-')
+					adjust = 1;
+				else break;
+				n+= 1;
+			}
+			l = strlen(name);
+			while (adjust && w > l) {
+				pane_text(p, ' ', 0, x, y);
+				x += 1;
+				w -= 1;
+			}
+
+			while (*name && w > 0 ) {
+				pane_text(p, *name, 0, x, y);
+				x += 1;
+				w -= 1;
+				name += 1;
+			}
+			while (w > 0) {
+				pane_text(p, ' ', 0, x, y);
+				x += 1;
+				w -= 1;
+			}
+		}
 		y += 1;
+		x = 0;
 	}
 	mark_free(m);
 	if (mark_ordered(mark_of_point(pt), dd->top) && !mark_same(d, mark_of_point(pt), dd->top))
