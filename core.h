@@ -48,8 +48,10 @@ struct editor {
 	struct list_head	rendertypes;
 	struct event_base	*base;
 	struct list_head	documents;
+	struct doc		*docs;  /* document containing all documents */
 };
 struct editor *editor_new(void);
+void doc_make_docs(struct editor *ed);
 
 struct display {
 	struct editor		*ed;

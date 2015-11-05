@@ -10,5 +10,7 @@ struct editor *editor_new(void)
 	INIT_LIST_HEAD(&ed->doctypes);
 	INIT_LIST_HEAD(&ed->rendertypes);
 	INIT_LIST_HEAD(&ed->documents);
+
+	doc_make_docs(ed);
 	return ed;
 }

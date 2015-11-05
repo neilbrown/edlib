@@ -18,9 +18,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define PRIVATE_DOC_REF
+struct doc_ref {
+	struct doc	*d;
+	int		ignore;
+};
+
 #include "core.h"
 #include "pane.h"
 #include "view.h"
+#include "attr.h"
 
 int doc_add_view(struct doc *d, struct command *c)
 {
@@ -193,7 +200,172 @@ struct doc *doc_find(struct editor *ed, char *name)
 	return NULL;
 }
 
+/* the 'docs' document type is special in that there can only ever
+ * be one instance - the list of documents.
+ * So there is no 'doctype' registered, just a document which can never
+ * be deleted.
+ */
+
+struct docs {
+	struct doc	doc;
+};
+
+static void docs_replace(struct point *pos, struct mark *end,
+			 char *str, bool *first)
+{
+}
+
+static int docs_same_file(struct doc *d, int fd, struct stat *stb)
+{
+	return 0;
+}
+
+static int docs_reundo(struct point *p, bool redo)
+{
+	return 0;
+}
+
+static wint_t docs_step(struct doc *doc, struct mark *m, bool forward, bool move)
+{
+	struct doc *d = m->ref.d, *next;
+
+	if (forward) {
+		/* report on d */
+		if (d == NULL || d == list_last_entry(&doc->ed->documents, struct doc, list))
+			next = NULL;
+		else
+			next = list_next_entry(d, list);
+	} else {
+		next = d;
+		if (d == NULL)
+			d = list_last_entry(&doc->ed->documents, struct doc, list);
+		else if (d == list_first_entry(&doc->ed->documents, struct doc, list))
+			d = NULL;
+		else
+			d = list_prev_entry(d, list);
+		if (d)
+			next = d;
+	}
+	if (move)
+		m->ref.d = next;
+	if (d == NULL)
+		return WEOF;
+	else
+		return ' ';
+}
+
+static char *docs_getstr(struct doc *d, struct mark *from, struct mark *to)
+{
+	return NULL;
+}
+
+static void docs_setref(struct doc *doc, struct mark *m, bool start)
+{
+
+	if (start)
+		m->ref.d = list_first_entry(&doc->ed->documents, struct doc, list);
+	else
+		m->ref.d = list_last_entry(&doc->ed->documents, struct doc, list);
+
+	m->ref.ignore = 0;
+}
+
+static int docs_sameref(struct doc *d, struct mark *a, struct mark *b)
+{
+	return a->ref.d == b->ref.d;
+}
+
+
+static char *docs_get_attr(struct doc *doc, struct mark *m,
+			  bool forward, char *attr)
+{
+	struct doc *d = m->ref.d;
+
+	if (!forward) {
+		if (!d)
+			d = list_last_entry(&doc->ed->documents, struct doc, list);
+		else if (d != list_first_entry(&doc->ed->documents, struct doc, list))
+			d = list_prev_entry(d, list);
+		else
+			d = NULL;
+	}
+	if (!d)
+		return NULL;
+	if (strcmp(attr, "name") == 0)
+		return d->name;
+	return attr_get_str(d->attrs, attr, -1);
+}
+
+static int docs_set_attr(struct point *p, char *attr, char *val)
+{
+	return 0;
+}
+
+static struct doc_operations docs_ops = {
+	.replace   = docs_replace,
+	.same_file = docs_same_file,
+	.reundo    = docs_reundo,
+	.step      = docs_step,
+	.get_str   = docs_getstr,
+	.set_ref   = docs_setref,
+	.same_ref  = docs_sameref,
+	.get_attr  = docs_get_attr,
+	.set_attr  = docs_set_attr,
+};
+
+void doc_make_docs(struct editor *ed)
+{
+	struct docs *ds = malloc(sizeof(*ds));
+
+	doc_init(&ds->doc);
+	ds->doc.ed = ed;
+	ds->doc.ops = &docs_ops;
+	ds->doc.default_render = "dir";
+	doc_set_name(&ds->doc, "*Documents*");
+	ed->docs = &ds->doc;
+	doc_promote(&ds->doc);
+}
+
+static void docs_release(struct doc *d)
+{
+	/* This document is about to be moved in the list.
+	 * Any mark pointing at it is moved forward
+	 */
+	struct editor *ed = d->ed;
+	struct mark *m;
+
+	for (m = doc_first_mark_all(ed->docs);
+	     m;
+	     m = doc_next_mark_all(ed->docs, m))
+		if (m->ref.d == d) {
+			docs_step(ed->docs, m, 1, 1);
+			doc_notify_change(ed->docs, m);
+		}
+}
+
+static void docs_attach(struct doc *d)
+{
+	/* This document has just been added to the list.
+	 * and mark pointing just past it is moved back.
+	 */
+	struct editor *ed = d->ed;
+	struct mark *m;
+
+	if (d->list.next == &ed->documents)
+		/* At the end, nothing to do */
+		return;
+	for (m = doc_first_mark_all(ed->docs);
+	     m;
+	     m = doc_next_mark_all(ed->docs, m))
+		if (d->list.next == &m->ref.d->list) {
+			docs_step(ed->docs, m, 0, 1);
+			doc_notify_change(ed->docs, m);
+		}
+}
+
 void doc_promote(struct doc *d)
 {
+	docs_release(d);
 	list_move(&d->list, &d->ed->documents);
+	docs_attach(d);
 }
