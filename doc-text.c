@@ -892,10 +892,14 @@ static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2)
 		return r1->o == r2->o;
 	}
 	if (r1->c == NULL) {
+		if (list_empty(&t->text))
+			return 1;
 		return (r2->o == r2->c->end &&
 			r2->c->lst.next == &t->text);
 	}
 	if (r2->c == NULL) {
+		if (list_empty(&t->text))
+			return 1;
 		return (r1->o == r1->c->end &&
 			r1->c->lst.next == &t->text);
 	}
