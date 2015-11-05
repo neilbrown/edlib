@@ -183,26 +183,28 @@ static int text_load_file(struct doc *d, struct point *pos,
 {
 	off_t size = lseek(fd, 0, SEEK_END);
 	struct text_alloc *a;
-	struct text_chunk *c = malloc(sizeof(*c));
+	struct text_chunk *c;
 	int len;
 	struct text *t = container_of(d, struct text, doc);
 
 	if (size < 0)
 		goto err;
 	lseek(fd, 0, SEEK_SET);
-	a = text_new_alloc(t, size);
-	if (!a)
-		goto err;
-	while (a->free < size &&
-	       (len = read(fd, a->text + a->free, size - a->free)) > 0)
-		a->free += len;
+	if (size > 0) {
+		c = malloc(sizeof(*c));
+		a = text_new_alloc(t, size);
+		if (!a)
+			goto err;
+		while (a->free < size &&
+		       (len = read(fd, a->text + a->free, size - a->free)) > 0)
+			a->free += len;
 
-	c->txt = a->text;
-	c->attrs = NULL;
-	c->start = 0;
-	c->end = a->free;
-	list_add(&c->lst, &t->text);
-
+		c->txt = a->text;
+		c->attrs = NULL;
+		c->start = 0;
+		c->end = a->free;
+		list_add(&c->lst, &t->text);
+	}
 	if (name && !pos) {
 		char *dname;
 
