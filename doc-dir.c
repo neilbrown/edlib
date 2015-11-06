@@ -30,6 +30,7 @@
 #include <string.h>
 #include <locale.h>
 #include <sys/stat.h>
+#include <sys/fcntl.h>
 #include <dirent.h>
 #include <stdio.h>
 
@@ -214,11 +215,15 @@ static int dir_sameref(struct doc *d, struct mark *a, struct mark *b)
 	return a->ref.d == b->ref.d;
 }
 
-static void get_stat(struct dir_ent *de)
+static void get_stat(struct directory *dr, struct dir_ent *de)
 {
+	int dfd;
 	if (de->st.st_mode)
 		return;
-	if (lstat(de->name, &de->st) != 0) {
+	dfd = open(dr->fname, O_RDONLY);
+	if (!dfd)
+		return;
+	if (fstatat(dfd, de->name, &de->st, AT_SYMLINK_NOFOLLOW) != 0) {
 		de->st.st_mode = 0xffff;
 		de->ch = '?';
 	}
@@ -262,22 +267,22 @@ static char *dir_get_attr(struct doc *d, struct mark *m,
 	if (strcmp(attr, "name") == 0) {
 		return de->name;
 	} else if (strcmp(attr, "mtime") == 0) {
-		get_stat(de);
+		get_stat(dr, de);
 		return fmt_num(de, de->st.st_mtime);
 	} else if (strcmp(attr, "atime") == 0) {
-		get_stat(de);
+		get_stat(dr, de);
 		return fmt_num(de, de->st.st_atime);
 	} else if (strcmp(attr, "ctime") == 0) {
-		get_stat(de);
+		get_stat(dr, de);
 		return fmt_num(de, de->st.st_ctime);
 	} else if (strcmp(attr, "owner") == 0) {
-		get_stat(de);
+		get_stat(dr, de);
 		return fmt_num(de, de->st.st_uid);
 	} else if (strcmp(attr, "group") == 0) {
-		get_stat(de);
+		get_stat(dr, de);
 		return fmt_num(de, de->st.st_gid);
 	} else if (strcmp(attr, "modes") == 0) {
-		get_stat(de);
+		get_stat(dr, de);
 		return fmt_num(de, de->st.st_mode & 0777);
 	} else
 		return attr_get_str(de->attrs, attr, -1);
