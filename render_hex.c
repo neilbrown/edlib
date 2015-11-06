@@ -391,7 +391,7 @@ static void render_hex_attach(struct pane *parent, struct point *pt)
 	p->keymap = he_map;
 }
 
-struct rendertype render_hex = {
+static struct rendertype render_hex = {
 	.name	= "hex",
 	.attach	= render_hex_attach,
 };

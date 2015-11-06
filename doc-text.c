@@ -1398,7 +1398,7 @@ static struct doc_operations text_ops = {
 	.destroy   = text_destroy,
 };
 
-struct doctype text_type = {
+static struct doctype text_type = {
 	.name = "text",
 	.new = text_new,
 };

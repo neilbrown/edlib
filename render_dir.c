@@ -461,7 +461,7 @@ static void render_dir_attach(struct pane *parent, struct point *pt)
 	p->keymap = dr_map;
 }
 
-struct rendertype render_dir = {
+static struct rendertype render_dir = {
 	.name	= "dir",
 	.attach	= render_dir_attach,
 };

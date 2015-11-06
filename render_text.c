@@ -459,7 +459,7 @@ static void render_text_attach(struct pane *parent, struct point *pt)
 	p->keymap = rt_map;
 }
 
-struct rendertype render_text = {
+static struct rendertype render_text = {
 	.name	= "text",
 	.attach	= render_text_attach,
 };
