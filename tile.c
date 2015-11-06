@@ -524,7 +524,7 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_tile, tile_command);
 
-void tile_register(struct map *m)
+void tile_register(void)
 {
 	tile_map = key_alloc();
 

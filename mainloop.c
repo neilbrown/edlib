@@ -57,8 +57,8 @@ int main(int argc, char *argv[])
 	global_map = key_alloc();
 	ed->base = base;
 	root = ncurses_init(ed, global_map);
-	tile_register(global_map);
-	view_register(global_map);
+	tile_register();
+	view_register();
 	text_register(ed);
 	doc_dir_register(ed);
 	render_dir_register(ed);

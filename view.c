@@ -379,17 +379,17 @@ static int view_click(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_click, view_click);
 
-void view_register(struct map *m)
+void view_register(void)
 {
 	view_map = key_alloc();
 
-	key_add(m, "Move-Char", &comm_char);
-	key_add(m, "Move-Word", &comm_word);
-	key_add(m, "Move-WORD", &comm_WORD);
-	key_add(m, "Move-EOL", &comm_eol);
-	key_add(m, "Move-Line", &comm_line);
-	key_add(m, "Move-File", &comm_file);
-	key_add(m, "Move-View-Large", &comm_page);
+	key_add(view_map, "Move-Char", &comm_char);
+	key_add(view_map, "Move-Word", &comm_word);
+	key_add(view_map, "Move-WORD", &comm_WORD);
+	key_add(view_map, "Move-EOL", &comm_eol);
+	key_add(view_map, "Move-Line", &comm_line);
+	key_add(view_map, "Move-File", &comm_file);
+	key_add(view_map, "Move-View-Large", &comm_page);
 
 	key_add(view_map, "Replace", &comm_replace);
 
