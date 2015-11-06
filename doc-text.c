@@ -152,7 +152,7 @@ static int text_round_len(char *text, int len)
 	 * and there is an end marker in the previous 4 bytes,
 	 * move back to there.
 	 */
-	int i;
+	int i = 0;
 	while (i < len && i <=4)
 		if ((text[len-i] & 0xC0) == 0x80)
 		/* next byte is a continuation, so this isn't a good
