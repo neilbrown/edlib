@@ -288,7 +288,7 @@ static char *docs_get_attr(struct doc *doc, struct mark *m,
 		if (strcmp(attr, "heading") == 0)
 			return "  Document             File";
 		if (strcmp(attr, "line-format") == 0)
-			return "  %name:20 %filename";
+			return "  %+name:20 %filename";
 		return NULL;
 	}
 	d = m->ref.d;

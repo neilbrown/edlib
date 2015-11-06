@@ -119,6 +119,7 @@ void point_free(struct point *p)
 static void dup_mark(struct mark *orig, struct mark *new)
 {
 	new->ref = orig->ref;
+	new->rpos = orig->rpos;
 	new->attrs= NULL;
 	hlist_add_after(&orig->all, &new->all);
 	assign_seq(new, orig->seq);
@@ -220,6 +221,7 @@ struct point *point_new(struct doc *d, struct point **owner)
 				   d->nviews * sizeof(ret->lists[0]));
 
 	d->ops->set_ref(d, &ret->m, 1);
+	ret->m.rpos = 0;
 	ret->m.attrs = NULL;
 	hlist_add_head(&ret->m.all, &d->marks);
 	assign_seq(&ret->m, 0);
@@ -243,6 +245,7 @@ void point_reset(struct point *p)
 	struct doc *d = p->doc;
 	/* move point to start of text */
 	d->ops->set_ref(d, &p->m, 1);
+	p->m.rpos = 0;
 	hlist_del(&p->m.all);
 	hlist_add_head(&p->m.all, &d->marks);
 	tlist_del(&p->m.view);
@@ -320,6 +323,7 @@ struct mark *doc_new_mark(struct doc *d, int view)
 		return NULL;
 	ret = malloc(sizeof(*ret));
 	d->ops->set_ref(d, ret, 1);
+	ret->rpos = 0;
 	ret->attrs = NULL;
 	hlist_add_head(&ret->all, &d->marks);
 	assign_seq(ret, 0);

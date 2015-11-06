@@ -136,7 +136,11 @@ struct mark {
 	struct tlist_head	view;
 	struct attrset		*attrs;
 	int			seq;
-	int			viewnum;
+	short			viewnum;
+	short			rpos;	/* use by renderer to identify positions with
+					 * a document object (which displays as more than
+					 * a char
+					 */
 };
 
 struct point {

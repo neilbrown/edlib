@@ -24,6 +24,8 @@ struct dir_data {
 	int		typenum;
 	struct pane	*pane;
 	int		header;
+	short		fields;
+	short		home_field;
 };
 
 static struct map *dr_map;
@@ -72,6 +74,8 @@ static struct mark *render(struct point *pt, struct pane *p)
 	while (y < p->h) {
 		wint_t ch;
 		char *name, *n;
+		int home = -1;
+		int field = 0;
 
 		mark_free(last_vis);
 		last_vis = mark_dup(m, 0);
@@ -87,13 +91,25 @@ static struct mark *render(struct point *pt, struct pane *p)
 			char buf[40], *b;
 			int w, adjust, l;
 
-			if (*n != '%') {
+			if (*n != '%' || n[1] == '%') {
 				pane_text(p, *n, 0, x, y);
+				if (*n == '%')
+					n += 1;
 				x += 1;
 				n += 1;
 				continue;
 			}
+			field += 1;
 			n += 1;
+			if (*n == '+') {
+				/* Home field */
+				n += 1;
+				home = field;
+				if (dd->home_field < 0)
+					dd->home_field = home;
+			}
+			if (p->cy == y && mark_of_point(pt)->rpos == field - dd->home_field)
+				p->cx = x;
 			b = buf;
 			while (*n == '-' || *n == '_' || isalnum(*n)) {
 				if (b < buf + sizeof(buf) - 2)
@@ -138,6 +154,8 @@ static struct mark *render(struct point *pt, struct pane *p)
 				w -= 1;
 			}
 		}
+		dd->fields = field;
+		dd->home_field = home;
 		y += 1;
 		x = 0;
 	}
@@ -359,6 +377,41 @@ static int render_dir_move_line(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_line, render_dir_move_line);
 
+static int render_dir_move_horiz(struct command *c, struct cmd_info *ci)
+{
+	/* Horizonal movement - adjust ->rpos within fields, or
+	 * move to next line
+	 */
+	struct point *pt = *ci->pointp;
+	struct dir_data *dd = ci->home->data;
+	int rpt = RPT_NUM(ci);
+
+	if (dd->fields < 2)
+		return 0;
+	while (rpt > 0 && doc_following(pt->doc, ci->mark) != WEOF) {
+		if (ci->mark->rpos < dd->fields - dd->home_field)
+			ci->mark->rpos += 1;
+		else {
+			if (mark_next(pt->doc, ci->mark) == WEOF)
+				break;
+			ci->mark->rpos = -dd->home_field;
+		}
+		rpt -= 1;
+	}
+	while (rpt < 0) {
+		if (ci->mark->rpos > - dd->home_field)
+			ci->mark->rpos -= 1;
+		else {
+			if (mark_prev(pt->doc, ci->mark) == WEOF)
+				break;
+			ci->mark->rpos = dd->fields - dd->home_field;
+		}
+		rpt += 1;
+	}
+	return 1;
+}
+DEF_CMD(comm_horiz, render_dir_move_horiz);
+
 static void render_dir_register_map(void)
 {
 	dr_map = key_alloc();
@@ -370,6 +423,9 @@ static void render_dir_register_map(void)
 	key_add(dr_map, "Click-1", &comm_cursor);
 	key_add(dr_map, "Press-1", &comm_cursor);
 	key_add(dr_map, "Move-Line", &comm_line);
+	key_add(dr_map, "Move-Char", &comm_horiz);
+	key_add(dr_map, "Move-Word", &comm_horiz);
+	key_add(dr_map, "Move-WORD", &comm_horiz);
 
 	key_add(dr_map, "Replace", &comm_follow);
 }
@@ -386,6 +442,8 @@ static void render_dir_attach(struct pane *parent, struct point *pt)
 	dd->typenum = doc_add_view(pt->doc, &dd->type);
 	p = pane_register(parent, 0, &render_dir_refresh, dd, NULL);
 	dd->pane = p;
+	dd->header = 0;
+	dd->home_field = -1;
 
 	if (!dr_map)
 		render_dir_register_map();
