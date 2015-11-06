@@ -1,4 +1,7 @@
 /*
+ * Copyright Neil Brown <neil@brown.name> 2015
+ * May be distrubuted under terms of GPLv2 - see file:COPYING
+ *
  * popup
  *
  * A 'popup' dialogue pane can be used to enter a file name or

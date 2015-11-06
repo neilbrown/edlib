@@ -1,3 +1,7 @@
+/*
+ * Copyright Neil Brown <neil@brown.name> 2015
+ * May be distrubuted under terms of GPLv2 - see file:COPYING
+ */
 
 struct attrset;
 char *attr_find(struct attrset *set, char *key);

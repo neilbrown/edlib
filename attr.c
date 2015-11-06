@@ -1,4 +1,7 @@
 /*
+ * Copyright Neil Brown <neil@brown.name> 2015
+ * May be distrubuted under terms of GPLv2 - see file:COPYING
+ *
  * Attributes.
  *
  * Attributes are attached to text in buffers and to marks and probably

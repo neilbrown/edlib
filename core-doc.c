@@ -1,4 +1,7 @@
 /*
+ * Copyright Neil Brown <neil@brown.name> 2015
+ * May be distrubuted under terms of GPLv2 - see file:COPYING
+ *
  * All content managed in edlib is stored in documents.
  * There can be multiple document handlers which export the
  * doc_operations interface to provide access to a particular

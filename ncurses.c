@@ -1,4 +1,7 @@
 /*
+ * Copyright Neil Brown <neil@brown.name> 2015
+ * May be distrubuted under terms of GPLv2 - see file:COPYING
+ *
  * ncurses front end for edlib.
  *
  * There is currently only support for a single terminal window

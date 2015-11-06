@@ -1,4 +1,8 @@
-/* Marks and Points.
+/*
+ * Copyright Neil Brown <neil@brown.name> 2015
+ * May be distrubuted under terms of GPLv2 - see file:COPYING
+ *
+ * Marks and Points.
  *
  * A 'Mark' is a reference to a location in a text.  The location
  * is between two characters and remains there while characters

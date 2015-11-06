@@ -1,3 +1,10 @@
+/*
+ * Taken from Linux kernel.
+ * Some parts:
+ * Copyright Neil Brown <neil@brown.name> 2015
+ * May be distrubuted under terms of GPLv2 - see file:COPYING
+ *
+ */
 #ifndef __LIST_H__
 #define __LIST_H__
 

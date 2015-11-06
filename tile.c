@@ -1,4 +1,7 @@
 /*
+ * Copyright Neil Brown <neil@brown.name> 2015
+ * May be distrubuted under terms of GPLv2 - see file:COPYING
+ *
  * Tile manager for edlib.
  * This could be implemented as a plug-in eventually (I think).
  *

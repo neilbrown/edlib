@@ -1,5 +1,8 @@
 
 /*
+ * Copyright Neil Brown <neil@brown.name> 2015
+ * May be distrubuted under terms of GPLv2 - see file:COPYING
+ *
  * main loop for edlib.
  */
 
