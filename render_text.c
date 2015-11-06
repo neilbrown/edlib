@@ -222,14 +222,21 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 				found_start = 1;
 		}
 	}
-	/* Move 'start' to start of line if possible */
-	ch = WEOF;
-	while (sx < p->w-2 &&
-	       (ch = mark_prev(d, start)) != WEOF &&
-	       ch != '\n')
-		sx++;
-	if (ch == '\n')
-		mark_next(d, start);
+	if (ey > 0) {
+		/* Move 'start' to start of line if possible */
+		while (sx < p->w-2 &&
+		       (ch = mark_prev(d, start)) != WEOF &&
+		       ch != '\n')
+			sx++;
+		if (ch == '\n')
+			mark_next(d, start);
+	} else {
+		/* cursor is very near bottom, move 'start' to end of line */
+		while (sx < p->w*2 &&
+		       (ch = mark_next(d, start)) != WEOF &&
+		       ch != '\n')
+			sx++;
+	}
 	/* I wonder if we should round off to a newline?? */
 	mark_free(end);
 	return start;
