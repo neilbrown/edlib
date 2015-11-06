@@ -16,14 +16,17 @@
  * A popup is created by popup_register()
  * This is given a name, an initial content, and an event key.
  */
+#define _GNU_SOURCE /*  for asprintf */
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <memory.h>
 #include <ncurses.h>
 
 #include "core.h"
 #include "pane.h"
 #include "view.h"
+#include "attr.h"
 
 #include "extras.h"
 
@@ -104,6 +107,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	bool first = 1;
 	struct cmd_info ci;
 	struct point *pt;
+	char *prefix;
 
 	root = p;
 	while (root->parent)
@@ -119,6 +123,9 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	pane_resize(p, 1, 1, p->parent->w-2, 1);
 	d = doc_new(pane2ed(root), "text");
 	doc_set_name(d, name);
+	asprintf(&prefix, "%s: ", name);
+	attr_set_str(&d->attrs, "prefix", prefix, -1);
+	free(prefix);
 	ppi->doc = d;
 	p2 = view_attach(p, d, NULL, 0);
 	pt = p2->parent->point;

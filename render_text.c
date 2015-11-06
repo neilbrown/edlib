@@ -28,6 +28,7 @@ struct rt_data {
 	struct command	type;
 	int		typenum;
 	struct pane	*pane;
+	int		prefix_len;
 };
 
 static struct map *rt_map;
@@ -100,8 +101,20 @@ static struct mark *render(struct point *pt, struct pane *p)
 	struct doc *d = pt->doc;
 	int x = 0, y = 0;
 	wint_t ch;
+	char *prefix;
 
 	pane_clear(p, 0, 0, 0, 0, 0);
+
+	prefix = doc_attr(d, NULL, 0, "prefix");
+	if (prefix) {
+		char *s = prefix;
+		while (*s) {
+			pane_text(p, *s, A_BOLD, x, y);
+			x += 1;
+			s += 1;
+		}
+	}
+	rd->prefix_len = x;
 
 	m = mark_dup(rd->top, 0);
 	last_vis = mark_dup(m, 0);
@@ -144,6 +157,8 @@ static struct mark *find_pos(struct doc *d, struct pane *p, int px, int py)
 	wint_t ch;
 
 	m = mark_dup(rd->top, 1);
+
+	x += rd->prefix_len;
 
 	ch = doc_prior(d, m);
 	if (ch != WEOF && ch != '\n') {
