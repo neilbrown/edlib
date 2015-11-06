@@ -47,16 +47,14 @@ int main(int argc, char *argv[])
 	struct event_base *base;
 	struct pane *root;
 	struct pane *b1, *b2, *b3, *b4;
-	struct map *global_map;
 	struct editor *ed = editor_new();
 
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 	base = event_base_new();
 	event_base_priority_init(base, 2);
-	global_map = key_alloc();
 	ed->base = base;
-	root = ncurses_init(ed, global_map);
+	root = ncurses_init(ed);
 	tile_register();
 	view_register();
 	text_register(ed);
@@ -65,8 +63,7 @@ int main(int argc, char *argv[])
 	render_text_register(ed);
 	render_hex_register(ed);
 	popup_init();
-	emacs_register(global_map);
-	pane_set_mode(root, "emacs-", 0);
+	ed->map = emacs_register();
 
 	b1 = tile_init(root);
 	b2 = tile_split(b1, 0, 0);

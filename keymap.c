@@ -290,6 +290,8 @@ static int key_handle(struct cmd_info *ci)
 		}
 		p = p->parent;
 	}
+	if (!ret)
+		ret = key_lookup(pane2ed(ci->focus)->map, ci);
 	return ret;
 }
 

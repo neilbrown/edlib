@@ -49,6 +49,7 @@ struct editor {
 	struct event_base	*base;
 	struct list_head	documents;
 	struct doc		*docs;  /* document containing all documents */
+	struct map		*map;   /* temp hack */
 };
 struct editor *editor_new(void);
 void doc_make_docs(struct editor *ed);

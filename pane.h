@@ -36,5 +36,5 @@ void pane_set_numeric(struct pane *p, int numeric);
 void pane_set_extra(struct pane *p, int extra);
 struct editor *pane2ed(struct pane *p);
 
-struct pane *ncurses_init(struct editor *ed, struct map *keymap);
+struct pane *ncurses_init(struct editor *ed);
 void ncurses_end(void);

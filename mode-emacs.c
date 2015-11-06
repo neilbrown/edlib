@@ -18,8 +18,6 @@
 
 #include "extras.h"
 
-
-
 static int emacs_move(struct command *c, struct cmd_info *ci);
 static int emacs_delete(struct command *c, struct cmd_info *ci);
 
@@ -30,44 +28,44 @@ static struct move_command {
 	char		*k1, *k2, *k3;
 } move_commands[] = {
 	{CMD(emacs_move), "Move-Char", 1,
-	 "emacs-C-Chr-F", "emacs-Right", NULL},
+	 "C-Chr-F", "Right", NULL},
 	{CMD(emacs_move), "Move-Char", -1,
-	 "emacs-C-Chr-B", "emacs-Left", NULL},
+	 "C-Chr-B", "Left", NULL},
 	{CMD(emacs_move), "Move-Word", 1,
-	 "emacs-M-Chr-f", "emacs-M-Right", NULL},
+	 "M-Chr-f", "M-Right", NULL},
 	{CMD(emacs_move), "Move-Word", -1,
-	 "emacs-M-Chr-b", "emacs-M-Left", NULL},
+	 "M-Chr-b", "M-Left", NULL},
 	{CMD(emacs_move), "Move-WORD", 1,
-	 "emacs-M-Chr-F", NULL, NULL},
+	 "M-Chr-F", NULL, NULL},
 	{CMD(emacs_move), "Move-WORD", -1,
-	 "emacs-M-Chr-B", NULL, NULL},
+	 "M-Chr-B", NULL, NULL},
 	{CMD(emacs_move), "Move-EOL", 1,
-	 "emacs-C-Chr-E", "emacs-End", NULL},
+	 "C-Chr-E", "End", NULL},
 	{CMD(emacs_move), "Move-EOL", -1,
-	 "emacs-C-Chr-A", "emacs-Home", NULL},
+	 "C-Chr-A", "Home", NULL},
 	{CMD(emacs_move), "Move-Line", -1,
-	 "emacs-C-Chr-P", "emacs-Up", NULL},
+	 "C-Chr-P", "Up", NULL},
 	{CMD(emacs_move), "Move-Line", 1,
-	 "emacs-C-Chr-N", "emacs-Down", NULL},
+	 "C-Chr-N", "Down", NULL},
 	{CMD(emacs_move), "Move-File", 1,
-	 "emacs-M-Chr->", "emacs-S-End", NULL},
+	 "M-Chr->", "S-End", NULL},
 	{CMD(emacs_move), "Move-File", -1,
-	 "emacs-M-Chr-<", "emacs-S-Home", NULL},
+	 "M-Chr-<", "S-Home", NULL},
 	{CMD(emacs_move), "Move-View-Large", 1,
-	 "emacs-Next", "emacs-C-Chr-V", NULL},
+	 "Next", "C-Chr-V", NULL},
 	{CMD(emacs_move), "Move-View-Large", -1,
-	 "emacs-Prior", "emacs-M-Chr-v", NULL},
+	 "Prior", "M-Chr-v", NULL},
 
 	{CMD(emacs_delete), "Move-Char", 1,
-	 "emacs-C-Chr-D", "emacs-Del", "emacs-del"},
+	 "C-Chr-D", "Del", "del"},
 	{CMD(emacs_delete), "Move-Char", -1,
-	 "emacs-C-Chr-H", "emacs-Backspace", NULL},
+	 "C-Chr-H", "Backspace", NULL},
 	{CMD(emacs_delete), "Move-Word", 1,
-	 "emacs-M-Chr-d", NULL, NULL},
+	 "M-Chr-d", NULL, NULL},
 	{CMD(emacs_delete), "Move-Word", -1,
-	 "emacs-M-C-Chr-H", "emacs-M-Backspace", NULL},
+	 "M-C-Chr-H", "M-Backspace", NULL},
 	{CMD(emacs_delete), "Move-EOL", 1,
-	 "emacs-C-Chr-K", NULL, NULL},
+	 "C-Chr-K", NULL, NULL},
 };
 
 static int emacs_move(struct command *c, struct cmd_info *ci)
@@ -166,7 +164,7 @@ static struct str_command {
 	{CMD(emacs_str), "WindowOP", "split-x", "emCX-Chr-3"},
 	{CMD(emacs_str), "WindowOP", "close", "emCX-Chr-0"},
 	{CMD(emacs_str), "Misc", "exit", "emCX-C-Chr-C"},
-	{CMD(emacs_str), "Misc", "refresh", "emacs-C-Chr-L"},
+	{CMD(emacs_str), "Misc", "refresh", "C-Chr-L"},
 };
 
 static int emacs_str(struct command *c, struct cmd_info *ci)
@@ -191,7 +189,7 @@ static int emacs_insert(struct command *c, struct cmd_info *ci)
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
 	ci2.mark = mark_of_point(*ci->pointp);
-	strncpy(str,ci->key+6+4, sizeof(str));
+	strncpy(str,ci->key+4, sizeof(str));
 	str[4] = 0;
 	ci2.str = str;
 	ci2.pointp = ci->pointp;
@@ -225,7 +223,7 @@ static int emacs_insert_other(struct command *c, struct cmd_info *ci)
 	ci2.extra = ci->extra;
 	ci2.mark = mark_of_point(*ci->pointp);
 	for (i = 0; other_inserts[i].key; i++)
-		if (strcmp(other_inserts[i].key, ci->key+6) == 0)
+		if (strcmp(other_inserts[i].key, ci->key) == 0)
 			break;
 	if (other_inserts[i].key == NULL)
 		return 0;
@@ -337,27 +335,12 @@ DEF_CMD(comm_viewdocs, emacs_viewdocs);
 
 static int emacs_meta(struct command *c, struct cmd_info *ci)
 {
-	pane_set_mode(ci->home, "emacs-M-", 1);
+	pane_set_mode(ci->home, "M-", 1);
 	pane_set_numeric(ci->home, ci->numeric);
 	pane_set_extra(ci->home, ci->extra);
 	return 1;
 }
 DEF_CMD(comm_meta, emacs_meta);
-
-static int emacs_raw(struct command *c, struct cmd_info *ci)
-{
-	struct cmd_info ci2 = *ci;
-
-	if (strncmp(ci->key, "emacs-", 6) != 0)
-		return 0;
-	ci2.key = ci->key + 6;
-	if (ci->x >= 0) {
-		ci2.focus = ci->home;
-		return key_handle_xy(&ci2);
-	} else
-		return key_handle_focus(&ci2);
-}
-DEF_CMD(comm_raw, emacs_raw);
 
 static int emacs_num(struct command *c, struct cmd_info *ci)
 {
@@ -373,13 +356,14 @@ static int emacs_num(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_num, emacs_num);
 
-void emacs_register(struct map *m)
+struct map *emacs_register(void)
 {
 	unsigned i;
 	struct command *cx_cmd = key_register_prefix("emCX-");
+	struct map *m = key_alloc();
 
-	key_add(m, "emacs-C-Chr-X", cx_cmd);
-	key_add(m, "emacs-ESC", &comm_meta);
+	key_add(m, "C-Chr-X", cx_cmd);
+	key_add(m, "ESC", &comm_meta);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
 		struct move_command *mc = &move_commands[i];
@@ -395,13 +379,13 @@ void emacs_register(struct map *m)
 		key_add(m, sc->k, &sc->cmd);
 	}
 
-	key_add_range(m, "emacs-Chr- ", "emacs-Chr-~", &comm_insert);
-	key_add(m, "emacs-Tab", &comm_insert_other);
-	key_add(m, "emacs-LF", &comm_insert_other);
-	key_add(m, "emacs-Return", &comm_insert_other);
+	key_add_range(m, "Chr- ", "Chr-~", &comm_insert);
+	key_add(m, "Tab", &comm_insert_other);
+	key_add(m, "LF", &comm_insert_other);
+	key_add(m, "Return", &comm_insert_other);
 
-	key_add(m, "emacs-C-Chr-_", &comm_undo);
-	key_add(m, "emacs-M-C-Chr-_", &comm_redo);
+	key_add(m, "C-Chr-_", &comm_undo);
+	key_add(m, "M-C-Chr-_", &comm_redo);
 
 	key_add(m, "emCX-C-Chr-F", &comm_findfile);
 	key_add(m, "File Found", &comm_findfile);
@@ -410,8 +394,6 @@ void emacs_register(struct map *m)
 	key_add(m, "Doc Found", &comm_finddoc);
 	key_add(m, "emCX-C-Chr-B", &comm_viewdocs);
 
-	/* A simple mouse click just gets resent without a mode */
-	key_add(m, "emacs-Click-1", &comm_raw);
-
-	key_add_range(m, "emacs-M-Chr-0", "emacs-M-Chr-9", &comm_num);
+	key_add_range(m, "M-Chr-0", "M-Chr-9", &comm_num);
+	return m;
 }

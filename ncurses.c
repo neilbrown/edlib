@@ -126,12 +126,13 @@ static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
 DEF_CMD(ncurses_refresh, do_ncurses_refresh);
 
 static void handle_winch(int sig, short ev, void *null);
-struct pane *ncurses_init(struct editor *ed, struct map *map)
+struct pane *ncurses_init(struct editor *ed)
 {
 	WINDOW *w = initscr();
 	struct pane *p;
 	struct event *l;
 	struct display_data *dd = malloc(sizeof(*dd));
+	struct map *map = key_alloc();
 
 	start_color();
 	use_default_colors();
@@ -146,8 +147,8 @@ struct pane *ncurses_init(struct editor *ed, struct map *map)
 
 	dd->dpy.ed = ed;
 	dd->scr = NULL;
-	dd->mode = 0;
-	dd->next_mode = 0;
+	dd->mode = "";
+	dd->next_mode = "";
 	dd->numeric = NO_NUMERIC;
 	dd->extra = 0;
 
