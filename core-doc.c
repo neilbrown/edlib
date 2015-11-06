@@ -380,3 +380,27 @@ void doc_promote(struct doc *d)
 	list_move(&d->list, &d->ed->documents);
 	docs_attach(d);
 }
+
+int  doc_destroy(struct doc *d)
+{
+	/* If there are no views on the document, then unlink from
+	 * the documents list and destroy it.
+	 */
+	int i;
+	for (i = 0; i < d->nviews; i++)
+		if (d->views[i].notify)
+			/* still in used */
+			return 0;
+
+	list_del(&d->list);
+
+	free(d->views);
+	attr_free(&d->attrs);
+	free(d->name);
+	while (d->marks.first) {
+		struct mark *m = hlist_first_entry(&d->marks, struct mark, all);
+		mark_free(m);
+	}
+	d->ops->destroy(d);
+	return 1;
+}

@@ -94,6 +94,7 @@ struct doc_operations {
 	 */
 	char		*(*get_attr)(struct doc *d, struct mark *m, bool forward, char *attr);
 	int		(*set_attr)(struct point *pos, char *attr, char *val);
+	void		(*destroy)(struct doc *d);
 };
 
 void doc_init(struct doc *d);
@@ -107,6 +108,7 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render);
 void doc_set_name(struct doc *d, char *name);
 struct doc *doc_find(struct editor *ed, char *name);
 void doc_promote(struct doc *d);
+int  doc_destroy(struct doc *d);
 
 struct rendertype {
 	char	*name;

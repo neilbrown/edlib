@@ -932,13 +932,14 @@ static int text_sameref(struct doc *d, struct mark *a, struct mark *b)
 static struct doc *text_new(struct doctype *dt)
 {
 	struct text *t = malloc(sizeof(*t));
-	text_new_alloc(t, 0);
+	t->alloc = NULL;
 	INIT_LIST_HEAD(&t->text);
 	t->undo = t->redo = NULL;
 	doc_init(&t->doc);
 	t->doc.default_render = "text";
 	t->doc.ops = &text_ops;
 	t->fname = NULL;
+	text_new_alloc(t, 0);
 	return &t->doc;
 }
 
@@ -1354,6 +1355,35 @@ static int text_set_attr(struct point *p, char *attr, char *val)
 	return attr_set_str(&c->attrs, attr, val, o);
 }
 
+static void text_destroy(struct doc *d)
+{
+	struct text *t = container_of(d, struct text, doc);
+
+	while (!list_empty(&t->text)) {
+		struct text_chunk *c = list_entry(t->text.next, struct text_chunk, lst);
+		list_del(&c->lst);
+		attr_free(&c->attrs);
+		free(c);
+	}
+	while (t->alloc) {
+		struct text_alloc *ta = t->alloc;
+		t->alloc = ta->prev;
+		free(ta);
+	}
+	while (t->undo) {
+		struct text_edit *te = t->undo;
+		t->undo = te->next;
+		free(te);
+	}
+	while (t->redo) {
+		struct text_edit *te = t->redo;
+		t->redo = te->next;
+		free(te);
+	}
+	free(t->fname);
+	free(t);
+}
+
 static struct doc_operations text_ops = {
 	.replace   = text_replace,
 	.load_file = text_load_file,
@@ -1365,6 +1395,7 @@ static struct doc_operations text_ops = {
 	.same_ref  = text_sameref,
 	.get_attr  = text_get_attr,
 	.set_attr  = text_set_attr,
+	.destroy   = text_destroy,
 };
 
 struct doctype text_type = {

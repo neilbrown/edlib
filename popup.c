@@ -44,6 +44,8 @@ static int do_popup_refresh(struct command *c, struct cmd_info *ci)
 	int label;
 
 	if (strcmp(ci->key, "Close") == 0) {
+		if (ppi->doc)
+			doc_destroy(ppi->doc);
 		free(ppi);
 		/* FIXME : drop reference on ppi->doc ?? */
 		return 1;

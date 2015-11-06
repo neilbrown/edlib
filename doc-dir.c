@@ -227,6 +227,7 @@ static void get_stat(struct directory *dr, struct dir_ent *de)
 		de->st.st_mode = 0xffff;
 		de->ch = '?';
 	}
+	close(dfd);
 }
 
 static char *fmt_num(struct dir_ent *de, long num)
@@ -293,6 +294,22 @@ static int dir_set_attr(struct point *p, char *attr, char *val)
 	return 0;
 }
 
+static void dir_destroy(struct doc *d)
+{
+	struct directory *dr = container_of(d, struct directory, doc);
+
+	while (!list_empty(&dr->ents)) {
+		struct dir_ent *de = list_entry(dr->ents.next, struct dir_ent, lst);
+
+		attr_free(&de->attrs);
+		free(de->name);
+		list_del(&de->lst);
+		free(de);
+	}
+	free(d);
+}
+
+
 static struct doc_operations dir_ops = {
 	.replace   = dir_replace,
 	.load_file = dir_load_file,
@@ -304,6 +321,7 @@ static struct doc_operations dir_ops = {
 	.same_ref  = dir_sameref,
 	.get_attr  = dir_get_attr,
 	.set_attr  = dir_set_attr,
+	.destroy   = dir_destroy,
 };
 
 static struct doctype dirtype = {
