@@ -1,5 +1,5 @@
 
-LDLIBS= -lncursesw -levent
+LDLIBS= -lncursesw -levent -ldl
 CPPFLAGS= -I/usr/include/ncursesw
 CFLAGS=-g -Wall -Werror -Wstrict-prototypes -Wextra -Wno-unused-parameter
 
