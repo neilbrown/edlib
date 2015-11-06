@@ -361,7 +361,7 @@ static int doc_dir_open(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_open, doc_dir_open);
 
-void doc_dir_register(struct editor *ed)
+void edlib_init(struct editor *ed)
 {
 	doc_register_type(ed, &dirtype);
 

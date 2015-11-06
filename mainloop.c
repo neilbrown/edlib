@@ -10,6 +10,9 @@
 #include <event.h>
 #include <curses.h>
 #include <wchar.h>
+#include <dirent.h>
+#include <string.h>
+#include <dlfcn.h>
 
 #include "core.h"
 #include "pane.h"
@@ -30,6 +33,11 @@ static void attach_file(struct pane *p, char *fname, char *render)
 	} else {
 		p = doc_from_text(p, fname, "File not found");
 	}
+	if (!p) {
+		ncurses_end();
+		exit(1);
+	}
+
 	pt = p->parent->point;
 	point_reset(pt);
 	if (fname[0] != '.')
@@ -37,11 +45,31 @@ static void attach_file(struct pane *p, char *fname, char *render)
 			mark_next(pt->doc, mark_of_point(pt));
 }
 
-void text_register(struct editor *ed);
-void doc_dir_register(struct editor *ed);
-void render_text_register(struct editor *ed);
-void render_hex_register(struct editor *ed);
-void render_dir_register(struct editor *ed);
+static void load_libs(struct editor *ed)
+{
+	DIR *dir;
+	struct dirent de, *res;
+	char buf[PATH_MAX];
+
+	dir = opendir("lib");
+	if (!dir)
+		return;
+	while (readdir_r(dir, &de, &res) == 0 && res) {
+		void *h;
+		void (*s)(struct editor *e);
+		int l = strlen(res->d_name);
+		if (l <= 3 || strcmp(res->d_name + l-3, ".so") != 0)
+			continue;
+		strcpy(buf, "lib/");
+		strcat(buf, res->d_name);
+		h = dlopen(buf, RTLD_NOW);
+		if (h == NULL) continue;
+		s = dlsym(h, "edlib_init");
+		if (s)
+			s(ed);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	struct event_base *base;
@@ -57,12 +85,8 @@ int main(int argc, char *argv[])
 	root = ncurses_init(ed);
 	tile_register();
 	view_register();
-	text_register(ed);
-	doc_dir_register(ed);
-	render_dir_register(ed);
-	render_text_register(ed);
-	render_hex_register(ed);
 	popup_init();
+	load_libs(ed);
 	ed->map = emacs_register();
 
 	b1 = tile_init(root);

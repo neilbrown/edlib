@@ -1403,7 +1403,7 @@ static struct doctype text_type = {
 	.new = text_new,
 };
 
-void text_register(struct editor *ed)
+void edlib_init(struct editor *ed)
 {
 	doc_register_type(ed, &text_type);
 }

@@ -466,7 +466,7 @@ static struct rendertype render_dir = {
 	.attach	= render_dir_attach,
 };
 
-void render_dir_register(struct editor *ed)
+void edlib_init(struct editor *ed)
 {
 	render_register_type(ed, &render_dir);
 }

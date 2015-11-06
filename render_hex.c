@@ -396,7 +396,7 @@ static struct rendertype render_hex = {
 	.attach	= render_hex_attach,
 };
 
-void render_hex_register(struct editor *ed)
+void edlib_init(struct editor *ed)
 {
 	render_register_type(ed, &render_hex);
 }

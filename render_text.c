@@ -464,7 +464,7 @@ static struct rendertype render_text = {
 	.attach	= render_text_attach,
 };
 
-void render_text_register(struct editor *ed)
+void edlib_init(struct editor *ed)
 {
 	render_register_type(ed, &render_text);
 }

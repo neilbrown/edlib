@@ -279,6 +279,8 @@ static int key_handle(struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	int ret = 0;
 
+	if (!ci->pointp)
+		return 0;
 	while (ret == 0 && p) {
 		if (p->keymap) {
 			ci->home = p;

@@ -146,6 +146,8 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 		d = doc_new(pane2ed(parent), "dir");
 	} else
 		return NULL;
+	if (!d)
+		return NULL;
 	doc_load_file(d, NULL, fd, rp);
 found:
 	p = view_attach(parent, d, NULL, 1);
