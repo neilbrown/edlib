@@ -412,6 +412,15 @@ static int render_dir_move_horiz(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_horiz, render_dir_move_horiz);
 
+static int render_dir_open(struct command *c, struct cmd_info *ci)
+{
+	struct cmd_info ci2 = *ci;
+
+	ci2.key = "Open";
+	return key_handle_focus(&ci2);
+}
+DEF_CMD(comm_open, render_dir_open);
+
 static void render_dir_register_map(void)
 {
 	dr_map = key_alloc();
@@ -428,6 +437,8 @@ static void render_dir_register_map(void)
 	key_add(dr_map, "Move-WORD", &comm_horiz);
 
 	key_add(dr_map, "Replace", &comm_follow);
+
+	key_add(dr_map, "Chr-f", &comm_open);
 }
 
 static void render_dir_attach(struct pane *parent, struct point *pt)

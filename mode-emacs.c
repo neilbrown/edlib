@@ -273,9 +273,10 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	pane_close(p);
 
 	fd = open(ci->str, O_RDONLY);
-	if (fd >= 0)
+	if (fd >= 0) {
 		p = doc_open(par, fd, ci->str, NULL);
-	else
+		close(fd);
+	} else
 		p = doc_from_text(par, ci->str, "File not found\n");
 	pane_focus(p);
 	return 1;

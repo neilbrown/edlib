@@ -70,6 +70,7 @@ struct doc {
 	struct editor		*ed;
 	struct doc_operations	*ops;
 	struct list_head	list;	/* ed->documents */
+	struct map		*map;
 	char			*name;
 	char			*default_render;
 };

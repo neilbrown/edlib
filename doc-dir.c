@@ -42,6 +42,7 @@ struct doc_ref {
 
 #include "core.h"
 #include "attr.h"
+#include "pane.h"
 
 struct dir_ent {
 	char			*name;
@@ -60,6 +61,7 @@ struct directory {
 	char			*fname;
 };
 static struct doc_operations dir_ops;
+static struct map *doc_map;
 
 static int add_ent(struct directory *dr, struct dirent *de)
 {
@@ -112,6 +114,7 @@ static struct doc *dir_new(struct doctype *dt)
 {
 	struct directory *dr = malloc(sizeof(*dr));
 	doc_init(&dr->doc);
+	dr->doc.map = doc_map;
 	dr->doc.default_render = "dir";
 	dr->doc.ops = &dir_ops;
 	INIT_LIST_HEAD(&dr->ents);
@@ -329,7 +332,39 @@ static struct doctype dirtype = {
 	.new = dir_new,
 };
 
+static int doc_dir_open(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ci->home;
+	struct point *pt = p->point;
+	struct doc *d = pt->doc;
+	struct directory *dr = container_of(d, struct directory, doc);
+	struct dir_ent *de = pt->m.ref.d;
+	struct pane *par = p->parent;
+	int fd, dfd;
+
+	/* close this pane, open the given file. */
+	if (de == NULL)
+		return 0;
+	dfd = open(dr->fname, O_RDONLY);
+	if (dfd < 0)
+		return 0;
+	fd = openat(dfd, de->name, O_RDONLY);
+	close(dfd);
+	pane_close(p);
+	if (fd >= 0) {
+		p = doc_open(par, fd, de->name, NULL);
+		close(fd);
+	} else
+		p = doc_from_text(par, de->name, "File not found\n");
+	pane_focus(p);
+	return 1;
+}
+DEF_CMD(comm_open, doc_dir_open);
+
 void doc_dir_register(struct editor *ed)
 {
 	doc_register_type(ed, &dirtype);
+
+	doc_map = key_alloc();
+	key_add(doc_map, "Open", &comm_open);
 }

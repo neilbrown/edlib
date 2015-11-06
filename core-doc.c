@@ -99,6 +99,7 @@ void doc_init(struct doc *d)
 	d->views = NULL;
 	d->nviews = 0;
 	d->name = NULL;
+	d->map = NULL;
 }
 
 struct doctype_list {
@@ -324,9 +325,29 @@ static struct doc_operations docs_ops = {
 	.set_attr  = docs_set_attr,
 };
 
+static int docs__open(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ci->home;
+	struct point *pt = p->point;
+	struct doc *dc = pt->m.ref.d;
+	struct pane *par = p->parent;
+
+	/* close this pane, open the given document. */
+	if (dc == NULL)
+		return 0;
+
+	pane_close(p);
+	p = view_attach(par, dc, NULL, 1);
+	render_attach(dc->default_render, p, p->parent->point);
+	pane_focus(p);
+	return 1;
+}
+DEF_CMD(comm_open, docs__open);
+
 void doc_make_docs(struct editor *ed)
 {
 	struct docs *ds = malloc(sizeof(*ds));
+	struct map *docs_map = key_alloc();
 
 	doc_init(&ds->doc);
 	ds->doc.ed = ed;
@@ -334,6 +355,10 @@ void doc_make_docs(struct editor *ed)
 	ds->doc.default_render = "dir";
 	doc_set_name(&ds->doc, "*Documents*");
 	ed->docs = &ds->doc;
+
+	key_add(docs_map, "Open", &comm_open);
+	ds->doc.map = docs_map;
+
 	doc_promote(&ds->doc);
 }
 
