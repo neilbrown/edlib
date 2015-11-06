@@ -25,6 +25,7 @@
  *
  */
 
+#define _GNU_SOURCE /*  for asprintf */
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -340,22 +341,21 @@ static int doc_dir_open(struct command *c, struct cmd_info *ci)
 	struct directory *dr = container_of(d, struct directory, doc);
 	struct dir_ent *de = pt->m.ref.d;
 	struct pane *par = p->parent;
-	int fd, dfd;
+	int fd;
+	char *fname = NULL;
 
 	/* close this pane, open the given file. */
 	if (de == NULL)
 		return 0;
-	dfd = open(dr->fname, O_RDONLY);
-	if (dfd < 0)
-		return 0;
-	fd = openat(dfd, de->name, O_RDONLY);
-	close(dfd);
+	asprintf(&fname, "%s/%s", dr->fname, de->name);
+	fd = open(fname, O_RDONLY);
 	pane_close(p);
 	if (fd >= 0) {
-		p = doc_open(par, fd, de->name, NULL);
+		p = doc_open(par, fd, fname, NULL);
 		close(fd);
 	} else
-		p = doc_from_text(par, de->name, "File not found\n");
+		p = doc_from_text(par, fname, "File not found\n");
+	free(fname);
 	pane_focus(p);
 	return 1;
 }

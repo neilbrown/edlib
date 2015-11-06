@@ -132,19 +132,21 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 	struct stat stb;
 	struct doc *d;
 	struct pane *p;
+	char pathbuf[PATH_MAX], *rp;
 
 	fstat(fd, &stb);
 	list_for_each_entry(d, &pane2ed(parent)->documents, list)
 		if (d->ops->same_file(d, fd, &stb))
 			goto found;
 
+	rp = realpath(name, pathbuf);
 	if ((stb.st_mode & S_IFMT) == S_IFREG) {
 		d = doc_new(pane2ed(parent), "text");
 	} else if ((stb.st_mode & S_IFMT) == S_IFDIR) {
 		d = doc_new(pane2ed(parent), "dir");
 	} else
 		return NULL;
-	doc_load_file(d, NULL, fd, name);
+	doc_load_file(d, NULL, fd, rp);
 found:
 	p = view_attach(parent, d, NULL, 1);
 	if (!render)
