@@ -18,10 +18,9 @@
 
 #include "extras.h"
 
-static struct doc *attach_file(struct pane *p, char *fname, char *render)
+static void attach_file(struct pane *p, char *fname, char *render)
 {
 	int fd = open(fname, O_RDONLY);
-	struct doc *d = doc_new(pane2ed(p), "text");
 	struct point *pt;
 	int i;
 
@@ -33,10 +32,9 @@ static struct doc *attach_file(struct pane *p, char *fname, char *render)
 	}
 	pt = p->parent->point;
 	point_reset(pt);
-	for (i=0 ; i<2000; i++)
-		mark_next(pt->doc, mark_of_point(pt));
-
-	return d;
+	if (fname[0] != '.')
+		for (i=0 ; i<2000; i++)
+			mark_next(pt->doc, mark_of_point(pt));
 }
 
 void text_register(struct editor *ed);
