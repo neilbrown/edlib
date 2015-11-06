@@ -196,6 +196,18 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
+
+	if (he->top) {
+		int tpos;
+		count_calculate(pt->doc, NULL, he->top);
+		tpos = attr_find_int(*mark_attr(he->top), "chars");
+		if (tpos % 16 != 0) {
+			top = find_top(pt, p, he->top, end);
+			mark_free(he->top);
+			he->top = top;
+		}
+	}
+
 	if (he->top) {
 		end = render(pt, p);
 		if (he->ignore_point || p->cx >= 0)
@@ -219,8 +231,11 @@ static int render_hex_notify(struct command *c, struct cmd_info *ci)
 
 	if (strcmp(ci->key, "Replace") != 0)
 		return 0;
-	if (ci->mark == he->top)
-		/* A change in the text between top and bot */
+	if (he->bot == NULL || ci->mark == NULL ||
+	    mark_ordered(ci->mark, he->bot))
+		/* A change that was not after the bot, so offsets
+		 * probably changed, so redraw
+		 */
 		pane_damaged(he->pane, DAMAGED_CONTENT);
 	return 0;
 }
