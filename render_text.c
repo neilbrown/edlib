@@ -225,7 +225,10 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 				found_start = 1;
 		}
 	}
-	if (ey > 0) {
+	/* FIXME this is a bit simplistic and may not handle short windows
+	 * or long lines well.
+	 */
+	if (ey > 0 || sy <= 1) {
 		/* Move 'start' to start of line if possible */
 		while (sx < p->w-2 &&
 		       (ch = mark_prev(d, start)) != WEOF &&
