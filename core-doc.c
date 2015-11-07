@@ -163,9 +163,17 @@ found:
 struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 {
 	bool first = 1;
-	struct doc *d = doc_new(pane2ed(parent), "text");
-	struct pane *p = view_attach(parent, d, NULL, 1);
-	struct point *pt = p->parent->point;
+	struct doc *d;
+	struct pane *p;
+	struct point *pt;
+
+	d = doc_new(pane2ed(parent), "text");
+	if (!d)
+		return NULL;
+	p = view_attach(parent, d, NULL, 1);
+	if (!p)
+		return p;
+	pt = p->parent->point;
 	doc_set_name(d, name);
 	doc_replace(pt, NULL, text, &first);
 	point_reset(pt);
