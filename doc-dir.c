@@ -139,16 +139,22 @@ static int dir_load_file(struct doc *d, struct point *pos,
 	load_dir(dr, fd);
 	if (name && !pos) {
 		char *dname;
+		int l = strlen(name);
 
 		fstat(fd, &dr->stat);
 		free(dr->fname);
-		dr->fname = strdup(name);
-		dname = strrchr(name, '/');
-		if (dname)
+		dr->fname = malloc(l+2);
+		strcpy(dr->fname, name);
+		if (l > 1 && dr->fname[l-1] == '/')
+			dr->fname[l-1] = '\0';
+		dname = strrchr(dr->fname, '/');
+		if (dname && dname[1])
 			dname += 1;
 		else
 			dname = name;
 		doc_set_name(d, dname);
+		if (l > 1)
+			strcat(dr->fname, "/");
 	}
 	return 1;
 }
