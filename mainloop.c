@@ -24,30 +24,25 @@
 
 #include "extras.h"
 
-static void attach_file(struct pane *p, char *fname, char *render)
-{
-	int fd = open(fname, O_RDONLY);
-	struct point *pt;
-	int i;
-
-	if (fd >= 0) {
-		p = doc_open(p, fd, fname, render);
-		close(fd);
-	} else {
-		p = doc_from_text(p, fname, "File not found");
-	}
-	if (!p) {
-		ncurses_end();
-		exit(1);
-	}
-
-	pt = p->parent->point;
-	point_reset(pt);
-	if (fname[0] != '.')
-		for (i=0 ; i<2000; i++)
-			mark_next(pt->doc, mark_of_point(pt));
-}
-
+char WelcomeText[] =
+	"\n"
+	"Welcome to 'edlib' - the beginning of what one day might be an editor\n"
+	"\n"
+	"Current functionality includes:\n"
+	"  splitting and closing windows (C-x 0,2,3)\n"
+	"  Resize current window (C-x },{,^\n"
+	"  Move among windows (C-x o,O  or mouse click)\n"
+	"  Opening a file or directrory (C-x C-f)\n"
+	"  Movement by char, word, line, page, start/end file (standard emacs keys)\n"
+	"  Insert/delete text\n"
+	"  C-_ and M-C-_ to undo and redo changes\n"
+	"  Visit list of documents (C-x C-b)\n"
+	"  Open file from directory list, or document from document list ('f').\n"
+	"  Numeric prefixes with M-0 to M-9.\n"
+	"\n"
+	"And C-x C-c to close (without saving anything)\n"
+	"Mouse clicks move the cursor, and clicking on the scroll bar scrolls\n"
+	;
 static void load_libs(struct editor *ed)
 {
 	DIR *dir;
@@ -77,7 +72,8 @@ int main(int argc, char *argv[])
 {
 	struct event_base *base;
 	struct pane *root;
-	struct pane *b1, *b2, *b3, *b4;
+	struct pane *b, *p;
+
 	struct editor *ed = editor_new();
 
 	setlocale(LC_ALL, "");
@@ -92,18 +88,12 @@ int main(int argc, char *argv[])
 	load_libs(ed);
 	ed->map = emacs_register();
 
-	b1 = tile_init(root);
-	b2 = tile_split(b1, 0, 0);
-	b3 = tile_split(b1, 1, 1);
-	attach_file(b3, "core-mark.c", NULL);
-	attach_file(b1, ".", NULL);
-	attach_file(b2, "doc-text.c", NULL);
-
-	b4 = tile_split(b2, 1, 0);
-	attach_file(b4, "doc-text.c", "hex");
-
-	pane_refresh(root);
-	event_base_dispatch(base);
+	b = tile_init(root);
+	p = doc_from_text(b, "*Welcome*", WelcomeText);
+	if (p) {
+		pane_refresh(root);
+		event_base_dispatch(base);
+	}
 	ncurses_end();
 	exit(0);
 }

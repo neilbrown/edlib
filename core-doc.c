@@ -166,7 +166,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	struct doc *d = doc_new(pane2ed(parent), "text");
 	struct pane *p = view_attach(parent, d, NULL, 1);
 	struct point *pt = p->parent->point;
-	doc_set_name(d, "Error");
+	doc_set_name(d, name);
 	doc_replace(pt, NULL, text, &first);
 	point_reset(pt);
 	render_attach(d->default_render, p, pt);
