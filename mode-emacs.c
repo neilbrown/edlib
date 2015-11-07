@@ -263,7 +263,23 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	struct pane *p, *par;
 
 	if (strcmp(ci->key, "File Found") != 0) {
-		popup_register(ci->focus, "Find File", "/home/neilb/", "File Found");
+		char *path = NULL;
+		char buf[PATH_MAX];
+		if (ci->pointp) {
+			path = doc_attr((*ci->pointp)->doc, NULL, 0, "filename");
+			if (path) {
+				strcpy(buf, path);
+				path = strrchr(buf, '/');
+				if (path)
+					path[1] = '\0';
+				path = buf;
+			}
+		}
+		if (!path)
+			path = realpath(".", buf);
+		if (!path)
+			path = "/";
+		popup_register(ci->focus, "Find File", path, "File Found");
 		return 1;
 	}
 	p = ci->focus;
