@@ -112,7 +112,7 @@ static void load_dir(struct directory *dr, int fd)
 	closedir(dir);
 }
 
-static struct doc *dir_new(struct doctype *dt)
+static int dir_new(struct command *c, struct cmd_info *ci)
 {
 	struct directory *dr = malloc(sizeof(*dr));
 	doc_init(&dr->doc);
@@ -121,8 +121,10 @@ static struct doc *dir_new(struct doctype *dt)
 	dr->doc.ops = &dir_ops;
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	return &dr->doc;
+	point_new(&dr->doc, ci->pointp);
+	return 1;
 }
+DEF_CMD(comm_new, dir_new);
 
 static void dir_replace(struct point *pos, struct mark *end,
 			 char *str, bool *first)
@@ -335,11 +337,6 @@ static struct doc_operations dir_ops = {
 	.destroy   = dir_destroy,
 };
 
-static struct doctype dirtype = {
-	.name = "dir",
-	.new = dir_new,
-};
-
 static int doc_dir_open(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
@@ -370,7 +367,7 @@ DEF_CMD(comm_open, doc_dir_open);
 
 void edlib_init(struct editor *ed)
 {
-	doc_register_type(ed, &dirtype);
+	key_add(ed->commands, "doc-dir", &comm_new);
 
 	doc_map = key_alloc();
 	key_add(doc_map, "Open", &comm_open);

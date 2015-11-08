@@ -931,7 +931,7 @@ static int text_sameref(struct doc *d, struct mark *a, struct mark *b)
 	return text_ref_same(t, &a->ref, &b->ref);
 }
 
-static struct doc *text_new(struct doctype *dt)
+static int text_new(struct command *c, struct cmd_info *ci)
 {
 	struct text *t = malloc(sizeof(*t));
 	t->alloc = NULL;
@@ -942,8 +942,10 @@ static struct doc *text_new(struct doctype *dt)
 	t->doc.ops = &text_ops;
 	t->fname = NULL;
 	text_new_alloc(t, 0);
-	return &t->doc;
+	point_new(&t->doc, ci->pointp);
+	return 1;
 }
+DEF_CMD(comm_new, text_new);
 
 static int count_bytes(struct text *t, struct mark *from, struct mark *to)
 {
@@ -1400,12 +1402,9 @@ static struct doc_operations text_ops = {
 	.destroy   = text_destroy,
 };
 
-static struct doctype text_type = {
-	.name = "text",
-	.new = text_new,
-};
+
 
 void edlib_init(struct editor *ed)
 {
-	doc_register_type(ed, &text_type);
+	key_add(ed->commands, "doc-text", &comm_new);
 }

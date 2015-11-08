@@ -102,7 +102,6 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	/* attach to root, center, one line of content, half width of pane */
 	struct pane *ret, *root, *p2;
 	struct popup_info *ppi = malloc(sizeof(*ppi));
-	struct doc *d;
 	bool first = 1;
 	struct cmd_info ci;
 	struct point *pt;
@@ -120,16 +119,15 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	pane_resize(p, root->w/4, root->h/2-2, root->w/2, 3);
 	p = pane_register(p, 0, &popup_no_refresh, NULL, NULL);
 	pane_resize(p, 1, 1, p->parent->w-2, 1);
-	d = doc_new(pane2ed(root), "text");
-	doc_set_name(d, name);
+	pt = doc_new(pane2ed(root), "text");
+	doc_set_name(pt->doc, name);
 	asprintf(&prefix, "%s: ", name);
-	attr_set_str(&d->attrs, "prefix", prefix, -1);
+	attr_set_str(&pt->doc->attrs, "prefix", prefix, -1);
 	free(prefix);
-	ppi->doc = d;
-	p2 = view_attach(p, d, NULL, 0);
-	pt = p2->parent->point;
-	doc_replace(pt, NULL, content, &first);
-	render_attach(d->default_render, p2, pt);
+	ppi->doc = pt->doc;
+	p2 = view_attach(p, pt, 0);
+	doc_replace(p2->parent->point, NULL, content, &first);
+	render_attach(ppi->doc->default_render, p2, p2->parent->point);
 	ret = pane_register(p2->focus, 0, &popup_no_refresh, ppi, NULL);
 	pane_check_size(ret);
 	ret->cx = ret->cy = -1;

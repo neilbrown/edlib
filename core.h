@@ -46,11 +46,11 @@ struct doc_ref {
  * the editor to be found from any pane or point.
  */
 struct editor {
-	struct list_head	doctypes;
 	struct list_head	rendertypes;
 	struct event_base	*base;
 	struct list_head	documents;
 	struct doc		*docs;  /* document containing all documents */
+	struct map		*commands;
 	struct map		*map;   /* temp hack */
 };
 struct editor *editor_new(void);
@@ -79,11 +79,6 @@ struct doc {
 	char			*default_render;
 };
 
-struct doctype {
-	char		*name;
-	struct doc	*(*new)(struct doctype*);
-};
-
 struct doc_operations {
 	void		(*replace)(struct point *pos, struct mark *end,
 				   char *str, bool *first);
@@ -107,8 +102,7 @@ void doc_init(struct doc *d);
 int doc_add_view(struct doc *d, struct command *c);
 void doc_del_view(struct doc *d, struct command *c);
 int doc_find_view(struct doc *d, struct command *c);
-struct doc *doc_new(struct editor *ed, char *type);
-void doc_register_type(struct editor *ed, struct doctype *dt);
+struct point *doc_new(struct editor *ed, char *type);
 struct pane *doc_from_text(struct pane *parent, char *name, char *text);
 struct pane *doc_open(struct pane *parent, int fd, char *name, char *render);
 void doc_set_name(struct doc *d, char *name);
@@ -244,6 +238,7 @@ struct cmd_info {
 struct map *key_alloc(void);
 int key_handle_focus(struct cmd_info *ci);
 int key_handle_xy(struct cmd_info *ci);
+int key_lookup(struct map *m, struct cmd_info *ci);
 void key_add(struct map *map, char *k, struct command *comm);
 void key_add_range(struct map *map, char *first, char *last,
 		   struct command *comm);

@@ -258,7 +258,7 @@ struct command *key_register_prefix(char *name)
 	return &modmap[free].comm;
 }
 
-static int key_lookup(struct map *m, struct cmd_info *ci)
+int key_lookup(struct map *m, struct cmd_info *ci)
 {
 	int pos = key_find(m, ci->key);
 	struct command *comm;

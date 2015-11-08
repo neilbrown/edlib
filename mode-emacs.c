@@ -303,6 +303,7 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p, *par;
 	struct doc *d;
+	struct point *pt;
 
 	if (strcmp(ci->key, "Doc Found") != 0) {
 		popup_register(ci->focus, "Find Document", "", "Doc Found");
@@ -321,7 +322,8 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 	if (!d)
 		return 1;
 	pane_close(p);
-	p = view_attach(par, d, NULL, 1);
+	point_new(d, &pt);
+	p = view_attach(par, pt, 1);
 	render_attach(d->default_render, p, p->parent->point);
 	return 1;
 }
@@ -331,6 +333,7 @@ static int emacs_viewdocs(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p, *par;
 	struct doc *d;
+	struct point *pt;
 
 	p = ci->focus;
 	while (p && !p->point)
@@ -344,7 +347,8 @@ static int emacs_viewdocs(struct command *c, struct cmd_info *ci)
 	if (!d)
 		return 1;
 	pane_close(p);
-	p = view_attach(par, d, NULL, 1);
+	point_new(d, &pt);
+	p = view_attach(par, pt, 1);
 	render_attach(d->default_render, p, p->parent->point);
 	return 1;
 }

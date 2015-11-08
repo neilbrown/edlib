@@ -104,57 +104,51 @@ void doc_init(struct doc *d)
 	d->map = NULL;
 }
 
-struct doctype_list {
-	struct doctype		*type;
-	struct list_head	lst;
-};
-
-void doc_register_type(struct editor *ed, struct doctype *type)
+struct point *doc_new(struct editor *ed, char *type)
 {
-	struct doctype_list *t = malloc(sizeof(*t));
-	t->type = type;
-	list_add(&t->lst, &ed->doctypes);
-}
+	char buf[100];
+	struct cmd_info ci = {0};
+	struct point *pt;
 
-struct doc *doc_new(struct editor *ed, char *type)
-{
-	struct doctype_list *dt;
-	list_for_each_entry(dt, &ed->doctypes, lst)
-		if (strcmp(dt->type->name, type) == 0) {
-			struct doc *d = dt->type->new(dt->type);
-			if (d)
-				d->ed = ed;
-			return d;
-		}
-	return NULL;
+	sprintf(buf, "doc-%s", type);
+	ci.key = buf;
+	ci.pointp = &pt;
+	if (!key_lookup(ed->commands, &ci))
+		return NULL;
+	pt->doc->ed = ed;
+	return pt;
 }
 
 struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 {
 	struct stat stb;
 	struct doc *d;
+	struct point *pt;
 	struct pane *p;
 	char pathbuf[PATH_MAX], *rp;
 
 	fstat(fd, &stb);
 	list_for_each_entry(d, &pane2ed(parent)->documents, list)
-		if (d->ops->same_file(d, fd, &stb))
+		if (d->ops->same_file(d, fd, &stb)) {
+			point_new(d, &pt);
 			goto found;
+		}
 
 	rp = realpath(name, pathbuf);
 	if ((stb.st_mode & S_IFMT) == S_IFREG) {
-		d = doc_new(pane2ed(parent), "text");
+		pt = doc_new(pane2ed(parent), "text");
 	} else if ((stb.st_mode & S_IFMT) == S_IFDIR) {
-		d = doc_new(pane2ed(parent), "dir");
+		pt = doc_new(pane2ed(parent), "dir");
 	} else
 		return NULL;
-	if (!d)
+	if (!pt)
 		return NULL;
-	doc_load_file(d, NULL, fd, rp);
+	doc_load_file(pt->doc, NULL, fd, rp);
+	point_reset(pt);
 found:
-	p = view_attach(parent, d, NULL, 1);
+	p = view_attach(parent, pt, 1);
 	if (!render)
-		render = d->default_render;
+		render = pt->doc->default_render;
 	render_attach(render, p, p->parent->point);
 	return p;
 }
@@ -162,21 +156,20 @@ found:
 struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 {
 	bool first = 1;
-	struct doc *d;
 	struct pane *p;
 	struct point *pt;
 
-	d = doc_new(pane2ed(parent), "text");
-	if (!d)
+	pt = doc_new(pane2ed(parent), "text");
+	if (!pt)
 		return NULL;
-	p = view_attach(parent, d, NULL, 1);
+	p = view_attach(parent, pt, 1);
 	if (!p)
 		return p;
 	pt = p->parent->point;
-	doc_set_name(d, name);
+	doc_set_name(pt->doc, name);
 	doc_replace(pt, NULL, text, &first);
 	point_reset(pt);
-	render_attach(d->default_render, p, pt);
+	render_attach(pt->doc->default_render, p, pt);
 	return p;
 }
 
@@ -339,24 +332,25 @@ static struct doc_operations docs_ops = {
 	.set_attr  = docs_set_attr,
 };
 
-static int docs__open(struct command *c, struct cmd_info *ci)
+static int docs_open(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
-	struct point *pt = p->point;
-	struct doc *dc = pt->m.ref.d;
+	struct point *pt;
+	struct doc *dc = p->point->m.ref.d;
 	struct pane *par = p->parent;
 
 	/* close this pane, open the given document. */
 	if (dc == NULL)
 		return 0;
 
+	point_new(dc, &pt);
 	pane_close(p);
-	p = view_attach(par, dc, NULL, 1);
+	p = view_attach(par, pt, 1);
 	render_attach(dc->default_render, p, p->parent->point);
 	pane_focus(p);
 	return 1;
 }
-DEF_CMD(comm_open, docs__open);
+DEF_CMD(comm_open, docs_open);
 
 void doc_make_docs(struct editor *ed)
 {

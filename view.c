@@ -30,7 +30,7 @@ struct view_data {
 };
 
 static struct map *view_map;
-struct pane *view_attach(struct pane *par, struct doc *d, struct point *pt, int border);
+struct pane *view_attach(struct pane *par, struct point *pt, int border);
 
 static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 {
@@ -57,7 +57,8 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 		struct pane *p2;
 		if (!p->point)
 			return 0;
-		p2 = view_attach(parent, NULL, p->point, 1);
+		point_dup(p->point, &pt);
+		p2 = view_attach(parent, pt, 1);
 		return pane_clone(p->focus->focus, p2);
 	}
 	if (strcmp(ci->key, "Refresh") != 0)
@@ -120,26 +121,23 @@ static int view_notify(struct command *c, struct cmd_info *ci)
 	return 0;
 }
 
-struct pane *view_attach(struct pane *par, struct doc *d, struct point *pt, int border)
+struct pane *view_attach(struct pane *par, struct point *pt, int border)
 {
 	struct view_data *vd;
 	struct pane *p;
+	struct doc *d = pt->doc;
 
-	if (!d)
-		d = pt->doc;
 	doc_promote(d);
 
 	vd = malloc(sizeof(*vd));
 	vd->border = border;
 	vd->ch_notify.func = view_notify;
-	vd->ch_notify_num = doc_add_view(d, &vd->ch_notify);
-
+	pt->owner = &pt;
 	p = pane_register(par, 0, &view_refresh, vd, NULL);
 	p->keymap = view_map;
-	if (pt)
-		point_dup(pt, &p->point);
-	else
-		point_new(d, &p->point);
+	pt->owner = &p->point;
+	p->point = pt;
+	vd->ch_notify_num = doc_add_view(d, &vd->ch_notify);
 	vd->pane = p;
 
 	pane_resize(p, 0, 0, par->w, par->h);

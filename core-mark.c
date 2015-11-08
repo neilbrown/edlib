@@ -171,6 +171,7 @@ void points_resize(struct doc *d)
 		struct point *new = malloc(sizeof(*new) +
 					   d->nviews * sizeof(new->lists[0]));
 		new->m.ref = p->m.ref;
+		new->m.rpos = p->m.rpos;
 		new->m.attrs = p->m.attrs;
 		new->m.seq = p->m.seq;
 		new->m.viewnum = p->m.viewnum;
