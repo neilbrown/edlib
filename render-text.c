@@ -463,13 +463,14 @@ static void render_text_attach(struct pane *parent, struct point *pt)
 		render_text_register_map();
 	p->keymap = rt_map;
 }
-
-static struct rendertype render_text = {
-	.name	= "text",
-	.attach	= render_text_attach,
-};
+static int do_render_text_attach(struct command *c, struct cmd_info *ci)
+{
+	render_text_attach(ci->focus, *ci->pointp);
+	return 1;
+}
+DEF_CMD(comm_attach, do_render_text_attach);
 
 void edlib_init(struct editor *ed)
 {
-	render_register_type(ed, &render_text);
+	key_add(ed->commands, "render-text-attach", &comm_attach);
 }

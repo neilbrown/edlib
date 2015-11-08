@@ -11,7 +11,6 @@
 struct editor *editor_new(void)
 {
 	struct editor *ed = calloc(sizeof(*ed), 1);
-	INIT_LIST_HEAD(&ed->rendertypes);
 	INIT_LIST_HEAD(&ed->documents);
 
 	doc_make_docs(ed);

@@ -46,7 +46,6 @@ struct doc_ref {
  * the editor to be found from any pane or point.
  */
 struct editor {
-	struct list_head	rendertypes;
 	struct event_base	*base;
 	struct list_head	documents;
 	struct doc		*docs;  /* document containing all documents */
@@ -110,11 +109,6 @@ struct doc *doc_find(struct editor *ed, char *name);
 void doc_promote(struct doc *d);
 int  doc_destroy(struct doc *d);
 
-struct rendertype {
-	char	*name;
-	void	(*attach)(struct pane *parent, struct point *pt);
-};
-void render_register_type(struct editor *ed, struct rendertype *dt);
 int render_attach(char *name, struct pane *parent, struct point *pt);
 
 /* Points and Marks */

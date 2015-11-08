@@ -28,6 +28,7 @@
 #include <string.h>
 #include <wchar.h>
 #include <ctype.h>
+#include <stdio.h>
 
 #include "core.h"
 
@@ -351,27 +352,16 @@ struct pane *pane_with_cursor(struct pane *p, int *oxp, int *oyp)
 	return ret;
 }
 
-struct rendertype_list {
-	struct rendertype	*type;
-	struct list_head	lst;
-};
-
-void render_register_type(struct editor *ed, struct rendertype *type)
-{
-	struct rendertype_list *t = malloc(sizeof(*t));
-	t->type = type;
-	list_add(&t->lst, &ed->rendertypes);
-}
-
 int render_attach(char *name, struct pane *parent, struct point *pt)
 {
-	struct rendertype_list *rt;
-	list_for_each_entry(rt, &pane2ed(parent)->rendertypes, lst)
-		if (strcmp(rt->type->name, name) == 0) {
-			rt->type->attach(parent, pt);
-			return 1;
-		}
-	return 0;
+	char buf[100];
+	struct cmd_info ci = {0};
+
+	sprintf(buf, "render-%s-attach", name);
+	ci.key = buf;
+	ci.focus = parent;
+	ci.pointp = &pt;
+	return key_lookup(pane2ed(parent)->commands, &ci);
 }
 
 

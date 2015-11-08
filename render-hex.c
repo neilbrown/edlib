@@ -390,13 +390,14 @@ static void render_hex_attach(struct pane *parent, struct point *pt)
 		render_hex_register_map();
 	p->keymap = he_map;
 }
-
-static struct rendertype render_hex = {
-	.name	= "hex",
-	.attach	= render_hex_attach,
-};
+static int do_render_hex_attach(struct command *c, struct cmd_info *ci)
+{
+	render_hex_attach(ci->focus, *ci->pointp);
+	return 1;
+}
+DEF_CMD(comm_attach, do_render_hex_attach);
 
 void edlib_init(struct editor *ed)
 {
-	render_register_type(ed, &render_hex);
+	key_add(ed->commands, "render-hex-attach", &comm_attach);
 }

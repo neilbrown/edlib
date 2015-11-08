@@ -459,13 +459,14 @@ static void render_dir_attach(struct pane *parent, struct point *pt)
 		render_dir_register_map();
 	p->keymap = dr_map;
 }
-
-static struct rendertype render_dir = {
-	.name	= "dir",
-	.attach	= render_dir_attach,
-};
+static int do_render_dir_attach(struct command *c, struct cmd_info *ci)
+{
+	render_dir_attach(ci->focus, *ci->pointp);
+	return 1;
+}
+DEF_CMD(comm_attach, do_render_dir_attach);
 
 void edlib_init(struct editor *ed)
 {
-	render_register_type(ed, &render_dir);
+	key_add(ed->commands, "render-dir-attach", &comm_attach);
 }
