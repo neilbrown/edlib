@@ -29,8 +29,6 @@
 struct display_data {
 	struct display		dpy;
 	SCREEN			*scr;
-	char			*mode, *next_mode;
-	int			numeric, extra;
 };
 
 static SCREEN *current_screen;
@@ -148,10 +146,10 @@ struct pane *ncurses_init(struct editor *ed)
 
 	dd->dpy.ed = ed;
 	dd->scr = NULL;
-	dd->mode = "";
-	dd->next_mode = "";
-	dd->numeric = NO_NUMERIC;
-	dd->extra = 0;
+	dd->dpy.mode = "";
+	dd->dpy.next_mode = "";
+	dd->dpy.numeric = NO_NUMERIC;
+	dd->dpy.extra = 0;
 
 	current_screen = NULL;
 	p = pane_register(NULL, 0, &ncurses_refresh, dd, NULL);
@@ -186,41 +184,6 @@ static void handle_winch(int sig, short ev, void *vpane)
 	clear();
 	pane_damaged(p, DAMAGED_SIZE|DAMAGED_FORCE);
 	pane_refresh(p);
-}
-
-void pane_set_mode(struct pane *p, char *mode, int transient)
-{
-	struct display_data *dd;
-	while (p->parent)
-		p = p->parent;
-	if (p->refresh != &ncurses_refresh)
-		return;
-	dd = p->data;
-	dd->mode = mode;
-	if (!transient)
-		dd->next_mode = mode;
-}
-
-void pane_set_numeric(struct pane *p, int numeric)
-{
-	struct display_data *dd;
-	while (p->parent)
-		p = p->parent;
-	if (p->refresh != &ncurses_refresh)
-		return;
-	dd = p->data;
-	dd->numeric = numeric;
-}
-
-void pane_set_extra(struct pane *p, int extra)
-{
-	struct display_data *dd;
-	while (p->parent)
-		p = p->parent;
-	if (p->refresh != &ncurses_refresh)
-		return;
-	dd = p->data;
-	dd->extra = extra;
 }
 
 void pane_clear(struct pane *p, int attr, int x, int y, int w, int h)
@@ -331,7 +294,7 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	char *k, *n;
 	char buf[100];/* FIXME */
 
-	strcpy(buf, dd->mode);
+	strcpy(buf, dd->dpy.mode);
 	k = buf + strlen(buf);
 	if (keytype == KEY_CODE_YES) {
 		n = find_name(key_names, c);
@@ -351,13 +314,13 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 
 	ci.key = buf;
 	ci.focus = p;
-	ci.numeric = dd->numeric;
-	ci.extra = dd->extra;
+	ci.numeric = dd->dpy.numeric;
+	ci.extra = dd->dpy.extra;
 	ci.x = ci.y = -1;
 	// FIXME find doc
-	dd->mode = dd->next_mode;
-	dd->numeric = NO_NUMERIC;
-	dd->extra = 0;
+	dd->dpy.mode = dd->dpy.next_mode;
+	dd->dpy.numeric = NO_NUMERIC;
+	dd->dpy.extra = 0;
 	key_handle_focus(&ci);
 }
 
@@ -367,16 +330,16 @@ static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
 	struct cmd_info ci = {0};
 	char buf[100];/* FIXME */
 
-	ci.key = strcat(strcpy(buf, dd->mode), cmd);
+	ci.key = strcat(strcpy(buf, dd->dpy.mode), cmd);
 	ci.focus = p;
-	ci.numeric = dd->numeric;
-	ci.extra = dd->extra;
+	ci.numeric = dd->dpy.numeric;
+	ci.extra = dd->dpy.extra;
 	ci.x = x;
 	ci.y = y;
 	// FIXME find doc
-	dd->mode = dd->next_mode;
-	dd->numeric = NO_NUMERIC;
-	dd->extra = 0;
+	dd->dpy.mode = dd->dpy.next_mode;
+	dd->dpy.numeric = NO_NUMERIC;
+	dd->dpy.extra = 0;
 	key_handle_xy(&ci);
 }
 

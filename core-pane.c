@@ -373,3 +373,36 @@ int render_attach(char *name, struct pane *parent, struct point *pt)
 		}
 	return 0;
 }
+
+
+void pane_set_mode(struct pane *p, char *mode, int transient)
+{
+	struct display *dd;
+
+	while (p->parent)
+		p = p->parent;
+	dd = p->data;
+	dd->mode = mode;
+	if (!transient)
+		dd->next_mode = mode;
+}
+
+void pane_set_numeric(struct pane *p, int numeric)
+{
+	struct display *dd;
+
+	while (p->parent)
+		p = p->parent;
+	dd = p->data;
+	dd->numeric = numeric;
+}
+
+void pane_set_extra(struct pane *p, int extra)
+{
+	struct display *dd;
+
+	while (p->parent)
+		p = p->parent;
+	dd = p->data;
+	dd->extra = extra;
+}
