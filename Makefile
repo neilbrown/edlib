@@ -14,7 +14,7 @@ OBJ = ncurses.o view.o tile.o mainloop.o attr.o keymap.o pane.o \
 	core-mark.o core-doc.o core-editor.o \
 	mode-emacs.o
 SHOBJ = doc-text.o doc-dir.o \
-	render_text.o render_hex.o render_dir.o
+	render-text.o render-hex.o render-dir.o
 
 SO = $(patsubst %.o,lib/%.so,$(SHOBJ))
 H = list.h pane.h attr.h tile.h view.h extras.h core.h
