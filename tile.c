@@ -92,7 +92,7 @@ struct pane *tile_init(struct pane *display)
 	return p;
 }
 
-struct pane *tile_split(struct pane *p, int horiz, int after)
+static struct pane *tile_split(struct pane *p, int horiz, int after)
 {
 	/* Create a new pane near the given one, reducing its size,
 	 * and possibly the size of other siblings.
@@ -414,7 +414,7 @@ static void tile_adjust(struct pane *p)
 	}
 }
 
-int tile_grow(struct pane *p, int horiz, int size)
+static int tile_grow(struct pane *p, int horiz, int size)
 {
 	/* Try to grow the pane in given direction, or shrink if
 	 * size < 0.
