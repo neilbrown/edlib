@@ -45,8 +45,6 @@ struct doc_ref {
 };
 
 #include "core.h"
-#include "attr.h"
-#include "pane.h"
 
 struct dir_ent {
 	char			*name;

@@ -70,7 +70,6 @@ struct doc_ref {
 };
 
 #include "core.h"
-#include "attr.h"
 
 /* text is allocated is large blocks - possibly a whole
  * file or some other large unit being added to a document.

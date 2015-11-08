@@ -20,8 +20,7 @@
 #include <string.h>
 
 #include "core.h"
-#include "pane.h"
-#include "view.h"
+#include "extras.h"
 
 struct rt_data {
 	struct mark	*top, *bot;

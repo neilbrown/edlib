@@ -30,8 +30,6 @@
 #include <ctype.h>
 
 #include "core.h"
-#include "pane.h"
-#include "tile.h"
 
 static void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 {

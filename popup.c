@@ -27,10 +27,6 @@
 #include <ncurses.h>
 
 #include "core.h"
-#include "pane.h"
-#include "view.h"
-#include "attr.h"
-
 #include "extras.h"
 
 struct popup_info {

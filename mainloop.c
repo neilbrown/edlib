@@ -18,10 +18,6 @@
 #include <dlfcn.h>
 
 #include "core.h"
-#include "pane.h"
-#include "tile.h"
-#include "view.h"
-
 #include "extras.h"
 
 char WelcomeText[] =

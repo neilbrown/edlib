@@ -22,9 +22,6 @@
 #include <string.h>
 
 #include "core.h"
-#include "pane.h"
-#include "view.h"
-
 #include "extras.h"
 
 struct tileinfo {

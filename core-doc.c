@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define PRIVATE_DOC_REF
 struct doc_ref {
@@ -28,9 +29,7 @@ struct doc_ref {
 };
 
 #include "core.h"
-#include "pane.h"
-#include "view.h"
-#include "attr.h"
+#include "extras.h"
 
 int doc_add_view(struct doc *d, struct command *c)
 {

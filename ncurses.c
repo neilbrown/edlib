@@ -25,8 +25,6 @@
 #include <sys/ioctl.h>
 
 #include "core.h"
-#include "pane.h"
-#include "tile.h"
 
 struct display_data {
 	struct display		dpy;

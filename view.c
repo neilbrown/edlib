@@ -19,9 +19,6 @@
 #include <wctype.h>
 
 #include "core.h"
-#include "pane.h"
-#include "attr.h"
-
 #include "extras.h"
 
 struct view_data {

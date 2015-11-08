@@ -14,12 +14,9 @@
 #include <stdlib.h>
 #include <wchar.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "core.h"
-#include "pane.h"
-#include "view.h"
-#include "attr.h"
-
 #include "extras.h"
 
 struct he_data {

@@ -16,9 +16,6 @@
 #include <string.h>
 
 #include "core.h"
-#include "pane.h"
-#include "view.h"
-
 #include "extras.h"
 
 static int emacs_move(struct command *c, struct cmd_info *ci);

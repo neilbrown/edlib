@@ -27,8 +27,6 @@
 #include <string.h>
 
 #include "core.h"
-#include "attr.h"
-#include "pane.h"
 #include "extras.h"
 
 static void do_count(struct doc *d, struct mark *start, struct mark *end,

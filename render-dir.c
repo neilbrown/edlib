@@ -14,10 +14,6 @@
 #include <ctype.h>
 
 #include "core.h"
-#include "pane.h"
-#include "view.h"
-#include "attr.h"
-
 #include "extras.h"
 
 struct dir_data {
