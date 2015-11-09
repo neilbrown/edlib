@@ -41,6 +41,7 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	struct view_data *vd = p->data;
 	struct point *pt;
 	int ln, l, w, c;
+	struct cmd_info ci2 = {0};
 	char msg[100];
 
 	if (vd->pane != p)
@@ -77,8 +78,10 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	if (!vd->border)
 		return 0;
 
-	count_calculate(pt->doc, NULL, mark_of_point(pt));
-	count_calculate(pt->doc, NULL, NULL);
+	ci2.key = "CountLines";
+	ci2.pointp = ci->pointp;
+	key_lookup(pt->doc->ed->commands, &ci2);
+
 	ln = attr_find_int(*mark_attr(mark_of_point(pt)), "lines");
 	l = attr_find_int(pt->doc->attrs, "lines");
 	w = attr_find_int(pt->doc->attrs, "words");

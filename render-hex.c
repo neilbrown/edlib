@@ -48,10 +48,15 @@ static struct mark *render(struct point *pt, struct pane *p)
 	int x = 0, y = 0;
 	struct mark *m;
 	int c;
+	struct cmd_info ci2 = {0};
 
 	pane_clear(p, 0, 0, 0, 0, 0);
 
-	count_calculate(pt->doc, NULL, he->top);
+	ci2.key = "CountLines";
+	ci2.pointp = &pt;
+	ci2.mark = he->top;
+	key_lookup(d->ed->commands, &ci2);
+
 	c = attr_find_int(*mark_attr(he->top), "chars");
 
 	m = mark_dup(he->top, 0);
@@ -111,16 +116,20 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 	int ppos, tpos, bpos, pos, point_pos;
 	struct he_data *he = p->data;
 	struct doc *d = pt->doc;
+	struct cmd_info ci2 = {0};
 
-	count_calculate(d, NULL, mark_of_point(pt));
+	ci2.key = "CountLines";
+	ci2.pointp = &pt;
+	ci2.mark = top;
+	key_lookup(d->ed->commands, &ci2);
 	point_pos = attr_find_int(*mark_attr(mark_of_point(pt)), "chars");
 	tpos = bpos = ppos = point_pos;
 	if (top) {
-		count_calculate(d, NULL, top);
 		tpos = attr_find_int(*mark_attr(top), "chars");
 	}
 	if (bot) {
-		count_calculate(d, NULL, bot);
+		ci2.mark = bot;
+		key_lookup(d->ed->commands, &ci2);
 		bpos = attr_find_int(*mark_attr(bot), "chars");
 	}
 	ppos -= ppos % 16;
@@ -198,8 +207,12 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
 
 	if (he->top) {
+		struct cmd_info ci2 = {0};
 		int tpos;
-		count_calculate(pt->doc, NULL, he->top);
+		ci2.key = "CountLines";
+		ci2.pointp = ci->pointp;
+		ci2.mark = he->top;
+		key_lookup(pt->doc->ed->commands, &ci2);
 		tpos = attr_find_int(*mark_attr(he->top), "chars");
 		if (tpos % 16 != 0) {
 			top = find_top(pt, p, he->top, end);

@@ -116,7 +116,7 @@ static int need_recalc(struct doc *d, struct mark *m)
 	return ret;
 }
 
-void count_calculate(struct doc *d, struct mark *start, struct mark *end)
+static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 {
 	int type = doc_find_view(d, &count_cmd);
 	int lines, words, chars, l, w, c;
@@ -207,4 +207,23 @@ done:
 	attr_set_int(attrs, "lines", lines);
 	attr_set_int(attrs, "words", words);
 	attr_set_int(attrs, "chars", chars);
+}
+
+static int do_count_lines(struct command *c, struct cmd_info *ci)
+{
+	struct point *pt = *ci->pointp;
+	struct doc *d = pt->doc;
+
+	/* FIXME optimise this away most of the time */
+	count_calculate(d, NULL, NULL);
+	count_calculate(d, NULL, mark_of_point(pt));
+	if (ci->mark)
+		count_calculate(d, NULL, ci->mark);
+	return 1;
+}
+DEF_CMD(comm_count, do_count_lines);
+
+void edlib_init(struct editor *ed)
+{
+	key_add(ed->commands, "CountLines", &comm_count);
 }
