@@ -16,8 +16,10 @@
  * The target pane must not disappear while the popup is active.
  * I need to find a way to control that.
  *
- * A popup is created by popup_register()
- * This is given a name, an initial content, and an event key.
+ * A popup is created by "popup-attach"
+ * A prefix to be displayed can be added by setting "prefix" on the document created.
+ * The event sent when the popup is closed can be set by setting attribute "done-key"
+ * otherwise "PopupDone" is used.
  */
 #define _GNU_SOURCE /*  for asprintf */
 #include <unistd.h>
@@ -30,9 +32,7 @@
 #include "extras.h"
 
 struct popup_info {
-	char		*name;
 	struct pane	*target, *popup;
-	char		*key;
 	struct doc	*doc;
 };
 
@@ -42,6 +42,7 @@ static int do_popup_refresh(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	struct popup_info *ppi = p->data;
+	char *name = ppi->doc->name;
 	int i;
 	int label;
 
@@ -76,11 +77,11 @@ static int do_popup_refresh(struct command *c, struct cmd_info *ci)
 	pane_text(p, 'X', A_STANDOUT, p->w-1, 0);
 	pane_text(p, '/', A_STANDOUT, p->w-1, p->h-1);
 
-	label = (p->w - strlen(ppi->name)) / 2;
+	label = (p->w - strlen(name)) / 2;
 	if (label < 1)
 		label = 1;
-	for (i = 0; ppi->name[i]; i++)
-		pane_text(p, ppi->name[i], A_STANDOUT, label+i, 0);
+	for (i = 0; name[i]; i++)
+		pane_text(p, name[i], A_STANDOUT, label+i, 0);
 	return 0;
 }
 DEF_CMD(popup_refresh, do_popup_refresh);
@@ -97,50 +98,36 @@ static int do_popup_no_refresh(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(popup_no_refresh, do_popup_no_refresh);
 
-struct pane *popup_register(struct pane *p, char *name, char *content, char *key)
+static int popup_attach(struct command *c, struct cmd_info *ci)
 {
 	/* attach to root, center, one line of content, half width of pane */
-	struct pane *ret, *root, *p2;
+	struct pane *ret, *root, *p;
 	struct popup_info *ppi = malloc(sizeof(*ppi));
-	bool first = 1;
-	struct cmd_info ci;
 	struct point *pt;
-	char *prefix;
 
-	root = p;
+	root = ci->focus;
 	while (root->parent)
 		root = root->parent;
-	ppi->name = name;
-	ppi->target = p;
-	ppi->key = key;
-	p = pane_register(root, 1, &popup_refresh, ppi, NULL);
-	ppi->popup = p;
+	ppi->target = ci->focus;
+	ppi->popup = pane_register(root, 1, &popup_refresh, ppi, NULL);
 
-	pane_resize(p, root->w/4, root->h/2-2, root->w/2, 3);
-	p = pane_register(p, 0, &popup_no_refresh, NULL, NULL);
+	pane_resize(ppi->popup, root->w/4, root->h/2-2, root->w/2, 3);
+	p = pane_register(ppi->popup, 0, &popup_no_refresh, NULL, NULL);
 	pane_resize(p, 1, 1, p->parent->w-2, 1);
 	pt = doc_new(pane2ed(root), "text");
-	doc_set_name(pt->doc, name);
-	asprintf(&prefix, "%s: ", name);
-	attr_set_str(&pt->doc->attrs, "prefix", prefix, -1);
-	free(prefix);
+	doc_set_name(pt->doc, "*popup*");
 	ppi->doc = pt->doc;
-	p2 = pane_attach(p, "view-noborders", pt);
-	doc_replace(p2->parent->point, NULL, content, &first);
-	render_attach(ppi->doc->default_render, p2, p2->parent->point);
-	ret = pane_register(p2->focus, 0, &popup_no_refresh, ppi, NULL);
+	p = pane_attach(p, "view-noborders", pt);
+	render_attach(ppi->doc->default_render, p, p->parent->point);
+	ret = pane_register(p->focus, 0, &popup_no_refresh, ppi, NULL);
 	pane_check_size(ret);
 	ret->cx = ret->cy = -1;
 	ret->keymap = pp_map;
 	pane_focus(ret);
-	ci.key = "Move-File";
-	ci.numeric =1;
-	ci.focus = ret;
-	ci.mark = NULL;
-	ci.pointp = &p2->parent->point;
-	key_handle_focus(&ci);
-	return ret;
+	ci->home = ret;
+	return 1;
 }
+DEF_CMD(comm_attach, popup_attach);
 
 static int popup_done(struct command *c, struct cmd_info *ci)
 {
@@ -152,7 +139,9 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 		return 0;
 
 	ci2.focus = ppi->target;
-	ci2.key = ppi->key;
+	ci2.key = attr_get_str(ppi->doc->attrs, "done-key", -1);
+	if (!ci2.key)
+		ci2.key = "PopupDone";
 	ci2.numeric = 1;
 	ci2.str = doc_getstr(ppi->doc, NULL, NULL);
 	ci2.mark = NULL;
@@ -163,9 +152,11 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_done, popup_done);
 
-void popup_init(void)
+void edlib_init(struct editor *ed)
 {
 	pp_map = key_alloc();
 
 	key_add(pp_map, "Replace", &comm_done);
+
+	key_add(ed->commands, "popup-attach", &comm_attach);
 }

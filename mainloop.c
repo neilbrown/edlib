@@ -78,7 +78,6 @@ int main(int argc, char *argv[])
 	event_base_priority_init(base, 2);
 	ed->base = base;
 	root = ncurses_init(ed);
-	popup_init();
 	load_libs(ed);
 	ed->map = emacs_register();
 

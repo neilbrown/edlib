@@ -262,6 +262,9 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	if (strcmp(ci->key, "File Found") != 0) {
 		char *path = NULL;
 		char buf[PATH_MAX];
+		struct point **ptp;
+		struct doc *d;
+
 		if (ci->pointp) {
 			path = doc_attr((*ci->pointp)->doc, NULL, 0, "filename");
 			if (path) {
@@ -276,7 +279,21 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 			path = realpath(".", buf);
 		if (!path)
 			path = "/";
-		popup_register(ci->focus, "Find File", path, "File Found");
+		p = pane_attach(ci->focus, "popup-attach", NULL);
+		/* FIXME test failure */
+		ptp = pane_point(p);
+		d = (*ptp)->doc;
+		attr_set_str(&d->attrs, "prefix", "Find File: ", -1);
+		attr_set_str(&d->attrs, "done-key", "File Found", -1);
+		doc_set_name(d, "Find File");
+		if (path) {
+			struct cmd_info ci2 = {0};
+			ci2.key = "Replace";
+			ci2.focus = p;
+			ci2.str = path;
+			ci2.pointp = ptp;
+			key_handle_focus(&ci2);
+		}
 		return 1;
 	}
 	p = ci->focus;
@@ -306,7 +323,13 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 	struct point *pt;
 
 	if (strcmp(ci->key, "Doc Found") != 0) {
-		popup_register(ci->focus, "Find Document", "", "Doc Found");
+		struct point **ptp;
+		p = pane_attach(ci->focus, "popup-attach", NULL);
+		ptp = pane_point(p);
+		d = (*ptp)->doc;
+		attr_set_str(&d->attrs, "prefix", "Find Document: ", 01);
+		attr_set_str(&d->attrs, "done-key", "Doc Found", -1);
+		doc_set_name(d, "Find Document");
 		return 1;
 	}
 
