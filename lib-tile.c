@@ -76,7 +76,7 @@ static int do_tile_refresh(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(tile_refresh, do_tile_refresh);
 
-int tile_attach(struct command *c, struct cmd_info *ci)
+static int tile_attach(struct command *c, struct cmd_info *ci)
 {
 	struct pane *display = ci->focus;
 	struct tileinfo *ti = malloc(sizeof(*ti));
