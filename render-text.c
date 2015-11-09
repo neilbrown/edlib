@@ -95,12 +95,12 @@ static int rt_back(struct doc *d, struct pane *p, struct mark *m, int *x, int *y
 	return 1;
 }
 
-static struct mark *render(struct point *pt, struct pane *p)
+static struct mark *render(struct point **ptp, struct pane *p)
 {
 	struct mark *m;
 	struct mark *last_vis;
 	struct rt_data *rd = p->data;
-	struct doc *d = pt->doc;
+	struct doc *d = (*ptp)->doc;
 	int x = 0, y = 0;
 	wint_t ch;
 	char *prefix;
@@ -132,7 +132,7 @@ static struct mark *render(struct point *pt, struct pane *p)
 	while (y < p->h) {
 		mark_free(last_vis);
 		last_vis = mark_dup(m, 0);
-		if (mark_same(d, m, mark_of_point(pt))) {
+		if (mark_same(d, m, mark_of_point(*ptp))) {
 			p->cx = x;
 			p->cy = y;
 		}
@@ -140,11 +140,11 @@ static struct mark *render(struct point *pt, struct pane *p)
 			break;
 	}
 	mark_free(m);
-	if (mark_ordered(mark_of_point(pt), rd->top))
+	if (mark_ordered(mark_of_point(*ptp), rd->top))
 		/* point is before mark, cannot possibly see cursor */
 		p->cx = p->cy = -1;
-	while (mark_ordered(last_vis, mark_of_point(pt)) &&
-	       mark_same(d, last_vis, mark_of_point(pt)))
+	while (mark_ordered(last_vis, mark_of_point(*ptp)) &&
+	       mark_same(d, last_vis, mark_of_point(*ptp)))
 		/* point is at end of visible region - need to include it */
 		mark_forward_over(last_vis, doc_next_mark_all(d, last_vis));
 
@@ -181,12 +181,12 @@ static struct mark *find_pos(struct doc *d, struct pane *p, int px, int py)
 	return m;
 }
 
-static struct mark *find_top(struct point *pt, struct pane *p,
+static struct mark *find_top(struct point **ptp, struct pane *p,
 			     struct mark *top, struct mark *bot)
 {
 	/* top and bot might be NULL, else they record what is currently
 	 * in the pane.
-	 * We walk outwards from pt until we reach extremes of buffer,
+	 * We walk outwards from ptp until we reach extremes of buffer,
 	 * or cross top (from above) or bot (from below).
 	 * When end hits EOF or start crosses bot, end stops moving.
 	 * When start hits SOF or end crosses top, start stops moving.
@@ -195,13 +195,13 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 	 */
 	struct rt_data *rt = p->data;
 	struct mark *start, *end;
-	struct doc *d = pt->doc;
+	struct doc *d = (*ptp)->doc;
 	int found_start = 0, found_end = 0;
 	int sx=0, sy=0, ex=0, ey=0;
 	wint_t ch;
 
-	start = mark_at_point(pt, rt->typenum);
-	end = mark_at_point(pt, rt->typenum);
+	start = mark_at_point(*ptp, rt->typenum);
+	end = mark_at_point(*ptp, rt->typenum);
 	if (bot &&
 	    (mark_ordered(start, bot) && ! mark_same(d, start, bot)))
 		bot = NULL;
@@ -252,14 +252,14 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->home;
 	struct rt_data *rt = p->data;
 	struct mark *end = NULL, *top;
-	struct point *pt;
+	struct doc *d;
 
 	if (strcmp(ci->key, "Close") == 0) {
-		struct point *pt = *ci->pointp;
 		struct pane *p = rt->pane;
+		d = (*ci->pointp)->doc;
 		mark_free(rt->top);
 		mark_free(rt->bot);
-		doc_del_view(pt->doc, &rt->type);
+		doc_del_view(d, &rt->type);
 		p->data = NULL;
 		p->keymap = NULL;
 		p->refresh = NULL;
@@ -283,29 +283,29 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 
 	pane_check_size(p);
 
-	pt = *ci->pointp;
+	d = (*ci->pointp)->doc;
 
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
 	if (rt->top && rt->top_sol &&
-	    doc_prior(pt->doc, rt->top) != '\n' && doc_prior(pt->doc, rt->top) != WEOF) {
-		top = find_top(pt, p, rt->top, end);
+	    doc_prior(d, rt->top) != '\n' && doc_prior(d, rt->top) != WEOF) {
+		top = find_top(ci->pointp, p, rt->top, end);
 		mark_free(rt->top);
 		rt->top = top;
 	}
 	if (rt->top) {
-		end = render(pt, p);
+		end = render(ci->pointp, p);
 		if (rt->ignore_point || p->cx >= 0)
 			/* Found the cursor! */
 			goto found;
 	}
-	top = find_top(pt, p, rt->top, end);
+	top = find_top(ci->pointp, p, rt->top, end);
 	mark_free(rt->top);
 	mark_free(end);
 	rt->top = top;
-	rt->top_sol = (doc_prior(pt->doc, rt->top) == '\n' ||
-		       doc_prior(pt->doc, rt->top) == WEOF);
-	end = render(pt, p);
+	rt->top_sol = (doc_prior(d, rt->top) == '\n' ||
+		       doc_prior(d, rt->top) == WEOF);
+	end = render(ci->pointp, p);
 found:
 	mark_free(rt->bot);
 	rt->bot = end;

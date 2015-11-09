@@ -41,10 +41,10 @@ static int put_str(struct pane *p, char *buf, int attr, int x, int y)
 	return len;
 }
 
-static struct mark *render(struct point *pt, struct pane *p)
+static struct mark *render(struct point **ptp, struct pane *p)
 {
 	struct he_data *he = p->data;
-	struct doc *d = pt->doc;
+	struct doc *d = (*ptp)->doc;
 	int x = 0, y = 0;
 	struct mark *m;
 	int c;
@@ -53,7 +53,7 @@ static struct mark *render(struct point *pt, struct pane *p)
 	pane_clear(p, 0, 0, 0, 0, 0);
 
 	ci2.key = "CountLines";
-	ci2.pointp = &pt;
+	ci2.pointp = ptp;
 	ci2.mark = he->top;
 	key_lookup(d->ed->commands, &ci2);
 
@@ -73,7 +73,7 @@ static struct mark *render(struct point *pt, struct pane *p)
 		xcol += put_str(p, buf, 0, xcol, y);
 		for (x = 0; x < 16; x++) {
 			wint_t ch;
-			if (mark_same(d, m, mark_of_point(pt))) {
+			if (mark_same(d, m, mark_of_point(*ptp))) {
 				p->cx = xcol;
 				p->cy = y;
 			}
@@ -96,13 +96,13 @@ static struct mark *render(struct point *pt, struct pane *p)
 		if (x < 16)
 			break;
 	}
-	if (mark_ordered(mark_of_point(pt), he->top) &&
-	    !mark_same(d, mark_of_point(pt), he->top))
+	if (mark_ordered(mark_of_point(*ptp), he->top) &&
+	    !mark_same(d, mark_of_point(*ptp), he->top))
 		p->cx = p->cy = -1;
 	return m;
 }
 
-static struct mark *find_top(struct point *pt, struct pane *p,
+static struct mark *find_top(struct point **ptp, struct pane *p,
 			     struct mark *top, struct mark *bot)
 {
 	/* top and bot might be NULL, else they record what is currently
@@ -115,14 +115,14 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 	struct mark *m;
 	int ppos, tpos, bpos, pos, point_pos;
 	struct he_data *he = p->data;
-	struct doc *d = pt->doc;
+	struct doc *d = (*ptp)->doc;
 	struct cmd_info ci2 = {0};
 
 	ci2.key = "CountLines";
-	ci2.pointp = &pt;
+	ci2.pointp = ptp;
 	ci2.mark = top;
 	key_lookup(d->ed->commands, &ci2);
-	point_pos = attr_find_int(*mark_attr(mark_of_point(pt)), "chars");
+	point_pos = attr_find_int(*mark_attr(mark_of_point(*ptp)), "chars");
 	tpos = bpos = ppos = point_pos;
 	if (top) {
 		tpos = attr_find_int(*mark_attr(top), "chars");
@@ -155,7 +155,7 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 		else
 			pos = ppos - p->h/2 * 16;
 	}
-	m = mark_at_point(pt, he->typenum);
+	m = mark_at_point(*ptp, he->typenum);
 
 	while (pos < point_pos) {
 		mark_prev(d, m);
@@ -169,14 +169,15 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->home;
 	struct he_data *he = p->data;
 	struct mark *end = NULL, *top;
-	struct point *pt;
+	struct doc *d;
 
 	if (strcmp(ci->key, "Close") == 0) {
-		struct point *pt = *ci->pointp;
 		struct pane *p = he->pane;
+
+		d = (*ci->pointp)->doc;
 		mark_free(he->top);
 		mark_free(he->bot);
-		doc_del_view(pt->doc, &he->type);
+		doc_del_view(d, &he->type);
 		p->data = NULL;
 		p->refresh = NULL;
 		p->keymap = NULL;
@@ -200,7 +201,7 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 
 	if (!ci->pointp)
 		return 0;
-	pt = *ci->pointp;
+	d = (*ci->pointp)->doc;
 	pane_check_size(p);
 
 	if (p->focus == NULL && !list_empty(&p->children))
@@ -212,25 +213,25 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 		ci2.key = "CountLines";
 		ci2.pointp = ci->pointp;
 		ci2.mark = he->top;
-		key_lookup(pt->doc->ed->commands, &ci2);
+		key_lookup(d->ed->commands, &ci2);
 		tpos = attr_find_int(*mark_attr(he->top), "chars");
 		if (tpos % 16 != 0) {
-			top = find_top(pt, p, he->top, end);
+			top = find_top(ci->pointp, p, he->top, end);
 			mark_free(he->top);
 			he->top = top;
 		}
 	}
 
 	if (he->top) {
-		end = render(pt, p);
+		end = render(ci->pointp, p);
 		if (he->ignore_point || p->cx >= 0)
 			goto found;
 	}
-	top = find_top(pt, p, he->top, end);
+	top = find_top(ci->pointp, p, he->top, end);
 	mark_free(he->top);
 	mark_free(end);
 	he->top = top;
-	end = render(pt, p);
+	end = render(ci->pointp, p);
 found:
 	mark_free(he->bot);
 	he->bot = end;

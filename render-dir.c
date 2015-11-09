@@ -41,12 +41,12 @@ static int put_str(struct pane *p, char *buf, int attr, int x, int y)
 	return len;
 }
 
-static struct mark *render(struct point *pt, struct pane *p)
+static struct mark *render(struct point **ptp, struct pane *p)
 {
 	struct mark *m;
 	struct mark *last_vis;
 	struct dir_data *dd = p->data;
-	struct doc *d = pt->doc;
+	struct doc *d = (*ptp)->doc;
 	int x = 0, y = 0;
 	char *hdr;
 	char *body;
@@ -78,7 +78,7 @@ static struct mark *render(struct point *pt, struct pane *p)
 
 		mark_free(last_vis);
 		last_vis = mark_dup(m, 0);
-		if (mark_same(d, m, mark_of_point(pt))) {
+		if (mark_same(d, m, mark_of_point(*ptp))) {
 			p->cx = x;
 			p->cy = y;
 		}
@@ -107,7 +107,7 @@ static struct mark *render(struct point *pt, struct pane *p)
 				if (dd->home_field < 0)
 					dd->home_field = home;
 			}
-			if (p->cy == y && mark_of_point(pt)->rpos == field - dd->home_field)
+			if (p->cy == y && mark_of_point(*ptp)->rpos == field - dd->home_field)
 				p->cx = x;
 			b = buf;
 			while (*n == '-' || *n == '_' || isalnum(*n)) {
@@ -159,7 +159,7 @@ static struct mark *render(struct point *pt, struct pane *p)
 		x = 0;
 	}
 	mark_free(m);
-	if (mark_ordered(mark_of_point(pt), dd->top) && !mark_same(d, mark_of_point(pt), dd->top))
+	if (mark_ordered(mark_of_point(*ptp), dd->top) && !mark_same(d, mark_of_point(*ptp), dd->top))
 		p->cx = p->cy = -1;
 	return last_vis;
 }
@@ -179,7 +179,7 @@ static struct mark *find_pos(struct doc *d, struct pane *p, int px, int py)
 	return m;
 }
 
-static struct mark *find_top(struct point *pt, struct pane *p,
+static struct mark *find_top(struct point **ptp, struct pane *p,
 			     struct mark *top, struct mark *bot)
 {
 	/* If top and bot are not NULL, they record what is currently
@@ -191,13 +191,13 @@ static struct mark *find_top(struct point *pt, struct pane *p,
 	 */
 	struct dir_data *dd = p->data;
 	struct mark *start, *end;
-	struct doc *d = pt->doc;
+	struct doc *d = (*ptp)->doc;
 	int found_start = 0, found_end = 0;
 	int ph = p->h - dd->header;
 	int height = 0;
 
-	start = mark_at_point(pt, dd->typenum);
-	end = mark_at_point(pt, dd->typenum);
+	start = mark_at_point(*ptp, dd->typenum);
+	end = mark_at_point(*ptp, dd->typenum);
 	if (bot &&
 	    (mark_ordered(start, bot) && ! mark_same(d, start, bot)))
 		/* We can never cross bot from below */
@@ -237,14 +237,14 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 	struct pane *p = ci->home;
 	struct dir_data *dd = p->data;
 	struct mark *end = NULL, *top;
-	struct point *pt;
+	struct doc *d;
 
 	if (strcmp(ci->key, "Close") == 0) {
 		struct pane *p = dd->pane;
-		pt = *ci->pointp;
+		d = (*ci->pointp)->doc;
 		mark_free(dd->top);
 		mark_free(dd->bot);
-		doc_del_view(pt->doc, &dd->type);
+		doc_del_view(d, &dd->type);
 		p->data = NULL;
 		p->refresh = NULL;
 		p->keymap = NULL;
@@ -266,21 +266,20 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
-	pt = *ci->pointp;
 	pane_check_size(p);
 
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
 	if (dd->top) {
-		end = render(pt, p);
+		end = render(ci->pointp, p);
 		if (dd->ignore_point || p->cx >= 0)
 			goto found;
 	}
-	top = find_top(pt, p, dd->top, end);
+	top = find_top(ci->pointp, p, dd->top, end);
 	mark_free(dd->top);
 	mark_free(end);
 	dd->top = top;
-	end = render(pt, p);
+	end = render(ci->pointp, p);
 found:
 	mark_free(dd->bot);
 	dd->bot = end;
