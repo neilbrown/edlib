@@ -348,6 +348,7 @@ static int docs_open(struct command *c, struct cmd_info *ci)
 	struct point *pt;
 	struct doc *dc = p->point->m.ref.d;
 	struct pane *par = p->parent;
+	char *render;
 
 	/* close this pane, open the given document. */
 	if (dc == NULL)
@@ -357,7 +358,10 @@ static int docs_open(struct command *c, struct cmd_info *ci)
 	pane_close(p);
 	p = pane_attach(par, "view-borders", pt);
 	if (p) {
-		render_attach(dc->default_render, p, p->parent->point);
+		render = dc->default_render;
+		if (ci->str)
+			render = ci->str;
+		render_attach(render, p, p->parent->point);
 		pane_focus(p);
 		return 1;
 	} else {

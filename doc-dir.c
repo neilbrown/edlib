@@ -355,7 +355,7 @@ static int doc_dir_open(struct command *c, struct cmd_info *ci)
 	fd = open(fname, O_RDONLY);
 	pane_close(p);
 	if (fd >= 0) {
-		p = doc_open(par, fd, fname, NULL);
+		p = doc_open(par, fd, fname, ci->str);
 		close(fd);
 	} else
 		p = doc_from_text(par, fname, "File not found\n");

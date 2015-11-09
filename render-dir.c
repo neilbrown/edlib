@@ -416,6 +416,8 @@ static int render_dir_open(struct command *c, struct cmd_info *ci)
 	struct cmd_info ci2 = *ci;
 
 	ci2.key = "Open";
+	if (strcmp(ci->key, "Chr-h") == 0)
+		ci2.str = "hex";
 	return key_handle_focus(&ci2);
 }
 DEF_CMD(comm_open, render_dir_open);
@@ -438,6 +440,7 @@ static void render_dir_register_map(void)
 	key_add(dr_map, "Replace", &comm_follow);
 
 	key_add(dr_map, "Chr-f", &comm_open);
+	key_add(dr_map, "Chr-h", &comm_open);
 }
 
 static void render_dir_attach(struct pane *parent, struct point *pt)

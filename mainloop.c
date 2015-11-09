@@ -34,6 +34,7 @@ char WelcomeText[] =
 	"  C-_ and M-C-_ to undo and redo changes\n"
 	"  Visit list of documents (C-x C-b)\n"
 	"  Open file from directory list, or document from document list ('f').\n"
+	"  Open file in 'hex' view from directory listing ('h').\n"
 	"  Numeric prefixes with M-0 to M-9.\n"
 	"\n"
 	"And C-x C-c to close (without saving anything)\n"
