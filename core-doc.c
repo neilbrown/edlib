@@ -147,9 +147,15 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 	point_reset(pt);
 found:
 	p = pane_attach(parent, "view-borders", pt);
-	if (!render)
-		render = pt->doc->default_render;
-	render_attach(render, p, p->parent->point);
+	if (p) {
+		if (!render)
+			render = pt->doc->default_render;
+		render_attach(render, p, p->parent->point);
+	} else {
+		d = pt->doc;
+		point_free(pt);
+		doc_destroy(d);
+	}
 	return p;
 }
 
@@ -163,8 +169,12 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	if (!pt)
 		return NULL;
 	p = pane_attach(parent, "view-borders", pt);
-	if (!p)
+	if (!p) {
+		struct doc *d = pt->doc;
+		point_free(pt);
+		doc_destroy(d);
 		return p;
+	}
 	pt = p->parent->point;
 	doc_set_name(pt->doc, name);
 	doc_replace(pt, NULL, text, &first);
@@ -346,9 +356,14 @@ static int docs_open(struct command *c, struct cmd_info *ci)
 	point_new(dc, &pt);
 	pane_close(p);
 	p = pane_attach(par, "view-borders", pt);
-	render_attach(dc->default_render, p, p->parent->point);
-	pane_focus(p);
-	return 1;
+	if (p) {
+		render_attach(dc->default_render, p, p->parent->point);
+		pane_focus(p);
+		return 1;
+	} else {
+		point_free(pt);
+		return 0;
+	}
 }
 DEF_CMD(comm_open, docs_open);
 

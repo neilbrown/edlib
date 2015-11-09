@@ -170,6 +170,7 @@ wint_t mark_prev(struct doc *d, struct mark *m);
 struct mark *mark_at_point(struct point *p, int view);
 void points_resize(struct doc *d);
 void points_attach(struct doc *d, int view);
+void point_free(struct point *p);
 
 static inline int mark_ordered(struct mark *m1, struct mark *m2)
 {

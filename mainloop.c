@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 {
 	struct event_base *base;
 	struct pane *root;
-	struct pane *b, *p;
+	struct pane *b, *p= NULL;;
 
 	struct editor *ed = editor_new();
 
@@ -82,7 +82,8 @@ int main(int argc, char *argv[])
 	ed->map = emacs_register();
 
 	b = pane_attach(root, "tile", NULL);
-	p = doc_from_text(b, "*Welcome*", WelcomeText);
+	if (b)
+		p = doc_from_text(b, "*Welcome*", WelcomeText);
 	if (p) {
 		pane_refresh(root);
 		event_base_dispatch(base);
