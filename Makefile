@@ -15,7 +15,7 @@ OBJ = ncurses.o tile.o mainloop.o \
 	mode-emacs.o
 SHOBJ = doc-text.o doc-dir.o \
 	render-text.o render-hex.o render-dir.o \
-	view.o
+	lib-view.o
 
 SO = $(patsubst %.o,lib/%.so,$(SHOBJ))
 H = list.h extras.h core.h
