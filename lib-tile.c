@@ -520,6 +520,13 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 	} else if (strcmp(ci->str, "close")==0) {
 		if (ti->direction != Neither)
 			pane_close(p);
+	} else if (strcmp(ci->str, "close-others") == 0) {
+		/* close all other panes in the 'tiles' list. */
+		while (!list_empty(&ti->tiles)) {
+			struct tileinfo *ti2 = list_entry(ti->tiles.next,
+							  struct tileinfo, tiles);
+			pane_close(ti2->p);
+		}
 	} else
 		return 0;
 	return 1;

@@ -160,6 +160,7 @@ static struct str_command {
 	{CMD(emacs_str), "WindowOP", "x+", "emCX-Chr-}"},
 	{CMD(emacs_str), "WindowOP", "x-", "emCX-Chr-{"},
 	{CMD(emacs_str), "WindowOP", "y+", "emCX-Chr-^"},
+	{CMD(emacs_str), "WindowOP", "close-others", "emCX-Chr-1"},
 	{CMD(emacs_str), "WindowOP", "split-y", "emCX-Chr-2"},
 	{CMD(emacs_str), "WindowOP", "split-x", "emCX-Chr-3"},
 	{CMD(emacs_str), "WindowOP", "close", "emCX-Chr-0"},
