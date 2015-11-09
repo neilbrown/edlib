@@ -16,7 +16,7 @@
  * The target pane must not disappear while the popup is active.
  * I need to find a way to control that.
  *
- * A popup is created by "popup-attach"
+ * A popup is created by "attach-popup"
  * A prefix to be displayed can be added by setting "prefix" on the document created.
  * The event sent when the popup is closed can be set by setting attribute "done-key"
  * otherwise "PopupDone" is used.
@@ -158,5 +158,5 @@ void edlib_init(struct editor *ed)
 
 	key_add(pp_map, "Replace", &comm_done);
 
-	key_add(ed->commands, "popup-attach", &comm_attach);
+	key_add(ed->commands, "attach-popup", &comm_attach);
 }

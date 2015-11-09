@@ -532,5 +532,5 @@ void edlib_init(struct editor *ed)
 
 	key_add(tile_map, "WindowOP", &comm_tile);
 
-	key_add(ed->commands, "tile-attach", &comm_attach);
+	key_add(ed->commands, "attach-tile", &comm_attach);
 }

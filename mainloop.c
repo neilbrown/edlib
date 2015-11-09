@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 	load_libs(ed);
 	ed->map = emacs_register();
 
-	b = pane_attach(root, "tile-attach", NULL);
+	b = pane_attach(root, "tile", NULL);
 	p = doc_from_text(b, "*Welcome*", WelcomeText);
 	if (p) {
 		pane_refresh(root);

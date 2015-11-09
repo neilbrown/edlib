@@ -58,7 +58,7 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 		if (!p->point)
 			return 0;
 		point_dup(p->point, &pt);
-		p2 = view_attach(parent, pt, 1);
+		p2 = view_attach(parent, pt, vd->border);
 		return pane_clone(p->focus->focus, p2);
 	}
 	if (strcmp(ci->key, "Refresh") != 0)
@@ -152,7 +152,7 @@ static struct pane *view_attach(struct pane *par, struct point *pt, int border)
 
 static int do_view_attach(struct command *c, struct cmd_info *ci)
 {
-	int borders = strcmp(ci->key, "view-borders") == 0;
+	int borders = strcmp(ci->key, "attach-view-borders") == 0;
 	ci->home = view_attach(ci->focus, *ci->pointp, borders);
 	return ci->home != NULL;
 }
@@ -402,6 +402,6 @@ void edlib_init(struct editor *ed)
 	key_add(view_map, "Click-1", &comm_click);
 	key_add(view_map, "Press-1", &comm_click);
 
-	key_add(ed->commands, "view-borders", &comm_attach);
-	key_add(ed->commands, "view-noborders", &comm_attach);
+	key_add(ed->commands, "attach-view-borders", &comm_attach);
+	key_add(ed->commands, "attach-view-noborders", &comm_attach);
 }

@@ -279,7 +279,7 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 			path = realpath(".", buf);
 		if (!path)
 			path = "/";
-		p = pane_attach(ci->focus, "popup-attach", NULL);
+		p = pane_attach(ci->focus, "popup", NULL);
 		/* FIXME test failure */
 		ptp = pane_point(p);
 		d = (*ptp)->doc;
@@ -324,7 +324,7 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 
 	if (strcmp(ci->key, "Doc Found") != 0) {
 		struct point **ptp;
-		p = pane_attach(ci->focus, "popup-attach", NULL);
+		p = pane_attach(ci->focus, "popup", NULL);
 		ptp = pane_point(p);
 		d = (*ptp)->doc;
 		attr_set_str(&d->attrs, "prefix", "Find Document: ", 01);
