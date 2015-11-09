@@ -244,6 +244,7 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 		d = (*ci->pointp)->doc;
 		mark_free(dd->top);
 		mark_free(dd->bot);
+		dd->pane = NULL;
 		doc_del_view(d, &dd->type);
 		p->data = NULL;
 		p->refresh = NULL;
@@ -291,11 +292,17 @@ static int render_dir_notify(struct command *c, struct cmd_info *ci)
 {
 	struct dir_data *dd = container_of(c, struct dir_data, type);
 
-	if (strcmp(ci->key, "Replace") != 0)
+	if (strcmp(ci->key, "Replace") == 0) {
+		if (ci->mark == dd->top)
+			/* A change in the text between top and bot */
+			pane_damaged(dd->pane, DAMAGED_CONTENT);
 		return 0;
-	if (ci->mark == dd->top)
-		/* A change in the text between top and bot */
-		pane_damaged(dd->pane, DAMAGED_CONTENT);
+	}
+	if (strcmp(ci->key, "Release") == 0) {
+		if (dd->pane)
+			pane_close(dd->pane);
+		return 1;
+	}
 	return 0;
 }
 

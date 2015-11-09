@@ -413,6 +413,18 @@ static int emacs_num(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_num, emacs_num);
 
+static int emacs_kill_doc(struct command *c, struct cmd_info *ci)
+{
+	struct doc *d;
+	if (!ci->pointp)
+		return 0;
+	d = (*ci->pointp)->doc;
+	doc_close_views(d);
+	doc_destroy(d);
+	return 1;
+}
+DEF_CMD(comm_kill_doc, emacs_kill_doc);
+
 struct map *emacs_register(void)
 {
 	unsigned i;
@@ -450,6 +462,8 @@ struct map *emacs_register(void)
 	key_add(m, "emCX-Chr-b", &comm_finddoc);
 	key_add(m, "Doc Found", &comm_finddoc);
 	key_add(m, "emCX-C-Chr-B", &comm_viewdocs);
+
+	key_add(m, "emCX-Chr-k", &comm_kill_doc);
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &comm_num);
 	return m;

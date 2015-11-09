@@ -135,6 +135,8 @@ void pane_close(struct pane *p)
 	}
 	ci.key = "Close";
 	ci.focus = ci.home = p;
+	if (p->parent->focus == p)
+		p->parent->focus = NULL;
 	pp = p;
 	while (pp && !pp->point)
 		pp = pp->parent;

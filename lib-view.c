@@ -113,15 +113,50 @@ static int do_view_null(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(view_null, do_view_null);
 
+static struct pane *view_reattach(struct pane *p, struct point *pt);
+
 static int view_notify(struct command *c, struct cmd_info *ci)
 {
-	struct view_data *vd;
-	if (strcmp(ci->key, "Replace") != 0)
-		return 0;
+	struct view_data *vd = container_of(c, struct view_data, ch_notify);
 
-	vd = container_of(c, struct view_data, ch_notify);
-	pane_damaged(vd->pane, DAMAGED_CONTENT);
+	if (strcmp(ci->key, "Replace") == 0) {
+		pane_damaged(vd->pane, DAMAGED_CONTENT);
+		return 0;
+	}
+	if (strcmp(ci->key, "Release") == 0) {
+		/* release attached document and attach something else.
+		 * there must always be another document somewhere.
+		 */
+		struct doc *d = vd->pane->point->doc;
+		struct editor *ed = d->ed;
+		struct point *pt;
+		struct pane *p;
+
+		pt = editor_choose_doc(ed);
+		doc_del_view(d, &vd->ch_notify);
+		pane_close(vd->pane->focus);
+		p = view_reattach(vd->pane, pt);
+		render_attach(p->parent->point->doc->default_render, p, p->parent->point);
+	}
 	return 0;
+}
+
+static struct pane *view_reattach(struct pane *par, struct point *pt)
+{
+	struct view_data *vd = par->data;
+	struct pane *p;
+
+	pt->owner = &par->point;
+	par->point = pt;
+	vd->ch_notify_num = doc_add_view(pt->doc, &vd->ch_notify);
+
+	p = pane_register(par, 0, &view_null, vd, NULL);
+	if (vd->border)
+		pane_resize(p, 1, 0, par->w-1, par->h-1);
+	else
+		pane_resize(p, 0, 0, par->w, par->h);
+	pane_damaged(p, DAMAGED_SIZE);
+	return p;
 }
 
 static struct pane *view_attach(struct pane *par, struct point *pt, int border)
@@ -138,19 +173,10 @@ static struct pane *view_attach(struct pane *par, struct point *pt, int border)
 	pt->owner = &pt;
 	p = pane_register(par, 0, &view_refresh, vd, NULL);
 	p->keymap = view_map;
-	pt->owner = &p->point;
-	p->point = pt;
-	vd->ch_notify_num = doc_add_view(d, &vd->ch_notify);
 	vd->pane = p;
-
 	pane_resize(p, 0, 0, par->w, par->h);
-	p = pane_register(p, 0, &view_null, vd, NULL);
-	if (vd->border)
-		pane_resize(p, 1, 0, par->w-1, par->h-1);
-	else
-		pane_resize(p, 0, 0, par->w, par->h);
-	pane_damaged(p, DAMAGED_SIZE);
-	return p;
+
+	return view_reattach(p, pt);
 }
 
 static int do_view_attach(struct command *c, struct cmd_info *ci)

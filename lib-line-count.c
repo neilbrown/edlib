@@ -82,15 +82,25 @@ static void do_count(struct doc *d, struct mark *start, struct mark *end,
 
 static int count_notify(struct command *c, struct cmd_info *ci)
 {
-	if (strcmp(ci->key, "Replace") != 0)
-		return 0;
-
-	if (ci->mark != NULL) {
-		attr_del(mark_attr(ci->mark), "lines");
-		attr_del(mark_attr(ci->mark), "words");
-		attr_del(mark_attr(ci->mark), "chars");
+	if (strcmp(ci->key, "Replace") == 0) {
+		if (ci->mark != NULL) {
+			attr_del(mark_attr(ci->mark), "lines");
+			attr_del(mark_attr(ci->mark), "words");
+			attr_del(mark_attr(ci->mark), "chars");
+		}
+		return 1;
 	}
-	return 1;
+	if (strcmp(ci->key, "Release") == 0) {
+		struct doc *d = (*ci->pointp)->doc;
+		struct mark *m;
+		int i = doc_find_view(d, c);
+		if (i < 0)
+			return 0;
+		while ((m = doc_first_mark(d, i)) != NULL)
+			mark_free(m);
+		doc_del_view(d, c);
+	}
+	return 0;
 }
 static struct command count_cmd = {count_notify};
 

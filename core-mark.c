@@ -103,6 +103,7 @@ static void mark_delete(struct mark *m)
 		tlist_del_init(&m->view);
 	attr_free(&m->attrs);
 }
+
 void mark_free(struct mark *m)
 {
 	if (m) {
@@ -240,7 +241,8 @@ struct point *point_new(struct doc *d, struct point **owner)
 			INIT_TLIST_HEAD(&ret->lists[i], GRP_LIST);
 	ret->owner = owner;
 	ret->doc = d;
-	*owner = ret;
+	if (owner)
+		*owner = ret;
 	return ret;
 }
 

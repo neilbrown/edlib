@@ -259,6 +259,7 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 		d = (*ci->pointp)->doc;
 		mark_free(rt->top);
 		mark_free(rt->bot);
+		rt->pane = NULL;
 		doc_del_view(d, &rt->type);
 		p->data = NULL;
 		p->keymap = NULL;
@@ -317,11 +318,17 @@ static int render_text_notify(struct command *c, struct cmd_info *ci)
 {
 	struct rt_data *rt = container_of(c, struct rt_data, type);
 
-	if (strcmp(ci->key, "Replace") != 0)
+	if (strcmp(ci->key, "Replace") == 0) {
+		if (ci->mark == rt->top)
+			/* A change in the text between top and bot */
+			pane_damaged(rt->pane, DAMAGED_CONTENT);
 		return 0;
-	if (ci->mark == rt->top)
-		/* A change in the text between top and bot */
-		pane_damaged(rt->pane, DAMAGED_CONTENT);
+	}
+	if (strcmp(ci->key, "Release") == 0) {
+		if (rt->pane)
+			pane_close(rt->pane);
+		return 1;
+	}
 	return 0;
 }
 

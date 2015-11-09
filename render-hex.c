@@ -177,6 +177,7 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 		d = (*ci->pointp)->doc;
 		mark_free(he->top);
 		mark_free(he->bot);
+		he->pane = NULL;
 		doc_del_view(d, &he->type);
 		p->data = NULL;
 		p->refresh = NULL;
@@ -243,14 +244,20 @@ static int render_hex_notify(struct command *c, struct cmd_info *ci)
 {
 	struct he_data *he = container_of(c, struct he_data, type);
 
-	if (strcmp(ci->key, "Replace") != 0)
+	if (strcmp(ci->key, "Replace") == 0) {
+		if (he->bot == NULL || ci->mark == NULL ||
+		    mark_ordered(ci->mark, he->bot))
+			/* A change that was not after the bot, so offsets
+			 * probably changed, so redraw
+			 */
+			pane_damaged(he->pane, DAMAGED_CONTENT);
 		return 0;
-	if (he->bot == NULL || ci->mark == NULL ||
-	    mark_ordered(ci->mark, he->bot))
-		/* A change that was not after the bot, so offsets
-		 * probably changed, so redraw
-		 */
-		pane_damaged(he->pane, DAMAGED_CONTENT);
+	}
+	if (strcmp(ci->key, "Release") == 0) {
+		if (he->pane)
+			pane_close(he->pane);
+		return 1;
+	}
 	return 0;
 }
 

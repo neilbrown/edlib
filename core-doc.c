@@ -92,6 +92,25 @@ int doc_find_view(struct doc *d, struct command *c)
 	return -1;
 }
 
+void doc_close_views(struct doc *d)
+{
+	struct cmd_info ci;
+	int i;
+
+	ci.key = "Release";
+	for (i = 0; i < d->nviews; i++) {
+		struct point pt, *ptp = &pt;
+		struct command *c;
+		if (d->views[i].notify == NULL)
+			continue;
+		ci.pointp = &ptp;
+		pt.doc = d;
+		c = d->views[i].notify;
+		c->func(c, &ci);
+	}
+}
+
+
 void doc_init(struct doc *d)
 {
 	INIT_HLIST_HEAD(&d->marks);
@@ -409,7 +428,7 @@ static void docs_release(struct doc *d)
 static void docs_attach(struct doc *d)
 {
 	/* This document has just been added to the list.
-	 * and mark pointing just past it is moved back.
+	 * any mark pointing just past it is moved back.
 	 */
 	struct editor *ed = d->ed;
 	struct mark *m;
@@ -439,11 +458,15 @@ int  doc_destroy(struct doc *d)
 	 * the documents list and destroy it.
 	 */
 	int i;
+
 	for (i = 0; i < d->nviews; i++)
 		if (d->views[i].notify)
 			/* still in used */
 			return 0;
+	if (d->ops == &docs_ops)
+		return 0;
 
+	docs_release(d);
 	list_del(&d->list);
 
 	free(d->views);
