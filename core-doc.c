@@ -146,7 +146,7 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 	doc_load_file(pt->doc, NULL, fd, rp);
 	point_reset(pt);
 found:
-	p = view_attach(parent, pt, 1);
+	p = pane_attach(parent, "view-borders", pt);
 	if (!render)
 		render = pt->doc->default_render;
 	render_attach(render, p, p->parent->point);
@@ -162,7 +162,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	pt = doc_new(pane2ed(parent), "text");
 	if (!pt)
 		return NULL;
-	p = view_attach(parent, pt, 1);
+	p = pane_attach(parent, "view-borders", pt);
 	if (!p)
 		return p;
 	pt = p->parent->point;
@@ -345,7 +345,7 @@ static int docs_open(struct command *c, struct cmd_info *ci)
 
 	point_new(dc, &pt);
 	pane_close(p);
-	p = view_attach(par, pt, 1);
+	p = pane_attach(par, "view-borders", pt);
 	render_attach(dc->default_render, p, p->parent->point);
 	pane_focus(p);
 	return 1;

@@ -125,7 +125,7 @@ struct pane *popup_register(struct pane *p, char *name, char *content, char *key
 	attr_set_str(&pt->doc->attrs, "prefix", prefix, -1);
 	free(prefix);
 	ppi->doc = pt->doc;
-	p2 = view_attach(p, pt, 0);
+	p2 = pane_attach(p, "view-noborders", pt);
 	doc_replace(p2->parent->point, NULL, content, &first);
 	render_attach(ppi->doc->default_render, p2, p2->parent->point);
 	ret = pane_register(p2->focus, 0, &popup_no_refresh, ppi, NULL);

@@ -11,9 +11,6 @@ struct map *emacs_register(void);
 
 struct pane *tile_init(struct pane *display);
 void tile_register(void);
-struct pane *view_attach(struct pane *par, struct point *pt, int border);
-void view_register(void);
-
 
 struct pane *ncurses_init(struct editor *ed);
 void ncurses_end(void);

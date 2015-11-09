@@ -79,7 +79,6 @@ int main(int argc, char *argv[])
 	ed->base = base;
 	root = ncurses_init(ed);
 	tile_register();
-	view_register();
 	popup_init();
 	load_libs(ed);
 	ed->map = emacs_register();

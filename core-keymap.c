@@ -262,7 +262,6 @@ int key_lookup(struct map *m, struct cmd_info *ci)
 {
 	int pos = key_find(m, ci->key);
 	struct command *comm;
-	struct cmd_info ci2 = *ci;
 
 	if (pos >= m->size)
 		return 0;
@@ -274,7 +273,7 @@ int key_lookup(struct map *m, struct cmd_info *ci)
 		comm = GETCOMM(m->comms[pos-1]);
 	} else
 		return 0;
-	return comm->func(comm, &ci2);
+	return comm->func(comm, ci);
 }
 
 static int key_handle(struct cmd_info *ci)

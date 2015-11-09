@@ -30,7 +30,7 @@ struct view_data {
 };
 
 static struct map *view_map;
-struct pane *view_attach(struct pane *par, struct point *pt, int border);
+static struct pane *view_attach(struct pane *par, struct point *pt, int border);
 
 static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 {
@@ -121,7 +121,7 @@ static int view_notify(struct command *c, struct cmd_info *ci)
 	return 0;
 }
 
-struct pane *view_attach(struct pane *par, struct point *pt, int border)
+static struct pane *view_attach(struct pane *par, struct point *pt, int border)
 {
 	struct view_data *vd;
 	struct pane *p;
@@ -149,6 +149,14 @@ struct pane *view_attach(struct pane *par, struct point *pt, int border)
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }
+
+static int do_view_attach(struct command *c, struct cmd_info *ci)
+{
+	int borders = strcmp(ci->key, "view-borders") == 0;
+	ci->home = view_attach(ci->focus, *ci->pointp, borders);
+	return ci->home != NULL;
+}
+DEF_CMD(comm_attach, do_view_attach);
 
 static int view_char(struct command *c, struct cmd_info *ci)
 {
@@ -377,7 +385,7 @@ static int view_click(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_click, view_click);
 
-void view_register(void)
+void edlib_init(struct editor *ed)
 {
 	view_map = key_alloc();
 
@@ -394,4 +402,6 @@ void view_register(void)
 	key_add(view_map, "Click-1", &comm_click);
 	key_add(view_map, "Press-1", &comm_click);
 
+	key_add(ed->commands, "view-borders", &comm_attach);
+	key_add(ed->commands, "view-noborders", &comm_attach);
 }

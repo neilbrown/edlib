@@ -323,7 +323,7 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 		return 1;
 	pane_close(p);
 	point_new(d, &pt);
-	p = view_attach(par, pt, 1);
+	p = pane_attach(par, "view-borders", pt);
 	render_attach(d->default_render, p, p->parent->point);
 	return 1;
 }
@@ -348,7 +348,7 @@ static int emacs_viewdocs(struct command *c, struct cmd_info *ci)
 		return 1;
 	pane_close(p);
 	point_new(d, &pt);
-	p = view_attach(par, pt, 1);
+	p = pane_attach(par, "view-borders", pt);
 	render_attach(d->default_render, p, p->parent->point);
 	return 1;
 }

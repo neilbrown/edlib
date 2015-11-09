@@ -396,3 +396,17 @@ void pane_set_extra(struct pane *p, int extra)
 	dd = p->data;
 	dd->extra = extra;
 }
+
+struct pane *pane_attach(struct pane *p, char *type, struct point *pt)
+{
+	struct cmd_info ci = {0};
+	struct editor *ed = pane2ed(p);
+
+	ci.key = type;
+	ci.focus = p;
+	if (pt)
+		ci.pointp = &pt;
+	if (!key_lookup(ed->commands, &ci))
+		return NULL;
+	return ci.home;
+}
