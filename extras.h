@@ -9,9 +9,6 @@ void popup_init(void);
 
 struct map *emacs_register(void);
 
-struct pane *tile_init(struct pane *display);
-void tile_register(void);
-
 struct pane *ncurses_init(struct editor *ed);
 void ncurses_end(void);
 void pane_clear(struct pane *p, int attr, int x, int y, int w, int h);

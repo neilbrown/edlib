@@ -9,13 +9,13 @@ CFLAGS=-g -Wall -Werror -Wstrict-prototypes -Wextra -Wno-unused-parameter
 
 all:edlib checksym libs
 
-OBJ = ncurses.o tile.o mainloop.o \
+OBJ = ncurses.o mainloop.o \
 	popup.o line_count.o \
 	core-mark.o core-doc.o core-editor.o core-attr.o core-keymap.o core-pane.o \
 	mode-emacs.o
 SHOBJ = doc-text.o doc-dir.o \
 	render-text.o render-hex.o render-dir.o \
-	lib-view.o
+	lib-view.o lib-tile.o
 
 SO = $(patsubst %.o,lib/%.so,$(SHOBJ))
 H = list.h extras.h core.h

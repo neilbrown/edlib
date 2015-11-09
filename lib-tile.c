@@ -3,7 +3,6 @@
  * May be distrubuted under terms of GPLv2 - see file:COPYING
  *
  * Tile manager for edlib.
- * This could be implemented as a plug-in eventually (I think).
  *
  * Given a display pane, tile it with other panes which will be
  * used by some other clients, probably text buffers.
@@ -77,8 +76,9 @@ static int do_tile_refresh(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(tile_refresh, do_tile_refresh);
 
-struct pane *tile_init(struct pane *display)
+int tile_attach(struct command *c, struct cmd_info *ci)
 {
+	struct pane *display = ci->focus;
 	struct tileinfo *ti = malloc(sizeof(*ti));
 	struct pane *p = pane_register(display, 0, &tile_refresh, ti, NULL);
 	p->keymap = tile_map;
@@ -86,8 +86,10 @@ struct pane *tile_init(struct pane *display)
 	ti->direction = Neither;
 	INIT_LIST_HEAD(&ti->tiles);
 	pane_resize(p, 0, 0, display->w, display->h);
-	return p;
+	ci->home = p;
+	return 1;
 }
+DEF_CMD(comm_attach, tile_attach);
 
 static struct pane *tile_split(struct pane *p, int horiz, int after)
 {
@@ -524,9 +526,11 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_tile, tile_command);
 
-void tile_register(void)
+void edlib_init(struct editor *ed)
 {
 	tile_map = key_alloc();
 
 	key_add(tile_map, "WindowOP", &comm_tile);
+
+	key_add(ed->commands, "tile-attach", &comm_attach);
 }

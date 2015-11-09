@@ -78,12 +78,11 @@ int main(int argc, char *argv[])
 	event_base_priority_init(base, 2);
 	ed->base = base;
 	root = ncurses_init(ed);
-	tile_register();
 	popup_init();
 	load_libs(ed);
 	ed->map = emacs_register();
 
-	b = tile_init(root);
+	b = pane_attach(root, "tile-attach", NULL);
 	p = doc_from_text(b, "*Welcome*", WelcomeText);
 	if (p) {
 		pane_refresh(root);
