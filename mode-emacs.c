@@ -398,7 +398,7 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 		point_free(pt);
 		return 0;
 	}
-	render_attach(d->default_render, p, p->parent->point);
+	render_attach(NULL, p);
 	return 1;
 }
 DEF_CMD(comm_finddoc, emacs_finddoc);
@@ -427,7 +427,7 @@ static int emacs_viewdocs(struct command *c, struct cmd_info *ci)
 		point_free(pt);
 		return 0;
 	}
-	render_attach(d->default_render, p, p->parent->point);
+	render_attach(NULL, p);
 	return 1;
 }
 DEF_CMD(comm_viewdocs, emacs_viewdocs);

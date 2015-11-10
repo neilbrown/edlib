@@ -136,7 +136,7 @@ static int view_notify(struct command *c, struct cmd_info *ci)
 		doc_del_view(d, &vd->ch_notify);
 		pane_close(vd->pane->focus);
 		p = view_reattach(vd->pane, pt);
-		render_attach(p->parent->point->doc->default_render, p, p->parent->point);
+		render_attach(NULL, p);
 	}
 	return 0;
 }

@@ -355,15 +355,21 @@ struct pane *pane_with_cursor(struct pane *p, int *oxp, int *oyp)
 	return ret;
 }
 
-int render_attach(char *name, struct pane *parent, struct point *pt)
+int render_attach(char *name, struct pane *parent)
 {
 	char buf[100];
 	struct cmd_info ci = {0};
+	struct point **ptp = pane_point(parent);
+
+	if (!ptp)
+		return 0;
+	if (!name)
+		name = (*ptp)->doc->default_render;
 
 	sprintf(buf, "render-%s-attach", name);
 	ci.key = buf;
 	ci.focus = parent;
-	ci.pointp = &pt;
+	ci.pointp = ptp;
 	return key_lookup(pane2ed(parent)->commands, &ci);
 }
 
