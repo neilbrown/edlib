@@ -311,10 +311,10 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 		}
 		return 1;
 	}
+
 	if (strcmp(ci->key, "File Found Other Window") == 0) {
-		pane_focus(ci->focus);
 		ci2.key = "OtherPane";
-		ci2.focus = ci->home;
+		ci2.focus = ci->focus;
 		key_handle_focus(&ci2);
 		p = ci2.focus;
 		while (p->focus)
@@ -371,15 +371,15 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 	}
 
 	if (strcmp(ci->key, "Doc Found Other Window") == 0) {
-		pane_focus(ci->focus);
 		ci2.key = "OtherPane";
-		ci2.focus = ci->home;
+		ci2.focus = ci->focus;
 		key_handle_focus(&ci2);
 		p = ci2.focus;
 		while (p->focus)
 			p = p->focus;
 	} else
 		p = ci->focus;
+
 	par = p;
 	while (p && !p->point)
 		p = p->parent;

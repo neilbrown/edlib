@@ -127,7 +127,7 @@ void pane_refresh(struct pane *p)
 void pane_close(struct pane *p)
 {
 	struct cmd_info ci = {0};
-	struct pane *c, *pp;
+	struct pane *c;
 
 	while (!list_empty(&p->children)) {
 		c = list_first_entry(&p->children, struct pane, siblings);
@@ -137,11 +137,9 @@ void pane_close(struct pane *p)
 	ci.focus = ci.home = p;
 	if (p->parent && p->parent->focus == p)
 		p->parent->focus = NULL;
-	pp = p;
-	while (pp && !pp->point)
-		pp = pp->parent;
-	if (pp)
-		ci.pointp = &pp->point;
+
+	ci.pointp = pane_point(p);
+
 	list_del_init(&p->siblings);
 	if (p->refresh)
 		p->refresh->func(p->refresh, &ci);

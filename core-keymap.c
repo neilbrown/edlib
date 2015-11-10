@@ -315,14 +315,14 @@ int key_handle_focus(struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	ci->x = -1;
 	ci->y = -1;
-	if (p->point)
-		ci->pointp = &p->point;
 	while (p->focus) {
-		p = p->focus;
 		if (p->point)
 			ci->pointp = &p->point;
+		p = p->focus;
 	}
 	ci->focus = p;
+	if (!ci->pointp)
+		ci->pointp = pane_point(p);
 	return key_handle(ci);
 }
 
@@ -333,10 +333,11 @@ int key_handle_xy(struct cmd_info *ci)
 	int x = ci->x;
 	int y = ci->y;
 
-	if (p->point)
-		ci->pointp = &p->point;
 	while (1) {
 		struct pane *t, *chld = NULL;
+
+		if (p->point)
+			ci->pointp = &p->point;
 
 		list_for_each_entry(t, &p->children, siblings) {
 			if (x < t->x || x >= t->x + t->w)
@@ -352,9 +353,9 @@ int key_handle_xy(struct cmd_info *ci)
 		x -= chld->x;
 		y -= chld->y;
 		p = chld;
-		if (p->point)
-			ci->pointp = &p->point;
 	}
+	if (!ci->pointp)
+		ci->pointp = pane_point(p);
 	ci->x = x;
 	ci->y = y;
 	ci->focus = p;

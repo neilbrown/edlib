@@ -180,7 +180,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 {
 	bool first = 1;
 	struct pane *p;
-	struct point *pt;
+	struct point *pt, **ptp;
 
 	pt = doc_new(pane2ed(parent), "text");
 	if (!pt)
@@ -192,10 +192,10 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 		doc_destroy(d);
 		return p;
 	}
-	pt = p->parent->point;
-	doc_set_name(pt->doc, name);
-	doc_replace(pt, NULL, text, &first);
-	point_reset(pt);
+	ptp = pane_point(p);
+	doc_set_name((*ptp)->doc, name);
+	doc_replace(*ptp, NULL, text, &first);
+	point_reset(*ptp);
 	render_attach(NULL, p);
 	return p;
 }
