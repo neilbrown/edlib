@@ -288,13 +288,6 @@ static int key_handle(struct cmd_info *ci)
 			ci->home = p;
 			ret = p->handle->func(p->handle, ci);
 		}
-		if (!ret && p->point && p->point->doc->map) {
-			struct map *m = p->point->doc->map;
-			if (m) {
-				ci->home = p;
-				ret = key_lookup(m, ci);
-			}
-		}
 		if (ret)
 			/* 'p' might have been destroyed */
 			break;

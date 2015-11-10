@@ -48,6 +48,11 @@ static int do_view_handle(struct command *cm, struct cmd_info *ci)
 	ret = key_lookup(view_map, ci);
 	if (ret)
 		return ret;
+	if (p->point->doc->map) {
+		ret = key_lookup(p->point->doc->map, ci);
+		if (ret)
+			return ret;
+	}
 
 	if (vd->pane != p)
 		vd->pane = p; /* FIXME having to do this is horrible */
