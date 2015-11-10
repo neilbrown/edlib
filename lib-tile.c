@@ -523,8 +523,7 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 	} else if (strcmp(ci->str, "close-others") == 0) {
 		/* close all other panes in the 'tiles' list. */
 		while (!list_empty(&ti->tiles)) {
-			struct tileinfo *ti2 = list_entry(ti->tiles.next,
-							  struct tileinfo, tiles);
+			struct tileinfo *ti2 = list_next_entry(ti, tiles);
 			pane_close(ti2->p);
 		}
 	} else
@@ -533,11 +532,28 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_tile, tile_command);
 
+static int tile_other(struct command *c, struct cmd_info *ci)
+{
+	/* Choose some other tile.  If there aren't any, make one.
+	 * Result is returned in ci->focus
+	 */
+	struct pane *p = ci->home;
+	struct tileinfo *ti = p->data;
+
+	if (!list_empty(&ti->tiles)) {
+		struct tileinfo *ti2 = list_next_entry(ti, tiles);
+		ci->focus = ti2->p;
+		return 1;
+	}
+	return 0;
+}
+DEF_CMD(comm_other, tile_other);
 void edlib_init(struct editor *ed)
 {
 	tile_map = key_alloc();
 
 	key_add(tile_map, "WindowOP", &comm_tile);
+	key_add(tile_map, "OtherPane", &comm_other);
 
 	key_add(ed->commands, "attach-tile", &comm_attach);
 }

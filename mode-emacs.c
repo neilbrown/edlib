@@ -324,21 +324,39 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 	struct pane *p, *par;
 	struct doc *d;
 	struct point *pt;
+	struct cmd_info ci2 = {0};
 
-	if (strcmp(ci->key, "Doc Found") != 0) {
+	if (strncmp(ci->key, "Doc Found", 9) != 0) {
 		struct point **ptp;
+
 		p = pane_attach(ci->focus, "popup", NULL);
 		if (!p)
 			return 0;
 		ptp = pane_point(p);
 		d = (*ptp)->doc;
-		attr_set_str(&d->attrs, "prefix", "Find Document: ", 01);
-		attr_set_str(&d->attrs, "done-key", "Doc Found", -1);
+		if (strncmp(ci->key, "emCX4-", 6) == 0) {
+			attr_set_str(&d->attrs, "prefix",
+				     "Find Document Other Window: ", 01);
+			attr_set_str(&d->attrs, "done-key",
+				     "Doc Found Other Window", -1);
+		} else {
+			attr_set_str(&d->attrs, "prefix", "Find Document: ", 01);
+			attr_set_str(&d->attrs, "done-key", "Doc Found", -1);
+		}
 		doc_set_name(d, "Find Document");
 		return 1;
 	}
 
-	p = ci->focus;
+	if (strcmp(ci->key, "Doc Found Other Window") == 0) {
+		pane_focus(ci->focus);
+		ci2.key = "OtherPane";
+		ci2.focus = ci->home;
+		key_handle_focus(&ci2);
+		p = ci2.focus;
+		while (p->focus)
+			p = p->focus;
+	} else
+		p = ci->focus;
 	while (p && !p->point)
 		p = p->parent;
 	if (!p || !p->parent)
@@ -429,9 +447,11 @@ struct map *emacs_register(void)
 {
 	unsigned i;
 	struct command *cx_cmd = key_register_prefix("emCX-");
+	struct command *cx4_cmd = key_register_prefix("emCX4-");
 	struct map *m = key_alloc();
 
 	key_add(m, "C-Chr-X", cx_cmd);
+	key_add(m, "emCX-Chr-4", cx4_cmd);
 	key_add(m, "ESC", &comm_meta);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
@@ -457,10 +477,15 @@ struct map *emacs_register(void)
 	key_add(m, "M-C-Chr-_", &comm_redo);
 
 	key_add(m, "emCX-C-Chr-F", &comm_findfile);
+	key_add(m, "emCX4-C-Chr-F", &comm_findfile);
+	key_add(m, "emCX4-Chr-f", &comm_findfile);
 	key_add(m, "File Found", &comm_findfile);
+	key_add(m, "File Found Other Window", &comm_findfile);
 
 	key_add(m, "emCX-Chr-b", &comm_finddoc);
+	key_add(m, "emCX4-Chr-b", &comm_finddoc);
 	key_add(m, "Doc Found", &comm_finddoc);
+	key_add(m, "Doc Found Other Window", &comm_finddoc);
 	key_add(m, "emCX-C-Chr-B", &comm_viewdocs);
 
 	key_add(m, "emCX-Chr-k", &comm_kill_doc);
