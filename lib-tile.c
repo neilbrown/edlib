@@ -175,6 +175,12 @@ static int tile_destroy(struct pane *p)
 		/* Cannot destroy root (yet) */
 		return 0;
 
+	if (p->parent == NULL) {
+		/* subsumed husk being destroyed */
+		free(ti);
+		return 1;
+	}
+
 	if (ti->direction == Vert)
 		pos = p->y;
 	else
@@ -263,7 +269,7 @@ static int tile_destroy(struct pane *p)
 		pane_subsume(remain, p);
 		ti->p = p;
 		ti2->p = remain;
-		pane_free(remain);
+		pane_close(remain);
 	}
 	return 1;
 }

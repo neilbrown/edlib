@@ -135,7 +135,7 @@ void pane_close(struct pane *p)
 	}
 	ci.key = "Close";
 	ci.focus = ci.home = p;
-	if (p->parent->focus == p)
+	if (p->parent && p->parent->focus == p)
 		p->parent->focus = NULL;
 	pp = p;
 	while (pp && !pp->point)
@@ -147,7 +147,7 @@ void pane_close(struct pane *p)
 		p->refresh->func(p->refresh, &ci);
 	pane_damaged(p->parent, DAMAGED_FORCE|DAMAGED_CURSOR);
 /* FIXME who destroys 'point'*/
-	pane_free(p);
+	free(p);
 }
 
 int pane_clone(struct pane *from, struct pane *parent)
@@ -220,6 +220,9 @@ void pane_subsume(struct pane *p, struct pane *parent)
 	struct pane *c;
 
 	list_del_init(&p->siblings);
+	if (p->parent && p->parent->focus == p)
+		p->parent->focus = NULL;
+	p->parent = NULL;
 	while (!list_empty(&p->children)) {
 		c = list_first_entry(&p->children, struct pane, siblings);
 		list_move(&c->siblings, &parent->children);
@@ -243,15 +246,6 @@ void pane_subsume(struct pane *p, struct pane *parent)
 		parent->point->owner = &parent->point;
 	if (p->point)
 		p->point->owner = &p->point;
-}
-
-void pane_free(struct pane *p)
-{
-	ASSERT(list_empty(&p->children));
-	list_del_init(&p->siblings);
-	if (p->parent->focus == p)
-		p->parent->focus = NULL;
-	free(p);
 }
 
 int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)
