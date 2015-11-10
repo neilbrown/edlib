@@ -50,7 +50,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 	int c;
 	struct cmd_info ci2 = {0};
 
-	pane_clear(p, 0, 0, 0, 0, 0);
+	pane_clear(p, 0);
 
 	ci2.key = "CountLines";
 	ci2.pointp = ptp;

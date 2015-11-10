@@ -412,3 +412,18 @@ struct pane *pane_attach(struct pane *p, char *type, struct point *pt)
 	free(com);
 	return ci.home;
 }
+
+void pane_clear(struct pane *p, int attr)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = "pane-clear";
+	ci.focus = p;
+	ci.extra = attr;
+	/* This is a kludge.
+	 * using handle_xy with -1,-1 forces the given focus
+	 * to be used rather than any child.
+	 */
+	ci.x = ci.y = -1;
+	key_handle_xy(&ci);
+}

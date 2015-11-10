@@ -51,7 +51,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 	char *hdr;
 	char *body;
 
-	pane_clear(p, 0, 0, 0, 0, 0);
+	pane_clear(p, 0);
 
 	hdr = doc_attr(d, NULL, 0, "heading");
 	body = doc_attr(d, NULL, 0, "line-format");

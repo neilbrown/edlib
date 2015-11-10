@@ -289,6 +289,7 @@ void pane_set_mode(struct pane *p, char *mode, int transient);
 void pane_set_numeric(struct pane *p, int numeric);
 void pane_set_extra(struct pane *p, int extra);
 struct pane *pane_attach(struct pane *p, char *type, struct point *pt);
+void pane_clear(struct pane *p, int attr);
 static inline struct point **pane_point(struct pane *p)
 {
 	while (p && !p->point)

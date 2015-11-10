@@ -32,6 +32,7 @@ struct display_data {
 };
 
 static SCREEN *current_screen;
+static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h);
 
 static void set_screen(SCREEN *scr)
 {
@@ -103,6 +104,10 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 
 	if (strcmp(ci->key, "Close") == 0) {
 		ncurses_end();
+		return 1;
+	}
+	if (strcmp(ci->key, "pane-clear") == 0) {
+		ncurses_clear(ci->focus, ci->extra, 0, 0, 0, 0);
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") != 0)
@@ -185,7 +190,7 @@ static void handle_winch(int sig, short ev, void *vpane)
 	pane_refresh(p);
 }
 
-void pane_clear(struct pane *p, int attr, int x, int y, int w, int h)
+static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h)
 {
 	int r, c;
 	struct display_data *dd;
