@@ -7,30 +7,35 @@ LDLIBS= -lncursesw -levent -ldl
 CPPFLAGS= -I/usr/include/ncursesw
 CFLAGS=-g -Wall -Werror -Wstrict-prototypes -Wextra -Wno-unused-parameter
 
-all:edlib checksym libs
+all:edlib checksym lib shared
 
-OBJ = mainloop.o \
-	core-mark.o core-doc.o core-editor.o core-attr.o core-keymap.o core-pane.o
+OBJ = mainloop.o
+LIBOBJ = core-mark.o core-doc.o core-editor.o core-attr.o core-keymap.o core-pane.o
 SHOBJ = doc-text.o doc-dir.o \
 	render-text.o render-hex.o render-dir.o \
 	lib-view.o lib-tile.o lib-popup.o lib-line-count.o lib-keymap.o \
 	mode-emacs.o \
-	ncurses.o
+	display-ncurses.o
 
-SO = $(patsubst %.o,lib/%.so,$(SHOBJ))
+SO = $(patsubst %.o,lib/edlib-%.so,$(SHOBJ))
 H = list.h core.h
-edlib: $(OBJ)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -o edlib $(OBJ) $(LDLIBS)
+edlib: $(OBJ) lib
+	$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -o edlib $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
 
 $(OBJ) $(SHOBJ) : $(H)
 
-$(SHOBJ) : %.o : %.c
+$(SHOBJ) $(LIBOBJ) : %.o : %.c
 	gcc -fPIC $(CPPFLAGS) $(CFLAGS) -c $<
 
-libs: $(SO)
-$(SO) : lib/%.so : %.o
+lib: lib/libedlib.so
+lib/libedlib.so: $(LIBOBJ)
 	@mkdir -p lib
-	gcc -shared -Wl,-soname,doc-text -o $@ $<
+	gcc -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ)
+
+shared: $(SO)
+$(SO) : lib/edlib-%.so : %.o
+	@mkdir -p lib
+	gcc -shared -Wl,-soname,edlib-$*.so -o $@ $<
 
 
 CSRC= attr.c

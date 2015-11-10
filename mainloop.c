@@ -55,6 +55,8 @@ static void load_libs(struct editor *ed)
 		void *h;
 		void (*s)(struct editor *e);
 		int l = strlen(res->d_name);
+		if (strncmp(res->d_name, "edlib", 5) != 0)
+			continue;
 		if (l <= 3 || strcmp(res->d_name + l-3, ".so") != 0)
 			continue;
 		strcpy(buf, "lib/");
