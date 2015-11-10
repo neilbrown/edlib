@@ -427,3 +427,29 @@ void pane_clear(struct pane *p, int attr)
 	ci.x = ci.y = -1;
 	key_handle_xy(&ci);
 }
+
+void pane_text(struct pane *p, wchar_t ch, int attr, int x, int y)
+{
+	struct cmd_info ci = {0};
+	char buf[5];
+	int w=1, h=1;
+	int z = p->z;
+	p = pane_to_root(p, &x, &y, &w, &h);
+	if (w < 1 || h < 1)
+		return;
+
+	if (pane_masked(p, x, y, z, NULL, NULL))
+		return;
+
+	ci.key = "pane-text";
+	ci.focus = p;
+	ci.x = x;
+	ci.y = y;
+	ci.extra = attr;
+	ci.str = buf;
+	/* FIXME wchar! */
+	buf[0] = ch;
+	buf[1] = 0;
+	/* FIXME this could result in cropping the text. */
+	key_handle_xy(&ci);
+}

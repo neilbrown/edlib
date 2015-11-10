@@ -33,6 +33,7 @@ struct display_data {
 
 static SCREEN *current_screen;
 static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h);
+static void ncurses_text(struct pane *p, wchar_t ch, int attr, int x, int y);
 
 static void set_screen(SCREEN *scr)
 {
@@ -108,6 +109,10 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 	}
 	if (strcmp(ci->key, "pane-clear") == 0) {
 		ncurses_clear(ci->focus, ci->extra, 0, 0, 0, 0);
+		return 1;
+	}
+	if (strcmp(ci->key, "pane-text") == 0) {
+		ncurses_text(ci->home, ci->str[0], ci->extra, ci->x, ci->y);
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") != 0)
@@ -215,18 +220,11 @@ static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h)
 				mvaddch(r, c, ' ');
 }
 
-void pane_text(struct pane *p, wchar_t ch, int attr, int x, int y)
+static void ncurses_text(struct pane *p, wchar_t ch, int attr, int x, int y)
 {
 	struct display_data *dd;
 	cchar_t cc;
-	int w=1, h=1;
-	int z = p->z;
-	p = pane_to_root(p, &x, &y, &w, &h);
-	if (w < 1 || h < 1)
-		return;
 
-	if (pane_masked(p, x, y, z, NULL, NULL))
-		return;
 	dd = p->data;
 	set_screen(dd->scr);
 	cc.attr = attr;
