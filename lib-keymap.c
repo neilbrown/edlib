@@ -18,8 +18,8 @@
  * one writable keymap (initially empty).
  * A keymap command will typically perform a lookup in a private keymap.
  *
- * *set-key commands must combine the key name and the command name
- * in ->str.  That is a bother.
+ * *set-key commands will receive the keyname and the command name in
+ * the two strings: str and str2.  We lookup str2 in doc->something.
  */
 
 #include <stdlib.h>

@@ -11,7 +11,6 @@
 #include <locale.h>
 #include <fcntl.h>
 #include <event.h>
-#include <curses.h>
 #include <wchar.h>
 #include <dirent.h>
 #include <string.h>

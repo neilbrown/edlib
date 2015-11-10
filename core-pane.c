@@ -430,13 +430,13 @@ struct pane *pane_attach(struct pane *p, char *type, struct point *pt)
 	return ci.home;
 }
 
-void pane_clear(struct pane *p, int attr)
+void pane_clear(struct pane *p, char *attrs)
 {
 	struct cmd_info ci = {0};
 
 	ci.key = "pane-clear";
 	ci.focus = p;
-	ci.extra = attr;
+	ci.str2 = attrs;
 	/* This is a kludge.
 	 * using handle_xy with -1,-1 forces the given focus
 	 * to be used rather than any child.
@@ -445,7 +445,7 @@ void pane_clear(struct pane *p, int attr)
 	key_handle_xy(&ci);
 }
 
-void pane_text(struct pane *p, wchar_t ch, int attr, int x, int y)
+void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y)
 {
 	struct cmd_info ci = {0};
 	char buf[5];
@@ -462,8 +462,8 @@ void pane_text(struct pane *p, wchar_t ch, int attr, int x, int y)
 	ci.focus = p;
 	ci.x = x;
 	ci.y = y;
-	ci.extra = attr;
 	ci.str = buf;
+	ci.str2 = attrs;
 	/* FIXME wchar! */
 	buf[0] = ch;
 	buf[1] = 0;

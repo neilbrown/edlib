@@ -29,11 +29,11 @@ struct he_data {
 static struct map *he_map;
 static void render_hex_attach(struct pane *parent, struct point **ptp);
 
-static int put_str(struct pane *p, char *buf, int attr, int x, int y)
+static int put_str(struct pane *p, char *buf, char *attrs, int x, int y)
 {
 	int len = 0;
 	while (buf[len]) {
-		pane_text(p, buf[len], attr, x, y);
+		pane_text(p, buf[len], attrs, x, y);
 		x += 1;
 		len += 1;
 	}
@@ -49,7 +49,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 	int c;
 	struct cmd_info ci2 = {0};
 
-	pane_clear(p, 0);
+	pane_clear(p, NULL);
 
 	ci2.key = "CountLines";
 	ci2.pointp = ptp;
@@ -69,7 +69,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 		char buf[20];
 
 		sprintf(buf, "%08x: ", c);
-		xcol += put_str(p, buf, 0, xcol, y);
+		xcol += put_str(p, buf, NULL, xcol, y);
 		for (x = 0; x < 16; x++) {
 			wint_t ch;
 			if (mark_same(d, m, mark_of_point(*ptp))) {
@@ -80,13 +80,13 @@ static struct mark *render(struct point **ptp, struct pane *p)
 			if (ch == WEOF)
 				break;
 			sprintf(buf, "%02x ", ch & 0xff);
-			xcol += put_str(p, buf, 0, xcol, y);
+			xcol += put_str(p, buf, NULL, xcol, y);
 			if (x == 7)
 				xcol += 1;
 
 			if (ch < ' ')
 				ch = '?';
-			pane_text(p, ch, 0, ccol, y);
+			pane_text(p, ch, NULL, ccol, y);
 			ccol += 1;
 			if (x == 7)
 				ccol += 1;

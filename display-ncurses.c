@@ -92,6 +92,17 @@ static void ncurses_end(void)
 	endwin();
 }
 
+static int cvt_attrs(char *attrs)
+{
+	int attr = 0;
+
+	if (attrs == NULL) attr = 0;
+	else if (strcmp(attrs, "inverse")==0) attr = A_STANDOUT;
+	else if (strcmp(attrs, "bold")==0) attr = A_BOLD;
+	else if (strcmp(attrs, "underline")==0) attr = A_UNDERLINE;
+	return attr;
+}
+
 static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
@@ -108,11 +119,13 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 		return 1;
 	}
 	if (strcmp(ci->key, "pane-clear") == 0) {
-		ncurses_clear(ci->focus, ci->extra, 0, 0, 0, 0);
+		int attr = cvt_attrs(ci->str2);
+		ncurses_clear(ci->focus, attr, 0, 0, 0, 0);
 		return 1;
 	}
 	if (strcmp(ci->key, "pane-text") == 0) {
-		ncurses_text(ci->home, ci->str[0], ci->extra, ci->x, ci->y);
+		int attr = cvt_attrs(ci->str2);
+		ncurses_text(ci->home, ci->str[0], attr, ci->x, ci->y);
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") != 0)

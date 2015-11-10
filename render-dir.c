@@ -29,11 +29,11 @@ struct dir_data {
 static struct map *dr_map;
 static void render_dir_attach(struct pane *parent, struct point **ptp);
 
-static int put_str(struct pane *p, char *buf, int attr, int x, int y)
+static int put_str(struct pane *p, char *buf, char *attrs, int x, int y)
 {
 	int len = 0;
 	while (buf[len]) {
-		pane_text(p, buf[len], attr, x, y);
+		pane_text(p, buf[len], attrs, x, y);
 		x += 1;
 		len += 1;
 	}
@@ -50,12 +50,12 @@ static struct mark *render(struct point **ptp, struct pane *p)
 	char *hdr;
 	char *body;
 
-	pane_clear(p, 0);
+	pane_clear(p, NULL);
 
 	hdr = doc_attr(d, NULL, 0, "heading");
 	body = doc_attr(d, NULL, 0, "line-format");
 	if (hdr) {
-		put_str(p, hdr, 1<<(8+13), x, y);
+		put_str(p, hdr, "bold", x, y);
 		y += 1;
 		dd->header = 1;
 	} else
@@ -90,7 +90,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 			int w, adjust, l;
 
 			if (*n != '%' || n[1] == '%') {
-				pane_text(p, *n, 0, x, y);
+				pane_text(p, *n, NULL, x, y);
 				if (*n == '%')
 					n += 1;
 				x += 1;
@@ -117,7 +117,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 			*b = 0;
 			if (strcmp(buf, "c") == 0) {
 				/* Display the char under cursor */
-				pane_text(p, ch, 0, x, y);
+				pane_text(p, ch, NULL, x, y);
 				x += 1;
 				continue;
 			}
@@ -125,7 +125,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 			if (!name)
 				name = "-";
 			if (*n != ':') {
-				x += put_str(p, name, 0, x, y);
+				x += put_str(p, name, NULL, x, y);
 				continue;
 			}
 			w = 0;
@@ -141,19 +141,19 @@ static struct mark *render(struct point **ptp, struct pane *p)
 			}
 			l = strlen(name);
 			while (adjust && w > l) {
-				pane_text(p, ' ', 0, x, y);
+				pane_text(p, ' ', NULL, x, y);
 				x += 1;
 				w -= 1;
 			}
 
 			while (*name && w > 0 ) {
-				pane_text(p, *name, 0, x, y);
+				pane_text(p, *name, NULL, x, y);
 				x += 1;
 				w -= 1;
 				name += 1;
 			}
 			while (w > 0) {
-				pane_text(p, ' ', 0, x, y);
+				pane_text(p, ' ', NULL, x, y);
 				x += 1;
 				w -= 1;
 			}

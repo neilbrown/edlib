@@ -13,10 +13,10 @@
 
 #include <unistd.h>
 #include <stdlib.h>
-#include <curses.h>
 #include <string.h>
 #include <wchar.h>
 #include <wctype.h>
+#include <stdio.h>
 
 #include "core.h"
 
@@ -98,19 +98,19 @@ static int do_view_handle(struct command *cm, struct cmd_info *ci)
 	if (l <= 0)
 		l = 1;
 	for (i = 0; i < p->h-1; i++)
-		pane_text(p, '|', A_STANDOUT, 0, i);
+		pane_text(p, '|', "inverse", 0, i);
 	mid = 1 + (p->h-4) * ln / l;
 	pane_text(p, '^', 0, 0, mid-1);
-	pane_text(p, '#', A_STANDOUT, 0, mid);
+	pane_text(p, '#', "inverse", 0, mid);
 	pane_text(p, 'v', 0, 0, mid+1);
-	pane_text(p, '+', A_STANDOUT, 0, p->h-1);
+	pane_text(p, '+', "inverse", 0, p->h-1);
 	p->cx = 0; p->cy = p->h - 1;
 	for (i = 1; i < p->w; i++)
-		pane_text(p, '=', A_STANDOUT, i, p->h-1);
+		pane_text(p, '=', "inverse", i, p->h-1);
 
 	snprintf(msg, sizeof(msg), "L%d W%d C%d D:%s", l,w,c, pt->doc->name);
 	for (i = 0; msg[i] && i+4 < p->w; i++)
-		pane_text(p, msg[i], A_STANDOUT, i+4, p->h-1);
+		pane_text(p, msg[i], "inverse", i+4, p->h-1);
 	vd->scroll_bar_y = mid;
 	return 0;
 }

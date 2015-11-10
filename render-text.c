@@ -16,7 +16,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <wchar.h>
-#include <curses.h>
 #include <string.h>
 
 #include "core.h"
@@ -53,7 +52,7 @@ static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y
 			w = 1;
 		if (*x + w >= p->w) {
 			if (draw)
-				pane_text(p, '\\', A_UNDERLINE, p->w-1, *y);
+				pane_text(p, '\\', "underline", p->w-1, *y);
 			*y += 1;
 			*x = 0;
 		}
@@ -61,10 +60,10 @@ static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y
 			if (ch == '\t')
 				;
 			else if (ch < ' ') {
-				pane_text(p, '^', A_UNDERLINE, *x, *y);
-				pane_text(p, ch+'@', A_UNDERLINE, 1+*x, *y);
+				pane_text(p, '^', "underline", *x, *y);
+				pane_text(p, ch+'@', "underline", 1+*x, *y);
 			} else {
-				pane_text(p, ch, 0, *x, *y);
+				pane_text(p, ch, NULL, *x, *y);
 			}
 		}
 		*x += w;
@@ -104,13 +103,13 @@ static struct mark *render(struct point **ptp, struct pane *p)
 	wint_t ch;
 	char *prefix;
 
-	pane_clear(p, 0);
+	pane_clear(p, NULL);
 
 	prefix = doc_attr(d, NULL, 0, "prefix");
 	if (prefix) {
 		char *s = prefix;
 		while (*s) {
-			pane_text(p, *s, A_BOLD, x, y);
+			pane_text(p, *s, "bold", x, y);
 			x += 1;
 			s += 1;
 		}
@@ -125,7 +124,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 
 	ch = doc_prior(d, m);
 	if (ch != WEOF && ch != '\n') {
-		pane_text(p, '<', A_UNDERLINE, x, y);
+		pane_text(p, '<', "underline", x, y);
 		x += 1;
 	}
 	while (y < p->h) {

@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
-#include <ncurses.h>
 
 #include "core.h"
 
@@ -64,23 +63,23 @@ static int do_popup_handle(struct command *c, struct cmd_info *ci)
 	pane_resize(p->focus, 1, 1, p->w-2, 1);
 
 	for (i = 0; i < p->h-1; i++) {
-		pane_text(p, '|', A_STANDOUT, 0, i);
-		pane_text(p, '|', A_STANDOUT, p->w-1, i);
+		pane_text(p, '|', "inverse", 0, i);
+		pane_text(p, '|', "inverse", p->w-1, i);
 	}
 	for (i = 0; i < p->w-1; i++) {
-		pane_text(p, '-', A_STANDOUT, i, 0);
-		pane_text(p, '-', A_STANDOUT, i ,p->h-1);
+		pane_text(p, '-', "inverse", i, 0);
+		pane_text(p, '-', "inverse", i ,p->h-1);
 	}
-	pane_text(p, '/', A_STANDOUT, 0, 0);
-	pane_text(p, '\\', A_STANDOUT, 0, p->h-1);
-	pane_text(p, 'X', A_STANDOUT, p->w-1, 0);
-	pane_text(p, '/', A_STANDOUT, p->w-1, p->h-1);
+	pane_text(p, '/', "inverse", 0, 0);
+	pane_text(p, '\\', "inverse", 0, p->h-1);
+	pane_text(p, 'X', "inverse", p->w-1, 0);
+	pane_text(p, '/', "inverse", p->w-1, p->h-1);
 
 	label = (p->w - strlen(name)) / 2;
 	if (label < 1)
 		label = 1;
 	for (i = 0; name[i]; i++)
-		pane_text(p, name[i], A_STANDOUT, label+i, 0);
+		pane_text(p, name[i], "inverse", label+i, 0);
 	return 0;
 }
 DEF_CMD(popup_handle, do_popup_handle);
