@@ -67,12 +67,6 @@ static inline struct command *SET_RANGE(struct command *c)
 	return (struct command *)(((unsigned long)c) | 1UL);
 }
 
-static struct modmap {
-	char	*name;
-	bool	transient;
-	struct command comm;
-} modmap[512] = {{0}};
-
 static int size2alloc(int size)
 {
 	/* Alway multiple of 8. */
@@ -236,6 +230,12 @@ void key_del(struct map *map, wint_t k)
 }
 #endif
 
+struct modmap {
+	char	*name;
+	bool	transient;
+	struct command comm;
+};
+
 static int key_prefix(struct command *comm, struct cmd_info *ci)
 {
 	struct modmap *m = container_of(comm, struct modmap, comm);
@@ -246,23 +246,12 @@ static int key_prefix(struct command *comm, struct cmd_info *ci)
 
 struct command *key_register_prefix(char *name)
 {
-	int i;
-	int free = 0;
-	for (i = 1; i < 512; i++) {
-		if (!modmap[i].name) {
-			if (!free)
-				free = i;
-			continue;
-		}
-		if (strcmp(modmap[i].name, name) == 0)
-			return &modmap[i].comm;
-	}
-	if (!free)
-		return NULL;
-	modmap[free].name = strdup(name);
-	modmap[free].transient = 1;
-	modmap[free].comm.func = key_prefix;
-	return &modmap[free].comm;
+	struct modmap *mm = malloc(sizeof(*mm));
+
+	mm->name = strdup(name);
+	mm->transient = 1;
+	mm->comm.func = key_prefix;
+	return &mm->comm;
 }
 
 struct command *key_lookup_cmd(struct map *m, char *c)
