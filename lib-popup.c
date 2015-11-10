@@ -135,20 +135,27 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 	struct popup_info *ppi = p->data;
 	struct cmd_info ci2;
 
-	if (ci->str == NULL || ci->str[0] != '\n')
-		return 0;
+	if (strcmp(ci->key, "Abort") == 0) {
+		pane_close(ppi->popup);
+		return 1;
+	}
+	if (strcmp(ci->key, "Replace") == 0) {
+		if (ci->str == NULL || ci->str[0] != '\n')
+			return 0;
 
-	ci2.focus = ppi->target;
-	ci2.key = attr_get_str(ppi->doc->attrs, "done-key", -1);
-	if (!ci2.key)
-		ci2.key = "PopupDone";
-	ci2.numeric = 1;
-	ci2.str = doc_getstr(ppi->doc, NULL, NULL);
-	ci2.mark = NULL;
-	key_handle_focus(&ci2);
-	free(ci2.str);
-	pane_close(ppi->popup);
-	return 1;
+		ci2.focus = ppi->target;
+		ci2.key = attr_get_str(ppi->doc->attrs, "done-key", -1);
+		if (!ci2.key)
+			ci2.key = "PopupDone";
+		ci2.numeric = 1;
+		ci2.str = doc_getstr(ppi->doc, NULL, NULL);
+		ci2.mark = NULL;
+		key_handle_focus(&ci2);
+		free(ci2.str);
+		pane_close(ppi->popup);
+		return 1;
+	}
+	return 0;
 }
 DEF_CMD(comm_done, popup_done);
 
@@ -157,6 +164,7 @@ void edlib_init(struct editor *ed)
 	pp_map = key_alloc();
 
 	key_add(pp_map, "Replace", &comm_done);
+	key_add(pp_map, "Abort", &comm_done);
 
 	key_add(ed->commands, "attach-popup", &comm_attach);
 }

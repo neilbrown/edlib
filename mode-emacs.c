@@ -166,6 +166,10 @@ static struct str_command {
 	{CMD(emacs_str), "WindowOP", "close", "emCX-Chr-0"},
 	{CMD(emacs_str), "Misc", "exit", "emCX-C-Chr-C"},
 	{CMD(emacs_str), "Misc", "refresh", "C-Chr-L"},
+	{CMD(emacs_str), "Abort", NULL, "C-Chr-G"},
+	{CMD(emacs_str), "NOP", NULL, "M-Chr-G"},
+	{CMD(emacs_str), "NOP", NULL, "emCX-C-Chr-G"},
+	{CMD(emacs_str), "NOP", NULL, "emCX4-C-Chr-G"},
 };
 
 static int emacs_str(struct command *c, struct cmd_info *ci)
