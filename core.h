@@ -61,6 +61,7 @@ struct editor {
 struct pane *editor_new(void);
 struct point *editor_choose_doc(struct editor *ed);
 void doc_make_docs(struct editor *ed);
+int editor_load_module(struct editor *ed, char *name);
 
 struct doc {
 	struct hlist_head	marks;

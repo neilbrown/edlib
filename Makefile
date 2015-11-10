@@ -20,9 +20,9 @@ SHOBJ = doc-text.o doc-dir.o \
 SO = $(patsubst %.o,lib/edlib-%.so,$(SHOBJ))
 H = list.h core.h
 edlib: $(OBJ) lib
-	$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -o edlib $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -Wl,--disable-new-dtags -o edlib $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
 
-$(OBJ) $(SHOBJ) : $(H)
+$(OBJ) $(SHOBJ) $(LIBOBJ) : $(H)
 
 $(SHOBJ) $(LIBOBJ) : %.o : %.c
 	gcc -fPIC $(CPPFLAGS) $(CFLAGS) -c $<

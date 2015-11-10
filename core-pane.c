@@ -350,6 +350,7 @@ int render_attach(char *name, struct pane *parent)
 	char buf[100];
 	struct cmd_info ci = {0};
 	struct point **ptp = pane_point(parent);
+	int ret;
 
 	if (!ptp)
 		return 0;
@@ -360,6 +361,12 @@ int render_attach(char *name, struct pane *parent)
 	ci.key = buf;
 	ci.focus = parent;
 	ci.pointp = ptp;
+	ret = key_lookup(pane2ed(parent)->commands, &ci);
+	if (ret)
+		return ret;
+	sprintf(buf, "render-%s", name);
+	editor_load_module(pane2ed(parent), buf);
+	sprintf(buf, "render-%s-attach", name);
 	return key_lookup(pane2ed(parent)->commands, &ci);
 }
 
@@ -407,8 +414,18 @@ struct pane *pane_attach(struct pane *p, char *type, struct point *pt)
 	ci.focus = p;
 	if (pt)
 		ci.pointp = &pt;
-	if (!key_lookup(ed->commands, &ci))
-		ci.home = NULL;
+	if (!key_lookup(ed->commands, &ci)) {
+		char *mod;
+		if (strcmp(type, "global-keymap")==0)
+			type = "keymap";
+		if (strncmp(type, "view-", 5) == 0)
+			type = "view";
+		asprintf(&mod, "lib-%s", type);
+		editor_load_module(ed, mod);
+		free(mod);
+		if (!key_lookup(ed->commands, &ci))
+			ci.home = NULL;
+	}
 	free(com);
 	return ci.home;
 }

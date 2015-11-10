@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <dlfcn.h>
 
 #include "core.h"
 
@@ -41,4 +43,21 @@ struct point *editor_choose_doc(struct editor *ed)
 		}
 	}
 	return point_new(choice, NULL);
+}
+
+int editor_load_module(struct editor *ed, char *name)
+{
+	char buf[PATH_MAX];
+	void *h;
+	void (*s)(struct editor *e);
+
+	sprintf(buf, "edlib-%s.so", name);
+	h = dlopen(buf, RTLD_NOW);
+	if (!h)
+		return 0;
+	s = dlsym(h, "edlib_init");
+	if (!s)
+		return 0;
+	s(ed);
+	return 1;
 }

@@ -131,8 +131,11 @@ struct point *doc_new(struct editor *ed, char *type)
 	sprintf(buf, "doc-%s", type);
 	ci.key = buf;
 	ci.pointp = &pt;
-	if (!key_lookup(ed->commands, &ci))
-		return NULL;
+	if (!key_lookup(ed->commands, &ci)) {
+		editor_load_module(ed, buf);
+		if (!key_lookup(ed->commands, &ci))
+			return NULL;
+	}
 	pt->doc->ed = ed;
 	return pt;
 }

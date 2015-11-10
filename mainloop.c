@@ -15,7 +15,6 @@
 #include <wchar.h>
 #include <dirent.h>
 #include <string.h>
-#include <dlfcn.h>
 
 #include "core.h"
 
@@ -42,32 +41,6 @@ char WelcomeText[] =
 	"And C-x C-c to close (without saving anything)\n"
 	"Mouse clicks move the cursor, and clicking on the scroll bar scrolls\n"
 	;
-static void load_libs(struct editor *ed)
-{
-	DIR *dir;
-	struct dirent de, *res;
-	char buf[PATH_MAX];
-
-	dir = opendir("lib");
-	if (!dir)
-		return;
-	while (readdir_r(dir, &de, &res) == 0 && res) {
-		void *h;
-		void (*s)(struct editor *e);
-		int l = strlen(res->d_name);
-		if (strncmp(res->d_name, "edlib", 5) != 0)
-			continue;
-		if (l <= 3 || strcmp(res->d_name + l-3, ".so") != 0)
-			continue;
-		strcpy(buf, "lib/");
-		strcat(buf, res->d_name);
-		h = dlopen(buf, RTLD_NOW);
-		if (h == NULL) continue;
-		s = dlsym(h, "edlib_init");
-		if (s)
-			s(ed);
-	}
-}
 
 int main(int argc, char *argv[])
 {
@@ -84,8 +57,9 @@ int main(int argc, char *argv[])
 	base = event_base_new();
 	event_base_priority_init(base, 2);
 	ed->base = base;
-	load_libs(ed);
 
+	editor_load_module(ed, "lib-line-count");
+	editor_load_module(ed, "display-ncurses");
 	ci.home = ci.focus = vroot;
 	ci.key = "display-ncurses";
 	if (!key_lookup(ed->commands, &ci))
@@ -93,6 +67,7 @@ int main(int argc, char *argv[])
 	root = ci.focus;
 	global = pane_attach(root, "global-keymap", NULL);
 
+	editor_load_module(ed, "mode-emacs");
 	ci.focus = global;
 	ci.key = "global-set-keymap";
 	ci.str = "mode-emacs";
