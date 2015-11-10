@@ -51,5 +51,5 @@ checksym:
 	@nm edlib  | awk '$$2 == "T" {print $$3}' | while read a; do grep $$a *.h > /dev/null || echo  $$a; done | grep -vE '^(_.*|main)$$' ||:
 
 clean:
-	rm -f edlib $(OBJ) $(SHOBJ)
+	rm -f edlib $(OBJ) $(SHOBJ) $(LIBOBJ)
 	rm -rf lib
