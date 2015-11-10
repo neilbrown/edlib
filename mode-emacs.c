@@ -259,8 +259,9 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 {
 	int fd;
 	struct pane *p, *par;
+	struct cmd_info ci2 = {0};
 
-	if (strcmp(ci->key, "File Found") != 0) {
+	if (strncmp(ci->key, "File Found", 10) != 0) {
 		char *path = NULL;
 		char buf[PATH_MAX];
 		struct point **ptp;
@@ -286,8 +287,15 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 
 		ptp = pane_point(p);
 		d = (*ptp)->doc;
-		attr_set_str(&d->attrs, "prefix", "Find File: ", -1);
-		attr_set_str(&d->attrs, "done-key", "File Found", -1);
+		if (strncmp(ci->key, "emCX4-", 6) == 0) {
+			attr_set_str(&d->attrs, "prefix",
+				     "Find File Other Window: ", 01);
+			attr_set_str(&d->attrs, "done-key",
+				     "File Found Other Window", -1);
+		} else {
+			attr_set_str(&d->attrs, "prefix", "Find File: ", -1);
+			attr_set_str(&d->attrs, "done-key", "File Found", -1);
+		}
 		doc_set_name(d, "Find File");
 		if (path) {
 			struct cmd_info ci2 = {0};
@@ -299,14 +307,25 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 		}
 		return 1;
 	}
-	p = ci->focus;
+	if (strcmp(ci->key, "File Found Other Window") == 0) {
+		pane_focus(ci->focus);
+		ci2.key = "OtherPane";
+		ci2.focus = ci->home;
+		key_handle_focus(&ci2);
+		p = ci2.focus;
+		while (p->focus)
+			p = p->focus;
+	} else
+		p = ci->focus;
+
+	par = p;
 	while (p && !p->point)
 		p = p->parent;
-	if (!p || !p->parent)
-		return 0;
-	par = p->parent;
+	if (p && p->parent)
+		par = p->parent;
 	/* par is the tile */
-	pane_close(p);
+	if (p)
+		pane_close(p);
 
 	fd = open(ci->str, O_RDONLY);
 	if (fd >= 0) {
@@ -357,17 +376,18 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 			p = p->focus;
 	} else
 		p = ci->focus;
+	par = p;
 	while (p && !p->point)
 		p = p->parent;
-	if (!p || !p->parent)
-		return 0;
-	par = p->parent;
+	if (p && p->parent)
+		par = p->parent;
 	/* par is the tile */
 
-	d = doc_find(pane2ed(p), ci->str);
+	d = doc_find(pane2ed(par), ci->str);
 	if (!d)
 		return 1;
-	pane_close(p);
+	if (p)
+		pane_close(p);
 	point_new(d, &pt);
 	p = pane_attach(par, "view-borders", pt);
 	if (!p) {

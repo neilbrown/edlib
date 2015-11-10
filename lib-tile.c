@@ -538,6 +538,7 @@ static int tile_other(struct command *c, struct cmd_info *ci)
 	 * Result is returned in ci->focus
 	 */
 	struct pane *p = ci->home;
+	struct pane *p2;
 	struct tileinfo *ti = p->data;
 
 	if (!list_empty(&ti->tiles)) {
@@ -545,7 +546,13 @@ static int tile_other(struct command *c, struct cmd_info *ci)
 		ci->focus = ti2->p;
 		return 1;
 	}
-	return 0;
+	/* Need to create a tile.  If wider than 120 (FIXME configurable and
+	 * pixel sensitive), horiz-split else vert
+	 */
+	p2 = tile_split(p, p->w >= 120, 1);
+	if (p2)
+		ci->focus = p2;
+	return 1;
 }
 DEF_CMD(comm_other, tile_other);
 void edlib_init(struct editor *ed)
