@@ -254,8 +254,7 @@ struct pane {
 
 	int			damaged;
 
-	struct map		*keymap;
-	struct command		*refresh;
+	struct command		*handle;
 	void			*data;
 	struct point		*point;
 };
@@ -271,7 +270,7 @@ enum {
 };
 
 struct pane *pane_register(struct pane *parent, int z,
-			   struct command *refresh, void *data,
+			   struct command *handle, void *data,
 			   struct list_head *here);
 void pane_reparent(struct pane *p, struct pane *newparent, struct list_head *here);
 void pane_subsume(struct pane *p, struct pane *parent);

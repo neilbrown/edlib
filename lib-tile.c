@@ -50,11 +50,16 @@ static void tile_adjust(struct pane *p);
 static void tile_avail(struct pane *p, struct pane *ignore);
 static int tile_destroy(struct pane *p);
 
-static int do_tile_refresh(struct command *c, struct cmd_info *ci)
+static int do_tile_handle(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	int damage = ci->extra;
 	struct tileinfo *ti = p->data;
+	int ret;
+
+	ret = key_lookup(tile_map, ci);
+	if (ret)
+		return ret;
 
 	if (strcmp(ci->key, "Close") == 0) {
 		tile_destroy(p);
@@ -74,14 +79,14 @@ static int do_tile_refresh(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(tile_refresh, do_tile_refresh);
+DEF_CMD(tile_handle, do_tile_handle);
 
 static int tile_attach(struct command *c, struct cmd_info *ci)
 {
 	struct pane *display = ci->focus;
 	struct tileinfo *ti = malloc(sizeof(*ti));
-	struct pane *p = pane_register(display, 0, &tile_refresh, ti, NULL);
-	p->keymap = tile_map;
+	struct pane *p = pane_register(display, 0, &tile_handle, ti, NULL);
+
 	ti->p = p;
 	ti->direction = Neither;
 	INIT_LIST_HEAD(&ti->tiles);
@@ -122,8 +127,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after)
 		ti2 = malloc(sizeof(*ti2));
 		ti2->direction = ti->direction;
 		INIT_LIST_HEAD(&ti2->tiles);
-		p2 = pane_register(p->parent, 0, &tile_refresh, ti2, &p->siblings);
-		p2->keymap = tile_map;
+		p2 = pane_register(p->parent, 0, &tile_handle, ti2, &p->siblings);
 		ti2->p = p2;
 		pane_resize(p2, p->x, p->y, p->w, p->h);
 		pane_reparent(p, p2, NULL);
@@ -137,8 +141,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after)
 		list_add(&ti2->tiles, &ti->tiles);
 	else
 		list_add_tail(&ti2->tiles, &ti->tiles);
-	ret = pane_register(p->parent, 0, &tile_refresh, ti2, here);
-	ret->keymap = tile_map;
+	ret = pane_register(p->parent, 0, &tile_handle, ti2, here);
 	ti2->p = ret;
 	switch (!!horiz + 2 * !!after) {
 	case 0: /* vert before */
@@ -285,16 +288,6 @@ static void tile_avail(struct pane *p, struct pane *ignore)
 	 */
 	struct tileinfo *ti = p->data;
 	struct pane *t;
-
-#if 0
-	if (ti->direction == Neither) {
-		t = list_first_entry(&p->children, struct pane, siblings);
-		if (t->refresh == &tile_refresh) {
-			p = t;
-			ti = p->data;
-		}
-	}
-#endif
 
 	if (p->children.next == p->children.prev) {
 		/* one or zero children */

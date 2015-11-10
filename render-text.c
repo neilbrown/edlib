@@ -247,12 +247,17 @@ static struct mark *find_top(struct point **ptp, struct pane *p,
 	return start;
 }
 
-static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
+static int do_render_text_handle(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	struct rt_data *rt = p->data;
 	struct mark *end = NULL, *top;
 	struct doc *d;
+	int ret;
+
+	ret = key_lookup(rt_map, ci);
+	if (ret)
+		return ret;
 
 	if (strcmp(ci->key, "Close") == 0) {
 		struct pane *p = rt->pane;
@@ -262,8 +267,7 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 		rt->pane = NULL;
 		doc_del_view(d, &rt->type);
 		p->data = NULL;
-		p->keymap = NULL;
-		p->refresh = NULL;
+		p->handle = NULL;
 		free(rt);
 		return 0;
 	}
@@ -308,7 +312,7 @@ found:
 	rt->bot = end;
 	return 0;
 }
-DEF_CMD(render_text_refresh, do_render_text_refresh);
+DEF_CMD(render_text_handle, do_render_text_handle);
 
 static int render_text_notify(struct command *c, struct cmd_info *ci)
 {
@@ -463,12 +467,11 @@ static void render_text_attach(struct pane *parent, struct point **ptp)
 	rt->target_x = -1;
 	rt->type.func = render_text_notify;
 	rt->typenum = doc_add_view((*ptp)->doc, &rt->type);
-	p = pane_register(parent, 0, &render_text_refresh, rt, NULL);
+	p = pane_register(parent, 0, &render_text_handle, rt, NULL);
 	rt->pane = p;
 
 	if (!rt_map)
 		render_text_register_map();
-	p->keymap = rt_map;
 }
 static int do_render_text_attach(struct command *c, struct cmd_info *ci)
 {

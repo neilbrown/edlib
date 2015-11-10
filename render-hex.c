@@ -164,12 +164,17 @@ static struct mark *find_top(struct point **ptp, struct pane *p,
 	return m;
 }
 
-static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
+static int do_render_hex_handle(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	struct he_data *he = p->data;
 	struct mark *end = NULL, *top;
 	struct doc *d;
+	int ret;
+
+	ret = key_lookup(he_map, ci);
+	if (ret)
+		return ret;
 
 	if (strcmp(ci->key, "Close") == 0) {
 		struct pane *p = he->pane;
@@ -180,8 +185,7 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 		he->pane = NULL;
 		doc_del_view(d, &he->type);
 		p->data = NULL;
-		p->refresh = NULL;
-		p->keymap = NULL;
+		p->handle = NULL;
 		free(he);
 		return 1;
 	}
@@ -234,7 +238,7 @@ found:
 	he->bot = end;
 	return 0;
 }
-DEF_CMD(render_hex_refresh, do_render_hex_refresh);
+DEF_CMD(render_hex_handle, do_render_hex_handle);
 
 static int render_hex_notify(struct command *c, struct cmd_info *ci)
 {
@@ -405,12 +409,11 @@ static void render_hex_attach(struct pane *parent, struct point **ptp)
 	he->ignore_point = 0;
 	he->type.func = render_hex_notify;
 	he->typenum = doc_add_view((*ptp)->doc, &he->type);
-	p = pane_register(parent, 0, &render_hex_refresh, he, NULL);
+	p = pane_register(parent, 0, &render_hex_handle, he, NULL);
 	he->pane = p;
 
 	if (!he_map)
 		render_hex_register_map();
-	p->keymap = he_map;
 }
 static int do_render_hex_attach(struct command *c, struct cmd_info *ci)
 {

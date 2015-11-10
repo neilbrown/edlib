@@ -238,12 +238,17 @@ static struct mark *find_top(struct point **ptp, struct pane *p,
 	return start;
 }
 
-static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
+static int do_render_dir_handle(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	struct dir_data *dd = p->data;
 	struct mark *end = NULL, *top;
 	struct doc *d;
+	int ret;
+
+	ret = key_lookup(dr_map, ci);
+	if (ret)
+		return ret;
 
 	if (strcmp(ci->key, "Close") == 0) {
 		struct pane *p = dd->pane;
@@ -253,8 +258,7 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 		dd->pane = NULL;
 		doc_del_view(d, &dd->type);
 		p->data = NULL;
-		p->refresh = NULL;
-		p->keymap = NULL;
+		p->handle = NULL;
 		free(dd);
 		return 1;
 	}
@@ -288,7 +292,7 @@ found:
 	dd->bot = end;
 	return 0;
 }
-DEF_CMD(render_dir_refresh, do_render_dir_refresh);
+DEF_CMD(render_dir_handle, do_render_dir_handle);
 
 static int render_dir_notify(struct command *c, struct cmd_info *ci)
 {
@@ -465,14 +469,13 @@ static void render_dir_attach(struct pane *parent, struct point **ptp)
 	dd->ignore_point = 0;
 	dd->type.func = render_dir_notify;
 	dd->typenum = doc_add_view((*ptp)->doc, &dd->type);
-	p = pane_register(parent, 0, &render_dir_refresh, dd, NULL);
+	p = pane_register(parent, 0, &render_dir_handle, dd, NULL);
 	dd->pane = p;
 	dd->header = 0;
 	dd->home_field = -1;
 
 	if (!dr_map)
 		render_dir_register_map();
-	p->keymap = dr_map;
 }
 static int do_render_dir_attach(struct command *c, struct cmd_info *ci)
 {

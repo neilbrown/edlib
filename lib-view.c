@@ -32,7 +32,7 @@ struct view_data {
 static struct map *view_map;
 static struct pane *view_attach(struct pane *par, struct point *pt, int border);
 
-static int do_view_refresh(struct command *cm, struct cmd_info *ci)
+static int do_view_handle(struct command *cm, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	int damage = ci->extra;
@@ -43,6 +43,11 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	int ln, l, w, c;
 	struct cmd_info ci2 = {0};
 	char msg[100];
+	int ret;
+
+	ret = key_lookup(view_map, ci);
+	if (ret)
+		return ret;
 
 	if (vd->pane != p)
 		vd->pane = p; /* FIXME having to do this is horrible */
@@ -105,7 +110,7 @@ static int do_view_refresh(struct command *cm, struct cmd_info *ci)
 	vd->scroll_bar_y = mid;
 	return 0;
 }
-DEF_CMD(view_refresh, do_view_refresh);
+DEF_CMD(view_handle, do_view_handle);
 
 static int do_view_null(struct command *c, struct cmd_info *ci)
 {
@@ -171,8 +176,7 @@ static struct pane *view_attach(struct pane *par, struct point *pt, int border)
 	vd->border = border;
 	vd->ch_notify.func = view_notify;
 	pt->owner = &pt;
-	p = pane_register(par, 0, &view_refresh, vd, NULL);
-	p->keymap = view_map;
+	p = pane_register(par, 0, &view_handle, vd, NULL);
 	vd->pane = p;
 	pane_resize(p, 0, 0, par->w, par->h);
 

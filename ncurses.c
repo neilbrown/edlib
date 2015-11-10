@@ -83,15 +83,17 @@ static int nc_misc(struct command *c, struct cmd_info *ci)
 		return 0;
 	return 1;
 }
-DEF_CMD(comm_misc, nc_misc);
 
-static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
+static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	int damage = ci->extra;
 	struct display_data *dd = p->data;
 	struct event *l;
 	struct timeval tv;
+
+	if (strcmp(ci->key, "Misc") == 0)
+		return nc_misc(c, ci);
 
 	if (strcmp(ci->key, "Close") == 0) {
 		/* FIXME */
@@ -122,7 +124,7 @@ static int do_ncurses_refresh(struct command *c, struct cmd_info *ci)
 	ci->extra &= DAMAGED_SIZE;
 	return 1;
 }
-DEF_CMD(ncurses_refresh, do_ncurses_refresh);
+DEF_CMD(ncurses_handle, do_ncurses_handle);
 
 static void handle_winch(int sig, short ev, void *null);
 struct pane *ncurses_init(struct editor *ed)
@@ -131,7 +133,6 @@ struct pane *ncurses_init(struct editor *ed)
 	struct pane *p;
 	struct event *l;
 	struct display_data *dd = malloc(sizeof(*dd));
-	struct map *map = key_alloc();
 
 	start_color();
 	use_default_colors();
@@ -152,10 +153,7 @@ struct pane *ncurses_init(struct editor *ed)
 	dd->dpy.extra = 0;
 
 	current_screen = NULL;
-	p = pane_register(NULL, 0, &ncurses_refresh, dd, NULL);
-	p->keymap = map;
-
-	key_add(map, "Misc", &comm_misc);
+	p = pane_register(NULL, 0, &ncurses_handle, dd, NULL);
 
 	getmaxyx(stdscr, p->h, p->w); p->h-=1;
 

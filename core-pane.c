@@ -47,11 +47,10 @@ static void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->cx = p->cy = -1;
 	p->h = p->w = 0;
 	p->focus = NULL;
-	p->refresh = NULL;
+	p->handle = NULL;
 	p->data = NULL;
 	p->damaged = 0;
 	p->point = NULL;
-	p->keymap = NULL;
 }
 
 /*
@@ -70,7 +69,7 @@ void pane_damaged(struct pane *p, int type)
 }
 
 struct pane *pane_register(struct pane *parent, int z,
-			   struct command *refresh, void *data, struct list_head *here)
+			   struct command *handle, void *data, struct list_head *here)
 {
 	struct pane *p = malloc(sizeof(*p));
 	pane_init(p, parent, here);
@@ -78,7 +77,7 @@ struct pane *pane_register(struct pane *parent, int z,
 		p->z = parent->z + z;
 	else
 		p->z = z;
-	p->refresh = refresh;
+	p->handle = handle;
 	p->data = data;
 	if (parent && parent->focus == NULL)
 		parent->focus = p;
@@ -103,7 +102,7 @@ static void __pane_refresh(struct cmd_info *ci)
 	else {
 		ci->extra = damage;
 		damage &= DAMAGED_FORCE | DAMAGED_SIZE;
-		if (p->refresh->func(p->refresh, ci))
+		if (p->handle->func(p->handle, ci))
 			damage |= ci->extra;
 	}
 	p->damaged = 0;
@@ -141,8 +140,8 @@ void pane_close(struct pane *p)
 	ci.pointp = pane_point(p);
 
 	list_del_init(&p->siblings);
-	if (p->refresh)
-		p->refresh->func(p->refresh, &ci);
+	if (p->handle)
+		p->handle->func(p->handle, &ci);
 	pane_damaged(p->parent, DAMAGED_FORCE|DAMAGED_CURSOR);
 /* FIXME who destroys 'point'*/
 	free(p);
@@ -162,8 +161,8 @@ int pane_clone(struct pane *from, struct pane *parent)
 	ci.key = "Clone";
 	ci.focus = parent;
 	ci.home = from;
-	if (from->refresh)
-		return from->refresh->func(from->refresh, &ci);
+	if (from->handle)
+		return from->handle->func(from->handle, &ci);
 	return 0;
 }
 
@@ -209,11 +208,11 @@ void pane_subsume(struct pane *p, struct pane *parent)
 {
 	/* move all content from p into parent, which must be empty,
 	 * except possibly for 'p'.
-	 * 'data', 'point' and 'refresh' are swapped.
+	 * 'data', 'point' and 'handle' are swapped.
 	 * After this, p can be freed
 	 */
 	void *data;
-	struct command *refresh;
+	struct command *handle;
 	struct point *point;
 	struct pane *c;
 
@@ -227,11 +226,10 @@ void pane_subsume(struct pane *p, struct pane *parent)
 		c->parent = parent;
 	}
 	parent->focus = p->focus;
-	parent->keymap = p->keymap;
 
-	refresh = parent->refresh;
-	parent->refresh = p->refresh;
-	p->refresh = refresh;
+	handle = parent->handle;
+	parent->handle = p->handle;
+	p->handle = handle;
 
 	data = parent->data;
 	parent->data = p->data;

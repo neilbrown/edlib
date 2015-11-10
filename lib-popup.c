@@ -38,7 +38,7 @@ struct popup_info {
 
 static struct map *pp_map;
 
-static int do_popup_refresh(struct command *c, struct cmd_info *ci)
+static int do_popup_handle(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	struct popup_info *ppi = p->data;
@@ -84,19 +84,25 @@ static int do_popup_refresh(struct command *c, struct cmd_info *ci)
 		pane_text(p, name[i], A_STANDOUT, label+i, 0);
 	return 0;
 }
-DEF_CMD(popup_refresh, do_popup_refresh);
+DEF_CMD(popup_handle, do_popup_handle);
 
-static int do_popup_no_refresh(struct command *c, struct cmd_info *ci)
+static int do_popup_sub_handle(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 
-	if (p->focus == NULL && !list_empty(&p->children))
-		p->focus = list_first_entry(&p->children, struct pane, siblings);
-	if (p->data != NULL && strcmp(ci->key, "Refresh") == 0)
-		pane_check_size(p);
+	if (strcmp(ci->key, "Refresh") == 0) {
+		if (p->focus == NULL && !list_empty(&p->children))
+			p->focus = list_first_entry(&p->children,
+						    struct pane, siblings);
+		if (p->data != NULL && strcmp(ci->key, "Refresh") == 0)
+			pane_check_size(p);
+		return 0;
+	}
+	if (p->data)
+		return key_lookup(pp_map, ci);
 	return 0;
 }
-DEF_CMD(popup_no_refresh, do_popup_no_refresh);
+DEF_CMD(popup_sub_handle, do_popup_sub_handle);
 
 static int popup_attach(struct command *c, struct cmd_info *ci)
 {
@@ -109,20 +115,19 @@ static int popup_attach(struct command *c, struct cmd_info *ci)
 	while (root->parent)
 		root = root->parent;
 	ppi->target = ci->focus;
-	ppi->popup = pane_register(root, 1, &popup_refresh, ppi, NULL);
+	ppi->popup = pane_register(root, 1, &popup_handle, ppi, NULL);
 
 	pane_resize(ppi->popup, root->w/4, root->h/2-2, root->w/2, 3);
-	p = pane_register(ppi->popup, 0, &popup_no_refresh, NULL, NULL);
+	p = pane_register(ppi->popup, 0, &popup_sub_handle, NULL, NULL);
 	pane_resize(p, 1, 1, p->parent->w-2, 1);
 	pt = doc_new(pane2ed(root), "text");
 	doc_set_name(pt->doc, "*popup*");
 	ppi->doc = pt->doc;
 	p = pane_attach(p, "view-noborders", pt);
 	render_attach(NULL, p);
-	ret = pane_register(p->focus, 0, &popup_no_refresh, ppi, NULL);
+	ret = pane_register(p->focus, 0, &popup_sub_handle, ppi, NULL);
 	pane_check_size(ret);
 	ret->cx = ret->cy = -1;
-	ret->keymap = pp_map;
 	pane_focus(ret);
 	ci->home = ret;
 	return 1;

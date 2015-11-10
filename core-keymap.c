@@ -7,7 +7,7 @@
  * A keymap maps a key to a command.
  * Keys are ordered for fast binary-search lookup.
  * A "key" is an arbitrary string which typically contains
- * some 'mode' prefix and some specific tail.
+ * some 'mode' pr efix and some specific tail.
  * e.g emacs-M-C-Chr-x is Meta-Control-X in emacs mode.
  * As far as the map is concerned, it is just a lexically order string.
  *
@@ -284,9 +284,9 @@ static int key_handle(struct cmd_info *ci)
 	if (!ci->pointp)
 		return 0;
 	while (ret == 0 && p) {
-		if (p->keymap) {
+		if (p->handle) {
 			ci->home = p;
-			ret = key_lookup(p->keymap, ci);
+			ret = p->handle->func(p->handle, ci);
 		}
 		if (!ret && p->point && p->point->doc->map) {
 			struct map *m = p->point->doc->map;
