@@ -4,28 +4,35 @@
 #
 
 LDLIBS= -lncursesw -levent -ldl
-CPPFLAGS= -I/usr/include/ncursesw
+CPPFLAGS= -I. -I/usr/include/ncursesw
 CFLAGS=-g -Wall -Werror -Wstrict-prototypes -Wextra -Wno-unused-parameter
 
-all:edlib checksym lib shared
+all: dirs edlib checksym lib shared
 
-OBJ = mainloop.o
-LIBOBJ = core-mark.o core-doc.o core-editor.o core-attr.o core-keymap.o core-pane.o
-SHOBJ = doc-text.o doc-dir.o \
-	render-text.o render-hex.o render-dir.o \
-	lib-view.o lib-tile.o lib-popup.o lib-line-count.o lib-keymap.o \
-	mode-emacs.o \
-	display-ncurses.o
+OBJ = O/mainloop.o
+LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
+	O/core-keymap.o O/core-pane.o
+SHOBJ = O/doc-text.o O/doc-dir.o \
+	O/render-text.o O/render-hex.o O/render-dir.o \
+	O/lib-view.o O/lib-tile.o O/lib-popup.o O/lib-line-count.o O/lib-keymap.o \
+	O/mode-emacs.o \
+	O/display-ncurses.o
 
-SO = $(patsubst %.o,lib/edlib-%.so,$(SHOBJ))
+SO = $(patsubst O/%.o,lib/edlib-%.so,$(SHOBJ))
 H = list.h core.h
 edlib: $(OBJ) lib
 	$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -Wl,--disable-new-dtags -o edlib $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
 
 $(OBJ) $(SHOBJ) $(LIBOBJ) : $(H)
 
-$(SHOBJ) $(LIBOBJ) : %.o : %.c
-	gcc -fPIC $(CPPFLAGS) $(CFLAGS) -c $<
+$(OBJ) : O/%.o : %.c
+	gcc $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+$(SHOBJ) $(LIBOBJ) : O/%.o : %.c
+	gcc -fPIC $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+dirs :
+	@mkdir -p lib O
 
 lib: lib/libedlib.so
 lib/libedlib.so: $(LIBOBJ)
@@ -33,7 +40,7 @@ lib/libedlib.so: $(LIBOBJ)
 	gcc -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ)
 
 shared: $(SO)
-$(SO) : lib/edlib-%.so : %.o
+$(SO) : lib/edlib-%.so : O/%.o
 	@mkdir -p lib
 	gcc -shared -Wl,-soname,edlib-$*.so -o $@ $<
 
@@ -51,5 +58,5 @@ checksym:
 	@nm edlib  | awk '$$2 == "T" {print $$3}' | while read a; do grep $$a *.h > /dev/null || echo  $$a; done | grep -vE '^(_.*|main)$$' ||:
 
 clean:
-	rm -f edlib $(OBJ) $(SHOBJ) $(LIBOBJ)
-	rm -rf lib
+	rm -f edlib
+	rm -rf lib O
