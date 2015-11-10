@@ -117,7 +117,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 			*b = 0;
 			if (strcmp(buf, "c") == 0) {
 				/* Display the char under cursor */
-				pane_text(p, ch, NULL, x, y);
+				pane_text(p, ch, "fg:red", x, y);
 				x += 1;
 				continue;
 			}
@@ -125,7 +125,10 @@ static struct mark *render(struct point **ptp, struct pane *p)
 			if (!name)
 				name = "-";
 			if (*n != ':') {
-				x += put_str(p, name, NULL, x, y);
+				char *attr = NULL;
+				if (home == field)
+					attr = "fg:blue";
+				x += put_str(p, name, attr, x, y);
 				continue;
 			}
 			w = 0;
@@ -147,7 +150,10 @@ static struct mark *render(struct point **ptp, struct pane *p)
 			}
 
 			while (*name && w > 0 ) {
-				pane_text(p, *name, NULL, x, y);
+				char *attr = NULL;
+				if (home == field)
+					attr = "fg:blue";
+				pane_text(p, *name, attr, x, y);
 				x += 1;
 				w -= 1;
 				name += 1;

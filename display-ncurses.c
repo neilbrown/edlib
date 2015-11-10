@@ -95,11 +95,35 @@ static void ncurses_end(void)
 static int cvt_attrs(char *attrs)
 {
 	int attr = 0;
+	char tmp[40];
+	char *a;
 
-	if (attrs == NULL) attr = 0;
-	else if (strcmp(attrs, "inverse")==0) attr = A_STANDOUT;
-	else if (strcmp(attrs, "bold")==0) attr = A_BOLD;
-	else if (strcmp(attrs, "underline")==0) attr = A_UNDERLINE;
+	if (!attrs)
+		return 0;
+	a = attrs;
+	while (a && *a) {
+		char *c;
+		if (*a == ',') {
+			a++;
+			continue;
+		}
+		c = strchr(a, ',');
+		if (!c)
+			c = a+strlen(a);
+		strncpy(tmp, a, c-a);
+		tmp[c-a] = 0;
+		if (strcmp(tmp, "inverse")==0) attr |= A_STANDOUT;
+		else if (strcmp(tmp, "bold")==0) attr |= A_BOLD;
+		else if (strcmp(tmp, "underline")==0) attr |= A_UNDERLINE;
+		else if (strcmp(tmp, "fg:blue")  == 0) {
+			init_pair(1, COLOR_BLUE, -1);
+			attr |= COLOR_PAIR(1);
+		} else if (strcmp(tmp, "fg:red")  == 0) {
+			init_pair(2, COLOR_RED, -1);
+			attr |= COLOR_PAIR(2);
+		}
+		a = c;
+	}
 	return attr;
 }
 
