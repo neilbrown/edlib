@@ -1,6 +1,6 @@
 /*
  * Copyright Neil Brown <neil@brown.name> 2015
- * May be distrubuted under terms of GPLv2 - see file:COPYING
+ * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * A buffer can be viewed in a pane.
  * The pane is (typically) a tile in a display.
