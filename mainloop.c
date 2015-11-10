@@ -98,6 +98,6 @@ int main(int argc, char *argv[])
 		pane_refresh(root);
 		event_base_dispatch(base);
 	}
-	ncurses_end();
+	pane_close(root);
 	exit(0);
 }

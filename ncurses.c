@@ -84,6 +84,12 @@ static int nc_misc(struct command *c, struct cmd_info *ci)
 	return 1;
 }
 
+static void ncurses_end(void)
+{
+	nl();
+	endwin();
+}
+
 static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
@@ -96,7 +102,8 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 		return nc_misc(c, ci);
 
 	if (strcmp(ci->key, "Close") == 0) {
-		/* FIXME */
+		ncurses_end();
+		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
@@ -164,12 +171,6 @@ struct pane *ncurses_init(struct editor *ed)
 	event_add(l, NULL);
 	pane_damaged(p, DAMAGED_SIZE | DAMAGED_FORCE);
 	return p;
-}
-
-void ncurses_end(void)
-{
-	nl();
-	endwin();
 }
 
 static void handle_winch(int sig, short ev, void *vpane)

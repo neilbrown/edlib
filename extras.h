@@ -4,6 +4,5 @@
  */
 
 struct pane *ncurses_init(struct editor *ed);
-void ncurses_end(void);
 void pane_clear(struct pane *p, int attr, int x, int y, int w, int h);
 void pane_text(struct pane *p, wchar_t ch, int attr, int x, int y);
