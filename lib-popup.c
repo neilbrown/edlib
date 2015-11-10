@@ -110,10 +110,14 @@ static int popup_attach(struct command *c, struct cmd_info *ci)
 	struct pane *ret, *root, *p;
 	struct popup_info *ppi = malloc(sizeof(*ppi));
 	struct point *pt;
+	struct cmd_info ci2 = {0};
 
-	root = ci->focus;
-	while (root->parent)
-		root = root->parent;
+	ci2.key = "global-key-root";
+	ci2.focus = ci->focus;
+	if (!key_handle_focus(&ci2))
+		return 0;
+	root = ci2.focus;
+
 	ppi->target = ci->focus;
 	ppi->popup = pane_register(root, 1, &popup_handle, ppi, NULL);
 
@@ -141,6 +145,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 	struct cmd_info ci2;
 
 	if (strcmp(ci->key, "Abort") == 0) {
+		pane_focus(ppi->target);
 		pane_close(ppi->popup);
 		return 1;
 	}
@@ -148,6 +153,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 		if (ci->str == NULL || ci->str[0] != '\n')
 			return 0;
 
+		pane_focus(ppi->target);
 		ci2.focus = ppi->target;
 		ci2.key = attr_get_str(ppi->doc->attrs, "done-key", -1);
 		if (!ci2.key)

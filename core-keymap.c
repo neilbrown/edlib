@@ -86,6 +86,13 @@ struct map *key_alloc(void)
 	return m;
 }
 
+void key_free(struct map *m)
+{
+	free(m->keys);
+	free(m->comms);
+	free(m);
+}
+
 /* Find first entry >= k */
 static int key_find(struct map *map, char *k)
 {
@@ -258,6 +265,22 @@ struct command *key_register_prefix(char *name)
 	return &modmap[free].comm;
 }
 
+struct command *key_lookup_cmd(struct map *m, char *c)
+{
+	int pos = key_find(m, c);
+
+	if (pos >= m->size)
+		return NULL;
+	if (strcmp(m->keys[pos], c) == 0) {
+		/* Exact match - use this entry */
+		return GETCOMM(m->comms[pos]);
+	} else if (pos > 0 && IS_RANGE(m->comms[pos-1])) {
+		/* In a range, use previous */
+		return GETCOMM(m->comms[pos-1]);
+	} else
+		return NULL;
+}
+
 int key_lookup(struct map *m, struct cmd_info *ci)
 {
 	int pos = key_find(m, ci->key);
@@ -281,8 +304,6 @@ static int key_handle(struct cmd_info *ci)
 	struct pane *p = ci->focus;
 	int ret = 0;
 
-	if (!ci->pointp)
-		return 0;
 	while (ret == 0 && p) {
 		if (p->handle) {
 			ci->home = p;
@@ -297,8 +318,6 @@ static int key_handle(struct cmd_info *ci)
 		}
 		p = p->parent;
 	}
-	if (!ret)
-		ret = key_lookup(pane2ed(ci->focus)->map, ci);
 	return ret;
 }
 

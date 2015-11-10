@@ -68,8 +68,9 @@ static void load_libs(struct editor *ed)
 int main(int argc, char *argv[])
 {
 	struct event_base *base;
-	struct pane *root;
-	struct pane *b, *p= NULL;;
+	struct pane *root, *global;
+	struct pane *b, *p= NULL;
+	struct cmd_info ci = {0};
 
 	struct editor *ed = editor_new();
 
@@ -80,9 +81,14 @@ int main(int argc, char *argv[])
 	ed->base = base;
 	root = ncurses_init(ed);
 	load_libs(ed);
-	ed->map = emacs_register();
 
-	b = pane_attach(root, "tile", NULL);
+	global = pane_attach(root, "global-keymap", NULL);
+
+	ci.focus = global;
+	ci.key = "global-set-keymap";
+	ci.str = "mode-emacs";
+	key_handle_focus(&ci);
+	b = pane_attach(global, "tile", NULL);
 	if (b)
 		p = doc_from_text(b, "*Welcome*", WelcomeText);
 	if (p) {

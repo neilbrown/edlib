@@ -26,7 +26,6 @@ struct point;
 struct attrset;
 struct display;
 struct pane;
-struct keymap;
 struct command;
 struct cmd_info;
 
@@ -50,7 +49,6 @@ struct editor {
 	struct list_head	documents;
 	struct doc		*docs;  /* document containing all documents */
 	struct map		*commands;
-	struct map		*map;   /* temp hack */
 };
 struct editor *editor_new(void);
 struct point *editor_choose_doc(struct editor *ed);
@@ -233,9 +231,11 @@ struct cmd_info {
 #define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric)
 
 struct map *key_alloc(void);
+void key_free(struct map *m);
 int key_handle_focus(struct cmd_info *ci);
 int key_handle_xy(struct cmd_info *ci);
 int key_lookup(struct map *m, struct cmd_info *ci);
+struct command *key_lookup_cmd(struct map *m, char *c);
 void key_add(struct map *map, char *k, struct command *comm);
 void key_add_range(struct map *map, char *first, char *last,
 		   struct command *comm);

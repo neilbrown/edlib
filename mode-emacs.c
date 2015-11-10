@@ -463,7 +463,9 @@ static int emacs_kill_doc(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_kill_doc, emacs_kill_doc);
 
-struct map *emacs_register(void)
+static struct map *emacs_map;
+
+static void emacs_init(void)
 {
 	unsigned i;
 	struct command *cx_cmd = key_register_prefix("emCX-");
@@ -511,5 +513,18 @@ struct map *emacs_register(void)
 	key_add(m, "emCX-Chr-k", &comm_kill_doc);
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &comm_num);
-	return m;
+	emacs_map = m;
+}
+
+static int do_mode_emacs(struct command *c, struct cmd_info *ci)
+{
+	return key_lookup(emacs_map, ci);
+}
+DEF_CMD(mode_emacs, do_mode_emacs);
+
+void edlib_init(struct editor *ed)
+{
+	if (emacs_map == NULL)
+		emacs_init();
+	key_add(ed->commands, "mode-emacs", &mode_emacs);
 }

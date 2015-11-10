@@ -2,7 +2,6 @@
  * Copyright Neil Brown <neil@brown.name> 2015
  * May be distrubuted under terms of GPLv2 - see file:COPYING
  */
-struct map *emacs_register(void);
 
 struct pane *ncurses_init(struct editor *ed);
 void ncurses_end(void);
