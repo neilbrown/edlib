@@ -144,7 +144,7 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 DEF_CMD(ncurses_handle, do_ncurses_handle);
 
 static void handle_winch(int sig, short ev, void *null);
-struct pane *ncurses_init(struct editor *ed)
+static struct pane *ncurses_init(struct editor *ed)
 {
 	WINDOW *w = initscr();
 	struct pane *p;
@@ -390,4 +390,17 @@ static void input_handle(int fd, short ev, void *P)
 			send_key(is_keycode, c, p);
 	}
 	pane_refresh(p);
+}
+
+static int display_ncurses(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ncurses_init(pane2ed(ci->home));
+	ci->focus = p;
+	return 1;
+}
+DEF_CMD(comm_ncurses, display_ncurses);
+
+void edlib_init(struct editor *ed)
+{
+	key_add(ed->commands, "display-ncurses", &comm_ncurses);
 }

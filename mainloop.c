@@ -83,9 +83,13 @@ int main(int argc, char *argv[])
 	base = event_base_new();
 	event_base_priority_init(base, 2);
 	ed->base = base;
-	root = ncurses_init(ed);
 	load_libs(ed);
 
+	ci.home = ci.focus = vroot;
+	ci.key = "display-ncurses";
+	if (!key_lookup(ed->commands, &ci))
+		exit(1);
+	root = ci.focus;
 	global = pane_attach(root, "global-keymap", NULL);
 
 	ci.focus = global;
