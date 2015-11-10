@@ -2,7 +2,7 @@
  * Copyright Neil Brown <neil@brown.name> 2015
  * May be distrubuted under terms of GPLv2 - see file:COPYING
  *
- * Keymaps for libed.
+ * Keymaps for edlib.
  *
  * A keymap maps a key to a command.
  * Keys are ordered for fast binary-search lookup.
