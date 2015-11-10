@@ -260,9 +260,9 @@ static char *dir_get_attr(struct doc *d, struct mark *m,
 		if (a)
 			return a;
 		if (strcmp(attr, "heading") == 0)
-			return "    Mtime       Owner  File Name";
+			return "     Mtime       Owner  File Name";
 		if (strcmp(attr, "line-format") == 0)
-			return "  %mtime:11 %owner:-8 %+name";
+			return " %c %mtime:11 %owner:-8 %+name";
 		if (strcmp(attr, "filename") == 0)
 			return dr->fname;
 		return NULL;

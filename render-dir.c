@@ -116,6 +116,12 @@ static struct mark *render(struct point **ptp, struct pane *p)
 				n += 1;
 			}
 			*b = 0;
+			if (strcmp(buf, "c") == 0) {
+				/* Display the char under cursor */
+				pane_text(p, ch, 0, x, y);
+				x += 1;
+				continue;
+			}
 			name = doc_attr(d, m, 0, buf);
 			if (!name)
 				name = "-";
