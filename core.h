@@ -44,21 +44,23 @@ struct doc_ref {
  * The root pane of a pane tree must have a display as the 'data', which allows
  * the editor to be found from any pane or point.
  */
-struct editor {
-	struct event_base	*base;
-	struct list_head	documents;
-	struct doc		*docs;  /* document containing all documents */
-	struct map		*commands;
-};
-struct editor *editor_new(void);
-struct point *editor_choose_doc(struct editor *ed);
-void doc_make_docs(struct editor *ed);
-
 struct display {
 	struct editor		*ed;
 	char			*mode, *next_mode;
 	int			numeric, extra;
 };
+
+struct editor {
+	struct event_base	*base;
+	struct list_head	documents;
+	struct doc		*docs;  /* document containing all documents */
+	struct map		*commands;
+
+	struct display		null_display;
+};
+struct pane *editor_new(void);
+struct point *editor_choose_doc(struct editor *ed);
+void doc_make_docs(struct editor *ed);
 
 struct doc {
 	struct hlist_head	marks;

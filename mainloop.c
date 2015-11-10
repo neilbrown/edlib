@@ -74,9 +74,10 @@ int main(int argc, char *argv[])
 	struct pane *root, *global;
 	struct pane *b, *p= NULL;
 	struct cmd_info ci = {0};
+	struct editor *ed;
+	struct pane *vroot = editor_new();
 
-	struct editor *ed = editor_new();
-
+	ed = pane2ed(vroot);
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 	base = event_base_new();

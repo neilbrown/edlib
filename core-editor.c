@@ -8,14 +8,19 @@
 
 #include "core.h"
 
-struct editor *editor_new(void)
+struct pane *editor_new(void)
 {
 	struct editor *ed = calloc(sizeof(*ed), 1);
+	struct pane *p;
+
 	INIT_LIST_HEAD(&ed->documents);
 
 	doc_make_docs(ed);
 	ed->commands = key_alloc();
-	return ed;
+	ed->null_display.ed = ed;
+	p = pane_register(NULL, 0, NULL, &ed->null_display, NULL);
+	point_new(ed->docs, &p->point);
+	return p;
 }
 
 struct point *editor_choose_doc(struct editor *ed)
