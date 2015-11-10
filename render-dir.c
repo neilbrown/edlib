@@ -28,7 +28,7 @@ struct dir_data {
 };
 
 static struct map *dr_map;
-static void render_dir_attach(struct pane *parent, struct point *pt);
+static void render_dir_attach(struct pane *parent, struct point **ptp);
 
 static int put_str(struct pane *p, char *buf, int attr, int x, int y)
 {
@@ -260,12 +260,8 @@ static int do_render_dir_refresh(struct command *c, struct cmd_info *ci)
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *parent = ci->focus;
-		struct pane *pp = parent;
-		while (pp && pp->point == NULL)
-			pp = pp->parent;
-		if (!pp)
-			return 0;
-		render_dir_attach(parent, pp->point);
+
+		render_dir_attach(parent, NULL);
 		if (p->focus)
 			return pane_clone(p->focus, parent->focus);
 		return 1;
@@ -455,16 +451,20 @@ static void render_dir_register_map(void)
 	key_add(dr_map, "Chr-h", &comm_open);
 }
 
-static void render_dir_attach(struct pane *parent, struct point *pt)
+static void render_dir_attach(struct pane *parent, struct point **ptp)
 {
 	struct dir_data *dd = malloc(sizeof(*dd));
 	struct pane *p;
 
+	if (!ptp)
+		ptp = pane_point(parent);
+	if (!ptp)
+		return;
 	dd->top = NULL;
 	dd->bot = NULL;
 	dd->ignore_point = 0;
 	dd->type.func = render_dir_notify;
-	dd->typenum = doc_add_view(pt->doc, &dd->type);
+	dd->typenum = doc_add_view((*ptp)->doc, &dd->type);
 	p = pane_register(parent, 0, &render_dir_refresh, dd, NULL);
 	dd->pane = p;
 	dd->header = 0;
@@ -476,7 +476,7 @@ static void render_dir_attach(struct pane *parent, struct point *pt)
 }
 static int do_render_dir_attach(struct command *c, struct cmd_info *ci)
 {
-	render_dir_attach(ci->focus, *ci->pointp);
+	render_dir_attach(ci->focus, ci->pointp);
 	return 1;
 }
 DEF_CMD(comm_attach, do_render_dir_attach);

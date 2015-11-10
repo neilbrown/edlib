@@ -28,7 +28,7 @@ struct he_data {
 };
 
 static struct map *he_map;
-static void render_hex_attach(struct pane *parent, struct point *pt);
+static void render_hex_attach(struct pane *parent, struct point **ptp);
 
 static int put_str(struct pane *p, char *buf, int attr, int x, int y)
 {
@@ -187,12 +187,8 @@ static int do_render_hex_refresh(struct command *c, struct cmd_info *ci)
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *parent = ci->focus;
-		struct pane *pp = parent;
-		while (pp && pp->point == NULL)
-			pp = pp->parent;
-		if (!pp)
-			return 0;
-		render_hex_attach(parent, pp->point);
+
+		render_hex_attach(parent, NULL);
 		if (p->focus)
 			return pane_clone(p->focus, parent->focus);
 		return 1;
@@ -394,16 +390,21 @@ static void render_hex_register_map(void)
 	key_add(he_map, "Replace", &comm_follow);
 }
 
-static void render_hex_attach(struct pane *parent, struct point *pt)
+static void render_hex_attach(struct pane *parent, struct point **ptp)
 {
 	struct he_data *he = malloc(sizeof(*he));
 	struct pane *p;
+
+	if (!ptp)
+		ptp = pane_point(parent);
+	if (!ptp)
+		return;
 
 	he->top = NULL;
 	he->bot = NULL;
 	he->ignore_point = 0;
 	he->type.func = render_hex_notify;
-	he->typenum = doc_add_view(pt->doc, &he->type);
+	he->typenum = doc_add_view((*ptp)->doc, &he->type);
 	p = pane_register(parent, 0, &render_hex_refresh, he, NULL);
 	he->pane = p;
 
@@ -413,7 +414,7 @@ static void render_hex_attach(struct pane *parent, struct point *pt)
 }
 static int do_render_hex_attach(struct command *c, struct cmd_info *ci)
 {
-	render_hex_attach(ci->focus, *ci->pointp);
+	render_hex_attach(ci->focus, ci->pointp);
 	return 1;
 }
 DEF_CMD(comm_attach, do_render_hex_attach);

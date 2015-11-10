@@ -34,7 +34,7 @@ struct rt_data {
 };
 
 static struct map *rt_map;
-static void render_text_attach(struct pane *p, struct point *pt);
+static void render_text_attach(struct pane *p, struct point **pt);
 
 static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y, int draw)
 {
@@ -269,12 +269,8 @@ static int do_render_text_refresh(struct command *c, struct cmd_info *ci)
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *parent = ci->focus;
-		struct pane *pp = parent;
-		while (pp && pp->point == NULL)
-			pp = pp->parent;
-		if (!pp)
-			return 0;
-		render_text_attach(parent, pp->point);
+
+		render_text_attach(parent, NULL);
 		if (p->focus)
 			return pane_clone(p->focus, parent->focus);
 		return 1;
@@ -452,17 +448,21 @@ static void render_text_register_map(void)
 	key_add(rt_map, "Replace", &comm_follow);
 }
 
-static void render_text_attach(struct pane *parent, struct point *pt)
+static void render_text_attach(struct pane *parent, struct point **ptp)
 {
 	struct rt_data *rt = malloc(sizeof(*rt));
 	struct pane *p;
 
+	if (!ptp)
+		ptp = pane_point(parent);
+	if (!ptp)
+		return;
 	rt->top = NULL;
 	rt->bot = NULL;
 	rt->ignore_point = 0;
 	rt->target_x = -1;
 	rt->type.func = render_text_notify;
-	rt->typenum = doc_add_view(pt->doc, &rt->type);
+	rt->typenum = doc_add_view((*ptp)->doc, &rt->type);
 	p = pane_register(parent, 0, &render_text_refresh, rt, NULL);
 	rt->pane = p;
 
@@ -472,7 +472,7 @@ static void render_text_attach(struct pane *parent, struct point *pt)
 }
 static int do_render_text_attach(struct command *c, struct cmd_info *ci)
 {
-	render_text_attach(ci->focus, *ci->pointp);
+	render_text_attach(ci->focus, ci->pointp);
 	return 1;
 }
 DEF_CMD(comm_attach, do_render_text_attach);
