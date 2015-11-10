@@ -16,7 +16,6 @@
 #include <string.h>
 
 #include "core.h"
-#include "extras.h"
 
 static int emacs_move(struct command *c, struct cmd_info *ci);
 static int emacs_delete(struct command *c, struct cmd_info *ci);

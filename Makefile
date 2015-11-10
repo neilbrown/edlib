@@ -18,7 +18,7 @@ SHOBJ = doc-text.o doc-dir.o \
 	ncurses.o
 
 SO = $(patsubst %.o,lib/%.so,$(SHOBJ))
-H = list.h extras.h core.h
+H = list.h core.h
 edlib: $(OBJ)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -o edlib $(OBJ) $(LDLIBS)
 

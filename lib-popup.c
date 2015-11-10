@@ -29,7 +29,6 @@
 #include <ncurses.h>
 
 #include "core.h"
-#include "extras.h"
 
 struct popup_info {
 	struct pane	*target, *popup;

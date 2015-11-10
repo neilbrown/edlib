@@ -21,7 +21,6 @@
 #include <string.h>
 
 #include "core.h"
-#include "extras.h"
 
 struct tileinfo {
 	/* If direction is Horiz, this and siblings are stacked

@@ -14,7 +14,6 @@
 #include <ctype.h>
 
 #include "core.h"
-#include "extras.h"
 
 struct dir_data {
 	struct mark	*top, *bot;

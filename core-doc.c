@@ -29,7 +29,6 @@ struct doc_ref {
 };
 
 #include "core.h"
-#include "extras.h"
 
 int doc_add_view(struct doc *d, struct command *c)
 {

@@ -17,7 +17,6 @@
 #include <stdio.h>
 
 #include "core.h"
-#include "extras.h"
 
 struct he_data {
 	struct mark	*top, *bot;

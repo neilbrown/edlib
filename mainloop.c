@@ -18,7 +18,6 @@
 #include <dlfcn.h>
 
 #include "core.h"
-#include "extras.h"
 
 char WelcomeText[] =
 	"\n"

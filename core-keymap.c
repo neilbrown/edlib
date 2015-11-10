@@ -44,7 +44,6 @@
 #include <memory.h>
 
 #include "core.h"
-#include "extras.h"
 
 struct map {
 	int	size;

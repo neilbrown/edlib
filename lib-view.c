@@ -19,7 +19,6 @@
 #include <wctype.h>
 
 #include "core.h"
-#include "extras.h"
 
 struct view_data {
 	int		border;
