@@ -317,8 +317,6 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 		ci2.focus = ci->focus;
 		key_handle_focus(&ci2);
 		p = ci2.focus;
-		while (p->focus)
-			p = p->focus;
 	} else
 		p = ci->focus;
 
@@ -328,8 +326,8 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	if (p && p->parent)
 		par = p->parent;
 	/* par is the tile */
-	if (p)
-		pane_close(p);
+	if (par->focus)
+		pane_close(par->focus);
 
 	fd = open(ci->str, O_RDONLY);
 	if (fd >= 0) {
@@ -375,8 +373,6 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 		ci2.focus = ci->focus;
 		key_handle_focus(&ci2);
 		p = ci2.focus;
-		while (p->focus)
-			p = p->focus;
 	} else
 		p = ci->focus;
 
@@ -390,8 +386,8 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 	d = doc_find(pane2ed(par), ci->str);
 	if (!d)
 		return 1;
-	if (p)
-		pane_close(p);
+	if (par->focus)
+		pane_close(par->focus);
 	point_new(d, &pt);
 	p = pane_attach(par, "view-borders", pt);
 	if (!p) {
