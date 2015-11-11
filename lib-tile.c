@@ -484,6 +484,7 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 	struct pane *p2;
 	struct tileinfo *ti = p->data;
 	struct tileinfo *t2;
+	struct pane *cld = pane_child(p);
 
 	if (!ci->str)
 		return 0;
@@ -505,13 +506,13 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 	} else if (strcmp(ci->str, "y-")==0) {
 		tile_grow(p, 0, -RPT_NUM(ci));
 		pane_damaged(p, DAMAGED_SIZE);
-	} else if (strcmp(ci->str, "split-x")==0) {
+	} else if (strcmp(ci->str, "split-x")==0 && cld) {
 		p2 = tile_split(p, 1, 1);
-		if (p2 && !pane_clone(p->focus, p2))
+		if (p2 && !pane_clone(cld, p2))
 			pane_close(p2);
-	} else if (strcmp(ci->str, "split-y")==0) {
+	} else if (strcmp(ci->str, "split-y")==0 && cld) {
 		p2 = tile_split(p, 0, 1);
-		if (p2 && !pane_clone(p->focus, p2))
+		if (p2 && !pane_clone(cld, p2))
 			pane_close(p2);
 	} else if (strcmp(ci->str, "close")==0) {
 		if (ti->direction != Neither)

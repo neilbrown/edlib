@@ -166,12 +166,15 @@ static int do_view_handle(struct command *cm, struct cmd_info *ci)
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *parent = ci->focus;
-		struct pane *p2;
+		struct pane *p2, *c;
 		if (!p->point)
 			return 0;
 		point_dup(p->point, &pt);
 		p2 = view_attach(parent, pt, vd->border);
-		return pane_clone(p->focus->focus, p2);
+		c = pane_child(pane_child(p));
+		if (c)
+			return pane_clone(c, p2);
+		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") == 0)
 		return view_refresh(ci);
@@ -202,11 +205,13 @@ static int view_notify(struct command *c, struct cmd_info *ci)
 		struct doc *d = vd->pane->point->doc;
 		struct editor *ed = d->ed;
 		struct point *pt;
-		struct pane *p;
+		struct pane *p, *c;
 
 		pt = editor_choose_doc(ed);
 		doc_del_view(d, &vd->ch_notify);
-		pane_close(vd->pane->focus);
+		c = pane_child(vd->pane);
+		if (c)
+			pane_close(c);
 		p = view_reattach(vd->pane, pt);
 		render_attach(NULL, p);
 	}
@@ -468,12 +473,13 @@ static int view_click(struct command *c, struct cmd_info *ci)
 	if (p->h <= 4)
 		return 0;
 
-	ci2.focus = p->focus;
+	p = pane_child(p);
+	ci2.focus = p;
 	ci2.key = "Move-View-Small";
 	ci2.numeric = RPT_NUM(ci);
 	ci2.mark = mark_of_point(*ci->pointp);
 	ci2.pointp = ci->pointp;
-	p = p->focus;
+
 	if (ci->y == mid-1) {
 		/* scroll up */
 		ci2.numeric = -ci2.numeric;

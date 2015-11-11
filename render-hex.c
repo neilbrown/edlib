@@ -232,10 +232,12 @@ static int do_render_hex_handle(struct command *c, struct cmd_info *ci)
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *parent = ci->focus;
+		struct pane *c;
 
 		render_hex_attach(parent, NULL);
-		if (p->focus)
-			return pane_clone(p->focus, parent->focus);
+		c = pane_child(p);
+		if (c)
+			return pane_clone(c, parent->focus);
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") == 0)
