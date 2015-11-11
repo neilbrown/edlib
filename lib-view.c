@@ -46,7 +46,7 @@ static int do_view_handle(struct command *cm, struct cmd_info *ci)
 	int mid;
 	struct view_data *vd = p->data;
 	struct point *pt;
-	int ln, l, w, c;
+	int ln, l, w, c = -1;
 	struct cmd_info ci2 = {0};
 	char msg[100];
 	int ret;
@@ -108,24 +108,27 @@ static int do_view_handle(struct command *cm, struct cmd_info *ci)
 
 	if (vd->border & BORDER_LEFT) {
 		/* Left border is (currently) always a scroll bar */
-		ci2.key = "CountLines";
-		ci2.pointp = ci->pointp;
-		key_lookup(pt->doc->ed->commands, &ci2);
-
-		ln = attr_find_int(*mark_attr(mark_of_point(pt)), "lines");
-		l = attr_find_int(pt->doc->attrs, "lines");
-		w = attr_find_int(pt->doc->attrs, "words");
-		c = attr_find_int(pt->doc->attrs, "chars");
-		if (l <= 0)
-			l = 1;
 		for (i = 0; i < p->h; i++)
 			pane_text(p, '|', "inverse", 0, i);
-		mid = 1 + (p->h-4) * ln / l;
-		pane_text(p, '^', 0, 0, mid-1);
-		pane_text(p, '#', "inverse", 0, mid);
-		pane_text(p, 'v', 0, 0, mid+1);
-		pane_text(p, '+', "inverse", 0, p->h-1);
-		vd->scroll_bar_y = mid;
+
+		if (p->h > 4) {
+			ci2.key = "CountLines";
+			ci2.pointp = ci->pointp;
+			key_lookup(pt->doc->ed->commands, &ci2);
+
+			ln = attr_find_int(*mark_attr(mark_of_point(pt)), "lines");
+			l = attr_find_int(pt->doc->attrs, "lines");
+			w = attr_find_int(pt->doc->attrs, "words");
+			c = attr_find_int(pt->doc->attrs, "chars");
+			if (l <= 0)
+				l = 1;
+			mid = 1 + (p->h-4) * ln / l;
+			pane_text(p, '^', 0, 0, mid-1);
+			pane_text(p, '#', "inverse", 0, mid);
+			pane_text(p, 'v', 0, 0, mid+1);
+			pane_text(p, '+', "inverse", 0, p->h-1);
+			vd->scroll_bar_y = mid;
+		}
 	}
 	if (vd->border & BORDER_RIGHT) {
 		for (i = 0; i < p->h; i++)
@@ -146,9 +149,12 @@ static int do_view_handle(struct command *cm, struct cmd_info *ci)
 		for (i = 0; i < p->w; i++)
 			pane_text(p, '=', "inverse", i, p->h-1);
 
-		if (!(vd->border & BORDER_TOP) && (vd->border & BORDER_LEFT)) {
-			snprintf(msg, sizeof(msg), "L%d W%d C%d D:%s",
-				 l,w,c, pt->doc->name);
+		if (!(vd->border & BORDER_TOP)) {
+			if (c >= 0)
+				snprintf(msg, sizeof(msg), "L%d W%d C%d D:%s",
+					 l,w,c, pt->doc->name);
+			else
+				snprintf(msg, sizeof(msg),"%s", pt->doc->name);
 			for (i = 0; msg[i] && i+4 < p->w; i++)
 				pane_text(p, msg[i], "inverse", i+4, p->h-1);
 		}
@@ -451,6 +457,8 @@ static int view_click(struct command *c, struct cmd_info *ci)
 	struct cmd_info ci2 = {0};
 
 	if (ci->x != 0)
+		return 0;
+	if (p->h <= 4)
 		return 0;
 
 	ci2.focus = p->focus;

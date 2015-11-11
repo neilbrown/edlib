@@ -283,7 +283,7 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 			path = realpath(".", buf);
 		if (!path)
 			path = "/";
-		p = pane_attach(ci->focus, "popup", NULL, NULL);
+		p = pane_attach(ci->focus, "popup", NULL, "D2");
 		if (!p)
 			return 0;
 
@@ -347,7 +347,7 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 	if (strncmp(ci->key, "Doc Found", 9) != 0) {
 		struct point **ptp;
 
-		p = pane_attach(ci->focus, "popup", NULL, NULL);
+		p = pane_attach(ci->focus, "popup", NULL, "D2");
 		if (!p)
 			return 0;
 		ptp = pane_point(p);

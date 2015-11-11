@@ -32,9 +32,32 @@
 struct popup_info {
 	struct pane	*target, *popup;
 	struct doc	*doc;
+	char		*style;
 };
 
 static struct map *pp_map;
+
+static void popup_resize(struct pane *p, char *style)
+{
+	int x,y,w,h;
+	/* First find the size */
+	if (strchr(style, 'M'))
+		h = p->parent->h/2 + 1;
+	else
+		h = 3;
+	w = p->parent->w/2;
+	if (strchr(style, '1')) w = (p->parent->w-2)/4 + 1;
+	if (strchr(style, '3')) w = 3 * (p->parent->w-2)/4;
+	if (strchr(style, '4')) w = p->parent->w-2;
+	/* Now position */
+	x = p->parent->w/2 - w/2 - 1;
+	y = p->parent->h/2 - h/2 - 1;
+	if (strchr(style, 'T')) { y = 0; h -= 1; }
+	if (strchr(style, 'B')) { h -= 1; y = p->parent->h - h; }
+	if (strchr(style, 'L')) x = 0;
+	if (strchr(style, 'R')) x = p->parent->w - w;
+	pane_resize(p, x, y, w, h);
+}
 
 static int do_popup_handle(struct command *c, struct cmd_info *ci)
 {
@@ -52,7 +75,7 @@ static int do_popup_handle(struct command *c, struct cmd_info *ci)
 	if (strcmp(ci->key, "Refresh") != 0)
 		return 0;
 
-	pane_resize(p, p->parent->w/4, p->parent->h/2-2, p->parent->w/2, 3);
+	popup_resize(p, ppi->style);
 
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
@@ -81,23 +104,50 @@ DEF_CMD(popup_sub_handle, do_popup_sub_handle);
 
 static int popup_attach(struct command *c, struct cmd_info *ci)
 {
-	/* attach to root, center, one line of content, half width of pane */
+	/* attach a popup.  It can be attach to the view or the display,
+	 * can be in a corner, in a side, or central, and be 1 line or
+	 * multi line, and can have controlled width.
+	 * These are set with individual character in ci->str as follows.
+	 * D  - attach to display, otherwise is on focus.
+	 * TBLR - 0, 1, or 2 can be given for center, side, or corner
+	 * M  - multi line, else one line
+	 * 1234 - how many quarters of width to use.(default 2);
+	 */
 	struct pane *ret, *root, *p;
 	struct popup_info *ppi = malloc(sizeof(*ppi));
 	struct point *pt;
-	struct cmd_info ci2 = {0};
+	char *style = ci->str;
+	char border[4];
+	int i, j;
 
-	ci2.key = "global-key-root";
-	ci2.focus = ci->focus;
-	if (!key_handle_focus(&ci2))
-		return 0;
-	root = ci2.focus;
+	if (!style)
+		style = "D3";
+	if (strchr(style, 'D')) {
+		struct cmd_info ci2 = {0};
+		ci2.key = "global-key-root";
+		ci2.focus = ci->focus;
+		if (!key_handle_focus(&ci2))
+			return 0;
+		root = ci2.focus;
+	} else {
+		p = ci->focus;
+		while (p && !p->point)
+			p = p->parent;
+		if (!p || !p->parent)
+			return 0;
+		root = p->parent;
+	}
 
 	ppi->target = ci->focus;
 	ppi->popup = pane_register(root, 1, &popup_handle, ppi, NULL);
-
-	pane_resize(ppi->popup, root->w/4, root->h/2-2, root->w/2, 3);
-	attr_set_str(&ppi->popup->attrs, "borders", "TBLR", -1);
+	ppi->style = style;
+	popup_resize(ppi->popup, style);
+	for (i = 0, j = 0; i < 4; i++) {
+		if (strchr(style, "TLBR"[i]) == NULL)
+			border[j++] = "TLBR"[i];
+	}
+	border[j] = 0;
+	attr_set_str(&ppi->popup->attrs, "borders", border, -1);
 
 	pt = doc_new(pane2ed(root), "text");
 	doc_set_name(pt->doc, "*popup*");
@@ -108,7 +158,7 @@ static int popup_attach(struct command *c, struct cmd_info *ci)
 	pane_check_size(ret);
 	ret->cx = ret->cy = -1;
 	pane_focus(ret);
-	ci->home = ret;
+	ci->home = p;
 	return 1;
 }
 DEF_CMD(comm_attach, popup_attach);
