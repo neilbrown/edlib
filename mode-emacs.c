@@ -290,13 +290,13 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 		ptp = pane_point(p);
 		d = (*ptp)->doc;
 		if (strncmp(ci->key, "emCX4-", 6) == 0) {
-			attr_set_str(&d->attrs, "prefix",
+			attr_set_str(&p->attrs, "prefix",
 				     "Find File Other Window: ", 01);
-			attr_set_str(&d->attrs, "done-key",
+			attr_set_str(&p->attrs, "done-key",
 				     "File Found Other Window", -1);
 		} else {
-			attr_set_str(&d->attrs, "prefix", "Find File: ", -1);
-			attr_set_str(&d->attrs, "done-key", "File Found", -1);
+			attr_set_str(&p->attrs, "prefix", "Find File: ", -1);
+			attr_set_str(&p->attrs, "done-key", "File Found", -1);
 		}
 		doc_set_name(d, "Find File");
 		if (path) {
@@ -304,7 +304,6 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 			ci2.key = "Replace";
 			ci2.focus = p;
 			ci2.str = path;
-			ci2.pointp = ptp;
 			key_handle_focus(&ci2);
 		}
 		return 1;
@@ -354,13 +353,13 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 		ptp = pane_point(p);
 		d = (*ptp)->doc;
 		if (strncmp(ci->key, "emCX4-", 6) == 0) {
-			attr_set_str(&d->attrs, "prefix",
-				     "Find Document Other Window: ", 01);
-			attr_set_str(&d->attrs, "done-key",
+			attr_set_str(&p->attrs, "prefix",
+				     "Find Document Other Window: ", -1);
+			attr_set_str(&p->attrs, "done-key",
 				     "Doc Found Other Window", -1);
 		} else {
-			attr_set_str(&d->attrs, "prefix", "Find Document: ", 01);
-			attr_set_str(&d->attrs, "done-key", "Doc Found", -1);
+			attr_set_str(&p->attrs, "prefix", "Find Document: ", -1);
+			attr_set_str(&p->attrs, "done-key", "Doc Found", -1);
 		}
 		doc_set_name(d, "Find Document");
 		return 1;

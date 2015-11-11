@@ -105,7 +105,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 
 	pane_clear(p, NULL);
 
-	prefix = doc_attr(d, NULL, 0, "prefix");
+	prefix = pane_attr_get(p, "prefix");
 	if (prefix) {
 		char *s = prefix;
 		while (*s) {

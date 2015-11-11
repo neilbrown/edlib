@@ -51,6 +51,7 @@ static void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->data = NULL;
 	p->damaged = 0;
 	p->point = NULL;
+	p->attrs = 0;
 }
 
 /*
@@ -143,6 +144,7 @@ void pane_close(struct pane *p)
 	if (p->handle)
 		p->handle->func(p->handle, &ci);
 	pane_damaged(p->parent, DAMAGED_FORCE|DAMAGED_CURSOR);
+	attr_free(&p->attrs);
 /* FIXME who destroys 'point'*/
 	free(p);
 }
@@ -469,4 +471,16 @@ void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y)
 	buf[1] = 0;
 	/* FIXME this could result in cropping the text. */
 	key_handle_xy(&ci);
+}
+
+char *pane_attr_get(struct pane *p, char *key)
+{
+	while (p) {
+		char *a = attr_get_str(p->attrs, key, -1);
+		if (a)
+			return a;
+		p = p->parent;
+	}
+	/* FIXME do I want editor-wide attributes too? */
+	return NULL;
 }

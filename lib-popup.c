@@ -17,7 +17,7 @@
  * I need to find a way to control that.
  *
  * A popup is created by "attach-popup"
- * A prefix to be displayed can be added by setting "prefix" on the document created.
+ * A prefix to be displayed can be added by setting "prefix" on the popup pane.
  * The event sent when the popup is closed can be set by setting attribute "done-key"
  * otherwise "PopupDone" is used.
  */
@@ -153,7 +153,7 @@ static int popup_done(struct command *c, struct cmd_info *ci)
 
 		pane_focus(ppi->target);
 		ci2.focus = ppi->target;
-		ci2.key = attr_get_str(ppi->doc->attrs, "done-key", -1);
+		ci2.key = pane_attr_get(ci->focus, "done-key");
 		if (!ci2.key)
 			ci2.key = "PopupDone";
 		ci2.numeric = 1;

@@ -260,6 +260,7 @@ struct pane {
 	struct command		*handle;
 	void			*data;
 	struct point		*point;
+	struct attrset		*attrs;
 };
 
 
@@ -294,6 +295,7 @@ void pane_set_extra(struct pane *p, int extra);
 struct pane *pane_attach(struct pane *p, char *type, struct point *pt);
 void pane_clear(struct pane *p, char *attrs);
 void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y);
+char *pane_attr_get(struct pane *p, char *key);
 static inline struct point **pane_point(struct pane *p)
 {
 	while (p && !p->point)
