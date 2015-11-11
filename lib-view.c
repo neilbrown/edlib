@@ -41,7 +41,6 @@ static struct pane *view_attach(struct pane *par, struct point *pt, int border);
 static int view_refresh(struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
-	int damage = ci->extra;
 	struct view_data *vd = p->data;
 	struct point *pt;
 	int ln, l, w, c = -1;
@@ -52,24 +51,7 @@ static int view_refresh(struct cmd_info *ci)
 
 	pt = *ci->pointp;
 
-	if (damage & DAMAGED_SIZE) {
-		int x=0, y=0, w, h;
-		pane_check_size(p);
-		w = p->w; h = p->h;
-		if (vd->border & BORDER_LEFT) {
-			x += 1; w -= 1;
-		}
-		if (vd->border & BORDER_RIGHT) {
-			w -= 1;
-		}
-		if (vd->border & BORDER_TOP) {
-			y += 1; h -= 1;
-		}
-		if (vd->border & BORDER_BOT) {
-			h -= 1;
-		}
-		pane_resize(p->focus, x, y, w, h);
-	}
+	pane_check_size(p);
 	p->cx = 0; p->cy = 0;
 	if (!vd->border)
 		return 0;
@@ -184,6 +166,32 @@ DEF_CMD(view_handle, do_view_handle);
 
 static int do_view_null(struct command *c, struct cmd_info *ci)
 {
+	struct pane *p = ci->home;
+	struct view_data *vd = p->data;
+
+	if (strcmp(ci->key, "Refresh") == 0) {
+		int damage = ci->extra;
+		if (damage & DAMAGED_SIZE) {
+			int x = 0, y = 0;
+			int w = p->parent->w;
+			int h = p->parent->h;
+
+			if (vd->border & BORDER_LEFT) {
+				x += 1; w -= 1;
+			}
+			if (vd->border & BORDER_RIGHT) {
+				w -= 1;
+			}
+			if (vd->border & BORDER_TOP) {
+				y += 1; h -= 1;
+			}
+			if (vd->border & BORDER_BOT) {
+				h -= 1;
+			}
+			pane_resize(p, x, y, w, h);
+		}
+		return 0;
+	}
 	return 0;
 }
 DEF_CMD(view_null, do_view_null);
