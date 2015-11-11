@@ -71,12 +71,7 @@ static int do_popup_handle(struct command *c, struct cmd_info *ci)
 	}
 
 	if (strcmp(ci->key, "Refresh") == 0) {
-
 		popup_resize(p, ppi->style);
-
-		if (p->focus == NULL && !list_empty(&p->children))
-			p->focus = list_first_entry(&p->children, struct pane, siblings);
-
 		return 0;
 	}
 	if (strcmp(ci->key, "popup:Abort") == 0) {

@@ -256,8 +256,6 @@ static int text_refresh(struct cmd_info *ci)
 
 	d = (*ci->pointp)->doc;
 
-	if (p->focus == NULL && !list_empty(&p->children))
-		p->focus = list_first_entry(&p->children, struct pane, siblings);
 	if (rt->top && rt->top_sol &&
 	    doc_prior(d, rt->top) != '\n' && doc_prior(d, rt->top) != WEOF) {
 		top = find_top(ci->pointp, p, rt->top, end);

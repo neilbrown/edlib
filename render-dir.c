@@ -279,9 +279,6 @@ static int do_render_dir_handle(struct command *c, struct cmd_info *ci)
 
 		pane_check_size(p);
 
-		if (p->focus == NULL && !list_empty(&p->children))
-			p->focus = list_first_entry(&p->children,
-						    struct pane, siblings);
 		if (dd->top) {
 			end = render(ci->pointp, p);
 			if (dd->ignore_point || p->cx >= 0)

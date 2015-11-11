@@ -92,6 +92,9 @@ static void __pane_refresh(struct cmd_info *ci)
 	struct pane *p = ci->home;
 	struct point  **pp;
 
+	if (p->focus == NULL)
+		p->focus = list_first_entry_or_null(
+			&p->children, struct pane, siblings);
 	if (p->point)
 		ci->pointp = &p->point;
 	pp = ci->pointp;
@@ -139,8 +142,10 @@ void pane_close(struct pane *p)
 	}
 	ci.key = "Close";
 	ci.focus = ci.home = p;
-	if (p->parent && p->parent->focus == p)
+	if (p->parent && p->parent->focus == p) {
+		pane_damaged(p->parent, DAMAGED_CURSOR);
 		p->parent->focus = NULL;
+	}
 
 	ci.pointp = pane_point(p);
 
@@ -223,8 +228,10 @@ void pane_subsume(struct pane *p, struct pane *parent)
 	struct pane *c;
 
 	list_del_init(&p->siblings);
-	if (p->parent && p->parent->focus == p)
+	if (p->parent && p->parent->focus == p) {
+		pane_damaged(p->parent, DAMAGED_CURSOR);
 		p->parent->focus = NULL;
+	}
 	p->parent = NULL;
 	while (!list_empty(&p->children)) {
 		c = list_first_entry(&p->children, struct pane, siblings);
@@ -313,7 +320,11 @@ void pane_focus(struct pane *p)
 {
 	pane_damaged(p, DAMAGED_CURSOR);
 	while (p->parent) {
-		p->parent->focus = p;
+		if (p->parent->focus &&
+		    p->parent->focus != p) {
+			pane_damaged(p->parent->focus, DAMAGED_CURSOR);
+			p->parent->focus = p;
+		}
 		p = p->parent;
 	}
 }

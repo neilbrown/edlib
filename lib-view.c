@@ -51,8 +51,6 @@ static int view_refresh(struct cmd_info *ci)
 	int mid;
 
 	pt = *ci->pointp;
-	if (p->focus == NULL && !list_empty(&p->children))
-		p->focus = list_first_entry(&p->children, struct pane, siblings);
 
 	if (damage & DAMAGED_SIZE) {
 		int x=0, y=0, w, h;

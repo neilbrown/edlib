@@ -175,9 +175,6 @@ static int hex_refresh(struct cmd_info *ci)
 	d = (*ci->pointp)->doc;
 	pane_check_size(p);
 
-	if (p->focus == NULL && !list_empty(&p->children))
-		p->focus = list_first_entry(&p->children, struct pane, siblings);
-
 	if (he->top) {
 		struct cmd_info ci2 = {0};
 		int tpos;
