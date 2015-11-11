@@ -125,7 +125,7 @@ static int popup_attach(struct command *c, struct cmd_info *ci)
 	pt = doc_new(pane2ed(root), "text");
 	doc_set_name(pt->doc, "*popup*");
 	ppi->doc = pt->doc;
-	p = pane_attach(p, "view-noborders", pt);
+	p = pane_attach(p, "view", pt);
 	render_attach(NULL, p);
 	ret = pane_register(p->focus, 0, &popup_sub_handle, ppi, NULL);
 	pane_check_size(ret);

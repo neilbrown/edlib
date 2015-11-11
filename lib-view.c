@@ -27,6 +27,13 @@ struct view_data {
 	struct pane	*pane;
 	int		scroll_bar_y;
 };
+/* 0 to 4 borders are possible */
+enum {
+	BORDER_LEFT	= 1,
+	BORDER_RIGHT	= 2,
+	BORDER_TOP	= 4,
+	BORDER_BOT	= 8,
+};
 
 static struct map *view_map;
 static struct pane *view_attach(struct pane *par, struct point *pt, int border);
@@ -78,40 +85,83 @@ static int do_view_handle(struct command *cm, struct cmd_info *ci)
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
 
 	if (damage & DAMAGED_SIZE) {
+		int x=0, y=0, w, h;
 		pane_check_size(p);
-		if (vd->border)
-			pane_resize(p->focus, 1, 0, p->w-1, p->h-1);
-		else
-			pane_check_size(p->focus);
+		w = p->w; h = p->h;
+		if (vd->border & BORDER_LEFT) {
+			x += 1; w -= 1;
+		}
+		if (vd->border & BORDER_RIGHT) {
+			w -= 1;
+		}
+		if (vd->border & BORDER_TOP) {
+			y += 1; h -= 1;
+		}
+		if (vd->border & BORDER_BOT) {
+			h -= 1;
+		}
+		pane_resize(p->focus, x, y, w, h);
 	}
+	p->cx = 0; p->cy = 0;
 	if (!vd->border)
 		return 0;
 
-	ci2.key = "CountLines";
-	ci2.pointp = ci->pointp;
-	key_lookup(pt->doc->ed->commands, &ci2);
+	if (vd->border & BORDER_LEFT) {
+		/* Left border is (currently) always a scroll bar */
+		ci2.key = "CountLines";
+		ci2.pointp = ci->pointp;
+		key_lookup(pt->doc->ed->commands, &ci2);
 
-	ln = attr_find_int(*mark_attr(mark_of_point(pt)), "lines");
-	l = attr_find_int(pt->doc->attrs, "lines");
-	w = attr_find_int(pt->doc->attrs, "words");
-	c = attr_find_int(pt->doc->attrs, "chars");
-	if (l <= 0)
-		l = 1;
-	for (i = 0; i < p->h-1; i++)
-		pane_text(p, '|', "inverse", 0, i);
-	mid = 1 + (p->h-4) * ln / l;
-	pane_text(p, '^', 0, 0, mid-1);
-	pane_text(p, '#', "inverse", 0, mid);
-	pane_text(p, 'v', 0, 0, mid+1);
-	pane_text(p, '+', "inverse", 0, p->h-1);
-	p->cx = 0; p->cy = p->h - 1;
-	for (i = 1; i < p->w; i++)
-		pane_text(p, '=', "inverse", i, p->h-1);
+		ln = attr_find_int(*mark_attr(mark_of_point(pt)), "lines");
+		l = attr_find_int(pt->doc->attrs, "lines");
+		w = attr_find_int(pt->doc->attrs, "words");
+		c = attr_find_int(pt->doc->attrs, "chars");
+		if (l <= 0)
+			l = 1;
+		for (i = 0; i < p->h; i++)
+			pane_text(p, '|', "inverse", 0, i);
+		mid = 1 + (p->h-4) * ln / l;
+		pane_text(p, '^', 0, 0, mid-1);
+		pane_text(p, '#', "inverse", 0, mid);
+		pane_text(p, 'v', 0, 0, mid+1);
+		pane_text(p, '+', "inverse", 0, p->h-1);
+		vd->scroll_bar_y = mid;
+	}
+	if (vd->border & BORDER_RIGHT) {
+		for (i = 0; i < p->h; i++)
+			pane_text(p, '|', "inverse", p->w-1, i);
+	}
+	if (vd->border & BORDER_TOP) {
+		int label;
+		for (i = 0; i < p->w; i++)
+			pane_text(p, '-', "inverse", i, 0);
+		snprintf(msg, sizeof(msg), "%s", pt->doc->name);
+		label = (p->w - strlen(msg)) / 2;
+		if (label < 1)
+			label = 1;
+		for (i = 0; msg[i]; i++)
+			pane_text(p, msg[i], "inverse", label+i, 0);
+	}
+	if (vd->border & BORDER_BOT) {
+		for (i = 0; i < p->w; i++)
+			pane_text(p, '=', "inverse", i, p->h-1);
 
-	snprintf(msg, sizeof(msg), "L%d W%d C%d D:%s", l,w,c, pt->doc->name);
-	for (i = 0; msg[i] && i+4 < p->w; i++)
-		pane_text(p, msg[i], "inverse", i+4, p->h-1);
-	vd->scroll_bar_y = mid;
+		if (!(vd->border & BORDER_TOP) && (vd->border & BORDER_LEFT)) {
+			snprintf(msg, sizeof(msg), "L%d W%d C%d D:%s",
+				 l,w,c, pt->doc->name);
+			for (i = 0; msg[i] && i+4 < p->w; i++)
+				pane_text(p, msg[i], "inverse", i+4, p->h-1);
+		}
+	}
+	if (!(~vd->border & (BORDER_LEFT|BORDER_BOT)))
+		/* Both are set */
+		pane_text(p, '+', "inverse", 0, p->h-1);
+	if (!(~vd->border & (BORDER_RIGHT|BORDER_TOP)))
+		pane_text(p, 'X', "inverse", p->w-1, 0);
+	if (!(~vd->border & (BORDER_LEFT|BORDER_TOP)))
+		pane_text(p, '/', "inverse", 0, 0);
+	if (!(~vd->border & (BORDER_RIGHT|BORDER_BOT)))
+		pane_text(p, '/', "inverse", p->w-1, p->h-1);
 	return 0;
 }
 DEF_CMD(view_handle, do_view_handle);
@@ -160,10 +210,6 @@ static struct pane *view_reattach(struct pane *par, struct point *pt)
 	vd->ch_notify_num = doc_add_view(pt->doc, &vd->ch_notify);
 
 	p = pane_register(par, 0, &view_null, vd, NULL);
-	if (vd->border)
-		pane_resize(p, 1, 0, par->w-1, par->h-1);
-	else
-		pane_resize(p, 0, 0, par->w, par->h);
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }
@@ -189,7 +235,15 @@ static struct pane *view_attach(struct pane *par, struct point *pt, int border)
 
 static int do_view_attach(struct command *c, struct cmd_info *ci)
 {
-	int borders = strcmp(ci->key, "attach-view-borders") == 0;
+	int borders = 0;
+	char *borderstr = pane_attr_get(ci->focus, "borders");
+	if (!borderstr)
+		borderstr = "";
+	if (strchr(borderstr, 'T')) borders |= BORDER_TOP;
+	if (strchr(borderstr, 'B')) borders |= BORDER_BOT;
+	if (strchr(borderstr, 'L')) borders |= BORDER_LEFT;
+	if (strchr(borderstr, 'R')) borders |= BORDER_RIGHT;
+
 	ci->home = view_attach(ci->focus, *ci->pointp, borders);
 	return ci->home != NULL;
 }
@@ -439,6 +493,5 @@ void edlib_init(struct editor *ed)
 	key_add(view_map, "Click-1", &comm_click);
 	key_add(view_map, "Press-1", &comm_click);
 
-	key_add(ed->commands, "attach-view-borders", &comm_attach);
-	key_add(ed->commands, "attach-view-noborders", &comm_attach);
+	key_add(ed->commands, "attach-view", &comm_attach);
 }

@@ -420,8 +420,6 @@ struct pane *pane_attach(struct pane *p, char *type, struct point *pt)
 		char *mod;
 		if (strcmp(type, "global-keymap")==0)
 			type = "keymap";
-		if (strncmp(type, "view-", 5) == 0)
-			type = "view";
 		asprintf(&mod, "lib-%s", type);
 		editor_load_module(ed, mod);
 		free(mod);

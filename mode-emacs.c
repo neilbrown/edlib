@@ -386,7 +386,7 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 	if (par->focus)
 		pane_close(par->focus);
 	point_new(d, &pt);
-	p = pane_attach(par, "view-borders", pt);
+	p = pane_attach(par, "view", pt);
 	if (!p) {
 		point_free(pt);
 		return 0;
@@ -415,7 +415,7 @@ static int emacs_viewdocs(struct command *c, struct cmd_info *ci)
 		return 1;
 	pane_close(p);
 	point_new(d, &pt);
-	p = pane_attach(par, "view-borders", pt);
+	p = pane_attach(par, "view", pt);
 	if (!p) {
 		point_free(pt);
 		return 0;

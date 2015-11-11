@@ -90,6 +90,7 @@ static int tile_attach(struct command *c, struct cmd_info *ci)
 	INIT_LIST_HEAD(&ti->tiles);
 	pane_resize(p, 0, 0, display->w, display->h);
 	ci->home = p;
+	attr_set_str(&p->attrs, "borders", "BL", -1);
 	return 1;
 }
 DEF_CMD(comm_attach, tile_attach);
