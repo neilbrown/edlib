@@ -286,7 +286,7 @@ static int render_hex_move(struct command *c, struct cmd_info *ci)
 		rpt += 1;
 	while (rpt > 0 && mark_next(pt->doc, he->top) != WEOF)
 		rpt -= 1;
-	pane_damaged(p, DAMAGED_CURSOR);
+	pane_damaged(p, DAMAGED_CONTENT);
 	return 1;
 }
 DEF_CMD(comm_move, render_hex_move);
@@ -297,7 +297,7 @@ static int render_hex_follow_point(struct command *c, struct cmd_info *ci)
 	struct he_data *he = p->data;
 
 	if (he->ignore_point) {
-		pane_damaged(p, DAMAGED_CURSOR);
+		pane_damaged(p, DAMAGED_CONTENT);
 		he->ignore_point = 0;
 	}
 	return 0;

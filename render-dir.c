@@ -341,7 +341,7 @@ static int render_dir_move(struct command *c, struct cmd_info *ci)
 			break;
 		rpt += 1;
 	}
-	pane_damaged(p, DAMAGED_CURSOR);
+	pane_damaged(p, DAMAGED_CONTENT);
 	return 1;
 }
 DEF_CMD(comm_move, render_dir_move);
@@ -353,7 +353,7 @@ static int render_dir_follow_point(struct command *c, struct cmd_info *ci)
 
 	if (dd->ignore_point) {
 		dd->ignore_point = 0;
-		pane_damaged(p, DAMAGED_CURSOR);
+		pane_damaged(p, DAMAGED_CONTENT);
 	}
 	return 0;
 }

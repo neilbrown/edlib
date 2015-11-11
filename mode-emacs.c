@@ -243,7 +243,7 @@ static int emacs_undo(struct command *c, struct cmd_info *ci)
 {
 	struct point *pt = *ci->pointp;
 	doc_undo(pt, 0);
-	pane_damaged(ci->home->focus, DAMAGED_CURSOR);
+	pane_damaged(ci->home->focus, DAMAGED_CONTENT);
 	return 1;
 }
 DEF_CMD(comm_undo, emacs_undo);
@@ -252,7 +252,7 @@ static int emacs_redo(struct command *c, struct cmd_info *ci)
 {
 	struct point *pt = *ci->pointp;
 	doc_undo(pt, 1);
-	pane_damaged(ci->home->focus, DAMAGED_CURSOR);
+	pane_damaged(ci->home->focus, DAMAGED_CONTENT);
 	return 1;
 }
 DEF_CMD(comm_redo, emacs_redo);

@@ -79,7 +79,7 @@ static int nc_misc(struct command *c, struct cmd_info *ci)
 		event_base_loopbreak(dd->dpy.ed->base);
 	else if (strcmp(ci->str, "refresh") == 0) {
 		clear();
-		pane_damaged(p,  DAMAGED_FORCE);
+		pane_damaged(p,  DAMAGED_SIZE);
 		pane_refresh(p);
 	} else
 		return 0;
@@ -174,8 +174,7 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
 		event_add(l, &tv);
-		ci->extra &= DAMAGED_SIZE;
-		return 1;
+		return 0;
 	}
 	return 0;
 }
@@ -217,7 +216,7 @@ static struct pane *ncurses_init(struct editor *ed)
 	l = event_new(ed->base, SIGWINCH, EV_SIGNAL|EV_PERSIST,
 		      handle_winch, p);
 	event_add(l, NULL);
-	pane_damaged(p, DAMAGED_SIZE | DAMAGED_FORCE);
+	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }
 
@@ -229,7 +228,7 @@ static void handle_winch(int sig, short ev, void *vpane)
 	resize_term(size.ws_row, size.ws_col);
 
 	clear();
-	pane_damaged(p, DAMAGED_SIZE|DAMAGED_FORCE);
+	pane_damaged(p, DAMAGED_SIZE);
 	pane_refresh(p);
 }
 

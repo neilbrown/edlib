@@ -102,7 +102,11 @@ static void __pane_refresh(struct cmd_info *ci)
 		damage = 0;
 	else {
 		ci->extra = damage;
-		damage &= DAMAGED_FORCE | DAMAGED_SIZE;
+		if (ci->extra & DAMAGED_SIZE)
+			ci->extra |= DAMAGED_CONTENT;
+		if (ci->extra & DAMAGED_CONTENT)
+			ci->extra |= DAMAGED_CURSOR;
+		damage &= DAMAGED_SIZE;
 		if (p->handle->func(p->handle, ci))
 			damage |= ci->extra;
 	}
@@ -143,7 +147,7 @@ void pane_close(struct pane *p)
 	list_del_init(&p->siblings);
 	if (p->handle)
 		p->handle->func(p->handle, &ci);
-	pane_damaged(p->parent, DAMAGED_FORCE|DAMAGED_CURSOR);
+	pane_damaged(p->parent, DAMAGED_SIZE);
 	attr_free(&p->attrs);
 /* FIXME who destroys 'point'*/
 	free(p);
@@ -173,7 +177,7 @@ void pane_resize(struct pane *p, int x, int y, int w, int h)
 	int damage = 0;
 	if (x >= 0 &&
 	    (p->x != x || p->y != y)) {
-		damage |= DAMAGED_POSN;
+		damage |= DAMAGED_CONTENT;
 		p->x = x;
 		p->y = y;
 	}

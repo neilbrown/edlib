@@ -361,7 +361,7 @@ static int render_text_move(struct command *c, struct cmd_info *ci)
 		while (rt_fore(pt->doc, p, rt->top, &x, &y, 0) && y < rpt)
 			;
 	}
-	pane_damaged(p, DAMAGED_CURSOR);
+	pane_damaged(p, DAMAGED_CONTENT);
 	return 1;
 }
 DEF_CMD(comm_move, render_text_move);
@@ -372,7 +372,7 @@ static int render_text_follow_point(struct command *c, struct cmd_info *ci)
 	struct rt_data *rt = p->data;
 
 	if (rt->ignore_point) {
-		pane_damaged(p, DAMAGED_CURSOR);
+		pane_damaged(p, DAMAGED_CONTENT);
 		rt->ignore_point = 0;
 
 		if (strcmp(ci->key, "Move-Line") != 0)
