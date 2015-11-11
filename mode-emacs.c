@@ -471,6 +471,9 @@ static int emacs_search(struct command *c, struct cmd_info *ci)
 		attr_set_str(&p->attrs, "done-key", "Search String", -1);
 		ptp = pane_point(p);
 		doc_set_name((*ptp)->doc, "Search");
+		while (pane_child(p))
+			p = pane_child(p);
+		pane_attach(p, "emacs-search", NULL, NULL);
 		return 1;
 	}
 
@@ -551,9 +554,11 @@ static int do_mode_emacs(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(mode_emacs, do_mode_emacs);
 
+void emacs_search_init(struct editor *ed);
 void edlib_init(struct editor *ed)
 {
 	if (emacs_map == NULL)
 		emacs_init();
 	key_add(ed->commands, "mode-emacs", &mode_emacs);
+	emacs_search_init(ed);
 }

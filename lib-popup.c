@@ -97,6 +97,10 @@ static int do_popup_handle(struct command *c, struct cmd_info *ci)
 		pane_close(ppi->popup);
 		return 1;
 	}
+	if (strcmp(ci->key, "popup:get-target") == 0) {
+		ci->focus = ppi->target;
+		return 1;
+	}
 	return 0;
 }
 DEF_CMD(popup_handle, do_popup_handle);

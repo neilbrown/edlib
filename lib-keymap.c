@@ -134,7 +134,10 @@ static int keymap_attach(struct command *c, struct cmd_info *ci)
 	kd->globalcmd = NULL;
 	kd->cmdcount = 0;
 	kd->global = c ? 1 : 0;
-	p = pane_register(ci->focus, 0, &key_handle, kd, NULL);
+	p = ci->focus;
+	while (pane_child(p))
+		p = pane_child(p);
+	p = pane_register(p, 0, &key_handle, kd, NULL);
 	pane_check_size(p);
 	ci->home = p;
 	return 1;

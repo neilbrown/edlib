@@ -256,7 +256,7 @@ static int text_refresh(struct cmd_info *ci)
 
 	d = (*ci->pointp)->doc;
 
-	if (rt->top && rt->top_sol &&
+	if (rt->top && rt->top_sol && !rt->ignore_point &&
 	    doc_prior(d, rt->top) != '\n' && doc_prior(d, rt->top) != WEOF) {
 		top = find_top(ci->pointp, p, rt->top, end);
 		mark_free(rt->top);
@@ -366,6 +366,28 @@ static int render_text_move(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_move, render_text_move);
 
+static int render_text_move_pos(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ci->home;
+	struct rt_data *rt = p->data;
+	struct point *pt = *ci->pointp;
+	struct mark *top;
+
+	rt->ignore_point = 1;
+	if (rt->top &&
+	    rt->bot &&
+	    mark_ordered(rt->top, mark_of_point(pt)) &&
+	    mark_ordered(mark_of_point(pt), rt->bot))
+		/* pos already displayed */
+		return 1;
+	top = find_top(ci->pointp, ci->home, rt->top, rt->bot);
+	mark_free(rt->top);
+	rt->top = top;
+	pane_damaged(p, DAMAGED_CONTENT);
+	return 1;
+}
+DEF_CMD(comm_move_pos, render_text_move_pos);
+
 static int render_text_follow_point(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
@@ -450,6 +472,7 @@ static void render_text_register_map(void)
 	key_add_range(rt_map, "Move-", "Move-\377", &comm_follow);
 	key_add(rt_map, "Move-View-Small", &comm_move);
 	key_add(rt_map, "Move-View-Large", &comm_move);
+	key_add(rt_map, "Move-View-Pos", &comm_move_pos);
 	key_add(rt_map, "Move-CursorXY", &comm_cursor);
 	key_add(rt_map, "Click-1", &comm_cursor);
 	key_add(rt_map, "Press-1", &comm_cursor);

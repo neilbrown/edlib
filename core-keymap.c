@@ -316,7 +316,7 @@ int key_handle_focus(struct cmd_info *ci)
 	ci->x = -1;
 	ci->y = -1;
 	while (p->focus) {
-		if (p->point)
+		if (p->point && !ci->pointp)
 			ci->pointp = &p->point;
 		p = p->focus;
 	}

@@ -18,7 +18,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o \
 	O/lib-search.o \
 	O/mode-emacs.o \
 	O/display-ncurses.o
-XOBJ = O/rexel.o
+XOBJ = O/rexel.o O/emacs-search.o
 
 SO = $(patsubst O/%.o,lib/edlib-%.so,$(SHOBJ))
 H = list.h core.h
@@ -43,6 +43,7 @@ lib/libedlib.so: $(LIBOBJ)
 
 shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o O/rexel.o
+lib/edlib-mode-emacs.so : O/mode-emacs.o O/emacs-search.o
 
 $(SO) : lib/edlib-%.so : O/%.o
 	@mkdir -p lib

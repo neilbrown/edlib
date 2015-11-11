@@ -50,8 +50,8 @@ static int text_search(struct command *c, struct cmd_info *ci)
 	free(rxl);
 	return 1;
 }
-
 DEF_CMD(comm_search, text_search);
+
 void edlib_init(struct editor *ed)
 {
 	key_add(ed->commands, "text-search", &comm_search);
