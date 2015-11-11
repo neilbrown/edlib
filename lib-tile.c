@@ -66,7 +66,7 @@ static int do_tile_handle(struct command *c, struct cmd_info *ci)
 
 	if (strcmp(ci->key, "Refresh") == 0) {
 		if ((damage & DAMAGED_SIZE) && ti->direction == Neither) {
-			pane_resize(p, 0, 0, p->parent->w, p->parent->h);
+			pane_check_size(p);
 			tile_avail(p, NULL);
 			tile_adjust(p);
 		}
@@ -85,7 +85,7 @@ static int tile_attach(struct command *c, struct cmd_info *ci)
 	ti->p = p;
 	ti->direction = Neither;
 	INIT_LIST_HEAD(&ti->tiles);
-	pane_resize(p, 0, 0, display->w, display->h);
+	pane_check_size(p);
 	ci->home = p;
 	attr_set_str(&p->attrs, "borders", "BL", -1);
 	return 1;
@@ -333,7 +333,7 @@ static void tile_adjust(struct pane *p)
 		return;
 	if (p->children.next == p->children.prev) {
 		t = list_first_entry(&p->children, struct pane, siblings);
-		pane_resize(t, 0, 0, p->w, p->h);
+		pane_check_size(t);
 		return;
 	}
 	list_for_each_entry(t, &p->children, siblings) {

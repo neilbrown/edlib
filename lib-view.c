@@ -254,7 +254,7 @@ static struct pane *view_attach(struct pane *par, struct point *pt, int border)
 	pt->owner = &pt;
 	p = pane_register(par, 0, &view_handle, vd, NULL);
 	vd->pane = p;
-	pane_resize(p, 0, 0, par->w, par->h);
+	pane_check_size(p);
 
 	return view_reattach(p, pt);
 }
