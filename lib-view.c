@@ -38,48 +38,18 @@ enum {
 static struct map *view_map;
 static struct pane *view_attach(struct pane *par, struct point *pt, int border);
 
-static int do_view_handle(struct command *cm, struct cmd_info *ci)
+static int view_refresh(struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	int damage = ci->extra;
-	int i;
-	int mid;
 	struct view_data *vd = p->data;
 	struct point *pt;
 	int ln, l, w, c = -1;
 	struct cmd_info ci2 = {0};
 	char msg[100];
-	int ret;
+	int i;
+	int mid;
 
-	ret = key_lookup(view_map, ci);
-	if (ret)
-		return ret;
-	if (p->point->doc->map) {
-		ret = key_lookup(p->point->doc->map, ci);
-		if (ret)
-			return ret;
-	}
-
-	if (vd->pane != p)
-		vd->pane = p; /* FIXME having to do this is horrible */
-
-	if (strcmp(ci->key, "Close") == 0) {
-		pt = *ci->pointp;
-		doc_del_view(pt->doc, &vd->ch_notify);
-		free(vd);
-		return 1;
-	}
-	if (strcmp(ci->key, "Clone") == 0) {
-		struct pane *parent = ci->focus;
-		struct pane *p2;
-		if (!p->point)
-			return 0;
-		point_dup(p->point, &pt);
-		p2 = view_attach(parent, pt, vd->border);
-		return pane_clone(p->focus->focus, p2);
-	}
-	if (strcmp(ci->key, "Refresh") != 0)
-		return 0;
 	pt = *ci->pointp;
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
@@ -168,6 +138,45 @@ static int do_view_handle(struct command *cm, struct cmd_info *ci)
 		pane_text(p, '/', "inverse", 0, 0);
 	if (!(~vd->border & (BORDER_RIGHT|BORDER_BOT)))
 		pane_text(p, '/', "inverse", p->w-1, p->h-1);
+	return 0;
+}
+
+static int do_view_handle(struct command *cm, struct cmd_info *ci)
+{
+	struct pane *p = ci->home;
+	struct point *pt;
+	struct view_data *vd = p->data;
+	int ret;
+
+	ret = key_lookup(view_map, ci);
+	if (ret)
+		return ret;
+	if (p->point->doc->map) {
+		ret = key_lookup(p->point->doc->map, ci);
+		if (ret)
+			return ret;
+	}
+
+	if (vd->pane != p)
+		vd->pane = p; /* FIXME having to do this is horrible */
+
+	if (strcmp(ci->key, "Close") == 0) {
+		pt = *ci->pointp;
+		doc_del_view(pt->doc, &vd->ch_notify);
+		free(vd);
+		return 1;
+	}
+	if (strcmp(ci->key, "Clone") == 0) {
+		struct pane *parent = ci->focus;
+		struct pane *p2;
+		if (!p->point)
+			return 0;
+		point_dup(p->point, &pt);
+		p2 = view_attach(parent, pt, vd->border);
+		return pane_clone(p->focus->focus, p2);
+	}
+	if (strcmp(ci->key, "Refresh") == 0)
+		return view_refresh(ci);
 	return 0;
 }
 DEF_CMD(view_handle, do_view_handle);

@@ -64,16 +64,18 @@ static int do_tile_handle(struct command *c, struct cmd_info *ci)
 		return 0;
 	}
 
-	if (strcmp(ci->key, "Refresh") != 0)
+	if (strcmp(ci->key, "Refresh") == 0) {
+
+		if (p->focus == NULL && !list_empty(&p->children))
+			p->focus = list_first_entry(&p->children, struct pane,
+						    siblings);
+
+		if ((damage & DAMAGED_SIZE) && ti->direction == Neither) {
+			pane_resize(p, 0, 0, p->parent->w, p->parent->h);
+			tile_avail(p, NULL);
+			tile_adjust(p);
+		}
 		return 0;
-
-	if (p->focus == NULL && !list_empty(&p->children))
-		p->focus = list_first_entry(&p->children, struct pane, siblings);
-
-	if ((damage & DAMAGED_SIZE) && ti->direction == Neither) {
-		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
-		tile_avail(p, NULL);
-		tile_adjust(p);
 	}
 	return 0;
 }

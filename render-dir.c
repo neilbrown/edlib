@@ -275,26 +275,28 @@ static int do_render_dir_handle(struct command *c, struct cmd_info *ci)
 			return pane_clone(p->focus, parent->focus);
 		return 1;
 	}
-	if (strcmp(ci->key, "Refresh") != 0)
-		return 0;
+	if (strcmp(ci->key, "Refresh") == 0) {
 
-	pane_check_size(p);
+		pane_check_size(p);
 
-	if (p->focus == NULL && !list_empty(&p->children))
-		p->focus = list_first_entry(&p->children, struct pane, siblings);
-	if (dd->top) {
+		if (p->focus == NULL && !list_empty(&p->children))
+			p->focus = list_first_entry(&p->children,
+						    struct pane, siblings);
+		if (dd->top) {
+			end = render(ci->pointp, p);
+			if (dd->ignore_point || p->cx >= 0)
+				goto found;
+		}
+		top = find_top(ci->pointp, p, dd->top, end);
+		mark_free(dd->top);
+		mark_free(end);
+		dd->top = top;
 		end = render(ci->pointp, p);
-		if (dd->ignore_point || p->cx >= 0)
-			goto found;
+	found:
+		mark_free(dd->bot);
+		dd->bot = end;
+		return 0;
 	}
-	top = find_top(ci->pointp, p, dd->top, end);
-	mark_free(dd->top);
-	mark_free(end);
-	dd->top = top;
-	end = render(ci->pointp, p);
-found:
-	mark_free(dd->bot);
-	dd->bot = end;
 	return 0;
 }
 DEF_CMD(render_dir_handle, do_render_dir_handle);

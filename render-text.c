@@ -245,40 +245,12 @@ static struct mark *find_top(struct point **ptp, struct pane *p,
 	return start;
 }
 
-static int do_render_text_handle(struct command *c, struct cmd_info *ci)
+static int text_refresh(struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	struct rt_data *rt = p->data;
 	struct mark *end = NULL, *top;
 	struct doc *d;
-	int ret;
-
-	ret = key_lookup(rt_map, ci);
-	if (ret)
-		return ret;
-
-	if (strcmp(ci->key, "Close") == 0) {
-		struct pane *p = rt->pane;
-		d = (*ci->pointp)->doc;
-		mark_free(rt->top);
-		mark_free(rt->bot);
-		rt->pane = NULL;
-		doc_del_view(d, &rt->type);
-		p->data = NULL;
-		p->handle = NULL;
-		free(rt);
-		return 0;
-	}
-	if (strcmp(ci->key, "Clone") == 0) {
-		struct pane *parent = ci->focus;
-
-		render_text_attach(parent, NULL);
-		if (p->focus)
-			return pane_clone(p->focus, parent->focus);
-		return 1;
-	}
-	if (strcmp(ci->key, "Refresh") != 0)
-		return 0;
 
 	pane_check_size(p);
 
@@ -308,6 +280,42 @@ static int do_render_text_handle(struct command *c, struct cmd_info *ci)
 found:
 	mark_free(rt->bot);
 	rt->bot = end;
+	return 0;
+}
+
+static int do_render_text_handle(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ci->home;
+	struct rt_data *rt = p->data;
+	struct doc *d;
+	int ret;
+
+	ret = key_lookup(rt_map, ci);
+	if (ret)
+		return ret;
+
+	if (strcmp(ci->key, "Close") == 0) {
+		struct pane *p = rt->pane;
+		d = (*ci->pointp)->doc;
+		mark_free(rt->top);
+		mark_free(rt->bot);
+		rt->pane = NULL;
+		doc_del_view(d, &rt->type);
+		p->data = NULL;
+		p->handle = NULL;
+		free(rt);
+		return 0;
+	}
+	if (strcmp(ci->key, "Clone") == 0) {
+		struct pane *parent = ci->focus;
+
+		render_text_attach(parent, NULL);
+		if (p->focus)
+			return pane_clone(p->focus, parent->focus);
+		return 1;
+	}
+	if (strcmp(ci->key, "Refresh") == 0)
+		return text_refresh(ci);
 	return 0;
 }
 DEF_CMD(render_text_handle, do_render_text_handle);

@@ -152,31 +152,32 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 		ncurses_text(ci->home, ci->str[0], attr, ci->x, ci->y);
 		return 1;
 	}
-	if (strcmp(ci->key, "Refresh") != 0)
-		return 0;
+	if (strcmp(ci->key, "Refresh") == 0) {
 
-	if (p->focus == NULL) {
-		/* Choose child with largest z */
-		struct pane *c;
-		list_for_each_entry(c, &p->children, siblings)
-			if (p->focus == NULL ||
-			    c->z > p->focus->z)
-				p->focus = c;
+		if (p->focus == NULL) {
+			/* Choose child with largest z */
+			struct pane *c;
+			list_for_each_entry(c, &p->children, siblings)
+				if (p->focus == NULL ||
+				    c->z > p->focus->z)
+					p->focus = c;
+		}
+
+		set_screen(dd->scr);
+
+		if (damage & DAMAGED_SIZE) {
+			getmaxyx(stdscr, p->h, p->w);
+			p->h -= 1;
+		}
+		l = event_new(dd->dpy.ed->base, -1, EV_TIMEOUT, ncurses_flush, p);
+		event_priority_set(l, 0);
+		tv.tv_sec = 0;
+		tv.tv_usec = 0;
+		event_add(l, &tv);
+		ci->extra &= DAMAGED_SIZE;
+		return 1;
 	}
-
-	set_screen(dd->scr);
-
-	if (damage & DAMAGED_SIZE) {
-		getmaxyx(stdscr, p->h, p->w);
-		p->h -= 1;
-	}
-	l = event_new(dd->dpy.ed->base, -1, EV_TIMEOUT, ncurses_flush, p);
-	event_priority_set(l, 0);
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-	event_add(l, &tv);
-	ci->extra &= DAMAGED_SIZE;
-	return 1;
+	return 0;
 }
 DEF_CMD(ncurses_handle, do_ncurses_handle);
 

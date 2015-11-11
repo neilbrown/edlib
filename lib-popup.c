@@ -72,14 +72,15 @@ static int do_popup_handle(struct command *c, struct cmd_info *ci)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "Refresh") != 0)
+	if (strcmp(ci->key, "Refresh") == 0) {
+
+		popup_resize(p, ppi->style);
+
+		if (p->focus == NULL && !list_empty(&p->children))
+			p->focus = list_first_entry(&p->children, struct pane, siblings);
+
 		return 0;
-
-	popup_resize(p, ppi->style);
-
-	if (p->focus == NULL && !list_empty(&p->children))
-		p->focus = list_first_entry(&p->children, struct pane, siblings);
-
+	}
 	return 0;
 }
 DEF_CMD(popup_handle, do_popup_handle);
@@ -92,7 +93,7 @@ static int do_popup_sub_handle(struct command *c, struct cmd_info *ci)
 		if (p->focus == NULL && !list_empty(&p->children))
 			p->focus = list_first_entry(&p->children,
 						    struct pane, siblings);
-		if (p->data != NULL && strcmp(ci->key, "Refresh") == 0)
+		if (p->data != NULL)
 			pane_check_size(p);
 		return 0;
 	}

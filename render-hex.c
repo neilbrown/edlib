@@ -163,41 +163,12 @@ static struct mark *find_top(struct point **ptp, struct pane *p,
 	return m;
 }
 
-static int do_render_hex_handle(struct command *c, struct cmd_info *ci)
+static int hex_refresh(struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	struct he_data *he = p->data;
 	struct mark *end = NULL, *top;
 	struct doc *d;
-	int ret;
-
-	ret = key_lookup(he_map, ci);
-	if (ret)
-		return ret;
-
-	if (strcmp(ci->key, "Close") == 0) {
-		struct pane *p = he->pane;
-
-		d = (*ci->pointp)->doc;
-		mark_free(he->top);
-		mark_free(he->bot);
-		he->pane = NULL;
-		doc_del_view(d, &he->type);
-		p->data = NULL;
-		p->handle = NULL;
-		free(he);
-		return 1;
-	}
-	if (strcmp(ci->key, "Clone") == 0) {
-		struct pane *parent = ci->focus;
-
-		render_hex_attach(parent, NULL);
-		if (p->focus)
-			return pane_clone(p->focus, parent->focus);
-		return 1;
-	}
-	if (strcmp(ci->key, "Refresh") != 0)
-		return 0;
 
 	if (!ci->pointp)
 		return 0;
@@ -235,6 +206,43 @@ static int do_render_hex_handle(struct command *c, struct cmd_info *ci)
 found:
 	mark_free(he->bot);
 	he->bot = end;
+	return 0;
+}
+
+static int do_render_hex_handle(struct command *c, struct cmd_info *ci)
+{
+	struct pane *p = ci->home;
+	struct he_data *he = p->data;
+	struct doc *d;
+	int ret;
+
+	ret = key_lookup(he_map, ci);
+	if (ret)
+		return ret;
+
+	if (strcmp(ci->key, "Close") == 0) {
+		struct pane *p = he->pane;
+
+		d = (*ci->pointp)->doc;
+		mark_free(he->top);
+		mark_free(he->bot);
+		he->pane = NULL;
+		doc_del_view(d, &he->type);
+		p->data = NULL;
+		p->handle = NULL;
+		free(he);
+		return 1;
+	}
+	if (strcmp(ci->key, "Clone") == 0) {
+		struct pane *parent = ci->focus;
+
+		render_hex_attach(parent, NULL);
+		if (p->focus)
+			return pane_clone(p->focus, parent->focus);
+		return 1;
+	}
+	if (strcmp(ci->key, "Refresh") == 0)
+		return hex_refresh(ci);
 	return 0;
 }
 DEF_CMD(render_hex_handle, do_render_hex_handle);
