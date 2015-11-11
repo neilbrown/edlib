@@ -15,8 +15,10 @@ LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
 SHOBJ = O/doc-text.o O/doc-dir.o \
 	O/render-text.o O/render-hex.o O/render-dir.o \
 	O/lib-view.o O/lib-tile.o O/lib-popup.o O/lib-line-count.o O/lib-keymap.o \
+	O/lib-search.o \
 	O/mode-emacs.o \
 	O/display-ncurses.o
+XOBJ = O/rexel.o
 
 SO = $(patsubst O/%.o,lib/edlib-%.so,$(SHOBJ))
 H = list.h core.h
@@ -28,7 +30,7 @@ $(OBJ) $(SHOBJ) $(LIBOBJ) : $(H)
 $(OBJ) : O/%.o : %.c
 	gcc $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-$(SHOBJ) $(LIBOBJ) : O/%.o : %.c
+$(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
 	gcc -fPIC $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
 dirs :
@@ -40,9 +42,11 @@ lib/libedlib.so: $(LIBOBJ)
 	gcc -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ)
 
 shared: $(SO)
+lib/edlib-lib-search.so : O/lib-search.o O/rexel.o
+
 $(SO) : lib/edlib-%.so : O/%.o
 	@mkdir -p lib
-	gcc -shared -Wl,-soname,edlib-$*.so -o $@ $<
+	gcc -shared -Wl,-soname,edlib-$*.so -o $@ $^
 
 
 CSRC= attr.c

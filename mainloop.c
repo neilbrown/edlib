@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
 	ed->base = base;
 
 	editor_load_module(ed, "lib-line-count");
+	editor_load_module(ed, "lib-search");
 	editor_load_module(ed, "display-ncurses");
 	ci.home = ci.focus = vroot;
 	ci.key = "display-ncurses";

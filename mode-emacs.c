@@ -291,7 +291,7 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 		d = (*ptp)->doc;
 		if (strncmp(ci->key, "emCX4-", 6) == 0) {
 			attr_set_str(&p->attrs, "prefix",
-				     "Find File Other Window: ", 01);
+				     "Find File Other Window: ", -1);
 			attr_set_str(&p->attrs, "done-key",
 				     "File Found Other Window", -1);
 		} else {
@@ -460,6 +460,37 @@ static int emacs_kill_doc(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_kill_doc, emacs_kill_doc);
 
+static int emacs_search(struct command *c, struct cmd_info *ci)
+{
+	struct cmd_info ci2 = {0};
+
+	if (strcmp(ci->key, "Search String") != 0) {
+		struct pane *p = pane_attach(ci->focus, "popup", NULL, "TR2");
+		struct point **ptp;
+		if (!p)
+			return 0;
+		attr_set_str(&p->attrs, "prefix", "Search: ", -1);
+		attr_set_str(&p->attrs, "done-key", "Search String", -1);
+		ptp = pane_point(p);
+		doc_set_name((*ptp)->doc, "Search");
+		return 1;
+	}
+
+	if (!ci->str || !ci->str[0])
+		return -1;
+	ci2.pointp = pane_point(ci->focus);
+	ci2.mark = mark_dup(mark_of_point(*ci2.pointp), 1);
+	ci2.str = ci->str;
+	ci2.key = "text-search";
+	if (!key_lookup(pane2ed(ci->focus)->commands, &ci2))
+		ci2.extra = -1;
+	if (ci2.extra > 0)
+		point_to_mark(*ci2.pointp, ci2.mark);
+	mark_free(ci2.mark);
+	return 1;
+}
+DEF_CMD(comm_search, emacs_search);
+
 static struct map *emacs_map;
 
 static void emacs_init(void)
@@ -508,6 +539,9 @@ static void emacs_init(void)
 	key_add(m, "emCX-C-Chr-B", &comm_viewdocs);
 
 	key_add(m, "emCX-Chr-k", &comm_kill_doc);
+
+	key_add(m, "C-Chr-S", &comm_search);
+	key_add(m, "Search String", &comm_search);
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &comm_num);
 	emacs_map = m;
