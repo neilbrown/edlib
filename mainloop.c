@@ -64,14 +64,14 @@ int main(int argc, char *argv[])
 	if (!key_lookup(ed->commands, &ci))
 		exit(1);
 	root = ci.focus;
-	global = pane_attach(root, "global-keymap", NULL);
+	global = pane_attach(root, "global-keymap", NULL, NULL);
 
 	editor_load_module(ed, "mode-emacs");
 	ci.focus = global;
 	ci.key = "global-set-keymap";
 	ci.str = "mode-emacs";
 	key_handle_focus(&ci);
-	b = pane_attach(global, "tile", NULL);
+	b = pane_attach(global, "tile", NULL, NULL);
 	if (b)
 		p = doc_from_text(b, "*Welcome*", WelcomeText);
 	if (p) {
