@@ -35,8 +35,6 @@ struct popup_info {
 	char		*style;
 };
 
-static struct map *pp_map;
-
 static void popup_resize(struct pane *p, char *style)
 {
 	int x,y,w,h;
@@ -81,27 +79,45 @@ static int do_popup_handle(struct command *c, struct cmd_info *ci)
 
 		return 0;
 	}
+	if (strcmp(ci->key, "popup:Abort") == 0) {
+		pane_focus(ppi->target);
+		pane_close(ppi->popup);
+		return 1;
+	}
+	if (strcmp(ci->key, "popup:Replace") == 0) {
+		struct cmd_info ci2 = {0};
+		if (ci->str == NULL || ci->str[0] != '\n')
+			return 0;
+
+		pane_focus(ppi->target);
+		ci2.focus = ppi->target;
+		ci2.key = pane_attr_get(ci->focus, "done-key");
+		if (!ci2.key)
+			ci2.key = "PopupDone";
+		ci2.numeric = 1;
+		ci2.str = doc_getstr(ppi->doc, NULL, NULL);
+		ci2.mark = NULL;
+		key_handle_focus(&ci2);
+		free(ci2.str);
+		pane_close(ppi->popup);
+		return 1;
+	}
 	return 0;
 }
 DEF_CMD(popup_handle, do_popup_handle);
 
-static int do_popup_sub_handle(struct command *c, struct cmd_info *ci)
+static int popup_quote(struct command *c, struct cmd_info *ci)
 {
-	struct pane *p = ci->home;
+	struct cmd_info ci2;
 
-	if (strcmp(ci->key, "Refresh") == 0) {
-		if (p->focus == NULL && !list_empty(&p->children))
-			p->focus = list_first_entry(&p->children,
-						    struct pane, siblings);
-		if (p->data != NULL)
-			pane_check_size(p);
-		return 0;
-	}
-	if (p->data)
-		return key_lookup(pp_map, ci);
-	return 0;
+	ci2 = *ci;
+	if (strcmp(ci->key, "Replace") == 0)
+		ci2.key = "popup:Replace";
+	else
+		ci2.key = "popup:Abort";
+	return key_handle_focus(&ci2);
 }
-DEF_CMD(popup_sub_handle, do_popup_sub_handle);
+DEF_CMD(comm_quote, popup_quote);
 
 static int popup_attach(struct command *c, struct cmd_info *ci)
 {
@@ -114,11 +130,12 @@ static int popup_attach(struct command *c, struct cmd_info *ci)
 	 * M  - multi line, else one line
 	 * 1234 - how many quarters of width to use.(default 2);
 	 */
-	struct pane *ret, *root, *p;
+	struct pane *root, *p;
 	struct popup_info *ppi = malloc(sizeof(*ppi));
 	struct point *pt;
 	char *style = ci->str;
 	char border[4];
+	struct cmd_info ci2={0};
 	int i, j;
 
 	if (!style)
@@ -155,53 +172,22 @@ static int popup_attach(struct command *c, struct cmd_info *ci)
 	ppi->doc = pt->doc;
 	p = pane_attach(ppi->popup, "view", pt, NULL);
 	render_attach(NULL, p);
-	ret = pane_register(p->focus, 0, &popup_sub_handle, ppi, NULL);
-	pane_check_size(ret);
-	ret->cx = ret->cy = -1;
-	pane_focus(ret);
+	pane_focus(p);
+	ci2.key = "local-set-key";
+	ci2.focus = p;
+	ci2.str = "popup:quote";
+	ci2.str2 = "Replace";
+	key_handle_focus(&ci2);
+	ci2.str2 = "Abort";
+	key_handle_focus(&ci2);
+
 	ci->home = p;
 	return 1;
 }
 DEF_CMD(comm_attach, popup_attach);
 
-static int popup_done(struct command *c, struct cmd_info *ci)
-{
-	struct pane *p = ci->home;
-	struct popup_info *ppi = p->data;
-	struct cmd_info ci2;
-
-	if (strcmp(ci->key, "Abort") == 0) {
-		pane_focus(ppi->target);
-		pane_close(ppi->popup);
-		return 1;
-	}
-	if (strcmp(ci->key, "Replace") == 0) {
-		if (ci->str == NULL || ci->str[0] != '\n')
-			return 0;
-
-		pane_focus(ppi->target);
-		ci2.focus = ppi->target;
-		ci2.key = pane_attr_get(ci->focus, "done-key");
-		if (!ci2.key)
-			ci2.key = "PopupDone";
-		ci2.numeric = 1;
-		ci2.str = doc_getstr(ppi->doc, NULL, NULL);
-		ci2.mark = NULL;
-		key_handle_focus(&ci2);
-		free(ci2.str);
-		pane_close(ppi->popup);
-		return 1;
-	}
-	return 0;
-}
-DEF_CMD(comm_done, popup_done);
-
 void edlib_init(struct editor *ed)
 {
-	pp_map = key_alloc();
-
-	key_add(pp_map, "Replace", &comm_done);
-	key_add(pp_map, "Abort", &comm_done);
-
 	key_add(ed->commands, "attach-popup", &comm_attach);
+	key_add(ed->commands, "popup:quote", &comm_quote);
 }
