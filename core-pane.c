@@ -133,25 +133,25 @@ void pane_refresh(struct pane *p)
 
 void pane_close(struct pane *p)
 {
-	struct cmd_info ci = {0};
 	struct pane *c;
 
 	while (!list_empty(&p->children)) {
 		c = list_first_entry(&p->children, struct pane, siblings);
 		pane_close(c);
 	}
-	ci.key = "Close";
-	ci.focus = ci.home = p;
 	if (p->parent && p->parent->focus == p) {
 		pane_damaged(p->parent, DAMAGED_CURSOR);
 		p->parent->focus = NULL;
 	}
-
-	ci.pointp = pane_point(p);
-
 	list_del_init(&p->siblings);
-	if (p->handle)
+	if (p->handle) {
+		struct cmd_info ci = {0};
+
+		ci.key = "Close";
+		ci.focus = ci.home = p;
+		ci.pointp = pane_point(p);
 		p->handle->func(p->handle, &ci);
+	}
 	pane_damaged(p->parent, DAMAGED_SIZE);
 	attr_free(&p->attrs);
 /* FIXME who destroys 'point'*/
@@ -204,6 +204,8 @@ void pane_check_size(struct pane *p)
 
 void pane_reparent(struct pane *p, struct pane *newparent, struct list_head *here)
 {
+	/* detach p from its parent and attach beneath its sibling newparent */
+	ASSERT(p->parent == newparent->parent);
 	list_del(&p->siblings);
 	if (p->parent->focus == p)
 		p->parent->focus = newparent;
