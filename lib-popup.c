@@ -40,9 +40,6 @@ static int do_popup_handle(struct command *c, struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	struct popup_info *ppi = p->data;
-	char *name = ppi->doc->name;
-	int i;
-	int label;
 
 	if (strcmp(ci->key, "Close") == 0) {
 		if (ppi->doc)
@@ -60,26 +57,6 @@ static int do_popup_handle(struct command *c, struct cmd_info *ci)
 	if (p->focus == NULL && !list_empty(&p->children))
 		p->focus = list_first_entry(&p->children, struct pane, siblings);
 
-	pane_resize(p->focus, 1, 1, p->w-2, 1);
-
-	for (i = 0; i < p->h-1; i++) {
-		pane_text(p, '|', "inverse", 0, i);
-		pane_text(p, '|', "inverse", p->w-1, i);
-	}
-	for (i = 0; i < p->w-1; i++) {
-		pane_text(p, '-', "inverse", i, 0);
-		pane_text(p, '-', "inverse", i ,p->h-1);
-	}
-	pane_text(p, '/', "inverse", 0, 0);
-	pane_text(p, '\\', "inverse", 0, p->h-1);
-	pane_text(p, 'X', "inverse", p->w-1, 0);
-	pane_text(p, '/', "inverse", p->w-1, p->h-1);
-
-	label = (p->w - strlen(name)) / 2;
-	if (label < 1)
-		label = 1;
-	for (i = 0; name[i]; i++)
-		pane_text(p, name[i], "inverse", label+i, 0);
 	return 0;
 }
 DEF_CMD(popup_handle, do_popup_handle);
@@ -120,12 +97,12 @@ static int popup_attach(struct command *c, struct cmd_info *ci)
 	ppi->popup = pane_register(root, 1, &popup_handle, ppi, NULL);
 
 	pane_resize(ppi->popup, root->w/4, root->h/2-2, root->w/2, 3);
-	p = pane_register(ppi->popup, 0, &popup_sub_handle, NULL, NULL);
-	pane_resize(p, 1, 1, p->parent->w-2, 1);
+	attr_set_str(&ppi->popup->attrs, "borders", "TBLR", -1);
+
 	pt = doc_new(pane2ed(root), "text");
 	doc_set_name(pt->doc, "*popup*");
 	ppi->doc = pt->doc;
-	p = pane_attach(p, "view", pt);
+	p = pane_attach(ppi->popup, "view", pt);
 	render_attach(NULL, p);
 	ret = pane_register(p->focus, 0, &popup_sub_handle, ppi, NULL);
 	pane_check_size(ret);
