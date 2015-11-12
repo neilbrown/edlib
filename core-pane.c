@@ -74,10 +74,7 @@ struct pane *pane_register(struct pane *parent, int z,
 {
 	struct pane *p = malloc(sizeof(*p));
 	pane_init(p, parent, here);
-	if (parent)
-		p->z = parent->z + z;
-	else
-		p->z = z;
+	p->z = z;
 	p->handle = handle;
 	p->data = data;
 	if (parent && parent->focus == NULL)
@@ -296,6 +293,7 @@ int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)
 	/* This pane doesn't mask (same z level) but a child still could */
 	x -= p->x;
 	y -= p->y;
+	z -= p->z;
 	list_for_each_entry(c, &p->children, siblings)
 		if (pane_masked(c, x, y, z, w, h))
 			return 1;
@@ -303,7 +301,7 @@ int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)
 	return 0;
 }
 
-struct pane *pane_to_root(struct pane *p, int *x, int *y, int *w, int *h)
+struct pane *pane_to_root(struct pane *p, int *x, int *y, int *z, int *w, int *h)
 {
 	while(1) {
 		if (w && *x + *w > p->w)
@@ -312,6 +310,7 @@ struct pane *pane_to_root(struct pane *p, int *x, int *y, int *w, int *h)
 			*h = p->h - *y;
 		*x += p->x;
 		*y += p->y;
+		*z += p->z;
 		if (!p->parent)
 			return p;
 		p = p->parent;
@@ -470,7 +469,7 @@ void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y)
 	char buf[5];
 	int w=1, h=1;
 	int z = p->z;
-	p = pane_to_root(p, &x, &y, &w, &h);
+	p = pane_to_root(p, &x, &y, &z, &w, &h);
 	if (w < 1 || h < 1)
 		return;
 

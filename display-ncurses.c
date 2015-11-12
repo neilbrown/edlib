@@ -243,7 +243,7 @@ static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h)
 		w = p->w - x;
 	if (h == 0)
 		h = p->h - y;
-	p = pane_to_root(p, &x, &y, &w, &h);
+	p = pane_to_root(p, &x, &y, &z, &w, &h);
 	w0 = w; h0 = h;
 	if (pane_masked(p, x, y, z, &w0, &h0))
 		w0 = h0 = 0;
