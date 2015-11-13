@@ -35,8 +35,9 @@ struct tileinfo {
 	 * Min of these applies to parent.
 	 */
 	enum {Neither, Horiz, Vert}	direction;
-	int				avail_inline;
-	int				avail_perp;
+	short				avail_inline;
+	short				avail_perp;
+	short				leaf;
 	struct list_head		tiles; /* headless ordered list of all tiles
 						* in the tree.  Used for next/prev
 						*/
@@ -82,6 +83,7 @@ static int tile_attach(struct command *c, struct cmd_info *ci)
 	struct tileinfo *ti = malloc(sizeof(*ti));
 	struct pane *p = pane_register(display, 0, &tile_handle, ti, NULL);
 
+	ti->leaf = 1;
 	ti->p = p;
 	ti->direction = Neither;
 	INIT_LIST_HEAD(&ti->tiles);
@@ -121,6 +123,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after)
 		 */
 		struct pane *p2;
 		ti2 = malloc(sizeof(*ti2));
+		ti2->leaf = 0;
 		ti2->direction = ti->direction;
 		INIT_LIST_HEAD(&ti2->tiles);
 		p2 = pane_register(p->parent, 0, &tile_handle, ti2, &p->siblings);
@@ -134,6 +137,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after)
 	here = after ? &p->siblings : p->siblings.prev;
 	ti2 = malloc(sizeof(*ti2));
 	ti2->direction = ti->direction;
+	ti2->leaf = ti->leaf;
 	if (after)
 		list_add(&ti2->tiles, &ti->tiles);
 	else
@@ -188,6 +192,8 @@ static int tile_destroy(struct pane *p)
 	prevpos = nextpos = -1;
 	list_for_each_entry(t, &p->parent->children, siblings) {
 		int pos2;
+		if (t->z)
+			continue;
 		if (ti->direction == Vert)
 			pos2 = t->y;
 		else
@@ -286,7 +292,7 @@ static void tile_avail(struct pane *p, struct pane *ignore)
 	struct tileinfo *ti = p->data;
 	struct pane *t;
 
-	if (p->children.next == p->children.prev) {
+	if (ti->leaf) {
 		/* one or zero children */
 		if (ti->direction == Horiz) {
 			ti->avail_inline = p->w < 4 ? 0 : p->w - 4;
@@ -299,7 +305,7 @@ static void tile_avail(struct pane *p, struct pane *ignore)
 		struct tileinfo *ti2;
 		int sum = 0, min = -1;
 		list_for_each_entry(t, &p->children, siblings) {
-			if (t == ignore)
+			if (t == ignore || t->z)
 				continue;
 			tile_avail(t, NULL);
 			ti2 = t->data;
@@ -329,15 +335,19 @@ static void tile_adjust(struct pane *p)
 	int avail_cnt = 0;
 	int pos;
 	int size;
-	if (list_empty(&p->children))
-		return;
-	if (p->children.next == p->children.prev) {
-		t = list_first_entry(&p->children, struct pane, siblings);
-		pane_check_size(t);
+	struct tileinfo *ti = p->data;
+
+	if (ti->leaf) {
+		t = pane_child(p);
+		if (t)
+			pane_check_size(t);
 		return;
 	}
 	list_for_each_entry(t, &p->children, siblings) {
-		struct tileinfo *ti = t->data;
+
+		if (t->z)
+			continue;
+		ti = t->data;
 		if (ti->direction == Horiz) {
 			t->y = 0;
 			t->h = p->h;
@@ -362,6 +372,8 @@ static void tile_adjust(struct pane *p)
 		list_for_each_entry(t, &p->children, siblings) {
 			struct tileinfo *ti = t->data;
 			int diff;
+			if (t->z)
+				continue;
 			if (used > size) {
 				/* shrinking */
 				if (ti->avail_inline == 0)
@@ -398,6 +410,8 @@ static void tile_adjust(struct pane *p)
 	pos = 0;
 	list_for_each_entry(t, &p->children, siblings) {
 		struct tileinfo *ti = t->data;
+		if (t->z)
+			continue;
 		if (ti->direction == Horiz) {
 			t->x = pos;
 			pos += t->w;
@@ -445,10 +459,19 @@ static int tile_grow(struct pane *p, int horiz, int size)
 	/* OK, this stacks in the right direction. if shrinking we can commit */
 	if (size < 0) {
 		struct pane *other;
-		if (p->siblings.prev != &p->parent->children)
-			other = list_prev_entry(p, siblings);
-		else
-			other = list_next_entry(p, siblings);
+		struct pane *t;
+		int p_found = 0;
+		list_for_each_entry(t, &p->parent->children, siblings) {
+			if (t->z)
+				continue;
+			if (t == p)
+				p_found = 1;
+			else
+				other = t;
+			if (other && p_found)
+				break;
+		}
+
 		if (ti->direction == Horiz) {
 			p->w += size;
 			other->w -= size;
