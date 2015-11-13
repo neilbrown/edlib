@@ -19,6 +19,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include "core.h"
 
 struct es_info {
@@ -43,21 +44,46 @@ DEF_CMD(search_forward, do_search_forward);
 
 static int do_search_retreat(struct command *c, struct cmd_info *ci)
 {
+	struct es_info *esi = ci->home->data;
+
+	if (esi->s == NULL)
+		return 0;
 	return 1;
 }
 DEF_CMD(search_retreat, do_search_retreat);
 
-static int do_search_add_word(struct command *c, struct cmd_info *ci)
+static int do_search_add(struct command *c, struct cmd_info *ci)
 {
-	return 1;
-}
-DEF_CMD(search_add_word, do_search_add_word);
+	struct es_info *esi = ci->home->data;
+	struct doc *d = esi->end->doc;
+	wint_t wch;
+	char b[5];
+	struct cmd_info ci2 = {0};
 
-static int do_search_add_char(struct command *c, struct cmd_info *ci)
-{
+	do {
+		/* TEMP HACK - please fix */
+		d->ops->set_attr(esi->end, "highlight", NULL);
+		wch = mark_next(d, mark_of_point(esi->end));
+		if (wch == WEOF)
+			return 1;
+		if (wch == '\n') {
+			/* ugly hack */
+			mark_prev(d, mark_of_point(esi->end));
+			return 1;
+		}
+		b[0] = wch;
+		b[1] = 0;
+		ci2.key = "Replace";
+		ci2.str = b;
+		ci2.numeric = 1;
+		ci2.mark = NULL;
+		ci2.pointp = ci->pointp;
+		ci2.focus = ci->focus;
+		key_handle_focus(&ci2);
+	} while (strcmp(ci->key, "C-Chr-C") != 0 && wch != ' ');
 	return 1;
 }
-DEF_CMD(search_add_char, do_search_add_char);
+DEF_CMD(search_add, do_search_add);
 
 static int do_search_backward(struct command *c, struct cmd_info *ci)
 {
@@ -124,8 +150,8 @@ static void emacs_search_init_map(void)
 	es_map = key_alloc();
 	key_add(es_map, "C-Chr-S", &search_forward);
 	key_add(es_map, "Backspace", &search_retreat);
-	key_add(es_map, "C-Chr-W", &search_add_word);
-	key_add(es_map, "C-Chr-C", &search_add_char);
+	key_add(es_map, "C-Chr-W", &search_add);
+	key_add(es_map, "C-Chr-C", &search_add);
 	key_add(es_map, "C-Chr-R", &search_backward);
 	key_add(es_map, "Refresh", &search_refresh);
 	key_add(es_map, "Close", &search_close);
