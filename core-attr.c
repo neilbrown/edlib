@@ -90,6 +90,8 @@ static int attr_cmp(char *a, char *b, int bnum)
 		if (bnum >= 0) {
 			bi = bnum + 256;
 			bnum = -1;
+			if (*a == ' ')
+				a++;
 		} else
 			bi = getcmptok(&b);
 		if (ai < bi)

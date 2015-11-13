@@ -77,6 +77,8 @@ static int do_search_close(struct command *c, struct cmd_info *ci)
 	struct es_info *esi = ci->focus->data;
 
 	doc_del_view(esi->target->point->doc, &esi->watch);
+	/* TEMP HACK - please fix */
+	esi->target->point->doc->ops->set_attr(esi->end, "highlight", NULL);
 	point_free(esi->end);
 	mark_free(esi->start);
 	while (esi->s) {
@@ -94,7 +96,10 @@ static int do_search_again(struct command *c, struct cmd_info *ci)
 	/* document has changed, retry search */
 	struct es_info *esi = container_of(c, struct es_info, watch);
 	struct cmd_info ci2 = {0};
+	struct doc *d = esi->end->doc;
 
+	/* TEMP HACK - please fix */
+	d->ops->set_attr(esi->end, "highlight", NULL);
 	ci2.pointp = &esi->end;
 	ci2.mark = mark_dup(esi->start, 1);
 	ci2.str = doc_getstr((*ci->pointp)->doc, NULL, NULL);
@@ -103,6 +108,8 @@ static int do_search_again(struct command *c, struct cmd_info *ci)
 		ci2.extra = -1;
 	if (ci2.extra > 0) {
 		point_to_mark(esi->end, ci2.mark);
+		/* TEMP HACK - please fix */
+		d->ops->set_attr(esi->end, "highlight","fg:red,inverse");
 		ci2.key = "Move-View-Pos";
 		ci2.focus = esi->target;
 		key_handle_focus(&ci2);

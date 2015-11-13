@@ -1356,6 +1356,7 @@ static int text_set_attr(struct point *p, char *attr, char *val)
 		c = list_next_entry(c, lst);
 		o = c->start;
 	}
+	point_notify_change(p, NULL);
 	return attr_set_str(&c->attrs, attr, val, o);
 }
 

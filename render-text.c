@@ -36,7 +36,13 @@ static void render_text_attach(struct pane *p, struct point **pt);
 
 static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y, int draw)
 {
-	wint_t ch = mark_next(d, m);
+	wint_t ch;
+	char *highlight;
+
+	/* TEMP HACK - please fix */
+	highlight = d->ops->get_attr(d, m, 1, "highlight");
+
+	ch = mark_next(d, m);
 	if (ch == WEOF)
 		return 0;
 	if (ch == '\n') {
@@ -63,7 +69,7 @@ static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y
 				pane_text(p, '^', "underline", *x, *y);
 				pane_text(p, ch+'@', "underline", 1+*x, *y);
 			} else {
-				pane_text(p, ch, NULL, *x, *y);
+				pane_text(p, ch, highlight, *x, *y);
 			}
 		}
 		*x += w;
