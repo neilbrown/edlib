@@ -30,7 +30,7 @@ struct es_info {
 	} *s;
 	struct mark *start; /* where searching starts */
 	struct point *end; /* where last success ended */
-	struct pane *target;
+	struct pane *target, *search;
 	struct command watch;
 	short matched;
 };
@@ -165,6 +165,9 @@ static int do_search_again(struct command *c, struct cmd_info *ci)
 	struct es_info *esi = container_of(c, struct es_info, watch);
 	struct cmd_info ci2 = {0};
 	struct doc *d = esi->end->doc;
+	struct pane *p;
+	char *a, *pfx;
+	int ret;
 
 	/* TEMP HACK - please fix */
 	d->ops->set_attr(esi->end, "highlight", NULL);
@@ -172,9 +175,12 @@ static int do_search_again(struct command *c, struct cmd_info *ci)
 	ci2.mark = mark_dup(esi->start, 1);
 	ci2.str = doc_getstr((*ci->pointp)->doc, NULL, NULL);
 	ci2.key = "text-search";
-	if (!key_lookup(pane2ed(esi->target)->commands, &ci2))
-		ci2.extra = -1;
-	if (ci2.extra > 0) {
+	ret = key_lookup(pane2ed(esi->target)->commands, &ci2);
+	if (ret == 0)
+		pfx = "Search (unavailable): ";
+	else if (ret < 0) {
+		pfx = "Search (incomplete): ";
+	} else if (ci2.extra > 0) {
 		point_to_mark(esi->end, ci2.mark);
 		/* TEMP HACK - please fix */
 		d->ops->set_attr(esi->end, "highlight","fg:red,inverse");
@@ -182,8 +188,19 @@ static int do_search_again(struct command *c, struct cmd_info *ci)
 		ci2.focus = esi->target;
 		key_handle_focus(&ci2);
 		esi->matched = 1;
-	} else
+		pfx = "Search: ";
+	} else {
 		esi->matched = 0;
+		pfx = "Failed Search: ";
+	}
+	/* HACK */
+	for (p = esi->search; p; p = p->parent) {
+		a = attr_get_str(p->attrs, "prefix", -1);
+		if (!a)
+			continue;
+		if (strcmp(a, pfx) != 0)
+			attr_set_str(&p->attrs, "prefix", pfx, -1);
+	}
 	mark_free(ci2.mark);
 	free(ci2.str);
 	return 1;
@@ -232,6 +249,7 @@ static int emacs_search(struct command *c, struct cmd_info *ci)
 	esi->start = mark_dup(mark_of_point(esi->end), 1);
 	esi->s = NULL;
 	esi->matched = 0;
+	esi->search = ci->focus;
 	esi->watch.func = do_search_again;
 	ptp = pane_point(ci->focus);
 	doc_add_view((*ptp)->doc, &esi->watch);
