@@ -26,18 +26,43 @@ struct es_info {
 	struct stk {
 		struct stk *next;
 		struct mark *m; /* Start of search */
-		int len; /* current length of match string */
+		unsigned int len; /* current length of match string */
 	} *s;
 	struct mark *start; /* where searching starts */
 	struct point *end; /* where last success ended */
 	struct pane *target;
 	struct command watch;
+	short matched;
 };
 
 static struct map *es_map;
 
+static int do_search_again(struct command *c, struct cmd_info *ci);
 static int do_search_forward(struct command *c, struct cmd_info *ci)
 {
+	struct es_info *esi = ci->home->data;
+	struct doc *d = esi->end->doc;
+	struct stk *s;
+	char *str;
+
+	if (esi->s && mark_same(d, esi->s->m, mark_of_point(esi->end))) {
+		/* already pushed and didn't find anything new */
+		return 1;
+	}
+	s = malloc(sizeof(*s));
+	s->m = esi->start;
+	str = doc_getstr((*ci->pointp)->doc, NULL, NULL);
+	s->len = strlen(str);
+	free(str);
+	s->next = esi->s;
+	esi->s = s;
+	if (esi->matched)
+		esi->start = mark_dup(mark_of_point(esi->end), 1);
+	else {
+		esi->start = mark_dup(s->m, 1);
+		mark_reset(d, esi->start);
+	}
+	point_notify_change(*ci->pointp, NULL);
 	return 1;
 }
 DEF_CMD(search_forward, do_search_forward);
@@ -45,9 +70,22 @@ DEF_CMD(search_forward, do_search_forward);
 static int do_search_retreat(struct command *c, struct cmd_info *ci)
 {
 	struct es_info *esi = ci->home->data;
+	char *str;
+	struct stk *s;
 
 	if (esi->s == NULL)
 		return 0;
+	str = doc_getstr((*ci->pointp)->doc, NULL, NULL);
+	if (strlen(str) > esi->s->len) {
+		free(str);
+		return 0;
+	}
+	s = esi->s;
+	esi->s = s->next;
+	mark_free(esi->start);
+	esi->start = s->m;
+	free(s);
+	point_notify_change(*ci->pointp, NULL);
 	return 1;
 }
 DEF_CMD(search_retreat, do_search_retreat);
@@ -68,9 +106,13 @@ static int do_search_add(struct command *c, struct cmd_info *ci)
 			return 1;
 		if (wch == '\n') {
 			/* ugly hack */
+			/* Sending this will cause a call-back to
+			 * close everything down.
+			 */
 			mark_prev(d, mark_of_point(esi->end));
 			return 1;
 		}
+		/* FIXME utf-8! and quote regexp chars */
 		b[0] = wch;
 		b[1] = 0;
 		ci2.key = "Replace";
@@ -139,7 +181,9 @@ static int do_search_again(struct command *c, struct cmd_info *ci)
 		ci2.key = "Move-View-Pos";
 		ci2.focus = esi->target;
 		key_handle_focus(&ci2);
-	}
+		esi->matched = 1;
+	} else
+		esi->matched = 0;
 	mark_free(ci2.mark);
 	free(ci2.str);
 	return 1;
@@ -187,6 +231,7 @@ static int emacs_search(struct command *c, struct cmd_info *ci)
 	point_dup(esi->target->point, &esi->end);
 	esi->start = mark_dup(mark_of_point(esi->end), 1);
 	esi->s = NULL;
+	esi->matched = 0;
 	esi->watch.func = do_search_again;
 	ptp = pane_point(ci->focus);
 	doc_add_view((*ptp)->doc, &esi->watch);

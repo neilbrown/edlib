@@ -265,6 +265,36 @@ void point_reset(struct point *p)
 	assign_seq(&p->m, 0);
 }
 
+void mark_reset(struct doc *d, struct mark *m)
+{
+	struct point *p;
+	int i;
+
+	d->ops->set_ref(d, m, 1);
+	m->rpos = 0;
+	hlist_del(&m->all);
+	hlist_add_head(&m->all, &d->marks);
+	assign_seq(m, 0);
+
+	if (m->viewnum == MARK_UNGROUPED)
+		return;
+	if (m->viewnum != MARK_POINT) {
+		tlist_del(&m->view);
+		tlist_add(&m->view, GRP_MARK, &d->views[m->viewnum].head);
+		return;
+	}
+	/* MARK_POINT */
+	tlist_del(&m->view);
+	tlist_add(&m->view, GRP_MARK, &d->points);
+	p = container_of(m, struct point, m);
+	for (i = 0; i < p->size; i++)
+		if (d->views[i].notify) {
+			tlist_del(&p->lists[i]);
+			tlist_add(&p->lists[i], GRP_LIST, &d->views[i].head);
+		}
+}
+
+
 struct doc_ref point_ref(struct point *p)
 {
 	return p->m.ref;
