@@ -247,8 +247,12 @@ static int dir_same_file(struct doc *d, int fd, struct stat *stb)
 
 	if (!dr->fname)
 		return 0;
-	return (dr->stat.st_ino == stb->st_ino &&
-		dr->stat.st_dev == stb->st_dev);
+	if (! (dr->stat.st_ino == stb->st_ino &&
+	       dr->stat.st_dev == stb->st_dev))
+		return 0;
+	/* Let's reload it now */
+	dir_load_file(d, NULL, fd, NULL);
+	return 1;
 }
 
 static int dir_reundo(struct point *p, bool redo)
