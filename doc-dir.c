@@ -65,7 +65,7 @@ struct directory {
 static struct doc_operations dir_ops;
 static struct map *doc_map;
 
-static int add_ent(struct directory *dr, struct dirent *de)
+static int add_ent(struct list_head *lst, struct dirent *de)
 {
 	struct dir_ent *dre;
 	struct dir_ent *before; /* insert before here */
@@ -91,15 +91,15 @@ static int add_ent(struct directory *dr, struct dirent *de)
 		default:
 		case DT_UNKNOWN:dre->ch = '?'; break;
 		}
-	before = list_first_entry(&dr->ents, struct dir_ent, lst);
-	while (&before->lst != &dr->ents &&
+	before = list_first_entry(lst, struct dir_ent, lst);
+	while (&before->lst != lst &&
 	       strcmp(dre->name, before->name) > 0)
 		before = list_next_entry(before, lst);
 	list_add_tail(&dre->lst, &before->lst);
 	return 1;
 }
 
-static void load_dir(struct directory *dr, int fd)
+static void load_dir(struct list_head *lst, int fd)
 {
 	DIR *dir;
 	struct dirent de, *res;
@@ -108,7 +108,7 @@ static void load_dir(struct directory *dr, int fd)
 	if (!dir)
 		return;
 	while (readdir_r(dir, &de, &res) == 0 && res)
-		add_ent(dr, res);
+		add_ent(lst, res);
 	closedir(dir);
 }
 
@@ -135,8 +135,88 @@ static int dir_load_file(struct doc *d, struct point *pos,
 			 int fd, char *name)
 {
 	struct directory *dr = container_of(d, struct directory, doc);
+	struct list_head new;
+	struct dir_ent *de1, *de2;
+	struct mark *m, *prev;
+	int doclose = 0;
+	int donotify = 1;
 
-	load_dir(dr, fd);
+	if (fd < 0) {
+		if (!dr->fname)
+			return -1;
+		fd = open(dr->fname, O_RDONLY|O_DIRECTORY);
+		if (fd < 0)
+			return -1;
+		doclose = 1;
+	}
+
+	INIT_LIST_HEAD(&new);
+	load_dir(&new, fd);
+	de1 = list_first_entry_or_null(&dr->ents, struct dir_ent, lst);
+	de2 = list_first_entry_or_null(&new, struct dir_ent, lst);
+	if (!de1)
+		/* Nothing already in dir, so only notify at the end */
+		donotify = 1;
+	prev = m = doc_first_mark_all(d);
+	/* 'm' is always at-or-after the earliest of de1 */
+	while (de1 || de2) {
+		if (de1 &&
+		    (de2 == NULL || strcmp(de1->name, de2->name) < 0)) {
+			/* de1 doesn't exist in new: need to delete it. */
+			struct mark *m2;
+			struct dir_ent *de = de1;
+			if (de1 == list_last_entry(&dr->ents, struct dir_ent, lst))
+				de1 = NULL;
+			else
+				de1 = list_next_entry(de1, lst);
+			for (m2 = m; m2 && m2->ref.d == de;
+			     m2 = doc_next_mark_all(d, m2))
+				m2->ref.d = de1;
+			attr_free(&de->attrs);
+			free(de->name);
+			list_del(&de->lst);
+			free(de);
+			if (m && donotify) {
+				doc_notify_change(d, prev);
+				doc_notify_change(d, m);
+			}
+		} else if (de2 &&
+			   (de1 == NULL || strcmp(de2->name, de1->name) < 0)) {
+			/* de2 doesn't already exist, so add it before de1 */
+			list_del(&de2->lst);
+			if (de1)
+				list_add_tail(&de2->lst, &de1->lst);
+			else
+				list_add_tail(&de2->lst, &dr->ents);
+			if (m && donotify) {
+				doc_notify_change(d, prev);
+				doc_notify_change(d, m);
+			}
+		} else {
+			/* de1 and de2 are the same.  Just step over de1 and
+			 * delete de2
+			 */
+			if (de1 == list_last_entry(&dr->ents, struct dir_ent, lst))
+				de1 = NULL;
+			else
+				de1 = list_next_entry(de1, lst);
+			list_del(&de2->lst);
+			attr_free(&de2->attrs);
+			free(de2->name);
+			free(de2);
+		}
+		de2 = list_first_entry_or_null(&new, struct dir_ent, lst);
+		while (m && m->ref.d && de1 && strcmp(m->ref.d->name, de1->name) < 0) {
+			prev = m;
+			m = doc_next_mark_all(d, m);
+		}
+	}
+	if (!donotify) {
+		m = doc_first_mark_all(d);
+		if (m)
+			doc_notify_change(d, m);
+	}
+
 	if (name && !pos) {
 		char *dname;
 		int l = strlen(name);
@@ -156,6 +236,8 @@ static int dir_load_file(struct doc *d, struct point *pos,
 		if (l > 1)
 			strcat(dr->fname, "/");
 	}
+	if (doclose)
+		close(fd);
 	return 1;
 }
 

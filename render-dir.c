@@ -440,6 +440,20 @@ static int render_dir_open(struct command *c, struct cmd_info *ci)
 }
 DEF_CMD(comm_open, render_dir_open);
 
+static int render_dir_reload(struct command *c, struct cmd_info *ci)
+{
+	struct point **ptp = ci->pointp;
+	struct doc *d;
+
+	if (!ptp)
+		return 0;
+	d = (*ptp)->doc;
+	if (d->ops->load_file)
+		d->ops->load_file(d, NULL, -1, NULL);
+	return 1;
+}
+DEF_CMD(comm_reload, render_dir_reload);
+
 static void render_dir_register_map(void)
 {
 	dr_map = key_alloc();
@@ -459,6 +473,7 @@ static void render_dir_register_map(void)
 
 	key_add(dr_map, "Chr-f", &comm_open);
 	key_add(dr_map, "Chr-h", &comm_open);
+	key_add(dr_map, "Chr-g", &comm_reload);
 }
 
 static void render_dir_attach(struct pane *parent, struct point **ptp)
