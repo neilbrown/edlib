@@ -32,6 +32,7 @@ char WelcomeText[] =
 	"  Movement by char, word, line, page, start/end file (standard emacs keys)\n"
 	"  Insert/delete text\n"
 	"  C-_ and M-C-_ to undo and redo changes\n"
+	"  C-s to search (incrementally) in text document\n"
 	"  Visit list of documents (C-x C-b)\n"
 	"  Open file from directory list, or document from document list ('f').\n"
 	"  Open file in 'hex' view from directory listing ('h').\n"
