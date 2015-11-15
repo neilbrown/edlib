@@ -144,7 +144,7 @@ static int do_search_close(struct command *c, struct cmd_info *ci)
 {
 	struct es_info *esi = ci->focus->data;
 
-	doc_del_view(esi->target->point->doc, &esi->watch);
+	doc_del_view((*ci->pointp)->doc, &esi->watch);
 	/* TEMP HACK - please fix */
 	esi->target->point->doc->ops->set_attr(esi->end, "highlight", NULL);
 	point_free(esi->end);
@@ -168,6 +168,14 @@ static int do_search_again(struct command *c, struct cmd_info *ci)
 	struct pane *p;
 	char *a, *pfx;
 	int ret;
+
+	if (strcmp(ci->key, "Release") == 0) {
+		struct doc *d = (*ci->pointp)->doc;
+
+		/* No marks to remove */
+		doc_del_view(d, c);
+		return 0;
+	}
 
 	/* TEMP HACK - please fix */
 	d->ops->set_attr(esi->end, "highlight", NULL);
