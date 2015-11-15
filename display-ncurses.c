@@ -346,8 +346,6 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	ci.focus = p;
 	ci.numeric = dd->dpy.numeric;
 	ci.extra = dd->dpy.extra;
-	ci.x = ci.y = -1;
-	// FIXME find doc
 	dd->dpy.mode = dd->dpy.next_mode;
 	dd->dpy.numeric = NO_NUMERIC;
 	dd->dpy.extra = 0;
@@ -366,7 +364,6 @@ static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
 	ci.extra = dd->dpy.extra;
 	ci.x = x;
 	ci.y = y;
-	// FIXME find doc
 	dd->dpy.mode = dd->dpy.next_mode;
 	dd->dpy.numeric = NO_NUMERIC;
 	dd->dpy.extra = 0;

@@ -236,6 +236,7 @@ struct cmd_info {
 
 struct map *key_alloc(void);
 void key_free(struct map *m);
+int key_handle(struct cmd_info *ci);
 int key_handle_focus(struct cmd_info *ci);
 int key_handle_xy(struct cmd_info *ci);
 int key_lookup(struct map *m, struct cmd_info *ci);

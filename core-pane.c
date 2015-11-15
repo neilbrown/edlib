@@ -455,12 +455,7 @@ void pane_clear(struct pane *p, char *attrs)
 	ci.key = "pane-clear";
 	ci.focus = p;
 	ci.str2 = attrs;
-	/* This is a kludge.
-	 * using handle_xy with -1,-1 forces the given focus
-	 * to be used rather than any child.
-	 */
-	ci.x = ci.y = -1;
-	key_handle_xy(&ci);
+	key_handle(&ci);
 }
 
 void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y)

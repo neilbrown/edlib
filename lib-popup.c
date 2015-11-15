@@ -107,9 +107,8 @@ DEF_CMD(popup_handle, do_popup_handle);
 
 static int popup_quote(struct command *c, struct cmd_info *ci)
 {
-	struct cmd_info ci2;
+	struct cmd_info ci2 = *ci;
 
-	ci2 = *ci;
 	if (strcmp(ci->key, "Replace") == 0)
 		ci2.key = "popup:Replace";
 	else

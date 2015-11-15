@@ -287,11 +287,13 @@ int key_lookup(struct map *m, struct cmd_info *ci)
 	return comm->func(comm, ci);
 }
 
-static int key_handle(struct cmd_info *ci)
+int key_handle(struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	int ret = 0;
 
+	if (!ci->pointp)
+		ci->pointp = pane_point(p);
 	while (ret == 0 && p) {
 		if (p->handle) {
 			ci->home = p;
@@ -321,8 +323,6 @@ int key_handle_focus(struct cmd_info *ci)
 		p = p->focus;
 	}
 	ci->focus = p;
-	if (!ci->pointp)
-		ci->pointp = pane_point(p);
 	return key_handle(ci);
 }
 
@@ -354,8 +354,6 @@ int key_handle_xy(struct cmd_info *ci)
 		y -= chld->y;
 		p = chld;
 	}
-	if (!ci->pointp)
-		ci->pointp = pane_point(p);
 	ci->x = x;
 	ci->y = y;
 	ci->focus = p;

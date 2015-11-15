@@ -70,8 +70,6 @@ static int key_do_handle(struct command *c, struct cmd_info *ci)
 			/* Add a local keymap on 'focus' and re-send */
 			struct pane *p = ci->focus;
 			struct cmd_info ci2 = {0};
-			while (p->focus)
-				p = p->focus;
 			ci2.focus = p;
 			keymap_attach(NULL, &ci2);
 			pane_attach(p, "local-keymap", NULL, NULL);
