@@ -149,7 +149,7 @@ DEF_CMD(ncurses_handle)
 	}
 	if (strcmp(ci->key, "pane-text") == 0) {
 		int attr = cvt_attrs(ci->str2);
-		ncurses_text(ci->home, ci->str[0], attr, ci->x, ci->y);
+		ncurses_text(ci->home, ci->extra, attr, ci->x, ci->y);
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") == 0) {
@@ -250,16 +250,12 @@ static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h)
 static void ncurses_text(struct pane *p, wchar_t ch, int attr, int x, int y)
 {
 	struct display_data *dd;
-	cchar_t cc;
+	cchar_t cc = {0};
 
 	dd = p->data;
 	set_screen(dd->scr);
 	cc.attr = attr;
 	cc.chars[0] = ch;
-	cc.chars[1] = 0;
-	#ifdef NCURSES_EXT_COLORS
-	cc.ext_color = 0;
-	#endif
 
 	mvadd_wch(y, x, &cc);
 }

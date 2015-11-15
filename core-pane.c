@@ -480,9 +480,8 @@ void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y)
 	ci.y = y;
 	ci.str = buf;
 	ci.str2 = attrs;
-	/* FIXME wchar! */
-	buf[0] = ch;
-	buf[1] = 0;
+	ci.extra = ch;
+
 	/* FIXME this could result in cropping the text. */
 	key_handle_xy(&ci);
 }
