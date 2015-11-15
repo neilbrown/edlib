@@ -259,7 +259,7 @@ DEF_CMD(emacs_search)
 	while (pane_child(ci->focus))
 		ci->focus = pane_child(ci->focus);
 	p = pane_register(ci->focus, 0, &search_handle, esi, NULL);
-	ci->home = p;
+	ci->focus = p;
 	return 1;
 }
 

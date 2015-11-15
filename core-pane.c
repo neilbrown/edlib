@@ -445,10 +445,10 @@ struct pane *pane_attach(struct pane *p, char *type, struct point *pt,
 		editor_load_module(ed, mod);
 		free(mod);
 		if (!key_lookup(ed->commands, &ci))
-			ci.home = NULL;
+			ci.focus = NULL;
 	}
 	free(com);
-	return ci.home;
+	return ci.focus;
 }
 
 void pane_clear(struct pane *p, char *attrs)

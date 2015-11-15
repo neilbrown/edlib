@@ -87,7 +87,7 @@ DEF_CMD(tile_attach)
 	ti->direction = Neither;
 	INIT_LIST_HEAD(&ti->tiles);
 	pane_check_size(p);
-	ci->home = p;
+	ci->focus = p;
 	attr_set_str(&p->attrs, "borders", "BL", -1);
 	return 1;
 }

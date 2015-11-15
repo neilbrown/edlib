@@ -177,7 +177,7 @@ DEF_CMD(popup_attach)
 	ci2.str2 = "Abort";
 	key_handle_focus(&ci2);
 
-	ci->home = p;
+	ci->focus = p;
 	return 1;
 }
 
