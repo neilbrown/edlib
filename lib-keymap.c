@@ -33,9 +33,9 @@ struct key_data {
 	int		global;
 };
 
-static int keymap_attach(struct command *c, struct cmd_info *ci);
+static int keymap_attach_func(struct cmd_info *ci);
 
-static int key_do_handle(struct command *c, struct cmd_info *ci)
+DEF_CMD(keymap_handle)
 {
 	struct key_data *kd = ci->home->data;
 	int i;
@@ -71,7 +71,7 @@ static int key_do_handle(struct command *c, struct cmd_info *ci)
 			struct pane *p = ci->focus;
 			struct cmd_info ci2 = {0};
 			ci2.focus = p;
-			keymap_attach(NULL, &ci2);
+			keymap_attach_func(&ci2);
 			pane_attach(p, "local-keymap", NULL, NULL);
 			return key_handle_focus(ci);
 		}
@@ -113,16 +113,17 @@ static int key_do_handle(struct command *c, struct cmd_info *ci)
 	}
 
 	for (i = 0; i < kd->cmdcount; i++) {
-		int ret = kd->cmds[i]->func(kd->cmds[i], ci);
+		int ret;
+		ci->comm = kd->cmds[i];
+		ret = kd->cmds[i]->func(ci);
 		if (ret)
 			return ret;
 	}
 
 	return key_lookup(kd->map, ci);
 }
-DEF_CMD(key_handle, key_do_handle);
 
-static int keymap_attach(struct command *c, struct cmd_info *ci)
+DEF_CMD(keymap_attach)
 {
 	struct key_data *kd = malloc(sizeof(*kd));
 	struct pane *p;
@@ -131,18 +132,17 @@ static int keymap_attach(struct command *c, struct cmd_info *ci)
 	kd->cmds = NULL;
 	kd->globalcmd = NULL;
 	kd->cmdcount = 0;
-	kd->global = c ? 1 : 0;
+	kd->global = ci->comm ? 1 : 0;
 	p = ci->focus;
 	while (pane_child(p))
 		p = pane_child(p);
-	p = pane_register(p, 0, &key_handle, kd, NULL);
+	p = pane_register(p, 0, &keymap_handle, kd, NULL);
 	pane_check_size(p);
 	ci->home = p;
 	return 1;
 }
-DEF_CMD(comm_attach, keymap_attach);
 
 void edlib_init(struct editor *ed)
 {
-	key_add(ed->commands, "attach-global-keymap", &comm_attach);
+	key_add(ed->commands, "attach-global-keymap", &keymap_attach);
 }

@@ -105,7 +105,8 @@ void doc_close_views(struct doc *d)
 		ci.pointp = &ptp;
 		pt.doc = d;
 		c = d->views[i].notify;
-		c->func(c, &ci);
+		ci.comm = c;
+		c->func(&ci);
 	}
 }
 
@@ -361,7 +362,7 @@ static struct doc_operations docs_ops = {
 	.set_attr  = docs_set_attr,
 };
 
-static int docs_open(struct command *c, struct cmd_info *ci)
+DEF_CMD(comm_open)
 {
 	struct pane *p = ci->home;
 	struct point *pt;
@@ -384,7 +385,6 @@ static int docs_open(struct command *c, struct cmd_info *ci)
 		return 0;
 	}
 }
-DEF_CMD(comm_open, docs_open);
 
 void doc_make_docs(struct editor *ed)
 {

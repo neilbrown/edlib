@@ -112,7 +112,7 @@ static void load_dir(struct list_head *lst, int fd)
 	closedir(dir);
 }
 
-static int dir_new(struct command *c, struct cmd_info *ci)
+DEF_CMD(comm_new)
 {
 	struct directory *dr = malloc(sizeof(*dr));
 	doc_init(&dr->doc);
@@ -124,7 +124,6 @@ static int dir_new(struct command *c, struct cmd_info *ci)
 	point_new(&dr->doc, ci->pointp);
 	return 1;
 }
-DEF_CMD(comm_new, dir_new);
 
 static void dir_replace(struct point *pos, struct mark *end,
 			 char *str, bool *first)
@@ -423,7 +422,7 @@ static struct doc_operations dir_ops = {
 	.destroy   = dir_destroy,
 };
 
-static int doc_dir_open(struct command *c, struct cmd_info *ci)
+DEF_CMD(comm_open)
 {
 	struct pane *p = ci->home;
 	struct point *pt = p->point;
@@ -449,7 +448,6 @@ static int doc_dir_open(struct command *c, struct cmd_info *ci)
 	pane_focus(p);
 	return 1;
 }
-DEF_CMD(comm_open, doc_dir_open);
 
 void edlib_init(struct editor *ed)
 {

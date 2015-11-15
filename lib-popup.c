@@ -57,7 +57,7 @@ static void popup_resize(struct pane *p, char *style)
 	pane_resize(p, x, y, w, h);
 }
 
-static int do_popup_handle(struct command *c, struct cmd_info *ci)
+DEF_CMD(popup_handle)
 {
 	struct pane *p = ci->home;
 	struct popup_info *ppi = p->data;
@@ -103,9 +103,8 @@ static int do_popup_handle(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(popup_handle, do_popup_handle);
 
-static int popup_quote(struct command *c, struct cmd_info *ci)
+DEF_CMD(popup_quote)
 {
 	struct cmd_info ci2 = *ci;
 
@@ -115,9 +114,8 @@ static int popup_quote(struct command *c, struct cmd_info *ci)
 		ci2.key = "popup:Abort";
 	return key_handle_focus(&ci2);
 }
-DEF_CMD(comm_quote, popup_quote);
 
-static int popup_attach(struct command *c, struct cmd_info *ci)
+DEF_CMD(popup_attach)
 {
 	/* attach a popup.  It can be attach to the view or the display,
 	 * can be in a corner, in a side, or central, and be 1 line or
@@ -182,10 +180,9 @@ static int popup_attach(struct command *c, struct cmd_info *ci)
 	ci->home = p;
 	return 1;
 }
-DEF_CMD(comm_attach, popup_attach);
 
 void edlib_init(struct editor *ed)
 {
-	key_add(ed->commands, "attach-popup", &comm_attach);
-	key_add(ed->commands, "popup:quote", &comm_quote);
+	key_add(ed->commands, "attach-popup", &popup_attach);
+	key_add(ed->commands, "popup:quote", &popup_quote);
 }

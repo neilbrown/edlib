@@ -49,7 +49,7 @@ static void tile_adjust(struct pane *p);
 static void tile_avail(struct pane *p, struct pane *ignore);
 static int tile_destroy(struct pane *p);
 
-static int do_tile_handle(struct command *c, struct cmd_info *ci)
+DEF_CMD(tile_handle)
 {
 	struct pane *p = ci->home;
 	int damage = ci->extra;
@@ -75,9 +75,8 @@ static int do_tile_handle(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(tile_handle, do_tile_handle);
 
-static int tile_attach(struct command *c, struct cmd_info *ci)
+DEF_CMD(tile_attach)
 {
 	struct pane *display = ci->focus;
 	struct tileinfo *ti = malloc(sizeof(*ti));
@@ -92,7 +91,6 @@ static int tile_attach(struct command *c, struct cmd_info *ci)
 	attr_set_str(&p->attrs, "borders", "BL", -1);
 	return 1;
 }
-DEF_CMD(comm_attach, tile_attach);
 
 static struct pane *tile_split(struct pane *p, int horiz, int after)
 {
@@ -501,7 +499,7 @@ static int tile_grow(struct pane *p, int horiz, int size)
 	return 1;
 }
 
-static int tile_command(struct command *c, struct cmd_info *ci)
+DEF_CMD(tile_command)
 {
 	struct pane *p = ci->home;
 	struct pane *p2;
@@ -550,9 +548,8 @@ static int tile_command(struct command *c, struct cmd_info *ci)
 		return 0;
 	return 1;
 }
-DEF_CMD(comm_tile, tile_command);
 
-static int tile_other(struct command *c, struct cmd_info *ci)
+DEF_CMD(tile_other)
 {
 	/* Choose some other tile.  If there aren't any, make one.
 	 * Result is returned in ci->focus
@@ -574,13 +571,13 @@ static int tile_other(struct command *c, struct cmd_info *ci)
 		ci->focus = p2;
 	return 1;
 }
-DEF_CMD(comm_other, tile_other);
+
 void edlib_init(struct editor *ed)
 {
 	tile_map = key_alloc();
 
-	key_add(tile_map, "WindowOP", &comm_tile);
-	key_add(tile_map, "OtherPane", &comm_other);
+	key_add(tile_map, "WindowOP", &tile_command);
+	key_add(tile_map, "OtherPane", &tile_other);
 
-	key_add(ed->commands, "attach-tile", &comm_attach);
+	key_add(ed->commands, "attach-tile", &tile_attach);
 }

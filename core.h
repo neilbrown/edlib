@@ -206,11 +206,17 @@ void attr_free(struct attrset **setp);
 
 /* Commands */
 struct command {
-	int	(*func)(struct command *comm, struct cmd_info *ci);
+	int	(*func)(struct cmd_info *ci);
 };
 
-#define	CMD(func) {func}
-#define	DEF_CMD(comm, func) static struct command comm = CMD(func)
+#define CMD(_name) {_name ## _func }
+#define DEF_CMD(_name) \
+	static int _name ## _func(struct cmd_info *ci); \
+	static struct command _name = CMD(_name);	\
+	static int _name ## _func(struct cmd_info *ci)
+#define REDEF_CMD(_name) \
+	static int _name ## _func(struct cmd_info *ci)
+
 #define	ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 
 /* Each event (above) is accompanied by a cmd_info structure.
@@ -230,6 +236,7 @@ struct cmd_info {
 	char		*str, *str2;
 	struct mark	*mark;
 	struct point	**pointp;
+	struct command	*comm;
 };
 #define	NO_NUMERIC	(INT_MAX/2)
 #define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric)

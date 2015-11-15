@@ -16,8 +16,8 @@
 
 #include "core.h"
 
-static int emacs_move(struct command *c, struct cmd_info *ci);
-static int emacs_delete(struct command *c, struct cmd_info *ci);
+REDEF_CMD(emacs_move);
+REDEF_CMD(emacs_delete);
 
 static struct move_command {
 	struct command	cmd;
@@ -66,9 +66,9 @@ static struct move_command {
 	 "C-Chr-K", NULL, NULL},
 };
 
-static int emacs_move(struct command *c, struct cmd_info *ci)
+REDEF_CMD(emacs_move)
 {
-	struct move_command *mv = container_of(c, struct move_command, cmd);
+	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 	struct pane *cursor_pane = pane_with_cursor(ci->home, NULL, NULL);
 	struct point *pt = *ci->pointp;
 	int old_x = -1;
@@ -110,9 +110,9 @@ static int emacs_move(struct command *c, struct cmd_info *ci)
 	return ret;
 }
 
-static int emacs_delete(struct command *c, struct cmd_info *ci)
+REDEF_CMD(emacs_delete)
 {
-	struct move_command *mv = container_of(c, struct move_command, cmd);
+	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 	struct cmd_info ci2 = {0};
 	int ret = 0;
 	struct mark *m;
@@ -146,7 +146,7 @@ static int emacs_delete(struct command *c, struct cmd_info *ci)
 	return ret;
 }
 
-static int emacs_str(struct command *c, struct cmd_info *ci);
+REDEF_CMD(emacs_str);
 static struct str_command {
 	struct command	cmd;
 	char		*type;
@@ -170,9 +170,9 @@ static struct str_command {
 	{CMD(emacs_str), "NOP", NULL, "emCX4-C-Chr-G"},
 };
 
-static int emacs_str(struct command *c, struct cmd_info *ci)
+REDEF_CMD(emacs_str)
 {
-	struct str_command *sc = container_of(c, struct str_command, cmd);
+	struct str_command *sc = container_of(ci->comm, struct str_command, cmd);
 	struct cmd_info ci2;
 
 	ci2 = *ci;
@@ -181,7 +181,7 @@ static int emacs_str(struct command *c, struct cmd_info *ci)
 	return key_handle_focus(&ci2);
 }
 
-static int emacs_insert(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_insert)
 {
 	char str[5];
 	struct cmd_info ci2 = {0};
@@ -201,7 +201,6 @@ static int emacs_insert(struct command *c, struct cmd_info *ci)
 
 	return ret;
 }
-DEF_CMD(comm_insert, emacs_insert);
 
 static struct {
 	char *key;
@@ -213,7 +212,7 @@ static struct {
 	{NULL, NULL}
 };
 
-static int emacs_insert_other(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_insert_other)
 {
 	struct pane *p = ci->home;
 	struct cmd_info ci2 = {0};
@@ -237,25 +236,22 @@ static int emacs_insert_other(struct command *c, struct cmd_info *ci)
 	pane_set_extra(p, 0); /* A newline starts a new undo */
 	return ret;
 }
-DEF_CMD(comm_insert_other, emacs_insert_other);
 
-static int emacs_undo(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_undo)
 {
 	struct point *pt = *ci->pointp;
 	doc_undo(pt, 0);
 	return 1;
 }
-DEF_CMD(comm_undo, emacs_undo);
 
-static int emacs_redo(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_redo)
 {
 	struct point *pt = *ci->pointp;
 	doc_undo(pt, 1);
 	return 1;
 }
-DEF_CMD(comm_redo, emacs_redo);
 
-static int emacs_findfile(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_findfile)
 {
 	int fd;
 	struct pane *p, *par;
@@ -333,9 +329,8 @@ static int emacs_findfile(struct command *c, struct cmd_info *ci)
 	pane_focus(p);
 	return 1;
 }
-DEF_CMD(comm_findfile, emacs_findfile);
 
-static int emacs_finddoc(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_finddoc)
 {
 	struct pane *p, *par;
 	struct doc *d;
@@ -392,9 +387,8 @@ static int emacs_finddoc(struct command *c, struct cmd_info *ci)
 	render_attach(NULL, p);
 	return 1;
 }
-DEF_CMD(comm_finddoc, emacs_finddoc);
 
-static int emacs_viewdocs(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_viewdocs)
 {
 	struct pane *p, *par;
 	struct doc *d;
@@ -421,18 +415,16 @@ static int emacs_viewdocs(struct command *c, struct cmd_info *ci)
 	render_attach(NULL, p);
 	return 1;
 }
-DEF_CMD(comm_viewdocs, emacs_viewdocs);
 
-static int emacs_meta(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_meta)
 {
 	pane_set_mode(ci->home, "M-", 1);
 	pane_set_numeric(ci->home, ci->numeric);
 	pane_set_extra(ci->home, ci->extra);
 	return 1;
 }
-DEF_CMD(comm_meta, emacs_meta);
 
-static int emacs_num(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_num)
 {
 	int rpt = RPT_NUM(ci);
 	char *last = ci->key + strlen(ci->key)-1;
@@ -444,9 +436,8 @@ static int emacs_num(struct command *c, struct cmd_info *ci)
 	pane_set_extra(ci->home, ci->extra);
 	return 1;
 }
-DEF_CMD(comm_num, emacs_num);
 
-static int emacs_kill_doc(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_kill_doc)
 {
 	struct doc *d;
 	if (!ci->pointp)
@@ -456,9 +447,8 @@ static int emacs_kill_doc(struct command *c, struct cmd_info *ci)
 	doc_destroy(d);
 	return 1;
 }
-DEF_CMD(comm_kill_doc, emacs_kill_doc);
 
-static int emacs_search(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_search)
 {
 	struct cmd_info ci2 = {0};
 
@@ -490,7 +480,6 @@ static int emacs_search(struct command *c, struct cmd_info *ci)
 	mark_free(ci2.mark);
 	return 1;
 }
-DEF_CMD(comm_search, emacs_search);
 
 static struct map *emacs_map;
 
@@ -503,7 +492,7 @@ static void emacs_init(void)
 
 	key_add(m, "C-Chr-X", cx_cmd);
 	key_add(m, "emCX-Chr-4", cx4_cmd);
-	key_add(m, "ESC", &comm_meta);
+	key_add(m, "ESC", &emacs_meta);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
 		struct move_command *mc = &move_commands[i];
@@ -519,40 +508,39 @@ static void emacs_init(void)
 		key_add(m, sc->k, &sc->cmd);
 	}
 
-	key_add_range(m, "Chr- ", "Chr-~", &comm_insert);
-	key_add(m, "Tab", &comm_insert_other);
-	key_add(m, "LF", &comm_insert_other);
-	key_add(m, "Return", &comm_insert_other);
+	key_add_range(m, "Chr- ", "Chr-~", &emacs_insert);
+	key_add(m, "Tab", &emacs_insert_other);
+	key_add(m, "LF", &emacs_insert_other);
+	key_add(m, "Return", &emacs_insert_other);
 
-	key_add(m, "C-Chr-_", &comm_undo);
-	key_add(m, "M-C-Chr-_", &comm_redo);
+	key_add(m, "C-Chr-_", &emacs_undo);
+	key_add(m, "M-C-Chr-_", &emacs_redo);
 
-	key_add(m, "emCX-C-Chr-F", &comm_findfile);
-	key_add(m, "emCX4-C-Chr-F", &comm_findfile);
-	key_add(m, "emCX4-Chr-f", &comm_findfile);
-	key_add(m, "File Found", &comm_findfile);
-	key_add(m, "File Found Other Window", &comm_findfile);
+	key_add(m, "emCX-C-Chr-F", &emacs_findfile);
+	key_add(m, "emCX4-C-Chr-F", &emacs_findfile);
+	key_add(m, "emCX4-Chr-f", &emacs_findfile);
+	key_add(m, "File Found", &emacs_findfile);
+	key_add(m, "File Found Other Window", &emacs_findfile);
 
-	key_add(m, "emCX-Chr-b", &comm_finddoc);
-	key_add(m, "emCX4-Chr-b", &comm_finddoc);
-	key_add(m, "Doc Found", &comm_finddoc);
-	key_add(m, "Doc Found Other Window", &comm_finddoc);
-	key_add(m, "emCX-C-Chr-B", &comm_viewdocs);
+	key_add(m, "emCX-Chr-b", &emacs_finddoc);
+	key_add(m, "emCX4-Chr-b", &emacs_finddoc);
+	key_add(m, "Doc Found", &emacs_finddoc);
+	key_add(m, "Doc Found Other Window", &emacs_finddoc);
+	key_add(m, "emCX-C-Chr-B", &emacs_viewdocs);
 
-	key_add(m, "emCX-Chr-k", &comm_kill_doc);
+	key_add(m, "emCX-Chr-k", &emacs_kill_doc);
 
-	key_add(m, "C-Chr-S", &comm_search);
-	key_add(m, "Search String", &comm_search);
+	key_add(m, "C-Chr-S", &emacs_search);
+	key_add(m, "Search String", &emacs_search);
 
-	key_add_range(m, "M-Chr-0", "M-Chr-9", &comm_num);
+	key_add_range(m, "M-Chr-0", "M-Chr-9", &emacs_num);
 	emacs_map = m;
 }
 
-static int do_mode_emacs(struct command *c, struct cmd_info *ci)
+DEF_CMD(mode_emacs)
 {
 	return key_lookup(emacs_map, ci);
 }
-DEF_CMD(mode_emacs, do_mode_emacs);
 
 void emacs_search_init(struct editor *ed);
 void edlib_init(struct editor *ed)

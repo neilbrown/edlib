@@ -107,7 +107,8 @@ static void __pane_refresh(struct cmd_info *ci)
 		if (ci->extra & DAMAGED_CONTENT)
 			ci->extra |= DAMAGED_CURSOR;
 		damage &= DAMAGED_SIZE;
-		if (p->handle->func(p->handle, ci))
+		ci->comm = p->handle;
+		if (p->handle->func(ci))
 			damage |= ci->extra;
 	}
 	p->damaged = 0;
@@ -147,7 +148,8 @@ void pane_close(struct pane *p)
 		ci.key = "Close";
 		ci.focus = ci.home = p;
 		ci.pointp = pane_point(p);
-		p->handle->func(p->handle, &ci);
+		ci.comm = p->handle;
+		p->handle->func(&ci);
 	}
 	pane_damaged(p->parent, DAMAGED_SIZE);
 	attr_free(&p->attrs);
@@ -169,8 +171,9 @@ int pane_clone(struct pane *from, struct pane *parent)
 	ci.key = "Clone";
 	ci.focus = parent;
 	ci.home = from;
+	ci.comm = from->handle;
 	if (from->handle)
-		return from->handle->func(from->handle, &ci);
+		return from->handle->func(&ci);
 	return 0;
 }
 

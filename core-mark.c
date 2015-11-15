@@ -659,13 +659,14 @@ void point_notify_change(struct point *p, struct mark *m)
 
 		if (!c)
 			continue;
+		ci.comm = c;
 		while (TLIST_TYPE(tl) == GRP_LIST)
 			tl = TLIST_PTR(tl->prev);
 		if (TLIST_TYPE(tl) == GRP_MARK)
 			ci.mark = tlist_entry(tl, struct mark, view);
 		else
 			ci.mark = NULL;
-		c->func(c, &ci);
+		c->func(&ci);
 		while (TLIST_TYPE(tl) == GRP_MARK &&
 		       (mark_ordered(m, ci.mark) || mark_same(d, m, ci.mark))) {
 			do
@@ -674,7 +675,7 @@ void point_notify_change(struct point *p, struct mark *m)
 
 			if (TLIST_TYPE(tl) == GRP_MARK) {
 				ci.mark = tlist_entry(tl, struct mark, view);
-				c->func(c, &ci);
+				c->func(&ci);
 			}
 		}
 
@@ -684,7 +685,7 @@ void point_notify_change(struct point *p, struct mark *m)
 			if (TLIST_TYPE(tl) == GRP_MARK) {
 				ci.mark = tlist_entry(tl, struct mark, view);
 				if (mark_same(d, ci.mark, mark_of_point(p)))
-					c->func(c, &ci);
+					c->func(&ci);
 				else
 					break;
 			}
@@ -727,7 +728,8 @@ void doc_notify_change(struct doc *d, struct mark *m)
 					ci.mark = tlist_entry(tl, struct mark, view);
 				else
 					ci.mark = NULL;
-				c->func(c, &ci);
+				ci.comm = c;
+				c->func(&ci);
 			}
 			break;
 		}
@@ -739,7 +741,8 @@ void doc_notify_change(struct doc *d, struct mark *m)
 			remaining -= 1;
 			if (c) {
 				ci.mark = m;
-				c->func(c, &ci);
+				ci.comm = c;
+				c->func(&ci);
 			}
 		}
 		if (m->all.pprev == &d->marks.first)

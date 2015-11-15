@@ -27,7 +27,7 @@ struct he_data {
 };
 
 static struct map *he_map;
-static void render_hex_attach(struct pane *parent, struct point **ptp);
+static void do_render_hex_attach(struct pane *parent, struct point **ptp);
 
 static int put_str(struct pane *p, char *buf, char *attrs, int x, int y)
 {
@@ -206,7 +206,7 @@ found:
 	return 0;
 }
 
-static int do_render_hex_handle(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_hex_handle)
 {
 	struct pane *p = ci->home;
 	struct he_data *he = p->data;
@@ -234,7 +234,7 @@ static int do_render_hex_handle(struct command *c, struct cmd_info *ci)
 		struct pane *parent = ci->focus;
 		struct pane *c;
 
-		render_hex_attach(parent, NULL);
+		do_render_hex_attach(parent, NULL);
 		c = pane_child(p);
 		if (c)
 			return pane_clone(c, parent->focus);
@@ -244,11 +244,10 @@ static int do_render_hex_handle(struct command *c, struct cmd_info *ci)
 		return hex_refresh(ci);
 	return 0;
 }
-DEF_CMD(render_hex_handle, do_render_hex_handle);
 
-static int render_hex_notify(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_hex_notify)
 {
-	struct he_data *he = container_of(c, struct he_data, type);
+	struct he_data *he = container_of(ci->comm, struct he_data, type);
 
 	if (strcmp(ci->key, "Replace") == 0) {
 		if (he->bot == NULL || ci->mark == NULL ||
@@ -267,7 +266,7 @@ static int render_hex_notify(struct command *c, struct cmd_info *ci)
 	return 0;
 }
 
-static int render_hex_move(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_hex_move)
 {
 	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
@@ -288,9 +287,8 @@ static int render_hex_move(struct command *c, struct cmd_info *ci)
 	pane_damaged(p, DAMAGED_CONTENT);
 	return 1;
 }
-DEF_CMD(comm_move, render_hex_move);
 
-static int render_hex_follow_point(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_hex_follow_point)
 {
 	struct pane *p = ci->home;
 	struct he_data *he = p->data;
@@ -301,9 +299,8 @@ static int render_hex_follow_point(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(comm_follow, render_hex_follow_point);
 
-static int render_hex_set_cursor(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_hex_set_cursor)
 {
 	struct pane *p = ci->home;
 	struct point *pt = *ci->pointp;
@@ -335,9 +332,8 @@ static int render_hex_set_cursor(struct command *c, struct cmd_info *ci)
 	pane_focus(p);
 	return 1;
 }
-DEF_CMD(comm_cursor, render_hex_set_cursor);
 
-static int render_hex_move_line(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_hex_move_line)
 {
 	/* MV_CHAR 16 times repeat count */
 	struct cmd_info ci2 = {0};
@@ -348,9 +344,8 @@ static int render_hex_move_line(struct command *c, struct cmd_info *ci)
 	return key_handle_focus(&ci2);
 
 }
-DEF_CMD(comm_line, render_hex_move_line);
 
-static int render_hex_eol(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_hex_eol)
 {
 	struct point *pt = *ci->pointp;
 	wint_t ch = 1;
@@ -382,25 +377,24 @@ static int render_hex_eol(struct command *c, struct cmd_info *ci)
 	he->ignore_point = 0;
 	return 1;
 }
-DEF_CMD(comm_eol, render_hex_eol);
 
 static void render_hex_register_map(void)
 {
 	he_map = key_alloc();
 
-	key_add_range(he_map, "Move-", "Move-\377", &comm_follow);
-	key_add(he_map, "Move-View-Small", &comm_move);
-	key_add(he_map, "Move-View-Large", &comm_move);
-	key_add(he_map, "Move-CursorXY", &comm_cursor);
-	key_add(he_map, "Click-1", &comm_cursor);
-	key_add(he_map, "Press-1", &comm_cursor);
-	key_add(he_map, "Move-Line", &comm_line);
+	key_add_range(he_map, "Move-", "Move-\377", &render_hex_follow_point);
+	key_add(he_map, "Move-View-Small", &render_hex_move);
+	key_add(he_map, "Move-View-Large", &render_hex_move);
+	key_add(he_map, "Move-CursorXY", &render_hex_set_cursor);
+	key_add(he_map, "Click-1", &render_hex_set_cursor);
+	key_add(he_map, "Press-1", &render_hex_set_cursor);
+	key_add(he_map, "Move-Line", &render_hex_move_line);
 
-	key_add(he_map, "Move-EOL", &comm_eol);
-	key_add(he_map, "Replace", &comm_follow);
+	key_add(he_map, "Move-EOL", &render_hex_eol);
+	key_add(he_map, "Replace", &render_hex_follow_point);
 }
 
-static void render_hex_attach(struct pane *parent, struct point **ptp)
+static void do_render_hex_attach(struct pane *parent, struct point **ptp)
 {
 	struct he_data *he = malloc(sizeof(*he));
 	struct pane *p;
@@ -413,7 +407,7 @@ static void render_hex_attach(struct pane *parent, struct point **ptp)
 	he->top = NULL;
 	he->bot = NULL;
 	he->ignore_point = 0;
-	he->type.func = render_hex_notify;
+	he->type = render_hex_notify;
 	he->typenum = doc_add_view((*ptp)->doc, &he->type);
 	p = pane_register(parent, 0, &render_hex_handle, he, NULL);
 	he->pane = p;
@@ -421,14 +415,14 @@ static void render_hex_attach(struct pane *parent, struct point **ptp)
 	if (!he_map)
 		render_hex_register_map();
 }
-static int do_render_hex_attach(struct command *c, struct cmd_info *ci)
+
+DEF_CMD(render_hex_attach)
 {
-	render_hex_attach(ci->focus, ci->pointp);
+	do_render_hex_attach(ci->focus, ci->pointp);
 	return 1;
 }
-DEF_CMD(comm_attach, do_render_hex_attach);
 
 void edlib_init(struct editor *ed)
 {
-	key_add(ed->commands, "render-hex-attach", &comm_attach);
+	key_add(ed->commands, "render-hex-attach", &render_hex_attach);
 }

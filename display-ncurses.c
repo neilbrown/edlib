@@ -70,7 +70,7 @@ static void ncurses_flush(int fd, short ev, void *P)
 	refresh();
 }
 
-static int nc_misc(struct command *c, struct cmd_info *ci)
+DEF_CMD(nc_misc)
 {
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
@@ -127,7 +127,7 @@ static int cvt_attrs(char *attrs)
 	return attr;
 }
 
-static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
+DEF_CMD(ncurses_handle)
 {
 	struct pane *p = ci->home;
 	int damage = ci->extra;
@@ -136,7 +136,7 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 	struct timeval tv;
 
 	if (strcmp(ci->key, "Misc") == 0)
-		return nc_misc(c, ci);
+		return nc_misc.func(ci);
 
 	if (strcmp(ci->key, "Close") == 0) {
 		ncurses_end();
@@ -169,7 +169,6 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(ncurses_handle, do_ncurses_handle);
 
 static void handle_winch(int sig, short ev, void *null);
 static struct pane *ncurses_init(struct editor *ed)
@@ -417,13 +416,12 @@ static void input_handle(int fd, short ev, void *P)
 	pane_refresh(p);
 }
 
-static int display_ncurses(struct command *c, struct cmd_info *ci)
+DEF_CMD(comm_ncurses)
 {
 	struct pane *p = ncurses_init(pane2ed(ci->home));
 	ci->focus = p;
 	return 1;
 }
-DEF_CMD(comm_ncurses, display_ncurses);
 
 void edlib_init(struct editor *ed)
 {
