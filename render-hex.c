@@ -311,19 +311,19 @@ DEF_CMD(render_hex_set_cursor)
 	if (!he->top)
 		return 0;
 
-	if (ci->x < 10)
+	if (ci->hx < 10)
 		x = 0;
-	else if (ci->x < 10 + 8*3)
-		x = (ci->x - 10) / 3;
-	else if (ci->x < 10 + 1 + 16*3)
-		x = (ci->x - 11) / 3;
-	else if (ci->x < 10 + 1 + 2 + 16*3 + 8)
-		x = ci->x - (10+1+2+16*3);
-	else if (ci->x < 10 + 1 + 2 + 16*3 + 8 + 1 + 8)
-		x = ci->x - (10+1+2+16*3 + 1);
+	else if (ci->hx < 10 + 8*3)
+		x = (ci->hx - 10) / 3;
+	else if (ci->hx < 10 + 1 + 16*3)
+		x = (ci->hx - 11) / 3;
+	else if (ci->hx < 10 + 1 + 2 + 16*3 + 8)
+		x = ci->hx - (10+1+2+16*3);
+	else if (ci->hx < 10 + 1 + 2 + 16*3 + 8 + 1 + 8)
+		x = ci->hx - (10+1+2+16*3 + 1);
 	else
 		x = 15;
-	n = ci->y * 16 + x;
+	n = ci->hy * 16 + x;
 	m = mark_dup(he->top, 1);
 	while (n > 0 && mark_next(pt->doc, m) != WEOF)
 		n -= 1;

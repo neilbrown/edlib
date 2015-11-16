@@ -465,7 +465,7 @@ DEF_CMD(view_click)
 	int mid = vd->scroll_bar_y;
 	struct cmd_info ci2 = {0};
 
-	if (ci->x != 0)
+	if (ci->hx != 0)
 		return 0;
 	if (p->h <= 4)
 		return 0;
@@ -477,16 +477,16 @@ DEF_CMD(view_click)
 	ci2.mark = mark_of_point(*ci->pointp);
 	ci2.pointp = ci->pointp;
 
-	if (ci->y == mid-1) {
+	if (ci->hy == mid-1) {
 		/* scroll up */
 		ci2.numeric = -ci2.numeric;
-	} else if (ci->y < mid-1) {
+	} else if (ci->hy < mid-1) {
 		/* big scroll up */
 		ci2.numeric = -ci2.numeric;
 		ci2.key = "Move-View-Large";
-	} else if (ci->y == mid+1) {
+	} else if (ci->hy == mid+1) {
 		/* scroll down */
-	} else if (ci->y > mid+1 && ci->y < p->h-1) {
+	} else if (ci->hy > mid+1 && ci->hy < p->h-1) {
 		ci2.key = "Move-View-Large";
 	} else
 		return 0;

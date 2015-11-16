@@ -149,7 +149,7 @@ DEF_CMD(ncurses_handle)
 	}
 	if (strcmp(ci->key, "pane-text") == 0) {
 		int attr = cvt_attrs(ci->str2);
-		ncurses_text(ci->home, ci->extra, attr, ci->x, ci->y);
+		ncurses_text(ci->home, ci->extra, attr, ci->hx, ci->hy);
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") == 0) {

@@ -296,6 +296,8 @@ int key_handle(struct cmd_info *ci)
 	if (ci->comm)
 		return ci->comm->func(ci);
 
+	ci->hx = ci->x;
+	ci->hy = ci->y;
 	if (!ci->pointp)
 		ci->pointp = pane_point(p);
 	while (ret == 0 && p) {
@@ -307,9 +309,9 @@ int key_handle(struct cmd_info *ci)
 		if (ret)
 			/* 'p' might have been destroyed */
 			break;
-		if (ci->x >= 0) {
-			ci->x += p->x;
-			ci->y += p->y;
+		if (ci->hx >= 0) {
+			ci->hx += p->x;
+			ci->hy += p->y;
 		}
 		p = p->parent;
 	}

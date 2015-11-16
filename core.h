@@ -232,7 +232,8 @@ struct cmd_info {
 	char		*key;
 	struct pane	*home, *focus;
 	int		numeric, extra;
-	int		x,y;
+	int		x,y;		/* relative to focus */
+	int		hx, hy;		/* x,y mapped to 'home' */
 	char		*str, *str2;
 	struct mark	*mark;
 	struct point	**pointp;

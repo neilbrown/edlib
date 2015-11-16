@@ -412,7 +412,7 @@ DEF_CMD(render_text_set_cursor)
 	struct point *pt = *ci->pointp;
 	struct mark *m;
 
-	m = find_pos(pt->doc, p, ci->x, ci->y);
+	m = find_pos(pt->doc, p, ci->hx, ci->hy);
 	point_to_mark(pt, m);
 	mark_free(m);
 	pane_focus(p);
