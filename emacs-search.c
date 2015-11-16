@@ -37,7 +37,7 @@ struct es_info {
 
 static struct map *es_map;
 
-static int do_search_again(struct cmd_info *ci);
+DEF_CMD(search_again);
 
 DEF_CMD(search_forward)
 {
@@ -154,7 +154,7 @@ DEF_CMD(search_close)
 	return 1;
 }
 
-static int do_search_again(struct cmd_info *ci)
+REDEF_CMD(search_again)
 {
 	/* document has changed, retry search */
 	struct es_info *esi = container_of(ci->comm, struct es_info, watch);
@@ -252,7 +252,7 @@ DEF_CMD(emacs_search)
 	esi->s = NULL;
 	esi->matched = 0;
 	esi->search = ci->focus;
-	esi->watch.func = do_search_again;
+	esi->watch = search_again;
 	ptp = pane_point(ci->focus);
 	doc_add_view((*ptp)->doc, &esi->watch);
 
