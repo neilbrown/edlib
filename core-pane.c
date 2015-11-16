@@ -107,7 +107,8 @@ static void __pane_refresh(struct cmd_info *ci)
 		if (ci->extra & DAMAGED_CONTENT)
 			ci->extra |= DAMAGED_CURSOR;
 		damage &= DAMAGED_SIZE;
-		if (p->handle->func(p->handle, ci))
+		ci->comm = p->handle;
+		if (p->handle->func(ci))
 			damage |= ci->extra;
 	}
 	p->damaged = 0;
@@ -147,7 +148,8 @@ void pane_close(struct pane *p)
 		ci.key = "Close";
 		ci.focus = ci.home = p;
 		ci.pointp = pane_point(p);
-		p->handle->func(p->handle, &ci);
+		ci.comm = p->handle;
+		p->handle->func(&ci);
 	}
 	pane_damaged(p->parent, DAMAGED_SIZE);
 	attr_free(&p->attrs);
@@ -169,8 +171,9 @@ int pane_clone(struct pane *from, struct pane *parent)
 	ci.key = "Clone";
 	ci.focus = parent;
 	ci.home = from;
+	ci.comm = from->handle;
 	if (from->handle)
-		return from->handle->func(from->handle, &ci);
+		return from->handle->func(&ci);
 	return 0;
 }
 
@@ -442,10 +445,10 @@ struct pane *pane_attach(struct pane *p, char *type, struct point *pt,
 		editor_load_module(ed, mod);
 		free(mod);
 		if (!key_lookup(ed->commands, &ci))
-			ci.home = NULL;
+			ci.focus = NULL;
 	}
 	free(com);
-	return ci.home;
+	return ci.focus;
 }
 
 void pane_clear(struct pane *p, char *attrs)
@@ -455,26 +458,13 @@ void pane_clear(struct pane *p, char *attrs)
 	ci.key = "pane-clear";
 	ci.focus = p;
 	ci.str2 = attrs;
-	/* This is a kludge.
-	 * using handle_xy with -1,-1 forces the given focus
-	 * to be used rather than any child.
-	 */
-	ci.x = ci.y = -1;
-	key_handle_xy(&ci);
+	key_handle(&ci);
 }
 
 void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y)
 {
 	struct cmd_info ci = {0};
 	char buf[5];
-	int w=1, h=1;
-	int z = p->z;
-	p = pane_to_root(p, &x, &y, &z, &w, &h);
-	if (w < 1 || h < 1)
-		return;
-
-	if (pane_masked(p, x, y, z, NULL, NULL))
-		return;
 
 	ci.key = "pane-text";
 	ci.focus = p;
@@ -482,11 +472,9 @@ void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y)
 	ci.y = y;
 	ci.str = buf;
 	ci.str2 = attrs;
-	/* FIXME wchar! */
-	buf[0] = ch;
-	buf[1] = 0;
-	/* FIXME this could result in cropping the text. */
-	key_handle_xy(&ci);
+	ci.extra = ch;
+
+	key_handle(&ci);
 }
 
 char *pane_attr_get(struct pane *p, char *key)

@@ -27,7 +27,7 @@ struct dir_data {
 };
 
 static struct map *dr_map;
-static void render_dir_attach(struct pane *parent, struct point **ptp);
+static void do_render_dir_attach(struct pane *parent, struct point **ptp);
 
 static int put_str(struct pane *p, char *buf, char *attrs, int x, int y)
 {
@@ -243,7 +243,7 @@ static struct mark *find_top(struct point **ptp, struct pane *p,
 	return start;
 }
 
-static int do_render_dir_handle(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_dir_handle)
 {
 	struct pane *p = ci->home;
 	struct dir_data *dd = p->data;
@@ -271,7 +271,7 @@ static int do_render_dir_handle(struct command *c, struct cmd_info *ci)
 		struct pane *parent = ci->focus;
 		struct pane *c;
 
-		render_dir_attach(parent, NULL);
+		do_render_dir_attach(parent, NULL);
 		c = pane_child(p);
 		if (c)
 			return pane_clone(c, parent->focus);
@@ -298,11 +298,10 @@ static int do_render_dir_handle(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(render_dir_handle, do_render_dir_handle);
 
-static int render_dir_notify(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_dir_notify)
 {
-	struct dir_data *dd = container_of(c, struct dir_data, type);
+	struct dir_data *dd = container_of(ci->comm, struct dir_data, type);
 
 	if (strcmp(ci->key, "Replace") == 0) {
 		if (ci->mark == dd->top)
@@ -318,7 +317,7 @@ static int render_dir_notify(struct command *c, struct cmd_info *ci)
 	return 0;
 }
 
-static int render_dir_move(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_dir_move)
 {
 	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
@@ -343,9 +342,8 @@ static int render_dir_move(struct command *c, struct cmd_info *ci)
 	pane_damaged(p, DAMAGED_CONTENT);
 	return 1;
 }
-DEF_CMD(comm_move, render_dir_move);
 
-static int render_dir_follow_point(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_dir_follow_point)
 {
 	struct pane *p = ci->home;
 	struct dir_data *dd = p->data;
@@ -356,23 +354,21 @@ static int render_dir_follow_point(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(comm_follow, render_dir_follow_point);
 
-static int render_dir_set_cursor(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_dir_set_cursor)
 {
 	struct pane *p = ci->home;
 	struct point *pt = *ci->pointp;
 	struct mark *m;
 
-	m = find_pos(pt->doc, p, ci->x, ci->y);
+	m = find_pos(pt->doc, p, ci->hx, ci->hy);
 	point_to_mark(pt, m);
 	mark_free(m);
 	pane_focus(p);
 	return 1;
 }
-DEF_CMD(comm_cursor, render_dir_set_cursor);
 
-static int render_dir_move_line(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_dir_move_line)
 {
 	struct point *pt = *ci->pointp;
 	struct dir_data *dd = ci->home->data;
@@ -392,9 +388,8 @@ static int render_dir_move_line(struct command *c, struct cmd_info *ci)
 
 	return 1;
 }
-DEF_CMD(comm_line, render_dir_move_line);
 
-static int render_dir_move_horiz(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_dir_move_horiz)
 {
 	/* Horizonal movement - adjust ->rpos within fields, or
 	 * move to next line
@@ -427,9 +422,8 @@ static int render_dir_move_horiz(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-DEF_CMD(comm_horiz, render_dir_move_horiz);
 
-static int render_dir_open(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_dir_open)
 {
 	struct cmd_info ci2 = *ci;
 
@@ -438,9 +432,8 @@ static int render_dir_open(struct command *c, struct cmd_info *ci)
 		ci2.str = "hex";
 	return key_handle_focus(&ci2);
 }
-DEF_CMD(comm_open, render_dir_open);
 
-static int render_dir_reload(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_dir_reload)
 {
 	struct point **ptp = ci->pointp;
 	struct doc *d;
@@ -452,31 +445,29 @@ static int render_dir_reload(struct command *c, struct cmd_info *ci)
 		d->ops->load_file(d, NULL, -1, NULL);
 	return 1;
 }
-DEF_CMD(comm_reload, render_dir_reload);
-
 static void render_dir_register_map(void)
 {
 	dr_map = key_alloc();
 
-	key_add_range(dr_map, "Move-", "Move-\377", &comm_follow);
-	key_add(dr_map, "Move-View-Small", &comm_move);
-	key_add(dr_map, "Move-View-Large", &comm_move);
-	key_add(dr_map, "Move-CursorXY", &comm_cursor);
-	key_add(dr_map, "Click-1", &comm_cursor);
-	key_add(dr_map, "Press-1", &comm_cursor);
-	key_add(dr_map, "Move-Line", &comm_line);
-	key_add(dr_map, "Move-Char", &comm_horiz);
-	key_add(dr_map, "Move-Word", &comm_horiz);
-	key_add(dr_map, "Move-WORD", &comm_horiz);
+	key_add_range(dr_map, "Move-", "Move-\377", &render_dir_follow_point);
+	key_add(dr_map, "Move-View-Small", &render_dir_move);
+	key_add(dr_map, "Move-View-Large", &render_dir_move);
+	key_add(dr_map, "Move-CursorXY", &render_dir_set_cursor);
+	key_add(dr_map, "Click-1", &render_dir_set_cursor);
+	key_add(dr_map, "Press-1", &render_dir_set_cursor);
+	key_add(dr_map, "Move-Line", &render_dir_move_line);
+	key_add(dr_map, "Move-Char", &render_dir_move_horiz);
+	key_add(dr_map, "Move-Word", &render_dir_move_horiz);
+	key_add(dr_map, "Move-WORD", &render_dir_move_horiz);
 
-	key_add(dr_map, "Replace", &comm_follow);
+	key_add(dr_map, "Replace", &render_dir_follow_point);
 
-	key_add(dr_map, "Chr-f", &comm_open);
-	key_add(dr_map, "Chr-h", &comm_open);
-	key_add(dr_map, "Chr-g", &comm_reload);
+	key_add(dr_map, "Chr-f", &render_dir_open);
+	key_add(dr_map, "Chr-h", &render_dir_open);
+	key_add(dr_map, "Chr-g", &render_dir_reload);
 }
 
-static void render_dir_attach(struct pane *parent, struct point **ptp)
+static void do_render_dir_attach(struct pane *parent, struct point **ptp)
 {
 	struct dir_data *dd = malloc(sizeof(*dd));
 	struct pane *p;
@@ -488,7 +479,7 @@ static void render_dir_attach(struct pane *parent, struct point **ptp)
 	dd->top = NULL;
 	dd->bot = NULL;
 	dd->ignore_point = 0;
-	dd->type.func = render_dir_notify;
+	dd->type = render_dir_notify;
 	dd->typenum = doc_add_view((*ptp)->doc, &dd->type);
 	p = pane_register(parent, 0, &render_dir_handle, dd, NULL);
 	dd->pane = p;
@@ -498,14 +489,14 @@ static void render_dir_attach(struct pane *parent, struct point **ptp)
 	if (!dr_map)
 		render_dir_register_map();
 }
-static int do_render_dir_attach(struct command *c, struct cmd_info *ci)
+
+DEF_CMD(render_dir_attach)
 {
-	render_dir_attach(ci->focus, ci->pointp);
+	do_render_dir_attach(ci->focus, ci->pointp);
 	return 1;
 }
-DEF_CMD(comm_attach, do_render_dir_attach);
 
 void edlib_init(struct editor *ed)
 {
-	key_add(ed->commands, "render-dir-attach", &comm_attach);
+	key_add(ed->commands, "render-dir-attach", &render_dir_attach);
 }

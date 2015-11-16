@@ -931,7 +931,7 @@ static int text_sameref(struct doc *d, struct mark *a, struct mark *b)
 	return text_ref_same(t, &a->ref, &b->ref);
 }
 
-static int text_new(struct command *c, struct cmd_info *ci)
+DEF_CMD(comm_new)
 {
 	struct text *t = malloc(sizeof(*t));
 	t->alloc = NULL;
@@ -945,7 +945,6 @@ static int text_new(struct command *c, struct cmd_info *ci)
 	point_new(&t->doc, ci->pointp);
 	return 1;
 }
-DEF_CMD(comm_new, text_new);
 
 static int count_bytes(struct text *t, struct mark *from, struct mark *to)
 {

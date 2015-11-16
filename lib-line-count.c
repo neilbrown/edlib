@@ -79,7 +79,7 @@ static void do_count(struct doc *d, struct mark *start, struct mark *end,
 	mark_free(m);
 }
 
-static int count_notify(struct command *c, struct cmd_info *ci)
+DEF_CMD(count_notify)
 {
 	if (strcmp(ci->key, "Replace") == 0) {
 		if (ci->mark != NULL) {
@@ -92,16 +92,15 @@ static int count_notify(struct command *c, struct cmd_info *ci)
 	if (strcmp(ci->key, "Release") == 0) {
 		struct doc *d = (*ci->pointp)->doc;
 		struct mark *m;
-		int i = doc_find_view(d, c);
+		int i = doc_find_view(d, ci->comm);
 		if (i < 0)
 			return 0;
 		while ((m = doc_first_mark(d, i)) != NULL)
 			mark_free(m);
-		doc_del_view(d, c);
+		doc_del_view(d, ci->comm);
 	}
 	return 0;
 }
-static struct command count_cmd = {count_notify};
 
 static int need_recalc(struct doc *d, struct mark *m)
 {
@@ -127,13 +126,13 @@ static int need_recalc(struct doc *d, struct mark *m)
 
 static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 {
-	int type = doc_find_view(d, &count_cmd);
+	int type = doc_find_view(d, &count_notify);
 	int lines, words, chars, l, w, c;
 	struct mark *m, *m2;
 	struct attrset **attrs;
 
 	if (type < 0)
-		type = doc_add_view(d, &count_cmd);
+		type = doc_add_view(d, &count_notify);
 
 	m = doc_first_mark(d, type);
 	if (m == NULL) {
@@ -218,7 +217,7 @@ done:
 	attr_set_int(attrs, "chars", chars);
 }
 
-static int do_count_lines(struct command *c, struct cmd_info *ci)
+DEF_CMD(count_lines)
 {
 	struct point *pt = *ci->pointp;
 	struct doc *d = pt->doc;
@@ -230,9 +229,8 @@ static int do_count_lines(struct command *c, struct cmd_info *ci)
 		count_calculate(d, NULL, ci->mark);
 	return 1;
 }
-DEF_CMD(comm_count, do_count_lines);
 
 void edlib_init(struct editor *ed)
 {
-	key_add(ed->commands, "CountLines", &comm_count);
+	key_add(ed->commands, "CountLines", &count_lines);
 }

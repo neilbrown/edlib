@@ -36,7 +36,7 @@ enum {
 };
 
 static struct map *view_map;
-static struct pane *view_attach(struct pane *par, struct point *pt, int border);
+static struct pane *do_view_attach(struct pane *par, struct point *pt, int border);
 
 static int view_refresh(struct cmd_info *ci)
 {
@@ -121,7 +121,7 @@ static int view_refresh(struct cmd_info *ci)
 	return 0;
 }
 
-static int do_view_handle(struct command *cm, struct cmd_info *ci)
+DEF_CMD(view_handle)
 {
 	struct pane *p = ci->home;
 	struct point *pt;
@@ -152,7 +152,7 @@ static int do_view_handle(struct command *cm, struct cmd_info *ci)
 		if (!p->point)
 			return 0;
 		point_dup(p->point, &pt);
-		p2 = view_attach(parent, pt, vd->border);
+		p2 = do_view_attach(parent, pt, vd->border);
 		c = pane_child(pane_child(p));
 		if (c)
 			return pane_clone(c, p2);
@@ -162,9 +162,8 @@ static int do_view_handle(struct command *cm, struct cmd_info *ci)
 		return view_refresh(ci);
 	return 0;
 }
-DEF_CMD(view_handle, do_view_handle);
 
-static int do_view_null(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_null)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
@@ -194,13 +193,12 @@ static int do_view_null(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(view_null, do_view_null);
 
 static struct pane *view_reattach(struct pane *p, struct point *pt);
 
-static int view_notify(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_notify)
 {
-	struct view_data *vd = container_of(c, struct view_data, ch_notify);
+	struct view_data *vd = container_of(ci->comm, struct view_data, ch_notify);
 
 	if (strcmp(ci->key, "Replace") == 0) {
 		pane_damaged(vd->pane, DAMAGED_CONTENT);
@@ -240,7 +238,7 @@ static struct pane *view_reattach(struct pane *par, struct point *pt)
 	return p;
 }
 
-static struct pane *view_attach(struct pane *par, struct point *pt, int border)
+static struct pane *do_view_attach(struct pane *par, struct point *pt, int border)
 {
 	struct view_data *vd;
 	struct pane *p;
@@ -250,7 +248,7 @@ static struct pane *view_attach(struct pane *par, struct point *pt, int border)
 
 	vd = malloc(sizeof(*vd));
 	vd->border = border;
-	vd->ch_notify.func = view_notify;
+	vd->ch_notify = view_notify;
 	pt->owner = &pt;
 	p = pane_register(par, 0, &view_handle, vd, NULL);
 	vd->pane = p;
@@ -259,7 +257,7 @@ static struct pane *view_attach(struct pane *par, struct point *pt, int border)
 	return view_reattach(p, pt);
 }
 
-static int do_view_attach(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_attach)
 {
 	int borders = 0;
 	char *borderstr = pane_attr_get(ci->focus, "borders");
@@ -270,12 +268,11 @@ static int do_view_attach(struct command *c, struct cmd_info *ci)
 	if (strchr(borderstr, 'L')) borders |= BORDER_LEFT;
 	if (strchr(borderstr, 'R')) borders |= BORDER_RIGHT;
 
-	ci->home = view_attach(ci->focus, *ci->pointp, borders);
-	return ci->home != NULL;
+	ci->focus = do_view_attach(ci->focus, *ci->pointp, borders);
+	return ci->focus != NULL;
 }
-DEF_CMD(comm_attach, do_view_attach);
 
-static int view_char(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_char)
 {
 	struct point *pt = *ci->pointp;
 	int rpt = RPT_NUM(ci);
@@ -293,9 +290,8 @@ static int view_char(struct command *c, struct cmd_info *ci)
 
 	return 1;
 }
-DEF_CMD(comm_char, view_char);
 
-static int view_word(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_word)
 {
 	struct point *pt = *ci->pointp;
 	int rpt = RPT_NUM(ci);
@@ -332,9 +328,8 @@ static int view_word(struct command *c, struct cmd_info *ci)
 
 	return 1;
 }
-DEF_CMD(comm_word, view_word);
 
-static int view_WORD(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_WORD)
 {
 	struct point *pt = *ci->pointp;
 	int rpt = RPT_NUM(ci);
@@ -362,9 +357,8 @@ static int view_WORD(struct command *c, struct cmd_info *ci)
 
 	return 1;
 }
-DEF_CMD(comm_WORD, view_WORD);
 
-static int view_eol(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_eol)
 {
 	struct point *pt = *ci->pointp;
 	wint_t ch = 1;
@@ -390,9 +384,8 @@ static int view_eol(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-DEF_CMD(comm_eol, view_eol);
 
-static int view_line(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_line)
 {
 	struct point *pt = *ci->pointp;
 	wint_t ch = 1;
@@ -412,9 +405,8 @@ static int view_line(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-DEF_CMD(comm_line, view_line);
 
-static int view_file(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_file)
 {
 	struct point *pt = *ci->pointp;
 	wint_t ch = 1;
@@ -434,9 +426,8 @@ static int view_file(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-DEF_CMD(comm_file, view_file);
 
-static int view_page(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_page)
 {
 	struct point *pt = *ci->pointp;
 	wint_t ch = 1;
@@ -457,9 +448,8 @@ static int view_page(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-DEF_CMD(comm_page, view_page);
 
-static int view_replace(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_replace)
 {
 	struct point *pt = *ci->pointp;
 	bool first_change = (ci->extra == 0);
@@ -467,16 +457,15 @@ static int view_replace(struct command *c, struct cmd_info *ci)
 	doc_replace(pt, ci->mark, ci->str, &first_change);
 	return 1;
 }
-DEF_CMD(comm_replace, view_replace);
 
-static int view_click(struct command *c, struct cmd_info *ci)
+DEF_CMD(view_click)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
 	int mid = vd->scroll_bar_y;
 	struct cmd_info ci2 = {0};
 
-	if (ci->x != 0)
+	if (ci->hx != 0)
 		return 0;
 	if (p->h <= 4)
 		return 0;
@@ -488,39 +477,38 @@ static int view_click(struct command *c, struct cmd_info *ci)
 	ci2.mark = mark_of_point(*ci->pointp);
 	ci2.pointp = ci->pointp;
 
-	if (ci->y == mid-1) {
+	if (ci->hy == mid-1) {
 		/* scroll up */
 		ci2.numeric = -ci2.numeric;
-	} else if (ci->y < mid-1) {
+	} else if (ci->hy < mid-1) {
 		/* big scroll up */
 		ci2.numeric = -ci2.numeric;
 		ci2.key = "Move-View-Large";
-	} else if (ci->y == mid+1) {
+	} else if (ci->hy == mid+1) {
 		/* scroll down */
-	} else if (ci->y > mid+1 && ci->y < p->h-1) {
+	} else if (ci->hy > mid+1 && ci->hy < p->h-1) {
 		ci2.key = "Move-View-Large";
 	} else
 		return 0;
 	return key_handle_focus(&ci2);
 }
-DEF_CMD(comm_click, view_click);
 
 void edlib_init(struct editor *ed)
 {
 	view_map = key_alloc();
 
-	key_add(view_map, "Move-Char", &comm_char);
-	key_add(view_map, "Move-Word", &comm_word);
-	key_add(view_map, "Move-WORD", &comm_WORD);
-	key_add(view_map, "Move-EOL", &comm_eol);
-	key_add(view_map, "Move-Line", &comm_line);
-	key_add(view_map, "Move-File", &comm_file);
-	key_add(view_map, "Move-View-Large", &comm_page);
+	key_add(view_map, "Move-Char", &view_char);
+	key_add(view_map, "Move-Word", &view_word);
+	key_add(view_map, "Move-WORD", &view_WORD);
+	key_add(view_map, "Move-EOL", &view_eol);
+	key_add(view_map, "Move-Line", &view_line);
+	key_add(view_map, "Move-File", &view_file);
+	key_add(view_map, "Move-View-Large", &view_page);
 
-	key_add(view_map, "Replace", &comm_replace);
+	key_add(view_map, "Replace", &view_replace);
 
-	key_add(view_map, "Click-1", &comm_click);
-	key_add(view_map, "Press-1", &comm_click);
+	key_add(view_map, "Click-1", &view_click);
+	key_add(view_map, "Press-1", &view_click);
 
-	key_add(ed->commands, "attach-view", &comm_attach);
+	key_add(ed->commands, "attach-view", &view_attach);
 }

@@ -70,7 +70,7 @@ static void ncurses_flush(int fd, short ev, void *P)
 	refresh();
 }
 
-static int nc_misc(struct command *c, struct cmd_info *ci)
+DEF_CMD(nc_misc)
 {
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
@@ -127,7 +127,7 @@ static int cvt_attrs(char *attrs)
 	return attr;
 }
 
-static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
+DEF_CMD(ncurses_handle)
 {
 	struct pane *p = ci->home;
 	int damage = ci->extra;
@@ -136,7 +136,7 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 	struct timeval tv;
 
 	if (strcmp(ci->key, "Misc") == 0)
-		return nc_misc(c, ci);
+		return nc_misc.func(ci);
 
 	if (strcmp(ci->key, "Close") == 0) {
 		ncurses_end();
@@ -149,7 +149,7 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 	}
 	if (strcmp(ci->key, "pane-text") == 0) {
 		int attr = cvt_attrs(ci->str2);
-		ncurses_text(ci->home, ci->str[0], attr, ci->x, ci->y);
+		ncurses_text(ci->focus, ci->extra, attr, ci->x, ci->y);
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") == 0) {
@@ -169,7 +169,6 @@ static int do_ncurses_handle(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(ncurses_handle, do_ncurses_handle);
 
 static void handle_winch(int sig, short ev, void *null);
 static struct pane *ncurses_init(struct editor *ed)
@@ -251,16 +250,21 @@ static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h)
 static void ncurses_text(struct pane *p, wchar_t ch, int attr, int x, int y)
 {
 	struct display_data *dd;
-	cchar_t cc;
+	cchar_t cc = {0};
+	int w=1, h=1;
+	int z = p->z;
+
+	p = pane_to_root(p, &x, &y, &z, &w, &h);
+	if (w < 1 || h < 1)
+		return;
+
+	if (pane_masked(p, x, y, z, NULL, NULL))
+		return;
 
 	dd = p->data;
 	set_screen(dd->scr);
 	cc.attr = attr;
 	cc.chars[0] = ch;
-	cc.chars[1] = 0;
-	#ifdef NCURSES_EXT_COLORS
-	cc.ext_color = 0;
-	#endif
 
 	mvadd_wch(y, x, &cc);
 }
@@ -346,8 +350,6 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	ci.focus = p;
 	ci.numeric = dd->dpy.numeric;
 	ci.extra = dd->dpy.extra;
-	ci.x = ci.y = -1;
-	// FIXME find doc
 	dd->dpy.mode = dd->dpy.next_mode;
 	dd->dpy.numeric = NO_NUMERIC;
 	dd->dpy.extra = 0;
@@ -366,7 +368,6 @@ static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
 	ci.extra = dd->dpy.extra;
 	ci.x = x;
 	ci.y = y;
-	// FIXME find doc
 	dd->dpy.mode = dd->dpy.next_mode;
 	dd->dpy.numeric = NO_NUMERIC;
 	dd->dpy.extra = 0;
@@ -420,13 +421,12 @@ static void input_handle(int fd, short ev, void *P)
 	pane_refresh(p);
 }
 
-static int display_ncurses(struct command *c, struct cmd_info *ci)
+DEF_CMD(comm_ncurses)
 {
 	struct pane *p = ncurses_init(pane2ed(ci->home));
 	ci->focus = p;
 	return 1;
 }
-DEF_CMD(comm_ncurses, display_ncurses);
 
 void edlib_init(struct editor *ed)
 {

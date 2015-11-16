@@ -37,8 +37,9 @@ struct es_info {
 
 static struct map *es_map;
 
-static int do_search_again(struct command *c, struct cmd_info *ci);
-static int do_search_forward(struct command *c, struct cmd_info *ci)
+DEF_CMD(search_again);
+
+DEF_CMD(search_forward)
 {
 	struct es_info *esi = ci->home->data;
 	struct doc *d = esi->end->doc;
@@ -65,9 +66,8 @@ static int do_search_forward(struct command *c, struct cmd_info *ci)
 	point_notify_change(*ci->pointp, NULL);
 	return 1;
 }
-DEF_CMD(search_forward, do_search_forward);
 
-static int do_search_retreat(struct command *c, struct cmd_info *ci)
+DEF_CMD(search_retreat)
 {
 	struct es_info *esi = ci->home->data;
 	char *str;
@@ -88,9 +88,8 @@ static int do_search_retreat(struct command *c, struct cmd_info *ci)
 	point_notify_change(*ci->pointp, NULL);
 	return 1;
 }
-DEF_CMD(search_retreat, do_search_retreat);
 
-static int do_search_add(struct command *c, struct cmd_info *ci)
+DEF_CMD(search_add)
 {
 	struct es_info *esi = ci->home->data;
 	struct doc *d = esi->end->doc;
@@ -125,22 +124,19 @@ static int do_search_add(struct command *c, struct cmd_info *ci)
 	} while (strcmp(ci->key, "C-Chr-C") != 0 && wch != ' ');
 	return 1;
 }
-DEF_CMD(search_add, do_search_add);
 
-static int do_search_backward(struct command *c, struct cmd_info *ci)
+DEF_CMD(search_backward)
 {
 	return 1;
 }
-DEF_CMD(search_backward, do_search_backward);
 
-static int do_search_refresh(struct command *c, struct cmd_info *ci)
+DEF_CMD(search_refresh)
 {
 	pane_check_size(ci->focus);
 	return 1;
 }
-DEF_CMD(search_refresh, do_search_refresh);
 
-static int do_search_close(struct command *c, struct cmd_info *ci)
+DEF_CMD(search_close)
 {
 	struct es_info *esi = ci->focus->data;
 
@@ -157,12 +153,11 @@ static int do_search_close(struct command *c, struct cmd_info *ci)
 	}
 	return 1;
 }
-DEF_CMD(search_close, do_search_close);
 
-static int do_search_again(struct command *c, struct cmd_info *ci)
+REDEF_CMD(search_again)
 {
 	/* document has changed, retry search */
-	struct es_info *esi = container_of(c, struct es_info, watch);
+	struct es_info *esi = container_of(ci->comm, struct es_info, watch);
 	struct cmd_info ci2 = {0};
 	struct doc *d = esi->end->doc;
 	struct pane *p;
@@ -173,7 +168,7 @@ static int do_search_again(struct command *c, struct cmd_info *ci)
 		struct doc *d = (*ci->pointp)->doc;
 
 		/* No marks to remove */
-		doc_del_view(d, c);
+		doc_del_view(d, ci->comm);
 		return 0;
 	}
 
@@ -226,13 +221,12 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "Close", &search_close);
 }
 
-static int do_search_handle(struct command *c, struct cmd_info *ci)
+DEF_CMD(search_handle)
 {
 	return key_lookup(es_map, ci);
 }
-DEF_CMD(search_handle, do_search_handle);
 
-static int emacs_search(struct command *c, struct cmd_info *ci)
+DEF_CMD(emacs_search)
 {
 	struct pane *p;
 	struct es_info *esi;
@@ -258,19 +252,18 @@ static int emacs_search(struct command *c, struct cmd_info *ci)
 	esi->s = NULL;
 	esi->matched = 0;
 	esi->search = ci->focus;
-	esi->watch.func = do_search_again;
+	esi->watch = search_again;
 	ptp = pane_point(ci->focus);
 	doc_add_view((*ptp)->doc, &esi->watch);
 
 	while (pane_child(ci->focus))
 		ci->focus = pane_child(ci->focus);
 	p = pane_register(ci->focus, 0, &search_handle, esi, NULL);
-	ci->home = p;
+	ci->focus = p;
 	return 1;
 }
-DEF_CMD(comm_emacs_search, emacs_search);
 
 void emacs_search_init(struct editor *ed)
 {
-	key_add(ed->commands, "attach-emacs-search", &comm_emacs_search);
+	key_add(ed->commands, "attach-emacs-search", &emacs_search);
 }

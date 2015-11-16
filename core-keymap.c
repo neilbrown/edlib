@@ -235,9 +235,9 @@ struct modmap {
 	struct command comm;
 };
 
-static int key_prefix(struct command *comm, struct cmd_info *ci)
+static int key_prefix(struct cmd_info *ci)
 {
-	struct modmap *m = container_of(comm, struct modmap, comm);
+	struct modmap *m = container_of(ci->comm, struct modmap, comm);
 
 	pane_set_mode(ci->home, m->name, m->transient);
 	return 1;
@@ -284,25 +284,34 @@ int key_lookup(struct map *m, struct cmd_info *ci)
 		comm = GETCOMM(m->comms[pos-1]);
 	} else
 		return 0;
-	return comm->func(comm, ci);
+	ci->comm = comm;
+	return comm->func(ci);
 }
 
-static int key_handle(struct cmd_info *ci)
+int key_handle(struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
 	int ret = 0;
 
+	if (ci->comm)
+		return ci->comm->func(ci);
+
+	ci->hx = ci->x;
+	ci->hy = ci->y;
+	if (!ci->pointp)
+		ci->pointp = pane_point(p);
 	while (ret == 0 && p) {
 		if (p->handle) {
 			ci->home = p;
-			ret = p->handle->func(p->handle, ci);
+			ci->comm = p->handle;
+			ret = p->handle->func(ci);
 		}
 		if (ret)
 			/* 'p' might have been destroyed */
 			break;
-		if (ci->x >= 0) {
-			ci->x += p->x;
-			ci->y += p->y;
+		if (ci->hx >= 0) {
+			ci->hx += p->x;
+			ci->hy += p->y;
 		}
 		p = p->parent;
 	}
@@ -321,8 +330,7 @@ int key_handle_focus(struct cmd_info *ci)
 		p = p->focus;
 	}
 	ci->focus = p;
-	if (!ci->pointp)
-		ci->pointp = pane_point(p);
+	ci->comm = NULL;
 	return key_handle(ci);
 }
 
@@ -354,10 +362,9 @@ int key_handle_xy(struct cmd_info *ci)
 		y -= chld->y;
 		p = chld;
 	}
-	if (!ci->pointp)
-		ci->pointp = pane_point(p);
 	ci->x = x;
 	ci->y = y;
 	ci->focus = p;
+	ci->comm = NULL;
 	return key_handle(ci);
 }

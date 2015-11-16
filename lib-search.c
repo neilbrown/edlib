@@ -12,7 +12,7 @@
 #include "core.h"
 #include "rexel.h"
 
-static int text_search(struct command *c, struct cmd_info *ci)
+DEF_CMD(text_search)
 {
 	struct point *pt;
 	struct mark *m;
@@ -50,9 +50,8 @@ static int text_search(struct command *c, struct cmd_info *ci)
 	free(rxl);
 	return 1;
 }
-DEF_CMD(comm_search, text_search);
 
 void edlib_init(struct editor *ed)
 {
-	key_add(ed->commands, "text-search", &comm_search);
+	key_add(ed->commands, "text-search", &text_search);
 }

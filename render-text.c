@@ -32,7 +32,7 @@ struct rt_data {
 };
 
 static struct map *rt_map;
-static void render_text_attach(struct pane *p, struct point **pt);
+static void do_render_text_attach(struct pane *p, struct point **pt);
 
 static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y, int draw)
 {
@@ -287,7 +287,7 @@ found:
 	return 0;
 }
 
-static int do_render_text_handle(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_text_handle)
 {
 	struct pane *p = ci->home;
 	struct rt_data *rt = p->data;
@@ -314,7 +314,7 @@ static int do_render_text_handle(struct command *c, struct cmd_info *ci)
 		struct pane *parent = ci->focus;
 		struct pane *c;
 
-		render_text_attach(parent, NULL);
+		do_render_text_attach(parent, NULL);
 		c = pane_child(p);
 		if (c)
 			return pane_clone(c, parent->focus);
@@ -324,11 +324,10 @@ static int do_render_text_handle(struct command *c, struct cmd_info *ci)
 		return text_refresh(ci);
 	return 0;
 }
-DEF_CMD(render_text_handle, do_render_text_handle);
 
-static int render_text_notify(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_text_notify)
 {
-	struct rt_data *rt = container_of(c, struct rt_data, type);
+	struct rt_data *rt = container_of(ci->comm, struct rt_data, type);
 
 	if (strcmp(ci->key, "Replace") == 0) {
 		if (ci->mark == rt->top)
@@ -344,7 +343,7 @@ static int render_text_notify(struct command *c, struct cmd_info *ci)
 	return 0;
 }
 
-static int render_text_move(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_text_move)
 {
 	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
@@ -370,9 +369,8 @@ static int render_text_move(struct command *c, struct cmd_info *ci)
 	pane_damaged(p, DAMAGED_CONTENT);
 	return 1;
 }
-DEF_CMD(comm_move, render_text_move);
 
-static int render_text_move_pos(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_text_move_pos)
 {
 	struct pane *p = ci->home;
 	struct rt_data *rt = p->data;
@@ -392,9 +390,8 @@ static int render_text_move_pos(struct command *c, struct cmd_info *ci)
 	pane_damaged(p, DAMAGED_CONTENT);
 	return 1;
 }
-DEF_CMD(comm_move_pos, render_text_move_pos);
 
-static int render_text_follow_point(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_text_follow_point)
 {
 	struct pane *p = ci->home;
 	struct rt_data *rt = p->data;
@@ -408,23 +405,21 @@ static int render_text_follow_point(struct command *c, struct cmd_info *ci)
 	}
 	return 0;
 }
-DEF_CMD(comm_follow, render_text_follow_point);
 
-static int render_text_set_cursor(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_text_set_cursor)
 {
 	struct pane *p = ci->home;
 	struct point *pt = *ci->pointp;
 	struct mark *m;
 
-	m = find_pos(pt->doc, p, ci->x, ci->y);
+	m = find_pos(pt->doc, p, ci->hx, ci->hy);
 	point_to_mark(pt, m);
 	mark_free(m);
 	pane_focus(p);
 	return 1;
 }
-DEF_CMD(comm_cursor, render_text_set_cursor);
 
-static int render_text_move_line(struct command *c, struct cmd_info *ci)
+DEF_CMD(render_text_move_line)
 {
 	struct pane *p = ci->home;
 	/* MV_EOL repeatedly, then move to match cursor */
@@ -469,25 +464,24 @@ static int render_text_move_line(struct command *c, struct cmd_info *ci)
 	pane_damaged(p, DAMAGED_CURSOR);
 	return 1;
 }
-DEF_CMD(comm_line, render_text_move_line);
 
 static void render_text_register_map(void)
 {
 	rt_map = key_alloc();
 
-	key_add_range(rt_map, "Move-", "Move-\377", &comm_follow);
-	key_add(rt_map, "Move-View-Small", &comm_move);
-	key_add(rt_map, "Move-View-Large", &comm_move);
-	key_add(rt_map, "Move-View-Pos", &comm_move_pos);
-	key_add(rt_map, "Move-CursorXY", &comm_cursor);
-	key_add(rt_map, "Click-1", &comm_cursor);
-	key_add(rt_map, "Press-1", &comm_cursor);
-	key_add(rt_map, "Move-Line", &comm_line);
+	key_add_range(rt_map, "Move-", "Move-\377", &render_text_follow_point);
+	key_add(rt_map, "Move-View-Small", &render_text_move);
+	key_add(rt_map, "Move-View-Large", &render_text_move);
+	key_add(rt_map, "Move-View-Pos", &render_text_move_pos);
+	key_add(rt_map, "Move-CursorXY", &render_text_set_cursor);
+	key_add(rt_map, "Click-1", &render_text_set_cursor);
+	key_add(rt_map, "Press-1", &render_text_set_cursor);
+	key_add(rt_map, "Move-Line", &render_text_move_line);
 
-	key_add(rt_map, "Replace", &comm_follow);
+	key_add(rt_map, "Replace", &render_text_follow_point);
 }
 
-static void render_text_attach(struct pane *parent, struct point **ptp)
+static void do_render_text_attach(struct pane *parent, struct point **ptp)
 {
 	struct rt_data *rt = malloc(sizeof(*rt));
 	struct pane *p;
@@ -500,7 +494,7 @@ static void render_text_attach(struct pane *parent, struct point **ptp)
 	rt->bot = NULL;
 	rt->ignore_point = 0;
 	rt->target_x = -1;
-	rt->type.func = render_text_notify;
+	rt->type = render_text_notify;
 	rt->typenum = doc_add_view((*ptp)->doc, &rt->type);
 	p = pane_register(parent, 0, &render_text_handle, rt, NULL);
 	rt->pane = p;
@@ -508,14 +502,14 @@ static void render_text_attach(struct pane *parent, struct point **ptp)
 	if (!rt_map)
 		render_text_register_map();
 }
-static int do_render_text_attach(struct command *c, struct cmd_info *ci)
+
+DEF_CMD(render_text_attach)
 {
-	render_text_attach(ci->focus, ci->pointp);
+	do_render_text_attach(ci->focus, ci->pointp);
 	return 1;
 }
-DEF_CMD(comm_attach, do_render_text_attach);
 
 void edlib_init(struct editor *ed)
 {
-	key_add(ed->commands, "render-text-attach", &comm_attach);
+	key_add(ed->commands, "render-text-attach", &render_text_attach);
 }
