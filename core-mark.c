@@ -132,7 +132,13 @@ static void dup_mark(struct mark *orig, struct mark *new)
 
 struct mark *mark_at_point(struct point *p, int view)
 {
-	struct mark *ret = malloc(sizeof(*ret));
+	struct mark *ret;
+	int size = sizeof(*ret);
+
+	if (view >= 0)
+		size += p->doc->views[view].space;
+
+	ret = calloc(size, 1);
 
 	dup_mark(&p->m, ret);
 	ret->viewnum = view;
@@ -204,7 +210,22 @@ void points_attach(struct doc *d, int view)
 
 struct mark *mark_dup(struct mark *m, int notype)
 {
-	struct mark *ret = malloc(sizeof(*ret));
+	struct mark *ret;
+	int size = sizeof(*ret);
+
+	if (!notype) {
+		struct tlist_head *tl;
+		struct docview *dv;
+		if (m->viewnum == MARK_POINT)
+			return NULL;
+		tl = &m->view;
+		while (TLIST_TYPE(tl) != GRP_HEAD)
+			tl = TLIST_PTR(tl->next);
+		dv = container_of(tl, struct docview, head);
+		size += dv->space;
+	}
+
+	ret = calloc(size, 1);
 	dup_mark(m, ret);
 	if (notype) {
 		ret->viewnum = MARK_UNGROUPED;

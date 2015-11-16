@@ -58,6 +58,7 @@ int doc_add_view(struct doc *d, struct command *c)
 		points_resize(d);
 	}
 	points_attach(d, ret);
+	d->views[ret].space = 0;
 	d->views[ret].notify = c;
 	return ret;
 }
