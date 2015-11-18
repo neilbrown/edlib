@@ -176,6 +176,12 @@ struct mark *mark_at_point(struct point *p, int view);
 void points_resize(struct doc *d);
 void points_attach(struct doc *d, int view);
 void point_free(struct point *p);
+struct mark *vmark_next(struct mark *m);
+struct mark *vmark_prev(struct mark *m);
+struct mark *vmark_first(struct doc *d, int view);
+struct mark *vmark_last(struct doc *d, int view);
+struct mark *vmark_matching(struct doc *d, struct mark *m);
+struct mark *vmark_at_point(struct point *pt, int view);
 
 static inline int mark_ordered(struct mark *m1, struct mark *m2)
 {
@@ -184,6 +190,10 @@ static inline int mark_ordered(struct mark *m1, struct mark *m2)
 static inline int mark_same(struct doc *d, struct mark *m1, struct mark *m2)
 {
 	return d->ops->same_ref(d, m1, m2);
+}
+static inline int mark_ordered_or_same(struct doc *d, struct mark *m1, struct mark *m2)
+{
+	return mark_ordered(m1, m2) || mark_same(d, m1, m2);
 }
 static inline struct attrset **mark_attr(struct mark *m)
 {

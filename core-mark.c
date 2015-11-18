@@ -94,6 +94,7 @@ static void assign_seq(struct mark *m, int prev)
 	}
 	/* We've come to the end */
 	m->seq = prev + 128;
+	ASSERT(m->seq >= 0);
 }
 
 static void mark_delete(struct mark *m)
@@ -500,6 +501,7 @@ wint_t mark_next(struct doc *d, struct mark *m)
 {
 	wint_t ret;
 	struct mark *m2 = NULL;
+
 	while ((m2 = next_mark(d, m)) != NULL &&
 	       mark_same(d, m, m2))
 		mark_forward_over(m, m2);
@@ -519,6 +521,7 @@ wint_t mark_prev(struct doc *d, struct mark *m)
 {
 	wint_t ret;
 	struct mark *mp = NULL;
+
 	while ((mp = prev_mark(d, m)) != NULL &&
 	       mark_same(d, m, mp))
 		mark_backward_over(m, mp);
@@ -655,6 +658,110 @@ void point_to_mark(struct point *p, struct mark *m)
 		point_forward_to_mark(p, m);
 	else if (p->m.seq > m->seq)
 		point_backward_to_mark(p, m);
+}
+
+/* A 'vmark' is a mark in a particular view.  We can walk around those
+ * silently skipping over the points.
+ */
+
+static struct mark *__vmark_next(struct tlist_head *tl)
+{
+	while (TLIST_TYPE(tl) != GRP_HEAD) {
+		if (TLIST_TYPE(tl) == GRP_LIST) {
+			tl = TLIST_PTR(tl->next);
+			continue;
+		}
+		return container_of(tl, struct mark, view);
+	}
+	return NULL;
+}
+
+struct mark *vmark_next(struct mark *m)
+{
+	struct tlist_head *tl;
+
+	tl = TLIST_PTR(m->view.next);
+	return __vmark_next(tl);
+}
+
+static struct mark *__vmark_prev(struct tlist_head *tl)
+{
+	while (TLIST_TYPE(tl) != GRP_HEAD) {
+		if (TLIST_TYPE(tl) == GRP_LIST) {
+			tl = TLIST_PTR(tl->prev);
+			continue;
+		}
+		return container_of(tl, struct mark, view);
+	}
+	return NULL;
+}
+
+struct mark *vmark_prev(struct mark *m)
+{
+	struct tlist_head *tl;
+
+	tl = TLIST_PTR(m->view.prev);
+	return __vmark_prev(tl);
+}
+
+struct mark *vmark_first(struct doc *d, int view)
+{
+	struct tlist_head *tl;
+
+	tl = TLIST_PTR(d->views[view].head.next);
+	while (TLIST_TYPE(tl) != GRP_HEAD) {
+		if (TLIST_TYPE(tl) == GRP_LIST) {
+			tl = TLIST_PTR(tl->next);
+			continue;
+		}
+		return container_of(tl, struct mark, view);
+	}
+	return NULL;
+}
+
+struct mark *vmark_last(struct doc *d, int view)
+{
+	struct tlist_head *tl;
+
+	tl = TLIST_PTR(d->views[view].head.prev);
+	while (TLIST_TYPE(tl) != GRP_HEAD) {
+		if (TLIST_TYPE(tl) == GRP_LIST) {
+			tl = TLIST_PTR(tl->prev);
+			continue;
+		}
+		return container_of(tl, struct mark, view);
+	}
+	return NULL;
+}
+
+struct mark *vmark_matching(struct doc *d, struct mark *m)
+{
+	/* Find a nearby mark in the same view with the same ref */
+	struct mark *m2;
+
+	m2 = vmark_prev(m);
+	if (m2 && mark_same(d, m, m2))
+		return m2;
+	m2 = vmark_next(m);
+	if (m2 && mark_same(d, m, m2))
+		return m2;
+	return NULL;
+}
+
+struct mark *vmark_at_point(struct point *pt, int view)
+{
+	struct tlist_head *tl;
+	struct mark *m;
+
+	tl = &pt->lists[view];
+	m = __vmark_prev(tl);
+	if (m && mark_same(pt->doc, m, mark_of_point(pt)))
+		return m;
+	tl = &pt->lists[view];
+	m = __vmark_next(tl);
+	if (m && mark_same(pt->doc, m, mark_of_point(pt)))
+		return m;
+	return NULL;
 }
 
 void point_notify_change(struct point *p, struct mark *m)
