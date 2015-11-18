@@ -138,11 +138,12 @@ static int text_locate(struct text *t, struct doc_ref *r, struct doc_ref *dest);
 static struct doc_operations text_ops;
 static void text_check_consistent(struct text *t);
 
+static struct map *text_map;
 /*
  * A text will mostly hold utf-8 so we try to align chunk breaks with
  * Unicode points.  This particularly affects adding new strings to
  * allocations.
- * There is no guarantee that a byte strings is UTF-8 though, so
+ * There is no guarantee that a byte string is UTF-8 though, so
  * We only adjust the length if we can find an end-of-code-point in
  * the last 4 bytes. (longest UTF-8 encoding of 21bit unicode is 4 bytes).
  */
@@ -155,9 +156,10 @@ static int text_round_len(char *text, int len)
 	 * move back to there.
 	 */
 	int i = 0;
-	while (i < len && i <=4)
-		if ((text[len-i] & 0xC0) == 0x80)
-		/* next byte is a continuation, so this isn't a good
+	while (i+1 < len && i <=4)
+		if ((text[len-i] & 0xC0) == 0x80 &&
+		    (text[len-i-1] & 0x80) == 0x80)
+		/* next byte is inside a UTF-8 code point, so this isn't a good
 		 * spot to end. Try further back */
 			i += 1;
 		else
@@ -844,6 +846,7 @@ static wint_t text_next(struct text *t, struct doc_ref *r)
 
 	err = mbrtowc(&ret, r->c->txt + r->o, r->c->end - r->o, &ps);
 	if (err > 0) {
+		ASSERT(text_round_len(r->c->txt, r->o+err-1) == r->o);
 		r->o += err;
 		return ret;
 	}
@@ -899,7 +902,10 @@ static wint_t text_step(struct doc *d, struct mark *m, bool forward, bool move)
 static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2)
 {
 	if (r1->c == r2->c) {
-		return r1->o == r2->o;
+		if (r1->c == NULL)
+			return r1->o == r2->o;
+		return text_round_len(r1->c->txt, r1->o) ==
+			text_round_len(r1->c->txt, r2->o);
 	}
 	if (r1->c == NULL) {
 		if (list_empty(&t->text))
