@@ -456,7 +456,7 @@ static int tile_grow(struct pane *p, int horiz, int size)
 
 	/* OK, this stacks in the right direction. if shrinking we can commit */
 	if (size < 0) {
-		struct pane *other;
+		struct pane *other = NULL;
 		struct pane *t;
 		int p_found = 0;
 		list_for_each_entry(t, &p->parent->children, siblings) {
