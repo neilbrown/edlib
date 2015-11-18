@@ -11,7 +11,7 @@ all: dirs edlib checksym lib shared
 
 OBJ = O/mainloop.o
 LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
-	O/core-keymap.o O/core-pane.o
+	O/core-keymap.o O/core-pane.o O/core-misc.o
 SHOBJ = O/doc-text.o O/doc-dir.o \
 	O/render-text.o O/render-hex.o O/render-dir.o \
 	O/lib-view.o O/lib-tile.o O/lib-popup.o O/lib-line-count.o O/lib-keymap.o \
@@ -21,7 +21,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o \
 XOBJ = O/rexel.o O/emacs-search.o
 
 SO = $(patsubst O/%.o,lib/edlib-%.so,$(SHOBJ))
-H = list.h core.h
+H = list.h core.h misc.h
 edlib: $(OBJ) lib/libedlib.so
 	$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -Wl,--disable-new-dtags -o edlib $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
 
