@@ -360,27 +360,27 @@ DEF_CMD(view_WORD)
 
 DEF_CMD(view_eol)
 {
-	struct point *pt = *ci->pointp;
+	struct doc *d = (*ci->pointp)->doc;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(pt->doc, ci->mark)) != WEOF &&
+		while ((ch = mark_next(d, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(pt->doc, ci->mark)) != WEOF &&
+		while ((ch = mark_prev(d, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt += 1;
 	}
 	if (ch == '\n') {
 		if (RPT_NUM(ci) > 0)
-			mark_prev(pt->doc, ci->mark);
+			mark_prev(d, ci->mark);
 		else if (RPT_NUM(ci) < 0)
-			mark_next(pt->doc, ci->mark);
+			mark_next(d, ci->mark);
 	}
 	return 1;
 }
