@@ -387,9 +387,9 @@ static void send_mouse(MEVENT *mev, struct pane *p)
 		char *action;
 		if (BUTTON_PRESS(s, b))
 			action = "Press-%d";
-		if (BUTTON_RELEASE(s, b))
+		else if (BUTTON_RELEASE(s, b))
 			action = "Release-%d";
-		if (BUTTON_CLICK(s, b))
+		else if (BUTTON_CLICK(s, b))
 			action = "Click-%d";
 		else if (BUTTON_DOUBLE_CLICK(s, b))
 			action = "DClick-%d";
