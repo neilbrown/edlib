@@ -162,12 +162,13 @@ DEF_CMD(popup_attach)
 	}
 	border[j] = 0;
 	attr_set_str(&ppi->popup->attrs, "borders", border, -1);
+	attr_set_str(&ppi->popup->attrs, "render-wrap", "no", -1);
 
 	pt = doc_new(pane2ed(root), "text");
 	doc_set_name(pt->doc, "*popup*");
 	ppi->doc = pt->doc;
 	p = pane_attach(ppi->popup, "view", pt, NULL);
-	render_attach(NULL, p);
+	render_attach("lines", p);
 	pane_focus(p);
 	ci2.key = "local-set-key";
 	ci2.focus = p;

@@ -70,6 +70,7 @@ struct doc_ref {
 };
 
 #include "core.h"
+#include "misc.h"
 
 /* text is allocated is large blocks - possibly a whole
  * file or some other large unit being added to a document.
@@ -944,8 +945,9 @@ DEF_CMD(comm_new)
 	INIT_LIST_HEAD(&t->text);
 	t->undo = t->redo = NULL;
 	doc_init(&t->doc);
-	t->doc.default_render = "text";
+	t->doc.default_render = "lines";
 	t->doc.ops = &text_ops;
+	t->doc.map = text_map;
 	t->fname = NULL;
 	text_new_alloc(t, 0);
 	point_new(&t->doc, ci->pointp);
@@ -1408,9 +1410,122 @@ static struct doc_operations text_ops = {
 	.destroy   = text_destroy,
 };
 
+#define LARGE_LINE 4096
 
+DEF_CMD(render_line_prev)
+{
+	/* In the process of rendering a line we need to find the
+	 * start of line.
+	 * Search backwards until a newline or start-of-file is found,
+	 * or until a LARGE_LINE boundary has been passed and a further
+	 * LARGE_LINE/2 bytes examined with no newline. In that case,
+	 * report the boundary.
+	 * If RPT_NUM == 1, step back at least one character so we get
+	 * the previous line and not the line we are on.
+	 * If we hit start-of-file without finding newline, return -1;
+	 */
+	struct mark *m = ci->mark;
+	struct doc *d = (*ci->pointp)->doc;
+	struct mark *boundary = NULL;
+	int since_boundary;
+	int rpt = RPT_NUM(ci);
+	wint_t ch;
+	int offset = 0;
+
+	while ((ch = mark_prev(d, m)) != WEOF &&
+	       (ch != '\n' || rpt > 0) &&
+	       (!boundary || since_boundary < LARGE_LINE/2)) {
+		rpt = 0;
+		if (boundary)
+			since_boundary += 1;
+		else if (m->ref.o < offset &&
+			 m->ref.o >= LARGE_LINE &&
+			 (m->ref.o-1) / LARGE_LINE != (offset-1) / LARGE_LINE) {
+			/* here is a boundary */
+			boundary = mark_dup(m, 1);
+		}
+		offset = m->ref.o;
+	}
+	if (ch != WEOF && ch != '\n') {
+		/* need to use the boundary */
+		if (!boundary)
+			return 1;
+		while (mark_ordered(m, boundary)) {
+			struct mark *n = doc_next_mark_all(d, m);
+			m->ref = n->ref;
+			mark_forward_over(m, n);
+		}
+		mark_free(boundary);
+		return 1;
+	}
+	if (ch == WEOF && rpt)
+		return -1;
+	if (ch == '\n')
+		/* Found a '\n', so step back over it for start-of-line. */
+		mark_next(d, m);
+	return 1;
+}
+
+DEF_CMD(render_line)
+{
+	/* Render the line from 'mark' to the first '\n' or until
+	 * 'extra' chars.
+	 * Convert '<' to '<<' and if a char has the 'highlight' attribute,
+	 * include that between '<>'.
+	 */
+	struct buf b;
+	struct point **ptp = ci->pointp;
+	struct doc *d = (*ptp)->doc;
+	struct mark *m = ci->mark;
+	int o = ci->numeric;
+	wint_t ch = WEOF;
+	int chars = 0;
+
+	buf_init(&b);
+	while (1) {
+		char *attr = text_get_attr(d, m, 1, "highlight");
+		int offset = m->ref.o;
+		if (o >= 0 && b.len >= o)
+			break;
+		if (o == -1 && mark_same(d, m, mark_of_point(*ptp)))
+			break;
+		ch = mark_next(d, m);
+		if (ch == WEOF)
+			break;
+		if (ch == '\n') {
+			buf_append(&b, ch);
+			break;
+		}
+		if (chars > LARGE_LINE/2 &&
+		    m->ref.o > offset &&
+		    (m->ref.o-1)/LARGE_LINE != (offset-1)/LARGE_LINE)
+			break;
+		if (attr) {
+			buf_append(&b, '<');
+			buf_concat(&b, attr);
+			buf_append(&b, '>');
+		}
+		if (ch == '<')
+			buf_append(&b, '<');
+		if (ch < ' ' && ch != '\t' && ch != '\n') {
+			buf_concat(&b, "<fg:red>^");
+			buf_append(&b, '@' + ch);
+			buf_concat(&b, "</>");
+		} else
+			buf_append(&b, ch);
+		if (attr)
+			buf_concat(&b, "</>");
+		chars++;
+	}
+	ci->str = buf_final(&b);
+	return 1;
+}
 
 void edlib_init(struct editor *ed)
 {
 	key_add(ed->commands, "doc-text", &comm_new);
+
+	text_map = key_alloc();
+	key_add(text_map, "render-line-prev", &render_line_prev);
+	key_add(text_map, "render-line", &render_line);
 }
