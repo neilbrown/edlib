@@ -483,6 +483,11 @@ char *pane_attr_get(struct pane *p, char *key)
 		char *a = attr_get_str(p->attrs, key, -1);
 		if (a)
 			return a;
+		if (p->point) {
+			a = doc_attr(p->point->doc, NULL, 0, key);
+			if (a)
+				return a;
+		}
 		p = p->parent;
 	}
 	/* FIXME do I want editor-wide attributes too? */
