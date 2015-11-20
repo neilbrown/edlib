@@ -20,6 +20,8 @@ struct rf_data {
 	int fields;
 };
 
+DEF_CMD(render_format_attach);
+
 DEF_CMD(render_line)
 {
 	char *body = pane_attr_get(ci->focus, "line-format");
@@ -135,11 +137,20 @@ DEF_CMD(render_line_prev)
 
 DEF_CMD(format_close)
 {
+	struct rl_data *rl = ci->home->data;
+	free(rl);
 	return 1;
 }
 
 DEF_CMD(format_clone)
 {
+	struct pane *c;
+
+	ci->pointp = pane_point(ci->focus);
+	render_format_attach_func(ci);
+	c = pane_child(ci->home);
+	if (c)
+		return pane_clone(c, pane_child(ci->focus));
 	return 1;
 }
 
@@ -225,7 +236,7 @@ DEF_CMD(render_format_handle)
 	return key_lookup(rf_map, ci);
 }
 
-DEF_CMD(render_format_attach)
+REDEF_CMD(render_format_attach)
 {
 	struct rf_data *rf = malloc(sizeof(*rf));
 	struct pane *p;
