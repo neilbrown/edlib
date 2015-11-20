@@ -117,7 +117,7 @@ DEF_CMD(comm_new)
 	struct directory *dr = malloc(sizeof(*dr));
 	doc_init(&dr->doc);
 	dr->doc.map = doc_map;
-	dr->doc.default_render = "dir";
+	dr->doc.default_render = "format";
 	dr->doc.ops = &dir_ops;
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
@@ -347,7 +347,7 @@ static char *dir_get_attr(struct doc *d, struct mark *m,
 		if (strcmp(attr, "heading") == 0)
 			return "     Mtime       Owner  File Name";
 		if (strcmp(attr, "line-format") == 0)
-			return " %c %mtime:11 %owner:-8 %+name";
+			return " <fg:red>%c</> %mtime:11 %owner:-8 <fg:blue>%+name</>\n";
 		if (strcmp(attr, "filename") == 0)
 			return dr->fname;
 		return NULL;
