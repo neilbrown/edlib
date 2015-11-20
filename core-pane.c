@@ -108,8 +108,8 @@ static void __pane_refresh(struct cmd_info *ci)
 			ci->extra |= DAMAGED_CURSOR;
 		damage &= DAMAGED_SIZE;
 		ci->comm = p->handle;
-		if (p->handle->func(ci))
-			damage |= ci->extra;
+		if (p->handle->func(ci) == 0)
+			pane_check_size(p);
 	}
 	p->damaged = 0;
 	list_for_each_entry(c, &p->children, siblings) {

@@ -284,7 +284,7 @@ static int text_refresh(struct cmd_info *ci)
 found:
 	mark_free(rt->bot);
 	rt->bot = end;
-	return 0;
+	return 1;
 }
 
 DEF_CMD(render_text_handle)

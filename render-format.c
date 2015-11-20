@@ -154,12 +154,6 @@ DEF_CMD(format_clone)
 	return 1;
 }
 
-DEF_CMD(format_refresh)
-{
-	pane_check_size(ci->home);
-	return 1;
-}
-
 DEF_CMD(format_move_line)
 {
 	struct point *pt = *ci->pointp;
@@ -223,7 +217,6 @@ static void render_format_register_map(void)
 	key_add(rf_map, "render-line-prev", &render_line_prev);
 	key_add(rf_map, "Close", &format_close);
 	key_add(rf_map, "Clone", &format_clone);
-	key_add(rf_map, "Refresh", &format_refresh);
 
 	key_add(rf_map, "Move-EOL", &format_move_line);
 	key_add(rf_map, "Move-Char", &format_move_horiz);

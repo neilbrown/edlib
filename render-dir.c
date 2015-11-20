@@ -294,7 +294,7 @@ DEF_CMD(render_dir_handle)
 	found:
 		mark_free(dd->bot);
 		dd->bot = end;
-		return 0;
+		return 1;
 	}
 	return 0;
 }

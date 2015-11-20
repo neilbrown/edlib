@@ -171,7 +171,7 @@ static int hex_refresh(struct cmd_info *ci)
 	struct doc *d;
 
 	if (!ci->pointp)
-		return 0;
+		return 1;
 	d = (*ci->pointp)->doc;
 	pane_check_size(p);
 
@@ -203,7 +203,7 @@ static int hex_refresh(struct cmd_info *ci)
 found:
 	mark_free(he->bot);
 	he->bot = end;
-	return 0;
+	return 1;
 }
 
 DEF_CMD(render_hex_handle)

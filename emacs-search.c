@@ -130,12 +130,6 @@ DEF_CMD(search_backward)
 	return 1;
 }
 
-DEF_CMD(search_refresh)
-{
-	pane_check_size(ci->focus);
-	return 1;
-}
-
 DEF_CMD(search_close)
 {
 	struct es_info *esi = ci->focus->data;
@@ -217,7 +211,6 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "C-Chr-W", &search_add);
 	key_add(es_map, "C-Chr-C", &search_add);
 	key_add(es_map, "C-Chr-R", &search_backward);
-	key_add(es_map, "Refresh", &search_refresh);
 	key_add(es_map, "Close", &search_close);
 }
 

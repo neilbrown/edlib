@@ -71,7 +71,7 @@ DEF_CMD(tile_handle)
 			tile_avail(p, NULL);
 			tile_adjust(p);
 		}
-		return 0;
+		return 1;
 	}
 	return 0;
 }

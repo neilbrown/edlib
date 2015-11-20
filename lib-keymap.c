@@ -55,10 +55,6 @@ DEF_CMD(keymap_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "Refresh") == 0) {
-		pane_check_size(ci->home);
-		return 0;
-	}
 	if (kd->global && strcmp(ci->key, "global-key-root") == 0) {
 		ci->focus = ci->home;
 		return 1;

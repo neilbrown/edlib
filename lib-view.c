@@ -54,7 +54,7 @@ static int view_refresh(struct cmd_info *ci)
 	pane_check_size(p);
 	p->cx = 0; p->cy = 0;
 	if (!vd->border)
-		return 0;
+		return 1;
 
 	if (vd->border & BORDER_LEFT) {
 		/* Left border is (currently) always a scroll bar */
@@ -118,7 +118,7 @@ static int view_refresh(struct cmd_info *ci)
 		pane_text(p, '/', "inverse", 0, 0);
 	if (!(~vd->border & (BORDER_RIGHT|BORDER_BOT)))
 		pane_text(p, '/', "inverse", p->w-1, p->h-1);
-	return 0;
+	return 1;
 }
 
 DEF_CMD(view_handle)
@@ -189,7 +189,7 @@ DEF_CMD(view_null)
 			}
 			pane_resize(p, x, y, w, h);
 		}
-		return 0;
+		return 1;
 	}
 	return 0;
 }

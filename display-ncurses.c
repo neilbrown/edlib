@@ -165,7 +165,7 @@ DEF_CMD(ncurses_handle)
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
 		event_add(l, &tv);
-		return 0;
+		return 1;
 	}
 	return 0;
 }

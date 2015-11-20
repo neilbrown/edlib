@@ -72,7 +72,7 @@ DEF_CMD(popup_handle)
 
 	if (strcmp(ci->key, "Refresh") == 0) {
 		popup_resize(p, ppi->style);
-		return 0;
+		return 1;
 	}
 	if (strcmp(ci->key, "popup:Abort") == 0) {
 		pane_focus(ppi->target);
