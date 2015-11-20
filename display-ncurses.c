@@ -254,6 +254,9 @@ static void ncurses_text(struct pane *p, wchar_t ch, int attr, int x, int y)
 	int w=1, h=1;
 	int z = p->z;
 
+	if (x < 0 || y < 0)
+		return;
+
 	p = pane_to_root(p, &x, &y, &z, &w, &h);
 	if (w < 1 || h < 1)
 		return;
