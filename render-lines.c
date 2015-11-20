@@ -613,7 +613,7 @@ DEF_CMD(render_lines_close)
 	return 0;
 }
 
-DEF_CMD(render_lines_follow_point)
+DEF_CMD(render_lines_other_move)
 {
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
@@ -723,7 +723,7 @@ DEF_CMD(render_lines_set_cursor)
 	int y = -rl->skip_lines;
 	int found = 0;
 
-	render_lines_follow_point_func(ci);
+	render_lines_other_move_func(ci);
 
 	m = container_of(vmark_first(d, rl->typenum), struct rl_mark, m);
 
@@ -885,7 +885,7 @@ static void render_lines_register_map(void)
 {
 	rl_map = key_alloc();
 
-	key_add_range(rl_map, "Move-", "Move-\377", &render_lines_follow_point);
+	key_add_range(rl_map, "Move-", "Move-\377", &render_lines_other_move);
 	key_add(rl_map, "Move-View-Small", &render_lines_move);
 	key_add(rl_map, "Move-View-Large", &render_lines_move);
 	key_add(rl_map, "Move-View-Pos", &render_lines_move_pos);
@@ -894,7 +894,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Press-1", &render_lines_set_cursor);
 	key_add(rl_map, "Move-Line", &render_lines_move_line);
 
-	key_add(rl_map, "Replace", &render_lines_follow_point);
+	key_add(rl_map, "Replace", &render_lines_other_move);
 
 	key_add(rl_map, "Close", &render_lines_close);
 	key_add(rl_map, "Clone", &render_lines_clone);
