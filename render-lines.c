@@ -622,8 +622,7 @@ DEF_CMD(render_lines_follow_point)
 		pane_damaged(p, DAMAGED_CONTENT);
 		rl->ignore_point = 0;
 	}
-	if (strcmp(ci->key, "Move-Line") != 0)
-		rl->target_x = -1;
+	rl->target_x = -1;
 
 	/* Allow other handlers to complete the Replace */
 	return 0;
@@ -782,9 +781,10 @@ DEF_CMD(render_lines_move_line)
 	struct rl_data *rl = p->data;
 	struct point **ptp = ci->pointp;
 	struct cmd_info ci2 = {0};
-	struct mark *m;
 	int target_x, target_y;
 	int o = -1;
+
+	rl->ignore_point = 0;
 
 	/* save target as it might get changed */
 	target_x = rl->target_x;
@@ -798,18 +798,22 @@ DEF_CMD(render_lines_move_line)
 	ci2.numeric = RPT_NUM(ci);
 	if (ci2.numeric < 0)
 		ci2.numeric -= 1;
+	else
+		ci2.numeric += 1;
 	ci2.mark = mark_of_point(*ptp);
 	ci2.pointp = ci->pointp;
 	if (!key_handle_focus(&ci2))
 		return -1;
+	if (RPT_NUM(ci) > 0) {
+		/* at end of target line, move to start */
+		ci2.numeric = -1;
+		if (!key_handle_focus(&ci2))
+			return -1;
+	}
 
 	/* restore target: Move-EOL might have changed it */
 	rl->target_x = target_x;
 	rl->target_y = target_y;
-	m = ci2.mark;
-	if (RPT_NUM(ci) > 0)
-		/* Move-EOL left us at EOL */
-		mark_next((*ptp)->doc, m);
 
 	if (target_x >= 0 || target_y >= 0) {
 		struct rl_mark *start =
