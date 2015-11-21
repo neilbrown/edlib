@@ -51,6 +51,7 @@ int doc_add_view(struct doc *d, struct command *c)
 		for (; i < d->nviews; i++) {
 			INIT_TLIST_HEAD(&g[i].head, GRP_HEAD);
 			g[i].notify = NULL;
+			g[i].space = 0;
 		}
 		free(d->views);
 		d->views = g;
@@ -379,7 +380,17 @@ DEF_CMD(docs_open)
 		renderer = "hex";
 
 	point_new(dc, &pt);
-	pane_close(p);
+	if (strcmp(ci->key, "Chr-o") == 0) {
+		struct cmd_info ci2 = {0};
+		ci2.key = "OtherPane";
+		ci2.focus = ci->focus;
+		if (key_handle_focus(&ci2)) {
+			par = ci2.focus;
+			p = pane_child(par);
+		}
+	}
+	if (p)
+		pane_close(p);
 	p = pane_attach(par, "view", pt, NULL);
 	if (p) {
 		render_attach(renderer, p);
@@ -414,6 +425,7 @@ void doc_make_docs(struct editor *ed)
 	key_add(docs_map, "Chr-f", &docs_open);
 	key_add(docs_map, "Chr-h", &docs_open);
 	key_add(docs_map, "Return", &docs_open);
+	key_add(docs_map, "Chr-o", &docs_open);
 	key_add(docs_map, "Chr-q", &docs_bury);
 	ds->doc.map = docs_map;
 

@@ -441,7 +441,17 @@ DEF_CMD(dir_open)
 		renderer = "hex";
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
-	pane_close(p);
+	if (strcmp(ci->key, "Chr-o") == 0) {
+		struct cmd_info ci2 = {0};
+		ci2.key = "OtherPane";
+		ci2.focus = ci->focus;
+		if (key_handle_focus(&ci2)) {
+			par = ci2.focus;
+			p = pane_child(par);
+		}
+	}
+	if (p)
+		pane_close(p);
 	if (fd >= 0) {
 		p = doc_open(par, fd, fname, renderer);
 		close(fd);
@@ -477,6 +487,7 @@ void edlib_init(struct editor *ed)
 	key_add(doc_map, "Chr-f", &dir_open);
 	key_add(doc_map, "Return", &dir_open);
 	key_add(doc_map, "Chr-h", &dir_open);
+	key_add(doc_map, "Chr-o", &dir_open);
 	key_add(doc_map, "Chr-g", &dir_reread);
 	key_add(doc_map, "Chr-q", &dir_close);
 }
