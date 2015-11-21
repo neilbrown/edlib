@@ -325,7 +325,7 @@ static char *docs_get_attr(struct doc *doc, struct mark *m,
 		if (a)
 			return a;
 		if (strcmp(attr, "heading") == 0)
-			return "  Document             File";
+			return "<bold,underline>  Document             File</>";
 		if (strcmp(attr, "line-format") == 0)
 			return "  %+name:20 %filename";
 		return NULL;
@@ -363,28 +363,40 @@ static struct doc_operations docs_ops = {
 	.set_attr  = docs_set_attr,
 };
 
-DEF_CMD(comm_open)
+DEF_CMD(docs_open)
 {
 	struct pane *p = ci->home;
 	struct point *pt;
 	struct doc *dc = p->point->m.ref.d;
 	struct pane *par = p->parent;
+	char *renderer = NULL;
 
 	/* close this pane, open the given document. */
 	if (dc == NULL)
 		return 0;
 
+	if (strcmp(ci->key, "Chr-h") == 0)
+		renderer = "hex";
+
 	point_new(dc, &pt);
 	pane_close(p);
 	p = pane_attach(par, "view", pt, NULL);
 	if (p) {
-		render_attach(ci->str, p);
+		render_attach(renderer, p);
 		pane_focus(p);
 		return 1;
 	} else {
 		point_free(pt);
 		return 0;
 	}
+}
+
+DEF_CMD(docs_bury)
+{
+	struct doc *d = (*ci->pointp)->doc;
+
+	doc_close_views(d);
+	return 1;
 }
 
 void doc_make_docs(struct editor *ed)
@@ -395,11 +407,14 @@ void doc_make_docs(struct editor *ed)
 	doc_init(&ds->doc);
 	ds->doc.ed = ed;
 	ds->doc.ops = &docs_ops;
-	ds->doc.default_render = "dir";
+	ds->doc.default_render = "format";
 	doc_set_name(&ds->doc, "*Documents*");
 	ed->docs = &ds->doc;
 
-	key_add(docs_map, "Open", &comm_open);
+	key_add(docs_map, "Chr-f", &docs_open);
+	key_add(docs_map, "Chr-h", &docs_open);
+	key_add(docs_map, "Return", &docs_open);
+	key_add(docs_map, "Chr-q", &docs_bury);
 	ds->doc.map = docs_map;
 
 	doc_promote(&ds->doc);
