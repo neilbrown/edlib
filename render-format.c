@@ -34,7 +34,10 @@ DEF_CMD(render_line)
 	int home;
 	int field = 0;
 
-	ch = mark_next(d, m);
+	if (RPT_NUM(ci) < 0 &&
+	    !mark_same(d, mark_of_point(*ci->pointp), m))
+		ci->numeric = NO_NUMERIC;
+	ch = doc_following(d, m);
 	if (ch == WEOF) {
 		ci->str = NULL;
 		return 1;
@@ -44,9 +47,14 @@ DEF_CMD(render_line)
 	if (!body)
 		body = "%+name";
 	n = body;
+	m->rpos = field - rf->home_field;
 	while (*n) {
 		char buf[40], *b, *val;
 		int w, adjust, l;
+
+		if (RPT_NUM(ci) < 0 &&
+		    mark_of_point(*ci->pointp)->rpos == m->rpos)
+			break;
 
 		if (*n != '%' || n[1] == '%') {
 			buf_append(&ret, *n);
@@ -55,10 +63,15 @@ DEF_CMD(render_line)
 			n += 1;
 			continue;
 		}
-		if (RPT_NUM(ci) < 0 &&
-		    mark_of_point(*ci->pointp)->rpos == field - rf->home_field)
-			break;
 		field += 1;
+		m->rpos = field - rf->home_field;
+
+		if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
+		    ret.len >= ci->numeric)
+			break;
+		if (RPT_NUM(ci) < 0 &&
+		    mark_of_point(*ci->pointp)->rpos == m->rpos)
+			break;
 		n += 1;
 		if (*n == '+') {
 			/* Home field */
@@ -79,7 +92,7 @@ DEF_CMD(render_line)
 			buf_append(&ret, ch);
 			continue;
 		}
-		val = doc_attr(d, m, 0, buf);
+		val = doc_attr(d, m, 1, buf);
 		if (!val)
 			val = "-";
 		if (*n != ':') {
@@ -116,6 +129,16 @@ DEF_CMD(render_line)
 	if (!*n) {
 		rf->fields = field;
 		rf->home_field = home;
+		m->rpos = field + 1 - rf->home_field;
+		if (RPT_NUM(ci) < 0 &&
+		    mark_of_point(*ci->pointp)->rpos == m->rpos)
+			;
+		else if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC)
+			;
+		else {
+			buf_append(&ret, '\n');
+			mark_next(d, m);
+		}
 	}
 	ci->str = buf_final(&ret);
 	return 1;
@@ -158,17 +181,23 @@ DEF_CMD(format_move_line)
 {
 	struct point *pt = *ci->pointp;
 	int rpt = RPT_NUM(ci);
+	struct rf_data *rf = ci->home->data;
 
 	while (rpt > 1) {
 		if (mark_next(pt->doc, ci->mark) == WEOF)
 			break;
 		rpt -= 1;
 	}
-	while (rpt < 0) {
+	while (rpt < -1) {
 		if (mark_prev(pt->doc, ci->mark) == WEOF)
 			break;
 		rpt += 1;
 	}
+	if (rpt < 0)
+		ci->mark->rpos = -rf->home_field;
+	if (rpt > 0)
+		ci->mark->rpos = rf->fields + 1 - rf->home_field;
+
 
 	return 1;
 }
@@ -185,7 +214,7 @@ DEF_CMD(format_move_horiz)
 	if (rf->fields < 2)
 		return 1;
 	while (rpt > 0 && doc_following(pt->doc, ci->mark) != WEOF) {
-		if (ci->mark->rpos < rf->fields - rf->home_field)
+		if (ci->mark->rpos < rf->fields - rf->home_field + 1)
 			ci->mark->rpos += 1;
 		else {
 			if (mark_next(pt->doc, ci->mark) == WEOF)
@@ -195,12 +224,12 @@ DEF_CMD(format_move_horiz)
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		if (ci->mark->rpos > - rf->home_field)
+		if (ci->mark->rpos > -rf->home_field)
 			ci->mark->rpos -= 1;
 		else {
 			if (mark_prev(pt->doc, ci->mark) == WEOF)
 				break;
-			ci->mark->rpos = rf->fields - rf->home_field;
+			ci->mark->rpos = rf->fields - rf->home_field + 1;
 		}
 		rpt += 1;
 	}

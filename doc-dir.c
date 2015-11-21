@@ -347,7 +347,7 @@ static char *dir_get_attr(struct doc *d, struct mark *m,
 		if (strcmp(attr, "heading") == 0)
 			return "     Mtime       Owner  File Name";
 		if (strcmp(attr, "line-format") == 0)
-			return " <fg:red>%c</> %mtime:11 %owner:-8 <fg:blue>%+name</>\n";
+			return " <fg:red>%c</> %mtime:11 %owner:-8 <fg:blue>%+name</>";
 		if (strcmp(attr, "filename") == 0)
 			return dr->fname;
 		return NULL;
