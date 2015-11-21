@@ -55,6 +55,9 @@ DEF_CMD(render_line)
 		if (RPT_NUM(ci) < 0 &&
 		    mark_of_point(*ci->pointp)->rpos == m->rpos)
 			break;
+		if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
+		    ret.len >= ci->numeric)
+			break;
 
 		if (*n != '%' || n[1] == '%') {
 			buf_append(&ret, *n);
