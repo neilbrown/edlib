@@ -422,7 +422,7 @@ static struct doc_operations dir_ops = {
 	.destroy   = dir_destroy,
 };
 
-DEF_CMD(comm_open)
+DEF_CMD(dir_open)
 {
 	struct pane *p = ci->home;
 	struct point *pt = p->point;
@@ -432,15 +432,18 @@ DEF_CMD(comm_open)
 	struct pane *par = p->parent;
 	int fd;
 	char *fname = NULL;
+	char *renderer = NULL;
 
 	/* close this pane, open the given file. */
 	if (de == NULL)
 		return 0;
+	if (strcmp(ci->key, "Chr-h") == 0)
+		renderer = "hex";
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
 	pane_close(p);
 	if (fd >= 0) {
-		p = doc_open(par, fd, fname, ci->str);
+		p = doc_open(par, fd, fname, renderer);
 		close(fd);
 	} else
 		p = doc_from_text(par, fname, "File not found\n");
@@ -449,10 +452,31 @@ DEF_CMD(comm_open)
 	return 1;
 }
 
+DEF_CMD(dir_reread)
+{
+	struct doc *d = (*ci->pointp)->doc;
+	d->ops->load_file(d, NULL, -1, NULL);
+	return 1;
+}
+
+DEF_CMD(dir_close)
+{
+	struct doc *d = (*ci->pointp)->doc;
+
+	doc_close_views(d);
+	doc_destroy(d);
+	return 1;
+}
+
+
 void edlib_init(struct editor *ed)
 {
 	key_add(ed->commands, "doc-dir", &comm_new);
 
 	doc_map = key_alloc();
-	key_add(doc_map, "Open", &comm_open);
+	key_add(doc_map, "Chr-f", &dir_open);
+	key_add(doc_map, "Return", &dir_open);
+	key_add(doc_map, "Chr-h", &dir_open);
+	key_add(doc_map, "Chr-g", &dir_reread);
+	key_add(doc_map, "Chr-q", &dir_close);
 }
