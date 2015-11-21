@@ -48,16 +48,16 @@ DEF_CMD(render_line)
 		body = "%+name";
 	n = body;
 	m->rpos = field - rf->home_field;
+	if (RPT_NUM(ci) < 0 &&
+	    mark_of_point(*ci->pointp)->rpos == m->rpos)
+		goto endwhile;
+	if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
+	    ret.len >= ci->numeric)
+		goto endwhile;
+
 	while (*n) {
 		char buf[40], *b, *val;
 		int w, adjust, l;
-
-		if (RPT_NUM(ci) < 0 &&
-		    mark_of_point(*ci->pointp)->rpos == m->rpos)
-			break;
-		if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
-		    ret.len >= ci->numeric)
-			break;
 
 		if (*n != '%' || n[1] == '%') {
 			buf_append(&ret, *n);
@@ -129,6 +129,7 @@ DEF_CMD(render_line)
 			w -= 1;
 		}
 	}
+endwhile:
 	if (!*n) {
 		rf->fields = field;
 		rf->home_field = home;
