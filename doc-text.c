@@ -1453,6 +1453,7 @@ DEF_CMD(render_line_prev)
 		while (mark_ordered(m, boundary)) {
 			struct mark *n = doc_next_mark_all(d, m);
 			m->ref = n->ref;
+			m->rpos = n->rpos;
 			mark_forward_over(m, n);
 		}
 		mark_free(boundary);

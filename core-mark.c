@@ -658,6 +658,7 @@ void point_to_mark(struct point *p, struct mark *m)
 		point_forward_to_mark(p, m);
 	else if (p->m.seq > m->seq)
 		point_backward_to_mark(p, m);
+	p->m.rpos = m->rpos;
 }
 
 /* A 'vmark' is a mark in a particular view.  We can walk around those
