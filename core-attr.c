@@ -183,7 +183,7 @@ int attr_del(struct attrset **setp, char *key)
 	len += strlen(set->attrs + offset + len) + 1;
 	memmove(set->attrs + offset,
 		set->attrs + offset + len,
-		set->len - offset);
+		set->len - (offset + len));
 	set->len -= len;
 	if (set->len == 0) {
 		*setp = set->next;
@@ -228,7 +228,7 @@ int attr_set_str(struct attrset **setp, char *key, char *val, int keynum)
 		len += strlen(set->attrs + offset + len) + 1;
 		memmove(set->attrs + offset,
 			set->attrs + offset + len,
-			set->len - offset);
+			set->len - (offset + len));
 		set->len -= len;
 	}
 	if (!val)

@@ -154,6 +154,7 @@ void pane_close(struct pane *p)
 	pane_damaged(p->parent, DAMAGED_SIZE);
 	attr_free(&p->attrs);
 /* FIXME who destroys 'point'*/
+	ASSERT(p->point == NULL);
 	free(p);
 }
 

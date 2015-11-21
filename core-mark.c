@@ -116,6 +116,7 @@ void mark_free(struct mark *m)
 void point_free(struct point *p)
 {
 	int i;
+	*p->owner = NULL;
 	for (i = 0; i < p->size; i++)
 		tlist_del_init(&p->lists[i]);
 	mark_delete(&p->m);

@@ -143,6 +143,7 @@ DEF_CMD(view_handle)
 	if (strcmp(ci->key, "Close") == 0) {
 		pt = *ci->pointp;
 		doc_del_view(pt->doc, &vd->ch_notify);
+		point_free(pt);
 		free(vd);
 		return 1;
 	}
@@ -213,11 +214,13 @@ DEF_CMD(view_notify)
 		struct point *pt;
 		struct pane *p, *c;
 
-		pt = editor_choose_doc(ed);
 		doc_del_view(d, &vd->ch_notify);
 		c = pane_child(vd->pane);
 		if (c)
 			pane_close(c);
+		pt = vd->pane->point;
+		point_free(pt);
+		pt = editor_choose_doc(ed);
 		p = view_reattach(vd->pane, pt);
 		render_attach(NULL, p);
 	}

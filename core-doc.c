@@ -47,6 +47,7 @@ int doc_add_view(struct doc *d, struct command *c)
 			tlist_add(&g[i].head, GRP_HEAD, &d->views[i].head);
 			tlist_del(&d->views[i].head);
 			g[i].notify = d->views[i].notify;
+			g[i].space = d->views[i].space;
 		}
 		for (; i < d->nviews; i++) {
 			INIT_TLIST_HEAD(&g[i].head, GRP_HEAD);

@@ -1459,6 +1459,8 @@ DEF_CMD(render_line_prev)
 		mark_free(boundary);
 		return 1;
 	}
+	if (boundary)
+		mark_free(boundary);
 	if (ch == WEOF && rpt)
 		return -1;
 	if (ch == '\n')
