@@ -232,13 +232,16 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 			x += w;
 		}
 	}
-	if (y == cy && x <= cx)
+	if ((y == cy && x <= cx) || y < cy)
 		/* haven't passed the cursor yet */
 		*offsetp = line - line_start;
 	if (offset >= 0 && line - line_start <= offset) {
 		*cyp = y;
 		*cxp = x;
 	}
+	if (x > 0)
+		/* No newline at the end .. but we must render as whole lines */
+		y += 1;
 	*yp = y;
 	free(buf_final(&attr));
 }
@@ -504,13 +507,13 @@ restart:
 			call_render_line(p, ptp, m);
 		}
 		m2 = container_of(vmark_next(&m->m), struct rl_mark, m);
-		if (p->cx < 0 &&
+		if (m->line &&
 		    mark_ordered_or_same(d, &m->m, mark_of_point(*ptp)) &&
 		    (!m2 || mark_ordered_or_same(d, mark_of_point(*ptp), &m2->m))) {
 			int len = call_render_line_to_point(p, ptp,
 							    m);
 			rl->cursor_line = y;
-			render_line(p, m->line?:"", &y, 1, &p->cx, &p->cy, &len);
+			render_line(p, m->line, &y, 1, &p->cx, &p->cy, &len);
 			if (p->cy < 0)
 				p->cx = -1;
 			if (!rl->do_wrap && p->cy >= 0 && p->cx < rl->prefix_len) {
