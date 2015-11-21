@@ -91,6 +91,7 @@ struct rl_data {
 	int		do_wrap;
 	int		shift_left;
 	int		prefix_len;
+	int		header_lines;
 	struct command	type;
 	int		typenum;
 	struct pane	*pane;
@@ -124,7 +125,8 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 	if (prefix) {
 		char *s = prefix;
 		while (*s) {
-			pane_text(p, *s, "bold", x, y);
+			if (y >= rl->header_lines)
+				pane_text(p, *s, "bold", x, y);
 			x += 1;
 			s += 1;
 		}
@@ -212,13 +214,13 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 				w = 1;
 			if (x + w >= p->w && wrap) {
 				/* line wrap */
-				if (dodraw && x >= rl->prefix_len)
+				if (dodraw && x >= rl->prefix_len && y >= rl->header_lines)
 					pane_text(p, '\\', "underline,fg:blue",
 						  p->w-1, y);
 				y += 1;
 				x = rl->prefix_len;
 			}
-			if (!dodraw || x < rl->prefix_len)
+			if (!dodraw || x < rl->prefix_len || y < rl->header_lines)
 				;
 			else if (ch == '\t')
 				;
@@ -409,7 +411,7 @@ static void find_lines(struct point **ptp, struct pane *p)
 		top = NULL;
 
 	rl->skip_lines = 0;
-	while (!((found_start && found_end) || y >= p->h)) {
+	while (!((found_start && found_end) || y >= p->h - rl->header_lines)) {
 		if (!found_start) {
 			/* step backwards moving start */
 			if (lines_above > 0) {
@@ -490,12 +492,21 @@ static void render(struct point **ptp, struct pane *p)
 	int y;
 	struct rl_mark *m, *m2;
 	int restarted = 0;
+	char *hdr;
 
 	d = (*ptp)->doc;
 
+	hdr = pane_attr_get(p, "heading");
+
 restart:
-	y = -rl->skip_lines;
 	pane_clear(p, NULL);
+	y = 0;
+	if (hdr) {
+		rl->header_lines = 0;
+		render_line(p, hdr, &y, 1, NULL, NULL, NULL);
+		rl->header_lines = y;
+	}
+	y -= rl->skip_lines;
 	m = container_of(vmark_first(d, rl->typenum), struct rl_mark, m);
 
 	p->cx = p->cy = -1;
@@ -723,7 +734,7 @@ DEF_CMD(render_lines_set_cursor)
 	struct doc *d = (*ptp)->doc;
 	struct rl_data *rl = p->data;
 	struct rl_mark *m;
-	int y = -rl->skip_lines;
+	int y = rl->header_lines - rl->skip_lines;
 	int found = 0;
 
 	render_lines_other_move_func(ci);
@@ -921,6 +932,7 @@ REDEF_CMD(render_lines_attach)
 	rl->cursor_line = 0;
 	rl->do_wrap = 1;
 	rl->shift_left = 0;
+	rl->header_lines = 0;
 	rl->type = render_lines_notify;
 	rl->typenum = doc_add_view((*ptp)->doc, &rl->type);
 	(*ptp)->doc->views[rl->typenum].space =
