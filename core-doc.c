@@ -124,7 +124,6 @@ static void doc_close_views(struct doc *d)
 	}
 }
 
-
 void doc_init(struct doc *d)
 {
 	INIT_HLIST_HEAD(&d->marks);
@@ -135,6 +134,7 @@ void doc_init(struct doc *d)
 	d->nviews = 0;
 	d->name = NULL;
 	d->map = NULL;
+	d->deleting = 0;
 }
 
 struct point *doc_new(struct editor *ed, char *type)
@@ -495,11 +495,16 @@ int  doc_destroy(struct doc *d)
 	 */
 	int i;
 
+	d->deleting = 1;
+	if (d->ops == &docs_ops)
+		d->deleting = 2; /* tell editor choose doc that this
+				  * is available if absolutely needed */
 	doc_close_views(d);
+	d->deleting = 0;
 
 	for (i = 0; i < d->nviews; i++)
 		if (d->views[i].notify)
-			/* still in used */
+			/* still in use */
 			return 0;
 	if (d->ops == &docs_ops)
 		return 0;

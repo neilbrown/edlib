@@ -30,10 +30,15 @@ struct point *editor_choose_doc(struct editor *ed)
 	/* Choose the first document with no watchers.
 	 * If there isn't any, choose the last document
 	 */
-	struct doc *d, *choice;
-	choice = list_last_entry(&ed->documents, struct doc, list);
+	struct doc *d, *choice = NULL, *last = NULL, *docs = NULL;
+
 	list_for_each_entry(d, &ed->documents, list) {
 		int i;
+		if (d->deleting == 2)
+			docs = d;
+		if (d->deleting)
+			continue;
+		last = d;
 		for (i = 0; i < d->nviews; i++)
 			if (d->views[i].notify == NULL)
 				break;
@@ -42,6 +47,10 @@ struct point *editor_choose_doc(struct editor *ed)
 			break;
 		}
 	}
+	if (!choice)
+		choice = last;
+	if (!choice)
+		choice = docs;
 	return point_new(choice, NULL);
 }
 

@@ -80,6 +80,7 @@ struct doc {
 	struct map		*map;
 	char			*name;
 	char			*default_render;
+	short			deleting; /* is begin destroyed */
 };
 
 struct doc_operations {
