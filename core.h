@@ -69,7 +69,8 @@ struct doc {
 	struct docview {
 		struct tlist_head head;
 		struct command	  *notify;
-		int		space;	/* extra space to allocate after a mark */
+		short		space;	/* extra space to allocate after a mark */
+		short		marked;	/* being deleted */
 	} *views;
 	struct attrset		*attrs;
 	int			nviews;
