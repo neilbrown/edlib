@@ -37,6 +37,9 @@
 #include <sys/fcntl.h>
 #include <dirent.h>
 #include <stdio.h>
+#include <pwd.h>
+#include <grp.h>
+#include <time.h>
 
 #define PRIVATE_DOC_REF
 struct doc_ref {
@@ -334,6 +337,22 @@ static char *fmt_num(struct dir_ent *de, long num)
 	return de->nbuf;
 }
 
+static char *save_str(struct dir_ent *de, char *str)
+{
+	strncpy(de->nbuf, str, sizeof(de->nbuf));
+	de->nbuf[sizeof(de->nbuf)-1] = 0;
+	return de->nbuf;
+}
+
+static char *fmt_date(struct dir_ent *de, time_t t)
+{
+	struct tm tm;
+	localtime_r(&t, &tm);
+	strftime(de->nbuf, sizeof(de->nbuf),
+		 "%b %d %H:%M", &tm);
+	return de->nbuf;
+}
+
 static char *dir_get_attr(struct doc *d, struct mark *m,
 			  bool forward, char *attr)
 {
@@ -345,9 +364,9 @@ static char *dir_get_attr(struct doc *d, struct mark *m,
 		if (a)
 			return a;
 		if (strcmp(attr, "heading") == 0)
-			return "<bold,fg:blue,underline>     Mtime       Owner  File Name</>";
+			return "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      File Name</>";
 		if (strcmp(attr, "line-format") == 0)
-			return " <fg:red>%c</> %mtime:11 %owner:-8 <fg:blue>%+name</>";
+			return " <fg:red>%perms</> %mdate:13 %user:10 %group:10 <fg:blue>%+name</>";
 		if (strcmp(attr, "filename") == 0)
 			return dr->fname;
 		return NULL;
@@ -368,21 +387,70 @@ static char *dir_get_attr(struct doc *d, struct mark *m,
 	} else if (strcmp(attr, "mtime") == 0) {
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_mtime);
+	} else if (strcmp(attr, "mdate") == 0) {
+		get_stat(dr, de);
+		return fmt_date(de, de->st.st_mtime);
 	} else if (strcmp(attr, "atime") == 0) {
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_atime);
+	} else if (strcmp(attr, "adate") == 0) {
+		get_stat(dr, de);
+		return fmt_date(de, de->st.st_atime);
 	} else if (strcmp(attr, "ctime") == 0) {
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_ctime);
-	} else if (strcmp(attr, "owner") == 0) {
+	} else if (strcmp(attr, "cdate") == 0) {
+		get_stat(dr, de);
+		return fmt_date(de, de->st.st_ctime);
+	} else if (strcmp(attr, "uid") == 0) {
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_uid);
-	} else if (strcmp(attr, "group") == 0) {
+	} else if (strcmp(attr, "gid") == 0) {
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_gid);
-	} else if (strcmp(attr, "modes") == 0) {
+	} else if (strcmp(attr, "user") == 0) {
+		struct passwd *pw;
+		get_stat(dr, de);
+		pw = getpwuid(de->st.st_uid);
+		if (pw)
+			return save_str(de, pw->pw_name);
+		else
+			return fmt_num(de, de->st.st_uid);
+	} else if (strcmp(attr, "group") == 0) {
+		struct group *gr;
+		get_stat(dr, de);
+		gr = getgrgid(de->st.st_gid);
+		if (gr)
+			return save_str(de, gr->gr_name);
+		else
+			return fmt_num(de, de->st.st_gid);
+	} else if (strcmp(attr, "mode") == 0) {
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_mode & 0777);
+	} else if (strcmp(attr, "perms") == 0) {
+		char *c;
+		int m;
+		int i;
+		get_stat(dr, de);
+		c = de->nbuf;
+		m = de->st.st_mode;
+		switch (m & S_IFMT) {
+		case S_IFREG: *c ++ = '-'; break;
+		case S_IFDIR: *c ++ = 'd'; break;
+		case S_IFBLK: *c ++ = 'b'; break;
+		case S_IFCHR: *c ++ = 'c'; break;
+		case S_IFSOCK:*c ++ = 's'; break;
+		case S_IFLNK: *c ++ = 'l'; break;
+		default:      *c ++ = '?'; break;
+		}
+		for (i = 0; i < 3; i++) {
+			*c ++ = (m & 0400) ? 'r':'-';
+			*c ++ = (m & 0200) ? 'w':'-';
+			*c ++ = (m & 0100) ? 'x':'-';
+			m = m << 3;
+		}
+		*c = 0;
+		return de->nbuf;
 	} else
 		return attr_get_str(de->attrs, attr, -1);
 }
