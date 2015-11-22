@@ -875,8 +875,20 @@ void doc_notify_change(struct doc *d, struct mark *m)
 				c->func(&ci);
 			}
 		}
-		if (m->all.pprev == &d->marks.first)
+		if (m->all.pprev == &d->marks.first) {
+			/* Notify everything else with a NULL mark */
+			for (i = 0; i < d->nviews; i++) {
+				struct command *c = d->views[i].notify;
+				if (done[i])
+					continue;
+				if (!c)
+					continue;
+				ci.mark = NULL;
+				ci.comm = c;
+				c->func(&ci);
+			}
 			break;
+		}
 		m = hlist_prev_entry(m, all);
 	}
 }
