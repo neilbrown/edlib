@@ -903,8 +903,16 @@ static wint_t text_step(struct doc *d, struct mark *m, bool forward, bool move)
 static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2)
 {
 	if (r1->c == r2->c) {
+		if (r1->o == r2->o)
+			return 1;
 		if (r1->c == NULL)
-			return r1->o == r2->o;
+			return 0;
+		/* if references are in the middle of a UTF-8 encoded
+		 * char, accept as same if it is same char
+		 */
+		if (r1->o == r1->c->end ||
+		    r2->o == r2->c->end)
+			return 0;
 		return text_round_len(r1->c->txt, r1->o) ==
 			text_round_len(r1->c->txt, r2->o);
 	}
