@@ -859,9 +859,27 @@ DEF_CMD(render_lines_notify)
 		if (ci->mark) {
 			struct rl_mark *rm = container_of(ci->mark,
 							  struct rl_mark, m);
+			struct mark *vm;
+			struct point **ptp = pane_point(rl->pane);
+			struct doc *d = (*ptp)->doc;
 			if (rm->line) {
 				free(rm->line);
 				rm->line = NULL;
+			}
+			/* If an adjacent mark is for the same location,
+			 * delete it - marks must remain distinct
+			 */
+			while ((vm = vmark_prev(&rm->m)) != NULL &&
+			       mark_same(d, &rm->m, vm)) {
+				struct rl_mark *rlm = container_of(vm, struct rl_mark, m);
+				free(rlm->line);
+				mark_free(vm);
+			}
+			while ((vm = vmark_next(&rm->m)) != NULL &&
+			       mark_same(d, &rm->m, vm)) {
+				struct rl_mark *rlm = container_of(vm, struct rl_mark, m);
+				free(rlm->line);
+				mark_free(vm);
 			}
 			pane_damaged(rl->pane, DAMAGED_CONTENT);
 		}
