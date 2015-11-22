@@ -94,7 +94,7 @@ int doc_find_view(struct doc *d, struct command *c)
 	return -1;
 }
 
-void doc_close_views(struct doc *d)
+static void doc_close_views(struct doc *d)
 {
 	struct cmd_info ci;
 	int i;
@@ -407,7 +407,7 @@ DEF_CMD(docs_bury)
 {
 	struct doc *d = (*ci->pointp)->doc;
 
-	doc_close_views(d);
+	doc_destroy(d);
 	return 1;
 }
 
@@ -483,6 +483,8 @@ int  doc_destroy(struct doc *d)
 	 * the documents list and destroy it.
 	 */
 	int i;
+
+	doc_close_views(d);
 
 	for (i = 0; i < d->nviews; i++)
 		if (d->views[i].notify)

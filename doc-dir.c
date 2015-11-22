@@ -473,7 +473,6 @@ DEF_CMD(dir_close)
 {
 	struct doc *d = (*ci->pointp)->doc;
 
-	doc_close_views(d);
 	doc_destroy(d);
 	return 1;
 }

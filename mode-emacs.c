@@ -443,7 +443,6 @@ DEF_CMD(emacs_kill_doc)
 	if (!ci->pointp)
 		return 0;
 	d = (*ci->pointp)->doc;
-	doc_close_views(d);
 	doc_destroy(d);
 	return 1;
 }
