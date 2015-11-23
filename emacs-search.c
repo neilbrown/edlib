@@ -249,8 +249,7 @@ DEF_CMD(emacs_search)
 	ptp = pane_point(ci->focus);
 	doc_add_view((*ptp)->doc, &esi->watch);
 
-	while (pane_child(ci->focus))
-		ci->focus = pane_child(ci->focus);
+	ci->focus = pane_final_child(ci->focus);
 	p = pane_register(ci->focus, 0, &search_handle, esi, NULL);
 	ci->focus = p;
 	return 1;

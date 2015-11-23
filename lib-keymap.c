@@ -130,8 +130,7 @@ DEF_CMD(keymap_attach)
 	kd->cmdcount = 0;
 	kd->global = ci->comm ? 1 : 0;
 	p = ci->focus;
-	while (pane_child(p))
-		p = pane_child(p);
+	p = pane_final_child(p);
 	p = pane_register(p, 0, &keymap_handle, kd, NULL);
 	pane_check_size(p);
 	ci->focus = p;

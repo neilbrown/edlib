@@ -337,6 +337,7 @@ static inline struct pane *pane_child(struct pane *p)
 			return c;
 	return NULL;
 }
+struct pane *pane_final_child(struct pane *p);
 
 /* Inlines */
 

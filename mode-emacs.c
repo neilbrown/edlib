@@ -460,8 +460,7 @@ DEF_CMD(emacs_search)
 		attr_set_str(&p->attrs, "done-key", "Search String", -1);
 		ptp = pane_point(p);
 		doc_set_name((*ptp)->doc, "Search");
-		while (pane_child(p))
-			p = pane_child(p);
+		p = pane_final_child(p);
 		pane_attach(p, "emacs-search", NULL, NULL);
 		return 1;
 	}

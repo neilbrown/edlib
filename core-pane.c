@@ -494,3 +494,12 @@ char *pane_attr_get(struct pane *p, char *key)
 	/* FIXME do I want editor-wide attributes too? */
 	return NULL;
 }
+
+struct pane *pane_final_child(struct pane *p)
+{
+	struct pane *c;
+
+	while ((c = pane_child(p)) != NULL)
+		p = c;
+	return p;
+}
