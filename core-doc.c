@@ -155,7 +155,8 @@ struct point *doc_new(struct editor *ed, char *type)
 	return pt;
 }
 
-struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
+struct pane *doc_open(struct editor *ed, struct pane *parent, int fd,
+		      char *name, char *render)
 {
 	struct stat stb;
 	struct doc *d;
@@ -164,7 +165,7 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 	char pathbuf[PATH_MAX], *rp;
 
 	fstat(fd, &stb);
-	list_for_each_entry(d, &pane2ed(parent)->documents, list)
+	list_for_each_entry(d, &ed->documents, list)
 		if (d->ops->same_file(d, fd, &stb)) {
 			point_new(d, &pt);
 			goto found;
@@ -172,9 +173,9 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 
 	rp = realpath(name, pathbuf);
 	if ((stb.st_mode & S_IFMT) == S_IFREG) {
-		pt = doc_new(pane2ed(parent), "text");
+		pt = doc_new(ed, "text");
 	} else if ((stb.st_mode & S_IFMT) == S_IFDIR) {
-		pt = doc_new(pane2ed(parent), "dir");
+		pt = doc_new(ed, "dir");
 	} else
 		return NULL;
 	if (!pt)
@@ -182,15 +183,19 @@ struct pane *doc_open(struct pane *parent, int fd, char *name, char *render)
 	doc_load_file(pt->doc, NULL, fd, rp);
 	point_reset(pt);
 found:
-	p = pane_attach(parent, "view", pt, NULL);
-	if (p) {
-		render_attach(render, p);
-	} else {
-		d = pt->doc;
-		point_free(pt);
-		doc_destroy(d);
+	if (parent) {
+		p = pane_attach(parent, "view", pt, NULL);
+		if (p) {
+			render_attach(render, p);
+		} else {
+			d = pt->doc;
+			point_free(pt);
+			doc_destroy(d);
+		}
+		return p;
 	}
-	return p;
+	/* GROSS HACK */
+	return (struct pane *)pt;
 }
 
 struct pane *doc_from_text(struct pane *parent, char *name, char *text)
