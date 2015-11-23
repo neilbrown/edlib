@@ -131,11 +131,14 @@ DEF_CMD(popup_attach)
 	char border[4];
 	struct cmd_info ci2={0};
 	int i, j;
+	int z = 1;
 
 	if (!style)
 		style = "D3";
 	if (strchr(style, 'D')) {
 		struct cmd_info ci2 = {0};
+		int x = 0, y = 0;
+		pane_to_root(ci->focus, &x, &y, &z, NULL, NULL);
 		ci2.key = "global-key-root";
 		ci2.focus = ci->focus;
 		if (!key_handle_focus(&ci2))
@@ -151,7 +154,7 @@ DEF_CMD(popup_attach)
 	}
 
 	ppi->target = ci->focus;
-	ppi->popup = pane_register(root, 1, &popup_handle, ppi, NULL);
+	ppi->popup = pane_register(root, z, &popup_handle, ppi, NULL);
 	ppi->style = style;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
