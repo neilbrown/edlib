@@ -155,7 +155,7 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 		int err = mbrtowc(&ch, line, l, &ps);
 
 		if (err < 0) {
-			ch = *line++;
+			ch = *line;
 			err = 1;
 		}
 		if (y == cy && x <= cx)
@@ -518,13 +518,13 @@ restart:
 			call_render_line(p, ptp, m);
 		}
 		m2 = container_of(vmark_next(&m->m), struct rl_mark, m);
-		if (m->line &&
+		if (p->cx <= 0 &&
 		    mark_ordered_or_same(d, &m->m, mark_of_point(*ptp)) &&
 		    (!m2 || mark_ordered_or_same(d, mark_of_point(*ptp), &m2->m))) {
 			int len = call_render_line_to_point(p, ptp,
 							    m);
 			rl->cursor_line = y;
-			render_line(p, m->line, &y, 1, &p->cx, &p->cy, &len);
+			render_line(p, m->line ?: "", &y, 1, &p->cx, &p->cy, &len);
 			if (p->cy < 0)
 				p->cx = -1;
 			if (!rl->do_wrap && p->cy >= 0 && p->cx < rl->prefix_len) {
