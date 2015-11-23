@@ -153,7 +153,7 @@ DEF_CMD(render_line_prev)
 	struct mark *m = ci->mark;
 	struct doc *d = (*ci->pointp)->doc;
 
-	if (RPT_NUM(ci) == 0)
+	if (RPT_NUM(ci) == 0 && doc_following(d, m) != WEOF)
 		/* always at start-of-line */
 		return 1;
 	if (mark_prev(d, m) == WEOF)
