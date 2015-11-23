@@ -182,11 +182,14 @@ struct pane *doc_open(struct editor *ed, struct pane *parent, int fd,
 		return NULL;
 	doc_load_file(pt->doc, NULL, fd, rp);
 	point_reset(pt);
+	d = NULL;
 found:
 	if (parent) {
 		p = pane_attach(parent, "view", pt, NULL);
 		if (p) {
 			render_attach(render, p);
+		} else if (d) {
+			point_free(pt);
 		} else {
 			d = pt->doc;
 			point_free(pt);
