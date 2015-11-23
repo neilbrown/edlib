@@ -203,7 +203,7 @@ void pane_check_size(struct pane *p)
 		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
 }
 
-void pane_reparent(struct pane *p, struct pane *newparent, struct list_head *here)
+void pane_reparent(struct pane *p, struct pane *newparent)
 {
 	/* detach p from its parent and attach beneath its sibling newparent */
 	ASSERT(p->parent == newparent->parent);
@@ -213,9 +213,7 @@ void pane_reparent(struct pane *p, struct pane *newparent, struct list_head *her
 	p->parent = newparent;
 	if (newparent->focus == NULL)
 		newparent->focus = p;
-	if (!here)
-		here = &newparent->children;
-	list_add(&p->siblings, here);
+	list_add(&p->siblings, &newparent->children);
 }
 
 void pane_subsume(struct pane *p, struct pane *parent)

@@ -127,7 +127,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after)
 		p2 = pane_register(p->parent, 0, &tile_handle, ti2, &p->siblings);
 		ti2->p = p2;
 		pane_resize(p2, p->x, p->y, p->w, p->h);
-		pane_reparent(p, p2, NULL);
+		pane_reparent(p, p2);
 		p2->attrs = p->attrs; p->attrs = NULL;
 		pane_resize(p, 0, 0, 0, 0);
 		ti->direction = horiz ? Horiz : Vert;
