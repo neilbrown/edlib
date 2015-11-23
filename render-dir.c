@@ -27,7 +27,7 @@ struct dir_data {
 };
 
 static struct map *dr_map;
-static void do_render_dir_attach(struct pane *parent, struct point **ptp);
+static struct pane *do_render_dir_attach(struct pane *parent, struct point **ptp);
 
 static int put_str(struct pane *p, char *buf, char *attrs, int x, int y)
 {
@@ -467,7 +467,7 @@ static void render_dir_register_map(void)
 	key_add(dr_map, "Chr-g", &render_dir_reload);
 }
 
-static void do_render_dir_attach(struct pane *parent, struct point **ptp)
+static struct pane *do_render_dir_attach(struct pane *parent, struct point **ptp)
 {
 	struct dir_data *dd = malloc(sizeof(*dd));
 	struct pane *p;
@@ -475,7 +475,7 @@ static void do_render_dir_attach(struct pane *parent, struct point **ptp)
 	if (!ptp)
 		ptp = pane_point(parent);
 	if (!ptp)
-		return;
+		return NULL;
 	dd->top = NULL;
 	dd->bot = NULL;
 	dd->ignore_point = 0;
@@ -488,11 +488,12 @@ static void do_render_dir_attach(struct pane *parent, struct point **ptp)
 
 	if (!dr_map)
 		render_dir_register_map();
+	return p;
 }
 
 DEF_CMD(render_dir_attach)
 {
-	do_render_dir_attach(ci->focus, ci->pointp);
+	ci->focus = do_render_dir_attach(ci->focus, ci->pointp);
 	return 1;
 }
 

@@ -365,7 +365,7 @@ struct pane *pane_with_cursor(struct pane *p, int *oxp, int *oyp)
 	return ret;
 }
 
-int render_attach(char *name, struct pane *parent)
+struct pane *render_attach(char *name, struct pane *parent)
 {
 	char buf[100];
 	struct cmd_info ci = {0};
@@ -376,7 +376,7 @@ int render_attach(char *name, struct pane *parent)
 	parent = pane_final_child(parent);
 	ptp = pane_point(parent);
 	if (!ptp)
-		return 0;
+		return NULL;
 	if (!name)
 		name = (*ptp)->doc->default_render;
 
@@ -386,11 +386,14 @@ int render_attach(char *name, struct pane *parent)
 	ci.pointp = ptp;
 	ret = key_lookup(pane2ed(parent)->commands, &ci);
 	if (ret)
-		return ret;
+		return ci.focus;
 	sprintf(buf, "render-%s", name);
 	editor_load_module(pane2ed(parent), buf);
 	sprintf(buf, "render-%s-attach", name);
-	return key_lookup(pane2ed(parent)->commands, &ci);
+	ret = key_lookup(pane2ed(parent)->commands, &ci);
+	if (ret)
+		return ci.focus;
+	return NULL;
 }
 
 

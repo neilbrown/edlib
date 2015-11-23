@@ -26,7 +26,7 @@ struct he_data {
 };
 
 static struct map *he_map;
-static void do_render_hex_attach(struct pane *parent, struct point **ptp);
+static struct pane *do_render_hex_attach(struct pane *parent, struct point **ptp);
 
 DEF_CMD(render_hex_handle)
 {
@@ -221,7 +221,7 @@ static void render_hex_register_map(void)
 	key_add(he_map, "render-line", &render_line);
 }
 
-static void do_render_hex_attach(struct pane *parent, struct point **ptp)
+static struct pane *do_render_hex_attach(struct pane *parent, struct point **ptp)
 {
 	struct he_data *he = malloc(sizeof(*he));
 	struct pane *p;
@@ -229,7 +229,7 @@ static void do_render_hex_attach(struct pane *parent, struct point **ptp)
 	if (!ptp)
 		ptp = pane_point(parent);
 	if (!ptp)
-		return;
+		return NULL;
 
 	he->type = render_hex_notify;
 	he->typenum = doc_add_view((*ptp)->doc, &he->type);
@@ -241,11 +241,12 @@ static void do_render_hex_attach(struct pane *parent, struct point **ptp)
 
 	if (!he_map)
 		render_hex_register_map();
+	return p;
 }
 
 DEF_CMD(render_hex_attach)
 {
-	do_render_hex_attach(ci->focus, ci->pointp);
+	ci->focus = do_render_hex_attach(ci->focus, ci->pointp);
 	return 1;
 }
 

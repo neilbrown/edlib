@@ -115,7 +115,7 @@ struct doc *doc_find(struct editor *ed, char *name);
 void doc_promote(struct doc *d);
 int  doc_destroy(struct doc *d);
 
-int render_attach(char *name, struct pane *parent);
+struct pane *render_attach(char *name, struct pane *parent);
 
 /* Points and Marks */
 

@@ -32,7 +32,7 @@ struct rt_data {
 };
 
 static struct map *rt_map;
-static void do_render_text_attach(struct pane *p, struct point **pt);
+static struct pane *do_render_text_attach(struct pane *p, struct point **pt);
 
 static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y, int draw)
 {
@@ -481,7 +481,7 @@ static void render_text_register_map(void)
 	key_add(rt_map, "Replace", &render_text_follow_point);
 }
 
-static void do_render_text_attach(struct pane *parent, struct point **ptp)
+static struct pane *do_render_text_attach(struct pane *parent, struct point **ptp)
 {
 	struct rt_data *rt = malloc(sizeof(*rt));
 	struct pane *p;
@@ -489,7 +489,7 @@ static void do_render_text_attach(struct pane *parent, struct point **ptp)
 	if (!ptp)
 		ptp = pane_point(parent);
 	if (!ptp)
-		return;
+		return NULL;
 	rt->top = NULL;
 	rt->bot = NULL;
 	rt->ignore_point = 0;
@@ -501,11 +501,12 @@ static void do_render_text_attach(struct pane *parent, struct point **ptp)
 
 	if (!rt_map)
 		render_text_register_map();
+	return p;
 }
 
 DEF_CMD(render_text_attach)
 {
-	do_render_text_attach(ci->focus, ci->pointp);
+	ci->focus = do_render_text_attach(ci->focus, ci->pointp);
 	return 1;
 }
 

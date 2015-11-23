@@ -177,7 +177,7 @@ DEF_CMD(format_clone)
 	render_format_attach_func(ci);
 	c = pane_child(ci->home);
 	if (c)
-		return pane_clone(c, pane_child(ci->focus));
+		return pane_clone(c, ci->focus);
 	return 1;
 }
 
@@ -281,6 +281,7 @@ REDEF_CMD(render_format_attach)
 
 	if (!rf_map)
 		render_format_register_map();
+	ci->focus = p;
 	return 1;
 }
 

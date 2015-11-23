@@ -959,6 +959,7 @@ REDEF_CMD(render_lines_attach)
 
 	if (!rl_map)
 		render_lines_register_map();
+	ci->focus = rl->pane;
 	return 1;
 }
 
