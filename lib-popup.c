@@ -178,7 +178,7 @@ DEF_CMD(popup_attach)
 	ci2.str2 = "Abort";
 	key_handle_focus(&ci2);
 
-	ci->focus = p;
+	ci->focus = ppi->popup;
 	return 1;
 }
 

@@ -281,7 +281,9 @@ DEF_CMD(emacs_findfile)
 		if (!p)
 			return 0;
 
-		ptp = pane_point(p);
+		ptp = pane_point(pane_final_child(p));
+		/* Want to work with the document pane */
+		p = container_of(ptp, struct pane, point);
 		d = (*ptp)->doc;
 		if (strncmp(ci->key, "emCX4-", 6) == 0) {
 			attr_set_str(&p->attrs, "prefix",
@@ -343,7 +345,9 @@ DEF_CMD(emacs_finddoc)
 		p = pane_attach(ci->focus, "popup", NULL, "D2");
 		if (!p)
 			return 0;
-		ptp = pane_point(p);
+		ptp = pane_point(pane_final_child(p));
+		/* Want to work with the document pane */
+		p = container_of(ptp, struct pane, point);
 		d = (*ptp)->doc;
 		if (strncmp(ci->key, "emCX4-", 6) == 0) {
 			attr_set_str(&p->attrs, "prefix",
@@ -456,9 +460,11 @@ DEF_CMD(emacs_search)
 		struct point **ptp;
 		if (!p)
 			return 0;
+		ptp = pane_point(pane_final_child(p));
+		/* Want to work with the document pane */
+		p = container_of(ptp, struct pane, point);
 		attr_set_str(&p->attrs, "prefix", "Search: ", -1);
 		attr_set_str(&p->attrs, "done-key", "Search String", -1);
-		ptp = pane_point(p);
 		doc_set_name((*ptp)->doc, "Search");
 		p = pane_final_child(p);
 		pane_attach(p, "emacs-search", NULL, NULL);

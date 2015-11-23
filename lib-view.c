@@ -156,7 +156,7 @@ DEF_CMD(view_handle)
 		p2 = do_view_attach(parent, pt, vd->border);
 		c = pane_child(pane_child(p));
 		if (c)
-			return pane_clone(c, p2);
+			return pane_clone(c, pane_final_child(p2));
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") == 0)
@@ -257,7 +257,8 @@ static struct pane *do_view_attach(struct pane *par, struct point *pt, int borde
 	vd->pane = p;
 	pane_check_size(p);
 
-	return view_reattach(p, pt);
+	view_reattach(p, pt);
+	return p;
 }
 
 DEF_CMD(view_attach)
