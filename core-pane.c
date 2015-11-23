@@ -369,9 +369,12 @@ int render_attach(char *name, struct pane *parent)
 {
 	char buf[100];
 	struct cmd_info ci = {0};
-	struct point **ptp = pane_point(parent);
+	struct point **ptp;
 	int ret;
 
+	/* always attach a renderer as a leaf */
+	parent = pane_final_child(parent);
+	ptp = pane_point(parent);
 	if (!ptp)
 		return 0;
 	if (!name)
