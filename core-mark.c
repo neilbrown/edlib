@@ -650,6 +650,7 @@ static void point_backward_to_mark(struct point *p, struct mark *m)
 	hlist_del(&p->m.all);
 	hlist_add_after(&m->all, &p->m.all);
 	p->m.ref = m->ref;
+	p->m.rpos = m->rpos;
 	assign_seq(&p->m, m->seq);
 }
 
@@ -660,6 +661,26 @@ void point_to_mark(struct point *p, struct mark *m)
 	else if (p->m.seq > m->seq)
 		point_backward_to_mark(p, m);
 	p->m.rpos = m->rpos;
+}
+
+void mark_to_mark(struct doc *d, struct mark *m, struct mark *target)
+{
+
+	if (m->viewnum == MARK_POINT) {
+		point_to_mark(container_of(m, struct point, m),
+			      target);
+		return;
+	}
+	while (mark_ordered(m, target)) {
+		struct mark *n = doc_next_mark_all(d, m);
+		mark_forward_over(m, n);
+	}
+	while (mark_ordered(target, m)) {
+		struct mark *n = doc_prev_mark_all(d, m);
+		mark_backward_over(m, n);
+	}
+	m->ref = target->ref;
+	m->rpos = target->rpos;
 }
 
 /* A 'vmark' is a mark in a particular view.  We can walk around those

@@ -1458,12 +1458,7 @@ DEF_CMD(render_line_prev)
 		/* need to use the boundary */
 		if (!boundary)
 			return 1;
-		while (mark_ordered(m, boundary)) {
-			struct mark *n = doc_next_mark_all(d, m);
-			m->ref = n->ref;
-			m->rpos = n->rpos;
-			mark_forward_over(m, n);
-		}
+		mark_to_mark(d, m, boundary);
 		mark_free(boundary);
 		return 1;
 	}

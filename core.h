@@ -168,6 +168,7 @@ void point_notify_change(struct point *p, struct mark *m);
 void doc_notify_change(struct doc *d, struct mark *m);
 void doc_check_consistent(struct doc *d);
 void point_to_mark(struct point *p, struct mark *m);
+void mark_to_mark(struct doc *d, struct mark *m, struct mark *target);
 /*??*/struct doc_ref point_ref(struct point *p);
 struct point *point_new(struct doc *d, struct point **owner);
 struct point *point_dup(struct point *p, struct point **owner);
