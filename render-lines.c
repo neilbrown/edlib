@@ -102,8 +102,6 @@ struct rl_mark {
 	char		*line;
 };
 
-static struct map *rl_map;
-
 /* render a line, with attributes and wrapping.  Report line offset where
  * cursor point cx,cy is passed. -1 if never seen.
  */
@@ -497,6 +495,8 @@ static void render(struct point **ptp, struct pane *p)
 	d = (*ptp)->doc;
 
 	hdr = pane_attr_get(p, "heading");
+	if (hdr && !*hdr)
+		hdr = NULL;
 
 restart:
 	pane_clear(p, NULL);
@@ -907,6 +907,8 @@ DEF_CMD(render_lines_clone)
 		return pane_clone(c, parent->focus);
 	return 1;
 }
+
+static struct map *rl_map;
 
 DEF_CMD(render_lines_handle)
 {
