@@ -451,6 +451,12 @@ static char *dir_get_attr(struct doc *d, struct mark *m,
 		}
 		*c = 0;
 		return de->nbuf;
+	} else if (strcmp(attr, "suffix") == 0) {
+		get_stat(dr, de);
+		if ((de->st.st_mode & S_IFMT) == S_IFDIR)
+			return "/";
+		else
+			return "";
 	} else
 		return attr_get_str(de->attrs, attr, -1);
 }

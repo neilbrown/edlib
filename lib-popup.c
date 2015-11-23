@@ -176,7 +176,7 @@ DEF_CMD(popup_attach)
 		ppi->doc = pt->doc;
 	}
 	p = pane_attach(ppi->popup, "view", pt, NULL);
-	render_attach("lines", p);
+	render_attach(NULL, p);
 	pane_focus(p);
 	ci2.key = "local-set-key";
 	ci2.focus = p;

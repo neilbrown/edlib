@@ -296,12 +296,17 @@ DEF_CMD(emacs_findfile)
 		}
 		doc_set_name(d, "Find File");
 		if (path) {
-			struct cmd_info ci2 = {0};
 			ci2.key = "Replace";
 			ci2.focus = p;
 			ci2.str = path;
 			key_handle_focus(&ci2);
 		}
+		memset(&ci2, 0, sizeof(ci2));
+		ci2.key = "local-set-key";
+		ci2.focus = p;
+		ci2.str = "emacs:file-complete";
+		ci2.str2 = "Tab";
+		key_handle_focus(&ci2);
 		return 1;
 	}
 
@@ -329,6 +334,76 @@ DEF_CMD(emacs_findfile)
 	} else
 		p = doc_from_text(par, ci->str, "File not found\n");
 	pane_focus(p);
+	return 1;
+}
+
+DEF_CMD(emacs_file_complete)
+{
+	/* Extract a directory name and a basename from the document.
+	 * Find a document for the directory and attach as a completing
+	 * popup menu
+	 */
+	struct doc *doc = (*ci->pointp)->doc;
+	char *str = doc_getstr(doc, NULL, NULL);
+	char *d, *b, *c;
+	int fd;
+	struct pane *par, *pop;
+	struct cmd_info ci2 = {0};
+	struct point *pt, **ptp;
+
+	d = str;
+	while ((c = strstr(d, "//")) != NULL)
+		d = c+1;
+	b = strrchr(d, '/');
+	if (b) {
+		b += 1;
+		d = strndup(d, b-d);
+	} else {
+		b = d;
+		d = strdup(".");
+	}
+	fd = open(d, O_DIRECTORY|O_RDONLY);
+	if (fd < 0) {
+		free(d);
+		free(str);
+		return -1;
+	}
+	pt = (struct point *)doc_open(doc->ed, NULL, fd, d, NULL);
+	close(fd);
+	pop = pane_attach(ci->focus, "popup", pt, "DM1");
+	ptp = pane_point(pane_final_child(pop));
+	/* Want to work with the document pane */
+	par = container_of(ptp, struct pane, point);
+
+	attr_set_str(&par->attrs, "line-format", "%+name%suffix", -1);
+	attr_set_str(&par->attrs, "heading", "", -1);
+	attr_set_str(&par->attrs, "done-key", "Replace", -1);
+	render_attach("complete", par);
+	ci2.key = "Complete:prefix";
+	ci2.str = b;
+	ci2.focus = par;
+	key_handle_focus(&ci2);
+	free(d);
+	if (ci2.str && (strlen(ci2.str) <= strlen(b) && ci2.extra > 1)) {
+		/* We need the dropdown */
+		pane_damaged(par, DAMAGED_CONTENT);
+		free(str);
+		return 1;
+	}
+	if (ci2.str) {
+		/* add the extra chars from ci2.str */
+		char *c = ci2.str + strlen(b);
+		struct cmd_info ci3 = {0};
+		ci3.key = "Replace";
+		ci3.pointp = ci->pointp;
+		ci3.mark = mark_of_point(*ci->pointp);
+		ci3.numeric = 1;
+		ci3.focus = ci->focus;
+		ci3.str = c;
+		key_handle_focus(&ci3);
+	}
+	/* Now need to close the popup */
+	pane_close(pop);
 	return 1;
 }
 
@@ -552,5 +627,6 @@ void edlib_init(struct editor *ed)
 	if (emacs_map == NULL)
 		emacs_init();
 	key_add(ed->commands, "mode-emacs", &mode_emacs);
+	key_add(ed->commands, "emacs:file-complete", &emacs_file_complete);
 	emacs_search_init(ed);
 }
