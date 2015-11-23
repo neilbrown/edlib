@@ -908,6 +908,23 @@ DEF_CMD(render_lines_clone)
 	return 1;
 }
 
+DEF_CMD(render_lines_redraw)
+{
+	struct pane *p = ci->home;
+	struct rl_data *rl = p->data;
+	struct doc *d = (*ci->pointp)->doc;
+	struct mark *m;
+
+	for (m = vmark_first(d, rl->typenum);
+	     m;
+	     m = vmark_next(m)) {
+		struct rl_mark *rm = container_of(m, struct rl_mark, m);
+		free(rm->line);
+		rm->line = NULL;
+	}
+	return 1;
+}
+
 static struct map *rl_map;
 
 DEF_CMD(render_lines_handle)
@@ -933,6 +950,9 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Close", &render_lines_close);
 	key_add(rl_map, "Clone", &render_lines_clone);
 	key_add(rl_map, "Refresh", &render_lines_refresh);
+
+	/* force full refresh */
+	key_add(rl_map, "render-lines:redraw", &render_lines_redraw);
 }
 
 REDEF_CMD(render_lines_attach)
