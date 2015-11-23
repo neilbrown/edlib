@@ -434,6 +434,11 @@ DEF_CMD(emacs_finddoc)
 			attr_set_str(&p->attrs, "done-key", "Doc Found", -1);
 		}
 		doc_set_name(d, "Find Document");
+		ci2.key = "local-set-key";
+		ci2.focus = p;
+		ci2.str = "emacs:doc-complete";
+		ci2.str2 = "Tab";
+		key_handle_focus(&ci2);
 		return 1;
 	}
 
@@ -467,6 +472,54 @@ DEF_CMD(emacs_finddoc)
 	return 1;
 }
 
+DEF_CMD(emacs_doc_complete)
+{
+	/* Extract a document from the document.
+	 * Attach the 'docs' document as a completing popup menu
+	 */
+	struct doc *doc = (*ci->pointp)->doc;
+	char *str = doc_getstr(doc, NULL, NULL);
+	struct pane *par, *pop;
+	struct cmd_info ci2 = {0};
+	struct point *pt, **ptp;
+
+	pt = point_new(doc->ed->docs, &pt);
+	pop = pane_attach(ci->focus, "popup", pt, "DM1");
+	ptp = pane_point(pane_final_child(pop));
+	/* Want to work with the document pane */
+	par = container_of(ptp, struct pane, point);
+
+	attr_set_str(&par->attrs, "line-format", "%+name", -1);
+	attr_set_str(&par->attrs, "heading", "", -1);
+	attr_set_str(&par->attrs, "done-key", "Replace", -1);
+	render_attach("complete", par);
+	ci2.key = "Complete:prefix";
+	ci2.str = str;
+	ci2.focus = par;
+	key_handle_focus(&ci2);
+	if (ci2.str && (strlen(ci2.str) <= strlen(str) && ci2.extra > 1)) {
+		/* We need the dropdown */
+		pane_damaged(par, DAMAGED_CONTENT);
+		free(str);
+		return 1;
+	}
+	if (ci2.str) {
+		/* add the extra chars from ci2.str */
+		char *c = ci2.str + strlen(str);
+		struct cmd_info ci3 = {0};
+		ci3.key = "Replace";
+		ci3.pointp = ci->pointp;
+		ci3.mark = mark_of_point(*ci->pointp);
+		ci3.numeric = 1;
+		ci3.focus = ci->focus;
+		ci3.str = c;
+		key_handle_focus(&ci3);
+	}
+	/* Now need to close the popup */
+	pane_close(pop);
+	return 1;
+}
+
 DEF_CMD(emacs_viewdocs)
 {
 	struct pane *p, *par;
@@ -481,7 +534,7 @@ DEF_CMD(emacs_viewdocs)
 	par = p->parent;
 	/* par is the tile */
 
-	d = doc_find(pane2ed(p), "*Documents*");
+	d = pane2ed(p)->docs;
 	if (!d)
 		return 1;
 	pane_close(p);
@@ -628,5 +681,6 @@ void edlib_init(struct editor *ed)
 		emacs_init();
 	key_add(ed->commands, "mode-emacs", &mode_emacs);
 	key_add(ed->commands, "emacs:file-complete", &emacs_file_complete);
+	key_add(ed->commands, "emacs:doc-complete", &emacs_doc_complete);
 	emacs_search_init(ed);
 }
