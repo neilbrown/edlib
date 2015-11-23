@@ -66,7 +66,6 @@ DEF_CMD(popup_handle)
 		if (ppi->doc)
 			doc_destroy(ppi->doc);
 		free(ppi);
-		/* FIXME : drop reference on ppi->doc ?? */
 		return 1;
 	}
 
@@ -88,10 +87,13 @@ DEF_CMD(popup_handle)
 		if (!ci2.key)
 			ci2.key = "PopupDone";
 		ci2.numeric = 1;
-		ci2.str = doc_getstr(ppi->doc, NULL, NULL);
+		ci2.str = ci->str;
+		if (ppi->doc)
+			ci2.str = doc_getstr(ppi->doc, NULL, NULL);
 		ci2.mark = NULL;
 		key_handle_focus(&ci2);
-		free(ci2.str);
+		if (ppi->doc)
+			free(ci2.str);
 		pane_close(ppi->popup);
 		return 1;
 	}
@@ -156,6 +158,7 @@ DEF_CMD(popup_attach)
 	ppi->target = ci->focus;
 	ppi->popup = pane_register(root, z, &popup_handle, ppi, NULL);
 	ppi->style = style;
+	ppi->doc = NULL;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
 		if (strchr(style, "TLBR"[i]) == NULL)
@@ -165,9 +168,13 @@ DEF_CMD(popup_attach)
 	attr_set_str(&ppi->popup->attrs, "borders", border, -1);
 	attr_set_str(&ppi->popup->attrs, "render-wrap", "no", -1);
 
-	pt = doc_new(pane2ed(root), "text");
-	doc_set_name(pt->doc, "*popup*");
-	ppi->doc = pt->doc;
+	if (ci->pointp) {
+		pt = *ci->pointp;
+	} else {
+		pt = doc_new(pane2ed(root), "text");
+		doc_set_name(pt->doc, "*popup*");
+		ppi->doc = pt->doc;
+	}
 	p = pane_attach(ppi->popup, "view", pt, NULL);
 	render_attach("lines", p);
 	pane_focus(p);
