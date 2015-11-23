@@ -79,10 +79,8 @@ DEF_CMD(popup_handle)
 		pane_close(ppi->popup);
 		return 1;
 	}
-	if (strcmp(ci->key, "popup:Replace") == 0) {
+	if (strcmp(ci->key, "popup:Return") == 0) {
 		struct cmd_info ci2 = {0};
-		if (ci->str == NULL || ci->str[0] != '\n')
-			return 0;
 
 		pane_focus(ppi->target);
 		ci2.focus = ppi->target;
@@ -108,8 +106,8 @@ DEF_CMD(popup_quote)
 {
 	struct cmd_info ci2 = *ci;
 
-	if (strcmp(ci->key, "Replace") == 0)
-		ci2.key = "popup:Replace";
+	if (strcmp(ci->key, "Return") == 0)
+		ci2.key = "popup:Return";
 	else
 		ci2.key = "popup:Abort";
 	return key_handle_focus(&ci2);
@@ -173,7 +171,7 @@ DEF_CMD(popup_attach)
 	ci2.key = "local-set-key";
 	ci2.focus = p;
 	ci2.str = "popup:quote";
-	ci2.str2 = "Replace";
+	ci2.str2 = "Return";
 	key_handle_focus(&ci2);
 	ci2.str2 = "Abort";
 	key_handle_focus(&ci2);
