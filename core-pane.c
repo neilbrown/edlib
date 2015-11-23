@@ -272,7 +272,7 @@ int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)
 	int xh = x + (w ? *w : 1);
 	int yh = y + (h ? *h : 1);
 
-	if (x > p->x+p->w || y > p->y+p->h)
+	if (x >= p->x+p->w || y >= p->y+p->h)
 		/* x,y is beyond this pane, no overlap possible */
 		return 0;
 	if (xh <= p->x || yh <= p->y)
@@ -285,9 +285,9 @@ int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)
 			/* pane masks x,y itself */
 			return 1;
 		/* pane must just mask some of the region beyond x,y */
-		if (w)
+		if (w && *w > p->x - x)
 			*w = p->x - x;
-		if (h)
+		if (h && *h > p->y - y)
 			*h = p->y - y;
 
 		return 0;
