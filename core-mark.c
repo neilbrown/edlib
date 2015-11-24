@@ -799,7 +799,7 @@ void point_notify_change(struct point *p, struct mark *m)
 			ci.mark = NULL;
 		c->func(&ci);
 		while (TLIST_TYPE(tl) == GRP_MARK &&
-		       (mark_ordered(m, ci.mark) || mark_same(d, m, ci.mark))) {
+		       (mark_ordered_or_same(d, m, ci.mark))) {
 			do
 				tl = TLIST_PTR(tl->prev);
 			while (TLIST_TYPE(tl) == GRP_LIST);
