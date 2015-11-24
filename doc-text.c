@@ -1568,7 +1568,7 @@ DEF_CMD(render_line_prev)
 	if (boundary)
 		mark_free(boundary);
 	if (ch == WEOF && rpt)
-		return -1;
+		return -2;
 	if (ch == '\n')
 		/* Found a '\n', so step back over it for start-of-line. */
 		mark_next(d, m);
