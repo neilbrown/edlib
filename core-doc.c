@@ -199,11 +199,8 @@ found:
 			render_attach(render, p);
 		} else if (d) {
 			point_free(pt);
-		} else {
-			d = pt->doc;
-			point_free(pt);
-			doc_destroy(d);
-		}
+		} else
+			doc_destroy(pt->doc);
 		return p;
 	}
 	/* GROSS HACK */
@@ -221,9 +218,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 		return NULL;
 	p = pane_attach(parent, "view", pt, NULL);
 	if (!p) {
-		struct doc *d = pt->doc;
-		point_free(pt);
-		doc_destroy(d);
+		doc_destroy(pt->doc);
 		return p;
 	}
 	ptp = pane_point(p);
@@ -523,7 +518,13 @@ int  doc_destroy(struct doc *d)
 	free(d->name);
 	while (d->marks.first) {
 		struct mark *m = hlist_first_entry(&d->marks, struct mark, all);
-		mark_free(m);
+		if (m->viewnum == MARK_POINT)
+			point_free(container_of(m, struct point, m));
+		else if (m->viewnum == MARK_UNGROUPED)
+			mark_free(m);
+		else
+			/* vmarks should have gone already */
+			ASSERT(0);
 	}
 	d->ops->destroy(d);
 	return 1;
