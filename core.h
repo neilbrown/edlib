@@ -214,6 +214,10 @@ void attr_free(struct attrset **setp);
 struct command {
 	int	(*func)(struct cmd_info *ci);
 };
+struct lookup_cmd {
+	struct command	c;
+	struct map	**m;
+};
 
 #define CMD(_name) {_name ## _func }
 #define DEF_CMD(_name) \
@@ -222,6 +226,11 @@ struct command {
 	static int _name ## _func(struct cmd_info *ci)
 #define REDEF_CMD(_name) \
 	static int _name ## _func(struct cmd_info *ci)
+
+#define DEF_LOOKUP_CMD(_name, _map) \
+	static struct lookup_cmd _name = { { key_lookup_cmd_func }, &_map };
+
+int key_lookup_cmd_func(struct cmd_info *ci);
 
 #define	ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 

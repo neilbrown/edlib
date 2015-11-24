@@ -214,10 +214,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "Close", &search_close);
 }
 
-DEF_CMD(search_handle)
-{
-	return key_lookup(es_map, ci);
-}
+DEF_LOOKUP_CMD(search_handle, es_map);
 
 DEF_CMD(emacs_search)
 {
@@ -250,7 +247,7 @@ DEF_CMD(emacs_search)
 	doc_add_view((*ptp)->doc, &esi->watch);
 
 	ci->focus = pane_final_child(ci->focus);
-	p = pane_register(ci->focus, 0, &search_handle, esi, NULL);
+	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);
 	ci->focus = p;
 	return 1;
 }

@@ -257,10 +257,7 @@ static void render_format_register_map(void)
 	key_add(rf_map, "Move-WORD", &format_move_horiz);
 }
 
-DEF_CMD(render_format_handle)
-{
-	return key_lookup(rf_map, ci);
-}
+DEF_LOOKUP_CMD(render_format_handle, rf_map);
 
 REDEF_CMD(render_format_attach)
 {
@@ -275,7 +272,7 @@ REDEF_CMD(render_format_attach)
 		return -1;
 
 	rf->home_field = -1;
-	p = pane_register(parent, 0, &render_format_handle, rf, NULL);
+	p = pane_register(parent, 0, &render_format_handle.c, rf, NULL);
 	attr_set_str(&p->attrs, "render-wrap", "no", -1);
 	render_attach("lines", p);
 

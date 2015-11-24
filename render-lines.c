@@ -938,10 +938,7 @@ DEF_CMD(render_lines_redraw)
 
 static struct map *rl_map;
 
-DEF_CMD(render_lines_handle)
-{
-	return key_lookup(rl_map, ci);
-}
+DEF_LOOKUP_CMD(render_lines_handle, rl_map)
 
 static void render_lines_register_map(void)
 {
@@ -988,7 +985,7 @@ REDEF_CMD(render_lines_attach)
 	rl->typenum = doc_add_view((*ptp)->doc, &rl->type);
 	(*ptp)->doc->views[rl->typenum].space =
 		sizeof(struct rl_mark) - sizeof(struct mark);
-	rl->pane = pane_register(ci->focus, 0, &render_lines_handle, rl, NULL);
+	rl->pane = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
 
 	if (!rl_map)
 		render_lines_register_map();

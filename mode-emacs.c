@@ -669,17 +669,14 @@ static void emacs_init(void)
 	emacs_map = m;
 }
 
-DEF_CMD(mode_emacs)
-{
-	return key_lookup(emacs_map, ci);
-}
+DEF_LOOKUP_CMD(mode_emacs, emacs_map);
 
 void emacs_search_init(struct editor *ed);
 void edlib_init(struct editor *ed)
 {
 	if (emacs_map == NULL)
 		emacs_init();
-	key_add(ed->commands, "mode-emacs", &mode_emacs);
+	key_add(ed->commands, "mode-emacs", &mode_emacs.c);
 	key_add(ed->commands, "emacs:file-complete", &emacs_file_complete);
 	key_add(ed->commands, "emacs:doc-complete", &emacs_doc_complete);
 	emacs_search_init(ed);

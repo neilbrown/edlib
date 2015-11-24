@@ -280,10 +280,7 @@ DEF_CMD(complete_return)
 
 static struct map *rc_map;
 
-DEF_CMD(complete_handle)
-{
-	return key_lookup(rc_map, ci);
-}
+DEF_LOOKUP_CMD(complete_handle, rc_map)
 
 static void register_map(void)
 {
@@ -328,7 +325,7 @@ REDEF_CMD(complete_attach)
 
 
 	cd = calloc(1, sizeof(*cd));
-	complete = pane_register(parent, 0, &complete_handle, cd, NULL);
+	complete = pane_register(parent, 0, &complete_handle.c, cd, NULL);
 	if (!complete) {
 		free(cd);
 		return -1;

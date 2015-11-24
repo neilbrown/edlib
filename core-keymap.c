@@ -288,6 +288,12 @@ int key_lookup(struct map *m, struct cmd_info *ci)
 	return comm->func(ci);
 }
 
+int key_lookup_cmd_func(struct cmd_info *ci)
+{
+	struct lookup_cmd *l = container_of(ci->comm, struct lookup_cmd, c);
+	return key_lookup(*l->m, ci);
+}
+
 int key_handle(struct cmd_info *ci)
 {
 	struct pane *p = ci->focus;
