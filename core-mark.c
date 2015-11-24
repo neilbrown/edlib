@@ -243,78 +243,65 @@ struct mark *mark_dup(struct mark *m, int notype)
 	return ret;
 }
 
-struct point *point_new(struct doc *d, struct point **owner)
-{
-	int i;
-	struct point *ret = malloc(sizeof(*ret) +
-				   d->nviews * sizeof(ret->lists[0]));
-
-	d->ops->set_ref(d, &ret->m, 1);
-	ret->m.rpos = 0;
-	ret->m.attrs = NULL;
-	hlist_add_head(&ret->m.all, &d->marks);
-	assign_seq(&ret->m, 0);
-	ret->m.viewnum = MARK_POINT;
-	ret->size = d->nviews;
-	tlist_add(&ret->m.view, GRP_MARK, &d->points);
-	for (i = 0; i < ret->size; i++)
-		if (d->views[i].notify)
-			tlist_add(&ret->lists[i], GRP_LIST, &d->views[i].head);
-		else
-			INIT_TLIST_HEAD(&ret->lists[i], GRP_LIST);
-	ret->owner = owner;
-	ret->doc = d;
-	if (owner)
-		*owner = ret;
-	return ret;
-}
-
-void point_reset(struct point *p)
-{
-	int i;
-	struct doc *d = p->doc;
-	/* move point to start of text */
-	d->ops->set_ref(d, &p->m, 1);
-	p->m.rpos = 0;
-	hlist_del(&p->m.all);
-	hlist_add_head(&p->m.all, &d->marks);
-	tlist_del(&p->m.view);
-	tlist_add(&p->m.view, GRP_MARK, &d->points);
-	for (i = 0; i < p->size; i++)
-		if (d->views[i].notify) {
-			tlist_del(&p->lists[i]);
-			tlist_add(&p->lists[i], GRP_LIST, &d->views[i].head);
-		}
-	assign_seq(&p->m, 0);
-}
-
-void mark_reset(struct doc *d, struct mark *m)
+void __mark_reset(struct doc *d, struct mark *m, int new)
 {
 	struct point *p;
 	int i;
 
 	d->ops->set_ref(d, m, 1);
 	m->rpos = 0;
-	hlist_del(&m->all);
+	if (!new)
+		hlist_del(&m->all);
 	hlist_add_head(&m->all, &d->marks);
 	assign_seq(m, 0);
 
 	if (m->viewnum == MARK_UNGROUPED)
 		return;
 	if (m->viewnum != MARK_POINT) {
-		tlist_del(&m->view);
+		if (!new)
+			tlist_del(&m->view);
 		tlist_add(&m->view, GRP_MARK, &d->views[m->viewnum].head);
 		return;
 	}
 	/* MARK_POINT */
-	tlist_del(&m->view);
+	if (!new)
+		tlist_del(&m->view);
 	tlist_add(&m->view, GRP_MARK, &d->points);
 	p = container_of(m, struct point, m);
 	for (i = 0; i < p->size; i++)
 		if (d->views[i].notify) {
-			tlist_del(&p->lists[i]);
+			if (!new)
+				tlist_del(&p->lists[i]);
 			tlist_add(&p->lists[i], GRP_LIST, &d->views[i].head);
-		}
+		} else if (new)
+			INIT_TLIST_HEAD(&p->lists[i], GRP_LIST);
+}
+
+struct point *point_new(struct doc *d, struct point **owner)
+{
+	struct point *ret = malloc(sizeof(*ret) +
+				   d->nviews * sizeof(ret->lists[0]));
+
+	ret->m.attrs = NULL;
+	ret->m.viewnum = MARK_POINT;
+	ret->size = d->nviews;
+	ret->owner = owner;
+	ret->doc = d;
+	__mark_reset(d, &ret->m, 1);
+	if (owner)
+		*owner = ret;
+	return ret;
+}
+
+void mark_reset(struct doc *d, struct mark *m)
+{
+	__mark_reset(d, m, 0);
+}
+
+void point_reset(struct point *p)
+{
+	struct doc *d = p->doc;
+	__mark_reset(d, &p->m, 0);
 }
 
 struct mark *doc_first_mark(struct doc *d, int view)
@@ -371,14 +358,10 @@ struct mark *doc_new_mark(struct doc *d, int view)
 	if (view == MARK_POINT || view >= d->nviews || d->views[view].notify == NULL)
 		return NULL;
 	ret = malloc(sizeof(*ret));
-	d->ops->set_ref(d, ret, 1);
 	ret->rpos = 0;
 	ret->attrs = NULL;
-	hlist_add_head(&ret->all, &d->marks);
-	assign_seq(ret, 0);
 	ret->viewnum = view;
-	if (view >= 0)
-		tlist_add(&ret->view, GRP_MARK, &d->views[view].head);
+	__mark_reset(d, ret, 1);
 	return ret;
 }
 
