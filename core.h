@@ -88,7 +88,6 @@ struct doc_operations {
 				   char *str, bool *first);
 	int		(*reundo)(struct point *pos, bool undo);
 	wint_t		(*step)(struct doc *d, struct mark *m, bool forward, bool move);
-	char		*(*get_str)(struct doc *d, struct mark *from, struct mark *to);
 	void		(*set_ref)(struct doc *d, struct mark *m, bool start);
 	int		(*same_ref)(struct doc *d, struct mark *a, struct mark *b);
 	/* get/set attr operate on the attributes of the char immediately
@@ -365,10 +364,21 @@ static inline int doc_load_file(struct doc *d, struct point *p,
 	ci.key = "doc:load-file";
 	return key_lookup(d->map, &ci);
 }
-static inline char *doc_getstr(struct doc *d, struct mark *from, struct mark *to)
+static inline char *doc_getstr(struct point *from, struct mark *to)
 {
-	return d->ops->get_str(d, from, to);
+	struct cmd_info ci = {0};
+	struct doc *d = from->doc;
+	int ret;
+
+	ci.key = "doc:get-str";
+	ci.pointp = &from;
+	ci.mark = to;
+	ret = key_lookup(d->map, &ci);
+	if (!ret)
+		return NULL;
+	return ci.str;
 }
+
 static inline char *doc_attr(struct doc *d, struct mark *m, bool forward, char *attr)
 {
 	return d->ops->get_attr(d, m, forward, attr);

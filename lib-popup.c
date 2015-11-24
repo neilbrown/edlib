@@ -31,7 +31,7 @@
 
 struct popup_info {
 	struct pane	*target, *popup;
-	struct doc	*doc;
+	struct point	*point;
 	char		*style;
 };
 
@@ -63,8 +63,8 @@ DEF_CMD(popup_handle)
 	struct popup_info *ppi = p->data;
 
 	if (strcmp(ci->key, "Close") == 0) {
-		if (ppi->doc)
-			doc_destroy(ppi->doc);
+		if (ppi->point)
+			doc_destroy(ppi->point->doc);
 		free(ppi);
 		return 1;
 	}
@@ -88,11 +88,11 @@ DEF_CMD(popup_handle)
 			ci2.key = "PopupDone";
 		ci2.numeric = 1;
 		ci2.str = ci->str;
-		if (ppi->doc)
-			ci2.str = doc_getstr(ppi->doc, NULL, NULL);
+		if (ppi->point)
+			ci2.str = doc_getstr(ppi->point, NULL);
 		ci2.mark = NULL;
 		key_handle_focus(&ci2);
-		if (ppi->doc)
+		if (ppi->point)
 			free(ci2.str);
 		pane_close(ppi->popup);
 		return 1;
@@ -158,7 +158,7 @@ DEF_CMD(popup_attach)
 	ppi->target = ci->focus;
 	ppi->popup = pane_register(root, z, &popup_handle, ppi, NULL);
 	ppi->style = style;
-	ppi->doc = NULL;
+	ppi->point = NULL;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
 		if (strchr(style, "TLBR"[i]) == NULL)
@@ -169,13 +169,13 @@ DEF_CMD(popup_attach)
 	attr_set_str(&ppi->popup->attrs, "render-wrap", "no", -1);
 
 	if (ci->pointp) {
-		pt = *ci->pointp;
+		p = pane_attach(ppi->popup, "view", *ci->pointp, NULL);
 	} else {
 		pt = doc_new(pane2ed(root), "text");
 		doc_set_name(pt->doc, "*popup*");
-		ppi->doc = pt->doc;
+		p = pane_attach(ppi->popup, "view", pt, NULL);
+		point_new(pt->doc, &ppi->point);
 	}
-	p = pane_attach(ppi->popup, "view", pt, NULL);
 	render_attach(NULL, p);
 	pane_focus(p);
 	ci2.key = "local-set-key";

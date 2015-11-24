@@ -318,11 +318,6 @@ static wint_t docs_step(struct doc *doc, struct mark *m, bool forward, bool move
 		return ' ';
 }
 
-static char *docs_getstr(struct doc *d, struct mark *from, struct mark *to)
-{
-	return NULL;
-}
-
 static void docs_setref(struct doc *doc, struct mark *m, bool start)
 {
 
@@ -380,7 +375,6 @@ static struct doc_operations docs_ops = {
 	.replace   = docs_replace,
 	.reundo    = docs_reundo,
 	.step      = docs_step,
-	.get_str   = docs_getstr,
 	.set_ref   = docs_setref,
 	.same_ref  = docs_sameref,
 	.get_attr  = docs_get_attr,

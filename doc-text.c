@@ -997,12 +997,25 @@ static int count_bytes(struct text *t, struct mark *from, struct mark *to)
 	return l;
 }
 
-static char *text_getstr(struct doc *d, struct mark *from, struct mark *to)
+DEF_CMD(text_get_str)
 {
+	struct point *pt = *ci->pointp;
+	struct doc *d = pt->doc;
+	struct mark *from = NULL, *to = NULL;
 	struct text *t = container_of(d, struct text, doc);
 	struct text_chunk *c, *first, *last;
 	char *ret;
 	int l = 0, head, tail;
+
+	if (ci->mark) {
+		if (mark_ordered(&pt->m, ci->mark)) {
+			from = &pt->m;
+			to = ci->mark;
+		} else {
+			from = ci->mark;
+			to = &pt->m;
+		}
+	}
 
 	first = list_first_entry_or_null(&t->text, struct text_chunk, lst);
 	head = 0;
@@ -1044,7 +1057,8 @@ static char *text_getstr(struct doc *d, struct mark *from, struct mark *to)
 			break;
 	}
 	ret[l] = 0;
-	return ret;
+	ci->str = ret;
+	return 1;
 }
 
 static void text_setref(struct doc *d, struct mark *m, bool start)
@@ -1413,7 +1427,6 @@ static struct doc_operations text_ops = {
 	.replace   = text_replace,
 	.reundo    = text_reundo,
 	.step      = text_step,
-	.get_str   = text_getstr,
 	.set_ref   = text_setref,
 	.same_ref  = text_sameref,
 	.get_attr  = text_get_attr,
@@ -1540,4 +1553,5 @@ void edlib_init(struct editor *ed)
 
 	key_add(text_map, "doc:load-file", &text_load_file);
 	key_add(text_map, "doc:same-file", &text_same_file);
+	key_add(text_map, "doc:get-str", &text_get_str);
 }

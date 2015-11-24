@@ -302,11 +302,6 @@ static wint_t dir_step(struct doc *doc, struct mark *m, bool forward, bool move)
 	return ret;
 }
 
-static char *dir_getstr(struct doc *d, struct mark *from, struct mark *to)
-{
-	return NULL;
-}
-
 static void dir_setref(struct doc *doc, struct mark *m, bool start)
 {
 	struct directory *dr = container_of(doc, struct directory, doc);
@@ -493,7 +488,6 @@ static struct doc_operations dir_ops = {
 	.replace   = dir_replace,
 	.reundo    = dir_reundo,
 	.step      = dir_step,
-	.get_str   = dir_getstr,
 	.set_ref   = dir_setref,
 	.same_ref  = dir_sameref,
 	.get_attr  = dir_get_attr,
