@@ -495,6 +495,8 @@ int  doc_destroy(struct doc *d)
 	 * the documents list and destroy it.
 	 */
 	int i;
+	struct cmd_info ci2 = {0};
+	struct point p, *pt;
 
 	d->deleting = 1;
 	if (d->ops == &docs_ops)
@@ -513,6 +515,13 @@ int  doc_destroy(struct doc *d)
 	docs_release(d);
 	list_del(&d->list);
 
+	ci2.key = "doc:destroy";
+	/* Hack ... will go */
+	p.doc = d;
+	pt = &p;
+	ci2.pointp = &pt;
+	key_lookup(d->map, &ci2);
+
 	free(d->views);
 	attr_free(&d->attrs);
 	free(d->name);
@@ -526,6 +535,6 @@ int  doc_destroy(struct doc *d)
 			/* vmarks should have gone already */
 			ASSERT(0);
 	}
-	d->ops->destroy(d);
+	free(d);
 	return 1;
 }

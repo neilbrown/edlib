@@ -468,8 +468,9 @@ static int dir_set_attr(struct point *p, char *attr, char *val)
 	return 0;
 }
 
-static void dir_destroy(struct doc *d)
+DEF_CMD(dir_destroy)
 {
+	struct doc *d = (*ci->pointp)->doc;
 	struct directory *dr = container_of(d, struct directory, doc);
 
 	while (!list_empty(&dr->ents)) {
@@ -480,7 +481,7 @@ static void dir_destroy(struct doc *d)
 		list_del(&de->lst);
 		free(de);
 	}
-	free(d);
+	return 1;
 }
 
 
@@ -492,7 +493,6 @@ static struct doc_operations dir_ops = {
 	.same_ref  = dir_sameref,
 	.get_attr  = dir_get_attr,
 	.set_attr  = dir_set_attr,
-	.destroy   = dir_destroy,
 };
 
 DEF_CMD(dir_open)
@@ -564,4 +564,5 @@ void edlib_init(struct editor *ed)
 
 	key_add(doc_map, "doc:load-file", &dir_load_file);
 	key_add(doc_map, "doc:same-file", &dir_same_file);
+	key_add(doc_map, "doc:destroy", &dir_destroy);
 }

@@ -1394,8 +1394,9 @@ static int text_set_attr(struct point *p, char *attr, char *val)
 	return attr_set_str(&c->attrs, attr, val, o);
 }
 
-static void text_destroy(struct doc *d)
+DEF_CMD(text_destroy)
 {
+	struct doc *d = (*ci->pointp)->doc;
 	struct text *t = container_of(d, struct text, doc);
 
 	while (!list_empty(&t->text)) {
@@ -1420,7 +1421,7 @@ static void text_destroy(struct doc *d)
 		free(te);
 	}
 	free(t->fname);
-	free(t);
+	return 1;
 }
 
 static struct doc_operations text_ops = {
@@ -1431,7 +1432,6 @@ static struct doc_operations text_ops = {
 	.same_ref  = text_sameref,
 	.get_attr  = text_get_attr,
 	.set_attr  = text_set_attr,
-	.destroy   = text_destroy,
 };
 
 #define LARGE_LINE 4096
@@ -1554,4 +1554,5 @@ void edlib_init(struct editor *ed)
 	key_add(text_map, "doc:load-file", &text_load_file);
 	key_add(text_map, "doc:same-file", &text_same_file);
 	key_add(text_map, "doc:get-str", &text_get_str);
+	key_add(text_map, "doc:destroy", &text_destroy);
 }

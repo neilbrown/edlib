@@ -95,7 +95,6 @@ struct doc_operations {
 	 */
 	char		*(*get_attr)(struct doc *d, struct mark *m, bool forward, char *attr);
 	int		(*set_attr)(struct point *pos, char *attr, char *val);
-	void		(*destroy)(struct doc *d);
 };
 
 void doc_init(struct doc *d);
