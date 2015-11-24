@@ -9,7 +9,7 @@ CFLAGS=-g -Wall -Werror -Wstrict-prototypes -Wextra -Wno-unused-parameter
 
 all: dirs edlib checksym lib shared
 
-OBJ = O/mainloop.o
+OBJ = O/edlib.o
 LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
 	O/core-keymap.o O/core-pane.o O/core-misc.o
 SHOBJ = O/doc-text.o O/doc-dir.o \
