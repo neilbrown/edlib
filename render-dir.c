@@ -170,7 +170,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 		x = 0;
 	}
 	mark_free(m);
-	if (mark_ordered(&(*ptp)->m, dd->top) && !mark_same(d, &(*ptp)->m, dd->top))
+	if (mark_ordered_not_same(d, &(*ptp)->m, dd->top))
 		p->cx = p->cy = -1;
 	return last_vis;
 }
@@ -210,11 +210,11 @@ static struct mark *find_top(struct point **ptp, struct pane *p,
 	start = mark_at_point(*ptp, dd->typenum);
 	end = mark_at_point(*ptp, dd->typenum);
 	if (bot &&
-	    (mark_ordered(start, bot) && ! mark_same(d, start, bot)))
+	    (mark_ordered_not_same(d, start, bot)))
 		/* We can never cross bot from below */
 		bot = NULL;
 	if (top &&
-	    (mark_ordered(top, end) && ! mark_same(d, top, end)))
+	    (mark_ordered_not_same(d, top, end)))
 		/* We can never cross top from above */
 		top = NULL;
 	while (!((found_start && found_end) || height >= ph-1)) {

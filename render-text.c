@@ -207,10 +207,10 @@ static struct mark *find_top(struct point **ptp, struct pane *p,
 	start = mark_at_point(*ptp, rt->typenum);
 	end = mark_at_point(*ptp, rt->typenum);
 	if (bot &&
-	    (mark_ordered(start, bot) && ! mark_same(d, start, bot)))
+	    (mark_ordered_not_same(d, start, bot)))
 		bot = NULL;
 	if (top &&
-	    (mark_ordered(top, end) && ! mark_same(d, top, end)))
+	    (mark_ordered_not_same(d, top, end)))
 		top = NULL;
 	while (!((found_start && found_end) || ey-sy >= p->h-1)) {
 		if (!found_start) {

@@ -44,7 +44,7 @@ static void do_count(struct doc *d, struct mark *start, struct mark *end,
 	*linep = 0;
 	*wordp = 0;
 	*charp = 0;
-	while ((end == NULL || (mark_ordered(m, end) && !mark_same(d, m, end))) &&
+	while ((end == NULL || (mark_ordered_not_same(d, m, end))) &&
 	       (ch = mark_next(d, m)) != WEOF) {
 		chars += 1;
 		if (ch == '\n')
@@ -55,7 +55,7 @@ static void do_count(struct doc *d, struct mark *start, struct mark *end,
 		} else if (inword && !(iswprint(ch) && !iswspace(ch)))
 			inword = 0;
 		if (add_marks && lines >= 50 &&
-		    (end == NULL || (mark_ordered(m, end) && !mark_same(d, m, end)))) {
+		    (end == NULL || (mark_ordered_not_same(d, m, end)))) {
 			/* leave a mark here and keep going */
 			attr_set_int(mark_attr(start), "lines", lines);
 			attr_set_int(mark_attr(start), "words", words);
@@ -151,7 +151,7 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 		/* find the first mark that isn't before 'start', and count
 		 * from there.
 		 */
-		while (m && mark_ordered(m, start) && !mark_same(d, m, start)) {
+		while (m && mark_ordered_not_same(d, m, start)) {
 			/* Force and update to make sure spacing stays sensible */
 			if (need_recalc(d, m))
 				/* need to update this one */
