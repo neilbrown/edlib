@@ -88,10 +88,6 @@ struct doc_operations {
 				   char *str, bool *first);
 	wint_t		(*step)(struct doc *d, struct mark *m, bool forward, bool move);
 	int		(*same_ref)(struct doc *d, struct mark *a, struct mark *b);
-	/* get/set attr operate on the attributes of the char immediately
-	 * after the point/mark.  They fail at EOF.
-	 */
-	char		*(*get_attr)(struct doc *d, struct mark *m, bool forward, char *attr);
 };
 
 void doc_init(struct doc *d);
@@ -390,7 +386,18 @@ static inline char *doc_getstr(struct point *from, struct mark *to)
 
 static inline char *doc_attr(struct doc *d, struct mark *m, bool forward, char *attr)
 {
-	return d->ops->get_attr(d, m, forward, attr);
+	struct cmd_info ci = {0};
+	struct point pt, *p = &pt;
+
+	pt.doc = d;
+	ci.key = "doc:get-attr";
+	ci.pointp = &p;
+	ci.mark = m;
+	ci.numeric = forward ? 1 : 0;
+	ci.str = attr;
+	if (key_lookup(d->map, &ci) == 0)
+		return NULL;
+	return ci.str2;
 }
 
 static inline int doc_set_attr(struct point *pt, char *attr, char *val)

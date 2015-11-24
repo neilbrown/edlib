@@ -354,8 +354,9 @@ static char *fmt_date(struct dir_ent *de, time_t t)
 	return de->nbuf;
 }
 
-static char *dir_get_attr(struct doc *d, struct mark *m,
-			  bool forward, char *attr)
+static char *__dir_get_attr(struct doc *d, struct mark *m,
+			    bool forward, char *attr)
+
 {
 	struct dir_ent *de;
 	struct directory *dr = container_of(d, struct directory, doc);
@@ -462,6 +463,17 @@ static char *dir_get_attr(struct doc *d, struct mark *m,
 		return attr_get_str(de->attrs, attr, -1);
 }
 
+DEF_CMD(dir_get_attr)
+{
+	struct doc *d = (*ci->pointp)->doc;
+	struct mark *m = ci->mark;
+	bool forward = ci->numeric != 0;
+	char *attr = ci->str;
+
+	ci->str2 = __dir_get_attr(d, m, forward, attr);
+	return 1;
+}
+
 DEF_CMD(dir_destroy)
 {
 	struct doc *d = (*ci->pointp)->doc;
@@ -483,7 +495,6 @@ static struct doc_operations dir_ops = {
 	.replace   = dir_replace,
 	.step      = dir_step,
 	.same_ref  = dir_sameref,
-	.get_attr  = dir_get_attr,
 };
 
 DEF_CMD(dir_open)
@@ -557,4 +568,5 @@ void edlib_init(struct editor *ed)
 	key_add(doc_map, "doc:same-file", &dir_same_file);
 	key_add(doc_map, "doc:destroy", &dir_destroy);
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
+	key_add(doc_map, "doc:get-attr", &dir_get_attr);
 }

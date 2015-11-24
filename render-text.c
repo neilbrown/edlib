@@ -40,7 +40,7 @@ static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y
 	char *highlight;
 
 	/* TEMP HACK - please fix */
-	highlight = d->ops->get_attr(d, m, 1, "highlight");
+	highlight = doc_attr(d, m, 1, "highlight");
 
 	ch = mark_next(d, m);
 	if (ch == WEOF)

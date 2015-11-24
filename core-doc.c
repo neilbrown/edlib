@@ -329,8 +329,8 @@ static int docs_sameref(struct doc *d, struct mark *a, struct mark *b)
 }
 
 
-static char *docs_get_attr(struct doc *doc, struct mark *m,
-			  bool forward, char *attr)
+static char *__docs_get_attr(struct doc *doc, struct mark *m,
+			     bool forward, char *attr)
 {
 	struct doc *d;
 
@@ -360,11 +360,20 @@ static char *docs_get_attr(struct doc *doc, struct mark *m,
 	return doc_attr(d, NULL, 0, attr);
 }
 
+DEF_CMD(docs_get_attr)
+{
+	struct doc *doc = (*ci->pointp)->doc;
+	struct mark *m = ci->mark;
+	bool forward = ci->numeric != 0;
+	char *attr = ci->str;
+	ci->str2 = __docs_get_attr(doc, m, forward, attr);
+	return 1;
+}
+
 static struct doc_operations docs_ops = {
 	.replace   = docs_replace,
 	.step      = docs_step,
 	.same_ref  = docs_sameref,
-	.get_attr  = docs_get_attr,
 };
 
 DEF_CMD(docs_open)
@@ -432,6 +441,7 @@ void doc_make_docs(struct editor *ed)
 	key_add(docs_map, "Chr-q", &docs_bury);
 
 	key_add(docs_map, "doc:set-ref", &docs_set_ref);
+	key_add(docs_map, "doc:get-attr", &docs_get_attr);
 
 	ds->doc.map = docs_map;
 

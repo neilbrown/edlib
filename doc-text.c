@@ -1398,7 +1398,7 @@ static void text_replace(struct point *pos, struct mark *end,
 }
 
 
-static char *text_get_attr(struct doc *d, struct mark *m,
+static char *__text_get_attr(struct doc *d, struct mark *m,
 			   bool forward, char *attr)
 {
 	struct text_chunk *c;
@@ -1444,6 +1444,17 @@ static char *text_get_attr(struct doc *d, struct mark *m,
 		o -= 1;
 	}
 	return attr_get_str(c->attrs, attr, o);
+}
+
+DEF_CMD(text_get_attr)
+{
+	struct doc *d = (*ci->pointp)->doc;
+	struct mark *m = ci->mark;
+	bool forward = ci->numeric != 0;
+	char *attr = ci->str;
+
+	ci->str2 = __text_get_attr(d, m, forward, attr);
+	return 1;
 }
 
 DEF_CMD(text_set_attr)
@@ -1503,7 +1514,6 @@ static struct doc_operations text_ops = {
 	.replace   = text_replace,
 	.step      = text_step,
 	.same_ref  = text_sameref,
-	.get_attr  = text_get_attr,
 };
 
 #define LARGE_LINE 4096
@@ -1577,7 +1587,7 @@ DEF_CMD(render_line)
 
 	buf_init(&b);
 	while (1) {
-		char *attr = text_get_attr(d, m, 1, "highlight");
+		char *attr = __text_get_attr(d, m, 1, "highlight");
 		int offset = m->ref.o;
 		if (o >= 0 && b.len >= o)
 			break;
@@ -1631,4 +1641,5 @@ void edlib_init(struct editor *ed)
 	key_add(text_map, "doc:save-file", &text_save_file);
 	key_add(text_map, "doc:reundo", &text_reundo);
 	key_add(text_map, "doc:set-attr", &text_set_attr);
+	key_add(text_map, "doc:get-attr", &text_get_attr);
 }
