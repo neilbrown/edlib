@@ -89,7 +89,7 @@ DEF_CMD(popup_handle)
 		ci2.numeric = 1;
 		ci2.str = ci->str;
 		if (ppi->point)
-			ci2.str = doc_getstr(ppi->point, NULL);
+			ci2.str = doc_getstr(ppi->popup, NULL);
 		ci2.mark = NULL;
 		key_handle_focus(&ci2);
 		if (ppi->point)

@@ -240,15 +240,13 @@ DEF_CMD(emacs_insert_other)
 
 DEF_CMD(emacs_undo)
 {
-	struct point *pt = *ci->pointp;
-	doc_undo(pt, 0);
+	doc_undo(ci->focus, 0);
 	return 1;
 }
 
 DEF_CMD(emacs_redo)
 {
-	struct point *pt = *ci->pointp;
-	doc_undo(pt, 1);
+	doc_undo(ci->focus, 1);
 	return 1;
 }
 
@@ -345,7 +343,7 @@ DEF_CMD(emacs_file_complete)
 	 * popup menu
 	 */
 	struct doc *doc = (*ci->pointp)->doc;
-	char *str = doc_getstr(*ci->pointp, NULL);
+	char *str = doc_getstr(ci->focus, NULL);
 	char *d, *b, *c;
 	int fd;
 	struct pane *par, *pop;
@@ -479,7 +477,7 @@ DEF_CMD(emacs_doc_complete)
 	 * Attach the 'docs' document as a completing popup menu
 	 */
 	struct doc *doc = (*ci->pointp)->doc;
-	char *str = doc_getstr(*ci->pointp, NULL);
+	char *str = doc_getstr(ci->focus, NULL);
 	struct pane *par, *pop;
 	struct cmd_info ci2 = {0};
 	struct point *pt, **ptp;

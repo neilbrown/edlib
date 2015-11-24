@@ -52,7 +52,7 @@ DEF_CMD(search_forward)
 	}
 	s = malloc(sizeof(*s));
 	s->m = esi->start;
-	str = doc_getstr(*ci->pointp, NULL);
+	str = doc_getstr(ci->focus, NULL);
 	s->len = strlen(str);
 	free(str);
 	s->next = esi->s;
@@ -75,7 +75,7 @@ DEF_CMD(search_retreat)
 
 	if (esi->s == NULL)
 		return 0;
-	str = doc_getstr(*ci->pointp, NULL);
+	str = doc_getstr(ci->focus, NULL);
 	if (strlen(str) > esi->s->len) {
 		free(str);
 		return 0;
@@ -169,7 +169,7 @@ REDEF_CMD(search_again)
 	doc_set_attr(esi->end, "highlight", NULL);
 	ci2.pointp = &esi->end;
 	ci2.mark = mark_dup(esi->start, 1);
-	ci2.str = doc_getstr(*ci->pointp, NULL);
+	ci2.str = doc_getstr(esi->search, NULL);
 	ci2.key = "text-search";
 	ret = key_lookup(pane2ed(esi->target)->commands, &ci2);
 	if (ret == 0)

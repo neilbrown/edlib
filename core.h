@@ -357,13 +357,13 @@ static inline void doc_replace(struct pane *p, struct mark *m,
 	key_handle_focus(&ci);
 	*first = ci.extra;
 }
-static inline int doc_undo(struct point *p, bool redo)
+static inline int doc_undo(struct pane *p, bool redo)
 {
 	struct cmd_info ci = {0};
-	ci.pointp = &p;
+	ci.focus = p;
 	ci.numeric = redo ? 1 : 0;
 	ci.key = "doc:reundo";
-	return key_lookup(p->doc->map, &ci);
+	return key_handle_focus(&ci);
 }
 static inline int doc_load_file(struct doc *d, struct point *p,
 				int fd, char *name)
@@ -375,16 +375,15 @@ static inline int doc_load_file(struct doc *d, struct point *p,
 	ci.key = "doc:load-file";
 	return key_lookup(d->map, &ci);
 }
-static inline char *doc_getstr(struct point *from, struct mark *to)
+static inline char *doc_getstr(struct pane *from, struct mark *to)
 {
 	struct cmd_info ci = {0};
-	struct doc *d = from->doc;
 	int ret;
 
 	ci.key = "doc:get-str";
-	ci.pointp = &from;
+	ci.focus = from;
 	ci.mark = to;
-	ret = key_lookup(d->map, &ci);
+	ret = key_handle_focus(&ci);
 	if (!ret)
 		return NULL;
 	return ci.str;
