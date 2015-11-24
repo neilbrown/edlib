@@ -88,7 +88,6 @@ struct doc_operations {
 				   char *str, bool *first);
 	int		(*reundo)(struct point *pos, bool undo);
 	wint_t		(*step)(struct doc *d, struct mark *m, bool forward, bool move);
-	void		(*set_ref)(struct doc *d, struct mark *m, bool start);
 	int		(*same_ref)(struct doc *d, struct mark *a, struct mark *b);
 	/* get/set attr operate on the attributes of the char immediately
 	 * after the point/mark.  They fail at EOF.

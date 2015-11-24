@@ -245,15 +245,23 @@ struct mark *mark_dup(struct mark *m, int notype)
 
 void __mark_reset(struct doc *d, struct mark *m, int new)
 {
-	struct point *p;
+	struct point *p, pt;
 	int i;
+	struct cmd_info ci = {0};
 
-	d->ops->set_ref(d, m, 1);
 	m->rpos = 0;
 	if (!new)
 		hlist_del(&m->all);
 	hlist_add_head(&m->all, &d->marks);
 	assign_seq(m, 0);
+
+	ci.key = "doc:set-ref";
+	ci.mark = m;
+	ci.numeric = 1; /* start */
+	pt.doc = d;
+	p = &pt;
+	ci.pointp = &p;
+	key_lookup(d->map, &ci);
 
 	if (m->viewnum == MARK_UNGROUPED)
 		return;

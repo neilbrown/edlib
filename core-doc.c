@@ -313,15 +313,19 @@ static wint_t docs_step(struct doc *doc, struct mark *m, bool forward, bool move
 		return ' ';
 }
 
-static void docs_setref(struct doc *doc, struct mark *m, bool start)
+DEF_CMD(docs_set_ref)
 {
+	struct doc *doc = (*ci->pointp)->doc;
+	struct mark *m = ci->mark;
 
-	if (start)
+	if (ci->numeric == 1)
 		m->ref.d = list_first_entry(&doc->ed->documents, struct doc, list);
 	else
 		m->ref.d = list_last_entry(&doc->ed->documents, struct doc, list);
 
 	m->ref.ignore = 0;
+	m->rpos = 0;
+	return 1;
 }
 
 static int docs_sameref(struct doc *d, struct mark *a, struct mark *b)
@@ -370,7 +374,6 @@ static struct doc_operations docs_ops = {
 	.replace   = docs_replace,
 	.reundo    = docs_reundo,
 	.step      = docs_step,
-	.set_ref   = docs_setref,
 	.same_ref  = docs_sameref,
 	.get_attr  = docs_get_attr,
 	.set_attr  = docs_set_attr,
@@ -439,6 +442,8 @@ void doc_make_docs(struct editor *ed)
 	key_add(docs_map, "Return", &docs_open);
 	key_add(docs_map, "Chr-o", &docs_open);
 	key_add(docs_map, "Chr-q", &docs_bury);
+
+	key_add(docs_map, "doc:set-ref", &docs_set_ref);
 
 	ds->doc.map = docs_map;
 

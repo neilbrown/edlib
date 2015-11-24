@@ -1061,17 +1061,21 @@ DEF_CMD(text_get_str)
 	return 1;
 }
 
-static void text_setref(struct doc *d, struct mark *m, bool start)
+DEF_CMD(text_set_ref)
 {
+	struct doc *d = (*ci->pointp)->doc;
+	struct mark *m = ci->mark;
 	struct text *t = container_of(d, struct text, doc);
 
-	if (list_empty(&t->text) || !start) {
+	if (list_empty(&t->text) || ci->numeric != 1) {
 		m->ref.c = NULL;
 		m->ref.o = 0;
-		return;
+	} else {
+		m->ref.c = list_first_entry(&t->text, struct text_chunk, lst);
+		m->ref.o = m->ref.c->start;
 	}
-	m->ref.c = list_first_entry(&t->text, struct text_chunk, lst);
-	m->ref.o = m->ref.c->start;
+	m->rpos = 0;
+	return 1;
 }
 
 static int text_advance_towards(struct text *t, struct doc_ref *ref, struct doc_ref *target)
@@ -1428,7 +1432,6 @@ static struct doc_operations text_ops = {
 	.replace   = text_replace,
 	.reundo    = text_reundo,
 	.step      = text_step,
-	.set_ref   = text_setref,
 	.same_ref  = text_sameref,
 	.get_attr  = text_get_attr,
 	.set_attr  = text_set_attr,
@@ -1555,4 +1558,5 @@ void edlib_init(struct editor *ed)
 	key_add(text_map, "doc:same-file", &text_same_file);
 	key_add(text_map, "doc:get-str", &text_get_str);
 	key_add(text_map, "doc:destroy", &text_destroy);
+	key_add(text_map, "doc:set-ref", &text_set_ref);
 }

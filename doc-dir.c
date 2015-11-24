@@ -302,15 +302,19 @@ static wint_t dir_step(struct doc *doc, struct mark *m, bool forward, bool move)
 	return ret;
 }
 
-static void dir_setref(struct doc *doc, struct mark *m, bool start)
+DEF_CMD(dir_set_ref)
 {
-	struct directory *dr = container_of(doc, struct directory, doc);
+	struct doc *d = (*ci->pointp)->doc;
+	struct directory *dr = container_of(d, struct directory, doc);
+	struct mark *m = ci->mark;
 
-	if (list_empty(&dr->ents) || !start)
+	if (list_empty(&dr->ents) || ci->numeric != 1)
 		m->ref.d = NULL;
 	else
 		m->ref.d = list_first_entry(&dr->ents, struct dir_ent, lst);
 	m->ref.ignore = 0;
+	m->rpos = 0;
+	return 1;
 }
 
 static int dir_sameref(struct doc *d, struct mark *a, struct mark *b)
@@ -489,7 +493,6 @@ static struct doc_operations dir_ops = {
 	.replace   = dir_replace,
 	.reundo    = dir_reundo,
 	.step      = dir_step,
-	.set_ref   = dir_setref,
 	.same_ref  = dir_sameref,
 	.get_attr  = dir_get_attr,
 	.set_attr  = dir_set_attr,
@@ -565,4 +568,5 @@ void edlib_init(struct editor *ed)
 	key_add(doc_map, "doc:load-file", &dir_load_file);
 	key_add(doc_map, "doc:same-file", &dir_same_file);
 	key_add(doc_map, "doc:destroy", &dir_destroy);
+	key_add(doc_map, "doc:set-ref", &dir_set_ref);
 }
