@@ -86,9 +86,6 @@ struct doc {
 struct doc_operations {
 	void		(*replace)(struct point *pos, struct mark *end,
 				   char *str, bool *first);
-	int		(*load_file)(struct doc *d, struct point *pos,
-				     int fd, char *name);
-	int		(*same_file)(struct doc *d, int fd, struct stat *stb);
 	int		(*reundo)(struct point *pos, bool undo);
 	wint_t		(*step)(struct doc *d, struct mark *m, bool forward, bool move);
 	char		*(*get_str)(struct doc *d, struct mark *from, struct mark *to);
@@ -361,7 +358,12 @@ static inline int doc_undo(struct point *p, bool redo)
 static inline int doc_load_file(struct doc *d, struct point *p,
 				int fd, char *name)
 {
-	return d->ops->load_file(d, p, fd, name);
+	struct cmd_info ci = {0};
+	ci.pointp = &p;
+	ci.extra = fd;
+	ci.str = name;
+	ci.key = "doc:load-file";
+	return key_lookup(d->map, &ci);
 }
 static inline char *doc_getstr(struct doc *d, struct mark *from, struct mark *to)
 {

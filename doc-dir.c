@@ -133,9 +133,13 @@ static void dir_replace(struct point *pos, struct mark *end,
 {
 }
 
-static int dir_load_file(struct doc *d, struct point *pos,
-			 int fd, char *name)
+DEF_CMD(dir_load_file)
 {
+	struct point *pos = *(ci->pointp);
+	struct doc *d = pos->doc;
+	int fd = ci->extra;
+	char *name = ci->str;
+
 	struct directory *dr = container_of(d, struct directory, doc);
 	struct list_head new;
 	struct dir_ent *de1, *de2;
@@ -219,7 +223,7 @@ static int dir_load_file(struct doc *d, struct point *pos,
 			doc_notify_change(d, m);
 	}
 
-	if (name && !pos) {
+	if (name) {
 		char *dname;
 		int l = strlen(name);
 
@@ -243,8 +247,11 @@ static int dir_load_file(struct doc *d, struct point *pos,
 	return 1;
 }
 
-static int dir_same_file(struct doc *d, int fd, struct stat *stb)
+DEF_CMD(dir_same_file)
 {
+	struct doc *d = (*ci->pointp)->doc;
+	int fd = ci->extra;
+	struct stat *stb = (void*)ci->str2;
 	struct directory *dr = container_of(d, struct directory, doc);
 
 	if (!dr->fname)
@@ -253,7 +260,7 @@ static int dir_same_file(struct doc *d, int fd, struct stat *stb)
 	       dr->stat.st_dev == stb->st_dev))
 		return 0;
 	/* Let's reload it now */
-	dir_load_file(d, NULL, fd, NULL);
+	doc_load_file(d, *ci->pointp, fd, NULL);
 	return 1;
 }
 
@@ -484,8 +491,6 @@ static void dir_destroy(struct doc *d)
 
 static struct doc_operations dir_ops = {
 	.replace   = dir_replace,
-	.load_file = dir_load_file,
-	.same_file = dir_same_file,
 	.reundo    = dir_reundo,
 	.step      = dir_step,
 	.get_str   = dir_getstr,
@@ -539,8 +544,7 @@ DEF_CMD(dir_open)
 DEF_CMD(dir_reread)
 {
 	struct doc *d = (*ci->pointp)->doc;
-	d->ops->load_file(d, NULL, -1, NULL);
-	return 1;
+	return doc_load_file(d, *ci->pointp, -1, NULL);
 }
 
 DEF_CMD(dir_close)
@@ -563,4 +567,7 @@ void edlib_init(struct editor *ed)
 	key_add(doc_map, "Chr-o", &dir_open);
 	key_add(doc_map, "Chr-g", &dir_reread);
 	key_add(doc_map, "Chr-q", &dir_close);
+
+	key_add(doc_map, "doc:load-file", &dir_load_file);
+	key_add(doc_map, "doc:same-file", &dir_same_file);
 }

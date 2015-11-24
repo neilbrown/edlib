@@ -165,11 +165,20 @@ struct pane *doc_open(struct editor *ed, struct pane *parent, int fd,
 	char pathbuf[PATH_MAX], *rp;
 
 	fstat(fd, &stb);
-	list_for_each_entry(d, &ed->documents, list)
-		if (d->ops->same_file(d, fd, &stb)) {
+	list_for_each_entry(d, &ed->documents, list) {
+		struct cmd_info ci2 = {0};
+		struct point tpt;
+		ci2.key = "doc:same-file";
+		tpt.doc = d;
+		pt = &tpt;
+		ci2.pointp = &pt;
+		ci2.extra = -1;
+		ci2.str2 = (void*)&stb;
+		if (key_lookup(d->map, &ci2) > 0) {
 			point_new(d, &pt);
 			goto found;
 		}
+	}
 
 	rp = realpath(name, pathbuf);
 	if ((stb.st_mode & S_IFMT) == S_IFREG) {
@@ -180,7 +189,7 @@ struct pane *doc_open(struct editor *ed, struct pane *parent, int fd,
 		return NULL;
 	if (!pt)
 		return NULL;
-	doc_load_file(pt->doc, NULL, fd, rp);
+	doc_load_file(pt->doc, pt, fd, rp);
 	point_reset(pt);
 	d = NULL;
 found:
@@ -273,11 +282,6 @@ struct docs {
 static void docs_replace(struct point *pos, struct mark *end,
 			 char *str, bool *first)
 {
-}
-
-static int docs_same_file(struct doc *d, int fd, struct stat *stb)
-{
-	return 0;
 }
 
 static int docs_reundo(struct point *p, bool redo)
@@ -374,7 +378,6 @@ static int docs_set_attr(struct point *p, char *attr, char *val)
 
 static struct doc_operations docs_ops = {
 	.replace   = docs_replace,
-	.same_file = docs_same_file,
 	.reundo    = docs_reundo,
 	.step      = docs_step,
 	.get_str   = docs_getstr,
@@ -447,6 +450,7 @@ void doc_make_docs(struct editor *ed)
 	key_add(docs_map, "Return", &docs_open);
 	key_add(docs_map, "Chr-o", &docs_open);
 	key_add(docs_map, "Chr-q", &docs_bury);
+
 	ds->doc.map = docs_map;
 
 	doc_promote(&ds->doc);

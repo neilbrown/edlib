@@ -184,9 +184,12 @@ text_new_alloc(struct text *t, int size)
 	return new;
 }
 
-static int text_load_file(struct doc *d, struct point *pos,
-			  int fd, char *name)
+DEF_CMD(text_load_file)
 {
+	struct point *pos = *ci->pointp;
+	struct doc *d = pos->doc;
+	int fd = ci->extra;
+	char *name = ci->str;
 	off_t size = lseek(fd, 0, SEEK_END);
 	struct text_alloc *a;
 	struct text_chunk *c;
@@ -211,7 +214,7 @@ static int text_load_file(struct doc *d, struct point *pos,
 		c->end = a->free;
 		list_add(&c->lst, &t->text);
 	}
-	if (name && !pos) {
+	if (name) {
 		char *dname;
 
 		fstat(fd, &t->stat);
@@ -230,8 +233,10 @@ err:
 	return 0;
 }
 
-static int text_same_file(struct doc *d, int fd, struct stat *stb)
+DEF_CMD(text_same_file)
 {
+	struct doc *d = (*ci->pointp)->doc;
+	struct stat *stb = (void*)ci->str2;
 	struct text *t = container_of(d, struct text, doc);
 
 	if (t->fname == NULL)
@@ -1406,8 +1411,6 @@ static void text_destroy(struct doc *d)
 
 static struct doc_operations text_ops = {
 	.replace   = text_replace,
-	.load_file = text_load_file,
-	.same_file = text_same_file,
 	.reundo    = text_reundo,
 	.step      = text_step,
 	.get_str   = text_getstr,
@@ -1534,4 +1537,7 @@ void edlib_init(struct editor *ed)
 	text_map = key_alloc();
 	key_add(text_map, "render-line-prev", &render_line_prev);
 	key_add(text_map, "render-line", &render_line);
+
+	key_add(text_map, "doc:load-file", &text_load_file);
+	key_add(text_map, "doc:same-file", &text_same_file);
 }

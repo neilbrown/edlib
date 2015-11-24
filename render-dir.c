@@ -441,10 +441,9 @@ DEF_CMD(render_dir_reload)
 	if (!ptp)
 		return 0;
 	d = (*ptp)->doc;
-	if (d->ops->load_file)
-		d->ops->load_file(d, NULL, -1, NULL);
-	return 1;
+	return doc_load_file(d, *ptp, -1, NULL);
 }
+
 static void render_dir_register_map(void)
 {
 	dr_map = key_alloc();
