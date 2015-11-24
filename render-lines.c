@@ -153,6 +153,8 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 
 	while (*line && y < p->h) {
 		int err = mbrtowc(&ch, line, l, &ps);
+		int draw_cursor = 0;
+		int l;
 
 		if (err < 0) {
 			ch = *line;
@@ -165,6 +167,8 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 			*cyp = y;
 			*cxp = x;
 		}
+		if (line - line_start == offset)
+			draw_cursor = 1;
 
 		if (err == 0)
 			break;
@@ -198,12 +202,17 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 				continue;
 			}
 		}
+		if (draw_cursor) {
+			l = attr.len;
+			buf_concat(&attr, ",inverse");
+			if (dodraw)
+				pane_text(p, ' ', buf_final(&attr), x, y);
+		}
 		if (ch == '\n') {
 			x = 0;
 			y += 1;
 		} else {
 			int w = 1;
-
 			if (ch == '\t')
 				w = 9 - x % 8;
 			else if (ch < ' ')
@@ -231,6 +240,8 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 			}
 			x += w;
 		}
+		if (draw_cursor)
+			attr.len = l;
 	}
 	if ((y == cy && x <= cx) || y < cy)
 		/* haven't passed the cursor yet */
