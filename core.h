@@ -344,17 +344,17 @@ static inline wint_t doc_prior(struct doc *d, struct mark *m)
 {
 	return mark_step2(d, m, 0, 0);
 }
-static inline void doc_replace(struct point *p, struct mark *m,
+static inline void doc_replace(struct pane *p, struct mark *m,
 			       char *str, bool *first)
 {
 	struct cmd_info ci = {0};
 	ci.key = "doc:replace";
-	ci.pointp = &p;
+	ci.focus = p;
 	ci.mark = m;
 	ci.str = str;
 	ci.extra = *first;
 	ci.numeric = 1;
-	key_lookup(p->doc->map, &ci);
+	key_handle_focus(&ci);
 	*first = ci.extra;
 }
 static inline int doc_undo(struct point *p, bool redo)

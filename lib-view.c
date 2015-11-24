@@ -455,10 +455,9 @@ DEF_CMD(view_page)
 
 DEF_CMD(view_replace)
 {
-	struct point *pt = *ci->pointp;
 	bool first_change = (ci->extra == 0);
 
-	doc_replace(pt, ci->mark, ci->str, &first_change);
+	doc_replace(ci->focus, ci->mark, ci->str, &first_change);
 	return 1;
 }
 

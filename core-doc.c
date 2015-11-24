@@ -223,7 +223,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	}
 	ptp = pane_point(p);
 	doc_set_name((*ptp)->doc, name);
-	doc_replace(*ptp, NULL, text, &first);
+	doc_replace(p, NULL, text, &first);
 	point_reset(*ptp);
 	render_attach(NULL, p);
 	return p;
