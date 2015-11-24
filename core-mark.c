@@ -317,12 +317,6 @@ void mark_reset(struct doc *d, struct mark *m)
 		}
 }
 
-
-struct doc_ref point_ref(struct point *p)
-{
-	return p->m.ref;
-}
-
 struct mark *doc_first_mark(struct doc *d, int view)
 {
 	struct tlist_head *tl;
