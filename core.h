@@ -92,7 +92,6 @@ struct doc_operations {
 	 * after the point/mark.  They fail at EOF.
 	 */
 	char		*(*get_attr)(struct doc *d, struct mark *m, bool forward, char *attr);
-	int		(*set_attr)(struct point *pos, char *attr, char *val);
 };
 
 void doc_init(struct doc *d);
@@ -393,3 +392,16 @@ static inline char *doc_attr(struct doc *d, struct mark *m, bool forward, char *
 {
 	return d->ops->get_attr(d, m, forward, attr);
 }
+
+static inline int doc_set_attr(struct point *pt, char *attr, char *val)
+{
+	struct cmd_info ci = {0};
+	struct doc *d = pt->doc;
+
+	ci.key = "doc:set-attr";
+	ci.pointp = &pt;
+	ci.str = attr;
+	ci.str2 = val;
+	return key_lookup(d->map, &ci);
+}
+

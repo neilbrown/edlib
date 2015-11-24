@@ -1446,8 +1446,11 @@ static char *text_get_attr(struct doc *d, struct mark *m,
 	return attr_get_str(c->attrs, attr, o);
 }
 
-static int text_set_attr(struct point *p, char *attr, char *val)
+DEF_CMD(text_set_attr)
 {
+	struct point *p = *ci->pointp;
+	char *attr = ci->str;
+	char *val = ci->str2;
 	struct text_chunk *c = p->m.ref.c;
 	struct text *t = container_of(p->doc, struct text, doc);
 	int o = p->m.ref.o;
@@ -1501,7 +1504,6 @@ static struct doc_operations text_ops = {
 	.step      = text_step,
 	.same_ref  = text_sameref,
 	.get_attr  = text_get_attr,
-	.set_attr  = text_set_attr,
 };
 
 #define LARGE_LINE 4096
@@ -1628,4 +1630,5 @@ void edlib_init(struct editor *ed)
 	key_add(text_map, "doc:set-ref", &text_set_ref);
 	key_add(text_map, "doc:save-file", &text_save_file);
 	key_add(text_map, "doc:reundo", &text_reundo);
+	key_add(text_map, "doc:set-attr", &text_set_attr);
 }

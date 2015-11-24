@@ -462,11 +462,6 @@ static char *dir_get_attr(struct doc *d, struct mark *m,
 		return attr_get_str(de->attrs, attr, -1);
 }
 
-static int dir_set_attr(struct point *p, char *attr, char *val)
-{
-	return 0;
-}
-
 DEF_CMD(dir_destroy)
 {
 	struct doc *d = (*ci->pointp)->doc;
@@ -489,7 +484,6 @@ static struct doc_operations dir_ops = {
 	.step      = dir_step,
 	.same_ref  = dir_sameref,
 	.get_attr  = dir_get_attr,
-	.set_attr  = dir_set_attr,
 };
 
 DEF_CMD(dir_open)

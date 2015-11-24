@@ -99,7 +99,7 @@ DEF_CMD(search_add)
 
 	do {
 		/* TEMP HACK - please fix */
-		d->ops->set_attr(esi->end, "highlight", NULL);
+		doc_set_attr(esi->end, "highlight", NULL);
 		wch = mark_next(d, &esi->end->m);
 		if (wch == WEOF)
 			return 1;
@@ -136,7 +136,7 @@ DEF_CMD(search_close)
 
 	doc_del_view((*ci->pointp)->doc, &esi->watch);
 	/* TEMP HACK - please fix */
-	esi->target->point->doc->ops->set_attr(esi->end, "highlight", NULL);
+	doc_set_attr(esi->end, "highlight", NULL);
 	point_free(esi->end);
 	mark_free(esi->start);
 	while (esi->s) {
@@ -153,7 +153,6 @@ REDEF_CMD(search_again)
 	/* document has changed, retry search */
 	struct es_info *esi = container_of(ci->comm, struct es_info, watch);
 	struct cmd_info ci2 = {0};
-	struct doc *d = esi->end->doc;
 	struct pane *p;
 	char *a, *pfx;
 	int ret;
@@ -167,7 +166,7 @@ REDEF_CMD(search_again)
 	}
 
 	/* TEMP HACK - please fix */
-	d->ops->set_attr(esi->end, "highlight", NULL);
+	doc_set_attr(esi->end, "highlight", NULL);
 	ci2.pointp = &esi->end;
 	ci2.mark = mark_dup(esi->start, 1);
 	ci2.str = doc_getstr(*ci->pointp, NULL);
@@ -180,7 +179,7 @@ REDEF_CMD(search_again)
 	} else if (ci2.extra > 0) {
 		point_to_mark(esi->end, ci2.mark);
 		/* TEMP HACK - please fix */
-		d->ops->set_attr(esi->end, "highlight","fg:red,inverse");
+		doc_set_attr(esi->end, "highlight","fg:red,inverse");
 		ci2.key = "Move-View-Pos";
 		ci2.focus = esi->target;
 		key_handle_focus(&ci2);

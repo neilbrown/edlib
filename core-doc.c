@@ -360,17 +360,11 @@ static char *docs_get_attr(struct doc *doc, struct mark *m,
 	return doc_attr(d, NULL, 0, attr);
 }
 
-static int docs_set_attr(struct point *p, char *attr, char *val)
-{
-	return 0;
-}
-
 static struct doc_operations docs_ops = {
 	.replace   = docs_replace,
 	.step      = docs_step,
 	.same_ref  = docs_sameref,
 	.get_attr  = docs_get_attr,
-	.set_attr  = docs_set_attr,
 };
 
 DEF_CMD(docs_open)
