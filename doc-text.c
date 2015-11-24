@@ -812,7 +812,7 @@ DEF_CMD(text_reundo)
 					break;
 				while ((m = doc_next_mark_all(d, &p->m)) != NULL &&
 				       m->ref.c == p->m.ref.c &&
-				       m->ref.o < p->m.ref.o)
+				       m->ref.o <= p->m.ref.o)
 					mark_forward_over(&p->m, m);
 			} while (i == 2);
 		} else {
@@ -822,7 +822,7 @@ DEF_CMD(text_reundo)
 					break;
 				while ((m = doc_prev_mark_all(d, &p->m)) != NULL &&
 				       m->ref.c == p->m.ref.c &&
-				       m->ref.o > p->m.ref.o)
+				       m->ref.o >= p->m.ref.o)
 					mark_backward_over(&p->m, m);
 			} while (i == 2);
 		}
