@@ -85,7 +85,6 @@ struct doc {
 
 struct doc_operations {
 	wint_t		(*step)(struct doc *d, struct mark *m, bool forward, bool move);
-	int		(*same_ref)(struct doc *d, struct mark *a, struct mark *b);
 };
 
 void doc_init(struct doc *d);
@@ -155,6 +154,8 @@ void doc_notify_change(struct doc *d, struct mark *m);
 void doc_check_consistent(struct doc *d);
 void point_to_mark(struct point *p, struct mark *m);
 void mark_to_mark(struct doc *d, struct mark *m, struct mark *target);
+int mark_same(struct doc *d, struct mark *m1, struct mark *m2);
+int mark_same2(struct doc *d, struct mark *m1, struct mark *m2, struct cmd_info *ci);
 struct point *point_new(struct doc *d, struct point **owner);
 struct point *point_dup(struct point *p, struct point **owner);
 wint_t mark_next(struct doc *d, struct mark *m);
@@ -173,10 +174,6 @@ struct mark *vmark_at_point(struct point *pt, int view);
 static inline int mark_ordered(struct mark *m1, struct mark *m2)
 {
 	return m1->seq < m2->seq;
-}
-static inline int mark_same(struct doc *d, struct mark *m1, struct mark *m2)
-{
-	return d->ops->same_ref(d, m1, m2);
 }
 static inline int mark_ordered_or_same(struct doc *d, struct mark *m1, struct mark *m2)
 {
@@ -248,7 +245,7 @@ struct cmd_info {
 	int		x,y;		/* relative to focus */
 	int		hx, hy;		/* x,y mapped to 'home' */
 	char		*str, *str2;
-	struct mark	*mark;
+	struct mark	*mark, *mark2;
 	struct point	**pointp;
 	struct command	*comm;
 };

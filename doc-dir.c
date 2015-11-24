@@ -307,9 +307,10 @@ DEF_CMD(dir_set_ref)
 	return 1;
 }
 
-static int dir_sameref(struct doc *d, struct mark *a, struct mark *b)
+DEF_CMD(dir_mark_same)
 {
-	return a->ref.d == b->ref.d;
+	ci->extra = ci->mark->ref.d == ci->mark2->ref.d;
+	return 1;
 }
 
 static void get_stat(struct directory *dr, struct dir_ent *de)
@@ -488,7 +489,6 @@ DEF_CMD(dir_destroy)
 
 static struct doc_operations dir_ops = {
 	.step      = dir_step,
-	.same_ref  = dir_sameref,
 };
 
 DEF_CMD(dir_open)
@@ -563,4 +563,5 @@ void edlib_init(struct editor *ed)
 	key_add(doc_map, "doc:destroy", &dir_destroy);
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
 	key_add(doc_map, "doc:get-attr", &dir_get_attr);
+	key_add(doc_map, "doc:mark-same", &dir_mark_same);
 }

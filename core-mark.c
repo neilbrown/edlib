@@ -663,6 +663,27 @@ void mark_to_mark(struct doc *d, struct mark *m, struct mark *target)
 	m->rpos = target->rpos;
 }
 
+int mark_same2(struct doc *d, struct mark *m1, struct mark *m2, struct cmd_info *ci)
+{
+	struct point p, *pt = &p;
+	struct cmd_info ci2 = {0};
+	p.doc = d;
+	if (!ci)
+		ci = &ci2;
+	ci->key = "doc:mark-same";
+	ci->mark = m1;
+	ci->mark2 = m2;
+	ci->pointp = &pt;
+	ci->extra = 0;
+	key_lookup(d->map, ci);
+	return ci->extra;
+}
+
+int mark_same(struct doc *d, struct mark *m1, struct mark *m2)
+{
+	return mark_same2(d, m1, m2, NULL);
+}
+
 /* A 'vmark' is a mark in a particular view.  We can walk around those
  * silently skipping over the points.
  */

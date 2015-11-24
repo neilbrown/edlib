@@ -1013,10 +1013,12 @@ static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2)
 	return 0;
 }
 
-static int text_sameref(struct doc *d, struct mark *a, struct mark *b)
+DEF_CMD(text_mark_same)
 {
+	struct doc *d = (*ci->pointp)->doc;
 	struct text *t = container_of(d, struct text, doc);
-	return text_ref_same(t, &a->ref, &b->ref);
+	ci->extra = text_ref_same(t, &ci->mark->ref, &ci->mark2->ref);
+	return 1;
 }
 
 DEF_CMD(comm_new)
@@ -1517,7 +1519,6 @@ DEF_CMD(text_destroy)
 
 static struct doc_operations text_ops = {
 	.step      = text_step,
-	.same_ref  = text_sameref,
 };
 
 #define LARGE_LINE 4096
@@ -1647,4 +1648,5 @@ void edlib_init(struct editor *ed)
 	key_add(text_map, "doc:set-attr", &text_set_attr);
 	key_add(text_map, "doc:get-attr", &text_get_attr);
 	key_add(text_map, "doc:replace", &text_replace);
+	key_add(text_map, "doc:mark-same", &text_mark_same);
 }

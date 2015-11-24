@@ -318,11 +318,11 @@ DEF_CMD(docs_set_ref)
 	return 1;
 }
 
-static int docs_sameref(struct doc *d, struct mark *a, struct mark *b)
+DEF_CMD(docs_mark_same)
 {
-	return a->ref.d == b->ref.d;
+	ci->extra = ci->mark->ref.d == ci->mark2->ref.d;
+	return 1;
 }
-
 
 static char *__docs_get_attr(struct doc *doc, struct mark *m,
 			     bool forward, char *attr)
@@ -367,7 +367,6 @@ DEF_CMD(docs_get_attr)
 
 static struct doc_operations docs_ops = {
 	.step      = docs_step,
-	.same_ref  = docs_sameref,
 };
 
 DEF_CMD(docs_open)
@@ -436,6 +435,7 @@ void doc_make_docs(struct editor *ed)
 
 	key_add(docs_map, "doc:set-ref", &docs_set_ref);
 	key_add(docs_map, "doc:get-attr", &docs_get_attr);
+	key_add(docs_map, "doc:mark-same", &docs_mark_same);
 
 	ds->doc.map = docs_map;
 
