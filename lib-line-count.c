@@ -224,7 +224,7 @@ DEF_CMD(count_lines)
 
 	/* FIXME optimise this away most of the time */
 	count_calculate(d, NULL, NULL);
-	count_calculate(d, NULL, mark_of_point(pt));
+	count_calculate(d, NULL, &pt->m);
 	if (ci->mark)
 		count_calculate(d, NULL, ci->mark);
 	return 1;

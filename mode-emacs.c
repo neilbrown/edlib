@@ -82,7 +82,7 @@ REDEF_CMD(emacs_move)
 	ci2.focus = ci->focus;
 	ci2.key = mv->type;
 	ci2.numeric = mv->direction * RPT_NUM(ci);
-	ci2.mark = mark_of_point(pt);
+	ci2.mark = &pt->m;
 	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);
 
@@ -191,7 +191,7 @@ DEF_CMD(emacs_insert)
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
-	ci2.mark = mark_of_point(*ci->pointp);
+	ci2.mark = &(*ci->pointp)->m;
 	strncpy(str,ci->key+4, sizeof(str));
 	str[4] = 0;
 	ci2.str = str;
@@ -223,7 +223,7 @@ DEF_CMD(emacs_insert_other)
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
-	ci2.mark = mark_of_point(*ci->pointp);
+	ci2.mark = &(*ci->pointp)->m;
 	for (i = 0; other_inserts[i].key; i++)
 		if (strcmp(other_inserts[i].key, ci->key) == 0)
 			break;
@@ -396,7 +396,7 @@ DEF_CMD(emacs_file_complete)
 		struct cmd_info ci3 = {0};
 		ci3.key = "Replace";
 		ci3.pointp = ci->pointp;
-		ci3.mark = mark_of_point(*ci->pointp);
+		ci3.mark = &(*ci->pointp)->m;
 		ci3.numeric = 1;
 		ci3.focus = ci->focus;
 		ci3.str = c;
@@ -509,7 +509,7 @@ DEF_CMD(emacs_doc_complete)
 		struct cmd_info ci3 = {0};
 		ci3.key = "Replace";
 		ci3.pointp = ci->pointp;
-		ci3.mark = mark_of_point(*ci->pointp);
+		ci3.mark = &(*ci->pointp)->m;
 		ci3.numeric = 1;
 		ci3.focus = ci->focus;
 		ci3.str = c;
@@ -602,7 +602,7 @@ DEF_CMD(emacs_search)
 	if (!ci->str || !ci->str[0])
 		return -1;
 	ci2.pointp = pane_point(ci->focus);
-	ci2.mark = mark_dup(mark_of_point(*ci2.pointp), 1);
+	ci2.mark = mark_dup(&(*ci2.pointp)->m, 1);
 	ci2.str = ci->str;
 	ci2.key = "text-search";
 	if (!key_lookup(pane2ed(ci->focus)->commands, &ci2))

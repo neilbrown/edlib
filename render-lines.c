@@ -530,8 +530,8 @@ restart:
 		}
 		m2 = container_of(vmark_next(&m->m), struct rl_mark, m);
 		if (p->cx <= 0 &&
-		    mark_ordered_or_same(d, &m->m, mark_of_point(*ptp)) &&
-		    (!m2 || mark_ordered_or_same(d, mark_of_point(*ptp), &m2->m))) {
+		    mark_ordered_or_same(d, &m->m, &(*ptp)->m) &&
+		    (!m2 || mark_ordered_or_same(d, &(*ptp)->m, &m2->m))) {
 			int len = call_render_line_to_point(p, ptp,
 							    m);
 			rl->cursor_line = y;
@@ -783,8 +783,8 @@ DEF_CMD(render_lines_move_pos)
 	top = vmark_first(d, rl->typenum);
 	bot = vmark_last(d, rl->typenum);
 	if (top && bot &&
-	    mark_ordered(top, mark_of_point(pt)) &&
-	    mark_ordered(mark_of_point(pt), bot))
+	    mark_ordered(top, &pt->m) &&
+	    mark_ordered(&pt->m, bot))
 		/* pos already displayed */
 		return 1;
 	find_lines(ci->pointp, ci->home);
@@ -825,7 +825,7 @@ DEF_CMD(render_lines_move_line)
 		ci2.numeric -= 1;
 	else
 		ci2.numeric += 1;
-	ci2.mark = mark_of_point(*ptp);
+	ci2.mark = &(*ptp)->m;
 	ci2.pointp = ci->pointp;
 	if (!key_handle_focus(&ci2))
 		return -1;

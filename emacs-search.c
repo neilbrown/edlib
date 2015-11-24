@@ -46,7 +46,7 @@ DEF_CMD(search_forward)
 	struct stk *s;
 	char *str;
 
-	if (esi->s && mark_same(d, esi->s->m, mark_of_point(esi->end))) {
+	if (esi->s && mark_same(d, esi->s->m, &esi->end->m)) {
 		/* already pushed and didn't find anything new */
 		return 1;
 	}
@@ -58,7 +58,7 @@ DEF_CMD(search_forward)
 	s->next = esi->s;
 	esi->s = s;
 	if (esi->matched)
-		esi->start = mark_dup(mark_of_point(esi->end), 1);
+		esi->start = mark_dup(&esi->end->m, 1);
 	else {
 		esi->start = mark_dup(s->m, 1);
 		mark_reset(d, esi->start);
@@ -100,7 +100,7 @@ DEF_CMD(search_add)
 	do {
 		/* TEMP HACK - please fix */
 		d->ops->set_attr(esi->end, "highlight", NULL);
-		wch = mark_next(d, mark_of_point(esi->end));
+		wch = mark_next(d, &esi->end->m);
 		if (wch == WEOF)
 			return 1;
 		if (wch == '\n') {
@@ -108,7 +108,7 @@ DEF_CMD(search_add)
 			/* Sending this will cause a call-back to
 			 * close everything down.
 			 */
-			mark_prev(d, mark_of_point(esi->end));
+			mark_prev(d, &esi->end->m);
 			return 1;
 		}
 		/* FIXME utf-8! and quote regexp chars */
@@ -241,7 +241,7 @@ DEF_CMD(emacs_search)
 	}
 	esi->target = ci2.focus;
 	point_dup(esi->target->point, &esi->end);
-	esi->start = mark_dup(mark_of_point(esi->end), 1);
+	esi->start = mark_dup(&esi->end->m, 1);
 	esi->s = NULL;
 	esi->matched = 0;
 	esi->search = ci->focus;

@@ -35,7 +35,7 @@ DEF_CMD(render_line)
 	int field = 0;
 
 	if (RPT_NUM(ci) < 0 &&
-	    !mark_same(d, mark_of_point(*ci->pointp), m))
+	    !mark_same(d, &(*ci->pointp)->m, m))
 		ci->numeric = NO_NUMERIC;
 	ch = doc_following(d, m);
 	if (ch == WEOF) {
@@ -49,7 +49,7 @@ DEF_CMD(render_line)
 	n = body;
 	m->rpos = field - rf->home_field;
 	if (RPT_NUM(ci) < 0 &&
-	    mark_of_point(*ci->pointp)->rpos == m->rpos)
+	    (*ci->pointp)->m.rpos == m->rpos)
 		goto endwhile;
 	if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
 	    ret.len >= ci->numeric)
@@ -73,7 +73,7 @@ DEF_CMD(render_line)
 		    ret.len >= ci->numeric)
 			break;
 		if (RPT_NUM(ci) < 0 &&
-		    mark_of_point(*ci->pointp)->rpos == m->rpos)
+		    (*ci->pointp)->m.rpos == m->rpos)
 			break;
 		n += 1;
 		if (*n == '+') {
@@ -135,7 +135,7 @@ endwhile:
 		rf->home_field = home;
 		m->rpos = field + 1 - rf->home_field;
 		if (RPT_NUM(ci) < 0 &&
-		    mark_of_point(*ci->pointp)->rpos == m->rpos)
+		    (*ci->pointp)->m.rpos == m->rpos)
 			;
 		else if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC)
 			;

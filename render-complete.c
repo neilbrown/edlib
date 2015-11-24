@@ -259,7 +259,7 @@ DEF_CMD(complete_return)
 	ci2.key = "render-line";
 	ci2.focus = ci->home;
 	ci2.home = ci->home;
-	ci2.mark = mark_of_point(*ci->pointp);
+	ci2.mark = &(*ci->pointp)->m;
 	ci2.pointp = ci->pointp;
 	ci2.numeric = NO_NUMERIC;
 	render_complete_line_func(&ci2);

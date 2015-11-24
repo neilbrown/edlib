@@ -136,7 +136,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 	while (y < p->h) {
 		mark_free(last_vis);
 		last_vis = mark_dup(m, 0);
-		if (mark_same(d, m, mark_of_point(*ptp))) {
+		if (mark_same(d, m, &(*ptp)->m)) {
 			p->cx = x;
 			p->cy = y;
 		}
@@ -144,11 +144,11 @@ static struct mark *render(struct point **ptp, struct pane *p)
 			break;
 	}
 	mark_free(m);
-	if (mark_ordered(mark_of_point(*ptp), rd->top))
+	if (mark_ordered(&(*ptp)->m, rd->top))
 		/* point is before mark, cannot possibly see cursor */
 		p->cx = p->cy = -1;
-	while (mark_ordered(last_vis, mark_of_point(*ptp)) &&
-	       mark_same(d, last_vis, mark_of_point(*ptp)))
+	while (mark_ordered(last_vis, &(*ptp)->m) &&
+	       mark_same(d, last_vis, &(*ptp)->m))
 		/* point is at end of visible region - need to include it */
 		mark_forward_over(last_vis, doc_next_mark_all(d, last_vis));
 
@@ -380,8 +380,8 @@ DEF_CMD(render_text_move_pos)
 	rt->ignore_point = 1;
 	if (rt->top &&
 	    rt->bot &&
-	    mark_ordered(rt->top, mark_of_point(pt)) &&
-	    mark_ordered(mark_of_point(pt), rt->bot))
+	    mark_ordered(rt->top, &pt->m) &&
+	    mark_ordered(&pt->m, rt->bot))
 		/* pos already displayed */
 		return 1;
 	top = find_top(ci->pointp, ci->home, rt->top, rt->bot);
@@ -440,7 +440,7 @@ DEF_CMD(render_text_move_line)
 	ci2.numeric = RPT_NUM(ci);
 	if (ci2.numeric < 0)
 		ci2.numeric -= 1;
-	m = mark_of_point(pt);
+	m = &pt->m;
 	ci2.mark = m;
 	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);

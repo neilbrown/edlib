@@ -66,7 +66,7 @@ static int view_refresh(struct cmd_info *ci)
 			ci2.pointp = ci->pointp;
 			key_lookup(pt->doc->ed->commands, &ci2);
 
-			ln = attr_find_int(*mark_attr(mark_of_point(pt)), "lines");
+			ln = attr_find_int(*mark_attr(&pt->m), "lines");
 			l = attr_find_int(pt->doc->attrs, "lines");
 			w = attr_find_int(pt->doc->attrs, "words");
 			c = attr_find_int(pt->doc->attrs, "chars");
@@ -417,7 +417,7 @@ DEF_CMD(view_file)
 	int rpt = RPT_NUM(ci);
 
 	if (ci->mark == NULL)
-		ci->mark = mark_of_point(pt);
+		ci->mark = &pt->m;
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next(pt->doc, ci->mark)) != WEOF)
 			;
@@ -478,7 +478,7 @@ DEF_CMD(view_click)
 	ci2.focus = p;
 	ci2.key = "Move-View-Small";
 	ci2.numeric = RPT_NUM(ci);
-	ci2.mark = mark_of_point(*ci->pointp);
+	ci2.mark = &(*ci->pointp)->m;
 	ci2.pointp = ci->pointp;
 
 	if (ci->hy == mid-1) {

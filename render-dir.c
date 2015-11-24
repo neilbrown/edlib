@@ -77,7 +77,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 
 		mark_free(last_vis);
 		last_vis = mark_dup(m, 0);
-		if (mark_same(d, m, mark_of_point(*ptp))) {
+		if (mark_same(d, m, &(*ptp)->m)) {
 			p->cx = x;
 			p->cy = y;
 		}
@@ -106,7 +106,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 				if (dd->home_field < 0)
 					dd->home_field = home;
 			}
-			if (p->cy == y && mark_of_point(*ptp)->rpos == field - dd->home_field)
+			if (p->cy == y && (*ptp)->m.rpos == field - dd->home_field)
 				p->cx = x;
 			b = buf;
 			while (*n == '-' || *n == '_' || isalnum(*n)) {
@@ -170,7 +170,7 @@ static struct mark *render(struct point **ptp, struct pane *p)
 		x = 0;
 	}
 	mark_free(m);
-	if (mark_ordered(mark_of_point(*ptp), dd->top) && !mark_same(d, mark_of_point(*ptp), dd->top))
+	if (mark_ordered(&(*ptp)->m, dd->top) && !mark_same(d, &(*ptp)->m, dd->top))
 		p->cx = p->cy = -1;
 	return last_vis;
 }

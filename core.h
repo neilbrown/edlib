@@ -151,7 +151,6 @@ struct point {
 	struct tlist_head	lists[];
 };
 
-struct mark *mark_of_point(struct point *p);
 struct mark *mark_dup(struct mark *m, int notype);
 void mark_free(struct mark *m);
 struct mark *doc_new_mark(struct doc *d, int view);

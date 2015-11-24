@@ -729,49 +729,49 @@ static int text_reundo(struct point *p, bool redo)
 			where = 1;
 			first = 0;
 		} else
-			where = text_locate(t, &mark_of_point(p)->ref, &end);
+			where = text_locate(t, &p->m.ref, &end);
 		if (!where)
 			break;
 
 		if (where == 1) {
 			do {
-				i = text_advance_towards(t, &mark_of_point(p)->ref, &end);
+				i = text_advance_towards(t, &p->m.ref, &end);
 				if (i == 0)
 					break;
-				while ((m = doc_next_mark_all(d, mark_of_point(p))) != NULL &&
-				       m->ref.c == mark_of_point(p)->ref.c &&
-				       m->ref.o < mark_of_point(p)->ref.o)
-					mark_forward_over(mark_of_point(p), m);
+				while ((m = doc_next_mark_all(d, &p->m)) != NULL &&
+				       m->ref.c == p->m.ref.c &&
+				       m->ref.o < p->m.ref.o)
+					mark_forward_over(&p->m, m);
 			} while (i == 2);
 		} else {
 			do {
-				i = text_retreat_towards(t, &mark_of_point(p)->ref, &end);
+				i = text_retreat_towards(t, &p->m.ref, &end);
 				if (i == 0)
 					break;
-				while ((m = doc_prev_mark_all(d, mark_of_point(p))) != NULL &&
-				       m->ref.c == mark_of_point(p)->ref.c &&
-				       m->ref.o > mark_of_point(p)->ref.o)
-					mark_backward_over(mark_of_point(p), m);
+				while ((m = doc_prev_mark_all(d, &p->m)) != NULL &&
+				       m->ref.c == p->m.ref.c &&
+				       m->ref.o > p->m.ref.o)
+					mark_backward_over(&p->m, m);
 			} while (i == 2);
 		}
 
-		if (!text_ref_same(t, &mark_of_point(p)->ref, &end))
+		if (!text_ref_same(t, &p->m.ref, &end))
 			/* eek! */
 			break;
 		/* point is now at location of undo */
 
-		m = mark_of_point(p);
+		m = &p->m;
 		hlist_for_each_entry_continue_reverse(m, &t->doc.marks, all)
 			if (text_update_prior_after_change(t, &m->ref,
 							   &start, &end) == 0)
 				break;
-		m = mark_of_point(p);
+		m = &p->m;
 		hlist_for_each_entry_continue(m, all)
 			if (text_update_following_after_change(t, &m->ref,
 							       &start, &end) == 0)
 				break;
 
-		early = doc_prev_mark_all(d, mark_of_point(p));
+		early = doc_prev_mark_all(d, &p->m);
 		if (early && !text_ref_same(t, &early->ref, &start))
 			early = NULL;
 
@@ -1256,7 +1256,7 @@ static void text_replace(struct point *pos, struct mark *end,
 {
 	struct doc *d = pos->doc;
 	struct text *t = container_of(d, struct text, doc);
-	struct mark *pm = mark_of_point(pos);
+	struct mark *pm = &pos->m;
 	struct mark *early = NULL;
 
 	/* First delete, then insert */
@@ -1269,7 +1269,7 @@ static void text_replace(struct point *pos, struct mark *end,
 			point_to_mark(pos, end);
 		} else
 			myend = mark_dup(end, 1);
-		l = count_bytes(t, mark_of_point(pos), myend);
+		l = count_bytes(t, &pos->m, myend);
 		mark_free(myend);
 		text_del(t, &pm->ref, l, first);
 
@@ -1493,7 +1493,7 @@ DEF_CMD(render_line)
 		int offset = m->ref.o;
 		if (o >= 0 && b.len >= o)
 			break;
-		if (o == -1 && mark_same(d, m, mark_of_point(*ptp)))
+		if (o == -1 && mark_same(d, m, &(*ptp)->m))
 			break;
 		ch = mark_next(d, m);
 		if (ch == WEOF)

@@ -147,7 +147,7 @@ DEF_CMD(render_line)
 		struct mark *m2 = ci->mark;
 
 		if (ci->numeric == -1 &&
-		    mark_same(d, m2, mark_of_point(*ptp)))
+		    mark_same(d, m2, &(*ptp)->m))
 			goto done;
 		if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC &&
 		    ci->numeric <= ret.len)

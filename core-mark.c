@@ -323,11 +323,6 @@ struct doc_ref point_ref(struct point *p)
 	return p->m.ref;
 }
 
-struct mark *mark_of_point(struct point *p)
-{
-	return &p->m;
-}
-
 struct mark *doc_first_mark(struct doc *d, int view)
 {
 	struct tlist_head *tl;
@@ -778,11 +773,11 @@ struct mark *vmark_at_point(struct point *pt, int view)
 
 	tl = &pt->lists[view];
 	m = __vmark_prev(tl);
-	if (m && mark_same(pt->doc, m, mark_of_point(pt)))
+	if (m && mark_same(pt->doc, m, &pt->m))
 		return m;
 	tl = &pt->lists[view];
 	m = __vmark_next(tl);
-	if (m && mark_same(pt->doc, m, mark_of_point(pt)))
+	if (m && mark_same(pt->doc, m, &pt->m))
 		return m;
 	return NULL;
 }
@@ -803,7 +798,7 @@ void point_notify_change(struct point *p, struct mark *m)
 	ci.x = ci.y = -1;
 	ci.pointp = p->owner;
 	if (!m)
-		m = mark_of_point(p);
+		m = &p->m;
 	for (i = 0; i < p->size; i++) {
 		struct tlist_head *tl = &p->lists[i];
 		struct command *c = d->views[i].notify;
@@ -835,7 +830,7 @@ void point_notify_change(struct point *p, struct mark *m)
 		while (TLIST_TYPE(tl) != GRP_HEAD) {
 			if (TLIST_TYPE(tl) == GRP_MARK) {
 				ci.mark = tlist_entry(tl, struct mark, view);
-				if (mark_same(d, ci.mark, mark_of_point(p)))
+				if (mark_same(d, ci.mark, &p->m))
 					c->func(&ci);
 				else
 					break;
