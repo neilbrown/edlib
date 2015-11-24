@@ -44,19 +44,35 @@ struct doc_ref {
  * The root pane of a pane tree must have a display as the 'data', which allows
  * the editor to be found from any pane or point.
  */
+struct pane {
+	struct pane		*parent;
+	struct list_head	siblings;
+	struct list_head	children;
+	int			x,y,z;
+	int			h,w;
+	struct pane		*focus;
+	int			cx, cy;	/* cursor position */
+
+	int			damaged;
+
+	struct command		*handle;
+	void			*data;
+	struct point		*point;
+	struct attrset		*attrs;
+};
+
 struct display {
-	struct editor		*ed;
 	char			*mode, *next_mode;
 	int			numeric, extra;
 };
 
 struct editor {
+	struct pane		root;
 	struct event_base	*base;
 	struct list_head	documents;
 	struct doc		*docs;  /* document containing all documents */
+	struct point		*docs_point;
 	struct map		*commands;
-
-	struct display		null_display;
 };
 struct pane *editor_new(void);
 struct point *editor_choose_doc(struct editor *ed);
@@ -261,26 +277,6 @@ void key_add_range(struct map *map, char *first, char *last,
 		   struct command *comm);
 struct command *key_register_prefix(char *name);
 
-
-/* pane */
-struct pane {
-	struct pane		*parent;
-	struct list_head	siblings;
-	struct list_head	children;
-	int			x,y,z;
-	int			h,w;
-	struct pane		*focus;
-	int			cx, cy;	/* cursor position */
-
-	int			damaged;
-
-	struct command		*handle;
-	void			*data;
-	struct point		*point;
-	struct attrset		*attrs;
-};
-
-
 enum {
 	DAMAGED_CHILD	= 1,
 	DAMAGED_SIZE	= 2, /* these the each impose the next. */
@@ -291,6 +287,7 @@ enum {
 struct pane *pane_register(struct pane *parent, int z,
 			   struct command *handle, void *data,
 			   struct list_head *here);
+void pane_init(struct pane *p, struct pane *par, struct list_head *here);
 void pane_reparent(struct pane *p, struct pane *newparent);
 void pane_subsume(struct pane *p, struct pane *parent);
 void pane_close(struct pane *p);

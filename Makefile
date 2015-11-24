@@ -26,7 +26,7 @@ H = list.h core.h misc.h
 edlib: $(OBJ) lib/libedlib.so
 	$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -Wl,--disable-new-dtags -o edlib $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
 
-$(OBJ) $(SHOBJ) $(LIBOBJ) : $(H)
+$(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) : $(H)
 
 $(OBJ) : O/%.o : %.c
 	gcc $(CPPFLAGS) $(CFLAGS) -c -o $@ $<

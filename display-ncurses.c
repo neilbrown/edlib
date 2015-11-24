@@ -73,10 +73,10 @@ static void ncurses_flush(int fd, short ev, void *P)
 DEF_CMD(nc_misc)
 {
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
+	struct editor *ed = pane2ed(p);
 
 	if (strcmp(ci->str, "exit") == 0)
-		event_base_loopbreak(dd->dpy.ed->base);
+		event_base_loopbreak(ed->base);
 	else if (strcmp(ci->str, "refresh") == 0) {
 		clear();
 		pane_damaged(p,  DAMAGED_SIZE);
@@ -153,14 +153,14 @@ DEF_CMD(ncurses_handle)
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") == 0) {
-
+		struct editor *ed = pane2ed(p);
 		set_screen(dd->scr);
 
 		if (damage & DAMAGED_SIZE) {
 			getmaxyx(stdscr, p->h, p->w);
 			p->h -= 1;
 		}
-		l = event_new(dd->dpy.ed->base, -1, EV_TIMEOUT, ncurses_flush, p);
+		l = event_new(ed->base, -1, EV_TIMEOUT, ncurses_flush, p);
 		event_priority_set(l, 0);
 		tv.tv_sec = 0;
 		tv.tv_usec = 0;
@@ -189,7 +189,6 @@ static struct pane *ncurses_init(struct editor *ed)
 	keypad(w, TRUE);
 	mousemask(ALL_MOUSE_EVENTS, NULL);
 
-	dd->dpy.ed = ed;
 	dd->scr = NULL;
 	dd->dpy.mode = "";
 	dd->dpy.next_mode = "";
@@ -197,7 +196,7 @@ static struct pane *ncurses_init(struct editor *ed)
 	dd->dpy.extra = 0;
 
 	current_screen = NULL;
-	p = pane_register(NULL, 0, &ncurses_handle, dd, NULL);
+	p = pane_register(&ed->root, 0, &ncurses_handle, dd, NULL);
 
 	getmaxyx(stdscr, p->h, p->w); p->h-=1;
 

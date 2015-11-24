@@ -10,19 +10,27 @@
 
 #include "core.h"
 
+struct map *ed_map;
+
+DEF_LOOKUP_CMD(ed_handle, ed_map);
+
 struct pane *editor_new(void)
 {
 	struct editor *ed = calloc(sizeof(*ed), 1);
-	struct pane *p;
+
+	if (!ed_map)
+		ed_map = key_alloc();
+
+	pane_init(&ed->root, NULL, NULL);
+	ed->root.handle = &ed_handle.c;
+	ed->root.data = NULL;
 
 	INIT_LIST_HEAD(&ed->documents);
 
 	doc_make_docs(ed);
 	ed->commands = key_alloc();
-	ed->null_display.ed = ed;
-	p = pane_register(NULL, 0, NULL, &ed->null_display, NULL);
-	point_new(ed->docs, &p->point);
-	return p;
+	point_new(ed->docs, &ed->docs_point);
+	return &ed->root;
 }
 
 struct point *editor_choose_doc(struct editor *ed)

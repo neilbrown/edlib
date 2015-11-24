@@ -33,7 +33,7 @@
 
 #include "core.h"
 
-static void pane_init(struct pane *p, struct pane *par, struct list_head *here)
+void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 {
 	p->parent = par;
 	if (par && !here)
@@ -305,6 +305,9 @@ int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)
 
 struct pane *pane_to_root(struct pane *p, int *x, int *y, int *z, int *w, int *h)
 {
+	/* The root we aim for is the display, which is one step
+	 * below the actual root (which can contain several displays).
+	 */
 	while(1) {
 		if (w && *x + *w > p->w)
 			*w = p->w - *x;
@@ -313,7 +316,7 @@ struct pane *pane_to_root(struct pane *p, int *x, int *y, int *z, int *w, int *h
 		*x += p->x;
 		*y += p->y;
 		*z += p->z;
-		if (!p->parent)
+		if (!p->parent || !p->parent->parent)
 			return p;
 		p = p->parent;
 	}
@@ -322,7 +325,8 @@ struct pane *pane_to_root(struct pane *p, int *x, int *y, int *z, int *w, int *h
 void pane_focus(struct pane *p)
 {
 	pane_damaged(p, DAMAGED_CURSOR);
-	while (p->parent) {
+	/* refocus up to the display, but not do the root */
+	while (p->parent && p->parent->parent) {
 		if (p->parent->focus &&
 		    p->parent->focus != p) {
 			pane_damaged(p->parent->focus, DAMAGED_CURSOR);
@@ -334,11 +338,9 @@ void pane_focus(struct pane *p)
 
 struct editor *pane2ed(struct pane *p)
 {
-	struct display *dpy;
 	while (p->parent)
 		p = p->parent;
-	dpy = p->data;
-	return dpy->ed;
+	return container_of(p, struct editor, root);
 }
 
 struct pane *pane_with_cursor(struct pane *p, int *oxp, int *oyp)
@@ -401,7 +403,9 @@ void pane_set_mode(struct pane *p, char *mode, int transient)
 {
 	struct display *dd;
 
-	while (p->parent)
+	if (!p->parent)
+		return;
+	while (p->parent->parent)
 		p = p->parent;
 	dd = p->data;
 	dd->mode = mode;
@@ -413,7 +417,9 @@ void pane_set_numeric(struct pane *p, int numeric)
 {
 	struct display *dd;
 
-	while (p->parent)
+	if (!p->parent)
+		return;
+	while (p->parent->parent)
 		p = p->parent;
 	dd = p->data;
 	dd->numeric = numeric;
@@ -423,7 +429,9 @@ void pane_set_extra(struct pane *p, int extra)
 {
 	struct display *dd;
 
-	while (p->parent)
+	if (!p->parent)
+		return;
+	while (p->parent->parent)
 		p = p->parent;
 	dd = p->data;
 	dd->extra = extra;
