@@ -84,8 +84,6 @@ struct doc {
 };
 
 struct doc_operations {
-	void		(*replace)(struct point *pos, struct mark *end,
-				   char *str, bool *first);
 	wint_t		(*step)(struct doc *d, struct mark *m, bool forward, bool move);
 	int		(*same_ref)(struct doc *d, struct mark *a, struct mark *b);
 };
@@ -349,7 +347,15 @@ static inline wint_t doc_prior(struct doc *d, struct mark *m)
 static inline void doc_replace(struct point *p, struct mark *m,
 			       char *str, bool *first)
 {
-	p->doc->ops->replace(p, m, str, first);
+	struct cmd_info ci = {0};
+	ci.key = "doc:replace";
+	ci.pointp = &p;
+	ci.mark = m;
+	ci.str = str;
+	ci.extra = *first;
+	ci.numeric = 1;
+	key_lookup(p->doc->map, &ci);
+	*first = ci.extra;
 }
 static inline int doc_undo(struct point *p, bool redo)
 {

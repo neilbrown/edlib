@@ -274,11 +274,6 @@ struct docs {
 	struct doc	doc;
 };
 
-static void docs_replace(struct point *pos, struct mark *end,
-			 char *str, bool *first)
-{
-}
-
 static wint_t docs_step(struct doc *doc, struct mark *m, bool forward, bool move)
 {
 	struct doc *d = m->ref.d, *next;
@@ -371,7 +366,6 @@ DEF_CMD(docs_get_attr)
 }
 
 static struct doc_operations docs_ops = {
-	.replace   = docs_replace,
 	.step      = docs_step,
 	.same_ref  = docs_sameref,
 };

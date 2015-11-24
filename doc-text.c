@@ -1342,9 +1342,12 @@ static void text_check_consistent(struct text *t)
 	doc_check_consistent(d);
 }
 
-static void text_replace(struct point *pos, struct mark *end,
-			 char *str, bool *first)
+DEF_CMD(text_replace)
 {
+	struct point *pos = *ci->pointp;
+	struct mark *end = ci->mark;
+	char *str = ci->str;
+	bool first = ci->numeric;
 	struct doc *d = pos->doc;
 	struct text *t = container_of(d, struct text, doc);
 	struct mark *pm = &pos->m;
@@ -1362,7 +1365,7 @@ static void text_replace(struct point *pos, struct mark *end,
 			myend = mark_dup(end, 1);
 		l = count_bytes(t, &pos->m, myend);
 		mark_free(myend);
-		text_del(t, &pm->ref, l, first);
+		text_del(t, &pm->ref, l, &first);
 
 		for (m = doc_prev_mark_all(d, pm);
 		     m && text_update_prior_after_change(t, &m->ref, &pm->ref, &pm->ref);
@@ -1382,7 +1385,7 @@ static void text_replace(struct point *pos, struct mark *end,
 		struct doc_ref start;
 		struct mark *m;
 
-		text_add_str(t, &pm->ref, str, &start, first);
+		text_add_str(t, &pm->ref, str, &start, &first);
 		for (m = doc_prev_mark_all(d, pm);
 		     m && text_update_prior_after_change(t, &m->ref, &start, &pm->ref);
 		     m = doc_prev_mark_all(d, m))
@@ -1395,6 +1398,8 @@ static void text_replace(struct point *pos, struct mark *end,
 
 	}
 	point_notify_change(pos, early);
+	ci->numeric = first;
+	return 1;
 }
 
 
@@ -1511,7 +1516,6 @@ DEF_CMD(text_destroy)
 }
 
 static struct doc_operations text_ops = {
-	.replace   = text_replace,
 	.step      = text_step,
 	.same_ref  = text_sameref,
 };
@@ -1642,4 +1646,5 @@ void edlib_init(struct editor *ed)
 	key_add(text_map, "doc:reundo", &text_reundo);
 	key_add(text_map, "doc:set-attr", &text_set_attr);
 	key_add(text_map, "doc:get-attr", &text_get_attr);
+	key_add(text_map, "doc:replace", &text_replace);
 }

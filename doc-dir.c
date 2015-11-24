@@ -128,11 +128,6 @@ DEF_CMD(comm_new)
 	return 1;
 }
 
-static void dir_replace(struct point *pos, struct mark *end,
-			 char *str, bool *first)
-{
-}
-
 DEF_CMD(dir_load_file)
 {
 	struct point *pos = *(ci->pointp);
@@ -492,7 +487,6 @@ DEF_CMD(dir_destroy)
 
 
 static struct doc_operations dir_ops = {
-	.replace   = dir_replace,
 	.step      = dir_step,
 	.same_ref  = dir_sameref,
 };
