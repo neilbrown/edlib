@@ -168,6 +168,7 @@ static struct str_command {
 	{CMD(emacs_str), "NOP", NULL, "M-Chr-G"},
 	{CMD(emacs_str), "NOP", NULL, "emCX-C-Chr-G"},
 	{CMD(emacs_str), "NOP", NULL, "emCX4-C-Chr-G"},
+	{CMD(emacs_str), "doc:save-file", NULL, "emCX-C-Chr-S"},
 };
 
 REDEF_CMD(emacs_str)

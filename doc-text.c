@@ -57,6 +57,9 @@
 #include <string.h>
 #include <memory.h>
 #include <locale.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <errno.h>
 
 /* A doc_ref is treated as a pointer to a chunk, and an offset
  * from the start of 'txt'.  So 'o' must be between c->start and
@@ -231,6 +234,69 @@ DEF_CMD(text_load_file)
 err:
 	free(c);
 	return 0;
+}
+
+static int do_text_write_file(struct text *t, char *fname)
+{
+	/* Don't worry about links for now
+	 * Create a temp file with #basename#~, write to that,
+	 * fsync and then rename
+	 */
+	char *tempname = malloc(strlen(fname) + 3 + 10);
+	char *base, *tbase;
+	int cnt = 0;
+	int fd = -1;
+	struct text_chunk *c;
+
+	strcpy(tempname, fname);
+	base = strrchr(fname, '/');
+	if (base)
+		base += 1;
+	else
+		base = fname;
+	tbase = tempname + (base - fname);
+	while (cnt < 20 && fd == -1) {
+		if (cnt)
+			sprintf(tbase, "#%s#~%d", base, cnt);
+		else
+			sprintf(tbase, "#%s#~", base);
+		fd = open(tempname, O_WRONLY|O_CREAT|O_EXCL, 0666);
+		if (fd < 0 && errno != EEXIST)
+			break;
+		cnt += 1;
+	}
+	if (fd < 0)
+		return -1;
+
+	list_for_each_entry(c, &t->text, lst) {
+		char *s = c->txt + c->start;
+		int ln = c->end - c->start;
+		if (write(fd, s, ln) != ln)
+			goto error;
+	}
+	if (fsync(fd) != 0)
+		goto error;
+	if (rename(tempname, fname) < 0)
+		goto error;
+	close(fd);
+	free(tempname);
+	return 0;
+error:
+	close(fd);
+	unlink(tempname);
+	free(tempname);
+	return -1;
+
+}
+
+DEF_CMD(text_save_file)
+{
+	struct doc *d = (*ci->pointp)->doc;
+	struct text *t = container_of(d, struct text, doc);
+
+	if (!t->fname)
+		return -1;
+	return do_text_write_file(t, t->fname);
 }
 
 DEF_CMD(text_same_file)
@@ -1559,4 +1625,5 @@ void edlib_init(struct editor *ed)
 	key_add(text_map, "doc:get-str", &text_get_str);
 	key_add(text_map, "doc:destroy", &text_destroy);
 	key_add(text_map, "doc:set-ref", &text_set_ref);
+	key_add(text_map, "doc:save-file", &text_save_file);
 }
