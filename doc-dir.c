@@ -264,11 +264,6 @@ DEF_CMD(dir_same_file)
 	return 1;
 }
 
-static int dir_reundo(struct point *p, bool redo)
-{
-	return 0;
-}
-
 static wint_t dir_step(struct doc *doc, struct mark *m, bool forward, bool move)
 {
 	struct directory *dr = container_of(doc, struct directory, doc);
@@ -491,7 +486,6 @@ DEF_CMD(dir_destroy)
 
 static struct doc_operations dir_ops = {
 	.replace   = dir_replace,
-	.reundo    = dir_reundo,
 	.step      = dir_step,
 	.same_ref  = dir_sameref,
 	.get_attr  = dir_get_attr,

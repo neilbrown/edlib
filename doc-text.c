@@ -773,8 +773,10 @@ static int text_redo(struct text *t, struct doc_ref *start, struct doc_ref *end)
 		return 2;
 }
 
-static int text_reundo(struct point *p, bool redo)
+DEF_CMD(text_reundo)
 {
+	struct point *p = *ci->pointp;
+	bool redo = ci->numeric != 0;
 	struct doc_ref start, end;
 	int did_do = 2;
 	bool first = 1;
@@ -1496,7 +1498,6 @@ DEF_CMD(text_destroy)
 
 static struct doc_operations text_ops = {
 	.replace   = text_replace,
-	.reundo    = text_reundo,
 	.step      = text_step,
 	.same_ref  = text_sameref,
 	.get_attr  = text_get_attr,
@@ -1626,4 +1627,5 @@ void edlib_init(struct editor *ed)
 	key_add(text_map, "doc:destroy", &text_destroy);
 	key_add(text_map, "doc:set-ref", &text_set_ref);
 	key_add(text_map, "doc:save-file", &text_save_file);
+	key_add(text_map, "doc:reundo", &text_reundo);
 }

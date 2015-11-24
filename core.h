@@ -86,7 +86,6 @@ struct doc {
 struct doc_operations {
 	void		(*replace)(struct point *pos, struct mark *end,
 				   char *str, bool *first);
-	int		(*reundo)(struct point *pos, bool undo);
 	wint_t		(*step)(struct doc *d, struct mark *m, bool forward, bool move);
 	int		(*same_ref)(struct doc *d, struct mark *a, struct mark *b);
 	/* get/set attr operate on the attributes of the char immediately
@@ -359,7 +358,11 @@ static inline void doc_replace(struct point *p, struct mark *m,
 }
 static inline int doc_undo(struct point *p, bool redo)
 {
-	return p->doc->ops->reundo(p, redo);
+	struct cmd_info ci = {0};
+	ci.pointp = &p;
+	ci.numeric = redo ? 1 : 0;
+	ci.key = "doc:reundo";
+	return key_lookup(p->doc->map, &ci);
 }
 static inline int doc_load_file(struct doc *d, struct point *p,
 				int fd, char *name)

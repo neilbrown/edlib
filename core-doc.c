@@ -279,11 +279,6 @@ static void docs_replace(struct point *pos, struct mark *end,
 {
 }
 
-static int docs_reundo(struct point *p, bool redo)
-{
-	return 0;
-}
-
 static wint_t docs_step(struct doc *doc, struct mark *m, bool forward, bool move)
 {
 	struct doc *d = m->ref.d, *next;
@@ -372,7 +367,6 @@ static int docs_set_attr(struct point *p, char *attr, char *val)
 
 static struct doc_operations docs_ops = {
 	.replace   = docs_replace,
-	.reundo    = docs_reundo,
 	.step      = docs_step,
 	.same_ref  = docs_sameref,
 	.get_attr  = docs_get_attr,
