@@ -65,7 +65,7 @@ struct directory {
 	struct stat		stat;
 	char			*fname;
 };
-static struct doc_operations dir_ops;
+
 static struct map *doc_map;
 
 static int add_ent(struct list_head *lst, struct dirent *de)
@@ -121,7 +121,6 @@ DEF_CMD(comm_new)
 	doc_init(&dr->doc);
 	dr->doc.map = doc_map;
 	dr->doc.default_render = "format";
-	dr->doc.ops = &dir_ops;
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
 	point_new(&dr->doc, ci->pointp);
@@ -491,10 +490,6 @@ DEF_CMD(dir_destroy)
 	}
 	return 1;
 }
-
-
-static struct doc_operations dir_ops = {
-};
 
 DEF_CMD(dir_open)
 {

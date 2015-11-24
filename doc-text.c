@@ -139,7 +139,6 @@ static int text_advance_towards(struct text *t, struct doc_ref *ref, struct doc_
 static int text_retreat_towards(struct text *t, struct doc_ref *ref, struct doc_ref *target);
 static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2);
 static int text_locate(struct text *t, struct doc_ref *r, struct doc_ref *dest);
-static struct doc_operations text_ops;
 static void text_check_consistent(struct text *t);
 
 static struct map *text_map;
@@ -1035,7 +1034,6 @@ DEF_CMD(comm_new)
 	t->undo = t->redo = NULL;
 	doc_init(&t->doc);
 	t->doc.default_render = "lines";
-	t->doc.ops = &text_ops;
 	t->doc.map = text_map;
 	t->fname = NULL;
 	text_new_alloc(t, 0);
@@ -1522,9 +1520,6 @@ DEF_CMD(text_destroy)
 	free(t->fname);
 	return 1;
 }
-
-static struct doc_operations text_ops = {
-};
 
 #define LARGE_LINE 4096
 

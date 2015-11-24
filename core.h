@@ -75,15 +75,11 @@ struct doc {
 	struct attrset		*attrs;
 	int			nviews;
 	struct editor		*ed;
-	struct doc_operations	*ops;
 	struct list_head	list;	/* ed->documents */
 	struct map		*map;
 	char			*name;
 	char			*default_render;
 	short			deleting; /* is begin destroyed */
-};
-
-struct doc_operations {
 };
 
 void doc_init(struct doc *d);

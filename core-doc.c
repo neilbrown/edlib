@@ -371,9 +371,6 @@ DEF_CMD(docs_get_attr)
 	return 1;
 }
 
-static struct doc_operations docs_ops = {
-};
-
 DEF_CMD(docs_open)
 {
 	struct pane *p = ci->home;
@@ -427,7 +424,6 @@ void doc_make_docs(struct editor *ed)
 
 	doc_init(&ds->doc);
 	ds->doc.ed = ed;
-	ds->doc.ops = &docs_ops;
 	ds->doc.default_render = "format";
 	doc_set_name(&ds->doc, "*Documents*");
 	ed->docs = &ds->doc;
@@ -502,7 +498,7 @@ int  doc_destroy(struct doc *d)
 	struct point p, *pt;
 
 	d->deleting = 1;
-	if (d->ops == &docs_ops)
+	if (d == d->ed->docs)
 		d->deleting = 2; /* tell editor choose doc that this
 				  * is available if absolutely needed */
 	doc_close_views(d);
@@ -512,7 +508,7 @@ int  doc_destroy(struct doc *d)
 		if (d->views[i].notify)
 			/* still in use */
 			return 0;
-	if (d->ops == &docs_ops)
+	if (d == d->ed->docs)
 		return 0;
 
 	docs_release(d);
