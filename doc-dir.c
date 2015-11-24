@@ -259,8 +259,13 @@ DEF_CMD(dir_same_file)
 	return 1;
 }
 
-static wint_t dir_step(struct doc *doc, struct mark *m, bool forward, bool move)
+DEF_CMD(dir_step)
 {
+	struct doc *doc = (*ci->pointp)->doc;
+	struct mark *m = ci->mark;
+	bool forward = ci->numeric;
+	bool move = ci->extra;
+
 	struct directory *dr = container_of(doc, struct directory, doc);
 	struct dir_ent *d = m->ref.d;
 	wint_t ret;
@@ -289,7 +294,8 @@ static wint_t dir_step(struct doc *doc, struct mark *m, bool forward, bool move)
 	}
 	if (move && ret != WEOF)
 		m->ref.d = d;
-	return ret;
+	ci->extra = ret;
+	return 1;
 }
 
 DEF_CMD(dir_set_ref)
@@ -488,7 +494,6 @@ DEF_CMD(dir_destroy)
 
 
 static struct doc_operations dir_ops = {
-	.step      = dir_step,
 };
 
 DEF_CMD(dir_open)
@@ -564,4 +569,5 @@ void edlib_init(struct editor *ed)
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
 	key_add(doc_map, "doc:get-attr", &dir_get_attr);
 	key_add(doc_map, "doc:mark-same", &dir_mark_same);
+	key_add(doc_map, "doc:step", &dir_step);
 }

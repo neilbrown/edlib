@@ -274,8 +274,13 @@ struct docs {
 	struct doc	doc;
 };
 
-static wint_t docs_step(struct doc *doc, struct mark *m, bool forward, bool move)
+DEF_CMD(docs_step)
 {
+	struct doc *doc = (*ci->pointp)->doc;
+	struct mark *m = ci->mark;
+	bool forward = ci->numeric;
+	bool move = ci->extra;
+
 	struct doc *d = m->ref.d, *next;
 
 	if (forward) {
@@ -298,9 +303,10 @@ static wint_t docs_step(struct doc *doc, struct mark *m, bool forward, bool move
 	if (move)
 		m->ref.d = next;
 	if (d == NULL)
-		return WEOF;
+		ci->extra = WEOF;
 	else
-		return ' ';
+		ci->extra = ' ';
+	return 1;
 }
 
 DEF_CMD(docs_set_ref)
@@ -366,7 +372,6 @@ DEF_CMD(docs_get_attr)
 }
 
 static struct doc_operations docs_ops = {
-	.step      = docs_step,
 };
 
 DEF_CMD(docs_open)
@@ -436,6 +441,7 @@ void doc_make_docs(struct editor *ed)
 	key_add(docs_map, "doc:set-ref", &docs_set_ref);
 	key_add(docs_map, "doc:get-attr", &docs_get_attr);
 	key_add(docs_map, "doc:mark-same", &docs_mark_same);
+	key_add(docs_map, "doc:step", &docs_step);
 
 	ds->doc.map = docs_map;
 
@@ -454,7 +460,7 @@ static void docs_release(struct doc *d)
 	     m;
 	     m = doc_next_mark_all(ed->docs, m))
 		if (m->ref.d == d) {
-			docs_step(ed->docs, m, 1, 1);
+			mark_step2(ed->docs, m, 1, 1);
 			doc_notify_change(ed->docs, m);
 		}
 }
@@ -474,7 +480,7 @@ static void docs_attach(struct doc *d)
 	     m;
 	     m = doc_next_mark_all(ed->docs, m))
 		if (d->list.next == &m->ref.d->list) {
-			docs_step(ed->docs, m, 0, 1);
+			mark_step2(ed->docs, m, 0, 1);
 			doc_notify_change(ed->docs, m);
 		}
 }

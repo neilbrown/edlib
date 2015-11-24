@@ -957,8 +957,13 @@ static wint_t text_prev(struct text *t, struct doc_ref *r)
 	return ret;
 }
 
-static wint_t text_step(struct doc *d, struct mark *m, bool forward, bool move)
+DEF_CMD(text_step)
 {
+	struct doc *d = (*ci->pointp)->doc;
+	struct mark *m = ci->mark;
+	bool forward = ci->numeric;
+	bool move = ci->extra;
+
 	struct text *t = container_of(d, struct text, doc);
 	struct doc_ref r;
 	wint_t ret;
@@ -970,7 +975,8 @@ static wint_t text_step(struct doc *d, struct mark *m, bool forward, bool move)
 		ret = text_prev(t, &r);
 	if (ret != WEOF && move)
 		m->ref = *(struct doc_ref*)&r;
-	return ret;
+	ci->extra = ret;
+	return 1;
 }
 
 static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2)
@@ -1518,7 +1524,6 @@ DEF_CMD(text_destroy)
 }
 
 static struct doc_operations text_ops = {
-	.step      = text_step,
 };
 
 #define LARGE_LINE 4096
@@ -1649,4 +1654,5 @@ void edlib_init(struct editor *ed)
 	key_add(text_map, "doc:get-attr", &text_get_attr);
 	key_add(text_map, "doc:replace", &text_replace);
 	key_add(text_map, "doc:mark-same", &text_mark_same);
+	key_add(text_map, "doc:step", &text_step);
 }

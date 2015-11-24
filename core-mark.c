@@ -478,6 +478,27 @@ void mark_backward_over(struct mark *m, struct mark *mp)
 	mp->seq = seq;
 }
 
+wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci)
+{
+	struct point p, *pt = &p;
+
+	p.doc = d;
+	ci->key = "doc:step";
+	ci->pointp = &pt;
+	ci->mark = m;
+	ci->numeric = forward;
+	ci->extra = move;
+	key_lookup(d->map, ci);
+	return ci->extra;
+}
+
+wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move)
+{
+	struct cmd_info ci = {0};
+
+	return mark_step(d, m, forward, move, &ci);
+}
+
 wint_t mark_next(struct doc *d, struct mark *m)
 {
 	wint_t ret;
@@ -487,7 +508,7 @@ wint_t mark_next(struct doc *d, struct mark *m)
 	       mark_same(d, m, m2))
 		mark_forward_over(m, m2);
 
-	ret = d->ops->step(d, m, 1, 1);
+	ret = mark_step2(d, m, 1, 1);
 	if (ret == WEOF)
 		return ret;
 
@@ -507,7 +528,7 @@ wint_t mark_prev(struct doc *d, struct mark *m)
 	       mark_same(d, m, mp))
 		mark_backward_over(m, mp);
 
-	ret = d->ops->step(d, m, 0, 1);
+	ret = mark_step2(d, m, 0, 1);
 	if (ret == WEOF)
 		return ret;
 	while ((mp = prev_mark(d, m)) != NULL &&

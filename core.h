@@ -84,7 +84,6 @@ struct doc {
 };
 
 struct doc_operations {
-	wint_t		(*step)(struct doc *d, struct mark *m, bool forward, bool move);
 };
 
 void doc_init(struct doc *d);
@@ -158,6 +157,8 @@ int mark_same(struct doc *d, struct mark *m1, struct mark *m2);
 int mark_same2(struct doc *d, struct mark *m1, struct mark *m2, struct cmd_info *ci);
 struct point *point_new(struct doc *d, struct point **owner);
 struct point *point_dup(struct point *p, struct point **owner);
+wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci);
+wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move);
 wint_t mark_next(struct doc *d, struct mark *m);
 wint_t mark_prev(struct doc *d, struct mark *m);
 struct mark *mark_at_point(struct point *p, int view);
@@ -341,11 +342,11 @@ struct pane *pane_final_child(struct pane *p);
 
 static inline wint_t doc_following(struct doc *d, struct mark *m)
 {
-	return d->ops->step(d, m, 1, 0);
+	return mark_step2(d, m, 1, 0);
 }
 static inline wint_t doc_prior(struct doc *d, struct mark *m)
 {
-	return d->ops->step(d, m, 0, 0);
+	return mark_step2(d, m, 0, 0);
 }
 static inline void doc_replace(struct point *p, struct mark *m,
 			       char *str, bool *first)
