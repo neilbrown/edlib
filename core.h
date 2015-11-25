@@ -69,13 +69,11 @@ struct display {
 struct editor {
 	struct pane		root;
 	struct event_base	*base;
-	struct list_head	documents;
 	struct doc		*docs;  /* document containing all documents */
-	struct point		*docs_point;
 	struct map		*commands;
 };
 struct pane *editor_new(void);
-struct point *editor_choose_doc(struct editor *ed);
+struct pane *editor_choose_doc(struct editor *ed);
 void doc_make_docs(struct editor *ed);
 int editor_load_module(struct editor *ed, char *name);
 
@@ -91,7 +89,7 @@ struct doc {
 	struct attrset		*attrs;
 	int			nviews;
 	struct editor		*ed;
-	struct list_head	list;	/* ed->documents */
+	struct pane		*home; /* pane in null_display which owns this doc*/
 	struct map		*map;
 	char			*name;
 	char			*default_render;
@@ -102,10 +100,11 @@ void doc_init(struct doc *d);
 int doc_add_view(struct doc *d, struct command *c);
 void doc_del_view(struct doc *d, struct command *c);
 int doc_find_view(struct doc *d, struct command *c);
-struct point *doc_new(struct editor *ed, char *type);
+struct pane *doc_new(struct editor *ed, char *type);
 struct pane *doc_from_text(struct pane *parent, char *name, char *text);
 struct pane *doc_open(struct editor *ed, struct pane *parent, int fd,
 		      char *name, char *render);
+struct pane *doc_attach(struct pane *parent, struct doc *d);
 void doc_set_name(struct doc *d, char *name);
 struct doc *doc_find(struct editor *ed, char *name);
 void doc_promote(struct doc *d);
@@ -305,7 +304,7 @@ struct editor *pane2ed(struct pane *p);
 void pane_set_mode(struct pane *p, char *mode, int transient);
 void pane_set_numeric(struct pane *p, int numeric);
 void pane_set_extra(struct pane *p, int extra);
-struct pane *pane_attach(struct pane *p, char *type, struct point *pt, char *arg);
+struct pane *pane_attach(struct pane *p, char *type, struct pane *dp, char *arg);
 void pane_clear(struct pane *p, char *attrs);
 void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y);
 char *pane_attr_get(struct pane *p, char *key);
@@ -362,15 +361,14 @@ static inline int doc_undo(struct pane *p, bool redo)
 	ci.key = "doc:reundo";
 	return key_handle_focus(&ci);
 }
-static inline int doc_load_file(struct doc *d, struct point *p,
-				int fd, char *name)
+static inline int doc_load_file(struct pane *p, int fd, char *name)
 {
 	struct cmd_info ci = {0};
-	ci.pointp = &p;
+	ci.focus = p;
 	ci.extra = fd;
 	ci.str = name;
 	ci.key = "doc:load-file";
-	return key_lookup(d->map, &ci);
+	return key_handle_focus(&ci);
 }
 static inline char *doc_getstr(struct pane *from, struct mark *to)
 {

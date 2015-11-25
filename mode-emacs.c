@@ -346,9 +346,9 @@ DEF_CMD(emacs_file_complete)
 	char *str = doc_getstr(ci->focus, NULL);
 	char *d, *b, *c;
 	int fd;
-	struct pane *par, *pop;
+	struct pane *par, *pop, *docp;
 	struct cmd_info ci2 = {0};
-	struct point *pt, **ptp;
+	struct point **ptp;
 
 	d = str;
 	while ((c = strstr(d, "//")) != NULL)
@@ -367,9 +367,9 @@ DEF_CMD(emacs_file_complete)
 		free(str);
 		return -1;
 	}
-	pt = (struct point *)doc_open(doc->ed, NULL, fd, d, NULL);
+	docp = doc_open(doc->ed, NULL, fd, d, NULL);
 	close(fd);
-	pop = pane_attach(ci->focus, "popup", pt, "DM1");
+	pop = pane_attach(ci->focus, "popup", docp, "DM1");
 	ptp = pane_point(pane_final_child(pop));
 	/* Want to work with the document pane */
 	par = container_of(ptp, struct pane, point);
@@ -410,7 +410,6 @@ DEF_CMD(emacs_finddoc)
 {
 	struct pane *p, *par;
 	struct doc *d;
-	struct point *pt;
 	struct cmd_info ci2 = {0};
 
 	if (strncmp(ci->key, "Doc Found", 9) != 0) {
@@ -461,12 +460,9 @@ DEF_CMD(emacs_finddoc)
 		return 1;
 	if (par->focus)
 		pane_close(par->focus);
-	point_new(d, &pt);
-	p = pane_attach(par, "view", pt, NULL);
-	if (!p) {
-		point_free(pt);
+	p = pane_attach(par, "view", d->home, NULL);
+	if (!p)
 		return 0;
-	}
 	render_attach(NULL, p);
 	return 1;
 }
@@ -480,10 +476,9 @@ DEF_CMD(emacs_doc_complete)
 	char *str = doc_getstr(ci->focus, NULL);
 	struct pane *par, *pop;
 	struct cmd_info ci2 = {0};
-	struct point *pt, **ptp;
+	struct point **ptp;
 
-	pt = point_new(doc->ed->docs, &pt);
-	pop = pane_attach(ci->focus, "popup", pt, "DM1");
+	pop = pane_attach(ci->focus, "popup", doc->ed->docs->home, "DM1");
 	ptp = pane_point(pane_final_child(pop));
 	/* Want to work with the document pane */
 	par = container_of(ptp, struct pane, point);
@@ -523,7 +518,6 @@ DEF_CMD(emacs_viewdocs)
 {
 	struct pane *p, *par;
 	struct doc *d;
-	struct point *pt;
 
 	p = ci->focus;
 	while (p && !p->point)
@@ -537,10 +531,8 @@ DEF_CMD(emacs_viewdocs)
 	if (!d)
 		return 1;
 	pane_close(p);
-	point_new(d, &pt);
-	p = pane_attach(par, "view", pt, NULL);
+	p = pane_attach(par, "view", d->home, NULL);
 	if (!p) {
-		point_free(pt);
 		return 0;
 	}
 	render_attach(NULL, p);

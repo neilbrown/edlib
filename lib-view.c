@@ -36,7 +36,7 @@ enum {
 };
 
 static struct map *view_map;
-static struct pane *do_view_attach(struct pane *par, struct point *pt, int border);
+static struct pane *do_view_attach(struct pane *par, struct pane *dp, int border);
 
 static int view_refresh(struct cmd_info *ci)
 {
@@ -152,8 +152,7 @@ DEF_CMD(view_handle)
 		struct pane *p2, *c;
 		if (!p->point)
 			return 0;
-		point_dup(p->point, &pt);
-		p2 = do_view_attach(parent, pt, vd->border);
+		p2 = do_view_attach(parent, p->point->doc->home, vd->border);
 		c = pane_child(pane_child(p));
 		if (c)
 			return pane_clone(c, pane_final_child(p2));
@@ -195,7 +194,7 @@ DEF_CMD(view_null)
 	return 0;
 }
 
-static struct pane *view_reattach(struct pane *p, struct point *pt);
+static struct pane *view_reattach(struct pane *p, struct pane *dp);
 
 DEF_CMD(view_notify)
 {
@@ -211,53 +210,50 @@ DEF_CMD(view_notify)
 		 */
 		struct doc *d = vd->pane->point->doc;
 		struct editor *ed = d->ed;
-		struct point *pt;
-		struct pane *p, *c;
+		struct pane *p, *c, *dp;
 
 		doc_del_view(d, &vd->ch_notify);
 		c = pane_child(vd->pane);
 		if (c)
 			pane_close(c);
-		pt = vd->pane->point;
-		point_free(pt);
-		pt = editor_choose_doc(ed);
-		p = view_reattach(vd->pane, pt);
+		point_free(vd->pane->point);
+		dp = editor_choose_doc(ed);
+		p = view_reattach(vd->pane, dp);
 		render_attach(NULL, p);
 	}
 	return 0;
 }
 
-static struct pane *view_reattach(struct pane *par, struct point *pt)
+static struct pane *view_reattach(struct pane *par, struct pane *dp)
 {
 	struct view_data *vd = par->data;
 	struct pane *p;
 
-	pt->owner = &par->point;
-	par->point = pt;
-	vd->ch_notify_num = doc_add_view(pt->doc, &vd->ch_notify);
+
+	point_new(dp->data, &par->point);
+	vd->ch_notify_num = doc_add_view(dp->data, &vd->ch_notify);
 
 	p = pane_register(par, 0, &view_null, vd, NULL);
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }
 
-static struct pane *do_view_attach(struct pane *par, struct point *pt, int border)
+static struct pane *do_view_attach(struct pane *par, struct pane *dp, int border)
 {
 	struct view_data *vd;
 	struct pane *p;
-	struct doc *d = pt->doc;
+	struct doc *d = dp->data;
 
 	doc_promote(d);
 
 	vd = malloc(sizeof(*vd));
 	vd->border = border;
 	vd->ch_notify = view_notify;
-	pt->owner = &pt;
 	p = pane_register(par, 0, &view_handle, vd, NULL);
 	vd->pane = p;
 	pane_check_size(p);
 
-	view_reattach(p, pt);
+	view_reattach(p, dp);
 	return p;
 }
 
@@ -272,7 +268,7 @@ DEF_CMD(view_attach)
 	if (strchr(borderstr, 'L')) borders |= BORDER_LEFT;
 	if (strchr(borderstr, 'R')) borders |= BORDER_RIGHT;
 
-	ci->focus = do_view_attach(ci->focus, *ci->pointp, borders);
+	ci->focus = do_view_attach(ci->focus, ci->home, borders);
 	return ci->focus != NULL;
 }
 

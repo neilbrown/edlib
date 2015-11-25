@@ -188,15 +188,20 @@ text_new_alloc(struct text *t, int size)
 
 DEF_CMD(text_load_file)
 {
-	struct point *pos = *ci->pointp;
-	struct doc *d = pos->doc;
+	struct doc *d;
 	int fd = ci->extra;
 	char *name = ci->str;
 	off_t size = lseek(fd, 0, SEEK_END);
 	struct text_alloc *a;
 	struct text_chunk *c;
 	int len;
-	struct text *t = container_of(d, struct text, doc);
+	struct text *t;
+
+	if (ci->home)
+		d = ci->home->data;
+	else
+		return -1;
+	t = container_of(d, struct text, doc);
 
 	if (size < 0)
 		goto err;
@@ -300,7 +305,7 @@ DEF_CMD(text_save_file)
 
 DEF_CMD(text_same_file)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->home->data;
 	struct stat *stb = (void*)ci->str2;
 	struct text *t = container_of(d, struct text, doc);
 
@@ -1026,9 +1031,11 @@ DEF_CMD(text_mark_same)
 	return 1;
 }
 
-DEF_CMD(comm_new)
+DEF_CMD(text_new)
 {
 	struct text *t = malloc(sizeof(*t));
+	struct editor *ed = pane2ed(ci->focus);
+
 	t->alloc = NULL;
 	INIT_LIST_HEAD(&t->text);
 	t->undo = t->redo = NULL;
@@ -1037,7 +1044,7 @@ DEF_CMD(comm_new)
 	t->doc.map = text_map;
 	t->fname = NULL;
 	text_new_alloc(t, 0);
-	point_new(&t->doc, ci->pointp);
+	ci->focus = doc_attach(ed->root.focus, &t->doc);
 	return 1;
 }
 
@@ -1632,7 +1639,7 @@ DEF_CMD(render_line)
 
 void edlib_init(struct editor *ed)
 {
-	key_add(ed->commands, "doc-text", &comm_new);
+	key_add(ed->commands, "doc-text", &text_new);
 
 	text_map = key_alloc();
 	key_add(text_map, "render-line-prev", &render_line_prev);

@@ -435,13 +435,7 @@ DEF_CMD(render_dir_open)
 
 DEF_CMD(render_dir_reload)
 {
-	struct point **ptp = ci->pointp;
-	struct doc *d;
-
-	if (!ptp)
-		return 0;
-	d = (*ptp)->doc;
-	return doc_load_file(d, *ptp, -1, NULL);
+	return doc_load_file(ci->focus, -1, NULL);
 }
 
 static void render_dir_register_map(void)

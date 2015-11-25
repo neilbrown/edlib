@@ -115,24 +115,30 @@ static void load_dir(struct list_head *lst, int fd)
 	closedir(dir);
 }
 
-DEF_CMD(comm_new)
+DEF_CMD(dir_new)
 {
 	struct directory *dr = malloc(sizeof(*dr));
+	struct editor *ed = pane2ed(ci->focus);
+
 	doc_init(&dr->doc);
 	dr->doc.map = doc_map;
 	dr->doc.default_render = "format";
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	point_new(&dr->doc, ci->pointp);
+	ci->focus = doc_attach(ed->root.focus, &dr->doc);
 	return 1;
 }
 
 DEF_CMD(dir_load_file)
 {
-	struct point *pos = *(ci->pointp);
-	struct doc *d = pos->doc;
+	struct doc *d;
 	int fd = ci->extra;
 	char *name = ci->str;
+
+	if (ci->home)
+		d = ci->home->data;
+	else
+		return -1;
 
 	struct directory *dr = container_of(d, struct directory, doc);
 	struct list_head new;
@@ -243,7 +249,7 @@ DEF_CMD(dir_load_file)
 
 DEF_CMD(dir_same_file)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->home->data;
 	int fd = ci->extra;
 	struct stat *stb = (void*)ci->str2;
 	struct directory *dr = container_of(d, struct directory, doc);
@@ -254,7 +260,7 @@ DEF_CMD(dir_same_file)
 	       dr->stat.st_dev == stb->st_dev))
 		return 0;
 	/* Let's reload it now */
-	doc_load_file(d, *ci->pointp, fd, NULL);
+	doc_load_file(ci->focus, fd, NULL);
 	return 1;
 }
 
@@ -533,8 +539,7 @@ DEF_CMD(dir_open)
 
 DEF_CMD(dir_reread)
 {
-	struct doc *d = (*ci->pointp)->doc;
-	return doc_load_file(d, *ci->pointp, -1, NULL);
+	return doc_load_file(ci->focus, -1, NULL);
 }
 
 DEF_CMD(dir_close)
@@ -548,7 +553,7 @@ DEF_CMD(dir_close)
 
 void edlib_init(struct editor *ed)
 {
-	key_add(ed->commands, "doc-dir", &comm_new);
+	key_add(ed->commands, "doc-dir", &dir_new);
 
 	doc_map = key_alloc();
 	key_add(doc_map, "Chr-f", &dir_open);

@@ -24,7 +24,7 @@
 
 #define PRIVATE_DOC_REF
 struct doc_ref {
-	struct doc	*d;
+	struct pane	*p;
 	int		ignore;
 };
 
@@ -128,97 +128,98 @@ void doc_init(struct doc *d)
 {
 	INIT_HLIST_HEAD(&d->marks);
 	INIT_TLIST_HEAD(&d->points, 0);
-	INIT_LIST_HEAD(&d->list);
 	d->attrs = NULL;
 	d->views = NULL;
 	d->nviews = 0;
 	d->name = NULL;
 	d->map = NULL;
 	d->deleting = 0;
+	d->home = NULL;
 }
 
-struct point *doc_new(struct editor *ed, char *type)
+DEF_CMD(doc_handle)
+{
+	struct doc *d = ci->home->data;
+	return key_lookup(d->map, ci);
+}
+
+struct pane *doc_attach(struct pane *parent, struct doc *d)
+{
+	struct pane *p;
+
+	p = pane_register(parent, 0, &doc_handle, d, NULL);
+	if (!d->home)
+		d->home = p;
+	d->ed = pane2ed(parent);
+	return p;
+}
+
+struct pane *doc_new(struct editor *ed, char *type)
 {
 	char buf[100];
 	struct cmd_info ci = {0};
-	struct point *pt;
 
 	sprintf(buf, "doc-%s", type);
 	ci.key = buf;
-	ci.pointp = &pt;
+	ci.focus = ci.home = &ed->root;
 	if (!key_lookup(ed->commands, &ci)) {
 		editor_load_module(ed, buf);
 		if (!key_lookup(ed->commands, &ci))
 			return NULL;
 	}
-	pt->doc->ed = ed;
-	return pt;
+	return ci.focus;
 }
 
 struct pane *doc_open(struct editor *ed, struct pane *parent, int fd,
 		      char *name, char *render)
 {
 	struct stat stb;
-	struct doc *d;
-	struct point *pt;
 	struct pane *p;
 	char pathbuf[PATH_MAX], *rp;
 
 	fstat(fd, &stb);
-	list_for_each_entry(d, &ed->documents, list) {
+	list_for_each_entry(p, &ed->root.focus->children, siblings) {
 		struct cmd_info ci2 = {0};
-		struct point tpt;
 		ci2.key = "doc:same-file";
-		tpt.doc = d;
-		pt = &tpt;
-		ci2.pointp = &pt;
+		ci2.focus = p;
 		ci2.extra = -1;
 		ci2.str2 = (void*)&stb;
-		if (key_lookup(d->map, &ci2) > 0) {
-			point_new(d, &pt);
+		if (key_handle_focus(&ci2) > 0)
 			goto found;
-		}
 	}
 
 	rp = realpath(name, pathbuf);
 	if ((stb.st_mode & S_IFMT) == S_IFREG) {
-		pt = doc_new(ed, "text");
+		p = doc_new(ed, "text");
 	} else if ((stb.st_mode & S_IFMT) == S_IFDIR) {
-		pt = doc_new(ed, "dir");
+		p = doc_new(ed, "dir");
 	} else
 		return NULL;
-	if (!pt)
+	if (!p)
 		return NULL;
-	doc_load_file(pt->doc, pt, fd, rp);
-	point_reset(pt);
-	d = NULL;
+	doc_load_file(p, fd, rp);
 found:
 	if (parent) {
-		p = pane_attach(parent, "view", pt, NULL);
-		if (p) {
+		p = pane_attach(parent, "view", p, NULL);
+		if (p)
 			render_attach(render, p);
-		} else if (d) {
-			point_free(pt);
-		} else
-			doc_destroy(pt->doc);
 		return p;
 	}
-	/* GROSS HACK */
-	return (struct pane *)pt;
+	return p;
 }
 
 struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 {
 	bool first = 1;
 	struct pane *p;
-	struct point *pt, **ptp;
+	struct point **ptp;
 
-	pt = doc_new(pane2ed(parent), "text");
-	if (!pt)
+	p = doc_new(pane2ed(parent), "text");
+	if (!p)
 		return NULL;
-	p = pane_attach(parent, "view", pt, NULL);
+	p = pane_attach(parent, "view", p, NULL);
 	if (!p) {
-		doc_destroy(pt->doc);
+		doc_destroy(p->data);
 		return p;
 	}
 	ptp = pane_point(p);
@@ -236,13 +237,14 @@ void doc_set_name(struct doc *d, char *name)
 	int conflict = 1;
 
 	while (conflict && unique < 1000) {
-		struct doc *d2;
+		struct pane *p;
 		conflict = 0;
 		if (unique > 1)
 			sprintf(nname, "%s<%d>", name, unique);
 		else
 			strcpy(nname, name);
-		list_for_each_entry(d2, &d->ed->documents, list) {
+		list_for_each_entry(p, &d->ed->root.focus->children, siblings) {
+			struct doc *d2 = p->data;
 			if (d != d2 && strcmp(nname, d2->name) == 0) {
 				conflict = 1;
 				unique += 1;
@@ -256,11 +258,13 @@ void doc_set_name(struct doc *d, char *name)
 
 struct doc *doc_find(struct editor *ed, char *name)
 {
-	struct doc *d;
+	struct pane *p;
 
-	list_for_each_entry(d, &ed->documents, list)
+	list_for_each_entry(p, &ed->root.focus->children, siblings) {
+		struct doc *d = p->data;
 		if (strcmp(name, d->name) == 0)
 			return d;
+	}
 	return NULL;
 }
 
@@ -281,28 +285,31 @@ DEF_CMD(docs_step)
 	bool forward = ci->numeric;
 	bool move = ci->extra;
 
-	struct doc *d = m->ref.d, *next;
+	struct pane *p = m->ref.p, *next;
 
 	if (forward) {
 		/* report on d */
-		if (d == NULL || d == list_last_entry(&doc->ed->documents, struct doc, list))
+		if (p == NULL || p == list_last_entry(&doc->ed->root.focus->children,
+						      struct pane, siblings))
 			next = NULL;
 		else
-			next = list_next_entry(d, list);
+			next = list_next_entry(p, siblings);
 	} else {
-		next = d;
-		if (d == NULL)
-			d = list_last_entry(&doc->ed->documents, struct doc, list);
-		else if (d == list_first_entry(&doc->ed->documents, struct doc, list))
-			d = NULL;
+		next = p;
+		if (p == NULL)
+			p = list_last_entry(&doc->ed->root.focus->children,
+					    struct pane, siblings);
+		else if (p == list_first_entry(&doc->ed->root.focus->children,
+					       struct pane, siblings))
+			p = NULL;
 		else
-			d = list_prev_entry(d, list);
-		if (d)
-			next = d;
+			p = list_prev_entry(p, siblings);
+		if (p)
+			next = p;
 	}
 	if (move)
-		m->ref.d = next;
-	if (d == NULL)
+		m->ref.p = next;
+	if (p == NULL)
 		ci->extra = WEOF;
 	else
 		ci->extra = ' ';
@@ -315,9 +322,11 @@ DEF_CMD(docs_set_ref)
 	struct mark *m = ci->mark;
 
 	if (ci->numeric == 1)
-		m->ref.d = list_first_entry(&doc->ed->documents, struct doc, list);
+		m->ref.p = list_first_entry(&doc->ed->root.focus->children,
+					    struct pane, siblings);
 	else
-		m->ref.d = list_last_entry(&doc->ed->documents, struct doc, list);
+		m->ref.p = list_last_entry(&doc->ed->root.focus->children,
+					   struct pane, siblings);
 
 	m->ref.ignore = 0;
 	m->rpos = 0;
@@ -326,7 +335,7 @@ DEF_CMD(docs_set_ref)
 
 DEF_CMD(docs_mark_same)
 {
-	ci->extra = ci->mark->ref.d == ci->mark2->ref.d;
+	ci->extra = ci->mark->ref.p == ci->mark2->ref.p;
 	return 1;
 }
 
@@ -334,6 +343,7 @@ static char *__docs_get_attr(struct doc *doc, struct mark *m,
 			     bool forward, char *attr)
 {
 	struct doc *d;
+	struct pane *p;
 
 	if (!m) {
 		char *a = attr_get_str(doc->attrs, attr, -1);
@@ -345,17 +355,20 @@ static char *__docs_get_attr(struct doc *doc, struct mark *m,
 			return "  %+name:20 %filename";
 		return NULL;
 	}
-	d = m->ref.d;
+	p = m->ref.p;
 	if (!forward) {
-		if (!d)
-			d = list_last_entry(&doc->ed->documents, struct doc, list);
-		else if (d != list_first_entry(&doc->ed->documents, struct doc, list))
-			d = list_prev_entry(d, list);
+		if (!p)
+			p = list_last_entry(&doc->ed->root.focus->children,
+					    struct pane, siblings);
+		else if (p != list_first_entry(&doc->ed->root.focus->children,
+					       struct pane, siblings))
+			p = list_prev_entry(p, siblings);
 		else
-			d = NULL;
+			p = NULL;
 	}
-	if (!d)
+	if (!p)
 		return NULL;
+	d = p->data;
 	if (strcmp(attr, "name") == 0)
 		return d->name;
 	return doc_attr(d, NULL, 0, attr);
@@ -374,19 +387,17 @@ DEF_CMD(docs_get_attr)
 DEF_CMD(docs_open)
 {
 	struct pane *p = ci->home;
-	struct point *pt;
-	struct doc *dc = p->point->m.ref.d;
+	struct pane *dp = p->point->m.ref.p;
 	struct pane *par = p->parent;
 	char *renderer = NULL;
 
 	/* close this pane, open the given document. */
-	if (dc == NULL)
+	if (dp == NULL)
 		return 0;
 
 	if (strcmp(ci->key, "Chr-h") == 0)
 		renderer = "hex";
 
-	point_new(dc, &pt);
 	if (strcmp(ci->key, "Chr-o") == 0) {
 		struct cmd_info ci2 = {0};
 		ci2.key = "OtherPane";
@@ -398,13 +409,12 @@ DEF_CMD(docs_open)
 	}
 	if (p)
 		pane_close(p);
-	p = pane_attach(par, "view", pt, NULL);
+	p = pane_attach(par, "view", dp, NULL);
 	if (p) {
 		render_attach(renderer, p);
 		pane_focus(p);
 		return 1;
 	} else {
-		point_free(pt);
 		return 0;
 	}
 }
@@ -440,7 +450,7 @@ void doc_make_docs(struct editor *ed)
 	key_add(docs_map, "doc:step", &docs_step);
 
 	ds->doc.map = docs_map;
-
+	doc_attach(ed->root.focus, &ds->doc);
 	doc_promote(&ds->doc);
 }
 
@@ -455,7 +465,7 @@ static void docs_release(struct doc *d)
 	for (m = doc_first_mark_all(ed->docs);
 	     m;
 	     m = doc_next_mark_all(ed->docs, m))
-		if (m->ref.d == d) {
+		if (m->ref.p == d->home) {
 			mark_step2(ed->docs, m, 1, 1);
 			doc_notify_change(ed->docs, m);
 		}
@@ -468,14 +478,15 @@ static void docs_attach(struct doc *d)
 	 */
 	struct editor *ed = d->ed;
 	struct mark *m;
+	struct pane *p = d->home;
 
-	if (d->list.next == &ed->documents)
+	if (p->siblings.next == &ed->root.focus->children)
 		/* At the end, nothing to do */
 		return;
 	for (m = doc_first_mark_all(ed->docs);
 	     m;
 	     m = doc_next_mark_all(ed->docs, m))
-		if (d->list.next == &m->ref.d->list) {
+		if (p->siblings.next == &m->ref.p->siblings) {
 			mark_step2(ed->docs, m, 0, 1);
 			doc_notify_change(ed->docs, m);
 		}
@@ -483,8 +494,9 @@ static void docs_attach(struct doc *d)
 
 void doc_promote(struct doc *d)
 {
+	struct pane *p = d->home;
 	docs_release(d);
-	list_move(&d->list, &d->ed->documents);
+	list_move(&p->siblings, &d->ed->root.focus->children);
 	docs_attach(d);
 }
 
@@ -512,7 +524,7 @@ int  doc_destroy(struct doc *d)
 		return 0;
 
 	docs_release(d);
-	list_del(&d->list);
+	pane_close(d->home);
 
 	ci2.key = "doc:destroy";
 	/* Hack ... will go */

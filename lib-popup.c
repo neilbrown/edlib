@@ -30,8 +30,7 @@
 #include "core.h"
 
 struct popup_info {
-	struct pane	*target, *popup;
-	struct point	*point;
+	struct pane	*target, *popup, *doc;
 	char		*style;
 };
 
@@ -63,8 +62,8 @@ DEF_CMD(popup_handle)
 	struct popup_info *ppi = p->data;
 
 	if (strcmp(ci->key, "Close") == 0) {
-		if (ppi->point)
-			doc_destroy(ppi->point->doc);
+		if (ppi->doc)
+			doc_destroy(ppi->doc->data);
 		free(ppi);
 		return 1;
 	}
@@ -88,11 +87,11 @@ DEF_CMD(popup_handle)
 			ci2.key = "PopupDone";
 		ci2.numeric = 1;
 		ci2.str = ci->str;
-		if (ppi->point)
+		if (ppi->doc)
 			ci2.str = doc_getstr(ppi->popup, NULL);
 		ci2.mark = NULL;
 		key_handle_focus(&ci2);
-		if (ppi->point)
+		if (ppi->doc)
 			free(ci2.str);
 		pane_close(ppi->popup);
 		return 1;
@@ -128,7 +127,6 @@ DEF_CMD(popup_attach)
 	 */
 	struct pane *root, *p;
 	struct popup_info *ppi = malloc(sizeof(*ppi));
-	struct point *pt;
 	char *style = ci->str;
 	char border[4];
 	struct cmd_info ci2={0};
@@ -158,7 +156,7 @@ DEF_CMD(popup_attach)
 	ppi->target = ci->focus;
 	ppi->popup = pane_register(root, z, &popup_handle, ppi, NULL);
 	ppi->style = style;
-	ppi->point = NULL;
+	ppi->doc = NULL;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
 		if (strchr(style, "TLBR"[i]) == NULL)
@@ -168,13 +166,16 @@ DEF_CMD(popup_attach)
 	attr_set_str(&ppi->popup->attrs, "borders", border, -1);
 	attr_set_str(&ppi->popup->attrs, "render-wrap", "no", -1);
 
-	if (ci->pointp) {
-		p = pane_attach(ppi->popup, "view", *ci->pointp, NULL);
+	if (ci->home) {
+		p = pane_attach(ppi->popup, "view", ci->home, NULL);
 	} else {
-		pt = doc_new(pane2ed(root), "text");
-		doc_set_name(pt->doc, "*popup*");
-		p = pane_attach(ppi->popup, "view", pt, NULL);
-		point_new(pt->doc, &ppi->point);
+		struct pane *dp;
+		struct doc *d;
+		dp = doc_new(pane2ed(root), "text");
+		d = dp->data;
+		doc_set_name(d, "*popup*");
+		p = pane_attach(ppi->popup, "view", dp, NULL);
+		ppi->doc = dp;
 	}
 	render_attach(NULL, p);
 	pane_focus(p);
