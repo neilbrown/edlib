@@ -268,13 +268,14 @@ REDEF_CMD(render_format_attach)
 	struct pane *p;
 	struct pane *parent = ci->focus;
 
+	if (!rf_map)
+		render_format_register_map();
+
 	rf->home_field = -1;
 	p = pane_register(parent, 0, &render_format_handle.c, rf, NULL);
 	attr_set_str(&p->attrs, "render-wrap", "no", -1);
 	render_attach("lines", p);
 
-	if (!rf_map)
-		render_format_register_map();
 	ci->focus = p;
 	return 1;
 }

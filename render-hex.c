@@ -229,6 +229,9 @@ static struct pane *do_render_hex_attach(struct pane *parent, struct point **ptp
 	struct he_data *he = malloc(sizeof(*he));
 	struct pane *p;
 
+	if (!he_map)
+		render_hex_register_map();
+
 	if (!ptp)
 		ptp = pane_point(parent);
 	if (!ptp)
@@ -242,8 +245,6 @@ static struct pane *do_render_hex_attach(struct pane *parent, struct point **ptp
 	he->pane = p;
 	render_attach("lines", p);
 
-	if (!he_map)
-		render_hex_register_map();
 	return p;
 }
 

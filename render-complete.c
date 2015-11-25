@@ -310,6 +310,9 @@ REDEF_CMD(complete_attach)
 	struct complete_data *cd;
 	struct cmd_info ci2 = {0};
 
+	if (!rc_map)
+		register_map();
+
 	/* Need to interpose a new pane between the 'render-lines' pane,
 	 * which we assume is 'ci->focus' and its parent, so we can
 	 * re-interpret lines.
@@ -335,8 +338,6 @@ REDEF_CMD(complete_attach)
 	pane_check_size(complete);
 	cd->prefix = strdup("");
 
-	if (!rc_map)
-		register_map();
 	ci->focus = complete;
 	return 1;
 }

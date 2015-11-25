@@ -486,6 +486,9 @@ static struct pane *do_render_text_attach(struct pane *parent, struct point **pt
 	struct rt_data *rt = malloc(sizeof(*rt));
 	struct pane *p;
 
+	if (!rt_map)
+		render_text_register_map();
+
 	if (!ptp)
 		ptp = pane_point(parent);
 	if (!ptp)
@@ -498,9 +501,6 @@ static struct pane *do_render_text_attach(struct pane *parent, struct point **pt
 	rt->typenum = doc_add_view((*ptp)->doc, &rt->type);
 	p = pane_register(parent, 0, &render_text_handle, rt, NULL);
 	rt->pane = p;
-
-	if (!rt_map)
-		render_text_register_map();
 	return p;
 }
 

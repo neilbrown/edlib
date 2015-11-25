@@ -465,6 +465,9 @@ static struct pane *do_render_dir_attach(struct pane *parent, struct point **ptp
 	struct dir_data *dd = malloc(sizeof(*dd));
 	struct pane *p;
 
+	if (!dr_map)
+		render_dir_register_map();
+
 	if (!ptp)
 		ptp = pane_point(parent);
 	if (!ptp)
@@ -478,9 +481,6 @@ static struct pane *do_render_dir_attach(struct pane *parent, struct point **ptp
 	dd->pane = p;
 	dd->header = 0;
 	dd->home_field = -1;
-
-	if (!dr_map)
-		render_dir_register_map();
 	return p;
 }
 

@@ -969,6 +969,9 @@ REDEF_CMD(render_lines_attach)
 	struct rl_data *rl = malloc(sizeof(*rl));
 	struct point **ptp;
 
+	if (!rl_map)
+		render_lines_register_map();
+
 	ptp = ci->pointp;
 	if (!ptp)
 		return -1;
@@ -988,8 +991,6 @@ REDEF_CMD(render_lines_attach)
 		sizeof(struct rl_mark) - sizeof(struct mark);
 	rl->pane = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
 
-	if (!rl_map)
-		render_lines_register_map();
 	ci->focus = rl->pane;
 	return 1;
 }
