@@ -399,7 +399,6 @@ struct pane *render_attach(char *name, struct pane *parent)
 	sprintf(buf, "render-%s-attach", name);
 	ci.key = buf;
 	ci.focus = parent;
-	ci.pointp = pane_point(parent);
 	ret = key_lookup(pane2ed(parent)->commands, &ci);
 	if (ret)
 		return ci.focus;

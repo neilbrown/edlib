@@ -912,7 +912,6 @@ DEF_CMD(render_lines_clone)
 	struct pane *parent = ci->focus;
 	struct pane *p = ci->home, *c;
 
-	ci->pointp = pane_point(parent);
 	render_lines_attach.func(ci);
 	c = pane_child(p);
 	if (c)
