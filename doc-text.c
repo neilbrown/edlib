@@ -609,7 +609,7 @@ static void text_del(struct text *t, struct doc_ref *pos, int len, bool *first_e
 			c->end = pos->o;
 			attr_trim(&c->attrs, c->end);
 			text_add_edit(t, c, first_edit, 0, -diff);
-			if (c->lst.next != &t->text) {
+			if (len && c->lst.next != &t->text) {
 				pos->c = list_next_entry(c, lst);
 				pos->o = pos->c->start;
 			} else
