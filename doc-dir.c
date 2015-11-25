@@ -266,7 +266,7 @@ DEF_CMD(dir_same_file)
 
 DEF_CMD(dir_step)
 {
-	struct doc *doc = (*ci->pointp)->doc;
+	struct doc *doc = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric;
 	bool move = ci->extra;

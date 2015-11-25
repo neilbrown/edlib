@@ -963,7 +963,7 @@ static wint_t text_prev(struct text *t, struct doc_ref *r)
 
 DEF_CMD(text_step)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric;
 	bool move = ci->extra;

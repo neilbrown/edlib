@@ -478,15 +478,12 @@ void mark_backward_over(struct mark *m, struct mark *mp)
 
 wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci)
 {
-	struct point p, *pt = &p;
-
-	p.doc = d;
 	ci->key = "doc:step";
-	ci->pointp = &pt;
+	ci->focus = d->home;
 	ci->mark = m;
 	ci->numeric = forward;
 	ci->extra = move;
-	key_lookup(d->map, ci);
+	key_handle_focus(ci);
 	return ci->extra;
 }
 

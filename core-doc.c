@@ -278,7 +278,7 @@ struct docs {
 
 DEF_CMD(docs_step)
 {
-	struct doc *doc = (*ci->pointp)->doc;
+	struct doc *doc = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric;
 	bool move = ci->extra;
