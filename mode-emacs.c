@@ -309,22 +309,20 @@ DEF_CMD(emacs_findfile)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "File Found Other Window") == 0) {
+	if (strcmp(ci->key, "File Found Other Window") == 0)
 		ci2.key = "OtherPane";
-		ci2.focus = ci->focus;
-		key_handle_focus(&ci2);
-		p = ci2.focus;
-	} else
-		p = ci->focus;
+	else
+		ci2.key = "ThisPane";
+	ci2.focus = ci->focus;
+	if (key_handle_focus(&ci2) == 0)
+		return -1;
+	p = ci2.focus;
 
 	par = p;
-	while (p && !p->point)
-		p = p->parent;
-	if (p && p->parent)
-		par = p->parent;
 	/* par is the tile */
-	if (par->focus)
-		pane_close(par->focus);
+	p = pane_child(par);
+	if (p)
+		pane_close(p);
 
 	fd = open(ci->str, O_RDONLY);
 	if (fd >= 0) {
@@ -440,19 +438,16 @@ DEF_CMD(emacs_finddoc)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "Doc Found Other Window") == 0) {
+	if (strcmp(ci->key, "Doc Found Other Window") == 0)
 		ci2.key = "OtherPane";
-		ci2.focus = ci->focus;
-		key_handle_focus(&ci2);
-		p = ci2.focus;
-	} else
-		p = ci->focus;
+	else
+		ci2.key = "ThisPane";
+	ci2.focus = ci->focus;
+	if (key_handle_focus(&ci2) == 0)
+		return -1;
+	p = ci2.focus;
 
 	par = p;
-	while (p && !p->point)
-		p = p->parent;
-	if (p && p->parent)
-		par = p->parent;
 	/* par is the tile */
 
 	p = doc_find(pane2ed(par), ci->str);
@@ -515,19 +510,21 @@ DEF_CMD(emacs_viewdocs)
 {
 	struct pane *p, *par;
 	struct doc *d;
+	struct cmd_info ci2 = {0};
 
-	p = ci->focus;
-	while (p && !p->point)
-		p = p->parent;
-	if (!p || !p->parent)
-		return 0;
-	par = p->parent;
+	ci2.key = "ThisPane";
+	ci2.focus = ci->focus;
+	if (key_handle_focus(&ci2) == 0)
+		return -1;
+	par = ci2.focus;
 	/* par is the tile */
 
-	d = pane2ed(p)->docs;
+	d = pane2ed(par)->docs;
 	if (!d)
 		return 1;
-	pane_close(p);
+	p = pane_child(par);
+	if (p)
+		pane_close(p);
 	p = doc_attach_view(par, d->home, NULL);
 	return !!p;
 }
