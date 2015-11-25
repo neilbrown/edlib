@@ -29,9 +29,12 @@ DEF_CMD(render_complete_line)
 	 */
 	struct cmd_info ci2 = {0};
 	struct complete_data *cd = ci->home->data;
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d;
 	int plen;
 
+	if (!ci->pointp || !ci->mark)
+		return -1;
+	d = (*ci->pointp)->doc;
 	ci2.key = ci->key;
 	ci2.mark = ci->mark;
 	ci2.pointp = ci->pointp;
@@ -310,15 +313,13 @@ REDEF_CMD(complete_attach)
 	/* Need to interpose a new pane between the 'render-lines' pane,
 	 * which we assume is 'ci->focus' and its parent, so we can
 	 * re-interpret lines.
-	 * Find the 'render-line-prev' pane by sending a render-lines request
-	 * and grabbing 'home'
+	 * Find the 'render-line-prev' pane by sending a render-line request
+	 * (with NULLs so it fails) and grabbing 'home'
 	 */
-	ci2.key = "render-line-prev";
-	ci2.pointp = ci->pointp;
-	ci2.numeric = 0;
-	ci2.mark = mark_at_point(*ci->pointp, MARK_UNGROUPED);
+	ci2.key = "render-line";
 	ci2.focus = ci->focus;
-	key_handle_focus(&ci2);
+	if (key_handle_focus(&ci2) == 0)
+		return -1;
 	parent = ci2.home;
 	lines = pane_child(parent);
 	mark_free(ci2.mark);

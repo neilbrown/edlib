@@ -27,13 +27,17 @@ DEF_CMD(render_line)
 	char *body = pane_attr_get(ci->focus, "line-format");
 	struct rf_data *rf = ci->home->data;
 	struct buf ret;
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d;
 	struct mark *m = ci->mark;
 	char *n;
 	wint_t ch;
 	int home;
 	int field = 0;
 
+	if (!ci->pointp || !ci->mark)
+		return -1;
+
+	d = (*ci->pointp)->doc;
 	if (RPT_NUM(ci) < 0 &&
 	    !mark_same(d, &(*ci->pointp)->m, m))
 		ci->numeric = NO_NUMERIC;

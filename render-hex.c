@@ -123,13 +123,16 @@ DEF_CMD(render_line)
 {
 	struct buf ret;
 	struct point **ptp = ci->pointp;
-	struct doc *d = (*ptp)->doc;
+	struct doc *d;
 	struct cmd_info ci2 = {0};
 	struct mark *m = NULL;
 	int pos;
 	int i;
 	char buf[10];
 
+	if (!ptp || !ci->mark)
+		return -1;
+	d = (*ptp)->doc;
 	ci2.key = "CountLines";
 	ci2.pointp = ptp;
 	ci2.mark = ci->mark;

@@ -1592,11 +1592,15 @@ DEF_CMD(render_line)
 	 */
 	struct buf b;
 	struct point **ptp = ci->pointp;
-	struct doc *d = (*ptp)->doc;
+	struct doc *d;
 	struct mark *m = ci->mark;
 	int o = ci->numeric;
 	wint_t ch = WEOF;
 	int chars = 0;
+
+	if (!m || !ptp)
+		return -1;
+	d = (*ptp)->doc;
 
 	buf_init(&b);
 	while (1) {
