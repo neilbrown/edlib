@@ -404,9 +404,10 @@ static inline int doc_set_attr(struct point *pt, char *attr, char *val)
 	struct doc *d = pt->doc;
 
 	ci.key = "doc:set-attr";
-	ci.pointp = &pt;
+	ci.focus = d->home;
+	ci.mark = &pt->m;
 	ci.str = attr;
 	ci.str2 = val;
-	return key_lookup(d->map, &ci);
+	return key_handle_focus(&ci);
 }
 

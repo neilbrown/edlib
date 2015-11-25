@@ -1477,12 +1477,12 @@ DEF_CMD(text_get_attr)
 
 DEF_CMD(text_set_attr)
 {
-	struct point *p = *ci->pointp;
 	char *attr = ci->str;
 	char *val = ci->str2;
-	struct text_chunk *c = p->m.ref.c;
-	struct text *t = container_of(p->doc, struct text, doc);
-	int o = p->m.ref.o;
+	struct text_chunk *c = ci->mark->ref.c;
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+	int o = ci->mark->ref.o;
 
 	if (!c)
 		/* EOF */
@@ -1494,7 +1494,7 @@ DEF_CMD(text_set_attr)
 		c = list_next_entry(c, lst);
 		o = c->start;
 	}
-	doc_notify_change(p->doc, &p->m);
+	doc_notify_change(d, ci->mark);
 	return attr_set_str(&c->attrs, attr, val, o);
 }
 
