@@ -1025,8 +1025,9 @@ static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2)
 
 DEF_CMD(text_mark_same)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
+
 	ci->extra = text_ref_same(t, &ci->mark->ref, &ci->mark2->ref);
 	return 1;
 }

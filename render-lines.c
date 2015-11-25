@@ -871,8 +871,9 @@ DEF_CMD(render_lines_notify)
 			struct rl_mark *rm = container_of(ci->mark,
 							  struct rl_mark, m);
 			struct mark *vm;
-			struct point **ptp = pane_point(rl->pane);
-			struct doc *d = (*ptp)->doc;
+			struct cmd_info ci2 = {0};
+			struct pane *p = rl->pane;
+
 			if (rm->line) {
 				free(rm->line);
 				rm->line = NULL;
@@ -881,13 +882,13 @@ DEF_CMD(render_lines_notify)
 			 * delete it - marks must remain distinct
 			 */
 			while ((vm = vmark_prev(&rm->m)) != NULL &&
-			       mark_same(d, &rm->m, vm)) {
+			       mark_same_pane(p, &rm->m, vm, &ci2)) {
 				struct rl_mark *rlm = container_of(vm, struct rl_mark, m);
 				free(rlm->line);
 				mark_free(vm);
 			}
 			while ((vm = vmark_next(&rm->m)) != NULL &&
-			       mark_same(d, &rm->m, vm)) {
+			       mark_same_pane(p, &rm->m, vm, &ci2)) {
 				struct rl_mark *rlm = container_of(vm, struct rl_mark, m);
 				free(rlm->line);
 				mark_free(vm);
