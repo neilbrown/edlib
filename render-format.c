@@ -173,7 +173,6 @@ DEF_CMD(format_clone)
 {
 	struct pane *c;
 
-	ci->pointp = pane_point(ci->focus);
 	render_format_attach_func(ci);
 	c = pane_child(ci->home);
 	if (c)
@@ -264,12 +263,6 @@ REDEF_CMD(render_format_attach)
 	struct rf_data *rf = malloc(sizeof(*rf));
 	struct pane *p;
 	struct pane *parent = ci->focus;
-	struct point **ptp = ci->pointp;
-
-	if (!ptp)
-		ptp = pane_point(parent);
-	if (!ptp)
-		return -1;
 
 	rf->home_field = -1;
 	p = pane_register(parent, 0, &render_format_handle.c, rf, NULL);
