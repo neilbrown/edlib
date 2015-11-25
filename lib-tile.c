@@ -572,12 +572,19 @@ DEF_CMD(tile_other)
 	return 1;
 }
 
+DEF_CMD(tile_this)
+{
+	ci->focus = ci->home;
+	return 1;
+}
+
 void edlib_init(struct editor *ed)
 {
 	tile_map = key_alloc();
 
 	key_add(tile_map, "WindowOP", &tile_command);
 	key_add(tile_map, "OtherPane", &tile_other);
+	key_add(tile_map, "ThisPane", &tile_this);
 
 	key_add(ed->commands, "attach-tile", &tile_attach);
 }

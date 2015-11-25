@@ -135,23 +135,18 @@ DEF_CMD(popup_attach)
 
 	if (!style)
 		style = "D3";
+
 	if (strchr(style, 'D')) {
-		struct cmd_info ci2 = {0};
 		int x = 0, y = 0;
 		pane_to_root(ci->focus, &x, &y, &z, NULL, NULL);
 		ci2.key = "global-key-root";
-		ci2.focus = ci->focus;
-		if (!key_handle_focus(&ci2))
-			return 0;
-		root = ci2.focus;
-	} else {
-		p = ci->focus;
-		while (p && !p->point)
-			p = p->parent;
-		if (!p || !p->parent)
-			return 0;
-		root = p->parent;
-	}
+	} else
+		ci2.key = "ThisPane";
+	ci2.focus = ci->focus;
+
+	if (!key_handle_focus(&ci2))
+		return 0;
+	root = ci2.focus;
 
 	ppi->target = ci->focus;
 	ppi->popup = pane_register(root, z, &popup_handle, ppi, NULL);
@@ -178,6 +173,7 @@ DEF_CMD(popup_attach)
 		p = doc_attach_view(ppi->popup, dp, NULL);
 	}
 	pane_focus(p);
+	memset(&ci2, 0, sizeof(ci2));
 	ci2.key = "local-set-key";
 	ci2.focus = p;
 	ci2.str = "popup:quote";
