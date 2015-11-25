@@ -106,7 +106,7 @@ struct pane *doc_open(struct editor *ed, struct pane *parent, int fd,
 		      char *name, char *render);
 struct pane *doc_attach(struct pane *parent, struct doc *d);
 void doc_set_name(struct doc *d, char *name);
-struct doc *doc_find(struct editor *ed, char *name);
+struct pane *doc_find(struct editor *ed, char *name);
 void doc_promote(struct doc *d);
 int  doc_destroy(struct doc *d);
 

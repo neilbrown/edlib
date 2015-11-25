@@ -409,7 +409,6 @@ DEF_CMD(emacs_file_complete)
 DEF_CMD(emacs_finddoc)
 {
 	struct pane *p, *par;
-	struct doc *d;
 	struct cmd_info ci2 = {0};
 
 	if (strncmp(ci->key, "Doc Found", 9) != 0) {
@@ -421,7 +420,6 @@ DEF_CMD(emacs_finddoc)
 		ptp = pane_point(pane_final_child(p));
 		/* Want to work with the document pane */
 		p = container_of(ptp, struct pane, point);
-		d = (*ptp)->doc;
 		if (strncmp(ci->key, "emCX4-", 6) == 0) {
 			attr_set_str(&p->attrs, "prefix",
 				     "Find Document Other Window: ", -1);
@@ -431,7 +429,7 @@ DEF_CMD(emacs_finddoc)
 			attr_set_str(&p->attrs, "prefix", "Find Document: ", -1);
 			attr_set_str(&p->attrs, "done-key", "Doc Found", -1);
 		}
-		doc_set_name(d, "Find Document");
+		doc_set_name((*ptp)->doc, "Find Document");
 		ci2.key = "local-set-key";
 		ci2.focus = p;
 		ci2.str = "emacs:doc-complete";
@@ -455,12 +453,12 @@ DEF_CMD(emacs_finddoc)
 		par = p->parent;
 	/* par is the tile */
 
-	d = doc_find(pane2ed(par), ci->str);
-	if (!d)
+	p = doc_find(pane2ed(par), ci->str);
+	if (!p)
 		return 1;
 	if (par->focus)
 		pane_close(par->focus);
-	p = pane_attach(par, "view", d->home, NULL);
+	p = pane_attach(par, "view", p, NULL);
 	if (!p)
 		return 0;
 	render_attach(NULL, p);

@@ -256,14 +256,14 @@ void doc_set_name(struct doc *d, char *name)
 	d->name = nname;
 }
 
-struct doc *doc_find(struct editor *ed, char *name)
+struct pane *doc_find(struct editor *ed, char *name)
 {
 	struct pane *p;
 
 	list_for_each_entry(p, &ed->root.focus->children, siblings) {
 		struct doc *d = p->data;
 		if (strcmp(name, d->name) == 0)
-			return d;
+			return p;
 	}
 	return NULL;
 }
