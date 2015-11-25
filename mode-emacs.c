@@ -557,6 +557,7 @@ DEF_CMD(emacs_kill_doc)
 DEF_CMD(emacs_search)
 {
 	struct cmd_info ci2 = {0};
+	struct mark *m;
 
 	if (strcmp(ci->key, "Search String") != 0) {
 		struct pane *p = pane_attach(ci->focus, "popup", NULL, "TR2");
@@ -580,14 +581,20 @@ DEF_CMD(emacs_search)
 	if (!ci->str || !ci->str[0])
 		return -1;
 	ci2.pointp = pane_point(ci->focus);
-	ci2.mark = mark_dup(&(*ci2.pointp)->m, 1);
+	m = mark_dup(&(*ci2.pointp)->m, 1);
+	ci2.mark = m;
 	ci2.str = ci->str;
 	ci2.key = "text-search";
 	if (!key_lookup(pane2ed(ci->focus)->commands, &ci2))
 		ci2.extra = -1;
-	if (ci2.extra > 0)
-		point_to_mark(*ci2.pointp, ci2.mark);
-	mark_free(ci2.mark);
+	if (ci2.extra > 0) {
+		memset(&ci2, 0, sizeof(ci2));
+		ci2.key = "Move-to";
+		ci2.mark = m;
+		ci2.focus = ci->focus;
+		key_handle_focus(&ci2);
+	}
+	mark_free(m);
 	return 1;
 }
 
