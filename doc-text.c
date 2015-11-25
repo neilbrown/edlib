@@ -1494,7 +1494,7 @@ DEF_CMD(text_set_attr)
 		c = list_next_entry(c, lst);
 		o = c->start;
 	}
-	point_notify_change(p, NULL);
+	doc_notify_change(p->doc, &p->m);
 	return attr_set_str(&c->attrs, attr, val, o);
 }
 

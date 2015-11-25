@@ -868,10 +868,16 @@ void point_notify_change(struct point *p, struct mark *m)
 void doc_notify_change(struct doc *d, struct mark *m)
 {
 	struct cmd_info ci = {0};
-	char *done = alloca(d->nviews);
+	char *done;
 	int i;
 	int remaining = d->nviews;
 
+	if (m->viewnum == MARK_POINT) {
+		point_notify_change(container_of(m, struct point, m), NULL);
+		return;
+	}
+
+	done = alloca(d->nviews);
 	for (i = 0; i < d->nviews; i++)
 		done[i] = 0;
 	ci.key = "Replace";
