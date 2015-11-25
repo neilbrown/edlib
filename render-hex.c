@@ -26,13 +26,12 @@ struct he_data {
 };
 
 static struct map *he_map;
-static struct pane *do_render_hex_attach(struct pane *parent, struct point **ptp);
+static struct pane *do_render_hex_attach(struct pane *parent);
 
 DEF_CMD(render_hex_handle)
 {
 	struct pane *p = ci->home;
 	struct he_data *he = p->data;
-	struct doc *d;
 	int ret;
 
 	ret = key_lookup(he_map, ci);
@@ -42,9 +41,8 @@ DEF_CMD(render_hex_handle)
 	if (strcmp(ci->key, "Close") == 0) {
 		struct pane *p = he->pane;
 
-		d = (*ci->pointp)->doc;
 		he->pane = NULL;
-		doc_del_view(d, &he->type);
+		doc_del_view(p, &he->type);
 		p->data = NULL;
 		p->handle = NULL;
 		free(he);
@@ -54,7 +52,7 @@ DEF_CMD(render_hex_handle)
 		struct pane *parent = ci->focus;
 		struct pane *c;
 
-		do_render_hex_attach(parent, NULL);
+		do_render_hex_attach(parent);
 		c = pane_child(p);
 		if (c)
 			return pane_clone(c, parent->focus);
@@ -224,7 +222,7 @@ static void render_hex_register_map(void)
 	key_add(he_map, "render-line", &render_line);
 }
 
-static struct pane *do_render_hex_attach(struct pane *parent, struct point **ptp)
+static struct pane *do_render_hex_attach(struct pane *parent)
 {
 	struct he_data *he = malloc(sizeof(*he));
 	struct pane *p;
@@ -232,13 +230,8 @@ static struct pane *do_render_hex_attach(struct pane *parent, struct point **ptp
 	if (!he_map)
 		render_hex_register_map();
 
-	if (!ptp)
-		ptp = pane_point(parent);
-	if (!ptp)
-		return NULL;
-
 	he->type = render_hex_notify;
-	he->typenum = doc_add_view((*ptp)->doc, &he->type);
+	he->typenum = doc_add_view(parent, &he->type, 0);
 	p = pane_register(parent, 0, &render_hex_handle, he, NULL);
 	attr_set_str(&p->attrs, "render-wrap", "no", -1);
 	attr_set_str(&p->attrs, "heading", "<bold>          00 11 22 33 44 55 66 77  88 99 aa bb cc dd ee ff   0 1 2 3 4 5 6 7  8 9 a b c d e f</>", -1);
@@ -250,7 +243,7 @@ static struct pane *do_render_hex_attach(struct pane *parent, struct point **ptp
 
 DEF_CMD(render_hex_attach)
 {
-	ci->focus = do_render_hex_attach(ci->focus, ci->pointp);
+	ci->focus = do_render_hex_attach(ci->focus);
 	return 1;
 }
 

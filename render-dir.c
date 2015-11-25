@@ -27,7 +27,7 @@ struct dir_data {
 };
 
 static struct map *dr_map;
-static struct pane *do_render_dir_attach(struct pane *parent, struct point **ptp);
+static struct pane *do_render_dir_attach(struct pane *parent);
 
 static int put_str(struct pane *p, char *buf, char *attrs, int x, int y)
 {
@@ -248,7 +248,6 @@ DEF_CMD(render_dir_handle)
 	struct pane *p = ci->home;
 	struct dir_data *dd = p->data;
 	struct mark *end = NULL, *top;
-	struct doc *d;
 	int ret;
 
 	ret = key_lookup(dr_map, ci);
@@ -257,11 +256,11 @@ DEF_CMD(render_dir_handle)
 
 	if (strcmp(ci->key, "Close") == 0) {
 		struct pane *p = dd->pane;
-		d = (*ci->pointp)->doc;
+
 		mark_free(dd->top);
 		mark_free(dd->bot);
 		dd->pane = NULL;
-		doc_del_view(d, &dd->type);
+		doc_del_view(p, &dd->type);
 		p->data = NULL;
 		p->handle = NULL;
 		free(dd);
@@ -271,7 +270,7 @@ DEF_CMD(render_dir_handle)
 		struct pane *parent = ci->focus;
 		struct pane *c;
 
-		do_render_dir_attach(parent, NULL);
+		do_render_dir_attach(parent);
 		c = pane_child(p);
 		if (c)
 			return pane_clone(c, parent->focus);
@@ -460,7 +459,7 @@ static void render_dir_register_map(void)
 	key_add(dr_map, "Chr-g", &render_dir_reload);
 }
 
-static struct pane *do_render_dir_attach(struct pane *parent, struct point **ptp)
+static struct pane *do_render_dir_attach(struct pane *parent)
 {
 	struct dir_data *dd = malloc(sizeof(*dd));
 	struct pane *p;
@@ -468,15 +467,11 @@ static struct pane *do_render_dir_attach(struct pane *parent, struct point **ptp
 	if (!dr_map)
 		render_dir_register_map();
 
-	if (!ptp)
-		ptp = pane_point(parent);
-	if (!ptp)
-		return NULL;
 	dd->top = NULL;
 	dd->bot = NULL;
 	dd->ignore_point = 0;
 	dd->type = render_dir_notify;
-	dd->typenum = doc_add_view((*ptp)->doc, &dd->type);
+	dd->typenum = doc_add_view(parent, &dd->type, 0);
 	p = pane_register(parent, 0, &render_dir_handle, dd, NULL);
 	dd->pane = p;
 	dd->header = 0;
@@ -486,7 +481,7 @@ static struct pane *do_render_dir_attach(struct pane *parent, struct point **ptp
 
 DEF_CMD(render_dir_attach)
 {
-	ci->focus = do_render_dir_attach(ci->focus, ci->pointp);
+	ci->focus = do_render_dir_attach(ci->focus);
 	return 1;
 }
 

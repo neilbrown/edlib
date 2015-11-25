@@ -32,7 +32,7 @@ struct rt_data {
 };
 
 static struct map *rt_map;
-static struct pane *do_render_text_attach(struct pane *p, struct point **pt);
+static struct pane *do_render_text_attach(struct pane *p);
 
 static int rt_fore(struct doc *d, struct pane *p, struct mark *m, int *x, int *y, int draw)
 {
@@ -291,7 +291,6 @@ DEF_CMD(render_text_handle)
 {
 	struct pane *p = ci->home;
 	struct rt_data *rt = p->data;
-	struct doc *d;
 	int ret;
 
 	ret = key_lookup(rt_map, ci);
@@ -300,11 +299,10 @@ DEF_CMD(render_text_handle)
 
 	if (strcmp(ci->key, "Close") == 0) {
 		struct pane *p = rt->pane;
-		d = (*ci->pointp)->doc;
 		mark_free(rt->top);
 		mark_free(rt->bot);
 		rt->pane = NULL;
-		doc_del_view(d, &rt->type);
+		doc_del_view(p, &rt->type);
 		p->data = NULL;
 		p->handle = NULL;
 		free(rt);
@@ -314,7 +312,7 @@ DEF_CMD(render_text_handle)
 		struct pane *parent = ci->focus;
 		struct pane *c;
 
-		do_render_text_attach(parent, NULL);
+		do_render_text_attach(parent);
 		c = pane_child(p);
 		if (c)
 			return pane_clone(c, parent->focus);
@@ -481,7 +479,7 @@ static void render_text_register_map(void)
 	key_add(rt_map, "Replace", &render_text_follow_point);
 }
 
-static struct pane *do_render_text_attach(struct pane *parent, struct point **ptp)
+static struct pane *do_render_text_attach(struct pane *parent)
 {
 	struct rt_data *rt = malloc(sizeof(*rt));
 	struct pane *p;
@@ -489,16 +487,12 @@ static struct pane *do_render_text_attach(struct pane *parent, struct point **pt
 	if (!rt_map)
 		render_text_register_map();
 
-	if (!ptp)
-		ptp = pane_point(parent);
-	if (!ptp)
-		return NULL;
 	rt->top = NULL;
 	rt->bot = NULL;
 	rt->ignore_point = 0;
 	rt->target_x = -1;
 	rt->type = render_text_notify;
-	rt->typenum = doc_add_view((*ptp)->doc, &rt->type);
+	rt->typenum = doc_add_view(parent, &rt->type, 0);
 	p = pane_register(parent, 0, &render_text_handle, rt, NULL);
 	rt->pane = p;
 	return p;
@@ -506,7 +500,7 @@ static struct pane *do_render_text_attach(struct pane *parent, struct point **pt
 
 DEF_CMD(render_text_attach)
 {
-	ci->focus = do_render_text_attach(ci->focus, ci->pointp);
+	ci->focus = do_render_text_attach(ci->focus);
 	return 1;
 }
 

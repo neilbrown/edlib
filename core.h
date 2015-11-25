@@ -96,9 +96,6 @@ struct doc {
 };
 
 void doc_init(struct doc *d);
-int doc_add_view(struct doc *d, struct command *c);
-void doc_del_view(struct doc *d, struct command *c);
-int doc_find_view(struct doc *d, struct command *c);
 struct pane *doc_new(struct editor *ed, char *type);
 struct pane *doc_from_text(struct pane *parent, char *name, char *text);
 struct pane *doc_open(struct editor *ed, int fd, char *name);
@@ -260,7 +257,7 @@ struct cmd_info {
 	char		*str, *str2;
 	struct mark	*mark, *mark2;
 	struct point	**pointp;
-	struct command	*comm;
+	struct command	*comm, *comm2;
 };
 #define	NO_NUMERIC	(INT_MAX/2)
 #define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric)
@@ -410,5 +407,38 @@ static inline int doc_set_attr(struct point *pt, char *attr, char *val)
 	ci.str = attr;
 	ci.str2 = val;
 	return key_handle_focus(&ci);
+}
+
+
+static inline int doc_add_view(struct pane *p, struct command *c, int size)
+{
+	struct cmd_info ci = {0};
+	ci.focus = p;
+	ci.key = "doc:add-view";
+	ci.comm2 = c;
+	ci.extra = size;
+	if (key_handle_focus(&ci) == 0)
+		return -1;
+	return ci.extra;
+}
+
+static inline void doc_del_view(struct pane *p, struct command *c)
+{
+	struct cmd_info ci = {0};
+	ci.focus = p;
+	ci.key = "doc:del-view";
+	ci.comm2 = c;
+	key_handle_focus(&ci);
+}
+
+static inline int doc_find_view(struct pane *p, struct command *c)
+{
+	struct cmd_info ci = {0};
+	ci.focus = p;
+	ci.key = "doc:find-view";
+	ci.comm2 = c;
+	if (key_handle_focus(&ci) == 0)
+		return -1;
+	return ci.extra;
 }
 

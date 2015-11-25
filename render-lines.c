@@ -631,7 +631,7 @@ DEF_CMD(render_lines_close)
 	}
 
 	rl->pane = NULL;
-	doc_del_view(d, &rl->type);
+	doc_del_view(p, &rl->type);
 	p->data = NULL;
 	p->handle = NULL;
 	free(rl);
@@ -967,14 +967,9 @@ static void render_lines_register_map(void)
 REDEF_CMD(render_lines_attach)
 {
 	struct rl_data *rl = malloc(sizeof(*rl));
-	struct point **ptp;
 
 	if (!rl_map)
 		render_lines_register_map();
-
-	ptp = ci->pointp;
-	if (!ptp)
-		return -1;
 
 	rl->ignore_point = 0;
 	rl->top_sol = 0;
@@ -986,9 +981,7 @@ REDEF_CMD(render_lines_attach)
 	rl->shift_left = 0;
 	rl->header_lines = 0;
 	rl->type = render_lines_notify;
-	rl->typenum = doc_add_view((*ptp)->doc, &rl->type);
-	(*ptp)->doc->views[rl->typenum].space =
-		sizeof(struct rl_mark) - sizeof(struct mark);
+	rl->typenum = doc_add_view(ci->focus, &rl->type, sizeof(struct rl_mark));
 	rl->pane = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
 
 	ci->focus = rl->pane;

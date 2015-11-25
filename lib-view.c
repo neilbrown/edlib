@@ -124,7 +124,6 @@ static int view_refresh(struct cmd_info *ci)
 DEF_CMD(view_handle)
 {
 	struct pane *p = ci->home;
-	struct point *pt;
 	struct view_data *vd = p->data;
 	int ret;
 
@@ -136,8 +135,7 @@ DEF_CMD(view_handle)
 		vd->pane = p; /* FIXME having to do this is horrible */
 
 	if (strcmp(ci->key, "Close") == 0) {
-		pt = *ci->pointp;
-		doc_del_view(pt->doc, &vd->ch_notify);
+		doc_del_view(p, &vd->ch_notify);
 		free(vd);
 		return 1;
 	}
@@ -208,9 +206,8 @@ static struct pane *view_reattach(struct pane *par)
 {
 	struct view_data *vd = par->data;
 	struct pane *p;
-	struct point **ptp = pane_point(par);
 
-	vd->ch_notify_num = doc_add_view((*ptp)->doc, &vd->ch_notify);
+	vd->ch_notify_num = doc_add_view(par, &vd->ch_notify, 0);
 
 	p = pane_register(par, 0, &view_null, vd, NULL);
 	pane_damaged(p, DAMAGED_SIZE);

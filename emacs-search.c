@@ -138,7 +138,7 @@ DEF_CMD(search_close)
 {
 	struct es_info *esi = ci->focus->data;
 
-	doc_del_view((*ci->pointp)->doc, &esi->watch);
+	doc_del_view(ci->focus, &esi->watch);
 	/* TEMP HACK - please fix */
 	doc_set_attr(esi->end, "highlight", NULL);
 	point_free(esi->end);
@@ -162,10 +162,8 @@ REDEF_CMD(search_again)
 	int ret;
 
 	if (strcmp(ci->key, "Release") == 0) {
-		struct doc *d = ci->home->data;
-
 		/* No marks to remove */
-		doc_del_view(d, ci->comm);
+		doc_del_view(ci->home, ci->comm);
 		return 0;
 	}
 
@@ -224,7 +222,6 @@ DEF_CMD(emacs_search)
 	struct pane *p;
 	struct es_info *esi;
 	struct cmd_info ci2 = {0};
-	struct point **ptp;
 
 	if (!es_map)
 		emacs_search_init_map();
@@ -250,8 +247,7 @@ DEF_CMD(emacs_search)
 	esi->matched = 0;
 	esi->search = ci->focus;
 	esi->watch = search_again;
-	ptp = pane_point(ci->focus);
-	doc_add_view((*ptp)->doc, &esi->watch);
+	doc_add_view(ci->focus, &esi->watch, 0);
 
 	ci->focus = pane_final_child(ci->focus);
 	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);

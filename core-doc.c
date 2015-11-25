@@ -30,7 +30,7 @@ struct doc_ref {
 
 #include "core.h"
 
-int doc_add_view(struct doc *d, struct command *c)
+static int do_doc_add_view(struct doc *d, struct command *c, int size)
 {
 	struct docview *g;
 	int ret;
@@ -63,12 +63,14 @@ int doc_add_view(struct doc *d, struct command *c)
 	}
 	points_attach(d, ret);
 	d->views[ret].space = 0;
+	if (size > 0 && (unsigned)size > sizeof(struct mark))
+		d->views[ret].space = size - sizeof(struct mark);
 	d->views[ret].notify = c;
 	d->views[ret].marked = 0;
 	return ret;
 }
 
-void doc_del_view(struct doc *d, struct command *c)
+static void do_doc_del_view(struct doc *d, struct command *c)
 {
 	/* This view should only have points on the list, not typed
 	 * marks.  Just delete everything and clear the 'notify' pointer
@@ -88,7 +90,7 @@ void doc_del_view(struct doc *d, struct command *c)
 	}
 }
 
-int doc_find_view(struct doc *d, struct command *c)
+static int do_doc_find_view(struct doc *d, struct command *c)
 {
 	int i;
 	for (i = 0 ; i < d->nviews; i++)
@@ -182,6 +184,27 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "doc:set-name") == 0) {
 		doc_set_name(d, ci->str);
+		return 1;
+	}
+
+	if (strcmp(ci->key, "doc:add-view") == 0) {
+		if (!ci->comm2)
+			return -1;
+		ci->extra = do_doc_add_view(d, ci->comm2, ci->extra);
+		return 1;
+	}
+
+	if (strcmp(ci->key, "doc:del-view") == 0) {
+		if (!ci->comm2)
+			return -1;
+		do_doc_del_view(d, ci->comm2);
+		return 1;
+	}
+
+	if (strcmp(ci->key, "doc:find-view") == 0) {
+		if (!ci->comm2)
+			return -1;
+		ci->extra = do_doc_find_view(d, ci->comm2);
 		return 1;
 	}
 
