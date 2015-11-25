@@ -155,6 +155,7 @@ DEF_CMD(doc_handle)
 		struct pane *p = doc_attach(ci->focus, d);
 		struct pane *c = pane_child(ci->home);
 
+		point_dup(ci->home->point, &p->point);
 		if (c)
 			pane_clone(c, p);
 		return 1;
@@ -175,8 +176,6 @@ struct pane *doc_attach(struct pane *parent, struct doc *d)
 	p = pane_register(parent, 0, &doc_handle, d, NULL);
 	if (!d->home)
 		d->home = p;
-	else
-		point_new(d, &p->point);
 	d->ed = pane2ed(parent);
 	doc_promote(d);
 	return p;
@@ -232,8 +231,10 @@ struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render
 {
 	struct pane *p;
 	p = doc_attach(parent, doc->data);
-	if (p)
+	if (p) {
+		point_new(doc->data, &p->point);
 		p = pane_attach(p, "view", doc, NULL);
+	}
 	if (p)
 		p = render_attach(render, p);
 	return p;
