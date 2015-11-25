@@ -258,8 +258,8 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 {
 	bool first = 1;
 	struct pane *p;
-	struct point **ptp;
 	struct doc *d;
+	struct cmd_info ci = {0};
 
 	p = doc_new(pane2ed(parent), "text");
 	if (!p)
@@ -272,8 +272,10 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 		return p;
 	}
 	doc_replace(p, NULL, text, &first);
-	ptp = pane_point(p);
-	point_reset(*ptp);
+	ci.key = "Move-File";
+	ci.numeric = -1;
+	ci.focus = p;
+	key_handle_focus(&ci);
 	return p;
 }
 
