@@ -387,15 +387,13 @@ static inline char *doc_getstr(struct pane *from, struct mark *to)
 static inline char *doc_attr(struct doc *d, struct mark *m, bool forward, char *attr)
 {
 	struct cmd_info ci = {0};
-	struct point pt, *p = &pt;
 
-	pt.doc = d;
 	ci.key = "doc:get-attr";
-	ci.pointp = &p;
+	ci.focus = d->home;
 	ci.mark = m;
 	ci.numeric = forward ? 1 : 0;
 	ci.str = attr;
-	if (key_lookup(d->map, &ci) == 0)
+	if (key_handle_focus(&ci) == 0)
 		return NULL;
 	return ci.str2;
 }

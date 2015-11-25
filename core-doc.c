@@ -374,7 +374,7 @@ static char *__docs_get_attr(struct doc *doc, struct mark *m,
 
 DEF_CMD(docs_get_attr)
 {
-	struct doc *doc = (*ci->pointp)->doc;
+	struct doc *doc = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;

@@ -1466,7 +1466,7 @@ static char *__text_get_attr(struct doc *d, struct mark *m,
 
 DEF_CMD(text_get_attr)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
