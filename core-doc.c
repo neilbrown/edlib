@@ -138,6 +138,33 @@ void doc_init(struct doc *d)
 DEF_CMD(doc_handle)
 {
 	struct doc *d = ci->home->data;
+
+	/* This is a hack - I should use a watcher, but I don't have
+	 * anywhere to store it.
+	 * FIXME make this optional
+	 */
+	if (strcmp(ci->key, "Refresh") == 0) {
+		struct pane *p = pane_child(ci->home);
+		if (p)
+			return 0; /* use default handling */
+		p = editor_choose_doc(pane2ed(ci->home));
+		doc_attach_view(ci->home, p, NULL);
+		return 0;
+	}
+	if (strcmp(ci->key, "Clone") == 0) {
+		struct pane *p = doc_attach(ci->focus, d);
+		struct pane *c = pane_child(ci->home);
+
+		if (c)
+			pane_clone(c, p);
+		return 1;
+	}
+
+	if (strcmp(ci->key, "Close") == 0) {
+		if (ci->home->point)
+			point_free(ci->home->point);
+		return 1;
+	}
 	return key_lookup(d->map, ci);
 }
 
@@ -148,7 +175,10 @@ struct pane *doc_attach(struct pane *parent, struct doc *d)
 	p = pane_register(parent, 0, &doc_handle, d, NULL);
 	if (!d->home)
 		d->home = p;
+	else
+		point_new(d, &p->point);
 	d->ed = pane2ed(parent);
+	doc_promote(d);
 	return p;
 }
 
@@ -200,7 +230,10 @@ struct pane *doc_open(struct editor *ed, int fd, char *name)
 
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render)
 {
-	struct pane *p = pane_attach(parent, "view", doc, NULL);
+	struct pane *p;
+	p = doc_attach(parent, doc->data);
+	if (p)
+		p = pane_attach(p, "view", doc, NULL);
 	if (p)
 		p = render_attach(render, p);
 	return p;

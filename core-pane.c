@@ -54,6 +54,21 @@ void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->attrs = 0;
 }
 
+static void __pane_check(struct pane *p)
+{
+	struct pane *c;
+	list_for_each_entry(c, &p->children, siblings) {
+		ASSERT(c->parent == p);
+		__pane_check(c);
+	}
+}
+
+void pane_check(struct pane *p)
+{
+	while (p->parent)
+		p = p->parent;
+	__pane_check(p);
+}
 /*
  * pane_damaged: mark a pane as being 'damaged', and make
  * sure all parents know about it.
@@ -132,6 +147,7 @@ void pane_refresh(struct pane *p)
 void pane_close(struct pane *p)
 {
 	struct pane *c;
+	pane_check(p);
 
 	while (!list_empty(&p->children)) {
 		c = list_first_entry(&p->children, struct pane, siblings);
