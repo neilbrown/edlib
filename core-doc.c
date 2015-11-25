@@ -168,8 +168,7 @@ struct pane *doc_new(struct editor *ed, char *type)
 	return ci.focus;
 }
 
-struct pane *doc_open(struct editor *ed, struct pane *parent, int fd,
-		      char *name, char *render)
+struct pane *doc_open(struct editor *ed, int fd, char *name)
 {
 	struct stat stb;
 	struct pane *p;
@@ -183,7 +182,7 @@ struct pane *doc_open(struct editor *ed, struct pane *parent, int fd,
 		ci2.extra = -1;
 		ci2.str2 = (void*)&stb;
 		if (key_handle_focus(&ci2) > 0)
-			goto found;
+			return p;
 	}
 
 	rp = realpath(name, pathbuf);
@@ -196,13 +195,14 @@ struct pane *doc_open(struct editor *ed, struct pane *parent, int fd,
 	if (!p)
 		return NULL;
 	doc_load_file(p, fd, rp);
-found:
-	if (parent) {
-		p = pane_attach(parent, "view", p, NULL);
-		if (p)
-			render_attach(render, p);
-		return p;
-	}
+	return p;
+}
+
+struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render)
+{
+	struct pane *p = pane_attach(parent, "view", doc, NULL);
+	if (p)
+		p = render_attach(render, p);
 	return p;
 }
 

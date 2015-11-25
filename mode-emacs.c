@@ -328,7 +328,9 @@ DEF_CMD(emacs_findfile)
 
 	fd = open(ci->str, O_RDONLY);
 	if (fd >= 0) {
-		p = doc_open(pane2ed(par), par, fd, ci->str, NULL);
+		p = doc_open(pane2ed(par), fd, ci->str);
+		if (p)
+			doc_attach_view(par, p, NULL);
 		close(fd);
 	} else
 		p = doc_from_text(par, ci->str, "File not found\n");
@@ -367,7 +369,7 @@ DEF_CMD(emacs_file_complete)
 		free(str);
 		return -1;
 	}
-	docp = doc_open(doc->ed, NULL, fd, d, NULL);
+	docp = doc_open(doc->ed, fd, d);
 	close(fd);
 	pop = pane_attach(ci->focus, "popup", docp, "DM1");
 	ptp = pane_point(pane_final_child(pop));

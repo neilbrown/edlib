@@ -528,7 +528,9 @@ DEF_CMD(dir_open)
 	if (p)
 		pane_close(p);
 	if (fd >= 0) {
-		p = doc_open(d->ed, par, fd, fname, renderer);
+		p = doc_open(d->ed, fd, fname);
+		if (p)
+			p = doc_attach_view(par, p, renderer);
 		close(fd);
 	} else
 		p = doc_from_text(par, fname, "File not found\n");

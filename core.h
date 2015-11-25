@@ -102,8 +102,8 @@ void doc_del_view(struct doc *d, struct command *c);
 int doc_find_view(struct doc *d, struct command *c);
 struct pane *doc_new(struct editor *ed, char *type);
 struct pane *doc_from_text(struct pane *parent, char *name, char *text);
-struct pane *doc_open(struct editor *ed, struct pane *parent, int fd,
-		      char *name, char *render);
+struct pane *doc_open(struct editor *ed, int fd, char *name);
+struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render);
 struct pane *doc_attach(struct pane *parent, struct doc *d);
 void doc_set_name(struct doc *d, char *name);
 struct pane *doc_find(struct editor *ed, char *name);
