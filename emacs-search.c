@@ -233,15 +233,19 @@ DEF_CMD(emacs_search)
 	if (key_handle_focus(&ci2) == 0)
 		return 0;
 	esi = malloc(sizeof(*esi));
-	while (ci2.focus && ! ci2.focus->point)
-		ci2.focus = ci2.focus->parent;
-	if (!ci2.focus) {
-		free(esi);
-		return 0;
-	}
 	esi->target = ci2.focus;
-	point_dup(esi->target->point, &esi->end);
-	esi->start = mark_dup(&esi->end->m, 1);
+	memset(&ci2, 0, sizeof(ci2));
+	ci2.key = "PointDup";
+	ci2.focus = esi->target;
+	key_handle_focus(&ci2);
+	if (!ci2.mark) {
+		free(esi);
+		return -1;
+	}
+	esi->end = container_of(ci2.mark, struct point, m);
+	esi->end->owner = &esi->end;
+
+	esi->start = mark_dup(ci2.mark, 1);
 	esi->s = NULL;
 	esi->matched = 0;
 	esi->search = ci->focus;

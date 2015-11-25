@@ -166,6 +166,15 @@ DEF_CMD(doc_handle)
 			point_free(ci->home->point);
 		return 1;
 	}
+
+	if (strcmp(ci->key, "PointDup") == 0) {
+		struct point *pt = NULL;
+		if (ci->home->point)
+			point_dup(ci->home->point, &pt);
+		ci->mark = &pt->m;
+		return 1;
+	}
+
 	return key_lookup(d->map, ci);
 }
 
