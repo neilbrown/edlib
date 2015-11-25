@@ -402,6 +402,8 @@ static char *__docs_get_attr(struct doc *doc, struct mark *m,
 			return "<bold,underline>  Document             File</>";
 		if (strcmp(attr, "line-format") == 0)
 			return "  %+name:20 %filename";
+		if (strcmp(attr, "default-renderer") == 0)
+			return "format";
 		return NULL;
 	}
 	p = m->ref.p;
@@ -482,7 +484,6 @@ void doc_make_docs(struct editor *ed)
 
 	doc_init(&ds->doc);
 	ds->doc.ed = ed;
-	ds->doc.default_render = "format";
 	doc_set_name(&ds->doc, "*Documents*");
 	ed->docs = &ds->doc;
 

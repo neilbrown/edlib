@@ -122,7 +122,6 @@ DEF_CMD(dir_new)
 
 	doc_init(&dr->doc);
 	dr->doc.map = doc_map;
-	dr->doc.default_render = "format";
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
 	ci->focus = doc_attach(ed->root.focus, &dr->doc);
@@ -374,6 +373,8 @@ static char *__dir_get_attr(struct doc *d, struct mark *m,
 			return a;
 		if (strcmp(attr, "heading") == 0)
 			return "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      File Name</>";
+		if (strcmp(attr, "default-renderer") == 0)
+			return "format";
 		if (strcmp(attr, "line-format") == 0)
 			return " <fg:red>%perms</> %mdate:13 %user:10 %group:10 <fg:blue>%+name</>";
 		if (strcmp(attr, "filename") == 0)

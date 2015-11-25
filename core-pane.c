@@ -387,21 +387,19 @@ struct pane *render_attach(char *name, struct pane *parent)
 {
 	char buf[100];
 	struct cmd_info ci = {0};
-	struct point **ptp;
 	int ret;
 
 	/* always attach a renderer as a leaf */
 	parent = pane_final_child(parent);
-	ptp = pane_point(parent);
-	if (!ptp)
-		return NULL;
 	if (!name)
-		name = (*ptp)->doc->default_render;
+		name = pane_attr_get(parent, "default-renderer");
+	if (!name)
+		return NULL;
 
 	sprintf(buf, "render-%s-attach", name);
 	ci.key = buf;
 	ci.focus = parent;
-	ci.pointp = ptp;
+	ci.pointp = pane_point(parent);
 	ret = key_lookup(pane2ed(parent)->commands, &ci);
 	if (ret)
 		return ci.focus;

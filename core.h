@@ -92,7 +92,6 @@ struct doc {
 	struct pane		*home; /* pane in null_display which owns this doc*/
 	struct map		*map;
 	char			*name;
-	char			*default_render;
 	short			deleting; /* is begin destroyed */
 };
 

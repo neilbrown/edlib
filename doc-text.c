@@ -1040,7 +1040,6 @@ DEF_CMD(text_new)
 	INIT_LIST_HEAD(&t->text);
 	t->undo = t->redo = NULL;
 	doc_init(&t->doc);
-	t->doc.default_render = "lines";
 	t->doc.map = text_map;
 	t->fname = NULL;
 	text_new_alloc(t, 0);
@@ -1427,6 +1426,8 @@ static char *__text_get_attr(struct doc *d, struct mark *m,
 		char *a = attr_get_str(d->attrs, attr, -1);
 		if (a)
 			return a;
+		if (strcmp(attr, "default-renderer") == 0)
+			return "lines";
 		if (strcmp(attr, "filename") == 0)
 			return t->fname;
 		return NULL;
