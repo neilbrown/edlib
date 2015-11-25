@@ -259,8 +259,6 @@ DEF_CMD(emacs_findfile)
 	if (strncmp(ci->key, "File Found", 10) != 0) {
 		char *path = NULL;
 		char buf[PATH_MAX];
-		struct point **ptp;
-		struct doc *d;
 
 		if (ci->pointp) {
 			path = doc_attr((*ci->pointp)->doc, NULL, 0, "filename");
@@ -280,10 +278,6 @@ DEF_CMD(emacs_findfile)
 		if (!p)
 			return 0;
 
-		ptp = pane_point(pane_final_child(p));
-		/* Want to work with the document pane */
-		p = container_of(ptp, struct pane, point);
-		d = (*ptp)->doc;
 		if (strncmp(ci->key, "emCX4-", 6) == 0) {
 			attr_set_str(&p->attrs, "prefix",
 				     "Find File Other Window: ", -1);
@@ -293,8 +287,12 @@ DEF_CMD(emacs_findfile)
 			attr_set_str(&p->attrs, "prefix", "Find File: ", -1);
 			attr_set_str(&p->attrs, "done-key", "File Found", -1);
 		}
-		doc_set_name(d, "Find File");
+		ci2.key = "doc:set-name";
+		ci2.focus = p;
+		ci2.str = "Find File";
+		key_handle_focus(&ci2);
 		if (path) {
+			memset(&ci2, 0, sizeof(ci2));
 			ci2.key = "Replace";
 			ci2.focus = p;
 			ci2.str = path;
@@ -412,14 +410,11 @@ DEF_CMD(emacs_finddoc)
 	struct cmd_info ci2 = {0};
 
 	if (strncmp(ci->key, "Doc Found", 9) != 0) {
-		struct point **ptp;
 
 		p = pane_attach(ci->focus, "popup", NULL, "D2");
 		if (!p)
 			return 0;
-		ptp = pane_point(pane_final_child(p));
-		/* Want to work with the document pane */
-		p = container_of(ptp, struct pane, point);
+
 		if (strncmp(ci->key, "emCX4-", 6) == 0) {
 			attr_set_str(&p->attrs, "prefix",
 				     "Find Document Other Window: ", -1);
@@ -429,7 +424,12 @@ DEF_CMD(emacs_finddoc)
 			attr_set_str(&p->attrs, "prefix", "Find Document: ", -1);
 			attr_set_str(&p->attrs, "done-key", "Doc Found", -1);
 		}
-		doc_set_name((*ptp)->doc, "Find Document");
+		ci2.key = "doc:set-name";
+		ci2.focus = p;
+		ci2.str = "Find Document";
+		key_handle_focus(&ci2);
+
+		memset(&ci2, 0, sizeof(ci2));
 		ci2.key = "local-set-key";
 		ci2.focus = p;
 		ci2.str = "emacs:doc-complete";
@@ -566,15 +566,18 @@ DEF_CMD(emacs_search)
 
 	if (strcmp(ci->key, "Search String") != 0) {
 		struct pane *p = pane_attach(ci->focus, "popup", NULL, "TR2");
-		struct point **ptp;
+
 		if (!p)
 			return 0;
-		ptp = pane_point(pane_final_child(p));
-		/* Want to work with the document pane */
-		p = container_of(ptp, struct pane, point);
+
 		attr_set_str(&p->attrs, "prefix", "Search: ", -1);
 		attr_set_str(&p->attrs, "done-key", "Search String", -1);
-		doc_set_name((*ptp)->doc, "Search");
+
+		ci2.key = "doc:set-name";
+		ci2.focus = p;
+		ci2.str = "Search";
+		key_handle_focus(&ci2);
+
 		p = pane_final_child(p);
 		pane_attach(p, "emacs-search", NULL, NULL);
 		return 1;

@@ -175,6 +175,11 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
+	if (strcmp(ci->key, "doc:set-name") == 0) {
+		doc_set_name(d, ci->str);
+		return 1;
+	}
+
 	return key_lookup(d->map, ci);
 }
 
