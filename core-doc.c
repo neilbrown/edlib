@@ -318,14 +318,14 @@ DEF_CMD(docs_step)
 
 DEF_CMD(docs_set_ref)
 {
-	struct doc *doc = (*ci->pointp)->doc;
+	struct editor *ed = pane2ed(ci->home);
 	struct mark *m = ci->mark;
 
 	if (ci->numeric == 1)
-		m->ref.p = list_first_entry(&doc->ed->root.focus->children,
+		m->ref.p = list_first_entry(&ed->root.focus->children,
 					    struct pane, siblings);
 	else
-		m->ref.p = list_last_entry(&doc->ed->root.focus->children,
+		m->ref.p = list_last_entry(&ed->root.focus->children,
 					   struct pane, siblings);
 
 	m->ref.ignore = 0;

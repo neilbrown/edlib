@@ -305,7 +305,7 @@ DEF_CMD(dir_step)
 
 DEF_CMD(dir_set_ref)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
 	struct mark *m = ci->mark;
 

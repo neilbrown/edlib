@@ -1144,7 +1144,7 @@ DEF_CMD(text_get_str)
 
 DEF_CMD(text_set_ref)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	struct text *t = container_of(d, struct text, doc);
 
