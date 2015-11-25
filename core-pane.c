@@ -507,6 +507,9 @@ void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y)
 
 char *pane_attr_get(struct pane *p, char *key)
 {
+	struct pane *c;
+	while ((c = pane_child(p)) != NULL)
+		p = c;
 	while (p) {
 		char *a = attr_get_str(p->attrs, key, -1);
 		if (a)

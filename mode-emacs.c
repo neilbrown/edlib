@@ -346,7 +346,6 @@ DEF_CMD(emacs_file_complete)
 	int fd;
 	struct pane *par, *pop, *docp;
 	struct cmd_info ci2 = {0};
-	struct point **ptp;
 
 	d = str;
 	while ((c = strstr(d, "//")) != NULL)
@@ -368,9 +367,7 @@ DEF_CMD(emacs_file_complete)
 	docp = doc_open(doc->ed, fd, d);
 	close(fd);
 	pop = pane_attach(ci->focus, "popup", docp, "DM1");
-	ptp = pane_point(pane_final_child(pop));
-	/* Want to work with the document pane */
-	par = container_of(ptp, struct pane, point);
+	par = pane_final_child(pop);
 
 	attr_set_str(&par->attrs, "line-format", "%+name%suffix", -1);
 	attr_set_str(&par->attrs, "heading", "", -1);
@@ -468,12 +465,9 @@ DEF_CMD(emacs_doc_complete)
 	char *str = doc_getstr(ci->focus, NULL);
 	struct pane *par, *pop;
 	struct cmd_info ci2 = {0};
-	struct point **ptp;
 
 	pop = pane_attach(ci->focus, "popup", doc->ed->docs->home, "DM1");
-	ptp = pane_point(pane_final_child(pop));
-	/* Want to work with the document pane */
-	par = container_of(ptp, struct pane, point);
+	par = pane_final_child(pop);
 
 	attr_set_str(&par->attrs, "line-format", "%+name", -1);
 	attr_set_str(&par->attrs, "heading", "", -1);
