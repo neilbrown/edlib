@@ -109,15 +109,13 @@ static void doc_close_views(struct doc *d)
 			d->views[i].marked = 0;
 	ci.key = "Release";
 	for (i = 0; i < d->nviews; i++) {
-		struct point pt, *ptp = &pt;
 		struct command *c;
 		if (!d->views[i].marked)
 			/* Don't delete newly added views */
 			continue;
 		if (d->views[i].notify == NULL)
 			continue;
-		ci.pointp = &ptp;
-		pt.doc = d;
+		ci.focus = ci.home = d->home;
 		c = d->views[i].notify;
 		ci.comm = c;
 		c->func(&ci);

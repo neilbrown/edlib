@@ -90,7 +90,7 @@ DEF_CMD(count_notify)
 		return 1;
 	}
 	if (strcmp(ci->key, "Release") == 0) {
-		struct doc *d = (*ci->pointp)->doc;
+		struct doc *d = ci->home->data;
 		struct mark *m;
 		int i = doc_find_view(d, ci->comm);
 		if (i < 0)

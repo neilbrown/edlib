@@ -158,7 +158,7 @@ REDEF_CMD(search_again)
 	int ret;
 
 	if (strcmp(ci->key, "Release") == 0) {
-		struct doc *d = (*ci->pointp)->doc;
+		struct doc *d = ci->home->data;
 
 		/* No marks to remove */
 		doc_del_view(d, ci->comm);
