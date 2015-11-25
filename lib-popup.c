@@ -167,17 +167,16 @@ DEF_CMD(popup_attach)
 	attr_set_str(&ppi->popup->attrs, "render-wrap", "no", -1);
 
 	if (ci->home) {
-		p = pane_attach(ppi->popup, "view", ci->home, NULL);
+		p = doc_attach_view(ppi->popup, ci->home, NULL);
 	} else {
 		struct pane *dp;
 		struct doc *d;
 		dp = doc_new(pane2ed(root), "text");
 		d = dp->data;
 		doc_set_name(d, "*popup*");
-		p = pane_attach(ppi->popup, "view", dp, NULL);
 		ppi->doc = dp;
+		p = doc_attach_view(ppi->popup, dp, NULL);
 	}
-	render_attach(NULL, p);
 	pane_focus(p);
 	ci2.key = "local-set-key";
 	ci2.focus = p;

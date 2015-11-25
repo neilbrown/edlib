@@ -460,11 +460,8 @@ DEF_CMD(emacs_finddoc)
 		return 1;
 	if (par->focus)
 		pane_close(par->focus);
-	p = pane_attach(par, "view", p, NULL);
-	if (!p)
-		return 0;
-	render_attach(NULL, p);
-	return 1;
+	p = doc_attach_view(par, p, NULL);
+	return !!p;
 }
 
 DEF_CMD(emacs_doc_complete)
@@ -531,12 +528,8 @@ DEF_CMD(emacs_viewdocs)
 	if (!d)
 		return 1;
 	pane_close(p);
-	p = pane_attach(par, "view", d->home, NULL);
-	if (!p) {
-		return 0;
-	}
-	render_attach(NULL, p);
-	return 1;
+	p = doc_attach_view(par, d->home, NULL);
+	return !!p;
 }
 
 DEF_CMD(emacs_meta)

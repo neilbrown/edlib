@@ -211,20 +211,21 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	bool first = 1;
 	struct pane *p;
 	struct point **ptp;
+	struct doc *d;
 
 	p = doc_new(pane2ed(parent), "text");
 	if (!p)
 		return NULL;
-	p = pane_attach(parent, "view", p, NULL);
+	d = p->data;
+	doc_set_name(d, name);
+	p = doc_attach_view(parent, p, NULL);
 	if (!p) {
 		doc_destroy(p->data);
 		return p;
 	}
-	ptp = pane_point(p);
-	doc_set_name((*ptp)->doc, name);
 	doc_replace(p, NULL, text, &first);
+	ptp = pane_point(p);
 	point_reset(*ptp);
-	render_attach(NULL, p);
 	return p;
 }
 
@@ -407,9 +408,8 @@ DEF_CMD(docs_open)
 	}
 	if (p)
 		pane_close(p);
-	p = pane_attach(par, "view", dp, NULL);
+	p = doc_attach_view(par, dp, renderer);
 	if (p) {
-		render_attach(renderer, p);
 		pane_focus(p);
 		return 1;
 	} else {
