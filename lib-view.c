@@ -246,57 +246,6 @@ DEF_CMD(view_attach)
 	return ci->focus != NULL;
 }
 
-DEF_CMD(view_line)
-{
-	struct point *pt = *ci->pointp;
-	wint_t ch = 1;
-	int rpt = RPT_NUM(ci);
-
-	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(pt->doc, ci->mark)) != WEOF &&
-		       ch != '\n')
-			;
-		rpt -= 1;
-	}
-	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(pt->doc, ci->mark)) != WEOF &&
-		       ch != '\n')
-			;
-		rpt += 1;
-	}
-	return 1;
-}
-
-DEF_CMD(view_page)
-{
-	struct point *pt = *ci->pointp;
-	wint_t ch = 1;
-	int rpt = RPT_NUM(ci);
-
-	rpt *= ci->home->h-2;
-	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(pt->doc, ci->mark)) != WEOF &&
-		       ch != '\n')
-			;
-		rpt -= 1;
-	}
-	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(pt->doc, ci->mark)) != WEOF &&
-		       ch != '\n')
-			;
-		rpt += 1;
-	}
-	return 1;
-}
-
-DEF_CMD(view_replace)
-{
-	bool first_change = (ci->extra == 0);
-
-	doc_replace(ci->focus, ci->mark, ci->str, &first_change);
-	return 1;
-}
-
 DEF_CMD(view_click)
 {
 	struct pane *p = ci->home;
@@ -335,11 +284,6 @@ DEF_CMD(view_click)
 void edlib_init(struct editor *ed)
 {
 	view_map = key_alloc();
-
-	key_add(view_map, "Move-Line", &view_line);
-	key_add(view_map, "Move-View-Large", &view_page);
-
-	key_add(view_map, "Replace", &view_replace);
 
 	key_add(view_map, "Click-1", &view_click);
 	key_add(view_map, "Press-1", &view_click);

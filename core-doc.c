@@ -273,6 +273,57 @@ DEF_CMD(doc_file)
 	return 1;
 }
 
+DEF_CMD(doc_line)
+{
+	struct doc *d = ci->home->data;
+	wint_t ch = 1;
+	int rpt = RPT_NUM(ci);
+
+	while (rpt > 0 && ch != WEOF) {
+		while ((ch = mark_next(d, ci->mark)) != WEOF &&
+		       ch != '\n')
+			;
+		rpt -= 1;
+	}
+	while (rpt < 0 && ch != WEOF) {
+		while ((ch = mark_prev(d, ci->mark)) != WEOF &&
+		       ch != '\n')
+			;
+		rpt += 1;
+	}
+	return 1;
+}
+
+DEF_CMD(doc_page)
+{
+	struct doc *d = ci->home->data;
+	wint_t ch = 1;
+	int rpt = RPT_NUM(ci);
+
+	rpt *= ci->home->h-2;
+	while (rpt > 0 && ch != WEOF) {
+		while ((ch = mark_next(d, ci->mark)) != WEOF &&
+		       ch != '\n')
+			;
+		rpt -= 1;
+	}
+	while (rpt < 0 && ch != WEOF) {
+		while ((ch = mark_prev(d, ci->mark)) != WEOF &&
+		       ch != '\n')
+			;
+		rpt += 1;
+	}
+	return 1;
+}
+
+DEF_CMD(doc_do_replace)
+{
+	bool first_change = (ci->extra == 0);
+
+	doc_replace(ci->home, ci->mark, ci->str, &first_change);
+	return 1;
+}
+
 static struct map *doc_default_cmd;
 
 static void init_doc_defaults(void)
@@ -284,6 +335,9 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "Move-WORD", &doc_WORD);
 	key_add(doc_default_cmd, "Move-EOL", &doc_eol);
 	key_add(doc_default_cmd, "Move-File", &doc_file);
+	key_add(doc_default_cmd, "Move-Line", &doc_line);
+	key_add(doc_default_cmd, "Move-View-Large", &doc_page);
+	key_add(doc_default_cmd, "Replace", &doc_do_replace);
 }
 
 DEF_CMD(doc_handle)
