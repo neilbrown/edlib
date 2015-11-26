@@ -266,7 +266,6 @@ struct cmd_info {
 	int		hx, hy;		/* x,y mapped to 'home' */
 	char		*str, *str2;
 	struct mark	*mark, *mark2;
-	struct point	**pointp;
 	struct command	*comm, *comm2;
 };
 #define	NO_NUMERIC	(INT_MAX/2)

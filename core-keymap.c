@@ -304,13 +304,7 @@ int key_handle(struct cmd_info *ci)
 
 	ci->hx = ci->x;
 	ci->hy = ci->y;
-	if (!ci->pointp) {
-		struct pane *p2 = p;
-		while (p2 && !p2->point)
-			p2 = p2->parent;
-		if (p2)
-			ci->pointp = &p2->point;
-	}
+
 	while (ret == 0 && p) {
 		if (p->handle) {
 			ci->home = p;
@@ -336,8 +330,6 @@ static int __key_handle_focus(struct cmd_info *ci, int savepoint)
 	ci->x = -1;
 	ci->y = -1;
 	while (p->focus) {
-		if (p->point && !ci->pointp)
-			ci->pointp = &p->point;
 		p = p->focus;
 		if (savepoint && p->point)
 			ci->mark = &p->point->m;
@@ -365,9 +357,6 @@ static int __key_handle_xy(struct cmd_info *ci, int savepoint)
 
 	while (1) {
 		struct pane *t, *chld = NULL;
-
-		if (p->point)
-			ci->pointp = &p->point;
 
 		list_for_each_entry(t, &p->children, siblings) {
 			if (x < t->x || x >= t->x + t->w)
