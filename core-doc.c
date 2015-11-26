@@ -139,19 +139,18 @@ void doc_init(struct doc *d)
 	d->home = NULL;
 }
 
-
 DEF_CMD(doc_char)
 {
-	struct point *pt = *ci->pointp;
+	struct doc *d = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
 	while (rpt > 0) {
-		if (mark_next(pt->doc, ci->mark) == WEOF)
+		if (mark_next(d, ci->mark) == WEOF)
 			break;
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		if (mark_prev(pt->doc, ci->mark) == WEOF)
+		if (mark_prev(d, ci->mark) == WEOF)
 			break;
 		rpt += 1;
 	}
@@ -161,35 +160,35 @@ DEF_CMD(doc_char)
 
 DEF_CMD(doc_word)
 {
-	struct point *pt = *ci->pointp;
+	struct doc *d = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
 	/* We skip spaces, then either alphanum or non-space/alphanum */
 	while (rpt > 0) {
-		while (iswspace(doc_following(pt->doc, ci->mark)))
-			mark_next(pt->doc, ci->mark);
-		if (iswalnum(doc_following(pt->doc, ci->mark))) {
-			while (iswalnum(doc_following(pt->doc, ci->mark)))
-				mark_next(pt->doc, ci->mark);
+		while (iswspace(doc_following(d, ci->mark)))
+			mark_next(d, ci->mark);
+		if (iswalnum(doc_following(d, ci->mark))) {
+			while (iswalnum(doc_following(d, ci->mark)))
+				mark_next(d, ci->mark);
 		} else {
 			wint_t wi;
-			while ((wi=doc_following(pt->doc, ci->mark)) != WEOF &&
+			while ((wi=doc_following(d, ci->mark)) != WEOF &&
 			       !iswspace(wi) && !iswalnum(wi))
-				mark_next(pt->doc, ci->mark);
+				mark_next(d, ci->mark);
 		}
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		while (iswspace(doc_prior(pt->doc, ci->mark)))
-			mark_prev(pt->doc, ci->mark);
-		if (iswalnum(doc_prior(pt->doc, ci->mark))) {
-			while (iswalnum(doc_prior(pt->doc, ci->mark)))
-				mark_prev(pt->doc, ci->mark);
+		while (iswspace(doc_prior(d, ci->mark)))
+			mark_prev(d, ci->mark);
+		if (iswalnum(doc_prior(d, ci->mark))) {
+			while (iswalnum(doc_prior(d, ci->mark)))
+				mark_prev(d, ci->mark);
 		} else {
 			wint_t wi;
-			while ((wi=doc_prior(pt->doc, ci->mark)) != WEOF &&
+			while ((wi=doc_prior(d, ci->mark)) != WEOF &&
 			       !iswspace(wi) && !iswalnum(wi))
-				mark_prev(pt->doc, ci->mark);
+				mark_prev(d, ci->mark);
 		}
 		rpt += 1;
 	}
@@ -197,29 +196,29 @@ DEF_CMD(doc_word)
 	return 1;
 }
 
-DEF_CMD(doc_word)
+DEF_CMD(doc_WORD)
 {
-	struct point *pt = *ci->pointp;
+	struct doc *d = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
 	/* We skip spaces, then non-spaces */
 	while (rpt > 0) {
 		wint_t wi;
-		while (iswspace(doc_following(pt->doc, ci->mark)))
-			mark_next(pt->doc, ci->mark);
+		while (iswspace(doc_following(d, ci->mark)))
+			mark_next(d, ci->mark);
 
-		while ((wi=doc_following(pt->doc, ci->mark)) != WEOF &&
+		while ((wi=doc_following(d, ci->mark)) != WEOF &&
 		       !iswspace(wi))
-			mark_next(pt->doc, ci->mark);
+			mark_next(d, ci->mark);
 		rpt -= 1;
 	}
 	while (rpt < 0) {
 		wint_t wi;
-		while (iswspace(doc_prior(pt->doc, ci->mark)))
-			mark_prev(pt->doc, ci->mark);
-		while ((wi=doc_prior(pt->doc, ci->mark)) != WEOF &&
+		while (iswspace(doc_prior(d, ci->mark)))
+			mark_prev(d, ci->mark);
+		while ((wi=doc_prior(d, ci->mark)) != WEOF &&
 		       !iswspace(wi))
-			mark_prev(pt->doc, ci->mark);
+			mark_prev(d, ci->mark);
 		rpt += 1;
 	}
 
@@ -228,7 +227,7 @@ DEF_CMD(doc_word)
 
 DEF_CMD(doc_eol)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->home->data;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -255,19 +254,19 @@ DEF_CMD(doc_eol)
 
 DEF_CMD(doc_file)
 {
-	struct point *pt = *ci->pointp;
+	struct doc *d = ci->home->data;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
 	if (ci->mark == NULL)
-		ci->mark = &pt->m;
+		ci->mark = &ci->home->point->m;
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(pt->doc, ci->mark)) != WEOF)
+		while ((ch = mark_next(d, ci->mark)) != WEOF)
 			;
 		rpt = 0;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(pt->doc, ci->mark)) != WEOF)
+		while ((ch = mark_prev(d, ci->mark)) != WEOF)
 			;
 		rpt = 0;
 	}
@@ -282,7 +281,7 @@ static void init_doc_defaults(void)
 
 	key_add(doc_default_cmd, "Move-Char", &doc_char);
 	key_add(doc_default_cmd, "Move-Word", &doc_word);
-	key_add(doc_default_cmd, "Move-WORD", &doc_word);
+	key_add(doc_default_cmd, "Move-WORD", &doc_WORD);
 	key_add(doc_default_cmd, "Move-EOL", &doc_eol);
 	key_add(doc_default_cmd, "Move-File", &doc_file);
 }
