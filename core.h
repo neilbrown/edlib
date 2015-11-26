@@ -159,7 +159,7 @@ void mark_reset(struct doc *d, struct mark *m);
 void __mark_reset(struct doc *d, struct mark *m, int new, int end);
 void mark_forward_over(struct mark *m, struct mark *m2);
 void mark_backward_over(struct mark *m, struct mark *mp);
-void point_notify_change(struct point *p, struct mark *m);
+void point_notify_change(struct doc *d, struct point *p, struct mark *m);
 void doc_notify_change(struct doc *d, struct mark *m);
 void doc_check_consistent(struct doc *d);
 void point_to_mark(struct point *p, struct mark *m);

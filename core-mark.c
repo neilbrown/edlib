@@ -900,7 +900,7 @@ struct mark *do_vmark_at_point(struct doc *d, struct point *pt, int view)
 	return NULL;
 }
 
-void point_notify_change(struct point *p, struct mark *m)
+void point_notify_change(struct doc *d, struct point *p, struct mark *m)
 {
 	/* Notify of changes from m (might be NULL) to p.
 	 * Notify the last mark which is before p or m,
@@ -908,7 +908,6 @@ void point_notify_change(struct point *p, struct mark *m)
 	 * There will be none in between.
 	 */
 	struct cmd_info ci = {0};
-	struct doc *d = p->doc;
 	int i;
 
 	ci.key = "Notify:Replace";
@@ -968,7 +967,7 @@ void doc_notify_change(struct doc *d, struct mark *m)
 	int remaining = d->nviews;
 
 	if (m->viewnum == MARK_POINT) {
-		point_notify_change(container_of(m, struct point, m), NULL);
+		point_notify_change(d, container_of(m, struct point, m), NULL);
 		return;
 	}
 

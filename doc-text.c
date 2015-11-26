@@ -852,7 +852,7 @@ DEF_CMD(text_reundo)
 		if (early && !text_ref_same(t, &early->ref, &start))
 			early = NULL;
 
-		point_notify_change(ci->home->point, early);
+		point_notify_change(d, ci->home->point, early);
 
 		text_check_consistent(t);
 	}
@@ -1409,7 +1409,7 @@ DEF_CMD(text_replace)
 		text_check_consistent(t);
 
 	}
-	point_notify_change(pos, early);
+	point_notify_change(d, pos, early);
 	ci->numeric = first;
 	return 1;
 }
