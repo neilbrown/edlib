@@ -146,6 +146,8 @@ DEF_CMD(complete_clone)
 
 DEF_CMD(complete_nomove)
 {
+	if (strcmp(ci->key, "Move-File") == 0 && ci->numeric == 1)
+		return 0;
 	return 1;
 }
 
@@ -205,17 +207,28 @@ DEF_CMD(complete_set_prefix)
 	struct pane *p = ci->home;
 	struct complete_data *cd = p->data;
 	struct cmd_info ci2 = {0};
-	struct point **ptp = ci->pointp;
-	struct doc *d = (*ptp)->doc;
-	struct mark *m = mark_at_point(*ptp, MARK_UNGROUPED);
+	struct mark *m;
 	int cnt = 0;
 	char *common = NULL;
 
 	free(cd->prefix);
 	cd->prefix = strdup(ci->str);
 
-	while (mark_next(d, m) != WEOF)
-		;
+	ci2.key = "PointDup";
+	ci2.focus = ci->home;
+	ci2.extra = MARK_UNGROUPED;
+	key_handle_focus(&ci2);
+	m = ci2.mark;
+
+	memset(&ci2, 0, sizeof(ci2));
+
+	ci2.key = "Move-File";
+	ci2.focus = ci->home;
+	ci2.numeric = 1;
+	ci2.mark = m;
+	key_handle_focus(&ci2);
+
+	memset(&ci2, 0, sizeof(ci2));
 	ci2.key = "render-line-prev";
 	ci2.numeric = 1;
 	ci2.mark = m;
@@ -235,7 +248,11 @@ DEF_CMD(complete_set_prefix)
 	}
 	ci->extra = cnt;
 	ci->str = common;
-	point_to_mark(*ptp, m);
+	memset(&ci2, 0, sizeof(ci2));
+	ci2.key = "Move-to";
+	ci2.mark = m;
+	ci2.focus = ci->home;
+	key_handle_focus(&ci2);
 	mark_free(m);
 	memset(&ci2, 0, sizeof(ci2));
 	ci2.key = "render-lines:redraw";
