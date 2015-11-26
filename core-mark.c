@@ -346,11 +346,21 @@ struct mark *doc_first_mark(struct doc *d, int view)
 	return NULL;
 }
 
-struct mark *doc_next_mark(struct doc *d, struct mark *m)
+struct mark *doc_next_mark(struct mark *m)
 {
 	struct tlist_head *tl = &m->view;
 
 	tlist_for_each_continue(tl, GRP_HEAD)
+		if (TLIST_TYPE(tl) == GRP_MARK)
+			return tlist_entry(tl, struct mark, view);
+	return NULL;
+}
+
+struct mark *doc_prev_mark(struct mark *m)
+{
+	struct tlist_head *tl = &m->view;
+
+	tlist_for_each_continue_reverse(tl, GRP_HEAD)
 		if (TLIST_TYPE(tl) == GRP_MARK)
 			return tlist_entry(tl, struct mark, view);
 	return NULL;
