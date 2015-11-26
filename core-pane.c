@@ -163,7 +163,6 @@ void pane_close(struct pane *p)
 
 		ci.key = "Close";
 		ci.focus = ci.home = p;
-		ci.pointp = pane_point(p);
 		ci.comm = p->handle;
 		p->handle->func(&ci);
 	}
