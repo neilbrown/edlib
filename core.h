@@ -388,12 +388,12 @@ static inline char *doc_getstr(struct pane *from, struct mark *to)
 	return ci.str;
 }
 
-static inline char *doc_attr(struct doc *d, struct mark *m, bool forward, char *attr)
+static inline char *doc_attr(struct pane *dp, struct mark *m, bool forward, char *attr)
 {
 	struct cmd_info ci = {0};
 
 	ci.key = "doc:get-attr";
-	ci.focus = d->home;
+	ci.focus = dp;
 	ci.mark = m;
 	ci.numeric = forward ? 1 : 0;
 	ci.str = attr;

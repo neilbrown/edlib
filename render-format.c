@@ -97,7 +97,7 @@ DEF_CMD(render_line)
 			buf_append(&ret, ch);
 			continue;
 		}
-		val = doc_attr(d, m, 1, buf);
+		val = doc_attr(dp, m, 1, buf);
 		if (!val)
 			val = "-";
 		if (*n != ':') {

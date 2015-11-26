@@ -680,7 +680,7 @@ static char *__docs_get_attr(struct doc *doc, struct mark *m,
 	d = p->data;
 	if (strcmp(attr, "name") == 0)
 		return d->name;
-	return doc_attr(d, NULL, 0, attr);
+	return doc_attr(p, NULL, 0, attr);
 }
 
 DEF_CMD(docs_get_attr)

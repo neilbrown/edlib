@@ -507,7 +507,7 @@ char *pane_attr_get(struct pane *p, char *key)
 		if (a)
 			return a;
 		if (p->point) {
-			a = doc_attr(p->point->doc, NULL, 0, key);
+			a = doc_attr(p, NULL, 0, key);
 			if (a)
 				return a;
 		}
