@@ -790,16 +790,16 @@ struct mark *vmark_last(struct doc *d, int view)
 	return NULL;
 }
 
-struct mark *vmark_matching(struct doc *d, struct mark *m)
+struct mark *vmark_matching(struct pane *p, struct mark *m)
 {
 	/* Find a nearby mark in the same view with the same ref */
 	struct mark *m2;
 
 	m2 = vmark_prev(m);
-	if (m2 && mark_same(d, m, m2))
+	if (m2 && mark_same_pane(p, m, m2, NULL))
 		return m2;
 	m2 = vmark_next(m);
-	if (m2 && mark_same(d, m, m2))
+	if (m2 && mark_same_pane(p, m, m2, NULL))
 		return m2;
 	return NULL;
 }

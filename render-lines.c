@@ -284,7 +284,7 @@ static struct mark *call_render_line_prev(struct pane *p, struct point **ptp,
 		return NULL;
 	}
 
-	m = vmark_matching((*ptp)->doc, ci.mark);
+	m = vmark_matching(p, ci.mark);
 	if (m)
 		mark_free(ci.mark);
 	else
@@ -317,7 +317,7 @@ static struct mark *call_render_line(struct pane *p, struct point **ptp,
 		free(start->line);
 	start->line = ci.str;
 
-	m = vmark_matching((*ptp)->doc, ci.mark);
+	m = vmark_matching(p, ci.mark);
 	if (m)
 		mark_free(ci.mark);
 	else
