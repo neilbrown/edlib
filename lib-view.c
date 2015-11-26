@@ -42,14 +42,15 @@ static int view_refresh(struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
-	struct point *pt;
+	struct mark *m = ci->mark;
 	int ln, l, w, c = -1;
 	struct cmd_info ci2 = {0};
 	char msg[100];
 	int i;
 	int mid;
-
-	pt = *ci->pointp;
+	struct editor *ed = pane2ed(ci->home);
+	struct pane *dp = doc_get_pane(ci->home);
+	struct doc *d = dp->data;
 
 	pane_check_size(p);
 	p->cx = 0; p->cy = 0;
@@ -64,13 +65,13 @@ static int view_refresh(struct cmd_info *ci)
 		if (p->h > 4) {
 			ci2.key = "CountLines";
 			ci2.home = ci2.focus = p;
-			ci2.mark = &pt->m;
-			key_lookup(pt->doc->ed->commands, &ci2);
+			ci2.mark = m;
+			key_lookup(ed->commands, &ci2);
 
-			ln = attr_find_int(*mark_attr(&pt->m), "lines");
-			l = attr_find_int(pt->doc->attrs, "lines");
-			w = attr_find_int(pt->doc->attrs, "words");
-			c = attr_find_int(pt->doc->attrs, "chars");
+			ln = attr_find_int(*mark_attr(m), "lines");
+			l = attr_find_int(d->attrs, "lines");
+			w = attr_find_int(d->attrs, "words");
+			c = attr_find_int(d->attrs, "chars");
 			if (l <= 0)
 				l = 1;
 			mid = 1 + (p->h-4) * ln / l;
@@ -89,7 +90,7 @@ static int view_refresh(struct cmd_info *ci)
 		int label;
 		for (i = 0; i < p->w; i++)
 			pane_text(p, '-', "inverse", i, 0);
-		snprintf(msg, sizeof(msg), "%s", pt->doc->name);
+		snprintf(msg, sizeof(msg), "%s", d->name);
 		label = (p->w - strlen(msg)) / 2;
 		if (label < 1)
 			label = 1;
@@ -103,9 +104,9 @@ static int view_refresh(struct cmd_info *ci)
 		if (!(vd->border & BORDER_TOP)) {
 			if (c >= 0)
 				snprintf(msg, sizeof(msg), "L%d W%d C%d D:%s",
-					 l,w,c, pt->doc->name);
+					 l,w,c, d->name);
 			else
-				snprintf(msg, sizeof(msg),"%s", pt->doc->name);
+				snprintf(msg, sizeof(msg),"%s", d->name);
 			for (i = 0; msg[i] && i+4 < p->w; i++)
 				pane_text(p, msg[i], "inverse", i+4, p->h-1);
 		}

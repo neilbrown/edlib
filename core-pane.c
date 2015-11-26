@@ -102,36 +102,36 @@ static void __pane_refresh(struct cmd_info *ci)
 	struct pane *c;
 	int damage = ci->extra;
 	struct pane *p = ci->home;
-	struct point  **pp;
+	struct cmd_info ci2 = *ci;
 
 	if (p->focus == NULL)
 		p->focus = list_first_entry_or_null(
 			&p->children, struct pane, siblings);
 	if (p->point)
-		ci->pointp = &p->point;
-	pp = ci->pointp;
+		ci2.mark = &p->point->m;
+
 	damage |= p->damaged;
 	if (!damage)
 		return;
 	if (damage == DAMAGED_CHILD)
 		damage = 0;
 	else {
-		ci->extra = damage;
-		if (ci->extra & DAMAGED_SIZE)
-			ci->extra |= DAMAGED_CONTENT;
-		if (ci->extra & DAMAGED_CONTENT)
-			ci->extra |= DAMAGED_CURSOR;
+		ci2.extra = damage;
+		if (ci2.extra & DAMAGED_SIZE)
+			ci2.extra |= DAMAGED_CONTENT;
+		if (ci2.extra & DAMAGED_CONTENT)
+			ci2.extra |= DAMAGED_CURSOR;
 		damage &= DAMAGED_SIZE;
-		ci->comm = p->handle;
-		if (p->handle->func(ci) == 0)
+		ci2.comm = p->handle;
+		if (p->handle->func(&ci2) == 0)
 			pane_check_size(p);
 	}
 	p->damaged = 0;
 	list_for_each_entry(c, &p->children, siblings) {
-		ci->pointp = pp;
-		ci->extra = damage;
-		ci->home = c;
-		__pane_refresh(ci);
+		ci2.extra = damage;
+		ci2.home = c;
+		ci2.comm = NULL;
+		__pane_refresh(&ci2);
 	}
 }
 
