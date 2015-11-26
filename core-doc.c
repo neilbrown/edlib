@@ -265,11 +265,11 @@ DEF_CMD(doc_file)
 			;
 		rpt = 0;
 	}
-	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(d, ci->mark)) != WEOF)
-			;
-		rpt = 0;
-	}
+	if (rpt > 0)
+		__mark_reset(d, ci->mark, 0, 1);
+	if (rpt < 0)
+		mark_reset(d, ci->mark);
+
 	return 1;
 }
 

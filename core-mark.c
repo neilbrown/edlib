@@ -243,21 +243,34 @@ struct mark *mark_dup(struct mark *m, int notype)
 	return ret;
 }
 
-void __mark_reset(struct doc *d, struct mark *m, int new)
+void __mark_reset(struct doc *d, struct mark *m, int new, int end)
 {
 	struct point *p;
 	int i;
 	struct cmd_info ci = {0};
+	int seq = 0;
 
 	m->rpos = 0;
 	if (!new)
 		hlist_del(&m->all);
-	hlist_add_head(&m->all, &d->marks);
-	assign_seq(m, 0);
+	if (end) {
+		if (hlist_empty(&d->marks))
+			hlist_add_head(&m->all, &d->marks);
+		else {
+			struct mark *last = hlist_first_entry(&d->marks,
+							      struct mark, all);
+			while (last->all.next)
+				last = hlist_next_entry(last, all);
+			seq = last->seq;
+			hlist_add_after(&last->all, &m->all);
+		}
+	} else
+		hlist_add_head(&m->all, &d->marks);
+	assign_seq(m, seq);
 
 	ci.key = "doc:set-ref";
 	ci.mark = m;
-	ci.numeric = 1; /* start */
+	ci.numeric = !end; /* start */
 	ci.focus = d->home;
 	key_handle_focus(&ci);
 
@@ -266,19 +279,28 @@ void __mark_reset(struct doc *d, struct mark *m, int new)
 	if (m->viewnum != MARK_POINT) {
 		if (!new)
 			tlist_del(&m->view);
-		tlist_add(&m->view, GRP_MARK, &d->views[m->viewnum].head);
+		if (end)
+			tlist_add_tail(&m->view, GRP_MARK, &d->views[m->viewnum].head);
+		else
+			tlist_add(&m->view, GRP_MARK, &d->views[m->viewnum].head);
 		return;
 	}
 	/* MARK_POINT */
 	if (!new)
 		tlist_del(&m->view);
-	tlist_add(&m->view, GRP_MARK, &d->points);
+	if (end)
+		tlist_add_tail(&m->view, GRP_MARK, &d->points);
+	else
+		tlist_add(&m->view, GRP_MARK, &d->points);
 	p = container_of(m, struct point, m);
 	for (i = 0; i < p->size; i++)
 		if (d->views[i].notify) {
 			if (!new)
 				tlist_del(&p->lists[i]);
-			tlist_add(&p->lists[i], GRP_LIST, &d->views[i].head);
+			if (end)
+				tlist_add_tail(&p->lists[i], GRP_LIST, &d->views[i].head);
+			else
+				tlist_add(&p->lists[i], GRP_LIST, &d->views[i].head);
 		} else if (new)
 			INIT_TLIST_HEAD(&p->lists[i], GRP_LIST);
 }
@@ -293,7 +315,7 @@ struct point *point_new(struct doc *d, struct point **owner)
 	ret->size = d->nviews;
 	ret->owner = owner;
 	ret->doc = d;
-	__mark_reset(d, &ret->m, 1);
+	__mark_reset(d, &ret->m, 1, 0);
 	if (owner)
 		*owner = ret;
 	return ret;
@@ -301,13 +323,13 @@ struct point *point_new(struct doc *d, struct point **owner)
 
 void mark_reset(struct doc *d, struct mark *m)
 {
-	__mark_reset(d, m, 0);
+	__mark_reset(d, m, 0, 0);
 }
 
 void point_reset(struct point *p)
 {
 	struct doc *d = p->doc;
-	__mark_reset(d, &p->m, 0);
+	__mark_reset(d, &p->m, 0, 0);
 }
 
 struct mark *doc_first_mark(struct doc *d, int view)
@@ -367,7 +389,7 @@ struct mark *doc_new_mark(struct doc *d, int view)
 	ret->rpos = 0;
 	ret->attrs = NULL;
 	ret->viewnum = view;
-	__mark_reset(d, ret, 1);
+	__mark_reset(d, ret, 1, 0);
 	return ret;
 }
 
