@@ -116,7 +116,6 @@ void mark_free(struct mark *m)
 void point_free(struct point *p)
 {
 	int i;
-	*p->owner = NULL;
 	for (i = 0; i < p->size; i++)
 		tlist_del_init(&p->links->lists[i]);
 	mark_delete(&p->m);
@@ -152,7 +151,7 @@ struct mark *mark_at_point(struct point *p, int view)
 	return ret;
 }
 
-struct point *point_dup(struct point *p, struct point **owner)
+struct point *point_dup(struct point *p)
 {
 	int i;
 	struct point *ret = malloc(sizeof(*ret));
@@ -170,8 +169,6 @@ struct point *point_dup(struct point *p, struct point **owner)
 			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
 		else
 			tlist_add(&lnk->lists[i], GRP_LIST, &p->links->lists[i]);
-	*owner = ret;
-	ret->owner = owner;
 	ret->doc = p->doc;
 	return ret;
 }
@@ -302,7 +299,7 @@ void __mark_reset(struct doc *d, struct mark *m, int new, int end)
 			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
 }
 
-struct point *point_new(struct doc *d, struct point **owner)
+struct point *point_new(struct doc *d)
 {
 	struct point *ret = malloc(sizeof(*ret));
 	struct point_links *lnk = malloc(sizeof(*lnk) +
@@ -311,13 +308,10 @@ struct point *point_new(struct doc *d, struct point **owner)
 	ret->m.attrs = NULL;
 	ret->m.viewnum = MARK_POINT;
 	ret->size = d->nviews;
-	ret->owner = owner;
 	ret->doc = d;
 	ret->links = lnk;
 	lnk->pt = ret;
 	__mark_reset(d, &ret->m, 1, 0);
-	if (owner)
-		*owner = ret;
 	return ret;
 }
 

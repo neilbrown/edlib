@@ -137,7 +137,6 @@ struct mark {
 struct point {
 	struct mark		m;
 	struct doc		*doc;
-	struct point		**owner;
 	int			size;
 	struct point_links {
 		struct point		*pt;
@@ -169,8 +168,8 @@ int mark_same(struct doc *d, struct mark *m1, struct mark *m2);
 int mark_same2(struct doc *d, struct mark *m1, struct mark *m2, struct cmd_info *ci);
 int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2,
 		   struct cmd_info *ci);
-struct point *point_new(struct doc *d, struct point **owner);
-struct point *point_dup(struct point *p, struct point **owner);
+struct point *point_new(struct doc *d);
+struct point *point_dup(struct point *p);
 wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci);
 wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move);
 wint_t mark_next(struct doc *d, struct mark *m);

@@ -267,10 +267,6 @@ void pane_subsume(struct pane *p, struct pane *parent)
 	point = parent->point;
 	parent->point = p->point;
 	p->point = point;
-	if (parent->point)
-		parent->point->owner = &parent->point;
-	if (p->point)
-		p->point->owner = &p->point;
 }
 
 int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)

@@ -141,6 +141,7 @@ DEF_CMD(search_close)
 	/* TEMP HACK - please fix */
 	doc_set_attr(esi->end, "highlight", NULL);
 	point_free(esi->end);
+	esi->end = NULL;
 	mark_free(esi->start);
 	while (esi->s) {
 		struct stk *n = esi->s;
@@ -246,7 +247,6 @@ DEF_CMD(emacs_search)
 		return -1;
 	}
 	esi->end = container_of(ci2.mark, struct point, m);
-	esi->end->owner = &esi->end;
 
 	esi->start = mark_dup(ci2.mark, 1);
 	esi->s = NULL;

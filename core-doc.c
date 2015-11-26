@@ -361,7 +361,7 @@ DEF_CMD(doc_handle)
 		struct pane *p = doc_attach(ci->focus, d);
 		struct pane *c = pane_child(ci->home);
 
-		point_dup(ci->home->point, &p->point);
+		p->point = point_dup(ci->home->point);
 		if (c)
 			pane_clone(c, p);
 		return 1;
@@ -370,6 +370,7 @@ DEF_CMD(doc_handle)
 	if (strcmp(ci->key, "Close") == 0) {
 		if (ci->home->point)
 			point_free(ci->home->point);
+		ci->home->point = NULL;
 		return 1;
 	}
 
@@ -378,7 +379,7 @@ DEF_CMD(doc_handle)
 		ci->mark = NULL;
 		if (ci->home->point) {
 			if (ci->extra == MARK_POINT) {
-				point_dup(ci->home->point, &pt);
+				pt = point_dup(ci->home->point);
 				ci->mark = &pt->m;
 			}
 			if (ci->extra == MARK_UNGROUPED)
@@ -497,7 +498,7 @@ struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render
 	struct pane *p;
 	p = doc_attach(parent, doc->data);
 	if (p) {
-		point_new(doc->data, &p->point);
+		p->point = point_new(doc->data);
 		p = pane_attach(p, "view", doc, NULL);
 	}
 	if (p)
