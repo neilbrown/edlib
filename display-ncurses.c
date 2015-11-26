@@ -355,7 +355,7 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	dd->dpy.mode = dd->dpy.next_mode;
 	dd->dpy.numeric = NO_NUMERIC;
 	dd->dpy.extra = 0;
-	key_handle_focus(&ci);
+	key_handle_focus_point(&ci);
 }
 
 static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
@@ -373,7 +373,7 @@ static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
 	dd->dpy.mode = dd->dpy.next_mode;
 	dd->dpy.numeric = NO_NUMERIC;
 	dd->dpy.extra = 0;
-	key_handle_xy(&ci);
+	key_handle_xy_point(&ci);
 }
 
 static void send_mouse(MEVENT *mev, struct pane *p)

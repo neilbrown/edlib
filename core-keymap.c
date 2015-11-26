@@ -329,7 +329,7 @@ int key_handle(struct cmd_info *ci)
 	return ret;
 }
 
-int key_handle_focus(struct cmd_info *ci)
+static int __key_handle_focus(struct cmd_info *ci, int savepoint)
 {
 	/* Handle this in the focus pane, so x,y are irrelevant */
 	struct pane *p = ci->focus;
@@ -339,13 +339,24 @@ int key_handle_focus(struct cmd_info *ci)
 		if (p->point && !ci->pointp)
 			ci->pointp = &p->point;
 		p = p->focus;
+		if (savepoint && p->point)
+			ci->mark = &p->point->m;
 	}
 	ci->focus = p;
 	ci->comm = NULL;
 	return key_handle(ci);
 }
 
-int key_handle_xy(struct cmd_info *ci)
+int key_handle_focus(struct cmd_info *ci)
+{
+	return __key_handle_focus(ci, 0);
+}
+int key_handle_focus_point(struct cmd_info *ci)
+{
+	return __key_handle_focus(ci, 1);
+}
+
+static int __key_handle_xy(struct cmd_info *ci, int savepoint)
 {
 	/* Handle this in child with x,y co-ords */
 	struct pane *p = ci->focus;
@@ -372,10 +383,21 @@ int key_handle_xy(struct cmd_info *ci)
 		x -= chld->x;
 		y -= chld->y;
 		p = chld;
+		if (savepoint && p->point)
+			ci->mark = &p->point->m;
 	}
 	ci->x = x;
 	ci->y = y;
 	ci->focus = p;
 	ci->comm = NULL;
 	return key_handle(ci);
+}
+
+int key_handle_xy(struct cmd_info *ci)
+{
+	return __key_handle_xy(ci, 0);
+}
+int key_handle_xy_point(struct cmd_info *ci)
+{
+	return __key_handle_xy(ci, 1);
 }
