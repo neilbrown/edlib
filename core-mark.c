@@ -348,10 +348,9 @@ struct mark *doc_first_mark(struct doc *d, int view)
 
 struct mark *doc_next_mark(struct doc *d, struct mark *m)
 {
-	int view = m->viewnum;
 	struct tlist_head *tl = &m->view;
 
-	tlist_for_each_continue(tl, &d->views[view].head)
+	tlist_for_each_continue(tl, GRP_HEAD)
 		if (TLIST_TYPE(tl) == GRP_MARK)
 			return tlist_entry(tl, struct mark, view);
 	return NULL;
@@ -578,7 +577,7 @@ static void point_forward_to_mark(struct point *p, struct mark *m)
 
 	pnear = p;
 	ptmp = p;
-	tlist_for_each_entry_continue(ptmp, &d->points, m.view) {
+	tlist_for_each_entry_continue(ptmp, GRP_HEAD, m.view) {
 		if (ptmp->m.seq < m->seq)
 			pnear = ptmp;
 		else
@@ -599,7 +598,7 @@ static void point_forward_to_mark(struct point *p, struct mark *m)
 		if (!d->views[i].notify)
 			continue;
 		tl = &pnear->links->lists[i];
-		tlist_for_each_continue(tl,  &d->views[i].head) {
+		tlist_for_each_continue(tl,  GRP_HEAD) {
 			struct mark *mtmp;
 			if (TLIST_TYPE(tl) != GRP_MARK)
 				break;
@@ -632,7 +631,7 @@ static void point_backward_to_mark(struct point *p, struct mark *m)
 
 	pnear = p;
 	ptmp = p;
-	tlist_for_each_entry_continue_reverse(ptmp, &d->points, m.view) {
+	tlist_for_each_entry_continue_reverse(ptmp, GRP_HEAD, m.view) {
 		if (ptmp->m.seq > m->seq)
 			pnear = ptmp;
 		else
@@ -653,7 +652,7 @@ static void point_backward_to_mark(struct point *p, struct mark *m)
 		if (!d->views[i].notify)
 			continue;
 		tl = &pnear->links->lists[i];
-		tlist_for_each_continue_reverse(tl, &d->views[i].head) {
+		tlist_for_each_continue_reverse(tl, GRP_HEAD) {
 			struct mark *mtmp;
 			if (TLIST_TYPE(tl) != GRP_MARK)
 				break;

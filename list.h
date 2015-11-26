@@ -608,27 +608,27 @@ static inline void tlist_del_init(struct tlist_head *entry)
 /**
  * tlist_for_each_continue - continue iteration over tlist
  * @pos:	the struct tlist_head * to use as a loop cursor.
- * @head:	the head for your list.
+ * @head_typef:	the the type of the head for your list.
  *
  * Continue to iterate over tlist, continuing after
  * the current position.
  */
-#define tlist_for_each_continue(pos, head)			\
+#define tlist_for_each_continue(pos, head_type)			\
 	for (pos = TLIST_PTR(pos->next);			\
-	     pos != (head);					\
+	     TLIST_TYPE(pos) != (head_type);			\
 	     pos = TLIST_PTR(pos->next))
 
 /**
  * list_for_each_continue_reverse - iterate backwards from the given point
  * @pos:	the struct tlist_head * to use as a loop cursor.
- * @head:	the head for your list.
+ * @head:	the type of the head for your list.
  *
  * Start to iterate over list of given type backwards, continuing after
  * the current position.
  */
-#define tlist_for_each_continue_reverse(pos, head)		\
+#define tlist_for_each_continue_reverse(pos, head_type)		\
 	for (pos = TLIST_PTR(pos->prev);			\
-	     pos != (head);					\
+	     TLIST_TYPE(pos) != (head_type);			\
 	     pos = TLIST_PTR(pos->prev))
 
 /**
@@ -647,29 +647,29 @@ static inline void tlist_del_init(struct tlist_head *entry)
 /**
  * tlist_for_each_entry_continue - continue iteration over list of given type
  * @pos:	the type * to use as a loop cursor.
- * @head:	the head for your list.
+ * @head_type:	type of pointer in the head for your list.
  * @member:	the name of the tlist_head within the struct.
  *
  * Continue to iterate over list of given type, continuing after
  * the current position.
  */
-#define tlist_for_each_entry_continue(pos, head, member)		\
+#define tlist_for_each_entry_continue(pos, head_type, member)		\
 	for (pos = tlist_next_entry(pos, member);			\
-	     &pos->member != (head);					\
+	     TLIST_TYPE(&pos->member) != (head_type);			\
 	     pos = tlist_next_entry(pos, member))
 
 /**
  * list_for_each_entry_continue_reverse - iterate backwards from the given point
  * @pos:	the type * to use as a loop cursor.
- * @head:	the head for your list.
+ * @head_type:	type of pointer in the head for your list.
  * @member:	the name of the list_head within the struct.
  *
  * Start to iterate over list of given type backwards, continuing after
  * the current position.
  */
-#define tlist_for_each_entry_continue_reverse(pos, head, member)		\
+#define tlist_for_each_entry_continue_reverse(pos, head_type, member)		\
 	for (pos = tlist_prev_entry(pos, member);			\
-	     &pos->member != (head);					\
+	     TLIST_TYPE(&pos->member) != (head_type);			\
 	     pos = tlist_prev_entry(pos, member))
 
 #endif /* __LIST_H__ */
