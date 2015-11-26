@@ -295,7 +295,7 @@ error:
 
 DEF_CMD(text_save_file)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
 
 	if (!t->fname)
@@ -1080,8 +1080,7 @@ static int count_bytes(struct text *t, struct mark *from, struct mark *to)
 
 DEF_CMD(text_get_str)
 {
-	struct point *pt = *ci->pointp;
-	struct doc *d = pt->doc;
+	struct doc *d = ci->home->data;
 	struct mark *from = NULL, *to = NULL;
 	struct text *t = container_of(d, struct text, doc);
 	struct text_chunk *c, *first, *last;
@@ -1089,12 +1088,12 @@ DEF_CMD(text_get_str)
 	int l = 0, head, tail;
 
 	if (ci->mark) {
-		if (mark_ordered(&pt->m, ci->mark)) {
-			from = &pt->m;
+		if (mark_ordered(ci->mark2, ci->mark)) {
+			from = ci->mark2;
 			to = ci->mark;
 		} else {
 			from = ci->mark;
-			to = &pt->m;
+			to = ci->mark2;
 		}
 	}
 
