@@ -309,14 +309,6 @@ struct pane *pane_attach(struct pane *p, char *type, struct pane *dp, char *arg)
 void pane_clear(struct pane *p, char *attrs);
 void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y);
 char *pane_attr_get(struct pane *p, char *key);
-static inline struct point **pane_point(struct pane *p)
-{
-	while (p && !p->point)
-		p = p->parent;
-	if (p)
-		return &p->point;
-	return NULL;
-}
 
 static inline struct pane *pane_child(struct pane *p)
 {

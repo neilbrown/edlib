@@ -304,8 +304,13 @@ int key_handle(struct cmd_info *ci)
 
 	ci->hx = ci->x;
 	ci->hy = ci->y;
-	if (!ci->pointp)
-		ci->pointp = pane_point(p);
+	if (!ci->pointp) {
+		struct pane *p2 = p;
+		while (p2 && !p2->point)
+			p2 = p2->parent;
+		if (p2)
+			ci->pointp = &p2->point;
+	}
 	while (ret == 0 && p) {
 		if (p->handle) {
 			ci->home = p;
