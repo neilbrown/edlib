@@ -598,7 +598,6 @@ int  doc_destroy(struct doc *d)
 	 */
 	int i;
 	struct cmd_info ci2 = {0};
-	struct point p, *pt;
 
 	d->deleting = 1;
 	if (d == d->ed->docs)
@@ -618,11 +617,8 @@ int  doc_destroy(struct doc *d)
 	pane_close(d->home);
 
 	ci2.key = "doc:destroy";
-	/* Hack ... will go */
-	p.doc = d;
-	pt = &p;
-	ci2.pointp = &pt;
-	key_lookup(d->map, &ci2);
+	ci2.focus = d->home;
+	key_handle_focus(&ci2);
 
 	free(d->views);
 	attr_free(&d->attrs);

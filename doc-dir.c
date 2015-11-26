@@ -484,7 +484,7 @@ DEF_CMD(dir_get_attr)
 
 DEF_CMD(dir_destroy)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
 
 	while (!list_empty(&dr->ents)) {

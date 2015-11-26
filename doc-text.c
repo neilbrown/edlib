@@ -1502,7 +1502,7 @@ DEF_CMD(text_set_attr)
 
 DEF_CMD(text_destroy)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->focus->data;
 	struct text *t = container_of(d, struct text, doc);
 
 	while (!list_empty(&t->text)) {
