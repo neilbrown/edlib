@@ -80,8 +80,9 @@ DEF_CMD(render_hex_notify)
 
 DEF_CMD(render_hex_eol)
 {
-	struct point **ptp = ci->pointp;
-	struct doc *d = (*ptp)->doc;
+	struct pane *dp = doc_get_pane(ci->home);
+	struct doc *d = dp->data;
+	struct editor *ed = pane2ed(ci->home);
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 	int pos;
@@ -90,7 +91,7 @@ DEF_CMD(render_hex_eol)
 	ci2.key = "CountLines";
 	ci2.home = ci2.focus = ci->home;
 	ci2.mark = ci->mark;
-	key_lookup(d->ed->commands, &ci2);
+	key_lookup(ed->commands, &ci2);
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
