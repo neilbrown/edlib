@@ -171,9 +171,15 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "PointDup") == 0) {
 		struct point *pt = NULL;
-		if (ci->home->point)
-			point_dup(ci->home->point, &pt);
-		ci->mark = &pt->m;
+		ci->mark = NULL;
+		if (ci->home->point) {
+			if (ci->extra == MARK_POINT) {
+				point_dup(ci->home->point, &pt);
+				ci->mark = &pt->m;
+			}
+			if (ci->extra == MARK_UNGROUPED)
+				ci->mark = mark_dup(&ci->home->point->m, 1);
+		}
 		return 1;
 	}
 

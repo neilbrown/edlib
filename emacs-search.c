@@ -169,7 +169,7 @@ REDEF_CMD(search_again)
 
 	/* TEMP HACK - please fix */
 	doc_set_attr(esi->end, "highlight", NULL);
-	ci2.pointp = &esi->end;
+	ci2.focus = esi->target;
 	ci2.mark = mark_dup(esi->start, 1);
 	ci2.str = doc_getstr(esi->search, NULL);
 	ci2.key = "text-search";
@@ -233,6 +233,7 @@ DEF_CMD(emacs_search)
 	esi->target = ci2.focus;
 	memset(&ci2, 0, sizeof(ci2));
 	ci2.key = "PointDup";
+	ci2.extra = MARK_POINT;
 	ci2.focus = esi->target;
 	key_handle_focus(&ci2);
 	if (!ci2.mark) {

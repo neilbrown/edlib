@@ -14,17 +14,20 @@
 
 DEF_CMD(text_search)
 {
-	struct point *pt;
 	struct mark *m;
+	struct pane *dp;
 	struct doc *d;
 	unsigned short *rxl;
 	struct match_state *st;
 	int since_start, len;
 
-	if (!ci->pointp || !ci->str|| !ci->mark)
-		return 0;
-	pt = *ci->pointp;
-	d = pt->doc;
+	if (!ci->str|| !ci->mark)
+		return -1;
+
+	dp = doc_get_pane(ci->focus);
+	if (!dp)
+		return -1;
+	d = dp->data;
 
 	m = ci->mark;
 	rxl = rxl_parse(ci->str, NULL, 0);

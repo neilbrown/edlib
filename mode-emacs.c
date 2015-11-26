@@ -580,8 +580,15 @@ DEF_CMD(emacs_search)
 
 	if (!ci->str || !ci->str[0])
 		return -1;
-	ci2.pointp = pane_point(ci->focus);
-	m = mark_dup(&(*ci2.pointp)->m, 1);
+
+	ci2.key = "PointDup";
+	ci2.focus = ci->home;
+	ci2.extra = MARK_UNGROUPED;
+	key_handle_focus(&ci2);
+	m = ci2.mark;
+
+	memset(&ci2, 0, sizeof(ci2));
+	ci2.focus = ci->home;
 	ci2.mark = m;
 	ci2.str = ci->str;
 	ci2.key = "text-search";
