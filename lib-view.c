@@ -191,7 +191,7 @@ DEF_CMD(view_notify)
 {
 	struct view_data *vd = container_of(ci->comm, struct view_data, ch_notify);
 
-	if (strcmp(ci->key, "Replace") == 0) {
+	if (strcmp(ci->key, "Notify:Replace") == 0) {
 		pane_damaged(vd->pane, DAMAGED_CONTENT);
 		return 0;
 	}

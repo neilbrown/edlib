@@ -876,7 +876,7 @@ void point_notify_change(struct point *p, struct mark *m)
 	struct doc *d = p->doc;
 	int i;
 
-	ci.key = "Replace";
+	ci.key = "Notify:Replace";
 	ci.numeric = 1;
 	ci.x = ci.y = -1;
 	ci.pointp = p->owner;
@@ -941,7 +941,7 @@ void doc_notify_change(struct doc *d, struct mark *m)
 	done = alloca(d->nviews);
 	for (i = 0; i < d->nviews; i++)
 		done[i] = 0;
-	ci.key = "Replace";
+	ci.key = "Notify:Replace";
 	ci.numeric = 1;
 	ci.x = ci.y = -1;
 	while (remaining) {

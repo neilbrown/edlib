@@ -857,7 +857,7 @@ DEF_CMD(render_lines_notify)
 {
 	struct rl_data *rl = container_of(ci->comm, struct rl_data, type);
 
-	if (strcmp(ci->key, "Replace") == 0) {
+	if (strcmp(ci->key, "Notify:Replace") == 0) {
 		if (ci->mark) {
 			struct rl_mark *rm = container_of(ci->mark,
 							  struct rl_mark, m);

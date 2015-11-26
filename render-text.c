@@ -327,7 +327,7 @@ DEF_CMD(render_text_notify)
 {
 	struct rt_data *rt = container_of(ci->comm, struct rt_data, type);
 
-	if (strcmp(ci->key, "Replace") == 0) {
+	if (strcmp(ci->key, "Notify:Replace") == 0) {
 		if (ci->mark == rt->top)
 			/* A change in the text between top and bot */
 			pane_damaged(rt->pane, DAMAGED_CONTENT);

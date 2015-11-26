@@ -81,7 +81,7 @@ static void do_count(struct doc *d, struct mark *start, struct mark *end,
 
 DEF_CMD(count_notify)
 {
-	if (strcmp(ci->key, "Replace") == 0) {
+	if (strcmp(ci->key, "Notify:Replace") == 0) {
 		if (ci->mark != NULL) {
 			attr_del(mark_attr(ci->mark), "lines");
 			attr_del(mark_attr(ci->mark), "words");

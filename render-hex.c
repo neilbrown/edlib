@@ -65,7 +65,7 @@ DEF_CMD(render_hex_notify)
 {
 	struct he_data *he = container_of(ci->comm, struct he_data, type);
 
-	if (strcmp(ci->key, "Replace") == 0) {
+	if (strcmp(ci->key, "Notify:Replace") == 0) {
 		pane_damaged(pane_child(he->pane), DAMAGED_CONTENT);
 		return 0;
 	}

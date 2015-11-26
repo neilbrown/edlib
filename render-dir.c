@@ -302,7 +302,7 @@ DEF_CMD(render_dir_notify)
 {
 	struct dir_data *dd = container_of(ci->comm, struct dir_data, type);
 
-	if (strcmp(ci->key, "Replace") == 0) {
+	if (strcmp(ci->key, "Notify:Replace") == 0) {
 		if (ci->mark == dd->top)
 			/* A change in the text between top and bot */
 			pane_damaged(dd->pane, DAMAGED_CONTENT);
