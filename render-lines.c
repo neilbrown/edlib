@@ -836,7 +836,7 @@ DEF_CMD(render_lines_move_line)
 			struct mark *m2 = call_render_line_offset(
 				p, start, o);
 			if (m2)
-				point_to_mark(*ci->pointp, m2);
+				mark_to_mark(ci->mark, m2);
 			mark_free(m2);
 		}
 	}
