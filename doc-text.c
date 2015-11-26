@@ -788,7 +788,7 @@ DEF_CMD(text_reundo)
 	struct text *t = container_of(d, struct text, doc);
 
 	while (did_do != 1) {
-		struct mark *m;
+		struct mark *m2;
 		struct mark *early = NULL;
 		int where;
 		int i;
@@ -815,20 +815,20 @@ DEF_CMD(text_reundo)
 				i = text_advance_towards(t, &p->m.ref, &end);
 				if (i == 0)
 					break;
-				while ((m = doc_next_mark_all(d, &p->m)) != NULL &&
-				       m->ref.c == p->m.ref.c &&
-				       m->ref.o <= p->m.ref.o)
-					mark_forward_over(&p->m, m);
+				while ((m2 = doc_next_mark_all(d, &p->m)) != NULL &&
+				       m2->ref.c == p->m.ref.c &&
+				       m2->ref.o <= p->m.ref.o)
+					mark_forward_over(&p->m, m2);
 			} while (i == 2);
 		} else {
 			do {
 				i = text_retreat_towards(t, &p->m.ref, &end);
 				if (i == 0)
 					break;
-				while ((m = doc_prev_mark_all(d, &p->m)) != NULL &&
-				       m->ref.c == p->m.ref.c &&
-				       m->ref.o >= p->m.ref.o)
-					mark_backward_over(&p->m, m);
+				while ((m2 = doc_prev_mark_all(d, &p->m)) != NULL &&
+				       m2->ref.c == p->m.ref.c &&
+				       m2->ref.o >= p->m.ref.o)
+					mark_backward_over(&p->m, m2);
 			} while (i == 2);
 		}
 
@@ -837,14 +837,14 @@ DEF_CMD(text_reundo)
 			break;
 		/* point is now at location of undo */
 
-		m = &p->m;
-		hlist_for_each_entry_continue_reverse(m, &t->doc.marks, all)
-			if (text_update_prior_after_change(t, &m->ref,
+		m2 = &p->m;
+		hlist_for_each_entry_continue_reverse(m2, &t->doc.marks, all)
+			if (text_update_prior_after_change(t, &m2->ref,
 							   &start, &end) == 0)
 				break;
-		m = &p->m;
-		hlist_for_each_entry_continue(m, all)
-			if (text_update_following_after_change(t, &m->ref,
+		m2 = &p->m;
+		hlist_for_each_entry_continue(m2, all)
+			if (text_update_following_after_change(t, &m2->ref,
 							       &start, &end) == 0)
 				break;
 
