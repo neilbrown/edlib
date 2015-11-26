@@ -389,8 +389,8 @@ static void find_lines(struct point **ptp, struct pane *p)
 	int lines_above = 0, lines_below = 0;
 
 	d = (*ptp)->doc;
-	top = container_of(vmark_first(d, rl->typenum), struct rl_mark, m);
-	bot = container_of(vmark_last(d, rl->typenum), struct rl_mark, m);
+	top = container_of(vmark_first(p, rl->typenum), struct rl_mark, m);
+	bot = container_of(vmark_last(p, rl->typenum), struct rl_mark, m);
 	m = call_render_line_prev(p, ptp, mark_at_point(*ptp, rl->typenum),
 				  0, &rl->top_sol);
 	if (!m)
@@ -518,7 +518,7 @@ restart:
 		rl->header_lines = y;
 	}
 	y -= rl->skip_lines;
-	m = container_of(vmark_first(d, rl->typenum), struct rl_mark, m);
+	m = container_of(vmark_first(p, rl->typenum), struct rl_mark, m);
 
 	p->cx = p->cy = -1;
 	rl->cursor_line = 0;
@@ -588,7 +588,6 @@ DEF_CMD(render_lines_refresh)
 {
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
-	struct doc *d;
 	struct mark *m;
 	char *a;
 
@@ -597,9 +596,7 @@ DEF_CMD(render_lines_refresh)
 	a = pane_attr_get(p, "render-wrap");
 	rl->do_wrap = (!a || strcmp(a, "yes") == 0);
 
-	d = (*ci->pointp)->doc;
-
-	m = vmark_first(d, rl->typenum);
+	m = vmark_first(p, rl->typenum);
 	if (rl->top_sol && m)
 		m = call_render_line_prev(p, ci->pointp, mark_dup(m, 0), 0,
 					  &rl->top_sol);
@@ -619,12 +616,9 @@ DEF_CMD(render_lines_close)
 {
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
-	struct doc *d;
 	struct mark *m;
 
-	d = (*ci->pointp)->doc;
-
-	while ((m = vmark_first(d, rl->typenum)) != NULL) {
+	while ((m = vmark_first(p, rl->typenum)) != NULL) {
 		struct rl_mark *rm = container_of(m, struct rl_mark, m);
 		free(rm->line);
 		mark_free(m);
@@ -669,11 +663,10 @@ DEF_CMD(render_lines_move)
 	int rpt = RPT_NUM(ci);
 	struct rl_data *rl = p->data;
 	struct point **ptp = ci->pointp;
-	struct doc *d = (*ptp)->doc;
 	struct mark *top;
 	int pagesize = 1;
 
-	top = vmark_first(d, rl->typenum);
+	top = vmark_first(p, rl->typenum);
 	if (!top)
 		return 0;
 	if (strcmp(ci->key, "Move-View-Large") == 0)
@@ -724,7 +717,7 @@ DEF_CMD(render_lines_move)
 			if ((rpt+pagesize-1)/pagesize !=
 			    (rpt+pagesize-y-1)/pagesize)
 				/* Have cross a full page, can discard old lines */
-				while ((old = vmark_first(d, rl->typenum)) != NULL &&
+				while ((old = vmark_first(p, rl->typenum)) != NULL &&
 				       old != top) {
 					rm = container_of(old, struct rl_mark, m);
 					free(rm->line);
@@ -742,7 +735,6 @@ DEF_CMD(render_lines_set_cursor)
 {
 	struct pane *p = ci->home;
 	struct point **ptp = ci->pointp;
-	struct doc *d = (*ptp)->doc;
 	struct rl_data *rl = p->data;
 	struct rl_mark *m;
 	int y = rl->header_lines - rl->skip_lines;
@@ -750,7 +742,7 @@ DEF_CMD(render_lines_set_cursor)
 
 	render_lines_other_move_func(ci);
 
-	m = container_of(vmark_first(d, rl->typenum), struct rl_mark, m);
+	m = container_of(vmark_first(p, rl->typenum), struct rl_mark, m);
 
 	while (y <= ci->hy && m && m->line) {
 		int cx = ci->hx, cy = ci->hy, o = -1;
@@ -776,12 +768,11 @@ DEF_CMD(render_lines_move_pos)
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
 	struct point *pt = *ci->pointp;
-	struct doc *d = pt->doc;
 	struct mark *top, *bot;
 
 	rl->ignore_point = 1;
-	top = vmark_first(d, rl->typenum);
-	bot = vmark_last(d, rl->typenum);
+	top = vmark_first(p, rl->typenum);
+	bot = vmark_last(p, rl->typenum);
 	if (top && bot &&
 	    mark_ordered(top, &pt->m) &&
 	    mark_ordered(&pt->m, bot))
@@ -842,7 +833,7 @@ DEF_CMD(render_lines_move_line)
 
 	if (target_x >= 0 || target_y >= 0) {
 		struct rl_mark *start =
-			container_of(vmark_at_point(*ci->pointp, rl->typenum),
+			container_of(vmark_at_point(p, rl->typenum),
 				     struct rl_mark, m);
 		int y = 0;
 		if (!start || !start->line) {
@@ -923,10 +914,9 @@ DEF_CMD(render_lines_redraw)
 {
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
-	struct doc *d = (*ci->pointp)->doc;
 	struct mark *m;
 
-	for (m = vmark_first(d, rl->typenum);
+	for (m = vmark_first(p, rl->typenum);
 	     m;
 	     m = vmark_next(m)) {
 		struct rl_mark *rm = container_of(m, struct rl_mark, m);

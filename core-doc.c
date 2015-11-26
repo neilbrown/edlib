@@ -208,6 +208,14 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
+	if (strcmp(ci->key, "doc:vmark-get") == 0) {
+		ci->mark = do_vmark_first(d, ci->numeric);
+		ci->mark2 = do_vmark_last(d, ci->numeric);
+		if (ci->extra && ci->home->point)
+			ci->mark2 = do_vmark_at_point(ci->home->point, ci->numeric);
+		return 1;
+	}
+
 	return key_lookup(d->map, ci);
 }
 

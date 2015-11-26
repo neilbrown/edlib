@@ -760,7 +760,7 @@ struct mark *vmark_prev(struct mark *m)
 	return __vmark_prev(tl);
 }
 
-struct mark *vmark_first(struct doc *d, int view)
+struct mark *do_vmark_first(struct doc *d, int view)
 {
 	struct tlist_head *tl;
 
@@ -775,7 +775,7 @@ struct mark *vmark_first(struct doc *d, int view)
 	return NULL;
 }
 
-struct mark *vmark_last(struct doc *d, int view)
+struct mark *do_vmark_last(struct doc *d, int view)
 {
 	struct tlist_head *tl;
 
@@ -788,6 +788,51 @@ struct mark *vmark_last(struct doc *d, int view)
 		return container_of(tl, struct mark, view);
 	}
 	return NULL;
+}
+
+static int vmark_get(struct pane *p, int view,
+		     struct mark **first, struct mark **last, struct mark **point)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = "doc:vmark-get";
+	ci.focus = p;
+	ci.numeric = view;
+	if (point)
+		ci.extra = 1;
+	if (key_handle_focus(&ci) == 0)
+		return 0;
+	if (first)
+		*first = ci.mark;
+	if (point)
+		*point = ci.mark2;
+	else if (last)
+		*last = ci.mark2;
+	return 1;
+}
+
+struct mark *vmark_first(struct pane *p, int view)
+{
+	struct mark *first = NULL;
+	if (vmark_get(p, view, &first, NULL, NULL) == 0)
+		return 0;
+	return first;
+}
+
+struct mark *vmark_last(struct pane *p, int view)
+{
+	struct mark *last = NULL;
+	if (vmark_get(p, view, NULL, &last, NULL) == 0)
+		return 0;
+	return last;
+}
+
+struct mark *vmark_at_point(struct pane *p, int view)
+{
+	struct mark *point = NULL;
+	if (vmark_get(p, view, NULL, NULL, &point) == 0)
+		return 0;
+	return point;
 }
 
 struct mark *vmark_matching(struct pane *p, struct mark *m)
@@ -804,7 +849,7 @@ struct mark *vmark_matching(struct pane *p, struct mark *m)
 	return NULL;
 }
 
-struct mark *vmark_at_point(struct point *pt, int view)
+struct mark *do_vmark_at_point(struct point *pt, int view)
 {
 	struct tlist_head *tl;
 	struct mark *m;

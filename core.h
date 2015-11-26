@@ -176,10 +176,13 @@ void points_attach(struct doc *d, int view);
 void point_free(struct point *p);
 struct mark *vmark_next(struct mark *m);
 struct mark *vmark_prev(struct mark *m);
-struct mark *vmark_first(struct doc *d, int view);
-struct mark *vmark_last(struct doc *d, int view);
+struct mark *do_vmark_first(struct doc *d, int view);
+struct mark *do_vmark_last(struct doc *d, int view);
 struct mark *vmark_matching(struct pane *p, struct mark *m);
-struct mark *vmark_at_point(struct point *pt, int view);
+struct mark *do_vmark_at_point(struct point *pt, int view);
+struct mark *vmark_first(struct pane *p, int view);
+struct mark *vmark_last(struct pane *p, int view);
+struct mark *vmark_at_point(struct pane *p, int view);
 
 static inline int mark_ordered(struct mark *m1, struct mark *m2)
 {
