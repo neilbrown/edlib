@@ -29,15 +29,16 @@ DEF_CMD(render_complete_line)
 	 */
 	struct cmd_info ci2 = {0};
 	struct complete_data *cd = ci->home->data;
-	struct doc *d;
+	struct pane *dp = doc_get_pane(ci->home);
+	struct doc *d = dp ? dp->data : NULL;
 	int plen;
 
-	if (!ci->pointp || !ci->mark)
+	if (!d || !ci->mark)
 		return -1;
-	d = (*ci->pointp)->doc;
+
 	ci2.key = ci->key;
 	ci2.mark = ci->mark;
-	ci2.pointp = ci->pointp;
+	ci2.mark2 = ci->mark2;
 	ci2.focus = ci->home->parent;
 	ci2.numeric = ci->numeric;
 	if (key_handle(&ci2) == 0)
@@ -83,7 +84,6 @@ DEF_CMD(render_complete_prev)
 
 	ci3.key= "render-line";
 	ci3.focus = ci->home->parent;
-	ci3.pointp = ci->pointp;
 	while (1) {
 		int cmp;
 
@@ -174,7 +174,6 @@ DEF_CMD(complete_eol)
 		ci2.key = "render-line";
 		ci2.numeric = NO_NUMERIC;
 		ci2.mark = ci->mark;
-		ci2.pointp = ci->pointp;
 		ci2.focus = ci->focus;
 		ci2.home = ci->home;
 		if (render_complete_line_func(&ci2) < 0)
@@ -260,7 +259,6 @@ DEF_CMD(complete_return)
 	ci2.focus = ci->home;
 	ci2.home = ci->home;
 	ci2.mark = &(*ci->pointp)->m;
-	ci2.pointp = ci->pointp;
 	ci2.numeric = NO_NUMERIC;
 	render_complete_line_func(&ci2);
 	str = ci2.str;

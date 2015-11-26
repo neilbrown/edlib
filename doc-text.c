@@ -1591,16 +1591,15 @@ DEF_CMD(render_line)
 	 * include that between '<>'.
 	 */
 	struct buf b;
-	struct point **ptp = ci->pointp;
-	struct doc *d;
+	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
+	struct mark *pm = ci->mark2; /* The location to render as focus */
 	int o = ci->numeric;
 	wint_t ch = WEOF;
 	int chars = 0;
 
-	if (!m || !ptp)
+	if (!m)
 		return -1;
-	d = (*ptp)->doc;
 
 	buf_init(&b);
 	while (1) {
@@ -1608,7 +1607,7 @@ DEF_CMD(render_line)
 		int offset = m->ref.o;
 		if (o >= 0 && b.len >= o)
 			break;
-		if (o == -1 && mark_same(d, m, &(*ptp)->m))
+		if (pm && mark_same(d, m, pm))
 			break;
 		ch = mark_next(d, m);
 		if (ch == WEOF)

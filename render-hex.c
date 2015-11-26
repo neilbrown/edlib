@@ -121,17 +121,18 @@ DEF_CMD(render_hex_eol)
 DEF_CMD(render_line)
 {
 	struct buf ret;
-	struct point **ptp = ci->pointp;
-	struct doc *d;
 	struct cmd_info ci2 = {0};
 	struct mark *m = NULL;
+	struct pane *dp = doc_get_pane(ci->home);
+	struct doc *d = dp ? dp->data : NULL;
+	struct mark *pm = ci->mark2;
 	int pos;
 	int i;
 	char buf[10];
 
-	if (!ptp || !ci->mark)
+	if (!d || !ci->mark)
 		return -1;
-	d = (*ptp)->doc;
+
 	ci2.key = "CountLines";
 	ci2.home = ci2.focus = ci->home;
 	ci2.mark = ci->mark;
@@ -148,8 +149,7 @@ DEF_CMD(render_line)
 		wint_t ch;
 		struct mark *m2 = ci->mark;
 
-		if (ci->numeric == -1 &&
-		    mark_same(d, m2, &(*ptp)->m))
+		if (pm && mark_same(d, m2, pm))
 			goto done;
 		if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC &&
 		    ci->numeric <= ret.len)

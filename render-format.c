@@ -27,20 +27,20 @@ DEF_CMD(render_line)
 	char *body = pane_attr_get(ci->focus, "line-format");
 	struct rf_data *rf = ci->home->data;
 	struct buf ret;
-	struct doc *d;
+	struct pane *dp = doc_get_pane(ci->home);
+	struct doc *d = dp ? dp->data : NULL;
 	struct mark *m = ci->mark;
+	struct mark *pm = ci->mark2;
 	char *n;
 	wint_t ch;
 	int home;
 	int field = 0;
 
-	if (!ci->pointp || !ci->mark)
+	if (!d || !ci->mark)
 		return -1;
 
-	d = (*ci->pointp)->doc;
-	if (RPT_NUM(ci) < 0 &&
-	    !mark_same(d, &(*ci->pointp)->m, m))
-		ci->numeric = NO_NUMERIC;
+	if (pm && !mark_same(d, pm, m))
+		pm = NULL;
 	ch = doc_following(d, m);
 	if (ch == WEOF) {
 		ci->str = NULL;
@@ -52,8 +52,7 @@ DEF_CMD(render_line)
 		body = "%+name";
 	n = body;
 	m->rpos = field - rf->home_field;
-	if (RPT_NUM(ci) < 0 &&
-	    (*ci->pointp)->m.rpos == m->rpos)
+	if (pm && pm->rpos == m->rpos)
 		goto endwhile;
 	if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
 	    ret.len >= ci->numeric)
@@ -76,8 +75,7 @@ DEF_CMD(render_line)
 		if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
 		    ret.len >= ci->numeric)
 			break;
-		if (RPT_NUM(ci) < 0 &&
-		    (*ci->pointp)->m.rpos == m->rpos)
+		if (pm && pm->rpos == m->rpos)
 			break;
 		n += 1;
 		if (*n == '+') {
@@ -138,8 +136,7 @@ endwhile:
 		rf->fields = field;
 		rf->home_field = home;
 		m->rpos = field + 1 - rf->home_field;
-		if (RPT_NUM(ci) < 0 &&
-		    (*ci->pointp)->m.rpos == m->rpos)
+		if (pm && pm->rpos == m->rpos)
 			;
 		else if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC)
 			;

@@ -299,7 +299,6 @@ static struct mark *call_render_line(struct pane *p, struct point **ptp,
 
 	ci.key = "render-line";
 	ci.focus = p;
-	ci.pointp = ptp;
 	ci.mark = mark_dup(&start->m, 0);
 	ci.numeric = NO_NUMERIC;
 	/* Allow for filling the rest of the pane, given that
@@ -340,7 +339,6 @@ static struct mark *call_render_line_offset(struct pane *p, struct point **ptp,
 
 	ci.key = "render-line";
 	ci.focus = p;
-	ci.pointp = ptp;
 	ci.mark = mark_dup(&start->m, 0);
 	ci.numeric = offset;
 	if (key_handle(&ci) == 0) {
@@ -359,7 +357,7 @@ static int call_render_line_to_point(struct pane *p, struct point **ptp,
 
 	ci.key = "render-line";
 	ci.focus = p;
-	ci.pointp = ptp;
+	ci.mark2 = &(*ptp)->m;
 	ci.mark = mark_dup(&start->m, 0);
 	ci.numeric = -1;
 	if (key_handle(&ci) == 0) {
