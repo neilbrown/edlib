@@ -383,6 +383,9 @@ static void find_lines(struct mark *pm, struct pane *p)
 	int found_start = 0, found_end = 0;
 	int lines_above = 0, lines_below = 0;
 
+	if (pm->viewnum != MARK_POINT)
+		return;
+
 	top = container_of(vmark_first(p, rl->typenum), struct rl_mark, m);
 	bot = container_of(vmark_last(p, rl->typenum), struct rl_mark, m);
 	m = call_render_line_prev(p, mark_at_point(container_of(pm, struct point, m),
@@ -756,18 +759,18 @@ DEF_CMD(render_lines_move_pos)
 {
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
-	struct point *pt = *ci->pointp;
+	struct mark *pm = ci->mark;
 	struct mark *top, *bot;
 
 	rl->ignore_point = 1;
 	top = vmark_first(p, rl->typenum);
 	bot = vmark_last(p, rl->typenum);
 	if (top && bot &&
-	    mark_ordered(top, &pt->m) &&
-	    mark_ordered(&pt->m, bot))
+	    mark_ordered(top, pm) &&
+	    mark_ordered(pm, bot))
 		/* pos already displayed */
 		return 1;
-	find_lines(&(*ci->pointp)->m, ci->home);
+	find_lines(pm, ci->home);
 	pane_damaged(p, DAMAGED_CONTENT);
 	return 1;
 }

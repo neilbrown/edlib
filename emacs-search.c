@@ -159,6 +159,8 @@ REDEF_CMD(search_again)
 	struct pane *p;
 	char *a, *pfx;
 	int ret;
+	struct mark *m;
+	char *str;
 
 	if (strcmp(ci->key, "Release") == 0) {
 		/* No marks to remove */
@@ -169,8 +171,10 @@ REDEF_CMD(search_again)
 	/* TEMP HACK - please fix */
 	doc_set_attr(esi->end, "highlight", NULL);
 	ci2.focus = esi->target;
-	ci2.mark = mark_dup(esi->start, 1);
-	ci2.str = doc_getstr(esi->search, NULL);
+	m = mark_dup(esi->start, 1);
+	ci2.mark = m;
+	str = doc_getstr(esi->search, NULL);
+	ci2.str = str;
 	ci2.key = "text-search";
 	ret = key_lookup(pane2ed(esi->target)->commands, &ci2);
 	if (ret == 0)
@@ -178,11 +182,13 @@ REDEF_CMD(search_again)
 	else if (ret < 0) {
 		pfx = "Search (incomplete): ";
 	} else if (ci2.extra > 0) {
-		point_to_mark(esi->end, ci2.mark);
+		memset(&ci2, 0, sizeof(ci2));
+		point_to_mark(esi->end, m);
 		/* TEMP HACK - please fix */
 		doc_set_attr(esi->end, "highlight","fg:red,inverse");
 		ci2.key = "Move-View-Pos";
 		ci2.focus = esi->target;
+		ci2.mark = &esi->end->m;
 		key_handle_focus(&ci2);
 		esi->matched = 1;
 		pfx = "Search: ";
@@ -198,8 +204,8 @@ REDEF_CMD(search_again)
 		if (strcmp(a, pfx) != 0)
 			attr_set_str(&p->attrs, "prefix", pfx, -1);
 	}
-	mark_free(ci2.mark);
-	free(ci2.str);
+	mark_free(m);
+	free(str);
 	return 1;
 }
 
