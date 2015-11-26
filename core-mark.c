@@ -710,7 +710,6 @@ int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2,
 	ci->mark2 = m2;
 	ci->extra = 0;
 	ci->focus = p;
-	ci->pointp = NULL;
 	if (key_handle_focus(ci) == 0)
 		return 0;
 	return ci->extra;
