@@ -513,7 +513,8 @@ DEF_CMD(docs_open)
 
 DEF_CMD(docs_bury)
 {
-	struct doc *d = (*ci->pointp)->doc;
+	struct pane *p = doc_get_pane(ci->home);
+	struct doc *d = p->data;
 
 	doc_destroy(d);
 	return 1;
