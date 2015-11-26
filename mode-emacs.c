@@ -333,7 +333,7 @@ DEF_CMD(emacs_file_complete)
 	 * Find a document for the directory and attach as a completing
 	 * popup menu
 	 */
-	struct doc *doc = (*ci->pointp)->doc;
+	struct editor *ed = pane2ed(ci->home);
 	char *str = doc_getstr(ci->focus, NULL);
 	char *d, *b, *c;
 	int fd;
@@ -357,7 +357,7 @@ DEF_CMD(emacs_file_complete)
 		free(str);
 		return -1;
 	}
-	docp = doc_open(doc->ed, fd, d);
+	docp = doc_open(ed, fd, d);
 	close(fd);
 	pop = pane_attach(ci->focus, "popup", docp, "DM1");
 	par = pane_final_child(pop);
@@ -382,7 +382,7 @@ DEF_CMD(emacs_file_complete)
 		char *c = ci2.str + strlen(b);
 		struct cmd_info ci3 = {0};
 		ci3.key = "Replace";
-		ci3.mark = &(*ci->pointp)->m;
+		ci3.mark = ci->mark;
 		ci3.numeric = 1;
 		ci3.focus = ci->focus;
 		ci3.str = c;
@@ -453,12 +453,12 @@ DEF_CMD(emacs_doc_complete)
 	/* Extract a document from the document.
 	 * Attach the 'docs' document as a completing popup menu
 	 */
-	struct doc *doc = (*ci->pointp)->doc;
+	struct editor *ed = pane2ed(ci->home);
 	char *str = doc_getstr(ci->focus, NULL);
 	struct pane *par, *pop;
 	struct cmd_info ci2 = {0};
 
-	pop = pane_attach(ci->focus, "popup", doc->ed->docs->home, "DM1");
+	pop = pane_attach(ci->focus, "popup", ed->docs->home, "DM1");
 	par = pane_final_child(pop);
 
 	attr_set_str(&par->attrs, "line-format", "%+name", -1);
@@ -480,7 +480,7 @@ DEF_CMD(emacs_doc_complete)
 		char *c = ci2.str + strlen(str);
 		struct cmd_info ci3 = {0};
 		ci3.key = "Replace";
-		ci3.mark = &(*ci->pointp)->m;
+		ci3.mark = ci->mark;
 		ci3.numeric = 1;
 		ci3.focus = ci->focus;
 		ci3.str = c;
