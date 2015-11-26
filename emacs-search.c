@@ -103,7 +103,7 @@ DEF_CMD(search_add)
 
 	do {
 		/* TEMP HACK - please fix */
-		doc_set_attr(esi->end, "highlight", NULL);
+		doc_set_attr(esi->target, esi->end, "highlight", NULL);
 		wch = mark_next(d, &esi->end->m);
 		if (wch == WEOF)
 			return 1;
@@ -139,7 +139,7 @@ DEF_CMD(search_close)
 
 	doc_del_view(ci->focus, &esi->watch);
 	/* TEMP HACK - please fix */
-	doc_set_attr(esi->end, "highlight", NULL);
+	doc_set_attr(esi->target, esi->end, "highlight", NULL);
 	point_free(esi->end);
 	esi->end = NULL;
 	mark_free(esi->start);
@@ -170,7 +170,7 @@ REDEF_CMD(search_again)
 	}
 
 	/* TEMP HACK - please fix */
-	doc_set_attr(esi->end, "highlight", NULL);
+	doc_set_attr(esi->target, esi->end, "highlight", NULL);
 	ci2.focus = esi->target;
 	m = mark_dup(esi->start, 1);
 	ci2.mark = m;
@@ -186,7 +186,7 @@ REDEF_CMD(search_again)
 		memset(&ci2, 0, sizeof(ci2));
 		point_to_mark(esi->end, m);
 		/* TEMP HACK - please fix */
-		doc_set_attr(esi->end, "highlight","fg:red,inverse");
+		doc_set_attr(esi->target, esi->end, "highlight","fg:red,inverse");
 		ci2.key = "Move-View-Pos";
 		ci2.focus = esi->target;
 		ci2.mark = &esi->end->m;

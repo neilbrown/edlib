@@ -401,13 +401,13 @@ static inline char *doc_attr(struct doc *d, struct mark *m, bool forward, char *
 	return ci.str2;
 }
 
-static inline int doc_set_attr(struct point *pt, char *attr, char *val)
+static inline int doc_set_attr(struct pane *p, struct point *pt,
+			       char *attr, char *val)
 {
 	struct cmd_info ci = {0};
-	struct doc *d = pt->doc;
 
 	ci.key = "doc:set-attr";
-	ci.focus = d->home;
+	ci.focus = p;
 	ci.mark = &pt->m;
 	ci.str = attr;
 	ci.str2 = val;
