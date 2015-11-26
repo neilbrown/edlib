@@ -583,7 +583,6 @@ static void point_forward_to_mark(struct point *p, struct mark *m)
 {
 	struct point *ptmp, *pnear;
 	int i;
-	struct doc *d = p->doc;
 
 	pnear = p;
 	ptmp = p;
@@ -605,9 +604,9 @@ static void point_forward_to_mark(struct point *p, struct mark *m)
 		struct mark *mnear = NULL;
 		struct tlist_head *tl;
 
-		if (!d->views[i].notify)
-			continue;
 		tl = &pnear->links->lists[i];
+		if (tlist_empty(tl))
+			continue;
 		tlist_for_each_continue(tl,  GRP_HEAD) {
 			struct mark *mtmp;
 			if (TLIST_TYPE(tl) != GRP_MARK)
@@ -636,7 +635,6 @@ static void point_forward_to_mark(struct point *p, struct mark *m)
 static void point_backward_to_mark(struct point *p, struct mark *m)
 {
 	struct point *ptmp, *pnear;
-	struct doc *d = p->doc;
 	int i;
 
 	pnear = p;
@@ -659,9 +657,9 @@ static void point_backward_to_mark(struct point *p, struct mark *m)
 		struct mark *mnear = NULL;
 		struct tlist_head *tl;
 
-		if (!d->views[i].notify)
-			continue;
 		tl = &pnear->links->lists[i];
+		if (tlist_empty(tl))
+			continue;
 		tlist_for_each_continue_reverse(tl, GRP_HEAD) {
 			struct mark *mtmp;
 			if (TLIST_TYPE(tl) != GRP_MARK)
