@@ -254,16 +254,15 @@ DEF_CMD(emacs_findfile)
 		char *path = NULL;
 		char buf[PATH_MAX];
 
-		if (ci->pointp) {
-			path = doc_attr((*ci->pointp)->doc, NULL, 0, "filename");
-			if (path) {
-				strcpy(buf, path);
-				path = strrchr(buf, '/');
-				if (path)
-					path[1] = '\0';
-				path = buf;
-			}
+		path = pane_attr_get(ci->focus, "filename");
+		if (path) {
+			strcpy(buf, path);
+			path = strrchr(buf, '/');
+			if (path)
+				path[1] = '\0';
+			path = buf;
 		}
+
 		if (!path)
 			path = realpath(".", buf);
 		if (!path)
