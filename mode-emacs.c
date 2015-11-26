@@ -572,7 +572,7 @@ DEF_CMD(emacs_search)
 	if (!ci->str || !ci->str[0])
 		return -1;
 
-	ci2.key = "PointDup";
+	ci2.key = "doc:dup-point";
 	ci2.focus = ci->home;
 	ci2.extra = MARK_UNGROUPED;
 	key_handle_focus(&ci2);

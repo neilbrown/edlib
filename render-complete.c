@@ -214,7 +214,7 @@ DEF_CMD(complete_set_prefix)
 	free(cd->prefix);
 	cd->prefix = strdup(ci->str);
 
-	ci2.key = "PointDup";
+	ci2.key = "doc:dup-point";
 	ci2.focus = ci->home;
 	ci2.extra = MARK_UNGROUPED;
 	key_handle_focus(&ci2);

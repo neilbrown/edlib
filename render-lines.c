@@ -388,8 +388,7 @@ static void find_lines(struct mark *pm, struct pane *p)
 
 	top = container_of(vmark_first(p, rl->typenum), struct rl_mark, m);
 	bot = container_of(vmark_last(p, rl->typenum), struct rl_mark, m);
-	m = call_render_line_prev(p, mark_at_point(container_of(pm, struct point, m),
-						   rl->typenum),
+	m = call_render_line_prev(p, mark_at_point(p, pm, rl->typenum),
 				  0, &rl->top_sol);
 	if (!m)
 		return;

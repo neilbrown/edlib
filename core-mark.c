@@ -132,23 +132,35 @@ static void dup_mark(struct mark *orig, struct mark *new)
 	assign_seq(new, orig->seq);
 }
 
-struct mark *mark_at_point(struct point *p, int view)
+struct mark *do_mark_at_point(struct doc *d, struct point *pt, int view)
 {
 	struct mark *ret;
 	int size = sizeof(*ret);
 
 	if (view >= 0)
-		size += p->doc->views[view].space;
+		size += d->views[view].space;
 
 	ret = calloc(size, 1);
 
-	dup_mark(&p->m, ret);
+	dup_mark(&pt->m, ret);
 	ret->viewnum = view;
 	if (view >= 0)
-		tlist_add(&ret->view, GRP_MARK, &p->links->lists[view]);
+		tlist_add(&ret->view, GRP_MARK, &pt->links->lists[view]);
 	else
 		INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	return ret;
+}
+
+struct mark *mark_at_point(struct pane *p, struct mark *pm, int view)
+{
+	struct cmd_info ci = {0};
+	ci.key = "doc:dup-point";
+	ci.extra = view;
+	ci.mark = pm;
+	ci.focus = p;
+	if (key_handle_focus(&ci) == 0)
+		return NULL;
+	return ci.mark;
 }
 
 struct point *point_dup(struct point *p)
@@ -871,18 +883,18 @@ struct mark *vmark_matching(struct pane *p, struct mark *m)
 	return NULL;
 }
 
-struct mark *do_vmark_at_point(struct point *pt, int view)
+struct mark *do_vmark_at_point(struct doc *d, struct point *pt, int view)
 {
 	struct tlist_head *tl;
 	struct mark *m;
 
 	tl = &pt->links->lists[view];
 	m = __vmark_prev(tl);
-	if (m && mark_same(pt->doc, m, &pt->m))
+	if (m && mark_same(d, m, &pt->m))
 		return m;
 	tl = &pt->links->lists[view];
 	m = __vmark_next(tl);
-	if (m && mark_same(pt->doc, m, &pt->m))
+	if (m && mark_same(d, m, &pt->m))
 		return m;
 	return NULL;
 }

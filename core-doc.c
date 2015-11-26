@@ -374,16 +374,21 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "PointDup") == 0) {
-		struct point *pt = NULL;
+	if (strcmp(ci->key, "doc:dup-point") == 0) {
+		struct point *pt = ci->home->point;
+		if (ci->mark && ci->mark->viewnum == MARK_POINT)
+			pt = container_of(ci->mark, struct point, m);
 		ci->mark = NULL;
 		if (ci->home->point) {
 			if (ci->extra == MARK_POINT) {
-				pt = point_dup(ci->home->point);
+				pt = point_dup(pt);
 				ci->mark = &pt->m;
 			}
-			if (ci->extra == MARK_UNGROUPED)
-				ci->mark = mark_dup(&ci->home->point->m, 1);
+			else if (ci->extra == MARK_UNGROUPED)
+				ci->mark = mark_dup(&pt->m, 1);
+			else
+				ci->mark = do_mark_at_point(d, pt,
+							    ci->extra);
 		}
 		return 1;
 	}
@@ -423,7 +428,8 @@ DEF_CMD(doc_handle)
 		ci->mark = do_vmark_first(d, ci->numeric);
 		ci->mark2 = do_vmark_last(d, ci->numeric);
 		if (ci->extra && ci->home->point)
-			ci->mark2 = do_vmark_at_point(ci->home->point, ci->numeric);
+			ci->mark2 = do_vmark_at_point(d, ci->home->point,
+						      ci->numeric);
 		return 1;
 	}
 

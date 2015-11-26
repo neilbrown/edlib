@@ -174,7 +174,8 @@ wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cm
 wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move);
 wint_t mark_next(struct doc *d, struct mark *m);
 wint_t mark_prev(struct doc *d, struct mark *m);
-struct mark *mark_at_point(struct point *p, int view);
+struct mark *mark_at_point(struct pane *p, struct mark *pm, int view);
+struct mark *do_mark_at_point(struct doc *d, struct point *pt, int view);
 void points_resize(struct doc *d);
 void points_attach(struct doc *d, int view);
 void point_free(struct point *p);
@@ -183,7 +184,7 @@ struct mark *vmark_prev(struct mark *m);
 struct mark *do_vmark_first(struct doc *d, int view);
 struct mark *do_vmark_last(struct doc *d, int view);
 struct mark *vmark_matching(struct pane *p, struct mark *m);
-struct mark *do_vmark_at_point(struct point *pt, int view);
+struct mark *do_vmark_at_point(struct doc *d, struct point *pt, int view);
 struct mark *vmark_first(struct pane *p, int view);
 struct mark *vmark_last(struct pane *p, int view);
 struct mark *vmark_at_point(struct pane *p, int view);
