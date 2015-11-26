@@ -139,7 +139,10 @@ struct point {
 	struct doc		*doc;
 	struct point		**owner;
 	int			size;
-	struct tlist_head	lists[];
+	struct point_links {
+		struct point		*pt;
+		struct tlist_head	lists[];
+	} *links;
 };
 
 struct mark *mark_dup(struct mark *m, int notype);
