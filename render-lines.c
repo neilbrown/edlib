@@ -724,7 +724,6 @@ DEF_CMD(render_lines_move)
 DEF_CMD(render_lines_set_cursor)
 {
 	struct pane *p = ci->home;
-	struct point **ptp = ci->pointp;
 	struct rl_data *rl = p->data;
 	struct rl_mark *m;
 	int y = rl->header_lines - rl->skip_lines;
@@ -740,7 +739,7 @@ DEF_CMD(render_lines_set_cursor)
 		if (o >= 0) {
 			struct mark *m2 = call_render_line_offset(p, m, o);
 			if (m2) {
-				point_to_mark(*ptp, m2);
+				mark_to_mark(ci->mark, m2);
 				mark_free(m2);
 				found = 1;
 			}
@@ -785,7 +784,6 @@ DEF_CMD(render_lines_move_line)
 	 */
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
-	struct point **ptp = ci->pointp;
 	struct cmd_info ci2 = {0};
 	int target_x, target_y;
 	int o = -1;
@@ -806,8 +804,7 @@ DEF_CMD(render_lines_move_line)
 		ci2.numeric -= 1;
 	else
 		ci2.numeric += 1;
-	ci2.mark = &(*ptp)->m;
-	ci2.pointp = ci->pointp;
+	ci2.mark = ci->mark;
 	if (!key_handle_focus(&ci2))
 		return -1;
 	if (RPT_NUM(ci) > 0) {

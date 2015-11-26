@@ -263,8 +263,7 @@ DEF_CMD(view_click)
 	ci2.focus = p;
 	ci2.key = "Move-View-Small";
 	ci2.numeric = RPT_NUM(ci);
-	ci2.mark = &(*ci->pointp)->m;
-	ci2.pointp = ci->pointp;
+	ci2.mark = ci->mark;
 
 	if (ci->hy == mid-1) {
 		/* scroll up */

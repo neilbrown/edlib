@@ -70,7 +70,6 @@ REDEF_CMD(emacs_move)
 {
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 	struct pane *cursor_pane = pane_with_cursor(ci->home, NULL, NULL);
-	struct point *pt = *ci->pointp;
 	int old_x = -1;
 	struct cmd_info ci2 = {0};
 	int ret = 0;
@@ -82,8 +81,7 @@ REDEF_CMD(emacs_move)
 	ci2.focus = ci->focus;
 	ci2.key = mv->type;
 	ci2.numeric = mv->direction * RPT_NUM(ci);
-	ci2.mark = &pt->m;
-	ci2.pointp = ci->pointp;
+	ci2.mark = ci->mark;
 	ret = key_handle_focus(&ci2);
 
 	if (!ret)
@@ -101,7 +99,6 @@ REDEF_CMD(emacs_move)
 			ci2.y = 0;
 		else
 			ci2.y = cursor_pane->h - 1;
-		ci2.pointp = ci->pointp;
 		key_handle_xy(&ci2);
 	}
 
