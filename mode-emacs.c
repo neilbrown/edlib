@@ -113,9 +113,10 @@ REDEF_CMD(emacs_delete)
 	struct cmd_info ci2 = {0};
 	int ret = 0;
 	struct mark *m;
-	struct doc *d = ci->pointp[0]->doc;
+	struct pane *dp = doc_get_pane(ci->home);
+	struct doc *d = dp->data;
 
-	m = mark_at_point(*ci->pointp, MARK_UNGROUPED);
+	m = mark_dup(ci->mark, 1);
 	ci2.focus = ci->focus;
 	ci2.key = mv->type;
 	ci2.numeric = mv->direction * RPT_NUM(ci);
@@ -123,7 +124,6 @@ REDEF_CMD(emacs_delete)
 	    doc_following(d, m) == '\n')
 		ci2.key = "Move-Char";
 	ci2.mark = m;
-	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);
 	if (!ret) {
 		mark_free(m);
@@ -188,7 +188,7 @@ DEF_CMD(emacs_insert)
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
-	ci2.mark = &(*ci->pointp)->m;
+	ci2.mark = ci->mark;
 	strncpy(str,ci->key+4, sizeof(str));
 	str[4] = 0;
 	ci2.str = str;
@@ -219,7 +219,7 @@ DEF_CMD(emacs_insert_other)
 	ci2.key = "Replace";
 	ci2.numeric = 1;
 	ci2.extra = ci->extra;
-	ci2.mark = &(*ci->pointp)->m;
+	ci2.mark = ci->mark;
 	for (i = 0; other_inserts[i].key; i++)
 		if (strcmp(other_inserts[i].key, ci->key) == 0)
 			break;
