@@ -879,7 +879,6 @@ void point_notify_change(struct point *p, struct mark *m)
 	ci.key = "Notify:Replace";
 	ci.numeric = 1;
 	ci.x = ci.y = -1;
-	ci.pointp = p->owner;
 	if (!m)
 		m = &p->m;
 	for (i = 0; i < p->size; i++) {
