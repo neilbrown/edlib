@@ -501,10 +501,9 @@ DEF_CMD(dir_destroy)
 DEF_CMD(dir_open)
 {
 	struct pane *p = ci->home;
-	struct point *pt = p->point;
-	struct doc *d = pt->doc;
+	struct doc *d = p->data;
 	struct directory *dr = container_of(d, struct directory, doc);
-	struct dir_ent *de = pt->m.ref.d;
+	struct dir_ent *de = ci->mark->ref.d;
 	struct pane *par = p->parent;
 	int fd;
 	char *fname = NULL;
