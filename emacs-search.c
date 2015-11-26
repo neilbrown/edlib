@@ -45,7 +45,7 @@ DEF_CMD(search_forward)
 	struct doc *d = esi->end->doc;
 	struct stk *s;
 	char *str;
-	struct point *pt;
+	bool first = 1;
 
 	if (esi->s && mark_same(d, esi->s->m, &esi->end->m)) {
 		/* already pushed and didn't find anything new */
@@ -64,8 +64,8 @@ DEF_CMD(search_forward)
 		esi->start = mark_dup(s->m, 1);
 		mark_reset(d, esi->start);
 	}
-	pt = *ci->pointp;
-	doc_notify_change(pt->doc, &pt->m);
+	/* Trigger notification so isearch watcher searches again */
+	doc_replace(esi->search, NULL, "", &first);
 	return 1;
 }
 
@@ -74,7 +74,7 @@ DEF_CMD(search_retreat)
 	struct es_info *esi = ci->home->data;
 	char *str;
 	struct stk *s;
-	struct point *pt;
+	bool first = 1;
 
 	if (esi->s == NULL)
 		return 0;
@@ -88,8 +88,8 @@ DEF_CMD(search_retreat)
 	mark_free(esi->start);
 	esi->start = s->m;
 	free(s);
-	pt = *ci->pointp;
-	doc_notify_change(pt->doc, &pt->m);
+	/* Trigger notification so isearch watcher searches again */
+	doc_replace(esi->search, NULL, "", &first);
 	return 1;
 }
 
