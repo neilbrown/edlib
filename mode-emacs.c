@@ -538,11 +538,11 @@ DEF_CMD(emacs_num)
 
 DEF_CMD(emacs_kill_doc)
 {
-	struct doc *d;
-	if (!ci->pointp)
-		return 0;
-	d = (*ci->pointp)->doc;
-	doc_destroy(d);
+	struct pane *p = doc_get_pane(ci->home);
+	struct doc *d = p ? p->data : NULL;
+
+	if (d)
+		doc_destroy(d);
 	return 1;
 }
 
