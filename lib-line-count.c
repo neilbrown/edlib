@@ -219,14 +219,15 @@ done:
 
 DEF_CMD(count_lines)
 {
-	struct point *pt = *ci->pointp;
-	struct doc *d = pt->doc;
+	struct pane *dp = doc_get_pane(ci->home);
+	struct doc *d = dp->data;
 
 	/* FIXME optimise this away most of the time */
 	count_calculate(d, NULL, NULL);
-	count_calculate(d, NULL, &pt->m);
 	if (ci->mark)
 		count_calculate(d, NULL, ci->mark);
+	if (ci->mark2)
+		count_calculate(d, NULL, ci->mark2);
 	return 1;
 }
 

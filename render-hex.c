@@ -88,7 +88,7 @@ DEF_CMD(render_hex_eol)
 	struct cmd_info ci2 = {0};
 
 	ci2.key = "CountLines";
-	ci2.pointp = ptp;
+	ci2.home = ci2.focus = ci->home;
 	ci2.mark = ci->mark;
 	key_lookup(d->ed->commands, &ci2);
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
@@ -132,7 +132,7 @@ DEF_CMD(render_line)
 		return -1;
 	d = (*ptp)->doc;
 	ci2.key = "CountLines";
-	ci2.pointp = ptp;
+	ci2.home = ci2.focus = ci->home;
 	ci2.mark = ci->mark;
 	key_lookup(d->ed->commands, &ci2);
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
@@ -197,7 +197,7 @@ DEF_CMD(render_line_prev)
 	int to, from;
 
 	ci2.key = "CountLines";
-	ci2.pointp = ptp;
+	ci2.home = ci2.focus = ci->home;
 	ci2.mark = ci->mark;
 	key_lookup(d->ed->commands, &ci2);
 

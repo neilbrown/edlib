@@ -63,7 +63,8 @@ static int view_refresh(struct cmd_info *ci)
 
 		if (p->h > 4) {
 			ci2.key = "CountLines";
-			ci2.pointp = ci->pointp;
+			ci2.home = ci2.focus = p;
+			ci2.mark = &pt->m;
 			key_lookup(pt->doc->ed->commands, &ci2);
 
 			ln = attr_find_int(*mark_attr(&pt->m), "lines");
