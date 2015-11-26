@@ -122,7 +122,6 @@ DEF_CMD(search_add)
 		ci2.str = b;
 		ci2.numeric = 1;
 		ci2.mark = NULL;
-		ci2.pointp = ci->pointp;
 		ci2.focus = ci->focus;
 		key_handle_focus(&ci2);
 	} while (strcmp(ci->key, "C-Chr-C") != 0 && wch != ' ');

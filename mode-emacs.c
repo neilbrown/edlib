@@ -138,7 +138,6 @@ REDEF_CMD(emacs_delete)
 	ci2.extra = ci->extra;
 	ci2.mark = m;
 	ci2.str = NULL;
-	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);
 	mark_free(m);
 	pane_set_extra(ci->home, 1);
@@ -196,7 +195,6 @@ DEF_CMD(emacs_insert)
 	strncpy(str,ci->key+4, sizeof(str));
 	str[4] = 0;
 	ci2.str = str;
-	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);
 	pane_set_extra(ci->home, 1);
 
@@ -232,7 +230,6 @@ DEF_CMD(emacs_insert_other)
 		return 0;
 
 	ci2.str = other_inserts[i].insert;
-	ci2.pointp = ci->pointp;
 	ret = key_handle_focus(&ci2);
 	pane_set_extra(p, 0); /* A newline starts a new undo */
 	return ret;
@@ -389,7 +386,6 @@ DEF_CMD(emacs_file_complete)
 		char *c = ci2.str + strlen(b);
 		struct cmd_info ci3 = {0};
 		ci3.key = "Replace";
-		ci3.pointp = ci->pointp;
 		ci3.mark = &(*ci->pointp)->m;
 		ci3.numeric = 1;
 		ci3.focus = ci->focus;
@@ -488,7 +484,6 @@ DEF_CMD(emacs_doc_complete)
 		char *c = ci2.str + strlen(str);
 		struct cmd_info ci3 = {0};
 		ci3.key = "Replace";
-		ci3.pointp = ci->pointp;
 		ci3.mark = &(*ci->pointp)->m;
 		ci3.numeric = 1;
 		ci3.focus = ci->focus;
