@@ -186,17 +186,18 @@ DEF_CMD(format_clone)
 
 DEF_CMD(format_move_line)
 {
-	struct point *pt = *ci->pointp;
+	struct pane *dp = doc_get_pane(ci->focus);
+	struct doc *d = dp->data;
 	int rpt = RPT_NUM(ci);
 	struct rf_data *rf = ci->home->data;
 
 	while (rpt > 1) {
-		if (mark_next(pt->doc, ci->mark) == WEOF)
+		if (mark_next(d, ci->mark) == WEOF)
 			break;
 		rpt -= 1;
 	}
 	while (rpt < -1) {
-		if (mark_prev(pt->doc, ci->mark) == WEOF)
+		if (mark_prev(d, ci->mark) == WEOF)
 			break;
 		rpt += 1;
 	}
@@ -214,17 +215,18 @@ DEF_CMD(format_move_horiz)
 	/* Horizonal movement - adjust ->rpos within fields, or
 	 * move to next line
 	 */
-	struct point *pt = *ci->pointp;
+	struct pane *dp = doc_get_pane(ci->focus);
+	struct doc *d = dp->data;
 	struct rf_data *rf = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
 	if (rf->fields < 2)
 		return 1;
-	while (rpt > 0 && doc_following(pt->doc, ci->mark) != WEOF) {
+	while (rpt > 0 && doc_following(d, ci->mark) != WEOF) {
 		if (ci->mark->rpos < rf->fields - rf->home_field + 1)
 			ci->mark->rpos += 1;
 		else {
-			if (mark_next(pt->doc, ci->mark) == WEOF)
+			if (mark_next(d, ci->mark) == WEOF)
 				break;
 			ci->mark->rpos = -rf->home_field;
 		}
@@ -234,7 +236,7 @@ DEF_CMD(format_move_horiz)
 		if (ci->mark->rpos > -rf->home_field)
 			ci->mark->rpos -= 1;
 		else {
-			if (mark_prev(pt->doc, ci->mark) == WEOF)
+			if (mark_prev(d, ci->mark) == WEOF)
 				break;
 			ci->mark->rpos = rf->fields - rf->home_field + 1;
 		}
