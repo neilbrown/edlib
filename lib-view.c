@@ -246,119 +246,6 @@ DEF_CMD(view_attach)
 	return ci->focus != NULL;
 }
 
-DEF_CMD(view_char)
-{
-	struct point *pt = *ci->pointp;
-	int rpt = RPT_NUM(ci);
-
-	while (rpt > 0) {
-		if (mark_next(pt->doc, ci->mark) == WEOF)
-			break;
-		rpt -= 1;
-	}
-	while (rpt < 0) {
-		if (mark_prev(pt->doc, ci->mark) == WEOF)
-			break;
-		rpt += 1;
-	}
-
-	return 1;
-}
-
-DEF_CMD(view_word)
-{
-	struct point *pt = *ci->pointp;
-	int rpt = RPT_NUM(ci);
-
-	/* We skip spaces, then either alphanum or non-space/alphanum */
-	while (rpt > 0) {
-		while (iswspace(doc_following(pt->doc, ci->mark)))
-			mark_next(pt->doc, ci->mark);
-		if (iswalnum(doc_following(pt->doc, ci->mark))) {
-			while (iswalnum(doc_following(pt->doc, ci->mark)))
-				mark_next(pt->doc, ci->mark);
-		} else {
-			wint_t wi;
-			while ((wi=doc_following(pt->doc, ci->mark)) != WEOF &&
-			       !iswspace(wi) && !iswalnum(wi))
-				mark_next(pt->doc, ci->mark);
-		}
-		rpt -= 1;
-	}
-	while (rpt < 0) {
-		while (iswspace(doc_prior(pt->doc, ci->mark)))
-			mark_prev(pt->doc, ci->mark);
-		if (iswalnum(doc_prior(pt->doc, ci->mark))) {
-			while (iswalnum(doc_prior(pt->doc, ci->mark)))
-				mark_prev(pt->doc, ci->mark);
-		} else {
-			wint_t wi;
-			while ((wi=doc_prior(pt->doc, ci->mark)) != WEOF &&
-			       !iswspace(wi) && !iswalnum(wi))
-				mark_prev(pt->doc, ci->mark);
-		}
-		rpt += 1;
-	}
-
-	return 1;
-}
-
-DEF_CMD(view_WORD)
-{
-	struct point *pt = *ci->pointp;
-	int rpt = RPT_NUM(ci);
-
-	/* We skip spaces, then non-spaces */
-	while (rpt > 0) {
-		wint_t wi;
-		while (iswspace(doc_following(pt->doc, ci->mark)))
-			mark_next(pt->doc, ci->mark);
-
-		while ((wi=doc_following(pt->doc, ci->mark)) != WEOF &&
-		       !iswspace(wi))
-			mark_next(pt->doc, ci->mark);
-		rpt -= 1;
-	}
-	while (rpt < 0) {
-		wint_t wi;
-		while (iswspace(doc_prior(pt->doc, ci->mark)))
-			mark_prev(pt->doc, ci->mark);
-		while ((wi=doc_prior(pt->doc, ci->mark)) != WEOF &&
-		       !iswspace(wi))
-			mark_prev(pt->doc, ci->mark);
-		rpt += 1;
-	}
-
-	return 1;
-}
-
-DEF_CMD(view_eol)
-{
-	struct doc *d = (*ci->pointp)->doc;
-	wint_t ch = 1;
-	int rpt = RPT_NUM(ci);
-
-	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(d, ci->mark)) != WEOF &&
-		       ch != '\n')
-			;
-		rpt -= 1;
-	}
-	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(d, ci->mark)) != WEOF &&
-		       ch != '\n')
-			;
-		rpt += 1;
-	}
-	if (ch == '\n') {
-		if (RPT_NUM(ci) > 0)
-			mark_prev(d, ci->mark);
-		else if (RPT_NUM(ci) < 0)
-			mark_next(d, ci->mark);
-	}
-	return 1;
-}
-
 DEF_CMD(view_line)
 {
 	struct point *pt = *ci->pointp;
@@ -376,27 +263,6 @@ DEF_CMD(view_line)
 		       ch != '\n')
 			;
 		rpt += 1;
-	}
-	return 1;
-}
-
-DEF_CMD(view_file)
-{
-	struct point *pt = *ci->pointp;
-	wint_t ch = 1;
-	int rpt = RPT_NUM(ci);
-
-	if (ci->mark == NULL)
-		ci->mark = &pt->m;
-	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(pt->doc, ci->mark)) != WEOF)
-			;
-		rpt = 0;
-	}
-	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(pt->doc, ci->mark)) != WEOF)
-			;
-		rpt = 0;
 	}
 	return 1;
 }
@@ -470,12 +336,7 @@ void edlib_init(struct editor *ed)
 {
 	view_map = key_alloc();
 
-	key_add(view_map, "Move-Char", &view_char);
-	key_add(view_map, "Move-Word", &view_word);
-	key_add(view_map, "Move-WORD", &view_WORD);
-	key_add(view_map, "Move-EOL", &view_eol);
 	key_add(view_map, "Move-Line", &view_line);
-	key_add(view_map, "Move-File", &view_file);
 	key_add(view_map, "Move-View-Large", &view_page);
 
 	key_add(view_map, "Replace", &view_replace);
