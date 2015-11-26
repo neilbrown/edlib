@@ -332,12 +332,6 @@ void mark_reset(struct doc *d, struct mark *m)
 	__mark_reset(d, m, 0, 0);
 }
 
-void point_reset(struct point *p)
-{
-	struct doc *d = p->doc;
-	__mark_reset(d, &p->m, 0, 0);
-}
-
 struct mark *doc_first_mark(struct doc *d, int view)
 {
 	struct tlist_head *tl;
