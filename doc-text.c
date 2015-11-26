@@ -1544,7 +1544,7 @@ DEF_CMD(render_line_prev)
 	 * If we hit start-of-file without finding newline, return -1;
 	 */
 	struct mark *m = ci->mark;
-	struct doc *d = (*ci->pointp)->doc;
+	struct doc *d = ci->home->data;
 	struct mark *boundary = NULL;
 	int since_boundary;
 	int rpt = RPT_NUM(ci);

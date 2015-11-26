@@ -71,13 +71,13 @@ DEF_CMD(render_complete_prev)
 	 */
 	struct cmd_info ci2 = {0}, ci3 = {0};
 	struct complete_data *cd = ci->home->data;
-	struct doc *d = (*ci->pointp)->doc;
+	struct pane *dp = doc_get_pane(ci->home);
+	struct doc *d = dp->data;
 	int plen;
 	int ret;
 
 	ci2.key = ci->key;
 	ci2.mark = ci->mark;
-	ci2.pointp = ci->pointp;
 	ci2.focus = ci->home->parent;
 	ci2.numeric = 0;
 
@@ -163,7 +163,6 @@ DEF_CMD(complete_eol)
 		ci2.key = "render-line-prev";
 		ci2.numeric = 1;
 		ci2.mark = ci->mark;
-		ci2.pointp = ci->pointp;
 		ci2.focus = ci->focus;
 		ci2.home = ci->home;
 		if (render_complete_prev_func(&ci2) < 0)
@@ -223,7 +222,6 @@ DEF_CMD(complete_set_prefix)
 	ci2.key = "render-line-prev";
 	ci2.numeric = 1;
 	ci2.mark = m;
-	ci2.pointp = ptp;
 	ci2.focus = p;
 	ci2.home = p;
 	ci2.extra = 42; /* request copy of line in str2 */

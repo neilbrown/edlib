@@ -192,8 +192,8 @@ DEF_CMD(render_line_prev)
 	/* If ->numeric is 0, round down to multiple of 16.
 	 * if it is 1, subtract a further 16.
 	 */
-	struct point **ptp = ci->pointp;
-	struct doc *d = (*ptp)->doc;
+	struct pane *dp = doc_get_pane(ci->home);
+	struct doc *d = dp->data;
 	struct cmd_info ci2 = {0};
 	int to, from;
 

@@ -257,14 +257,13 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 	free(buf_final(&attr));
 }
 
-static struct mark *call_render_line_prev(struct pane *p, struct point **ptp,
+static struct mark *call_render_line_prev(struct pane *p,
 					  struct mark *m, int n, int *found)
 {
 	struct cmd_info ci = {0};
 	int ret;
 
 	ci.key = "render-line-prev";
-	ci.pointp = ptp;
 	ci.mark = m;
 	ci.focus = p;
 	ci.numeric = n;
@@ -391,7 +390,7 @@ static void find_lines(struct point **ptp, struct pane *p)
 	d = (*ptp)->doc;
 	top = container_of(vmark_first(p, rl->typenum), struct rl_mark, m);
 	bot = container_of(vmark_last(p, rl->typenum), struct rl_mark, m);
-	m = call_render_line_prev(p, ptp, mark_at_point(*ptp, rl->typenum),
+	m = call_render_line_prev(p, mark_at_point(*ptp, rl->typenum),
 				  0, &rl->top_sol);
 	if (!m)
 		return;
@@ -427,8 +426,7 @@ static void find_lines(struct point **ptp, struct pane *p)
 				lines_above -= 1;
 				y += 1;
 			} else {
-				m = call_render_line_prev(p, ptp,
-							  mark_dup(&start->m, 0),
+				m = call_render_line_prev(p, mark_dup(&start->m, 0),
 							  1, &rl->top_sol);
 				if (!m) {
 					/* no text before 'start' */
@@ -598,7 +596,7 @@ DEF_CMD(render_lines_refresh)
 
 	m = vmark_first(p, rl->typenum);
 	if (rl->top_sol && m)
-		m = call_render_line_prev(p, ci->pointp, mark_dup(m, 0), 0,
+		m = call_render_line_prev(p, mark_dup(m, 0), 0,
 					  &rl->top_sol);
 
 	if (m) {
@@ -686,7 +684,7 @@ DEF_CMD(render_lines_move)
 				continue;
 			}
 
-			top = call_render_line_prev(p, ptp, mark_dup(top, 0),
+			top = call_render_line_prev(p, mark_dup(top, 0),
 						    1, &rl->top_sol);
 			if (!top)
 				break;

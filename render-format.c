@@ -155,7 +155,8 @@ endwhile:
 DEF_CMD(render_line_prev)
 {
 	struct mark *m = ci->mark;
-	struct doc *d = (*ci->pointp)->doc;
+	struct pane *dp = doc_get_pane(ci->home);
+	struct doc *d = dp->data;
 
 	if (RPT_NUM(ci) == 0 && doc_following(d, m) != WEOF)
 		/* always at start-of-line */
