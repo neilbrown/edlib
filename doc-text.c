@@ -815,7 +815,7 @@ DEF_CMD(text_reundo)
 				i = text_advance_towards(t, &m->ref, &end);
 				if (i == 0)
 					break;
-				while ((m2 = doc_next_mark_all(d, m)) != NULL &&
+				while ((m2 = doc_next_mark_all(m)) != NULL &&
 				       m2->ref.c == m->ref.c &&
 				       m2->ref.o <= m->ref.o)
 					mark_forward_over(m, m2);
@@ -825,7 +825,7 @@ DEF_CMD(text_reundo)
 				i = text_retreat_towards(t, &m->ref, &end);
 				if (i == 0)
 					break;
-				while ((m2 = doc_prev_mark_all(d, m)) != NULL &&
+				while ((m2 = doc_prev_mark_all_safe(d, m)) != NULL &&
 				       m2->ref.c == m->ref.c &&
 				       m2->ref.o >= m->ref.o)
 					mark_backward_over(m, m2);
@@ -848,7 +848,7 @@ DEF_CMD(text_reundo)
 							       &start, &end) == 0)
 				break;
 
-		early = doc_prev_mark_all(d, m);
+		early = doc_prev_mark_all_safe(d, m);
 		if (early && !text_ref_same(t, &early->ref, &start))
 			early = NULL;
 
@@ -1335,11 +1335,11 @@ static void text_check_consistent(struct text *t)
 		}
 	}
 
-	for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(d, m))
+	for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(m))
 		text_ref_consistent(t, &m->ref);
 
 	prev = NULL;
-	for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(d, m)) {
+	for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(m)) {
 		if (prev) {
 			struct doc_ref r = prev->ref;
 			int i;
@@ -1372,24 +1372,24 @@ DEF_CMD(text_replace)
 
 		if (!mark_ordered(pm, end)) {
 			myend = mark_dup(pm, 1);
-			mark_to_mark(d, pm, end);
+			mark_to_mark(pm, end);
 		} else
 			myend = mark_dup(end, 1);
 		l = count_bytes(t, pm, myend);
 		mark_free(myend);
 		text_del(t, &pm->ref, l, &first);
 
-		for (m = doc_prev_mark_all(d, pm);
+		for (m = doc_prev_mark_all_safe(d, pm);
 		     m && text_update_prior_after_change(t, &m->ref, &pm->ref, &pm->ref);
-		     m = doc_prev_mark_all(d, m))
+		     m = doc_prev_mark_all_safe(d, m))
 			;
-		for (m = doc_next_mark_all(d, pm);
+		for (m = doc_next_mark_all(pm);
 		     m && text_update_following_after_change(t, &m->ref, &pm->ref, &pm->ref);
-		     m = doc_next_mark_all(d, m))
+		     m = doc_next_mark_all(m))
 			;
 		text_check_consistent(t);
 	}
-	early = doc_prev_mark_all(d, pm);
+	early = doc_prev_mark_all_safe(d, pm);
 	if (early && !mark_same(d, early, pm))
 		early = NULL;
 
@@ -1398,13 +1398,13 @@ DEF_CMD(text_replace)
 		struct mark *m;
 
 		text_add_str(t, &pm->ref, str, &start, &first);
-		for (m = doc_prev_mark_all(d, pm);
+		for (m = doc_prev_mark_all_safe(d, pm);
 		     m && text_update_prior_after_change(t, &m->ref, &start, &pm->ref);
-		     m = doc_prev_mark_all(d, m))
+		     m = doc_prev_mark_all_safe(d, m))
 			;
-		for (m = doc_next_mark_all(d, pm);
+		for (m = doc_next_mark_all(pm);
 		     m && text_update_following_after_change(t, &m->ref, &start, &pm->ref);
-		     m = doc_next_mark_all(d, m))
+		     m = doc_next_mark_all(m))
 			;
 		text_check_consistent(t);
 
@@ -1569,7 +1569,7 @@ DEF_CMD(render_line_prev)
 		/* need to use the boundary */
 		if (!boundary)
 			return 1;
-		mark_to_mark(d, m, boundary);
+		mark_to_mark(m, boundary);
 		mark_free(boundary);
 		return 1;
 	}

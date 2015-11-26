@@ -175,7 +175,7 @@ DEF_CMD(dir_load_file)
 			else
 				de1 = list_next_entry(de1, lst);
 			for (m2 = m; m2 && m2->ref.d == de;
-			     m2 = doc_next_mark_all(d, m2))
+			     m2 = doc_next_mark_all(m2))
 				m2->ref.d = de1;
 			attr_free(&de->attrs);
 			free(de->name);
@@ -213,7 +213,7 @@ DEF_CMD(dir_load_file)
 		de2 = list_first_entry_or_null(&new, struct dir_ent, lst);
 		while (m && m->ref.d && de1 && strcmp(m->ref.d->name, de1->name) < 0) {
 			prev = m;
-			m = doc_next_mark_all(d, m);
+			m = doc_next_mark_all(m);
 		}
 	}
 	if (!donotify) {

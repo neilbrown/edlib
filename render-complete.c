@@ -57,7 +57,7 @@ DEF_CMD(render_complete_line)
 		    strncmp(ci2.str, cd->prefix, plen) == 0)
 			break;
 		/* have a match, so move the mark to here. */
-		mark_to_mark(d, ci->mark, ci2.mark);
+		mark_to_mark(ci->mark, ci2.mark);
 	}
 	mark_free(ci2.mark);
 	return 1;
@@ -72,8 +72,6 @@ DEF_CMD(render_complete_prev)
 	 */
 	struct cmd_info ci2 = {0}, ci3 = {0};
 	struct complete_data *cd = ci->home->data;
-	struct pane *dp = doc_get_pane(ci->home);
-	struct doc *d = dp->data;
 	int plen;
 	int ret;
 
@@ -118,7 +116,7 @@ DEF_CMD(render_complete_prev)
 	if (ci2.mark != ci->mark) {
 		if (ret > 0)
 			/* move ci->mark back to ci2.mark */
-			mark_to_mark(d, ci->mark, ci2.mark);
+			mark_to_mark(ci->mark, ci2.mark);
 		mark_free(ci2.mark);
 	}
 	return ret;

@@ -765,7 +765,7 @@ static void docs_release(struct doc *d)
 
 	for (m = doc_first_mark_all(ed->docs);
 	     m;
-	     m = doc_next_mark_all(ed->docs, m))
+	     m = doc_next_mark_all(m))
 		if (m->ref.p == d->home) {
 			mark_step2(ed->docs, m, 1, 1);
 			doc_notify_change(ed->docs, m);
@@ -786,7 +786,7 @@ static void docs_attach(struct doc *d)
 		return;
 	for (m = doc_first_mark_all(ed->docs);
 	     m;
-	     m = doc_next_mark_all(ed->docs, m))
+	     m = doc_next_mark_all(m))
 		if (p->siblings.next == &m->ref.p->siblings) {
 			mark_step2(ed->docs, m, 0, 1);
 			doc_notify_change(ed->docs, m);

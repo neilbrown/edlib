@@ -364,18 +364,24 @@ struct mark *doc_first_mark_all(struct doc *d)
 	return NULL;
 }
 
-struct mark *doc_next_mark_all(struct doc *d, struct mark *m)
+struct mark *doc_next_mark_all(struct mark *m)
 {
 	if (m->all.next)
 		return hlist_next_entry(m, all);
 	return NULL;
 }
 
-struct mark *doc_prev_mark_all(struct doc *d, struct mark *m)
+struct mark *doc_prev_mark_all_safe(struct doc *d, struct mark *m)
 {
 	if (d->marks.first != &m->all)
 		return hlist_prev_entry(m, all);
 	return NULL;
+}
+
+struct mark *doc_prev_mark_all(struct mark *m)
+{
+	/* Must never be called on first mark */
+	return hlist_prev_entry(m, all);
 }
 
 
@@ -681,7 +687,7 @@ void point_to_mark(struct point *p, struct mark *m)
 	p->m.rpos = m->rpos;
 }
 
-void mark_to_mark(struct doc *d, struct mark *m, struct mark *target)
+void mark_to_mark(struct mark *m, struct mark *target)
 {
 
 	if (m->viewnum == MARK_POINT) {
@@ -690,11 +696,11 @@ void mark_to_mark(struct doc *d, struct mark *m, struct mark *target)
 		return;
 	}
 	while (mark_ordered(m, target)) {
-		struct mark *n = doc_next_mark_all(d, m);
+		struct mark *n = doc_next_mark_all(m);
 		mark_forward_over(m, n);
 	}
 	while (mark_ordered(target, m)) {
-		struct mark *n = doc_prev_mark_all(d, m);
+		struct mark *n = doc_prev_mark_all(m);
 		mark_backward_over(m, n);
 	}
 	m->ref = target->ref;
