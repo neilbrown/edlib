@@ -42,10 +42,14 @@ DEF_CMD(search_again);
 DEF_CMD(search_forward)
 {
 	struct es_info *esi = ci->home->data;
-	struct doc *d = esi->end->doc;
+	struct pane *dp = doc_get_pane(esi->target);
+	struct doc *d = dp ? dp->data : NULL;
 	struct stk *s;
 	char *str;
 	bool first = 1;
+
+	if (!d)
+		return -1;
 
 	if (esi->s && mark_same(d, esi->s->m, &esi->end->m)) {
 		/* already pushed and didn't find anything new */
@@ -96,11 +100,14 @@ DEF_CMD(search_retreat)
 DEF_CMD(search_add)
 {
 	struct es_info *esi = ci->home->data;
-	struct doc *d = esi->end->doc;
+	struct pane *dp = doc_get_pane(esi->target);
+	struct doc *d = dp ? dp->data : NULL;
 	wint_t wch;
 	char b[5];
 	struct cmd_info ci2 = {0};
 
+	if (!d)
+		return -1;
 	do {
 		/* TEMP HACK - please fix */
 		doc_set_attr(esi->target, esi->end, "highlight", NULL);
