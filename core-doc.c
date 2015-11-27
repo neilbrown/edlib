@@ -674,8 +674,7 @@ DEF_CMD(docs_set_ref)
 		m->ref.p = list_first_entry(&ed->root.focus->children,
 					    struct pane, siblings);
 	else
-		m->ref.p = list_last_entry(&ed->root.focus->children,
-					   struct pane, siblings);
+		m->ref.p = NULL;
 
 	m->ref.ignore = 0;
 	m->rpos = 0;
