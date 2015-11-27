@@ -95,7 +95,7 @@ struct doc {
 };
 
 void doc_init(struct doc *d);
-struct pane *doc_new(struct editor *ed, char *type);
+struct doc *doc_new(struct editor *ed, char *type);
 struct pane *doc_from_text(struct pane *parent, char *name, char *text);
 struct pane *doc_open(struct editor *ed, int fd, char *name);
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render);

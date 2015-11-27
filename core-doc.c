@@ -453,10 +453,11 @@ struct pane *doc_attach(struct pane *parent, struct doc *d)
 	return p;
 }
 
-struct pane *doc_new(struct editor *ed, char *type)
+struct doc *doc_new(struct editor *ed, char *type)
 {
 	char buf[100];
 	struct cmd_info ci = {0};
+	struct doc *d;
 
 	if (!doc_default_cmd)
 		init_doc_defaults();
@@ -469,13 +470,15 @@ struct pane *doc_new(struct editor *ed, char *type)
 		if (!key_lookup(ed->commands, &ci))
 			return NULL;
 	}
-	return ci.focus;
+	d = ci.focus->data;
+	return d;
 }
 
 struct pane *doc_open(struct editor *ed, int fd, char *name)
 {
 	struct stat stb;
 	struct pane *p;
+	struct doc *d;
 	char pathbuf[PATH_MAX], *rp;
 
 	fstat(fd, &stb);
@@ -491,15 +494,15 @@ struct pane *doc_open(struct editor *ed, int fd, char *name)
 
 	rp = realpath(name, pathbuf);
 	if ((stb.st_mode & S_IFMT) == S_IFREG) {
-		p = doc_new(ed, "text");
+		d = doc_new(ed, "text");
 	} else if ((stb.st_mode & S_IFMT) == S_IFDIR) {
-		p = doc_new(ed, "dir");
+		d = doc_new(ed, "dir");
 	} else
 		return NULL;
-	if (!p)
+	if (!d)
 		return NULL;
-	doc_load_file(p, fd, rp);
-	return p;
+	doc_load_file(d->home, fd, rp);
+	return d->home;
 }
 
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render)
@@ -522,14 +525,13 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	struct doc *d;
 	struct cmd_info ci = {0};
 
-	p = doc_new(pane2ed(parent), "text");
-	if (!p)
+	d = doc_new(pane2ed(parent), "text");
+	if (!d)
 		return NULL;
-	d = p->data;
 	doc_set_name(d, name);
-	p = doc_attach_view(parent, p, NULL);
+	p = doc_attach_view(parent, d->home, NULL);
 	if (!p) {
-		doc_destroy(p->data);
+		doc_destroy(d);
 		return p;
 	}
 	doc_replace(p, NULL, text, &first);

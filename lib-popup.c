@@ -164,13 +164,11 @@ DEF_CMD(popup_attach)
 	if (ci->home) {
 		p = doc_attach_view(ppi->popup, ci->home, NULL);
 	} else {
-		struct pane *dp;
 		struct doc *d;
-		dp = doc_new(pane2ed(root), "text");
-		d = dp->data;
+		d = doc_new(pane2ed(root), "text");
 		doc_set_name(d, "*popup*");
-		ppi->doc = dp;
-		p = doc_attach_view(ppi->popup, dp, NULL);
+		ppi->doc = d->home;
+		p = doc_attach_view(ppi->popup, d->home, NULL);
 	}
 	pane_focus(p);
 	memset(&ci2, 0, sizeof(ci2));
