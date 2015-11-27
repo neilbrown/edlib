@@ -103,7 +103,7 @@ static int do_doc_find_view(struct doc *d, struct command *c)
 
 static void doc_close_views(struct doc *d)
 {
-	struct cmd_info ci;
+	struct cmd_info ci = {0};
 	int i;
 
 	for (i = 0; i < d->nviews; i++)
