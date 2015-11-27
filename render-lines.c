@@ -857,8 +857,7 @@ DEF_CMD(render_lines_notify)
 				vm->mdata = NULL;
 				mark_free(vm);
 			}
-			while ((vm = vmark_next(rm)) != NULL &&
-			       mark_same_pane(p, rm, vm, &ci2)) {
+			while ((vm = vmark_next(rm)) != NULL && mark_same_pane(p, rm, vm, &ci2)) {
 				free(vm->mdata);
 				vm->mdata = NULL;
 				mark_free(vm);

@@ -422,6 +422,11 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
+	if (strcmp(ci->key, "doc:find") == 0) {
+		ci->misc = d;
+		return 1;
+	}
+
 	if (strcmp(ci->key, "doc:vmark-get") == 0) {
 		ci->mark = do_vmark_first(d, ci->numeric);
 		ci->mark2 = do_vmark_last(d, ci->numeric);
@@ -727,8 +732,7 @@ DEF_CMD(docs_open)
 
 DEF_CMD(docs_bury)
 {
-	struct pane *p = doc_get_pane(ci->home);
-	struct doc *d = p->data;
+	struct doc *d = doc_from_pane(ci->home);
 
 	doc_destroy(d);
 	return 1;

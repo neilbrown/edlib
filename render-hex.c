@@ -80,8 +80,7 @@ DEF_CMD(render_hex_notify)
 
 DEF_CMD(render_hex_eol)
 {
-	struct pane *dp = doc_get_pane(ci->home);
-	struct doc *d = dp->data;
+	struct doc *d = doc_from_pane(ci->home);
 	struct editor *ed = pane2ed(ci->home);
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
@@ -123,8 +122,7 @@ DEF_CMD(render_line)
 	struct buf ret;
 	struct cmd_info ci2 = {0};
 	struct mark *m = NULL;
-	struct pane *dp = doc_get_pane(ci->home);
-	struct doc *d = dp ? dp->data : NULL;
+	struct doc *d = doc_from_pane(ci->home);
 	struct mark *pm = ci->mark2;
 	int pos;
 	int i;
@@ -192,8 +190,7 @@ DEF_CMD(render_line_prev)
 	/* If ->numeric is 0, round down to multiple of 16.
 	 * if it is 1, subtract a further 16.
 	 */
-	struct pane *dp = doc_get_pane(ci->home);
-	struct doc *d = dp->data;
+	struct doc *d = doc_from_pane(ci->home);
 	struct cmd_info ci2 = {0};
 	int to, from;
 

@@ -449,14 +449,13 @@ static inline int doc_find_view(struct pane *p, struct command *c)
 	return ci.extra;
 }
 
-static inline struct pane *doc_get_pane(struct pane *p)
+static inline struct doc *doc_from_pane(struct pane *p)
 {
 	struct cmd_info ci = {0};
 	ci.focus = p;
-	ci.key = "doc:find-view";
-	ci.comm2 = NULL;
+	ci.key = "doc:find";
 	if (key_handle_focus(&ci) == 0)
 		return NULL;
-	return ci.home;
+	return ci.misc;
 }
 

@@ -15,7 +15,6 @@
 DEF_CMD(text_search)
 {
 	struct mark *m;
-	struct pane *dp;
 	struct doc *d;
 	unsigned short *rxl;
 	struct match_state *st;
@@ -24,11 +23,9 @@ DEF_CMD(text_search)
 	if (!ci->str|| !ci->mark)
 		return -1;
 
-	dp = doc_get_pane(ci->focus);
-	if (!dp)
+	d = doc_from_pane(ci->focus);
+	if (!d)
 		return -1;
-	d = dp->data;
-
 	m = ci->mark;
 	rxl = rxl_parse(ci->str, NULL, 0);
 	if (!rxl)

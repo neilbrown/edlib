@@ -27,8 +27,7 @@ DEF_CMD(render_line)
 	char *body = pane_attr_get(ci->focus, "line-format");
 	struct rf_data *rf = ci->home->data;
 	struct buf ret;
-	struct pane *dp = doc_get_pane(ci->home);
-	struct doc *d = dp ? dp->data : NULL;
+	struct doc *d = doc_from_pane(ci->home);
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2;
 	char *n;
@@ -97,7 +96,7 @@ DEF_CMD(render_line)
 			buf_append(&ret, ch);
 			continue;
 		}
-		val = doc_attr(dp, m, 1, buf);
+		val = doc_attr(d->home, m, 1, buf);
 		if (!val)
 			val = "-";
 		if (*n != ':') {
@@ -152,8 +151,7 @@ endwhile:
 DEF_CMD(render_line_prev)
 {
 	struct mark *m = ci->mark;
-	struct pane *dp = doc_get_pane(ci->home);
-	struct doc *d = dp->data;
+	struct doc *d = doc_from_pane(ci->home);
 
 	if (RPT_NUM(ci) == 0 && doc_following(d, m) != WEOF)
 		/* always at start-of-line */
@@ -184,8 +182,7 @@ DEF_CMD(format_clone)
 
 DEF_CMD(format_move_line)
 {
-	struct pane *dp = doc_get_pane(ci->focus);
-	struct doc *d = dp->data;
+	struct doc *d = doc_from_pane(ci->focus);
 	int rpt = RPT_NUM(ci);
 	struct rf_data *rf = ci->home->data;
 
@@ -213,8 +210,7 @@ DEF_CMD(format_move_horiz)
 	/* Horizonal movement - adjust ->rpos within fields, or
 	 * move to next line
 	 */
-	struct pane *dp = doc_get_pane(ci->focus);
-	struct doc *d = dp->data;
+	struct doc *d = doc_from_pane(ci->focus);
 	struct rf_data *rf = ci->home->data;
 	int rpt = RPT_NUM(ci);
 

@@ -42,8 +42,7 @@ DEF_CMD(search_again);
 DEF_CMD(search_forward)
 {
 	struct es_info *esi = ci->home->data;
-	struct pane *dp = doc_get_pane(esi->target);
-	struct doc *d = dp ? dp->data : NULL;
+	struct doc *d = doc_from_pane(esi->target);
 	struct stk *s;
 	char *str;
 	bool first = 1;
@@ -100,8 +99,7 @@ DEF_CMD(search_retreat)
 DEF_CMD(search_add)
 {
 	struct es_info *esi = ci->home->data;
-	struct pane *dp = doc_get_pane(esi->target);
-	struct doc *d = dp ? dp->data : NULL;
+	struct doc *d = doc_from_pane(esi->target);
 	wint_t wch;
 	char b[5];
 	struct cmd_info ci2 = {0};

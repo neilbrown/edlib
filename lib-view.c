@@ -49,8 +49,7 @@ static int view_refresh(struct cmd_info *ci)
 	int i;
 	int mid;
 	struct editor *ed = pane2ed(ci->home);
-	struct pane *dp = doc_get_pane(ci->home);
-	struct doc *d = dp->data;
+	struct doc *d = doc_from_pane(ci->home);
 
 	pane_check_size(p);
 	p->cx = 0; p->cy = 0;

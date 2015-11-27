@@ -219,8 +219,7 @@ done:
 
 DEF_CMD(count_lines)
 {
-	struct pane *dp = doc_get_pane(ci->home);
-	struct doc *d = dp->data;
+	struct doc *d = doc_from_pane(ci->home);
 
 	/* FIXME optimise this away most of the time */
 	count_calculate(d, NULL, NULL);

@@ -29,8 +29,7 @@ DEF_CMD(render_complete_line)
 	 */
 	struct cmd_info ci2 = {0};
 	struct complete_data *cd = ci->home->data;
-	struct pane *dp = doc_get_pane(ci->home);
-	struct doc *d = dp ? dp->data : NULL;
+	struct doc *d = doc_from_pane(ci->home);
 	int plen;
 
 	if (!d || !ci->mark)

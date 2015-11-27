@@ -113,8 +113,7 @@ REDEF_CMD(emacs_delete)
 	struct cmd_info ci2 = {0};
 	int ret = 0;
 	struct mark *m;
-	struct pane *dp = doc_get_pane(ci->home);
-	struct doc *d = dp->data;
+	struct doc *d = doc_from_pane(ci->home);
 
 	m = mark_dup(ci->mark, 1);
 	ci2.focus = ci->focus;
@@ -537,8 +536,7 @@ DEF_CMD(emacs_num)
 
 DEF_CMD(emacs_kill_doc)
 {
-	struct pane *p = doc_get_pane(ci->home);
-	struct doc *d = p ? p->data : NULL;
+	struct doc *d = doc_from_pane(ci->home);
 
 	if (d)
 		doc_destroy(d);
