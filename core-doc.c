@@ -846,11 +846,11 @@ int  doc_destroy(struct doc *d)
 		return 0;
 
 	docs_release(d);
-	pane_close(d->home);
 
 	ci2.key = "doc:destroy";
 	ci2.focus = d->home;
 	key_handle_focus(&ci2);
+	pane_close(d->home);
 
 	free(d->views);
 	attr_free(&d->attrs);
