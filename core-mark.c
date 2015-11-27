@@ -391,12 +391,13 @@ struct mark *doc_prev_mark_all(struct mark *m)
 struct mark *doc_new_mark(struct doc *d, int view)
 {
 	struct mark *ret;
+	int size = sizeof(*ret);
 
 	if (view == MARK_POINT || view >= d->nviews || d->views[view].notify == NULL)
 		return NULL;
-	ret = malloc(sizeof(*ret));
-	ret->rpos = 0;
-	ret->attrs = NULL;
+	if (view > 0)
+		size += d->views[view].space;
+	ret = calloc(size, 1);
 	ret->viewnum = view;
 	__mark_reset(d, ret, 1, 0);
 	return ret;

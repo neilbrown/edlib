@@ -351,18 +351,6 @@ DEF_CMD(doc_handle)
 	struct doc_data *dd = ci->home->data;
 	int ret;
 
-	/* This is a hack - I should use a watcher, but I don't have
-	 * anywhere to store it.
-	 * FIXME make this optional
-	 */
-	if (strcmp(ci->key, "Refresh") == 0) {
-		struct pane *p = pane_child(ci->home);
-		if (p)
-			return 0; /* use default handling */
-		p = editor_choose_doc(pane2ed(ci->home));
-		doc_attach_view(ci->home, p, NULL);
-		return 0;
-	}
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = doc_attach(ci->focus, dd->doc);
 		struct pane *c = pane_child(ci->home);
@@ -374,9 +362,12 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "Close") == 0) {
+		doc_del_view(ci->home, &dd->notify);
 		if (ci->home->point)
 			mark_free(ci->home->point);
 		ci->home->point = NULL;
+		free(dd);
+		ci->home->data = NULL;
 		return 1;
 	}
 
@@ -447,6 +438,35 @@ DEF_CMD(doc_handle)
 	return ret;
 }
 
+DEF_CMD(doc_notify)
+{
+	if (strcmp(ci->key, "Release") == 0) {
+		/* This pane has to go away */
+		struct doc_data *dd = container_of(ci->comm, struct doc_data, notify);
+		struct pane *par = dd->pane, *p;
+
+		doc_del_view(ci->home, ci->comm);
+		/* Need another document to fill this pane. */
+		/* FIXME make this conditional */
+		p = pane_child(par);
+		if (p)
+			pane_close(p);
+		p = editor_choose_doc(pane2ed(ci->home));
+		if (!p)
+			return 1;
+		doc_attach_view(par, p, NULL);
+		p = pane_child(par);
+		if (p) {
+			pane_subsume(p, par);
+			dd = par->data;
+			dd->pane = par;
+			pane_close(p);
+		}
+		return 1;
+	}
+	return 0;
+}
+
 struct pane *doc_attach(struct pane *parent, struct doc *d)
 {
 	struct pane *p;
@@ -457,6 +477,12 @@ struct pane *doc_attach(struct pane *parent, struct doc *d)
 	p = pane_register(parent, 0, &doc_handle, dd, NULL);
 	if (!d->home)
 		d->home = p;
+	else {
+		/* non-home panes need to be notified so they can self-destruct */
+		dd->notify = doc_notify;
+		doc_add_view(p, &dd->notify, 0);
+	}
+	dd->pane = p;
 	d->ed = pane2ed(parent);
 	doc_promote(d);
 	return p;

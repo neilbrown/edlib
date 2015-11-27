@@ -60,11 +60,17 @@ struct pane {
 	struct attrset		*attrs;
 };
 
+struct command {
+	int	(*func)(struct cmd_info *ci);
+};
+
 /* this is ->data for a document pane.  Only core-doc and
  * individual document handlers can know about this.
  */
 struct doc_data {
 	struct doc		*doc;
+	struct command		notify;
+	struct pane		*pane;
 };
 
 struct display {
@@ -235,9 +241,6 @@ void attr_free(struct attrset **setp);
 
 
 /* Commands */
-struct command {
-	int	(*func)(struct cmd_info *ci);
-};
 struct lookup_cmd {
 	struct command	c;
 	struct map	**m;
