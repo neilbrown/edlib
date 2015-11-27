@@ -152,7 +152,6 @@ struct mark *doc_first_mark_all(struct doc *d);
 struct mark *doc_next_mark_all(struct mark *m);
 struct mark *doc_prev_mark_all(struct mark *m);
 struct mark *doc_prev_mark_all_safe(struct doc *d, struct mark *m);
-struct mark *doc_first_mark(struct doc *d, int viewnum);
 struct mark *doc_next_mark(struct mark *m);
 struct mark *doc_prev_mark(struct mark *m);
 void point_reset(struct mark *p);

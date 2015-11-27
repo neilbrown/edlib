@@ -90,12 +90,11 @@ DEF_CMD(count_notify)
 		return 1;
 	}
 	if (strcmp(ci->key, "Release") == 0) {
-		struct doc *d = ci->home->data;
 		struct mark *m;
 		int i = doc_find_view(ci->home, ci->comm);
 		if (i < 0)
 			return 0;
-		while ((m = doc_first_mark(d, i)) != NULL)
+		while ((m = vmark_first(ci->home, i)) != NULL)
 			mark_free(m);
 		doc_del_view(ci->home, ci->comm);
 	}
@@ -134,7 +133,7 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 	if (type < 0)
 		type = doc_add_view(d->home, &count_notify, 0);
 
-	m = doc_first_mark(d, type);
+	m = vmark_first(d->home, type);
 	if (m == NULL) {
 		/* No marks yet, let's make some */
 		m = doc_new_mark(d, type);

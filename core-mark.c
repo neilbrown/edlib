@@ -340,20 +340,6 @@ void mark_reset(struct doc *d, struct mark *m)
 	__mark_reset(d, m, 0, 0);
 }
 
-struct mark *doc_first_mark(struct doc *d, int view)
-{
-	struct tlist_head *tl;
-
-	if (view < 0 || view >= d->nviews || d->views[view].notify == NULL)
-		return NULL;
-	if (tlist_empty(&d->views[view].head))
-		return NULL;
-	tlist_for_each(tl, &d->views[view].head)
-		if (TLIST_TYPE(tl) == GRP_MARK)
-			return tlist_entry(tl, struct mark, view);
-	return NULL;
-}
-
 struct mark *doc_next_mark(struct mark *m)
 {
 	struct tlist_head *tl = &m->view;
