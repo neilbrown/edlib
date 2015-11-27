@@ -136,8 +136,8 @@ struct mark {
 
 struct point {
 	struct mark		m;
-	int			size;
 	struct point_links {
+		int			size;
 		struct point		*pt;
 		struct tlist_head	lists[];
 	} *links;
