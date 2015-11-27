@@ -136,7 +136,6 @@ struct mark {
 
 struct point {
 	struct mark		m;
-	struct doc		*doc;
 	int			size;
 	struct point_links {
 		struct point		*pt;

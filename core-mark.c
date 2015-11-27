@@ -181,7 +181,6 @@ struct point *point_dup(struct point *p)
 			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
 		else
 			tlist_add(&lnk->lists[i], GRP_LIST, &p->links->lists[i]);
-	ret->doc = p->doc;
 	return ret;
 }
 
@@ -320,7 +319,6 @@ struct point *point_new(struct doc *d)
 	ret->m.attrs = NULL;
 	ret->m.viewnum = MARK_POINT;
 	ret->size = d->nviews;
-	ret->doc = d;
 	ret->links = lnk;
 	lnk->pt = ret;
 	__mark_reset(d, &ret->m, 1, 0);
