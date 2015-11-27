@@ -276,6 +276,8 @@ DEF_CMD(complete_return)
 	ci2.numeric = NO_NUMERIC;
 	render_complete_line_func(&ci2);
 	str = ci2.str;
+	if (!str)
+		return 1;
 	l = strlen(str);
 	if (l && str[l-1] == '\n')
 		str[l-1] = 0;
