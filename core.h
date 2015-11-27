@@ -60,6 +60,13 @@ struct pane {
 	struct attrset		*attrs;
 };
 
+/* this is ->data for a document pane.  Only core-doc and
+ * individual document handlers can know about this.
+ */
+struct doc_data {
+	struct doc		*doc;
+};
+
 struct display {
 	char			*mode, *next_mode;
 	int			numeric, extra;

@@ -164,7 +164,7 @@ DEF_CMD(render_line_prev)
 
 DEF_CMD(format_close)
 {
-	struct rl_data *rl = ci->home->data;
+	struct rf_data *rl = ci->home->data;
 	free(rl);
 	return 1;
 }

@@ -52,7 +52,8 @@ struct pane *editor_choose_doc(struct editor *ed)
 
 	list_for_each_entry(p, &ed->root.focus->children, siblings) {
 		int i;
-		d = p->data;
+		struct doc_data *dd = p->data;
+		d = dd->doc;
 		if (d->deleting == 2)
 			docs = d;
 		if (d->deleting)

@@ -141,16 +141,16 @@ void doc_init(struct doc *d)
 
 DEF_CMD(doc_char)
 {
-	struct doc *d = ci->home->data;
+	struct doc_data *dd = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
 	while (rpt > 0) {
-		if (mark_next(d, ci->mark) == WEOF)
+		if (mark_next(dd->doc, ci->mark) == WEOF)
 			break;
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		if (mark_prev(d, ci->mark) == WEOF)
+		if (mark_prev(dd->doc, ci->mark) == WEOF)
 			break;
 		rpt += 1;
 	}
@@ -160,7 +160,8 @@ DEF_CMD(doc_char)
 
 DEF_CMD(doc_word)
 {
-	struct doc *d = ci->home->data;
+	struct doc_data *dd = ci->home->data;
+	struct doc *d = dd->doc;
 	int rpt = RPT_NUM(ci);
 
 	/* We skip spaces, then either alphanum or non-space/alphanum */
@@ -198,7 +199,8 @@ DEF_CMD(doc_word)
 
 DEF_CMD(doc_WORD)
 {
-	struct doc *d = ci->home->data;
+	struct doc_data *dd = ci->home->data;
+	struct doc *d = dd->doc;
 	int rpt = RPT_NUM(ci);
 
 	/* We skip spaces, then non-spaces */
@@ -227,7 +229,8 @@ DEF_CMD(doc_WORD)
 
 DEF_CMD(doc_eol)
 {
-	struct doc *d = ci->home->data;
+	struct doc_data *dd = ci->home->data;
+	struct doc *d = dd->doc;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -254,7 +257,8 @@ DEF_CMD(doc_eol)
 
 DEF_CMD(doc_file)
 {
-	struct doc *d = ci->home->data;
+	struct doc_data *dd = ci->home->data;
+	struct doc *d = dd->doc;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -275,7 +279,8 @@ DEF_CMD(doc_file)
 
 DEF_CMD(doc_line)
 {
-	struct doc *d = ci->home->data;
+	struct doc_data *dd = ci->home->data;
+	struct doc *d = dd->doc;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -296,7 +301,8 @@ DEF_CMD(doc_line)
 
 DEF_CMD(doc_page)
 {
-	struct doc *d = ci->home->data;
+	struct doc_data *dd = ci->home->data;
+	struct doc *d = dd->doc;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -342,7 +348,7 @@ static void init_doc_defaults(void)
 
 DEF_CMD(doc_handle)
 {
-	struct doc *d = ci->home->data;
+	struct doc_data *dd = ci->home->data;
 	int ret;
 
 	/* This is a hack - I should use a watcher, but I don't have
@@ -358,7 +364,7 @@ DEF_CMD(doc_handle)
 		return 0;
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
-		struct pane *p = doc_attach(ci->focus, d);
+		struct pane *p = doc_attach(ci->focus, dd->doc);
 		struct pane *c = pane_child(ci->home);
 
 		p->point = point_dup(ci->home->point);
@@ -385,7 +391,7 @@ DEF_CMD(doc_handle)
 			else if (ci->extra == MARK_UNGROUPED)
 				ci->mark = mark_dup(pt, 1);
 			else
-				ci->mark = do_mark_at_point(d, pt,
+				ci->mark = do_mark_at_point(dd->doc, pt,
 							    ci->extra);
 		}
 		return 1;
@@ -397,46 +403,46 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "doc:set-name") == 0) {
-		doc_set_name(d, ci->str);
+		doc_set_name(dd->doc, ci->str);
 		return 1;
 	}
 
 	if (strcmp(ci->key, "doc:add-view") == 0) {
 		if (!ci->comm2)
 			return -1;
-		ci->extra = do_doc_add_view(d, ci->comm2, ci->extra);
+		ci->extra = do_doc_add_view(dd->doc, ci->comm2, ci->extra);
 		return 1;
 	}
 
 	if (strcmp(ci->key, "doc:del-view") == 0) {
 		if (!ci->comm2)
 			return -1;
-		do_doc_del_view(d, ci->comm2);
+		do_doc_del_view(dd->doc, ci->comm2);
 		return 1;
 	}
 
 	if (strcmp(ci->key, "doc:find-view") == 0) {
 		if (!ci->comm2)
 			return -1;
-		ci->extra = do_doc_find_view(d, ci->comm2);
+		ci->extra = do_doc_find_view(dd->doc, ci->comm2);
 		return 1;
 	}
 
 	if (strcmp(ci->key, "doc:find") == 0) {
-		ci->misc = d;
+		ci->misc = dd->doc;
 		return 1;
 	}
 
 	if (strcmp(ci->key, "doc:vmark-get") == 0) {
-		ci->mark = do_vmark_first(d, ci->numeric);
-		ci->mark2 = do_vmark_last(d, ci->numeric);
+		ci->mark = do_vmark_first(dd->doc, ci->numeric);
+		ci->mark2 = do_vmark_last(dd->doc, ci->numeric);
 		if (ci->extra && ci->home->point)
-			ci->mark2 = do_vmark_at_point(d, ci->home->point,
+			ci->mark2 = do_vmark_at_point(dd->doc, ci->home->point,
 						      ci->numeric);
 		return 1;
 	}
 
-	ret = key_lookup(d->map, ci);
+	ret = key_lookup(dd->doc->map, ci);
 	ret = ret ?: key_lookup(doc_default_cmd, ci);
 	return ret;
 }
@@ -444,8 +450,11 @@ DEF_CMD(doc_handle)
 struct pane *doc_attach(struct pane *parent, struct doc *d)
 {
 	struct pane *p;
+	struct doc_data *dd = malloc(sizeof(*dd));
 
-	p = pane_register(parent, 0, &doc_handle, d, NULL);
+	dd->doc = d;
+
+	p = pane_register(parent, 0, &doc_handle, dd, NULL);
 	if (!d->home)
 		d->home = p;
 	d->ed = pane2ed(parent);
@@ -457,7 +466,7 @@ struct doc *doc_new(struct editor *ed, char *type)
 {
 	char buf[100];
 	struct cmd_info ci = {0};
-	struct doc *d;
+	struct doc_data *dd;
 
 	if (!doc_default_cmd)
 		init_doc_defaults();
@@ -470,8 +479,8 @@ struct doc *doc_new(struct editor *ed, char *type)
 		if (!key_lookup(ed->commands, &ci))
 			return NULL;
 	}
-	d = ci.focus->data;
-	return d;
+	dd = ci.focus->data;
+	return dd->doc;
 }
 
 struct pane *doc_open(struct editor *ed, int fd, char *name)
@@ -508,9 +517,10 @@ struct pane *doc_open(struct editor *ed, int fd, char *name)
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render)
 {
 	struct pane *p;
-	p = doc_attach(parent, doc->data);
+	struct doc_data *dd = doc->data;
+	p = doc_attach(parent, dd->doc);
 	if (p) {
-		p->point = point_new(doc->data);
+		p->point = point_new(dd->doc);
 		p = pane_attach(p, "view", doc, NULL);
 	}
 	if (p)
@@ -556,8 +566,8 @@ void doc_set_name(struct doc *d, char *name)
 		else
 			strcpy(nname, name);
 		list_for_each_entry(p, &d->ed->root.focus->children, siblings) {
-			struct doc *d2 = p->data;
-			if (d != d2 && strcmp(nname, d2->name) == 0) {
+			struct doc_data *d2 = p->data;
+			if (d != d2->doc && strcmp(nname, d2->doc->name) == 0) {
 				conflict = 1;
 				unique += 1;
 				break;
@@ -573,8 +583,8 @@ struct pane *doc_find(struct editor *ed, char *name)
 	struct pane *p;
 
 	list_for_each_entry(p, &ed->root.focus->children, siblings) {
-		struct doc *d = p->data;
-		if (strcmp(name, d->name) == 0)
+		struct doc_data *dd = p->data;
+		if (strcmp(name, dd->doc->name) == 0)
 			return p;
 	}
 	return NULL;
@@ -592,7 +602,8 @@ struct docs {
 
 DEF_CMD(docs_step)
 {
-	struct doc *doc = ci->home->data;
+	struct doc_data *dd = ci->home->data;
+	struct doc *doc = dd->doc;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric;
 	bool move = ci->extra;
@@ -654,7 +665,7 @@ DEF_CMD(docs_mark_same)
 static char *__docs_get_attr(struct doc *doc, struct mark *m,
 			     bool forward, char *attr)
 {
-	struct doc *d;
+	struct doc_data *dd;
 	struct pane *p;
 
 	if (!m) {
@@ -682,19 +693,19 @@ static char *__docs_get_attr(struct doc *doc, struct mark *m,
 	}
 	if (!p)
 		return NULL;
-	d = p->data;
+	dd = p->data;
 	if (strcmp(attr, "name") == 0)
-		return d->name;
+		return dd->doc->name;
 	return doc_attr(p, NULL, 0, attr);
 }
 
 DEF_CMD(docs_get_attr)
 {
-	struct doc *doc = ci->home->data;
+	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
-	ci->str2 = __docs_get_attr(doc, m, forward, attr);
+	ci->str2 = __docs_get_attr(dd->doc, m, forward, attr);
 	return 1;
 }
 

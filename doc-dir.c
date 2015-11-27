@@ -130,16 +130,16 @@ DEF_CMD(dir_new)
 
 DEF_CMD(dir_load_file)
 {
-	struct doc *d;
+	struct doc_data *dd;
 	int fd = ci->extra;
 	char *name = ci->str;
 
 	if (ci->home)
-		d = ci->home->data;
+		dd = ci->home->data;
 	else
 		return -1;
 
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct directory *dr = container_of(dd->doc, struct directory, doc);
 	struct list_head new;
 	struct dir_ent *de1, *de2;
 	struct mark *m, *prev;
@@ -162,7 +162,7 @@ DEF_CMD(dir_load_file)
 	if (!de1)
 		/* Nothing already in dir, so only notify at the end */
 		donotify = 1;
-	prev = m = doc_first_mark_all(d);
+	prev = m = doc_first_mark_all(&dr->doc);
 	/* 'm' is always at-or-after the earliest of de1 */
 	while (de1 || de2) {
 		if (de1 &&
@@ -182,8 +182,8 @@ DEF_CMD(dir_load_file)
 			list_del(&de->lst);
 			free(de);
 			if (m && donotify) {
-				doc_notify_change(d, prev);
-				doc_notify_change(d, m);
+				doc_notify_change(&dr->doc, prev);
+				doc_notify_change(&dr->doc, m);
 			}
 		} else if (de2 &&
 			   (de1 == NULL || strcmp(de2->name, de1->name) < 0)) {
@@ -194,8 +194,8 @@ DEF_CMD(dir_load_file)
 			else
 				list_add_tail(&de2->lst, &dr->ents);
 			if (m && donotify) {
-				doc_notify_change(d, prev);
-				doc_notify_change(d, m);
+				doc_notify_change(&dr->doc, prev);
+				doc_notify_change(&dr->doc, m);
 			}
 		} else {
 			/* de1 and de2 are the same.  Just step over de1 and
@@ -217,9 +217,9 @@ DEF_CMD(dir_load_file)
 		}
 	}
 	if (!donotify) {
-		m = doc_first_mark_all(d);
+		m = doc_first_mark_all(&dr->doc);
 		if (m)
-			doc_notify_change(d, m);
+			doc_notify_change(&dr->doc, m);
 	}
 
 	if (name) {
@@ -237,7 +237,7 @@ DEF_CMD(dir_load_file)
 			dname += 1;
 		else
 			dname = name;
-		doc_set_name(d, dname);
+		doc_set_name(&dr->doc, dname);
 		if (l > 1)
 			strcat(dr->fname, "/");
 	}
@@ -248,10 +248,10 @@ DEF_CMD(dir_load_file)
 
 DEF_CMD(dir_same_file)
 {
-	struct doc *d = ci->home->data;
+	struct doc_data *dd = ci->home->data;
 	int fd = ci->extra;
 	struct stat *stb = ci->misc;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct directory *dr = container_of(dd->doc, struct directory, doc);
 
 	if (!dr->fname)
 		return 0;
@@ -265,12 +265,12 @@ DEF_CMD(dir_same_file)
 
 DEF_CMD(dir_step)
 {
-	struct doc *doc = ci->home->data;
+	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric;
 	bool move = ci->extra;
 
-	struct directory *dr = container_of(doc, struct directory, doc);
+	struct directory *dr = container_of(dd->doc, struct directory, doc);
 	struct dir_ent *d = m->ref.d;
 	wint_t ret;
 
@@ -304,8 +304,8 @@ DEF_CMD(dir_step)
 
 DEF_CMD(dir_set_ref)
 {
-	struct doc *d = ci->home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct doc_data *dd = ci->home->data;
+	struct directory *dr = container_of(dd->doc, struct directory, doc);
 	struct mark *m = ci->mark;
 
 	if (list_empty(&dr->ents) || ci->numeric != 1)
@@ -473,19 +473,19 @@ static char *__dir_get_attr(struct doc *d, struct mark *m,
 
 DEF_CMD(dir_get_attr)
 {
-	struct doc *d = ci->home->data;
+	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
 
-	ci->str2 = __dir_get_attr(d, m, forward, attr);
+	ci->str2 = __dir_get_attr(dd->doc, m, forward, attr);
 	return 1;
 }
 
 DEF_CMD(dir_destroy)
 {
-	struct doc *d = ci->home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct doc_data *dd = ci->home->data;
+	struct directory *dr = container_of(dd->doc, struct directory, doc);
 
 	while (!list_empty(&dr->ents)) {
 		struct dir_ent *de = list_entry(dr->ents.next, struct dir_ent, lst);
@@ -501,8 +501,8 @@ DEF_CMD(dir_destroy)
 DEF_CMD(dir_open)
 {
 	struct pane *p = ci->home;
-	struct doc *d = p->data;
-	struct directory *dr = container_of(d, struct directory, doc);
+	struct doc_data *dd = p->data;
+	struct directory *dr = container_of(dd->doc, struct directory, doc);
 	struct dir_ent *de = ci->mark->ref.d;
 	struct pane *par = p->parent;
 	int fd;
@@ -528,7 +528,7 @@ DEF_CMD(dir_open)
 	if (p)
 		pane_close(p);
 	if (fd >= 0) {
-		p = doc_open(d->ed, fd, fname);
+		p = doc_open(dd->doc->ed, fd, fname);
 		if (p)
 			p = doc_attach_view(par, p, renderer);
 		close(fd);
