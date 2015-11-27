@@ -145,7 +145,7 @@ DEF_CMD(complete_clone)
 
 DEF_CMD(complete_nomove)
 {
-	if (strcmp(ci->key, "Move-File") == 0 && ci->numeric == 1)
+	if (strcmp(ci->key, "Move-File") == 0)
 		return 0;
 	return 1;
 }
