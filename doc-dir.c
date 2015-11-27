@@ -505,6 +505,7 @@ DEF_CMD(dir_open)
 	struct directory *dr = container_of(dd->doc, struct directory, doc);
 	struct dir_ent *de = ci->mark->ref.d;
 	struct pane *par = p->parent;
+	struct editor *ed = dr->doc.ed;
 	int fd;
 	char *fname = NULL;
 	char *renderer = NULL;
@@ -528,7 +529,7 @@ DEF_CMD(dir_open)
 	if (p)
 		pane_close(p);
 	if (fd >= 0) {
-		p = doc_open(dd->doc->ed, fd, fname);
+		p = doc_open(ed, fd, fname);
 		if (p)
 			p = doc_attach_view(par, p, renderer);
 		close(fd);
