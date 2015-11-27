@@ -30,7 +30,8 @@
 #include "core.h"
 
 struct popup_info {
-	struct pane	*target, *popup, *doc;
+	struct pane	*target, *popup;
+	struct doc	*doc;
 	char		*style;
 };
 
@@ -63,7 +64,7 @@ DEF_CMD(popup_handle)
 
 	if (strcmp(ci->key, "Close") == 0) {
 		if (ppi->doc)
-			doc_destroy(ppi->doc->data);
+			doc_destroy(ppi->doc);
 		free(ppi);
 		return 1;
 	}
@@ -167,7 +168,7 @@ DEF_CMD(popup_attach)
 		struct doc *d;
 		d = doc_new(pane2ed(root), "text");
 		doc_set_name(d, "*popup*");
-		ppi->doc = d->home;
+		ppi->doc = d;
 		p = doc_attach_view(ppi->popup, d->home, NULL);
 	}
 	pane_focus(p);
