@@ -78,6 +78,7 @@
 #include <wchar.h>
 #include <string.h>
 
+#define	MARK_DATA_PTR char
 #include "core.h"
 #include "misc.h"
 
@@ -95,11 +96,6 @@ struct rl_data {
 	struct command	type;
 	int		typenum;
 	struct pane	*pane;
-};
-
-struct rl_mark {
-	struct mark	m;
-	char		*line;
 };
 
 /* render a line, with attributes and wrapping.  Report line offset where
@@ -291,14 +287,14 @@ static struct mark *call_render_line_prev(struct pane *p,
 	return m;
 }
 
-static struct mark *call_render_line(struct pane *p, struct rl_mark *start)
+static struct mark *call_render_line(struct pane *p, struct mark *start)
 {
 	struct cmd_info ci = {0};
 	struct mark *m, *m2;
 
 	ci.key = "render-line";
 	ci.focus = p;
-	ci.mark = mark_dup(&start->m, 0);
+	ci.mark = mark_dup(start, 0);
 	ci.numeric = NO_NUMERIC;
 	/* Allow for filling the rest of the pane, given that
 	 * some has been used.
@@ -310,9 +306,9 @@ static struct mark *call_render_line(struct pane *p, struct rl_mark *start)
 		return NULL;
 	}
 
-	if (start->line)
-		free(start->line);
-	start->line = ci.str;
+	if (start->mdata)
+		free(start->mdata);
+	start->mdata = ci.str;
 
 	m = vmark_matching(p, ci.mark);
 	if (m)
@@ -321,10 +317,10 @@ static struct mark *call_render_line(struct pane *p, struct rl_mark *start)
 		m = ci.mark;
 	/* Any mark between start and m must be discarded,
 	 */
-	while ((m2 = vmark_next(&start->m)) != NULL &&
+	while ((m2 = vmark_next(start)) != NULL &&
 	       mark_ordered(m2, m)) {
-			struct rl_mark *rm2 = container_of(m2, struct rl_mark, m);
-			free(rm2->line);
+			free(m2->mdata);
+			m2->mdata = NULL;
 			mark_free(m2);
 	}
 
@@ -332,13 +328,13 @@ static struct mark *call_render_line(struct pane *p, struct rl_mark *start)
 }
 
 static struct mark *call_render_line_offset(struct pane *p,
-					    struct rl_mark *start, int offset)
+					    struct mark *start, int offset)
 {
 	struct cmd_info ci = {0};
 
 	ci.key = "render-line";
 	ci.focus = p;
-	ci.mark = mark_dup(&start->m, 0);
+	ci.mark = mark_dup(start, 0);
 	ci.numeric = offset;
 	if (key_handle(&ci) == 0) {
 		mark_free(ci.mark);
@@ -349,7 +345,7 @@ static struct mark *call_render_line_offset(struct pane *p,
 }
 
 static int call_render_line_to_point(struct pane *p, struct mark *pm,
-				     struct rl_mark *start)
+				     struct mark *start)
 {
 	struct cmd_info ci = {0};
 	int len;
@@ -357,7 +353,7 @@ static int call_render_line_to_point(struct pane *p, struct mark *pm,
 	ci.key = "render-line";
 	ci.focus = p;
 	ci.mark2 = pm;
-	ci.mark = mark_dup(&start->m, 0);
+	ci.mark = mark_dup(start, 0);
 	ci.numeric = -1;
 	if (key_handle(&ci) == 0) {
 		mark_free(ci.mark);
@@ -375,9 +371,9 @@ static int call_render_line_to_point(struct pane *p, struct mark *pm,
 static void find_lines(struct mark *pm, struct pane *p)
 {
 	struct rl_data *rl = p->data;
-	struct rl_mark *top, *bot;
+	struct mark *top, *bot;
 	struct mark *m;
-	struct rl_mark *start, *end;
+	struct mark *start, *end;
 	int y = 0;
 	int offset;
 	int found_start = 0, found_end = 0;
@@ -386,34 +382,34 @@ static void find_lines(struct mark *pm, struct pane *p)
 	if (pm->viewnum != MARK_POINT)
 		return;
 
-	top = container_of(vmark_first(p, rl->typenum), struct rl_mark, m);
-	bot = container_of(vmark_last(p, rl->typenum), struct rl_mark, m);
+	top = vmark_first(p, rl->typenum);
+	bot = vmark_last(p, rl->typenum);
 	m = call_render_line_prev(p, mark_at_point(p, pm, rl->typenum),
 				  0, &rl->top_sol);
 	if (!m)
 		return;
-	start = container_of(m, struct rl_mark, m);
+	start = m;
 	offset = call_render_line_to_point(p, pm, start);
-	if (start->line == NULL)
+	if (start->mdata == NULL)
 		m = call_render_line(p, start);
 	else
-		m = vmark_next(&start->m);
+		m = vmark_next(start);
 
-	end = container_of(m, struct rl_mark, m);
-	if (start->line) {
+	end = m;
+	if (start->mdata) {
 		int x;
 		x = -1; lines_above = -1; y = 0;
-		render_line(p, start->line, &y, 0, &x, &lines_above, &offset);
+		render_line(p, start->mdata, &y, 0, &x, &lines_above, &offset);
 		lines_below = y - lines_above;
 	}
 	y = 1;
 	/* We have start/end of the focus line, and its height */
-	if (bot && !mark_ordered_or_same_pane(p, &bot->m, &start->m))
+	if (bot && !mark_ordered_or_same_pane(p, bot, start))
 		/* already before 'bot', so will never "cross over" bot, so
 		 * ignore 'bot'
 		 */
 		bot = NULL;
-	if (top && !mark_ordered_or_same_pane(p, &end->m, &top->m))
+	if (top && !mark_ordered_or_same_pane(p, end, top))
 		top = NULL;
 
 	rl->skip_lines = 0;
@@ -424,17 +420,17 @@ static void find_lines(struct mark *pm, struct pane *p)
 				lines_above -= 1;
 				y += 1;
 			} else {
-				m = call_render_line_prev(p, mark_dup(&start->m, 0),
+				m = call_render_line_prev(p, mark_dup(start, 0),
 							  1, &rl->top_sol);
 				if (!m) {
 					/* no text before 'start' */
 					found_start = 1;
 				} else {
 					int h = 0;
-					start = container_of(m, struct rl_mark, m);
-					if (!start->line)
+					start = m;
+					if (!start->mdata)
 						call_render_line(p, start);
-					render_line(p, start->line, &h, 0,
+					render_line(p, start->mdata, &h, 0,
 						    NULL, NULL, NULL);
 					if (h) {
 						lines_above = h - 1;
@@ -442,7 +438,7 @@ static void find_lines(struct mark *pm, struct pane *p)
 					} else
 						found_start = 1;
 				}
-				if (bot && mark_ordered(&start->m, &bot->m))
+				if (bot && mark_ordered(start, bot))
 					found_end = 1;
 			}
 		}
@@ -452,16 +448,15 @@ static void find_lines(struct mark *pm, struct pane *p)
 				lines_below -= 1;
 				y += 1;
 			} else {
-				if (!end->line)
+				if (!end->mdata)
 					call_render_line(p, end);
-				if (!end->line)
+				if (!end->mdata)
 					found_end = 1;
 				else {
 					int h = 0;
-					render_line(p, end->line, &h, 0,
+					render_line(p, end->mdata, &h, 0,
 						    NULL, NULL, NULL);
-					end = container_of(vmark_next(&end->m),
-							   struct rl_mark, m);
+					end = vmark_next(end);
 					ASSERT(end != NULL);
 					if (h) {
 						lines_below = h - 1;
@@ -469,32 +464,32 @@ static void find_lines(struct mark *pm, struct pane *p)
 					} else
 						found_end = 1;
 				}
-				if (top && mark_ordered(&top->m, &end->m))
+				if (top && mark_ordered(top, end))
 					found_start = 1;
 			}
 		}
 	}
 	rl->skip_lines = lines_above;
 	/* Now discard any marks outside start-end */
-	while ((m = vmark_prev(&start->m)) != NULL) {
-		struct rl_mark *rm = container_of(m, struct rl_mark, m);
-		free(rm->line);
+	while ((m = vmark_prev(start)) != NULL) {
+		free(m->mdata);
+		m->mdata = NULL;
 		mark_free(m);
 	}
-	while ((m = vmark_next(&end->m)) != NULL) {
-		struct rl_mark *rm = container_of(m, struct rl_mark, m);
-		free(rm->line);
+	while ((m = vmark_next(end)) != NULL) {
+		free(m->mdata);
+		m->mdata = NULL;
 		mark_free(m);
 	}
-	free(end->line);
-	end->line = NULL;
+	free(end->mdata);
+	end->mdata = NULL;
 }
 
 static void render(struct mark *pm, struct pane *p)
 {
 	struct rl_data *rl = p->data;
 	int y;
-	struct rl_mark *m, *m2;
+	struct mark *m, *m2;
 	int restarted = 0;
 	char *hdr;
 
@@ -511,24 +506,24 @@ restart:
 		rl->header_lines = y;
 	}
 	y -= rl->skip_lines;
-	m = container_of(vmark_first(p, rl->typenum), struct rl_mark, m);
+	m = vmark_first(p, rl->typenum);
 
 	p->cx = p->cy = -1;
 	rl->cursor_line = 0;
 
 	while (m && y < p->h) {
-		if (m->line == NULL) {
+		if (m->mdata == NULL) {
 			/* This line has changed. */
 			call_render_line(p, m);
 		}
-		m2 = container_of(vmark_next(&m->m), struct rl_mark, m);
+		m2 = vmark_next(m);
 		if (p->cx <= 0 &&
-		    mark_ordered_or_same_pane(p, &m->m, pm) &&
-		    (!m2 || mark_ordered_or_same_pane(p, pm, &m2->m))) {
+		    mark_ordered_or_same_pane(p, m, pm) &&
+		    (!m2 || mark_ordered_or_same_pane(p, pm, m2))) {
 			int len = call_render_line_to_point(p, pm,
 							    m);
 			rl->cursor_line = y;
-			render_line(p, m->line ?: "", &y, 1, &p->cx, &p->cy, &len);
+			render_line(p, m->mdata ?: "", &y, 1, &p->cx, &p->cy, &len);
 			if (p->cy < 0)
 				p->cx = -1;
 			if (!rl->do_wrap && p->cy >= 0 && p->cx < rl->prefix_len) {
@@ -559,19 +554,19 @@ restart:
 				}
 			}
 		} else
-			render_line(p, m->line?:"", &y, 1, NULL, NULL, NULL);
+			render_line(p, m->mdata?:"", &y, 1, NULL, NULL, NULL);
 		if (!m2)
 			break;
 		m = m2;
 	}
 	/* Any marks after 'm' must be discarded */
 	if (m) {
-		free(m->line);
-		m->line = NULL;
-		while ((m2 = container_of(vmark_next(&m->m),
-					  struct rl_mark, m)) != NULL) {
-			free(m2->line);
-			mark_free(&m2->m);
+		free(m->mdata);
+		m->mdata = NULL;
+		while ((m2 = vmark_next(m)) != NULL) {
+			free(m2->mdata);
+			m2->mdata = NULL;
+			mark_free(m2);
 		}
 	}
 	return;
@@ -612,8 +607,8 @@ DEF_CMD(render_lines_close)
 	struct mark *m;
 
 	while ((m = vmark_first(p, rl->typenum)) != NULL) {
-		struct rl_mark *rm = container_of(m, struct rl_mark, m);
-		free(rm->line);
+		free(m->mdata);
+		m->mdata = NULL;
 		mark_free(m);
 	}
 
@@ -669,7 +664,6 @@ DEF_CMD(render_lines_move)
 
 	if (rpt < 0) {
 		while (rpt < 0) {
-			struct rl_mark *rm;
 			int y = 0;
 
 			if (rl->skip_lines) {
@@ -682,25 +676,23 @@ DEF_CMD(render_lines_move)
 						    1, &rl->top_sol);
 			if (!top)
 				break;
-			rm = container_of(top, struct rl_mark, m);
-			if (rm->line == NULL)
-				call_render_line(p, rm);
-			if (rm->line == NULL)
+			if (top->mdata == NULL)
+				call_render_line(p, top);
+			if (top->mdata == NULL)
 				break;
-			render_line(p, rm->line, &y, 0, NULL, NULL, NULL);
+			render_line(p, top->mdata, &y, 0, NULL, NULL, NULL);
 			rl->skip_lines = y;
 		}
 	} else {
 		while (top && rpt > 0) {
 			int y = 0;
 			struct mark *old;
-			struct rl_mark *rm = container_of(top, struct rl_mark, m);
 
-			if (rm->line == NULL)
-				call_render_line(p, rm);
-			if (rm->line == NULL)
+			if (top->mdata == NULL)
+				call_render_line(p, top);
+			if (top->mdata == NULL)
 				break;
-			render_line(p, rm->line, &y, 0, NULL, NULL, NULL);
+			render_line(p, top->mdata, &y, 0, NULL, NULL, NULL);
 			if (rl->skip_lines + rpt < y) {
 				rl->skip_lines += rpt;
 				break;
@@ -711,8 +703,8 @@ DEF_CMD(render_lines_move)
 				/* Have cross a full page, can discard old lines */
 				while ((old = vmark_first(p, rl->typenum)) != NULL &&
 				       old != top) {
-					rm = container_of(old, struct rl_mark, m);
-					free(rm->line);
+					free(old->mdata);
+					old->mdata = NULL;
 					mark_free(old);
 				}
 			rpt -= y - rl->skip_lines;
@@ -727,17 +719,17 @@ DEF_CMD(render_lines_set_cursor)
 {
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
-	struct rl_mark *m;
+	struct mark *m;
 	int y = rl->header_lines - rl->skip_lines;
 	int found = 0;
 
 	render_lines_other_move_func(ci);
 
-	m = container_of(vmark_first(p, rl->typenum), struct rl_mark, m);
+	m = vmark_first(p, rl->typenum);
 
-	while (y <= ci->hy && m && m->line) {
+	while (y <= ci->hy && m && m->mdata) {
 		int cx = ci->hx, cy = ci->hy, o = -1;
-		render_line(p, m->line, &y, 0, &cx, &cy, &o);
+		render_line(p, m->mdata, &y, 0, &cx, &cy, &o);
 		if (o >= 0) {
 			struct mark *m2 = call_render_line_offset(p, m, o);
 			if (m2) {
@@ -747,7 +739,7 @@ DEF_CMD(render_lines_set_cursor)
 			}
 		} else if (found)
 			break;
-		m = container_of(vmark_next(&m->m), struct rl_mark, m);
+		m = vmark_next(m);
 	}
 
 	pane_focus(p);
@@ -821,15 +813,14 @@ DEF_CMD(render_lines_move_line)
 	rl->target_y = target_y;
 
 	if (target_x >= 0 || target_y >= 0) {
-		struct rl_mark *start =
-			container_of(vmark_at_point(p, rl->typenum),
-				     struct rl_mark, m);
+		struct mark *start =
+			vmark_at_point(p, rl->typenum);
 		int y = 0;
-		if (!start || !start->line) {
+		if (!start || !start->mdata) {
 			pane_damaged(p, DAMAGED_CONTENT);
 			return 1;
 		}
-		render_line(p, start->line, &y, 0, &target_x, &target_y, &o);
+		render_line(p, start->mdata, &y, 0, &target_x, &target_y, &o);
 		/* 'o' is the distance from start-of-line of the target */
 		if (o >= 0) {
 			struct mark *m2 = call_render_line_offset(
@@ -848,29 +839,28 @@ DEF_CMD(render_lines_notify)
 
 	if (strcmp(ci->key, "Notify:Replace") == 0) {
 		if (ci->mark) {
-			struct rl_mark *rm = container_of(ci->mark,
-							  struct rl_mark, m);
+			struct mark *rm = ci->mark;
 			struct mark *vm;
 			struct cmd_info ci2 = {0};
 			struct pane *p = rl->pane;
 
-			if (rm->line) {
-				free(rm->line);
-				rm->line = NULL;
+			if (rm->mdata) {
+				free(rm->mdata);
+				rm->mdata = NULL;
 			}
 			/* If an adjacent mark is for the same location,
 			 * delete it - marks must remain distinct
 			 */
-			while ((vm = vmark_prev(&rm->m)) != NULL &&
-			       mark_same_pane(p, &rm->m, vm, &ci2)) {
-				struct rl_mark *rlm = container_of(vm, struct rl_mark, m);
-				free(rlm->line);
+			while ((vm = vmark_prev(rm)) != NULL &&
+			       mark_same_pane(p, rm, vm, &ci2)) {
+				free(vm->mdata);
+				vm->mdata = NULL;
 				mark_free(vm);
 			}
-			while ((vm = vmark_next(&rm->m)) != NULL &&
-			       mark_same_pane(p, &rm->m, vm, &ci2)) {
-				struct rl_mark *rlm = container_of(vm, struct rl_mark, m);
-				free(rlm->line);
+			while ((vm = vmark_next(rm)) != NULL &&
+			       mark_same_pane(p, rm, vm, &ci2)) {
+				free(vm->mdata);
+				vm->mdata = NULL;
 				mark_free(vm);
 			}
 			pane_damaged(rl->pane, DAMAGED_CONTENT);
@@ -908,9 +898,8 @@ DEF_CMD(render_lines_redraw)
 	for (m = vmark_first(p, rl->typenum);
 	     m;
 	     m = vmark_next(m)) {
-		struct rl_mark *rm = container_of(m, struct rl_mark, m);
-		free(rm->line);
-		rm->line = NULL;
+		free(m->mdata);
+		m->mdata = NULL;
 	}
 	return 1;
 }
@@ -959,7 +948,7 @@ REDEF_CMD(render_lines_attach)
 	rl->shift_left = 0;
 	rl->header_lines = 0;
 	rl->type = render_lines_notify;
-	rl->typenum = doc_add_view(ci->focus, &rl->type, sizeof(struct rl_mark));
+	rl->typenum = doc_add_view(ci->focus, &rl->type, 0);
 	rl->pane = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
 
 	ci->focus = rl->pane;

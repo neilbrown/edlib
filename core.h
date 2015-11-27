@@ -120,6 +120,9 @@ enum {
 	GRP_LIST = 2, // tlist_head in point.lists
 };
 
+#ifndef MARK_DATA_PTR
+#define MARK_DATA_PTR void
+#endif
 struct mark {
 	struct doc_ref		ref;
 	struct hlist_node	all;
@@ -131,7 +134,7 @@ struct mark {
 					 * a document object (which displays as more than
 					 * a char
 					 */
-	void			*mdata;
+	MARK_DATA_PTR		*mdata;
 };
 
 /* A point uses this for the mdata */
