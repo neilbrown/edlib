@@ -479,7 +479,7 @@ struct pane *doc_open(struct editor *ed, int fd, char *name)
 		ci2.key = "doc:same-file";
 		ci2.focus = p;
 		ci2.extra = -1;
-		ci2.str2 = (void*)&stb;
+		ci2.misc = &stb;
 		if (key_handle_focus(&ci2) > 0)
 			return p;
 	}

@@ -270,6 +270,7 @@ struct cmd_info {
 	char		*str, *str2;
 	struct mark	*mark, *mark2;
 	struct command	*comm, *comm2;
+	void		*misc;		/* command specific */
 };
 #define	NO_NUMERIC	(INT_MAX/2)
 #define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric)

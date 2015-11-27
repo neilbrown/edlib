@@ -306,7 +306,7 @@ DEF_CMD(text_save_file)
 DEF_CMD(text_same_file)
 {
 	struct doc *d = ci->home->data;
-	struct stat *stb = (void*)ci->str2;
+	struct stat *stb = ci->misc;
 	struct text *t = container_of(d, struct text, doc);
 
 	if (t->fname == NULL)

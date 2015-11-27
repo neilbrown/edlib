@@ -250,7 +250,7 @@ DEF_CMD(dir_same_file)
 {
 	struct doc *d = ci->home->data;
 	int fd = ci->extra;
-	struct stat *stb = (void*)ci->str2;
+	struct stat *stb = ci->misc;
 	struct directory *dr = container_of(d, struct directory, doc);
 
 	if (!dr->fname)
