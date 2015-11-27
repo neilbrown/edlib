@@ -101,7 +101,10 @@ DEF_CMD(render_complete_prev)
 			break;
 		}
 		mark_free(ci3.mark);
-		cmp = strncmp(ci3.str, cd->prefix, plen);
+		if (ci3.str == NULL)
+			cmp = -1;
+		else
+			cmp = strncmp(ci3.str, cd->prefix, plen);
 		if (cmp != 0 || ci2.numeric != 1 || ci->extra != 42)
 			free(ci3.str);
 		else
@@ -155,7 +158,7 @@ DEF_CMD(complete_eol)
 	int rpt = RPT_NUM(ci);
 
 	if (rpt >= -1 && rpt <= 1)
-		/* movement with the line */
+		/* movement within the line */
 		return 1;
 	while (rpt < -1) {
 		struct cmd_info ci2 = {0};
