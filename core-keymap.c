@@ -332,7 +332,7 @@ static int __key_handle_focus(struct cmd_info *ci, int savepoint)
 	while (p->focus) {
 		p = p->focus;
 		if (savepoint && p->point)
-			ci->mark = &p->point->m;
+			ci->mark = p->point;
 	}
 	ci->focus = p;
 	ci->comm = NULL;
@@ -373,7 +373,7 @@ static int __key_handle_xy(struct cmd_info *ci, int savepoint)
 		y -= chld->y;
 		p = chld;
 		if (savepoint && p->point)
-			ci->mark = &p->point->m;
+			ci->mark = p->point;
 	}
 	ci->x = x;
 	ci->y = y;

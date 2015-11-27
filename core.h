@@ -22,7 +22,6 @@ typedef _Bool bool;
 
 struct doc;
 struct mark;
-struct point;
 struct attrset;
 struct display;
 struct pane;
@@ -57,7 +56,7 @@ struct pane {
 
 	struct command		*handle;
 	void			*data;
-	struct point		*point;
+	struct mark		*point;
 	struct attrset		*attrs;
 };
 
@@ -132,16 +131,16 @@ struct mark {
 					 * a document object (which displays as more than
 					 * a char
 					 */
+	void			*mdata;
 };
 
-struct point {
-	struct mark		m;
-	struct point_links {
-		int			size;
-		struct point		*pt;
-		struct tlist_head	lists[];
-	} *links;
+/* A point uses this for the mdata */
+struct point_links {
+	int			size;
+	struct mark		*pt;
+	struct tlist_head	lists[];
 };
+
 
 struct mark *mark_dup(struct mark *m, int notype);
 void mark_free(struct mark *m);
@@ -153,37 +152,36 @@ struct mark *doc_prev_mark_all_safe(struct doc *d, struct mark *m);
 struct mark *doc_first_mark(struct doc *d, int viewnum);
 struct mark *doc_next_mark(struct mark *m);
 struct mark *doc_prev_mark(struct mark *m);
-void point_reset(struct point *p);
+void point_reset(struct mark *p);
 void mark_reset(struct doc *d, struct mark *m);
 void __mark_reset(struct doc *d, struct mark *m, int new, int end);
 void mark_forward_over(struct mark *m, struct mark *m2);
 void mark_backward_over(struct mark *m, struct mark *mp);
-void point_notify_change(struct doc *d, struct point *p, struct mark *m);
+void point_notify_change(struct doc *d, struct mark *p, struct mark *m);
 void doc_notify_change(struct doc *d, struct mark *m);
 void doc_check_consistent(struct doc *d);
-void point_to_mark(struct point *p, struct mark *m);
+void point_to_mark(struct mark *p, struct mark *m);
 void mark_to_mark(struct mark *m, struct mark *target);
 int mark_same(struct doc *d, struct mark *m1, struct mark *m2);
 int mark_same2(struct doc *d, struct mark *m1, struct mark *m2, struct cmd_info *ci);
 int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2,
 		   struct cmd_info *ci);
-struct point *point_new(struct doc *d);
-struct point *point_dup(struct point *p);
+struct mark *point_new(struct doc *d);
+struct mark *point_dup(struct mark *p);
 wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci);
 wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move);
 wint_t mark_next(struct doc *d, struct mark *m);
 wint_t mark_prev(struct doc *d, struct mark *m);
 struct mark *mark_at_point(struct pane *p, struct mark *pm, int view);
-struct mark *do_mark_at_point(struct doc *d, struct point *pt, int view);
+struct mark *do_mark_at_point(struct doc *d, struct mark *pt, int view);
 void points_resize(struct doc *d);
 void points_attach(struct doc *d, int view);
-void point_free(struct point *p);
 struct mark *vmark_next(struct mark *m);
 struct mark *vmark_prev(struct mark *m);
 struct mark *do_vmark_first(struct doc *d, int view);
 struct mark *do_vmark_last(struct doc *d, int view);
 struct mark *vmark_matching(struct pane *p, struct mark *m);
-struct mark *do_vmark_at_point(struct doc *d, struct point *pt, int view);
+struct mark *do_vmark_at_point(struct doc *d, struct mark *pt, int view);
 struct mark *vmark_first(struct pane *p, int view);
 struct mark *vmark_last(struct pane *p, int view);
 struct mark *vmark_at_point(struct pane *p, int view);
@@ -401,14 +399,14 @@ static inline char *doc_attr(struct pane *dp, struct mark *m, bool forward, char
 	return ci.str2;
 }
 
-static inline int doc_set_attr(struct pane *p, struct point *pt,
+static inline int doc_set_attr(struct pane *p, struct mark *pt,
 			       char *attr, char *val)
 {
 	struct cmd_info ci = {0};
 
 	ci.key = "doc:set-attr";
 	ci.focus = p;
-	ci.mark = &pt->m;
+	ci.mark = pt;
 	ci.str = attr;
 	ci.str2 = val;
 	return key_handle_focus(&ci);

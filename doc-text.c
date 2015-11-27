@@ -780,7 +780,7 @@ static int text_redo(struct text *t, struct doc_ref *start, struct doc_ref *end)
 DEF_CMD(text_reundo)
 {
 	struct doc *d = ci->home->data;
-	struct mark *m = &ci->home->point->m;
+	struct mark *m = ci->home->point;
 	bool redo = ci->numeric != 0;
 	struct doc_ref start, end;
 	int did_do = 2;
@@ -1358,11 +1358,10 @@ DEF_CMD(text_replace)
 {
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
-	struct point *pos = ci->home->point;
+	struct mark *pm = ci->home->point;
 	struct mark *end = ci->mark;
 	char *str = ci->str;
 	bool first = ci->numeric;
-	struct mark *pm = &pos->m;
 	struct mark *early = NULL;
 
 	/* First delete, then insert */
@@ -1409,7 +1408,7 @@ DEF_CMD(text_replace)
 		text_check_consistent(t);
 
 	}
-	point_notify_change(d, pos, early);
+	point_notify_change(d, pm, early);
 	ci->numeric = first;
 	return 1;
 }

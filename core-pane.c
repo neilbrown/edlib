@@ -108,7 +108,7 @@ static void __pane_refresh(struct cmd_info *ci)
 		p->focus = list_first_entry_or_null(
 			&p->children, struct pane, siblings);
 	if (p->point)
-		ci2.mark = &p->point->m;
+		ci2.mark = p->point;
 
 	damage |= p->damaged;
 	if (!damage)
@@ -240,7 +240,7 @@ void pane_subsume(struct pane *p, struct pane *parent)
 	 */
 	void *data;
 	struct command *handle;
-	struct point *point;
+	struct mark *point;
 	struct pane *c;
 
 	list_del_init(&p->siblings);

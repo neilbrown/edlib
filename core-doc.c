@@ -259,7 +259,7 @@ DEF_CMD(doc_file)
 	int rpt = RPT_NUM(ci);
 
 	if (ci->mark == NULL)
-		ci->mark = &ci->home->point->m;
+		ci->mark = ci->home->point;
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next(d, ci->mark)) != WEOF)
 			;
@@ -369,23 +369,21 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "Close") == 0) {
 		if (ci->home->point)
-			point_free(ci->home->point);
+			mark_free(ci->home->point);
 		ci->home->point = NULL;
 		return 1;
 	}
 
 	if (strcmp(ci->key, "doc:dup-point") == 0) {
-		struct point *pt = ci->home->point;
+		struct mark *pt = ci->home->point;
 		if (ci->mark && ci->mark->viewnum == MARK_POINT)
-			pt = container_of(ci->mark, struct point, m);
+			pt = ci->mark;
 		ci->mark = NULL;
 		if (ci->home->point) {
-			if (ci->extra == MARK_POINT) {
-				pt = point_dup(pt);
-				ci->mark = &pt->m;
-			}
+			if (ci->extra == MARK_POINT)
+				ci->mark = point_dup(pt);
 			else if (ci->extra == MARK_UNGROUPED)
-				ci->mark = mark_dup(&pt->m, 1);
+				ci->mark = mark_dup(pt, 1);
 			else
 				ci->mark = do_mark_at_point(d, pt,
 							    ci->extra);
@@ -696,7 +694,7 @@ DEF_CMD(docs_get_attr)
 DEF_CMD(docs_open)
 {
 	struct pane *p = ci->home;
-	struct pane *dp = p->point->m.ref.p;
+	struct pane *dp = p->point->ref.p;
 	struct pane *par = p->parent;
 	char *renderer = NULL;
 
@@ -842,9 +840,7 @@ int  doc_destroy(struct doc *d)
 	free(d->name);
 	while (d->marks.first) {
 		struct mark *m = hlist_first_entry(&d->marks, struct mark, all);
-		if (m->viewnum == MARK_POINT)
-			point_free(container_of(m, struct point, m));
-		else if (m->viewnum == MARK_UNGROUPED)
+		if (m->viewnum == MARK_POINT || m->viewnum == MARK_UNGROUPED)
 			mark_free(m);
 		else
 			/* vmarks should have gone already */
