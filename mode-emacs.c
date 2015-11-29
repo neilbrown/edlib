@@ -622,6 +622,7 @@ static void emacs_init(void)
 	}
 
 	key_add_range(m, "Chr- ", "Chr-~", &emacs_insert);
+	key_add_range(m, "Chr-\200", "Chr-\377\377\377\377", &emacs_insert);
 	key_add(m, "Tab", &emacs_insert_other);
 	key_add(m, "LF", &emacs_insert_other);
 	key_add(m, "Return", &emacs_insert_other);

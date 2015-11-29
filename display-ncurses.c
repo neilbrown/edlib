@@ -345,7 +345,7 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 		else if (c < ' ')
 			sprintf(k, "C-Chr-%c", c+64);
 		else
-			sprintf(k, "Chr-%c", c);
+			sprintf(k, "Chr-%lc", c);
 	}
 
 	ci.key = buf;

@@ -147,23 +147,24 @@ static struct map *text_map;
  * Unicode points.  This particularly affects adding new strings to
  * allocations.
  * There is no guarantee that a byte string is UTF-8 though, so
- * We only adjust the length if we can find an end-of-code-point in
+ * We only adjust the length if we can find a start-of-code-point in
  * the last 4 bytes. (longest UTF-8 encoding of 21bit unicode is 4 bytes).
+ * A start of codepoint starts with 0b0 or 0b11, not 0b10.
  */
 static int text_round_len(char *text, int len)
 {
 	/* The string at 'text' is *longer* than 'len', or
 	 * at least text[len] is defined - it can be nul.  If
-	 * len doesn't mark the end of a UTF-8 codepoint,
-	 * and there is an end marker in the previous 4 bytes,
+	 * [len] isn't the start of a new codepoint, and there
+	 * is a start marker in the previous 4 bytes,
 	 * move back to there.
 	 */
 	int i = 0;
-	while (i+1 < len && i <=4)
-		if ((text[len-i] & 0xC0) == 0x80 &&
-		    (text[len-i-1] & 0x80) == 0x80)
-		/* next byte is inside a UTF-8 code point, so this isn't a good
-		 * spot to end. Try further back */
+	while (i <= len && i <=4)
+		if ((text[len-i] & 0xC0) == 0x80)
+			/* next byte is inside a UTF-8 code point, so
+			 * this isn't a good spot to end. Try further
+			 * back */
 			i += 1;
 		else
 			return len-i;
