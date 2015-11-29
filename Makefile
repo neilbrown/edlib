@@ -3,8 +3,8 @@
 # May be distrubuted under terms of GPLv2 - see file:COPYING
 #
 
-LDLIBS= -lncursesw -levent -ldl
-CPPFLAGS= -I. -I/usr/include/ncursesw
+LDLIBS= -levent -ldl
+CPPFLAGS= -I.
 CFLAGS=-g -Wall -Werror -Wstrict-prototypes -Wextra -Wno-unused-parameter
 
 all: dirs edlib checksym lib shared
@@ -17,9 +17,16 @@ SHOBJ = O/doc-text.o O/doc-dir.o \
 	O/render-format.o O/render-complete.o \
 	O/lib-view.o O/lib-tile.o O/lib-popup.o O/lib-line-count.o O/lib-keymap.o \
 	O/lib-search.o \
+	O/lang-python.o \
 	O/mode-emacs.o \
 	O/display-ncurses.o
 XOBJ = O/rexel.o O/emacs-search.o
+
+LIBS-lang-python = -lpython2.7
+INC-lang-python = -I/usr/include/python2.7
+
+LIBS-display-ncurses = -lncursesw
+INC-display-ncurses = -I/usr/include/ncursesw
 
 SO = $(patsubst O/%.o,lib/edlib-%.so,$(SHOBJ))
 H = list.h core.h misc.h
@@ -29,10 +36,10 @@ edlib: $(OBJ) lib/libedlib.so
 $(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) : $(H)
 
 $(OBJ) : O/%.o : %.c
-	gcc $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+	gcc $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
-	gcc -fPIC $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+	gcc -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 dirs :
 	@mkdir -p lib O
@@ -48,8 +55,7 @@ lib/edlib-mode-emacs.so : O/mode-emacs.o O/emacs-search.o
 
 $(SO) : lib/edlib-%.so : O/%.o
 	@mkdir -p lib
-	gcc -shared -Wl,-soname,edlib-$*.so -o $@ $^
-
+	gcc -shared -Wl,-soname,edlib-$*.so -o $@ $^ $(LIBS-$*)
 
 CSRC= attr.c
 

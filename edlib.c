@@ -78,6 +78,13 @@ int main(int argc, char *argv[])
 	if (b)
 		p = doc_from_text(b, "*Welcome*", WelcomeText);
 	if (p) {
+		editor_load_module(ed, "lang-python");
+		memset(&ci, 0, sizeof(ci));
+		ci.home = ci.focus = p;
+		ci.key = "python-load";
+		ci.str = "python/test.py";
+		key_lookup(ed->commands, &ci);
+
 		pane_refresh(root);
 		event_base_dispatch(base);
 	}
