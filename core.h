@@ -56,7 +56,7 @@ struct pane {
 
 	struct command		*handle;
 	void			*data;
-	struct mark		*point;
+	struct mark		*pointer;
 	struct attrset		*attrs;
 };
 
@@ -71,6 +71,7 @@ struct doc_data {
 	struct doc		*doc;
 	struct command		notify;
 	struct pane		*pane;
+	struct mark		*point;
 };
 
 struct display {
@@ -403,11 +404,12 @@ static inline char *doc_attr(struct pane *dp, struct mark *m, bool forward, char
 	struct cmd_info ci = {0};
 
 	ci.key = "doc:get-attr";
-	ci.focus = dp;
+	ci.home = ci.focus = dp;
 	ci.mark = m;
 	ci.numeric = forward ? 1 : 0;
 	ci.str = attr;
-	if (key_handle_focus(&ci) == 0)
+	ci.comm = dp->handle;
+	if (!dp->handle || dp->handle->func(&ci) == 0)
 		return NULL;
 	return ci.str2;
 }

@@ -50,7 +50,7 @@ void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->handle = NULL;
 	p->data = NULL;
 	p->damaged = 0;
-	p->point = NULL;
+	p->pointer = NULL;
 	p->attrs = 0;
 }
 
@@ -107,8 +107,8 @@ static void __pane_refresh(struct cmd_info *ci)
 	if (p->focus == NULL)
 		p->focus = list_first_entry_or_null(
 			&p->children, struct pane, siblings);
-	if (p->point)
-		ci2.mark = p->point;
+	if (p->pointer)
+		ci2.mark = p->pointer;
 
 	damage |= p->damaged;
 	if (!damage)
@@ -168,8 +168,6 @@ void pane_close(struct pane *p)
 	}
 	pane_damaged(p->parent, DAMAGED_SIZE);
 	attr_free(&p->attrs);
-/* FIXME who destroys 'point'*/
-	ASSERT(p->point == NULL);
 	free(p);
 }
 
@@ -264,9 +262,9 @@ void pane_subsume(struct pane *p, struct pane *parent)
 	parent->data = p->data;
 	p->data = data;
 
-	point = parent->point;
-	parent->point = p->point;
-	p->point = point;
+	point = parent->pointer;
+	parent->pointer = p->pointer;
+	p->pointer = point;
 }
 
 int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)
@@ -506,11 +504,9 @@ char *pane_attr_get(struct pane *p, char *key)
 		char *a = attr_get_str(p->attrs, key, -1);
 		if (a)
 			return a;
-		if (p->point) {
-			a = doc_attr(p, NULL, 0, key);
-			if (a)
-				return a;
-		}
+		a = doc_attr(p, NULL, 0, key);
+		if (a)
+			return a;
 		p = p->parent;
 	}
 	/* FIXME do I want editor-wide attributes too? */
