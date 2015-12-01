@@ -727,6 +727,9 @@ DEF_CMD(render_lines_set_cursor)
 
 	m = vmark_first(p, rl->typenum);
 
+	if (y > ci->hy)
+		/* x,y is in header line - try lower */
+		ci->hy = y;
 	while (y <= ci->hy && m && m->mdata) {
 		int cx = ci->hx, cy = ci->hy, o = -1;
 		render_line(p, m->mdata, &y, 0, &cx, &cy, &o);
