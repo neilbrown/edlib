@@ -518,11 +518,9 @@ DEF_CMD(dir_open)
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
 	if (strcmp(ci->key, "Chr-o") == 0) {
-		struct cmd_info ci2 = {0};
-		ci2.key = "OtherPane";
-		ci2.focus = ci->focus;
-		if (key_handle_focus(&ci2)) {
-			par = ci2.focus;
+		struct pane *p2 = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+		if (p2) {
+			par = p2;
 			p = pane_child(par);
 		}
 	}

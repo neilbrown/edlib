@@ -251,7 +251,8 @@ DEF_CMD(view_click)
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
 	int mid = vd->scroll_bar_y;
-	struct cmd_info ci2 = {0};
+	char *key;
+	int num;
 
 	if (ci->hx != 0)
 		return 0;
@@ -259,25 +260,24 @@ DEF_CMD(view_click)
 		return 0;
 
 	p = pane_child(p);
-	ci2.focus = p;
-	ci2.key = "Move-View-Small";
-	ci2.numeric = RPT_NUM(ci);
-	ci2.mark = ci->mark;
+
+	key = "Move-View-Small";
+	num = RPT_NUM(ci);
 
 	if (ci->hy == mid-1) {
 		/* scroll up */
-		ci2.numeric = -ci2.numeric;
+		num = -num;
 	} else if (ci->hy < mid-1) {
 		/* big scroll up */
-		ci2.numeric = -ci2.numeric;
-		ci2.key = "Move-View-Large";
+		num = -num;
+		key = "Move-View-Large";
 	} else if (ci->hy == mid+1) {
 		/* scroll down */
 	} else if (ci->hy > mid+1 && ci->hy < p->h-1) {
-		ci2.key = "Move-View-Large";
+		key = "Move-View-Large";
 	} else
 		return 0;
-	return key_handle_focus(&ci2);
+	return call3(key, p, num, NULL);
 }
 
 void edlib_init(struct editor *ed)

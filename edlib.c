@@ -70,10 +70,8 @@ int main(int argc, char *argv[])
 	global = pane_attach(root, "global-keymap", NULL, NULL);
 
 	editor_load_module(ed, "mode-emacs");
-	ci.focus = global;
-	ci.key = "global-set-keymap";
-	ci.str = "mode-emacs";
-	key_handle_focus(&ci);
+	call5("global-set-keymap", global, 0, NULL, "mode-emacs", 0);
+
 	b = pane_attach(global, "tile", NULL, NULL);
 	if (b)
 		p = doc_from_text(b, "*Welcome*", WelcomeText);

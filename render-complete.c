@@ -216,21 +216,9 @@ DEF_CMD(complete_set_prefix)
 	free(cd->prefix);
 	cd->prefix = strdup(ci->str);
 
-	ci2.key = "doc:dup-point";
-	ci2.focus = ci->home;
-	ci2.extra = MARK_UNGROUPED;
-	key_handle_focus(&ci2);
-	m = ci2.mark;
+	m = call_mark("doc:dup-point", ci->home, 0, NULL, MARK_UNGROUPED);
+	call3("Move-File", ci->home, 1, m);
 
-	memset(&ci2, 0, sizeof(ci2));
-
-	ci2.key = "Move-File";
-	ci2.focus = ci->home;
-	ci2.numeric = 1;
-	ci2.mark = m;
-	key_handle_focus(&ci2);
-
-	memset(&ci2, 0, sizeof(ci2));
 	ci2.key = "render-line-prev";
 	ci2.numeric = 1;
 	ci2.mark = m;
@@ -250,16 +238,9 @@ DEF_CMD(complete_set_prefix)
 	}
 	ci->extra = cnt;
 	ci->str = common;
-	memset(&ci2, 0, sizeof(ci2));
-	ci2.key = "Move-to";
-	ci2.mark = m;
-	ci2.focus = ci->home;
-	key_handle_focus(&ci2);
+	call3("Move-to", ci->home, 0, m);
 	mark_free(m);
-	memset(&ci2, 0, sizeof(ci2));
-	ci2.key = "render-lines:redraw";
-	ci2.focus = ci->focus;
-	key_handle_focus(&ci2);
+	call3("render-lines:redraw", ci->focus, 0, NULL);
 	return 1;
 }
 

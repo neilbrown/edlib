@@ -78,12 +78,7 @@ REDEF_CMD(emacs_move)
 		return 0;
 	old_x = cursor_pane->cx;
 
-	ci2.focus = ci->focus;
-	ci2.key = mv->type;
-	ci2.numeric = mv->direction * RPT_NUM(ci);
-	ci2.mark = ci->mark;
-	ret = key_handle_focus(&ci2);
-
+	ret = call3(mv->type, ci->focus, mv->direction * RPT_NUM(ci), ci->mark);
 	if (!ret)
 		return 0;
 
@@ -95,6 +90,7 @@ REDEF_CMD(emacs_move)
 		ci2.key = "Move-CursorXY";
 		ci2.numeric = 1;
 		ci2.x = old_x;
+		ci2.mark = ci->mark;
 		if (mv->direction == 1)
 			ci2.y = 0;
 		else
@@ -110,31 +106,24 @@ REDEF_CMD(emacs_move)
 REDEF_CMD(emacs_delete)
 {
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
-	struct cmd_info ci2 = {0};
 	int ret = 0;
 	struct mark *m;
 	struct doc *d = doc_from_pane(ci->home);
 
 	m = mark_dup(ci->mark, 1);
-	ci2.focus = ci->focus;
-	ci2.key = mv->type;
-	ci2.numeric = mv->direction * RPT_NUM(ci);
-	if (strcmp(mv->type, "Move-EOL") == 0 && ci2.numeric == 1 &&
+
+	if (strcmp(mv->type, "Move-EOL") == 0 &&
+	    mv->direction == 1 && RPT_NUM(ci) == 1 &&
 	    doc_following(d, m) == '\n')
-		ci2.key = "Move-Char";
-	ci2.mark = m;
-	ret = key_handle_focus(&ci2);
+		ret = call3("Move-Char", ci->focus, mv->direction * RPT_NUM(ci), m);
+	else
+		ret = call3(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);
+
 	if (!ret) {
 		mark_free(m);
 		return 0;
 	}
-	ci2.focus = ci->focus;
-	ci2.key = "Replace";
-	ci2.numeric = 1;
-	ci2.extra = ci->extra;
-	ci2.mark = m;
-	ci2.str = NULL;
-	ret = key_handle_focus(&ci2);
+	ret = call5("Replace", ci->focus, 1, m, NULL, ci->extra);
 	mark_free(m);
 	pane_set_extra(ci->home, 1);
 
@@ -179,19 +168,12 @@ REDEF_CMD(emacs_str)
 
 DEF_CMD(emacs_insert)
 {
-	char str[5];
-	struct cmd_info ci2 = {0};
 	int ret;
+	char *str;
 
-	ci2.focus = ci->focus;
-	ci2.key = "Replace";
-	ci2.numeric = 1;
-	ci2.extra = ci->extra;
-	ci2.mark = ci->mark;
-	strncpy(str,ci->key+4, sizeof(str));
-	str[4] = 0;
-	ci2.str = str;
-	ret = key_handle_focus(&ci2);
+	/* Key is "Chr-X" - skip 4 bytes to get X */
+	str = ci->key + 4;
+	ret = call5("Replace", ci->focus, 1, ci->mark, str, ci->extra);
 	pane_set_extra(ci->home, 1);
 
 	return ret;
@@ -209,25 +191,18 @@ static struct {
 
 DEF_CMD(emacs_insert_other)
 {
-	struct pane *p = ci->home;
-	struct cmd_info ci2 = {0};
 	int ret;
 	int i;
 
-	ci2.focus = ci->focus;
-	ci2.key = "Replace";
-	ci2.numeric = 1;
-	ci2.extra = ci->extra;
-	ci2.mark = ci->mark;
 	for (i = 0; other_inserts[i].key; i++)
 		if (strcmp(other_inserts[i].key, ci->key) == 0)
 			break;
 	if (other_inserts[i].key == NULL)
 		return 0;
 
-	ci2.str = other_inserts[i].insert;
-	ret = key_handle_focus(&ci2);
-	pane_set_extra(p, 0); /* A newline starts a new undo */
+	ret = call5("Replace", ci->focus, 1, ci->mark, other_inserts[i].insert,
+		    ci->extra);
+	pane_set_extra(ci->home, 0); /* A newline starts a new undo */
 	return ret;
 }
 
@@ -279,18 +254,10 @@ DEF_CMD(emacs_findfile)
 			attr_set_str(&p->attrs, "prefix", "Find File: ", -1);
 			attr_set_str(&p->attrs, "done-key", "File Found", -1);
 		}
-		ci2.key = "doc:set-name";
-		ci2.focus = p;
-		ci2.str = "Find File";
-		key_handle_focus(&ci2);
-		if (path) {
-			memset(&ci2, 0, sizeof(ci2));
-			ci2.key = "Replace";
-			ci2.focus = p;
-			ci2.str = path;
-			key_handle_focus(&ci2);
-		}
-		memset(&ci2, 0, sizeof(ci2));
+		call5("doc:set-name", p, 0, NULL, "Find File", 0);
+		if (path)
+			call5("Replace", p, 0, NULL, path, 0);
+
 		ci2.key = "local-set-key";
 		ci2.focus = p;
 		ci2.str = "emacs:file-complete";
@@ -300,13 +267,12 @@ DEF_CMD(emacs_findfile)
 	}
 
 	if (strcmp(ci->key, "File Found Other Window") == 0)
-		ci2.key = "OtherPane";
+		p = call_pane("OtherPane", ci->focus, 0, NULL, 0);
 	else
-		ci2.key = "ThisPane";
-	ci2.focus = ci->focus;
-	if (key_handle_focus(&ci2) == 0)
+		p = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+
+	if (!p)
 		return -1;
-	p = ci2.focus;
 
 	par = p;
 	/* par is the tile */
@@ -379,13 +345,8 @@ DEF_CMD(emacs_file_complete)
 	if (ci2.str) {
 		/* add the extra chars from ci2.str */
 		char *c = ci2.str + strlen(b);
-		struct cmd_info ci3 = {0};
-		ci3.key = "Replace";
-		ci3.mark = ci->mark;
-		ci3.numeric = 1;
-		ci3.focus = ci->focus;
-		ci3.str = c;
-		key_handle_focus(&ci3);
+
+		call5("Replace", ci->focus, 1, ci->mark, c, 0);
 	}
 	/* Now need to close the popup */
 	pane_close(pop);
@@ -412,12 +373,8 @@ DEF_CMD(emacs_finddoc)
 			attr_set_str(&p->attrs, "prefix", "Find Document: ", -1);
 			attr_set_str(&p->attrs, "done-key", "Doc Found", -1);
 		}
-		ci2.key = "doc:set-name";
-		ci2.focus = p;
-		ci2.str = "Find Document";
-		key_handle_focus(&ci2);
+		call5("doc:set-name", p, 0, NULL, "Find Document", 0);
 
-		memset(&ci2, 0, sizeof(ci2));
 		ci2.key = "local-set-key";
 		ci2.focus = p;
 		ci2.str = "emacs:doc-complete";
@@ -427,13 +384,11 @@ DEF_CMD(emacs_finddoc)
 	}
 
 	if (strcmp(ci->key, "Doc Found Other Window") == 0)
-		ci2.key = "OtherPane";
+		p = call_pane("OtherPane", ci->focus, 0, NULL, 0);
 	else
-		ci2.key = "ThisPane";
-	ci2.focus = ci->focus;
-	if (key_handle_focus(&ci2) == 0)
+		p = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	if (!p)
 		return -1;
-	p = ci2.focus;
 
 	par = p;
 	/* par is the tile */
@@ -477,13 +432,8 @@ DEF_CMD(emacs_doc_complete)
 	if (ci2.str) {
 		/* add the extra chars from ci2.str */
 		char *c = ci2.str + strlen(str);
-		struct cmd_info ci3 = {0};
-		ci3.key = "Replace";
-		ci3.mark = ci->mark;
-		ci3.numeric = 1;
-		ci3.focus = ci->focus;
-		ci3.str = c;
-		key_handle_focus(&ci3);
+
+		call5("Replace", ci->focus, 1, ci->mark, c, 0);
 	}
 	/* Now need to close the popup */
 	pane_close(pop);
@@ -494,13 +444,10 @@ DEF_CMD(emacs_viewdocs)
 {
 	struct pane *p, *par;
 	struct doc *d;
-	struct cmd_info ci2 = {0};
 
-	ci2.key = "ThisPane";
-	ci2.focus = ci->focus;
-	if (key_handle_focus(&ci2) == 0)
+	par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	if (!par)
 		return -1;
-	par = ci2.focus;
 	/* par is the tile */
 
 	d = pane2ed(par)->docs;
@@ -557,10 +504,7 @@ DEF_CMD(emacs_search)
 		attr_set_str(&p->attrs, "prefix", "Search: ", -1);
 		attr_set_str(&p->attrs, "done-key", "Search String", -1);
 
-		ci2.key = "doc:set-name";
-		ci2.focus = p;
-		ci2.str = "Search";
-		key_handle_focus(&ci2);
+		call5("doc:set-name", p, 0, NULL, "Search", 0);
 
 		p = pane_final_child(p);
 		pane_attach(p, "emacs-search", NULL, NULL);
@@ -570,11 +514,7 @@ DEF_CMD(emacs_search)
 	if (!ci->str || !ci->str[0])
 		return -1;
 
-	ci2.key = "doc:dup-point";
-	ci2.focus = ci->home;
-	ci2.extra = MARK_UNGROUPED;
-	key_handle_focus(&ci2);
-	m = ci2.mark;
+	m = call_mark("doc:dup-point", ci->home, 0, NULL, MARK_UNGROUPED);
 
 	memset(&ci2, 0, sizeof(ci2));
 	ci2.focus = ci->home;
@@ -583,13 +523,9 @@ DEF_CMD(emacs_search)
 	ci2.key = "text-search";
 	if (!key_lookup(pane2ed(ci->focus)->commands, &ci2))
 		ci2.extra = -1;
-	if (ci2.extra > 0) {
-		memset(&ci2, 0, sizeof(ci2));
-		ci2.key = "Move-to";
-		ci2.mark = m;
-		ci2.focus = ci->focus;
-		key_handle_focus(&ci2);
-	}
+	if (ci2.extra > 0)
+		call3("Move-to", ci->focus, 0, m);
+
 	mark_free(m);
 	return 1;
 }

@@ -104,7 +104,6 @@ DEF_CMD(search_add)
 	char b[5];
 	mbstate_t ps = {0};
 	int l;
-	struct cmd_info ci2 = {0};
 
 	if (!d)
 		return -1;
@@ -129,12 +128,7 @@ DEF_CMD(search_add)
 		} else
 			l = wcrtomb(b, wch, &ps);
 		b[l] = 0;
-		ci2.key = "Replace";
-		ci2.str = b;
-		ci2.numeric = 1;
-		ci2.mark = NULL;
-		ci2.focus = ci->focus;
-		key_handle_focus(&ci2);
+		call5("Replace", ci->focus, 1, NULL, b, 0);
 	} while (strcmp(ci->key, "C-Chr-C") != 0 && wch != ' ');
 	return 1;
 }
@@ -198,10 +192,7 @@ REDEF_CMD(search_again)
 		point_to_mark(esi->end, m);
 		/* TEMP HACK - please fix */
 		doc_set_attr(esi->target, esi->end, "highlight","fg:red,inverse");
-		ci2.key = "Move-View-Pos";
-		ci2.focus = esi->target;
-		ci2.mark = esi->end;
-		key_handle_focus(&ci2);
+		call3("Move-View-Pos", esi->target, 0, esi->end);
 		esi->matched = 1;
 		pfx = "Search: ";
 	} else {
@@ -238,28 +229,23 @@ DEF_CMD(emacs_search)
 {
 	struct pane *p;
 	struct es_info *esi;
-	struct cmd_info ci2 = {0};
+	struct mark *m;
 
 	if (!es_map)
 		emacs_search_init_map();
-	ci2.key = "popup:get-target";
-	ci2.focus = ci->focus;
-	if (key_handle_focus(&ci2) == 0)
-		return 0;
+	p = call_pane("popup:get-target", ci->focus, 0, 0, 0);
+	if (!p)
+		return -1;
 	esi = malloc(sizeof(*esi));
-	esi->target = ci2.focus;
-	memset(&ci2, 0, sizeof(ci2));
-	ci2.key = "doc:dup-point";
-	ci2.extra = MARK_POINT;
-	ci2.focus = esi->target;
-	key_handle_focus(&ci2);
-	if (!ci2.mark) {
+	esi->target = p;
+	m = call_mark("doc:dup-point", p, 0, NULL, MARK_POINT);
+	if (!m) {
 		free(esi);
 		return -1;
 	}
-	esi->end = ci2.mark;
+	esi->end = m;
 
-	esi->start = mark_dup(ci2.mark, 1);
+	esi->start = mark_dup(m, 1);
 	esi->s = NULL;
 	esi->matched = 0;
 	esi->search = ci->focus;

@@ -563,7 +563,6 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	bool first = 1;
 	struct pane *p;
 	struct doc *d;
-	struct cmd_info ci = {0};
 
 	d = doc_new(pane2ed(parent), "text");
 	if (!d)
@@ -575,10 +574,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 		return p;
 	}
 	doc_replace(p, NULL, text, &first);
-	ci.key = "Move-File";
-	ci.numeric = -1;
-	ci.focus = p;
-	key_handle_focus(&ci);
+	call3("Move-File", p, -1, NULL);
 	return p;
 }
 
@@ -754,11 +750,9 @@ DEF_CMD(docs_open)
 		renderer = "hex";
 
 	if (strcmp(ci->key, "Chr-o") == 0) {
-		struct cmd_info ci2 = {0};
-		ci2.key = "OtherPane";
-		ci2.focus = ci->focus;
-		if (key_handle_focus(&ci2)) {
-			par = ci2.focus;
+		struct pane *p2 = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+		if (p2) {
+			par = p2;
 			p = pane_child(par);
 		}
 	}
@@ -859,7 +853,6 @@ int  doc_destroy(struct doc *d)
 	 * the documents list and destroy it.
 	 */
 	int i;
-	struct cmd_info ci2 = {0};
 
 	d->deleting = 1;
 	if (d == d->ed->docs)
@@ -877,9 +870,7 @@ int  doc_destroy(struct doc *d)
 
 	docs_release(d);
 
-	ci2.key = "doc:destroy";
-	ci2.focus = d->home;
-	key_handle_focus(&ci2);
+	call3("doc:destroy", d->home, 0, 0);
 	pane_close(d->home);
 
 	free(d->views);

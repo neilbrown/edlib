@@ -161,14 +161,7 @@ struct mark *do_mark_at_point(struct doc *d, struct mark *pt, int view)
 
 struct mark *mark_at_point(struct pane *p, struct mark *pm, int view)
 {
-	struct cmd_info ci = {0};
-	ci.key = "doc:dup-point";
-	ci.extra = view;
-	ci.mark = pm;
-	ci.focus = p;
-	if (key_handle_focus(&ci) == 0)
-		return NULL;
-	return ci.mark;
+	return call_mark("doc:dup-point", p, 0, pm, view);
 }
 
 struct mark *point_dup(struct mark *p)
@@ -259,7 +252,6 @@ struct mark *mark_dup(struct mark *m, int notype)
 void __mark_reset(struct doc *d, struct mark *m, int new, int end)
 {
 	int i;
-	struct cmd_info ci = {0};
 	int seq = 0;
 	struct point_links *lnk;
 
@@ -281,11 +273,7 @@ void __mark_reset(struct doc *d, struct mark *m, int new, int end)
 		hlist_add_head(&m->all, &d->marks);
 	assign_seq(m, seq);
 
-	ci.key = "doc:set-ref";
-	ci.mark = m;
-	ci.numeric = !end; /* start */
-	ci.focus = d->home;
-	key_handle_focus(&ci);
+	call3("doc:set-ref", d->home, !end, m);
 
 	if (m->viewnum == MARK_UNGROUPED)
 		return;
@@ -508,13 +496,7 @@ void mark_backward_over(struct mark *m, struct mark *mp)
 
 wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci)
 {
-	ci->key = "doc:step";
-	ci->focus = d->home;
-	ci->mark = m;
-	ci->numeric = forward;
-	ci->extra = move;
-	key_handle_focus(ci);
-	return ci->extra;
+	return call_extra("doc:step", d->home, forward, m, move);
 }
 
 wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move)

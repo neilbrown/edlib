@@ -470,3 +470,87 @@ static inline struct doc *doc_from_pane(struct pane *p)
 	return ci.misc;
 }
 
+static inline int call3(char *key, struct pane *focus, int numeric, struct mark *m)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.mark = m;
+	return key_handle_focus(&ci);
+}
+
+static inline int call5(char *key, struct pane *focus, int numeric, struct mark *m,
+			 char *str, int extra)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.mark = m;
+	ci.str = str;
+	ci.extra = extra;
+	return key_handle_focus(&ci);
+}
+
+static inline struct mark *call_mark(char *key, struct pane *focus, int numeric,
+				     struct mark *m, int extra)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.extra = extra;
+	ci.mark = m;
+	if (!key_handle_focus(&ci))
+		return NULL;
+	return ci.mark;
+}
+
+static inline struct pane *call_pane(char *key, struct pane *focus, int numeric,
+				     struct mark *m, int extra)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.extra = extra;
+	ci.mark = m;
+	if (!key_handle_focus(&ci))
+		return NULL;
+	return ci.focus;
+}
+
+static inline int call_extra(char *key, struct pane *focus, int numeric, struct mark *m,
+			     int extra)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.extra = extra;
+	ci.mark = m;
+	if (!key_handle_focus(&ci))
+		return 0;
+	return ci.extra;
+}
+
+static inline char *call_str(char *key, struct pane *focus, int numeric, struct mark *m,
+			     char *str)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.str = str;
+	ci.mark = m;
+	if (!key_handle_focus(&ci))
+		return NULL;
+	return ci.str;
+}
