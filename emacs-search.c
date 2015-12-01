@@ -102,6 +102,8 @@ DEF_CMD(search_add)
 	struct doc *d = doc_from_pane(esi->target);
 	wint_t wch;
 	char b[5];
+	mbstate_t ps = {0};
+	int l;
 	struct cmd_info ci2 = {0};
 
 	if (!d)
@@ -121,8 +123,12 @@ DEF_CMD(search_add)
 			return 1;
 		}
 		/* FIXME utf-8! and quote regexp chars */
-		b[0] = wch;
-		b[1] = 0;
+		if (strchr("|*+?{}()?^$\\", wch)) {
+			b[0] = '\\';
+			l = wcrtomb(b+1, wch, &ps) + 1;
+		} else
+			l = wcrtomb(b, wch, &ps);
+		b[l] = 0;
 		ci2.key = "Replace";
 		ci2.str = b;
 		ci2.numeric = 1;

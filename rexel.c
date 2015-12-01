@@ -916,7 +916,7 @@ static int parse_atom(struct parse_state *st)
 		st->patn++;
 		ch = *st->patn;
 		switch (ch) {
-			/* These just fall through are are interpreted literally */
+			/* These just fall through and are interpreted literally */
 		case '^':
 		case '.':
 		case '[':
@@ -928,6 +928,7 @@ static int parse_atom(struct parse_state *st)
 		case '+':
 		case '?':
 		case '{':
+		case '}':
 		case '\\':
 			break;
 			/* These are simple translations */
