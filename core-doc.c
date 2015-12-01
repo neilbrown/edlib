@@ -263,7 +263,7 @@ DEF_CMD(doc_file)
 	int rpt = RPT_NUM(ci);
 
 	if (ci->mark == NULL)
-		ci->mark = ci->home->point;
+		ci->mark = dd->point;
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next(d, ci->mark)) != WEOF)
 			;
@@ -354,8 +354,10 @@ DEF_CMD(doc_handle)
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = doc_attach(ci->focus, dd->doc);
 		struct pane *c = pane_child(ci->home);
+		struct doc_data *dd2 = p->data;
 
-		p->point = point_dup(ci->home->point);
+		dd2->point = point_dup(dd->point);
+		p->pointer = dd2->point;
 		if (c)
 			pane_clone(c, p);
 		return 1;
@@ -363,20 +365,19 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "Close") == 0) {
 		doc_del_view(ci->home, &dd->notify);
-		if (ci->home->point)
-			mark_free(ci->home->point);
-		ci->home->point = NULL;
+		if (dd->point)
+			mark_free(dd->point);
 		free(dd);
 		ci->home->data = NULL;
 		return 1;
 	}
 
 	if (strcmp(ci->key, "doc:dup-point") == 0) {
-		struct mark *pt = ci->home->point;
+		struct mark *pt = dd->point;
 		if (ci->mark && ci->mark->viewnum == MARK_POINT)
 			pt = ci->mark;
 		ci->mark = NULL;
-		if (ci->home->point) {
+		if (pt) {
 			if (ci->extra == MARK_POINT)
 				ci->mark = point_dup(pt);
 			else if (ci->extra == MARK_UNGROUPED)
@@ -389,7 +390,7 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "Move-to") == 0) {
-		point_to_mark(ci->home->point, ci->mark);
+		point_to_mark(dd->point, ci->mark);
 		return 1;
 	}
 
@@ -427,8 +428,8 @@ DEF_CMD(doc_handle)
 	if (strcmp(ci->key, "doc:vmark-get") == 0) {
 		ci->mark = do_vmark_first(dd->doc, ci->numeric);
 		ci->mark2 = do_vmark_last(dd->doc, ci->numeric);
-		if (ci->extra && ci->home->point)
-			ci->mark2 = do_vmark_at_point(dd->doc, ci->home->point,
+		if (ci->extra && dd->point)
+			ci->mark2 = do_vmark_at_point(dd->doc, dd->point,
 						      ci->numeric);
 		return 1;
 	}
@@ -482,6 +483,7 @@ struct pane *doc_attach(struct pane *parent, struct doc *d)
 		dd->notify = doc_notify;
 		doc_add_view(p, &dd->notify, 0);
 	}
+	dd->point = NULL;
 	dd->pane = p;
 	d->ed = pane2ed(parent);
 	doc_promote(d);
@@ -546,7 +548,9 @@ struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render
 	struct doc_data *dd = doc->data;
 	p = doc_attach(parent, dd->doc);
 	if (p) {
-		p->point = point_new(dd->doc);
+		dd = p->data;
+		dd->point = point_new(dd->doc);
+		p->pointer = dd->point;
 		p = pane_attach(p, "view", doc, NULL);
 	}
 	if (p)
@@ -737,7 +741,8 @@ DEF_CMD(docs_get_attr)
 DEF_CMD(docs_open)
 {
 	struct pane *p = ci->home;
-	struct pane *dp = p->point->ref.p;
+	struct doc_data *dd = p->data;
+	struct pane *dp = dd->point->ref.p;
 	struct pane *par = p->parent;
 	char *renderer = NULL;
 
