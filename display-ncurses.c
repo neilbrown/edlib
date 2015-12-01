@@ -423,7 +423,7 @@ static void input_handle(int fd, short ev, void *P)
 	pane_refresh(p);
 }
 
-DEF_CMD(comm_ncurses)
+DEF_CMD(display_ncurses)
 {
 	struct pane *p = ncurses_init(pane2ed(ci->home));
 	ci->focus = p;
@@ -432,5 +432,5 @@ DEF_CMD(comm_ncurses)
 
 void edlib_init(struct editor *ed)
 {
-	key_add(ed->commands, "display-ncurses", &comm_ncurses);
+	key_add(ed->commands, "display-ncurses", &display_ncurses);
 }
