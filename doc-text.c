@@ -353,15 +353,18 @@ static void text_add_str(struct text *t, struct doc_ref *pos, char *str,
 	 */
 	struct text_alloc *a = t->alloc;
 	int len = strlen(str);
+	int len2;
 
 	if (start)
 		*start = *pos;
 
+	len2 = len;
 	if (pos->c && pos->o == pos->c->end &&
 	    pos->c->txt + pos->o == a->text + a->free &&
 	    (a->size - a->free >= len ||
-	     (len = text_round_len(str, a->size - a->free)) > 0)) {
+	     (len2 = text_round_len(str, a->size - a->free)) > 0)) {
 		/* Some of this ('len') can be added to the current chunk */
+		len = len2;
 		memcpy(a->text+a->free, str, len);
 		a->free += len;
 		pos->c->end += len;
