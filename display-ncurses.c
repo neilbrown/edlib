@@ -156,10 +156,9 @@ DEF_CMD(ncurses_handle)
 		struct editor *ed = pane2ed(p);
 		set_screen(dd->scr);
 
-		if (damage & DAMAGED_SIZE) {
+		if (damage & DAMAGED_SIZE)
 			getmaxyx(stdscr, p->h, p->w);
-			p->h -= 1;
-		}
+
 		l = event_new(ed->base, -1, EV_TIMEOUT, ncurses_flush, p);
 		event_priority_set(l, 0);
 		tv.tv_sec = 0;
