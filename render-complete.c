@@ -71,7 +71,7 @@ DEF_CMD(render_complete_prev)
 	 */
 	struct cmd_info ci2 = {0}, ci3 = {0};
 	struct complete_data *cd = ci->home->data;
-	int plen;
+	int plen = strlen(cd->prefix);
 	int ret;
 
 	ci2.key = ci->key;
@@ -79,7 +79,7 @@ DEF_CMD(render_complete_prev)
 	ci2.focus = ci->home->parent;
 	ci2.numeric = 0;
 
-	ci3.key= "render-line";
+	ci3.key = "render-line";
 	ci3.focus = ci->home->parent;
 	while (1) {
 		int cmp;
@@ -93,7 +93,6 @@ DEF_CMD(render_complete_prev)
 		 */
 		if (ci2.mark == ci->mark)
 			ci2.mark = mark_dup(ci->mark, 1);
-		plen = strlen(cd->prefix);
 		ci3.mark = mark_dup(ci2.mark, 1);
 		ci3.numeric = NO_NUMERIC;
 		if (key_handle(&ci3) == 0) {
@@ -149,6 +148,8 @@ DEF_CMD(complete_clone)
 DEF_CMD(complete_nomove)
 {
 	if (strcmp(ci->key, "Move-File") == 0)
+		return 0;
+	if (strcmp(ci->key, "Move-to") == 0)
 		return 0;
 	return 1;
 }
