@@ -223,6 +223,16 @@ REDEF_CMD(search_again)
 	return 1;
 }
 
+DEF_CMD(search_done)
+{
+	/* need to advance the target view to 'start' */
+	struct es_info *esi = ci->home->data;
+
+	call3("Move-to", esi->target, 0, esi->start);
+	/* Now let popup finish the job */
+	return 0;
+}
+
 static void emacs_search_init_map(void)
 {
 	es_map = key_alloc();
@@ -232,6 +242,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "C-Chr-C", &search_add);
 	key_add(es_map, "C-Chr-R", &search_backward);
 	key_add(es_map, "Close", &search_close);
+	key_add(es_map, "popup:Return", &search_done);
 }
 
 DEF_LOOKUP_CMD(search_handle, es_map);
