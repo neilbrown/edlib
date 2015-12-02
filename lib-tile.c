@@ -578,6 +578,18 @@ DEF_CMD(tile_this)
 	return 1;
 }
 
+DEF_CMD(tile_root)
+{
+	struct pane *p = ci->home;
+	struct tileinfo *ti = p->data;
+	while (ti->direction != Neither) {
+		p = p->parent;
+		ti = p->data;
+	}
+	ci->focus = p;
+	return 1;
+}
+
 void edlib_init(struct editor *ed)
 {
 	tile_map = key_alloc();
@@ -585,6 +597,7 @@ void edlib_init(struct editor *ed)
 	key_add(tile_map, "WindowOP", &tile_command);
 	key_add(tile_map, "OtherPane", &tile_other);
 	key_add(tile_map, "ThisPane", &tile_this);
+	key_add(tile_map, "RootPane", &tile_root);
 
 	key_add(ed->commands, "attach-tile", &tile_attach);
 }

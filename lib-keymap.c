@@ -55,10 +55,6 @@ DEF_CMD(keymap_handle)
 		return 1;
 	}
 
-	if (kd->global && strcmp(ci->key, "global-key-root") == 0) {
-		ci->focus = ci->home;
-		return 1;
-	}
 	if (kd->global && strncmp(ci->key, "local-", 6) == 0) {
 		if (strcmp(ci->key, "local-set-key") == 0 ||
 		    strcmp(ci->key, "local-add-keymap") == 0 ||

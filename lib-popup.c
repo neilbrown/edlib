@@ -140,7 +140,7 @@ DEF_CMD(popup_attach)
 	if (strchr(style, 'D')) {
 		int x = 0, y = 0;
 		pane_to_root(ci->focus, &x, &y, &z, NULL, NULL);
-		root = call_pane("global-key-root", ci->focus, 0, NULL, 0);
+		root = call_pane("RootPane", ci->focus, 0, NULL, 0);
 	} else
 		root = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 	if (!root)
