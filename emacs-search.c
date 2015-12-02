@@ -27,12 +27,14 @@ struct es_info {
 		struct stk *next;
 		struct mark *m; /* Start of search */
 		unsigned int len; /* current length of match string */
+		int wrapped;
 	} *s;
 	struct mark *start; /* where searching starts */
 	struct mark *end; /* where last success ended */
 	struct pane *target, *search;
 	struct command watch;
 	short matched;
+	short wrapped;
 };
 
 static struct map *es_map;
@@ -69,6 +71,7 @@ DEF_CMD(search_forward)
 	s = malloc(sizeof(*s));
 	s->m = esi->start;
 	s->len = strlen(str);
+	s->wrapped = esi->wrapped;
 	free(str);
 	s->next = esi->s;
 	esi->s = s;
@@ -76,6 +79,7 @@ DEF_CMD(search_forward)
 		esi->start = mark_dup(esi->end, 1);
 	else {
 		esi->start = mark_dup(s->m, 1);
+		esi->wrapped = 1;
 		mark_reset(d, esi->start);
 	}
 	/* Trigger notification so isearch watcher searches again */
@@ -101,6 +105,7 @@ DEF_CMD(search_retreat)
 	esi->s = s->next;
 	mark_free(esi->start);
 	esi->start = s->m;
+	esi->wrapped = s->wrapped;
 	free(s);
 	/* Trigger notification so isearch watcher searches again */
 	doc_replace(esi->search, NULL, "", &first);
@@ -206,6 +211,8 @@ REDEF_CMD(search_again)
 		call3("Move-View-Pos", esi->target, 0, esi->end);
 		esi->matched = 1;
 		pfx = "Search: ";
+		if (esi->wrapped)
+			pfx = "Wrapped Search: ";
 	} else {
 		esi->matched = 0;
 		pfx = "Failed Search: ";
@@ -270,6 +277,7 @@ DEF_CMD(emacs_search)
 	esi->start = mark_dup(m, 1);
 	esi->s = NULL;
 	esi->matched = 0;
+	esi->wrapped = 0;
 	esi->search = ci->focus;
 	esi->watch = search_again;
 	doc_add_view(ci->focus, &esi->watch, 0);
