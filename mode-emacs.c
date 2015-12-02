@@ -84,8 +84,12 @@ REDEF_CMD(emacs_move)
 
 	if (strcmp(mv->type, "Move-View-Large") == 0 && old_x >= 0) {
 		/* Might have lost the cursor - place it at top or
-		 * bottom of view
+		 * bottom of view, but make sure it moves only in the
+		 * right direction.
 		 */
+		int ok;
+		struct mark *old_point = mark_at_point(cursor_pane,
+						       ci->mark, MARK_UNGROUPED);
 		ci2.focus = cursor_pane;
 		ci2.key = "Move-CursorXY";
 		ci2.numeric = 1;
@@ -96,6 +100,25 @@ REDEF_CMD(emacs_move)
 		else
 			ci2.y = cursor_pane->h - 1;
 		key_handle_xy(&ci2);
+		if (mv->direction == 1)
+			ok = mark_ordered_not_same_pane(cursor_pane, old_point, ci->mark);
+		else
+			ok = mark_ordered_not_same_pane(cursor_pane, ci->mark, old_point);
+		if (!ok) {
+			/* Try other end of pane */
+			memset(&ci2, 0, sizeof(ci2));
+			ci2.focus = cursor_pane;
+			ci2.key = "Move-CursorXY";
+			ci2.numeric = 1;
+			ci2.x = old_x;
+			ci2.mark = ci->mark;
+			if (mv->direction != 1)
+				ci2.y = 0;
+			else
+				ci2.y = cursor_pane->h - 1;
+			key_handle_xy(&ci2);
+		}
+		mark_free(old_point);
 	}
 
 	pane_damaged(cursor_pane, DAMAGED_CURSOR);

@@ -216,6 +216,11 @@ static inline int mark_ordered_or_same_pane(struct pane *p, struct mark *m1, str
 	return mark_ordered(m1, m2) || mark_same_pane(p, m1, m2, NULL);
 }
 
+static inline int mark_ordered_not_same_pane(struct pane *p, struct mark *m1, struct mark *m2)
+{
+	return mark_ordered(m1, m2) && !mark_same_pane(p, m1, m2, NULL);
+}
+
 static inline int mark_ordered_not_same(struct doc *d, struct mark *m1, struct mark *m2)
 {
 	return mark_ordered(m1, m2) && !mark_same(d, m1, m2);
