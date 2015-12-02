@@ -67,7 +67,8 @@ int main(int argc, char *argv[])
 	if (!key_lookup(ed->commands, &ci))
 		exit(1);
 	root = ci.focus;
-	global = pane_attach(root, "global-keymap", NULL, NULL);
+	global = pane_attach(root, "messageline", NULL, NULL);
+	global = pane_attach(global, "global-keymap", NULL, NULL);
 
 	editor_load_module(ed, "mode-emacs");
 	call5("global-set-keymap", global, 0, NULL, "mode-emacs", 0);

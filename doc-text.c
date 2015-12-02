@@ -52,6 +52,7 @@
  */
 
 
+#define _GNU_SOURCE /* for asprintf */
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -298,10 +299,24 @@ DEF_CMD(text_save_file)
 {
 	struct doc_data *dd = ci->home->data;
 	struct text *t = container_of(dd->doc, struct text, doc);
+	int ret;
+	char *msg;
 
-	if (!t->fname)
-		return -1;
-	return do_text_write_file(t, t->fname);
+	if (!t->fname) {
+		asprintf(&msg, "** No file name known for %s ***", dd->doc->name);
+		ret = -1;
+	} else {
+		ret = do_text_write_file(t, t->fname);
+		if (ret == 0)
+			asprintf(&msg, "Successfully wrote %s", t->fname);
+		else
+			asprintf(&msg, "*** Faild to write %s ***", t->fname);
+	}
+	call5("Message", ci->home, 0, NULL, msg, 0);
+	free(msg);
+	if (ret == 0)
+		return 1;
+	return -1;
 }
 
 DEF_CMD(text_same_file)

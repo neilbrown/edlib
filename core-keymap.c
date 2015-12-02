@@ -343,9 +343,13 @@ int key_handle_focus(struct cmd_info *ci)
 {
 	return __key_handle_focus(ci, 0);
 }
+
 int key_handle_focus_point(struct cmd_info *ci)
 {
-	return __key_handle_focus(ci, 1);
+	int ret =  __key_handle_focus(ci, 1);
+	if (ret < 0)
+		call5("Message", ci->focus, 0, NULL, "** Command Failed **", 1);
+	return ret;
 }
 
 static int __key_handle_xy(struct cmd_info *ci, int savepoint)
