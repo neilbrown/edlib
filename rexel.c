@@ -392,7 +392,7 @@ int rxl_advance(struct match_state *st, wint_t ch, int flag, int restart)
 				advance = 1;
 				if ((ch == '\n' || ch == '\r' || ch == '\f')
 				    && !RXL_IS_DOTALL(st->rxl))
-					advance = 0;
+					advance = -1;
 				break;
 			case REC_MATCH:
 				/* cannot match more chars here */

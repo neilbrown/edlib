@@ -27,7 +27,7 @@ DEF_CMD(text_search)
 	if (!d)
 		return -1;
 	m = ci->mark;
-	rxl = rxl_parse(ci->str, NULL, 0);
+	rxl = rxl_parse(ci->str, NULL, 1);
 	if (!rxl)
 		return -1;
 	st = rxl_prepare(rxl);
