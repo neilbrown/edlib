@@ -50,3 +50,8 @@ void buf_append(struct buf *b, wchar_t wch)
 		l = wcrtomb(t, wch, &ps);
 	buf_concat_len(b, t, l);
 }
+
+void buf_append_byte(struct buf *b, char c)
+{
+	buf_concat_len(b, &c, 1);
+}

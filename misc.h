@@ -16,6 +16,7 @@ void buf_init(struct buf *b);
 void buf_concat(struct buf *b, char *s);
 void buf_concat_len(struct buf *b, char *s, int l);
 void buf_append(struct buf *b, wchar_t wch);
+void buf_append_byte(struct buf *b, char c);
 static inline char *buf_final(struct buf *b)
 {
 	if (b->b)

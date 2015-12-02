@@ -62,7 +62,7 @@ DEF_CMD(render_line)
 		int w, adjust, l;
 
 		if (*n != '%' || n[1] == '%') {
-			buf_append(&ret, *n);
+			buf_append_byte(&ret, *n);
 			if (*n == '%')
 				n += 1;
 			n += 1;
@@ -100,7 +100,12 @@ DEF_CMD(render_line)
 		if (!val)
 			val = "-";
 		if (*n != ':') {
-			buf_concat(&ret, val);
+			while (*val) {
+				if (*val == '<')
+					buf_append_byte(&ret, '<');
+				buf_append_byte(&ret, *val);
+				val += 1;
+			}
 			continue;
 		}
 		w = 0;
@@ -121,7 +126,9 @@ DEF_CMD(render_line)
 		}
 
 		while (*val && w > 0 ) {
-			buf_append(&ret, *val);
+			if (*val == '<')
+				buf_append_byte(&ret, '<');
+			buf_append_byte(&ret, *val);
 			w -= 1;
 			val += 1;
 		}

@@ -437,7 +437,9 @@ DEF_CMD(emacs_doc_complete)
 	struct pane *par, *pop;
 	struct cmd_info ci2 = {0};
 
-	pop = pane_attach(ci->focus, "popup", ed->docs->home, "DM1");
+	pop = pane_attach(ci->focus, "popup", ed->docs->home, "DM1r");
+	if (!pop)
+		return -1;
 	par = pane_final_child(pop);
 
 	attr_set_str(&par->attrs, "line-format", "%+name", -1);
