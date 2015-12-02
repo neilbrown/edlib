@@ -924,6 +924,8 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Move-Line", &render_lines_move_line);
 
 	key_add(rl_map, "Replace", &render_lines_other_move);
+	/* Make it easy to stop ignoring point */
+	key_add(rl_map, "Abort", &render_lines_other_move);
 
 	key_add(rl_map, "Close", &render_lines_close);
 	key_add(rl_map, "Clone", &render_lines_clone);

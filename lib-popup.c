@@ -75,6 +75,7 @@ DEF_CMD(popup_handle)
 	}
 	if (strcmp(ci->key, "popup:Abort") == 0) {
 		pane_focus(ppi->target);
+		call3("Abort", ppi->target, 0, NULL);
 		pane_close(ppi->popup);
 		return 1;
 	}
