@@ -17,10 +17,30 @@
 #include <stdlib.h>
 #include <string.h>
 #include "core.h"
+#include "misc.h"
 
 struct complete_data {
 	char *prefix;
 };
+
+static char *add_highlight_prefix(char *orig, int plen, char *attr)
+{
+	struct buf ret;
+
+	if (orig == NULL)
+		return orig;
+	buf_init(&ret);
+	buf_concat(&ret, attr);
+	while (plen > 0 && *orig) {
+		if (*orig == '<')
+			buf_append_byte(&ret, *orig++);
+		buf_append_byte(&ret, *orig++);
+		plen -= 1;
+	}
+	buf_concat(&ret, "</>");
+	buf_concat(&ret, orig);
+	return buf_final(&ret);
+}
 
 DEF_CMD(render_complete_line)
 {
@@ -30,7 +50,7 @@ DEF_CMD(render_complete_line)
 	struct cmd_info ci2 = {0};
 	struct complete_data *cd = ci->home->data;
 	struct doc *d = doc_from_pane(ci->home);
-	int plen;
+	int plen = strlen(cd->prefix);
 
 	if (!d || !ci->mark)
 		return -1;
@@ -42,11 +62,11 @@ DEF_CMD(render_complete_line)
 	ci2.numeric = ci->numeric;
 	if (key_handle(&ci2) == 0)
 		return 0;
-	ci->str = ci2.str;
+	ci->str = add_highlight_prefix(ci2.str, plen, "<fg:red>");
+	free(ci2.str);
 	if (ci->numeric != NO_NUMERIC)
 		return 1;
 	/* Need to continue over other matching lines */
-	plen = strlen(cd->prefix);
 	ci2.mark = mark_dup(ci->mark, 1);
 	while (1) {
 		ci2.numeric = ci->numeric;
@@ -253,6 +273,7 @@ DEF_CMD(complete_return)
 	struct cmd_info ci2 = {0};
 	char *str;
 	int l;
+	char *c1, *c2;
 
 	ci2.key = "render-line";
 	ci2.focus = ci->home;
@@ -266,6 +287,21 @@ DEF_CMD(complete_return)
 	l = strlen(str);
 	if (l && str[l-1] == '\n')
 		str[l-1] = 0;
+	c1 = c2 = str;
+	while (*c2) {
+		if (*c2 != '<') {
+			*c1++ = *c2++;
+			continue;
+		}
+		c2 += 1;
+		if (*c2 == '<') {
+			*c1++ = *c2++;
+			continue;
+		}
+		while (*c2 && c2[-1] != '>')
+			c2++;
+	}
+	*c1 = 0;
 
 	memset(&ci2, 0, sizeof(ci2));
 	ci2.key = ci->key;
