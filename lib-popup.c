@@ -125,6 +125,7 @@ DEF_CMD(popup_attach)
 	 * TBLR - 0, 1, or 2 can be given for center, side, or corner
 	 * M  - multi line, else one line
 	 * 1234 - how many quarters of width to use.(default 2);
+	 * r  - allow recursive popup
 	 */
 	struct pane *root, *p;
 	struct popup_info *ppi = malloc(sizeof(*ppi));
@@ -136,6 +137,11 @@ DEF_CMD(popup_attach)
 
 	if (!style)
 		style = "D3";
+
+	if (!strchr(style, 'r') &&
+	    pane_attr_get(ci->focus, "Popup") != NULL)
+		/* No recusive popups without permission */
+		return 0;
 
 	if (strchr(style, 'D')) {
 		int x = 0, y = 0;
@@ -156,6 +162,7 @@ DEF_CMD(popup_attach)
 			border[j++] = "TLBR"[i];
 	}
 	border[j] = 0;
+	attr_set_str(&ppi->popup->attrs, "Popup", "true", -1);
 	attr_set_str(&ppi->popup->attrs, "borders", border, -1);
 	attr_set_str(&ppi->popup->attrs, "render-wrap", "no", -1);
 

@@ -347,7 +347,9 @@ DEF_CMD(emacs_file_complete)
 	}
 	docp = doc_open(ed, fd, d);
 	close(fd);
-	pop = pane_attach(ci->focus, "popup", docp, "DM1");
+	pop = pane_attach(ci->focus, "popup", docp, "DM1r");
+	if (!pop)
+		return -1;
 	par = pane_final_child(pop);
 
 	attr_set_str(&par->attrs, "line-format", "%+name%suffix", -1);
