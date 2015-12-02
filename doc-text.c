@@ -1519,7 +1519,7 @@ DEF_CMD(text_set_attr)
 
 DEF_CMD(text_destroy)
 {
-	struct doc_data *dd = ci->focus->data;
+	struct doc_data *dd = ci->home->data;
 	struct text *t = container_of(dd->doc, struct text, doc);
 
 	while (!list_empty(&t->text)) {

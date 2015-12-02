@@ -151,7 +151,7 @@ DEF_CMD(search_backward)
 
 DEF_CMD(search_close)
 {
-	struct es_info *esi = ci->focus->data;
+	struct es_info *esi = ci->home->data;
 
 	doc_del_view(ci->focus, &esi->watch);
 	/* TEMP HACK - please fix */
