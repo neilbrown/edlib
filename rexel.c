@@ -265,7 +265,6 @@ static int set_match(struct match_state *st, unsigned short addr, wchar_t ch)
 	return 0;
 }
 
-
 /*
  * Advance the match state to process 'ch' and/or flag.
  * flag indicates start/end of word/line, and whether to ignore ch.

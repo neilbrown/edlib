@@ -14,7 +14,7 @@
 
 DEF_CMD(text_search)
 {
-	struct mark *m;
+	struct mark *m, *endmark = NULL;;
 	struct doc *d;
 	unsigned short *rxl;
 	struct match_state *st;
@@ -32,19 +32,24 @@ DEF_CMD(text_search)
 		return -1;
 	st = rxl_prepare(rxl);
 	since_start = -1;
-	while (since_start < 0 || len > 0) {
+	while (since_start < 0 || len != -2) {
 		wint_t wch = mark_next(d, m);
 		if (wch == WEOF)
 			break;
-		if (since_start >= 0)
-			since_start += 1;
+
 		len = rxl_advance(st, wch, 0, since_start < 0);
 		if (len >= 0 &&
-		    (since_start < 0 || len > since_start))
+		    (since_start < 0 || len > since_start)) {
 			since_start = len;
+			if (endmark)
+				mark_free(endmark);
+			endmark = mark_dup(m, 1);
+		}
 	}
-	if (since_start > 0)
-		mark_prev(d, m);
+	if (since_start > 0 && endmark) {
+		mark_to_mark(m, endmark);
+		mark_free(endmark);
+	}
 	ci->extra = since_start;
 	rxl_free_state(st);
 	free(rxl);
