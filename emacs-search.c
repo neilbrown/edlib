@@ -54,9 +54,20 @@ DEF_CMD(search_forward)
 		/* already pushed and didn't find anything new */
 		return 1;
 	}
+	str = doc_getstr(ci->focus, NULL);
+	if (!*str) {
+		/* re-use old string; Is there any point to this indirection? */
+		char *ss;
+		ss = pane_attr_get(ci->focus, "done-key");
+		if (ss)
+			ss = pane_attr_get(ci->focus, ss);
+		if (ss) {
+			doc_replace(esi->search, NULL, ss, &first);
+			return 1;
+		}
+	}
 	s = malloc(sizeof(*s));
 	s->m = esi->start;
-	str = doc_getstr(ci->focus, NULL);
 	s->len = strlen(str);
 	free(str);
 	s->next = esi->s;

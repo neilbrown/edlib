@@ -19,12 +19,20 @@ DEF_CMD(null_display_handle)
 	return 0;
 }
 
+DEF_CMD(global_set_attr)
+{
+	attr_set_str(&ci->home->attrs, ci->str, ci->str2, -1);
+	return 1;
+}
+
 struct pane *editor_new(void)
 {
 	struct editor *ed = calloc(sizeof(*ed), 1);
 
-	if (!ed_map)
+	if (!ed_map) {
 		ed_map = key_alloc();
+		key_add(ed_map, "global-set-attr", &global_set_attr);
+	}
 
 	pane_init(&ed->root, NULL, NULL);
 	ed->root.handle = &ed_handle.c;

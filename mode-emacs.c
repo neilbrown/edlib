@@ -541,6 +541,12 @@ DEF_CMD(emacs_search)
 
 	m = call_mark("doc:dup-point", ci->home, 0, NULL, MARK_UNGROUPED);
 
+	ci2.key = "global-set-attr";
+	ci2.str = "Search String";
+	ci2.str2 = ci->str;
+	ci2.focus = ci->home;
+	key_handle_focus(&ci2);
+
 	memset(&ci2, 0, sizeof(ci2));
 	ci2.focus = ci->home;
 	ci2.mark = m;
