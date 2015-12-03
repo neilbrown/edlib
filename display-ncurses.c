@@ -62,13 +62,6 @@ static void move_cursor(struct pane *p)
 	}
 }
 
-static void ncurses_flush(int fd, short ev, void *P)
-{
-	struct pane *p = P;
-	move_cursor(p);
-	refresh();
-}
-
 DEF_CMD(nc_misc)
 {
 	struct pane *p = ci->home;
@@ -129,10 +122,7 @@ static int cvt_attrs(char *attrs)
 DEF_CMD(ncurses_handle)
 {
 	struct pane *p = ci->home;
-	int damage = ci->extra;
 	struct display_data *dd = p->data;
-	struct event *l;
-	struct timeval tv;
 
 	if (strcmp(ci->key, "Misc") == 0)
 		return nc_misc.func(ci);
@@ -152,18 +142,18 @@ DEF_CMD(ncurses_handle)
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") == 0) {
-		struct editor *ed = pane2ed(p);
 		set_screen(dd->scr);
 
-		if (damage & DAMAGED_SIZE)
-			getmaxyx(stdscr, p->h, p->w);
-
-		l = event_new(ed->base, -1, EV_TIMEOUT, ncurses_flush, p);
-		event_priority_set(l, 0);
-		tv.tv_sec = 0;
-		tv.tv_usec = 0;
-		event_add(l, &tv);
-		return 1;
+		if (ci->numeric > 0) {
+			/* post-order call */
+			move_cursor(p);
+			refresh();
+		} else {
+			int damage = ci->extra;
+			if (damage & DAMAGED_SIZE)
+				getmaxyx(stdscr, p->h, p->w);
+		}
+		return 2; /* request post-order call */
 	}
 	return 0;
 }

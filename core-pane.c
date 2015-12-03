@@ -103,6 +103,7 @@ static void __pane_refresh(struct cmd_info *ci)
 	int damage = ci->extra;
 	struct pane *p = ci->home;
 	struct cmd_info ci2 = *ci;
+	int ret = 0;
 
 	if (p->focus == NULL)
 		p->focus = list_first_entry_or_null(
@@ -123,7 +124,8 @@ static void __pane_refresh(struct cmd_info *ci)
 			ci2.extra |= DAMAGED_CURSOR;
 		damage &= DAMAGED_SIZE;
 		ci2.comm = p->handle;
-		if (p->handle->func(&ci2) == 0)
+		ret = p->handle->func(&ci2);
+		if (ret == 0)
 			pane_check_size(p);
 	}
 	p->damaged = 0;
@@ -132,6 +134,12 @@ static void __pane_refresh(struct cmd_info *ci)
 		ci2.home = c;
 		ci2.comm = NULL;
 		__pane_refresh(&ci2);
+	}
+	if (ret == 2) {
+		/* "Refresh" requested a post-order call */
+		ci2 = *ci;
+		ci2.numeric = 1;
+		p->handle->func(&ci2);
 	}
 }
 
