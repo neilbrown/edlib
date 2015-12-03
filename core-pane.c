@@ -147,6 +147,9 @@ void pane_refresh(struct pane *p)
 {
 	struct cmd_info ci = {0};
 	pane_damaged(p, DAMAGED_CURSOR);
+	/* Always refresh a while display */
+	while (p->parent)
+		p = p->parent;
 	ci.focus = ci.home = p;
 	ci.key = "Refresh";
 	__pane_refresh(&ci);
