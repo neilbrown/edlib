@@ -99,6 +99,7 @@ DEF_CMD(python_load)
 struct python_command {
 	struct command	c;
 	PyObject	*callable;
+	int		home_func;	/* Should ->home->data be passed as 'data' */
 };
 
 DEF_CMD(python_call)
@@ -126,6 +127,9 @@ DEF_CMD(python_call)
 	PyDict_SetItemString(kwds, "xy", Py_BuildValue("ii", ci->x, ci->y));
 	PyDict_SetItemString(kwds, "hxy", Py_BuildValue("ii", ci->hx, ci->hy));
 	/* FIXME what about ->comm and ->comm2?? */
+
+	if (pc->home_func)
+		PyDict_SetItemString(kwds, "data", ci->home->data);
 
 	ret = PyObject_Call(pc->callable, args, kwds);
 
@@ -180,6 +184,40 @@ static Pane *pane_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 		self->pane = NULL;
 	}
 	return self;
+}
+
+static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
+{
+	Pane *parent;
+	PyObject *py_handler;
+	PyObject *data;
+	int z = 0;
+	int ret;
+	struct python_command *handler;
+	static char *keywords[] = {"parent", "handler", "data", "z", NULL};
+
+	if (self->pane) {
+		PyErr_SetString(PyExc_TypeError, "Pane already initialised");
+		return 0;
+	}
+	/* Pane(parent, handler, data, z=0 */
+	ret = PyArg_ParseTupleAndKeywords(args, kwds, "O!OO|i", keywords,
+					  &PaneType, &parent, &py_handler, &data,
+					  &z);
+	if (ret < 0)
+		return ret;
+	if (!PyCallable_Check(py_handler)) {
+		PyErr_SetString(PyExc_TypeError, "'handler' is not callable");
+		return 0;
+	}
+	/* FIXME arrange to free this when "Close" is called */
+	handler = malloc(sizeof(handler));
+	handler->c = python_call;
+	handler->callable = py_handler;
+	handler->home_func = 1;
+
+	self->pane = pane_register(parent->pane, z, &handler->c, data, NULL);
+	return 0;
 }
 
 static void pane_dealloc(Pane *self)
@@ -395,7 +433,7 @@ static PyTypeObject PaneType = {
     0,				/* tp_descr_get */
     0,				/* tp_descr_set */
     0,				/* tp_dictoffset */
-    0,				/* tp_init */
+    .tp_init = (initproc)Pane_init,/* tp_init */
     0,				/* tp_alloc */
     .tp_new = (newfunc)pane_new,/* tp_new */
 };
@@ -655,6 +693,7 @@ static PyObject *edlib_call(PyObject *self, PyObject *args, PyObject *kwds)
 			struct python_command *pc = malloc(sizeof(*pc));
 			pc->callable = a;
 			pc->c = python_call;
+			pc->home_func = 0;
 			if (ci.comm2 == NULL)
 				ci.comm2 = &pc->c;
 			else if (ci.comm == NULL)
