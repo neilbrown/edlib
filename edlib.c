@@ -84,9 +84,9 @@ int main(int argc, char *argv[])
 		ci.str = "python/test.py";
 		key_lookup(ed->commands, &ci);
 
-		pane_refresh(root);
+		pane_refresh(&ed->root);
 		event_base_dispatch(base);
 	}
-	pane_close(root);
+	pane_close(&ed->root);
 	exit(0);
 }

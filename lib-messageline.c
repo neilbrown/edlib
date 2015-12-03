@@ -64,7 +64,7 @@ DEF_CMD(messageline_handle)
 		return 1;
 	}
 	/* Anything else clears the message */
-	if (strncmp(ci->key, "pane", 4) != 0 && mli->message) {
+	if (strcmp(ci->key, "Keystroke") == 0 && mli->message) {
 		free(mli->message);
 		mli->message = NULL;
 		pane_clear(mli->line, "");

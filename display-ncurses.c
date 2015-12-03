@@ -27,7 +27,6 @@
 #include "core.h"
 
 struct display_data {
-	struct display		dpy;
 	SCREEN			*scr;
 };
 
@@ -189,10 +188,6 @@ static struct pane *ncurses_init(struct editor *ed)
 	mousemask(ALL_MOUSE_EVENTS, NULL);
 
 	dd->scr = NULL;
-	dd->dpy.mode = "";
-	dd->dpy.next_mode = "";
-	dd->dpy.numeric = NO_NUMERIC;
-	dd->dpy.extra = 0;
 
 	current_screen = NULL;
 	p = pane_register(&ed->root, 0, &ncurses_handle, dd, NULL);
@@ -205,7 +200,7 @@ static struct pane *ncurses_init(struct editor *ed)
 		      handle_winch, p);
 	event_add(l, NULL);
 	pane_damaged(p, DAMAGED_SIZE);
-	return p;
+	return pane_attach(p, "input", NULL, NULL);
 }
 
 static void handle_winch(int sig, short ev, void *vpane)
@@ -324,55 +319,38 @@ static char *find_name (struct namelist *l, wint_t c)
 
 static void send_key(int keytype, wint_t c, struct pane *p)
 {
-	struct display_data *dd = p->data;
-	struct cmd_info ci = {0};
-	char *k, *n;
+	char *n;
 	char buf[100];/* FIXME */
 
-	strcpy(buf, dd->dpy.mode);
-	k = buf + strlen(buf);
 	if (keytype == KEY_CODE_YES) {
 		n = find_name(key_names, c);
 		if (!n)
-			sprintf(k, "Ncurs-%o", c);
+			sprintf(buf, "Ncurs-%o", c);
 		else
-			strcpy(k, n);
+			strcpy(buf, n);
 	} else {
 		n = find_name(char_names, c);
 		if (n)
-			strcpy(k, n);
+			strcpy(buf, n);
 		else if (c < ' ')
-			sprintf(k, "C-Chr-%c", c+64);
+			sprintf(buf, "C-Chr-%c", c+64);
 		else
-			sprintf(k, "Chr-%lc", c);
+			sprintf(buf, "Chr-%lc", c);
 	}
 
-	ci.key = buf;
-	ci.focus = p;
-	ci.numeric = dd->dpy.numeric;
-	ci.extra = dd->dpy.extra;
-	dd->dpy.mode = dd->dpy.next_mode;
-	dd->dpy.numeric = NO_NUMERIC;
-	dd->dpy.extra = 0;
-	key_handle_focus_point(&ci);
+	call5("Keystroke", p, 0, NULL, buf, 0);
 }
 
 static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
 {
-	struct display_data *dd = p->data;
 	struct cmd_info ci = {0};
-	char buf[100];/* FIXME */
 
-	ci.key = strcat(strcpy(buf, dd->dpy.mode), cmd);
+	ci.key = "Mouse-event";
+	ci.str = cmd;
 	ci.focus = p;
-	ci.numeric = dd->dpy.numeric;
-	ci.extra = dd->dpy.extra;
 	ci.x = x;
 	ci.y = y;
-	dd->dpy.mode = dd->dpy.next_mode;
-	dd->dpy.numeric = NO_NUMERIC;
-	dd->dpy.extra = 0;
-	key_handle_xy_point(&ci);
+	key_handle_xy(&ci);
 }
 
 static void send_mouse(MEVENT *mev, struct pane *p)

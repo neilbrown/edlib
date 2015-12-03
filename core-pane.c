@@ -407,40 +407,17 @@ struct pane *render_attach(char *name, struct pane *parent)
 
 void pane_set_mode(struct pane *p, char *mode, int transient)
 {
-	struct display *dd;
-
-	if (!p->parent)
-		return;
-	while (p->parent->parent)
-		p = p->parent;
-	dd = p->data;
-	dd->mode = mode;
-	if (!transient)
-		dd->next_mode = mode;
+	call5("Mode:set-mode", p, 0, NULL, mode, !transient);
 }
 
 void pane_set_numeric(struct pane *p, int numeric)
 {
-	struct display *dd;
-
-	if (!p->parent)
-		return;
-	while (p->parent->parent)
-		p = p->parent;
-	dd = p->data;
-	dd->numeric = numeric;
+	call3("Mode:set-numeric", p, numeric, NULL);
 }
 
 void pane_set_extra(struct pane *p, int extra)
 {
-	struct display *dd;
-
-	if (!p->parent)
-		return;
-	while (p->parent->parent)
-		p = p->parent;
-	dd = p->data;
-	dd->extra = extra;
+	call5("Mode:set-extra", p, 0, NULL, NULL, extra);
 }
 
 struct pane *pane_attach(struct pane *p, char *type, struct pane *dp,

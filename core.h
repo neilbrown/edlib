@@ -6,7 +6,6 @@
  * documents
  * marks and points
  * attributes
- * displays
  * panes
  * keymaps
  * commands
@@ -23,7 +22,6 @@ typedef _Bool bool;
 struct doc;
 struct mark;
 struct attrset;
-struct display;
 struct pane;
 struct command;
 struct cmd_info;
@@ -39,9 +37,8 @@ struct doc_ref {
  * This captures and documents the global states, and allows
  * multiple "editors" in the one process, should that be valuable.
  *
- * Each document and each display contains a reference to the editor.
- * The root pane of a pane tree must have a display as the 'data', which allows
- * the editor to be found from any pane or point.
+ * Each document and contains a reference to the editor which is the root of the
+ * pane tree.
  */
 struct pane {
 	struct pane		*parent;
@@ -72,11 +69,6 @@ struct doc_data {
 	struct command		notify;
 	struct pane		*pane;
 	struct mark		*point;
-};
-
-struct display {
-	char			*mode, *next_mode;
-	int			numeric, extra;
 };
 
 struct editor {
@@ -306,7 +298,7 @@ struct command *key_register_prefix(char *name);
 
 enum {
 	DAMAGED_CHILD	= 1,
-	DAMAGED_SIZE	= 2, /* these the each impose the next. */
+	DAMAGED_SIZE	= 2, /* these three each impose the next. */
 	DAMAGED_CONTENT	= 4,
 	DAMAGED_CURSOR	= 8,
 };
