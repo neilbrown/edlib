@@ -334,6 +334,10 @@ static struct map *doc_default_cmd;
 
 static void init_doc_defaults(void)
 {
+
+	if (doc_default_cmd)
+		return;
+
 	doc_default_cmd = key_alloc();
 
 	key_add(doc_default_cmd, "Move-Char", &doc_char);
@@ -496,8 +500,7 @@ struct doc *doc_new(struct editor *ed, char *type)
 	struct cmd_info ci = {0};
 	struct doc_data *dd;
 
-	if (!doc_default_cmd)
-		init_doc_defaults();
+	init_doc_defaults();
 
 	sprintf(buf, "doc-%s", type);
 	ci.key = buf;
@@ -780,6 +783,7 @@ void doc_make_docs(struct editor *ed)
 	struct docs *ds = malloc(sizeof(*ds));
 	struct map *docs_map = key_alloc();
 
+	init_doc_defaults();
 	doc_init(&ds->doc);
 	ds->doc.ed = ed;
 	doc_set_name(&ds->doc, "*Documents*");
