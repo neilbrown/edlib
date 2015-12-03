@@ -203,6 +203,22 @@ static Pane *pane_children(Pane *self)
 						     struct pane, siblings));
 }
 
+static PyObject *Pane_focus(Pane *self)
+{
+	if (self->pane)
+		pane_focus(self->pane);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyObject *Pane_refresh(Pane *self)
+{
+	if (self->pane)
+		pane_refresh(self->pane);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static Pane *pane_this(Pane *self)
 {
 	return (Pane *)Pane_Frompane(self->pane);
@@ -225,6 +241,10 @@ static Pane *pane_next(Pane *self)
 static PyMethodDef pane_methods[] = {
 	{"children", (PyCFunction)pane_children, METH_NOARGS,
 	 "provides and iterator which will iterate over all children"},
+	{"take_focus", (PyCFunction)Pane_focus, METH_NOARGS,
+	 "Claim the focus for this pane"},
+	{"refresh", (PyCFunction)Pane_refresh, METH_NOARGS,
+	 "Trigger refresh on this pane"},
 	{NULL}
 };
 
