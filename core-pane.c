@@ -405,9 +405,9 @@ struct pane *render_attach(char *name, struct pane *parent)
 }
 
 
-void pane_set_mode(struct pane *p, char *mode, int transient)
+void pane_set_mode(struct pane *p, char *mode)
 {
-	call5("Mode:set-mode", p, 0, NULL, mode, !transient);
+	call5("Mode:set-mode", p, 0, NULL, mode, 0);
 }
 
 void pane_set_numeric(struct pane *p, int numeric)

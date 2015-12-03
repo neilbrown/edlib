@@ -321,7 +321,7 @@ struct pane *pane_to_root(struct pane *p, int *x, int *y, int *z,
 			  int *w, int *h);
 int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h);
 struct editor *pane2ed(struct pane *p);
-void pane_set_mode(struct pane *p, char *mode, int transient);
+void pane_set_mode(struct pane *p, char *mode);
 void pane_set_numeric(struct pane *p, int numeric);
 void pane_set_extra(struct pane *p, int extra);
 struct pane *pane_attach(struct pane *p, char *type, struct pane *dp, char *arg);

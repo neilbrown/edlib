@@ -231,7 +231,6 @@ void key_del(struct map *map, wint_t k)
 
 struct modmap {
 	char	*name;
-	bool	transient;
 	struct command comm;
 };
 
@@ -239,7 +238,7 @@ static int key_prefix(struct cmd_info *ci)
 {
 	struct modmap *m = container_of(ci->comm, struct modmap, comm);
 
-	pane_set_mode(ci->home, m->name, m->transient);
+	pane_set_mode(ci->home, m->name);
 	return 1;
 }
 
@@ -248,7 +247,6 @@ struct command *key_register_prefix(char *name)
 	struct modmap *mm = malloc(sizeof(*mm));
 
 	mm->name = strdup(name);
-	mm->transient = 1;
 	mm->comm.func = key_prefix;
 	return &mm->comm;
 }

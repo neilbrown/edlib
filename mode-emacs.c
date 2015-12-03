@@ -489,7 +489,7 @@ DEF_CMD(emacs_viewdocs)
 
 DEF_CMD(emacs_meta)
 {
-	pane_set_mode(ci->home, "M-", 1);
+	pane_set_mode(ci->home, "M-");
 	pane_set_numeric(ci->home, ci->numeric);
 	pane_set_extra(ci->home, ci->extra);
 	return 1;
