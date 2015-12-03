@@ -25,6 +25,14 @@ DEF_CMD(global_set_attr)
 	return 1;
 }
 
+DEF_CMD(global_set_command)
+{
+	struct editor *ed = container_of(ci->home, struct editor, root);
+
+	key_add(ed->commands, ci->str, ci->comm2);
+	return 1;
+}
+
 struct pane *editor_new(void)
 {
 	struct editor *ed = calloc(sizeof(*ed), 1);
@@ -32,6 +40,7 @@ struct pane *editor_new(void)
 	if (!ed_map) {
 		ed_map = key_alloc();
 		key_add(ed_map, "global-set-attr", &global_set_attr);
+		key_add(ed_map, "global-set-command", &global_set_command);
 	}
 
 	pane_init(&ed->root, NULL, NULL);

@@ -399,5 +399,6 @@ DEF_CMD(display_ncurses)
 
 void edlib_init(struct editor *ed)
 {
-	key_add(ed->commands, "display-ncurses", &display_ncurses);
+	call_comm("global-set-command", &ed->root, 0, NULL, "display-ncurses",
+		  0, &display_ncurses);
 }
