@@ -108,7 +108,7 @@ DEF_CMD(python_call)
 	PyObject *ret, *args, *kwds;
 	int rv = 1;
 
-	args = Py_BuildValue("(s)", ci->str);
+	args = Py_BuildValue("(s)", ci->key);
 	kwds = PyDict_New();
 	if (ci->focus)
 		PyDict_SetItemString(kwds, "focus", Pane_Frompane(ci->focus));
@@ -136,9 +136,12 @@ DEF_CMD(python_call)
 	Py_DECREF(args);
 	Py_DECREF(kwds);
 	if (!ret) {
+		PyErr_Print();
 		/* FIXME cancel error?? */
 		return -1;
 	}
+	if (ret == Py_None)
+		rv = 0;
 	if (PyDict_Check(ret)) {
 		PyObject *r;
 		r = PyDict_GetItemString(ret, "focus");
@@ -168,6 +171,10 @@ DEF_CMD(python_call)
 		r = PyDict_GetItemString(ret, "extra");
 		if (r && PyInt_Check(r))
 			ci->extra = PyInt_AsLong(r);
+
+		r = PyDict_GetItemString(ret, "return");
+		if (r && PyInt_Check(r))
+			rv = PyInt_AsLong(r);
 
 		/* FIXME xy and hxy */
 	}
@@ -201,18 +208,25 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 		return 0;
 	}
 	/* Pane(parent, handler, data, z=0 */
+	if (!PyTuple_Check(args) || PyTuple_GET_SIZE(args) == 0)
+		/* Probably an internal Pane_Frompane call */
+		return 1;
+
+
+	PyObject_Print(args, stderr, 0);
 	ret = PyArg_ParseTupleAndKeywords(args, kwds, "O!OO|i", keywords,
 					  &PaneType, &parent, &py_handler, &data,
 					  &z);
-	if (ret < 0)
+	if (ret <= 0)
 		return ret;
 	if (!PyCallable_Check(py_handler)) {
 		PyErr_SetString(PyExc_TypeError, "'handler' is not callable");
 		return 0;
 	}
 	/* FIXME arrange to free this when "Close" is called */
-	handler = malloc(sizeof(handler));
+	handler = malloc(sizeof(*handler));
 	handler->c = python_call;
+	Py_INCREF(py_handler);
 	handler->callable = py_handler;
 	handler->home_func = 1;
 
@@ -691,6 +705,7 @@ static PyObject *edlib_call(PyObject *self, PyObject *args, PyObject *kwds)
 		} else if (PyCallable_Check(a)) {
 			/* FIXME this is never freed */
 			struct python_command *pc = malloc(sizeof(*pc));
+			Py_INCREF(a);
 			pc->callable = a;
 			pc->c = python_call;
 			pc->home_func = 0;
