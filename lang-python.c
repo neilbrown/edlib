@@ -70,7 +70,7 @@ DEF_CMD(python_load)
 {
 	char *fname = ci->str;
 	FILE *fp;
-	PyObject *globals;
+	PyObject *globals, *main_mod;
 	struct editor *ed = pane2ed(ci->home);
 	PyObject *Ed;
 
@@ -80,15 +80,18 @@ DEF_CMD(python_load)
 	if (!fp)
 		return -1;
 
+	main_mod = PyImport_AddModule("__main__");
+	if (main_mod == NULL)
+		return -1;
+	globals = PyModule_GetDict(main_mod);
+
 	Ed = Pane_Frompane(&ed->root);
-	globals = PyDict_New();
 	PyDict_SetItemString(globals, "editor", Ed);
 	PyDict_SetItemString(globals, "pane", Pane_Frompane(ci->home));
 	PyDict_SetItemString(globals, "edlib", EdlibModule);
 	PyRun_FileExFlags(fp, fname, Py_file_input, globals, globals, 0, NULL);
 	PyErr_Print();
 	Py_DECREF(Ed);
-	Py_DECREF(globals);
 	fclose(fp);
 	return 1;
 }
