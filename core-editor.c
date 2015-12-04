@@ -98,7 +98,12 @@ int editor_load_module(struct editor *ed, char *name)
 	void (*s)(struct editor *e);
 
 	sprintf(buf, "edlib-%s.so", name);
-	h = dlopen(buf, RTLD_NOW);
+	/* RTLD_GLOBAL is needed for python, else we get
+	 * errors about _Py_ZeroStruct which a python script
+	 * tries "import gtk"
+	 *
+	 */
+	h = dlopen(buf, RTLD_NOW | RTLD_GLOBAL);
 	if (!h)
 		return 0;
 	s = dlsym(h, "edlib_init");
