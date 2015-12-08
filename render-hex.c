@@ -241,8 +241,9 @@ static struct pane *do_render_hex_attach(struct pane *parent)
 
 DEF_CMD(render_hex_attach)
 {
-	ci->focus = do_render_hex_attach(ci->focus);
-	return 1;
+	return comm_call(ci->comm2, "callback:attach",
+			 do_render_hex_attach(ci->focus),
+			 0, NULL, NULL, 0);
 }
 
 void edlib_init(struct editor *ed)

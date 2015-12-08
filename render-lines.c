@@ -955,8 +955,8 @@ REDEF_CMD(render_lines_attach)
 	rl->typenum = doc_add_view(ci->focus, &rl->type, 0);
 	rl->pane = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
 
-	ci->focus = rl->pane;
-	return 1;
+	return comm_call(ci->comm2, "callback:attach", rl->pane,
+			 0, NULL, NULL, 0);
 }
 
 void edlib_init(struct editor *ed)

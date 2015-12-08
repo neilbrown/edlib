@@ -369,8 +369,7 @@ REDEF_CMD(complete_attach)
 	pane_check_size(complete);
 	cd->prefix = strdup("");
 
-	ci->focus = complete;
-	return 1;
+	return comm_call(ci->comm2, "callback:attach", complete, 0, NULL, NULL, 0);
 }
 
 void edlib_init(struct editor *ed)

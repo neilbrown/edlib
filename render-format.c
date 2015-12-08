@@ -20,8 +20,6 @@ struct rf_data {
 	int fields;
 };
 
-DEF_CMD(render_format_attach);
-
 DEF_CMD(render_line)
 {
 	char *body = pane_attr_get(ci->focus, "line-format");
@@ -176,14 +174,16 @@ DEF_CMD(format_close)
 	return 1;
 }
 
+static struct pane *do_render_format_attach(struct pane *parent);
 DEF_CMD(format_clone)
 {
 	struct pane *c;
+	struct pane *p;
 
-	render_format_attach_func(ci);
+	p = do_render_format_attach(ci->focus);
 	c = pane_child(ci->home);
 	if (c)
-		return pane_clone(c, ci->focus);
+		return pane_clone(c, p);
 	return 1;
 }
 
@@ -265,11 +265,10 @@ static void render_format_register_map(void)
 
 DEF_LOOKUP_CMD(render_format_handle, rf_map);
 
-REDEF_CMD(render_format_attach)
+static struct pane *do_render_format_attach(struct pane *parent)
 {
 	struct rf_data *rf = malloc(sizeof(*rf));
 	struct pane *p;
-	struct pane *parent = ci->focus;
 
 	if (!rf_map)
 		render_format_register_map();
@@ -278,9 +277,16 @@ REDEF_CMD(render_format_attach)
 	p = pane_register(parent, 0, &render_format_handle.c, rf, NULL);
 	attr_set_str(&p->attrs, "render-wrap", "no", -1);
 	render_attach("lines", p);
+	return p;
+}
 
-	ci->focus = p;
-	return 1;
+DEF_CMD(render_format_attach)
+{
+	struct pane *p;
+
+	p = do_render_format_attach(ci->focus);
+
+	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
 void edlib_init(struct editor *ed)

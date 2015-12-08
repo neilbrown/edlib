@@ -387,11 +387,22 @@ struct pane *pane_with_cursor(struct pane *p, int *oxp, int *oyp)
 	return ret;
 }
 
+DEF_CMD(pane_callback)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->p = ci->focus;
+	return 1;
+}
+
 struct pane *render_attach(char *name, struct pane *parent)
 {
 	char buf[100];
 	struct cmd_info ci = {0};
 	int ret;
+	struct call_return cr;
+
+	cr.c = pane_callback;
+	cr.p = NULL;
 
 	/* always attach a renderer as a leaf */
 	parent = pane_final_child(parent);
@@ -403,15 +414,16 @@ struct pane *render_attach(char *name, struct pane *parent)
 	sprintf(buf, "render-%s-attach", name);
 	ci.key = buf;
 	ci.focus = parent;
+	ci.comm2 = &cr.c;
 	ret = key_lookup(pane2ed(parent)->commands, &ci);
 	if (ret)
-		return ci.focus;
+		return cr.p;
 	sprintf(buf, "render-%s", name);
 	editor_load_module(pane2ed(parent), buf);
 	sprintf(buf, "render-%s-attach", name);
 	ret = key_lookup(pane2ed(parent)->commands, &ci);
 	if (ret)
-		return ci.focus;
+		return cr.p;
 	return NULL;
 }
 
@@ -429,13 +441,6 @@ void pane_set_numeric(struct pane *p, int numeric)
 void pane_set_extra(struct pane *p, int extra)
 {
 	call5("Mode:set-extra", p, 0, NULL, NULL, extra);
-}
-
-DEF_CMD(pane_callback)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->p = ci->focus;
-	return 1;
 }
 
 struct pane *pane_attach(struct pane *p, char *type, struct pane *dp,
