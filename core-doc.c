@@ -626,6 +626,32 @@ struct pane *doc_find(struct editor *ed, char *name)
 	return NULL;
 }
 
+DEF_CMD(doc_attr_callback)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return , c);
+	cr->s = ci->str;
+	return 1;
+}
+
+char *doc_attr(struct pane *dp, struct mark *m, bool forward, char *attr)
+{
+	struct cmd_info ci = {0};
+	struct call_return cr;
+
+	ci.key = "doc:get-attr";
+	ci.home = ci.focus = dp;
+	ci.mark = m;
+	ci.numeric = forward ? 1 : 0;
+	ci.str = attr;
+	ci.comm = dp->handle;
+	cr.c = doc_attr_callback;
+	cr.s = NULL;
+	ci.comm2 = &cr.c;
+	if (!dp->handle || dp->handle->func(&ci) == 0)
+		return NULL;
+	return cr.s;
+}
+
 /* the 'docs' document type is special in that there can only ever
  * be one instance - the list of documents.
  * So there is no 'doctype' registered, just a document which can never
@@ -741,7 +767,10 @@ DEF_CMD(docs_get_attr)
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
-	ci->str2 = __docs_get_attr(dd->doc, m, forward, attr);
+	char *val = __docs_get_attr(dd->doc, m, forward, attr);
+
+	comm_call(ci->comm2, "callback:get_attr", ci->focus,
+		  0, NULL, val, 0);
 	return 1;
 }
 

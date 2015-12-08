@@ -476,8 +476,10 @@ DEF_CMD(dir_get_attr)
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
+	char *val = __dir_get_attr(dd->doc, m, forward, attr);
 
-	ci->str2 = __dir_get_attr(dd->doc, m, forward, attr);
+	comm_call(ci->comm2, "callback:get_attr", ci->focus,
+		  0, NULL, val, 0);
 	return 1;
 }
 

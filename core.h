@@ -168,6 +168,7 @@ void mark_backward_over(struct mark *m, struct mark *mp);
 void point_notify_change(struct doc *d, struct mark *p, struct mark *m);
 void doc_notify_change(struct doc *d, struct mark *m);
 void doc_check_consistent(struct doc *d);
+char *doc_attr(struct pane *dp, struct mark *m, bool forward, char *attr);
 void point_to_mark(struct mark *p, struct mark *m);
 void mark_to_mark(struct mark *m, struct mark *target);
 int mark_same(struct doc *d, struct mark *m1, struct mark *m2);
@@ -399,21 +400,6 @@ static inline char *doc_getstr(struct pane *from, struct mark *to)
 	return ci.str;
 }
 
-static inline char *doc_attr(struct pane *dp, struct mark *m, bool forward, char *attr)
-{
-	struct cmd_info ci = {0};
-
-	ci.key = "doc:get-attr";
-	ci.home = ci.focus = dp;
-	ci.mark = m;
-	ci.numeric = forward ? 1 : 0;
-	ci.str = attr;
-	ci.comm = dp->handle;
-	if (!dp->handle || dp->handle->func(&ci) == 0)
-		return NULL;
-	return ci.str2;
-}
-
 static inline int doc_set_attr(struct pane *p, struct mark *pt,
 			       char *attr, char *val)
 {
@@ -501,6 +487,7 @@ static inline int call5(char *key, struct pane *focus, int numeric, struct mark 
 struct call_return {
 	struct command c;
 	struct mark *m;
+	char *s;
 };
 
 static inline int call_comm(char *key, struct pane *focus, int numeric, struct mark *m,
