@@ -1379,7 +1379,7 @@ DEF_CMD(text_replace)
 	struct mark *pm = dd->point;
 	struct mark *end = ci->mark;
 	char *str = ci->str;
-	bool first = ci->numeric;
+	bool first = ci->extra;
 	struct mark *early = NULL;
 
 	/* First delete, then insert */
@@ -1427,8 +1427,7 @@ DEF_CMD(text_replace)
 
 	}
 	point_notify_change(&t->doc, pm, early);
-	ci->numeric = first;
-	return 1;
+	return first ? 1 : 2;
 }
 
 

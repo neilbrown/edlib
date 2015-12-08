@@ -356,14 +356,17 @@ static inline void doc_replace(struct pane *p, struct mark *m,
 			       char *str, bool *first)
 {
 	struct cmd_info ci = {0};
+	int ret;
+
 	ci.key = "doc:replace";
 	ci.focus = p;
 	ci.mark = m;
 	ci.str = str;
 	ci.extra = *first;
 	ci.numeric = 1;
-	key_handle_focus(&ci);
-	*first = ci.extra;
+	ret = key_handle_focus(&ci);
+	if (ret == 1)
+		*first = 1;
 }
 static inline int doc_undo(struct pane *p, bool redo)
 {
