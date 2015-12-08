@@ -998,8 +998,8 @@ DEF_CMD(text_step)
 		ret = text_prev(t, &r);
 	if (ret != WEOF && move)
 		m->ref = *(struct doc_ref*)&r;
-	ci->extra = ret;
-	return 1;
+	/* return value must be +ve, so use high bits to ensure this. */
+	return (ret & 0xFFFFF) | 0x100000;
 }
 
 static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2)

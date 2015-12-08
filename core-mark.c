@@ -496,7 +496,14 @@ void mark_backward_over(struct mark *m, struct mark *mp)
 
 wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci)
 {
-	return call_extra("doc:step", d->home, forward, m, move);
+	int ret = call5("doc:step", d->home, forward, m, NULL, move);
+
+	if (ret <= 0)
+		return ret;
+	if (ret >= 0x1fffff)
+		return WEOF;
+	else
+		return ret & 0xfffff;
 }
 
 wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move)

@@ -639,6 +639,7 @@ DEF_CMD(docs_step)
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric;
 	bool move = ci->extra;
+	int ret;
 
 	struct pane *p = m->ref.p, *next;
 
@@ -665,10 +666,11 @@ DEF_CMD(docs_step)
 	if (move)
 		m->ref.p = next;
 	if (p == NULL)
-		ci->extra = WEOF;
+		ret = WEOF;
 	else
-		ci->extra = ' ';
-	return 1;
+		ret = ' ';
+	/* return value must be +ve, so use high bits to ensure this. */
+	return (ret & 0xFFFFF) | 0x100000;
 }
 
 DEF_CMD(docs_set_ref)

@@ -298,8 +298,8 @@ DEF_CMD(dir_step)
 	}
 	if (move && ret != WEOF)
 		m->ref.d = d;
-	ci->extra = ret;
-	return 1;
+	/* return value must be +ve, so use high bits to ensure this. */
+	return (ret & 0xFFFFF) | 0x100000;
 }
 
 DEF_CMD(dir_set_ref)
