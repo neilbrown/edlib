@@ -418,10 +418,13 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "doc:find-view") == 0) {
+		int ret;
 		if (!ci->comm2)
 			return -1;
-		ci->extra = do_doc_find_view(dd->doc, ci->comm2);
-		return 1;
+		ret =  do_doc_find_view(dd->doc, ci->comm2);
+		if (ret < 0)
+			return ret;
+		return ret + 1;
 	}
 
 	if (strcmp(ci->key, "doc:find") == 0) {
