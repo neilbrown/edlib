@@ -702,15 +702,14 @@ void mark_to_mark(struct mark *m, struct mark *target)
 int mark_same2(struct doc *d, struct mark *m1, struct mark *m2, struct cmd_info *ci)
 {
 	struct cmd_info ci2 = {0};
+
 	if (!ci)
 		ci = &ci2;
 	ci->key = "doc:mark-same";
 	ci->mark = m1;
 	ci->mark2 = m2;
 	ci->home = d->home;
-	ci->extra = 0;
-	key_lookup(d->map, ci);
-	return ci->extra;
+	return key_lookup(d->map, ci) == 1;
 }
 
 int mark_same(struct doc *d, struct mark *m1, struct mark *m2)
@@ -728,11 +727,8 @@ int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2,
 	ci->key = "doc:mark-same";
 	ci->mark = m1;
 	ci->mark2 = m2;
-	ci->extra = 0;
 	ci->focus = p;
-	if (key_handle_focus(ci) == 0)
-		return 0;
-	return ci->extra;
+	return key_handle_focus(ci) == 1;
 }
 
 /* A 'vmark' is a mark in a particular view.  We can walk around those

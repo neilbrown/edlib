@@ -1047,8 +1047,7 @@ DEF_CMD(text_mark_same)
 	struct doc_data *dd = ci->home->data;
 	struct text *t = container_of(dd->doc, struct text, doc);
 
-	ci->extra = text_ref_same(t, &ci->mark->ref, &ci->mark2->ref);
-	return 1;
+	return text_ref_same(t, &ci->mark->ref, &ci->mark2->ref) ? 1 : 2;
 }
 
 DEF_CMD(text_new)

@@ -691,8 +691,7 @@ DEF_CMD(docs_set_ref)
 
 DEF_CMD(docs_mark_same)
 {
-	ci->extra = ci->mark->ref.p == ci->mark2->ref.p;
-	return 1;
+	return ci->mark->ref.p == ci->mark2->ref.p ? 1 : 2;
 }
 
 static char *__docs_get_attr(struct doc *doc, struct mark *m,

@@ -319,8 +319,7 @@ DEF_CMD(dir_set_ref)
 
 DEF_CMD(dir_mark_same)
 {
-	ci->extra = ci->mark->ref.d == ci->mark2->ref.d;
-	return 1;
+	return ci->mark->ref.d == ci->mark2->ref.d ? 1 : 2;
 }
 
 static void get_stat(struct directory *dr, struct dir_ent *de)
