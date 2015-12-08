@@ -169,6 +169,7 @@ void point_notify_change(struct doc *d, struct mark *p, struct mark *m);
 void doc_notify_change(struct doc *d, struct mark *m);
 void doc_check_consistent(struct doc *d);
 char *doc_attr(struct pane *dp, struct mark *m, bool forward, char *attr);
+char *doc_getstr(struct pane *from, struct mark *to);
 void point_to_mark(struct mark *p, struct mark *m);
 void mark_to_mark(struct mark *m, struct mark *target);
 int mark_same(struct doc *d, struct mark *m1, struct mark *m2);
@@ -385,19 +386,6 @@ static inline int doc_load_file(struct pane *p, int fd, char *name)
 	ci.str = name;
 	ci.key = "doc:load-file";
 	return key_handle_focus(&ci);
-}
-static inline char *doc_getstr(struct pane *from, struct mark *to)
-{
-	struct cmd_info ci = {0};
-	int ret;
-
-	ci.key = "doc:get-str";
-	ci.focus = from;
-	ci.mark = to;
-	ret = key_handle_focus(&ci);
-	if (!ret)
-		return NULL;
-	return ci.str;
 }
 
 static inline int doc_set_attr(struct pane *p, struct mark *pt,

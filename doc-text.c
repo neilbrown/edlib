@@ -1155,7 +1155,8 @@ DEF_CMD(text_get_str)
 			break;
 	}
 	ret[l] = 0;
-	ci->str = ret;
+	comm_call(ci->comm2, "callback:get-str", ci->focus, 0, NULL, ret, 0);
+	free(ret);
 	return 1;
 }
 

@@ -628,7 +628,7 @@ struct pane *doc_find(struct editor *ed, char *name)
 
 DEF_CMD(doc_attr_callback)
 {
-	struct call_return *cr = container_of(ci->comm, struct call_return , c);
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 	cr->s = ci->str;
 	return 1;
 }
@@ -648,6 +648,31 @@ char *doc_attr(struct pane *dp, struct mark *m, bool forward, char *attr)
 	cr.s = NULL;
 	ci.comm2 = &cr.c;
 	if (!dp->handle || dp->handle->func(&ci) == 0)
+		return NULL;
+	return cr.s;
+}
+
+DEF_CMD(doc_str_callback)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->s = strdup(ci->str);
+	return 1;
+}
+
+char *doc_getstr(struct pane *from, struct mark *to)
+{
+	struct cmd_info ci = {0};
+	int ret;
+	struct call_return cr;
+
+	ci.key = "doc:get-str";
+	ci.focus = from;
+	ci.mark = to;
+	cr.c = doc_str_callback;
+	cr.s = NULL;
+	ci.comm2 = &cr.c;
+	ret = key_handle_focus(&ci);
+	if (!ret)
 		return NULL;
 	return cr.s;
 }
