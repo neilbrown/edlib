@@ -476,6 +476,7 @@ struct call_return {
 	struct command c;
 	struct mark *m;
 	char *s;
+	struct pane *p;
 };
 
 static inline int call_comm(char *key, struct pane *focus, int numeric, struct mark *m,
@@ -498,6 +499,8 @@ static inline int comm_call(struct command *comm, char *key, struct pane *focus,
 {
 	struct cmd_info ci = {0};
 
+	if (!comm)
+		return -1;
 	ci.key = key;
 	ci.focus = focus;
 	ci.numeric = numeric;

@@ -129,8 +129,9 @@ DEF_CMD(keymap_attach)
 	p = pane_final_child(p);
 	p = pane_register(p, 0, &keymap_handle, kd, NULL);
 	pane_check_size(p);
-	ci->focus = p;
-	return 1;
+	if (p)
+		return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+	return -1;
 }
 
 void edlib_init(struct editor *ed)

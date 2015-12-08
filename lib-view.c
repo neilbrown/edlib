@@ -242,8 +242,8 @@ DEF_CMD(view_attach)
 	if (strchr(borderstr, 'L')) borders |= BORDER_LEFT;
 	if (strchr(borderstr, 'R')) borders |= BORDER_RIGHT;
 
-	ci->focus = do_view_attach(ci->focus, borders);
-	return ci->focus != NULL;
+	return comm_call(ci->comm2, "callback:attach", do_view_attach(ci->focus, borders),
+			 0, NULL, NULL, 0);
 }
 
 DEF_CMD(view_click)

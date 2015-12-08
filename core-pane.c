@@ -431,18 +431,30 @@ void pane_set_extra(struct pane *p, int extra)
 	call5("Mode:set-extra", p, 0, NULL, NULL, extra);
 }
 
+DEF_CMD(pane_callback)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->p = ci->focus;
+	return 1;
+}
+
 struct pane *pane_attach(struct pane *p, char *type, struct pane *dp,
 			 char *arg)
 {
 	struct cmd_info ci = {0};
 	struct editor *ed = pane2ed(p);
 	char *com;
+	struct call_return cr;
+
+	cr.c = pane_callback;
+	cr.p = NULL;
 
 	asprintf(&com, "attach-%s", type);
 	ci.key = com;
 	ci.home = dp;
 	ci.focus = p;
 	ci.str = arg;
+	ci.comm2 = &cr.c;
 	if (!key_lookup(ed->commands, &ci)) {
 		char *mod;
 		if (strcmp(type, "global-keymap")==0)
@@ -450,11 +462,10 @@ struct pane *pane_attach(struct pane *p, char *type, struct pane *dp,
 		asprintf(&mod, "lib-%s", type);
 		editor_load_module(ed, mod);
 		free(mod);
-		if (!key_lookup(ed->commands, &ci))
-			ci.focus = NULL;
+		key_lookup(ed->commands, &ci);
 	}
 	free(com);
-	return ci.focus;
+	return cr.p;
 }
 
 void pane_clear(struct pane *p, char *attrs)

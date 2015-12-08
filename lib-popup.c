@@ -186,8 +186,7 @@ DEF_CMD(popup_attach)
 	ci2.str2 = "Abort";
 	key_handle_focus(&ci2);
 
-	ci->focus = ppi->popup;
-	return 1;
+	return comm_call(ci->comm2, "callback:attach", ppi->popup, 0, NULL, NULL, 0);
 }
 
 void edlib_init(struct editor *ed)

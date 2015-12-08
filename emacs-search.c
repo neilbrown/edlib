@@ -282,9 +282,10 @@ DEF_CMD(emacs_search)
 	esi->watch = search_again;
 	doc_add_view(ci->focus, &esi->watch, 0);
 
-	ci->focus = pane_final_child(ci->focus);
-	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);
-	ci->focus = p;
+	p = pane_final_child(ci->focus);
+	p = pane_register(p, 0, &search_handle.c, esi, NULL);
+	if (p)
+		comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 	return 1;
 }
 

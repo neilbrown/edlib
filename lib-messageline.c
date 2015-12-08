@@ -76,12 +76,13 @@ DEF_CMD(messageline_attach)
 {
 	struct mlinfo *mli = malloc(sizeof(*mli));
 	struct pane *p = ci->focus;
+	struct pane *ret;
 
 	mli->message = NULL;
-	ci->focus = pane_register(p, 0, &messageline_handle, mli, NULL);
+	ret = pane_register(p, 0, &messageline_handle, mli, NULL);
 	mli->line = pane_register(p, 1, &messageline_handle, mli, NULL);
 	pane_focus(ci->focus);
-	return 1;
+	return comm_call(ci->comm2, "callback:attach", ret, 0, NULL, NULL, 0);
 }
 
 

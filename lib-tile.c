@@ -87,9 +87,8 @@ DEF_CMD(tile_attach)
 	ti->direction = Neither;
 	INIT_LIST_HEAD(&ti->tiles);
 	pane_check_size(p);
-	ci->focus = p;
 	attr_set_str(&p->attrs, "borders", "BL", -1);
-	return 1;
+	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
 static struct pane *tile_split(struct pane *p, int horiz, int after)

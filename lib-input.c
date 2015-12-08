@@ -105,6 +105,7 @@ DEF_LOOKUP_CMD(input_handle, im_map);
 DEF_CMD(input_attach)
 {
 	struct input_mode *im = malloc(sizeof(*im));
+	struct pane *p;
 
 	register_map();
 
@@ -112,8 +113,10 @@ DEF_CMD(input_attach)
 	im->numeric = NO_NUMERIC;
 	im->extra = 0;
 
-	ci->focus = pane_register(ci->focus, 0, &input_handle.c, im, NULL);
-	return 1;
+	p = pane_register(ci->focus, 0, &input_handle.c, im, NULL);
+	if (p)
+		return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+	return -1;
 }
 
 void edlib_init(struct editor *ed)
