@@ -201,9 +201,12 @@ REDEF_CMD(search_again)
 	ret = key_lookup(pane2ed(esi->target)->commands, &ci2);
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
-	else if (ret < 0) {
+	else if (ret == -2) {
+		esi->matched = 0;
+		pfx = "Failed Search: ";
+	} else if (ret < 0) {
 		pfx = "Search (incomplete): ";
-	} else if (ci2.extra > 0) {
+	} else {
 		memset(&ci2, 0, sizeof(ci2));
 		point_to_mark(esi->end, m);
 		/* TEMP HACK - please fix */
@@ -213,9 +216,6 @@ REDEF_CMD(search_again)
 		pfx = "Search: ";
 		if (esi->wrapped)
 			pfx = "Wrapped Search: ";
-	} else {
-		esi->matched = 0;
-		pfx = "Failed Search: ";
 	}
 	/* HACK */
 	for (p = esi->search; p; p = p->parent) {

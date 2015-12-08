@@ -50,10 +50,11 @@ DEF_CMD(text_search)
 		mark_to_mark(m, endmark);
 		mark_free(endmark);
 	}
-	ci->extra = since_start;
 	rxl_free_state(st);
 	free(rxl);
-	return 1;
+	if (since_start < 0)
+		return -2;
+	return since_start + 1;
 }
 
 void edlib_init(struct editor *ed)

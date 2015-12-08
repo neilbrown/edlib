@@ -521,6 +521,7 @@ DEF_CMD(emacs_search)
 {
 	struct cmd_info ci2 = {0};
 	struct mark *m;
+	int ret;
 
 	if (strcmp(ci->key, "Search String") != 0) {
 		struct pane *p = pane_attach(ci->focus, "popup", NULL, "TR2");
@@ -554,9 +555,8 @@ DEF_CMD(emacs_search)
 	ci2.mark = m;
 	ci2.str = ci->str;
 	ci2.key = "text-search";
-	if (!key_lookup(pane2ed(ci->focus)->commands, &ci2))
-		ci2.extra = -1;
-	if (ci2.extra > 0)
+	ret = key_lookup(pane2ed(ci->focus)->commands, &ci2);
+	if (ret > 1)
 		call3("Move-to", ci->focus, 0, m);
 
 	mark_free(m);
