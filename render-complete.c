@@ -237,7 +237,7 @@ DEF_CMD(complete_set_prefix)
 	free(cd->prefix);
 	cd->prefix = strdup(ci->str);
 
-	m = call_mark("doc:dup-point", ci->home, 0, NULL, MARK_UNGROUPED);
+	m = mark_at_point(ci->home, NULL, MARK_UNGROUPED);
 	call3("Move-File", ci->home, 1, m);
 
 	ci2.key = "render-line-prev";

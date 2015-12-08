@@ -544,7 +544,7 @@ DEF_CMD(emacs_search)
 	if (!ci->str || !ci->str[0])
 		return -1;
 
-	m = call_mark("doc:dup-point", ci->home, 0, NULL, MARK_UNGROUPED);
+	m = mark_at_point(ci->home, NULL, MARK_UNGROUPED);
 
 	ci2.key = "global-set-attr";
 	ci2.str = "Search String";

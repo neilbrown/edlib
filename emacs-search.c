@@ -267,7 +267,7 @@ DEF_CMD(emacs_search)
 		return -1;
 	esi = malloc(sizeof(*esi));
 	esi->target = p;
-	m = call_mark("doc:dup-point", p, 0, NULL, MARK_POINT);
+	m = mark_at_point(p, NULL, MARK_POINT);
 	if (!m) {
 		free(esi);
 		return -1;
