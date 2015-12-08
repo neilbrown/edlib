@@ -378,19 +378,23 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "doc:dup-point") == 0) {
 		struct mark *pt = dd->point;
+		struct mark *m;
 		if (ci->mark && ci->mark->viewnum == MARK_POINT)
 			pt = ci->mark;
-		ci->mark = NULL;
-		if (pt) {
-			if (ci->extra == MARK_POINT)
-				ci->mark = point_dup(pt);
-			else if (ci->extra == MARK_UNGROUPED)
-				ci->mark = mark_dup(pt, 1);
-			else
-				ci->mark = do_mark_at_point(dd->doc, pt,
-							    ci->extra);
-		}
-		return 1;
+
+		if (!pt || !ci->comm2)
+			return -1;
+
+		if (ci->extra == MARK_POINT)
+			m = point_dup(pt);
+		else if (ci->extra == MARK_UNGROUPED)
+			m = mark_dup(pt, 1);
+		else
+			m = do_mark_at_point(dd->doc, pt,
+					     ci->extra);
+
+		return comm_call(ci->comm2, "callback:dup-point", ci->focus,
+				 0, m, NULL, 0);
 	}
 
 	if (strcmp(ci->key, "Move-to") == 0) {

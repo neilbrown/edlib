@@ -498,6 +498,11 @@ static inline int call5(char *key, struct pane *focus, int numeric, struct mark 
 	return key_handle_focus(&ci);
 }
 
+struct call_return {
+	struct command c;
+	struct mark *m;
+};
+
 static inline int call_comm(char *key, struct pane *focus, int numeric, struct mark *m,
 			    char *str, int extra, struct command *comm)
 {
@@ -513,19 +518,19 @@ static inline int call_comm(char *key, struct pane *focus, int numeric, struct m
 	return key_handle_focus(&ci);
 }
 
-static inline struct mark *call_mark(char *key, struct pane *focus, int numeric,
-				     struct mark *m, int extra)
+static inline int comm_call(struct command *comm, char *key, struct pane *focus,
+			    int numeric, struct mark *m, char *str, int extra)
 {
 	struct cmd_info ci = {0};
 
 	ci.key = key;
 	ci.focus = focus;
 	ci.numeric = numeric;
-	ci.extra = extra;
 	ci.mark = m;
-	if (!key_handle_focus(&ci))
-		return NULL;
-	return ci.mark;
+	ci.str = str;
+	ci.extra = extra;
+	ci.comm = comm;
+	return comm->func(&ci);
 }
 
 static inline struct pane *call_pane(char *key, struct pane *focus, int numeric,
