@@ -257,12 +257,11 @@ DEF_CMD(complete_set_prefix)
 			common[common_len(c, common)] = 0;
 		cnt += 1;
 	}
-	ci->extra = cnt;
 	ci->str = common;
 	call3("Move-to", ci->home, 0, m);
 	mark_free(m);
 	call3("render-lines:redraw", ci->focus, 0, NULL);
-	return 1;
+	return cnt + 1;
 }
 
 DEF_CMD(complete_return)

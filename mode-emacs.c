@@ -327,6 +327,7 @@ DEF_CMD(emacs_file_complete)
 	int fd;
 	struct pane *par, *pop, *docp;
 	struct cmd_info ci2 = {0};
+	int ret;
 
 	d = str;
 	while ((c = strstr(d, "//")) != NULL)
@@ -359,9 +360,9 @@ DEF_CMD(emacs_file_complete)
 	ci2.key = "Complete:prefix";
 	ci2.str = b;
 	ci2.focus = par;
-	key_handle_focus(&ci2);
+	ret = key_handle_focus(&ci2);
 	free(d);
-	if (ci2.str && (strlen(ci2.str) <= strlen(b) && ci2.extra > 1)) {
+	if (ci2.str && (strlen(ci2.str) <= strlen(b) && ret-1 > 1)) {
 		/* We need the dropdown */
 		pane_damaged(par, DAMAGED_CONTENT);
 		free(str);
@@ -436,6 +437,7 @@ DEF_CMD(emacs_doc_complete)
 	char *str = doc_getstr(ci->focus, NULL);
 	struct pane *par, *pop;
 	struct cmd_info ci2 = {0};
+	int ret;
 
 	pop = pane_attach(ci->focus, "popup", ed->docs->home, "DM1r");
 	if (!pop)
@@ -449,8 +451,8 @@ DEF_CMD(emacs_doc_complete)
 	ci2.key = "Complete:prefix";
 	ci2.str = str;
 	ci2.focus = par;
-	key_handle_focus(&ci2);
-	if (ci2.str && (strlen(ci2.str) <= strlen(str) && ci2.extra > 1)) {
+	ret = key_handle_focus(&ci2);
+	if (ci2.str && (strlen(ci2.str) <= strlen(str) && ret - 1 > 1)) {
 		/* We need the dropdown */
 		pane_damaged(par, DAMAGED_CONTENT);
 		free(str);
