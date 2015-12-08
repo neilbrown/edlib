@@ -722,16 +722,18 @@ DEF_CMD(render_lines_set_cursor)
 	struct mark *m;
 	int y = rl->header_lines - rl->skip_lines;
 	int found = 0;
+	int cihy;
 
 	render_lines_other_move_func(ci);
 
 	m = vmark_first(p, rl->typenum);
 
+	cihy = ci->hy;
 	if (y > ci->hy)
 		/* x,y is in header line - try lower */
-		ci->hy = y;
+		cihy = y;
 	while (y <= ci->hy && m && m->mdata) {
-		int cx = ci->hx, cy = ci->hy, o = -1;
+		int cx = ci->hx, cy = cihy, o = -1;
 		render_line(p, m->mdata, &y, 0, &cx, &cy, &o);
 		if (o >= 0) {
 			struct mark *m2 = call_render_line_offset(p, m, o);
