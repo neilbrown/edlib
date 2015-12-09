@@ -405,13 +405,15 @@ static inline int doc_set_attr(struct pane *p, struct mark *pt,
 static inline int doc_add_view(struct pane *p, struct command *c, int size)
 {
 	struct cmd_info ci = {0};
+	int ret;
 	ci.focus = p;
 	ci.key = "doc:add-view";
 	ci.comm2 = c;
 	ci.extra = size;
-	if (key_handle_focus(&ci) == 0)
+	ret = key_handle_focus(&ci);
+	if (ret <= 0)
 		return -1;
-	return ci.extra;
+	return ret - 1;
 }
 
 static inline void doc_del_view(struct pane *p, struct command *c)

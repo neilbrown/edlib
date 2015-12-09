@@ -411,8 +411,7 @@ DEF_CMD(doc_handle)
 	if (strcmp(ci->key, "doc:add-view") == 0) {
 		if (!ci->comm2)
 			return -1;
-		ci->extra = do_doc_add_view(dd->doc, ci->comm2, ci->extra);
-		return 1;
+		return 1 + do_doc_add_view(dd->doc, ci->comm2, ci->extra);
 	}
 
 	if (strcmp(ci->key, "doc:del-view") == 0) {
