@@ -43,12 +43,20 @@ char WelcomeText[] =
 	"Mouse clicks move the cursor, and clicking on the scroll bar scrolls\n"
 	;
 
+DEF_CMD(take_pane)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->p = ci->focus;
+	return 1;
+}
+
 int main(int argc, char *argv[])
 {
 	struct event_base *base;
 	struct pane *root, *global;
 	struct pane *b, *p= NULL;
 	struct cmd_info ci = {0};
+	struct call_return cr;
 	struct editor *ed;
 	struct pane *vroot = editor_new();
 
@@ -64,9 +72,12 @@ int main(int argc, char *argv[])
 	editor_load_module(ed, "display-ncurses");
 	ci.home = ci.focus = vroot;
 	ci.key = "display-ncurses";
+	cr.c = take_pane;
+	cr.p = NULL;
+	ci.comm2 = &cr.c;
 	if (!key_lookup(ed->commands, &ci))
 		exit(1);
-	root = ci.focus;
+	root = cr.p;
 	global = pane_attach(root, "messageline", NULL, NULL);
 	global = pane_attach(global, "global-keymap", NULL, NULL);
 

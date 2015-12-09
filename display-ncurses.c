@@ -393,8 +393,10 @@ static void input_handle(int fd, short ev, void *P)
 DEF_CMD(display_ncurses)
 {
 	struct pane *p = ncurses_init(pane2ed(ci->home));
-	ci->focus = p;
-	return 1;
+	if (p)
+		return comm_call(ci->comm2, "callback:display", p, 0, NULL,
+				 NULL, 0);
+	return -1;
 }
 
 void edlib_init(struct editor *ed)
