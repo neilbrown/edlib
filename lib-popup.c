@@ -98,10 +98,10 @@ DEF_CMD(popup_handle)
 		pane_close(ppi->popup);
 		return 1;
 	}
-	if (strcmp(ci->key, "popup:get-target") == 0) {
-		ci->focus = ppi->target;
-		return 1;
-	}
+	if (strcmp(ci->key, "popup:get-target") == 0)
+		return comm_call(ci->comm2, "callback:get-target",
+				 ppi->target, 0, NULL, NULL, 0);
+
 	return 0;
 }
 

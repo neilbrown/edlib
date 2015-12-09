@@ -631,22 +631,23 @@ DEF_CMD(tile_other)
 
 	if (!list_empty(&ti->tiles)) {
 		struct tileinfo *ti2 = list_next_entry(ti, tiles);
-		ci->focus = ti2->p;
-		return 1;
+		return comm_call(ci->comm2, "callback:pane", ti2->p, 0,
+				 NULL, NULL, 0);
 	}
 	/* Need to create a tile.  If wider than 120 (FIXME configurable and
 	 * pixel sensitive), horiz-split else vert
 	 */
 	p2 = tile_split(p, p->w >= 120, 1);
 	if (p2)
-		ci->focus = p2;
-	return 1;
+		return comm_call(ci->comm2, "callback:pane", p2, 0,
+				 NULL, NULL, 0);
+	return -1;
 }
 
 DEF_CMD(tile_this)
 {
-	ci->focus = ci->home;
-	return 1;
+	return comm_call(ci->comm2, "callback:pane", ci->home, 0,
+			 NULL, NULL, 0);
 }
 
 DEF_CMD(tile_root)
@@ -657,8 +658,8 @@ DEF_CMD(tile_root)
 		p = p->parent;
 		ti = p->data;
 	}
-	ci->focus = p;
-	return 1;
+	return comm_call(ci->comm2, "callback:pane", p, 0,
+			 NULL, NULL, 0);
 }
 
 void edlib_init(struct editor *ed)

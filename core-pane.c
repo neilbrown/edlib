@@ -523,3 +523,29 @@ struct pane *pane_final_child(struct pane *p)
 		p = c;
 	return p;
 }
+
+DEF_CMD(take_pane)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->p = ci->focus;
+	return 1;
+}
+
+struct pane *call_pane(char *key, struct pane *focus, int numeric,
+		       struct mark *m, int extra)
+{
+	struct cmd_info ci = {0};
+	struct call_return cr;
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.extra = extra;
+	ci.mark = m;
+	cr.c = take_pane;
+	cr.p = NULL;
+	ci.comm2 = &cr.c;
+	if (!key_handle_focus(&ci))
+		return NULL;
+	return cr.p;
+}

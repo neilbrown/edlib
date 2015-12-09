@@ -330,6 +330,8 @@ struct pane *pane_attach(struct pane *p, char *type, struct pane *dp, char *arg)
 void pane_clear(struct pane *p, char *attrs);
 void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y);
 char *pane_attr_get(struct pane *p, char *key);
+struct pane *call_pane(char *key, struct pane *focus, int numeric,
+		       struct mark *m, int extra);
 
 static inline struct pane *pane_child(struct pane *p)
 {
@@ -512,21 +514,6 @@ static inline int comm_call(struct command *comm, char *key, struct pane *focus,
 	ci.extra = extra;
 	ci.comm = comm;
 	return comm->func(&ci);
-}
-
-static inline struct pane *call_pane(char *key, struct pane *focus, int numeric,
-				     struct mark *m, int extra)
-{
-	struct cmd_info ci = {0};
-
-	ci.key = key;
-	ci.focus = focus;
-	ci.numeric = numeric;
-	ci.extra = extra;
-	ci.mark = m;
-	if (!key_handle_focus(&ci))
-		return NULL;
-	return ci.focus;
 }
 
 static inline int call_extra(char *key, struct pane *focus, int numeric, struct mark *m,
