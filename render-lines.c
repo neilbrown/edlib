@@ -287,15 +287,26 @@ static struct mark *call_render_line_prev(struct pane *p,
 	return m;
 }
 
+DEF_CMD(save_str)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->s = ci->str ? strdup(ci->str) : NULL;
+	return 1;
+}
+
 static struct mark *call_render_line(struct pane *p, struct mark *start)
 {
 	struct cmd_info ci = {0};
+	struct call_return cr;
 	struct mark *m, *m2;
 
 	ci.key = "render-line";
 	ci.focus = p;
 	ci.mark = mark_dup(start, 0);
 	ci.numeric = NO_NUMERIC;
+	cr.c = save_str;
+	cr.s = NULL;
+	ci.comm2 = &cr.c;
 	/* Allow for filling the rest of the pane, given that
 	 * some has been used.
 	 * 'used' can be negative if the mark is before the start
@@ -308,7 +319,7 @@ static struct mark *call_render_line(struct pane *p, struct mark *start)
 
 	if (start->mdata)
 		free(start->mdata);
-	start->mdata = ci.str;
+	start->mdata = cr.s;
 
 	m = vmark_matching(p, ci.mark);
 	if (m)
@@ -327,6 +338,11 @@ static struct mark *call_render_line(struct pane *p, struct mark *start)
 	return m;
 }
 
+DEF_CMD(no_save)
+{
+	return 1;
+}
+
 static struct mark *call_render_line_offset(struct pane *p,
 					    struct mark *start, int offset)
 {
@@ -336,12 +352,20 @@ static struct mark *call_render_line_offset(struct pane *p,
 	ci.focus = p;
 	ci.mark = mark_dup(start, 0);
 	ci.numeric = offset;
+	ci.comm2 = &no_save;
 	if (key_handle(&ci) == 0) {
 		mark_free(ci.mark);
 		return NULL;
 	}
-	free(ci.str);
 	return ci.mark;
+}
+
+DEF_CMD(get_len)
+{
+	if (ci->str)
+		return strlen(ci->str) + 1;
+	else
+		return 1;
 }
 
 static int call_render_line_to_point(struct pane *p, struct mark *pm,
@@ -355,16 +379,14 @@ static int call_render_line_to_point(struct pane *p, struct mark *pm,
 	ci.mark2 = pm;
 	ci.mark = mark_dup(start, 0);
 	ci.numeric = -1;
-	if (key_handle(&ci) == 0) {
+	ci.comm2 = &get_len;
+	len = key_handle(&ci);
+	if (len <= 0) {
 		mark_free(ci.mark);
 		return 0;
 	}
+	len -= 1;
 	mark_free(ci.mark);
-	if (ci.str) {
-		len = strlen(ci.str);
-		free(ci.str);
-	} else
-		len = 0;
 	return len;
 }
 

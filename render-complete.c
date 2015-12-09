@@ -23,6 +23,12 @@ struct complete_data {
 	char *prefix;
 };
 
+struct rlcb {
+	struct command c;
+	int keep, plen, cmp;
+	char *prefix, *str;
+};
+
 static char *add_highlight_prefix(char *orig, int plen, char *attr)
 {
 	struct buf ret;
@@ -42,6 +48,22 @@ static char *add_highlight_prefix(char *orig, int plen, char *attr)
 	return buf_final(&ret);
 }
 
+DEF_CMD(save_highlighted)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->s = add_highlight_prefix(ci->str, cr->i, "<fg:red>");
+	return 1;
+}
+
+DEF_CMD(rcl_cb)
+{
+	struct rlcb *cb = container_of(ci->comm, struct rlcb, c);
+	if (ci->str == NULL)
+		cb->cmp = 0;
+	else
+		cb->cmp = strncmp(ci->str, cb->prefix, cb->plen);
+	return 1;
+}
 DEF_CMD(render_complete_line)
 {
 	/* The first line *must* match the prefix.
@@ -51,6 +73,9 @@ DEF_CMD(render_complete_line)
 	struct complete_data *cd = ci->home->data;
 	struct doc *d = doc_from_pane(ci->home);
 	int plen = strlen(cd->prefix);
+	struct call_return cr;
+	struct rlcb cb;
+	int ret;
 
 	if (!d || !ci->mark)
 		return -1;
@@ -60,28 +85,48 @@ DEF_CMD(render_complete_line)
 	ci2.mark2 = ci->mark2;
 	ci2.focus = ci->home->parent;
 	ci2.numeric = ci->numeric;
+	cr.c = save_highlighted;
+	cr.i = plen;
+	cr.s = NULL;
+	ci2.comm2 = &cr.c;
 	if (key_handle(&ci2) == 0)
 		return 0;
-	ci->str = add_highlight_prefix(ci2.str, plen, "<fg:red>");
-	free(ci2.str);
+
+	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cr.s, 0);
 	if (ci->numeric != NO_NUMERIC)
-		return 1;
+		return ret;
 	/* Need to continue over other matching lines */
 	ci2.mark = mark_dup(ci->mark, 1);
 	while (1) {
 		ci2.numeric = ci->numeric;
 		ci2.focus = ci->home->parent;
+		cb.c = rcl_cb;
+		cb.plen = plen;
+		cb.prefix = cd->prefix;
+		cb.cmp = 0;
+		ci2.comm2 = &cb.c;
 		key_handle(&ci2);
-		if (ci2.str == NULL ||
-		    strncmp(ci2.str, cd->prefix, plen) == 0)
+		if (cb.cmp == 0)
 			break;
-		/* have a match, so move the mark to here. */
+
+		/* have a non-match, so move the mark over it. */
 		mark_to_mark(ci->mark, ci2.mark);
 	}
 	mark_free(ci2.mark);
-	return 1;
+	return ret;
 }
 
+DEF_CMD(rlcb)
+{
+	struct rlcb *cb = container_of(ci->comm, struct rlcb, c);
+	if (ci->str == NULL)
+		cb->cmp = -1;
+	else
+		cb->cmp = strncmp(ci->str, cb->prefix, cb->plen);
+	if (cb->cmp == 0 && cb->keep && ci->str)
+		cb->str = strdup(ci->str);
+	return 1;
+}
 DEF_CMD(render_complete_prev)
 {
 	/* If ->numeric is 0 we just need 'start of line' so use
@@ -90,8 +135,8 @@ DEF_CMD(render_complete_prev)
 	 * it matches the prefix.
 	 */
 	struct cmd_info ci2 = {0}, ci3 = {0};
+	struct rlcb cb;
 	struct complete_data *cd = ci->home->data;
-	int plen = strlen(cd->prefix);
 	int ret;
 
 	ci2.key = ci->key;
@@ -101,9 +146,12 @@ DEF_CMD(render_complete_prev)
 
 	ci3.key = "render-line";
 	ci3.focus = ci->home->parent;
+	cb.c = rlcb;
+	cb.str = NULL;
+	cb.prefix = cd->prefix;
+	cb.plen = strlen(cb.prefix);
+	ci3.comm2 = &cb.c;
 	while (1) {
-		int cmp;
-
 		ret = key_handle(&ci2);
 		if (ret <= 0 || ci->numeric == 0)
 			/* Either hit start-of-file, or have what we need */
@@ -115,20 +163,16 @@ DEF_CMD(render_complete_prev)
 			ci2.mark = mark_dup(ci->mark, 1);
 		ci3.mark = mark_dup(ci2.mark, 1);
 		ci3.numeric = NO_NUMERIC;
-		if (key_handle(&ci3) == 0) {
+		cb.keep = ci2.numeric == 1 && ci->extra == 42;
+		cb.str = NULL;
+		if (key_handle(&ci3) != 1) {
 			mark_free(ci3.mark);
 			break;
 		}
 		mark_free(ci3.mark);
-		if (ci3.str == NULL)
-			cmp = -1;
-		else
-			cmp = strncmp(ci3.str, cd->prefix, plen);
-		if (cmp != 0 || ci2.numeric != 1 || ci->extra != 42)
-			free(ci3.str);
-		else
-			ci->str2 = ci3.str;
-		if (cmp == 0 && ci2.numeric == 1)
+		ci->str2 = cb.str;
+
+		if (cb.cmp == 0 && ci2.numeric == 1)
 			/* This is a valid new start-of-line */
 			break;
 		/* step back once more */
@@ -174,6 +218,12 @@ DEF_CMD(complete_nomove)
 	return 1;
 }
 
+DEF_CMD(eol_cb)
+{
+	/* don't save anything */
+	return 1;
+}
+
 DEF_CMD(complete_eol)
 {
 	int rpt = RPT_NUM(ci);
@@ -194,15 +244,16 @@ DEF_CMD(complete_eol)
 	}
 	while (rpt > 1) {
 		struct cmd_info ci2 = {0};
+		struct call_return cr;
 		ci2.key = "render-line";
 		ci2.numeric = NO_NUMERIC;
 		ci2.mark = ci->mark;
 		ci2.focus = ci->focus;
 		ci2.home = ci->home;
-		if (render_complete_line_func(&ci2) < 0)
+		cr.c = eol_cb;
+		ci2.comm2 = &cr.c;
+		if (render_complete_line_func(&ci2) <= 0)
 			rpt = 1;
-		else
-			free(ci2.str);
 		rpt -= 1;
 	}
 	return 1;
@@ -264,13 +315,20 @@ DEF_CMD(complete_set_prefix)
 	return cnt + 1;
 }
 
+DEF_CMD(save_str)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->s = ci->str ? strdup(ci->str) : NULL;
+	return 1;
+}
+
 DEF_CMD(complete_return)
 {
 	/* submit the selected entry to the popup */
 	struct pane *p = ci->home;
 	struct complete_data *cd = p->data;
 	struct cmd_info ci2 = {0};
-	char *str;
+	struct call_return cr;
 	int l;
 	char *c1, *c2;
 
@@ -279,14 +337,16 @@ DEF_CMD(complete_return)
 	ci2.home = ci->home;
 	ci2.mark = ci->mark;
 	ci2.numeric = NO_NUMERIC;
+	cr.c = save_str;
+	cr.s = NULL;
+	ci2.comm2 = &cr.c;
 	render_complete_line_func(&ci2);
-	str = ci2.str;
-	if (!str)
+	if (!cr.s)
 		return 1;
-	l = strlen(str);
-	if (l && str[l-1] == '\n')
-		str[l-1] = 0;
-	c1 = c2 = str;
+	l = strlen(cr.s);
+	if (l && cr.s[l-1] == '\n')
+		cr.s[l-1] = 0;
+	c1 = c2 = cr.s;
 	while (*c2) {
 		if (*c2 != '<') {
 			*c1++ = *c2++;
@@ -305,10 +365,10 @@ DEF_CMD(complete_return)
 	memset(&ci2, 0, sizeof(ci2));
 	ci2.key = ci->key;
 	ci2.focus = ci->home->parent;
-	ci2.str = str + strlen(cd->prefix);
+	ci2.str = cr.s + strlen(cd->prefix);
 	ci2.numeric = NO_NUMERIC;
 	key_handle(&ci2);
-	free(str);
+	free(cr.s);
 	return 1;
 }
 

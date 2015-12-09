@@ -32,6 +32,7 @@ DEF_CMD(render_line)
 	wint_t ch;
 	int home;
 	int field = 0;
+	int rv;
 
 	if (!d || !ci->mark)
 		return -1;
@@ -39,10 +40,8 @@ DEF_CMD(render_line)
 	if (pm && !mark_same(d, pm, m))
 		pm = NULL;
 	ch = doc_following(d, m);
-	if (ch == WEOF) {
-		ci->str = NULL;
+	if (ch == WEOF)
 		return 1;
-	}
 	buf_init(&ret);
 
 	if (!body)
@@ -149,8 +148,10 @@ endwhile:
 			mark_next(d, m);
 		}
 	}
-	ci->str = buf_final(&ret);
-	return 1;
+	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
+		       buf_final(&ret), 0);
+	free(ret.b);
+	return rv;
 }
 
 DEF_CMD(render_line_prev)

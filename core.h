@@ -477,6 +477,7 @@ struct call_return {
 	struct mark *m;
 	char *s;
 	struct pane *p;
+	int i;
 };
 
 static inline int call_comm(char *key, struct pane *focus, int numeric, struct mark *m,

@@ -1617,6 +1617,7 @@ DEF_CMD(render_line)
 	int o = ci->numeric;
 	wint_t ch = WEOF;
 	int chars = 0;
+	int ret;
 
 	if (!m)
 		return -1;
@@ -1657,8 +1658,10 @@ DEF_CMD(render_line)
 			buf_concat(&b, "</>");
 		chars++;
 	}
-	ci->str = buf_final(&b);
-	return 1;
+	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
+			buf_final(&b), 0);
+	free(b.b);
+	return ret;
 }
 
 void edlib_init(struct editor *ed)

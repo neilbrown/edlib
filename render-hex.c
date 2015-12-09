@@ -127,6 +127,7 @@ DEF_CMD(render_line)
 	int pos;
 	int i;
 	char buf[10];
+	int rv;
 
 	if (!d || !ci->mark)
 		return -1;
@@ -181,8 +182,10 @@ DEF_CMD(render_line)
 done:
 	if (m)
 		mark_free(m);
-	ci->str = buf_final(&ret);
-	return 1;
+	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
+		       buf_final(&ret), 0);
+	free(ret.b);
+	return rv;
 }
 
 DEF_CMD(render_line_prev)
