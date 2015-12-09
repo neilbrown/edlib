@@ -315,6 +315,13 @@ DEF_CMD(emacs_findfile)
 	return 1;
 }
 
+DEF_CMD(save_str)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->s = ci->str ? strdup(ci->str) : NULL;
+	return 1;
+}
+
 DEF_CMD(emacs_file_complete)
 {
 	/* Extract a directory name and a basename from the document.
@@ -327,6 +334,7 @@ DEF_CMD(emacs_file_complete)
 	int fd;
 	struct pane *par, *pop, *docp;
 	struct cmd_info ci2 = {0};
+	struct call_return cr;
 	int ret;
 
 	d = str;
@@ -360,19 +368,24 @@ DEF_CMD(emacs_file_complete)
 	ci2.key = "Complete:prefix";
 	ci2.str = b;
 	ci2.focus = par;
+	cr.c = save_str;
+	cr.s = NULL;
+	ci2.comm2 = &cr.c;
 	ret = key_handle_focus(&ci2);
 	free(d);
-	if (ci2.str && (strlen(ci2.str) <= strlen(b) && ret-1 > 1)) {
+	if (cr.s && (strlen(cr.s) <= strlen(b) && ret-1 > 1)) {
 		/* We need the dropdown */
 		pane_damaged(par, DAMAGED_CONTENT);
 		free(str);
+		free(cr.s);
 		return 1;
 	}
-	if (ci2.str) {
+	if (cr.s) {
 		/* add the extra chars from ci2.str */
-		char *c = ci2.str + strlen(b);
+		char *c = cr.s + strlen(b);
 
 		call5("Replace", ci->focus, 1, ci->mark, c, 0);
+		free(cr.s);
 	}
 	/* Now need to close the popup */
 	pane_close(pop);
@@ -437,6 +450,7 @@ DEF_CMD(emacs_doc_complete)
 	char *str = doc_getstr(ci->focus, NULL);
 	struct pane *par, *pop;
 	struct cmd_info ci2 = {0};
+	struct call_return cr;
 	int ret;
 
 	pop = pane_attach(ci->focus, "popup", ed->docs->home, "DM1r");
@@ -451,18 +465,23 @@ DEF_CMD(emacs_doc_complete)
 	ci2.key = "Complete:prefix";
 	ci2.str = str;
 	ci2.focus = par;
+	cr.c = save_str;
+	cr.s = NULL;
+	ci2.comm2= &cr.c;
 	ret = key_handle_focus(&ci2);
-	if (ci2.str && (strlen(ci2.str) <= strlen(str) && ret - 1 > 1)) {
+	if (cr.s && (strlen(cr.s) <= strlen(str) && ret - 1 > 1)) {
 		/* We need the dropdown */
 		pane_damaged(par, DAMAGED_CONTENT);
 		free(str);
+		free(cr.s);
 		return 1;
 	}
-	if (ci2.str) {
-		/* add the extra chars from ci2.str */
-		char *c = ci2.str + strlen(str);
+	if (cr.s) {
+		/* add the extra chars from cr.s */
+		char *c = cr.s + strlen(str);
 
 		call5("Replace", ci->focus, 1, ci->mark, c, 0);
+		free(cr.s);
 	}
 	/* Now need to close the popup */
 	pane_close(pop);
