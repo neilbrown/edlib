@@ -1054,6 +1054,7 @@ DEF_CMD(text_new)
 {
 	struct text *t = malloc(sizeof(*t));
 	struct editor *ed = pane2ed(ci->focus);
+	struct pane *p;
 
 	t->alloc = NULL;
 	INIT_LIST_HEAD(&t->text);
@@ -1062,8 +1063,10 @@ DEF_CMD(text_new)
 	t->doc.map = text_map;
 	t->fname = NULL;
 	text_new_alloc(t, 0);
-	ci->focus = doc_attach(ed->root.focus, &t->doc);
-	return 1;
+	p = doc_attach(ed->root.focus, &t->doc);
+	if (p)
+		return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
+	return -1;
 }
 
 static int count_bytes(struct text *t, struct mark *from, struct mark *to)

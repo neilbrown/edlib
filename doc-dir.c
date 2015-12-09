@@ -119,13 +119,16 @@ DEF_CMD(dir_new)
 {
 	struct directory *dr = malloc(sizeof(*dr));
 	struct editor *ed = pane2ed(ci->focus);
+	struct pane *p;
 
 	doc_init(&dr->doc);
 	dr->doc.map = doc_map;
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	ci->focus = doc_attach(ed->root.focus, &dr->doc);
-	return 1;
+	p = doc_attach(ed->root.focus, &dr->doc);
+	if (p)
+		return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
+	return -1;
 }
 
 DEF_CMD(dir_load_file)

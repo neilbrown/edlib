@@ -501,10 +501,18 @@ struct pane *doc_attach(struct pane *parent, struct doc *d)
 	return p;
 }
 
+DEF_CMD(take_pane)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->p = ci->focus;
+	return 1;
+}
+
 struct doc *doc_new(struct editor *ed, char *type)
 {
 	char buf[100];
 	struct cmd_info ci = {0};
+	struct call_return cr;
 	struct doc_data *dd;
 
 	init_doc_defaults();
@@ -512,12 +520,15 @@ struct doc *doc_new(struct editor *ed, char *type)
 	sprintf(buf, "doc-%s", type);
 	ci.key = buf;
 	ci.focus = ci.home = &ed->root;
+	cr.c = take_pane;
+	cr.p = NULL;
+	ci.comm2 = &cr.c;
 	if (!key_lookup(ed->commands, &ci)) {
 		editor_load_module(ed, buf);
 		if (!key_lookup(ed->commands, &ci))
 			return NULL;
 	}
-	dd = ci.focus->data;
+	dd = cr.p->data;
 	return dd->doc;
 }
 
