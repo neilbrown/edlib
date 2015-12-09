@@ -170,7 +170,11 @@ DEF_CMD(render_complete_prev)
 			break;
 		}
 		mark_free(ci3.mark);
-		ci->str2 = cb.str;
+		/* This is a horrible hack, but as it is entirely internal
+		 * to this module it can say for now.
+		 * Cast ci to remove any 'const' tag that I hope to add soon.
+		 */
+		((struct cmd_info*)ci)->str2 = cb.str;
 
 		if (cb.cmp == 0 && ci2.numeric == 1)
 			/* This is a valid new start-of-line */
