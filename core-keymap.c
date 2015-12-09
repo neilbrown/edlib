@@ -234,7 +234,7 @@ struct modmap {
 	struct command comm;
 };
 
-static int key_prefix(struct cmd_info *ci)
+static int key_prefix(const struct cmd_info *ci)
 {
 	struct modmap *m = container_of(ci->comm, struct modmap, comm);
 
@@ -267,7 +267,7 @@ struct command *key_lookup_cmd(struct map *m, char *c)
 		return NULL;
 }
 
-int key_lookup(struct map *m, struct cmd_info *ci)
+int key_lookup(struct map *m, const struct cmd_info *ci)
 {
 	int pos = key_find(m, ci->key);
 	struct command *comm;
@@ -282,39 +282,40 @@ int key_lookup(struct map *m, struct cmd_info *ci)
 		comm = GETCOMM(m->comms[pos-1]);
 	} else
 		return 0;
-	ci->comm = comm;
+	((struct cmd_info*)ci)->comm = comm;
 	return comm->func(ci);
 }
 
-int key_lookup_cmd_func(struct cmd_info *ci)
+int key_lookup_cmd_func(const struct cmd_info *ci)
 {
 	struct lookup_cmd *l = container_of(ci->comm, struct lookup_cmd, c);
 	return key_lookup(*l->m, ci);
 }
 
-int key_handle(struct cmd_info *ci)
+int key_handle(const struct cmd_info *ci)
 {
+	struct cmd_info *vci = (struct cmd_info*)ci;
 	struct pane *p = ci->focus;
 	int ret = 0;
 
 	if (ci->comm)
 		return ci->comm->func(ci);
 
-	ci->hx = ci->x;
-	ci->hy = ci->y;
+	vci->hx = ci->x;
+	vci->hy = ci->y;
 
 	while (ret == 0 && p) {
 		if (p->handle) {
-			ci->home = p;
-			ci->comm = p->handle;
+			vci->home = p;
+			vci->comm = p->handle;
 			ret = p->handle->func(ci);
 		}
 		if (ret)
 			/* 'p' might have been destroyed */
 			break;
 		if (ci->hx >= 0) {
-			ci->hx += p->x;
-			ci->hy += p->y;
+			vci->hx += p->x;
+			vci->hy += p->y;
 		}
 		p = p->parent;
 	}

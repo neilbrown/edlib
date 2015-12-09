@@ -58,7 +58,7 @@ struct pane {
 };
 
 struct command {
-	int	(*func)(struct cmd_info *ci);
+	int	(*func)(const struct cmd_info *ci);
 };
 
 /* this is ->data for a document pane.  Only core-doc and
@@ -252,16 +252,16 @@ struct lookup_cmd {
 
 #define CMD(_name) {_name ## _func }
 #define DEF_CMD(_name) \
-	static int _name ## _func(struct cmd_info *ci); \
+	static int _name ## _func(const struct cmd_info *ci); \
 	static struct command _name = CMD(_name);	\
-	static int _name ## _func(struct cmd_info *ci)
+	static int _name ## _func(const struct cmd_info *ci)
 #define REDEF_CMD(_name) \
-	static int _name ## _func(struct cmd_info *ci)
+	static int _name ## _func(const struct cmd_info *ci)
 
 #define DEF_LOOKUP_CMD(_name, _map) \
 	static struct lookup_cmd _name = { { key_lookup_cmd_func }, &_map };
 
-int key_lookup_cmd_func(struct cmd_info *ci);
+int key_lookup_cmd_func(const struct cmd_info *ci);
 
 #define	ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 
@@ -290,12 +290,12 @@ struct cmd_info {
 
 struct map *key_alloc(void);
 void key_free(struct map *m);
-int key_handle(struct cmd_info *ci);
+int key_handle(const struct cmd_info *ci);
 int key_handle_focus(struct cmd_info *ci);
 int key_handle_xy(struct cmd_info *ci);
 int key_handle_focus_point(struct cmd_info *ci);
 int key_handle_xy_point(struct cmd_info *ci);
-int key_lookup(struct map *m, struct cmd_info *ci);
+int key_lookup(struct map *m, const const struct cmd_info *ci);
 struct command *key_lookup_cmd(struct map *m, char *c);
 void key_add(struct map *map, char *k, struct command *comm);
 void key_add_range(struct map *map, char *first, char *last,

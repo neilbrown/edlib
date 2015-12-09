@@ -38,7 +38,7 @@ enum {
 static struct map *view_map;
 static struct pane *do_view_attach(struct pane *par, int border);
 
-static int view_refresh(struct cmd_info *ci)
+static int view_refresh(const struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;

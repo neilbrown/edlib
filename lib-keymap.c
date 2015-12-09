@@ -66,7 +66,7 @@ DEF_CMD(keymap_handle)
 			ci2.focus = p;
 			keymap_attach_func(&ci2);
 			pane_attach(p, "local-keymap", NULL, NULL);
-			return key_handle_focus(ci);
+			return key_handle_focus((struct cmd_info*)ci);
 		}
 	}
 	if (kd->global && strncmp(ci->key, "global-set-key", 14) == 0) {
@@ -107,7 +107,7 @@ DEF_CMD(keymap_handle)
 
 	for (i = 0; i < kd->cmdcount; i++) {
 		int ret;
-		ci->comm = kd->cmds[i];
+		((struct cmd_info*)ci)->comm = kd->cmds[i];
 		ret = kd->cmds[i]->func(ci);
 		if (ret)
 			return ret;
