@@ -261,18 +261,19 @@ DEF_CMD(doc_file)
 	struct doc *d = dd->doc;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
+	struct mark *m = ci->mark;
 
-	if (ci->mark == NULL)
-		ci->mark = dd->point;
+	if (!m)
+		m = dd->point;
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(d, ci->mark)) != WEOF)
+		while ((ch = mark_next(d, m)) != WEOF)
 			;
 		rpt = 0;
 	}
 	if (rpt > 0)
-		__mark_reset(d, ci->mark, 0, 1);
+		__mark_reset(d, m, 0, 1);
 	if (rpt < 0)
-		mark_reset(d, ci->mark);
+		mark_reset(d, m);
 
 	return 1;
 }
