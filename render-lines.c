@@ -263,7 +263,7 @@ static struct mark *call_render_line_prev(struct pane *p,
 	ci.mark = m;
 	ci.focus = p;
 	ci.numeric = n;
-	ret = key_handle(&ci);
+	ret = key_handle_focus(&ci);
 	if (ret == 0) {
 		mark_free(m);
 		return NULL;
@@ -312,7 +312,7 @@ static struct mark *call_render_line(struct pane *p, struct mark *start)
 	 * 'used' can be negative if the mark is before the start
 	 * of the pane
 	 */
-	if (key_handle(&ci) == 0) {
+	if (key_handle_focus(&ci) == 0) {
 		mark_free(ci.mark);
 		return NULL;
 	}
@@ -353,7 +353,7 @@ static struct mark *call_render_line_offset(struct pane *p,
 	ci.mark = mark_dup(start, 0);
 	ci.numeric = offset;
 	ci.comm2 = &no_save;
-	if (key_handle(&ci) == 0) {
+	if (key_handle_focus(&ci) == 0) {
 		mark_free(ci.mark);
 		return NULL;
 	}
@@ -380,7 +380,7 @@ static int call_render_line_to_point(struct pane *p, struct mark *pm,
 	ci.mark = mark_dup(start, 0);
 	ci.numeric = -1;
 	ci.comm2 = &get_len;
-	len = key_handle(&ci);
+	len = key_handle_focus(&ci);
 	if (len <= 0) {
 		mark_free(ci.mark);
 		return 0;

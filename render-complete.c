@@ -215,6 +215,8 @@ DEF_CMD(complete_nomove)
 		return 0;
 	if (strcmp(ci->key, "Move-to") == 0)
 		return 0;
+	if (strcmp(ci->key, "Move-Line") == 0)
+		return 0;
 	return 1;
 }
 
@@ -396,36 +398,17 @@ static void register_map(void)
 REDEF_CMD(complete_attach)
 {
 	struct pane *complete;
-	struct pane *lines;
-	struct pane *parent;
 	struct complete_data *cd;
-	struct cmd_info ci2 = {0};
 
 	if (!rc_map)
 		register_map();
 
-	/* Need to interpose a new pane between the 'render-lines' pane,
-	 * which we assume is 'ci->focus' and its parent, so we can
-	 * re-interpret lines.
-	 * Find the 'render-line-prev' pane by sending a render-line request
-	 * (with NULLs so it fails) and grabbing 'home'
-	 */
-	ci2.key = "render-line";
-	ci2.focus = ci->focus;
-	if (key_handle_focus(&ci2) == 0)
-		return -1;
-	parent = ci2.home;
-	lines = pane_child(parent);
-	mark_free(ci2.mark);
-
-
 	cd = calloc(1, sizeof(*cd));
-	complete = pane_register(parent, 0, &complete_handle.c, cd, NULL);
+	complete = pane_register(ci->focus, 0, &complete_handle.c, cd, NULL);
 	if (!complete) {
 		free(cd);
 		return -1;
 	}
-	pane_reparent(lines, complete);
 	pane_check_size(complete);
 	cd->prefix = strdup("");
 
