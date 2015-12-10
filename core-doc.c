@@ -437,12 +437,14 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "doc:vmark-get") == 0) {
-		ci->mark = do_vmark_first(dd->doc, ci->numeric);
-		ci->mark2 = do_vmark_last(dd->doc, ci->numeric);
+		struct mark *m, *m2;
+		m = do_vmark_first(dd->doc, ci->numeric);
+		m2 = do_vmark_last(dd->doc, ci->numeric);
 		if (ci->extra && dd->point)
-			ci->mark2 = do_vmark_at_point(dd->doc, dd->point,
-						      ci->numeric);
-		return 1;
+			m2 = do_vmark_at_point(dd->doc, dd->point,
+					       ci->numeric);
+		return comm_call7(ci->comm2, "callback:vmark", ci->focus,
+				  0, m, NULL, 0, NULL, m2);
 	}
 
 	ret = key_lookup(dd->doc->map, ci);

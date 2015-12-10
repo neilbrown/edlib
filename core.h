@@ -478,7 +478,7 @@ static inline int call5(char *key, struct pane *focus, int numeric, struct mark 
 
 struct call_return {
 	struct command c;
-	struct mark *m;
+	struct mark *m, *m2;
 	char *s;
 	struct pane *p;
 	int i;
@@ -511,6 +511,27 @@ static inline int comm_call(struct command *comm, char *key, struct pane *focus,
 	ci.numeric = numeric;
 	ci.mark = m;
 	ci.str = str;
+	ci.extra = extra;
+	ci.comm = comm;
+	return comm->func(&ci);
+}
+
+static inline int comm_call7(struct command *comm, char *key,
+			     struct pane *focus,
+			     int numeric, struct mark *m, char *str,
+			     int extra, char *str2, struct mark *m2)
+{
+	struct cmd_info ci = {0};
+
+	if (!comm)
+		return -1;
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.mark = m;
+	ci.mark2 = m2;
+	ci.str = str;
+	ci.str2 = str2;
 	ci.extra = extra;
 	ci.comm = comm;
 	return comm->func(&ci);

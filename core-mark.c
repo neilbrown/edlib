@@ -820,24 +820,36 @@ struct mark *do_vmark_last(struct doc *d, int view)
 	return NULL;
 }
 
+DEF_CMD(take_marks)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->m = ci->mark;
+	cr->m2 = ci->mark2;
+	return 1;
+}
+
 static int vmark_get(struct pane *p, int view,
 		     struct mark **first, struct mark **last, struct mark **point)
 {
 	struct cmd_info ci = {0};
+	struct call_return cr;
 
 	ci.key = "doc:vmark-get";
 	ci.focus = p;
 	ci.numeric = view;
+	cr.c = take_marks;
+	cr.m = cr.m2 = NULL;
+	ci.comm2 = &cr.c;
 	if (point)
 		ci.extra = 1;
 	if (key_handle_focus(&ci) == 0)
 		return 0;
 	if (first)
-		*first = ci.mark;
+		*first = cr.m;
 	if (point)
-		*point = ci.mark2;
+		*point = cr.m2;
 	else if (last)
-		*last = ci.mark2;
+		*last = cr.m2;
 	return 1;
 }
 
