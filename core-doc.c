@@ -32,6 +32,8 @@ struct doc_ref {
 
 #include "core.h"
 
+static int do_doc_destroy(struct doc *d);
+
 static int do_doc_add_view(struct doc *d, struct command *c, int size)
 {
 	struct docview *g;
@@ -446,6 +448,8 @@ DEF_CMD(doc_handle)
 		return comm_call7(ci->comm2, "callback:vmark", ci->focus,
 				  0, m, NULL, 0, NULL, m2);
 	}
+	if (strcmp(ci->key, "doc:destroy") == 0)
+		return do_doc_destroy(dd->doc);
 
 	ret = key_lookup(dd->doc->map, ci);
 	ret = ret ?: key_lookup(doc_default_cmd, ci);
@@ -593,7 +597,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	doc_set_name(d, name);
 	p = doc_attach_view(parent, d->home, NULL);
 	if (!p) {
-		doc_destroy(d);
+		do_doc_destroy(d);
 		return p;
 	}
 	doc_replace(p, NULL, text, &first);
@@ -847,9 +851,7 @@ DEF_CMD(docs_open)
 
 DEF_CMD(docs_bury)
 {
-	struct doc *d = doc_from_pane(ci->home);
-
-	doc_destroy(d);
+	doc_destroy(ci->home);
 	return 1;
 }
 
@@ -926,12 +928,13 @@ void doc_promote(struct doc *d)
 	docs_attach(d);
 }
 
-int  doc_destroy(struct doc *d)
+static int do_doc_destroy(struct doc *d)
 {
 	/* If there are no views on the document, then unlink from
 	 * the documents list and destroy it.
 	 */
 	int i;
+	struct cmd_info ci = {0};
 
 	d->deleting = 1;
 	if (d == d->ed->docs)
@@ -943,13 +946,16 @@ int  doc_destroy(struct doc *d)
 	for (i = 0; i < d->nviews; i++)
 		if (d->views[i].notify)
 			/* still in use */
-			return 0;
+			return -1;
 	if (d == d->ed->docs)
-		return 0;
+		return -1;
 
 	docs_release(d);
 
-	call3("doc:destroy", d->home, 0, 0);
+	ci.home = ci.focus = d->home;
+	ci.key = "doc:destroy";
+	key_lookup(d->map, &ci);
+
 	pane_close(d->home);
 
 	free(d->views);
@@ -965,4 +971,9 @@ int  doc_destroy(struct doc *d)
 	}
 	free(d);
 	return 1;
+}
+
+int doc_destroy(struct pane *p)
+{
+	return call3("doc:destroy", p, 0, 0);
 }

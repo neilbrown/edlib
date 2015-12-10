@@ -531,10 +531,7 @@ DEF_CMD(emacs_num)
 
 DEF_CMD(emacs_kill_doc)
 {
-	struct doc *d = doc_from_pane(ci->home);
-
-	if (d)
-		doc_destroy(d);
+	doc_destroy(ci->home);
 	return 1;
 }
 

@@ -549,9 +549,7 @@ DEF_CMD(dir_reread)
 
 DEF_CMD(dir_close)
 {
-	struct doc *d = doc_from_pane(ci->home);
-
-	doc_destroy(d);
+	doc_destroy(ci->home);
 	return 1;
 }
 
