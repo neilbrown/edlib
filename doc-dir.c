@@ -185,8 +185,8 @@ DEF_CMD(dir_load_file)
 			list_del(&de->lst);
 			free(de);
 			if (m && donotify) {
-				doc_notify_change(&dr->doc, prev);
-				doc_notify_change(&dr->doc, m);
+				doc_notify_change(&dr->doc, prev, NULL);
+				doc_notify_change(&dr->doc, m, NULL);
 			}
 		} else if (de2 &&
 			   (de1 == NULL || strcmp(de2->name, de1->name) < 0)) {
@@ -197,8 +197,8 @@ DEF_CMD(dir_load_file)
 			else
 				list_add_tail(&de2->lst, &dr->ents);
 			if (m && donotify) {
-				doc_notify_change(&dr->doc, prev);
-				doc_notify_change(&dr->doc, m);
+				doc_notify_change(&dr->doc, prev, NULL);
+				doc_notify_change(&dr->doc, m, NULL);
 			}
 		} else {
 			/* de1 and de2 are the same.  Just step over de1 and
@@ -222,7 +222,7 @@ DEF_CMD(dir_load_file)
 	if (!donotify) {
 		m = doc_first_mark_all(&dr->doc);
 		if (m)
-			doc_notify_change(&dr->doc, m);
+			doc_notify_change(&dr->doc, m, NULL);
 	}
 
 	if (name) {

@@ -902,7 +902,7 @@ static void docs_release(struct doc *d)
 	     m = doc_next_mark_all(m))
 		if (m->ref.p == d->home) {
 			mark_step2(ed->docs, m, 1, 1);
-			doc_notify_change(ed->docs, m);
+			doc_notify_change(ed->docs, m, NULL);
 		}
 }
 
@@ -923,7 +923,7 @@ static void docs_attach(struct doc *d)
 	     m = doc_next_mark_all(m))
 		if (p->siblings.next == &m->ref.p->siblings) {
 			mark_step2(ed->docs, m, 0, 1);
-			doc_notify_change(ed->docs, m);
+			doc_notify_change(ed->docs, m, NULL);
 		}
 }
 

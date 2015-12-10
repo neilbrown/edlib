@@ -952,7 +952,7 @@ struct mark *do_vmark_at_point(struct doc *d, struct mark *pt, int view)
 	return NULL;
 }
 
-void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
+static void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
 {
 	/* Notify of changes from m (might be NULL) to p.
 	 * Notify the last mark which is before p or m,
@@ -1011,8 +1011,9 @@ void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
 
 /* doc_notify_change is slower than point_notify_change, but only
  * requires a mark, not a point.
+ * A second mark should only be given in the first mark is a point
  */
-void doc_notify_change(struct doc *d, struct mark *m)
+void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 {
 	struct cmd_info ci = {0};
 	char *done;
@@ -1020,9 +1021,10 @@ void doc_notify_change(struct doc *d, struct mark *m)
 	int remaining = d->nviews;
 
 	if (m->viewnum == MARK_POINT) {
-		point_notify_change(d, m, NULL);
+		point_notify_change(d, m, m2);
 		return;
 	}
+	ASSERT(m2 == NULL);
 
 	done = alloca(d->nviews);
 	for (i = 0; i < d->nviews; i++)

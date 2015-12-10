@@ -871,7 +871,7 @@ DEF_CMD(text_reundo)
 		if (early && !text_ref_same(t, &early->ref, &start))
 			early = NULL;
 
-		point_notify_change(&t->doc, dd->point, early);
+		doc_notify_change(&t->doc, dd->point, early);
 
 		text_check_consistent(t);
 	}
@@ -1430,7 +1430,7 @@ DEF_CMD(text_replace)
 		text_check_consistent(t);
 
 	}
-	point_notify_change(&t->doc, pm, early);
+	doc_notify_change(&t->doc, pm, early);
 	return first ? 1 : 2;
 }
 
@@ -1516,7 +1516,7 @@ DEF_CMD(text_set_attr)
 		c = list_next_entry(c, lst);
 		o = c->start;
 	}
-	doc_notify_change(&t->doc, ci->mark);
+	doc_notify_change(&t->doc, ci->mark, NULL);
 	return attr_set_str(&c->attrs, attr, val, o);
 }
 
