@@ -963,6 +963,7 @@ static void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
 	int i;
 	struct point_links *lnk = p->mdata;
 
+	pane_notify(d->home, "Notify:Replace", p, m);
 	ci.key = "Notify:Replace";
 	ci.numeric = 1;
 	ci.x = ci.y = -1;

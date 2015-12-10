@@ -68,6 +68,7 @@ struct notifier {
 	struct list_head	notifier_link, notifiee_link;
 };
 void pane_add_notify(struct pane *target, struct pane *source, char *msg);
+void pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2);
 
 /* this is ->data for a document pane.  Only core-doc and
  * individual document handlers can know about this.
@@ -556,7 +557,8 @@ static inline int comm_call(struct command *comm, char *key, struct pane *focus,
 }
 
 static inline int comm_call_pane(struct pane *home, char *key, struct pane *focus,
-				 int numeric, struct mark *m, char *str, int extra)
+				 int numeric, struct mark *m, char *str, int extra,
+				 struct mark *m2)
 {
 	struct cmd_info ci = {0};
 	struct command *comm = home->handle;

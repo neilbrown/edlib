@@ -190,10 +190,20 @@ void pane_notify_close(struct pane *p)
 		list_del_init(&n->notifier_link);
 		if (strcmp(n->notification, "Notify:Close") == 0)
 			comm_call_pane(n->notifiee, n->notification, p,
-				       0, NULL, NULL, 0);
+				       0, NULL, NULL, 0, NULL);
 		free(n->notification);
 		free(n);
 	}
+}
+
+void pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2)
+{
+	struct notifier *n;
+
+	list_for_each_entry(n, &p->notifiees, notifier_link)
+		if (strcmp(n->notification, notification) == 0)
+			comm_call_pane(n->notifiee, n->notification, p,
+				       0, m, NULL, 0, m2);
 }
 
 void pane_close(struct pane *p)
