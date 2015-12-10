@@ -179,6 +179,8 @@ struct mark *point_new(struct doc *d);
 struct mark *point_dup(struct mark *p);
 wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci);
 wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move);
+wint_t mark_step_pane(struct pane *p, struct mark *m, int forward, int move, struct cmd_info *ci);
+
 wint_t mark_next(struct doc *d, struct mark *m);
 wint_t mark_prev(struct doc *d, struct mark *m);
 wint_t mark_next_pane(struct pane *p, struct mark *m);
@@ -352,6 +354,10 @@ struct pane *pane_final_child(struct pane *p);
 static inline wint_t doc_following(struct doc *d, struct mark *m)
 {
 	return mark_step2(d, m, 1, 0);
+}
+static inline wint_t doc_following_pane(struct pane *p, struct mark *m)
+{
+	return mark_step_pane(p, m, 1, 0, NULL);
 }
 static inline wint_t doc_prior(struct doc *d, struct mark *m)
 {

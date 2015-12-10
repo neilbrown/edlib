@@ -80,7 +80,6 @@ DEF_CMD(render_hex_notify)
 
 DEF_CMD(render_hex_eol)
 {
-	struct doc *d = doc_from_pane(ci->home);
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 	int pos;
@@ -95,21 +94,21 @@ DEF_CMD(render_hex_eol)
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 	while (rpt > 0 && ch != WEOF) {
 		while ((pos & 15) != 15 &&
-		       (ch = mark_next(d, ci->mark)) != WEOF)
+		       (ch = mark_next_pane(ci->focus, ci->mark)) != WEOF)
 			pos += 1;
 		rpt -= 1;
 		if (rpt) {
-			ch = mark_next(d, ci->mark);
+			ch = mark_next_pane(ci->focus, ci->mark);
 			pos += 1;
 		}
 	}
 	while (rpt < 0 && ch != WEOF) {
 		while ((pos & 15) != 0 &&
-		       (ch = mark_prev(d, ci->mark)) != WEOF)
+		       (ch = mark_prev_pane(ci->focus, ci->mark)) != WEOF)
 			pos -= 1;
 		rpt += 1;
 		if (rpt) {
-			ch = mark_prev(d, ci->mark);
+			ch = mark_prev_pane(ci->focus, ci->mark);
 			pos -= 1;
 		}
 	}
@@ -121,14 +120,13 @@ DEF_CMD(render_line)
 	struct buf ret;
 	struct cmd_info ci2 = {0};
 	struct mark *m = NULL;
-	struct doc *d = doc_from_pane(ci->home);
 	struct mark *pm = ci->mark2;
 	int pos;
 	int i;
 	char buf[10];
 	int rv;
 
-	if (!d || !ci->mark)
+	if (!ci->focus || !ci->mark)
 		return -1;
 
 	ci2.key = "CountLines";
@@ -138,7 +136,7 @@ DEF_CMD(render_line)
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 
 	buf_init(&ret);
-	if (doc_following(d, ci->mark) == WEOF)
+	if (doc_following_pane(ci->focus, ci->mark) == WEOF)
 		goto done;
 	sprintf(buf, "<bold>%08x:</> ", pos);
 	buf_concat(&ret, buf);
@@ -153,7 +151,7 @@ DEF_CMD(render_line)
 		    ci->numeric <= ret.len)
 			goto done;
 
-		ch = mark_next(d, m2);
+		ch = mark_next_pane(ci->focus, m2);
 		if (ch == WEOF)
 			strcpy(buf, "   ");
 		else
@@ -167,7 +165,7 @@ DEF_CMD(render_line)
 	for (i = 0; i < 16; i++) {
 		wint_t ch;
 
-		ch = mark_next(d, m);
+		ch = mark_next_pane(ci->focus, m);
 		if (ch == WEOF)
 			ch = ' ';
 		if (ch < ' ')
@@ -192,7 +190,6 @@ DEF_CMD(render_line_prev)
 	/* If ->numeric is 0, round down to multiple of 16.
 	 * if it is 1, subtract a further 16.
 	 */
-	struct doc *d = doc_from_pane(ci->home);
 	struct cmd_info ci2 = {0};
 	int to, from;
 
@@ -206,7 +203,7 @@ DEF_CMD(render_line_prev)
 	if (ci->numeric && to >= 16)
 		to -= 16;
 	while (to < from) {
-		mark_prev(d, ci->mark);
+		mark_prev_pane(ci->focus, ci->mark);
 		from -= 1;
 	}
 	return 1;

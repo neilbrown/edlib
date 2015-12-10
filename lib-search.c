@@ -15,17 +15,13 @@
 DEF_CMD(text_search)
 {
 	struct mark *m, *endmark = NULL;;
-	struct doc *d;
 	unsigned short *rxl;
 	struct match_state *st;
 	int since_start, len;
 
-	if (!ci->str|| !ci->mark)
+	if (!ci->str|| !ci->mark || !ci->focus)
 		return -1;
 
-	d = doc_from_pane(ci->focus);
-	if (!d)
-		return -1;
 	m = ci->mark;
 	rxl = rxl_parse(ci->str, NULL, 1);
 	if (!rxl)
@@ -33,7 +29,7 @@ DEF_CMD(text_search)
 	st = rxl_prepare(rxl);
 	since_start = -1;
 	while (since_start < 0 || len != -2) {
-		wint_t wch = mark_next(d, m);
+		wint_t wch = mark_next_pane(ci->focus, m);
 		if (wch == WEOF)
 			break;
 

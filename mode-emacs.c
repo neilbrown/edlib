@@ -131,13 +131,12 @@ REDEF_CMD(emacs_delete)
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 	int ret = 0;
 	struct mark *m;
-	struct doc *d = doc_from_pane(ci->home);
 
 	m = mark_dup(ci->mark, 1);
 
 	if (strcmp(mv->type, "Move-EOL") == 0 &&
 	    mv->direction == 1 && RPT_NUM(ci) == 1 &&
-	    doc_following(d, m) == '\n')
+	    doc_following_pane(ci->focus, m) == '\n')
 		ret = call3("Move-Char", ci->focus, mv->direction * RPT_NUM(ci), m);
 	else
 		ret = call3(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);

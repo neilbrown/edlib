@@ -34,12 +34,12 @@ DEF_CMD(render_line)
 	int field = 0;
 	int rv;
 
-	if (!d || !ci->mark)
+	if (!d || !ci->mark || !ci->focus)
 		return -1;
 
 	if (pm && !mark_same_pane(ci->home, pm, m, NULL))
 		pm = NULL;
-	ch = doc_following(d, m);
+	ch = doc_following_pane(ci->focus, m);
 	if (ch == WEOF)
 		return 1;
 	buf_init(&ret);
@@ -145,7 +145,7 @@ endwhile:
 			;
 		else {
 			buf_append(&ret, '\n');
-			mark_next(d, m);
+			mark_next_pane(ci->focus, m);
 		}
 	}
 	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
@@ -157,12 +157,11 @@ endwhile:
 DEF_CMD(render_line_prev)
 {
 	struct mark *m = ci->mark;
-	struct doc *d = doc_from_pane(ci->home);
 
 	if (RPT_NUM(ci) == 0)
 		/* always at start-of-line */
 		return 1;
-	if (mark_prev(d, m) == WEOF)
+	if (mark_prev_pane(ci->home, m) == WEOF)
 		/* Hit start-of-file */
 		return -1;
 	return 1;
@@ -190,17 +189,16 @@ DEF_CMD(format_clone)
 
 DEF_CMD(format_move_line)
 {
-	struct doc *d = doc_from_pane(ci->focus);
 	int rpt = RPT_NUM(ci);
 	struct rf_data *rf = ci->home->data;
 
 	while (rpt > 1) {
-		if (mark_next(d, ci->mark) == WEOF)
+		if (mark_next_pane(ci->focus, ci->mark) == WEOF)
 			break;
 		rpt -= 1;
 	}
 	while (rpt < -1) {
-		if (mark_prev(d, ci->mark) == WEOF)
+		if (mark_prev_pane(ci->focus, ci->mark) == WEOF)
 			break;
 		rpt += 1;
 	}
@@ -218,17 +216,16 @@ DEF_CMD(format_move_horiz)
 	/* Horizonal movement - adjust ->rpos within fields, or
 	 * move to next line
 	 */
-	struct doc *d = doc_from_pane(ci->focus);
 	struct rf_data *rf = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
 	if (rf->fields < 2)
 		return 1;
-	while (rpt > 0 && doc_following(d, ci->mark) != WEOF) {
+	while (rpt > 0 && doc_following_pane(ci->focus, ci->mark) != WEOF) {
 		if (ci->mark->rpos < rf->fields - rf->home_field + 1)
 			ci->mark->rpos += 1;
 		else {
-			if (mark_next(d, ci->mark) == WEOF)
+			if (mark_next_pane(ci->focus, ci->mark) == WEOF)
 				break;
 			ci->mark->rpos = -rf->home_field;
 		}
@@ -238,7 +235,7 @@ DEF_CMD(format_move_horiz)
 		if (ci->mark->rpos > -rf->home_field)
 			ci->mark->rpos -= 1;
 		else {
-			if (mark_prev(d, ci->mark) == WEOF)
+			if (mark_prev_pane(ci->focus, ci->mark) == WEOF)
 				break;
 			ci->mark->rpos = rf->fields - rf->home_field + 1;
 		}
