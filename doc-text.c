@@ -857,7 +857,7 @@ DEF_CMD(text_reundo)
 		/* point is now at location of undo */
 
 		m2 = m;
-		hlist_for_each_entry_continue_reverse(m2, &t->doc.marks, all)
+		hlist_for_each_entry_continue_reverse(m2, all)
 			if (text_update_prior_after_change(t, &m2->ref,
 							   &start, &end) == 0)
 				break;

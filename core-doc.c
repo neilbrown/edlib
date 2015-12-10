@@ -961,7 +961,7 @@ static int do_doc_destroy(struct doc *d)
 	free(d->views);
 	attr_free(&d->attrs);
 	free(d->name);
-	while (d->marks.first) {
+	while (!hlist_empty(&d->marks)) {
 		struct mark *m = hlist_first_entry(&d->marks, struct mark, all);
 		if (m->viewnum == MARK_POINT || m->viewnum == MARK_UNGROUPED)
 			mark_free(m);

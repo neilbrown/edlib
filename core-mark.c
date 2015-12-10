@@ -365,7 +365,7 @@ struct mark *doc_prev_mark(struct mark *m)
 
 struct mark *doc_first_mark_all(struct doc *d)
 {
-	if (d->marks.first)
+	if (!hlist_empty(&d->marks))
 		return hlist_first_entry(&d->marks, struct mark, all);
 	return NULL;
 }
@@ -379,7 +379,7 @@ struct mark *doc_next_mark_all(struct mark *m)
 
 struct mark *doc_prev_mark_all_safe(struct doc *d, struct mark *m)
 {
-	if (d->marks.first != &m->all)
+	if (!HLIST_IS_HEAD(m->all.pprev))
 		return hlist_prev_entry(m, all);
 	return NULL;
 }
@@ -427,7 +427,7 @@ static struct mark *next_mark(struct mark *m)
 }
 static struct mark *prev_mark(struct doc *d, struct mark *m)
 {
-	if (m->all.pprev == &d->marks.first)
+	if (HLIST_IS_HEAD(m->all.pprev))
 		return NULL;
 	return hlist_prev_entry(m, all);
 }
@@ -1022,7 +1022,7 @@ void doc_notify_change(struct doc *d, struct mark *m)
 				c->func(&ci);
 			}
 		}
-		if (m->all.pprev == &d->marks.first) {
+		if (HLIST_IS_HEAD(m->all.pprev)) {
 			/* Notify everything else with a NULL mark */
 			for (i = 0; i < d->nviews; i++) {
 				struct command *c = d->views[i].notify;

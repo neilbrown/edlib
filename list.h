@@ -282,17 +282,23 @@ static inline int list_empty(struct list_head *head)
 	for (; pos && &pos->member != (head);				\
 	     pos = list_next_entry(pos, member))
 
+/* 'first' has lsb set so the start of the list can be recognised
+ * with passing the head around.
+ */
 struct hlist_head {
-	struct hlist_node *first;
+	struct hlist_node *vfirst;
 };
+#define	HLIST_PTR(_h) ((struct hlist_node *)(((unsigned long)_h) & ~1UL))
+#define	HLIST_HEAD_PTR(_h) ((void*)(((unsigned long)_h) | 1UL))
+#define	HLIST_IS_HEAD(_h) (((unsigned long)(*(_h))) & 1UL)
 
 struct hlist_node {
 	struct hlist_node *next, **pprev;
 };
 
-#define HLIST_HEAD_INIT { .first = NULL }
-#define HLIST_HEAD(name) struct hlist_head name = {  .first = NULL }
-#define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL)
+#define HLIST_HEAD_INIT { .vfirst = HLIST_HEAD_PTR(NULL) }
+#define HLIST_HEAD(name) struct hlist_head name = {  .vfirst = HLIST_HEAD_PTR(NULL) }
+#define INIT_HLIST_HEAD(ptr) ((ptr)->vfirst = HLIST_HEAD_PTR(NULL))
 static inline void INIT_HLIST_NODE(struct hlist_node *h)
 {
 	h->next = NULL;
@@ -306,14 +312,17 @@ static inline int hlist_unhashed(const struct hlist_node *h)
 
 static inline int hlist_empty(const struct hlist_head *h)
 {
-	return !h->first;
+	return !HLIST_PTR(h->vfirst);
 }
 
 static inline void __hlist_del(struct hlist_node *n)
 {
 	struct hlist_node *next = n->next;
 	struct hlist_node **pprev = n->pprev;
-	*pprev = next;
+	if (HLIST_IS_HEAD(pprev))
+		*pprev= HLIST_HEAD_PTR(next);
+	else
+		*pprev = next;
 	if (next)
 		next->pprev = pprev;
 }
@@ -335,26 +344,29 @@ static inline void hlist_del_init(struct hlist_node *n)
 
 static inline void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
 {
-	struct hlist_node *first = h->first;
+	struct hlist_node *first = HLIST_PTR(h->vfirst);
 	n->next = first;
 	if (first)
 		first->pprev = &n->next;
-	h->first = n;
-	n->pprev = &h->first;
+	h->vfirst = HLIST_HEAD_PTR(n);
+	n->pprev = &h->vfirst;
 }
 
 /* next must be != NULL */
 static inline void hlist_add_before(struct hlist_node *n,
-					struct hlist_node *next)
+				    struct hlist_node *next)
 {
 	n->pprev = next->pprev;
 	n->next = next;
 	next->pprev = &n->next;
-	*(n->pprev) = n;
+	if (HLIST_IS_HEAD((n->pprev)))
+		*(n->pprev) = HLIST_HEAD_PTR(n);
+	else
+		*(n->pprev) = n;
 }
 
 static inline void hlist_add_after(struct hlist_node *n,
-					struct hlist_node *next)
+				   struct hlist_node *next)
 {
 	next->next = n->next;
 	n->next = next;
@@ -377,27 +389,27 @@ static inline void hlist_add_fake(struct hlist_node *n)
 static inline void hlist_move_list(struct hlist_head *old,
 				   struct hlist_head *new)
 {
-	new->first = old->first;
-	if (new->first)
-		new->first->pprev = &new->first;
-	old->first = NULL;
+	new->vfirst = old->vfirst;
+	if (!hlist_empty(new))
+		HLIST_PTR(new->vfirst)->pprev = &new->vfirst;
+	INIT_HLIST_HEAD(old);
 }
 
-#define hlist_entry(ptr, type, member) container_of(ptr,type,member)
+#define hlist_entry(ptr, type, member) container_of(HLIST_PTR(ptr),type,member)
 
 #define hlist_next_entry(ptr, member) \
 	hlist_entry((ptr)->member.next, typeof(*(ptr)), member)
 #define hlist_first_entry(head, type, member)			\
-	hlist_entry((head)->first, type, member)
+	hlist_entry((head)->vfirst, type, member)
 #define hlist_prev(ptr) container_of((ptr)->pprev, struct hlist_node, next)
 #define hlist_prev_entry(ptr, member) \
 	hlist_entry(hlist_prev(&(ptr)->member), typeof(*(ptr)), member)
 
 #define hlist_for_each(pos, head) \
-	for (pos = (head)->first; pos ; pos = pos->next)
+	for (pos = HLIST_PTR((head)->first); pos ; pos = pos->next)
 
 #define hlist_for_each_safe(pos, n, head) \
-	for (pos = (head)->first; pos && ({ n = pos->next; 1; }); \
+	for (pos = HLIST_PTR((head)->first); pos && ({ n = pos->next; 1; }); \
 	     pos = n)
 
 /**
@@ -407,7 +419,7 @@ static inline void hlist_move_list(struct hlist_head *old,
  * @member:	the name of the hlist_node within the struct.
  */
 #define hlist_for_each_entry(pos, head, member)			\
-	for (pos = (head)->first ? hlist_first_entry(head, typeof(*pos), member) : NULL; \
+	for (pos = hlist_empty(head) ? NULL : hlist_first_entry(head, typeof(*pos), member); \
 	     pos ;							\
 	     pos = pos->member.next ? hlist_next_entry(pos, member) : NULL)
 /**
@@ -425,10 +437,10 @@ static inline void hlist_move_list(struct hlist_head *old,
  * @pos:	the type * to use as a loop cursor.
  * @member:	the name of the hlist_node within the struct.
  */
-#define hlist_for_each_entry_continue_reverse(pos, head, member)		 \
-	for (pos = &pos->member == (head)->first ? NULL : hlist_prev_entry(pos, member);\
+#define hlist_for_each_entry_continue_reverse(pos, member)		 \
+	for (pos = HLIST_IS_HEAD(pos->member.pprev) ? NULL : hlist_prev_entry(pos, member); \
 	     pos ;						\
-	     pos = &pos->member == (head)->first ? NULL : hlist_prev_entry(pos, member ))
+	     pos = HLIST_IS_HEAD(pos->member.pprev) ? NULL : hlist_prev_entry(pos, member ))
 
 /**
  * hlist_for_each_entry_from - iterate over a hlist continuing from current point
@@ -452,7 +464,7 @@ static inline void hlist_move_list(struct hlist_head *old,
  */
 #if 0
 #define hlist_for_each_entry_safe(tpos, pos, n, head, member)		\
-	for (pos = (head)->first;					\
+	for (pos = HLIST_PTR((head)->first);				\
 	     pos && ({ n = pos->next; 1; }) &&				\
 		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
 	     pos = n)
