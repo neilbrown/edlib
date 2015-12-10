@@ -460,9 +460,11 @@ DEF_CMD(doc_handle)
 		struct mark *m, *m2;
 		m = do_vmark_first(dd->doc, ci->numeric);
 		m2 = do_vmark_last(dd->doc, ci->numeric);
-		if (ci->extra && dd->point)
+		if (ci->extra == 1 && dd->point)
 			m2 = do_vmark_at_point(dd->doc, dd->point,
 					       ci->numeric);
+		if (ci->extra == 2)
+			m2 = doc_new_mark(dd->doc, ci->numeric);
 		return comm_call7(ci->comm2, "callback:vmark", ci->focus,
 				  0, m, NULL, 0, NULL, m2);
 	}

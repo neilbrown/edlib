@@ -861,7 +861,7 @@ DEF_CMD(take_marks)
 }
 
 static int vmark_get(struct pane *p, int view,
-		     struct mark **first, struct mark **last, struct mark **point)
+		     struct mark **first, struct mark **last, struct mark **point, struct mark **new)
 {
 	struct cmd_info ci = {0};
 	struct call_return cr;
@@ -874,12 +874,16 @@ static int vmark_get(struct pane *p, int view,
 	ci.comm2 = &cr.c;
 	if (point)
 		ci.extra = 1;
+	else if (new)
+		ci.extra = 2;
 	if (key_handle_focus(&ci) == 0)
 		return 0;
 	if (first)
 		*first = cr.m;
 	if (point)
 		*point = cr.m2;
+	else if (new)
+		*new = cr.m2;
 	else if (last)
 		*last = cr.m2;
 	return 1;
@@ -888,7 +892,7 @@ static int vmark_get(struct pane *p, int view,
 struct mark *vmark_first(struct pane *p, int view)
 {
 	struct mark *first = NULL;
-	if (vmark_get(p, view, &first, NULL, NULL) == 0)
+	if (vmark_get(p, view, &first, NULL, NULL, NULL) == 0)
 		return 0;
 	return first;
 }
@@ -896,7 +900,7 @@ struct mark *vmark_first(struct pane *p, int view)
 struct mark *vmark_last(struct pane *p, int view)
 {
 	struct mark *last = NULL;
-	if (vmark_get(p, view, NULL, &last, NULL) == 0)
+	if (vmark_get(p, view, NULL, &last, NULL, NULL) == 0)
 		return 0;
 	return last;
 }
@@ -904,9 +908,17 @@ struct mark *vmark_last(struct pane *p, int view)
 struct mark *vmark_at_point(struct pane *p, int view)
 {
 	struct mark *point = NULL;
-	if (vmark_get(p, view, NULL, NULL, &point) == 0)
+	if (vmark_get(p, view, NULL, NULL, &point, NULL) == 0)
 		return 0;
 	return point;
+}
+
+struct mark *vmark_new(struct pane *p, int view)
+{
+	struct mark *new = NULL;
+	if (vmark_get(p, view, NULL, NULL, NULL, &new) == 0)
+		return 0;
+	return new;
 }
 
 struct mark *vmark_matching(struct pane *p, struct mark *m)

@@ -135,12 +135,12 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 	m = vmark_first(d->home, type);
 	if (m == NULL) {
 		/* No marks yet, let's make some */
-		m = doc_new_mark(d, type);
+		m = vmark_new(d->home, type);
 		do_count(d, m, NULL, &l, &w, &c, 1);
 	}
 	if (doc_prior(d, m) != WEOF) {
 		/* no mark at start of file */
-		m2 = doc_new_mark(d, type);
+		m2 = vmark_new(d->home, type);
 		do_count(d, m2, m, &l, &w, &c, 1);
 		m = m2;
 	}
