@@ -12,7 +12,16 @@
 
 struct map *ed_map;
 
-DEF_LOOKUP_CMD(ed_handle, ed_map);
+DEF_CMD(ed_handle)
+{
+	struct editor *ed = container_of(ci->home, struct editor, root);
+	int ret;
+
+	ret = key_lookup(ed_map, ci);
+	if (ret)
+		return ret;
+	return key_lookup(ed->commands, ci);
+}
 
 DEF_CMD(null_display_handle)
 {
@@ -44,7 +53,7 @@ struct pane *editor_new(void)
 	}
 
 	pane_init(&ed->root, NULL, NULL);
-	ed->root.handle = &ed_handle.c;
+	ed->root.handle = &ed_handle;
 	ed->root.data = NULL;
 
 	/* The first child of the root is the 'null_display'

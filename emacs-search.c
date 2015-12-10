@@ -195,7 +195,7 @@ REDEF_CMD(search_again)
 	str = doc_getstr(esi->search, NULL);
 	ci2.str = str;
 	ci2.key = "text-search";
-	ret = key_lookup(pane2ed(esi->target)->commands, &ci2);
+	ret = key_handle(&ci2);
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
 	else if (ret == -2) {

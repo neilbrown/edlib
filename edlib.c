@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 	cr.c = take_pane;
 	cr.p = NULL;
 	ci.comm2 = &cr.c;
-	if (!key_lookup(ed->commands, &ci))
+	if (key_handle(&ci) <= 0)
 		exit(1);
 	root = cr.p;
 	global = pane_attach(root, "messageline", NULL, NULL);
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 		ci.home = ci.focus = p;
 		ci.key = "python-load";
 		ci.str = "python/test.py";
-		key_lookup(ed->commands, &ci);
+		key_handle(&ci);
 
 		pane_refresh(&ed->root);
 		event_base_dispatch(base);

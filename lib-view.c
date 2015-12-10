@@ -48,7 +48,6 @@ static int view_refresh(struct cmd_info *ci)
 	char msg[100];
 	int i;
 	int mid;
-	struct editor *ed = pane2ed(ci->home);
 	struct doc *d = doc_from_pane(ci->home);
 
 	pane_check_size(p);
@@ -65,7 +64,7 @@ static int view_refresh(struct cmd_info *ci)
 			ci2.key = "CountLines";
 			ci2.home = ci2.focus = p;
 			ci2.mark = m;
-			key_lookup(ed->commands, &ci2);
+			key_handle(&ci2);
 
 			ln = attr_find_int(*mark_attr(m), "lines");
 			l = attr_find_int(d->attrs, "lines");

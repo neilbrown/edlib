@@ -573,7 +573,7 @@ DEF_CMD(emacs_search)
 	ci2.mark = m;
 	ci2.str = ci->str;
 	ci2.key = "text-search";
-	ret = key_lookup(pane2ed(ci->focus)->commands, &ci2);
+	ret = key_handle(&ci2);
 	if (ret > 1)
 		call3("Move-to", ci->focus, 0, m);
 

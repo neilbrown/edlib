@@ -81,7 +81,6 @@ DEF_CMD(render_hex_notify)
 DEF_CMD(render_hex_eol)
 {
 	struct doc *d = doc_from_pane(ci->home);
-	struct editor *ed = pane2ed(ci->home);
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 	int pos;
@@ -90,7 +89,7 @@ DEF_CMD(render_hex_eol)
 	ci2.key = "CountLines";
 	ci2.home = ci2.focus = ci->home;
 	ci2.mark = ci->mark;
-	key_lookup(ed->commands, &ci2);
+	key_handle(&ci2);
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
@@ -135,7 +134,7 @@ DEF_CMD(render_line)
 	ci2.key = "CountLines";
 	ci2.home = ci2.focus = ci->home;
 	ci2.mark = ci->mark;
-	key_lookup(d->ed->commands, &ci2);
+	key_handle(&ci2);
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 
 	buf_init(&ret);
@@ -200,7 +199,7 @@ DEF_CMD(render_line_prev)
 	ci2.key = "CountLines";
 	ci2.home = ci2.focus = ci->home;
 	ci2.mark = ci->mark;
-	key_lookup(d->ed->commands, &ci2);
+	key_handle(&ci2);
 
 	from = attr_find_int(*mark_attr(ci->mark), "chars");
 	to = from & ~0xF;
