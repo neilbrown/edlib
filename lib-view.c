@@ -67,9 +67,9 @@ static int view_refresh(struct cmd_info *ci)
 			key_handle(&ci2);
 
 			ln = attr_find_int(*mark_attr(m), "lines");
-			l = attr_find_int(d->attrs, "lines");
-			w = attr_find_int(d->attrs, "words");
-			c = attr_find_int(d->attrs, "chars");
+			l = pane_attr_get_int(ci->home, "lines");
+			w = pane_attr_get_int(ci->home, "words");
+			c = pane_attr_get_int(ci->home, "chars");
 			if (l <= 0)
 				l = 1;
 			mid = 1 + (p->h-4) * ln / l;

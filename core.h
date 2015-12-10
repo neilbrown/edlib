@@ -336,6 +336,19 @@ char *pane_attr_get(struct pane *p, char *key);
 struct pane *call_pane(char *key, struct pane *focus, int numeric,
 		       struct mark *m, int extra);
 
+static inline int pane_attr_get_int(struct pane *p, char *key)
+{
+	char *c = pane_attr_get(p, key);
+	int rv;
+	char *end;
+	if (!c)
+		return -1;
+	rv = strtol(c, &end, 10);
+	if (end == c || *end)
+		return -1;
+	return rv;
+}
+
 static inline struct pane *pane_child(struct pane *p)
 {
 	/* Find a child (if any) with z=0.  There should be
