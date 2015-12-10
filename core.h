@@ -333,6 +333,7 @@ struct pane *pane_attach(struct pane *p, char *type, struct pane *dp, char *arg)
 void pane_clear(struct pane *p, char *attrs);
 void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y);
 char *pane_attr_get(struct pane *p, char *key);
+char *pane_mark_attr(struct pane *p, struct mark *m, int forward, char *key);
 struct pane *call_pane(char *key, struct pane *focus, int numeric,
 		       struct mark *m, int extra);
 

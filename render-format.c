@@ -25,7 +25,6 @@ DEF_CMD(render_line)
 	char *body = pane_attr_get(ci->focus, "line-format");
 	struct rf_data *rf = ci->home->data;
 	struct buf ret;
-	struct doc *d = doc_from_pane(ci->home);
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2;
 	char *n;
@@ -34,7 +33,7 @@ DEF_CMD(render_line)
 	int field = 0;
 	int rv;
 
-	if (!d || !ci->mark || !ci->focus)
+	if (!ci->mark || !ci->focus)
 		return -1;
 
 	if (pm && !mark_same_pane(ci->home, pm, m, NULL))
@@ -93,7 +92,7 @@ DEF_CMD(render_line)
 			buf_append(&ret, ch);
 			continue;
 		}
-		val = doc_attr(d->home, m, 1, buf);
+		val = pane_mark_attr(ci->focus, m, 1, buf);
 		if (!val)
 			val = "-";
 		if (*n != ':') {

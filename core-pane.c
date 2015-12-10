@@ -515,6 +515,17 @@ char *pane_attr_get(struct pane *p, char *key)
 	return NULL;
 }
 
+char *pane_mark_attr(struct pane *p, struct mark *m, int forward, char *key)
+{
+	while (p) {
+		char *a = doc_attr(p, m, forward, key);
+		if (a)
+			return a;
+		p = p->parent;
+	}
+	return NULL;
+}
+
 struct pane *pane_final_child(struct pane *p)
 {
 	struct pane *c;
