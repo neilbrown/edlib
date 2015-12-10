@@ -451,11 +451,6 @@ DEF_CMD(doc_handle)
 		return ret + 1;
 	}
 
-	if (strcmp(ci->key, "doc:find") == 0) {
-		ci->misc = dd->doc;
-		return 1;
-	}
-
 	if (strcmp(ci->key, "doc:vmark-get") == 0) {
 		struct mark *m, *m2;
 		m = do_vmark_first(dd->doc, ci->numeric);

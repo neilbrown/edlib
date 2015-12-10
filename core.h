@@ -467,16 +467,6 @@ static inline int doc_find_view(struct pane *p, struct command *c)
 	return ret - 1;
 }
 
-static inline struct doc *doc_from_pane(struct pane *p)
-{
-	struct cmd_info ci = {0};
-	ci.focus = p;
-	ci.key = "doc:find";
-	if (key_handle_focus(&ci) == 0)
-		return NULL;
-	return ci.misc;
-}
-
 static inline int call3(char *key, struct pane *focus, int numeric, struct mark *m)
 {
 	struct cmd_info ci = {0};
