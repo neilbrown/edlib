@@ -71,13 +71,12 @@ DEF_CMD(render_complete_line)
 	 */
 	struct cmd_info ci2 = {0};
 	struct complete_data *cd = ci->home->data;
-	struct doc *d = doc_from_pane(ci->home);
 	int plen = strlen(cd->prefix);
 	struct call_return cr;
 	struct rlcb cb;
 	int ret;
 
-	if (!d || !ci->mark)
+	if (!ci->mark)
 		return -1;
 
 	ci2.key = ci->key;
