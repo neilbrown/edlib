@@ -28,7 +28,7 @@
 
 #include "core.h"
 
-static void do_count(struct doc *d, struct mark *start, struct mark *end,
+static void do_count(struct pane *p, struct mark *start, struct mark *end,
 		     int *linep, int *wordp, int *charp, int add_marks)
 {
 	/* if 'end' is NULL, go all the way to EOF */
@@ -44,8 +44,8 @@ static void do_count(struct doc *d, struct mark *start, struct mark *end,
 	*linep = 0;
 	*wordp = 0;
 	*charp = 0;
-	while ((end == NULL || (mark_ordered_not_same(d, m, end))) &&
-	       (ch = mark_next(d, m)) != WEOF) {
+	while ((end == NULL || (mark_ordered_not_same_pane(p, m, end))) &&
+	       (ch = mark_next_pane(p, m)) != WEOF) {
 		chars += 1;
 		if (ch == '\n')
 			lines += 1;
@@ -55,7 +55,7 @@ static void do_count(struct doc *d, struct mark *start, struct mark *end,
 		} else if (inword && !(iswprint(ch) && !iswspace(ch)))
 			inword = 0;
 		if (add_marks && lines >= 50 &&
-		    (end == NULL || (mark_ordered_not_same(d, m, end)))) {
+		    (end == NULL || (mark_ordered_not_same_pane(p, m, end)))) {
 			/* leave a mark here and keep going */
 			attr_set_int(mark_attr(start), "lines", lines);
 			attr_set_int(mark_attr(start), "words", words);
@@ -101,7 +101,7 @@ DEF_CMD(count_notify)
 	return 0;
 }
 
-static int need_recalc(struct doc *d, struct mark *m)
+static int need_recalc(struct pane *p, struct mark *m)
 {
 	struct mark *next;
 	int ret = 0;
@@ -113,7 +113,7 @@ static int need_recalc(struct doc *d, struct mark *m)
 		next = doc_next_mark_view(m);
 		if (!next)
 			break;
-		if (doc_prior(d, next) == '\n' &&
+		if (doc_prior_pane(p, next) == '\n' &&
 		    attr_find_int(*mark_attr(next), "lines") > 10)
 			break;
 		/* discard next - we'll find or create another */
@@ -123,25 +123,26 @@ static int need_recalc(struct doc *d, struct mark *m)
 	return ret;
 }
 
-static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
+static void count_calculate(struct pane *p,
+			    struct mark *start, struct mark *end)
 {
-	int type = doc_find_view(d->home, &count_notify);
+	int type = doc_find_view(p, &count_notify);
 	int lines, words, chars, l, w, c;
 	struct mark *m, *m2;
 
 	if (type < 0)
-		type = doc_add_view(d->home, &count_notify, 0);
+		type = doc_add_view(p, &count_notify, 0);
 
-	m = vmark_first(d->home, type);
+	m = vmark_first(p, type);
 	if (m == NULL) {
 		/* No marks yet, let's make some */
-		m = vmark_new(d->home, type);
-		do_count(d, m, NULL, &l, &w, &c, 1);
+		m = vmark_new(p, type);
+		do_count(p, m, NULL, &l, &w, &c, 1);
 	}
-	if (doc_prior(d, m) != WEOF) {
+	if (doc_prior_pane(p, m) != WEOF) {
 		/* no mark at start of file */
-		m2 = vmark_new(d->home, type);
-		do_count(d, m2, m, &l, &w, &c, 1);
+		m2 = vmark_new(p, type);
+		do_count(p, m2, m, &l, &w, &c, 1);
 		m = m2;
 	}
 
@@ -149,30 +150,30 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 		/* find the first mark that isn't before 'start', and count
 		 * from there.
 		 */
-		while (m && mark_ordered_not_same(d, m, start)) {
+		while (m && mark_ordered_not_same_pane(p, m, start)) {
 			/* Force and update to make sure spacing stays sensible */
-			if (need_recalc(d, m))
+			if (need_recalc(p, m))
 				/* need to update this one */
-				do_count(d, m, doc_next_mark_view(m), &l, &w, &c, 1);
+				do_count(p, m, doc_next_mark_view(m), &l, &w, &c, 1);
 
 			m = doc_next_mark_view(m);
 		}
 		if (!m) {
 			/* fell off the end, just count directly */
-			do_count(d, start, end, &lines, &words, &chars, 0);
+			do_count(p, start, end, &lines, &words, &chars, 0);
 			goto done;
 		}
 	}
-	if (need_recalc(d, m))
+	if (need_recalc(p, m))
 		/* need to update this one */
-		do_count(d, m, doc_next_mark_view(m), &l, &w, &c, 1);
+		do_count(p, m, doc_next_mark_view(m), &l, &w, &c, 1);
 
 	/* 'm' is not before 'start', it might be after.
 	 * if 'm' is not before 'end' either, just count from
 	 * start to end.
 	 */
 	if (end && !mark_ordered(m, end)) {
-		do_count(d, start?:m, end, &lines, &words, &chars, 0);
+		do_count(p, start?:m, end, &lines, &words, &chars, 0);
 		goto done;
 	}
 
@@ -180,10 +181,10 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 	 * So count from start to m, then add totals from m and subsequent.
 	 * Then count to 'end'.
 	 */
-	if (!start || mark_same(d, m, start))
+	if (!start || mark_same_pane(p, m, start, NULL))
 		lines = words = chars = 0;
 	else
-		do_count(d, start, m, &lines, &words, &chars, 0);
+		do_count(p, start, m, &lines, &words, &chars, 0);
 	while ((m2 = doc_next_mark_view(m)) != NULL &&
 	       (!end || mark_ordered(m2, end))) {
 		/* Need everything from m to m2 */
@@ -191,16 +192,16 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 		words += attr_find_int(*mark_attr(m), "words");
 		chars += attr_find_int(*mark_attr(m), "chars");
 		m = m2;
-		if (need_recalc(d, m))
-			do_count(d, m, doc_next_mark_view(m), &l, &w, &c, 1);
+		if (need_recalc(p, m))
+			do_count(p, m, doc_next_mark_view(m), &l, &w, &c, 1);
 	}
 	/* m is the last mark before end */
 	if (!end) {
 		lines += attr_find_int(*mark_attr(m), "lines");
 		words += attr_find_int(*mark_attr(m), "words");
 		chars += attr_find_int(*mark_attr(m), "chars");
-	} else if (!mark_same(d, m, end)) {
-		do_count(d, m, end, &l, &w, &c, 0);
+	} else if (!mark_same_pane(p, m, end, NULL)) {
+		do_count(p, m, end, &l, &w, &c, 0);
 		lines += l;
 		words += w;
 		chars += c;
@@ -212,22 +213,20 @@ done:
 		attr_set_int(attrs, "words", words);
 		attr_set_int(attrs, "chars", chars);
 	} else {
-		call5("doc:attr-set", d->home, lines, NULL, "lines", 1);
-		call5("doc:attr-set", d->home, words, NULL, "words", 1);
-		call5("doc:attr-set", d->home, chars, NULL, "chars", 1);
+		call5("doc:attr-set", p, lines, NULL, "lines", 1);
+		call5("doc:attr-set", p, words, NULL, "words", 1);
+		call5("doc:attr-set", p, chars, NULL, "chars", 1);
 	}
 }
 
 DEF_CMD(count_lines)
 {
-	struct doc *d = doc_from_pane(ci->focus);
-
 	/* FIXME optimise this away most of the time */
-	count_calculate(d, NULL, NULL);
+	count_calculate(ci->focus, NULL, NULL);
 	if (ci->mark)
-		count_calculate(d, NULL, ci->mark);
+		count_calculate(ci->focus, NULL, ci->mark);
 	if (ci->mark2)
-		count_calculate(d, NULL, ci->mark2);
+		count_calculate(ci->focus, NULL, ci->mark2);
 	return 1;
 }
 

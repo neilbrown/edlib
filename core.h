@@ -378,6 +378,10 @@ static inline wint_t doc_prior(struct doc *d, struct mark *m)
 {
 	return mark_step2(d, m, 0, 0);
 }
+static inline wint_t doc_prior_pane(struct pane *p, struct mark *m)
+{
+	return mark_step_pane(p, m, 0, 0, NULL);
+}
 static inline void doc_replace(struct pane *p, struct mark *m,
 			       char *str, bool *first)
 {
