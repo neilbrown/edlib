@@ -145,42 +145,10 @@ DEF_CMD(python_call)
 	}
 	if (ret == Py_None)
 		rv = 0;
-	if (PyDict_Check(ret)) {
-		PyObject *r;
-		r = PyDict_GetItemString(ret, "focus");
-		if (r && Py_TYPE(r) == &PaneType)
-			ci->focus = ((Pane*)r)->pane;
-		r = PyDict_GetItemString(ret, "home");
-		if (r && Py_TYPE(r) == &PaneType)
-			ci->home = ((Pane*)r)->pane;
-
-		r = PyDict_GetItemString(ret, "mark");
-		if (r && Py_TYPE(r) == &MarkType)
-			ci->mark = ((Mark*)r)->mark;
-		r = PyDict_GetItemString(ret, "mark2");
-		if (r && Py_TYPE(r) == &MarkType)
-			ci->mark2 = ((Mark*)r)->mark;
-
-		r = PyDict_GetItemString(ret, "str");
-		if (r && PyString_Check(r))
-			ci->str = PyString_AsString(r);
-		r = PyDict_GetItemString(ret, "str2");
-		if (r && PyString_Check(r))
-			ci->str2 = PyString_AsString(r);
-
-		r = PyDict_GetItemString(ret, "numeric");
-		if (r && PyInt_Check(r))
-			ci->numeric = PyInt_AsLong(r);
-		r = PyDict_GetItemString(ret, "extra");
-		if (r && PyInt_Check(r))
-			ci->extra = PyInt_AsLong(r);
-
-		r = PyDict_GetItemString(ret, "return");
-		if (r && PyInt_Check(r))
-			rv = PyInt_AsLong(r);
-
-		/* FIXME xy and hxy */
-	}
+	else if (PyInt_Check(ret))
+		rv = PyInt_AsLong(ret);
+	else
+		rv = 1;
 	Py_DECREF(ret);
 	return rv;
 }
