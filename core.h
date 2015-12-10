@@ -55,11 +55,19 @@ struct pane {
 	void			*data;
 	struct mark		*pointer;
 	struct attrset		*attrs;
+	struct list_head	notifiers, notifiees;
 };
 
 struct command {
 	int	(*func)(const struct cmd_info *ci);
 };
+
+struct notifier {
+	struct pane		*notifiee;
+	char			*notification;
+	struct list_head	notifier_link, notifiee_link;
+};
+void pane_add_notify(struct pane *target, struct pane *source, char *msg);
 
 /* this is ->data for a document pane.  Only core-doc and
  * individual document handlers can know about this.
@@ -538,6 +546,25 @@ static inline int comm_call(struct command *comm, char *key, struct pane *focus,
 
 	if (!comm)
 		return -1;
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.mark = m;
+	ci.str = str;
+	ci.extra = extra;
+	ci.comm = comm;
+	return comm->func(&ci);
+}
+
+static inline int comm_call_pane(struct pane *home, char *key, struct pane *focus,
+				 int numeric, struct mark *m, char *str, int extra)
+{
+	struct cmd_info ci = {0};
+	struct command *comm = home->handle;
+
+	if (!comm)
+		return -1;
+	ci.home = home;
 	ci.key = key;
 	ci.focus = focus;
 	ci.numeric = numeric;

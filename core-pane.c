@@ -43,6 +43,8 @@ void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	else
 		INIT_LIST_HEAD(&p->siblings);
 	INIT_LIST_HEAD(&p->children);
+	INIT_LIST_HEAD(&p->notifiers);
+	INIT_LIST_HEAD(&p->notifiees);
 	p->x = p->y = p->z = 0;
 	p->cx = p->cy = -1;
 	p->h = p->w = 0;
@@ -155,6 +157,45 @@ void pane_refresh(struct pane *p)
 	__pane_refresh(&ci);
 }
 
+void pane_add_notify(struct pane *target, struct pane *source, char *msg)
+{
+	struct notifier *n = malloc(sizeof(*n));
+
+	n->notifiee = target;
+	n->notification = strdup(msg);
+	list_add(&n->notifier_link, &source->notifiees);
+	list_add(&n->notifiee_link, &target->notifiers);
+}
+
+static void pane_drop_notifiers(struct pane *p)
+{
+	while (!list_empty(&p->notifiers)) {
+		struct notifier *n = list_first_entry(&p->notifiers,
+						      struct notifier,
+						      notifiee_link);
+		list_del_init(&n->notifiee_link);
+		list_del_init(&n->notifier_link);
+		free(n->notification);
+		free(n);
+	}
+}
+
+static void pane_notify_close(struct pane *p)
+{
+	while (!list_empty(&p->notifiees)) {
+		struct notifier *n = list_first_entry(&p->notifiers,
+						      struct notifier,
+						      notifiee_link);
+		list_del_init(&n->notifiee_link);
+		list_del_init(&n->notifier_link);
+		if (strcmp(n->notification, "Notify:Close") == 0)
+			comm_call_pane(n->notifiee, n->notification, p,
+				       0, NULL, NULL, 0);
+		free(n->notification);
+		free(n);
+	}
+}
+
 void pane_close(struct pane *p)
 {
 	struct pane *c;
@@ -169,6 +210,8 @@ void pane_close(struct pane *p)
 		p->parent->focus = NULL;
 	}
 	list_del_init(&p->siblings);
+	pane_drop_notifiers(p);
+	pane_notify_close(p);
 	if (p->handle) {
 		struct cmd_info ci = {0};
 
