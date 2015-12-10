@@ -333,6 +333,18 @@ DEF_CMD(doc_do_replace)
 	return 1;
 }
 
+DEF_CMD(doc_attr_set)
+{
+	struct doc_data *dd = ci->home->data;
+	struct doc *d = dd->doc;
+
+	if (ci->str2 == NULL && ci->extra == 1)
+		attr_set_int(&d->attrs, ci->str, ci->numeric);
+	else
+		attr_set_str(&d->attrs, ci->str, ci->str2, -1);
+	return 1;
+}
+
 static struct map *doc_default_cmd;
 
 static void init_doc_defaults(void)
@@ -351,6 +363,7 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "Move-Line", &doc_line);
 	key_add(doc_default_cmd, "Move-View-Large", &doc_page);
 	key_add(doc_default_cmd, "Replace", &doc_do_replace);
+	key_add(doc_default_cmd, "doc:attr-set", &doc_attr_set);
 }
 
 DEF_CMD(doc_handle)

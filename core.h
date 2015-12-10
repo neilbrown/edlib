@@ -497,6 +497,22 @@ static inline int call5(char *key, struct pane *focus, int numeric, struct mark 
 	return key_handle_focus(&ci);
 }
 
+static inline int call7(char *key, struct pane *focus, int numeric, struct mark *m,
+			char *str, int extra, char *str2, struct mark *m2)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.mark = m;
+	ci.mark2 = m2;
+	ci.str = str;
+	ci.str2 = str2;
+	ci.extra = extra;
+	return key_handle_focus(&ci);
+}
+
 struct call_return {
 	struct command c;
 	struct mark *m, *m2;

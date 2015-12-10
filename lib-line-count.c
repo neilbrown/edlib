@@ -128,7 +128,6 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 	int type = doc_find_view(d->home, &count_notify);
 	int lines, words, chars, l, w, c;
 	struct mark *m, *m2;
-	struct attrset **attrs;
 
 	if (type < 0)
 		type = doc_add_view(d->home, &count_notify, 0);
@@ -207,13 +206,16 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 		chars += c;
 	}
 done:
-	if (end)
-		attrs = &end->attrs;
-	else
-		attrs = &d->attrs;
-	attr_set_int(attrs, "lines", lines);
-	attr_set_int(attrs, "words", words);
-	attr_set_int(attrs, "chars", chars);
+	if (end) {
+		struct attrset **attrs = &end->attrs;
+		attr_set_int(attrs, "lines", lines);
+		attr_set_int(attrs, "words", words);
+		attr_set_int(attrs, "chars", chars);
+	} else {
+		call5("doc:attr-set", d->home, lines, NULL, "lines", 1);
+		call5("doc:attr-set", d->home, words, NULL, "words", 1);
+		call5("doc:attr-set", d->home, chars, NULL, "chars", 1);
+	}
 }
 
 DEF_CMD(count_lines)
