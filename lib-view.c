@@ -48,7 +48,7 @@ static int view_refresh(struct cmd_info *ci)
 	char msg[100];
 	int i;
 	int mid;
-	struct doc *d = doc_from_pane(ci->home);
+	char *name;
 
 	pane_check_size(p);
 	p->cx = 0; p->cy = 0;
@@ -84,11 +84,14 @@ static int view_refresh(struct cmd_info *ci)
 		for (i = 0; i < p->h; i++)
 			pane_text(p, '|', "inverse", p->w-1, i);
 	}
+	if (vd->border & (BORDER_TOP | BORDER_BOT)) {
+		name = pane_attr_get(p, "doc:name");
+	}
 	if (vd->border & BORDER_TOP) {
 		int label;
 		for (i = 0; i < p->w; i++)
 			pane_text(p, '-', "inverse", i, 0);
-		snprintf(msg, sizeof(msg), "%s", d->name);
+		snprintf(msg, sizeof(msg), "%s", name);
 		label = (p->w - strlen(msg)) / 2;
 		if (label < 1)
 			label = 1;
@@ -102,9 +105,9 @@ static int view_refresh(struct cmd_info *ci)
 		if (!(vd->border & BORDER_TOP)) {
 			if (c >= 0)
 				snprintf(msg, sizeof(msg), "L%d W%d C%d D:%s",
-					 l,w,c, d->name);
+					 l,w,c, name);
 			else
-				snprintf(msg, sizeof(msg),"%s", d->name);
+				snprintf(msg, sizeof(msg),"%s", name);
 			for (i = 0; msg[i] && i+4 < p->w; i++)
 				pane_text(p, msg[i], "inverse", i+4, p->h-1);
 		}

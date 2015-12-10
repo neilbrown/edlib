@@ -410,6 +410,11 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
+	if (strcmp(ci->key, "doc:get-attr") == 0 &&
+	    strcmp(ci->str, "doc:name") == 0)
+		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
+				 NULL, dd->doc->name, 0);
+
 	if (strcmp(ci->key, "doc:add-view") == 0) {
 		if (!ci->comm2)
 			return -1;
