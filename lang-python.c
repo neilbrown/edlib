@@ -716,9 +716,7 @@ static PyObject *edlib_call(PyObject *self, PyObject *args, PyObject *kwds)
 		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
 		return NULL;
 	}
-	/* FIXME how do I return the various return values? */
-	Py_INCREF(Py_True);
-	return Py_True;
+	return PyInt_FromLong(rv);
 }
 
 static PyMethodDef edlib_methods[] = {
