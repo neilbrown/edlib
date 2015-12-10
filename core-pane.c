@@ -180,12 +180,12 @@ static void pane_drop_notifiers(struct pane *p)
 	}
 }
 
-static void pane_notify_close(struct pane *p)
+void pane_notify_close(struct pane *p)
 {
 	while (!list_empty(&p->notifiees)) {
-		struct notifier *n = list_first_entry(&p->notifiers,
+		struct notifier *n = list_first_entry(&p->notifiees,
 						      struct notifier,
-						      notifiee_link);
+						      notifier_link);
 		list_del_init(&n->notifiee_link);
 		list_del_init(&n->notifier_link);
 		if (strcmp(n->notification, "Notify:Close") == 0)

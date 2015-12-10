@@ -74,7 +74,6 @@ void pane_add_notify(struct pane *target, struct pane *source, char *msg);
  */
 struct doc_data {
 	struct doc		*doc;
-	struct command		notify;
 	struct pane		*pane;
 	struct mark		*point;
 };
@@ -324,6 +323,7 @@ void pane_init(struct pane *p, struct pane *par, struct list_head *here);
 void pane_reparent(struct pane *p, struct pane *newparent);
 void pane_subsume(struct pane *p, struct pane *parent);
 void pane_close(struct pane *p);
+void pane_notify_close(struct pane *p);
 int pane_clone(struct pane *from, struct pane *parent);
 void pane_resize(struct pane *p, int x, int y, int w, int h);
 void pane_check_size(struct pane *p);

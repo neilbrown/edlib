@@ -371,6 +371,29 @@ DEF_CMD(doc_handle)
 	struct doc_data *dd = ci->home->data;
 	int ret;
 
+	if (strcmp(ci->key, "Notify:Close") == 0) {
+		/* This pane has to go away */
+		struct doc_data *dd = ci->home->data;
+		struct pane *par = ci->home, *p;
+
+		/* Need another document to fill this pane. */
+		/* FIXME make this conditional */
+		p = pane_child(par);
+		if (p)
+			pane_close(p);
+		p = editor_choose_doc(pane2ed(ci->home));
+		if (!p)
+			return 1;
+		doc_attach_view(par, p, NULL);
+		p = pane_child(par);
+		if (p) {
+			pane_subsume(p, par);
+			dd = par->data;
+			dd->pane = par;
+			pane_close(p);
+		}
+		return 1;
+	}
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = doc_attach(ci->focus, dd->doc);
 		struct pane *c = pane_child(ci->home);
@@ -384,7 +407,6 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "Close") == 0) {
-		doc_del_view(ci->home, &dd->notify);
 		if (dd->point)
 			mark_free(dd->point);
 		free(dd);
@@ -471,35 +493,6 @@ DEF_CMD(doc_handle)
 	return ret;
 }
 
-DEF_CMD(doc_notify)
-{
-	if (strcmp(ci->key, "Release") == 0) {
-		/* This pane has to go away */
-		struct doc_data *dd = container_of(ci->comm, struct doc_data, notify);
-		struct pane *par = dd->pane, *p;
-
-		doc_del_view(ci->home, ci->comm);
-		/* Need another document to fill this pane. */
-		/* FIXME make this conditional */
-		p = pane_child(par);
-		if (p)
-			pane_close(p);
-		p = editor_choose_doc(pane2ed(ci->home));
-		if (!p)
-			return 1;
-		doc_attach_view(par, p, NULL);
-		p = pane_child(par);
-		if (p) {
-			pane_subsume(p, par);
-			dd = par->data;
-			dd->pane = par;
-			pane_close(p);
-		}
-		return 1;
-	}
-	return 0;
-}
-
 struct pane *doc_attach(struct pane *parent, struct doc *d)
 {
 	struct pane *p;
@@ -512,8 +505,7 @@ struct pane *doc_attach(struct pane *parent, struct doc *d)
 		d->home = p;
 	else {
 		/* non-home panes need to be notified so they can self-destruct */
-		dd->notify = doc_notify;
-		doc_add_view(p, &dd->notify, 0);
+		pane_add_notify(p, d->home, "Notify:Close");
 	}
 	dd->point = NULL;
 	dd->pane = p;
@@ -956,6 +948,7 @@ static int do_doc_destroy(struct doc *d)
 		d->deleting = 2; /* tell editor choose doc that this
 				  * is available if absolutely needed */
 	doc_close_views(d);
+	pane_notify_close(d->home);
 	d->deleting = 0;
 
 	for (i = 0; i < d->nviews; i++)
