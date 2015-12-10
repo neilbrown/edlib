@@ -343,7 +343,7 @@ void mark_reset(struct doc *d, struct mark *m)
 	__mark_reset(d, m, 0, 0);
 }
 
-struct mark *doc_next_mark(struct mark *m)
+struct mark *doc_next_mark_view(struct mark *m)
 {
 	struct tlist_head *tl = &m->view;
 
@@ -353,7 +353,7 @@ struct mark *doc_next_mark(struct mark *m)
 	return NULL;
 }
 
-struct mark *doc_prev_mark(struct mark *m)
+struct mark *doc_prev_mark_view(struct mark *m)
 {
 	struct tlist_head *tl = &m->view;
 
@@ -377,19 +377,12 @@ struct mark *doc_next_mark_all(struct mark *m)
 	return NULL;
 }
 
-struct mark *doc_prev_mark_all_safe(struct doc *d, struct mark *m)
+struct mark *doc_prev_mark_all(struct mark *m)
 {
 	if (!HLIST_IS_HEAD(m->all.pprev))
 		return hlist_prev_entry(m, all);
 	return NULL;
 }
-
-struct mark *doc_prev_mark_all(struct mark *m)
-{
-	/* Must never be called on first mark */
-	return hlist_prev_entry(m, all);
-}
-
 
 struct mark *doc_new_mark(struct doc *d, int view)
 {
@@ -418,19 +411,6 @@ struct mark *doc_new_mark(struct doc *d, int view)
  * point easily but to move to mark they must walk one mark at a time.
  *
  */
-
-static struct mark *next_mark(struct mark *m)
-{
-	if (m->all.next == NULL)
-		return NULL;
-	return hlist_next_entry(m, all);
-}
-static struct mark *prev_mark(struct doc *d, struct mark *m)
-{
-	if (HLIST_IS_HEAD(m->all.pprev))
-		return NULL;
-	return hlist_prev_entry(m, all);
-}
 
 static void swap_lists(struct mark *p1, struct mark *p2)
 {
@@ -533,7 +513,7 @@ wint_t mark_next(struct doc *d, struct mark *m)
 	wint_t ret;
 	struct mark *m2 = NULL;
 
-	while ((m2 = next_mark(m)) != NULL &&
+	while ((m2 = doc_next_mark_all(m)) != NULL &&
 	       mark_same(d, m, m2))
 		mark_forward_over(m, m2);
 
@@ -542,7 +522,7 @@ wint_t mark_next(struct doc *d, struct mark *m)
 		return ret;
 
 /* FIXME do I need to do this - is it precise enough? */
-	while ((m2 = next_mark(m)) != NULL &&
+	while ((m2 = doc_next_mark_all(m)) != NULL &&
 	       mark_same(d, m, m2))
 		mark_forward_over(m, m2);
 	return ret;
@@ -553,14 +533,14 @@ wint_t mark_prev(struct doc *d, struct mark *m)
 	wint_t ret;
 	struct mark *mp = NULL;
 
-	while ((mp = prev_mark(d, m)) != NULL &&
+	while ((mp = doc_prev_mark_all(m)) != NULL &&
 	       mark_same(d, m, mp))
 		mark_backward_over(m, mp);
 
 	ret = mark_step2(d, m, 0, 1);
 	if (ret == WEOF)
 		return ret;
-	while ((mp = prev_mark(d, m)) != NULL &&
+	while ((mp = doc_prev_mark_all(m)) != NULL &&
 	       mark_same(d, m, mp))
 		mark_backward_over(m, mp);
 	return ret;

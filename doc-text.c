@@ -844,7 +844,7 @@ DEF_CMD(text_reundo)
 				i = text_retreat_towards(t, &m->ref, &end);
 				if (i == 0)
 					break;
-				while ((m2 = doc_prev_mark_all_safe(&t->doc, m)) != NULL &&
+				while ((m2 = doc_prev_mark_all(m)) != NULL &&
 				       m2->ref.c == m->ref.c &&
 				       m2->ref.o >= m->ref.o)
 					mark_backward_over(m, m2);
@@ -867,7 +867,7 @@ DEF_CMD(text_reundo)
 							       &start, &end) == 0)
 				break;
 
-		early = doc_prev_mark_all_safe(&t->doc, m);
+		early = doc_prev_mark_all(m);
 		if (early && !text_ref_same(t, &early->ref, &start))
 			early = NULL;
 
@@ -1400,9 +1400,9 @@ DEF_CMD(text_replace)
 		mark_free(myend);
 		text_del(t, &pm->ref, l, &first);
 
-		for (m = doc_prev_mark_all_safe(&t->doc, pm);
+		for (m = doc_prev_mark_all(pm);
 		     m && text_update_prior_after_change(t, &m->ref, &pm->ref, &pm->ref);
-		     m = doc_prev_mark_all_safe(&t->doc, m))
+		     m = doc_prev_mark_all(m))
 			;
 		for (m = doc_next_mark_all(pm);
 		     m && text_update_following_after_change(t, &m->ref, &pm->ref, &pm->ref);
@@ -1410,7 +1410,7 @@ DEF_CMD(text_replace)
 			;
 		text_check_consistent(t);
 	}
-	early = doc_prev_mark_all_safe(&t->doc, pm);
+	early = doc_prev_mark_all(pm);
 	if (early && !mark_same(&t->doc, early, pm))
 		early = NULL;
 
@@ -1419,9 +1419,9 @@ DEF_CMD(text_replace)
 		struct mark *m;
 
 		text_add_str(t, &pm->ref, str, &start, &first);
-		for (m = doc_prev_mark_all_safe(&t->doc, pm);
+		for (m = doc_prev_mark_all(pm);
 		     m && text_update_prior_after_change(t, &m->ref, &start, &pm->ref);
-		     m = doc_prev_mark_all_safe(&t->doc, m))
+		     m = doc_prev_mark_all(m))
 			;
 		for (m = doc_next_mark_all(pm);
 		     m && text_update_following_after_change(t, &m->ref, &start, &pm->ref);

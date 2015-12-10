@@ -110,7 +110,7 @@ static int need_recalc(struct doc *d, struct mark *m)
 	if (!attr_find(*mark_attr(m), "lines"))
 		ret = 1;
 	while (1) {
-		next = doc_next_mark(m);
+		next = doc_next_mark_view(m);
 		if (!next)
 			break;
 		if (doc_prior(d, next) == '\n' &&
@@ -154,9 +154,9 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 			/* Force and update to make sure spacing stays sensible */
 			if (need_recalc(d, m))
 				/* need to update this one */
-				do_count(d, m, doc_next_mark(m), &l, &w, &c, 1);
+				do_count(d, m, doc_next_mark_view(m), &l, &w, &c, 1);
 
-			m = doc_next_mark(m);
+			m = doc_next_mark_view(m);
 		}
 		if (!m) {
 			/* fell off the end, just count directly */
@@ -166,7 +166,7 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 	}
 	if (need_recalc(d, m))
 		/* need to update this one */
-		do_count(d, m, doc_next_mark(m), &l, &w, &c, 1);
+		do_count(d, m, doc_next_mark_view(m), &l, &w, &c, 1);
 
 	/* 'm' is not before 'start', it might be after.
 	 * if 'm' is not before 'end' either, just count from
@@ -185,7 +185,7 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 		lines = words = chars = 0;
 	else
 		do_count(d, start, m, &lines, &words, &chars, 0);
-	while ((m2 = doc_next_mark(m)) != NULL &&
+	while ((m2 = doc_next_mark_view(m)) != NULL &&
 	       (!end || mark_ordered(m2, end))) {
 		/* Need everything from m to m2 */
 		lines += attr_find_int(*mark_attr(m), "lines");
@@ -193,7 +193,7 @@ static void count_calculate(struct doc *d, struct mark *start, struct mark *end)
 		chars += attr_find_int(*mark_attr(m), "chars");
 		m = m2;
 		if (need_recalc(d, m))
-			do_count(d, m, doc_next_mark(m), &l, &w, &c, 1);
+			do_count(d, m, doc_next_mark_view(m), &l, &w, &c, 1);
 	}
 	/* m is the last mark before end */
 	if (!end) {
