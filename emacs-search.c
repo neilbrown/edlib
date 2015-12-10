@@ -52,7 +52,7 @@ DEF_CMD(search_forward)
 	if (!d)
 		return -1;
 
-	if (esi->s && mark_same(d, esi->s->m, esi->end)) {
+	if (esi->s && mark_same_pane(esi->target, esi->s->m, esi->end, NULL)) {
 		/* already pushed and didn't find anything new */
 		return 1;
 	}

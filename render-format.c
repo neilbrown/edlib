@@ -37,7 +37,7 @@ DEF_CMD(render_line)
 	if (!d || !ci->mark)
 		return -1;
 
-	if (pm && !mark_same(d, pm, m))
+	if (pm && !mark_same_pane(ci->home, pm, m, NULL))
 		pm = NULL;
 	ch = doc_following(d, m);
 	if (ch == WEOF)

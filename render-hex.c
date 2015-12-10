@@ -148,7 +148,7 @@ DEF_CMD(render_line)
 		wint_t ch;
 		struct mark *m2 = ci->mark;
 
-		if (pm && mark_same(d, m2, pm))
+		if (pm && mark_same_pane(ci->home, m2, pm, NULL))
 			goto done;
 		if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC &&
 		    ci->numeric <= ret.len)
