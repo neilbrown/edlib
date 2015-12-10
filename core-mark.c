@@ -419,7 +419,7 @@ struct mark *doc_new_mark(struct doc *d, int view)
  *
  */
 
-static struct mark *next_mark(struct doc *d, struct mark *m)
+static struct mark *next_mark(struct mark *m)
 {
 	if (m->all.next == NULL)
 		return NULL;
@@ -533,7 +533,7 @@ wint_t mark_next(struct doc *d, struct mark *m)
 	wint_t ret;
 	struct mark *m2 = NULL;
 
-	while ((m2 = next_mark(d, m)) != NULL &&
+	while ((m2 = next_mark(m)) != NULL &&
 	       mark_same(d, m, m2))
 		mark_forward_over(m, m2);
 
@@ -542,7 +542,7 @@ wint_t mark_next(struct doc *d, struct mark *m)
 		return ret;
 
 /* FIXME do I need to do this - is it precise enough? */
-	while ((m2 = next_mark(d, m)) != NULL &&
+	while ((m2 = next_mark(m)) != NULL &&
 	       mark_same(d, m, m2))
 		mark_forward_over(m, m2);
 	return ret;
