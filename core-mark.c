@@ -501,6 +501,18 @@ wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cm
 		return ret & 0xfffff;
 }
 
+wint_t mark_step_pane(struct pane *p, struct mark *m, int forward, int move, struct cmd_info *ci)
+{
+	int ret = call5("doc:step", p, forward, m, NULL, move);
+
+	if (ret <= 0)
+		return ret;
+	if (ret >= 0x1fffff)
+		return WEOF;
+	else
+		return ret & 0xfffff;
+}
+
 wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move)
 {
 	struct cmd_info ci = {0};
@@ -528,6 +540,27 @@ wint_t mark_next(struct doc *d, struct mark *m)
 	return ret;
 }
 
+wint_t mark_next_pane(struct pane *p, struct mark *m)
+{
+	wint_t ret;
+	struct mark *m2 = NULL;
+	struct cmd_info same_ci = {0};
+
+	while ((m2 = doc_next_mark_all(m)) != NULL &&
+	       mark_same_pane(p, m, m2, &same_ci))
+		mark_forward_over(m, m2);
+
+	ret = mark_step_pane(p, m, 1, 1, NULL);
+	if (ret == WEOF)
+		return ret;
+
+/* FIXME do I need to do this - is it precise enough? */
+	while ((m2 = doc_next_mark_all(m)) != NULL &&
+	       mark_same_pane(p, m, m2, &same_ci))
+		mark_forward_over(m, m2);
+	return ret;
+}
+
 wint_t mark_prev(struct doc *d, struct mark *m)
 {
 	wint_t ret;
@@ -542,6 +575,25 @@ wint_t mark_prev(struct doc *d, struct mark *m)
 		return ret;
 	while ((mp = doc_prev_mark_all(m)) != NULL &&
 	       mark_same(d, m, mp))
+		mark_backward_over(m, mp);
+	return ret;
+}
+
+wint_t mark_prev_pane(struct pane *p, struct mark *m)
+{
+	wint_t ret;
+	struct mark *mp = NULL;
+	struct cmd_info same_ci = {0};
+
+	while ((mp = doc_prev_mark_all(m)) != NULL &&
+	       mark_same_pane(p, m, mp, &same_ci))
+		mark_backward_over(m, mp);
+
+	ret = mark_step_pane(p, m, 0, 1, NULL);
+	if (ret == WEOF)
+		return ret;
+	while ((mp = doc_prev_mark_all(m)) != NULL &&
+	       mark_same_pane(p, m, mp, &same_ci))
 		mark_backward_over(m, mp);
 	return ret;
 }

@@ -115,18 +115,15 @@ DEF_CMD(search_retreat)
 DEF_CMD(search_add)
 {
 	struct es_info *esi = ci->home->data;
-	struct doc *d = doc_from_pane(esi->target);
 	wint_t wch;
 	char b[5];
 	mbstate_t ps = {0};
 	int l;
 
-	if (!d)
-		return -1;
 	do {
 		/* TEMP HACK - please fix */
 		doc_set_attr(esi->target, esi->end, "highlight", NULL);
-		wch = mark_next(d, esi->end);
+		wch = mark_next_pane(esi->target, esi->end);
 		if (wch == WEOF)
 			return 1;
 		if (wch == '\n') {
@@ -134,7 +131,7 @@ DEF_CMD(search_add)
 			/* Sending this will cause a call-back to
 			 * close everything down.
 			 */
-			mark_prev(d, esi->end);
+			mark_prev_pane(esi->target, esi->end);
 			return 1;
 		}
 		/* FIXME utf-8! and quote regexp chars */

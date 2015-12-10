@@ -181,6 +181,8 @@ wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cm
 wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move);
 wint_t mark_next(struct doc *d, struct mark *m);
 wint_t mark_prev(struct doc *d, struct mark *m);
+wint_t mark_next_pane(struct pane *p, struct mark *m);
+wint_t mark_prev_pane(struct pane *p, struct mark *m);
 struct mark *mark_at_point(struct pane *p, struct mark *pm, int view);
 struct mark *do_mark_at_point(struct doc *d, struct mark *pt, int view);
 void points_resize(struct doc *d);
