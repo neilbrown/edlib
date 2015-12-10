@@ -44,13 +44,9 @@ DEF_CMD(search_again);
 DEF_CMD(search_forward)
 {
 	struct es_info *esi = ci->home->data;
-	struct doc *d = doc_from_pane(esi->target);
 	struct stk *s;
 	char *str;
 	bool first = 1;
-
-	if (!d)
-		return -1;
 
 	if (esi->s && mark_same_pane(esi->target, esi->s->m, esi->end, NULL)) {
 		/* already pushed and didn't find anything new */
@@ -80,7 +76,7 @@ DEF_CMD(search_forward)
 	else {
 		esi->start = mark_dup(s->m, 1);
 		esi->wrapped = 1;
-		mark_reset(d, esi->start);
+		call3("Move-File", esi->target, -1, esi->start);
 	}
 	/* Trigger notification so isearch watcher searches again */
 	doc_replace(esi->search, NULL, "", &first);
