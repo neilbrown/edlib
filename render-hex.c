@@ -28,37 +28,32 @@ struct he_data {
 static struct map *he_map;
 static struct pane *do_render_hex_attach(struct pane *parent);
 
-DEF_CMD(render_hex_handle)
+DEF_LOOKUP_CMD(render_hex_handle, he_map);
+
+DEF_CMD(render_hex_close)
 {
 	struct pane *p = ci->home;
 	struct he_data *he = p->data;
-	int ret;
 
-	ret = key_lookup(he_map, ci);
-	if (ret)
-		return ret;
+	he->pane = NULL;
+	doc_del_view(p, &he->type);
+	p->data = NULL;
+	p->handle = NULL;
+	free(he);
+	return 1;
+}
 
-	if (strcmp(ci->key, "Close") == 0) {
-		struct pane *p = he->pane;
+DEF_CMD(render_hex_clone)
+{
+	struct pane *p = ci->home;
+	struct pane *parent = ci->focus;
+	struct pane *c;
 
-		he->pane = NULL;
-		doc_del_view(p, &he->type);
-		p->data = NULL;
-		p->handle = NULL;
-		free(he);
-		return 1;
-	}
-	if (strcmp(ci->key, "Clone") == 0) {
-		struct pane *parent = ci->focus;
-		struct pane *c;
-
-		do_render_hex_attach(parent);
-		c = pane_child(p);
-		if (c)
-			return pane_clone(c, parent->focus);
-		return 1;
-	}
-	return 0;
+	do_render_hex_attach(parent);
+	c = pane_child(p);
+	if (c)
+		return pane_clone(c, parent->focus);
+	return 1;
 }
 
 DEF_CMD(render_hex_notify)
@@ -217,6 +212,9 @@ static void render_hex_register_map(void)
 
 	key_add(he_map, "render-line-prev", &render_line_prev);
 	key_add(he_map, "render-line", &render_line);
+
+	key_add(he_map, "Close", &render_hex_close);
+	key_add(he_map, "Clone", &render_hex_clone);
 }
 
 static struct pane *do_render_hex_attach(struct pane *parent)
@@ -229,7 +227,7 @@ static struct pane *do_render_hex_attach(struct pane *parent)
 
 	he->type = render_hex_notify;
 	he->typenum = doc_add_view(parent, &he->type, 0);
-	p = pane_register(parent, 0, &render_hex_handle, he, NULL);
+	p = pane_register(parent, 0, &render_hex_handle.c, he, NULL);
 	attr_set_str(&p->attrs, "render-wrap", "no", -1);
 	attr_set_str(&p->attrs, "heading", "<bold>          00 11 22 33 44 55 66 77  88 99 aa bb cc dd ee ff   0 1 2 3 4 5 6 7  8 9 a b c d e f</>", -1);
 	he->pane = p;
