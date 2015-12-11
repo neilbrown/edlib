@@ -376,6 +376,16 @@ static PyObject *pane_repr(Pane *p)
 	return Py_BuildValue("s", buf);
 }
 
+static long pane_hash(Pane *p)
+{
+	return (long)p->pane;
+}
+
+static long pane_cmp(Pane *p1, Pane *p2)
+{
+	return (long)p1->pane - (long)p2->pane;
+}
+
 static PyGetSetDef pane_getseters[] = {
     {"x",
      (getter)pane_getnum, (setter)pane_setnum,
@@ -417,12 +427,12 @@ static PyTypeObject PaneType = {
     0,				/*tp_print*/
     0,				/*tp_getattr*/
     0,				/*tp_setattr*/
-    0,				/*tp_compare*/
+    (cmpfunc)pane_cmp,		/*tp_compare*/
     (reprfunc)pane_repr,	/*tp_repr*/
     0,				/*tp_as_number*/
     0,				/*tp_as_sequence*/
     0,				/*tp_as_mapping*/
-    0,				/*tp_hash */
+    (hashfunc)pane_hash,	/*tp_hash */
     0,				/*tp_call*/
     0,				/*tp_str*/
     0,				/*tp_getattro*/
