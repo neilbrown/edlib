@@ -22,8 +22,6 @@
 
 struct view_data {
 	int		border;
-	struct command	ch_notify;
-	int		ch_notify_num;
 	struct pane	*pane;
 	int		scroll_bar_y;
 };
@@ -138,7 +136,6 @@ DEF_CMD(view_handle)
 		vd->pane = p; /* FIXME having to do this is horrible */
 
 	if (strcmp(ci->key, "Close") == 0) {
-		doc_del_view(p, &vd->ch_notify);
 		free(vd);
 		return 1;
 	}
@@ -154,6 +151,10 @@ DEF_CMD(view_handle)
 	}
 	if (strcmp(ci->key, "Refresh") == 0)
 		return view_refresh(ci);
+	if (strcmp(ci->key, "Notify:Replace") == 0) {
+		pane_damaged(p, DAMAGED_CONTENT);
+		return 1;
+	}
 	return 0;
 }
 
@@ -188,30 +189,12 @@ DEF_CMD(view_null)
 	return 0;
 }
 
-static struct pane *view_reattach(struct pane *p);
-
-DEF_CMD(view_notify)
-{
-	struct view_data *vd = container_of(ci->comm, struct view_data, ch_notify);
-
-	if (strcmp(ci->key, "Notify:Replace") == 0) {
-		pane_damaged(vd->pane, DAMAGED_CONTENT);
-		return 0;
-	}
-	if (strcmp(ci->key, "Release") == 0) {
-		pane_close(vd->pane);
-		return 1;
-	}
-	return 0;
-}
-
 static struct pane *view_reattach(struct pane *par)
 {
 	struct view_data *vd = par->data;
 	struct pane *p;
 
-	vd->ch_notify_num = doc_add_view(par, &vd->ch_notify, 0);
-
+	call3("Request:Notify:Replace", par, 0, NULL);
 	p = pane_register(par, 0, &view_null, vd, NULL);
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;
@@ -224,7 +207,6 @@ static struct pane *do_view_attach(struct pane *par, int border)
 
 	vd = malloc(sizeof(*vd));
 	vd->border = border;
-	vd->ch_notify = view_notify;
 	p = pane_register(par, 0, &view_handle, vd, NULL);
 	vd->pane = p;
 	pane_check_size(p);
