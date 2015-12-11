@@ -25,6 +25,10 @@
  *                iterator for both 'all' and 'view' lists.
  *                no methods yet.
  *
+ *  edlib.comm  - a command which can be used to invoke code in other
+ *                module editors.  These look like any other python
+ *                callable.  They cannot be explicitly created, but can
+ *                be received from and passed to other commands.
  *
  */
 
@@ -52,6 +56,22 @@ static PyTypeObject MarkType;
 #define	ITER_VIEW	2
 #define	ITER_VIEW_REVERSE 3
 
+typedef struct {
+	PyObject_HEAD
+	struct command	*comm;
+} Comm;
+static PyTypeObject CommType;
+/* When a python callable is passed to edlib_call() we combine it
+ * with this "python_call" for edlib to call back that callable.
+ */
+struct python_command {
+	struct command	c;
+	PyObject	*callable;
+	int		home_func;	/* Should ->home->data be passed as 'data' */
+};
+DEF_CMD(python_call);
+static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds);
+
 static inline PyObject *Pane_Frompane(struct pane *p)
 {
 	Pane *pane = (Pane *)PyObject_CallObject((PyObject*)&PaneType, NULL);
@@ -64,6 +84,19 @@ static inline PyObject *Mark_Frommark(struct mark *m)
 	Mark *mark = (Mark *)PyObject_CallObject((PyObject*)&MarkType, NULL);
 	mark->mark = m;
 	return (PyObject*)mark;
+}
+
+static inline PyObject *Comm_Fromcomm(struct command *c)
+{
+	if (c->func == python_call_func) {
+		struct python_command *pc = container_of(c, struct python_command, c);
+		Py_INCREF(pc->callable);
+		return pc->callable;
+	} else {
+		Comm *comm = (Comm*)PyObject_CallObject((PyObject*)&CommType, NULL);
+		comm->comm = c;
+		return (PyObject*)comm;
+	}
 }
 
 DEF_CMD(python_load)
@@ -96,16 +129,7 @@ DEF_CMD(python_load)
 	return 1;
 }
 
-/* When a python callable is passed to a edlib_call() we combine it
- * with this "python_call" to edlib to call back that callable.
- */
-struct python_command {
-	struct command	c;
-	PyObject	*callable;
-	int		home_func;	/* Should ->home->data be passed as 'data' */
-};
-
-DEF_CMD(python_call)
+REDEF_CMD(python_call)
 {
 	struct python_command *pc = container_of(ci->comm, struct python_command, c);
 	PyObject *ret, *args, *kwds;
@@ -125,11 +149,14 @@ DEF_CMD(python_call)
 		PyDict_SetItemString(kwds, "str", Py_BuildValue("s", ci->str));
 	if (ci->str2)
 		PyDict_SetItemString(kwds, "str2", Py_BuildValue("s", ci->str2));
+	if (ci->comm)
+		PyDict_SetItemString(kwds, "comm", Comm_Fromcomm(ci->comm));
+	if (ci->comm2)
+		PyDict_SetItemString(kwds, "comm2", Comm_Fromcomm(ci->comm2));
 	PyDict_SetItemString(kwds, "numeric", Py_BuildValue("i", ci->numeric));
 	PyDict_SetItemString(kwds, "extra", Py_BuildValue("i", ci->extra));
 	PyDict_SetItemString(kwds, "xy", Py_BuildValue("ii", ci->x, ci->y));
 	PyDict_SetItemString(kwds, "hxy", Py_BuildValue("ii", ci->hx, ci->hy));
-	/* FIXME what about ->comm and ->comm2?? */
 
 	if (pc->home_func)
 		PyDict_SetItemString(kwds, "data", ci->home->data);
@@ -182,7 +209,6 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 	if (!PyTuple_Check(args) || PyTuple_GET_SIZE(args) == 0)
 		/* Probably an internal Pane_Frompane call */
 		return 1;
-
 
 	PyObject_Print(args, stderr, 0);
 	ret = PyArg_ParseTupleAndKeywords(args, kwds, "O!OO|i", keywords,
@@ -574,6 +600,96 @@ static PyTypeObject MarkType = {
     .tp_new = (newfunc)mark_new,/* tp_new */
 };
 
+static void comm_dealloc(Comm *self)
+{
+	self->ob_type->tp_free((PyObject*)self);
+}
+
+static PyObject *comm_repr(Comm *p)
+{
+	char buf[50];
+	sprintf(buf, "<comm-0x%p/0x%p>", p->comm, p->comm->func);
+	return Py_BuildValue("s", buf);
+}
+
+static PyObject *Comm_call(Comm *c, PyObject *args, PyObject *kwds)
+{
+	struct cmd_info ci = {0};
+	int rv;
+
+	if (c->comm->func == python_call.func) {
+		struct python_command *pc = container_of(c->comm, struct python_command,
+							 c);
+		return PyObject_Call(pc->callable, args, kwds);
+	}
+	rv = get_cmd_info(&ci, args, kwds);
+	if (rv <= 0)
+		return NULL;
+	ci.comm = c->comm;
+	rv = c->comm->func(&ci);
+	if (!rv) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	if (rv < 0) {
+		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
+		return NULL;
+	}
+	return PyInt_FromLong(rv);
+}
+
+static Comm *comm_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+	Comm *self;
+
+	self = (Comm *)type->tp_alloc(type, 0);
+	if (self)
+		self->comm = NULL;
+	return self;
+}
+
+static PyTypeObject CommType = {
+    PyObject_HEAD_INIT(NULL)
+    0,				/*ob_size*/
+    "edlib.Comm",		/*tp_name*/
+    sizeof(Comm),		/*tp_basicsize*/
+    0,				/*tp_itemsize*/
+    (destructor)comm_dealloc,	/*tp_dealloc*/
+    0,				/*tp_print*/
+    0,				/*tp_getattr*/
+    0,				/*tp_setattr*/
+    0,				/*tp_compare*/
+    (reprfunc)comm_repr,	/*tp_repr*/
+    0,				/*tp_as_number*/
+    0,				/*tp_as_sequence*/
+    0,				/*tp_as_mapping*/
+    0,				/*tp_hash */
+    (ternaryfunc)Comm_call,	/*tp_call*/
+    0,				/*tp_str*/
+    0,				/*tp_getattro*/
+    0,				/*tp_setattro*/
+    0,				/*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+    "edlib command",		/* tp_doc */
+    0,				/* tp_traverse */
+    0,				/* tp_clear */
+    0,				/* tp_richcompare */
+    0,				/* tp_weaklistoffset */
+    0,				/* tp_iter */
+    0,				/* tp_iternext */
+    0,				/* tp_methods */
+    0,				/* tp_members */
+    0,				/* tp_getset */
+    0,				/* tp_base */
+    0,				/* tp_dict */
+    0,				/* tp_descr_get */
+    0,				/* tp_descr_set */
+    0,				/* tp_dictoffset */
+    0,				/* tp_init */
+    0,				/* tp_alloc */
+    .tp_new = (newfunc)comm_new,/* tp_new */
+};
+
 /* The 'call' function takes liberties with arg passing.
  * Positional args must start with the key, and then are handled based on
  * there type.  They can be panes, strigns, ints, pairs, marks, commands.
@@ -586,92 +702,100 @@ static PyTypeObject MarkType = {
  * kwd arguments can also be used, currently
  * key, home, focus, xy, hxy, str, str2, mark, mark2, comm, comm2.
  */
-static PyObject *edlib_call(PyObject *self, PyObject *args, PyObject *kwds)
+static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 {
-	struct cmd_info ci = {0};
 	int argc;
 	PyObject *a;
 	int i;
-	int rv;
 	int numeric_set = 0, extra_set = 0;
 	int xy_set = 0, hxy_set = 0;
 
 	if (!PyTuple_Check(args))
-		return NULL;
+		return 0;
 	argc = PyTuple_GET_SIZE(args);
 	if (argc >= 1) {
 		/* First positional arg must be the key */
 		a = PyTuple_GetItem(args, 0);
 		if (!PyString_Check(a)) {
 			PyErr_SetString(PyExc_TypeError, "First are must be key");
-			return NULL;
+			return 0;
 		}
-		ci.key = PyString_AsString(a);
+		ci->key = PyString_AsString(a);
 	}
 	for (i = 1; i < argc; i++) {
 		a = PyTuple_GetItem(args, i);
 		if (Py_TYPE(a) == &PaneType) {
-			if (ci.focus == NULL)
-				ci.focus = ((Pane*)a)->pane;
-			else if (ci.home == NULL)
-				ci.home = ((Pane*)a)->pane;
+			if (ci->focus == NULL)
+				ci->focus = ((Pane*)a)->pane;
+			else if (ci->home == NULL)
+				ci->home = ((Pane*)a)->pane;
 			else {
 				PyErr_SetString(PyExc_TypeError, "Only 2 Pane args permitted");
-				return NULL;
+				return 0;
 			}
 		} else if (Py_TYPE(a) == &MarkType) {
-			if (ci.mark == NULL)
-				ci.mark = ((Mark*)a)->mark;
-			else if (ci.mark2 == NULL)
-				ci.mark2 = ((Mark*)a)->mark;
+			if (ci->mark == NULL)
+				ci->mark = ((Mark*)a)->mark;
+			else if (ci->mark2 == NULL)
+				ci->mark2 = ((Mark*)a)->mark;
 			else {
 				PyErr_SetString(PyExc_TypeError, "Only 2 Mark args permitted");
-				return NULL;
+				return 0;
 			}
 		} else if (PyString_Check(a)) {
-			if (ci.str == NULL)
-				ci.str = PyString_AsString(a);
-			else if (ci.str2 == NULL)
-				ci.str2 = PyString_AsString(a);
+			if (ci->str == NULL)
+				ci->str = PyString_AsString(a);
+			else if (ci->str2 == NULL)
+				ci->str2 = PyString_AsString(a);
 			else {
 				PyErr_SetString(PyExc_TypeError, "Only 3 String args permitted");
-				return NULL;
+				return 0;
 			}
 		} else if (PyInt_Check(a)) {
 			if (!numeric_set) {
-				ci.numeric = PyInt_AsLong(a);
+				ci->numeric = PyInt_AsLong(a);
 				numeric_set = 1;
 			} else if (!extra_set) {
-				ci.extra = PyInt_AsLong(a);
+				ci->extra = PyInt_AsLong(a);
 				extra_set = 1;
 			} else {
 				PyErr_SetString(PyExc_TypeError, "Only 2 Number args permitted");
-				return NULL;
+				return 0;
 			}
 		} else if (PyTuple_Check(a)) {
 			int n = PyTuple_GET_SIZE(a);
 			PyObject *n1, *n2;
 			if (n != 2) {
 				PyErr_SetString(PyExc_TypeError, "Only 2-element tuples permitted");
-				return NULL;
+				return 0;
 			}
 			n1 = PyTuple_GetItem(a, 0);
 			n2 = PyTuple_GetItem(a, 1);
 			if (!PyInt_Check(n1) || !PyInt_Check(n2)) {
 				PyErr_SetString(PyExc_TypeError, "Only tuples of integers permitted");
-				return NULL;
+				return 0;
 			}
 			if (!xy_set) {
-				ci.x = PyInt_AsLong(n1);
-				ci.y = PyInt_AsLong(n2);
+				ci->x = PyInt_AsLong(n1);
+				ci->y = PyInt_AsLong(n2);
 				xy_set = 1;
 			} else if (!hxy_set) {
-				ci.hx = PyInt_AsLong(n1);
-				ci.hy = PyInt_AsLong(n2);
+				ci->hx = PyInt_AsLong(n1);
+				ci->hy = PyInt_AsLong(n2);
 				hxy_set = 1;
 			} else {
 				PyErr_SetString(PyExc_TypeError, "Only two tuples permitted");
-				return NULL;
+				return 0;
+			}
+		} else if (Py_TYPE(a) == &CommType) {
+			Comm *c = (Comm*)a;
+			if (ci->comm2 == NULL)
+				ci->comm2 = c->comm;
+			else if (ci->comm == NULL)
+				ci->comm = c->comm;
+			else {
+				PyErr_SetString(PyExc_TypeError, "Only two callables permitted");
+				return 0;
 			}
 		} else if (PyCallable_Check(a)) {
 			/* FIXME this is never freed */
@@ -680,31 +804,43 @@ static PyObject *edlib_call(PyObject *self, PyObject *args, PyObject *kwds)
 			pc->callable = a;
 			pc->c = python_call;
 			pc->home_func = 0;
-			if (ci.comm2 == NULL)
-				ci.comm2 = &pc->c;
-			else if (ci.comm == NULL)
-				ci.comm = &pc->c;
+			if (ci->comm2 == NULL)
+				ci->comm2 = &pc->c;
+			else if (ci->comm == NULL)
+				ci->comm = &pc->c;
 			else {
 				free(pc);
 				PyErr_SetString(PyExc_TypeError, "Only two callables permitted");
-				return NULL;
+				return 0;
 			}
 		} else {
 			PyErr_SetString(PyExc_TypeError, "Unsupported arg type");
-			return NULL;
+			return 0;
 		}
 	}
 	/* Handle keyword args - later */
-	if (!ci.key) {
+	if (!ci->key) {
 		PyErr_SetString(PyExc_TypeError, "No key specified");
-		return NULL;
+		return 0;
 	}
-	if (!ci.focus) {
+	if (!ci->focus) {
 		PyErr_SetString(PyExc_TypeError, "No focus specified");
-		return NULL;
+		return 0;
 	}
 
-	if (xy_set)
+	return xy_set ? 2 : 1;
+}
+
+static PyObject *edlib_call(PyObject *self, PyObject *args, PyObject *kwds)
+{
+	struct cmd_info ci = {0};
+	int rv;
+
+	rv = get_cmd_info(&ci, args, kwds);
+
+	if (rv <= 0)
+		return NULL;
+	if (rv == 2)
 		rv = key_handle_xy(&ci);
 	else
 		rv = key_handle_focus(&ci);
