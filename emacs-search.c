@@ -39,8 +39,6 @@ struct es_info {
 
 static struct map *es_map;
 
-DEF_CMD(search_again);
-
 DEF_CMD(search_forward)
 {
 	struct es_info *esi = ci->home->data;
@@ -166,22 +164,16 @@ DEF_CMD(search_close)
 	return 1;
 }
 
-REDEF_CMD(search_again)
+DEF_CMD(search_again)
 {
 	/* document has changed, retry search */
-	struct es_info *esi = container_of(ci->comm, struct es_info, watch);
+	struct es_info *esi = ci->home->data;
 	struct cmd_info ci2 = {0};
 	struct pane *p;
 	char *a, *pfx;
 	int ret;
 	struct mark *m;
 	char *str;
-
-	if (strcmp(ci->key, "Release") == 0) {
-		/* No marks to remove */
-		doc_del_view(ci->home, ci->comm);
-		return 0;
-	}
 
 	/* TEMP HACK - please fix */
 	doc_set_attr(esi->target, esi->end, "highlight", NULL);
@@ -243,6 +235,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "C-Chr-R", &search_backward);
 	key_add(es_map, "Close", &search_close);
 	key_add(es_map, "popup:Return", &search_done);
+	key_add(es_map, "Notify:Replace", &search_again);
 }
 
 DEF_LOOKUP_CMD(search_handle, es_map);
@@ -272,13 +265,13 @@ DEF_CMD(emacs_search)
 	esi->matched = 0;
 	esi->wrapped = 0;
 	esi->search = ci->focus;
-	esi->watch = search_again;
-	doc_add_view(ci->focus, &esi->watch, 0);
 
 	p = pane_final_child(ci->focus);
 	p = pane_register(p, 0, &search_handle.c, esi, NULL);
-	if (p)
+	if (p) {
+		call3("Request:Notify:Replace", p, 0, NULL);
 		comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+	}
 	return 1;
 }
 

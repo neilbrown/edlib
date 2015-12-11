@@ -486,6 +486,19 @@ static inline int call3(char *key, struct pane *focus, int numeric, struct mark 
 	return key_handle_focus(&ci);
 }
 
+static inline int call_home(struct pane *home, char *key, struct pane *focus,
+			    int numeric, struct mark *m)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.home = home;
+	ci.numeric = numeric;
+	ci.mark = m;
+	return key_handle_focus(&ci);
+}
+
 static inline int call5(char *key, struct pane *focus, int numeric, struct mark *m,
 			 char *str, int extra)
 {
