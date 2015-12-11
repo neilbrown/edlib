@@ -99,12 +99,11 @@ struct pane *pane_register(struct pane *parent, int z,
 	return p;
 }
 
-static void __pane_refresh(struct cmd_info *ci)
+static void __pane_refresh(struct cmd_info ci)
 {
 	struct pane *c;
-	int damage = ci->extra;
-	struct pane *p = ci->home;
-	struct cmd_info ci2 = *ci;
+	int damage = ci.extra;
+	struct pane *p = ci.home;
 	int ret = 0;
 
 	if (p->damaged & DAMAGED_CLOSED)
@@ -114,7 +113,7 @@ static void __pane_refresh(struct cmd_info *ci)
 		p->focus = list_first_entry_or_null(
 			&p->children, struct pane, siblings);
 	if (p->pointer)
-		ci2.mark = p->pointer;
+		ci.mark = p->pointer;
 
 	damage |= p->damaged;
 	if (!damage)
@@ -122,6 +121,7 @@ static void __pane_refresh(struct cmd_info *ci)
 	if (damage == DAMAGED_CHILD)
 		damage = 0;
 	else {
+		struct cmd_info ci2 = ci;
 		ci2.extra = damage;
 		if (ci2.extra & DAMAGED_SIZE)
 			ci2.extra |= DAMAGED_CONTENT;
@@ -134,17 +134,17 @@ static void __pane_refresh(struct cmd_info *ci)
 			pane_check_size(p);
 	}
 	p->damaged = 0;
+	ci.extra = damage;
 	list_for_each_entry(c, &p->children, siblings) {
-		ci2.extra = damage;
-		ci2.home = c;
-		ci2.comm = NULL;
-		__pane_refresh(&ci2);
+		ci.home = c;
+		__pane_refresh(ci);
 	}
 	if (ret == 2) {
 		/* "Refresh" requested a post-order call */
-		ci2 = *ci;
-		ci2.numeric = 1;
-		p->handle->func(&ci2);
+		ci.home = p;
+		ci.numeric = 1;
+		ci.comm = p->handle;
+		p->handle->func(&ci);
 	}
 }
 
@@ -157,7 +157,7 @@ void pane_refresh(struct pane *p)
 		p = p->parent;
 	ci.focus = ci.home = p;
 	ci.key = "Refresh";
-	__pane_refresh(&ci);
+	__pane_refresh(ci);
 }
 
 void pane_add_notify(struct pane *target, struct pane *source, char *msg)
