@@ -286,6 +286,106 @@ static Pane *pane_next(Pane *self)
 	return (Pane*)Pane_Frompane(list_next_entry(self->pane, siblings));
 }
 
+static PyObject *Pane_call(Pane *self, PyObject *args, PyObject *kwds)
+{
+	struct cmd_info ci = {0};
+	int rv;
+
+	ci.focus = self->pane;
+
+	rv = get_cmd_info(&ci, args, kwds);
+
+	if (rv <= 0)
+		return NULL;
+
+	rv = key_handle(&ci);
+
+	if (!rv) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	if (rv < 0) {
+		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
+		return NULL;
+	}
+	return PyInt_FromLong(rv);
+}
+
+static PyObject *Pane_call_focus(Pane *self, PyObject *args, PyObject *kwds)
+{
+	struct cmd_info ci = {0};
+	int rv;
+
+	ci.focus = self->pane;
+
+	rv = get_cmd_info(&ci, args, kwds);
+
+	if (rv <= 0)
+		return NULL;
+	rv = key_handle_focus(&ci);
+	if (!rv) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	if (rv < 0) {
+		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
+		return NULL;
+	}
+	return PyInt_FromLong(rv);
+}
+
+static PyObject *Pane_call_xy(Pane *self, PyObject *args, PyObject *kwds)
+{
+	struct cmd_info ci = {0};
+	int rv;
+
+	ci.focus = self->pane;
+
+	rv = get_cmd_info(&ci, args, kwds);
+
+	if (rv <= 0)
+		return NULL;
+	if (rv != 2) {
+		PyErr_SetString(Edlib_CommandFailed, "x,y not given with call_xy");
+		return NULL;
+	}
+	rv = key_handle_xy(&ci);
+
+	if (!rv) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	if (rv < 0) {
+		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
+		return NULL;
+	}
+	return PyInt_FromLong(rv);
+}
+
+static PyObject *Pane_call_filter(Pane *self, PyObject *args, PyObject *kwds)
+{
+	struct cmd_info ci = {0};
+	int rv;
+
+	ci.focus = self->pane;
+
+	rv = get_cmd_info(&ci, args, kwds);
+
+	if (rv <= 0)
+		return NULL;
+
+	rv = key_handle_filter(&ci);
+	if (!rv) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	if (rv < 0) {
+		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
+		return NULL;
+	}
+	return PyInt_FromLong(rv);
+}
+
 static PyMethodDef pane_methods[] = {
 	{"children", (PyCFunction)pane_children, METH_NOARGS,
 	 "provides and iterator which will iterate over all children"},
@@ -293,6 +393,14 @@ static PyMethodDef pane_methods[] = {
 	 "Claim the focus for this pane"},
 	{"refresh", (PyCFunction)Pane_refresh, METH_NOARGS,
 	 "Trigger refresh on this pane"},
+	{"call", (PyCFunction)Pane_call, METH_VARARGS|METH_KEYWORDS,
+	 "Call a command from a pane"},
+	{"call_focus", (PyCFunction)Pane_call_focus, METH_VARARGS|METH_KEYWORDS,
+	 "Call a command from a pane, follow out to final focus pane"},
+	{"call_xy", (PyCFunction)Pane_call_xy, METH_VARARGS|METH_KEYWORDS,
+	 "Call a command from a pane, follow x,y out to leaf"},
+	{"call_filter", (PyCFunction)Pane_call_filter, METH_VARARGS|METH_KEYWORDS,
+	 "Call a command from a pane, search searching from given pane, not leaf"},
 	{NULL}
 };
 
@@ -707,9 +815,9 @@ static PyTypeObject CommType = {
  * Ints are assigned to numeric then extra
  * Pairs (must be of ints) are assigned to x,y then hx,hy.
  * Marks are assigned to mark then mark2
- * commands are assigned to comm2, then comm (yes - backwards).
+ * A command is assigned to comm2 (comm is set automatically)
  * kwd arguments can also be used, currently
- * key, home, focus, xy, hxy, str, str2, mark, mark2, comm, comm2.
+ * key, home, focus, xy, hxy, str, str2, mark, mark2, comm2.
  */
 static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 {
@@ -796,10 +904,8 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 			Comm *c = (Comm*)a;
 			if (ci->comm2 == NULL)
 				ci->comm2 = c->comm;
-			else if (ci->comm == NULL)
-				ci->comm = c->comm;
 			else {
-				PyErr_SetString(PyExc_TypeError, "Only two callables permitted");
+				PyErr_SetString(PyExc_TypeError, "Only one callable permitted");
 				return 0;
 			}
 		} else if (PyCallable_Check(a)) {
@@ -811,11 +917,9 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 			pc->home_func = 0;
 			if (ci->comm2 == NULL)
 				ci->comm2 = &pc->c;
-			else if (ci->comm == NULL)
-				ci->comm = &pc->c;
 			else {
 				free(pc);
-				PyErr_SetString(PyExc_TypeError, "Only two callables permitted");
+				PyErr_SetString(PyExc_TypeError, "Only one callable permitted");
 				return 0;
 			}
 		} else {
@@ -836,36 +940,6 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 	return xy_set ? 2 : 1;
 }
 
-static PyObject *edlib_call(PyObject *self, PyObject *args, PyObject *kwds)
-{
-	struct cmd_info ci = {0};
-	int rv;
-
-	rv = get_cmd_info(&ci, args, kwds);
-
-	if (rv <= 0)
-		return NULL;
-	if (rv == 2)
-		rv = key_handle_xy(&ci);
-	else
-		rv = key_handle_focus(&ci);
-	if (!rv) {
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-	if (rv < 0) {
-		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
-		return NULL;
-	}
-	return PyInt_FromLong(rv);
-}
-
-static PyMethodDef edlib_methods[] = {
-	{"call", (PyCFunction)edlib_call, METH_VARARGS | METH_KEYWORDS,
-	 "Make an edlib call"},
-	{NULL, NULL, 0, NULL}
-};
-
 void edlib_init(struct editor *ed)
 {
 	PyObject *m;
@@ -880,7 +954,7 @@ void edlib_init(struct editor *ed)
 	if (PyType_Ready(&MarkType) < 0)
 		return;
 
-	m = Py_InitModule3("edlib", edlib_methods,
+	m = Py_InitModule3("edlib", NULL,
 			   "edlib - one more editor is never enough.");
 
 	if (!m)
