@@ -67,6 +67,12 @@ DEF_CMD(popup_handle)
 		return 1;
 	}
 
+	if (strcmp(ci->key, "Notify:Close") == 0) {
+		if (ci->focus == ppi->target)
+			pane_close(p);
+		return 1;
+	}
+
 	if (strcmp(ci->key, "Refresh") == 0) {
 		popup_resize(p, ppi->style);
 		return 1;
@@ -174,6 +180,8 @@ DEF_CMD(popup_attach)
 	attr_set_str(&ppi->popup->attrs, "Popup", "true", -1);
 	attr_set_str(&ppi->popup->attrs, "borders", border, -1);
 	attr_set_str(&ppi->popup->attrs, "render-wrap", "no", -1);
+
+	pane_add_notify(ppi->popup, ppi->target, "Notify:Close");
 
 	if (ci->home) {
 		p = doc_attach_view(ppi->popup, ci->home, NULL);
