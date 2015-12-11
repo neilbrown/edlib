@@ -68,6 +68,9 @@ DEF_CMD(libevent_signal)
 DEF_CMD(libevent_run)
 {
 	struct event_base *b = base;
+	if (!b)
+		return 0;
+
 	event_base_dispatch(b);
 	while (!list_empty(&event_list)) {
 		struct evt *ev = list_first_entry(&event_list, struct evt, lst);

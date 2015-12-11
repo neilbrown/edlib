@@ -93,7 +93,8 @@ int main(int argc, char *argv[])
 		key_handle(&ci);
 
 		pane_refresh(&ed->root);
-		call3("event:run", vroot, 0, NULL);
+		while (call3("event:run", vroot, 0, NULL) == 1)
+			;
 	}
 	pane_close(&ed->root);
 	exit(0);

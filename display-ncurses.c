@@ -151,6 +151,12 @@ DEF_CMD(ncurses_handle)
 			int damage = ci->extra;
 			if (damage & DAMAGED_SIZE)
 				getmaxyx(stdscr, p->h, p->w);
+			if (damage & DAMAGED_EVENTS) {
+				call_home(p, "event:read", p, 0, NULL,
+					  &input_handle);
+				call_home(p, "event:signal", p, SIGWINCH, NULL,
+					  &handle_winch);
+			}
 		}
 		return 2; /* request post-order call */
 	}

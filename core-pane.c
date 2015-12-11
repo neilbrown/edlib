@@ -127,7 +127,7 @@ static void __pane_refresh(struct cmd_info *ci)
 			ci2.extra |= DAMAGED_CONTENT;
 		if (ci2.extra & DAMAGED_CONTENT)
 			ci2.extra |= DAMAGED_CURSOR;
-		damage &= DAMAGED_SIZE;
+		damage &= DAMAGED_SIZE | DAMAGED_EVENTS;
 		ci2.comm = p->handle;
 		ret = p->handle->func(&ci2);
 		if (ret == 0)
