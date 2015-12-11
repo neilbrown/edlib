@@ -341,7 +341,7 @@ static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
 	ci.focus = p;
 	ci.x = x;
 	ci.y = y;
-	key_handle_xy(&ci);
+	key_handle(&ci);
 }
 
 static void send_mouse(MEVENT *mev, struct pane *p)

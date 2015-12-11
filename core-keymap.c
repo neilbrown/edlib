@@ -292,11 +292,13 @@ int key_lookup_cmd_func(const struct cmd_info *ci)
 	return key_lookup(*l->m, ci);
 }
 
-int key_handle(const struct cmd_info *ci)
+/* key_handle_filter is simplest. It just searches towards root for the pane
+ * which handles the command.
+ */
+int key_handle_filter(const struct cmd_info *ci)
 {
 	struct cmd_info *vci = (struct cmd_info*)ci;
 	struct pane *p;
-	int ret = 0;
 
 	if (ci->comm)
 		return ci->comm->func(ci);
@@ -308,7 +310,8 @@ int key_handle(const struct cmd_info *ci)
 	if (!p)
 		p = ci->focus;
 
-	while (ret == 0 && p) {
+	while (p) {
+		int ret = 0;
 		if (p->handle) {
 			vci->home = p;
 			vci->comm = p->handle;
@@ -316,53 +319,56 @@ int key_handle(const struct cmd_info *ci)
 		}
 		if (ret)
 			/* 'p' might have been destroyed */
-			break;
+			return ret;
 		p = p->parent;
 	}
-	return ret;
+	return 0;
 }
 
-static int __key_handle_focus(struct cmd_info *ci, int savepoint)
+/* key_handle move 'home' out to a leaf and searches from there */
+int key_handle(const struct cmd_info *ci)
 {
-	/* Handle this in the focus pane, so x,y are irrelevant */
+	struct pane *p;
+	if (ci->comm)
+		return ci->comm->func(ci);
+	p = ci->home;
+	if (!p)
+		p = ci->focus;
+	while (p->focus)
+		p = p->focus;
+	((struct cmd_info*)ci)->home = p;
+	return key_handle_filter(ci);
+}
+
+int key_handle_focus(struct cmd_info *ci)
+{
 	struct pane *p = ci->home;
 	if (!p)
 		p = ci->focus;
 	if (!p)
 		return -1;
+	/* Handle this in the focus pane, so x,y are irrelevant */
 	ci->x = -1;
 	ci->y = -1;
 	while (p->focus) {
 		p = p->focus;
-		if (savepoint && p->pointer)
+		if (!ci->mark)
 			ci->mark = p->pointer;
 	}
-	if (!ci->home || !ci->focus)
-		ci->focus = p;
+	ci->focus = p;
 	ci->home = p;
 	ci->comm = NULL;
 	return key_handle(ci);
 }
 
-int key_handle_focus(struct cmd_info *ci)
-{
-	return __key_handle_focus(ci, 0);
-}
-
-int key_handle_focus_point(struct cmd_info *ci)
-{
-	int ret =  __key_handle_focus(ci, 1);
-	if (ret < 0)
-		call5("Message", ci->focus, 0, NULL, "** Command Failed **", 1);
-	return ret;
-}
-
-static int __key_handle_xy(struct cmd_info *ci, int savepoint)
+int key_handle_xy(struct cmd_info *ci)
 {
 	/* Handle this in child with x,y co-ords */
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
 	int x = ci->x;
 	int y = ci->y;
+	if (!p)
+		p = ci->focus;
 
 	while (1) {
 		struct pane *t, *chld = NULL;
@@ -381,21 +387,13 @@ static int __key_handle_xy(struct cmd_info *ci, int savepoint)
 		x -= chld->x;
 		y -= chld->y;
 		p = chld;
-		if (savepoint && p->pointer)
+		if (!ci->mark)
 			ci->mark = p->pointer;
 	}
 	ci->x = x;
 	ci->y = y;
 	ci->focus = p;
+	ci->home = p;
 	ci->comm = NULL;
 	return key_handle(ci);
-}
-
-int key_handle_xy(struct cmd_info *ci)
-{
-	return __key_handle_xy(ci, 0);
-}
-int key_handle_xy_point(struct cmd_info *ci)
-{
-	return __key_handle_xy(ci, 1);
 }

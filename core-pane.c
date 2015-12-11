@@ -616,7 +616,7 @@ struct pane *call_pane(char *key, struct pane *focus, int numeric,
 	cr.c = take_pane;
 	cr.p = NULL;
 	ci.comm2 = &cr.c;
-	if (!key_handle_focus(&ci))
+	if (!key_handle(&ci))
 		return NULL;
 	return cr.p;
 }

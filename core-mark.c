@@ -775,7 +775,7 @@ int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2,
 	ci->mark = m1;
 	ci->mark2 = m2;
 	ci->focus = p;
-	return key_handle_focus(ci) == 1;
+	return key_handle(ci) == 1;
 }
 
 /* A 'vmark' is a mark in a particular view.  We can walk around those
@@ -876,7 +876,7 @@ static int vmark_get(struct pane *p, int view,
 		ci.extra = 1;
 	else if (new)
 		ci.extra = 2;
-	if (key_handle_focus(&ci) == 0)
+	if (key_handle(&ci) == 0)
 		return 0;
 	if (first)
 		*first = cr.m;
@@ -926,7 +926,7 @@ struct mark *vmark_at_or_before(struct pane *p, struct mark *m, int view)
 	cr.c = take_marks;
 	cr.m = cr.m2 = NULL;
 	ci.comm2 = &cr.c;
-	if (key_handle_focus(&ci) == 0)
+	if (key_handle(&ci) == 0)
 		return NULL;
 	return cr.m2;
 }

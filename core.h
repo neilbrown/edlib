@@ -297,11 +297,10 @@ struct cmd_info {
 
 struct map *key_alloc(void);
 void key_free(struct map *m);
+int key_handle_filter(const struct cmd_info *ci);
 int key_handle(const struct cmd_info *ci);
 int key_handle_focus(struct cmd_info *ci);
 int key_handle_xy(struct cmd_info *ci);
-int key_handle_focus_point(struct cmd_info *ci);
-int key_handle_xy_point(struct cmd_info *ci);
 int key_lookup(struct map *m, const const struct cmd_info *ci);
 struct command *key_lookup_cmd(struct map *m, char *c);
 void key_add(struct map *map, char *k, struct command *comm);
@@ -412,7 +411,7 @@ static inline void doc_replace(struct pane *p, struct mark *m,
 	ci.str = str;
 	ci.extra = *first;
 	ci.numeric = 1;
-	ret = key_handle_focus(&ci);
+	ret = key_handle(&ci);
 	if (ret == 1)
 		*first = 1;
 }
@@ -422,7 +421,7 @@ static inline int doc_undo(struct pane *p, bool redo)
 	ci.focus = p;
 	ci.numeric = redo ? 1 : 0;
 	ci.key = "doc:reundo";
-	return key_handle_focus(&ci);
+	return key_handle(&ci);
 }
 static inline int doc_load_file(struct pane *p, int fd, char *name)
 {
@@ -431,7 +430,7 @@ static inline int doc_load_file(struct pane *p, int fd, char *name)
 	ci.extra = fd;
 	ci.str = name;
 	ci.key = "doc:load-file";
-	return key_handle_focus(&ci);
+	return key_handle(&ci);
 }
 
 static inline int doc_set_attr(struct pane *p, struct mark *pt,
@@ -444,7 +443,7 @@ static inline int doc_set_attr(struct pane *p, struct mark *pt,
 	ci.mark = pt;
 	ci.str = attr;
 	ci.str2 = val;
-	return key_handle_focus(&ci);
+	return key_handle(&ci);
 }
 
 
@@ -456,7 +455,7 @@ static inline int doc_add_view(struct pane *p, struct command *c, int size)
 	ci.key = "doc:add-view";
 	ci.comm2 = c;
 	ci.extra = size;
-	ret = key_handle_focus(&ci);
+	ret = key_handle(&ci);
 	if (ret <= 0)
 		return -1;
 	return ret - 1;
@@ -468,7 +467,7 @@ static inline void doc_del_view(struct pane *p, struct command *c)
 	ci.focus = p;
 	ci.key = "doc:del-view";
 	ci.comm2 = c;
-	key_handle_focus(&ci);
+	key_handle(&ci);
 }
 
 static inline int doc_find_view(struct pane *p, struct command *c)
@@ -479,7 +478,7 @@ static inline int doc_find_view(struct pane *p, struct command *c)
 	ci.focus = p;
 	ci.key = "doc:find-view";
 	ci.comm2 = c;
-	ret = key_handle_focus(&ci);
+	ret = key_handle(&ci);
 	if (ret <= 0)
 		return -1;
 	return ret - 1;
@@ -493,7 +492,7 @@ static inline int call3(char *key, struct pane *focus, int numeric, struct mark 
 	ci.focus = focus;
 	ci.numeric = numeric;
 	ci.mark = m;
-	return key_handle_focus(&ci);
+	return key_handle(&ci);
 }
 
 static inline int call_home(struct pane *home, char *key, struct pane *focus,
@@ -507,7 +506,7 @@ static inline int call_home(struct pane *home, char *key, struct pane *focus,
 	ci.numeric = numeric;
 	ci.mark = m;
 	ci.comm2 = comm;
-	return key_handle_focus(&ci);
+	return key_handle(&ci);
 }
 
 static inline int call5(char *key, struct pane *focus, int numeric, struct mark *m,
@@ -521,7 +520,7 @@ static inline int call5(char *key, struct pane *focus, int numeric, struct mark 
 	ci.mark = m;
 	ci.str = str;
 	ci.extra = extra;
-	return key_handle_focus(&ci);
+	return key_handle(&ci);
 }
 
 static inline int call7(char *key, struct pane *focus, int numeric, struct mark *m,
@@ -537,7 +536,7 @@ static inline int call7(char *key, struct pane *focus, int numeric, struct mark 
 	ci.str = str;
 	ci.str2 = str2;
 	ci.extra = extra;
-	return key_handle_focus(&ci);
+	return key_handle(&ci);
 }
 
 struct call_return {
@@ -560,7 +559,7 @@ static inline int call_comm(char *key, struct pane *focus, int numeric, struct m
 	ci.str = str;
 	ci.extra = extra;
 	ci.comm2 = comm;
-	return key_handle_focus(&ci);
+	return key_handle(&ci);
 }
 
 static inline int comm_call(struct command *comm, char *key, struct pane *focus,

@@ -188,7 +188,7 @@ REDEF_CMD(emacs_str)
 	ci2.numeric = ci->numeric;
 	ci2.extra = ci->extra;
 	ci2.mark = ci->mark;
-	return key_handle_focus(&ci2);
+	return key_handle(&ci2);
 }
 
 DEF_CMD(emacs_insert)
@@ -287,7 +287,7 @@ DEF_CMD(emacs_findfile)
 		ci2.focus = p;
 		ci2.str = "emacs:file-complete";
 		ci2.str2 = "Tab";
-		key_handle_focus(&ci2);
+		key_handle(&ci2);
 		return 1;
 	}
 
@@ -373,7 +373,7 @@ DEF_CMD(emacs_file_complete)
 	cr.c = save_str;
 	cr.s = NULL;
 	ci2.comm2 = &cr.c;
-	ret = key_handle_focus(&ci2);
+	ret = key_handle(&ci2);
 	free(d);
 	if (cr.s && (strlen(cr.s) <= strlen(b) && ret-1 > 1)) {
 		/* We need the dropdown */
@@ -420,7 +420,7 @@ DEF_CMD(emacs_finddoc)
 		ci2.focus = p;
 		ci2.str = "emacs:doc-complete";
 		ci2.str2 = "Tab";
-		key_handle_focus(&ci2);
+		key_handle(&ci2);
 		return 1;
 	}
 
@@ -470,7 +470,7 @@ DEF_CMD(emacs_doc_complete)
 	cr.c = save_str;
 	cr.s = NULL;
 	ci2.comm2= &cr.c;
-	ret = key_handle_focus(&ci2);
+	ret = key_handle(&ci2);
 	if (cr.s && (strlen(cr.s) <= strlen(str) && ret - 1 > 1)) {
 		/* We need the dropdown */
 		pane_damaged(par, DAMAGED_CONTENT);
@@ -568,7 +568,7 @@ DEF_CMD(emacs_search)
 	ci2.str = "Search String";
 	ci2.str2 = ci->str;
 	ci2.focus = ci->home;
-	key_handle_focus(&ci2);
+	key_handle(&ci2);
 
 	memset(&ci2, 0, sizeof(ci2));
 	ci2.focus = ci->home;

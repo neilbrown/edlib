@@ -113,7 +113,7 @@ DEF_CMD(popup_handle)
 		if (ppi->doc)
 			ci2.str = doc_getstr(ppi->popup, NULL);
 		ci2.mark = NULL;
-		key_handle_focus(&ci2);
+		key_handle(&ci2);
 		if (ppi->doc)
 			free(ci2.str);
 		d = ppi->doc; ppi->doc = NULL;
@@ -142,7 +142,7 @@ DEF_CMD(popup_quote)
 	ci2.numeric = ci->numeric;
 	ci2.extra = ci->extra;
 	ci2.mark = ci->mark;
-	return key_handle_focus(&ci2);
+	return key_handle(&ci2);
 }
 
 DEF_CMD(popup_attach)
@@ -214,9 +214,9 @@ DEF_CMD(popup_attach)
 	ci2.focus = p;
 	ci2.str = "popup:quote";
 	ci2.str2 = "Return";
-	key_handle_focus(&ci2);
+	key_handle(&ci2);
 	ci2.str2 = "Abort";
-	key_handle_focus(&ci2);
+	key_handle(&ci2);
 
 	return comm_call(ci->comm2, "callback:attach", ppi->popup, 0, NULL, NULL, 0);
 }

@@ -1108,7 +1108,7 @@ DEF_CMD(text_get_str)
 	char *ret;
 	int l = 0, head, tail;
 
-	if (ci->mark) {
+	if (ci->mark && ci->mark2) {
 		if (mark_ordered(ci->mark2, ci->mark)) {
 			from = ci->mark2;
 			to = ci->mark;

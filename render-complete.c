@@ -88,7 +88,7 @@ DEF_CMD(render_complete_line)
 	cr.i = plen;
 	cr.s = NULL;
 	ci2.comm2 = &cr.c;
-	if (key_handle(&ci2) == 0)
+	if (key_handle_filter(&ci2) == 0)
 		return 0;
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cr.s, 0);
@@ -104,7 +104,7 @@ DEF_CMD(render_complete_line)
 		cb.prefix = cd->prefix;
 		cb.cmp = 0;
 		ci2.comm2 = &cb.c;
-		key_handle(&ci2);
+		key_handle_filter(&ci2);
 		if (cb.cmp == 0)
 			break;
 
@@ -151,7 +151,7 @@ DEF_CMD(render_complete_prev)
 	cb.plen = strlen(cb.prefix);
 	ci3.comm2 = &cb.c;
 	while (1) {
-		ret = key_handle(&ci2);
+		ret = key_handle_filter(&ci2);
 		if (ret <= 0 || ci->numeric == 0)
 			/* Either hit start-of-file, or have what we need */
 			break;
@@ -164,7 +164,7 @@ DEF_CMD(render_complete_prev)
 		ci3.numeric = NO_NUMERIC;
 		cb.keep = ci2.numeric == 1 && ci->extra == 42;
 		cb.str = NULL;
-		if (key_handle(&ci3) != 1) {
+		if (key_handle_filter(&ci3) != 1) {
 			mark_free(ci3.mark);
 			break;
 		}
@@ -373,7 +373,7 @@ DEF_CMD(complete_return)
 	ci2.focus = ci->home->parent;
 	ci2.str = cr.s + strlen(cd->prefix);
 	ci2.numeric = NO_NUMERIC;
-	key_handle(&ci2);
+	key_handle_filter(&ci2);
 	free(cr.s);
 	return 1;
 }

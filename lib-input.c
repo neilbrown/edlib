@@ -49,6 +49,7 @@ DEF_CMD(keystroke)
 	struct cmd_info ci2 = {0};
 	struct input_mode *im = ci->home->data;
 	int l;
+	int ret;
 
 	l = strlen(im->mode) + strlen(ci->str) + 1;
 	ci2.key = malloc(l);
@@ -60,8 +61,10 @@ DEF_CMD(keystroke)
 	im->mode = "";
 	im->numeric = NO_NUMERIC;
 	im->extra = 0;
-	key_handle_focus_point(&ci2);
+	ret = key_handle_focus(&ci2);
 	free(ci2.key);
+	if (ret < 0)
+		call5("Message", ci2.focus, 0, NULL, "** Command Failed **", 1);
 	return 0;
 }
 
@@ -85,7 +88,7 @@ DEF_CMD(mouse_event)
 	im->numeric = NO_NUMERIC;
 	im->extra = 0;
 
-	key_handle_xy_point(&ci2);
+	key_handle_xy(&ci2);
 	return 0;
 }
 
