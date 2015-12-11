@@ -132,12 +132,16 @@ DEF_CMD(popup_handle)
 
 DEF_CMD(popup_quote)
 {
-	struct cmd_info ci2 = *ci;
+	struct cmd_info ci2 = {0};
 
 	if (strcmp(ci->key, "Return") == 0)
 		ci2.key = "popup:Return";
 	else
 		ci2.key = "popup:Abort";
+	ci2.focus = ci->focus;
+	ci2.numeric = ci->numeric;
+	ci2.extra = ci->extra;
+	ci2.mark = ci->mark;
 	return key_handle_focus(&ci2);
 }
 
