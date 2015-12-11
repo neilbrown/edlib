@@ -33,6 +33,7 @@ struct popup_info {
 	struct pane	*target, *popup;
 	struct doc	*doc;
 	char		*style;
+	int closing;
 };
 
 static void popup_resize(struct pane *p, char *style)
@@ -61,22 +62,23 @@ DEF_CMD(popup_handle)
 {
 	struct pane *p = ci->home;
 	struct popup_info *ppi = p->data;
+	struct doc *d;
 
 	if (strcmp(ci->key, "Close") == 0) {
-		if (ppi->doc)
+		d = ppi->doc; ppi->doc = NULL;
+		if (d)
 			/* FIXME make this doc auto-close */
-			doc_destroy(ppi->doc->home);
+			doc_destroy(d->home);
 		free(ppi);
 		return 1;
 	}
 
 	if (strcmp(ci->key, "Notify:Close") == 0) {
-		if (ci->focus == ppi->target) {
-			if (ppi->doc) {
+		if (ci->focus == ppi->target && !ppi->closing) {
+			d = ppi->doc; ppi->doc = NULL;
+			if (d)
 				/* FIXME make this doc auto-close */
-				doc_destroy(ppi->doc->home);
-				ppi->doc = NULL;
-			}
+				doc_destroy(d->home);
 			pane_close(p);
 		}
 		return 1;
@@ -88,18 +90,19 @@ DEF_CMD(popup_handle)
 	}
 	if (strcmp(ci->key, "popup:Abort") == 0) {
 		pane_focus(ppi->target);
+		ppi->closing = 1;
 		call3("Abort", ppi->target, 0, NULL);
-		if (ppi->doc) {
+		d = ppi->doc; ppi->doc = NULL;
+		if (d)
 			/* FIXME make this doc auto-close */
-			doc_destroy(ppi->doc->home);
-			ppi->doc = NULL;
-		}
+			doc_destroy(d->home);
 		pane_close(ppi->popup);
 		return 1;
 	}
 	if (strcmp(ci->key, "popup:Return") == 0) {
 		struct cmd_info ci2 = {0};
 
+		ppi->closing = 1;
 		pane_focus(ppi->target);
 		ci2.focus = ppi->target;
 		ci2.key = pane_attr_get(ci->focus, "done-key");
@@ -113,11 +116,10 @@ DEF_CMD(popup_handle)
 		key_handle_focus(&ci2);
 		if (ppi->doc)
 			free(ci2.str);
-		if (ppi->doc) {
+		d = ppi->doc; ppi->doc = NULL;
+		if (d)
 			/* FIXME make this doc auto-close */
-			doc_destroy(ppi->doc->home);
-			ppi->doc = NULL;
-		}
+			doc_destroy(d->home);
 		pane_close(ppi->popup);
 		return 1;
 	}
@@ -180,6 +182,7 @@ DEF_CMD(popup_attach)
 	ppi->popup = pane_register(root, z, &popup_handle, ppi, NULL);
 	ppi->style = style;
 	ppi->doc = NULL;
+	ppi->closing = 0;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
 		if (strchr(style, "TLBR"[i]) == NULL)
