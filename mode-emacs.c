@@ -180,11 +180,14 @@ static struct str_command {
 REDEF_CMD(emacs_str)
 {
 	struct str_command *sc = container_of(ci->comm, struct str_command, cmd);
-	struct cmd_info ci2;
+	struct cmd_info ci2 = {0};
 
-	ci2 = *ci;
 	ci2.key = sc->type;
 	ci2.str = sc->str;
+	ci2.focus = ci->focus;
+	ci2.numeric = ci->numeric;
+	ci2.extra = ci->extra;
+	ci2.mark = ci->mark;
 	return key_handle_focus(&ci2);
 }
 
