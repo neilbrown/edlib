@@ -156,7 +156,6 @@ REDEF_CMD(python_call)
 	PyDict_SetItemString(kwds, "numeric", Py_BuildValue("i", ci->numeric));
 	PyDict_SetItemString(kwds, "extra", Py_BuildValue("i", ci->extra));
 	PyDict_SetItemString(kwds, "xy", Py_BuildValue("ii", ci->x, ci->y));
-	PyDict_SetItemString(kwds, "hxy", Py_BuildValue("ii", ci->hx, ci->hy));
 
 	if (pc->home_func)
 		PyDict_SetItemString(kwds, "data", ci->home->data);
@@ -718,7 +717,7 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 	PyObject *a;
 	int i;
 	int numeric_set = 0, extra_set = 0;
-	int xy_set = 0, hxy_set = 0;
+	int xy_set = 0;
 
 	if (!PyTuple_Check(args))
 		return 0;
@@ -789,12 +788,8 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 				ci->x = PyInt_AsLong(n1);
 				ci->y = PyInt_AsLong(n2);
 				xy_set = 1;
-			} else if (!hxy_set) {
-				ci->hx = PyInt_AsLong(n1);
-				ci->hy = PyInt_AsLong(n2);
-				hxy_set = 1;
 			} else {
-				PyErr_SetString(PyExc_TypeError, "Only two tuples permitted");
+				PyErr_SetString(PyExc_TypeError, "Only one tuple permitted");
 				return 0;
 			}
 		} else if (Py_TYPE(a) == &CommType) {

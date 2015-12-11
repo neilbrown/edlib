@@ -620,3 +620,29 @@ struct pane *call_pane(char *key, struct pane *focus, int numeric,
 		return NULL;
 	return cr.p;
 }
+
+/* convert pane-relative co-ords to absolute */
+void pane_absxy(struct pane *p, int *x, int *y)
+{
+	while (p) {
+		*x += p->x;
+		*y += p->y;
+		p = p->parent;
+	}
+}
+
+/* Convert absolute c-ords to relative */
+void pane_relxy(struct pane *p, int *x, int *y)
+{
+	while (p) {
+		*x -= p->x;
+		*y -= p->y;
+		p = p->parent;
+	}
+}
+
+void pane_map_xy(struct pane *orig, struct pane *target, int *x, int *y)
+{
+	pane_absxy(orig, x, y);
+	pane_relxy(target, x, y);
+}

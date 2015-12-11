@@ -301,9 +301,6 @@ int key_handle(const struct cmd_info *ci)
 	if (ci->comm)
 		return ci->comm->func(ci);
 
-	vci->hx = ci->x;
-	vci->hy = ci->y;
-
 	/* If 'home' is set, search from there, else search
 	 * from focus
 	 */
@@ -320,10 +317,6 @@ int key_handle(const struct cmd_info *ci)
 		if (ret)
 			/* 'p' might have been destroyed */
 			break;
-		if (ci->hx >= 0) {
-			vci->hx += p->x;
-			vci->hy += p->y;
-		}
 		p = p->parent;
 	}
 	return ret;

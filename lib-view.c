@@ -237,8 +237,12 @@ DEF_CMD(view_click)
 	int mid = vd->scroll_bar_y;
 	char *key;
 	int num;
+	int cihx, cihy;
 
-	if (ci->hx != 0)
+	cihx = ci->x; cihy = ci->y;
+	pane_map_xy(ci->focus, ci->home, &cihx, &cihy);
+
+	if (cihx != 0)
 		return 0;
 	if (p->h <= 4)
 		return 0;
@@ -248,16 +252,16 @@ DEF_CMD(view_click)
 	key = "Move-View-Small";
 	num = RPT_NUM(ci);
 
-	if (ci->hy == mid-1) {
+	if (cihy == mid-1) {
 		/* scroll up */
 		num = -num;
-	} else if (ci->hy < mid-1) {
+	} else if (cihy < mid-1) {
 		/* big scroll up */
 		num = -num;
 		key = "Move-View-Large";
-	} else if (ci->hy == mid+1) {
+	} else if (cihy == mid+1) {
 		/* scroll down */
-	} else if (ci->hy > mid+1 && ci->hy < p->h-1) {
+	} else if (cihy > mid+1 && cihy < p->h-1) {
 		key = "Move-View-Large";
 	} else
 		return 0;

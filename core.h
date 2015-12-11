@@ -287,7 +287,6 @@ struct cmd_info {
 	struct pane	*home, *focus;
 	int		numeric, extra;
 	int		x,y;		/* relative to focus */
-	int		hx, hy;		/* x,y mapped to 'home' */
 	char		*str, *str2;
 	struct mark	*mark, *mark2;
 	struct command	*comm, *comm2;
@@ -351,6 +350,9 @@ void pane_clear(struct pane *p, char *attrs);
 void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y);
 char *pane_attr_get(struct pane *p, char *key);
 char *pane_mark_attr(struct pane *p, struct mark *m, int forward, char *key);
+void pane_absxy(struct pane *p, int *x, int *y);
+void pane_relxy(struct pane *p, int *x, int *y);
+void pane_map_xy(struct pane *orig, struct pane *target, int *x, int *y);
 struct pane *call_pane(char *key, struct pane *focus, int numeric,
 		       struct mark *m, int extra);
 
