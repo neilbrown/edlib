@@ -63,13 +63,22 @@ DEF_CMD(popup_handle)
 	struct popup_info *ppi = p->data;
 
 	if (strcmp(ci->key, "Close") == 0) {
+		if (ppi->doc)
+			/* FIXME make this doc auto-close */
+			doc_destroy(ppi->doc->home);
 		free(ppi);
 		return 1;
 	}
 
 	if (strcmp(ci->key, "Notify:Close") == 0) {
-		if (ci->focus == ppi->target)
+		if (ci->focus == ppi->target) {
+			if (ppi->doc) {
+				/* FIXME make this doc auto-close */
+				doc_destroy(ppi->doc->home);
+				ppi->doc = NULL;
+			}
 			pane_close(p);
+		}
 		return 1;
 	}
 
@@ -82,8 +91,8 @@ DEF_CMD(popup_handle)
 		call3("Abort", ppi->target, 0, NULL);
 		if (ppi->doc) {
 			/* FIXME make this doc auto-close */
+			doc_destroy(ppi->doc->home);
 			ppi->doc = NULL;
-			doc_destroy(ci->focus);
 		}
 		pane_close(ppi->popup);
 		return 1;
@@ -106,8 +115,8 @@ DEF_CMD(popup_handle)
 			free(ci2.str);
 		if (ppi->doc) {
 			/* FIXME make this doc auto-close */
+			doc_destroy(ppi->doc->home);
 			ppi->doc = NULL;
-			doc_destroy(ci->focus);
 		}
 		pane_close(ppi->popup);
 		return 1;
