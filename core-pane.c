@@ -107,6 +107,9 @@ static void __pane_refresh(struct cmd_info *ci)
 	struct cmd_info ci2 = *ci;
 	int ret = 0;
 
+	if (p->damaged & DAMAGED_CLOSED)
+		return;
+
 	if (p->focus == NULL)
 		p->focus = list_first_entry_or_null(
 			&p->children, struct pane, siblings);
@@ -209,6 +212,9 @@ void pane_notify(struct pane *p, char *notification, struct mark *m, struct mark
 void pane_close(struct pane *p)
 {
 	struct pane *c;
+	if (p->damaged & DAMAGED_CLOSED)
+		return;
+	p->damaged |= DAMAGED_CLOSED;
 	pane_check(p);
 
 	while (!list_empty(&p->children)) {

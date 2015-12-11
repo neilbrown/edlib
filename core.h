@@ -314,6 +314,8 @@ enum {
 	DAMAGED_SIZE	= 2, /* these three each impose the next. */
 	DAMAGED_CONTENT	= 4,
 	DAMAGED_CURSOR	= 8,
+
+	DAMAGED_CLOSED	= 1024,
 };
 
 struct pane *pane_register(struct pane *parent, int z,
