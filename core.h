@@ -202,9 +202,11 @@ struct mark *do_vmark_first(struct doc *d, int view);
 struct mark *do_vmark_last(struct doc *d, int view);
 struct mark *vmark_matching(struct pane *p, struct mark *m);
 struct mark *do_vmark_at_point(struct doc *d, struct mark *pt, int view);
+struct mark *do_vmark_at_or_before(struct doc *d, struct mark *m, int view);
 struct mark *vmark_first(struct pane *p, int view);
 struct mark *vmark_last(struct pane *p, int view);
 struct mark *vmark_at_point(struct pane *p, int view);
+struct mark *vmark_at_or_before(struct pane *p, struct mark *m, int view);
 struct mark *vmark_new(struct pane *p, int view);
 
 static inline int mark_ordered(struct mark *m1, struct mark *m2)

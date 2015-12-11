@@ -862,43 +862,47 @@ DEF_CMD(render_lines_move_line)
 
 DEF_CMD(render_lines_notify)
 {
-	struct rl_data *rl = container_of(ci->comm, struct rl_data, type);
+	return 1;
+}
 
-	if (strcmp(ci->key, "Notify:Replace") == 0) {
-		if (ci->mark) {
-			struct mark *rm = ci->mark;
-			struct mark *vm;
-			struct cmd_info ci2 = {0};
-			struct pane *p = rl->pane;
+DEF_CMD(render_lines_notify_replace)
+{
+	struct rl_data *rl = ci->home->data;
+	struct mark *start = ci->mark2;
+	struct mark *end, *t;
+	struct pane *p = ci->home;
 
-			if (rm->mdata) {
-				free(rm->mdata);
-				rm->mdata = NULL;
-			}
-			/* If an adjacent mark is for the same location,
-			 * delete it - marks must remain distinct
-			 */
-			while ((vm = vmark_prev(rm)) != NULL &&
-			       mark_same_pane(p, rm, vm, &ci2)) {
-				free(vm->mdata);
-				vm->mdata = NULL;
-				mark_free(vm);
-			}
-			while ((vm = vmark_next(rm)) != NULL && mark_same_pane(p, rm, vm, &ci2)) {
-				free(vm->mdata);
-				vm->mdata = NULL;
-				mark_free(vm);
-			}
-			pane_damaged(rl->pane, DAMAGED_CONTENT);
+	if (!start)
+		start = ci->mark;
+	if (!ci->mark)
+		return 1;
+
+	end = vmark_at_or_before(ci->home, ci->mark, rl->typenum);
+
+	if (!end)
+		/* Change before visible region */
+		return 1;
+
+	t = end;
+	while (t && mark_ordered_or_same_pane(p, start, t)) {
+		struct mark *t2;
+		if (t->mdata) {
+			free(t->mdata);
+			t->mdata = NULL;
 		}
-		return 1;
+		t2 = doc_prev_mark_view(t);
+		if (t2 && mark_same_pane(p, t, t2, NULL))
+			/* Marks must be distinct! */
+			mark_free(t);
+		t = t2;
 	}
-	if (strcmp(ci->key, "Release") == 0) {
-		if (rl->pane)
-			pane_close(rl->pane);
-		return 1;
+	if (t && t->mdata) {
+		free(t->mdata);
+		t->mdata = NULL;
 	}
-	return 0;
+	pane_damaged(rl->pane, DAMAGED_CONTENT);
+
+	return 1;
 }
 
 
@@ -957,6 +961,8 @@ static void render_lines_register_map(void)
 
 	/* force full refresh */
 	key_add(rl_map, "render-lines:redraw", &render_lines_redraw);
+
+	key_add(rl_map, "Notify:Replace", &render_lines_notify_replace);
 }
 
 REDEF_CMD(render_lines_attach)
@@ -978,6 +984,7 @@ REDEF_CMD(render_lines_attach)
 	rl->type = render_lines_notify;
 	rl->typenum = doc_add_view(ci->focus, &rl->type, 0);
 	rl->pane = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
+	call3("Request:Notify:Replace", rl->pane, 0, NULL);
 
 	return comm_call(ci->comm2, "callback:attach", rl->pane,
 			 0, NULL, NULL, 0);

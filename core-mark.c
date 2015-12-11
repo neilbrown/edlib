@@ -913,6 +913,24 @@ struct mark *vmark_at_point(struct pane *p, int view)
 	return point;
 }
 
+struct mark *vmark_at_or_before(struct pane *p, struct mark *m, int view)
+{
+	struct cmd_info ci = {0};
+	struct call_return cr;
+
+	ci.key = "doc:vmark-get";
+	ci.focus = p;
+	ci.numeric = view;
+	ci.extra = 3;
+	ci.mark = m;
+	cr.c = take_marks;
+	cr.m = cr.m2 = NULL;
+	ci.comm2 = &cr.c;
+	if (key_handle_focus(&ci) == 0)
+		return NULL;
+	return cr.m2;
+}
+
 struct mark *vmark_new(struct pane *p, int view)
 {
 	struct mark *new = NULL;
@@ -952,6 +970,40 @@ struct mark *do_vmark_at_point(struct doc *d, struct mark *pt, int view)
 	return NULL;
 }
 
+struct mark *do_vmark_at_or_before(struct doc *d, struct mark *m, int view)
+{
+	struct mark *vm = m;
+
+	/* might need to hunt along 'all' list for something suitable */
+	while (vm && vm->viewnum != MARK_POINT && vm->viewnum != view)
+		vm = doc_next_mark_all(vm);
+	if (!vm) {
+		vm = m;
+		while (vm && vm->viewnum != MARK_POINT && vm->viewnum != view)
+			vm = doc_prev_mark_all(vm);
+	}
+	if (vm->viewnum == MARK_POINT) {
+		struct point_links *lnk = vm->mdata;
+		struct tlist_head *tl = &lnk->lists[view];
+		vm = __vmark_next(tl);
+		if (vm && mark_same(d, vm, m)) {
+			/* maybe there are even more */
+			struct mark *vm2;
+			while ((vm2 = vmark_next(vm)) != NULL &&
+			       mark_same(d, vm, vm2))
+				vm = vm2;
+		} else
+			vm = __vmark_prev(tl);
+	} else if (vm->viewnum == view) {
+		/* Just use this, or nearby */
+		struct mark *vm2;
+		while ((vm2 = vmark_next(vm)) != NULL &&
+		       mark_same(d, vm, vm2))
+			vm = vm2;
+	}
+	return vm;
+}
+
 static void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
 {
 	/* Notify of changes from m (might be NULL) to p.
@@ -963,7 +1015,6 @@ static void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
 	int i;
 	struct point_links *lnk = p->mdata;
 
-	pane_notify(d->home, "Notify:Replace", p, m);
 	ci.key = "Notify:Replace";
 	ci.numeric = 1;
 	ci.x = ci.y = -1;
@@ -1020,6 +1071,8 @@ void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 	char *done;
 	int i;
 	int remaining = d->nviews;
+
+	pane_notify(d->home, "Notify:Replace", m, m2);
 
 	if (m->viewnum == MARK_POINT) {
 		point_notify_change(d, m, m2);

@@ -488,6 +488,8 @@ DEF_CMD(doc_handle)
 					       ci->numeric);
 		if (ci->extra == 2)
 			m2 = doc_new_mark(dd->doc, ci->numeric);
+		if (ci->extra == 3)
+			m2 = do_vmark_at_or_before(dd->doc, ci->mark, ci->numeric);
 		return comm_call7(ci->comm2, "callback:vmark", ci->focus,
 				  0, m, NULL, 0, NULL, m2);
 	}
