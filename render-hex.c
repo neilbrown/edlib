@@ -20,8 +20,6 @@
 #include "misc.h"
 
 struct he_data {
-	struct command	type;
-	int		typenum;
 	struct pane	*pane;
 };
 
@@ -36,7 +34,6 @@ DEF_CMD(render_hex_close)
 	struct he_data *he = p->data;
 
 	he->pane = NULL;
-	doc_del_view(p, &he->type);
 	p->data = NULL;
 	p->handle = NULL;
 	free(he);
@@ -56,20 +53,19 @@ DEF_CMD(render_hex_clone)
 	return 1;
 }
 
-DEF_CMD(render_hex_notify)
+DEF_CMD(render_hex_notify_replace)
 {
-	struct he_data *he = container_of(ci->comm, struct he_data, type);
 
-	if (strcmp(ci->key, "Notify:Replace") == 0) {
-		pane_damaged(pane_child(he->pane), DAMAGED_CONTENT);
-		return 0;
-	}
-	if (strcmp(ci->key, "Release") == 0) {
-		if (he->pane)
-			pane_close(he->pane);
-		return 1;
-	}
-	return 0;
+	/* If change happens only after the view port, we don't
+	 * need damage.
+	 * If before, we might need to update addresses.
+	 * However we cannot currently access the view port, so
+	 * always signal damage.
+	 * This pane_child call is a hack - it may not be the
+	 * render-lines that we want.
+	 */
+	pane_damaged(pane_child(ci->home), DAMAGED_CONTENT);
+	return 1;
 }
 
 
@@ -215,6 +211,7 @@ static void render_hex_register_map(void)
 
 	key_add(he_map, "Close", &render_hex_close);
 	key_add(he_map, "Clone", &render_hex_clone);
+	key_add(he_map, "Notify:Replace", &render_hex_notify_replace);
 }
 
 static struct pane *do_render_hex_attach(struct pane *parent)
@@ -225,9 +222,8 @@ static struct pane *do_render_hex_attach(struct pane *parent)
 	if (!he_map)
 		render_hex_register_map();
 
-	he->type = render_hex_notify;
-	he->typenum = doc_add_view(parent, &he->type, 0);
 	p = pane_register(parent, 0, &render_hex_handle.c, he, NULL);
+	call3("Request:Notify:Replace", p, 0, NULL);
 	attr_set_str(&p->attrs, "render-wrap", "no", -1);
 	attr_set_str(&p->attrs, "heading", "<bold>          00 11 22 33 44 55 66 77  88 99 aa bb cc dd ee ff   0 1 2 3 4 5 6 7  8 9 a b c d e f</>", -1);
 	he->pane = p;
