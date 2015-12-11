@@ -295,7 +295,7 @@ int key_lookup_cmd_func(const struct cmd_info *ci)
 int key_handle(const struct cmd_info *ci)
 {
 	struct cmd_info *vci = (struct cmd_info*)ci;
-	struct pane *p = ci->focus;
+	struct pane *p;
 	int ret = 0;
 
 	if (ci->comm)
@@ -303,6 +303,13 @@ int key_handle(const struct cmd_info *ci)
 
 	vci->hx = ci->x;
 	vci->hy = ci->y;
+
+	/* If 'home' is set, search from there, else search
+	 * from focus
+	 */
+	p = ci->home;
+	if (!p)
+		p = ci->focus;
 
 	while (ret == 0 && p) {
 		if (p->handle) {
@@ -325,7 +332,11 @@ int key_handle(const struct cmd_info *ci)
 static int __key_handle_focus(struct cmd_info *ci, int savepoint)
 {
 	/* Handle this in the focus pane, so x,y are irrelevant */
-	struct pane *p = ci->focus;
+	struct pane *p = ci->home;
+	if (!p)
+		p = ci->focus;
+	if (!p)
+		return -1;
 	ci->x = -1;
 	ci->y = -1;
 	while (p->focus) {
@@ -333,7 +344,9 @@ static int __key_handle_focus(struct cmd_info *ci, int savepoint)
 		if (savepoint && p->pointer)
 			ci->mark = p->pointer;
 	}
-	ci->focus = p;
+	if (!ci->home || !ci->focus)
+		ci->focus = p;
+	ci->home = p;
 	ci->comm = NULL;
 	return key_handle(ci);
 }
