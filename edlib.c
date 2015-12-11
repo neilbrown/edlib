@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <locale.h>
 #include <fcntl.h>
-#include <event.h>
 #include <wchar.h>
 #include <dirent.h>
 #include <string.h>
@@ -52,7 +51,6 @@ DEF_CMD(take_pane)
 
 int main(int argc, char *argv[])
 {
-	struct event_base *base;
 	struct pane *root, *global;
 	struct pane *b, *p= NULL;
 	struct cmd_info ci = {0};
@@ -63,13 +61,12 @@ int main(int argc, char *argv[])
 	ed = pane2ed(vroot);
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
-	base = event_base_new();
-	event_base_priority_init(base, 2);
-	ed->base = base;
 
 	editor_load_module(ed, "lib-line-count");
 	editor_load_module(ed, "lib-search");
+	editor_load_module(ed, "lib-libevent");
 	editor_load_module(ed, "display-ncurses");
+	call3("libevent:activate", vroot, 0, NULL);
 	ci.home = ci.focus = vroot;
 	ci.key = "display-ncurses";
 	cr.c = take_pane;
@@ -96,7 +93,7 @@ int main(int argc, char *argv[])
 		key_handle(&ci);
 
 		pane_refresh(&ed->root);
-		event_base_dispatch(base);
+		call3("event:run", vroot, 0, NULL);
 	}
 	pane_close(&ed->root);
 	exit(0);

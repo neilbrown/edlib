@@ -3,7 +3,7 @@
 # May be distrubuted under terms of GPLv2 - see file:COPYING
 #
 
-LDLIBS= -levent -ldl
+LDLIBS= -ldl
 CPPFLAGS= -I.
 CFLAGS=-g -Wall -Werror -Wstrict-prototypes -Wextra -Wno-unused-parameter
 
@@ -16,7 +16,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o \
 	O/render-hex.o O/render-lines.o \
 	O/render-format.o O/render-complete.o \
 	O/lib-view.o O/lib-tile.o O/lib-popup.o O/lib-line-count.o O/lib-keymap.o \
-	O/lib-search.o O/lib-messageline.o O/lib-input.o \
+	O/lib-search.o O/lib-messageline.o O/lib-input.o O/lib-libevent.o \
 	O/lang-python.o \
 	O/mode-emacs.o \
 	O/display-ncurses.o
@@ -27,6 +27,8 @@ INC-lang-python = -I/usr/include/python2.7
 
 LIBS-display-ncurses = -lncursesw
 INC-display-ncurses = -I/usr/include/ncursesw
+
+LIBS-lib-libevent = -levent
 
 SO = $(patsubst O/%.o,lib/edlib-%.so,$(SHOBJ))
 H = list.h core.h misc.h

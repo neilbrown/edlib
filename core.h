@@ -81,7 +81,6 @@ struct doc_data {
 
 struct editor {
 	struct pane		root;
-	struct event_base	*base;
 	struct doc		*docs;  /* document containing all documents */
 	struct map		*commands;
 };
@@ -491,7 +490,7 @@ static inline int call3(char *key, struct pane *focus, int numeric, struct mark 
 }
 
 static inline int call_home(struct pane *home, char *key, struct pane *focus,
-			    int numeric, struct mark *m)
+			    int numeric, struct mark *m, struct command *comm)
 {
 	struct cmd_info ci = {0};
 
@@ -500,6 +499,7 @@ static inline int call_home(struct pane *home, char *key, struct pane *focus,
 	ci.home = home;
 	ci.numeric = numeric;
 	ci.mark = m;
+	ci.comm2 = comm;
 	return key_handle_focus(&ci);
 }
 

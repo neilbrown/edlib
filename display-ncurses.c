@@ -20,7 +20,6 @@
 #include <string.h>
 #include <locale.h>
 #include <ctype.h>
-#include <event.h>
 #include <signal.h>
 #include <sys/ioctl.h>
 
@@ -42,8 +41,6 @@ static void set_screen(SCREEN *scr)
 	current_screen = scr;
 }
 
-static void input_handle(int fd, short ev, void *P);
-
 static void move_cursor(struct pane *p)
 {
 	int ox;
@@ -62,13 +59,15 @@ static void move_cursor(struct pane *p)
 	}
 }
 
+DEF_CMD(input_handle);
+DEF_CMD(handle_winch);
+
 DEF_CMD(nc_misc)
 {
 	struct pane *p = ci->home;
-	struct editor *ed = pane2ed(p);
 
 	if (strcmp(ci->str, "exit") == 0)
-		event_base_loopbreak(ed->base);
+		call3("event:deactivate", p, 0, NULL);
 	else if (strcmp(ci->str, "refresh") == 0) {
 		clear();
 		pane_damaged(p,  DAMAGED_SIZE);
@@ -158,12 +157,10 @@ DEF_CMD(ncurses_handle)
 	return 0;
 }
 
-static void handle_winch(int sig, short ev, void *null);
 static struct pane *ncurses_init(struct editor *ed)
 {
 	WINDOW *w = initscr();
 	struct pane *p;
-	struct event *l;
 	struct display_data *dd = malloc(sizeof(*dd));
 
 	start_color();
@@ -184,18 +181,15 @@ static struct pane *ncurses_init(struct editor *ed)
 
 	getmaxyx(stdscr, p->h, p->w); p->h-=1;
 
-	l = event_new(ed->base, 0, EV_READ|EV_PERSIST, input_handle, p);
-	event_add(l, NULL);
-	l = event_new(ed->base, SIGWINCH, EV_SIGNAL|EV_PERSIST,
-		      handle_winch, p);
-	event_add(l, NULL);
+	call_home(p, "event:read", p, 0, NULL, &input_handle);
+	call_home(p, "event:signal", p, SIGWINCH, NULL, &handle_winch);
 	pane_damaged(p, DAMAGED_SIZE);
 	return pane_attach(p, "input", NULL, NULL);
 }
 
-static void handle_winch(int sig, short ev, void *vpane)
+REDEF_CMD(handle_winch)
 {
-	struct pane *p = vpane;
+	struct pane *p = ci->home;
 	struct winsize size;
 	ioctl(1, TIOCGWINSZ, &size);
 	resize_term(size.ws_row, size.ws_col);
@@ -203,6 +197,7 @@ static void handle_winch(int sig, short ev, void *vpane)
 	clear();
 	pane_damaged(p, DAMAGED_SIZE);
 	pane_refresh(p);
+	return 1;
 }
 
 static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h)
@@ -373,9 +368,9 @@ static void send_mouse(MEVENT *mev, struct pane *p)
 		do_send_mouse(p, x, y, "MouseMove");
 }
 
-static void input_handle(int fd, short ev, void *P)
+REDEF_CMD(input_handle)
 {
-	struct pane *p = P;
+	struct pane *p = ci->home;
 	wint_t c;
 	int is_keycode;
 
@@ -388,6 +383,7 @@ static void input_handle(int fd, short ev, void *P)
 			send_key(is_keycode, c, p);
 	}
 	pane_refresh(p);
+	return 1;
 }
 
 DEF_CMD(display_ncurses)
