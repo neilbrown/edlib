@@ -217,6 +217,9 @@ void pane_close(struct pane *p)
 	p->damaged |= DAMAGED_CLOSED;
 	pane_check(p);
 
+	list_del_init(&p->siblings);
+	pane_drop_notifiers(p);
+
 	while (!list_empty(&p->children)) {
 		c = list_first_entry(&p->children, struct pane, siblings);
 		pane_close(c);
@@ -225,8 +228,6 @@ void pane_close(struct pane *p)
 		pane_damaged(p->parent, DAMAGED_CURSOR);
 		p->parent->focus = NULL;
 	}
-	list_del_init(&p->siblings);
-	pane_drop_notifiers(p);
 	pane_notify_close(p);
 	if (p->handle) {
 		struct cmd_info ci = {0};
