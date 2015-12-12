@@ -17,6 +17,8 @@
  *                     cx,cy can be changed freely.
  *                  'parent' and 'focus' can be read but not written
  *                method for 'children' provides first child as an iterator.
+ *                method abs() converts relative co-ords to absolute.
+ *                rel() converts absolute co-ords to relative.
  *  edlib.mark  - these reference locations in a document.  The document is
  *                not directly accessible, it can only be accessed through
  *                a pane (which may translate events and results).
@@ -386,6 +388,26 @@ static PyObject *Pane_call_filter(Pane *self, PyObject *args, PyObject *kwds)
 	return PyInt_FromLong(rv);
 }
 
+static PyObject *Pane_abs(Pane *self, PyObject *args)
+{
+	int x,y;
+	int ret = PyArg_ParseTuple(args, "ii", &x, &y);
+	if (ret <= 0)
+		return NULL;
+	pane_absxy(self->pane, &x, &y);
+	return Py_BuildValue("ii", x, y);
+}
+
+static PyObject *Pane_rel(Pane *self, PyObject *args)
+{
+	int x,y;
+	int ret = PyArg_ParseTuple(args, "ii", &x, &y);
+	if (ret <= 0)
+		return NULL;
+	pane_relxy(self->pane, &x, &y);
+	return Py_BuildValue("ii", x, y);
+}
+
 static PyMethodDef pane_methods[] = {
 	{"children", (PyCFunction)pane_children, METH_NOARGS,
 	 "provides and iterator which will iterate over all children"},
@@ -401,6 +423,10 @@ static PyMethodDef pane_methods[] = {
 	 "Call a command from a pane, follow x,y out to leaf"},
 	{"call_filter", (PyCFunction)Pane_call_filter, METH_VARARGS|METH_KEYWORDS,
 	 "Call a command from a pane, search searching from given pane, not leaf"},
+	{"abs", (PyCFunction)Pane_abs, METH_VARARGS,
+	 "Convert pane-relative co-ords to absolute co-ords"},
+	{"rel", (PyCFunction)Pane_rel, METH_VARARGS,
+	 "Convert absolute co-orders to pane-relative"},
 	{NULL}
 };
 
