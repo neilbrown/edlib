@@ -211,7 +211,6 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 		/* Probably an internal Pane_Frompane call */
 		return 1;
 
-	PyObject_Print(args, stderr, 0);
 	ret = PyArg_ParseTupleAndKeywords(args, kwds, "O!OO|i", keywords,
 					  &PaneType, &parent, &py_handler, &data,
 					  &z);
