@@ -444,6 +444,7 @@ static PyObject *pane_getnum(Pane *p, char *which)
 	case 'X': n = p->pane->cx; break;
 	case 'Y': n = p->pane->cy; break;
 	case 'z': n = p->pane->z; break;
+	case 'Z': n = p->pane->abs_z; break;
 	}
 	return PyInt_FromLong(n);
 }
@@ -459,6 +460,10 @@ static int pane_setnum(Pane *p, PyObject *v, char *which)
 	}
 	if (*which == 'z') {
 		PyErr_SetString(PyExc_TypeError, "z cannot be set");
+		return -1;
+	}
+	if (*which == 'Z') {
+		PyErr_SetString(PyExc_TypeError, "abs_z cannot be set");
 		return -1;
 	}
 	val = PyInt_AsLong(v);
@@ -540,6 +545,9 @@ static PyGetSetDef pane_getseters[] = {
     {"cy",
      (getter)pane_getnum, (setter)pane_setnum,
      "Cursor Y offset in pane", "Y" },
+    {"abs_z",
+     (getter)pane_getnum, (setter)pane_setnum,
+     "global Z offset", "Z" },
     {"parent",
      (getter)pane_getpane, (setter)pane_nosetpane,
      "Parent pane", "p"},

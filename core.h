@@ -48,6 +48,7 @@ struct pane {
 	int			h,w;
 	struct pane		*focus;
 	int			cx, cy;	/* cursor position */
+	int			abs_z, abs_zhi; /* 'hi' is the max of all children */
 
 	int			damaged;
 
@@ -320,7 +321,10 @@ enum {
 
 	DAMAGED_CLOSED	= 1024,
 	DAMAGED_EVENTS	= 2048, /* event loop changed, resubmit requests */
+	DAMAGED_Z	= 4096, /* global-z has changed */
 };
+#define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT | DAMAGED_CURSOR \
+			   | DAMAGED_EVENTS)
 
 struct pane *pane_register(struct pane *parent, int z,
 			   struct command *handle, void *data,

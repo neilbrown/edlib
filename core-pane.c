@@ -99,6 +99,10 @@ struct pane *pane_register(struct pane *parent, int z,
 	return p;
 }
 
+/* 'abs_z' is a global z-depth number.
+ * 'abs_z' of root is 0, and abs_z of every other pane is 1 more than abs_zhi
+ * of siblings with lower 'z', or same as parent if no such siblings.
+ */
 static void __pane_refresh(struct cmd_info ci)
 {
 	struct pane *c;
@@ -106,9 +110,12 @@ static void __pane_refresh(struct cmd_info ci)
 	struct pane *p = ci.home;
 	int ret = 0;
 	int nextz;
+	int abs_z = p->abs_z;
 
-	if (p->damaged & DAMAGED_CLOSED)
+	if (p->damaged & DAMAGED_CLOSED) {
+		p->abs_zhi = abs_z;
 		return;
+	}
 
 	if (p->focus == NULL)
 		p->focus = list_first_entry_or_null(
@@ -119,9 +126,7 @@ static void __pane_refresh(struct cmd_info ci)
 	damage |= p->damaged;
 	if (!damage)
 		return;
-	if (damage == DAMAGED_CHILD)
-		damage = 0;
-	else {
+	if (damage & (DAMAGED_NEED_CALL)) {
 		struct cmd_info ci2 = ci;
 		ci2.extra = damage;
 		if (ci2.extra & DAMAGED_SIZE)
@@ -133,21 +138,31 @@ static void __pane_refresh(struct cmd_info ci)
 		ret = p->handle->func(&ci2);
 		if (ret == 0)
 			pane_check_size(p);
-	}
+	} else
+		damage = 0;
 	p->damaged = 0;
 	ci.extra = damage;
 	nextz = 0;
 	while (nextz >= 0) {
 		int z = nextz;
+		int abs_zhi = abs_z;
 		nextz = -1;
 		list_for_each_entry(c, &p->children, siblings) {
 			if (c->z > z && (nextz == -1 || c->z < nextz))
 				nextz = c->z;
 			if (c->z == z) {
+				if (c->abs_z != abs_z) {
+					c->abs_z = abs_z;
+					c->damaged |= DAMAGED_Z;
+				}
 				ci.home = c;
 				__pane_refresh(ci);
+				if (c->abs_zhi > abs_zhi)
+					abs_zhi = c->abs_zhi;
 			}
 		}
+		p->abs_zhi = abs_zhi;
+		abs_z = abs_zhi + 1;
 	}
 	if (ret == 2) {
 		/* "Refresh" requested a post-order call */
@@ -162,9 +177,10 @@ void pane_refresh(struct pane *p)
 {
 	struct cmd_info ci = {0};
 	pane_damaged(p, DAMAGED_CURSOR);
-	/* Always refresh a while display */
+	/* Always refresh a whole display */
 	while (p->parent)
 		p = p->parent;
+	p->abs_z = 0;
 	ci.focus = ci.home = p;
 	ci.key = "Refresh";
 	__pane_refresh(ci);
