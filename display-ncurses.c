@@ -66,15 +66,13 @@ DEF_CMD(nc_misc)
 {
 	struct pane *p = ci->home;
 
-	if (strcmp(ci->str, "exit") == 0)
-		call3("event:deactivate", p, 0, NULL);
-	else if (strcmp(ci->str, "refresh") == 0) {
+	if (strcmp(ci->str, "refresh") == 0) {
 		clear();
 		pane_damaged(p,  DAMAGED_SIZE);
 		pane_refresh(p);
-	} else
-		return 0;
-	return 1;
+		return 1;
+	}
+	return 0;
 }
 
 static void ncurses_end(void)
@@ -123,7 +121,7 @@ DEF_CMD(ncurses_handle)
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
 
-	if (strcmp(ci->key, "Misc") == 0)
+	if (strcmp(ci->key, "Display") == 0)
 		return nc_misc.func(ci);
 
 	if (strcmp(ci->key, "Close") == 0) {

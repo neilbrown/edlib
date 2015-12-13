@@ -168,8 +168,7 @@ static struct str_command {
 	{CMD(emacs_str), "WindowOP", "split-y", "emCX-Chr-2"},
 	{CMD(emacs_str), "WindowOP", "split-x", "emCX-Chr-3"},
 	{CMD(emacs_str), "WindowOP", "close", "emCX-Chr-0"},
-	{CMD(emacs_str), "Misc", "exit", "emCX-C-Chr-C"},
-	{CMD(emacs_str), "Misc", "refresh", "C-Chr-L"},
+	{CMD(emacs_str), "Display", "refresh", "C-Chr-L"},
 	{CMD(emacs_str), "Abort", NULL, "C-Chr-G"},
 	{CMD(emacs_str), "NOP", NULL, "M-Chr-G"},
 	{CMD(emacs_str), "NOP", NULL, "emCX-C-Chr-G"},
@@ -189,6 +188,14 @@ REDEF_CMD(emacs_str)
 	ci2.extra = ci->extra;
 	ci2.mark = ci->mark;
 	return key_handle(&ci2);
+}
+
+DEF_CMD(emacs_exit)
+{
+	struct pane *p = ci->home;
+
+	call3("event:deactivate", p, 0, NULL);
+	return 1;
 }
 
 DEF_CMD(emacs_insert)
@@ -635,6 +642,8 @@ static void emacs_init(void)
 
 	key_add(m, "C-Chr-S", &emacs_search);
 	key_add(m, "Search String", &emacs_search);
+
+	key_add(m, "emCX-C-Chr-C", &emacs_exit);
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &emacs_num);
 	emacs_map = m;
