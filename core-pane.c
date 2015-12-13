@@ -105,6 +105,7 @@ static void __pane_refresh(struct cmd_info ci)
 	int damage = ci.extra;
 	struct pane *p = ci.home;
 	int ret = 0;
+	int nextz;
 
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
@@ -135,9 +136,18 @@ static void __pane_refresh(struct cmd_info ci)
 	}
 	p->damaged = 0;
 	ci.extra = damage;
-	list_for_each_entry(c, &p->children, siblings) {
-		ci.home = c;
-		__pane_refresh(ci);
+	nextz = 0;
+	while (nextz >= 0) {
+		int z = nextz;
+		nextz = -1;
+		list_for_each_entry(c, &p->children, siblings) {
+			if (c->z > z && (nextz == -1 || c->z < nextz))
+				nextz = c->z;
+			if (c->z == z) {
+				ci.home = c;
+				__pane_refresh(ci);
+			}
+		}
 	}
 	if (ret == 2) {
 		/* "Refresh" requested a post-order call */
