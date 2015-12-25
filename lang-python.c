@@ -397,6 +397,19 @@ static PyObject *Pane_abs(Pane *self, PyObject *args)
 	return Py_BuildValue("ii", x, y);
 }
 
+static PyObject *Pane_add_notify(Pane *self, PyObject *args)
+{
+	Pane *other = NULL;
+	char *event = NULL;
+	int ret = PyArg_ParseTuple(args, "O!s", &PaneType, &other, &event);
+	if (ret <= 0)
+		return NULL;
+	pane_add_notify(self->pane, other->pane, event);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyObject *Pane_rel(Pane *self, PyObject *args)
 {
 	int x,y;
@@ -426,6 +439,8 @@ static PyMethodDef pane_methods[] = {
 	 "Convert pane-relative co-ords to absolute co-ords"},
 	{"rel", (PyCFunction)Pane_rel, METH_VARARGS,
 	 "Convert absolute co-orders to pane-relative"},
+	{"add_notify", (PyCFunction)Pane_add_notify, METH_VARARGS,
+	 "Add notified for an event on some other pane"},
 	{NULL}
 };
 
