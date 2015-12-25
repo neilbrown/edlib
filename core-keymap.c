@@ -159,7 +159,7 @@ void key_add(struct map *map, char *k, struct command *comm)
 		(map->size - pos) * sizeof(map->keys[0]));
 	memmove(map->comms+pos+ins_cnt, map->comms+pos,
 		(map->size - pos) * sizeof(struct command *));
-	map->keys[pos] = k;
+	map->keys[pos] = strdup(k);
 	map->comms[pos] = comm;
 	if (comm2) {
 		map->keys[pos+1] = k;
