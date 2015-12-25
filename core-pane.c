@@ -110,7 +110,7 @@ static void __pane_refresh(struct cmd_info ci)
 	struct pane *p = ci.home;
 	int ret = 0;
 	int nextz;
-	int abs_z = p->abs_z;
+	int abs_z = p->abs_z + 1;
 
 	if (p->damaged & DAMAGED_CLOSED) {
 		p->abs_zhi = abs_z;
