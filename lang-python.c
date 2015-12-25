@@ -982,9 +982,12 @@ void edlib_init(struct editor *ed)
 
 	PaneType.tp_new = PyType_GenericNew;
 	MarkType.tp_new = PyType_GenericNew;
+	CommType.tp_new = PyType_GenericNew;
 	if (PyType_Ready(&PaneType) < 0)
 		return;
 	if (PyType_Ready(&MarkType) < 0)
+		return;
+	if (PyType_Ready(&CommType) < 0)
 		return;
 
 	m = Py_InitModule3("edlib", NULL,
@@ -997,6 +1000,7 @@ void edlib_init(struct editor *ed)
 	Py_INCREF(&MarkType);
 	PyModule_AddObject(m, "pane", (PyObject *)&PaneType);
 	PyModule_AddObject(m, "mark", (PyObject *)&MarkType);
+	PyModule_AddObject(m, "comm", (PyObject *)&CommType);
 	key_add(ed->commands, "python-load", &python_load);
 
 	Edlib_CommandFailed = PyErr_NewException("edlib.commandfailed", NULL, NULL);
