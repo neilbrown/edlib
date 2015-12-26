@@ -57,6 +57,10 @@ int main(int argc, char *argv[])
 	struct call_return cr;
 	struct editor *ed;
 	struct pane *vroot = editor_new();
+	int gtk = 0;
+
+	if (argc > 1 && strcmp(argv[1], "-g") == 0)
+		gtk = 1;
 
 	ed = pane2ed(vroot);
 	setlocale(LC_ALL, "");
@@ -64,17 +68,27 @@ int main(int argc, char *argv[])
 
 	editor_load_module(ed, "lib-line-count");
 	editor_load_module(ed, "lib-search");
-	editor_load_module(ed, "lib-libevent");
-	editor_load_module(ed, "display-ncurses");
-	call3("libevent:activate", vroot, 0, NULL);
+	editor_load_module(ed, "lang-python");
+	if (gtk) {
+		call5("python-load", vroot, 0, NULL, "python/display-pygtk.py", 0);
+		call3("pygtkevent:activate", vroot, 0, NULL);
+		ci.key = "display-pygtk";
+	} else {
+		editor_load_module(ed, "lib-libevent");
+		editor_load_module(ed, "display-ncurses");
+		call3("libevent:activate", vroot, 0, NULL);
+		ci.key = "display-ncurses";
+	}
 	ci.home = ci.focus = vroot;
-	ci.key = "display-ncurses";
 	cr.c = take_pane;
 	cr.p = NULL;
 	ci.comm2 = &cr.c;
 	if (key_handle(&ci) <= 0)
 		exit(1);
-	root = cr.p;
+	if (gtk)
+		root = pane_attach(cr.p, "input", NULL, NULL);
+	else
+		root = cr.p;
 	global = pane_attach(root, "messageline", NULL, NULL);
 	global = pane_attach(global, "global-keymap", NULL, NULL);
 
@@ -85,7 +99,6 @@ int main(int argc, char *argv[])
 	if (b)
 		p = doc_from_text(b, "*Welcome*", WelcomeText);
 	if (p) {
-		editor_load_module(ed, "lang-python");
 		memset(&ci, 0, sizeof(ci));
 		ci.home = ci.focus = p;
 		ci.key = "python-load";
