@@ -583,6 +583,23 @@ static inline int comm_call(struct command *comm, char *key, struct pane *focus,
 	return comm->func(&ci);
 }
 
+static inline int comm_call_xy(struct command *comm, char *key, struct pane *focus,
+			       int numeric, int extra, int x, int y)
+{
+	struct cmd_info ci = {0};
+
+	if (!comm)
+		return -1;
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.extra = extra;
+	ci.x = x;
+	ci.y = y;
+	ci.comm = comm;
+	return comm->func(&ci);
+}
+
 static inline int comm_call_pane(struct pane *home, char *key, struct pane *focus,
 				 int numeric, struct mark *m, char *str, int extra,
 				 struct mark *m2)
