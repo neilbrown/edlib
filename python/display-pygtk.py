@@ -42,9 +42,40 @@ class EdDisplay(gtk.Window):
             return True
         if key == "pane-clear":
             f = a["focus"]
+            if "str2" in a:
+                fg, bg = self.get_colours(a["str2"])
+            else:
+                fg, bg = self.get_colours("")
             pm = self.get_pixmap(f)
-            self.do_clear(pm)
+            self.do_clear(pm, bg)
             return True
+
+        if key == "text-size":
+            fd = self.extract_font(a["str2"])
+            ctx = self.text.pango_get_context()
+            metric = ctx.get_metrics(fd)
+            self.text.modify_font(fd)
+            layout = self.text.create_pango_layout(a["str"])
+            ink,(x,y,width,height) = layout.get_pixel_extents()
+            ascent = metric.get_ascent() / pango.SCALE
+            cb = a["comm2"]
+            max_bytes,something = layout.xy_to_index(a["numeric"], 0)
+            return cb.call("callback:size", f, max_bytes, ascent, (width, height))
+
+        if key == "text-display":
+            (x,y) = a["xy"]
+            fd = self.extract_font(a["str2"])
+            ctx = self.text.pango_get_context()
+            self.text_modify_font(fd)
+            layout = self.text.create_pango_layout(a["str"])
+            #ink,(xo,yo,width,height) = layout.get_pixel_extents()
+            fg, bg = self.get_colours(a["str2"])
+            pm = self.get_pixmap(f)
+            metric = ctx.get_metrics(fd)
+            ascent = metric.get_ascent() / pango.SCALE
+            #pm.draw_rectangle(bg, True, x+xo-ascent, y+yo, width, height)
+            pm.draw_layout(fg, x-ascent, y, layout, fg, bg)
+
         if key == "Notify:Close":
             f = a["focus"]
             if f and f in self.panes:
@@ -52,6 +83,36 @@ class EdDisplay(gtk.Window):
             return True
 
         return None
+
+    styles=["oblique","italic","bold","small-caps"]
+
+    def extract_font(self, attrs):
+        "Return a pango.FontDescription"
+        family="mono"
+        style=""
+        size=10
+        for word in attrs.split():
+            if word in styles:
+                style += " " + word
+            elif word == "large":
+                size = 14
+            elif word[0:7] == "family:":
+                family = word[7:]
+        return pango.FontDescription(family+' '+style+' '+str(size))
+
+    def get_colours(self, attrs):
+        "Return a foreground and a background colour"
+        fg = "black"
+        bg = "white"
+        for word in attrs.split():
+            if word[0:3] == "fg:":
+                fg = word[3:]
+            if word[0:3] == "bg:":
+                bg = word[3:]
+        cmap = self.text.get_colormap()
+        fgc = cmap.alloc_color(gtk.gdk.color_parse(fg))
+        bgc = cmap.alloc_color(gtk.gdk.color_parse(bg))
+        return (fgc, bgc)
 
     def get_pixmap(self, p):
         if p in self.panes:
@@ -186,13 +247,13 @@ class EdDisplay(gtk.Window):
         t.queue_draw()
         return False
 
-    def do_clear(self, pm):
+    def do_clear(self, pm, colour):
 
         t = self.text
         if not self.bg:
             self.bg = t.window.new_gc()
             cmap = t.get_colormap()
-            self.bg.set_foreground(cmap.alloc_color(gtk.gdk.color_parse("lightyellow")))
+            self.bg.set_foreground(colour)
         (w,h) = pm.get_size()
         pm.draw_rectangle(self.bg, True, 0, 0, w, h)
 
