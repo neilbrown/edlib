@@ -19,13 +19,12 @@ class EdDisplay(gtk.Window):
     def __init__(self, home):
         gtk.Window.__init__(self)
         self.pane = edlib.Pane(home, self.handle, None)
-        self.pane.w = 80
-        self.pane.h = 24
         self.panes = {}
-        self.set_default_size(700, 300)
         self.set_title("EDLIB")
         self.connect('destroy', self.close_win)
         self.create_ui()
+        self.pane.w = self.charwidth * 80
+        self.pane.h = self.lineheight * 24
         self.show()
 
     def handle(self, key, **a):
@@ -118,13 +117,13 @@ class EdDisplay(gtk.Window):
         if p in self.panes:
             pm = self.panes[p]
             (w,h) = pm.get_size()
-            if w == p.w * self.charwidth and h == p.h * self.lineheight:
+            if w == p.w and h == p.h:
                 return pm
             del self.panes[p]
         else:
             self.pane.add_notify(p, "Notify:Close")
 
-        self.panes[p] = gtk.gdk.Pixmap(self.window, p.w * self.charwidth, p.h * self.lineheight)
+        self.panes[p] = gtk.gdk.Pixmap(self.window, p.w, p.h)
         return self.panes[p]
 
     def close_win(self, *a):
@@ -166,21 +165,19 @@ class EdDisplay(gtk.Window):
             pm = self.panes[p]
             (rx,ry) = p.abs(0,0)
             self.text.window.draw_drawable(self.bg, pm, 0, 0,
-                                           rx * self.charwidth, ry * self.lineheight,
+                                           rx, ry,
                                            -1, -1)
 
     def reconfigure(self, w, ev):
         alloc = w.get_allocation()
-        rows = int(alloc.height / self.lineheight)
-        cols = int(alloc.width / self.charwidth)
-        self.pane.w = cols
-        self.pane.h = rows
+        self.pane.w = alloc.width
+        self.pane.h = alloc.height
         self.text.queue_draw()
 
     def press(self, c, event):
         c.grab_focus()
-        x = int(event.x / self.charwidth)
-        y = int(event.y / self.lineheight)
+        x = int(event.x)
+        y = int(event.y)
         s = "Click-" + ("%d"%event.button)
         if event.state & gtk.gdk.SHIFT_MASK:
             s = "S-" + s;
@@ -242,8 +239,8 @@ class EdDisplay(gtk.Window):
         bg = self.bg; fg = self.gc
         if "inverse" in attr:
             fg,bg = bg,fg
-        pm.draw_rectangle(bg, True, x * self.charwidth, y * self.lineheight, self.charwidth, self.lineheight)
-        pm.draw_layout(fg, x * self.charwidth, y * self.lineheight, layout)
+        pm.draw_rectangle(bg, True, x, y, self.charwidth, self.lineheight)
+        pm.draw_layout(fg, x, y, layout)
         t.queue_draw()
         return False
 
