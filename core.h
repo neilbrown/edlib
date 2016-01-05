@@ -527,6 +527,21 @@ static inline int call5(char *key, struct pane *focus, int numeric, struct mark 
 	return key_handle(&ci);
 }
 
+static inline int call_xy(char *key, struct pane *focus, int numeric,
+			  char *str, char *str2, int x, int y)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.str = str;
+	ci.str2 = str2;
+	ci.x = x;
+	ci.y = y;
+	return key_handle(&ci);
+}
+
 static inline int call7(char *key, struct pane *focus, int numeric, struct mark *m,
 			char *str, int extra, char *str2, struct mark *m2)
 {
@@ -549,6 +564,7 @@ struct call_return {
 	char *s;
 	struct pane *p;
 	int i;
+	int x,y;
 };
 
 static inline int call_comm(char *key, struct pane *focus, int numeric, struct mark *m,
@@ -561,6 +577,22 @@ static inline int call_comm(char *key, struct pane *focus, int numeric, struct m
 	ci.numeric = numeric;
 	ci.mark = m;
 	ci.str = str;
+	ci.extra = extra;
+	ci.comm2 = comm;
+	return key_handle(&ci);
+}
+
+static inline int call_comm7(char *key, struct pane *focus, int numeric, struct mark *m,
+			     char *str, int extra, char *str2, struct command *comm)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.mark = m;
+	ci.str = str;
+	ci.str2 = str2;
 	ci.extra = extra;
 	ci.comm2 = comm;
 	return key_handle(&ci);

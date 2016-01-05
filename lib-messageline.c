@@ -17,19 +17,22 @@
 struct mlinfo {
 	char *message;
 	struct pane *line;
+	int height; /* height of line */
+	int ascent; /* how for down to baseline */
 };
 
 static void pane_str(struct pane *p, char *s, char *attr, int x, int y)
 {
-	mbstate_t ps = {0};
-	int err;
-	wchar_t ch;
+	call_xy("text-display", p, -1, s, attr, x, y);
+}
 
-	while ((err = mbrtowc(&ch, s, 5, &ps)) > 0) {
-		pane_text(p, ch, attr, x, y);
-		s += err;
-		x += 1;
-	}
+DEF_CMD(text_size_callback)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->x = ci->x;
+	cr->y = ci->y;
+	cr->i = ci->extra;
+	return 1;
 }
 
 DEF_CMD(messageline_handle)
@@ -51,15 +54,24 @@ DEF_CMD(messageline_handle)
 		return 0;
 	}
 	if (strcmp(ci->key, "Refresh") == 0) {
+		if (mli->height == 0) {
+			struct call_return cr;
+			cr.c = text_size_callback;
+			call_comm7("text-size", ci->home, 0, NULL,
+				   "M", 0, "bold", &cr.c);
+			mli->height = cr.y;
+			mli->ascent = cr.i;
+		}
 		if (ci->home == mli->line) {
-			pane_resize(ci->home, 0, ci->home->parent->h - 1,
-				    ci->home->parent->w, 1);
-			pane_clear(mli->line, "");
+			pane_resize(ci->home, 0, ci->home->parent->h - mli->height,
+				    ci->home->parent->w, mli->height);
+			pane_clear(mli->line, "bg:cyan");
 			if (mli->message)
-				pane_str(mli->line, mli->message, "bold", 0, 0);
+				pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
+					 0, 0 + mli->ascent);
 		} else {
 			pane_resize(ci->home, 0, 0, ci->home->parent->w,
-				    ci->home->parent->h - 1);
+				    ci->home->parent->h - mli->height);
 		}
 		return 1;
 	}
@@ -79,6 +91,7 @@ DEF_CMD(messageline_attach)
 	struct pane *ret;
 
 	mli->message = NULL;
+	mli->height = 0;
 	ret = pane_register(p, 0, &messageline_handle, mli, NULL);
 	mli->line = pane_register(p, 1, &messageline_handle, mli, NULL);
 	pane_focus(ci->focus);

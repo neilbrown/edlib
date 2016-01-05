@@ -166,7 +166,7 @@ DEF_CMD(ncurses_handle)
 				max_bytes = offset;
 		}
 		return comm_call_xy(ci->comm2, "callback:size", ci->focus,
-				    max_bytes, 1, size, 1);
+				    max_bytes, 0, size, 1);
 	}
 	if (strcmp(ci->key, "text-display") == 0) {
 		int attr = cvt_attrs(ci->str2);
