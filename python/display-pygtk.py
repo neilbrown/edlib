@@ -63,13 +63,23 @@ class EdDisplay(gtk.Window):
             return cb("callback:size", f, max_bytes, ascent, (width, height))
 
         if key == "text-display":
+            if not self.gc:
+                t = self.text
+                self.gc = t.window.new_gc()
+                cmap = t.get_colormap()
+                self.gc.set_foreground(cmap.alloc_color(gtk.gdk.color_parse("blue")))
+
             (x,y) = a["xy"]
             f = a["focus"]
-            fd = self.extract_font(a["str2"])
+            if 'str2' in a:
+                attr = a['str2']
+            else:
+                attr = ''
+            fd = self.extract_font(attr)
             ctx = self.text.get_pango_context()
             self.text.modify_font(fd)
             layout = self.text.create_pango_layout(a["str"])
-            fg, bg = self.get_colours(a["str2"])
+            fg, bg = self.get_colours(attr)
             pm = self.get_pixmap(f)
             metric = ctx.get_metrics(fd)
             ascent = metric.get_ascent() / pango.SCALE
@@ -103,15 +113,21 @@ class EdDisplay(gtk.Window):
         "Return a foreground and a background colour"
         fg = "black"
         bg = "white"
+        inv = False
         for word in attrs.split(','):
             if word[0:3] == "fg:":
                 fg = word[3:]
             if word[0:3] == "bg:":
                 bg = word[3:]
+            if word == "inverse":
+                inv = True
         cmap = self.text.get_colormap()
         fgc = cmap.alloc_color(gtk.gdk.color_parse(fg))
         bgc = cmap.alloc_color(gtk.gdk.color_parse(bg))
-        return (fgc, bgc)
+        if inv:
+            return (bgc, fgc)
+        else:
+            return (fgc, bgc)
 
     def get_pixmap(self, p):
         if p in self.panes:

@@ -22,6 +22,9 @@
 
 struct view_data {
 	int		border;
+	int		border_width, border_height;
+	int		line_height;
+	int		ascent;
 	struct pane	*pane;
 	int		scroll_bar_y;
 };
@@ -35,6 +38,20 @@ enum {
 
 static struct map *view_map;
 static struct pane *do_view_attach(struct pane *par, int border);
+
+static void one_char(struct pane *p, char *s, char *attr, int x, int y)
+{
+	call_xy("text-display", p, -1, s, attr, x, y);
+}
+
+DEF_CMD(text_size_callback)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->x = ci->x;
+	cr->y = ci->y;
+	cr->i = ci->extra;
+	return 1;
+}
 
 static int view_refresh(const struct cmd_info *ci)
 {
@@ -53,12 +70,32 @@ static int view_refresh(const struct cmd_info *ci)
 	if (!vd->border)
 		return 1;
 
+	if (vd->line_height < 0) {
+		struct call_return cr;
+		cr.c = text_size_callback;
+		call_comm7("text-size", ci->home, 0, NULL,
+			   "M", 0, "bold", &cr.c);
+		vd->line_height = cr.y;
+		vd->border_height = cr.y;
+		vd->border_width = cr.x;
+		vd->ascent = cr.i;
+
+		if (p->h < vd->border_height * 3) {
+			vd->border &= ~BORDER_TOP;
+			vd->border &= ~BORDER_BOT;
+		}
+		if (p->w < vd->border_width * 3) {
+			vd->border &= ~BORDER_LEFT;
+			vd->border &= ~BORDER_RIGHT;
+		}
+	}
+
 	if (vd->border & BORDER_LEFT) {
 		/* Left border is (currently) always a scroll bar */
-		for (i = 0; i < p->h; i++)
-			pane_text(p, '|', "inverse", 0, i);
+		for (i = 0; i < p->h; i += vd->line_height)
+			one_char(p, "|", "inverse", 0, i + vd->ascent);
 
-		if (p->h > 4) {
+		if (p->h > 4 * vd->line_height) {
 			ci2.key = "CountLines";
 			ci2.home = ci2.focus = p;
 			ci2.mark = m;
@@ -70,35 +107,38 @@ static int view_refresh(const struct cmd_info *ci)
 			c = pane_attr_get_int(ci->home, "chars");
 			if (l <= 0)
 				l = 1;
-			mid = 1 + (p->h-4) * ln / l;
-			pane_text(p, '^', 0, 0, mid-1);
-			pane_text(p, '#', "inverse", 0, mid);
-			pane_text(p, 'v', 0, 0, mid+1);
-			pane_text(p, '+', "inverse", 0, p->h-1);
+			mid = vd->line_height + (p->h - 4 * vd->line_height) * ln / l;
+			one_char(p, "^", 0, 0, mid-vd->line_height + vd->ascent);
+			one_char(p, "#", "inverse", 0, mid + vd->ascent);
+			one_char(p, "v", 0, 0, mid+vd->line_height + vd->ascent);
+			one_char(p, "+", "inverse", 0, p->h
+				  - vd->line_height + vd->ascent);
 			vd->scroll_bar_y = mid;
 		}
 	}
 	if (vd->border & BORDER_RIGHT) {
-		for (i = 0; i < p->h; i++)
-			pane_text(p, '|', "inverse", p->w-1, i);
+		for (i = 0; i < p->h; i += vd->line_height)
+			one_char(p, "|", "inverse", p->w-vd->border_width,
+				  i + vd->ascent);
 	}
 	if (vd->border & (BORDER_TOP | BORDER_BOT)) {
 		name = pane_attr_get(p, "doc:name");
 	}
 	if (vd->border & BORDER_TOP) {
 		int label;
-		for (i = 0; i < p->w; i++)
-			pane_text(p, '-', "inverse", i, 0);
+		for (i = 0; i < p->w; i += vd->border_width)
+			one_char(p, "-", "inverse", i, vd->ascent);
 		snprintf(msg, sizeof(msg), "%s", name);
-		label = (p->w - strlen(msg)) / 2;
-		if (label < 1)
+		label = (p->w - strlen(msg) * vd->border_width) / 2;
+		if (label < vd->border_width)
 			label = 1;
-		for (i = 0; msg[i]; i++)
-			pane_text(p, msg[i], "inverse", label+i, 0);
+		one_char(p, msg, "inverse",
+			 label * vd->border_width, vd->ascent);
 	}
 	if (vd->border & BORDER_BOT) {
-		for (i = 0; i < p->w; i++)
-			pane_text(p, '=', "inverse", i, p->h-1);
+		for (i = 0; i < p->w; i+= vd->border_width)
+			one_char(p, "=", "inverse", i,
+				  p->h-vd->border_height+vd->ascent);
 
 		if (!(vd->border & BORDER_TOP)) {
 			if (c >= 0)
@@ -106,19 +146,20 @@ static int view_refresh(const struct cmd_info *ci)
 					 l,w,c, name);
 			else
 				snprintf(msg, sizeof(msg),"%s", name);
-			for (i = 0; msg[i] && i+4 < p->w; i++)
-				pane_text(p, msg[i], "inverse", i+4, p->h-1);
+			one_char(p, msg, "inverse",
+				 4*vd->border_width,
+				 p->h-vd->border_height + vd->ascent);
 		}
 	}
 	if (!(~vd->border & (BORDER_LEFT|BORDER_BOT)))
 		/* Both are set */
-		pane_text(p, '+', "inverse", 0, p->h-1);
+		one_char(p, "+", "inverse", 0, p->h-vd->border_height+vd->ascent);
 	if (!(~vd->border & (BORDER_RIGHT|BORDER_TOP)))
-		pane_text(p, 'X', "inverse", p->w-1, 0);
+		one_char(p, "X", "inverse", p->w-vd->border_width, vd->ascent);
 	if (!(~vd->border & (BORDER_LEFT|BORDER_TOP)))
-		pane_text(p, '/', "inverse", 0, 0);
+		one_char(p, "/", "inverse", 0, vd->ascent);
 	if (!(~vd->border & (BORDER_RIGHT|BORDER_BOT)))
-		pane_text(p, '/', "inverse", p->w-1, p->h-1);
+		one_char(p, "/", "inverse", p->w-vd->border_width, p->h-vd->border_height+vd->ascent);
 	return 1;
 }
 
@@ -171,16 +212,16 @@ DEF_CMD(view_null)
 			int h = p->parent->h;
 
 			if (vd->border & BORDER_LEFT) {
-				x += 1; w -= 1;
+				x += vd->border_width; w -= vd->border_width;
 			}
 			if (vd->border & BORDER_RIGHT) {
-				w -= 1;
+				w -= vd->border_width;
 			}
 			if (vd->border & BORDER_TOP) {
-				y += 1; h -= 1;
+				y += vd->border_height; h -= vd->border_height;
 			}
 			if (vd->border & BORDER_BOT) {
-				h -= 1;
+				h -= vd->border_height;
 			}
 			pane_resize(p, x, y, w, h);
 		}
@@ -207,6 +248,8 @@ static struct pane *do_view_attach(struct pane *par, int border)
 
 	vd = malloc(sizeof(*vd));
 	vd->border = border;
+	vd->line_height = -1;
+	vd->border_width = vd->border_height = -1;
 	p = pane_register(par, 0, &view_handle, vd, NULL);
 	vd->pane = p;
 	pane_check_size(p);
@@ -235,6 +278,7 @@ DEF_CMD(view_click)
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
 	int mid = vd->scroll_bar_y;
+	int lh = vd->line_height;
 	char *key;
 	int num;
 	int cihx, cihy;
@@ -242,7 +286,7 @@ DEF_CMD(view_click)
 	cihx = ci->x; cihy = ci->y;
 	pane_map_xy(ci->focus, ci->home, &cihx, &cihy);
 
-	if (cihx != 0)
+	if (cihx >= vd->border_width)
 		return 0;
 	if (p->h <= 4)
 		return 0;
@@ -252,19 +296,19 @@ DEF_CMD(view_click)
 	key = "Move-View-Small";
 	num = RPT_NUM(ci);
 
-	if (cihy == mid-1) {
-		/* scroll up */
-		num = -num;
-	} else if (cihy < mid-1) {
+	if (cihy < mid - lh) {
 		/* big scroll up */
 		num = -num;
 		key = "Move-View-Large";
-	} else if (cihy == mid+1) {
+	} else if (cihy <= mid) {
+		/* scroll up */
+		num = -num;
+	} else if (cihy <= mid + lh) {
 		/* scroll down */
-	} else if (cihy > mid+1 && cihy < p->h-1) {
+	} else {
+		/* big scroll down */
 		key = "Move-View-Large";
-	} else
-		return 0;
+	}
 	return call3(key, p, num, NULL);
 }
 
