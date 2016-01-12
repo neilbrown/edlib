@@ -81,7 +81,7 @@ void pane_damaged(struct pane *p, int type)
 		if ((p->damaged | type) == p->damaged)
 			return;
 		p->damaged |= type;
-		type = DAMAGED_CHILD | (type & DAMAGED_CURSOR);
+		type = DAMAGED_CHILD;
 		p = p->parent;
 	}
 }
@@ -133,7 +133,7 @@ static void __pane_refresh(struct cmd_info ci)
 			ci2.extra |= DAMAGED_CONTENT;
 		if (ci2.extra & DAMAGED_CONTENT)
 			ci2.extra |= DAMAGED_CURSOR;
-		damage &= DAMAGED_SIZE | DAMAGED_EVENTS;
+		damage &= DAMAGED_SIZE | DAMAGED_EVENTS | DAMAGED_CURSOR;
 		ci2.comm = p->handle;
 		ret = p->handle->func(&ci2);
 		if (ret == 0)
