@@ -449,30 +449,6 @@ struct editor *pane2ed(struct pane *p)
 	return container_of(p, struct editor, root);
 }
 
-struct pane *pane_with_cursor(struct pane *p, int *oxp, int *oyp)
-{
-	struct pane *ret = p;
-	int ox = 0, oy = 0;
-	if (oxp) {
-		*oxp = 0;
-		*oyp = 0;
-	}
-	while (p) {
-		ox += p->x;
-		oy += p->y;
-
-		if (p->cx >= 0 && p->cy >= 0) {
-			ret = p;
-			if (oxp) {
-				*oxp = ox;
-				*oyp = oy;
-			}
-		}
-		p = p->focus;
-	}
-	return ret;
-}
-
 DEF_CMD(pane_callback)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);

@@ -8,4 +8,3 @@ unsigned short *rxl_parse_verbatim(char *patn, int nocase);
 struct match_state *rxl_prepare(unsigned short *rxl);
 void rxl_free_state(struct match_state *s);
 int rxl_advance(struct match_state *st, wint_t ch, int flag, int restart);
-

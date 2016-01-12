@@ -69,7 +69,7 @@ static struct move_command {
 REDEF_CMD(emacs_move)
 {
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
-	struct pane *cursor_pane = pane_with_cursor(ci->home, NULL, NULL);
+	struct pane *cursor_pane = ci->focus;
 	int old_x = -1;
 	struct cmd_info ci2 = {0};
 	int ret = 0;
