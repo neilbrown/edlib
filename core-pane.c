@@ -569,20 +569,6 @@ void pane_clear(struct pane *p, char *attrs)
 	key_handle(&ci);
 }
 
-void pane_text(struct pane *p, wchar_t ch, char *attrs, int x, int y)
-{
-	struct cmd_info ci = {0};
-
-	ci.key = "pane-text";
-	ci.focus = p;
-	ci.x = x;
-	ci.y = y;
-	ci.str2 = attrs;
-	ci.extra = ch;
-
-	key_handle(&ci);
-}
-
 char *pane_attr_get(struct pane *p, char *key)
 {
 	struct pane *c;

@@ -139,11 +139,6 @@ DEF_CMD(ncurses_handle)
 		ncurses_clear(ci->focus, attr, 0, 0, 0, 0);
 		return 1;
 	}
-	if (strcmp(ci->key, "pane-text") == 0) {
-		int attr = cvt_attrs(ci->str2);
-		ncurses_text(ci->focus, ci->extra, attr, ci->x, ci->y, 0);
-		return 1;
-	}
 	if (strcmp(ci->key, "text-size") == 0) {
 		int max_space = ci->numeric;
 		int max_bytes = 0;

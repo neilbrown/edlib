@@ -28,17 +28,6 @@ class EdDisplay(gtk.Window):
         self.show()
 
     def handle(self, key, **a):
-        if key == "pane-text":
-            (x,y) = a["xy"]
-            c = a["extra"]
-            f = a["focus"]
-            if "str2" in a:
-                attr = a["str2"]
-            else:
-                attr = ""
-            pm = self.get_pixmap(f);
-            self.draw_char(pm, x, y, c, attr)
-            return True
         if key == "pane-clear":
             f = a["focus"]
             if "str2" in a:
@@ -265,25 +254,6 @@ class EdDisplay(gtk.Window):
             s = "M-" + s;
         self.pane.call_focus("Keystroke", self.pane, s)
         self.pane.refresh()
-
-    def draw_char(self, pm, x, y, c, attr):
-        t = self.text
-        if not self.gc:
-            self.gc = t.window.new_gc()
-            cmap = t.get_colormap()
-            self.gc.set_foreground(cmap.alloc_color(gtk.gdk.color_parse("blue")))
-        if not self.bg:
-            self.bg = t.window.new_gc()
-            cmap = t.get_colormap()
-            self.bg.set_foreground(cmap.alloc_color(gtk.gdk.color_parse("lightyellow")))
-        layout = t.create_pango_layout(unichr(c))
-        bg = self.bg; fg = self.gc
-        if "inverse" in attr:
-            fg,bg = bg,fg
-        pm.draw_rectangle(bg, True, x, y, self.charwidth, self.lineheight)
-        pm.draw_layout(fg, x, y, layout)
-        t.queue_draw()
-        return False
 
     def do_clear(self, pm, colour):
 
