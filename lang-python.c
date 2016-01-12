@@ -540,7 +540,11 @@ static long pane_hash(Pane *p)
 
 static long pane_cmp(Pane *p1, Pane *p2)
 {
-	return (long)p1->pane - (long)p2->pane;
+	if (p1->pane == p2->pane)
+		return 0;
+	if (p1->pane < p2->pane)
+		return -1;
+	return 1;
 }
 
 static PyGetSetDef pane_getseters[] = {
