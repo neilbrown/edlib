@@ -563,7 +563,7 @@ struct call_return {
 	struct mark *m, *m2;
 	char *s;
 	struct pane *p;
-	int i;
+	int i, i2;
 	int x,y;
 };
 

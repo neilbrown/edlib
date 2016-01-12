@@ -98,6 +98,114 @@ struct rl_data {
 	struct pane	*pane;
 };
 
+DEF_CMD(text_size_callback)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->x = ci->x;
+	cr->y = ci->y;
+	cr->i = ci->numeric;
+	cr->i2 = ci->extra;
+	return 1;
+}
+
+#define WRAP 1
+#define CURS 2
+
+static int draw_some(struct pane *p, int *x, int y, char *start, char **endp,
+		     char *attr, int margin, int cursorpos, int cursx)
+{
+	/* draw some text from 'start' for length 'len' into p[x,y].
+	 * Update 'x' and 'startp' past what as drawn.
+	 * Everything is drawn with the same attributes: attr.
+	 * If the text would get closer to right end than 'margin',
+	 * when stop drawing before then.  If this happens, WRAP is returned.
+	 * If drawing would pass curx, then it stops before cursx and CURS is returned.
+	 * If cursorpos is between 0 and len inclusive, a cursor is drawn there.
+	 */
+	int len = *endp - start;
+	char *str = strndup(start, len);
+	struct call_return cr;
+	int max;
+	int ret = WRAP;
+	int rmargin = p->w - margin;
+
+	if (cursx >= 0 && cursx >= *x && cursx < rmargin) {
+		rmargin = cursx;
+		ret = CURS;
+	}
+
+	cr.c = text_size_callback;
+	call_comm7("text-size", p, rmargin - *x, NULL, str, 0, attr, &cr.c);
+	max = cr.i;
+	if (max == 0 && ret == CURS) {
+		/* must already have CURS position. */
+		ret = WRAP;
+		rmargin = p->w - margin;
+		call_comm7("text-size", p, rmargin - *x, NULL, str, 0, attr, &cr.c);
+		max = cr.i;
+	}
+	if (max < len) {
+		str[max] = 0;
+		call_comm7("text-size", p, rmargin - *x, NULL, str, 0, attr, &cr.c);
+	}
+	if (y >= 0) {
+		if (cursorpos >= 0 && cursorpos <= len)
+			call_xy("text-display", p, cursorpos, str, attr, *x, y);
+		else
+			call_xy("text-display", p, -1, str, attr, *x, y);
+	}
+	free(str);
+	*x += cr.x;
+	if (max >= len)
+		return 0;
+	/* Didn't draw everything. */
+	*endp = start + max;
+	return ret;
+}
+
+static void update_line_height_attr(struct pane *p, int *h, int *a, char *attr)
+{
+	struct call_return cr;
+	cr.c = text_size_callback;
+	call_comm7("text-size", p, -1, NULL, "M", 0, attr, &cr.c);
+	if (cr.y > *h)
+		*h = cr.y;
+	if (cr.i2 > *a)
+		*a = cr.i2;
+}
+
+static void update_line_height(struct pane *p, int *h, int *a, char *line)
+{
+	struct buf attr;
+
+	buf_init(&attr);
+	update_line_height_attr(p, h, a, "");
+	while (*line) {
+		char c = *line++;
+		char *st = line;
+		if (c != '<' || *line == '<')
+			continue;
+
+		while (*line && line[-1] != '>')
+			line += 1;
+		if (st[0] != '/') {
+			buf_concat_len(&attr, st, line-st);
+			attr.b[attr.len-1] = ',';
+			buf_append(&attr, ',');
+			update_line_height_attr(p, h, a, buf_final(&attr));
+		} else {
+			/* strip back to ",," */
+			if (attr.len > 0)
+				attr.len -= 2;
+			while (attr.len > 0 &&
+			       (attr.b[attr.len] != ',' ||
+				attr.b[attr.len+1] != ','))
+				attr.len -= 1;
+		}
+	}
+	free(buf_final(&attr));
+}
+
 /* render a line, with attributes and wrapping.  Report line offset where
  * cursor point cx,cy is passed. -1 if never seen.
  */
@@ -106,28 +214,30 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 {
 	int x = 0;
 	int y = *yp;
-	mbstate_t ps = {0};
 	char *line_start = line;
-	int l = strlen(line);
+	char *start = line;
 	struct buf attr;
-	wchar_t ch;
+	unsigned char ch;
 	int cy = -1, cx = -1, offset = -1;
 	struct rl_data *rl = p->data;
 	int wrap = rl->do_wrap;
 	char *prefix = pane_attr_get(p, "prefix");
+	int line_height = -1;
+	int ascent = -1;
+	int mwidth = -1;
+	int ret = 0;
+
+	update_line_height(p, &line_height, &ascent, line);
 
 	if (prefix) {
-		char *s = prefix;
-		while (*s) {
-			if (y >= rl->header_lines)
-				pane_text(p, *s, "bold", x, y);
-			x += 1;
-			s += 1;
-		}
+		char *s = prefix + strlen(prefix);
+		update_line_height_attr(p, &line_height, &ascent, "bold");
+		draw_some(p, &x, dodraw?y+ascent:-1, prefix, &s, "bold", 0, -1, -1);
 	}
 	rl->prefix_len = x;
 
 	buf_init(&attr);
+	buf_append(&attr, ' '); attr.len = 0;
 	if (cxp && cyp && offsetp) {
 		/* If cx and cy are non-negative, set *offsetp to
 		 * the length when we reach that cursor pos.
@@ -148,39 +258,88 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 		x -= rl->shift_left;
 
 	while (*line && y < p->h) {
-		int err = mbrtowc(&ch, line, l, &ps);
-		int draw_cursor = 0;
-		int l;
+		int CX;
+		int CP;
 
-		if (err < 0) {
-			ch = *line;
-			err = 1;
+		if (mwidth < 0) {
+			struct call_return cr;
+			cr.c = text_size_callback;
+			call_comm7("text-size", p, -1, NULL, "M", 0,
+				   buf_final(&attr), &cr.c);
+			mwidth = cr.x;
 		}
-		if (y == cy && x <= cx)
-			/* haven't passed the cursor yet */
-			*offsetp = line - line_start;
+
+		if (ret == WRAP) {
+			char buf[2], *b;
+			strcpy(buf, "\\");
+			b = buf+1;
+			x = p->w - mwidth;
+			draw_some(p, &x, dodraw?y+ascent:-1, buf, &b, "underline,fg:blue",
+				  0, -1, -1);
+
+			x = 0;
+			y += line_height;
+		}
+
+		ch = *line;
+
+		if (y+line_height < cy ||
+		    (y <= cy && x <= cx) ||
+		    ret == CURS)
+			if (offsetp)
+				/* haven't passed the cursor yet */
+				*offsetp = start - line_start;
+		if (ret == CURS) {
+			/* Found the cursor, stop looking */
+			cy = -1; cx = -1;
+		}
+		if (y+line_height >= cy &&
+		    y <= cy && x <= cx)
+			CX = cx;
+		else
+			CX = -1;
+		if (offset < start - line_start)
+			CP = -1;
+		else
+			CP = offset - (start - line_start);
+		ret = 0;
+
 		if (offset >= 0 && line - line_start <= offset) {
 			*cyp = y;
 			*cxp = x;
 		}
-		if (line - line_start == offset)
-			draw_cursor = 1;
 
-		if (err == 0)
-			break;
-		line += err;
-		l -= err;
-
+		if (ch >= ' ' && ch != '<') {
+			line += 1;
+			/* only flush out if string is getting a bit long */
+			if ((ch & 0xc0) == 0x80)
+				/* In the middle of a UTF-8 */
+				continue;
+			if (offset == (line - line_start) ||
+			    (line-start) * mwidth > p->w - x) {
+				ret = draw_some(p, &x, dodraw?y+ascent:-1, start,
+						&line,
+						buf_final(&attr), mwidth, CP, CX);
+				start = line;
+			}
+			continue;
+		}
+		ret = draw_some(p, &x, dodraw?y+ascent:-1, start, &line,
+				buf_final(&attr), mwidth, CP, CX);
+		start = line;
+		if (ret)
+			continue;
 		if (ch == '<') {
+			line += 1;
 			if (*line == '<') {
+				start = line;
 				line += 1;
-				l -= 1;
 			} else {
 				char *a = line;
-				while (*line && line[-1] != '>') {
+
+				while (*line && line[-1] != '>')
 					line += 1;
-					l =- 1;
-				}
+
 				if (a[0] != '/') {
 					buf_concat_len(&attr, a, line-a);
 					/* mark location with ",," */
@@ -190,65 +349,69 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 					/* strip back to ",," */
 					if (attr.len > 0)
 						attr.len -= 2;
-					while (attr.len > 0 &&
+					while (attr.len >=2 &&
 					       (attr.b[attr.len-1] != ',' ||
 						attr.b[attr.len-2] != ','))
 						attr.len -= 1;
+					if (attr.len == 2)
+						attr.len = 0;
 				}
-				continue;
+				start = line;
+				mwidth = -1;
 			}
+			continue;
 		}
-		if (draw_cursor) {
-			l = attr.len;
-			buf_concat(&attr, ",inverse");
-			if (dodraw)
-				pane_text(p, ' ', buf_final(&attr), x, y);
-		}
+
+		if (y+line_height < cy ||
+		    (y <= cy && x <= cx) ||
+		    ret == CURS)
+			if (offsetp)
+				/* haven't passed the cursor yet */
+				*offsetp = start - line_start;
+
+		line += 1;
 		if (ch == '\n') {
 			x = 0;
-			y += 1;
+			y += line_height;
+			start = line;
+		} else if (ch == '\t') {
+			int xc = x / mwidth;
+			int w = 8 - xc % 8;
+			x += w * mwidth;
+			start = line;
 		} else {
-			int w = 1;
-			if (ch == '\t')
-				w = 9 - x % 8;
-			else if (ch < ' ')
-				w = 2;
-			else
-				w = 1;
-			if (x + w >= p->w && wrap) {
-				/* line wrap */
-				if (dodraw && x >= rl->prefix_len && y >= rl->header_lines)
-					pane_text(p, '\\', "underline,fg:blue",
-						  p->w-1, y);
-				y += 1;
-				x = rl->prefix_len;
-			}
-			if (!dodraw || x < rl->prefix_len || y < rl->header_lines)
-				;
-			else if (ch == '\t')
-				;
-			else if (ch < ' ') {
-				/* Should not happen, bug just in case ... */
-				pane_text(p, '^', "underline,fg:red", x, y);
-				pane_text(p, ch + '@', "underline,fg:blue", x+1, y);
-			} else {
-				pane_text(p, ch, buf_final(&attr), x, y);
-			}
-			x += w;
-		}
-		if (draw_cursor)
+			char buf[4], *b;
+			int l = attr.len;
+			buf[0] = '^';
+			buf[1] = ch + '@';
+			buf[2] = 0;
+			b = buf+2;
+			buf_concat(&attr, ",underline,fg:red");
+			ret = draw_some(p, &x, dodraw?y+ascent:-1, buf, &b,
+					buf_final(&attr),
+					mwidth*2, CP, CX);
 			attr.len = l;
+			start = line;
+		}
+		continue;
 	}
-	if ((y == cy && x <= cx) || y < cy)
+	if (!*line && (line > start || offset == start - line_start)) {
+		/* Some more to draw */
+		draw_some(p, &x, dodraw?y+ascent:-1, start, &line,
+			  buf_final(&attr), mwidth, offset - (start - line_start), cx);
+	}
+	if (y + line_height < cy ||
+	    (y <= cy && x <= cx))
 		/* haven't passed the cursor yet */
-		*offsetp = line - line_start;
+		if (offsetp)
+			*offsetp = line - line_start;
 	if (offset >= 0 && line - line_start <= offset) {
 		*cyp = y;
 		*cxp = x;
 	}
 	if (x > 0)
 		/* No newline at the end .. but we must render as whole lines */
-		y += 1;
+		y += line_height;
 	*yp = y;
 	free(buf_final(&attr));
 }

@@ -146,7 +146,7 @@ DEF_CMD(ncurses_handle)
 	}
 	if (strcmp(ci->key, "text-size") == 0) {
 		int max_space = ci->numeric;
-		int max_bytes = -1;
+		int max_bytes = 0;
 		int size = 0;
 		int offset = 0;
 		mbstate_t mbs = {};
@@ -203,7 +203,7 @@ DEF_CMD(ncurses_handle)
 			/* post-order call */
 			move_cursor(p);
 			if (dd->cursor.x >= 0)
-				move(dd->cursor.x, dd->cursor.y);
+				move(dd->cursor.y, dd->cursor.x);
 			refresh();
 		} else {
 			int damage = ci->extra;

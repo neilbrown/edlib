@@ -512,6 +512,11 @@ static Pane *pane_getpane(Pane *p, char *which)
 		newpane->pane = p->pane->parent;
 	if (*which == 'f')
 		newpane->pane = p->pane->focus;
+	if (newpane->pane == NULL) {
+		Py_DECREF(newpane);
+		Py_INCREF(Py_None);
+		newpane = (Pane*)Py_None;
+	}
 	return newpane;
 }
 

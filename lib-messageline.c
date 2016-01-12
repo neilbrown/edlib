@@ -57,7 +57,7 @@ DEF_CMD(messageline_handle)
 		if (mli->height == 0) {
 			struct call_return cr;
 			cr.c = text_size_callback;
-			call_comm7("text-size", ci->home, 0, NULL,
+			call_comm7("text-size", ci->home, -1, NULL,
 				   "M", 0, "bold", &cr.c);
 			mli->height = cr.y;
 			mli->ascent = cr.i;

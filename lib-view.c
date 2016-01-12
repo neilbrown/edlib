@@ -73,7 +73,7 @@ static int view_refresh(const struct cmd_info *ci)
 	if (vd->line_height < 0) {
 		struct call_return cr;
 		cr.c = text_size_callback;
-		call_comm7("text-size", ci->home, 0, NULL,
+		call_comm7("text-size", ci->home, -1, NULL,
 			   "M", 0, "bold", &cr.c);
 		vd->line_height = cr.y;
 		vd->border_height = cr.y;

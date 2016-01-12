@@ -58,7 +58,14 @@ class EdDisplay(gtk.Window):
             ink,(x,y,width,height) = layout.get_pixel_extents()
             ascent = metric.get_ascent() / pango.SCALE
             cb = a["comm2"]
-            max_bytes,something = layout.xy_to_index(a["numeric"], 0)
+            if a['numeric'] >= 0:
+                if width <= a['numeric']:
+                    max_bytes = len(a["str"])
+                else:
+                    max_bytes,extra = layout.xy_to_index(pango.SCALE*a["numeric"],
+                                                         metric.get_ascent())
+            else:
+                max_bytes = 0
             f = a["focus"]
             return cb("callback:size", f, max_bytes, ascent, (width, height))
 
@@ -84,6 +91,24 @@ class EdDisplay(gtk.Window):
             metric = ctx.get_metrics(fd)
             ascent = metric.get_ascent() / pango.SCALE
             pm.draw_layout(self.gc, x, y-ascent, layout, fg, bg)
+            if a['numeric'] >= 0:
+                cx,cy,cw,ch = layout.index_to_pos(a["numeric"])
+                if cw <= 0:
+                    cw = metric.get_approximate_char_width()
+                cx /= pango.SCALE
+                cy /= pango.SCALE
+                cw /= pango.SCALE
+                ch /= pango.SCALE
+                pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
+                                  cw-1, ch-1);
+                extra = True
+                while f.parent and f.parent.parent:
+                    if f.parent.focus != f:
+                        extra = False
+                    f = f.parent
+                if extra:
+                    pm.draw_rectangle(self.gc, False, x+cx+1, y-ascent+cy+1,
+                                      cw-3, ch-3);
 
         if key == "Notify:Close":
             f = a["focus"]
