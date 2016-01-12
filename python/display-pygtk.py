@@ -64,6 +64,8 @@ class EdDisplay(gtk.Window):
                 self.gc = t.window.new_gc()
                 cmap = t.get_colormap()
                 self.gc.set_foreground(cmap.alloc_color(gtk.gdk.color_parse("blue")))
+            if not self.bg:
+                self.bg = t.window.new_gc()
 
             (x,y) = a["xy"]
             f = a["focus"]
@@ -79,7 +81,10 @@ class EdDisplay(gtk.Window):
             pm = self.get_pixmap(f)
             metric = ctx.get_metrics(fd)
             ascent = metric.get_ascent() / pango.SCALE
-            pm.draw_layout(self.gc, x, y-ascent, layout, fg, bg)
+            ink,(lx,ly,width,height) = layout.get_pixel_extents()
+            self.bg.set_foreground(bg)
+            pm.draw_rectangle(self.bg, True, x+lx, y-ascent+ly, width, height)
+            pm.draw_layout(self.gc, x, y-ascent, layout, fg)
             if a['numeric'] >= 0:
                 cx,cy,cw,ch = layout.index_to_pos(a["numeric"])
                 if cw <= 0:
@@ -96,8 +101,14 @@ class EdDisplay(gtk.Window):
                         extra = False
                     f = f.parent
                 if extra:
-                    pm.draw_rectangle(self.gc, False, x+cx+1, y-ascent+cy+1,
-                                      cw-3, ch-3);
+                    pm.draw_rectangle(self.gc, True, x+cx, y-ascent+cy,
+                                      cw, ch);
+                    c = a["numeric"]
+                    if c < len(a["str"]):
+                        s = unicode(a["str"][c:], "utf-8")
+                        l2 = pango.Layout(ctx)
+                        l2.set_text(s[0])
+                        pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, bg)
 
         if key == "Notify:Close":
             f = a["focus"]
@@ -258,10 +269,9 @@ class EdDisplay(gtk.Window):
     def do_clear(self, pm, colour):
 
         t = self.text
-        if not self.bg or True:
+        if not self.bg:
             self.bg = t.window.new_gc()
-            cmap = t.get_colormap()
-            self.bg.set_foreground(colour)
+        self.bg.set_foreground(colour)
         (w,h) = pm.get_size()
         pm.draw_rectangle(self.bg, True, 0, 0, w, h)
 

@@ -1649,8 +1649,13 @@ DEF_CMD(render_line)
 			buf_concat(&b, attr);
 			buf_append(&b, '>');
 		}
-		if (ch == '<')
+		if (ch == '<') {
+			if (o >= 0 && b.len+1 >= o) {
+				mark_prev(d, m);
+				break;
+			}
 			buf_append(&b, '<');
+		}
 		if (ch < ' ' && ch != '\t' && ch != '\n') {
 			buf_concat(&b, "<fg:red>^");
 			buf_append(&b, '@' + ch);

@@ -332,6 +332,8 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 		if (ch == '<') {
 			line += 1;
 			if (*line == '<') {
+				if (offset == start - line_start)
+					offset += 1;
 				start = line;
 				line += 1;
 			} else {
