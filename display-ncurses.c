@@ -42,24 +42,6 @@ static void set_screen(SCREEN *scr)
 	current_screen = scr;
 }
 
-static void move_cursor(struct pane *p)
-{
-	int ox;
-	int oy;
-
-	p = pane_with_cursor(p, &ox, &oy);
-
-	if (p) {
-		int cx = p->cx;
-		int cy = p->cy;
-		if (cx >= p->w)
-			cx = p->w - 1;
-		if (cy >= p->h)
-			cy = p->h - 1;
-		move(oy+cy, ox+cx);
-	}
-}
-
 DEF_CMD(input_handle);
 DEF_CMD(handle_winch);
 
@@ -196,7 +178,6 @@ DEF_CMD(ncurses_handle)
 
 		if (ci->numeric > 0) {
 			/* post-order call */
-			move_cursor(p);
 			if (dd->cursor.x >= 0)
 				move(dd->cursor.y, dd->cursor.x);
 			refresh();
