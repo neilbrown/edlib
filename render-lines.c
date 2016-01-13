@@ -355,7 +355,7 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 					       (attr.b[attr.len-1] != ',' ||
 						attr.b[attr.len-2] != ','))
 						attr.len -= 1;
-					if (attr.len == 2)
+					if (attr.len == 1)
 						attr.len = 0;
 				}
 				if (offset == start - line_start)

@@ -1660,6 +1660,8 @@ DEF_CMD(render_line)
 			buf_concat(&b, "<fg:red>^");
 			buf_append(&b, '@' + ch);
 			buf_concat(&b, "</>");
+		} else if (ch == 0x7f) {
+			buf_concat(&b, "<fg:red>^?</>");
 		} else
 			buf_append(&b, ch);
 		if (attr)
