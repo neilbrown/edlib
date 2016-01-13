@@ -80,14 +80,19 @@ static int view_refresh(const struct cmd_info *ci)
 		vd->border_width = cr.x;
 		vd->ascent = cr.i;
 
-		if (p->h < vd->border_height * 3) {
+		if (p->h < vd->border_height * 3 &&
+		    (vd->border & (BORDER_TOP|BORDER_BOT)) ==
+		    (BORDER_TOP|BORDER_BOT)) {
 			vd->border &= ~BORDER_TOP;
 			vd->border &= ~BORDER_BOT;
 		}
-		if (p->w < vd->border_width * 3) {
+		if (p->w < vd->border_width * 3 &&
+		    (vd->border & (BORDER_LEFT|BORDER_RIGHT)) ==
+		    (BORDER_LEFT|BORDER_RIGHT)) {
 			vd->border &= ~BORDER_LEFT;
 			vd->border &= ~BORDER_RIGHT;
 		}
+
 	}
 
 	if (vd->border & BORDER_LEFT) {
