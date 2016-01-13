@@ -36,14 +36,36 @@ struct popup_info {
 	int closing;
 };
 
+DEF_CMD(text_size_callback)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->x = ci->x;
+	cr->y = ci->y;
+	cr->i = ci->numeric;
+	cr->i2 = ci->extra;
+	return 1;
+}
+
+static int line_height(struct pane *p)
+{
+	struct call_return cr;
+
+	cr.c = text_size_callback;
+	call_comm7("text-size", p, -1, NULL, "x", 0, "", &cr.c);
+	return cr.y;
+}
+
 static void popup_resize(struct pane *p, char *style)
 {
 	int x,y,w,h;
+	int lh;
+
 	/* First find the size */
+	lh = line_height(p);
 	if (strchr(style, 'M'))
 		h = p->parent->h/2 + 1;
 	else
-		h = 3;
+		h = lh * 3;
 	w = p->parent->w/2;
 	if (strchr(style, '1')) w = (p->parent->w-2)/4 + 1;
 	if (strchr(style, '3')) w = 3 * (p->parent->w-2)/4;

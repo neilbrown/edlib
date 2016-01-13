@@ -23,6 +23,7 @@ class EdDisplay(gtk.Window):
         self.set_title("EDLIB")
         self.connect('destroy', self.close_win)
         self.create_ui()
+        self.need_refresh = True
         self.pane.w = self.charwidth * 80
         self.pane.h = self.lineheight * 24
         self.show()
@@ -109,6 +110,7 @@ class EdDisplay(gtk.Window):
                         l2 = pango.Layout(ctx)
                         l2.set_text(s[0])
                         pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, bg)
+            return True
 
         if key == "Notify:Close":
             f = a["focus"]
@@ -199,7 +201,9 @@ class EdDisplay(gtk.Window):
 
 
     def refresh(self, *a):
-        self.pane.refresh()
+        if self.need_refresh:
+            self.pane.refresh()
+            self.need_refresh = False
         l = self.panes.keys()
         l.sort(key=lambda pane: pane.abs_z)
         for p in l:
@@ -211,8 +215,11 @@ class EdDisplay(gtk.Window):
 
     def reconfigure(self, w, ev):
         alloc = w.get_allocation()
+        if self.pane.w == alloc.width and self.pane.h == alloc.height:
+            return None
         self.pane.w = alloc.width
         self.pane.h = alloc.height
+        self.need_refresh = True
         self.text.queue_draw()
 
     def press(self, c, event):
@@ -227,7 +234,7 @@ class EdDisplay(gtk.Window):
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
         self.pane.call_xy("Mouse-event", "Click-1", self.pane, (x,y))
-        self.refresh()
+        self.pane.refresh()
 
     eventmap = { "Return" : "Return",
                  "Tab" : "Tab",

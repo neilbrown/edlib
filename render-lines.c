@@ -304,7 +304,7 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 			CP = offset - (start - line_start);
 		ret = 0;
 
-		if (offset >= 0 && line - line_start <= offset) {
+		if (offset >= 0 && start - line_start <= offset) {
 			*cyp = y;
 			*cxp = x;
 		}
@@ -358,6 +358,8 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 					if (attr.len == 2)
 						attr.len = 0;
 				}
+				if (offset == start - line_start)
+					offset += line-start;
 				start = line;
 				mwidth = -1;
 			}
