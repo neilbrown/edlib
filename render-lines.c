@@ -96,6 +96,7 @@ struct rl_data {
 	struct command	type;
 	int		typenum;
 	struct pane	*pane;
+	int		line_height;
 };
 
 DEF_CMD(text_size_callback)
@@ -235,6 +236,7 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 		draw_some(p, &x, dodraw?y+ascent:-1, prefix, &s, "bold", 0, -1, -1);
 	}
 	rl->prefix_len = x;
+	rl->line_height = line_height;
 
 	buf_init(&attr);
 	buf_append(&attr, ' '); attr.len = 0;
@@ -840,13 +842,13 @@ DEF_CMD(render_lines_move)
 	int rpt = RPT_NUM(ci);
 	struct rl_data *rl = p->data;
 	struct mark *top;
-	int pagesize = 1;
+	int pagesize = rl->line_height;
 
 	top = vmark_first(p, rl->typenum);
 	if (!top)
 		return 0;
 	if (strcmp(ci->key, "Move-View-Large") == 0)
-		pagesize = p->h - 2;
+		pagesize = p->h - 2 * rl->line_height;
 	rpt *= pagesize;
 
 	rl->ignore_point = 1;
@@ -887,9 +889,9 @@ DEF_CMD(render_lines_move)
 				break;
 			}
 			top = vmark_next(top);
-			if ((rpt+pagesize-1)/pagesize !=
-			    (rpt+pagesize-y-1)/pagesize)
-				/* Have cross a full page, can discard old lines */
+			if ((rpt+pagesize-rl->line_height)/pagesize !=
+			    (rpt+pagesize-y-rl->line_height)/pagesize)
+				/* Have crossed a full page, can discard old lines */
 				while ((old = vmark_first(p, rl->typenum)) != NULL &&
 				       old != top) {
 					free(old->mdata);
