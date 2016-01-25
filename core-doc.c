@@ -51,12 +51,12 @@ static int do_doc_add_view(struct doc *d, struct command *c)
 			tlist_add(&g[i].head, GRP_HEAD, &d->views[i].head);
 			tlist_del(&d->views[i].head);
 			g[i].notify = d->views[i].notify;
-			g[i].marked = d->views[i].marked;
+			g[i].state = d->views[i].state;
 		}
 		for (; i < d->nviews; i++) {
 			INIT_TLIST_HEAD(&g[i].head, GRP_HEAD);
 			g[i].notify = NULL;
-			g[i].marked = 0;
+			g[i].state = 0;
 		}
 		free(d->views);
 		d->views = g;
@@ -65,7 +65,7 @@ static int do_doc_add_view(struct doc *d, struct command *c)
 	}
 	points_attach(d, ret);
 	d->views[ret].notify = c;
-	d->views[ret].marked = 0;
+	d->views[ret].state = 1;
 	return ret;
 }
 
@@ -81,6 +81,7 @@ static void do_doc_del_view(struct doc *d, struct command *c)
 	if (i >= d->nviews)
 		return;
 	d->views[i].notify = NULL;
+	d->views[i].state = 0;
 	while (!tlist_empty(&d->views[i].head)) {
 		struct tlist_head *tl = d->views[i].head.next;
 		if (TLIST_TYPE(tl) != GRP_LIST)
@@ -104,14 +105,13 @@ static void doc_close_views(struct doc *d)
 	int i;
 
 	for (i = 0; i < d->nviews; i++)
-		if (d->views[i].notify)
-			d->views[i].marked = 1;
-		else
-			d->views[i].marked = 0;
+		if (d->views[i].state)
+			/* mark as being deleted */
+			d->views[i].state = 2;
 	ci.key = "Release";
 	for (i = 0; i < d->nviews; i++) {
 		struct command *c;
-		if (!d->views[i].marked)
+		if (d->views[i].state != 2)
 			/* Don't delete newly added views */
 			continue;
 		if (d->views[i].notify == NULL)
