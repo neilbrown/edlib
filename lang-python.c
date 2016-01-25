@@ -51,12 +51,8 @@ static PyTypeObject PaneType;
 typedef struct {
 	PyObject_HEAD
 	struct mark	*mark;
-	short		iter_type;
 } Mark;
 static PyTypeObject MarkType;
-#define	ITER_ALL	1
-#define	ITER_VIEW	2
-#define	ITER_VIEW_REVERSE 3
 
 typedef struct {
 	PyObject_HEAD
@@ -746,36 +742,6 @@ PyObject *mark_compare(Mark *a, Mark *b, int op)
 	return ret ? Py_True : Py_False;
 }
 
-static Mark *mark_this(Mark *self)
-{
-	Mark *ret = (Mark*)Mark_Frommark(self->mark);
-	ret->iter_type = ITER_ALL;
-	return ret;
-}
-
-static Mark *Mark_next(Mark *self)
-{
-	struct mark *next;
-
-	if (!self->mark) {
-		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
-		return NULL;
-	}
-	switch (self->iter_type) {
-	default:
-	case ITER_ALL: next = doc_next_mark_all(self->mark); break;
-	case ITER_VIEW: next = vmark_next(self->mark); break;
-	case ITER_VIEW_REVERSE: next = vmark_prev(self->mark); break;
-	}
-	self->mark = next;
-	if (next == NULL) {
-		/* Reached the end of the list */
-		return NULL;
-	}
-
-	return (Mark*)Mark_Frommark(next);
-}
-
 static PyGetSetDef mark_getseters[] = {
     {"rpos",
      (getter)mark_getrpos, (setter)mark_setrpos,
@@ -850,8 +816,8 @@ static PyTypeObject MarkType = {
     0,				/* tp_clear */
     (richcmpfunc)mark_compare,	/* tp_richcompare */
     0,				/* tp_weaklistoffset */
-    (getiterfunc)mark_this,	/* tp_iter */
-    (iternextfunc)Mark_next,	/* tp_iternext */
+    0,				/* tp_iter */
+    0,				/* tp_iternext */
     mark_methods,		/* tp_methods */
     0,				/* tp_members */
     mark_getseters,		/* tp_getset */
