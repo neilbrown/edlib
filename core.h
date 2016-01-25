@@ -461,11 +461,21 @@ static inline int doc_add_view(struct pane *p, struct command *c)
 	return ret - 1;
 }
 
-static inline void doc_del_view(struct pane *p, struct command *c)
+static inline void doc_del_view(struct pane *p, int num)
 {
 	struct cmd_info ci = {0};
 	ci.focus = p;
 	ci.key = "doc:del-view";
+	ci.numeric = num;
+	key_handle(&ci);
+}
+
+static inline void doc_del_view_notifier(struct pane *p, struct command *c)
+{
+	struct cmd_info ci = {0};
+	ci.focus = p;
+	ci.key = "doc:del-view";
+	ci.numeric = -1;
 	ci.comm2 = c;
 	key_handle(&ci);
 }

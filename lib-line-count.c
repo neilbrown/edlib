@@ -96,7 +96,7 @@ DEF_CMD(count_notify)
 			return 0;
 		while ((m = vmark_first(ci->home, i)) != NULL)
 			mark_free(m);
-		doc_del_view(ci->home, ci->comm);
+		doc_del_view_notifier(ci->home, ci->comm);
 	}
 	return 0;
 }

@@ -69,7 +69,7 @@ static int do_doc_add_view(struct doc *d, struct command *c)
 	return ret;
 }
 
-static void do_doc_del_view(struct doc *d, struct command *c)
+static void do_doc_del_view_notifier(struct doc *d, struct command *c)
 {
 	/* This view should only have points on the list, not typed
 	 * marks.  Just delete everything and clear the 'notify' pointer
@@ -79,6 +79,23 @@ static void do_doc_del_view(struct doc *d, struct command *c)
 		if (d->views[i].notify == c)
 			break;
 	if (i >= d->nviews)
+		return;
+	d->views[i].notify = NULL;
+	d->views[i].state = 0;
+	while (!tlist_empty(&d->views[i].head)) {
+		struct tlist_head *tl = d->views[i].head.next;
+		if (TLIST_TYPE(tl) != GRP_LIST)
+			abort();
+		tlist_del_init(tl);
+	}
+}
+
+static void do_doc_del_view(struct doc *d, int i)
+{
+	/* This view should only have points on the list, not typed
+	 * marks.  Just delete everything and clear the 'notify' pointer
+	 */
+	if (i < 0 || i >= d->nviews)
 		return;
 	d->views[i].notify = NULL;
 	d->views[i].state = 0;
@@ -458,9 +475,12 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "doc:del-view") == 0) {
-		if (!ci->comm2)
+		if (ci->numeric >= 0)
+			do_doc_del_view(dd->doc, ci->numeric);
+		else if (ci->comm2)
+			do_doc_del_view_notifier(dd->doc, ci->comm2);
+		else
 			return -1;
-		do_doc_del_view(dd->doc, ci->comm2);
 		return 1;
 	}
 

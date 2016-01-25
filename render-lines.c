@@ -804,7 +804,7 @@ DEF_CMD(render_lines_close)
 	}
 
 	rl->pane = NULL;
-	doc_del_view(p, &rl->type);
+	doc_del_view(p, rl->typenum);
 	p->data = NULL;
 	p->handle = NULL;
 	free(rl);
