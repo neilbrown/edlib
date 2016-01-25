@@ -36,7 +36,7 @@
 
 #include <Python.h>
 #include <structmember.h>
-
+#define MARK_DATA_PTR PyObject
 #include "core.h"
 
 PyObject *Edlib_CommandFailed;
@@ -662,6 +662,44 @@ static int mark_nosetview(Mark *m, PyObject *v, void *which)
 	return -1;
 }
 
+static PyObject *mark_getdata(Mark *m, void *x)
+{
+	PyObject *ret;
+	if (m->mark == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return NULL;
+	}
+	if (m->mark->mtype != &MarkType)
+		ret = Py_None;
+	else
+		ret = m->mark->mdata;
+	Py_INCREF(ret);
+	return ret;
+}
+
+static int mark_setdata(Mark *m, PyObject *v, void *x)
+{
+	if (m->mark == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return -1;
+	}
+	if (m->mark->mdata && m->mark->mtype != &MarkType) {
+		PyErr_SetString(PyExc_TypeError, "Mark contains non-pythonic data");
+		return -1;
+	}
+	if (m->mark->mdata)
+		Py_DECREF(m->mark->mdata);
+	if (v == Py_None) {
+		m->mark->mtype = NULL;
+		m->mark->mdata = NULL;
+	} else {
+		Py_INCREF(v);
+		m->mark->mdata = v;
+		m->mark->mtype = &MarkType;
+	}
+	return 0;
+}
+
 PyObject *mark_compare(Mark *a, Mark *b, int op)
 {
 	int ret = 0;
@@ -713,6 +751,9 @@ static PyGetSetDef mark_getseters[] = {
     {"viewnum",
      (getter)mark_getview, (setter)mark_nosetview,
      "Index for view list", NULL},
+    {"data",
+     (getter)mark_getdata, (setter)mark_setdata,
+     "Application data", NULL},
     {NULL}  /* Sentinel */
 };
 
