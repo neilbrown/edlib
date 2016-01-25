@@ -783,9 +783,63 @@ static PyObject *Mark_to_mark(Mark *self, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Mark_next(Mark *self)
+{
+	struct mark *next;
+	if (!self->mark) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return NULL;
+	}
+	if (self->mark->viewnum >= 0)
+		next = vmark_next(self->mark);
+	else
+		next = NULL;
+	if (next)
+		return Mark_Frommark(next);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyObject *Mark_prev(Mark *self)
+{
+	struct mark *prev;
+	if (!self->mark) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return NULL;
+	}
+	if (self->mark->viewnum >= 0)
+		prev = vmark_prev(self->mark);
+	else
+		prev = NULL;
+	if (prev)
+		return Mark_Frommark(prev);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyObject *Mark_next_any(Mark *self)
+{
+	struct mark *next;
+	if (!self->mark) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return NULL;
+	}
+	next = doc_next_mark_all(self->mark);
+	if (next)
+		return Mark_Frommark(next);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef mark_methods[] = {
 	{"to_mark", (PyCFunction)Mark_to_mark, METH_VARARGS,
 	 "Move one mark to another"},
+	{"next", (PyCFunction)Mark_next, METH_NOARGS,
+	 "next vmark"},
+	{"prev", (PyCFunction)Mark_prev, METH_NOARGS,
+	 "previous vmark"},
+	{"next_any", (PyCFunction)Mark_next_any, METH_NOARGS,
+	 "next any_mark"},
 	{NULL}
 };
 
