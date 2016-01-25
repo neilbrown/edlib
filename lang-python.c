@@ -805,6 +805,24 @@ static void mark_dealloc(Mark *self)
 	self->ob_type->tp_free((PyObject*)self);
 }
 
+static PyObject *Mark_to_mark(Mark *self, PyObject *args)
+{
+	Mark *other = NULL;
+	int ret = PyArg_ParseTuple(args, "O!", &MarkType, &other);
+	if (ret <= 0)
+		return NULL;
+	mark_to_mark(self->mark, other->mark);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyMethodDef mark_methods[] = {
+	{"to_mark", (PyCFunction)Mark_to_mark, METH_VARARGS,
+	 "Move one mark to another"},
+	{NULL}
+};
+
 static PyTypeObject MarkType = {
     PyObject_HEAD_INIT(NULL)
     0,				/*ob_size*/
@@ -834,7 +852,7 @@ static PyTypeObject MarkType = {
     0,				/* tp_weaklistoffset */
     (getiterfunc)mark_this,	/* tp_iter */
     (iternextfunc)Mark_next,	/* tp_iternext */
-    0,				/* tp_methods */
+    mark_methods,		/* tp_methods */
     0,				/* tp_members */
     mark_getseters,		/* tp_getset */
     0,				/* tp_base */
