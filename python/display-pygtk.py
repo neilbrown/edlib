@@ -18,7 +18,7 @@ import glib
 class EdDisplay(gtk.Window):
     def __init__(self, home):
         gtk.Window.__init__(self)
-        self.pane = edlib.Pane(home, self.handle, None)
+        self.pane = edlib.Pane(home, self.handle)
         self.panes = {}
         self.set_title("EDLIB")
         self.connect('destroy', self.close_win)
@@ -29,6 +29,12 @@ class EdDisplay(gtk.Window):
         self.show()
 
     def handle(self, key, **a):
+
+        if key == "Close":
+            self.pane.close()
+            # FIXME close the window??
+            return True
+
         if key == "pane-clear":
             f = a["focus"]
             if "str2" in a:

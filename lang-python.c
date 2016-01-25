@@ -76,8 +76,14 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds);
 
 static inline PyObject *Pane_Frompane(struct pane *p)
 {
-	Pane *pane = (Pane *)PyObject_CallObject((PyObject*)&PaneType, NULL);
-	pane->pane = p;
+	Pane *pane;
+	if (p && p->handle->func == python_call.func) {
+		pane = p->data;
+		Py_INCREF(pane);
+	} else {
+		pane = (Pane *)PyObject_CallObject((PyObject*)&PaneType, NULL);
+		pane->pane = p;
+	}
 	return (PyObject*)pane;
 }
 
@@ -196,11 +202,10 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 {
 	Pane *parent;
 	PyObject *py_handler;
-	PyObject *data;
 	int z = 0;
 	int ret;
 	struct python_command *handler;
-	static char *keywords[] = {"parent", "handler", "data", "z", NULL};
+	static char *keywords[] = {"parent", "handler", "z", NULL};
 
 	if (self->pane) {
 		PyErr_SetString(PyExc_TypeError, "Pane already initialised");
@@ -211,8 +216,8 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 		/* Probably an internal Pane_Frompane call */
 		return 1;
 
-	ret = PyArg_ParseTupleAndKeywords(args, kwds, "O!OO|i", keywords,
-					  &PaneType, &parent, &py_handler, &data,
+	ret = PyArg_ParseTupleAndKeywords(args, kwds, "O!O|i", keywords,
+					  &PaneType, &parent, &py_handler,
 					  &z);
 	if (ret <= 0)
 		return ret;
@@ -227,7 +232,7 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 	handler->callable = py_handler;
 	handler->home_func = 1;
 
-	self->pane = pane_register(parent->pane, z, &handler->c, data, NULL);
+	self->pane = pane_register(parent->pane, z, &handler->c, self, NULL);
 	return 0;
 }
 
@@ -420,7 +425,34 @@ static PyObject *Pane_rel(Pane *self, PyObject *args)
 	return Py_BuildValue("ii", x, y);
 }
 
+static PyObject *Pane_close(Pane *self)
+{
+	struct pane *p = self->pane;
+	if (p) {
+		pane_close(p);
+		self->pane = NULL;
+	}
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyObject *Pane_release(Pane *self)
+{
+	struct pane *p = self->pane;
+	if (p && p->handle->func == python_call.func && p->data) {
+		p->data = NULL;
+		Py_DECREF(self);
+	}
+	self->pane = NULL;
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef pane_methods[] = {
+	{"close", (PyCFunction)Pane_close, METH_NOARGS,
+	 "close the pane"},
+	{"release", (PyCFunction)Pane_release, METH_NOARGS,
+	 "pane is being closed, so release the Pane"},
 	{"children", (PyCFunction)pane_children, METH_NOARGS,
 	 "provides and iterator which will iterate over all children"},
 	{"take_focus", (PyCFunction)Pane_focus, METH_NOARGS,
