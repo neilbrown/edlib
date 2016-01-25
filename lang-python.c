@@ -77,7 +77,7 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds);
 static inline PyObject *Pane_Frompane(struct pane *p)
 {
 	Pane *pane;
-	if (p && p->handle->func == python_call.func) {
+	if (p && p->handle && p->handle->func == python_call.func) {
 		pane = p->data;
 		Py_INCREF(pane);
 	} else {

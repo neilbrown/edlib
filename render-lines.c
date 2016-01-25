@@ -93,7 +93,6 @@ struct rl_data {
 	int		shift_left;
 	int		prefix_len;
 	int		header_lines;
-	struct command	type;
 	int		typenum;
 	struct pane	*pane;
 	int		line_height;
@@ -1031,11 +1030,6 @@ DEF_CMD(render_lines_move_line)
 	return 1;
 }
 
-DEF_CMD(render_lines_notify)
-{
-	return 1;
-}
-
 DEF_CMD(render_lines_notify_replace)
 {
 	struct rl_data *rl = ci->home->data;
@@ -1152,8 +1146,7 @@ REDEF_CMD(render_lines_attach)
 	rl->do_wrap = 1;
 	rl->shift_left = 0;
 	rl->header_lines = 0;
-	rl->type = render_lines_notify;
-	rl->typenum = doc_add_view(ci->focus, &rl->type);
+	rl->typenum = doc_add_view(ci->focus, NULL);
 	rl->pane = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
 	call3("Request:Notify:Replace", rl->pane, 0, NULL);
 
