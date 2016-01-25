@@ -96,7 +96,7 @@ struct doc {
 	struct docview {
 		struct tlist_head head;
 		struct command	  *notify;
-		short		state;	/* 0 = unused, 1 = active, 2 = being deleted */
+		short		  state;	/* 0 = unused, 1 = active, 2 = being deleted */
 	} *views;
 	struct attrset		*attrs;
 	int			nviews;

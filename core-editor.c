@@ -86,7 +86,7 @@ struct pane *editor_choose_doc(struct editor *ed)
 			continue;
 		last = d;
 		for (i = 0; i < d->nviews; i++)
-			if (d->views[i].notify == NULL)
+			if (d->views[i].state == 0)
 				break;
 		if (i == d->nviews) {
 			choice = d;

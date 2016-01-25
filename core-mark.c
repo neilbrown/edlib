@@ -297,7 +297,7 @@ void __mark_reset(struct doc *d, struct mark *m, int new, int end)
 
 	lnk = m->mdata;;
 	for (i = 0; i < lnk->size; i++)
-		if (d->views[i].notify) {
+		if (d->views[i].state) {
 			if (!new)
 				tlist_del(&lnk->lists[i]);
 			if (end)
@@ -374,7 +374,7 @@ struct mark *doc_new_mark(struct doc *d, int view)
 {
 	struct mark *ret;
 
-	if (view == MARK_POINT || view >= d->nviews || d->views[view].notify == NULL)
+	if (view == MARK_POINT || view >= d->nviews || d->views[view].state != 1)
 		return NULL;
 	ret = calloc(sizeof(*ret), 1);
 	ret->viewnum = view;
@@ -1007,7 +1007,7 @@ static void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
 		struct tlist_head *tl = &lnk->lists[i];
 		struct command *c = d->views[i].notify;
 
-		if (!c)
+		if (!c || d->views[i].state == 0)
 			continue;
 		ci.comm = c;
 		while (TLIST_TYPE(tl) == GRP_LIST)
@@ -1080,7 +1080,7 @@ void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 					continue;
 				done[i] = 1;
 				remaining -= 1;
-				if (!c)
+				if (!c || d->views[i].state == 0)
 					continue;
 				while (TLIST_TYPE(tl) == GRP_LIST)
 					tl = TLIST_PTR(tl->prev);
@@ -1099,7 +1099,7 @@ void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 			struct command *c = d->views[m->viewnum].notify;
 			done[m->viewnum] = 1;
 			remaining -= 1;
-			if (c) {
+			if (c && d->views[m->viewnum].state) {
 				ci.mark = m;
 				ci.comm = c;
 				c->func(&ci);
@@ -1111,7 +1111,7 @@ void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 				struct command *c = d->views[i].notify;
 				if (done[i])
 					continue;
-				if (!c)
+				if (!c || d->views[i].state == 0)
 					continue;
 				ci.mark = NULL;
 				ci.comm = c;
@@ -1141,7 +1141,7 @@ void doc_check_consistent(struct doc *d)
 		seq = m->seq + 1;
 	}
 	for (i = 0; i < d->nviews; i++)
-		if (d->views[i].notify == NULL) {
+		if (d->views[i].state == 0) {
 			if (!tlist_empty(&d->views[i].head)) abort();
 		} else {
 			struct tlist_head *tl;

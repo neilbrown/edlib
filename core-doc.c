@@ -41,7 +41,7 @@ static int do_doc_add_view(struct doc *d, struct command *c)
 	int i;
 
 	for (ret = 0; ret < d->nviews; ret++)
-		if (d->views[ret].notify == NULL)
+		if (d->views[ret].state == 0)
 			break;
 	if (ret == d->nviews) {
 		/* Resize the view list */
@@ -469,8 +469,6 @@ DEF_CMD(doc_handle)
 				 NULL, dd->doc->name, 0);
 
 	if (strcmp(ci->key, "doc:add-view") == 0) {
-		if (!ci->comm2)
-			return -1;
 		return 1 + do_doc_add_view(dd->doc, ci->comm2);
 	}
 
@@ -975,7 +973,7 @@ static int do_doc_destroy(struct doc *d)
 	d->deleting = 0;
 
 	for (i = 0; i < d->nviews; i++)
-		if (d->views[i].notify)
+		if (d->views[i].state)
 			/* still in use */
 			return -1;
 	if (d == d->ed->docs)
