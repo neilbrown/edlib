@@ -32,7 +32,6 @@ struct es_info {
 	struct mark *start; /* where searching starts */
 	struct mark *end; /* where last success ended */
 	struct pane *target, *search;
-	struct command watch;
 	short matched;
 	short wrapped;
 };
@@ -149,7 +148,6 @@ DEF_CMD(search_close)
 {
 	struct es_info *esi = ci->home->data;
 
-	doc_del_view(ci->focus, &esi->watch);
 	/* TEMP HACK - please fix */
 	doc_set_attr(esi->target, esi->end, "highlight", NULL);
 	mark_free(esi->end);
