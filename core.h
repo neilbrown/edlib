@@ -96,7 +96,6 @@ struct doc {
 	struct docview {
 		struct tlist_head head;
 		struct command	  *notify;
-		short		space;	/* extra space to allocate after a mark */
 		short		marked;	/* being deleted */
 	} *views;
 	struct attrset		*attrs;
@@ -448,14 +447,13 @@ static inline int doc_set_attr(struct pane *p, struct mark *pt,
 }
 
 
-static inline int doc_add_view(struct pane *p, struct command *c, int size)
+static inline int doc_add_view(struct pane *p, struct command *c)
 {
 	struct cmd_info ci = {0};
 	int ret;
 	ci.focus = p;
 	ci.key = "doc:add-view";
 	ci.comm2 = c;
-	ci.extra = size;
 	ret = key_handle(&ci);
 	if (ret <= 0)
 		return -1;

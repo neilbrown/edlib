@@ -1153,7 +1153,7 @@ REDEF_CMD(render_lines_attach)
 	rl->shift_left = 0;
 	rl->header_lines = 0;
 	rl->type = render_lines_notify;
-	rl->typenum = doc_add_view(ci->focus, &rl->type, 0);
+	rl->typenum = doc_add_view(ci->focus, &rl->type);
 	rl->pane = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
 	call3("Request:Notify:Replace", rl->pane, 0, NULL);
 

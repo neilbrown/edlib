@@ -138,17 +138,13 @@ static void dup_mark(struct mark *orig, struct mark *new)
 struct mark *do_mark_at_point(struct doc *d, struct mark *pt, int view)
 {
 	struct mark *ret;
-	int size = sizeof(*ret);
 	struct point_links *lnk;
 
 	if (pt->viewnum != MARK_POINT)
 		return NULL;
 	lnk = pt->mdata;
 
-	if (view >= 0)
-		size += d->views[view].space;
-
-	ret = calloc(size, 1);
+	ret = calloc(sizeof(*ret), 1);
 
 	dup_mark(pt, ret);
 	ret->viewnum = view;
@@ -234,21 +230,11 @@ void points_attach(struct doc *d, int view)
 struct mark *mark_dup(struct mark *m, int notype)
 {
 	struct mark *ret;
-	int size = sizeof(*ret);
 
-	if (!notype) {
-		struct tlist_head *tl;
-		struct docview *dv;
-		if (m->viewnum == MARK_POINT)
+	if (!notype && m->viewnum == MARK_POINT)
 			return NULL;
-		tl = &m->view;
-		while (TLIST_TYPE(tl) != GRP_HEAD)
-			tl = TLIST_PTR(tl->next);
-		dv = container_of(tl, struct docview, head);
-		size += dv->space;
-	}
 
-	ret = calloc(size, 1);
+	ret = calloc(sizeof(*ret), 1);
 	dup_mark(m, ret);
 	if (notype) {
 		ret->viewnum = MARK_UNGROUPED;
@@ -387,13 +373,10 @@ struct mark *doc_prev_mark_all(struct mark *m)
 struct mark *doc_new_mark(struct doc *d, int view)
 {
 	struct mark *ret;
-	int size = sizeof(*ret);
 
 	if (view == MARK_POINT || view >= d->nviews || d->views[view].notify == NULL)
 		return NULL;
-	if (view > 0)
-		size += d->views[view].space;
-	ret = calloc(size, 1);
+	ret = calloc(sizeof(*ret), 1);
 	ret->viewnum = view;
 	__mark_reset(d, ret, 1, 0);
 	return ret;

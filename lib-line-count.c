@@ -131,7 +131,7 @@ static void count_calculate(struct pane *p,
 	struct mark *m, *m2;
 
 	if (type < 0)
-		type = doc_add_view(p, &count_notify, 0);
+		type = doc_add_view(p, &count_notify);
 
 	m = vmark_first(p, type);
 	if (m == NULL) {

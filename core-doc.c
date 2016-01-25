@@ -34,7 +34,7 @@ struct doc_ref {
 
 static int do_doc_destroy(struct doc *d);
 
-static int do_doc_add_view(struct doc *d, struct command *c, int size)
+static int do_doc_add_view(struct doc *d, struct command *c)
 {
 	struct docview *g;
 	int ret;
@@ -51,13 +51,11 @@ static int do_doc_add_view(struct doc *d, struct command *c, int size)
 			tlist_add(&g[i].head, GRP_HEAD, &d->views[i].head);
 			tlist_del(&d->views[i].head);
 			g[i].notify = d->views[i].notify;
-			g[i].space = d->views[i].space;
 			g[i].marked = d->views[i].marked;
 		}
 		for (; i < d->nviews; i++) {
 			INIT_TLIST_HEAD(&g[i].head, GRP_HEAD);
 			g[i].notify = NULL;
-			g[i].space = 0;
 			g[i].marked = 0;
 		}
 		free(d->views);
@@ -66,9 +64,6 @@ static int do_doc_add_view(struct doc *d, struct command *c, int size)
 		points_resize(d);
 	}
 	points_attach(d, ret);
-	d->views[ret].space = 0;
-	if (size > 0 && (unsigned)size > sizeof(struct mark))
-		d->views[ret].space = size - sizeof(struct mark);
 	d->views[ret].notify = c;
 	d->views[ret].marked = 0;
 	return ret;
@@ -459,7 +454,7 @@ DEF_CMD(doc_handle)
 	if (strcmp(ci->key, "doc:add-view") == 0) {
 		if (!ci->comm2)
 			return -1;
-		return 1 + do_doc_add_view(dd->doc, ci->comm2, ci->extra);
+		return 1 + do_doc_add_view(dd->doc, ci->comm2);
 	}
 
 	if (strcmp(ci->key, "doc:del-view") == 0) {
