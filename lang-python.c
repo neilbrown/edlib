@@ -859,6 +859,52 @@ static PyMethodDef mark_methods[] = {
 	{NULL}
 };
 
+static PyObject *mark_get_item(Mark *self, PyObject *key)
+{
+	char *k, *v;
+	if (!self->mark) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return NULL;
+	}
+	if (!PyString_Check(key)) {
+		PyErr_SetString(PyExc_TypeError, "Key must be a string");
+		return NULL;
+	}
+	k = PyString_AsString(key);
+	v = attr_get_str(self->mark->attrs, k, -1);
+	if (v)
+		return Py_BuildValue("s", v);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static int mark_set_item(Mark *self, PyObject *key, PyObject *val)
+{
+	char *k, *v;
+	if (!self->mark) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return -1;
+	}
+	if (!PyString_Check(key)) {
+		PyErr_SetString(PyExc_TypeError, "Key must be a string");
+		return -1;
+	}
+	if (!PyString_Check(val)) {
+		PyErr_SetString(PyExc_TypeError, "value must be a string");
+		return -1;
+	}
+	k = PyString_AsString(key);
+	v = PyString_AsString(val);
+	attr_set_str(&self->mark->attrs, k, v, -1);
+	return 0;
+}
+
+static PyMappingMethods mark_mapping = {
+	.mp_length = NULL,
+	.mp_subscript = (binaryfunc)mark_get_item,
+	.mp_ass_subscript = (objobjargproc)mark_set_item,
+};
+
 static PyTypeObject MarkType = {
     PyObject_HEAD_INIT(NULL)
     0,				/*ob_size*/
@@ -873,7 +919,7 @@ static PyTypeObject MarkType = {
     0,				/*tp_repr*/
     0,				/*tp_as_number*/
     0,				/*tp_as_sequence*/
-    0,				/*tp_as_mapping*/
+    &mark_mapping,		/*tp_as_mapping*/
     0,				/*tp_hash */
     0,				/*tp_call*/
     0,				/*tp_str*/
