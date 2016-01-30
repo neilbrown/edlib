@@ -306,7 +306,7 @@ static PyObject *Pane_call(Pane *self, PyObject *args, PyObject *kwds)
 		Py_INCREF(Py_None);
 		return Py_None;
 	}
-	if (rv < 0) {
+	if (rv == -1000) {
 		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
 		return NULL;
 	}
@@ -329,7 +329,7 @@ static PyObject *Pane_call_focus(Pane *self, PyObject *args, PyObject *kwds)
 		Py_INCREF(Py_None);
 		return Py_None;
 	}
-	if (rv < 0) {
+	if (rv == -1000) {
 		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
 		return NULL;
 	}
@@ -357,7 +357,7 @@ static PyObject *Pane_call_xy(Pane *self, PyObject *args, PyObject *kwds)
 		Py_INCREF(Py_None);
 		return Py_None;
 	}
-	if (rv < 0) {
+	if (rv == -1000) {
 		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
 		return NULL;
 	}
@@ -381,7 +381,7 @@ static PyObject *Pane_call_filter(Pane *self, PyObject *args, PyObject *kwds)
 		Py_INCREF(Py_None);
 		return Py_None;
 	}
-	if (rv < 0) {
+	if (rv == -1000) {
 		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
 		return NULL;
 	}
@@ -419,6 +419,30 @@ static PyObject *Pane_rel(Pane *self, PyObject *args)
 		return NULL;
 	pane_relxy(self->pane, &x, &y);
 	return Py_BuildValue("ii", x, y);
+}
+
+static PyObject *Pane_render_attach(Pane *self, PyObject *args)
+{
+	char *type = NULL;
+	struct pane *p;
+	int ret = PyArg_ParseTuple(args, "s", &type);
+	if (ret <= 0)
+		return NULL;
+	p = render_attach(type, self->pane);
+	if (!p) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	return Pane_Frompane(p);
+}
+
+static PyObject *Pane_damaged(Pane *self, PyObject *args)
+{
+	if (self->pane) {
+		pane_damaged(self->pane, DAMAGED_SIZE);
+	}
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 static PyObject *Pane_close(Pane *self)
@@ -469,6 +493,10 @@ static PyMethodDef pane_methods[] = {
 	 "Convert absolute co-orders to pane-relative"},
 	{"add_notify", (PyCFunction)Pane_add_notify, METH_VARARGS,
 	 "Add notified for an event on some other pane"},
+	{"render_attach", (PyCFunction)Pane_render_attach, METH_VARARGS,
+	 "Attach a renderer to a pane"},
+	{"damage", (PyCFunction)Pane_damaged, METH_VARARGS,
+	 "Mark pane as damaged"},
 	{NULL}
 };
 
@@ -609,6 +637,52 @@ static PyGetSetDef pane_getseters[] = {
     {NULL}  /* Sentinel */
 };
 
+static PyObject *Pane_get_item(Pane *self, PyObject *key)
+{
+	char *k, *v;
+	if (!self->pane) {
+		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
+		return NULL;
+	}
+	if (!PyString_Check(key)) {
+		PyErr_SetString(PyExc_TypeError, "Key must be a string");
+		return NULL;
+	}
+	k = PyString_AsString(key);
+	v = attr_get_str(self->pane->attrs, k, -1);
+	if (v)
+		return Py_BuildValue("s", v);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static int Pane_set_item(Pane *self, PyObject *key, PyObject *val)
+{
+	char *k, *v;
+	if (!self->pane) {
+		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
+		return -1;
+	}
+	if (!PyString_Check(key)) {
+		PyErr_SetString(PyExc_TypeError, "Key must be a string");
+		return -1;
+	}
+	if (!PyString_Check(val)) {
+		PyErr_SetString(PyExc_TypeError, "value must be a string");
+		return -1;
+	}
+	k = PyString_AsString(key);
+	v = PyString_AsString(val);
+	attr_set_str(&self->pane->attrs, k, v, -1);
+	return 0;
+}
+
+static PyMappingMethods pane_mapping = {
+	.mp_length = NULL,
+	.mp_subscript = (binaryfunc)Pane_get_item,
+	.mp_ass_subscript = (objobjargproc)Pane_set_item,
+};
+
 static PyTypeObject PaneType = {
     PyObject_HEAD_INIT(NULL)
     0,				/*ob_size*/
@@ -623,7 +697,7 @@ static PyTypeObject PaneType = {
     (reprfunc)pane_repr,	/*tp_repr*/
     0,				/*tp_as_number*/
     0,				/*tp_as_sequence*/
-    0,				/*tp_as_mapping*/
+    &pane_mapping,		/*tp_as_mapping*/
     (hashfunc)pane_hash,	/*tp_hash */
     0,				/*tp_call*/
     0,				/*tp_str*/
@@ -690,6 +764,21 @@ static int mark_nosetview(Mark *m, PyObject *v, void *which)
 	return -1;
 }
 
+static PyObject *Mark_getseq(Mark *m, void *x)
+{
+	if (m->mark == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return NULL;
+	}
+	return PyInt_FromLong(m->mark->seq);
+}
+
+static int Mark_nosetseq(Mark *m, PyObject *v, void *which)
+{
+	PyErr_SetString(PyExc_TypeError, "Cannot set mark seq num");
+	return -1;
+}
+
 static PyObject *mark_getdata(Mark *m, void *x)
 {
 	PyObject *ret;
@@ -731,15 +820,27 @@ static int mark_setdata(Mark *m, PyObject *v, void *x)
 PyObject *mark_compare(Mark *a, Mark *b, int op)
 {
 	int ret = 0;
-	switch(op) {
-	case Py_LT: ret = mark_ordered(a->mark, b->mark); break;
-	case Py_LE: ret = mark_ordered(a->mark, b->mark); break;
-	case Py_GT: ret = mark_ordered(a->mark, b->mark); break;
-	case Py_GE: ret = mark_ordered(a->mark, b->mark); break;
-	case Py_EQ: ret = mark_ordered(a->mark, b->mark); break;
-	case Py_NE: ret = mark_ordered(a->mark, b->mark); break;
-	}
-	return ret ? Py_True : Py_False;
+	PyObject *rv;
+	if ((PyObject*)a == Py_None)
+		ret = (op == Py_LT || op == Py_LE || op == Py_NE);
+	else if ((PyObject*)b == Py_None)
+		ret = (op == Py_GT || op == Py_GE || op == Py_EQ);
+	else if (PyObject_TypeCheck(a, &MarkType) == 0 ||
+		 PyObject_TypeCheck(b, &MarkType) == 0) {
+		PyErr_SetString(PyExc_TypeError, "Mark compared with non-Mark");
+		return NULL;
+	} else
+		switch(op) {
+		case Py_LT: ret = mark_ordered(a->mark, b->mark); break;
+		case Py_LE: ret = !mark_ordered(b->mark, a->mark); break;
+		case Py_GT: ret = mark_ordered(b->mark, a->mark); break;
+		case Py_GE: ret = !mark_ordered(a->mark, b->mark); break;
+		case Py_EQ: ret = !mark_ordered(a->mark, b->mark) && !mark_ordered(b->mark, a->mark); break;
+		case Py_NE: ret = mark_ordered(a->mark, b->mark) || mark_ordered(b->mark, a->mark); break;
+		}
+	rv = ret ? Py_True : Py_False;
+	Py_INCREF(rv);
+	return rv;
 }
 
 static PyGetSetDef mark_getseters[] = {
@@ -749,6 +850,9 @@ static PyGetSetDef mark_getseters[] = {
     {"viewnum",
      (getter)mark_getview, (setter)mark_nosetview,
      "Index for view list", NULL},
+    {"seq",
+     (getter)Mark_getseq, (setter)Mark_nosetseq,
+     "Seq number of mark", NULL},
     {"data",
      (getter)mark_getdata, (setter)mark_setdata,
      "Application data", NULL},
@@ -831,16 +935,33 @@ static PyObject *Mark_next_any(Mark *self)
 	return Py_None;
 }
 
-static PyObject *Mark_dup(Mark *self)
+static PyObject *Mark_dup(Mark *self, PyObject *args)
 {
 	struct mark *new;
+	int ret;
+	int no_type = 0;
 	if (!self->mark) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	new = mark_dup(self->mark, 0);
+	ret = PyArg_ParseTuple(args, "|i", &no_type);
+	if (ret <= 0)
+		return NULL;
+	new = mark_dup(self->mark, no_type);
 	if (new)
 		return Mark_Frommark(new);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyObject *Mark_unlink(Mark *self)
+{
+	if (!self->mark) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return NULL;
+	}
+	mark_free(self->mark);
+	self->mark = NULL;
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -854,8 +975,10 @@ static PyMethodDef mark_methods[] = {
 	 "previous vmark"},
 	{"next_any", (PyCFunction)Mark_next_any, METH_NOARGS,
 	 "next any_mark"},
-	{"dup", (PyCFunction)Mark_dup, METH_NOARGS,
-	 "duplicate a mark, preserving type"},
+	{"dup", (PyCFunction)Mark_dup, METH_VARARGS,
+	 "duplicate a mark, preserving type .. or not if '1' is given"},
+	{"unlink", (PyCFunction)Mark_unlink, METH_NOARGS,
+	 "unlink mark and discard it"},
 	{NULL}
 };
 
@@ -978,7 +1101,7 @@ static PyObject *Comm_call(Comm *c, PyObject *args, PyObject *kwds)
 		Py_INCREF(Py_None);
 		return Py_None;
 	}
-	if (rv < 0) {
+	if (rv == -1000) {
 		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
 		return NULL;
 	}
@@ -1071,7 +1194,7 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 	}
 	for (i = 1; i < argc; i++) {
 		a = PyTuple_GetItem(args, i);
-		if (Py_TYPE(a) == &PaneType) {
+		if (PyObject_TypeCheck(a, &PaneType)) {
 			if (ci->focus == NULL)
 				ci->focus = ((Pane*)a)->pane;
 			else if (ci->home == NULL)

@@ -494,8 +494,12 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "doc:vmark-get") == 0) {
 		struct mark *m, *m2;
-		m = do_vmark_first(dd->doc, ci->numeric);
-		m2 = do_vmark_last(dd->doc, ci->numeric);
+		if (ci->extra == 2) {
+			m = m2 = NULL;
+		} else {
+			m = do_vmark_first(dd->doc, ci->numeric);
+			m2 = do_vmark_last(dd->doc, ci->numeric);
+		}
 		if (ci->extra == 1 && dd->point)
 			m2 = do_vmark_at_point(dd->doc, dd->point,
 					       ci->numeric);
@@ -858,6 +862,8 @@ DEF_CMD(docs_open)
 
 	if (strcmp(ci->key, "Chr-h") == 0)
 		renderer = "hex";
+	if (strcmp(ci->key, "Chr-p") == 0)
+		renderer = "present";
 
 	if (strcmp(ci->key, "Chr-o") == 0) {
 		struct pane *p2 = call_pane("OtherPane", ci->focus, 0, NULL, 0);
@@ -896,6 +902,7 @@ void doc_make_docs(struct editor *ed)
 
 	key_add(docs_map, "Chr-f", &docs_open);
 	key_add(docs_map, "Chr-h", &docs_open);
+	key_add(docs_map, "Chr-p", &docs_open);
 	key_add(docs_map, "Return", &docs_open);
 	key_add(docs_map, "Chr-o", &docs_open);
 	key_add(docs_map, "Chr-q", &docs_bury);

@@ -16,11 +16,15 @@
 
 #include "core.h"
 
-char WelcomeText[] =
+static char WelcomeText[] =
+	":H1:center,bg:green\n"
+	"\n"
+	"# heading\n"
+	"line\n"
 	"\n"
 	"Welcome to 'edlib' - the beginning of what one day might be an editor\n"
 	"\n"
-	"Current functionality includes:\n"
+	"# Current functionality includes:\n"
 	"  splitting and closing windows (C-x 0,1,2,3)\n"
 	"  Resize current window (C-x },{,^)\n"
 	"  Move among windows (C-x o,O  or mouse click)\n"
@@ -95,6 +99,12 @@ int main(int argc, char *argv[])
 	editor_load_module(ed, "mode-emacs");
 	call5("global-set-keymap", global, 0, NULL, "mode-emacs", 0);
 
+	memset(&ci, 0, sizeof(ci));
+	ci.home = ci.focus = global;
+	ci.key = "python-load";
+	ci.str = "python/render-present.py";
+	key_handle(&ci);
+
 	b = pane_attach(global, "tile", NULL, NULL);
 	if (b)
 		p = doc_from_text(b, "*Welcome*", WelcomeText);
@@ -104,6 +114,23 @@ int main(int argc, char *argv[])
 		ci.key = "python-load";
 		ci.str = "python/test.py";
 		key_handle(&ci);
+
+		/* New window.. */
+		if (gtk)  {
+			memset(&ci, 0, sizeof(ci));
+			ci.home = ci.focus = vroot;
+			ci.key = "display-pygtk";
+			cr.c = take_pane;
+			cr.p = NULL;
+			ci.comm2 = &cr.c;
+			key_handle(&ci);
+			root = pane_attach(cr.p, "input", NULL, NULL);
+			global = pane_attach(root, "messageline", NULL, NULL);
+			global = pane_attach(global, "global-keymap", NULL, NULL);
+			call5("global-set-keymap", global, 0, NULL, "mode-emacs", 0);
+			b = pane_attach(global, "tile", NULL, NULL);
+			p = doc_from_text(b, "*Welcome*", WelcomeText);
+		}
 
 		pane_refresh(&ed->root);
 		while (call3("event:run", vroot, 0, NULL) == 1)

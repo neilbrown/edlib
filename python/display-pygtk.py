@@ -30,6 +30,12 @@ class EdDisplay(gtk.Window):
 
     def handle(self, key, **a):
 
+        if key == "Window:fullscreen":
+            if a['numeric'] > 0:
+                self.fullscreen()
+            else:
+                self.unfullscreen()
+
         if key == "Close":
             self.pane.close()
             # FIXME close the window??
@@ -38,15 +44,16 @@ class EdDisplay(gtk.Window):
         if key == "pane-clear":
             f = a["focus"]
             if "str2" in a:
+                print "CLEAR", a['str2']
                 fg, bg = self.get_colours(a["str2"])
             else:
-                fg, bg = self.get_colours("")
+                fg, bg = self.get_colours("bg:white")
             pm = self.get_pixmap(f)
             self.do_clear(pm, bg)
             return True
 
         if key == "text-size":
-            fd = self.extract_font(a["str2"])
+            fd = self.extract_font(a["str2"], a['extra'])
             ctx = self.text.get_pango_context()
             metric = ctx.get_metrics(fd)
             self.text.modify_font(fd)
@@ -73,6 +80,8 @@ class EdDisplay(gtk.Window):
                 self.gc.set_foreground(cmap.alloc_color(gtk.gdk.color_parse("blue")))
             if not self.bg:
                 self.bg = t.window.new_gc()
+                cmap = t.get_colormap()
+                self.bg.set_foreground(cmap.alloc_color(gtk.gdk.color_parse("white")))
 
             (x,y) = a["xy"]
             f = a["focus"]
@@ -80,7 +89,7 @@ class EdDisplay(gtk.Window):
                 attr = a['str2']
             else:
                 attr = ''
-            fd = self.extract_font(attr)
+            fd = self.extract_font(attr, a['extra'])
             ctx = self.text.get_pango_context()
             self.text.modify_font(fd)
             layout = self.text.create_pango_layout(a["str"])
@@ -89,9 +98,10 @@ class EdDisplay(gtk.Window):
             metric = ctx.get_metrics(fd)
             ascent = metric.get_ascent() / pango.SCALE
             ink,(lx,ly,width,height) = layout.get_pixel_extents()
-            self.bg.set_foreground(bg)
-            pm.draw_rectangle(self.bg, True, x+lx, y-ascent+ly, width, height)
-            pm.draw_layout(self.gc, x, y-ascent, layout, fg)
+            if bg:
+                self.bg.set_foreground(bg)
+                pm.draw_rectangle(self.bg, True, x+lx, y-ascent+ly, width, height)
+            pm.draw_layout(self.gc, x, y-ascent, layout, fg, bg)
             if a['numeric'] >= 0:
                 cx,cy,cw,ch = layout.index_to_pos(a["numeric"])
                 if cw <= 0:
@@ -107,6 +117,7 @@ class EdDisplay(gtk.Window):
                     if f.parent.focus != f:
                         extra = False
                     f = f.parent
+                print x,cx,y,cy,cw,ch,extra,a['numeric'],len(a['str'])
                 if extra:
                     pm.draw_rectangle(self.gc, True, x+cx, y-ascent+cy,
                                       cw, ch);
@@ -115,7 +126,42 @@ class EdDisplay(gtk.Window):
                         s = unicode(a["str"][c:], "utf-8")
                         l2 = pango.Layout(ctx)
                         l2.set_text(s[0])
-                        pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, bg)
+                        pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, bg, fg)
+                    else:
+                        pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
+                                          cw-1, ch-1);
+            return True
+
+        if key == "image-display":
+            # 'str' is a file name of an image
+            # xy is location for top/left
+            # numeric/extra are max width/height
+            # I should use a pane-per-image but I'm in a rush
+            fl = a['str']
+            f = a['focus']
+            w = a['numeric']
+            h = a['extra']
+            if h == 0:
+                h = w
+            (x,y) = a['xy']
+            try:
+                pb = gtk.gdk.pixbuf_new_from_file(fl)
+            except:
+                pb = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
+                pb.fill(0xff000000)
+            if pb.get_width() * h > pb.get_height() * w:
+                # image is wider than space, so reduce height
+                h2 = pb.get_height() * w / pb.get_width()
+                y += (h-h2)/2
+                h = h2
+            else:
+                # image is taller than space
+                w2 = pb.get_width() * h / pb.get_height()
+                x += (w-w2)/2
+                w = w2
+            scale = pb.scale_simple(w, h, gtk.gdk.INTERP_HYPER)
+            pm = self.get_pixmap(f)
+            pm.draw_pixbuf(self.gc, scale, 0, 0, x, y)
             return True
 
         if key == "Notify:Close":
@@ -128,24 +174,33 @@ class EdDisplay(gtk.Window):
 
     styles=["oblique","italic","bold","small-caps"]
 
-    def extract_font(self, attrs):
+    def extract_font(self, attrs, scale):
         "Return a pango.FontDescription"
         family="mono"
         style=""
         size=10
+        if scale <= 10:
+            scale = 1000
         for word in attrs.split(','):
             if word in self.styles:
                 style += " " + word
+            elif len(word) and word[0].isdigit():
+                size = word
             elif word == "large":
-                size = 14
+                size = 40
+            elif word == "small":
+                size = 8.9
             elif word[0:7] == "family:":
                 family = word[7:]
-        return pango.FontDescription(family+' '+style+' '+str(size))
+        fd = pango.FontDescription(family+' '+style+' '+str(size))
+        if scale != 1000:
+            fd.set_size(fd.get_size() * scale / 1000)
+        return fd
 
     def get_colours(self, attrs):
         "Return a foreground and a background colour"
-        fg = "black"
-        bg = "white"
+        fg = None
+        bg = None
         inv = False
         for word in attrs.split(','):
             if word[0:3] == "fg:":
@@ -155,12 +210,32 @@ class EdDisplay(gtk.Window):
             if word == "inverse":
                 inv = True
         cmap = self.text.get_colormap()
-        fgc = cmap.alloc_color(gtk.gdk.color_parse(fg))
-        bgc = cmap.alloc_color(gtk.gdk.color_parse(bg))
         if inv:
-            return (bgc, fgc)
+            fg,bg = bg,fg
+            if fg is None:
+                fg = "white"
+            if bg is None:
+                bg = "black"
+        if fg is None:
+            fg = "black"
+
+        if fg:
+            try:
+                c = gtk.gdk.color_parse(fg)
+            except:
+                c = gtk.gdk.color_parse("black")
+            fgc = cmap.alloc_color(c)
         else:
-            return (fgc, bgc)
+            fgc = None
+        if bg:
+            try:
+                c = gtk.gdk.color_parse(bg)
+            except:
+                c = gtk.gdk.color_parse("white")
+            bgc = cmap.alloc_color(c)
+        else:
+            bgc = None
+        return fgc, bgc
 
     def get_pixmap(self, p):
         if p in self.panes:

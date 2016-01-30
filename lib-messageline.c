@@ -18,7 +18,8 @@ struct mlinfo {
 	char *message;
 	struct pane *line;
 	int height; /* height of line */
-	int ascent; /* how for down to baseline */
+	int ascent; /* how far down to baseline */
+	int hidden;
 };
 
 static void pane_str(struct pane *p, char *s, char *attr, int x, int y)
@@ -38,6 +39,15 @@ DEF_CMD(text_size_callback)
 DEF_CMD(messageline_handle)
 {
 	struct mlinfo *mli = ci->home->data;
+
+	if (strcmp(ci->key, "Window:borderless") == 0) {
+		if (ci->numeric > 0)
+			mli->hidden = 1;
+		else
+			mli->hidden = 0;
+		pane_damaged(ci->home, DAMAGED_SIZE);
+		return 0; /* Allow other handlers */
+	}
 
 	if (strcmp(ci->key, "Message") == 0) {
 		if (ci->extra == 0 || mli->message == NULL) {
@@ -63,15 +73,19 @@ DEF_CMD(messageline_handle)
 			mli->ascent = cr.i;
 		}
 		if (ci->home == mli->line) {
-			pane_resize(ci->home, 0, ci->home->parent->h - mli->height,
-				    ci->home->parent->w, mli->height);
+			if (mli->hidden)
+				pane_resize(ci->home, 0, ci->home->parent->h,
+					    ci->home->parent->w, mli->height);
+			else
+				pane_resize(ci->home, 0, ci->home->parent->h - mli->height,
+					    ci->home->parent->w, mli->height);
 			pane_clear(mli->line, "bg:cyan");
 			if (mli->message)
 				pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
 					 0, 0 + mli->ascent);
 		} else {
 			pane_resize(ci->home, 0, 0, ci->home->parent->w,
-				    ci->home->parent->h - mli->height);
+				    ci->home->parent->h - (mli->hidden ? 0 : mli->height));
 		}
 		return 1;
 	}
@@ -92,6 +106,7 @@ DEF_CMD(messageline_attach)
 
 	mli->message = NULL;
 	mli->height = 0;
+	mli->hidden = 0;
 	ret = pane_register(p, 0, &messageline_handle, mli, NULL);
 	mli->line = pane_register(p, 1, &messageline_handle, mli, NULL);
 	pane_focus(ci->focus);

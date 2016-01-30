@@ -22,6 +22,7 @@
 
 struct view_data {
 	int		border;
+	int		old_border;
 	int		border_width, border_height;
 	int		line_height;
 	int		ascent;
@@ -253,6 +254,7 @@ static struct pane *do_view_attach(struct pane *par, int border)
 
 	vd = malloc(sizeof(*vd));
 	vd->border = border;
+	vd->old_border = border;
 	vd->line_height = -1;
 	vd->border_width = vd->border_height = -1;
 	p = pane_register(par, 0, &view_handle, vd, NULL);
@@ -317,12 +319,27 @@ DEF_CMD(view_click)
 	return call3(key, p, num, NULL);
 }
 
+DEF_CMD(view_borderless)
+{
+	struct pane *p = ci->home;
+	struct view_data *vd = p->data;
+
+	if (ci->numeric > 0) {
+		vd->border = 0;
+	} else {
+		vd->border = vd->old_border;
+	}
+	pane_damaged(p, DAMAGED_SIZE);
+	return 0; /* Allow other handlers */
+}
+
 void edlib_init(struct editor *ed)
 {
 	view_map = key_alloc();
 
 	key_add(view_map, "Click-1", &view_click);
 	key_add(view_map, "Press-1", &view_click);
+	key_add(view_map, "Window:borderless", &view_borderless);
 
 	key_add(ed->commands, "attach-view", &view_attach);
 }

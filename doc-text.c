@@ -1446,8 +1446,11 @@ static char *__text_get_attr(struct doc *d, struct mark *m,
 		char *a = attr_get_str(d->attrs, attr, -1);
 		if (a)
 			return a;
-		if (strcmp(attr, "default-renderer") == 0)
+		if (strcmp(attr, "default-renderer") == 0) {
+//			if (t->fname && strcmp(t->fname + strlen(t->fname)-3, ".md") == 0)
+//				return "present";
 			return "lines";
+		}
 		if (strcmp(attr, "filename") == 0)
 			return t->fname;
 		return NULL;

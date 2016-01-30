@@ -25,7 +25,7 @@
  * The returned line can contain attribute markings as <attr,attr>.
  * </> is used to pop most recent attributes.  << is used to include a literal '<'.
  * Lines generally contains UTF-8.  Control character '\n' is end of line and
- * '\t' tabs 1-8 spaces.  Other control characters should be rendered as
+ * '\t' tabs 1-<8 spaces.  Other control characters should be rendered as
  * e.g. <fg:red>^X</> - in particular, nul must not appear in the line.
  *
  * We currently assume a constant-width font 1x1.
@@ -73,11 +73,12 @@
  * the slow way if the target point wasn't found.
  */
 
+#define _GNU_SOURCE for-asprintf
 #include <unistd.h>
 #include <stdlib.h>
 #include <wchar.h>
 #include <string.h>
-
+#include <stdio.h>
 #define	MARK_DATA_PTR char
 #include "core.h"
 #include "misc.h"
@@ -112,7 +113,7 @@ DEF_CMD(text_size_callback)
 #define CURS 2
 
 static int draw_some(struct pane *p, int *x, int y, char *start, char **endp,
-		     char *attr, int margin, int cursorpos, int cursx)
+		     char *attr, int margin, int cursorpos, int cursx, int scale)
 {
 	/* draw some text from 'start' for length 'len' into p[x,y].
 	 * Update 'x' and 'startp' past what as drawn.
@@ -124,7 +125,7 @@ static int draw_some(struct pane *p, int *x, int y, char *start, char **endp,
 	 */
 	int len = *endp - start;
 	char *str = strndup(start, len);
-	struct call_return cr;
+	struct call_return cr = {0};
 	int max;
 	int ret = WRAP;
 	int rmargin = p->w - margin;
@@ -135,24 +136,25 @@ static int draw_some(struct pane *p, int *x, int y, char *start, char **endp,
 	}
 
 	cr.c = text_size_callback;
-	call_comm7("text-size", p, rmargin - *x, NULL, str, 0, attr, &cr.c);
+	/* FIXME check error - python might crash */
+	call_comm7("text-size", p, rmargin - *x, NULL, str, scale, attr, &cr.c);
 	max = cr.i;
 	if (max == 0 && ret == CURS) {
 		/* must already have CURS position. */
 		ret = WRAP;
 		rmargin = p->w - margin;
-		call_comm7("text-size", p, rmargin - *x, NULL, str, 0, attr, &cr.c);
+		call_comm7("text-size", p, rmargin - *x, NULL, str, scale, attr, &cr.c);
 		max = cr.i;
 	}
 	if (max < len) {
 		str[max] = 0;
-		call_comm7("text-size", p, rmargin - *x, NULL, str, 0, attr, &cr.c);
+		call_comm7("text-size", p, rmargin - *x, NULL, str, scale, attr, &cr.c);
 	}
 	if (y >= 0) {
 		if (cursorpos >= 0 && cursorpos <= len)
-			call_xy("text-display", p, cursorpos, str, attr, *x, y);
+			call_xy7("text-display", p, cursorpos, scale, str, attr, *x, y, NULL, NULL);
 		else
-			call_xy("text-display", p, -1, str, attr, *x, y);
+			call_xy7("text-display", p, -1, scale, str, attr, *x, y, NULL, NULL);
 	}
 	free(str);
 	*x += cr.x;
@@ -163,36 +165,65 @@ static int draw_some(struct pane *p, int *x, int y, char *start, char **endp,
 	return ret;
 }
 
-static void update_line_height_attr(struct pane *p, int *h, int *a, char *attr)
+static void update_line_height_attr(struct pane *p, int *h, int *a, int *w, char *attr, char *str, int scale)
 {
 	struct call_return cr;
 	cr.c = text_size_callback;
-	call_comm7("text-size", p, -1, NULL, "M", 0, attr, &cr.c);
+	call_comm7("text-size", p, -1, NULL, str, scale, attr, &cr.c);
 	if (cr.y > *h)
 		*h = cr.y;
 	if (cr.i2 > *a)
 		*a = cr.i2;
+	if (w)
+		*w += cr.x;
 }
 
-static void update_line_height(struct pane *p, int *h, int *a, char *line)
+static void update_line_height(struct pane *p, int *h, int *a, int *w, int *center, char *line,
+			       int scale)
 {
 	struct buf attr;
+	char *tst = line;
+	char *l;
+	int above = 0, below = 0;
+	int attr_found = 0;
 
 	buf_init(&attr);
-	update_line_height_attr(p, h, a, "");
+	buf_append(&attr, ',');
 	while (*line) {
 		char c = *line++;
 		char *st = line;
 		if (c != '<' || *line == '<')
 			continue;
 
+		if (line-1 > tst) {
+			l = strndup(tst, line-1-tst);
+			update_line_height_attr(p, h, a, w, buf_final(&attr), l, scale);
+			free(l);
+		}
 		while (*line && line[-1] != '>')
 			line += 1;
+		tst = line;
 		if (st[0] != '/') {
+			char *c;
 			buf_concat_len(&attr, st, line-st);
 			attr.b[attr.len-1] = ',';
 			buf_append(&attr, ',');
-			update_line_height_attr(p, h, a, buf_final(&attr));
+			if (center && strstr(buf_final(&attr), ",center,"))
+				*center = 1;
+			if (center && (c=strstr(buf_final(&attr), ",left:")) != NULL) {
+				*center = atoi(c+6) * scale/1000;
+			}
+			if (center && (c=strstr(buf_final(&attr), ",right:")) != NULL) {
+				*center = - atoi(c+7) * scale/1000;
+			}
+			if ((c=strstr(buf_final(&attr), ",space-above:")) != NULL) {
+				above = atoi(c+13) * scale/1000;
+			}
+			if ((c=strstr(buf_final(&attr), ",space-below:")) != NULL) {
+				below = atoi(c+13) * scale/1000;
+			}
+			attr_found = 1;
+			update_line_height_attr(p, h, a, w, buf_final(&attr), "", scale);
 		} else {
 			/* strip back to ",," */
 			if (attr.len > 0)
@@ -203,13 +234,64 @@ static void update_line_height(struct pane *p, int *h, int *a, char *line)
 				attr.len -= 1;
 		}
 	}
+	if (line[-1] == '\n')
+		line -= 1;
+	if (line > tst || !attr_found) {
+		l = strndup(tst, line-tst);
+		update_line_height_attr(p, h, a, w, buf_final(&attr), l, scale);
+		free(l);
+	}
+	*h += above + below;
+	*a += above;
 	free(buf_final(&attr));
+}
+
+static void render_image(struct pane *p, char *line, int *yp, int dodraw, int scale)
+{
+	char *cp, *e;
+	char *fname = NULL;
+	int width = p->w/2, height = p->h/2;
+	int y;
+
+	while (*line == '<')
+		line ++;
+	while (line) {
+		e = strchr(line, ',');
+		if (!e)
+			e = strchr(line, '>');
+		if (strncmp(line, "image:", 6) == 0) {
+			cp = line + 6;
+			if (e)
+				fname = strndup(cp, e-cp);
+			else
+				fname = strdup(cp);
+		} else if (strncmp(line, "width:", 6) == 0) {
+			width = atoi(line+6);
+			width = width * scale / 1000;
+		} else if (strncmp(line, "height:", 7) == 0) {
+			height = atoi(line+7);
+			height = height * scale / 1000;
+		}
+		if (e)
+			e++;
+		line = e;
+	}
+	y = *yp;
+	*yp = y + height;
+	if (!fname)
+		return;
+	if (!dodraw) {
+		free(fname);
+		return;
+	}
+	call_xy7("image-display", p, width, height, fname, NULL, (p->w - width)/2, y,
+		 NULL, NULL);
 }
 
 /* render a line, with attributes and wrapping.  Report line offset where
  * cursor point cx,cy is passed. -1 if never seen.
  */
-static void render_line(struct pane *p, char *line, int *yp, int dodraw,
+static void render_line(struct pane *p, char *line, int *yp, int dodraw, int scale,
 		       int *cxp, int *cyp, int *offsetp)
 {
 	int x = 0;
@@ -226,17 +308,33 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 	int ascent = -1;
 	int mwidth = -1;
 	int ret = 0;
+	int twidth = 0;
+	int center = 0;
 
-	update_line_height(p, &line_height, &ascent, line);
+	/* Temporary hack (I hope) */
+	if (strncmp(line, "<image", 6) == 0) {
+		render_image(p, line, yp, dodraw, scale);
+		if (cxp) *cxp = -1;
+		if (cyp) *cyp = -1;
+		if (offsetp) *offsetp = -1;
+		return;
+	}
+
+	update_line_height(p, &line_height, &ascent, &twidth, &center, line, scale);
 
 	if (prefix) {
 		char *s = prefix + strlen(prefix);
-		update_line_height_attr(p, &line_height, &ascent, "bold");
-		draw_some(p, &x, dodraw?y+ascent:-1, prefix, &s, "bold", 0, -1, -1);
+		update_line_height_attr(p, &line_height, &ascent, NULL, "bold", prefix, scale);
+		draw_some(p, &x, dodraw?y+ascent:-1, prefix, &s, "bold", 0, -1, -1, scale);
 	}
 	rl->prefix_len = x;
+	if (center == 1)
+		x += (p->w - x - twidth)/2;
+	if (center > 1)
+		x += center;
+	if (center < 0)
+		x = p->w - x - twidth + center;
 	rl->line_height = line_height;
-
 	buf_init(&attr);
 	buf_append(&attr, ' '); attr.len = 0;
 	if (cxp && cyp && offsetp) {
@@ -270,16 +368,21 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 			mwidth = cr.x;
 		}
 
-		if (ret == WRAP) {
+		if (ret == WRAP && wrap) {
 			char buf[2], *b;
 			strcpy(buf, "\\");
 			b = buf+1;
 			x = p->w - mwidth;
 			draw_some(p, &x, dodraw?y+ascent:-1, buf, &b, "underline,fg:blue",
-				  0, -1, -1);
+				  0, -1, -1, scale);
 
 			x = 0;
 			y += line_height;
+		}
+		if (ret == WRAP && !wrap) {
+			while (*line && *line != '\n' && *line != '<')
+				line += 1;
+			start = line;
 		}
 
 		ch = *line;
@@ -320,20 +423,22 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 			    (line-start) * mwidth > p->w - x) {
 				ret = draw_some(p, &x, dodraw?y+ascent:-1, start,
 						&line,
-						buf_final(&attr), mwidth, CP, CX);
+						buf_final(&attr), wrap ? mwidth : 0, CP, CX, scale);
 				start = line;
 			}
 			continue;
 		}
 		ret = draw_some(p, &x, dodraw?y+ascent:-1, start, &line,
-				buf_final(&attr), mwidth, CP, CX);
+				buf_final(&attr), wrap ? mwidth : 0, CP, CX, scale);
+		if (!wrap && ret == WRAP && line == start)
+			ret = 0;
 		start = line;
 		if (ret)
 			continue;
 		if (ch == '<') {
 			line += 1;
 			if (*line == '<') {
-				if (offset == start - line_start)
+				if (offset >= 0 && offset == start - line_start)
 					offset += 1;
 				start = line;
 				line += 1;
@@ -392,9 +497,10 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 			buf[2] = 0;
 			b = buf+2;
 			buf_concat(&attr, ",underline,fg:red");
+			if (ch == '\f') buf[0] = 0;
 			ret = draw_some(p, &x, dodraw?y+ascent:-1, buf, &b,
 					buf_final(&attr),
-					mwidth*2, CP, CX);
+					wrap ? mwidth*2 : 0, CP, CX, scale);
 			attr.len = l;
 			start = line;
 		}
@@ -403,7 +509,7 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw,
 	if (!*line && (line > start || offset == start - line_start)) {
 		/* Some more to draw */
 		draw_some(p, &x, dodraw?y+ascent:-1, start, &line,
-			  buf_final(&attr), mwidth, offset - (start - line_start), cx);
+			  buf_final(&attr), wrap ? mwidth : 0, offset - (start - line_start), cx, scale);
 	}
 	if (y + line_height < cy ||
 	    (y <= cy && x <= cx))
@@ -437,7 +543,7 @@ static struct mark *call_render_line_prev(struct pane *p,
 		return NULL;
 	}
 	/* if n>0 we can fail because start-of-file was found before
-	 * and newline.  In that case ret == -2, and we return NULL.
+	 * any newline.  In that case ret == -2, and we return NULL.
 	 */
 	if (found)
 		*found = (ret != -1);
@@ -558,19 +664,44 @@ static int call_render_line_to_point(struct pane *p, struct mark *pm,
 	return len;
 }
 
+static int get_scale(struct pane *p)
+{
+	char *sc = pane_attr_get(p, "scale");
+	int x, y;
+	int xscale, yscale, scale;
+
+	if (!sc)
+		return 1000;
+
+	if (sscanf(sc, "x:%d,y:%d", &x, &y) != 2)
+		return 1000;
+
+	/* 'scale' is pixels per point times 1000.
+	 * ":scale:x" is points across pane, so scale = p->w/x*1000
+	 */
+	xscale = 1000 * p->w / x;
+	yscale = 1000 * p->h / y;
+	scale = (xscale < yscale) ? xscale: yscale;
+	if (scale < 10)
+		scale = 1000;
+	return scale;
+}
+
 static void find_lines(struct mark *pm, struct pane *p)
 {
 	struct rl_data *rl = p->data;
 	struct mark *top, *bot;
 	struct mark *m;
 	struct mark *start, *end;
+	int x;
 	int y = 0;
 	int offset;
 	int found_start = 0, found_end = 0;
 	int lines_above = 0, lines_below = 0;
+	int scale = get_scale(p);
 
-	if (pm->viewnum != MARK_POINT)
-		return;
+//	if (pm->viewnum != MARK_POINT)
+//		return;
 
 	top = vmark_first(p, rl->typenum);
 	bot = vmark_last(p, rl->typenum);
@@ -586,14 +717,15 @@ static void find_lines(struct mark *pm, struct pane *p)
 		m = vmark_next(start);
 
 	end = m;
-	if (start->mdata) {
-		int x;
-		x = -1; lines_above = -1; y = 0;
-		render_line(p, start->mdata, &y, 0, &x, &lines_above, &offset);
-		lines_below = y - lines_above;
-	}
-	y = 1;
-	/* We have start/end of the focus line, and its height */
+	x = -1; lines_above = -1; y = 0;
+	render_line(p, start->mdata ?: "", &y, 0, scale, &x, &lines_above, &offset);
+	//lines_below = y - lines_above;
+	lines_above =  lines_below = 0;
+
+	/* We have start/end of the focus line, and its height
+	 * Rendering just that "line" uses a height of 'y', of which
+	 * 'lines_above' is above the cursor, and 'lines_below' is below.
+	 */
 	if (bot && !mark_ordered_or_same_pane(p, bot, start))
 		/* already before 'bot', so will never "cross over" bot, so
 		 * ignore 'bot'
@@ -602,64 +734,85 @@ static void find_lines(struct mark *pm, struct pane *p)
 	if (top && !mark_ordered_or_same_pane(p, end, top))
 		top = NULL;
 
-	rl->skip_lines = 0;
-	while (!((found_start && found_end) || y >= p->h - rl->header_lines)) {
-		if (!found_start) {
+	while ((!found_start || !found_end) && y < p->h - rl->header_lines) {
+		if (!found_start && lines_above == 0) {
 			/* step backwards moving start */
-			if (lines_above > 0) {
-				lines_above -= 1;
-				y += 1;
+			m = call_render_line_prev(p, mark_dup(start, 0),
+						  1, &rl->top_sol);
+			if (!m) {
+				/* no text before 'start' */
+				found_start = 1;
 			} else {
-				m = call_render_line_prev(p, mark_dup(start, 0),
-							  1, &rl->top_sol);
-				if (!m) {
-					/* no text before 'start' */
-					found_start = 1;
-				} else {
-					int h = 0;
-					start = m;
-					if (!start->mdata)
-						call_render_line(p, start);
-					render_line(p, start->mdata, &h, 0,
+				int h = 0;
+				start = m;
+				if (!start->mdata)
+					call_render_line(p, start);
+				if (start->mdata)
+					render_line(p, start->mdata, &h, 0, scale,
 						    NULL, NULL, NULL);
-					if (h) {
-						lines_above = h - 1;
-						y += 1;
-					} else
-						found_start = 1;
-				}
-				if (bot && mark_ordered(start, bot))
-					found_end = 1;
+				if (h) {
+					lines_above = h;
+				} else
+					found_start = 1;
 			}
+			if (bot && mark_ordered(start, bot))
+				found_end = 1;
 		}
-		if (!found_end) {
+		if (!found_end && lines_below == 0) {
 			/* step forwards */
-			if (lines_below > 0) {
-				lines_below -= 1;
-				y += 1;
-			} else {
-				if (!end->mdata)
-					call_render_line(p, end);
-				if (!end->mdata)
+			if (!end->mdata)
+				call_render_line(p, end);
+			if (!end->mdata)
+				found_end = 1;
+			else {
+				int h = 0;
+				render_line(p, end->mdata, &h, 0, scale,
+					    NULL, NULL, NULL);
+				if (end->mdata[strlen(end->mdata)-1] == '\f')
 					found_end = 1;
-				else {
-					int h = 0;
-					render_line(p, end->mdata, &h, 0,
-						    NULL, NULL, NULL);
-					end = vmark_next(end);
-					ASSERT(end != NULL);
-					if (h) {
-						lines_below = h - 1;
-						y += 1;
-					} else
-						found_end = 1;
-				}
-				if (top && mark_ordered(top, end))
-					found_start = 1;
+				end = vmark_next(end);
+				ASSERT(end != NULL);
+				if (h) {
+					lines_below = h;
+				} else
+					found_end = 1;
 			}
+			if (top && mark_ordered(top, end))
+				found_start = 1;
+		}
+		if (lines_above > 0 && lines_below > 0) {
+			int consume = (lines_above > lines_below ? lines_below:lines_above) * 2;
+			if (consume > (p->h - rl->header_lines) - y)
+				consume = (p->h - rl->header_lines) - y;
+			if (lines_above > lines_below) {
+				lines_above -= consume - (consume/2);
+				lines_below -= consume/2;
+			} else {
+				lines_below -= consume - (consume/2);
+				lines_above -= consume/2;
+			}
+			y += consume;
+			/* We have just consumed all of one of lines_{above,below}
+			 * so they are no longer both > 0 */
+		}
+		if (found_end && lines_above) {
+			int consume = p->h - rl->header_lines - y;
+			if (consume > lines_above)
+				consume = lines_above;
+			lines_above -= consume;
+			y += consume;
+		}
+		if (found_start && lines_below) {
+			int consume = p->h - rl->header_lines - y;
+			if (consume > lines_below)
+				consume = lines_below;
+			lines_below -= consume;
+			y += consume;
 		}
 	}
 	rl->skip_lines = lines_above;
+	if (start->seq > end->seq)
+		end = start;
 	/* Now discard any marks outside start-end */
 	while ((m = vmark_prev(start)) != NULL) {
 		free(m->mdata);
@@ -682,17 +835,25 @@ static void render(struct mark *pm, struct pane *p)
 	struct mark *m, *m2;
 	int restarted = 0;
 	char *hdr;
+	char *bg;
+	int scale = get_scale(p);
 
 	hdr = pane_attr_get(p, "heading");
 	if (hdr && !*hdr)
 		hdr = NULL;
 
 restart:
-	pane_clear(p, NULL);
-	y = 0;
+	bg = pane_attr_get(p, "background");
+	if (bg && strncmp(bg, "color:", 6) == 0) {
+		char *a;
+		asprintf(&a, "bg:%s", bg+6);
+		pane_clear(p, a);
+		free(a);
+	} else
+		pane_clear(p, NULL);
 	if (hdr) {
 		rl->header_lines = 0;
-		render_line(p, hdr, &y, 1, NULL, NULL, NULL);
+		render_line(p, hdr, &y, 1, scale, NULL, NULL, NULL);
 		rl->header_lines = y;
 	}
 	y -= rl->skip_lines;
@@ -713,7 +874,7 @@ restart:
 			int len = call_render_line_to_point(p, pm,
 							    m);
 			rl->cursor_line = y;
-			render_line(p, m->mdata ?: "", &y, 1, &p->cx, &p->cy, &len);
+			render_line(p, m->mdata ?: "", &y, 1, scale, &p->cx, &p->cy, &len);
 			if (p->cy < 0)
 				p->cx = -1;
 			if (!rl->do_wrap && p->cy >= 0 && p->cx < rl->prefix_len) {
@@ -744,7 +905,9 @@ restart:
 				}
 			}
 		} else
-			render_line(p, m->mdata?:"", &y, 1, NULL, NULL, NULL);
+			render_line(p, m->mdata?:"", &y, 1, scale, NULL, NULL, NULL);
+		if (m->mdata && m->mdata[strlen(m->mdata)-1]=='\f')
+			break;
 		if (!m2)
 			break;
 		m = m2;
@@ -842,6 +1005,7 @@ DEF_CMD(render_lines_move)
 	struct rl_data *rl = p->data;
 	struct mark *top;
 	int pagesize = rl->line_height;
+	int scale = get_scale(p);
 
 	top = vmark_first(p, rl->typenum);
 	if (!top)
@@ -870,7 +1034,7 @@ DEF_CMD(render_lines_move)
 				call_render_line(p, top);
 			if (top->mdata == NULL)
 				break;
-			render_line(p, top->mdata, &y, 0, NULL, NULL, NULL);
+			render_line(p, top->mdata, &y, 0, scale, NULL, NULL, NULL);
 			rl->skip_lines = y;
 		}
 	} else {
@@ -882,7 +1046,7 @@ DEF_CMD(render_lines_move)
 				call_render_line(p, top);
 			if (top->mdata == NULL)
 				break;
-			render_line(p, top->mdata, &y, 0, NULL, NULL, NULL);
+			render_line(p, top->mdata, &y, 0, scale, NULL, NULL, NULL);
 			if (rl->skip_lines + rpt < y) {
 				rl->skip_lines += rpt;
 				break;
@@ -913,6 +1077,7 @@ DEF_CMD(render_lines_set_cursor)
 	int y = rl->header_lines - rl->skip_lines;
 	int found = 0;
 	int cihx, cihy;
+	int scale = get_scale(p);
 
 	render_lines_other_move_func(ci);
 
@@ -926,7 +1091,7 @@ DEF_CMD(render_lines_set_cursor)
 		cihy = y;
 	while (y <= cihy && m && m->mdata) {
 		int cx = cihx, cy = cihy, o = -1;
-		render_line(p, m->mdata, &y, 0, &cx, &cy, &o);
+		render_line(p, m->mdata, &y, 0, scale, &cx, &cy, &o);
 		if (o >= 0) {
 			struct mark *m2 = call_render_line_offset(p, m, o);
 			if (m2) {
@@ -955,7 +1120,7 @@ DEF_CMD(render_lines_move_pos)
 	bot = vmark_last(p, rl->typenum);
 	if (top && bot &&
 	    mark_ordered(top, pm) &&
-	    mark_ordered(pm, bot))
+	    mark_ordered(pm, bot) && !mark_same_pane(p, pm, bot, NULL))
 		/* pos already displayed */
 		return 1;
 	find_lines(pm, ci->home);
@@ -978,6 +1143,7 @@ DEF_CMD(render_lines_move_line)
 	struct cmd_info ci2 = {0};
 	int target_x, target_y;
 	int o = -1;
+	int scale = get_scale(p);
 
 	rl->ignore_point = 0;
 
@@ -1017,7 +1183,7 @@ DEF_CMD(render_lines_move_line)
 			pane_damaged(p, DAMAGED_CONTENT);
 			return 1;
 		}
-		render_line(p, start->mdata, &y, 0, &target_x, &target_y, &o);
+		render_line(p, start->mdata, &y, 0, scale, &target_x, &target_y, &o);
 		/* 'o' is the distance from start-of-line of the target */
 		if (o >= 0) {
 			struct mark *m2 = call_render_line_offset(
@@ -1096,6 +1262,7 @@ DEF_CMD(render_lines_redraw)
 		free(m->mdata);
 		m->mdata = NULL;
 	}
+	pane_damaged(p, DAMAGED_SIZE);
 	return 1;
 }
 

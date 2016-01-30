@@ -374,7 +374,8 @@ struct mark *doc_new_mark(struct doc *d, int view)
 {
 	struct mark *ret;
 
-	if (view == MARK_POINT || view >= d->nviews || d->views[view].state != 1)
+	if (view == MARK_POINT || view >= d->nviews ||
+	    (view != MARK_UNGROUPED && d->views[view].state != 1))
 		return NULL;
 	ret = calloc(sizeof(*ret), 1);
 	ret->viewnum = view;
@@ -981,8 +982,10 @@ struct mark *do_vmark_at_or_before(struct doc *d, struct mark *m, int view)
 		/* Just use this, or nearby */
 		struct mark *vm2;
 		while ((vm2 = vmark_next(vm)) != NULL &&
-		       mark_same(d, vm, vm2))
+		       mark_same(d, vm, m))
 			vm = vm2;
+		while (vm && vm->seq > m->seq && !mark_same(d, vm, m))
+			vm = vmark_prev(vm);
 	}
 	return vm;
 }
@@ -1046,7 +1049,7 @@ static void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
 
 /* doc_notify_change is slower than point_notify_change, but only
  * requires a mark, not a point.
- * A second mark should only be given in the first mark is a point
+ * A second mark should only be given if the first mark is a point
  */
 void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 {
