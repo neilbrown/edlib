@@ -411,6 +411,14 @@ DEF_CMD(doc_handle)
 		pane_add_notify(ci->focus, dd->doc->home, "Notify:Replace");
 		return 1;
 	}
+	if (strcmp(ci->key, "Request:Notify:Recentre") == 0) {
+		pane_add_notify(ci->focus, dd->doc->home, "Notify:Recentre");
+		return 1;
+	}
+	if (strcmp(ci->key, "doc:Recentre") == 0) {
+		pane_notify(dd->doc->home, "Notify:Recentre", ci->mark, NULL);
+		return 1;
+	}
 
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = doc_attach(ci->focus, dd->doc);

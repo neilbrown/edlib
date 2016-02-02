@@ -143,7 +143,7 @@ class PresenterPane(edlib.Pane):
                     if globals is not None:
                         self.globals = globals
                         if 'background' in globals:
-                            self['background'] = globals['background']
+                            self['background'] = 'call:Present-BG:'+globals['background']
                         if 'scale' in globals:
                             self['scale'] = globals['scale']
                         self.call("render-lines:redraw")
@@ -256,7 +256,7 @@ class PresenterPane(edlib.Pane):
                     pm = None
                     continue
 
-            # pm is the start of this page, just need to check next
+            # pm is the start of a page, just need to check next is vald
             if pm['next-valid'] != 'yes':
                 next = self.find_page(pm)
                 if not next:
@@ -270,6 +270,7 @@ class PresenterPane(edlib.Pane):
                     n.to_mark(next)
                     next.unlink()
                     pm['next-valid'] = 'yes'
+                    pm = None
                 else:
                     if self.marks_same(next, pm.next()):
                         pm['next-valid'] = 'yes'
@@ -331,6 +332,7 @@ class PresenterPane(edlib.Pane):
         la=[]
         self.call("doc:vmark-get", self.attrview, 2, lambda key,**a: take('mark2', la, a))
         line = la[0]
+        line.to_mark(page)
 
         while not next or (line < next and not self.marks_same(line, next)):
             # There is a line there that we care about - unless EOF
@@ -341,32 +343,103 @@ class PresenterPane(edlib.Pane):
             self.annotate(this, l)
         line.unlink()
 
-    def get_local_attr(self, m, attr):
+    def line_reval(self, l, page):
+        while l.prev() is not None and l.prev()['type'] == 'unknown':
+            l2 = l.prev()
+            l.unlink()
+            l = l2
+
+        if l is None:
+            la=[]
+            self.call("doc:vmark-get", self.attrview, 2,
+                      lambda key,**a: take('mark2', la, a))
+            l = la[0]
+            l.to_mark(page)
+        # l is a good starting point.  parse until l.next or page.next
+        end = l.next()
+        if end is None:
+            end = page.next()
+        while not end or (l < end and not self.marks_same(l, end)):
+            # There is a line there that we care about - unless EOF
+            this = l.dup()
+            txt = self.get_line_at(l)
+            if not txt:
+                break
+            self.annotate(this, txt)
+        l.unlink()
+
+    def get_local_attr(self, m, attr, page):
         t = 'attr:' + attr
         l = self.prev_line(m)
         while l:
             if l['type'] == 'unknown':
-                # Ouch - need to re-evaluate.  Just assume still at start-of-line
-                self.annotate(l, self.print_line_at(l))
-                pass
+                self.line_reval(l, page)
+                l = self.prev_line(m)
+                continue
+
             if l['type'] == t:
                 return l['value']
             l = l.prev()
         return None
 
-    para_ptn =  ['# ', '## ', '> ', '- ', '    ', '!',  None, '']
-    para_type = ['H1', 'H2',  'I',  'L1', 'C',    'IM', 'BL', 'P']
+    paras = {
+        '# ' : 'H1',
+        '## ': 'H2',
+        '>'  : 'I',
+        '- ' : 'L1',
+        '!'  : 'IM',
+        ''   : 'P',
+        None : 'BL',
+        '    - ': 'L2',
+        '     ': {'L2':'L2c', 'L2c':'L2c', 'L1':'L1c', 'L1c': 'L1c', None: 'C'},
+        '    ' : {'L2':'L1c', 'L2c':'L1c', 'L1':'L1c', 'L1c': 'L1c', None: 'C'},
+        ' '    : {'L2':'L1c', 'L2c':'L1c', 'L1':'L1c', 'L1c': 'L1c', None: 'P'},
+        }
     defaults = {
-        'H1': 'center,large,family:serif',
-        'H2': 'right:20,fg:red,bold',
-        'I': 'left:5,family:Mufferaw',
+        'H1': 'center,30,family:serif',
+        'H2': 'center,20,fg:red,bold',
+        'I': 'left:50,family:Mufferaw',
         'C': 'family:mono',
-        'L1': 'fg:blue,left:40,family:sans',
+        'L1': 'left:20,family:sans,bullet:#,tab:20',
+        'L1c': 'left:20,family:sans,tab:20',
+        'L2': 'left:40,family:sans,bullet:#,tab:20',
+        'L2c': 'left:40,family:sans,tab:20',
         'P': 'left:30,family:sans,space-below:20',
         'BL': '3',
+        'bullet': 'fg:red',
+        'bold': 'bold',
+        'italic':'italic'
         }
 
+    def get_attr(self, here, mode, page):
+        v = self.get_local_attr(here, mode, page)
+        if not v and mode in self.globals:
+            v = self.globals[mode]
+        if not v and mode in self.defaults:
+            v = self.defaults[mode]
+        if not v:
+            v = ""
+        return v
+
     def handle(self, key, **a):
+        if key == "Present-BG":
+            cmds = a['str'].split(',')
+            f = a['focus']
+            for c in cmds:
+                if c[:6] == 'color:':
+                    f.call('pane-clear', c[6:])
+                if c[:14] == "image-stretch:":
+                    f.call('image-stretch-display', self.w, self.h, c[14:], (0,0))
+                if c[:6] == "image:":
+                    f.call('image-display', self.w, self.h, c[6:], (0,0))
+                if c[:8] == "overlay:":
+                    f.call('image-display', self.w/6, self.h*3/4, c[8:], (self.w*5/6, self.h/4))
+                if c == "page-local":
+                    page = self.find_pages(a['mark'])
+                    cm = self.get_local_attr(a['mark'], "background", page)
+                    if cm:
+                        cmds.extend(cm.split(','))
+            return 1
         if key == "render-line-prev":
             # Go to start of page
             here = a['mark']
@@ -417,30 +490,62 @@ class PresenterPane(edlib.Pane):
                 cb("callback", self)
             else:
                 mode = 'P'
-                for n in range(len(self.para_ptn)):
-                    prefix = self.para_ptn[n]
-                    if prefix == None and line == "":
-                        mode = self.para_type[n]
+                prefix = None
+                for pf in self.paras:
+                    if pf == None and line == "":
+                        mode = self.paras[pf]
                         break
-                    if prefix is not None and prefix == line[0:len(prefix)]:
-                        mode = self.para_type[n]
-                        line = line[len(prefix):]
-                        break
-                v = self.get_local_attr(here, mode)
-                if not v and mode in self.globals:
-                    v = self.globals[mode]
-                if not v and mode in self.defaults:
-                    v = self.defaults[mode]
-                if not v:
-                    v = ""
+                    if (pf and (prefix is None or len(pf) > len(prefix)) and
+                        pf == line[0:len(pf)]):
+                        mode = self.paras[pf]
+                        prefix = pf
+
+                if prefix:
+                    line = line[len(prefix):]
+                if type(mode) == dict:
+                    # look up type of previous line.
+                    pmode = None
+                    if here.prev() is not None:
+                        pmode = here.prev()['mode']
+                    if pmode in mode:
+                        mode = mode[pmode]
+                    else:
+                        mode = mode[None]
+                here['mode'] = mode
+                v = self.get_attr(here, mode, page)
 
                 if mode == 'IM':
-                    cb("callback", self, "<image:"+line+",width=200,height=100>")
+                    width=200; height=100
+                    if len(line) > 1 and line[0].isdigit():
+                        try:
+                            c = line.index(':')
+                            width = int(line[:c])
+                        except:
+                            c = -1
+
+                        line = line[c+1:]
+                        try:
+                            c = line.index(':')
+                            height = int(line[:c])
+                        except:
+                            c = -1
+                        line = line[c+1:]
+
+                    cb("callback", self, "<image:"+line+",width:%d,height:%d>"%(width,height))
                     return 1
 
                 line = re.sub("\*([A-Za-z0-9][^*<]*)\*", "<italic>\\1</>", line)
-                line = re.sub("`([A-Za-z0-9][^*<]*)`", "<family:mono>\\1</>", line)
-                line = "<"+v+">"+ line + "</>"
+                line = re.sub("`([/A-Za-z0-9][^*<]*)`", "<family:mono>\\1</>", line)
+                b = re.match(".*,bullet:([^:,]*)", v)
+                if b:
+                    vb = self.get_attr(here, 'bullet', page)
+                    if vb:
+                        bl = "<%s>%s</>" % (vb, b.group(1))
+                    else:
+                        bl = b.group(1)
+                    line = bl +"<"+v+">"+ line + "</>"
+                else:
+                    line = "<"+v+">"+ line + "</>"
                 line += '\n'
                 if end and (here > end or self.marks_same(here,end)):
                     line += '\f'
@@ -476,6 +581,10 @@ class PresenterPane(edlib.Pane):
                 l = l.next()
                 if l:
                     l['type'] = 'unknown'
+            return 1
+
+        if key == "Notify:Recentre":
+            self.call("Move-View-Pos", a['mark'])
             return 1
 
         if key == "Close":
@@ -528,10 +637,62 @@ def present_attach(key, focus, comm2, **a):
     p = PresenterPane(focus)
     p['render-wrap'] = 'no'
     p['background'] = 'color:yellow'
+    p['hide-cursor'] = 'yes'
 
     p.call("Request:Notify:Replace")
+    p.call("Request:Notify:Recentre")
     p = p.render_attach("lines")
     comm2('callback', p)
     return 1
 
+def get_line_at(focus, m):
+    # call render-line at m
+    line = []
+    focus.call("render-line", m, -1, lambda key, **a: take('str', line, a, ''))
+    return line[0]
+def present_page(key, focus, mark, **a):
+    # Assumming 'mark' is either start-of-file (if 'sof') or the start of
+    # a page, find the start of the next page.  Return an untyped mark
+    # or None if there is no next page.
+    # A page starts with some ":attr:" lines and then a "# " line.
+    # If not 'sof' we first need to skip over the start of 'this' page.
+    if a['numeric'] <= 0:
+        return 0
+    skipping = True
+    start = mark
+    m = start.dup(1)
+    maybe = None
+
+    while True:
+        if not maybe and not skipping:
+            maybe = m.dup()
+        l = get_line_at(focus, m)
+        if not l:
+            # End of document
+            if maybe:
+                maybe.unlink()
+            m.unlink()
+            return 1
+        if l[0] == ':':
+            # attribute - doesn't advance possible start
+            pass
+        elif l[0:2] == "# ":
+            # level-1 heading. This is it if not skipping
+            if skipping:
+                skipping = False
+            else:
+                m.unlink()
+                mark.to_mark(maybe)
+                maybe.unlink()
+                focus.call("doc:Recentre", mark)
+                return 1
+        else:
+            # not part of start-of-page
+            skipping = False
+            if maybe:
+                maybe.unlink()
+            maybe = None
+
+
 editor.call("global-set-command", pane, "render-present-attach", present_attach)
+editor.call("global-set-command", pane, "Presenter-page", present_page)

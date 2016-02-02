@@ -79,7 +79,7 @@ DEF_CMD(messageline_handle)
 			else
 				pane_resize(ci->home, 0, ci->home->parent->h - mli->height,
 					    ci->home->parent->w, mli->height);
-			pane_clear(mli->line, "bg:cyan");
+			pane_clear(mli->line, "bg:white");
 			if (mli->message)
 				pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
 					 0, 0 + mli->ascent);

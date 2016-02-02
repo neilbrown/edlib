@@ -15,6 +15,18 @@ import thread
 import gobject
 import glib
 
+def take(name, place, args, default=None):
+    if name in args:
+        place.append(args[name])
+    else:
+        place.append(default)
+    return 1
+
+def attach(p, mode):
+    pl=[]
+    p.call("attach-%s"%mode, lambda key,**a:take('focus', pl, a))
+    return pl[0]
+
 class EdDisplay(gtk.Window):
     def __init__(self, home):
         gtk.Window.__init__(self)
@@ -30,6 +42,26 @@ class EdDisplay(gtk.Window):
 
     def handle(self, key, **a):
 
+        if key == "M-Chr--" or key == "M-Chr-_":
+            self.pane['scale'] = "%d"%(int(self.pane['scale']) * 100/105)
+            return 1
+        if key == "M-Chr-=" or key == "M-Chr-+":
+            self.pane['scale'] = "%d"%(int(self.pane['scale']) * 105/100)
+            return 1
+
+        if key == "DisplayOP" and a['str'] == "new":
+            pl=[]
+            disp = a['home']
+            while disp.parent:
+                disp = disp.parent
+            disp = EdDisplay(disp)
+            p = attach(disp.pane, "input");
+            p = attach(p, "messageline");
+            p = attach(p, "global-keymap")
+            p.call("global-set-keymap", "mode-emacs");
+            p = attach(p, "tile")
+            return 1
+
         if key == "Window:fullscreen":
             if a['numeric'] > 0:
                 self.fullscreen()
@@ -44,7 +76,6 @@ class EdDisplay(gtk.Window):
         if key == "pane-clear":
             f = a["focus"]
             if "str2" in a:
-                print "CLEAR", a['str2']
                 fg, bg = self.get_colours(a["str2"])
             else:
                 fg, bg = self.get_colours("bg:white")
@@ -117,7 +148,7 @@ class EdDisplay(gtk.Window):
                     if f.parent.focus != f:
                         extra = False
                     f = f.parent
-                print x,cx,y,cy,cw,ch,extra,a['numeric'],len(a['str'])
+                #print x,cx,y,cy,cw,ch,extra,a['numeric'],len(a['str'])
                 if extra:
                     pm.draw_rectangle(self.gc, True, x+cx, y-ascent+cy,
                                       cw, ch);
@@ -159,6 +190,28 @@ class EdDisplay(gtk.Window):
                 w2 = pb.get_width() * h / pb.get_height()
                 x += (w-w2)/2
                 w = w2
+            scale = pb.scale_simple(w, h, gtk.gdk.INTERP_HYPER)
+            pm = self.get_pixmap(f)
+            pm.draw_pixbuf(self.gc, scale, 0, 0, x, y)
+            return True
+
+        if key == "image-stretch-display":
+            # 'str' is a file name of an image
+            # xy is location for top/left
+            # numeric/extra are max width/height
+            # I should use a pane-per-image but I'm in a rush
+            fl = a['str']
+            f = a['focus']
+            w = a['numeric']
+            h = a['extra']
+            if h == 0:
+                h = w
+            (x,y) = a['xy']
+            try:
+                pb = gtk.gdk.pixbuf_new_from_file(fl)
+            except:
+                pb = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
+                pb.fill(0xff000000)
             scale = pb.scale_simple(w, h, gtk.gdk.INTERP_HYPER)
             pm = self.get_pixmap(f)
             pm.draw_pixbuf(self.gc, scale, 0, 0, x, y)
@@ -359,12 +412,17 @@ class EdDisplay(gtk.Window):
         t = self.text
         if not self.bg:
             self.bg = t.window.new_gc()
-        self.bg.set_foreground(colour)
+        try:
+            self.bg.set_foreground(colour)
+        except:
+            print 'error colour is', colour, type(colour)
+            pass
         (w,h) = pm.get_size()
         pm.draw_rectangle(self.bg, True, 0, 0, w, h)
 
 def new_display(key, home, comm2, **a):
     disp = EdDisplay(home)
+    disp.pane['scale'] = "1000"
     comm2('callback', disp.pane)
     return 1
 

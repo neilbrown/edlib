@@ -578,6 +578,10 @@ static int text_update_following_after_change(struct text *t, struct doc_ref *po
 		*pos = *epos;
 		return 1;
 	}
+	/* HACK? */
+	if (text_ref_same(t, pos, epos))
+		/* KEep going*/
+		return 1;
 	/* This is beyond the change point and no deletion or split
 	 * happened here, so all done.
 	 */

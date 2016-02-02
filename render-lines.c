@@ -222,6 +222,9 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w, int *cent
 			if ((c=strstr(buf_final(&attr), ",space-below:")) != NULL) {
 				below = atoi(c+13) * scale/1000;
 			}
+			if ((c=strstr(buf_final(&attr), ",tab:")) != NULL) {
+				*w = atoi(c+5) * scale / 1000;
+			}
 			attr_found = 1;
 			update_line_height_attr(p, h, a, w, buf_final(&attr), "", scale);
 		} else {
@@ -310,6 +313,7 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 	int ret = 0;
 	int twidth = 0;
 	int center = 0;
+	int margin;
 
 	/* Temporary hack (I hope) */
 	if (strncmp(line, "<image", 6) == 0) {
@@ -334,6 +338,7 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 		x += center;
 	if (center < 0)
 		x = p->w - x - twidth + center;
+	margin = x;
 	rl->line_height = line_height;
 	buf_init(&attr);
 	buf_append(&attr, ' '); attr.len = 0;
@@ -449,10 +454,17 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 					line += 1;
 
 				if (a[0] != '/') {
+					int ln = attr.len;
+					char *tb;
 					buf_concat_len(&attr, a, line-a);
 					/* mark location with ",," */
 					attr.b[attr.len-1] = ',';
 					buf_append(&attr, ',');
+					tb = strstr(buf_final(&attr)+ln,
+						    "tab:");
+					if (tb) {
+						x = margin + atoi(tb+4) * scale / 1000;
+					}
 				} else {
 					/* strip back to ",," */
 					if (attr.len > 0)
@@ -673,8 +685,12 @@ static int get_scale(struct pane *p)
 	if (!sc)
 		return 1000;
 
-	if (sscanf(sc, "x:%d,y:%d", &x, &y) != 2)
+	if (sscanf(sc, "x:%d,y:%d", &x, &y) != 2) {
+		scale = atoi(sc);
+		if (scale > 3)
+			return scale;
 		return 1000;
+	}
 
 	/* 'scale' is pixels per point times 1000.
 	 * ":scale:x" is points across pane, so scale = p->w/x*1000
@@ -837,18 +853,37 @@ static void render(struct mark *pm, struct pane *p)
 	char *hdr;
 	char *bg;
 	int scale = get_scale(p);
+	int hide_cursor = 0;
 
 	hdr = pane_attr_get(p, "heading");
 	if (hdr && !*hdr)
 		hdr = NULL;
+	bg = pane_attr_get(p, "hide-cursor");
+	if (bg && strcmp(bg, "yes") == 0)
+		hide_cursor = 1;
 
 restart:
+	y = 0;
 	bg = pane_attr_get(p, "background");
 	if (bg && strncmp(bg, "color:", 6) == 0) {
 		char *a;
 		asprintf(&a, "bg:%s", bg+6);
 		pane_clear(p, a);
 		free(a);
+	} else if (bg && strncmp(bg, "image:", 6) == 0) {
+		pane_clear(p, "bg:black");
+		call_xy7("image-display", p, p->w, p->h, bg+6, NULL, 0, 0, NULL, NULL);
+	} else if (bg && strncmp(bg, "image-stretch:", 14) == 0) {
+		pane_clear(p, "bg:black");
+		call_xy7("image-stretch-display", p, p->w, p->h, bg+14, NULL, 0, 0, NULL, NULL);
+	} else if (bg && strncmp(bg, "call:", 5) == 0) {
+		char *f, *a;
+		f = strdup(bg+5);
+		a = strchr(f, ':');
+		if (a)
+			*a++ = 0;
+		call5(f, p, 0, pm, a, 0);
+		free(f);
 	} else
 		pane_clear(p, NULL);
 	if (hdr) {
@@ -868,7 +903,7 @@ restart:
 			call_render_line(p, m);
 		}
 		m2 = vmark_next(m);
-		if (p->cx <= 0 &&
+		if (!hide_cursor && p->cx <= 0 &&
 		    mark_ordered_or_same_pane(p, m, pm) &&
 		    (!m2 || mark_ordered_or_same_pane(p, pm, m2))) {
 			int len = call_render_line_to_point(p, pm,
@@ -1006,6 +1041,7 @@ DEF_CMD(render_lines_move)
 	struct mark *top;
 	int pagesize = rl->line_height;
 	int scale = get_scale(p);
+	int ret;
 
 	top = vmark_first(p, rl->typenum);
 	if (!top)
@@ -1013,6 +1049,14 @@ DEF_CMD(render_lines_move)
 	if (strcmp(ci->key, "Move-View-Large") == 0)
 		pagesize = p->h - 2 * rl->line_height;
 	rpt *= pagesize;
+
+	ret = call3("Presenter-page", p, rpt, ci->mark);
+	if (ret) {
+		rl->ignore_point = 0;
+		find_lines(ci->mark, p);
+		pane_damaged(p, DAMAGED_CONTENT);
+		return 10;
+	}
 
 	rl->ignore_point = 1;
 
@@ -1266,6 +1310,15 @@ DEF_CMD(render_lines_redraw)
 	return 1;
 }
 
+/* This hack doesn't belong here */
+DEF_CMD(render_lines_display)
+{
+	if (ci->str && strcmp(ci->str, "refresh") == 0) {
+		call3("doc:Recentre", ci->focus, 0, ci->mark);
+	}
+	return 0;
+}
+
 static struct map *rl_map;
 
 DEF_LOOKUP_CMD(render_lines_handle, rl_map)
@@ -1295,6 +1348,8 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "render-lines:redraw", &render_lines_redraw);
 
 	key_add(rl_map, "Notify:Replace", &render_lines_notify_replace);
+
+	key_add(rl_map, "Display", &render_lines_display);
 }
 
 REDEF_CMD(render_lines_attach)

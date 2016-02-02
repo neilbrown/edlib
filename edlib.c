@@ -129,9 +129,8 @@ int main(int argc, char *argv[])
 			global = pane_attach(global, "global-keymap", NULL, NULL);
 			call5("global-set-keymap", global, 0, NULL, "mode-emacs", 0);
 			b = pane_attach(global, "tile", NULL, NULL);
-			p = doc_from_text(b, "*Welcome*", WelcomeText);
+			p = doc_attach_view(b, pane2ed(b)->docs->home, NULL);
 		}
-
 		pane_refresh(&ed->root);
 		while (call3("event:run", vroot, 0, NULL) == 1)
 			;

@@ -82,7 +82,7 @@ REDEF_CMD(emacs_move)
 	if (!ret)
 		return 0;
 
-	if (strcmp(mv->type, "Move-View-Large") == 0 && old_x >= 0) {
+	if (strcmp(mv->type, "Move-View-Large") == 0 && old_x >= 0 && ret != 10) {
 		/* Might have lost the cursor - place it at top or
 		 * bottom of view, but make sure it moves only in the
 		 * right direction.
@@ -167,6 +167,7 @@ static struct str_command {
 	{CMD(emacs_str), "WindowOP", "close-others", "emCX-Chr-1"},
 	{CMD(emacs_str), "WindowOP", "split-y", "emCX-Chr-2"},
 	{CMD(emacs_str), "WindowOP", "split-x", "emCX-Chr-3"},
+	{CMD(emacs_str), "DisplayOP", "new", "emCX5-Chr-2"},
 	{CMD(emacs_str), "WindowOP", "close", "emCX-Chr-0"},
 	{CMD(emacs_str), "Display", "refresh", "C-Chr-L"},
 	{CMD(emacs_str), "Abort", NULL, "C-Chr-G"},
@@ -597,10 +598,12 @@ static void emacs_init(void)
 	unsigned i;
 	struct command *cx_cmd = key_register_prefix("emCX-");
 	struct command *cx4_cmd = key_register_prefix("emCX4-");
+	struct command *cx5_cmd = key_register_prefix("emCX5-");
 	struct map *m = key_alloc();
 
 	key_add(m, "C-Chr-X", cx_cmd);
 	key_add(m, "emCX-Chr-4", cx4_cmd);
+	key_add(m, "emCX-Chr-5", cx5_cmd);
 	key_add(m, "ESC", &emacs_meta);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
