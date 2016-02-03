@@ -863,6 +863,7 @@ static void render(struct mark *pm, struct pane *p)
 		hide_cursor = 1;
 
 restart:
+	m = vmark_first(p, rl->typenum);
 	y = 0;
 	bg = pane_attr_get(p, "background");
 	if (bg && strncmp(bg, "color:", 6) == 0) {
@@ -882,7 +883,7 @@ restart:
 		a = strchr(f, ':');
 		if (a)
 			*a++ = 0;
-		call5(f, p, 0, pm, a, 0);
+		call5(f, p, 0, m, a, 0);
 		free(f);
 	} else
 		pane_clear(p, NULL);
@@ -892,7 +893,6 @@ restart:
 		rl->header_lines = y;
 	}
 	y -= rl->skip_lines;
-	m = vmark_first(p, rl->typenum);
 
 	p->cx = p->cy = -1;
 	rl->cursor_line = 0;

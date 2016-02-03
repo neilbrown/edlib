@@ -421,6 +421,14 @@ class PresenterPane(edlib.Pane):
             v = ""
         return v
 
+    def pathto(self, f):
+        if f[0] == '/':
+            return f
+        path = self['filename']
+        if not path:
+            return f
+        return os.path.dirname(path)+'/'+f
+
     def handle(self, key, **a):
         if key == "Present-BG":
             cmds = a['str'].split(',')
@@ -429,14 +437,18 @@ class PresenterPane(edlib.Pane):
                 if c[:6] == 'color:':
                     f.call('pane-clear', c[6:])
                 if c[:14] == "image-stretch:":
-                    f.call('image-stretch-display', self.w, self.h, c[14:], (0,0))
+                    f.call('image-stretch-display', self.w, self.h, self.pathto(c[14:]), (0,0))
                 if c[:6] == "image:":
-                    f.call('image-display', self.w, self.h, c[6:], (0,0))
+                    f.call('image-display', self.w, self.h, self.pathto(c[6:]), (0,0))
                 if c[:8] == "overlay:":
-                    f.call('image-display', self.w/6, self.h*3/4, c[8:], (self.w*5/6, self.h/4))
+                    f.call('image-display', self.w/6, self.h*3/4, self.pathto(c[8:]), (self.w*5/6, self.h/4))
+                if c[:9] == "overlayC:":
+                    f.call('image-display', self.w/6, self.h*3/4, self.pathto(c[9:]), (self.w*5/12, self.h/8))
                 if c == "page-local":
                     page = self.find_pages(a['mark'])
-                    cm = self.get_local_attr(a['mark'], "background", page)
+                    self.clean_lines(page)
+                    self.mark_lines(page)
+                    cm = self.get_local_attr(a['mark'], "background", a['mark'])
                     if cm:
                         cmds.extend(cm.split(','))
             return 1
@@ -531,7 +543,7 @@ class PresenterPane(edlib.Pane):
                             c = -1
                         line = line[c+1:]
 
-                    cb("callback", self, "<image:"+line+",width:%d,height:%d>"%(width,height))
+                    cb("callback", self, "<image:"+self.pathto(line)+",width:%d,height:%d>"%(width,height))
                     return 1
 
                 line = re.sub("\*([A-Za-z0-9][^*<]*)\*", "<italic>\\1</>", line)

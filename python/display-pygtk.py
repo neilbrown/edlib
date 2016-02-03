@@ -46,6 +46,8 @@ class EdDisplay(gtk.Window):
             self.pane['scale'] = "%d"%(int(self.pane['scale']) * 100/105)
             return 1
         if key == "M-Chr-=" or key == "M-Chr-+":
+            if self.pane['scale'] is None:
+                self.pane['scale'] = "1000"
             self.pane['scale'] = "%d"%(int(self.pane['scale']) * 105/100)
             return 1
 

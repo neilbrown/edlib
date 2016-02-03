@@ -649,7 +649,7 @@ static PyObject *Pane_get_item(Pane *self, PyObject *key)
 		return NULL;
 	}
 	k = PyString_AsString(key);
-	v = attr_get_str(self->pane->attrs, k, -1);
+	v = pane_attr_get(self->pane, k);
 	if (v)
 		return Py_BuildValue("s", v);
 	Py_INCREF(Py_None);

@@ -17,14 +17,10 @@
 #include "core.h"
 
 static char WelcomeText[] =
-	":H1:center,bg:green\n"
-	"\n"
-	"# heading\n"
-	"line\n"
 	"\n"
 	"Welcome to 'edlib' - the beginning of what one day might be an editor\n"
 	"\n"
-	"# Current functionality includes:\n"
+	"Current functionality includes:\n"
 	"  splitting and closing windows (C-x 0,1,2,3)\n"
 	"  Resize current window (C-x },{,^)\n"
 	"  Move among windows (C-x o,O  or mouse click)\n"
@@ -116,7 +112,7 @@ int main(int argc, char *argv[])
 		key_handle(&ci);
 
 		/* New window.. */
-		if (gtk)  {
+		if (gtk && 0)  {
 			memset(&ci, 0, sizeof(ci));
 			ci.home = ci.focus = vroot;
 			ci.key = "display-pygtk";
