@@ -16,7 +16,7 @@
 
 #include "core.h"
 
-char WelcomeText[] =
+static char WelcomeText[] =
 	"\n"
 	"Welcome to 'edlib' - the beginning of what one day might be an editor\n"
 	"\n"
