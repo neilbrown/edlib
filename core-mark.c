@@ -437,6 +437,8 @@ void mark_forward_over(struct mark *m, struct mark *m2)
 	seq = m->seq;
 	m->seq = m2->seq;
 	m2->seq = seq;
+
+	m->ref = m2->ref;
 }
 
 void mark_backward_over(struct mark *m, struct mark *mp)
@@ -470,6 +472,8 @@ void mark_backward_over(struct mark *m, struct mark *mp)
 	seq = m->seq;
 	m->seq = mp->seq;
 	mp->seq = seq;
+
+	m->ref = mp->ref;
 }
 
 wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci)
