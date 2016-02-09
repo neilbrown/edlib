@@ -1050,7 +1050,7 @@ static void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
 
 /* doc_notify_change is slower than point_notify_change, but only
  * requires a mark, not a point.
- * A second mark should only be given in the first mark is a point
+ * A second mark should only be given if the first mark is a point
  */
 void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 {

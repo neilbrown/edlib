@@ -437,7 +437,7 @@ static struct mark *call_render_line_prev(struct pane *p,
 		return NULL;
 	}
 	/* if n>0 we can fail because start-of-file was found before
-	 * and newline.  In that case ret == -2, and we return NULL.
+	 * any newline.  In that case ret == -2, and we return NULL.
 	 */
 	if (found)
 		*found = (ret != -1);
