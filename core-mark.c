@@ -959,6 +959,10 @@ struct mark *do_vmark_at_point(struct doc *d, struct mark *pt, int view)
 
 struct mark *do_vmark_at_or_before(struct doc *d, struct mark *m, int view)
 {
+	/* First the last 'view' mark that is not later in the document than 'm'.
+	 * It might be later in the mark list, but not in the document.
+	 * Return NULL if all 'view' marks are after 'm' in the document.
+	 */
 	struct mark *vm = m;
 
 	/* might need to hunt along 'all' list for something suitable */
@@ -969,6 +973,12 @@ struct mark *do_vmark_at_or_before(struct doc *d, struct mark *m, int view)
 		while (vm && vm->viewnum != MARK_POINT && vm->viewnum != view)
 			vm = doc_prev_mark_all(vm);
 	}
+	if (!vm)
+		/* No 'view' marks at all! */
+		return vm;
+	/* 'vm' is either a point or a 'view' mark.  It is probably after 'm',
+	 * but if it is before, then no 'view' mark is after.
+	 */
 	if (vm->viewnum == MARK_POINT) {
 		struct point_links *lnk = vm->mdata;
 		struct tlist_head *tl = &lnk->lists[view];
@@ -985,8 +995,11 @@ struct mark *do_vmark_at_or_before(struct doc *d, struct mark *m, int view)
 		/* Just use this, or nearby */
 		struct mark *vm2;
 		while ((vm2 = vmark_next(vm)) != NULL &&
-		       mark_same(d, vm, vm2))
+		       mark_same(d, vm, m))
 			vm = vm2;
+		while (vm && vm->seq > m->seq && !mark_same(d, vm, m))
+			vm = vmark_prev(vm);
+
 	}
 	return vm;
 }
