@@ -1086,7 +1086,7 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 	}
 	for (i = 1; i < argc; i++) {
 		a = PyTuple_GetItem(args, i);
-		if (Py_TYPE(a) == &PaneType) {
+		if (PyObject_TypeCheck(a, &PaneType)) {
 			if (ci->focus == NULL)
 				ci->focus = ((Pane*)a)->pane;
 			else if (ci->home == NULL)
@@ -1095,7 +1095,7 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 				PyErr_SetString(PyExc_TypeError, "Only 2 Pane args permitted");
 				return 0;
 			}
-		} else if (Py_TYPE(a) == &MarkType) {
+		} else if (PyObject_TypeCheck(a, &MarkType)) {
 			if (ci->mark == NULL)
 				ci->mark = ((Mark*)a)->mark;
 			else if (ci->mark2 == NULL)
@@ -1145,7 +1145,7 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 				PyErr_SetString(PyExc_TypeError, "Only one tuple permitted");
 				return 0;
 			}
-		} else if (Py_TYPE(a) == &CommType) {
+		} else if (PyObject_TypeCheck(a, &CommType)) {
 			Comm *c = (Comm*)a;
 			if (ci->comm2 == NULL)
 				ci->comm2 = c->comm;
