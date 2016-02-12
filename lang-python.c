@@ -307,7 +307,7 @@ static PyObject *Pane_call(Pane *self, PyObject *args, PyObject *kwds)
 		return Py_None;
 	}
 	if (rv < 0) {
-		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
+		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
 		return NULL;
 	}
 	return PyInt_FromLong(rv);
@@ -330,7 +330,7 @@ static PyObject *Pane_call_focus(Pane *self, PyObject *args, PyObject *kwds)
 		return Py_None;
 	}
 	if (rv < 0) {
-		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
+		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
 		return NULL;
 	}
 	return PyInt_FromLong(rv);
@@ -348,7 +348,7 @@ static PyObject *Pane_call_xy(Pane *self, PyObject *args, PyObject *kwds)
 	if (rv <= 0)
 		return NULL;
 	if (rv != 2) {
-		PyErr_SetString(Edlib_CommandFailed, "x,y not given with call_xy");
+		PyErr_SetString(PyExc_TypeError, "x,y not given with call_xy");
 		return NULL;
 	}
 	rv = key_handle_xy(&ci);
@@ -358,7 +358,7 @@ static PyObject *Pane_call_xy(Pane *self, PyObject *args, PyObject *kwds)
 		return Py_None;
 	}
 	if (rv < 0) {
-		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
+		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
 		return NULL;
 	}
 	return PyInt_FromLong(rv);
@@ -382,7 +382,7 @@ static PyObject *Pane_call_filter(Pane *self, PyObject *args, PyObject *kwds)
 		return Py_None;
 	}
 	if (rv < 0) {
-		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
+		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
 		return NULL;
 	}
 	return PyInt_FromLong(rv);
@@ -994,7 +994,7 @@ static PyObject *Comm_call(Comm *c, PyObject *args, PyObject *kwds)
 		return Py_None;
 	}
 	if (rv < 0) {
-		PyErr_SetString(Edlib_CommandFailed, ci.str ? ci.str : "Command Failed");
+		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
 		return NULL;
 	}
 	return PyInt_FromLong(rv);
