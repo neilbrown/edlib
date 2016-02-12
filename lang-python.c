@@ -731,15 +731,30 @@ static int mark_setdata(Mark *m, PyObject *v, void *x)
 PyObject *mark_compare(Mark *a, Mark *b, int op)
 {
 	int ret = 0;
-	switch(op) {
-	case Py_LT: ret = mark_ordered(a->mark, b->mark); break;
-	case Py_LE: ret = mark_ordered(a->mark, b->mark); break;
-	case Py_GT: ret = mark_ordered(a->mark, b->mark); break;
-	case Py_GE: ret = mark_ordered(a->mark, b->mark); break;
-	case Py_EQ: ret = mark_ordered(a->mark, b->mark); break;
-	case Py_NE: ret = mark_ordered(a->mark, b->mark); break;
+	PyObject *rv;
+
+	if ((PyObject*)a == Py_None)
+		ret = (op == Py_LT || op == Py_LE || op == Py_NE);
+	else if ((PyObject*)b == Py_None)
+		ret = (op == Py_GT || op == Py_GE || op == Py_EQ);
+	else if (PyObject_TypeCheck(a, &MarkType) == 0 ||
+		 PyObject_TypeCheck(b, &MarkType) == 0) {
+		PyErr_SetString(PyExc_TypeError, "Mark compared with non-Mark");
+		return NULL;
+	} else {
+		int cmp = a->mark->seq - b->mark->seq;
+		switch(op) {
+		case Py_LT: ret = cmp <  0; break;
+		case Py_LE: ret = cmp <= 0; break;
+		case Py_GT: ret = cmp >  0; break;
+		case Py_GE: ret = cmp >= 0; break;
+		case Py_EQ: ret = cmp == 0; break;
+		case Py_NE: ret = cmp != 0; break;
+		}
 	}
-	return ret ? Py_True : Py_False;
+	rv = ret ? Py_True : Py_False;
+	Py_INCREF(rv);
+	return rv;
 }
 
 static PyGetSetDef mark_getseters[] = {
