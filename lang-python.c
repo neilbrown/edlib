@@ -429,6 +429,21 @@ static PyObject *Pane_rel(Pane *self, PyObject *args)
 	return Py_BuildValue("ii", x, y);
 }
 
+static PyObject *Pane_render_attach(Pane *self, PyObject *args)
+{
+	char *type = NULL;
+	struct pane *p;
+	int ret = PyArg_ParseTuple(args, "s", &type);
+	if (ret <= 0)
+		return NULL;
+	p = render_attach(type, self->pane);
+	if (!p) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	return Pane_Frompane(p);
+}
+
 static PyObject *Pane_close(Pane *self)
 {
 	struct pane *p = self->pane;
@@ -477,6 +492,8 @@ static PyMethodDef pane_methods[] = {
 	 "Convert absolute co-orders to pane-relative"},
 	{"add_notify", (PyCFunction)Pane_add_notify, METH_VARARGS,
 	 "Add notified for an event on some other pane"},
+	{"render_attach", (PyCFunction)Pane_render_attach, METH_VARARGS,
+	 "Attach a renderer to a pane"},
 	{NULL}
 };
 
