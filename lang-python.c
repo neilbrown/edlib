@@ -649,6 +649,52 @@ static PyGetSetDef pane_getseters[] = {
     {NULL}  /* Sentinel */
 };
 
+static PyObject *Pane_get_item(Pane *self, PyObject *key)
+{
+	char *k, *v;
+	if (!self->pane) {
+		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
+		return NULL;
+	}
+	if (!PyString_Check(key)) {
+		PyErr_SetString(PyExc_TypeError, "Key must be a string");
+		return NULL;
+	}
+	k = PyString_AsString(key);
+	v = pane_attr_get(self->pane, k);
+	if (v)
+		return Py_BuildValue("s", v);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static int Pane_set_item(Pane *self, PyObject *key, PyObject *val)
+{
+	char *k, *v;
+	if (!self->pane) {
+		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
+		return -1;
+	}
+	if (!PyString_Check(key)) {
+		PyErr_SetString(PyExc_TypeError, "Key must be a string");
+		return -1;
+	}
+	if (!PyString_Check(val)) {
+		PyErr_SetString(PyExc_TypeError, "value must be a string");
+		return -1;
+	}
+	k = PyString_AsString(key);
+	v = PyString_AsString(val);
+	attr_set_str(&self->pane->attrs, k, v, -1);
+	return 0;
+}
+
+static PyMappingMethods pane_mapping = {
+	.mp_length = NULL,
+	.mp_subscript = (binaryfunc)Pane_get_item,
+	.mp_ass_subscript = (objobjargproc)Pane_set_item,
+};
+
 static PyTypeObject PaneType = {
     PyObject_HEAD_INIT(NULL)
     0,				/*ob_size*/
@@ -663,7 +709,7 @@ static PyTypeObject PaneType = {
     (reprfunc)pane_repr,	/*tp_repr*/
     0,				/*tp_as_number*/
     0,				/*tp_as_sequence*/
-    0,				/*tp_as_mapping*/
+    &pane_mapping,		/*tp_as_mapping*/
     (hashfunc)pane_hash,	/*tp_hash */
     0,				/*tp_call*/
     0,				/*tp_str*/
