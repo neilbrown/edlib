@@ -51,6 +51,7 @@ static PyTypeObject PaneType;
 typedef struct {
 	PyObject_HEAD
 	struct mark	*mark;
+	int		released;
 } Mark;
 static PyTypeObject MarkType;
 
@@ -85,7 +86,13 @@ static inline PyObject *Pane_Frompane(struct pane *p)
 
 static inline PyObject *Mark_Frommark(struct mark *m)
 {
-	Mark *mark = (Mark *)PyObject_CallObject((PyObject*)&MarkType, NULL);
+	Mark *mark;
+
+	if (m->mtype == &MarkType) {
+		Py_INCREF(m->mdata);
+		return m->mdata;
+	}
+	mark = (Mark *)PyObject_CallObject((PyObject*)&MarkType, NULL);
 	mark->mark = m;
 	return (PyObject*)mark;
 }
@@ -690,44 +697,6 @@ static int mark_nosetview(Mark *m, PyObject *v, void *which)
 	return -1;
 }
 
-static PyObject *mark_getdata(Mark *m, void *x)
-{
-	PyObject *ret;
-	if (m->mark == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
-		return NULL;
-	}
-	if (m->mark->mtype != &MarkType)
-		ret = Py_None;
-	else
-		ret = m->mark->mdata;
-	Py_INCREF(ret);
-	return ret;
-}
-
-static int mark_setdata(Mark *m, PyObject *v, void *x)
-{
-	if (m->mark == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
-		return -1;
-	}
-	if (m->mark->mdata && m->mark->mtype != &MarkType) {
-		PyErr_SetString(PyExc_TypeError, "Mark contains non-pythonic data");
-		return -1;
-	}
-	if (m->mark->mdata)
-		Py_DECREF(m->mark->mdata);
-	if (v == Py_None) {
-		m->mark->mtype = NULL;
-		m->mark->mdata = NULL;
-	} else {
-		Py_INCREF(v);
-		m->mark->mdata = v;
-		m->mark->mtype = &MarkType;
-	}
-	return 0;
-}
-
 PyObject *mark_compare(Mark *a, Mark *b, int op)
 {
 	int ret = 0;
@@ -764,9 +733,6 @@ static PyGetSetDef mark_getseters[] = {
     {"viewnum",
      (getter)mark_getview, (setter)mark_nosetview,
      "Index for view list", NULL},
-    {"data",
-     (getter)mark_getdata, (setter)mark_setdata,
-     "Application data", NULL},
     {NULL}  /* Sentinel */
 };
 
@@ -812,11 +778,25 @@ static int Mark_init(Mark *self, PyObject *args, PyObject *kwds)
 	} else {
 		self->mark = mark_dup(orig->mark, 0);
 	}
+	if (!self->mark) {
+		PyErr_SetString(PyExc_TypeError, "Mark creation failed");
+		return -1;
+	}
+	if (self->mark->viewnum >= 0) {
+		/* vmarks don't disappear until explicitly released */
+		Py_INCREF(self);
+		self->released = 0;
+	} else
+		self->released = 1;
+	self->mark->mtype = &MarkType;
+	self->mark->mdata = (PyObject*)self;
 	return 1;
 }
 
 static void mark_dealloc(Mark *self)
 {
+	if (self->mark && self->mark->mtype == &MarkType)
+		mark_free(self->mark);
 	self->ob_type->tp_free((PyObject*)self);
 }
 
@@ -894,6 +874,18 @@ static PyObject *Mark_dup(Mark *self)
 	return Py_None;
 }
 
+static PyObject *Mark_release(Mark *self)
+{
+	if (self->mark && self->mark->viewnum >= 0 &&
+	    self->released == 0 &&
+	    self->mark->mtype == &MarkType) {
+		Py_DECREF(self);
+		self->released = 1;
+	}
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef mark_methods[] = {
 	{"to_mark", (PyCFunction)Mark_to_mark, METH_VARARGS,
 	 "Move one mark to another"},
@@ -905,6 +897,8 @@ static PyMethodDef mark_methods[] = {
 	 "next any_mark"},
 	{"dup", (PyCFunction)Mark_dup, METH_NOARGS,
 	 "duplicate a mark, preserving type"},
+	{"release", (PyCFunction)Mark_release, METH_NOARGS,
+	 "release a vmark so it can disappear"},
 	{NULL}
 };
 
