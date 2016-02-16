@@ -548,6 +548,25 @@ static inline int call_xy(char *key, struct pane *focus, int numeric,
 	return key_handle(&ci);
 }
 
+static inline int call_xy7(char *key, struct pane *focus, int numeric, int extra,
+			   char *str, char *str2, int x, int y,
+			   struct mark *m, struct mark *m2)
+{
+	struct cmd_info ci = {0};
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.extra = extra;
+	ci.str = str;
+	ci.str2 = str2;
+	ci.x = x;
+	ci.y = y;
+	ci.mark = m;
+	ci.mark2 = m2;
+	return key_handle(&ci);
+}
+
 static inline int call7(char *key, struct pane *focus, int numeric, struct mark *m,
 			char *str, int extra, char *str2, struct mark *m2)
 {
