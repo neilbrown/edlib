@@ -40,7 +40,7 @@ class EdDisplay(gtk.Window):
             if "str2" in a:
                 fg, bg = self.get_colours(a["str2"])
             else:
-                fg, bg = self.get_colours("")
+                fg, bg = self.get_colours("bg:white")
             pm = self.get_pixmap(f)
             self.do_clear(pm, bg)
             return True
@@ -71,13 +71,15 @@ class EdDisplay(gtk.Window):
             return cb("callback:size", f, max_bytes, ascent, (width, height))
 
         if key == "text-display":
-            if not self.gc:
+            if not self.gc or not self.bg:
+                fg, bg = self.get_colours("fg:blue,bg:white")
                 t = self.text
-                self.gc = t.window.new_gc()
-                cmap = t.get_colormap()
-                self.gc.set_foreground(cmap.alloc_color(gtk.gdk.color_parse("blue")))
-            if not self.bg:
-                self.bg = t.window.new_gc()
+                if not self.gc:
+                    self.gc = t.window.new_gc()
+                    self.gc.set_foreground(fg)
+                if not self.bg:
+                    self.bg = t.window.new_gc()
+                    self.bg.set_foreground(bg)
 
             (x,y) = a["xy"]
             f = a["focus"]
@@ -95,9 +97,10 @@ class EdDisplay(gtk.Window):
             metric = ctx.get_metrics(fd)
             ascent = metric.get_ascent() / pango.SCALE
             ink,(lx,ly,width,height) = layout.get_pixel_extents()
-            self.bg.set_foreground(bg)
-            pm.draw_rectangle(self.bg, True, x+lx, y-ascent+ly, width, height)
-            pm.draw_layout(self.gc, x, y-ascent, layout, fg)
+            if bg:
+                self.bg.set_foreground(bg)
+                pm.draw_rectangle(self.bg, True, x+lx, y-ascent+ly, width, height)
+            pm.draw_layout(self.gc, x, y-ascent, layout, fg, bg)
             if a['numeric'] >= 0:
                 cx,cy,cw,ch = layout.index_to_pos(a["numeric"])
                 if cw <= 0:
@@ -121,7 +124,11 @@ class EdDisplay(gtk.Window):
                         s = unicode(a["str"][c:], "utf-8")
                         l2 = pango.Layout(ctx)
                         l2.set_text(s[0])
-                        pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, bg)
+                        fg, bg = self.get_colours(attr+",inverse")
+                        pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, fg, bg)
+                    else:
+                        pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
+                                          cw-1, ch-1)
             return True
 
         if key == "Notify:Close":
@@ -161,9 +168,9 @@ class EdDisplay(gtk.Window):
         return fd
 
     def get_colours(self, attrs):
-        "Return a foreground and a background colour"
-        fg = "black"
-        bg = "white"
+        "Return a foreground and a background colour - background might be None"
+        fg = None
+        bg = None
         inv = False
         for word in attrs.split(','):
             if word[0:3] == "fg:":
@@ -173,12 +180,35 @@ class EdDisplay(gtk.Window):
             if word == "inverse":
                 inv = True
         cmap = self.text.get_colormap()
-        fgc = cmap.alloc_color(gtk.gdk.color_parse(fg))
-        bgc = cmap.alloc_color(gtk.gdk.color_parse(bg))
         if inv:
-            return (bgc, fgc)
+            fg,bg = bg,fg
+            if fg is None:
+                fg = "white"
+            if bg is None:
+                bg = "black"
         else:
-            return (fgc, bgc)
+            if fg is None:
+                fg = "black"
+
+        if fg:
+            try:
+                c = gtk.gdk.color_parse(fg)
+            except:
+                c = gtk.gdk.color_parse("black")
+            fgc = cmap.alloc_color(c)
+        else:
+            fgc = None
+
+        if bg:
+            try:
+                c = gtk.gdk.color_parse(bg)
+            except:
+                c = gtk.gdk.color_parse("white")
+            bgc = cmap.alloc_color(c)
+        else:
+            bgc = None
+
+        return fgc, bgc
 
     def get_pixmap(self, p):
         if p in self.panes:
