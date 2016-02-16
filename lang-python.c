@@ -444,6 +444,19 @@ static PyObject *Pane_render_attach(Pane *self, PyObject *args)
 	return Pane_Frompane(p);
 }
 
+static PyObject *Pane_damaged(Pane *self, PyObject *args)
+{
+	int damage = DAMAGED_CONTENT;
+	int ret = PyArg_ParseTuple(args, "|i", &damage);
+	if (ret <= 0)
+		return NULL;
+	if (self->pane)
+		pane_damaged(self->pane, DAMAGED_SIZE);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyObject *Pane_close(Pane *self)
 {
 	struct pane *p = self->pane;
@@ -494,6 +507,8 @@ static PyMethodDef pane_methods[] = {
 	 "Add notified for an event on some other pane"},
 	{"render_attach", (PyCFunction)Pane_render_attach, METH_VARARGS,
 	 "Attach a renderer to a pane"},
+	{"damage", (PyCFunction)Pane_damaged, METH_VARARGS,
+	 "Mark pane as damaged"},
 	{NULL}
 };
 
