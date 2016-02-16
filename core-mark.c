@@ -813,6 +813,9 @@ struct mark *do_vmark_first(struct doc *d, int view)
 {
 	struct tlist_head *tl;
 
+	if (view < 0 || view >= d->nviews)
+		return NULL;
+
 	tl = TLIST_PTR(d->views[view].head.next);
 	while (TLIST_TYPE(tl) != GRP_HEAD) {
 		if (TLIST_TYPE(tl) == GRP_LIST) {
@@ -827,6 +830,9 @@ struct mark *do_vmark_first(struct doc *d, int view)
 struct mark *do_vmark_last(struct doc *d, int view)
 {
 	struct tlist_head *tl;
+
+	if (view < 0 || view >= d->nviews)
+		return NULL;
 
 	tl = TLIST_PTR(d->views[view].head.prev);
 	while (TLIST_TYPE(tl) != GRP_HEAD) {
@@ -945,6 +951,9 @@ struct mark *do_vmark_at_point(struct doc *d, struct mark *pt, int view)
 	struct tlist_head *tl;
 	struct mark *m;
 	struct point_links *lnk = pt->mdata;
+
+	if (view < 0 || view >= d->nviews)
+		return NULL;
 
 	tl = &lnk->lists[view];
 	m = __vmark_prev(tl);
