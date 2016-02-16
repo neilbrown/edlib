@@ -219,7 +219,7 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 		return ret;
 	if (!PyCallable_Check(py_handler)) {
 		PyErr_SetString(PyExc_TypeError, "'handler' is not callable");
-		return 0;
+		return -1;
 	}
 	/* FIXME arrange to free this when "Close" is called */
 	handler = malloc(sizeof(*handler));
@@ -781,6 +781,40 @@ static Mark *mark_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 	return self;
 }
 
+static int Mark_init(Mark *self, PyObject *args, PyObject *kwds)
+{
+	Pane *doc = NULL;
+	int view = MARK_UNGROUPED;
+	Mark *orig = NULL;
+	static char *keywords[] = {"pane","view","orig", NULL};
+	int ret;
+
+	if (!PyTuple_Check(args) || PyTuple_GET_SIZE(args) == 0)
+		/* Internal Mark_Frommark call */
+		return 1;
+
+	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|O!OiO!O", keywords,
+					  &PaneType, &doc,
+					  &view,
+					  &MarkType, &orig);
+	if (ret <= 0)
+		return ret;
+	if (doc && orig) {
+		PyErr_SetString(PyExc_TypeError, "Only one of 'pane' and 'orig' may be set");
+		return -1;
+	}
+	if (!doc && !orig) {
+		PyErr_SetString(PyExc_TypeError, "At least one of 'pane' and 'orig' must be set");
+		return -1;
+	}
+	if (doc) {
+		self->mark = vmark_new(doc->pane, view);
+	} else {
+		self->mark = mark_dup(orig->mark, 0);
+	}
+	return 1;
+}
+
 static void mark_dealloc(Mark *self)
 {
 	self->ob_type->tp_free((PyObject*)self);
@@ -957,7 +991,7 @@ static PyTypeObject MarkType = {
     0,				/* tp_descr_get */
     0,				/* tp_descr_set */
     0,				/* tp_dictoffset */
-    0,				/* tp_init */
+    .tp_init = (initproc)Mark_init,/* tp_init */
     0,				/* tp_alloc */
     .tp_new = (newfunc)mark_new,/* tp_new */
 };
