@@ -219,6 +219,8 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w,
 				above = atoi(c+13) * scale / 1000;
 			if ((c=strstr(b, ",space-below:")) != NULL)
 				below = atoi(c+13) * scale / 1000;
+			if ((c=strstr(b, ",tab:")) != NULL)
+				*w = atoi(c+5) * scale / 1000;
 			attr_found = 1;
 			update_line_height_attr(p, h, a, w, b, "", scale);
 		} else {
@@ -265,6 +267,7 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 	int ret = 0;
 	int twidth = 0;
 	int center = 0;
+	int margin;
 
 	update_line_height(p, &line_height, &ascent, &twidth, &center, line, scale);
 
@@ -281,6 +284,7 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 		x += center;
 	if (center < 0)
 		x = p->w - x - twidth + center;
+	margin = x;
 
 	rl->line_height = line_height;
 
@@ -391,10 +395,17 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 					line += 1;
 
 				if (a[0] != '/') {
+					int ln = attr.len;
+					char *tb;
+
 					buf_concat_len(&attr, a, line-a);
 					/* mark location with ",," */
 					attr.b[attr.len-1] = ',';
 					buf_append(&attr, ',');
+					tb = strstr(buf_final(&attr)+ln,
+						    "tab:");
+					if (tb)
+						x = margin + atoi(tb+4) * scale / 1000;
 				} else {
 					/* strip back to ",," */
 					if (attr.len > 0)
