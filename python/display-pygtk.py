@@ -46,7 +46,12 @@ class EdDisplay(gtk.Window):
             return True
 
         if key == "text-size":
-            fd = self.extract_font(a["str2"])
+            attr=""; scale=1000
+            if 'str2' in a:
+                attr = a['str2']
+            if 'extra' in a:
+                scale = a['extra']
+            fd = self.extract_font(attr, scale)
             ctx = self.text.get_pango_context()
             metric = ctx.get_metrics(fd)
             self.text.modify_font(fd)
@@ -76,11 +81,12 @@ class EdDisplay(gtk.Window):
 
             (x,y) = a["xy"]
             f = a["focus"]
+            attr=""; scale=1000
             if 'str2' in a:
                 attr = a['str2']
-            else:
-                attr = ''
-            fd = self.extract_font(attr)
+            if 'extra' in a:
+                scale = a['extra']
+            fd = self.extract_font(attr, scale)
             ctx = self.text.get_pango_context()
             self.text.modify_font(fd)
             layout = self.text.create_pango_layout(a["str"])
@@ -128,11 +134,13 @@ class EdDisplay(gtk.Window):
 
     styles=["oblique","italic","bold","small-caps"]
 
-    def extract_font(self, attrs):
+    def extract_font(self, attrs, scale):
         "Return a pango.FontDescription"
         family="mono"
         style=""
         size=10
+        if scale <= 10:
+            scale = 1000
         for word in attrs.split(','):
             if word in self.styles:
                 style += " " + word
@@ -140,7 +148,10 @@ class EdDisplay(gtk.Window):
                 size = 14
             elif word[0:7] == "family:":
                 family = word[7:]
-        return pango.FontDescription(family+' '+style+' '+str(size))
+        fd = pango.FontDescription(family+' '+style+' '+str(size))
+        if scale != 1000:
+            fd.set_size(fd.get_size() * scale / 1000)
+        return fd
 
     def get_colours(self, attrs):
         "Return a foreground and a background colour"
