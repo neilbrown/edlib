@@ -661,6 +661,7 @@ static void find_lines(struct mark *pm, struct pane *p)
 	struct mark *top, *bot;
 	struct mark *m;
 	struct mark *start, *end;
+	int x;
 	int y = 0;
 	int offset;
 	int found_start = 0, found_end = 0;
@@ -684,14 +685,14 @@ static void find_lines(struct mark *pm, struct pane *p)
 		m = vmark_next(start);
 
 	end = m;
-	if (start->mdata) {
-		int x;
-		x = -1; lines_above = -1; y = 0;
-		render_line(p, start->mdata, &y, 0, scale, &x, &lines_above, &offset);
-		lines_below = y - lines_above;
-	}
-	y = 1;
-	/* We have start/end of the focus line, and its height */
+	x = -1; lines_above = -1; y = 0;
+	render_line(p, start->mdata ?: "", &y, 0, scale, &x, &lines_above, &offset);
+	lines_above = lines_below = 0;
+
+	/* We have start/end of the focus line, and its height.
+	 * Rendering just that "line" uses a height of 'y', of which
+	 * 'lines_above' is above the cursor, and 'lines_below' is below.
+	 */
 	if (bot && !mark_ordered_or_same_pane(p, bot, start))
 		/* already before 'bot', so will never "cross over" bot, so
 		 * ignore 'bot'
@@ -700,61 +701,78 @@ static void find_lines(struct mark *pm, struct pane *p)
 	if (top && !mark_ordered_or_same_pane(p, end, top))
 		top = NULL;
 
-	rl->skip_lines = 0;
-	while (!((found_start && found_end) || y >= p->h - rl->header_lines)) {
-		if (!found_start) {
+	while ((!found_start || !found_end) && y < p->h - rl->header_lines) {
+		if (!found_start && lines_above == 0) {
 			/* step backwards moving start */
-			if (lines_above > 0) {
-				lines_above -= 1;
-				y += 1;
+			m = call_render_line_prev(p, mark_dup(start, 0),
+						  1, &rl->top_sol);
+			if (!m) {
+				/* no text before 'start' */
+				found_start = 1;
 			} else {
-				m = call_render_line_prev(p, mark_dup(start, 0),
-							  1, &rl->top_sol);
-				if (!m) {
-					/* no text before 'start' */
-					found_start = 1;
-				} else {
-					int h = 0;
-					start = m;
-					if (!start->mdata)
-						call_render_line(p, start);
+				int h = 0;
+				start = m;
+				if (!start->mdata)
+					call_render_line(p, start);
+				if (start->mdata)
 					render_line(p, start->mdata, &h, 0, scale,
 						    NULL, NULL, NULL);
-					if (h) {
-						lines_above = h - 1;
-						y += 1;
-					} else
-						found_start = 1;
-				}
-				if (bot && mark_ordered(start, bot))
-					found_end = 1;
-			}
-		}
-		if (!found_end) {
-			/* step forwards */
-			if (lines_below > 0) {
-				lines_below -= 1;
-				y += 1;
-			} else {
-				if (!end->mdata)
-					call_render_line(p, end);
-				if (!end->mdata)
-					found_end = 1;
-				else {
-					int h = 0;
-					render_line(p, end->mdata, &h, 0, scale,
-						    NULL, NULL, NULL);
-					end = vmark_next(end);
-					ASSERT(end != NULL);
-					if (h) {
-						lines_below = h - 1;
-						y += 1;
-					} else
-						found_end = 1;
-				}
-				if (top && mark_ordered(top, end))
+				if (h) {
+					lines_above = h;
+				} else
 					found_start = 1;
 			}
+			if (bot && mark_ordered(start, bot))
+				found_end = 1;
+		}
+		if (!found_end && lines_below == 0) {
+			/* step forwards */
+			if (!end->mdata)
+				call_render_line(p, end);
+			if (!end->mdata)
+				found_end = 1;
+			else {
+				int h = 0;
+				render_line(p, end->mdata, &h, 0, scale,
+					    NULL, NULL, NULL);
+				end = vmark_next(end);
+				ASSERT(end != NULL);
+				if (h) {
+					lines_below = h;
+				} else
+					found_end = 1;
+			}
+			if (top && mark_ordered(top, end))
+				found_start = 1;
+		}
+		if (lines_above > 0 && lines_below > 0) {
+			int consume = (lines_above > lines_below ? lines_below : lines_above) * 2;
+			if (consume > (p->h - rl->header_lines) - y)
+				consume = (p->h - rl->header_lines) - y;
+			if (lines_above > lines_below) {
+				lines_above -= consume - (consume/2);
+				lines_below -= consume/2;
+			} else {
+				lines_below -= consume - (consume/2);
+				lines_above -= consume/2;
+			}
+			y += consume;
+			/* We have just consumed all of one of lines_{above,below}
+			 * so they are no longer both > 0 */
+		}
+		if (found_end && lines_above) {
+			int consume = p->h - rl->header_lines - y;
+			if (consume > lines_above)
+				consume = lines_above;
+			lines_above -= consume;
+			y += consume;
+		}
+		if (found_start && lines_below) {
+			int consume = p->h - rl->header_lines - y;
+			if (consume > lines_below)
+				consume = lines_below;
+			lines_below -= consume;
+			y += consume;
 		}
 	}
 	rl->skip_lines = lines_above;
