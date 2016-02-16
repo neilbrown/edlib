@@ -183,6 +183,7 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w,
 	struct buf attr;
 	int attr_found = 0;
 	char *segstart = line;
+	int above = 0, below = 0;
 
 	buf_init(&attr);
 	buf_append(&attr, ',');
@@ -214,6 +215,10 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w,
 				*center = atoi(c+6) * scale / 1000;
 			if (center && (c=strstr(b, ",right:")) != NULL)
 				*center = - atoi(c+7) * scale / 1000;
+			if ((c=strstr(b, ",space-above:")) != NULL)
+				above = atoi(c+13) * scale / 1000;
+			if ((c=strstr(b, ",space-below:")) != NULL)
+				below = atoi(c+13) * scale / 1000;
 			attr_found = 1;
 			update_line_height_attr(p, h, a, w, b, "", scale);
 		} else {
@@ -233,6 +238,8 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w,
 		update_line_height_attr(p, h, a, w, buf_final(&attr), l, scale);
 		free(l);
 	}
+	*h += above + below;
+	*a += above;
 	free(buf_final(&attr));
 }
 
