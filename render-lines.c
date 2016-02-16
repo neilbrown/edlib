@@ -164,37 +164,58 @@ static int draw_some(struct pane *p, int *x, int y, char *start, char **endp,
 	return ret;
 }
 
-static void update_line_height_attr(struct pane *p, int *h, int *a, char *attr, int scale)
+static void update_line_height_attr(struct pane *p, int *h, int *a, int *w, char *attr, char *str, int scale)
 {
 	struct call_return cr;
 	cr.c = text_size_callback;
-	call_comm7("text-size", p, -1, NULL, "M", scale, attr, &cr.c);
+	call_comm7("text-size", p, -1, NULL, str, scale, attr, &cr.c);
 	if (cr.y > *h)
 		*h = cr.y;
 	if (cr.i2 > *a)
 		*a = cr.i2;
+	if (w)
+		*w += cr.x;
 }
 
-static void update_line_height(struct pane *p, int *h, int *a,
-			       char *line, int scale)
+static void update_line_height(struct pane *p, int *h, int *a, int *w,
+			       int *center, char *line, int scale)
 {
 	struct buf attr;
+	int attr_found = 0;
+	char *segstart = line;
 
 	buf_init(&attr);
-	update_line_height_attr(p, h, a, "", scale);
+	buf_append(&attr, ',');
 	while (*line) {
 		char c = *line++;
 		char *st = line;
 		if (c != '<' || *line == '<')
 			continue;
 
+		if (line - 1 > segstart) {
+			char *l = strndup(segstart, line - 1 - segstart);
+			update_line_height_attr(p, h, a, w, buf_final(&attr),
+						l, scale);
+			free(l);
+		}
 		while (*line && line[-1] != '>')
 			line += 1;
+		segstart = line;
 		if (st[0] != '/') {
+			char *c;
+			char *b = buf_final(&attr);
+
 			buf_concat_len(&attr, st, line-st);
 			attr.b[attr.len-1] = ',';
 			buf_append(&attr, ',');
-			update_line_height_attr(p, h, a, buf_final(&attr), scale);
+			if (center && strstr(b, ",center,"))
+				*center = 1;
+			if (center && (c=strstr(b, ",left:")) != NULL)
+				*center = atoi(c+6) * scale / 1000;
+			if (center && (c=strstr(b, ",right:")) != NULL)
+				*center = - atoi(c+7) * scale / 1000;
+			attr_found = 1;
+			update_line_height_attr(p, h, a, w, b, "", scale);
 		} else {
 			/* strip back to ",," */
 			if (attr.len > 0)
@@ -204,6 +225,13 @@ static void update_line_height(struct pane *p, int *h, int *a,
 				attr.b[attr.len+1] != ','))
 				attr.len -= 1;
 		}
+	}
+	if (line[-1] == '\n')
+		line -= 1;
+	if (line > segstart || !attr_found) {
+		char *l = strndup(segstart, line - segstart);
+		update_line_height_attr(p, h, a, w, buf_final(&attr), l, scale);
+		free(l);
 	}
 	free(buf_final(&attr));
 }
@@ -228,15 +256,25 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 	int ascent = -1;
 	int mwidth = -1;
 	int ret = 0;
+	int twidth = 0;
+	int center = 0;
 
-	update_line_height(p, &line_height, &ascent, line, scale);
+	update_line_height(p, &line_height, &ascent, &twidth, &center, line, scale);
 
 	if (prefix) {
 		char *s = prefix + strlen(prefix);
-		update_line_height_attr(p, &line_height, &ascent, "bold", scale);
+		update_line_height_attr(p, &line_height, &ascent, NULL,
+					"bold", prefix, scale);
 		draw_some(p, &x, dodraw?y+ascent:-1, prefix, &s, "bold", 0, -1, -1, scale);
 	}
 	rl->prefix_len = x;
+	if (center == 1)
+		x += (p->w - x - twidth) / 2;
+	if (center > 1)
+		x += center;
+	if (center < 0)
+		x = p->w - x - twidth + center;
+
 	rl->line_height = line_height;
 
 	buf_init(&attr);
