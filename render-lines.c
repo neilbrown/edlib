@@ -321,7 +321,7 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 			mwidth = cr.x;
 		}
 
-		if (ret == WRAP) {
+		if (ret == WRAP && wrap) {
 			char buf[2], *b;
 			strcpy(buf, "\\");
 			b = buf+1;
@@ -331,6 +331,11 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 
 			x = 0;
 			y += line_height;
+		}
+		if (ret == WRAP && !wrap) {
+			while (*line && *line != '\n' && *line != '<')
+				line += 1;
+			start = line;
 		}
 
 		ch = *line;
@@ -371,20 +376,26 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 			    (line-start) * mwidth > p->w - x) {
 				ret = draw_some(p, &x, dodraw?y+ascent:-1, start,
 						&line,
-						buf_final(&attr), mwidth, CP, CX, scale);
+						buf_final(&attr),
+						wrap ? mwidth : 0,
+						CP, CX, scale);
 				start = line;
 			}
 			continue;
 		}
 		ret = draw_some(p, &x, dodraw?y+ascent:-1, start, &line,
-				buf_final(&attr), mwidth, CP, CX, scale);
+				buf_final(&attr),
+				wrap ? mwidth : 0,
+				CP, CX, scale);
+		if (!wrap && ret == WRAP && line == start)
+			ret = 0;
 		start = line;
 		if (ret)
 			continue;
 		if (ch == '<') {
 			line += 1;
 			if (*line == '<') {
-				if (offset == start - line_start)
+				if (offset >= 0 && offset == start - line_start)
 					offset += 1;
 				start = line;
 				line += 1;
@@ -452,7 +463,7 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 			buf_concat(&attr, ",underline,fg:red");
 			ret = draw_some(p, &x, dodraw?y+ascent:-1, buf, &b,
 					buf_final(&attr),
-					mwidth*2, CP, CX, scale);
+					wrap ? mwidth*2: 0, CP, CX, scale);
 			attr.len = l;
 			start = line;
 		}
@@ -461,7 +472,8 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 	if (!*line && (line > start || offset == start - line_start)) {
 		/* Some more to draw */
 		draw_some(p, &x, dodraw?y+ascent:-1, start, &line,
-			  buf_final(&attr), mwidth, offset - (start - line_start), cx, scale);
+			  buf_final(&attr),
+			  wrap ? mwidth : 0, offset - (start - line_start), cx, scale);
 	}
 	if (y + line_height < cy ||
 	    (y <= cy && x <= cx))
