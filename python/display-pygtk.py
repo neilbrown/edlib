@@ -144,8 +144,15 @@ class EdDisplay(gtk.Window):
         for word in attrs.split(','):
             if word in self.styles:
                 style += " " + word
+            elif len(word) and word[0].isdigit():
+                try:
+                    size = float(word)
+                except:
+                    size = 10
             elif word == "large":
                 size = 14
+            elif word == "small":
+                size = 9
             elif word[0:7] == "family:":
                 family = word[7:]
         fd = pango.FontDescription(family+' '+style+' '+str(size))
