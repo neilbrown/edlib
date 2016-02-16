@@ -94,6 +94,7 @@ static inline PyObject *Mark_Frommark(struct mark *m)
 	}
 	mark = (Mark *)PyObject_CallObject((PyObject*)&MarkType, NULL);
 	mark->mark = m;
+	mark->released = 1;
 	return (PyObject*)mark;
 }
 
@@ -867,9 +868,15 @@ static PyObject *Mark_dup(Mark *self)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	new = mark_dup(self->mark, 0);
-	if (new)
-		return Mark_Frommark(new);
+	new = mark_dup(self->mark, 1);
+	if (new) {
+		if (self->mark->mtype != &MarkType)
+			return Mark_Frommark(new);
+		new->mdata = Mark_Frommark(new);
+		new->mtype = &MarkType;
+		Py_INCREF(new->mdata);
+		return new->mdata;
+	}
 	Py_INCREF(Py_None);
 	return Py_None;
 }
