@@ -131,6 +131,47 @@ class EdDisplay(gtk.Window):
                                           cw-1, ch-1)
             return True
 
+        if key == "image-display":
+            # 'str' is the file name of an image
+            # 'numeric' is '1' if image should be stretch to fill pane
+            # if 'numeric is '0', then 'extra' is 'or' of
+            #   0,1,2 for left/middle/right in x direction
+            #   0,4,8 for top/middle/bottom in y direction
+            # only one of these can be used as image will fill pane in other direction.
+            fl = a['str']
+            f = a['focus']
+            stretch = a['numeric']
+            pos = a['extra']
+            w,h = self.pane.w, self.pane.h
+            x,y = 0, 0
+            try:
+                pb = gtk.gdk.pixbuf_new_from_file(fl)
+            except:
+                # create a red error image
+                pb = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
+                pb.fill(0xff000000)
+            if not stretch:
+                if pb.get_width() * h > pb.get_height() * w:
+                    # image is wider than space, reduce height
+                    h2 = pb.get_height() * w / pb.get_width()
+                    if pos & 12 == 4:
+                        y = (h - h2) / 2
+                    if pos & 12 == 8:
+                        y = h - h2
+                    h = h2
+                else:
+                    # image is too tall, reduce width
+                    w2 = pb.get_width() * h / pb.get_height()
+                    if pos & 3 == 1:
+                        x = (w - w2) / 2
+                    if pos & 3 == 2:
+                        x = w - w2
+                    w = w2
+            scale = pb.scale_simple(w, h, gtk.gdk.INTERP_HYPER)
+            pm = self.get_pixmap(f)
+            pm.draw_pixbuf(self.gc, scale, 0, 0, x, y)
+            return True
+
         if key == "Notify:Close":
             f = a["focus"]
             if f and f in self.panes:
