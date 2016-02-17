@@ -668,9 +668,6 @@ static void find_lines(struct mark *pm, struct pane *p)
 	int lines_above = 0, lines_below = 0;
 	int scale = get_scale(p);
 
-	if (pm->viewnum != MARK_POINT)
-		return;
-
 	top = vmark_first(p, rl->typenum);
 	bot = vmark_last(p, rl->typenum);
 	m = call_render_line_prev(p, mark_at_point(p, pm, rl->typenum),
