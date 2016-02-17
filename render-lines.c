@@ -777,6 +777,11 @@ static void find_lines(struct mark *pm, struct pane *p)
 	}
 	rl->skip_lines = lines_above;
 	/* Now discard any marks outside start-end */
+	if (end->seq < start->seq)
+		/* something confused, make sure we don't try to use 'end' after
+		 * freeing it.
+		 */
+		end = start;
 	while ((m = vmark_prev(start)) != NULL) {
 		free(m->mdata);
 		m->mdata = NULL;
