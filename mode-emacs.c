@@ -168,7 +168,7 @@ static struct str_command {
 	{CMD(emacs_str), "Window:split-y", NULL, "emCX-Chr-2"},
 	{CMD(emacs_str), "Window:split-x", NULL, "emCX-Chr-3"},
 	{CMD(emacs_str), "Window:close", NULL, "emCX-Chr-0"},
-	{CMD(emacs_str), "Display", "refresh", "C-Chr-L"},
+	{CMD(emacs_str), "Display:refresh", NULL, "C-Chr-L"},
 	{CMD(emacs_str), "Abort", NULL, "C-Chr-G"},
 	{CMD(emacs_str), "NOP", NULL, "M-Chr-G"},
 	{CMD(emacs_str), "NOP", NULL, "emCX-C-Chr-G"},

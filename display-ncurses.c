@@ -49,7 +49,7 @@ DEF_CMD(nc_misc)
 {
 	struct pane *p = ci->home;
 
-	if (strcmp(ci->str, "refresh") == 0) {
+	if (strcmp(ci->key, "Display:refresh") == 0) {
 		clear();
 		pane_damaged(p,  DAMAGED_SIZE);
 		pane_refresh(p);
@@ -109,7 +109,7 @@ DEF_CMD(ncurses_handle)
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
 
-	if (strcmp(ci->key, "Display") == 0)
+	if (strncmp(ci->key, "Display:", 8) == 0)
 		return nc_misc.func(ci);
 
 	if (strcmp(ci->key, "Close") == 0) {
