@@ -801,10 +801,15 @@ static void render(struct mark *pm, struct pane *p)
 	int restarted = 0;
 	char *hdr;
 	int scale = get_scale(p);
+	char *s;
+	int hide_cursor = 0;
 
 	hdr = pane_attr_get(p, "heading");
 	if (hdr && !*hdr)
 		hdr = NULL;
+	s = pane_attr_get(p, "hide-cursor");
+	if (s && strcmp(s, "yes") == 0)
+		hide_cursor = 1;
 
 restart:
 	pane_clear(p, NULL);
@@ -826,7 +831,7 @@ restart:
 			call_render_line(p, m);
 		}
 		m2 = vmark_next(m);
-		if (p->cx <= 0 &&
+		if (!hide_cursor && p->cx <= 0 &&
 		    mark_ordered_or_same_pane(p, m, pm) &&
 		    (!m2 || mark_ordered_or_same_pane(p, pm, m2))) {
 			int len = call_render_line_to_point(p, pm,
