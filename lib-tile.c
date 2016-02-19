@@ -549,10 +549,9 @@ DEF_CMD(tile_command)
 	struct tileinfo *ti = p->data;
 	struct tileinfo *t2;
 	struct pane *cld = pane_child(p);
+	char *cmd = ci->key + 7; /* "Window:" */
 
-	if (!ci->str)
-		return 0;
-	if (strcmp(ci->str, "next")==0) {
+	if (strcmp(cmd, "next")==0) {
 		/* If currently on a popup, go to next popup if there is one, else
 		 * to this tile.
 		 * If was not on a pop-up, go to next tile and if there is a popup,
@@ -583,33 +582,33 @@ DEF_CMD(tile_command)
 		p2 = next_popup(t2->p, NULL);
 		if (p2)
 			pane_focus(p2);
-	} else if (strcmp(ci->str, "prev")==0) {
+	} else if (strcmp(cmd, "prev")==0) {
 		t2 = list_prev_entry(ti, tiles);
 		pane_focus(t2->p);
-	} else if (strcmp(ci->str, "x+")==0) {
+	} else if (strcmp(cmd, "x+")==0) {
 		tile_grow(p, 1, RPT_NUM(ci));
 		pane_damaged(p, DAMAGED_SIZE);
-	} else if (strcmp(ci->str, "x-")==0) {
+	} else if (strcmp(cmd, "x-")==0) {
 		tile_grow(p, 1, -RPT_NUM(ci));
 		pane_damaged(p, DAMAGED_SIZE);
-	} else if (strcmp(ci->str, "y+")==0) {
+	} else if (strcmp(cmd, "y+")==0) {
 		tile_grow(p, 0, RPT_NUM(ci));
 		pane_damaged(p, DAMAGED_SIZE);
-	} else if (strcmp(ci->str, "y-")==0) {
+	} else if (strcmp(cmd, "y-")==0) {
 		tile_grow(p, 0, -RPT_NUM(ci));
 		pane_damaged(p, DAMAGED_SIZE);
-	} else if (strcmp(ci->str, "split-x")==0 && cld) {
+	} else if (strcmp(cmd, "split-x")==0 && cld) {
 		p2 = tile_split(p, 1, 1);
 		if (p2 && !pane_clone(cld, p2))
 			pane_close(p2);
-	} else if (strcmp(ci->str, "split-y")==0 && cld) {
+	} else if (strcmp(cmd, "split-y")==0 && cld) {
 		p2 = tile_split(p, 0, 1);
 		if (p2 && !pane_clone(cld, p2))
 			pane_close(p2);
-	} else if (strcmp(ci->str, "close")==0) {
+	} else if (strcmp(cmd, "close")==0) {
 		if (ti->direction != Neither)
 			pane_close(p);
-	} else if (strcmp(ci->str, "close-others") == 0) {
+	} else if (strcmp(cmd, "close-others") == 0) {
 		/* close all other panes in the 'tiles' list. */
 		while (!list_empty(&ti->tiles)) {
 			struct tileinfo *ti2 = list_next_entry(ti, tiles);
@@ -666,7 +665,7 @@ void edlib_init(struct editor *ed)
 {
 	tile_map = key_alloc();
 
-	key_add(tile_map, "WindowOP", &tile_command);
+	key_add_range(tile_map, "Window:", "Window;", &tile_command);
 	key_add(tile_map, "OtherPane", &tile_other);
 	key_add(tile_map, "ThisPane", &tile_this);
 	key_add(tile_map, "RootPane", &tile_root);
