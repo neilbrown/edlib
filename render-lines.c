@@ -810,9 +810,24 @@ static void render(struct mark *pm, struct pane *p)
 	s = pane_attr_get(p, "hide-cursor");
 	if (s && strcmp(s, "yes") == 0)
 		hide_cursor = 1;
+	s = pane_attr_get(p, "background");
 
 restart:
-	pane_clear(p, NULL);
+	if (!s)
+		pane_clear(p, NULL);
+	else if (strncmp(s, "color:", 6) == 0) {
+		char *a = strdup(s);
+		strcpy(a, "bg:");
+		strcpy(a+3, a+6);
+		pane_clear(p, a);
+		free(a);
+	} else if (strncmp(s, "image:", 6) == 0)
+		call5("image-display", p, 1, NULL, s+6, 0);
+	else if (strncmp(s, "call:", 5) == 0)
+		call3(s+5, p, 0, pm);
+	else
+		pane_clear(p, NULL);
+
 	y = 0;
 	if (hdr) {
 		rl->header_lines = 0;
