@@ -30,6 +30,12 @@ class EdDisplay(gtk.Window):
 
     def handle(self, key, **a):
 
+        if key == "Display:fullscreen":
+            if a['numeric'] > 0:
+                self.fullscreen()
+            else:
+                self.unfullscreen()
+
         if key == "Close":
             self.pane.close()
             # FIXME close the window??
