@@ -22,6 +22,7 @@
 
 struct view_data {
 	int		border;
+	int		old_border;
 	int		border_width, border_height;
 	int		line_height;
 	int		ascent;
@@ -189,7 +190,7 @@ DEF_CMD(view_handle)
 		struct pane *parent = ci->focus;
 		struct pane *p2, *c;
 
-		p2 = do_view_attach(parent, vd->border);
+		p2 = do_view_attach(parent, vd->old_border);
 		c = pane_child(pane_child(p));
 		if (c)
 			return pane_clone(c, pane_final_child(p2));
@@ -253,6 +254,7 @@ static struct pane *do_view_attach(struct pane *par, int border)
 
 	vd = malloc(sizeof(*vd));
 	vd->border = border;
+	vd->old_border = border;
 	vd->line_height = -1;
 	vd->border_width = vd->border_height = -1;
 	p = pane_register(par, 0, &view_handle, vd, NULL);
@@ -317,12 +319,28 @@ DEF_CMD(view_click)
 	return call3(key, p, num, NULL);
 }
 
+DEF_CMD(view_border)
+{
+	struct pane *p = ci->home;
+	struct view_data *vd = p->data;
+
+	if (ci->numeric <= 0)
+		vd->border = 0;
+	else
+		vd->border = vd->old_border;
+
+	pane_damaged(p, DAMAGED_SIZE);
+	return 0; /* allow other handlers to change borders */
+}
+
+
 void edlib_init(struct editor *ed)
 {
 	view_map = key_alloc();
 
 	key_add(view_map, "Click-1", &view_click);
 	key_add(view_map, "Press-1", &view_click);
+	key_add(view_map, "Window:border", &view_border);
 
 	key_add(ed->commands, "attach-view", &view_attach);
 }
