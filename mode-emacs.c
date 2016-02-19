@@ -152,37 +152,35 @@ REDEF_CMD(emacs_delete)
 	return ret;
 }
 
-REDEF_CMD(emacs_str);
-static struct str_command {
+REDEF_CMD(emacs_simple);
+static struct simple_command {
 	struct command	cmd;
 	char		*type;
-	char		*str;
 	char		*k;
-} str_commands[] = {
-	{CMD(emacs_str), "Window:next", NULL, "emCX-Chr-o"},
-	{CMD(emacs_str), "Window:prev", NULL, "emCX-Chr-O"},
-	{CMD(emacs_str), "Window:x+", NULL, "emCX-Chr-}"},
-	{CMD(emacs_str), "Window:x-", NULL, "emCX-Chr-{"},
-	{CMD(emacs_str), "Window:y+", NULL, "emCX-Chr-^"},
-	{CMD(emacs_str), "Window:close-others", NULL, "emCX-Chr-1"},
-	{CMD(emacs_str), "Window:split-y", NULL, "emCX-Chr-2"},
-	{CMD(emacs_str), "Window:split-x", NULL, "emCX-Chr-3"},
-	{CMD(emacs_str), "Window:close", NULL, "emCX-Chr-0"},
-	{CMD(emacs_str), "Display:refresh", NULL, "C-Chr-L"},
-	{CMD(emacs_str), "Abort", NULL, "C-Chr-G"},
-	{CMD(emacs_str), "NOP", NULL, "M-Chr-G"},
-	{CMD(emacs_str), "NOP", NULL, "emCX-C-Chr-G"},
-	{CMD(emacs_str), "NOP", NULL, "emCX4-C-Chr-G"},
-	{CMD(emacs_str), "doc:save-file", NULL, "emCX-C-Chr-S"},
+} simple_commands[] = {
+	{CMD(emacs_simple), "Window:next", "emCX-Chr-o"},
+	{CMD(emacs_simple), "Window:prev", "emCX-Chr-O"},
+	{CMD(emacs_simple), "Window:x+", "emCX-Chr-}"},
+	{CMD(emacs_simple), "Window:x-", "emCX-Chr-{"},
+	{CMD(emacs_simple), "Window:y+", "emCX-Chr-^"},
+	{CMD(emacs_simple), "Window:close-others", "emCX-Chr-1"},
+	{CMD(emacs_simple), "Window:split-y", "emCX-Chr-2"},
+	{CMD(emacs_simple), "Window:split-x", "emCX-Chr-3"},
+	{CMD(emacs_simple), "Window:close", "emCX-Chr-0"},
+	{CMD(emacs_simple), "Display:refresh", "C-Chr-L"},
+	{CMD(emacs_simple), "Abort", "C-Chr-G"},
+	{CMD(emacs_simple), "NOP", "M-Chr-G"},
+	{CMD(emacs_simple), "NOP", "emCX-C-Chr-G"},
+	{CMD(emacs_simple), "NOP", "emCX4-C-Chr-G"},
+	{CMD(emacs_simple), "doc:save-file", "emCX-C-Chr-S"},
 };
 
-REDEF_CMD(emacs_str)
+REDEF_CMD(emacs_simple)
 {
-	struct str_command *sc = container_of(ci->comm, struct str_command, cmd);
+	struct simple_command *sc = container_of(ci->comm, struct simple_command, cmd);
 	struct cmd_info ci2 = {0};
 
 	ci2.key = sc->type;
-	ci2.str = sc->str;
 	ci2.focus = ci->focus;
 	ci2.numeric = ci->numeric;
 	ci2.extra = ci->extra;
@@ -612,8 +610,8 @@ static void emacs_init(void)
 			key_add(m, mc->k3, &mc->cmd);
 	}
 
-	for (i = 0; i < ARRAY_SIZE(str_commands); i++) {
-		struct str_command *sc = &str_commands[i];
+	for (i = 0; i < ARRAY_SIZE(simple_commands); i++) {
+		struct simple_command *sc = &simple_commands[i];
 		key_add(m, sc->k, &sc->cmd);
 	}
 
