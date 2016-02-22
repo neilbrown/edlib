@@ -321,29 +321,6 @@ static PyObject *Pane_call(Pane *self, PyObject *args, PyObject *kwds)
 	return PyInt_FromLong(rv);
 }
 
-static PyObject *Pane_call_focus(Pane *self, PyObject *args, PyObject *kwds)
-{
-	struct cmd_info ci = {0};
-	int rv;
-
-	ci.focus = self->pane;
-
-	rv = get_cmd_info(&ci, args, kwds);
-
-	if (rv <= 0)
-		return NULL;
-	rv = key_handle_focus(&ci);
-	if (!rv) {
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-	if (rv < 0) {
-		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
-		return NULL;
-	}
-	return PyInt_FromLong(rv);
-}
-
 static PyObject *Pane_call_xy(Pane *self, PyObject *args, PyObject *kwds)
 {
 	struct cmd_info ci = {0};
@@ -493,8 +470,6 @@ static PyMethodDef pane_methods[] = {
 	 "Trigger refresh on this pane"},
 	{"call", (PyCFunction)Pane_call, METH_VARARGS|METH_KEYWORDS,
 	 "Call a command from a pane"},
-	{"call_focus", (PyCFunction)Pane_call_focus, METH_VARARGS|METH_KEYWORDS,
-	 "Call a command from a pane, follow out to final focus pane"},
 	{"call_xy", (PyCFunction)Pane_call_xy, METH_VARARGS|METH_KEYWORDS,
 	 "Call a command from a pane, follow x,y out to leaf"},
 	{"call_filter", (PyCFunction)Pane_call_filter, METH_VARARGS|METH_KEYWORDS,

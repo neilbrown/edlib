@@ -48,20 +48,30 @@ DEF_CMD(keystroke)
 {
 	struct cmd_info ci2 = {0};
 	struct input_mode *im = ci->home->data;
+	struct pane *p;
 	int l;
 	int ret;
 
 	l = strlen(im->mode) + strlen(ci->str) + 1;
 	ci2.key = malloc(l);
 	strcat(strcpy(ci2.key, im->mode), ci->str);
-	ci2.focus = ci->home;
 	ci2.numeric = im->numeric;
 	ci2.extra = im->extra;
 
 	im->mode = "";
 	im->numeric = NO_NUMERIC;
 	im->extra = 0;
-	ret = key_handle_focus(&ci2);
+
+	ci2.x = ci2.y = -1;
+	p = ci->focus;
+	while (p->focus) {
+		p = p->focus;
+		if (!ci2.mark)
+			ci2.mark = p->pointer;
+	}
+	ci2.focus = p;
+
+	ret = key_handle(&ci2);
 	free(ci2.key);
 	if (ret < 0)
 		call5("Message", ci2.focus, 0, NULL, "** Command Failed **", 1);

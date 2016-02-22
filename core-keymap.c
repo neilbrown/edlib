@@ -340,27 +340,6 @@ int key_handle(const struct cmd_info *ci)
 	return key_handle_filter(ci);
 }
 
-int key_handle_focus(struct cmd_info *ci)
-{
-	struct pane *p = ci->home;
-	if (!p)
-		p = ci->focus;
-	if (!p)
-		return -1;
-	/* Handle this in the focus pane, so x,y are irrelevant */
-	ci->x = -1;
-	ci->y = -1;
-	while (p->focus) {
-		p = p->focus;
-		if (!ci->mark)
-			ci->mark = p->pointer;
-	}
-	ci->focus = p;
-	ci->home = p;
-	ci->comm = NULL;
-	return key_handle(ci);
-}
-
 int key_handle_xy(struct cmd_info *ci)
 {
 	/* Handle this in child with x,y co-ords */
