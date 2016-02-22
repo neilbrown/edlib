@@ -300,7 +300,6 @@ struct map *key_alloc(void);
 void key_free(struct map *m);
 int key_handle_filter(const struct cmd_info *ci);
 int key_handle(const struct cmd_info *ci);
-int key_handle_xy(struct cmd_info *ci);
 int key_lookup(struct map *m, const const struct cmd_info *ci);
 struct command *key_lookup_cmd(struct map *m, char *c);
 void key_add(struct map *map, char *k, struct command *comm);

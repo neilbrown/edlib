@@ -98,7 +98,28 @@ DEF_CMD(mouse_event)
 	im->numeric = NO_NUMERIC;
 	im->extra = 0;
 
-	key_handle_xy(&ci2);
+	while (1) {
+		struct pane *t, *chld = NULL;
+
+		list_for_each_entry(t, &ci2.focus->children, siblings) {
+			if (ci2.x < t->x || ci2.x >= t->x + t->w)
+				continue;
+			if (ci2.y < t->y || ci2.y >= t->y + t->h)
+				continue;
+			if (chld == NULL || t->z > chld->z)
+				chld = t;
+		}
+		/* descend into chld */
+		if (!chld)
+			break;
+		ci2.x -= chld->x;
+		ci2.y -= chld->y;
+		ci2.focus = chld;
+		if (!ci2.mark)
+			ci2.mark = chld->pointer;
+	}
+
+	key_handle(&ci2);
 	return 0;
 }
 

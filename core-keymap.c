@@ -340,39 +340,3 @@ int key_handle(const struct cmd_info *ci)
 	return key_handle_filter(ci);
 }
 
-int key_handle_xy(struct cmd_info *ci)
-{
-	/* Handle this in child with x,y co-ords */
-	struct pane *p = ci->home;
-	int x = ci->x;
-	int y = ci->y;
-	if (!p)
-		p = ci->focus;
-
-	while (1) {
-		struct pane *t, *chld = NULL;
-
-		list_for_each_entry(t, &p->children, siblings) {
-			if (x < t->x || x >= t->x + t->w)
-				continue;
-			if (y < t->y || y >= t->y + t->h)
-				continue;
-			if (chld == NULL || t->z > chld->z)
-				chld = t;
-		}
-		/* descend into chld */
-		if (!chld)
-			break;
-		x -= chld->x;
-		y -= chld->y;
-		p = chld;
-		if (!ci->mark)
-			ci->mark = p->pointer;
-	}
-	ci->x = x;
-	ci->y = y;
-	ci->focus = p;
-	ci->home = p;
-	ci->comm = NULL;
-	return key_handle(ci);
-}
