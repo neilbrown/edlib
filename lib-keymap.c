@@ -34,7 +34,7 @@ struct key_data {
 };
 
 
-DEF_CMD(keymap_attach);
+static struct pane *do_keymap_attach(struct pane *p, int global);
 
 DEF_CMD(keymap_handle)
 {
@@ -61,12 +61,13 @@ DEF_CMD(keymap_handle)
 		    strcmp(ci->key, "local-add-keymap") == 0 ||
 		    strcmp(ci->key, "local-remove-keymap") == 0) {
 			/* Add a local keymap on 'focus' and re-send */
-			struct pane *p = ci->focus;
 			struct cmd_info ci2 = {0};
-			ci2.focus = p;
-			keymap_attach_func(&ci2);
-			pane_attach(p, "local-keymap", NULL, NULL);
-			return key_handle_focus((struct cmd_info*)ci);
+			ci2.focus = do_keymap_attach(ci->focus, 0);
+			ci2.key = ci->key;
+			ci2.numeric = ci->numeric;
+			ci2.str = ci->str;
+			ci2.str2 = ci->str2;
+			return key_handle(&ci2);
 		}
 	}
 	if (kd->global && strncmp(ci->key, "global-set-key", 14) == 0) {
@@ -116,20 +117,26 @@ DEF_CMD(keymap_handle)
 	return key_lookup(kd->map, ci);
 }
 
-REDEF_CMD(keymap_attach)
+static struct pane *do_keymap_attach(struct pane *p, int global)
 {
 	struct key_data *kd = malloc(sizeof(*kd));
-	struct pane *p;
 
 	kd->map = key_alloc();
 	kd->cmds = NULL;
 	kd->globalcmd = NULL;
 	kd->cmdcount = 0;
-	kd->global = ci->comm ? 1 : 0;
-	p = ci->focus;
+	kd->global = global;
 	p = pane_final_child(p);
-	p = pane_register(p, 0, &keymap_handle, kd, NULL);
-	pane_check_size(p);
+	if (p)
+		p = pane_register(p, 0, &keymap_handle, kd, NULL);
+	if (p)
+		pane_check_size(p);
+	return p;
+}
+
+DEF_CMD(keymap_attach)
+{
+	struct pane *p = do_keymap_attach(ci->focus, 1);
 	if (p)
 		return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 	return -1;
