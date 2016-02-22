@@ -218,14 +218,15 @@ static struct pane *ncurses_init(struct editor *ed)
 	dd->cursor.x = dd->cursor.y = -1;
 
 	current_screen = NULL;
-	p = pane_register(&ed->root, 0, &ncurses_handle, dd, NULL);
+	p = pane_attach(&ed->root, "input", NULL, NULL);
+	p = pane_register(p, 0, &ncurses_handle, dd, NULL);
 
 	getmaxyx(stdscr, p->h, p->w); p->h-=1;
 
 	call_home(p, "event:read", p, 0, NULL, &input_handle);
 	call_home(p, "event:signal", p, SIGWINCH, NULL, &handle_winch);
 	pane_damaged(p, DAMAGED_SIZE);
-	return pane_attach(p, "input", NULL, NULL);
+	return p;
 }
 
 REDEF_CMD(handle_winch)

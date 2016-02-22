@@ -334,7 +334,7 @@ class EdDisplay(gtk.Window):
             s = "C-" + s;
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
-        self.pane.call_xy("Mouse-event", "Click-1", self.pane, (x,y))
+        self.pane.call("Mouse-event", "Click-1", self.pane, (x,y))
         self.pane.refresh()
 
     eventmap = { "Return" : "Return",
@@ -371,7 +371,7 @@ class EdDisplay(gtk.Window):
                 s = "Chr-" + s
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
-        self.pane.call_focus("Keystroke", self.pane, s)
+        self.pane.call("Keystroke", self.pane, s)
         self.pane.refresh()
 
     def do_clear(self, pm, colour):
@@ -384,7 +384,7 @@ class EdDisplay(gtk.Window):
         pm.draw_rectangle(self.bg, True, 0, 0, w, h)
 
 def new_display(key, home, comm2, **a):
-    disp = EdDisplay(home)
+    disp = EdDisplay(a['focus'])
     comm2('callback', disp.pane)
     return 1
 

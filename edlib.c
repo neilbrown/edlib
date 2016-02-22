@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 	if (gtk) {
 		call5("python-load", vroot, 0, NULL, "python/display-pygtk.py", 0);
 		call3("pygtkevent:activate", vroot, 0, NULL);
+		vroot = pane_attach(vroot, "input", NULL, NULL);
 		ci.key = "display-pygtk";
 	} else {
 		editor_load_module(ed, "lib-libevent");
@@ -85,10 +86,7 @@ int main(int argc, char *argv[])
 	ci.comm2 = &cr.c;
 	if (key_handle(&ci) <= 0)
 		exit(1);
-	if (gtk)
-		root = pane_attach(cr.p, "input", NULL, NULL);
-	else
-		root = cr.p;
+	root = cr.p;
 	global = pane_attach(root, "messageline", NULL, NULL);
 	global = pane_attach(global, "global-keymap", NULL, NULL);
 
