@@ -91,7 +91,8 @@ REDEF_CMD(emacs_move)
 		struct mark *old_point = mark_at_point(cursor_pane,
 						       ci->mark, MARK_UNGROUPED);
 		ci2.focus = cursor_pane;
-		ci2.key = "Move-CursorXY";
+		ci2.key = "Mouse-event";
+		ci2.str = "Move-CursorXY";
 		ci2.numeric = 1;
 		ci2.x = old_x;
 		ci2.mark = ci->mark;
@@ -99,7 +100,7 @@ REDEF_CMD(emacs_move)
 			ci2.y = 0;
 		else
 			ci2.y = cursor_pane->h - 1;
-		key_handle_xy(&ci2);
+		key_handle(&ci2);
 		if (mv->direction == 1)
 			ok = mark_ordered_not_same_pane(cursor_pane, old_point, ci->mark);
 		else
@@ -108,7 +109,8 @@ REDEF_CMD(emacs_move)
 			/* Try other end of pane */
 			memset(&ci2, 0, sizeof(ci2));
 			ci2.focus = cursor_pane;
-			ci2.key = "Move-CursorXY";
+			ci2.key = "Mouse-event";
+			ci2.str = "Move-CursorXY";
 			ci2.numeric = 1;
 			ci2.x = old_x;
 			ci2.mark = ci->mark;
@@ -116,7 +118,7 @@ REDEF_CMD(emacs_move)
 				ci2.y = 0;
 			else
 				ci2.y = cursor_pane->h - 1;
-			key_handle_xy(&ci2);
+			key_handle(&ci2);
 		}
 		mark_free(old_point);
 	}
