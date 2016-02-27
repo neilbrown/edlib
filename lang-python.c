@@ -499,6 +499,8 @@ static Pane *pane_getpane(Pane *p, char *which)
 		newpane->pane = p->pane->parent;
 	if (*which == 'f')
 		newpane->pane = p->pane->focus;
+	if (*which == 'F')
+		newpane->pane = pane_final_child(p->pane);
 	if (newpane->pane == NULL) {
 		Py_DECREF(newpane);
 		Py_INCREF(Py_None);
@@ -565,6 +567,9 @@ static PyGetSetDef pane_getseters[] = {
     {"focus",
      (getter)pane_getpane, (setter)pane_nosetpane,
      "Focal child", "f"},
+    {"final",
+     (getter)pane_getpane, (setter)pane_nosetpane,
+     "Final child", "F"},
     {NULL}  /* Sentinel */
 };
 
