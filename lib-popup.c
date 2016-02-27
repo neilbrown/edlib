@@ -133,7 +133,7 @@ DEF_CMD(popup_handle)
 		ci2.numeric = 1;
 		ci2.str = ci->str;
 		if (ppi->doc)
-			ci2.str = doc_getstr(ppi->popup, NULL);
+			ci2.str = doc_getstr(pane_final_child(ppi->popup), NULL);
 		ci2.mark = NULL;
 		key_handle(&ci2);
 		if (ppi->doc)
@@ -237,6 +237,8 @@ DEF_CMD(popup_attach)
 	ci2.str = "popup:quote";
 	ci2.str2 = "Return";
 	key_handle(&ci2);
+	ci2.focus = pane_final_child(p);
+	ci2.home = NULL; ci2.comm = NULL;
 	ci2.str2 = "Abort";
 	key_handle(&ci2);
 

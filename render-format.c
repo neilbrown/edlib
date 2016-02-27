@@ -38,7 +38,7 @@ DEF_CMD(render_line)
 
 	if (pm && !mark_same_pane(ci->home, pm, m, NULL))
 		pm = NULL;
-	ch = doc_following_pane(ci->focus, m);
+	ch = doc_following_pane(ci->home, m);
 	if (ch == WEOF)
 		return 1;
 	buf_init(&ret);

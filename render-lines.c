@@ -499,7 +499,7 @@ static struct mark *call_render_line_prev(struct pane *p,
 
 	ci.key = "render-line-prev";
 	ci.mark = m;
-	ci.focus = p;
+	ci.focus = pane_final_child(p);
 	ci.numeric = n;
 	ret = key_handle(&ci);
 	if (ret == 0) {
@@ -539,7 +539,7 @@ static struct mark *call_render_line(struct pane *p, struct mark *start)
 	struct mark *m, *m2;
 
 	ci.key = "render-line";
-	ci.focus = p;
+	ci.focus = pane_final_child(p);
 	ci.mark = mark_dup(start, 0);
 	ci.numeric = NO_NUMERIC;
 	cr.c = save_str;
@@ -587,7 +587,7 @@ static struct mark *call_render_line_offset(struct pane *p,
 	struct cmd_info ci = {0};
 
 	ci.key = "render-line";
-	ci.focus = p;
+	ci.focus = pane_final_child(p);
 	ci.mark = mark_dup(start, 0);
 	ci.numeric = offset;
 	ci.comm2 = &no_save;
@@ -613,7 +613,7 @@ static int call_render_line_to_point(struct pane *p, struct mark *pm,
 	int len;
 
 	ci.key = "render-line";
-	ci.focus = p;
+	ci.focus = pane_final_child(p);
 	ci.mark2 = pm;
 	ci.mark = mark_dup(start, 0);
 	ci.numeric = -1;

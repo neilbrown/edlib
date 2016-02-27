@@ -316,7 +316,7 @@ DEF_CMD(view_click)
 		/* big scroll down */
 		key = "Move-View-Large";
 	}
-	return call3(key, p, num, NULL);
+	return call3(key, pane_final_child(p), num, NULL);
 }
 
 DEF_CMD(view_border)

@@ -312,7 +312,7 @@ DEF_CMD(text_save_file)
 		else
 			asprintf(&msg, "*** Faild to write %s ***", t->fname);
 	}
-	call5("Message", ci->home, 0, NULL, msg, 0);
+	call5("Message", ci->focus, 0, NULL, msg, 0);
 	free(msg);
 	if (ret == 0)
 		return 1;

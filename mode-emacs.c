@@ -149,7 +149,7 @@ REDEF_CMD(emacs_delete)
 	}
 	ret = call5("Replace", ci->focus, 1, m, NULL, ci->extra);
 	mark_free(m);
-	pane_set_extra(ci->home, 1);
+	pane_set_extra(ci->focus, 1);
 
 	return ret;
 }
@@ -206,7 +206,7 @@ DEF_CMD(emacs_insert)
 	/* Key is "Chr-X" - skip 4 bytes to get X */
 	str = ci->key + 4;
 	ret = call5("Replace", ci->focus, 1, ci->mark, str, ci->extra);
-	pane_set_extra(ci->home, 1);
+	pane_set_extra(ci->focus, 1);
 
 	return ret;
 }
@@ -234,7 +234,7 @@ DEF_CMD(emacs_insert_other)
 
 	ret = call5("Replace", ci->focus, 1, ci->mark, other_inserts[i].insert,
 		    ci->extra);
-	pane_set_extra(ci->home, 0); /* A newline starts a new undo */
+	pane_set_extra(ci->focus, 0); /* A newline starts a new undo */
 	return ret;
 }
 
@@ -291,7 +291,7 @@ DEF_CMD(emacs_findfile)
 			call5("Replace", p, 0, NULL, path, 0);
 
 		ci2.key = "local-set-key";
-		ci2.focus = p;
+		ci2.focus = pane_final_child(p);
 		ci2.str = "emacs:file-complete";
 		ci2.str2 = "Tab";
 		key_handle(&ci2);
@@ -376,7 +376,7 @@ DEF_CMD(emacs_file_complete)
 	render_attach("complete", par);
 	ci2.key = "Complete:prefix";
 	ci2.str = b;
-	ci2.focus = par;
+	ci2.focus = pane_final_child(par);
 	cr.c = save_str;
 	cr.s = NULL;
 	ci2.comm2 = &cr.c;
@@ -473,7 +473,7 @@ DEF_CMD(emacs_doc_complete)
 	render_attach("complete", par);
 	ci2.key = "Complete:prefix";
 	ci2.str = str;
-	ci2.focus = par;
+	ci2.focus = pane_final_child(par);
 	cr.c = save_str;
 	cr.s = NULL;
 	ci2.comm2= &cr.c;
@@ -519,9 +519,9 @@ DEF_CMD(emacs_viewdocs)
 
 DEF_CMD(emacs_meta)
 {
-	pane_set_mode(ci->home, "M-");
-	pane_set_numeric(ci->home, ci->numeric);
-	pane_set_extra(ci->home, ci->extra);
+	pane_set_mode(ci->focus, "M-");
+	pane_set_numeric(ci->focus, ci->numeric);
+	pane_set_extra(ci->focus, ci->extra);
 	return 1;
 }
 
@@ -533,8 +533,8 @@ DEF_CMD(emacs_num)
 	if (ci->numeric == NO_NUMERIC)
 		rpt = 0;
 	rpt = rpt * 10 + *last - '0';
-	pane_set_numeric(ci->home, rpt);
-	pane_set_extra(ci->home, ci->extra);
+	pane_set_numeric(ci->focus, rpt);
+	pane_set_extra(ci->focus, ci->extra);
 	return 1;
 }
 
@@ -569,7 +569,7 @@ DEF_CMD(emacs_search)
 	if (!ci->str || !ci->str[0])
 		return -1;
 
-	m = mark_at_point(ci->home, NULL, MARK_UNGROUPED);
+	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 
 	ci2.key = "global-set-attr";
 	ci2.str = "Search String";

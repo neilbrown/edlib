@@ -238,7 +238,7 @@ static int key_prefix(const struct cmd_info *ci)
 {
 	struct modmap *m = container_of(ci->comm, struct modmap, comm);
 
-	pane_set_mode(ci->home, m->name);
+	pane_set_mode(ci->focus, m->name);
 	return 1;
 }
 
