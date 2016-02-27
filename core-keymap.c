@@ -292,10 +292,9 @@ int key_lookup_cmd_func(const struct cmd_info *ci)
 	return key_lookup(*l->m, ci);
 }
 
-/* key_handle_filter is simplest. It just searches towards root for the pane
- * which handles the command.
+/* key_handle.  Search towards root for the pane which handles the command.
  */
-int key_handle_filter(const struct cmd_info *ci)
+int key_handle(const struct cmd_info *ci)
 {
 	struct cmd_info *vci = (struct cmd_info*)ci;
 	struct pane *p;
@@ -324,19 +323,3 @@ int key_handle_filter(const struct cmd_info *ci)
 	}
 	return 0;
 }
-
-/* key_handle move 'home' out to a leaf and searches from there */
-int key_handle(const struct cmd_info *ci)
-{
-	struct pane *p;
-	if (ci->comm)
-		return ci->comm->func(ci);
-	p = ci->home;
-	if (!p)
-		p = ci->focus;
-	while (p->focus)
-		p = p->focus;
-	((struct cmd_info*)ci)->home = p;
-	return key_handle_filter(ci);
-}
-
