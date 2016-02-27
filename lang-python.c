@@ -488,24 +488,25 @@ static int pane_setnum(Pane *p, PyObject *v, char *which)
 
 static Pane *pane_getpane(Pane *p, char *which)
 {
-	Pane *newpane = (Pane *)Pane_Frompane(NULL);
+	struct pane *new = NULL;
+	Pane *newpane;
 
 	if (p->pane == NULL) {
-		Py_DECREF(newpane);
 		PyErr_SetString(PyExc_TypeError, "pane not initialized");
 		return NULL;
 	}
 	if (*which == 'p')
-		newpane->pane = p->pane->parent;
+		new = p->pane->parent;
 	if (*which == 'f')
-		newpane->pane = p->pane->focus;
+		new = p->pane->focus;
 	if (*which == 'F')
-		newpane->pane = pane_final_child(p->pane);
-	if (newpane->pane == NULL) {
-		Py_DECREF(newpane);
+		new = pane_final_child(p->pane);
+	if (new == NULL) {
 		Py_INCREF(Py_None);
 		newpane = (Pane*)Py_None;
-	}
+	} else
+		newpane = (Pane *)Pane_Frompane(new);
+
 	return newpane;
 }
 
