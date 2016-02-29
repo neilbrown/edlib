@@ -301,7 +301,7 @@ static PyObject *Pane_call(Pane *self, PyObject *args, PyObject *kwds)
 	struct cmd_info ci = {0};
 	int rv;
 
-	ci.focus = self->pane;
+	ci.home = self->pane;
 
 	rv = get_cmd_info(&ci, args, kwds);
 
@@ -1125,10 +1125,10 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 	for (i = 1; i < argc; i++) {
 		a = PyTuple_GetItem(args, i);
 		if (PyObject_TypeCheck(a, &PaneType)) {
-			if (ci->focus == NULL)
-				ci->focus = ((Pane*)a)->pane;
-			else if (ci->home == NULL)
+			if (ci->home == NULL)
 				ci->home = ((Pane*)a)->pane;
+			else if (ci->focus == NULL)
+				ci->focus = ((Pane*)a)->pane;
 			else {
 				PyErr_SetString(PyExc_TypeError, "Only 2 Pane args permitted");
 				return 0;
@@ -1215,10 +1215,12 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 		PyErr_SetString(PyExc_TypeError, "No key specified");
 		return 0;
 	}
-	if (!ci->focus) {
-		PyErr_SetString(PyExc_TypeError, "No focus specified");
+	if (!ci->home) {
+		PyErr_SetString(PyExc_TypeError, "No pane specified");
 		return 0;
 	}
+	if (!ci->focus)
+		ci->focus = ci->home;
 
 	return xy_set ? 2 : 1;
 }
