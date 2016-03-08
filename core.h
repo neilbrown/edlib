@@ -76,7 +76,6 @@ void pane_notify(struct pane *p, char *notification, struct mark *m, struct mark
  */
 struct doc_data {
 	struct doc		*doc;
-	struct pane		*pane;
 	struct mark		*point;
 };
 

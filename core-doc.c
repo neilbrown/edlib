@@ -407,8 +407,6 @@ DEF_CMD(doc_handle)
 		p = pane_child(par);
 		if (p) {
 			pane_subsume(p, par);
-			dd = par->data;
-			dd->pane = par;
 			pane_close(p);
 		}
 		return 1;
@@ -536,7 +534,6 @@ struct pane *doc_attach(struct pane *parent, struct doc *d)
 		pane_add_notify(p, d->home, "Notify:Close");
 	}
 	dd->point = NULL;
-	dd->pane = p;
 	call5("docs:attach", d->home, 1, NULL, NULL, 0);
 	return p;
 }
