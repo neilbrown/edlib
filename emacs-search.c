@@ -273,7 +273,8 @@ DEF_CMD(emacs_search)
 	return 1;
 }
 
-void emacs_search_init(struct editor *ed)
+void emacs_search_init(struct pane *ed)
 {
-	key_add(ed->commands, "attach-emacs-search", &emacs_search);
+	call_comm("global-set-command", ed, 0, NULL, "attach-emacs-search",
+		  0, &emacs_search);
 }

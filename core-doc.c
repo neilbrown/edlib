@@ -537,7 +537,6 @@ struct pane *doc_attach(struct pane *parent, struct doc *d)
 	}
 	dd->point = NULL;
 	dd->pane = p;
-	d->ed = pane2ed(parent);
 	call5("docs:attach", d->home, 1, NULL, NULL, 0);
 	return p;
 }
@@ -549,7 +548,7 @@ DEF_CMD(take_pane)
 	return 1;
 }
 
-struct doc *doc_new(struct editor *ed, char *type)
+struct doc *doc_new(struct pane *p, char *type)
 {
 	char buf[100];
 	struct cmd_info ci = {0};
@@ -560,27 +559,27 @@ struct doc *doc_new(struct editor *ed, char *type)
 
 	sprintf(buf, "doc-%s", type);
 	ci.key = buf;
-	ci.focus = ci.home = &ed->root;
+	ci.focus = ci.home = p;
 	cr.c = take_pane;
 	cr.p = NULL;
 	ci.comm2 = &cr.c;
-	if (!key_lookup(ed->commands, &ci)) {
-		editor_load_module(ed, buf);
-		if (!key_lookup(ed->commands, &ci))
+	if (!key_handle(&ci)) {
+		call5("global-load-module", p, 0, NULL, buf, 0);
+		if (!key_handle(&ci))
 			return NULL;
 	}
 	dd = cr.p->data;
 	return dd->doc;
 }
 
-struct pane *doc_open(struct editor *ed, int fd, char *name)
+struct pane *doc_open(struct pane *ed, int fd, char *name)
 {
 	struct stat stb;
 	struct pane *p;
 	struct doc *d;
 	char pathbuf[PATH_MAX], *rp;
 
-	p = call_pane7("docs:byfd", &ed->root, 0, NULL, fd, name);
+	p = call_pane7("docs:byfd", ed, 0, NULL, fd, name);
 
 	if (p)
 		return p;
@@ -623,7 +622,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	struct pane *p;
 	struct doc *d;
 
-	d = doc_new(pane2ed(parent), "text");
+	d = doc_new(parent, "text");
 	if (!d)
 		return NULL;
 	doc_set_name(d, name);

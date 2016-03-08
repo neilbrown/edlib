@@ -286,7 +286,8 @@ DEF_CMD(render_format_attach)
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "render-format-attach", &render_format_attach);
+	call_comm("global-set-command", ed, 0, NULL, "render-format-attach",
+		  0, &render_format_attach);
 }

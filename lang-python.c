@@ -116,7 +116,6 @@ DEF_CMD(python_load)
 	char *fname = ci->str;
 	FILE *fp;
 	PyObject *globals, *main_mod;
-	struct editor *ed = pane2ed(ci->home);
 	PyObject *Ed;
 
 	if (!fname)
@@ -130,7 +129,7 @@ DEF_CMD(python_load)
 		return -1;
 	globals = PyModule_GetDict(main_mod);
 
-	Ed = Pane_Frompane(&ed->root);
+	Ed = Pane_Frompane(ci->home);
 	PyDict_SetItemString(globals, "editor", Ed);
 	PyDict_SetItemString(globals, "pane", Pane_Frompane(ci->focus));
 	PyDict_SetItemString(globals, "edlib", EdlibModule);
@@ -1225,7 +1224,7 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 	return xy_set ? 2 : 1;
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
 	PyObject *m;
 
@@ -1253,7 +1252,7 @@ void edlib_init(struct editor *ed)
 	PyModule_AddObject(m, "Pane", (PyObject *)&PaneType);
 	PyModule_AddObject(m, "Mark", (PyObject *)&MarkType);
 	PyModule_AddObject(m, "Comm", (PyObject *)&CommType);
-	key_add(ed->commands, "python-load", &python_load);
+	call_comm("global-set-command", ed, 0, NULL, "python-load", 0, &python_load);
 
 	Edlib_CommandFailed = PyErr_NewException("edlib.commandfailed", NULL, NULL);
 	Py_INCREF(Edlib_CommandFailed);

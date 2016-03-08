@@ -230,7 +230,8 @@ DEF_CMD(count_lines)
 	return 1;
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "CountLines", &count_lines);
+	call_comm("global-set-command", ed, 0, NULL, "CountLines",
+		  0, &count_lines);
 }

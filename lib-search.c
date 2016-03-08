@@ -53,7 +53,8 @@ DEF_CMD(text_search)
 	return since_start + 1;
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "text-search", &text_search);
+	call_comm("global-set-command", ed, 0, NULL, "text-search",
+		  0, &text_search);
 }

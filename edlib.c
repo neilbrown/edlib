@@ -55,29 +55,30 @@ int main(int argc, char *argv[])
 	struct pane *b, *p= NULL;
 	struct cmd_info ci = {0};
 	struct call_return cr;
-	struct editor *ed;
+	struct pane *ed;
 	struct pane *vroot = editor_new();
 	int gtk = 0;
 
 	if (argc > 1 && strcmp(argv[1], "-g") == 0)
 		gtk = 1;
 
-	ed = pane2ed(vroot);
+	ed = vroot;
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 
 	doc_new(ed, "docs");
-	editor_load_module(ed, "lib-line-count");
-	editor_load_module(ed, "lib-search");
-	editor_load_module(ed, "lang-python");
+	call5("global-load-module", ed, 0, NULL, "lib-line-count", 0);
+	call5("global-load-module", ed, 0, NULL, "lib-search", 0);
+	call5("global-load-module", ed, 0, NULL, "lang-python", 0);
+
 	if (gtk) {
 		call5("python-load", vroot, 0, NULL, "python/display-pygtk.py", 0);
 		call3("pygtkevent:activate", vroot, 0, NULL);
 		vroot = pane_attach(vroot, "input", NULL, NULL);
 		ci.key = "display-pygtk";
 	} else {
-		editor_load_module(ed, "lib-libevent");
-		editor_load_module(ed, "display-ncurses");
+		call5("global-load-module", ed, 0, NULL, "lib-libevent", 0);
+		call5("global-load-module", ed, 0, NULL, "display-ncurses", 0);
 		call3("libevent:activate", vroot, 0, NULL);
 		ci.key = "display-ncurses";
 	}
@@ -91,7 +92,7 @@ int main(int argc, char *argv[])
 	global = pane_attach(root, "messageline", NULL, NULL);
 	global = pane_attach(global, "global-keymap", NULL, NULL);
 
-	editor_load_module(ed, "mode-emacs");
+	call5("global-load-module", ed, 0, NULL, "mode-emacs", 0);
 	call5("global-set-keymap", global, 0, NULL, "mode-emacs", 0);
 
 	b = pane_attach(global, "tile", NULL, NULL);
@@ -104,10 +105,10 @@ int main(int argc, char *argv[])
 		ci.str = "python/test.py";
 		key_handle(&ci);
 
-		pane_refresh(&ed->root);
+		pane_refresh(ed);
 		while (call3("event:run", vroot, 0, NULL) == 1)
 			;
 	}
-	pane_close(&ed->root);
+	pane_close(ed);
 	exit(0);
 }

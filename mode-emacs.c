@@ -314,7 +314,7 @@ DEF_CMD(emacs_findfile)
 
 	fd = open(ci->str, O_RDONLY);
 	if (fd >= 0) {
-		p = doc_open(pane2ed(par), fd, ci->str);
+		p = doc_open(par, fd, ci->str);
 		if (p)
 			doc_attach_view(par, p, NULL);
 		close(fd);
@@ -339,7 +339,6 @@ DEF_CMD(emacs_file_complete)
 	 * Find a document for the directory and attach as a completing
 	 * popup menu
 	 */
-	struct editor *ed = pane2ed(ci->home);
 	char *str = doc_getstr(ci->focus, NULL);
 	char *d, *b, *c;
 	int fd;
@@ -365,7 +364,7 @@ DEF_CMD(emacs_file_complete)
 		free(str);
 		return -1;
 	}
-	docp = doc_open(ed, fd, d);
+	docp = doc_open(ci->home, fd, d);
 	close(fd);
 	pop = pane_attach(ci->focus, "popup", "DM1r", pane_attr_get(docp, "doc:name"));
 	if (!pop)
@@ -651,13 +650,16 @@ static void emacs_init(void)
 
 DEF_LOOKUP_CMD(mode_emacs, emacs_map);
 
-void emacs_search_init(struct editor *ed);
-void edlib_init(struct editor *ed)
+void emacs_search_init(struct pane *ed);
+void edlib_init(struct pane *ed)
 {
 	if (emacs_map == NULL)
 		emacs_init();
-	key_add(ed->commands, "mode-emacs", &mode_emacs.c);
-	key_add(ed->commands, "emacs:file-complete", &emacs_file_complete);
-	key_add(ed->commands, "emacs:doc-complete", &emacs_doc_complete);
+	call_comm("global-set-command", ed, 0, NULL, "mode-emacs",
+		  0, &mode_emacs.c);
+	call_comm("global-set-command", ed, 0, NULL, "emacs:file-complete",
+		  0, &emacs_file_complete);
+	call_comm("global-set-command", ed, 0, NULL, "emacs:doc-complete",
+		  0, &emacs_doc_complete);
 	emacs_search_init(ed);
 }

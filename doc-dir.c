@@ -118,14 +118,13 @@ static void load_dir(struct list_head *lst, int fd)
 DEF_CMD(dir_new)
 {
 	struct directory *dr = malloc(sizeof(*dr));
-	struct editor *ed = pane2ed(ci->focus);
 	struct pane *p;
 
 	doc_init(&dr->doc);
 	dr->doc.map = doc_map;
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	p = doc_attach(ed->root.focus, &dr->doc);
+	p = doc_attach(ci->home, &dr->doc);
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
 	return -1;
@@ -511,7 +510,6 @@ DEF_CMD(dir_open)
 	struct directory *dr = container_of(dd->doc, struct directory, doc);
 	struct dir_ent *de = ci->mark->ref.d;
 	struct pane *par = p->parent;
-	struct editor *ed = dr->doc.ed;
 	int fd;
 	char *fname = NULL;
 	char *renderer = NULL;
@@ -533,7 +531,7 @@ DEF_CMD(dir_open)
 	if (p)
 		pane_close(p);
 	if (fd >= 0) {
-		p = doc_open(ed, fd, fname);
+		p = doc_open(par, fd, fname);
 		if (p)
 			p = doc_attach_view(par, p, renderer);
 		close(fd);
@@ -555,9 +553,10 @@ DEF_CMD(dir_close)
 }
 
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "doc-dir", &dir_new);
+	call_comm("global-set-command", ed, 0, NULL, "doc-dir",
+		  0, &dir_new);
 
 	doc_map = key_alloc();
 	key_add(doc_map, "Chr-f", &dir_open);

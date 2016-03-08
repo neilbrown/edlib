@@ -420,7 +420,8 @@ REDEF_CMD(complete_attach)
 	return comm_call(ci->comm2, "callback:attach", complete, 0, NULL, NULL, 0);
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "render-complete-attach", &complete_attach);
+	call_comm("global-set-command", ed, 0, NULL, "render-complete-attach",
+		  0, &complete_attach);
 }

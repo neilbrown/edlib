@@ -157,7 +157,8 @@ DEF_CMD(keymap_attach)
 	return -1;
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "attach-global-keymap", &keymap_attach);
+	call_comm("global-set-command", ed, 0, NULL, "attach-global-keymap",
+		  0, &keymap_attach);
 }

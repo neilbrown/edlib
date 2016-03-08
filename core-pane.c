@@ -453,13 +453,6 @@ void pane_focus(struct pane *p)
 	}
 }
 
-struct editor *pane2ed(struct pane *p)
-{
-	while (p->parent)
-		p = p->parent;
-	return container_of(p, struct editor, root);
-}
-
 DEF_CMD(pane_callback)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
@@ -488,13 +481,13 @@ struct pane *render_attach(char *name, struct pane *parent)
 	ci.key = buf;
 	ci.focus = parent;
 	ci.comm2 = &cr.c;
-	ret = key_lookup(pane2ed(parent)->commands, &ci);
+	ret = key_handle(&ci);
 	if (ret)
 		return cr.p;
 	sprintf(buf, "render-%s", name);
-	editor_load_module(pane2ed(parent), buf);
+	call5("global-load-module", parent, 0, NULL, buf, 0);
 	sprintf(buf, "render-%s-attach", name);
-	ret = key_lookup(pane2ed(parent)->commands, &ci);
+	ret = key_handle(&ci);
 	if (ret)
 		return cr.p;
 	return NULL;
@@ -520,7 +513,6 @@ struct pane *pane_attach(struct pane *p, char *type,
 			 char *arg, char *arg2)
 {
 	struct cmd_info ci = {0};
-	struct editor *ed = pane2ed(p);
 	char *com;
 	struct call_return cr;
 
@@ -533,14 +525,14 @@ struct pane *pane_attach(struct pane *p, char *type,
 	ci.str = arg;
 	ci.str2 = arg2;
 	ci.comm2 = &cr.c;
-	if (!key_lookup(ed->commands, &ci)) {
+	if (!key_handle(&ci)) {
 		char *mod;
 		if (strcmp(type, "global-keymap")==0)
 			type = "keymap";
 		asprintf(&mod, "lib-%s", type);
-		editor_load_module(ed, mod);
+		call5("global-load-module", p, 0, NULL, mod, 0);
 		free(mod);
-		key_lookup(ed->commands, &ci);
+		key_handle(&ci);
 	}
 	free(com);
 	return cr.p;

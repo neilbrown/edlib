@@ -231,7 +231,7 @@ DEF_CMD(popup_attach)
 		p = doc_attach_view(ppi->popup, dp, NULL);
 	} else {
 		struct doc *d;
-		d = doc_new(pane2ed(root), "text");
+		d = doc_new(root, "text");
 		doc_set_name(d, "*popup*");
 		ppi->doc = d;
 		p = doc_attach_view(ppi->popup, d->home, NULL);
@@ -251,8 +251,10 @@ DEF_CMD(popup_attach)
 	return comm_call(ci->comm2, "callback:attach", ppi->popup, 0, NULL, NULL, 0);
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "attach-popup", &popup_attach);
-	key_add(ed->commands, "popup:quote", &popup_quote);
+	call_comm("global-set-command", ed, 0, NULL, "attach-popup",
+		  0, &popup_attach);
+	call_comm("global-set-command", ed, 0, NULL, "popup:quote",
+		  0, &popup_quote);
 }

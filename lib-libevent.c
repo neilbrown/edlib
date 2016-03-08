@@ -108,8 +108,8 @@ DEF_CMD(libevent_activate)
 	return 1;
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	call_comm("global-set-command", &ed->root, 0, NULL, "libevent:activate",
+	call_comm("global-set-command", ed, 0, NULL, "libevent:activate",
 		  0, &libevent_activate);
 }

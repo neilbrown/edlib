@@ -154,7 +154,8 @@ DEF_CMD(input_attach)
 	return -1;
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "attach-input", &input_attach);
+	call_comm("global-set-command", ed, 0, NULL, "attach-input",
+		  0, &input_attach);
 }

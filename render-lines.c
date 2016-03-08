@@ -1296,7 +1296,8 @@ REDEF_CMD(render_lines_attach)
 			 0, NULL, NULL, 0);
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "render-lines-attach", &render_lines_attach);
+	call_comm("global-set-command", ed, 0, NULL, "render-lines-attach",
+		  0, &render_lines_attach);
 }

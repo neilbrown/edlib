@@ -1056,7 +1056,6 @@ DEF_CMD(text_mark_same)
 DEF_CMD(text_new)
 {
 	struct text *t = malloc(sizeof(*t));
-	struct editor *ed = pane2ed(ci->focus);
 	struct pane *p;
 
 	t->alloc = NULL;
@@ -1066,7 +1065,7 @@ DEF_CMD(text_new)
 	t->doc.map = text_map;
 	t->fname = NULL;
 	text_new_alloc(t, 0);
-	p = doc_attach(ed->root.focus, &t->doc);
+	p = doc_attach(ci->home, &t->doc);
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
 	return -1;
@@ -1677,9 +1676,9 @@ DEF_CMD(render_line)
 	return ret;
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "doc-text", &text_new);
+	call_comm("global-set-command", ed, 0, NULL, "doc-text", 0, &text_new);
 
 	text_map = key_alloc();
 	key_add(text_map, "render-line-prev", &render_line_prev);

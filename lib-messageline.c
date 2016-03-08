@@ -115,7 +115,8 @@ DEF_CMD(messageline_attach)
 }
 
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "attach-messageline", &messageline_attach);
+	call_comm("global-set-command", ed, 0, NULL, "attach-messageline",
+		  0, &messageline_attach);
 }

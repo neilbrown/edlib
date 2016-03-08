@@ -197,7 +197,7 @@ DEF_CMD(ncurses_handle)
 	return 0;
 }
 
-static struct pane *ncurses_init(struct editor *ed)
+static struct pane *ncurses_init(struct pane *ed)
 {
 	WINDOW *w = initscr();
 	struct pane *p;
@@ -218,7 +218,7 @@ static struct pane *ncurses_init(struct editor *ed)
 	dd->cursor.x = dd->cursor.y = -1;
 
 	current_screen = NULL;
-	p = pane_attach(&ed->root, "input", NULL, NULL);
+	p = pane_attach(ed, "input", NULL, NULL);
 	p = pane_register(p, 0, &ncurses_handle, dd, NULL);
 
 	getmaxyx(stdscr, p->h, p->w); p->h-=1;
@@ -445,15 +445,15 @@ REDEF_CMD(input_handle)
 
 DEF_CMD(display_ncurses)
 {
-	struct pane *p = ncurses_init(pane2ed(ci->home));
+	struct pane *p = ncurses_init(ci->home);
 	if (p)
 		return comm_call(ci->comm2, "callback:display", p, 0, NULL,
 				 NULL, 0);
 	return -1;
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	call_comm("global-set-command", &ed->root, 0, NULL, "display-ncurses",
+	call_comm("global-set-command", ed, 0, NULL, "display-ncurses",
 		  0, &display_ncurses);
 }

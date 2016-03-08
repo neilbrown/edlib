@@ -334,7 +334,7 @@ DEF_CMD(view_border)
 }
 
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
 	view_map = key_alloc();
 
@@ -342,5 +342,6 @@ void edlib_init(struct editor *ed)
 	key_add(view_map, "Press-1", &view_click);
 	key_add(view_map, "Window:border", &view_border);
 
-	key_add(ed->commands, "attach-view", &view_attach);
+	call_comm("global-set-command", ed, 0, NULL, "attach-view",
+		  0, &view_attach);
 }

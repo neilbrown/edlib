@@ -14,13 +14,13 @@ struct map *ed_map;
 
 DEF_CMD(ed_handle)
 {
-	struct editor *ed = container_of(ci->home, struct editor, root);
+	struct map *map = ci->home->data;
 	int ret;
 
 	ret = key_lookup(ed_map, ci);
 	if (ret)
 		return ret;
-	return key_lookup(ed->commands, ci);
+	return key_lookup(map, ci);
 }
 
 DEF_CMD(global_set_attr)
@@ -31,16 +31,19 @@ DEF_CMD(global_set_attr)
 
 DEF_CMD(global_set_command)
 {
-	struct editor *ed = container_of(ci->home, struct editor, root);
+	struct map *map = ci->home->data;
 
-	key_add(ed->commands, ci->str, ci->comm2);
+	if (ci->str2)
+		key_add_range(map, ci->str, ci->str2, ci->comm2);
+	else
+		key_add(map, ci->str, ci->comm2);
 	return 1;
 }
 
 DEF_CMD(global_get_command)
 {
-	struct editor *ed = container_of(ci->home, struct editor, root);
-	struct command *cm = key_lookup_cmd(ed->commands, ci->str);
+	struct map *map = ci->home->data;
+	struct command *cm = key_lookup_cmd(map, ci->str);
 	struct cmd_info ci2 = {0};
 
 	if (!cm)
@@ -55,30 +58,12 @@ DEF_CMD(global_get_command)
 	return -1;
 }
 
-struct pane *editor_new(void)
+DEF_CMD(editor_load_module)
 {
-	struct editor *ed = calloc(sizeof(*ed), 1);
-
-	if (!ed_map) {
-		ed_map = key_alloc();
-		key_add(ed_map, "global-set-attr", &global_set_attr);
-		key_add(ed_map, "global-set-command", &global_set_command);
-		key_add(ed_map, "global-get-command", &global_get_command);
-	}
-
-	pane_init(&ed->root, NULL, NULL);
-	ed->root.handle = &ed_handle;
-	ed->root.data = NULL;
-
-	ed->commands = key_alloc();
-	return &ed->root;
-}
-
-int editor_load_module(struct editor *ed, char *name)
-{
+	char *name = ci->str;
 	char buf[PATH_MAX];
 	void *h;
-	void (*s)(struct editor *e);
+	void (*s)(struct pane *p);
 
 	sprintf(buf, "edlib-%s.so", name);
 	/* RTLD_GLOBAL is needed for python, else we get
@@ -92,6 +77,24 @@ int editor_load_module(struct editor *ed, char *name)
 	s = dlsym(h, "edlib_init");
 	if (!s)
 		return 0;
-	s(ed);
+	s(ci->home);
 	return 1;
 }
+
+struct pane *editor_new(void)
+{
+	struct pane *ed;
+
+	if (!ed_map) {
+		ed_map = key_alloc();
+		key_add(ed_map, "global-set-attr", &global_set_attr);
+		key_add(ed_map, "global-set-command", &global_set_command);
+		key_add(ed_map, "global-get-command", &global_get_command);
+		key_add(ed_map, "global-load-module", &editor_load_module);
+	}
+
+	ed = pane_register(NULL, 0, &ed_handle, key_alloc(), NULL);
+
+	return ed;
+}
+

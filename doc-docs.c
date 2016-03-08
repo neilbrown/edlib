@@ -384,7 +384,6 @@ DEF_CMD(attach_docs)
 	 */
 	struct docs *doc = malloc(sizeof(*doc));
 	struct pane *p;
-	struct editor *ed = pane2ed(ci->focus);
 
 	docs_init_map();
 	doc_init(&doc->doc);
@@ -399,13 +398,15 @@ DEF_CMD(attach_docs)
 	}
 
 	doc->callback = docs_callback;
-	key_add_range(ed->commands, "docs:","docs;", &doc->callback);
+	call_comm7("global-set-command", ci->home, 0, NULL, "docs:", 0, "docs;",
+		   &doc->callback);
 
 	return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
 }
 
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
-	key_add(ed->commands, "doc-docs", &attach_docs);
+	call_comm("global-set-command", ed, 0, NULL, "doc-docs",
+		  0, &attach_docs);
 }

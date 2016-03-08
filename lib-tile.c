@@ -661,7 +661,7 @@ DEF_CMD(tile_root)
 			 NULL, NULL, 0);
 }
 
-void edlib_init(struct editor *ed)
+void edlib_init(struct pane *ed)
 {
 	tile_map = key_alloc();
 
@@ -670,5 +670,6 @@ void edlib_init(struct editor *ed)
 	key_add(tile_map, "ThisPane", &tile_this);
 	key_add(tile_map, "RootPane", &tile_root);
 
-	key_add(ed->commands, "attach-tile", &tile_attach);
+	call_comm("global-set-command", ed, 0, NULL, "attach-tile",
+		  0, &tile_attach);
 }

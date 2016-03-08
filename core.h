@@ -80,13 +80,7 @@ struct doc_data {
 	struct mark		*point;
 };
 
-struct editor {
-	struct pane		root;
-	struct map		*commands;
-};
 struct pane *editor_new(void);
-
-int editor_load_module(struct editor *ed, char *name);
 
 struct doc {
 	struct hlist_head	marks;
@@ -98,7 +92,6 @@ struct doc {
 	} *views;
 	struct attrset		*attrs;
 	int			nviews;
-	struct editor		*ed;
 	struct pane		*home; /* pane in null_display which owns this doc*/
 	struct map		*map;
 	char			*name;
@@ -106,9 +99,9 @@ struct doc {
 };
 
 void doc_init(struct doc *d);
-struct doc *doc_new(struct editor *ed, char *type);
+struct doc *doc_new(struct pane *ed, char *type);
 struct pane *doc_from_text(struct pane *parent, char *name, char *text);
-struct pane *doc_open(struct editor *ed, int fd, char *name);
+struct pane *doc_open(struct pane *ed, int fd, char *name);
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render);
 struct pane *doc_attach(struct pane *parent, struct doc *d);
 void doc_set_name(struct doc *d, char *name);
@@ -333,7 +326,6 @@ void pane_damaged(struct pane *p, int type);
 struct pane *pane_to_root(struct pane *p, int *x, int *y, int *z,
 			  int *w, int *h);
 int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h);
-struct editor *pane2ed(struct pane *p);
 void pane_set_mode(struct pane *p, char *mode);
 void pane_set_numeric(struct pane *p, int numeric);
 void pane_set_extra(struct pane *p, int extra);
