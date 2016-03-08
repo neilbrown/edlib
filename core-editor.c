@@ -37,6 +37,24 @@ DEF_CMD(global_set_command)
 	return 1;
 }
 
+DEF_CMD(global_get_command)
+{
+	struct editor *ed = container_of(ci->home, struct editor, root);
+	struct command *cm = key_lookup_cmd(ed->commands, ci->str);
+	struct cmd_info ci2 = {0};
+
+	if (!cm)
+		return -1;
+	ci2.key = "callback:comm";
+	ci2.focus = ci->focus;
+	ci2.str = ci->str;
+	ci2.comm2 = cm;
+	ci2.comm = ci->comm2;
+	if (ci2.comm)
+		return ci2.comm->func(&ci2);
+	return -1;
+}
+
 struct pane *editor_new(void)
 {
 	struct editor *ed = calloc(sizeof(*ed), 1);
@@ -45,6 +63,7 @@ struct pane *editor_new(void)
 		ed_map = key_alloc();
 		key_add(ed_map, "global-set-attr", &global_set_attr);
 		key_add(ed_map, "global-set-command", &global_set_command);
+		key_add(ed_map, "global-get-command", &global_get_command);
 	}
 
 	pane_init(&ed->root, NULL, NULL);

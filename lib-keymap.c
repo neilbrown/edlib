@@ -36,6 +36,25 @@ struct key_data {
 
 static struct pane *do_keymap_attach(struct pane *p, int global);
 
+DEF_CMD(get_command_callback)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return , c);
+	cr->comm = ci->comm2;
+	return 1;
+}
+
+static struct command *get_command(struct pane *p, char *cmd)
+{
+	struct call_return cr = {0};
+	int ret;
+
+	cr.c = get_command_callback;
+	ret = call_comm("global-get-command", p, 0, NULL, cmd, 0, &cr.c);
+	if (ret > 0)
+		return cr.comm;
+	return NULL;
+}
+
 DEF_CMD(keymap_handle)
 {
 	struct key_data *kd = ci->home->data;
@@ -74,8 +93,7 @@ DEF_CMD(keymap_handle)
 		if (strcmp(ci->key, "global-set-key") == 0) {
 		}
 		if (strcmp(ci->key, "global-set-keymap") == 0) {
-			struct editor *ed = pane2ed(ci->home);
-			struct command *cm = key_lookup_cmd(ed->commands, ci->str);
+			struct command *cm = get_command(ci->home, ci->str);
 			if (!cm)
 				return -1;
 			kd->globalcmd = cm;
@@ -86,8 +104,7 @@ DEF_CMD(keymap_handle)
 	}
 	if (!kd->global && strncmp(ci->key, "local-", 6) == 0) {
 		if (strcmp(ci->key, "local-add-keymap") == 0) {
-			struct editor *ed = pane2ed(ci->home);
-			struct command *cm = key_lookup_cmd(ed->commands, ci->str);
+			struct command *cm = get_command(ci->home, ci->str);
 			if (!cm)
 				return -1;
 			kd->cmds = realloc(kd->cmds, ((kd->cmdcount+1)*
@@ -96,9 +113,7 @@ DEF_CMD(keymap_handle)
 			return 1;
 		}
 		if (strcmp(ci->key, "local-set-key") == 0) {
-			struct editor *ed = pane2ed(ci->home);
-			struct command *cm = key_lookup_cmd(ed->commands, ci->str);
-
+			struct command *cm = get_command(ci->home, ci->str);
 			if (!cm)
 				return -1;
 			key_add(kd->map, ci->str2, cm);

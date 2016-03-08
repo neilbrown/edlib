@@ -583,6 +583,7 @@ struct call_return {
 	struct pane *p;
 	int i, i2;
 	int x,y;
+	struct command *comm;
 };
 
 static inline int call_comm(char *key, struct pane *focus, int numeric, struct mark *m,
