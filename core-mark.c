@@ -186,6 +186,7 @@ struct mark *point_dup(struct mark *p)
 	dup_mark(p, ret);
 	ret->viewnum = MARK_POINT;
 	ret->mdata = lnk;
+	ret->mtype = NULL;
 	lnk->size = old->size;
 	lnk->pt = ret;
 	tlist_add(&ret->view, GRP_MARK, &p->view);
@@ -295,7 +296,7 @@ void __mark_reset(struct doc *d, struct mark *m, int new, int end)
 	else
 		tlist_add(&m->view, GRP_MARK, &d->points);
 
-	lnk = m->mdata;;
+	lnk = m->mdata;
 	for (i = 0; i < lnk->size; i++)
 		if (d->views[i].state) {
 			if (!new)
@@ -318,6 +319,7 @@ struct mark *point_new(struct doc *d)
 	ret->attrs = NULL;
 	ret->viewnum = MARK_POINT;
 	ret->mdata = lnk;
+	ret->mtype = NULL;
 	lnk->size = d->nviews;
 	lnk->pt = ret;
 	__mark_reset(d, ret, 1, 0);

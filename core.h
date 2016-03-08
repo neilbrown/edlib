@@ -82,12 +82,10 @@ struct doc_data {
 
 struct editor {
 	struct pane		root;
-	struct doc		*docs;  /* document containing all documents */
 	struct map		*commands;
 };
 struct pane *editor_new(void);
-struct pane *editor_choose_doc(struct editor *ed);
-void doc_make_docs(struct editor *ed);
+
 int editor_load_module(struct editor *ed, char *name);
 
 struct doc {
@@ -114,9 +112,6 @@ struct pane *doc_open(struct editor *ed, int fd, char *name);
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render);
 struct pane *doc_attach(struct pane *parent, struct doc *d);
 void doc_set_name(struct doc *d, char *name);
-struct pane *doc_find(struct editor *ed, char *name);
-void doc_promote(struct doc *d);
-int  doc_destroy(struct pane *p);
 
 struct pane *render_attach(char *name, struct pane *parent);
 
@@ -291,7 +286,6 @@ struct cmd_info {
 	char		*str, *str2;
 	struct mark	*mark, *mark2;
 	struct command	*comm, *comm2;
-	void		*misc;		/* command specific */
 };
 #define	NO_NUMERIC	(INT_MAX/2)
 #define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric)
@@ -352,6 +346,8 @@ void pane_relxy(struct pane *p, int *x, int *y);
 void pane_map_xy(struct pane *orig, struct pane *target, int *x, int *y);
 struct pane *call_pane(char *key, struct pane *focus, int numeric,
 		       struct mark *m, int extra);
+struct pane *call_pane7(char *key, struct pane *focus, int numeric,
+			struct mark *m, int extra, char *str);
 
 static inline int pane_attr_get_int(struct pane *p, char *key)
 {

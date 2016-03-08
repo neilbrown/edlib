@@ -320,6 +320,8 @@ DEF_CMD(emacs_findfile)
 		close(fd);
 	} else
 		p = doc_from_text(par, ci->str, "File not found\n");
+	if (!p)
+		return -1;
 	pane_focus(p);
 	return 1;
 }
@@ -441,7 +443,7 @@ DEF_CMD(emacs_finddoc)
 	par = p;
 	/* par is the tile */
 
-	p = doc_find(pane2ed(par), ci->str);
+	p = call_pane7("docs:byname", ci->focus, 0, NULL, 0, ci->str);
 	if (!p)
 		return 1;
 	if (par->focus)
@@ -455,14 +457,16 @@ DEF_CMD(emacs_doc_complete)
 	/* Extract a document from the document.
 	 * Attach the 'docs' document as a completing popup menu
 	 */
-	struct editor *ed = pane2ed(ci->home);
 	char *str = doc_getstr(ci->focus, NULL);
-	struct pane *par, *pop;
+	struct pane *par, *pop, *docs;
 	struct cmd_info ci2 = {0};
 	struct call_return cr;
 	int ret;
 
-	pop = pane_attach(ci->focus, "popup", ed->docs->home, "DM1r");
+	docs = call_pane("docs:byname", ci->focus, 0, NULL, 0);
+	if (!docs)
+		return -1;
+	pop = pane_attach(ci->focus, "popup", docs, "DM1r");
 	if (!pop)
 		return -1;
 	par = pane_final_child(pop);
@@ -500,20 +504,20 @@ DEF_CMD(emacs_doc_complete)
 DEF_CMD(emacs_viewdocs)
 {
 	struct pane *p, *par;
-	struct doc *d;
+	struct pane *docs;
 
 	par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 	if (!par)
 		return -1;
 	/* par is the tile */
 
-	d = pane2ed(par)->docs;
-	if (!d)
+	docs = call_pane7("docs:byname", ci->focus, 0, NULL, 0, "*Documents*");
+	if (!docs)
 		return 1;
 	p = pane_child(par);
 	if (p)
 		pane_close(p);
-	p = doc_attach_view(par, d->home, NULL);
+	p = doc_attach_view(par, docs, NULL);
 	return !!p;
 }
 
@@ -540,8 +544,7 @@ DEF_CMD(emacs_num)
 
 DEF_CMD(emacs_kill_doc)
 {
-	doc_destroy(ci->home);
-	return 1;
+	return call3("doc:destroy", ci->home, 0, 0);
 }
 
 DEF_CMD(emacs_search)

@@ -48,6 +48,7 @@ void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->x = p->y = p->z = 0;
 	p->cx = p->cy = -1;
 	p->h = p->w = 0;
+	p->abs_z = p->abs_zhi = 0;
 	p->focus = NULL;
 	p->handle = NULL;
 	p->data = NULL;
@@ -243,6 +244,15 @@ void pane_close(struct pane *p)
 	p->damaged |= DAMAGED_CLOSED;
 	pane_check(p);
 
+	if (p->parent && p->parent->handle) {
+		struct cmd_info ci = {0};
+
+		ci.key = "ChildClosed";
+		ci.focus = p;
+		ci.home = p->parent;
+		ci.comm = p->parent->handle;
+		ci.comm->func(&ci);
+	}
 	list_del_init(&p->siblings);
 	pane_drop_notifiers(p);
 
@@ -602,6 +612,26 @@ struct pane *call_pane(char *key, struct pane *focus, int numeric,
 	ci.numeric = numeric;
 	ci.extra = extra;
 	ci.mark = m;
+	cr.c = take_pane;
+	cr.p = NULL;
+	ci.comm2 = &cr.c;
+	if (!key_handle(&ci))
+		return NULL;
+	return cr.p;
+}
+
+struct pane *call_pane7(char *key, struct pane *focus, int numeric,
+			struct mark *m, int extra, char *str)
+{
+	struct cmd_info ci = {0};
+	struct call_return cr;
+
+	ci.key = key;
+	ci.focus = focus;
+	ci.numeric = numeric;
+	ci.extra = extra;
+	ci.mark = m;
+	ci.str = str;
 	cr.c = take_pane;
 	cr.p = NULL;
 	ci.comm2 = &cr.c;

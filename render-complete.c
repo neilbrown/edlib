@@ -149,6 +149,7 @@ DEF_CMD(render_complete_prev)
 	cb.str = NULL;
 	cb.prefix = cd->prefix;
 	cb.plen = strlen(cb.prefix);
+	cb.cmp = 0;
 	ci3.comm2 = &cb.c;
 	while (1) {
 		ret = key_handle(&ci2);

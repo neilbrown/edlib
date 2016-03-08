@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 
+	doc_new(ed, "docs");
 	editor_load_module(ed, "lib-line-count");
 	editor_load_module(ed, "lib-search");
 	editor_load_module(ed, "lang-python");

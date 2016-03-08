@@ -12,7 +12,7 @@ all: dirs edlib checksym lib shared
 OBJ = O/edlib.o
 LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
 	O/core-keymap.o O/core-pane.o O/core-misc.o
-SHOBJ = O/doc-text.o O/doc-dir.o \
+SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/render-hex.o O/render-lines.o \
 	O/render-format.o O/render-complete.o \
 	O/lib-view.o O/lib-tile.o O/lib-popup.o O/lib-line-count.o O/lib-keymap.o \

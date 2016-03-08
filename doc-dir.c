@@ -253,13 +253,15 @@ DEF_CMD(dir_same_file)
 {
 	struct doc_data *dd = ci->home->data;
 	int fd = ci->extra;
-	struct stat *stb = ci->misc;
+	struct stat stb;
 	struct directory *dr = container_of(dd->doc, struct directory, doc);
 
 	if (!dr->fname)
 		return 0;
-	if (! (dr->stat.st_ino == stb->st_ino &&
-	       dr->stat.st_dev == stb->st_dev))
+	if (fstat(fd, &stb) != 0)
+		return 0;
+	if (! (dr->stat.st_ino == stb.st_ino &&
+	       dr->stat.st_dev == stb.st_dev))
 		return 0;
 	/* Let's reload it now */
 	doc_load_file(ci->focus, fd, NULL);
@@ -549,8 +551,7 @@ DEF_CMD(dir_reread)
 
 DEF_CMD(dir_close)
 {
-	doc_destroy(ci->home);
-	return 1;
+	return call3("doc:destroy", ci->home, 0, 0);
 }
 
 

@@ -90,7 +90,7 @@ DEF_CMD(popup_handle)
 		d = ppi->doc; ppi->doc = NULL;
 		if (d)
 			/* FIXME make this doc auto-close */
-			doc_destroy(d->home);
+			call3("doc:destroy", d->home, 0, 0);
 		free(ppi);
 		return 1;
 	}
@@ -100,7 +100,7 @@ DEF_CMD(popup_handle)
 			d = ppi->doc; ppi->doc = NULL;
 			if (d)
 				/* FIXME make this doc auto-close */
-				doc_destroy(d->home);
+				call3("doc:destroy", d->home, 0, 0);
 			pane_close(p);
 		}
 		return 1;
@@ -117,7 +117,7 @@ DEF_CMD(popup_handle)
 		d = ppi->doc; ppi->doc = NULL;
 		if (d)
 			/* FIXME make this doc auto-close */
-			doc_destroy(d->home);
+			call3("doc:destroy", d->home, 0, 0);
 		pane_close(ppi->popup);
 		return 1;
 	}
@@ -141,7 +141,7 @@ DEF_CMD(popup_handle)
 		d = ppi->doc; ppi->doc = NULL;
 		if (d)
 			/* FIXME make this doc auto-close */
-			doc_destroy(d->home);
+			call3("doc:destroy", d->home, 0, 0);
 		pane_close(ppi->popup);
 		return 1;
 	}

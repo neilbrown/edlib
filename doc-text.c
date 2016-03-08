@@ -322,13 +322,16 @@ DEF_CMD(text_save_file)
 DEF_CMD(text_same_file)
 {
 	struct doc_data *dd = ci->home->data;
-	struct stat *stb = ci->misc;
 	struct text *t = container_of(dd->doc, struct text, doc);
+	struct stat stb;
+	int fd = ci->extra;
 
 	if (t->fname == NULL)
 		return 0;
-	if (t->stat.st_ino == stb->st_ino &&
-	    t->stat.st_dev == stb->st_dev)
+	if (fstat(fd, &stb) != 0)
+		return 0;
+	if (t->stat.st_ino == stb.st_ino &&
+	    t->stat.st_dev == stb.st_dev)
 		return 1;
 	return 0;
 }
