@@ -273,7 +273,7 @@ DEF_CMD(emacs_findfile)
 			path = realpath(".", buf);
 		if (!path)
 			path = "/";
-		p = pane_attach(ci->focus, "popup", NULL, "D2");
+		p = pane_attach(ci->focus, "popup", "D2", NULL);
 		if (!p)
 			return 0;
 
@@ -367,7 +367,7 @@ DEF_CMD(emacs_file_complete)
 	}
 	docp = doc_open(ed, fd, d);
 	close(fd);
-	pop = pane_attach(ci->focus, "popup", docp, "DM1r");
+	pop = pane_attach(ci->focus, "popup", "DM1r", pane_attr_get(docp, "doc:name"));
 	if (!pop)
 		return -1;
 	par = pane_final_child(pop);
@@ -410,7 +410,7 @@ DEF_CMD(emacs_finddoc)
 
 	if (strncmp(ci->key, "Doc Found", 9) != 0) {
 
-		p = pane_attach(ci->focus, "popup", NULL, "D2");
+		p = pane_attach(ci->focus, "popup", "D2", NULL);
 		if (!p)
 			return 0;
 
@@ -458,15 +458,12 @@ DEF_CMD(emacs_doc_complete)
 	 * Attach the 'docs' document as a completing popup menu
 	 */
 	char *str = doc_getstr(ci->focus, NULL);
-	struct pane *par, *pop, *docs;
+	struct pane *par, *pop;
 	struct cmd_info ci2 = {0};
 	struct call_return cr;
 	int ret;
 
-	docs = call_pane("docs:byname", ci->focus, 0, NULL, 0);
-	if (!docs)
-		return -1;
-	pop = pane_attach(ci->focus, "popup", docs, "DM1r");
+	pop = pane_attach(ci->focus, "popup", "DM1r", "*Documents*");
 	if (!pop)
 		return -1;
 	par = pane_final_child(pop);
@@ -554,7 +551,7 @@ DEF_CMD(emacs_search)
 	int ret;
 
 	if (strcmp(ci->key, "Search String") != 0) {
-		struct pane *p = pane_attach(ci->focus, "popup", NULL, "TR2");
+		struct pane *p = pane_attach(ci->focus, "popup", "TR2", NULL);
 
 		if (!p)
 			return 0;

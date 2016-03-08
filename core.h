@@ -337,7 +337,7 @@ struct editor *pane2ed(struct pane *p);
 void pane_set_mode(struct pane *p, char *mode);
 void pane_set_numeric(struct pane *p, int numeric);
 void pane_set_extra(struct pane *p, int extra);
-struct pane *pane_attach(struct pane *p, char *type, struct pane *dp, char *arg);
+struct pane *pane_attach(struct pane *p, char *type, char *arg, char *arg2);
 void pane_clear(struct pane *p, char *attrs);
 char *pane_attr_get(struct pane *p, char *key);
 char *pane_mark_attr(struct pane *p, struct mark *m, int forward, char *key);

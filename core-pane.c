@@ -516,8 +516,8 @@ void pane_set_extra(struct pane *p, int extra)
 	call5("Mode:set-extra", p, 0, NULL, NULL, extra);
 }
 
-struct pane *pane_attach(struct pane *p, char *type, struct pane *dp,
-			 char *arg)
+struct pane *pane_attach(struct pane *p, char *type,
+			 char *arg, char *arg2)
 {
 	struct cmd_info ci = {0};
 	struct editor *ed = pane2ed(p);
@@ -529,9 +529,9 @@ struct pane *pane_attach(struct pane *p, char *type, struct pane *dp,
 
 	asprintf(&com, "attach-%s", type);
 	ci.key = com;
-	ci.home = dp;
 	ci.focus = p;
 	ci.str = arg;
+	ci.str2 = arg2;
 	ci.comm2 = &cr.c;
 	if (!key_lookup(ed->commands, &ci)) {
 		char *mod;

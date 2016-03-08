@@ -221,8 +221,14 @@ DEF_CMD(popup_attach)
 
 	pane_add_notify(ppi->popup, ppi->target, "Notify:Close");
 
-	if (ci->home) {
-		p = doc_attach_view(ppi->popup, ci->home, NULL);
+	if (ci->str2) {
+		struct pane *dp = call_pane7("docs:byname", ci->focus, 0, NULL, 0,
+					     ci->str2);
+
+		if (!dp)
+			/* FIXME clean up*/
+			return -1;
+		p = doc_attach_view(ppi->popup, dp, NULL);
 	} else {
 		struct doc *d;
 		d = doc_new(pane2ed(root), "text");
