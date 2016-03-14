@@ -71,14 +71,6 @@ struct notifier {
 void pane_add_notify(struct pane *target, struct pane *source, char *msg);
 void pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2);
 
-/* this is ->data for a document pane.  Only core-doc and
- * individual document handlers can know about this.
- */
-struct doc_data {
-	struct doc		*doc;
-	struct mark		*point;
-};
-
 struct pane *editor_new(void);
 
 struct doc {
@@ -92,18 +84,18 @@ struct doc {
 	struct attrset		*attrs;
 	int			nviews;
 	struct pane		*home; /* pane in null_display which owns this doc*/
-	struct map		*map;
 	char			*name;
 	short			deleting; /* is begin destroyed */
 };
 
 void doc_init(struct doc *d);
-struct doc *doc_new(struct pane *ed, char *type);
+struct pane *doc_new(struct pane *ed, char *type);
 struct pane *doc_from_text(struct pane *parent, char *name, char *text);
 struct pane *doc_open(struct pane *ed, int fd, char *name);
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render);
-struct pane *doc_attach(struct pane *parent, struct doc *d);
+struct pane *doc_attach(struct pane *parent, struct pane *d);
 void doc_set_name(struct doc *d, char *name);
+int doc_destroy(struct pane *dp);
 
 struct pane *render_attach(char *name, struct pane *parent);
 
@@ -180,7 +172,7 @@ wint_t mark_prev(struct doc *d, struct mark *m);
 wint_t mark_next_pane(struct pane *p, struct mark *m);
 wint_t mark_prev_pane(struct pane *p, struct mark *m);
 struct mark *mark_at_point(struct pane *p, struct mark *pm, int view);
-struct mark *do_mark_at_point(struct doc *d, struct mark *pt, int view);
+struct mark *do_mark_at_point(struct mark *pt, int view);
 void points_resize(struct doc *d);
 void points_attach(struct doc *d, int view);
 struct mark *vmark_next(struct mark *m);
@@ -383,22 +375,6 @@ static inline wint_t doc_prior(struct doc *d, struct mark *m)
 static inline wint_t doc_prior_pane(struct pane *p, struct mark *m)
 {
 	return mark_step_pane(p, m, 0, 0, NULL);
-}
-static inline void doc_replace(struct pane *p, struct mark *m,
-			       char *str, bool *first)
-{
-	struct cmd_info ci = {0};
-	int ret;
-
-	ci.key = "doc:replace";
-	ci.focus = p;
-	ci.mark = m;
-	ci.str = str;
-	ci.extra = *first;
-	ci.numeric = 1;
-	ret = key_handle(&ci);
-	if (ret == 1)
-		*first = 1;
 }
 static inline int doc_undo(struct pane *p, bool redo)
 {
@@ -616,7 +592,7 @@ static inline int comm_call(struct command *comm, char *key, struct pane *focus,
 	if (!comm)
 		return -1;
 	ci.key = key;
-	ci.focus = focus;
+	ci.home = ci.focus = focus;
 	ci.numeric = numeric;
 	ci.mark = m;
 	ci.str = str;

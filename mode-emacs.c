@@ -573,11 +573,11 @@ DEF_CMD(emacs_search)
 	ci2.key = "global-set-attr";
 	ci2.str = "Search String";
 	ci2.str2 = ci->str;
-	ci2.focus = ci->home;
+	ci2.focus = ci->focus;
 	key_handle(&ci2);
 
 	memset(&ci2, 0, sizeof(ci2));
-	ci2.focus = ci->home;
+	ci2.focus = ci->focus;
 	ci2.mark = m;
 	ci2.str = ci->str;
 	ci2.key = "text-search";

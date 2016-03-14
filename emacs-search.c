@@ -43,7 +43,6 @@ DEF_CMD(search_forward)
 	struct es_info *esi = ci->home->data;
 	struct stk *s;
 	char *str;
-	bool first = 1;
 
 	if (esi->s && mark_same_pane(esi->target, esi->s->m, esi->end, NULL)) {
 		/* already pushed and didn't find anything new */
@@ -57,7 +56,7 @@ DEF_CMD(search_forward)
 		if (ss)
 			ss = pane_attr_get(ci->focus, ss);
 		if (ss) {
-			doc_replace(esi->search, NULL, ss, &first);
+			call5("Replace", esi->search, 1, NULL, ss, 1);
 			return 1;
 		}
 	}
@@ -76,7 +75,7 @@ DEF_CMD(search_forward)
 		call3("Move-File", esi->target, -1, esi->start);
 	}
 	/* Trigger notification so isearch watcher searches again */
-	doc_replace(esi->search, NULL, "", &first);
+	call5("Replace", esi->search, 1, NULL, "", 1);
 	return 1;
 }
 
@@ -85,7 +84,6 @@ DEF_CMD(search_retreat)
 	struct es_info *esi = ci->home->data;
 	char *str;
 	struct stk *s;
-	bool first = 1;
 
 	if (esi->s == NULL)
 		return 0;
@@ -101,7 +99,7 @@ DEF_CMD(search_retreat)
 	esi->wrapped = s->wrapped;
 	free(s);
 	/* Trigger notification so isearch watcher searches again */
-	doc_replace(esi->search, NULL, "", &first);
+	call5("Replace", esi->search, 1, NULL, "", 1);
 	return 1;
 }
 

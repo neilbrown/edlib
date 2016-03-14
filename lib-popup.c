@@ -31,7 +31,7 @@
 
 struct popup_info {
 	struct pane	*target, *popup;
-	struct doc	*doc;
+	struct pane	*doc;
 	char		*style;
 	int closing;
 };
@@ -84,13 +84,13 @@ DEF_CMD(popup_handle)
 {
 	struct pane *p = ci->home;
 	struct popup_info *ppi = p->data;
-	struct doc *d;
+	struct pane *d;
 
 	if (strcmp(ci->key, "Close") == 0) {
 		d = ppi->doc; ppi->doc = NULL;
 		if (d)
 			/* FIXME make this doc auto-close */
-			call3("doc:destroy", d->home, 0, 0);
+			doc_destroy(d);
 		free(ppi);
 		return 1;
 	}
@@ -100,7 +100,7 @@ DEF_CMD(popup_handle)
 			d = ppi->doc; ppi->doc = NULL;
 			if (d)
 				/* FIXME make this doc auto-close */
-				call3("doc:destroy", d->home, 0, 0);
+				doc_destroy(d);
 			pane_close(p);
 		}
 		return 1;
@@ -117,7 +117,7 @@ DEF_CMD(popup_handle)
 		d = ppi->doc; ppi->doc = NULL;
 		if (d)
 			/* FIXME make this doc auto-close */
-			call3("doc:destroy", d->home, 0, 0);
+			doc_destroy(d);
 		pane_close(ppi->popup);
 		return 1;
 	}
@@ -141,7 +141,7 @@ DEF_CMD(popup_handle)
 		d = ppi->doc; ppi->doc = NULL;
 		if (d)
 			/* FIXME make this doc auto-close */
-			call3("doc:destroy", d->home, 0, 0);
+			doc_destroy(d);
 		pane_close(ppi->popup);
 		return 1;
 	}
@@ -230,11 +230,11 @@ DEF_CMD(popup_attach)
 			return -1;
 		p = doc_attach_view(ppi->popup, dp, NULL);
 	} else {
-		struct doc *d;
+		struct pane *d;
 		d = doc_new(root, "text");
-		doc_set_name(d, "*popup*");
+		doc_set_name(d->data, "*popup*");
 		ppi->doc = d;
-		p = doc_attach_view(ppi->popup, d->home, NULL);
+		p = doc_attach_view(ppi->popup, d, NULL);
 	}
 	pane_focus(p);
 

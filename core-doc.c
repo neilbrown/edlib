@@ -32,7 +32,13 @@ struct doc_ref {
 
 #include "core.h"
 
-static int do_doc_destroy(struct doc *d);
+
+/* this is ->data for a document reference pane.
+ */
+struct doc_data {
+	struct pane		*doc;
+	struct mark		*point;
+};
 
 static int do_doc_add_view(struct doc *d, struct command *c)
 {
@@ -148,23 +154,23 @@ void doc_init(struct doc *d)
 	d->views = NULL;
 	d->nviews = 0;
 	d->name = NULL;
-	d->map = NULL;
 	d->deleting = 0;
 	d->home = NULL;
 }
 
+/* For these 'default commands', home->data is struct doc */
 DEF_CMD(doc_char)
 {
-	struct doc_data *dd = ci->home->data;
+	struct doc *d = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
 	while (rpt > 0) {
-		if (mark_next(dd->doc, ci->mark) == WEOF)
+		if (mark_next(d, ci->mark) == WEOF)
 			break;
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		if (mark_prev(dd->doc, ci->mark) == WEOF)
+		if (mark_prev(d, ci->mark) == WEOF)
 			break;
 		rpt += 1;
 	}
@@ -174,8 +180,7 @@ DEF_CMD(doc_char)
 
 DEF_CMD(doc_word)
 {
-	struct doc_data *dd = ci->home->data;
-	struct doc *d = dd->doc;
+	struct doc *d = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
 	/* We skip spaces, then either alphanum or non-space/alphanum */
@@ -213,8 +218,7 @@ DEF_CMD(doc_word)
 
 DEF_CMD(doc_WORD)
 {
-	struct doc_data *dd = ci->home->data;
-	struct doc *d = dd->doc;
+	struct doc *d = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
 	/* We skip spaces, then non-spaces */
@@ -243,8 +247,7 @@ DEF_CMD(doc_WORD)
 
 DEF_CMD(doc_eol)
 {
-	struct doc_data *dd = ci->home->data;
-	struct doc *d = dd->doc;
+	struct doc *d = ci->home->data;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -271,14 +274,11 @@ DEF_CMD(doc_eol)
 
 DEF_CMD(doc_file)
 {
-	struct doc_data *dd = ci->home->data;
-	struct doc *d = dd->doc;
+	struct doc *d = ci->home->data;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 	struct mark *m = ci->mark;
 
-	if (!m)
-		m = dd->point;
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next(d, m)) != WEOF)
 			;
@@ -294,8 +294,7 @@ DEF_CMD(doc_file)
 
 DEF_CMD(doc_line)
 {
-	struct doc_data *dd = ci->home->data;
-	struct doc *d = dd->doc;
+	struct doc *d = ci->home->data;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -316,8 +315,7 @@ DEF_CMD(doc_line)
 
 DEF_CMD(doc_page)
 {
-	struct doc_data *dd = ci->home->data;
-	struct doc *d = dd->doc;
+	struct doc *d = ci->home->data;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -337,18 +335,9 @@ DEF_CMD(doc_page)
 	return 1;
 }
 
-DEF_CMD(doc_do_replace)
-{
-	bool first_change = (ci->extra == 0);
-
-	doc_replace(ci->home, ci->mark, ci->str, &first_change);
-	return 1;
-}
-
 DEF_CMD(doc_attr_set)
 {
-	struct doc_data *dd = ci->home->data;
-	struct doc *d = dd->doc;
+	struct doc *d = ci->home->data;
 
 	if (ci->str2 == NULL && ci->extra == 1)
 		attr_set_int(&d->attrs, ci->str, ci->numeric);
@@ -374,7 +363,6 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "Move-File", &doc_file);
 	key_add(doc_default_cmd, "Move-Line", &doc_line);
 	key_add(doc_default_cmd, "Move-View-Large", &doc_page);
-	key_add(doc_default_cmd, "Replace", &doc_do_replace);
 	key_add(doc_default_cmd, "doc:attr-set", &doc_attr_set);
 }
 
@@ -382,6 +370,7 @@ DEF_CMD(doc_handle)
 {
 	struct doc_data *dd = ci->home->data;
 	int ret;
+	struct cmd_info ci2;
 
 	if (strcmp(ci->key, "Notify:Close") == 0) {
 		/* This pane has to go away */
@@ -413,7 +402,7 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "Request:Notify:Replace") == 0) {
-		pane_add_notify(ci->focus, dd->doc->home, "Notify:Replace");
+		pane_add_notify(ci->focus, dd->doc, "Notify:Replace");
 		return 1;
 	}
 
@@ -451,11 +440,15 @@ DEF_CMD(doc_handle)
 		else if (ci->extra == MARK_UNGROUPED)
 			m = mark_dup(pt, 1);
 		else
-			m = do_mark_at_point(dd->doc, pt,
-					     ci->extra);
+			m = do_mark_at_point(pt, ci->extra);
 
 		return comm_call(ci->comm2, "callback:dup-point", ci->focus,
 				 0, m, NULL, 0);
+	}
+
+	if (strcmp(ci->key, "Replace") == 0) {
+		return call7("doc:replace", dd->doc, 1, ci->mark, ci->str,
+			     1, NULL, dd->point);
 	}
 
 	if (strcmp(ci->key, "Move-to") == 0) {
@@ -464,24 +457,26 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "doc:set-name") == 0) {
-		doc_set_name(dd->doc, ci->str);
+		doc_set_name(dd->doc->data, ci->str);
 		return 1;
 	}
 
 	if (strcmp(ci->key, "doc:get-attr") == 0 &&
-	    strcmp(ci->str, "doc:name") == 0)
+	    strcmp(ci->str, "doc:name") == 0) {
+		struct doc *d = dd->doc->data;
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
-				 NULL, dd->doc->name, 0);
+				 NULL, d->name, 0);
+	}
 
 	if (strcmp(ci->key, "doc:add-view") == 0) {
-		return 1 + do_doc_add_view(dd->doc, ci->comm2);
+		return 1 + do_doc_add_view(dd->doc->data, ci->comm2);
 	}
 
 	if (strcmp(ci->key, "doc:del-view") == 0) {
 		if (ci->numeric >= 0)
-			do_doc_del_view(dd->doc, ci->numeric);
+			do_doc_del_view(dd->doc->data, ci->numeric);
 		else if (ci->comm2)
-			do_doc_del_view_notifier(dd->doc, ci->comm2);
+			do_doc_del_view_notifier(dd->doc->data, ci->comm2);
 		else
 			return -1;
 		return 1;
@@ -491,7 +486,7 @@ DEF_CMD(doc_handle)
 		int ret;
 		if (!ci->comm2)
 			return -1;
-		ret =  do_doc_find_view(dd->doc, ci->comm2);
+		ret =  do_doc_find_view(dd->doc->data, ci->comm2);
 		if (ret < 0)
 			return ret;
 		return ret + 1;
@@ -499,27 +494,38 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "doc:vmark-get") == 0) {
 		struct mark *m, *m2;
-		m = do_vmark_first(dd->doc, ci->numeric);
-		m2 = do_vmark_last(dd->doc, ci->numeric);
+		m = do_vmark_first(dd->doc->data, ci->numeric);
+		m2 = do_vmark_last(dd->doc->data, ci->numeric);
 		if (ci->extra == 1 && dd->point)
-			m2 = do_vmark_at_point(dd->doc, dd->point,
+			m2 = do_vmark_at_point(dd->doc->data, dd->point,
 					       ci->numeric);
 		if (ci->extra == 2)
-			m2 = doc_new_mark(dd->doc, ci->numeric);
+			m2 = doc_new_mark(dd->doc->data, ci->numeric);
 		if (ci->extra == 3)
-			m2 = do_vmark_at_or_before(dd->doc, ci->mark, ci->numeric);
+			m2 = do_vmark_at_or_before(dd->doc->data, ci->mark, ci->numeric);
 		return comm_call7(ci->comm2, "callback:vmark", ci->focus,
 				  0, m, NULL, 0, NULL, m2);
 	}
 	if (strcmp(ci->key, "doc:destroy") == 0)
-		return do_doc_destroy(dd->doc);
+		return doc_destroy(dd->doc);
 
-	ret = key_lookup(dd->doc->map, ci);
-	ret = ret ?: key_lookup(doc_default_cmd, ci);
-	return ret;
+	ci2 = *ci;
+	ci2.comm = NULL;
+	ci2.home = dd->doc;
+	/* FIXME do this when doc:get-attr doesn't care
+	if (ci2.mark == NULL)
+		ci2.mark = dd->point;
+	*/
+	ci2.comm = ci2.home->handle;
+	ret = ci2.home->handle->func(&ci2);
+	if (ret)
+		return ret;
+	ci2.comm = NULL;
+	ci2.home = dd->doc;
+	return key_lookup(doc_default_cmd, &ci2);
 }
 
-struct pane *doc_attach(struct pane *parent, struct doc *d)
+struct pane *doc_attach(struct pane *parent, struct pane *d)
 {
 	struct pane *p;
 	struct doc_data *dd = malloc(sizeof(*dd));
@@ -527,14 +533,10 @@ struct pane *doc_attach(struct pane *parent, struct doc *d)
 	dd->doc = d;
 
 	p = pane_register(parent, 0, &doc_handle, dd, NULL);
-	if (!d->home)
-		d->home = p;
-	else {
-		/* non-home panes need to be notified so they can self-destruct */
-		pane_add_notify(p, d->home, "Notify:Close");
-	}
+	/* non-home panes need to be notified so they can self-destruct */
+	pane_add_notify(p, d, "Notify:Close");
 	dd->point = NULL;
-	call5("docs:attach", d->home, 1, NULL, NULL, 0);
+	call5("docs:attach", d, 1, NULL, NULL, 0);
 	return p;
 }
 
@@ -545,12 +547,12 @@ DEF_CMD(take_pane)
 	return 1;
 }
 
-struct doc *doc_new(struct pane *p, char *type)
+struct pane *doc_new(struct pane *p, char *type)
 {
 	char buf[100];
 	struct cmd_info ci = {0};
 	struct call_return cr;
-	struct doc_data *dd;
+	struct pane *d;
 
 	init_doc_defaults();
 
@@ -565,46 +567,50 @@ struct doc *doc_new(struct pane *p, char *type)
 		if (!key_handle(&ci))
 			return NULL;
 	}
-	dd = cr.p->data;
-	return dd->doc;
+	d = cr.p;
+	return d;
 }
 
 struct pane *doc_open(struct pane *ed, int fd, char *name)
 {
 	struct stat stb;
 	struct pane *p;
-	struct doc *d;
 	char pathbuf[PATH_MAX], *rp;
 
 	p = call_pane7("docs:byfd", ed, 0, NULL, fd, name);
 
-	if (p)
+	if (p) {
+		call5("docs:attach", p, 1, NULL, NULL, 0);
 		return p;
+	}
 
 	if (fstat(fd, &stb) != 0)
 		return NULL;
 
 	rp = realpath(name, pathbuf);
 	if ((stb.st_mode & S_IFMT) == S_IFREG) {
-		d = doc_new(ed, "text");
+		p = doc_new(ed, "text");
 	} else if ((stb.st_mode & S_IFMT) == S_IFDIR) {
-		d = doc_new(ed, "dir");
+		p = doc_new(ed, "dir");
 	} else
 		return NULL;
-	if (!d)
+	if (!p)
 		return NULL;
-	doc_load_file(d->home, fd, rp);
-	return d->home;
+	doc_load_file(p, fd, rp);
+	call5("docs:attach", p, 1, NULL, NULL, 0);
+	return p;
 }
 
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render)
 {
 	struct pane *p;
-	struct doc_data *dd = doc->data;
-	p = doc_attach(parent, dd->doc);
+	if (doc)
+		p = doc_attach(parent, doc);
+	else
+		p = parent;
 	if (p) {
-		dd = p->data;
-		dd->point = point_new(dd->doc);
+		struct doc_data *dd = p->data;
+		dd->point = point_new(dd->doc->data);
 		p->pointer = dd->point;
 		p = pane_attach(p, "view", NULL, NULL);
 	}
@@ -615,22 +621,24 @@ struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render
 
 struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 {
-	bool first = 1;
-	struct pane *p;
-	struct doc *d;
+	struct pane *p, *dp, *p2;
+	struct doc_data *dd;
 
-	d = doc_new(parent, "text");
-	if (!d)
+	p = doc_new(parent, "text");
+	if (!p)
 		return NULL;
-	doc_set_name(d, name);
-	p = doc_attach_view(parent, d->home, NULL);
-	if (!p) {
-		do_doc_destroy(d);
-		return p;
+	doc_set_name(p->data, name);
+	/* FIXME when doc:get-attr fixed, won't need 'dp' or 'dd' */
+	dp = doc_attach(parent, p);
+	p2 = doc_attach_view(dp, NULL, NULL);
+	if (!p2) {
+		doc_destroy(p);
+		return p2;
 	}
-	doc_replace(p, NULL, text, &first);
-	call3("Move-File", p, -1, NULL);
-	return p;
+	dd = dp->data;
+	call5("Replace", p2, 1, NULL, text, 0);
+	call3("Move-File", p2, -1, dd->point);
+	return p2;
 }
 
 void doc_set_name(struct doc *d, char *name)
@@ -691,13 +699,13 @@ char *doc_getstr(struct pane *from, struct mark *to)
 	return cr.s;
 }
 
-static int do_doc_destroy(struct doc *d)
+int doc_destroy(struct pane *dp)
 {
 	/* If there are no views on the document, then unlink from
 	 * the documents list and destroy it.
 	 */
 	int i;
-	struct cmd_info ci = {0};
+	struct doc *d = dp->data;
 
 	d->deleting = 1;
 
@@ -713,11 +721,8 @@ static int do_doc_destroy(struct doc *d)
 			/* still in use */
 			return -1;
 
-	ci.home = ci.focus = d->home;
-	ci.key = "doc:destroy";
-	if (key_lookup(d->map, &ci) < 0)
+	if (comm_call(d->home->handle, "doc:free", d->home, 0, NULL, NULL, 0) < 0)
 		return -1;
-
 	pane_close(d->home);
 
 	free(d->views);

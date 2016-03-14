@@ -115,16 +115,18 @@ static void load_dir(struct list_head *lst, int fd)
 	closedir(dir);
 }
 
+DEF_LOOKUP_CMD(doc_handle, doc_map);
+
 DEF_CMD(dir_new)
 {
 	struct directory *dr = malloc(sizeof(*dr));
 	struct pane *p;
 
 	doc_init(&dr->doc);
-	dr->doc.map = doc_map;
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	p = doc_attach(ci->home, &dr->doc);
+	p = pane_register(ci->home, 0, &doc_handle.c, &dr->doc, NULL);
+	dr->doc.home = p;
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
 	return -1;
@@ -132,16 +134,10 @@ DEF_CMD(dir_new)
 
 DEF_CMD(dir_load_file)
 {
-	struct doc_data *dd;
+	struct doc *d = ci->home->data;
 	int fd = ci->extra;
 	char *name = ci->str;
-
-	if (ci->home)
-		dd = ci->home->data;
-	else
-		return -1;
-
-	struct directory *dr = container_of(dd->doc, struct directory, doc);
+	struct directory *dr = container_of(d, struct directory, doc);
 	struct list_head new;
 	struct dir_ent *de1, *de2;
 	struct mark *m, *prev;
@@ -250,10 +246,10 @@ DEF_CMD(dir_load_file)
 
 DEF_CMD(dir_same_file)
 {
-	struct doc_data *dd = ci->home->data;
+	struct doc *d = ci->home->data;
 	int fd = ci->extra;
 	struct stat stb;
-	struct directory *dr = container_of(dd->doc, struct directory, doc);
+	struct directory *dr = container_of(d, struct directory, doc);
 
 	if (!dr->fname)
 		return 0;
@@ -269,12 +265,11 @@ DEF_CMD(dir_same_file)
 
 DEF_CMD(dir_step)
 {
-	struct doc_data *dd = ci->home->data;
+	struct doc *doc = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric;
 	bool move = ci->extra;
-
-	struct directory *dr = container_of(dd->doc, struct directory, doc);
+	struct directory *dr = container_of(doc, struct directory, doc);
 	struct dir_ent *d = m->ref.d;
 	wint_t ret;
 
@@ -308,8 +303,8 @@ DEF_CMD(dir_step)
 
 DEF_CMD(dir_set_ref)
 {
-	struct doc_data *dd = ci->home->data;
-	struct directory *dr = container_of(dd->doc, struct directory, doc);
+	struct doc *d = ci->home->data;
+	struct directory *dr = container_of(d, struct directory, doc);
 	struct mark *m = ci->mark;
 
 	if (list_empty(&dr->ents) || ci->numeric != 1)
@@ -382,6 +377,8 @@ static char *__dir_get_attr(struct doc *d, struct mark *m,
 			return " <fg:red>%perms</> %mdate:13 %user:10 %group:10 <fg:blue>%+name</>";
 		if (strcmp(attr, "filename") == 0)
 			return dr->fname;
+		if (strcmp(attr, "doc:name") == 0)
+			return d->name;
 		return NULL;
 	}
 	de = m->ref.d;
@@ -476,11 +473,11 @@ static char *__dir_get_attr(struct doc *d, struct mark *m,
 
 DEF_CMD(dir_get_attr)
 {
-	struct doc_data *dd = ci->home->data;
+	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
-	char *val = __dir_get_attr(dd->doc, m, forward, attr);
+	char *val = __dir_get_attr(d, m, forward, attr);
 
 	comm_call(ci->comm2, "callback:get_attr", ci->focus,
 		  0, NULL, val, 0);
@@ -489,8 +486,8 @@ DEF_CMD(dir_get_attr)
 
 DEF_CMD(dir_destroy)
 {
-	struct doc_data *dd = ci->home->data;
-	struct directory *dr = container_of(dd->doc, struct directory, doc);
+	struct doc *d = ci->home->data;
+	struct directory *dr = container_of(d, struct directory, doc);
 
 	while (!list_empty(&dr->ents)) {
 		struct dir_ent *de = list_entry(dr->ents.next, struct dir_ent, lst);
@@ -506,8 +503,8 @@ DEF_CMD(dir_destroy)
 DEF_CMD(dir_open)
 {
 	struct pane *p = ci->home;
-	struct doc_data *dd = p->data;
-	struct directory *dr = container_of(dd->doc, struct directory, doc);
+	struct doc *d = p->data;
+	struct directory *dr = container_of(d, struct directory, doc);
 	struct dir_ent *de = ci->mark->ref.d;
 	struct pane *par = p->parent;
 	int fd;
@@ -549,7 +546,8 @@ DEF_CMD(dir_reread)
 
 DEF_CMD(dir_close)
 {
-	return call3("doc:destroy", ci->home, 0, 0);
+	doc_destroy(ci->home);
+	return 1;
 }
 
 
@@ -568,7 +566,7 @@ void edlib_init(struct pane *ed)
 
 	key_add(doc_map, "doc:load-file", &dir_load_file);
 	key_add(doc_map, "doc:same-file", &dir_same_file);
-	key_add(doc_map, "doc:destroy", &dir_destroy);
+	key_add(doc_map, "doc:free", &dir_destroy);
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
 	key_add(doc_map, "doc:get-attr", &dir_get_attr);
 	key_add(doc_map, "doc:mark-same", &dir_mark_same);

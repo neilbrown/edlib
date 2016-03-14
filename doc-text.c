@@ -190,20 +190,14 @@ text_new_alloc(struct text *t, int size)
 
 DEF_CMD(text_load_file)
 {
-	struct doc_data *dd;
+	struct doc *d = ci->home->data;
 	int fd = ci->extra;
 	char *name = ci->str;
 	off_t size = lseek(fd, 0, SEEK_END);
 	struct text_alloc *a;
 	struct text_chunk *c;
 	int len;
-	struct text *t;
-
-	if (ci->home)
-		dd = ci->home->data;
-	else
-		return -1;
-	t = container_of(dd->doc, struct text, doc);
+	struct text *t = container_of(d, struct text, doc);
 
 	if (size < 0)
 		goto err;
@@ -234,7 +228,7 @@ DEF_CMD(text_load_file)
 			dname += 1;
 		else
 			dname = name;
-		doc_set_name(dd->doc, dname);
+		doc_set_name(d, dname);
 	}
 	return 1;
 err:
@@ -297,13 +291,13 @@ error:
 
 DEF_CMD(text_save_file)
 {
-	struct doc_data *dd = ci->home->data;
-	struct text *t = container_of(dd->doc, struct text, doc);
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
 	int ret;
 	char *msg;
 
 	if (!t->fname) {
-		asprintf(&msg, "** No file name known for %s ***", dd->doc->name);
+		asprintf(&msg, "** No file name known for %s ***", d->name);
 		ret = -1;
 	} else {
 		ret = do_text_write_file(t, t->fname);
@@ -321,8 +315,8 @@ DEF_CMD(text_save_file)
 
 DEF_CMD(text_same_file)
 {
-	struct doc_data *dd = ci->home->data;
-	struct text *t = container_of(dd->doc, struct text, doc);
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
 	struct stat stb;
 	int fd = ci->extra;
 
@@ -801,13 +795,13 @@ static int text_redo(struct text *t, struct doc_ref *start, struct doc_ref *end)
 
 DEF_CMD(text_reundo)
 {
-	struct doc_data *dd = ci->home->data;
-	struct mark *m = dd->point;
+	struct doc *d = ci->home->data;
+	struct mark *m = ci->mark;
 	bool redo = ci->numeric != 0;
 	struct doc_ref start, end;
 	int did_do = 2;
 	bool first = 1;
-	struct text *t = container_of(dd->doc, struct text, doc);
+	struct text *t = container_of(d, struct text, doc);
 
 	while (did_do != 1) {
 		struct mark *m2;
@@ -824,7 +818,7 @@ DEF_CMD(text_reundo)
 
 		if (first) {
 			/* Not nearby, look from the start */
-			mark_reset(&t->doc, m);
+			mark_reset(d, m);
 			where = 1;
 			first = 0;
 		} else
@@ -874,7 +868,7 @@ DEF_CMD(text_reundo)
 		if (early && !text_ref_same(t, &early->ref, &start))
 			early = NULL;
 
-		doc_notify_change(&t->doc, dd->point, early);
+		doc_notify_change(&t->doc, ci->mark, early);
 
 		text_check_consistent(t);
 	}
@@ -985,12 +979,11 @@ static wint_t text_prev(struct text *t, struct doc_ref *r)
 
 DEF_CMD(text_step)
 {
-	struct doc_data *dd = ci->home->data;
+	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric;
 	bool move = ci->extra;
-
-	struct text *t = container_of(dd->doc, struct text, doc);
+	struct text *t = container_of(d, struct text, doc);
 	struct doc_ref r;
 	wint_t ret;
 
@@ -1047,11 +1040,13 @@ static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2)
 
 DEF_CMD(text_mark_same)
 {
-	struct doc_data *dd = ci->home->data;
-	struct text *t = container_of(dd->doc, struct text, doc);
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
 
 	return text_ref_same(t, &ci->mark->ref, &ci->mark2->ref) ? 1 : 2;
 }
+
+DEF_LOOKUP_CMD(text_handle, text_map);
 
 DEF_CMD(text_new)
 {
@@ -1062,10 +1057,10 @@ DEF_CMD(text_new)
 	INIT_LIST_HEAD(&t->text);
 	t->undo = t->redo = NULL;
 	doc_init(&t->doc);
-	t->doc.map = text_map;
 	t->fname = NULL;
 	text_new_alloc(t, 0);
-	p = doc_attach(ci->home, &t->doc);
+	p = pane_register(ci->home, 0, &text_handle.c, &t->doc, NULL);
+	t->doc.home = p;
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
 	return -1;
@@ -1103,9 +1098,9 @@ static int count_bytes(struct text *t, struct mark *from, struct mark *to)
 
 DEF_CMD(text_get_str)
 {
-	struct doc_data *dd = ci->home->data;
+	struct doc *d = ci->home->data;
 	struct mark *from = NULL, *to = NULL;
-	struct text *t = container_of(dd->doc, struct text, doc);
+	struct text *t = container_of(d, struct text, doc);
 	struct text_chunk *c, *first, *last;
 	char *ret;
 	int l = 0, head, tail;
@@ -1167,9 +1162,9 @@ DEF_CMD(text_get_str)
 
 DEF_CMD(text_set_ref)
 {
-	struct doc_data *dd = ci->home->data;
+	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	struct text *t = container_of(dd->doc, struct text, doc);
+	struct text *t = container_of(d, struct text, doc);
 
 	if (list_empty(&t->text) || ci->numeric != 1) {
 		m->ref.c = NULL;
@@ -1380,9 +1375,9 @@ static void text_check_consistent(struct text *t)
 
 DEF_CMD(text_replace)
 {
-	struct doc_data *dd = ci->home->data;
-	struct text *t = container_of(dd->doc, struct text, doc);
-	struct mark *pm = dd->point;
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+	struct mark *pm = ci->mark2;
 	struct mark *end = ci->mark;
 	char *str = ci->str;
 	bool first = ci->extra;
@@ -1489,11 +1484,11 @@ static char *__text_get_attr(struct doc *d, struct mark *m,
 
 DEF_CMD(text_get_attr)
 {
-	struct doc_data *dd = ci->home->data;
+	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
-	char *val = __text_get_attr(dd->doc, m, forward, attr);
+	char *val = __text_get_attr(d, m, forward, attr);
 
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val, 0);
 	return 1;
@@ -1504,8 +1499,8 @@ DEF_CMD(text_set_attr)
 	char *attr = ci->str;
 	char *val = ci->str2;
 	struct text_chunk *c = ci->mark->ref.c;
-	struct doc_data *dd = ci->home->data;
-	struct text *t = container_of(dd->doc, struct text, doc);
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
 	int o = ci->mark->ref.o;
 
 	if (!c)
@@ -1524,8 +1519,8 @@ DEF_CMD(text_set_attr)
 
 DEF_CMD(text_destroy)
 {
-	struct doc_data *dd = ci->home->data;
-	struct text *t = container_of(dd->doc, struct text, doc);
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
 
 	while (!list_empty(&t->text)) {
 		struct text_chunk *c = list_entry(t->text.next, struct text_chunk, lst);
@@ -1567,8 +1562,7 @@ DEF_CMD(render_line_prev)
 	 * If we hit start-of-file without finding newline, return -1;
 	 */
 	struct mark *m = ci->mark;
-	struct doc_data *dd = ci->home->data;
-	struct doc *d = dd->doc;
+	struct doc *d = ci->home->data;
 	struct mark *boundary = NULL;
 	int since_boundary;
 	int rpt = RPT_NUM(ci);
@@ -1615,10 +1609,9 @@ DEF_CMD(render_line)
 	 * include that between '<>'.
 	 */
 	struct buf b;
-	struct doc_data *dd = ci->home->data;
-	struct doc *d = dd->doc;
+	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	struct mark *pm = ci->mark2; /* The location to render as focus */
+	struct mark *pm = ci->mark2; /* The location to render as cursor */
 	int o = ci->numeric;
 	wint_t ch = WEOF;
 	int chars = 0;
@@ -1687,7 +1680,7 @@ void edlib_init(struct pane *ed)
 	key_add(text_map, "doc:load-file", &text_load_file);
 	key_add(text_map, "doc:same-file", &text_same_file);
 	key_add(text_map, "doc:get-str", &text_get_str);
-	key_add(text_map, "doc:destroy", &text_destroy);
+	key_add(text_map, "doc:free", &text_destroy);
 	key_add(text_map, "doc:set-ref", &text_set_ref);
 	key_add(text_map, "doc:save-file", &text_save_file);
 	key_add(text_map, "doc:reundo", &text_reundo);

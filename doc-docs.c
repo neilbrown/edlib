@@ -76,25 +76,25 @@ static void docs_enmark(struct docs *doc, struct pane *p)
 
 static void check_name(struct docs *docs, struct pane *pane)
 {
-	struct doc_data *dd = pane->data;
+	struct doc *d = pane->data;
 	char *nname;
 	int unique = 1;
 	int conflict = 1;
 
-	if (!dd->doc->name)
-		dd->doc->name = strdup("*unknown*");
+	if (!d->name)
+		d->name = strdup("*unknown*");
 
-	nname = malloc(strlen(dd->doc->name) + sizeof("<xxx>"));
+	nname = malloc(strlen(d->name) + sizeof("<xxx>"));
 	while (conflict && unique < 1000) {
 		struct pane *p;
 		conflict = 0;
 		if (unique > 1)
-			sprintf(nname, "%s<%d>", dd->doc->name, unique);
+			sprintf(nname, "%s<%d>", d->name, unique);
 		else
-			strcpy(nname, dd->doc->name);
+			strcpy(nname, d->name);
 		list_for_each_entry(p, &docs->doc.home->children, siblings) {
-			struct doc_data *d2 = p->data;
-			if (dd->doc != d2->doc && strcmp(nname, d2->doc->name) == 0) {
+			struct doc *d2 = p->data;
+			if (d != d2 && strcmp(nname, d2->name) == 0) {
 				conflict = 1;
 				unique += 1;
 				break;
@@ -102,18 +102,18 @@ static void check_name(struct docs *docs, struct pane *pane)
 		}
 	}
 	if (unique > 1) {
-		free(dd->doc->name);
-		dd->doc->name = nname;
+		free(d->name);
+		d->name = nname;
 	} else
 		free(nname);
 }
 
 DEF_CMD(doc_checkname)
 {
-	struct doc_data *dd = ci->home->data;
-	struct docs *d = container_of(dd->doc, struct docs, doc);
+	struct doc *d = ci->home->data;
+	struct docs *ds = container_of(d, struct docs, doc);
 
-	check_name(d, ci->focus);
+	check_name(ds, ci->focus);
 	return 1;
 }
 
@@ -127,8 +127,9 @@ DEF_CMD(docs_callback)
 			return comm_call(ci->comm2, "callback:doc", doc->doc.home,
 					 0, NULL, NULL, 0);
 		list_for_each_entry(p, &doc->doc.home->children, siblings) {
-			char *n = doc_attr(p, NULL, 0, "doc:name");
-			if (strcmp(ci->str, n) == 0)
+			struct doc *dc = p->data;
+			char *n = dc->name;
+			if (n && strcmp(ci->str, n) == 0)
 				return comm_call(ci->comm2, "callback:doc", p, 0,
 						 NULL, NULL, 0);
 		}
@@ -148,8 +149,8 @@ DEF_CMD(docs_callback)
 		struct pane *choice = NULL, *last = NULL;
 
 		list_for_each_entry(p, &doc->doc.home->children, siblings) {
-			struct doc_data *dd = p->data;
-			if (dd->doc->deleting)
+			struct doc *d = p->data;
+			if (d->deleting)
 				continue;
 			last = p;
 			if (list_empty(&p->notifiees)) {
@@ -187,8 +188,7 @@ DEF_CMD(docs_callback)
 
 DEF_CMD(docs_step)
 {
-	struct doc_data *dd = ci->home->data;
-	struct doc *doc = dd->doc;
+	struct doc *doc = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric;
 	bool move = ci->extra;
@@ -227,8 +227,8 @@ DEF_CMD(docs_step)
 
 DEF_CMD(docs_set_ref)
 {
-	struct doc_data *dd = ci->home->data;
-	struct docs *d = container_of(dd->doc, struct docs, doc);
+	struct doc *dc = ci->home->data;
+	struct docs *d = container_of(dc, struct docs, doc);
 	struct mark *m = ci->mark;
 
 	if (ci->numeric == 1)
@@ -279,19 +279,19 @@ static char *__docs_get_attr(struct doc *doc, struct mark *m,
 		return NULL;
 
 	if (strcmp(attr, "name") == 0) {
-		struct doc_data *dd = p->data;
-		return dd->doc->name;
+		struct doc *d = p->data;
+		return d->name;
 	}
 	return doc_attr(p, NULL, 0, attr);
 }
 
 DEF_CMD(docs_get_attr)
 {
-	struct doc_data *dd = ci->home->data;
+	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
-	char *val = __docs_get_attr(dd->doc, m, forward, attr);
+	char *val = __docs_get_attr(d, m, forward, attr);
 
 	comm_call(ci->comm2, "callback:get_attr", ci->focus,
 		  0, NULL, val, 0);
@@ -300,10 +300,10 @@ DEF_CMD(docs_get_attr)
 
 DEF_CMD(docs_open)
 {
-	struct pane *p = ci->home;
+	struct pane *p;
 	struct pane *dp = ci->mark->ref.p;
-	struct pane *par = p->parent;
 	char *renderer = NULL;
+	struct pane *par;
 
 	/* close this pane, open the given document. */
 	if (dp == NULL)
@@ -312,13 +312,13 @@ DEF_CMD(docs_open)
 	if (strcmp(ci->key, "Chr-h") == 0)
 		renderer = "hex";
 
-	if (strcmp(ci->key, "Chr-o") == 0) {
-		struct pane *p2 = call_pane("OtherPane", ci->focus, 0, NULL, 0);
-		if (p2) {
-			par = p2;
-			p = pane_child(par);
-		}
-	}
+	if (strcmp(ci->key, "Chr-o") == 0)
+		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+	else
+		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	if (!par)
+		return -1;
+	p = pane_child(par);
 	if (p)
 		pane_close(p);
 	p = doc_attach_view(par, dp, renderer);
@@ -332,7 +332,8 @@ DEF_CMD(docs_open)
 
 DEF_CMD(docs_bury)
 {
-	return call3("doc:destroy", ci->home, 0, 0);
+	doc_destroy(ci->home);
+	return 1;
 }
 
 DEF_CMD(docs_destroy)
@@ -343,10 +344,10 @@ DEF_CMD(docs_destroy)
 
 DEF_CMD(docs_child_closed)
 {
-	struct doc_data *dd = ci->home->data;
-	struct docs *d = container_of(dd->doc, struct docs, doc);
+	struct doc *d = ci->home->data;
+	struct docs *docs = container_of(d, struct docs, doc);
 
-	docs_demark(d, ci->focus);
+	docs_demark(docs, ci->focus);
 	return 1;
 }
 
@@ -365,7 +366,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:get-attr", &docs_get_attr);
 	key_add(docs_map, "doc:mark-same", &docs_mark_same);
 	key_add(docs_map, "doc:step", &docs_step);
-	key_add(docs_map, "doc:destroy", &docs_destroy);
+	key_add(docs_map, "doc:free", &docs_destroy);
 	key_add(docs_map, "doc:check_name", &doc_checkname);
 
 	key_add(docs_map, "Chr-f", &docs_open);
@@ -376,6 +377,8 @@ static void docs_init_map(void)
 
 	key_add(docs_map, "ChildClosed", &docs_child_closed);
 }
+
+DEF_LOOKUP_CMD(docs_handle, docs_map);
 
 DEF_CMD(attach_docs)
 {
@@ -388,14 +391,14 @@ DEF_CMD(attach_docs)
 	docs_init_map();
 	doc_init(&doc->doc);
 
-	doc->doc.map = docs_map;
 	doc->doc.name = strdup("*Documents*");
-	p = doc_attach(ci->focus, &doc->doc);
+	p = pane_register(ci->focus, 0, &docs_handle.c, &doc->doc, NULL);
 	if (!p) {
 		free(doc->doc.name);
 		free(doc);
 		return -1;
 	}
+	doc->doc.home = p;
 
 	doc->callback = docs_callback;
 	call_comm7("global-set-command", ci->home, 0, NULL, "docs:", 0, "docs;",

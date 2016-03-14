@@ -135,7 +135,7 @@ static void dup_mark(struct mark *orig, struct mark *new)
 	assign_seq(new, orig->seq);
 }
 
-struct mark *do_mark_at_point(struct doc *d, struct mark *pt, int view)
+struct mark *do_mark_at_point(struct mark *pt, int view)
 {
 	struct mark *ret;
 	struct point_links *lnk;
@@ -745,7 +745,7 @@ int mark_same2(struct doc *d, struct mark *m1, struct mark *m2, struct cmd_info 
 	ci->mark = m1;
 	ci->mark2 = m2;
 	ci->home = d->home;
-	return key_lookup(d->map, ci) == 1;
+	return key_handle(ci) == 1;
 }
 
 int mark_same(struct doc *d, struct mark *m1, struct mark *m2)
