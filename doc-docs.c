@@ -252,18 +252,6 @@ static char *__docs_get_attr(struct doc *doc, struct mark *m,
 {
 	struct pane *p;
 
-	if (!m) {
-		char *a = attr_get_str(doc->attrs, attr, -1);
-		if (a)
-			return a;
-		if (strcmp(attr, "heading") == 0)
-			return "<bold,underline>  Document             File</>";
-		if (strcmp(attr, "line-format") == 0)
-			return "  %+name:20 %filename";
-		if (strcmp(attr, "default-renderer") == 0)
-			return "format";
-		return NULL;
-	}
 	p = m->ref.p;
 	if (!forward) {
 		if (!p)
@@ -285,13 +273,39 @@ static char *__docs_get_attr(struct doc *doc, struct mark *m,
 	return doc_attr(p, NULL, 0, attr);
 }
 
-DEF_CMD(docs_get_attr)
+DEF_CMD(docs_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
-	char *val = __docs_get_attr(d, m, forward, attr);
+	char *val;
+	if (!m)
+		return -1;
+
+	val = __docs_get_attr(d, m, forward, attr);
+
+	comm_call(ci->comm2, "callback:get_attr", ci->focus,
+		  0, NULL, val, 0);
+	return 1;
+}
+
+DEF_CMD(docs_get_attr)
+{
+	struct doc *d = ci->home->data;
+	char *attr = ci->str;
+	char *val = attr_get_str(d->attrs, attr, -1);
+
+	if (val)
+		;
+	else if (strcmp(attr, "heading") == 0)
+			val = "<bold,underline>  Document             File</>";
+	else if (strcmp(attr, "line-format") == 0)
+			val = "  %+name:20 %filename";
+	else if (strcmp(attr, "default-renderer") == 0)
+			val = "format";
+	else
+		return 0;
 
 	comm_call(ci->comm2, "callback:get_attr", ci->focus,
 		  0, NULL, val, 0);
@@ -363,7 +377,8 @@ static void docs_init_map(void)
 	 */
 
 	key_add(docs_map, "doc:set-ref", &docs_set_ref);
-	key_add(docs_map, "doc:get-attr", &docs_get_attr);
+	key_add(docs_map, "doc:get-attr", &docs_doc_get_attr);
+	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "doc:mark-same", &docs_mark_same);
 	key_add(docs_map, "doc:step", &docs_step);
 	key_add(docs_map, "doc:free", &docs_destroy);

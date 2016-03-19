@@ -365,22 +365,6 @@ static char *__dir_get_attr(struct doc *d, struct mark *m,
 	struct dir_ent *de;
 	struct directory *dr = container_of(d, struct directory, doc);
 
-	if (!m) {
-		char *a = attr_get_str(d->attrs, attr, -1);
-		if (a)
-			return a;
-		if (strcmp(attr, "heading") == 0)
-			return "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      File Name</>";
-		if (strcmp(attr, "default-renderer") == 0)
-			return "format";
-		if (strcmp(attr, "line-format") == 0)
-			return " <fg:red>%perms</> %mdate:13 %user:10 %group:10 <fg:blue>%+name</>";
-		if (strcmp(attr, "filename") == 0)
-			return dr->fname;
-		if (strcmp(attr, "doc:name") == 0)
-			return d->name;
-		return NULL;
-	}
 	de = m->ref.d;
 	if (!forward) {
 		if (!de)
@@ -471,14 +455,44 @@ static char *__dir_get_attr(struct doc *d, struct mark *m,
 		return attr_get_str(de->attrs, attr, -1);
 }
 
-DEF_CMD(dir_get_attr)
+DEF_CMD(dir_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
-	char *val = __dir_get_attr(d, m, forward, attr);
+	char *val;
 
+	if (!m)
+		return -1;
+	val = __dir_get_attr(d, m, forward, attr);
+
+	comm_call(ci->comm2, "callback:get_attr", ci->focus,
+		  0, NULL, val, 0);
+	return 1;
+}
+
+DEF_CMD(dir_get_attr)
+{
+	struct doc *d = ci->home->data;
+	struct directory *dr = container_of(d, struct directory, doc);
+	char *attr = ci->str;
+	char *val = attr_get_str(d->attrs, attr, -1);
+
+	if (val)
+		;
+	else if (strcmp(attr, "heading") == 0)
+		val = "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      File Name</>";
+	else if (strcmp(attr, "default-renderer") == 0)
+		val = "format";
+	else if (strcmp(attr, "line-format") == 0)
+		val = " <fg:red>%perms</> %mdate:13 %user:10 %group:10 <fg:blue>%+name</>";
+	else if (strcmp(attr, "filename") == 0)
+		val = dr->fname;
+	else if  (strcmp(attr, "doc:name") == 0)
+		val = d->name;
+	else
+		return 0;
 	comm_call(ci->comm2, "callback:get_attr", ci->focus,
 		  0, NULL, val, 0);
 	return 1;
@@ -568,7 +582,8 @@ void edlib_init(struct pane *ed)
 	key_add(doc_map, "doc:same-file", &dir_same_file);
 	key_add(doc_map, "doc:free", &dir_destroy);
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
-	key_add(doc_map, "doc:get-attr", &dir_get_attr);
+	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
+	key_add(doc_map, "get-attr", &dir_get_attr);
 	key_add(doc_map, "doc:mark-same", &dir_mark_same);
 	key_add(doc_map, "doc:step", &dir_step);
 }

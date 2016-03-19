@@ -1439,18 +1439,6 @@ static char *__text_get_attr(struct doc *d, struct mark *m,
 	struct text *t = container_of(d, struct text, doc);
 	int o;
 
-	if (!m) {
-		char *a = attr_get_str(d->attrs, attr, -1);
-		if (a)
-			return a;
-		if (strcmp(attr, "default-renderer") == 0)
-			return "lines";
-		if (strcmp(attr, "filename") == 0)
-			return t->fname;
-		return NULL;
-	}
-
-
 	c = m->ref.c;
 	o = m->ref.o;
 	if (forward) {
@@ -1482,13 +1470,33 @@ static char *__text_get_attr(struct doc *d, struct mark *m,
 	return attr_get_str(c->attrs, attr, o);
 }
 
-DEF_CMD(text_get_attr)
+DEF_CMD(text_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
 	char *val = __text_get_attr(d, m, forward, attr);
+
+	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val, 0);
+	return 1;
+}
+
+DEF_CMD(text_get_attr)
+{
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+	char *attr = ci->str;
+	char *val = attr_get_str(d->attrs, attr, -1);
+
+	if (val)
+		;
+	else if (strcmp(attr, "default-renderer") == 0)
+		val = "lines";
+	else if (strcmp(attr, "filename") == 0)
+		val = t->fname;
+	else
+		return 0;
 
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val, 0);
 	return 1;
@@ -1685,7 +1693,8 @@ void edlib_init(struct pane *ed)
 	key_add(text_map, "doc:save-file", &text_save_file);
 	key_add(text_map, "doc:reundo", &text_reundo);
 	key_add(text_map, "doc:set-attr", &text_set_attr);
-	key_add(text_map, "doc:get-attr", &text_get_attr);
+	key_add(text_map, "doc:get-attr", &text_doc_get_attr);
+	key_add(text_map, "get-attr", &text_get_attr);
 	key_add(text_map, "doc:replace", &text_replace);
 	key_add(text_map, "doc:mark-same", &text_mark_same);
 	key_add(text_map, "doc:step", &text_step);

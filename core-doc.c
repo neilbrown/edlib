@@ -461,7 +461,7 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "doc:get-attr") == 0 &&
+	if (strcmp(ci->key, "get-attr") == 0 &&
 	    strcmp(ci->str, "doc:name") == 0) {
 		struct doc *d = dd->doc->data;
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
@@ -661,6 +661,8 @@ char *doc_attr(struct pane *dp, struct mark *m, bool forward, char *attr)
 	struct call_return cr;
 
 	ci.key = "doc:get-attr";
+	if (!m)
+		ci.key = "get-attr";
 	ci.home = ci.focus = dp;
 	ci.mark = m;
 	ci.numeric = forward ? 1 : 0;
