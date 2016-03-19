@@ -512,10 +512,8 @@ DEF_CMD(doc_handle)
 	ci2 = *ci;
 	ci2.comm = NULL;
 	ci2.home = dd->doc;
-	/* FIXME do this when doc:get-attr doesn't care
 	if (ci2.mark == NULL)
 		ci2.mark = dd->point;
-	*/
 	ci2.comm = ci2.home->handle;
 	ret = ci2.home->handle->func(&ci2);
 	if (ret)
@@ -604,10 +602,8 @@ struct pane *doc_open(struct pane *ed, int fd, char *name)
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render)
 {
 	struct pane *p;
-	if (doc)
-		p = doc_attach(parent, doc);
-	else
-		p = parent;
+
+	p = doc_attach(parent, doc);
 	if (p) {
 		struct doc_data *dd = p->data;
 		dd->point = point_new(dd->doc->data);
@@ -621,23 +617,19 @@ struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render
 
 struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 {
-	struct pane *p, *dp, *p2;
-	struct doc_data *dd;
+	struct pane *p, *p2;
 
 	p = doc_new(parent, "text");
 	if (!p)
 		return NULL;
 	doc_set_name(p->data, name);
-	/* FIXME when doc:get-attr fixed, won't need 'dp' or 'dd' */
-	dp = doc_attach(parent, p);
-	p2 = doc_attach_view(dp, NULL, NULL);
+	p2 = doc_attach_view(parent, p, NULL);
 	if (!p2) {
 		doc_destroy(p);
 		return p2;
 	}
-	dd = dp->data;
 	call5("Replace", p2, 1, NULL, text, 0);
-	call3("Move-File", p2, -1, dd->point);
+	call3("Move-File", p2, -1, NULL);
 	return p2;
 }
 
