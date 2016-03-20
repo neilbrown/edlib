@@ -828,23 +828,27 @@ DEF_CMD(text_reundo)
 
 		if (where == 1) {
 			do {
-				i = text_advance_towards(t, &m->ref, &end);
+				struct doc_ref tmp = m->ref;
+				i = text_advance_towards(t, &tmp, &end);
 				if (i == 0)
 					break;
 				while ((m2 = doc_next_mark_all(m)) != NULL &&
-				       m2->ref.c == m->ref.c &&
-				       m2->ref.o <= m->ref.o)
+				       m2->ref.c == tmp.c &&
+				       m2->ref.o <= tmp.o)
 					mark_forward_over(m, m2);
+				m->ref = tmp;
 			} while (i == 2);
 		} else {
 			do {
-				i = text_retreat_towards(t, &m->ref, &end);
+				struct doc_ref tmp = m->ref;
+				i = text_retreat_towards(t, &tmp, &end);
 				if (i == 0)
 					break;
 				while ((m2 = doc_prev_mark_all(m)) != NULL &&
-				       m2->ref.c == m->ref.c &&
-				       m2->ref.o >= m->ref.o)
+				       m2->ref.c == tmp.c &&
+				       m2->ref.o >= tmp.o)
 					mark_backward_over(m, m2);
+				m->ref = tmp;
 			} while (i == 2);
 		}
 
