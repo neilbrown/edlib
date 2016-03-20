@@ -49,7 +49,8 @@ DEF_CMD(render_hex_clone)
 	do_render_hex_attach(parent);
 	c = pane_child(p);
 	if (c)
-		return pane_clone(c, parent->focus);
+		return comm_call_pane(c, "Clone", parent->focus,
+				      0, NULL, NULL, 0, NULL);
 	return 1;
 }
 

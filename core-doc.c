@@ -435,7 +435,7 @@ DEF_CMD(doc_handle)
 		dd2->point = point_dup(dd->point);
 		p->pointer = dd2->point;
 		if (c)
-			pane_clone(c, p);
+			comm_call_pane(c, "Clone", p, 0, NULL, NULL, 0, NULL);
 		return 1;
 	}
 

@@ -1222,7 +1222,8 @@ DEF_CMD(render_lines_clone)
 	render_lines_attach.func(ci);
 	c = pane_child(p);
 	if (c)
-		return pane_clone(c, parent->focus);
+		return comm_call_pane(c, "Clone", parent->focus,
+				      0, NULL, NULL, 0, NULL);
 	return 1;
 }
 

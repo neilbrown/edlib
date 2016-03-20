@@ -71,7 +71,7 @@ DEF_CMD(keymap_handle)
 		//struct pane *p2;
 		//	p2 = key_attach(ci->focus, ci->home->map);
 		//if (ci->focus->focus)
-		//	return pane_clone(ci->focus->focus, p2);
+		//	comm_call_pane(ci->focus->focus, "Clone", p2, 0, NULL, NULL, 0, NULL);
 		return 1;
 	}
 

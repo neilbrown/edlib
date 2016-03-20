@@ -599,12 +599,16 @@ DEF_CMD(tile_command)
 		pane_damaged(p, DAMAGED_SIZE);
 	} else if (strcmp(cmd, "split-x")==0 && cld) {
 		p2 = tile_split(p, 1, 1);
-		if (p2 && !pane_clone(cld, p2))
-			pane_close(p2);
+		if (p2) {
+			if (!comm_call_pane(cld, "Clone", p2, 0, NULL, NULL, 0, NULL))
+				pane_close(p2);
+		}
 	} else if (strcmp(cmd, "split-y")==0 && cld) {
 		p2 = tile_split(p, 0, 1);
-		if (p2 && !pane_clone(cld, p2))
-			pane_close(p2);
+		if (p2) {
+			if (!comm_call_pane(cld, "Clone", p2, 0, NULL, NULL, 0, NULL))
+				pane_close(p2);
+		}
 	} else if (strcmp(cmd, "close")==0) {
 		if (ti->direction != Neither)
 			pane_close(p);

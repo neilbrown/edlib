@@ -182,7 +182,7 @@ DEF_CMD(format_clone)
 	p = do_render_format_attach(ci->focus);
 	c = pane_child(ci->home);
 	if (c)
-		return pane_clone(c, p);
+		return comm_call_pane(c, "Clone", p, 0, NULL, NULL, 0, NULL);
 	return 1;
 }
 

@@ -193,7 +193,8 @@ DEF_CMD(view_handle)
 		p2 = do_view_attach(parent, vd->old_border);
 		c = pane_child(pane_child(p));
 		if (c)
-			return pane_clone(c, pane_final_child(p2));
+			return comm_call_pane(c, "Clone", pane_final_child(p2),
+					      0, NULL, NULL, 0, NULL);
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") == 0)

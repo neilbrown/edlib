@@ -282,26 +282,6 @@ void pane_close(struct pane *p)
 	free(p);
 }
 
-int pane_clone(struct pane *from, struct pane *parent)
-{
-	/* Create a clone of 'from' as a child of 'parent'.
-	 * We send a 'Clone' message to 'from' which may
-	 * well call pane_clone() recursively on children.
-	 * 'parent' is passed as the 'focus'.
-	 */
-	struct cmd_info ci = {0};
-
-	if (!from || !parent)
-		return 0;
-	ci.key = "Clone";
-	ci.focus = parent;
-	ci.home = from;
-	ci.comm = from->handle;
-	if (from->handle)
-		return from->handle->func(&ci);
-	return 0;
-}
-
 void pane_resize(struct pane *p, int x, int y, int w, int h)
 {
 	int damage = 0;
