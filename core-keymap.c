@@ -289,7 +289,11 @@ int key_lookup(struct map *m, const struct cmd_info *ci)
 int key_lookup_cmd_func(const struct cmd_info *ci)
 {
 	struct lookup_cmd *l = container_of(ci->comm, struct lookup_cmd, c);
-	return key_lookup(*l->m, ci);
+	int ret = key_lookup(*l->m, ci);
+
+	if (!ret && l->dflt && *l->dflt)
+		ret = key_lookup(*l->dflt, ci);
+	return ret;
 }
 
 /* key_handle.  Search towards root for the pane which handles the command.

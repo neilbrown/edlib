@@ -346,7 +346,7 @@ DEF_CMD(doc_attr_set)
 	return 1;
 }
 
-static struct map *doc_default_cmd;
+struct map *doc_default_cmd;
 
 static void init_doc_defaults(void)
 {
@@ -369,7 +369,6 @@ static void init_doc_defaults(void)
 DEF_CMD(doc_handle)
 {
 	struct doc_data *dd = ci->home->data;
-	int ret;
 	struct cmd_info ci2;
 
 	if (strcmp(ci->key, "Notify:Close") == 0) {
@@ -515,12 +514,7 @@ DEF_CMD(doc_handle)
 	if (ci2.mark == NULL)
 		ci2.mark = dd->point;
 	ci2.comm = ci2.home->handle;
-	ret = ci2.home->handle->func(&ci2);
-	if (ret)
-		return ret;
-	ci2.comm = NULL;
-	ci2.home = dd->doc;
-	return key_lookup(doc_default_cmd, &ci2);
+	return ci2.home->handle->func(&ci2);
 }
 
 struct pane *doc_attach(struct pane *parent, struct pane *d)

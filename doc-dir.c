@@ -115,7 +115,7 @@ static void load_dir(struct list_head *lst, int fd)
 	closedir(dir);
 }
 
-DEF_LOOKUP_CMD(doc_handle, doc_map);
+DEF_LOOKUP_CMD_DFLT(doc_handle, doc_map, doc_default_cmd);
 
 DEF_CMD(dir_new)
 {

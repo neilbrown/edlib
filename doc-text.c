@@ -1050,7 +1050,7 @@ DEF_CMD(text_mark_same)
 	return text_ref_same(t, &ci->mark->ref, &ci->mark2->ref) ? 1 : 2;
 }
 
-DEF_LOOKUP_CMD(text_handle, text_map);
+DEF_LOOKUP_CMD_DFLT(text_handle, text_map, doc_default_cmd);
 
 DEF_CMD(text_new)
 {

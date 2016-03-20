@@ -96,6 +96,7 @@ struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render
 struct pane *doc_attach(struct pane *parent, struct pane *d);
 void doc_set_name(struct doc *d, char *name);
 int doc_destroy(struct pane *dp);
+extern struct map *doc_default_cmd;
 
 struct pane *render_attach(char *name, struct pane *parent);
 
@@ -235,7 +236,7 @@ void attr_free(struct attrset **setp);
 /* Commands */
 struct lookup_cmd {
 	struct command	c;
-	struct map	**m;
+	struct map	**m, **dflt;
 };
 
 #define CMD(_name) {_name ## _func }
@@ -247,7 +248,9 @@ struct lookup_cmd {
 	static int _name ## _func(const struct cmd_info *ci)
 
 #define DEF_LOOKUP_CMD(_name, _map) \
-	static struct lookup_cmd _name = { { key_lookup_cmd_func }, &_map };
+	static struct lookup_cmd _name = { { key_lookup_cmd_func }, &_map, NULL };
+#define DEF_LOOKUP_CMD_DFLT(_name, _map, _dflt)				\
+	static struct lookup_cmd _name = { { key_lookup_cmd_func }, &_map, &_dflt };
 
 int key_lookup_cmd_func(const struct cmd_info *ci);
 

@@ -393,7 +393,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "ChildClosed", &docs_child_closed);
 }
 
-DEF_LOOKUP_CMD(docs_handle, docs_map);
+DEF_LOOKUP_CMD_DFLT(docs_handle, docs_map, doc_default_cmd);
 
 DEF_CMD(attach_docs)
 {
