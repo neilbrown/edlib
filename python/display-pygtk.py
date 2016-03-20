@@ -15,6 +15,19 @@ import thread
 import gobject
 import glib
 
+
+def take(name, place, args, default=None):
+    if name in args:
+        place.append(args[name])
+    else:
+        place.append(default)
+    return 1
+
+def attach(p, mode):
+    pl=[]
+    p.call("attach-%s"%mode, lambda key,**a:take('focus', pl, a))
+    return pl[0]
+
 class EdDisplay(gtk.Window):
     def __init__(self, home):
         gtk.Window.__init__(self)
@@ -35,6 +48,20 @@ class EdDisplay(gtk.Window):
                 self.fullscreen()
             else:
                 self.unfullscreen()
+
+        if key == "Display:new":
+            pl=[]
+            disp = a['home']
+            newdisp = EdDisplay(disp.parent)
+            p = attach(newdisp.pane, "messageline")
+            p = attach(p, "global-keymap")
+            p.call("global-set-keymap", "mode-emacs")
+            p = attach(p, "tile")
+            pl=[]
+            a['focus'].call("ThisPane", lambda key, **a:take('focus', pl, a))
+            if len(pl) == 1:
+                pl[0].focus.call("Clone", p)
+            return 1
 
         if key == "Close":
             self.pane.close()

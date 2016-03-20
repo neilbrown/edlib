@@ -170,6 +170,7 @@ static struct simple_command {
 	{CMD(emacs_simple), "Window:split-x", "emCX-Chr-3"},
 	{CMD(emacs_simple), "Window:close", "emCX-Chr-0"},
 	{CMD(emacs_simple), "Display:refresh", "C-Chr-L"},
+	{CMD(emacs_simple), "Display:new", "emCX5-Chr-2"},
 	{CMD(emacs_simple), "Abort", "C-Chr-G"},
 	{CMD(emacs_simple), "NOP", "M-Chr-G"},
 	{CMD(emacs_simple), "NOP", "emCX-C-Chr-G"},
@@ -596,10 +597,12 @@ static void emacs_init(void)
 	unsigned i;
 	struct command *cx_cmd = key_register_prefix("emCX-");
 	struct command *cx4_cmd = key_register_prefix("emCX4-");
+	struct command *cx5_cmd = key_register_prefix("emCX5-");
 	struct map *m = key_alloc();
 
 	key_add(m, "C-Chr-X", cx_cmd);
 	key_add(m, "emCX-Chr-4", cx4_cmd);
+	key_add(m, "emCX-Chr-5", cx5_cmd);
 	key_add(m, "ESC", &emacs_meta);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
