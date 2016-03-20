@@ -467,6 +467,8 @@ DEF_CMD(dir_doc_get_attr)
 		return -1;
 	val = __dir_get_attr(d, m, forward, attr);
 
+	if (!val)
+		return 0;
 	comm_call(ci->comm2, "callback:get_attr", ci->focus,
 		  0, NULL, val, 0);
 	return 1;
@@ -489,8 +491,6 @@ DEF_CMD(dir_get_attr)
 		val = " <fg:red>%perms</> %mdate:13 %user:10 %group:10 <fg:blue>%+name</>";
 	else if (strcmp(attr, "filename") == 0)
 		val = dr->fname;
-	else if  (strcmp(attr, "doc:name") == 0)
-		val = d->name;
 	else
 		return 0;
 	comm_call(ci->comm2, "callback:get_attr", ci->focus,

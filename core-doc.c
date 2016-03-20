@@ -346,6 +346,17 @@ DEF_CMD(doc_attr_set)
 	return 1;
 }
 
+DEF_CMD(doc_get_attr)
+{
+	struct doc *d = ci->home->data;
+
+	if (strcmp(ci->str, "doc:name") == 0)
+		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
+				 NULL, d->name, 0);
+
+	return 0;
+}
+
 struct map *doc_default_cmd;
 
 static void init_doc_defaults(void)
@@ -364,6 +375,7 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "Move-Line", &doc_line);
 	key_add(doc_default_cmd, "Move-View-Large", &doc_page);
 	key_add(doc_default_cmd, "doc:attr-set", &doc_attr_set);
+	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
 }
 
 DEF_CMD(doc_handle)
@@ -458,13 +470,6 @@ DEF_CMD(doc_handle)
 	if (strcmp(ci->key, "doc:set-name") == 0) {
 		doc_set_name(dd->doc->data, ci->str);
 		return 1;
-	}
-
-	if (strcmp(ci->key, "get-attr") == 0 &&
-	    strcmp(ci->str, "doc:name") == 0) {
-		struct doc *d = dd->doc->data;
-		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
-				 NULL, d->name, 0);
 	}
 
 	if (strcmp(ci->key, "doc:add-view") == 0) {

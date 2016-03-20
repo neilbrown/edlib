@@ -285,6 +285,8 @@ DEF_CMD(docs_doc_get_attr)
 
 	val = __docs_get_attr(d, m, forward, attr);
 
+	if (!val)
+		return 0;
 	comm_call(ci->comm2, "callback:get_attr", ci->focus,
 		  0, NULL, val, 0);
 	return 1;
