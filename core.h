@@ -69,7 +69,9 @@ struct notifier {
 	struct list_head	notifier_link, notifiee_link;
 };
 void pane_add_notify(struct pane *target, struct pane *source, char *msg);
-void pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2);
+void pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2,
+		 char *str);
+void pane_drop_notifiers(struct pane *p, char *notification);
 
 struct pane *editor_new(void);
 

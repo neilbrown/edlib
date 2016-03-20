@@ -197,12 +197,14 @@ void pane_add_notify(struct pane *target, struct pane *source, char *msg)
 	list_add(&n->notifiee_link, &target->notifiers);
 }
 
-static void pane_drop_notifiers(struct pane *p)
+void pane_drop_notifiers(struct pane *p, char *notification)
 {
 	while (!list_empty(&p->notifiers)) {
 		struct notifier *n = list_first_entry(&p->notifiers,
 						      struct notifier,
 						      notifiee_link);
+		if (notification && strcmp(notification, n->notification) != 0)
+			continue;
 		list_del_init(&n->notifiee_link);
 		list_del_init(&n->notifier_link);
 		free(n->notification);
@@ -226,14 +228,16 @@ void pane_notify_close(struct pane *p)
 	}
 }
 
-void pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2)
+void pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2,
+		 char *str)
 {
 	struct notifier *n;
+	struct list_head *t;
 
-	list_for_each_entry(n, &p->notifiees, notifier_link)
+	list_for_each_entry_safe(n, t, &p->notifiees, notifier_link)
 		if (strcmp(n->notification, notification) == 0)
 			comm_call_pane(n->notifiee, n->notification, p,
-				       0, m, NULL, 0, m2);
+				       0, m, str, 0, m2);
 }
 
 void pane_close(struct pane *p)
@@ -254,7 +258,7 @@ void pane_close(struct pane *p)
 		ci.comm->func(&ci);
 	}
 	list_del_init(&p->siblings);
-	pane_drop_notifiers(p);
+	pane_drop_notifiers(p, NULL);
 
 	while (!list_empty(&p->children)) {
 		c = list_first_entry(&p->children, struct pane, siblings);

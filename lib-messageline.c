@@ -51,6 +51,8 @@ DEF_CMD(messageline_handle)
 
 	if (strcmp(ci->key, "Message") == 0) {
 		if (ci->extra == 0 || mli->message == NULL) {
+			if (!mli->message)
+				call3("Request:Notify:Keystroke", ci->focus, 0, NULL);
 			free(mli->message);
 			mli->message = strdup(ci->str);
 			pane_damaged(mli->line, DAMAGED_CONTENT);
@@ -58,6 +60,8 @@ DEF_CMD(messageline_handle)
 		return 0; /* allow other handlers */
 	}
 	if (strcmp(ci->key, "Abort") == 0) {
+		if (!mli->message)
+			call3("Request:Notify:Keystroke", ci->home, 0, NULL);
 		free(mli->message);
 		mli->message = strdup("ABORTED");
 		pane_damaged(mli->line, DAMAGED_CONTENT);
@@ -90,11 +94,14 @@ DEF_CMD(messageline_handle)
 		}
 		return 1;
 	}
-	/* Anything else clears the message */
-	if (strcmp(ci->key, "Keystroke") == 0 && mli->message) {
+	/* Keystroke notification clears the message line */
+	if ((strcmp(ci->key, "Notify:Keystroke") == 0
+	     || strcmp(ci->key, "Keystroke") == 0)
+	    && mli->message) {
 		free(mli->message);
 		mli->message = NULL;
-		pane_clear(mli->line, "");
+		pane_drop_notifiers(ci->home, "Notify:Keystroke");
+		return 1;
 	}
 	return 0;
 }

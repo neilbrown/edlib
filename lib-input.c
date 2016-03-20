@@ -52,6 +52,8 @@ DEF_CMD(keystroke)
 	int l;
 	int ret;
 
+	pane_notify(ci->home, "Notify:Keystroke", NULL, NULL, ci->str);
+
 	l = strlen(im->mode) + strlen(ci->str) + 1;
 	ci2.key = malloc(l);
 	strcat(strcpy(ci2.key, im->mode), ci->str);
@@ -84,6 +86,7 @@ DEF_CMD(mouse_event)
 	int l;
 	struct cmd_info ci2 = {0};
 
+	pane_notify(ci->home, "Notify:Mouse-event", NULL, NULL, ci->str);
 
 	l = strlen(im->mode) + strlen(ci->str) + 1;
 	ci2.key = malloc(l);
@@ -123,6 +126,19 @@ DEF_CMD(mouse_event)
 	return 0;
 }
 
+DEF_CMD(request_notify)
+{
+	if (strcmp(ci->key, "Request:Notify:Keystroke") == 0) {
+		pane_add_notify(ci->focus, ci->home, "Notify:Keystroke");
+		return 1;
+	}
+	if (strcmp(ci->key, "Request:Notify:Mouse-event") == 0) {
+		pane_add_notify(ci->focus, ci->home, "Notify:Mouse-event");
+		return 1;
+	}
+	return 0;
+}
+
 static struct map *im_map;
 static void register_map(void)
 {
@@ -134,6 +150,7 @@ static void register_map(void)
 	key_add(im_map, "Mode:set-mode", &set_mode);
 	key_add(im_map, "Mode:set-numeric", &set_numeric);
 	key_add(im_map, "Mode:set-extra", &set_extra);
+	key_add_range(im_map, "Request:Notify:", "Request:Notify;", &request_notify);
 }
 
 DEF_LOOKUP_CMD(input_handle, im_map);
