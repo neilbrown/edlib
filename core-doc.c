@@ -357,6 +357,15 @@ DEF_CMD(doc_get_attr)
 	return 0;
 }
 
+DEF_CMD(doc_set_name)
+{
+	struct doc *d = ci->home->data;
+
+	free(d->name);
+	d->name = strdup(ci->str);
+	return call3("doc:check_name", d->home, -1, NULL);
+}
+
 struct map *doc_default_cmd;
 
 static void init_doc_defaults(void)
@@ -376,6 +385,7 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "Move-View-Large", &doc_page);
 	key_add(doc_default_cmd, "doc:attr-set", &doc_attr_set);
 	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
+	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
 }
 
 DEF_CMD(doc_handle)
@@ -464,11 +474,6 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "Move-to") == 0) {
 		point_to_mark(dd->point, ci->mark);
-		return 1;
-	}
-
-	if (strcmp(ci->key, "doc:set-name") == 0) {
-		doc_set_name(dd->doc->data, ci->str);
 		return 1;
 	}
 
@@ -621,7 +626,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	p = doc_new(parent, "text");
 	if (!p)
 		return NULL;
-	doc_set_name(p->data, name);
+	call5("doc:set-name", p, 0, NULL, name, 0);
 	p2 = doc_attach_view(parent, p, NULL);
 	if (!p2) {
 		doc_destroy(p);
@@ -630,13 +635,6 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	call5("Replace", p2, 1, NULL, text, 0);
 	call3("Move-File", p2, -1, NULL);
 	return p2;
-}
-
-void doc_set_name(struct doc *d, char *name)
-{
-	free(d->name);
-	d->name = strdup(name);
-	call3("doc:check_name", d->home, -1, NULL);
 }
 
 DEF_CMD(doc_attr_callback)

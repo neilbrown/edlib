@@ -229,10 +229,13 @@ DEF_CMD(popup_attach)
 			/* FIXME clean up*/
 			return -1;
 		p = doc_attach_view(ppi->popup, dp, NULL);
+		if (!p)
+			/* FIXME clean up*/
+			return -1;
 	} else {
 		struct pane *d;
 		d = doc_new(root, "text");
-		doc_set_name(d->data, "*popup*");
+		call5("doc:set-name", d, 0, NULL, "*popup*", 0);
 		ppi->doc = d;
 		p = doc_attach_view(ppi->popup, d, NULL);
 	}

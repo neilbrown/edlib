@@ -94,7 +94,6 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text);
 struct pane *doc_open(struct pane *ed, int fd, char *name);
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render);
 struct pane *doc_attach(struct pane *parent, struct pane *d);
-void doc_set_name(struct doc *d, char *name);
 int doc_destroy(struct pane *dp);
 extern struct map *doc_default_cmd;
 

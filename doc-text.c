@@ -228,7 +228,7 @@ DEF_CMD(text_load_file)
 			dname += 1;
 		else
 			dname = name;
-		doc_set_name(d, dname);
+		call5("doc:set-name", ci->home, 0, NULL, dname, 0);
 	}
 	return 1;
 err:

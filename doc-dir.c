@@ -235,7 +235,7 @@ DEF_CMD(dir_load_file)
 			dname += 1;
 		else
 			dname = name;
-		doc_set_name(&dr->doc, dname);
+		call5("doc:set-name", ci->home, 0, NULL, dname, 0);
 		if (l > 1)
 			strcat(dr->fname, "/");
 	}
