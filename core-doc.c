@@ -519,7 +519,6 @@ DEF_CMD(doc_handle)
 		return doc_destroy(dd->doc);
 
 	ci2 = *ci;
-	ci2.comm = NULL;
 	ci2.home = dd->doc;
 	if (ci2.mark == NULL)
 		ci2.mark = dd->point;
