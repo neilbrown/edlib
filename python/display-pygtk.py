@@ -50,17 +50,10 @@ class EdDisplay(gtk.Window):
                 self.unfullscreen()
 
         if key == "Display:new":
-            pl=[]
             disp = a['home']
             newdisp = EdDisplay(disp.parent)
-            p = attach(newdisp.pane, "messageline")
-            p = attach(p, "global-keymap")
-            p.call("global-set-keymap", "mode-emacs")
-
-            pl=[]
-            a['focus'].call("RootPane", lambda key, **a:take('focus', pl, a))
-            if len(pl) == 1:
-                pl[0].call("Clone", p)
+            if disp.focus:
+                disp.focus.call("Clone", newdisp.pane)
             return 1
 
         if key == "Close":

@@ -68,10 +68,26 @@ DEF_CMD(keymap_handle)
 		return 1;
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
-		//struct pane *p2;
-		//	p2 = key_attach(ci->focus, ci->home->map);
-		//if (ci->focus->focus)
-		//	comm_call_pane(ci->focus->focus, "Clone", p2, 0, NULL, NULL, 0, NULL);
+		struct pane *p = do_keymap_attach(ci->focus, kd->global);
+		struct pane *child = pane_child(ci->home);
+		struct key_data *kd_old = ci->home->data;
+		struct key_data *kd_new;
+		if (!p)
+			return -1;
+		kd_new = p->data;
+		kd_new->globalcmd = kd_old->globalcmd;
+		if (kd_old->cmds == &kd_old->globalcmd) {
+			kd_new->cmds = &kd_new->globalcmd;
+			kd_new->cmdcount = 1;
+		} else if (kd_old->cmds) {
+			kd_new->cmdcount = kd_old->cmdcount;
+			kd_new->cmds = malloc(kd_new->cmdcount * sizeof(kd_new->cmds[0]));
+			for (i = 0; i < kd_new->cmdcount; i++)
+				kd_new->cmds[i] = kd_old->cmds[i];
+		}
+		if (child)
+			return comm_call_pane(child, "Clone", p,
+					      0, NULL, NULL, 0, NULL);
 		return 1;
 	}
 

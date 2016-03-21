@@ -21,6 +21,7 @@ struct mlinfo {
 	int ascent; /* how far down to baseline */
 	int hidden;
 };
+static struct pane *do_messageline_attach(struct pane *p);
 
 static void pane_str(struct pane *p, char *s, char *attr, int x, int y)
 {
@@ -39,6 +40,15 @@ DEF_CMD(text_size_callback)
 DEF_CMD(messageline_handle)
 {
 	struct mlinfo *mli = ci->home->data;
+
+	if (strcmp(ci->key, "Clone") == 0) {
+		struct pane *p = do_messageline_attach(ci->focus);
+		struct pane *child = pane_child(ci->home);
+		if (p && child)
+			return comm_call_pane(child, "Clone", p,
+					      0, NULL, NULL, 0, NULL);
+		return 1;
+	}
 
 	if (strcmp(ci->key, "Display:border") == 0) {
 		if (ci->numeric > 0)
@@ -106,10 +116,9 @@ DEF_CMD(messageline_handle)
 	return 0;
 }
 
-DEF_CMD(messageline_attach)
+static struct pane *do_messageline_attach(struct pane *p)
 {
 	struct mlinfo *mli = malloc(sizeof(*mli));
-	struct pane *p = ci->focus;
 	struct pane *ret;
 
 	mli->message = NULL;
@@ -117,7 +126,16 @@ DEF_CMD(messageline_attach)
 	mli->hidden = 0;
 	ret = pane_register(p, 0, &messageline_handle, mli, NULL);
 	mli->line = pane_register(p, 1, &messageline_handle, mli, NULL);
-	pane_focus(ci->focus);
+	pane_focus(p);
+
+	return ret;
+}
+
+DEF_CMD(messageline_attach)
+{
+	struct pane *ret;
+
+	ret = do_messageline_attach(ci->focus);
 	return comm_call(ci->comm2, "callback:attach", ret, 0, NULL, NULL, 0);
 }
 
