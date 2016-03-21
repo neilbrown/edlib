@@ -76,6 +76,34 @@ DEF_CMD(tile_handle)
 	return 0;
 }
 
+DEF_CMD(tile_clone)
+{
+	struct pane *parent = ci->focus;
+	struct pane *p2, *child;
+	struct tileinfo *ti;
+
+	/* Clone a new 'tile' onto the parent, but only
+	 * create a single tile, cloned from the focus pane
+	 */
+	ti = malloc(sizeof(*ti));
+	ti->leaf = 1;
+	ti->direction = Neither;
+	INIT_LIST_HEAD(&ti->tiles);
+	ti->p = p2 = pane_register(parent, 0, &tile_handle, ti, NULL);
+	pane_check_size(p2);
+	attr_set_str(&p2->attrs, "borders", "BL", -1);
+	child = ci->home;
+	ti = child->data;
+	while (!ti->leaf && child->focus) {
+		child = child->focus;
+		ti = child->data;
+	}
+	if (child->focus)
+		return comm_call_pane(child->focus, "Clone", p2,
+				      0, NULL, NULL, 0, NULL);
+	return 1;
+}
+
 DEF_CMD(tile_attach)
 {
 	struct pane *display = ci->focus;
@@ -673,6 +701,7 @@ void edlib_init(struct pane *ed)
 	key_add(tile_map, "OtherPane", &tile_other);
 	key_add(tile_map, "ThisPane", &tile_this);
 	key_add(tile_map, "RootPane", &tile_root);
+	key_add(tile_map, "Clone", &tile_clone);
 
 	call_comm("global-set-command", ed, 0, NULL, "attach-tile",
 		  0, &tile_attach);

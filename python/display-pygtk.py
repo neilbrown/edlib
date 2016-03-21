@@ -56,11 +56,11 @@ class EdDisplay(gtk.Window):
             p = attach(newdisp.pane, "messageline")
             p = attach(p, "global-keymap")
             p.call("global-set-keymap", "mode-emacs")
-            p = attach(p, "tile")
+
             pl=[]
-            a['focus'].call("ThisPane", lambda key, **a:take('focus', pl, a))
+            a['focus'].call("RootPane", lambda key, **a:take('focus', pl, a))
             if len(pl) == 1:
-                pl[0].focus.call("Clone", p)
+                pl[0].call("Clone", p)
             return 1
 
         if key == "Close":
