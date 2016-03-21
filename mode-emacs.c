@@ -155,6 +155,7 @@ REDEF_CMD(emacs_delete)
 }
 
 REDEF_CMD(emacs_simple);
+REDEF_CMD(emacs_simple_neg);
 static struct simple_command {
 	struct command	cmd;
 	char		*type;
@@ -169,6 +170,8 @@ static struct simple_command {
 	{CMD(emacs_simple), "Window:split-y", "emCX-Chr-2"},
 	{CMD(emacs_simple), "Window:split-x", "emCX-Chr-3"},
 	{CMD(emacs_simple), "Window:close", "emCX-Chr-0"},
+	{CMD(emacs_simple), "Window:scale-relative", "emCX-Chr-="},
+	{CMD(emacs_simple_neg), "Window:scale-relative", "emCX-Chr--"},
 	{CMD(emacs_simple), "Display:refresh", "C-Chr-L"},
 	{CMD(emacs_simple), "Display:new", "emCX5-Chr-2"},
 	{CMD(emacs_simple), "Abort", "C-Chr-G"},
@@ -186,6 +189,19 @@ REDEF_CMD(emacs_simple)
 	ci2.key = sc->type;
 	ci2.focus = ci->focus;
 	ci2.numeric = ci->numeric;
+	ci2.extra = ci->extra;
+	ci2.mark = ci->mark;
+	return key_handle(&ci2);
+}
+
+REDEF_CMD(emacs_simple_neg)
+{
+	struct simple_command *sc = container_of(ci->comm, struct simple_command, cmd);
+	struct cmd_info ci2 = {0};
+
+	ci2.key = sc->type;
+	ci2.focus = ci->focus;
+	ci2.numeric = -RPT_NUM(ci);
 	ci2.extra = ci->extra;
 	ci2.mark = ci->mark;
 	return key_handle(&ci2);

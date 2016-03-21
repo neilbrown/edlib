@@ -104,6 +104,44 @@ DEF_CMD(tile_clone)
 	return 1;
 }
 
+static int get_scale(struct pane *p)
+{
+	char *sc = pane_attr_get(p, "scale");
+	int scale;
+
+	if (!sc)
+		return 1000;
+
+	scale = atoi(sc);
+	if (scale > 3)
+		return scale;
+	return 1000;
+}
+
+DEF_CMD(tile_scale)
+{
+	struct pane *p = ci->home;
+	int scale = get_scale(p);
+	int rpt = RPT_NUM(ci);
+
+	if (rpt > 10) rpt = 10;
+	if (rpt < -10) rpt = -10;
+	while (rpt > 0) {
+		scale = scale * 11/10;
+		rpt -= 1;
+	}
+	while (rpt < 0) {
+		scale = scale * 9 / 10;
+		rpt += 1;
+	}
+
+	attr_set_int(&p->attrs, "scale", scale);
+	pane_damaged(p, DAMAGED_SIZE);
+	return 1;
+}
+
+
+
 DEF_CMD(tile_attach)
 {
 	struct pane *display = ci->focus;
@@ -702,6 +740,7 @@ void edlib_init(struct pane *ed)
 	key_add(tile_map, "ThisPane", &tile_this);
 	key_add(tile_map, "RootPane", &tile_root);
 	key_add(tile_map, "Clone", &tile_clone);
+	key_add(tile_map, "Window:scale-relative", &tile_scale);
 
 	call_comm("global-set-command", ed, 0, NULL, "attach-tile",
 		  0, &tile_attach);
