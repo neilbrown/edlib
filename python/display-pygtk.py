@@ -389,6 +389,8 @@ class EdDisplay(gtk.Window):
                 s = "C-Chr-" + chr(ord(s[0])+64)
             else:
                 s = "Chr-" + s
+                if event.state & gtk.gdk.CONTROL_MASK:
+                    s = "C-" + s;
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
         self.pane.call("Keystroke", self.pane, s)
