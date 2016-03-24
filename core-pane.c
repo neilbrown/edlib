@@ -461,7 +461,7 @@ struct pane *render_attach(char *name, struct pane *parent)
 	if (!name)
 		return NULL;
 
-	sprintf(buf, "render-%s-attach", name);
+	sprintf(buf, "attach-render-%s", name);
 	ci.key = buf;
 	ci.focus = parent;
 	ci.comm2 = &cr.c;
@@ -470,7 +470,7 @@ struct pane *render_attach(char *name, struct pane *parent)
 		return cr.p;
 	sprintf(buf, "render-%s", name);
 	call5("global-load-module", parent, 0, NULL, buf, 0);
-	sprintf(buf, "render-%s-attach", name);
+	sprintf(buf, "attach-render-%s", name);
 	ret = key_handle(&ci);
 	if (ret)
 		return cr.p;

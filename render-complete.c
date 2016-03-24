@@ -423,6 +423,6 @@ REDEF_CMD(complete_attach)
 
 void edlib_init(struct pane *ed)
 {
-	call_comm("global-set-command", ed, 0, NULL, "render-complete-attach",
+	call_comm("global-set-command", ed, 0, NULL, "attach-render-complete",
 		  0, &complete_attach);
 }

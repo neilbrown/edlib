@@ -1299,6 +1299,6 @@ REDEF_CMD(render_lines_attach)
 
 void edlib_init(struct pane *ed)
 {
-	call_comm("global-set-command", ed, 0, NULL, "render-lines-attach",
+	call_comm("global-set-command", ed, 0, NULL, "attach-render-lines",
 		  0, &render_lines_attach);
 }

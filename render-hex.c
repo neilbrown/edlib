@@ -242,6 +242,6 @@ DEF_CMD(render_hex_attach)
 
 void edlib_init(struct pane *ed)
 {
-	call_comm("global-set-command", ed, 0, NULL, "render-hex-attach",
+	call_comm("global-set-command", ed, 0, NULL, "attach-render-hex",
 		  0, &render_hex_attach);
 }
