@@ -1683,7 +1683,7 @@ DEF_CMD(render_line)
 
 void edlib_init(struct pane *ed)
 {
-	call_comm("global-set-command", ed, 0, NULL, "doc-text", 0, &text_new);
+	call_comm("global-set-command", ed, 0, NULL, "attach-doc-text", 0, &text_new);
 
 	text_map = key_alloc();
 	key_add(text_map, "render-line-prev", &render_line_prev);

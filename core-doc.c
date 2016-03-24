@@ -557,14 +557,14 @@ struct pane *doc_new(struct pane *p, char *type)
 
 	init_doc_defaults();
 
-	sprintf(buf, "doc-%s", type);
+	sprintf(buf, "attach-doc-%s", type);
 	ci.key = buf;
 	ci.focus = ci.home = p;
 	cr.c = take_pane;
 	cr.p = NULL;
 	ci.comm2 = &cr.c;
 	if (!key_handle(&ci)) {
-		call5("global-load-module", p, 0, NULL, buf, 0);
+		call5("global-load-module", p, 0, NULL, buf+7, 0);
 		if (!key_handle(&ci))
 			return NULL;
 	}

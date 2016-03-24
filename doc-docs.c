@@ -427,6 +427,6 @@ DEF_CMD(attach_docs)
 
 void edlib_init(struct pane *ed)
 {
-	call_comm("global-set-command", ed, 0, NULL, "doc-docs",
+	call_comm("global-set-command", ed, 0, NULL, "attach-doc-docs",
 		  0, &attach_docs);
 }
