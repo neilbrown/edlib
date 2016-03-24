@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 	call5("global-load-module", ed, 0, NULL, "lang-python", 0);
 
 	if (gtk) {
-		call5("python-load", vroot, 0, NULL, "python/display-pygtk.py", 0);
+		call5("global-load-module", ed, 0, NULL, "display-pygtk", 0);
 		call3("pygtkevent:activate", vroot, 0, NULL);
 		vroot = pane_attach(vroot, "input", NULL, NULL);
 		ci.key = "display-pygtk";

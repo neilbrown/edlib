@@ -140,6 +140,37 @@ DEF_CMD(python_load)
 	return 1;
 }
 
+DEF_CMD(python_load_module)
+{
+	char *name = ci->str;
+	FILE *fp;
+	PyObject *globals, *main_mod;
+	PyObject *Ed;
+	char buf [PATH_MAX];
+
+	if (!name)
+		return -1;
+	snprintf(buf, sizeof(buf), "python/%s.py", name);
+	fp = fopen(buf, "r");
+	if (!fp)
+		return -1;
+
+	main_mod = PyImport_AddModule("__main__");
+	if (main_mod == NULL)
+		return -1;
+	globals = PyModule_GetDict(main_mod);
+
+	Ed = Pane_Frompane(ci->home);
+	PyDict_SetItemString(globals, "editor", Ed);
+	PyDict_SetItemString(globals, "pane", Pane_Frompane(ci->focus));
+	PyDict_SetItemString(globals, "edlib", EdlibModule);
+	PyRun_FileExFlags(fp, buf, Py_file_input, globals, globals, 0, NULL);
+	PyErr_Print();
+	Py_DECREF(Ed);
+	fclose(fp);
+	return 1;
+}
+
 REDEF_CMD(python_call)
 {
 	struct python_command *pc = container_of(ci->comm, struct python_command, c);
@@ -1253,6 +1284,8 @@ void edlib_init(struct pane *ed)
 	PyModule_AddObject(m, "Mark", (PyObject *)&MarkType);
 	PyModule_AddObject(m, "Comm", (PyObject *)&CommType);
 	call_comm("global-set-command", ed, 0, NULL, "python-load", 0, &python_load);
+	call_comm("global-set-command", ed, 0, NULL, "global-load-modules:python", 0,
+		  &python_load_module);
 
 	Edlib_CommandFailed = PyErr_NewException("edlib.commandfailed", NULL, NULL);
 	Py_INCREF(Edlib_CommandFailed);
