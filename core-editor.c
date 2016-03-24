@@ -60,6 +60,7 @@ DEF_CMD(global_get_command)
 
 DEF_CMD(editor_load_module)
 {
+	struct map *map = ci->home->data;
 	char *name = ci->str;
 	char buf[PATH_MAX];
 	void *h;
@@ -72,13 +73,14 @@ DEF_CMD(editor_load_module)
 	 *
 	 */
 	h = dlopen(buf, RTLD_NOW | RTLD_GLOBAL);
-	if (!h)
-		return 0;
-	s = dlsym(h, "edlib_init");
-	if (!s)
-		return 0;
-	s(ci->home);
-	return 1;
+	if (h) {
+		s = dlsym(h, "edlib_init");
+		if (s) {
+			s(ci->home);
+			return 1;
+		}
+	}
+	return key_lookup_prefix(map, ci);
 }
 
 struct pane *editor_new(void)
@@ -97,4 +99,3 @@ struct pane *editor_new(void)
 
 	return ed;
 }
-

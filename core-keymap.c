@@ -286,6 +286,26 @@ int key_lookup(struct map *m, const struct cmd_info *ci)
 	return comm->func(ci);
 }
 
+int key_lookup_prefix(struct map *m, const struct cmd_info *ci)
+{
+	int pos = key_find(m, ci->key);
+	struct command *comm, *prev = NULL;
+	int len = strlen(ci->key);
+
+	while (pos < m->size && strncmp(m->keys[pos], ci->key, len) == 0) {
+		comm = GETCOMM(m->comms[pos]);
+		if (comm && comm != prev) {
+			int ret;
+			((struct cmd_info*)ci)->comm = comm;
+			ret = comm->func(ci);
+			if (ret)
+				return ret;
+			prev = comm;
+		}
+	}
+	return 0;
+}
+
 int key_lookup_cmd_func(const struct cmd_info *ci)
 {
 	struct lookup_cmd *l = container_of(ci->comm, struct lookup_cmd, c);
