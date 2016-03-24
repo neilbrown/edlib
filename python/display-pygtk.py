@@ -445,5 +445,5 @@ def events_activate(key, home, focus, **a):
 
     return 1
 
-editor.call("global-set-command", pane, "display-pygtk", new_display);
+editor.call("global-set-command", pane, "attach-display-pygtk", new_display);
 editor.call("global-set-command", pane, "pygtkevent:activate", events_activate);

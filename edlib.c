@@ -75,12 +75,12 @@ int main(int argc, char *argv[])
 		call5("global-load-module", ed, 0, NULL, "display-pygtk", 0);
 		call3("pygtkevent:activate", vroot, 0, NULL);
 		vroot = pane_attach(vroot, "input", NULL, NULL);
-		ci.key = "display-pygtk";
+		ci.key = "attach-display-pygtk";
 	} else {
 		call5("global-load-module", ed, 0, NULL, "lib-libevent", 0);
 		call5("global-load-module", ed, 0, NULL, "display-ncurses", 0);
 		call3("libevent:activate", vroot, 0, NULL);
-		ci.key = "display-ncurses";
+		ci.key = "attach-display-ncurses";
 	}
 	ci.home = ci.focus = vroot;
 	cr.c = take_pane;
