@@ -132,6 +132,13 @@ DEF_CMD(dir_new)
 	return -1;
 }
 
+DEF_CMD(dir_new2)
+{
+	if (ci->extra != S_IFDIR)
+		return 0;
+	return dir_new_func(ci);
+}
+
 DEF_CMD(dir_load_file)
 {
 	struct doc *d = ci->home->data;
@@ -577,6 +584,8 @@ void edlib_init(struct pane *ed)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-doc-dir",
 		  0, &dir_new);
+	call_comm("global-set-command", ed, 0, NULL, "open-doc-dir",
+		  0, &dir_new2);
 
 	doc_map = key_alloc();
 	key_add(doc_map, "Chr-f", &dir_open);

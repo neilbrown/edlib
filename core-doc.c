@@ -552,7 +552,7 @@ struct pane *doc_open(struct pane *ed, int fd, char *name)
 {
 	struct stat stb;
 	struct pane *p;
-	char pathbuf[PATH_MAX], *rp;
+	char pathbuf[PATH_MAX], *rp = NULL;
 
 	p = call_pane7("docs:byfd", ed, 0, NULL, fd, name);
 
@@ -561,16 +561,30 @@ struct pane *doc_open(struct pane *ed, int fd, char *name)
 		return p;
 	}
 
-	if (fstat(fd, &stb) != 0)
+	if (fd < 0) {
+		char *sl;
+		stb.st_mode = 0;
+		sl = strrchr(name, '/');
+		if (sl && sl-name < PATH_MAX-4 && sl[1]) {
+			char nbuf[PATH_MAX];
+			strncpy(nbuf, name, sl-name);
+			nbuf[sl-name] = 0;
+			rp = realpath(nbuf, pathbuf);
+		} else if (!sl)
+			rp = realpath(".", pathbuf);
+
+		if (rp) {
+			strcat(rp, "/");
+			strcat(rp, sl+1);
+		}
+	} else if (fstat(fd, &stb) == 0)
+		rp = realpath(name, pathbuf);
+	if (!rp)
 		return NULL;
 
-	rp = realpath(name, pathbuf);
-	if ((stb.st_mode & S_IFMT) == S_IFREG) {
-		p = doc_new(ed, "text");
-	} else if ((stb.st_mode & S_IFMT) == S_IFDIR) {
-		p = doc_new(ed, "dir");
-	} else
-		return NULL;
+	p = call_pane7("global-multicall-open-doc-", ed, fd, NULL,
+		       stb.st_mode & S_IFMT, rp);
+
 	if (!p)
 		return NULL;
 	doc_load_file(p, fd, rp);

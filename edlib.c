@@ -70,6 +70,8 @@ int main(int argc, char *argv[])
 	call5("global-load-module", ed, 0, NULL, "lib-linecount", 0);
 	call5("global-load-module", ed, 0, NULL, "lib-search", 0);
 	call5("global-load-module", ed, 0, NULL, "lang-python", 0);
+	call5("global-load-module", ed, 0, NULL, "doc-text", 0);
+	call5("global-load-module", ed, 0, NULL, "doc-dir", 0);
 
 	if (gtk) {
 		vroot = pane_attach(vroot, "input", NULL, NULL);

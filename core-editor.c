@@ -128,6 +128,14 @@ DEF_CMD(editor_auto_event)
 	return key_lookup_prefix(map, ci);
 }
 
+DEF_CMD(editor_multicall)
+{
+	struct map *map = ci->home->data;
+
+	((struct cmd_info*)ci)->key += strlen("global-multicall-");
+	return key_lookup_prefix(map, ci);
+}
+
 struct pane *editor_new(void)
 {
 	struct pane *ed;
@@ -140,6 +148,8 @@ struct pane *editor_new(void)
 		key_add(ed_map, "global-load-module", &editor_load_module);
 		key_add_range(ed_map, "attach-", "attach.", &editor_auto_load);
 		key_add_range(ed_map, "event:", "event;", &editor_auto_event);
+		key_add_range(ed_map, "global-multicall-", "global-multicall.",
+			      &editor_multicall);
 	}
 
 	ed = pane_register(NULL, 0, &ed_handle, key_alloc(), NULL);

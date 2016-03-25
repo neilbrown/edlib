@@ -1070,6 +1070,13 @@ DEF_CMD(text_new)
 	return -1;
 }
 
+DEF_CMD(text_new2)
+{
+	if (ci->extra != S_IFREG)
+		return 0;
+	return text_new_func(ci);
+}
+
 static int count_bytes(struct text *t, struct mark *from, struct mark *to)
 {
 	struct text_chunk *c, *first, *last;
@@ -1684,6 +1691,7 @@ DEF_CMD(render_line)
 void edlib_init(struct pane *ed)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-doc-text", 0, &text_new);
+	call_comm("global-set-command", ed, 0, NULL, "open-doc-text", 0, &text_new2);
 
 	text_map = key_alloc();
 	key_add(text_map, "render-line-prev", &render_line_prev);
