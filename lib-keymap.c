@@ -109,7 +109,9 @@ DEF_CMD(keymap_handle)
 		if (strcmp(ci->key, "global-set-key") == 0) {
 		}
 		if (strcmp(ci->key, "global-set-keymap") == 0) {
-			struct command *cm = get_command(ci->home, ci->str);
+			struct command *cm = ci->comm2;
+			if (!cm && ci->str)
+				cm = get_command(ci->home, ci->str);
 			if (!cm)
 				return -1;
 			kd->globalcmd = cm;

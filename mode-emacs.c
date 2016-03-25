@@ -669,13 +669,19 @@ static void emacs_init(void)
 
 DEF_LOOKUP_CMD(mode_emacs, emacs_map);
 
+DEF_CMD(attach_mode_emacs)
+{
+	return call_comm("global-set-keymap", ci->focus, 0, NULL, NULL, 0,
+			 &mode_emacs.c);
+}
+
 void emacs_search_init(struct pane *ed);
 void edlib_init(struct pane *ed)
 {
 	if (emacs_map == NULL)
 		emacs_init();
-	call_comm("global-set-command", ed, 0, NULL, "mode-emacs",
-		  0, &mode_emacs.c);
+	call_comm("global-set-command", ed, 0, NULL, "attach-mode-emacs",
+		  0, &attach_mode_emacs);
 	call_comm("global-set-command", ed, 0, NULL, "emacs:file-complete",
 		  0, &emacs_file_complete);
 	call_comm("global-set-command", ed, 0, NULL, "emacs:doc-complete",

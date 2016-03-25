@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 	global = pane_attach(global, "global-keymap", NULL, NULL);
 
 	call5("global-load-module", ed, 0, NULL, "mode-emacs", 0);
-	call5("global-set-keymap", global, 0, NULL, "mode-emacs", 0);
+	call3("attach-mode-emacs", global, 0, NULL);
 
 	b = pane_attach(global, "tile", NULL, NULL);
 	if (b)
