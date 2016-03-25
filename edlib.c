@@ -72,13 +72,10 @@ int main(int argc, char *argv[])
 	call5("global-load-module", ed, 0, NULL, "lang-python", 0);
 
 	if (gtk) {
-		call5("global-load-module", ed, 0, NULL, "display-pygtk", 0);
-		call3("pygtkevent:activate", vroot, 0, NULL);
 		vroot = pane_attach(vroot, "input", NULL, NULL);
 		ci.key = "attach-display-pygtk";
 	} else {
 		call5("global-load-module", ed, 0, NULL, "lib-libevent", 0);
-		call5("global-load-module", ed, 0, NULL, "display-ncurses", 0);
 		call3("libevent:activate", vroot, 0, NULL);
 		ci.key = "attach-display-ncurses";
 	}
@@ -89,10 +86,11 @@ int main(int argc, char *argv[])
 	if (key_handle(&ci) <= 0)
 		exit(1);
 	root = cr.p;
+	if (gtk)
+		call3("pygtkevent:activate", vroot, 0, NULL);
 	global = pane_attach(root, "messageline", NULL, NULL);
 	global = pane_attach(global, "global-keymap", NULL, NULL);
 
-	call5("global-load-module", ed, 0, NULL, "mode-emacs", 0);
 	call3("attach-mode-emacs", global, 0, NULL);
 
 	b = pane_attach(global, "tile", NULL, NULL);

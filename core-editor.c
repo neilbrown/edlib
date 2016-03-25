@@ -17,10 +17,10 @@ DEF_CMD(ed_handle)
 	struct map *map = ci->home->data;
 	int ret;
 
-	ret = key_lookup(ed_map, ci);
-	if (ret)
-		return ret;
-	return key_lookup(map, ci);
+	ret = key_lookup(map, ci);
+	if (!ret)
+		ret = key_lookup(ed_map, ci);
+	return ret;
 }
 
 DEF_CMD(global_set_attr)
@@ -83,6 +83,36 @@ DEF_CMD(editor_load_module)
 	return key_lookup_prefix(map, ci);
 }
 
+DEF_CMD(editor_auto_load)
+{
+	int ret;
+	struct map *map = ci->home->data;
+	char *mod = ci->key + 7;
+
+	if (strncmp(mod, "doc-", 4) == 0 ||
+	    strncmp(mod, "render-", 7) == 0 ||
+	    strncmp(mod, "mode-", 5) == 0 ||
+	    strncmp(mod, "display-", 8) == 0)
+		;
+	else if (strcmp(mod, "global-keymap") == 0) {
+		mod = strdup("lib-keymap");
+	} else {
+		mod = malloc(4+strlen(mod)+1);
+		strcpy(mod, "lib-");
+		strcpy(mod+4, ci->key + 7);
+	}
+
+	ret = call5("global-load-module", ci->home, 0, NULL,
+		    mod, 0);
+	if (mod != ci->key + 7)
+		free(mod);
+
+	if (ret > 0)
+		/* auto-load succeeded */
+		return key_lookup(map, ci);
+	return 0;
+}
+
 struct pane *editor_new(void)
 {
 	struct pane *ed;
@@ -93,6 +123,7 @@ struct pane *editor_new(void)
 		key_add(ed_map, "global-set-command", &global_set_command);
 		key_add(ed_map, "global-get-command", &global_get_command);
 		key_add(ed_map, "global-load-module", &editor_load_module);
+		key_add_range(ed_map, "attach-", "attach.", &editor_auto_load);
 	}
 
 	ed = pane_register(NULL, 0, &ed_handle, key_alloc(), NULL);

@@ -468,12 +468,6 @@ struct pane *render_attach(char *name, struct pane *parent)
 	ret = key_handle(&ci);
 	if (ret)
 		return cr.p;
-	sprintf(buf, "render-%s", name);
-	call5("global-load-module", parent, 0, NULL, buf, 0);
-	sprintf(buf, "attach-render-%s", name);
-	ret = key_handle(&ci);
-	if (ret)
-		return cr.p;
 	return NULL;
 }
 
@@ -509,15 +503,7 @@ struct pane *pane_attach(struct pane *p, char *type,
 	ci.str = arg;
 	ci.str2 = arg2;
 	ci.comm2 = &cr.c;
-	if (!key_handle(&ci)) {
-		char *mod;
-		if (strcmp(type, "global-keymap")==0)
-			type = "keymap";
-		asprintf(&mod, "lib-%s", type);
-		call5("global-load-module", p, 0, NULL, mod, 0);
-		free(mod);
-		key_handle(&ci);
-	}
+	key_handle(&ci);
 	free(com);
 	return cr.p;
 }

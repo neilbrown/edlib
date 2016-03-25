@@ -563,11 +563,8 @@ struct pane *doc_new(struct pane *p, char *type)
 	cr.c = take_pane;
 	cr.p = NULL;
 	ci.comm2 = &cr.c;
-	if (!key_handle(&ci)) {
-		call5("global-load-module", p, 0, NULL, buf+7, 0);
-		if (!key_handle(&ci))
-			return NULL;
-	}
+	if (!key_handle(&ci))
+		return NULL;
 	d = cr.p;
 	return d;
 }
