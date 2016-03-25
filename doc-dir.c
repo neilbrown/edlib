@@ -538,7 +538,15 @@ DEF_CMD(dir_open)
 			par = p2;
 			p = pane_child(par);
 		}
+	} else {
+		struct pane *p2 = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+		if (p2) {
+			par = p2;
+			p = pane_child(par);
+		}
 	}
+	if (!par)
+		return -1;
 	if (p)
 		pane_close(p);
 	if (fd >= 0) {

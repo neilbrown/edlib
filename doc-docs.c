@@ -182,6 +182,7 @@ DEF_CMD(docs_callback)
 		else
 			list_move_tail(&p->siblings, &doc->doc.home->children);
 		docs_enmark(doc, p);
+		return 1;
 	}
 	return 0;
 }
