@@ -530,13 +530,11 @@ DEF_CMD(dir_open)
 	struct pane *par = p->parent;
 	int fd;
 	char *fname = NULL;
-	char *renderer = NULL;
 
 	/* close this pane, open the given file. */
 	if (de == NULL)
 		return 0;
-	if (strcmp(ci->key, "Chr-h") == 0)
-		renderer = "hex";
+
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
 	if (strcmp(ci->key, "Chr-o") == 0) {
@@ -559,10 +557,56 @@ DEF_CMD(dir_open)
 	if (fd >= 0) {
 		p = doc_open(par, fd, fname);
 		if (p)
-			p = doc_attach_view(par, p, renderer);
+			p = doc_attach_view(par, p, NULL);
 		close(fd);
 	} else
 		p = doc_from_text(par, fname, "File not found\n");
+	free(fname);
+	pane_focus(p);
+	return 1;
+}
+
+DEF_CMD(dir_open_alt)
+{
+	struct pane *p = ci->home;
+	struct doc *d = p->data;
+	struct directory *dr = container_of(d, struct directory, doc);
+	struct dir_ent *de = ci->mark->ref.d;
+	struct pane *par = p->parent;
+	int fd;
+	char *fname = NULL;
+	char *renderer = NULL;
+	char buf[100];
+
+	/* close this pane, open the given file. */
+	if (de == NULL)
+		return 0;
+	snprintf(buf, sizeof(buf), "render-%s", ci->key);
+	asprintf(&fname, "%s/%s", dr->fname, de->name);
+	fd = open(fname, O_RDONLY);
+
+	par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	if (!par)
+		return -1;
+
+	p = pane_child(par);
+
+	if (fd >= 0) {
+		struct pane *new = doc_open(par, fd, fname);
+		if (new) {
+			renderer = pane_attr_get(new, buf);
+			if (renderer) {
+				if (p)
+					pane_close(p);
+				p = doc_attach_view(par, new, renderer);
+			}
+		}
+		close(fd);
+	} else {
+		if (p)
+			pane_close(p);
+		p = doc_from_text(par, fname, "File not found\n");
+	}
 	free(fname);
 	pane_focus(p);
 	return 1;
@@ -590,7 +634,7 @@ void edlib_init(struct pane *ed)
 	doc_map = key_alloc();
 	key_add(doc_map, "Chr-f", &dir_open);
 	key_add(doc_map, "Return", &dir_open);
-	key_add(doc_map, "Chr-h", &dir_open);
+	key_add_range(doc_map, "Chr-A", "Chr-Z", &dir_open_alt);
 	key_add(doc_map, "Chr-o", &dir_open);
 	key_add(doc_map, "Chr-g", &dir_reread);
 	key_add(doc_map, "Chr-q", &dir_close);

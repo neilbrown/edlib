@@ -1504,6 +1504,8 @@ DEF_CMD(text_get_attr)
 		;
 	else if (strcmp(attr, "render-default") == 0)
 		val = "lines";
+	else if (strcmp(attr, "render-Chr-H") == 0)
+		val = "hex";
 	else if (strcmp(attr, "filename") == 0)
 		val = t->fname;
 	else

@@ -319,20 +319,48 @@ DEF_CMD(docs_open)
 {
 	struct pane *p;
 	struct pane *dp = ci->mark->ref.p;
-	char *renderer = NULL;
 	struct pane *par;
 
 	/* close this pane, open the given document. */
 	if (dp == NULL)
 		return 0;
 
-	if (strcmp(ci->key, "Chr-h") == 0)
-		renderer = "hex";
-
 	if (strcmp(ci->key, "Chr-o") == 0)
 		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
 	else
 		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	if (!par)
+		return -1;
+	p = pane_child(par);
+	if (p)
+		pane_close(p);
+	p = doc_attach_view(par, dp, NULL);
+	if (p) {
+		pane_focus(p);
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+DEF_CMD(docs_open_alt)
+{
+	struct pane *p;
+	struct pane *dp = ci->mark->ref.p;
+	char *renderer = NULL;
+	struct pane *par;
+	char buf[100];
+
+	/* close this pane, open the given document. */
+	if (dp == NULL)
+		return 0;
+
+	snprintf(buf, sizeof(buf), "render-%s", ci->key);
+	renderer = pane_attr_get(dp, buf);
+	if (!renderer)
+		return -1;
+
+	par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 	if (!par)
 		return -1;
 	p = pane_child(par);
@@ -388,10 +416,10 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:check_name", &doc_checkname);
 
 	key_add(docs_map, "Chr-f", &docs_open);
-	key_add(docs_map, "Chr-h", &docs_open);
 	key_add(docs_map, "Return", &docs_open);
 	key_add(docs_map, "Chr-o", &docs_open);
 	key_add(docs_map, "Chr-q", &docs_bury);
+	key_add_range(docs_map, "Chr-A", "Chr-Z", &docs_open_alt);
 
 	key_add(docs_map, "ChildClosed", &docs_child_closed);
 }
