@@ -601,7 +601,7 @@ struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render
 		struct doc_data *dd = p->data;
 		dd->point = point_new(dd->doc->data);
 		p->pointer = dd->point;
-		p = pane_attach(p, "view", NULL, NULL);
+		p = call_pane("attach-view", p, 0, NULL, 0);
 	}
 	if (p)
 		p = render_attach(render, p);

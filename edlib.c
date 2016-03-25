@@ -72,15 +72,15 @@ int main(int argc, char *argv[])
 	}
 
 	if (p)
-		p = pane_attach(p, "messageline", NULL, NULL);
+		p = call_pane("attach-messageline", p, 0, NULL, 0);
 	if (p)
-		p = pane_attach(p, "global-keymap", NULL, NULL);
+		p = call_pane("attach-global-keymap", p, 0, NULL, 0);
 
 	if (p)
 		call3("attach-mode-emacs", p, 0, NULL);
 
 	if (p)
-		p = pane_attach(p, "tile", NULL, NULL);
+		p = call_pane("attach-tile", p, 0, NULL, 0);
 	if (p)
 		p = doc_from_text(p, "*Welcome*", WelcomeText);
 	if (p) {

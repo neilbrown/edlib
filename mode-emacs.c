@@ -290,7 +290,7 @@ DEF_CMD(emacs_findfile)
 			path = realpath(".", buf);
 		if (!path)
 			path = "/";
-		p = pane_attach(ci->focus, "popup", "D2", NULL);
+		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2");
 		if (!p)
 			return 0;
 
@@ -426,7 +426,7 @@ DEF_CMD(emacs_finddoc)
 
 	if (strncmp(ci->key, "Doc Found", 9) != 0) {
 
-		p = pane_attach(ci->focus, "popup", "D2", NULL);
+		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2");
 		if (!p)
 			return 0;
 
@@ -567,7 +567,8 @@ DEF_CMD(emacs_search)
 	int ret;
 
 	if (strcmp(ci->key, "Search String") != 0) {
-		struct pane *p = pane_attach(ci->focus, "popup", "TR2", NULL);
+		struct pane *p = call_pane7("attach-popup", ci->focus, 0, NULL,
+					    0, "TR2");
 
 		if (!p)
 			return 0;
@@ -578,7 +579,7 @@ DEF_CMD(emacs_search)
 		call5("doc:set-name", p, 0, NULL, "Search", 0);
 
 		p = pane_final_child(p);
-		pane_attach(p, "emacs-search", NULL, NULL);
+		call_pane("attach-emacs-search", p, 0, NULL, 0);
 		return 1;
 	}
 
