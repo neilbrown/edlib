@@ -305,7 +305,7 @@ DEF_CMD(docs_get_attr)
 			val = "<bold,underline>  Document             File</>";
 	else if (strcmp(attr, "line-format") == 0)
 			val = "  %+name:20 %filename";
-	else if (strcmp(attr, "default-renderer") == 0)
+	else if (strcmp(attr, "render-default") == 0)
 			val = "format";
 	else
 		return 0;

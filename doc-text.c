@@ -1502,7 +1502,7 @@ DEF_CMD(text_get_attr)
 
 	if (val)
 		;
-	else if (strcmp(attr, "default-renderer") == 0)
+	else if (strcmp(attr, "render-default") == 0)
 		val = "lines";
 	else if (strcmp(attr, "filename") == 0)
 		val = t->fname;
