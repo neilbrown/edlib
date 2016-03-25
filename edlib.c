@@ -75,7 +75,6 @@ int main(int argc, char *argv[])
 		vroot = pane_attach(vroot, "input", NULL, NULL);
 		ci.key = "attach-display-pygtk";
 	} else {
-		call3("attach-libevent", vroot, 0, NULL);
 		ci.key = "attach-display-ncurses";
 	}
 	ci.home = ci.focus = vroot;
@@ -85,8 +84,7 @@ int main(int argc, char *argv[])
 	if (key_handle(&ci) <= 0)
 		exit(1);
 	root = cr.p;
-	if (gtk)
-		call3("pygtkevent:activate", vroot, 0, NULL);
+
 	global = pane_attach(root, "messageline", NULL, NULL);
 	global = pane_attach(global, "global-keymap", NULL, NULL);
 

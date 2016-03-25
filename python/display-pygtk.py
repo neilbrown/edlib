@@ -30,6 +30,7 @@ def attach(p, mode):
 
 class EdDisplay(gtk.Window):
     def __init__(self, home):
+        events_activate(home)
         gtk.Window.__init__(self)
         self.pane = edlib.Pane(home, self.handle)
         self.panes = {}
@@ -417,34 +418,40 @@ class events:
     def read(self, key, focus, comm2, numeric, **a):
         self.active = True
         gobject.io_add_watch(numeric, gobject.IO_IN, self.docall, comm2, focus, numeric)
+        return 1
 
     def docall(self, comm, focus, fd):
         comm2.call("callback", focus, fd)
         return 1
 
     def signal(self, key, focus, comm2, numeric, **a):
-        pass
+        return 1
 
     def run(self, key, **a):
         if self.active:
             gtk.main()
             return 1
         else:
-            return 0
+            return -1
 
     def deactivate(self, key, **a):
         self.active = False
         gtk.main_quit()
+        global ev
+        ev = None
         return 1
 
-def events_activate(key, home, focus, **a):
+ev = None
+def events_activate(home):
+    global ev
+    if ev:
+        return 1
     ev = events()
-    home.call("global-set-command", focus, "event:read", ev.read)
-    home.call("global-set-command", focus, "event:signal", ev.signal)
-    home.call("global-set-command", focus, "event:run", ev.run)
-    home.call("global-set-command", focus, "event:deactivate", ev.deactivate)
+    home.call("global-set-command", home, "event:read-python", ev.read)
+    home.call("global-set-command", home, "event:signal-python", ev.signal)
+    home.call("global-set-command", home, "event:run-python", ev.run)
+    home.call("global-set-command", home, "event:deactivate-python", ev.deactivate)
 
     return 1
 
 editor.call("global-set-command", pane, "attach-display-pygtk", new_display);
-editor.call("global-set-command", pane, "pygtkevent:activate", events_activate);

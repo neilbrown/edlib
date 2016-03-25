@@ -113,6 +113,21 @@ DEF_CMD(editor_auto_load)
 	return 0;
 }
 
+DEF_CMD(editor_auto_event)
+{
+	/* Event handled register under a private name so we
+	 * have to use key_lookup_prefix to find them.
+	 * If nothing is found, autoload lib-libevent (hack?)
+	 */
+	struct map *map = ci->home->data;
+	int ret = key_lookup_prefix(map, ci);
+
+	if (ret)
+		return ret;
+	call3("attach-libevent", ci->home, 0, NULL);
+	return key_lookup_prefix(map, ci);
+}
+
 struct pane *editor_new(void)
 {
 	struct pane *ed;
@@ -124,6 +139,7 @@ struct pane *editor_new(void)
 		key_add(ed_map, "global-get-command", &global_get_command);
 		key_add(ed_map, "global-load-module", &editor_load_module);
 		key_add_range(ed_map, "attach-", "attach.", &editor_auto_load);
+		key_add_range(ed_map, "event:", "event;", &editor_auto_event);
 	}
 
 	ed = pane_register(NULL, 0, &ed_handle, key_alloc(), NULL);

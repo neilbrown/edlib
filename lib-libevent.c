@@ -99,13 +99,14 @@ DEF_CMD(libevent_deactivate)
 
 DEF_CMD(libevent_activate)
 {
-	call_comm("global-set-command", ci->focus, 0, NULL, "event:read",
+	/* These are defaults, so make them sort late */
+	call_comm("global-set-command", ci->focus, 0, NULL, "event:read-zz",
 		  0, &libevent_read);
-	call_comm("global-set-command", ci->focus, 0, NULL, "event:signal",
+	call_comm("global-set-command", ci->focus, 0, NULL, "event:signal-zz",
 		  0, &libevent_signal);
-	call_comm("global-set-command", ci->focus, 0, NULL, "event:run",
+	call_comm("global-set-command", ci->focus, 0, NULL, "event:run-zz",
 		  0, &libevent_run);
-	call_comm("global-set-command", ci->focus, 0, NULL, "event:deactivate",
+	call_comm("global-set-command", ci->focus, 0, NULL, "event:deactivate-zz",
 		  0, &libevent_deactivate);
 
 	return 1;
