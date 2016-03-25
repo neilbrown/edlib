@@ -437,22 +437,9 @@ void pane_focus(struct pane *p)
 	}
 }
 
-DEF_CMD(pane_callback)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->p = ci->focus;
-	return 1;
-}
-
 struct pane *render_attach(char *name, struct pane *parent)
 {
 	char buf[100];
-	struct cmd_info ci = {0};
-	int ret;
-	struct call_return cr;
-
-	cr.c = pane_callback;
-	cr.p = NULL;
 
 	/* always attach a renderer as a leaf */
 	parent = pane_final_child(parent);
@@ -462,13 +449,7 @@ struct pane *render_attach(char *name, struct pane *parent)
 		return NULL;
 
 	sprintf(buf, "attach-render-%s", name);
-	ci.key = buf;
-	ci.focus = parent;
-	ci.comm2 = &cr.c;
-	ret = key_handle(&ci);
-	if (ret)
-		return cr.p;
-	return NULL;
+	return call_pane(buf, parent, 0, NULL, 0);
 }
 
 
