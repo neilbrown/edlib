@@ -187,6 +187,23 @@ DEF_CMD(docs_callback)
 	return 0;
 }
 
+DEF_CMD(doc_revisit)
+{
+	struct pane *p = ci->focus;
+	struct docs *docs = container_of(ci->home->data, struct docs, doc);
+	if (!p)
+		return -1;
+	if (p == docs->doc.home)
+		return 1;
+	docs_demark(docs, p);
+	if (ci->numeric >= 0)
+		list_move(&p->siblings, &docs->doc.home->children);
+	else
+		list_move_tail(&p->siblings, &docs->doc.home->children);
+	docs_enmark(docs, p);
+	return 1;
+}
+
 DEF_CMD(docs_step)
 {
 	struct doc *doc = ci->home->data;
@@ -414,6 +431,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:step", &docs_step);
 	key_add(docs_map, "doc:free", &docs_destroy);
 	key_add(docs_map, "doc:check_name", &doc_checkname);
+	key_add(docs_map, "doc:revisit", &doc_revisit);
 
 	key_add(docs_map, "Chr-f", &docs_open);
 	key_add(docs_map, "Return", &docs_open);

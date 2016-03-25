@@ -533,7 +533,7 @@ struct pane *doc_attach(struct pane *parent, struct pane *d)
 	/* non-home panes need to be notified so they can self-destruct */
 	pane_add_notify(p, d, "Notify:Close");
 	dd->point = NULL;
-	call5("docs:attach", d, 1, NULL, NULL, 0);
+	call5("doc:revisit", d, 1, NULL, NULL, 0);
 	return p;
 }
 
