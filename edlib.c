@@ -44,17 +44,15 @@ static char WelcomeText[] =
 
 int main(int argc, char *argv[])
 {
-	struct pane *root, *global;
-	struct pane *b, *p= NULL;
-	struct cmd_info ci = {0};
-	struct pane *ed;
-	struct pane *vroot = editor_new();
+	struct pane *ed = editor_new();
+	struct pane *p;
 	int gtk = 0;
 
+	if (!ed)
+		exit(1);
 	if (argc > 1 && strcmp(argv[1], "-g") == 0)
 		gtk = 1;
 
-	ed = vroot;
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 
@@ -65,32 +63,29 @@ int main(int argc, char *argv[])
 	call5("global-load-module", ed, 0, NULL, "doc-text", 0);
 	call5("global-load-module", ed, 0, NULL, "doc-dir", 0);
 
-	vroot = pane_attach(vroot, "input", NULL, NULL);
-	if (gtk)
-		root = call_pane("attach-display-pygtk", vroot, 0, NULL, 0);
-	else
-		root = call_pane("attach-display-ncurses", vroot, 0, NULL, 0);
-
-	if (!root)
-		exit(1);
-
-	global = pane_attach(root, "messageline", NULL, NULL);
-	global = pane_attach(global, "global-keymap", NULL, NULL);
-
-	call3("attach-mode-emacs", global, 0, NULL);
-
-	b = pane_attach(global, "tile", NULL, NULL);
-	if (b)
-		p = doc_from_text(b, "*Welcome*", WelcomeText);
+	p = call_pane("attach-input", ed, 0, NULL, 0);
 	if (p) {
-		memset(&ci, 0, sizeof(ci));
-		ci.home = ci.focus = p;
-		ci.key = "python-load";
-		ci.str = "python/test.py";
-		key_handle(&ci);
+		if (gtk)
+			p = call_pane("attach-display-pygtk", p, 0, NULL, 0);
+		else
+			p = call_pane("attach-display-ncurses", p, 0, NULL, 0);
+	}
 
+	if (p)
+		p = pane_attach(p, "messageline", NULL, NULL);
+	if (p)
+		p = pane_attach(p, "global-keymap", NULL, NULL);
+
+	if (p)
+		call3("attach-mode-emacs", p, 0, NULL);
+
+	if (p)
+		p = pane_attach(p, "tile", NULL, NULL);
+	if (p)
+		p = doc_from_text(p, "*Welcome*", WelcomeText);
+	if (p) {
 		pane_refresh(ed);
-		while (call3("event:run", vroot, 0, NULL) == 1)
+		while (call3("event:run", ed, 0, NULL) == 1)
 			;
 	}
 	pane_close(ed);
