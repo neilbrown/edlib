@@ -370,10 +370,6 @@ struct map *doc_default_cmd;
 
 static void init_doc_defaults(void)
 {
-
-	if (doc_default_cmd)
-		return;
-
 	doc_default_cmd = key_alloc();
 
 	key_add(doc_default_cmd, "Move-Char", &doc_char);
@@ -541,32 +537,15 @@ struct pane *doc_attach(struct pane *parent, struct pane *d)
 	return p;
 }
 
-DEF_CMD(take_pane)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->p = ci->focus;
-	return 1;
-}
-
 struct pane *doc_new(struct pane *p, char *type)
 {
 	char buf[100];
-	struct cmd_info ci = {0};
-	struct call_return cr;
-	struct pane *d;
 
-	init_doc_defaults();
+	if (!doc_default_cmd)
+		init_doc_defaults();
 
-	sprintf(buf, "attach-doc-%s", type);
-	ci.key = buf;
-	ci.focus = ci.home = p;
-	cr.c = take_pane;
-	cr.p = NULL;
-	ci.comm2 = &cr.c;
-	if (!key_handle(&ci))
-		return NULL;
-	d = cr.p;
-	return d;
+	snprintf(buf, sizeof(buf), "attach-doc-%s", type);
+	return call_pane(buf, p, 0, NULL, 0);
 }
 
 struct pane *doc_open(struct pane *ed, int fd, char *name)
