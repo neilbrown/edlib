@@ -166,13 +166,14 @@ DEF_CMD(docs_callback)
 				 NULL, NULL, 0);
 	}
 
-	if (strcmp(ci->key, "docs:attach") == 0) {
+	if (strcmp(ci->key, "doc:appeared-") == 0) {
+		/* Always return 0 so other handlers get a chance */
 		struct pane *p = ci->focus;
 		if (!p)
-			return -1;
+			return 0;
 		if (p == doc->doc.home)
 			/* The docs doc is implicitly attached */
-			return 1;
+			return 0;
 		if (p->parent != doc->doc.home)
 			check_name(doc, p);
 		p->parent = doc->doc.home;
@@ -182,7 +183,7 @@ DEF_CMD(docs_callback)
 		else
 			list_move_tail(&p->siblings, &doc->doc.home->children);
 		docs_enmark(doc, p);
-		return 1;
+		return 0;
 	}
 	return 0;
 }
@@ -467,6 +468,8 @@ DEF_CMD(attach_docs)
 	doc->callback = docs_callback;
 	call_comm7("global-set-command", ci->home, 0, NULL, "docs:", 0, "docs;",
 		   &doc->callback);
+	call_comm("global-set-command", ci->home, 0, NULL,
+		  "doc:appeared-docs-register", 0, &doc->callback);
 
 	return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
 }

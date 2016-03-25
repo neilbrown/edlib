@@ -557,7 +557,7 @@ struct pane *doc_open(struct pane *ed, int fd, char *name)
 	p = call_pane7("docs:byfd", ed, 0, NULL, fd, name, NULL);
 
 	if (p) {
-		call5("docs:attach", p, 1, NULL, NULL, 0);
+		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 		return p;
 	}
 
@@ -588,7 +588,7 @@ struct pane *doc_open(struct pane *ed, int fd, char *name)
 	if (!p)
 		return NULL;
 	doc_load_file(p, fd, rp);
-	call5("docs:attach", p, 1, NULL, NULL, 0);
+	call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	return p;
 }
 
