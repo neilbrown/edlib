@@ -583,7 +583,7 @@ struct pane *call_pane(char *key, struct pane *focus, int numeric,
 }
 
 struct pane *call_pane7(char *key, struct pane *focus, int numeric,
-			struct mark *m, int extra, char *str)
+			struct mark *m, int extra, char *str, char *str2)
 {
 	struct cmd_info ci = {0};
 	struct call_return cr;
@@ -594,6 +594,7 @@ struct pane *call_pane7(char *key, struct pane *focus, int numeric,
 	ci.extra = extra;
 	ci.mark = m;
 	ci.str = str;
+	ci.str2 = str2;
 	cr.c = take_pane;
 	cr.p = NULL;
 	ci.comm2 = &cr.c;

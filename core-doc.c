@@ -554,7 +554,7 @@ struct pane *doc_open(struct pane *ed, int fd, char *name)
 	struct pane *p;
 	char pathbuf[PATH_MAX], *rp = NULL;
 
-	p = call_pane7("docs:byfd", ed, 0, NULL, fd, name);
+	p = call_pane7("docs:byfd", ed, 0, NULL, fd, name, NULL);
 
 	if (p) {
 		call5("docs:attach", p, 1, NULL, NULL, 0);
@@ -583,7 +583,7 @@ struct pane *doc_open(struct pane *ed, int fd, char *name)
 		return NULL;
 
 	p = call_pane7("global-multicall-open-doc-", ed, fd, NULL,
-		       stb.st_mode & S_IFMT, rp);
+		       stb.st_mode & S_IFMT, rp, NULL);
 
 	if (!p)
 		return NULL;

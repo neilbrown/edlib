@@ -223,7 +223,7 @@ DEF_CMD(popup_attach)
 
 	if (ci->str2) {
 		struct pane *dp = call_pane7("docs:byname", ci->focus, 0, NULL, 0,
-					     ci->str2);
+					     ci->str2, NULL);
 
 		if (!dp)
 			/* FIXME clean up*/

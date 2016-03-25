@@ -334,7 +334,7 @@ void pane_map_xy(struct pane *orig, struct pane *target, int *x, int *y);
 struct pane *call_pane(char *key, struct pane *focus, int numeric,
 		       struct mark *m, int extra);
 struct pane *call_pane7(char *key, struct pane *focus, int numeric,
-			struct mark *m, int extra, char *str);
+			struct mark *m, int extra, char *str, char *str2);
 
 static inline int pane_attr_get_int(struct pane *p, char *key)
 {

@@ -290,7 +290,7 @@ DEF_CMD(emacs_findfile)
 			path = realpath(".", buf);
 		if (!path)
 			path = "/";
-		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2");
+		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2", NULL);
 		if (!p)
 			return 0;
 
@@ -426,7 +426,7 @@ DEF_CMD(emacs_finddoc)
 
 	if (strncmp(ci->key, "Doc Found", 9) != 0) {
 
-		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2");
+		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2", NULL);
 		if (!p)
 			return 0;
 
@@ -459,7 +459,7 @@ DEF_CMD(emacs_finddoc)
 	par = p;
 	/* par is the tile */
 
-	p = call_pane7("docs:byname", ci->focus, 0, NULL, 0, ci->str);
+	p = call_pane7("docs:byname", ci->focus, 0, NULL, 0, ci->str, NULL);
 	if (!p)
 		return 1;
 	if (par->focus)
@@ -524,7 +524,7 @@ DEF_CMD(emacs_viewdocs)
 		return -1;
 	/* par is the tile */
 
-	docs = call_pane7("docs:byname", ci->focus, 0, NULL, 0, "*Documents*");
+	docs = call_pane7("docs:byname", ci->focus, 0, NULL, 0, "*Documents*", NULL);
 	if (!docs)
 		return 1;
 	p = pane_child(par);
@@ -568,7 +568,7 @@ DEF_CMD(emacs_search)
 
 	if (strcmp(ci->key, "Search String") != 0) {
 		struct pane *p = call_pane7("attach-popup", ci->focus, 0, NULL,
-					    0, "TR2");
+					    0, "TR2", NULL);
 
 		if (!p)
 			return 0;
