@@ -4,7 +4,7 @@
  *
  * libevent support for edlib.
  *
- * Register command "libevent:activate".
+ * Register command "attach-libevent".
  * When that is called, register:
  *   "event:read"
  *   "event:signal"
@@ -110,6 +110,6 @@ DEF_CMD(libevent_activate)
 
 void edlib_init(struct pane *ed)
 {
-	call_comm("global-set-command", ed, 0, NULL, "libevent:activate",
+	call_comm("global-set-command", ed, 0, NULL, "attach-libevent",
 		  0, &libevent_activate);
 }

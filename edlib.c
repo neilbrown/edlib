@@ -75,8 +75,7 @@ int main(int argc, char *argv[])
 		vroot = pane_attach(vroot, "input", NULL, NULL);
 		ci.key = "attach-display-pygtk";
 	} else {
-		call5("global-load-module", ed, 0, NULL, "lib-libevent", 0);
-		call3("libevent:activate", vroot, 0, NULL);
+		call3("attach-libevent", vroot, 0, NULL);
 		ci.key = "attach-display-ncurses";
 	}
 	ci.home = ci.focus = vroot;
