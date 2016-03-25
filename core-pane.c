@@ -487,27 +487,6 @@ void pane_set_extra(struct pane *p, int extra)
 	call5("Mode:set-extra", p, 0, NULL, NULL, extra);
 }
 
-struct pane *pane_attach(struct pane *p, char *type,
-			 char *arg, char *arg2)
-{
-	struct cmd_info ci = {0};
-	char *com;
-	struct call_return cr;
-
-	cr.c = pane_callback;
-	cr.p = NULL;
-
-	asprintf(&com, "attach-%s", type);
-	ci.key = com;
-	ci.focus = p;
-	ci.str = arg;
-	ci.str2 = arg2;
-	ci.comm2 = &cr.c;
-	key_handle(&ci);
-	free(com);
-	return cr.p;
-}
-
 void pane_clear(struct pane *p, char *attrs)
 {
 	struct cmd_info ci = {0};
