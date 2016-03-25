@@ -62,7 +62,7 @@ DEF_CMD(messageline_handle)
 	if (strcmp(ci->key, "Message") == 0) {
 		if (ci->extra == 0 || mli->message == NULL) {
 			if (!mli->message)
-				call3("Request:Notify:Keystroke", ci->focus, 0, NULL);
+				call3("Request:Notify:Keystroke", ci->home, 0, NULL);
 			free(mli->message);
 			mli->message = strdup(ci->str);
 			pane_damaged(mli->line, DAMAGED_CONTENT);
