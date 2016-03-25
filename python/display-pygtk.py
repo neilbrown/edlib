@@ -415,6 +415,7 @@ class events:
         self.active = True
 
     def read(self, key, focus, comm2, numeric, **a):
+        self.active = True
         gobject.io_add_watch(numeric, gobject.IO_IN, self.docall, comm2, focus, numeric)
 
     def docall(self, comm, focus, fd):

@@ -44,6 +44,10 @@ static void call_event(int thing, short sev, void *evv)
 DEF_CMD(libevent_read)
 {
 	struct evt *ev = malloc(sizeof(*ev));
+
+	if (!base)
+		base = event_base_new();
+
 	ev->l = event_new(base, ci->numeric, EV_READ|EV_PERSIST,
 			  call_event, ev);
 	ev->home = ci->focus;
@@ -56,6 +60,10 @@ DEF_CMD(libevent_read)
 DEF_CMD(libevent_signal)
 {
 	struct evt *ev = malloc(sizeof(*ev));
+
+	if (!base)
+		base = event_base_new();
+
 	ev->l = event_new(base, ci->numeric, EV_SIGNAL|EV_PERSIST,
 			  call_event, ev);
 	ev->home = ci->focus;
@@ -91,11 +99,6 @@ DEF_CMD(libevent_deactivate)
 
 DEF_CMD(libevent_activate)
 {
-	if (base)
-		return 1;
-	base = event_base_new();
-	INIT_LIST_HEAD(&event_list);
-
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:read",
 		  0, &libevent_read);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:signal",
@@ -110,6 +113,7 @@ DEF_CMD(libevent_activate)
 
 void edlib_init(struct pane *ed)
 {
+	INIT_LIST_HEAD(&event_list);
 	call_comm("global-set-command", ed, 0, NULL, "attach-libevent",
 		  0, &libevent_activate);
 }
