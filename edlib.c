@@ -42,19 +42,11 @@ static char WelcomeText[] =
 	"Mouse clicks move the cursor, and clicking on the scroll bar scrolls\n"
 	;
 
-DEF_CMD(take_pane)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->p = ci->focus;
-	return 1;
-}
-
 int main(int argc, char *argv[])
 {
 	struct pane *root, *global;
 	struct pane *b, *p= NULL;
 	struct cmd_info ci = {0};
-	struct call_return cr;
 	struct pane *ed;
 	struct pane *vroot = editor_new();
 	int gtk = 0;
@@ -75,17 +67,12 @@ int main(int argc, char *argv[])
 
 	vroot = pane_attach(vroot, "input", NULL, NULL);
 	if (gtk)
-		ci.key = "attach-display-pygtk";
+		root = call_pane("attach-display-pygtk", vroot, 0, NULL, 0);
 	else
-		ci.key = "attach-display-ncurses";
+		root = call_pane("attach-display-ncurses", vroot, 0, NULL, 0);
 
-	ci.home = ci.focus = vroot;
-	cr.c = take_pane;
-	cr.p = NULL;
-	ci.comm2 = &cr.c;
-	if (key_handle(&ci) <= 0)
+	if (!root)
 		exit(1);
-	root = cr.p;
 
 	global = pane_attach(root, "messageline", NULL, NULL);
 	global = pane_attach(global, "global-keymap", NULL, NULL);
