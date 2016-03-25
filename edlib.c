@@ -73,12 +73,12 @@ int main(int argc, char *argv[])
 	call5("global-load-module", ed, 0, NULL, "doc-text", 0);
 	call5("global-load-module", ed, 0, NULL, "doc-dir", 0);
 
-	if (gtk) {
-		vroot = pane_attach(vroot, "input", NULL, NULL);
+	vroot = pane_attach(vroot, "input", NULL, NULL);
+	if (gtk)
 		ci.key = "attach-display-pygtk";
-	} else {
+	else
 		ci.key = "attach-display-ncurses";
-	}
+
 	ci.home = ci.focus = vroot;
 	cr.c = take_pane;
 	cr.p = NULL;

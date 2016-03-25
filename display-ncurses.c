@@ -218,8 +218,7 @@ static struct pane *ncurses_init(struct pane *ed)
 	dd->cursor.x = dd->cursor.y = -1;
 
 	current_screen = NULL;
-	p = pane_attach(ed, "input", NULL, NULL);
-	p = pane_register(p, 0, &ncurses_handle, dd, NULL);
+	p = pane_register(ed, 0, &ncurses_handle, dd, NULL);
 
 	getmaxyx(stdscr, p->h, p->w); p->h-=1;
 
@@ -445,7 +444,7 @@ REDEF_CMD(input_handle)
 
 DEF_CMD(display_ncurses)
 {
-	struct pane *p = ncurses_init(ci->home);
+	struct pane *p = ncurses_init(ci->focus);
 	if (p)
 		return comm_call(ci->comm2, "callback:display", p, 0, NULL,
 				 NULL, 0);
