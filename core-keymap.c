@@ -294,6 +294,7 @@ int key_lookup_prefix(struct map *m, const struct cmd_info *ci)
 
 	while (pos < m->size && strncmp(m->keys[pos], ci->key, len) == 0) {
 		comm = GETCOMM(m->comms[pos]);
+		pos += 1;
 		if (comm && comm != prev) {
 			int ret;
 			((struct cmd_info*)ci)->comm = comm;
