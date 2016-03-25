@@ -24,7 +24,7 @@ static char WelcomeText[] =
 	"  splitting and closing windows (C-x 0,1,2,3)\n"
 	"  Resize current window (C-x },{,^)\n"
 	"  Move among windows (C-x o,O  or mouse click)\n"
-	"  Opening a file or directrory (C-x C-f)\n"
+	"  Opening a file or directory (C-x C-f)\n"
 	"    TAB performs file-name completion in a menu\n"
 	"  Open a document by name (C-x b) - with TAB completion\n"
 	"  Open a file or document in another pane (C-x 4 C-f,b)\n"
