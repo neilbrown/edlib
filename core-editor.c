@@ -94,12 +94,12 @@ DEF_CMD(editor_auto_load)
 	    strncmp(mod, "mode-", 5) == 0 ||
 	    strncmp(mod, "display-", 8) == 0)
 		;
-	else if (strcmp(mod, "global-keymap") == 0) {
-		mod = strdup("lib-keymap");
-	} else {
-		mod = malloc(4+strlen(mod)+1);
+	else {
+		char *m = strrchr(ci->key+6, '-');
+		m += 1;
+		mod = malloc(4+strlen(m)+1);
 		strcpy(mod, "lib-");
-		strcpy(mod+4, ci->key + 7);
+		strcpy(mod+4, m);
 	}
 
 	ret = call5("global-load-module", ci->home, 0, NULL,
