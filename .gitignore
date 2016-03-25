@@ -1,4 +1,3 @@
-*.o
 edlib
 core
 test_*
