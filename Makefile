@@ -43,6 +43,19 @@ $(OBJ) : O/%.o : %.c
 $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
 	gcc -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
+.PHONY: TAGS
+TAGS :
+	etags -o TAGS.tmp Makefile *.h *.c python/*.py
+	@sed 's/[\o177,].*//' TAGS > .TAGS1
+	@sed 's/[\o177,].*//' TAGS.tmp > .TAGS2
+	@if cmp -s .TAGS1 .TAGS2 ; then \
+	    rm -f TAGS.tmp ; \
+	else \
+	    mv TAGS.tmp TAGS ;\
+	fi
+	@rm -f .TAGS1 .TAGS2
+
+
 dirs :
 	@mkdir -p lib O
 
