@@ -240,8 +240,19 @@ DEF_CMD(render_hex_attach)
 			 0, NULL, NULL, 0);
 }
 
+DEF_CMD(hex_appeared)
+{
+	char *t = pane_attr_get(ci->focus, "doc-type");
+	if (t && strcmp(t, "text") == 0)
+		call7("doc:attr-set", ci->focus, 0, NULL, "render-Chr-H", 0,
+		      "hex", NULL);
+	return 0;
+}
+
 void edlib_init(struct pane *ed)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-render-hex",
 		  0, &render_hex_attach);
+	call_comm("global-set-command", ed, 0, NULL, "doc:appeared-hex",
+		  0, &hex_appeared);
 }

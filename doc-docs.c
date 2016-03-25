@@ -325,6 +325,8 @@ DEF_CMD(docs_get_attr)
 			val = "  %+name:20 %filename";
 	else if (strcmp(attr, "render-default") == 0)
 			val = "format";
+	else if (strcmp(attr, "doc-type") == 0)
+		val = "docs";
 	else
 		return 0;
 

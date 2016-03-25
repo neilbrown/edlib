@@ -494,6 +494,8 @@ DEF_CMD(dir_get_attr)
 		val = "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      File Name</>";
 	else if (strcmp(attr, "render-default") == 0)
 		val = "format";
+	else if (strcmp(attr, "doc-type") == 0)
+		val = "dir";
 	else if (strcmp(attr, "line-format") == 0)
 		val = " <fg:red>%perms</> %mdate:13 %user:10 %group:10 <fg:blue>%+name</>";
 	else if (strcmp(attr, "filename") == 0)
