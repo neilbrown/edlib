@@ -366,6 +366,18 @@ DEF_CMD(doc_set_name)
 	return call3("doc:check_name", d->home, -1, NULL);
 }
 
+DEF_CMD(doc_request_notify)
+{
+	pane_add_notify(ci->focus, ci->home, ci->key+8);
+	return 1;
+}
+
+DEF_CMD(doc_notify)
+{
+	pane_notify(ci->home, ci->key, ci->mark, ci->mark2, ci->str);
+	return 1;
+}
+
 struct map *doc_default_cmd;
 
 static void init_doc_defaults(void)
@@ -382,6 +394,10 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "doc:attr-set", &doc_attr_set);
 	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
+	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
+		      &doc_request_notify);
+	key_add_range(doc_default_cmd, "Notify:doc:", "Notify:doc;",
+		      &doc_notify);
 }
 
 DEF_CMD(doc_handle)
