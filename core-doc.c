@@ -616,6 +616,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 	if (!p)
 		return NULL;
 	call5("doc:set-name", p, 0, NULL, name, 0);
+	call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	p2 = doc_attach_view(parent, p, NULL);
 	if (!p2) {
 		doc_destroy(p);
