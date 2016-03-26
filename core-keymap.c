@@ -291,19 +291,22 @@ int key_lookup_prefix(struct map *m, const struct cmd_info *ci)
 	int pos = key_find(m, ci->key);
 	struct command *comm, *prev = NULL;
 	int len = strlen(ci->key);
+	char *k = ci->key;
 
-	while (pos < m->size && strncmp(m->keys[pos], ci->key, len) == 0) {
+	while (pos < m->size && strncmp(m->keys[pos], k, len) == 0) {
 		comm = GETCOMM(m->comms[pos]);
-		pos += 1;
 		if (comm && comm != prev) {
 			int ret;
 			((struct cmd_info*)ci)->comm = comm;
+			((struct cmd_info*)ci)->key = m->keys[pos];
 			ret = comm->func(ci);
 			if (ret)
 				return ret;
 			prev = comm;
 		}
+		pos += 1;
 	}
+	((struct cmd_info*)ci)->key = k;
 	return 0;
 }
 

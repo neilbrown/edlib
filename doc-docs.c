@@ -166,7 +166,7 @@ DEF_CMD(docs_callback)
 				 NULL, NULL, 0);
 	}
 
-	if (strcmp(ci->key, "doc:appeared-") == 0) {
+	if (strcmp(ci->key, "doc:appeared-docs-register") == 0) {
 		/* Always return 0 so other handlers get a chance */
 		struct pane *p = ci->focus;
 		if (!p)
