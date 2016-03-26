@@ -223,14 +223,16 @@ DEF_CMD(docs_step)
 			next = list_next_entry(p, siblings);
 	} else {
 		next = p;
-		if (p == NULL)
+		if (list_empty(&doc->home->children))
+			p = NULL;
+		else if (!p)
 			p = list_last_entry(&doc->home->children,
 					    struct pane, siblings);
-		else if (p == list_first_entry(&doc->home->children,
+		else if (p != list_first_entry(&doc->home->children,
 					       struct pane, siblings))
-			p = NULL;
-		else
 			p = list_prev_entry(p, siblings);
+		else
+			p = NULL;
 		if (p)
 			next = p;
 	}
@@ -250,7 +252,7 @@ DEF_CMD(docs_set_ref)
 	struct docs *d = container_of(dc, struct docs, doc);
 	struct mark *m = ci->mark;
 
-	if (ci->numeric == 1)
+	if (ci->numeric == 1 && !list_empty(&d->doc.home->children))
 		m->ref.p = list_first_entry(&d->doc.home->children,
 					    struct pane, siblings);
 	else
@@ -273,7 +275,9 @@ static char *__docs_get_attr(struct doc *doc, struct mark *m,
 
 	p = m->ref.p;
 	if (!forward) {
-		if (!p)
+		if (list_empty(&doc->home->children))
+			p = NULL;
+		else if (!p)
 			p = list_last_entry(&doc->home->children,
 					    struct pane, siblings);
 		else if (p != list_first_entry(&doc->home->children,
