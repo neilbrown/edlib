@@ -830,8 +830,13 @@ static int Mark_init(Mark *self, PyObject *args, PyObject *kwds)
 
 static void mark_dealloc(Mark *self)
 {
-	if (self->mark && self->mark->mtype == &MarkType)
-		mark_free(self->mark);
+	if (self->mark && self->mark->mtype == &MarkType) {
+		struct mark *m = self->mark;
+		self->mark = NULL;
+		m->mtype = NULL;
+		m->mdata = NULL;
+		mark_free(m);
+	}
 	self->ob_type->tp_free((PyObject*)self);
 }
 
