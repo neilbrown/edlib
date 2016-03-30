@@ -925,7 +925,12 @@ static PyObject *Mark_release(Mark *self)
 	if (self->mark && self->mark->viewnum >= 0 &&
 	    self->released == 0 &&
 	    self->mark->mtype == &MarkType) {
+		struct mark *m = self->mark;
 		Py_DECREF(self);
+		m->mdata = NULL;
+		m->mtype = NULL;
+		self->mark = NULL;
+		mark_free(m);
 		self->released = 1;
 	}
 	Py_INCREF(Py_None);
