@@ -91,7 +91,7 @@ DEF_CMD(mouse_event)
 	l = strlen(im->mode) + strlen(ci->str) + 1;
 	ci2.key = malloc(l);
 	strcat(strcpy(ci2.key, im->mode), ci->str);
-	ci2.focus = ci->home;
+	ci2.focus = ci->focus;
 	ci2.numeric = im->numeric;
 	ci2.extra = im->extra;
 	ci2.x = ci->x; ci2.y = ci->y;
