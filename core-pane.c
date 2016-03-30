@@ -229,7 +229,7 @@ void pane_notify_close(struct pane *p)
 }
 
 int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2,
-		char *str)
+		char *str, int numeric)
 {
 	/* Return the largest absolue return value. If no notifiees are found.
 	 * return 0
@@ -241,7 +241,7 @@ int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark 
 	list_for_each_entry_safe(n, t, &p->notifiees, notifier_link)
 		if (strcmp(n->notification, notification) == 0) {
 			int r = comm_call_pane(n->notifiee, n->notification, p,
-					       0, m, str, 0, m2);
+					       numeric, m, str, 0, m2);
 			if (abs(r) > abs(ret))
 				ret = r;
 		}

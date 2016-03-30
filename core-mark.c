@@ -1083,7 +1083,7 @@ void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 	int i;
 	int remaining = d->nviews;
 
-	pane_notify(d->home, "Notify:Replace", m, m2, NULL);
+	pane_notify(d->home, "Notify:Replace", m, m2, NULL, 0);
 
 	if (m->viewnum == MARK_POINT) {
 		point_notify_change(d, m, m2);

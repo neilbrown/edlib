@@ -70,7 +70,7 @@ struct notifier {
 };
 void pane_add_notify(struct pane *target, struct pane *source, char *msg);
 int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2,
-		char *str);
+		char *str, int numeric);
 void pane_drop_notifiers(struct pane *p, char *notification);
 
 struct pane *editor_new(void);
