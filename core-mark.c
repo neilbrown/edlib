@@ -376,7 +376,9 @@ struct mark *doc_new_mark(struct doc *d, int view)
 {
 	struct mark *ret;
 
-	if (view == MARK_POINT || view >= d->nviews || d->views[view].state != 1)
+	if (view == MARK_POINT || view >= d->nviews ||
+	    view < MARK_UNGROUPED ||
+	    (view >= 0 && d->views[view].state != 1))
 		return NULL;
 	ret = calloc(sizeof(*ret), 1);
 	ret->viewnum = view;
