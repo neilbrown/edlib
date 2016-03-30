@@ -374,8 +374,7 @@ DEF_CMD(doc_request_notify)
 
 DEF_CMD(doc_notify)
 {
-	pane_notify(ci->home, ci->key, ci->mark, ci->mark2, ci->str);
-	return 1;
+	return pane_notify(ci->home, ci->key, ci->mark, ci->mark2, ci->str);
 }
 
 struct map *doc_default_cmd;

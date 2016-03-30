@@ -228,16 +228,24 @@ void pane_notify_close(struct pane *p)
 	}
 }
 
-void pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2,
-		 char *str)
+int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2,
+		char *str)
 {
+	/* Return the largest absolue return value. If no notifiees are found.
+	 * return 0
+	 */
+	int ret = 0;
 	struct notifier *n;
 	struct list_head *t;
 
 	list_for_each_entry_safe(n, t, &p->notifiees, notifier_link)
-		if (strcmp(n->notification, notification) == 0)
-			comm_call_pane(n->notifiee, n->notification, p,
-				       0, m, str, 0, m2);
+		if (strcmp(n->notification, notification) == 0) {
+			int r = comm_call_pane(n->notifiee, n->notification, p,
+					       0, m, str, 0, m2);
+			if (abs(r) > abs(ret))
+				ret = r;
+		}
+	return ret;
 }
 
 void pane_close(struct pane *p)
