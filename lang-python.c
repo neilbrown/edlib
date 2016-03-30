@@ -789,16 +789,17 @@ static int Mark_init(Mark *self, PyObject *args, PyObject *kwds)
 	static char *keywords[] = {"pane","view","orig", NULL};
 	int ret;
 
-	if (!PyTuple_Check(args) || PyTuple_GET_SIZE(args) == 0)
+	if (!PyTuple_Check(args) ||
+	    (PyTuple_GET_SIZE(args) == 0 && kwds == NULL))
 		/* Internal Mark_Frommark call */
 		return 1;
 
-	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|O!OiO!O", keywords,
+	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|O!iO!", keywords,
 					  &PaneType, &doc,
 					  &view,
 					  &MarkType, &orig);
 	if (ret <= 0)
-		return ret;
+		return -1;
 	if (doc && orig) {
 		PyErr_SetString(PyExc_TypeError, "Only one of 'pane' and 'orig' may be set");
 		return -1;
