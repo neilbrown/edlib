@@ -245,6 +245,42 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w,
 	free(buf_final(&attr));
 }
 
+static void render_image(struct pane *p, char *line, int *yp,
+			 int dodraw, int scale)
+{
+	char *fname = NULL;
+	int width = p->w/2, height = p->h/2;
+
+	while (*line == '<')
+		line += 1;
+
+	while (*line && *line != '>') {
+		int len = strcspn(line, ",>");
+
+		if (strncmp(line, "image:", 6) == 0) {
+			char *cp = line + 6;
+			fname = strndup(cp, len-6);
+		} else if (strncmp(line, "width:", 6) == 0) {
+			width = atoi(line + 6);
+			width = width * scale / 1000;
+		} else if (strncmp(line, "height:", 7) == 0) {
+			height = atoi(line + 7);
+			height = height * scale / 1000;
+		}
+		line += len;
+		line += strspn(line, ",");
+	}
+	if (fname && dodraw) {
+		struct pane *tmp = pane_register(p, 0, NULL, NULL, NULL);
+
+		pane_resize(tmp, (p->w - width)/2, *yp, width, height);
+		call5("image-display", tmp, 0, NULL, fname, 5);
+		pane_close(tmp);
+	}
+	*yp += height;
+	free(fname);
+}
+
 /* render a line, with attributes and wrapping.  Report line offset where
  * cursor point cx,cy is passed. -1 if never seen.
  */
@@ -268,6 +304,22 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 	int twidth = 0;
 	int center = 0;
 	int margin;
+
+	if (strncmp(line, "<image:",7) == 0) {
+		/* For now an <image> must be on a line by itself.
+		 * Maybe this can be changed later if I decide on
+		 * something that makes sense.
+		 * The cursor is not on the image.
+		 */
+		render_image(p, line, yp, dodraw, scale);
+		if (cxp)
+			*cxp = -1;
+		if (cyp)
+			*cyp = -1;
+		if (offsetp)
+			*offsetp = -1;
+		return;
+	}
 
 	update_line_height(p, &line_height, &ascent, &twidth, &center, line, scale);
 
