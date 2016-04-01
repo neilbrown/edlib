@@ -813,6 +813,7 @@ static void render(struct mark *pm, struct pane *p)
 	s = pane_attr_get(p, "background");
 
 restart:
+	m = vmark_first(p, rl->typenum);
 	if (!s)
 		pane_clear(p, NULL);
 	else if (strncmp(s, "color:", 6) == 0) {
@@ -824,7 +825,7 @@ restart:
 	} else if (strncmp(s, "image:", 6) == 0)
 		call5("image-display", p, 1, NULL, s+6, 0);
 	else if (strncmp(s, "call:", 5) == 0)
-		call3(s+5, p, 0, pm);
+		call3(s+5, p, 0, m);
 	else
 		pane_clear(p, NULL);
 
@@ -835,7 +836,6 @@ restart:
 		rl->header_lines = y;
 	}
 	y -= rl->skip_lines;
-	m = vmark_first(p, rl->typenum);
 
 	p->cx = p->cy = -1;
 	rl->cursor_line = 0;
