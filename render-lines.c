@@ -1275,20 +1275,14 @@ static void render_lines_register_map(void)
 
 REDEF_CMD(render_lines_attach)
 {
-	struct rl_data *rl = malloc(sizeof(*rl));
+	struct rl_data *rl = calloc(sizeof(*rl), 1);
 
 	if (!rl_map)
 		render_lines_register_map();
 
-	rl->ignore_point = 0;
-	rl->top_sol = 0;
-	rl->skip_lines = 0;
 	rl->target_x = -1;
 	rl->target_y = -1;
-	rl->cursor_line = 0;
 	rl->do_wrap = 1;
-	rl->shift_left = 0;
-	rl->header_lines = 0;
 	rl->typenum = doc_add_view(ci->focus, NULL);
 	rl->pane = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
 	call3("Request:Notify:Replace", rl->pane, 0, NULL);
