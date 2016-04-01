@@ -195,6 +195,15 @@ class EdDisplay(gtk.Window):
                         x = w - w2
                     w = w2
             scale = pb.scale_simple(w, h, gtk.gdk.INTERP_HYPER)
+            # I'm not sure I'm completely happy with this, but when
+            # not stretching and when z == 0, draw on a parent pane unless
+            # a pixmap has already been allocated.  This allows
+            # a temp pane to be created to draw an image, then it can
+            # be discarded and the image remains
+            while f.z == 0 and not stretch and f not in self.panes and f.parent:
+                x += f.x
+                y += f.y
+                f = f.parent
             pm = self.get_pixmap(f)
             pm.draw_pixbuf(self.gc, scale, 0, 0, x, y)
             return True
