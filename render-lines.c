@@ -448,6 +448,10 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 			x = 0;
 			y += line_height;
 			start = line;
+		} else if (ch == '\f') {
+			x = 0;
+			y += p->h;
+			start = line;
 		} else if (ch == '\t') {
 			int xc = x / mwidth;
 			int w = 8 - xc % 8;
@@ -734,9 +738,13 @@ static void find_lines(struct mark *pm, struct pane *p)
 					    NULL, NULL, NULL);
 				end = vmark_next(end);
 				ASSERT(end != NULL);
-				if (h) {
+				if (h > p->h) {
+					/* Formfeed marked end of page */
+					lines_below = h - p->h;
+					found_end = 1;
+				} else if (h)
 					lines_below = h;
-				} else
+				else
 					found_end = 1;
 			}
 			if (top && mark_ordered(top, end))
