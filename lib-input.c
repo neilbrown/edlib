@@ -65,6 +65,7 @@ DEF_CMD(keystroke)
 	im->extra = 0;
 
 	ci2.x = ci2.y = -1;
+	ci2.mark = ci->mark;
 	p = ci->focus;
 	while (p->focus) {
 		p = p->focus;
@@ -94,6 +95,7 @@ DEF_CMD(mouse_event)
 	ci2.focus = ci->focus;
 	ci2.numeric = im->numeric;
 	ci2.extra = im->extra;
+	ci2.mark = ci->mark;
 	ci2.x = ci->x; ci2.y = ci->y;
 	pane_map_xy(ci->focus, ci2.focus, &ci2.x, &ci2.y);
 
