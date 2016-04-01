@@ -882,11 +882,13 @@ restart:
 		strcpy(a+3, a+6);
 		pane_clear(p, a);
 		free(a);
-	} else if (strncmp(s, "image:", 6) == 0)
-		call5("image-display", p, 1, NULL, s+6, 0);
-	else if (strncmp(s, "call:", 5) == 0)
-		call3(s+5, p, 0, m);
-	else
+	} else if (strncmp(s, "image:", 6) == 0) {
+		if (call5("image-display", p, 1, NULL, s+6, 0) == 0)
+			pane_clear(p, NULL);
+	} else if (strncmp(s, "call:", 5) == 0) {
+		if (call3(s+5, p, 0, m) == 0)
+			pane_clear(p, NULL);
+	} else
 		pane_clear(p, NULL);
 
 	y = 0;

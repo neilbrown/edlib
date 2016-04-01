@@ -405,17 +405,19 @@ class PresenterPane(edlib.Pane):
         if key[:10] == "Present-BG":
             cmds = key[11:].split(',')
             f = a['focus']
+            ret = 0
             for c in cmds:
+                rv = None
                 if c[:6] == 'color:':
-                    f.call('pane-clear', c[6:])
+                    rv = f.call('pane-clear', c[6:])
                 if c[:14] == "image-stretch:":
-                    f.call('image-display', 1, self.pathto(c[14:]))
+                    rv = f.call('image-display', 1, self.pathto(c[14:]))
                 if c[:6] == "image:":
-                    f.call('image-display', 0, 5, self.pathto(c[6:]))
+                    rv = f.call('image-display', 0, 5, self.pathto(c[6:]))
                 if c[:8] == "overlay:":
-                    f.call('image-display', 0, 2, self.pathto(c[8:]))
+                    rv = f.call('image-display', 0, 2, self.pathto(c[8:]))
                 if c[:9] == "overlayC:":
-                    f.call('image-display', self.w/6, self.h*3/4, self.pathto(c[9:]), (self.w*5/12, self.h/8))
+                    rv = f.call('image-display', self.w/6, self.h*3/4, self.pathto(c[9:]), (self.w*5/12, self.h/8))
                 if c == "page-local":
                     page = self.find_pages(a['mark'])
                     self.clean_lines(page)
@@ -423,7 +425,9 @@ class PresenterPane(edlib.Pane):
                     cm = self.get_local_attr(a['mark'], "background", page)
                     if cm:
                         cmds.extend(cm.split(','))
-            return 1
+                if rv != None:
+                    ret |= rv
+            return ret
         if key == "render-line-prev":
             # Go to start of page
             here = a['mark']
