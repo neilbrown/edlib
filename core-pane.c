@@ -135,8 +135,11 @@ static void __pane_refresh(struct cmd_info ci)
 		if (ci2.extra & DAMAGED_CONTENT)
 			ci2.extra |= DAMAGED_CURSOR;
 		damage &= DAMAGED_SIZE | DAMAGED_EVENTS | DAMAGED_CURSOR;
-		ci2.comm = p->handle;
-		ret = p->handle->func(&ci2);
+		if (p->handle) {
+			ci2.comm = p->handle;
+			ret = p->handle->func(&ci2);
+		} else
+			ret = 1;
 		if (ret == 0)
 			pane_check_size(p);
 	} else

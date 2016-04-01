@@ -426,7 +426,7 @@ static PyObject *Pane_close(Pane *self)
 static PyObject *Pane_release(Pane *self)
 {
 	struct pane *p = self->pane;
-	if (p && p->handle->func == python_call.func && p->data) {
+	if (p && p->handle && p->handle->func == python_call.func && p->data) {
 		p->data = NULL;
 		Py_DECREF(self);
 	}
