@@ -42,6 +42,7 @@
 default_attrs = "normal 10 family:sans fg:black bg:white left:5 space-after:1 space-before:1 xscale:10 yscale:40"
 
 import re
+import os
 
 def take(name, place, args, default=None):
     if name in args:
