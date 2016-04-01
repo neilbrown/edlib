@@ -160,7 +160,7 @@ class EdDisplay(gtk.Window):
 
         if key == "image-display":
             # 'str' is the file name of an image
-            # 'numeric' is '1' if image should be stretch to fill pane
+            # 'numeric' is '1' if image should be stretched to fill pane
             # if 'numeric is '0', then 'extra' is 'or' of
             #   0,1,2 for left/middle/right in x direction
             #   0,4,8 for top/middle/bottom in y direction
@@ -169,8 +169,8 @@ class EdDisplay(gtk.Window):
             f = a['focus']
             stretch = a['numeric']
             pos = a['extra']
-            w,h = self.pane.w, self.pane.h
-            x,y = 0, 0
+            w, h = f.w, f.h
+            x, y = 0, 0
             try:
                 pb = gtk.gdk.pixbuf_new_from_file(fl)
             except:
