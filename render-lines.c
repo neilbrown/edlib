@@ -1071,6 +1071,13 @@ DEF_CMD(render_lines_move)
 			m = mark_dup(top, 0);
 			top = call_render_line_prev(p, m,
 						    1, &rl->top_sol);
+			if (!top && doc_prior_pane(p, prevtop) != WEOF) {
+				/* Double check - maybe a soft top-of-file */
+				m = mark_dup(prevtop, 0);
+				mark_prev_pane(p, m);
+				top = call_render_line_prev(p, m,
+							    1, &rl->top_sol);
+			}
 			if (!top)
 				break;
 			m = top;
