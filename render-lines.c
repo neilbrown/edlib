@@ -1080,7 +1080,6 @@ DEF_CMD(render_lines_move)
 	} else {
 		while (top && rpt > 0) {
 			int y = 0;
-			struct mark *old;
 			int page_end = 0;
 
 			if (top->mdata == NULL)
@@ -1095,17 +1094,22 @@ DEF_CMD(render_lines_move)
 				break;
 			}
 			top = vmark_next(top);
-			if ((rpt+pagesize-rl->line_height)/pagesize !=
-			    (rpt+pagesize-y-rl->line_height)/pagesize)
-				/* Have crossed a full page, can discard old lines */
-				while ((old = vmark_first(p, rl->typenum)) != NULL &&
-				       old != top) {
-					free(old->mdata);
-					old->mdata = NULL;
-					mark_free(old);
-				}
+			if (top->mdata == NULL)
+				call_render_line(p, top);
 			rpt -= y - rl->skip_lines;
 			rl->skip_lines = 0;
+		}
+		if (top && top->mdata) {
+			/* We didn't fall off the end, so it is OK to remove
+			 * everything before 'top'
+			 */
+			struct mark *old;
+			while ((old = vmark_first(p, rl->typenum)) != NULL &&
+			       old != top) {
+				free(old->mdata);
+				old->mdata = NULL;
+				mark_free(old);
+			}
 		}
 	}
 	pane_damaged(p, DAMAGED_CONTENT);
