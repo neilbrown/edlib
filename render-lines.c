@@ -1059,6 +1059,8 @@ DEF_CMD(render_lines_move)
 	if (rpt < 0) {
 		while (rpt < 0) {
 			int y = 0;
+			struct mark *m;
+			struct mark *prevtop = top;
 
 			if (rl->skip_lines) {
 				rl->skip_lines -= 1;
@@ -1066,15 +1068,23 @@ DEF_CMD(render_lines_move)
 				continue;
 			}
 
-			top = call_render_line_prev(p, mark_dup(top, 0),
+			m = mark_dup(top, 0);
+			top = call_render_line_prev(p, m,
 						    1, &rl->top_sol);
 			if (!top)
 				break;
-			if (top->mdata == NULL)
-				call_render_line(p, top);
-			if (top->mdata == NULL)
-				break;
-			render_line(p, top->mdata, &y, 0, scale, NULL, NULL, NULL, NULL);
+			m = top;
+			while (m->seq < prevtop->seq &&
+			       !mark_same_pane(p, m, prevtop, NULL)) {
+				if (m->mdata == NULL)
+					call_render_line(p, m);
+				if (m->mdata == NULL) {
+					rpt = 0;
+					break;
+				}
+				render_line(p, m->mdata, &y, 0, scale, NULL, NULL, NULL, NULL);
+				m = vmark_next(m);
+			}
 			rl->skip_lines = y;
 		}
 	} else {
