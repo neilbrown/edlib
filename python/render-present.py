@@ -431,13 +431,17 @@ class PresenterPane(edlib.Pane):
         if key == "render-line-prev":
             # Go to start of page
             here = a['mark']
+            if a['numeric'] == 0:
+                # just make sure at start of line
+                return self.parent.call("render-line-prev", here, 0)
+
             start = self.find_pages(here)
             if not start:
                 return -2
             if start > here:
                 start = here
 
-            if self.marks_same(start, here) and a['numeric'] == 1:
+            if self.marks_same(start, here):
                 return -2
             here.to_mark(start)
             return 1
