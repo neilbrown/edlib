@@ -493,9 +493,7 @@ void pane_clear(struct pane *p, char *attrs)
 
 char *pane_attr_get(struct pane *p, char *key)
 {
-	struct pane *c;
-	while ((c = pane_child(p)) != NULL)
-		p = c;
+	p = pane_final_child(p);
 	while (p) {
 		char *a = attr_get_str(p->attrs, key, -1);
 		if (a)
