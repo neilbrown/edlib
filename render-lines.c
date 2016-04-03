@@ -886,7 +886,7 @@ restart:
 		if (call5("image-display", p, 1, NULL, s+6, 0) <= 0)
 			pane_clear(p, NULL);
 	} else if (strncmp(s, "call:", 5) == 0) {
-		if (call3(s+5, p, 0, m) <= 0)
+		if (call_home(pane_final_child(p), s+5, p, 0, m, NULL) <= 0)
 			pane_clear(p, NULL);
 	} else
 		pane_clear(p, NULL);
