@@ -609,7 +609,7 @@ class PresenterPane(edlib.Pane):
                 self.borderless = True
             return 1
 
-        if key == "Presenter:Move-View-Large":
+        if key == "Move-View-Large":
             p = a['mark']
             page = self.find_pages(p)
             if a['numeric'] < 0:
@@ -618,7 +618,7 @@ class PresenterPane(edlib.Pane):
                 page = page.next()
             if page is not None:
                 p.to_mark(page)
-                self.call("Move-View-Pos", page)
+                a['focus'].call("Move-View-Pos", page)
                 a['focus'].damage(1)
             return 1
 
@@ -640,15 +640,14 @@ class MarkdownPane(edlib.Pane):
         return 0
 
 def present_attach(key, focus, comm2, **a):
-    p = PresenterPane(focus)
+    p = focus.render_attach("lines")
+    p = PresenterPane(p)
     p['render-wrap'] = 'no'
     p['background'] = 'color:yellow'
     p['hide-cursor'] = 'yes'
 
     p.call("Request:Notify:Replace")
     p.call("Request:Notify:doc:Recentre")
-    p = p.render_attach("lines")
-    p.call("local-set-key", "Presenter:quote", "Move-View-Large")
     while p.focus:
         p = p.focus
     comm2("callback", p)
@@ -667,11 +666,6 @@ def markdown_appeared(key, focus, **a):
         focus.call("doc:attr-set", "render-default", "markdown")
     return 1
 
-def present_quote(key, focus, **a):
-    #return focus.call("Presenter:"+key, **a)
-    return focus.call("Presenter:"+key, a['numeric'], a['extra'], a['mark'])
-
 editor.call("global-set-command", pane, "attach-render-markdown", markdown_attach)
 editor.call("global-set-command", pane, "attach-render-present", present_attach)
 editor.call("global-set-command", pane, "doc:appeared-markdown", markdown_appeared)
-editor.call("global-set-command", pane, "Presenter:quote", present_quote)
