@@ -436,6 +436,8 @@ struct pane *pane_to_root(struct pane *p, int *x, int *y, int *z, int *w, int *h
 
 void pane_focus(struct pane *p)
 {
+	if (!p)
+		return;
 	pane_damaged(p, DAMAGED_CURSOR);
 	/* refocus up to the display, but not do the root */
 	while (p->parent && p->parent->parent) {
