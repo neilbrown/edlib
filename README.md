@@ -49,7 +49,7 @@ All commands receive the same types of arguments and produce an integer
 result.  The arguments include two panes, two marks, three
 strings, two numbers, two co-ordinate pairs and one command.  Extra
 result values can be effected by passing them to a call to the
-“command” argument.
+“command” argument - i.e the command can be used as a call-back.
 
 Commands can be used internally to a module and externally for
 communication between modules.  Externally visible commands appear
@@ -72,7 +72,7 @@ command to perform the desired action.
 
 The other special argument is one of the panes, called “home”.  This
 always identifies the pane in which the command was found, either as a
-dedicated 'pane' command or as a named command.  One of the primary
+dedicated “pane” command or as a named command.  One of the primary
 uses of “home” is to access “home->data” which a private data
 structure owned by the pane.  The command associated with a
 particular pane is typically the only code which can understand the
@@ -86,38 +86,51 @@ complete asynchronously.  Commands only return this if they are
 specifically documented to do say.  It is usually only relevant if a
 callback was passed as the “command” argument and it indicates that
 the callback has not yet been called, but otherwise no error has been
-detected.
+detected. (Actually, async commands are purely theoretical, so details
+are likely to change).
 
 Panes
 -----
 
-A pane combines a rectangular area of display with some
+A pane combines an optional rectangular area of display with some
 functionality.  As such it can receive mouse and keyboard events,
 can draw on a display, and can send commands to other panes.  As
 previously mentioned, panes can also store module-specific data.
 
 All panes are arranged as a tree with all but the root having a parent
-and many having siblings and children.  The “root” pane does not
-correspond to any display, but is still implemented as a pane for
-consistency.  The children of the root are the different display
-windows, each of which can use a distinct display technology such as
-“ncurses” or “gtk” or “qt” or “fbdev” or anything else.  The root pane
-also has some “virtual display” panes which are used to gather other
-special panes - see “Documents” below.
+and many having siblings and children.  When a pane represents a
+rectangle of display all children are restricted to just that
+rectangle or less.  Often a child will cover exactly the same areas as
+its parent.  In other cases several children will share out the area.
 
-As well as a dedicated command and private data, each pane has:
+Events are often generated at a leaf of the tree of panes (i.e. a pane
+with no children).  They travel up the tree towards the root until
+they find a pane which can handle them.  That pane might handle the
+event bey generating other events.  They will typically start looking
+for handler at the same leaf.  For this reason branches of the pane
+tree usually have more generic panes closer to the root and more
+special-purpose panes near the leaves.
+
+It is quite normal for there to be panes in the tree that are not
+directly involves in displaying anything - these are just useful
+containers for data and functionality.  Documents, described below,
+exist as panes that are not directly displayed.  Instead there are
+display pane which link to the document and display its content.
+
+As well as a dedicated command (the “handler”) and private data, each
+pane has:
 
 - x,y co-ordinates together with width and height.  The co-ordinates
   are relative to the parent, and by recursive addition can be made
   absolute.
-- a 'z' value which indicates display priority with respect to
+- a “z” value which indicates display priority with respect to
   siblings.  When siblings overlap, the sibling with the higher “z”
   value will be draw “over” siblings with a lower “z” value, including
   all the children of that sibling (independent of their z value).
-- a selected child referred to as the 'focus'. Keyboard input at a
+- a selected child referred to as the “focus”. Keyboard input at a
   display is forwarded down the chain of focus links until it reaches
   a leaf pane.  This is where handling of the keystroke starts.
-- a set of  'damaged' flag which record if any changes have been made
+- a set of “damaged” flags which record if any changes have been made
   which might affect the display.
 - an arbitrary set of attributes with assigned values.
 
@@ -126,14 +139,13 @@ include, but are not limited to, a notification when the pane is
 destroyed and a notification when a document attached to the pane
 changes.  This notifications are effected by calling the panes command
 with a key like “notify:close” and with the second pane argument
-(known as 'focus') set to the pane which is sending the notification.
-
+(known as “focus”) set to the pane which is sending the notification.
 
 Documents
 ---------
 
 A document provides access to whatever data is being edited.  There
-can be multiple implementations of a document but they call have a
+can be multiple implementations for documents but they all have a
 common interface.
 
 A “document” is assumed to be a linear sequence of elements each of
@@ -146,30 +158,21 @@ and the associated character reflects the type of entry.  The
 attributes contain the useful information such as file name, size,
 modify time etc.
 
-Documents cannot be accessed directly, but must be accessed through a
-“document access” pane.  There can be several panes which access the
-one document though there is always one special pane in a “virtual”
-display.  There panes in this virtual display contain all of the
-active documents so a list of documents can be obtained by iterating
-over the children of this virtual display.  There is a singleton
-document types called “*Documents*” which lists all active documents.
-By opening a pane on this document, the set of active documents can be
-viewed and modified.
-
-It is (will be?) possible for different panes to provide slightly
-different access styles to the same document.  For example one pane
-might present a file as a sequence of bytes while another presents the
-same file as a sequence of unicode characters.  Similarly one
-interface may accept arbitrary insert/delete operations while another
-converts all changes to over-writes (maybe).
-
+A document is represents by a non-display pane.  These panes are
+typically collected together as children of a “document-list” pane
+which can be asked to add or find documents.  To display and a
+document a document-display pane is normally created.  This contains,
+in its private data, a reference to the document pane and a “point”
+(see below) indicating where changes will happen.  Events that arrive
+at the document-display pane will typically be forwarded to the
+document, though they maybe be handled directly by the display pane.
 
 Attributes
 ----------
 
 An attribute is a simple name/value pair, both being strings.
 Attributes can be associated with various other objects, including
-mark, panes, and elements in a document.  Parsing code can
+marks, panes, and elements in a document.  Parsing code can
 annotate a buffer with attributes, and rendering code can use these
 attributes to guide rendering.  e.g. parsing code can attach
 “spelling=wrong” or “spelling=doubtful” and rendering can underline in
@@ -178,7 +181,7 @@ red or whatever.
 Currently most attributes have to be stored using a particular
 implementation of attribute storage.  I'm not sure I want that in the
 longer term.  I'm considering having the pane command support a
-"attribute:get" command though there are still unresolved issues with
+“attribute:get” command though there are still unresolved issues with
 that idea.
 
 Marks and Points
@@ -187,10 +190,10 @@ Marks and Points
 A “mark” identifies a location in a document.  The location is between
 two elements in the document, or at the start or end, and the mark
 remains at that location despite any edits that do not affect
-neighbouring element.
+neighbouring elements.
 
 Marks come in three different sorts: ungrouped, grouped, and points.
-All of these appear in document-order a single linked list, all have a
+All of these appear in document-order a singly linked list, all have a
 sequence number in the list so ordering-tests are easy, and each can
 have a set of attributes attached.
 
@@ -198,8 +201,8 @@ As well as identifying a location in a document, a mark can identify a
 location in the display of that document location.  When a single
 element in a document is displayed using multiple characters (as for
 example a directory entry might be), the “rendering position” or
-“rpos” can record where in those multiple character the mark really
-belong.  I'm not yet sure how useful this is, but it seems like a good
+“rpos” can record where in those multiple characters the mark really
+belongs.  I'm not yet sure how useful this is, but it seems like a good
 idea.
 
 An ungrouped mark has no property beyond the above.  A grouped marked
@@ -207,7 +210,7 @@ is included in a second linked list with all the other marks in the
 same group.  This group is owned by a specific pane and keeps
 information relevant to the task of that pane.  A pane responsible for
 rendering part of a document might have marks identifying the start
-and end of the visible portion, and maybe even the start of teach line
+and end of the visible portion, and maybe even the start of each line
 in the visible portion.  An ungrouped mark also has a reference to an
 arbitrary data structure which is understood by the pane which owns
 the group.
@@ -215,38 +218,41 @@ the group.
 A “point” is a special grouped-mark which is included in all of the
 other lists of grouped marks.  This is achieved by using the external
 reference to hold an auxiliary data structure which is linked in to
-all of the lists.  Every pane which views a document owns a point.
-This point is usually where changes to the document happen.  When the
+all of the lists.  Every document-display pane owns a point.  This
+point is usually where changes to the document happen.  When the
 notification mechanism mentioned earlier tells other panes of a chance
-to the document, the point where the change happened is also
-reported.  From this point it is easy to find and update nearby marks
-of any mark-group.
+to the document, the point where the change happened is also reported.
+From this point it is easy to find and update nearby marks of any
+mark-group.
 
-An example use is to have a group of marks which are used to track line
-numbers.  “line-count” marks are placed every 500 lines (or so) with
-an attribute recording exactly how many lines between this and the
-next “line-count” mark.  When a change happens, the recorded line
-count is cleared.  When a line count or line number is needed, the
-list of “line-count” marks is walked from the start.  If any has its
-count cleared, the lines in that section are counted and the record is
-updated.  Otherwise all that is required is simply adding up a few
-numbers.
+An example use is to have a group of marks which are used to track
+line numbers.  “line-count” marks are placed every 500 lines (or so)
+with an attribute recording exactly how many lines between this and
+the next “line-count” mark.  When a change happens, the recorded line
+count on the preceding mark is cleared.  When a line count or line
+number is needed, the list of “line-count” marks is walked from the
+start.  If any has its count cleared, the lines in that section are
+counted and the record is updated.  Otherwise all that is required is
+simply adding up a few numbers.
 
 Marks could be used by a parser to identify key locations which would
 allow a renderer to find the important content quickly if it was only
 rendering a partial view - such as the headings in outline mode.
 
-
 Displays
 --------
 
 A “display” is just a pane which can create an image somehow, and
-responds to commands like “draw:clear” and “draw:text”.  Displays are
-typically just below the root of the 'pane' tree, but this is not a
-requirement.
+responds to commands like “pane-clear”, “text-display”, and
+“image-display”.  Displays are typically just below the root of the
+“pane” tree, but this is not a requirement.
 
-A display is also expected to call "Keystroke" and "Mouse-event"
-commands in response to appropriate events.
+A display is also expected to call “Keystroke” and “Mouse-event”
+commands in response to appropriate events.  There will propagate
+towards the root and normally hit an input-management pane which will
+find the appropriate target leaf, will convert to a full event,
+e.g. adding a repeat count or indication of a prefix key, and will
+submit the new event at the target.
 
 Keymaps
 -------
@@ -254,7 +260,7 @@ Keymaps
 A keymap is a mapping from command names to commands.  In many cases a
 similar data structure such as a Python “dict” could be used.  The
 keymap implemented in edlib has one small advantage in that a range of
-strings can be mapped to a command, then exception can be recorded.
+strings can be mapped to a command, then exceptions can be recorded.
 
 Keymaps are a bit like attributes in that the concept is valuable but
 it isn't yet clear how central a particular implementation should be.
@@ -264,34 +270,43 @@ Handling Commands
 
 Now that we have plenty of context, it is time to revisit commands to
 discuss how they are called.  It is possible to invoke a specific
-command directly but most often a more general mechanism is used to
-find the appropriate command.  There are three such mechanisms which
-each search the pane tree testing different commands until one accepts
-the given “key” name.  They each find a starting pane in a different
-way, and then try that pane and then its parent and so on up the tree
-until a pane accepts the command (returning non-zero) or until the
-root is reached.
+command directly if you have a reference to it but most often a more
+general mechanism is used to find the appropriate command.  The most
+common mechanism is to identify a “home” pane and the handler for that
+pane and each ancestor will be tried in turn until the handler returns
+a non-zero value, or until the root pane has been tried.  Very often
+the starting home pane will also be the focus pane so when the two are
+the same it is not necessary to specify both.
 
-There are three ways to choose the starting point, which is included
-in the arguments to every command called as the “focus” point.
+The other common mechanism is to follow the "notifier" chain from a
+pane.  This lists a number of panes which have requested
+notifications.  When calling notifiers, all target panes have their
+handler called and if any return a non-zero value, the over-all return
+value will be non-zero.
 
-The first way is for the caller to explicitly set it.  This is not a
-very common approach but is needed when a pane acts like a “filter”.
-The handler for a particular command might call that command on the
-parent, then process the result in some way and return that result to
-the caller.  This can also be used when the appropriate “focus” has
-already been found.  If the handler for some command wants to call
-some other command it will typically pass the “focus” of the first as
-the “focus” to start searching for the second.
+Each handler can perform further lookup however it likes.  It may
+just compare the “key” against a number of supported keys, or it might
+perform a lookup in a key-table.  One particularly useful approach is
+to look up all commands with a prefix matching the key and call all of
+them in order until one returns a non-zero value.  This can be used to
+allow multiple handlers to register for a service where each will
+handle different instances.  For example when choosing a document type
+to open a given file, all document types will be tried but some would
+be expected to return zero.  e.g. if the file is actually a directory,
+everything but the directory document type would reject the request.
 
-The second way is to search out to a leaf of the tree following the
-“focus” links in each pane.  The search typically starts at a
-“Display” pane where a keystroke is generated,
+Another example worth understanding is the document-display pane
+type.  When this receives an event it will handle it directly if it
+understands the key, otherwise it will pass it to the document pane.
+If that doesn't recognize the event it will continue up the tree from
+the document-display pane.
 
-The third way is to search out to a leaf of the tree which contains
-some particular x,y co-ordinate.  The pane with the highest 'z' value
-which contains the co-ordinate will be chosen.  This is typically used
-to find the correct handler for a mouse event.
+Like document-display, other pane types are free to direct events
+elsewhere as appropriate.  The “input” handler takes keystroke events
+and redirects them to the current focus pane, and take mouse events
+and redirects them to the pane with the greatest 'z' depth which cover
+the mouse location.
+
 
 Core Extensions
 ===============
@@ -303,7 +318,7 @@ to make them useful.  The current extensions that are available include:
 Text Document
 -------------
 
-A text document stores text in various linked data structured designed
+A text document stores text in various linked data structures designed
 to make simple edits easy and to support unlimited undo/redo.  There
 are a number of allocations, and a list of “chunks” which each
 identify a start and end in one of those allocations.  Edits can
@@ -320,13 +335,26 @@ directory and provides a variety of attributes for each entry.  The
 directory can be re-read at any time with incremental changes made to
 the document.
 
+Documents Document
+------------------
+
+There is typically one pane of this type and it registers an
+“attach-doc” handler with the root pane to get notified when documents
+are created.  It will reparent the document that that it becomes a
+child of the “Documents” pane.  Then all documents can be found in the
+list of children.
+
+The “documents” pane presents as a document which can be viewed and
+appears as a list of document names.  Various keystroke events allow
+documents to be opened, deleted, etc.
+
 Ncurses Display
 ---------------
 
-The 'ncurses' display can draw text on a terminal window and can set
+The “ncurses” display can draw text on a terminal window and can set
 various attributes such as colour, bold, underline etc.  It also
-receives keyboard and mouse input and sends 'Mouse-event' or
-'Keystroke' commands ... somewhere.
+receives keyboard and mouse input and sends “Mouse-event” or
+“Keystroke” command up to the input manage.
 
 Line-Renderer
 -------------
@@ -377,7 +405,7 @@ Hex Render
 The HEX renderer provides an alternate “render-line” for a document
 which starts each line at a multiple of 16 bytes from the start of the
 document, and formats the next 16 bytes as hex and ASCII.  Each
-rendered line start with the byte offset of the start of the line.
+rendered line starts with the byte offset of the start of the line.
 
 Tiler
 -----
@@ -405,7 +433,7 @@ information provided by child panes.
 Popup manager
 -------------
 
-The popup manager places a small window with an elevated 'z' value
+The popup manager places a small window with an elevated “z” value
 somewhere relevant on the display and can provide a simple text document
 for text entry - or can use a provided document.  Various key strokes
 are captured to allow the popup to be aborted, or to send the content
@@ -443,13 +471,13 @@ Messageline
 -----------
 
 “Messageline” trims the bottom line off a pane (providing a pane which is
-slightly smaller) and will displays messages in this pane until the
+slightly smaller) and will display messages in this pane until the
 next keyboard command.
 
 Input
 -----
 
-A pane of this module store some state related to the current input
+A pane of this module stores some state related to the current input
 context, including a modifier prefix and a repeat count.
 
 When a “keystroke” command is received the prefix is added to the key
@@ -458,7 +486,7 @@ repeat count, which gets cleared.
 
 Commands are provided to set a new prefix or repeat count.  So for
 example “Meta-1” might multiply the repeat count in the command by 10,
-add 1, and then ask 'input' to set that as the new repeat count for
+add 1, and then ask “input” to set that as the new repeat count for
 the next keystroke.
 
 Emacs Mode
@@ -481,16 +509,31 @@ languages to access the core edlib functionality.
 Pygtk Display
 -------------
 
-This is an under-development display module written in python and
-using pygtk for drawing.
+This is a display module written in python and using pygtk for
+drawing.
 
 When a “text” or “clear” request is made on a pane, the module
 allocates a pixmap (arranging for it to be destroyed when the pane is
 closed) and performs the drawings there.  When a refresh is required,
 the various pixmaps are combined and drawn to the target window.
 
-There is currently no attempt to handle variable-width fonts.  That
-must come later.
+Variable with fonts are supported as are images.  An image is
+typically the only thing drawn in a pane, so sub-panes must be used to
+draw images within a document.
+
+libEvent
+--------
+
+edlib needs an event loop to wait for input, capture signals, and run
+tasks.  Any module can register an event loop by registering handlers
+for various “event:*” events with the root pane.  When pygtk is being
+used, the glib event loop must be used.  Otherwise some other event
+loop is needed.  To this end, the libevent module registers a
+low-priority set of event handler which use libevent.
+
+I'm not entirely happy about this arrangement.  In particular I would
+like to be able to have multiple event loops running in separate
+threads.  So expect things to change here.
 
 
 TO-DO
@@ -505,35 +548,26 @@ This a list of just some of the things I want to work on soon.  You
 might noticed that the above texts might suggest that some of them are
 done already.  In those cases I was being a little ahead of myself above.
 
-- Generic notifications between panes: currently only a document can
-  notify a pane.
-
-- change commands that return a non-integer to do so by calling
-  the call-back command.
-
 - The “complete” popup should be positioned above/below the file name,
   not over the top of it.  And typing should increase/decrease the
   prefix.
 
 - render-lines should always re-render the line containing point, so
-  the location of 'point' can affect the rendering.
+  the location of “point” can affect the rendering.
 
 - allow searching in the rendered output as well as in the document
 
-- support case-insensitive search an literal (non-regex) search.
+- support case-insensitive search and literal (non-regex) searchs.
 
 - Create an append-only limited size document for a log of messages
   and a log of keystrokes.
 
 - use above to allow keyboard macros.
 
-- create a 'mmap' document type so I can edit a block device without
+- create a “mmap” document type so I can edit a block device without
   reading it all in.
 
-- create a 'reflection' document so I can view the internal data structures.
-
-- Generalize the “event loop” interface so that glib events can be
-  used when gtk is active.
+- create a “reflection” document so I can view the internal data structures.
 
 - create clean threading interfaces so that I can have different event
   loops in different threads and suitable locking so commands can be
@@ -551,9 +585,6 @@ done already.  In those cases I was being a little ahead of myself above.
 - lots of work on pygtk interface
 
 - allow a second (and more) ncurses display to be created.
-
-- determine how best to support variable-sized fonts, both
-  non-constant-width and requested font size changing.
 
 - improve ncurses code for choosing colours.
 
@@ -593,7 +624,7 @@ editing in arbitrary terminal windows where I do other work.
 calculator in floating pane
 ---------------------------
 
-I very often use 'bc' for hex/decimal conversion etc.  But it is a
+I very often use “bc” for hex/decimal conversion etc.  But it is a
 little clumsy.  I want an easy calculator on my desktop with base
 conversion.  I'd like to use edlib.  I imagine a small pop-up
 appearing which automatically converts whatever I type.
@@ -602,7 +633,7 @@ spread sheet
 ------------
 
 Many years ago I started writing a spreadsheet program in emacs-lisp.
-The document was a 'LaTeX' document with specially marked “tabular”
+The document was a “LaTeX” document with specially marked “tabular”
 sections.  Each cell was on a line by itself.  It consisted of the
 current appearance of the text, and then a comment containing the
 formula and formatting rules.
@@ -668,7 +699,7 @@ with function signature one the whole line.
 
 Certainly the start of the current function would appear somewhere no
 matter where in the function I am editing, and as many of the
-variables as possible.  If I am in an 'if' statement in a 'for' look,
+variables as possible.  If I am in an “if” statement in a “for” look,
 then the loop header and the if condition would be displayed if at all
 possible.
 
@@ -676,7 +707,7 @@ hexedit
 -------
 
 This is something that is very clumsy with emacs, and should be very
-easy with edlib.  A 'hexedit' view shows the hex value of each byte in
+easy with edlib.  A “hexedit” view shows the hex value of each byte in
 the file in a nice regular pattern.  For ASCII chars, it also shows
 the character separately.
 
@@ -699,6 +730,5 @@ command to a separate buffer.
 
 Auto paging would be disabled (where possible) and edlib would page
 output as needed.  This means that `cat bigfile` could move the whole
-file into a buffer, which wouldn't be good.  If a 'less' command could
+file into a buffer, which wouldn't be good.  If a “less” command could
 give the filename to edlib and let it display, that might be nice.
- 
