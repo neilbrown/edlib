@@ -110,7 +110,20 @@ DEF_CMD(popup_handle)
 		popup_resize(p, ppi->style);
 		return 1;
 	}
-	if (strcmp(ci->key, "popup:Abort") == 0) {
+	if (strcmp(ci->key, "popup:get-target") == 0)
+		return comm_call(ci->comm2, "callback:get-target",
+				 ppi->target, 0, NULL, NULL, 0);
+
+	return 0;
+}
+
+DEF_CMD(popup_leaf)
+{
+	struct pane *p = ci->home;
+	struct popup_info *ppi = p->data;
+	struct pane *d;
+
+	if (strcmp(ci->key, "Abort") == 0) {
 		pane_focus(ppi->target);
 		ppi->closing = 1;
 		call3("Abort", ppi->target, 0, NULL);
@@ -121,7 +134,7 @@ DEF_CMD(popup_handle)
 		pane_close(ppi->popup);
 		return 1;
 	}
-	if (strcmp(ci->key, "popup:Return") == 0) {
+	if (strcmp(ci->key, "Return") == 0) {
 		struct cmd_info ci2 = {0};
 
 		ppi->closing = 1;
@@ -145,26 +158,7 @@ DEF_CMD(popup_handle)
 		pane_close(ppi->popup);
 		return 1;
 	}
-	if (strcmp(ci->key, "popup:get-target") == 0)
-		return comm_call(ci->comm2, "callback:get-target",
-				 ppi->target, 0, NULL, NULL, 0);
-
 	return 0;
-}
-
-DEF_CMD(popup_quote)
-{
-	struct cmd_info ci2 = {0};
-
-	if (strcmp(ci->key, "Return") == 0)
-		ci2.key = "popup:Return";
-	else
-		ci2.key = "popup:Abort";
-	ci2.focus = ci->focus;
-	ci2.numeric = ci->numeric;
-	ci2.extra = ci->extra;
-	ci2.mark = ci->mark;
-	return key_handle(&ci2);
 }
 
 DEF_CMD(popup_attach)
@@ -183,7 +177,6 @@ DEF_CMD(popup_attach)
 	struct popup_info *ppi = malloc(sizeof(*ppi));
 	char *style = ci->str;
 	char border[4];
-	struct cmd_info ci2={0};
 	int i, j;
 	int z = 1;
 
@@ -239,17 +232,8 @@ DEF_CMD(popup_attach)
 		ppi->doc = d;
 		p = doc_attach_view(ppi->popup, d, NULL);
 	}
+	p = pane_register(pane_final_child(p), 0, &popup_leaf, ppi, NULL);
 	pane_focus(p);
-
-	ci2.key = "local-set-key";
-	ci2.focus = p;
-	ci2.str = "popup:quote";
-	ci2.str2 = "Return";
-	key_handle(&ci2);
-	ci2.focus = pane_final_child(p);
-	ci2.home = NULL; ci2.comm = NULL;
-	ci2.str2 = "Abort";
-	key_handle(&ci2);
 
 	return comm_call(ci->comm2, "callback:attach", ppi->popup, 0, NULL, NULL, 0);
 }
@@ -258,6 +242,4 @@ void edlib_init(struct pane *ed)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-popup",
 		  0, &popup_attach);
-	call_comm("global-set-command", ed, 0, NULL, "popup:quote",
-		  0, &popup_quote);
 }
