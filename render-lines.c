@@ -1184,7 +1184,7 @@ DEF_CMD(render_lines_move_pos)
 	bot = vmark_last(p, rl->typenum);
 	if (top && bot &&
 	    mark_ordered(top, pm) &&
-	    mark_ordered(pm, bot))
+	    mark_ordered(pm, bot) && !mark_same_pane(p, pm, bot, NULL))
 		/* pos already displayed */
 		return 1;
 	find_lines(pm, ci->home);
