@@ -559,7 +559,7 @@ DEF_CMD(emacs_num)
 
 DEF_CMD(emacs_kill_doc)
 {
-	return call3("doc:destroy", ci->home, 0, 0);
+	return call3("doc:destroy", ci->focus, 0, 0);
 }
 
 DEF_CMD(emacs_search)
