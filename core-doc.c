@@ -380,6 +380,49 @@ DEF_CMD(doc_notify)
 			   ci->str, ci->numeric);
 }
 
+DEF_CMD(doc_findview)
+{
+	int ret;
+	if (!ci->comm2)
+		return -1;
+	ret =  do_doc_find_view(ci->home->data, ci->comm2);
+	if (ret < 0)
+		return ret;
+	return ret + 1;
+}
+
+DEF_CMD(doc_delview)
+{
+	if (ci->numeric >= 0)
+		do_doc_del_view(ci->home->data, ci->numeric);
+	else if (ci->comm2)
+		do_doc_del_view_notifier(ci->home->data, ci->comm2);
+	else
+		return -1;
+	return 1;
+}
+
+DEF_CMD(doc_addview)
+{
+	return 1 + do_doc_add_view(ci->home->data, ci->comm2);
+}
+
+DEF_CMD(doc_vmarkget)
+{
+	struct mark *m, *m2;
+	m = do_vmark_first(ci->home->data, ci->numeric);
+	m2 = do_vmark_last(ci->home->data, ci->numeric);
+	if (ci->extra == 1 && ci->mark)
+		m2 = do_vmark_at_point(ci->home->data, ci->mark,
+				       ci->numeric);
+	if (ci->extra == 2)
+		m2 = doc_new_mark(ci->home->data, ci->numeric);
+	if (ci->extra == 3)
+		m2 = do_vmark_at_or_before(ci->home->data, ci->mark, ci->numeric);
+	return comm_call7(ci->comm2, "callback:vmark", ci->focus,
+			  0, m, NULL, 0, NULL, m2);
+}
+
 struct map *doc_default_cmd;
 
 static void init_doc_defaults(void)
@@ -394,6 +437,10 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "Move-Line", &doc_line);
 	key_add(doc_default_cmd, "Move-View-Large", &doc_page);
 	key_add(doc_default_cmd, "doc:attr-set", &doc_attr_set);
+	key_add(doc_default_cmd, "doc:find-view", &doc_findview);
+	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
+	key_add(doc_default_cmd, "doc:del-view", &doc_delview);
+	key_add(doc_default_cmd, "doc:vmark-get", &doc_vmarkget);
 	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
@@ -491,44 +538,6 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "doc:add-view") == 0) {
-		return 1 + do_doc_add_view(dd->doc->data, ci->comm2);
-	}
-
-	if (strcmp(ci->key, "doc:del-view") == 0) {
-		if (ci->numeric >= 0)
-			do_doc_del_view(dd->doc->data, ci->numeric);
-		else if (ci->comm2)
-			do_doc_del_view_notifier(dd->doc->data, ci->comm2);
-		else
-			return -1;
-		return 1;
-	}
-
-	if (strcmp(ci->key, "doc:find-view") == 0) {
-		int ret;
-		if (!ci->comm2)
-			return -1;
-		ret =  do_doc_find_view(dd->doc->data, ci->comm2);
-		if (ret < 0)
-			return ret;
-		return ret + 1;
-	}
-
-	if (strcmp(ci->key, "doc:vmark-get") == 0) {
-		struct mark *m, *m2;
-		m = do_vmark_first(dd->doc->data, ci->numeric);
-		m2 = do_vmark_last(dd->doc->data, ci->numeric);
-		if (ci->extra == 1 && dd->point)
-			m2 = do_vmark_at_point(dd->doc->data, dd->point,
-					       ci->numeric);
-		if (ci->extra == 2)
-			m2 = doc_new_mark(dd->doc->data, ci->numeric);
-		if (ci->extra == 3)
-			m2 = do_vmark_at_or_before(dd->doc->data, ci->mark, ci->numeric);
-		return comm_call7(ci->comm2, "callback:vmark", ci->focus,
-				  0, m, NULL, 0, NULL, m2);
-	}
 	if (strcmp(ci->key, "doc:destroy") == 0)
 		return doc_destroy(dd->doc);
 
