@@ -384,7 +384,7 @@ DEF_CMD(emacs_file_complete)
 	docp = doc_open(ci->home, fd, d);
 	close(fd);
 	pop = call_pane7("attach-popup", ci->focus, 0, NULL, 0,
-			 "DM1r", pane_attr_get(docp, "doc:name"));
+			 "DM1r", pane_attr_get(docp, "doc-name"));
 	if (!pop)
 		return -1;
 	par = pane_final_child(pop);

@@ -350,7 +350,7 @@ DEF_CMD(doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 
-	if (strcmp(ci->str, "doc:name") == 0)
+	if (strcmp(ci->str, "doc-name") == 0)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
 				 NULL, d->name, 0);
 

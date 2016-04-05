@@ -128,7 +128,7 @@ static int view_refresh(const struct cmd_info *ci)
 				  i + vd->ascent);
 	}
 	if (vd->border & (BORDER_TOP | BORDER_BOT)) {
-		name = pane_attr_get(p, "doc:name");
+		name = pane_attr_get(p, "doc-name");
 	}
 	if (vd->border & BORDER_TOP) {
 		int label;
