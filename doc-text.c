@@ -134,6 +134,7 @@ struct text {
 
 	struct stat		stat;
 	char			*fname;
+	struct text_edit	*saved;
 };
 
 static int text_advance_towards(struct text *t, struct doc_ref *ref, struct doc_ref *target);
@@ -230,6 +231,8 @@ DEF_CMD(text_load_file)
 			dname = name;
 		call5("doc:set-name", ci->home, 0, NULL, dname, 0);
 	}
+	t->saved = t->undo;
+	call3("doc:status-changed", ci->home, 0, NULL);
 	return 1;
 err:
 	free(c);
@@ -301,9 +304,11 @@ DEF_CMD(text_save_file)
 		ret = -1;
 	} else {
 		ret = do_text_write_file(t, t->fname);
-		if (ret == 0)
+		if (ret == 0) {
 			asprintf(&msg, "Successfully wrote %s", t->fname);
-		else
+			t->saved = t->undo;
+			call3("doc:status-changed", d->home, 0, NULL);
+		} else
 			asprintf(&msg, "*** Faild to write %s ***", t->fname);
 	}
 	call5("Message", ci->focus, 0, NULL, msg, 0);
@@ -691,6 +696,8 @@ static int text_undo(struct text *t, struct doc_ref *start, struct doc_ref *end)
 			/* Was deletion, now inserting */
 			end->o = e->target->end;
 	}
+	if (t->undo == t->saved || e->next == t->saved)
+		call3("doc:status-changed", t->doc.home, 0, NULL);
 	t->undo = e->next;
 	e->next = t->redo;
 	t->redo = e;
@@ -1399,6 +1406,9 @@ DEF_CMD(text_replace)
 		struct mark *myend, *m;
 		int l;
 
+		if (t->undo == t->saved)
+			call3("doc:status-changed", d->home, 0, NULL);
+
 		if (!mark_ordered(pm, end)) {
 			myend = mark_dup(pm, 1);
 			mark_to_mark(pm, end);
@@ -1425,6 +1435,9 @@ DEF_CMD(text_replace)
 	if (str) {
 		struct doc_ref start;
 		struct mark *m;
+
+		if (t->undo == t->saved)
+			call3("doc:status-changed", d->home, 0, NULL);
 
 		text_add_str(t, &pm->ref, str, &start, &first);
 		for (m = doc_prev_mark_all(pm);
@@ -1508,6 +1521,8 @@ DEF_CMD(text_get_attr)
 		val = "text";
 	else if (strcmp(attr, "filename") == 0)
 		val = t->fname;
+	else if (strcmp(attr, "doc-modified") == 0)
+		val = (t->saved != t->undo) ? "yes" : "no";
 	else
 		return 0;
 

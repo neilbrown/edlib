@@ -188,6 +188,20 @@ DEF_CMD(docs_callback)
 	return 0;
 }
 
+DEF_CMD(doc_damage)
+{
+	struct pane *p = ci->home;
+	struct mark *m = doc_new_mark(p->data, MARK_UNGROUPED);
+	do {
+		if (m->ref.p == ci->focus) {
+			doc_notify_change(p->data, m, NULL);
+			break;
+		}
+	} while (mark_next(p->data, m) != WEOF);
+	mark_free(m);
+	return 1;
+}
+
 DEF_CMD(doc_revisit)
 {
 	struct pane *p = ci->focus;
@@ -324,9 +338,9 @@ DEF_CMD(docs_get_attr)
 	if (val)
 		;
 	else if (strcmp(attr, "heading") == 0)
-			val = "<bold,underline>  Document             File</>";
+			val = "<bold,underline> Mod Document             File</>";
 	else if (strcmp(attr, "line-format") == 0)
-			val = "  %+name:20 %filename";
+			val = " %doc-modified:3 %+name:20 %filename";
 	else if (strcmp(attr, "render-default") == 0)
 			val = "format";
 	else if (strcmp(attr, "doc-type") == 0)
@@ -439,6 +453,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:free", &docs_destroy);
 	key_add(docs_map, "doc:check_name", &doc_checkname);
 	key_add(docs_map, "doc:revisit", &doc_revisit);
+	key_add(docs_map, "doc:status-changed", &doc_damage);
 
 	key_add(docs_map, "Chr-f", &docs_open);
 	key_add(docs_map, "Return", &docs_open);

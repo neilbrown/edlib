@@ -65,6 +65,7 @@ static int view_refresh(const struct cmd_info *ci)
 	int i;
 	int mid;
 	char *name;
+	char *modified = "??";
 
 	pane_check_size(p);
 	p->cx = 0; p->cy = 0;
@@ -129,6 +130,11 @@ static int view_refresh(const struct cmd_info *ci)
 	}
 	if (vd->border & (BORDER_TOP | BORDER_BOT)) {
 		name = pane_attr_get(p, "doc-name");
+		modified = pane_attr_get(p, "doc-modified");
+		if (modified && strcmp(modified, "yes") == 0)
+			modified = "*";
+		else
+			modified = "-";
 	}
 	if (vd->border & BORDER_TOP) {
 		int label;
@@ -148,10 +154,10 @@ static int view_refresh(const struct cmd_info *ci)
 
 		if (!(vd->border & BORDER_TOP)) {
 			if (c >= 0)
-				snprintf(msg, sizeof(msg), "L%d W%d C%d D:%s",
-					 l,w,c, name);
+				snprintf(msg, sizeof(msg), "L%d W%d C%d M%s D:%s",
+					 l,w,c, modified, name);
 			else
-				snprintf(msg, sizeof(msg),"%s", name);
+				snprintf(msg, sizeof(msg), "%s-%s", modified, name);
 			one_char(p, msg, "inverse",
 				 4*vd->border_width,
 				 p->h-vd->border_height + vd->ascent);
