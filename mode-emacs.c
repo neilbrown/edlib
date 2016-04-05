@@ -562,6 +562,14 @@ DEF_CMD(emacs_kill_doc)
 	return call3("doc:destroy", ci->focus, 0, 0);
 }
 
+DEF_CMD(emacs_save_all)
+{
+	if (ci->numeric == NO_NUMERIC)
+		return call3("docs:save-interactive", ci->focus, 0, 0);
+	else
+		return call3("docs:save-all", ci->focus, 0, 0);
+}
+
 DEF_CMD(emacs_search)
 {
 	struct cmd_info ci2 = {0};
@@ -660,6 +668,8 @@ static void emacs_init(void)
 	key_add(m, "emCX-C-Chr-B", &emacs_viewdocs);
 
 	key_add(m, "emCX-Chr-k", &emacs_kill_doc);
+
+	key_add(m, "emCX-Chr-s", &emacs_save_all);
 
 	key_add(m, "C-Chr-S", &emacs_search);
 	key_add(m, "Search String", &emacs_search);

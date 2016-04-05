@@ -74,6 +74,20 @@ static void docs_enmark(struct docs *doc, struct pane *p)
 		}
 }
 
+static void doc_save(struct pane *p, struct pane *focus)
+{
+	char *fn = pane_attr_get(p, "filename");
+	char *mod = pane_attr_get(p, "doc-modified");
+	if (!fn || !*fn)
+		call5("Message", focus, 0, NULL,
+		      "File has no filename - cannot be saved.", 0);
+	else if (!mod || strcmp(mod, "yes") != 0)
+		call5("Message", focus, 0, NULL,
+		      "File not modified - no need to save.", 0);
+	else
+		call_home(p, "doc:save-file", focus, 0, NULL, NULL);
+}
+
 static void check_name(struct docs *docs, struct pane *pane)
 {
 	struct doc *d = pane->data;
@@ -164,6 +178,12 @@ DEF_CMD(docs_callback)
 			choice = doc->doc.home;
 		return comm_call(ci->comm2, "callback:doc", choice, 0,
 				 NULL, NULL, 0);
+	}
+
+	if (strcmp(ci->key, "docs:save-all") == 0) {
+		list_for_each_entry(p, &doc->doc.home->children, siblings)
+			doc_save(p, NULL);
+		return 1;
 	}
 
 	if (strcmp(ci->key, "doc:appeared-docs-register") == 0) {
@@ -422,23 +442,10 @@ DEF_CMD(docs_bury)
 DEF_CMD(docs_save)
 {
 	struct pane *dp = ci->mark->ref.p;
-	char *fn, *mod;
 
 	if (!dp)
 		return 0;
-	fn = pane_attr_get(dp, "filename");
-	mod = pane_attr_get(dp, "doc-modified");
-	if (!fn || !*fn) {
-		call5("Message", ci->focus, 0, NULL,
-		      "File has no filename - cannot be saved.", 0);
-		return 1;
-	}
-	if (!mod || strcmp(mod, "yes") != 0) {
-		call5("Message", ci->focus, 0, NULL,
-		      "File not modified - no need to save.", 0);
-		return 1;
-	}
-	call_home(dp, "doc:save-file", ci->focus, 0, NULL, NULL);
+	doc_save(dp, ci->focus);
 	return 1;
 }
 
