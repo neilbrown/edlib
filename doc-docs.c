@@ -419,6 +419,47 @@ DEF_CMD(docs_bury)
 	return 1;
 }
 
+DEF_CMD(docs_save)
+{
+	struct pane *dp = ci->mark->ref.p;
+	char *fn, *mod;
+
+	if (!dp)
+		return 0;
+	fn = pane_attr_get(dp, "filename");
+	mod = pane_attr_get(dp, "doc-modified");
+	if (!fn || !*fn) {
+		call5("Message", ci->focus, 0, NULL,
+		      "File has no filename - cannot be saved.", 0);
+		return 1;
+	}
+	if (!mod || strcmp(mod, "yes") != 0) {
+		call5("Message", ci->focus, 0, NULL,
+		      "File not modified - no need to save.", 0);
+		return 1;
+	}
+	call_home(dp, "doc:save-file", ci->focus, 0, NULL, NULL);
+	return 1;
+}
+
+DEF_CMD(docs_kill)
+{
+	struct pane *dp = ci->mark->ref.p;
+	char *mod;
+
+	if (!dp)
+		return 0;
+	mod = pane_attr_get(dp, "doc-modified");
+	if (mod && strcmp(mod, "yes") == 0 &&
+	    ci->numeric == NO_NUMERIC) {
+		call5("Message", ci->focus, 0, NULL,
+		      "File modified, cannot kill.", 0);
+		return 1;
+	}
+	doc_destroy(dp);
+	return 1;
+}
+
 DEF_CMD(docs_destroy)
 {
 	/* Not allowed to destroy this document */
@@ -459,6 +500,8 @@ static void docs_init_map(void)
 	key_add(docs_map, "Return", &docs_open);
 	key_add(docs_map, "Chr-o", &docs_open);
 	key_add(docs_map, "Chr-q", &docs_bury);
+	key_add(docs_map, "Chr-s", &docs_save);
+	key_add(docs_map, "Chr-k", &docs_kill);
 	key_add_range(docs_map, "Chr-A", "Chr-Z", &docs_open_alt);
 
 	key_add(docs_map, "ChildClosed", &docs_child_closed);
