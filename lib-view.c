@@ -60,7 +60,6 @@ static int view_refresh(const struct cmd_info *ci)
 	struct view_data *vd = p->data;
 	struct mark *m = ci->mark;
 	int ln, l, w, c = -1;
-	struct cmd_info ci2 = {0};
 	char msg[100];
 	int i;
 	int mid;
@@ -103,10 +102,7 @@ static int view_refresh(const struct cmd_info *ci)
 			one_char(p, "|", "inverse", 0, i + vd->ascent);
 
 		if (p->h > 4 * vd->line_height) {
-			ci2.key = "CountLines";
-			ci2.home = ci2.focus = p;
-			ci2.mark = m;
-			key_handle(&ci2);
+			call3("CountLines", p, 0, m);
 
 			ln = attr_find_int(*mark_attr(m), "lines");
 			l = pane_attr_get_int(ci->home, "lines");

@@ -75,12 +75,8 @@ DEF_CMD(render_hex_eol)
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 	int pos;
-	struct cmd_info ci2 = {0};
 
-	ci2.key = "CountLines";
-	ci2.home = ci2.focus = ci->home;
-	ci2.mark = ci->mark;
-	key_handle(&ci2);
+	call3("CountLines", ci->home, 0, ci->mark);
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
@@ -110,7 +106,6 @@ DEF_CMD(render_hex_eol)
 DEF_CMD(render_line)
 {
 	struct buf ret;
-	struct cmd_info ci2 = {0};
 	struct mark *m = NULL;
 	struct mark *pm = ci->mark2;
 	int pos;
@@ -121,10 +116,7 @@ DEF_CMD(render_line)
 	if (!ci->focus || !ci->mark)
 		return -1;
 
-	ci2.key = "CountLines";
-	ci2.home = ci2.focus = ci->home;
-	ci2.mark = ci->mark;
-	key_handle(&ci2);
+	call3("CountLines", ci->home, 0, ci->mark);
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 
 	buf_init(&ret);
@@ -182,13 +174,9 @@ DEF_CMD(render_line_prev)
 	/* If ->numeric is 0, round down to multiple of 16.
 	 * if it is 1, subtract a further 16.
 	 */
-	struct cmd_info ci2 = {0};
 	int to, from;
 
-	ci2.key = "CountLines";
-	ci2.home = ci2.focus = ci->home;
-	ci2.mark = ci->mark;
-	key_handle(&ci2);
+	call3("CountLines", ci->home, 0, ci->mark);
 
 	from = attr_find_int(*mark_attr(ci->mark), "chars");
 	to = from & ~0xF;

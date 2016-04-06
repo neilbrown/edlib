@@ -551,14 +551,10 @@ static void render_line(struct pane *p, char *line, int *yp, int dodraw, int sca
 static struct mark *call_render_line_prev(struct pane *p,
 					  struct mark *m, int n, int *found)
 {
-	struct cmd_info ci = {0};
 	int ret;
+	struct mark *m2;
 
-	ci.key = "render-line-prev";
-	ci.mark = m;
-	ci.focus = pane_final_child(p);
-	ci.numeric = n;
-	ret = key_handle(&ci);
+	ret = call3("render-line-prev", pane_final_child(p), n, m);
 	if (ret == 0) {
 		mark_free(m);
 		return NULL;
@@ -574,12 +570,12 @@ static struct mark *call_render_line_prev(struct pane *p,
 		return NULL;
 	}
 
-	m = vmark_matching(p, ci.mark);
-	if (m)
-		mark_free(ci.mark);
+	m2 = vmark_matching(p, m);
+	if (m2)
+		mark_free(m);
 	else
-		m = ci.mark;
-	return m;
+		m2 = m;
+	return m2;
 }
 
 DEF_CMD(save_str)
@@ -595,19 +591,16 @@ static struct mark *call_render_line(struct pane *p, struct mark *start)
 	struct call_return cr;
 	struct mark *m, *m2;
 
-	ci.key = "render-line";
-	ci.focus = pane_final_child(p);
-	ci.mark = mark_dup(start, 0);
-	ci.numeric = NO_NUMERIC;
+	m = mark_dup(start, 0);
 	cr.c = save_str;
 	cr.s = NULL;
-	ci.comm2 = &cr.c;
 	/* Allow for filling the rest of the pane, given that
 	 * some has been used.
 	 * 'used' can be negative if the mark is before the start
 	 * of the pane
 	 */
-	if (key_handle(&ci) == 0) {
+	if (call_comm("render-line", pane_final_child(p), NO_NUMERIC,
+		      m, NULL, 0, &cr.c) == 0) {
 		mark_free(ci.mark);
 		return NULL;
 	}
@@ -616,21 +609,21 @@ static struct mark *call_render_line(struct pane *p, struct mark *start)
 		free(start->mdata);
 	start->mdata = cr.s;
 
-	m = vmark_matching(p, ci.mark);
-	if (m)
-		mark_free(ci.mark);
+	m2 = vmark_matching(p, m);
+	if (m2)
+		mark_free(m);
 	else
-		m = ci.mark;
+		m2 = m;
 	/* Any mark between start and m must be discarded,
 	 */
-	while ((m2 = vmark_next(start)) != NULL &&
-	       mark_ordered(m2, m)) {
-			free(m2->mdata);
-			m2->mdata = NULL;
-			mark_free(m2);
+	while ((m = vmark_next(start)) != NULL &&
+	       mark_ordered(m, m2)) {
+			free(m->mdata);
+			m->mdata = NULL;
+			mark_free(m);
 	}
 
-	return m;
+	return m2;
 }
 
 DEF_CMD(no_save)
@@ -641,18 +634,15 @@ DEF_CMD(no_save)
 static struct mark *call_render_line_offset(struct pane *p,
 					    struct mark *start, int offset)
 {
-	struct cmd_info ci = {0};
+	struct mark *m;
 
-	ci.key = "render-line";
-	ci.focus = pane_final_child(p);
-	ci.mark = mark_dup(start, 0);
-	ci.numeric = offset;
-	ci.comm2 = &no_save;
-	if (key_handle(&ci) == 0) {
-		mark_free(ci.mark);
+	m = mark_dup(start, 0);
+	if (call_comm("render-line", pane_final_child(p), offset, m,
+		      NULL, 0, &no_save) == 0) {
+		mark_free(m);
 		return NULL;
 	}
-	return ci.mark;
+	return m;
 }
 
 DEF_CMD(get_len)
@@ -1204,10 +1194,10 @@ DEF_CMD(render_lines_move_line)
 	 */
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
-	struct cmd_info ci2 = {0};
 	int target_x, target_y;
 	int o = -1;
 	int scale = get_scale(p);
+	int num;
 
 	rl->ignore_point = 0;
 
@@ -1218,20 +1208,17 @@ DEF_CMD(render_lines_move_line)
 		target_x = p->cx;
 		target_y = p->cy - rl->cursor_line;
 	}
-	ci2.focus = ci->focus;
-	ci2.key = "Move-EOL";
-	ci2.numeric = RPT_NUM(ci);
-	if (ci2.numeric < 0)
-		ci2.numeric -= 1;
+
+	num = RPT_NUM(ci);
+	if (num < 0)
+		num -= 1;
 	else
-		ci2.numeric += 1;
-	ci2.mark = ci->mark;
-	if (!key_handle(&ci2))
+		num += 1;
+	if (!call5("Move-EOL", ci->focus, num, ci->mark, NULL, 0))
 		return -1;
 	if (RPT_NUM(ci) > 0) {
 		/* at end of target line, move to start */
-		ci2.numeric = -1;
-		if (!key_handle(&ci2))
+		if (!call5("Move-EOL", ci->focus, -1, ci->mark, NULL, 0))
 			return -1;
 	}
 

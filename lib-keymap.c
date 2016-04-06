@@ -96,13 +96,9 @@ DEF_CMD(keymap_handle)
 		    strcmp(ci->key, "local-add-keymap") == 0 ||
 		    strcmp(ci->key, "local-remove-keymap") == 0) {
 			/* Add a local keymap on 'focus' and re-send */
-			struct cmd_info ci2 = {0};
-			ci2.focus = do_keymap_attach(ci->focus, 0);
-			ci2.key = ci->key;
-			ci2.numeric = ci->numeric;
-			ci2.str = ci->str;
-			ci2.str2 = ci->str2;
-			return key_handle(&ci2);
+			return call7(ci->key, do_keymap_attach(ci->focus, 0),
+				     ci->numeric, ci->mark, ci->str, ci->extra,
+				     ci->str2, ci->mark2);
 		}
 	}
 	if (kd->global && strncmp(ci->key, "global-set-key", 14) == 0) {

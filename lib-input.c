@@ -46,38 +46,37 @@ DEF_CMD(set_extra)
 
 DEF_CMD(keystroke)
 {
-	struct cmd_info ci2 = {0};
+	char *key;
 	struct input_mode *im = ci->home->data;
 	struct pane *p;
 	int l;
 	int ret;
+	int numeric = im->numeric;
+	int extra = im->extra;
+	struct mark *m;
 
 	pane_notify(ci->home, "Notify:Keystroke", NULL, NULL, ci->str, 0);
 
 	l = strlen(im->mode) + strlen(ci->str) + 1;
-	ci2.key = malloc(l);
-	strcat(strcpy(ci2.key, im->mode), ci->str);
-	ci2.numeric = im->numeric;
-	ci2.extra = im->extra;
+	key = malloc(l);
+	strcat(strcpy(key, im->mode), ci->str);
 
 	im->mode = "";
 	im->numeric = NO_NUMERIC;
 	im->extra = 0;
 
-	ci2.x = ci2.y = -1;
-	ci2.mark = ci->mark;
+	m = ci->mark;
 	p = ci->focus;
 	while (p->focus) {
 		p = p->focus;
-		if (!ci2.mark)
-			ci2.mark = p->pointer;
+		if (!m)
+			m = p->pointer;
 	}
-	ci2.focus = p;
 
-	ret = key_handle(&ci2);
-	free(ci2.key);
+	ret = call5(key, p, numeric, m, NULL, extra);
+	free(key);
 	if (ret < 0)
-		call5("Message", ci2.focus, 0, NULL, "** Command Failed **", 1);
+		call5("Message", p, 0, NULL, "** Command Failed **", 1);
 	return 0;
 }
 

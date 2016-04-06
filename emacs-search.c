@@ -164,7 +164,6 @@ DEF_CMD(search_again)
 {
 	/* document has changed, retry search */
 	struct es_info *esi = ci->home->data;
-	struct cmd_info ci2 = {0};
 	struct pane *p;
 	char *a, *pfx;
 	int ret;
@@ -173,13 +172,9 @@ DEF_CMD(search_again)
 
 	/* TEMP HACK - please fix */
 	doc_set_attr(esi->target, esi->end, "highlight", NULL);
-	ci2.focus = esi->target;
 	m = mark_dup(esi->start, 1);
-	ci2.mark = m;
 	str = doc_getstr(esi->search, NULL);
-	ci2.str = str;
-	ci2.key = "text-search";
-	ret = key_handle(&ci2);
+	ret = call5("text-search", esi->target, 0, m, str, 0);
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
 	else if (ret == -2) {
@@ -188,7 +183,6 @@ DEF_CMD(search_again)
 	} else if (ret < 0) {
 		pfx = "Search (incomplete): ";
 	} else {
-		memset(&ci2, 0, sizeof(ci2));
 		point_to_mark(esi->end, m);
 		/* TEMP HACK - please fix */
 		doc_set_attr(esi->target, esi->end, "highlight","fg:red,inverse");

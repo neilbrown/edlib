@@ -135,22 +135,19 @@ DEF_CMD(popup_leaf)
 		return 1;
 	}
 	if (strcmp(ci->key, "Return") == 0) {
-		struct cmd_info ci2 = {0};
+		char *key, *str;
 
 		ppi->closing = 1;
 		pane_focus(ppi->target);
-		ci2.focus = ppi->target;
-		ci2.key = pane_attr_get(ci->focus, "done-key");
-		if (!ci2.key)
-			ci2.key = "PopupDone";
-		ci2.numeric = 1;
-		ci2.str = ci->str;
+		key = pane_attr_get(ci->focus, "done-key");
+		if (!key)
+			key = "PopupDone";
+		str = ci->str;
 		if (ppi->doc)
-			ci2.str = doc_getstr(pane_final_child(ppi->popup), NULL);
-		ci2.mark = NULL;
-		key_handle(&ci2);
+			str = doc_getstr(pane_final_child(ppi->popup), NULL);
+		call5(key, ppi->target, 1, NULL, str, 0);
 		if (ppi->doc)
-			free(ci2.str);
+			free(str);
 		d = ppi->doc; ppi->doc = NULL;
 		if (d)
 			/* FIXME make this doc auto-close */

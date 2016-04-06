@@ -71,7 +71,6 @@ REDEF_CMD(emacs_move)
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 	struct pane *cursor_pane = ci->focus;
 	int old_x = -1;
-	struct cmd_info ci2 = {0};
 	int ret = 0;
 
 	if (!cursor_pane)
@@ -90,35 +89,25 @@ REDEF_CMD(emacs_move)
 		int ok;
 		struct mark *old_point = mark_at_point(cursor_pane,
 						       ci->mark, MARK_UNGROUPED);
-		ci2.focus = cursor_pane;
-		ci2.key = "Mouse-event";
-		ci2.str = "Move-CursorXY";
-		ci2.numeric = 1;
-		ci2.x = old_x;
-		ci2.mark = ci->mark;
+		int y;
 		if (mv->direction == 1)
-			ci2.y = 0;
+			y = 0;
 		else
-			ci2.y = cursor_pane->h - 1;
-		key_handle(&ci2);
+			y = cursor_pane->h - 1;
+		call_xy7("Mouse-event", cursor_pane, 1, 0, "Move-CursorXY", NULL,
+			 old_x, y, ci->mark, NULL);
 		if (mv->direction == 1)
 			ok = mark_ordered_not_same_pane(cursor_pane, old_point, ci->mark);
 		else
 			ok = mark_ordered_not_same_pane(cursor_pane, ci->mark, old_point);
 		if (!ok) {
 			/* Try other end of pane */
-			memset(&ci2, 0, sizeof(ci2));
-			ci2.focus = cursor_pane;
-			ci2.key = "Mouse-event";
-			ci2.str = "Move-CursorXY";
-			ci2.numeric = 1;
-			ci2.x = old_x;
-			ci2.mark = ci->mark;
 			if (mv->direction != 1)
-				ci2.y = 0;
+				y = 0;
 			else
-				ci2.y = cursor_pane->h - 1;
-			key_handle(&ci2);
+				y = cursor_pane->h - 1;
+			call_xy7("Mouse-event", cursor_pane, 1, 0, "Move-CursorXY",
+				 NULL, old_x, y, ci->mark, NULL);
 		}
 		mark_free(old_point);
 	}
@@ -184,27 +173,15 @@ static struct simple_command {
 REDEF_CMD(emacs_simple)
 {
 	struct simple_command *sc = container_of(ci->comm, struct simple_command, cmd);
-	struct cmd_info ci2 = {0};
 
-	ci2.key = sc->type;
-	ci2.focus = ci->focus;
-	ci2.numeric = ci->numeric;
-	ci2.extra = ci->extra;
-	ci2.mark = ci->mark;
-	return key_handle(&ci2);
+	return call5(sc->type, ci->focus, ci->numeric, ci->mark, NULL, ci->extra);
 }
 
 REDEF_CMD(emacs_simple_neg)
 {
 	struct simple_command *sc = container_of(ci->comm, struct simple_command, cmd);
-	struct cmd_info ci2 = {0};
 
-	ci2.key = sc->type;
-	ci2.focus = ci->focus;
-	ci2.numeric = -RPT_NUM(ci);
-	ci2.extra = ci->extra;
-	ci2.mark = ci->mark;
-	return key_handle(&ci2);
+	return call5(sc->type, ci->focus, -RPT_NUM(ci), ci->mark, NULL, ci->extra);
 }
 
 DEF_CMD(emacs_exit)
@@ -271,7 +248,6 @@ DEF_CMD(emacs_findfile)
 {
 	int fd;
 	struct pane *p, *par;
-	struct cmd_info ci2 = {0};
 
 	if (strncmp(ci->key, "File Found", 10) != 0) {
 		char *path = NULL;
@@ -307,11 +283,8 @@ DEF_CMD(emacs_findfile)
 		if (path)
 			call5("Replace", p, 0, NULL, path, 0);
 
-		ci2.key = "local-set-key";
-		ci2.focus = pane_final_child(p);
-		ci2.str = "emacs:file-complete";
-		ci2.str2 = "Tab";
-		key_handle(&ci2);
+		call7("local-set-key", pane_final_child(p), 0, NULL,
+		      "emacs:file-complete", 0, "Tab", NULL);
 		return 1;
 	}
 
@@ -360,7 +333,6 @@ DEF_CMD(emacs_file_complete)
 	char *d, *b, *c;
 	int fd;
 	struct pane *par, *pop, *docp;
-	struct cmd_info ci2 = {0};
 	struct call_return cr;
 	int ret;
 
@@ -393,13 +365,10 @@ DEF_CMD(emacs_file_complete)
 	attr_set_str(&par->attrs, "heading", "", -1);
 	attr_set_str(&par->attrs, "done-key", "Replace", -1);
 	render_attach("complete", par);
-	ci2.key = "Complete:prefix";
-	ci2.str = b;
-	ci2.focus = pane_final_child(par);
 	cr.c = save_str;
 	cr.s = NULL;
-	ci2.comm2 = &cr.c;
-	ret = key_handle(&ci2);
+	ret = call_comm("Complete:prefix", pane_final_child(par), 0, NULL,
+			b, 0, &cr.c);
 	free(d);
 	if (cr.s && (strlen(cr.s) <= strlen(b) && ret-1 > 1)) {
 		/* We need the dropdown */
@@ -423,7 +392,6 @@ DEF_CMD(emacs_file_complete)
 DEF_CMD(emacs_finddoc)
 {
 	struct pane *p, *par;
-	struct cmd_info ci2 = {0};
 
 	if (strncmp(ci->key, "Doc Found", 9) != 0) {
 
@@ -442,11 +410,8 @@ DEF_CMD(emacs_finddoc)
 		}
 		call5("doc:set-name", p, 0, NULL, "Find Document", 0);
 
-		ci2.key = "local-set-key";
-		ci2.focus = p;
-		ci2.str = "emacs:doc-complete";
-		ci2.str2 = "Tab";
-		key_handle(&ci2);
+		call7("local-set-key", p, 0, NULL, "emacs:doc-complete",
+		      0, "Tab", NULL);
 		return 1;
 	}
 
@@ -476,7 +441,6 @@ DEF_CMD(emacs_doc_complete)
 	 */
 	char *str = doc_getstr(ci->focus, NULL);
 	struct pane *par, *pop;
-	struct cmd_info ci2 = {0};
 	struct call_return cr;
 	int ret;
 
@@ -490,13 +454,10 @@ DEF_CMD(emacs_doc_complete)
 	attr_set_str(&par->attrs, "heading", "", -1);
 	attr_set_str(&par->attrs, "done-key", "Replace", -1);
 	render_attach("complete", par);
-	ci2.key = "Complete:prefix";
-	ci2.str = str;
-	ci2.focus = pane_final_child(par);
 	cr.c = save_str;
 	cr.s = NULL;
-	ci2.comm2= &cr.c;
-	ret = key_handle(&ci2);
+	ret = call_comm("Complete:prefix", pane_final_child(par), 0, NULL,
+			str, 0, &cr.c);
 	if (cr.s && (strlen(cr.s) <= strlen(str) && ret - 1 > 1)) {
 		/* We need the dropdown */
 		pane_damaged(par, DAMAGED_CONTENT);
@@ -572,9 +533,7 @@ DEF_CMD(emacs_save_all)
 
 DEF_CMD(emacs_search)
 {
-	struct cmd_info ci2 = {0};
 	struct mark *m;
-	int ret;
 
 	if (strcmp(ci->key, "Search String") != 0) {
 		struct pane *p = call_pane7("attach-popup", ci->focus, 0, NULL,
@@ -598,19 +557,10 @@ DEF_CMD(emacs_search)
 
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 
-	ci2.key = "global-set-attr";
-	ci2.str = "Search String";
-	ci2.str2 = ci->str;
-	ci2.focus = ci->focus;
-	key_handle(&ci2);
+	call7("global-set-attr", ci->focus, 0, NULL, "Search String",
+	      0, ci->str, NULL);
 
-	memset(&ci2, 0, sizeof(ci2));
-	ci2.focus = ci->focus;
-	ci2.mark = m;
-	ci2.str = ci->str;
-	ci2.key = "text-search";
-	ret = key_handle(&ci2);
-	if (ret > 1)
+	if (call5("text-search", ci->focus, 0, m, ci->str, 0) > 1)
 		call3("Move-to", ci->focus, 0, m);
 
 	mark_free(m);

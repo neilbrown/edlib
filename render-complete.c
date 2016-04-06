@@ -370,12 +370,8 @@ DEF_CMD(complete_return)
 	}
 	*c1 = 0;
 
-	memset(&ci2, 0, sizeof(ci2));
-	ci2.key = ci->key;
-	ci2.focus = ci->home->parent;
-	ci2.str = cr.s + strlen(cd->prefix);
-	ci2.numeric = NO_NUMERIC;
-	key_handle(&ci2);
+	call5(ci->key, ci->home->parent, NO_NUMERIC, NULL,
+	      cr.s + strlen(cd->prefix), 0);
 	free(cr.s);
 	return 1;
 }
