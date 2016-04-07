@@ -31,7 +31,6 @@
 
 struct popup_info {
 	struct pane	*target, *popup;
-	struct pane	*doc;
 	char		*style;
 	int closing;
 };
@@ -84,23 +83,14 @@ DEF_CMD(popup_handle)
 {
 	struct pane *p = ci->home;
 	struct popup_info *ppi = p->data;
-	struct pane *d;
 
 	if (strcmp(ci->key, "Close") == 0) {
-		d = ppi->doc; ppi->doc = NULL;
-		if (d)
-			/* FIXME make this doc auto-close */
-			doc_destroy(d);
 		free(ppi);
 		return 1;
 	}
 
 	if (strcmp(ci->key, "Notify:Close") == 0) {
 		if (ci->focus == ppi->target && !ppi->closing) {
-			d = ppi->doc; ppi->doc = NULL;
-			if (d)
-				/* FIXME make this doc auto-close */
-				doc_destroy(d);
 			pane_close(p);
 		}
 		return 1;
@@ -110,10 +100,6 @@ DEF_CMD(popup_handle)
 		pane_focus(ppi->target);
 		ppi->closing = 1;
 		call3("Abort", ppi->target, 0, NULL);
-		d = ppi->doc; ppi->doc = NULL;
-		if (d)
-			/* FIXME make this doc auto-close */
-			doc_destroy(d);
 		pane_close(ppi->popup);
 		return 1;
 	}
@@ -136,10 +122,6 @@ DEF_CMD(popup_handle)
 			key = "PopupDone";
 		str = ci->str;
 		call5(key, ppi->target, 1, NULL, str, 0);
-		d = ppi->doc; ppi->doc = NULL;
-		if (d)
-			/* FIXME make this doc auto-close */
-			doc_destroy(d);
 		pane_close(ppi->popup);
 		return 1;
 	}
@@ -186,7 +168,6 @@ DEF_CMD(popup_attach)
 	ppi->target = ci->focus;
 	ppi->popup = pane_register(root, z, &popup_handle, ppi, NULL);
 	ppi->style = style;
-	ppi->doc = NULL;
 	ppi->closing = 0;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
@@ -216,8 +197,8 @@ DEF_CMD(popup_attach)
 		d = doc_new(root, "text");
 		call5("doc:set-name", d, 0, NULL, "*popup*", 0);
 		call5("global-multicall-doc:appeared-", d, 1, NULL, NULL, 0);
-		ppi->doc = d;
 		p = doc_attach_view(ppi->popup, d, NULL);
+		call3("doc:autoclose", p, 1, NULL);
 	}
 	pane_focus(p);
 

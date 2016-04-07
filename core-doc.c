@@ -38,6 +38,7 @@ struct doc_ref {
 struct doc_data {
 	struct pane		*doc;
 	struct mark		*point;
+	int			autoclose;
 };
 
 static int do_doc_add_view(struct doc *d, struct command *c)
@@ -500,9 +501,15 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
+	if (strcmp(ci->key, "doc:autoclose") == 0) {
+		dd->autoclose = ci->numeric;
+		return 1;
+	}
 	if (strcmp(ci->key, "Close") == 0) {
 		if (dd->point)
 			mark_free(dd->point);
+		if (dd->autoclose)
+			doc_destroy(dd->doc);
 		free(dd);
 		ci->home->data = NULL;
 		return 1;
@@ -552,7 +559,7 @@ DEF_CMD(doc_handle)
 struct pane *doc_attach(struct pane *parent, struct pane *d)
 {
 	struct pane *p;
-	struct doc_data *dd = malloc(sizeof(*dd));
+	struct doc_data *dd = calloc(sizeof(*dd), 1);
 
 	dd->doc = d;
 
