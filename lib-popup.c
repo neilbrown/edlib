@@ -215,6 +215,7 @@ DEF_CMD(popup_attach)
 		struct pane *d;
 		d = doc_new(root, "text");
 		call5("doc:set-name", d, 0, NULL, "*popup*", 0);
+		call5("global-multicall-doc:appeared-", d, 1, NULL, NULL, 0);
 		ppi->doc = d;
 		p = doc_attach_view(ppi->popup, d, NULL);
 	}
