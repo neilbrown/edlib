@@ -209,10 +209,12 @@ DEF_CMD(search_done)
 {
 	/* need to advance the target view to 'start' */
 	struct es_info *esi = ci->home->data;
+	char *str = doc_getstr(ci->focus, NULL);
 
 	call3("Move-to", esi->target, 0, esi->start);
-	/* Now let popup finish the job */
-	return 0;
+	call5("popup:close", ci->focus->parent, 0, NULL, str, 0);
+	free(str);
+	return 1;
 }
 
 static void emacs_search_init_map(void)

@@ -244,6 +244,39 @@ DEF_CMD(emacs_redo)
 	return 1;
 }
 
+REDEF_CMD(emacs_file_complete);
+REDEF_CMD(emacs_doc_complete);
+
+DEF_CMD(find_complete)
+{
+	char *type = ci->home->data;
+	if (strcmp(type, "file") == 0)
+		return emacs_file_complete_func(ci);
+	else
+		return emacs_doc_complete_func(ci);
+}
+
+DEF_CMD(find_done)
+{
+	int ret;
+	char *str = doc_getstr(ci->focus, NULL);
+
+	ret = call5("popup:close", ci->focus->parent, 0, NULL, str, 0);
+	free(str);
+	return ret;
+}
+
+static struct
+map *fh_map;
+static void findmap_init(void)
+{
+	fh_map = key_alloc();
+	key_add(fh_map, "Tab", &find_complete);
+	key_add(fh_map, "Return", &find_done);
+}
+
+DEF_LOOKUP_CMD(find_handle, fh_map);
+
 DEF_CMD(emacs_findfile)
 {
 	int fd;
@@ -283,8 +316,7 @@ DEF_CMD(emacs_findfile)
 		if (path)
 			call5("Replace", p, 0, NULL, path, 0);
 
-		call7("local-set-key", pane_final_child(p), 0, NULL,
-		      "emacs:file-complete", 0, "Tab", NULL);
+		pane_register(pane_final_child(p), 0, &find_handle.c, "file", NULL);
 		return 1;
 	}
 
@@ -323,7 +355,7 @@ DEF_CMD(save_str)
 	return 1;
 }
 
-DEF_CMD(emacs_file_complete)
+REDEF_CMD(emacs_file_complete)
 {
 	/* Extract a directory name and a basename from the document.
 	 * Find a document for the directory and attach as a completing
@@ -410,8 +442,7 @@ DEF_CMD(emacs_finddoc)
 		}
 		call5("doc:set-name", p, 0, NULL, "Find Document", 0);
 
-		call7("local-set-key", p, 0, NULL, "emacs:doc-complete",
-		      0, "Tab", NULL);
+		pane_register(p, 0, &find_handle.c, "doc", NULL);
 		return 1;
 	}
 
@@ -434,7 +465,7 @@ DEF_CMD(emacs_finddoc)
 	return !!p;
 }
 
-DEF_CMD(emacs_doc_complete)
+REDEF_CMD(emacs_doc_complete)
 {
 	/* Extract a document from the document.
 	 * Attach the 'docs' document as a completing popup menu
@@ -643,11 +674,9 @@ void edlib_init(struct pane *ed)
 {
 	if (emacs_map == NULL)
 		emacs_init();
+	if (fh_map == NULL)
+		findmap_init();
 	call_comm("global-set-command", ed, 0, NULL, "attach-mode-emacs",
 		  0, &attach_mode_emacs);
-	call_comm("global-set-command", ed, 0, NULL, "emacs:file-complete",
-		  0, &emacs_file_complete);
-	call_comm("global-set-command", ed, 0, NULL, "emacs:doc-complete",
-		  0, &emacs_doc_complete);
 	emacs_search_init(ed);
 }

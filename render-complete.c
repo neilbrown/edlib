@@ -370,7 +370,7 @@ DEF_CMD(complete_return)
 	}
 	*c1 = 0;
 
-	call5(ci->key, ci->home->parent, NO_NUMERIC, NULL,
+	call5("popup:close", ci->home->parent, NO_NUMERIC, NULL,
 	      cr.s + strlen(cd->prefix), 0);
 	free(cr.s);
 	return 1;

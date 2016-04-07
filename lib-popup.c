@@ -126,16 +126,7 @@ DEF_CMD(popup_handle)
 		return comm_call(ci->comm2, "callback:get-target",
 				 ppi->target, 0, NULL, NULL, 0);
 
-	return 0;
-}
-
-DEF_CMD(popup_leaf)
-{
-	struct pane *p = ci->home;
-	struct popup_info *ppi = p->data;
-	struct pane *d;
-
-	if (strcmp(ci->key, "Return") == 0) {
+	if (strcmp(ci->key, "popup:close") == 0) {
 		char *key, *str;
 
 		ppi->closing = 1;
@@ -144,11 +135,7 @@ DEF_CMD(popup_leaf)
 		if (!key)
 			key = "PopupDone";
 		str = ci->str;
-		if (ppi->doc)
-			str = doc_getstr(pane_final_child(ppi->popup), NULL);
 		call5(key, ppi->target, 1, NULL, str, 0);
-		if (ppi->doc)
-			free(str);
 		d = ppi->doc; ppi->doc = NULL;
 		if (d)
 			/* FIXME make this doc auto-close */
@@ -156,6 +143,7 @@ DEF_CMD(popup_leaf)
 		pane_close(ppi->popup);
 		return 1;
 	}
+
 	return 0;
 }
 
@@ -230,7 +218,6 @@ DEF_CMD(popup_attach)
 		ppi->doc = d;
 		p = doc_attach_view(ppi->popup, d, NULL);
 	}
-	p = pane_register(pane_final_child(p), 0, &popup_leaf, ppi, NULL);
 	pane_focus(p);
 
 	return comm_call(ci->comm2, "callback:attach", ppi->popup, 0, NULL, NULL, 0);
