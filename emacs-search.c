@@ -224,7 +224,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "C-Chr-C", &search_add);
 	key_add(es_map, "C-Chr-R", &search_backward);
 	key_add(es_map, "Close", &search_close);
-	key_add(es_map, "popup:Return", &search_done);
+	key_add(es_map, "Return", &search_done);
 	key_add(es_map, "Notify:Replace", &search_again);
 }
 
