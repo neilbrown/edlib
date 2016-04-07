@@ -106,6 +106,18 @@ DEF_CMD(popup_handle)
 		return 1;
 	}
 
+	if (strcmp(ci->key, "Abort") == 0) {
+		pane_focus(ppi->target);
+		ppi->closing = 1;
+		call3("Abort", ppi->target, 0, NULL);
+		d = ppi->doc; ppi->doc = NULL;
+		if (d)
+			/* FIXME make this doc auto-close */
+			doc_destroy(d);
+		pane_close(ppi->popup);
+		return 1;
+	}
+
 	if (strcmp(ci->key, "Refresh") == 0) {
 		popup_resize(p, ppi->style);
 		return 1;
@@ -123,17 +135,6 @@ DEF_CMD(popup_leaf)
 	struct popup_info *ppi = p->data;
 	struct pane *d;
 
-	if (strcmp(ci->key, "Abort") == 0) {
-		pane_focus(ppi->target);
-		ppi->closing = 1;
-		call3("Abort", ppi->target, 0, NULL);
-		d = ppi->doc; ppi->doc = NULL;
-		if (d)
-			/* FIXME make this doc auto-close */
-			doc_destroy(d);
-		pane_close(ppi->popup);
-		return 1;
-	}
 	if (strcmp(ci->key, "Return") == 0) {
 		char *key, *str;
 
