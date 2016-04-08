@@ -32,7 +32,6 @@
 struct popup_info {
 	struct pane	*target, *popup;
 	char		*style;
-	int closing;
 };
 
 DEF_CMD(text_size_callback)
@@ -90,7 +89,9 @@ DEF_CMD(popup_handle)
 	}
 
 	if (strcmp(ci->key, "Notify:Close") == 0) {
-		if (ci->focus == ppi->target && !ppi->closing) {
+		if (ci->focus == ppi->target) {
+			/* target is closing, so we close too */
+			ppi->target = NULL;
 			pane_close(p);
 		}
 		return 1;
@@ -98,7 +99,6 @@ DEF_CMD(popup_handle)
 
 	if (strcmp(ci->key, "Abort") == 0) {
 		pane_focus(ppi->target);
-		ppi->closing = 1;
 		call3("Abort", ppi->target, 0, NULL);
 		pane_close(ppi->popup);
 		return 1;
@@ -114,15 +114,16 @@ DEF_CMD(popup_handle)
 
 	if (strcmp(ci->key, "popup:close") == 0) {
 		char *key, *str;
+		struct pane *target = ppi->target;
 
-		ppi->closing = 1;
-		pane_focus(ppi->target);
+		pane_focus(target);
 		key = pane_attr_get(ci->focus, "done-key");
 		if (!key)
 			key = "PopupDone";
 		str = ci->str;
-		call5(key, ppi->target, 1, NULL, str, 0);
 		pane_close(ppi->popup);
+		/* This pane is closed now, ppi is gone. Be careful */
+		call5(key, target, 1, NULL, str, 0);
 		return 1;
 	}
 
@@ -168,7 +169,6 @@ DEF_CMD(popup_attach)
 	ppi->target = ci->focus;
 	ppi->popup = pane_register(root, z, &popup_handle, ppi, NULL);
 	ppi->style = style;
-	ppi->closing = 0;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
 		if (strchr(style, "TLBR"[i]) == NULL)
