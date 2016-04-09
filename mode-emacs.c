@@ -299,7 +299,7 @@ DEF_CMD(emacs_findfile)
 			path = realpath(".", buf);
 		if (!path)
 			path = "/";
-		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2", NULL);
+		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2", path);
 		if (!p)
 			return 0;
 
@@ -313,8 +313,6 @@ DEF_CMD(emacs_findfile)
 			attr_set_str(&p->attrs, "done-key", "File Found", -1);
 		}
 		call5("doc:set-name", p, 0, NULL, "Find File", 0);
-		if (path)
-			call5("Replace", p, 0, NULL, path, 0);
 
 		pane_register(pane_final_child(p), 0, &find_handle.c, "file", NULL);
 		return 1;
@@ -387,11 +385,10 @@ REDEF_CMD(emacs_file_complete)
 	}
 	docp = doc_open(ci->home, fd, d);
 	close(fd);
-	pop = call_pane7("attach-popup", ci->focus, 0, NULL, 0,
-			 "DM1r", pane_attr_get(docp, "doc-name"));
+	pop = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "DM1r", NULL);
 	if (!pop)
 		return -1;
-	par = pane_final_child(pop);
+	par = doc_attach_view(pop, docp, NULL);
 
 	attr_set_str(&par->attrs, "line-format", "%+name%suffix", -1);
 	attr_set_str(&par->attrs, "heading", "", -1);
@@ -427,7 +424,7 @@ DEF_CMD(emacs_finddoc)
 
 	if (strncmp(ci->key, "Doc Found", 9) != 0) {
 
-		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2", NULL);
+		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2", "");
 		if (!p)
 			return 0;
 
@@ -471,15 +468,17 @@ REDEF_CMD(emacs_doc_complete)
 	 * Attach the 'docs' document as a completing popup menu
 	 */
 	char *str = doc_getstr(ci->focus, NULL);
-	struct pane *par, *pop;
+	struct pane *par, *pop, *docs;
 	struct call_return cr;
 	int ret;
 
 	pop = call_pane7("attach-popup", ci->focus, 0, NULL, 0,
-			 "DM1r", "*Documents*");
+			 "DM1r", NULL);
 	if (!pop)
 		return -1;
-	par = pane_final_child(pop);
+	docs = call_pane7("docs:byname", ci->focus, 0, NULL,
+			  0, NULL, NULL);
+	par = doc_attach_view(pop, docs, NULL);
 
 	attr_set_str(&par->attrs, "line-format", "%+name", -1);
 	attr_set_str(&par->attrs, "heading", "", -1);
@@ -568,7 +567,7 @@ DEF_CMD(emacs_search)
 
 	if (strcmp(ci->key, "Search String") != 0) {
 		struct pane *p = call_pane7("attach-popup", ci->focus, 0, NULL,
-					    0, "TR2", NULL);
+					    0, "TR2", "");
 
 		if (!p)
 			return 0;

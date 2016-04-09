@@ -142,7 +142,7 @@ DEF_CMD(popup_attach)
 	 * 1234 - how many quarters of width to use.(default 2);
 	 * r  - allow recursive popup
 	 */
-	struct pane *root, *p;
+	struct pane *root;
 	struct popup_info *ppi = malloc(sizeof(*ppi));
 	char *style = ci->str;
 	char border[4];
@@ -180,27 +180,14 @@ DEF_CMD(popup_attach)
 	attr_set_str(&ppi->popup->attrs, "render-wrap", "no", -1);
 
 	pane_add_notify(ppi->popup, ppi->target, "Notify:Close");
+	pane_focus(ppi->popup);
 
 	if (ci->str2) {
-		struct pane *dp = call_pane7("docs:byname", ci->focus, 0, NULL, 0,
-					     ci->str2, NULL);
+		struct pane *p = doc_from_text(ppi->popup, "*popup*", ci->str2);
 
-		if (!dp)
-			/* FIXME clean up*/
-			return -1;
-		p = doc_attach_view(ppi->popup, dp, NULL);
-		if (!p)
-			/* FIXME clean up*/
-			return -1;
-	} else {
-		struct pane *d;
-		d = doc_new(root, "text");
-		call5("doc:set-name", d, 0, NULL, "*popup*", 0);
-		call5("global-multicall-doc:appeared-", d, 1, NULL, NULL, 0);
-		p = doc_attach_view(ppi->popup, d, NULL);
+		call3("Move-File", p, 1, NULL);
 		call3("doc:autoclose", p, 1, NULL);
 	}
-	pane_focus(p);
 
 	return comm_call(ci->comm2, "callback:attach", ppi->popup, 0, NULL, NULL, 0);
 }
