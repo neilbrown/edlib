@@ -442,7 +442,7 @@ DEF_CMD(emacs_finddoc)
 		}
 		call5("doc:set-name", p, 0, NULL, "Find Document", 0);
 
-		pane_register(p, 0, &find_handle.c, "doc", NULL);
+		pane_register(pane_final_child(p), 0, &find_handle.c, "doc", NULL);
 		return 1;
 	}
 
