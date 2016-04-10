@@ -299,7 +299,7 @@ DEF_CMD(emacs_findfile)
 			path = realpath(".", buf);
 		if (!path)
 			path = "/";
-		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2", path);
+		p = call_pane7("PopupTile", ci->focus, 0, NULL, 0, "D2", path);
 		if (!p)
 			return 0;
 
@@ -379,7 +379,7 @@ REDEF_CMD(emacs_file_complete)
 	}
 	docp = doc_open(ci->home, fd, d);
 	close(fd);
-	pop = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "DM1r", NULL);
+	pop = call_pane7("PopupTile", ci->focus, 0, NULL, 0, "DM1r", NULL);
 	if (!pop)
 		return -1;
 	par = doc_attach_view(pop, docp, NULL);
@@ -418,7 +418,7 @@ DEF_CMD(emacs_finddoc)
 
 	if (strncmp(ci->key, "Doc Found", 9) != 0) {
 
-		p = call_pane7("attach-popup", ci->focus, 0, NULL, 0, "D2", "");
+		p = call_pane7("PopupTile", ci->focus, 0, NULL, 0, "D2", "");
 		if (!p)
 			return 0;
 
@@ -462,7 +462,7 @@ REDEF_CMD(emacs_doc_complete)
 	struct call_return cr;
 	int ret;
 
-	pop = call_pane7("attach-popup", ci->focus, 0, NULL, 0,
+	pop = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
 			 "DM1r", NULL);
 	if (!pop)
 		return -1;
@@ -552,7 +552,7 @@ DEF_CMD(emacs_search)
 	struct mark *m;
 
 	if (strcmp(ci->key, "Search String") != 0) {
-		struct pane *p = call_pane7("attach-popup", ci->focus, 0, NULL,
+		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL,
 					    0, "TR2", "");
 
 		if (!p)

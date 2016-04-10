@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
 	doc_new(ed, "docs");
 	call5("global-load-module", ed, 0, NULL, "lib-linecount", 0);
 	call5("global-load-module", ed, 0, NULL, "lib-search", 0);
+	call5("global-load-module", ed, 0, NULL, "lib-popup", 0);
 	call5("global-load-module", ed, 0, NULL, "lang-python", 0);
 	call5("global-load-module", ed, 0, NULL, "doc-text", 0);
 	call5("global-load-module", ed, 0, NULL, "doc-dir", 0);

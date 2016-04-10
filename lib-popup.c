@@ -16,7 +16,7 @@
  * The target pane must not disappear while the popup is active.
  * I need to find a way to control that.
  *
- * A popup is created by "attach-popup"
+ * A popup is created by "PopupTile"
  * A prefix to be displayed can be added by setting "prefix" on the popup pane.
  * The event sent when the popup is closed can be set by setting attribute "done-key"
  * otherwise "PopupDone" is used.
@@ -194,6 +194,6 @@ DEF_CMD(popup_attach)
 
 void edlib_init(struct pane *ed)
 {
-	call_comm("global-set-command", ed, 0, NULL, "attach-popup",
+	call_comm("global-set-command", ed, 0, NULL, "PopupTile",
 		  0, &popup_attach);
 }
