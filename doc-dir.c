@@ -529,7 +529,7 @@ DEF_CMD(dir_open)
 	struct doc *d = p->data;
 	struct directory *dr = container_of(d, struct directory, doc);
 	struct dir_ent *de = ci->mark->ref.d;
-	struct pane *par = p->parent;
+	struct pane *par;
 	int fd;
 	char *fname = NULL;
 
@@ -539,23 +539,11 @@ DEF_CMD(dir_open)
 
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
-	if (strcmp(ci->key, "Chr-o") == 0) {
-		struct pane *p2 = call_pane("OtherPane", ci->focus, 0, NULL, 0);
-		if (p2) {
-			par = p2;
-			p = pane_child(par);
-		}
-	} else {
-		struct pane *p2 = call_pane("ThisPane", ci->focus, 0, NULL, 0);
-		if (p2) {
-			par = p2;
-			p = pane_child(par);
-		}
-	}
-	if (!par)
-		return -1;
-	if (p)
-		pane_close(p);
+	if (strcmp(ci->key, "Chr-o") == 0)
+		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+	else
+		par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
+
 	if (fd >= 0) {
 		p = doc_open(par, fd, fname);
 		if (p)
@@ -587,26 +575,24 @@ DEF_CMD(dir_open_alt)
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
 
-	par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
-	if (!par)
-		return -1;
-
-	p = pane_child(par);
 
 	if (fd >= 0) {
 		struct pane *new = doc_open(par, fd, fname);
 		if (new) {
 			renderer = pane_attr_get(new, buf);
 			if (renderer) {
-				if (p)
-					pane_close(p);
+				par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
+				if (!par)
+					return -1;
+
 				p = doc_attach_view(par, new, renderer);
 			}
 		}
 		close(fd);
 	} else {
-		if (p)
-			pane_close(p);
+		par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
+		if (!par)
+			return -1;
 		p = doc_from_text(par, fname, "File not found\n");
 	}
 	free(fname);

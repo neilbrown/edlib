@@ -700,6 +700,9 @@ DEF_CMD(tile_other)
 
 	if (!list_empty(&ti->tiles)) {
 		struct tileinfo *ti2 = list_next_entry(ti, tiles);
+		struct pane *c = pane_child(ti2->p);
+		if (c)
+			pane_close(c);
 		return comm_call(ci->comm2, "callback:pane", ti2->p, 0,
 				 NULL, NULL, 0);
 	}
@@ -715,6 +718,14 @@ DEF_CMD(tile_other)
 
 DEF_CMD(tile_this)
 {
+	struct tileinfo *ti = ci->home->data;
+	if (!ti->leaf)
+		return 0;
+	if (ci->extra) {
+		struct pane *child = pane_child(ci->home);
+		if (child)
+			pane_close(child);
+	}
 	return comm_call(ci->comm2, "callback:pane", ci->home, 0,
 			 NULL, NULL, 0);
 }
@@ -723,10 +734,10 @@ DEF_CMD(tile_root)
 {
 	struct pane *p = ci->home;
 	struct tileinfo *ti = p->data;
-	while (ti->direction != Neither) {
-		p = p->parent;
-		ti = p->data;
-	}
+
+	if (ti->direction != Neither)
+		return 0;
+
 	return comm_call(ci->comm2, "callback:pane", p, 0,
 			 NULL, NULL, 0);
 }

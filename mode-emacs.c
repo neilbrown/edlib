@@ -319,18 +319,12 @@ DEF_CMD(emacs_findfile)
 	}
 
 	if (strcmp(ci->key, "File Found Other Window") == 0)
-		p = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
 	else
-		p = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+		par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
 
-	if (!p)
+	if (!par)
 		return -1;
-
-	par = p;
-	/* par is the tile */
-	p = pane_child(par);
-	if (p)
-		pane_close(p);
 
 	fd = open(ci->str, O_RDONLY);
 	if (fd >= 0) {
@@ -443,21 +437,17 @@ DEF_CMD(emacs_finddoc)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "Doc Found Other Window") == 0)
-		p = call_pane("OtherPane", ci->focus, 0, NULL, 0);
-	else
-		p = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	p = call_pane7("docs:byname", ci->focus, 0, NULL, 0, ci->str, NULL);
 	if (!p)
 		return -1;
 
-	par = p;
-	/* par is the tile */
-
-	p = call_pane7("docs:byname", ci->focus, 0, NULL, 0, ci->str, NULL);
+	if (strcmp(ci->key, "Doc Found Other Window") == 0)
+		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+	else
+		par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
 	if (!p)
-		return 1;
-	if (par->focus)
-		pane_close(par->focus);
+		return -1;
+
 	p = doc_attach_view(par, p, NULL);
 	return !!p;
 }
@@ -512,17 +502,13 @@ DEF_CMD(emacs_viewdocs)
 	struct pane *p, *par;
 	struct pane *docs;
 
-	par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
-	if (!par)
-		return -1;
-	/* par is the tile */
-
 	docs = call_pane7("docs:byname", ci->focus, 0, NULL, 0, "*Documents*", NULL);
 	if (!docs)
-		return 1;
-	p = pane_child(par);
-	if (p)
-		pane_close(p);
+		return -1;
+	par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
+	if (!par)
+		return -1;
+
 	p = doc_attach_view(par, docs, NULL);
 	return !!p;
 }

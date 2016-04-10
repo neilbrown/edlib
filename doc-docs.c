@@ -386,12 +386,9 @@ DEF_CMD(docs_open)
 	if (strcmp(ci->key, "Chr-o") == 0)
 		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
 	else
-		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+		par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
 	if (!par)
 		return -1;
-	p = pane_child(par);
-	if (p)
-		pane_close(p);
 	p = doc_attach_view(par, dp, NULL);
 	if (p) {
 		pane_focus(p);
@@ -418,12 +415,9 @@ DEF_CMD(docs_open_alt)
 	if (!renderer)
 		return -1;
 
-	par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
 	if (!par)
 		return -1;
-	p = pane_child(par);
-	if (p)
-		pane_close(p);
 	p = doc_attach_view(par, dp, renderer);
 	if (p) {
 		pane_focus(p);
