@@ -120,10 +120,12 @@ DEF_CMD(popup_handle)
 		key = pane_attr_get(ci->focus, "done-key");
 		if (!key)
 			key = "PopupDone";
+		key = strdup(key);
 		str = ci->str;
 		pane_close(ppi->popup);
 		/* This pane is closed now, ppi is gone. Be careful */
 		call5(key, target, 1, NULL, str, 0);
+		free(key);
 		return 1;
 	}
 
