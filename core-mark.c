@@ -69,6 +69,9 @@
 
 #include "core.h"
 
+static int mark_same_pane_exact(struct pane *p, struct mark *m1, struct mark *m2,
+				struct cmd_info *ci);
+
 /* seq numbers added to the end are given a gap of 128.
  * seq numbers at other locations are placed at mean of before and after.
  * If there is no room, seq add 256 to the 'next' seq, 255 to the one
@@ -538,7 +541,7 @@ wint_t mark_next_pane(struct pane *p, struct mark *m)
 	struct cmd_info same_ci = {0};
 
 	while ((m2 = doc_next_mark_all(m)) != NULL &&
-	       mark_same_pane(p, m, m2, &same_ci))
+	       mark_same_pane_exact(p, m, m2, &same_ci))
 		mark_forward_over(m, m2);
 
 	ret = mark_step_pane(p, m, 1, 1, NULL);
@@ -547,7 +550,7 @@ wint_t mark_next_pane(struct pane *p, struct mark *m)
 
 /* FIXME do I need to do this - is it precise enough? */
 	while ((m2 = doc_next_mark_all(m)) != NULL &&
-	       mark_same_pane(p, m, m2, &same_ci))
+	       mark_same_pane_exact(p, m, m2, &same_ci))
 		mark_forward_over(m, m2);
 	return ret;
 }
@@ -577,14 +580,14 @@ wint_t mark_prev_pane(struct pane *p, struct mark *m)
 	struct cmd_info same_ci = {0};
 
 	while ((mp = doc_prev_mark_all(m)) != NULL &&
-	       mark_same_pane(p, m, mp, &same_ci))
+	       mark_same_pane_exact(p, m, mp, &same_ci))
 		mark_backward_over(m, mp);
 
 	ret = mark_step_pane(p, m, 0, 1, NULL);
 	if (ret == WEOF)
 		return ret;
 	while ((mp = doc_prev_mark_all(m)) != NULL &&
-	       mark_same_pane(p, m, mp, &same_ci))
+	       mark_same_pane_exact(p, m, mp, &same_ci))
 		mark_backward_over(m, mp);
 	return ret;
 }
@@ -763,6 +766,20 @@ int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2,
 	if (!ci)
 		ci = &ci2;
 	ci->key = "doc:mark-same";
+	ci->mark = m1;
+	ci->mark2 = m2;
+	ci->focus = p;
+	return key_handle(ci) == 1;
+}
+
+static int mark_same_pane_exact(struct pane *p, struct mark *m1, struct mark *m2,
+				struct cmd_info *ci)
+{
+	struct cmd_info ci2 = {0};
+
+	if (!ci)
+		ci = &ci2;
+	ci->key = "doc:mark-same-exact";
 	ci->mark = m1;
 	ci->mark2 = m2;
 	ci->focus = p;

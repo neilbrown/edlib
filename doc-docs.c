@@ -491,6 +491,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:get-attr", &docs_doc_get_attr);
 	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "doc:mark-same", &docs_mark_same);
+	key_add(docs_map, "doc:mark-same-exact", &docs_mark_same);
 	key_add(docs_map, "doc:step", &docs_step);
 	key_add(docs_map, "doc:free", &docs_destroy);
 	key_add(docs_map, "doc:check_name", &doc_checkname);

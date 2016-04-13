@@ -1726,5 +1726,6 @@ void edlib_init(struct pane *ed)
 	key_add(text_map, "get-attr", &text_get_attr);
 	key_add(text_map, "doc:replace", &text_replace);
 	key_add(text_map, "doc:mark-same", &text_mark_same);
+	key_add(text_map, "doc:mark-same-exact", &text_mark_same);
 	key_add(text_map, "doc:step", &text_step);
 }

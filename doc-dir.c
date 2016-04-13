@@ -634,5 +634,6 @@ void edlib_init(struct pane *ed)
 	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
 	key_add(doc_map, "get-attr", &dir_get_attr);
 	key_add(doc_map, "doc:mark-same", &dir_mark_same);
+	key_add(doc_map, "doc:mark-same-exact", &dir_mark_same);
 	key_add(doc_map, "doc:step", &dir_step);
 }
