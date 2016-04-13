@@ -36,9 +36,9 @@ DEF_CMD(render_line)
 	if (!ci->mark || !ci->focus)
 		return -1;
 
-	if (pm && !mark_same_pane(ci->home, pm, m, NULL))
+	if (pm && !mark_same_pane(ci->focus, pm, m, NULL))
 		pm = NULL;
-	ch = doc_following_pane(ci->home, m);
+	ch = doc_following_pane(ci->focus, m);
 	if (ch == WEOF)
 		return 1;
 	buf_init(&ret);
@@ -160,7 +160,7 @@ DEF_CMD(render_line_prev)
 	if (RPT_NUM(ci) == 0)
 		/* always at start-of-line */
 		return 1;
-	if (mark_prev_pane(ci->home, m) == WEOF)
+	if (mark_prev_pane(ci->focus, m) == WEOF)
 		/* Hit start-of-file */
 		return -1;
 	return 1;
