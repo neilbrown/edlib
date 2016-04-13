@@ -1066,7 +1066,7 @@ DEF_CMD(text_new)
 
 	t->alloc = NULL;
 	INIT_LIST_HEAD(&t->text);
-	t->undo = t->redo = NULL;
+	t->saved = t->undo = t->redo = NULL;
 	doc_init(&t->doc);
 	t->fname = NULL;
 	text_new_alloc(t, 0);
