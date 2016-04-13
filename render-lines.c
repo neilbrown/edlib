@@ -225,7 +225,7 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w,
 			update_line_height_attr(p, h, a, w, b, "", scale);
 		} else {
 			/* strip back to ",," */
-			if (attr.len > 0)
+			if (attr.len >= 2)
 				attr.len -= 2;
 			while (attr.len > 0 &&
 			       (attr.b[attr.len] != ',' ||
