@@ -582,10 +582,7 @@ class PresenterPane(edlib.Pane):
                 m = self.find_page(mark)
                 if m:
                     mark.to_mark(m)
-            f = self
-            while f.focus:
-                f = f.focus
-            f.call("Move-View-Pos", mark)
+            self.final.call("Move-View-Pos", mark)
             return 1
 
         if key == "Close":
