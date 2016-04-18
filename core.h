@@ -67,6 +67,7 @@ struct notifier {
 	struct pane		*notifiee;
 	char			*notification;
 	struct list_head	notifier_link, notifiee_link;
+	int			noted;
 };
 void pane_add_notify(struct pane *target, struct pane *source, char *msg);
 int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2,

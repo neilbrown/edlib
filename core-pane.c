@@ -196,16 +196,18 @@ void pane_add_notify(struct pane *target, struct pane *source, char *msg)
 
 	n->notifiee = target;
 	n->notification = strdup(msg);
+	n->noted = 1;
 	list_add(&n->notifier_link, &source->notifiees);
 	list_add(&n->notifiee_link, &target->notifiers);
 }
 
 void pane_drop_notifiers(struct pane *p, char *notification)
 {
-	while (!list_empty(&p->notifiers)) {
-		struct notifier *n = list_first_entry(&p->notifiers,
-						      struct notifier,
-						      notifiee_link);
+	struct list_head *t;
+	struct notifier *n;
+
+	list_for_each_entry_safe(n, t, &p->notifiers, notifiee_link) {
+
 		if (notification && strcmp(notification, n->notification) != 0)
 			continue;
 		list_del_init(&n->notifiee_link);
@@ -239,15 +241,22 @@ int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark 
 	 */
 	int ret = 0;
 	struct notifier *n;
-	struct list_head *t;
 
-	list_for_each_entry_safe(n, t, &p->notifiees, notifier_link)
+	list_for_each_entry(n, &p->notifiees, notifier_link)
+		n->noted = 0;
+restart:
+	list_for_each_entry(n, &p->notifiees, notifier_link) {
+		if (n->noted)
+			continue;
+		n->noted = 1;
 		if (strcmp(n->notification, notification) == 0) {
 			int r = comm_call_pane(n->notifiee, n->notification, p,
 					       numeric, m, str, 0, m2);
 			if (abs(r) > abs(ret))
 				ret = r;
+			goto restart;
 		}
+	}
 	return ret;
 }
 
