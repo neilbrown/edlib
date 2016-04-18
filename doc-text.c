@@ -298,6 +298,7 @@ DEF_CMD(text_save_file)
 	struct text *t = container_of(d, struct text, doc);
 	int ret;
 	char *msg;
+	int change_status = 0;
 
 	if (!t->fname) {
 		asprintf(&msg, "** No file name known for %s ***", d->name);
@@ -307,12 +308,14 @@ DEF_CMD(text_save_file)
 		if (ret == 0) {
 			asprintf(&msg, "Successfully wrote %s", t->fname);
 			t->saved = t->undo;
-			call3("doc:status-changed", d->home, 0, NULL);
+			change_status = 1;
 		} else
 			asprintf(&msg, "*** Faild to write %s ***", t->fname);
 	}
 	call5("Message", ci->focus, 0, NULL, msg, 0);
 	free(msg);
+	if (change_status)
+		call3("doc:status-changed", d->home, 0, NULL);
 	if (ret == 0)
 		return 1;
 	return -1;
@@ -667,6 +670,7 @@ static void text_del(struct text *t, struct doc_ref *pos, int len, bool *first_e
 static int text_undo(struct text *t, struct doc_ref *start, struct doc_ref *end)
 {
 	struct text_edit *e = t->undo;
+	int status_change = 0;
 
 	if (!e)
 		return 0;
@@ -697,7 +701,7 @@ static int text_undo(struct text *t, struct doc_ref *start, struct doc_ref *end)
 			end->o = e->target->end;
 	}
 	if (t->undo == t->saved || e->next == t->saved)
-		call3("doc:status-changed", t->doc.home, 0, NULL);
+		status_change = 1;
 	t->undo = e->next;
 	e->next = t->redo;
 	t->redo = e;
@@ -728,6 +732,8 @@ static int text_undo(struct text *t, struct doc_ref *start, struct doc_ref *end)
 				c->end += e->len;
 		}
 	}
+	if (status_change)
+		call3("doc:status-changed", t->doc.home, 0, NULL);
 	if (e->first)
 		return 1;
 	else
@@ -1400,6 +1406,7 @@ DEF_CMD(text_replace)
 	char *str = ci->str;
 	bool first = ci->extra;
 	struct mark *early = NULL;
+	int status_change = 0;
 
 	/* First delete, then insert */
 	if (end && !text_ref_same(t, &pm->ref, &end->ref)) {
@@ -1407,7 +1414,7 @@ DEF_CMD(text_replace)
 		int l;
 
 		if (t->undo == t->saved)
-			call3("doc:status-changed", d->home, 0, NULL);
+			status_change = 1;
 
 		if (!mark_ordered(pm, end)) {
 			myend = mark_dup(pm, 1);
@@ -1437,7 +1444,7 @@ DEF_CMD(text_replace)
 		struct mark *m;
 
 		if (t->undo == t->saved)
-			call3("doc:status-changed", d->home, 0, NULL);
+			status_change = 1;
 
 		text_add_str(t, &pm->ref, str, &start, &first);
 		for (m = doc_prev_mark_all(pm);
@@ -1451,6 +1458,8 @@ DEF_CMD(text_replace)
 		text_check_consistent(t);
 
 	}
+	if (status_change)
+		call3("doc:status-changed", d->home, 0, NULL);
 	doc_notify_change(&t->doc, pm, early);
 	return first ? 1 : 2;
 }
