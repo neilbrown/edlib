@@ -541,9 +541,10 @@ DEF_CMD(emacs_kill_doc)
 
 DEF_CMD(emacs_save_all)
 {
-	if (ci->numeric == NO_NUMERIC)
-		return call3("docs:save-interactive", ci->focus, 0, 0);
-	else
+	if (ci->numeric == NO_NUMERIC) {
+		struct pane *p = call_pane("ThisPane", ci->focus, 0, NULL, 1);
+		return call3("docs:show-modified", p, 0, 0);
+	} else
 		return call3("docs:save-all", ci->focus, 0, 0);
 }
 

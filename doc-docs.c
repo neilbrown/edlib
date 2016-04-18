@@ -131,6 +131,128 @@ DEF_CMD(doc_checkname)
 	return 1;
 }
 
+/*
+ * Interactive saving of files, particularly as happens when the editor
+ * is exiting, pops up a document-list window which only display
+ * documents which need saving.  The can be saved or killed, both of which
+ * actions removes them from the list.  When the list is empty an event can be
+ * sent back to the pane that requested the popup.
+ */
+
+static int mark_is_modified(struct pane *p, struct mark *m)
+{
+	char *fn, *mod;
+
+	mod = pane_mark_attr(p, m, 1, "doc-modified");
+	if (!mod || strcmp(mod, "yes") != 0)
+		return 0;
+	fn = pane_mark_attr(p, m, 1, "filename");
+	return fn && *fn;
+}
+
+static void mark_to_modified(struct pane *p, struct mark *m)
+{
+	/* If 'm' isn't just before a savable document, move it forward */
+	while (!mark_is_modified(p, m))
+		if (mark_next_pane(p, m) == WEOF)
+			break;
+}
+
+static wchar_t prev_modified(struct pane *p, struct mark *m)
+{
+	if (mark_prev_pane(p, m) == WEOF)
+		return WEOF;
+	while (mark_is_modified(p, m))
+		if (mark_prev_pane(p, m) == WEOF)
+			return WEOF;
+
+	return doc_following_pane(p, m);
+}
+
+DEF_CMD(docs_modified_handle)
+{
+	struct mark *m;
+
+	if (strncmp(ci->key, "render-line", 4) == 0 &&
+	    ci->mark2) {
+		/* mark2 is point - now is a good time to ensure it is
+		 * on a safe place
+		 */
+		mark_to_modified(ci->home->parent, ci->mark2);
+		return 0;
+	}
+
+	if (strcmp(ci->key, "Notify:Replace") == 0) {
+		call3("render-lines:redraw", ci->home, 0, NULL);
+		return 1;
+	}
+
+	if (strcmp(ci->key, "doc:step") == 0) {
+		/* Only permit stepping to a document that is modified and
+		 * has a file name
+		 */
+		wint_t ch, ret;
+		mark_to_modified(ci->home->parent, ci->mark);
+		if (ci->numeric) {
+			ret = doc_following_pane(ci->home->parent, ci->mark);
+			if (ci->extra && ret != WEOF) {
+				mark_next_pane(ci->home->parent, ci->mark);
+				mark_to_modified(ci->home->parent, ci->mark);
+			}
+		} else {
+			m = mark_dup(ci->mark, 1);
+			ch = prev_modified(ci->home->parent, m);
+			if (ch == WEOF)
+				ret = ch;
+			else {
+				if (ci->extra)
+					mark_to_mark(ci->mark, m);
+				ret = mark_next_pane(ci->home->parent, m);
+			}
+			mark_free(m);
+		}
+		return ret;
+	}
+	if (strcmp(ci->key, "doc:get-attr") == 0) {
+		char *attr;
+		m = mark_dup(ci->mark, 1);
+		mark_to_modified(ci->home->parent, m);
+		if (!ci->numeric)
+			prev_modified(ci->home->parent, m);
+		attr = pane_mark_attr(ci->home->parent, m, 1, ci->str);
+		mark_free(m);
+		comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, attr, 0);
+		return 1;
+	}
+	if (strcmp(ci->key, "doc:mark-same") == 0) {
+		struct docs *doc = ci->home->data;
+		struct pane *p1 = ci->mark->ref.p;
+		struct pane *p2 = ci->mark2->ref.p;
+		list_for_each_entry_from(p1, &doc->doc.home->children, siblings) {
+			char *fn = pane_attr_get(p1, "filename");
+			char *mod = pane_attr_get(p1, "doc-modified");
+			if (fn && *fn && mod && strcmp(mod, "yes") == 0)
+				break;
+		}
+		list_for_each_entry_from(p2, &doc->doc.home->children, siblings) {
+			char *fn = pane_attr_get(p2, "filename");
+			char *mod = pane_attr_get(p2, "doc-modified");
+			if (fn && *fn && mod && strcmp(mod, "yes") == 0)
+				break;
+		}
+		if (p1 == p2)
+			return 1;
+		else
+			return 2;
+	}
+	if (strcmp(ci->key, "get-attr") == 0 &&
+	    strcmp(ci->str, "doc-name") == 0)
+		return comm_call(ci->comm2, "callback:get_attr", ci->focus,
+				 0, NULL, "*Modified Documents*", 0);
+
+	return 0;
+}
+
 DEF_CMD(docs_callback)
 {
 	struct docs *doc = container_of(ci->comm, struct docs, callback);
@@ -183,6 +305,13 @@ DEF_CMD(docs_callback)
 	if (strcmp(ci->key, "docs:save-all") == 0) {
 		list_for_each_entry(p, &doc->doc.home->children, siblings)
 			doc_save(p, NULL);
+		return 1;
+	}
+
+	if (strcmp(ci->key, "docs:show-modified") == 0) {
+		struct pane *p = doc_attach_view(ci->focus, doc->doc.home, NULL);
+		p = pane_register(pane_final_child(p), 0, &docs_modified_handle, doc, NULL);
+		call3("Request:Notify:Replace", p, 0, NULL);
 		return 1;
 	}
 
