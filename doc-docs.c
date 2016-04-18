@@ -183,7 +183,14 @@ DEF_CMD(docs_modified_handle)
 	}
 
 	if (strcmp(ci->key, "Notify:Replace") == 0) {
+		int all_gone;
+		m = vmark_new(ci->home->parent, MARK_UNGROUPED);
+		mark_to_modified(ci->home->parent, m);
+		all_gone = (m->ref.p == NULL);
+		mark_free(m);
 		call3("render-lines:redraw", ci->home, 0, NULL);
+		if (all_gone)
+			call5("popup:close", ci->home, 0, NULL, NULL, 0);
 		return 1;
 	}
 
