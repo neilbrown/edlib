@@ -773,16 +773,17 @@ static void find_lines(struct mark *pm, struct pane *p, struct pane *focus)
 		}
 		if (!found_end && lines_below == 0) {
 			/* step forwards */
+			struct mark *next;
 			if (!end->mdata)
 				call_render_line(focus, end);
-			if (!end->mdata)
+			next = vmark_next(end);
+			if (!end->mdata || !next)
 				found_end = 1;
 			else {
 				int h = 0;
 				render_line(p, focus, end->mdata, &h, 0, scale,
 					    NULL, NULL, NULL, &found_end);
-				end = vmark_next(end);
-				ASSERT(end != NULL);
+				end = next;
 				if (h)
 					lines_below = h;
 				else
