@@ -605,6 +605,12 @@ DEF_CMD(docs_kill)
 	return 1;
 }
 
+DEF_CMD(docs_toggle)
+{
+	struct pane *dp = ci->mark->ref.p;
+	return call3("doc:modified", dp, 0, NULL);
+}
+
 DEF_CMD(docs_destroy)
 {
 	/* Not allowed to destroy this document */
@@ -648,6 +654,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "Chr-q", &docs_bury);
 	key_add(docs_map, "Chr-s", &docs_save);
 	key_add(docs_map, "Chr-k", &docs_kill);
+	key_add(docs_map, "Chr-%", &docs_toggle);
 	key_add_range(docs_map, "Chr-A", "Chr-Z", &docs_open_alt);
 
 	key_add(docs_map, "ChildClosed", &docs_child_closed);

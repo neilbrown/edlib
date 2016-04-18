@@ -1562,6 +1562,24 @@ DEF_CMD(text_set_attr)
 	return attr_set_str(&c->attrs, attr, val, o);
 }
 
+DEF_CMD(text_modified)
+{
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+
+	if (ci->numeric == 0) {
+		if (t->saved == t->undo)
+			t->saved = NULL;
+		else
+			t->saved = t->undo;
+	} else if (ci->numeric > 1)
+		t->saved = NULL;
+	else
+		t->saved = t->undo;
+	call3("doc:status-changed", d->home, 0, NULL);
+	return 1;
+}
+
 DEF_CMD(text_destroy)
 {
 	struct doc *d = ci->home->data;
@@ -1737,4 +1755,5 @@ void edlib_init(struct pane *ed)
 	key_add(text_map, "doc:mark-same", &text_mark_same);
 	key_add(text_map, "doc:mark-same-exact", &text_mark_same);
 	key_add(text_map, "doc:step", &text_step);
+	key_add(text_map, "doc:modified", &text_modified);
 }
