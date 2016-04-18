@@ -173,7 +173,15 @@ DEF_CMD(docs_modified_handle)
 {
 	struct mark *m;
 
-	if (strncmp(ci->key, "render-line", 4) == 0 &&
+	if (strncmp(ci->key, "Chr-", 4) == 0) {
+		if (strlen(ci->key) == 5 &&
+		    strchr("sk%", ci->key[4]) != NULL)
+			return 0;
+		/* Suppress all others */
+		return 1;
+	}
+
+	if (strcmp(ci->key, "render-line") == 0 &&
 	    ci->mark2) {
 		/* mark2 is point - now is a good time to ensure it is
 		 * on a safe place
