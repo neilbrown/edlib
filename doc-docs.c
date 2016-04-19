@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright Neil Brown ©2016 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *

@@ -188,7 +188,13 @@ DEF_CMD(emacs_exit)
 {
 	struct pane *p = ci->home;
 
-	call3("event:deactivate", p, 0, NULL);
+	if (ci->numeric == NO_NUMERIC) {
+		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
+					    "DM", NULL);
+		attr_set_str(&p->attrs, "done-key", "event:deactivate", -1);
+		return call3("docs:show-modified", p, 0, 0);
+	} else
+		call3("event:deactivate", p, 0, NULL);
 	return 1;
 }
 
