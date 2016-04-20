@@ -1,0 +1,72 @@
+# -*- coding: utf-8 -*-
+# Copyright Neil Brown ©2016 <neil@brown.name>
+# May be distributed under terms of GPLv2 - see file:COPYING
+#
+
+import subprocess, os, fcntl
+
+class ShellPane(edlib.Pane):
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus, self.handle)
+
+    def run(self, cmd):
+        FNULL = open(os.devnull, 'r')
+        self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT,
+                                     stdin = FNULL)
+        FNULL.close()
+        if not self.pipe:
+            return False
+        fd = self.pipe.stdout.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+        self.call("event:read", fd, self.read)
+        return True
+
+    def read(self, key, focus, fd):
+        if not self.pipe:
+            return False
+        try:
+            r = os.read(self.pipe.stdout.fileno(), 1024)
+        except IOError:
+            return True
+        if r is None or len(r) == 0:
+            self.pipe.communicate()
+            self.pipe = None
+            self.call("Replace", "\nProcess Finished\n");
+            return False
+        self.call("Replace", r);
+        self.refresh()
+        return True
+
+    def handle(self, key, **a):
+        if key == "Close":
+            if self.pipe is not None:
+                self.pipe.terminate()
+                self.pipe.communicate()
+                self.pipe = None
+            self.release()
+            return 1
+        if key == "Abort":
+            if self.pipe is not None:
+                self.pipe.terminate()
+                self.pipe.communicate()
+                self.pipe = None
+                self.call("Replace", "\nProcess Aborted\n");
+            return 1
+
+def shell_attach(key, focus, comm2, str, **a):
+    m = edlib.Mark(focus)
+    focus.call("Move-File", 1)
+    focus.call("Replace", m)
+    p = ShellPane(focus)
+    if not p:
+        return -1;
+    if not p.run(str):
+        p.release()
+        return -1;
+    comm2("callback", p)
+    return 1
+
+editor.call("global-set-command", pane, "attach-shellcmd", shell_attach)

@@ -256,6 +256,8 @@ REDEF_CMD(emacs_doc_complete);
 DEF_CMD(find_complete)
 {
 	char *type = ci->home->data;
+	if (strcmp(type, "cmd") == 0)
+		return 0;
 	if (strcmp(type, "file") == 0)
 		return emacs_file_complete_func(ci);
 	else
@@ -519,6 +521,34 @@ DEF_CMD(emacs_viewdocs)
 	return !!p;
 }
 
+DEF_CMD(emacs_shell)
+{
+	char *name = "*Shell Command Output*";
+	struct pane *p, *doc, *par;
+	if (strcmp(ci->key, "Shell Command") != 0) {
+		p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
+			       "D2", "");
+		if (!p)
+			return 0;
+		attr_set_str(&p->attrs, "prefix", "Shell command: ", -1);
+		attr_set_str(&p->attrs, "done-key", "Shell Command", -1);
+		call5("doc:set-name", p, 0, NULL, "Shell Command", 0);
+		pane_register(pane_final_child(p), 0, &find_handle.c, "cmd", NULL);
+		return 1;
+	}
+	par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+	if (!par)
+		return -1;
+	/* Find or create "*Shell Command Output*" */
+	doc = call_pane7("docs:byname", ci->focus, 0, NULL, 0, name, NULL);
+	if (!doc)
+		doc = doc_from_text(par, name, "");
+	p = doc_attach(doc, doc);
+	call_pane7("attach-shellcmd", p, 0, NULL, 0, ci->str, NULL);
+	doc_attach_view(par, doc, NULL);
+	return 1;
+}
+
 DEF_CMD(emacs_meta)
 {
 	pane_set_mode(ci->focus, "M-");
@@ -649,6 +679,9 @@ static void emacs_init(void)
 	key_add(m, "Search String", &emacs_search);
 
 	key_add(m, "emCX-C-Chr-C", &emacs_exit);
+
+	key_add(m, "M-Chr-!", &emacs_shell);
+	key_add(m, "Shell Command", &emacs_shell);
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &emacs_num);
 	emacs_map = m;
