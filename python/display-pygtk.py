@@ -434,8 +434,8 @@ class events:
         gobject.io_add_watch(numeric, gobject.IO_IN, self.docall, comm2, focus, numeric)
         return 1
 
-    def docall(self, comm, focus, fd):
-        comm2.call("callback", focus, fd)
+    def docall(self, source, condition, comm2, focus, fd):
+        comm2("callback", focus, fd)
         return 1
 
     def signal(self, key, focus, comm2, numeric, **a):
