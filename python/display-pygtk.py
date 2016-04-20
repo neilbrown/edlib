@@ -44,6 +44,11 @@ class EdDisplay(gtk.Window):
 
     def handle(self, key, **a):
 
+        if key == "Refresh":
+            if a['numeric'] > 0:
+                self.text.queue_draw()
+            return 2
+
         if key == "Display:fullscreen":
             if a['numeric'] > 0:
                 self.fullscreen()
@@ -79,10 +84,10 @@ class EdDisplay(gtk.Window):
             if 'extra' in a:
                 scale = a['extra']
             fd = self.extract_font(attr, scale)
-            ctx = self.text.get_pango_context()
-            metric = ctx.get_metrics(fd)
-            self.text.modify_font(fd)
             layout = self.text.create_pango_layout(a["str"])
+            layout.set_font_description(fd)
+            ctx = layout.get_context()
+            metric = ctx.get_metrics(fd)
             ink,(x,y,width,height) = layout.get_pixel_extents()
             ascent = metric.get_ascent() / pango.SCALE
             cb = a["comm2"]
@@ -116,9 +121,9 @@ class EdDisplay(gtk.Window):
             if 'extra' in a:
                 scale = a['extra']
             fd = self.extract_font(attr, scale)
-            ctx = self.text.get_pango_context()
-            self.text.modify_font(fd)
             layout = self.text.create_pango_layout(a["str"])
+            layout.set_font_description(fd)
+            ctx = layout.get_context()
             fg, bg = self.get_colours(attr)
             pm = self.get_pixmap(f)
             metric = ctx.get_metrics(fd)
