@@ -546,13 +546,14 @@ DEF_CMD(dir_open)
 
 	if (fd >= 0) {
 		p = doc_open(par, fd, fname);
-		if (p)
-			p = doc_attach_view(par, p, NULL);
 		close(fd);
 	} else
 		p = doc_from_text(par, fname, "File not found\n");
 	free(fname);
-	pane_focus(p);
+	if (p) {
+		p = doc_attach_view(par, p, NULL);
+		pane_focus(p);
+	}
 	return 1;
 }
 
@@ -590,10 +591,11 @@ DEF_CMD(dir_open_alt)
 		}
 		close(fd);
 	} else {
+		struct pane *doc = doc_from_text(par, fname, "File not found\n");
 		par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
 		if (!par)
 			return -1;
-		p = doc_from_text(par, fname, "File not found\n");
+		p = doc_attach_view(par, doc, NULL);
 	}
 	free(fname);
 	pane_focus(p);

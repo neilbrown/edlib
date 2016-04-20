@@ -185,7 +185,8 @@ DEF_CMD(popup_attach)
 	pane_focus(ppi->popup);
 
 	if (ci->str2) {
-		struct pane *p = doc_from_text(ppi->popup, "*popup*", ci->str2);
+		struct pane *doc = doc_from_text(ppi->popup, "*popup*", ci->str2);
+		struct pane *p = doc_attach_view(ppi->popup, doc, NULL);
 
 		call3("Move-File", p, 1, NULL);
 		call3("doc:autoclose", p, 1, NULL);

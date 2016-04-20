@@ -335,11 +335,11 @@ DEF_CMD(emacs_findfile)
 	fd = open(ci->str, O_RDONLY);
 	if (fd >= 0) {
 		p = doc_open(par, fd, ci->str);
-		if (p)
-			doc_attach_view(par, p, NULL);
 		close(fd);
 	} else
 		p = doc_from_text(par, ci->str, "File not found\n");
+	if (p)
+		doc_attach_view(par, p, NULL);
 	if (!p)
 		return -1;
 	pane_focus(p);
