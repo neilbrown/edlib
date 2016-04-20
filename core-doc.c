@@ -492,10 +492,9 @@ DEF_CMD(doc_handle)
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = doc_attach(ci->focus, dd->doc);
 		struct pane *c = pane_child(ci->home);
-		struct doc_data *dd2 = p->data;
 
-		dd2->point = point_dup(dd->point);
-		p->pointer = dd2->point;
+		if (p)
+			point_to_mark(p->pointer, ci->home->pointer);
 		if (c)
 			comm_call_pane(c, "Clone", p, 0, NULL, NULL, 0, NULL);
 		return 1;
@@ -566,7 +565,8 @@ struct pane *doc_attach(struct pane *parent, struct pane *d)
 	p = pane_register(parent, 0, &doc_handle, dd, NULL);
 	/* non-home panes need to be notified so they can self-destruct */
 	pane_add_notify(p, d, "Notify:Close");
-	dd->point = NULL;
+	dd->point = point_new(d->data);
+	p->pointer = dd->point;
 	call5("doc:revisit", d, 1, NULL, NULL, 0);
 	return p;
 }
@@ -631,12 +631,8 @@ struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render
 	struct pane *p;
 
 	p = doc_attach(parent, doc);
-	if (p) {
-		struct doc_data *dd = p->data;
-		dd->point = point_new(dd->doc->data);
-		p->pointer = dd->point;
+	if (p)
 		p = call_pane("attach-view", p, 0, NULL, 0);
-	}
 	if (p)
 		p = render_attach(render, p);
 	return p;
