@@ -5,7 +5,14 @@
 
 LDLIBS= -ldl
 CPPFLAGS= -I.
-CFLAGS=-g -Wall -Werror -Wstrict-prototypes -Wextra -Wno-unused-parameter
+# use "make DBG=" to avoid the extra checks and errors
+ifdef LEAK
+DBG= -Werror -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=leak
+else
+DBG= -Werror -fno-omit-frame-pointer -fsanitize=undefined
+endif
+CFLAGS=-g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG)
+#Doesn't work :-( -fsanitize=address
 
 all: dirs edlib checksym lib shared
 
