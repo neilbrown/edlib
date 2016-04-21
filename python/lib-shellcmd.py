@@ -24,7 +24,7 @@ class ShellPane(edlib.Pane):
         self.call("event:read", fd, self.read)
         return True
 
-    def read(self, key, focus, fd):
+    def read(self, key, **a):
         if not self.pipe:
             return False
         try:
