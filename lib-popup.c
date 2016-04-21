@@ -147,7 +147,7 @@ DEF_CMD(popup_attach)
 	struct pane *root;
 	struct popup_info *ppi = malloc(sizeof(*ppi));
 	char *style = ci->str;
-	char border[4];
+	char border[5];
 	int i, j;
 	int z = 1;
 
