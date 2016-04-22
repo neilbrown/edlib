@@ -1017,6 +1017,8 @@ DEF_CMD(render_lines_other_move)
 	}
 	rl->target_x = -1;
 
+	pane_damaged(p, DAMAGED_CURSOR);
+
 	/* Allow other handlers to complete the Replace */
 	return 0;
 }
@@ -1251,6 +1253,7 @@ DEF_CMD(render_lines_move_line)
 			mark_free(m2);
 		}
 	}
+	pane_damaged(p, DAMAGED_CURSOR);
 	return 1;
 }
 

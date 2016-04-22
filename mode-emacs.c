@@ -112,8 +112,6 @@ REDEF_CMD(emacs_move)
 		mark_free(old_point);
 	}
 
-	pane_damaged(cursor_pane, DAMAGED_CURSOR);
-
 	return ret;
 }
 
