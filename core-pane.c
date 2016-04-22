@@ -82,6 +82,8 @@ void pane_damaged(struct pane *p, int type)
 		if ((p->damaged | type) == p->damaged)
 			return;
 		p->damaged |= type;
+		if (type == DAMAGED_POSTORDER)
+			break;
 		type = DAMAGED_CHILD;
 		p = p->parent;
 	}
@@ -109,7 +111,6 @@ static void __pane_refresh(struct cmd_info ci)
 	struct pane *c;
 	int damage = ci.extra;
 	struct pane *p = ci.home;
-	int ret = 0;
 	int nextz;
 	int abs_z = p->abs_z + 1;
 
@@ -127,6 +128,7 @@ static void __pane_refresh(struct cmd_info ci)
 	damage |= p->damaged;
 	if (!damage)
 		return;
+	p->damaged = 0;
 	if (damage & (DAMAGED_NEED_CALL)) {
 		struct cmd_info ci2 = ci;
 		ci2.extra = damage;
@@ -137,14 +139,11 @@ static void __pane_refresh(struct cmd_info ci)
 		damage &= DAMAGED_SIZE | DAMAGED_EVENTS | DAMAGED_CURSOR;
 		if (p->handle) {
 			ci2.comm = p->handle;
-			ret = p->handle->func(&ci2);
-		} else
-			ret = 1;
-		if (ret == 0)
-			pane_check_size(p);
+			if (p->handle->func(&ci2) == 0)
+				pane_check_size(p);
+		}
 	} else
 		damage = 0;
-	p->damaged = 0;
 	ci.extra = damage;
 	nextz = 0;
 	while (nextz >= 0) {
@@ -168,8 +167,9 @@ static void __pane_refresh(struct cmd_info ci)
 		p->abs_zhi = abs_zhi;
 		abs_z = abs_zhi + 1;
 	}
-	if (ret == 2) {
-		/* "Refresh" requested a post-order call */
+	if (p->damaged & DAMAGED_POSTORDER) {
+		/* post-order call was triggered */
+		p->damaged &= ~DAMAGED_POSTORDER;
 		ci.home = p;
 		ci.numeric = 1;
 		ci.comm = p->handle;

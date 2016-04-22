@@ -119,6 +119,7 @@ DEF_CMD(ncurses_handle)
 	if (strcmp(ci->key, "pane-clear") == 0) {
 		int attr = cvt_attrs(ci->str2);
 		ncurses_clear(ci->focus, attr, 0, 0, 0, 0);
+		pane_damaged(p, DAMAGED_POSTORDER);
 		return 1;
 	}
 	if (strcmp(ci->key, "text-size") == 0) {
@@ -172,6 +173,8 @@ DEF_CMD(ncurses_handle)
 		}
 		if (offset == cursor_offset)
 			ncurses_text(ci->focus, ' ', 0, x, y, 1);
+		pane_damaged(p, DAMAGED_POSTORDER);
+		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") == 0) {
 		set_screen(dd->scr);
@@ -192,7 +195,7 @@ DEF_CMD(ncurses_handle)
 					  &handle_winch);
 			}
 		}
-		return 2; /* request post-order call */
+		return 1;
 	}
 	return 0;
 }

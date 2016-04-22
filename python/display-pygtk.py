@@ -47,13 +47,14 @@ class EdDisplay(gtk.Window):
         if key == "Refresh":
             if a['numeric'] > 0:
                 self.text.queue_draw()
-            return 2
+            return 1
 
         if key == "Display:fullscreen":
             if a['numeric'] > 0:
                 self.fullscreen()
             else:
                 self.unfullscreen()
+            return 1
 
         if key == "Display:new":
             disp = a['home']
@@ -75,6 +76,7 @@ class EdDisplay(gtk.Window):
                 fg, bg = self.get_colours("bg:white")
             pm = self.get_pixmap(f)
             self.do_clear(pm, bg)
+            self.pane.damaged(edlib.DAMAGED_POSTORDER)
             return True
 
         if key == "text-size":
@@ -103,6 +105,7 @@ class EdDisplay(gtk.Window):
             return cb("callback:size", f, max_bytes, ascent, (width, height))
 
         if key == "text-display":
+            self.pane.damaged(edlib.DAMAGED_POSTORDER)
             if not self.gc or not self.bg:
                 fg, bg = self.get_colours("fg:blue,bg:white")
                 t = self.text
@@ -164,6 +167,7 @@ class EdDisplay(gtk.Window):
             return True
 
         if key == "image-display":
+            self.pane.damaged(edlib.DAMAGED_POSTORDER)
             # 'str' is the file name of an image
             # 'numeric' is '1' if image should be stretched to fill pane
             # if 'numeric is '0', then 'extra' is 'or' of

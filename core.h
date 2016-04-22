@@ -299,6 +299,7 @@ enum {
 	DAMAGED_CONTENT	= 4,
 	DAMAGED_CURSOR	= 8,
 
+	DAMAGED_POSTORDER= 512,
 	DAMAGED_CLOSED	= 1024,
 	DAMAGED_EVENTS	= 2048, /* event loop changed, resubmit requests */
 	DAMAGED_Z	= 4096, /* global-z has changed */
