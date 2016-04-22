@@ -38,7 +38,8 @@ static void call_event(int thing, short sev, void *evv)
 	ci.home = ci.focus = ev->home;
 	ci.comm = ev->comm;
 	ci.numeric = thing;
-	ev->comm->func(&ci);
+	if (ev->comm->func(&ci) < 0)
+		event_del(ev->l);
 }
 
 DEF_CMD(libevent_read)

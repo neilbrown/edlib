@@ -26,19 +26,19 @@ class ShellPane(edlib.Pane):
 
     def read(self, key, **a):
         if not self.pipe:
-            return False
+            return -1
         try:
             r = os.read(self.pipe.stdout.fileno(), 1024)
         except IOError:
-            return True
+            return 1
         if r is None or len(r) == 0:
             self.pipe.communicate()
             self.pipe = None
             self.call("Replace", "\nProcess Finished\n");
-            return False
+            return -1
         self.call("Replace", r);
         self.refresh()
-        return True
+        return 1
 
     def handle(self, key, **a):
         if key == "Close":

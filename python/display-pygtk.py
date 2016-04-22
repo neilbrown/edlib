@@ -435,8 +435,11 @@ class events:
         return 1
 
     def docall(self, source, condition, comm2, focus, fd):
-        comm2("callback", focus, fd)
-        return 1
+        try:
+            comm2("callback", focus, fd)
+            return True
+        except edlib.commandfailed:
+            return False
 
     def signal(self, key, focus, comm2, numeric, **a):
         return 1
