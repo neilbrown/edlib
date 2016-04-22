@@ -100,7 +100,7 @@ static inline PyObject *Mark_Frommark(struct mark *m)
 
 static inline PyObject *Comm_Fromcomm(struct command *c)
 {
-	if (c->func == python_call_func) {
+	if (c->func == python_call_func && 0) {
 		struct python_command *pc = container_of(c, struct python_command, c);
 		Py_INCREF(pc->callable);
 		return pc->callable;
@@ -1058,11 +1058,13 @@ static PyObject *Comm_call(Comm *c, PyObject *args, PyObject *kwds)
 	struct cmd_info ci = {0};
 	int rv;
 
+#if 0
 	if (c->comm->func == python_call.func) {
 		struct python_command *pc = container_of(c->comm, struct python_command,
 							 c);
 		return PyObject_Call(pc->callable, args, kwds);
 	}
+#endif
 	rv = get_cmd_info(&ci, args, kwds);
 	if (rv <= 0)
 		return NULL;
