@@ -43,9 +43,13 @@ class ShellPane(edlib.Pane):
     def handle(self, key, **a):
         if key == "Close":
             if self.pipe is not None:
-                self.pipe.terminate()
-                self.pipe.communicate()
+                p = self.pipe
                 self.pipe = None
+                p.terminate()
+                try:
+                    p.communicate()
+                except IOError:
+                    pass
             self.release()
             return 1
         if key == "Abort":
