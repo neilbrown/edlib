@@ -406,7 +406,7 @@ static PyObject *Pane_damaged(Pane *self, PyObject *args)
 	if (ret <= 0)
 		return NULL;
 	if (self->pane)
-		pane_damaged(self->pane, DAMAGED_SIZE);
+		pane_damaged(self->pane, damage);
 
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -456,7 +456,7 @@ static PyMethodDef pane_methods[] = {
 	 "Add notified for an event on some other pane"},
 	{"render_attach", (PyCFunction)Pane_render_attach, METH_VARARGS,
 	 "Attach a renderer to a pane"},
-	{"damage", (PyCFunction)Pane_damaged, METH_VARARGS,
+	{"damaged", (PyCFunction)Pane_damaged, METH_VARARGS,
 	 "Mark pane as damaged"},
 	{NULL}
 };
@@ -1296,6 +1296,13 @@ void edlib_init(struct pane *ed)
 	PyModule_AddObject(m, "Pane", (PyObject *)&PaneType);
 	PyModule_AddObject(m, "Mark", (PyObject *)&MarkType);
 	PyModule_AddObject(m, "Comm", (PyObject *)&CommType);
+	PyModule_AddIntMacro(m, DAMAGED_CHILD);
+	PyModule_AddIntMacro(m, DAMAGED_SIZE);
+	PyModule_AddIntMacro(m, DAMAGED_CONTENT);
+	PyModule_AddIntMacro(m, DAMAGED_CURSOR);
+	PyModule_AddIntMacro(m, DAMAGED_CLOSED);
+	PyModule_AddIntMacro(m, DAMAGED_EVENTS);
+	PyModule_AddIntMacro(m, DAMAGED_Z);
 	call_comm("global-set-command", ed, 0, NULL, "python-load", 0, &python_load);
 	call_comm("global-set-command", ed, 0, NULL, "global-load-modules:python", 0,
 		  &python_load_module);
