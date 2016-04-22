@@ -95,7 +95,6 @@ DEF_CMD(libevent_run)
 
 DEF_CMD(libevent_deactivate)
 {
-	event_base_loopbreak(base);
 	base = NULL;
 	return 1;
 }

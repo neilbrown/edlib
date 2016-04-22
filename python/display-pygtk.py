@@ -455,7 +455,6 @@ class events:
 
     def deactivate(self, key, **a):
         self.active = False
-        gtk.main_quit()
         global ev
         ev = None
         return 1
