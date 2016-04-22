@@ -180,7 +180,6 @@ static void __pane_refresh(struct cmd_info ci)
 void pane_refresh(struct pane *p)
 {
 	struct cmd_info ci = {0};
-	pane_damaged(p, DAMAGED_CURSOR);
 	/* Always refresh a whole display */
 	while (p->parent)
 		p = p->parent;

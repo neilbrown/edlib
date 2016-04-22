@@ -52,7 +52,6 @@ DEF_CMD(nc_misc)
 	if (strcmp(ci->key, "Display:refresh") == 0) {
 		clear();
 		pane_damaged(p,  DAMAGED_SIZE);
-		pane_refresh(p);
 		return 1;
 	}
 	return 0;
@@ -240,7 +239,6 @@ REDEF_CMD(handle_winch)
 
 	clear();
 	pane_damaged(p, DAMAGED_SIZE);
-	pane_refresh(p);
 	return 1;
 }
 
@@ -441,7 +439,6 @@ REDEF_CMD(input_handle)
 		} else
 			send_key(is_keycode, c, p);
 	}
-	pane_refresh(p);
 	return 1;
 }
 

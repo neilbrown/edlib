@@ -80,7 +80,9 @@ DEF_CMD(libevent_run)
 	if (!b)
 		return 0;
 
-	event_base_dispatch(b);
+	event_base_loop(b, EVLOOP_ONCE);
+	if (base == b)
+		return 1;
 	while (!list_empty(&event_list)) {
 		struct evt *ev = list_first_entry(&event_list, struct evt, lst);
 		list_del(&ev->lst);
@@ -88,7 +90,7 @@ DEF_CMD(libevent_run)
 		event_free(ev->l);
 	}
 	event_base_free(b);
-	return 1;
+	return -1;
 }
 
 DEF_CMD(libevent_deactivate)

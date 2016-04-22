@@ -341,9 +341,6 @@ class EdDisplay(gtk.Window):
 
 
     def refresh(self, *a):
-        if self.need_refresh:
-            self.pane.refresh()
-            self.need_refresh = False
         l = self.panes.keys()
         l.sort(key=lambda pane: pane.abs_z)
         for p in l:
@@ -374,7 +371,6 @@ class EdDisplay(gtk.Window):
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
         self.pane.call("Mouse-event", "Click-1", self.pane, (x,y))
-        self.pane.refresh()
 
     eventmap = { "Return" : "Return",
                  "Tab" : "Tab",
@@ -413,7 +409,6 @@ class EdDisplay(gtk.Window):
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
         self.pane.call("Keystroke", self.pane, s)
-        self.pane.refresh()
 
     def do_clear(self, pm, colour):
 
@@ -450,7 +445,10 @@ class events:
 
     def run(self, key, **a):
         if self.active:
-            gtk.main()
+            gtk.main_iteration(True)
+            while self.active and gtk.events_pending():
+                gtk.main_iteration(False)
+        if self.active:
             return 1
         else:
             return -1
