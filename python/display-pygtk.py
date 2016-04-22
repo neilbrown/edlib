@@ -428,14 +428,14 @@ class events:
     def __init__(self):
         self.active = True
 
-    def read(self, key, focus, comm2, numeric, **a):
+    def read(self, key, home, comm2, numeric, **a):
         self.active = True
-        gobject.io_add_watch(numeric, gobject.IO_IN | gobject.IO_HUP, self.docall, comm2, focus, numeric)
+        gobject.io_add_watch(numeric, gobject.IO_IN | gobject.IO_HUP, self.docall, comm2, home, numeric)
         return 1
 
-    def docall(self, source, condition, comm2, focus, fd):
+    def docall(self, source, condition, comm2, home, fd):
         try:
-            comm2("callback", focus, fd)
+            comm2("callback", home, fd)
             return True
         except edlib.commandfailed:
             return False
