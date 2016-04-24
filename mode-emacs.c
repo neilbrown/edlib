@@ -265,7 +265,7 @@ DEF_CMD(find_complete)
 DEF_CMD(find_done)
 {
 	int ret;
-	char *str = doc_getstr(ci->focus, NULL);
+	char *str = doc_getstr(ci->focus, NULL, NULL);
 
 	ret = call5("popup:close", ci->focus->parent, 0, NULL, str, 0);
 	free(str);
@@ -359,7 +359,7 @@ REDEF_CMD(emacs_file_complete)
 	 * Find a document for the directory and attach as a completing
 	 * popup menu
 	 */
-	char *str = doc_getstr(ci->focus, NULL);
+	char *str = doc_getstr(ci->focus, NULL, NULL);
 	char *d, *b, *c;
 	int fd;
 	struct pane *par, *pop, *docp;
@@ -463,7 +463,7 @@ REDEF_CMD(emacs_doc_complete)
 	/* Extract a document from the document.
 	 * Attach the 'docs' document as a completing popup menu
 	 */
-	char *str = doc_getstr(ci->focus, NULL);
+	char *str = doc_getstr(ci->focus, NULL, NULL);
 	struct pane *par, *pop, *docs;
 	struct call_return cr;
 	int ret;

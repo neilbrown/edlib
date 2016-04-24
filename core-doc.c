@@ -689,7 +689,7 @@ DEF_CMD(doc_str_callback)
 	return 1;
 }
 
-char *doc_getstr(struct pane *from, struct mark *to)
+char *doc_getstr(struct pane *from, struct mark *to, struct mark *m2)
 {
 	struct cmd_info ci = {0};
 	int ret;
@@ -698,6 +698,7 @@ char *doc_getstr(struct pane *from, struct mark *to)
 	ci.key = "doc:get-str";
 	ci.focus = from;
 	ci.mark = to;
+	ci.mark2 = m2;
 	cr.c = doc_str_callback;
 	cr.s = NULL;
 	ci.comm2 = &cr.c;

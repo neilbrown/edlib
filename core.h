@@ -157,7 +157,7 @@ void mark_backward_over(struct mark *m, struct mark *mp);
 void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2);
 void doc_check_consistent(struct doc *d);
 char *doc_attr(struct pane *dp, struct mark *m, bool forward, char *attr);
-char *doc_getstr(struct pane *from, struct mark *to);
+char *doc_getstr(struct pane *from, struct mark *to, struct mark *m2);
 void point_to_mark(struct mark *p, struct mark *m);
 void mark_to_mark(struct mark *m, struct mark *target);
 int mark_same(struct doc *d, struct mark *m1, struct mark *m2);
