@@ -21,10 +21,15 @@
  * @type:	the type of the container struct this is embedded in.
  * @member:	the name of the member within the struct.
  *
+ * The temp variable _mptr has the member name suffixed to
+ * avoid variable aliasing warnings.
  */
 #define container_of(ptr, type, member) ({			\
-	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
-	(type *)( (char *)__mptr - offsetof(type,member) );})
+	const typeof( ((type *)0)->member ) *__mptr##member = (ptr);	\
+	(type *)( (char *)__mptr##member - offsetof(type,member) );})
+#define container_of_array(ptr, type, member, index) ({			\
+	const typeof( ((type *)0)->member[index] ) *__mptr##member = (ptr);	\
+	(type *)( (char *)__mptr##member - offsetof(type,member[index]) );})
 
 /*
  * These are non-NULL pointers that will result in page faults
