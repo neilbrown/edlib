@@ -120,6 +120,7 @@ TODO:
 #include <ctype.h>
 #include <wctype.h>
 #include <memory.h>
+#include "rexel.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -278,6 +279,7 @@ int rxl_advance(struct match_state *st, wint_t ch, int flag, int restart)
 	int active = st->active;
 	int next = 1-active;
 	int eol;
+	int len;
 	unsigned short i;
 	int advance = 0;
 	wint_t uch;
@@ -311,7 +313,7 @@ int rxl_advance(struct match_state *st, wint_t ch, int flag, int restart)
 		 * Allow 4 chars per column
 		 */
 		unsigned short cnt;
-		int len = RXL_SETSTART(st->rxl) - st->rxl;
+		len = RXL_SETSTART(st->rxl) - st->rxl;
 
 		for (i = 1; i < len; i++)
 			if (!REC_ISFORK(st->rxl[i])) {
@@ -370,7 +372,7 @@ int rxl_advance(struct match_state *st, wint_t ch, int flag, int restart)
 	}
 #endif /* DEBUG */
 	/* Firstly, clear out next lists */
-	int len = RXL_SETSTART(st->rxl) - st->rxl;
+	len = RXL_SETSTART(st->rxl) - st->rxl;
 	for (i = 0; i < len; i++) {
 		st->link[next][i] = NO_LINK;
 		st->leng[next][i] = 0;
@@ -379,8 +381,8 @@ int rxl_advance(struct match_state *st, wint_t ch, int flag, int restart)
 
 	/* Now advance each current match */
 	for (i = st->link[active][0]; i; i = st->link[active][i]) {
-		int len = st->leng[active][i];
 		unsigned int cmd = st->rxl[i];
+		len = st->leng[active][i];
 
 		if (!flag)
 			/* If we get a match, then len will have increased */
@@ -823,7 +825,7 @@ static int parse_set(struct parse_state *st)
 	return 1;
 }
 
-int cvt_hex(char *s, int len)
+static int cvt_hex(char *s, int len)
 {
 	long rv = 0;
 	while (len) {
@@ -1184,7 +1186,7 @@ static void setup_match(struct match_state *st, unsigned short *rxl)
 	st->link[st->active][0] = 0;
 }
 
-void *rxl_prepare(unsigned short *rxl)
+struct match_state *rxl_prepare(unsigned short *rxl)
 {
 	struct match_state *ret;
 
@@ -1193,10 +1195,8 @@ void *rxl_prepare(unsigned short *rxl)
 	return ret;
 }
 
-void rxl_free_state(void *v)
+void rxl_free_state(struct match_state *s)
 {
-	struct match_state *s = v;
-
 	free(s->link[0]);
 	free(s);
 }
