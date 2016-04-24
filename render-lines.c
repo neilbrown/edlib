@@ -203,7 +203,7 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w,
 			line += 1;
 		segstart = line;
 		if (st[0] != '/') {
-			char *c;
+			char *c2;
 			char *b = buf_final(&attr);
 
 			buf_concat_len(&attr, st, line-st);
@@ -211,16 +211,16 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w,
 			buf_append(&attr, ',');
 			if (center && strstr(b, ",center,"))
 				*center = 1;
-			if (center && (c=strstr(b, ",left:")) != NULL)
-				*center = atoi(c+6) * scale / 1000;
-			if (center && (c=strstr(b, ",right:")) != NULL)
-				*center = - atoi(c+7) * scale / 1000;
-			if ((c=strstr(b, ",space-above:")) != NULL)
-				above = atoi(c+13) * scale / 1000;
-			if ((c=strstr(b, ",space-below:")) != NULL)
-				below = atoi(c+13) * scale / 1000;
-			if ((c=strstr(b, ",tab:")) != NULL)
-				*w = atoi(c+5) * scale / 1000;
+			if (center && (c2=strstr(b, ",left:")) != NULL)
+				*center = atoi(c2+6) * scale / 1000;
+			if (center && (c2=strstr(b, ",right:")) != NULL)
+				*center = - atoi(c2+7) * scale / 1000;
+			if ((c2=strstr(b, ",space-above:")) != NULL)
+				above = atoi(c2+13) * scale / 1000;
+			if ((c2=strstr(b, ",space-below:")) != NULL)
+				below = atoi(c2+13) * scale / 1000;
+			if ((c2=strstr(b, ",tab:")) != NULL)
+				*w = atoi(c2+5) * scale / 1000;
 			attr_found = 1;
 			update_line_height_attr(p, h, a, w, b, "", scale);
 		} else {

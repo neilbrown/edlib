@@ -111,9 +111,9 @@ static int view_refresh(const struct cmd_info *ci)
 			if (l <= 0)
 				l = 1;
 			mid = vd->line_height + (p->h - 4 * vd->line_height) * ln / l;
-			one_char(p, "^", 0, 0, mid-vd->line_height + vd->ascent);
+			one_char(p, "^", NULL, 0, mid-vd->line_height + vd->ascent);
 			one_char(p, "#", "inverse", 0, mid + vd->ascent);
-			one_char(p, "v", 0, 0, mid+vd->line_height + vd->ascent);
+			one_char(p, "v", NULL, 0, mid+vd->line_height + vd->ascent);
 			one_char(p, "+", "inverse", 0, p->h
 				  - vd->line_height + vd->ascent);
 			vd->scroll_bar_y = mid;

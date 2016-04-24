@@ -323,7 +323,7 @@ DEF_CMD(docs_callback)
 	}
 
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
-		struct pane *p = doc_attach_view(ci->focus, doc->doc.home, NULL);
+		p = doc_attach_view(ci->focus, doc->doc.home, NULL);
 		p = pane_register(pane_final_child(p), 0, &docs_modified_handle, doc, NULL);
 		call3("Request:Notify:Replace", p, 0, NULL);
 		/* And trigger Notify:Replace handling immediately...*/
@@ -333,7 +333,7 @@ DEF_CMD(docs_callback)
 
 	if (strcmp(ci->key, "doc:appeared-docs-register") == 0) {
 		/* Always return 0 so other handlers get a chance */
-		struct pane *p = ci->focus;
+		p = ci->focus;
 		if (!p)
 			return 0;
 		if (p == doc->doc.home)

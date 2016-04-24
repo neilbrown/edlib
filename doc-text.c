@@ -119,7 +119,7 @@ struct text_edit {
 	struct text_edit	*next;
 	bool			first:1;
 	bool			at_start:1;
-	int			len:30; // bytes add, -ve for removed.
+	signed int		len:30; // bytes add, -ve for removed.
 };
 
 /* A text document is a document with allocations, a list

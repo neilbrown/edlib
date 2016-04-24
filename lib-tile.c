@@ -433,19 +433,19 @@ static void tile_adjust(struct pane *p)
 			cnt = avail_cnt;
 		avail_cnt = 0;
 		list_for_each_entry(t, &p->children, siblings) {
-			struct tileinfo *ti = t->data;
+			struct tileinfo *ti2 = t->data;
 			int diff;
 			if (t->z)
 				continue;
 			if (used > size) {
 				/* shrinking */
-				if (ti->avail_inline == 0)
+				if (ti2->avail_inline == 0)
 					continue;
 				diff = (used - size + (used%cnt)) / cnt;
-				if (diff > ti->avail_inline)
-					diff = ti->avail_inline;
-				ti->avail_inline -= diff;
-				if (ti->avail_inline)
+				if (diff > ti2->avail_inline)
+					diff = ti2->avail_inline;
+				ti2->avail_inline -= diff;
+				if (ti2->avail_inline)
 					/* Still space available if needed */
 					avail_cnt++;
 
@@ -457,7 +457,7 @@ static void tile_adjust(struct pane *p)
 
 			if (diff)
 				change = 1;
-			if (ti->direction == Horiz) {
+			if (ti2->direction == Horiz) {
 				t->w += diff;
 				used += diff;
 				cnt--;
@@ -472,10 +472,10 @@ static void tile_adjust(struct pane *p)
 	}
 	pos = 0;
 	list_for_each_entry(t, &p->children, siblings) {
-		struct tileinfo *ti = t->data;
+		struct tileinfo *ti2 = t->data;
 		if (t->z)
 			continue;
-		if (ti->direction == Horiz) {
+		if (ti2->direction == Horiz) {
 			t->x = pos;
 			pos += t->w;
 		} else {

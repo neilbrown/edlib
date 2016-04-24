@@ -14,7 +14,7 @@
 
 DEF_CMD(text_search)
 {
-	struct mark *m, *endmark = NULL;;
+	struct mark *m, *endmark = NULL;
 	unsigned short *rxl;
 	struct match_state *st;
 	int since_start, len;
