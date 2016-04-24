@@ -5,6 +5,7 @@
 
 LDLIBS= -ldl
 CPPFLAGS= -I.
+SPARSEFLAGS= -Wsparse-all -Wno-transparent-union
 # use "make DBG=" to avoid the extra checks and errors
 ifdef LEAK
 DBG= -Werror -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=leak
@@ -46,11 +47,11 @@ edlib: $(OBJ) lib/libedlib.so
 $(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) : $(H)
 
 $(OBJ) : O/%.o : %.c
-	sparse $(CPPFLAGS) $(INC-$*) -Wsparse-all $<
+	sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
 	gcc $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
-	sparse  $(CPPFLAGS) $(INC-$*) -Wsparse-all $<
+	sparse  $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
 	gcc -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 .PHONY: TAGS

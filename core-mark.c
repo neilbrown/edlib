@@ -907,7 +907,7 @@ struct mark *vmark_first(struct pane *p, int view)
 {
 	struct mark *first = NULL;
 	if (vmark_get(p, view, &first, NULL, NULL, NULL) == 0)
-		return 0;
+		return NULL;
 	return first;
 }
 
@@ -915,7 +915,7 @@ struct mark *vmark_last(struct pane *p, int view)
 {
 	struct mark *last = NULL;
 	if (vmark_get(p, view, NULL, &last, NULL, NULL) == 0)
-		return 0;
+		return NULL;
 	return last;
 }
 
@@ -923,7 +923,7 @@ struct mark *vmark_at_point(struct pane *p, int view)
 {
 	struct mark *point = NULL;
 	if (vmark_get(p, view, NULL, NULL, &point, NULL) == 0)
-		return 0;
+		return NULL;
 	return point;
 }
 
@@ -949,7 +949,7 @@ struct mark *vmark_new(struct pane *p, int view)
 {
 	struct mark *new = NULL;
 	if (vmark_get(p, view, NULL, NULL, NULL, &new) == 0)
-		return 0;
+		return NULL;
 	return new;
 }
 
@@ -1066,9 +1066,9 @@ static void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
 		c->func(&ci);
 		while (TLIST_TYPE(tl) == GRP_MARK &&
 		       (mark_ordered_or_same(d, m, ci.mark))) {
-			do
+			do {
 				tl = TLIST_PTR(tl->prev);
-			while (TLIST_TYPE(tl) == GRP_LIST);
+			} while (TLIST_TYPE(tl) == GRP_LIST);
 
 			if (TLIST_TYPE(tl) == GRP_MARK) {
 				ci.mark = tlist_entry(tl, struct mark, view);
@@ -1202,7 +1202,7 @@ void doc_check_consistent(struct doc *d)
 					m = container_of(tl, struct mark, view);
 					break;
 				case GRP_LIST:
-					pl = container_of(tl, struct point_links, lists[i]);
+					pl = container_of_array(tl, struct point_links, lists, i);
 					m = pl->pt;
 					break;
 				default: abort();
