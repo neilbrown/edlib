@@ -20,6 +20,7 @@
 REDEF_CMD(emacs_move);
 REDEF_CMD(emacs_delete);
 REDEF_CMD(emacs_case);
+REDEF_CMD(emacs_swap);
 
 static struct move_command {
 	struct command	cmd;
@@ -75,6 +76,11 @@ static struct move_command {
 	 "M-Chr-c", NULL, NULL},
 	{CMD(emacs_case), "TMove-Char", 1,
 	 "M-Chr-`", NULL, NULL},
+
+	{CMD(emacs_swap), "Move-Char", 1,
+	 "C-Chr-T", NULL, NULL},
+	{CMD(emacs_swap), "Move-Word", 1,
+	 "M-Chr-t", NULL, NULL},
 };
 
 REDEF_CMD(emacs_move)
@@ -224,6 +230,69 @@ REDEF_CMD(emacs_case)
 			pane_set_extra(ci->focus, 1);
 		}
 		mark_free(m);
+		cnt -= 1;
+	}
+	/* When moving forward, move point.  When backward, leave point alone */
+	if (start) {
+		mark_to_mark(ci->mark, start);
+		mark_free(start);
+	}
+	return ret;
+}
+
+REDEF_CMD(emacs_swap)
+{
+	/* collect the object behind point and insert it after the object
+	 * after point
+	 */
+	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
+	int ret = 0;
+	struct mark *start = NULL;
+	int cnt = mv->direction * RPT_NUM(ci);
+	int dir;
+
+	if (cnt == 0)
+		return 1;
+	if (cnt > 0) {
+		dir = 1;
+	} else {
+		dir = -1;
+		cnt = -cnt;
+		start = mark_dup(ci->mark, 1);
+	}
+
+	while (cnt > 0) {
+		struct mark *as, *ae, *bs, *be;
+		char *astr, *bstr;
+
+		ret = call3(mv->type, ci->focus, -dir, ci->mark);
+		if (ret <= 0)
+			break;
+		as = mark_dup(ci->mark, 1);
+		ret = call3(mv->type, ci->focus, dir, ci->mark);
+		if (ret <= 0 || mark_same_pane(ci->focus, ci->mark, as, NULL)) {
+			mark_free(as);
+			break;
+		}
+		ae = mark_dup(ci->mark, 1);
+		call3(mv->type, ci->focus, dir, ci->mark);
+		be = mark_dup(ci->mark, 1);
+		call3(mv->type, ci->focus, -dir, ci->mark);
+		bs = mark_dup(ci->mark, 1);
+		astr = doc_getstr(ci->focus, as, ae);
+		bstr = doc_getstr(ci->focus, bs, be);
+		mark_to_mark(ci->mark, ae);
+		call5("Replace", ci->focus, 1, as, bstr, 1);
+		mark_to_mark(ci->mark, be);
+		call5("Replace", ci->focus, 1, bs, astr, 0);
+		if (dir < 0)
+			call3(mv->type, ci->focus, dir, ci->mark);
+		free(astr);
+		free(bstr);
+		mark_free(as);
+		mark_free(ae);
+		mark_free(bs);
+		mark_free(be);
 		cnt -= 1;
 	}
 	/* When moving forward, move point.  When backward, leave point alone */
