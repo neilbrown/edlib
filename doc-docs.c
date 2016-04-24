@@ -62,13 +62,12 @@ static void docs_enmark(struct docs *doc, struct pane *p)
 	 */
 	struct mark *m;
 
-	if (p->siblings.next == &doc->doc.home->children)
-		/* At the end, nothing to do */
-		return;
 	for (m = doc_first_mark_all(&doc->doc);
 	     m;
 	     m = doc_next_mark_all(m))
-		if (p->siblings.next == &m->ref.p->siblings) {
+		if ((p->siblings.next == &doc->doc.home->children &&
+		     m->ref.p == NULL) ||
+		    (p->siblings.next == &m->ref.p->siblings)) {
 			mark_step2(&doc->doc, m, 0, 1);
 			doc_notify_change(&doc->doc, m, NULL);
 		}
