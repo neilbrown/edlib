@@ -277,7 +277,7 @@ struct cmd_info {
 	struct command	*comm, *comm2;
 };
 #define	NO_NUMERIC	(INT_MAX/2)
-#define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric)
+#define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric == -NO_NUMERIC ? -1 : (ci)->numeric)
 
 struct map *key_alloc(void);
 void key_free(struct map *m);

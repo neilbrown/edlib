@@ -652,13 +652,27 @@ DEF_CMD(emacs_meta)
 
 DEF_CMD(emacs_num)
 {
-	int rpt = RPT_NUM(ci);
+	int rpt = ci->numeric;
 	char *last = ci->key + strlen(ci->key)-1;
+	int neg = 0;
 
-	if (ci->numeric == NO_NUMERIC)
+	if (rpt < 0) {
+		neg = 1;
+		rpt = -rpt;
+	}
+	if (rpt == NO_NUMERIC)
 		rpt = 0;
+
 	rpt = rpt * 10 + *last - '0';
-	pane_set_numeric(ci->focus, rpt);
+
+	pane_set_numeric(ci->focus, neg ? -rpt : rpt);
+	pane_set_extra(ci->focus, ci->extra);
+	return 1;
+}
+
+DEF_CMD(emacs_neg)
+{
+	pane_set_numeric(ci->focus, - ci->numeric);
 	pane_set_extra(ci->focus, ci->extra);
 	return 1;
 }
@@ -796,6 +810,7 @@ static void emacs_init(void)
 	key_add(m, "M-Chr-B", &emacs_bury);
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &emacs_num);
+	key_add(m, "M-Chr--", &emacs_neg);
 	emacs_map = m;
 }
 
