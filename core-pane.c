@@ -235,7 +235,7 @@ void pane_notify_close(struct pane *p)
 int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2,
 		char *str, int numeric)
 {
-	/* Return the largest absolue return value. If no notifiees are found.
+	/* Return the largest absolute return value. If no notifiees are found.
 	 * return 0
 	 */
 	int ret = 0;

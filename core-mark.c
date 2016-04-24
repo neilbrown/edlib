@@ -1108,7 +1108,6 @@ void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 		point_notify_change(d, m, m2);
 		return;
 	}
-	ASSERT(m2 == NULL);
 
 	done = alloca(d->nviews);
 	for (i = 0; i < d->nviews; i++)
@@ -1168,8 +1167,10 @@ void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 		}
 		m = hlist_prev_entry(m, all);
 	}
-}
 
+	if (m2)
+		doc_notify_change(d, m2, NULL);
+}
 
 void doc_check_consistent(struct doc *d)
 {
