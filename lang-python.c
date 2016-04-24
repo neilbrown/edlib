@@ -34,13 +34,19 @@
  *
  */
 
+#ifdef __CHECKER__
+/* Need to define stuff that pyconfig needs */
+#define __linux__
+#define __x86_64__
+#define __LP64__
+#endif
 #include <Python.h>
 #include <structmember.h>
 #define MARK_DATA_PTR PyObject
 #include "core.h"
 
-PyObject *Edlib_CommandFailed;
-PyObject *EdlibModule;
+static PyObject *Edlib_CommandFailed;
+static PyObject *EdlibModule;
 
 typedef struct {
 	PyObject_HEAD
@@ -657,38 +663,38 @@ static PyTypeObject PaneType = {
     sizeof(Pane),		/*tp_basicsize*/
     0,				/*tp_itemsize*/
     (destructor)pane_dealloc,	/*tp_dealloc*/
-    0,				/*tp_print*/
-    0,				/*tp_getattr*/
-    0,				/*tp_setattr*/
+    NULL,			/*tp_print*/
+    NULL,			/*tp_getattr*/
+    NULL,			/*tp_setattr*/
     (cmpfunc)pane_cmp,		/*tp_compare*/
     (reprfunc)pane_repr,	/*tp_repr*/
-    0,				/*tp_as_number*/
-    0,				/*tp_as_sequence*/
+    NULL,			/*tp_as_number*/
+    NULL,			/*tp_as_sequence*/
     &pane_mapping,		/*tp_as_mapping*/
     (hashfunc)pane_hash,	/*tp_hash */
-    0,				/*tp_call*/
-    0,				/*tp_str*/
-    0,				/*tp_getattro*/
-    0,				/*tp_setattro*/
-    0,				/*tp_as_buffer*/
+    NULL,			/*tp_call*/
+    NULL,			/*tp_str*/
+    NULL,			/*tp_getattro*/
+    NULL,			/*tp_setattro*/
+    NULL,			/*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
     "edlib panes",		/* tp_doc */
-    0,				/* tp_traverse */
-    0,				/* tp_clear */
-    0,				/* tp_richcompare */
+    NULL,			/* tp_traverse */
+    NULL,			/* tp_clear */
+    NULL,			/* tp_richcompare */
     0,				/* tp_weaklistoffset */
     (getiterfunc)pane_this,	/* tp_iter */
     (iternextfunc)pane_next,	/* tp_iternext */
     pane_methods,		/* tp_methods */
-    0,				/* tp_members */
+    NULL,			/* tp_members */
     pane_getseters,		/* tp_getset */
-    0,				/* tp_base */
-    0,				/* tp_dict */
-    0,				/* tp_descr_get */
-    0,				/* tp_descr_set */
+    NULL,			/* tp_base */
+    NULL,			/* tp_dict */
+    NULL,			/* tp_descr_get */
+    NULL,			/* tp_descr_set */
     0,				/* tp_dictoffset */
     .tp_init = (initproc)Pane_init,/* tp_init */
-    0,				/* tp_alloc */
+    NULL,			/* tp_alloc */
     .tp_new = (newfunc)pane_new,/* tp_new */
 };
 
@@ -731,7 +737,7 @@ static int mark_nosetview(Mark *m, PyObject *v, void *which)
 	return -1;
 }
 
-PyObject *mark_compare(Mark *a, Mark *b, int op)
+static PyObject *mark_compare(Mark *a, Mark *b, int op)
 {
 	int ret = 0;
 	PyObject *rv;
@@ -1006,38 +1012,38 @@ static PyTypeObject MarkType = {
     sizeof(Mark),		/*tp_basicsize*/
     0,				/*tp_itemsize*/
     (destructor)mark_dealloc,	/*tp_dealloc*/
-    0,				/*tp_print*/
-    0,				/*tp_getattr*/
-    0,				/*tp_setattr*/
-    0,				/*tp_compare*/
-    0,				/*tp_repr*/
-    0,				/*tp_as_number*/
-    0,				/*tp_as_sequence*/
+    NULL,			/*tp_print*/
+    NULL,			/*tp_getattr*/
+    NULL,			/*tp_setattr*/
+    NULL,			/*tp_compare*/
+    NULL,			/*tp_repr*/
+    NULL,			/*tp_as_number*/
+    NULL,			/*tp_as_sequence*/
     &mark_mapping,		/*tp_as_mapping*/
-    0,				/*tp_hash */
-    0,				/*tp_call*/
-    0,				/*tp_str*/
-    0,				/*tp_getattro*/
-    0,				/*tp_setattro*/
-    0,				/*tp_as_buffer*/
+    NULL,			/*tp_hash */
+    NULL,			/*tp_call*/
+    NULL,			/*tp_str*/
+    NULL,			/*tp_getattro*/
+    NULL,			/*tp_setattro*/
+    NULL,			/*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
     "edlib marks",		/* tp_doc */
-    0,				/* tp_traverse */
-    0,				/* tp_clear */
+    NULL,			/* tp_traverse */
+    NULL,			/* tp_clear */
     (richcmpfunc)mark_compare,	/* tp_richcompare */
     0,				/* tp_weaklistoffset */
-    0,				/* tp_iter */
-    0,				/* tp_iternext */
+    NULL,			/* tp_iter */
+    NULL,			/* tp_iternext */
     mark_methods,		/* tp_methods */
-    0,				/* tp_members */
+    NULL,			/* tp_members */
     mark_getseters,		/* tp_getset */
-    0,				/* tp_base */
-    0,				/* tp_dict */
-    0,				/* tp_descr_get */
-    0,				/* tp_descr_set */
+    NULL,			/* tp_base */
+    NULL,			/* tp_dict */
+    NULL,			/* tp_descr_get */
+    NULL,			/* tp_descr_set */
     0,				/* tp_dictoffset */
     .tp_init = (initproc)Mark_init,/* tp_init */
-    0,				/* tp_alloc */
+    NULL,			/* tp_alloc */
     .tp_new = (newfunc)mark_new,/* tp_new */
 };
 
@@ -1098,38 +1104,38 @@ static PyTypeObject CommType = {
     sizeof(Comm),		/*tp_basicsize*/
     0,				/*tp_itemsize*/
     (destructor)comm_dealloc,	/*tp_dealloc*/
-    0,				/*tp_print*/
-    0,				/*tp_getattr*/
-    0,				/*tp_setattr*/
-    0,				/*tp_compare*/
+    NULL,			/*tp_print*/
+    NULL,			/*tp_getattr*/
+    NULL,			/*tp_setattr*/
+    NULL,			/*tp_compare*/
     (reprfunc)comm_repr,	/*tp_repr*/
-    0,				/*tp_as_number*/
-    0,				/*tp_as_sequence*/
-    0,				/*tp_as_mapping*/
-    0,				/*tp_hash */
+    NULL,			/*tp_as_number*/
+    NULL,			/*tp_as_sequence*/
+    NULL,			/*tp_as_mapping*/
+    NULL,			/*tp_hash */
     (ternaryfunc)Comm_call,	/*tp_call*/
-    0,				/*tp_str*/
-    0,				/*tp_getattro*/
-    0,				/*tp_setattro*/
-    0,				/*tp_as_buffer*/
+    NULL,			/*tp_str*/
+    NULL,			/*tp_getattro*/
+    NULL,			/*tp_setattro*/
+    NULL,			/*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
     "edlib command",		/* tp_doc */
-    0,				/* tp_traverse */
-    0,				/* tp_clear */
-    0,				/* tp_richcompare */
+    NULL,			/* tp_traverse */
+    NULL,			/* tp_clear */
+    NULL,			/* tp_richcompare */
     0,				/* tp_weaklistoffset */
-    0,				/* tp_iter */
-    0,				/* tp_iternext */
-    0,				/* tp_methods */
-    0,				/* tp_members */
-    0,				/* tp_getset */
-    0,				/* tp_base */
-    0,				/* tp_dict */
-    0,				/* tp_descr_get */
-    0,				/* tp_descr_set */
+    NULL,			/* tp_iter */
+    NULL,			/* tp_iternext */
+    NULL,			/* tp_methods */
+    NULL,			/* tp_members */
+    NULL,			/* tp_getset */
+    NULL,			/* tp_base */
+    NULL,			/* tp_dict */
+    NULL,			/* tp_descr_get */
+    NULL,			/* tp_descr_set */
     0,				/* tp_dictoffset */
-    0,				/* tp_init */
-    0,				/* tp_alloc */
+    NULL,			/* tp_init */
+    NULL,			/* tp_alloc */
     .tp_new = (newfunc)comm_new,/* tp_new */
 };
 
