@@ -621,6 +621,23 @@ DEF_CMD(emacs_search)
 	return 1;
 }
 
+DEF_CMD(emacs_bury)
+{
+	/* Display something else in this tile. */
+	struct pane *tile, *c;
+	tile = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	if (!tile)
+		return 1;
+	call5("doc:revisit", ci->focus, -1, NULL, NULL, 0);
+	c = pane_child(tile);
+	if (c)
+		pane_close(c);
+	c = call_pane("docs:choose", tile, 0, NULL, 0);
+	if (c)
+		doc_attach_view(tile, c, NULL);
+	return 1;
+}
+
 static struct map *emacs_map;
 
 static void emacs_init(void)
@@ -682,6 +699,8 @@ static void emacs_init(void)
 
 	key_add(m, "M-Chr-!", &emacs_shell);
 	key_add(m, "Shell Command", &emacs_shell);
+
+	key_add(m, "M-Chr-B", &emacs_bury);
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &emacs_num);
 	emacs_map = m;
