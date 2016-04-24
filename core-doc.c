@@ -500,6 +500,15 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
+
+	if (strcmp(ci->key, "doc:revisit") == 0) {
+		/* This must be redirected to document to propagate to parent.
+		 * I wonder if anything else does.
+		 */
+		return call5(ci->key, dd->doc, ci->numeric, ci->mark,
+			     ci->str, ci->extra);
+	}
+
 	if (strcmp(ci->key, "doc:autoclose") == 0) {
 		dd->autoclose = ci->numeric;
 		return 1;
