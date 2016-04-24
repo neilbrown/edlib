@@ -5,6 +5,7 @@
 
 LDLIBS= -ldl
 CPPFLAGS= -I.
+CC = gcc
 SPARSEFLAGS= -Wsparse-all -Wno-transparent-union -Wsparse-error
 # use "make DBG=" to avoid the extra checks and errors
 ifdef LEAK
@@ -39,20 +40,34 @@ INC-display-ncurses = -I/usr/include/ncursesw
 
 LIBS-lib-libevent = -levent
 
+#
+# Pretty print - borrowed from 'sparse'
+#
+V	      = @
+Q	      = $(V:1=)
+QUIET_CC      = $(Q:@=@echo    '     CC       '$@;)
+QUIET_AR      = $(Q:@=@echo    '     AR       '$@;)
+QUIET_GEN     = $(Q:@=@echo    '     GEN      '$@;)
+QUIET_LINK    = $(Q:@=@echo    '     LINK     '$@;)
+QUIET_LIB     = $(Q:@=@echo    '     LIB      '$@;)
+QUIET_CHECK   = $(Q:@=@echo    '     CHECK    '$<;)
+
+
+
 SO = $(patsubst O/%.o,lib/edlib-%.so,$(SHOBJ))
 H = list.h core.h misc.h
 edlib: $(OBJ) lib/libedlib.so
-	$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -Wl,--disable-new-dtags -o edlib $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
+	$(QUIET_LINK)$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -Wl,--disable-new-dtags -o edlib $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
 
 $(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) : $(H)
 
 $(OBJ) : O/%.o : %.c
-	sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
-	gcc $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
+	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
+	$(QUIET_CC)$(CC) $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
-	sparse  $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
-	gcc -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
+	$(QUIET_CHECK)sparse  $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
+	$(QUIET_CC)$(CC) -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 .PHONY: TAGS
 TAGS :
@@ -73,7 +88,7 @@ dirs :
 lib: lib/libedlib.so
 lib/libedlib.so: $(LIBOBJ)
 	@mkdir -p lib
-	gcc -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ)
+	$(QUIET_CC)$(CC) -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ)
 
 shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o O/rexel.o
@@ -81,7 +96,7 @@ lib/edlib-mode-emacs.so : O/mode-emacs.o O/emacs-search.o
 
 $(SO) : lib/edlib-%.so : O/%.o
 	@mkdir -p lib
-	gcc -shared -Wl,-soname,edlib-$*.so -o $@ $^ $(LIBS-$*)
+	$(QUIET_LIB)$(CC) -shared -Wl,-soname,edlib-$*.so -o $@ $^ $(LIBS-$*)
 
 CSRC= attr.c
 
