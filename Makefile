@@ -46,9 +46,11 @@ edlib: $(OBJ) lib/libedlib.so
 $(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) : $(H)
 
 $(OBJ) : O/%.o : %.c
+	sparse $(CPPFLAGS) $(INC-$*) -Wsparse-all $<
 	gcc $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
+	sparse  $(CPPFLAGS) $(INC-$*) -Wsparse-all $<
 	gcc -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 .PHONY: TAGS
