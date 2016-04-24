@@ -4,3 +4,5 @@ test_*
 TAGS
 lib/
 O/
+/.DEBUG
+/.LEAK

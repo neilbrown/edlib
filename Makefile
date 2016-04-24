@@ -7,11 +7,17 @@ LDLIBS= -ldl
 CPPFLAGS= -I.
 CC = gcc
 SPARSEFLAGS= -Wsparse-all -Wno-transparent-union -Wsparse-error
-# use "make DBG=" to avoid the extra checks and errors
-ifdef LEAK
-DBG= -Werror -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=leak
+# Create files .DEBUG and .LEAK for extra checking
+ifeq "$(wildcard .DEBUG)" ".DEBUG"
+ ifeq "$(wildcard .LEAK)" ".LEAK"
+  DBG= -Werror -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=leak
+ else
+  DBG= -Werror -fno-omit-frame-pointer -fsanitize=undefined
+ endif
+ CHK=
 else
-DBG= -Werror -fno-omit-frame-pointer -fsanitize=undefined
+ DBG=
+ CHK= @ : do-not-
 endif
 CFLAGS=-g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG)
 #Doesn't work :-( -fsanitize=address
@@ -50,7 +56,7 @@ QUIET_AR      = $(Q:@=@echo    '     AR       '$@;)
 QUIET_GEN     = $(Q:@=@echo    '     GEN      '$@;)
 QUIET_LINK    = $(Q:@=@echo    '     LINK     '$@;)
 QUIET_LIB     = $(Q:@=@echo    '     LIB      '$@;)
-QUIET_CHECK   = $(Q:@=@echo    '     CHECK    '$<;)
+QUIET_CHECK   = $(CHK)$(Q:@=@echo    '     CHECK    '$<;)
 
 
 
