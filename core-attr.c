@@ -33,6 +33,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <ctype.h>
+#include "core.h"
 
 struct attrset {
 	unsigned short	size, /* space allocated */
@@ -136,7 +137,7 @@ int main(int argc, char *argv[])
 
 #endif
 
-int __attr_find(struct attrset ***setpp, char *key, int *offsetp, int keynum)
+static int __attr_find(struct attrset ***setpp, char *key, int *offsetp, int keynum)
 {
 	struct attrset **setp = *setpp;
 	struct attrset *set = *setp;

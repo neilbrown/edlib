@@ -54,7 +54,7 @@ void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->data = NULL;
 	p->damaged = 0;
 	p->pointer = NULL;
-	p->attrs = 0;
+	p->attrs = NULL;
 }
 
 static void __pane_check(struct pane *p)
@@ -66,7 +66,7 @@ static void __pane_check(struct pane *p)
 	}
 }
 
-void pane_check(struct pane *p)
+static void pane_check(struct pane *p)
 {
 	while (p->parent)
 		p = p->parent;
