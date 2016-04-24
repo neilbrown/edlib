@@ -430,12 +430,12 @@ static char *__dir_get_attr(struct doc *d, struct mark *m,
 		return fmt_num(de, de->st.st_mode & 0777);
 	} else if (strcmp(attr, "perms") == 0) {
 		char *c;
-		int m;
+		int mode;
 		int i;
 		get_stat(dr, de);
 		c = de->nbuf;
-		m = de->st.st_mode;
-		switch (m & S_IFMT) {
+		mode = de->st.st_mode;
+		switch (mode & S_IFMT) {
 		case S_IFREG: *c ++ = '-'; break;
 		case S_IFDIR: *c ++ = 'd'; break;
 		case S_IFBLK: *c ++ = 'b'; break;
@@ -445,10 +445,10 @@ static char *__dir_get_attr(struct doc *d, struct mark *m,
 		default:      *c ++ = '?'; break;
 		}
 		for (i = 0; i < 3; i++) {
-			*c ++ = (m & 0400) ? 'r':'-';
-			*c ++ = (m & 0200) ? 'w':'-';
-			*c ++ = (m & 0100) ? 'x':'-';
-			m = m << 3;
+			*c ++ = (mode & 0400) ? 'r':'-';
+			*c ++ = (mode & 0200) ? 'w':'-';
+			*c ++ = (mode & 0100) ? 'x':'-';
+			mode = mode << 3;
 		}
 		*c = 0;
 		return de->nbuf;

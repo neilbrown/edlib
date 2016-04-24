@@ -75,6 +75,8 @@ int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark 
 void pane_drop_notifiers(struct pane *p, char *notification);
 
 struct pane *editor_new(void);
+/* This is declared here so sparse knows it is global */
+void edlib_init(struct pane *ed);
 
 struct doc {
 	struct hlist_head	marks;
