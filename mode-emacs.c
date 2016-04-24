@@ -13,11 +13,13 @@
 #include <wchar.h>
 #include <fcntl.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "core.h"
 
 REDEF_CMD(emacs_move);
 REDEF_CMD(emacs_delete);
+REDEF_CMD(emacs_case);
 
 static struct move_command {
 	struct command	cmd;
@@ -64,6 +66,15 @@ static struct move_command {
 	 "M-C-Chr-H", "M-Backspace", NULL},
 	{CMD(emacs_delete), "Move-EOL", 1,
 	 "C-Chr-K", NULL, NULL},
+
+	{CMD(emacs_case), "LMove-Word", 1,
+	 "M-Chr-l", NULL, NULL},
+	{CMD(emacs_case), "UMove-Word", 1,
+	 "M-Chr-u", NULL, NULL},
+	{CMD(emacs_case), "CMove-Word", 1,
+	 "M-Chr-c", NULL, NULL},
+	{CMD(emacs_case), "TMove-Char", 1,
+	 "M-Chr-`", NULL, NULL},
 };
 
 REDEF_CMD(emacs_move)
@@ -138,6 +149,88 @@ REDEF_CMD(emacs_delete)
 	mark_free(m);
 	pane_set_extra(ci->focus, 1);
 
+	return ret;
+}
+
+REDEF_CMD(emacs_case)
+{
+	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
+	int ret = 0;
+	struct mark *start = NULL;
+	int cnt = mv->direction * RPT_NUM(ci);
+	int dir;
+
+	if (cnt == 0)
+		return 1;
+	if (cnt > 0) {
+		dir = 1;
+	} else {
+		dir = -1;
+		cnt = -cnt;
+		start = mark_dup(ci->mark, 1);
+	}
+
+	while (cnt > 0) {
+		struct mark *m = mark_dup(ci->mark, 1);
+
+		ret = call3(mv->type+1, ci->focus, dir, ci->mark);
+		if (ret <= 0 || mark_same_pane(ci->focus, ci->mark, m, NULL))
+			/* Hit end of file */
+			cnt = 1;
+		else {
+			char *str = doc_getstr(ci->focus, ci->mark, m);
+			char *c;
+			int changed = 0;
+			int found = 0;
+
+			for (c = str; *c; c += 1) {
+				char type = mv->type[0];
+				if (type == 'C') {
+					type = found ? 'L' : 'U';
+					if (isalpha(*c))
+						found = 1;
+				}
+				switch(type) {
+				default: /* silence compiler */
+				case 'U': /* Uppercase */
+					if (islower(*c)) {
+						changed = 1;
+						*c = toupper(*c);
+					}
+					break;
+				case 'L': /* Lowercase */
+					if (isupper(*c)) {
+						changed = 1;
+						*c = tolower(*c);
+					}
+					break;
+				case 'T': /* Toggle */
+					if (isupper(*c)) {
+						changed = 1;
+						*c = tolower(*c);
+					} else if (islower(*c)) {
+						changed = 1;
+						*c = toupper(*c);
+					}
+					break;
+				}
+			}
+			if (changed) {
+				ret = call5("Replace", ci->focus, 1, m, str, ci->extra);
+				if (dir < 0)
+					call3(mv->type+1, ci->focus, dir, ci->mark);
+			}
+			free(str);
+			pane_set_extra(ci->focus, 1);
+		}
+		mark_free(m);
+		cnt -= 1;
+	}
+	/* When moving forward, move point.  When backward, leave point alone */
+	if (start) {
+		mark_to_mark(ci->mark, start);
+		mark_free(start);
+	}
 	return ret;
 }
 
