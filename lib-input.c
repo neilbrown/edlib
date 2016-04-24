@@ -84,7 +84,7 @@ DEF_CMD(mouse_event)
 {
 	struct input_mode *im = ci->home->data;
 	int l;
-	struct cmd_info ci2 = {0};
+	struct cmd_info ci2 = {};
 
 	pane_notify(ci->home, "Notify:Mouse-event", NULL, NULL, ci->str, 0);
 

@@ -328,7 +328,7 @@ static Pane *pane_next(Pane *self)
 
 static PyObject *Pane_call(Pane *self, PyObject *args, PyObject *kwds)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	int rv;
 
 	ci.home = self->pane;
@@ -1055,7 +1055,7 @@ static PyObject *comm_repr(Comm *p)
 
 static PyObject *Comm_call(Comm *c, PyObject *args, PyObject *kwds)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	int rv;
 
 #if 0

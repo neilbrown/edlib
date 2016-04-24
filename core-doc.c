@@ -125,7 +125,7 @@ static int do_doc_find_view(struct doc *d, struct command *c)
 
 static void doc_close_views(struct doc *d)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	int i;
 
 	for (i = 0; i < d->nviews; i++)
@@ -672,7 +672,7 @@ DEF_CMD(doc_attr_callback)
 
 char *doc_attr(struct pane *dp, struct mark *m, bool forward, char *attr)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	struct call_return cr;
 
 	ci.key = "doc:get-attr";
@@ -700,7 +700,7 @@ DEF_CMD(doc_str_callback)
 
 char *doc_getstr(struct pane *from, struct mark *to, struct mark *m2)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	int ret;
 	struct call_return cr;
 

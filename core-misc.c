@@ -40,7 +40,7 @@ void buf_concat(struct buf *b, char *s)
 void buf_append(struct buf *b, wchar_t wch)
 {
 	char t[5];
-	mbstate_t ps = {0};
+	mbstate_t ps = {};
 	size_t l;
 
 	if (wch <= 0x7f) {

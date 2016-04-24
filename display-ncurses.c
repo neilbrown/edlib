@@ -270,7 +270,7 @@ static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h)
 static void ncurses_text(struct pane *p, wchar_t ch, int attr, int x, int y, int cursor)
 {
 	struct display_data *dd;
-	cchar_t cc = {0};
+	cchar_t cc = {};
 	int w=1, h=1;
 	int z = p->z;
 
@@ -385,7 +385,7 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 
 static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = "Mouse-event";
 	ci.str = cmd;

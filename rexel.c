@@ -701,7 +701,7 @@ static int is_set_element(char *p)
 /* FIXME UNICODE */
 static int do_parse_set(struct parse_state *st, int plane)
 {
-	mbstate_t ps = {0};
+	mbstate_t ps = {};
 	char *p = st->patn;
 	wchar_t ch;
 	int newplane = 0xFFFFFF;
@@ -904,7 +904,7 @@ static int parse_atom(struct parse_state *st)
 	if (*st->patn == '[')
 		return parse_set(st);
 	if (*st->patn & 0x80) {
-		mbstate_t ps = {0};
+		mbstate_t ps = {};
 		int len = mbrtowc(&ch, st->patn, 5, &ps);
 		if (len <= 0)
 			return 0;
@@ -1148,7 +1148,7 @@ unsigned short *rxl_parse_verbatim(char *patn, int nocase)
 {
 	struct parse_state st;
 	int i, l;
-	mbstate_t ps = {0};
+	mbstate_t ps = {};
 	wchar_t ch;
 
 	st.next = 1 + strlen(patn) + 1;
@@ -1301,8 +1301,8 @@ static void run_tests()
 		int mstart = -1, mlen;
 		int len, ccnt = 0;
 
-		mbstate_t ps = {0};
-		struct match_state st = {0};
+		mbstate_t ps = {};
+		struct match_state st = {};
 
 		if (f & F_VERB)
 			rxl = rxl_parse_verbatim(patn, f & F_ICASE);
@@ -1364,7 +1364,7 @@ int main(int argc, char *argv[])
 	int verbatim = 0;
 	int longest = 0;
 	int opt;
-	mbstate_t ps = {0};
+	mbstate_t ps = {};
 	char *patn, *target;
 
 	while ((opt = getopt(argc, argv, "ivlT")) > 0)

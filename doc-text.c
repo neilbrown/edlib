@@ -943,7 +943,7 @@ static wint_t text_next(struct text *t, struct doc_ref *r)
 {
 	wchar_t ret;
 	int err;
-	mbstate_t ps = {0};
+	mbstate_t ps = {};
 
 	if (r->c == NULL)
 		return WEOF;
@@ -969,7 +969,7 @@ static wint_t text_prev(struct text *t, struct doc_ref *r)
 {
 	wchar_t ret;
 	int err;
-	mbstate_t ps = {0};
+	mbstate_t ps = {};
 
 	if (r->c == NULL) {
 		if (list_empty(&t->text))

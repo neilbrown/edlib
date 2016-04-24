@@ -45,7 +45,7 @@ DEF_CMD(get_command_callback)
 
 static struct command *get_command(struct pane *p, char *cmd)
 {
-	struct call_return cr = {0};
+	struct call_return cr = {};
 	int ret;
 
 	cr.c = get_command_callback;

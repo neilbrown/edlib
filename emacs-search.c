@@ -108,7 +108,7 @@ DEF_CMD(search_add)
 	struct es_info *esi = ci->home->data;
 	wint_t wch;
 	char b[5];
-	mbstate_t ps = {0};
+	mbstate_t ps = {};
 	int l;
 
 	do {

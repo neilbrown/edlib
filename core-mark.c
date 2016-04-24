@@ -509,7 +509,7 @@ wint_t mark_step_pane(struct pane *p, struct mark *m, int forward, int move, str
 
 wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	return mark_step(d, m, forward, move, &ci);
 }
@@ -538,7 +538,7 @@ wint_t mark_next_pane(struct pane *p, struct mark *m)
 {
 	wint_t ret;
 	struct mark *m2 = NULL;
-	struct cmd_info same_ci = {0};
+	struct cmd_info same_ci = {};
 
 	while ((m2 = doc_next_mark_all(m)) != NULL &&
 	       mark_same_pane_exact(p, m, m2, &same_ci))
@@ -577,7 +577,7 @@ wint_t mark_prev_pane(struct pane *p, struct mark *m)
 {
 	wint_t ret;
 	struct mark *mp = NULL;
-	struct cmd_info same_ci = {0};
+	struct cmd_info same_ci = {};
 
 	while ((mp = doc_prev_mark_all(m)) != NULL &&
 	       mark_same_pane_exact(p, m, mp, &same_ci))
@@ -742,7 +742,7 @@ void mark_to_mark(struct mark *m, struct mark *target)
 
 int mark_same2(struct doc *d, struct mark *m1, struct mark *m2, struct cmd_info *ci)
 {
-	struct cmd_info ci2 = {0};
+	struct cmd_info ci2 = {};
 
 	if (!ci)
 		ci = &ci2;
@@ -761,7 +761,7 @@ int mark_same(struct doc *d, struct mark *m1, struct mark *m2)
 int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2,
 		   struct cmd_info *ci)
 {
-	struct cmd_info ci2 = {0};
+	struct cmd_info ci2 = {};
 
 	if (!ci)
 		ci = &ci2;
@@ -775,7 +775,7 @@ int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2,
 static int mark_same_pane_exact(struct pane *p, struct mark *m1, struct mark *m2,
 				struct cmd_info *ci)
 {
-	struct cmd_info ci2 = {0};
+	struct cmd_info ci2 = {};
 
 	if (!ci)
 		ci = &ci2;
@@ -877,7 +877,7 @@ DEF_CMD(take_marks)
 static int vmark_get(struct pane *p, int view,
 		     struct mark **first, struct mark **last, struct mark **point, struct mark **new)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	struct call_return cr;
 
 	ci.key = "doc:vmark-get";
@@ -929,7 +929,7 @@ struct mark *vmark_at_point(struct pane *p, int view)
 
 struct mark *vmark_at_or_before(struct pane *p, struct mark *m, int view)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	struct call_return cr;
 
 	ci.key = "doc:vmark-get";
@@ -1041,7 +1041,7 @@ static void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
 	 * and all marks with the same ref as p or m.
 	 * There will be none in between.
 	 */
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	int i;
 	struct point_links *lnk = p->mdata;
 
@@ -1097,7 +1097,7 @@ static void point_notify_change(struct doc *d, struct mark *p, struct mark *m)
  */
 void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	char *done;
 	int i;
 	int remaining = d->nviews;

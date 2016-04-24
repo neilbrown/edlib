@@ -44,7 +44,7 @@ DEF_CMD(global_get_command)
 {
 	struct map *map = ci->home->data;
 	struct command *cm = key_lookup_cmd(map, ci->str);
-	struct cmd_info ci2 = {0};
+	struct cmd_info ci2 = {};
 
 	if (!cm)
 		return -1;

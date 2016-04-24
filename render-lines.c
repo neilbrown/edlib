@@ -125,7 +125,7 @@ static int draw_some(struct pane *p, int *x, int y, char *start, char **endp,
 	 */
 	int len = *endp - start;
 	char *str = strndup(start, len);
-	struct call_return cr = {0};
+	struct call_return cr = {};
 	int max;
 	int ret = WRAP;
 	int rmargin = p->w - margin;
@@ -588,7 +588,7 @@ DEF_CMD(save_str)
 
 static struct mark *call_render_line(struct pane *p, struct mark *start)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	struct call_return cr;
 	struct mark *m, *m2;
 
@@ -657,7 +657,7 @@ DEF_CMD(get_len)
 static int call_render_line_to_point(struct pane *p, struct mark *pm,
 				     struct mark *start)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	int len;
 
 	ci.key = "render-line";

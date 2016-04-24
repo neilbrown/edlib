@@ -32,7 +32,7 @@ struct evt {
 static void call_event(int thing, short sev, void *evv)
 {
 	struct evt *ev = evv;
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = "callback:event";
 	ci.home = ci.focus = ev->home;

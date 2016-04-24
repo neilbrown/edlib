@@ -69,7 +69,7 @@ DEF_CMD(render_complete_line)
 	/* The first line *must* match the prefix.
 	 * skip over any following lines that don't
 	 */
-	struct cmd_info ci2 = {0};
+	struct cmd_info ci2 = {};
 	struct complete_data *cd = ci->home->data;
 	int plen = strlen(cd->prefix);
 	struct call_return cr;
@@ -133,7 +133,7 @@ DEF_CMD(render_complete_prev)
 	 * otherwise call repeatedly and then render the line and see if
 	 * it matches the prefix.
 	 */
-	struct cmd_info ci2 = {0}, ci3 = {0};
+	struct cmd_info ci2 = {}, ci3 = {};
 	struct rlcb cb;
 	struct complete_data *cd = ci->home->data;
 	int ret;
@@ -239,7 +239,7 @@ DEF_CMD(complete_eol)
 		/* movement within the line */
 		return 1;
 	while (rpt < -1) {
-		struct cmd_info ci2 = {0};
+		struct cmd_info ci2 = {};
 		ci2.key = "render-line-prev";
 		ci2.numeric = 1;
 		ci2.mark = ci->mark;
@@ -250,7 +250,7 @@ DEF_CMD(complete_eol)
 		rpt += 1;
 	}
 	while (rpt > 1) {
-		struct cmd_info ci2 = {0};
+		struct cmd_info ci2 = {};
 		struct call_return cr;
 		ci2.key = "render-line";
 		ci2.numeric = NO_NUMERIC;
@@ -287,7 +287,7 @@ DEF_CMD(complete_set_prefix)
 	 */
 	struct pane *p = ci->home;
 	struct complete_data *cd = p->data;
-	struct cmd_info ci2 = {0};
+	struct cmd_info ci2 = {};
 	struct mark *m;
 	int cnt = 0;
 	char *common = NULL;
@@ -335,7 +335,7 @@ DEF_CMD(complete_return)
 	/* submit the selected entry to the popup */
 	struct pane *p = ci->home;
 	struct complete_data *cd = p->data;
-	struct cmd_info ci2 = {0};
+	struct cmd_info ci2 = {};
 	struct call_return cr;
 	int l;
 	char *c1, *c2;

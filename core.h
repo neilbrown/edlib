@@ -276,6 +276,7 @@ struct cmd_info {
 	struct mark	*mark, *mark2;
 	struct command	*comm, *comm2;
 };
+
 #define	NO_NUMERIC	(INT_MAX/2)
 #define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric == -NO_NUMERIC ? -1 : (ci)->numeric)
 
@@ -383,7 +384,7 @@ static inline wint_t doc_prior_pane(struct pane *p, struct mark *m)
 }
 static inline int doc_undo(struct pane *p, bool redo)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	ci.focus = p;
 	ci.numeric = redo ? 1 : 0;
 	ci.key = "doc:reundo";
@@ -391,7 +392,7 @@ static inline int doc_undo(struct pane *p, bool redo)
 }
 static inline int doc_load_file(struct pane *p, int fd, char *name)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	ci.focus = p;
 	ci.extra = fd;
 	ci.str = name;
@@ -402,7 +403,7 @@ static inline int doc_load_file(struct pane *p, int fd, char *name)
 static inline int doc_set_attr(struct pane *p, struct mark *pt,
 			       char *attr, char *val)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = "doc:set-attr";
 	ci.focus = p;
@@ -415,7 +416,7 @@ static inline int doc_set_attr(struct pane *p, struct mark *pt,
 
 static inline int doc_add_view(struct pane *p, struct command *c)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	int ret;
 	ci.focus = p;
 	ci.key = "doc:add-view";
@@ -428,7 +429,7 @@ static inline int doc_add_view(struct pane *p, struct command *c)
 
 static inline void doc_del_view(struct pane *p, int num)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	ci.focus = p;
 	ci.key = "doc:del-view";
 	ci.numeric = num;
@@ -437,7 +438,7 @@ static inline void doc_del_view(struct pane *p, int num)
 
 static inline void doc_del_view_notifier(struct pane *p, struct command *c)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	ci.focus = p;
 	ci.key = "doc:del-view";
 	ci.numeric = -1;
@@ -447,7 +448,7 @@ static inline void doc_del_view_notifier(struct pane *p, struct command *c)
 
 static inline int doc_find_view(struct pane *p, struct command *c)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	int ret;
 
 	ci.focus = p;
@@ -461,7 +462,7 @@ static inline int doc_find_view(struct pane *p, struct command *c)
 
 static inline int call3(char *key, struct pane *focus, int numeric, struct mark *m)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = key;
 	ci.focus = focus;
@@ -473,7 +474,7 @@ static inline int call3(char *key, struct pane *focus, int numeric, struct mark 
 static inline int call_home(struct pane *home, char *key, struct pane *focus,
 			    int numeric, struct mark *m, struct command *comm)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = key;
 	ci.focus = focus;
@@ -487,7 +488,7 @@ static inline int call_home(struct pane *home, char *key, struct pane *focus,
 static inline int call5(char *key, struct pane *focus, int numeric, struct mark *m,
 			 char *str, int extra)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = key;
 	ci.focus = focus;
@@ -501,7 +502,7 @@ static inline int call5(char *key, struct pane *focus, int numeric, struct mark 
 static inline int call_xy(char *key, struct pane *focus, int numeric,
 			  char *str, char *str2, int x, int y)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = key;
 	ci.focus = focus;
@@ -517,7 +518,7 @@ static inline int call_xy7(char *key, struct pane *focus, int numeric, int extra
 			   char *str, char *str2, int x, int y,
 			   struct mark *m, struct mark *m2)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = key;
 	ci.focus = focus;
@@ -535,7 +536,7 @@ static inline int call_xy7(char *key, struct pane *focus, int numeric, int extra
 static inline int call7(char *key, struct pane *focus, int numeric, struct mark *m,
 			char *str, int extra, char *str2, struct mark *m2)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = key;
 	ci.focus = focus;
@@ -561,7 +562,7 @@ struct call_return {
 static inline int call_comm(char *key, struct pane *focus, int numeric, struct mark *m,
 			    char *str, int extra, struct command *comm)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = key;
 	ci.focus = focus;
@@ -576,7 +577,7 @@ static inline int call_comm(char *key, struct pane *focus, int numeric, struct m
 static inline int call_comm7(char *key, struct pane *focus, int numeric, struct mark *m,
 			     char *str, int extra, char *str2, struct command *comm)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = key;
 	ci.focus = focus;
@@ -592,7 +593,7 @@ static inline int call_comm7(char *key, struct pane *focus, int numeric, struct 
 static inline int comm_call(struct command *comm, char *key, struct pane *focus,
 			    int numeric, struct mark *m, char *str, int extra)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	if (!comm)
 		return -1;
@@ -609,7 +610,7 @@ static inline int comm_call(struct command *comm, char *key, struct pane *focus,
 static inline int comm_call_xy(struct command *comm, char *key, struct pane *focus,
 			       int numeric, int extra, int x, int y)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	if (!comm)
 		return -1;
@@ -627,7 +628,7 @@ static inline int comm_call_pane(struct pane *home, char *key, struct pane *focu
 				 int numeric, struct mark *m, char *str, int extra,
 				 struct mark *m2)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	struct command *comm = home->handle;
 
 	if (!comm)
@@ -648,7 +649,7 @@ static inline int comm_call7(struct command *comm, char *key,
 			     int numeric, struct mark *m, char *str,
 			     int extra, char *str2, struct mark *m2)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	if (!comm)
 		return -1;

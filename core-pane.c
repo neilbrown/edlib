@@ -179,7 +179,7 @@ static void __pane_refresh(struct cmd_info ci)
 
 void pane_refresh(struct pane *p)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	/* Always refresh a whole display */
 	while (p->parent)
 		p = p->parent;
@@ -268,7 +268,7 @@ void pane_close(struct pane *p)
 	pane_check(p);
 
 	if (p->parent && p->parent->handle) {
-		struct cmd_info ci = {0};
+		struct cmd_info ci = {};
 
 		ci.key = "ChildClosed";
 		ci.focus = p;
@@ -289,7 +289,7 @@ void pane_close(struct pane *p)
 	}
 	pane_notify_close(p);
 	if (p->handle) {
-		struct cmd_info ci = {0};
+		struct cmd_info ci = {};
 
 		ci.key = "Close";
 		ci.focus = ci.home = p;
@@ -491,7 +491,7 @@ void pane_set_extra(struct pane *p, int extra)
 
 void pane_clear(struct pane *p, char *attrs)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 
 	ci.key = "pane-clear";
 	ci.focus = p;
@@ -545,7 +545,7 @@ DEF_CMD(take_pane)
 struct pane *call_pane(char *key, struct pane *focus, int numeric,
 		       struct mark *m, int extra)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	struct call_return cr;
 
 	ci.key = key;
@@ -564,7 +564,7 @@ struct pane *call_pane(char *key, struct pane *focus, int numeric,
 struct pane *call_pane7(char *key, struct pane *focus, int numeric,
 			struct mark *m, int extra, char *str, char *str2)
 {
-	struct cmd_info ci = {0};
+	struct cmd_info ci = {};
 	struct call_return cr;
 
 	ci.key = key;
