@@ -457,7 +457,6 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "Notify:Close") == 0) {
 		/* This pane has to go away */
-		struct doc_data *dd = ci->home->data;
 		struct pane *par = ci->home, *p;
 
 		/* Point needs to go now else it will be delete when

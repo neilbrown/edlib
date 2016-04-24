@@ -10,7 +10,7 @@
 
 #include "core.h"
 
-struct map *ed_map;
+static struct map *ed_map;
 
 DEF_CMD(ed_handle)
 {
