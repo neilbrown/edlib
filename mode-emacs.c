@@ -346,15 +346,13 @@ REDEF_CMD(emacs_simple_neg)
 
 DEF_CMD(emacs_exit)
 {
-	struct pane *p = ci->home;
-
 	if (ci->numeric == NO_NUMERIC) {
 		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
 					    "DM", NULL);
 		attr_set_str(&p->attrs, "done-key", "event:deactivate", -1);
-		return call3("docs:show-modified", p, 0, 0);
+		return call3("docs:show-modified", p, 0, NULL);
 	} else
-		call3("event:deactivate", p, 0, NULL);
+		call3("event:deactivate", ci->focus, 0, NULL);
 	return 1;
 }
 
@@ -570,7 +568,7 @@ REDEF_CMD(emacs_file_complete)
 	}
 	if (cr.s) {
 		/* add the extra chars from ci2.str */
-		char *c = cr.s + strlen(b);
+		c = cr.s + strlen(b);
 
 		call5("Replace", ci->focus, 1, ci->mark, c, 0);
 		free(cr.s);
@@ -748,7 +746,7 @@ DEF_CMD(emacs_neg)
 
 DEF_CMD(emacs_kill_doc)
 {
-	return call3("doc:destroy", ci->focus, 0, 0);
+	return call3("doc:destroy", ci->focus, 0, NULL);
 }
 
 DEF_CMD(emacs_save_all)
@@ -756,9 +754,9 @@ DEF_CMD(emacs_save_all)
 	if (ci->numeric == NO_NUMERIC) {
 		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
 					    "DM", NULL);
-		return call3("docs:show-modified", p, 0, 0);
+		return call3("docs:show-modified", p, 0, NULL);
 	} else
-		return call3("docs:save-all", ci->focus, 0, 0);
+		return call3("docs:save-all", ci->focus, 0, NULL);
 }
 
 DEF_CMD(emacs_search)

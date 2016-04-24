@@ -240,7 +240,7 @@ DEF_CMD(emacs_search)
 
 	if (!es_map)
 		emacs_search_init_map();
-	p = call_pane("popup:get-target", ci->focus, 0, 0, 0);
+	p = call_pane("popup:get-target", ci->focus, 0, NULL, 0);
 	if (!p)
 		return -1;
 	esi = malloc(sizeof(*esi));
