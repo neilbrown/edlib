@@ -111,6 +111,7 @@ DEF_CMD(messageline_handle)
 		free(mli->message);
 		mli->message = NULL;
 		pane_drop_notifiers(ci->home, "Notify:Keystroke");
+		pane_damaged(mli->line, DAMAGED_CONTENT);
 		return 1;
 	}
 	return 0;
