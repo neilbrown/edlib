@@ -267,7 +267,7 @@ DEF_CMD(find_done)
 	int ret;
 	char *str = doc_getstr(ci->focus, NULL, NULL);
 
-	ret = call5("popup:close", ci->focus->parent, 0, NULL, str, 0);
+	ret = call5("popup:close", ci->focus, 0, NULL, str, 0);
 	free(str);
 	return ret;
 }
