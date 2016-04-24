@@ -531,6 +531,8 @@ DEF_CMD(emacs_shell)
 		attr_set_str(&p->attrs, "prefix", "Shell command: ", -1);
 		attr_set_str(&p->attrs, "done-key", "Shell Command", -1);
 		call5("doc:set-name", p, 0, NULL, "Shell Command", 0);
+		p = call_pane7("attach-history", pane_final_child(p), 0, NULL, 0,
+			       "*Shell History*", "popup:close");
 		pane_register(pane_final_child(p), 0, &find_handle.c, "cmd", NULL);
 		return 1;
 	}
