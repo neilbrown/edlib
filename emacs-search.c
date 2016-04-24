@@ -267,6 +267,8 @@ DEF_CMD(emacs_search)
 	return 1;
 }
 
+/* Pre-declare to silence sparse - for now */
+void emacs_search_init(struct pane *ed);
 void emacs_search_init(struct pane *ed)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-emacs-search",

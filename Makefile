@@ -5,7 +5,7 @@
 
 LDLIBS= -ldl
 CPPFLAGS= -I.
-SPARSEFLAGS= -Wsparse-all -Wno-transparent-union
+SPARSEFLAGS= -Wsparse-all -Wno-transparent-union -Wsparse-error
 # use "make DBG=" to avoid the extra checks and errors
 ifdef LEAK
 DBG= -Werror -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=leak
