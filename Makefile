@@ -19,6 +19,13 @@ else
  DBG=
  CHK= @ : do-not-
 endif
+ifeq "$(wildcard .SMATCH)" ".SMATCH"
+ # SYMLINK .SMATCH to the smatch binary for testing.
+ SMATCH_CMD=$(shell readlink .SMATCH)
+ QUIET_SMATCH  = $(Q:@=@echo    '     SMATCH   '$<;)$(SMATCH_CMD)
+else
+ QUIET_SMATCH  = @: skip
+endif
 CFLAGS=-g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG)
 #Doesn't work :-( -fsanitize=address
 
@@ -73,6 +80,7 @@ $(OBJ) : O/%.o : %.c
 
 $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
 	$(QUIET_CHECK)sparse  $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
+	$(QUIET_SMATCH) -I/usr/include/x86_64-linux-gnu/ $(CPPFLAGS) $(INC-$*) $<
 	$(QUIET_CC)$(CC) -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 .PHONY: TAGS

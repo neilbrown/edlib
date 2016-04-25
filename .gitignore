@@ -6,3 +6,4 @@ lib/
 O/
 /.DEBUG
 /.LEAK
+/.SMATCH
