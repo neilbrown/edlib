@@ -145,7 +145,7 @@ DEF_CMD(popup_attach)
 	 * r  - allow recursive popup
 	 */
 	struct pane *root;
-	struct popup_info *ppi = malloc(sizeof(*ppi));
+	struct popup_info *ppi;
 	char *style = ci->str;
 	char border[5];
 	int i, j;
@@ -168,6 +168,7 @@ DEF_CMD(popup_attach)
 	if (!root)
 		return 0;
 
+	ppi = malloc(sizeof(*ppi));
 	ppi->target = ci->focus;
 	ppi->popup = pane_register(root, z, &popup_handle, ppi, NULL);
 	ppi->style = style;
