@@ -14,10 +14,10 @@ ifeq "$(wildcard .DEBUG)" ".DEBUG"
  else
   DBG= -Werror -fno-omit-frame-pointer -fsanitize=undefined
  endif
- CHK=
+ QUIET_CHECK   = $(Q:@=@echo    '     CHECK    '$<;)
 else
  DBG=
- CHK= @ : do-not-
+ QUIET_CHECK   = @: skip
 endif
 ifeq "$(wildcard .SMATCH)" ".SMATCH"
  # SYMLINK .SMATCH to the smatch binary for testing.
@@ -63,7 +63,6 @@ QUIET_AR      = $(Q:@=@echo    '     AR       '$@;)
 QUIET_GEN     = $(Q:@=@echo    '     GEN      '$@;)
 QUIET_LINK    = $(Q:@=@echo    '     LINK     '$@;)
 QUIET_LIB     = $(Q:@=@echo    '     LIB      '$@;)
-QUIET_CHECK   = $(CHK)$(Q:@=@echo    '     CHECK    '$<;)
 
 
 
