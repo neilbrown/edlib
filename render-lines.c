@@ -1360,7 +1360,7 @@ static void render_lines_register_map(void)
 
 REDEF_CMD(render_lines_attach)
 {
-	struct rl_data *rl = calloc(sizeof(*rl), 1);
+	struct rl_data *rl = calloc(1, sizeof(*rl));
 
 	if (!rl_map)
 		render_lines_register_map();

@@ -566,7 +566,7 @@ DEF_CMD(doc_handle)
 struct pane *doc_attach(struct pane *parent, struct pane *d)
 {
 	struct pane *p;
-	struct doc_data *dd = calloc(sizeof(*dd), 1);
+	struct doc_data *dd = calloc(1, sizeof(*dd));
 
 	dd->doc = d;
 

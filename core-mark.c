@@ -147,7 +147,7 @@ struct mark *do_mark_at_point(struct mark *pt, int view)
 		return NULL;
 	lnk = pt->mdata;
 
-	ret = calloc(sizeof(*ret), 1);
+	ret = calloc(1, sizeof(*ret));
 
 	dup_mark(pt, ret);
 	ret->viewnum = view;
@@ -238,7 +238,7 @@ struct mark *mark_dup(struct mark *m, int notype)
 	if (!notype && m->viewnum == MARK_POINT)
 			return NULL;
 
-	ret = calloc(sizeof(*ret), 1);
+	ret = calloc(1, sizeof(*ret));
 	dup_mark(m, ret);
 	if (notype) {
 		ret->viewnum = MARK_UNGROUPED;
@@ -383,7 +383,7 @@ struct mark *doc_new_mark(struct doc *d, int view)
 	    view < MARK_UNGROUPED ||
 	    (view >= 0 && d->views[view].state != 1))
 		return NULL;
-	ret = calloc(sizeof(*ret), 1);
+	ret = calloc(1, sizeof(*ret));
 	ret->viewnum = view;
 	__mark_reset(d, ret, 1, 0);
 	return ret;

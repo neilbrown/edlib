@@ -124,7 +124,7 @@ DEF_CMD(history_attach)
 	if (!ci->str)
 		return -1;
 
-	hi = calloc(sizeof(*hi), 1);
+	hi = calloc(1, sizeof(*hi));
 	hi->donekey = ci->str2;
 	hi->history = call_pane7("docs:byname", ci->focus, 0, NULL, 0,
 				 ci->str, NULL);
