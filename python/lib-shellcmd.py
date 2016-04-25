@@ -37,7 +37,6 @@ class ShellPane(edlib.Pane):
             self.call("Replace", "\nProcess Finished\n");
             return -1
         self.call("Replace", r);
-        self.refresh()
         return 1
 
     def handle(self, key, **a):
