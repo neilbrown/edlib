@@ -535,6 +535,9 @@ static int tile_grow(struct pane *p, int horiz, int size)
 				break;
 		}
 
+		if (other == NULL)
+			/* Strange - there should have been two elements in list */
+			return 1;
 		if (ti->direction == Horiz) {
 			p->w += size;
 			other->w -= size;
