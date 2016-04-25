@@ -201,7 +201,8 @@ DEF_CMD(docs_modified_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "doc:step") == 0) {
+	if (strcmp(ci->key, "doc:step") == 0 &&
+	    ci->mark) {
 		/* Only permit stepping to a document that is modified and
 		 * has a file name
 		 */
@@ -227,7 +228,8 @@ DEF_CMD(docs_modified_handle)
 		}
 		return ret;
 	}
-	if (strcmp(ci->key, "doc:get-attr") == 0) {
+	if (strcmp(ci->key, "doc:get-attr") == 0 &&
+	    ci->mark) {
 		char *attr;
 		m = mark_dup(ci->mark, 1);
 		mark_to_modified(ci->home->parent, m);
@@ -238,7 +240,8 @@ DEF_CMD(docs_modified_handle)
 		comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, attr, 0);
 		return 1;
 	}
-	if (strcmp(ci->key, "doc:mark-same") == 0) {
+	if (strcmp(ci->key, "doc:mark-same") == 0 &&
+		ci->mark && ci->mark2) {
 		struct docs *doc = ci->home->data;
 		struct pane *p1 = ci->mark->ref.p;
 		struct pane *p2 = ci->mark2->ref.p;
