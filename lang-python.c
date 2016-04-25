@@ -185,10 +185,9 @@ REDEF_CMD(python_call)
 
 	args = Py_BuildValue("(s)", ci->key);
 	kwds = PyDict_New();
+	PyDict_SetItemString(kwds, "home", Pane_Frompane(ci->home));
 	if (ci->focus)
 		PyDict_SetItemString(kwds, "focus", Pane_Frompane(ci->focus));
-	if (ci->home)
-		PyDict_SetItemString(kwds, "home", Pane_Frompane(ci->home));
 	if (ci->mark)
 		PyDict_SetItemString(kwds, "mark", Mark_Frommark(ci->mark));
 	if (ci->mark2)
