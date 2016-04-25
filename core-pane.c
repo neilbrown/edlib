@@ -106,11 +106,9 @@ struct pane *pane_register(struct pane *parent, int z,
  * 'abs_z' of root is 0, and abs_z of every other pane is 1 more than abs_zhi
  * of siblings with lower 'z', or same as parent if no such siblings.
  */
-static void __pane_refresh(struct cmd_info ci)
+static void __pane_refresh(struct pane *p, int damage, struct mark *pointer)
 {
 	struct pane *c;
-	int damage = ci.extra;
-	struct pane *p = ci.home;
 	int nextz;
 	int abs_z = p->abs_z + 1;
 
@@ -123,28 +121,23 @@ static void __pane_refresh(struct cmd_info ci)
 		p->focus = list_first_entry_or_null(
 			&p->children, struct pane, siblings);
 	if (p->pointer)
-		ci.mark = p->pointer;
+		pointer = p->pointer;
 
 	damage |= p->damaged;
 	if (!damage)
 		return;
 	p->damaged = 0;
 	if (damage & (DAMAGED_NEED_CALL)) {
-		struct cmd_info ci2 = ci;
-		ci2.extra = damage;
-		if (ci2.extra & DAMAGED_SIZE)
-			ci2.extra |= DAMAGED_CONTENT;
-		if (ci2.extra & DAMAGED_CONTENT)
-			ci2.extra |= DAMAGED_CURSOR;
+		if (damage & DAMAGED_SIZE)
+			damage |= DAMAGED_CONTENT;
+		if (damage & DAMAGED_CONTENT)
+			damage |= DAMAGED_CURSOR;
+		if (comm_call(p->handle, "Refresh", p, 0, pointer, NULL, damage) == 0)
+			pane_check_size(p);
 		damage &= DAMAGED_SIZE | DAMAGED_EVENTS | DAMAGED_CURSOR;
-		if (p->handle) {
-			ci2.comm = p->handle;
-			if (p->handle->func(&ci2) == 0)
-				pane_check_size(p);
-		}
 	} else
 		damage = 0;
-	ci.extra = damage;
+
 	nextz = 0;
 	while (nextz >= 0) {
 		int z = nextz;
@@ -158,8 +151,7 @@ static void __pane_refresh(struct cmd_info ci)
 					c->abs_z = abs_z;
 					c->damaged |= DAMAGED_Z;
 				}
-				ci.home = c;
-				__pane_refresh(ci);
+				__pane_refresh(c, damage, pointer);
 				if (c->abs_zhi > abs_zhi)
 					abs_zhi = c->abs_zhi;
 			}
@@ -170,23 +162,14 @@ static void __pane_refresh(struct cmd_info ci)
 	if (p->damaged & DAMAGED_POSTORDER) {
 		/* post-order call was triggered */
 		p->damaged &= ~DAMAGED_POSTORDER;
-		ci.home = p;
-		ci.numeric = 1;
-		ci.comm = p->handle;
-		p->handle->func(&ci);
+		comm_call(p->handle, "Refresh", p, 1, pointer, NULL, damage);
 	}
 }
 
 void pane_refresh(struct pane *p)
 {
-	struct cmd_info ci = {};
-	/* Always refresh a whole display */
-	while (p->parent)
-		p = p->parent;
 	p->abs_z = 0;
-	ci.focus = ci.home = p;
-	ci.key = "Refresh";
-	__pane_refresh(ci);
+	__pane_refresh(p, 0, NULL);
 }
 
 void pane_add_notify(struct pane *target, struct pane *source, char *msg)
