@@ -4,7 +4,7 @@
  *
  * line/word/char count.
  *
- * This module can be attached to a text to count lines/words/chars.
+ * This module can be attached to a Document to count lines/words/chars.
  *
  * It attaches active marks every 50 lines or so and records the
  * counts between the marks.  These are stored as attributes
@@ -27,6 +27,10 @@
 #include <string.h>
 
 #include "core.h"
+
+struct count_info {
+	int view_num;
+};
 
 static void do_count(struct pane *p, struct mark *start, struct mark *end,
 		     int *linep, int *wordp, int *charp, int add_marks)
@@ -79,28 +83,6 @@ static void do_count(struct pane *p, struct mark *start, struct mark *end,
 	mark_free(m);
 }
 
-DEF_CMD(count_notify)
-{
-	if (strcmp(ci->key, "Notify:Replace") == 0) {
-		if (ci->mark != NULL) {
-			attr_del(mark_attr(ci->mark), "lines");
-			attr_del(mark_attr(ci->mark), "words");
-			attr_del(mark_attr(ci->mark), "chars");
-		}
-		return 1;
-	}
-	if (strcmp(ci->key, "Release") == 0) {
-		struct mark *m;
-		int i = doc_find_view(ci->home, ci->comm);
-		if (i < 0)
-			return 0;
-		while ((m = vmark_first(ci->home, i)) != NULL)
-			mark_free(m);
-		doc_del_view_notifier(ci->home, ci->comm);
-	}
-	return 0;
-}
-
 static int need_recalc(struct pane *p, struct mark *m)
 {
 	struct mark *next;
@@ -124,14 +106,11 @@ static int need_recalc(struct pane *p, struct mark *m)
 }
 
 static void count_calculate(struct pane *p,
-			    struct mark *start, struct mark *end)
+			    struct mark *start, struct mark *end,
+			    int type)
 {
-	int type = doc_find_view(p, &count_notify);
 	int lines, words, chars, l, w, c;
 	struct mark *m, *m2;
-
-	if (type < 0)
-		type = doc_add_view(p, &count_notify);
 
 	m = vmark_first(p, type);
 	if (m == NULL) {
@@ -219,14 +198,71 @@ done:
 	}
 }
 
+DEF_CMD(handle_count_lines)
+{
+	struct pane *p = ci->home;
+	struct pane *d = ci->focus;
+	struct count_info *cli = p->data;
+
+	if (strcmp(ci->key, "Notify:Close") == 0) {
+		struct mark *m;
+		while ((m = vmark_first(d, cli->view_num)) != NULL)
+			mark_free(m);
+		doc_del_view(d, cli->view_num);
+		free(cli);
+		p->data = NULL;
+		pane_close(p);
+		return 1;
+	}
+
+	if (strcmp(ci->key, "Notify:Replace") == 0) {
+		if (ci->mark) {
+			struct mark *end;
+
+			end = vmark_at_or_before(d, ci->mark, cli->view_num);
+			if (end) {
+				attr_del(mark_attr(end), "lines");
+				attr_del(mark_attr(end), "words");
+				attr_del(mark_attr(end), "chars");
+			}
+			call5("doc:attr-set", d, 0, NULL, "lines", 0);
+			call5("doc:attr-set", d, 0, NULL, "words", 0);
+			call5("doc:attr-set", d, 0, NULL, "chars", 0);
+		}
+		return 1;
+	}
+	if (strcmp(ci->key, "Notify:doc:CountLines") == 0) {
+		/* Option mark is "mark2" as "mark" get the "point" */
+		if (ci->numeric)
+			pane_add_notify(p, d, "Notify:Close");
+		count_calculate(d, NULL, ci->mark2, cli->view_num);
+		return 1;
+	}
+	return 0;
+}
+
 DEF_CMD(count_lines)
 {
 	/* FIXME optimise this away most of the time */
-	count_calculate(ci->focus, NULL, NULL);
+	if (call3("Notify:doc:CountLines", ci->focus, 0, NULL) == 0) {
+		/* No counter in place, add one */
+		struct count_info *cli;
+		struct pane *p;
+
+		cli = calloc(1, sizeof(*cli));
+		cli->view_num = doc_add_view(ci->focus, NULL);
+		p = pane_register(NULL, 0, &handle_count_lines, cli, NULL);
+		call_home(ci->focus, "Request:Notify:Replace", p, 0, NULL, NULL);
+		call_home(ci->focus, "Request:Notify:doc:CountLines", p,
+			  0, NULL, NULL);
+		call3("Notify:doc:CountLines", ci->focus, 1, ci->mark);
+	}
 	if (ci->mark)
-		count_calculate(ci->focus, NULL, ci->mark);
+		call7("Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
+		      0, NULL, ci->mark);
 	if (ci->mark2)
-		count_calculate(ci->focus, NULL, ci->mark2);
+		call7("Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
+		      0, NULL, ci->mark2);
 	return 1;
 }
 
