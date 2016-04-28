@@ -76,7 +76,7 @@ DEF_CMD(keystroke)
 	ret = call5(key, p, numeric, m, NULL, extra);
 	free(key);
 	if (ret < 0)
-		call5("Message", p, 0, NULL, "** Command Failed **", 1);
+		call5("Message", ci->focus, 0, NULL, "** Command Failed **", 1);
 	return 0;
 }
 
