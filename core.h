@@ -607,9 +607,8 @@ static inline int comm_call_pane(struct pane *home, char *key, struct pane *focu
 				 struct mark *m2)
 {
 	struct cmd_info ci = {};
-	struct command *comm = home->handle;
 
-	if (!comm)
+	if (!home || !home->handle)
 		return -1;
 	ci.home = home;
 	ci.key = key;
@@ -619,8 +618,8 @@ static inline int comm_call_pane(struct pane *home, char *key, struct pane *focu
 	ci.mark2 = m2;
 	ci.str = str;
 	ci.extra = extra;
-	ci.comm = comm;
-	return comm->func(&ci);
+	ci.comm = home->handle;
+	return home->handle->func(&ci);
 }
 
 static inline int comm_call7(struct command *comm, char *key,

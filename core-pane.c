@@ -106,6 +106,7 @@ struct pane *pane_register(struct pane *parent, int z,
 	p->data = data;
 	if (parent && parent->focus == NULL)
 		parent->focus = p;
+	comm_call_pane(parent, "ChildRegistered", p, 0, NULL, NULL, 0, NULL);
 	return p;
 }
 
