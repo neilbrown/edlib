@@ -385,25 +385,8 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "Notify:Close") == 0) {
 		/* This pane has to go away */
-		struct pane *par = ci->home, *p;
 
-		/* Point needs to go now else it will be delete when
-		 * the doc is destroy, and we get a dangling pointer
-		 */
-		struct mark *pnt = dd->point;
-		dd->point = NULL;
-		mark_free(pnt);
-
-		/* Need another document to fill this pane. */
-		/* FIXME make this conditional */
-		p = pane_child(par);
-		if (p)
-			pane_close(p);
-		p = call_pane("docs:choose", ci->focus, 0, NULL, 0);
-		if (!p)
-			return 1;
-		doc_attach_view(par->parent, p, NULL);
-		pane_close(par);
+		pane_close(ci->home);
 		return 1;
 	}
 

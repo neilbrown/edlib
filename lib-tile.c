@@ -701,11 +701,15 @@ DEF_CMD(tile_other)
 	struct pane *p2;
 	struct tileinfo *ti = p->data;
 
+	if (!ti->leaf)
+		return 0;
 	if (!list_empty(&ti->tiles)) {
 		struct tileinfo *ti2 = list_next_entry(ti, tiles);
 		struct pane *c = pane_child(ti2->p);
+		ti2->leaf = 2;
 		if (c)
 			pane_close(c);
+		ti2->leaf = 1;
 		return comm_call(ci->comm2, "callback:pane", ti2->p, 0,
 				 NULL, NULL, 0);
 	}
@@ -726,8 +730,10 @@ DEF_CMD(tile_this)
 		return 0;
 	if (ci->extra) {
 		struct pane *child = pane_child(ci->home);
+		ti->leaf = 2;
 		if (child)
 			pane_close(child);
+		ti->leaf = 1;
 	}
 	return comm_call(ci->comm2, "callback:pane", ci->home, 0,
 			 NULL, NULL, 0);
@@ -745,6 +751,23 @@ DEF_CMD(tile_root)
 			 NULL, NULL, 0);
 }
 
+DEF_CMD(tile_child_closed)
+{
+	struct pane *p = ci->home;
+	struct tileinfo *ti = p->data;
+	struct pane *c;
+
+	if (ti->leaf != 1)
+		return 1;
+	if (ci->focus->z != 0)
+		return 1;
+	/* Child closed, but we were, so find something else to display */
+	c = call_pane("docs:choose", p, 0, NULL, 0);
+	if (c)
+		doc_attach_view(p, c, NULL);
+	return 1;
+}
+
 void edlib_init(struct pane *ed)
 {
 	tile_map = key_alloc();
@@ -755,6 +778,7 @@ void edlib_init(struct pane *ed)
 	key_add(tile_map, "RootPane", &tile_root);
 	key_add(tile_map, "Clone", &tile_clone);
 	key_add(tile_map, "Window:scale-relative", &tile_scale);
+	key_add(tile_map, "ChildClosed", &tile_child_closed);
 
 	call_comm("global-set-command", ed, 0, NULL, "attach-tile",
 		  0, &tile_attach);

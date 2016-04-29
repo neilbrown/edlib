@@ -806,9 +806,6 @@ DEF_CMD(emacs_bury)
 	c = pane_child(tile);
 	if (c)
 		pane_close(c);
-	c = call_pane("docs:choose", tile, 0, NULL, 0);
-	if (c)
-		doc_attach_view(tile, c, NULL);
 	return 1;
 }
 

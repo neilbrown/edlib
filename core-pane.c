@@ -250,7 +250,8 @@ void pane_close(struct pane *p)
 	p->damaged |= DAMAGED_CLOSED;
 	pane_check(p);
 
-	if (p->parent && p->parent->handle) {
+	if (p->parent && p->parent->handle &&
+	    !(p->parent->damaged & DAMAGED_CLOSED)) {
 		struct cmd_info ci = {};
 
 		ci.key = "ChildClosed";
