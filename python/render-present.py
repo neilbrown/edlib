@@ -645,8 +645,6 @@ def present_attach(key, focus, comm2, **a):
 
     p.call("Request:Notify:Replace")
     p.call("Request:Notify:doc:Recentre")
-    while p.focus:
-        p = p.focus
     comm2("callback", p)
     return 1
 

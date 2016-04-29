@@ -446,8 +446,7 @@ struct pane *render_attach(char *name, struct pane *parent)
 {
 	char buf[100];
 
-	/* always attach a renderer as a leaf */
-	parent = pane_final_child(parent);
+	//WARN(!list_empty(&parent->children));
 	if (!name)
 		name = pane_attr_get(parent, "render-default");
 	if (!name)

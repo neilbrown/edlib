@@ -264,8 +264,7 @@ static struct pane *do_view_attach(struct pane *par, int border)
 	vd->pane = p;
 	pane_check_size(p);
 
-	view_reattach(p);
-	return p;
+	return view_reattach(p);
 }
 
 DEF_CMD(view_attach)
