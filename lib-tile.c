@@ -398,12 +398,10 @@ static void tile_adjust(struct pane *p)
 	int size;
 	struct tileinfo *ti = p->data;
 
-	if (ti->leaf) {
-		t = pane_child(p);
-		if (t)
-			pane_check_size(t);
+	if (ti->leaf)
+		/* Children are responsible for themselves. */
 		return;
-	}
+
 	list_for_each_entry(t, &p->children, siblings) {
 
 		if (t->z)
