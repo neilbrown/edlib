@@ -298,7 +298,8 @@ DEF_CMD(docs_callback)
 		return -1;
 	}
 	if (strcmp(ci->key, "docs:choose") == 0) {
-		/* Choose a documents with no views notifiees, but ignore 'deleting' */
+		/* Choose a documents with no notifiees or no pointer,
+		 * but ignore 'deleting' */
 		struct pane *choice = NULL, *last = NULL;
 
 		list_for_each_entry(p, &doc->doc.home->children, siblings) {
@@ -307,6 +308,10 @@ DEF_CMD(docs_callback)
 				continue;
 			last = p;
 			if (list_empty(&p->notifiees)) {
+				choice = p;
+				break;
+			}
+			if (tlist_empty(&d->points)) {
 				choice = p;
 				break;
 			}
