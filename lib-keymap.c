@@ -155,7 +155,6 @@ static struct pane *do_keymap_attach(struct pane *p, int global)
 	kd->globalcmd = NULL;
 	kd->cmdcount = 0;
 	kd->global = global;
-	p = pane_final_child(p);
 	p = pane_register(p, 0, &keymap_handle, kd, NULL);
 	if (p)
 		pane_check_size(p);
