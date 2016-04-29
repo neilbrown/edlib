@@ -259,7 +259,6 @@ static struct pane *do_view_attach(struct pane *par, int border)
 	vd->border_width = vd->border_height = -1;
 	p = pane_register(par, 0, &view_handle, vd, NULL);
 	vd->pane = p;
-	pane_check_size(p);
 
 	return view_reattach(p);
 }

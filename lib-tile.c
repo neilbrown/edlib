@@ -90,7 +90,6 @@ DEF_CMD(tile_clone)
 	ti->direction = Neither;
 	INIT_LIST_HEAD(&ti->tiles);
 	ti->p = p2 = pane_register(parent, 0, &tile_handle, ti, NULL);
-	pane_check_size(p2);
 	attr_set_str(&p2->attrs, "borders", "BL", -1);
 	child = ci->home;
 	ti = child->data;
@@ -150,7 +149,6 @@ DEF_CMD(tile_attach)
 	ti->p = p;
 	ti->direction = Neither;
 	INIT_LIST_HEAD(&ti->tiles);
-	pane_check_size(p);
 	attr_set_str(&p->attrs, "borders", "BL", -1);
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }

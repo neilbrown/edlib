@@ -48,6 +48,11 @@ void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->x = p->y = p->z = 0;
 	p->cx = p->cy = -1;
 	p->h = p->w = 0;
+	if (par) {
+		/* reasonable defaults */
+		p->w = par->w;
+		p->h = par->h;
+	}
 	p->abs_z = p->abs_zhi = 0;
 	p->focus = NULL;
 	p->handle = NULL;
@@ -55,6 +60,8 @@ void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->damaged = 0;
 	p->pointer = NULL;
 	p->attrs = NULL;
+	if (par)
+		pane_damaged(p, DAMAGED_SIZE);
 }
 
 static void __pane_check(struct pane *p)

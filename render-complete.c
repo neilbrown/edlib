@@ -407,7 +407,6 @@ REDEF_CMD(complete_attach)
 		free(cd);
 		return -1;
 	}
-	pane_check_size(complete);
 	cd->prefix = strdup("");
 
 	return comm_call(ci->comm2, "callback:attach", complete, 0, NULL, NULL, 0);
