@@ -42,6 +42,7 @@ struct tileinfo {
 						* in the tree.  Used for next/prev
 						*/
 	struct pane			*p;
+	struct pane			*content; /* if 'leaf' */
 };
 
 static struct map *tile_map;
@@ -85,7 +86,7 @@ DEF_CMD(tile_clone)
 	/* Clone a new 'tile' onto the parent, but only
 	 * create a single tile, cloned from the focus pane
 	 */
-	ti = malloc(sizeof(*ti));
+	ti = calloc(1, sizeof(*ti));
 	ti->leaf = 1;
 	ti->direction = Neither;
 	INIT_LIST_HEAD(&ti->tiles);
@@ -142,7 +143,7 @@ DEF_CMD(tile_scale)
 DEF_CMD(tile_attach)
 {
 	struct pane *display = ci->focus;
-	struct tileinfo *ti = malloc(sizeof(*ti));
+	struct tileinfo *ti = calloc(1, sizeof(*ti));
 	struct pane *p = pane_register(display, 0, &tile_handle, ti, NULL);
 
 	ti->leaf = 1;
@@ -181,7 +182,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after)
 		 * to create an extra level.
 		 */
 		struct pane *p2;
-		ti2 = malloc(sizeof(*ti2));
+		ti2 = calloc(1, sizeof(*ti2));
 		ti2->leaf = 0;
 		ti2->direction = ti->direction;
 		INIT_LIST_HEAD(&ti2->tiles);
@@ -194,7 +195,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after)
 		ti->direction = horiz ? Horiz : Vert;
 	}
 	here = after ? &p->siblings : p->siblings.prev;
-	ti2 = malloc(sizeof(*ti2));
+	ti2 = calloc(1, sizeof(*ti2));
 	ti2->direction = ti->direction;
 	ti2->leaf = ti->leaf;
 	if (after)
@@ -625,7 +626,7 @@ DEF_CMD(tile_command)
 				pane_focus(p2);
 				return 1;
 			} else if (ti->leaf) {
-				pane_focus(pane_child(p));
+				pane_focus(ti->content);
 				return 1;
 			}
 			t2 = tile_first(ti);
@@ -692,7 +693,7 @@ DEF_CMD(tile_other)
 		return 0;
 	if (!list_empty(&ti->tiles)) {
 		struct tileinfo *ti2 = list_next_entry(ti, tiles);
-		struct pane *c = pane_child(ti2->p);
+		struct pane *c = ti2->content;
 		ti2->leaf = 2;
 		if (c)
 			pane_close(c);
@@ -716,7 +717,7 @@ DEF_CMD(tile_this)
 	if (!ti->leaf)
 		return 0;
 	if (ci->extra) {
-		struct pane *child = pane_child(ci->home);
+		struct pane *child = ti->content;
 		ti->leaf = 2;
 		if (child)
 			pane_close(child);
@@ -755,6 +756,23 @@ DEF_CMD(tile_child_closed)
 	return 1;
 }
 
+DEF_CMD(tile_child_registered)
+{
+	struct pane *p = ci->home;
+	struct tileinfo *ti = p->data;
+	struct pane *c = ci->focus;
+
+	if (ti->leaf && c->z == 0) {
+		if (ti->content) {
+			ti->leaf = 2;
+			pane_close(ti->content);
+			ti->leaf = 1;
+		}
+		ti->content = c;
+	}
+	return 1;
+}
+
 void edlib_init(struct pane *ed)
 {
 	tile_map = key_alloc();
@@ -766,6 +784,7 @@ void edlib_init(struct pane *ed)
 	key_add(tile_map, "Clone", &tile_clone);
 	key_add(tile_map, "Window:scale-relative", &tile_scale);
 	key_add(tile_map, "ChildClosed", &tile_child_closed);
+	key_add(tile_map, "ChildRegistered", &tile_child_registered);
 
 	call_comm("global-set-command", ed, 0, NULL, "attach-tile",
 		  0, &tile_attach);
