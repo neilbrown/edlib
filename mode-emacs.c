@@ -797,14 +797,14 @@ DEF_CMD(emacs_search)
 DEF_CMD(emacs_bury)
 {
 	/* Display something else in this tile. */
-	struct pane *tile, *c;
+	struct pane *tile, *doc;
 	tile = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 	if (!tile)
 		return 1;
-	call5("doc:revisit", ci->focus, -1, NULL, NULL, 0);
-	c = pane_child(tile);
-	if (c)
-		pane_close(c);
+	call3("doc:revisit", ci->focus, -1, NULL);
+	doc = call_pane("docs:choose", ci->focus, 0, NULL, 0);
+	if (doc)
+		doc_attach_view(tile, doc, NULL);
 	return 1;
 }
 
