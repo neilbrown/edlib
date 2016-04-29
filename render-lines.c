@@ -1368,7 +1368,7 @@ REDEF_CMD(render_lines_attach)
 	rl->target_x = -1;
 	rl->target_y = -1;
 	rl->do_wrap = 1;
-	rl->typenum = doc_add_view(ci->focus, NULL);
+	rl->typenum = doc_add_view(ci->focus);
 	rl->pane = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
 	call3("Request:Notify:Replace", rl->pane, 0, NULL);
 

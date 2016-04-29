@@ -83,7 +83,6 @@ struct doc {
 	struct tlist_head	points;
 	struct docview {
 		struct tlist_head head;
-		struct command	  *notify;
 		short		  state;	/* 0 = unused, 1 = active, 2 = being deleted */
 	} *views;
 	struct attrset		*attrs;
@@ -416,13 +415,12 @@ static inline int doc_set_attr(struct pane *p, struct mark *pt,
 }
 
 
-static inline int doc_add_view(struct pane *p, struct command *c)
+static inline int doc_add_view(struct pane *p)
 {
 	struct cmd_info ci = {};
 	int ret;
 	ci.focus = p;
 	ci.key = "doc:add-view";
-	ci.comm2 = c;
 	ret = key_handle(&ci);
 	if (ret <= 0)
 		return -1;
@@ -436,30 +434,6 @@ static inline void doc_del_view(struct pane *p, int num)
 	ci.key = "doc:del-view";
 	ci.numeric = num;
 	key_handle(&ci);
-}
-
-static inline void doc_del_view_notifier(struct pane *p, struct command *c)
-{
-	struct cmd_info ci = {};
-	ci.focus = p;
-	ci.key = "doc:del-view";
-	ci.numeric = -1;
-	ci.comm2 = c;
-	key_handle(&ci);
-}
-
-static inline int doc_find_view(struct pane *p, struct command *c)
-{
-	struct cmd_info ci = {};
-	int ret;
-
-	ci.focus = p;
-	ci.key = "doc:find-view";
-	ci.comm2 = c;
-	ret = key_handle(&ci);
-	if (ret <= 0)
-		return -1;
-	return ret - 1;
 }
 
 static inline int call3(char *key, struct pane *focus, int numeric, struct mark *m)

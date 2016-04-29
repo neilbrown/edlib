@@ -41,7 +41,7 @@ struct doc_data {
 	int			autoclose;
 };
 
-static int do_doc_add_view(struct doc *d, struct command *c)
+static int do_doc_add_view(struct doc *d)
 {
 	struct docview *g;
 	int ret;
@@ -57,12 +57,10 @@ static int do_doc_add_view(struct doc *d, struct command *c)
 		for (i = 0; i < ret; i++) {
 			tlist_add(&g[i].head, GRP_HEAD, &d->views[i].head);
 			tlist_del(&d->views[i].head);
-			g[i].notify = d->views[i].notify;
 			g[i].state = d->views[i].state;
 		}
 		for (; i < d->nviews; i++) {
 			INIT_TLIST_HEAD(&g[i].head, GRP_HEAD);
-			g[i].notify = NULL;
 			g[i].state = 0;
 		}
 		free(d->views);
@@ -71,30 +69,8 @@ static int do_doc_add_view(struct doc *d, struct command *c)
 		points_resize(d);
 	}
 	points_attach(d, ret);
-	d->views[ret].notify = c;
 	d->views[ret].state = 1;
 	return ret;
-}
-
-static void do_doc_del_view_notifier(struct doc *d, struct command *c)
-{
-	/* This view should only have points on the list, not typed
-	 * marks.  Just delete everything and clear the 'notify' pointer
-	 */
-	int i;
-	for (i = 0; i < d->nviews; i++)
-		if (d->views[i].notify == c)
-			break;
-	if (i >= d->nviews)
-		return;
-	d->views[i].notify = NULL;
-	d->views[i].state = 0;
-	while (!tlist_empty(&d->views[i].head)) {
-		struct tlist_head *tl = d->views[i].head.next;
-		if (TLIST_TYPE(tl) != GRP_LIST)
-			abort();
-		tlist_del_init(tl);
-	}
 }
 
 static void do_doc_del_view(struct doc *d, int i)
@@ -104,46 +80,12 @@ static void do_doc_del_view(struct doc *d, int i)
 	 */
 	if (i < 0 || i >= d->nviews)
 		return;
-	d->views[i].notify = NULL;
 	d->views[i].state = 0;
 	while (!tlist_empty(&d->views[i].head)) {
 		struct tlist_head *tl = d->views[i].head.next;
 		if (TLIST_TYPE(tl) != GRP_LIST)
 			abort();
 		tlist_del_init(tl);
-	}
-}
-
-static int do_doc_find_view(struct doc *d, struct command *c)
-{
-	int i;
-	for (i = 0 ; i < d->nviews; i++)
-		if (d->views[i].notify == c)
-			return i;
-	return -1;
-}
-
-static void doc_close_views(struct doc *d)
-{
-	struct cmd_info ci = {};
-	int i;
-
-	for (i = 0; i < d->nviews; i++)
-		if (d->views[i].state)
-			/* mark as being deleted */
-			d->views[i].state = 2;
-	ci.key = "Release";
-	for (i = 0; i < d->nviews; i++) {
-		struct command *c;
-		if (d->views[i].state != 2)
-			/* Don't delete newly added views */
-			continue;
-		if (d->views[i].notify == NULL)
-			continue;
-		ci.focus = ci.home = d->home;
-		c = d->views[i].notify;
-		ci.comm = c;
-		c->func(&ci);
 	}
 }
 
@@ -381,23 +323,10 @@ DEF_CMD(doc_notify)
 			   ci->str, ci->numeric);
 }
 
-DEF_CMD(doc_findview)
-{
-	int ret;
-	if (!ci->comm2)
-		return -1;
-	ret =  do_doc_find_view(ci->home->data, ci->comm2);
-	if (ret < 0)
-		return ret;
-	return ret + 1;
-}
-
 DEF_CMD(doc_delview)
 {
 	if (ci->numeric >= 0)
 		do_doc_del_view(ci->home->data, ci->numeric);
-	else if (ci->comm2)
-		do_doc_del_view_notifier(ci->home->data, ci->comm2);
 	else
 		return -1;
 	return 1;
@@ -405,7 +334,7 @@ DEF_CMD(doc_delview)
 
 DEF_CMD(doc_addview)
 {
-	return 1 + do_doc_add_view(ci->home->data, ci->comm2);
+	return 1 + do_doc_add_view(ci->home->data);
 }
 
 DEF_CMD(doc_vmarkget)
@@ -438,7 +367,6 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "Move-Line", &doc_line);
 	key_add(doc_default_cmd, "Move-View-Large", &doc_page);
 	key_add(doc_default_cmd, "doc:attr-set", &doc_attr_set);
-	key_add(doc_default_cmd, "doc:find-view", &doc_findview);
 	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
 	key_add(doc_default_cmd, "doc:del-view", &doc_delview);
 	key_add(doc_default_cmd, "doc:vmark-get", &doc_vmarkget);
@@ -721,8 +649,6 @@ int doc_destroy(struct pane *dp)
 	struct doc *d = dp->data;
 
 	d->deleting = 1;
-
-	doc_close_views(d);
 	pane_notify_close(d->home);
 	d->deleting = 0;
 
