@@ -487,7 +487,7 @@ DEF_CMD(emacs_findfile)
 	if (strcmp(ci->key, "File Found Other Window") == 0)
 		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
 	else
-		par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
+		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 
 	if (!par)
 		return -1;
@@ -610,7 +610,7 @@ DEF_CMD(emacs_finddoc)
 	if (strcmp(ci->key, "Doc Found Other Window") == 0)
 		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
 	else
-		par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
+		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 	if (!p)
 		return -1;
 
@@ -671,7 +671,7 @@ DEF_CMD(emacs_viewdocs)
 	docs = call_pane7("docs:byname", ci->focus, 0, NULL, 0, "*Documents*", NULL);
 	if (!docs)
 		return -1;
-	par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
+	par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 	if (!par)
 		return -1;
 

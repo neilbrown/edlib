@@ -542,7 +542,7 @@ DEF_CMD(dir_open)
 	if (strcmp(ci->key, "Chr-o") == 0)
 		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
 	else
-		par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
+		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 
 	if (fd >= 0) {
 		p = doc_open(par, fd, fname);
@@ -582,7 +582,7 @@ DEF_CMD(dir_open_alt)
 		if (new) {
 			renderer = pane_attr_get(new, buf);
 			if (renderer) {
-				par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
+				par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 				if (!par)
 					return -1;
 
@@ -592,7 +592,7 @@ DEF_CMD(dir_open_alt)
 		close(fd);
 	} else {
 		struct pane *doc = doc_from_text(par, fname, "File not found\n");
-		par = call_pane("ThisPane", ci->focus, 0, NULL, 1);
+		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 		if (!par)
 			return -1;
 		p = doc_attach_view(par, doc, NULL);

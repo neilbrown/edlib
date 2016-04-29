@@ -718,13 +718,6 @@ DEF_CMD(tile_this)
 	struct tileinfo *ti = ci->home->data;
 	if (!ti->leaf)
 		return 0;
-	if (ci->extra) {
-		struct pane *child = ti->content;
-		ti->leaf = 2;
-		if (child)
-			pane_close(child);
-		ti->leaf = 1;
-	}
 	return comm_call(ci->comm2, "callback:pane", ci->home, 0,
 			 NULL, NULL, 0);
 }
