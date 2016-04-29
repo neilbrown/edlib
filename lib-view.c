@@ -193,9 +193,9 @@ DEF_CMD(view_handle)
 		struct pane *p2, *c;
 
 		p2 = do_view_attach(parent, vd->old_border);
-		c = pane_child(pane_child(p));
+		c = pane_child(p->focus);
 		if (c)
-			return comm_call_pane(c, "Clone", pane_final_child(p2),
+			return comm_call_pane(c, "Clone", p2,
 					      0, NULL, NULL, 0, NULL);
 		return 1;
 	}
@@ -300,8 +300,6 @@ DEF_CMD(view_click)
 	if (p->h <= 4)
 		return 0;
 
-	p = pane_child(p);
-
 	key = "Move-View-Small";
 	num = RPT_NUM(ci);
 
@@ -318,7 +316,7 @@ DEF_CMD(view_click)
 		/* big scroll down */
 		key = "Move-View-Large";
 	}
-	return call3(key, pane_final_child(p), num, NULL);
+	return call3(key, pane_final_child(p->focus), num, NULL);
 }
 
 DEF_CMD(view_border)
