@@ -110,7 +110,7 @@ DEF_CMD(render_line)
 	struct mark *pm = ci->mark2;
 	int pos;
 	int i;
-	char buf[10];
+	char buf[30];
 	int rv;
 
 	if (!ci->focus || !ci->mark)
@@ -122,7 +122,7 @@ DEF_CMD(render_line)
 	buf_init(&ret);
 	if (doc_following_pane(ci->focus, ci->mark) == WEOF)
 		goto done;
-	sprintf(buf, "<bold>%08x:</> ", pos);
+	snprintf(buf, sizeof(buf), "<bold>%08x:</> ", pos);
 	buf_concat(&ret, buf);
 	m = mark_dup(ci->mark, 0);
 	for (i = 0; i < 16; i++) {
