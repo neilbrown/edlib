@@ -562,7 +562,7 @@ static int tile_grow(struct pane *p, int horiz, int size)
 	return 1;
 }
 
-static struct pane *next_popup(struct pane *parent, struct pane *prev)
+static struct pane *next_child(struct pane *parent, struct pane *prev, bool popup)
 {
 	struct pane *p2;
 	list_for_each_entry(p2, &parent->children, siblings) {
@@ -572,7 +572,7 @@ static struct pane *next_popup(struct pane *parent, struct pane *prev)
 		}
 		if (prev)
 			continue;
-		if (p2->z == 0)
+		if ((p2->z != 0) != popup)
 			continue;
 		return p2;
 	}
@@ -582,7 +582,9 @@ static struct pane *next_popup(struct pane *parent, struct pane *prev)
 static struct tileinfo *tile_first(struct tileinfo *ti)
 {
 	while (!ti->leaf) {
-		struct pane *p = pane_child(ti->p);
+		struct pane *p = next_child(ti->p, NULL, 0);
+		if (!p)
+			return NULL;
 		ti = p->data;
 	}
 	return ti;
@@ -591,7 +593,7 @@ static struct tileinfo *tile_first(struct tileinfo *ti)
 static int tile_is_first(struct tileinfo *ti)
 {
 	while (ti->direction != Neither) {
-		if (ti->p != pane_child(ti->p->parent))
+		if (ti->p != next_child(ti->p->parent, NULL, 0))
 			return 0;
 		ti = ti->p->parent->data;
 	}
@@ -602,7 +604,7 @@ static struct pane *tile_root_popup(struct tileinfo *ti)
 {
 	while (ti->direction != Neither)
 		ti = ti->p->parent->data;
-	return next_popup(ti->p, NULL);
+	return next_child(ti->p, NULL, 1);
 }
 
 
@@ -621,7 +623,7 @@ DEF_CMD(tile_command)
 		 * go there.
 		 */
 		if (p->focus->z) {
-			p2 = next_popup(p, p->focus);
+			p2 = next_child(p, p->focus, 1);
 			if (p2) {
 				pane_focus(p2);
 				return 1;
@@ -642,7 +644,7 @@ DEF_CMD(tile_command)
 				t2 = tile_first(ti);
 		}
 		pane_focus(t2->p);
-		p2 = next_popup(t2->p, NULL);
+		p2 = next_child(t2->p, NULL, 1);
 		if (p2)
 			pane_focus(p2);
 	} else if (strcmp(cmd, "prev")==0) {
