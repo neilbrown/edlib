@@ -775,7 +775,6 @@ DEF_CMD(emacs_search)
 
 		call5("doc:set-name", p, 0, NULL, "Search", 0);
 
-		p = pane_final_child(p);
 		call_pane("attach-emacs-search", p, 0, NULL, 0);
 		return 1;
 	}

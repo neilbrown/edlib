@@ -144,7 +144,7 @@ DEF_CMD(popup_attach)
 	 * 1234 - how many quarters of width to use.(default 2);
 	 * r  - allow recursive popup
 	 */
-	struct pane *root;
+	struct pane *root, *p;
 	struct popup_info *ppi;
 	char *style = ci->str;
 	char border[5];
@@ -170,7 +170,7 @@ DEF_CMD(popup_attach)
 
 	ppi = malloc(sizeof(*ppi));
 	ppi->target = ci->focus;
-	ppi->popup = pane_register(root, z, &popup_handle, ppi, NULL);
+	ppi->popup = p = pane_register(root, z, &popup_handle, ppi, NULL);
 	ppi->style = style;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
@@ -187,13 +187,13 @@ DEF_CMD(popup_attach)
 
 	if (ci->str2) {
 		struct pane *doc = doc_from_text(ppi->popup, "*popup*", ci->str2);
-		struct pane *p = doc_attach_view(ppi->popup, doc, NULL);
+		p = doc_attach_view(ppi->popup, doc, NULL);
 
 		call3("Move-File", p, 1, NULL);
 		call3("doc:autoclose", p, 1, NULL);
 	}
 
-	return comm_call(ci->comm2, "callback:attach", ppi->popup, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
 void edlib_init(struct pane *ed)

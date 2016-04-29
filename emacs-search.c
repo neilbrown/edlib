@@ -258,8 +258,7 @@ DEF_CMD(emacs_search)
 	esi->wrapped = 0;
 	esi->search = ci->focus;
 
-	p = pane_final_child(ci->focus);
-	p = pane_register(p, 0, &search_handle.c, esi, NULL);
+	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);
 	if (p) {
 		call3("Request:Notify:Replace", p, 0, NULL);
 		comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
