@@ -474,12 +474,8 @@ DEF_CMD(doc_handle)
 		p = call_pane("docs:choose", ci->focus, 0, NULL, 0);
 		if (!p)
 			return 1;
-		doc_attach_view(par, p, NULL);
-		p = pane_child(par);
-		if (p) {
-			pane_subsume(p, par);
-			pane_close(p);
-		}
+		doc_attach_view(par->parent, p, NULL);
+		pane_close(par);
 		return 1;
 	}
 
