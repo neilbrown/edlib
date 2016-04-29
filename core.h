@@ -322,6 +322,8 @@ void pane_check_size(struct pane *p);
 void pane_refresh(struct pane *p);
 void pane_focus(struct pane *p);
 void pane_damaged(struct pane *p, int type);
+void pane_clone_children(struct pane *from, struct pane *to);
+
 struct pane *pane_to_root(struct pane *p, int *x, int *y, int *z,
 			  int *w, int *h);
 int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h);

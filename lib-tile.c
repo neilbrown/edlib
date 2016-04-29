@@ -98,9 +98,7 @@ DEF_CMD(tile_clone)
 		child = child->focus;
 		ti = child->data;
 	}
-	if (child->focus)
-		return comm_call_pane(child->focus, "Clone", p2,
-				      0, NULL, NULL, 0, NULL);
+	pane_clone_children(child, p2);
 	return 1;
 }
 
@@ -617,7 +615,6 @@ DEF_CMD(tile_command)
 	struct pane *p2;
 	struct tileinfo *ti = p->data;
 	struct tileinfo *t2;
-	struct pane *cld = pane_child(p);
 	char *cmd = ci->key + 7; /* "Window:" */
 
 	if (strcmp(cmd, "next")==0) {
@@ -666,18 +663,12 @@ DEF_CMD(tile_command)
 	} else if (strcmp(cmd, "y-")==0) {
 		tile_grow(p, 0, -RPT_NUM(ci));
 		pane_damaged(p, DAMAGED_SIZE);
-	} else if (strcmp(cmd, "split-x")==0 && cld) {
+	} else if (strcmp(cmd, "split-x")==0) {
 		p2 = tile_split(p, 1, 1);
-		if (p2) {
-			if (!comm_call_pane(cld, "Clone", p2, 0, NULL, NULL, 0, NULL))
-				pane_close(p2);
-		}
-	} else if (strcmp(cmd, "split-y")==0 && cld) {
+		pane_clone_children(ci->home, p2);
+	} else if (strcmp(cmd, "split-y")==0) {
 		p2 = tile_split(p, 0, 1);
-		if (p2) {
-			if (!comm_call_pane(cld, "Clone", p2, 0, NULL, NULL, 0, NULL))
-				pane_close(p2);
-		}
+		pane_clone_children(ci->home, p2);
 	} else if (strcmp(cmd, "close")==0) {
 		if (ti->direction != Neither)
 			pane_close(p);

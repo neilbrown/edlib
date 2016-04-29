@@ -1302,13 +1302,9 @@ DEF_CMD(render_lines_attach);
 DEF_CMD(render_lines_clone)
 {
 	struct pane *parent = ci->focus;
-	struct pane *p = ci->home, *c;
 
 	render_lines_attach.func(ci);
-	c = pane_child(p);
-	if (c)
-		return comm_call_pane(c, "Clone", parent->focus,
-				      0, NULL, NULL, 0, NULL);
+	pane_clone_children(ci->home, parent->focus);
 	return 1;
 }
 

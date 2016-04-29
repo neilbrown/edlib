@@ -176,13 +176,10 @@ DEF_CMD(format_close)
 static struct pane *do_render_format_attach(struct pane *parent);
 DEF_CMD(format_clone)
 {
-	struct pane *c;
 	struct pane *p;
 
 	p = do_render_format_attach(ci->focus);
-	c = pane_child(ci->home);
-	if (c)
-		return comm_call_pane(c, "Clone", p, 0, NULL, NULL, 0, NULL);
+	pane_clone_children(ci->home, p);
 	return 1;
 }
 

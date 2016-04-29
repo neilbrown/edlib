@@ -296,6 +296,19 @@ static Pane *pane_children(Pane *self)
 						     struct pane, siblings));
 }
 
+static PyObject *Pane_clone_children(Pane *self, PyObject *args)
+{
+	Pane *other = NULL;
+	int ret = PyArg_ParseTuple(args, "O!", &PaneType, &other);
+
+	if (ret <= 0)
+		return NULL;
+	if (self->pane && other->pane)
+		pane_clone_children(self->pane, other->pane);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyObject *Pane_focus(Pane *self)
 {
 	if (self->pane)
@@ -448,6 +461,8 @@ static PyMethodDef pane_methods[] = {
 	 "pane is being closed, so release the Pane"},
 	{"children", (PyCFunction)pane_children, METH_NOARGS,
 	 "provides and iterator which will iterate over all children"},
+	{"clone_children", (PyCFunction)Pane_clone_children, METH_VARARGS,
+	 "Clone all children onto the target"},
 	{"take_focus", (PyCFunction)Pane_focus, METH_NOARGS,
 	 "Claim the focus for this pane"},
 	{"refresh", (PyCFunction)Pane_refresh, METH_NOARGS,

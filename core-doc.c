@@ -397,12 +397,10 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = doc_attach(ci->focus, dd->doc);
-		struct pane *c = pane_child(ci->home);
 
 		if (p)
 			point_to_mark(p->pointer, ci->home->pointer);
-		if (c)
-			comm_call_pane(c, "Clone", p, 0, NULL, NULL, 0, NULL);
+		pane_clone_children(ci->home, p);
 		return 1;
 	}
 

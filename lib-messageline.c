@@ -43,10 +43,8 @@ DEF_CMD(messageline_handle)
 
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = do_messageline_attach(ci->focus);
-		struct pane *child = pane_child(ci->home);
-		if (p && child)
-			return comm_call_pane(child, "Clone", p,
-					      0, NULL, NULL, 0, NULL);
+
+		pane_clone_children(ci->home, p);
 		return 1;
 	}
 

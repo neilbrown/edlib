@@ -42,15 +42,10 @@ DEF_CMD(render_hex_close)
 
 DEF_CMD(render_hex_clone)
 {
-	struct pane *p = ci->home;
 	struct pane *parent = ci->focus;
-	struct pane *c;
 
 	do_render_hex_attach(parent);
-	c = pane_child(p);
-	if (c)
-		return comm_call_pane(c, "Clone", parent->focus,
-				      0, NULL, NULL, 0, NULL);
+	pane_clone_children(ci->home, parent->focus);
 	return 1;
 }
 

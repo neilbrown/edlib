@@ -509,6 +509,23 @@ char *pane_mark_attr(struct pane *p, struct mark *m, int forward, char *key)
 	return NULL;
 }
 
+void pane_clone_children(struct pane *from, struct pane *to)
+{
+	/* "to" is a clone of "from", but has no children.
+	 * Clone all the children of "from" to "to"
+	 * Ignore z>0 children
+	 */
+	struct pane *c;
+
+	if (!from || !to)
+		return;
+	list_for_each_entry(c, &from->children, siblings) {
+		if (c->z > 0)
+			continue;
+		comm_call_pane(c, "Clone", to, 0, NULL, NULL, 0, NULL);
+	}
+}
+
 struct pane *pane_final_child(struct pane *p)
 {
 	struct pane *c;

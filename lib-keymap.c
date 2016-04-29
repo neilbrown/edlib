@@ -69,7 +69,6 @@ DEF_CMD(keymap_handle)
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = do_keymap_attach(ci->focus, kd->global);
-		struct pane *child = pane_child(ci->home);
 		struct key_data *kd_old = ci->home->data;
 		struct key_data *kd_new;
 		if (!p)
@@ -85,9 +84,7 @@ DEF_CMD(keymap_handle)
 			for (i = 0; i < kd_new->cmdcount; i++)
 				kd_new->cmds[i] = kd_old->cmds[i];
 		}
-		if (child)
-			return comm_call_pane(child, "Clone", p,
-					      0, NULL, NULL, 0, NULL);
+		pane_clone_children(ci->home, p);
 		return 1;
 	}
 

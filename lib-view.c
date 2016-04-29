@@ -190,13 +190,10 @@ DEF_CMD(view_handle)
 	}
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *parent = ci->focus;
-		struct pane *p2, *c;
+		struct pane *p2;
 
 		p2 = do_view_attach(parent, vd->old_border);
-		c = pane_child(p->focus);
-		if (c)
-			return comm_call_pane(c, "Clone", p2,
-					      0, NULL, NULL, 0, NULL);
+		pane_clone_children(p->focus, p2);
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh") == 0)

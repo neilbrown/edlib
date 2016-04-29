@@ -59,8 +59,7 @@ class EdDisplay(gtk.Window):
         if key == "Display:new":
             disp = a['home']
             newdisp = EdDisplay(disp.parent)
-            if disp.focus:
-                disp.focus.call("Clone", newdisp.pane)
+            disp.clone_children(newdisp.pane);
             return 1
 
         if key == "Close":

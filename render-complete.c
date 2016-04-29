@@ -204,13 +204,9 @@ DEF_CMD(complete_attach);
 DEF_CMD(complete_clone)
 {
 	struct pane *parent = ci->focus;
-	struct pane *p = ci->home, *c;
 
 	complete_attach.func(ci);
-	c = pane_child(p);
-	if (c)
-		return comm_call_pane(c, "Clone", parent->focus,
-				      0, NULL, NULL, 0, NULL);
+	pane_clone_children(ci->home, parent->focus);
 	return 1;
 }
 
