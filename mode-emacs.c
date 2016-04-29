@@ -480,7 +480,7 @@ DEF_CMD(emacs_findfile)
 		}
 		call5("doc:set-name", p, 0, NULL, "Find File", 0);
 
-		pane_register(pane_final_child(p), 0, &find_handle.c, "file", NULL);
+		pane_register(p, 0, &find_handle.c, "file", NULL);
 		return 1;
 	}
 
@@ -522,7 +522,7 @@ REDEF_CMD(emacs_file_complete)
 	char *str = doc_getstr(ci->focus, NULL, NULL);
 	char *d, *b, *c;
 	int fd;
-	struct pane *par, *pop, *docp;
+	struct pane *par, *pop, *docp, *p;
 	struct call_return cr;
 	int ret;
 
@@ -553,10 +553,10 @@ REDEF_CMD(emacs_file_complete)
 	attr_set_str(&par->attrs, "line-format", "%+name%suffix", -1);
 	attr_set_str(&par->attrs, "heading", "", -1);
 	attr_set_str(&par->attrs, "done-key", "Replace", -1);
-	render_attach("complete", par);
+	p = render_attach("complete", par);
 	cr.c = save_str;
 	cr.s = NULL;
-	ret = call_comm("Complete:prefix", pane_final_child(par), 0, NULL,
+	ret = call_comm("Complete:prefix", p, 0, NULL,
 			b, 0, &cr.c);
 	free(d);
 	if (cr.s && (strlen(cr.s) <= strlen(b) && ret-1 > 1)) {
@@ -599,7 +599,7 @@ DEF_CMD(emacs_finddoc)
 		}
 		call5("doc:set-name", p, 0, NULL, "Find Document", 0);
 
-		pane_register(pane_final_child(p), 0, &find_handle.c, "doc", NULL);
+		pane_register(p, 0, &find_handle.c, "doc", NULL);
 		return 1;
 	}
 
@@ -624,7 +624,7 @@ REDEF_CMD(emacs_doc_complete)
 	 * Attach the 'docs' document as a completing popup menu
 	 */
 	char *str = doc_getstr(ci->focus, NULL, NULL);
-	struct pane *par, *pop, *docs;
+	struct pane *par, *pop, *docs, *p;
 	struct call_return cr;
 	int ret;
 
@@ -639,10 +639,10 @@ REDEF_CMD(emacs_doc_complete)
 	attr_set_str(&par->attrs, "line-format", "%+name", -1);
 	attr_set_str(&par->attrs, "heading", "", -1);
 	attr_set_str(&par->attrs, "done-key", "Replace", -1);
-	render_attach("complete", par);
+	p = render_attach("complete", par);
 	cr.c = save_str;
 	cr.s = NULL;
-	ret = call_comm("Complete:prefix", pane_final_child(par), 0, NULL,
+	ret = call_comm("Complete:prefix", p, 0, NULL,
 			str, 0, &cr.c);
 	if (cr.s && (strlen(cr.s) <= strlen(str) && ret - 1 > 1)) {
 		/* We need the dropdown */
@@ -691,9 +691,9 @@ DEF_CMD(emacs_shell)
 		attr_set_str(&p->attrs, "prefix", "Shell command: ", -1);
 		attr_set_str(&p->attrs, "done-key", "Shell Command", -1);
 		call5("doc:set-name", p, 0, NULL, "Shell Command", 0);
-		p = call_pane7("attach-history", pane_final_child(p), 0, NULL, 0,
+		p = call_pane7("attach-history", p, 0, NULL, 0,
 			       "*Shell History*", "popup:close");
-		pane_register(pane_final_child(p), 0, &find_handle.c, "cmd", NULL);
+		pane_register(p, 0, &find_handle.c, "cmd", NULL);
 		return 1;
 	}
 	par = call_pane("OtherPane", ci->focus, 0, NULL, 0);

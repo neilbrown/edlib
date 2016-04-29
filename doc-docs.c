@@ -332,7 +332,7 @@ DEF_CMD(docs_callback)
 
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
 		p = doc_attach_view(ci->focus, doc->doc.home, NULL);
-		p = pane_register(pane_final_child(p), 0, &docs_modified_handle, doc, NULL);
+		p = pane_register(p, 0, &docs_modified_handle, doc, NULL);
 		call3("Request:Notify:Replace", p, 0, NULL);
 		/* And trigger Notify:Replace handling immediately...*/
 		call3("Notify:Replace", p, 0, NULL);
