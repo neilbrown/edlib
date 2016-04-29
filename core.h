@@ -614,6 +614,7 @@ static inline int comm_call_pane(struct pane *home, char *key, struct pane *focu
 	ci.focus = focus;
 	ci.numeric = numeric;
 	ci.mark = m;
+	ci.mark2 = m2;
 	ci.str = str;
 	ci.extra = extra;
 	ci.comm = comm;
