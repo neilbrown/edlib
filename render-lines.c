@@ -95,7 +95,6 @@ struct rl_data {
 	int		prefix_len;
 	int		header_lines;
 	int		typenum;
-	struct pane	*pane;
 	int		line_height;
 };
 
@@ -998,7 +997,6 @@ DEF_CMD(render_lines_close)
 		mark_free(m);
 	}
 
-	rl->pane = NULL;
 	doc_del_view(p, rl->typenum);
 	p->data = NULL;
 	p->handle = NULL;
@@ -1292,7 +1290,7 @@ DEF_CMD(render_lines_notify_replace)
 		free(t->mdata);
 		t->mdata = NULL;
 	}
-	pane_damaged(rl->pane, DAMAGED_CONTENT);
+	pane_damaged(ci->home, DAMAGED_CONTENT);
 
 	return 1;
 }
@@ -1357,6 +1355,7 @@ static void render_lines_register_map(void)
 REDEF_CMD(render_lines_attach)
 {
 	struct rl_data *rl = calloc(1, sizeof(*rl));
+	struct pane *p;
 
 	if (!rl_map)
 		render_lines_register_map();
@@ -1365,10 +1364,10 @@ REDEF_CMD(render_lines_attach)
 	rl->target_y = -1;
 	rl->do_wrap = 1;
 	rl->typenum = doc_add_view(ci->focus);
-	rl->pane = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
-	call3("Request:Notify:Replace", rl->pane, 0, NULL);
+	p = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
+	call3("Request:Notify:Replace", p, 0, NULL);
 
-	return comm_call(ci->comm2, "callback:attach", rl->pane,
+	return comm_call(ci->comm2, "callback:attach", p,
 			 0, NULL, NULL, 0);
 }
 
