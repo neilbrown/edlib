@@ -1257,13 +1257,11 @@ DEF_CMD(render_lines_move_line)
 
 DEF_CMD(render_lines_notify_replace)
 {
-	struct rl_data *rl = ci->home->data;
-	struct mark *start = ci->mark2;
-	struct mark *end, *t;
-	struct pane *p = pane_final_child(ci->home);
+	struct pane *p = ci->home;
+	struct rl_data *rl = p->data;
+	struct mark *start = ci->mark2 ?: ci->mark;
+	struct mark *end;
 
-	if (!start)
-		start = ci->mark;
 	if (!ci->mark)
 		return 1;
 
@@ -1273,24 +1271,19 @@ DEF_CMD(render_lines_notify_replace)
 		/* Change before visible region */
 		return 1;
 
-	t = end;
-	while (t && mark_ordered_or_same_pane(p, start, t)) {
-		struct mark *t2;
-		if (t->mdata) {
-			free(t->mdata);
-			t->mdata = NULL;
+	while (end && mark_ordered_or_same_pane(p, start, end)) {
+		if (end->mdata) {
+			free(end->mdata);
+			end->mdata = NULL;
 		}
-		t2 = doc_prev_mark_view(t);
-		if (t2 && mark_same_pane(p, t, t2, NULL))
-			/* Marks must be distinct! */
-			mark_free(t);
-		t = t2;
+		end = doc_prev_mark_view(end);
 	}
-	if (t && t->mdata) {
-		free(t->mdata);
-		t->mdata = NULL;
+	/* Must be sure to clear the line *before* the change */
+	if (end && end->mdata) {
+		free(end->mdata);
+		end->mdata = NULL;
 	}
-	pane_damaged(ci->home, DAMAGED_CONTENT);
+	pane_damaged(p, DAMAGED_CONTENT);
 
 	return 1;
 }
