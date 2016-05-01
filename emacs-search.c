@@ -31,7 +31,7 @@ struct es_info {
 	} *s;
 	struct mark *start; /* where searching starts */
 	struct mark *end; /* where last success ended */
-	struct pane *target, *search;
+	struct pane *target;
 	short matched;
 	short wrapped;
 };
@@ -56,7 +56,7 @@ DEF_CMD(search_forward)
 		if (ss)
 			ss = pane_attr_get(ci->focus, ss);
 		if (ss) {
-			call5("Replace", esi->search, 1, NULL, ss, 1);
+			call5("Replace", ci->home, 1, NULL, ss, 1);
 			return 1;
 		}
 	}
@@ -75,7 +75,7 @@ DEF_CMD(search_forward)
 		call3("Move-File", esi->target, -1, esi->start);
 	}
 	/* Trigger notification so isearch watcher searches again */
-	call5("Replace", esi->search, 1, NULL, "", 1);
+	call5("Replace", ci->home, 1, NULL, "", 1);
 	return 1;
 }
 
@@ -99,7 +99,7 @@ DEF_CMD(search_retreat)
 	esi->wrapped = s->wrapped;
 	free(s);
 	/* Trigger notification so isearch watcher searches again */
-	call5("Replace", esi->search, 1, NULL, "", 1);
+	call5("Replace", ci->home, 1, NULL, "", 1);
 	return 1;
 }
 
@@ -173,7 +173,7 @@ DEF_CMD(search_again)
 	/* TEMP HACK - please fix */
 	doc_set_attr(esi->target, esi->end, "highlight", NULL);
 	m = mark_dup(esi->start, 1);
-	str = doc_getstr(esi->search, NULL, NULL);
+	str = doc_getstr(ci->home, NULL, NULL);
 	ret = call5("text-search", esi->target, 0, m, str, 0);
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
@@ -193,7 +193,7 @@ DEF_CMD(search_again)
 			pfx = "Wrapped Search: ";
 	}
 	/* HACK */
-	for (p = esi->search; p; p = p->parent) {
+	for (p = ci->home; p; p = p->parent) {
 		a = attr_get_str(p->attrs, "prefix", -1);
 		if (!a)
 			continue;
@@ -256,7 +256,6 @@ DEF_CMD(emacs_search)
 	esi->s = NULL;
 	esi->matched = 0;
 	esi->wrapped = 0;
-	esi->search = ci->focus;
 
 	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);
 	if (p) {
