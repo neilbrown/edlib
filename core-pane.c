@@ -155,10 +155,8 @@ static void __pane_refresh(struct pane *p, int damage, struct mark *pointer)
 			if (c->z > z && (nextz == -1 || c->z < nextz))
 				nextz = c->z;
 			if (c->z == z) {
-				if (c->abs_z != abs_z) {
+				if (c->abs_z != abs_z)
 					c->abs_z = abs_z;
-					c->damaged |= DAMAGED_Z;
-				}
 				__pane_refresh(c, damage, pointer);
 				if (c->abs_zhi > abs_zhi)
 					abs_zhi = c->abs_zhi;

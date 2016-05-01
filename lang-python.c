@@ -1324,7 +1324,6 @@ void edlib_init(struct pane *ed)
 	PyModule_AddIntMacro(m, DAMAGED_POSTORDER);
 	PyModule_AddIntMacro(m, DAMAGED_CLOSED);
 	PyModule_AddIntMacro(m, DAMAGED_EVENTS);
-	PyModule_AddIntMacro(m, DAMAGED_Z);
 	call_comm("global-set-command", ed, 0, NULL, "python-load", 0, &python_load);
 	call_comm("global-set-command", ed, 0, NULL, "global-load-modules:python", 0,
 		  &python_load_module);
