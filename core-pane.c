@@ -142,7 +142,7 @@ static void __pane_refresh(struct pane *p, int damage, struct mark *pointer)
 			damage |= DAMAGED_CURSOR;
 		if (comm_call(p->handle, "Refresh", p, 0, pointer, NULL, damage) == 0)
 			pane_check_size(p);
-		damage &= DAMAGED_SIZE | DAMAGED_EVENTS | DAMAGED_CURSOR;
+		damage &= DAMAGED_SIZE | DAMAGED_CURSOR;
 	} else
 		damage = 0;
 

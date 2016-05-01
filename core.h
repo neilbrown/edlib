@@ -292,7 +292,7 @@ void key_add_range(struct map *map, char *first, char *last,
 		   struct command *comm);
 struct command *key_register_prefix(char *name);
 
-/* DAMAGED_CURSOR, DAMAGED_SIZE and DAMAGED_EVENTS propagate down.
+/* DAMAGED_CURSOR, and DAMAGED_SIZE propagate down.
  * If any flag is set on children, DAMAGED_CHILD is set.
  */
 enum {
@@ -303,10 +303,8 @@ enum {
 
 	DAMAGED_POSTORDER= 512,
 	DAMAGED_CLOSED	= 1024,
-	DAMAGED_EVENTS	= 2048, /* event loop changed, resubmit requests */
 };
-#define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT | DAMAGED_CURSOR \
-			   | DAMAGED_EVENTS)
+#define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT | DAMAGED_CURSOR)
 
 struct pane *pane_register(struct pane *parent, int z,
 			   struct command *handle, void *data,
