@@ -104,7 +104,7 @@ DEF_CMD(popup_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "Refresh") == 0) {
+	if (strcmp(ci->key, "Refresh:size") == 0) {
 		popup_resize(p, ppi->style);
 		return 1;
 	}

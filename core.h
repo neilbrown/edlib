@@ -301,6 +301,8 @@ enum {
 	DAMAGED_CONTENT	= 4,
 	DAMAGED_CURSOR	= 8,
 
+	DAMAGED_SIZE_CHILD = 16, /* a child has changed size */
+
 	DAMAGED_POSTORDER= 512,
 	DAMAGED_CLOSED	= 1024,
 };

@@ -85,13 +85,20 @@ static void pane_check(struct pane *p)
  */
 void pane_damaged(struct pane *p, int type)
 {
-	while (p) {
-		if ((p->damaged | type) == p->damaged)
-			return;
-		p->damaged |= type;
-		if (type == DAMAGED_POSTORDER)
-			break;
+	if (!p || (p->damaged | type) == p->damaged)
+		return;
+	p->damaged |= type;
+
+	p = p->parent;
+	if (type == DAMAGED_SIZE)
+		type = DAMAGED_SIZE_CHILD;
+	else if (type & DAMAGED_NEED_CALL)
 		type = DAMAGED_CHILD;
+	else
+		return;
+
+	while (p && (p->damaged | type) != p->damaged) {
+		p->damaged |= type;
 		p = p->parent;
 	}
 }
@@ -113,8 +120,12 @@ struct pane *pane_register(struct pane *parent, int z,
 /* 'abs_z' is a global z-depth number.
  * 'abs_z' of root is 0, and abs_z of every other pane is 1 more than abs_zhi
  * of siblings with lower 'z', or same as parent if no such siblings.
+ *
+ * If DAMAGED_SIZE is set on a pane, we call "Refresh:size".
+ * If it or DAMAGED_SIZE_CHILD was set, we recurse onto all children.
+ * If abs_z is not one more than parent, we also recurse.
  */
-static void __pane_refresh(struct pane *p, int damage, struct mark *pointer)
+static void pane_do_resize(struct pane *p, int damage)
 {
 	struct pane *c;
 	int nextz;
@@ -124,27 +135,19 @@ static void __pane_refresh(struct pane *p, int damage, struct mark *pointer)
 		p->abs_zhi = abs_z;
 		return;
 	}
+	damage |= p->damaged & (DAMAGED_SIZE | DAMAGED_SIZE_CHILD);
+	if (!damage &&
+	    (p->parent == NULL || p->abs_z == p->parent->abs_z + p->z))
+		return;
 
 	if (p->focus == NULL)
 		p->focus = list_first_entry_or_null(
 			&p->children, struct pane, siblings);
-	if (p->pointer)
-		pointer = p->pointer;
 
-	damage |= p->damaged;
-	if (!damage)
-		return;
-	p->damaged = 0;
-	if (damage & (DAMAGED_NEED_CALL)) {
-		if (damage & DAMAGED_SIZE)
-			damage |= DAMAGED_CONTENT;
-		if (damage & DAMAGED_CONTENT)
-			damage |= DAMAGED_CURSOR;
-		if (comm_call(p->handle, "Refresh", p, 0, pointer, NULL, damage) == 0)
+	if (damage & (DAMAGED_SIZE)) {
+		if (comm_call(p->handle, "Refresh:size", p, 0, NULL, NULL, damage) == 0)
 			pane_check_size(p);
-		damage &= DAMAGED_SIZE | DAMAGED_CURSOR;
-	} else
-		damage = 0;
+	}
 
 	nextz = 0;
 	while (nextz >= 0) {
@@ -157,7 +160,7 @@ static void __pane_refresh(struct pane *p, int damage, struct mark *pointer)
 			if (c->z == z) {
 				if (c->abs_z != abs_z)
 					c->abs_z = abs_z;
-				__pane_refresh(c, damage, pointer);
+				pane_do_resize(c, damage & DAMAGED_SIZE);
 				if (c->abs_zhi > abs_zhi)
 					abs_zhi = c->abs_zhi;
 			}
@@ -165,17 +168,47 @@ static void __pane_refresh(struct pane *p, int damage, struct mark *pointer)
 		p->abs_zhi = abs_zhi;
 		abs_z = abs_zhi + 1;
 	}
+	if (p->damaged & DAMAGED_SIZE) {
+		p->damaged &= ~(DAMAGED_SIZE | DAMAGED_SIZE_CHILD);
+		p->damaged |= DAMAGED_CONTENT;
+	}
+}
+
+static void pane_do_refresh(struct pane *p, int damage, struct mark *pointer)
+{
+	struct pane *c;
+
+	if (p->damaged & DAMAGED_CLOSED)
+		return;
+
+	if (p->pointer)
+		pointer = p->pointer;
+
+	damage |= p->damaged & (DAMAGED_CHILD|DAMAGED_CONTENT|DAMAGED_CURSOR);
+	p->damaged = 0;
+	if (!damage)
+		return;
+	if (damage & (DAMAGED_NEED_CALL)) {
+		if (damage & DAMAGED_CONTENT)
+			damage |= DAMAGED_CURSOR;
+		comm_call(p->handle, "Refresh", p, 0, pointer, NULL, damage);
+	}
+
+	list_for_each_entry(c, &p->children, siblings)
+		pane_do_refresh(c, damage, pointer);
+
 	if (p->damaged & DAMAGED_POSTORDER) {
 		/* post-order call was triggered */
 		p->damaged &= ~DAMAGED_POSTORDER;
-		comm_call(p->handle, "Refresh", p, 1, pointer, NULL, damage);
+		comm_call(p->handle, "Refresh:postorder", p, 0, pointer, NULL, damage);
 	}
 }
 
 void pane_refresh(struct pane *p)
 {
 	p->abs_z = 0;
-	__pane_refresh(p, 0, NULL);
+	pane_do_resize(p, 0);
+	pane_do_refresh(p, 0, NULL);
 }
 
 void pane_add_notify(struct pane *target, struct pane *source, char *msg)
@@ -286,7 +319,7 @@ void pane_close(struct pane *p)
 		ci.comm = p->handle;
 		p->handle->func(&ci);
 	}
-	pane_damaged(p->parent, DAMAGED_SIZE);
+	pane_damaged(p->parent, DAMAGED_CONTENT);
 	attr_free(&p->attrs);
 	free(p);
 }

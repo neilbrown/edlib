@@ -964,8 +964,6 @@ DEF_CMD(render_lines_refresh)
 	struct mark *m;
 	char *a;
 
-	pane_check_size(p);
-
 	a = pane_attr_get(focus, "render-wrap");
 	rl->do_wrap = (!a || strcmp(a, "yes") == 0);
 

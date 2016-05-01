@@ -175,19 +175,16 @@ DEF_CMD(ncurses_handle)
 		pane_damaged(p, DAMAGED_POSTORDER);
 		return 1;
 	}
-	if (strcmp(ci->key, "Refresh") == 0) {
+	if (strcmp(ci->key, "Refresh:size") == 0) {
 		set_screen(dd->scr);
-
-		if (ci->numeric > 0) {
-			/* post-order call */
-			if (dd->cursor.x >= 0)
-				move(dd->cursor.y, dd->cursor.x);
-			refresh();
-		} else {
-			int damage = ci->extra;
-			if (damage & DAMAGED_SIZE)
-				getmaxyx(stdscr, p->h, p->w);
-		}
+		getmaxyx(stdscr, p->h, p->w);
+		return 1;
+	}
+	if (strcmp(ci->key, "Refresh:postorder") == 0) {
+		set_screen(dd->scr);
+		if (dd->cursor.x >= 0)
+			move(dd->cursor.y, dd->cursor.x);
+		refresh();
 		return 1;
 	}
 	return 0;

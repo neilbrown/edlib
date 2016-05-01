@@ -44,9 +44,8 @@ class EdDisplay(gtk.Window):
 
     def handle(self, key, **a):
 
-        if key == "Refresh":
-            if a['numeric'] > 0:
-                self.text.queue_draw()
+        if key == "Refresh:postorder":
+            self.text.queue_draw()
             return 1
 
         if key == "Display:fullscreen":

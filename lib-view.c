@@ -66,35 +66,9 @@ static int view_refresh(const struct cmd_info *ci)
 	char *name;
 	char *modified = "??";
 
-	pane_check_size(p);
 	p->cx = 0; p->cy = 0;
 	if (!vd->border)
 		return 1;
-
-	if (vd->line_height < 0) {
-		struct call_return cr;
-		cr.c = text_size_callback;
-		call_comm7("text-size", ci->home, -1, NULL,
-			   "M", 0, "bold", &cr.c);
-		vd->line_height = cr.y;
-		vd->border_height = cr.y;
-		vd->border_width = cr.x;
-		vd->ascent = cr.i;
-
-		if (p->h < vd->border_height * 3 &&
-		    (vd->border & (BORDER_TOP|BORDER_BOT)) ==
-		    (BORDER_TOP|BORDER_BOT)) {
-			vd->border &= ~BORDER_TOP;
-			vd->border &= ~BORDER_BOT;
-		}
-		if (p->w < vd->border_width * 3 &&
-		    (vd->border & (BORDER_LEFT|BORDER_RIGHT)) ==
-		    (BORDER_LEFT|BORDER_RIGHT)) {
-			vd->border &= ~BORDER_LEFT;
-			vd->border &= ~BORDER_RIGHT;
-		}
-
-	}
 
 	if (vd->border & BORDER_LEFT) {
 		/* Left border is (currently) always a scroll bar */
@@ -210,27 +184,50 @@ DEF_CMD(view_null)
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
 
-	if (strcmp(ci->key, "Refresh") == 0) {
-		int damage = ci->extra;
-		if (damage & DAMAGED_SIZE) {
-			int x = 0, y = 0;
-			int w = p->parent->w;
-			int h = p->parent->h;
+	if (strcmp(ci->key, "Refresh:size") == 0) {
+		int x = 0, y = 0;
+		int w = p->parent->w;
+		int h = p->parent->h;
 
-			if (vd->border & BORDER_LEFT) {
-				x += vd->border_width; w -= vd->border_width;
+		if (vd->line_height < 0) {
+			struct call_return cr;
+			cr.c = text_size_callback;
+			call_comm7("text-size", ci->home, -1, NULL,
+				   "M", 0, "bold", &cr.c);
+			vd->line_height = cr.y;
+			vd->border_height = cr.y;
+			vd->border_width = cr.x;
+			vd->ascent = cr.i;
+
+			if (h < vd->border_height * 3 &&
+			    (vd->border & (BORDER_TOP|BORDER_BOT)) ==
+			    (BORDER_TOP|BORDER_BOT)) {
+				vd->border &= ~BORDER_TOP;
+				vd->border &= ~BORDER_BOT;
 			}
-			if (vd->border & BORDER_RIGHT) {
-				w -= vd->border_width;
+			if (w < vd->border_width * 3 &&
+			    (vd->border & (BORDER_LEFT|BORDER_RIGHT)) ==
+			    (BORDER_LEFT|BORDER_RIGHT)) {
+				vd->border &= ~BORDER_LEFT;
+				vd->border &= ~BORDER_RIGHT;
 			}
-			if (vd->border & BORDER_TOP) {
-				y += vd->border_height; h -= vd->border_height;
-			}
-			if (vd->border & BORDER_BOT) {
-				h -= vd->border_height;
-			}
-			pane_resize(p, x, y, w, h);
+
 		}
+
+		if (vd->border & BORDER_LEFT) {
+			x += vd->border_width; w -= vd->border_width;
+		}
+		if (vd->border & BORDER_RIGHT) {
+			w -= vd->border_width;
+		}
+		if (vd->border & BORDER_TOP) {
+			y += vd->border_height; h -= vd->border_height;
+		}
+		if (vd->border & BORDER_BOT) {
+			h -= vd->border_height;
+		}
+		pane_resize(p, x, y, w, h);
+
 		return 1;
 	}
 	return 0;

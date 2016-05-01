@@ -75,7 +75,7 @@ DEF_CMD(messageline_handle)
 		pane_damaged(mli->line, DAMAGED_CONTENT);
 		return 0;
 	}
-	if (strcmp(ci->key, "Refresh") == 0) {
+	if (strcmp(ci->key, "Refresh:size") == 0) {
 		if (mli->height == 0) {
 			struct call_return cr;
 			cr.c = text_size_callback;
@@ -91,14 +91,19 @@ DEF_CMD(messageline_handle)
 			else
 				pane_resize(ci->home, 0, ci->home->parent->h - mli->height,
 					    ci->home->parent->w, mli->height);
-			pane_clear(mli->line, "bg:white");
-			if (mli->message)
-				pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
-					 0, 0 + mli->ascent);
 		} else {
 			pane_resize(ci->home, 0, 0, ci->home->parent->w,
 				    ci->home->parent->h
 				    - (mli->hidden ? 0 : mli->height));
+		}
+		return 1;
+	}
+	if (strcmp(ci->key, "Refresh") == 0) {
+		if (ci->home == mli->line) {
+			pane_clear(mli->line, "bg:white");
+			if (mli->message)
+				pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
+					 0, 0 + mli->ascent);
 		}
 		return 1;
 	}

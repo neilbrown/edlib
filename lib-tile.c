@@ -53,7 +53,6 @@ static int tile_destroy(struct pane *p);
 DEF_CMD(tile_handle)
 {
 	struct pane *p = ci->home;
-	int damage = ci->extra;
 	struct tileinfo *ti = p->data;
 	int ret;
 
@@ -66,8 +65,8 @@ DEF_CMD(tile_handle)
 		return 0;
 	}
 
-	if (strcmp(ci->key, "Refresh") == 0) {
-		if ((damage & DAMAGED_SIZE) && ti->direction == Neither) {
+	if (strcmp(ci->key, "Refresh:size") == 0) {
+		if (ti->direction == Neither) {
 			pane_check_size(p);
 			tile_avail(p, NULL);
 			tile_adjust(p);

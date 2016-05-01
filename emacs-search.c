@@ -7,7 +7,7 @@
  * emacs-search creates a popup search box and the attaches this mode.
  * We send a popup-get-target message to collect the target pane.
  * We have a stack of "string,pos" for repeated search requests.
- * We capture "Refresh" to repeat search.
+ * We capture "Replace" to repeat search.
  * We send "Move-View-Pos" to target to get it to refresh to a new location.
  * We capture:
  *   C-s - if we have a match, save end of match as new start
