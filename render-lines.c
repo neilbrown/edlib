@@ -637,7 +637,7 @@ static struct mark *call_render_line_offset(struct pane *p,
 	struct mark *m;
 
 	m = mark_dup(start, 0);
-	if (call_comm("render-line", pane_final_child(p), offset, m,
+	if (call_comm("render-line", p, offset, m,
 		      NULL, 0, &no_save) == 0) {
 		mark_free(m);
 		return NULL;
@@ -959,7 +959,7 @@ restart:
 DEF_CMD(render_lines_refresh)
 {
 	struct pane *p = ci->home;
-	struct pane *focus = pane_final_child(p);
+	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
 	struct mark *m;
 	char *a;
@@ -1150,7 +1150,7 @@ DEF_CMD(render_lines_set_cursor)
 		int cx = cihx, cy = cihy, o = -1;
 		render_line(p, focus, m->mdata, &y, 0, scale, &cx, &cy, &o, NULL);
 		if (o >= 0) {
-			struct mark *m2 = call_render_line_offset(p, m, o);
+			struct mark *m2 = call_render_line_offset(focus, m, o);
 			if (m2) {
 				mark_to_mark(ci->mark, m2);
 				mark_free(m2);
@@ -1243,7 +1243,7 @@ DEF_CMD(render_lines_move_line)
 		/* 'o' is the distance from start-of-line of the target */
 		if (o >= 0) {
 			struct mark *m2 = call_render_line_offset(
-				p, start, o);
+				focus, start, o);
 			if (m2)
 				mark_to_mark(ci->mark, m2);
 			mark_free(m2);

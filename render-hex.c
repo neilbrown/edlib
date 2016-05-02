@@ -57,10 +57,8 @@ DEF_CMD(render_hex_notify_replace)
 	 * If before, we might need to update addresses.
 	 * However we cannot currently access the view port, so
 	 * always signal damage.
-	 * This pane_child call is a hack - it may not be the
-	 * render-lines that we want.
 	 */
-	pane_damaged(pane_child(ci->home), DAMAGED_CONTENT);
+	pane_damaged(ci->home, DAMAGED_CONTENT);
 	return 1;
 }
 
