@@ -976,11 +976,11 @@ DEF_CMD(render_lines_refresh)
 		render(ci->mark, p, focus);
 		if (rl->ignore_point || (p->cx >= 0 && p->cy < p->h))
 			/* Found the cursor! */
-			return 1;
+			return 0;
 	}
 	find_lines(ci->mark, p, focus);
 	render(ci->mark, p, focus);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(render_lines_close)

@@ -335,6 +335,7 @@ static int tile_destroy(struct pane *p)
 		ti->p = p;
 		ti2->p = remain;
 		pane_close(remain);
+		pane_damaged(p, DAMAGED_SIZE);
 	}
 	return 1;
 }
@@ -416,6 +417,7 @@ static void tile_adjust(struct pane *p)
 			used += t->h;
 			size = p->h;
 		}
+		pane_damaged(t, DAMAGED_SIZE);
 		if (ti->avail_inline)
 			avail_cnt++;
 		cnt++;
@@ -460,6 +462,7 @@ static void tile_adjust(struct pane *p)
 				used += diff;
 				cnt--;
 			}
+			pane_damaged(t, DAMAGED_SIZE);
 		}
 		if (!change)
 			break;
@@ -476,6 +479,7 @@ static void tile_adjust(struct pane *p)
 			t->y = pos;
 			pos += t->h;
 		}
+		pane_damaged(t, DAMAGED_SIZE);
 		tile_adjust(t);
 	}
 }
@@ -539,6 +543,7 @@ static int tile_grow(struct pane *p, int horiz, int size)
 			p->h += size;
 			other->h -= size;
 		}
+		pane_damaged(p, DAMAGED_SIZE);
 		tile_adjust(p->parent);
 		return 1;
 	}
@@ -556,6 +561,7 @@ static int tile_grow(struct pane *p, int horiz, int size)
 		p->w += size;
 	else
 		p->h += size;
+	pane_damaged(p, DAMAGED_SIZE);
 	ti->avail_inline = 0; /* make sure this one doesn't suffer */
 	tile_adjust(p->parent);
 	return 1;

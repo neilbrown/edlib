@@ -90,7 +90,7 @@ void pane_damaged(struct pane *p, int type)
 	p->damaged |= type;
 
 	p = p->parent;
-	if (type == DAMAGED_SIZE)
+	if (type & DAMAGED_SIZE)
 		type = DAMAGED_SIZE_CHILD;
 	else if (type & DAMAGED_NEED_CALL)
 		type = DAMAGED_CHILD;
@@ -170,7 +170,10 @@ static void pane_do_resize(struct pane *p, int damage)
 	}
 	if (p->damaged & DAMAGED_SIZE) {
 		p->damaged &= ~(DAMAGED_SIZE | DAMAGED_SIZE_CHILD);
-		p->damaged |= DAMAGED_CONTENT;
+		p->damaged |= DAMAGED_CONTENT | DAMAGED_CHILD;
+	} else {
+		p->damaged &= ~DAMAGED_SIZE_CHILD;
+		p->damaged |= DAMAGED_CHILD;
 	}
 }
 
@@ -188,14 +191,15 @@ static void pane_do_refresh(struct pane *p, int damage, struct mark *pointer)
 	p->damaged = 0;
 	if (!damage)
 		return;
-	if (damage & (DAMAGED_NEED_CALL)) {
-		if (damage & DAMAGED_CONTENT)
-			damage |= DAMAGED_CURSOR;
-		comm_call(p->handle, "Refresh", p, 0, pointer, NULL, damage);
-	}
-
-	list_for_each_entry(c, &p->children, siblings)
-		pane_do_refresh(c, damage, pointer);
+	if (list_empty(&p->children)) {
+		if (damage & (DAMAGED_NEED_CALL)) {
+			if (damage & DAMAGED_CONTENT)
+				damage |= DAMAGED_CURSOR;
+			call5("Refresh", p, 0, pointer, NULL, damage);
+		}
+	} else
+		list_for_each_entry(c, &p->children, siblings)
+			pane_do_refresh(c, damage, pointer);
 
 	if (p->damaged & DAMAGED_POSTORDER) {
 		/* post-order call was triggered */
@@ -357,6 +361,7 @@ void pane_reparent(struct pane *p, struct pane *newparent)
 	if (p->parent->focus == p)
 		p->parent->focus = newparent;
 	p->parent = newparent;
+	newparent->damaged |= p->damaged;
 	if (newparent->focus == NULL)
 		newparent->focus = p;
 	list_add(&p->siblings, &newparent->children);
@@ -384,6 +389,7 @@ void pane_subsume(struct pane *p, struct pane *parent)
 		c = list_first_entry(&p->children, struct pane, siblings);
 		list_move(&c->siblings, &parent->children);
 		c->parent = parent;
+		parent->damaged |= c->damaged;
 	}
 	parent->focus = p->focus;
 
@@ -398,6 +404,8 @@ void pane_subsume(struct pane *p, struct pane *parent)
 	point = parent->pointer;
 	parent->pointer = p->pointer;
 	p->pointer = point;
+
+	parent->damaged |= p->damaged;
 }
 
 int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)

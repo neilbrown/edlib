@@ -105,7 +105,7 @@ DEF_CMD(messageline_handle)
 				pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
 					 0, 0 + mli->ascent);
 		}
-		return 1;
+		return 0;
 	}
 	/* Keystroke notification clears the message line */
 	if ((strcmp(ci->key, "Notify:Keystroke") == 0

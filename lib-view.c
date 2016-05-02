@@ -68,7 +68,7 @@ static int view_refresh(const struct cmd_info *ci)
 
 	p->cx = 0; p->cy = 0;
 	if (!vd->border)
-		return 1;
+		return 0;
 
 	if (vd->border & BORDER_LEFT) {
 		/* Left border is (currently) always a scroll bar */
@@ -142,7 +142,7 @@ static int view_refresh(const struct cmd_info *ci)
 		one_char(p, "/", "inverse", 0, vd->ascent);
 	if (!(~vd->border & (BORDER_RIGHT|BORDER_BOT)))
 		one_char(p, "/", "inverse", p->w-vd->border_width, p->h-vd->border_height+vd->ascent);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(view_handle)
