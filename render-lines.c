@@ -1032,7 +1032,7 @@ DEF_CMD(render_lines_move)
 	 * where there are more than a page full.
 	 */
 	struct pane *p = ci->home;
-	struct pane *focus = pane_final_child(p);
+	struct pane *focus = ci->focus;
 	int rpt = RPT_NUM(ci);
 	struct rl_data *rl = p->data;
 	struct mark *top;
@@ -1128,7 +1128,7 @@ DEF_CMD(render_lines_move)
 DEF_CMD(render_lines_set_cursor)
 {
 	struct pane *p = ci->home;
-	struct pane *focus = pane_final_child(p);
+	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
 	struct mark *m;
 	int y = rl->header_lines - rl->skip_lines;
