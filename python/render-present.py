@@ -616,7 +616,7 @@ class PresenterPane(edlib.Pane):
             if page is not None:
                 p.to_mark(page)
                 a['focus'].call("Move-View-Pos", page)
-                a['focus'].damage(edlib.DAMAGED_CURSOR)
+                a['focus'].damaged(edlib.DAMAGED_CURSOR)
             return 1
 
         return None
