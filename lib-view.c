@@ -68,7 +68,7 @@ static int view_refresh(const struct cmd_info *ci)
 	char *name;
 	char *modified = "??";
 
-	p->cx = 0; p->cy = 0;
+//	p->cx = 0; p->cy = 0;
 	if (!vd->border)
 		return 0;
 

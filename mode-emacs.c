@@ -87,18 +87,17 @@ REDEF_CMD(emacs_move)
 {
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 	struct pane *cursor_pane = ci->focus;
-	int old_x = -1;
+	struct pane *p;
 	int ret = 0;
 
 	if (!cursor_pane)
 		return 0;
-	old_x = cursor_pane->cx;
 
 	ret = call3(mv->type, ci->focus, mv->direction * RPT_NUM(ci), ci->mark);
 	if (!ret)
 		return 0;
 
-	if (strcmp(mv->type, "Move-View-Large") == 0 && old_x >= 0) {
+	if (strcmp(mv->type, "Move-View-Large") == 0) {
 		/* Might have lost the cursor - place it at top or
 		 * bottom of view, but make sure it moves only in the
 		 * right direction.
@@ -111,8 +110,15 @@ REDEF_CMD(emacs_move)
 			y = 0;
 		else
 			y = cursor_pane->h - 1;
+		call5("Refresh", cursor_pane, 0, ci->mark, NULL, DAMAGED_CURSOR);
+		for (p = cursor_pane; p && p->cx < 0; p = p->parent)
+			;
+		if (p)
+			/* Cursor is visible, so no need to move it */
+			return ret;
+
 		call_xy7("Mouse-event", cursor_pane, 1, 0, "Move-CursorXY", NULL,
-			 old_x, y, ci->mark, NULL);
+			 -1, y, ci->mark, NULL);
 		if (mv->direction == 1)
 			ok = mark_ordered_not_same_pane(cursor_pane, old_point, ci->mark);
 		else
@@ -124,7 +130,7 @@ REDEF_CMD(emacs_move)
 			else
 				y = cursor_pane->h - 1;
 			call_xy7("Mouse-event", cursor_pane, 1, 0, "Move-CursorXY",
-				 NULL, old_x, y, ci->mark, NULL);
+				 NULL, -1, y, ci->mark, NULL);
 		}
 		mark_free(old_point);
 	}
