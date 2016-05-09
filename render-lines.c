@@ -1134,14 +1134,23 @@ DEF_CMD(render_lines_set_cursor)
 	struct mark *m;
 	int y = rl->header_lines - rl->skip_lines;
 	int found = 0;
-	int cihx, cihy;
+	int cihx = 0, cihy = 0;
 	int scale = get_scale(p);
 
 	render_lines_other_move_func(ci);
 
 	m = vmark_first(p, rl->typenum);
 
-	cihx = ci->x; cihy = ci->y;
+	if (ci->x >= 0)
+		cihx = ci->x;
+	else if (p->cx >= 0)
+		cihx = p->cx;
+
+	if (ci->y >= 0)
+		cihy = ci->y;
+	else if (p->cx >= 0)
+		cihy = p->cy;
+
 	pane_map_xy(ci->focus, ci->home, &cihx, &cihy);
 
 	if (y > cihy)
