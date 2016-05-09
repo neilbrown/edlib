@@ -717,8 +717,9 @@ static void find_lines(struct mark *pm, struct pane *p, struct pane *focus)
 
 	top = vmark_first(focus, rl->typenum);
 	bot = vmark_last(focus, rl->typenum);
-	m = call_render_line_prev(focus, mark_at_point(focus, pm, rl->typenum),
-				  0, &rl->top_sol);
+	m = vmark_new(focus, rl->typenum);
+	mark_to_mark(m, pm);
+	m = call_render_line_prev(focus, m, 0, &rl->top_sol);
 	if (!m)
 		return;
 	start = m;
