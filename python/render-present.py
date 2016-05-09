@@ -58,6 +58,7 @@ class PresenterPane(edlib.Pane):
         self.pageview = focus.call("doc:add-view") - 1
         self.attrview = focus.call("doc:add-view") - 1
         self.borderless = False
+        self.target_mark = None
 
     def marks_same(self, m1, m2):
         if isinstance(m1, edlib.Mark) and isinstance(m1, edlib.Mark):
@@ -576,14 +577,28 @@ class PresenterPane(edlib.Pane):
             return 1
 
         if key == "Notify:doc:Recentre":
-            mark = a['mark']
+            m = a['mark']
+            mark = edlib.Mark(self)
+            mark.to_mark(m)
             if a['numeric'] == 2:
                 # Move 'mark' to start of next page
                 m = self.find_page(mark)
                 if m:
                     mark.to_mark(m)
-            self.final.call("Move-View-Pos", mark)
+                    if 'comm2' in a:
+                        a['comm2']("callback", a['focus'], m)
+            self.target_mark = mark;
+            self.damaged(edlib.DAMAGED_VIEW)
             return 1
+        if key == "Refresh:view":
+            m = self.target_mark
+            self.target_mark = None
+            if not m:
+                return 1
+            f = a['focus']
+            f.call("Move-View-Pos", m)
+            m.release()
+            return 0
 
         if key == "Close":
             # destroy all marks
@@ -621,6 +636,7 @@ class PresenterPane(edlib.Pane):
 
         return None
 
+
 class MarkdownPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
@@ -632,7 +648,11 @@ class MarkdownPane(edlib.Pane):
             focus.call("Notify:doc:Recentre", a['mark'])
             return 0
         if key == "Move-View-Large" and a['numeric'] >= 0:
-            if focus.call("Notify:doc:Recentre", a['mark'], 2) > 0:
+            m = a['mark']
+            m2 = m.dup()
+            if focus.call("Notify:doc:Recentre", m2, 2,
+                          lambda key, **a: m.to_mark(a['mark'])) > 0:
+                focus.damaged(edlib.DAMAGED_CURSOR)
                 return 1
         return 0
 

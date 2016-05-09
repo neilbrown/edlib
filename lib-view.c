@@ -28,6 +28,8 @@ struct view_data {
 	int		ascent;
 	struct pane	*pane;
 	int		scroll_bar_y;
+
+	int		move_small, move_large;
 };
 /* 0 to 4 borders are possible */
 enum {
@@ -249,7 +251,7 @@ static struct pane *do_view_attach(struct pane *par, int border)
 	struct view_data *vd;
 	struct pane *p;
 
-	vd = malloc(sizeof(*vd));
+	vd = calloc(1, sizeof(*vd));
 	vd->border = border;
 	vd->old_border = border;
 	vd->line_height = -1;
@@ -281,7 +283,7 @@ DEF_CMD(view_click)
 	struct view_data *vd = p->data;
 	int mid = vd->scroll_bar_y;
 	int lh = vd->line_height;
-	char *key;
+	int *size;
 	int num;
 	int cihx, cihy;
 
@@ -293,13 +295,13 @@ DEF_CMD(view_click)
 	if (p->h <= 4)
 		return 0;
 
-	key = "Move-View-Small";
+	size = &vd->move_small;
 	num = RPT_NUM(ci);
 
 	if (cihy < mid - lh) {
 		/* big scroll up */
 		num = -num;
-		key = "Move-View-Large";
+		size = &vd->move_large;
 	} else if (cihy <= mid) {
 		/* scroll up */
 		num = -num;
@@ -307,9 +309,27 @@ DEF_CMD(view_click)
 		/* scroll down */
 	} else {
 		/* big scroll down */
-		key = "Move-View-Large";
+		size = &vd->move_large;
 	}
-	return call3(key, pane_final_child(p->focus), num, NULL);
+	*size += num;
+	pane_damaged(p, DAMAGED_VIEW);
+	return 1;
+}
+
+DEF_CMD(view_refresh_view)
+{
+	struct pane *p = ci->home;
+	struct view_data *vd = p->data;
+
+	if (vd->move_large) {
+		call3("Move-View-Large", ci->focus, vd->move_large, ci->mark);
+		vd->move_large = 0;
+	}
+	if (vd->move_small) {
+		call3("Move-View-Small", ci->focus, vd->move_small, ci->mark);
+		vd->move_small = 0;
+	}
+	return 0;
 }
 
 DEF_CMD(view_border)
@@ -334,6 +354,7 @@ void edlib_init(struct pane *ed)
 	key_add(view_map, "Click-1", &view_click);
 	key_add(view_map, "Press-1", &view_click);
 	key_add(view_map, "Window:border", &view_border);
+	key_add(view_map, "Refresh:view", &view_refresh_view);
 
 	call_comm("global-set-command", ed, 0, NULL, "attach-view",
 		  0, &view_attach);

@@ -1319,6 +1319,7 @@ void edlib_init(struct pane *ed)
 	PyModule_AddObject(m, "Comm", (PyObject *)&CommType);
 	PyModule_AddIntMacro(m, DAMAGED_CHILD);
 	PyModule_AddIntMacro(m, DAMAGED_SIZE);
+	PyModule_AddIntMacro(m, DAMAGED_VIEW);
 	PyModule_AddIntMacro(m, DAMAGED_CONTENT);
 	PyModule_AddIntMacro(m, DAMAGED_CURSOR);
 	PyModule_AddIntMacro(m, DAMAGED_POSTORDER);

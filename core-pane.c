@@ -92,6 +92,8 @@ void pane_damaged(struct pane *p, int type)
 	p = p->parent;
 	if (type & DAMAGED_SIZE)
 		type = DAMAGED_SIZE_CHILD;
+	else if (type & DAMAGED_VIEW)
+		type = DAMAGED_VIEW_CHILD;
 	else if (type & DAMAGED_NEED_CALL)
 		type = DAMAGED_CHILD;
 	else
@@ -208,10 +210,33 @@ static void pane_do_refresh(struct pane *p, int damage, struct mark *pointer)
 	}
 }
 
+static void pane_do_review(struct pane *p, int damage, struct mark *pointer)
+{
+	struct pane *c;
+
+	if (p->damaged & DAMAGED_CLOSED)
+		return;
+
+	if (p->pointer)
+		pointer = p->pointer;
+
+	damage |= p->damaged & (DAMAGED_VIEW|DAMAGED_VIEW_CHILD);
+	p->damaged &= ~(DAMAGED_VIEW|DAMAGED_VIEW_CHILD);
+	if (!damage)
+		return;
+	if (list_empty(&p->children)) {
+		if (damage & (DAMAGED_VIEW))
+			call5("Refresh:view", p, 0, p->pointer, NULL, damage);
+	} else
+		list_for_each_entry(c, &p->children, siblings)
+			pane_do_review(c, damage, pointer);
+}
+
 void pane_refresh(struct pane *p)
 {
 	p->abs_z = 0;
 	pane_do_resize(p, 0);
+	pane_do_review(p, 0, NULL);
 	pane_do_refresh(p, 0, NULL);
 }
 

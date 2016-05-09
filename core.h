@@ -297,11 +297,13 @@ struct command *key_register_prefix(char *name);
  */
 enum {
 	DAMAGED_CHILD	= 1,
+	DAMAGED_VIEW	= 128,
 	DAMAGED_SIZE	= 2, /* these three each impose the next. */
 	DAMAGED_CONTENT	= 4,
 	DAMAGED_CURSOR	= 8,
 
 	DAMAGED_SIZE_CHILD = 16, /* a child has changed size */
+	DAMAGED_VIEW_CHILD = 32, /* a child needs to adjust the view */
 
 	DAMAGED_POSTORDER= 512,
 	DAMAGED_CLOSED	= 1024,
