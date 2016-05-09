@@ -55,7 +55,7 @@ DEF_CMD(keystroke)
 	int extra = im->extra;
 	struct mark *m;
 
-	pane_notify(ci->home, "Notify:Keystroke", NULL, NULL, ci->str, 0);
+	pane_notify(ci->home, "Notify:Keystroke", NULL, NULL, ci->str, 0, NULL);
 
 	l = strlen(im->mode) + strlen(ci->str) + 1;
 	key = malloc(l);
@@ -86,7 +86,7 @@ DEF_CMD(mouse_event)
 	int l;
 	struct cmd_info ci2 = {};
 
-	pane_notify(ci->home, "Notify:Mouse-event", NULL, NULL, ci->str, 0);
+	pane_notify(ci->home, "Notify:Mouse-event", NULL, NULL, ci->str, 0, NULL);
 
 	l = strlen(im->mode) + strlen(ci->str) + 1;
 	ci2.key = malloc(l);

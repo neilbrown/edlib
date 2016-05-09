@@ -1036,7 +1036,7 @@ struct mark *do_vmark_at_or_before(struct doc *d, struct mark *m, int view)
 
 void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
 {
-	pane_notify(d->home, "Notify:Replace", m, m2, NULL, 0);
+	pane_notify(d->home, "Notify:Replace", m, m2, NULL, 0, NULL);
 }
 
 void doc_check_consistent(struct doc *d)

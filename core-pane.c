@@ -113,7 +113,7 @@ struct pane *pane_register(struct pane *parent, int z,
 	p->data = data;
 	if (parent && parent->focus == NULL)
 		parent->focus = p;
-	comm_call_pane(parent, "ChildRegistered", p, 0, NULL, NULL, 0, NULL);
+	comm_call_pane(parent, "ChildRegistered", p, 0, NULL, NULL, 0, NULL, NULL);
 	return p;
 }
 
@@ -252,14 +252,14 @@ void pane_notify_close(struct pane *p)
 		list_del_init(&n->notifier_link);
 		if (strcmp(n->notification, "Notify:Close") == 0)
 			comm_call_pane(n->notifiee, n->notification, p,
-				       0, NULL, NULL, 0, NULL);
+				       0, NULL, NULL, 0, NULL, NULL);
 		free(n->notification);
 		free(n);
 	}
 }
 
 int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2,
-		char *str, int numeric)
+		char *str, int numeric, struct command *comm2)
 {
 	/* Return the largest absolute return value. If no notifiees are found.
 	 * return 0
@@ -276,7 +276,7 @@ restart:
 		n->noted = 1;
 		if (strcmp(n->notification, notification) == 0) {
 			int r = comm_call_pane(n->notifiee, n->notification, p,
-					       numeric, m, str, 0, m2);
+					       numeric, m, str, 0, m2, comm2);
 			if (abs(r) > abs(ret))
 				ret = r;
 			goto restart;
@@ -568,7 +568,7 @@ void pane_clone_children(struct pane *from, struct pane *to)
 	list_for_each_entry(c, &from->children, siblings) {
 		if (c->z > 0)
 			continue;
-		comm_call_pane(c, "Clone", to, 0, NULL, NULL, 0, NULL);
+		comm_call_pane(c, "Clone", to, 0, NULL, NULL, 0, NULL, NULL);
 	}
 }
 

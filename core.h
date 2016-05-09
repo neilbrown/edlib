@@ -71,7 +71,7 @@ struct notifier {
 };
 void pane_add_notify(struct pane *target, struct pane *source, char *msg);
 int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2,
-		char *str, int numeric);
+		char *str, int numeric, struct command *comm2);
 void pane_drop_notifiers(struct pane *p, char *notification);
 
 struct pane *editor_new(void);
@@ -603,7 +603,7 @@ static inline int comm_call_xy(struct command *comm, char *key, struct pane *foc
 
 static inline int comm_call_pane(struct pane *home, char *key, struct pane *focus,
 				 int numeric, struct mark *m, char *str, int extra,
-				 struct mark *m2)
+				 struct mark *m2, struct command *comm2)
 {
 	struct cmd_info ci = {};
 
@@ -618,6 +618,7 @@ static inline int comm_call_pane(struct pane *home, char *key, struct pane *focu
 	ci.str = str;
 	ci.extra = extra;
 	ci.comm = home->handle;
+	ci.comm2 = comm2;
 	return home->handle->func(&ci);
 }
 
