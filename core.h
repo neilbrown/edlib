@@ -355,19 +355,6 @@ static inline int pane_attr_get_int(struct pane *p, char *key)
 	return rv;
 }
 
-static inline struct pane *pane_child(struct pane *p)
-{
-	/* Find a child (if any) with z=0.  There should be
-	 * at most one.
-	 */
-	struct pane *c;
-	list_for_each_entry(c, &p->children, siblings)
-		if (c->z == 0)
-			return c;
-	return NULL;
-}
-struct pane *pane_final_child(struct pane *p);
-
 /* Inlines */
 
 static inline wint_t doc_following(struct doc *d, struct mark *m)
