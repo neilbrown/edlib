@@ -1464,9 +1464,8 @@ DEF_CMD(text_replace)
 	return first ? 1 : 2;
 }
 
-
-static char *__text_get_attr(struct doc *d, struct mark *m,
-			   bool forward, char *attr)
+static struct attrset *text_attrset(struct doc *d, struct mark *m,
+				    bool forward, int *op)
 {
 	struct text_chunk *c;
 	struct text *t = container_of(d, struct text, doc);
@@ -1500,7 +1499,28 @@ static char *__text_get_attr(struct doc *d, struct mark *m,
 		}
 		o -= 1;
 	}
-	return attr_get_str(c->attrs, attr, o);
+	*op = o;
+	return c->attrs;
+}
+
+static char *__text_get_attr(struct doc *d, struct mark *m,
+			     bool forward, char *attr)
+{
+	int o;
+	struct attrset *a = text_attrset(d, m, forward, &o);
+	if (!a)
+		return NULL;
+	return attr_get_str(a, attr, o);
+}
+
+static char *text_next_attr(struct doc *d, struct mark *m,
+			    bool forward, char *attr, char **valp)
+{
+	int o;
+	struct attrset *a = text_attrset(d, m, forward, &o);
+	if (!a)
+		return NULL;
+	return attr_get_next_key(a, attr, o, valp);
 }
 
 DEF_CMD(text_doc_get_attr)
