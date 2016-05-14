@@ -656,7 +656,7 @@ static int Pane_set_item(Pane *self, PyObject *key, PyObject *val)
 	}
 	k = PyString_AsString(key);
 	v = PyString_AsString(val);
-	attr_set_str(&self->pane->attrs, k, v, -1);
+	attr_set_str(&self->pane->attrs, k, v);
 	return 0;
 }
 
@@ -1005,7 +1005,7 @@ static int mark_set_item(Mark *self, PyObject *key, PyObject *val)
 	}
 	k = PyString_AsString(key);
 	v = PyString_AsString(val);
-	attr_set_str(&self->mark->attrs, k, v, -1);
+	attr_set_str(&self->mark->attrs, k, v);
 	return 0;
 }
 

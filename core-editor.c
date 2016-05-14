@@ -25,7 +25,7 @@ DEF_CMD(ed_handle)
 
 DEF_CMD(global_set_attr)
 {
-	attr_set_str(&ci->home->attrs, ci->str, ci->str2, -1);
+	attr_set_str(&ci->home->attrs, ci->str, ci->str2);
 	return 1;
 }
 

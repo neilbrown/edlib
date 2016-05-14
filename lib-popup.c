@@ -178,9 +178,9 @@ DEF_CMD(popup_attach)
 			border[j++] = "TLBR"[i];
 	}
 	border[j] = 0;
-	attr_set_str(&ppi->popup->attrs, "Popup", "true", -1);
-	attr_set_str(&ppi->popup->attrs, "borders", border, -1);
-	attr_set_str(&ppi->popup->attrs, "render-wrap", "no", -1);
+	attr_set_str(&ppi->popup->attrs, "Popup", "true");
+	attr_set_str(&ppi->popup->attrs, "borders", border);
+	attr_set_str(&ppi->popup->attrs, "render-wrap", "no");
 
 	pane_add_notify(ppi->popup, ppi->target, "Notify:Close");
 	pane_focus(ppi->popup);

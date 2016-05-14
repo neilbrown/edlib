@@ -355,7 +355,7 @@ DEF_CMD(emacs_exit)
 	if (ci->numeric == NO_NUMERIC) {
 		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
 					    "DM", NULL);
-		attr_set_str(&p->attrs, "done-key", "event:deactivate", -1);
+		attr_set_str(&p->attrs, "done-key", "event:deactivate");
 		return call3("docs:show-modified", p, 0, NULL);
 	} else
 		call3("event:deactivate", ci->focus, 0, NULL);
@@ -477,12 +477,12 @@ DEF_CMD(emacs_findfile)
 
 		if (strncmp(ci->key, "emCX4-", 6) == 0) {
 			attr_set_str(&p->attrs, "prefix",
-				     "Find File Other Window: ", -1);
+				     "Find File Other Window: ");
 			attr_set_str(&p->attrs, "done-key",
-				     "File Found Other Window", -1);
+				     "File Found Other Window");
 		} else {
-			attr_set_str(&p->attrs, "prefix", "Find File: ", -1);
-			attr_set_str(&p->attrs, "done-key", "File Found", -1);
+			attr_set_str(&p->attrs, "prefix", "Find File: ");
+			attr_set_str(&p->attrs, "done-key", "File Found");
 		}
 		call5("doc:set-name", p, 0, NULL, "Find File", 0);
 
@@ -556,9 +556,9 @@ REDEF_CMD(emacs_file_complete)
 		return -1;
 	par = doc_attach_view(pop, docp, NULL);
 
-	attr_set_str(&par->attrs, "line-format", "%+name%suffix", -1);
-	attr_set_str(&par->attrs, "heading", "", -1);
-	attr_set_str(&par->attrs, "done-key", "Replace", -1);
+	attr_set_str(&par->attrs, "line-format", "%+name%suffix");
+	attr_set_str(&par->attrs, "heading", "");
+	attr_set_str(&par->attrs, "done-key", "Replace");
 	p = render_attach("complete", par);
 	cr.c = save_str;
 	cr.s = NULL;
@@ -596,12 +596,12 @@ DEF_CMD(emacs_finddoc)
 
 		if (strncmp(ci->key, "emCX4-", 6) == 0) {
 			attr_set_str(&p->attrs, "prefix",
-				     "Find Document Other Window: ", -1);
+				     "Find Document Other Window: ");
 			attr_set_str(&p->attrs, "done-key",
-				     "Doc Found Other Window", -1);
+				     "Doc Found Other Window");
 		} else {
-			attr_set_str(&p->attrs, "prefix", "Find Document: ", -1);
-			attr_set_str(&p->attrs, "done-key", "Doc Found", -1);
+			attr_set_str(&p->attrs, "prefix", "Find Document: ");
+			attr_set_str(&p->attrs, "done-key", "Doc Found");
 		}
 		call5("doc:set-name", p, 0, NULL, "Find Document", 0);
 
@@ -642,9 +642,9 @@ REDEF_CMD(emacs_doc_complete)
 			  0, NULL, NULL);
 	par = doc_attach_view(pop, docs, NULL);
 
-	attr_set_str(&par->attrs, "line-format", "%+name", -1);
-	attr_set_str(&par->attrs, "heading", "", -1);
-	attr_set_str(&par->attrs, "done-key", "Replace", -1);
+	attr_set_str(&par->attrs, "line-format", "%+name");
+	attr_set_str(&par->attrs, "heading", "");
+	attr_set_str(&par->attrs, "done-key", "Replace");
 	p = render_attach("complete", par);
 	cr.c = save_str;
 	cr.s = NULL;
@@ -694,8 +694,8 @@ DEF_CMD(emacs_shell)
 			       "D2", "");
 		if (!p)
 			return 0;
-		attr_set_str(&p->attrs, "prefix", "Shell command: ", -1);
-		attr_set_str(&p->attrs, "done-key", "Shell Command", -1);
+		attr_set_str(&p->attrs, "prefix", "Shell command: ");
+		attr_set_str(&p->attrs, "done-key", "Shell Command");
 		call5("doc:set-name", p, 0, NULL, "Shell Command", 0);
 		p = call_pane7("attach-history", p, 0, NULL, 0,
 			       "*Shell History*", "popup:close");
@@ -776,8 +776,8 @@ DEF_CMD(emacs_search)
 		if (!p)
 			return 0;
 
-		attr_set_str(&p->attrs, "prefix", "Search: ", -1);
-		attr_set_str(&p->attrs, "done-key", "Search String", -1);
+		attr_set_str(&p->attrs, "prefix", "Search: ");
+		attr_set_str(&p->attrs, "done-key", "Search String");
 
 		call5("doc:set-name", p, 0, NULL, "Search", 0);
 

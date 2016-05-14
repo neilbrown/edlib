@@ -1559,7 +1559,7 @@ DEF_CMD(text_set_attr)
 		o = c->start;
 	}
 	doc_notify_change(&t->doc, ci->mark, NULL);
-	return attr_set_str(&c->attrs, attr, val, o);
+	return attr_set_str_key(&c->attrs, attr, val, o);
 }
 
 DEF_CMD(text_modified)

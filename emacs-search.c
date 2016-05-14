@@ -198,7 +198,7 @@ DEF_CMD(search_again)
 		if (!a)
 			continue;
 		if (strcmp(a, pfx) != 0)
-			attr_set_str(&p->attrs, "prefix", pfx, -1);
+			attr_set_str(&p->attrs, "prefix", pfx);
 	}
 	mark_free(m);
 	free(str);

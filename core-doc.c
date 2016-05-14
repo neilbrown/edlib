@@ -285,7 +285,7 @@ DEF_CMD(doc_attr_set)
 	if (ci->str2 == NULL && ci->extra == 1)
 		attr_set_int(&d->attrs, ci->str, ci->numeric);
 	else
-		attr_set_str(&d->attrs, ci->str, ci->str2, -1);
+		attr_set_str(&d->attrs, ci->str, ci->str2);
 	return 1;
 }
 
