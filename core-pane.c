@@ -557,7 +557,7 @@ void pane_clear(struct pane *p, char *attrs)
 char *pane_attr_get(struct pane *p, char *key)
 {
 	while (p) {
-		char *a = attr_get_str(p->attrs, key, -1);
+		char *a = attr_find(p->attrs, key);
 		if (a)
 			return a;
 		a = doc_attr(p, NULL, 0, key);

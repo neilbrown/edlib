@@ -506,7 +506,7 @@ DEF_CMD(docs_get_attr)
 {
 	struct doc *d = ci->home->data;
 	char *attr = ci->str;
-	char *val = attr_get_str(d->attrs, attr, -1);
+	char *val = attr_find(d->attrs, attr);
 
 	if (val)
 		;

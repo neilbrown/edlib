@@ -459,7 +459,7 @@ static char *__dir_get_attr(struct doc *d, struct mark *m,
 		else
 			return "";
 	} else
-		return attr_get_str(de->attrs, attr, -1);
+		return attr_find(de->attrs, attr);
 }
 
 DEF_CMD(dir_doc_get_attr)
@@ -486,7 +486,7 @@ DEF_CMD(dir_get_attr)
 	struct doc *d = ci->home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
 	char *attr = ci->str;
-	char *val = attr_get_str(d->attrs, attr, -1);
+	char *val = attr_find(d->attrs, attr);
 
 	if (val)
 		;

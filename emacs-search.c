@@ -194,7 +194,7 @@ DEF_CMD(search_again)
 	}
 	/* HACK */
 	for (p = ci->home; p; p = p->parent) {
-		a = attr_get_str(p->attrs, "prefix", -1);
+		a = attr_find(p->attrs, "prefix");
 		if (!a)
 			continue;
 		if (strcmp(a, pfx) != 0)

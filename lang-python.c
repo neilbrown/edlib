@@ -981,7 +981,7 @@ static PyObject *mark_get_item(Mark *self, PyObject *key)
 		return NULL;
 	}
 	k = PyString_AsString(key);
-	v = attr_get_str(self->mark->attrs, k, -1);
+	v = attr_find(self->mark->attrs, k);
 	if (v)
 		return Py_BuildValue("s", v);
 	Py_INCREF(Py_None);
