@@ -211,6 +211,40 @@ char *attr_find(struct attrset *set, char *key)
 	return attr_get_str(set, key, -1);
 }
 
+char *attr_get_next_key(struct attrset *set, char *key, int keynum, char **valp)
+{
+	struct attrset **setp = &set;
+	int offset = 0;
+	int cmp = __attr_find(&setp, key, &offset, keynum);
+	char *val;
+
+	if (cmp < 0)
+		return NULL;
+	set = *setp;
+	if (cmp == 0) {
+		/* Skip the matching key, then value */
+		offset += strlen(set->attrs + offset) + 1;
+		offset += strlen(set->attrs + offset) + 1;
+	}
+	if (offset >= set->len) {
+		set = set->next;
+		offset = 0;
+	}
+	if (!set)
+		return NULL;
+	key = set->attrs + offset;
+	val = key + strlen(key) + 1;
+	if (keynum >= 0) {
+		int kn = getcmptok(&key);
+		if (kn != keynum + 256)
+			return NULL;
+		if (*key == ' ')
+			key += 1;
+	}
+	*valp = val;
+	return key;
+}
+
 int attr_set_str_key(struct attrset **setp, char *key, char *val, int keynum)
 {
 	int offset = 0;

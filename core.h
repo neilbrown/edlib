@@ -228,6 +228,7 @@ int attr_del(struct attrset **setp, char *key);
 int attr_set_str(struct attrset **setp, char *key, char *val);
 int attr_set_str_key(struct attrset **setp, char *key, char *val, int keynum);
 char *attr_get_str(struct attrset *setp, char *key, int keynum);
+char *attr_get_next_key(struct attrset *set, char *key, int keynum, char **valp);
 int attr_find_int(struct attrset *set, char *key);
 int attr_set_int(struct attrset **setp, char *key, int val);
 void attr_trim(struct attrset **setp, int nkey);
