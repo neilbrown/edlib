@@ -355,7 +355,9 @@ DEF_CMD(emacs_exit)
 	if (ci->numeric == NO_NUMERIC) {
 		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
 					    "DM", NULL);
-		attr_set_str(&p->attrs, "done-key", "event:deactivate");
+		// FIXME if called from a popup, this fails.
+		if (p)
+			attr_set_str(&p->attrs, "done-key", "event:deactivate");
 		return call3("docs:show-modified", p, 0, NULL);
 	} else
 		call3("event:deactivate", ci->focus, 0, NULL);
@@ -814,6 +816,17 @@ DEF_CMD(emacs_bury)
 	return 1;
 }
 
+// FIXME this must go - a search pane must capture this.
+DEF_CMD(emacs_map_attr)
+{
+	if (strcmp(ci->str, "render:search") == 0) {
+		int len = atoi(ci->str2);
+		return comm_call(ci->comm2, "attr:callback", ci->focus, len,
+				 ci->mark, "fg:red,inverse", 20);
+	}
+	return 0;
+}
+
 static struct map *emacs_map;
 
 static void emacs_init(void)
@@ -880,6 +893,8 @@ static void emacs_init(void)
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &emacs_num);
 	key_add(m, "M-Chr--", &emacs_neg);
+
+	key_add(m, "map-attr", &emacs_map_attr);
 	emacs_map = m;
 }
 

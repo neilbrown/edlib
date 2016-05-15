@@ -1684,6 +1684,115 @@ DEF_CMD(render_line_prev)
 	return 1;
 }
 
+struct attr_stack {
+	struct attr_stack	*next;
+	char			*attr;
+	int			end;
+	int			priority;
+};
+
+static int find_finished(struct attr_stack *st, int pos, int *nextp)
+{
+	int depth = 0;
+	int fdepth = -1;
+	int next = -1;
+
+	for (; st ; st = st->next, depth++) {
+		if (st->end <= pos)
+			fdepth = depth;
+		else if (next < 0 || next > st->end)
+			next = st->end;
+	}
+	*nextp = next;
+	return fdepth;
+}
+
+static void as_pop(struct attr_stack **fromp, struct attr_stack **top, int depth,
+	    struct buf *b)
+{
+	struct attr_stack *from = *fromp;
+	struct attr_stack *to = *top;
+
+	while (from && depth >= 0) {
+		struct attr_stack *t;
+		buf_concat(b, "</>");
+		t = from;
+		from = t->next;
+		t->next = to;
+		to = t;
+		depth -= 1;
+	}
+	*fromp = from;
+	*top = to;
+}
+
+static void as_repush(struct attr_stack **fromp, struct attr_stack **top,
+		      int pos, struct buf *b)
+{
+	struct attr_stack *from = *fromp;
+	struct attr_stack *to = *top;
+
+	while (from) {
+		struct attr_stack *t = from->next;
+		if (from->end <= pos) {
+			free(from->attr);
+			free(from);
+		} else {
+			buf_append(b, '<');
+			buf_concat(b, from->attr);
+			buf_append(b, '>');
+			from->next = to;
+			to = from;
+		}
+		from = t;
+	}
+	*fromp = from;
+	*top = to;
+}
+
+static void as_add(struct attr_stack **fromp, struct attr_stack **top,
+		   int end, int prio, char *attr)
+{
+	struct attr_stack *from = *fromp;
+	struct attr_stack *to = *top;
+	struct attr_stack *new, **here;
+
+	while (from && from->priority > prio) {
+		struct attr_stack *t = from->next;
+		from->next = to;
+		to = from;
+		from = t;
+	}
+	here = &to;
+	while (*here && (*here)->priority <= prio)
+		here = &(*here)->next;
+	new = calloc(1, sizeof(*new));
+	new->next = *here;
+	new->attr = strdup(attr);
+	new->end = end;
+	new->priority = prio;
+	*here = new;
+	*top = to;
+	*fromp = from;
+}
+
+struct attr_return {
+	struct command c;
+	struct attr_stack *ast, *tmpst;
+	int min_end;
+	int chars;
+};
+
+DEF_CMD(text_attr_callback)
+{
+	struct attr_return *ar = container_of(ci->comm, struct attr_return, c);
+	as_add(&ar->ast, &ar->tmpst, ar->chars + ci->numeric, ci->extra, ci->str);
+	if (ar->min_end < 0 || ar->chars + ci->numeric < ar->min_end)
+		ar->min_end = ar->chars + ci->numeric;
+	// FIXME ->str2 should be inserted
+	return 1;
+}
+
 DEF_CMD(render_line)
 {
 	/* Render the line from 'mark' to the first '\n' or until
@@ -1699,34 +1808,49 @@ DEF_CMD(render_line)
 	wint_t ch = WEOF;
 	int chars = 0;
 	int ret;
+	struct attr_return ar;
+	int add_newline = 0;
+
+	ar.c = text_attr_callback;
+	ar.ast = ar.tmpst = NULL;
+	ar.min_end = -1;
 
 	if (!m)
 		return -1;
 
 	buf_init(&b);
 	while (1) {
-		char *attr = __text_get_attr(d, m, 1, "highlight");
+		char *key, *val;
 		int offset = m->ref.o;
 		if (o >= 0 && b.len >= o)
 			break;
 		if (pm && mark_same(d, m, pm))
 			break;
+
+		if (ar.ast && ar.min_end <= chars) {
+			int depth = find_finished(ar.ast, chars, &ar.min_end);
+			as_pop(&ar.ast, &ar.tmpst, depth, &b);
+		}
+
+		key = "render:";
+		ar.chars = chars;
+		while ((key = text_next_attr(d, m, 1, key, &val)) != NULL) {
+			call_comm7("map-attr", ci->focus, 0, m, key, 0, val,
+				   &ar.c);
+		}
+		as_repush(&ar.tmpst, &ar.ast, chars, &b);
+
 		ch = mark_next(d, m);
 		if (ch == WEOF)
 			break;
 		if (ch == '\n') {
-			buf_append(&b, ch);
+			add_newline = 1;
 			break;
 		}
 		if (chars > LARGE_LINE/2 &&
 		    m->ref.o > offset &&
 		    (m->ref.o-1)/LARGE_LINE != (offset-1)/LARGE_LINE)
 			break;
-		if (attr) {
-			buf_append(&b, '<');
-			buf_concat(&b, attr);
-			buf_append(&b, '>');
-		}
 		if (ch == '<') {
 			if (o >= 0 && b.len+1 >= o) {
 				mark_prev(d, m);
@@ -1742,10 +1866,14 @@ DEF_CMD(render_line)
 			buf_concat(&b, "<fg:red>^?</>");
 		} else
 			buf_append(&b, ch);
-		if (attr)
-			buf_concat(&b, "</>");
 		chars++;
 	}
+	while (ar.ast)
+		as_pop(&ar.ast, &ar.tmpst, 100, &b);
+	as_repush(&ar.tmpst, &ar.ast, 10000000, &b);
+	if (add_newline)
+		buf_append(&b, '\n');
+
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
 			buf_final(&b), 0);
 	free(b.b);

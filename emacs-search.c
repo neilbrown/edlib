@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "core.h"
 
 struct es_info {
@@ -31,6 +32,7 @@ struct es_info {
 	} *s;
 	struct mark *start; /* where searching starts */
 	struct mark *end; /* where last success ended */
+	struct mark *found; /* Where match was found */
 	struct pane *target;
 	short matched;
 	short wrapped;
@@ -60,7 +62,7 @@ DEF_CMD(search_forward)
 			return 1;
 		}
 	}
-	s = malloc(sizeof(*s));
+	s = calloc(1, sizeof(*s));
 	s->m = esi->start;
 	s->len = strlen(str);
 	s->wrapped = esi->wrapped;
@@ -113,7 +115,11 @@ DEF_CMD(search_add)
 
 	do {
 		/* TEMP HACK - please fix */
-		doc_set_attr(esi->target, esi->end, "highlight", NULL);
+		if (esi->found) {
+			doc_set_attr(esi->target, esi->found, "render:search", NULL);
+			mark_free(esi->found);
+			esi->found = NULL;
+		}
 		wch = mark_next_pane(esi->target, esi->end);
 		if (wch == WEOF)
 			return 1;
@@ -147,7 +153,11 @@ DEF_CMD(search_close)
 	struct es_info *esi = ci->home->data;
 
 	/* TEMP HACK - please fix */
-	doc_set_attr(esi->target, esi->end, "highlight", NULL);
+	if (esi->found) {
+		doc_set_attr(esi->target, esi->found, "render:search", NULL);
+		mark_free(esi->found);
+		esi->found = NULL;
+	}
 	mark_free(esi->end);
 	esi->end = NULL;
 	mark_free(esi->start);
@@ -171,7 +181,11 @@ DEF_CMD(search_again)
 	char *str;
 
 	/* TEMP HACK - please fix */
-	doc_set_attr(esi->target, esi->end, "highlight", NULL);
+	if (esi->found) {
+		doc_set_attr(esi->target, esi->found, "render:search", NULL);
+		mark_free(esi->found);
+		esi->found = NULL;
+	}
 	m = mark_dup(esi->start, 1);
 	str = doc_getstr(ci->home, NULL, NULL);
 	ret = call5("text-search", esi->target, 0, m, str, 0);
@@ -183,9 +197,16 @@ DEF_CMD(search_again)
 	} else if (ret < 0) {
 		pfx = "Search (incomplete): ";
 	} else {
+		char buf[sizeof(int)*3];
+		ret -= 1;
+		snprintf(buf, sizeof(buf), "%d", ret);
 		point_to_mark(esi->end, m);
+		while (ret > 0 && mark_prev_pane(esi->target, m) != WEOF)
+			ret -= 1;
 		/* TEMP HACK - please fix */
-		doc_set_attr(esi->target, esi->end, "highlight","fg:red,inverse");
+		doc_set_attr(esi->target, m, "render:search",buf);
+		esi->found = m;
+		m = NULL;
 		call3("Move-View-Pos", esi->target, 0, esi->end);
 		esi->matched = 1;
 		pfx = "Search: ";
@@ -200,7 +221,8 @@ DEF_CMD(search_again)
 		if (strcmp(a, pfx) != 0)
 			attr_set_str(&p->attrs, "prefix", pfx);
 	}
-	mark_free(m);
+	if (m)
+		mark_free(m);
 	free(str);
 	return 1;
 }
@@ -243,7 +265,7 @@ DEF_CMD(emacs_search)
 	p = call_pane("popup:get-target", ci->focus, 0, NULL, 0);
 	if (!p)
 		return -1;
-	esi = malloc(sizeof(*esi));
+	esi = calloc(1, sizeof(*esi));
 	esi->target = p;
 	m = mark_at_point(p, NULL, MARK_POINT);
 	if (!m) {
