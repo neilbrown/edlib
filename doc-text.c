@@ -1793,6 +1793,15 @@ DEF_CMD(text_attr_callback)
 	return 1;
 }
 
+static void call_map_mark(struct pane *f, struct mark *m, struct attr_return *ar)
+{
+	char *key = "render:";
+	char *val;
+
+	while ((key = attr_get_next_key(m->attrs, key, -1, &val)) != NULL)
+		call_comm7("map-attr", f, 0, m, key, 0, val, &ar->c);
+}
+
 DEF_CMD(render_line)
 {
 	/* Render the line from 'mark' to the first '\n' or until
@@ -1822,6 +1831,8 @@ DEF_CMD(render_line)
 	while (1) {
 		char *key, *val;
 		int offset = m->ref.o;
+		struct mark *m2;
+
 		if (o >= 0 && b.len >= o)
 			break;
 		if (pm && mark_same(d, m, pm))
@@ -1838,6 +1849,15 @@ DEF_CMD(render_line)
 			call_comm7("map-attr", ci->focus, 0, m, key, 0, val,
 				   &ar.c);
 		}
+
+		/* find all marks "here" - they might be fore or aft */
+		for (m2 = doc_prev_mark_all(m); m2 && mark_same(d, m, m2);
+		     m2 = doc_prev_mark_all(m2))
+			call_map_mark(ci->focus, m2, &ar);
+		for (m2 = doc_next_mark_all(m); m2 && mark_same(d, m, m2);
+		     m2 = doc_next_mark_all(m2))
+			call_map_mark(ci->focus, m2, &ar);
+
 		as_repush(&ar.tmpst, &ar.ast, chars, &b);
 
 		ch = mark_next(d, m);
