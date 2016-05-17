@@ -767,16 +767,40 @@ DEF_CMD(emacs_save_all)
 		return call3("docs:save-all", ci->focus, 0, NULL);
 }
 
+DEF_CMD(search_view_handle)
+{
+	if (strcmp(ci->key, "map-attr") == 0 &&
+	    strcmp(ci->str, "render:search") == 0) {
+		int len = atoi(ci->str2);
+		return comm_call(ci->comm2, "attr:callback", ci->focus, len,
+				 ci->mark, "fg:red,inverse", 20);
+	}
+	if (strcmp(ci->key, "search-view-close") == 0) {
+		pane_close(ci->home);
+		return 1;
+	}
+	return 0;
+}
+
 DEF_CMD(emacs_search)
 {
 	struct mark *m;
 
 	if (strcmp(ci->key, "Search String") != 0) {
-		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL,
-					    0, "TR2", "");
+		struct pane *sp;
+		struct pane *p;
 
-		if (!p)
+		sp = pane_register(ci->focus, 0, &search_view_handle, NULL, NULL);
+		if (!sp)
 			return 0;
+
+		p = call_pane7("PopupTile", sp, 0, NULL,
+			       0, "TR2", "");
+
+		if (!p) {
+			pane_close(sp);
+			return 0;
+		}
 
 		attr_set_str(&p->attrs, "prefix", "Search: ");
 		attr_set_str(&p->attrs, "done-key", "Search String");
@@ -798,6 +822,8 @@ DEF_CMD(emacs_search)
 	if (call5("text-search", ci->focus, 0, m, ci->str, 0) > 1)
 		call3("Move-to", ci->focus, 0, m);
 
+	call3("search-view-close", ci->focus, 0, NULL);
+
 	mark_free(m);
 	return 1;
 }
@@ -814,17 +840,6 @@ DEF_CMD(emacs_bury)
 	if (doc)
 		doc_attach_view(tile, doc, NULL);
 	return 1;
-}
-
-// FIXME this must go - a search pane must capture this.
-DEF_CMD(emacs_map_attr)
-{
-	if (strcmp(ci->str, "render:search") == 0) {
-		int len = atoi(ci->str2);
-		return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-				 ci->mark, "fg:red,inverse", 20);
-	}
-	return 0;
 }
 
 static struct map *emacs_map;
@@ -894,7 +909,6 @@ static void emacs_init(void)
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &emacs_num);
 	key_add(m, "M-Chr--", &emacs_neg);
 
-	key_add(m, "map-attr", &emacs_map_attr);
 	emacs_map = m;
 }
 
