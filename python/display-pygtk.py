@@ -156,6 +156,7 @@ class EdDisplay(gtk.Window):
                     if c < len(a["str"]):
                         s = unicode(a["str"][c:], "utf-8")
                         l2 = pango.Layout(ctx)
+                        l2.set_font_description(fd)
                         l2.set_text(s[0])
                         fg, bg = self.get_colours(attr+",inverse")
                         pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, fg, bg)
