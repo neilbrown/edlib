@@ -96,6 +96,9 @@ struct rl_data {
 	int		header_lines;
 	int		typenum;
 	int		line_height;
+	int		repositioned; /* send "render:reposition" when we know
+				       * full position again.
+				       */
 };
 
 DEF_CMD(text_size_callback)
@@ -900,7 +903,7 @@ restart:
 			call_render_line(focus, m);
 		}
 		m2 = vmark_next(m);
-		if (!hide_cursor && p->cx <= 0 &&
+		if (!hide_cursor && p->cx <= 0 && pm &&
 		    mark_ordered_or_same_pane(focus, m, pm) &&
 		    (!m2 || mark_ordered_or_same_pane(focus, pm, m2))) {
 			int len = call_render_line_to_point(focus, pm,
@@ -976,11 +979,27 @@ DEF_CMD(render_lines_refresh)
 	if (m) {
 		render(ci->mark, p, focus);
 		if (rl->ignore_point || (p->cx >= 0 && p->cy < p->h))
-			/* Found the cursor! */
 			return 0;
 	}
 	find_lines(ci->mark, p, focus);
 	render(ci->mark, p, focus);
+	rl->repositioned = 0;
+	call7("render:reposition", focus, 0, vmark_first(focus, rl->typenum),
+	      NULL, 0, NULL, vmark_last(focus, rl->typenum));
+	return 0;
+}
+
+DEF_CMD(render_lines_refresh_view)
+{
+	struct pane *p = ci->home;
+	struct pane *focus = ci->focus;
+	struct rl_data *rl = p->data;
+
+	if (rl->repositioned)
+		render(ci->mark, p, focus);
+	rl->repositioned = 0;
+	call7("render:reposition", focus, 0, vmark_first(focus, rl->typenum),
+	      NULL, 0, NULL, vmark_last(focus, rl->typenum));
 	return 0;
 }
 
@@ -1122,7 +1141,8 @@ DEF_CMD(render_lines_move)
 			}
 		}
 	}
-	pane_damaged(ci->home, DAMAGED_CONTENT);
+	rl->repositioned = 1;
+	pane_damaged(ci->home, DAMAGED_VIEW);
 	return 1;
 }
 
@@ -1192,7 +1212,8 @@ DEF_CMD(render_lines_move_pos)
 		/* pos already displayed */
 		return 1;
 	find_lines(pm, p, focus);
-	pane_damaged(p, DAMAGED_CONTENT);
+	pane_damaged(p, DAMAGED_VIEW);
+	rl->repositioned = 1;
 	return 1;
 }
 
@@ -1346,6 +1367,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Close", &render_lines_close);
 	key_add(rl_map, "Clone", &render_lines_clone);
 	key_add(rl_map, "Refresh", &render_lines_refresh);
+	key_add(rl_map, "Refresh:view", &render_lines_refresh_view);
 
 	/* force full refresh */
 	key_add(rl_map, "render-lines:redraw", &render_lines_redraw);

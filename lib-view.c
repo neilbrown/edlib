@@ -28,6 +28,7 @@ struct view_data {
 	int		ascent;
 	struct pane	*pane;
 	int		scroll_bar_y;
+	struct mark	*viewpoint;
 
 	int		move_small, move_large;
 };
@@ -60,7 +61,6 @@ static int view_refresh(const struct cmd_info *ci)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
-	struct mark *m = ci->mark;
 	int ln, l, w, c = -1;
 	char msg[100];
 	int i;
@@ -78,6 +78,11 @@ static int view_refresh(const struct cmd_info *ci)
 			one_char(p, "|", "inverse", 0, i + vd->ascent);
 
 		if (p->h > 4 * vd->line_height) {
+			struct mark *m = ci->mark;
+
+			if (vd->viewpoint)
+				m = vd->viewpoint;
+
 			call3("CountLines", p, 0, m);
 
 			ln = attr_find_int(*mark_attr(m), "lines");
@@ -161,6 +166,8 @@ DEF_CMD(view_handle)
 		vd->pane = p; /* FIXME having to do this is horrible */
 
 	if (strcmp(ci->key, "Close") == 0) {
+		if (vd->viewpoint)
+			mark_free(vd->viewpoint);
 		free(vd);
 		return 1;
 	}
@@ -177,6 +184,15 @@ DEF_CMD(view_handle)
 	if (strcmp(ci->key, "Notify:Replace") == 0) {
 		pane_damaged(p, DAMAGED_CONTENT);
 		return 1;
+	}
+	if (strcmp(ci->key, "render:reposition") == 0) {
+		if (vd->viewpoint)
+			mark_free(vd->viewpoint);
+		if (ci->mark)
+			vd->viewpoint = mark_dup(ci->mark, 1);
+		else
+			vd->viewpoint = NULL;
+		pane_damaged(p, DAMAGED_CONTENT);
 	}
 	return 0;
 }

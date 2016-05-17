@@ -594,7 +594,7 @@ class PresenterPane(edlib.Pane):
             m = self.target_mark
             self.target_mark = None
             if not m:
-                return 1
+                return 0
             f = a['focus']
             f.call("Move-View-Pos", m)
             m.release()
