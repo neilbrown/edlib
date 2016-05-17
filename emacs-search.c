@@ -20,7 +20,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include "core.h"
 
 struct es_info {
@@ -32,7 +31,6 @@ struct es_info {
 	} *s;
 	struct mark *start; /* where searching starts */
 	struct mark *end; /* where last success ended */
-	struct mark *found; /* Where match was found */
 	struct pane *target;
 	short matched;
 	short wrapped;
@@ -114,12 +112,7 @@ DEF_CMD(search_add)
 	int l;
 
 	do {
-		/* TEMP HACK - please fix */
-		if (esi->found) {
-			doc_set_attr(esi->target, esi->found, "render:search", NULL);
-			mark_free(esi->found);
-			esi->found = NULL;
-		}
+		call3("search:highlight", esi->target, 0, NULL);
 		wch = mark_next_pane(esi->target, esi->end);
 		if (wch == WEOF)
 			return 1;
@@ -152,12 +145,7 @@ DEF_CMD(search_close)
 {
 	struct es_info *esi = ci->home->data;
 
-	/* TEMP HACK - please fix */
-	if (esi->found) {
-		doc_set_attr(esi->target, esi->found, "render:search", NULL);
-		mark_free(esi->found);
-		esi->found = NULL;
-	}
+	call3("search:highlight", esi->target, 0, NULL);
 	mark_free(esi->end);
 	esi->end = NULL;
 	mark_free(esi->start);
@@ -180,12 +168,7 @@ DEF_CMD(search_again)
 	struct mark *m;
 	char *str;
 
-	/* TEMP HACK - please fix */
-	if (esi->found) {
-		doc_set_attr(esi->target, esi->found, "render:search", NULL);
-		mark_free(esi->found);
-		esi->found = NULL;
-	}
+	call3("search:highlight", esi->target, 0, NULL);
 	m = mark_dup(esi->start, 1);
 	str = doc_getstr(ci->home, NULL, NULL);
 	ret = call5("text-search", esi->target, 0, m, str, 0);
@@ -197,17 +180,11 @@ DEF_CMD(search_again)
 	} else if (ret < 0) {
 		pfx = "Search (incomplete): ";
 	} else {
-		char buf[sizeof(int)*3];
-		ret -= 1;
-		snprintf(buf, sizeof(buf), "%d", ret);
+		int len = --ret;
 		point_to_mark(esi->end, m);
 		while (ret > 0 && mark_prev_pane(esi->target, m) != WEOF)
 			ret -= 1;
-		/* TEMP HACK - please fix */
-		doc_set_attr(esi->target, m, "render:search",buf);
-		esi->found = m;
-		m = NULL;
-		call3("Move-View-Pos", esi->target, 0, esi->end);
+		call5("search:highlight", esi->target, len, m, str, 0);
 		esi->matched = 1;
 		pfx = "Search: ";
 		if (esi->wrapped)

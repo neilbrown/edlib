@@ -15,6 +15,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <stdio.h>
+
 #include "core.h"
 
 REDEF_CMD(emacs_move);
@@ -767,16 +769,46 @@ DEF_CMD(emacs_save_all)
 		return call3("docs:save-all", ci->focus, 0, NULL);
 }
 
+struct search_view_info {
+	int view;
+};
+
 DEF_CMD(search_view_handle)
 {
+	struct search_view_info *vi = ci->home->data;
+	if (strcmp(ci->key, "search:highlight")==0) {
+		/* from 'mark' for 'numeric' chars there is a match for 'str' */
+		struct mark *m;
+		while ((m = vmark_first(ci->focus, vi->view)) != NULL)
+			mark_free(m);
+		if (ci->mark && ci->numeric > 0) {
+			char buf[sizeof(int)*3];
+			snprintf(buf, sizeof(buf), "%d", ci->numeric);
+			m = vmark_new(ci->focus, vi->view);
+			mark_to_mark(m, ci->mark);
+			attr_set_str(&m->attrs, "render:search", buf);
+			call3("Move-View-Pos", ci->focus, 0, m);
+			call3("Notify:Replace", ci->focus, 0, m);
+		} else
+			call3("Notify:Replace", ci->focus, 0, NULL);
+		call3("render-lines:redraw", ci->home, 0, NULL);
+	}
 	if (strcmp(ci->key, "map-attr") == 0 &&
-	    strcmp(ci->str, "render:search") == 0) {
+	    strcmp(ci->str, "render:search") == 0 &&
+	    ci->mark && ci->mark->viewnum == vi->view) {
 		int len = atoi(ci->str2);
 		return comm_call(ci->comm2, "attr:callback", ci->focus, len,
 				 ci->mark, "fg:red,inverse", 20);
 	}
 	if (strcmp(ci->key, "search-view-close") == 0) {
 		pane_close(ci->home);
+		return 1;
+	}
+	if (strcmp(ci->key, "Close") == 0) {
+		struct mark *m;
+		while ((m = vmark_first(ci->focus, vi->view)) != NULL)
+			mark_free(m);
+		free(vi);
 		return 1;
 	}
 	return 0;
@@ -789,8 +821,11 @@ DEF_CMD(emacs_search)
 	if (strcmp(ci->key, "Search String") != 0) {
 		struct pane *sp;
 		struct pane *p;
+		struct search_view_info *vi = calloc(1, sizeof(*vi));
 
-		sp = pane_register(ci->focus, 0, &search_view_handle, NULL, NULL);
+		vi->view = doc_add_view(ci->focus);
+
+		sp = pane_register(ci->focus, 0, &search_view_handle, vi, NULL);
 		if (!sp)
 			return 0;
 
