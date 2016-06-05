@@ -771,7 +771,33 @@ DEF_CMD(emacs_save_all)
 
 struct search_view_info {
 	int view;
+	struct mark *viewstart, *viewend;
+	struct mark *current;
+	char *patn;
 };
+
+static void do_searches(struct pane *p, int view, char *patn,
+			struct mark *m, struct mark *end, struct mark *current)
+{
+	int ret;
+	if (!m)
+		return;
+	m = mark_dup(m, 1);
+	while ((ret = call7("text-search", p, 0, m, patn, 0, NULL, end)) >= 1) {
+		char buf[sizeof(int)*3];
+		struct mark *m2;
+		snprintf(buf, sizeof(buf), "%d", ret - 1);
+		m2 = vmark_new(p, view);
+		mark_to_mark(m2, m);
+		while (ret > 1 && mark_prev_pane(p, m2) != WEOF)
+			ret -= 1;
+		if (current && mark_same_pane(p, m2, current, NULL))
+			mark_free(m2);
+		else
+			attr_set_str(&m2->attrs, "render:search2", buf);
+	}
+	mark_free(m);
+}
 
 DEF_CMD(search_view_handle)
 {
@@ -781,17 +807,31 @@ DEF_CMD(search_view_handle)
 		struct mark *m;
 		while ((m = vmark_first(ci->focus, vi->view)) != NULL)
 			mark_free(m);
+		vi->current = NULL;
+		free(vi->patn);
+		vi->patn = NULL;
+
 		if (ci->mark && ci->numeric > 0) {
 			char buf[sizeof(int)*3];
 			snprintf(buf, sizeof(buf), "%d", ci->numeric);
+			vi->patn = strdup(ci->str);
 			m = vmark_new(ci->focus, vi->view);
 			mark_to_mark(m, ci->mark);
+			vi->current = m;
 			attr_set_str(&m->attrs, "render:search", buf);
 			call3("Move-View-Pos", ci->focus, 0, m);
-			call3("Notify:Replace", ci->focus, 0, m);
+			call3("Notify:Replace", ci->focus, 0, mark_dup(m,1));
+			if (vi->viewstart) {
+				m = mark_dup(vi->viewstart, 1);
+				do_searches(ci->focus, vi->view, ci->str,
+					    m, vi->viewend, vi->current);
+				mark_free(m);
+			}
 		} else
 			call3("Notify:Replace", ci->focus, 0, NULL);
 		call3("render-lines:redraw", ci->home, 0, NULL);
+		pane_damaged(ci->home, DAMAGED_CONTENT);
+		return 1;
 	}
 	if (strcmp(ci->key, "map-attr") == 0 &&
 	    strcmp(ci->str, "render:search") == 0 &&
@@ -800,14 +840,69 @@ DEF_CMD(search_view_handle)
 		return comm_call(ci->comm2, "attr:callback", ci->focus, len,
 				 ci->mark, "fg:red,inverse", 20);
 	}
+	if (strcmp(ci->key, "map-attr") == 0 &&
+	    strcmp(ci->str, "render:search2") == 0 &&
+	    ci->mark && ci->mark->viewnum == vi->view) {
+		int len = atoi(ci->str2);
+		return comm_call(ci->comm2, "attr:callback", ci->focus, len,
+				 ci->mark, "fg:blue,inverse", 20);
+	}
 	if (strcmp(ci->key, "search-view-close") == 0) {
 		pane_close(ci->home);
 		return 1;
 	}
+	if (strcmp(ci->key, "render:reposition") == 0) {
+		/* If new range and old range don't over-lap, discard
+		 * old range and re-fill new range.
+		 * Otherwise delete anything in range that is no longer visible.
+		 * If they overlap before, search from start to first match.
+		 * If they overlap after, search from last match to end.
+		 */
+		/* delete every match before new start and after end */
+		struct mark *start = ci->mark;
+		struct mark *end = ci->mark2;
+		struct mark *m;
+
+		while ((m = vmark_first(ci->focus, vi->view)) != NULL &&
+		       m != vi->current &&
+		       m->seq < start->seq)
+			mark_free(m);
+		while ((m = vmark_last(ci->focus, vi->view)) != NULL &&
+		       m != vi->current &&
+		       m->seq > end->seq)
+			mark_free(m);
+
+		if (vi->viewstart == NULL || start->seq < vi->viewstart->seq) {
+			/* search from 'start' to first match or 'end' */
+			m = vmark_first(ci->focus, vi->view);
+			do_searches(ci->focus, vi->view, vi->patn, start, m ?: end,
+				vi->current);
+			if (m)
+				do_searches(ci->focus, vi->view, vi->patn,
+					    vmark_last(ci->focus, vi->view), end,
+					    vi->current);
+		} else if (end->seq > vi->viewend-> seq) {
+			/* search from last match to end */
+			do_searches(ci->focus, vi->view, vi->patn, vi->viewend, end,
+				    vi->current);
+		}
+
+		mark_free(vi->viewstart);
+		mark_free(vi->viewend);
+		vi->viewstart = mark_dup(start, 1);
+		vi->viewend = mark_dup(end, 1);
+		call3("render-lines:redraw", ci->home, 0, NULL);
+		pane_damaged(ci->home, DAMAGED_CONTENT);
+
+		return 0;
+	}
 	if (strcmp(ci->key, "Close") == 0) {
 		struct mark *m;
+		mark_free(vi->viewstart);
+		mark_free(vi->viewend);
 		while ((m = vmark_first(ci->focus, vi->view)) != NULL)
 			mark_free(m);
+		free(vi->patn);
 		free(vi);
 		return 1;
 	}
@@ -828,6 +923,7 @@ DEF_CMD(emacs_search)
 		sp = pane_register(ci->focus, 0, &search_view_handle, vi, NULL);
 		if (!sp)
 			return 0;
+		pane_damaged(sp, DAMAGED_VIEW);
 
 		p = call_pane7("PopupTile", sp, 0, NULL,
 			       0, "TR2", "");
