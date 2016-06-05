@@ -288,7 +288,7 @@ static void render_image(struct pane *p, char *line, int *yp,
  */
 static void render_line(struct pane *p, struct pane *focus,
 			char *line, int *yp, int dodraw, int scale,
-			int *cxp, int *cyp, int *offsetp, int *end_of_page)
+			int *cxp, int *cyp, int *offsetp, int *end_of_pagep)
 {
 	int x = 0;
 	int y = *yp;
@@ -307,6 +307,7 @@ static void render_line(struct pane *p, struct pane *focus,
 	int twidth = 0;
 	int center = 0;
 	int margin;
+	int end_of_page = 0;
 
 	if (strncmp(line, "<image:",7) == 0) {
 		/* For now an <image> must be on a line by itself.
@@ -364,7 +365,7 @@ static void render_line(struct pane *p, struct pane *focus,
 	if (!wrap)
 		x -= rl->shift_left;
 
-	while (*line && y < p->h && (!end_of_page || !*end_of_page)) {
+	while (*line && y < p->h && !end_of_page) {
 		int CX;
 		int CP;
 
@@ -506,8 +507,7 @@ static void render_line(struct pane *p, struct pane *focus,
 		} else if (ch == '\f') {
 			x = 0;
 			start = line;
-			if (end_of_page)
-				*end_of_page = 1;
+			end_of_page = 1;
 		} else if (ch == '\t') {
 			int xc = x / mwidth;
 			int w = 8 - xc % 8;
@@ -549,6 +549,8 @@ static void render_line(struct pane *p, struct pane *focus,
 		y += line_height;
 	*yp = y;
 	free(buf_final(&attr));
+	if (end_of_pagep && end_of_page)
+		*end_of_pagep = end_of_page;
 }
 
 static struct mark *call_render_line_prev(struct pane *p,
@@ -780,17 +782,20 @@ static void find_lines(struct mark *pm, struct pane *p, struct pane *focus)
 			if (!end->mdata)
 				call_render_line(focus, end);
 			next = vmark_next(end);
-			if (!end->mdata || !next)
+			if (!end->mdata || !next) {
 				found_end = 1;
-			else {
+				lines_below = rl->line_height * 2;
+			} else {
 				int h = 0;
 				render_line(p, focus, end->mdata, &h, 0, scale,
 					    NULL, NULL, NULL, &found_end);
 				end = next;
 				if (h)
 					lines_below = h;
-				else
+				else {
 					found_end = 1;
+					lines_below = rl->line_height * 2;
+				}
 			}
 			if (top && mark_ordered(top, end))
 				found_start = 1;
