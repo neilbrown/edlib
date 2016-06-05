@@ -6,6 +6,7 @@
  * "text-search" command searches from given mark until it
  * finds the given string or end of buffer.
  * Leave mark at end of match and set ->extra to length of match.
+ * If mark2 is given, don't go beyond there.
  */
 
 #include <stdlib.h>
@@ -28,7 +29,8 @@ DEF_CMD(text_search)
 		return -1;
 	st = rxl_prepare(rxl);
 	since_start = -1;
-	while (since_start < 0 || len != -2) {
+	while ((since_start < 0 || len != -2) &&
+	       (ci->mark2 == NULL || m->seq < ci->mark2->seq)) {
 		wint_t wch = mark_next_pane(ci->focus, m);
 		if (wch == WEOF)
 			break;
