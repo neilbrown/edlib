@@ -315,7 +315,7 @@ DEF_CMD(complete_set_prefix)
 	free(common);
 	call3("Move-to", ci->focus, 0, m);
 	mark_free(m);
-	call3("render-lines:redraw", ci->focus, 0, NULL);
+	pane_damaged(ci->focus, DAMAGED_VIEW);
 	return cnt + 1;
 }
 

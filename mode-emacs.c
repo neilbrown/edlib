@@ -829,8 +829,7 @@ DEF_CMD(search_view_handle)
 			}
 		} else
 			call3("Notify:Replace", ci->focus, 0, NULL);
-		call3("render-lines:redraw", ci->home, 0, NULL);
-		pane_damaged(ci->home, DAMAGED_CONTENT);
+		pane_damaged(ci->home, DAMAGED_CONTENT|DAMAGED_VIEW);
 		return 1;
 	}
 	if (strcmp(ci->key, "map-attr") == 0 &&
@@ -891,8 +890,7 @@ DEF_CMD(search_view_handle)
 		mark_free(vi->viewend);
 		vi->viewstart = mark_dup(start, 1);
 		vi->viewend = mark_dup(end, 1);
-		call3("render-lines:redraw", ci->home, 0, NULL);
-		pane_damaged(ci->home, DAMAGED_CONTENT);
+		pane_damaged(ci->home, DAMAGED_CONTENT|DAMAGED_VIEW);
 
 		return 0;
 	}

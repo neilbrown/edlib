@@ -999,6 +999,14 @@ DEF_CMD(render_lines_refresh_view)
 	struct pane *p = ci->home;
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
+	struct mark *m;
+
+	for (m = vmark_first(p, rl->typenum);
+	     m;
+	     m = vmark_next(m)) {
+		free(m->mdata);
+		m->mdata = NULL;
+	}
 
 	if (rl->repositioned)
 		render(ci->mark, p, focus);
@@ -1333,21 +1341,6 @@ DEF_CMD(render_lines_clone)
 	return 1;
 }
 
-DEF_CMD(render_lines_redraw)
-{
-	struct pane *p = ci->home;
-	struct rl_data *rl = p->data;
-	struct mark *m;
-
-	for (m = vmark_first(p, rl->typenum);
-	     m;
-	     m = vmark_next(m)) {
-		free(m->mdata);
-		m->mdata = NULL;
-	}
-	return 1;
-}
-
 static struct map *rl_map;
 
 DEF_LOOKUP_CMD(render_lines_handle, rl_map)
@@ -1373,9 +1366,6 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Clone", &render_lines_clone);
 	key_add(rl_map, "Refresh", &render_lines_refresh);
 	key_add(rl_map, "Refresh:view", &render_lines_refresh_view);
-
-	/* force full refresh */
-	key_add(rl_map, "render-lines:redraw", &render_lines_redraw);
 
 	key_add(rl_map, "Notify:Replace", &render_lines_notify_replace);
 }

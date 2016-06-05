@@ -195,7 +195,8 @@ DEF_CMD(docs_modified_handle)
 		mark_to_modified(ci->home->parent, m);
 		all_gone = (m->ref.p == NULL);
 		mark_free(m);
-		call3("render-lines:redraw", ci->home, 0, NULL);
+		if (ci->mark)
+			pane_damaged(ci->home, DAMAGED_VIEW);
 		if (all_gone)
 			call5("popup:close", ci->home, 0, NULL, NULL, 0);
 		return 1;

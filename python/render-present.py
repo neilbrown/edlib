@@ -141,7 +141,7 @@ class PresenterPane(edlib.Pane):
                             self['background'] = 'call:Present-BG:'+globals['background']
                         if 'scale' in globals:
                             self['scale'] = globals['scale']
-                        self.call("render-lines:redraw")
+                        self.damaged(edlib.DAMAGED_VIEW)
                     return maybe
             else:
                 # not part of start-of-page
@@ -558,7 +558,7 @@ class PresenterPane(edlib.Pane):
                     self.first_valid = False
                     page['valid'] = 'no'
                 # attributes probably changed so...
-                self.call("render-lines:redraw")
+                self.damaged(edlib.DAMAGED_VIEW)
             else:
                 page['valid'] = 'no'
                 page['next-valid'] = 'no'
@@ -569,7 +569,7 @@ class PresenterPane(edlib.Pane):
             l = self.prev_line(m)
             if l:
                 if l['type'] and l['type'][0:5] == "attr:":
-                    self.call("render-lines:redraw")
+                    self.damaged(edlib.DAMAGED_VIEW)
                 l['type'] = 'unknown'
                 l = l.next()
                 if l:
