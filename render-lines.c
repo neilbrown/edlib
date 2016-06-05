@@ -1104,7 +1104,7 @@ DEF_CMD(render_lines_move)
 				break;
 			}
 			top = vmark_next(top);
-			if (top->mdata == NULL)
+			if (top && top->mdata == NULL)
 				call_render_line(focus, top);
 			rpt -= y - rl->skip_lines;
 			rl->skip_lines = 0;
