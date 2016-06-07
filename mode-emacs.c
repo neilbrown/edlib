@@ -159,7 +159,7 @@ REDEF_CMD(emacs_delete)
 		mark_free(m);
 		return 0;
 	}
-	ret = call5("Replace", ci->focus, 1, m, NULL, ci->extra);
+	ret = call5("Replace", ci->focus, 1, m, NULL, !ci->extra);
 	mark_free(m);
 	pane_set_extra(ci->focus, 1);
 
@@ -230,7 +230,7 @@ REDEF_CMD(emacs_case)
 				}
 			}
 			if (changed) {
-				ret = call5("Replace", ci->focus, 1, m, str, ci->extra);
+				ret = call5("Replace", ci->focus, 1, m, str, !ci->extra);
 				if (dir < 0)
 					call3(mv->type+1, ci->focus, dir, ci->mark);
 			}
@@ -373,7 +373,7 @@ DEF_CMD(emacs_insert)
 
 	/* Key is "Chr-X" - skip 4 bytes to get X */
 	str = ci->key + 4;
-	ret = call5("Replace", ci->focus, 1, ci->mark, str, ci->extra);
+	ret = call5("Replace", ci->focus, 1, ci->mark, str, !ci->extra);
 	pane_set_extra(ci->focus, 1);
 
 	return ret;
@@ -401,7 +401,7 @@ DEF_CMD(emacs_insert_other)
 		return 0;
 
 	ret = call5("Replace", ci->focus, 1, ci->mark, other_inserts[i].insert,
-		    ci->extra);
+		    !ci->extra);
 	pane_set_extra(ci->focus, 0); /* A newline starts a new undo */
 	return ret;
 }
