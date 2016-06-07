@@ -418,8 +418,12 @@ static void render_line(struct pane *p, struct pane *focus,
 		ret = 0;
 
 		if (offset >= 0 && start - line_start <= offset) {
-			*cyp = y;
-			*cxp = x;
+			if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
+				*cyp = y;
+				*cxp = x;
+			} else {
+				*cyp = *cxp = -1;
+			}
 		}
 
 		if (ch >= ' ' && ch != '<') {
@@ -541,10 +545,14 @@ static void render_line(struct pane *p, struct pane *focus,
 		if (offsetp)
 			*offsetp = line - line_start;
 	if (offset >= 0 && line - line_start <= offset) {
-		*cyp = y;
-		*cxp = x;
+		if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
+			*cyp = y;
+			*cxp = x;
+		} else {
+			*cyp = *cxp = -1;
+		}
 	}
-	if (x > 0)
+	if (x > 0 || y == *yp)
 		/* No newline at the end .. but we must render as whole lines */
 		y += line_height;
 	*yp = y;
@@ -1181,7 +1189,7 @@ DEF_CMD(render_lines_set_cursor)
 
 	if (ci->y >= 0)
 		cihy = ci->y;
-	else if (p->cx >= 0)
+	else if (p->cy >= 0)
 		cihy = p->cy;
 
 	pane_map_xy(ci->focus, ci->home, &cihx, &cihy);
@@ -1219,6 +1227,12 @@ DEF_CMD(render_lines_move_pos)
 	rl->ignore_point = 1;
 	top = vmark_first(focus, rl->typenum);
 	bot = vmark_last(focus, rl->typenum);
+	if (top && rl->skip_lines)
+		/* top line not fully displayed, being in that line is no sufficient */
+		top = doc_next_mark_view(top);
+	if (bot)
+		/* last line might not be fully displayed, so don't assume */
+		bot = doc_prev_mark_view(bot);
 	if (top && bot &&
 	    mark_ordered(top, pm) &&
 	    mark_ordered(pm, bot) && !mark_same_pane(focus, pm, bot, NULL))
