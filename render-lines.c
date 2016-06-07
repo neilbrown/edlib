@@ -752,6 +752,13 @@ static void find_lines(struct mark *pm, struct pane *p, struct pane *focus)
 	 * Rendering just that "line" uses a height of 'y', of which
 	 * 'lines_above' is above the cursor, and 'lines_below' is below.
 	 */
+	/* Don't consider the top or bottom lines as currently being
+	 * displayed - they might not be.
+	 */
+	if (top)
+		top = doc_next_mark_view(top);
+	if (bot)
+		bot = doc_prev_mark_view(bot);
 	if (bot && !mark_ordered_or_same_pane(focus, bot, start))
 		/* already before 'bot', so will never "cross over" bot, so
 		 * ignore 'bot'
