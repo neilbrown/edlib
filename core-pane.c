@@ -313,10 +313,15 @@ restart:
 void pane_close(struct pane *p)
 {
 	struct pane *c;
+	struct pane *ed;
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
 	p->damaged |= DAMAGED_CLOSED;
 	pane_check(p);
+
+	ed = p->parent;
+	while (ed && ed->parent)
+		ed = ed->parent;
 
 	if (p->parent && p->parent->handle &&
 	    !(p->parent->damaged & DAMAGED_CLOSED)) {
@@ -350,7 +355,10 @@ void pane_close(struct pane *p)
 	}
 	pane_damaged(p->parent, DAMAGED_CONTENT);
 	attr_free(&p->attrs);
-	free(p);
+	if (ed)
+		editor_delayed_free(ed, p);
+	else
+		free(p);
 }
 
 void pane_resize(struct pane *p, int x, int y, int w, int h)

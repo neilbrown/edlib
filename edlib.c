@@ -90,8 +90,10 @@ int main(int argc, char *argv[])
 
 	if (p) {
 		pane_refresh(ed);
-		while (call3("event:run", ed, 0, NULL) == 1)
+		while (call3("event:run", ed, 0, NULL) == 1) {
+			call3("global-multicall-on_idle-", ed, 0, NULL);
 			pane_refresh(ed);
+		}
 	}
 	pane_close(ed);
 	exit(0);

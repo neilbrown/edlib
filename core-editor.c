@@ -11,10 +11,15 @@
 #include "core.h"
 
 static struct map *ed_map;
+struct ed_info {
+	struct pane *freelist;
+	struct map *map;
+};
 
 DEF_CMD(ed_handle)
 {
-	struct map *map = ci->home->data;
+	struct ed_info *ei = ci->home->data;
+	struct map *map = ei->map;
 	int ret;
 
 	ret = key_lookup(map, ci);
@@ -31,7 +36,8 @@ DEF_CMD(global_set_attr)
 
 DEF_CMD(global_set_command)
 {
-	struct map *map = ci->home->data;
+	struct ed_info *ei = ci->home->data;
+	struct map *map = ei->map;
 
 	if (ci->str2)
 		key_add_range(map, ci->str, ci->str2, ci->comm2);
@@ -42,7 +48,8 @@ DEF_CMD(global_set_command)
 
 DEF_CMD(global_get_command)
 {
-	struct map *map = ci->home->data;
+	struct ed_info *ei = ci->home->data;
+	struct map *map = ei->map;
 	struct command *cm = key_lookup_cmd(map, ci->str);
 	struct cmd_info ci2 = {};
 
@@ -60,7 +67,8 @@ DEF_CMD(global_get_command)
 
 DEF_CMD(editor_load_module)
 {
-	struct map *map = ci->home->data;
+	struct ed_info *ei = ci->home->data;
+	struct map *map = ei->map;
 	char *name = ci->str;
 	char buf[PATH_MAX];
 	void *h;
@@ -86,7 +94,8 @@ DEF_CMD(editor_load_module)
 DEF_CMD(editor_auto_load)
 {
 	int ret;
-	struct map *map = ci->home->data;
+	struct ed_info *ei = ci->home->data;
+	struct map *map = ei->map;
 	char *mod = ci->key + 7;
 
 	if (strncmp(mod, "doc-", 4) == 0 ||
@@ -119,7 +128,8 @@ DEF_CMD(editor_auto_event)
 	 * have to use key_lookup_prefix to find them.
 	 * If nothing is found, autoload lib-libevent (hack?)
 	 */
-	struct map *map = ci->home->data;
+	struct ed_info *ei = ci->home->data;
+	struct map *map = ei->map;
 	int ret = key_lookup_prefix(map, ci);
 
 	if (ret)
@@ -130,15 +140,35 @@ DEF_CMD(editor_auto_event)
 
 DEF_CMD(editor_multicall)
 {
-	struct map *map = ci->home->data;
+	struct ed_info *ei = ci->home->data;
+	struct map *map = ei->map;
 
 	((struct cmd_info*)ci)->key += strlen("global-multicall-");
 	return key_lookup_prefix(map, ci);
 }
 
+DEF_CMD(editor_clean_up)
+{
+	struct ed_info *ei = ci->home->data;
+	while (ei->freelist) {
+		struct pane *p = ei->freelist;
+		ei->freelist = p->focus;
+		free(p);
+	}
+	return 0;
+}
+
+void editor_delayed_free(struct pane *ed, struct pane *p)
+{
+	struct ed_info *ei = ed->data;
+	p->focus = ei->freelist;
+	ei->freelist = p;
+}
+
 struct pane *editor_new(void)
 {
 	struct pane *ed;
+	struct ed_info *ei = calloc(1, sizeof(*ei));
 
 	if (!ed_map) {
 		ed_map = key_alloc();
@@ -151,8 +181,9 @@ struct pane *editor_new(void)
 		key_add_range(ed_map, "global-multicall-", "global-multicall.",
 			      &editor_multicall);
 	}
-
-	ed = pane_register(NULL, 0, &ed_handle, key_alloc(), NULL);
+	ei->map = key_alloc();
+	key_add(ei->map, "on_idle-clean_up", &editor_clean_up);
+	ed = pane_register(NULL, 0, &ed_handle, ei, NULL);
 
 	return ed;
 }
