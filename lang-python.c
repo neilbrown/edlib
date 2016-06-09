@@ -48,9 +48,19 @@
 static PyObject *Edlib_CommandFailed;
 static PyObject *EdlibModule;
 
+/* When a python callable is passed to edlib_call() we combine it
+ * with this "python_call" for edlib to call back that callable.
+ */
+struct python_command {
+	struct command	c;
+	PyObject	*callable;
+};
+DEF_CMD(python_call);
+
 typedef struct {
 	PyObject_HEAD
 	struct pane	*pane;
+	struct python_command handle;
 } Pane;
 static PyTypeObject PaneType;
 
@@ -66,14 +76,7 @@ typedef struct {
 	struct command	*comm;
 } Comm;
 static PyTypeObject CommType;
-/* When a python callable is passed to edlib_call() we combine it
- * with this "python_call" for edlib to call back that callable.
- */
-struct python_command {
-	struct command	c;
-	PyObject	*callable;
-};
-DEF_CMD(python_call);
+
 static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds);
 
 static inline PyObject *Pane_Frompane(struct pane *p)
@@ -239,7 +242,6 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 	PyObject *py_handler;
 	int z = 0;
 	int ret;
-	struct python_command *handler;
 	static char *keywords[] = {"parent", "handler", "z", NULL};
 
 	if (self->pane) {
@@ -260,13 +262,11 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 		PyErr_SetString(PyExc_TypeError, "'handler' is not callable");
 		return -1;
 	}
-	/* FIXME arrange to free this when "Close" is called */
-	handler = malloc(sizeof(*handler));
-	handler->c = python_call;
+	self->handle.c = python_call;
 	Py_INCREF(py_handler);
-	handler->callable = py_handler;
+	self->handle.callable = py_handler;
 
-	self->pane = pane_register(parent->pane, z, &handler->c, self, NULL);
+	self->pane = pane_register(parent->pane, z, &self->handle.c, self, NULL);
 	return 0;
 }
 
