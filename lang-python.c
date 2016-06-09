@@ -43,6 +43,12 @@
 #include <Python.h>
 #include <structmember.h>
 #define MARK_DATA_PTR PyObject
+#define PRIVATE_DOC_REF
+
+struct doc_ref {
+	PyObject *c;
+	int o;
+};
 #include "core.h"
 
 static PyObject *Edlib_CommandFailed;
@@ -77,6 +83,9 @@ typedef struct {
 	PyObject_HEAD
 	struct mark	*mark;
 	int		released;
+	int		local; /* set when mark arrived with ci->home being
+				* a Doc, so the ref is usable
+				*/
 } Mark;
 static PyTypeObject MarkType;
 
@@ -106,7 +115,7 @@ static inline PyObject *Pane_Frompane(struct pane *p)
 	return (PyObject*)pane;
 }
 
-static inline PyObject *Mark_Frommark(struct mark *m)
+static inline PyObject *Mark_Frommark(struct mark *m, int local)
 {
 	Mark *mark;
 
@@ -117,6 +126,7 @@ static inline PyObject *Mark_Frommark(struct mark *m)
 	mark = (Mark *)PyObject_CallObject((PyObject*)&MarkType, NULL);
 	mark->mark = m;
 	mark->released = 1;
+	mark->local = local;
 	return (PyObject*)mark;
 }
 
@@ -198,16 +208,19 @@ REDEF_CMD(python_call)
 	struct python_command *pc = container_of(ci->comm, struct python_command, c);
 	PyObject *ret, *args, *kwds;
 	int rv = 1;
+	int local;
 
 	args = Py_BuildValue("(s)", ci->key);
 	kwds = PyDict_New();
 	PyDict_SetItemString(kwds, "home", Pane_Frompane(ci->home));
+	local = ci->home && ci->home->handle &&
+		ci->home->handle->func == python_doc_call.func;
 	if (ci->focus)
 		PyDict_SetItemString(kwds, "focus", Pane_Frompane(ci->focus));
 	if (ci->mark)
-		PyDict_SetItemString(kwds, "mark", Mark_Frommark(ci->mark));
+		PyDict_SetItemString(kwds, "mark", Mark_Frommark(ci->mark, local));
 	if (ci->mark2)
-		PyDict_SetItemString(kwds, "mark2", Mark_Frommark(ci->mark2));
+		PyDict_SetItemString(kwds, "mark2", Mark_Frommark(ci->mark2, local));
 	if (ci->str)
 		PyDict_SetItemString(kwds, "str", Py_BuildValue("s", ci->str));
 	if (ci->str2)
@@ -831,7 +844,11 @@ static PyObject *mark_getrpos(Mark *m, void *x)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	return PyInt_FromLong(m->mark->rpos);
+	if (x == NULL)
+		return PyInt_FromLong(m->mark->rpos);
+	if (m->local)
+		return PyInt_FromLong(m->mark->ref.o);
+	return PyInt_FromLong(0);
 }
 
 static int mark_setrpos(Mark *m, PyObject *v, void *x)
@@ -845,9 +862,49 @@ static int mark_setrpos(Mark *m, PyObject *v, void *x)
 	val = PyInt_AsLong(v);
 	if (val == -1 && PyErr_Occurred())
 		return -1;
-	m->mark->rpos = val;
+	if (x == NULL)
+		m->mark->rpos = val;
+	else if (m->local)
+		m->mark->ref.o = val;
+	else {
+		PyErr_SetString(PyExc_TypeError, "Setting offset on non-local mark");
+		return -1;
+	}
 	return 0;
 }
+
+static PyObject *mark_getpos(Mark *m, void *x)
+{
+	if (m->mark == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return NULL;
+	}
+	if (m->local && m->mark->ref.c) {
+		Py_INCREF(m->mark->ref.c);
+		return m->mark->ref.c;
+	} else {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+}
+
+static int mark_setpos(Mark *m, PyObject *v, void *x)
+{
+	if (m->mark == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return -1;
+	}
+	if (!m->local) {
+		PyErr_SetString(PyExc_TypeError, "Not set ref for non-local mark");
+		return -1;
+	}
+	if (m->mark->ref.c)
+		Py_DECREF(m->mark->ref.c);
+	m->mark->ref.c = v;
+	Py_INCREF(v);
+	return 0;
+}
+
 
 static PyObject *mark_getview(Mark *m, void *x)
 {
@@ -894,6 +951,12 @@ static PyObject *mark_compare(Mark *a, Mark *b, int op)
 }
 
 static PyGetSetDef mark_getseters[] = {
+    {"pos",
+     (getter)mark_getpos, (setter)mark_setpos,
+     "Position ref", NULL},
+    {"offset",
+     (getter)mark_getrpos, (setter)mark_setrpos,
+     "Position offset", (void*)1},
     {"rpos",
      (getter)mark_getrpos, (setter)mark_setrpos,
      "Rendering Position",  NULL},
@@ -921,6 +984,7 @@ static int Mark_init(Mark *self, PyObject *args, PyObject *kwds)
 	Mark *orig = NULL;
 	static char *keywords[] = {"pane","view","orig", NULL};
 	int ret;
+	int local;
 
 	if (!PyTuple_Check(args) ||
 	    (PyTuple_GET_SIZE(args) == 0 && kwds == NULL))
@@ -942,9 +1006,13 @@ static int Mark_init(Mark *self, PyObject *args, PyObject *kwds)
 		return -1;
 	}
 	if (doc) {
-		self->mark = vmark_new(doc->pane, view);
+		struct pane *p = doc->pane;
+		self->mark = vmark_new(p, view);
+		local = p->handle &&
+			p->handle->func == python_doc_call.func;
 	} else {
 		self->mark = mark_dup(orig->mark, 0);
+		local = orig->local;
 	}
 	if (!self->mark) {
 		PyErr_SetString(PyExc_TypeError, "Mark creation failed");
@@ -956,6 +1024,7 @@ static int Mark_init(Mark *self, PyObject *args, PyObject *kwds)
 		self->released = 0;
 	} else
 		self->released = 1;
+	self->local = local;
 	self->mark->mtype = &MarkType;
 	self->mark->mdata = (PyObject*)self;
 	return 1;
@@ -968,6 +1037,8 @@ static void mark_dealloc(Mark *self)
 		self->mark = NULL;
 		m->mtype = NULL;
 		m->mdata = NULL;
+		if (self->local && m->ref.c)
+			Py_DECREF(m->ref.c);
 		mark_free(m);
 	}
 	self->ob_type->tp_free((PyObject*)self);
@@ -997,7 +1068,7 @@ static PyObject *Mark_next(Mark *self)
 	else
 		next = NULL;
 	if (next)
-		return Mark_Frommark(next);
+		return Mark_Frommark(next, self->local);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -1014,7 +1085,7 @@ static PyObject *Mark_prev(Mark *self)
 	else
 		prev = NULL;
 	if (prev)
-		return Mark_Frommark(prev);
+		return Mark_Frommark(prev, self->local);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -1028,7 +1099,7 @@ static PyObject *Mark_next_any(Mark *self)
 	}
 	next = doc_next_mark_all(self->mark);
 	if (next)
-		return Mark_Frommark(next);
+		return Mark_Frommark(next, self->local);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -1043,8 +1114,8 @@ static PyObject *Mark_dup(Mark *self)
 	new = mark_dup(self->mark, 1);
 	if (new) {
 		if (self->mark->mtype != &MarkType)
-			return Mark_Frommark(new);
-		new->mdata = Mark_Frommark(new);
+			return Mark_Frommark(new, self->local);
+		new->mdata = Mark_Frommark(new, self->local);
 		new->mtype = &MarkType;
 		Py_INCREF(new->mdata);
 		return new->mdata;
