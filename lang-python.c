@@ -56,6 +56,7 @@ struct python_command {
 	PyObject	*callable;
 };
 DEF_CMD(python_call);
+DEF_CMD(python_doc_call);
 
 typedef struct {
 	PyObject_HEAD
@@ -63,6 +64,14 @@ typedef struct {
 	struct python_command handle;
 } Pane;
 static PyTypeObject PaneType;
+
+typedef struct {
+	PyObject_HEAD
+	struct pane	*pane;
+	struct python_command handle;
+	struct doc	doc;
+} Doc;
+static PyTypeObject DocType;
 
 typedef struct {
 	PyObject_HEAD
@@ -84,6 +93,11 @@ static inline PyObject *Pane_Frompane(struct pane *p)
 	Pane *pane;
 	if (p && p->handle && p->handle->func == python_call.func) {
 		pane = p->data;
+		Py_INCREF(pane);
+	} else if (p && p->handle && p->handle->func == python_doc_call.func) {
+		struct doc *doc = p->data;
+		Doc *pdoc = container_of(doc, Doc, doc);
+		pane = (Pane*)pdoc;
 		Py_INCREF(pane);
 	} else {
 		pane = (Pane *)PyObject_CallObject((PyObject*)&PaneType, NULL);
@@ -225,6 +239,14 @@ REDEF_CMD(python_call)
 	return rv;
 }
 
+REDEF_CMD(python_doc_call)
+{
+	int rv = python_call_func(ci);
+	if (rv == 0)
+		rv = key_lookup(doc_default_cmd, ci);
+	return rv;
+}
+
 static Pane *pane_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
 	Pane *self;
@@ -236,28 +258,53 @@ static Pane *pane_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 	return self;
 }
 
-static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
+static void doc_free(struct doc *d)
+{
+	/* A bit like calling .release() on the pane */
+	Doc *pd = container_of(d, Doc, doc);
+	struct pane *p = pd->pane;
+	if (p) {
+		p->handle = NULL;
+		p->data = NULL;
+	}
+	Py_DECREF(pd);
+}
+
+static Doc *Doc_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+	Doc *self;
+
+	self = (Doc *)type->tp_alloc(type, 0);
+	if (self) {
+		self->pane = NULL;
+		doc_init(&self->doc);
+		self->doc.free = doc_free;
+	}
+	return self;
+}
+
+static int __Pane_init(Pane *self, PyObject *args, PyObject *kwds, Pane **parentp,
+		       int *zp)
 {
 	Pane *parent;
 	PyObject *py_handler;
-	int z = 0;
 	int ret;
 	static char *keywords[] = {"parent", "handler", "z", NULL};
 
 	if (self->pane) {
 		PyErr_SetString(PyExc_TypeError, "Pane already initialised");
-		return 0;
+		return -1;
 	}
 	/* Pane(parent, handler, data, z=0 */
 	if (!PyTuple_Check(args) || PyTuple_GET_SIZE(args) == 0)
 		/* Probably an internal Pane_Frompane call */
-		return 1;
+		return 0;
 
 	ret = PyArg_ParseTupleAndKeywords(args, kwds, "O!O|i", keywords,
 					  &PaneType, &parent, &py_handler,
-					  &z);
+					  zp);
 	if (ret <= 0)
-		return ret;
+		return -1;
 	if (!PyCallable_Check(py_handler)) {
 		PyErr_SetString(PyExc_TypeError, "'handler' is not callable");
 		return -1;
@@ -265,8 +312,36 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 	self->handle.c = python_call;
 	Py_INCREF(py_handler);
 	self->handle.callable = py_handler;
+	*parentp = parent;
+	return 1;
+}
+
+static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
+{
+	Pane *parent = NULL;
+	int z = 0;
+	int ret = __Pane_init(self, args, kwds, &parent, &z);
+
+	if (ret < 0 || !parent)
+		return ret;
 
 	self->pane = pane_register(parent->pane, z, &self->handle.c, self, NULL);
+	return 0;
+}
+
+static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
+{
+	Pane *parent = NULL;
+	int z = 0;
+	int ret = __Pane_init((Pane*)self, args, kwds, &parent, &z);
+
+	if (ret <= 0 || !parent)
+		return ret;
+
+	self->handle.c = python_doc_call;
+	doc_init(&self->doc);
+	self->pane = pane_register(parent->pane, z, &self->handle.c, &self->doc, NULL);
+	self->doc.home = self->pane;
 	return 0;
 }
 
@@ -440,6 +515,11 @@ static PyObject *Pane_release(Pane *self)
 {
 	struct pane *p = self->pane;
 	if (p && p->handle && p->handle->func == python_call.func && p->data) {
+		p->handle = NULL;
+		p->data = NULL;
+		Py_DECREF(self);
+	}
+	if (p && p->handle && p->handle->func == python_doc_call.func && p->data) {
 		p->handle = NULL;
 		p->data = NULL;
 		Py_DECREF(self);
@@ -701,6 +781,48 @@ static PyTypeObject PaneType = {
     .tp_init = (initproc)Pane_init,/* tp_init */
     NULL,			/* tp_alloc */
     .tp_new = (newfunc)pane_new,/* tp_new */
+};
+
+static PyTypeObject DocType = {
+    PyObject_HEAD_INIT(NULL)
+    0,				/*ob_size*/
+    "edlib.Doc",		/*tp_name*/
+    sizeof(Doc),		/*tp_basicsize*/
+    0,				/*tp_itemsize*/
+    (destructor)pane_dealloc,	/*tp_dealloc*/
+    NULL,			/*tp_print*/
+    NULL,			/*tp_getattr*/
+    NULL,			/*tp_setattr*/
+    (cmpfunc)pane_cmp,		/*tp_compare*/
+    (reprfunc)pane_repr,	/*tp_repr*/
+    NULL,			/*tp_as_number*/
+    NULL,			/*tp_as_sequence*/
+    &pane_mapping,		/*tp_as_mapping*/
+    (hashfunc)pane_hash,	/*tp_hash */
+    NULL,			/*tp_call*/
+    NULL,			/*tp_str*/
+    NULL,			/*tp_getattro*/
+    NULL,			/*tp_setattro*/
+    NULL,			/*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+    "edlib document",		/* tp_doc */
+    NULL,			/* tp_traverse */
+    NULL,			/* tp_clear */
+    NULL,			/* tp_richcompare */
+    0,				/* tp_weaklistoffset */
+    (getiterfunc)pane_this,	/* tp_iter */
+    (iternextfunc)pane_next,	/* tp_iternext */
+    pane_methods,		/* tp_methods */
+    NULL,			/* tp_members */
+    pane_getseters,		/* tp_getset */
+    &PaneType,			/* tp_base */
+    NULL,			/* tp_dict */
+    NULL,			/* tp_descr_get */
+    NULL,			/* tp_descr_set */
+    0,				/* tp_dictoffset */
+    .tp_init = (initproc)Doc_init,/* tp_init */
+    NULL,			/* tp_alloc */
+    .tp_new = (newfunc)Doc_new,/* tp_new */
 };
 
 static PyObject *mark_getrpos(Mark *m, void *x)
@@ -1286,9 +1408,12 @@ void edlib_init(struct pane *ed)
 	Py_Initialize();
 
 	PaneType.tp_new = PyType_GenericNew;
+	DocType.tp_new = PyType_GenericNew;
 	MarkType.tp_new = PyType_GenericNew;
 	CommType.tp_new = PyType_GenericNew;
 	if (PyType_Ready(&PaneType) < 0)
+		return;
+	if (PyType_Ready(&DocType) < 0)
 		return;
 	if (PyType_Ready(&MarkType) < 0)
 		return;
@@ -1306,6 +1431,7 @@ void edlib_init(struct pane *ed)
 	PyModule_AddObject(m, "Pane", (PyObject *)&PaneType);
 	PyModule_AddObject(m, "Mark", (PyObject *)&MarkType);
 	PyModule_AddObject(m, "Comm", (PyObject *)&CommType);
+	PyModule_AddObject(m, "Doc", (PyObject *)&DocType);
 	PyModule_AddIntMacro(m, DAMAGED_CHILD);
 	PyModule_AddIntMacro(m, DAMAGED_SIZE);
 	PyModule_AddIntMacro(m, DAMAGED_VIEW);
