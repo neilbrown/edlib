@@ -72,7 +72,6 @@ static PyTypeObject CommType;
 struct python_command {
 	struct command	c;
 	PyObject	*callable;
-	int		home_func;	/* Should ->home->data be passed as 'data' */
 };
 DEF_CMD(python_call);
 static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds);
@@ -204,9 +203,6 @@ REDEF_CMD(python_call)
 	PyDict_SetItemString(kwds, "extra", Py_BuildValue("i", ci->extra));
 	PyDict_SetItemString(kwds, "xy", Py_BuildValue("ii", ci->x, ci->y));
 
-	if (pc->home_func)
-		PyDict_SetItemString(kwds, "data", ci->home->data);
-
 	ret = PyObject_Call(pc->callable, args, kwds);
 
 	Py_DECREF(args);
@@ -269,7 +265,6 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 	handler->c = python_call;
 	Py_INCREF(py_handler);
 	handler->callable = py_handler;
-	handler->home_func = 1;
 
 	self->pane = pane_register(parent->pane, z, &handler->c, self, NULL);
 	return 0;
@@ -1256,7 +1251,6 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 			Py_INCREF(a);
 			pc->callable = a;
 			pc->c = python_call;
-			pc->home_func = 0;
 			if (ci->comm2 == NULL)
 				ci->comm2 = &pc->c;
 			else {
