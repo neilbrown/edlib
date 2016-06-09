@@ -99,6 +99,7 @@ void doc_init(struct doc *d)
 	d->name = NULL;
 	d->deleting = 0;
 	d->home = NULL;
+	d->free = NULL;
 }
 
 /* For these 'default commands', home->data is struct doc */
@@ -656,6 +657,9 @@ int doc_destroy(struct pane *dp)
 			/* vmarks should have gone already */
 			ASSERT(0);
 	}
-	free(d);
+	if (d->free)
+		d->free(d);
+	else
+		free(d);
 	return 1;
 }

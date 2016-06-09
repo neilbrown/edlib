@@ -90,6 +90,7 @@ struct doc {
 	struct pane		*home; /* pane in null_display which owns this doc*/
 	char			*name;
 	short			deleting; /* is begin destroyed */
+	void			(*free)(struct doc*);
 };
 
 void doc_init(struct doc *d);
