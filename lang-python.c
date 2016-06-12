@@ -1538,6 +1538,7 @@ void edlib_init(struct pane *ed)
 	PyModule_AddIntMacro(m, DAMAGED_CURSOR);
 	PyModule_AddIntMacro(m, DAMAGED_POSTORDER);
 	PyModule_AddIntMacro(m, DAMAGED_CLOSED);
+	PyModule_AddIntConstant(m, "WEOF", 0x1FFFFFF);
 	call_comm("global-set-command", ed, 0, NULL, "python-load", 0, &python_load);
 	call_comm("global-set-command", ed, 0, NULL, "global-load-modules:python", 0,
 		  &python_load_module);
