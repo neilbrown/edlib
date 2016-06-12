@@ -38,13 +38,22 @@ static void call_event(int thing, short sev, void *evv)
 	ci.home = ci.focus = ev->home;
 	ci.comm = ev->comm;
 	ci.numeric = thing;
-	if (ev->comm->func(&ci) < 0)
+	if (ev->comm->func(&ci) < 0) {
 		event_del(ev->l);
+		event_free(ev->l);
+		list_del(&ev->lst);
+		free(ev);
+	}
 }
 
 DEF_CMD(libevent_read)
 {
-	struct evt *ev = malloc(sizeof(*ev));
+	struct evt *ev;
+
+	if (!ci->comm2)
+		return -1;
+
+	ev = malloc(sizeof(*ev));
 
 	if (!base)
 		base = event_base_new();
@@ -60,7 +69,12 @@ DEF_CMD(libevent_read)
 
 DEF_CMD(libevent_signal)
 {
-	struct evt *ev = malloc(sizeof(*ev));
+	struct evt *ev;
+
+	if (!ci->comm2)
+		return -1;
+
+	ev = malloc(sizeof(*ev));
 
 	if (!base)
 		base = event_base_new();
@@ -88,6 +102,7 @@ DEF_CMD(libevent_run)
 		list_del(&ev->lst);
 		event_del(ev->l);
 		event_free(ev->l);
+		free(ev);
 	}
 	event_base_free(b);
 	return -1;
