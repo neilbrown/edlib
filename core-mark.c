@@ -488,7 +488,7 @@ wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cm
 	int ret = call5("doc:step", d->home, forward, m, NULL, move);
 
 	if (ret <= 0)
-		return ret;
+		return WEOF;
 	if (ret >= 0x1fffff)
 		return WEOF;
 	else
@@ -500,7 +500,7 @@ wint_t mark_step_pane(struct pane *p, struct mark *m, int forward, int move, str
 	int ret = call5("doc:step", p, forward, m, NULL, move);
 
 	if (ret <= 0)
-		return ret;
+		return WEOF;
 	if (ret >= 0x1fffff)
 		return WEOF;
 	else
