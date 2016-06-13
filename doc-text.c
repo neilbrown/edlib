@@ -1540,7 +1540,7 @@ DEF_CMD(text_get_attr)
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
 	char *attr = ci->str;
-	char *val = attr_find(d->attrs, attr);
+	char *val = attr_find(d->home->attrs, attr);
 
 	if (val)
 		;

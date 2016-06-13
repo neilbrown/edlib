@@ -93,7 +93,6 @@ void doc_init(struct doc *d)
 {
 	INIT_HLIST_HEAD(&d->marks);
 	INIT_TLIST_HEAD(&d->points, 0);
-	d->attrs = NULL;
 	d->views = NULL;
 	d->nviews = 0;
 	d->name = NULL;
@@ -284,9 +283,9 @@ DEF_CMD(doc_attr_set)
 	struct doc *d = ci->home->data;
 
 	if (ci->str2 == NULL && ci->extra == 1)
-		attr_set_int(&d->attrs, ci->str, ci->numeric);
+		attr_set_int(&d->home->attrs, ci->str, ci->numeric);
 	else
-		attr_set_str(&d->attrs, ci->str, ci->str2);
+		attr_set_str(&d->home->attrs, ci->str, ci->str2);
 	return 1;
 }
 
@@ -647,7 +646,6 @@ int doc_destroy(struct pane *dp)
 	pane_close(d->home);
 
 	free(d->views);
-	attr_free(&d->attrs);
 	free(d->name);
 	while (!hlist_empty(&d->marks)) {
 		struct mark *m = hlist_first_entry(&d->marks, struct mark, all);

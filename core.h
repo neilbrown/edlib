@@ -86,9 +86,8 @@ struct doc {
 		struct tlist_head head;
 		short		  state;	/* 0 = unused, 1 = active, 2 = being deleted */
 	} *views;
-	struct attrset		*attrs;
 	int			nviews;
-	struct pane		*home; /* pane in null_display which owns this doc*/
+	struct pane		*home; /* pane which owns this doc*/
 	char			*name;
 	short			deleting; /* is begin destroyed */
 	void			(*free)(struct doc*);
