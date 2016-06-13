@@ -92,6 +92,7 @@ DEF_CMD(search_retreat)
 		free(str);
 		return 0;
 	}
+	free(str);
 	s = esi->s;
 	esi->s = s->next;
 	mark_free(esi->start);

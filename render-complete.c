@@ -92,6 +92,7 @@ DEF_CMD(render_complete_line)
 		return 0;
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cr.s, 0);
+	free(cr.s);
 	if (ci->numeric != NO_NUMERIC)
 		return ret;
 	/* Need to continue over other matching lines */
