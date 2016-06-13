@@ -486,11 +486,9 @@ DEF_CMD(dir_get_attr)
 	struct doc *d = ci->home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
 	char *attr = ci->str;
-	char *val = attr_find(d->home->attrs, attr);
+	char *val;
 
-	if (val)
-		;
-	else if (strcmp(attr, "heading") == 0)
+	if (strcmp(attr, "heading") == 0)
 		val = "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      File Name</>";
 	else if (strcmp(attr, "render-default") == 0)
 		val = "format";
