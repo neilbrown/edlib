@@ -158,6 +158,7 @@ DEF_CMD(editor_clean_up)
 	while (ei->freelist) {
 		struct pane *p = ei->freelist;
 		ei->freelist = p->focus;
+		attr_free(&p->attrs);
 		free(p);
 	}
 	while (ei->store) {

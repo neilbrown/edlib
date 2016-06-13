@@ -354,11 +354,12 @@ void pane_close(struct pane *p)
 		p->handle->func(&ci);
 	}
 	pane_damaged(p->parent, DAMAGED_CONTENT);
-	attr_free(&p->attrs);
 	if (ed)
 		editor_delayed_free(ed, p);
-	else
+	else {
+		attr_free(&p->attrs);
 		free(p);
+	}
 }
 
 void pane_resize(struct pane *p, int x, int y, int w, int h)
