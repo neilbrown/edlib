@@ -14,6 +14,11 @@ static struct map *ed_map;
 struct ed_info {
 	struct pane *freelist;
 	struct map *map;
+	struct store {
+		struct store *next;
+		int size;
+		char space[];
+	} *store;
 };
 
 DEF_CMD(ed_handle)
@@ -155,8 +160,43 @@ DEF_CMD(editor_clean_up)
 		ei->freelist = p->focus;
 		free(p);
 	}
+	while (ei->store) {
+		struct store *s = ei->store;
+		ei->store = s->next;
+		free(s);
+	}
 	return 0;
 }
+
+void *memsave(struct pane *p, char *buf, int len)
+{
+	struct ed_info *ei;
+	if (!buf || !len)
+		return NULL;
+	while (p->parent)
+		p = p->parent;
+	ei = p->data;
+	if (ei->store == NULL || ei->store->size < len) {
+		struct store *s;
+		int l = 4096 - sizeof(*s);
+		while (l < len)
+			l += 4096;
+		s = malloc(l + sizeof(*s));
+		s->next = ei->store;
+		s->size = l;
+		ei->store = s;
+	}
+	ei->store->size -= len;
+	return memcpy(ei->store->space+ei->store->size, buf, len);
+}
+
+char *strsave(struct pane *p, char *buf)
+{
+	if (!buf)
+		return NULL;
+	return memsave(p, buf, strlen(buf)+1);
+}
+
 
 void editor_delayed_free(struct pane *ed, struct pane *p)
 {

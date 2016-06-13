@@ -76,6 +76,9 @@ void pane_drop_notifiers(struct pane *p, char *notification);
 
 void editor_delayed_free(struct pane *ed, struct pane *p);
 struct pane *editor_new(void);
+void *memsave(struct pane *p, char *buf, int len);
+char *strsave(struct pane *p, char *buf);
+
 /* This is declared here so sparse knows it is global */
 void edlib_init(struct pane *ed);
 
