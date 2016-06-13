@@ -574,7 +574,7 @@ struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 DEF_CMD(doc_attr_callback)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->s = ci->str;
+	cr->s = strsave(ci->focus, ci->str);
 	return 1;
 }
 
