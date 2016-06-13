@@ -339,7 +339,7 @@ int key_handle(const struct cmd_info *ci)
 	if (!p)
 		p = ci->focus;
 
-	while (p && !(p->damaged & DAMAGED_CLOSED)) {
+	while (p) {
 		int ret = 0;
 		if (p->handle) {
 			vci->home = p;

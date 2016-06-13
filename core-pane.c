@@ -354,6 +354,8 @@ void pane_close(struct pane *p)
 		p->handle->func(&ci);
 	}
 	pane_damaged(p->parent, DAMAGED_CONTENT);
+	p->parent = NULL;
+	p->handle = NULL;
 	if (ed)
 		editor_delayed_free(ed, p);
 	else {
