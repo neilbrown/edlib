@@ -379,7 +379,9 @@ struct mark *doc_new_mark(struct doc *d, int view)
 {
 	struct mark *ret;
 
-	if (view == MARK_POINT || view >= d->nviews ||
+	if (view == MARK_POINT)
+		return point_new(d);
+	if (view >= d->nviews ||
 	    view < MARK_UNGROUPED ||
 	    (view >= 0 && d->views[view].state != 1))
 		return NULL;
