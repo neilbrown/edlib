@@ -442,6 +442,19 @@ class events:
     def signal(self, key, focus, comm2, numeric, **a):
         return 1
 
+    def timer(self, key, focus, comm2, numeric, **a):
+        self.active = True
+        gobject.timeout_add(numeric*1000, self.dotimeout, comm2, focus, numeric)
+        return 1
+
+    def dotimeout(self, comm2, home, seconds):
+        try:
+            if comm2("callback", home) > 0:
+                gobject.timeout_add(seconds*1000, self.dotimeout, comm2, home, seconds)
+            return True
+        except edlib.commandfailed:
+            return False
+
     def run(self, key, **a):
         if self.active:
             gtk.main_iteration(True)
@@ -466,6 +479,7 @@ def events_activate(home):
     ev = events()
     home.call("global-set-command", home, "event:read-python", ev.read)
     home.call("global-set-command", home, "event:signal-python", ev.signal)
+    home.call("global-set-command", home, "event:timer-python", ev.timer)
     home.call("global-set-command", home, "event:run-python", ev.run)
     home.call("global-set-command", home, "event:deactivate-python", ev.deactivate)
 

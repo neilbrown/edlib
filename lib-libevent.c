@@ -27,6 +27,7 @@ struct evt {
 	struct pane *home;
 	struct command *comm;
 	struct list_head lst;
+	int seconds;
 };
 
 static void call_event(int thing, short sev, void *evv)
@@ -43,6 +44,27 @@ static void call_event(int thing, short sev, void *evv)
 		event_free(ev->l);
 		list_del(&ev->lst);
 		free(ev);
+	}
+}
+
+static void call_timeout_event(int thing, short sev, void *evv)
+{
+	struct evt *ev = evv;
+	struct cmd_info ci = {};
+
+	ci.key = "callback:event";
+	ci.home = ci.focus = ev->home;
+	ci.comm = ev->comm;
+	ci.numeric = thing;
+	if (ev->comm->func(&ci) <= 0) {
+		event_free(ev->l);
+		list_del(&ev->lst);
+		free(ev);
+	} else {
+		struct timeval tv;
+		tv.tv_sec = ev->seconds;
+		tv.tv_usec = 0;
+		event_add(ev->l, &tv);
 	}
 }
 
@@ -88,6 +110,31 @@ DEF_CMD(libevent_signal)
 	return 1;
 }
 
+DEF_CMD(libevent_timer)
+{
+	struct evt *ev;
+	struct timeval tv;
+
+	if (!ci->comm2)
+		return -1;
+
+	ev = malloc(sizeof(*ev));
+
+	if (!base)
+		base = event_base_new();
+
+	ev->l = event_new(base, -1, 0,
+			  call_timeout_event, ev);
+	ev->home = ci->focus;
+	ev->comm = ci->comm2;
+	ev->seconds = ci->numeric;
+	list_add(&ev->lst, &event_list);
+	tv.tv_sec = ev->seconds;
+	tv.tv_usec = 0;
+	event_add(ev->l, &tv);
+	return 1;
+}
+
 DEF_CMD(libevent_run)
 {
 	struct event_base *b = base;
@@ -121,6 +168,8 @@ DEF_CMD(libevent_activate)
 		  0, &libevent_read);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:signal-zz",
 		  0, &libevent_signal);
+	call_comm("global-set-command", ci->focus, 0, NULL, "event:timer-zz",
+		  0, &libevent_timer);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:run-zz",
 		  0, &libevent_run);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:deactivate-zz",
