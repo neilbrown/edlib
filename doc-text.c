@@ -196,7 +196,7 @@ DEF_CMD(text_load_file)
 	char *name = ci->str;
 	off_t size = lseek(fd, 0, SEEK_END);
 	struct text_alloc *a;
-	struct text_chunk *c;
+	struct text_chunk *c = NULL;
 	int len;
 	struct text *t = container_of(d, struct text, doc);
 
@@ -1407,6 +1407,9 @@ DEF_CMD(text_replace)
 	bool first = ci->extra;
 	struct mark *early = NULL;
 	int status_change = 0;
+
+	if (!pm)
+		return -1;
 
 	/* First delete, then insert */
 	if (end && !text_ref_same(t, &pm->ref, &end->ref)) {

@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
 	call5("global-load-module", ed, 0, NULL, "render-hex", 0);
 	call5("global-load-module", ed, 0, NULL, "render-present", 0);
 	call5("global-load-module", ed, 0, NULL, "module-notmuch", 0);
+	call5("global-load-module", ed, 0, NULL, "module-email", 0);
 
 	p = call_pane("attach-input", ed, 0, NULL, 0);
 	if (p) {

@@ -555,6 +555,8 @@ REDEF_CMD(emacs_file_complete)
 	}
 	docp = doc_open(ci->home, fd, d);
 	close(fd);
+	if (!docp)
+		return -1;
 	pop = call_pane7("PopupTile", ci->focus, 0, NULL, 0, "DM1r", NULL);
 	if (!pop)
 		return -1;
