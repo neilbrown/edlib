@@ -155,9 +155,9 @@ static int draw_some(struct pane *p, int *x, int y, char *start, char **endp,
 	}
 	if (y >= 0) {
 		if (cursorpos >= 0 && cursorpos <= len)
-			call_xy7("text-display", p, cursorpos, scale, str, attr, *x, y, NULL, NULL);
+			call_xy7("Draw:text", p, cursorpos, scale, str, attr, *x, y, NULL, NULL);
 		else
-			call_xy7("text-display", p, -1, scale, str, attr, *x, y, NULL, NULL);
+			call_xy7("Draw:text", p, -1, scale, str, attr, *x, y, NULL, NULL);
 	}
 	free(str);
 	*x += cr.x;
@@ -278,7 +278,7 @@ static void render_image(struct pane *p, char *line, int *yp,
 		struct pane *tmp = pane_register(p, 0, NULL, NULL, NULL);
 
 		pane_resize(tmp, (p->w - width)/2, *yp, width, height);
-		call5("image-display", tmp, 0, NULL, fname, 5);
+		call5("Draw:image", tmp, 0, NULL, fname, 5);
 		pane_close(tmp);
 	}
 	*yp += height;
@@ -904,7 +904,7 @@ restart:
 		pane_clear(p, a);
 		free(a);
 	} else if (strncmp(s, "image:", 6) == 0) {
-		if (call5("image-display", focus, 1, NULL, s+6, 0) <= 0)
+		if (call5("Draw:image", focus, 1, NULL, s+6, 0) <= 0)
 			pane_clear(p, NULL);
 	} else if (strncmp(s, "call:", 5) == 0) {
 		if (call_home(focus, s+5, p, 0, m, NULL) <= 0)

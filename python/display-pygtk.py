@@ -102,7 +102,7 @@ class EdDisplay(gtk.Window):
             f = a["focus"]
             return cb("callback:size", f, max_bytes, ascent, (width, height))
 
-        if key == "text-display":
+        if key == "Draw:text":
             self.pane.damaged(edlib.DAMAGED_POSTORDER)
             if not self.gc or not self.bg:
                 fg, bg = self.get_colours("fg:blue,bg:white")
@@ -165,7 +165,7 @@ class EdDisplay(gtk.Window):
                                           cw-1, ch-1)
             return True
 
-        if key == "image-display":
+        if key == "Draw:image":
             self.pane.damaged(edlib.DAMAGED_POSTORDER)
             # 'str' is the file name of an image
             # 'numeric' is '1' if image should be stretched to fill pane

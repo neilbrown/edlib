@@ -145,7 +145,7 @@ DEF_CMD(ncurses_handle)
 		return comm_call_xy(ci->comm2, "callback:size", ci->focus,
 				    max_bytes, 0, size, 1);
 	}
-	if (strcmp(ci->key, "text-display") == 0) {
+	if (strcmp(ci->key, "Draw:text") == 0) {
 		int attr = cvt_attrs(ci->str2);
 		int cursor_offset = ci->numeric;
 		int offset = 0;

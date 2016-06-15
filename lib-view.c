@@ -45,7 +45,7 @@ static struct pane *do_view_attach(struct pane *par, int border);
 
 static void one_char(struct pane *p, char *s, char *attr, int x, int y)
 {
-	call_xy("text-display", p, -1, s, attr, x, y);
+	call_xy("Draw:text", p, -1, s, attr, x, y);
 }
 
 DEF_CMD(text_size_callback)

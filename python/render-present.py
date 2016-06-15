@@ -412,13 +412,13 @@ class PresenterPane(edlib.Pane):
                 if c[:6] == 'color:':
                     rv = f.call('pane-clear', c[6:])
                 if c[:14] == "image-stretch:":
-                    rv = f.call('image-display', 1, self.pathto(c[14:]))
+                    rv = f.call('Draw:image', 1, self.pathto(c[14:]))
                 if c[:6] == "image:":
-                    rv = f.call('image-display', 0, 5, self.pathto(c[6:]))
+                    rv = f.call('Draw:image', 0, 5, self.pathto(c[6:]))
                 if c[:8] == "overlay:":
-                    rv = f.call('image-display', 0, 2, self.pathto(c[8:]))
+                    rv = f.call('Draw:image', 0, 2, self.pathto(c[8:]))
                 if c[:9] == "overlayC:":
-                    rv = f.call('image-display', self.w/6, self.h*3/4, self.pathto(c[9:]), (self.w*5/12, self.h/8))
+                    rv = f.call('Draw:image', self.w/6, self.h*3/4, self.pathto(c[9:]), (self.w*5/12, self.h/8))
                 if c == "page-local":
                     page = self.find_pages(a['mark'])
                     self.clean_lines(page)
