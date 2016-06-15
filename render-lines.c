@@ -275,10 +275,12 @@ static void render_image(struct pane *p, char *line, int *yp,
 		line += strspn(line, ",");
 	}
 	if (fname && dodraw) {
-		struct pane *tmp = pane_register(p, 0, NULL, NULL, NULL);
+		struct pane *tmp = pane_register(NULL, 0, NULL, NULL, NULL);
 
 		pane_resize(tmp, (p->w - width)/2, *yp, width, height);
+		tmp->parent = p;
 		call5("Draw:image", tmp, 0, NULL, fname, 5);
+		tmp->parent = NULL;
 		pane_close(tmp);
 	}
 	*yp += height;

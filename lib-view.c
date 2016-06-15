@@ -186,13 +186,17 @@ DEF_CMD(view_handle)
 		return 1;
 	}
 	if (strcmp(ci->key, "render:reposition") == 0) {
-		if (vd->viewpoint)
-			mark_free(vd->viewpoint);
-		if (ci->mark)
-			vd->viewpoint = mark_dup(ci->mark, 1);
-		else
-			vd->viewpoint = NULL;
-		pane_damaged(p, DAMAGED_CONTENT);
+		if (vd->viewpoint != ci->mark) {
+			if (!vd->viewpoint || !ci->mark ||
+			    !mark_same_pane(ci->focus, vd->viewpoint, ci->mark, NULL))
+				pane_damaged(p, DAMAGED_CONTENT);
+			if (vd->viewpoint)
+				mark_free(vd->viewpoint);
+			if (ci->mark)
+				vd->viewpoint = mark_dup(ci->mark, 1);
+			else
+				vd->viewpoint = NULL;
+		}
 	}
 	return 0;
 }

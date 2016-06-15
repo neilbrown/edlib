@@ -234,10 +234,18 @@ static void pane_do_review(struct pane *p, int damage, struct mark *pointer)
 
 void pane_refresh(struct pane *p)
 {
-	p->abs_z = 0;
-	pane_do_resize(p, 0);
-	pane_do_review(p, 0, NULL);
-	pane_do_refresh(p, 0, NULL);
+	int cnt = 3;
+	if (p->parent == NULL)
+		p->abs_z = 0;
+
+	while (cnt-- && (p->damaged & ~DAMAGED_CLOSED)) {
+		pane_do_resize(p, 0);
+		pane_do_review(p, 0, NULL);
+		pane_do_refresh(p, 0, NULL);
+	}
+	if (p->damaged)
+		fprintf(stderr, "WARNING %sroot pane damaged after refresh: %d\n",
+			p->parent ? "":"non-", p->damaged);
 }
 
 void pane_add_notify(struct pane *target, struct pane *source, char *msg)
