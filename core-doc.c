@@ -294,12 +294,12 @@ DEF_CMD(doc_get_attr)
 	struct doc *d = ci->home->data;
 	char *a;
 
-	if (strcmp(ci->str, "doc-name") == 0)
+	if ((a = attr_find(d->home->attrs, ci->str)) != NULL)
+		;
+	else if (strcmp(ci->str, "doc-name") == 0)
 		a = d->name;
 	else if (strcmp(ci->str, "doc-modified") == 0)
 		a = "no";
-	else
-		a = attr_find(d->home->attrs, ci->str);
 	if (a)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
 				 NULL, a, 0);

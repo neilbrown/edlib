@@ -1545,7 +1545,9 @@ DEF_CMD(text_get_attr)
 	char *attr = ci->str;
 	char *val;
 
-	if (strcmp(attr, "render-default") == 0)
+	if ((val = attr_find(d->home->attrs, attr)) != NULL)
+		;
+	else if (strcmp(attr, "render-default") == 0)
 		val = "lines";
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "text";

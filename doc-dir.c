@@ -488,7 +488,9 @@ DEF_CMD(dir_get_attr)
 	char *attr = ci->str;
 	char *val;
 
-	if (strcmp(attr, "heading") == 0)
+	if ((val = attr_find(d->home->attrs, attr)) != NULL)
+		;
+	else if (strcmp(attr, "heading") == 0)
 		val = "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      File Name</>";
 	else if (strcmp(attr, "render-default") == 0)
 		val = "format";

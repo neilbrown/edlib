@@ -507,8 +507,11 @@ DEF_CMD(docs_get_attr)
 {
 	char *attr = ci->str;
 	char *val;
+	struct doc *d = ci->home->data;
 
-	if (strcmp(attr, "heading") == 0)
+	if ((val = attr_find(d->home->attrs, attr)) != NULL)
+		;
+	else if (strcmp(attr, "heading") == 0)
 			val = "<bold,underline> Mod Document             File</>";
 	else if (strcmp(attr, "line-format") == 0)
 			val = " %doc-modified:3 %+name:20 %filename";
