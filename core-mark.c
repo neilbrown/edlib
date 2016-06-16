@@ -235,6 +235,8 @@ struct mark *mark_dup(struct mark *m, int notype)
 {
 	struct mark *ret;
 
+	if (!m)
+		return NULL;
 	if (!notype && m->viewnum == MARK_POINT)
 			return NULL;
 
