@@ -1136,6 +1136,20 @@ static PyObject *Mark_next_any(Mark *self)
 	return Py_None;
 }
 
+static PyObject *Mark_prev_any(Mark *self)
+{
+	struct mark *prev;
+	if (!self->mark) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return NULL;
+	}
+	prev = doc_prev_mark_all(self->mark);
+	if (prev)
+		return Mark_Frommark(prev, self->local);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyObject *Mark_dup(Mark *self)
 {
 	struct mark *new;
@@ -1182,6 +1196,8 @@ static PyMethodDef mark_methods[] = {
 	 "previous vmark"},
 	{"next_any", (PyCFunction)Mark_next_any, METH_NOARGS,
 	 "next any_mark"},
+	{"prev_any", (PyCFunction)Mark_prev_any, METH_NOARGS,
+	 "previous any_mark"},
 	{"dup", (PyCFunction)Mark_dup, METH_NOARGS,
 	 "duplicate a mark, preserving type"},
 	{"release", (PyCFunction)Mark_release, METH_NOARGS,
