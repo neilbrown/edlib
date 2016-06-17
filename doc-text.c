@@ -1426,8 +1426,11 @@ DEF_CMD(text_replace)
 	struct mark *early = NULL;
 	int status_change = 0;
 
-	if (!pm)
-		return -1;
+	if (!pm) {
+		/* Default to insert at end */
+		pm = point_new(d);
+		__mark_reset(d, pm, 0, 1);
+	}
 
 	/* First delete, then insert */
 	if (end && !text_ref_same(t, &pm->ref, &end->ref)) {
@@ -1482,6 +1485,8 @@ DEF_CMD(text_replace)
 	if (status_change)
 		call3("doc:status-changed", d->home, 0, NULL);
 	doc_notify_change(&t->doc, pm, early);
+	if (!ci->mark2)
+		mark_free(pm);
 	return first ? 1 : 2;
 }
 

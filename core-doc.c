@@ -568,16 +568,13 @@ struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render
 struct pane *doc_from_text(struct pane *parent, char *name, char *text)
 {
 	struct pane *p;
-	struct mark *m;
 
 	p = doc_new(parent, "text");
 	if (!p)
 		return NULL;
 	call5("doc:set-name", p, 0, NULL, name, 0);
 	call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
-	m = point_new(p->data);
-	call7("doc:replace", p, 1, NULL, text, 1, NULL, m);
-	mark_free(m);
+	call7("doc:replace", p, 1, NULL, text, 1, NULL, NULL);
 	return p;
 }
 
