@@ -1030,7 +1030,7 @@ DEF_CMD(text_step)
 		m->ref = r;
 	}
 	/* return value must be +ve, so use high bits to ensure this. */
-	return (ret & 0xFFFFF) | 0x100000;
+	return CHAR_RET(ret);
 }
 
 static int text_ref_same(struct text *t, struct doc_ref *r1, struct doc_ref *r2)

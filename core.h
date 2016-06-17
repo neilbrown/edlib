@@ -105,6 +105,8 @@ struct pane *doc_attach(struct pane *parent, struct pane *d);
 int doc_destroy(struct pane *dp);
 extern struct map *doc_default_cmd;
 
+#define CHAR_RET(_c) ((_c & 0xFFFFF) | 0x100000)
+
 struct pane *render_attach(char *name, struct pane *parent);
 
 /* Points and Marks */
