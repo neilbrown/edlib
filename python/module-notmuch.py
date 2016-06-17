@@ -246,10 +246,9 @@ class notmuch_main(edlib.Doc):
         self.notify("Notify:Replace")
         return -1
 
-def notmuch_doc(key, **a):
+def notmuch_doc(key, home, **a):
     # Create the root notmuch document
-    f = a['focus']
-    nm = notmuch_main(f)
+    nm = notmuch_main(home)
     nm['render-default'] = "notmuch:searchlist"
     nm.call("doc:set-name", "*Notmuch*")
     nm.call("global-multicall-doc:appeared-")

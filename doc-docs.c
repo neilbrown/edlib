@@ -701,7 +701,7 @@ DEF_CMD(attach_docs)
 	doc_init(&doc->doc);
 
 	doc->doc.name = strdup("*Documents*");
-	p = pane_register(ci->focus, 0, &docs_handle.c, &doc->doc, NULL);
+	p = pane_register(ci->home, 0, &docs_handle.c, &doc->doc, NULL);
 	if (!p) {
 		free(doc->doc.name);
 		free(doc);
