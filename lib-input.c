@@ -69,7 +69,7 @@ DEF_CMD(keystroke)
 	p = ci->focus;
 	while (p->focus) {
 		p = p->focus;
-		if (!m)
+		if (!ci->mark && p->pointer)
 			m = p->pointer;
 	}
 
@@ -119,7 +119,7 @@ DEF_CMD(mouse_event)
 		ci2.x -= chld->x;
 		ci2.y -= chld->y;
 		ci2.focus = chld;
-		if (!ci2.mark)
+		if (!ci->mark && chld->pointer)
 			ci2.mark = chld->pointer;
 	}
 
