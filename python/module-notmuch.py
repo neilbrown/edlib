@@ -174,14 +174,27 @@ class notmuch_main(edlib.Doc):
             forward = a['numeric']
             move = a['extra']
             ret = edlib.WEOF
+            target = m
             if forward and m.offset < len(self.searches.current):
                 ret = ' '
                 if move:
-                    m.offset = m.offset + 1
+                    m2 = m.next_any()
+                    while m2 and m2.offset <= m.offset + 1:
+                        target = m2
+                        m2 = m2.next_any()
+                    o = m.offset
+                    m.to_mark(target)
+                    m.offset = o+1
             if not forward and m.offset > 0:
                 ret = ' '
                 if move:
-                    m.offset = m.offset - 1
+                    m2 = m.prev_any()
+                    while m2 and m2.offset >= m.offset - 1:
+                        target = m2
+                        m2 = m2.prev_any()
+                    o = m.offset
+                    m.to_mark(target)
+                    m.offset = o - 1
             return ret
 
         if key == "doc:get-attr":

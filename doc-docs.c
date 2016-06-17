@@ -401,6 +401,7 @@ DEF_CMD(docs_step)
 {
 	struct doc *doc = ci->home->data;
 	struct mark *m = ci->mark;
+	struct mark *m2, *target = m;
 	bool forward = ci->numeric;
 	bool move = ci->extra;
 	int ret;
@@ -413,6 +414,11 @@ DEF_CMD(docs_step)
 			next = NULL;
 		else
 			next = list_next_entry(p, siblings);
+		if (move)
+			for (m2 = doc_next_mark_all(m);
+			     m2 && (m2->ref.p == next || m2->ref.p == m->ref.p);
+			     m2 = doc_next_mark_all(m2))
+				target = m2;
 	} else {
 		next = p;
 		if (list_empty(&doc->home->children))
@@ -427,9 +433,17 @@ DEF_CMD(docs_step)
 			p = NULL;
 		if (p)
 			next = p;
+		if (move)
+			for (m2 = doc_prev_mark_all(m);
+			     m2 && (m2->ref.p == next || m2->ref.p == m->ref.p);
+			     m2 = doc_prev_mark_all(m2))
+				target = m2;
 	}
-	if (move)
+	if (move) {
+		mark_to_mark(m, target);
 		m->ref.p = next;
+	}
+
 	if (p == NULL)
 		ret = WEOF;
 	else
@@ -655,7 +669,6 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:get-attr", &docs_doc_get_attr);
 	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "doc:mark-same", &docs_mark_same);
-	key_add(docs_map, "doc:mark-same-exact", &docs_mark_same);
 	key_add(docs_map, "doc:step", &docs_step);
 	key_add(docs_map, "doc:free", &docs_destroy);
 	key_add(docs_map, "doc:check_name", &doc_checkname);

@@ -998,6 +998,7 @@ DEF_CMD(text_step)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
+	struct mark *m2, *target = m;
 	bool forward = ci->numeric;
 	bool move = ci->extra;
 	struct text *t = container_of(d, struct text, doc);
@@ -1005,12 +1006,29 @@ DEF_CMD(text_step)
 	wint_t ret;
 
 	r = m->ref;
-	if (forward)
+	if (forward) {
 		ret = text_next(t, &r);
-	else
+		if (move)
+			for (m2 = doc_next_mark_all(m);
+			     m2 &&
+				     (text_ref_same(t, &m2->ref, &m->ref) ||
+				      text_ref_same(t, &m2->ref, &r));
+			     m2 = doc_next_mark_all(m2))
+				target = m2;
+	} else {
 		ret = text_prev(t, &r);
-	if (ret != WEOF && move)
-		m->ref = *(struct doc_ref*)&r;
+		if (move)
+			for (m2 = doc_prev_mark_all(m);
+			     m2 &&
+				     (text_ref_same(t, &m2->ref, &m->ref) ||
+				      text_ref_same(t, &m2->ref, &r));
+			     m2 = doc_prev_mark_all(m2))
+				target = m2;
+	}
+	if (move) {
+		mark_to_mark(m, target);
+		m->ref = r;
+	}
 	/* return value must be +ve, so use high bits to ensure this. */
 	return (ret & 0xFFFFF) | 0x100000;
 }
@@ -1924,7 +1942,6 @@ void edlib_init(struct pane *ed)
 	key_add(text_map, "get-attr", &text_get_attr);
 	key_add(text_map, "doc:replace", &text_replace);
 	key_add(text_map, "doc:mark-same", &text_mark_same);
-	key_add(text_map, "doc:mark-same-exact", &text_mark_same);
 	key_add(text_map, "doc:step", &text_step);
 	key_add(text_map, "doc:modified", &text_modified);
 }

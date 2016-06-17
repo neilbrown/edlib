@@ -274,6 +274,7 @@ DEF_CMD(dir_step)
 {
 	struct doc *doc = ci->home->data;
 	struct mark *m = ci->mark;
+	struct mark *m2, *target = m;
 	bool forward = ci->numeric;
 	bool move = ci->extra;
 	struct directory *dr = container_of(doc, struct directory, doc);
@@ -290,6 +291,11 @@ DEF_CMD(dir_step)
 			else
 				d = list_next_entry(d, lst);
 		}
+		if (move)
+			for (m2 = doc_next_mark_all(m);
+			     m2 && (m2->ref.d == d || m2->ref.d == m->ref.d);
+			     m2 = doc_next_mark_all(m2))
+				target = m2;
 	} else {
 		if (d == list_first_entry(&dr->ents, struct dir_ent, lst))
 			d = NULL;
@@ -299,11 +305,20 @@ DEF_CMD(dir_step)
 			d = list_prev_entry(d, lst);
 		if (d)
 			ret = d->ch;
-		else
+		else {
 			ret = WEOF;
+			d = m->ref.d;
+		}
+		if (move)
+			for (m2 = doc_prev_mark_all(m);
+			     m2 && (m2->ref.d == d || m2->ref.d == m->ref.d);
+			     m2 = doc_prev_mark_all(m2))
+				target = m2;
 	}
-	if (move && ret != WEOF)
+	if (move) {
+		mark_to_mark(m, target);
 		m->ref.d = d;
+	}
 	/* return value must be +ve, so use high bits to ensure this. */
 	return (ret & 0xFFFFF) | 0x100000;
 }
@@ -636,6 +651,5 @@ void edlib_init(struct pane *ed)
 	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
 	key_add(doc_map, "get-attr", &dir_get_attr);
 	key_add(doc_map, "doc:mark-same", &dir_mark_same);
-	key_add(doc_map, "doc:mark-same-exact", &dir_mark_same);
 	key_add(doc_map, "doc:step", &dir_step);
 }
