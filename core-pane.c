@@ -229,7 +229,7 @@ static void pane_do_review(struct pane *p, int damage, struct mark *pointer)
 		return;
 	if (list_empty(&p->children)) {
 		if (damage & (DAMAGED_VIEW))
-			call5("Refresh:view", p, 0, p->pointer, NULL, damage);
+			call5("Refresh:view", p, 0, pointer, NULL, damage);
 	} else
 		list_for_each_entry(c, &p->children, siblings)
 			pane_do_review(c, damage, pointer);

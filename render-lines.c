@@ -1006,16 +1006,21 @@ DEF_CMD(render_lines_refresh)
 
 	if (m) {
 		rl->lines = render(ci->mark, p, focus, &rl->cols);
-		if (rl->ignore_point || (p->cx >= 0 && p->cy < p->h))
+		if (!ci->mark || rl->ignore_point || (p->cx >= 0 && p->cy < p->h))
 			return 0;
 	}
-	find_lines(ci->mark, p, focus);
-	rl->lines = render(ci->mark, p, focus, &rl->cols);
+	m = ci->mark;
+	if (!m)
+		m = vmark_new(focus, MARK_UNGROUPED);
+	find_lines(m, p, focus);
+	rl->lines = render(m, p, focus, &rl->cols);
 	rl->repositioned = 0;
 	call_xy7("render:reposition", focus, rl->lines, rl->cols, NULL, NULL,
 		 p->cx, p->cy,
 		 vmark_first(focus, rl->typenum),
 		 vmark_last(focus, rl->typenum));
+	if (!ci->mark)
+		mark_free(m);
 	return 0;
 }
 

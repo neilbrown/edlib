@@ -85,7 +85,10 @@ static int view_refresh(const struct cmd_info *ci)
 
 			call3("CountLines", p, 0, m);
 
-			ln = attr_find_int(*mark_attr(m), "lines");
+			if (m)
+				ln = attr_find_int(*mark_attr(m), "lines");
+			else
+				ln = 0;
 			l = pane_attr_get_int(ci->home, "lines");
 			w = pane_attr_get_int(ci->home, "words");
 			c = pane_attr_get_int(ci->home, "chars");
