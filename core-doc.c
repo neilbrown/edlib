@@ -32,6 +32,14 @@ struct doc_ref {
 
 #include "core.h"
 
+static inline wint_t doc_following(struct doc *d, struct mark *m)
+{
+	return mark_step2(d, m, 1, 0);
+}
+static inline wint_t doc_prior(struct doc *d, struct mark *m)
+{
+	return mark_step2(d, m, 0, 0);
+}
 
 /* this is ->data for a document reference pane.
  */

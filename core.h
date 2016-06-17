@@ -363,17 +363,9 @@ static inline int pane_attr_get_int(struct pane *p, char *key)
 
 /* Inlines */
 
-static inline wint_t doc_following(struct doc *d, struct mark *m)
-{
-	return mark_step2(d, m, 1, 0);
-}
 static inline wint_t doc_following_pane(struct pane *p, struct mark *m)
 {
 	return mark_step_pane(p, m, 1, 0, NULL);
-}
-static inline wint_t doc_prior(struct doc *d, struct mark *m)
-{
-	return mark_step2(d, m, 0, 0);
 }
 static inline wint_t doc_prior_pane(struct pane *p, struct mark *m)
 {
