@@ -2,6 +2,7 @@
 # Copyright Neil Brown ©2015 <neil@brown.name>
 # May be distrubuted under terms of GPLv2 - see file:COPYING
 #
+MAKEFLAGS += -j
 
 LDLIBS= -ldl
 CPPFLAGS= -I.
