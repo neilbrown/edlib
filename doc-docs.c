@@ -50,7 +50,7 @@ static void docs_demark(struct docs *doc, struct pane *p)
 	     m;
 	     m = doc_next_mark_all(m))
 		if (m->ref.p == p) {
-			mark_step2(&doc->doc, m, 1, 1);
+			m->ref.p = list_next_entry(p, siblings);
 			doc_notify_change(&doc->doc, m, NULL);
 		}
 }
@@ -61,14 +61,18 @@ static void docs_enmark(struct docs *doc, struct pane *p)
 	 * any mark pointing just past it is moved back.
 	 */
 	struct mark *m;
+	struct pane *next;
+
+	if (p == list_last_entry(&doc->doc.home->children, struct pane, siblings))
+		next = NULL;
+	else
+		next = list_next_entry(p, siblings);
 
 	for (m = doc_first_mark_all(&doc->doc);
 	     m;
 	     m = doc_next_mark_all(m))
-		if ((p->siblings.next == &doc->doc.home->children &&
-		     m->ref.p == NULL) ||
-		    (p->siblings.next == &m->ref.p->siblings)) {
-			mark_step2(&doc->doc, m, 0, 1);
+		if (m->ref.p == next) {
+			m->ref.p = p;
 			doc_notify_change(&doc->doc, m, NULL);
 		}
 }
