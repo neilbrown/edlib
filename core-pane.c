@@ -127,7 +127,7 @@ struct pane *pane_register(struct pane *parent, int z,
  * If it or DAMAGED_SIZE_CHILD was set, we recurse onto all children.
  * If abs_z is not one more than parent, we also recurse.
  */
-static void pane_do_resize(struct pane *p, int damage)
+static void pane_do_resize(struct pane *p, int damage, struct mark *pointer)
 {
 	struct pane *c;
 	int nextz;
@@ -142,12 +142,15 @@ static void pane_do_resize(struct pane *p, int damage)
 	    (p->parent == NULL || p->abs_z == p->parent->abs_z + p->z))
 		return;
 
+	if (p->pointer)
+		pointer = p->pointer;
+
 	if (p->focus == NULL)
 		p->focus = list_first_entry_or_null(
 			&p->children, struct pane, siblings);
 
 	if (damage & (DAMAGED_SIZE)) {
-		if (comm_call(p->handle, "Refresh:size", p, 0, NULL, NULL, damage) == 0)
+		if (comm_call(p->handle, "Refresh:size", p, 0, pointer, NULL, damage) == 0)
 			pane_check_size(p);
 	}
 
@@ -162,7 +165,7 @@ static void pane_do_resize(struct pane *p, int damage)
 			if (c->z == z) {
 				if (c->abs_z != abs_z)
 					c->abs_z = abs_z;
-				pane_do_resize(c, damage & DAMAGED_SIZE);
+				pane_do_resize(c, damage & DAMAGED_SIZE, pointer);
 				if (c->abs_zhi > abs_zhi)
 					abs_zhi = c->abs_zhi;
 			}
@@ -232,16 +235,16 @@ static void pane_do_review(struct pane *p, int damage, struct mark *pointer)
 			pane_do_review(c, damage, pointer);
 }
 
-void pane_refresh(struct pane *p)
+void pane_refresh(struct pane *p, struct mark *pointer)
 {
 	int cnt = 3;
 	if (p->parent == NULL)
 		p->abs_z = 0;
 
 	while (cnt-- && (p->damaged & ~DAMAGED_CLOSED)) {
-		pane_do_resize(p, 0);
-		pane_do_review(p, 0, NULL);
-		pane_do_refresh(p, 0, NULL);
+		pane_do_resize(p, 0, pointer);
+		pane_do_review(p, 0, pointer);
+		pane_do_refresh(p, 0, pointer);
 	}
 	if (p->damaged)
 		fprintf(stderr, "WARNING %sroot pane damaged after refresh: %d\n",

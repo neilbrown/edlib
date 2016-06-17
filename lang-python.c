@@ -400,10 +400,14 @@ static PyObject *Pane_focus(Pane *self)
 	return Py_None;
 }
 
-static PyObject *Pane_refresh(Pane *self)
+static PyObject *Pane_refresh(Pane *self, PyObject *args)
 {
+	Mark *pointer = NULL;
+	int ret = PyArg_ParseTuple(args, "|O!", &MarkType, &pointer);
+	if (ret <= 0)
+		return NULL;
 	if (self->pane)
-		pane_refresh(self->pane);
+		pane_refresh(self->pane, pointer->mark);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -579,7 +583,7 @@ static PyMethodDef pane_methods[] = {
 	 "Clone all children onto the target"},
 	{"take_focus", (PyCFunction)Pane_focus, METH_NOARGS,
 	 "Claim the focus for this pane"},
-	{"refresh", (PyCFunction)Pane_refresh, METH_NOARGS,
+	{"refresh", (PyCFunction)Pane_refresh, METH_VARARGS,
 	 "Trigger refresh on this pane"},
 	{"call", (PyCFunction)Pane_call, METH_VARARGS|METH_KEYWORDS,
 	 "Call a command from a pane"},
