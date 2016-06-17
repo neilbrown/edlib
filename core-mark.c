@@ -614,7 +614,7 @@ static void point_forward_to_mark(struct mark *p, struct mark *m)
 	pnear = p;
 	ptmp = p;
 	tlist_for_each_entry_continue(ptmp, GRP_HEAD, view) {
-		if (ptmp->seq < m->seq)
+		if (ptmp->seq <= m->seq)
 			pnear = ptmp;
 		else
 			break;
@@ -640,7 +640,7 @@ static void point_forward_to_mark(struct mark *p, struct mark *m)
 			if (TLIST_TYPE(tl) != GRP_MARK)
 				break;
 			mtmp = container_of(tl, struct mark, view);
-			if (mtmp->seq < m->seq)
+			if (mtmp->seq <= m->seq)
 				mnear = mtmp;
 			else
 				break;
@@ -655,9 +655,9 @@ static void point_forward_to_mark(struct mark *p, struct mark *m)
 	}
 	/* finally move in the overall list */
 	hlist_del(&p->all);
-	hlist_add_before(&p->all, &m->all);
+	hlist_add_after(&m->all, &p->all);
 	p->ref = m->ref;
-	assign_seq(p, hlist_prev_entry(p, all)->seq);
+	assign_seq(p, m->seq);
 }
 
 static void point_backward_to_mark(struct mark *p, struct mark *m)
@@ -669,7 +669,7 @@ static void point_backward_to_mark(struct mark *p, struct mark *m)
 	pnear = p;
 	ptmp = p;
 	tlist_for_each_entry_continue_reverse(ptmp, GRP_HEAD, view) {
-		if (ptmp->seq > m->seq)
+		if (ptmp->seq >= m->seq)
 			pnear = ptmp;
 		else
 			break;
@@ -695,7 +695,7 @@ static void point_backward_to_mark(struct mark *p, struct mark *m)
 			if (TLIST_TYPE(tl) != GRP_MARK)
 				break;
 			mtmp = container_of(tl, struct mark, view);
-			if (mtmp->seq > m->seq)
+			if (mtmp->seq >= m->seq)
 				mnear = mtmp;
 			else
 				break;
@@ -710,7 +710,7 @@ static void point_backward_to_mark(struct mark *p, struct mark *m)
 	}
 	/* finally move in the overall list */
 	hlist_del(&p->all);
-	hlist_add_after(&m->all, &p->all);
+	hlist_add_before(&p->all, &m->all);
 	p->ref = m->ref;
 	p->rpos = m->rpos;
 	assign_seq(p, m->seq);
