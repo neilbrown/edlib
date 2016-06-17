@@ -477,7 +477,9 @@ DEF_CMD(doc_handle)
 	if (ci2.mark == NULL)
 		ci2.mark = dd->point;
 	ci2.comm = ci2.home->handle;
-	return ci2.home->handle->func(&ci2);
+	if (ci2.comm)
+		return ci2.comm->func(&ci2);
+	return 0;
 }
 
 struct pane *doc_attach(struct pane *parent, struct pane *d)
