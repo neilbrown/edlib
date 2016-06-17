@@ -1396,6 +1396,7 @@ static PyTypeObject CommType = {
  * A command is assigned to comm2 (comm is set automatically)
  * kwd arguments can also be used, currently
  * key, home, focus, xy, hxy, str, str2, mark, mark2, comm2.
+ * A 'None' arg is ignored - probably a mark or string or something. Just use NULL
  */
 static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 {
@@ -1419,7 +1420,9 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 	}
 	for (i = 1; i < argc; i++) {
 		a = PyTuple_GetItem(args, i);
-		if (PyObject_TypeCheck(a, &PaneType)) {
+		if (a == Py_None)
+			/* quietly ignore */;
+		else if (PyObject_TypeCheck(a, &PaneType)) {
 			if (ci->home == NULL)
 				ci->home = ((Pane*)a)->pane;
 			else if (ci->focus == NULL)
