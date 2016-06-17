@@ -727,19 +727,22 @@ void point_to_mark(struct mark *p, struct mark *m)
 
 void mark_to_mark(struct mark *m, struct mark *target)
 {
-
+	if (m->seq == target->seq)
+		return;
 	if (m->viewnum == MARK_POINT) {
 		point_to_mark(m, target);
 		return;
 	}
-	while (mark_ordered(m, target)) {
-		struct mark *n = doc_next_mark_all(m);
-		mark_forward_over(m, n);
-	}
-	while (mark_ordered(target, m)) {
-		struct mark *n = doc_prev_mark_all(m);
-		mark_backward_over(m, n);
-	}
+	if (mark_ordered(m, target))
+		do {
+			struct mark *n = doc_next_mark_all(m);
+			mark_forward_over(m, n);
+		} while (mark_ordered(m, target));
+	else
+		do {
+			struct mark *n = doc_prev_mark_all(m);
+			mark_backward_over(m, n);
+		} while (mark_ordered(target, m));
 	m->ref = target->ref;
 	m->rpos = target->rpos;
 }
