@@ -26,7 +26,6 @@ struct view_data {
 	int		border_width, border_height;
 	int		line_height;
 	int		ascent;
-	struct pane	*pane;
 	int		scroll_bar_y;
 	struct mark	*viewpoint;
 
@@ -165,9 +164,6 @@ DEF_CMD(view_handle)
 	if (ret)
 		return ret;
 
-	if (vd->pane != p)
-		vd->pane = p; /* FIXME having to do this is horrible */
-
 	if (strcmp(ci->key, "Close") == 0) {
 		if (vd->viewpoint)
 			mark_free(vd->viewpoint);
@@ -280,7 +276,6 @@ static struct pane *do_view_attach(struct pane *par, int border)
 	vd->line_height = -1;
 	vd->border_width = vd->border_height = -1;
 	p = pane_register(par, 0, &view_handle, vd, NULL);
-	vd->pane = p;
 
 	return view_reattach(p);
 }
