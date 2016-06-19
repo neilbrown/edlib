@@ -344,10 +344,10 @@ class EdDisplay(gtk.Window):
         l.sort(key=lambda pane: pane.abs_z)
         for p in l:
             pm = self.panes[p]
-            (rx,ry) = p.abs(0,0)
+            (rx,ry,rw,rh) = p.abs(0,0,p.w,p.h)
             self.text.window.draw_drawable(self.bg, pm, 0, 0,
                                            rx, ry,
-                                           -1, -1)
+                                           rw, rh)
 
     def reconfigure(self, w, ev):
         alloc = w.get_allocation()
