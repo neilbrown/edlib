@@ -608,7 +608,6 @@ DEF_CMD(save_str)
 
 static struct mark *call_render_line(struct pane *p, struct mark *start)
 {
-	struct cmd_info ci = {};
 	struct call_return cr;
 	struct mark *m, *m2;
 
@@ -622,7 +621,7 @@ static struct mark *call_render_line(struct pane *p, struct mark *start)
 	 */
 	if (call_comm("render-line", p, NO_NUMERIC,
 		      m, NULL, 0, &cr.c) == 0) {
-		mark_free(ci.mark);
+		mark_free(m);
 		return NULL;
 	}
 
