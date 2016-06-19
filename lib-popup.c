@@ -147,7 +147,6 @@ DEF_CMD(popup_attach)
 	char *style = ci->str;
 	char border[5];
 	int i, j;
-	int z = 1;
 
 	if (!style)
 		style = "D3";
@@ -158,8 +157,6 @@ DEF_CMD(popup_attach)
 		return 0;
 
 	if (strchr(style, 'D')) {
-		int x = 0, y = 0;
-		pane_to_root(ci->focus, &x, &y, &z, NULL, NULL);
 		root = call_pane("RootPane", ci->focus, 0, NULL, 0);
 	} else
 		root = call_pane("ThisPane", ci->focus, 0, NULL, 0);
@@ -168,7 +165,8 @@ DEF_CMD(popup_attach)
 
 	ppi = malloc(sizeof(*ppi));
 	ppi->target = ci->focus;
-	ppi->popup = p = pane_register(root, z, &popup_handle, ppi, NULL);
+	ppi->popup = p = pane_register(root, ci->focus->abs_z - root->abs_z + 1,
+				       &popup_handle, ppi, NULL);
 	ppi->style = style;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
