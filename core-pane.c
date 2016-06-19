@@ -452,10 +452,10 @@ void pane_subsume(struct pane *p, struct pane *parent)
 	parent->damaged |= p->damaged;
 }
 
-int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)
+int pane_masked(struct pane *p, int x, int y, int abs_z, int *w, int *h)
 {
 	/* Test if this pane, or its children, mask this location.
-	 * i.e. they have a higher 'z' and might draw here.
+	 * i.e. they have a higher 'abs_z' and might draw here.
 	 * If 'w' and 'h' are set then reduce them to confirm that
 	 * everything from x to x+w and y to y+h is not masked.
 	 * This allows cases where there is no masking to be handled
@@ -473,7 +473,7 @@ int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)
 		/* area is before this pane, no over lap possible */
 		return 0;
 
-	if (p->z > z) {
+	if (p->abs_z > abs_z && p->z) {
 		/* This pane does mask some of the region */
 		if (x >= p->x || y >= p->y)
 			/* pane masks x,y itself */
@@ -489,9 +489,8 @@ int pane_masked(struct pane *p, int x, int y, int z, int *w, int *h)
 	/* This pane doesn't mask (same z level) but a child still could */
 	x -= p->x;
 	y -= p->y;
-	z -= p->z;
 	list_for_each_entry(c, &p->children, siblings)
-		if (pane_masked(c, x, y, z, w, h))
+		if (pane_masked(c, x, y, abs_z, w, h))
 			return 1;
 
 	return 0;
