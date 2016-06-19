@@ -341,7 +341,7 @@ void pane_set_extra(struct pane *p, int extra);
 void pane_clear(struct pane *p, char *attrs);
 char *pane_attr_get(struct pane *p, char *key);
 char *pane_mark_attr(struct pane *p, struct mark *m, int forward, char *key);
-void pane_absxy(struct pane *p, int *x, int *y);
+void pane_absxy(struct pane *p, int *x, int *y, int *w, int *h);
 void pane_relxy(struct pane *p, int *x, int *y);
 void pane_map_xy(struct pane *orig, struct pane *target, int *x, int *y);
 struct pane *call_pane(char *key, struct pane *focus, int numeric,

@@ -485,11 +485,18 @@ static PyObject *Pane_notify(Pane *self, PyObject *args, PyObject *kwds)
 static PyObject *Pane_abs(Pane *self, PyObject *args)
 {
 	int x,y;
-	int ret = PyArg_ParseTuple(args, "ii", &x, &y);
+	int w=-1, h=-1;
+	int have_height = 0;
+	int ret = PyArg_ParseTuple(args, "ii|ii", &x, &y, &w, &h);
 	if (ret <= 0)
 		return NULL;
-	pane_absxy(self->pane, &x, &y);
-	return Py_BuildValue("ii", x, y);
+	if (h >= 0)
+		have_height = 1;
+	pane_absxy(self->pane, &x, &y, &w, &h);
+	if (have_height)
+		return Py_BuildValue("iiii", x, y, w, h);
+	else
+		return Py_BuildValue("ii", x, y);
 }
 
 static PyObject *Pane_add_notify(Pane *self, PyObject *args)
