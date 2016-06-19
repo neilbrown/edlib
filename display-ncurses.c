@@ -31,8 +31,10 @@ struct display_data {
 };
 
 static SCREEN *current_screen;
-static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h);
-static void ncurses_text(struct pane *p, wchar_t ch, int attr, int x, int y, int cursor);
+static void ncurses_clear(struct pane *p, struct pane *display,
+			  int attr, int x, int y, int w, int h);
+static void ncurses_text(struct pane *p, struct pane *display,
+			 wchar_t ch, int attr, int x, int y, int cursor);
 
 static void set_screen(SCREEN *scr)
 {
@@ -117,7 +119,7 @@ DEF_CMD(ncurses_handle)
 	}
 	if (strcmp(ci->key, "pane-clear") == 0) {
 		int attr = cvt_attrs(ci->str2);
-		ncurses_clear(ci->focus, attr, 0, 0, 0, 0);
+		ncurses_clear(ci->focus, p, attr, 0, 0, 0, 0);
 		pane_damaged(p, DAMAGED_POSTORDER);
 		return 1;
 	}
@@ -164,14 +166,14 @@ DEF_CMD(ncurses_handle)
 				break;
 			if (cursor_offset >= offset &&
 			    cursor_offset < offset + skip)
-				ncurses_text(ci->focus, wc, attr, x, y, 1);
+				ncurses_text(ci->focus, p, wc, attr, x, y, 1);
 			else
-				ncurses_text(ci->focus, wc, attr, x, y, 0);
+				ncurses_text(ci->focus, p, wc, attr, x, y, 0);
 			offset += skip;
 			x += width;
 		}
 		if (offset == cursor_offset)
-			ncurses_text(ci->focus, ' ', 0, x, y, 1);
+			ncurses_text(ci->focus, p, ' ', 0, x, y, 1);
 		pane_damaged(p, DAMAGED_POSTORDER);
 		return 1;
 	}
@@ -233,7 +235,8 @@ REDEF_CMD(handle_winch)
 	return 1;
 }
 
-static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h)
+static void ncurses_clear(struct pane *p, struct pane *display,
+			  int attr, int x, int y, int w, int h)
 {
 	int r, c;
 	struct display_data *dd;
@@ -244,21 +247,22 @@ static void ncurses_clear(struct pane *p, int attr, int x, int y, int w, int h)
 		w = p->w - x;
 	if (h == 0)
 		h = p->h - y;
-	p = pane_to_root(p, &x, &y, &z, &w, &h);
+	pane_to_root(p, &x, &y, &z, &w, &h);
 	w0 = w; h0 = h;
-	if (pane_masked(p, x, y, z, &w0, &h0))
+	if (pane_masked(display, x, y, z, &w0, &h0))
 		w0 = h0 = 0;
 
-	dd = p->data;
+	dd = display->data;
 	set_screen(dd->scr);
 	attrset(attr);
 	for (r = y; r < y+h; r++)
 		for (c = x; c < x+w; c++)
-			if ((r < y+h0 && c < x+w0) || !pane_masked(p, c, r, z, NULL, NULL))
+			if ((r < y+h0 && c < x+w0) || !pane_masked(display, c, r, z, NULL, NULL))
 				mvaddch(r, c, ' ');
 }
 
-static void ncurses_text(struct pane *p, wchar_t ch, int attr, int x, int y, int cursor)
+static void ncurses_text(struct pane *p, struct pane *display,
+			 wchar_t ch, int attr, int x, int y, int cursor)
 {
 	struct display_data *dd;
 	cchar_t cc = {};
@@ -270,21 +274,21 @@ static void ncurses_text(struct pane *p, wchar_t ch, int attr, int x, int y, int
 	if (cursor && p->parent) {
 		struct pane *p2 = p;
 		cursor = 2;
-		while (p2->parent->parent) {
+		while (p2->parent && p2 != display) {
 			if (p2->parent->focus != p2)
 				cursor = 1;
 			p2 = p2->parent;
 		}
 	}
 
-	p = pane_to_root(p, &x, &y, &z, &w, &h);
+	pane_to_root(p, &x, &y, &z, &w, &h);
 	if (w < 1 || h < 1)
 		return;
 
-	if (pane_masked(p, x, y, z, NULL, NULL))
+	if (pane_masked(display, x, y, z, NULL, NULL))
 		return;
 
-	dd = p->data;
+	dd = display->data;
 	set_screen(dd->scr);
 	if (cursor == 2) {
 		dd->cursor.x = x;
