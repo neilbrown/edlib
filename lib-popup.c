@@ -147,6 +147,7 @@ DEF_CMD(popup_attach)
 	char *style = ci->str;
 	char border[5];
 	int i, j;
+	int z;
 
 	if (!style)
 		style = "D3";
@@ -165,8 +166,12 @@ DEF_CMD(popup_attach)
 
 	ppi = malloc(sizeof(*ppi));
 	ppi->target = ci->focus;
-	ppi->popup = p = pane_register(root, ci->focus->abs_z - root->abs_z + 1,
-				       &popup_handle, ppi, NULL);
+	/* HACK this is because of +1 in pane_do_resize */
+	z = ci->focus->abs_z - root->abs_z;
+	if (z < 0)
+		z = 1;
+
+	ppi->popup = p = pane_register(root, z + 1, &popup_handle, ppi, NULL);
 	ppi->style = style;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
