@@ -496,26 +496,6 @@ int pane_masked(struct pane *p, int x, int y, int abs_z, int *w, int *h)
 	return 0;
 }
 
-struct pane *pane_to_root(struct pane *p, int *x, int *y, int *z, int *w, int *h)
-{
-	/* The root we aim for is the display, which is two steps
-	 * below the actual root (which can contain several displays
-	 * each with input handler).
-	 */
-	while(1) {
-		if (w && *x + *w > p->w)
-			*w = p->w - *x;
-		if (h && *y + *h > p->h)
-			*h = p->h - *y;
-		*x += p->x;
-		*y += p->y;
-		*z += p->z;
-		if (!p->parent || !p->parent->parent || !p->parent->parent->parent)
-			return p;
-		p = p->parent;
-	}
-}
-
 void pane_focus(struct pane *p)
 {
 	if (!p)

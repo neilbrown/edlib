@@ -240,14 +240,13 @@ static void ncurses_clear(struct pane *p, struct pane *display,
 {
 	int r, c;
 	struct display_data *dd;
-	int z = p->z;
 	int w0, h0;
 
 	if (w == 0)
 		w = p->w - x;
 	if (h == 0)
 		h = p->h - y;
-	pane_to_root(p, &x, &y, &z, &w, &h);
+	pane_absxy(p, &x, &y, &w, &h);
 	w0 = w; h0 = h;
 	if (pane_masked(display, x, y, p->abs_z, &w0, &h0))
 		w0 = h0 = 0;
@@ -268,7 +267,6 @@ static void ncurses_text(struct pane *p, struct pane *display,
 	struct display_data *dd;
 	cchar_t cc = {};
 	int w=1, h=1;
-	int z = p->z;
 
 	if (x < 0 || y < 0)
 		return;
@@ -282,7 +280,7 @@ static void ncurses_text(struct pane *p, struct pane *display,
 		}
 	}
 
-	pane_to_root(p, &x, &y, &z, &w, &h);
+	pane_absxy(p, &x, &y, &w, &h);
 	if (w < 1 || h < 1)
 		return;
 
