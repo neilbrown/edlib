@@ -67,11 +67,10 @@ DEF_CMD(tile_handle)
 
 	if (strcmp(ci->key, "Refresh:size") == 0) {
 		if (ti->direction == Neither) {
-			pane_check_size(p);
 			tile_avail(p, NULL);
 			tile_adjust(p);
 		}
-		return 1;
+		return !ti->leaf;
 	}
 	return 0;
 }

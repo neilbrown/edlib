@@ -137,6 +137,10 @@ static void pane_do_resize(struct pane *p, int damage, struct mark *pointer)
 		p->abs_zhi = abs_z;
 		return;
 	}
+	if (p->parent && (damage & DAMAGED_SIZE) && p->z == 0)
+		/* Parent was resized and didn't propagate, so we need to */
+		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
+
 	damage |= p->damaged & (DAMAGED_SIZE | DAMAGED_SIZE_CHILD);
 	if (!damage &&
 	    (p->parent == NULL || p->abs_z == p->parent->abs_z + p->z))
@@ -149,10 +153,10 @@ static void pane_do_resize(struct pane *p, int damage, struct mark *pointer)
 		p->focus = list_first_entry_or_null(
 			&p->children, struct pane, siblings);
 
-	if (damage & (DAMAGED_SIZE)) {
-		if (comm_call(p->handle, "Refresh:size", p, 0, pointer, NULL, damage) == 0)
-			pane_check_size(p);
-	}
+	if (damage & (DAMAGED_SIZE))
+		if (comm_call(p->handle, "Refresh:size", p, 0, pointer, NULL, damage) != 0)
+			/* No need to propagate, just check on children */
+			damage = 0;
 
 	nextz = 0;
 	while (nextz >= 0) {
@@ -391,13 +395,6 @@ void pane_resize(struct pane *p, int x, int y, int w, int h)
 		p->h = h;
 	}
 	pane_damaged(p, damage);
-}
-
-void pane_check_size(struct pane *p)
-{
-	/* match pane to parent */
-	if (p->parent)
-		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
 }
 
 void pane_reparent(struct pane *p, struct pane *newparent)

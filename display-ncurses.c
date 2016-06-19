@@ -178,7 +178,7 @@ DEF_CMD(ncurses_handle)
 	if (strcmp(ci->key, "Refresh:size") == 0) {
 		set_screen(dd->scr);
 		getmaxyx(stdscr, p->h, p->w);
-		return 1;
+		return 0;
 	}
 	if (strcmp(ci->key, "Refresh:postorder") == 0) {
 		set_screen(dd->scr);
@@ -213,7 +213,7 @@ static struct pane *ncurses_init(struct pane *ed)
 	current_screen = NULL;
 	p = pane_register(ed, 0, &ncurses_handle, dd, NULL);
 
-	getmaxyx(stdscr, p->h, p->w); p->h-=1;
+	getmaxyx(stdscr, p->h, p->w);
 
 	call_home(p, "event:read", p, 0, NULL, &input_handle);
 	call_home(p, "event:signal", p, SIGWINCH, NULL, &handle_winch);

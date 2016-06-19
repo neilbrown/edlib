@@ -327,7 +327,6 @@ void pane_subsume(struct pane *p, struct pane *parent);
 void pane_close(struct pane *p);
 void pane_notify_close(struct pane *p);
 void pane_resize(struct pane *p, int x, int y, int w, int h);
-void pane_check_size(struct pane *p);
 void pane_refresh(struct pane *p, struct mark *pointer);
 void pane_focus(struct pane *p);
 void pane_damaged(struct pane *p, int type);

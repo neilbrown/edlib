@@ -28,6 +28,7 @@ struct view_data {
 	int		ascent;
 	int		scroll_bar_y;
 	struct mark	*viewpoint;
+	struct pane	*child;
 
 	int		move_small, move_large;
 };
@@ -175,40 +176,18 @@ DEF_CMD(view_handle)
 		struct pane *p2;
 
 		p2 = do_view_attach(parent, vd->old_border);
-		pane_clone_children(p->focus, p2);
+		pane_clone_children(p, p2);
 		return 1;
 	}
-	if (strcmp(ci->key, "Refresh") == 0)
-		return view_refresh(ci);
-	if (strcmp(ci->key, "Notify:Replace") == 0) {
-		pane_damaged(p, DAMAGED_CONTENT);
+	if (strcmp(ci->key, "ChildRegistered") == 0) {
+		vd->child = ci->focus;
+		pane_damaged(p, DAMAGED_SIZE|DAMAGED_CONTENT);
 		return 1;
 	}
-	if (strcmp(ci->key, "render:reposition") == 0) {
-		if (vd->viewpoint != ci->mark) {
-			if (!vd->viewpoint || !ci->mark ||
-			    !mark_same_pane(ci->focus, vd->viewpoint, ci->mark, NULL))
-				pane_damaged(p, DAMAGED_CONTENT);
-			if (vd->viewpoint)
-				mark_free(vd->viewpoint);
-			if (ci->mark)
-				vd->viewpoint = mark_dup(ci->mark, 1);
-			else
-				vd->viewpoint = NULL;
-		}
-	}
-	return 0;
-}
-
-DEF_CMD(view_null)
-{
-	struct pane *p = ci->home;
-	struct view_data *vd = p->data;
-
 	if (strcmp(ci->key, "Refresh:size") == 0) {
 		int x = 0, y = 0;
-		int w = p->parent->w;
-		int h = p->parent->h;
+		int w = p->w;
+		int h = p->h;
 
 		if (vd->line_height < 0) {
 			struct call_return cr;
@@ -247,22 +226,31 @@ DEF_CMD(view_null)
 		if (vd->border & BORDER_BOT) {
 			h -= vd->border_height;
 		}
-		pane_resize(p, x, y, w, h);
+		if (vd->child)
+			pane_resize(vd->child, x, y, w, h);
 
 		return 1;
 	}
+	if (strcmp(ci->key, "Refresh") == 0)
+		return view_refresh(ci);
+	if (strcmp(ci->key, "Notify:Replace") == 0) {
+		pane_damaged(p, DAMAGED_CONTENT);
+		return 1;
+	}
+	if (strcmp(ci->key, "render:reposition") == 0) {
+		if (vd->viewpoint != ci->mark) {
+			if (!vd->viewpoint || !ci->mark ||
+			    !mark_same_pane(ci->focus, vd->viewpoint, ci->mark, NULL))
+				pane_damaged(p, DAMAGED_CONTENT);
+			if (vd->viewpoint)
+				mark_free(vd->viewpoint);
+			if (ci->mark)
+				vd->viewpoint = mark_dup(ci->mark, 1);
+			else
+				vd->viewpoint = NULL;
+		}
+	}
 	return 0;
-}
-
-static struct pane *view_reattach(struct pane *par)
-{
-	struct view_data *vd = par->data;
-	struct pane *p;
-
-	call3("Request:Notify:Replace", par, 0, NULL);
-	p = pane_register(par, 0, &view_null, vd, NULL);
-	pane_damaged(p, DAMAGED_SIZE);
-	return p;
 }
 
 static struct pane *do_view_attach(struct pane *par, int border)
@@ -276,8 +264,10 @@ static struct pane *do_view_attach(struct pane *par, int border)
 	vd->line_height = -1;
 	vd->border_width = vd->border_height = -1;
 	p = pane_register(par, 0, &view_handle, vd, NULL);
-
-	return view_reattach(p);
+	/* Capture Replace notification so we can update 'changed' flag in
+	 * status line FIXME need better method */
+	call3("Request:Notify:Replace", p, 0, NULL);
+	return p;
 }
 
 DEF_CMD(view_attach)

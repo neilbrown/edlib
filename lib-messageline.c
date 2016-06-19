@@ -16,7 +16,7 @@
 
 struct mlinfo {
 	char *message;
-	struct pane *line;
+	struct pane *line, *child;
 	int height; /* height of line */
 	int ascent; /* how far down to baseline */
 	int hidden;
@@ -84,28 +84,28 @@ DEF_CMD(messageline_handle)
 			mli->height = cr.y;
 			mli->ascent = cr.i;
 		}
-		if (ci->home == mli->line) {
-			if (mli->hidden)
-				pane_resize(ci->home, 0, ci->home->parent->h,
-					    ci->home->parent->w, mli->height);
-			else
-				pane_resize(ci->home, 0, ci->home->parent->h - mli->height,
-					    ci->home->parent->w, mli->height);
+
+		if (mli->hidden) {
+			pane_resize(mli->line, 0, ci->home->h,
+				    ci->home->w, mli->height);
+			if (mli->child)
+				pane_resize(mli->child, 0, 0,
+					    ci->home->w, ci->home->h);
 		} else {
-			pane_resize(ci->home, 0, 0, ci->home->parent->w,
-				    ci->home->parent->h
-				    - (mli->hidden ? 0 : mli->height));
+			pane_resize(mli->line, 0, ci->home->h - mli->height,
+				    ci->home->w, mli->height);
+			if (mli->child)
+				pane_resize(mli->child, 0, 0,
+					    ci->home->w,
+					    ci->home->h - mli->height);
 		}
 		return 1;
 	}
-	if (strcmp(ci->key, "Refresh") == 0) {
-		if (ci->home == mli->line) {
-			pane_clear(mli->line, "bg:white");
-			if (mli->message)
-				pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
-					 0, 0 + mli->ascent);
-		}
-		return 0;
+	if (strcmp(ci->key, "ChildRegistered") == 0) {
+		mli->child = ci->focus;
+		pane_damaged(ci->home, DAMAGED_SIZE);
+		pane_focus(ci->focus);
+		return 1;
 	}
 	/* Keystroke notification clears the message line */
 	if ((strcmp(ci->key, "Notify:Keystroke") == 0
@@ -120,16 +120,27 @@ DEF_CMD(messageline_handle)
 	return 0;
 }
 
+DEF_CMD(messageline_line_handle)
+{
+	struct mlinfo *mli = ci->home->data;
+
+	if (strcmp(ci->key, "Refresh") == 0) {
+		pane_clear(mli->line, "bg:white");
+		if (mli->message)
+			pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
+				 0, 0 + mli->ascent);
+		return 0;
+	}
+	return 0;
+}
 static struct pane *do_messageline_attach(struct pane *p)
 {
-	struct mlinfo *mli = malloc(sizeof(*mli));
+	struct mlinfo *mli = calloc(1, sizeof(*mli));
 	struct pane *ret;
 
-	mli->message = NULL;
-	mli->height = 0;
-	mli->hidden = 0;
 	ret = pane_register(p, 0, &messageline_handle, mli, NULL);
-	mli->line = pane_register(p, 1, &messageline_handle, mli, NULL);
+	/* z=1 to avoid clone_children affecting it */
+	mli->line = pane_register(ret, 1, &messageline_line_handle, mli, NULL);
 	pane_focus(p);
 
 	return ret;
