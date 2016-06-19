@@ -71,6 +71,8 @@ static int view_refresh(const struct cmd_info *ci)
 //	p->cx = 0; p->cy = 0;
 	if (!vd->border)
 		return 0;
+	if (vd->line_height <= 0)
+		return 0;
 
 	if (vd->border & BORDER_LEFT) {
 		/* Left border is (currently) always a scroll bar */
@@ -267,6 +269,7 @@ static struct pane *do_view_attach(struct pane *par, int border)
 	/* Capture Replace notification so we can update 'changed' flag in
 	 * status line FIXME need better method */
 	call3("Request:Notify:Replace", p, 0, NULL);
+	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }
 
