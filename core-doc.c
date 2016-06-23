@@ -226,15 +226,9 @@ DEF_CMD(doc_eol)
 DEF_CMD(doc_file)
 {
 	struct doc *d = ci->home->data;
-	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 	struct mark *m = ci->mark;
 
-	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(d, m)) != WEOF)
-			;
-		rpt = 0;
-	}
 	if (rpt > 0)
 		__mark_reset(d, m, 0, 1);
 	if (rpt < 0)
