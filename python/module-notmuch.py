@@ -164,7 +164,7 @@ class notmuch_main(edlib.Doc):
             m.rpos = 0
             return 1
 
-        if key[:13] == "doc:mark-same":
+        if key == "doc:mark-same":
             m = a['mark']
             m2= a['mark2']
             return 1 if m.offset == m2.offset else 2
