@@ -567,7 +567,7 @@ static inline int comm_call(struct command *comm, char *key, struct pane *focus,
 	ci.str = str;
 	ci.extra = extra;
 	ci.comm = comm;
-	return comm->func(&ci);
+	return ci.comm->func(&ci);
 }
 
 static inline int comm_call_xy(struct command *comm, char *key, struct pane *focus,
@@ -584,7 +584,7 @@ static inline int comm_call_xy(struct command *comm, char *key, struct pane *foc
 	ci.x = x;
 	ci.y = y;
 	ci.comm = comm;
-	return comm->func(&ci);
+	return ci.comm->func(&ci);
 }
 
 static inline int comm_call_pane(struct pane *home, char *key, struct pane *focus,
@@ -605,7 +605,7 @@ static inline int comm_call_pane(struct pane *home, char *key, struct pane *focu
 	ci.extra = extra;
 	ci.comm = home->handle;
 	ci.comm2 = comm2;
-	return home->handle->func(&ci);
+	return ci.comm->func(&ci);
 }
 
 static inline int comm_call7(struct command *comm, char *key,
@@ -626,5 +626,5 @@ static inline int comm_call7(struct command *comm, char *key,
 	ci.str2 = str2;
 	ci.extra = extra;
 	ci.comm = comm;
-	return comm->func(&ci);
+	return ci.comm->func(&ci);
 }

@@ -154,7 +154,8 @@ static void pane_do_resize(struct pane *p, int damage, struct mark *pointer)
 			&p->children, struct pane, siblings);
 
 	if (damage & (DAMAGED_SIZE))
-		if (comm_call(p->handle, "Refresh:size", p, 0, pointer, NULL, damage) != 0)
+		if (comm_call_pane(p, "Refresh:size", p, 0, pointer,
+				   NULL, damage, NULL, NULL) != 0)
 			/* No need to propagate, just check on children */
 			damage = 0;
 
@@ -213,7 +214,8 @@ static void pane_do_refresh(struct pane *p, int damage, struct mark *pointer)
 	if (p->damaged & DAMAGED_POSTORDER) {
 		/* post-order call was triggered */
 		p->damaged &= ~DAMAGED_POSTORDER;
-		comm_call(p->handle, "Refresh:postorder", p, 0, pointer, NULL, damage);
+		comm_call_pane(p, "Refresh:postorder", p, 0, pointer, NULL, damage,
+			       NULL, NULL);
 	}
 }
 

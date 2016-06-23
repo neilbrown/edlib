@@ -277,7 +277,7 @@ void __mark_reset(struct doc *d, struct mark *m, int new, int end)
 		hlist_add_head(&m->all, &d->marks);
 	assign_seq(m, seq);
 
-	call3("doc:set-ref", d->home, !end, m);
+	comm_call_pane(d->home, "doc:set-ref", d->home, !end, m, NULL, 0, NULL, NULL);
 
 	if (m->viewnum == MARK_UNGROUPED)
 		return;
@@ -486,7 +486,8 @@ void mark_backward_over(struct mark *m, struct mark *mp)
 
 wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci)
 {
-	int ret = call5("doc:step", d->home, forward, m, NULL, move);
+	int ret = comm_call_pane(d->home, "doc:step", d->home, forward, m, NULL, move,
+				 NULL, NULL);
 
 	if (ret <= 0)
 		return WEOF;
@@ -696,7 +697,8 @@ int mark_same2(struct doc *d, struct mark *m1, struct mark *m2, struct cmd_info 
 	ci->mark = m1;
 	ci->mark2 = m2;
 	ci->home = d->home;
-	return key_handle(ci) == 1;
+	ci->comm = d->home->handle;
+	return ci->comm->func(ci) == 1;
 }
 
 int mark_same(struct doc *d, struct mark *m1, struct mark *m2)
