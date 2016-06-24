@@ -259,7 +259,15 @@ void pane_refresh(struct pane *p, struct mark *pointer)
 
 void pane_add_notify(struct pane *target, struct pane *source, char *msg)
 {
-	struct notifier *n = malloc(sizeof(*n));
+	struct notifier *n;
+
+	list_for_each_entry(n, &source->notifiees, notifier_link)
+		if (n->notifiee == target &&
+		    strcmp(msg, n->notification) == 0)
+			/* Already notifying */
+			return;
+
+	n = malloc(sizeof(*n));
 
 	n->notifiee = target;
 	n->notification = strdup(msg);
