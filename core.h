@@ -138,6 +138,7 @@ struct mark {
 					 */
 	MARK_DATA_PTR		*mdata;
 	void			*mtype;	/* can be used to validate type of mdata */
+	void			(*refcnt)(struct mark *m, int cnt);
 };
 
 /* A point uses this for the mdata */

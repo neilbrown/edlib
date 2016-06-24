@@ -123,12 +123,28 @@ void mark_free(struct mark *m)
 		point_free(m);
 	ASSERT(m->mdata == NULL);
 	mark_delete(m);
+	if (m->refcnt)
+		m->refcnt(m, -1);
 	free(m);
+}
+
+static void mark_ref_copy(struct mark *to, struct mark *from)
+{
+	if (to->ref.p == from->ref.p &&
+	    to->ref.i == from->ref.i &&
+	    to->refcnt == from->refcnt)
+		return;
+	if (to->refcnt)
+		to->refcnt(to, -1);
+	to->ref = from->ref;
+	to->refcnt = from->refcnt;
+	if (to->refcnt)
+		to->refcnt(to, 1);
 }
 
 static void dup_mark(struct mark *orig, struct mark *new)
 {
-	new->ref = orig->ref;
+	mark_ref_copy(new, orig);
 	new->rpos = orig->rpos;
 	new->attrs= NULL;
 	hlist_add_after(&orig->all, &new->all);
@@ -446,7 +462,7 @@ void mark_forward_over(struct mark *m, struct mark *m2)
 	m->seq = m2->seq;
 	m2->seq = seq;
 
-	m->ref = m2->ref;
+	mark_ref_copy(m, m2);
 }
 
 void mark_backward_over(struct mark *m, struct mark *mp)
@@ -481,7 +497,7 @@ void mark_backward_over(struct mark *m, struct mark *mp)
 	m->seq = mp->seq;
 	mp->seq = seq;
 
-	m->ref = mp->ref;
+	mark_ref_copy(m, mp);
 }
 
 wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci)
@@ -596,7 +612,7 @@ static void point_forward_to_mark(struct mark *p, struct mark *m)
 	/* finally move in the overall list */
 	hlist_del(&p->all);
 	hlist_add_after(&m->all, &p->all);
-	p->ref = m->ref;
+	mark_ref_copy(p, m);
 	assign_seq(p, m->seq);
 }
 
@@ -651,8 +667,7 @@ static void point_backward_to_mark(struct mark *p, struct mark *m)
 	/* finally move in the overall list */
 	hlist_del(&p->all);
 	hlist_add_before(&p->all, &m->all);
-	p->ref = m->ref;
-	p->rpos = m->rpos;
+	mark_ref_copy(p, m);
 	assign_seq(p, m->seq);
 }
 
@@ -683,8 +698,7 @@ void mark_to_mark(struct mark *m, struct mark *target)
 			struct mark *n = doc_prev_mark_all(m);
 			mark_backward_over(m, n);
 		} while (mark_ordered(target, m));
-	m->ref = target->ref;
-	m->rpos = target->rpos;
+	mark_ref_copy(m, target);
 }
 
 int mark_same2(struct doc *d, struct mark *m1, struct mark *m2, struct cmd_info *ci)

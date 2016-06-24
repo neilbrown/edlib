@@ -914,13 +914,27 @@ static int mark_setrpos(Mark *m, PyObject *v, void *x)
 	return 0;
 }
 
+static void mark_refcnt(struct mark *m, int inc)
+{
+	if (!m || !m->ref.c)
+		return;
+	while (inc > 0) {
+		Py_INCREF(m->ref.c);
+		inc -= 1;
+	}
+	while (inc < 0) {
+		Py_DECREF(m->ref.c);
+		inc += 1;
+	}
+}
+
 static PyObject *mark_getpos(Mark *m, void *x)
 {
 	if (m->mark == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	if (m->local && m->mark->ref.c) {
+	if (m->local && m->mark->refcnt == mark_refcnt && m->mark->ref.c) {
 		Py_INCREF(m->mark->ref.c);
 		return m->mark->ref.c;
 	} else {
@@ -939,10 +953,11 @@ static int mark_setpos(Mark *m, PyObject *v, void *x)
 		PyErr_SetString(PyExc_TypeError, "Not set ref for non-local mark");
 		return -1;
 	}
-	if (m->mark->ref.c)
-		Py_DECREF(m->mark->ref.c);
+	if (m->mark->refcnt)
+		m->mark->refcnt(m->mark, -1);
 	m->mark->ref.c = v;
-	Py_INCREF(v);
+	m->mark->refcnt = mark_refcnt;
+	m->mark->refcnt(m->mark, 1);
 	return 0;
 }
 
@@ -1078,8 +1093,6 @@ static void mark_dealloc(Mark *self)
 		self->mark = NULL;
 		m->mtype = NULL;
 		m->mdata = NULL;
-		if (self->local && m->ref.c)
-			Py_DECREF(m->ref.c);
 		mark_free(m);
 	}
 	self->ob_type->tp_free((PyObject*)self);
