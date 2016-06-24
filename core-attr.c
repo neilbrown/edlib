@@ -414,9 +414,10 @@ int attr_find_int(struct attrset *set, char *key)
 
 int attr_set_int(struct attrset **setp, char *key, int val)
 {
-	char sval[22];
+	/* 3 digits per bytes, +1 for sign and +1 for trailing nul */
+	char sval[sizeof(int)*3+2];
 
-	sprintf(sval, "%d", val);
+	snprintf(sval, sizeof(sval), "%d", val);
 	return attr_set_str(setp, key, sval);
 }
 
