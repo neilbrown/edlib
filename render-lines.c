@@ -901,7 +901,7 @@ restart:
 	else if (strncmp(s, "color:", 6) == 0) {
 		char *a = strdup(s);
 		strcpy(a, "bg:");
-		strcpy(a+3, a+6);
+		strcpy(a+3, s+6);
 		pane_clear(p, a);
 		free(a);
 	} else if (strncmp(s, "image:", 6) == 0) {
