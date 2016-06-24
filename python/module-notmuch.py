@@ -2,7 +2,8 @@
 # edlib module for working with "notmuch" email.
 #
 # Two document types:
-# - search list: list of saved searches with count of 'current' and 'unread' messages
+# - search list: list of saved searches with count of 'current', 'unread',
+#   and 'new' messages
 # - message list: provided by notmuch-search, though probably with enhanced threads
 #
 # Messages and composition is handled by a separte 'email' module.  This module
@@ -14,6 +15,7 @@
 # saved search are stored in config file as "saved.foo". Some are special.
 # "saved.current" selects messages that have not been archived, and are not spam
 # "saved.unread" selects messages that should be highlighted. It is normally "tag:unread"
+# "saved.new" selects new messages. Normally "tag:new not tag:unread"
 # "saved.current-list" should be a conjunction of "saved:" searches.  They are listed
 #  in the "search list" together with a count of 'current' and 'current/new' messages.
 # "saved.misc-list" is a subsect of current-list for which saved:current should not
@@ -36,6 +38,7 @@ class searches:
         self.misc = []
         self.count = {}
         self.unread = {}
+        self.new = {}
 
         if 'NOTMUCH_CONFIG' in os.environ:
             self.path = os.environ['NOTMUCH_CONFIG']
@@ -73,6 +76,7 @@ class searches:
             if i not in self.count:
                 self.count[i] = None
                 self.unread[i] = None
+                self.new[i] = None
         self.mtime = mtime
         return True
 
@@ -80,8 +84,10 @@ class searches:
         for i in self.current:
             q = notmuch.Query(self.db, self.make_search(i, False))
             self.count[i] = q.count_messages()
-            q = notmuch.Query(self.db, self.make_search(i, True))
+            q = notmuch.Query(self.db, self.make_search(i, 'unread'))
             self.unread[i] = q.count_messages()
+            q = notmuch.Query(self.db, self.make_search(i, 'new'))
+            self.new[i] = q.count_messages()
 
     def update(self, pane, cb):
         self.todo = [] + self.current
@@ -98,7 +104,8 @@ class searches:
         self.p = Popen("/usr/bin/notmuch count --batch", shell=True, stdin=PIPE,
                        stdout = PIPE)
         self.p.stdin.write(self.make_search(n, False) + "\n")
-        self.p.stdin.write(self.make_search(n, True) + "\n")
+        self.p.stdin.write(self.make_search(n, 'unread') + "\n")
+        self.p.stdin.write(self.make_search(n, 'new') + "\n")
         self.p.stdin.close()
         self.pane.call("event:read", self.p.stdout.fileno(), self.cb)
 
@@ -106,10 +113,12 @@ class searches:
         n = self.todo.pop(0)
         c = self.p.stdout.readline()
         u = self.p.stdout.readline()
+        nw = self.p.stdout.readline()
         p = self.p
         self.p = None
         self.count[n] = int(c)
         self.unread[n] = int(u)
+        self.new[n] = int(nw)
         self.update_one()
         p.wait()
 
@@ -128,12 +137,12 @@ class searches:
             m = re.search(self.patn, query)
         return query
 
-    def make_search(self, name, unread):
+    def make_search(self, name, extra):
         s = "saved:" + name
         if name not in self.misc:
             s = s + " saved:current"
-        if unread:
-            s = s + " saved:unread"
+        if extra:
+            s = s + " saved:" + extra
         return self.map_search(s)
 
     def searches_from(self, n):
@@ -208,7 +217,9 @@ class notmuch_main(edlib.Doc):
             if o >= 0 and o < len(self.searches.current):
                 s = self.searches.current[o]
                 if attr == 'namefmt':
-                    if self.searches.unread[s]:
+                    if self.searches.new[s]:
+                        val = "bold,fg:red"
+                    elif self.searches.unread[s]:
                         val = "bold"
                     else:
                         val = ""
@@ -229,6 +240,11 @@ class notmuch_main(edlib.Doc):
                         val = "%6s" % "?"
                     else:
                         val = "%6d" % self.searches.unread[s]
+                elif attr == 'new':
+                    if self.searches.new[s] is None:
+                        val = "%6s" % "?"
+                    else:
+                        val = "%6d" % self.searches.new[s]
             a['comm2']("callback", a['focus'], val)
             return 1
 
@@ -269,7 +285,7 @@ class notmuch_main_view(edlib.Pane):
         edlib.Pane.__init__(self, focus, self.handle)
         self['render-wrap'] = 'no'
         self['background'] = 'color:#A0FFFF'
-        self['line-format'] = '<%namefmt>%+name</> <%unreadfmt>%unread</> %count'
+        self['line-format'] = '<%namefmt>%+name</> %new <%unreadfmt>%unread</> %count'
         self.call("Request:Notify:Replace")
 
     def handle(self, key, focus, **a):
