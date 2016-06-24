@@ -212,6 +212,11 @@ class notmuch_main(edlib.Doc):
                         val = "bold"
                     else:
                         val = ""
+                elif attr == 'unreadfmt':
+                    if self.searches.unread[s]:
+                        val = "bold"
+                    else:
+                        val = ""
                 elif attr == 'name':
                         val = "%-12s" % s
                 elif attr == 'count':
@@ -232,6 +237,7 @@ class notmuch_main(edlib.Doc):
                 self.timer_set = True
                 self.call("event:timer", 60*5, self.tick)
             self.searches.load(True)
+            self.notify("Notify:Replace")
             self.searches.update(self, self.updated)
             return 1
 
@@ -263,7 +269,7 @@ class notmuch_main_view(edlib.Pane):
         edlib.Pane.__init__(self, focus, self.handle)
         self['render-wrap'] = 'no'
         self['background'] = 'color:#A0FFFF'
-        self['line-format'] = '<%namefmt>%+name</> <bold>%unread</> %count'
+        self['line-format'] = '<%namefmt>%+name</> <%unreadfmt>%unread</> %count'
         self.call("Request:Notify:Replace")
 
     def handle(self, key, focus, **a):
