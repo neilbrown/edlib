@@ -261,7 +261,7 @@ DEF_LOOKUP_CMD(render_format_handle, rf_map);
 
 static struct pane *do_render_format_attach(struct pane *parent)
 {
-	struct rf_data *rf = malloc(sizeof(*rf));
+	struct rf_data *rf = calloc(1, sizeof(*rf));
 	struct pane *p;
 
 	if (!rf_map)

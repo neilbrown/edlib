@@ -179,7 +179,7 @@ struct mark *point_dup(struct mark *p)
 {
 	int i;
 	struct point_links *old = p->mdata;
-	struct mark *ret = malloc(sizeof(*ret));
+	struct mark *ret = calloc(1, sizeof(*ret));
 	struct point_links *lnk = malloc(sizeof(*lnk) +
 					 old->size * sizeof(lnk->lists[0]));
 
@@ -314,7 +314,7 @@ void __mark_reset(struct doc *d, struct mark *m, int new, int end)
 
 struct mark *point_new(struct doc *d)
 {
-	struct mark *ret = malloc(sizeof(*ret));
+	struct mark *ret = calloc(1, sizeof(*ret));
 	struct point_links *lnk = malloc(sizeof(*lnk) +
 					 d->nviews * sizeof(lnk->lists[0]));
 
