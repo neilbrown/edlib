@@ -209,7 +209,7 @@ class notmuch_main(edlib.Doc):
                 s = self.searches.current[o]
                 if attr == 'namefmt':
                     if self.searches.unread[s]:
-                        val = "fg:red,large"
+                        val = "bold"
                     else:
                         val = ""
                 elif attr == 'name':
