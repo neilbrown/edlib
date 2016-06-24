@@ -246,6 +246,8 @@ REDEF_CMD(python_call)
 		rv = 0;
 	else if (PyInt_Check(ret))
 		rv = PyInt_AsLong(ret);
+	else if (PyString_Check(ret))
+		rv = PyString_AsString(ret)[0];
 	else
 		rv = 1;
 	Py_DECREF(ret);
