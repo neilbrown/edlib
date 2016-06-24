@@ -70,6 +70,20 @@ class searches:
             p.communicate()
         except IOError:
             pass
+        if "current-list" not in self.slist:
+            self.slist["current-list"] = "saved:inbox saved:unread"
+            if "inbox" not in self.slist:
+                self.slist["inbox"] = "tag:inbox"
+            if "saved:unread" not in self.slist:
+                self.slist["unread"] = "tag:unread"
+
+        if "misc-list" not in self.slist:
+            self.slist["misc-list"] = ""
+        if "unread" not in self.slist:
+            self.slist["unread"] = "tag:unread"
+        if "new" not in self.slist:
+            self.slist["new"] = "(tag:new AND tag:unread)"
+
         self.current = self.searches_from("current-list")
         self.misc = self.searches_from("misc-list")
         for i in self.current:
