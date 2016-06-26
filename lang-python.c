@@ -95,7 +95,8 @@ typedef struct {
 } Comm;
 static PyTypeObject CommType;
 
-static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds);
+static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds,
+			PyObject **s1, PyObject **s2);
 
 static inline PyObject *Pane_Frompane(struct pane *p)
 {
@@ -449,16 +450,20 @@ static PyObject *Pane_call(Pane *self, PyObject *args, PyObject *kwds)
 {
 	struct cmd_info ci = {};
 	int rv;
+	PyObject *s1, *s2;
 
 	ci.home = self->pane;
 
-	rv = get_cmd_info(&ci, args, kwds);
+	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
 
-	if (rv <= 0)
+	if (rv <= 0) {
+		Py_XDECREF(s1); Py_XDECREF(s2);
 		return NULL;
+	}
 
 	rv = key_handle(&ci);
 
+	Py_XDECREF(s1); Py_XDECREF(s2);
 	if (!rv) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -474,17 +479,21 @@ static PyObject *Pane_notify(Pane *self, PyObject *args, PyObject *kwds)
 {
 	struct cmd_info ci = {};
 	int rv;
+	PyObject *s1, *s2;
 
 	ci.home = self->pane;
 
-	rv = get_cmd_info(&ci, args, kwds);
+	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
 
-	if (rv <= 0)
+	if (rv <= 0) {
+		Py_XDECREF(s1); Py_XDECREF(s2);
 		return NULL;
+	}
 
 	rv = pane_notify(ci.focus, ci.key, ci.mark, ci.mark2, ci.str,
 			 ci.numeric, ci.comm2);
 
+	Py_XDECREF(s1); Py_XDECREF(s2);
 	if (!rv) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -1343,6 +1352,7 @@ static PyObject *Comm_call(Comm *c, PyObject *args, PyObject *kwds)
 {
 	struct cmd_info ci = {};
 	int rv;
+	PyObject *s1, *s2;
 
 #if 0
 	if (c->comm->func == python_call.func) {
@@ -1351,11 +1361,15 @@ static PyObject *Comm_call(Comm *c, PyObject *args, PyObject *kwds)
 		return PyObject_Call(pc->callable, args, kwds);
 	}
 #endif
-	rv = get_cmd_info(&ci, args, kwds);
-	if (rv <= 0)
+	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
+	if (rv <= 0) {
+		Py_XDECREF(s1); Py_XDECREF(s2);
 		return NULL;
+	}
 	ci.comm = c->comm;
 	rv = c->comm->func(&ci);
+	Py_XDECREF(s1); Py_XDECREF(s2);
+
 	if (!rv) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -1432,13 +1446,16 @@ static PyTypeObject CommType = {
  * key, home, focus, xy, hxy, str, str2, mark, mark2, comm2.
  * A 'None' arg is ignored - probably a mark or string or something. Just use NULL
  */
-static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
+static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds,
+			PyObject **s1, PyObject **s2)
 {
 	int argc;
 	PyObject *a;
 	int i;
 	int numeric_set = 0, extra_set = 0;
 	int xy_set = 0;
+
+	*s1 = *s2 = NULL;
 
 	if (!PyTuple_Check(args))
 		return 0;
@@ -1483,6 +1500,21 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds)
 				PyErr_SetString(PyExc_TypeError, "Only 3 String args permitted");
 				return 0;
 			}
+		} else if (PyUnicode_Check(a)) {
+			PyObject *s;
+			if (ci->str && ci->str2) {
+				PyErr_SetString(PyExc_TypeError, "Only 3 String args permitted");
+				return 0;
+			}
+			s = PyUnicode_AsUTF8String(a);
+			if (!s)
+				return 0;
+			*s2 = *s1;
+			*s1 = s;
+			if (ci->str == NULL)
+				ci->str = PyString_AsString(s);
+			else
+				ci->str2 = PyString_AsString(s);
 		} else if (PyInt_Check(a)) {
 			if (!numeric_set) {
 				ci->numeric = PyInt_AsLong(a);
