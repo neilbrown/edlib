@@ -256,8 +256,10 @@ REDEF_CMD(python_call)
 		rv = 0;
 	else if (PyInt_Check(ret))
 		rv = PyInt_AsLong(ret);
-	else if (PyString_Check(ret))
-		rv = PyString_AsString(ret)[0];
+	else if (PyString_Check(ret) && PyString_GET_SIZE(ret) >= 1)
+		rv = CHAR_RET(PyString_AsString(ret)[0]);
+	else if (PyUnicode_Check(ret) && PyUnicode_GET_SIZE(ret) >= 1)
+		rv = CHAR_RET(PyUnicode_AS_UNICODE(ret)[0]);
 	else
 		rv = 1;
 	Py_DECREF(ret);
