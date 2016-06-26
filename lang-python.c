@@ -204,6 +204,18 @@ DEF_CMD(python_load_module)
 	return 1;
 }
 
+static PyObject *python_string(char *s)
+{
+	char *c = s;
+	while (*c && !(*c & 0x80))
+		c++;
+	if (*c)
+		/* must be Unicode */
+		return PyUnicode_DecodeUTF8(s, strlen(s), "Unicode");
+	else
+		return Py_BuildValue("s", s);
+}
+
 REDEF_CMD(python_call)
 {
 	struct python_command *pc = container_of(ci->comm, struct python_command, c);
@@ -226,10 +238,10 @@ REDEF_CMD(python_call)
 			     ci->mark2 ? Mark_Frommark(ci->mark2, local):
 			     (Py_INCREF(Py_None), Py_None));
 	PyDict_SetItemString(kwds, "str",
-			     ci->str ? Py_BuildValue("s", ci->str):
+			     ci->str ? python_string(ci->str):
 			     (Py_INCREF(Py_None), Py_None));
 	PyDict_SetItemString(kwds, "str2",
-			     ci->str2 ? Py_BuildValue("s", ci->str2):
+			     ci->str2 ? python_string(ci->str2):
 			     (Py_INCREF(Py_None), Py_None));
 	PyDict_SetItemString(kwds, "comm",
 			     ci->comm ? Comm_Fromcomm(ci->comm):
