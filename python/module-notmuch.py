@@ -288,7 +288,7 @@ def notmuch_doc(key, home, **a):
     nm['render-default'] = "notmuch:searchlist"
     nm.call("doc:set-name", "*Notmuch*")
     nm.call("global-multicall-doc:appeared-")
-    if 'comm2' in a:
+    if a['comm2'] is not None:
         cb = a['comm2']
         cb("callback", f, nm)
     return 1

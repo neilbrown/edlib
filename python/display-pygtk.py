@@ -17,7 +17,7 @@ import glib
 
 
 def take(name, place, args, default=None):
-    if name in args:
+    if args[name] is not None:
         place.append(args[name])
     else:
         place.append(default)
@@ -68,7 +68,7 @@ class EdDisplay(gtk.Window):
 
         if key == "pane-clear":
             f = a["focus"]
-            if "str2" in a:
+            if a["str2"] is not None:
                 fg, bg = self.get_colours(a["str2"])
             else:
                 fg, bg = self.get_colours("bg:white")
@@ -79,9 +79,9 @@ class EdDisplay(gtk.Window):
 
         if key == "text-size":
             attr=""; scale=1000
-            if 'str2' in a:
+            if a['str2'] is not None:
                 attr = a['str2']
-            if 'extra' in a:
+            if a['extra'] is not None:
                 scale = a['extra']
             fd = self.extract_font(attr, scale)
             layout = self.text.create_pango_layout(a["str"])
@@ -117,9 +117,9 @@ class EdDisplay(gtk.Window):
             (x,y) = a["xy"]
             f = a["focus"]
             attr=""; scale=1000
-            if 'str2' in a:
+            if a['str2'] is not None:
                 attr = a['str2']
-            if 'extra' in a:
+            if a['extra'] is not None:
                 scale = a['extra']
             fd = self.extract_font(attr, scale)
             layout = self.text.create_pango_layout(a["str"])

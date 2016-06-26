@@ -215,23 +215,33 @@ REDEF_CMD(python_call)
 	PyDict_SetItemString(kwds, "home", Pane_Frompane(ci->home));
 	local = ci->home && ci->home->handle &&
 		ci->home->handle->func == python_doc_call.func;
-	if (ci->focus)
-		PyDict_SetItemString(kwds, "focus", Pane_Frompane(ci->focus));
-	if (ci->mark)
-		PyDict_SetItemString(kwds, "mark", Mark_Frommark(ci->mark, local));
-	if (ci->mark2)
-		PyDict_SetItemString(kwds, "mark2", Mark_Frommark(ci->mark2, local));
-	if (ci->str)
-		PyDict_SetItemString(kwds, "str", Py_BuildValue("s", ci->str));
-	if (ci->str2)
-		PyDict_SetItemString(kwds, "str2", Py_BuildValue("s", ci->str2));
-	if (ci->comm)
-		PyDict_SetItemString(kwds, "comm", Comm_Fromcomm(ci->comm));
-	if (ci->comm2)
-		PyDict_SetItemString(kwds, "comm2", Comm_Fromcomm(ci->comm2));
-	PyDict_SetItemString(kwds, "numeric", Py_BuildValue("i", ci->numeric));
-	PyDict_SetItemString(kwds, "extra", Py_BuildValue("i", ci->extra));
-	PyDict_SetItemString(kwds, "xy", Py_BuildValue("ii", ci->x, ci->y));
+	PyDict_SetItemString(kwds, "focus",
+			     ci->focus ? Pane_Frompane(ci->focus):
+			     (Py_INCREF(Py_None), Py_None));
+	PyDict_SetItemString(kwds, "mark",
+			     ci->mark ? Mark_Frommark(ci->mark, local):
+			     (Py_INCREF(Py_None), Py_None));
+	PyDict_SetItemString(kwds, "mark2",
+			     ci->mark2 ? Mark_Frommark(ci->mark2, local):
+			     (Py_INCREF(Py_None), Py_None));
+	PyDict_SetItemString(kwds, "str",
+			     ci->str ? Py_BuildValue("s", ci->str):
+			     (Py_INCREF(Py_None), Py_None));
+	PyDict_SetItemString(kwds, "str2",
+			     ci->str2 ? Py_BuildValue("s", ci->str2):
+			     (Py_INCREF(Py_None), Py_None));
+	PyDict_SetItemString(kwds, "comm",
+			     ci->comm ? Comm_Fromcomm(ci->comm):
+			     (Py_INCREF(Py_None), Py_None));
+	PyDict_SetItemString(kwds, "comm2",
+			     ci->comm2 ? Comm_Fromcomm(ci->comm2):
+			     (Py_INCREF(Py_None), Py_None));
+	PyDict_SetItemString(kwds, "numeric",
+			     Py_BuildValue("i", ci->numeric));
+	PyDict_SetItemString(kwds, "extra",
+			     Py_BuildValue("i", ci->extra));
+	PyDict_SetItemString(kwds, "xy",
+			     Py_BuildValue("ii", ci->x, ci->y));
 
 	ret = PyObject_Call(pc->callable, args, kwds);
 

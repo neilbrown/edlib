@@ -585,7 +585,7 @@ class PresenterPane(edlib.Pane):
                 m = self.find_page(mark)
                 if m:
                     mark.to_mark(m)
-                    if 'comm2' in a:
+                    if a['comm2'] is not None:
                         a['comm2']("callback", a['focus'], m)
             self.target_mark = mark;
             self.damaged(edlib.DAMAGED_VIEW)
