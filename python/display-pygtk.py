@@ -93,10 +93,11 @@ class EdDisplay(gtk.Window):
             cb = a["comm2"]
             if a['numeric'] >= 0:
                 if width <= a['numeric']:
-                    max_bytes = len(a["str"])
+                    max_bytes = len(a["str"].encode("utf-8"))
                 else:
-                    max_bytes,extra = layout.xy_to_index(pango.SCALE*a["numeric"],
+                    max_chars,extra = layout.xy_to_index(pango.SCALE*a["numeric"],
                                                          metric.get_ascent())
+                    max_bytes = len(a["str"][:max_chars].encode("utf-8"))
             else:
                 max_bytes = 0
             f = a["focus"]
