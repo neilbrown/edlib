@@ -627,6 +627,18 @@ static struct pane *tile_root_popup(struct tileinfo *ti)
 	return next_child(ti->p, NULL, 1);
 }
 
+static struct tileinfo *tile_next_named(struct tileinfo *ti, char *name)
+{
+	struct tileinfo *t = ti;
+	while ((t = list_next_entry(t, tiles)) != ti) {
+		if (!name)
+			return t;
+		if (!t->name || strcmp(t->name, name) != 0)
+			continue;
+		return t;
+	}
+	return t;
+}
 
 DEF_CMD(tile_command)
 {
@@ -662,6 +674,7 @@ DEF_CMD(tile_command)
 			t2 = tile_first(ti);
 		} else {
 			if (ti->leaf) {
+				t2 = tile_next_named(ti, ci->str2);
 				t2 = list_next_entry(ti, tiles);
 				if (tile_is_first(t2) &&
 				    (p2 = tile_root_popup(t2)) != NULL) {
