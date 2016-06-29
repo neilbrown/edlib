@@ -233,9 +233,11 @@ static int tile_destroy(struct pane *p)
 	int pos, prevpos, nextpos;
 	int remaining = 0;
 
-	if (ti->direction == Neither)
-		/* Cannot destroy root (yet) */
-		return 0;
+	if (ti->direction == Neither) {
+		/* Children have already been destroyed, just clean up */
+		free(ti);
+		return 1;
+	}
 
 	if (p->parent == NULL) {
 		/* subsumed husk being destroyed */
