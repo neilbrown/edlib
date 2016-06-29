@@ -43,6 +43,7 @@ struct tileinfo {
 						*/
 	struct pane			*p;
 	struct pane			*content; /* if 'leaf' */
+	char				*group; /* only allocate for root, other share */
 };
 
 static struct map *tile_map;
@@ -79,22 +80,24 @@ DEF_CMD(tile_clone)
 {
 	struct pane *parent = ci->focus;
 	struct pane *p2, *child;
-	struct tileinfo *ti;
+	struct tileinfo *ti, *cti;
 
 	/* Clone a new 'tile' onto the parent, but only
 	 * create a single tile, cloned from the focus pane
 	 */
+	child = ci->home;
+	cti = child->data;
 	ti = calloc(1, sizeof(*ti));
 	ti->leaf = 1;
 	ti->direction = Neither;
+	if (cti->group)
+		ti->group = cti->group;
 	INIT_LIST_HEAD(&ti->tiles);
 	ti->p = p2 = pane_register(parent, 0, &tile_handle, ti, NULL);
 	attr_set_str(&p2->attrs, "borders", "BL");
-	child = ci->home;
-	ti = child->data;
-	while (!ti->leaf && child->focus) {
+	while (!cti->leaf && child->focus) {
 		child = child->focus;
-		ti = child->data;
+		cti = child->data;
 	}
 	pane_clone_children(child, p2);
 	return 1;
@@ -136,8 +139,6 @@ DEF_CMD(tile_scale)
 	return 1;
 }
 
-
-
 DEF_CMD(tile_attach)
 {
 	struct pane *display = ci->focus;
@@ -147,6 +148,8 @@ DEF_CMD(tile_attach)
 	ti->leaf = 1;
 	ti->p = p;
 	ti->direction = Neither;
+	if (ci->str)
+		ti->group = strdup(ci->str);
 	INIT_LIST_HEAD(&ti->tiles);
 	attr_set_str(&p->attrs, "borders", "BL");
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
@@ -183,6 +186,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after)
 		ti2 = calloc(1, sizeof(*ti2));
 		ti2->leaf = 0;
 		ti2->direction = ti->direction;
+		ti2->group = ti->group;
 		INIT_LIST_HEAD(&ti2->tiles);
 		p2 = pane_register(p->parent, 0, &tile_handle, ti2, &p->siblings);
 		ti2->p = p2;
@@ -194,6 +198,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after)
 	}
 	here = after ? &p->siblings : p->siblings.prev;
 	ti2 = calloc(1, sizeof(*ti2));
+	ti2->group = ti->group;
 	ti2->direction = ti->direction;
 	ti2->leaf = ti->leaf;
 	if (after)
@@ -235,6 +240,7 @@ static int tile_destroy(struct pane *p)
 
 	if (ti->direction == Neither) {
 		/* Children have already been destroyed, just clean up */
+		free(ti->group);
 		free(ti);
 		return 1;
 	}
@@ -622,6 +628,14 @@ DEF_CMD(tile_command)
 	struct tileinfo *t2;
 	char *cmd = ci->key + 7; /* "Window:" */
 
+	if (ci->str || ti->group) {
+		if (!ci->str || !ti->group)
+			return 0;
+		if (strcmp(ci->str, ti->group) != 0)
+			return 0;
+		/* same group - continue */
+	}
+
 	if (strcmp(cmd, "next")==0) {
 		/* If currently on a popup, go to next popup if there is one, else
 		 * to this tile.
@@ -699,6 +713,13 @@ DEF_CMD(tile_other)
 
 	if (!ti->leaf)
 		return 0;
+	if (ci->str || ti->group) {
+		if (!ci->str || !ti->group)
+			return 0;
+		if (strcmp(ci->str, ti->group) != 0)
+			return 0;
+		/* same group - continue */
+	}
 	if (!list_empty(&ti->tiles)) {
 		struct tileinfo *ti2 = list_next_entry(ti, tiles);
 		struct pane *c = ti2->content;
@@ -724,6 +745,13 @@ DEF_CMD(tile_this)
 	struct tileinfo *ti = ci->home->data;
 	if (!ti->leaf)
 		return 0;
+	if (ci->str || ti->group) {
+		if (!ci->str || !ti->group)
+			return 0;
+		if (strcmp(ci->str, ti->group) != 0)
+			return 0;
+		/* same group - continue */
+	}
 	return comm_call(ci->comm2, "callback:pane", ci->home, 0,
 			 NULL, NULL, 0);
 }
@@ -735,6 +763,13 @@ DEF_CMD(tile_root)
 
 	if (ti->direction != Neither)
 		return 0;
+	if (ci->str || ti->group) {
+		if (!ci->str || !ti->group)
+			return 0;
+		if (strcmp(ci->str, ti->group) != 0)
+			return 0;
+		/* same group - continue */
+	}
 
 	return comm_call(ci->comm2, "callback:pane", p, 0,
 			 NULL, NULL, 0);
