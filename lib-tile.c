@@ -743,11 +743,6 @@ DEF_CMD(tile_other)
 	}
 	if (!list_empty(&ti->tiles)) {
 		struct tileinfo *ti2 = list_next_entry(ti, tiles);
-		struct pane *c = ti2->content;
-		ti2->leaf = 2;
-		if (c)
-			pane_close(c);
-		ti2->leaf = 1;
 		return comm_call(ci->comm2, "callback:pane", ti2->p, 0,
 				 NULL, NULL, 0);
 	}
