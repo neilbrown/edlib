@@ -38,6 +38,7 @@ class EdDisplay(gtk.Window):
         self.connect('destroy', self.close_win)
         self.create_ui()
         self.need_refresh = True
+        self.pane['scale'] = "1000"
         self.pane.w = self.charwidth * 80
         self.pane.h = self.lineheight * 24
         self.show()
