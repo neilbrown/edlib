@@ -44,6 +44,7 @@ struct tileinfo {
 	struct pane			*p;
 	struct pane			*content; /* if 'leaf' */
 	char				*group; /* only allocate for root, other share */
+	char				*name; /* name in group for this leaf */
 };
 
 static struct map *tile_map;
@@ -150,12 +151,14 @@ DEF_CMD(tile_attach)
 	ti->direction = Neither;
 	if (ci->str)
 		ti->group = strdup(ci->str);
+	if (ci->str2)
+		ti->name = strdup(ci->str2);
 	INIT_LIST_HEAD(&ti->tiles);
 	attr_set_str(&p->attrs, "borders", "BL");
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
-static struct pane *tile_split(struct pane *p, int horiz, int after)
+static struct pane *tile_split(struct pane *p, int horiz, int after, char *name)
 {
 	/* Create a new pane near the given one, reducing its size,
 	 * and possibly the size of other siblings.
@@ -201,6 +204,8 @@ static struct pane *tile_split(struct pane *p, int horiz, int after)
 	ti2->group = ti->group;
 	ti2->direction = ti->direction;
 	ti2->leaf = ti->leaf;
+	if (name)
+		ti2->name = strdup(name);
 	if (after)
 		list_add(&ti2->tiles, &ti->tiles);
 	else
@@ -241,12 +246,14 @@ static int tile_destroy(struct pane *p)
 	if (ti->direction == Neither) {
 		/* Children have already been destroyed, just clean up */
 		free(ti->group);
+		free(ti->name);
 		free(ti);
 		return 1;
 	}
 
 	if (p->parent == NULL) {
 		/* subsumed husk being destroyed */
+		free(ti->name);
 		free(ti);
 		return 1;
 	}
@@ -327,6 +334,7 @@ static int tile_destroy(struct pane *p)
 		tile_adjust(prev);
 	}
 	list_del(&ti->tiles);
+	free(ti->name);
 	free(ti);
 	if (remaining == 1) {
 		struct tileinfo *ti2;
@@ -683,10 +691,10 @@ DEF_CMD(tile_command)
 		tile_grow(p, 0, -RPT_NUM(ci));
 		pane_damaged(p, DAMAGED_SIZE);
 	} else if (strcmp(cmd, "split-x")==0) {
-		p2 = tile_split(p, 1, 1);
+		p2 = tile_split(p, 1, 1, ci->str2);
 		pane_clone_children(ci->home, p2);
 	} else if (strcmp(cmd, "split-y")==0) {
-		p2 = tile_split(p, 0, 1);
+		p2 = tile_split(p, 0, 1, ci->str2);
 		pane_clone_children(ci->home, p2);
 	} else if (strcmp(cmd, "close")==0) {
 		if (ti->direction != Neither)
@@ -733,7 +741,7 @@ DEF_CMD(tile_other)
 	/* Need to create a tile.  If wider than 120 (FIXME configurable and
 	 * pixel sensitive), horiz-split else vert
 	 */
-	p2 = tile_split(p, p->w >= 120, 1);
+	p2 = tile_split(p, p->w >= 120, 1, ci->str2);
 	if (p2)
 		return comm_call(ci->comm2, "callback:pane", p2, 0,
 				 NULL, NULL, 0);
@@ -753,7 +761,7 @@ DEF_CMD(tile_this)
 		/* same group - continue */
 	}
 	return comm_call(ci->comm2, "callback:pane", ci->home, 0,
-			 NULL, NULL, 0);
+			 NULL, ti->name, 0);
 }
 
 DEF_CMD(tile_root)
