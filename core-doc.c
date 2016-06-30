@@ -359,6 +359,18 @@ DEF_CMD(doc_vmarkget)
 			  0, m, NULL, 0, NULL, m2);
 }
 
+DEF_CMD(doc_do_attach)
+{
+	/* Attach the home document to the focus */
+	struct pane *p = doc_attach_view(ci->focus, ci->home, ci->str);
+	if (!p)
+		return -1;
+	if (!ci->comm2)
+		return 1;
+	return comm_call(ci->comm2, "callback", p, 0, NULL, NULL, 0);
+}
+
+
 struct map *doc_default_cmd;
 
 static void init_doc_defaults(void)
@@ -378,6 +390,7 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "doc:vmark-get", &doc_vmarkget);
 	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
+	key_add(doc_default_cmd, "doc:attach", &doc_do_attach);
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
 		      &doc_request_notify);
 	key_add_range(doc_default_cmd, "Notify:doc:", "Notify:doc;",
