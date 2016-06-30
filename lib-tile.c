@@ -731,6 +731,7 @@ DEF_CMD(tile_other)
 	struct pane *p = ci->home;
 	struct pane *p2;
 	struct tileinfo *ti = p->data;
+	struct tileinfo *ti2;
 
 	if (!ti->leaf)
 		return 0;
@@ -741,15 +742,21 @@ DEF_CMD(tile_other)
 			return 0;
 		/* same group - continue */
 	}
-	if (!list_empty(&ti->tiles)) {
-		struct tileinfo *ti2 = list_next_entry(ti, tiles);
+	if (ci->str2 && ti->name && strcmp(ci->str2, ti->name) == 0)
+		return -1;
+
+	ti2 = tile_next_named(ti, ci->str2);
+	if (ti2 != ti)
 		return comm_call(ci->comm2, "callback:pane", ti2->p, 0,
 				 NULL, NULL, 0);
-	}
+
 	/* Need to create a tile.  If wider than 120 (FIXME configurable and
 	 * pixel sensitive), horiz-split else vert
 	 */
-	p2 = tile_split(p, p->w >= 120, 1, ci->str2);
+	if (ci->numeric)
+		p2 = tile_split(p, ci->numeric&1, ci->numeric&2, ci->str2);
+	else
+		p2 = tile_split(p, p->w >= 120, 1, ci->str2);
 	if (p2)
 		return comm_call(ci->comm2, "callback:pane", p2, 0,
 				 NULL, NULL, 0);
