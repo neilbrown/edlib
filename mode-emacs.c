@@ -960,6 +960,43 @@ DEF_CMD(emacs_bury)
 	return 1;
 }
 
+DEF_CMD(emacs_command)
+{
+	struct pane *p;
+
+	p = call_pane7("PopupTile", ci->focus, 0, NULL, 0, "D2", "");
+	if (!p)
+		return 0;
+	attr_set_str(&p->attrs, "prefix", "Cmd: ");
+	attr_set_str(&p->attrs, "done-key", "emacs:command");
+	call5("doc:set-name", p, 0, NULL, "M-x command", 0);
+	pane_register(p, 0, &find_handle.c, "file", NULL);
+	return 1;
+}
+
+DEF_CMD(emacs_do_command)
+{
+	char cmd[30];
+	int ret;
+
+	snprintf(cmd, sizeof(cmd), "interactive-cmd-%s", ci->str);
+	ret = call5(cmd, ci->focus, 0, ci->mark, ci->str, 0);
+	if (ret == 0) {
+		snprintf(cmd, sizeof(cmd), "Command %s not found", ci->str);
+		call5("Message", ci->focus, 0, NULL, cmd, 0);
+	} else if (ret < 0) {
+		snprintf(cmd, sizeof(cmd), "Command %s Failed", ci->str);
+		call5("Message", ci->focus, 0, NULL, cmd, 0);
+	}
+	return 1;
+}
+
+DEF_CMD(emacs_version)
+{
+	call5("Message", ci->focus, 0, NULL, "Version: edlib-0.0-devel", 0);
+	return 1;
+}
+
 DEF_CMD(emacs_attrs)
 {
 	int view = attr_find_int(ci->focus->attrs, "emacs-search-view");
@@ -1053,6 +1090,10 @@ static void emacs_init(void)
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &emacs_num);
 	key_add(m, "M-Chr--", &emacs_neg);
+
+	key_add(m, "M-Chr-x", &emacs_command);
+	key_add(m, "emacs:command", &emacs_do_command);
+	key_add(m, "interactive-cmd-version", &emacs_version);
 
 	emacs_map = m;
 }
