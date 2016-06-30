@@ -50,7 +50,11 @@ static void docs_demark(struct docs *doc, struct pane *p)
 	     m;
 	     m = doc_next_mark_all(m))
 		if (m->ref.p == p) {
-			m->ref.p = list_next_entry(p, siblings);
+			if (p == list_last_entry(&doc->doc.home->children,
+						 struct pane, siblings))
+				m->ref.p = NULL;
+			else
+				m->ref.p = list_next_entry(p, siblings);
 			doc_notify_change(&doc->doc, m, NULL);
 		}
 }
