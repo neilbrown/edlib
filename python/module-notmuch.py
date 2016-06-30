@@ -26,6 +26,13 @@ import re
 import os
 #import notmuch
 
+def take(name, place, args, default=None):
+    if args[name] is not None:
+        place.append(args[name])
+    else:
+        place.append(default)
+    return 1
+
 class searches:
     # Manage the saved searches
     # We read all searches from the config file and periodically
@@ -282,15 +289,16 @@ class notmuch_main(edlib.Doc):
         self.notify("Notify:Replace")
         return -1
 
-def notmuch_doc(key, home, **a):
+def notmuch_doc(key, home, focus, **a):
     # Create the root notmuch document
     nm = notmuch_main(home)
     nm['render-default'] = "notmuch:searchlist"
     nm.call("doc:set-name", "*Notmuch*")
     nm.call("global-multicall-doc:appeared-")
+    nm.call("notmuch:update")
     if a['comm2'] is not None:
         cb = a['comm2']
-        cb("callback", f, nm)
+        cb("callback", focus, nm)
     return 1
 
 class notmuch_main_view(edlib.Pane):
@@ -315,6 +323,18 @@ class notmuch_main_view(edlib.Pane):
             self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
             return 0
 
+def notmuch_mode(key, home, focus, **a):
+    pl=[]
+    focus.call("ThisPane", lambda key, **a:take('focus', pl, a))
+    try:
+        home.call("docs:byname", "*Notmuch*", lambda key, **a:take('focus', pl, a))
+    except:
+        home.call("attach-doc-notmuch", lambda key, **a:take('focus', pl, a))
+    if len(pl) != 2:
+        return -1
+    pl[1].call("doc:attach", pl[0])
+    return 1
+
 def render_searchlist_attach(key, focus, comm2, **a):
     p = focus.render_attach("format")
     p = p.render_attach("lines")
@@ -326,6 +346,4 @@ if "editor" in globals():
     editor.call("global-set-command", pane, "attach-doc-notmuch", notmuch_doc)
     editor.call("global-set-command", pane, "attach-render-notmuch:searchlist",
                 render_searchlist_attach)
-
-    # This should be done by 'M-x notmuch' or similar - eventually
-    editor.call("attach-doc-notmuch")
+    editor.call("global-set-command", pane, "interactive-cmd-nm", notmuch_mode)
