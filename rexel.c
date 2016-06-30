@@ -682,7 +682,6 @@ static void add_class(struct parse_state *st, int plane, wctype_t cls)
 	return;
 }
 
-
 static int is_set_element(char *p)
 {
 	int i;
@@ -1115,7 +1114,6 @@ static int parse_re(struct parse_state *st)
 		st->rxl[start] = REC_FORK | st->next;
 	return 1;
 }
-
 
 unsigned short *rxl_parse(char *patn, int *lenp, int nocase)
 {

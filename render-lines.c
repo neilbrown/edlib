@@ -1367,7 +1367,6 @@ DEF_CMD(render_lines_notify_replace)
 	return 1;
 }
 
-
 DEF_CMD(render_lines_attach);
 DEF_CMD(render_lines_clone)
 {

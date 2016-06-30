@@ -203,7 +203,6 @@ DEF_CMD(format_move_line)
 	if (rpt > 0)
 		ci->mark->rpos = rf->fields + 1 - rf->home_field;
 
-
 	return 1;
 }
 

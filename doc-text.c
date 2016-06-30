@@ -51,7 +51,6 @@
  * and then only start and end are changed.
  */
 
-
 #define _GNU_SOURCE /* for asprintf */
 #include <unistd.h>
 #include <stdlib.h>

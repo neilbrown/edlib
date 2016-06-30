@@ -591,7 +591,6 @@ DEF_CMD(dir_open_alt)
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
 
-
 	if (fd >= 0) {
 		struct pane *new = doc_open(par, fd, fname);
 		if (new) {
@@ -627,7 +626,6 @@ DEF_CMD(dir_close)
 	doc_destroy(ci->home);
 	return 1;
 }
-
 
 void edlib_init(struct pane *ed)
 {

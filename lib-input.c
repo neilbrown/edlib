@@ -19,7 +19,6 @@ struct input_mode {
 	int	numeric, extra;
 };
 
-
 DEF_CMD(set_mode)
 {
 	struct input_mode *im = ci->home->data;

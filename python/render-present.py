@@ -636,7 +636,6 @@ class PresenterPane(edlib.Pane):
 
         return None
 
-
 class MarkdownPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)

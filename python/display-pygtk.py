@@ -15,7 +15,6 @@ import thread
 import gobject
 import glib
 
-
 def take(name, place, args, default=None):
     if args[name] is not None:
         place.append(args[name])
@@ -339,7 +338,6 @@ class EdDisplay(gtk.Window):
                              gtk.gdk.KEY_PRESS_MASK|
                              gtk.gdk.KEY_RELEASE_MASK);
         self.text.set_property("can-focus", True)
-
 
     def refresh(self, *a):
         l = self.panes.keys()

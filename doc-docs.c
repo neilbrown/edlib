@@ -718,7 +718,6 @@ DEF_CMD(attach_docs)
 	return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
 }
 
-
 void edlib_init(struct pane *ed)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-doc-docs",

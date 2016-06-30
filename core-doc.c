@@ -410,7 +410,6 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
-
 	if (strcmp(ci->key, "doc:revisit") == 0) {
 		/* This must be redirected to document to propagate to parent.
 		 * I wonder if anything else does.

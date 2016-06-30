@@ -154,7 +154,6 @@ DEF_CMD(messageline_attach)
 	return comm_call(ci->comm2, "callback:attach", ret, 0, NULL, NULL, 0);
 }
 
-
 void edlib_init(struct pane *ed)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-messageline",

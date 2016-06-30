@@ -148,7 +148,6 @@ struct point_links {
 	struct tlist_head	lists[];
 };
 
-
 struct mark *mark_dup(struct mark *m, int notype);
 void mark_free(struct mark *m);
 struct mark *doc_new_mark(struct doc *d, int view);
@@ -242,8 +241,6 @@ void attr_trim(struct attrset **setp, int nkey);
 struct attrset *attr_copy_tail(struct attrset *set, int nkey);
 struct attrset *attr_collect(struct attrset *set, unsigned int pos, int prefix);
 void attr_free(struct attrset **setp);
-
-
 
 /* Commands */
 struct lookup_cmd {
@@ -401,7 +398,6 @@ static inline int doc_set_attr(struct pane *p, struct mark *pt,
 	ci.str2 = val;
 	return key_handle(&ci);
 }
-
 
 static inline int doc_add_view(struct pane *p)
 {

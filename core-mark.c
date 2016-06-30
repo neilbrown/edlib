@@ -406,7 +406,6 @@ struct mark *doc_new_mark(struct doc *d, int view)
 	return ret;
 }
 
-
 /* Movement of points and marks.
  *
  * Both points and marks can move.

@@ -357,7 +357,6 @@ DEF_CMD(view_border)
 	return 0; /* allow other handlers to change borders */
 }
 
-
 void edlib_init(struct pane *ed)
 {
 	view_map = key_alloc();

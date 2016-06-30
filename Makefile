@@ -65,8 +65,6 @@ QUIET_GEN     = $(Q:@=@echo    '     GEN      '$@;)
 QUIET_LINK    = $(Q:@=@echo    '     LINK     '$@;)
 QUIET_LIB     = $(Q:@=@echo    '     LIB      '$@;)
 
-
-
 SO = $(patsubst O/%.o,lib/edlib-%.so,$(SHOBJ))
 H = list.h core.h misc.h
 edlib: $(OBJ) lib/libedlib.so
@@ -94,7 +92,6 @@ TAGS :
 	    mv TAGS.tmp TAGS ;\
 	fi
 	@rm -f .TAGS1 .TAGS2
-
 
 dirs :
 	@mkdir -p lib O

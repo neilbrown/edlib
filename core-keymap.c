@@ -148,7 +148,6 @@ void key_add(struct map *map, char *k, struct command *comm)
 	ins_cnt = comm2 ? 2 : 1;
 	size = size2alloc(map->size + ins_cnt);
 
-
 	if (size2alloc(map->size) != size) {
 		map->keys = realloc(map->keys, size * sizeof(map->keys[0]));
 		map->comms = realloc(map->comms,

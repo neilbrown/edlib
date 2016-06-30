@@ -33,7 +33,6 @@ struct key_data {
 	int		global;
 };
 
-
 static struct pane *do_keymap_attach(struct pane *p, int global);
 
 DEF_CMD(get_command_callback)

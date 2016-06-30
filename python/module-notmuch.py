@@ -315,7 +315,6 @@ class notmuch_main_view(edlib.Pane):
             self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
             return 0
 
-
 def render_searchlist_attach(key, focus, comm2, **a):
     p = focus.render_attach("format")
     p = p.render_attach("lines")

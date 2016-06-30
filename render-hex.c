@@ -62,7 +62,6 @@ DEF_CMD(render_hex_notify_replace)
 	return 1;
 }
 
-
 DEF_CMD(render_hex_eol)
 {
 	wint_t ch = 1;

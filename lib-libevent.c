@@ -14,7 +14,6 @@
  * When "event:deactivate" is called, cause event:run to abort.
  */
 
-
 #include <stdlib.h>
 #include <event.h>
 #include "core.h"

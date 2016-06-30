@@ -198,7 +198,6 @@ char *strsave(struct pane *p, char *buf)
 	return memsave(p, buf, strlen(buf)+1);
 }
 
-
 void editor_delayed_free(struct pane *ed, struct pane *p)
 {
 	struct ed_info *ei = ed->data;

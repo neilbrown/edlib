@@ -994,7 +994,6 @@ static int mark_setpos(Mark *m, PyObject *v, void *x)
 	return 0;
 }
 
-
 static PyObject *mark_getview(Mark *m, void *x)
 {
 	if (m->mark == NULL) {
