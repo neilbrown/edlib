@@ -380,6 +380,7 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 
 	self->handle.c = python_doc_call;
 	doc_init(&self->doc);
+	self->doc.free = doc_free;
 	self->pane = pane_register(parent->pane, z, &self->handle.c, &self->doc, NULL);
 	self->doc.home = self->pane;
 	return 0;
