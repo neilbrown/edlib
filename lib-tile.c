@@ -158,7 +158,8 @@ DEF_CMD(tile_attach)
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
-static struct pane *tile_split(struct pane *p, int horiz, int after, char *name)
+static struct pane *tile_split(struct pane *p, int horiz, int after, char *name,
+			       int new_space)
 {
 	/* Create a new pane near the given one, reducing its size,
 	 * and possibly the size of other siblings.
@@ -180,6 +181,9 @@ static struct pane *tile_split(struct pane *p, int horiz, int after, char *name)
 	/* FIXME ask the leafs */
 	if (space < 8)
 		return NULL;
+	if (new_space == 0)
+		new_space = space / 2;
+	space -= new_space;
 
 	if (ti->direction != (horiz? Horiz : Vert)) {
 		/* This tile is not split in the required direction, need
@@ -214,20 +218,20 @@ static struct pane *tile_split(struct pane *p, int horiz, int after, char *name)
 	ti2->p = ret;
 	switch (!!horiz + 2 * !!after) {
 	case 0: /* vert before */
-		pane_resize(ret, p->x, p->y, p->w, p->h/2);
-		pane_resize(p, p->x, p->y + ret->h, p->w, p->h - ret->h);
+		pane_resize(ret, p->x, p->y, p->w, new_space);
+		pane_resize(p, p->x, p->y + ret->h, p->w, space);
 		break;
 	case 1: /* horiz before */
-		pane_resize(ret, p->x, p->y, p->w/2, p->h);
-		pane_resize(p, p->x + ret->w, p->y, p->w - ret->w, p->h);
+		pane_resize(ret, p->x, p->y, new_space, p->h);
+		pane_resize(p, p->x + ret->w, p->y, space, p->h);
 		break;
 	case 2: /* vert after */
-		pane_resize(ret, p->x, p->y + p->h/2, p->w, p->h - p->h/2);
-		pane_resize(p, -1, -1, p->w, p->h/2);
+		pane_resize(ret, p->x, p->y + space, p->w, new_space);
+		pane_resize(p, -1, -1, p->w, space);
 		break;
 	case 3: /* horiz after */
-		pane_resize(ret, p->x + p->w/2, p->y, p->w - p->w/2, p->h);
-		pane_resize(p, -1, -1, p->w/2, p->h);
+		pane_resize(ret, p->x + space, p->y, new_space, p->h);
+		pane_resize(p, -1, -1, space, p->h);
 		break;
 	}
 	tile_adjust(ret);
@@ -704,10 +708,10 @@ DEF_CMD(tile_command)
 		tile_grow(p, 0, -RPT_NUM(ci));
 		pane_damaged(p, DAMAGED_SIZE);
 	} else if (strcmp(cmd, "split-x")==0) {
-		p2 = tile_split(p, 1, 1, ci->str2);
+		p2 = tile_split(p, 1, 1, ci->str2, 0);
 		pane_clone_children(ci->home, p2);
 	} else if (strcmp(cmd, "split-y")==0) {
-		p2 = tile_split(p, 0, 1, ci->str2);
+		p2 = tile_split(p, 0, 1, ci->str2, 0);
 		pane_clone_children(ci->home, p2);
 	} else if (strcmp(cmd, "close")==0) {
 		if (ti->direction != Neither)
@@ -754,9 +758,9 @@ DEF_CMD(tile_other)
 	 * pixel sensitive), horiz-split else vert
 	 */
 	if (ci->numeric)
-		p2 = tile_split(p, ci->numeric&1, ci->numeric&2, ci->str2);
+		p2 = tile_split(p, ci->numeric&1, ci->numeric&2, ci->str2, 0);
 	else
-		p2 = tile_split(p, p->w >= 120, 1, ci->str2);
+		p2 = tile_split(p, p->w >= 120, 1, ci->str2, 0);
 	if (p2)
 		return comm_call(ci->comm2, "callback:pane", p2, 0,
 				 NULL, NULL, 0);
