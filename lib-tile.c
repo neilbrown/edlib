@@ -757,9 +757,25 @@ DEF_CMD(tile_other)
 	/* Need to create a tile.  If wider than 120 (FIXME configurable and
 	 * pixel sensitive), horiz-split else vert
 	 */
-	if (ci->numeric)
-		p2 = tile_split(p, ci->numeric&1, ci->numeric&2, ci->str2, 0);
-	else
+	if (ci->numeric) {
+		int scale = ci->numeric & 255;
+		int horiz = ci->numeric & 256;
+		int after = ci->numeric & 512;
+		int size;
+		if (horiz)
+			size = p->w;
+		else
+			size = p->h;
+		if (scale)
+			size = size * scale / 256;
+		else
+			size = size/2;
+		if (ci->extra > 0 && size > ci->extra)
+			size = ci->extra;
+		if (ci->extra < 0 && size < -ci->extra)
+			size = -ci->extra;
+		p2 = tile_split(p, horiz, after, ci->str2, size);
+	} else
 		p2 = tile_split(p, p->w >= 120, 1, ci->str2, 0);
 	if (p2)
 		return comm_call(ci->comm2, "callback:pane", p2, 0,
