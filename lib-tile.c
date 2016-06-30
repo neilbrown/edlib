@@ -146,6 +146,9 @@ DEF_CMD(tile_attach)
 	struct tileinfo *ti = calloc(1, sizeof(*ti));
 	struct pane *p = pane_register(display, 0, &tile_handle, ti, NULL);
 
+	/* Remove borders as our children will provide their own. */
+	call3("Window:border", display, 0, NULL);
+
 	ti->leaf = 1;
 	ti->p = p;
 	ti->direction = Neither;
