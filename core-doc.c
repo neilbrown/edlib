@@ -523,10 +523,8 @@ struct pane *doc_open(struct pane *ed, int fd, char *name)
 
 	p = call_pane7("docs:byfd", ed, 0, NULL, fd, name, NULL);
 
-	if (p) {
-		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
+	if (p)
 		return p;
-	}
 
 	if (fd < 0) {
 		char *sl;
