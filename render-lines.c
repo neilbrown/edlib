@@ -1341,8 +1341,10 @@ DEF_CMD(render_lines_notify_replace)
 	struct mark *start = ci->mark2 ?: ci->mark;
 	struct mark *end;
 
-	if (!ci->mark)
+	if (!ci->mark) {
+		pane_damaged(p, DAMAGED_VIEW);
 		return 1;
+	}
 
 	end = vmark_at_or_before(ci->home, ci->mark, rl->typenum);
 
