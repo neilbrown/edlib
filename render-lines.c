@@ -437,7 +437,7 @@ static void render_line(struct pane *p, struct pane *focus,
 		if (ch >= ' ' && ch != '<') {
 			line += 1;
 			/* only flush out if string is getting a bit long */
-			if ((ch & 0xc0) == 0x80)
+			if ((*line & 0xc0) == 0x80)
 				/* In the middle of a UTF-8 */
 				continue;
 			if (offset == (line - line_start) ||
