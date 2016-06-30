@@ -561,7 +561,7 @@ static PyObject *Pane_render_attach(Pane *self, PyObject *args)
 {
 	char *type = NULL;
 	struct pane *p;
-	int ret = PyArg_ParseTuple(args, "s", &type);
+	int ret = PyArg_ParseTuple(args, "|s", &type);
 	if (ret <= 0)
 		return NULL;
 	p = render_attach(type, self->pane);
