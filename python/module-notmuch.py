@@ -24,7 +24,8 @@
 from subprocess import Popen, PIPE
 import re
 import os
-#import notmuch
+import notmuch
+import json
 
 def take(name, place, args, default=None):
     if args[name] is not None:
@@ -132,14 +133,17 @@ class searches:
 
     def updated(self, *a):
         n = self.todo.pop(0)
-        c = self.p.stdout.readline()
-        u = self.p.stdout.readline()
-        nw = self.p.stdout.readline()
+        try:
+            c = self.p.stdout.readline()
+            self.count[n] = int(c)
+            u = self.p.stdout.readline()
+            self.unread[n] = int(u)
+            nw = self.p.stdout.readline()
+            self.new[n] = int(nw)
+        except:
+            pass
         p = self.p
         self.p = None
-        self.count[n] = int(c)
-        self.unread[n] = int(u)
-        self.new[n] = int(nw)
         self.update_one()
         p.wait()
 
@@ -278,6 +282,22 @@ class notmuch_main(edlib.Doc):
             self.searches.update(self, self.updated)
             return 1
 
+        if key == "notmuch-show-list":
+            m = a['mark']
+            if m.offset < len(self.searches.current):
+                pl = []
+                a['focus'].call("OtherPane", 256+512, lambda key,**a:take('focus', pl, a))
+                s = self.searches.current[m.offset]
+                s2 = self.searches.make_search(s, None)
+                root = self
+                while root.parent:
+                    root = root.parent
+                root.call("attach-doc-notmuch-list", s2, s, lambda key,**a:take('focus', pl, a))
+                pl[1].call('doc:attach', pl[0], lambda key,**a:take('focus',pl,a))
+                #pl[-1].call("doc:autoclose", 1)
+
+                return 1
+
     def tick(self, key, **a):
         if not self.searches.todo:
             self.searches.load(True)
@@ -289,16 +309,15 @@ class notmuch_main(edlib.Doc):
         self.notify("Notify:Replace")
         return -1
 
-def notmuch_doc(key, home, focus, **a):
+def notmuch_doc(key, home, focus, comm2, **a):
     # Create the root notmuch document
     nm = notmuch_main(home)
     nm['render-default'] = "notmuch:searchlist"
     nm.call("doc:set-name", "*Notmuch*")
     nm.call("global-multicall-doc:appeared-")
     nm.call("notmuch:update")
-    if a['comm2'] is not None:
-        cb = a['comm2']
-        cb("callback", focus, nm)
+    if comm2 is not None:
+        comm2("callback", focus, nm)
     return 1
 
 class notmuch_main_view(edlib.Pane):
@@ -310,7 +329,7 @@ class notmuch_main_view(edlib.Pane):
         self['line-format'] = '<%namefmt>%+name</> %new <%unreadfmt>%unread</> %count'
         self.call("Request:Notify:Replace")
 
-    def handle(self, key, focus, **a):
+    def handle(self, key, focus, mark, **a):
         if key == "Clone":
             p = notmuch_main_view(focus)
             self.clone_children(focus.focus)
@@ -322,6 +341,9 @@ class notmuch_main_view(edlib.Pane):
         if key == "Notify:Replace":
             self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
             return 0
+
+        if key == "Return":
+            return self.call("notmuch-show-list", mark)
 
 def notmuch_mode(key, home, focus, **a):
     pl=[]
@@ -335,6 +357,171 @@ def notmuch_mode(key, home, focus, **a):
     pl[1].call("doc:attach", pl[0])
     return 1
 
+##################
+# list-view shows a list of threads/messages that match a given
+# search query.
+# We generate the thread-ids using "notmuch search --output=threads"
+# For a full-scan we collect at most 100 and at most 1 month at a time, until
+# we reach and empty month, then get all the rest together
+# For an update, we just check the last day and add anything missing.
+# We keep an array of thread-ids
+
+class notmuch_list(edlib.Doc):
+    def __init__(self, focus, query):
+        edlib.Doc.__init__(self, focus, self.handle)
+        self.query = query
+        self.threadids = []
+        self.threads = {}
+        self.messageids = {}
+        self["render-default"] = "format"
+        self["line-format"] = "%date_relative<tab:130></> <fg:blue>%+authors</><tab:350> [%matched/%total] %subject                      "
+        self.load_full()
+
+    def load_full(self):
+        self.old = self.threadids[:]
+        self.new = []
+        self.offset = 0
+        self.age = 1
+        self.start_load()
+
+    def start_load(self):
+        cmd = ["/usr/bin/notmuch", "search", "--output=summary", "--format=json", "--limit=100", "--offset=%d" % self.offset ]
+        if self.age:
+            cmd += [ "date:-%dmonths.. AND " % self.age]
+        cmd += [ "( %s )" % self.query ]
+        self.p = Popen(cmd, shell=False, stdout=PIPE)
+        self.call("event:read", self.p.stdout.fileno(), self.get_threads)
+
+    def get_threads(self, key, **a):
+        found = 0
+        try:
+            tl = json.load(self.p.stdout)
+        except:
+            tl = []
+        for j in tl:
+            tid = j['thread']
+            found += 1
+            try:
+                i = self.old.index(tid)
+                if i > 0:
+                    self.move_marks_from(tid)
+                del self.old[i]
+            except ValueError:
+                pass
+            if tid not in self.new:
+                self.new.append(tid)
+            self.threads[tid] = j
+        tl = None
+        self.p.wait
+        self.p = None
+        if not self.threadids:
+            # first insertion, all marks must be at start
+            m = self.first_mark()
+            while m:
+                if m.pos is None:
+                    m.pos = self.new[0]
+                m = m.next_any()
+        self.threadids = self.new + self.old
+        self.notify("Notify:Replace")
+        if found < 100 and self.age == None:
+            # must have found them all
+            return -1
+        # request some more
+        if found < 5:
+            # stop worrying about age
+            self.age = None
+        if found < 100 and self.age:
+            self.age += 1
+        # allow for a little over-lap across successive calls
+        self.offset += found - 3
+        self.start_load()
+        return -1
+
+    def handle(self, key, mark, mark2, numeric, extra, focus, str, comm2, **a):
+        if key == "doc:set-ref":
+            if numeric == 1 and len(self.threadids) > 0:
+                mark.pos = self.threadids[0]
+            else:
+                mark.pos = None
+            mark.offset = 0
+            mark.rpos = 0
+            return 1
+
+        if key == "doc:mark-same":
+            return 1 if mark.pos == mark2.pos else 2
+
+        if key == "doc:step":
+            forward = numeric
+            move = extra
+            ret = edlib.WEOF
+            if mark.pos == None:
+                i = len(self.threadids)
+            else:
+                i = self.threadids.index(mark.pos)
+            if forward and i < len(self.threadids):
+                ret = ' '
+                if move:
+                    m2 = mark.next_any()
+                    target = None
+                    while m2 and m2.pos == mark.pos:
+                        target = m2
+                        m2 = m2.next_any()
+                    if target:
+                        mark.to_mark(target)
+                    if i+1 < len(self.threadids):
+                        mark.pos = self.threadids[i+1]
+                    else:
+                        mark.pos = None
+            if not forward and i > 0:
+                ret = ' '
+                if move:
+                    m2 = mark.prev_any()
+                    target = None
+                    while m2 and m2.pos == mark.pos:
+                        target = m2
+                        m2 = m2.prev_any()
+                    if target:
+                        mark.to_mark(target)
+                    mark.pos = self.threadids[i-1]
+            return ret
+
+        if key == "doc:get-attr":
+            attr = str
+            forward = numeric
+            if mark.pos == None:
+                i = len(self.threadids)
+            else:
+                i = self.threadids.index(mark.pos)
+            if not forward:
+                i -= 1
+            val = "["+attr+"]"
+            if i >= 0 and i < len(self.threadids):
+                tid = self.threadids[i]
+                t = self.threads[tid]
+                if attr in t:
+                    val = t[attr]
+                    if type(val) == int:
+                        val = "%3d" % val
+                    else:
+                        val = unicode(t[attr])
+                    if attr == 'date_relative':
+                        val = "           " + val
+                        val = val[-13:]
+            comm2("callback", focus, val)
+            return 1
+
+def notmuch_open_list(key, home, focus, str, str2, comm2, **a):
+    nm = notmuch_list(home, str)
+    if str2 is not None:
+        s = str2
+    else:
+        s = str
+    nm.call("doc:set-name", s)
+    nm.call("global-multicall-doc:appeared-")
+    if comm2 is not None:
+        comm2("callback", focus, nm)
+
+
 def render_searchlist_attach(key, focus, comm2, **a):
     p = focus.render_attach("format")
     p = p.render_attach("lines")
@@ -346,4 +533,5 @@ if "editor" in globals():
     editor.call("global-set-command", pane, "attach-doc-notmuch", notmuch_doc)
     editor.call("global-set-command", pane, "attach-render-notmuch:searchlist",
                 render_searchlist_attach)
+    editor.call("global-set-command", pane, "attach-doc-notmuch-list", notmuch_open_list)
     editor.call("global-set-command", pane, "interactive-cmd-nm", notmuch_mode)
