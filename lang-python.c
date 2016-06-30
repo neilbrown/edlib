@@ -735,6 +735,13 @@ static PyObject *pane_repr(Pane *p)
 	return Py_BuildValue("s", buf);
 }
 
+static PyObject *doc_repr(Pane *p)
+{
+	char buf[50];
+	sprintf(buf, "<pane-0x%p>", p->pane);
+	return Py_BuildValue("s", buf);
+}
+
 static long pane_hash(Pane *p)
 {
 	return (long)p->pane;
@@ -871,6 +878,23 @@ static PyTypeObject PaneType = {
     .tp_new = (newfunc)pane_new,/* tp_new */
 };
 
+static PyObject *first_mark(Doc *self)
+{
+	struct mark *m = doc_first_mark_all(&self->doc);
+	if (!m) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	return Mark_Frommark(m, 1);
+}
+
+static PyMethodDef doc_methods[] = {
+	{"first_mark", (PyCFunction)first_mark, METH_NOARGS,
+	 "first mark of document"},
+	{NULL}
+};
+
+
 static PyTypeObject DocType = {
     PyObject_HEAD_INIT(NULL)
     0,				/*ob_size*/
@@ -881,12 +905,12 @@ static PyTypeObject DocType = {
     NULL,			/*tp_print*/
     NULL,			/*tp_getattr*/
     NULL,			/*tp_setattr*/
-    (cmpfunc)pane_cmp,		/*tp_compare*/
-    (reprfunc)pane_repr,	/*tp_repr*/
+    NULL,			/*tp_compare*/
+    (reprfunc)doc_repr,	/*tp_repr*/
     NULL,			/*tp_as_number*/
     NULL,			/*tp_as_sequence*/
-    &pane_mapping,		/*tp_as_mapping*/
-    (hashfunc)pane_hash,	/*tp_hash */
+    NULL,			/*tp_as_mapping*/
+    NULL,			/*tp_hash */
     NULL,			/*tp_call*/
     NULL,			/*tp_str*/
     NULL,			/*tp_getattro*/
@@ -898,11 +922,11 @@ static PyTypeObject DocType = {
     NULL,			/* tp_clear */
     NULL,			/* tp_richcompare */
     0,				/* tp_weaklistoffset */
-    (getiterfunc)pane_this,	/* tp_iter */
-    (iternextfunc)pane_next,	/* tp_iternext */
-    pane_methods,		/* tp_methods */
+    NULL,			/* tp_iter */
+    NULL,			/* tp_iternext */
+    doc_methods,		/* tp_methods */
     NULL,			/* tp_members */
-    pane_getseters,		/* tp_getset */
+    NULL,			/* tp_getset */
     &PaneType,			/* tp_base */
     NULL,			/* tp_dict */
     NULL,			/* tp_descr_get */
