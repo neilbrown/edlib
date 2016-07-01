@@ -184,7 +184,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after, char *name,
 	/* FIXME ask the leafs */
 	if (space < 8)
 		return NULL;
-	if (new_space == 0)
+	if (new_space <= 2 || new_space >= space-2)
 		new_space = space / 2;
 	space -= new_space;
 
