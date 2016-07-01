@@ -376,15 +376,6 @@ static inline int doc_undo(struct pane *p, bool redo)
 	ci.key = "doc:reundo";
 	return key_handle(&ci);
 }
-static inline int doc_load_file(struct pane *p, int fd, char *name)
-{
-	struct cmd_info ci = {};
-	ci.focus = p;
-	ci.extra = fd;
-	ci.str = name;
-	ci.key = "doc:load-file";
-	return key_handle(&ci);
-}
 
 static inline int doc_set_attr(struct pane *p, struct mark *pt,
 			       char *attr, char *val)

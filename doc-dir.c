@@ -266,7 +266,7 @@ DEF_CMD(dir_same_file)
 	       dr->stat.st_dev == stb.st_dev))
 		return 0;
 	/* Let's reload it now */
-	doc_load_file(ci->focus, fd, NULL);
+	comm_call(&dir_load_file, "doc:load-file", ci->focus, 0, NULL, NULL, fd);
 	return 1;
 }
 
@@ -618,7 +618,7 @@ DEF_CMD(dir_open_alt)
 
 DEF_CMD(dir_reread)
 {
-	return doc_load_file(ci->focus, -1, NULL);
+	return comm_call(&dir_load_file, "doc:load-file", ci->focus, 0, NULL, NULL, -1);
 }
 
 DEF_CMD(dir_close)

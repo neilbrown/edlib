@@ -551,7 +551,7 @@ DEF_CMD(doc_open)
 
 		if (!p)
 			return -1;
-		doc_load_file(p, fd, rp);
+		call5("doc:load-file", p, 0, NULL, rp, fd);
 		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	}
 	return comm_call(ci->comm2, "callback", p, 0, NULL,
