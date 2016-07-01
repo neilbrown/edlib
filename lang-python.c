@@ -655,8 +655,8 @@ static PyObject *pane_getnum(Pane *p, char *which)
 	switch(*which) {
 	case 'x': n = p->pane->x; break;
 	case 'y': n = p->pane->y; break;
-	case 'w': n = p->pane->w; break;
-	case 'h': n = p->pane->h; break;
+	case 'w': n = p->pane->w > 0 ? p->pane->w : 1; break;
+	case 'h': n = p->pane->h > 0 ? p->pane->h : 1; break;
 	case 'X': n = p->pane->cx; break;
 	case 'Y': n = p->pane->cy; break;
 	case 'z': n = p->pane->z; break;
