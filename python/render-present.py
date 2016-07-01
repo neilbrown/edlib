@@ -402,28 +402,27 @@ class PresenterPane(edlib.Pane):
             return f
         return os.path.dirname(path)+'/'+f
 
-    def handle(self, key, **a):
+    def handle(self, key, focus, mark, numeric, comm2, **a):
         if key[:10] == "Present-BG":
             cmds = key[11:].split(',')
-            f = a['focus']
             ret = 0
             for c in cmds:
                 rv = None
                 if c[:6] == 'color:':
-                    rv = f.call('pane-clear', c[6:])
+                    rv = focus.call('pane-clear', c[6:])
                 if c[:14] == "image-stretch:":
-                    rv = f.call('Draw:image', 1, self.pathto(c[14:]))
+                    rv = focus.call('Draw:image', 1, self.pathto(c[14:]))
                 if c[:6] == "image:":
-                    rv = f.call('Draw:image', 0, 5, self.pathto(c[6:]))
+                    rv = focus.call('Draw:image', 0, 5, self.pathto(c[6:]))
                 if c[:8] == "overlay:":
-                    rv = f.call('Draw:image', 0, 2, self.pathto(c[8:]))
+                    rv = focus.call('Draw:image', 0, 2, self.pathto(c[8:]))
                 if c[:9] == "overlayC:":
-                    rv = f.call('Draw:image', self.w/6, self.h*3/4, self.pathto(c[9:]), (self.w*5/12, self.h/8))
+                    rv = focus.call('Draw:image', self.w/6, self.h*3/4, self.pathto(c[9:]), (self.w*5/12, self.h/8))
                 if c == "page-local":
-                    page = self.find_pages(a['mark'])
+                    page = self.find_pages(mark)
                     self.clean_lines(page)
                     self.mark_lines(page)
-                    cm = self.get_local_attr(a['mark'], "background", page)
+                    cm = self.get_local_attr(mark, "background", page)
                     if cm:
                         cmds.extend(cm.split(','))
                 if rv != None:
@@ -431,33 +430,30 @@ class PresenterPane(edlib.Pane):
             return ret
         if key == "render-line-prev":
             # Go to start of page
-            here = a['mark']
-            if a['numeric'] == 0:
+            if numeric == 0:
                 # just make sure at start of line
-                return self.parent.call("render-line-prev", here, 0)
+                return self.parent.call("render-line-prev", mark, 0)
 
-            start = self.find_pages(here)
+            start = self.find_pages(mark)
             if not start:
                 return -2
-            if start > here:
-                start = here
+            if start > mark:
+                start = mark
 
-            if self.marks_same(start, here):
+            if self.marks_same(start, mark):
                 return -2
-            here.to_mark(start)
+            mark.to_mark(start)
             return 1
 
         if key == "render-line":
-            here = a['mark']
-            cb = a['comm2']
-            page = self.find_pages(here)
+            page = self.find_pages(mark)
             if not page:
                 # No pages at all
-                cb("callback", self)
+                comm2("callback", self)
                 return 1
 
-            if here < page:
-                here.to_mark(page)
+            if mark < page:
+                mark.to_mark(page)
 
             self.clean_lines(page)
             self.mark_lines(page)
@@ -465,9 +461,9 @@ class PresenterPane(edlib.Pane):
             end = page.next()
 
             line = None
-            while end is None or here < end:
+            while end is None or mark < end:
                 lines = []
-                self.parent.call("render-line", here,a['numeric'],
+                self.parent.call("render-line", mark, numeric,
                                  lambda key2, **aa: take('str', lines, aa))
                 if len(lines) == 0 or lines[0] is None:
                     line = None
@@ -480,7 +476,7 @@ class PresenterPane(edlib.Pane):
                 break
 
             if line is None:
-                cb("callback", self)
+                comm2("callback", self)
             else:
                 mode = 'P'
                 prefix = None
@@ -498,14 +494,14 @@ class PresenterPane(edlib.Pane):
                 if type(mode) == dict:
                     # look up type of previous line.
                     pmode = None
-                    if here.prev() is not None:
-                        pmode = here.prev()['mode']
+                    if mark.prev() is not None:
+                        pmode = mark.prev()['mode']
                     if pmode in mode:
                         mode = mode[pmode]
                     else:
                         mode = mode[None]
-                here['mode'] = mode
-                v = self.get_attr(here, mode, page)
+                mark['mode'] = mode
+                v = self.get_attr(mark, mode, page)
 
                 if mode == 'IM':
                     width=200; height=100
@@ -524,14 +520,14 @@ class PresenterPane(edlib.Pane):
                             c = -1
                         line = line[c+1:]
 
-                    cb("callback", self, "<image:"+self.pathto(line)+",width:%d,height:%d>"%(width,height))
+                    comm2("callback", self, "<image:"+self.pathto(line)+",width:%d,height:%d>"%(width,height))
                     return 1
 
                 line = re.sub("\*([A-Za-z0-9][^*<]*)\*", "<italic>\\1</>", line)
                 line = re.sub("`([/A-Za-z0-9][^*<]*)`", "<family:mono>\\1</>", line)
                 b = re.match(".*,bullet:([^:,]*)", v)
                 if b:
-                    vb = self.get_attr(here, 'bullet', page)
+                    vb = self.get_attr(mark, 'bullet', page)
                     if vb:
                         bl = "<%s>%s</>" % (vb, b.group(1))
                     else:
@@ -540,19 +536,18 @@ class PresenterPane(edlib.Pane):
                 else:
                     line = "<"+v+">"+ line + "</>"
                 line += '\n'
-                if end and (here > end or self.marks_same(here,end)):
+                if end and (mark > end or self.marks_same(mark,end)):
                     line += '\f'
-                cb("callback", self, line)
+                comm2("callback", self, line)
             return 1
 
         if key == "Notify:Replace":
-            m = a['mark']
-            # A change has happened at 'm'.  The following page might not
+            # A change has happened at 'mark'.  The following page might not
             # be valid, and the previous may not be valid or have next-valid.
             # If no previous, self.first_valid may not be.
-            page = self.prev_page(m)
+            page = self.prev_page(mark)
             if not page:
-                # m is before first page
+                # mark is before first page
                 page = self.first_page()
                 if page:
                     self.first_valid = False
@@ -566,7 +561,7 @@ class PresenterPane(edlib.Pane):
                 if page:
                     page['valid'] = 'no'
 
-            l = self.prev_line(m)
+            l = self.prev_line(mark)
             if l:
                 if l['type'] and l['type'][0:5] == "attr:":
                     self.damaged(edlib.DAMAGED_VIEW)
@@ -577,26 +572,25 @@ class PresenterPane(edlib.Pane):
             return 1
 
         if key == "Notify:doc:Recentre":
-            m = a['mark']
-            mark = edlib.Mark(self)
-            mark.to_mark(m)
-            if a['numeric'] == 2:
-                # Move 'mark' to start of next page
-                m = self.find_page(mark)
+            m2 = edlib.Mark(self)
+            m2.to_mark(mark)
+            if numeric == 2:
+                # Move 'm2' to start of next page
+                m = self.find_page(m2)
                 if m:
-                    mark.to_mark(m)
-                    if a['comm2'] is not None:
-                        a['comm2']("callback", a['focus'], m)
-            self.target_mark = mark;
+                    m2.to_mark(m)
+                    if comm2 is not None:
+                        comm2("callback", focus, m)
+            self.target_mark = m2;
             self.damaged(edlib.DAMAGED_VIEW)
             return 1
+
         if key == "Refresh:view":
             m = self.target_mark
             self.target_mark = None
             if not m:
                 return 0
-            f = a['focus']
-            f.call("Move-View-Pos", m)
+            focus.call("Move-View-Pos", m)
             m.release()
             return 0
 
@@ -622,16 +616,15 @@ class PresenterPane(edlib.Pane):
             return 1
 
         if key == "Move-View-Large":
-            p = a['mark']
-            page = self.find_pages(p)
-            if a['numeric'] < 0:
+            page = self.find_pages(mark)
+            if numeric < 0:
                 page = page.prev()
             else:
                 page = page.next()
             if page is not None:
-                p.to_mark(page)
-                a['focus'].call("Move-View-Pos", page)
-                a['focus'].damaged(edlib.DAMAGED_CURSOR)
+                mark.to_mark(page)
+                focus.call("Move-View-Pos", page)
+                focus.damaged(edlib.DAMAGED_CURSOR)
             return 1
 
         return None
@@ -640,17 +633,16 @@ class MarkdownPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
 
-    def handle(self, key, focus, **a):
+    def handle(self, key, focus, mark, numeric, **a):
         # Refresh causes presentation page to recenter
         # page-down just moves down to start of next page.
         if key == "Display:refresh":
-            focus.call("Notify:doc:Recentre", a['mark'])
+            focus.call("Notify:doc:Recentre", mark)
             return 0
-        if key == "Move-View-Large" and a['numeric'] >= 0:
-            m = a['mark']
-            m2 = m.dup()
+        if key == "Move-View-Large" and numeric >= 0:
+            m2 = mark.dup()
             if focus.call("Notify:doc:Recentre", m2, 2,
-                          lambda key, **a: m.to_mark(a['mark'])) > 0:
+                          lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 focus.damaged(edlib.DAMAGED_CURSOR)
                 return 1
         return 0
