@@ -407,9 +407,9 @@ static void tile_adjust(struct pane *p)
 	 * For the non-stacking direction, offset must be zero and
 	 * size is copied from p.
 	 * For the stacking direction, we count used size, find the
-	 * change required and distribute that.  This relies on that
-	 * fact that 'tail_avail' must have been run and it left
-	 * avail space calculations around.
+	 * change required and distribute that.  For shrinking, this
+	 * relies on the fact that 'tile_avail' must have been run
+	 * and it left avail space calculations around.
 	 */
 	struct pane *t;
 	int used = 0;
@@ -444,8 +444,9 @@ static void tile_adjust(struct pane *p)
 			avail_cnt++;
 		cnt++;
 	}
-	while (used != size) {
+	while (used != size && avail_cnt) {
 		int change = 0;
+		int remain = used; /* size of panes still to be resize */
 
 		if (used > size)
 			cnt = avail_cnt;
@@ -453,13 +454,21 @@ static void tile_adjust(struct pane *p)
 		list_for_each_entry(t, &p->children, siblings) {
 			struct tileinfo *ti2 = t->data;
 			int diff;
+			int mysize;
 			if (t->z)
 				continue;
+			if (!remain)
+				break;
+			mysize = (ti2->direction == Horiz) ? t->w : t->h;
+
 			if (used > size) {
 				/* shrinking */
-				if (ti2->avail_inline == 0)
+				if (ti2->avail_inline == 0) {
+					remain -= mysize;
 					continue;
-				diff = (used - size + (used%cnt)) / cnt;
+				}
+				diff = (((used - size) * mysize) +
+					(used%remain)) / remain;
 				if (diff > ti2->avail_inline)
 					diff = ti2->avail_inline;
 				ti2->avail_inline -= diff;
@@ -471,8 +480,9 @@ static void tile_adjust(struct pane *p)
 			} else if (used == size)
 				break;
 			else
-				diff = (size - used + (size%cnt)) / cnt;
-
+				diff = (((size - used) * mysize) +
+					(used%remain) )/ remain;
+			remain -= mysize;
 			if (diff)
 				change = 1;
 			if (ti2->direction == Horiz) {
