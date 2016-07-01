@@ -27,6 +27,8 @@ import os
 import notmuch
 import json
 
+db = None
+
 def take(name, place, args, default=None):
     if args[name] is not None:
         place.append(args[name])
@@ -345,6 +347,12 @@ class notmuch_main_view(edlib.Pane):
         if key == "Return":
             return self.call("notmuch-show-list", mark)
 
+def render_searchlist_attach(key, focus, comm2, **a):
+    p = focus.render_attach("format")
+    p = notmuch_main_view(p)
+    comm2("callback", p)
+    return 1
+
 def notmuch_mode(key, home, focus, **a):
     pl=[]
     focus.call("ThisPane", lambda key, **a:take('focus', pl, a))
@@ -373,7 +381,7 @@ class notmuch_list(edlib.Doc):
         self.threadids = []
         self.threads = {}
         self.messageids = {}
-        self["render-default"] = "format"
+        self["render-default"] = "notmuch:query"
         self["line-format"] = "%date_relative<tab:130></> <fg:blue>%+authors</><tab:350> [%matched/%total] %subject                      "
         self.load_full()
 
@@ -510,6 +518,49 @@ class notmuch_list(edlib.Doc):
             comm2("callback", focus, val)
             return 1
 
+        if key == "notmuch-show-thread":
+            if mark.pos is None:
+                return 1
+            th = self.threads[mark.pos]
+            id = th['query'][0].split()[0]
+            global db
+            if not db:
+                db = notmuch.Database()
+            m = db.find_message(id[3:])
+            fn = m.get_filename()
+            try:
+                f = open(fn)
+            except:
+                focus.call("Message", "Cannot open " + fn)
+                return 1
+            pl = []
+            focus.call("doc:open", fn, f.fileno(), lambda key,**a:take('focus', pl, a))
+            f.close()
+            focus.call("OtherPane", 512, lambda key,**a:take('focus', pl, a))
+            pl[0].call("doc:attach", pl[1])
+            return 1
+
+class notmuch_query_view(edlib.Pane):
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus, self.handle)
+
+    def handle(self, key, focus, mark, **a):
+        if key == "Clone":
+            p = notmuch_query_view(focus)
+            self.clone_children(focus.focus)
+            return 1
+
+        if key == "Return":
+            return self.call("notmuch-show-thread", mark)
+
+
+def render_query_attach(key, home, focus, comm2, **a):
+    p = focus.render_attach("format")
+    p = notmuch_query_view(p)
+    if comm2:
+        comm2("callback", p)
+    return 1
+
 def notmuch_open_list(key, home, focus, str, str2, comm2, **a):
     nm = notmuch_list(home, str)
     if str2 is not None:
@@ -521,17 +572,11 @@ def notmuch_open_list(key, home, focus, str, str2, comm2, **a):
     if comm2 is not None:
         comm2("callback", focus, nm)
 
-
-def render_searchlist_attach(key, focus, comm2, **a):
-    p = focus.render_attach("format")
-    p = p.render_attach("lines")
-    p = notmuch_main_view(p)
-    comm2("callback", p)
-    return 1
-
 if "editor" in globals():
     editor.call("global-set-command", pane, "attach-doc-notmuch", notmuch_doc)
     editor.call("global-set-command", pane, "attach-render-notmuch:searchlist",
                 render_searchlist_attach)
     editor.call("global-set-command", pane, "attach-doc-notmuch-list", notmuch_open_list)
+    editor.call("global-set-command", pane, "attach-render-notmuch:query",
+                render_query_attach)
     editor.call("global-set-command", pane, "interactive-cmd-nm", notmuch_mode)
