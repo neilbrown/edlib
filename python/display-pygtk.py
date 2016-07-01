@@ -42,23 +42,22 @@ class EdDisplay(gtk.Window):
         self.pane.h = self.lineheight * 24
         self.show()
 
-    def handle(self, key, **a):
+    def handle(self, key, numeric, extra, home, focus, str, str2, comm2, xy, **a):
 
         if key == "Refresh:postorder":
             self.text.queue_draw()
             return 1
 
         if key == "Display:fullscreen":
-            if a['numeric'] > 0:
+            if numeric > 0:
                 self.fullscreen()
             else:
                 self.unfullscreen()
             return 1
 
         if key == "Display:new":
-            disp = a['home']
-            newdisp = EdDisplay(disp.parent)
-            disp.clone_children(newdisp.pane);
+            newdisp = EdDisplay(home.parent)
+            home.clone_children(newdisp.pane);
             return 1
 
         if key == "Close":
@@ -67,41 +66,38 @@ class EdDisplay(gtk.Window):
             return True
 
         if key == "pane-clear":
-            f = a["focus"]
-            if a["str2"] is not None:
-                fg, bg = self.get_colours(a["str2"])
+            if str2 is not None:
+                fg, bg = self.get_colours(str2)
             else:
                 fg, bg = self.get_colours("bg:white")
-            pm = self.get_pixmap(f)
+            pm = self.get_pixmap(focus)
             self.do_clear(pm, bg)
             self.pane.damaged(edlib.DAMAGED_POSTORDER)
             return True
 
         if key == "text-size":
             attr=""; scale=1000
-            if a['str2'] is not None:
-                attr = a['str2']
-            if a['extra'] is not None:
-                scale = a['extra']
+            if str2 is not None:
+                attr = str2
+            if extra is not None:
+                scale = extra
             fd = self.extract_font(attr, scale)
-            layout = self.text.create_pango_layout(a["str"])
+            layout = self.text.create_pango_layout(str)
             layout.set_font_description(fd)
             ctx = layout.get_context()
             metric = ctx.get_metrics(fd)
             ink,(x,y,width,height) = layout.get_pixel_extents()
             ascent = metric.get_ascent() / pango.SCALE
-            cb = a["comm2"]
-            if a['numeric'] >= 0:
-                if width <= a['numeric']:
-                    max_bytes = len(a["str"].encode("utf-8"))
+            if numeric >= 0:
+                if width <= numeric:
+                    max_bytes = len(str.encode("utf-8"))
                 else:
-                    max_chars,extra = layout.xy_to_index(pango.SCALE*a["numeric"],
+                    max_chars,extra = layout.xy_to_index(pango.SCALE*numeric,
                                                          metric.get_ascent())
-                    max_bytes = len(a["str"][:max_chars].encode("utf-8"))
+                    max_bytes = len(str[:max_chars].encode("utf-8"))
             else:
                 max_bytes = 0
-            f = a["focus"]
-            return cb("callback:size", f, max_bytes, ascent, (width, height))
+            return comm2("callback:size", focus, max_bytes, ascent, (width, height))
 
         if key == "Draw:text":
             self.pane.damaged(edlib.DAMAGED_POSTORDER)
@@ -115,19 +111,18 @@ class EdDisplay(gtk.Window):
                     self.bg = t.window.new_gc()
                     self.bg.set_foreground(bg)
 
-            (x,y) = a["xy"]
-            f = a["focus"]
+            (x,y) = xy
             attr=""; scale=1000
-            if a['str2'] is not None:
-                attr = a['str2']
-            if a['extra'] is not None:
-                scale = a['extra']
+            if str2 is not None:
+                attr = str2
+            if extra is not None:
+                scale = extra
             fd = self.extract_font(attr, scale)
-            layout = self.text.create_pango_layout(a["str"])
+            layout = self.text.create_pango_layout(str)
             layout.set_font_description(fd)
             ctx = layout.get_context()
             fg, bg = self.get_colours(attr)
-            pm = self.get_pixmap(f)
+            pm = self.get_pixmap(focus)
             metric = ctx.get_metrics(fd)
             ascent = metric.get_ascent() / pango.SCALE
             ink,(lx,ly,width,height) = layout.get_pixel_extents()
@@ -135,8 +130,8 @@ class EdDisplay(gtk.Window):
                 self.bg.set_foreground(bg)
                 pm.draw_rectangle(self.bg, True, x+lx, y-ascent+ly, width, height)
             pm.draw_layout(self.gc, x, y-ascent, layout, fg, bg)
-            if a['numeric'] >= 0:
-                cx,cy,cw,ch = layout.index_to_pos(a["numeric"])
+            if numeric >= 0:
+                cx,cy,cw,ch = layout.index_to_pos(numeric)
                 if cw <= 0:
                     cw = metric.get_approximate_char_width()
                 cx /= pango.SCALE
@@ -146,16 +141,15 @@ class EdDisplay(gtk.Window):
                 pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
                                   cw-1, ch-1);
                 extra = True
-                while f.parent and f.parent.parent:
-                    if f.parent.focus != f:
+                while focus.parent and focus.parent.parent:
+                    if focus.parent.focus != focus:
                         extra = False
-                    f = f.parent
+                    focus = focus.parent
                 if extra:
                     pm.draw_rectangle(self.gc, True, x+cx, y-ascent+cy,
                                       cw, ch);
-                    c = a["numeric"]
-                    if c < len(a["str"]):
-                        s = unicode(a["str"][c:], "utf-8")
+                    if numeric < len(str):
+                        s = unicode(str[numeric:], "utf-8")
                         l2 = pango.Layout(ctx)
                         l2.set_font_description(fd)
                         l2.set_text(s[0])
@@ -174,14 +168,12 @@ class EdDisplay(gtk.Window):
             #   0,1,2 for left/middle/right in x direction
             #   0,4,8 for top/middle/bottom in y direction
             # only one of these can be used as image will fill pane in other direction.
-            fl = a['str']
-            f = a['focus']
-            stretch = a['numeric']
-            pos = a['extra']
-            w, h = f.w, f.h
+            stretch = numeric
+            pos = extra
+            w, h = focus.w, focus.h
             x, y = 0, 0
             try:
-                pb = gtk.gdk.pixbuf_new_from_file(fl)
+                pb = gtk.gdk.pixbuf_new_from_file(str)
             except:
                 # create a red error image
                 pb = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
@@ -209,18 +201,17 @@ class EdDisplay(gtk.Window):
             # a pixmap has already been allocated.  This allows
             # a temp pane to be created to draw an image, then it can
             # be discarded and the image remains
-            while f.z == 0 and not stretch and f not in self.panes and f.parent:
-                x += f.x
-                y += f.y
-                f = f.parent
-            pm = self.get_pixmap(f)
+            while focus.z == 0 and not stretch and focus not in self.panes and focus.parent:
+                x += focus.x
+                y += focus.y
+                focus = focus.parent
+            pm = self.get_pixmap(focus)
             pm.draw_pixbuf(self.gc, scale, 0, 0, x, y)
             return True
 
         if key == "Notify:Close":
-            f = a["focus"]
-            if f and f in self.panes:
-                del self.panes[f]
+            if focus and focus in self.panes:
+                del self.panes[focus]
             return True
 
         return None
@@ -418,8 +409,8 @@ class EdDisplay(gtk.Window):
         (w,h) = pm.get_size()
         pm.draw_rectangle(self.bg, True, 0, 0, w, h)
 
-def new_display(key, home, comm2, **a):
-    disp = EdDisplay(a['focus'])
+def new_display(key, focus, comm2, **a):
+    disp = EdDisplay(focus)
     comm2('callback', disp.pane)
     return 1
 
