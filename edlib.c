@@ -86,8 +86,11 @@ int main(int argc, char *argv[])
 
 	if (p)
 		p = call_pane("attach-tile", p, 0, NULL, 0);
-	if (p)
-		p = doc_attach_view(p, doc_from_text(p, "*Welcome*", WelcomeText), NULL);
+	if (p) {
+		struct pane *d = call_pane7("doc:from-text", p, 0, NULL, 0,
+					    "*Welcome*", WelcomeText);
+		p = doc_attach_view(p, d, NULL);
+	}
 	if (p)
 
 	if (p) {

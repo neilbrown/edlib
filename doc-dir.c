@@ -563,7 +563,8 @@ DEF_CMD(dir_open)
 		p = call_pane7("doc:open", ci->focus, fd, NULL, 0, fname, NULL);
 		close(fd);
 	} else
-		p = doc_from_text(par, fname, "File not found\n");
+		p = call_pane7("doc:from-text", ci->focus, 0, NULL, 0, fname,
+			       "File not found\n");
 	free(fname);
 	if (p) {
 		p = doc_attach_view(par, p, NULL);
@@ -605,7 +606,8 @@ DEF_CMD(dir_open_alt)
 		}
 		close(fd);
 	} else {
-		struct pane *doc = doc_from_text(par, fname, "File not found\n");
+		struct pane *doc = call_pane7("doc:from-text", par, 0, NULL, 0,
+					      fname, "File not found\n");
 		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 		if (!par)
 			return -1;

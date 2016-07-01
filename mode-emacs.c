@@ -507,7 +507,8 @@ DEF_CMD(emacs_findfile)
 		p = call_pane7("doc:open", ci->focus, fd, NULL, 0, ci->str, NULL);
 		close(fd);
 	} else
-		p = doc_from_text(par, ci->str, "File not found\n");
+		p = call_pane7("doc:from-text", par, 0, NULL, 0,
+			       ci->str, "File not found\n");
 	if (p)
 		doc_attach_view(par, p, NULL);
 	if (!p)
@@ -714,7 +715,7 @@ DEF_CMD(emacs_shell)
 	/* Find or create "*Shell Command Output*" */
 	doc = call_pane7("docs:byname", ci->focus, 0, NULL, 0, name, NULL);
 	if (!doc)
-		doc = doc_from_text(par, name, "");
+		doc = call_pane7("doc:from-text", par, 0, NULL, 0, name, "");
 	p = doc_attach(doc, doc);
 	call_pane7("attach-shellcmd", p, 0, NULL, 0, ci->str, NULL);
 	doc_attach_view(par, doc, NULL);

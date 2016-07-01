@@ -129,7 +129,9 @@ DEF_CMD(history_attach)
 	hi->history = call_pane7("docs:byname", ci->focus, 0, NULL, 0,
 				 ci->str, NULL);
 	if (!hi->history)
-		hi->history = doc_from_text(ci->focus, ci->str, "");
+		hi->history =
+			call_pane7("doc:from-text", ci->focus, 0, NULL, 0,
+				   ci->str, "");
 	hi->m = vmark_new(hi->history, MARK_UNGROUPED);
 	call3("Move-File", hi->history, 1, hi->m);
 	buf_init(&hi->search);

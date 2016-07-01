@@ -570,17 +570,21 @@ struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render
 	return p;
 }
 
-struct pane *doc_from_text(struct pane *parent, char *name, char *text)
+DEF_CMD(doc_from_text)
 {
+	struct pane *parent = ci->focus;
+	char *name = ci->str;
+	char *text = ci->str2;
 	struct pane *p;
 
 	p = doc_new(parent, "text");
 	if (!p)
-		return NULL;
+		return -1;
 	call5("doc:set-name", p, 0, NULL, name, 0);
 	call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	call7("doc:replace", p, 1, NULL, text, 1, NULL, NULL);
-	return p;
+	return comm_call(ci->comm2, "callback", p, 0, NULL,
+			 NULL, 0);
 }
 
 DEF_CMD(doc_attr_callback)
@@ -681,6 +685,7 @@ int doc_destroy(struct pane *dp)
 void doc_setup(struct pane *ed)
 {
 	call_comm("global-set-command", ed, 0, NULL, "doc:open", 0, &doc_open);
+	call_comm("global-set-command", ed, 0, NULL, "doc:from-text", 0, &doc_from_text);
 	if (!doc_default_cmd)
 		init_doc_defaults();
 }
