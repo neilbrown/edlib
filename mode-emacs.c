@@ -504,7 +504,7 @@ DEF_CMD(emacs_findfile)
 
 	fd = open(ci->str, O_RDONLY);
 	if (fd >= 0) {
-		p = doc_open(par, fd, ci->str);
+		p = call_pane7("doc:open", ci->focus, fd, NULL, 0, ci->str, NULL);
 		close(fd);
 	} else
 		p = doc_from_text(par, ci->str, "File not found\n");
@@ -553,7 +553,7 @@ REDEF_CMD(emacs_file_complete)
 		free(str);
 		return -1;
 	}
-	docp = doc_open(ci->home, fd, d);
+	docp = call_pane7("doc:open", ci->focus, fd, NULL, 0, d, NULL);
 	close(fd);
 	if (!docp)
 		return -1;

@@ -225,5 +225,6 @@ struct pane *editor_new(void)
 	key_add(ei->map, "on_idle-clean_up", &editor_clean_up);
 	ed = pane_register(NULL, 0, &ed_handle, ei, NULL);
 
+	doc_setup(ed);
 	return ed;
 }

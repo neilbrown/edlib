@@ -508,23 +508,19 @@ struct pane *doc_new(struct pane *p, char *type)
 {
 	char buf[100];
 
-	if (!doc_default_cmd)
-		init_doc_defaults();
-
 	snprintf(buf, sizeof(buf), "attach-doc-%s", type);
 	return call_pane(buf, p, 0, NULL, 0);
 }
 
-struct pane *doc_open(struct pane *ed, int fd, char *name)
+DEF_CMD(doc_open)
 {
+	struct pane *ed = ci->home;
+	int fd = ci->numeric;
+	char *name = ci->str;
 	struct stat stb;
 	struct pane *p;
 	char pathbuf[PATH_MAX], *rp = NULL;
 
-	p = call_pane7("docs:byfd", ed, 0, NULL, fd, name, NULL);
-
-	if (p)
-		return p;
 
 	if (fd < 0) {
 		char *sl;
@@ -545,16 +541,21 @@ struct pane *doc_open(struct pane *ed, int fd, char *name)
 	} else if (fstat(fd, &stb) == 0)
 		rp = realpath(name, pathbuf);
 	if (!rp)
-		return NULL;
+		rp = name;
 
-	p = call_pane7("global-multicall-open-doc-", ed, fd, NULL,
-		       stb.st_mode & S_IFMT, rp, NULL);
+	p = call_pane7("docs:byfd", ed, 0, NULL, fd, rp, NULL);
 
-	if (!p)
-		return NULL;
-	doc_load_file(p, fd, rp);
-	call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
-	return p;
+	if (!p) {
+		p = call_pane7("global-multicall-open-doc-", ed, fd, NULL,
+			       stb.st_mode & S_IFMT, rp, NULL);
+
+		if (!p)
+			return -1;
+		doc_load_file(p, fd, rp);
+		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
+	}
+	return comm_call(ci->comm2, "callback", p, 0, NULL,
+			 NULL, 0);
 }
 
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render)
@@ -675,4 +676,11 @@ int doc_destroy(struct pane *dp)
 	else
 		free(d);
 	return 1;
+}
+
+void doc_setup(struct pane *ed)
+{
+	call_comm("global-set-command", ed, 0, NULL, "doc:open", 0, &doc_open);
+	if (!doc_default_cmd)
+		init_doc_defaults();
 }

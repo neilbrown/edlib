@@ -560,7 +560,7 @@ DEF_CMD(dir_open)
 		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 
 	if (fd >= 0) {
-		p = doc_open(par, fd, fname);
+		p = call_pane7("doc:open", ci->focus, fd, NULL, 0, fname, NULL);
 		close(fd);
 	} else
 		p = doc_from_text(par, fname, "File not found\n");
@@ -592,7 +592,7 @@ DEF_CMD(dir_open_alt)
 	fd = open(fname, O_RDONLY);
 
 	if (fd >= 0) {
-		struct pane *new = doc_open(par, fd, fname);
+		struct pane *new = call_pane7("doc:open", p, fd, NULL, 0, fname, NULL);
 		if (new) {
 			renderer = pane_attr_get(new, buf);
 			if (renderer) {
