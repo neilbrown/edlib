@@ -190,54 +190,49 @@ class notmuch_main(edlib.Doc):
         self.searches = searches()
         self.timer_set = False
 
-    def handle(self, key, **a):
+    def handle(self, key, focus, mark, mark2, numeric, extra, str, comm2, **a):
         if key == "doc:set-ref":
-            m = a['mark']
-            if a['numeric'] == 1:
-                m.offset = 0
+            if numeric == 1:
+                mark.offset = 0
             else:
-                m.offset = len(self.searches.current)
-            m.rpos = 0
+                mark.offset = len(self.searches.current)
+            mark.rpos = 0
             return 1
 
         if key == "doc:mark-same":
-            m = a['mark']
-            m2= a['mark2']
-            return 1 if m.offset == m2.offset else 2
+            return 1 if mark.offset == mark2.offset else 2
 
         if key == "doc:step":
-            m = a['mark']
-            forward = a['numeric']
-            move = a['extra']
+            forward = numeric
+            move = extra
             ret = edlib.WEOF
-            target = m
-            if forward and m.offset < len(self.searches.current):
+            target = mark
+            if forward and mark.offset < len(self.searches.current):
                 ret = ' '
                 if move:
-                    m2 = m.next_any()
-                    while m2 and m2.offset <= m.offset + 1:
+                    m2 = mark.next_any()
+                    while m2 and m2.offset <= mark.offset + 1:
                         target = m2
                         m2 = m2.next_any()
-                    o = m.offset
-                    m.to_mark(target)
-                    m.offset = o+1
-            if not forward and m.offset > 0:
+                    o = mark.offset
+                    mark.to_mark(target)
+                    mark.offset = o+1
+            if not forward and mark.offset > 0:
                 ret = ' '
                 if move:
-                    m2 = m.prev_any()
-                    while m2 and m2.offset >= m.offset - 1:
+                    m2 = mark.prev_any()
+                    while m2 and m2.offset >= mark.offset - 1:
                         target = m2
                         m2 = m2.prev_any()
-                    o = m.offset
-                    m.to_mark(target)
-                    m.offset = o - 1
+                    o = mark.offset
+                    mark.to_mark(target)
+                    mark.offset = o - 1
             return ret
 
         if key == "doc:get-attr":
-            m = a['mark']
-            attr = a['str']
-            forward = a['numeric']
-            o = m.offset
+            attr = str
+            forward = numeric
+            o = mark.offset
             if not forward:
                 o -= 1
             val = None
@@ -272,7 +267,7 @@ class notmuch_main(edlib.Doc):
                         val = "%6s" % "?"
                     else:
                         val = "%6d" % self.searches.new[s]
-            a['comm2']("callback", a['focus'], val)
+            comm2("callback", focus, val)
             return 1
 
         if key == "notmuch:update":
@@ -285,11 +280,10 @@ class notmuch_main(edlib.Doc):
             return 1
 
         if key == "notmuch-show-list":
-            m = a['mark']
-            if m.offset < len(self.searches.current):
+            if mark.offset < len(self.searches.current):
                 pl = []
-                a['focus'].call("OtherPane", 256+512, lambda key,**a:take('focus', pl, a))
-                s = self.searches.current[m.offset]
+                focus.call("OtherPane", 256+512, lambda key,**a:take('focus', pl, a))
+                s = self.searches.current[mark.offset]
                 s2 = self.searches.make_search(s, None)
                 root = self
                 while root.parent:
