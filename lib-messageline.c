@@ -94,7 +94,7 @@ DEF_CMD(messageline_handle)
 		} else {
 			pane_resize(mli->line, 0, ci->home->h - mli->height,
 				    ci->home->w, mli->height);
-			if (mli->child)
+			if (mli->child && ci->home->h > mli->height)
 				pane_resize(mli->child, 0, 0,
 					    ci->home->w,
 					    ci->home->h - mli->height);

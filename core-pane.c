@@ -404,6 +404,13 @@ void pane_resize(struct pane *p, int x, int y, int w, int h)
 		p->w = w;
 		p->h = h;
 	}
+	if (p->w < 0 || p->h < 0)
+		/* FIXME something more gentle */
+		abort();
+	if (p->w <= 0)
+		p->w = 1;
+	if (p->h <= 0)
+		p->h = 1;
 	pane_damaged(p, damage);
 }
 

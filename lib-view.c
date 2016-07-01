@@ -228,6 +228,10 @@ DEF_CMD(view_handle)
 		if (vd->border & BORDER_BOT) {
 			h -= vd->border_height;
 		}
+		if (w <= 0)
+			w = 1;
+		if (h <= 0)
+			h = 1;
 		if (vd->child)
 			pane_resize(vd->child, x, y, w, h);
 
