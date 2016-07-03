@@ -771,23 +771,9 @@ DEF_CMD(tile_other)
 	 * pixel sensitive), horiz-split else vert
 	 */
 	if (ci->numeric) {
-		int scale = ci->numeric & 255;
-		int horiz = ci->numeric & 256;
-		int after = ci->numeric & 512;
-		int size;
-		if (horiz)
-			size = p->w;
-		else
-			size = p->h;
-		if (scale)
-			size = size * scale / 256;
-		else
-			size = size/2;
-		if (ci->extra > 0 && size > ci->extra)
-			size = ci->extra;
-		if (ci->extra < 0 && size < -ci->extra)
-			size = -ci->extra;
-		p2 = tile_split(p, horiz, after, ci->str2, size);
+		int horiz = ci->numeric & 1;
+		int after = ci->numeric & 2;
+		p2 = tile_split(p, horiz, after, ci->str2, ci->extra);
 	} else
 		p2 = tile_split(p, p->w >= 120, 1, ci->str2, 0);
 	if (p2)
