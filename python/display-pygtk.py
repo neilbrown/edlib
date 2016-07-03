@@ -153,10 +153,9 @@ class EdDisplay(gtk.Window):
                     pm.draw_rectangle(self.gc, True, x+cx, y-ascent+cy,
                                       cw, ch);
                     if numeric < len(str):
-                        s = unicode(str[numeric:], "utf-8")
                         l2 = pango.Layout(ctx)
                         l2.set_font_description(fd)
-                        l2.set_text(s[0])
+                        l2.set_text(str[numeric])
                         fg, bg = self.get_colours(attr+",inverse")
                         pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, fg, bg)
                     else:
