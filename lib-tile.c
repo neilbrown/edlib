@@ -767,15 +767,18 @@ DEF_CMD(tile_other)
 		return comm_call(ci->comm2, "callback:pane", ti2->p, 0,
 				 NULL, NULL, 0);
 
-	/* Need to create a tile.  If wider than 120 (FIXME configurable and
-	 * pixel sensitive), horiz-split else vert
+	/* Need to create a tile.  If wider than 120 (FIXME configurable?),
+	 * horiz-split else vert
 	 */
 	if (ci->numeric) {
 		int horiz = ci->numeric & 1;
 		int after = ci->numeric & 2;
 		p2 = tile_split(p, horiz, after, ci->str2, ci->extra);
-	} else
-		p2 = tile_split(p, p->w >= 120, 1, ci->str2, 0);
+	} else {
+		struct xy xy = pane_scale(p);
+
+		p2 = tile_split(p, p->w * 1000 >= 1200 * xy.x, 1, ci->str2, 0);
+	}
 	if (p2)
 		return comm_call(ci->comm2, "callback:pane", p2, 0,
 				 NULL, NULL, 0);
