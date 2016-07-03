@@ -37,7 +37,7 @@ class EdDisplay(gtk.Window):
         self.connect('destroy', self.close_win)
         self.create_ui()
         self.need_refresh = True
-        self.pane['scale'] = "1000"
+        self.pane["scale:M"] = "%dx%d" % (self.charwidth, self.lineheight)
         self.pane.w = self.charwidth * 80
         self.pane.h = self.lineheight * 24
         self.show()
@@ -76,11 +76,13 @@ class EdDisplay(gtk.Window):
             return True
 
         if key == "text-size":
-            attr=""; scale=1000
+            attr=""
             if str2 is not None:
                 attr = str2
             if extra is not None:
-                scale = extra
+                scale = extra * 10 / self.charwidth
+            else:
+                scale = 1000
             fd = self.extract_font(attr, scale)
             layout = self.text.create_pango_layout(str)
             layout.set_font_description(fd)
@@ -112,11 +114,13 @@ class EdDisplay(gtk.Window):
                     self.bg.set_foreground(bg)
 
             (x,y) = xy
-            attr=""; scale=1000
+            attr=""
             if str2 is not None:
                 attr = str2
             if extra is not None:
-                scale = extra
+                scale = extra * 10 / self.charwidth
+            else:
+                scale = 1000
             fd = self.extract_font(attr, scale)
             layout = self.text.create_pango_layout(str)
             layout.set_font_description(fd)
@@ -410,6 +414,10 @@ class EdDisplay(gtk.Window):
         pm.draw_rectangle(self.bg, True, 0, 0, w, h)
 
 def new_display(key, focus, comm2, **a):
+    if 'SCALE' in os.environ:
+        sc = int(os.environ['SCALE'])
+        s = gtk.settings_get_default()
+        s.set_long_property("gtk-xft-dpi",sc*pango.SCALE, "code")
     disp = EdDisplay(focus)
     comm2('callback', disp.pane)
     return 1

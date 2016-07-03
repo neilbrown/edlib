@@ -315,6 +315,7 @@ enum {
 };
 #define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT | DAMAGED_CURSOR)
 
+struct xy {int x,y;};
 struct pane *pane_register(struct pane *parent, int z,
 			   struct command *handle, void *data,
 			   struct list_head *here);
@@ -343,6 +344,7 @@ struct pane *call_pane(char *key, struct pane *focus, int numeric,
 		       struct mark *m, int extra);
 struct pane *call_pane7(char *key, struct pane *focus, int numeric,
 			struct mark *m, int extra, char *str, char *str2);
+struct xy pane_scale(struct pane *p);
 
 static inline int pane_attr_get_int(struct pane *p, char *key)
 {

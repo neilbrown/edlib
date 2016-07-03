@@ -615,6 +615,16 @@ static PyObject *Pane_release(Pane *self)
 	return Py_None;
 }
 
+static PyObject *Pane_get_scale(Pane *self)
+{
+	struct pane *p = self->pane;
+	struct xy xy = {1000, 1000};
+
+	if (p)
+		xy = pane_scale(p);
+	return Py_BuildValue("ii", xy.x, xy.y);
+}
+
 static PyMethodDef pane_methods[] = {
 	{"close", (PyCFunction)Pane_close, METH_NOARGS,
 	 "close the pane"},
@@ -642,6 +652,8 @@ static PyMethodDef pane_methods[] = {
 	 "Attach a renderer to a pane"},
 	{"damaged", (PyCFunction)Pane_damaged, METH_VARARGS,
 	 "Mark pane as damaged"},
+	{"scale", (PyCFunction)Pane_get_scale, METH_NOARGS,
+	 "Get the x,y scale numbers for this pane"},
 	{NULL}
 };
 

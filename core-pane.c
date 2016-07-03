@@ -688,3 +688,51 @@ void pane_map_xy(struct pane *orig, struct pane *target, int *x, int *y)
 	pane_absxy(orig, x, y, &w, &h);
 	pane_relxy(target, x, y);
 }
+
+struct xy pane_scale(struct pane *p)
+{
+	/* "scale" is roughly pixels-per-point * 1000
+	 * So 10*scale.x is the width of a typical character in default font.
+	 * 10*scale.y is the height.
+	 * scale.x should be passed to text-size and and Draw:text to get
+	 * correctly sized text
+	 *
+	 */
+	char *scM = pane_attr_get(p, "scale:M");
+	char *sc;
+	struct xy xy;
+	int w,h;
+	int mw, mh;
+	int scale;
+
+	if (!scM ||
+	    sscanf(scM, "%dx%d", &mw, &mh) != 2 ||
+	    mw <= 0 || mh <= 0) {
+		/* Fonts have fixed 1x1 size so scaling not supported */
+		xy.x = 100;
+		xy.y = 100;
+		return xy;
+	}
+	sc = pane_attr_get(p, "scale");
+	if (sc == NULL)
+		scale = 1000;
+	else if (sscanf(sc, "x:%d,y:%d", &w, &h) == 2 ||
+		 sscanf(sc, "%dx%d", &w, &h) == 2) {
+		/* choose scale so w,h point fits in pane */
+		int xscale = 1000 * p->w * 10 / mw / w;
+		int yscale = 1000 * p->h * 10 / mh / h;
+		if (sc[0] == 'x')
+			/* Old style where 'y' was in 'width' units... */
+			yscale *= 2;
+		scale = (xscale < yscale) ? xscale :  yscale;
+	} else if (sscanf(sc, "%d", &scale) != 1)
+		scale = 1000;
+
+	if (scale < 10)
+		scale = 10;
+	if (scale > 100000)
+		scale = 100000;
+	xy.x = scale * mw / 10;
+	xy.y = scale * mh / 10;
+	return xy;
+}

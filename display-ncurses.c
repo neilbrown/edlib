@@ -216,7 +216,6 @@ static struct pane *ncurses_init(struct pane *ed)
 	p = pane_register(ed, 0, &ncurses_handle, dd, NULL);
 
 	getmaxyx(stdscr, p->h, p->w);
-	attr_set_int(&p->attrs, "scale", 100);
 
 	call_home(p, "event:read", p, 0, NULL, &input_handle);
 	call_home(p, "event:signal", p, SIGWINCH, NULL, &handle_winch);
