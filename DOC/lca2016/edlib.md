@@ -1,7 +1,7 @@
 :H1:center,20,fg:blue,space-above:15,family:sans
 :H2:center,15,fg:darkblue
 :background:image-stretch:back.jpg,page-local
-:scale:x:533,y:300
+:scale:x:590,y:400
 :P:left:30,12,family:sans
 :bullet:fg:red,13
 :L1:,left:30,12,bullet:•,tab:30,family:sans

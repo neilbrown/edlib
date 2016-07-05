@@ -311,7 +311,7 @@ class EdDisplay(gtk.Window):
         self.text = text
         self.add(text)
         text.show()
-        self.fd = pango.FontDescription("mono 12")
+        self.fd = pango.FontDescription("mono 10")
         text.modify_font(self.fd)
         ctx = text.get_pango_context()
         metric = ctx.get_metrics(self.fd)
