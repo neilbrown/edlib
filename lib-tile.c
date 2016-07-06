@@ -216,9 +216,10 @@ static struct pane *tile_split(struct pane **pp, int horiz, int after, char *nam
 	ti2 = calloc(1, sizeof(*ti2));
 	ti2->group = ti->group;
 	ti2->direction = ti->direction;
-	ti2->leaf = ti->leaf;
+	ti2->leaf = 1;
 	if (name)
 		ti2->name = strdup(name);
+	/* FIXME if ti wasn't a leaf, this is wrong.  Is that possible? */
 	if (after)
 		list_add(&ti2->tiles, &ti->tiles);
 	else
