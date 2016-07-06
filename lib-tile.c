@@ -161,7 +161,7 @@ DEF_CMD(tile_attach)
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
-static struct pane *tile_split(struct pane *p, int horiz, int after, char *name,
+static struct pane *tile_split(struct pane **pp, int horiz, int after, char *name,
 			       int new_space)
 {
 	/* Create a new pane near the given one, reducing its size,
@@ -172,6 +172,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after, char *name,
 	 * in the hierarchy.
 	 */
 	int space;
+	struct pane *p = *pp;
 	struct pane *ret;
 	struct tileinfo *ti = p->data;
 	struct list_head *here;
@@ -189,22 +190,27 @@ static struct pane *tile_split(struct pane *p, int horiz, int after, char *name,
 	space -= new_space;
 
 	if (ti->direction != (horiz? Horiz : Vert)) {
-		/* This tile is not split in the required direction, need
+		/* This tile does not stack in the required direction, need
 		 * to create an extra level.
 		 */
-		struct pane *p2;
+		struct pane *p2, *child;
+		struct list_head *t;
+		/* ti2 will be tileinfo for p, new pane gets ti */
 		ti2 = calloc(1, sizeof(*ti2));
 		ti2->leaf = 0;
 		ti2->direction = ti->direction;
 		ti2->group = ti->group;
 		INIT_LIST_HEAD(&ti2->tiles);
-		p2 = pane_register(p->parent, 0, &tile_handle, ti2, &p->siblings);
-		ti2->p = p2;
-		pane_resize(p2, p->x, p->y, p->w, p->h);
-		pane_reparent(p, p2);
-		p2->attrs = p->attrs; p->attrs = NULL;
-		pane_resize(p, 0, 0, 0, 0);
+		p->data = ti2;
+		ti2->p = p;
+		p2 = pane_register(p, 0, &tile_handle, ti, NULL);
+		ti->p = p2;
 		ti->direction = horiz ? Horiz : Vert;
+		/* All children of p must be moved to p2, except p2 */
+		list_for_each_entry_safe(child, t, &p->children, siblings)
+			if (child != p2)
+				pane_reparent(child, p2);
+		p = p2;
 	}
 	here = after ? &p->siblings : p->siblings.prev;
 	ti2 = calloc(1, sizeof(*ti2));
@@ -239,6 +245,7 @@ static struct pane *tile_split(struct pane *p, int horiz, int after, char *name,
 	}
 	tile_adjust(ret);
 	tile_adjust(p);
+	*pp = p;
 	return ret;
 }
 
@@ -721,11 +728,11 @@ DEF_CMD(tile_command)
 		tile_grow(p, 0, -RPT_NUM(ci));
 		pane_damaged(p, DAMAGED_SIZE);
 	} else if (strcmp(cmd, "split-x")==0) {
-		p2 = tile_split(p, 1, 1, ci->str2, 0);
-		pane_clone_children(ci->home, p2);
+		p2 = tile_split(&p, 1, 1, ci->str2, 0);
+		pane_clone_children(p, p2);
 	} else if (strcmp(cmd, "split-y")==0) {
-		p2 = tile_split(p, 0, 1, ci->str2, 0);
-		pane_clone_children(ci->home, p2);
+		p2 = tile_split(&p, 0, 1, ci->str2, 0);
+		pane_clone_children(p, p2);
 	} else if (strcmp(cmd, "close")==0) {
 		if (ti->direction != Neither)
 			pane_close(p);
@@ -773,11 +780,11 @@ DEF_CMD(tile_other)
 	if (ci->numeric) {
 		int horiz = ci->numeric & 1;
 		int after = ci->numeric & 2;
-		p2 = tile_split(p, horiz, after, ci->str2, ci->extra);
+		p2 = tile_split(&p, horiz, after, ci->str2, ci->extra);
 	} else {
 		struct xy xy = pane_scale(p);
 
-		p2 = tile_split(p, p->w * 1000 >= 1200 * xy.x, 1, ci->str2, 0);
+		p2 = tile_split(&p, p->w * 1000 >= 1200 * xy.x, 1, ci->str2, 0);
 	}
 	if (p2)
 		return comm_call(ci->comm2, "callback:pane", p2, 0,
