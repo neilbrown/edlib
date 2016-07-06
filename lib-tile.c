@@ -92,7 +92,7 @@ DEF_CMD(tile_clone)
 	ti->leaf = 1;
 	ti->direction = Neither;
 	if (cti->group)
-		ti->group = cti->group;
+		ti->group = strdup(cti->group);
 	INIT_LIST_HEAD(&ti->tiles);
 	ti->p = p2 = pane_register(parent, 0, &tile_handle, ti, NULL);
 	attr_set_str(&p2->attrs, "borders", "BL");
