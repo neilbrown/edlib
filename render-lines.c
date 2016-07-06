@@ -194,7 +194,11 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w,
 	while (*line) {
 		char c = *line++;
 		char *st = line;
-		if (c != '<' || *line == '<')
+		if (c == '<' && *line == '<') {
+			line += 1;
+			continue;
+		}
+		if (c != '<')
 			continue;
 
 		if (line - 1 > segstart) {
