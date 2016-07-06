@@ -34,7 +34,7 @@ struct tileinfo {
 	 * avail_perp is how much this tile can shrink perpendicular to direction.
 	 * Min of these applies to parent.
 	 */
-	enum {Neither, Horiz, Vert}	direction;
+	enum dir {Neither, Horiz, Vert}	direction;
 	short				avail_inline;
 	short				avail_perp;
 	short				leaf;
@@ -353,16 +353,19 @@ static int tile_destroy(struct pane *p)
 	free(ti);
 	if (remaining == 1) {
 		struct tileinfo *ti2;
+		enum dir tmp;
 		/* Only one child left, must move it into parent.
 		 * Cannot destroy the parent, so bring child into parent */
 		p = remain->parent;
 
 		ti = remain->data;
 		ti2 = p->data;
-		ti->direction = ti2->direction;
 
 		pane_subsume(remain, p);
+		tmp = ti2->direction;
+		ti2->direction = ti->direction;
 		ti->p = p;
+		ti->direction = tmp;
 		ti2->p = remain;
 		pane_close(remain);
 		pane_damaged(p, DAMAGED_SIZE);
