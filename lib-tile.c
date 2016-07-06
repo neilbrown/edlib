@@ -583,6 +583,7 @@ static int tile_grow(struct pane *p, int horiz, int size)
 			other->h -= size;
 		}
 		pane_damaged(p, DAMAGED_SIZE);
+		pane_damaged(other, DAMAGED_SIZE);
 		tile_adjust(p->parent);
 		return 1;
 	}
@@ -591,7 +592,7 @@ static int tile_grow(struct pane *p, int horiz, int size)
 	tile_avail(p->parent, p);
 	tip = p->parent->data;
 	if (ti->direction == (horiz ? Horiz : Vert))
-		avail= tip->avail_inline;
+		avail = tip->avail_inline;
 	else
 		avail = tip->avail_perp;
 	if (avail < size)
