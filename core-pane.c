@@ -198,7 +198,7 @@ static void pane_do_refresh(struct pane *p, int damage, struct mark *pointer)
 		pointer = p->pointer;
 
 	damage |= p->damaged & (DAMAGED_CHILD|DAMAGED_CONTENT|DAMAGED_CURSOR);
-	p->damaged = 0;
+	p->damaged &= ~(DAMAGED_CHILD|DAMAGED_CONTENT|DAMAGED_CURSOR);
 	if (!damage)
 		return;
 	if (list_empty(&p->children)) {
