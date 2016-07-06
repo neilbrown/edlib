@@ -139,7 +139,7 @@ static inline PyObject *Comm_Fromcomm(struct command *c)
 		return pc->callable;
 	} else {
 		Comm *comm = (Comm*)PyObject_CallObject((PyObject*)&CommType, NULL);
-		comm->comm = c;
+		comm->comm = command_get(c);
 		return (PyObject*)comm;
 	}
 }
@@ -481,12 +481,14 @@ static PyObject *Pane_call(Pane *self, PyObject *args, PyObject *kwds)
 
 	if (rv <= 0) {
 		Py_XDECREF(s1); Py_XDECREF(s2);
+		command_put(ci.comm2);
 		return NULL;
 	}
 
 	rv = key_handle(&ci);
 
 	Py_XDECREF(s1); Py_XDECREF(s2);
+	command_put(ci.comm2);
 	if (!rv) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -510,6 +512,7 @@ static PyObject *Pane_notify(Pane *self, PyObject *args, PyObject *kwds)
 
 	if (rv <= 0) {
 		Py_XDECREF(s1); Py_XDECREF(s2);
+		command_put(ci.comm2);
 		return NULL;
 	}
 
@@ -517,6 +520,7 @@ static PyObject *Pane_notify(Pane *self, PyObject *args, PyObject *kwds)
 			 ci.numeric, ci.comm2);
 
 	Py_XDECREF(s1); Py_XDECREF(s2);
+	command_put(ci.comm2);
 	if (!rv) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -1396,6 +1400,7 @@ static PyTypeObject MarkType = {
 
 static void comm_dealloc(Comm *self)
 {
+	command_put(self->comm);
 	self->ob_type->tp_free((PyObject*)self);
 }
 
@@ -1422,11 +1427,13 @@ static PyObject *Comm_call(Comm *c, PyObject *args, PyObject *kwds)
 	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
 	if (rv <= 0) {
 		Py_XDECREF(s1); Py_XDECREF(s2);
+		command_put(ci.comm2);
 		return NULL;
 	}
 	ci.comm = c->comm;
 	rv = c->comm->func(&ci);
 	Py_XDECREF(s1); Py_XDECREF(s2);
+	command_put(ci.comm2);
 
 	if (!rv) {
 		Py_INCREF(Py_None);
@@ -1490,6 +1497,15 @@ static PyTypeObject CommType = {
     NULL,			/* tp_alloc */
     .tp_new = (newfunc)comm_new,/* tp_new */
 };
+
+static void python_free_command(struct command *c)
+{
+	struct python_command *pc = container_of(c, struct python_command, c);
+
+	if (pc->callable)
+		Py_DECREF(pc->callable);
+	free(pc);
+}
 
 /* The 'call' function takes liberties with arg passing.
  * Positional args must start with the key, and then are handled based on
@@ -1607,22 +1623,23 @@ static int get_cmd_info(struct cmd_info *ci, PyObject *args, PyObject *kwds,
 			}
 		} else if (PyObject_TypeCheck(a, &CommType)) {
 			Comm *c = (Comm*)a;
-			if (ci->comm2 == NULL)
-				ci->comm2 = c->comm;
-			else {
+			if (ci->comm2 == NULL) {
+				ci->comm2 = command_get(c->comm);
+			} else {
 				PyErr_SetString(PyExc_TypeError, "Only one callable permitted");
 				return 0;
 			}
 		} else if (PyCallable_Check(a)) {
-			/* FIXME this is never freed */
 			struct python_command *pc = malloc(sizeof(*pc));
 			Py_INCREF(a);
 			pc->callable = a;
 			pc->c = python_call;
+			pc->c.free = python_free_command;
+			command_get(&pc->c);
 			if (ci->comm2 == NULL)
 				ci->comm2 = &pc->c;
 			else {
-				free(pc);
+				command_put(&pc->c);
 				PyErr_SetString(PyExc_TypeError, "Only one callable permitted");
 				return 0;
 			}

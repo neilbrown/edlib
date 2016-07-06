@@ -132,7 +132,7 @@ void key_add(struct map *map, char *k, struct command *comm)
 		} else {
 			/* replace a non-range */
 			/* FIXME do I need to release the old command */
-			map->comms[pos] = comm;
+			map->comms[pos] = command_get(comm);
 			return;
 		}
 	} else if (pos > 0 && IS_RANGE(map->comms[pos-1])) {
@@ -159,10 +159,10 @@ void key_add(struct map *map, char *k, struct command *comm)
 	memmove(map->comms+pos+ins_cnt, map->comms+pos,
 		(map->size - pos) * sizeof(struct command *));
 	map->keys[pos] = strdup(k);
-	map->comms[pos] = comm;
+	map->comms[pos] = command_get(comm);
 	if (comm2) {
 		map->keys[pos+1] = k;
-		map->comms[pos+1] = comm2;
+		map->comms[pos+1] = SET_RANGE(command_get(GETCOMM(comm2)));
 	}
 	map->size += ins_cnt;
 }
@@ -206,7 +206,7 @@ void key_add_range(struct map *map, char *first, char *last,
 
 	map->comms[pos] = SET_RANGE(comm);
 	map->keys[pos+1] = last;
-	map->comms[pos+1] = comm;
+	map->comms[pos+1] = command_get(comm);
 	map->size += move_size;
 	return;
 }
@@ -247,6 +247,7 @@ struct command *key_register_prefix(char *name)
 {
 	struct modmap *mm = malloc(sizeof(*mm));
 
+	/* FIXME refcount these */
 	mm->name = strdup(name);
 	mm->comm.func = key_prefix;
 	return &mm->comm;

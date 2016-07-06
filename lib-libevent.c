@@ -42,6 +42,7 @@ static void call_event(int thing, short sev, void *evv)
 		event_del(ev->l);
 		event_free(ev->l);
 		list_del(&ev->lst);
+		command_put(ev->comm);
 		free(ev);
 	}
 }
@@ -58,6 +59,7 @@ static void call_timeout_event(int thing, short sev, void *evv)
 	if (ev->comm->func(&ci) <= 0) {
 		event_free(ev->l);
 		list_del(&ev->lst);
+		command_put(ev->comm);
 		free(ev);
 	} else {
 		struct timeval tv;
@@ -82,7 +84,7 @@ DEF_CMD(libevent_read)
 	ev->l = event_new(base, ci->numeric, EV_READ|EV_PERSIST,
 			  call_event, ev);
 	ev->home = ci->focus;
-	ev->comm = ci->comm2;
+	ev->comm = command_get(ci->comm2);
 	list_add(&ev->lst, &event_list);
 	event_add(ev->l, NULL);
 	return 1;
@@ -103,7 +105,7 @@ DEF_CMD(libevent_signal)
 	ev->l = event_new(base, ci->numeric, EV_SIGNAL|EV_PERSIST,
 			  call_event, ev);
 	ev->home = ci->focus;
-	ev->comm = ci->comm2;
+	ev->comm = command_get(ci->comm2);
 	list_add(&ev->lst, &event_list);
 	event_add(ev->l, NULL);
 	return 1;
@@ -125,7 +127,7 @@ DEF_CMD(libevent_timer)
 	ev->l = event_new(base, -1, 0,
 			  call_timeout_event, ev);
 	ev->home = ci->focus;
-	ev->comm = ci->comm2;
+	ev->comm = command_get(ci->comm2);
 	ev->seconds = ci->numeric;
 	list_add(&ev->lst, &event_list);
 	tv.tv_sec = ev->seconds;
@@ -148,6 +150,7 @@ DEF_CMD(libevent_run)
 		list_del(&ev->lst);
 		event_del(ev->l);
 		event_free(ev->l);
+		command_put(ev->comm);
 		free(ev);
 	}
 	event_base_free(b);

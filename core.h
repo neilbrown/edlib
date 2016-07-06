@@ -61,7 +61,22 @@ struct pane {
 
 struct command {
 	int	(*func)(const struct cmd_info *ci);
+	int	refcnt; /* only if 'free' is not NULL */
+	void	(*free)(struct command *c);
 };
+
+static inline struct command *command_get(struct command *c)
+{
+	if (c && c->free)
+		c->refcnt += 1;
+	return c;
+}
+
+static inline void command_put(struct command *c)
+{
+	if (c && c->free && c->refcnt-- == 1)
+		c->free(c);
+}
 
 struct notifier {
 	struct pane		*notifiee;
@@ -247,7 +262,7 @@ struct lookup_cmd {
 	struct map	**m, **dflt;
 };
 
-#define CMD(_name) {_name ## _func }
+#define CMD(_name) {_name ## _func , 0, NULL}
 #define DEF_CMD(_name) \
 	static int _name ## _func(const struct cmd_info *ci); \
 	static struct command _name = CMD(_name);	\
@@ -256,9 +271,9 @@ struct lookup_cmd {
 	static int _name ## _func(const struct cmd_info *ci)
 
 #define DEF_LOOKUP_CMD(_name, _map) \
-	static struct lookup_cmd _name = { { key_lookup_cmd_func }, &_map, NULL };
+	static struct lookup_cmd _name = { { key_lookup_cmd_func, 0, NULL }, &_map, NULL };
 #define DEF_LOOKUP_CMD_DFLT(_name, _map, _dflt)				\
-	static struct lookup_cmd _name = { { key_lookup_cmd_func }, &_map, &_dflt };
+	static struct lookup_cmd _name = { { key_lookup_cmd_func, 0, NULL}, &_map, &_dflt };
 
 int key_lookup_cmd_func(const struct cmd_info *ci);
 
