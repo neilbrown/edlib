@@ -216,6 +216,14 @@ static PyObject *python_string(char *s)
 		return Py_BuildValue("s", s);
 }
 
+static int dict_add(PyObject *kwds, char *name, PyObject *val)
+{
+	if (!val)
+		return 0;
+	PyDict_SetItemString(kwds, name, val);
+	return 1;
+}
+
 REDEF_CMD(python_call)
 {
 	struct python_command *pc = container_of(ci->comm, struct python_command, c);
@@ -225,37 +233,39 @@ REDEF_CMD(python_call)
 
 	args = Py_BuildValue("(s)", ci->key);
 	kwds = PyDict_New();
-	PyDict_SetItemString(kwds, "home", Pane_Frompane(ci->home));
+	rv = rv && dict_add(kwds, "home", Pane_Frompane(ci->home));
 	local = ci->home && ci->home->handle &&
 		ci->home->handle->func == python_doc_call.func;
-	PyDict_SetItemString(kwds, "focus",
-			     ci->focus ? Pane_Frompane(ci->focus):
-			     (Py_INCREF(Py_None), Py_None));
-	PyDict_SetItemString(kwds, "mark",
-			     ci->mark ? Mark_Frommark(ci->mark, local):
-			     (Py_INCREF(Py_None), Py_None));
-	PyDict_SetItemString(kwds, "mark2",
-			     ci->mark2 ? Mark_Frommark(ci->mark2, local):
-			     (Py_INCREF(Py_None), Py_None));
-	PyDict_SetItemString(kwds, "str",
-			     ci->str ? python_string(ci->str):
-			     (Py_INCREF(Py_None), Py_None));
-	PyDict_SetItemString(kwds, "str2",
-			     ci->str2 ? python_string(ci->str2):
-			     (Py_INCREF(Py_None), Py_None));
-	PyDict_SetItemString(kwds, "comm",
-			     ci->comm ? Comm_Fromcomm(ci->comm):
-			     (Py_INCREF(Py_None), Py_None));
-	PyDict_SetItemString(kwds, "comm2",
-			     ci->comm2 ? Comm_Fromcomm(ci->comm2):
-			     (Py_INCREF(Py_None), Py_None));
-	PyDict_SetItemString(kwds, "numeric",
-			     Py_BuildValue("i", ci->numeric));
-	PyDict_SetItemString(kwds, "extra",
-			     Py_BuildValue("i", ci->extra));
-	PyDict_SetItemString(kwds, "xy",
-			     Py_BuildValue("ii", ci->x, ci->y));
+	rv = rv && dict_add(kwds, "focus",
+			    ci->focus ? Pane_Frompane(ci->focus):
+			    (Py_INCREF(Py_None), Py_None));
+	rv = rv && dict_add(kwds, "mark",
+			    ci->mark ? Mark_Frommark(ci->mark, local):
+			    (Py_INCREF(Py_None), Py_None));
+	rv = rv && dict_add(kwds, "mark2",
+			    ci->mark2 ? Mark_Frommark(ci->mark2, local):
+			    (Py_INCREF(Py_None), Py_None));
+	rv = rv && dict_add(kwds, "str",
+			    ci->str ? python_string(ci->str):
+			    (Py_INCREF(Py_None), Py_None));
+	rv = rv && dict_add(kwds, "str2",
+			    ci->str2 ? python_string(ci->str2):
+			    (Py_INCREF(Py_None), Py_None));
+	rv = rv && dict_add(kwds, "comm",
+			    ci->comm ? Comm_Fromcomm(ci->comm):
+			    (Py_INCREF(Py_None), Py_None));
+	rv = rv && dict_add(kwds, "comm2",
+			    ci->comm2 ? Comm_Fromcomm(ci->comm2):
+			    (Py_INCREF(Py_None), Py_None));
+	rv = rv && dict_add(kwds, "numeric",
+			    Py_BuildValue("i", ci->numeric));
+	rv = rv && dict_add(kwds, "extra",
+			    Py_BuildValue("i", ci->extra));
+	rv = rv && dict_add(kwds, "xy",
+			    Py_BuildValue("ii", ci->x, ci->y));
 
+	if (!rv)
+		return -1;
 	ret = PyObject_Call(pc->callable, args, kwds);
 
 	Py_DECREF(args);
