@@ -208,11 +208,12 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w,
 		segstart = line;
 		if (st[0] != '/') {
 			char *c2;
-			char *b = buf_final(&attr);
+			char *b;
 
 			buf_concat_len(&attr, st, line-st);
 			attr.b[attr.len-1] = ',';
 			buf_append(&attr, ',');
+			b = buf_final(&attr);
 			if (center && strstr(b, ",center,"))
 				*center = 1;
 			if (center && (c2=strstr(b, ",left:")) != NULL)
