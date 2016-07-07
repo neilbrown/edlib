@@ -221,6 +221,7 @@ static int dict_add(PyObject *kwds, char *name, PyObject *val)
 	if (!val)
 		return 0;
 	PyDict_SetItemString(kwds, name, val);
+	Py_DECREF(val);
 	return 1;
 }
 
@@ -265,8 +266,9 @@ REDEF_CMD(python_call)
 			    Py_BuildValue("ii", ci->x, ci->y));
 
 	if (!rv)
-		return -1;
-	ret = PyObject_Call(pc->callable, args, kwds);
+		ret = NULL;
+	else
+		ret = PyObject_Call(pc->callable, args, kwds);
 
 	Py_DECREF(args);
 	Py_DECREF(kwds);
