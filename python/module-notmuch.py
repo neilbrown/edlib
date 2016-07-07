@@ -64,7 +64,7 @@ class searches:
             mtime = stat.st_mtime
         except OSError:
             mtime = 0
-        if reload and mtime <= self.mtime:
+        if not reload and mtime <= self.mtime:
             return False
 
         p = Popen("notmuch config list", shell=True, stdout=PIPE)
@@ -274,7 +274,7 @@ class notmuch_main(edlib.Doc):
             if not self.timer_set:
                 self.timer_set = True
                 self.call("event:timer", 60*5, self.tick)
-            self.searches.load(True)
+            self.searches.load(False)
             self.notify("Notify:Replace")
             self.searches.update(self, self.updated)
             return 1
@@ -293,7 +293,7 @@ class notmuch_main(edlib.Doc):
 
     def tick(self, key, **a):
         if not self.searches.todo:
-            self.searches.load(True)
+            self.searches.load(False)
             self.searches.update(self, self.updated)
         return 1
 
@@ -451,7 +451,7 @@ class notmuch_list(edlib.Doc):
                 self.new.append(tid)
             self.threads[tid] = j
         tl = None
-        self.p.wait
+        self.p.wait()
         self.p = None
         if not self.threadids:
             # first insertion, all marks must be at start
