@@ -596,7 +596,7 @@ class PresenterPane(edlib.Pane):
 
         if key == "Close":
             # destroy all marks
-            self.release()
+            pass
 
         if key == "Clone":
             # Need to create a new PresenterPane I guess, then recurse on children

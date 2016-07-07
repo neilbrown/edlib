@@ -335,6 +335,16 @@ static Doc *Doc_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 	return self;
 }
 
+static void python_pane_free(struct command *c)
+{
+	Pane *p = container_of(c, Pane, handle.c);
+	/* pane has been closed */
+	p->pane = NULL;
+	Py_DECREF(p->handle.callable);
+	p->handle.callable = NULL;
+	Py_DECREF(p);
+}
+
 static int __Pane_init(Pane *self, PyObject *args, PyObject *kwds, Pane **parentp,
 		       int *zp)
 {
@@ -362,6 +372,7 @@ static int __Pane_init(Pane *self, PyObject *args, PyObject *kwds, Pane **parent
 		return -1;
 	}
 	self->handle.c = python_call;
+	self->handle.c.free = python_pane_free;
 	Py_INCREF(py_handler);
 	self->handle.callable = py_handler;
 	*parentp = parent;
@@ -377,6 +388,10 @@ static int Pane_init(Pane *self, PyObject *args, PyObject *kwds)
 	if (ret < 0 || !parent)
 		return ret;
 
+	/* The pane holds a reference to the Pane through the ->handle
+	 * function
+	 */
+	Py_INCREF(self);
 	self->pane = pane_register(parent->pane, z, &self->handle.c, self, NULL);
 	return 0;
 }
@@ -613,24 +628,6 @@ static PyObject *Pane_close(Pane *self)
 	return Py_None;
 }
 
-static PyObject *Pane_release(Pane *self)
-{
-	struct pane *p = self->pane;
-	if (p && p->handle && p->handle->func == python_call.func && p->data) {
-		p->handle = NULL;
-		p->data = NULL;
-		Py_DECREF(self);
-	}
-	if (p && p->handle && p->handle->func == python_doc_call.func && p->data) {
-		p->handle = NULL;
-		p->data = NULL;
-		Py_DECREF(self);
-	}
-	self->pane = NULL;
-	Py_INCREF(Py_None);
-	return Py_None;
-}
-
 static PyObject *Pane_get_scale(Pane *self)
 {
 	struct pane *p = self->pane;
@@ -644,8 +641,6 @@ static PyObject *Pane_get_scale(Pane *self)
 static PyMethodDef pane_methods[] = {
 	{"close", (PyCFunction)Pane_close, METH_NOARGS,
 	 "close the pane"},
-	{"release", (PyCFunction)Pane_release, METH_NOARGS,
-	 "pane is being closed, so release the Pane"},
 	{"children", (PyCFunction)pane_children, METH_NOARGS,
 	 "provides and iterator which will iterate over all children"},
 	{"clone_children", (PyCFunction)Pane_clone_children, METH_VARARGS,

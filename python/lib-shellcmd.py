@@ -49,7 +49,6 @@ class ShellPane(edlib.Pane):
                     p.communicate()
                 except IOError:
                     pass
-            self.release()
             return 1
         if key == "Abort":
             if self.pipe is not None:
@@ -67,7 +66,7 @@ def shell_attach(key, focus, comm2, str, **a):
     if not p:
         return -1;
     if not p.run(str):
-        p.release()
+        p.close()
         return -1;
     comm2("callback", p)
     return 1

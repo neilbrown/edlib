@@ -111,7 +111,7 @@ struct pane *pane_register(struct pane *parent, int z,
 	struct pane *p = malloc(sizeof(*p));
 	pane_init(p, parent, here);
 	p->z = z;
-	p->handle = handle;
+	p->handle = command_get(handle);
 	p->data = data;
 	if (parent && parent->focus == NULL)
 		parent->focus = p;
@@ -380,6 +380,7 @@ void pane_close(struct pane *p)
 	}
 	pane_damaged(p->parent, DAMAGED_CONTENT);
 	p->parent = NULL;
+	command_put(p->handle);
 	p->handle = NULL;
 	if (ed)
 		editor_delayed_free(ed, p);
