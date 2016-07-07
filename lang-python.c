@@ -164,7 +164,6 @@ DEF_CMD(python_load)
 
 	Ed = Pane_Frompane(ci->home);
 	PyDict_SetItemString(globals, "editor", Ed);
-	PyDict_SetItemString(globals, "pane", Pane_Frompane(ci->focus));
 	PyDict_SetItemString(globals, "edlib", EdlibModule);
 	PyRun_FileExFlags(fp, fname, Py_file_input, globals, globals, 0, NULL);
 	PyErr_Print();

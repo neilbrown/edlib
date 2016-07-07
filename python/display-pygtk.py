@@ -483,4 +483,4 @@ def events_activate(home):
 
     return 1
 
-editor.call("global-set-command", pane, "attach-display-pygtk", new_display);
+editor.call("global-set-command", "attach-display-pygtk", new_display);

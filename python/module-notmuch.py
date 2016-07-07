@@ -653,10 +653,10 @@ def notmuch_open_list(key, home, focus, str, str2, comm2, **a):
         comm2("callback", focus, nm)
 
 if "editor" in globals():
-    editor.call("global-set-command", pane, "attach-doc-notmuch", notmuch_doc)
-    editor.call("global-set-command", pane, "attach-render-notmuch:searchlist",
+    editor.call("global-set-command", "attach-doc-notmuch", notmuch_doc)
+    editor.call("global-set-command", "attach-render-notmuch:searchlist",
                 render_searchlist_attach)
-    editor.call("global-set-command", pane, "attach-doc-notmuch-list", notmuch_open_list)
-    editor.call("global-set-command", pane, "attach-render-notmuch:query",
+    editor.call("global-set-command", "attach-doc-notmuch-list", notmuch_open_list)
+    editor.call("global-set-command", "attach-render-notmuch:query",
                 render_query_attach)
-    editor.call("global-set-command", pane, "interactive-cmd-nm", notmuch_mode)
+    editor.call("global-set-command", "interactive-cmd-nm", notmuch_mode)

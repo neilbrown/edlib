@@ -71,4 +71,4 @@ def shell_attach(key, focus, comm2, str, **a):
     comm2("callback", p)
     return 1
 
-editor.call("global-set-command", pane, "attach-shellcmd", shell_attach)
+editor.call("global-set-command", "attach-shellcmd", shell_attach)

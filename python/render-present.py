@@ -672,6 +672,6 @@ def markdown_appeared(key, focus, **a):
         focus.call("doc:attr-set", "render-default", "markdown")
     return 1
 
-editor.call("global-set-command", pane, "attach-render-markdown", markdown_attach)
-editor.call("global-set-command", pane, "attach-render-present", present_attach)
-editor.call("global-set-command", pane, "doc:appeared-markdown", markdown_appeared)
+editor.call("global-set-command", "attach-render-markdown", markdown_attach)
+editor.call("global-set-command", "attach-render-present", present_attach)
+editor.call("global-set-command", "doc:appeared-markdown", markdown_appeared)
