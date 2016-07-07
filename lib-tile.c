@@ -95,11 +95,20 @@ DEF_CMD(tile_clone)
 		ti->group = strdup(cti->group);
 	INIT_LIST_HEAD(&ti->tiles);
 	ti->p = p2 = pane_register(parent, 0, &tile_handle, ti, NULL);
+	/* Remove borders as our children will provide their own. */
+	call3("Window:border", p2, 0, NULL);
 	attr_set_str(&p2->attrs, "borders", "BL");
 	while (!cti->leaf && child->focus) {
 		child = child->focus;
 		cti = child->data;
 	}
+	cti = list_next_entry(cti, tiles);
+	while (cti != child->data &&
+	       (cti->name == NULL || strcmp(cti->name, "main") != 0))
+		cti = list_next_entry(cti, tiles);
+	child = cti->p;
+	if (cti->name)
+		ti->name = strdup(cti->name);
 	pane_clone_children(child, p2);
 	return 1;
 }
