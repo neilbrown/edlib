@@ -25,11 +25,11 @@
  * avoid variable aliasing warnings.
  */
 #define container_of(ptr, type, member) ({			\
-	const typeof( ((type *)0)->member ) *__mptr##member = (ptr);	\
-	(type *)( (char *)__mptr##member - offsetof(type,member) );})
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+	(type *)( (char *)__mptr - offsetof(type,member) );})
 #define container_of_array(ptr, type, member, index) ({			\
-	const typeof( ((type *)0)->member[index] ) *__mptr##member = (ptr);	\
-	(type *)( (char *)__mptr##member - offsetof(type,member[index]) );})
+	const typeof( ((type *)0)->member[index] ) *__mptr = (ptr);	\
+	(type *)( (char *)__mptr - offsetof(type,member[index]) );})
 
 /*
  * These are non-NULL pointers that will result in page faults
@@ -408,7 +408,8 @@ static inline void hlist_move_list(struct hlist_head *old,
 	hlist_entry((head)->vfirst, type, member)
 #define hlist_prev(ptr) container_of((ptr)->pprev, struct hlist_node, next)
 #define hlist_prev_entry(ptr, member) \
-	hlist_entry(hlist_prev(&(ptr)->member), typeof(*(ptr)), member)
+	({struct hlist_node *__hln = hlist_prev(&(ptr)->member); \
+		hlist_entry(__hln, typeof(*(ptr)), member); })
 
 #define hlist_for_each(pos, head) \
 	for (pos = HLIST_PTR((head)->first); pos ; pos = pos->next)
