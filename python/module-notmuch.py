@@ -409,7 +409,7 @@ class notmuch_list(edlib.Doc):
         self.threads = {}
         self.messageids = {}
         self["render-default"] = "notmuch:query"
-        self["line-format"] = "<%hilite>%date_relative</><tab:130></> <fg:blue>%+authors</><tab:350> [%matched/%total] <%hilite>%subject</>                      "
+        self["line-format"] = "<%hilite>%date_relative</><tab:130></> <fg:blue>%+authors</><tab:350> [%matched/%total] <tab:450><%hilite>%subject</>                      "
         self.load_full()
 
     def load_full(self):
@@ -569,7 +569,7 @@ class notmuch_list(edlib.Doc):
                 elif attr in t:
                     val = t[attr]
                     if type(val) == int:
-                        val = "%3d" % val
+                        val = "%d" % val
                     else:
                         val = unicode(t[attr])
                     if attr == 'date_relative':
