@@ -456,7 +456,7 @@ class notmuch_list(edlib.Doc):
         tl = None
         self.p.wait()
         self.p = None
-        if not self.threadids:
+        if not self.threadids and len(self.new):
             # first insertion, all marks must be at start
             m = self.first_mark()
             while m:
