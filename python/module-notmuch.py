@@ -275,7 +275,7 @@ class notmuch_main(edlib.Doc):
             self.searches.update(self, self.updated)
             return 1
 
-        if key == "notmuch-show-list":
+        if key == "notmuch-follow":
             if mark.offset < len(self.searches.current):
                 pl = []
                 s = self.searches.current[mark.offset]
@@ -334,21 +334,6 @@ class notmuch_main_view(edlib.Pane):
             self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
             return 0
 
-        if key == "Return":
-            if self.maxlen <= 0:
-                self.maxlen = self.call("notmuch-search-maxlen")
-                if self.maxlen > 1:
-                    self.maxlen -= 1
-            pl = []
-            focus.call("notmuch-show-list", mark, lambda key,**a:take('focus',pl,a))
-            focus.call("RootPane", "notmuch", lambda key,**a:take('focus',pl,a))
-            if len(pl) != 2:
-                return 1
-            s = self.list_size(pl[1].w)
-            focus.call("OtherPane", "notmuch", "threads", 3, focus.w - s, lambda key,**a:take('focus', pl, a))
-            pl[0].call('doc:attach', pl[-1],  lambda key,**a:take('focus', pl, a))
-            #pl[-1].call("doc:autoclose", 1)
-
         if key == "Refresh:size":
             pl = []
             focus.call("ThisPane", "notmuch", lambda key,**a:take('focus',pl,a))
@@ -356,22 +341,28 @@ class notmuch_main_view(edlib.Pane):
             if len(pl) == 2:
                 if pl[0].w < pl[1].w:
                     # we have split, make sure proportions are OK
-                    s = self.list_size(pl[1].w)
+                    (s,s2,side,type) = self.list_info(pl[1])
                     if pl[0].w < s:
                         focus.call("Window:x+", "notmuch", s - pl[0].w)
                     elif pl[0].w > s:
                         focus.call("Window:x-", "notmuch", pl[0].w - s)
             return 0
-        return notmuch_handle(self, key, focus, numeric)
+        return notmuch_handle(self, key, focus, numeric, mark)
 
-    def list_size(self,space):
+    def list_info(self,pane):
+        if self.maxlen <= 0:
+            self.maxlen = self.call("notmuch-search-maxlen")
+            if self.maxlen > 1:
+                self.maxlen -= 1
+
+        space = pane.w
         ch,ln = self.scale()
         max = 5 + 1 + self.maxlen + 1
         if space * 100 / ch < max * 4:
             w = space / 4
         else:
             w = ch * 10 * max / 1000
-        return w
+        return (w, space-w, 3, "threads")
 
 
 def render_searchlist_attach(key, focus, comm2, **a):
@@ -589,7 +580,7 @@ class notmuch_list(edlib.Doc):
             comm2("callback", focus, val)
             return 1
 
-        if key == "notmuch-show-thread":
+        if key == "notmuch-follow":
             if mark.pos is None:
                 return 1
             th = self.threads[mark.pos]
@@ -622,17 +613,6 @@ class notmuch_query_view(edlib.Pane):
             self.clone_children(focus.focus)
             return 1
 
-        if key == "Return":
-            pl = []
-            focus.call("notmuch-show-thread", mark, lambda key,**a:take('focus',pl,a))
-            focus.call("RootPane", "notmuch", lambda key,**a:take('focus',pl,a))
-            if len(pl) != 2:
-                return 1
-            s = self.list_size(pl[1].h)
-            focus.call("OtherPane", "notmuch", "message", 2, focus.h - s, lambda key,**a:take('focus', pl, a))
-            pl[0].call('doc:attach', pl[-1], "notmuch:message", lambda key,**a:take('focus', pl, a))
-            #pl[-1].call("doc:autoclose", 1)
-
         if key == "Refresh:size":
             pl = []
             focus.call("ThisPane", "notmuch", lambda key,**a:take('focus',pl,a))
@@ -640,7 +620,7 @@ class notmuch_query_view(edlib.Pane):
             if len(pl) == 2:
                 if pl[0].h < pl[1].h:
                     # we have split, make sure proportions are OK
-                    s = self.list_size(pl[1].h)
+                    (s, s2, size, type) = self.list_info(pl[1])
                     if pl[0].h != s:
                         focus.damaged(edlib.DAMAGED_VIEW)
             return 0
@@ -652,16 +632,17 @@ class notmuch_query_view(edlib.Pane):
             if len(pl) == 2:
                 if pl[0].h < pl[1].h:
                     # we have split, make sure proportions are OK
-                    s = self.list_size(pl[1].h)
+                    (s,s2, size, type) = self.list_info(pl[1])
                     if pl[0].h < s:
                         focus.call("Window:y+", "notmuch", s - pl[0].h)
                     elif pl[0].h > s:
                         focus.call("Window:y-", "notmuch", pl[0].h - s)
             return 0
-        return notmuch_handle(self, key, focus, numeric)
+        return notmuch_handle(self, key, focus, numeric, mark)
 
-    def list_size(self,space):
+    def list_info(self,pane):
         ch,ln = self.scale()
+        space = pane.h
         min = 4
         if space * 100 / ln > min * 4:
             h = space / 4
@@ -669,7 +650,7 @@ class notmuch_query_view(edlib.Pane):
             h = ln * 10 * min / 1000
             if h > space / 2:
                 h = space / 2
-        return h
+        return (h, space - h, 2, "message")
 
 class notmuch_message_view(edlib.Pane):
     def __init__(self, focus):
@@ -680,14 +661,31 @@ class notmuch_message_view(edlib.Pane):
             p = notmuch_message_view(focus)
             self.clone_children(focus.focus)
             return 1
-        return notmuch_handle(self, key, focus, numeric)
+        if key == "notmuch-follow":
+            return 1
+        if key == "Replace":
+            return 1
+        return notmuch_handle(self, key, focus, numeric, mark)
 
-def notmuch_handle(pane, key, focus, numeric):
+def notmuch_handle(pane, key, focus, numeric, mark):
     # common handler for all sub-panes
     if key == "Chr-o":
         # focus to next window
         focus.call("Window:next", "notmuch", numeric)
         return 1
+
+    if key == "Return":
+        pl = []
+        focus.call("notmuch-follow", mark, lambda key,**a:take('focus',pl,a))
+        if not pl:
+            return 1
+        focus.call("RootPane", "notmuch", lambda key,**a:take('focus',pl,a))
+        if len(pl) != 2:
+            return 1
+        (size1, size2, side, type) = pane.list_info(pl[1])
+        focus.call("OtherPane", "notmuch", type, side, size2, lambda key,**a:take('focus', pl, a))
+        pl[0].call('doc:attach', pl[-1], "notmuch:"+type, lambda key,**a:take('focus', pl, a))
+        #pl[-1].call("doc:autoclose", 1)
 
 
 def render_query_attach(key, home, focus, comm2, **a):
@@ -720,7 +718,7 @@ if "editor" in globals():
     editor.call("global-set-command", "attach-render-notmuch:searchlist",
                 render_searchlist_attach)
     editor.call("global-set-command", "attach-doc-notmuch-list", notmuch_open_list)
-    editor.call("global-set-command", "attach-render-notmuch:query",
+    editor.call("global-set-command", "attach-render-notmuch:threads",
                 render_query_attach)
     editor.call("global-set-command", "attach-render-notmuch:message",
                 render_message_attach)
