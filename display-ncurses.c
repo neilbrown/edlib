@@ -94,6 +94,10 @@ static int cvt_attrs(char *attrs)
 		} else if (strcmp(tmp, "fg:red")  == 0) {
 			init_pair(2, COLOR_RED, -1);
 			attr |= COLOR_PAIR(2);
+		} else if (strcmp(tmp, "fg:grey")  == 0) {
+			/* HORRIBLE HACK - MUST FIXME */
+			init_pair(3, COLOR_YELLOW, -1);
+			attr |= COLOR_PAIR(3);
 		}
 		a = c;
 	}

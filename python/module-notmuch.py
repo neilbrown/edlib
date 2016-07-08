@@ -57,6 +57,7 @@ class searches:
         else:
             self.path = ".notmuch-config"
         self.mtime = 0
+        self.maxlen = 0
 
     def load(self, reload = False):
         try:
@@ -76,6 +77,8 @@ class searches:
                 continue
             w = line[6:].strip().split("=", 1)
             self.slist[w[0]] = w[1]
+            if len(w[0]) > self.maxlen:
+                self.maxlen = len(w[0])
         try:
             p.communicate()
         except IOError:
@@ -238,35 +241,27 @@ class notmuch_main(edlib.Doc):
             val = None
             if o >= 0 and o < len(self.searches.current):
                 s = self.searches.current[o]
-                if attr == 'namefmt':
+                if attr == 'fmt':
                     if self.searches.new[s]:
                         val = "bold,fg:red"
                     elif self.searches.unread[s]:
-                        val = "bold"
+                        val = "bold,fg:blue"
+                    elif self.searches.count[s]:
+                        val = "fg:black"
                     else:
-                        val = ""
-                elif attr == 'unreadfmt':
-                    if self.searches.unread[s]:
-                        val = "bold"
-                    else:
-                        val = ""
+                        val = "fg:grey"
                 elif attr == 'name':
                         val = "%-12s" % s
                 elif attr == 'count':
-                    if self.searches.count[s] is None:
-                        val = "%6s" % "?"
+                    c = self.searches.new[s]
+                    if not c:
+                        c = self.searches.unread[s]
+                    if not c:
+                        c = self.searches.count[s]
+                    if c is None:
+                        val = "%5s" % "?"
                     else:
-                        val = "%6d" % self.searches.count[s]
-                elif attr == 'unread':
-                    if self.searches.unread[s] is None:
-                        val = "%6s" % "?"
-                    else:
-                        val = "%6d" % self.searches.unread[s]
-                elif attr == 'new':
-                    if self.searches.new[s] is None:
-                        val = "%6s" % "?"
-                    else:
-                        val = "%6d" % self.searches.new[s]
+                        val = "%5d" % c
             comm2("callback", focus, val)
             return 1
 
@@ -290,6 +285,8 @@ class notmuch_main(edlib.Doc):
                 root.call("attach-doc-notmuch-list", s2, s, comm2)
 
                 return 1
+        if key == "notmuch-search-maxlen":
+            return self.searches.maxlen + 1
 
     def tick(self, key, **a):
         if not self.searches.todo:
@@ -319,8 +316,9 @@ class notmuch_main_view(edlib.Pane):
         edlib.Pane.__init__(self, focus, self.handle)
         self['render-wrap'] = 'no'
         self['background'] = 'color:#A0FFFF'
-        self['line-format'] = '<%namefmt>%+name</> %new <%unreadfmt>%unread</> %count'
+        self['line-format'] = '<%fmt>%count %+name</>'
         self.call("Request:Notify:Replace")
+        self.maxlen = 0
 
     def handle(self, key, focus, mark, **a):
         if key == "Clone":
@@ -336,6 +334,10 @@ class notmuch_main_view(edlib.Pane):
             return 0
 
         if key == "Return":
+            if self.maxlen <= 0:
+                self.maxlen = self.call("notmuch-search-maxlen")
+                if self.maxlen > 1:
+                    self.maxlen -= 1
             pl = []
             focus.call("notmuch-show-list", mark, lambda key,**a:take('focus',pl,a))
             focus.call("RootPane", "notmuch", lambda key,**a:take('focus',pl,a))
@@ -361,7 +363,7 @@ class notmuch_main_view(edlib.Pane):
             return 0
     def list_size(self,space):
         ch,ln = self.scale()
-        max = 34
+        max = 5 + 1 + self.maxlen + 1
         if space * 100 / ch < max * 4:
             w = space / 4
         else:
