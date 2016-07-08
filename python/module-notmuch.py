@@ -321,7 +321,7 @@ class notmuch_main_view(edlib.Pane):
         self.call("Request:Notify:Replace")
         self.maxlen = 0
 
-    def handle(self, key, focus, mark, **a):
+    def handle(self, key, focus, mark, numeric, **a):
         if key == "Clone":
             p = notmuch_main_view(focus)
             self.clone_children(focus.focus)
@@ -362,6 +362,8 @@ class notmuch_main_view(edlib.Pane):
                     elif pl[0].w > s:
                         focus.call("Window:x-", "notmuch", pl[0].w - s)
             return 0
+        return notmuch_handle(self, key, focus, numeric)
+
     def list_size(self,space):
         ch,ln = self.scale()
         max = 5 + 1 + self.maxlen + 1
@@ -598,7 +600,6 @@ class notmuch_list(edlib.Doc):
             try:
                 m = db.find_message(id[3:])
             except:
-                print "try again"
                 db = notmuch.Database()
                 m = db.find_message(id[3:])
             fn = m.get_filename()
@@ -615,7 +616,7 @@ class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
 
-    def handle(self, key, focus, mark, **a):
+    def handle(self, key, focus, mark, numeric, **a):
         if key == "Clone":
             p = notmuch_query_view(focus)
             self.clone_children(focus.focus)
@@ -629,7 +630,7 @@ class notmuch_query_view(edlib.Pane):
                 return 1
             s = self.list_size(pl[1].h)
             focus.call("OtherPane", "notmuch", "message", 2, focus.h - s, lambda key,**a:take('focus', pl, a))
-            pl[0].call('doc:attach', pl[-1],  lambda key,**a:take('focus', pl, a))
+            pl[0].call('doc:attach', pl[-1], "notmuch:message", lambda key,**a:take('focus', pl, a))
             #pl[-1].call("doc:autoclose", 1)
 
         if key == "Refresh:size":
@@ -657,6 +658,8 @@ class notmuch_query_view(edlib.Pane):
                     elif pl[0].h > s:
                         focus.call("Window:y-", "notmuch", pl[0].h - s)
             return 0
+        return notmuch_handle(self, key, focus, numeric)
+
     def list_size(self,space):
         ch,ln = self.scale()
         min = 4
@@ -668,11 +671,35 @@ class notmuch_query_view(edlib.Pane):
                 h = space / 2
         return h
 
+class notmuch_message_view(edlib.Pane):
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus, self.handle)
+
+    def handle(self, key, focus, mark, numeric, **a):
+        if key == "Clone":
+            p = notmuch_message_view(focus)
+            self.clone_children(focus.focus)
+            return 1
+        return notmuch_handle(self, key, focus, numeric)
+
+def notmuch_handle(pane, key, focus, numeric):
+    # common handler for all sub-panes
+    if key == "Chr-o":
+        # focus to next window
+        focus.call("Window:next", "notmuch", numeric)
+        return 1
 
 
 def render_query_attach(key, home, focus, comm2, **a):
     p = focus.render_attach("format")
     p = notmuch_query_view(p)
+    if comm2:
+        comm2("callback", p)
+    return 1
+
+def render_message_attach(key, home, focus, comm2, **a):
+    p = focus.render_attach()
+    p = notmuch_message_view(p)
     if comm2:
         comm2("callback", p)
     return 1
@@ -695,4 +722,6 @@ if "editor" in globals():
     editor.call("global-set-command", "attach-doc-notmuch-list", notmuch_open_list)
     editor.call("global-set-command", "attach-render-notmuch:query",
                 render_query_attach)
+    editor.call("global-set-command", "attach-render-notmuch:message",
+                render_message_attach)
     editor.call("global-set-command", "interactive-cmd-nm", notmuch_mode)
