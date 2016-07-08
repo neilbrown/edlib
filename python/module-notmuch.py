@@ -26,6 +26,7 @@ import re
 import os
 import notmuch
 import json
+import time
 
 db = None
 
@@ -546,6 +547,32 @@ class notmuch_list(edlib.Doc):
                         val = "fg:blue"
                     else:
                         val = "fg:black"
+                elif attr == "date_relative":
+                    sec = t['timestamp']
+                    then = time.localtime(sec)
+                    now = time.localtime()
+                    nows = time.time()
+                    if sec < nows and sec > nows - 60:
+                        val = "%d secs. ago" % (nows - sec)
+                    elif sec < nows and sec > nows - 60*60:
+                        val = "%d mins. ago" % ((nows - sec)/60)
+                    elif sec < nows and sec > nows - 60*60*6:
+                        mn = (nows - sec) / 60
+                        hr = int(mn/60)
+                        mn -= 60*hr
+                        val = "%dh%dm ago" % (hr,mn)
+                    elif then[:3] == now[:3]:
+                        val = time.strftime("Today %H:%M", then)
+                    elif sec > nows:
+                        val = time.strftime("%D %T!", then)
+                    elif sec > nows - 7 * 24 * 3600:
+                        val = time.strftime("%a %H:%M", then)
+                    elif then[0] == now[0]:
+                        val = time.strftime("%d/%b %H:%M", then)
+                    else:
+                        val = time.strftime("%Y-%b-%d", then)
+                    val = "              " + val
+                    val = val[-13:]
                 elif attr in t:
                     val = t[attr]
                     if type(val) == int:
