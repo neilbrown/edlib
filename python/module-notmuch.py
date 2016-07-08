@@ -686,6 +686,26 @@ def notmuch_handle(pane, key, focus, numeric, mark):
         focus.call("OtherPane", "notmuch", type, side, size2, lambda key,**a:take('focus', pl, a))
         pl[0].call('doc:attach', pl[-1], "notmuch:"+type, lambda key,**a:take('focus', pl, a))
         #pl[-1].call("doc:autoclose", 1)
+        return 1
+
+    if key == "Chr- ":
+        # "Space", like return but change focus, or "page-down", or "next"...
+        pl = []
+        focus.call("notmuch-follow", mark, lambda key,**a:take('focus',pl,a))
+        if not pl:
+            focus.call("Next", 1, mark)
+            # FIXME detect EOF and move to next message
+            return 1
+        focus.call("RootPane", "notmuch", lambda key,**a:take('focus',pl,a))
+        if len(pl) != 2:
+            return 1
+        (size1, size2, side, type) = pane.list_info(pl[1])
+        focus.call("OtherPane", "notmuch", type, side, size2, lambda key,**a:take('focus', pl, a))
+        pl[0].call('doc:attach', pl[-1], "notmuch:"+type, lambda key,**a:take('focus', pl, a))
+        pl[-1].take_focus()
+        #pl[-1].call("doc:autoclose", 1)
+        return 1
+
 
 
 def render_query_attach(key, home, focus, comm2, **a):
