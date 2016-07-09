@@ -442,13 +442,12 @@ class events:
 
     def timer(self, key, focus, comm2, numeric, **a):
         self.active = True
-        gobject.timeout_add(numeric*1000, self.dotimeout, comm2, focus, numeric)
+        gobject.timeout_add(numeric*1000, self.dotimeout, comm2, focus)
         return 1
 
-    def dotimeout(self, comm2, home, seconds):
+    def dotimeout(self, comm2, home):
         try:
-            if comm2("callback", home) > 0:
-                gobject.timeout_add(seconds*1000, self.dotimeout, comm2, home, seconds)
+            comm2("callback", home);
             return True
         except edlib.commandfailed:
             return False
