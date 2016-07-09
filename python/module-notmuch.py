@@ -408,6 +408,7 @@ class notmuch_list(edlib.Doc):
         self.threadids = []
         self.threads = {}
         self.messageids = {}
+        self.threadinfo = {}
         self["render-default"] = "notmuch:query"
         self["line-format"] = "<%hilite>%date_relative</><tab:130></> <fg:blue>%+authors</><tab:350> [%matched/%total] <tab:450><%hilite>%subject</>                      "
         self.load_full()
@@ -471,6 +472,43 @@ class notmuch_list(edlib.Doc):
         self.offset += found - 3
         self.start_load()
         return -1
+
+    def add_message(self, m, lst, info, depth):
+        mid = m.get_message_id()
+        lst.append(mid)
+        info[mid] = (m.get_filename(), m.get_date(),
+                     m.get_flag(notmuch.Message.FLAG.MATCH),
+                     depth, m.get_header("From"), m.get_header("Subject"), m.get_tags())
+        l = list(m.get_replies())
+        l.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
+        for m in l:
+            self.add_message(m, lst, info, depth + 1)
+
+    def _load_thread(self, tid):
+        global db
+        if not db:
+            db = notmuch.Database()
+        q = notmuch.Query(db, "thread:%s and (%s)" % (tid, self.query))
+        thread = list(q.search_threads())[0]
+        midlist = []
+        minfo = {}
+        ml = list(thread.get_toplevel_messages())
+        ml.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
+        for m in ml:
+            self.add_message(m, midlist, minfo, 0)
+        self.messageids[tid] = midlist
+        self.threadinfo[tid] = minfo
+
+    def load_thread(self, tid):
+        global db
+        aborted = True
+        while aborted:
+            try:
+                self._load_thread(tid)
+                aborted = False
+            except notmuch.XapianError:
+                db.close()
+                db = None
 
     def handle(self, key, mark, mark2, numeric, extra, focus, str, comm2, **a):
         if key == "doc:set-ref":
