@@ -1459,7 +1459,7 @@ DEF_CMD(text_replace)
 		text_check_consistent(t);
 	}
 	early = doc_prev_mark_all(pm);
-	if (early && !mark_same(&t->doc, early, pm))
+	if (early && !text_ref_same(t, &early->ref, &pm->ref))
 		early = NULL;
 
 	if (str) {
@@ -1836,6 +1836,7 @@ DEF_CMD(render_line)
 	 */
 	struct buf b;
 	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2; /* The location to render as cursor */
 	int o = ci->numeric;
@@ -1860,7 +1861,7 @@ DEF_CMD(render_line)
 
 		if (o >= 0 && b.len >= o)
 			break;
-		if (pm && mark_same(d, m, pm))
+		if (pm && text_ref_same(t, &m->ref, &pm->ref))
 			break;
 
 		if (ar.ast && ar.min_end <= chars) {
@@ -1876,10 +1877,10 @@ DEF_CMD(render_line)
 		}
 
 		/* find all marks "here" - they might be fore or aft */
-		for (m2 = doc_prev_mark_all(m); m2 && mark_same(d, m, m2);
+		for (m2 = doc_prev_mark_all(m); m2 && text_ref_same(t, &m->ref, &m2->ref);
 		     m2 = doc_prev_mark_all(m2))
 			call_map_mark(ci->focus, m2, &ar);
-		for (m2 = doc_next_mark_all(m); m2 && mark_same(d, m, m2);
+		for (m2 = doc_next_mark_all(m); m2 && text_ref_same(t, &m->ref, &m2->ref);
 		     m2 = doc_next_mark_all(m2))
 			call_map_mark(ci->focus, m2, &ar);
 
