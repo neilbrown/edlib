@@ -537,7 +537,65 @@ class notmuch_list(edlib.Doc):
         val = val[-13:]
         return val
 
-    def handle(self, key, mark, mark2, numeric, extra, focus, str, comm2, **a):
+    def next(self, pos, visible):
+        # visible is a list of visible thread-ids
+        # we move pos forward either to the next message in a visible thread
+        # or the first message of the next thread
+        # return index into thread list and index into message list of original pos,
+        # and new pos
+        if pos is None:
+            return (-1,-1,None)
+        th = pos[0]
+        i = self.threadids.index(th)
+        j = -1
+        if th in visible:
+            # maybe step to next message
+            if len(pos) == 1:
+                j = 0
+            else:
+                j = self.messageids[th].index(pos[1])
+            if j <= len(messageids[th]):
+                return (i, j, (th, self.messageids[j+1]))
+        # need next thread
+        if i+1 >= len(self.threadids):
+            return (i-1, j, None)
+        th = self.threadids[i+1]
+        if th in visible:
+            ms = self.messageids[th][0]
+            return (i, j, (th, ms))
+        return (i, -1, (th,))
+
+    def prev(self, pos, visible):
+        # visible is a list of visible thread-ids
+        # we move pos backward either to previous next message in a visible thread
+        # or the last message of the previous thread
+        # return index into thread list, index into message list, and new pos
+        # (Indexs are new pos!)
+        if pos is not None and pos[0] in visible and len(pos) == 2:
+            # maybe go to previous message
+            th = pos[0]
+            i = self.threadids.index(th)
+            ms = pos[1]
+            j = self.messageids[th].index(ms)
+            if j > 0:
+                j -= 1
+                return (i,j,(th, self.messageids[th][j]))
+        # need previous thread
+        if pos is None:
+            i = len(self.threadids)
+        else:
+            i = self.threadids.index(pos[0])
+        if i == 0:
+            return (-1, -1, None)
+        i -= 1
+        th = self.threadids[i]
+        if th not in visible:
+            return (i, -1, (th,))
+        j = len(self.messageids[th])
+        ms = self.messageids[th][j-1]
+        return (i, j, (th, ms))
+
+    def handle(self, key, mark, mark2, numeric, extra, focus, str, str2, comm2, **a):
         if key == "doc:set-ref":
             if numeric == 1 and len(self.threadids) > 0:
                 mark.pos = (self.threadids[0],)
@@ -558,8 +616,10 @@ class notmuch_list(edlib.Doc):
                 i = len(self.threadids)
             else:
                 i = self.threadids.index(mark.pos[0])
-            if forward and i < len(self.threadids):
-                ret = ' '
+            if forward:
+                i2,j2,pos = self.next(mark.pos, [str2])
+                if mark.pos is not None:
+                    ret = ' '
                 if move:
                     m2 = mark.next_any()
                     target = None
@@ -568,34 +628,32 @@ class notmuch_list(edlib.Doc):
                         m2 = m2.next_any()
                     if target:
                         mark.to_mark(target)
-                    if i+1 < len(self.threadids):
-                        mark.pos = (self.threadids[i+1],)
-                    else:
-                        mark.pos = None
-            if not forward and i > 0:
-                ret = ' '
-                if move:
-                    m2 = mark.prev_any()
-                    target = None
-                    while m2 and m2.pos == mark.pos:
-                        target = m2
-                        m2 = m2.prev_any()
-                    if target:
-                        mark.to_mark(target)
-                    mark.pos = (self.threadids[i-1],)
+                    mark.pos = pos
+            if not forward:
+                i2,j2,pos = self.prev(mark.pos, [str2])
+                if i2 >= 0:
+                    ret = ' '
+                    if move:
+                        m2 = mark.prev_any()
+                        target = None
+                        while m2 and m2.pos == mark.pos:
+                            target = m2
+                            m2 = m2.prev_any()
+                        if target:
+                            mark.to_mark(target)
+                        mark.pos = pos
             return ret
 
         if key == "doc:get-attr":
             attr = str
             forward = numeric
-            if mark.pos == None:
-                i = len(self.threadids)
+            if forward:
+                i,j,newpos = self.next(mark.pos, [str2])
             else:
-                i = self.threadids.index(mark.pos[0])
-            if not forward:
-                i -= 1
+                i,j,newpos = self.prev(mark.pos, [str2])
+
             val = "["+attr+"]"
-            if i >= 0 and i < len(self.threadids):
+            if i >= 0:
                 tid = self.threadids[i]
                 t = self.threads[tid]
                 if attr == "hilite":
