@@ -480,9 +480,11 @@ class notmuch_list(edlib.Doc):
                      m.get_flag(notmuch.Message.FLAG.MATCH),
                      depth, m.get_header("From"), m.get_header("Subject"), m.get_tags())
         l = list(m.get_replies())
-        l.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
-        for m in l:
-            self.add_message(m, lst, info, depth + 1)
+        if l:
+            l.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
+            for m in l[:-1]:
+                self.add_message(m, lst, info, depth * 2 + 1)
+            self.add_message(l[-1], lst, info, depth * 2)
 
     def _load_thread(self, tid):
         global db
@@ -494,8 +496,9 @@ class notmuch_list(edlib.Doc):
         minfo = {}
         ml = list(thread.get_toplevel_messages())
         ml.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
-        for m in ml:
-            self.add_message(m, midlist, minfo, 0)
+        for m in ml[:-1]:
+            self.add_message(m, midlist, minfo, 3)
+        self.add_message(ml[-1], midlist, minfo, 2)
         self.messageids[tid] = midlist
         self.threadinfo[tid] = minfo
 
@@ -595,6 +598,17 @@ class notmuch_list(edlib.Doc):
         ms = self.messageids[th][j-1]
         return (i, j, (th, ms))
 
+    def cvt_depth(self, depth):
+        ret = ""
+        while depth > 1:
+            if depth & 1:
+                ret = "+" + ret
+            else:
+                ret = "-" + ret
+
+            depth = int(depth/2)
+        return ret + "> "
+
     def handle(self, key, mark, mark2, numeric, extra, focus, str, str2, comm2, **a):
         if key == "doc:set-ref":
             if numeric == 1 and len(self.threadids) > 0:
@@ -653,7 +667,8 @@ class notmuch_list(edlib.Doc):
                 i,j,newpos = self.prev(mark.pos, [str2])
 
             val = "["+attr+"]"
-            if i >= 0:
+            if i >= 0 and j == -1:
+                # report on thread, not message
                 tid = self.threadids[i]
                 t = self.threads[tid]
                 if attr == "hilite":
@@ -678,6 +693,31 @@ class notmuch_list(edlib.Doc):
                         val = val[-13:]
                     if attr == "authors":
                         val = val[:20]
+
+            if j >= 0:
+                # report on an individual message
+                tid = self.threadids[i]
+                mid = self.messageids[tid][j]
+                m = self.threadinfo[tid][mid]
+                (fn, dt, matched, depth, author, subj, tags) = m
+                if attr == "hilite":
+                    if not matched:
+                        val = "fg:grey"
+                    elif "new" in tags and "unread" in tags:
+                        val = "fg:red,bold"
+                    elif "unread" in tags:
+                        val = "fg:blue"
+                    else:
+                        val = "fg:black"
+                elif attr == "date_relative":
+                    val = self.rel_date(dt)
+                elif attr == "authors":
+                    val = author[:20]
+                elif attr == "subject":
+                    val = subj
+                elif attr == "threadinfo":
+                    val = self.cvt_depth(depth)
+
             comm2("callback", focus, val)
             return 1
 
