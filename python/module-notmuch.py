@@ -455,7 +455,7 @@ class notmuch_list(edlib.Doc):
             m = self.first_mark()
             while m:
                 if m.pos is None:
-                    m.pos = self.new[0]
+                    m.pos = (self.new[0],)
                 m = m.next_any()
         self.threadids = self.new + self.old
         self.notify("Notify:Replace")
@@ -540,7 +540,7 @@ class notmuch_list(edlib.Doc):
     def handle(self, key, mark, mark2, numeric, extra, focus, str, comm2, **a):
         if key == "doc:set-ref":
             if numeric == 1 and len(self.threadids) > 0:
-                mark.pos = self.threadids[0]
+                mark.pos = (self.threadids[0],)
             else:
                 mark.pos = None
             mark.offset = 0
@@ -557,7 +557,7 @@ class notmuch_list(edlib.Doc):
             if mark.pos == None:
                 i = len(self.threadids)
             else:
-                i = self.threadids.index(mark.pos)
+                i = self.threadids.index(mark.pos[0])
             if forward and i < len(self.threadids):
                 ret = ' '
                 if move:
@@ -569,7 +569,7 @@ class notmuch_list(edlib.Doc):
                     if target:
                         mark.to_mark(target)
                     if i+1 < len(self.threadids):
-                        mark.pos = self.threadids[i+1]
+                        mark.pos = (self.threadids[i+1],)
                     else:
                         mark.pos = None
             if not forward and i > 0:
@@ -582,7 +582,7 @@ class notmuch_list(edlib.Doc):
                         m2 = m2.prev_any()
                     if target:
                         mark.to_mark(target)
-                    mark.pos = self.threadids[i-1]
+                    mark.pos = (self.threadids[i-1],)
             return ret
 
         if key == "doc:get-attr":
@@ -591,7 +591,7 @@ class notmuch_list(edlib.Doc):
             if mark.pos == None:
                 i = len(self.threadids)
             else:
-                i = self.threadids.index(mark.pos)
+                i = self.threadids.index(mark.pos[0])
             if not forward:
                 i -= 1
             val = "["+attr+"]"
@@ -626,7 +626,7 @@ class notmuch_list(edlib.Doc):
         if key == "notmuch-follow":
             if mark.pos is None:
                 return 1
-            th = self.threads[mark.pos]
+            th = self.threads[mark.pos[0]]
             id = th['query'][0].split()[0]
             global db
             if not db:
