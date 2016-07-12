@@ -620,7 +620,26 @@ class notmuch_list(edlib.Doc):
             return 1
 
         if key == "doc:mark-same":
-            return 1 if mark.pos == mark2.pos else 2
+            if mark.pos == mark2.pos:
+                return 1
+            if mark.pos is None or mark2.pos is None or mark.pos[0] != mark2.pos[0]:
+                # definitely different
+                return 2
+            # same thread, possible different messages
+            if mark.pos != str2:
+                # thread not open, so same
+                return 1
+            if len(mark.pos) == 1:
+                m = mark2.pos[1]
+            elif len(mark2.pos) == 1:
+                m = mark.pos[1]
+            else:
+                return 2
+            # one has no message, the other has one. so same if
+            # that one is the first.
+            if self.messageids[mark.pos[0]][0] == m:
+                return 1
+            return 2
 
         if key == "doc:step":
             forward = numeric
