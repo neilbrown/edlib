@@ -349,12 +349,12 @@ DEF_CMD(doc_vmarkget)
 	m = do_vmark_first(ci->home->data, ci->numeric);
 	m2 = do_vmark_last(ci->home->data, ci->numeric);
 	if (ci->extra == 1 && ci->mark)
-		m2 = do_vmark_at_point(ci->home->data, ci->mark,
+		m2 = do_vmark_at_point(ci->focus, ci->home->data, ci->mark,
 				       ci->numeric);
 	if (ci->extra == 2)
 		m2 = doc_new_mark(ci->home->data, ci->numeric);
 	if (ci->extra == 3)
-		m2 = do_vmark_at_or_before(ci->home->data, ci->mark, ci->numeric);
+		m2 = do_vmark_at_or_before(ci->focus, ci->home->data, ci->mark, ci->numeric);
 	return comm_call7(ci->comm2, "callback:vmark", ci->focus,
 			  0, m, NULL, 0, NULL, m2);
 }

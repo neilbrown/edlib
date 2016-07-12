@@ -907,7 +907,7 @@ struct mark *vmark_matching(struct pane *p, struct mark *m)
 	return NULL;
 }
 
-struct mark *do_vmark_at_point(struct doc *d, struct mark *pt, int view)
+struct mark *do_vmark_at_point(struct pane *p, struct doc *d, struct mark *pt, int view)
 {
 	struct tlist_head *tl;
 	struct mark *m;
@@ -918,16 +918,16 @@ struct mark *do_vmark_at_point(struct doc *d, struct mark *pt, int view)
 
 	tl = &lnk->lists[view];
 	m = __vmark_prev(tl);
-	if (m && mark_same(d, m, pt))
+	if (m && mark_same_pane(p, m, pt, NULL))
 		return m;
 	tl = &lnk->lists[view];
 	m = __vmark_next(tl);
-	if (m && mark_same(d, m, pt))
+	if (m && mark_same_pane(p, m, pt, NULL))
 		return m;
 	return NULL;
 }
 
-struct mark *do_vmark_at_or_before(struct doc *d, struct mark *m, int view)
+struct mark *do_vmark_at_or_before(struct pane *p, struct doc *d, struct mark *m, int view)
 {
 	/* First the last 'view' mark that is not later in the document than 'm'.
 	 * It might be later in the mark list, but not in the document.
@@ -953,11 +953,11 @@ struct mark *do_vmark_at_or_before(struct doc *d, struct mark *m, int view)
 		struct point_links *lnk = vm->mdata;
 		struct tlist_head *tl = &lnk->lists[view];
 		vm = __vmark_next(tl);
-		if (vm && mark_same(d, vm, m)) {
+		if (vm && mark_same_pane(p, vm, m, NULL)) {
 			/* maybe there are even more */
 			struct mark *vm2;
 			while ((vm2 = vmark_next(vm)) != NULL &&
-			       mark_same(d, vm, vm2))
+			       mark_same_pane(p, vm, vm2, NULL))
 				vm = vm2;
 		} else
 			vm = __vmark_prev(tl);
@@ -965,9 +965,9 @@ struct mark *do_vmark_at_or_before(struct doc *d, struct mark *m, int view)
 		/* Just use this, or nearby */
 		struct mark *vm2;
 		while ((vm2 = vmark_next(vm)) != NULL &&
-		       mark_same(d, vm, m))
+		       mark_same_pane(p, vm, m, NULL))
 			vm = vm2;
-		while (vm && vm->seq > m->seq && !mark_same(d, vm, m))
+		while (vm && vm->seq > m->seq && !mark_same_pane(p, vm, m, NULL))
 			vm = vmark_prev(vm);
 
 	}
