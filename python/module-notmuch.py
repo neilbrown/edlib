@@ -761,8 +761,11 @@ class notmuch_list(edlib.Doc):
             except:
                 focus.call("Message", "Cannot open " + fn)
                 return 1
-            focus.call("doc:open", fn, f.fileno(), comm2)
+            pl = []
+            focus.call("doc:open", fn, f.fileno(), lambda key,**a:take('focus',pl,a))
             f.close()
+            if pl:
+                comm2("callback", pl[0], mark.pos[0])
             return 1
 
 class notmuch_query_view(edlib.Pane):
