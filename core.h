@@ -182,7 +182,6 @@ char *doc_getstr(struct pane *from, struct mark *to, struct mark *m2);
 void point_to_mark(struct mark *p, struct mark *m);
 void mark_to_mark(struct mark *m, struct mark *target);
 int mark_same(struct doc *d, struct mark *m1, struct mark *m2);
-int mark_same2(struct doc *d, struct mark *m1, struct mark *m2, struct cmd_info *ci);
 int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2,
 		   struct cmd_info *ci);
 struct mark *point_new(struct doc *d);
