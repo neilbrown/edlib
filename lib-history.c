@@ -79,7 +79,7 @@ DEF_CMD(history_handle)
 			call3("Move-EOL", hi->history, 1, m);
 			call3("Move-Char", hi->history, 1, m);
 		}
-		if (mark_same_pane(hi->history, m, hi->m, NULL)) {
+		if (mark_same_pane(hi->history, m, hi->m)) {
 			/* No more history */
 			if (ci->key[6] == 'p') {
 				mark_free(m);

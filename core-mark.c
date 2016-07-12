@@ -712,18 +712,15 @@ int mark_same(struct doc *d, struct mark *m1, struct mark *m2)
 	return ci.comm->func(&ci) == 1;
 }
 
-int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2,
-		   struct cmd_info *ci)
+int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2)
 {
-	struct cmd_info ci2 = {};
+	struct cmd_info ci = {};
 
-	if (!ci)
-		ci = &ci2;
-	ci->key = "doc:mark-same";
-	ci->mark = m1;
-	ci->mark2 = m2;
-	ci->focus = p;
-	return key_handle(ci) == 1;
+	ci.key = "doc:mark-same";
+	ci.mark = m1;
+	ci.mark2 = m2;
+	ci.focus = p;
+	return key_handle(&ci) == 1;
 }
 
 /* A 'vmark' is a mark in a particular view.  We can walk around those
@@ -899,10 +896,10 @@ struct mark *vmark_matching(struct pane *p, struct mark *m)
 	struct mark *m2;
 
 	m2 = vmark_prev(m);
-	if (m2 && mark_same_pane(p, m, m2, NULL))
+	if (m2 && mark_same_pane(p, m, m2))
 		return m2;
 	m2 = vmark_next(m);
-	if (m2 && mark_same_pane(p, m, m2, NULL))
+	if (m2 && mark_same_pane(p, m, m2))
 		return m2;
 	return NULL;
 }
@@ -918,11 +915,11 @@ struct mark *do_vmark_at_point(struct pane *p, struct doc *d, struct mark *pt, i
 
 	tl = &lnk->lists[view];
 	m = __vmark_prev(tl);
-	if (m && mark_same_pane(p, m, pt, NULL))
+	if (m && mark_same_pane(p, m, pt))
 		return m;
 	tl = &lnk->lists[view];
 	m = __vmark_next(tl);
-	if (m && mark_same_pane(p, m, pt, NULL))
+	if (m && mark_same_pane(p, m, pt))
 		return m;
 	return NULL;
 }
@@ -953,11 +950,11 @@ struct mark *do_vmark_at_or_before(struct pane *p, struct doc *d, struct mark *m
 		struct point_links *lnk = vm->mdata;
 		struct tlist_head *tl = &lnk->lists[view];
 		vm = __vmark_next(tl);
-		if (vm && mark_same_pane(p, vm, m, NULL)) {
+		if (vm && mark_same_pane(p, vm, m)) {
 			/* maybe there are even more */
 			struct mark *vm2;
 			while ((vm2 = vmark_next(vm)) != NULL &&
-			       mark_same_pane(p, vm, vm2, NULL))
+			       mark_same_pane(p, vm, vm2))
 				vm = vm2;
 		} else
 			vm = __vmark_prev(tl);
@@ -965,9 +962,9 @@ struct mark *do_vmark_at_or_before(struct pane *p, struct doc *d, struct mark *m
 		/* Just use this, or nearby */
 		struct mark *vm2;
 		while ((vm2 = vmark_next(vm)) != NULL &&
-		       mark_same_pane(p, vm, m, NULL))
+		       mark_same_pane(p, vm, m))
 			vm = vm2;
-		while (vm && vm->seq > m->seq && !mark_same_pane(p, vm, m, NULL))
+		while (vm && vm->seq > m->seq && !mark_same_pane(p, vm, m))
 			vm = vmark_prev(vm);
 
 	}

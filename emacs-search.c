@@ -44,7 +44,7 @@ DEF_CMD(search_forward)
 	struct stk *s;
 	char *str;
 
-	if (esi->s && mark_same_pane(esi->target, esi->s->m, esi->end, NULL)) {
+	if (esi->s && mark_same_pane(esi->target, esi->s->m, esi->end)) {
 		/* already pushed and didn't find anything new */
 		return 1;
 	}

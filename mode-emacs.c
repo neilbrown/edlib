@@ -188,7 +188,7 @@ REDEF_CMD(emacs_case)
 		struct mark *m = mark_dup(ci->mark, 1);
 
 		ret = call3(mv->type+1, ci->focus, dir, ci->mark);
-		if (ret <= 0 || mark_same_pane(ci->focus, ci->mark, m, NULL))
+		if (ret <= 0 || mark_same_pane(ci->focus, ci->mark, m))
 			/* Hit end of file */
 			cnt = 1;
 		else {
@@ -278,7 +278,7 @@ REDEF_CMD(emacs_swap)
 			break;
 		as = mark_dup(ci->mark, 1);
 		ret = call3(mv->type, ci->focus, dir, ci->mark);
-		if (ret <= 0 || mark_same_pane(ci->focus, ci->mark, as, NULL)) {
+		if (ret <= 0 || mark_same_pane(ci->focus, ci->mark, as)) {
 			mark_free(as);
 			break;
 		}

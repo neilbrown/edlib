@@ -246,7 +246,7 @@ DEF_CMD(view_handle)
 	if (strcmp(ci->key, "render:reposition") == 0) {
 		if (vd->viewpoint != ci->mark) {
 			if (!vd->viewpoint || !ci->mark ||
-			    !mark_same_pane(ci->focus, vd->viewpoint, ci->mark, NULL))
+			    !mark_same_pane(ci->focus, vd->viewpoint, ci->mark))
 				pane_damaged(p, DAMAGED_CONTENT);
 			if (vd->viewpoint)
 				mark_free(vd->viewpoint);

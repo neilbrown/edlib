@@ -182,8 +182,7 @@ char *doc_getstr(struct pane *from, struct mark *to, struct mark *m2);
 void point_to_mark(struct mark *p, struct mark *m);
 void mark_to_mark(struct mark *m, struct mark *target);
 int mark_same(struct doc *d, struct mark *m1, struct mark *m2);
-int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2,
-		   struct cmd_info *ci);
+int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2);
 struct mark *point_new(struct doc *d);
 struct mark *point_dup(struct mark *p);
 wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci);
@@ -218,12 +217,12 @@ static inline int mark_ordered(struct mark *m1, struct mark *m2)
 
 static inline int mark_ordered_or_same_pane(struct pane *p, struct mark *m1, struct mark *m2)
 {
-	return mark_ordered(m1, m2) || mark_same_pane(p, m1, m2, NULL);
+	return mark_ordered(m1, m2) || mark_same_pane(p, m1, m2);
 }
 
 static inline int mark_ordered_not_same_pane(struct pane *p, struct mark *m1, struct mark *m2)
 {
-	return mark_ordered(m1, m2) && !mark_same_pane(p, m1, m2, NULL);
+	return mark_ordered(m1, m2) && !mark_same_pane(p, m1, m2);
 }
 
 static inline struct attrset **mark_attr(struct mark *m)

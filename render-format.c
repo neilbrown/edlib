@@ -36,7 +36,7 @@ DEF_CMD(render_line)
 	if (!ci->mark || !ci->focus)
 		return -1;
 
-	if (pm && !mark_same_pane(ci->focus, pm, m, NULL))
+	if (pm && !mark_same_pane(ci->focus, pm, m))
 		pm = NULL;
 	ch = doc_following_pane(ci->focus, m);
 	if (ch == WEOF)

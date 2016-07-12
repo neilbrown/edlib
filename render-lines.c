@@ -1116,7 +1116,7 @@ DEF_CMD(render_lines_move)
 				break;
 			m = top;
 			while (m->seq < prevtop->seq &&
-			       !mark_same_pane(focus, m, prevtop, NULL)) {
+			       !mark_same_pane(focus, m, prevtop)) {
 				if (m->mdata == NULL)
 					call_render_line(focus, m);
 				if (m->mdata == NULL) {
@@ -1236,7 +1236,7 @@ DEF_CMD(render_lines_move_pos)
 		bot = doc_prev_mark_view(bot);
 	if (top && bot &&
 	    mark_ordered(top, pm) &&
-	    mark_ordered(pm, bot) && !mark_same_pane(focus, pm, bot, NULL))
+	    mark_ordered(pm, bot) && !mark_same_pane(focus, pm, bot))
 		/* pos already displayed */
 		return 1;
 	find_lines(pm, p, focus);

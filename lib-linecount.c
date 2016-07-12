@@ -160,7 +160,7 @@ static void count_calculate(struct pane *p,
 	 * So count from start to m, then add totals from m and subsequent.
 	 * Then count to 'end'.
 	 */
-	if (!start || mark_same_pane(p, m, start, NULL))
+	if (!start || mark_same_pane(p, m, start))
 		lines = words = chars = 0;
 	else
 		do_count(p, start, m, &lines, &words, &chars, 0);
@@ -179,7 +179,7 @@ static void count_calculate(struct pane *p,
 		lines += attr_find_int(*mark_attr(m), "lines");
 		words += attr_find_int(*mark_attr(m), "words");
 		chars += attr_find_int(*mark_attr(m), "chars");
-	} else if (!mark_same_pane(p, m, end, NULL)) {
+	} else if (!mark_same_pane(p, m, end)) {
 		do_count(p, m, end, &l, &w, &c, 0);
 		lines += l;
 		words += w;
