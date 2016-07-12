@@ -724,6 +724,8 @@ class notmuch_list(edlib.Doc):
         if key == "notmuch-follow":
             if mark.pos is None:
                 return 1
+            if mark.pos[0] not in self.threadinfo:
+                self.load_thread(mark.pos[0])
             th = self.threads[mark.pos[0]]
             id = th['query'][0].split()[0]
             global db
