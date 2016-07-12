@@ -127,28 +127,6 @@ static int get_scale(struct pane *p)
 	return 1000;
 }
 
-DEF_CMD(tile_scale)
-{
-	struct pane *p = ci->home;
-	int scale = get_scale(p);
-	int rpt = RPT_NUM(ci);
-
-	if (rpt > 10) rpt = 10;
-	if (rpt < -10) rpt = -10;
-	while (rpt > 0) {
-		scale = scale * 11/10;
-		rpt -= 1;
-	}
-	while (rpt < 0) {
-		scale = scale * 9 / 10;
-		rpt += 1;
-	}
-
-	attr_set_int(&p->attrs, "scale", scale);
-	pane_damaged(p, DAMAGED_SIZE);
-	return 1;
-}
-
 DEF_CMD(tile_attach)
 {
 	struct pane *display = ci->focus;
@@ -756,6 +734,24 @@ DEF_CMD(tile_command)
 			struct tileinfo *ti2 = list_next_entry(ti, tiles);
 			pane_close(ti2->p);
 		}
+	} else if (strcmp(cmd, "scale-relative") == 0) {
+		int scale = get_scale(p);
+		int rpt = RPT_NUM(ci);
+
+		if (rpt > 10) rpt = 10;
+		if (rpt < -10) rpt = -10;
+		while (rpt > 0) {
+			scale = scale * 11/10;
+			rpt -= 1;
+		}
+		while (rpt < 0) {
+			scale = scale * 9 / 10;
+			rpt += 1;
+		}
+
+		attr_set_int(&p->attrs, "scale", scale);
+		pane_damaged(p, DAMAGED_SIZE);
+		return 1;
 	} else
 		return 0;
 	return 1;
@@ -884,7 +880,6 @@ void edlib_init(struct pane *ed)
 	key_add(tile_map, "ThisPane", &tile_this);
 	key_add(tile_map, "RootPane", &tile_root);
 	key_add(tile_map, "Clone", &tile_clone);
-	key_add(tile_map, "Window:scale-relative", &tile_scale);
 	key_add(tile_map, "ChildClosed", &tile_child_closed);
 	key_add(tile_map, "ChildRegistered", &tile_child_registered);
 
