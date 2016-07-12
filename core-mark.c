@@ -700,18 +700,6 @@ void mark_to_mark(struct mark *m, struct mark *target)
 	mark_ref_copy(m, target);
 }
 
-int mark_same(struct doc *d, struct mark *m1, struct mark *m2)
-{
-	struct cmd_info ci = {};
-
-	ci.key = "doc:mark-same";
-	ci.mark = m1;
-	ci.mark2 = m2;
-	ci.home = d->home;
-	ci.comm = d->home->handle;
-	return ci.comm->func(&ci) == 1;
-}
-
 int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2)
 {
 	struct cmd_info ci = {};

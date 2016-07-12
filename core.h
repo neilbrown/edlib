@@ -181,7 +181,6 @@ char *doc_attr(struct pane *dp, struct mark *m, bool forward, char *attr);
 char *doc_getstr(struct pane *from, struct mark *to, struct mark *m2);
 void point_to_mark(struct mark *p, struct mark *m);
 void mark_to_mark(struct mark *m, struct mark *target);
-int mark_same(struct doc *d, struct mark *m1, struct mark *m2);
 int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2);
 struct mark *point_new(struct doc *d);
 struct mark *point_dup(struct mark *p);
