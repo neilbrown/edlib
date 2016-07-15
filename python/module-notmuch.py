@@ -557,16 +557,16 @@ class notmuch_list(edlib.Doc):
                 j = 0
             else:
                 j = self.messageids[th].index(pos[1])
-            if j <= len(messageids[th]):
-                return (i, j, (th, self.messageids[j+1]))
+            if j + 1 < len(self.messageids[th]):
+                return (i, j, (th, self.messageids[th][j+1]))
         # need next thread
         if i+1 >= len(self.threadids):
-            return (i-1, j, None)
+            return (i, j, None)
         th = self.threadids[i+1]
         if th in visible:
             ms = self.messageids[th][0]
             return (i, j, (th, ms))
-        return (i, -1, (th,))
+        return (i, j, (th,))
 
     def prev(self, pos, visible):
         # visible is a list of visible thread-ids
@@ -626,7 +626,7 @@ class notmuch_list(edlib.Doc):
                 # definitely different
                 return 2
             # same thread, possible different messages
-            if mark.pos != str2:
+            if mark.pos[0] != str2:
                 # thread not open, so same
                 return 1
             if len(mark.pos) == 1:
@@ -645,10 +645,6 @@ class notmuch_list(edlib.Doc):
             forward = numeric
             move = extra
             ret = edlib.WEOF
-            if mark.pos == None:
-                i = len(self.threadids)
-            else:
-                i = self.threadids.index(mark.pos[0])
             if forward:
                 i2,j2,pos = self.next(mark.pos, [str2])
                 if mark.pos is not None:
@@ -686,7 +682,7 @@ class notmuch_list(edlib.Doc):
                 i,j,newpos = self.prev(mark.pos, [str2])
 
             val = "["+attr+"]"
-            if i >= 0 and j == -1:
+            if i >= 0 and j == -1 and self.threadids[i] != str2:
                 # report on thread, not message
                 tid = self.threadids[i]
                 t = self.threads[tid]
@@ -713,8 +709,10 @@ class notmuch_list(edlib.Doc):
                     if attr == "authors":
                         val = val[:20]
 
-            if j >= 0:
+            if j >= 0 or (i >= 0 and self.threadids[i] == str2):
                 # report on an individual message
+                if j < 0:
+                    j = 0
                 tid = self.threadids[i]
                 mid = self.messageids[tid][j]
                 m = self.threadinfo[tid][mid]
