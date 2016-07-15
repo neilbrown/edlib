@@ -37,6 +37,13 @@ def take(name, place, args, default=None):
         place.append(default)
     return 1
 
+def take2(pl, sl, args):
+    if 'focus' in args:
+        pl.append(args['focus'])
+    if 'str' in args:
+        sl.append(args['str'])
+    return 1
+
 class searches:
     # Manage the saved searches
     # We read all searches from the config file and periodically
@@ -320,6 +327,7 @@ class notmuch_main_view(edlib.Pane):
         self['line-format'] = '<%fmt>%count %+name</>'
         self.call("Request:Notify:Replace")
         self.maxlen = 0
+        self.selected = None
 
     def handle(self, key, focus, mark, numeric, **a):
         if key == "Clone":
@@ -743,17 +751,12 @@ class notmuch_list(edlib.Doc):
                 return 1
             if mark.pos[0] not in self.threadinfo:
                 self.load_thread(mark.pos[0])
-            th = self.threads[mark.pos[0]]
-            id = th['query'][0].split()[0]
-            global db
-            if not db:
-                db = notmuch.Database()
-            try:
-                m = db.find_message(id[3:])
-            except:
-                db = notmuch.Database()
-                m = db.find_message(id[3:])
-            fn = m.get_filename()
+            if len(mark.pos) == 1:
+                mid = self.messageids[mark.pos[0]][0]
+            else:
+                mid = mark.pos[1]
+            m = self.threadinfo[mark.pos[0]][mid]
+            fn = m[0]
             try:
                 f = open(fn)
             except:
@@ -769,6 +772,7 @@ class notmuch_list(edlib.Doc):
 class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
+        self.selected = None
 
     def handle(self, key, focus, mark, numeric, **a):
         if key == "Clone":
@@ -785,7 +789,7 @@ class notmuch_query_view(edlib.Pane):
                     # we have split, make sure proportions are OK
                     (s, s2, size, type) = self.list_info(pl[1])
                     if pl[0].h != s:
-                        focus.damaged(edlib.DAMAGED_VIEW)
+                        focus.damaged(edlib.DAMAGED_VIEW|edlib.DAMAGED_CONTENT)
             return 0
         if key == "Refresh:view":
             # check size
@@ -801,6 +805,16 @@ class notmuch_query_view(edlib.Pane):
                     elif pl[0].h > s:
                         focus.call("Window:y-", "notmuch", pl[0].h - s)
             return 0
+        if key in ["doc:step", "doc:get-attr", "doc:mark-same"]:
+            s = a['str']
+            if s is None:
+                s = ""
+            del a['str']
+            del a['str2']
+            del a['home']
+            del a['comm']
+            return self.parent.call(key, focus, mark, numeric, s, self.selected, *(a.values()))
+
         return notmuch_handle(self, key, focus, numeric, mark)
 
     def list_info(self,pane):
@@ -838,10 +852,13 @@ def notmuch_handle(pane, key, focus, numeric, mark):
         return 1
 
     if key == "Return":
-        pl = []
-        focus.call("notmuch-follow", mark, lambda key,**a:take('focus',pl,a))
+        pl = []; sl=[]
+        focus.call("notmuch-follow", mark, lambda key,**a:take2(pl,sl,a))
         if not pl:
             return 1
+        if sl and pane.selected != sl[0]:
+            pane.selected = sl[0]
+            pane.damaged(edlib.DAMAGED_VIEW)
         focus.call("RootPane", "notmuch", lambda key,**a:take('focus',pl,a))
         if len(pl) != 2:
             return 1
