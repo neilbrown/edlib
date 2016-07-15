@@ -310,13 +310,34 @@ class notmuch_main(edlib.Doc):
 def notmuch_doc(key, home, focus, comm2, **a):
     # Create the root notmuch document
     nm = notmuch_main(home)
-    nm['render-default'] = "notmuch:searchlist"
+    nm['render-default'] = "notmuch:master-view"
     nm.call("doc:set-name", "*Notmuch*")
     nm.call("global-multicall-doc:appeared-")
     nm.call("notmuch:update")
     if comm2 is not None:
         comm2("callback", focus, nm)
     return 1
+
+class notmuch_master_view(edlib.Pane):
+    # This pane controls one visible instance of the notmuch application.
+    # It will eventually manage the size and position of the 3 panes
+    # and will provide common handling for keystrokes
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus, self.handle)
+        pl = []
+        self.call("attach-tile", "notmuch", "main", lambda key,**a:take('focus',pl,a))
+        p = pl[-1]
+        p.call("attach-view", lambda key,**a:take('focus',pl,a))
+        p = pl[-1]
+        p = p.render_attach("format")
+        p = notmuch_main_view(p)
+
+    def handle(self, key, focus, mark, numeric, **a):
+        if key == "Clone":
+            p = notmuch_master_view(focus)
+            # We don't clone children, we create our own
+            return 1
+
 
 class notmuch_main_view(edlib.Pane):
     # This pane provides view on the search-list document.
@@ -373,17 +394,17 @@ class notmuch_main_view(edlib.Pane):
         return (w, space-w, 3, "threads")
 
 
-def render_searchlist_attach(key, focus, comm2, **a):
-    # A searchlist is rendered inside a tiler so that sub-windows
-    # created from it stay together in the tiler.  That means we need
-    # to add a local 'view'
-    pl = []
-    focus.call("attach-tile", "notmuch", "main", lambda key,**a:take('focus',pl,a))
-    p = pl[-1]
-    p.call("attach-view", lambda key,**a:take('focus',pl,a))
-    p = pl[-1]
-    p = p.render_attach("format")
-    p = notmuch_main_view(p)
+def render_master_view_attach(key, focus, comm2, **a):
+    # The master view for the '*Notmuch*' document uses multiple tiles
+    # to display the available searches, the current search results, and the
+    # current message, though each of these is optional.
+    # The tile which displays the search list does not have a document, as it
+    # refers down the main document.  So it doesn't automatically get borders
+    # from a 'view', so we must add one explicitly.
+    p = focus
+    p = notmuch_master_view(focus)
+    while p.focus:
+        p = p.focus
     p.take_focus()
     comm2("callback", p)
     return 1
@@ -915,8 +936,8 @@ def notmuch_open_list(key, home, focus, str, str2, comm2, **a):
 
 if "editor" in globals():
     editor.call("global-set-command", "attach-doc-notmuch", notmuch_doc)
-    editor.call("global-set-command", "attach-render-notmuch:searchlist",
-                render_searchlist_attach)
+    editor.call("global-set-command", "attach-render-notmuch:master-view",
+                render_master_view_attach)
     editor.call("global-set-command", "attach-doc-notmuch-list", notmuch_open_list)
     editor.call("global-set-command", "attach-render-notmuch:threads",
                 render_query_attach)
