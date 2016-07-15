@@ -478,7 +478,7 @@ class notmuch_list(edlib.Doc):
         lst.append(mid)
         info[mid] = (m.get_filename(), m.get_date(),
                      m.get_flag(notmuch.Message.FLAG.MATCH),
-                     depth, m.get_header("From"), m.get_header("Subject"), m.get_tags())
+                     depth, m.get_header("From"), m.get_header("Subject"), list(m.get_tags()))
         l = list(m.get_replies())
         if l:
             l.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
