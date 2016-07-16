@@ -390,6 +390,8 @@ DEF_CMD(doc_revisit)
 	struct docs *docs = container_of(ci->home->data, struct docs, doc);
 	if (!p)
 		return -1;
+	if (p->parent != ci->home)
+		return 0;
 	if (p == docs->doc.home)
 		return 1;
 	docs_demark(docs, p);
