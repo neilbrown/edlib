@@ -37,13 +37,6 @@ def take(name, place, args, default=None):
         place.append(default)
     return 1
 
-def take2(pl, sl, args):
-    if 'focus' in args:
-        pl.append(args['focus'])
-    if 'str' in args:
-        sl.append(args['str'])
-    return 1
-
 class searches:
     # Manage the saved searches
     # We read all searches from the config file and periodically
@@ -202,6 +195,10 @@ class notmuch_main(edlib.Doc):
         self.timer_set = False
 
     def handle(self, key, focus, mark, mark2, numeric, extra, str, comm2, **a):
+
+        if key == "doc:revisit":
+            return 1
+
         if key == "doc:set-ref":
             if numeric == 1:
                 mark.offset = 0
@@ -249,7 +246,9 @@ class notmuch_main(edlib.Doc):
             val = None
             if o >= 0 and o < len(self.searches.current):
                 s = self.searches.current[o]
-                if attr == 'fmt':
+                if attr == 'query':
+                    val = s
+                elif attr == 'fmt':
                     if self.searches.new[s]:
                         val = "bold,fg:red"
                     elif self.searches.unread[s]:
@@ -282,17 +281,40 @@ class notmuch_main(edlib.Doc):
             self.searches.update(self, self.updated)
             return 1
 
-        if key == "notmuch-follow":
-            if mark.offset < len(self.searches.current):
-                pl = []
-                s = self.searches.current[mark.offset]
-                s2 = self.searches.make_search(s, None)
-                root = self
-                while root.parent:
-                    root = root.parent
-                root.call("attach-doc-notmuch-list", s2, s, comm2)
+        if key == "notmuch:query":
+            # note: this is a private document that doesn't
+            # get registered in the global list
+            q = self.searches.make_search(str, None)
+            nm = notmuch_list(self, q)
+            nm.call("doc:set-name", str)
+            if comm2:
+                comm2("callback", nm)
+            return 1
 
+        if key == "notmuch:byid":
+            # return a document for the email message,
+            # this is a global document
+            global db
+            if not db:
+                db = notmuch.Database()
+            try:
+                m = db.find_message(str)
+            except:
+                db.close()
+                db = notmuch.Database()
+                m = db.find_message(str)
+            fn = m.get_filename()
+            try:
+                f = open(fn)
+            except:
+                focus.call("Message", "Cannot open " + fn)
                 return 1
+            pl = []
+            focus.call("doc:open", fn, f.fileno(), lambda key,**a:take('focus',pl,a))
+            f.close()
+            if pl:
+                comm2("callback", pl[0])
+
         if key == "notmuch-search-maxlen":
             return self.searches.maxlen + 1
 
@@ -332,12 +354,55 @@ class notmuch_master_view(edlib.Pane):
         p = p.render_attach("format")
         p = notmuch_main_view(p)
 
-    def handle(self, key, focus, mark, numeric, **a):
+        self.list_pane = p
+        self.query_pane = None
+        self.query = None
+        self.message_pane = None
+
+    def handle(self, key, focus, mark, numeric, str, **a):
         if key == "Clone":
             p = notmuch_master_view(focus)
             # We don't clone children, we create our own
             return 1
 
+        if key == "Return":
+            focus.call("notmuch:select", mark, 0)
+            return 1
+        if key == "Chr- ":
+            focus.call("notmuch:select", mark, 1)
+            return 1
+
+        if key == "notmuch:select-query":
+            # A query was selected, identifed by 'str'.  Close the
+            # message window and open a threads window.
+            if self.message_pane:
+                self.message_pane.call("Window:close", "notmuch")
+                self.message_pane = None
+            pl = []
+            self.call("notmuch:query", str,lambda key,**a:take('focus',pl,a))
+            self.list_pane.call("OtherPane", "notmuch", "threads", 3,
+                                    lambda key,**a:take('focus', pl, a))
+            self.query_pane = pl[-1]
+            pl[0].call("doc:attach", self.query_pane, "notmuch:threads",
+                       lambda key,**a:take('focus',pl,a))
+            self.query_pane = pl[-1]
+            if numeric:
+                self.query_pane.take_focus()
+            return 1
+
+        if key == "notmuch:select-message":
+            # a thread or message was selected. id in 'str'.
+            # Find the file and display it in a 'message' pane
+            pl=[]
+            self.call("notmuch:byid", str, lambda key,**a:take('focus',pl,a))
+            self.query_pane.call("OtherPane", "notmuch", "message", 2,
+                                 lambda key,**a:take('focus',pl,a))
+            pl[0].call("doc:attach", pl[-1], "notmuch:message",
+                                 lambda key,**a:take('focus',pl,a))
+            self.message_pane = pl[-1]
+            if numeric:
+                self.message_pane.take_focus()
+            return 1
 
 class notmuch_main_view(edlib.Pane):
     # This pane provides view on the search-list document.
@@ -376,6 +441,14 @@ class notmuch_main_view(edlib.Pane):
                     elif pl[0].w > s:
                         focus.call("Window:x-", "notmuch", pl[0].w - s)
             return 0
+
+        if key == "notmuch:select":
+            sl = []
+            focus.call("doc:get-attr", "query", mark, 1, lambda key,**a:take('str',sl,a))
+            if sl and sl[0]:
+                focus.call("notmuch:select-query", sl[0], numeric)
+            return 1
+
         return notmuch_handle(self, key, focus, numeric, mark)
 
     def list_info(self,pane):
@@ -715,7 +788,11 @@ class notmuch_list(edlib.Doc):
                 # report on thread, not message
                 tid = self.threadids[i]
                 t = self.threads[tid]
-                if attr == "hilite":
+                if attr == "message-id":
+                    val = None
+                elif attr == "thread-id":
+                    val = tid
+                elif attr == "hilite":
                     if "new" in t["tags"] and "unread" in t["tags"]:
                         val = "fg:red,bold"
                     elif "unread" in t["tags"]:
@@ -746,7 +823,11 @@ class notmuch_list(edlib.Doc):
                 mid = self.messageids[tid][j]
                 m = self.threadinfo[tid][mid]
                 (fn, dt, matched, depth, author, subj, tags) = m
-                if attr == "hilite":
+                if attr == "message-id":
+                    val = mid
+                elif attr == "thread-id":
+                    val = tid
+                elif attr == "hilite":
                     if not matched:
                         val = "fg:grey"
                     elif "new" in tags and "unread" in tags:
@@ -767,27 +848,9 @@ class notmuch_list(edlib.Doc):
             comm2("callback", focus, val)
             return 1
 
-        if key == "notmuch-follow":
-            if mark.pos is None:
-                return 1
-            if mark.pos[0] not in self.threadinfo:
-                self.load_thread(mark.pos[0])
-            if len(mark.pos) == 1:
-                mid = self.messageids[mark.pos[0]][0]
-            else:
-                mid = mark.pos[1]
-            m = self.threadinfo[mark.pos[0]][mid]
-            fn = m[0]
-            try:
-                f = open(fn)
-            except:
-                focus.call("Message", "Cannot open " + fn)
-                return 1
-            pl = []
-            focus.call("doc:open", fn, f.fileno(), lambda key,**a:take('focus',pl,a))
-            f.close()
-            if pl:
-                comm2("callback", pl[0], mark.pos[0])
+        if key == "notmuch:load-thread":
+            if str not in self.threadinfo:
+                self.load_thread(str)
             return 1
 
 class notmuch_query_view(edlib.Pane):
@@ -836,6 +899,19 @@ class notmuch_query_view(edlib.Pane):
             del a['comm']
             return self.parent.call(key, focus, mark, numeric, s, self.selected, *(a.values()))
 
+        if key == "notmuch:select":
+            sl = []
+            focus.call("doc:get-attr", "thread-id", 1, mark, lambda key,**a:take('str',sl,a))
+            if sl[0] != self.selected:
+                self.call("notmuch:load-thread", sl[0])
+                self.selected = sl[0]
+                self.damaged(edlib.DAMAGED_VIEW)
+            focus.call("doc:get-attr", "message-id", 1, mark, lambda key,**a:take('str',sl,a))
+            if len(sl) == 2:
+                focus.call("notmuch:select-message", sl[-1], numeric)
+            return 1
+
+
         return notmuch_handle(self, key, focus, numeric, mark)
 
     def list_info(self,pane):
@@ -859,9 +935,11 @@ class notmuch_message_view(edlib.Pane):
             p = notmuch_message_view(focus)
             self.clone_children(focus.focus)
             return 1
-        if key == "notmuch-follow":
-            return 1
         if key == "Replace":
+            return 1
+        if key == "Chr- ":
+            focus.call("Next", 1, mark)
+            # FIXME detect EOF and move to next message
             return 1
         return notmuch_handle(self, key, focus, numeric, mark)
 
@@ -871,42 +949,6 @@ def notmuch_handle(pane, key, focus, numeric, mark):
         # focus to next window
         focus.call("Window:next", "notmuch", numeric)
         return 1
-
-    if key == "Return":
-        pl = []; sl=[]
-        focus.call("notmuch-follow", mark, lambda key,**a:take2(pl,sl,a))
-        if not pl:
-            return 1
-        if sl and pane.selected != sl[0]:
-            pane.selected = sl[0]
-            pane.damaged(edlib.DAMAGED_VIEW)
-        focus.call("RootPane", "notmuch", lambda key,**a:take('focus',pl,a))
-        if len(pl) != 2:
-            return 1
-        (size1, size2, side, type) = pane.list_info(pl[1])
-        focus.call("OtherPane", "notmuch", type, side, size2, lambda key,**a:take('focus', pl, a))
-        pl[0].call('doc:attach', pl[-1], "notmuch:"+type, lambda key,**a:take('focus', pl, a))
-        #pl[-1].call("doc:autoclose", 1)
-        return 1
-
-    if key == "Chr- ":
-        # "Space", like return but change focus, or "page-down", or "next"...
-        pl = []
-        focus.call("notmuch-follow", mark, lambda key,**a:take('focus',pl,a))
-        if not pl:
-            focus.call("Next", 1, mark)
-            # FIXME detect EOF and move to next message
-            return 1
-        focus.call("RootPane", "notmuch", lambda key,**a:take('focus',pl,a))
-        if len(pl) != 2:
-            return 1
-        (size1, size2, side, type) = pane.list_info(pl[1])
-        focus.call("OtherPane", "notmuch", type, side, size2, lambda key,**a:take('focus', pl, a))
-        pl[0].call('doc:attach', pl[-1], "notmuch:"+type, lambda key,**a:take('focus', pl, a))
-        pl[-1].take_focus()
-        #pl[-1].call("doc:autoclose", 1)
-        return 1
-
 
 
 def render_query_attach(key, home, focus, comm2, **a):
@@ -923,22 +965,10 @@ def render_message_attach(key, home, focus, comm2, **a):
         comm2("callback", p)
     return 1
 
-def notmuch_open_list(key, home, focus, str, str2, comm2, **a):
-    nm = notmuch_list(home, str)
-    if str2 is not None:
-        s = str2
-    else:
-        s = str
-    nm.call("doc:set-name", s)
-    nm.call("global-multicall-doc:appeared-")
-    if comm2 is not None:
-        comm2("callback", focus, nm)
-
 if "editor" in globals():
     editor.call("global-set-command", "attach-doc-notmuch", notmuch_doc)
     editor.call("global-set-command", "attach-render-notmuch:master-view",
                 render_master_view_attach)
-    editor.call("global-set-command", "attach-doc-notmuch-list", notmuch_open_list)
     editor.call("global-set-command", "attach-render-notmuch:threads",
                 render_query_attach)
     editor.call("global-set-command", "attach-render-notmuch:message",
