@@ -66,14 +66,14 @@ class PresenterPane(edlib.Pane):
         return None
 
     def first_page(self):
-        m = []
+        m = [None]
         self.call("doc:vmark-get", self.pageview, lambda key, **a: take('mark', m, a))
-        return m[0]
+        return m[-1]
 
     def first_line(self):
-        m = []
+        m = [None]
         self.call("doc:vmark-get", self.attrview, lambda key, **a: take('mark', m, a))
-        return m[0]
+        return m[-1]
 
     def prev_page(self, m):
         m2 = []
@@ -626,6 +626,18 @@ class PresenterPane(edlib.Pane):
                 focus.call("Move-View-Pos", page)
                 focus.damaged(edlib.DAMAGED_CURSOR)
             return 1
+
+        if key == "Close":
+            m = self.first_page()
+            while m:
+                m.release()
+                m = self.first_page()
+            self.call("doc:del-view", self.pageview)
+            m = self.first_line()
+            while m:
+                m.release()
+                m = self.first_line()
+            self.call("doc:del-view", self.attrview)
 
         return None
 
