@@ -657,8 +657,11 @@ DEF_CMD(docs_toggle)
 
 DEF_CMD(docs_destroy)
 {
-	/* Not allowed to destroy this document */
-	return -1;
+	/* Not allowed to destroy this document 
+	 * So handle command here, so we don't get
+	 * to the default handler
+	 */
+	return 1;
 }
 
 DEF_CMD(docs_child_closed)
@@ -686,10 +689,10 @@ static void docs_init_map(void)
 	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "doc:mark-same", &docs_mark_same);
 	key_add(docs_map, "doc:step", &docs_step);
-	key_add(docs_map, "doc:free", &docs_destroy);
 	key_add(docs_map, "doc:check_name", &doc_checkname);
 	key_add(docs_map, "doc:revisit", &doc_revisit);
 	key_add(docs_map, "doc:status-changed", &doc_damage);
+	key_add(docs_map, "doc:destroy", &docs_destroy);
 
 	key_add(docs_map, "Chr-f", &docs_open);
 	key_add(docs_map, "Return", &docs_open);

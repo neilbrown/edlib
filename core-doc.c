@@ -694,8 +694,7 @@ static int doc_destroy(struct pane *dp)
 			/* still in use */
 			return -1;
 
-	if (comm_call_pane(d->home, "doc:free", d->home, 0, NULL, NULL, 0, NULL, NULL) < 0)
-		return -1;
+	comm_call_pane(d->home, "doc:free", d->home, 0, NULL, NULL, 0, NULL, NULL);
 	pane_close(d->home);
 
 	free(d->views);
