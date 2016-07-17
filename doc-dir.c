@@ -625,8 +625,7 @@ DEF_CMD(dir_reread)
 
 DEF_CMD(dir_close)
 {
-	doc_destroy(ci->home);
-	return 1;
+	return call3("doc:destroy", ci->home, 0, NULL);
 }
 
 void edlib_init(struct pane *ed)

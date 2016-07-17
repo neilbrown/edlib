@@ -115,7 +115,6 @@ void doc_init(struct doc *d);
 struct pane *doc_new(struct pane *ed, char *type);
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render);
 struct pane *doc_attach(struct pane *parent, struct pane *d);
-int doc_destroy(struct pane *dp);
 extern struct map *doc_default_cmd;
 void doc_setup(struct pane *ed);
 

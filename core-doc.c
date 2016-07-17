@@ -41,6 +41,8 @@ static inline wint_t doc_prior(struct doc *d, struct mark *m)
 	return mark_step2(d, m, 0, 0);
 }
 
+static int doc_destroy(struct pane *dp);
+
 /* this is ->data for a document reference pane.
  */
 struct doc_data {
@@ -394,6 +396,12 @@ DEF_CMD(doc_set_autoclose)
 	return 1;
 }
 
+DEF_CMD(doc_do_destroy)
+{
+	doc_destroy(ci->home);
+	return 1;
+}
+
 struct map *doc_default_cmd;
 
 static void init_doc_defaults(void)
@@ -415,6 +423,7 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
 	key_add(doc_default_cmd, "doc:attach", &doc_do_attach);
 	key_add(doc_default_cmd, "doc:autoclose", &doc_set_autoclose);
+	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);
 	key_add(doc_default_cmd, "Closed", &doc_do_closed);
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
 		      &doc_request_notify);
@@ -500,9 +509,6 @@ DEF_CMD(doc_handle)
 		point_to_mark(dd->point, ci->mark);
 		return 1;
 	}
-
-	if (strcmp(ci->key, "doc:destroy") == 0)
-		return doc_destroy(dd->doc);
 
 	ci2 = *ci;
 	ci2.home = dd->doc;
@@ -667,7 +673,7 @@ char *doc_getstr(struct pane *from, struct mark *to, struct mark *m2)
 	return cr.s;
 }
 
-int doc_destroy(struct pane *dp)
+static int doc_destroy(struct pane *dp)
 {
 	/* If there are no views on the document, then unlink from
 	 * the documents list and destroy it.

@@ -645,7 +645,7 @@ DEF_CMD(docs_kill)
 		      "File modified, cannot kill.", 0);
 		return 1;
 	}
-	doc_destroy(dp);
+	call3("doc:destroy", dp, 0, NULL);
 	return 1;
 }
 
