@@ -607,7 +607,17 @@ DEF_CMD(docs_open_alt)
 
 DEF_CMD(docs_bury)
 {
-	doc_destroy(ci->home);
+	/* If the docs list is in a tile, put something else there. */
+	/* FIXME should this be a function of the pane manager? */
+	struct pane *tile, *doc;
+	tile = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	if (!tile)
+		return 1;
+	/* Discourage this doc from being chosen again */
+	call3("doc:revisit", ci->focus, -1, NULL);
+	doc = call_pane("docs:choose", ci->focus, 0, NULL, 0);
+	if (doc)
+		doc_attach_view(tile, doc, NULL);
 	return 1;
 }
 
