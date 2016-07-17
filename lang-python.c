@@ -1154,13 +1154,13 @@ static int Mark_init(Mark *self, PyObject *args, PyObject *kwds)
 	}
 	if (self->mark->viewnum >= 0) {
 		/* vmarks don't disappear until explicitly released */
-		Py_INCREF(self);
 		self->released = 0;
+		self->mark->mtype = &MarkType;
+		self->mark->mdata = (PyObject*)self;
+		Py_INCREF(self);
 	} else
 		self->released = 1;
 	self->local = local;
-	self->mark->mtype = &MarkType;
-	self->mark->mdata = (PyObject*)self;
 	return 1;
 }
 
@@ -1258,14 +1258,9 @@ static PyObject *Mark_dup(Mark *self)
 		return NULL;
 	}
 	new = mark_dup(self->mark, 1);
-	if (new) {
-		if (self->mark->mtype != &MarkType)
-			return Mark_Frommark(new, self->local);
-		new->mdata = Mark_Frommark(new, self->local);
-		new->mtype = &MarkType;
-		Py_INCREF(new->mdata);
-		return new->mdata;
-	}
+	if (new)
+		return Mark_Frommark(new, self->local);
+
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -1299,7 +1294,7 @@ static PyMethodDef mark_methods[] = {
 	{"prev_any", (PyCFunction)Mark_prev_any, METH_NOARGS,
 	 "previous any_mark"},
 	{"dup", (PyCFunction)Mark_dup, METH_NOARGS,
-	 "duplicate a mark, preserving type"},
+	 "duplicate a mark, as ungrouped"},
 	{"release", (PyCFunction)Mark_release, METH_NOARGS,
 	 "release a vmark so it can disappear"},
 	{NULL}
