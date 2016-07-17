@@ -313,7 +313,7 @@ DEF_CMD(docs_callback)
 
 		list_for_each_entry(p, &doc->doc.home->children, siblings) {
 			struct doc *d = p->data;
-			if (d->deleting)
+			if (p->damaged & DAMAGED_CLOSED)
 				continue;
 			last = p;
 			if (list_empty(&p->notifiees)) {

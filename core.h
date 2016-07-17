@@ -107,7 +107,6 @@ struct doc {
 	int			nviews;
 	struct pane		*home; /* pane which owns this doc*/
 	char			*name;
-	short			deleting; /* is begin destroyed */
 	bool			autoclose;
 	void			(*free)(struct doc*);
 };

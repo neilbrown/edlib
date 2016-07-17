@@ -103,7 +103,6 @@ void doc_init(struct doc *d)
 	d->views = NULL;
 	d->nviews = 0;
 	d->name = NULL;
-	d->deleting = 0;
 	d->autoclose = 0;
 	d->home = NULL;
 	d->free = NULL;
@@ -676,9 +675,10 @@ int doc_destroy(struct pane *dp)
 	int i;
 	struct doc *d = dp->data;
 
-	d->deleting = 1;
+	/* Temp Hack */
+	d->home->damaged |= DAMAGED_CLOSED;
 	pane_notify_close(d->home);
-	d->deleting = 0;
+	d->home->damaged &= ~DAMAGED_CLOSED;
 
 	if (!list_empty(&d->home->notifiees))
 		/* still being watched */

@@ -847,7 +847,7 @@ DEF_CMD(tile_child_closed)
 		return 1;
 	if (ci->focus->z != 0)
 		return 1;
-	/* Child closed, but we were, so find something else to display */
+	/* Child closed, but we weren't, so find something else to display */
 	c = call_pane("docs:choose", p, 0, NULL, 0);
 	if (c)
 		doc_attach_view(p, c, NULL);
