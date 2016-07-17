@@ -108,10 +108,10 @@ struct doc {
 	struct pane		*home; /* pane which owns this doc*/
 	char			*name;
 	bool			autoclose;
-	void			(*free)(struct doc*);
 };
 
 void doc_init(struct doc *d);
+void doc_free(struct doc *d);
 struct pane *doc_new(struct pane *ed, char *type);
 struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render);
 struct pane *doc_attach(struct pane *parent, struct pane *d);

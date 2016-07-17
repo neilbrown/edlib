@@ -107,7 +107,6 @@ void doc_init(struct doc *d)
 	d->name = NULL;
 	d->autoclose = 0;
 	d->home = NULL;
-	d->free = NULL;
 }
 
 /* For these 'default commands', home->data is struct doc */
@@ -673,6 +672,20 @@ char *doc_getstr(struct pane *from, struct mark *to, struct mark *m2)
 	return cr.s;
 }
 
+void doc_free(struct doc *d)
+{
+	free(d->views);
+	free(d->name);
+	while (!hlist_empty(&d->marks)) {
+		struct mark *m = hlist_first_entry(&d->marks, struct mark, all);
+		if (m->viewnum == MARK_POINT || m->viewnum == MARK_UNGROUPED)
+			mark_free(m);
+		else
+			/* vmarks should have gone already */
+			ASSERT(0);
+	}
+}
+
 static int doc_destroy(struct pane *dp)
 {
 	/* If there are no views on the document, then unlink from
@@ -680,6 +693,7 @@ static int doc_destroy(struct pane *dp)
 	 */
 	int i;
 	struct doc *d = dp->data;
+	struct pane *h = d->home;
 
 	/* Temp Hack */
 	d->home->damaged |= DAMAGED_CLOSED;
@@ -695,22 +709,8 @@ static int doc_destroy(struct pane *dp)
 			return -1;
 
 	comm_call_pane(d->home, "doc:free", d->home, 0, NULL, NULL, 0, NULL, NULL);
-	pane_close(d->home);
+	pane_close(h);
 
-	free(d->views);
-	free(d->name);
-	while (!hlist_empty(&d->marks)) {
-		struct mark *m = hlist_first_entry(&d->marks, struct mark, all);
-		if (m->viewnum == MARK_POINT || m->viewnum == MARK_UNGROUPED)
-			mark_free(m);
-		else
-			/* vmarks should have gone already */
-			ASSERT(0);
-	}
-	if (d->free)
-		d->free(d);
-	else
-		free(d);
 	return 1;
 }
 

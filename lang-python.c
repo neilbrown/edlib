@@ -295,6 +295,18 @@ REDEF_CMD(python_doc_call)
 	int rv = python_call_func(ci);
 	if (rv == 0)
 		rv = key_lookup(doc_default_cmd, ci);
+	if (strcmp(ci->key, "doc:free") == 0) {
+		struct doc *d = ci->home->data;
+		Doc *pd = container_of(d, Doc, doc);
+		struct pane *p = pd->pane;
+
+		doc_free(d);
+		if (p) {
+			p->handle = NULL;
+			p->data = NULL;
+		}
+		Py_DECREF(pd);
+	}
 	return rv;
 }
 
@@ -309,17 +321,6 @@ static Pane *pane_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 	return self;
 }
 
-static void doc_free(struct doc *d)
-{
-	/* A bit like calling .release() on the pane */
-	Doc *pd = container_of(d, Doc, doc);
-	struct pane *p = pd->pane;
-	if (p) {
-		p->handle = NULL;
-		p->data = NULL;
-	}
-	Py_DECREF(pd);
-}
 
 static Doc *Doc_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
@@ -329,7 +330,6 @@ static Doc *Doc_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 	if (self) {
 		self->pane = NULL;
 		doc_init(&self->doc);
-		self->doc.free = doc_free;
 	}
 	return self;
 }
@@ -406,7 +406,6 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 
 	self->handle.c = python_doc_call;
 	doc_init(&self->doc);
-	self->doc.free = doc_free;
 	self->pane = pane_register(parent->pane, z, &self->handle.c, &self->doc, NULL);
 	self->doc.home = self->pane;
 	return 0;

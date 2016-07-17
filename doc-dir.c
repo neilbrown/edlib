@@ -535,6 +535,8 @@ DEF_CMD(dir_destroy)
 		list_del(&de->lst);
 		free(de);
 	}
+	doc_free(d);
+	free(dr);
 	return 1;
 }
 

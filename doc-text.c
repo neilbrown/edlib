@@ -1652,6 +1652,8 @@ DEF_CMD(text_destroy)
 		free(te);
 	}
 	free(t->fname);
+	doc_free(d);
+	free(t);
 	return 1;
 }
 

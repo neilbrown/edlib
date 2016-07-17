@@ -250,6 +250,8 @@ struct command *key_register_prefix(char *name)
 	/* FIXME refcount these */
 	mm->name = strdup(name);
 	mm->comm.func = key_prefix;
+	mm->comm.refcnt = 0;
+	mm->comm.free = NULL;
 	return &mm->comm;
 }
 
