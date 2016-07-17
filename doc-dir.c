@@ -647,7 +647,7 @@ void edlib_init(struct pane *ed)
 
 	key_add(doc_map, "doc:load-file", &dir_load_file);
 	key_add(doc_map, "doc:same-file", &dir_same_file);
-	key_add(doc_map, "doc:free", &dir_destroy);
+	key_add(doc_map, "Close", &dir_destroy);
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
 	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
 	key_add(doc_map, "get-attr", &dir_get_attr);

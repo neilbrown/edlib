@@ -1940,7 +1940,7 @@ void edlib_init(struct pane *ed)
 	key_add(text_map, "doc:load-file", &text_load_file);
 	key_add(text_map, "doc:same-file", &text_same_file);
 	key_add(text_map, "doc:get-str", &text_get_str);
-	key_add(text_map, "doc:free", &text_destroy);
+	key_add(text_map, "Close", &text_destroy);
 	key_add(text_map, "doc:set-ref", &text_set_ref);
 	key_add(text_map, "doc:save-file", &text_save_file);
 	key_add(text_map, "doc:reundo", &text_reundo);

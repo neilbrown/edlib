@@ -41,8 +41,6 @@ static inline wint_t doc_prior(struct doc *d, struct mark *m)
 	return mark_step2(d, m, 0, 0);
 }
 
-static int doc_destroy(struct pane *dp);
-
 /* this is ->data for a document reference pane.
  */
 struct doc_data {
@@ -384,7 +382,7 @@ DEF_CMD(doc_do_closed)
 	ret = pane_notify(p, "Notify:Close:request", NULL, NULL, NULL, 0, NULL);
 	if (ret > 0)
 		return 1;
-	doc_destroy(p);
+	pane_close(p);
 	return 1;
 }
 
@@ -397,7 +395,7 @@ DEF_CMD(doc_set_autoclose)
 
 DEF_CMD(doc_do_destroy)
 {
-	doc_destroy(ci->home);
+	pane_close(ci->home);
 	return 1;
 }
 
@@ -674,6 +672,10 @@ char *doc_getstr(struct pane *from, struct mark *to, struct mark *m2)
 
 void doc_free(struct doc *d)
 {
+	int i;
+
+	for (i = 0; i < d->nviews; i++)
+		ASSERT(!d->views[i].state);
 	free(d->views);
 	free(d->name);
 	while (!hlist_empty(&d->marks)) {
@@ -684,34 +686,6 @@ void doc_free(struct doc *d)
 			/* vmarks should have gone already */
 			ASSERT(0);
 	}
-}
-
-static int doc_destroy(struct pane *dp)
-{
-	/* If there are no views on the document, then unlink from
-	 * the documents list and destroy it.
-	 */
-	int i;
-	struct doc *d = dp->data;
-	struct pane *h = d->home;
-
-	/* Temp Hack */
-	d->home->damaged |= DAMAGED_CLOSED;
-	pane_notify_close(d->home);
-	d->home->damaged &= ~DAMAGED_CLOSED;
-
-	if (!list_empty(&d->home->notifiees))
-		/* still being watched */
-		return -1;
-	for (i = 0; i < d->nviews; i++)
-		if (d->views[i].state)
-			/* still in use */
-			return -1;
-
-	comm_call_pane(d->home, "doc:free", d->home, 0, NULL, NULL, 0, NULL, NULL);
-	pane_close(h);
-
-	return 1;
 }
 
 void doc_setup(struct pane *ed)

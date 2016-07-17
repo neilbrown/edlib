@@ -295,7 +295,7 @@ REDEF_CMD(python_doc_call)
 	int rv = python_call_func(ci);
 	if (rv == 0)
 		rv = key_lookup(doc_default_cmd, ci);
-	if (strcmp(ci->key, "doc:free") == 0) {
+	if (strcmp(ci->key, "Close") == 0) {
 		struct doc *d = ci->home->data;
 		Doc *pd = container_of(d, Doc, doc);
 		struct pane *p = pd->pane;
