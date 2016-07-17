@@ -46,7 +46,6 @@ static inline wint_t doc_prior(struct doc *d, struct mark *m)
 struct doc_data {
 	struct pane		*doc;
 	struct mark		*point;
-	int			autoclose;
 };
 
 static int do_doc_add_view(struct doc *d)
@@ -105,6 +104,7 @@ void doc_init(struct doc *d)
 	d->nviews = 0;
 	d->name = NULL;
 	d->deleting = 0;
+	d->autoclose = 0;
 	d->home = NULL;
 	d->free = NULL;
 }
@@ -370,6 +370,30 @@ DEF_CMD(doc_do_attach)
 	return comm_call(ci->comm2, "callback", p, 0, NULL, NULL, 0);
 }
 
+DEF_CMD(doc_do_closed)
+{
+	struct pane *p = ci->home;
+	struct doc *d = p->data;
+	int ret;
+
+	if (!d->autoclose)
+		return 0;
+	/* If there are any doc-displays open, then will return '1' and
+	 * we will know not to destroy document yet.
+	 */
+	ret = pane_notify(p, "Notify:Close:request", NULL, NULL, NULL, 0, NULL);
+	if (ret > 0)
+		return 1;
+	doc_destroy(p);
+	return 1;
+}
+
+DEF_CMD(doc_set_autoclose)
+{
+	struct doc *d = ci->home->data;
+	d->autoclose = ci->numeric;
+	return 1;
+}
 
 struct map *doc_default_cmd;
 
@@ -391,6 +415,8 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
 	key_add(doc_default_cmd, "doc:attach", &doc_do_attach);
+	key_add(doc_default_cmd, "doc:autoclose", &doc_set_autoclose);
+	key_add(doc_default_cmd, "Closed", &doc_do_closed);
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
 		      &doc_request_notify);
 	key_add_range(doc_default_cmd, "Notify:doc:", "Notify:doc;",
@@ -401,6 +427,12 @@ DEF_CMD(doc_handle)
 {
 	struct doc_data *dd = ci->home->data;
 	struct cmd_info ci2;
+
+	if (strcmp(ci->key, "Notify:Close:request") == 0) {
+		/* The autoclose document wants to know if it should close.
+		 * tell it "no" */
+		return 1;
+	}
 
 	if (strcmp(ci->key, "Notify:Close") == 0) {
 		/* This pane has to go away */
@@ -431,15 +463,10 @@ DEF_CMD(doc_handle)
 			     ci->str, ci->extra);
 	}
 
-	if (strcmp(ci->key, "doc:autoclose") == 0) {
-		dd->autoclose = ci->numeric;
-		return 1;
-	}
 	if (strcmp(ci->key, "Close") == 0) {
-		if (dd->point)
-			mark_free(dd->point);
-		if (dd->autoclose)
-			doc_destroy(dd->doc);
+		mark_free(dd->point);
+		comm_call_pane(dd->doc, "Closed", ci->home, 0, NULL, NULL, 0,
+			       NULL, NULL);
 		free(dd);
 		ci->home->data = NULL;
 		return 1;
