@@ -354,16 +354,61 @@ class notmuch_master_view(edlib.Pane):
         p = p.render_attach("format")
         p = notmuch_main_view(p)
 
+        self.maxlen = 0 # length of longest query name
         self.list_pane = p
         self.query_pane = None
         self.query = None
         self.message_pane = None
+
+    def resize(self):
+        if self.list_pane and (self.query_pane or self.message_pane):
+            # list_pane must be no more than 25% total width, and no more than
+            # 5+1+maxlen+1
+            if self.maxlen <= 0:
+                self.maxlen = self.call("notmuch-search-maxlen")
+                if self.maxlen > 1:
+                    self.maxlen -= 1
+            pl = []
+            self.list_pane.call("ThisPane", "notmuch", lambda key,**a:take('focus',pl,a))
+            tile = pl[0]
+            space = self.w
+            ch,ln = tile.scale()
+            max = 5 + 1 + self.maxlen + 1
+            if space * 100 / ch < max * 4:
+                w = space / 4
+            else:
+                w = ch * 10 * max / 1000
+            if tile.w != w:
+                tile.call("Window:x+", "notmuch", w - tile.w)
+        if self.query_pane and self.message_pane:
+            # query_pane much be at least 4 lines, else 1/4 height
+            # but never more than half the height
+            pl = []
+            self.query_pane.call("ThisPane", "notmuch", lambda key,**a:take('focus',pl,a))
+            tile = pl[0]
+            ch,ln = tile.scale()
+            space = self.h
+            min = 4
+            if space * 100 / ln > min * 4:
+                h = space / 4
+            else:
+                h = ln * 10 * min / 1000
+                if h > space / 2:
+                    h = space / 2
+            if tile.h != h:
+                tile.call("Window:y+", "notmuch", h - tile.h)
 
     def handle(self, key, focus, mark, numeric, str, **a):
         if key == "Clone":
             p = notmuch_master_view(focus)
             # We don't clone children, we create our own
             return 1
+
+        if key == "Refresh:size":
+            # First, make sure the tiler has adjusted to the new size
+            self.focus.handle("Refresh:size")
+            # then make sure children are OK
+            self.resize()
 
         if key == "Return":
             focus.call("notmuch:select", mark, 0)
@@ -388,6 +433,7 @@ class notmuch_master_view(edlib.Pane):
             self.query_pane = pl[-1]
             if numeric:
                 self.query_pane.take_focus()
+            self.resize()
             return 1
 
         if key == "notmuch:select-message":
@@ -402,6 +448,7 @@ class notmuch_master_view(edlib.Pane):
             self.message_pane = pl[-1]
             if numeric:
                 self.message_pane.take_focus()
+            self.resize()
             return 1
 
 class notmuch_main_view(edlib.Pane):
@@ -428,20 +475,6 @@ class notmuch_main_view(edlib.Pane):
             self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
             return 0
 
-        if key == "Refresh:size":
-            pl = []
-            focus.call("ThisPane", "notmuch", lambda key,**a:take('focus',pl,a))
-            focus.call("RootPane", "notmuch", lambda key,**a:take('focus',pl,a))
-            if len(pl) == 2:
-                if pl[0].w < pl[1].w:
-                    # we have split, make sure proportions are OK
-                    (s,s2,side,type) = self.list_info(pl[1])
-                    if pl[0].w < s:
-                        focus.call("Window:x+", "notmuch", s - pl[0].w)
-                    elif pl[0].w > s:
-                        focus.call("Window:x-", "notmuch", pl[0].w - s)
-            return 0
-
         if key == "notmuch:select":
             sl = []
             focus.call("doc:get-attr", "query", mark, 1, lambda key,**a:take('str',sl,a))
@@ -450,22 +483,6 @@ class notmuch_main_view(edlib.Pane):
             return 1
 
         return notmuch_handle(self, key, focus, numeric, mark)
-
-    def list_info(self,pane):
-        if self.maxlen <= 0:
-            self.maxlen = self.call("notmuch-search-maxlen")
-            if self.maxlen > 1:
-                self.maxlen -= 1
-
-        space = pane.w
-        ch,ln = self.scale()
-        max = 5 + 1 + self.maxlen + 1
-        if space * 100 / ch < max * 4:
-            w = space / 4
-        else:
-            w = ch * 10 * max / 1000
-        return (w, space-w, 3, "threads")
-
 
 def render_master_view_attach(key, focus, comm2, **a):
     # The master view for the '*Notmuch*' document uses multiple tiles
@@ -864,31 +881,6 @@ class notmuch_query_view(edlib.Pane):
             self.clone_children(focus.focus)
             return 1
 
-        if key == "Refresh:size":
-            pl = []
-            focus.call("ThisPane", "notmuch", lambda key,**a:take('focus',pl,a))
-            focus.call("RootPane", "notmuch", lambda key,**a:take('focus',pl,a))
-            if len(pl) == 2:
-                if pl[0].h < pl[1].h:
-                    # we have split, make sure proportions are OK
-                    (s, s2, size, type) = self.list_info(pl[1])
-                    if pl[0].h != s:
-                        focus.damaged(edlib.DAMAGED_VIEW|edlib.DAMAGED_CONTENT)
-            return 0
-        if key == "Refresh:view":
-            # check size
-            pl = []
-            focus.call("ThisPane", "notmuch", lambda key,**a:take('focus',pl,a))
-            focus.call("RootPane", "notmuch", lambda key,**a:take('focus',pl,a))
-            if len(pl) == 2:
-                if pl[0].h < pl[1].h:
-                    # we have split, make sure proportions are OK
-                    (s,s2, size, type) = self.list_info(pl[1])
-                    if pl[0].h < s:
-                        focus.call("Window:y+", "notmuch", s - pl[0].h)
-                    elif pl[0].h > s:
-                        focus.call("Window:y-", "notmuch", pl[0].h - s)
-            return 0
         if key in ["doc:step", "doc:get-attr", "doc:mark-same"]:
             s = a['str']
             if s is None:
@@ -913,18 +905,6 @@ class notmuch_query_view(edlib.Pane):
 
 
         return notmuch_handle(self, key, focus, numeric, mark)
-
-    def list_info(self,pane):
-        ch,ln = self.scale()
-        space = pane.h
-        min = 4
-        if space * 100 / ln > min * 4:
-            h = space / 4
-        else:
-            h = ln * 10 * min / 1000
-            if h > space / 2:
-                h = space / 2
-        return (h, space - h, 2, "message")
 
 class notmuch_message_view(edlib.Pane):
     def __init__(self, focus):
