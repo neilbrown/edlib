@@ -417,6 +417,16 @@ class notmuch_master_view(edlib.Pane):
             focus.call("notmuch:select", mark, 1)
             return 1
 
+        if key == "Chr-o":
+            # focus to next window
+            focus.call("Window:next", "notmuch", numeric)
+            return 1
+
+        if key == "Chr-g":
+            focus.call("notmuch:update")
+            self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
+            return 1
+
         if key == "notmuch:select-query":
             # A query was selected, identifed by 'str'.  Close the
             # message window and open a threads window.
@@ -467,10 +477,6 @@ class notmuch_main_view(edlib.Pane):
             p = notmuch_main_view(focus)
             self.clone_children(focus.focus)
             return 1
-        if key == "Chr-g":
-            focus.call("notmuch:update")
-            self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
-            return 1
         if key == "Notify:Replace":
             self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
             return 0
@@ -481,8 +487,6 @@ class notmuch_main_view(edlib.Pane):
             if sl and sl[0]:
                 focus.call("notmuch:select-query", sl[0], numeric)
             return 1
-
-        return notmuch_handle(self, key, focus, numeric, mark)
 
 def render_master_view_attach(key, focus, comm2, **a):
     # The master view for the '*Notmuch*' document uses multiple tiles
@@ -903,9 +907,6 @@ class notmuch_query_view(edlib.Pane):
                 focus.call("notmuch:select-message", sl[-1], numeric)
             return 1
 
-
-        return notmuch_handle(self, key, focus, numeric, mark)
-
 class notmuch_message_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
@@ -921,15 +922,6 @@ class notmuch_message_view(edlib.Pane):
             focus.call("Next", 1, mark)
             # FIXME detect EOF and move to next message
             return 1
-        return notmuch_handle(self, key, focus, numeric, mark)
-
-def notmuch_handle(pane, key, focus, numeric, mark):
-    # common handler for all sub-panes
-    if key == "Chr-o":
-        # focus to next window
-        focus.call("Window:next", "notmuch", numeric)
-        return 1
-
 
 def render_query_attach(key, home, focus, comm2, **a):
     p = focus.render_attach("format")
