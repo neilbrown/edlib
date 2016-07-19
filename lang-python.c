@@ -74,6 +74,12 @@ static PyTypeObject PaneType;
 typedef struct {
 	PyObject_HEAD
 	struct pane	*pane;
+} PaneIter;
+static PyTypeObject PaneIterType;
+
+typedef struct {
+	PyObject_HEAD
+	struct pane	*pane;
 	struct python_command handle;
 	struct doc	doc;
 } Doc;
@@ -418,20 +424,35 @@ static void pane_dealloc(Pane *self)
 	self->ob_type->tp_free((PyObject*)self);
 }
 
-static Pane *pane_children(Pane *self)
+static PyObject *pane_children(Pane *self)
 {
+	PaneIter *ret;
 	if (!self->pane) {
 		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
 		return NULL;
 	}
-	if (list_empty(&self->pane->children)) {
-		/* FIXME is this right for an empty iterator? */
-		Py_INCREF(Py_None);
-		return (Pane*)Py_None;
-	}
+	ret = (PaneIter*)PyObject_CallObject((PyObject*)&PaneIterType, NULL);
+	if (list_empty(&self->pane->children))
+		ret->pane = NULL;
+	else
+		ret->pane = list_first_entry(&self->pane->children,
+					     struct pane, siblings);
+	return (PyObject*)ret;
+}
 
-	return (Pane*)Pane_Frompane(list_first_entry(&self->pane->children,
-						     struct pane, siblings));
+static Pane *pane_iter_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+	Pane *self;
+
+	self = (Pane *)type->tp_alloc(type, 0);
+	if (self)
+		self->pane = NULL;
+	return self;
+}
+
+static void paneiter_dealloc(PaneIter *self)
+{
+	self->ob_type->tp_free((PyObject*)self);
 }
 
 static PyObject *Pane_clone_children(Pane *self, PyObject *args)
@@ -467,23 +488,25 @@ static PyObject *Pane_refresh(Pane *self, PyObject *args)
 	return Py_None;
 }
 
-static Pane *pane_this(Pane *self)
+static PaneIter *pane_this_iter(PaneIter *self)
 {
-	return (Pane *)Pane_Frompane(self->pane);
+	Py_INCREF(self);
+	return self;
 }
 
-static Pane *pane_next(Pane *self)
+static PyObject *pane_iter_next(PaneIter *self)
 {
-	if (!self->pane) {
-		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
+	PyObject *ret;
+	if (!self->pane)
+		/* Reached the end */
 		return NULL;
-	}
-	if (self->pane->siblings.next == &self->pane->parent->children) {
+	ret = Pane_Frompane(self->pane);
+	if (self->pane->siblings.next == &self->pane->parent->children)
 		/* Reached the end of the list */
-		return NULL;
-	}
-
-	return (Pane*)Pane_Frompane(list_next_entry(self->pane, siblings));
+		self->pane = NULL;
+	else
+		self->pane = list_next_entry(self->pane, siblings);
+	return ret;
 }
 
 static PyObject *Pane_call(Pane *self, PyObject *args, PyObject *kwds)
@@ -674,7 +697,7 @@ static PyMethodDef pane_methods[] = {
 	{"close", (PyCFunction)Pane_close, METH_NOARGS,
 	 "close the pane"},
 	{"children", (PyCFunction)pane_children, METH_NOARGS,
-	 "provides and iterator which will iterate over all children"},
+	 "provides an iterator which will iterate over all children"},
 	{"clone_children", (PyCFunction)Pane_clone_children, METH_VARARGS,
 	 "Clone all children onto the target"},
 	{"take_focus", (PyCFunction)Pane_focus, METH_NOARGS,
@@ -918,8 +941,8 @@ static PyTypeObject PaneType = {
     NULL,			/* tp_clear */
     NULL,			/* tp_richcompare */
     0,				/* tp_weaklistoffset */
-    (getiterfunc)pane_this,	/* tp_iter */
-    (iternextfunc)pane_next,	/* tp_iternext */
+    NULL,			/* tp_iter */
+    NULL,			/* tp_iternext */
     pane_methods,		/* tp_methods */
     NULL,			/* tp_members */
     pane_getseters,		/* tp_getset */
@@ -931,6 +954,48 @@ static PyTypeObject PaneType = {
     .tp_init = (initproc)Pane_init,/* tp_init */
     NULL,			/* tp_alloc */
     .tp_new = (newfunc)pane_new,/* tp_new */
+};
+
+static PyTypeObject PaneIterType = {
+    PyObject_HEAD_INIT(NULL)
+    0,				/*ob_size*/
+    "edlib.PaneIter",		/*tp_name*/
+    sizeof(PaneIter),		/*tp_basicsize*/
+    0,				/*tp_itemsize*/
+    (destructor)paneiter_dealloc,/*tp_dealloc*/
+    NULL,			/*tp_print*/
+    NULL,			/*tp_getattr*/
+    NULL,			/*tp_setattr*/
+    NULL,			/*tp_compare*/
+    NULL,			/*tp_repr*/
+    NULL,			/*tp_as_number*/
+    NULL,			/*tp_as_sequence*/
+    NULL,			/*tp_as_mapping*/
+    NULL,			/*tp_hash */
+    NULL,			/*tp_call*/
+    NULL,			/*tp_str*/
+    NULL,			/*tp_getattro*/
+    NULL,			/*tp_setattro*/
+    NULL,			/*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,		/*tp_flags*/
+    "edlib pane iterator",	/* tp_doc */
+    NULL,			/* tp_traverse */
+    NULL,			/* tp_clear */
+    NULL,			/* tp_richcompare */
+    0,				/* tp_weaklistoffset */
+    (getiterfunc)pane_this_iter,/* tp_iter */
+    (iternextfunc)pane_iter_next,/* tp_iternext */
+    NULL,			/* tp_methods */
+    NULL,			/* tp_members */
+    NULL,			/* tp_getset */
+    NULL,			/* tp_base */
+    NULL,			/* tp_dict */
+    NULL,			/* tp_descr_get */
+    NULL,			/* tp_descr_set */
+    0,				/* tp_dictoffset */
+    .tp_init = NULL,		/* tp_init */
+    NULL,			/* tp_alloc */
+    .tp_new = (newfunc)pane_iter_new,/* tp_new */
 };
 
 static PyObject *first_mark(Doc *self)
@@ -1700,16 +1765,15 @@ void edlib_init(struct pane *ed)
 	Py_Initialize();
 
 	PaneType.tp_new = PyType_GenericNew;
+	PaneIterType.tp_new = PyType_GenericNew;
 	DocType.tp_new = PyType_GenericNew;
 	MarkType.tp_new = PyType_GenericNew;
 	CommType.tp_new = PyType_GenericNew;
-	if (PyType_Ready(&PaneType) < 0)
-		return;
-	if (PyType_Ready(&DocType) < 0)
-		return;
-	if (PyType_Ready(&MarkType) < 0)
-		return;
-	if (PyType_Ready(&CommType) < 0)
+	if (PyType_Ready(&PaneType) < 0 ||
+	    PyType_Ready(&PaneIterType) < 0 ||
+	    PyType_Ready(&DocType) < 0 ||
+	    PyType_Ready(&MarkType) < 0 ||
+	    PyType_Ready(&CommType) < 0)
 		return;
 
 	m = Py_InitModule3("edlib", NULL,
@@ -1718,9 +1782,8 @@ void edlib_init(struct pane *ed)
 	if (!m)
 		return;
 
-	Py_INCREF(&PaneType);
-	Py_INCREF(&MarkType);
 	PyModule_AddObject(m, "Pane", (PyObject *)&PaneType);
+	PyModule_AddObject(m, "PaneIter", (PyObject *)&PaneIterType);
 	PyModule_AddObject(m, "Mark", (PyObject *)&MarkType);
 	PyModule_AddObject(m, "Comm", (PyObject *)&CommType);
 	PyModule_AddObject(m, "Doc", (PyObject *)&DocType);
