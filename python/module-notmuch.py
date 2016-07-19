@@ -121,13 +121,13 @@ class searches:
         self.todo = [] + self.current
         self.pane = pane
         self.cb = cb
-        self.update_one()
+        return self.update_one()
 
     def update_one(self):
         if not self.todo:
             self.pane = None
             self.cb = None
-            return
+            return False
         n = self.todo[0]
         self.p = Popen("/usr/bin/notmuch count --batch", shell=True, stdin=PIPE,
                        stdout = PIPE)
@@ -136,6 +136,7 @@ class searches:
         self.p.stdin.write(self.make_search(n, 'new') + "\n")
         self.p.stdin.close()
         self.pane.call("event:read", self.p.stdout.fileno(), self.cb)
+        return True
 
     def updated(self, *a):
         n = self.todo.pop(0)
@@ -150,8 +151,9 @@ class searches:
             pass
         p = self.p
         self.p = None
-        self.update_one()
+        more = self.update_one()
         p.wait()
+        return more
 
     patn = "\\bsaved:([-_A-Za-z0-9]*)\\b"
     def map_search(self, query):
@@ -193,6 +195,7 @@ class notmuch_main(edlib.Doc):
         edlib.Doc.__init__(self, focus, self.handle)
         self.searches = searches()
         self.timer_set = False
+        self.updating = False
 
     def handle(self, key, focus, mark, mark2, numeric, extra, str, comm2, **a):
 
@@ -275,10 +278,12 @@ class notmuch_main(edlib.Doc):
         if key == "notmuch:update":
             if not self.timer_set:
                 self.timer_set = True
-                self.call("event:timer", 60*5, self.tick)
+                self.call("event:timer", 5, self.tick)
             self.searches.load(False)
             self.notify("Notify:Replace")
-            self.searches.update(self, self.updated)
+            self.updating = True
+            if not self.searches.update(self, self.updated):
+                self.updating = False
             return 1
 
         if key == "notmuch:query":
@@ -295,7 +300,6 @@ class notmuch_main(edlib.Doc):
             if not nm:
                 nm = notmuch_list(self, q)
                 nm.call("doc:set-name", str)
-                print "made new", str
             if comm2:
                 comm2("callback", nm)
             return 1
@@ -328,14 +332,17 @@ class notmuch_main(edlib.Doc):
             return self.searches.maxlen + 1
 
     def tick(self, key, **a):
-        if not self.searches.todo:
+        if not self.updating:
+            self.updating = True
             self.searches.load(False)
-            self.searches.update(self, self.updated)
+            if not self.searches.update(self, self.updated):
+                self.updating = False
         return 1
 
     def updated(self, key, **a):
-        self.searches.updated()
-        self.notify("Notify:Replace")
+        if not self.searches.updated():
+            self.updating = False
+            self.notify("Notify:Replace")
         return -1
 
 def notmuch_doc(key, home, focus, comm2, **a):
