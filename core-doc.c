@@ -507,6 +507,12 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
+	if (strcmp(ci->key, "render:reposition") == 0)
+		/* HACK: don't let any underlying pane see this as it won't
+		 * mean anything, and lib-view grabs the mark which it shouldn't
+		 */
+		return 1;
+
 	ci2 = *ci;
 	ci2.home = dd->doc;
 	if (ci2.mark == NULL)
