@@ -82,10 +82,11 @@ static PyTypeObject DocType;
 typedef struct {
 	PyObject_HEAD
 	struct mark	*mark;
-	int		released;
-	int		local; /* set when mark arrived with ci->home being
+	unsigned int	released:1;
+	unsigned int	local:1; /* set when mark arrived with ci->home being
 				* a Doc, so the ref is usable
 				*/
+	unsigned int	owned:1;
 } Mark;
 static PyTypeObject MarkType;
 
@@ -128,6 +129,7 @@ static inline PyObject *Mark_Frommark(struct mark *m, int local)
 	mark->mark = m;
 	mark->released = 1;
 	mark->local = local;
+	mark->owned = 0;
 	return (PyObject*)mark;
 }
 
@@ -1195,6 +1197,7 @@ static int Mark_init(Mark *self, PyObject *args, PyObject *kwds)
 	} else
 		self->released = 1;
 	self->local = local;
+	self->owned = 1;
 	return 1;
 }
 
@@ -1205,8 +1208,9 @@ static void mark_dealloc(Mark *self)
 		self->mark = NULL;
 		m->mtype = NULL;
 		m->mdata = NULL;
-		mark_free(m);
 	}
+	if (self->owned && self->mark)
+		mark_free(self->mark);
 	self->ob_type->tp_free((PyObject*)self);
 }
 
@@ -1292,8 +1296,11 @@ static PyObject *Mark_dup(Mark *self)
 		return NULL;
 	}
 	new = mark_dup(self->mark, 1);
-	if (new)
-		return Mark_Frommark(new, self->local);
+	if (new) {
+		Mark *ret = (Mark*)Mark_Frommark(new, self->local);
+		ret->owned = 1;
+		return (PyObject*)ret;
+	}
 
 	Py_INCREF(Py_None);
 	return Py_None;
