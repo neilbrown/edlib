@@ -139,6 +139,8 @@ class searches:
         return True
 
     def updated(self, *a):
+        if not self.todo:
+            return False
         n = self.todo.pop(0)
         try:
             c = self.p.stdout.readline()
@@ -195,7 +197,7 @@ class notmuch_main(edlib.Doc):
         edlib.Doc.__init__(self, focus, self.handle)
         self.searches = searches()
         self.timer_set = False
-        self.updating = False
+        self.updating = None
 
     def handle(self, key, focus, mark, mark2, numeric, extra, str, comm2, **a):
 
@@ -281,9 +283,9 @@ class notmuch_main(edlib.Doc):
                 self.call("event:timer", 5, self.tick)
             self.searches.load(False)
             self.notify("Notify:Replace")
-            self.updating = True
+            self.updating = "counts"
             if not self.searches.update(self, self.updated):
-                self.updating = False
+                self.update_next()
             return 1
 
         if key == "notmuch:query":
@@ -331,19 +333,40 @@ class notmuch_main(edlib.Doc):
         if key == "notmuch-search-maxlen":
             return self.searches.maxlen + 1
 
+        if key == "notmuch:query-updated":
+            self.update_next()
+
     def tick(self, key, **a):
         if not self.updating:
-            self.updating = True
+            self.updating = "counts"
             self.searches.load(False)
             if not self.searches.update(self, self.updated):
-                self.updating = False
+                self.update_next()
         return 1
 
     def updated(self, key, **a):
         if not self.searches.updated():
-            self.updating = False
-            self.notify("Notify:Replace")
+            self.update_next()
+        self.notify("Notify:Replace")
         return -1
+
+    def update_next(self):
+        if self.updating == "counts":
+            self.updating = "queries"
+            qlist = []
+            for c in self.children():
+                qlist.append(c['query'])
+            self.qlist = qlist
+        while self.updating == "queries":
+            if not self.qlist:
+                self.updating = None
+            else:
+                q = self.qlist.pop(0)
+                for c in self.children():
+                    if c['query'] == q:
+                        c("notmuch:query-refresh")
+                        return
+
 
 def notmuch_doc(key, home, focus, comm2, **a):
     # Create the root notmuch document
@@ -549,6 +572,7 @@ class notmuch_list(edlib.Doc):
     def __init__(self, focus, query):
         edlib.Doc.__init__(self, focus, self.handle)
         self.query = query
+        self['query'] = query
         self.threadids = []
         self.threads = {}
         self.messageids = {}
@@ -562,11 +586,22 @@ class notmuch_list(edlib.Doc):
         self.new = []
         self.offset = 0
         self.age = 1
+        self.partial = False
+        self.start_load()
+
+    def load_update(self):
+        self.partial = True
+        self.age = None
+        self.old = self.threadids[:]
+        self.new = []
+        self.offset = 0
         self.start_load()
 
     def start_load(self):
         cmd = ["/usr/bin/notmuch", "search", "--output=summary", "--format=json", "--limit=100", "--offset=%d" % self.offset ]
-        if self.age:
+        if self.partial:
+            cmd += [ "date:-1day.. AND " ]
+        elif self.age:
             cmd += [ "date:-%dmonths.. AND " % self.age]
         cmd += [ "( %s )" % self.query ]
         self.p = Popen(cmd, shell=False, stdout=PIPE)
@@ -583,8 +618,8 @@ class notmuch_list(edlib.Doc):
             found += 1
             try:
                 i = self.old.index(tid)
-                if i > 0:
-                    self.move_marks_from(tid)
+                #if i > 0:
+                #    self.move_marks_from(tid)
                 del self.old[i]
             except ValueError:
                 pass
@@ -605,6 +640,7 @@ class notmuch_list(edlib.Doc):
         self.notify("Notify:Replace")
         if found < 100 and self.age == None:
             # must have found them all
+            self.call("notmuch:query-updated")
             return -1
         # request some more
         if found < 5:
@@ -899,6 +935,9 @@ class notmuch_list(edlib.Doc):
             if self.query == str2:
                 return 1
             return 0
+
+        if key == "notmuch:query-refresh":
+            self.load_update()
 
 class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
