@@ -517,7 +517,7 @@ static PyObject *Pane_call(Pane *self, PyObject *args, PyObject *kwds)
 	return PyInt_FromLong(rv);
 }
 
-static PyObject *Pane_handle(Pane *self, PyObject *args, PyObject *kwds)
+static PyObject *pane_direct_call(Pane *self, PyObject *args, PyObject *kwds)
 {
 	struct cmd_info ci = {};
 	int rv;
@@ -683,8 +683,6 @@ static PyMethodDef pane_methods[] = {
 	 "Trigger refresh on this pane"},
 	{"call", (PyCFunction)Pane_call, METH_VARARGS|METH_KEYWORDS,
 	 "Call a command from a pane"},
-	{"handle", (PyCFunction)Pane_handle, METH_VARARGS|METH_KEYWORDS,
-	 "Call the handler for a specific pane"},
 	{"notify", (PyCFunction)Pane_notify, METH_VARARGS|METH_KEYWORDS,
 	 "Send a notification from a pane"},
 	{"abs", (PyCFunction)Pane_abs, METH_VARARGS,
@@ -909,7 +907,7 @@ static PyTypeObject PaneType = {
     NULL,			/*tp_as_sequence*/
     &pane_mapping,		/*tp_as_mapping*/
     (hashfunc)pane_hash,	/*tp_hash */
-    NULL,			/*tp_call*/
+    (ternaryfunc)pane_direct_call,/*tp_call*/
     NULL,			/*tp_str*/
     NULL,			/*tp_getattro*/
     NULL,			/*tp_setattro*/
