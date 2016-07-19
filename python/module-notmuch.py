@@ -455,6 +455,11 @@ class notmuch_master_view(edlib.Pane):
                                  lambda key,**a:take('focus',pl,a))
             pl[0].call("doc:attach", pl[-1], "notmuch:message",
                                  lambda key,**a:take('focus',pl,a))
+            # This still doesn't work: there are races: attaching a doc to
+            # the pane causes the current doc to be closed.  But the new doc
+            # hasn't been anchored yet so if they are the same, we lose.
+            # Need a better way to anchor a document.
+            #pl[0].call("doc:autoclose", 1);
             self.message_pane = pl[-1]
             if numeric:
                 self.message_pane.take_focus()
