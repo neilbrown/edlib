@@ -27,8 +27,19 @@ import os
 import notmuch
 import json
 import time
+import fcntl
 
-db = None
+
+class locked_db():
+    def __enter__(self):
+        self.fd = open(os.environ["HOME"]+"/.notmuch-config")
+        fcntl.flock(self.fd.fileno(), fcntl.LOCK_SH)
+        self.db = notmuch.Database()
+        return self.db
+
+    def __exit__(self, a,b,c):
+        self.db.close()
+        self.fd.close()
 
 def take(name, place, args, default=None):
     if args[name] is not None:
@@ -280,7 +291,7 @@ class notmuch_main(edlib.Doc):
         if key == "notmuch:update":
             if not self.timer_set:
                 self.timer_set = True
-                self.call("event:timer", 5, self.tick)
+                self.call("event:timer", 5*60, self.tick)
             self.searches.load(False)
             self.notify("Notify:Replace")
             self.updating = "counts"
@@ -309,16 +320,9 @@ class notmuch_main(edlib.Doc):
         if key == "notmuch:byid":
             # return a document for the email message,
             # this is a global document
-            global db
-            if not db:
-                db = notmuch.Database()
-            try:
+            with locked_db() as db:
                 m = db.find_message(str)
-            except:
-                db.close()
-                db = notmuch.Database()
-                m = db.find_message(str)
-            fn = m.get_filename()
+                fn = m.get_filename() + ""
             try:
                 f = open(fn)
             except:
@@ -666,32 +670,19 @@ class notmuch_list(edlib.Doc):
                 self.add_message(m, lst, info, depth * 2 + 1)
             self.add_message(l[-1], lst, info, depth * 2)
 
-    def _load_thread(self, tid):
-        global db
-        if not db:
-            db = notmuch.Database()
-        q = notmuch.Query(db, "thread:%s and (%s)" % (tid, self.query))
-        thread = list(q.search_threads())[0]
-        midlist = []
-        minfo = {}
-        ml = list(thread.get_toplevel_messages())
-        ml.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
-        for m in ml[:-1]:
-            self.add_message(m, midlist, minfo, 3)
-        self.add_message(ml[-1], midlist, minfo, 2)
-        self.messageids[tid] = midlist
-        self.threadinfo[tid] = minfo
-
     def load_thread(self, tid):
-        global db
-        aborted = True
-        while aborted:
-            try:
-                self._load_thread(tid)
-                aborted = False
-            except notmuch.XapianError:
-                db.close()
-                db = None
+        with locked_db() as db:
+            q = notmuch.Query(db, "thread:%s and (%s)" % (tid, self.query))
+            thread = list(q.search_threads())[0]
+            midlist = []
+            minfo = {}
+            ml = list(thread.get_toplevel_messages())
+            ml.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
+            for m in ml[:-1]:
+                self.add_message(m, midlist, minfo, 3)
+            self.add_message(ml[-1], midlist, minfo, 2)
+            self.messageids[tid] = midlist
+            self.threadinfo[tid] = minfo
 
     def rel_date(self, sec):
         then = time.localtime(sec)
