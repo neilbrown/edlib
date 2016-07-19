@@ -285,8 +285,17 @@ class notmuch_main(edlib.Doc):
             # note: this is a private document that doesn't
             # get registered in the global list
             q = self.searches.make_search(str, None)
-            nm = notmuch_list(self, q)
-            nm.call("doc:set-name", str)
+            nm = None
+            it = self.children()
+            if it:
+                for child in it:
+                    if child("notmuch:same-search", str, q) > 0:
+                        nm = child
+                        break
+            if not nm:
+                nm = notmuch_list(self, q)
+                nm.call("doc:set-name", str)
+                print "made new", str
             if comm2:
                 comm2("callback", nm)
             return 1
@@ -878,6 +887,11 @@ class notmuch_list(edlib.Doc):
             if str not in self.threadinfo:
                 self.load_thread(str)
             return 1
+
+        if key == "notmuch:same-search":
+            if self.query == str2:
+                return 1
+            return 0
 
 class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
