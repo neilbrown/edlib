@@ -1292,7 +1292,7 @@ DEF_CMD(render_lines_move_line)
 
 	if (target_x >= 0 || target_y >= 0) {
 		struct mark *start =
-			vmark_at_point(focus, rl->typenum);
+			vmark_at_or_before(focus, ci->mark, rl->typenum);
 		int y = 0;
 		if (!start || !start->mdata) {
 			pane_damaged(p, DAMAGED_CONTENT);
