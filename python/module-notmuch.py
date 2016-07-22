@@ -460,6 +460,28 @@ class notmuch_master_view(edlib.Pane):
             focus.call("notmuch:select", mark, 1)
             return 1
 
+        if key in [ "M-Chr-n", "M-Chr-p", "Chr-n", "Chr-p"]:
+            if key[0] == "M" or not self.query_pane:
+                p = self.list_pane
+                op = self.query_pane
+            else:
+                p = self.query_pane
+                op = self.message_pane
+            if not p:
+                return 1
+            direction = 1 if key[-1] == "n" else -1
+            m = mark
+            if op:
+                # secondary window exists, so move
+                pl=[]
+                p.call("doc:dup-point", 0, -2, lambda key,**a:take("mark", pl, a))
+                m = pl[0]
+                if p.call("Move-Line", direction, m) == 1:
+                    p.call("Move-to", m)
+                    p.damaged(edlib.DAMAGED_CURSOR)
+            p.call("notmuch:select", m, 1)
+            return 1
+
         if key == "Chr-o":
             # focus to next window
             focus.call("Window:next", "notmuch", numeric)
