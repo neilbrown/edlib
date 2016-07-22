@@ -449,9 +449,12 @@ class notmuch_master_view(edlib.Pane):
 
         if key == "Refresh:size":
             # First, make sure the tiler has adjusted to the new size
+            self.focus.w = self.w
+            self.focus.h = self.h
             self.focus("Refresh:size")
             # then make sure children are OK
             self.resize()
+            return 1
 
         if key == "Return":
             focus.call("notmuch:select", mark, 0)
