@@ -218,7 +218,7 @@ static PyObject *python_string(char *s)
 		c++;
 	if (*c)
 		/* must be Unicode */
-		return PyUnicode_DecodeUTF8(s, strlen(s), "Unicode");
+		return PyUnicode_DecodeUTF8(s, strlen(s), NULL);
 	else
 		return Py_BuildValue("s", s);
 }
