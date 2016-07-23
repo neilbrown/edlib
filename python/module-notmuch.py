@@ -982,7 +982,7 @@ class notmuch_query_view(edlib.Pane):
             if sl[0] != self.selected:
                 self.call("notmuch:load-thread", sl[0])
                 self.selected = sl[0]
-                self.damaged(edlib.DAMAGED_VIEW)
+                self.damaged(edlib.DAMAGED_VIEW|edlib.DAMAGED_CONTENT)
             focus.call("doc:get-attr", "message-id", 1, mark, lambda key,**a:take('str',sl,a))
             if len(sl) == 2:
                 focus.call("notmuch:select-message", sl[-1], numeric)
