@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 # edlib module for working with "notmuch" email.
 #
 # Two document types:
@@ -685,15 +685,17 @@ class notmuch_list(edlib.Doc):
     def add_message(self, m, lst, info, depth):
         mid = m.get_message_id()
         lst.append(mid)
+        l = list(m.get_replies())
+        depth += [ 1 if l else 0 ]
         info[mid] = (m.get_filename(), m.get_date(),
                      m.get_flag(notmuch.Message.FLAG.MATCH),
                      depth, m.get_header("From"), m.get_header("Subject"), list(m.get_tags()))
-        l = list(m.get_replies())
+        depth = depth[:-1]
         if l:
             l.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
             for m in l[:-1]:
-                self.add_message(m, lst, info, depth * 2 + 1)
-            self.add_message(l[-1], lst, info, depth * 2)
+                self.add_message(m, lst, info, depth + [1])
+            self.add_message(l[-1], lst, info, depth + [0])
 
     def load_thread(self, tid):
         with locked_db() as db:
@@ -703,9 +705,8 @@ class notmuch_list(edlib.Doc):
             minfo = {}
             ml = list(thread.get_toplevel_messages())
             ml.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
-            for m in ml[:-1]:
-                self.add_message(m, midlist, minfo, 3)
-            self.add_message(ml[-1], midlist, minfo, 2)
+            for m in list(ml):
+                self.add_message(m, midlist, minfo, [2])
             self.messageids[tid] = midlist
             self.threadinfo[tid] = minfo
 
@@ -796,13 +797,12 @@ class notmuch_list(edlib.Doc):
 
     def cvt_depth(self, depth):
         ret = ""
-        while depth > 1:
-            if depth & 1:
-                ret = "+" + ret
-            else:
-                ret = "-" + ret
 
-            depth = int(depth/2)
+        for level in depth[:-2]:
+            ret += u" │ "[level]
+        ret += u"╰├─"[depth[-2]]
+        ret += u"─┬"[depth[-1]]
+
         return ret + "> "
 
     def handle(self, key, mark, mark2, numeric, extra, focus, str, str2, comm2, **a):
