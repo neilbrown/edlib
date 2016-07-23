@@ -485,6 +485,24 @@ class notmuch_master_view(edlib.Pane):
             p.call("notmuch:select", m, 1)
             return 1
 
+        if key in [ "Chr-x", "Chr-q" ]:
+            if self.message_pane:
+                # FIXME 'q' should mark as not 'unread'
+                p = self.message_pane
+                self.message_pane = None
+                p.call("Window:close", "notmuch")
+            elif self.query_pane:
+                # FIXME 'q' should mark messages as not 'new'
+                p = self.query_pane
+                self.query_pane = None
+                p.call("Window:close", "notmuch")
+            else:
+                pl=[]
+                self.call("ThisPane", lambda key,**a:take('focus',pl, a))
+                if pl and pl[0].focus:
+                    pl[0].focus.close()
+            return 1
+
         if key == "Chr-o":
             # focus to next window
             focus.call("Window:next", "notmuch", numeric)
