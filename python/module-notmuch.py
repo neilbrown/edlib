@@ -614,6 +614,16 @@ def notmuch_mode(key, home, focus, **a):
 # we reach and empty month, then get all the rest together
 # For an update, we just check the last day and add anything missing.
 # We keep an array of thread-ids
+#
+# Three different views are presented of this document depending
+# on extra arguments in the
+#    doc:set-ref doc:mark-same doc:step doc:get-attr
+# messages.
+# By default, when 'str' is None, only the separate threads a visible as objects.
+# If 'str' is a thread id and 'xy.x' is 0, then in place of that thread a
+#   list of 'matching' message is given
+# If 'str' is a thread id and 'xy.x' is non-zero, then only the messages in
+#   the thread are visible, but all are visible, including non-matching threads
 
 class notmuch_list(edlib.Doc):
     def __init__(self, focus, query):
@@ -718,7 +728,10 @@ class notmuch_list(edlib.Doc):
     def load_thread(self, tid):
         with locked_db() as db:
             q = notmuch.Query(db, "thread:%s and (%s)" % (tid, self.query))
-            thread = list(q.search_threads())[0]
+            tl = list(q.search_threads())
+            if not tl:
+                return
+            thread = tl[0]
             midlist = []
             minfo = {}
             ml = list(thread.get_toplevel_messages())
@@ -755,63 +768,124 @@ class notmuch_list(edlib.Doc):
         val = val[-13:]
         return val
 
-    def next(self, pos, visible):
-        # visible is a list of visible thread-ids
-        # we move pos forward either to the next message in a visible thread
-        # or the first message of the next thread
-        # return index into thread list and index into message list of original pos,
-        # and new pos
+    def pos_index(self, pos, visible, whole_thread):
+        # return (threadnum, messagenum, moved, pos)
+        # by finding the first position at or after pos
+        # and 'threadnum' being index into self.threadids
+        # 'messagenum' being -1 if thread not in visible, else
+        # index into self.messageids[threadid',
+        # 'moved' being true of 'pos' wasn't visible, and
+        # 'pos' being the new position.
+        # End-of-file is -1 -1 None
         if pos is None:
-            return (-1,-1,None)
+            return (-1, -1, False, None)
         th = pos[0]
+        moved = False
         i = self.threadids.index(th)
         j = -1
-        if th in visible:
-            # maybe step to next message
-            if len(pos) == 1:
-                j = 0
-            else:
-                j = self.messageids[th].index(pos[1])
-            if j + 1 < len(self.messageids[th]):
-                return (i, j, (th, self.messageids[th][j+1]))
-        # need next thread
-        if i+1 >= len(self.threadids):
-            return (i, j, None)
-        th = self.threadids[i+1]
-        if th in visible:
-            ms = self.messageids[th][0]
-            return (i, j, (th, ms))
-        return (i, j, (th,))
-
-    def prev(self, pos, visible):
-        # visible is a list of visible thread-ids
-        # we move pos backward either to previous next message in a visible thread
-        # or the last message of the previous thread
-        # return index into thread list, index into message list, and new pos
-        # (Indexs are new pos!)
-        if pos is not None and pos[0] in visible and len(pos) == 2:
-            # maybe go to previous message
-            th = pos[0]
-            i = self.threadids.index(th)
-            ms = pos[1]
-            j = self.messageids[th].index(ms)
-            if j > 0:
-                j -= 1
-                return (i,j,(th, self.messageids[th][j]))
-        # need previous thread
-        if pos is None:
-            i = len(self.threadids)
-        else:
-            i = self.threadids.index(pos[0])
-        if i == 0:
-            return (-1, -1, None)
-        i -= 1
-        th = self.threadids[i]
+        while whole_thread and th not in visible:
+            # invisible thread, move to next
+            moved = True
+            i += 1
+            if i >= len(self.threadids):
+                return (-1, -1, moved, None)
+            th = self.threadids[i]
+            pos = (th,)
+        # This thread is a valid location
         if th not in visible:
-            return (i, -1, (th,))
-        j = len(self.messageids[th])
-        ms = self.messageids[th][j-1]
-        return (i, j, (th, ms))
+            if len(pos) == 2:
+                # move to whole of thread
+                pos = (th,)
+                moved = True
+            return (i, -1, moved, pos)
+        # Thread is open, need to find a valid message, either after or before
+        mi = self.messageids[th]
+        ti = self.threadinfo[th]
+        if len(pos) == 1:
+            j = 0
+            moved = True
+        else:
+            j = mi.index(pos[1])
+        while j < len(mi):
+            if whole_thread or ti[mi[j]][2]:
+                return (i, j, moved, (th, mi[j]))
+            j += 1
+            moved = True
+        # search backwards
+        while j > 0:
+            j -= 1
+            if whole_thread or ti[mi[j]][2]:
+                return (i, j, True, (th, mi[j]))
+        # IMPOSSIBLE
+        return (-1, -1, True, None)
+
+    def next(self, i, j, visible, whole_thread):
+        # 'visible' is a list of visible thread-ids.
+        # We move pos forward either to the next message in a visible thread
+        # or the first message of the next thread
+        # Return index into thread list and index into message list of original pos,
+        # and new pos.
+        # Normally only select messages which 'match' (info[2])
+        # If whole_thread, then only select messages in a visible thread, and
+        #  select any of them, including non-matched.
+        # return i,j,pos
+        if j == -1 and i >= 0:
+            i += 1
+        else:
+            j += 1
+        while True:
+            if i == -1 or i >= len(self.threadids):
+                return (-1, -1, None)
+            th = self.threadids[i]
+            if th in visible:
+                # thread is visible, move to next message
+                mi = self.messageids[th]
+                ti = self.threadinfo[th]
+                if j < 0:
+                    j = 0
+                while j < len(mi) and not whole_thread and not ti[mi[j]][2]:
+                    j += 1
+                if j < len(mi):
+                    return (i, j, (th, mi[j]))
+            elif not whole_thread:
+                return (i, -1, (th,))
+            # Move to next thread
+            i += 1
+            j = -1
+
+    def prev(self, i, j, visible, whole_thread):
+        # 'visible' is a list of visible thread-ids
+        # We move pos backward either to previous next message in a visible thread
+        # or the last message of the previous thread.
+        # Return index into thread list, index into message list, and new pos
+        # (Indexs are new pos!)
+        # Normally only select messages which 'match' (info[2])
+        # If whole_thread, then only select messages in a visible thread,
+        #   and select any of them, including non-matched.
+        if j <= 0:
+            j = -1
+            i -= 1
+        else:
+            j -= 1
+        while True:
+            if i < 0:
+                return (-1, -1, None)
+            th = self.threadids[i]
+            if th in visible:
+                mi = self.messageids[th]
+                ti = self.threadinfo[th]
+                if j < 0 or j >= len(mi):
+                    j = len(mi) -1
+                while j >= 0 and not whole_thread and not ti[mi[j]][2]:
+                    j -= 1
+                if j >= 0:
+                    return (i, j, (th, mi[j]))
+            elif not whole_thread:
+                return (i, -1, (th,))
+            # move to previous thread
+            i -= 1
+            j = -1
+
 
     def cvt_depth(self, depth):
         ret = ""
@@ -823,12 +897,11 @@ class notmuch_list(edlib.Doc):
 
         return ret + "> "
 
-    def handle(self, key, mark, mark2, numeric, extra, focus, str, str2, comm2, **a):
+    def handle(self, key, mark, mark2, numeric, extra, focus, xy, str, str2, comm2, **a):
         if key == "doc:set-ref":
+            mark.pos = None
             if numeric == 1 and len(self.threadids) > 0:
-                mark.pos = (self.threadids[0],)
-            else:
-                mark.pos = None
+                i,j,moved,mark.pos = self.pos_index((self.threadids[0],),[str2], str2 and xy[0])
             mark.offset = 0
             mark.rpos = 0
             return 1
@@ -836,50 +909,44 @@ class notmuch_list(edlib.Doc):
         if key == "doc:mark-same":
             if mark.pos == mark2.pos:
                 return 1
-            if mark.pos is None or mark2.pos is None or mark.pos[0] != mark2.pos[0]:
-                # definitely different
-                return 2
-            # same thread, possible different messages
-            if mark.pos[0] != str2:
-                # thread not open, so same
-                return 1
-            if len(mark.pos) == 1:
-                m = mark2.pos[1]
-            elif len(mark2.pos) == 1:
-                m = mark.pos[1]
-            else:
-                return 2
-            # one has no message, the other has one. so same if
-            # that one is the first.
-            if self.messageids[mark.pos[0]][0] == m:
-                return 1
-            return 2
+            i1,j1,moved1,pos1 = self.pos_index(mark.pos, [str2], str2 and xy[0])
+            i2,j2,moved2,pos2 = self.pos_index(mark2.pos, [str2], str2 and xy[0])
+            return 1 if (i1,j1)==(i2,j2) else 2
 
         if key == "doc:step":
             forward = numeric
             move = extra
             ret = edlib.WEOF
+            i,j,moved,pos = self.pos_index(mark.pos, [str2], str2 and xy[0])
+            if moved:
+                mark.pos = pos
             if forward:
-                i2,j2,pos = self.next(mark.pos, [str2])
+                i2,j2,pos = self.next(i, j, [str2], str2 and xy[0])
                 if mark.pos is not None:
                     ret = ' '
                 if move:
                     m2 = mark.next_any()
                     target = None
-                    while m2 and m2.pos == mark.pos:
+                    while m2:
+                        i3,j3,moved3,pos3 = self.pos_index(m2.pos, [str2], str2 and xy[0])
+                        if (i3,j3) >= (i2,j2):
+                            break
                         target = m2
                         m2 = m2.next_any()
                     if target:
                         mark.to_mark(target)
                     mark.pos = pos
             if not forward:
-                i2,j2,pos = self.prev(mark.pos, [str2])
+                i2,j2,pos = self.prev(i,j, [str2], str2 and xy[0])
                 if i2 >= 0:
                     ret = ' '
                     if move:
                         m2 = mark.prev_any()
                         target = None
-                        while m2 and m2.pos == mark.pos:
+                        while m2:
+                            i3,j3,moved3,pos3 = self.pos_index(m2.pos, [str2], str2 and xy[0])
+                            if (i3,j3) <= (i2,j2):
+                                break
                             target = m2
                             m2 = m2.prev_any()
                         if target:
@@ -890,10 +957,11 @@ class notmuch_list(edlib.Doc):
         if key == "doc:get-attr":
             attr = str
             forward = numeric
-            if forward:
-                i,j,newpos = self.next(mark.pos, [str2])
-            else:
-                i,j,newpos = self.prev(mark.pos, [str2])
+            i,j,moved,pos = self.pos_index(mark.pos, [str2], str2 and xy[0])
+            if moved:
+                mark.pos = pos
+            if not forward:
+                i,j,newpos = self.prev(i, j, [str2], str2 and xy[0])
 
             val = "["+attr+"]"
             if i >= 0 and j == -1 and self.threadids[i] != str2:
@@ -977,6 +1045,7 @@ class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
         self.selected = None
+        self.whole_thread = 0
 
     def handle(self, key, focus, mark, numeric, **a):
         if key == "Clone":
@@ -992,15 +1061,23 @@ class notmuch_query_view(edlib.Pane):
             del a['str2']
             del a['home']
             del a['comm']
-            return self.parent.call(key, focus, mark, numeric, s, self.selected, *(a.values()))
+            del a['xy']
+            return self.parent.call(key, focus, mark, numeric, s, self.selected,
+                                    (self.whole_thread, 0), *(a.values()))
 
+        if key == 'Chr-Z':
+            self.whole_thread = 1 - self.whole_thread
+            focus.damaged(edlib.DAMAGED_VIEW)
+            focus.damaged(edlib.DAMAGED_CONTENT)
+            return 1
         if key == "notmuch:select":
             sl = []
             focus.call("doc:get-attr", "thread-id", 1, mark, lambda key,**a:take('str',sl,a))
             if sl[0] != self.selected:
                 self.call("notmuch:load-thread", sl[0])
                 self.selected = sl[0]
-                self.damaged(edlib.DAMAGED_VIEW|edlib.DAMAGED_CONTENT)
+                focus.damaged(edlib.DAMAGED_VIEW)
+                focus.damaged(edlib.DAMAGED_CONTENT)
             focus.call("doc:get-attr", "message-id", 1, mark, lambda key,**a:take('str',sl,a))
             if len(sl) == 2:
                 focus.call("notmuch:select-message", sl[-1], numeric)
