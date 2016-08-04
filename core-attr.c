@@ -146,10 +146,15 @@ int main(int argc, char *argv[])
 static int __attr_find(struct attrset ***setpp safe, char *key safe,
 		       int *offsetp safe, int keynum)
 {
-	struct attrset **setp safe = *setpp;
-	struct attrset *set = *setp;
+	struct attrset **setp safe;
+	struct attrset *set;
 	int i;
 
+	if (!*setpp)
+		/* FIXME smatch should check this */
+		return -1;
+	setp = *setpp;
+	set = *setp;
 	if (!set)
 		return -1;
 	*offsetp = 0;
@@ -266,7 +271,7 @@ int attr_set_str_key(struct attrset **setp safe, char *key safe, char *val, int 
 
 	if (cmp == 0) {
 		/* Remove old value */
-		set = *setp;
+		set = safe_cast *setp;
 		len = strlen(set->attrs + offset) + 1;
 		len += strlen(set->attrs + offset + len) + 1;
 		memmove(set->attrs + offset,
