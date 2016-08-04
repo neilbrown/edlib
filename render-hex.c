@@ -24,7 +24,7 @@ struct he_data {
 };
 
 static struct map *he_map;
-static struct pane *do_render_hex_attach(struct pane *parent safe) safe;
+static struct pane *do_render_hex_attach(struct pane *parent safe);
 
 DEF_LOOKUP_CMD(render_hex_handle, he_map);
 
@@ -34,7 +34,7 @@ DEF_CMD(render_hex_close)
 	struct he_data *he = p->data;
 
 	he->pane = NULL;
-	p->data = NULL;
+	p->data = safe_cast NULL;
 	p->handle = NULL;
 	free(he);
 	return 1;
@@ -68,6 +68,8 @@ DEF_CMD(render_hex_eol)
 	int rpt = RPT_NUM(ci);
 	int pos;
 
+	if (!ci->mark)
+		return -1;
 	call3("CountLines", ci->home, 0, ci->mark);
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 
@@ -168,6 +170,8 @@ DEF_CMD(render_line_prev)
 	 */
 	int to, from;
 
+	if (!ci->mark)
+		return -1;
 	call3("CountLines", ci->home, 0, ci->mark);
 
 	from = attr_find_int(*mark_attr(ci->mark), "chars");
@@ -195,7 +199,7 @@ static void render_hex_register_map(void)
 	key_add(he_map, "Notify:Replace", &render_hex_notify_replace);
 }
 
-static struct pane *do_render_hex_attach(struct pane *parent safe) safe
+static struct pane *do_render_hex_attach(struct pane *parent safe)
 {
 	struct he_data *he = malloc(sizeof(*he));
 	struct pane *p;
@@ -213,8 +217,12 @@ static struct pane *do_render_hex_attach(struct pane *parent safe) safe
 
 DEF_CMD(render_hex_attach)
 {
+	struct pane *p = do_render_hex_attach(ci->focus);
+
+	if (!p)
+		return -1;
 	return comm_call(ci->comm2, "callback:attach",
-			 do_render_hex_attach(ci->focus),
+			 p,
 			 0, NULL, NULL, 0);
 }
 
