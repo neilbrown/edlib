@@ -116,11 +116,15 @@ static void count_calculate(struct pane *p safe,
 	if (m == NULL) {
 		/* No marks yet, let's make some */
 		m = vmark_new(p, type);
+		if (!m)
+			return;
 		do_count(p, m, NULL, &l, &w, &c, 1);
 	}
 	if (doc_prior_pane(p, m) != WEOF) {
 		/* no mark at start of file */
 		m2 = vmark_new(p, type);
+		if (!m2)
+			return;
 		do_count(p, m2, m, &l, &w, &c, 1);
 		m = m2;
 	}

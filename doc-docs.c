@@ -201,6 +201,8 @@ DEF_CMD(docs_modified_handle)
 	if (strcmp(ci->key, "Notify:Replace") == 0) {
 		int all_gone;
 		m = vmark_new(ci->home->parent, MARK_UNGROUPED);
+		if (!m)
+			return -1;
 		mark_to_modified(ci->home->parent, m);
 		all_gone = (m->ref.p == NULL);
 		mark_free(m);

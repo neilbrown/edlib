@@ -120,6 +120,7 @@ DEF_CMD(history_attach)
 
 	struct history_info *hi;
 	struct pane *p;
+	struct mark *m;
 
 	if (!ci->str)
 		return -1;
@@ -133,8 +134,13 @@ DEF_CMD(history_attach)
 			       ci->str, "");
 	if (!p)
 		return 0;
+	m = vmark_new(p, MARK_UNGROUPED);
+	if (!m) {
+		pane_close(p);
+		return -1;
+	}
 	hi->history = p;
-	hi->m = vmark_new(hi->history, MARK_UNGROUPED);
+	hi->m = m;
 	call3("Move-File", hi->history, 1, hi->m);
 	buf_init(&hi->search);
 	p = pane_register(ci->focus, 0, &history_handle, hi, NULL);

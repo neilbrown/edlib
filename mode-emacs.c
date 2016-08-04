@@ -783,6 +783,8 @@ static void do_searches(struct pane *p safe, int view, char *patn,
 		struct mark *m2, *m3;
 		int len = ret - 1;
 		m2 = vmark_new(p, view);
+		if (!m2)
+			break;
 		mark_to_mark(m2, m);
 		while (ret > 1 && mark_prev_pane(p, m2) != WEOF)
 			ret -= 1;
@@ -823,6 +825,8 @@ DEF_CMD(emacs_search_highlight)
 	if (ci->mark && ci->numeric > 0) {
 		attr_set_str(&ci->focus->attrs, "emacs-search-patn", ci->str);
 		m = vmark_new(ci->focus, view);
+		if (!m)
+			return -1;
 		mark_to_mark(m, ci->mark);
 		attr_set_int(&m->attrs, "render:search", ci->numeric);
 		call3("Move-View-Pos", ci->focus, 0, m);

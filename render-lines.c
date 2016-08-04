@@ -717,6 +717,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 	top = vmark_first(focus, rl->typenum);
 	bot = vmark_last(focus, rl->typenum);
 	m = vmark_new(focus, rl->typenum);
+	if (!m)
+		return;
 	mark_to_mark(m, pm);
 	m = call_render_line_prev(focus, m, 0, &rl->top_sol);
 	if (!m)
@@ -991,6 +993,8 @@ DEF_CMD(render_lines_refresh)
 	m = ci->mark;
 	if (!m)
 		m = vmark_new(focus, MARK_UNGROUPED);
+	if (!m)
+		return -1;
 	find_lines(m, p, focus);
 	rl->lines = render(m, p, focus, &rl->cols);
 	rl->repositioned = 0;

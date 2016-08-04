@@ -863,7 +863,7 @@ struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe, int vi
 	return cr.m2;
 }
 
-struct mark *vmark_new(struct pane *p safe, int view) safe
+struct mark *vmark_new(struct pane *p safe, int view)
 {
 	struct mark *new = NULL;
 	if (vmark_get(p, view, NULL, NULL, NULL, &new) == 0)
