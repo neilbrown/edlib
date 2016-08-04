@@ -688,11 +688,18 @@ void mark_to_mark(struct mark *m safe, struct mark *target safe)
 	if (mark_ordered(m, target))
 		do {
 			struct mark *n = doc_next_mark_all(m);
+			if (!n)
+				/* Should be impossible, but mark-ordering
+				 * tests could be broken - fail safe!
+				 */
+				break;
 			mark_forward_over(m, n);
 		} while (mark_ordered(m, target));
 	else
 		do {
 			struct mark *n = doc_prev_mark_all(m);
+			if (!n)
+				break;
 			mark_backward_over(m, n);
 		} while (mark_ordered(target, m));
 	mark_ref_copy(m, target);
