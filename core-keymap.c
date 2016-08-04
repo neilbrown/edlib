@@ -317,7 +317,7 @@ int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe)
 int key_lookup_cmd_func(const struct cmd_info *ci safe)
 {
 	struct lookup_cmd *l = container_of(ci->comm, struct lookup_cmd, c);
-	int ret = key_lookup(*l->m, ci);
+	int ret = key_lookup(safe_cast *l->m, ci);
 
 	if (!ret && l->dflt && *l->dflt)
 		ret = key_lookup(*l->dflt, ci);
