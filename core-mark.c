@@ -108,8 +108,8 @@ static void mark_delete(struct mark *m safe)
 static void point_free(struct mark *p safe)
 {
 	int i;
-	struct point_links *lnk = p->mdata;
-	for (i = 0; lnk && i < lnk->size; i++)
+	struct point_links *lnk = safe_cast p->mdata;
+	for (i = 0; i < lnk->size; i++)
 		tlist_del_init(&lnk->lists[i]);
 	free(lnk);
 	p->mdata = NULL;
@@ -158,7 +158,7 @@ struct mark *do_mark_at_point(struct mark *pt safe, int view)
 
 	if (pt->viewnum != MARK_POINT)
 		return NULL;
-	lnk = pt->mdata;
+	lnk = safe_cast pt->mdata;
 
 	ret = calloc(1, sizeof(*ret));
 
@@ -219,13 +219,13 @@ void points_resize(struct doc *d safe)
 	struct mark *p;
 	tlist_for_each_entry(p, &d->points, view) {
 		int i;
-		struct point_links *old = p->mdata;
+		struct point_links *old = safe_cast p->mdata;
 		struct point_links *new = malloc(sizeof(*new) +
 						 d->nviews * sizeof(new->lists[0]));
 		new->pt = p;
 		new->size = d->nviews;
 		p->mdata = new;
-		for (i = 0; old && i < old->size; i++) {
+		for (i = 0; i < old->size; i++) {
 			tlist_add(&new->lists[i], GRP_LIST, &old->lists[i]);
 			tlist_del(&old->lists[i]);
 		}
@@ -239,7 +239,7 @@ void points_attach(struct doc *d safe, int view)
 {
 	struct mark *p;
 	tlist_for_each_entry(p, &d->points, view) {
-		struct point_links *lnk = p->mdata;
+		struct point_links *lnk = safe_cast p->mdata;
 		tlist_add_tail(&lnk->lists[view], GRP_LIST, &d->views[view].head);
 	}
 }
@@ -446,14 +446,14 @@ void mark_forward_over(struct mark *m safe, struct mark *m2 safe)
 		swap_lists(m, m2);
 	} else if (m->viewnum == MARK_POINT) {
 		/* Moving a point over a mark */
-		struct point_links *lnk = m->mdata;
+		struct point_links *lnk = safe_cast m->mdata;
 		if (m2->viewnum >= 0) {
 			tlist_del(&m2->view);
 			tlist_add_tail(&m2->view, GRP_MARK, &lnk->lists[m2->viewnum]);
 		}
 	} else if (m2->viewnum == MARK_POINT) {
 		/* stepping a mark over a point */
-		struct point_links *lnk = m2->mdata;
+		struct point_links *lnk = safe_cast m2->mdata;
 		if (m->viewnum >= 0) {
 			tlist_del(&m->view);
 			tlist_add(&m->view, GRP_MARK, &lnk->lists[m->viewnum]);
@@ -481,14 +481,14 @@ void mark_backward_over(struct mark *m safe, struct mark *mp safe)
 		swap_lists(m, mp);
 	} else if (m->viewnum == MARK_POINT) {
 		/* Moving a point over a mark */
-		struct point_links *lnks = m->mdata;
+		struct point_links *lnks = safe_cast m->mdata;
 		if (mp->viewnum >= 0) {
 			tlist_del(&mp->view);
 			tlist_add(&mp->view, GRP_MARK, &lnks->lists[mp->viewnum]);
 		}
 	} else if (mp->viewnum == MARK_POINT) {
 		/* Step back over a point */
-		struct point_links *lnks = mp->mdata;
+		struct point_links *lnks = safe_cast mp->mdata;
 		if (m->viewnum >= 0) {
 			tlist_del(&m->view);
 			tlist_add_tail(&m->view, GRP_MARK, &lnks->lists[m->viewnum]);
@@ -585,7 +585,7 @@ static void point_forward_to_mark(struct mark *p safe, struct mark *m safe)
 	for (i = 0; i < plnk->size; i++) {
 		struct mark *mnear = NULL;
 		struct tlist_head *tl;
-		struct point_links *pnlnk = pnear->mdata;
+		struct point_links *pnlnk = safe_cast pnear->mdata;
 
 		tl = &pnlnk->lists[i];
 		if (tlist_empty(tl))
@@ -640,7 +640,7 @@ static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
 	for (i = 0; i < plnk->size; i++) {
 		struct mark *mnear = NULL;
 		struct tlist_head *tl;
-		struct point_links *pnlnk = pnear->mdata;
+		struct point_links *pnlnk = safe_cast pnear->mdata;
 
 		tl = &pnlnk->lists[i];
 		if (tlist_empty(tl))
@@ -892,7 +892,7 @@ struct mark *do_vmark_at_point(struct pane *p safe, struct doc *d safe,
 {
 	struct tlist_head *tl;
 	struct mark *m;
-	struct point_links *lnk = pt->mdata;
+	struct point_links *lnk = safe_cast pt->mdata;
 
 	if (view < 0 || view >= d->nviews)
 		return NULL;
@@ -932,7 +932,7 @@ struct mark *do_vmark_at_or_before(struct pane *p safe, struct doc *d safe,
 	 * but if it is before, then no 'view' mark is after.
 	 */
 	if (vm->viewnum == MARK_POINT) {
-		struct point_links *lnk = vm->mdata;
+		struct point_links *lnk = safe_cast vm->mdata;
 		struct tlist_head *tl = &lnk->lists[view];
 		vm = __vmark_next(tl);
 		if (vm && mark_same_pane(p, vm, m)) {
