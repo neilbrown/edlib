@@ -1020,7 +1020,7 @@ static int parse_piece(struct parse_state *st safe)
 		return 1;
 	case '{':/* Need a number, maybe a comma, if no maybe a number, then } */
 		min = strtoul(st->patn, &ep, 10);
-		if (min > 256)
+		if (min > 256 || !ep)
 			return 0;
 		max = min;
 		if (*ep == ',') {
@@ -1028,7 +1028,7 @@ static int parse_piece(struct parse_state *st safe)
 			ep++;
 			if (isdigit(*ep)) {
 				max = strtoul(ep, &ep, 10);
-				if (max > 256 || max < min)
+				if (max > 256 || max < min || !ep)
 					return 0;
 			}
 		}

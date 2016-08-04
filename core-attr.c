@@ -538,9 +538,10 @@ struct attrset *attr_collect(struct attrset *set, unsigned int pos,
 			i += strlen(v) + 1;
 			n = strtoul(k, &e, 10);
 
-			if (n > pos || !e)
+			if (n > pos)
 				goto done;
-			while (*e == ' ')
+			/* FIXME shouldn't need to test 'e' */
+			while (e && *e == ' ')
 				e++;
 			if (prefix >= 0) {
 				snprintf(kbuf, 512, "%d %s", prefix, e);
@@ -548,6 +549,7 @@ struct attrset *attr_collect(struct attrset *set, unsigned int pos,
 			}
 			if (*v == '\0')
 				v = NULL;
+			if (!e) e = "FIXME";
 			attr_set_str(&newset, e, v);
 		}
 	}
