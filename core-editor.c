@@ -35,6 +35,8 @@ DEF_CMD(ed_handle)
 
 DEF_CMD(global_set_attr)
 {
+	if (!ci->str)
+		return -1;
 	attr_set_str(&ci->home->attrs, ci->str, ci->str2);
 	return 1;
 }
@@ -44,6 +46,8 @@ DEF_CMD(global_set_command)
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
 
+	if (!ci->str)
+		return -1;
 	if (ci->str2)
 		key_add_range(map, ci->str, ci->str2, ci->comm2);
 	else
@@ -55,10 +59,11 @@ DEF_CMD(global_get_command)
 {
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
-	struct command *cm = key_lookup_cmd(map, ci->str);
+	struct command *cm;
 	struct cmd_info ci2 = {.key = "callback:comm", .focus = ci->focus, .home = ci->focus, .comm = safe_cast 0};
 
-	if (!cm)
+	if (!ci->str ||
+	    !(cm = key_lookup_cmd(map, ci->str)))
 		return -1;
 	ci2.str = ci->str;
 	ci2.comm2 = cm;
