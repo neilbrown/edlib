@@ -30,8 +30,8 @@
 #include "core.h"
 
 struct popup_info {
-	struct pane	*target, *popup;
-	char		*style;
+	struct pane	*target safe, *popup safe;
+	char		*style safe;
 };
 
 DEF_CMD(text_size_callback)
@@ -58,6 +58,9 @@ static void popup_resize(struct pane *p safe, char *style safe)
 	int x,y,w,h;
 	int lh;
 
+	if (!p->parent)
+		/*FIXME impossible */
+		return;
 	/* First find the size */
 	lh = line_height(p);
 	if (strchr(style, 'M'))
@@ -91,7 +94,7 @@ DEF_CMD(popup_handle)
 	if (strcmp(ci->key, "Notify:Close") == 0) {
 		if (ci->focus == ppi->target) {
 			/* target is closing, so we close too */
-			ppi->target = NULL;
+			ppi->target = safe_cast NULL;
 			pane_close(p);
 		}
 		return 1;
@@ -171,7 +174,8 @@ DEF_CMD(popup_attach)
 	if (z < 0)
 		z = 1;
 
-	ppi->popup = p = pane_register(root, z + 1, &popup_handle, ppi, NULL);
+	p = pane_register(root, z + 1, &popup_handle, ppi, NULL);
+	ppi->popup = p;
 	ppi->style = style;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
@@ -190,12 +194,16 @@ DEF_CMD(popup_attach)
 		struct pane *doc =
 			call_pane7("doc:from-text", ppi->popup, 0, NULL, 0,
 				   "*popup*", ci->str2);
-		p = doc_attach_view(ppi->popup, doc, NULL);
+		if (doc &&
+		    (p = doc_attach_view(ppi->popup, doc, NULL)) != NULL) {
 
-		call3("Move-File", p, 1, NULL);
-		call3("doc:autoclose", p, 1, NULL);
+			call3("Move-File", p, 1, NULL);
+			call3("doc:autoclose", p, 1, NULL);
+		}
 	}
 
+	if (!p)
+		return -1;
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
