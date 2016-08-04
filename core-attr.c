@@ -64,9 +64,15 @@ static struct attrset *newattr(struct attrset *old, int size) safe
  */
 static int getcmptok(char **ap safe)
 {
-	char *a safe = *ap;
-	char c = *a++;
+	char *a safe;
+	char c;
 	int i;
+
+	if (!*ap)
+		/* FIXME smatch should handle "char * safe *ap safe" */
+		return 0;
+	a = *ap;
+	c = *a++;
 	if (!isdigit(c)) {
 		*ap = a;
 		return c;
