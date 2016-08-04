@@ -202,7 +202,7 @@ DEF_CMD(dir_load_file)
 				doc_notify_change(&dr->doc, prev, NULL);
 				doc_notify_change(&dr->doc, m, NULL);
 			}
-		} else {
+		} else if (de1 /*FIXME should be assumed */) {
 			/* de1 and de2 are the same.  Just step over de1 and
 			 * delete de2
 			 */
@@ -278,9 +278,12 @@ DEF_CMD(dir_step)
 	bool forward = ci->numeric;
 	bool move = ci->extra;
 	struct directory *dr = container_of(doc, struct directory, doc);
-	struct dir_ent *d = m->ref.d;
+	struct dir_ent *d;
 	wint_t ret;
 
+	if (!m)
+		return -1;
+	d = m->ref.d;
 	if (forward) {
 		if (d == NULL)
 			ret = WEOF;
@@ -329,6 +332,9 @@ DEF_CMD(dir_set_ref)
 	struct directory *dr = container_of(d, struct directory, doc);
 	struct mark *m = ci->mark;
 
+	if (!m)
+		return -1;
+
 	if (list_empty(&dr->ents) || ci->numeric != 1)
 		m->ref.d = NULL;
 	else
@@ -340,6 +346,8 @@ DEF_CMD(dir_set_ref)
 
 DEF_CMD(dir_mark_same)
 {
+	if (!ci->mark || !ci->mark2)
+		return -1;
 	return ci->mark->ref.d == ci->mark2->ref.d ? 1 : 2;
 }
 
@@ -485,7 +493,7 @@ DEF_CMD(dir_doc_get_attr)
 	char *attr = ci->str;
 	char *val;
 
-	if (!m)
+	if (!m || !attr)
 		return -1;
 	val = __dir_get_attr(d, m, forward, attr);
 
@@ -502,6 +510,9 @@ DEF_CMD(dir_get_attr)
 	struct directory *dr = container_of(d, struct directory, doc);
 	char *attr = ci->str;
 	char *val;
+
+	if (!attr)
+		return -1;
 
 	if ((val = attr_find(d->home->attrs, attr)) != NULL)
 		;
@@ -545,11 +556,14 @@ DEF_CMD(dir_open)
 	struct pane *p = ci->home;
 	struct doc *d = p->data;
 	struct directory *dr = container_of(d, struct directory, doc);
-	struct dir_ent *de = ci->mark->ref.d;
+	struct dir_ent *de;
 	struct pane *par;
 	int fd;
 	char *fname = NULL;
 
+	if (!ci->mark)
+		return -1;
+	de = ci->mark->ref.d;
 	/* close this pane, open the given file. */
 	if (de == NULL)
 		return 0;
@@ -580,13 +594,16 @@ DEF_CMD(dir_open_alt)
 	struct pane *p = ci->home;
 	struct doc *d = p->data;
 	struct directory *dr = container_of(d, struct directory, doc);
-	struct dir_ent *de = ci->mark->ref.d;
+	struct dir_ent *de;
 	struct pane *par = p->parent;
 	int fd;
 	char *fname = NULL;
 	char *renderer = NULL;
 	char buf[100];
 
+	if (!ci->mark || !par)
+		return -1;
+	de = ci->mark->ref.d;
 	/* close this pane, open the given file. */
 	if (de == NULL)
 		return 0;
@@ -611,7 +628,7 @@ DEF_CMD(dir_open_alt)
 		struct pane *doc = call_pane7("doc:from-text", par, 0, NULL, 0,
 					      fname, "File not found\n");
 		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
-		if (!par)
+		if (!par || !doc)
 			return -1;
 		p = doc_attach_view(par, doc, NULL);
 	}
