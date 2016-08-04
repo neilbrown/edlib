@@ -15,7 +15,7 @@
 
 void buf_init(struct buf *b safe)
 {
-	b->b = NULL;
+	b->b = safe_cast NULL;
 	b->len = 0;
 	b->size = 0;
 }
