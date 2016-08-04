@@ -22,16 +22,16 @@ static struct event_base *base;
 static struct list_head event_list;
 
 struct evt {
-	struct event *l;
-	struct pane *home;
-	struct command *comm;
+	struct event *l safe;
+	struct pane *home safe;
+	struct command *comm safe;
 	struct list_head lst;
 	int seconds;
 };
 
 static void call_event(int thing, short sev, void *evv)
 {
-	struct evt *ev = evv;
+	struct evt *ev safe = safe_cast evv;
 	struct cmd_info ci = {};
 
 	ci.key = "callback:event";
@@ -49,7 +49,7 @@ static void call_event(int thing, short sev, void *evv)
 
 static void call_timeout_event(int thing, short sev, void *evv)
 {
-	struct evt *ev = evv;
+	struct evt *ev safe = evv;
 	struct cmd_info ci = {};
 
 	ci.key = "callback:event";
@@ -81,8 +81,8 @@ DEF_CMD(libevent_read)
 	if (!base)
 		base = event_base_new();
 
-	ev->l = event_new(base, ci->numeric, EV_READ|EV_PERSIST,
-			  call_event, ev);
+	ev->l = safe_cast event_new(base, ci->numeric, EV_READ|EV_PERSIST,
+				    call_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
 	list_add(&ev->lst, &event_list);
@@ -102,8 +102,8 @@ DEF_CMD(libevent_signal)
 	if (!base)
 		base = event_base_new();
 
-	ev->l = event_new(base, ci->numeric, EV_SIGNAL|EV_PERSIST,
-			  call_event, ev);
+	ev->l = safe_cast event_new(base, ci->numeric, EV_SIGNAL|EV_PERSIST,
+				    call_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
 	list_add(&ev->lst, &event_list);
@@ -124,8 +124,8 @@ DEF_CMD(libevent_timer)
 	if (!base)
 		base = event_base_new();
 
-	ev->l = event_new(base, -1, 0,
-			  call_timeout_event, ev);
+	ev->l = safe_cast event_new(base, -1, 0,
+				    call_timeout_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
 	ev->seconds = ci->numeric;
@@ -180,7 +180,7 @@ DEF_CMD(libevent_activate)
 	return 1;
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	INIT_LIST_HEAD(&event_list);
 	call_comm("global-set-command", ed, 0, NULL, "attach-libevent",

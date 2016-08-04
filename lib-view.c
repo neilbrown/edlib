@@ -40,8 +40,8 @@ enum {
 	BORDER_BOT	= 8,
 };
 
-static struct map *view_map;
-static struct pane *do_view_attach(struct pane *par, int border);
+static struct map *view_map safe;
+static struct pane *do_view_attach(struct pane *par, int border) safe;
 
 static void one_char(struct pane *p, char *s, char *attr, int x, int y)
 {
@@ -57,7 +57,7 @@ DEF_CMD(text_size_callback)
 	return 1;
 }
 
-static int view_refresh(const struct cmd_info *ci)
+static int view_refresh(const struct cmd_info *ci safe)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
@@ -259,7 +259,7 @@ DEF_CMD(view_handle)
 	return 0;
 }
 
-static struct pane *do_view_attach(struct pane *par, int border)
+static struct pane *do_view_attach(struct pane *par, int border) safe
 {
 	struct view_data *vd;
 	struct pane *p;
@@ -361,7 +361,7 @@ DEF_CMD(view_border)
 	return 0; /* allow other handlers to change borders */
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	view_map = key_alloc();
 

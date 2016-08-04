@@ -41,16 +41,16 @@ struct tileinfo {
 	struct list_head		tiles; /* headless ordered list of all tiles
 						* in the tree.  Used for next/prev
 						*/
-	struct pane			*p;
+	struct pane			*p safe;
 	struct pane			*content; /* if 'leaf' */
 	char				*group; /* only allocate for root, other share */
 	char				*name; /* name in group for this leaf */
 };
 
-static struct map *tile_map;
-static void tile_adjust(struct pane *p);
-static void tile_avail(struct pane *p, struct pane *ignore);
-static int tile_destroy(struct pane *p);
+static struct map *tile_map safe;
+static void tile_adjust(struct pane *p safe);
+static void tile_avail(struct pane *p safe, struct pane *ignore);
+static int tile_destroy(struct pane *p safe);
 
 DEF_CMD(tile_handle)
 {
@@ -148,7 +148,7 @@ DEF_CMD(tile_attach)
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
-static struct pane *tile_split(struct pane **pp, int horiz, int after, char *name,
+static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char *name,
 			       int new_space)
 {
 	/* Create a new pane near the given one, reducing its size,
@@ -237,7 +237,7 @@ static struct pane *tile_split(struct pane **pp, int horiz, int after, char *nam
 	return ret;
 }
 
-static int tile_destroy(struct pane *p)
+static int tile_destroy(struct pane *p safe)
 {
 	struct tileinfo *ti = p->data;
 	struct pane *prev = NULL, *next = NULL;
@@ -360,7 +360,7 @@ static int tile_destroy(struct pane *p)
 	return 1;
 }
 
-static void tile_avail(struct pane *p, struct pane *ignore)
+static void tile_avail(struct pane *p safe, struct pane *ignore)
 {
 	/* How much can we shrink this pane?
 	 * If 'ignore' is set, it is a child of 'p', and we only
@@ -398,7 +398,7 @@ static void tile_avail(struct pane *p, struct pane *ignore)
 	}
 }
 
-static void tile_adjust(struct pane *p)
+static void tile_adjust(struct pane *p safe)
 {
 	/* Size of pane 'p' has changed and it is time to adjust
 	 * the children, both their size and offset.
@@ -426,7 +426,7 @@ static void tile_adjust(struct pane *p)
 		if (t->z)
 			continue;
 		ti = t->data;
-		if (ti->direction == Horiz) {
+ 		if (ti->direction == Horiz) {
 			t->y = 0;
 			t->h = p->h;
 			used += t->w;
@@ -514,7 +514,7 @@ static void tile_adjust(struct pane *p)
 	}
 }
 
-static int tile_grow(struct pane *p, int horiz, int size)
+static int tile_grow(struct pane *p safe, int horiz, int size)
 {
 	/* Try to grow the pane in given direction, or shrink if
 	 * size < 0.
@@ -615,7 +615,7 @@ static struct pane *next_child(struct pane *parent, struct pane *prev, bool popu
 	return NULL;
 }
 
-static struct tileinfo *tile_first(struct tileinfo *ti)
+static struct tileinfo *tile_first(struct tileinfo *ti safe)
 {
 	while (!ti->leaf) {
 		struct pane *p = next_child(ti->p, NULL, 0);
@@ -626,7 +626,7 @@ static struct tileinfo *tile_first(struct tileinfo *ti)
 	return ti;
 }
 
-static int tile_is_first(struct tileinfo *ti)
+static int tile_is_first(struct tileinfo *ti safe)
 {
 	while (ti->direction != Neither) {
 		if (ti->p != next_child(ti->p->parent, NULL, 0))
@@ -636,14 +636,14 @@ static int tile_is_first(struct tileinfo *ti)
 	return 1;
 }
 
-static struct pane *tile_root_popup(struct tileinfo *ti)
+static struct pane *tile_root_popup(struct tileinfo *ti safe)
 {
 	while (ti->direction != Neither)
 		ti = ti->p->parent->data;
 	return next_child(ti->p, NULL, 1);
 }
 
-static struct tileinfo *tile_next_named(struct tileinfo *ti, char *name)
+static struct tileinfo *tile_next_named(struct tileinfo *ti safe, char *name)
 {
 	struct tileinfo *t = ti;
 	while ((t = list_next_entry(t, tiles)) != ti) {
@@ -691,7 +691,6 @@ DEF_CMD(tile_command)
 		} else {
 			if (ti->leaf) {
 				t2 = tile_next_named(ti, ci->str2);
-				t2 = list_next_entry(ti, tiles);
 				if (tile_is_first(t2) &&
 				    (p2 = tile_root_popup(t2)) != NULL) {
 					pane_focus(p2);
@@ -871,7 +870,7 @@ DEF_CMD(tile_child_registered)
 	return 1;
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	tile_map = key_alloc();
 

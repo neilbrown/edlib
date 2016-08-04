@@ -24,7 +24,7 @@ struct he_data {
 };
 
 static struct map *he_map;
-static struct pane *do_render_hex_attach(struct pane *parent);
+static struct pane *do_render_hex_attach(struct pane *parent safe) safe;
 
 DEF_LOOKUP_CMD(render_hex_handle, he_map);
 
@@ -105,7 +105,7 @@ DEF_CMD(render_line)
 	char buf[30];
 	int rv;
 
-	if (!ci->focus || !ci->mark)
+	if (!ci->mark)
 		return -1;
 
 	call3("CountLines", ci->home, 0, ci->mark);
@@ -195,7 +195,7 @@ static void render_hex_register_map(void)
 	key_add(he_map, "Notify:Replace", &render_hex_notify_replace);
 }
 
-static struct pane *do_render_hex_attach(struct pane *parent)
+static struct pane *do_render_hex_attach(struct pane *parent safe) safe
 {
 	struct he_data *he = malloc(sizeof(*he));
 	struct pane *p;
@@ -227,7 +227,7 @@ DEF_CMD(hex_appeared)
 	return 0;
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-render-hex",
 		  0, &render_hex_attach);

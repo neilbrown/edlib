@@ -120,6 +120,9 @@ TODO:
 #include <ctype.h>
 #include <wctype.h>
 #include <memory.h>
+
+#include "safe.h"
+
 #include "rexel.h"
 
 #ifdef DEBUG
@@ -127,8 +130,8 @@ TODO:
 #endif
 struct match_state {
 	unsigned short	*rxl;
-	unsigned short	*link[2];
-	unsigned short	*leng[2];
+	unsigned short	*link[2] safe;
+	unsigned short	*leng[2] safe;
 	unsigned short	active;
 	int		match;
 	#ifdef DEBUG
@@ -161,9 +164,9 @@ struct match_state {
 #define	RXL_IS_DOTALL(rxl)	((rxl)[0] & RXL_DOTALL)
 
 static int classcnt = 0;
-static wctype_t *classmap = NULL;
+static wctype_t *classmap safe = NULL;
 
-static int do_link(struct match_state *st, int pos, int dest, int len)
+static int do_link(struct match_state *st safe, int pos, int dest, int len)
 {
 	unsigned short cmd = st->rxl[pos];
 	if (cmd == REC_MATCH) {
@@ -190,7 +193,7 @@ static int do_link(struct match_state *st, int pos, int dest, int len)
 	return dest;
 }
 
-static int set_match(struct match_state *st, unsigned short addr, wchar_t ch)
+static int set_match(struct match_state *st safe, unsigned short addr, wchar_t ch)
 {
 	unsigned short *set = RXL_SETSTART(st->rxl) + addr;
 	wchar_t uch = ch, lch = ch;
@@ -274,7 +277,7 @@ static int set_match(struct match_state *st, unsigned short addr, wchar_t ch)
 #define RXL_EOL	2
 #define	RXL_SOW	4
 #define	RXL_EOW	8
-int rxl_advance(struct match_state *st, wint_t ch, int flag, int restart)
+int rxl_advance(struct match_state *st safe, wint_t ch, int flag, int restart)
 {
 	int active = st->active;
 	int next = 1-active;
@@ -470,7 +473,7 @@ int rxl_advance(struct match_state *st, wint_t ch, int flag, int restart)
 }
 
 struct parse_state {
-	char	*patn;
+	char	*patn safe;
 	unsigned short	*rxl;
 	int	next;
 	unsigned short	*sets;
@@ -482,14 +485,14 @@ struct parse_state {
 	int	len;
 };
 
-static void add_cmd(struct parse_state *st, unsigned short cmd)
+static void add_cmd(struct parse_state *st safe, unsigned short cmd)
 {
 	if (st->rxl)
 		st->rxl[st->next] = cmd;
 	st->next += 1;
 }
 
-static void relocate(struct parse_state *st, unsigned short start, int len)
+static void relocate(struct parse_state *st safe, unsigned short start, int len)
 {
 	int i;
 	if (!st->rxl) {
@@ -506,8 +509,8 @@ static void relocate(struct parse_state *st, unsigned short start, int len)
 	st->next += len;
 }
 
-static int __add_range(struct parse_state *st, wchar_t start, wchar_t end,
-		       int plane, int *planes, int *newplane)
+static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
+		       int plane, int *planes safe, int *newplane safe)
 {
 	int p;
 	int lo, hi;
@@ -638,8 +641,8 @@ static int __add_range(struct parse_state *st, wchar_t start, wchar_t end,
 	return 0;
 }
 
-static int add_range(struct parse_state *st, wchar_t start, wchar_t end,
-		     int plane, int *planes, int *newplane)
+static int add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
+		     int plane, int *planes safe, int *newplane safe)
 {
 	if (!st->nocase ||
 	    !iswalpha(start) || !iswalpha(end))
@@ -649,7 +652,7 @@ static int add_range(struct parse_state *st, wchar_t start, wchar_t end,
 	return __add_range(st, towupper(start), towupper(end), plane, planes, newplane);
 }
 
-static void add_class(struct parse_state *st, int plane, wctype_t cls)
+static void add_class(struct parse_state *st safe, int plane, wctype_t cls)
 {
 	int c;
 	if (!st->sets) {
@@ -682,7 +685,7 @@ static void add_class(struct parse_state *st, int plane, wctype_t cls)
 	return;
 }
 
-static int is_set_element(char *p)
+static int is_set_element(char *p safe)
 {
 	int i;
 	if (*p != '[')
@@ -700,7 +703,7 @@ static int is_set_element(char *p)
 }
 
 /* FIXME UNICODE */
-static int do_parse_set(struct parse_state *st, int plane)
+static int do_parse_set(struct parse_state *st safe, int plane)
 {
 	mbstate_t ps = {};
 	char *p = st->patn;
@@ -790,7 +793,7 @@ static int do_parse_set(struct parse_state *st, int plane)
 	return newplane;
 }
 
-static int parse_set(struct parse_state *st)
+static int parse_set(struct parse_state *st safe)
 {
 	int plane;
 	char *patn;
@@ -824,7 +827,7 @@ static int parse_set(struct parse_state *st)
 	return 1;
 }
 
-static int cvt_hex(char *s, int len)
+static int cvt_hex(char *s safe, int len)
 {
 	long rv = 0;
 	while (len) {
@@ -845,7 +848,7 @@ static int cvt_hex(char *s, int len)
 	return rv;
 }
 
-static unsigned short  add_class_set(struct parse_state *st, char *cls, int in)
+static unsigned short  add_class_set(struct parse_state *st safe, char *cls safe, int in)
 {
 	if (!st->rxl) {
 		st->set += 3;
@@ -858,8 +861,8 @@ static unsigned short  add_class_set(struct parse_state *st, char *cls, int in)
 	st->set += 3;
 	return REC_SET | (st->set - 3);
 }
-static int parse_re(struct parse_state *st);
-static int parse_atom(struct parse_state *st)
+static int parse_re(struct parse_state *st safe);
+static int parse_atom(struct parse_state *st safe)
 {
 	/* parse out an atom: one of:
 	 * (re)
@@ -980,7 +983,7 @@ static int parse_atom(struct parse_state *st)
 	return 1;
 }
 
-static int parse_piece(struct parse_state *st)
+static int parse_piece(struct parse_state *st safe)
 {
 	int start = st->next;
 	char c;
@@ -1078,7 +1081,7 @@ static int parse_piece(struct parse_state *st)
 	return 0;
 }
 
-static int parse_branch(struct parse_state *st)
+static int parse_branch(struct parse_state *st safe)
 {
 	do {
 		if (!parse_piece(st))
@@ -1094,7 +1097,7 @@ static int parse_branch(struct parse_state *st)
 	return 1;
 }
 
-static int parse_re(struct parse_state *st)
+static int parse_re(struct parse_state *st safe)
 {
 	int start = st->next;
 	if (!parse_branch(st))
@@ -1115,7 +1118,7 @@ static int parse_re(struct parse_state *st)
 	return 1;
 }
 
-unsigned short *rxl_parse(char *patn, int *lenp, int nocase)
+unsigned short *rxl_parse(char *patn safe, int *lenp, int nocase)
 {
 	struct parse_state st;
 	st.patn = patn;
@@ -1144,7 +1147,7 @@ unsigned short *rxl_parse(char *patn, int *lenp, int nocase)
 	return st.rxl;
 }
 
-unsigned short *rxl_parse_verbatim(char *patn, int nocase)
+unsigned short *rxl_parse_verbatim(char *patn safe, int nocase) safe
 {
 	struct parse_state st;
 	int i, l;
@@ -1163,7 +1166,7 @@ unsigned short *rxl_parse_verbatim(char *patn, int nocase)
 	return st.rxl;
 }
 
-static void setup_match(struct match_state *st, unsigned short *rxl)
+static void setup_match(struct match_state *st safe, unsigned short *rxl safe)
 {
 	int len = RXL_SETSTART(rxl) - rxl;
 	int i;
@@ -1184,7 +1187,7 @@ static void setup_match(struct match_state *st, unsigned short *rxl)
 	st->link[st->active][0] = 0;
 }
 
-struct match_state *rxl_prepare(unsigned short *rxl)
+struct match_state *rxl_prepare(unsigned short *rxl safe) safe
 {
 	struct match_state *ret;
 
@@ -1193,7 +1196,7 @@ struct match_state *rxl_prepare(unsigned short *rxl)
 	return ret;
 }
 
-void rxl_free_state(struct match_state *s)
+void rxl_free_state(struct match_state *s safe)
 {
 	free(s->link[0]);
 	free(s);
@@ -1209,7 +1212,7 @@ static void printc(unsigned short c)
 		printf("%c", c);
 }
 
-static void print_set(unsigned short *set)
+static void print_set(unsigned short *set safe)
 {
 	int len = *set++;
 	int invert = len & 0x8000;
@@ -1242,7 +1245,7 @@ static void print_set(unsigned short *set)
 	}
 }
 
-void rxl_print(unsigned short *rxl)
+void rxl_print(unsigned short *rxl safe)
 {
 	unsigned short *set = RXL_SETSTART(rxl);
 	unsigned short *i;

@@ -75,7 +75,7 @@
  * after etc until we find a seq already above the target, or reach
  * gap size of 64. In later case we continue with fixed gap size.
  */
-static void assign_seq(struct mark *m, int prev)
+static void assign_seq(struct mark *m safe, int prev)
 {
 	int gap = 256;
 
@@ -97,7 +97,7 @@ static void assign_seq(struct mark *m, int prev)
 	ASSERT(m->seq >= 0);
 }
 
-static void mark_delete(struct mark *m)
+static void mark_delete(struct mark *m safe)
 {
 	hlist_del_init(&m->all);
 	if (m->viewnum != MARK_UNGROUPED)
@@ -105,11 +105,11 @@ static void mark_delete(struct mark *m)
 	attr_free(&m->attrs);
 }
 
-static void point_free(struct mark *p)
+static void point_free(struct mark *p safe)
 {
 	int i;
 	struct point_links *lnk = p->mdata;
-	for (i = 0; i < lnk->size; i++)
+	for (i = 0; lnk && i < lnk->size; i++)
 		tlist_del_init(&lnk->lists[i]);
 	free(lnk);
 	p->mdata = NULL;
@@ -128,7 +128,7 @@ void mark_free(struct mark *m)
 	free(m);
 }
 
-static void mark_ref_copy(struct mark *to, struct mark *from)
+static void mark_ref_copy(struct mark *to safe, struct mark *from safe)
 {
 	if (to->ref.p == from->ref.p &&
 	    to->ref.i == from->ref.i &&
@@ -142,7 +142,7 @@ static void mark_ref_copy(struct mark *to, struct mark *from)
 		to->refcnt(to, 1);
 }
 
-static void dup_mark(struct mark *orig, struct mark *new)
+static void dup_mark(struct mark *orig safe, struct mark *new safe)
 {
 	mark_ref_copy(new, orig);
 	new->rpos = orig->rpos;
@@ -151,7 +151,7 @@ static void dup_mark(struct mark *orig, struct mark *new)
 	assign_seq(new, orig->seq);
 }
 
-struct mark *do_mark_at_point(struct mark *pt, int view)
+struct mark *do_mark_at_point(struct mark *pt safe, int view)
 {
 	struct mark *ret;
 	struct point_links *lnk;
@@ -178,7 +178,7 @@ DEF_CMD(dup_point_callback)
 	return 1;
 }
 
-struct mark *mark_at_point(struct pane *p, struct mark *pm, int view)
+struct mark *mark_at_point(struct pane *p safe, struct mark *pm, int view)
 {
 	struct call_return cr;
 	int ret;
@@ -191,10 +191,10 @@ struct mark *mark_at_point(struct pane *p, struct mark *pm, int view)
 	return cr.m;
 }
 
-struct mark *point_dup(struct mark *p)
+struct mark *point_dup(struct mark *p safe) safe
 {
 	int i;
-	struct point_links *old = p->mdata;
+	struct point_links *old = safe_cast p->mdata;
 	struct mark *ret = calloc(1, sizeof(*ret));
 	struct point_links *lnk = malloc(sizeof(*lnk) +
 					 old->size * sizeof(lnk->lists[0]));
@@ -206,7 +206,7 @@ struct mark *point_dup(struct mark *p)
 	lnk->size = old->size;
 	lnk->pt = ret;
 	tlist_add(&ret->view, GRP_MARK, &p->view);
-	for (i = 0; i < lnk->size; i++)
+	for (i = 0; lnk && i < lnk->size; i++)
 		if (tlist_empty(&old->lists[i]))
 			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
 		else
@@ -214,7 +214,7 @@ struct mark *point_dup(struct mark *p)
 	return ret;
 }
 
-void points_resize(struct doc *d)
+void points_resize(struct doc *d safe)
 {
 	struct mark *p;
 	tlist_for_each_entry(p, &d->points, view) {
@@ -225,7 +225,7 @@ void points_resize(struct doc *d)
 		new->pt = p;
 		new->size = d->nviews;
 		p->mdata = new;
-		for (i = 0; i < old->size; i++) {
+		for (i = 0; old && i < old->size; i++) {
 			tlist_add(&new->lists[i], GRP_LIST, &old->lists[i]);
 			tlist_del(&old->lists[i]);
 		}
@@ -235,7 +235,7 @@ void points_resize(struct doc *d)
 	}
 }
 
-void points_attach(struct doc *d, int view)
+void points_attach(struct doc *d safe, int view)
 {
 	struct mark *p;
 	tlist_for_each_entry(p, &d->points, view) {
@@ -244,7 +244,7 @@ void points_attach(struct doc *d, int view)
 	}
 }
 
-struct mark *mark_dup(struct mark *m, int notype)
+struct mark *mark_dup(struct mark *m, int notype) safe
 {
 	struct mark *ret;
 
@@ -269,7 +269,7 @@ struct mark *mark_dup(struct mark *m, int notype)
 	return ret;
 }
 
-void __mark_reset(struct doc *d, struct mark *m, int new, int end)
+void __mark_reset(struct doc *d safe, struct mark *m safe, int new, int end)
 {
 	int i;
 	int seq = 0;
@@ -314,8 +314,8 @@ void __mark_reset(struct doc *d, struct mark *m, int new, int end)
 	else
 		tlist_add(&m->view, GRP_MARK, &d->points);
 
-	lnk = m->mdata;
-	for (i = 0; i < lnk->size; i++)
+	lnk = safe_cast m->mdata;
+	for (i = 0; d->views && i < lnk->size; i++)
 		if (d->views[i].state) {
 			if (!new)
 				tlist_del(&lnk->lists[i]);
@@ -328,7 +328,7 @@ void __mark_reset(struct doc *d, struct mark *m, int new, int end)
 			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
 }
 
-struct mark *point_new(struct doc *d)
+struct mark *point_new(struct doc *d safe) safe
 {
 	struct mark *ret = calloc(1, sizeof(*ret));
 	struct point_links *lnk = malloc(sizeof(*lnk) +
@@ -344,12 +344,12 @@ struct mark *point_new(struct doc *d)
 	return ret;
 }
 
-void mark_reset(struct doc *d, struct mark *m)
+void mark_reset(struct doc *d safe, struct mark *m safe)
 {
 	__mark_reset(d, m, 0, 0);
 }
 
-struct mark *doc_next_mark_view(struct mark *m)
+struct mark *doc_next_mark_view(struct mark *m safe)
 {
 	struct tlist_head *tl = &m->view;
 
@@ -359,7 +359,7 @@ struct mark *doc_next_mark_view(struct mark *m)
 	return NULL;
 }
 
-struct mark *doc_prev_mark_view(struct mark *m)
+struct mark *doc_prev_mark_view(struct mark *m safe)
 {
 	struct tlist_head *tl = &m->view;
 
@@ -369,34 +369,36 @@ struct mark *doc_prev_mark_view(struct mark *m)
 	return NULL;
 }
 
-struct mark *doc_first_mark_all(struct doc *d)
+struct mark *doc_first_mark_all(struct doc *d safe)
 {
 	if (!hlist_empty(&d->marks))
 		return hlist_first_entry(&d->marks, struct mark, all);
 	return NULL;
 }
 
-struct mark *doc_next_mark_all(struct mark *m)
+struct mark *doc_next_mark_all(struct mark *m safe)
 {
 	if (m->all.next)
 		return hlist_next_entry(m, all);
 	return NULL;
 }
 
-struct mark *doc_prev_mark_all(struct mark *m)
+struct mark *doc_prev_mark_all(struct mark *m safe)
 {
 	if (!HLIST_IS_HEAD(m->all.pprev))
 		return hlist_prev_entry(m, all);
 	return NULL;
 }
 
-struct mark *doc_new_mark(struct doc *d, int view)
+struct mark *doc_new_mark(struct doc *d safe, int view) safe
 {
+	/* FIXME view is >= -1 */
 	struct mark *ret;
 
 	if (view == MARK_POINT)
 		return point_new(d);
 	if (view >= d->nviews ||
+	    d->views == NULL ||
 	    view < MARK_UNGROUPED ||
 	    (view >= 0 && d->views[view].state != 1))
 		return NULL;
@@ -418,18 +420,18 @@ struct mark *doc_new_mark(struct doc *d, int view)
  *
  */
 
-static void swap_lists(struct mark *p1, struct mark *p2)
+static void swap_lists(struct mark *p1 safe, struct mark *p2 safe)
 {
 	struct point_links *tmp;
-	tmp = p1->mdata;
-	p1->mdata = p2->mdata;
+	tmp = safe_cast p1->mdata;
+	p1->mdata = safe_cast p2->mdata;
 	p2->mdata = tmp;
 	tmp->pt = p2;
-	tmp = p1->mdata;
+	tmp = safe_cast p1->mdata;
 	tmp->pt = p1;
 }
 
-void mark_forward_over(struct mark *m, struct mark *m2)
+void mark_forward_over(struct mark *m safe, struct mark *m2 safe)
 {
 	int seq;
 
@@ -464,7 +466,7 @@ void mark_forward_over(struct mark *m, struct mark *m2)
 	mark_ref_copy(m, m2);
 }
 
-void mark_backward_over(struct mark *m, struct mark *mp)
+void mark_backward_over(struct mark *m safe, struct mark *mp safe)
 {
 	int seq;
 
@@ -499,7 +501,7 @@ void mark_backward_over(struct mark *m, struct mark *mp)
 	mark_ref_copy(m, mp);
 }
 
-wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cmd_info *ci)
+wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move)
 {
 	int ret = comm_call_pane(d->home, "doc:step", d->home, forward, m, NULL, move,
 				 NULL, NULL);
@@ -512,7 +514,7 @@ wint_t mark_step(struct doc *d, struct mark *m, int forward, int move, struct cm
 		return ret & 0xfffff;
 }
 
-wint_t mark_step_pane(struct pane *p, struct mark *m, int forward, int move, struct cmd_info *ci)
+wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int move, struct cmd_info *ci)
 {
 	int ret = call5("doc:step", p, forward, m, NULL, move);
 
@@ -524,29 +526,27 @@ wint_t mark_step_pane(struct pane *p, struct mark *m, int forward, int move, str
 		return ret & 0xfffff;
 }
 
-wint_t mark_step2(struct doc *d, struct mark *m, int forward, int move)
+wint_t mark_step2(struct doc *d safe, struct mark *m safe, int forward, int move)
 {
-	struct cmd_info ci = {};
-
-	return mark_step(d, m, forward, move, &ci);
+	return mark_step(d, m, forward, move);
 }
 
-wint_t mark_next(struct doc *d, struct mark *m)
+wint_t mark_next(struct doc *d safe, struct mark *m safe)
 {
 	return mark_step2(d, m, 1, 1);
 }
 
-wint_t mark_next_pane(struct pane *p, struct mark *m)
+wint_t mark_next_pane(struct pane *p safe, struct mark *m safe)
 {
 	return mark_step_pane(p, m, 1, 1, NULL);
 }
 
-wint_t mark_prev(struct doc *d, struct mark *m)
+wint_t mark_prev(struct doc *d safe, struct mark *m safe)
 {
 	return mark_step2(d, m, 0, 1);
 }
 
-wint_t mark_prev_pane(struct pane *p, struct mark *m)
+wint_t mark_prev_pane(struct pane *p safe, struct mark *m safe)
 {
 	return mark_step_pane(p, m, 0, 1, NULL);
 }
@@ -560,11 +560,11 @@ wint_t mark_prev_pane(struct pane *p, struct mark *m)
  * Then update 'all' list, text ref and seq number.
  */
 
-static void point_forward_to_mark(struct mark *p, struct mark *m)
+static void point_forward_to_mark(struct mark *p safe, struct mark *m safe)
 {
 	struct mark *ptmp, *pnear;
 	int i;
-	struct point_links *plnk = p->mdata;
+	struct point_links *plnk = safe_cast p->mdata;
 
 	pnear = p;
 	ptmp = p;
@@ -615,11 +615,11 @@ static void point_forward_to_mark(struct mark *p, struct mark *m)
 	assign_seq(p, m->seq);
 }
 
-static void point_backward_to_mark(struct mark *p, struct mark *m)
+static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
 {
 	struct mark *ptmp, *pnear;
 	int i;
-	struct point_links *plnk = p->mdata;
+	struct point_links *plnk = safe_cast p->mdata;
 
 	pnear = p;
 	ptmp = p;
@@ -670,7 +670,7 @@ static void point_backward_to_mark(struct mark *p, struct mark *m)
 	assign_seq(p, m->seq);
 }
 
-void point_to_mark(struct mark *p, struct mark *m)
+void point_to_mark(struct mark *p safe, struct mark *m safe)
 {
 	if (p->seq < m->seq)
 		point_forward_to_mark(p, m);
@@ -679,7 +679,7 @@ void point_to_mark(struct mark *p, struct mark *m)
 	p->rpos = m->rpos;
 }
 
-void mark_to_mark(struct mark *m, struct mark *target)
+void mark_to_mark(struct mark *m safe, struct mark *target safe)
 {
 	if (m->seq == target->seq)
 		return;
@@ -700,14 +700,13 @@ void mark_to_mark(struct mark *m, struct mark *target)
 	mark_ref_copy(m, target);
 }
 
-int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2)
+int mark_same_pane(struct pane *p safe, struct mark *m1 safe, struct mark *m2 safe)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = {.key = "doc:mark-same", .focus = p, .home = p,
+			      .comm = safe_cast 0};
 
-	ci.key = "doc:mark-same";
 	ci.mark = m1;
 	ci.mark2 = m2;
-	ci.focus = p;
 	return key_handle(&ci) == 1;
 }
 
@@ -715,7 +714,7 @@ int mark_same_pane(struct pane *p, struct mark *m1, struct mark *m2)
  * silently skipping over the points.
  */
 
-static struct mark *__vmark_next(struct tlist_head *tl)
+static struct mark *__vmark_next(struct tlist_head *tl safe)
 {
 	while (TLIST_TYPE(tl) != GRP_HEAD) {
 		if (TLIST_TYPE(tl) == GRP_LIST) {
@@ -727,7 +726,7 @@ static struct mark *__vmark_next(struct tlist_head *tl)
 	return NULL;
 }
 
-struct mark *vmark_next(struct mark *m)
+struct mark *vmark_next(struct mark *m safe)
 {
 	struct tlist_head *tl;
 
@@ -735,7 +734,7 @@ struct mark *vmark_next(struct mark *m)
 	return __vmark_next(tl);
 }
 
-static struct mark *__vmark_prev(struct tlist_head *tl)
+static struct mark *__vmark_prev(struct tlist_head *tl safe)
 {
 	while (TLIST_TYPE(tl) != GRP_HEAD) {
 		if (TLIST_TYPE(tl) == GRP_LIST) {
@@ -747,7 +746,7 @@ static struct mark *__vmark_prev(struct tlist_head *tl)
 	return NULL;
 }
 
-struct mark *vmark_prev(struct mark *m)
+struct mark *vmark_prev(struct mark *m safe)
 {
 	struct tlist_head *tl;
 
@@ -755,11 +754,11 @@ struct mark *vmark_prev(struct mark *m)
 	return __vmark_prev(tl);
 }
 
-struct mark *do_vmark_first(struct doc *d, int view)
+struct mark *do_vmark_first(struct doc *d safe, int view)
 {
 	struct tlist_head *tl;
 
-	if (view < 0 || view >= d->nviews)
+	if (view < 0 || view >= d->nviews || d->views == NULL)
 		return NULL;
 
 	tl = TLIST_PTR(d->views[view].head.next);
@@ -773,11 +772,11 @@ struct mark *do_vmark_first(struct doc *d, int view)
 	return NULL;
 }
 
-struct mark *do_vmark_last(struct doc *d, int view)
+struct mark *do_vmark_last(struct doc *d safe, int view)
 {
 	struct tlist_head *tl;
 
-	if (view < 0 || view >= d->nviews)
+	if (view < 0 || view >= d->nviews || d->views == NULL)
 		return NULL;
 
 	tl = TLIST_PTR(d->views[view].head.prev);
@@ -799,14 +798,12 @@ DEF_CMD(take_marks)
 	return 1;
 }
 
-static int vmark_get(struct pane *p, int view,
+static int vmark_get(struct pane *p safe, int view,
 		     struct mark **first, struct mark **last, struct mark **point, struct mark **new)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = {.key = "doc:vmark-get", .focus = p, .home = p, .comm = safe_cast 0};
 	struct call_return cr;
 
-	ci.key = "doc:vmark-get";
-	ci.focus = p;
 	ci.numeric = view;
 	cr.c = take_marks;
 	cr.m = cr.m2 = NULL;
@@ -828,7 +825,7 @@ static int vmark_get(struct pane *p, int view,
 	return 1;
 }
 
-struct mark *vmark_first(struct pane *p, int view)
+struct mark *vmark_first(struct pane *p safe, int view)
 {
 	struct mark *first = NULL;
 	if (vmark_get(p, view, &first, NULL, NULL, NULL) == 0)
@@ -836,7 +833,7 @@ struct mark *vmark_first(struct pane *p, int view)
 	return first;
 }
 
-struct mark *vmark_last(struct pane *p, int view)
+struct mark *vmark_last(struct pane *p safe, int view)
 {
 	struct mark *last = NULL;
 	if (vmark_get(p, view, NULL, &last, NULL, NULL) == 0)
@@ -844,7 +841,7 @@ struct mark *vmark_last(struct pane *p, int view)
 	return last;
 }
 
-struct mark *vmark_at_point(struct pane *p, int view)
+struct mark *vmark_at_point(struct pane *p safe, int view)
 {
 	struct mark *point = NULL;
 	if (vmark_get(p, view, NULL, NULL, &point, NULL) == 0)
@@ -852,13 +849,11 @@ struct mark *vmark_at_point(struct pane *p, int view)
 	return point;
 }
 
-struct mark *vmark_at_or_before(struct pane *p, struct mark *m, int view)
+struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe, int view)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = {.key = "doc:vmark-get", .focus = p, .home = p, .comm = safe_cast 0};
 	struct call_return cr;
 
-	ci.key = "doc:vmark-get";
-	ci.focus = p;
 	ci.numeric = view;
 	ci.extra = 3;
 	ci.mark = m;
@@ -870,7 +865,7 @@ struct mark *vmark_at_or_before(struct pane *p, struct mark *m, int view)
 	return cr.m2;
 }
 
-struct mark *vmark_new(struct pane *p, int view)
+struct mark *vmark_new(struct pane *p safe, int view) safe
 {
 	struct mark *new = NULL;
 	if (vmark_get(p, view, NULL, NULL, NULL, &new) == 0)
@@ -878,7 +873,7 @@ struct mark *vmark_new(struct pane *p, int view)
 	return new;
 }
 
-struct mark *vmark_matching(struct pane *p, struct mark *m)
+struct mark *vmark_matching(struct pane *p safe, struct mark *m safe)
 {
 	/* Find a nearby mark in the same view with the same ref */
 	struct mark *m2;
@@ -892,7 +887,8 @@ struct mark *vmark_matching(struct pane *p, struct mark *m)
 	return NULL;
 }
 
-struct mark *do_vmark_at_point(struct pane *p, struct doc *d, struct mark *pt, int view)
+struct mark *do_vmark_at_point(struct pane *p safe, struct doc *d safe,
+			       struct mark *pt safe, int view)
 {
 	struct tlist_head *tl;
 	struct mark *m;
@@ -912,7 +908,8 @@ struct mark *do_vmark_at_point(struct pane *p, struct doc *d, struct mark *pt, i
 	return NULL;
 }
 
-struct mark *do_vmark_at_or_before(struct pane *p, struct doc *d, struct mark *m, int view)
+struct mark *do_vmark_at_or_before(struct pane *p safe, struct doc *d safe,
+				   struct mark *m safe, int view)
 {
 	/* First the last 'view' mark that is not later in the document than 'm'.
 	 * It might be later in the mark list, but not in the document.
@@ -959,12 +956,12 @@ struct mark *do_vmark_at_or_before(struct pane *p, struct doc *d, struct mark *m
 	return vm;
 }
 
-void doc_notify_change(struct doc *d, struct mark *m, struct mark *m2)
+void doc_notify_change(struct doc *d safe, struct mark *m, struct mark *m2)
 {
 	pane_notify(d->home, "Notify:Replace", m, m2, NULL, 0, NULL);
 }
 
-void doc_check_consistent(struct doc *d)
+void doc_check_consistent(struct doc *d safe)
 {
 	/* Check consistency of marks, and abort if not.
 	 * Check:
@@ -980,7 +977,7 @@ void doc_check_consistent(struct doc *d)
 			abort();
 		seq = m->seq + 1;
 	}
-	for (i = 0; i < d->nviews; i++)
+	for (i = 0; d->views && i < d->nviews; i++)
 		if (d->views[i].state == 0) {
 			if (!tlist_empty(&d->views[i].head)) abort();
 		} else {

@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "safe.h"
 #define PRIVATE_DOC_REF
 struct doc_ref {
 	struct pane	*p;
@@ -39,7 +40,7 @@ struct docs {
 	struct command		callback;
 };
 
-static void docs_demark(struct docs *doc, struct pane *p)
+static void docs_demark(struct docs *doc safe, struct pane *p safe)
 {
 	/* This document is about to be moved in the list.
 	 * Any mark pointing at it is moved forward
@@ -59,7 +60,7 @@ static void docs_demark(struct docs *doc, struct pane *p)
 		}
 }
 
-static void docs_enmark(struct docs *doc, struct pane *p)
+static void docs_enmark(struct docs *doc safe, struct pane *p safe)
 {
 	/* This document has just been added to the list.
 	 * any mark pointing just past it is moved back.
@@ -81,7 +82,7 @@ static void docs_enmark(struct docs *doc, struct pane *p)
 		}
 }
 
-static void doc_save(struct pane *p, struct pane *focus)
+static void doc_save(struct pane *p safe, struct pane *focus safe)
 {
 	char *fn = pane_attr_get(p, "filename");
 	char *mod = pane_attr_get(p, "doc-modified");
@@ -95,7 +96,7 @@ static void doc_save(struct pane *p, struct pane *focus)
 		call_home(p, "doc:save-file", focus, 0, NULL, NULL);
 }
 
-static void check_name(struct docs *docs, struct pane *pane)
+static void check_name(struct docs *docs safe, struct pane *pane safe)
 {
 	struct doc *d = pane->data;
 	char *nname;
@@ -146,7 +147,7 @@ DEF_CMD(doc_checkname)
  * sent back to the pane that requested the popup.
  */
 
-static int mark_is_modified(struct pane *p, struct mark *m)
+static int mark_is_modified(struct pane *p safe, struct mark *m safe)
 {
 	char *fn, *mod;
 
@@ -157,7 +158,7 @@ static int mark_is_modified(struct pane *p, struct mark *m)
 	return fn && *fn;
 }
 
-static void mark_to_modified(struct pane *p, struct mark *m)
+static void mark_to_modified(struct pane *p safe, struct mark *m safe)
 {
 	/* If 'm' isn't just before a savable document, move it forward */
 	while (!mark_is_modified(p, m))
@@ -165,7 +166,7 @@ static void mark_to_modified(struct pane *p, struct mark *m)
 			break;
 }
 
-static wchar_t prev_modified(struct pane *p, struct mark *m)
+static wchar_t prev_modified(struct pane *p safe, struct mark *m safe)
 {
 	if (mark_prev_pane(p, m) == WEOF)
 		return WEOF;
@@ -480,8 +481,8 @@ DEF_CMD(docs_mark_same)
 	return ci->mark->ref.p == ci->mark2->ref.p ? 1 : 2;
 }
 
-static char *__docs_get_attr(struct doc *doc, struct mark *m,
-			     bool forward, char *attr)
+static char *__docs_get_attr(struct doc *doc safe, struct mark *m safe,
+			     bool forward, char *attr safe)
 {
 	struct pane *p;
 
@@ -737,7 +738,7 @@ DEF_CMD(attach_docs)
 	return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-doc-docs",
 		  0, &attach_docs);

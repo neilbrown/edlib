@@ -32,11 +32,11 @@ struct doc_ref {
 
 #include "core.h"
 
-static inline wint_t doc_following(struct doc *d, struct mark *m)
+static inline wint_t doc_following(struct doc *d safe, struct mark *m safe)
 {
 	return mark_step2(d, m, 1, 0);
 }
-static inline wint_t doc_prior(struct doc *d, struct mark *m)
+static inline wint_t doc_prior(struct doc *d safe, struct mark *m safe)
 {
 	return mark_step2(d, m, 0, 0);
 }
@@ -44,24 +44,24 @@ static inline wint_t doc_prior(struct doc *d, struct mark *m)
 /* this is ->data for a document reference pane.
  */
 struct doc_data {
-	struct pane		*doc;
-	struct mark		*point;
+	struct pane		*doc safe;
+	struct mark		*point safe;
 };
 
-static int do_doc_add_view(struct doc *d)
+static int do_doc_add_view(struct doc *d safe)
 {
 	struct docview *g;
 	int ret;
 	int i;
 
-	for (ret = 0; ret < d->nviews; ret++)
+	for (ret = 0; d->views && ret < d->nviews; ret++)
 		if (d->views[ret].state == 0)
 			break;
-	if (ret == d->nviews) {
+	if (!d->views || ret == d->nviews) {
 		/* Resize the view list */
 		d->nviews += 4;
 		g = malloc(sizeof(*g) * d->nviews);
-		for (i = 0; i < ret; i++) {
+		for (i = 0; d->views && i < ret; i++) {
 			tlist_add(&g[i].head, GRP_HEAD, &d->views[i].head);
 			tlist_del(&d->views[i].head);
 			g[i].state = d->views[i].state;
@@ -80,12 +80,12 @@ static int do_doc_add_view(struct doc *d)
 	return ret;
 }
 
-static void do_doc_del_view(struct doc *d, int i)
+static void do_doc_del_view(struct doc *d safe, int i)
 {
 	/* This view should only have points on the list, not typed
 	 * marks.  Just delete everything and clear the 'notify' pointer
 	 */
-	if (i < 0 || i >= d->nviews)
+	if (i < 0 || i >= d->nviews || d->views == NULL)
 		return;
 	d->views[i].state = 0;
 	while (!tlist_empty(&d->views[i].head)) {
@@ -96,7 +96,7 @@ static void do_doc_del_view(struct doc *d, int i)
 	}
 }
 
-void doc_init(struct doc *d)
+void doc_init(struct doc *d safe)
 {
 	INIT_HLIST_HEAD(&d->marks);
 	INIT_TLIST_HEAD(&d->points, 0);
@@ -104,7 +104,7 @@ void doc_init(struct doc *d)
 	d->nviews = 0;
 	d->name = NULL;
 	d->autoclose = 0;
-	d->home = NULL;
+	d->home = safe_cast NULL;
 }
 
 /* For these 'default commands', home->data is struct doc */
@@ -291,7 +291,7 @@ DEF_CMD(doc_attr_set)
 
 DEF_CMD(doc_get_attr)
 {
-	struct doc *d = ci->home->data;
+	struct pane *p = ci->home; struct doc *d = p->data;
 	char *a;
 
 	if ((a = attr_find(d->home->attrs, ci->str)) != NULL)
@@ -399,7 +399,7 @@ DEF_CMD(doc_do_destroy)
 	return 1;
 }
 
-struct map *doc_default_cmd;
+struct map *doc_default_cmd safe;
 
 static void init_doc_defaults(void)
 {
@@ -473,7 +473,7 @@ DEF_CMD(doc_handle)
 		comm_call_pane(dd->doc, "Closed", ci->home, 0, NULL, NULL, 0,
 			       NULL, NULL);
 		free(dd);
-		ci->home->data = NULL;
+		ci->home->data = safe_cast NULL;
 		return 1;
 	}
 
@@ -517,13 +517,14 @@ DEF_CMD(doc_handle)
 	ci2.home = dd->doc;
 	if (ci2.mark == NULL)
 		ci2.mark = dd->point;
-	ci2.comm = ci2.home->handle;
-	if (ci2.comm)
+	if (ci2.home->handle) {
+		ci2.comm = ci2.home->handle;
 		return ci2.comm->func(&ci2);
+	}
 	return 0;
 }
 
-struct pane *doc_attach(struct pane *parent, struct pane *d)
+struct pane *doc_attach(struct pane *parent, struct pane *d safe)
 {
 	struct pane *p;
 	struct doc_data *dd = calloc(1, sizeof(*dd));
@@ -539,7 +540,7 @@ struct pane *doc_attach(struct pane *parent, struct pane *d)
 	return p;
 }
 
-struct pane *doc_new(struct pane *p, char *type)
+struct pane *doc_new(struct pane *p safe, char *type)
 {
 	char buf[100];
 
@@ -593,7 +594,7 @@ DEF_CMD(doc_open)
 			 NULL, 0);
 }
 
-struct pane *doc_attach_view(struct pane *parent, struct pane *doc, char *render)
+struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe, char *render)
 {
 	struct pane *p;
 
@@ -629,19 +630,16 @@ DEF_CMD(doc_attr_callback)
 	return 1;
 }
 
-char *doc_attr(struct pane *dp, struct mark *m, bool forward, char *attr)
+char *doc_attr(struct pane *dp safe, struct mark *m, bool forward, char *attr)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = {.key = "doc:get-attr", .home = dp, .focus = dp, .comm = safe_cast dp->handle};
 	struct call_return cr;
 
-	ci.key = "doc:get-attr";
 	if (!m)
 		ci.key = "get-attr";
-	ci.home = ci.focus = dp;
 	ci.mark = m;
 	ci.numeric = forward ? 1 : 0;
 	ci.str = attr;
-	ci.comm = dp->handle;
 	cr.c = doc_attr_callback;
 	cr.s = NULL;
 	ci.comm2 = &cr.c;
@@ -657,9 +655,9 @@ DEF_CMD(doc_str_callback)
 	return 1;
 }
 
-char *doc_getstr(struct pane *from, struct mark *to, struct mark *m2)
+char *doc_getstr(struct pane *from safe, struct mark *to, struct mark *m2)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = {.key = "doc:get-str", .focus = from, .home = from, .comm = safe_cast 0};
 	int ret;
 	struct call_return cr;
 
@@ -676,12 +674,12 @@ char *doc_getstr(struct pane *from, struct mark *to, struct mark *m2)
 	return cr.s;
 }
 
-void doc_free(struct doc *d)
+void doc_free(struct doc *d safe)
 {
 	int i;
 
 	for (i = 0; i < d->nviews; i++)
-		ASSERT(!d->views[i].state);
+		ASSERT(d->views && !d->views[i].state);
 	free(d->views);
 	free(d->name);
 	while (!hlist_empty(&d->marks)) {
@@ -694,10 +692,10 @@ void doc_free(struct doc *d)
 	}
 }
 
-void doc_setup(struct pane *ed)
+void doc_setup(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "doc:open", 0, &doc_open);
 	call_comm("global-set-command", ed, 0, NULL, "doc:from-text", 0, &doc_from_text);
-	if (!doc_default_cmd)
+	if (!(void*)doc_default_cmd)
 		init_doc_defaults();
 }

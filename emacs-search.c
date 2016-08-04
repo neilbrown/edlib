@@ -25,13 +25,13 @@
 struct es_info {
 	struct stk {
 		struct stk *next;
-		struct mark *m; /* Start of search */
+		struct mark *m safe; /* Start of search */
 		unsigned int len; /* current length of match string */
 		int wrapped;
 	} *s;
-	struct mark *start; /* where searching starts */
+	struct mark *start safe; /* where searching starts */
 	struct mark *end; /* where last success ended */
-	struct pane *target;
+	struct pane *target safe;
 	short matched;
 	short wrapped;
 };

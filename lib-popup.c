@@ -44,7 +44,7 @@ DEF_CMD(text_size_callback)
 	return 1;
 }
 
-static int line_height(struct pane *p)
+static int line_height(struct pane *p safe)
 {
 	struct call_return cr;
 
@@ -53,7 +53,7 @@ static int line_height(struct pane *p)
 	return cr.y;
 }
 
-static void popup_resize(struct pane *p, char *style)
+static void popup_resize(struct pane *p safe, char *style safe)
 {
 	int x,y,w,h;
 	int lh;
@@ -199,7 +199,7 @@ DEF_CMD(popup_attach)
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "PopupTile",
 		  0, &popup_attach);

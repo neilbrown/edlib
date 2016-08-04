@@ -116,8 +116,8 @@ DEF_CMD(text_size_callback)
 #define WRAP 1
 #define CURS 2
 
-static int draw_some(struct pane *p, int *x, int y, char *start, char **endp,
-		     char *attr, int margin, int cursorpos, int cursx, int scale)
+static int draw_some(struct pane *p safe, int *x safe, int y, char *start safe, char **endp safe,
+		     char *attr safe, int margin, int cursorpos, int cursx, int scale)
 {
 	/* draw some text from 'start' for length 'len' into p[x,y].
 	 * Update 'x' and 'startp' past what as drawn.
@@ -168,7 +168,8 @@ static int draw_some(struct pane *p, int *x, int y, char *start, char **endp,
 	return ret;
 }
 
-static void update_line_height_attr(struct pane *p, int *h, int *a, int *w, char *attr, char *str, int scale)
+static void update_line_height_attr(struct pane *p safe, int *h safe, int *a safe,
+				    int *w, char *attr safe, char *str safe, int scale)
 {
 	struct call_return cr;
 	cr.c = text_size_callback;
@@ -181,8 +182,8 @@ static void update_line_height_attr(struct pane *p, int *h, int *a, int *w, char
 		*w += cr.x;
 }
 
-static void update_line_height(struct pane *p, int *h, int *a, int *w,
-			       int *center, char *line, int scale)
+static void update_line_height(struct pane *p safe, int *h safe, int *a safe, int *w safe,
+			       int *center, char *line safe, int scale)
 {
 	struct buf attr;
 	int attr_found = 0;
@@ -254,7 +255,7 @@ static void update_line_height(struct pane *p, int *h, int *a, int *w,
 	free(buf_final(&attr));
 }
 
-static void render_image(struct pane *p, char *line, int *yp,
+static void render_image(struct pane *p safe, char *line safe, int *yp safe,
 			 int dodraw, int scale)
 {
 	char *fname = NULL;
@@ -295,8 +296,8 @@ static void render_image(struct pane *p, char *line, int *yp,
 /* render a line, with attributes and wrapping.  Report line offset where
  * cursor point cx,cy is passed. -1 if never seen.
  */
-static void render_line(struct pane *p, struct pane *focus,
-			char *line, int *yp, int dodraw, int scale,
+static void render_line(struct pane *p safe, struct pane *focus safe,
+			char *line safe, int *yp safe, int dodraw, int scale,
 			int *cxp, int *cyp, int *offsetp, int *end_of_pagep, int *cols)
 {
 	int x = 0;
@@ -574,8 +575,8 @@ static void render_line(struct pane *p, struct pane *focus,
 		*end_of_pagep = end_of_page;
 }
 
-static struct mark *call_render_line_prev(struct pane *p,
-					  struct mark *m, int n, int *found)
+static struct mark *call_render_line_prev(struct pane *p safe,
+					  struct mark *m safe, int n, int *found)
 {
 	int ret;
 	struct mark *m2;
@@ -611,7 +612,7 @@ DEF_CMD(save_str)
 	return 1;
 }
 
-static struct mark *call_render_line(struct pane *p, struct mark *start)
+static struct mark *call_render_line(struct pane *p safe, struct mark *start safe)
 {
 	struct call_return cr;
 	struct mark *m, *m2;
@@ -656,8 +657,8 @@ DEF_CMD(no_save)
 	return 1;
 }
 
-static struct mark *call_render_line_offset(struct pane *p,
-					    struct mark *start, int offset)
+static struct mark *call_render_line_offset(struct pane *p safe,
+					    struct mark *start safe, int offset)
 {
 	struct mark *m;
 
@@ -678,10 +679,10 @@ DEF_CMD(get_len)
 		return 1;
 }
 
-static int call_render_line_to_point(struct pane *p, struct mark *pm,
-				     struct mark *start)
+static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
+				     struct mark *start safe)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = {.key="render-line",.focus=p,.home=p,.comm=safe_cast 0};
 	int len;
 
 	ci.key = "render-line";
@@ -700,7 +701,7 @@ static int call_render_line_to_point(struct pane *p, struct mark *pm,
 	return len;
 }
 
-static void find_lines(struct mark *pm, struct pane *p, struct pane *focus)
+static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *focus safe)
 {
 	struct rl_data *rl = p->data;
 	struct mark *top, *bot;
@@ -851,7 +852,8 @@ static void find_lines(struct mark *pm, struct pane *p, struct pane *focus)
 	end->mdata = NULL;
 }
 
-static int render(struct mark *pm, struct pane *p, struct pane *focus, int *cols)
+static int render(struct mark *pm, struct pane *p safe,
+		  struct pane *focus safe, int *cols safe)
 {
 	struct rl_data *rl = p->data;
 	int y;
@@ -1405,7 +1407,7 @@ REDEF_CMD(render_lines_attach)
 			 0, NULL, NULL, 0);
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-render-lines",
 		  0, &render_lines_attach);

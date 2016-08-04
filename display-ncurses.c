@@ -31,9 +31,9 @@ struct display_data {
 };
 
 static SCREEN *current_screen;
-static void ncurses_clear(struct pane *p, struct pane *display,
+static void ncurses_clear(struct pane *p safe, struct pane *display safe,
 			  int attr, int x, int y, int w, int h);
-static void ncurses_text(struct pane *p, struct pane *display,
+static void ncurses_text(struct pane *p safe, struct pane *display safe,
 			 wchar_t ch, int attr, int x, int y, int cursor);
 
 static void set_screen(SCREEN *scr)
@@ -239,7 +239,7 @@ REDEF_CMD(handle_winch)
 	return 1;
 }
 
-static void ncurses_clear(struct pane *p, struct pane *display,
+static void ncurses_clear(struct pane *p safe, struct pane *display safe,
 			  int attr, int x, int y, int w, int h)
 {
 	int r, c;
@@ -265,7 +265,7 @@ static void ncurses_clear(struct pane *p, struct pane *display,
 				mvaddch(r, c, ' ');
 }
 
-static void ncurses_text(struct pane *p, struct pane *display,
+static void ncurses_text(struct pane *p safe, struct pane *display safe,
 			 wchar_t ch, int attr, int x, int y, int cursor)
 {
 	struct display_data *dd;
@@ -348,7 +348,7 @@ static struct namelist {
 	{0, NULL}
 };
 
-static char *find_name (struct namelist *l, wint_t c)
+static char *find_name (struct namelist *l safe, wint_t c)
 {
 	int i;
 	for (i = 0; l[i].name; i++)
@@ -357,7 +357,7 @@ static char *find_name (struct namelist *l, wint_t c)
 	return NULL;
 }
 
-static void send_key(int keytype, wint_t c, struct pane *p)
+static void send_key(int keytype, wint_t c, struct pane *p safe)
 {
 	char *n;
 	char buf[100];/* FIXME */
@@ -381,7 +381,7 @@ static void send_key(int keytype, wint_t c, struct pane *p)
 	call5("Keystroke", p, 0, NULL, buf, 0);
 }
 
-static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
+static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe)
 {
 	struct cmd_info ci = {};
 
@@ -393,7 +393,7 @@ static void do_send_mouse(struct pane *p, int x, int y, char *cmd)
 	key_handle(&ci);
 }
 
-static void send_mouse(MEVENT *mev, struct pane *p)
+static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 {
 	int x = mev->x;
 	int y = mev->y;
@@ -449,7 +449,7 @@ DEF_CMD(display_ncurses)
 	return -1;
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-display-ncurses",
 		  0, &display_ncurses);

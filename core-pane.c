@@ -33,7 +33,7 @@
 
 #include "core.h"
 
-void pane_init(struct pane *p, struct pane *par, struct list_head *here)
+void pane_init(struct pane *p safe, struct pane *par, struct list_head *here)
 {
 	p->parent = par;
 	if (par && !here)
@@ -56,7 +56,7 @@ void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 	p->abs_z = p->abs_zhi = 0;
 	p->focus = NULL;
 	p->handle = NULL;
-	p->data = NULL;
+	p->data = safe_cast NULL;
 	p->damaged = 0;
 	p->pointer = NULL;
 	p->attrs = NULL;
@@ -64,7 +64,7 @@ void pane_init(struct pane *p, struct pane *par, struct list_head *here)
 		pane_damaged(p, DAMAGED_SIZE);
 }
 
-static void __pane_check(struct pane *p)
+static void __pane_check(struct pane *p safe)
 {
 	struct pane *c;
 	list_for_each_entry(c, &p->children, siblings) {
@@ -73,7 +73,7 @@ static void __pane_check(struct pane *p)
 	}
 }
 
-static void pane_check(struct pane *p)
+static void pane_check(struct pane *p safe)
 {
 	while (p->parent)
 		p = p->parent;
@@ -106,7 +106,8 @@ void pane_damaged(struct pane *p, int type)
 }
 
 struct pane *pane_register(struct pane *parent, int z,
-			   struct command *handle, void *data, struct list_head *here)
+			   struct command *handle safe, void *data,
+			   struct list_head *here) safe
 {
 	struct pane *p = malloc(sizeof(*p));
 	pane_init(p, parent, here);
@@ -127,7 +128,7 @@ struct pane *pane_register(struct pane *parent, int z,
  * If it or DAMAGED_SIZE_CHILD was set, we recurse onto all children.
  * If abs_z is not one more than parent, we also recurse.
  */
-static void pane_do_resize(struct pane *p, int damage, struct mark *pointer)
+static void pane_do_resize(struct pane *p safe, int damage, struct mark *pointer)
 {
 	struct pane *c;
 	int nextz;
@@ -187,7 +188,7 @@ static void pane_do_resize(struct pane *p, int damage, struct mark *pointer)
 	}
 }
 
-static void pane_do_refresh(struct pane *p, int damage, struct mark *pointer)
+static void pane_do_refresh(struct pane *p safe, int damage, struct mark *pointer)
 {
 	struct pane *c;
 
@@ -219,7 +220,7 @@ static void pane_do_refresh(struct pane *p, int damage, struct mark *pointer)
 	}
 }
 
-static void pane_do_review(struct pane *p, int damage, struct mark *pointer)
+static void pane_do_review(struct pane *p safe, int damage, struct mark *pointer)
 {
 	struct pane *c;
 
@@ -241,7 +242,7 @@ static void pane_do_review(struct pane *p, int damage, struct mark *pointer)
 			pane_do_review(c, damage, pointer);
 }
 
-void pane_refresh(struct pane *p, struct mark *pointer)
+void pane_refresh(struct pane *p safe, struct mark *pointer)
 {
 	int cnt = 3;
 	if (p->parent == NULL)
@@ -257,7 +258,7 @@ void pane_refresh(struct pane *p, struct mark *pointer)
 			p->parent ? "":"non-", p->damaged);
 }
 
-void pane_add_notify(struct pane *target, struct pane *source, char *msg)
+void pane_add_notify(struct pane *target safe, struct pane *source safe, char *msg safe)
 {
 	struct notifier *n;
 
@@ -276,7 +277,7 @@ void pane_add_notify(struct pane *target, struct pane *source, char *msg)
 	list_add(&n->notifiee_link, &target->notifiers);
 }
 
-void pane_drop_notifiers(struct pane *p, char *notification)
+void pane_drop_notifiers(struct pane *p safe, char *notification)
 {
 	struct list_head *t;
 	struct notifier *n;
@@ -292,7 +293,7 @@ void pane_drop_notifiers(struct pane *p, char *notification)
 	}
 }
 
-void pane_notify_close(struct pane *p)
+void pane_notify_close(struct pane *p safe)
 {
 	while (!list_empty(&p->notifiees)) {
 		struct notifier *n = list_first_entry(&p->notifiees,
@@ -308,7 +309,7 @@ void pane_notify_close(struct pane *p)
 	}
 }
 
-int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark *m2,
+int pane_notify(struct pane *p safe, char *notification safe, struct mark *m, struct mark *m2,
 		char *str, int numeric, struct command *comm2)
 {
 	/* Return the largest absolute return value. If no notifiees are found.
@@ -316,7 +317,7 @@ int pane_notify(struct pane *p, char *notification, struct mark *m, struct mark 
 	 */
 	int ret = 0;
 	struct notifier *n;
-
+	/* FIXME why no error below */
 	list_for_each_entry(n, &p->notifiees, notifier_link)
 		n->noted = 0;
 restart:
@@ -336,7 +337,7 @@ restart:
 	return ret;
 }
 
-void pane_close(struct pane *p)
+void pane_close(struct pane *p safe)
 {
 	struct pane *c;
 	struct pane *ed;
@@ -349,13 +350,13 @@ void pane_close(struct pane *p)
 	while (ed && ed->parent)
 		ed = ed->parent;
 
-	if (p->parent && p->parent->handle &&
+	if (p->parent && (void*)p->parent->handle &&
 	    !(p->parent->damaged & DAMAGED_CLOSED)) {
-		struct cmd_info ci = {};
+		struct cmd_info ci = {.key = "ChildClosed",
+				      .focus = p,
+				      .home = p->parent,
+				      .comm = p->parent->handle};
 
-		ci.key = "ChildClosed";
-		ci.focus = p;
-		ci.home = p->parent;
 		ci.comm = p->parent->handle;
 		ci.comm->func(&ci);
 	}
@@ -372,11 +373,8 @@ void pane_close(struct pane *p)
 	}
 	pane_notify_close(p);
 	if (p->handle) {
-		struct cmd_info ci = {};
+		struct cmd_info ci = {.key = "Close", .focus = p, .home = p, .comm = p->handle};
 
-		ci.key = "Close";
-		ci.focus = ci.home = p;
-		ci.comm = p->handle;
 		p->handle->func(&ci);
 	}
 	pane_damaged(p->parent, DAMAGED_CONTENT);
@@ -391,7 +389,7 @@ void pane_close(struct pane *p)
 	}
 }
 
-void pane_resize(struct pane *p, int x, int y, int w, int h)
+void pane_resize(struct pane *p safe, int x, int y, int w, int h)
 {
 	int damage = 0;
 	if (x >= 0 &&
@@ -416,7 +414,7 @@ void pane_resize(struct pane *p, int x, int y, int w, int h)
 	pane_damaged(p, damage);
 }
 
-void pane_reparent(struct pane *p, struct pane *newparent)
+void pane_reparent(struct pane *p safe, struct pane *newparent safe)
 {
 	/* detach p from its parent and attach beneath its sibling newparent */
 	ASSERT(p->parent == newparent->parent);
@@ -430,7 +428,7 @@ void pane_reparent(struct pane *p, struct pane *newparent)
 	list_add(&p->siblings, &newparent->children);
 }
 
-void pane_subsume(struct pane *p, struct pane *parent)
+void pane_subsume(struct pane *p safe, struct pane *parent safe)
 {
 	/* move all content from p into parent, which must be empty,
 	 * except possibly for 'p'.
@@ -471,7 +469,7 @@ void pane_subsume(struct pane *p, struct pane *parent)
 	parent->damaged |= p->damaged;
 }
 
-int pane_masked(struct pane *p, int x, int y, int abs_z, int *w, int *h)
+int pane_masked(struct pane *p safe, int x, int y, int abs_z, int *w, int *h)
 {
 	/* Test if this pane, or its children, mask this location.
 	 * i.e. they have a higher 'abs_z' and might draw here.
@@ -531,7 +529,7 @@ void pane_focus(struct pane *p)
 	}
 }
 
-struct pane *render_attach(char *name, struct pane *parent)
+struct pane *render_attach(char *name, struct pane *parent safe)
 {
 	char buf[100];
 
@@ -545,32 +543,30 @@ struct pane *render_attach(char *name, struct pane *parent)
 	return call_pane(buf, parent, 0, NULL, 0);
 }
 
-void pane_set_mode(struct pane *p, char *mode)
+void pane_set_mode(struct pane *p safe, char *mode)
 {
 	call5("Mode:set-mode", p, 0, NULL, mode, 0);
 }
 
-void pane_set_numeric(struct pane *p, int numeric)
+void pane_set_numeric(struct pane *p safe, int numeric)
 {
 	call3("Mode:set-numeric", p, numeric, NULL);
 }
 
-void pane_set_extra(struct pane *p, int extra)
+void pane_set_extra(struct pane *p safe, int extra)
 {
 	call5("Mode:set-extra", p, 0, NULL, NULL, extra);
 }
 
-void pane_clear(struct pane *p, char *attrs)
+void pane_clear(struct pane *p safe, char *attrs)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = {.key = "pane-clear", .focus = p, .home = p, .comm = safe_cast 0};
 
-	ci.key = "pane-clear";
-	ci.focus = p;
 	ci.str2 = attrs;
 	key_handle(&ci);
 }
 
-char *pane_attr_get(struct pane *p, char *key)
+char *pane_attr_get(struct pane *p, char *key safe)
 {
 	while (p) {
 		char *a = attr_find(p->attrs, key);
@@ -585,7 +581,7 @@ char *pane_attr_get(struct pane *p, char *key)
 	return NULL;
 }
 
-char *pane_mark_attr(struct pane *p, struct mark *m, int forward, char *key)
+char *pane_mark_attr(struct pane *p, struct mark *m safe, int forward, char *key safe)
 {
 	while (p) {
 		char *a = doc_attr(p, m, forward, key);
@@ -620,10 +616,10 @@ DEF_CMD(take_pane)
 	return 1;
 }
 
-struct pane *call_pane(char *key, struct pane *focus, int numeric,
+struct pane *call_pane(char *key safe, struct pane *focus safe, int numeric,
 		       struct mark *m, int extra)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
 	struct call_return cr;
 
 	ci.key = key;
@@ -639,14 +635,12 @@ struct pane *call_pane(char *key, struct pane *focus, int numeric,
 	return cr.p;
 }
 
-struct pane *call_pane7(char *key, struct pane *focus, int numeric,
+struct pane *call_pane7(char *key safe, struct pane *focus safe, int numeric,
 			struct mark *m, int extra, char *str, char *str2)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
 	struct call_return cr;
 
-	ci.key = key;
-	ci.focus = focus;
 	ci.numeric = numeric;
 	ci.extra = extra;
 	ci.mark = m;
@@ -661,7 +655,7 @@ struct pane *call_pane7(char *key, struct pane *focus, int numeric,
 }
 
 /* convert pane-relative co-ords to absolute */
-void pane_absxy(struct pane *p, int *x, int *y, int *w, int *h)
+void pane_absxy(struct pane *p, int *x safe, int *y safe, int *w safe, int *h safe)
 {
 	while (p) {
 		if (p->w > 0 && *x + *w > p->w)
@@ -675,7 +669,7 @@ void pane_absxy(struct pane *p, int *x, int *y, int *w, int *h)
 }
 
 /* Convert absolute c-ords to relative */
-void pane_relxy(struct pane *p, int *x, int *y)
+void pane_relxy(struct pane *p, int *x safe, int *y safe)
 {
 	while (p) {
 		*x -= p->x;
@@ -684,14 +678,14 @@ void pane_relxy(struct pane *p, int *x, int *y)
 	}
 }
 
-void pane_map_xy(struct pane *orig, struct pane *target, int *x, int *y)
+void pane_map_xy(struct pane *orig, struct pane *target, int *x safe, int *y safe)
 {
 	int w=0, h=0;
 	pane_absxy(orig, x, y, &w, &h);
 	pane_relxy(target, x, y);
 }
 
-struct xy pane_scale(struct pane *p)
+struct xy pane_scale(struct pane *p safe)
 {
 	/* "scale" is roughly pixels-per-point * 1000
 	 * So 10*scale.x is the width of a typical character in default font.

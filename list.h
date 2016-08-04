@@ -21,15 +21,13 @@
  * @type:	the type of the container struct this is embedded in.
  * @member:	the name of the member within the struct.
  *
- * The temp variable _mptr has the member name suffixed to
- * avoid variable aliasing warnings.
  */
 #define container_of(ptr, type, member) ({			\
-	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
-	(type *)( (char *)__mptr - offsetof(type,member) );})
+	const typeof( ((type *)0)->member ) *__mptr safe = (ptr);	\
+	(type * safe)( (char *)__mptr - offsetof(type,member) );})
 #define container_of_array(ptr, type, member, index) ({			\
-	const typeof( ((type *)0)->member[index] ) *__mptr = (ptr);	\
-	(type *)( (char *)__mptr - offsetof(type,member[index]) );})
+	const typeof( ((type *)0)->member[index] ) *__mptr safe = (ptr);	\
+	(type * safe)( (char *)__mptr - offsetof(type,member[index]) );})
 
 /*
  * These are non-NULL pointers that will result in page faults
@@ -50,7 +48,7 @@
  */
 
 struct list_head {
-	struct list_head *next, *prev;
+	struct list_head *next safe, *prev safe;
 };
 
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
@@ -68,9 +66,9 @@ struct list_head {
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static inline void __list_add(struct list_head *new,
-			      struct list_head *prev,
-			      struct list_head *next)
+static inline void __list_add(struct list_head *new safe,
+			      struct list_head *prev safe,
+			      struct list_head *next safe)
 {
 	next->prev = new;
 	new->next = next;
@@ -86,7 +84,7 @@ static inline void __list_add(struct list_head *new,
  * Insert a new entry after the specified head.
  * This is good for implementing stacks.
  */
-static inline void list_add(struct list_head *new, struct list_head *head)
+static inline void list_add(struct list_head *new safe, struct list_head *head safe)
 {
 	__list_add(new, head, head->next);
 }
@@ -99,7 +97,7 @@ static inline void list_add(struct list_head *new, struct list_head *head)
  * Insert a new entry before the specified head.
  * This is useful for implementing queues.
  */
-static inline void list_add_tail(struct list_head *new, struct list_head *head)
+static inline void list_add_tail(struct list_head *new safe, struct list_head *head safe)
 {
 	__list_add(new, head->prev, head);
 }
@@ -111,7 +109,7 @@ static inline void list_add_tail(struct list_head *new, struct list_head *head)
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static inline void __list_del(struct list_head * prev, struct list_head * next)
+static inline void __list_del(struct list_head *prev safe, struct list_head *next safe)
 {
 	next->prev = prev;
 	prev->next = next;
@@ -123,7 +121,7 @@ static inline void __list_del(struct list_head * prev, struct list_head * next)
  * Note: list_empty on entry does not return true after this, the entry is
  * in an undefined state.
  */
-static inline void list_del(struct list_head *entry)
+static inline void list_del(struct list_head *entry safe)
 {
 	__list_del(entry->prev, entry->next);
 	entry->next = LIST_POISON1;
@@ -134,7 +132,7 @@ static inline void list_del(struct list_head *entry)
  * list_del_init - deletes entry from list and reinitialize it.
  * @entry: the element to delete from the list.
  */
-static inline void list_del_init(struct list_head *entry)
+static inline void list_del_init(struct list_head *entry safe)
 {
 	__list_del(entry->prev, entry->next);
 	INIT_LIST_HEAD(entry);
@@ -145,7 +143,7 @@ static inline void list_del_init(struct list_head *entry)
  * @list: the entry to move
  * @head: the head that will precede our entry
  */
-static inline void list_move(struct list_head *list, struct list_head *head)
+static inline void list_move(struct list_head *list safe, struct list_head *head safe)
 {
 	__list_del(list->prev, list->next);
 	list_add(list, head);
@@ -156,8 +154,8 @@ static inline void list_move(struct list_head *list, struct list_head *head)
  * @list: the entry to move
  * @head: the head that will follow our entry
  */
-static inline void list_move_tail(struct list_head *list,
-				  struct list_head *head)
+static inline void list_move_tail(struct list_head *list safe,
+				  struct list_head *head safe)
 {
 	__list_del(list->prev, list->next);
 	list_add_tail(list, head);
@@ -167,7 +165,7 @@ static inline void list_move_tail(struct list_head *list,
  * list_empty - tests whether a list is empty
  * @head: the list to test.
  */
-static inline int list_empty(struct list_head *head)
+static inline int list_empty(struct list_head *head safe)
 {
 	return head->next == head;
 }
@@ -298,29 +296,34 @@ struct hlist_head {
 #define	HLIST_IS_HEAD(_h) (((unsigned long)(*(_h))) & 1UL)
 
 struct hlist_node {
-	struct hlist_node *next, **pprev;
+	struct hlist_node *next;
+	struct hlist_node **pprev safe;
 };
 
 #define HLIST_HEAD_INIT { .vfirst = HLIST_HEAD_PTR(NULL) }
 #define HLIST_HEAD(name) struct hlist_head name = {  .vfirst = HLIST_HEAD_PTR(NULL) }
 #define INIT_HLIST_HEAD(ptr) ((ptr)->vfirst = HLIST_HEAD_PTR(NULL))
-static inline void INIT_HLIST_NODE(struct hlist_node *h)
+static inline void INIT_HLIST_NODE(struct hlist_node *h safe)
 {
 	h->next = NULL;
-	h->pprev = NULL;
+	h->pprev = &h->next;
 }
 
-static inline int hlist_unhashed(const struct hlist_node *h)
+static inline int hlist_unhashed(const struct hlist_node *h safe)
 {
-	return !h->pprev;
+	return h->pprev == &h->next;
 }
 
-static inline int hlist_empty(const struct hlist_head *h)
+static inline int hlist_empty(const struct hlist_head *h safe)
 {
+#ifndef __CHECKER__
 	return !HLIST_PTR(h->vfirst);
+#else
+	return (h->vfirst == NULL || h->vfirst == (struct hlist_node*)1);
+#endif
 }
 
-static inline void __hlist_del(struct hlist_node *n)
+static inline void __hlist_del(struct hlist_node *n safe)
 {
 	struct hlist_node *next = n->next;
 	struct hlist_node **pprev = n->pprev;
@@ -332,14 +335,14 @@ static inline void __hlist_del(struct hlist_node *n)
 		next->pprev = pprev;
 }
 
-static inline void hlist_del(struct hlist_node *n)
+static inline void hlist_del(struct hlist_node *n safe)
 {
 	__hlist_del(n);
 	n->next = LIST_POISON1;
 	n->pprev = LIST_POISON2;
 }
 
-static inline void hlist_del_init(struct hlist_node *n)
+static inline void hlist_del_init(struct hlist_node *n safe)
 {
 	if (!hlist_unhashed(n)) {
 		__hlist_del(n);
@@ -347,7 +350,7 @@ static inline void hlist_del_init(struct hlist_node *n)
 	}
 }
 
-static inline void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
+static inline void hlist_add_head(struct hlist_node *n safe, struct hlist_head *h safe)
 {
 	struct hlist_node *first = HLIST_PTR(h->vfirst);
 	n->next = first;
@@ -358,8 +361,8 @@ static inline void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
 }
 
 /* next must be != NULL */
-static inline void hlist_add_before(struct hlist_node *n,
-				    struct hlist_node *next)
+static inline void hlist_add_before(struct hlist_node *n safe,
+				    struct hlist_node *next safe)
 {
 	n->pprev = next->pprev;
 	n->next = next;
@@ -370,8 +373,8 @@ static inline void hlist_add_before(struct hlist_node *n,
 		*(n->pprev) = n;
 }
 
-static inline void hlist_add_after(struct hlist_node *n,
-				   struct hlist_node *next)
+static inline void hlist_add_after(struct hlist_node *n safe,
+				   struct hlist_node *next safe)
 {
 	next->next = n->next;
 	n->next = next;
@@ -381,18 +384,12 @@ static inline void hlist_add_after(struct hlist_node *n,
 		next->next->pprev  = &next->next;
 }
 
-/* after that we'll appear to be on some hlist and hlist_del will work */
-static inline void hlist_add_fake(struct hlist_node *n)
-{
-	n->pprev = &n->next;
-}
-
 /*
  * Move a list from one list head to another. Fixup the pprev
  * reference of the first entry if it exists.
  */
-static inline void hlist_move_list(struct hlist_head *old,
-				   struct hlist_head *new)
+static inline void hlist_move_list(struct hlist_head *old safe,
+				   struct hlist_head *new safe)
 {
 	new->vfirst = old->vfirst;
 	if (!hlist_empty(new))
@@ -483,14 +480,14 @@ static inline void hlist_move_list(struct hlist_head *old,
  * structures can all be on the same list
  */
 struct tlist_head {
-	struct tlist_head *next, *prev;
+	struct tlist_head *next safe, *prev safe;
 };
 
-#define TLIST_PTR(p) ((struct tlist_head *)(((unsigned long)(p)) & ~3UL))
+#define TLIST_PTR(p) ((struct tlist_head * safe)(((unsigned long)(p)) & ~3UL))
 #define __TLIST_TYPE(p,n) ((((unsigned long)(p)) & 3)<<2 | (((unsigned long)(n)) & 3))
 #define TLIST_TYPE(e) __TLIST_TYPE((e)->prev, (e)->next)
-#define TLIST_PREV(p,t) ((struct tlist_head*)((((t)>>2)&3)|(unsigned long)(p)))
-#define TLIST_NEXT(n,t) ((struct tlist_head*)(((t)&3)|(unsigned long)(n)))
+#define TLIST_PREV(p,t) ((struct tlist_head * safe)((((t)>>2)&3)|(unsigned long)(p)))
+#define TLIST_NEXT(n,t) ((struct tlist_head * safe)(((t)&3)|(unsigned long)(n)))
 
 #define TLIST_HEAD_INIT(name, type) { TLIST_NEXT(&(name),(type)),	\
 				      TLIST_PREV(&(name),(type)) }
@@ -503,7 +500,7 @@ struct tlist_head {
  * tlist_empty - tests whether a tlist is empty
  * @head: the list to test.
  */
-static inline int tlist_empty(struct tlist_head *head)
+static inline int tlist_empty(struct tlist_head *head safe)
 {
 	return TLIST_PTR(head->next) == head;
 }
@@ -513,9 +510,9 @@ static inline int tlist_empty(struct tlist_head *head)
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static inline void __tlist_add(struct tlist_head *new, int type,
-			       struct tlist_head *prev,
-			       struct tlist_head *next)
+static inline void __tlist_add(struct tlist_head *new safe, int type,
+			       struct tlist_head *prev safe,
+			       struct tlist_head *next safe)
 {
 	next->prev = TLIST_PREV(new, __TLIST_TYPE(next->prev, NULL));
 	new->next = TLIST_NEXT(next, type);
@@ -541,7 +538,7 @@ static inline void __tlist_add(struct tlist_head *new, int type,
  * Insert a new entry after the specified head.
  * This is good for implementing stacks.
  */
-static inline void tlist_add(struct tlist_head *new, int type, struct tlist_head *head)
+static inline void tlist_add(struct tlist_head *new safe, int type, struct tlist_head *head safe)
 {
 	__tlist_add(new, type, head, TLIST_PTR(head->next));
 }
@@ -555,7 +552,8 @@ static inline void tlist_add(struct tlist_head *new, int type, struct tlist_head
  * Insert a new entry before the specified head.
  * This is useful for implementing queues.
  */
-static inline void tlist_add_tail(struct tlist_head *new, int type, struct tlist_head *head)
+static inline void tlist_add_tail(struct tlist_head *new safe, int type,
+				  struct tlist_head *head safe)
 {
 	__tlist_add(new, type, TLIST_PTR(head->prev), head);
 }
@@ -567,7 +565,7 @@ static inline void tlist_add_tail(struct tlist_head *new, int type, struct tlist
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static inline void __tlist_del(struct tlist_head * prev, struct tlist_head * next)
+static inline void __tlist_del(struct tlist_head *prev safe, struct tlist_head *next safe)
 {
 	int nt = TLIST_TYPE(next);
 	int pt = TLIST_TYPE(prev);
@@ -581,7 +579,7 @@ static inline void __tlist_del(struct tlist_head * prev, struct tlist_head * nex
  * Note: list_empty on entry does not return true after this, the entry is
  * in an undefined state.
  */
-static inline void tlist_del(struct tlist_head *entry)
+static inline void tlist_del(struct tlist_head *entry safe)
 {
 	__tlist_del(TLIST_PTR(entry->prev), TLIST_PTR(entry->next));
 	entry->next = LIST_POISON1;
@@ -592,7 +590,7 @@ static inline void tlist_del(struct tlist_head *entry)
  * tlist_del_init - deletes entry from list and reinitialize it.
  * @entry: the element to delete from the list.
  */
-static inline void tlist_del_init(struct tlist_head *entry)
+static inline void tlist_del_init(struct tlist_head *entry safe)
 {
 	int type = TLIST_TYPE(entry);
 	__tlist_del(TLIST_PTR(entry->prev), TLIST_PTR(entry->next));

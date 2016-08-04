@@ -33,7 +33,7 @@ DEF_CMD(render_line)
 	int field = 0;
 	int rv;
 
-	if (!ci->mark || !ci->focus)
+	if (!ci->mark)
 		return -1;
 
 	if (pm && !mark_same_pane(ci->focus, pm, m))
@@ -100,7 +100,7 @@ DEF_CMD(render_line)
 				if (*val == '<')
 					buf_append_byte(&ret, '<');
 				buf_append_byte(&ret, *val);
-				val += 1;
+				val += 1;  /* This makes it possible for val to be NULL!*/
 			}
 			continue;
 		}
@@ -281,7 +281,7 @@ DEF_CMD(render_format_attach)
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-render-format",
 		  0, &render_format_attach);

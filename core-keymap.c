@@ -47,13 +47,13 @@
 
 struct map {
 	int	size;
-	char	**keys;
-	struct command **comms;
+	char	* *keys safe;
+	struct command **comms safe;
 };
 
-static inline struct command *GETCOMM(struct command *c)
+static inline struct command *GETCOMM(struct command *c) safe
 {
-	return (struct command *)(((unsigned long)c) & ~1UL);
+	return (struct command * safe)(((unsigned long)c) & ~1UL);
 }
 
 static inline int IS_RANGE(struct command *c)
@@ -72,14 +72,14 @@ static int size2alloc(int size)
 	return ((size-1) | 7) + 1;
 }
 
-struct map *key_alloc(void)
+struct map *key_alloc(void) safe
 {
 	struct map *m = malloc(sizeof(*m));
 	memset(m, 0, sizeof(*m));
 	return m;
 }
 
-void key_free(struct map *m)
+void key_free(struct map *m safe)
 {
 	free(m->keys);
 	free(m->comms);
@@ -87,7 +87,7 @@ void key_free(struct map *m)
 }
 
 /* Find first entry >= k */
-static int key_find(struct map *map, char *k)
+static int key_find(struct map *map safe, char *k safe)
 {
 	int lo = 0;
 	int hi = map->size;
@@ -106,7 +106,7 @@ static int key_find(struct map *map, char *k)
 	return hi;
 }
 
-void key_add(struct map *map, char *k, struct command *comm)
+void key_add(struct map *map safe, char *k safe, struct command *comm)
 {
 	int size;
 	int pos;
@@ -167,7 +167,7 @@ void key_add(struct map *map, char *k, struct command *comm)
 	map->size += ins_cnt;
 }
 
-void key_add_range(struct map *map, char *first, char *last,
+void key_add_range(struct map *map safe, char *first safe, char *last safe,
 		   struct command *comm)
 {
 	int size, move_size;
@@ -233,7 +233,7 @@ struct modmap {
 	struct command comm;
 };
 
-static int key_prefix(const struct cmd_info *ci)
+static int key_prefix(const struct cmd_info *ci safe)
 {
 	struct modmap *m = container_of(ci->comm, struct modmap, comm);
 
@@ -243,7 +243,7 @@ static int key_prefix(const struct cmd_info *ci)
 	return 1;
 }
 
-struct command *key_register_prefix(char *name)
+struct command *key_register_prefix(char *name safe)
 {
 	struct modmap *mm = malloc(sizeof(*mm));
 
@@ -255,7 +255,7 @@ struct command *key_register_prefix(char *name)
 	return &mm->comm;
 }
 
-struct command *key_lookup_cmd(struct map *m, char *c)
+struct command *key_lookup_cmd(struct map *m safe, char *c safe)
 {
 	int pos = key_find(m, c);
 
@@ -271,7 +271,7 @@ struct command *key_lookup_cmd(struct map *m, char *c)
 		return NULL;
 }
 
-int key_lookup(struct map *m, const struct cmd_info *ci)
+int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 {
 	int pos = key_find(m, ci->key);
 	struct command *comm;
@@ -290,7 +290,7 @@ int key_lookup(struct map *m, const struct cmd_info *ci)
 	return comm->func(ci);
 }
 
-int key_lookup_prefix(struct map *m, const struct cmd_info *ci)
+int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe)
 {
 	int pos = key_find(m, ci->key);
 	struct command *comm, *prev = NULL;
@@ -314,7 +314,7 @@ int key_lookup_prefix(struct map *m, const struct cmd_info *ci)
 	return 0;
 }
 
-int key_lookup_cmd_func(const struct cmd_info *ci)
+int key_lookup_cmd_func(const struct cmd_info *ci safe)
 {
 	struct lookup_cmd *l = container_of(ci->comm, struct lookup_cmd, c);
 	int ret = key_lookup(*l->m, ci);
@@ -326,12 +326,12 @@ int key_lookup_cmd_func(const struct cmd_info *ci)
 
 /* key_handle.  Search towards root for the pane which handles the command.
  */
-int key_handle(const struct cmd_info *ci)
+int key_handle(const struct cmd_info *ci safe)
 {
 	struct cmd_info *vci = (struct cmd_info*)ci;
 	struct pane *p;
 
-	if (ci->comm)
+	if ((void*) ci->comm)
 		return ci->comm->func(ci);
 
 	/* If 'home' is set, search from there, else search

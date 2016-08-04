@@ -10,10 +10,10 @@
 
 #include "core.h"
 
-static struct map *ed_map;
+static struct map *ed_map safe;
 struct ed_info {
 	struct pane *freelist;
-	struct map *map;
+	struct map *map safe;
 	struct store {
 		struct store *next;
 		int size;
@@ -56,17 +56,16 @@ DEF_CMD(global_get_command)
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
 	struct command *cm = key_lookup_cmd(map, ci->str);
-	struct cmd_info ci2 = {};
+	struct cmd_info ci2 = {.key = "callback:comm", .focus = ci->focus, .home = ci->focus, .comm = safe_cast 0};
 
 	if (!cm)
 		return -1;
-	ci2.key = "callback:comm";
-	ci2.focus = ci->focus;
 	ci2.str = ci->str;
 	ci2.comm2 = cm;
-	ci2.comm = ci->comm2;
-	if (ci2.comm)
+	if (ci->comm2) {
+		ci2.comm = ci->comm2;
 		return ci2.comm->func(&ci2);
+	}
 	return -1;
 }
 
@@ -169,7 +168,7 @@ DEF_CMD(editor_clean_up)
 	return 0;
 }
 
-void *memsave(struct pane *p, char *buf, int len)
+void *memsave(struct pane *p safe, char *buf, int len)
 {
 	struct ed_info *ei;
 	if (!buf || !len)
@@ -191,14 +190,14 @@ void *memsave(struct pane *p, char *buf, int len)
 	return memcpy(ei->store->space+ei->store->size, buf, len);
 }
 
-char *strsave(struct pane *p, char *buf)
+char *strsave(struct pane *p safe, char *buf)
 {
 	if (!buf)
 		return NULL;
 	return memsave(p, buf, strlen(buf)+1);
 }
 
-void editor_delayed_free(struct pane *ed, struct pane *p)
+void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 {
 	struct ed_info *ei = ed->data;
 	p->focus = ei->freelist;
@@ -210,7 +209,7 @@ struct pane *editor_new(void)
 	struct pane *ed;
 	struct ed_info *ei = calloc(1, sizeof(*ei));
 
-	if (!ed_map) {
+	if (! (void*) ed_map) {
 		ed_map = key_alloc();
 		key_add(ed_map, "global-set-attr", &global_set_attr);
 		key_add(ed_map, "global-set-command", &global_set_command);

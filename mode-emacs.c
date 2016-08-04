@@ -26,7 +26,7 @@ REDEF_CMD(emacs_swap);
 
 static struct move_command {
 	struct command	cmd;
-	char		*type;
+	char		*type safe;
 	int		direction;
 	char		*k1, *k2, *k3;
 } move_commands[] = {
@@ -772,7 +772,7 @@ DEF_CMD(emacs_save_all)
 		return call3("docs:save-all", ci->focus, 0, NULL);
 }
 
-static void do_searches(struct pane *p, int view, char *patn,
+static void do_searches(struct pane *p safe, int view, char *patn,
 			struct mark *m, struct mark *end)
 {
 	int ret;
@@ -873,7 +873,7 @@ DEF_CMD(emacs_reposition)
 		if (vend)
 			do_searches(ci->focus, view, patn,
 				    vend, end);
-	} else if (end->seq > vend->seq) {
+	} else if (vend && end->seq > vend->seq) {
 		/* search from last match to end */
 		do_searches(ci->focus, view, patn, vend, end);
 	}
@@ -1108,7 +1108,7 @@ DEF_CMD(attach_mode_emacs)
 }
 
 void emacs_search_init(struct pane *ed);
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	if (emacs_map == NULL)
 		emacs_init();

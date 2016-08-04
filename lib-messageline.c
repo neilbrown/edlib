@@ -16,7 +16,7 @@
 
 struct mlinfo {
 	char *message;
-	struct pane *line, *child;
+	struct pane *line safe, *child;
 	int height; /* height of line */
 	int ascent; /* how far down to baseline */
 	int hidden;
@@ -154,7 +154,7 @@ DEF_CMD(messageline_attach)
 	return comm_call(ci->comm2, "callback:attach", ret, 0, NULL, NULL, 0);
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-messageline",
 		  0, &messageline_attach);

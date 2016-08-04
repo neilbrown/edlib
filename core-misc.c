@@ -9,16 +9,18 @@
 #include <string.h>
 #include <wchar.h>
 
+#include "safe.h"
+
 #include "misc.h"
 
-void buf_init(struct buf *b)
+void buf_init(struct buf *b safe)
 {
 	b->b = NULL;
 	b->len = 0;
 	b->size = 0;
 }
 
-void buf_concat_len(struct buf *b, char *s, int l)
+void buf_concat_len(struct buf *b safe, char *s safe, int l)
 {
 
 	if (b->len + l >= b->size) {
@@ -31,13 +33,13 @@ void buf_concat_len(struct buf *b, char *s, int l)
 	b->b[b->len] = 0;
 }
 
-void buf_concat(struct buf *b, char *s)
+void buf_concat(struct buf *b safe, char *s safe)
 {
 	int l = strlen(s);
 	buf_concat_len(b, s, l);
 }
 
-void buf_append(struct buf *b, wchar_t wch)
+void buf_append(struct buf *b safe, wchar_t wch)
 {
 	char t[5];
 	mbstate_t ps = {};
@@ -51,7 +53,7 @@ void buf_append(struct buf *b, wchar_t wch)
 	buf_concat_len(b, t, l);
 }
 
-void buf_append_byte(struct buf *b, char c)
+void buf_append_byte(struct buf *b safe, char c)
 {
 	buf_concat_len(b, &c, 1);
 }

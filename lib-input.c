@@ -109,7 +109,7 @@ DEF_CMD(mouse_event)
 				continue;
 			if (ci2.y < t->y || ci2.y >= t->y + t->h)
 				continue;
-			if (chld == NULL || t->z > chld->z)
+			if (chld == NULL || t->z > chld->z) /* SMATCH BUG MAKES THIS EMPTY*/
 				chld = t;
 		}
 		/* descend into chld */
@@ -171,7 +171,7 @@ DEF_CMD(input_attach)
 	return -1;
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-input",
 		  0, &input_attach);

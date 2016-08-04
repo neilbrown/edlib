@@ -68,7 +68,7 @@ struct directory {
 
 static struct map *doc_map;
 
-static int add_ent(struct list_head *lst, struct dirent *de)
+static int add_ent(struct list_head *lst safe, struct dirent *de safe)
 {
 	struct dir_ent *dre;
 	struct dir_ent *before; /* insert before here */
@@ -102,7 +102,7 @@ static int add_ent(struct list_head *lst, struct dirent *de)
 	return 1;
 }
 
-static void load_dir(struct list_head *lst, int fd)
+static void load_dir(struct list_head *lst safe, int fd)
 {
 	DIR *dir;
 	struct dirent de, *res;
@@ -343,7 +343,7 @@ DEF_CMD(dir_mark_same)
 	return ci->mark->ref.d == ci->mark2->ref.d ? 1 : 2;
 }
 
-static void get_stat(struct directory *dr, struct dir_ent *de)
+static void get_stat(struct directory *dr safe, struct dir_ent *de safe)
 {
 	int dfd;
 	if (de->st.st_mode)
@@ -358,20 +358,20 @@ static void get_stat(struct directory *dr, struct dir_ent *de)
 	close(dfd);
 }
 
-static char *fmt_num(struct dir_ent *de, long num)
+static char *fmt_num(struct dir_ent *de safe, long num)
 {
 	sprintf(de->nbuf, "%ld", num);
 	return de->nbuf;
 }
 
-static char *save_str(struct dir_ent *de, char *str)
+static char *save_str(struct dir_ent *de safe, char *str safe)
 {
 	strncpy(de->nbuf, str, sizeof(de->nbuf));
 	de->nbuf[sizeof(de->nbuf)-1] = 0;
 	return de->nbuf;
 }
 
-static char *fmt_date(struct dir_ent *de, time_t t)
+static char *fmt_date(struct dir_ent *de safe, time_t t)
 {
 	struct tm tm;
 	localtime_r(&t, &tm);
@@ -380,8 +380,8 @@ static char *fmt_date(struct dir_ent *de, time_t t)
 	return de->nbuf;
 }
 
-static char *__dir_get_attr(struct doc *d, struct mark *m,
-			    bool forward, char *attr)
+static char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
+			    bool forward, char *attr safe)
 
 {
 	struct dir_ent *de;
@@ -428,7 +428,7 @@ static char *__dir_get_attr(struct doc *d, struct mark *m,
 		struct passwd *pw;
 		get_stat(dr, de);
 		pw = getpwuid(de->st.st_uid);
-		if (pw)
+		if (pw && pw->pw_name)
 			return save_str(de, pw->pw_name);
 		else
 			return fmt_num(de, de->st.st_uid);
@@ -436,7 +436,7 @@ static char *__dir_get_attr(struct doc *d, struct mark *m,
 		struct group *gr;
 		get_stat(dr, de);
 		gr = getgrgid(de->st.st_gid);
-		if (gr)
+		if (gr && gr->gr_name)
 			return save_str(de, gr->gr_name);
 		else
 			return fmt_num(de, de->st.st_gid);
@@ -568,7 +568,7 @@ DEF_CMD(dir_open)
 		p = call_pane7("doc:from-text", ci->focus, 0, NULL, 0, fname,
 			       "File not found\n");
 	free(fname);
-	if (p) {
+	if (par && p) {
 		p = doc_attach_view(par, p, NULL);
 		pane_focus(p);
 	}
@@ -630,7 +630,7 @@ DEF_CMD(dir_close)
 	return call3("doc:destroy", ci->home, 0, NULL);
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-doc-dir",
 		  0, &dir_new);

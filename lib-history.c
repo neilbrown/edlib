@@ -24,7 +24,7 @@
 
 struct history_info {
 	struct pane	*history;
-	struct mark	*m;
+	struct mark	*m safe;
 	char		*saved;
 	char		*donekey;
 	struct buf	search;
@@ -42,7 +42,7 @@ DEF_CMD(history_handle)
 		free(hi->search.b);
 		free(hi->saved);
 		free(hi);
-		p->data = NULL;
+		p->data = safe_cast NULL;
 		return 1;
 	}
 	if (!hi->history)
@@ -126,12 +126,14 @@ DEF_CMD(history_attach)
 
 	hi = calloc(1, sizeof(*hi));
 	hi->donekey = ci->str2;
-	hi->history = call_pane7("docs:byname", ci->focus, 0, NULL, 0,
-				 ci->str, NULL);
-	if (!hi->history)
-		hi->history =
-			call_pane7("doc:from-text", ci->focus, 0, NULL, 0,
-				   ci->str, "");
+	p = call_pane7("docs:byname", ci->focus, 0, NULL, 0,
+		       ci->str, NULL);
+	if (!p)
+		p = call_pane7("doc:from-text", ci->focus, 0, NULL, 0,
+			       ci->str, "");
+	if (!p)
+		return 0;
+	hi->history = p;
 	hi->m = vmark_new(hi->history, MARK_UNGROUPED);
 	call3("Move-File", hi->history, 1, hi->m);
 	buf_init(&hi->search);
@@ -141,7 +143,7 @@ DEF_CMD(history_attach)
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-history",
 		  0, &history_attach);

@@ -20,7 +20,7 @@ DEF_CMD(text_search)
 	struct match_state *st;
 	int since_start, len;
 
-	if (!ci->str|| !ci->mark || !ci->focus)
+	if (!ci->str|| !ci->mark)
 		return -1;
 
 	m = ci->mark;
@@ -55,7 +55,7 @@ DEF_CMD(text_search)
 	return since_start + 1;
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "text-search",
 		  0, &text_search);

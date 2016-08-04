@@ -69,7 +69,7 @@ DEF_CMD(render_complete_line)
 	/* The first line *must* match the prefix.
 	 * skip over any following lines that don't
 	 */
-	struct cmd_info ci2 = {};
+	struct cmd_info ci2 = {.key = ci->key };
 	struct complete_data *cd = ci->home->data;
 	int plen = strlen(cd->prefix);
 	struct call_return cr;
@@ -236,8 +236,7 @@ DEF_CMD(complete_eol)
 		/* movement within the line */
 		return 1;
 	while (rpt < -1) {
-		struct cmd_info ci2 = {};
-		ci2.key = "render-line-prev";
+		struct cmd_info ci2 = {.key = "render-line-prev"};
 		ci2.numeric = 1;
 		ci2.mark = ci->mark;
 		ci2.focus = ci->focus;
@@ -247,9 +246,8 @@ DEF_CMD(complete_eol)
 		rpt += 1;
 	}
 	while (rpt > 1) {
-		struct cmd_info ci2 = {};
+		struct cmd_info ci2 = {.key = "render-line"};
 		struct call_return cr;
-		ci2.key = "render-line";
 		ci2.numeric = NO_NUMERIC;
 		ci2.mark = ci->mark;
 		ci2.focus = ci->focus;
@@ -263,7 +261,7 @@ DEF_CMD(complete_eol)
 	return 1;
 }
 
-static int common_len(char *a, char *b)
+static int common_len(char *a safe, char *b safe)
 {
 	int len = 0;
 	while (*a && *a == *b) {
@@ -332,12 +330,11 @@ DEF_CMD(complete_return)
 	/* submit the selected entry to the popup */
 	struct pane *p = ci->home;
 	struct complete_data *cd = p->data;
-	struct cmd_info ci2 = {};
+	struct cmd_info ci2 = {.key="render-line"};
 	struct call_return cr;
 	int l;
 	char *c1, *c2;
 
-	ci2.key = "render-line";
 	ci2.focus = ci->home;
 	ci2.home = ci->home;
 	ci2.mark = ci->mark;
@@ -413,7 +410,7 @@ REDEF_CMD(complete_attach)
 	return comm_call(ci->comm2, "callback:attach", complete, 0, NULL, NULL, 0);
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-render-complete",
 		  0, &complete_attach);

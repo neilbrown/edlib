@@ -4,6 +4,9 @@
 #
 MAKEFLAGS += -j
 
+SMATCH_CHECK_SAFE=1
+export SMATCH_CHECK_SAFE
+
 LDLIBS= -ldl
 CPPFLAGS= -I.
 CC = gcc

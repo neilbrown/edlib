@@ -27,13 +27,14 @@
 #include "core.h"
 
 struct key_data {
-	struct map	*map;
-	struct command	**cmds, *globalcmd;
+	struct map	*map safe;
+	struct command	**cmds;
+	struct command	*globalcmd;
 	int		cmdcount;
 	int		global;
 };
 
-static struct pane *do_keymap_attach(struct pane *p, int global);
+static struct pane *do_keymap_attach(struct pane *p, int global) safe;
 
 DEF_CMD(get_command_callback)
 {
@@ -42,7 +43,7 @@ DEF_CMD(get_command_callback)
 	return 1;
 }
 
-static struct command *get_command(struct pane *p, char *cmd)
+static struct command *get_command(struct pane *p safe, char *cmd)
 {
 	struct call_return cr = {};
 	int ret;
@@ -146,7 +147,7 @@ DEF_CMD(keymap_handle)
 	return key_lookup(kd->map, ci);
 }
 
-static struct pane *do_keymap_attach(struct pane *p, int global)
+static struct pane *do_keymap_attach(struct pane *p, int global) safe
 {
 	struct key_data *kd = malloc(sizeof(*kd));
 
@@ -166,7 +167,7 @@ DEF_CMD(keymap_attach)
 	return -1;
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-global-keymap",
 		  0, &keymap_attach);

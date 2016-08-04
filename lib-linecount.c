@@ -32,8 +32,8 @@ struct count_info {
 	int view_num;
 };
 
-static void do_count(struct pane *p, struct mark *start, struct mark *end,
-		     int *linep, int *wordp, int *charp, int add_marks)
+static void do_count(struct pane *p safe, struct mark *start, struct mark *end,
+		     int *linep safe, int *wordp safe, int *charp safe, int add_marks)
 {
 	/* if 'end' is NULL, go all the way to EOF */
 	int lines = 0;
@@ -105,7 +105,7 @@ static int need_recalc(struct pane *p, struct mark *m)
 	return ret;
 }
 
-static void count_calculate(struct pane *p,
+static void count_calculate(struct pane *p safe,
 			    struct mark *start, struct mark *end,
 			    int type)
 {
@@ -266,7 +266,7 @@ DEF_CMD(count_lines)
 	return 1;
 }
 
-void edlib_init(struct pane *ed)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "CountLines",
 		  0, &count_lines);
