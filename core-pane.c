@@ -113,7 +113,13 @@ struct pane *pane_register(struct pane *parent, int z,
 	pane_init(p, parent, here);
 	p->z = z;
 	p->handle = command_get(handle);
-	p->data = data;
+	if (!data)
+		/* type of 'data' should correlate with type of handle,
+		 * which should be parameterised...
+		 */
+		p->data = handle;
+	else
+		p->data = data;
 	if (parent && parent->focus == NULL)
 		parent->focus = p;
 	comm_call_pane(parent, "ChildRegistered", p, 0, NULL, NULL, 0, NULL, NULL);
@@ -417,7 +423,7 @@ void pane_resize(struct pane *p safe, int x, int y, int w, int h)
 void pane_reparent(struct pane *p safe, struct pane *newparent safe)
 {
 	/* detach p from its parent and attach beneath its sibling newparent */
-	ASSERT(p->parent == newparent->parent);
+	ASSERT(p->parent && p->parent == newparent->parent);
 	list_del(&p->siblings);
 	if (p->parent->focus == p)
 		p->parent->focus = newparent;
