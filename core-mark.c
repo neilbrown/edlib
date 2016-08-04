@@ -244,14 +244,12 @@ void points_attach(struct doc *d safe, int view)
 	}
 }
 
-struct mark *mark_dup(struct mark *m, int notype) safe
+struct mark *mark_dup(struct mark *m safe, int notype) safe
 {
 	struct mark *ret;
 
-	if (!m)
-		return NULL;
 	if (!notype && m->viewnum == MARK_POINT)
-			return NULL;
+		return point_dup(m);
 
 	ret = calloc(1, sizeof(*ret));
 	dup_mark(m, ret);
@@ -398,10 +396,10 @@ struct mark *doc_new_mark(struct doc *d safe, int view) safe
 	if (view == MARK_POINT)
 		return point_new(d);
 	if (view >= d->nviews ||
-	    d->views == NULL ||
 	    view < MARK_UNGROUPED ||
-	    (view >= 0 && d->views[view].state != 1))
-		return NULL;
+	    (view >= 0 && (!d->views || d->views[view].state != 1)))
+		/* Erroneous call: fail-safe */
+		view = MARK_UNGROUPED;
 	ret = calloc(1, sizeof(*ret));
 	ret->viewnum = view;
 	__mark_reset(d, ret, 1, 0);

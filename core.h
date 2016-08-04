@@ -164,7 +164,7 @@ struct point_links {
 	struct tlist_head	lists[];
 };
 
-struct mark *mark_dup(struct mark *m, int notype) safe;
+struct mark *mark_dup(struct mark *m safe, int notype) safe;
 void mark_free(struct mark *m);
 struct mark *doc_new_mark(struct doc *d safe, int view) safe;
 struct mark *doc_first_mark_all(struct doc *d safe);
