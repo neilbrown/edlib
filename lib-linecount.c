@@ -32,7 +32,7 @@ struct count_info {
 	int view_num;
 };
 
-static void do_count(struct pane *p safe, struct mark *start, struct mark *end,
+static void do_count(struct pane *p safe, struct mark *start safe, struct mark *end,
 		     int *linep safe, int *wordp safe, int *charp safe, int add_marks)
 {
 	/* if 'end' is NULL, go all the way to EOF */
@@ -83,7 +83,7 @@ static void do_count(struct pane *p safe, struct mark *start, struct mark *end,
 	mark_free(m);
 }
 
-static int need_recalc(struct pane *p, struct mark *m)
+static int need_recalc(struct pane *p safe, struct mark *m)
 {
 	struct mark *next;
 	int ret = 0;
@@ -214,7 +214,7 @@ DEF_CMD(handle_count_lines)
 			mark_free(m);
 		doc_del_view(d, cli->view_num);
 		free(cli);
-		p->data = NULL;
+		p->data = safe_cast NULL;
 		pane_close(p);
 		return 1;
 	}
