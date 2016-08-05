@@ -281,7 +281,7 @@ static void render_image(struct pane *p safe, char *line safe, int *yp safe,
 		line += strspn(line, ",");
 	}
 	if (fname && dodraw) {
-		struct pane *tmp = pane_register(NULL, 0, NULL, NULL, NULL);
+		struct pane *tmp = pane_register(NULL, 0, safe_cast NULL, NULL, NULL);
 
 		pane_resize(tmp, (p->w - width)/2, *yp, width, height);
 		tmp->parent = p;
@@ -640,6 +640,9 @@ static struct mark *call_render_line(struct pane *p safe, struct mark *start saf
 		mark_free(m);
 	else
 		m2 = m;
+	/*FIXME shouldn't be needed */
+	m2 = safe_cast m2;
+
 	/* Any mark between start and m2 must be discarded,
 	 */
 	while ((m = vmark_next(start)) != NULL &&
@@ -731,6 +734,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 		m = vmark_next(start);
 
 	end = m;
+	if (!end)
+		return; /* FIXME can I prove this? */
+
 	x = -1; lines_above = -1; y = 0;
 	render_line(p, focus, start->mdata ?: "", &y, 0, scale.x,
 		    &x, &lines_above, &offset, &found_end, NULL);
@@ -1044,7 +1050,7 @@ DEF_CMD(render_lines_close)
 	}
 
 	doc_del_view(p, rl->typenum);
-	p->data = NULL;
+	p->data = safe_cast NULL;
 	p->handle = NULL;
 	free(rl);
 	return 0;
@@ -1121,7 +1127,7 @@ DEF_CMD(render_lines_move)
 			if (!top)
 				break;
 			m = top;
-			while (m->seq < prevtop->seq &&
+			while (m && m->seq < prevtop->seq &&
 			       !mark_same_pane(focus, m, prevtop)) {
 				if (m->mdata == NULL)
 					call_render_line(focus, m);
@@ -1185,6 +1191,9 @@ DEF_CMD(render_lines_set_cursor)
 	int cihx = 0, cihy = 0;
 	struct xy scale = pane_scale(p);
 
+	if (!ci->mark)
+		return -1;
+
 	render_lines_other_move_func(ci);
 
 	m = vmark_first(p, rl->typenum);
@@ -1231,6 +1240,8 @@ DEF_CMD(render_lines_move_pos)
 	struct mark *pm = ci->mark;
 	struct mark *top, *bot;
 
+	if (!pm)
+		return -1;
 	rl->ignore_point = 1;
 	top = vmark_first(focus, rl->typenum);
 	bot = vmark_last(focus, rl->typenum);
@@ -1268,6 +1279,9 @@ DEF_CMD(render_lines_move_line)
 	int o = -1;
 	struct xy scale = pane_scale(focus);
 	int num;
+
+	if (!ci->mark)
+		return -1;
 
 	rl->ignore_point = 0;
 
@@ -1325,7 +1339,7 @@ DEF_CMD(render_lines_notify_replace)
 	struct mark *start = ci->mark2 ?: ci->mark;
 	struct mark *end;
 
-	if (!ci->mark) {
+	if (!ci->mark /* FIXME redundant*/ || !start) {
 		pane_damaged(p, DAMAGED_VIEW);
 		return 1;
 	}
