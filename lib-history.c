@@ -67,7 +67,8 @@ DEF_CMD(history_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "M-Chr-p") == 0 || strcmp(ci->key, "M-Chr-n") == 0) {
+	if (ci->mark &&
+	    (strcmp(ci->key, "M-Chr-p") == 0 || strcmp(ci->key, "M-Chr-n") == 0)) {
 		char *l, *e;
 		if (ci->key[6] == 'p') {
 			m = mark_dup(hi->m, 1);
