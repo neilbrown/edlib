@@ -224,7 +224,7 @@ static PyObject *python_string(char *s safe) safe
 		c++;
 	if (*c)
 		/* must be Unicode */
-		return PyUnicode_DecodeUTF8(s, strlen(s), NULL);
+		return safe_cast PyUnicode_DecodeUTF8(s, strlen(s), NULL);
 	else
 		return safe_cast Py_BuildValue("s", s);
 }
