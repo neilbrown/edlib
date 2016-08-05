@@ -69,26 +69,21 @@ DEF_CMD(render_complete_line)
 	/* The first line *must* match the prefix.
 	 * skip over any following lines that don't
 	 */
-	struct cmd_info ci2 = {.key = ci->key };
 	struct complete_data *cd = ci->home->data;
 	int plen = strlen(cd->prefix);
 	struct call_return cr;
 	struct rlcb cb;
 	int ret;
+	struct mark *m;
 
-	if (!ci->mark)
+	if (!ci->mark || !ci->home->parent)
 		return -1;
 
-	ci2.key = ci->key;
-	ci2.mark = ci->mark;
-	ci2.mark2 = ci->mark2;
-	ci2.focus = ci->home->parent;
-	ci2.numeric = ci->numeric;
 	cr.c = save_highlighted;
 	cr.i = plen;
 	cr.s = NULL;
-	ci2.comm2 = &cr.c;
-	if (key_handle(&ci2) == 0)
+	if (call_comm8(ci->key, ci->home->parent, ci->numeric, ci->mark, NULL,
+		       0, ci->mark2, NULL, &cr.c) == 0)
 		return 0;
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cr.s, 0);
@@ -96,23 +91,22 @@ DEF_CMD(render_complete_line)
 	if (ci->numeric != NO_NUMERIC)
 		return ret;
 	/* Need to continue over other matching lines */
-	ci2.mark = mark_dup(ci->mark, 1);
+	m = mark_dup(ci->mark, 1);
 	while (1) {
-		ci2.numeric = ci->numeric;
-		ci2.focus = ci->home->parent;
 		cb.c = rcl_cb;
 		cb.plen = plen;
 		cb.prefix = cd->prefix;
 		cb.cmp = 0;
-		ci2.comm2 = &cb.c;
-		key_handle(&ci2);
+		call_comm8(ci->key, ci->home->parent, ci->numeric, m, NULL,
+			   0, ci->mark2, NULL, &cb.c);
+
 		if (cb.cmp == 0)
 			break;
 
 		/* have a non-match, so move the mark over it. */
-		mark_to_mark(ci->mark, ci2.mark);
+		mark_to_mark(ci->mark, m);
 	}
-	mark_free(ci2.mark);
+	mark_free(m);
 	return ret;
 }
 
@@ -136,17 +130,16 @@ static int do_render_complete_prev(struct complete_data *cd, struct mark *m,
 	 * otherwise call repeatedly and then render the line and see if
 	 * it matches the prefix.
 	 */
-	struct cmd_info ci2 = {}, ci3 = {};
+	struct cmd_info ci3 = {};
 	struct rlcb cb;
 	int ret;
+	struct mark *m2;
+	int n2;
 
 	if (savestr)
 		*savestr = NULL;
-
-	ci2.key = "render-line-prev";
-	ci2.mark = m;
-	ci2.focus = focus;
-	ci2.numeric = 0;
+	m2 = m;
+	n2 = 0;
 
 	ci3.key = "render-line";
 	ci3.focus = focus;
@@ -157,18 +150,18 @@ static int do_render_complete_prev(struct complete_data *cd, struct mark *m,
 	cb.cmp = 0;
 	ci3.comm2 = &cb.c;
 	while (1) {
-		ret = key_handle(&ci2);
+		ret = call3("render-line-prev", focus, n2, m2);
 		if (ret <= 0 || n == 0)
 			/* Either hit start-of-file, or have what we need */
 			break;
 		/* we must be looking at a possible option for the previous
 		 * line
 		 */
-		if (ci2.mark == m)
-			ci2.mark = mark_dup(m, 1);
-		ci3.mark = mark_dup(ci2.mark, 1);
+		if (m2 == m)
+			m2 = mark_dup(m, 1);
+		ci3.mark = mark_dup(m2, 1);
 		ci3.numeric = NO_NUMERIC;
-		cb.keep = ci2.numeric == 1 && savestr;
+		cb.keep = n2 == 1 && savestr;
 		cb.str = NULL;
 		if (key_handle(&ci3) != 1) {
 			mark_free(ci3.mark);
@@ -179,17 +172,17 @@ static int do_render_complete_prev(struct complete_data *cd, struct mark *m,
 		if (savestr)
 			*savestr = cb.str;
 
-		if (cb.cmp == 0 && ci2.numeric == 1)
+		if (cb.cmp == 0 && n2 == 1)
 			/* This is a valid new start-of-line */
 			break;
 		/* step back once more */
-		ci2.numeric = 1;
+		n2 = 1;
 	}
-	if (ci2.mark != m) {
+	if (m2 != m) {
 		if (ret > 0)
-			/* move m back to ci2.mark */
-			mark_to_mark(m, ci2.mark);
-		mark_free(ci2.mark);
+			/* move m back to m2 */
+			mark_to_mark(m, m2);
+		mark_free(m2);
 	}
 	return ret;
 }

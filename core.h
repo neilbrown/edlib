@@ -529,6 +529,21 @@ static inline int call_comm7(char *key safe, struct pane *focus safe, int numeri
 	return key_handle(&ci);
 }
 
+static inline int call_comm8(char *key safe, struct pane *focus safe, int numeric, struct mark *m,
+			     char *str, int extra, struct mark *m2, char *str2, struct command *comm)
+{
+	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
+
+	ci.numeric = numeric;
+	ci.mark = m;
+	ci.mark2 = m2;
+	ci.str = str;
+	ci.str2 = str2;
+	ci.extra = extra;
+	ci.comm2 = comm;
+	return key_handle(&ci);
+}
+
 static inline int comm_call(struct command *comm, char *key safe, struct pane *focus safe,
 			    int numeric, struct mark *m, char *str, int extra)
 {
