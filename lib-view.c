@@ -43,7 +43,7 @@ enum {
 static struct map *view_map safe;
 static struct pane *do_view_attach(struct pane *par, int border) safe;
 
-static void one_char(struct pane *p, char *s, char *attr, int x, int y)
+static void one_char(struct pane *p safe, char *s, char *attr, int x, int y)
 {
 	call_xy("Draw:text", p, -1, s, attr, x, y);
 }

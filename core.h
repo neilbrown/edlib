@@ -355,7 +355,7 @@ struct pane *call_pane7(char *key safe, struct pane *focus safe, int numeric,
 			struct mark *m, int extra, char *str, char *str2);
 struct xy pane_scale(struct pane *p safe);
 
-static inline int pane_attr_get_int(struct pane *p, char *key)
+static inline int pane_attr_get_int(struct pane *p safe, char *key safe)
 {
 	char *c = pane_attr_get(p, key);
 	int rv;
@@ -363,7 +363,7 @@ static inline int pane_attr_get_int(struct pane *p, char *key)
 	if (!c)
 		return -1;
 	rv = strtol(c, &end, 10);
-	if (end == c || *end)
+	if (end == c || !end || *end)
 		return -1;
 	return rv;
 }
