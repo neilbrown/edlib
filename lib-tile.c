@@ -159,7 +159,7 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char
 	 * in the hierarchy.
 	 */
 	int space;
-	struct pane *p = *pp;
+	struct pane *p = safe_cast *pp;
 	struct pane *ret;
 	struct tileinfo *ti = p->data;
 	struct list_head *here;
@@ -283,7 +283,7 @@ static int tile_destroy(struct pane *p safe)
 	}
 	/* There is always a sibling of a non-root */
 	ASSERT(remaining > 0);
-	if (prev == NULL) {
+	if (prev == NULL /* FIXME redundant */ && next) {
 		/* next gets the space and focus*/
 		if (ti->direction == Horiz)
 			pane_resize(next, p->x, next->y,
@@ -293,7 +293,7 @@ static int tile_destroy(struct pane *p safe)
 				    next->w, p->h + next->h);
 		tile_adjust(next);
 		p->parent->focus = next;
-	} else if (next == NULL) {
+	} else if (next == NULL /* FIXME redundant */ && prev) {
 		/* prev gets the space and focus */
 		if (ti->direction == Horiz)
 			pane_resize(prev, -1, -1, prev->w + p->w, prev->h);
@@ -301,7 +301,7 @@ static int tile_destroy(struct pane *p safe)
 			pane_resize(prev, -1, -1, prev->w, prev->h + p->h);
 		tile_adjust(prev);
 		p->parent->focus = prev;
-	} else {
+	} else if (/*FIXME*/ next && prev) {
 		/* space to the smallest, else share the space */
 		/* Focus goes to prev, unless next is small */
 		p->parent->focus = prev;
@@ -338,7 +338,7 @@ static int tile_destroy(struct pane *p safe)
 	list_del(&ti->tiles);
 	free(ti->name);
 	free(ti);
-	if (remaining == 1) {
+	if (remaining == 1 && remain->parent) {
 		struct tileinfo *ti2;
 		enum dir tmp;
 		/* Only one child left, must move it into parent.
@@ -529,6 +529,9 @@ static int tile_grow(struct pane *p safe, int horiz, int size)
 	struct tileinfo *tip;
 	int avail;
 
+	if (!p->parent)
+		return 0;
+
 	if (ti->direction == Neither)
 		/* Cannot grow/shrink the root */
 		return 0;
@@ -638,12 +641,12 @@ static int tile_is_first(struct tileinfo *ti safe)
 
 static struct pane *tile_root_popup(struct tileinfo *ti safe)
 {
-	while (ti->direction != Neither)
+	while (ti->direction != Neither && ti->p->parent)
 		ti = ti->p->parent->data;
 	return next_child(ti->p, NULL, 1);
 }
 
-static struct tileinfo *tile_next_named(struct tileinfo *ti safe, char *name)
+static struct tileinfo *tile_next_named(struct tileinfo *ti safe, char *name) safe
 {
 	struct tileinfo *t = ti;
 	while ((t = list_next_entry(t, tiles)) != ti) {
@@ -678,7 +681,7 @@ DEF_CMD(tile_command)
 		 * If was not on a pop-up, go to next tile and if there is a popup,
 		 * go there.
 		 */
-		if (p->focus->z) {
+		if (p->focus && p->focus->z) {
 			p2 = next_child(p, p->focus, 1);
 			if (p2) {
 				pane_focus(p2);
@@ -699,10 +702,12 @@ DEF_CMD(tile_command)
 			} else
 				t2 = tile_first(ti);
 		}
-		pane_focus(t2->p);
-		p2 = next_child(t2->p, NULL, 1);
-		if (p2)
-			pane_focus(p2);
+		if (t2) {
+			pane_focus(t2->p);
+			p2 = next_child(t2->p, NULL, 1);
+			if (p2)
+				pane_focus(p2);
+		}
 	} else if (strcmp(cmd, "prev")==0) {
 		t2 = list_prev_entry(ti, tiles);
 		pane_focus(t2->p);
