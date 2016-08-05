@@ -612,3 +612,25 @@ static inline int comm_call7(struct command *comm, char *key safe,
 	ci.comm = comm;
 	return ci.comm->func(&ci);
 }
+
+static inline int comm_call8(struct command *comm, struct pane *home safe,
+			     char *key safe,
+			     struct pane *focus safe,
+			     int numeric, struct mark *m, char *str,
+			     int extra, char *str2, struct mark *m2,
+			     struct command *comm2)
+{
+	struct cmd_info ci = {.key = key, .focus = focus, .home = home, .comm = safe_cast 0};
+
+	if (!comm)
+		return -1;
+	ci.numeric = numeric;
+	ci.mark = m;
+	ci.mark2 = m2;
+	ci.str = str;
+	ci.str2 = str2;
+	ci.extra = extra;
+	ci.comm = comm;
+	ci.comm2 = comm2;
+	return ci.comm->func(&ci);
+}

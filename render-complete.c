@@ -244,15 +244,11 @@ DEF_CMD(complete_eol)
 		rpt += 1;
 	}
 	while (rpt > 1) {
-		struct cmd_info ci2 = {.key = "render-line"};
 		struct call_return cr;
-		ci2.numeric = NO_NUMERIC;
-		ci2.mark = ci->mark;
-		ci2.focus = ci->focus;
-		ci2.home = ci->home;
 		cr.c = eol_cb;
-		ci2.comm2 = &cr.c;
-		if (render_complete_line_func(&ci2) <= 0)
+		if (comm_call8(&render_complete_line, ci->home, "render-line",
+			       ci->focus, NO_NUMERIC, ci->mark, NULL,
+			       0, NULL, NULL, &cr.c) <= 0)
 			rpt = 1;
 		rpt -= 1;
 	}
