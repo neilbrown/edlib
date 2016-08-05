@@ -422,9 +422,15 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 	return 0;
 }
 
+static inline void do_free(PyObject *ob safe)
+{
+	if (ob->ob_type && ob->ob_type->tp_free)
+		ob->ob_type->tp_free(ob);
+}
+
 static void pane_dealloc(Pane *self safe)
 {
-	self->ob_type->tp_free((PyObject*)self);
+	do_free((PyObject*safe)self);
 }
 
 static PyObject *pane_children(Pane *self safe)
@@ -457,7 +463,7 @@ static Pane *pane_iter_new(PyTypeObject *type safe, PyObject *args, PyObject *kw
 
 static void paneiter_dealloc(PaneIter *self safe)
 {
-	self->ob_type->tp_free((PyObject*)self);
+	do_free((PyObject*safe)self);
 }
 
 static PyObject *Pane_clone_children(Pane *self safe, PyObject *args)
@@ -1289,7 +1295,7 @@ static void mark_dealloc(Mark *self safe)
 	}
 	if (self->owned && self->mark)
 		mark_free(self->mark);
-	self->ob_type->tp_free((PyObject*)self);
+	do_free((PyObject*safe)self);
 }
 
 static PyObject *Mark_to_mark(Mark *self safe, PyObject *args)
@@ -1510,7 +1516,7 @@ static PyTypeObject MarkType = {
 static void comm_dealloc(Comm *self safe)
 {
 	command_put(self->comm);
-	self->ob_type->tp_free((PyObject*)self);
+	do_free((PyObject*safe)self);
 }
 
 static PyObject *comm_repr(Comm *p safe)
