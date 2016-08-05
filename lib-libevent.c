@@ -32,13 +32,9 @@ struct evt {
 static void call_event(int thing, short sev, void *evv)
 {
 	struct evt *ev safe = safe_cast evv;
-	struct cmd_info ci = {};
 
-	ci.key = "callback:event";
-	ci.home = ci.focus = ev->home;
-	ci.comm = ev->comm;
-	ci.numeric = thing;
-	if (ev->comm->func(&ci) < 0) {
+	if (comm_call(ev->comm, "callback:event", ev->home, thing,
+		      NULL, NULL, 0) < 0) {
 		event_del(ev->l);
 		event_free(ev->l);
 		list_del(&ev->lst);
@@ -49,14 +45,10 @@ static void call_event(int thing, short sev, void *evv)
 
 static void call_timeout_event(int thing, short sev, void *evv)
 {
-	struct evt *ev safe = evv;
-	struct cmd_info ci = {};
+	struct evt *ev safe = safe_cast evv;
 
-	ci.key = "callback:event";
-	ci.home = ci.focus = ev->home;
-	ci.comm = ev->comm;
-	ci.numeric = thing;
-	if (ev->comm->func(&ci) <= 0) {
+	if (comm_call(ev->comm, "callback:event", ev->home, thing,
+		      NULL, NULL, 0) < 0) {
 		event_free(ev->l);
 		list_del(&ev->lst);
 		command_put(ev->comm);
