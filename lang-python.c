@@ -220,7 +220,7 @@ static PyObject *python_string(char *s safe) safe
 		/* must be Unicode */
 		return PyUnicode_DecodeUTF8(s, strlen(s), NULL);
 	else
-		return Py_BuildValue("s", s);
+		return safe_cast Py_BuildValue("s", s);
 }
 
 static int dict_add(PyObject *kwds, char *name, PyObject *val)
@@ -315,7 +315,7 @@ REDEF_CMD(python_doc_call)
 	return rv;
 }
 
-static Pane *pane_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds) safe
+static Pane *pane_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
 {
 	Pane *self;
 
@@ -327,7 +327,7 @@ static Pane *pane_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds) s
 }
 
 
-static Doc *Doc_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds) safe
+static Doc *Doc_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
 {
 	Doc *self;
 
@@ -404,9 +404,9 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 {
 	Pane *parent = NULL;
 	int z = 0;
-	int ret = __Pane_init((Pane*)self, args, kwds, &parent, &z);
+	int ret = __Pane_init((Pane*safe)self, args, kwds, &parent, &z);
 
-	if (ret <= 0 || !parent)
+	if (ret <= 0 || !parent || !self)
 		return ret;
 
 	self->handle.c = python_doc_call;
@@ -429,15 +429,17 @@ static PyObject *pane_children(Pane *self safe)
 		return NULL;
 	}
 	ret = (PaneIter*)PyObject_CallObject((PyObject*)&PaneIterType, NULL);
-	if (list_empty(&self->pane->children))
-		ret->pane = NULL;
-	else
-		ret->pane = list_first_entry(&self->pane->children,
-					     struct pane, siblings);
+	if (ret) {
+		if (list_empty(&self->pane->children))
+			ret->pane = NULL;
+		else
+			ret->pane = list_first_entry(&self->pane->children,
+						     struct pane, siblings);
+	}
 	return (PyObject*)ret;
 }
 
-static Pane *pane_iter_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+static Pane *pane_iter_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
 {
 	Pane *self;
 
@@ -457,7 +459,7 @@ static PyObject *Pane_clone_children(Pane *self safe, PyObject *args)
 	Pane *other = NULL;
 	int ret = PyArg_ParseTuple(args, "O!", &PaneType, &other);
 
-	if (ret <= 0)
+	if (ret <= 0 || !other)
 		return NULL;
 	if (self->pane && other->pane)
 		pane_clone_children(self->pane, other->pane);
@@ -477,7 +479,7 @@ static PyObject *Pane_refresh(Pane *self safe, PyObject *args)
 {
 	Mark *pointer = NULL;
 	int ret = PyArg_ParseTuple(args, "|O!", &MarkType, &pointer);
-	if (ret <= 0)
+	if (ret <= 0 || !pointer)
 		return NULL;
 	if (self->pane)
 		pane_refresh(self->pane, pointer->mark);
@@ -506,7 +508,7 @@ static PyObject *pane_iter_next(PaneIter *self safe)
 	return ret;
 }
 
-static PyObject *Pane_call(Pane *self safe, PyObject *args, PyObject *kwds)
+static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 {
 	struct cmd_info ci = {};
 	int rv;
@@ -537,7 +539,7 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args, PyObject *kwds)
 	return PyInt_FromLong(rv);
 }
 
-static PyObject *pane_direct_call(Pane *self safe, PyObject *args, PyObject *kwds)
+static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 {
 	struct cmd_info ci = {};
 	int rv;
@@ -569,7 +571,7 @@ static PyObject *pane_direct_call(Pane *self safe, PyObject *args, PyObject *kwd
 	return PyInt_FromLong(rv);
 }
 
-static PyObject *Pane_notify(Pane *self safe, PyObject *args, PyObject *kwds)
+static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwds)
 {
 	struct cmd_info ci = {};
 	int rv;
@@ -623,9 +625,10 @@ static PyObject *Pane_add_notify(Pane *self safe, PyObject *args)
 	Pane *other = NULL;
 	char *event = NULL;
 	int ret = PyArg_ParseTuple(args, "O!s", &PaneType, &other, &event);
-	if (ret <= 0)
+	if (ret <= 0 || !other || !event)
 		return NULL;
-	pane_add_notify(self->pane, other->pane, event);
+	if (self->pane && other->pane)
+		pane_add_notify(self->pane, other->pane, event);
 
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -740,7 +743,7 @@ static PyObject *pane_getnum(Pane *p safe, char *which safe)
 	return PyInt_FromLong(n);
 }
 
-static int pane_setnum(Pane *p, PyObject *v, char *which)
+static int pane_setnum(Pane *p safe, PyObject *v, char *which safe)
 {
 	int x,y,w,h;
 	long val;
@@ -876,7 +879,7 @@ static PyObject *Pane_get_item(Pane *self safe, PyObject *key safe)
 		PyErr_SetString(PyExc_TypeError, "Key must be a string");
 		return NULL;
 	}
-	k = PyString_AsString(key);
+	k = safe_cast PyString_AsString(key);
 	v = pane_attr_get(self->pane, k);
 	if (v)
 		return Py_BuildValue("s", v);
@@ -899,8 +902,8 @@ static int Pane_set_item(Pane *self safe, PyObject *key, PyObject *val)
 		PyErr_SetString(PyExc_TypeError, "value must be a string");
 		return -1;
 	}
-	k = PyString_AsString(key);
-	v = PyString_AsString(val);
+	k = safe_cast PyString_AsString(key);
+	v = safe_cast PyString_AsString(val);
 	attr_set_str(&self->pane->attrs, k, v);
 	return 0;
 }
@@ -1164,7 +1167,9 @@ static PyObject *mark_compare(Mark *a safe, Mark *b safe, int op)
 		 PyObject_TypeCheck(b, &MarkType) == 0) {
 		PyErr_SetString(PyExc_TypeError, "Mark compared with non-Mark");
 		return NULL;
-	} else {
+	} else if (!a->mark || !b->mark)
+		return NULL;
+	else {
 		int cmp = a->mark->seq - b->mark->seq;
 		switch(op) {
 		case Py_LT: ret = cmp <  0; break;
@@ -1235,12 +1240,12 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 		PyErr_SetString(PyExc_TypeError, "At least one of 'pane' and 'orig' must be set");
 		return -1;
 	}
-	if (doc) {
+	if (doc && doc->pane) {
 		struct pane *p = doc->pane;
 		self->mark = vmark_new(p, view);
 		local = p->handle &&
 			p->handle->func == python_doc_call.func;
-	} else {
+	} else if (orig && orig->mark) {
 		self->mark = mark_dup(orig->mark, 0);
 		local = orig->local;
 	}
@@ -1278,7 +1283,7 @@ static PyObject *Mark_to_mark(Mark *self safe, PyObject *args)
 {
 	Mark *other = NULL;
 	int ret = PyArg_ParseTuple(args, "O!", &MarkType, &other);
-	if (ret <= 0 || !other)
+	if (ret <= 0 || !other || !self->mark || !other->mark)
 		return NULL;
 	mark_to_mark(self->mark, other->mark);
 
