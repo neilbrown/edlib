@@ -23,7 +23,7 @@ struct mlinfo {
 };
 static struct pane *do_messageline_attach(struct pane *p);
 
-static void pane_str(struct pane *p, char *s, char *attr, int x, int y)
+static void pane_str(struct pane *p safe, char *s, char *attr, int x, int y)
 {
 	call_xy("Draw:text", p, -1, s, attr, x, y);
 }
@@ -151,6 +151,8 @@ DEF_CMD(messageline_attach)
 	struct pane *ret;
 
 	ret = do_messageline_attach(ci->focus);
+	if (!ret)
+		return -1;
 	return comm_call(ci->comm2, "callback:attach", ret, 0, NULL, NULL, 0);
 }
 
