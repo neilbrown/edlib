@@ -127,7 +127,7 @@ DEF_CMD(ncurses_handle)
 		pane_damaged(p, DAMAGED_POSTORDER);
 		return 1;
 	}
-	if (strcmp(ci->key, "text-size") == 0) {
+	if (strcmp(ci->key, "text-size") == 0 && ci->str) {
 		int max_space = ci->numeric;
 		int max_bytes = 0;
 		int size = 0;
@@ -151,7 +151,7 @@ DEF_CMD(ncurses_handle)
 		return comm_call_xy(ci->comm2, "callback:size", ci->focus,
 				    max_bytes, 0, size, 1);
 	}
-	if (strcmp(ci->key, "Draw:text") == 0) {
+	if (strcmp(ci->key, "Draw:text") == 0 && ci->str) {
 		int attr = cvt_attrs(ci->str2);
 		int cursor_offset = ci->numeric;
 		int offset = 0;
@@ -383,14 +383,7 @@ static void send_key(int keytype, wint_t c, struct pane *p safe)
 
 static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe)
 {
-	struct cmd_info ci = {};
-
-	ci.key = "Mouse-event";
-	ci.str = cmd;
-	ci.focus = p;
-	ci.x = x;
-	ci.y = y;
-	key_handle(&ci);
+	call_xy("Mouse-event", p, 0, cmd, NULL, x, y);
 }
 
 static void send_mouse(MEVENT *mev safe, struct pane *p safe)
