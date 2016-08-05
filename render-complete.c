@@ -127,25 +127,29 @@ DEF_CMD(rlcb)
 		cb->str = strdup(ci->str);
 	return 1;
 }
-DEF_CMD(render_complete_prev)
+
+static int do_render_complete_prev(struct complete_data *cd, struct mark *m,
+				   struct pane *focus, int n, char **savestr)
 {
-	/* If ->numeric is 0 we just need 'start of line' so use
+	/* If 'n' is 0 we just need 'start of line' so use
 	 * underlying function.
 	 * otherwise call repeatedly and then render the line and see if
 	 * it matches the prefix.
 	 */
 	struct cmd_info ci2 = {}, ci3 = {};
 	struct rlcb cb;
-	struct complete_data *cd = ci->home->data;
 	int ret;
 
-	ci2.key = ci->key;
-	ci2.mark = ci->mark;
-	ci2.focus = ci->home->parent;
+	if (savestr)
+		*savestr = NULL;
+
+	ci2.key = "render-line-prev";
+	ci2.mark = m;
+	ci2.focus = focus;
 	ci2.numeric = 0;
 
 	ci3.key = "render-line";
-	ci3.focus = ci->home->parent;
+	ci3.focus = focus;
 	cb.c = rlcb;
 	cb.str = NULL;
 	cb.prefix = cd->prefix;
@@ -154,28 +158,26 @@ DEF_CMD(render_complete_prev)
 	ci3.comm2 = &cb.c;
 	while (1) {
 		ret = key_handle(&ci2);
-		if (ret <= 0 || ci->numeric == 0)
+		if (ret <= 0 || n == 0)
 			/* Either hit start-of-file, or have what we need */
 			break;
 		/* we must be looking at a possible option for the previous
 		 * line
 		 */
-		if (ci2.mark == ci->mark)
-			ci2.mark = mark_dup(ci->mark, 1);
+		if (ci2.mark == m)
+			ci2.mark = mark_dup(m, 1);
 		ci3.mark = mark_dup(ci2.mark, 1);
 		ci3.numeric = NO_NUMERIC;
-		cb.keep = ci2.numeric == 1 && ci->extra == 42;
+		cb.keep = ci2.numeric == 1 && savestr;
 		cb.str = NULL;
 		if (key_handle(&ci3) != 1) {
 			mark_free(ci3.mark);
 			break;
 		}
 		mark_free(ci3.mark);
-		/* This is a horrible hack, but as it is entirely internal
-		 * to this module it can say for now.
-		 * Cast ci to remove any 'const' tag that I hope to add soon.
-		 */
-		((struct cmd_info*)ci)->str2 = cb.str;
+
+		if (savestr)
+			*savestr = cb.str;
 
 		if (cb.cmp == 0 && ci2.numeric == 1)
 			/* This is a valid new start-of-line */
@@ -183,13 +185,24 @@ DEF_CMD(render_complete_prev)
 		/* step back once more */
 		ci2.numeric = 1;
 	}
-	if (ci2.mark != ci->mark) {
+	if (ci2.mark != m) {
 		if (ret > 0)
-			/* move ci->mark back to ci2.mark */
-			mark_to_mark(ci->mark, ci2.mark);
+			/* move m back to ci2.mark */
+			mark_to_mark(m, ci2.mark);
 		mark_free(ci2.mark);
 	}
 	return ret;
+}
+
+DEF_CMD(render_complete_prev)
+{
+	/* If ->numeric is 0 we just need 'start of line' so use
+	 * underlying function.
+	 * otherwise call repeatedly and then render the line and see if
+	 * it matches the prefix.
+	 */
+	struct complete_data *cd = ci->home->data;
+	return do_render_complete_prev(cd, ci->mark, ci->home->parent, ci->numeric, NULL);
 }
 
 DEF_CMD(complete_close)
@@ -236,12 +249,8 @@ DEF_CMD(complete_eol)
 		/* movement within the line */
 		return 1;
 	while (rpt < -1) {
-		struct cmd_info ci2 = {.key = "render-line-prev"};
-		ci2.numeric = 1;
-		ci2.mark = ci->mark;
-		ci2.focus = ci->focus;
-		ci2.home = ci->home;
-		if (render_complete_prev_func(&ci2) < 0)
+		if (do_render_complete_prev(ci->home->data, ci->mark,
+					    ci->focus->parent, 1, NULL) < 0)
 			rpt = -1;
 		rpt += 1;
 	}
@@ -282,8 +291,8 @@ DEF_CMD(complete_set_prefix)
 	 */
 	struct pane *p = ci->home;
 	struct complete_data *cd = p->data;
-	struct cmd_info ci2 = {};
 	struct mark *m;
+	char *c;
 	int cnt = 0;
 	char *common = NULL;
 
@@ -293,14 +302,7 @@ DEF_CMD(complete_set_prefix)
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 	call3("Move-File", ci->focus, 1, m);
 
-	ci2.key = "render-line-prev";
-	ci2.numeric = 1;
-	ci2.mark = m;
-	ci2.focus = p;
-	ci2.home = p;
-	ci2.extra = 42; /* request copy of line in str2 */
-	while (render_complete_prev_func(&ci2) > 0) {
-		char *c = ci2.str2;
+	while (do_render_complete_prev(cd, m, p->parent, 1, &c) > 0 && c) {
 		int l = strlen(c);
 		if (c[l-1] == '\n')
 			l -= 1;
