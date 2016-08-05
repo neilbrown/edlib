@@ -30,7 +30,7 @@ struct es_info {
 		int wrapped;
 	} *s;
 	struct mark *start safe; /* where searching starts */
-	struct mark *end; /* where last success ended */
+	struct mark *end safe; /* where last success ended */
 	struct pane *target safe;
 	short matched;
 	short wrapped;
@@ -49,7 +49,7 @@ DEF_CMD(search_forward)
 		return 1;
 	}
 	str = doc_getstr(ci->focus, NULL, NULL);
-	if (!*str) {
+	if (!str || !*str) {
 		/* re-use old string; Is there any point to this indirection? */
 		char *ss;
 		ss = pane_attr_get(ci->focus, "done-key");
@@ -148,7 +148,7 @@ DEF_CMD(search_close)
 
 	call3("search:highlight", esi->target, 0, NULL);
 	mark_free(esi->end);
-	esi->end = NULL;
+	esi->end = safe_cast NULL;
 	mark_free(esi->start);
 	while (esi->s) {
 		struct stk *n = esi->s;
@@ -212,7 +212,7 @@ DEF_CMD(search_done)
 	char *str = doc_getstr(ci->focus, NULL, NULL);
 
 	call3("Move-to", esi->target, 0, esi->start);
-	call5("popup:close", ci->focus->parent, 0, NULL, str, 0);
+	call5("popup:close", safe_cast ci->focus->parent, 0, NULL, str, 0);
 	free(str);
 	return 1;
 }
@@ -266,8 +266,8 @@ DEF_CMD(emacs_search)
 }
 
 /* Pre-declare to silence sparse - for now */
-void emacs_search_init(struct pane *ed);
-void emacs_search_init(struct pane *ed)
+void emacs_search_init(struct pane *ed safe);
+void emacs_search_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-emacs-search",
 		  0, &emacs_search);

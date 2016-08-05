@@ -1111,7 +1111,7 @@ DEF_CMD(attach_mode_emacs)
 			 &mode_emacs.c);
 }
 
-void emacs_search_init(struct pane *ed);
+void emacs_search_init(struct pane *ed safe);
 void edlib_init(struct pane *ed safe)
 {
 	if (emacs_map == NULL)
