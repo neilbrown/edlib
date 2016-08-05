@@ -130,10 +130,9 @@ static int do_render_complete_prev(struct complete_data *cd, struct mark *m,
 	 * otherwise call repeatedly and then render the line and see if
 	 * it matches the prefix.
 	 */
-	struct cmd_info ci3 = {};
 	struct rlcb cb;
 	int ret;
-	struct mark *m2;
+	struct mark *m2, *m3;
 	int n2;
 
 	if (savestr)
@@ -141,14 +140,11 @@ static int do_render_complete_prev(struct complete_data *cd, struct mark *m,
 	m2 = m;
 	n2 = 0;
 
-	ci3.key = "render-line";
-	ci3.focus = focus;
 	cb.c = rlcb;
 	cb.str = NULL;
 	cb.prefix = cd->prefix;
 	cb.plen = strlen(cb.prefix);
 	cb.cmp = 0;
-	ci3.comm2 = &cb.c;
 	while (1) {
 		ret = call3("render-line-prev", focus, n2, m2);
 		if (ret <= 0 || n == 0)
@@ -159,15 +155,15 @@ static int do_render_complete_prev(struct complete_data *cd, struct mark *m,
 		 */
 		if (m2 == m)
 			m2 = mark_dup(m, 1);
-		ci3.mark = mark_dup(m2, 1);
-		ci3.numeric = NO_NUMERIC;
+		m3 = mark_dup(m2, 1);
 		cb.keep = n2 == 1 && savestr;
 		cb.str = NULL;
-		if (key_handle(&ci3) != 1) {
-			mark_free(ci3.mark);
+		if (call_comm("render-line", focus, NO_NUMERIC, m3, NULL, 0, &cb.c)
+		    != 1) {
+			mark_free(m3);
 			break;
 		}
-		mark_free(ci3.mark);
+		mark_free(m3);
 
 		if (savestr)
 			*savestr = cb.str;
