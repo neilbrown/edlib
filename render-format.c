@@ -157,6 +157,8 @@ DEF_CMD(render_line_prev)
 {
 	struct mark *m = ci->mark;
 
+	if (!m)
+		return -1;
 	if (RPT_NUM(ci) == 0)
 		/* always at start-of-line */
 		return 1;
@@ -188,6 +190,9 @@ DEF_CMD(format_move_line)
 	int rpt = RPT_NUM(ci);
 	struct rf_data *rf = ci->home->data;
 
+	if (!ci->mark)
+		return -1;
+
 	while (rpt > 1) {
 		if (mark_next_pane(ci->focus, ci->mark) == WEOF)
 			break;
@@ -214,6 +219,8 @@ DEF_CMD(format_move_horiz)
 	struct rf_data *rf = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
+	if (!ci->mark)
+		return -1;
 	if (rf->fields < 2)
 		return 1;
 	while (rpt > 0 && doc_following_pane(ci->focus, ci->mark) != WEOF) {
@@ -277,7 +284,8 @@ DEF_CMD(render_format_attach)
 	struct pane *p;
 
 	p = do_render_format_attach(ci->focus);
-
+	if (!p)
+		return -1;
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 
