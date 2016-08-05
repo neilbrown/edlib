@@ -28,7 +28,7 @@ static struct move_command {
 	struct command	cmd;
 	char		*type safe;
 	int		direction;
-	char		*k1, *k2, *k3;
+	char		*k1 safe, *k2, *k3;
 } move_commands[] = {
 	{CMD(emacs_move), "Move-Char", 1,
 	 "C-Chr-F", "Right", NULL},
@@ -92,7 +92,7 @@ REDEF_CMD(emacs_move)
 	struct pane *p;
 	int ret = 0;
 
-	if (!cursor_pane)
+	if (!ci->mark)
 		return 0;
 
 	ret = call3(mv->type, ci->focus, mv->direction * RPT_NUM(ci), ci->mark);
@@ -108,6 +108,8 @@ REDEF_CMD(emacs_move)
 		struct mark *old_point = mark_at_point(cursor_pane,
 						       ci->mark, MARK_UNGROUPED);
 		int y;
+		if (!old_point)
+			return -1;
 		if (mv->direction == 1)
 			y = 0;
 		else
@@ -115,9 +117,11 @@ REDEF_CMD(emacs_move)
 		call5("Refresh", cursor_pane, 0, ci->mark, NULL, DAMAGED_CURSOR);
 		for (p = cursor_pane; p && p->cx < 0; p = p->parent)
 			;
-		if (p)
+		if (p) {
 			/* Cursor is visible, so no need to move it */
+			mark_free(old_point);
 			return ret;
+		}
 
 		call_xy7("Mouse-event", cursor_pane, 1, 0, "Move-CursorXY", NULL,
 			 -1, y, ci->mark, NULL);
@@ -145,6 +149,9 @@ REDEF_CMD(emacs_delete)
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 	int ret = 0;
 	struct mark *m;
+
+	if (!ci->mark)
+		return -1;
 
 	m = mark_dup(ci->mark, 1);
 
@@ -174,6 +181,9 @@ REDEF_CMD(emacs_case)
 	int cnt = mv->direction * RPT_NUM(ci);
 	int dir;
 
+	if (!ci->mark)
+		return -1;
+
 	if (cnt == 0)
 		return 1;
 	if (cnt > 0) {
@@ -197,7 +207,7 @@ REDEF_CMD(emacs_case)
 			int changed = 0;
 			int found = 0;
 
-			for (c = str; *c; c += 1) {
+			for (c = str; c && *c; c += 1) {
 				char type = mv->type[0];
 				if (type == 'C') {
 					type = found ? 'L' : 'U';
@@ -259,6 +269,9 @@ REDEF_CMD(emacs_swap)
 	int cnt = mv->direction * RPT_NUM(ci);
 	int dir;
 
+	if (!ci->mark)
+		return -1;
+
 	if (cnt == 0)
 		return 1;
 	if (cnt > 0) {
@@ -315,8 +328,8 @@ REDEF_CMD(emacs_simple);
 REDEF_CMD(emacs_simple_neg);
 static struct simple_command {
 	struct command	cmd;
-	char		*type;
-	char		*k;
+	char		*type safe;
+	char		*k safe;
 } simple_commands[] = {
 	{CMD(emacs_simple), "Window:next", "emCX-Chr-o"},
 	{CMD(emacs_simple), "Window:prev", "emCX-Chr-O"},
@@ -342,12 +355,18 @@ REDEF_CMD(emacs_simple)
 {
 	struct simple_command *sc = container_of(ci->comm, struct simple_command, cmd);
 
+	if (!ci->mark)
+		return -1;
+
 	return call5(sc->type, ci->focus, ci->numeric, ci->mark, NULL, ci->extra);
 }
 
 REDEF_CMD(emacs_simple_neg)
 {
 	struct simple_command *sc = container_of(ci->comm, struct simple_command, cmd);
+
+	if (!ci->mark)
+		return -1;
 
 	return call5(sc->type, ci->focus, -RPT_NUM(ci), ci->mark, NULL, ci->extra);
 }
@@ -358,8 +377,9 @@ DEF_CMD(emacs_exit)
 		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
 					    "DM", NULL);
 		// FIXME if called from a popup, this fails.
-		if (p)
-			attr_set_str(&p->attrs, "done-key", "event:deactivate");
+		if (!p)
+			return 0;
+		attr_set_str(&p->attrs, "done-key", "event:deactivate");
 		return call3("docs:show-modified", p, 0, NULL);
 	} else
 		call3("event:deactivate", ci->focus, 0, NULL);
@@ -370,6 +390,9 @@ DEF_CMD(emacs_insert)
 {
 	int ret;
 	char *str;
+
+	if (!ci->mark)
+		return -1;
 
 	/* Key is "Chr-X" - skip 4 bytes to get X */
 	str = ci->key + 4;
@@ -393,6 +416,9 @@ DEF_CMD(emacs_insert_other)
 {
 	int ret;
 	int i;
+
+	if (!ci->mark)
+		return -1;
 
 	for (i = 0; other_inserts[i].key; i++)
 		if (strcmp(other_inserts[i].key, ci->key) == 0)
@@ -530,13 +556,17 @@ REDEF_CMD(emacs_file_complete)
 	 * Find a document for the directory and attach as a completing
 	 * popup menu
 	 */
-	char *str = doc_getstr(ci->focus, NULL, NULL);
+	char *str;
 	char *d, *b, *c;
 	int fd;
 	struct pane *par, *pop, *docp, *p;
 	struct call_return cr;
 	int ret;
 
+	if (!ci->mark)
+		return -1;
+
+	str = doc_getstr(ci->focus, NULL, NULL);
 	d = str;
 	while ((c = strstr(d, "//")) != NULL)
 		d = c+1;
@@ -562,11 +592,15 @@ REDEF_CMD(emacs_file_complete)
 	if (!pop)
 		return -1;
 	par = doc_attach_view(pop, docp, NULL);
+	if (!par)
+		return -1;
 
 	attr_set_str(&par->attrs, "line-format", "%+name%suffix");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
 	p = render_attach("complete", par);
+	if (!p)
+		return -1;
 	cr.c = save_str;
 	cr.s = NULL;
 	ret = call_comm("Complete:prefix", p, 0, NULL,
@@ -624,7 +658,7 @@ DEF_CMD(emacs_finddoc)
 		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
 	else
 		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
-	if (!p)
+	if (!p || !par)
 		return -1;
 
 	p = doc_attach_view(par, p, NULL);
@@ -636,23 +670,33 @@ REDEF_CMD(emacs_doc_complete)
 	/* Extract a document from the document.
 	 * Attach the 'docs' document as a completing popup menu
 	 */
-	char *str = doc_getstr(ci->focus, NULL, NULL);
+	char *str;
 	struct pane *par, *pop, *docs, *p;
 	struct call_return cr;
 	int ret;
 
+	if (!ci->mark)
+		return -1;
+
+	str = doc_getstr(ci->focus, NULL, NULL);
 	pop = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
 			 "DM1r", NULL);
 	if (!pop)
 		return -1;
 	docs = call_pane7("docs:byname", ci->focus, 0, NULL,
 			  0, NULL, NULL);
+	if (!docs)
+		return -1;
 	par = doc_attach_view(pop, docs, NULL);
+	if (!par)
+		return -1;
 
 	attr_set_str(&par->attrs, "line-format", "%+name");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
 	p = render_attach("complete", par);
+	if (!p)
+		return -1;
 	cr.c = save_str;
 	cr.s = NULL;
 	ret = call_comm("Complete:prefix", p, 0, NULL,
@@ -696,6 +740,7 @@ DEF_CMD(emacs_shell)
 {
 	char *name = "*Shell Command Output*";
 	struct pane *p, *doc, *par;
+
 	if (strcmp(ci->key, "Shell Command") != 0) {
 		p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
 			       "D2", "");
@@ -716,7 +761,11 @@ DEF_CMD(emacs_shell)
 	doc = call_pane7("docs:byname", ci->focus, 0, NULL, 0, name, NULL);
 	if (!doc)
 		doc = call_pane7("doc:from-text", par, 0, NULL, 0, name, "");
+	if (!doc)
+		return -1;
 	p = doc_attach(doc, doc);
+	if (!p)
+		return -1;
 	call_pane7("attach-shellcmd", p, 0, NULL, 0, ci->str, NULL);
 	doc_attach_view(par, doc, NULL);
 	return 1;
@@ -767,9 +816,10 @@ DEF_CMD(emacs_save_all)
 	if (ci->numeric == NO_NUMERIC) {
 		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
 					    "DM", NULL);
-		return call3("docs:show-modified", p, 0, NULL);
-	} else
-		return call3("docs:save-all", ci->focus, 0, NULL);
+		if (p)
+			return call3("docs:show-modified", p, 0, NULL);
+	}
+	return call3("docs:save-all", ci->focus, 0, NULL);
 }
 
 static void do_searches(struct pane *p safe, int view, char *patn,
@@ -807,6 +857,9 @@ DEF_CMD(emacs_search_highlight)
 
 	if (view <= 0)
 		return 0;
+	if (!ci->mark)
+		return -1;
+
 	start = vmark_first(ci->focus, view);
 	end = vmark_last(ci->focus, view);
 	while (start && (m = vmark_next(start)) != NULL && m != end)
@@ -859,7 +912,7 @@ DEF_CMD(emacs_reposition)
 	char *patn = attr_find(ci->focus->attrs, "emacs-search-patn");
 	struct mark *vstart, *vend;
 
-	if (view < 0 || patn == NULL)
+	if (view < 0 || patn == NULL || !start || !end)
 		return 0;
 
 	while ((m = vmark_first(ci->focus, view)) != NULL &&
