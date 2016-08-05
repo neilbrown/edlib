@@ -75,8 +75,10 @@ static int do_doc_add_view(struct doc *d safe)
 		/* now resize all the points */
 		points_resize(d);
 	}
-	points_attach(d, ret);
-	d->views[ret].state = 1;
+	if (d->views /* FIXME always true */) {
+		points_attach(d, ret);
+		d->views[ret].state = 1;
+	}
 	return ret;
 }
 
@@ -113,6 +115,9 @@ DEF_CMD(doc_char)
 	struct doc *d = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
+	if (!ci->mark)
+		return -1;
+
 	while (rpt > 0) {
 		if (mark_next(d, ci->mark) == WEOF)
 			break;
@@ -131,6 +136,9 @@ DEF_CMD(doc_word)
 {
 	struct doc *d = ci->home->data;
 	int rpt = RPT_NUM(ci);
+
+	if (!ci->mark)
+		return -1;
 
 	/* We skip spaces, then either alphanum or non-space/alphanum */
 	while (rpt > 0) {
@@ -170,6 +178,9 @@ DEF_CMD(doc_WORD)
 	struct doc *d = ci->home->data;
 	int rpt = RPT_NUM(ci);
 
+	if (!ci->mark)
+		return -1;
+
 	/* We skip spaces, then non-spaces */
 	while (rpt > 0) {
 		wint_t wi;
@@ -200,6 +211,9 @@ DEF_CMD(doc_eol)
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
+	if (!ci->mark)
+		return -1;
+
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next(d, ci->mark)) != WEOF &&
 		       ch != '\n')
@@ -227,6 +241,9 @@ DEF_CMD(doc_file)
 	int rpt = RPT_NUM(ci);
 	struct mark *m = ci->mark;
 
+	if (!ci->mark)
+		return -1;
+
 	if (rpt > 0)
 		__mark_reset(d, m, 0, 1);
 	if (rpt < 0)
@@ -240,6 +257,9 @@ DEF_CMD(doc_line)
 	struct doc *d = ci->home->data;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
+
+	if (!ci->mark)
+		return -1;
 
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next(d, ci->mark)) != WEOF &&
@@ -262,6 +282,9 @@ DEF_CMD(doc_page)
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
+	if (!ci->mark)
+		return -1;
+
 	rpt *= ci->home->h-2;
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next(d, ci->mark)) != WEOF &&
@@ -282,6 +305,9 @@ DEF_CMD(doc_attr_set)
 {
 	struct doc *d = ci->home->data;
 
+	if (!ci->mark || !ci->str)
+		return -1;
+
 	if (ci->str2 == NULL && ci->extra == 1)
 		attr_set_int(&d->home->attrs, ci->str, ci->numeric);
 	else
@@ -293,6 +319,9 @@ DEF_CMD(doc_get_attr)
 {
 	struct pane *p = ci->home; struct doc *d = p->data;
 	char *a;
+
+	if (!ci->mark || !ci->str)
+		return -1;
 
 	if ((a = attr_find(d->home->attrs, ci->str)) != NULL)
 		;
@@ -351,7 +380,7 @@ DEF_CMD(doc_vmarkget)
 				       ci->numeric);
 	if (ci->extra == 2)
 		m2 = doc_new_mark(ci->home->data, ci->numeric);
-	if (ci->extra == 3)
+	if (ci->extra == 3 && ci->mark)
 		m2 = do_vmark_at_or_before(ci->focus, ci->home->data, ci->mark, ci->numeric);
 	return comm_call7(ci->comm2, "callback:vmark", ci->focus,
 			  0, m, NULL, 0, NULL, m2);
@@ -454,7 +483,7 @@ DEF_CMD(doc_handle)
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = doc_attach(ci->focus, dd->doc);
 
-		if (p)
+		if (p && p->pointer && ci->home->pointer)
 			point_to_mark(p->pointer, ci->home->pointer);
 		pane_clone_children(ci->home, p);
 		return 1;
@@ -464,6 +493,8 @@ DEF_CMD(doc_handle)
 		/* This must be redirected to document to propagate to parent.
 		 * I wonder if anything else does.
 		 */
+		if (!ci->mark)
+			return -1;
 		return call5(ci->key, dd->doc, ci->numeric, ci->mark,
 			     ci->str, ci->extra);
 	}
@@ -503,7 +534,8 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "Move-to") == 0) {
-		point_to_mark(dd->point, ci->mark);
+		if (ci->mark)
+			point_to_mark(dd->point, ci->mark);
 		return 1;
 	}
 
