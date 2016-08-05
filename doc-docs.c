@@ -181,6 +181,10 @@ DEF_CMD(docs_modified_handle)
 {
 	struct mark *m;
 
+	if (!ci->home->parent)
+		/* Should never happen */
+		return -1;
+
 	if (strncmp(ci->key, "Chr-", 4) == 0) {
 		if (strlen(ci->key) == 5 &&
 		    strchr("sk%", ci->key[4]) != NULL)
@@ -241,7 +245,7 @@ DEF_CMD(docs_modified_handle)
 		return ret;
 	}
 	if (strcmp(ci->key, "doc:get-attr") == 0 &&
-	    ci->mark) {
+	    ci->str && ci->mark) {
 		char *attr;
 		m = mark_dup(ci->mark, 1);
 		mark_to_modified(ci->home->parent, m);
@@ -338,7 +342,7 @@ DEF_CMD(docs_callback)
 
 	if (strcmp(ci->key, "docs:save-all") == 0) {
 		list_for_each_entry(p, &doc->doc.home->children, siblings)
-			doc_save(p, NULL);
+			doc_save(p, p);
 		return 1;
 	}
 
@@ -414,8 +418,12 @@ DEF_CMD(docs_step)
 	bool forward = ci->numeric;
 	bool move = ci->extra;
 	int ret;
-	struct pane *p = m->ref.p, *next;
+	struct pane *p, *next;
 
+	if (!m)
+		return -1;
+
+	p = m->ref.p;
 	if (forward) {
 		/* report on d */
 		if (p == NULL || p == list_last_entry(&doc->home->children,
@@ -467,6 +475,9 @@ DEF_CMD(docs_set_ref)
 	struct docs *d = container_of(dc, struct docs, doc);
 	struct mark *m = ci->mark;
 
+	if (!m)
+		return -1;
+
 	if (ci->numeric == 1 && !list_empty(&d->doc.home->children))
 		m->ref.p = list_first_entry(&d->doc.home->children,
 					    struct pane, siblings);
@@ -480,6 +491,8 @@ DEF_CMD(docs_set_ref)
 
 DEF_CMD(docs_mark_same)
 {
+	if (!ci->mark || !ci->mark2)
+		return -1;
 	return ci->mark->ref.p == ci->mark2->ref.p ? 1 : 2;
 }
 
@@ -518,7 +531,8 @@ DEF_CMD(docs_doc_get_attr)
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
 	char *val;
-	if (!m)
+
+	if (!m || !attr)
 		return -1;
 
 	val = __docs_get_attr(d, m, forward, attr);
@@ -535,6 +549,9 @@ DEF_CMD(docs_get_attr)
 	char *attr = ci->str;
 	char *val;
 	struct doc *d = ci->home->data;
+
+	if (!attr)
+		return -1;
 
 	if ((val = attr_find(d->home->attrs, attr)) != NULL)
 		;
@@ -557,9 +574,12 @@ DEF_CMD(docs_get_attr)
 DEF_CMD(docs_open)
 {
 	struct pane *p;
-	struct pane *dp = ci->mark->ref.p;
+	struct pane *dp;
 	struct pane *par;
 
+	if (!ci->mark)
+		return -1;
+	dp = ci->mark->ref.p;
 	/* close this pane, open the given document. */
 	if (dp == NULL)
 		return 0;
@@ -582,11 +602,14 @@ DEF_CMD(docs_open)
 DEF_CMD(docs_open_alt)
 {
 	struct pane *p;
-	struct pane *dp = ci->mark->ref.p;
+	struct pane *dp;
 	char *renderer = NULL;
 	struct pane *par;
 	char buf[100];
 
+	if (!ci->mark)
+		return -1;
+	dp = ci->mark->ref.p;
 	/* close this pane, open the given document. */
 	if (dp == NULL)
 		return 0;
@@ -626,8 +649,11 @@ DEF_CMD(docs_bury)
 
 DEF_CMD(docs_save)
 {
-	struct pane *dp = ci->mark->ref.p;
+	struct pane *dp;
 
+	if (!ci->mark)
+		return -1;
+	dp = ci->mark->ref.p;
 	if (!dp)
 		return 0;
 	doc_save(dp, ci->focus);
@@ -636,9 +662,12 @@ DEF_CMD(docs_save)
 
 DEF_CMD(docs_kill)
 {
-	struct pane *dp = ci->mark->ref.p;
+	struct pane *dp;
 	char *mod;
 
+	if (!ci->mark)
+		return -1;
+	dp = ci->mark->ref.p;
 	if (!dp)
 		return 0;
 	mod = pane_attr_get(dp, "doc-modified");
@@ -654,8 +683,13 @@ DEF_CMD(docs_kill)
 
 DEF_CMD(docs_toggle)
 {
-	struct pane *dp = ci->mark->ref.p;
-	return call3("doc:modified", dp, 0, NULL);
+	struct pane *dp;
+	if (!ci->mark)
+		return -1;
+	dp = ci->mark->ref.p;
+	if (dp)
+		return call3("doc:modified", dp, 0, NULL);
+	return 0;
 }
 
 DEF_CMD(docs_destroy)
