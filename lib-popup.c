@@ -174,8 +174,7 @@ DEF_CMD(popup_attach)
 	if (z < 0)
 		z = 1;
 
-	p = pane_register(root, z + 1, &popup_handle, ppi, NULL);
-	ppi->popup = p;
+	ppi->popup = p = pane_register(root, z + 1, &popup_handle, ppi, NULL);
 	ppi->style = style;
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
