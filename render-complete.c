@@ -317,19 +317,15 @@ DEF_CMD(complete_return)
 	/* submit the selected entry to the popup */
 	struct pane *p = ci->home;
 	struct complete_data *cd = p->data;
-	struct cmd_info ci2 = {.key="render-line"};
 	struct call_return cr;
 	int l;
 	char *c1, *c2;
 
-	ci2.focus = ci->home;
-	ci2.home = ci->home;
-	ci2.mark = ci->mark;
-	ci2.numeric = NO_NUMERIC;
 	cr.c = save_str;
 	cr.s = NULL;
-	ci2.comm2 = &cr.c;
-	render_complete_line_func(&ci2);
+	comm_call8(&render_complete_line, ci->home, "render-line",
+		   ci->home, NO_NUMERIC, ci->mark, NULL, 0, NULL,
+		   NULL, &cr.c);
 	if (!cr.s)
 		return 1;
 	l = strlen(cr.s);
