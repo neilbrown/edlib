@@ -83,19 +83,24 @@ DEF_CMD(mouse_event)
 {
 	struct input_mode *im = ci->home->data;
 	int l;
-	struct cmd_info ci2 = {};
+	int x,y;
+	int num, ex;
+	struct pane *focus;
+	struct mark *m;
+	char *key;
 
 	pane_notify(ci->home, "Notify:Mouse-event", NULL, NULL, ci->str, 0, NULL);
 
 	l = strlen(im->mode) + strlen(ci->str) + 1;
-	ci2.key = malloc(l);
-	strcat(strcpy(ci2.key, im->mode), ci->str);
-	ci2.focus = ci->focus;
-	ci2.numeric = im->numeric;
-	ci2.extra = im->extra;
-	ci2.mark = ci->mark;
-	ci2.x = ci->x; ci2.y = ci->y;
-	pane_map_xy(ci->focus, ci2.focus, &ci2.x, &ci2.y);
+	key = malloc(l);
+	strcat(strcpy(key, im->mode), ci->str);
+	focus = ci->focus;
+	num = im->numeric;
+	ex = im->extra;
+	m = ci->mark;
+	x = ci->x; y = ci->y;
+	/* FIXME is there any point in this? */
+	pane_map_xy(ci->focus, focus, &x, &y);
 
 	im->mode = "";
 	im->numeric = NO_NUMERIC;
@@ -104,25 +109,25 @@ DEF_CMD(mouse_event)
 	while (1) {
 		struct pane *t, *chld = NULL;
 
-		list_for_each_entry(t, &ci2.focus->children, siblings) {
-			if (ci2.x < t->x || ci2.x >= t->x + t->w)
+		list_for_each_entry(t, &focus->children, siblings) {
+			if (x < t->x || x >= t->x + t->w)
 				continue;
-			if (ci2.y < t->y || ci2.y >= t->y + t->h)
+			if (y < t->y || y >= t->y + t->h)
 				continue;
-			if (chld == NULL || t->z > chld->z) /* SMATCH BUG MAKES THIS EMPTY*/
+			if (chld == NULL || t->z > chld->z)
 				chld = t;
 		}
 		/* descend into chld */
 		if (!chld)
 			break;
-		ci2.x -= chld->x;
-		ci2.y -= chld->y;
-		ci2.focus = chld;
+		x -= chld->x;
+		y -= chld->y;
+		focus = chld;
 		if (!ci->mark && chld->pointer)
-			ci2.mark = chld->pointer;
+			m = chld->pointer;
 	}
 
-	key_handle(&ci2);
+	call_xy7(key, focus, num, ex, NULL, NULL, x, y, m, NULL);
 	return 0;
 }
 
