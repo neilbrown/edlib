@@ -185,8 +185,6 @@ text_new_alloc(struct text *t safe, int size) safe
 	if (size == 0)
 		size = DEFAULT_SIZE;
 	new = malloc(size + sizeof(struct text_alloc));
-	if (!new)
-		return NULL;
 	new->prev = t->alloc;
 	t->alloc = new;
 	new->size = size;
@@ -824,6 +822,9 @@ DEF_CMD(text_reundo)
 	bool first = 1;
 	struct text *t = container_of(d, struct text, doc);
 
+	if (!m)
+		return -1;
+
 	while (did_do != 1) {
 		struct mark *m2;
 		struct mark *early = NULL;
@@ -1013,6 +1014,9 @@ DEF_CMD(text_step)
 	struct doc_ref r;
 	wint_t ret;
 
+	if (!m)
+		return -1;
+
 	r = m->ref;
 	if (forward) {
 		ret = text_next(t, &r);
@@ -1048,6 +1052,9 @@ static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct do
 			return 1;
 		if (r1->c == NULL)
 			return 0;
+		/* FIXME this must fail as r1->c == rc->c, and r1->c != NULL) */
+		if (r2->c == NULL)
+			return 0;
 		/* if references are in the middle of a UTF-8 encoded
 		 * char, accept as same if it is same char
 		 */
@@ -1057,18 +1064,20 @@ static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct do
 		return text_round_len(r1->c->txt, r1->o) ==
 			text_round_len(r1->c->txt, r2->o);
 	}
-	if (r1->c == NULL) {
+	if (r1->c == NULL /*FIXME redundant*/ && r2->c != NULL) {
 		if (list_empty(&t->text))
 			return 1;
 		return (r2->o == r2->c->end &&
 			r2->c->lst.next == &t->text);
 	}
-	if (r2->c == NULL) {
+	if (r2->c == NULL /* FIXME redundant*/ && r1->c != NULL) {
 		if (list_empty(&t->text))
 			return 1;
 		return (r1->o == r1->c->end &&
 			r1->c->lst.next == &t->text);
 	}
+	/* FIXME impossible */
+	if (r1->c == NULL || r2->c == NULL) return 0;
 
 	if (r1->o == r1->c->end &&
 	    r2->o == r2->c->start &&
@@ -1085,6 +1094,9 @@ DEF_CMD(text_mark_same)
 {
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
+
+	if (!ci->mark || !ci->mark2)
+		return -1;
 
 	return text_ref_same(t, &ci->mark->ref, &ci->mark2->ref) ? 1 : 2;
 }
@@ -1216,6 +1228,8 @@ DEF_CMD(text_set_ref)
 	struct mark *m = ci->mark;
 	struct text *t = container_of(d, struct text, doc);
 
+	if (!m)
+		return -1;
 	if (list_empty(&t->text) || ci->numeric != 1) {
 		m->ref.c = NULL;
 		m->ref.o = 0;
@@ -1246,6 +1260,9 @@ static int text_advance_towards(struct text *t safe,
 		return 1;
 	}
 	if (ref->c == NULL) {
+		/* FIXME impossible */
+		if (target->c == NULL) return 0;
+
 		if (target->c->lst.next == &t->text &&
 		    target->o == target->c->end)
 			return 1;
@@ -1441,6 +1458,9 @@ DEF_CMD(text_replace)
 		pm = point_new(d);
 		__mark_reset(d, pm, 0, 1);
 	}
+	/* FIXME pm is certainly safe */
+	if (!pm)
+		return -1;
 
 	/* First delete, then insert */
 	if (end && !text_ref_same(t, &pm->ref, &end->ref)) {
@@ -1565,7 +1585,11 @@ DEF_CMD(text_doc_get_attr)
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
-	char *val = __text_get_attr(d, m, forward, attr);
+	char *val;
+
+	if (!m || !attr)
+		return -1;
+	val = __text_get_attr(d, m, forward, attr);
 
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val, 0);
 	return 1;
@@ -1577,6 +1601,9 @@ DEF_CMD(text_get_attr)
 	struct text *t = container_of(d, struct text, doc);
 	char *attr = ci->str;
 	char *val;
+
+	if (!attr)
+		return -1;
 
 	if ((val = attr_find(d->home->attrs, attr)) != NULL)
 		;
@@ -1599,11 +1626,16 @@ DEF_CMD(text_set_attr)
 {
 	char *attr = ci->str;
 	char *val = ci->str2;
-	struct text_chunk *c = ci->mark->ref.c;
+	struct text_chunk *c;
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
-	int o = ci->mark->ref.o;
+	int o;
 
+	if (!ci->mark || !attr)
+		return -1;
+
+	o = ci->mark->ref.o;
+	c = ci->mark->ref.c;
 	if (!c)
 		/* EOF */
 		return -1;
@@ -1691,6 +1723,9 @@ DEF_CMD(render_line_prev)
 	int rpt = RPT_NUM(ci);
 	wint_t ch;
 	int offset = 0;
+
+	if (!m)
+		return -1;
 
 	while ((ch = mark_prev(d, m)) != WEOF &&
 	       (ch != '\n' || rpt > 0) &&
@@ -1826,6 +1861,8 @@ struct attr_return {
 DEF_CMD(text_attr_callback)
 {
 	struct attr_return *ar = container_of(ci->comm, struct attr_return, c);
+	if (!ci->str)
+		return -1;
 	as_add(&ar->ast, &ar->tmpst, ar->chars + ci->numeric, ci->extra, ci->str);
 	if (ar->min_end < 0 || ar->chars + ci->numeric < ar->min_end)
 		ar->min_end = ar->chars + ci->numeric;
