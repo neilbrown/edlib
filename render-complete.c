@@ -29,7 +29,7 @@ struct rlcb {
 	char *prefix, *str;
 };
 
-static char *add_highlight_prefix(char *orig, int plen, char *attr)
+static char *add_highlight_prefix(char *orig, int plen, char *attr safe)
 {
 	struct buf ret;
 
@@ -122,8 +122,8 @@ DEF_CMD(rlcb)
 	return 1;
 }
 
-static int do_render_complete_prev(struct complete_data *cd, struct mark *m,
-				   struct pane *focus, int n, char **savestr)
+static int do_render_complete_prev(struct complete_data *cd safe, struct mark *m safe,
+				   struct pane *focus safe, int n, char **savestr)
 {
 	/* If 'n' is 0 we just need 'start of line' so use
 	 * underlying function.
@@ -191,6 +191,8 @@ DEF_CMD(render_complete_prev)
 	 * it matches the prefix.
 	 */
 	struct complete_data *cd = ci->home->data;
+	if (!ci->mark || !ci->home->parent)
+		return -1;
 	return do_render_complete_prev(cd, ci->mark, ci->home->parent, ci->numeric, NULL);
 }
 
@@ -234,6 +236,8 @@ DEF_CMD(complete_eol)
 {
 	int rpt = RPT_NUM(ci);
 
+	if (!ci->mark || !ci->focus->parent)
+		return -1;
 	if (rpt >= -1 && rpt <= 1)
 		/* movement within the line */
 		return 1;
@@ -285,6 +289,8 @@ DEF_CMD(complete_set_prefix)
 	cd->prefix = strdup(ci->str);
 
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
+	if (!m || !p->parent)
+		return -1;
 	call3("Move-File", ci->focus, 1, m);
 
 	while (do_render_complete_prev(cd, m, p->parent, 1, &c) > 0 && c) {
@@ -320,6 +326,9 @@ DEF_CMD(complete_return)
 	struct call_return cr;
 	int l;
 	char *c1, *c2;
+
+	if (!ci->mark || !ci->home->parent)
+		return -1;
 
 	cr.c = save_str;
 	cr.s = NULL;
