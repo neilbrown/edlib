@@ -51,6 +51,12 @@ struct doc_ref {
 };
 #include "core.h"
 
+#define SAFE_CI {.key=safe_cast NULL,\
+			.home=safe_cast NULL,\
+			.focus=safe_cast NULL,\
+			.comm=safe_cast NULL,\
+			}
+
 static PyObject *Edlib_CommandFailed;
 static PyObject *EdlibModule;
 
@@ -510,9 +516,12 @@ static PyObject *pane_iter_next(PaneIter *self safe)
 
 static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = SAFE_CI;
 	int rv;
 	PyObject *s1, *s2;
+
+	if (!self->pane)
+		return NULL;
 
 	ci.home = self->pane;
 
@@ -541,10 +550,12 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 
 static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = SAFE_CI;
 	int rv;
 	PyObject *s1, *s2;
 
+	if (!self->pane || !self->pane->handle)
+		return NULL;
 	ci.home = self->pane;
 
 	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
@@ -573,10 +584,12 @@ static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject
 
 static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwds)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = SAFE_CI;
 	int rv;
 	PyObject *s1, *s2;
 
+	if (!self->pane)
+		return NULL;
 	ci.home = self->pane;
 
 	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
@@ -649,7 +662,7 @@ static PyObject *Pane_render_attach(Pane *self safe, PyObject *args)
 	char *type = NULL;
 	struct pane *p;
 	int ret = PyArg_ParseTuple(args, "|s", &type);
-	if (ret <= 0)
+	if (ret <= 0 || !self->pane)
 		return NULL;
 	p = render_attach(type, self->pane);
 	if (!p) {
@@ -1417,7 +1430,7 @@ static PyObject *mark_get_item(Mark *self safe, PyObject *key safe)
 		PyErr_SetString(PyExc_TypeError, "Key must be a string");
 		return NULL;
 	}
-	k = PyString_AsString(key);
+	k = safe_cast PyString_AsString(key);
 	v = attr_find(self->mark->attrs, k);
 	if (v)
 		return Py_BuildValue("s", v);
@@ -1440,7 +1453,7 @@ static int mark_set_item(Mark *self safe, PyObject *key safe, PyObject *val safe
 		PyErr_SetString(PyExc_TypeError, "value must be a string");
 		return -1;
 	}
-	k = PyString_AsString(key);
+	k = safe_cast PyString_AsString(key);
 	v = PyString_AsString(val);
 	attr_set_str(&self->mark->attrs, k, v);
 	return 0;
@@ -1503,16 +1516,20 @@ static void comm_dealloc(Comm *self safe)
 static PyObject *comm_repr(Comm *p safe)
 {
 	char buf[50];
+	if (!p->comm)
+		return NULL;
 	sprintf(buf, "<comm-0x%p/0x%p>", p->comm, p->comm->func);
 	return Py_BuildValue("s", buf);
 }
 
 static PyObject *Comm_call(Comm *c safe, PyObject *args safe, PyObject *kwds)
 {
-	struct cmd_info ci = {};
+	struct cmd_info ci = SAFE_CI;
 	int rv;
 	PyObject *s1, *s2;
 
+	if (!c->comm)
+		return NULL;
 #if 0
 	if (c->comm->func == python_call.func) {
 		struct python_command *pc = container_of(c->comm, struct python_command,
@@ -1638,7 +1655,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			PyErr_SetString(PyExc_TypeError, "First are must be key");
 			return 0;
 		}
-		ci->key = PyString_AsString(a);
+		ci->key = safe_cast PyString_AsString(a);
 	}
 	for (i = 1; i < argc; i++) {
 		a = PyTuple_GetItem(args, i);
@@ -1646,9 +1663,9 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			/* quietly ignore */;
 		else if (PyObject_TypeCheck(a, &PaneType)) {
 			if ((void*)ci->home == NULL)
-				ci->home = ((Pane*)a)->pane;
+				ci->home = safe_cast ((Pane*)a)->pane;
 			else if ((void*)ci->focus == NULL)
-				ci->focus = ((Pane*)a)->pane;
+				ci->focus = safe_cast ((Pane*)a)->pane;
 			else {
 				PyErr_SetString(PyExc_TypeError, "Only 2 Pane args permitted");
 				return 0;
