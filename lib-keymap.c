@@ -28,7 +28,7 @@
 
 struct key_data {
 	struct map	*map safe;
-	struct command	* safe *cmds;
+	struct command	* safe *cmds safe;
 	struct command	*globalcmd;
 	int		cmdcount;
 	int		global;
@@ -63,7 +63,7 @@ DEF_CMD(keymap_handle)
 	if (strcmp(ci->key, "Close") == 0) {
 		command_put(kd->globalcmd);
 		key_free(kd->map);
-		if (kd->cmds != &kd->globalcmd) {
+		if (kd->cmds != (struct command *safe*)&kd->globalcmd) {
 			for (i = 0; i < kd->cmdcount; i++)
 				command_put(kd->cmds[i]);
 			free(kd->cmds);
@@ -78,11 +78,12 @@ DEF_CMD(keymap_handle)
 		if (!p)
 			return -1;
 		kd_new = p->data;
-		kd_new->globalcmd = command_get(kd_old->globalcmd);
-		if (kd_old->cmds == &kd_old->globalcmd) {
-			kd_new->cmds = &kd_new->globalcmd;
+		if (kd_old->globalcmd)
+			kd_new->globalcmd = command_get(kd_old->globalcmd);
+		if (kd_old->cmds == (struct command *safe*)&kd_old->globalcmd) {
+			kd_new->cmds = (struct command *safe*)&kd_new->globalcmd;
 			kd_new->cmdcount = 1;
-		} else if (kd_old->cmds) {
+		} else if ((void*)kd_old->cmds) {
 			kd_new->cmdcount = kd_old->cmdcount;
 			kd_new->cmds = malloc(kd_new->cmdcount * sizeof(kd_new->cmds[0]));
 			for (i = 0; i < kd_new->cmdcount; i++)
@@ -112,7 +113,7 @@ DEF_CMD(keymap_handle)
 			if (!cm)
 				return -1;
 			kd->globalcmd = command_get(cm);
-			kd->cmds = &kd->globalcmd;
+			kd->cmds = (struct command *safe*)&kd->globalcmd;
 			kd->cmdcount = 1;
 			return 1;
 		}
@@ -129,7 +130,7 @@ DEF_CMD(keymap_handle)
 		}
 		if (strcmp(ci->key, "local-set-key") == 0) {
 			struct command *cm = get_command(ci->home, ci->str);
-			if (!cm)
+			if (!cm || !ci->str2)
 				return -1;
 			key_add(kd->map, ci->str2, cm);
 			return 1;
@@ -152,7 +153,7 @@ static struct pane *do_keymap_attach(struct pane *p, int global) safe
 	struct key_data *kd = malloc(sizeof(*kd));
 
 	kd->map = key_alloc();
-	kd->cmds = NULL;
+	kd->cmds = safe_cast NULL;
 	kd->globalcmd = NULL;
 	kd->cmdcount = 0;
 	kd->global = global;

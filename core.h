@@ -68,9 +68,9 @@ struct command {
 	void	(*free)(struct command *c safe);
 };
 
-static inline struct command *command_get(struct command *c)
+static inline struct command *command_get(struct command *c safe) safe
 {
-	if (c && c->free)
+	if (c->free)
 		c->refcnt += 1;
 	return c;
 }

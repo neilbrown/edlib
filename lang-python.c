@@ -1743,7 +1743,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			}
 		} else if (PyObject_TypeCheck(a, &CommType)) {
 			Comm *c = (Comm*)a;
-			if (ci->comm2 == NULL) {
+			if (ci->comm2 == NULL && c->comm) {
 				ci->comm2 = command_get(c->comm);
 			} else {
 				PyErr_SetString(PyExc_TypeError, "Only one callable permitted");
