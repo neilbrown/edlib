@@ -28,7 +28,7 @@
 
 struct key_data {
 	struct map	*map safe;
-	struct command	**cmds;
+	struct command	* safe *cmds;
 	struct command	*globalcmd;
 	int		cmdcount;
 	int		global;

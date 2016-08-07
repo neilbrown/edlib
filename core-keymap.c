@@ -47,11 +47,11 @@
 
 struct map {
 	int	size;
-	char	* *keys safe;
-	struct command **comms safe;
+	char	* safe *keys safe;
+	struct command * safe *comms safe;
 };
 
-static inline struct command *GETCOMM(struct command *c) safe
+static inline struct command *GETCOMM(struct command *c safe) safe
 {
 	return (struct command * safe)(((unsigned long)c) & ~1UL);
 }

@@ -130,8 +130,8 @@ TODO:
 #endif
 struct match_state {
 	unsigned short	*rxl;
-	unsigned short	*link[2] safe;
-	unsigned short	*leng[2] safe;
+	unsigned short	* safe link[2] safe;
+	unsigned short	* safe leng[2] safe;
 	unsigned short	active;
 	int		match;
 	#ifdef DEBUG
