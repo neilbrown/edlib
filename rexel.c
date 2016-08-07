@@ -129,7 +129,7 @@ TODO:
 #include <stdio.h>
 #endif
 struct match_state {
-	unsigned short	*rxl;
+	unsigned short	*rxl safe;
 	unsigned short	* safe link[2] safe;
 	unsigned short	* safe leng[2] safe;
 	unsigned short	active;
@@ -195,7 +195,7 @@ static int do_link(struct match_state *st safe, int pos, int dest, int len)
 
 static int set_match(struct match_state *st safe, unsigned short addr, wchar_t ch)
 {
-	unsigned short *set = RXL_SETSTART(st->rxl) + addr;
+	unsigned short *set safe = RXL_SETSTART(st->rxl) + addr;
 	wchar_t uch = ch, lch = ch;
 	unsigned short len;
 	int ic = RXL_IS_CASELESS(st->rxl);
@@ -706,7 +706,7 @@ static int is_set_element(char *p safe)
 static int do_parse_set(struct parse_state *st safe, int plane)
 {
 	mbstate_t ps = {};
-	char *p = st->patn;
+	char *p safe = st->patn;
 	wchar_t ch;
 	int newplane = 0xFFFFFF;
 	int planes = 0;
@@ -731,13 +731,15 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 				wctype_t wct;
 				p += 2;
 				e = strchr(p, ':');
+				if (!e)
+					e = p + strlen(p);
 				cls = strndup(p, e-p);
 				wct = wctype(cls);
 				free(cls);
 				if (!wct)
 					return -1;
 				p = e;
-				while (*p != ']')
+				while (*p && *p != ']')
 					p++;
 				p++;
 				add_class(st, plane, wct);
@@ -850,7 +852,7 @@ static int cvt_hex(char *s safe, int len)
 
 static unsigned short  add_class_set(struct parse_state *st safe, char *cls safe, int in)
 {
-	if (!st->rxl) {
+	if (!st->rxl /* FIXME redundant, rxl and sets are set at same time */|| !st->sets) {
 		st->set += 3;
 		return REC_SET;
 	}
