@@ -558,7 +558,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		/* haven't passed the cursor yet */
 		if (offsetp)
 			*offsetp = line - line_start;
-	if (offset >= 0 && line - line_start <= offset) {
+	if (offset >= 0 && line - line_start <= offset
+	    &&/* Must be true when offset >= 0 */ cyp && cxp) {
 		if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
 			*cyp = y;
 			*cxp = x;
