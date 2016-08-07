@@ -95,12 +95,13 @@ DEF_CMD(render_line)
 		val = pane_mark_attr(ci->focus, m, 1, buf);
 		if (!val)
 			val = "-";
+		val = safe_cast val;
 		if (*n != ':') {
 			while (*val) {
 				if (*val == '<')
 					buf_append_byte(&ret, '<');
 				buf_append_byte(&ret, *val);
-				val += 1;  /* This makes it possible for val to be NULL!*/
+				val += 1;
 			}
 			continue;
 		}

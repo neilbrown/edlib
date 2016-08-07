@@ -32,19 +32,21 @@ struct rlcb {
 static char *add_highlight_prefix(char *orig, int plen, char *attr safe)
 {
 	struct buf ret;
+	char *c safe;
 
 	if (orig == NULL)
 		return orig;
+	c = orig;
 	buf_init(&ret);
 	buf_concat(&ret, attr);
-	while (plen > 0 && *orig) {
-		if (*orig == '<')
-			buf_append_byte(&ret, *orig++);
-		buf_append_byte(&ret, *orig++);
+	while (plen > 0 && *c) {
+		if (*c == '<')
+			buf_append_byte(&ret, *c++);
+		buf_append_byte(&ret, *c++);
 		plen -= 1;
 	}
 	buf_concat(&ret, "</>");
-	buf_concat(&ret, orig);
+	buf_concat(&ret, c);
 	return buf_final(&ret);
 }
 
