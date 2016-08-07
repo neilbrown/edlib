@@ -1458,9 +1458,6 @@ DEF_CMD(text_replace)
 		pm = point_new(d);
 		__mark_reset(d, pm, 0, 1);
 	}
-	/* FIXME pm is certainly safe */
-	if (!pm)
-		return -1;
 
 	/* First delete, then insert */
 	if (end && !text_ref_same(t, &pm->ref, &end->ref)) {

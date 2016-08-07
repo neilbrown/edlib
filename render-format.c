@@ -95,7 +95,7 @@ DEF_CMD(render_line)
 		val = pane_mark_attr(ci->focus, m, 1, buf);
 		if (!val)
 			val = "-";
-		val = safe_cast val;
+
 		if (*n != ':') {
 			while (*val) {
 				if (*val == '<')
