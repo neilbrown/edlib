@@ -178,8 +178,8 @@ static int text_round_len(char *text safe, int len)
 	return len;
 }
 
-static struct text_alloc *
-text_new_alloc(struct text *t safe, int size) safe
+static struct text_alloc *safe
+text_new_alloc(struct text *t safe, int size)
 {
 	struct text_alloc *new;
 	if (size == 0)

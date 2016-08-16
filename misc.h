@@ -17,7 +17,7 @@ void buf_concat(struct buf *b safe, char *s safe);
 void buf_concat_len(struct buf *b safe, char *s safe, int l);
 void buf_append(struct buf *b safe, wchar_t wch);
 void buf_append_byte(struct buf *b safe, char c);
-static inline char *buf_final(struct buf *b safe) safe
+static inline char *safe buf_final(struct buf *b safe)
 {
 	if ((void*)b->b)
 		b->b[b->len] = 0;

@@ -51,7 +51,7 @@ struct map {
 	struct command * safe *comms safe;
 };
 
-static inline struct command *GETCOMM(struct command *c safe) safe
+static inline struct command * safe GETCOMM(struct command *c safe)
 {
 	return (struct command * safe)(((unsigned long)c) & ~1UL);
 }
@@ -72,7 +72,7 @@ static int size2alloc(int size)
 	return ((size-1) | 7) + 1;
 }
 
-struct map *key_alloc(void) safe
+struct map *safe key_alloc(void)
 {
 	struct map *m = malloc(sizeof(*m));
 	memset(m, 0, sizeof(*m));

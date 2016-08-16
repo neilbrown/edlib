@@ -48,7 +48,7 @@ struct attrset {
 #define MAX_ATTR_SIZE (512 - sizeof(struct attrset))
 #endif
 
-static struct attrset *newattr(struct attrset *old, int size) safe
+static struct attrset *safe newattr(struct attrset *old, int size)
 {
 	struct attrset *set = realloc(old, sizeof(struct attrset) + size);
 	set->size = size;

@@ -34,7 +34,7 @@ struct key_data {
 	int		global;
 };
 
-static struct pane *do_keymap_attach(struct pane *p, int global) safe;
+static struct pane *safe do_keymap_attach(struct pane *p, int global);
 
 DEF_CMD(get_command_callback)
 {
@@ -148,7 +148,7 @@ DEF_CMD(keymap_handle)
 	return key_lookup(kd->map, ci);
 }
 
-static struct pane *do_keymap_attach(struct pane *p, int global) safe
+static struct pane *safe do_keymap_attach(struct pane *p, int global) 
 {
 	struct key_data *kd = malloc(sizeof(*kd));
 

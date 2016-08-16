@@ -41,7 +41,7 @@ enum {
 };
 
 static struct map *view_map safe;
-static struct pane *do_view_attach(struct pane *par, int border) safe;
+static struct pane *safe do_view_attach(struct pane *par, int border);
 
 static void one_char(struct pane *p safe, char *s, char *attr, int x, int y)
 {
@@ -259,7 +259,7 @@ DEF_CMD(view_handle)
 	return 0;
 }
 
-static struct pane *do_view_attach(struct pane *par, int border) safe
+static struct pane *safe do_view_attach(struct pane *par, int border) 
 {
 	struct view_data *vd;
 	struct pane *p;

@@ -130,8 +130,8 @@ TODO:
 #endif
 struct match_state {
 	unsigned short	*rxl safe;
-	unsigned short	* safe link[2] safe;
-	unsigned short	* safe leng[2] safe;
+	unsigned short	* safe link[2];
+	unsigned short	* safe leng[2];
 	unsigned short	active;
 	int		match;
 	#ifdef DEBUG
@@ -1149,7 +1149,7 @@ unsigned short *rxl_parse(char *patn safe, int *lenp, int nocase)
 	return st.rxl;
 }
 
-unsigned short *rxl_parse_verbatim(char *patn safe, int nocase) safe
+unsigned short *safe rxl_parse_verbatim(char *patn safe, int nocase) 
 {
 	struct parse_state st;
 	int i, l;
@@ -1189,7 +1189,7 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe)
 	st->link[st->active][0] = 0;
 }
 
-struct match_state *rxl_prepare(unsigned short *rxl safe) safe
+struct match_state *safe rxl_prepare(unsigned short *rxl safe) 
 {
 	struct match_state *ret;
 

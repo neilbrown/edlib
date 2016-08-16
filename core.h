@@ -68,7 +68,7 @@ struct command {
 	void	(*free)(struct command *c safe);
 };
 
-static inline struct command *command_get(struct command *c safe) safe
+static inline struct command *safe command_get(struct command * safe c)
 {
 	if (c->free)
 		c->refcnt += 1;
@@ -164,9 +164,9 @@ struct point_links {
 	struct tlist_head	lists[];
 };
 
-struct mark *mark_dup(struct mark *m safe, int notype) safe;
+struct mark *safe mark_dup(struct mark *m safe, int notype);
 void mark_free(struct mark *m);
-struct mark *doc_new_mark(struct doc *d safe, int view) safe;
+struct mark *safe doc_new_mark(struct doc *d safe, int view);
 struct mark *doc_first_mark_all(struct doc *d safe);
 struct mark *doc_next_mark_all(struct mark *m safe);
 struct mark *doc_prev_mark_all(struct mark *m safe);
@@ -184,8 +184,8 @@ char *doc_getstr(struct pane *from safe, struct mark *to, struct mark *m2);
 void point_to_mark(struct mark *p safe, struct mark *m safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);
 int mark_same_pane(struct pane *p safe, struct mark *m1 safe, struct mark *m2 safe);
-struct mark *point_new(struct doc *d safe) safe;
-struct mark *point_dup(struct mark *p safe) safe;
+struct mark *safe point_new(struct doc *d safe);
+struct mark *safe point_dup(struct mark *p safe);
 wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move);
 wint_t mark_step2(struct doc *d safe, struct mark *m safe, int forward, int move);
 wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int move, struct cmd_info *ci);
@@ -228,7 +228,7 @@ static inline int mark_ordered_not_same_pane(struct pane *p safe, struct mark *m
 	return mark_ordered(m1, m2) && !mark_same_pane(p, m1, m2);
 }
 
-static inline struct attrset **mark_attr(struct mark *m safe) safe
+static inline struct attrset **safe mark_attr(struct mark *m safe)
 {
 	return &m->attrs;
 }
@@ -295,7 +295,7 @@ struct cmd_info {
 #define	NO_NUMERIC	(INT_MAX/2)
 #define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric == -NO_NUMERIC ? -1 : (ci)->numeric)
 
-struct map *key_alloc(void) safe;
+struct map *safe key_alloc(void);
 void key_free(struct map *m safe);
 int key_handle(const struct cmd_info *ci safe);
 int key_lookup(struct map *m safe, const struct cmd_info *ci safe);
@@ -325,9 +325,9 @@ enum {
 #define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT | DAMAGED_CURSOR)
 
 struct xy {int x,y;};
-struct pane *pane_register(struct pane *parent, int z,
-			   struct command *handle safe, void *data,
-			   struct list_head *here) safe;
+struct pane *safe pane_register(struct pane *parent, int z,
+				struct command *handle safe, void *data,
+				struct list_head *here);
 void pane_init(struct pane *p safe, struct pane *par, struct list_head *here);
 void pane_reparent(struct pane *p safe, struct pane *newparent safe);
 void pane_subsume(struct pane *p safe, struct pane *parent safe);

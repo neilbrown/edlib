@@ -646,7 +646,7 @@ static struct pane *tile_root_popup(struct tileinfo *ti safe)
 	return next_child(ti->p, NULL, 1);
 }
 
-static struct tileinfo *tile_next_named(struct tileinfo *ti safe, char *name) safe
+static struct tileinfo *safe tile_next_named(struct tileinfo *ti safe, char *name) 
 {
 	struct tileinfo *t = ti;
 	while ((t = list_next_entry(t, tiles)) != ti) {

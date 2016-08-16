@@ -3,13 +3,13 @@
 #ifdef __CHECKER__
 #define safe __attribute__((safe))
 #define safe_cast (void * safe)
-extern void *calloc(int, int) safe;
-extern void *malloc(int) safe;
-extern void *realloc(void *, int) safe;
-extern char *strdup(char *) safe;
-extern char *strndup(char *, int) safe;
-extern const unsigned short int **__ctype_b_loc(void) safe;
-extern int *__errno_location(void) safe;
+extern void *safe calloc(int, int);
+extern void *safe malloc(int);
+extern void *safe realloc(void *, int);
+extern char *safe strdup(char *safe);
+extern char *safe strndup(char *safe, int);
+extern const unsigned short int **safe __ctype_b_loc(void);
+extern int *safe __errno_location(void);
 #else
 #define safe
 #define safe_cast

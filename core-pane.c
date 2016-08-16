@@ -105,9 +105,9 @@ void pane_damaged(struct pane *p, int type)
 	}
 }
 
-struct pane *pane_register(struct pane *parent, int z,
+struct pane *safe pane_register(struct pane *parent, int z,
 			   struct command *handle safe, void *data,
-			   struct list_head *here) safe
+			   struct list_head *here)
 {
 	struct pane *p = malloc(sizeof(*p));
 	pane_init(p, parent, here);

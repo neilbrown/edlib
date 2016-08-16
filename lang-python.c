@@ -111,7 +111,7 @@ static PyTypeObject CommType;
 static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject *kwds,
 			PyObject **s1 safe, PyObject **s2 safe);
 
-static inline PyObject *Pane_Frompane(struct pane *p) safe
+static inline PyObject *safe Pane_Frompane(struct pane *p) 
 {
 	Pane *pane;
 	if (p && p->handle && p->handle->func == python_call.func) {
@@ -129,7 +129,7 @@ static inline PyObject *Pane_Frompane(struct pane *p) safe
 	return (PyObject*)pane;
 }
 
-static inline PyObject *Mark_Frommark(struct mark *m safe, int local) safe
+static inline PyObject *safe Mark_Frommark(struct mark *m safe, int local) 
 {
 	Mark *mark;
 
@@ -145,7 +145,7 @@ static inline PyObject *Mark_Frommark(struct mark *m safe, int local) safe
 	return (PyObject*)mark;
 }
 
-static inline PyObject *Comm_Fromcomm(struct command *c safe) safe
+static inline PyObject *safe Comm_Fromcomm(struct command *c safe) 
 {
 	if (c->func == python_call_func && 0) {
 		struct python_command *pc = container_of(c, struct python_command, c);
@@ -217,7 +217,7 @@ DEF_CMD(python_load_module)
 	return 1;
 }
 
-static PyObject *python_string(char *s safe) safe
+static PyObject *safe python_string(char *s safe) 
 {
 	char *c = s;
 	while (*c && !(*c & 0x80))
@@ -260,10 +260,10 @@ REDEF_CMD(python_call)
 			    (Py_INCREF(Py_None), Py_None));
 	rv = rv && dict_add(kwds, "str",
 			    ci->str ? python_string(ci->str):
-			    (Py_INCREF(Py_None), Py_None));
+			    (Py_INCREF(Py_None), safe_cast Py_None));
 	rv = rv && dict_add(kwds, "str2",
 			    ci->str2 ? python_string(ci->str2):
-			    (Py_INCREF(Py_None), Py_None));
+			    (Py_INCREF(Py_None), safe_cast Py_None));
 	rv = rv && dict_add(kwds, "comm", Comm_Fromcomm(ci->comm));
 	rv = rv && dict_add(kwds, "comm2",
 			    ci->comm2 ? Comm_Fromcomm(ci->comm2):

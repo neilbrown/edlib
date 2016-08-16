@@ -191,7 +191,7 @@ struct mark *mark_at_point(struct pane *p safe, struct mark *pm, int view)
 	return cr.m;
 }
 
-struct mark *point_dup(struct mark *p safe) safe
+struct mark *safe point_dup(struct mark *p safe) 
 {
 	int i;
 	struct point_links *old = safe_cast p->mdata;
@@ -244,7 +244,7 @@ void points_attach(struct doc *d safe, int view)
 	}
 }
 
-struct mark *mark_dup(struct mark *m safe, int notype) safe
+struct mark *safe mark_dup(struct mark *m safe, int notype) 
 {
 	struct mark *ret;
 
@@ -326,7 +326,7 @@ void __mark_reset(struct doc *d safe, struct mark *m safe, int new, int end)
 			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
 }
 
-struct mark *point_new(struct doc *d safe) safe
+struct mark *safe point_new(struct doc *d safe) 
 {
 	struct mark *ret = calloc(1, sizeof(*ret));
 	struct point_links *lnk = malloc(sizeof(*lnk) +
@@ -388,7 +388,7 @@ struct mark *doc_prev_mark_all(struct mark *m safe)
 	return NULL;
 }
 
-struct mark *doc_new_mark(struct doc *d safe, int view) safe
+struct mark *safe doc_new_mark(struct doc *d safe, int view)
 {
 	/* FIXME view is >= -1 */
 	struct mark *ret;
