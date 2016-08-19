@@ -287,6 +287,8 @@ DEF_CMD(complete_set_prefix)
 	int cnt = 0;
 	char *common = NULL;
 
+	if (!ci->str)
+		return -1;
 	free(cd->prefix);
 	cd->prefix = strdup(ci->str);
 

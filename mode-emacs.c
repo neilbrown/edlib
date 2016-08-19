@@ -567,6 +567,8 @@ REDEF_CMD(emacs_file_complete)
 		return -1;
 
 	str = doc_getstr(ci->focus, NULL, NULL);
+	if (!str)
+		return -1;
 	d = str;
 	while ((c = strstr(d, "//")) != NULL)
 		d = c+1;

@@ -339,6 +339,8 @@ DEF_CMD(doc_set_name)
 {
 	struct doc *d = ci->home->data;
 
+	if (!ci->str)
+		return -1;
 	free(d->name);
 	d->name = strdup(ci->str);
 	return call3("doc:check_name", d->home, -1, NULL);
@@ -683,6 +685,9 @@ char *doc_attr(struct pane *dp safe, struct mark *m, bool forward, char *attr)
 DEF_CMD(doc_str_callback)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+
+	if (!ci->str)
+		return -1;
 	cr->s = strdup(ci->str);
 	return 1;
 }

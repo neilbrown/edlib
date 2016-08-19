@@ -57,7 +57,7 @@ DEF_CMD(messageline_handle)
 		return 0; /* Allow other panes to remove other borders */
 	}
 
-	if (strcmp(ci->key, "Message") == 0) {
+	if (strcmp(ci->key, "Message") == 0 && ci->str) {
 		if (ci->extra == 0 || mli->message == NULL) {
 			if (!mli->message)
 				call3("Request:Notify:Keystroke", ci->home, 0, NULL);
