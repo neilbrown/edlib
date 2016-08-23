@@ -220,6 +220,8 @@ class notmuch_main(edlib.Doc):
         self.searches = searches()
         self.timer_set = False
         self.updating = None
+        self.seen_threads = {}
+        self.seen_msgs = {}
 
     def handle(self, key, focus, mark, mark2, numeric, extra, str, str2, comm2, **a):
 
@@ -360,6 +362,38 @@ class notmuch_main(edlib.Doc):
                         m.remove_tag("unread")
                     if "new" in t:
                         m.remove_tag("new")
+            return 1
+
+        if key == "notmuch:remember-seen-thread" and str:
+            self.seen_threads[str] = focus
+            return 1
+        if key == "notmuch:remember-seen-msg" and str:
+            self.seen_msgs[str] = focus
+            return 1
+        if key == "notmuch:mark-seen":
+            with writeable_db() as db:
+                todel = []
+                for id in self.seen_msgs:
+                    if self.seen_msgs[id] == focus:
+                        m = db.find_message(id)
+                        if m:
+                            m.remove_tag("new")
+                        todel.append(id)
+                for id in todel:
+                    del self.seen_msgs[id]
+                todel = []
+                for id in self.seen_threads:
+                    if self.seen_threads[id] == focus:
+                        q = db.create_query("thread:%s" % id)
+                        for t in q.search_threads():
+                            ml = t.get_messages()
+                            for m in ml:
+                                if "new" in m.get_tags():
+                                    m.remove_tag("new")
+                            break
+                        todel.append(id)
+                for id in todel:
+                    del self.seen_threads[id]
             return 1
 
     def tick(self, key, **a):
@@ -515,7 +549,8 @@ class notmuch_master_view(edlib.Pane):
                 self.message_pane = None
                 p.call("Window:close", "notmuch")
             elif self.query_pane:
-                # FIXME 'q' should mark messages as not 'new'
+                if key != "Chr-x":
+                    self.query_pane.call("notmuch:mark-seen")
                 p = self.query_pane
                 self.query_pane = None
                 p.call("Window:close", "notmuch")
@@ -542,6 +577,8 @@ class notmuch_master_view(edlib.Pane):
             if self.message_pane:
                 self.message_pane.call("Window:close", "notmuch")
                 self.message_pane = None
+            if self.query_pane:
+                self.query_pane.call("notmuch:mark-seen")
             pl = []
             self.call("notmuch:query", str,lambda key,**a:take('focus',pl,a))
             self.list_pane.call("OtherPane", "notmuch", "threads", 3,
@@ -717,7 +754,8 @@ class notmuch_list(edlib.Doc):
                 self.new.append(tid)
             self.threads[tid] = j
         tl = None
-        self.p.wait()
+        if self.p:
+            self.p.wait()
         self.p = None
         if not self.threadids and len(self.new):
             # first insertion, all marks must be at start
@@ -1111,8 +1149,10 @@ class notmuch_query_view(edlib.Pane):
         edlib.Pane.__init__(self, focus, self.handle)
         self.selected = None
         self.whole_thread = 0
+        self.seen_threads = {}
+        self.seen_msgs = {}
 
-    def handle(self, key, focus, mark, numeric, **a):
+    def handle(self, key, focus, mark, mark2, numeric, **a):
         if key == "Clone":
             p = notmuch_query_view(focus)
             self.clone_children(focus.focus)
@@ -1127,7 +1167,7 @@ class notmuch_query_view(edlib.Pane):
             del a['home']
             del a['comm']
             del a['xy']
-            return self.parent.call(key, focus, mark, numeric, s, self.selected,
+            return self.parent.call(key, focus, mark, mark2, numeric, s, self.selected,
                                     (self.whole_thread, 0), *(a.values()))
 
         if key == 'Chr-Z':
@@ -1146,6 +1186,35 @@ class notmuch_query_view(edlib.Pane):
             focus.call("doc:get-attr", "message-id", 1, mark, lambda key,**a:take('str',sl,a))
             if len(sl) == 2 and sl[-1]:
                 focus.call("notmuch:select-message", sl[-1], sl[0], numeric)
+            return 1
+
+        if key == "render:reposition":
+            # some messages have been displayed, from mark to mark2
+            # collect threadids and message ids
+            if not mark or not mark2:
+                return 0
+            m = mark.dup()
+
+            while m < mark2:
+                i = []
+                focus.call("doc:get-attr", "thread-id", 1, m, lambda key,**a:take('str',i,a))
+                focus.call("doc:get-attr", "message-id", 1, m, lambda key,**a:take('str',i,a))
+                if i[0] and not i[1] and i[0] not in self.seen_threads:
+                    self.seen_threads[i[0]] = True
+                if i[0] and i[1]:
+                    if i[0] in self.seen_threads:
+                        del self.seen_threads[i[0]]
+                    if  i[1] not in self.seen_msgs:
+                        self.seen_msgs[i[1]] = True
+                if edlib.WEOF == focus.call("doc:step", 1, 1, m):
+                    break
+
+        if key == "notmuch:mark-seen":
+            for i in self.seen_threads:
+                self.parent.call("notmuch:remember-seen-thread", i)
+            for i in self.seen_msgs:
+                self.parent.call("notmuch:remember-seen-msg", i)
+            self.parent.call("notmuch:mark-seen")
             return 1
 
 class notmuch_message_view(edlib.Pane):
