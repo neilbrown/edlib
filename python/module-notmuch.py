@@ -41,6 +41,17 @@ class locked_db():
         self.db.close()
         self.fd.close()
 
+class writeable_db():
+    def __enter__(self):
+        self.fd = open(os.environ["HOME"]+"/.notmuch-config")
+        fcntl.flock(self.fd.fileno(), fcntl.LOCK_EX)
+        self.db = notmuch.Database(mode = notmuch.Database.MODE.READ_WRITE)
+        return self.db
+
+    def __exit__(self, a,b,c):
+        self.db.close()
+        self.fd.close()
+
 def take(name, place, args, default=None):
     if args[name] is not None:
         place.append(args[name])
@@ -210,7 +221,7 @@ class notmuch_main(edlib.Doc):
         self.timer_set = False
         self.updating = None
 
-    def handle(self, key, focus, mark, mark2, numeric, extra, str, comm2, **a):
+    def handle(self, key, focus, mark, mark2, numeric, extra, str, str2, comm2, **a):
 
         if key == "doc:revisit":
             return 1
@@ -340,6 +351,17 @@ class notmuch_main(edlib.Doc):
         if key == "notmuch:query-updated":
             self.update_next()
 
+        if key == "notmuch:mark-read":
+            with writeable_db() as db:
+                m = db.find_message(str2)
+                if m:
+                    t = list(m.get_tags())
+                    if "unread" in t:
+                        m.remove_tag("unread")
+                    if "new" in t:
+                        m.remove_tag("new")
+            return 1
+
     def tick(self, key, **a):
         if not self.updating:
             self.updating = "counts"
@@ -441,7 +463,7 @@ class notmuch_master_view(edlib.Pane):
             if tile.h != h:
                 tile.call("Window:y+", "notmuch", h - tile.h)
 
-    def handle(self, key, focus, mark, numeric, str, **a):
+    def handle(self, key, focus, mark, numeric, str, str2, **a):
         if key == "Clone":
             p = notmuch_master_view(focus)
             # We don't clone children, we create our own
@@ -487,7 +509,8 @@ class notmuch_master_view(edlib.Pane):
 
         if key in [ "Chr-x", "Chr-q" ]:
             if self.message_pane:
-                # FIXME 'q' should mark as not 'unread'
+                if key != "Chr-x":
+                    self.mark_read()
                 p = self.message_pane
                 self.message_pane = None
                 p.call("Window:close", "notmuch")
@@ -533,8 +556,9 @@ class notmuch_master_view(edlib.Pane):
             return 1
 
         if key == "notmuch:select-message":
-            # a thread or message was selected. id in 'str'.
+            # a thread or message was selected. id in 'str'. threadid in str2
             # Find the file and display it in a 'message' pane
+            self.mark_read()
             pl=[]
             self.call("notmuch:byid", str, lambda key,**a:take('focus',pl,a))
             self.query_pane.call("OtherPane", "notmuch", "message", 2,
@@ -546,11 +570,20 @@ class notmuch_master_view(edlib.Pane):
             # hasn't been anchored yet so if they are the same, we lose.
             # Need a better way to anchor a document.
             #pl[0].call("doc:autoclose", 1);
-            self.message_pane = pl[-1]
+            p = self.message_pane = pl[-1]
+            p.ctid = str2
+            p.cmid = str
             if numeric:
                 self.message_pane.take_focus()
             self.resize()
             return 1
+
+    def mark_read(self):
+        p = self.message_pane
+        if not p:
+            return
+        if self.query_pane:
+            self.query_pane.call("notmuch:mark-read", p.ctid, p.cmid)
 
 class notmuch_main_view(edlib.Pane):
     # This pane provides view on the search-list document.
@@ -963,7 +996,10 @@ class notmuch_list(edlib.Doc):
             if not forward:
                 i,j,newpos = self.prev(i, j, [str2], str2 and xy[0])
 
-            val = "["+attr+"]"
+            if attr in ["message-id","thread-id"]:
+                val = None
+            else:
+                val = "["+attr+"]"
             if i >= 0 and j == -1 and self.threadids[i] != str2:
                 # report on thread, not message
                 tid = self.threadids[i]
@@ -1010,6 +1046,8 @@ class notmuch_list(edlib.Doc):
                 elif attr == "hilite":
                     if not matched:
                         val = "fg:grey"
+                        if "new" in tags and "unread" in tags:
+                            val = "fg:pink"
                     elif "new" in tags and "unread" in tags:
                         val = "fg:red,bold"
                     elif "unread" in tags:
@@ -1040,6 +1078,33 @@ class notmuch_list(edlib.Doc):
 
         if key == "notmuch:query-refresh":
             self.load_update()
+
+        if key == "notmuch:mark-read":
+            ti = self.threadinfo[str]
+            m = ti[str2]
+            tags = m[6]
+            if "unread" not in tags and "new" not in tags:
+                return
+            if "unread" in tags:
+                tags.remove("unread")
+            if "new" in tags:
+                tags.remove("new")
+            is_unread = False
+            for mid in ti:
+                if "unread" in ti[mid][6]:
+                    # still has unread messages
+                    is_unread = True
+                    break
+            if not is_unread:
+                # thread is no longer 'unread'
+                j = self.threads[str]
+                t = j["tags"]
+                if "unread" in t:
+                    t.remove("unread")
+            self.notify("Notify:Replace")
+            # Let this fall though to database document.
+            return 0
+
 
 class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
@@ -1079,8 +1144,8 @@ class notmuch_query_view(edlib.Pane):
                 focus.damaged(edlib.DAMAGED_VIEW)
                 focus.damaged(edlib.DAMAGED_CONTENT)
             focus.call("doc:get-attr", "message-id", 1, mark, lambda key,**a:take('str',sl,a))
-            if len(sl) == 2:
-                focus.call("notmuch:select-message", sl[-1], numeric)
+            if len(sl) == 2 and sl[-1]:
+                focus.call("notmuch:select-message", sl[-1], sl[0], numeric)
             return 1
 
 class notmuch_message_view(edlib.Pane):
