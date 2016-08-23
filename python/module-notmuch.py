@@ -364,6 +364,16 @@ class notmuch_main(edlib.Doc):
                         m.remove_tag("new")
             return 1
 
+        if key[:19] == "notmuch:remove-tag-":
+            tag = key[19:]
+            with writeable_db() as db:
+                m = db.find_message(str2)
+                if m:
+                    t = list(m.get_tags())
+                    if tag in t:
+                        m.remove_tag(tag)
+            return 1
+
         if key == "notmuch:remember-seen-thread" and str:
             self.seen_threads[str] = focus
             return 1
@@ -519,7 +529,7 @@ class notmuch_master_view(edlib.Pane):
             focus.call("notmuch:select", mark, 1)
             return 1
 
-        if key in [ "M-Chr-n", "M-Chr-p", "Chr-n", "Chr-p"]:
+        if key in [ "M-Chr-n", "M-Chr-p", "Chr-n", "Chr-p", "Chr-a"]:
             if key[0] == "M" or not self.query_pane:
                 p = self.list_pane
                 op = self.query_pane
@@ -528,8 +538,14 @@ class notmuch_master_view(edlib.Pane):
                 op = self.message_pane
             if not p:
                 return 1
-            direction = 1 if key[-1] == "n" else -1
+            direction = 1 if key[-1] in "na" else -1
             m = mark
+            if key == "Chr-a" and self.message_pane:
+                if self.query_pane:
+                    self.query_pane.call("notmuch:remove-tag-inbox", self.message_pane.ctid,
+                                         self.message_pane.cmid)
+                else:
+                    self.call("notmuch:remove-tag", self.message_pane.cmid, "inbox")
             if op:
                 # secondary window exists, so move
                 pl=[]
@@ -1051,6 +1067,9 @@ class notmuch_list(edlib.Doc):
                         val = "fg:red,bold"
                     elif "unread" in t["tags"]:
                         val = "fg:blue"
+                    elif "inbox" not in t["tags"]:
+                        # FIXME this test is wrong once we have generic searches
+                        val = "fg:grey"
                     else:
                         val = "fg:black"
                 elif attr == "date_relative":
@@ -1082,7 +1101,8 @@ class notmuch_list(edlib.Doc):
                 elif attr == "thread-id":
                     val = tid
                 elif attr == "hilite":
-                    if not matched:
+                    # FIXME this inbox test is wrong once we allow generic searches
+                    if not matched or "inbox" not in tags:
                         val = "fg:grey"
                         if "new" in tags and "unread" in tags:
                             val = "fg:pink"
@@ -1139,6 +1159,31 @@ class notmuch_list(edlib.Doc):
                 t = j["tags"]
                 if "unread" in t:
                     t.remove("unread")
+            self.notify("Notify:Replace")
+            # Let this fall though to database document.
+            return 0
+
+        if key[:19] == "notmuch:remove-tag-":
+            tag = key[19:]
+            ti = self.threadinfo[str]
+            m = ti[str2]
+            tags = m[6]
+            if tag not in tags:
+                return
+            tags.remove(tag)
+
+            is_tagged = False
+            for mid in ti:
+                if tag in ti[mid][6]:
+                    # still has tagged messages
+                    is_tagged = True
+                    break
+            if not is_tagged:
+                # thread is no longer tagged
+                j = self.threads[str]
+                t = j["tags"]
+                if tag in t:
+                    t.remove(tag)
             self.notify("Notify:Replace")
             # Let this fall though to database document.
             return 0
