@@ -994,8 +994,13 @@ DEF_CMD(render_lines_refresh)
 
 	if (m) {
 		rl->lines = render(ci->mark, p, focus, &rl->cols);
-		if (!ci->mark || rl->ignore_point || (p->cx >= 0 && p->cy < p->h))
+		if (!ci->mark || rl->ignore_point || (p->cx >= 0 && p->cy < p->h)) {
+			call_xy7("render:reposition", focus, rl->lines, rl->cols, NULL, NULL,
+				 p->cx, p->cy,
+				 vmark_first(focus, rl->typenum),
+				 vmark_last(focus, rl->typenum));
 			return 0;
+		}
 	}
 	m = ci->mark;
 	if (!m)
@@ -1031,10 +1036,13 @@ DEF_CMD(render_lines_refresh_view)
 	if (rl->repositioned)
 		rl->lines = render(ci->mark, p, focus, &rl->cols);
 	rl->repositioned = 0;
-	call_xy7("render:reposition", focus, rl->lines, rl->cols, NULL, NULL,
-	      p->cx, p->cy,
-	      vmark_first(focus, rl->typenum),
-	      vmark_last(focus, rl->typenum));
+	if (p->damaged & (DAMAGED_CONTENT|DAMAGED_SIZE))
+		; /* wait for a proper redraw */
+	else
+		call_xy7("render:reposition", focus, rl->lines, rl->cols, NULL, NULL,
+			 p->cx, p->cy,
+			 vmark_first(focus, rl->typenum),
+			 vmark_last(focus, rl->typenum));
 	return 0;
 }
 
