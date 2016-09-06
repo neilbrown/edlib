@@ -430,6 +430,16 @@ DEF_CMD(doc_do_destroy)
 	return 1;
 }
 
+DEF_CMD(doc_do_revisit)
+{
+	/* If the document doesn't handle doc:revisit directly,
+	 * ask it's parent, which is probably a document manager
+	 */
+	if (!ci->home->parent)
+		return -1;
+	return call3(ci->key, ci->home->parent, ci->numeric, ci->mark);
+}
+
 struct map *doc_default_cmd safe;
 
 static void init_doc_defaults(void)
@@ -452,6 +462,7 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "doc:attach", &doc_do_attach);
 	key_add(doc_default_cmd, "doc:autoclose", &doc_set_autoclose);
 	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);
+	key_add(doc_default_cmd, "doc:revisit", &doc_do_revisit);
 	key_add(doc_default_cmd, "Closed", &doc_do_closed);
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
 		      &doc_request_notify);
@@ -489,16 +500,6 @@ DEF_CMD(doc_handle)
 			point_to_mark(p->pointer, ci->home->pointer);
 		pane_clone_children(ci->home, p);
 		return 1;
-	}
-
-	if (strcmp(ci->key, "doc:revisit") == 0) {
-		/* This must be redirected to document to propagate to parent.
-		 * I wonder if anything else does.
-		 */
-		if (!ci->mark)
-			return -1;
-		return call5(ci->key, dd->doc, ci->numeric, ci->mark,
-			     ci->str, ci->extra);
 	}
 
 	if (strcmp(ci->key, "Close") == 0) {
@@ -570,7 +571,7 @@ struct pane *doc_attach(struct pane *parent, struct pane *d safe)
 	pane_add_notify(p, d, "Notify:Close");
 	dd->point = point_new(d->data);
 	p->pointer = dd->point;
-	call5("doc:revisit", d, 1, NULL, NULL, 0);
+	call3("doc:revisit", d, 1, NULL);
 	return p;
 }
 
