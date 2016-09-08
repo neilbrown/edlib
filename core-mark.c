@@ -268,7 +268,7 @@ struct mark *safe mark_dup(struct mark *m safe, int notype)
 	return ret;
 }
 
-void __mark_reset(struct doc *d safe, struct mark *m safe, int end)
+void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 {
 	int i;
 	int seq = 0;
@@ -290,8 +290,6 @@ void __mark_reset(struct doc *d safe, struct mark *m safe, int end)
 	} else
 		hlist_add_head(&m->all, &d->marks);
 	assign_seq(m, seq);
-
-	comm_call_pane(d->home, "doc:set-ref", d->home, !end, m, NULL, 0, NULL, NULL);
 
 	if (m->viewnum == MARK_UNGROUPED)
 		return;
@@ -339,13 +337,13 @@ struct mark *safe point_new(struct doc *d safe)
 	lnk->pt = ret;
 	for (i = 0; i < d->nviews; i++)
 		INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
-	__mark_reset(d, ret, 0);
+	mark_reset(d, ret, 0);
 	return ret;
 }
 
-void mark_reset(struct doc *d safe, struct mark *m safe)
+void mark_reset(struct doc *d safe, struct mark *m safe, int end)
 {
-	__mark_reset(d, m, 0);
+	comm_call_pane(d->home, "doc:set-ref", d->home, !end, m, NULL, 0, NULL, NULL);
 }
 
 struct mark *doc_next_mark_view(struct mark *m safe)
@@ -405,7 +403,7 @@ struct mark *safe doc_new_mark(struct doc *d safe, int view)
 	INIT_HLIST_NODE(&ret->all);
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	ret->viewnum = view;
-	__mark_reset(d, ret, 0);
+	mark_reset(d, ret, 0);
 	return ret;
 }
 

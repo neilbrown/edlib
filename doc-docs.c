@@ -486,6 +486,7 @@ DEF_CMD(docs_set_ref)
 
 	m->ref.ignore = 0;
 	m->rpos = 0;
+	mark_to_end(dc, m, ci->numeric != 1);
 	return 1;
 }
 

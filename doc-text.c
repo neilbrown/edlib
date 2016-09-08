@@ -840,7 +840,7 @@ DEF_CMD(text_reundo)
 
 		if (first) {
 			/* Not nearby, look from the start */
-			mark_reset(d, m);
+			mark_reset(d, m, 0);
 			where = 1;
 			first = 0;
 		} else
@@ -1238,6 +1238,7 @@ DEF_CMD(text_set_ref)
 		m->ref.o = m->ref.c->start;
 	}
 	m->rpos = 0;
+	mark_to_end(d, m, ci->numeric != 1);
 	return 1;
 }
 
@@ -1456,7 +1457,7 @@ DEF_CMD(text_replace)
 	if (!pm) {
 		/* Default to insert at end */
 		pm = point_new(d);
-		__mark_reset(d, pm, 1);
+		mark_reset(d, pm, 1);
 	}
 
 	/* First delete, then insert */

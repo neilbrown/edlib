@@ -234,6 +234,8 @@ class notmuch_main(edlib.Doc):
             else:
                 mark.offset = len(self.searches.current)
             mark.rpos = 0
+            self.to_end(mark, numeric == 0);
+
             return 1
 
         if key == "doc:mark-same":
@@ -991,6 +993,7 @@ class notmuch_list(edlib.Doc):
                 i,j,moved,mark.pos = self.pos_index((self.threadids[0],),[str2], str2 and xy[0])
             mark.offset = 0
             mark.rpos = 0
+            self.to_end(mark, numeric == 0)
             return 1
 
         if key == "doc:mark-same":

@@ -1027,9 +1027,24 @@ static PyObject *first_mark(Doc *self safe)
 	return Mark_Frommark(m, 1);
 }
 
+static PyObject *to_end(Doc *self safe, PyObject *args)
+{
+	Mark *mark = NULL;
+	int end = 0;
+	int ret = PyArg_ParseTuple(args, "O!i", &MarkType, &mark, &end);
+	if (ret <= 0 || !mark || !mark->mark)
+		return NULL;
+
+	mark_to_end(&self->doc, mark->mark, end);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef doc_methods[] = {
 	{"first_mark", (PyCFunction)first_mark, METH_NOARGS,
 	 "first mark of document"},
+	{"to_end", (PyCFunction)to_end, METH_VARARGS,
+	 "Move mark to one end of document"},
 	{NULL}
 };
 
