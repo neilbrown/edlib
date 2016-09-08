@@ -660,6 +660,26 @@ struct pane *call_pane7(char *key safe, struct pane *focus safe, int numeric,
 	return cr.p;
 }
 
+struct pane *call_pane8(char *key safe, struct pane *focus safe, int numeric,
+			 struct mark *m, struct mark *m2, int extra, char *str, char *str2)
+{
+	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
+	struct call_return cr;
+
+	ci.numeric = numeric;
+	ci.extra = extra;
+	ci.mark = m;
+	ci.mark2 = m2;
+	ci.str = str;
+	ci.str2 = str2;
+	cr.c = take_pane;
+	cr.p = NULL;
+	ci.comm2 = &cr.c;
+	if (!key_handle(&ci))
+		return NULL;
+	return cr.p;
+}
+
 /* convert pane-relative co-ords to absolute */
 void pane_absxy(struct pane *p, int *x safe, int *y safe, int *w safe, int *h safe)
 {

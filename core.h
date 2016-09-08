@@ -355,6 +355,8 @@ struct pane *call_pane(char *key safe, struct pane *focus safe, int numeric,
 		       struct mark *m, int extra);
 struct pane *call_pane7(char *key safe, struct pane *focus safe, int numeric,
 			struct mark *m, int extra, char *str, char *str2);
+struct pane *call_pane8(char *key safe, struct pane *focus safe, int numeric,
+			struct mark *m, struct mark *m2, int extra, char *str, char *str2);
 struct xy pane_scale(struct pane *p safe);
 
 static inline int pane_attr_get_int(struct pane *p safe, char *key safe)
