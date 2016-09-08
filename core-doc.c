@@ -305,7 +305,7 @@ DEF_CMD(doc_attr_set)
 {
 	struct doc *d = ci->home->data;
 
-	if (!ci->mark || !ci->str)
+	if (!ci->str)
 		return -1;
 
 	if (ci->str2 == NULL && ci->extra == 1)
@@ -320,7 +320,7 @@ DEF_CMD(doc_get_attr)
 	struct pane *p = ci->home; struct doc *d = p->data;
 	char *a;
 
-	if (!ci->mark || !ci->str)
+	if (!ci->str)
 		return -1;
 
 	if ((a = attr_find(d->home->attrs, ci->str)) != NULL)

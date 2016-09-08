@@ -70,6 +70,8 @@ struct command {
 
 static inline struct command *safe command_get(struct command * safe c)
 {
+	if (!(void*) c)
+		return c;
 	if (c->free)
 		c->refcnt += 1;
 	return c;
