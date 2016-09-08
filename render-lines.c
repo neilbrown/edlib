@@ -383,12 +383,14 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		int CX;
 		int CP;
 
-		if (mwidth < 0) {
+		if (mwidth <= 0) {
 			struct call_return cr;
 			cr.c = text_size_callback;
 			call_comm7("text-size", p, -1, NULL, "M", 0,
 				   buf_final(&attr), &cr.c);
 			mwidth = cr.x;
+			if (mwidth <= 0)
+				mwidth = 1;
 		}
 
 		if (ret == WRAP && wrap) {
