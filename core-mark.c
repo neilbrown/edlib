@@ -461,8 +461,6 @@ void mark_forward_over(struct mark *m safe, struct mark *m2 safe)
 	seq = m->seq;
 	m->seq = m2->seq;
 	m2->seq = seq;
-
-	mark_ref_copy(m, m2);
 }
 
 void mark_backward_over(struct mark *m safe, struct mark *mp safe)
@@ -496,8 +494,6 @@ void mark_backward_over(struct mark *m safe, struct mark *mp safe)
 	seq = m->seq;
 	m->seq = mp->seq;
 	mp->seq = seq;
-
-	mark_ref_copy(m, mp);
 }
 
 wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move)
