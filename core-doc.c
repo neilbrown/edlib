@@ -592,10 +592,9 @@ DEF_CMD(doc_open)
 	struct pane *p;
 	char pathbuf[PATH_MAX], *rp = NULL;
 
-
+	stb.st_mode = 0;
 	if (fd < 0) {
 		char *sl;
-		stb.st_mode = 0;
 		sl = strrchr(name, '/');
 		if (sl && sl-name < PATH_MAX-4 && sl[1]) {
 			char nbuf[PATH_MAX];
@@ -611,6 +610,7 @@ DEF_CMD(doc_open)
 		}
 	} else if (fstat(fd, &stb) == 0)
 		rp = realpath(name, pathbuf);
+
 	if (!rp)
 		rp = name;
 
