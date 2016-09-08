@@ -1456,7 +1456,7 @@ DEF_CMD(text_replace)
 	if (!pm) {
 		/* Default to insert at end */
 		pm = point_new(d);
-		__mark_reset(d, pm, 0, 1);
+		__mark_reset(d, pm, 1);
 	}
 
 	/* First delete, then insert */

@@ -245,7 +245,7 @@ DEF_CMD(doc_file)
 		return -1;
 
 	if (rpt > 0)
-		__mark_reset(d, m, 0, 1);
+		__mark_reset(d, m, 1);
 	if (rpt < 0)
 		mark_reset(d, m);
 

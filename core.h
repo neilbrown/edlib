@@ -174,7 +174,7 @@ struct mark *doc_next_mark_view(struct mark *m safe);
 struct mark *doc_prev_mark_view(struct mark *m safe);
 void point_reset(struct mark *p);
 void mark_reset(struct doc *d safe, struct mark *m safe);
-void __mark_reset(struct doc *d safe, struct mark *m safe, int new, int end);
+void __mark_reset(struct doc *d safe, struct mark *m safe, int end);
 void mark_forward_over(struct mark *m safe, struct mark *m2 safe);
 void mark_backward_over(struct mark *m safe, struct mark *mp safe);
 void doc_notify_change(struct doc *d safe, struct mark *m, struct mark *m2);

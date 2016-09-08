@@ -148,6 +148,7 @@ static void dup_mark(struct mark *orig safe, struct mark *new safe)
 	new->rpos = orig->rpos;
 	new->attrs= NULL;
 	hlist_add_after(&orig->all, &new->all);
+	INIT_TLIST_HEAD(&new->view, GRP_MARK);
 	assign_seq(new, orig->seq);
 }
 
@@ -244,7 +245,7 @@ void points_attach(struct doc *d safe, int view)
 	}
 }
 
-struct mark *safe mark_dup(struct mark *m safe, int notype) 
+struct mark *safe mark_dup(struct mark *m safe, int notype)
 {
 	struct mark *ret;
 
@@ -267,15 +268,14 @@ struct mark *safe mark_dup(struct mark *m safe, int notype)
 	return ret;
 }
 
-void __mark_reset(struct doc *d safe, struct mark *m safe, int new, int end)
+void __mark_reset(struct doc *d safe, struct mark *m safe, int end)
 {
 	int i;
 	int seq = 0;
 	struct point_links *lnk;
 
 	m->rpos = 0;
-	if (!new)
-		hlist_del(&m->all);
+	hlist_del(&m->all);
 	if (end) {
 		if (hlist_empty(&d->marks))
 			hlist_add_head(&m->all, &d->marks);
@@ -296,8 +296,7 @@ void __mark_reset(struct doc *d safe, struct mark *m safe, int new, int end)
 	if (m->viewnum == MARK_UNGROUPED)
 		return;
 	if (m->viewnum != MARK_POINT) {
-		if (!new)
-			tlist_del(&m->view);
+		tlist_del(&m->view);
 		if (end)
 			tlist_add_tail(&m->view, GRP_MARK, &d->views[m->viewnum].head);
 		else
@@ -305,8 +304,7 @@ void __mark_reset(struct doc *d safe, struct mark *m safe, int new, int end)
 		return;
 	}
 	/* MARK_POINT */
-	if (!new)
-		tlist_del(&m->view);
+	tlist_del(&m->view);
 	if (end)
 		tlist_add_tail(&m->view, GRP_MARK, &d->points);
 	else
@@ -315,36 +313,39 @@ void __mark_reset(struct doc *d safe, struct mark *m safe, int new, int end)
 	lnk = safe_cast m->mdata;
 	for (i = 0; d->views && i < lnk->size; i++)
 		if (d->views[i].state) {
-			if (!new)
-				tlist_del(&lnk->lists[i]);
+			tlist_del(&lnk->lists[i]);
 			if (end)
 				tlist_add_tail(&lnk->lists[i], GRP_LIST,
 					       &d->views[i].head);
 			else
 				tlist_add(&lnk->lists[i], GRP_LIST, &d->views[i].head);
-		} else if (new)
-			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
+		}
 }
 
-struct mark *safe point_new(struct doc *d safe) 
+struct mark *safe point_new(struct doc *d safe)
 {
 	struct mark *ret = calloc(1, sizeof(*ret));
 	struct point_links *lnk = malloc(sizeof(*lnk) +
 					 d->nviews * sizeof(lnk->lists[0]));
+	int i;
 
+	INIT_HLIST_NODE(&ret->all);
+	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	ret->attrs = NULL;
 	ret->viewnum = MARK_POINT;
 	ret->mdata = lnk;
 	ret->mtype = NULL;
 	lnk->size = d->nviews;
 	lnk->pt = ret;
-	__mark_reset(d, ret, 1, 0);
+	for (i = 0; i < d->nviews; i++)
+		INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
+	__mark_reset(d, ret, 0);
 	return ret;
 }
 
 void mark_reset(struct doc *d safe, struct mark *m safe)
 {
-	__mark_reset(d, m, 0, 0);
+	__mark_reset(d, m, 0);
 }
 
 struct mark *doc_next_mark_view(struct mark *m safe)
@@ -401,8 +402,10 @@ struct mark *safe doc_new_mark(struct doc *d safe, int view)
 		/* Erroneous call: fail-safe */
 		view = MARK_UNGROUPED;
 	ret = calloc(1, sizeof(*ret));
+	INIT_HLIST_NODE(&ret->all);
+	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	ret->viewnum = view;
-	__mark_reset(d, ret, 1, 0);
+	__mark_reset(d, ret, 0);
 	return ret;
 }
 
