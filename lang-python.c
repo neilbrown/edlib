@@ -1126,9 +1126,9 @@ static int mark_setrpos(Mark *m safe, PyObject *v safe, void *x)
 	return 0;
 }
 
-static void mark_refcnt(struct mark *m, int inc)
+static void mark_refcnt(struct mark *m safe, int inc)
 {
-	if (!m || !m->ref.c)
+	if (!m->ref.c)
 		return;
 	while (inc > 0) {
 		Py_INCREF(m->ref.c);
