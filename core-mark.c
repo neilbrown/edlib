@@ -144,12 +144,12 @@ static void mark_ref_copy(struct mark *to safe, struct mark *from safe)
 
 static void dup_mark(struct mark *orig safe, struct mark *new safe)
 {
-	mark_ref_copy(new, orig);
-	new->rpos = orig->rpos;
-	new->attrs= NULL;
 	hlist_add_after(&orig->all, &new->all);
 	INIT_TLIST_HEAD(&new->view, GRP_MARK);
+	new->attrs= NULL;
 	assign_seq(new, orig->seq);
+	new->rpos = orig->rpos;
+	mark_ref_copy(new, orig);
 }
 
 struct mark *do_mark_at_point(struct mark *pt safe, int view)
@@ -404,6 +404,11 @@ struct mark *safe doc_new_mark(struct doc *d safe, int view)
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	ret->viewnum = view;
 	mark_reset(d, ret, 0);
+	if (hlist_unhashed(&ret->all)) {
+		/* Document misbehaved, fail gracefully */
+		mark_free(ret);
+		return NULL;
+	}
 	return ret;
 }
 
@@ -606,8 +611,8 @@ static void point_forward_to_mark(struct mark *p safe, struct mark *m safe)
 	/* finally move in the overall list */
 	hlist_del(&p->all);
 	hlist_add_after(&m->all, &p->all);
-	mark_ref_copy(p, m);
 	assign_seq(p, m->seq);
+	mark_ref_copy(p, m);
 }
 
 static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
@@ -661,8 +666,8 @@ static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
 	/* finally move in the overall list */
 	hlist_del(&p->all);
 	hlist_add_before(&p->all, &m->all);
-	mark_ref_copy(p, m);
 	assign_seq(p, m->seq);
+	mark_ref_copy(p, m);
 }
 
 void point_to_mark(struct mark *p safe, struct mark *m safe)
