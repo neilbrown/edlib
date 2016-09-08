@@ -585,7 +585,7 @@ static struct mark *call_render_line_prev(struct pane *p safe,
 	struct mark *m2;
 
 	ret = call3("render-line-prev", p, n, m);
-	if (ret == 0) {
+	if (ret <= 0) {
 		mark_free(m);
 		return NULL;
 	}
@@ -629,7 +629,7 @@ static struct mark *call_render_line(struct pane *p safe, struct mark *start saf
 	 * of the pane
 	 */
 	if (call_comm("render-line", p, NO_NUMERIC,
-		      m, NULL, 0, &cr.c) == 0) {
+		      m, NULL, 0, &cr.c) <= 0) {
 		mark_free(m);
 		return NULL;
 	}
@@ -670,7 +670,7 @@ static struct mark *call_render_line_offset(struct pane *p safe,
 
 	m = mark_dup(start, 0);
 	if (call_comm("render-line", p, offset, m,
-		      NULL, 0, &no_save) == 0) {
+		      NULL, 0, &no_save) <= 0) {
 		mark_free(m);
 		return NULL;
 	}
