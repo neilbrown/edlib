@@ -105,12 +105,12 @@ static int add_ent(struct list_head *lst safe, struct dirent *de safe)
 static void load_dir(struct list_head *lst safe, int fd)
 {
 	DIR *dir;
-	struct dirent de, *res;
+	struct dirent *res;
 
 	dir = fdopendir(dup(fd));
 	if (!dir)
 		return;
-	while (readdir_r(dir, &de, &res) == 0 && res)
+	while ((res = readdir(dir)) != NULL)
 		add_ent(lst, res);
 	closedir(dir);
 }
