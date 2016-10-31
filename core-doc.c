@@ -532,8 +532,8 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "Replace") == 0) {
-		return call7("doc:replace", dd->doc, 1, ci->mark, ci->str,
-			     ci->extra, NULL, dd->point);
+		return call_home7(dd->doc, "doc:replace", ci->focus, 1, ci->mark, ci->str,
+				  ci->extra, NULL, dd->point, NULL);
 	}
 
 	if (strcmp(ci->key, "Move-to") == 0) {
