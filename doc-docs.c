@@ -185,9 +185,9 @@ DEF_CMD(docs_modified_handle)
 		/* Should never happen */
 		return -1;
 
-	if (strncmp(ci->key, "Chr-", 4) == 0) {
-		if (strlen(ci->key) == 5 &&
-		    strchr("sk%", ci->key[4]) != NULL)
+	if (strcmp(ci->key, "doc:replace") == 0) {
+		if (ci->str &&
+		    strchr("sk%", ci->str[0]) != NULL)
 			return 0;
 		/* Suppress all others */
 		return 1;
@@ -572,23 +572,24 @@ DEF_CMD(docs_get_attr)
 	return 1;
 }
 
-DEF_CMD(docs_open)
+static int docs_open(struct pane *home safe, struct pane *focus safe,
+		     struct mark *m, char cmd)
 {
 	struct pane *p;
 	struct pane *dp;
 	struct pane *par;
 
-	if (!ci->mark)
+	if (!m)
 		return -1;
-	dp = ci->mark->ref.p;
+	dp = m->ref.p;
 	/* close this pane, open the given document. */
 	if (dp == NULL)
 		return 0;
 
-	if (strcmp(ci->key, "Chr-o") == 0)
-		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+	if (cmd == 'o')
+		par = call_pane("OtherPane", focus, 0, NULL, 0);
 	else
-		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+		par = call_pane("ThisPane", focus, 0, NULL, 0);
 	if (!par)
 		return -1;
 	p = doc_attach_view(par, dp, NULL);
@@ -600,7 +601,8 @@ DEF_CMD(docs_open)
 	}
 }
 
-DEF_CMD(docs_open_alt)
+static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
+			 struct mark *m, char cmd)
 {
 	struct pane *p;
 	struct pane *dp;
@@ -608,19 +610,19 @@ DEF_CMD(docs_open_alt)
 	struct pane *par;
 	char buf[100];
 
-	if (!ci->mark)
+	if (!m)
 		return -1;
-	dp = ci->mark->ref.p;
+	dp = m->ref.p;
 	/* close this pane, open the given document. */
 	if (dp == NULL)
 		return 0;
 
-	snprintf(buf, sizeof(buf), "render-%s", ci->key);
+	snprintf(buf, sizeof(buf), "render-Chr-%c", cmd);
 	renderer = pane_attr_get(dp, buf);
 	if (!renderer)
 		return -1;
 
-	par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	par = call_pane("ThisPane", focus, 0, NULL, 0);
 	if (!par)
 		return -1;
 	p = doc_attach_view(par, dp, renderer);
@@ -632,49 +634,49 @@ DEF_CMD(docs_open_alt)
 	}
 }
 
-DEF_CMD(docs_bury)
+static int docs_bury(struct pane *focus safe)
 {
 	/* If the docs list is in a tile, put something else there. */
 	/* FIXME should this be a function of the pane manager? */
 	struct pane *tile, *doc;
-	tile = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	tile = call_pane("ThisPane", focus, 0, NULL, 0);
 	if (!tile)
 		return 1;
 	/* Discourage this doc from being chosen again */
-	call3("doc:revisit", ci->focus, -1, NULL);
-	doc = call_pane("docs:choose", ci->focus, 0, NULL, 0);
+	call3("doc:revisit", focus, -1, NULL);
+	doc = call_pane("docs:choose", focus, 0, NULL, 0);
 	if (doc)
 		doc_attach_view(tile, doc, NULL);
 	return 1;
 }
 
-DEF_CMD(docs_save)
+static int docs_save(struct pane *focus safe, struct mark *m)
 {
 	struct pane *dp;
 
-	if (!ci->mark)
+	if (!m)
 		return -1;
-	dp = ci->mark->ref.p;
+	dp = m->ref.p;
 	if (!dp)
 		return 0;
-	doc_save(dp, ci->focus);
+	doc_save(dp, focus);
 	return 1;
 }
 
-DEF_CMD(docs_kill)
+static int docs_kill(struct pane *focus safe, struct mark *m, int numeric)
 {
 	struct pane *dp;
 	char *mod;
 
-	if (!ci->mark)
+	if (!m)
 		return -1;
-	dp = ci->mark->ref.p;
+	dp = m->ref.p;
 	if (!dp)
 		return 0;
 	mod = pane_attr_get(dp, "doc-modified");
 	if (mod && strcmp(mod, "yes") == 0 &&
-	    ci->numeric == NO_NUMERIC) {
-		call5("Message", ci->focus, 0, NULL,
+	    numeric == NO_NUMERIC) {
+		call5("Message", focus, 0, NULL,
 		      "File modified, cannot kill.", 0);
 		return 1;
 	}
@@ -682,12 +684,12 @@ DEF_CMD(docs_kill)
 	return 1;
 }
 
-DEF_CMD(docs_toggle)
+static int docs_toggle(struct pane *focus safe, struct mark *m)
 {
 	struct pane *dp;
-	if (!ci->mark)
+	if (!m)
 		return -1;
-	dp = ci->mark->ref.p;
+	dp = m->ref.p;
 	if (dp)
 		return call3("doc:modified", dp, 0, NULL);
 	return 0;
@@ -711,6 +713,33 @@ DEF_CMD(docs_child_closed)
 	return 1;
 }
 
+DEF_CMD(docs_cmd)
+{
+	char cmd;
+
+	if (!ci->str)
+		return -1;
+	cmd = ci->str[0];
+	switch(cmd) {
+	case 'f':
+	case '\n':
+	case 'o':
+		return docs_open(ci->home, ci->focus, ci->mark, cmd);
+	case 'q':
+		return docs_bury(ci->focus);
+	case 's':
+		return docs_save(ci->focus, ci->mark);
+	case 'k':
+		return docs_kill(ci->focus, ci->mark, ci->numeric);
+	case '%':
+		return docs_toggle(ci->focus, ci->mark);
+	default:
+		if (cmd >= 'A' && cmd <= 'Z')
+			return docs_open_alt(ci->home, ci->focus, ci->mark, cmd);
+		return 1;
+	}
+}
+
 static struct map *docs_map;
 
 static void docs_init_map(void)
@@ -731,15 +760,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:revisit", &doc_revisit);
 	key_add(docs_map, "doc:status-changed", &doc_damage);
 	key_add(docs_map, "doc:destroy", &docs_destroy);
-
-	key_add(docs_map, "Chr-f", &docs_open);
-	key_add(docs_map, "Return", &docs_open);
-	key_add(docs_map, "Chr-o", &docs_open);
-	key_add(docs_map, "Chr-q", &docs_bury);
-	key_add(docs_map, "Chr-s", &docs_save);
-	key_add(docs_map, "Chr-k", &docs_kill);
-	key_add(docs_map, "Chr-%", &docs_toggle);
-	key_add_range(docs_map, "Chr-A", "Chr-Z", &docs_open_alt);
+	key_add(docs_map, "doc:replace", &docs_cmd);
 
 	key_add(docs_map, "ChildClosed", &docs_child_closed);
 }
