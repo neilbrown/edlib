@@ -552,35 +552,34 @@ DEF_CMD(dir_destroy)
 	return 1;
 }
 
-DEF_CMD(dir_open)
+static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark *m, char cmd)
 {
-	struct pane *p = ci->home;
-	struct doc *d = p->data;
+	struct doc *d = home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
 	struct dir_ent *de;
-	struct pane *par;
+	struct pane *par, *p;
 	int fd;
 	char *fname = NULL;
 
-	if (!ci->mark)
+	if (!m)
 		return -1;
-	de = ci->mark->ref.d;
+	de = m->ref.d;
 	/* close this pane, open the given file. */
 	if (de == NULL)
 		return 0;
 
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
-	if (strcmp(ci->key, "Chr-o") == 0)
-		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+	if (cmd == 'o')
+		par = call_pane("OtherPane", focus, 0, NULL, 0);
 	else
-		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+		par = call_pane("ThisPane", focus, 0, NULL, 0);
 
 	if (fd >= 0) {
-		p = call_pane7("doc:open", ci->focus, fd, NULL, 0, fname, NULL);
+		p = call_pane7("doc:open", focus, fd, NULL, 0, fname, NULL);
 		close(fd);
 	} else
-		p = call_pane7("doc:from-text", ci->focus, 0, NULL, 0, fname,
+		p = call_pane7("doc:from-text", focus, 0, NULL, 0, fname,
 			       "File not found\n");
 	free(fname);
 	if (par && p) {
@@ -590,34 +589,33 @@ DEF_CMD(dir_open)
 	return 1;
 }
 
-DEF_CMD(dir_open_alt)
+static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct mark *m, char cmd)
 {
-	struct pane *p = ci->home;
-	struct doc *d = p->data;
+	struct doc *d = home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
 	struct dir_ent *de;
-	struct pane *par = p->parent;
+	struct pane *p = home,  *par = home->parent;
 	int fd;
 	char *fname = NULL;
 	char *renderer = NULL;
 	char buf[100];
 
-	if (!ci->mark || !par)
+	if (!m || !par)
 		return -1;
-	de = ci->mark->ref.d;
+	de = m->ref.d;
 	/* close this pane, open the given file. */
 	if (de == NULL)
-		return 0;
-	snprintf(buf, sizeof(buf), "render-%s", ci->key);
+		return -1;
+	snprintf(buf, sizeof(buf), "render-Chr-%c", cmd);
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
 
 	if (fd >= 0) {
-		struct pane *new = call_pane7("doc:open", p, fd, NULL, 0, fname, NULL);
+		struct pane *new = call_pane7("doc:open", home, fd, NULL, 0, fname, NULL);
 		if (new) {
 			renderer = pane_attr_get(new, buf);
 			if (renderer) {
-				par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+				par = call_pane("ThisPane", focus, 0, NULL, 0);
 				if (!par)
 					return -1;
 
@@ -628,7 +626,7 @@ DEF_CMD(dir_open_alt)
 	} else {
 		struct pane *doc = call_pane7("doc:from-text", par, 0, NULL, 0,
 					      fname, "File not found\n");
-		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+		par = call_pane("ThisPane", focus, 0, NULL, 0);
 		if (!par || !doc)
 			return -1;
 		p = doc_attach_view(par, doc, NULL);
@@ -638,14 +636,29 @@ DEF_CMD(dir_open_alt)
 	return 1;
 }
 
-DEF_CMD(dir_reread)
+DEF_CMD(dir_cmd)
 {
-	return comm_call(&dir_load_file, "doc:load-file", ci->focus, 0, NULL, NULL, -1);
-}
+	char cmd;
 
-DEF_CMD(dir_close)
-{
-	return call3("doc:destroy", ci->home, 0, NULL);
+	if (!ci->str)
+		return -1;
+	cmd = ci->str[0];
+	switch(cmd) {
+	case 'f':
+	case '\n':
+	case 'o':
+		return dir_open(ci->home, ci->focus, ci->mark, cmd);
+	case 'g':
+		return comm_call(&dir_load_file, "doc:load-file", ci->focus,
+				 0, NULL, NULL, -1);
+	case 'q':
+		return call3("doc:destroy", ci->home, 0, NULL);
+	default:
+		if (cmd >= 'A' && cmd <= 'Z')
+			return dir_open_alt(ci->home, ci->focus, ci->mark, cmd);
+		/* Doc has the final say on commands. */
+		return 1;
+	}
 }
 
 void edlib_init(struct pane *ed safe)
@@ -656,19 +669,15 @@ void edlib_init(struct pane *ed safe)
 		  0, &dir_new2);
 
 	doc_map = key_alloc();
-	key_add(doc_map, "Chr-f", &dir_open);
-	key_add(doc_map, "Return", &dir_open);
-	key_add_range(doc_map, "Chr-A", "Chr-Z", &dir_open_alt);
-	key_add(doc_map, "Chr-o", &dir_open);
-	key_add(doc_map, "Chr-g", &dir_reread);
-	key_add(doc_map, "Chr-q", &dir_close);
 
 	key_add(doc_map, "doc:load-file", &dir_load_file);
 	key_add(doc_map, "doc:same-file", &dir_same_file);
-	key_add(doc_map, "Close", &dir_destroy);
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
 	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
 	key_add(doc_map, "get-attr", &dir_get_attr);
 	key_add(doc_map, "doc:mark-same", &dir_mark_same);
 	key_add(doc_map, "doc:step", &dir_step);
+	key_add(doc_map, "doc:replace", &dir_cmd);
+
+	key_add(doc_map, "Close", &dir_destroy);
 }
