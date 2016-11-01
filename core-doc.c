@@ -560,16 +560,16 @@ DEF_CMD(doc_handle)
 		 * mean anything, and lib-view grabs the mark which it shouldn't
 		 */
 		return 1;
-
 	ci2 = *ci;
 	ci2.home = dd->doc;
+	ci2.comm = safe_cast NULL;
+
 	if (ci2.mark == NULL)
 		ci2.mark = dd->point;
-	if (ci2.home->handle) {
-		ci2.comm = ci2.home->handle;
-		return ci2.comm->func(&ci2);
-	}
-	return 0;
+	if (strncmp(ci->key, "doc:", 4) != 0)
+		/* doesn't get sent to the doc */
+		return key_lookup(doc_default_cmd, &ci2);
+	return key_handle(&ci2);
 }
 
 struct pane *doc_attach(struct pane *parent, struct pane *d safe)
