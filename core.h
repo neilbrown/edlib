@@ -181,7 +181,7 @@ void mark_forward_over(struct mark *m safe, struct mark *m2 safe);
 void mark_backward_over(struct mark *m safe, struct mark *mp safe);
 void doc_notify_change(struct doc *d safe, struct mark *m, struct mark *m2);
 void doc_check_consistent(struct doc *d safe);
-char *doc_attr(struct pane *dp safe, struct mark *m, bool forward, char *attr);
+char *doc_attr(struct pane *dp safe, struct mark *m, bool forward, char *attr, int *done);
 char *doc_getstr(struct pane *from safe, struct mark *to, struct mark *m2);
 void point_to_mark(struct mark *p safe, struct mark *m safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);

@@ -674,10 +674,10 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:same-file", &dir_same_file);
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
 	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
-	key_add(doc_map, "get-attr", &dir_get_attr);
 	key_add(doc_map, "doc:mark-same", &dir_mark_same);
 	key_add(doc_map, "doc:step", &dir_step);
 	key_add(doc_map, "doc:replace", &dir_cmd);
 
+	key_add(doc_map, "get-attr", &dir_get_attr);
 	key_add(doc_map, "Close", &dir_destroy);
 }

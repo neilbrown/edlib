@@ -1989,15 +1989,16 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:load-file", &text_load_file);
 	key_add(text_map, "doc:same-file", &text_same_file);
 	key_add(text_map, "doc:get-str", &text_get_str);
-	key_add(text_map, "Close", &text_destroy);
 	key_add(text_map, "doc:set-ref", &text_set_ref);
 	key_add(text_map, "doc:save-file", &text_save_file);
 	key_add(text_map, "doc:reundo", &text_reundo);
 	key_add(text_map, "doc:set-attr", &text_set_attr);
 	key_add(text_map, "doc:get-attr", &text_doc_get_attr);
-	key_add(text_map, "get-attr", &text_get_attr);
 	key_add(text_map, "doc:replace", &text_replace);
 	key_add(text_map, "doc:mark-same", &text_mark_same);
 	key_add(text_map, "doc:step", &text_step);
 	key_add(text_map, "doc:modified", &text_modified);
+
+	key_add(text_map, "Close", &text_destroy);
+	key_add(text_map, "get-attr", &text_get_attr);
 }

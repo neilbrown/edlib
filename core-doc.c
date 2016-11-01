@@ -332,7 +332,10 @@ DEF_CMD(doc_get_attr)
 	if (a)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
 				 NULL, a, 0);
-	return 0;
+	/* One a get-attr request reaches a document, it needs to stop there,
+	 * as parents might have a different idea about attributes, and about marks
+	 */
+	return 1;
 }
 
 DEF_CMD(doc_set_name)
@@ -536,6 +539,16 @@ DEF_CMD(doc_handle)
 				  ci->extra, NULL, dd->point, NULL);
 	}
 
+	if (strcmp(ci->key, "get-attr") == 0 && ci->mark == NULL) {
+		char *a;
+		if (!ci->str)
+			return -1;
+		a = pane_attr_get(dd->doc, ci->str);
+		if (!a)
+			return 0;
+		return comm_call(ci->comm2, "callback", ci->focus, 0, NULL, a, 0);
+	}
+
 	if (strcmp(ci->key, "Move-to") == 0) {
 		if (ci->mark)
 			point_to_mark(dd->point, ci->mark);
@@ -665,11 +678,14 @@ DEF_CMD(doc_attr_callback)
 	return 1;
 }
 
-char *doc_attr(struct pane *dp safe, struct mark *m, bool forward, char *attr)
+char *doc_attr(struct pane *dp safe, struct mark *m, bool forward, char *attr, int *done)
 {
 	struct cmd_info ci = {.key = "doc:get-attr", .home = dp, .focus = dp, .comm = safe_cast dp->handle};
 	struct call_return cr;
+	int ret;
 
+	if (done)
+		*done = 0;
 	if (!m)
 		ci.key = "get-attr";
 	ci.mark = m;
@@ -678,8 +694,10 @@ char *doc_attr(struct pane *dp safe, struct mark *m, bool forward, char *attr)
 	cr.c = doc_attr_callback;
 	cr.s = NULL;
 	ci.comm2 = &cr.c;
-	if (!dp->handle || dp->handle->func(&ci) == 0)
+	if (!dp->handle || (ret = dp->handle->func(&ci)) == 0)
 		return NULL;
+	if (ret > 0 && done)
+		*done = 1;
 	return cr.s;
 }
 

@@ -576,10 +576,11 @@ char *pane_attr_get(struct pane *p, char *key safe)
 {
 	while (p) {
 		char *a = attr_find(p->attrs, key);
+		int done;
 		if (a)
 			return a;
-		a = doc_attr(p, NULL, 0, key);
-		if (a)
+		a = doc_attr(p, NULL, 0, key, &done);
+		if (a || done)
 			return a;
 		p = p->parent;
 	}
@@ -590,8 +591,9 @@ char *pane_attr_get(struct pane *p, char *key safe)
 char *pane_mark_attr(struct pane *p, struct mark *m safe, int forward, char *key safe)
 {
 	while (p) {
-		char *a = doc_attr(p, m, forward, key);
-		if (a)
+		int done;
+		char *a = doc_attr(p, m, forward, key, &done);
+		if (a || done)
 			return a;
 		p = p->parent;
 	}

@@ -522,7 +522,7 @@ static char *__docs_get_attr(struct doc *doc safe, struct mark *m safe,
 		struct doc *d = p->data;
 		return d->name;
 	}
-	return doc_attr(p, NULL, 0, attr);
+	return doc_attr(p, NULL, 0, attr, NULL);
 }
 
 DEF_CMD(docs_doc_get_attr)
@@ -753,7 +753,6 @@ static void docs_init_map(void)
 
 	key_add(docs_map, "doc:set-ref", &docs_set_ref);
 	key_add(docs_map, "doc:get-attr", &docs_doc_get_attr);
-	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "doc:mark-same", &docs_mark_same);
 	key_add(docs_map, "doc:step", &docs_step);
 	key_add(docs_map, "doc:check_name", &doc_checkname);
@@ -762,6 +761,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:destroy", &docs_destroy);
 	key_add(docs_map, "doc:replace", &docs_cmd);
 
+	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "ChildClosed", &docs_child_closed);
 }
 
