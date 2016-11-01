@@ -1983,8 +1983,8 @@ void edlib_init(struct pane *ed safe)
 	call_comm("global-set-command", ed, 0, NULL, "open-doc-text", 0, &text_new2);
 
 	text_map = key_alloc();
-	key_add(text_map, "render-line-prev", &render_line_prev);
-	key_add(text_map, "render-line", &render_line);
+	key_add(text_map, "doc:render-line-prev", &render_line_prev);
+	key_add(text_map, "doc:render-line", &render_line);
 
 	key_add(text_map, "doc:load-file", &text_load_file);
 	key_add(text_map, "doc:same-file", &text_same_file);

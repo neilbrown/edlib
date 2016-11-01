@@ -193,7 +193,7 @@ DEF_CMD(docs_modified_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "render-line") == 0 &&
+	if (strcmp(ci->key, "doc:render-line") == 0 &&
 	    ci->mark2) {
 		/* mark2 is point - now is a good time to ensure it is
 		 * on a safe place

@@ -86,14 +86,14 @@ class PresenterPane(edlib.Pane):
         return m2[0]
 
     def get_line_at(self, m):
-        # call render-line at m
+        # call doc:render-line at m
         line = []
-        self.parent.call("render-line", m, -1, lambda key, **a: take('str', line, a, ''))
+        self.parent.call("doc:render-line", m, -1, lambda key, **a: take('str', line, a, ''))
         return line[0]
 
     def get_line_before(self, m):
         m2 = m.dup()
-        ret = self.parent.call("render-line-prev", m2, 1)
+        ret = self.parent.call("doc:render-line-prev", m2, 1)
         if ret <= 0:
             return None
         l = self.get_line_at(m2)
@@ -428,11 +428,11 @@ class PresenterPane(edlib.Pane):
                 if rv != None:
                     ret |= rv
             return ret
-        if key == "render-line-prev":
+        if key == "doc:render-line-prev":
             # Go to start of page
             if numeric == 0:
                 # just make sure at start of line
-                return self.parent.call("render-line-prev", mark, 0)
+                return self.parent.call("doc:render-line-prev", mark, 0)
 
             start = self.find_pages(mark)
             if not start:
@@ -445,7 +445,7 @@ class PresenterPane(edlib.Pane):
             mark.to_mark(start)
             return 1
 
-        if key == "render-line":
+        if key == "doc:render-line":
             page = self.find_pages(mark)
             if not page:
                 # No pages at all
@@ -463,7 +463,7 @@ class PresenterPane(edlib.Pane):
             line = None
             while end is None or mark < end:
                 lines = []
-                self.parent.call("render-line", mark, numeric,
+                self.parent.call("doc:render-line", mark, numeric,
                                  lambda key2, **aa: take('str', lines, aa))
                 if len(lines) == 0 or lines[0] is None:
                     line = None

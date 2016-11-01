@@ -2,7 +2,7 @@
  * Copyright Neil Brown ©2015 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
- * render-format.  Provide 'render-line' functions to render
+ * render-format.  Provide 'doc:render-line' functions to render
  * a document one element per line using a format string to display
  * attributes of that element.
  *
@@ -253,8 +253,8 @@ static void render_format_register_map(void)
 {
 	rf_map = key_alloc();
 
-	key_add(rf_map, "render-line", &render_line);
-	key_add(rf_map, "render-line-prev", &render_line_prev);
+	key_add(rf_map, "doc:render-line", &render_line);
+	key_add(rf_map, "doc:render-line-prev", &render_line_prev);
 	key_add(rf_map, "Close", &format_close);
 	key_add(rf_map, "Clone", &format_clone);
 
