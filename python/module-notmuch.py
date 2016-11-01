@@ -303,7 +303,7 @@ class notmuch_main(edlib.Doc):
             comm2("callback", focus, val)
             return 1
 
-        if key == "notmuch:update":
+        if key == "doc:notmuch:update":
             if not self.timer_set:
                 self.timer_set = True
                 self.call("event:timer", 5*60, self.tick)
@@ -314,7 +314,7 @@ class notmuch_main(edlib.Doc):
                 self.update_next()
             return 1
 
-        if key == "notmuch:query":
+        if key == "doc:notmuch:query":
             # note: this is a private document that doesn't
             # get registered in the global list
             q = self.searches.make_search(str, None)
@@ -322,7 +322,7 @@ class notmuch_main(edlib.Doc):
             it = self.children()
             if it:
                 for child in it:
-                    if child("notmuch:same-search", str, q) > 0:
+                    if child("doc:notmuch:same-search", str, q) > 0:
                         nm = child
                         break
             if not nm:
@@ -332,7 +332,7 @@ class notmuch_main(edlib.Doc):
                 comm2("callback", nm)
             return 1
 
-        if key == "notmuch:byid":
+        if key == "doc:notmuch:byid":
             # return a document for the email message,
             # this is a global document
             with locked_db() as db:
@@ -349,13 +349,14 @@ class notmuch_main(edlib.Doc):
             if pl:
                 comm2("callback", pl[0])
 
-        if key == "notmuch-search-maxlen":
+        if key == "doc:notmuch:search-maxlen":
             return self.searches.maxlen + 1
 
-        if key == "notmuch:query-updated":
+        if key == "doc:notmuch:query-updated":
             self.update_next()
+            return 1
 
-        if key == "notmuch:mark-read":
+        if key == "doc:notmuch:mark-read":
             with writeable_db() as db:
                 m = db.find_message(str2)
                 if m:
@@ -366,8 +367,8 @@ class notmuch_main(edlib.Doc):
                         m.remove_tag("new")
             return 1
 
-        if key[:19] == "notmuch:remove-tag-":
-            tag = key[19:]
+        if key[:23] == "doc:notmuch:remove-tag-":
+            tag = key[23:]
             with writeable_db() as db:
                 m = db.find_message(str2)
                 if m:
@@ -376,13 +377,13 @@ class notmuch_main(edlib.Doc):
                         m.remove_tag(tag)
             return 1
 
-        if key == "notmuch:remember-seen-thread" and str:
+        if key == "doc:notmuch:remember-seen-thread" and str:
             self.seen_threads[str] = focus
             return 1
-        if key == "notmuch:remember-seen-msg" and str:
+        if key == "doc:notmuch:remember-seen-msg" and str:
             self.seen_msgs[str] = focus
             return 1
-        if key == "notmuch:mark-seen":
+        if key == "doc:notmuch:mark-seen":
             with writeable_db() as db:
                 todel = []
                 for id in self.seen_msgs:
@@ -436,7 +437,7 @@ class notmuch_main(edlib.Doc):
                 q = self.qlist.pop(0)
                 for c in self.children():
                     if c['query'] == q:
-                        c("notmuch:query-refresh")
+                        c("doc:notmuch:query-refresh")
                         return
 
 
@@ -446,7 +447,7 @@ def notmuch_doc(key, home, focus, comm2, **a):
     nm['render-default'] = "notmuch:master-view"
     nm.call("doc:set-name", "*Notmuch*")
     nm.call("global-multicall-doc:appeared-")
-    nm.call("notmuch:update")
+    nm.call("doc:notmuch:update")
     if comm2 is not None:
         comm2("callback", focus, nm)
     return 1
@@ -476,7 +477,7 @@ class notmuch_master_view(edlib.Pane):
             # list_pane must be no more than 25% total width, and no more than
             # 5+1+maxlen+1
             if self.maxlen <= 0:
-                self.maxlen = self.call("notmuch-search-maxlen")
+                self.maxlen = self.call("doc:notmuch:search-maxlen")
                 if self.maxlen > 1:
                     self.maxlen -= 1
             pl = []
@@ -544,7 +545,7 @@ class notmuch_master_view(edlib.Pane):
             m = mark
             if key == "Chr-a" and self.message_pane:
                 if self.query_pane:
-                    self.query_pane.call("notmuch:remove-tag-inbox", self.message_pane.ctid,
+                    self.query_pane.call("doc:notmuch:remove-tag-inbox", self.message_pane.ctid,
                                          self.message_pane.cmid)
                 else:
                     self.call("notmuch:remove-tag", self.message_pane.cmid, "inbox")
@@ -568,7 +569,7 @@ class notmuch_master_view(edlib.Pane):
                 p.call("Window:close", "notmuch")
             elif self.query_pane:
                 if key != "Chr-x":
-                    self.query_pane.call("notmuch:mark-seen")
+                    self.query_pane.call("doc:notmuch:mark-seen")
                 p = self.query_pane
                 self.query_pane = None
                 p.call("Window:close", "notmuch")
@@ -585,7 +586,7 @@ class notmuch_master_view(edlib.Pane):
             return 1
 
         if key == "Chr-g":
-            focus.call("notmuch:update")
+            focus.call("doc:notmuch:update")
             self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
             return 1
 
@@ -596,9 +597,9 @@ class notmuch_master_view(edlib.Pane):
                 self.message_pane.call("Window:close", "notmuch")
                 self.message_pane = None
             if self.query_pane:
-                self.query_pane.call("notmuch:mark-seen")
+                self.query_pane.call("doc:notmuch:mark-seen")
             pl = []
-            self.call("notmuch:query", str,lambda key,**a:take('focus',pl,a))
+            self.call("doc:notmuch:query", str,lambda key,**a:take('focus',pl,a))
             self.list_pane.call("OtherPane", "notmuch", "threads", 3,
                                     lambda key,**a:take('focus', pl, a))
             self.query_pane = pl[-1]
@@ -615,7 +616,7 @@ class notmuch_master_view(edlib.Pane):
             # Find the file and display it in a 'message' pane
             self.mark_read()
             pl=[]
-            self.call("notmuch:byid", str, lambda key,**a:take('focus',pl,a))
+            self.call("doc:notmuch:byid", str, lambda key,**a:take('focus',pl,a))
             self.query_pane.call("OtherPane", "notmuch", "message", 2,
                                  lambda key,**a:take('focus',pl,a))
             pl[0].call("doc:attach", pl[-1], "notmuch:message",
@@ -638,7 +639,7 @@ class notmuch_master_view(edlib.Pane):
         if not p:
             return
         if self.query_pane:
-            self.query_pane.call("notmuch:mark-read", p.ctid, p.cmid)
+            self.query_pane.call("doc:notmuch:mark-read", p.ctid, p.cmid)
 
 class notmuch_main_view(edlib.Pane):
     # This pane provides view on the search-list document.
@@ -786,7 +787,7 @@ class notmuch_list(edlib.Doc):
         self.notify("Notify:Replace")
         if found < 100 and self.age == None:
             # must have found them all
-            self.call("notmuch:query-updated")
+            self.call("doc:notmuch:query-updated")
             return -1
         # request some more
         if found < 5:
@@ -1127,20 +1128,20 @@ class notmuch_list(edlib.Doc):
             comm2("callback", focus, val)
             return 1
 
-        if key == "notmuch:load-thread":
+        if key == "doc:notmuch:load-thread":
             if str not in self.threadinfo:
                 self.load_thread(str)
             return 1
 
-        if key == "notmuch:same-search":
+        if key == "doc:notmuch:same-search":
             if self.query == str2:
                 return 1
             return 0
 
-        if key == "notmuch:query-refresh":
+        if key == "doc:notmuch:query-refresh":
             self.load_update()
 
-        if key == "notmuch:mark-read":
+        if key == "doc:notmuch:mark-read":
             ti = self.threadinfo[str]
             m = ti[str2]
             tags = m[6]
@@ -1166,8 +1167,8 @@ class notmuch_list(edlib.Doc):
             # Let this fall though to database document.
             return 0
 
-        if key[:19] == "notmuch:remove-tag-":
-            tag = key[19:]
+        if key[:23] == "doc:notmuch:remove-tag-":
+            tag = key[23:]
             ti = self.threadinfo[str]
             m = ti[str2]
             tags = m[6]
@@ -1227,7 +1228,7 @@ class notmuch_query_view(edlib.Pane):
             sl = []
             focus.call("doc:get-attr", "thread-id", 1, mark, lambda key,**a:take('str',sl,a))
             if sl[0] != self.selected:
-                self.call("notmuch:load-thread", sl[0])
+                self.call("doc:notmuch:load-thread", sl[0])
                 self.selected = sl[0]
                 focus.damaged(edlib.DAMAGED_VIEW)
                 focus.damaged(edlib.DAMAGED_CONTENT)
@@ -1257,12 +1258,12 @@ class notmuch_query_view(edlib.Pane):
                 if edlib.WEOF == focus.call("doc:step", 1, 1, m):
                     break
 
-        if key == "notmuch:mark-seen":
+        if key == "doc:notmuch:mark-seen":
             for i in self.seen_threads:
-                self.parent.call("notmuch:remember-seen-thread", i)
+                self.parent.call("doc:notmuch:remember-seen-thread", i)
             for i in self.seen_msgs:
-                self.parent.call("notmuch:remember-seen-msg", i)
-            self.parent.call("notmuch:mark-seen")
+                self.parent.call("doc:notmuch:remember-seen-msg", i)
+            self.parent.call("doc:notmuch:mark-seen")
             return 1
 
 class notmuch_message_view(edlib.Pane):
