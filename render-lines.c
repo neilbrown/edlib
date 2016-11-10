@@ -1427,7 +1427,10 @@ REDEF_CMD(render_lines_attach)
 	rl->target_y = -1;
 	rl->do_wrap = 1;
 	rl->typenum = doc_add_view(ci->focus);
-	p = pane_register(ci->focus, 0, &render_lines_handle.c, rl, NULL);
+	p = ci->focus;
+	if (strcmp(ci->key, "attach-render-text") == 0)
+		p = call_pane("attach-renderline", p, 0, NULL, 0);
+	p = pane_register(p, 0, &render_lines_handle.c, rl, NULL);
 	call3("Request:Notify:Replace", p, 0, NULL);
 
 	return comm_call(ci->comm2, "callback:attach", p,
@@ -1437,5 +1440,7 @@ REDEF_CMD(render_lines_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-render-lines",
+		  0, &render_lines_attach);
+	call_comm("global-set-command", ed, 0, NULL, "attach-render-text",
 		  0, &render_lines_attach);
 }

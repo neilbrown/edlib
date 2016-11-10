@@ -1,0 +1,349 @@
+/*
+ * Copyright Neil Brown ©2016 <neil@brown.name>
+ * May be distributed under terms of GPLv2 - see file:COPYING
+ *
+ */
+
+
+#include <unistd.h>
+#include <stdlib.h>
+#include <wchar.h>
+#include <wctype.h>
+#include <string.h>
+
+#include <stdio.h>
+
+#include "core.h"
+#include "misc.h"
+
+static struct map *rl_map safe;
+
+#define LARGE_LINE 4096
+
+DEF_CMD(render_prev)
+{
+	/* In the process of rendering a line we need to find the
+	 * start of line.
+	 * Search backwards until a newline or start-of-file is found,
+	 * or until a LARGE_LINE boundary has been passed and a further
+	 * LARGE_LINE/2 bytes examined with no newline. In that case,
+	 * report the boundary.
+	 * If RPT_NUM == 1, step back at least one character so we get
+	 * the previous line and not the line we are on.
+	 * If we hit start-of-file without finding newline, return -1;
+	 */
+	struct mark *m = ci->mark;
+	struct pane *p = ci->home;
+	struct mark *boundary = NULL;
+	int since_boundary;
+	int rpt = RPT_NUM(ci);
+	wint_t ch;
+#if 0
+	int offset = 0;
+#endif
+	if (!m)
+		return -1;
+
+	while ((ch = mark_prev_pane(p, m)) != WEOF &&
+	       (ch != '\n' || rpt > 0) &&
+	       (!boundary || since_boundary < LARGE_LINE/2)) {
+		rpt = 0;
+		if (boundary)
+			since_boundary += 1;
+#if 0
+		else if (m->ref.o < offset &&
+			 m->ref.o >= LARGE_LINE &&
+			 (m->ref.o-1) / LARGE_LINE != (offset-1) / LARGE_LINE) {
+			/* here is a boundary */
+			boundary = mark_dup(m, 1);
+		}
+		offset = m->ref.o;
+#endif
+	}
+	if (ch != WEOF && ch != '\n') {
+		/* need to use the boundary */
+		if (!boundary)
+			return 1;
+		mark_to_mark(m, boundary);
+		mark_free(boundary);
+		return 1;
+	}
+	if (boundary)
+		mark_free(boundary);
+	if (ch == WEOF && rpt)
+		return -2;
+	if (ch == '\n')
+		/* Found a '\n', so step back over it for start-of-line. */
+		mark_next_pane(p, m);
+	return 1;
+}
+
+struct attr_stack {
+	struct attr_stack	*next;
+	char			*attr safe;
+	int			end;
+	int			priority;
+};
+
+static int find_finished(struct attr_stack *st, int pos, int *nextp safe)
+{
+	int depth = 0;
+	int fdepth = -1;
+	int next = -1;
+
+	for (; st ; st = st->next, depth++) {
+		if (st->end <= pos)
+			fdepth = depth;
+		else if (next < 0 || next > st->end)
+			next = st->end;
+	}
+	*nextp = next;
+	return fdepth;
+}
+
+static void as_pop(struct attr_stack **fromp safe, struct attr_stack **top safe, int depth,
+	    struct buf *b safe)
+{
+	struct attr_stack *from = *fromp;
+	struct attr_stack *to = *top;
+
+	while (from && depth >= 0) {
+		struct attr_stack *t;
+		buf_concat(b, "</>");
+		t = from;
+		from = t->next;
+		t->next = to;
+		to = t;
+		depth -= 1;
+	}
+	*fromp = from;
+	*top = to;
+}
+
+static void as_repush(struct attr_stack **fromp safe, struct attr_stack **top safe,
+		      int pos, struct buf *b safe)
+{
+	struct attr_stack *from = *fromp;
+	struct attr_stack *to = *top;
+
+	while (from) {
+		struct attr_stack *t = from->next;
+		if (from->end <= pos) {
+			free(from->attr);
+			free(from);
+		} else {
+			buf_append(b, '<');
+			buf_concat(b, from->attr);
+			buf_append(b, '>');
+			from->next = to;
+			to = from;
+		}
+		from = t;
+	}
+	*fromp = from;
+	*top = to;
+}
+
+static void as_add(struct attr_stack **fromp safe, struct attr_stack **top safe,
+		   int end, int prio, char *attr safe)
+{
+	struct attr_stack *from = *fromp;
+	struct attr_stack *to = *top;
+	struct attr_stack *new, **here;
+
+	while (from && from->priority > prio) {
+		struct attr_stack *t = from->next;
+		from->next = to;
+		to = from;
+		from = t;
+	}
+	here = &to;
+	while (*here && (*here)->priority <= prio)
+		here = &(*here)->next;
+	new = calloc(1, sizeof(*new));
+	new->next = *here;
+	new->attr = strdup(attr);
+	new->end = end;
+	new->priority = prio;
+	*here = new;
+	*top = to;
+	*fromp = from;
+}
+
+struct attr_return {
+	struct command rtn;
+	struct command fwd;
+	struct attr_stack *ast, *tmpst;
+	int min_end;
+	int chars;
+};
+
+DEF_CMD(text_attr_forward)
+{
+	struct attr_return *ar = container_of(ci->comm, struct attr_return, fwd);
+	if (!ci->str || !ci->str2)
+		return 0;
+	printf("FORWARD #%s#%s#\n", ci->str, ci->str2);
+	return call_comm7("map-attr", ci->focus, 0, ci->mark, ci->str2, 0, ci->str, &ar->rtn);
+}
+
+DEF_CMD(text_attr_callback)
+{
+	struct attr_return *ar = container_of(ci->comm, struct attr_return, rtn);
+	if (!ci->str)
+		return -1;
+	as_add(&ar->ast, &ar->tmpst, ar->chars + ci->numeric, ci->extra, ci->str);
+	if (ar->min_end < 0 || ar->chars + ci->numeric < ar->min_end)
+		ar->min_end = ar->chars + ci->numeric;
+	// FIXME ->str2 should be inserted
+	return 1;
+}
+
+static void call_map_mark(struct pane *f safe, struct mark *m safe,
+			  struct attr_return *ar safe)
+{
+	char *key = "render:";
+	char *val;
+
+	while ((key = attr_get_next_key(m->attrs, key, -1, &val)) != NULL)
+		call_comm7("map-attr", f, 0, m, key, 0, val, &ar->rtn);
+}
+
+DEF_CMD(render_line)
+{
+	/* Render the line from 'mark' to the first '\n' or until
+	 * 'extra' chars.
+	 * Convert '<' to '<<' and if a char has the 'highlight' attribute,
+	 * include that between '<>'.
+	 */
+	struct buf b;
+	struct pane *p = ci->home;
+	struct mark *m = ci->mark;
+	struct mark *pm = ci->mark2; /* The location to render as cursor */
+	int o = ci->numeric;
+	wint_t ch = WEOF;
+	int chars = 0;
+	int ret;
+	struct attr_return ar;
+	int add_newline = 0;
+
+	ar.rtn = text_attr_callback;
+	ar.fwd = text_attr_forward;
+	ar.ast = ar.tmpst = NULL;
+	ar.min_end = -1;
+
+	if (!m)
+		return -1;
+
+	buf_init(&b);
+	while (1) {
+#if 0
+		int offset = m->ref.o;
+#endif
+		struct mark *m2;
+
+		if (o >= 0 && b.len >= o)
+			break;
+		if (pm && mark_same_pane(p, m, pm))
+			break;
+
+		if (ar.ast && ar.min_end <= chars) {
+			int depth = find_finished(ar.ast, chars, &ar.min_end);
+			as_pop(&ar.ast, &ar.tmpst, depth, &b);
+		}
+
+		ar.chars = chars;
+		call_comm7("doc:get-attr", ci->focus, 1, m, "render:", 1, NULL, &ar.fwd);
+
+		/* find all marks "here" - they might be fore or aft */
+		for (m2 = doc_prev_mark_all(m); m2 && mark_same_pane(p, m, m2);
+		     m2 = doc_prev_mark_all(m2))
+			call_map_mark(ci->focus, m2, &ar);
+		for (m2 = doc_next_mark_all(m); m2 && mark_same_pane(p, m, m2);
+		     m2 = doc_next_mark_all(m2))
+			call_map_mark(ci->focus, m2, &ar);
+
+		as_repush(&ar.tmpst, &ar.ast, chars, &b);
+
+		ch = mark_next_pane(p, m);
+		if (ch == WEOF)
+			break;
+		if (ch == '\n') {
+			add_newline = 1;
+			break;
+		}
+#if 0
+		if (chars > LARGE_LINE/2 &&
+		    m->ref.o > offset &&
+		    (m->ref.o-1)/LARGE_LINE != (offset-1)/LARGE_LINE)
+			break;
+#endif
+		if (ch == '<') {
+			if (o >= 0 && b.len+1 >= o) {
+				mark_prev_pane(p, m);
+				break;
+			}
+			buf_append(&b, '<');
+		}
+		if (ch < ' ' && ch != '\t' && ch != '\n') {
+			buf_concat(&b, "<fg:red>^");
+			buf_append(&b, '@' + ch);
+			buf_concat(&b, "</>");
+		} else if (ch == 0x7f) {
+			buf_concat(&b, "<fg:red>^?</>");
+		} else
+			buf_append(&b, ch);
+		chars++;
+	}
+	while (ar.ast)
+		as_pop(&ar.ast, &ar.tmpst, 100, &b);
+	as_repush(&ar.tmpst, &ar.ast, 10000000, &b);
+	if (add_newline)
+		buf_append(&b, '\n');
+
+	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
+			buf_final(&b), 0);
+	free(b.b);
+	return ret;
+}
+
+DEF_LOOKUP_CMD(renderline_handle, rl_map);
+
+static struct pane *do_renderline_attach(struct pane *p)
+{
+	struct pane *ret;
+
+	ret = pane_register(p, 0, &renderline_handle.c, NULL, NULL);
+
+	return ret;
+}
+
+DEF_CMD(renderline_attach)
+{
+	struct pane *ret;
+
+	ret = do_renderline_attach(ci->focus);
+	if (!ret)
+		return -1;
+	return comm_call(ci->comm2, "callback:attach", ret, 0, NULL, NULL, 0);
+}
+
+DEF_CMD(rl_clone)
+{
+	struct pane *parent = ci->focus;
+	struct pane *child = do_renderline_attach(parent);
+	pane_clone_children(ci->home, child);
+	return 1;
+}
+
+void edlib_init(struct pane *ed safe)
+{
+	rl_map = key_alloc();
+
+	key_add(rl_map, "doc:render-line", &render_line);
+	key_add(rl_map, "doc:render-line-prev", &render_prev);
+	key_add(rl_map, "Clone", &rl_clone);
+
+	call_comm("global-set-command", ed, 0, NULL, "attach-renderline",
+		  0, &renderline_attach);
+}
