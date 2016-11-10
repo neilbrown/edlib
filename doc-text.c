@@ -1557,26 +1557,6 @@ static struct attrset *text_attrset(struct doc *d safe, struct mark *m safe,
 	return c->attrs;
 }
 
-static char *__text_get_attr(struct doc *d safe, struct mark *m safe,
-			     bool forward, char *attr safe)
-{
-	int o;
-	struct attrset *a = text_attrset(d, m, forward, &o);
-	if (!a)
-		return NULL;
-	return attr_get_str(a, attr, o);
-}
-
-static char *text_next_attr(struct doc *d safe, struct mark *m safe,
-			    bool forward, char *attr safe, char **valp safe)
-{
-	int o;
-	struct attrset *a = text_attrset(d, m, forward, &o);
-	if (!a)
-		return NULL;
-	return attr_get_next_key(a, attr, o, valp);
-}
-
 DEF_CMD(text_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
@@ -1584,12 +1564,22 @@ DEF_CMD(text_doc_get_attr)
 	bool forward = ci->numeric != 0;
 	char *attr = ci->str;
 	char *val;
+	struct attrset *a;
+	int o;
 
 	if (!m || !attr)
 		return -1;
-	val = __text_get_attr(d, m, forward, attr);
-
+	a = text_attrset(d, m, forward, &o);
+	val = attr_get_str(a, attr, o);
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val, 0);
+	if (ci->extra == 1) {
+		char *key = attr;
+		int len = strlen(attr);
+		while ((key = attr_get_next_key(a, key, o, &val)) != NULL &&
+		       strncmp(key, attr, len) == 0)
+			comm_call7(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val, 0,
+				   key, NULL);
+	}
 	return 1;
 }
 
@@ -1850,15 +1840,25 @@ static void as_add(struct attr_stack **fromp safe, struct attr_stack **top safe,
 }
 
 struct attr_return {
-	struct command c;
+	struct command rtn;
+	struct command fwd;
 	struct attr_stack *ast, *tmpst;
 	int min_end;
 	int chars;
 };
 
+DEF_CMD(text_attr_forward)
+{
+	struct attr_return *ar = container_of(ci->comm, struct attr_return, fwd);
+	if (!ci->str || !ci->str2)
+		return 0;
+	printf("FORWARD #%s#%s#\n", ci->str, ci->str2);
+	return call_comm7("map-attr", ci->focus, 0, ci->mark, ci->str2, 0, ci->str, &ar->rtn);
+}
+
 DEF_CMD(text_attr_callback)
 {
-	struct attr_return *ar = container_of(ci->comm, struct attr_return, c);
+	struct attr_return *ar = container_of(ci->comm, struct attr_return, rtn);
 	if (!ci->str)
 		return -1;
 	as_add(&ar->ast, &ar->tmpst, ar->chars + ci->numeric, ci->extra, ci->str);
@@ -1875,7 +1875,7 @@ static void call_map_mark(struct pane *f safe, struct mark *m safe,
 	char *val;
 
 	while ((key = attr_get_next_key(m->attrs, key, -1, &val)) != NULL)
-		call_comm7("map-attr", f, 0, m, key, 0, val, &ar->c);
+		call_comm7("map-attr", f, 0, m, key, 0, val, &ar->rtn);
 }
 
 DEF_CMD(render_line)
@@ -1897,7 +1897,8 @@ DEF_CMD(render_line)
 	struct attr_return ar;
 	int add_newline = 0;
 
-	ar.c = text_attr_callback;
+	ar.rtn = text_attr_callback;
+	ar.fwd = text_attr_forward;
 	ar.ast = ar.tmpst = NULL;
 	ar.min_end = -1;
 
@@ -1906,7 +1907,6 @@ DEF_CMD(render_line)
 
 	buf_init(&b);
 	while (1) {
-		char *key, *val;
 		int offset = m->ref.o;
 		struct mark *m2;
 
@@ -1920,12 +1920,8 @@ DEF_CMD(render_line)
 			as_pop(&ar.ast, &ar.tmpst, depth, &b);
 		}
 
-		key = "render:";
 		ar.chars = chars;
-		while ((key = text_next_attr(d, m, 1, key, &val)) != NULL) {
-			call_comm7("map-attr", ci->focus, 0, m, key, 0, val,
-				   &ar.c);
-		}
+		call_comm7("doc:get-attr", ci->focus, 1, m, "render:", 1, NULL, &ar.fwd);
 
 		/* find all marks "here" - they might be fore or aft */
 		for (m2 = doc_prev_mark_all(m); m2 && text_ref_same(t, &m->ref, &m2->ref);
