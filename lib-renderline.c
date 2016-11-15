@@ -16,60 +16,56 @@
 #include "core.h"
 #include "misc.h"
 
+struct rl_info {
+	int	view;
+};
+
 static struct map *rl_map safe;
 
-#define LARGE_LINE 4096
+#define LARGE_LINE 1000
 
 DEF_CMD(render_prev)
 {
 	/* In the process of rendering a line we need to find the
-	 * start of line.
-	 * Search backwards until a newline or start-of-file is found,
-	 * or until a LARGE_LINE boundary has been passed and a further
-	 * LARGE_LINE/2 bytes examined with no newline. In that case,
-	 * report the boundary.
+	 * start of line.  We use a mark to create an artificial
+	 * start-of-line where none can be found.
+	 * Search backwards until a newline or start-of-file or the
+	 * mark is found.  Move backwards at most LARGE_LINE characters
+	 * and if nothing else is found, put a mark there and treat as s-o-l.
+	 *
 	 * If RPT_NUM == 1, step back at least one character so we get
 	 * the previous line and not the line we are on.
 	 * If we hit start-of-file without finding newline, return -1;
 	 */
 	struct mark *m = ci->mark;
 	struct pane *p = ci->home;
+	struct rl_info *rl = p->data;
 	struct mark *boundary = NULL;
-	int since_boundary;
+	int count = 0;
 	int rpt = RPT_NUM(ci);
 	wint_t ch;
-#if 0
-	int offset = 0;
-#endif
+
 	if (!m)
 		return -1;
 
 	while ((ch = mark_prev_pane(p, m)) != WEOF &&
 	       (ch != '\n' || rpt > 0) &&
-	       (!boundary || since_boundary < LARGE_LINE/2)) {
+	       count < LARGE_LINE &&
+	       (!boundary || mark_ordered(boundary, m))) {
 		rpt = 0;
-		if (boundary)
-			since_boundary += 1;
-#if 0
-		else if (m->ref.o < offset &&
-			 m->ref.o >= LARGE_LINE &&
-			 (m->ref.o-1) / LARGE_LINE != (offset-1) / LARGE_LINE) {
-			/* here is a boundary */
-			boundary = mark_dup(m, 1);
-		}
-		offset = m->ref.o;
-#endif
+		if (!count)
+			boundary = vmark_at_or_before(p, m, rl->view);
+		count += 1;
 	}
 	if (ch != WEOF && ch != '\n') {
-		/* need to use the boundary */
-		if (!boundary)
-			return 1;
-		mark_to_mark(m, boundary);
-		mark_free(boundary);
+		/* need to ensure there is a stable boundary here */
+		if (!boundary || !mark_ordered(boundary, m)) {
+			boundary = vmark_new(p, rl->view);
+			if (boundary)
+				mark_to_mark(boundary, m);
+		}
 		return 1;
 	}
-	if (boundary)
-		mark_free(boundary);
 	if (ch == WEOF && rpt)
 		return -2;
 	if (ch == '\n')
@@ -218,8 +214,10 @@ DEF_CMD(render_line)
 	 */
 	struct buf b;
 	struct pane *p = ci->home;
+	struct rl_info *rl = p->data;
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2; /* The location to render as cursor */
+	struct mark *boundary;
 	int o = ci->numeric;
 	wint_t ch = WEOF;
 	int chars = 0;
@@ -235,11 +233,11 @@ DEF_CMD(render_line)
 	if (!m)
 		return -1;
 
+	boundary = vmark_at_or_before(p, m, rl->view);
+	if (boundary)
+		boundary = vmark_next(boundary);
 	buf_init(&b);
 	while (1) {
-#if 0
-		int offset = m->ref.o;
-#endif
 		struct mark *m2;
 
 		if (o >= 0 && b.len >= o)
@@ -272,12 +270,8 @@ DEF_CMD(render_line)
 			add_newline = 1;
 			break;
 		}
-#if 0
-		if (chars > LARGE_LINE/2 &&
-		    m->ref.o > offset &&
-		    (m->ref.o-1)/LARGE_LINE != (offset-1)/LARGE_LINE)
+		if (boundary && boundary->seq <= m->seq)
 			break;
-#endif
 		if (ch == '<') {
 			if (o >= 0 && b.len+1 >= o) {
 				mark_prev_pane(p, m);
@@ -309,11 +303,13 @@ DEF_CMD(render_line)
 
 DEF_LOOKUP_CMD(renderline_handle, rl_map);
 
-static struct pane *do_renderline_attach(struct pane *p)
+static struct pane *do_renderline_attach(struct pane *p safe)
 {
 	struct pane *ret;
+	struct rl_info *rl = calloc(1, sizeof(*rl));
 
-	ret = pane_register(p, 0, &renderline_handle.c, NULL, NULL);
+	rl->view = doc_add_view(p);
+	ret = pane_register(p, 0, &renderline_handle.c, rl, NULL);
 
 	return ret;
 }
@@ -336,6 +332,20 @@ DEF_CMD(rl_clone)
 	return 1;
 }
 
+DEF_CMD(rl_close)
+{
+	struct pane *p = ci->home;
+	struct rl_info *rl = p->data;
+	struct mark *m;
+	while ((m = vmark_first(p, rl->view)) != NULL)
+		mark_free(m);
+	doc_del_view(p, rl->view);
+	free(rl);
+	p->data = safe_cast NULL;
+	p->handle = NULL;
+	return 0;
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	rl_map = key_alloc();
@@ -343,6 +353,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(rl_map, "doc:render-line", &render_line);
 	key_add(rl_map, "doc:render-line-prev", &render_prev);
 	key_add(rl_map, "Clone", &rl_clone);
+	key_add(rl_map, "Close", &rl_close);
 
 	call_comm("global-set-command", ed, 0, NULL, "attach-renderline",
 		  0, &renderline_attach);
