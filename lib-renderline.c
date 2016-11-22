@@ -179,7 +179,6 @@ DEF_CMD(text_attr_forward)
 	struct attr_return *ar = container_of(ci->comm, struct attr_return, fwd);
 	if (!ci->str || !ci->str2)
 		return 0;
-	printf("FORWARD #%s#%s#\n", ci->str, ci->str2);
 	return call_comm7("map-attr", ci->focus, 0, ci->mark, ci->str2, 0, ci->str, &ar->rtn);
 }
 
