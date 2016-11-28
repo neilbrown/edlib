@@ -5,7 +5,8 @@
  * doc-email: Present an email message as its intended content, with
  * part recognition and decoding etc.
  *
- * Version 0.0: Use lib-crop to display just the headers.
+ * Version 0.1: Use lib-crop to display just the headers, and a separate
+ *              instance to display the body.
  *
  * Not so easy.  Need to be careful about redirecting doc commands.
  * A document needs:
@@ -36,7 +37,6 @@ struct doc_ref {
 struct email_info {
 	struct doc	doc;
 	struct pane	*headers safe;
-	struct pane	*crop safe;
 };
 
 static void reset_mark(struct mark *m)
@@ -130,7 +130,7 @@ DEF_CMD(email_handle)
 	if (ci->mark) {
 		m1 = ci->mark->ref.m;
 		if (!m1) {
-			m1 = vmark_new(ei->crop, MARK_UNGROUPED);
+			m1 = vmark_new(ei->headers, MARK_UNGROUPED);
 			ci->mark->ref.m = m1;
 			ci->mark->refcnt = email_mark_refcnt;
 			mark_to_end(&ei->doc, ci->mark, 0);
@@ -140,7 +140,7 @@ DEF_CMD(email_handle)
 	if (ci->mark2) {
 		m2 = ci->mark2->ref.m;
 		if (!m2) {
-			m2 = vmark_new(ei->crop, MARK_UNGROUPED);
+			m2 = vmark_new(ei->headers, MARK_UNGROUPED);
 			ci->mark2->ref.m = m2;
 			ci->mark2->refcnt = email_mark_refcnt;
 			mark_to_end(&ei->doc, ci->mark2, 0);
@@ -149,7 +149,7 @@ DEF_CMD(email_handle)
 	}
 	if (strcmp(ci->key, "doc:set-ref") != 0)
 		email_check_consistent(ei);
-	ret = call_home7(ei->crop, ci->key, ci->focus, ci->numeric, m1, ci->str,
+	ret = call_home7(ei->headers, ci->key, ci->focus, ci->numeric, m1, ci->str,
 			 ci->extra,ci->str2, m2, ci->comm2);
 	reset_mark(ci->mark);
 	if (ci->mark2) {
@@ -187,7 +187,6 @@ DEF_CMD(open_email)
 	}
 	ei = calloc(1, sizeof(*ei));
 	doc_init(&ei->doc);
-	ei->headers = p;
 	h = call_pane8("attach-crop", p, 0, start, end, 0, NULL, NULL);
 	mark_free(start);
 	mark_free(end);
@@ -196,7 +195,7 @@ DEF_CMD(open_email)
 	h2 = call_pane("attach-rfc822header", h, 0, NULL, 0);
 	if (!h2)
 		goto out;
-	ei->crop = h2;
+	ei->headers = h2;
 	h = pane_register(ci->home, 0, &email_handle, &ei->doc, NULL);
 	if (h) {
 		attr_set_str(&h->attrs, "render-default", "text");
