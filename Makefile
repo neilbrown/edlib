@@ -39,11 +39,12 @@ OBJ = O/edlib.o
 LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
 	O/core-keymap.o O/core-pane.o O/core-misc.o
 SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
+	O/doc-email.o \
 	O/render-hex.o O/render-lines.o \
 	O/render-format.o O/render-complete.o \
 	O/lib-view.o O/lib-tile.o O/lib-popup.o O/lib-linecount.o O/lib-keymap.o \
 	O/lib-search.o O/lib-messageline.o O/lib-input.o O/lib-libevent.o \
-	O/lib-history.o O/lib-crop.o O/lib-renderline.o \
+	O/lib-history.o O/lib-crop.o O/lib-renderline.o O/lib-rfc822header.o \
 	O/lang-python.o \
 	O/mode-emacs.o \
 	O/display-ncurses.o

@@ -338,16 +338,11 @@ class notmuch_main(edlib.Doc):
             with locked_db() as db:
                 m = db.find_message(str)
                 fn = m.get_filename() + ""
-            try:
-                f = open(fn)
-            except:
-                focus.call("Message", "Cannot open " + fn)
-                return 1
             pl = []
-            focus.call("doc:open", fn, f.fileno(), lambda key,**a:take('focus',pl,a))
-            f.close()
+            focus.call("doc:open", "email:"+fn, -2, lambda key,**a:take('focus',pl,a))
             if pl:
                 comm2("callback", pl[0])
+            return 1
 
         if key == "doc:notmuch:search-maxlen":
             return self.searches.maxlen + 1
@@ -889,6 +884,7 @@ class notmuch_list(edlib.Doc):
                 moved = True
             return (i, -1, moved, pos)
         # Thread is open, need to find a valid message, either after or before
+        # FIXME I get a key-error below sometimes.  Maybe out-of-sync with DB
         mi = self.messageids[th]
         ti = self.threadinfo[th]
         if len(pos) == 1:
@@ -1270,7 +1266,7 @@ class notmuch_message_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
 
-    def handle(self, key, focus, mark, numeric, **a):
+    def handle(self, key, focus, mark, numeric, str, str2, comm2, **a):
         if key == "Clone":
             p = notmuch_message_view(focus)
             self.clone_children(focus.focus)
@@ -1280,6 +1276,9 @@ class notmuch_message_view(edlib.Pane):
         if key == "Chr- ":
             focus.call("Next", 1, mark)
             # FIXME detect EOF and move to next message
+            return 1
+        if key == "map-attr" and str == "render:rfc822header":
+            comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 20)
             return 1
 
 def render_query_attach(key, home, focus, comm2, **a):
