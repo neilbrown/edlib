@@ -170,7 +170,7 @@ static wchar_t prev_modified(struct pane *p safe, struct mark *m safe)
 {
 	if (mark_prev_pane(p, m) == WEOF)
 		return WEOF;
-	while (mark_is_modified(p, m))
+	while (!mark_is_modified(p, m))
 		if (mark_prev_pane(p, m) == WEOF)
 			return WEOF;
 
@@ -184,6 +184,11 @@ DEF_CMD(docs_modified_handle)
 	if (!ci->home->parent)
 		/* Should never happen */
 		return -1;
+
+	if (ci->mark)
+		mark_to_modified(ci->home->parent, ci->mark);
+	if (ci->mark2)
+		mark_to_modified(ci->home->parent, ci->mark2);
 
 	if (strcmp(ci->key, "doc:replace") == 0) {
 		if (ci->str &&
@@ -248,7 +253,7 @@ DEF_CMD(docs_modified_handle)
 		return 1;
 	}
 	if (strcmp(ci->key, "doc:mark-same") == 0 &&
-		ci->mark && ci->mark2) {
+	    ci->mark && ci->mark2) {
 		struct docs *doc = ci->home->data;
 		struct pane *p1 = ci->mark->ref.p;
 		struct pane *p2 = ci->mark2->ref.p;
