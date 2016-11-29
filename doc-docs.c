@@ -193,15 +193,6 @@ DEF_CMD(docs_modified_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "doc:render-line") == 0 &&
-	    ci->mark2) {
-		/* mark2 is point - now is a good time to ensure it is
-		 * on a safe place
-		 */
-		mark_to_modified(ci->home->parent, ci->mark2);
-		return 0;
-	}
-
 	if (strcmp(ci->key, "Notify:Replace") == 0) {
 		int all_gone;
 		m = vmark_new(ci->home->parent, MARK_UNGROUPED);

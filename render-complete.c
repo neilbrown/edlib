@@ -148,7 +148,7 @@ static int do_render_complete_prev(struct complete_data *cd safe, struct mark *m
 	cb.plen = strlen(cb.prefix);
 	cb.cmp = 0;
 	while (1) {
-		ret = call3("doc:render-line-prev", focus, n2, m2);
+		ret = call3("render-line-prev", focus, n2, m2);
 		if (ret <= 0 || n == 0)
 			/* Either hit start-of-file, or have what we need */
 			break;
@@ -160,7 +160,7 @@ static int do_render_complete_prev(struct complete_data *cd safe, struct mark *m
 		m3 = mark_dup(m2, 1);
 		cb.keep = n2 == 1 && savestr;
 		cb.str = NULL;
-		if (call_comm("doc:render-line", focus, NO_NUMERIC, m3, NULL, 0, &cb.c)
+		if (call_comm("render-line", focus, NO_NUMERIC, m3, NULL, 0, &cb.c)
 		    != 1) {
 			mark_free(m3);
 			break;
@@ -252,7 +252,7 @@ DEF_CMD(complete_eol)
 	while (rpt > 1) {
 		struct call_return cr;
 		cr.c = eol_cb;
-		if (comm_call8(&render_complete_line, ci->home, "doc:render-line",
+		if (comm_call8(&render_complete_line, ci->home, "render-line",
 			       ci->focus, NO_NUMERIC, ci->mark, NULL,
 			       0, NULL, NULL, &cr.c) <= 0)
 			rpt = 1;
@@ -336,7 +336,7 @@ DEF_CMD(complete_return)
 
 	cr.c = save_str;
 	cr.s = NULL;
-	comm_call8(&render_complete_line, ci->home, "doc:render-line",
+	comm_call8(&render_complete_line, ci->home, "render-line",
 		   ci->home, NO_NUMERIC, ci->mark, NULL, 0, NULL,
 		   NULL, &cr.c);
 	if (!cr.s)
@@ -374,8 +374,8 @@ static void register_map(void)
 {
 	rc_map = key_alloc();
 
-	key_add(rc_map, "doc:render-line", &render_complete_line);
-	key_add(rc_map, "doc:render-line-prev", &render_complete_prev);
+	key_add(rc_map, "render-line", &render_complete_line);
+	key_add(rc_map, "render-line-prev", &render_complete_prev);
 	key_add(rc_map, "Close", &complete_close);
 	key_add(rc_map, "Clone", &complete_clone);
 

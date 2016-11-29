@@ -15,7 +15,7 @@
  *  doc:step
  *  doc:get-attr doc:set-attr?
  * and might capture doc:revisit to hide??
- * others are doc:render-line* doc:load-file,same-file,save-file
+ * others are doc:load-file,same-file,save-file
  *  doc:replace doc:reundo doc:get-str doc:modified
  */
 
@@ -115,8 +115,6 @@ DEF_CMD(email_handle)
 	if (strcmp(ci->key, "doc:set-ref") != 0 &&
 	    strcmp(ci->key, "doc:mark-same") != 0 &&
 	    strcmp(ci->key, "doc:step") != 0 &&
-	    strcmp(ci->key, "doc:render-line") != 0 &&
-	    strcmp(ci->key, "doc:render-line-prev") != 0 &&
 	    strcmp(ci->key, "doc:get-attr") != 0
 		)
 		return key_lookup(doc_default_cmd, ci);

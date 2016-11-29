@@ -191,8 +191,8 @@ static void render_hex_register_map(void)
 
 	key_add(he_map, "Move-EOL", &render_hex_eol);
 
-	key_add(he_map, "doc:render-line-prev", &render_line_prev);
-	key_add(he_map, "doc:render-line", &render_line);
+	key_add(he_map, "render-line-prev", &render_line_prev);
+	key_add(he_map, "render-line", &render_line);
 
 	key_add(he_map, "Close", &render_hex_close);
 	key_add(he_map, "Clone", &render_hex_clone);

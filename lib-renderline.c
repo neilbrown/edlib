@@ -349,8 +349,8 @@ void edlib_init(struct pane *ed safe)
 {
 	rl_map = key_alloc();
 
-	key_add(rl_map, "doc:render-line", &render_line);
-	key_add(rl_map, "doc:render-line-prev", &render_prev);
+	key_add(rl_map, "render-line", &render_line);
+	key_add(rl_map, "render-line-prev", &render_prev);
 	key_add(rl_map, "Clone", &rl_clone);
 	key_add(rl_map, "Close", &rl_close);
 
