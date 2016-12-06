@@ -79,9 +79,21 @@ DEF_CMD(crop_handle)
 			return -1;
 	ret = comm_call_pane(p, ci->key, ci->focus, ci->numeric,
 				      ci->mark, ci->str, ci->extra, ci->mark2, ci->comm2);
-	if (crop(ci->mark, cd, p) || crop(ci->mark2, cd, p))
-		if (strcmp(ci->key, "doc:set-ref") != 0)
+	if (crop(ci->mark, cd, p) || crop(ci->mark2, cd, p)) {
+		if (strcmp(ci->key, "doc:step") == 0)
+			ret = CHAR_RET(WEOF);
+		else if (strcmp(ci->key, "doc:set-ref") != 0)
 			ret = -1;
+	}
+	if (strcmp(ci->key, "doc:step")==0 && ci->extra == 0 && ci->mark) {
+		if (ci->numeric) {
+			if (mark_same_pane(p, ci->mark, cd->end))
+				ret = CHAR_RET(WEOF);
+		} else {
+			if (mark_same_pane(p, ci->mark, cd->start))
+				ret = CHAR_RET(WEOF);
+		}
+	}
 	return ret;
 }
 
