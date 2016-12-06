@@ -679,9 +679,12 @@ static struct mark *call_render_line_offset(struct pane *p safe,
 
 DEF_CMD(get_len)
 {
-	if (ci->str)
-		return strlen(ci->str) + 1;
-	else
+	if (ci->str) {
+		int l = strlen(ci->str);
+		while (l >=3 && strncmp(ci->str+l-3, "</>", 3) == 0)
+			l -= 3;
+		return l + 1;
+	} else
 		return 1;
 }
 
