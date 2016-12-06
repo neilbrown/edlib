@@ -40,17 +40,23 @@ static void header_add(struct header_info *hi safe, char *header)
 DEF_CMD(header_step)
 {
 	struct pane *p = ci->home;
+	struct pane *par = p->parent;
 	struct header_info *hi = p->data;
 	struct mark *m = ci->mark;
 	bool forward = ci->numeric;
 	struct mark *st;
 	struct mark *ed;
 
-	if (!m)
+	if (!m || !par)
 		return 0;
-	st = vmark_at_or_before(p, m, hi->vnum);
-	if (st)
+	st = vmark_at_or_before(par, m, hi->vnum);
+	if (st) {
 		ed = vmark_next(st);
+		if (!ed) {
+			ed = st;
+			st = vmark_prev(ed);
+		}
+	}
 	if (!st || !ed)
 		return CHAR_RET(WEOF);
 	if (st->seq < m->seq && m->seq < ed->seq &&
@@ -81,18 +87,52 @@ DEF_CMD(header_step)
 	return 0;
 }
 
+DEF_CMD(header_same)
+{
+	struct pane *p = ci->home;
+	struct pane *par = p->parent;
+	struct header_info *hi = p->data;
+	struct mark *m1 = ci->mark;
+	struct mark *m2 = ci->mark2;
+	struct mark *m;
+
+	if (!m1 || !m2 || !par)
+		return -1;
+	if (m1->seq > m2->seq) {
+		m1 = ci->mark2;
+		m2 = ci->mark;
+	}
+	m = vmark_at_or_before(par, m2, hi->vnum);
+	if (m && m1->seq < m->seq) {
+		/* Marks could be the same is m1 is the end of
+		 * one header, and m2 is the start of the next.
+		 * Otherwise leave it to parent to determine
+		 */
+		if (mark_same_pane(par, m, m2)) {
+			while ((m = vmark_prev(m)) != NULL) {
+				if (attr_find_int(m->attrs, "visible") == 1)
+					break;
+				if (mark_same_pane(par, m, m1))
+					return 1;
+			}
+		}
+	}
+	return 0;
+}
+
 DEF_CMD(header_attr)
 {
 	struct pane *p = ci->home;
+	struct pane *par = p->parent;
 	struct header_info *hi = p->data;
 	struct mark *st;
 	struct mark *ed;
 	struct mark *m = ci->mark;
 
-	if (!ci->mark)
+	if (!ci->mark || !par)
 		return 0;
 
-	st = vmark_at_or_before(p, m, hi->vnum);
+	st = vmark_at_or_before(par, m, hi->vnum);
 	if (st)
 		ed = vmark_next(st);
 	if (!st || !ed)
@@ -111,12 +151,14 @@ DEF_CMD(header_attr)
 			mark_to_mark(m, st);
 	}
 	if (strcmp(ci->str, "render:") == 0 && ci->extra == 1) {
-		if (st && mark_same_pane(p, st, ci->mark)) {
+		if (st && mark_same_pane(par, st, ci->mark)) {
 			char *h = attr_find(st->attrs, "header");
 			char n[5];
+			/* +1 to include ':' */
 			sprintf(n, "%d", (int)(h ? strlen(h)+1 : 0));
-			comm_call7(ci->comm2, "callback:get-attr", ci->focus,
-				   0, NULL, n, 0, "render:rfc822header", NULL);
+			if (h && h[0])
+				comm_call7(ci->comm2, "callback:get-attr", ci->focus,
+					   0, NULL, n, 0, "render:rfc822header", NULL);
 		}
 	}
 	return 0;
@@ -142,6 +184,7 @@ static void header_init_map(void)
 {
 	header_map = key_alloc();
 	key_add(header_map, "doc:step", &header_step);
+	key_add(header_map, "doc:mark-same", &header_same);
 	key_add(header_map, "doc:get-attr", &header_attr);
 	key_add(header_map, "Close", &header_close);
 }
@@ -184,16 +227,20 @@ static void find_headers(struct pane *p safe)
 		attr_set_str(&hm->attrs, "header", hname);
 		free(hname);
 		while ((ch = mark_next_pane(par, m)) != WEOF &&
-		       (ch != '\n' || isspace(doc_following_pane(par, m))))
+		       (ch != '\n' ||
+			(ch = doc_following_pane(par, m)) == ' ' || ch == '\t'))
 			;
 		hm = mark_dup(m, 0);
 	}
 	mark_free(m);
 }
 
-static int check_header(struct header_info *hi, char *h)
+static int check_header(struct header_info *hi, char *h safe)
 {
 	struct hdr_list *he;
+	if (h[0] == 0 || h[0] == '\n')
+		/* Blank line at end is considered to be a header */
+		return 1;
 	list_for_each_entry(he, &hi->headers, list) {
 		if (strcasecmp(he->header, h) == 0)
 			return 1;
