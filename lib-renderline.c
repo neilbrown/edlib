@@ -262,6 +262,9 @@ DEF_CMD(render_line)
 
 		as_repush(&ar.tmpst, &ar.ast, chars, &b);
 
+		if (o >= 0 && b.len >= o)
+			break;
+
 		ch = mark_next_pane(p, m);
 		if (ch == WEOF)
 			break;
