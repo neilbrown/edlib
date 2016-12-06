@@ -120,31 +120,24 @@ static void change_part(struct email_info *ei safe, struct mark *m safe, int par
 	call3("doc:set-ref", p, !end, m1);
 }
 
-DEF_CMD(email_handle)
+DEF_CMD(email_close)
+{
+	struct email_info *ei = ci->home->data;
+	doc_free(&ei->doc);
+	free(ei);
+	return 1;
+}
+
+DEF_CMD(email_set_ref)
 {
 	struct email_info *ei = ci->home->data;
 	struct mark *m1 = NULL, *m2 = NULL;
 	int ret;
 
-	if (strcmp(ci->key, "Close") == 0) {
-		doc_free(&ei->doc);
-		free(ei);
-		return 1;
-	}
-
-	if (strcmp(ci->key, "doc:set-ref") != 0 &&
-	    strcmp(ci->key, "doc:mark-same") != 0 &&
-	    strcmp(ci->key, "doc:step") != 0 &&
-	    strcmp(ci->key, "doc:get-attr") != 0
-		)
-		return key_lookup(doc_default_cmd, ci);
-
 	/* Document access commands are handled by the 'cropper'.
 	 * First we need to substitute the marks, then call the cropper
 	 * which calls the document.  Then make sure the marks are still in order.
 	 */
-	if (strcmp(ci->key, "doc:set-ref") != 0)
-		email_check_consistent(ei);
 	if (ci->mark) {
 		if (!ci->mark->ref.m) {
 			change_part(ei, ci->mark, 0, 0);
@@ -161,10 +154,62 @@ DEF_CMD(email_handle)
 		}
 		m2 = ci->mark2->ref.m;
 	}
-	if (strcmp(ci->key, "doc:set-ref") != 0)
-		email_check_consistent(ei);
-	if (strcmp(ci->key, "doc:mark-same") == 0 &&
-	    ci->mark && ci->mark2 &&
+	if (ci->mark && ci->mark2 &&
+	    ci->mark->ref.docnum != ci->mark2->ref.docnum)
+		return -1;
+	if (!ci->mark)
+		return -1;
+
+	if (ci->numeric == 1) {
+		/* start */
+		if (ci->mark->ref.docnum != 0)
+			change_part(ei, ci->mark, 0, 0);
+	} else {
+		if (ci->mark->ref.docnum != 1)
+			change_part(ei, ci->mark, 1, 1);
+	}
+
+	ret = call_home7(ci->mark->ref.docnum ? ei->body : ei->headers,
+			 ci->key, ci->focus, ci->numeric, m1, ci->str,
+			 ci->extra,ci->str2, m2, ci->comm2);
+	reset_mark(ci->mark);
+	if (ci->mark2) {
+		reset_mark(ci->mark2);
+		reset_mark(ci->mark);
+	}
+	email_check_consistent(ei);
+	return ret;
+}
+
+DEF_CMD(email_same)
+{
+	struct email_info *ei = ci->home->data;
+	struct mark *m1 = NULL, *m2 = NULL;
+	int ret;
+
+	/* Document access commands are handled by the 'cropper'.
+	 * First we need to substitute the marks, then call the cropper
+	 * which calls the document.  Then make sure the marks are still in order.
+	 */
+	email_check_consistent(ei);
+	if (ci->mark) {
+		if (!ci->mark->ref.m) {
+			change_part(ei, ci->mark, 0, 0);
+			mark_to_end(&ei->doc, ci->mark, 0);
+			reset_mark(ci->mark);
+		}
+		m1 = ci->mark->ref.m;
+	}
+	if (ci->mark2) {
+		if (!ci->mark2->ref.m) {
+			change_part(ei, ci->mark2, 0, 0);
+			mark_to_end(&ei->doc, ci->mark2, 0);
+			reset_mark(ci->mark2);
+		}
+		m2 = ci->mark2->ref.m;
+	}
+	email_check_consistent(ei);
+	if (ci->mark && ci->mark2 &&
 	    ci->mark->ref.docnum != ci->mark2->ref.docnum) {
 		if (ci->mark->ref.docnum < ci->mark2->ref.docnum) {
 			if (call5("doc:step", ei->headers, 1, m1, NULL, 0) == CHAR_RET(WEOF) &&
@@ -177,26 +222,57 @@ DEF_CMD(email_handle)
 		}
 		return 2;
 	}
+	if (!ci->mark)
+		return -1;
+	ret = call_home7(ci->mark->ref.docnum ? ei->body : ei->headers,
+			 ci->key, ci->focus, ci->numeric, m1, ci->str,
+			 ci->extra,ci->str2, m2, ci->comm2);
+	reset_mark(ci->mark);
+	if (ci->mark2) {
+		reset_mark(ci->mark2);
+		reset_mark(ci->mark);
+	}
+	email_check_consistent(ei);
+	return ret;
+}
+
+DEF_CMD(email_step)
+{
+	struct email_info *ei = ci->home->data;
+	struct mark *m1 = NULL, *m2 = NULL;
+	int ret;
+
+	/* Document access commands are handled by the 'cropper'.
+	 * First we need to substitute the marks, then call the cropper
+	 * which calls the document.  Then make sure the marks are still in order.
+	 */
+	email_check_consistent(ei);
+	if (ci->mark) {
+		if (!ci->mark->ref.m) {
+			change_part(ei, ci->mark, 0, 0);
+			mark_to_end(&ei->doc, ci->mark, 0);
+			reset_mark(ci->mark);
+		}
+		m1 = ci->mark->ref.m;
+	}
+	if (ci->mark2) {
+		if (!ci->mark2->ref.m) {
+			change_part(ei, ci->mark2, 0, 0);
+			mark_to_end(&ei->doc, ci->mark2, 0);
+			reset_mark(ci->mark2);
+		}
+		m2 = ci->mark2->ref.m;
+	}
+	email_check_consistent(ei);
 	if (ci->mark && ci->mark2 &&
 	    ci->mark->ref.docnum != ci->mark2->ref.docnum)
 		return -1;
 	if (!ci->mark)
 		return -1;
-	if (strcmp(ci->key, "doc:set-ref") == 0 && ci->mark) {
-		if (ci->numeric == 1) {
-			/* start */
-			if (ci->mark->ref.docnum != 0)
-				change_part(ei, ci->mark, 0, 0);
-		} else {
-			if (ci->mark->ref.docnum != 1)
-				change_part(ei, ci->mark, 1, 1);
-		}
-	}
 	ret = call_home7(ci->mark->ref.docnum ? ei->body : ei->headers,
 			 ci->key, ci->focus, ci->numeric, m1, ci->str,
 			 ci->extra,ci->str2, m2, ci->comm2);
-	while ((ret == CHAR_RET(WEOF) || ret == -1) &&
-	       ci->mark && strcmp(ci->key, "doc:step") == 0) {
+	while (ret == CHAR_RET(WEOF) || ret == -1) {
 		if (ci->numeric) {
 			if (ci->mark->ref.docnum == 1)
 				break;
@@ -219,6 +295,64 @@ DEF_CMD(email_handle)
 	email_check_consistent(ei);
 	return ret;
 }
+
+DEF_CMD(email_attr)
+{
+	struct email_info *ei = ci->home->data;
+	struct mark *m1 = NULL, *m2 = NULL;
+	int ret;
+
+	/* Document access commands are handled by the 'cropper'.
+	 * First we need to substitute the marks, then call the cropper
+	 * which calls the document.  Then make sure the marks are still in order.
+	 */
+	email_check_consistent(ei);
+	if (ci->mark) {
+		if (!ci->mark->ref.m) {
+			change_part(ei, ci->mark, 0, 0);
+			mark_to_end(&ei->doc, ci->mark, 0);
+			reset_mark(ci->mark);
+		}
+		m1 = ci->mark->ref.m;
+	}
+	if (ci->mark2) {
+		if (!ci->mark2->ref.m) {
+			change_part(ei, ci->mark2, 0, 0);
+			mark_to_end(&ei->doc, ci->mark2, 0);
+			reset_mark(ci->mark2);
+		}
+		m2 = ci->mark2->ref.m;
+	}
+	email_check_consistent(ei);
+	if (ci->mark && ci->mark2 &&
+	    ci->mark->ref.docnum != ci->mark2->ref.docnum)
+		return -1;
+	if (!ci->mark)
+		return -1;
+	ret = call_home7(ci->mark->ref.docnum ? ei->body : ei->headers,
+			 ci->key, ci->focus, ci->numeric, m1, ci->str,
+			 ci->extra,ci->str2, m2, ci->comm2);
+	reset_mark(ci->mark);
+	if (ci->mark2) {
+		reset_mark(ci->mark2);
+		reset_mark(ci->mark);
+	}
+	email_check_consistent(ei);
+	return ret;
+}
+
+static struct map *email_map safe;
+
+static void email_init_map(void)
+{
+	email_map = key_alloc();
+	key_add(email_map, "doc:set-ref", &email_set_ref);
+	key_add(email_map, "doc:mark-same", &email_same);
+	key_add(email_map, "doc:step", &email_step);
+	key_add(email_map, "doc:get-attr", &email_attr);
+	key_add(email_map, "Close", &email_close);
+}
+DEF_LOOKUP_CMD_DFLT(email_handle, email_map, doc_default_cmd);
 
 DEF_CMD(open_email)
 {
@@ -262,7 +396,7 @@ DEF_CMD(open_email)
 		goto out;
 	ei->body = h;
 
-	h = pane_register(ci->home, 0, &email_handle, &ei->doc, NULL);
+	h = pane_register(ci->home, 0, &email_handle.c, &ei->doc, NULL);
 	if (h) {
 		mark_free(start);
 		mark_free(end);
@@ -278,7 +412,9 @@ out:
 	return -1;
 }
 
+
 void edlib_init(struct pane *ed safe)
 {
+	email_init_map();
 	call_comm("global-set-command", ed, 0, NULL, "open-doc-email", 0, &open_email);
 }
