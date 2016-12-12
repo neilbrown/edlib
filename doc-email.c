@@ -123,6 +123,10 @@ static void change_part(struct email_info *ei safe, struct mark *m safe, int par
 DEF_CMD(email_close)
 {
 	struct email_info *ei = ci->home->data;
+	comm_call_pane(ei->headers, "Closed", ci->home, 0, NULL, NULL, 0,
+		       NULL, NULL);
+	comm_call_pane(ei->body, "Closed", ci->home, 0, NULL, NULL, 0,
+		       NULL, NULL);
 	doc_free(&ei->doc);
 	free(ei);
 	return 1;
@@ -341,6 +345,25 @@ DEF_CMD(email_attr)
 	return ret;
 }
 
+DEF_CMD(email_notify_close)
+{
+
+	if (strcmp(ci->key, "Notify:Close:request") == 0) {
+		/* The autoclose document wants to know if it should close.
+		 * tell it "no" */
+		return 1;
+	}
+
+	if (strcmp(ci->key, "Notify:Close") == 0) {
+		/* sub-document has been closed.
+		 * Can we survive? or should we just shut down?
+		 */
+		pane_close(ci->home);
+		return 1;
+	}
+	return 0;
+}
+
 static struct map *email_map safe;
 
 static void email_init_map(void)
@@ -351,6 +374,7 @@ static void email_init_map(void)
 	key_add(email_map, "doc:step", &email_step);
 	key_add(email_map, "doc:get-attr", &email_attr);
 	key_add(email_map, "Close", &email_close);
+	key_add_range(email_map, "Notify:Close", "Notify:Close\377", &email_notify_close);
 }
 DEF_LOOKUP_CMD_DFLT(email_handle, email_map, doc_default_cmd);
 
@@ -398,6 +422,9 @@ DEF_CMD(open_email)
 
 	h = pane_register(ci->home, 0, &email_handle.c, &ei->doc, NULL);
 	if (h) {
+		pane_add_notify(h, ei->headers, "Notify:Close");
+		pane_add_notify(h, ei->body, "Notify:Close");
+
 		mark_free(start);
 		mark_free(end);
 		attr_set_str(&h->attrs, "render-default", "text");
