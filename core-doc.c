@@ -402,21 +402,27 @@ DEF_CMD(doc_do_attach)
 	return comm_call(ci->comm2, "callback", p, 0, NULL, NULL, 0);
 }
 
-DEF_CMD(doc_do_closed)
+DEF_CMD(doc_drop_cache)
 {
 	struct pane *p = ci->home;
 	struct doc *d = p->data;
+
+	if (d->autoclose)
+		pane_close(p);
+	return 1;
+}
+
+DEF_CMD(doc_do_closed)
+{
+	struct pane *p = ci->home;
 	int ret;
 
-	if (!d->autoclose)
-		return 0;
 	/* If there are any doc-displays open, then will return '1' and
 	 * we will know not to destroy document yet.
 	 */
 	ret = pane_notify(p, "Notify:Close:request", NULL, NULL, NULL, 0, NULL);
-	if (ret > 0)
-		return 1;
-	pane_close(p);
+	if (ret == 0)
+		call3("doc:drop-cache", p, 0, NULL);
 	return 1;
 }
 
@@ -466,6 +472,7 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "doc:autoclose", &doc_set_autoclose);
 	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);
 	key_add(doc_default_cmd, "doc:revisit", &doc_do_revisit);
+	key_add(doc_default_cmd, "doc:drop-cache", &doc_drop_cache);
 	key_add(doc_default_cmd, "Closed", &doc_do_closed);
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
 		      &doc_request_notify);
