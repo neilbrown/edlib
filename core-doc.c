@@ -349,6 +349,17 @@ DEF_CMD(doc_set_name)
 	return call3("doc:check_name", d->home, -1, NULL);
 }
 
+DEF_CMD(doc_set_parent)
+{
+	if (ci->focus != ci->home->parent) {
+		list_move(&ci->home->siblings, &ci->focus->children);
+		ci->home->parent = ci->focus;
+	}
+	call3("doc:check_name", ci->home, ci->numeric, NULL);
+
+	return 1;
+}
+
 DEF_CMD(doc_request_notify)
 {
 	pane_add_notify(ci->focus, ci->home, ci->key+8);
@@ -468,6 +479,7 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "doc:vmark-get", &doc_vmarkget);
 	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
+	key_add(doc_default_cmd, "doc:set-parent", &doc_set_parent);
 	key_add(doc_default_cmd, "doc:attach", &doc_do_attach);
 	key_add(doc_default_cmd, "doc:autoclose", &doc_set_autoclose);
 	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);

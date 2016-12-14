@@ -136,6 +136,15 @@ DEF_CMD(doc_checkname)
 	struct docs *ds = container_of(d, struct docs, doc);
 
 	check_name(ds, ci->focus);
+	if (ci->numeric >= 0) {
+		struct pane *p = ci->focus;
+		docs_demark(ds, p);
+		if (ci->numeric > 0)
+			list_move(&p->siblings, &ci->home->children);
+		else
+			list_move_tail(&p->siblings, &ci->home->children);
+		docs_enmark(ds, p);
+	}
 	return 1;
 }
 
@@ -359,15 +368,8 @@ DEF_CMD(docs_callback)
 		if (p == doc->doc.home)
 			/* The docs doc is implicitly attached */
 			return 0;
-		if (p->parent != doc->doc.home)
-			check_name(doc, p);
-		p->parent = doc->doc.home;
-		docs_demark(doc, p);
-		if (ci->numeric >= 0)
-			list_move(&p->siblings, &doc->doc.home->children);
-		else
-			list_move_tail(&p->siblings, &doc->doc.home->children);
-		docs_enmark(doc, p);
+		call_home(p, "doc:set-parent", doc->doc.home,
+			  ci->numeric >= 0 ? 1 : 0 , NULL, NULL);
 		return 0;
 	}
 	return 0;
