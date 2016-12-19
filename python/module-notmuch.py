@@ -598,8 +598,10 @@ class notmuch_master_view(edlib.Pane):
             self.list_pane.call("OtherPane", "notmuch", "threads", 3,
                                     lambda key,**a:take('focus', pl, a))
             self.query_pane = pl[-1]
-            pl[0].call("doc:attach", self.query_pane, "notmuch:threads",
-                       lambda key,**a:take('focus',pl,a))
+            pl[-1].call("doc:attach",
+                        lambda key,**a:take('focus',pl,a))
+            pl[-1].call("doc:assign", pl[0], 1, "notmuch:threads",
+                                    lambda key,**a:take('focus', pl, a))
             self.query_pane = pl[-1]
             if numeric:
                 self.query_pane.take_focus()
@@ -614,8 +616,11 @@ class notmuch_master_view(edlib.Pane):
             self.call("doc:notmuch:byid", str, lambda key,**a:take('focus',pl,a))
             self.query_pane.call("OtherPane", "notmuch", "message", 2,
                                  lambda key,**a:take('focus',pl,a))
-            pl[0].call("doc:attach", pl[-1], "notmuch:message",
-                                 lambda key,**a:take('focus',pl,a))
+            pl[-1].call("doc:attach",
+                        lambda key,**a:take('focus',pl,a))
+            pl[-1].call("doc:assign", pl[0], 1, "notmuch:message",
+                        lambda key,**a:take('focus', pl, a))
+
             # This still doesn't work: there are races: attaching a doc to
             # the pane causes the current doc to be closed.  But the new doc
             # hasn't been anchored yet so if they are the same, we lose.
@@ -687,7 +692,9 @@ def notmuch_mode(key, home, focus, **a):
         home.call("attach-doc-notmuch", lambda key, **a:take('focus', pl, a))
     if len(pl) != 2:
         return -1
-    pl[1].call("doc:attach", pl[0])
+    pl[0].call("doc:attach",
+               lambda key,**a:take('focus', pl, a))
+    pl[-1].call("doc:assign", pl[1], 1)
     return 1
 
 ##################

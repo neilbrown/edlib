@@ -32,6 +32,9 @@ struct doc_ref {
 
 #include "core.h"
 
+static struct pane *doc_assign(struct pane *p safe, int, char *);
+struct pane *doc_attach(struct pane *parent, struct pane *d);
+
 static inline wint_t doc_following(struct doc *d safe, struct mark *m safe)
 {
 	return mark_step2(d, m, 1, 0);
@@ -402,17 +405,6 @@ DEF_CMD(doc_vmarkget)
 			  0, m, NULL, 0, NULL, m2);
 }
 
-DEF_CMD(doc_do_attach)
-{
-	/* Attach the home document to the focus */
-	struct pane *p = doc_attach_view(ci->focus, ci->home, ci->str);
-	if (!p)
-		return -1;
-	if (!ci->comm2)
-		return 1;
-	return comm_call(ci->comm2, "callback", p, 0, NULL, NULL, 0);
-}
-
 DEF_CMD(doc_drop_cache)
 {
 	struct pane *p = ci->home;
@@ -480,7 +472,6 @@ static void init_doc_defaults(void)
 	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
 	key_add(doc_default_cmd, "doc:set-parent", &doc_set_parent);
-	key_add(doc_default_cmd, "doc:attach", &doc_do_attach);
 	key_add(doc_default_cmd, "doc:autoclose", &doc_set_autoclose);
 	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);
 	key_add(doc_default_cmd, "doc:revisit", &doc_do_revisit);
@@ -553,6 +544,17 @@ DEF_CMD(doc_handle)
 				 0, m, NULL, 0);
 	}
 
+	if (strcmp(ci->key, "doc:assign") == 0) {
+		struct pane *p2;
+		if ((void*) (dd->doc))
+			return -1;
+		dd->doc = ci->focus;
+		p2 = doc_assign(ci->home, ci->numeric, ci->str);
+		if (p2)
+			comm_call(ci->comm2, "callback:doc", p2, 0, NULL, NULL, 0);
+		return 1;
+	}
+
 	if (strcmp(ci->key, "Replace") == 0) {
 		return call_home7(dd->doc, "doc:replace", ci->focus, 1, ci->mark, ci->str,
 				  ci->extra, NULL, dd->point, NULL);
@@ -591,19 +593,39 @@ DEF_CMD(doc_handle)
 	return key_handle(&ci2);
 }
 
-struct pane *doc_attach(struct pane *parent, struct pane *d safe)
+static struct pane *doc_assign(struct pane *p safe, int numeric, char *str)
+{
+	struct doc_data *dd = p->data;
+	struct pane *p2 = NULL;
+	struct mark *m;
+
+	m = vmark_new(dd->doc, MARK_POINT);
+	if (!m)
+		return NULL;
+	dd->point = m;
+	pane_add_notify(p, dd->doc, "Notify:Close");
+	p->pointer = dd->point;
+	call3("doc:revisit", dd->doc, 1, NULL);
+	if (numeric) {
+		p2 = call_pane("attach-view", p, 0, NULL, 0);
+		if (p2)
+			p2 = render_attach(str, p2);
+	}
+	return p2;
+}
+
+struct pane *doc_attach(struct pane *parent, struct pane *d)
 {
 	struct pane *p;
 	struct doc_data *dd = calloc(1, sizeof(*dd));
 
-	dd->doc = d;
+	if (d)
+		dd->doc = d;
 
 	p = pane_register(parent, 0, &doc_handle, dd, NULL);
 	/* non-home panes need to be notified so they can self-destruct */
-	pane_add_notify(p, d, "Notify:Close");
-	dd->point = point_new(d->data);
-	p->pointer = dd->point;
-	call3("doc:revisit", d, 1, NULL);
+	if (d)
+		doc_assign(p, 0, NULL);
 	return p;
 }
 
@@ -613,6 +635,19 @@ struct pane *doc_new(struct pane *p safe, char *type)
 
 	snprintf(buf, sizeof(buf), "attach-doc-%s", type);
 	return call_pane(buf, p, 0, NULL, 0);
+}
+
+/*
+ * If you have a document and want to view it, you call "doc:attach"
+ * passing the attachment point as the focus.
+ * Then call "doc:assign" on the resulting pane to provide the document.
+ */
+DEF_CMD(doc_do_attach)
+{
+	struct pane *p = doc_attach(ci->focus, NULL);
+	if (!p)
+		return -1;
+	return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
 }
 
 DEF_CMD(doc_open)
@@ -771,6 +806,7 @@ void doc_setup(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "doc:open", 0, &doc_open);
 	call_comm("global-set-command", ed, 0, NULL, "doc:from-text", 0, &doc_from_text);
+	call_comm("global-set-command", ed, 0, NULL, "doc:attach", 0, &doc_do_attach);
 	if (!(void*)doc_default_cmd)
 		init_doc_defaults();
 }

@@ -765,9 +765,10 @@ DEF_CMD(emacs_shell)
 		doc = call_pane7("doc:from-text", par, 0, NULL, 0, name, "");
 	if (!doc)
 		return -1;
-	p = doc_attach(doc, doc);
+	p = call_pane("doc:attach", doc, 0, NULL, 0);
 	if (!p)
 		return -1;
+	call_home(p, "doc:assign", doc, 0, NULL, NULL);
 	call_pane7("attach-shellcmd", p, 0, NULL, 0, ci->str, NULL);
 	doc_attach_view(par, doc, NULL);
 	return 1;
