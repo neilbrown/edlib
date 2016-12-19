@@ -194,8 +194,11 @@ DEF_CMD(view_handle)
 		if (vd->line_height < 0) {
 			struct call_return cr;
 			cr.c = text_size_callback;
-			call_comm7("text-size", ci->home, -1, NULL,
-				   "M", 0, "bold", &cr.c);
+			if (call_comm7("text-size", ci->home, -1, NULL,
+				       "M", 0, "bold", &cr.c) == 0) {
+				cr.x = cr.y =1;
+				cr.i = 0;
+			}
 			vd->line_height = cr.y;
 			vd->border_height = cr.y;
 			vd->border_width = cr.x;
