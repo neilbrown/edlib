@@ -116,18 +116,20 @@ void doc_init(struct doc *d safe)
 DEF_CMD(doc_char)
 {
 	struct pane *p = ci->home;
+	struct doc_data *dd = p->data;
+	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
 
-	if (!ci->mark)
-		return -1;
+	if (!m)
+		m = dd->point;
 
 	while (rpt > 0) {
-		if (mark_next_pane(p, ci->mark) == WEOF)
+		if (mark_next_pane(p, m) == WEOF)
 			break;
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		if (mark_prev_pane(p, ci->mark) == WEOF)
+		if (mark_prev_pane(p, m) == WEOF)
 			break;
 		rpt += 1;
 	}
@@ -138,37 +140,39 @@ DEF_CMD(doc_char)
 DEF_CMD(doc_word)
 {
 	struct pane *p = ci->home;
+	struct doc_data *dd = p->data;
+	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
 
-	if (!ci->mark)
-		return -1;
+	if (!m)
+		m = dd->point;
 
 	/* We skip spaces, then either alphanum or non-space/alphanum */
 	while (rpt > 0) {
-		while (iswspace(doc_following_pane(p, ci->mark)))
-			mark_next_pane(p, ci->mark);
-		if (iswalnum(doc_following_pane(p, ci->mark))) {
-			while (iswalnum(doc_following_pane(p, ci->mark)))
-				mark_next_pane(p, ci->mark);
+		while (iswspace(doc_following_pane(p, m)))
+			mark_next_pane(p, m);
+		if (iswalnum(doc_following_pane(p, m))) {
+			while (iswalnum(doc_following_pane(p, m)))
+				mark_next_pane(p, m);
 		} else {
 			wint_t wi;
-			while ((wi=doc_following_pane(p, ci->mark)) != WEOF &&
+			while ((wi=doc_following_pane(p, m)) != WEOF &&
 			       !iswspace(wi) && !iswalnum(wi))
-				mark_next_pane(p, ci->mark);
+				mark_next_pane(p, m);
 		}
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		while (iswspace(doc_prior_pane(p, ci->mark)))
-			mark_prev_pane(p, ci->mark);
-		if (iswalnum(doc_prior_pane(p, ci->mark))) {
-			while (iswalnum(doc_prior_pane(p, ci->mark)))
-				mark_prev_pane(p, ci->mark);
+		while (iswspace(doc_prior_pane(p, m)))
+			mark_prev_pane(p, m);
+		if (iswalnum(doc_prior_pane(p, m))) {
+			while (iswalnum(doc_prior_pane(p, m)))
+				mark_prev_pane(p, m);
 		} else {
 			wint_t wi;
-			while ((wi=doc_prior_pane(p, ci->mark)) != WEOF &&
+			while ((wi=doc_prior_pane(p, m)) != WEOF &&
 			       !iswspace(wi) && !iswalnum(wi))
-				mark_prev_pane(p, ci->mark);
+				mark_prev_pane(p, m);
 		}
 		rpt += 1;
 	}
@@ -179,29 +183,31 @@ DEF_CMD(doc_word)
 DEF_CMD(doc_WORD)
 {
 	struct pane *p = ci->home;
+	struct doc_data *dd = p->data;
+	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
 
-	if (!ci->mark)
-		return -1;
+	if (!m)
+		m = dd->point;
 
 	/* We skip spaces, then non-spaces */
 	while (rpt > 0) {
 		wint_t wi;
-		while (iswspace(doc_following_pane(p, ci->mark)))
-			mark_next_pane(p, ci->mark);
+		while (iswspace(doc_following_pane(p, m)))
+			mark_next_pane(p, m);
 
-		while ((wi=doc_following_pane(p, ci->mark)) != WEOF &&
+		while ((wi=doc_following_pane(p, m)) != WEOF &&
 		       !iswspace(wi))
-			mark_next_pane(p, ci->mark);
+			mark_next_pane(p, m);
 		rpt -= 1;
 	}
 	while (rpt < 0) {
 		wint_t wi;
-		while (iswspace(doc_prior_pane(p, ci->mark)))
-			mark_prev_pane(p, ci->mark);
-		while ((wi=doc_prior_pane(p, ci->mark)) != WEOF &&
+		while (iswspace(doc_prior_pane(p, m)))
+			mark_prev_pane(p, m);
+		while ((wi=doc_prior_pane(p, m)) != WEOF &&
 		       !iswspace(wi))
-			mark_prev_pane(p, ci->mark);
+			mark_prev_pane(p, m);
 		rpt += 1;
 	}
 
@@ -211,29 +217,31 @@ DEF_CMD(doc_WORD)
 DEF_CMD(doc_eol)
 {
 	struct pane *p = ci->home;
+	struct doc_data *dd = p->data;
+	struct mark *m = ci->mark;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
-	if (!ci->mark)
-		return -1;
+	if (!m)
+		m = dd->point;
 
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next_pane(p, ci->mark)) != WEOF &&
+		while ((ch = mark_next_pane(p, m)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev_pane(p, ci->mark)) != WEOF &&
+		while ((ch = mark_prev_pane(p, m)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt += 1;
 	}
 	if (ch == '\n') {
 		if (RPT_NUM(ci) > 0)
-			mark_prev_pane(p, ci->mark);
+			mark_prev_pane(p, m);
 		else if (RPT_NUM(ci) < 0)
-			mark_next_pane(p, ci->mark);
+			mark_next_pane(p, m);
 	}
 	return 1;
 }
@@ -241,11 +249,12 @@ DEF_CMD(doc_eol)
 DEF_CMD(doc_file)
 {
 	struct pane *p = ci->home;
+	struct doc_data *dd = p->data;
 	int rpt = RPT_NUM(ci);
 	struct mark *m = ci->mark;
 
-	if (!ci->mark)
-		return -1;
+	if (!m)
+		m = dd->point;
 
 	call3("doc:set-ref", p, (rpt <= 0), m);
 
@@ -255,20 +264,22 @@ DEF_CMD(doc_file)
 DEF_CMD(doc_line)
 {
 	struct pane *p = ci->home;
+	struct doc_data *dd = p->data;
+	struct mark *m = ci->mark;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
-	if (!ci->mark)
-		return -1;
+	if (!m)
+		m = dd->point;
 
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next_pane(p, ci->mark)) != WEOF &&
+		while ((ch = mark_next_pane(p, m)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev_pane(p, ci->mark)) != WEOF &&
+		while ((ch = mark_prev_pane(p, m)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt += 1;
@@ -279,21 +290,23 @@ DEF_CMD(doc_line)
 DEF_CMD(doc_page)
 {
 	struct pane *p = ci->home;
+	struct doc_data *dd = p->data;
+	struct mark *m = ci->mark;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
-	if (!ci->mark)
-		return -1;
+	if (!m)
+		m = dd->point;
 
 	rpt *= ci->home->h-2;
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next_pane(p, ci->mark)) != WEOF &&
+		while ((ch = mark_next_pane(p, m)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev_pane(p, ci->mark)) != WEOF &&
+		while ((ch = mark_prev_pane(p, m)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt += 1;
@@ -450,18 +463,21 @@ DEF_CMD(doc_do_revisit)
 }
 
 struct map *doc_default_cmd safe;
+static struct map *doc_handle_cmd safe;
 
-static void init_doc_defaults(void)
+static void init_doc_cmds(void)
 {
 	doc_default_cmd = key_alloc();
+	doc_handle_cmd = key_alloc();
 
-	key_add(doc_default_cmd, "Move-Char", &doc_char);
-	key_add(doc_default_cmd, "Move-Word", &doc_word);
-	key_add(doc_default_cmd, "Move-WORD", &doc_WORD);
-	key_add(doc_default_cmd, "Move-EOL", &doc_eol);
-	key_add(doc_default_cmd, "Move-File", &doc_file);
-	key_add(doc_default_cmd, "Move-Line", &doc_line);
-	key_add(doc_default_cmd, "Move-View-Large", &doc_page);
+	key_add(doc_handle_cmd, "Move-Char", &doc_char);
+	key_add(doc_handle_cmd, "Move-Word", &doc_word);
+	key_add(doc_handle_cmd, "Move-WORD", &doc_WORD);
+	key_add(doc_handle_cmd, "Move-EOL", &doc_eol);
+	key_add(doc_handle_cmd, "Move-File", &doc_file);
+	key_add(doc_handle_cmd, "Move-Line", &doc_line);
+	key_add(doc_handle_cmd, "Move-View-Large", &doc_page);
+
 	key_add(doc_default_cmd, "doc:attr-set", &doc_attr_set);
 	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
 	key_add(doc_default_cmd, "doc:del-view", &doc_delview);
@@ -484,6 +500,11 @@ DEF_CMD(doc_handle)
 {
 	struct doc_data *dd = ci->home->data;
 	struct cmd_info ci2;
+	int retval;
+
+	retval = key_lookup(doc_handle_cmd, ci);
+	if (retval)
+		return retval;
 
 	if (strcmp(ci->key, "Notify:Close:request") == 0) {
 		/* The autoclose document wants to know if it should close.
@@ -586,7 +607,7 @@ DEF_CMD(doc_handle)
 		ci2.mark = dd->point;
 	if (strncmp(ci->key, "doc:", 4) != 0)
 		/* doesn't get sent to the doc */
-		return key_lookup(doc_default_cmd, &ci2);
+		return 0;
 	return key_handle(&ci2);
 }
 
@@ -805,5 +826,5 @@ void doc_setup(struct pane *ed safe)
 	call_comm("global-set-command", ed, 0, NULL, "doc:from-text", 0, &doc_from_text);
 	call_comm("global-set-command", ed, 0, NULL, "doc:attach", 0, &doc_do_attach);
 	if (!(void*)doc_default_cmd)
-		init_doc_defaults();
+		init_doc_cmds();
 }
