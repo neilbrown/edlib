@@ -115,19 +115,19 @@ void doc_init(struct doc *d safe)
 /* For these 'default commands', home->data is struct doc */
 DEF_CMD(doc_char)
 {
-	struct doc *d = ci->home->data;
+	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
 
 	if (!ci->mark)
 		return -1;
 
 	while (rpt > 0) {
-		if (mark_next(d, ci->mark) == WEOF)
+		if (mark_next_pane(p, ci->mark) == WEOF)
 			break;
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		if (mark_prev(d, ci->mark) == WEOF)
+		if (mark_prev_pane(p, ci->mark) == WEOF)
 			break;
 		rpt += 1;
 	}
@@ -137,7 +137,7 @@ DEF_CMD(doc_char)
 
 DEF_CMD(doc_word)
 {
-	struct doc *d = ci->home->data;
+	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
 
 	if (!ci->mark)
@@ -145,30 +145,30 @@ DEF_CMD(doc_word)
 
 	/* We skip spaces, then either alphanum or non-space/alphanum */
 	while (rpt > 0) {
-		while (iswspace(doc_following(d, ci->mark)))
-			mark_next(d, ci->mark);
-		if (iswalnum(doc_following(d, ci->mark))) {
-			while (iswalnum(doc_following(d, ci->mark)))
-				mark_next(d, ci->mark);
+		while (iswspace(doc_following_pane(p, ci->mark)))
+			mark_next_pane(p, ci->mark);
+		if (iswalnum(doc_following_pane(p, ci->mark))) {
+			while (iswalnum(doc_following_pane(p, ci->mark)))
+				mark_next_pane(p, ci->mark);
 		} else {
 			wint_t wi;
-			while ((wi=doc_following(d, ci->mark)) != WEOF &&
+			while ((wi=doc_following_pane(p, ci->mark)) != WEOF &&
 			       !iswspace(wi) && !iswalnum(wi))
-				mark_next(d, ci->mark);
+				mark_next_pane(p, ci->mark);
 		}
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		while (iswspace(doc_prior(d, ci->mark)))
-			mark_prev(d, ci->mark);
-		if (iswalnum(doc_prior(d, ci->mark))) {
-			while (iswalnum(doc_prior(d, ci->mark)))
-				mark_prev(d, ci->mark);
+		while (iswspace(doc_prior_pane(p, ci->mark)))
+			mark_prev_pane(p, ci->mark);
+		if (iswalnum(doc_prior_pane(p, ci->mark))) {
+			while (iswalnum(doc_prior_pane(p, ci->mark)))
+				mark_prev_pane(p, ci->mark);
 		} else {
 			wint_t wi;
-			while ((wi=doc_prior(d, ci->mark)) != WEOF &&
+			while ((wi=doc_prior_pane(p, ci->mark)) != WEOF &&
 			       !iswspace(wi) && !iswalnum(wi))
-				mark_prev(d, ci->mark);
+				mark_prev_pane(p, ci->mark);
 		}
 		rpt += 1;
 	}
@@ -178,7 +178,7 @@ DEF_CMD(doc_word)
 
 DEF_CMD(doc_WORD)
 {
-	struct doc *d = ci->home->data;
+	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
 
 	if (!ci->mark)
@@ -187,21 +187,21 @@ DEF_CMD(doc_WORD)
 	/* We skip spaces, then non-spaces */
 	while (rpt > 0) {
 		wint_t wi;
-		while (iswspace(doc_following(d, ci->mark)))
-			mark_next(d, ci->mark);
+		while (iswspace(doc_following_pane(p, ci->mark)))
+			mark_next_pane(p, ci->mark);
 
-		while ((wi=doc_following(d, ci->mark)) != WEOF &&
+		while ((wi=doc_following_pane(p, ci->mark)) != WEOF &&
 		       !iswspace(wi))
-			mark_next(d, ci->mark);
+			mark_next_pane(p, ci->mark);
 		rpt -= 1;
 	}
 	while (rpt < 0) {
 		wint_t wi;
-		while (iswspace(doc_prior(d, ci->mark)))
-			mark_prev(d, ci->mark);
-		while ((wi=doc_prior(d, ci->mark)) != WEOF &&
+		while (iswspace(doc_prior_pane(p, ci->mark)))
+			mark_prev_pane(p, ci->mark);
+		while ((wi=doc_prior_pane(p, ci->mark)) != WEOF &&
 		       !iswspace(wi))
-			mark_prev(d, ci->mark);
+			mark_prev_pane(p, ci->mark);
 		rpt += 1;
 	}
 
@@ -210,7 +210,7 @@ DEF_CMD(doc_WORD)
 
 DEF_CMD(doc_eol)
 {
-	struct doc *d = ci->home->data;
+	struct pane *p = ci->home;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -218,46 +218,43 @@ DEF_CMD(doc_eol)
 		return -1;
 
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(d, ci->mark)) != WEOF &&
+		while ((ch = mark_next_pane(p, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(d, ci->mark)) != WEOF &&
+		while ((ch = mark_prev_pane(p, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt += 1;
 	}
 	if (ch == '\n') {
 		if (RPT_NUM(ci) > 0)
-			mark_prev(d, ci->mark);
+			mark_prev_pane(p, ci->mark);
 		else if (RPT_NUM(ci) < 0)
-			mark_next(d, ci->mark);
+			mark_next_pane(p, ci->mark);
 	}
 	return 1;
 }
 
 DEF_CMD(doc_file)
 {
-	struct doc *d = ci->home->data;
+	struct pane *p = ci->home;
 	int rpt = RPT_NUM(ci);
 	struct mark *m = ci->mark;
 
 	if (!ci->mark)
 		return -1;
 
-	if (rpt > 0)
-		mark_reset(d, m, 1);
-	if (rpt < 0)
-		mark_reset(d, m, 0);
+	call3("doc:set-ref", p, (rpt <= 0), m);
 
 	return 1;
 }
 
 DEF_CMD(doc_line)
 {
-	struct doc *d = ci->home->data;
+	struct pane *p = ci->home;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -265,13 +262,13 @@ DEF_CMD(doc_line)
 		return -1;
 
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(d, ci->mark)) != WEOF &&
+		while ((ch = mark_next_pane(p, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(d, ci->mark)) != WEOF &&
+		while ((ch = mark_prev_pane(p, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt += 1;
@@ -281,7 +278,7 @@ DEF_CMD(doc_line)
 
 DEF_CMD(doc_page)
 {
-	struct doc *d = ci->home->data;
+	struct pane *p = ci->home;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
@@ -290,13 +287,13 @@ DEF_CMD(doc_page)
 
 	rpt *= ci->home->h-2;
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next(d, ci->mark)) != WEOF &&
+		while ((ch = mark_next_pane(p, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev(d, ci->mark)) != WEOF &&
+		while ((ch = mark_prev_pane(p, ci->mark)) != WEOF &&
 		       ch != '\n')
 			;
 		rpt += 1;
