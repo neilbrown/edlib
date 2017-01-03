@@ -964,7 +964,7 @@ restart:
 						rl->shift_left -= 8 * mwidth;
 					}
 				}
-				if (!restarted) {
+				if (restarted != 2) {
 					restarted = 1;
 					goto restart;
 				}
@@ -984,8 +984,8 @@ restart:
 					rl->shift_left += 8 * mwidth;
 					p->cx -= 8 * mwidth;
 				}
-				if (!restarted) {
-					restarted = 1;
+				if (restarted != 1) {
+					restarted = 2;
 					goto restart;
 				}
 			}
