@@ -343,13 +343,16 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 
 	update_line_height(p, &line_height, &ascent, &twidth, &center, line, scale);
 
+	if (!wrap)
+		x -= rl->shift_left;
+
 	if (prefix) {
 		char *s = prefix + strlen(prefix);
 		update_line_height_attr(p, &line_height, &ascent, NULL,
 					"bold", prefix, scale);
 		draw_some(p, &x, dodraw?y+ascent:-1, prefix, &s, "bold", 0, -1, -1, scale);
 	}
-	rl->prefix_len = x;
+	rl->prefix_len = x + rl->shift_left;
 	if (center == 1)
 		x += (p->w - x - twidth) / 2;
 	if (center > 1)
@@ -379,9 +382,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		*offsetp = -1;
 		cx = cy = -1;
 	}
-
-	if (!wrap)
-		x -= rl->shift_left;
 
 	while (*line && y < p->h && !end_of_page) {
 		int CX;
