@@ -887,6 +887,7 @@ static int render(struct mark *pm, struct pane *p safe,
 	char *s;
 	int hide_cursor = 0;
 	int found_end;
+	int mwidth = -1;
 
 	hdr = pane_attr_get(focus, "heading");
 	if (hdr && !*hdr)
@@ -944,14 +945,23 @@ restart:
 			if (p->cy < 0)
 				p->cx = -1;
 			if (!rl->do_wrap && p->cy >= 0 && p->cx < rl->prefix_len) {
+				if (mwidth < 0) {
+					struct call_return cr;
+					cr.c = text_size_callback;
+					call_comm7("text-size", p, -1, NULL, "M", 0,
+						   "", &cr.c);
+					mwidth = cr.x;
+					if (mwidth <= 0)
+						mwidth = 1;
+				}
 				/* Need to shift to right */
 				while (rl->shift_left > 0 && p->cx < rl->prefix_len) {
-					if (rl->shift_left < 8) {
+					if (rl->shift_left < 8* mwidth) {
 						p->cx += rl->shift_left;
 						rl->shift_left = 0;
 					} else {
-						p->cx += 8;
-						rl->shift_left -= 8;
+						p->cx += 8 * mwidth;
+						rl->shift_left -= 8 * mwidth;
 					}
 				}
 				if (!restarted) {
@@ -960,10 +970,19 @@ restart:
 				}
 			}
 			if (p->cx >= p->w && !rl->do_wrap) {
+				if (mwidth < 0) {
+					struct call_return cr;
+					cr.c = text_size_callback;
+					call_comm7("text-size", p, -1, NULL, "M", 0,
+						   "", &cr.c);
+					mwidth = cr.x;
+					if (mwidth <= 0)
+						mwidth = 1;
+				}
 				/* Need to shift to the left */
 				while (p->cx >= p->w) {
-					rl->shift_left += 8;
-					p->cx -= 8;
+					rl->shift_left += 8 * mwidth;
+					p->cx -= 8 * mwidth;
 				}
 				if (!restarted) {
 					restarted = 1;
