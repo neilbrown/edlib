@@ -124,7 +124,7 @@ static int draw_some(struct pane *p safe, int *x safe, int y, char *start safe, 
 	 * Everything is drawn with the same attributes: attr.
 	 * If the text would get closer to right end than 'margin',
 	 * when stop drawing before then.  If this happens, WRAP is returned.
-	 * If drawing would pass curx, then it stops before cursx and CURS is returned.
+	 * If drawing would pass cursx, then it stops before cursx and CURS is returned.
 	 * If cursorpos is between 0 and len inclusive, a cursor is drawn there.
 	 */
 	int len = *endp - start;
@@ -293,8 +293,12 @@ static void render_image(struct pane *p safe, char *line safe, int *yp safe,
 	free(fname);
 }
 
-/* render a line, with attributes and wrapping.  Report line offset where
- * cursor point cx,cy is passed. -1 if never seen.
+/* Render a line, with attributes and wrapping.
+ * Report line offset where cursor point cx,cy is passed. -1 if never seen.
+ * Report cx,cy location where char at 'offsetp' was drawn, or -1.
+ * Note offsetp, cxp, cyp are in-out parameters.
+ * The location that comes in as *offsetp goes out as *cxp,*cyp
+ * The location that comes in as *cxp,*cyp goes out as *offsetp.
  */
 static void render_line(struct pane *p safe, struct pane *focus safe,
 			char *line safe, int *yp safe, int dodraw, int scale,
@@ -393,24 +397,29 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				mwidth = 1;
 		}
 
-		if (ret == WRAP && wrap) {
-			char buf[2], *b;
-			strcpy(buf, "\\");
-			b = buf+1;
-			x = p->w - mwidth;
-			draw_some(p, &x, dodraw?y+ascent:-1, buf, &b, "underline,fg:blue",
-				  0, -1, -1, scale);
+		if (ret == WRAP) {
+			/* No room for more text */
+			if (wrap) {
+				/* Display "\" to indicating wrapping, and move down */
+				char buf[2], *b;
+				strcpy(buf, "\\");
+				b = buf+1;
+				x = p->w - mwidth;
+				draw_some(p, &x, dodraw?y+ascent:-1, buf, &b, "underline,fg:blue",
+					  0, -1, -1, scale);
 
-			x = 0;
-			y += line_height;
+				x = 0;
+				y += line_height;
+			} else {
+				/* Skip over normal text, but make sure to handle
+				 * newline and attributes correctly.
+				 */
+				//while (*line && *line != '\n' && *line != '<')
+				//	line += 1;
+				line += strcspn(line, "\n");
+				start = line;
+			}
 		}
-		if (ret == WRAP && !wrap) {
-			while (*line && *line != '\n' && *line != '<')
-				line += 1;
-			start = line;
-		}
-
-		ch = *line;
 
 		if (y+line_height < cy ||
 		    (y <= cy && x <= cx) ||
@@ -442,9 +451,13 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			}
 		}
 
+		ch = *line;
 		if (ch >= ' ' && ch != '<') {
 			line += 1;
-			/* only flush out if string is getting a bit long */
+			/* Only flush out if string is getting a bit long.
+			 * i.e. if we have reached the offset we are measuring to,
+			 * or if we could have reached the right margin.
+			 */
 			if ((*line & 0xc0) == 0x80)
 				/* In the middle of a UTF-8 */
 				continue;
@@ -463,8 +476,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				buf_final(&attr),
 				wrap ? mwidth : 0,
 				CP, CX, scale);
-		if (!wrap && ret == WRAP && line == start)
-			ret = 0;
 		start = line;
 		if (ret)
 			continue;
