@@ -605,7 +605,9 @@ DEF_CMD(doc_handle)
 
 	if (ci2.mark == NULL)
 		ci2.mark = dd->point;
-	if (strncmp(ci->key, "doc:", 4) != 0)
+	if (strncmp(ci->key, "doc:", 4) != 0 &&
+	    strncmp(ci->key, "Request:Notify:doc:", 19) != 0 &&
+	    strncmp(ci->key, "Notify:doc:", 11) != 0)
 		/* doesn't get sent to the doc */
 		return 0;
 	return key_handle(&ci2);
