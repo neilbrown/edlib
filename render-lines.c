@@ -397,6 +397,36 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				mwidth = 1;
 		}
 
+		if (y+line_height < cy ||
+		    (y <= cy && x <= cx) ||
+		    ret == CURS)
+			if (offsetp)
+				/* haven't passed the cursor yet */
+				*offsetp = start - line_start;
+		if (ret == CURS) {
+			/* Found the cursor, stop looking */
+			cy = -1; cx = -1;
+		}
+		if (y+line_height >= cy &&
+		    y <= cy && x <= cx)
+			CX = cx;
+		else
+			CX = -1;
+		if (offset < start - line_start)
+			CP = -1;
+		else
+			CP = offset - (start - line_start);
+
+		if (offset >= 0 && start - line_start <= offset) {
+			if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
+				*cyp = y;
+				*cxp = x;
+			} else {
+				*cyp = *cxp = -1;
+			}
+		}
+
+
 		if (ret == WRAP) {
 			/* No room for more text */
 			if (wrap) {
@@ -421,36 +451,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			}
 		}
 
-		if (y+line_height < cy ||
-		    (y <= cy && x <= cx) ||
-		    ret == CURS)
-			if (offsetp)
-				/* haven't passed the cursor yet */
-				*offsetp = start - line_start;
-		if (ret == CURS) {
-			/* Found the cursor, stop looking */
-			cy = -1; cx = -1;
-		}
-		if (y+line_height >= cy &&
-		    y <= cy && x <= cx)
-			CX = cx;
-		else
-			CX = -1;
-		if (offset < start - line_start)
-			CP = -1;
-		else
-			CP = offset - (start - line_start);
 		ret = 0;
-
-		if (offset >= 0 && start - line_start <= offset) {
-			if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
-				*cyp = y;
-				*cxp = x;
-			} else {
-				*cyp = *cxp = -1;
-			}
-		}
-
 		ch = *line;
 		if (ch >= ' ' && ch != '<') {
 			line += 1;
