@@ -150,6 +150,8 @@ class EdDisplay(gtk.Window):
                         extra = False
                     focus = focus.parent
                 if extra:
+                    if fg:
+                        self.gc.set_foreground(fg)
                     pm.draw_rectangle(self.gc, True, x+cx, y-ascent+cy,
                                       cw, ch);
                     if numeric < len(str):
