@@ -207,7 +207,10 @@ static void flush_line(struct pane *p, struct render_list **rlp safe,
 	}
 	if (p) {
 		for (rl = *rlp; rl && rl != last_wrap; rl = rl->next) {
-			call_xy7("Draw:text", p, rl->cursorpos, scale,
+			int cp = rl->cursorpos;
+			if (wrap_pos && cp == (int)strlen(rl->text))
+				cp = -1;
+			call_xy7("Draw:text", p, cp, scale,
 				 rl->text, rl->attr, x, y, NULL, NULL);
 			x += rl->width;
 		}
