@@ -39,14 +39,14 @@ static int crop(struct mark *m, struct crop_data *cd safe, struct pane *p safe)
 
 	if (m->seq < cd->start->seq) {
 		if (mark_same_pane(p, m, cd->start)) {
-			mark_forward_over(m, cd->start);
+			mark_to_mark(m, cd->start);
 			return 0;
 		}
 		mark_to_mark(m, cd->start);
 	}
 	if (m->seq > cd->end->seq) {
 		if (mark_same_pane(p, m, cd->end)) {
-			mark_backward_over(m, cd->end);
+			mark_to_mark(m, cd->end);
 			return 0;
 		}
 		mark_to_mark(m, cd->end);
