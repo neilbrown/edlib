@@ -84,7 +84,7 @@ DEF_CMD(open_email)
 		goto out;
 
 	/* move 'start' to end of file */
-	call3("Move-File", p, 1, start);
+	call3("doc:set-ref", p, 0, start);
 	h = call_pane8("attach-crop", p, 0, end, start, 0, NULL, NULL);
 	if (!h)
 		goto out;
