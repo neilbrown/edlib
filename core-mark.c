@@ -439,6 +439,7 @@ void mark_forward_over(struct mark *m safe, struct mark *m2 safe)
 {
 	int seq;
 
+	ASSERT(m2 == doc_next_mark_all(m));
 	hlist_del(&m->all);
 	hlist_add_after(&m2->all, &m->all);
 	if (m->viewnum == m2->viewnum && m->viewnum != MARK_UNGROUPED) {
@@ -472,6 +473,7 @@ void mark_backward_over(struct mark *m safe, struct mark *mp safe)
 {
 	int seq;
 
+	ASSERT(mp == doc_prev_mark_all(m));
 	hlist_del(&m->all);
 	hlist_add_before(&m->all, &mp->all);
 	if (m->viewnum == mp->viewnum && m->viewnum != MARK_UNGROUPED) {
