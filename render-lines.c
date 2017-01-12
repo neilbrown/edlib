@@ -448,7 +448,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 
 	while (*line && y < p->h && !end_of_page) {
 		int CX;
-		int CP;
 
 		if (mwidth <= 0) {
 			struct call_return cr;
@@ -475,10 +474,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			CX = cx;
 		else
 			CX = -1;
-		if (offset < start - line_start)
-			CP = -1;
-		else
-			CP = offset - (start - line_start);
 
 		if (offset >= 0 && start - line_start <= offset) {
 			if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
@@ -525,7 +520,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 						&line,
 						buf_final(&attr),
 						wrap ? mwidth : 0,
-						CP, CX, scale);
+						offset - (start - line_start), CX, scale);
 				start = line;
 			}
 			continue;
@@ -533,7 +528,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		ret = draw_some(p, &rlst, &x, start, &line,
 				buf_final(&attr),
 				wrap ? mwidth : 0,
-				CP, CX, scale);
+				offset - (start - line_start), CX, scale);
 		start = line;
 		if (ret)
 			continue;
@@ -613,7 +608,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			buf_concat(&attr, ",underline,fg:red");
 			ret = draw_some(p, &rlst, &x, buf, &b,
 					buf_final(&attr),
-					wrap ? mwidth*2: 0, CP, CX, scale);
+					wrap ? mwidth*2: 0, offset - (start - line_start), CX, scale);
 			attr.len = l;
 			start = line;
 		}
