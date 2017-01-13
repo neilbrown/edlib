@@ -187,14 +187,39 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x 
 	return ret;
 }
 
+static char *get_last_attr(char *attrs, char *attr)
+{
+	char *com = attrs + strlen(attrs);
+	int len = strlen(attr);
+	for (; com >= attrs ; com--) {
+		int i = 1;
+		if (*com != ',' && com > attrs)
+			continue;
+		if (com == attrs)
+			i = 0;
+		if (strncmp(com+i, attr, len) != 0)
+			continue;
+		if (com[i+len] != ':')
+			continue;
+		com += i+len+1;
+		for (i=0; com[i] && com[i] != ','; i++)
+			;
+		return strndup(com, i);
+	}
+	return NULL;
+}
+
 static int flush_line(struct pane *p, struct render_list **rlp safe,
 		      int y, int scale, int wrap_pos)
 {
-	struct render_list *last_wrap = NULL, *end_wrap = NULL;
+	struct render_list *last_wrap = NULL, *end_wrap = NULL, *last_rl = NULL;
 	int in_wrap = 0;
-	struct render_list *rl;
+	struct render_list *rl, *tofree;
 	int x = 0;
+	char *head;
 
+	if (!*rlp)
+		return 0;
 	for (rl = *rlp; wrap_pos && rl; rl = rl->next) {
 		if (strstr(rl->attr, "wrap,")) {
 			if (!in_wrap) {
@@ -208,7 +233,10 @@ static int flush_line(struct pane *p, struct render_list **rlp safe,
 				end_wrap = rl;
 			in_wrap = 0;
 		}
+		last_rl = rl;
 	}
+	if (last_wrap)
+		last_rl = last_wrap;
 	if (p) {
 		for (rl = *rlp; rl && rl != last_wrap; rl = rl->next) {
 			int cp = rl->cursorpos;
@@ -219,18 +247,40 @@ static int flush_line(struct pane *p, struct render_list **rlp safe,
 				 rl->text, rl->attr, x, y, NULL, NULL);
 			x += rl->width;
 		}
-		if (wrap_pos)
+		if (wrap_pos) {
+			char *e = get_last_attr(last_rl->attr, "wrap-tail");
 			call_xy7("Draw:text", p, -1, scale,
-				 "\\", "underline,fg:blue", wrap_pos, y, NULL, NULL);
+				 e ?: "\\", "underline,fg:blue", wrap_pos, y, NULL, NULL);
+			free(e);
+		}
 	}
-	for (rl = *rlp; rl && rl != end_wrap; rl = *rlp) {
-		*rlp = rl->next;
+	tofree = *rlp;
+	*rlp = end_wrap;
+	if (p && x > p->w)
+		x = p->w;
+
+	if (p && wrap_pos && last_rl && (head = get_last_attr(last_rl->attr, "wrap-head"))) {
+		struct call_return cr = {};
+		cr.c = text_size_callback;
+		call_comm7("text-size", p, p->w, NULL, head, scale, last_rl->attr, &cr.c);
+		rl = calloc(1, sizeof(*rl));
+		rl->text = head;
+		rl->attr = strdup(last_rl->attr); // FIXME underline,fg:blue ???
+		rl->width = cr.x;
+		rl->x = 0;
+		rl->cursorpos = -1;
+		rl->next = *rlp;
+		*rlp = rl;
+		x -= cr.x;
+	}
+
+	for (rl = tofree; rl && rl != end_wrap; rl = tofree) {
+		tofree = rl->next;
 		free(rl->text);
 		free(rl->attr);
 		free(rl);
 	}
-	if (p && x > p->w)
-		x = p->w;
+
 	for (rl = end_wrap; rl; rl = rl->next)
 		rl->x -= x;
 	return x;
@@ -460,6 +510,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		if (mwidth <= 0) {
 			struct call_return cr;
 			cr.c = text_size_callback;
+			cr.x = 0;
 			call_comm7("text-size", p, -1, NULL, "M", 0,
 				   buf_final(&attr), &cr.c);
 			mwidth = cr.x;
