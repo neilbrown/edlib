@@ -30,6 +30,7 @@
 struct hdr_list {
 	struct list_head list;
 	int is_list; // do commas separate units
+	int is_text; // wrap on spaces
 	char header[];
 };
 
@@ -39,11 +40,15 @@ struct header_info {
 	struct pane *orig safe;
 };
 
-static void header_add(struct header_info *hi safe, char *header, int is_list)
+#define IS_LIST 1
+#define IS_TEXT 2
+
+static void header_add(struct header_info *hi safe, char *header, int type)
 {
 	struct hdr_list *hl = malloc(sizeof(*hl) + strlen(header) + 1);
 	strcpy(hl->header, header);
-	hl->is_list = is_list;
+	hl->is_list = type & IS_LIST;
+	hl->is_text = type & IS_TEXT;
 	list_add_tail(&hl->list, &hi->headers);
 }
 
@@ -139,13 +144,21 @@ static void copy_header(struct pane *p safe, struct hdr_list *hdr safe,
 		}
 		if (sol && (ch == ' ' || ch == '\t'))
 			continue;
-		if (sol) {
+		if (sol && hdr->is_text) {
 			call7("doc:replace", p, 1, NULL, " ", 1, NULL, point);
+			mark_prev_pane(p, point);
+			call7("doc:set-attr", p, 1, point, "render:rfc822header-wrap", 0, "1", NULL);
+			mark_next_pane(p, point);
 			sol = 0;
 		}
 		buf[0] = ch;
 		buf[1] = 0;
 		call7("doc:replace", p, 1, NULL, buf, 1, NULL, point);
+		if (ch == ' ' && hdr->is_text) {
+			mark_prev_pane(p, point);
+			call7("doc:set-attr", p, 1, point, "render:rfc822header-wrap", 0, "1", NULL);
+			mark_next_pane(p, point);
+		}
 		if (ch == ',' && hdr->is_list) {
 			struct mark *p2 = mark_dup(point, 1);
 			int cnt = 1;
@@ -212,9 +225,9 @@ DEF_CMD(header_attach)
 		/* add defaults */
 		header_add(hi, "from", 0);
 		header_add(hi, "date", 0);
-		header_add(hi, "subject", 0);
-		header_add(hi, "to", 1);
-		header_add(hi, "cc", 1);
+		header_add(hi, "subject", IS_TEXT);
+		header_add(hi, "to", IS_LIST);
+		header_add(hi, "cc", IS_LIST);
 	}
 	hi->vnum = doc_add_view(hi->orig);
 	find_headers(p);
