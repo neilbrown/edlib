@@ -123,6 +123,7 @@ static void copy_header(struct pane *p safe, struct hdr_list *hdr safe,
 	wint_t ch;
 	struct header_info *hi = p->data;
 	struct pane *doc = hi->orig;
+	char attr[100];
 
 	call3("doc:set-ref", p, 0, point);
 	hstart = mark_dup(point, 1);
@@ -164,6 +165,9 @@ static void copy_header(struct pane *p safe, struct hdr_list *hdr safe,
 	call7("doc:replace", p, 1, NULL, "\n", 1, NULL, point);
 	sprintf(buf, "%zd", strlen(hdr->header)+1);
 	call7("doc:set-attr", p, 1, hstart, "render:rfc822header", 0, buf, NULL);
+	snprintf(attr, sizeof(attr), "render:rfc822header-%s", hdr->header);
+	call7("doc:set-attr", p, 1, hstart, attr, 0, "10000", NULL);
+
 	mark_free(hstart);
 	mark_free(point);
 
@@ -206,11 +210,11 @@ DEF_CMD(header_attach)
 	}
 	if (ci->numeric == 0) {
 		/* add defaults */
-		header_add(hi, "From", 0);
-		header_add(hi, "Date", 0);
-		header_add(hi, "Subject", 0);
-		header_add(hi, "To", 1);
-		header_add(hi, "Cc", 1);
+		header_add(hi, "from", 0);
+		header_add(hi, "date", 0);
+		header_add(hi, "subject", 0);
+		header_add(hi, "to", 1);
+		header_add(hi, "cc", 1);
 	}
 	hi->vnum = doc_add_view(hi->orig);
 	find_headers(p);

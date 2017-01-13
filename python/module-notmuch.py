@@ -1285,10 +1285,16 @@ class notmuch_message_view(edlib.Pane):
             # FIXME detect EOF and move to next message
             return 1
         if key == "map-attr" and str == "render:rfc822header":
-            comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 20)
+            comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed", 21)
             return 1
         if key == "map-attr" and str == "render:rfc822header-wrap":
             comm2("attr:callback", focus, int(str2), mark, "wrap", 20)
+            return 1
+        if key == "map-attr" and str == "render:rfc822header-subject":
+            comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 20)
+            return 1
+        if key == "map-attr" and str == "render:rfc822header-to":
+            comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 20)
             return 1
 
 def render_query_attach(key, home, focus, comm2, **a):
