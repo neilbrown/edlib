@@ -120,7 +120,7 @@ static void find_headers(struct pane *p safe)
 static void copy_header(struct pane *p safe, struct hdr_list *hdr safe,
 			struct mark *start safe, struct mark *end safe)
 {
-	struct mark *m = mark_dup(start, 1);
+	struct mark *m;
 	struct mark *point = vmark_new(p, MARK_POINT);
 	struct mark *hstart;
 	int sol = 0;
@@ -130,6 +130,9 @@ static void copy_header(struct pane *p safe, struct hdr_list *hdr safe,
 	struct pane *doc = hi->orig;
 	char attr[100];
 
+	if (!point)
+		return;
+	m = mark_dup(start, 1);
 	call3("doc:set-ref", p, 0, point);
 	hstart = mark_dup(point, 1);
 	if (hstart->seq > point->seq)

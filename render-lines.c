@@ -115,7 +115,7 @@ DEF_CMD(text_size_callback)
 
 struct render_list {
 	struct render_list *next;
-	char	*text, *attr; // both are allocated
+	char	*text safe, *attr safe; // both are allocated
 	int	x, width;
 	int	cursorpos;
 };
@@ -123,7 +123,7 @@ struct render_list {
 #define WRAP 1
 #define CURS 2
 
-static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x safe,
+static int draw_some(struct pane *p safe, struct render_list **rlp, int *x safe,
 		     char *start safe, char **endp safe,
 		     char *attr safe, int margin, int cursorpos, int cursx, int scale)
 {
@@ -187,7 +187,7 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x 
 	return ret;
 }
 
-static char *get_last_attr(char *attrs, char *attr)
+static char *get_last_attr(char *attrs safe, char *attr)
 {
 	char *com = attrs + strlen(attrs);
 	int len = strlen(attr);
@@ -247,7 +247,7 @@ static int flush_line(struct pane *p, struct render_list **rlp safe,
 				 rl->text, rl->attr, x, y, NULL, NULL);
 			x += rl->width;
 		}
-		if (wrap_pos) {
+		if (wrap_pos && last_rl) {
 			char *e = get_last_attr(last_rl->attr, "wrap-tail");
 			call_xy7("Draw:text", p, -1, scale,
 				 e ?: "\\", "underline,fg:blue", wrap_pos, y, NULL, NULL);
