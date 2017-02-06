@@ -147,11 +147,13 @@ static void copy_header(struct pane *p safe, struct hdr_list *hdr safe,
 		}
 		if (sol && (ch == ' ' || ch == '\t'))
 			continue;
-		if (sol && hdr->is_text) {
+		if (sol) {
 			call7("doc:replace", p, 1, NULL, " ", 1, NULL, point);
-			mark_prev_pane(p, point);
-			call7("doc:set-attr", p, 1, point, "render:rfc822header-wrap", 0, "1", NULL);
-			mark_next_pane(p, point);
+			if (hdr->is_text) {
+				mark_prev_pane(p, point);
+				call7("doc:set-attr", p, 1, point, "render:rfc822header-wrap", 0, "1", NULL);
+				mark_next_pane(p, point);
+			}
 			sol = 0;
 		}
 		buf[0] = ch;
