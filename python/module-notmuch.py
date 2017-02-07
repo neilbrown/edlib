@@ -225,6 +225,9 @@ class notmuch_main(edlib.Doc):
 
     def handle(self, key, focus, mark, mark2, numeric, extra, str, str2, comm2, **a):
 
+        if key == "doc:check_name":
+            return 1
+
         if key == "doc:revisit":
             return 1
 
@@ -341,6 +344,7 @@ class notmuch_main(edlib.Doc):
             pl = []
             focus.call("doc:open", "email:"+fn, -2, lambda key,**a:take('focus',pl,a))
             if pl:
+                pl[0].call("doc:set-parent", self)
                 comm2("callback", pl[0])
             return 1
 
