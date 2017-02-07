@@ -134,10 +134,10 @@ DEF_CMD(doc_checkname)
 {
 	struct doc *d = ci->home->data;
 	struct docs *ds = container_of(d, struct docs, doc);
+	struct pane *p = ci->focus;
 
-	check_name(ds, ci->focus);
-	if (ci->numeric >= 0) {
-		struct pane *p = ci->focus;
+	check_name(ds, p);
+	if (ci->numeric >= 0 && p->parent == ci->home) {
 		docs_demark(ds, p);
 		if (ci->numeric > 0)
 			list_move(&p->siblings, &ci->home->children);
