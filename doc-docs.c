@@ -369,6 +369,8 @@ DEF_CMD(docs_callback)
 			/* The docs doc is implicitly attached */
 			return 0;
 		call_home(p, "doc:set-parent", doc->doc.home,
+			  0 , NULL, NULL);
+		call_home(p, "doc:check_name", doc->doc.home,
 			  ci->numeric >= 0 ? 1 : 0 , NULL, NULL);
 		return 0;
 	}

@@ -368,7 +368,6 @@ DEF_CMD(doc_set_parent)
 		list_move(&ci->home->siblings, &ci->focus->children);
 		ci->home->parent = ci->focus;
 	}
-	call3("doc:check_name", ci->home, ci->numeric, NULL);
 
 	return 1;
 }
