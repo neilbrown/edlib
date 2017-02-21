@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 
-	doc_new(ed, "docs");
+	doc_new(ed, "docs", NULL);
 	call5("global-load-module", ed, 0, NULL, "lib-linecount", 0);
 	call5("global-load-module", ed, 0, NULL, "lib-search", 0);
 	call5("global-load-module", ed, 0, NULL, "lib-popup", 0);

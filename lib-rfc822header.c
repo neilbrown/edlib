@@ -213,7 +213,7 @@ DEF_CMD(header_attach)
 	struct hdr_list *he;
 	struct pane *doc;
 
-	doc = doc_new(ci->focus, "text");
+	doc = doc_new(ci->focus, "text", ci->focus);
 	if (!doc)
 		return -1;
 	call3("doc:autoclose", doc, 1, NULL);

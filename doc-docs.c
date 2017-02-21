@@ -365,11 +365,16 @@ DEF_CMD(docs_callback)
 		p = ci->focus;
 		if (!p)
 			return 0;
+		if (p->parent && p->parent->parent)
+			/* This has a parent which is not the root,
+			 * so we shouldn't interfere.
+			 */
+			return 0;
 		if (p == doc->doc.home)
 			/* The docs doc is implicitly attached */
 			return 0;
 		call_home(p, "doc:set-parent", doc->doc.home,
-			  0 , NULL, NULL);
+			  0, NULL, NULL);
 		call_home(p, "doc:check_name", doc->doc.home,
 			  ci->numeric >= 0 ? 1 : 0 , NULL, NULL);
 		return 0;

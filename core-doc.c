@@ -648,12 +648,16 @@ struct pane *doc_attach(struct pane *parent, struct pane *d)
 	return p;
 }
 
-struct pane *doc_new(struct pane *p safe, char *type)
+struct pane *doc_new(struct pane *p safe, char *type, struct pane *parent)
 {
 	char buf[100];
+	struct pane *np;
 
 	snprintf(buf, sizeof(buf), "attach-doc-%s", type);
-	return call_pane(buf, p, 0, NULL, 0);
+	np = call_pane(buf, p, 0, NULL, 0);
+	if (np && parent)
+		call_home(np, "doc:set-parent", parent, 0, NULL, NULL);
+	return np;
 }
 
 /*
@@ -734,7 +738,7 @@ DEF_CMD(doc_from_text)
 	char *text = ci->str2;
 	struct pane *p;
 
-	p = doc_new(parent, "text");
+	p = doc_new(parent, "text", NULL);
 	if (!p)
 		return -1;
 	call5("doc:set-name", p, 0, NULL, name, 0);

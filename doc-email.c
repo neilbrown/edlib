@@ -89,7 +89,7 @@ DEF_CMD(open_email)
 	if (!h)
 		goto out;
 
-	p = doc_new(ci->home, "multipart");
+	p = doc_new(ci->home, "multipart", ei->email);
 	if (!p)
 		goto out;
 	call_home(p, "multipart-add", h2, 0, NULL, NULL);
