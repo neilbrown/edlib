@@ -225,9 +225,6 @@ class notmuch_main(edlib.Doc):
 
     def handle(self, key, focus, mark, mark2, numeric, extra, str, str2, comm2, **a):
 
-        if key == "doc:check_name":
-            return 1
-
         if key == "doc:revisit":
             return 1
 

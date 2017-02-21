@@ -359,7 +359,7 @@ DEF_CMD(doc_set_name)
 		return -1;
 	free(d->name);
 	d->name = strdup(ci->str);
-	return call3("doc:check_name", d->home, -1, NULL);
+	return call3("doc:revisit", d->home, 0, NULL);
 }
 
 DEF_CMD(doc_set_parent)

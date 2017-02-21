@@ -130,22 +130,18 @@ static void check_name(struct docs *docs safe, struct pane *pane safe)
 		free(nname);
 }
 
-DEF_CMD(doc_checkname)
+static void doc_checkname(struct pane *p safe, struct docs *ds safe, int n)
 {
-	struct doc *d = ci->home->data;
-	struct docs *ds = container_of(d, struct docs, doc);
-	struct pane *p = ci->focus;
-
+	ASSERT(p->parent->data == ds);
 	check_name(ds, p);
-	if (ci->numeric >= 0 && p->parent == ci->home) {
+	if (n) {
 		docs_demark(ds, p);
-		if (ci->numeric > 0)
-			list_move(&p->siblings, &ci->home->children);
+		if (n > 0)
+			list_move(&p->siblings, &ds->doc.home->children);
 		else
-			list_move_tail(&p->siblings, &ci->home->children);
+			list_move_tail(&p->siblings, &ds->doc.home->children);
 		docs_enmark(ds, p);
 	}
-	return 1;
 }
 
 /*
@@ -375,8 +371,8 @@ DEF_CMD(docs_callback)
 			return 0;
 		call_home(p, "doc:set-parent", doc->doc.home,
 			  0, NULL, NULL);
-		call_home(p, "doc:check_name", doc->doc.home,
-			  ci->numeric >= 0 ? 1 : 0 , NULL, NULL);
+		if (p->parent)
+			doc_checkname(p, doc, ci->numeric);
 		return 0;
 	}
 	return 0;
@@ -406,12 +402,7 @@ DEF_CMD(doc_revisit)
 		return 0;
 	if (p == docs->doc.home)
 		return 1;
-	docs_demark(docs, p);
-	if (ci->numeric >= 0)
-		list_move(&p->siblings, &docs->doc.home->children);
-	else
-		list_move_tail(&p->siblings, &docs->doc.home->children);
-	docs_enmark(docs, p);
+	doc_checkname(p, docs, ci->numeric);
 	return 1;
 }
 
@@ -760,7 +751,6 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:get-attr", &docs_doc_get_attr);
 	key_add(docs_map, "doc:mark-same", &docs_mark_same);
 	key_add(docs_map, "doc:step", &docs_step);
-	key_add(docs_map, "doc:check_name", &doc_checkname);
 	key_add(docs_map, "doc:revisit", &doc_revisit);
 	key_add(docs_map, "doc:status-changed", &doc_damage);
 	key_add(docs_map, "doc:destroy", &docs_destroy);
