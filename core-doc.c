@@ -454,11 +454,14 @@ DEF_CMD(doc_do_destroy)
 DEF_CMD(doc_do_revisit)
 {
 	/* If the document doesn't handle doc:revisit directly,
-	 * ask it's parent, which is probably a document manager
+	 * ask it's parent, which is probably a document manager.
+	 * We need this indirection to pass the document as the
+	 * focus, so the document handler knows which document
+	 * to revisit.
 	 */
 	if (!ci->home->parent)
 		return -1;
-	return call3(ci->key, ci->home->parent, ci->numeric, ci->mark);
+	return call_home(ci->home->parent, ci->key, ci->home, ci->numeric, ci->mark, NULL);
 }
 
 struct map *doc_default_cmd safe;
