@@ -61,7 +61,7 @@ DEF_CMD(open_email)
 	    strncmp(ci->str, "email:", 6) != 0)
 		return 0;
 	fd = open(ci->str+6, O_RDONLY);
-	p = call_pane7("doc:open", ci->focus, fd, NULL, 0, ci->str + 6, NULL);
+	p = call_pane7("doc:open", ci->focus, fd, NULL, 1, ci->str + 6, NULL);
 	if (!p)
 		return 0;
 	start = vmark_new(p, MARK_UNGROUPED);
@@ -94,6 +94,7 @@ DEF_CMD(open_email)
 		goto out;
 	call_home(p, "multipart-add", h2, 0, NULL, NULL);
 	call_home(p, "multipart-add", h, 0, NULL, NULL);
+	call3("doc:autoclose", p, 1, NULL);
 
 	h = pane_register(p, 0, &email_handle.c, ei, NULL);
 	if (h) {

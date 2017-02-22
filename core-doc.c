@@ -688,6 +688,7 @@ DEF_CMD(doc_open)
 	char *name = ci->str;
 	struct stat stb;
 	struct pane *p;
+	int autoclose = ci->extra;
 	char pathbuf[PATH_MAX], *rp = NULL;
 
 	stb.st_mode = 0;
@@ -720,6 +721,8 @@ DEF_CMD(doc_open)
 
 		if (!p)
 			return -1;
+		if (autoclose)
+			call3("doc:autoclose", p, 1, NULL);
 		call5("doc:load-file", p, 0, NULL, rp, fd);
 		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	}
