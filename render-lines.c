@@ -142,7 +142,7 @@ static int draw_some(struct pane *p safe, struct render_list **rlp, int *x safe,
 	int ret = WRAP;
 	int rmargin = p->w - margin;
 
-	if (len == 0)
+	if (len == 0 && cursorpos != 0)
 		return 0;
 	str = strndup(start, len);
 	if (cursx >= 0 && cursx >= *x && cursx < rmargin) {
