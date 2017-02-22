@@ -494,6 +494,9 @@ void attr_trim(struct attrset **setp safe, int nkey)
 	attr_free(setp);
 }
 
+/* make a copy of 'set', keeping only attributes from 'nkey'
+ * onwards.  'nkey' will be the new starting offset.
+ */
 struct attrset *attr_copy_tail(struct attrset *set, int nkey)
 {
 	struct attrset *newset = NULL;
@@ -508,10 +511,14 @@ struct attrset *attr_copy_tail(struct attrset *set, int nkey)
 			v = set->attrs + i;
 			i += strlen(v) + 1;
 			n = atoi(k);
+			if (n < nkey)
+				continue;
+			while (*k && *k != ' ')
+				k++;
+			if (*k == ' ')
+				k++;
 
-			if (n <= nkey && *v == '\0')
-				v = NULL;
-			attr_set_str_key(&newset, k, v, nkey);
+			attr_set_str_key(&newset, k, v, n-nkey);
 		}
 	}
 
