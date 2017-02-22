@@ -382,8 +382,12 @@ DEF_CMD(doc_damage)
 {
 	struct pane *p = ci->home;
 	struct mark *m = doc_new_mark(p->data, MARK_UNGROUPED);
+	struct pane *child = pane_my_child(p, ci->focus);
+
+	if (!child)
+		return -1;
 	do {
-		if (m->ref.p == ci->focus) {
+		if (m->ref.p == child) {
 			doc_notify_change(p->data, m, NULL);
 			break;
 		}
@@ -394,7 +398,7 @@ DEF_CMD(doc_damage)
 
 DEF_CMD(doc_revisit)
 {
-	struct pane *p = ci->focus;
+	struct pane *p = pane_my_child(ci->home, ci->focus);
 	struct docs *docs = container_of(ci->home->data, struct docs, doc);
 	if (!p)
 		return -1;
@@ -704,8 +708,10 @@ DEF_CMD(docs_child_closed)
 {
 	struct doc *d = ci->home->data;
 	struct docs *docs = container_of(d, struct docs, doc);
-
-	docs_demark(docs, ci->focus);
+	struct pane *child = pane_my_child(ci->home, ci->focus);
+	if (!child)
+		return -1;
+	docs_demark(docs, child);
 	return 1;
 }
 

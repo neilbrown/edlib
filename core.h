@@ -339,6 +339,7 @@ void pane_refresh(struct pane *p safe, struct mark *pointer);
 void pane_focus(struct pane *p);
 void pane_damaged(struct pane *p, int type);
 void pane_clone_children(struct pane *from, struct pane *to);
+struct pane *pane_my_child(struct pane *p, struct pane *c);
 
 int pane_masked(struct pane *p safe, int x, int y, int abs_z, int *w, int *h);
 void pane_set_mode(struct pane *p safe, char *mode);

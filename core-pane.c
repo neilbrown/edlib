@@ -617,6 +617,13 @@ void pane_clone_children(struct pane *from, struct pane *to)
 	}
 }
 
+struct pane *pane_my_child(struct pane *p, struct pane *c)
+{
+	while (c && c->parent != p)
+		c = c->parent;
+	return c;
+}
+
 DEF_CMD(take_pane)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);

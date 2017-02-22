@@ -712,6 +712,21 @@ static PyObject *Pane_get_scale(Pane *self safe)
 	return Py_BuildValue("ii", xy.x, xy.y);
 }
 
+static PyObject *Pane_mychild(Pane *self safe, PyObject *args)
+{
+	Pane *child = NULL;
+	int ret = PyArg_ParseTuple(args, "O!s", &PaneType, &child);
+	if (ret <= 0 || !child)
+		return NULL;
+	if (self->pane && child->pane) {
+		struct pane *p = pane_my_child(self->pane, child->pane);
+		if (p)
+			return Pane_Frompane(p);
+	}
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef pane_methods[] = {
 	{"close", (PyCFunction)Pane_close, METH_NOARGS,
 	 "close the pane"},
@@ -739,6 +754,8 @@ static PyMethodDef pane_methods[] = {
 	 "Mark pane as damaged"},
 	{"scale", (PyCFunction)Pane_get_scale, METH_NOARGS,
 	 "Get the x,y scale numbers for this pane"},
+	{"mychild", (PyCFunction)Pane_mychild, METH_VARARGS,
+	 "Get ancestor of pane which is my child, or None"},
 	{NULL}
 };
 
