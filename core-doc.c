@@ -428,6 +428,12 @@ DEF_CMD(doc_do_closed)
 {
 	struct pane *p = ci->home;
 	int ret;
+	struct pane *child;
+
+	/* Close the path of filters from doc to focus */
+	child = pane_my_child(p, ci->focus);
+	if (child)
+		pane_close(child);
 
 	/* If there are any doc-displays open, then will return '1' and
 	 * we will know not to destroy document yet.
@@ -537,7 +543,7 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "Close") == 0) {
 		mark_free(dd->point);
-		call_home(dd->doc, "doc:closed", ci->home, 0, NULL, NULL);
+		call3("doc:closed", dd->doc, 0, NULL);
 		free(dd);
 		ci->home->data = safe_cast NULL;
 		return 1;
