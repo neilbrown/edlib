@@ -125,8 +125,7 @@ DEF_CMD(mp_close)
 	struct mp_info *mpi = ci->home->data;
 	int i;
 	for (i = 0; i < mpi->nparts; i++)
-		comm_call_pane(mpi->parts[i], "Closed", ci->home, 0, NULL, NULL, 0,
-			       NULL, NULL);
+		call_home(mpi->parts[i], "doc:closed", ci->home, 0, NULL, NULL);
 	doc_free(&mpi->doc);
 	free(mpi->parts);
 	free(mpi);

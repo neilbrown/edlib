@@ -491,7 +491,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);
 	key_add(doc_default_cmd, "doc:revisit", &doc_do_revisit);
 	key_add(doc_default_cmd, "doc:drop-cache", &doc_drop_cache);
-	key_add(doc_default_cmd, "Closed", &doc_do_closed);
+	key_add(doc_default_cmd, "doc:closed", &doc_do_closed);
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
 		      &doc_request_notify);
 	key_add_range(doc_default_cmd, "Notify:doc:", "Notify:doc;",
@@ -537,8 +537,7 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "Close") == 0) {
 		mark_free(dd->point);
-		comm_call_pane(dd->doc, "Closed", ci->home, 0, NULL, NULL, 0,
-			       NULL, NULL);
+		call_home(dd->doc, "doc:closed", ci->home, 0, NULL, NULL);
 		free(dd);
 		ci->home->data = safe_cast NULL;
 		return 1;
