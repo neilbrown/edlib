@@ -949,14 +949,17 @@ class notmuch_list(edlib.Doc):
 
     def prev(self, i, j, visible, whole_thread):
         # 'visible' is a list of visible thread-ids
-        # We move pos backward either to previous next message in a visible thread
+        # We move pos backward either to previous message in a visible thread
         # or the last message of the previous thread.
         # Return index into thread list, index into message list, and new pos
         # (Indexs are new pos!)
         # Normally only select messages which 'match' (info[2])
         # If whole_thread, then only select messages in a visible thread,
         #   and select any of them, including non-matched.
-        if j <= 0:
+        if i < 0:
+            i = len(self.threadids) - 1
+            j = -1;
+        elif j <= 0:
             j = -1
             i -= 1
         else:
