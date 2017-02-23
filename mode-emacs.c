@@ -770,7 +770,7 @@ DEF_CMD(emacs_shell)
 		return -1;
 	call_home(p, "doc:assign", doc, 0, NULL, NULL);
 	call_pane7("attach-shellcmd", p, 0, NULL, 0, ci->str, NULL);
-	doc_attach_view(par, doc, NULL);
+	doc_attach_view(par, doc, "default:viewer");
 	return 1;
 }
 

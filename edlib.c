@@ -68,6 +68,7 @@ int main(int argc, char *argv[])
 	call5("global-load-module", ed, 0, NULL, "render-lines", 0);
 	call5("global-load-module", ed, 0, NULL, "module-notmuch", 0);
 	call5("global-load-module", ed, 0, NULL, "doc-email", 0);
+	call5("global-load-module", ed, 0, NULL, "lib-viewer", 0);
 
 	p = call_pane("attach-input", ed, 0, NULL, 0);
 	if (p) {
@@ -92,7 +93,6 @@ int main(int argc, char *argv[])
 					    "*Welcome*", WelcomeText);
 		p = doc_attach_view(p, d, NULL);
 	}
-	if (p)
 
 	if (p) {
 		pane_refresh(ed, NULL);

@@ -537,16 +537,29 @@ void pane_focus(struct pane *p)
 
 struct pane *render_attach(char *name, struct pane *parent safe)
 {
-	char buf[100];
+	char buf[100]; /* FIXME */
+	char *renderer = name;
+	struct pane *p;
 
-	//WARN(!list_empty(&parent->children));
-	if (!name)
-		name = pane_attr_get(parent, "render-default");
-	if (!name)
+	if (name && strncmp(name, "default:", 8) == 0)
+		renderer = NULL;
+	if (!renderer)
+		renderer = pane_attr_get(parent, "render-default");
+	if (!renderer)
 		return NULL;
 
-	sprintf(buf, "attach-render-%s", name);
-	return call_pane(buf, parent, 0, NULL, 0);
+	sprintf(buf, "attach-render-%s", renderer);
+	p = call_pane(buf, parent, 0, NULL, 0);
+	if (!p)
+		return NULL;
+	parent = p;
+	if (name && strncmp(name, "default:", 8) == 0) {
+		sprintf(buf, "attach-%s", name+8);
+		p = call_pane(buf, parent, 0, NULL, 0);
+		if (p)
+			parent = p;
+	}
+	return parent;
 }
 
 void pane_set_mode(struct pane *p safe, char *mode)

@@ -682,7 +682,7 @@ def markdown_appeared(key, focus, **a):
     if n and n[-3:] == ".md":
         focus.call("doc:attr-set", "render-Chr-P", "present")
         focus.call("doc:attr-set", "render-default", "markdown")
-    return 1
+    return 0
 
 editor.call("global-set-command", "attach-render-markdown", markdown_attach)
 editor.call("global-set-command", "attach-render-present", present_attach)
