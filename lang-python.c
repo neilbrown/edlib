@@ -99,6 +99,7 @@ typedef struct {
 				* a Doc, so the ref is usable
 				*/
 	unsigned int	owned:1;
+	unsigned int	mine:1; /* mtype is  MarkType */
 } Mark;
 static PyTypeObject MarkType;
 
@@ -142,6 +143,7 @@ static inline PyObject *safe Mark_Frommark(struct mark *m safe, int local)
 	mark->released = 1;
 	mark->local = local;
 	mark->owned = 0;
+	mark->mine = 0;
 	return (PyObject*)mark;
 }
 
@@ -1307,11 +1309,14 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 	if (self->mark->viewnum >= 0) {
 		/* vmarks don't disappear until explicitly released */
 		self->released = 0;
+		self->mine = 1;
 		self->mark->mtype = &MarkType;
 		self->mark->mdata = (PyObject*)self;
 		Py_INCREF(self);
-	} else
+	} else {
+		self->mine = 0;
 		self->released = 1;
+	}
 	self->local = local;
 	self->owned = 1;
 	return 1;
@@ -1319,7 +1324,7 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 
 static void mark_dealloc(Mark *self safe)
 {
-	if (self->mark && self->mark->mtype == &MarkType) {
+	if (self->mine && self->mark && self->mark->mtype == &MarkType) {
 		struct mark *m = self->mark;
 		self->mark = NULL;
 		m->mtype = NULL;
