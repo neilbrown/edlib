@@ -247,6 +247,9 @@ DEF_CMD(view_handle)
 		return 1;
 	}
 	if (strcmp(ci->key, "render:reposition") == 0) {
+		if (call3("doc:mymark", ci->home, 0, ci->mark) != 1)
+			/* mark for some other document */
+			return 0;
 		if (vd->viewpoint != ci->mark) {
 			if (!vd->viewpoint || !ci->mark ||
 			    !mark_same_pane(ci->focus, vd->viewpoint, ci->mark))

@@ -470,6 +470,20 @@ DEF_CMD(doc_do_revisit)
 	return call_home(ci->home->parent, ci->key, ci->home, ci->numeric, ci->mark, NULL);
 }
 
+DEF_CMD(doc_mymark)
+{
+	/* Check if ci->mark is a mark in this document.
+	 * 1 for 'yes', -1 for 'no'
+	 */
+	struct doc *d = ci->home->data;
+	struct mark *m;
+
+	m = doc_first_mark_all(d);
+	while (m && m != ci->mark)
+		m = doc_next_mark_all(m);
+	return m ? 1 : -1;
+}
+
 struct map *doc_default_cmd safe;
 static struct map *doc_handle_cmd safe;
 
@@ -498,6 +512,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:revisit", &doc_do_revisit);
 	key_add(doc_default_cmd, "doc:drop-cache", &doc_drop_cache);
 	key_add(doc_default_cmd, "doc:closed", &doc_do_closed);
+	key_add(doc_default_cmd, "doc:mymark", &doc_mymark);
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
 		      &doc_request_notify);
 	key_add_range(doc_default_cmd, "Notify:doc:", "Notify:doc;",
@@ -601,11 +616,6 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "render:reposition") == 0)
-		/* HACK: don't let any underlying pane see this as it won't
-		 * mean anything, and lib-view grabs the mark which it shouldn't
-		 */
-		return 1;
 	ci2 = *ci;
 	ci2.home = dd->doc;
 	ci2.comm = safe_cast NULL;
