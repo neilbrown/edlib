@@ -148,22 +148,16 @@ static void copy_header(struct pane *p safe, struct hdr_list *hdr safe,
 		if (sol && (ch == ' ' || ch == '\t'))
 			continue;
 		if (sol) {
-			call7("doc:replace", p, 1, NULL, " ", 1, NULL, point);
-			if (hdr->is_text) {
-				mark_prev_pane(p, point);
-				call7("doc:set-attr", p, 1, point, "render:rfc822header-wrap", 0, "1", NULL);
-				mark_next_pane(p, point);
-			}
+			call7("doc:replace", p, 1, NULL, " ", 1,
+			      hdr->is_text ? ",render:rfc822header-wrap=1" : NULL,
+			      point);
 			sol = 0;
 		}
 		buf[0] = ch;
 		buf[1] = 0;
-		call7("doc:replace", p, 1, NULL, buf, 1, NULL, point);
-		if (ch == ' ' && hdr->is_text) {
-			mark_prev_pane(p, point);
-			call7("doc:set-attr", p, 1, point, "render:rfc822header-wrap", 0, "1", NULL);
-			mark_next_pane(p, point);
-		}
+		call7("doc:replace", p, 1, NULL, buf, 1,
+		      ch == ' ' && hdr->is_text ? ",render:rfc822header-wrap=1" : NULL,
+		      point);
 		if (ch == ',' && hdr->is_list) {
 			struct mark *p2 = mark_dup(point, 1);
 			int cnt = 1;

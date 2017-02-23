@@ -72,7 +72,6 @@ struct doc_ref {
 	struct text_chunk *c;
 	int o;
 };
-#undef safe
 
 #include "core.h"
 #include "misc.h"
@@ -1443,6 +1442,29 @@ static void text_check_consistent(struct text *t safe)
 	doc_check_consistent(d);
 }
 
+static void text_add_attrs(struct attrset **attrs safe, char *new safe, int o)
+{
+	char sep = *new++;
+	char *cpy = strdup(new);
+	char *a = cpy;
+
+	while (a) {
+		char *k, *v;
+		k = a;
+		a = strchr(a, sep);
+		if (a)
+			*a++ = '\0';
+		v = strchr(k, '=');
+		if (v)
+			*v++ = '\0';
+		else
+			continue;
+		attr_set_str_key(attrs, k, v, o);
+	}
+
+	free(cpy);
+}
+
 DEF_CMD(text_replace)
 {
 	struct doc *d = ci->home->data;
@@ -1450,6 +1472,7 @@ DEF_CMD(text_replace)
 	struct mark *pm = ci->mark2;
 	struct mark *end = ci->mark;
 	char *str = ci->str;
+	char *newattrs = ci->str2;
 	bool first = ci->extra;
 	struct mark *early = NULL;
 	int status_change = 0;
@@ -1507,6 +1530,8 @@ DEF_CMD(text_replace)
 		     m && text_update_following_after_change(t, &m->ref, &start, &pm->ref);
 		     m = doc_next_mark_all(m))
 			;
+		if (newattrs && start.c)
+			text_add_attrs(&start.c->attrs, newattrs, start.o);
 		text_check_consistent(t);
 
 	}
