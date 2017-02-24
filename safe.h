@@ -8,6 +8,16 @@ extern void *safe malloc(int);
 extern void *safe realloc(void *, int);
 extern char *safe strdup(char *safe);
 extern char *safe strndup(char *safe, int);
+extern int strcmp(char *a safe, char *b safe);
+extern int strncmp(char *a safe, char *b safe, int n);
+extern char *safe strcpy(char *a safe, char *b safe);
+extern char *safe strncpy(char *a safe, char *b safe, int n);
+extern char *safe strcat(char *a safe, char *b safe);
+extern char *safe strncat(char *a safe, char *b safe, int n);
+extern char *strchr(char *a safe, char b);
+extern char *strrchr(char *a safe, char b);
+extern int strlen(char *a safe);
+
 extern const unsigned short int **safe __ctype_b_loc(void);
 extern int *safe __errno_location(void);
 #else

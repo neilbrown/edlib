@@ -187,7 +187,7 @@ static int draw_some(struct pane *p safe, struct render_list **rlp, int *x safe,
 	return ret;
 }
 
-static char *get_last_attr(char *attrs safe, char *attr)
+static char *get_last_attr(char *attrs safe, char *attr safe)
 {
 	char *com = attrs + strlen(attrs);
 	int len = strlen(attr);

@@ -114,10 +114,12 @@ DEF_CMD(editor_auto_load)
 		;
 	else {
 		char *m = strrchr(ci->key+6, '-');
-		m += 1;
-		mod = malloc(4+strlen(m)+1);
-		strcpy(mod, "lib-");
-		strcpy(mod+4, m);
+		if (m) {
+			m += 1;
+			mod = malloc(4+strlen(m)+1);
+			strcpy(mod, "lib-");
+			strcpy(mod+4, m);
+		}
 	}
 
 	ret = call5("global-load-module", ci->home, 0, NULL,

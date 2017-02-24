@@ -50,7 +50,7 @@ struct doc_ref {
 #include "core.h"
 
 struct dir_ent {
-	char			*name;
+	char			*name safe;
 	wchar_t			ch;
 	struct list_head	lst;
 	struct attrset		*attrs;

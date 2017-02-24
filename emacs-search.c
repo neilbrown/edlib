@@ -59,6 +59,8 @@ DEF_CMD(search_forward)
 			call5("Replace", ci->home, 1, NULL, ss, 1);
 			return 1;
 		}
+		if (!str)
+			return -1;
 	}
 	s = calloc(1, sizeof(*s));
 	s->m = esi->start;
@@ -88,6 +90,8 @@ DEF_CMD(search_retreat)
 	if (esi->s == NULL)
 		return 0;
 	str = doc_getstr(ci->focus, NULL, NULL);
+	if (!str)
+		return -1;
 	if (strlen(str) > esi->s->len) {
 		free(str);
 		return 0;

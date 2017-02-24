@@ -43,7 +43,7 @@ struct header_info {
 #define IS_LIST 1
 #define IS_TEXT 2
 
-static void header_add(struct header_info *hi safe, char *header, int type)
+static void header_add(struct header_info *hi safe, char *header safe, int type)
 {
 	struct hdr_list *hl = malloc(sizeof(*hl) + strlen(header) + 1);
 	strcpy(hl->header, header);

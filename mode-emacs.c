@@ -421,7 +421,7 @@ DEF_CMD(emacs_insert_other)
 		return -1;
 
 	for (i = 0; other_inserts[i].key; i++)
-		if (strcmp(other_inserts[i].key, ci->key) == 0)
+		if (strcmp(safe_cast other_inserts[i].key, ci->key) == 0)
 			break;
 	if (other_inserts[i].key == NULL)
 		return 0;
@@ -681,6 +681,8 @@ REDEF_CMD(emacs_doc_complete)
 		return -1;
 
 	str = doc_getstr(ci->focus, NULL, NULL);
+	if (!str)
+		return -1;
 	pop = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
 			 "DM1r", NULL);
 	if (!pop)
@@ -1061,6 +1063,9 @@ DEF_CMD(emacs_version)
 DEF_CMD(emacs_attrs)
 {
 	int view = attr_find_int(ci->focus->attrs, "emacs-search-view");
+
+	if (!ci->str)
+		return 0;
 
 	if (strcmp(ci->str, "render:search") == 0) {
 		/* Current search match -  "20" is a priority */

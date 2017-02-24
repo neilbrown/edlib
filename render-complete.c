@@ -20,13 +20,13 @@
 #include "misc.h"
 
 struct complete_data {
-	char *prefix;
+	char *prefix safe;
 };
 
 struct rlcb {
 	struct command c;
 	int keep, plen, cmp;
-	char *prefix, *str;
+	char *prefix safe, *str;
 };
 
 static char *add_highlight_prefix(char *orig, int plen, char *attr safe)

@@ -15,7 +15,7 @@
 #include "core.h"
 
 struct input_mode {
-	char	*mode;
+	char	*mode safe;
 	int	numeric, extra;
 };
 
@@ -23,6 +23,8 @@ DEF_CMD(set_mode)
 {
 	struct input_mode *im = ci->home->data;
 
+	if (!ci->str)
+		return -1;
 	im->mode = ci->str;
 	return 1;
 }
@@ -53,6 +55,9 @@ DEF_CMD(keystroke)
 	int numeric = im->numeric;
 	int extra = im->extra;
 	struct mark *m;
+
+	if (!ci->str)
+		return -1;
 
 	pane_notify(ci->home, "Notify:Keystroke", NULL, NULL, ci->str, 0, NULL);
 
@@ -88,6 +93,9 @@ DEF_CMD(mouse_event)
 	struct pane *focus;
 	struct mark *m;
 	char *key;
+
+	if (!ci->str)
+		return -1;
 
 	pane_notify(ci->home, "Notify:Mouse-event", NULL, NULL, ci->str, 0, NULL);
 

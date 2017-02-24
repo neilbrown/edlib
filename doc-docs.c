@@ -116,7 +116,7 @@ static void check_name(struct docs *docs safe, struct pane *pane safe)
 			strcpy(nname, d->name);
 		list_for_each_entry(p, &docs->doc.home->children, siblings) {
 			struct doc *d2 = p->data;
-			if (d != d2 && strcmp(nname, d2->name) == 0) {
+			if (d != d2 && d2->name && strcmp(nname, d2->name) == 0) {
 				conflict = 1;
 				unique += 1;
 				break;
@@ -280,6 +280,7 @@ DEF_CMD(docs_modified_handle)
 			return 2;
 	}
 	if (strcmp(ci->key, "get-attr") == 0 &&
+	    ci->str &&
 	    strcmp(ci->str, "doc-name") == 0)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus,
 				 0, NULL, "*Modified Documents*", 0);

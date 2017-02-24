@@ -241,7 +241,7 @@ err:
 	return 0;
 }
 
-static int do_text_write_file(struct text *t safe, char *fname)
+static int do_text_write_file(struct text *t safe, char *fname safe)
 {
 	/* Don't worry about links for now
 	 * Create a temp file with #basename#~, write to that,

@@ -701,6 +701,8 @@ DEF_CMD(doc_open)
 	int autoclose = ci->extra;
 	char pathbuf[PATH_MAX], *rp = NULL;
 
+	if (!name)
+		return -1;
 	stb.st_mode = 0;
 	if (fd < 0) {
 		char *sl;
@@ -710,8 +712,10 @@ DEF_CMD(doc_open)
 			strncpy(nbuf, name, sl-name);
 			nbuf[sl-name] = 0;
 			rp = realpath(nbuf, pathbuf);
-		} else if (!sl)
+		} else if (!sl) {
 			rp = realpath(".", pathbuf);
+			sl = name-1;
+		}
 
 		if (rp) {
 			strcat(rp, "/");
