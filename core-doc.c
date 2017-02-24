@@ -538,12 +538,7 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "Notify:Close") == 0) {
 		/* This pane has to go away */
-		/* release the document immediately, as close can be delayed
-		 * and things happen in surprising orders
-		 */
-		dd->doc = safe_cast NULL;
-		mark_free(dd->point);
-		dd->point = safe_cast NULL;
+
 		pane_close(ci->home);
 		return 1;
 	}
