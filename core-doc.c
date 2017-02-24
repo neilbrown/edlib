@@ -433,7 +433,7 @@ DEF_CMD(doc_delayed_close)
 	/* If there are any doc-displays open, then will return '1' and
 	 * we will know not to destroy document yet.
 	 */
-	ret = pane_notify(p, "Notify:Close:request", NULL, NULL, NULL, 0, NULL);
+	ret = pane_notify(p, "Notify:doc:viewers", NULL, NULL, NULL, 0, NULL);
 	if (ret == 0)
 		call3("doc:drop-cache", p, 0, NULL);
 	return 1;
@@ -538,7 +538,7 @@ DEF_CMD(doc_handle)
 	if (retval)
 		return retval;
 
-	if (strcmp(ci->key, "Notify:Close:request") == 0) {
+	if (strcmp(ci->key, "Notify:doc:viewers") == 0) {
 		/* The autoclose document wants to know if it should close.
 		 * tell it "no" */
 		return 1;
@@ -651,6 +651,7 @@ static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
 	dd->doc = doc;
 	dd->point = m;
 	pane_add_notify(p, doc, "Notify:Close");
+	pane_add_notify(p, doc, "Notify:doc:viewers");
 	p->pointer = m;
 	call3("doc:revisit", doc, 1, NULL);
 	if (numeric) {

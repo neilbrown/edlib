@@ -331,8 +331,7 @@ restart:
 		if (n->noted)
 			continue;
 		n->noted = 1;
-		if (strncmp(n->notification, notification,
-			    strlen(n->notification)) == 0) {
+		if (strcmp(n->notification, notification) == 0) {
 			int r = comm_call_pane(n->notifiee, notification, p,
 					       numeric, m, str, 0, m2, comm2);
 			if (abs(r) > abs(ret))

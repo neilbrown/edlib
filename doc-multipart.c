@@ -305,20 +305,18 @@ DEF_CMD(mp_attr)
 
 DEF_CMD(mp_notify_close)
 {
-	if (strcmp(ci->key, "Notify:Close:request") == 0) {
-		/* The autoclose document wants to know if it should close.
-		 * tell it "no" */
-		return 1;
-	}
+	/* sub-document has been closed.
+	 * Can we survive? or should we just shut down?
+	 */
+	pane_close(ci->home);
+	return 1;
+}
 
-	if (strcmp(ci->key, "Notify:Close") == 0) {
-		/* sub-document has been closed.
-		 * Can we survive? or should we just shut down?
-		 */
-		pane_close(ci->home);
-		return 1;
-	}
-	return 0;
+DEF_CMD(mp_notify_viewers)
+{
+	/* The autoclose document wants to know if it should close.
+	 * tell it "no" */
+	return 1;
 }
 
 static void mp_resize(struct mp_info *mpi safe, int size)
@@ -340,6 +338,8 @@ DEF_CMD(mp_add)
 	mpi->nparts += 1;
 	mpi->parts[n] = ci->focus;
 	pane_add_notify(ci->home, ci->focus, "Notify:Close");
+	call_home(ci->focus, "Request:Notify:doc:viewers", ci->home, 0, NULL, NULL);
+
 	return 1;
 }
 
@@ -351,7 +351,8 @@ static void mp_init_map(void)
 	key_add(mp_map, "doc:step", &mp_step);
 	key_add(mp_map, "doc:get-attr", &mp_attr);
 	key_add(mp_map, "Close", &mp_close);
-	key_add_range(mp_map, "Notify:Close", "Notify:Close\377", &mp_notify_close);
+	key_add(mp_map, "Notify:Close", &mp_notify_close);
+	key_add(mp_map, "Notify:doc:viewers", &mp_notify_viewers);
 	key_add(mp_map, "multipart-add", &mp_add);
 }
 DEF_LOOKUP_CMD_DFLT(mp_handle, mp_map, doc_default_cmd);
