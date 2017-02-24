@@ -13,6 +13,11 @@
 static struct map *ed_map safe;
 struct ed_info {
 	struct pane *freelist;
+	struct idle_call {
+		struct idle_call *next;
+		struct pane *focus safe;
+		struct command *callback safe;
+	} *idle_calls;
 	struct map *map safe;
 	struct store {
 		struct store *next;
@@ -161,6 +166,13 @@ DEF_CMD(editor_multicall)
 DEF_CMD(editor_clean_up)
 {
 	struct ed_info *ei = ci->home->data;
+
+	while (ei->idle_calls) {
+		struct idle_call *i = ei->idle_calls;
+		ei->idle_calls = i->next;
+		comm_call(i->callback, "idle-callback", i->focus, 0, NULL, NULL, 0);
+		free(i);
+	}
 	while (ei->freelist) {
 		struct pane *p = ei->freelist;
 		ei->freelist = p->focus;
@@ -173,6 +185,23 @@ DEF_CMD(editor_clean_up)
 		free(s);
 	}
 	return 0;
+}
+
+DEF_CMD(editor_on_idle)
+{
+	/* register comm2 to be called when next idle. */
+	struct ed_info *ei = ci->home->data;
+	struct idle_call *ic;
+
+	if (!ci->comm2)
+		return -1;
+
+	ic = calloc(1, sizeof(*ic));
+	ic->focus = ci->focus;
+	ic->callback = ci->comm2;
+	ic->next = ei->idle_calls;
+	ei->idle_calls = ic;
+	return 1;
 }
 
 void *memsave(struct pane *p safe, char *buf, int len)
@@ -222,6 +251,7 @@ struct pane *editor_new(void)
 		key_add(ed_map, "global-set-command", &global_set_command);
 		key_add(ed_map, "global-get-command", &global_get_command);
 		key_add(ed_map, "global-load-module", &editor_load_module);
+		key_add(ed_map, "editor-on-idle", &editor_on_idle);
 		key_add_range(ed_map, "attach-", "attach.", &editor_auto_load);
 		key_add_range(ed_map, "event:", "event;", &editor_auto_event);
 		key_add_range(ed_map, "global-multicall-", "global-multicall.",

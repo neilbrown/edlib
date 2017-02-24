@@ -425,16 +425,10 @@ DEF_CMD(doc_drop_cache)
 	return 1;
 }
 
-DEF_CMD(doc_do_closed)
+DEF_CMD(doc_delayed_close)
 {
 	struct pane *p = ci->home;
 	int ret;
-	struct pane *child;
-
-	/* Close the path of filters from doc to focus */
-	child = pane_my_child(p, ci->focus);
-	if (child)
-		pane_close(child);
 
 	/* If there are any doc-displays open, then will return '1' and
 	 * we will know not to destroy document yet.
@@ -442,6 +436,20 @@ DEF_CMD(doc_do_closed)
 	ret = pane_notify(p, "Notify:Close:request", NULL, NULL, NULL, 0, NULL);
 	if (ret == 0)
 		call3("doc:drop-cache", p, 0, NULL);
+	return 1;
+}
+
+DEF_CMD(doc_do_closed)
+{
+	struct pane *p = ci->home;
+	struct pane *child;
+
+	/* Close the path of filters from doc to focus */
+	child = pane_my_child(p, ci->focus);
+	if (child)
+		pane_close(child);
+
+	call_comm("editor-on-idle", p, 0, NULL, NULL, 0, &doc_delayed_close);
 	return 1;
 }
 
