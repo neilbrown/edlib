@@ -219,7 +219,7 @@ DEF_CMD(python_load_module)
 	return 1;
 }
 
-static PyObject *safe python_string(char *s safe) 
+static PyObject *safe python_string(char *s safe)
 {
 	char *c = s;
 	while (*c && !(*c & 0x80))
@@ -229,6 +229,17 @@ static PyObject *safe python_string(char *s safe)
 		return safe_cast PyUnicode_DecodeUTF8(s, strlen(s), NULL);
 	else
 		return safe_cast Py_BuildValue("s", s);
+}
+
+static char *python_as_string(PyObject *s, PyObject **tofree safe)
+{
+	if (s && PyUnicode_Check(s)) {
+		s = PyUnicode_AsUTF8String(s);
+		*tofree = s;
+	}
+	if (s && PyString_Check(s))
+		return PyString_AsString(s);
+	return NULL;
 }
 
 static int dict_add(PyObject *kwds, char *name, PyObject *val)
@@ -909,16 +920,19 @@ static PyGetSetDef pane_getseters[] = {
 static PyObject *Pane_get_item(Pane *self safe, PyObject *key safe)
 {
 	char *k, *v;
+	PyObject *t1 = NULL;
+
 	if (!self->pane) {
 		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
 		return NULL;
 	}
-	if (!PyString_Check(key)) {
-		PyErr_SetString(PyExc_TypeError, "Key must be a string");
+	k = python_as_string(key, &t1);
+	if (!k) {
+		PyErr_SetString(PyExc_TypeError, "Key must be a string or unicode");
 		return NULL;
 	}
-	k = safe_cast PyString_AsString(key);
 	v = pane_attr_get(self->pane, k);
+	Py_XDECREF(t1);
 	if (v)
 		return Py_BuildValue("s", v);
 	Py_INCREF(Py_None);
@@ -928,21 +942,26 @@ static PyObject *Pane_get_item(Pane *self safe, PyObject *key safe)
 static int Pane_set_item(Pane *self safe, PyObject *key, PyObject *val)
 {
 	char *k, *v;
+	PyObject *t1 = NULL, *t2 = NULL;
+
 	if (!self->pane) {
 		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
 		return -1;
 	}
-	if (!PyString_Check(key)) {
-		PyErr_SetString(PyExc_TypeError, "Key must be a string");
+	k = python_as_string(key, &t1);
+	if (!k) {
+		PyErr_SetString(PyExc_TypeError, "Key must be a string or unicode");
 		return -1;
 	}
-	if (!PyString_Check(val)) {
-		PyErr_SetString(PyExc_TypeError, "value must be a string");
+	v = python_as_string(val, &t2);
+	if (!v) {
+		PyErr_SetString(PyExc_TypeError, "value must be a string or unicode");
+		Py_XDECREF(t1);
 		return -1;
 	}
-	k = safe_cast PyString_AsString(key);
-	v = safe_cast PyString_AsString(val);
 	attr_set_str(&self->pane->attrs, k, v);
+	Py_XDECREF(t1);
+	Py_XDECREF(t2);
 	return 0;
 }
 
@@ -1465,16 +1484,19 @@ static PyMethodDef mark_methods[] = {
 static PyObject *mark_get_item(Mark *self safe, PyObject *key safe)
 {
 	char *k, *v;
+	PyObject *t1 = NULL;
+
 	if (!self->mark) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	if (!PyString_Check(key)) {
-		PyErr_SetString(PyExc_TypeError, "Key must be a string");
+	k = python_as_string(key, &t1);
+	if (!k) {
+		PyErr_SetString(PyExc_TypeError, "Key must be a string or unicode");
 		return NULL;
 	}
-	k = safe_cast PyString_AsString(key);
 	v = attr_find(self->mark->attrs, k);
+	Py_XDECREF(t1);
 	if (v)
 		return Py_BuildValue("s", v);
 	Py_INCREF(Py_None);
@@ -1484,21 +1506,25 @@ static PyObject *mark_get_item(Mark *self safe, PyObject *key safe)
 static int mark_set_item(Mark *self safe, PyObject *key safe, PyObject *val safe)
 {
 	char *k, *v;
+	PyObject *t1 = NULL, *t2 = NULL;
 	if (!self->mark) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return -1;
 	}
-	if (!PyString_Check(key)) {
-		PyErr_SetString(PyExc_TypeError, "Key must be a string");
+	k = python_as_string(key, &t1);
+	if (!k) {
+		PyErr_SetString(PyExc_TypeError, "Key must be a string or unicode");
 		return -1;
 	}
-	if (!PyString_Check(val)) {
-		PyErr_SetString(PyExc_TypeError, "value must be a string");
+	v = python_as_string(val, &t2);
+	if (!v) {
+		PyErr_SetString(PyExc_TypeError, "value must be a string or unicode");
+		Py_XDECREF(t1);
 		return -1;
 	}
-	k = safe_cast PyString_AsString(key);
-	v = PyString_AsString(val);
 	attr_set_str(&self->mark->attrs, k, v);
+	Py_XDECREF(t1);
+	Py_XDECREF(t2);
 	return 0;
 }
 
@@ -1722,30 +1748,24 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 				PyErr_SetString(PyExc_TypeError, "Only 2 Mark args permitted");
 				return 0;
 			}
-		} else if (PyString_Check(a)) {
-			if (ci->str == NULL)
-				ci->str = PyString_AsString(a);
-			else if (ci->str2 == NULL)
-				ci->str2 = PyString_AsString(a);
-			else {
-				PyErr_SetString(PyExc_TypeError, "Only 3 String args permitted");
-				return 0;
-			}
-		} else if (PyUnicode_Check(a)) {
-			PyObject *s;
+		} else if (PyUnicode_Check(a) || PyString_Check(a)) {
+			char *str;
+			PyObject *s = NULL;
 			if (ci->str && ci->str2) {
 				PyErr_SetString(PyExc_TypeError, "Only 3 String args permitted");
 				return 0;
 			}
-			s = PyUnicode_AsUTF8String(a);
-			if (!s)
+			str = python_as_string(a, &s);
+			if (!str)
 				return 0;
-			*s2 = *s1;
-			*s1 = s;
+			if (s) {
+				*s2 = *s1;
+				*s1 = s;
+			}
 			if (ci->str == NULL)
-				ci->str = PyString_AsString(s);
+				ci->str = str;
 			else
-				ci->str2 = PyString_AsString(s);
+				ci->str2 = str;
 		} else if (PyInt_Check(a)) {
 			if (!numeric_set) {
 				ci->numeric = PyInt_AsLong(a);
