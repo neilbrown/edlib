@@ -23,6 +23,7 @@
 #include <wchar.h>
 #include <wctype.h>
 #include <stdio.h>
+#include <fcntl.h>
 
 #define PRIVATE_DOC_REF
 struct doc_ref {
@@ -707,42 +708,52 @@ DEF_CMD(doc_open)
 	if (!name)
 		return -1;
 	stb.st_mode = 0;
-	if (fd < 0) {
+	if (fd >= -1) {
+		/* Try to canonicalize directory part of path */
 		char *sl;
 		sl = strrchr(name, '/');
-		if (sl && sl-name < PATH_MAX-4 && sl[1]) {
+		if (!sl) {
+			rp = realpath(".", pathbuf);
+			sl = name;
+		} else if (sl-name < PATH_MAX-4) {
 			char nbuf[PATH_MAX];
 			strncpy(nbuf, name, sl-name);
-			nbuf[sl-name] = 0;
+			nbuf[sl-name+1] = 0;
 			rp = realpath(nbuf, pathbuf);
-		} else if (!sl) {
-			rp = realpath(".", pathbuf);
-			sl = name-1;
 		}
 
 		if (rp) {
 			strcat(rp, "/");
 			strcat(rp, sl+1);
+			name = rp;
 		}
-	} else if (fstat(fd, &stb) == 0)
-		rp = realpath(name, pathbuf);
+	}
 
-	if (!rp)
-		rp = name;
+	if (fd == -1)
+		/* No open yet */
+		fd = open(name, O_RDONLY);
+
+	if (fd >= 0)
+		fstat(fd, &stb);
 
 	p = call_pane7("docs:byfd", ed, 0, NULL, fd, rp, NULL);
 
 	if (!p) {
 		p = call_pane7("global-multicall-open-doc-", ed, fd, NULL,
-			       stb.st_mode & S_IFMT, rp, NULL);
+			       stb.st_mode & S_IFMT, name, NULL);
 
-		if (!p)
+		if (!p) {
+			if (fd != ci->numeric)
+				close(fd);
 			return -1;
+		}
 		if (autoclose)
 			call3("doc:autoclose", p, 1, NULL);
-		call5("doc:load-file", p, 0, NULL, rp, fd);
+		call5("doc:load-file", p, 0, NULL, name, fd);
 		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	}
+	if (fd != ci->numeric)
+		close(fd);
 	return comm_call(ci->comm2, "callback", p, 0, NULL,
 			 NULL, 0);
 }
