@@ -32,7 +32,7 @@ struct doc_ref {
 
 #include "core.h"
 
-static struct pane *doc_assign(struct pane *p safe, int, char *);
+static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe, int, char *);
 struct pane *doc_attach(struct pane *parent, struct pane *d);
 
 static inline wint_t doc_following(struct doc *d safe, struct mark *m safe)
@@ -588,8 +588,7 @@ DEF_CMD(doc_handle)
 		struct pane *p2;
 		if ((void*) (dd->doc))
 			return -1;
-		dd->doc = ci->focus;
-		p2 = doc_assign(ci->home, ci->numeric, ci->str);
+		p2 = doc_assign(ci->home, ci->focus, ci->numeric, ci->str);
 		if (p2)
 			comm_call(ci->comm2, "callback:doc", p2, 0, NULL, NULL, 0);
 		return 1;
@@ -630,19 +629,21 @@ DEF_CMD(doc_handle)
 	return key_handle(&ci2);
 }
 
-static struct pane *doc_assign(struct pane *p safe, int numeric, char *str)
+static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
+			       int numeric, char *str)
 {
 	struct doc_data *dd = p->data;
 	struct pane *p2 = NULL;
 	struct mark *m;
 
-	m = vmark_new(dd->doc, MARK_POINT);
+	m = vmark_new(doc, MARK_POINT);
 	if (!m)
 		return NULL;
+	dd->doc = doc;
 	dd->point = m;
-	pane_add_notify(p, dd->doc, "Notify:Close");
-	p->pointer = dd->point;
-	call3("doc:revisit", dd->doc, 1, NULL);
+	pane_add_notify(p, doc, "Notify:Close");
+	p->pointer = m;
+	call3("doc:revisit", doc, 1, NULL);
 	if (numeric) {
 		p2 = call_pane("attach-view", p, 0, NULL, 0);
 		if (p2)
@@ -656,13 +657,10 @@ struct pane *doc_attach(struct pane *parent, struct pane *d)
 	struct pane *p;
 	struct doc_data *dd = calloc(1, sizeof(*dd));
 
-	if (d)
-		dd->doc = d;
-
 	p = pane_register(parent, 0, &doc_handle, dd, NULL);
 	/* non-home panes need to be notified so they can self-destruct */
 	if (d)
-		doc_assign(p, 0, NULL);
+		doc_assign(p, d, 0, NULL);
 	return p;
 }
 
