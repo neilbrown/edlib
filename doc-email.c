@@ -101,6 +101,8 @@ DEF_CMD(open_email)
 		mark_free(start);
 		mark_free(end);
 		attr_set_str(&h->attrs, "render-default", "text");
+		attr_set_str(&p->attrs, "filename", ci->str+6);
+		attr_set_str(&p->attrs, "doc-type", "email");
 		return comm_call(ci->comm2, "callback:attach", h, 0, NULL, NULL, 0);
 	}
 out:
