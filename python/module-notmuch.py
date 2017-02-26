@@ -601,7 +601,7 @@ class notmuch_master_view(edlib.Pane):
             self.query_pane = pl[-1]
             pl[-1].call("doc:attach",
                         lambda key,**a:take('focus',pl,a))
-            pl[-1].call("doc:assign", pl[0], 1, "notmuch:threads",
+            pl[-1].call("doc:assign", pl[0], "notmuch:threads",
                                     lambda key,**a:take('focus', pl, a))
             self.query_pane = pl[-1]
             if numeric:
@@ -619,7 +619,7 @@ class notmuch_master_view(edlib.Pane):
                                  lambda key,**a:take('focus',pl,a))
             pl[-1].call("doc:attach",
                         lambda key,**a:take('focus',pl,a))
-            pl[-1].call("doc:assign", pl[0], 1, "notmuch:message",
+            pl[-1].call("doc:assign", pl[0], "notmuch:message",
                         lambda key,**a:take('focus', pl, a))
 
             # This still doesn't work: there are races: attaching a doc to

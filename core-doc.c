@@ -654,7 +654,7 @@ static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
 	pane_add_notify(p, doc, "Notify:doc:viewers");
 	p->pointer = m;
 	call3("doc:revisit", doc, 1, NULL);
-	if (numeric) {
+	if (numeric || str) {
 		p2 = call_pane("attach-view", p, 0, NULL, 0);
 		if (p2)
 			p2 = render_attach(str, p2);
