@@ -328,6 +328,7 @@ REDEF_CMD(python_doc_call)
 		if (p) {
 			p->handle = NULL;
 			p->data = safe_cast NULL;
+			pd->pane = NULL;
 		}
 		Py_DECREF(pd);
 	}
