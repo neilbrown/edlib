@@ -1292,6 +1292,10 @@ class notmuch_message_view(edlib.Pane):
         edlib.Pane.__init__(self, focus, self.handle)
 
     def handle(self, key, focus, mark, numeric, str, str2, comm2, **a):
+        if key == "Close":
+            # make sure tile is closed, don't let it display something else
+            self.call("Window:close", "notmuch")
+            return 1
         if key == "Clone":
             p = notmuch_message_view(focus)
             self.clone_children(focus.focus)
