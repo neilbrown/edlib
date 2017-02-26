@@ -576,6 +576,20 @@ class notmuch_master_view(edlib.Pane):
                     pl[0].focus.close()
             return 1
 
+        if key in [ "Chr-V" ]:
+            if not self.message_pane:
+                return 1
+            pl = []
+            self.call("OtherPane", lambda key,**a:take('focus', pl, a))
+            if not pl:
+                return 1
+            pl[0].call("doc:attach", lambda key,**a:take('focus', pl, a))
+            self.call("doc:open", self.message_pane["filename"], -1,
+                       lambda key,**a:take('focus', pl, a))
+            pl[2].call("doc:autoclose", 0)
+            pl[1].call("doc:assign",pl[2], "default:viewer")
+            return 1
+
         if key == "Chr-o":
             # focus to next window
             focus.call("Window:next", "notmuch", numeric)
