@@ -598,9 +598,10 @@ DEF_CMD(doc_handle)
 		if ((void*) (dd->doc))
 			return -1;
 		p2 = doc_assign(ci->home, ci->focus, ci->numeric, ci->str);
-		if (p2)
-			return comm_call(ci->comm2, "callback:doc", p2, 0, NULL, NULL, 0);
-		return -1;
+		if (!p2)
+			return -1;
+		comm_call(ci->comm2, "callback:doc", p2, 0, NULL, NULL, 0);
+		return 1;
 	}
 
 	if (strcmp(ci->key, "Replace") == 0) {
