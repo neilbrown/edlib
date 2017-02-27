@@ -12,6 +12,7 @@
 
 static struct map *ed_map safe;
 struct ed_info {
+	unsigned long magic;
 	struct pane *freelist;
 	struct idle_call {
 		struct idle_call *next;
@@ -212,6 +213,7 @@ void *memsave(struct pane *p safe, char *buf, int len)
 	while (p->parent)
 		p = p->parent;
 	ei = p->data;
+	ASSERT(ei->magic==0x4321765498765432UL);
 	if (ei->store == NULL || ei->store->size < len) {
 		struct store *s;
 		int l = 4096 - sizeof(*s);
@@ -236,6 +238,7 @@ char *strsave(struct pane *p safe, char *buf)
 void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 {
 	struct ed_info *ei = ed->data;
+	ASSERT(ei->magic==0x4321765498765432UL);
 	p->focus = ei->freelist;
 	ei->freelist = p;
 }
@@ -245,6 +248,7 @@ struct pane *editor_new(void)
 	struct pane *ed;
 	struct ed_info *ei = calloc(1, sizeof(*ei));
 
+	ei->magic = 0x4321765498765432UL;
 	if (! (void*) ed_map) {
 		ed_map = key_alloc();
 		key_add(ed_map, "global-set-attr", &global_set_attr);
