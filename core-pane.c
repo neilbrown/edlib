@@ -369,10 +369,14 @@ static void pane_close2(struct pane *p safe, struct pane *other safe)
 	list_del_init(&p->siblings);
 	pane_drop_notifiers(p, NULL);
 
-	while (!list_empty(&p->children)) {
-		c = list_first_entry(&p->children, struct pane, siblings);
+restart:
+	list_for_each_entry(c, &p->children, siblings) {
+		if (c->damaged & DAMAGED_CLOSED)
+			continue;
 		pane_close(c);
+		goto restart;
 	}
+
 	if (p->parent && p->parent->focus == p) {
 		pane_damaged(p->parent, DAMAGED_CURSOR);
 		p->parent->focus = NULL;
