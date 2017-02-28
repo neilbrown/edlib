@@ -54,6 +54,11 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 			if (p == list_last_entry(&doc->doc.home->children,
 						 struct pane, siblings))
 				m->ref.p = NULL;
+			else if (!p->parent || list_empty(&p->siblings))
+				/* document is gone.  This shouldn't happen,
+				 * but for safety, set doc to NULL.
+				 */
+				m->ref.p = NULL;
 			else
 				m->ref.p = list_next_entry(p, siblings);
 			doc_notify_change(&doc->doc, m, NULL);
