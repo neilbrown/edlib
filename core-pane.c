@@ -356,6 +356,8 @@ static void pane_close2(struct pane *p safe, struct pane *other safe)
 	while (ed && ed->parent)
 		ed = ed->parent;
 
+	pane_drop_notifiers(p, NULL);
+
 	if (p->parent && (void*)p->parent->handle &&
 	    !(p->parent->damaged & DAMAGED_CLOSED)) {
 		struct cmd_info ci = {.key = "ChildClosed",
@@ -367,7 +369,6 @@ static void pane_close2(struct pane *p safe, struct pane *other safe)
 		ci.comm->func(&ci);
 	}
 	list_del_init(&p->siblings);
-	pane_drop_notifiers(p, NULL);
 
 restart:
 	list_for_each_entry(c, &p->children, siblings) {
@@ -388,7 +389,10 @@ restart:
 		p->handle->func(&ci);
 	}
 	pane_damaged(p->parent, DAMAGED_CONTENT);
-	p->parent = NULL;
+	/* If a child has not yet has "Close" called, we need to leave
+	 * ->parent in place so a full range of commands are available.
+	 */
+	// p->parent = NULL;
 	command_put(p->handle);
 	p->handle = NULL;
 	if (ed)
