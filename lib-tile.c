@@ -348,13 +348,12 @@ static int tile_destroy(struct pane *p safe)
 		ti = remain->data;
 		ti2 = p->data;
 
-		pane_subsume(remain, p);
 		tmp = ti2->direction;
 		ti2->direction = ti->direction;
 		ti->p = p;
 		ti->direction = tmp;
 		ti2->p = remain;
-		pane_close(remain);
+		pane_subsume(remain, p);
 		pane_damaged(p, DAMAGED_SIZE);
 	}
 	return 1;

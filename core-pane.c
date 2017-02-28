@@ -342,16 +342,17 @@ restart:
 	return ret;
 }
 
-void pane_close(struct pane *p safe)
+static void pane_close2(struct pane *p safe, struct pane *other safe)
 {
 	struct pane *c;
 	struct pane *ed;
+
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
 	p->damaged |= DAMAGED_CLOSED;
 	pane_check(p);
 
-	ed = p->parent;
+	ed = other;
 	while (ed && ed->parent)
 		ed = ed->parent;
 
@@ -392,6 +393,11 @@ void pane_close(struct pane *p safe)
 		attr_free(&p->attrs);
 		free(p);
 	}
+}
+
+void pane_close(struct pane *p safe)
+{
+       pane_close2(p, p);
 }
 
 void pane_resize(struct pane *p safe, int x, int y, int w, int h)
@@ -438,7 +444,7 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 	/* move all content from p into parent, which must be empty,
 	 * except possibly for 'p'.
 	 * 'data', 'point' and 'handle' are swapped.
-	 * After this, p can be freed
+	 * Finally, p is freed
 	 */
 	void *data;
 	struct command *handle;
@@ -472,6 +478,8 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 	p->pointer = point;
 
 	parent->damaged |= p->damaged;
+
+	pane_close2(p, parent);
 }
 
 int pane_masked(struct pane *p safe, int x, int y, int abs_z, int *w, int *h)
