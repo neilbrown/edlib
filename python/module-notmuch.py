@@ -507,6 +507,11 @@ class notmuch_master_view(edlib.Pane):
                 tile.call("Window:y+", "notmuch", h - tile.h)
 
     def handle(self, key, focus, mark, numeric, str, str2, **a):
+
+        if key == "docs:choose":
+            # don't choose anything
+            return 1
+
         if key == "Clone":
             p = notmuch_master_view(focus)
             # We don't clone children, we create our own
