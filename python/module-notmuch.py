@@ -561,6 +561,10 @@ class notmuch_master_view(edlib.Pane):
             p.call("notmuch:select", m, 1)
             return 1
 
+        if key == "doc:notmuch-close-message":
+            self.message_pane = None
+            return 1
+
         if key in [ "Chr-x", "Chr-q" ]:
             if self.message_pane:
                 if key != "Chr-x":
@@ -609,8 +613,9 @@ class notmuch_master_view(edlib.Pane):
             # A query was selected, identifed by 'str'.  Close the
             # message window and open a threads window.
             if self.message_pane:
-                self.message_pane.call("Window:close", "notmuch")
+                p = self.message_pane
                 self.message_pane = None
+                p.call("Window:close", "notmuch")
             if self.query_pane:
                 self.query_pane.call("doc:notmuch:mark-seen")
             pl = []
@@ -1298,8 +1303,7 @@ class notmuch_message_view(edlib.Pane):
 
     def handle(self, key, focus, mark, numeric, str, str2, comm2, **a):
         if key == "Close":
-            # make sure tile is closed, don't let it display something else
-            self.call("Window:close", "notmuch")
+            self.call("doc:notmuch-close-message")
             return 1
         if key == "Clone":
             p = notmuch_message_view(focus)
