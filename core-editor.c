@@ -238,6 +238,11 @@ char *strsave(struct pane *p safe, char *buf)
 void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 {
 	struct ed_info *ei = ed->data;
+	if (!ei) {
+		attr_free(&p->attrs);
+		free(p);
+		return;
+	}
 	ASSERT(ei->magic==0x4321765498765432UL);
 	p->focus = ei->freelist;
 	ei->freelist = p;
