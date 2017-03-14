@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
 	if (!ed)
 		exit(1);
-	if (argc > 1 && strcmp(argv[1], "-g") == 0)
+	if (argc > 1 && argv[1] && strcmp(argv[1], "-g") == 0)
 		gtk = 1;
 
 	setlocale(LC_ALL, "");
@@ -91,7 +91,8 @@ int main(int argc, char *argv[])
 	if (p) {
 		struct pane *d = call_pane7("doc:from-text", p, 0, NULL, 0,
 					    "*Welcome*", WelcomeText);
-		p = doc_attach_view(p, d, NULL);
+		if (d)
+			p = doc_attach_view(p, d, NULL);
 	}
 
 	if (p) {

@@ -79,10 +79,11 @@ $(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) : $(H)
 
 $(OBJ) : O/%.o : %.c
 	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
+	$(QUIET_SMATCH) -I/usr/include/x86_64-linux-gnu/ $(CPPFLAGS) $(INC-$*) $<
 	$(QUIET_CC)$(CC) $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
-	$(QUIET_CHECK)sparse  $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
+	$(QUIET_CHECK)sparse -D__FLT_EVAL_METHOD__=1  $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
 	$(QUIET_SMATCH) -I/usr/include/x86_64-linux-gnu/ $(CPPFLAGS) $(INC-$*) $<
 	$(QUIET_CC)$(CC) -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
