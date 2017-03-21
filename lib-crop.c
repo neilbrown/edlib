@@ -73,10 +73,10 @@ DEF_CMD(crop_handle)
 		return comm_call_pane(p, ci->key, ci->focus, ci->numeric,
 				      NULL, ci->str, ci->extra, NULL, ci->comm2);
 
-	if (!in_range(ci->mark, cd, p) || !in_range(ci->mark2, cd, p))
-		/* doc:set-ref is allowed on any mark */
-		if (strcmp(ci->key, "doc:set-ref") != 0)
-			return -1;
+	/* Always force marks to be in range */
+	crop(ci->mark, cd, p);
+	crop(ci->mark2, cd, p);
+
 	ret = comm_call_pane(p, ci->key, ci->focus, ci->numeric,
 				      ci->mark, ci->str, ci->extra, ci->mark2, ci->comm2);
 	if (crop(ci->mark, cd, p) || crop(ci->mark2, cd, p)) {
