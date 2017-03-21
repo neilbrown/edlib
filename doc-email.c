@@ -56,7 +56,7 @@ DEF_CMD(open_email)
 	struct mark *start, *end;
 	wint_t prev = 0, ch = 0;
 	struct pane *p, *h, *h2;
-	char *xfer;
+	char *xfer, *type;
 
 	if (ci->str == NULL ||
 	    strncmp(ci->str, "email:", 6) != 0)
@@ -90,6 +90,7 @@ DEF_CMD(open_email)
 	if (!h)
 		goto out;
 
+	type = attr_find(h2->attrs, "rfc822-content-type");
 	xfer = attr_find(h2->attrs, "rfc822-content-transfer-encoding");
 	if (xfer && strcasecmp(xfer, "quoted-printable") == 0) {
 		struct pane *hx = call_pane("attach-quoted_printable", h, 0, NULL, 0);
@@ -98,6 +99,12 @@ DEF_CMD(open_email)
 	}
 	if (xfer && strcasecmp(xfer, "base64") == 0) {
 		struct pane *hx = call_pane("attach-base64", h, 0, NULL, 0);
+		if (hx)
+			h = hx;
+	}
+	if (type && (strstr(type, "charset=\"utf-8\"") ||
+		     strstr(type, "charset=utf-8"))) {
+		struct pane *hx = call_pane("attach-utf8", h, 0, NULL, 0);
 		if (hx)
 			h = hx;
 	}

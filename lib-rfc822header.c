@@ -287,7 +287,7 @@ DEF_CMD(header_attach)
 	if (t && strncmp(t, "1.0", 3) == 0) {
 		free(t);
 		t = load_header(p, "Content-Type");
-		attr_set_str(&p->attrs, "rfc882-content-type", t);
+		attr_set_str(&p->attrs, "rfc822-content-type", t);
 		free(t);
 		t = load_header(p, "Content-Transfer-Encoding");
 		attr_set_str(&p->attrs, "rfc822-content-transfer-encoding", t);
