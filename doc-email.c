@@ -56,6 +56,7 @@ DEF_CMD(open_email)
 	struct mark *start, *end;
 	wint_t prev = 0, ch = 0;
 	struct pane *p, *h, *h2;
+	char *xfer;
 
 	if (ci->str == NULL ||
 	    strncmp(ci->str, "email:", 6) != 0)
@@ -88,6 +89,18 @@ DEF_CMD(open_email)
 	h = call_pane8("attach-crop", p, 0, end, start, 0, NULL, NULL);
 	if (!h)
 		goto out;
+
+	xfer = attr_find(h2->attrs, "rfc822-content-transfer-encoding");
+	if (xfer && strcasecmp(xfer, "quoted-printable") == 0) {
+		struct pane *hx = call_pane("attach-quoted_printable", h, 0, NULL, 0);
+		if (hx)
+			h = hx;
+	}
+	if (xfer && strcasecmp(xfer, "base64") == 0) {
+		struct pane *hx = call_pane("attach-base64", h, 0, NULL, 0);
+		if (hx)
+			h = hx;
+	}
 
 	p = doc_new(ci->home, "multipart", ei->email);
 	if (!p)

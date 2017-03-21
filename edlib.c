@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
 	call5("global-load-module", ed, 0, NULL, "module-notmuch", 0);
 	call5("global-load-module", ed, 0, NULL, "doc-email", 0);
 	call5("global-load-module", ed, 0, NULL, "lib-viewer", 0);
+	call5("global-load-module", ed, 0, NULL, "lib-qprint", 0);
 
 	p = call_pane("attach-input", ed, 0, NULL, 0);
 	if (p) {

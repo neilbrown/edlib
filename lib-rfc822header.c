@@ -199,6 +199,51 @@ static void add_headers(struct pane *p safe, struct hdr_list *hdr safe)
 	}
 }
 
+static char *extract_header(struct pane *p safe, struct mark *start safe,
+			    struct mark *end safe)
+{
+	struct mark *m;
+	struct header_info *hi = p->data;
+	struct pane *doc = hi->orig;
+	int found = 0;
+	struct buf buf;
+	wint_t ch;
+
+	buf_init(&buf);
+	m = mark_dup(start, 1);
+	while ((ch = mark_next_pane(doc, m)) != WEOF &&
+	       m->seq < end->seq) {
+		if (!found && ch == ':') {
+			found = 1;
+			continue;
+		}
+		if (!found)
+			continue;
+		if (buf.len == 0 && (ch == ' ' || ch == '\t'))
+			continue;
+		buf_append(&buf, ch);
+	}
+	while (buf.len > 0 &&
+	       strchr(" \t\n", buf.b[buf.len-1]) != NULL)
+		buf.len -= 1;
+	return buf_final(&buf);
+}
+
+static char *load_header(struct pane *p safe, char *hdr safe)
+{
+	struct header_info *hi = p->data;
+	struct mark *m, *n;
+
+	for (m = vmark_first(hi->orig, hi->vnum); m; m = n) {
+		char *h = attr_find(m->attrs, "header");
+		n = vmark_next(m);
+		if (n && h && strcasecmp(h, hdr) == 0)
+			return extract_header(p, m, n);
+	}
+	return NULL;
+}
+
+
 DEF_LOOKUP_CMD(header_handle, header_map);
 DEF_CMD(header_attach)
 {
@@ -206,6 +251,7 @@ DEF_CMD(header_attach)
 	struct pane *p;
 	struct hdr_list *he;
 	struct pane *doc;
+	char *t;
 
 	doc = doc_new(ci->focus, "text", ci->focus);
 	if (!doc)
@@ -233,6 +279,21 @@ DEF_CMD(header_attach)
 	list_for_each_entry(he, &hi->headers, list)
 		add_headers(p, he);
 	call7("doc:replace", p, 1, NULL, "\n", 1, NULL, NULL);
+
+	t = load_header(p, "MIME-Version");
+	/* FIXME instead of just checking first the chars, I
+	 * should stripe comments and check it all.
+	 */
+	if (t && strncmp(t, "1.0", 3) == 0) {
+		free(t);
+		t = load_header(p, "Content-Type");
+		attr_set_str(&p->attrs, "rfc882-content-type", t);
+		free(t);
+		t = load_header(p, "Content-Transfer-Encoding");
+		attr_set_str(&p->attrs, "rfc822-content-transfer-encoding", t);
+		free(t);
+	} else
+		free(t);
 
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
