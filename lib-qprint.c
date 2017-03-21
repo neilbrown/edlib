@@ -74,6 +74,8 @@ DEF_CMD(qp_step)
 		if (ch == '=') {
 			/* CRLF or HexHex expected. */
 			c2 = mark_next_pane(p, m);
+			if (c2 == '\n')
+				goto retry;
 			c3 = mark_next_pane(p, m);
 			if (c2 == '\r' && c3 == '\n')
 				goto retry;
@@ -91,6 +93,11 @@ DEF_CMD(qp_step)
 		if (c2 == '\r')
 			/* Found the white-space, retry from here and see the '\n' */
 			goto retry;
+		if (c2 == '\n') {
+			/* No \r, just \n.  Step back to see it */
+			mark_prev_pane(p, m);
+			goto retry;
+		}
 		/* Just normal white space */
 		mark_free(m);
 		return CHAR_RET(ch);
@@ -109,7 +116,8 @@ DEF_CMD(qp_step)
 				mark_prev_pane(p, m);
 				goto retry;
 			}
-			mark_to_mark(ci->mark, m);
+			if (move)
+				mark_to_mark(ci->mark, m);
 			mark_free(m);
 			return CHAR_RET('\n');
 		}
