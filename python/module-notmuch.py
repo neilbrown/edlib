@@ -543,7 +543,7 @@ class notmuch_master_view(edlib.Pane):
                 self.list_pane.call("Return")
             return 1
 
-        if key in [ "M-Chr-n", "M-Chr-p", "Chr-n", "Chr-p", "Chr-a"]:
+        if key in [ "M-Chr-n", "M-Chr-p", "Chr-n", "Chr-p"]:
             if key[0] == "M" or not self.query_pane:
                 p = self.list_pane
                 op = self.query_pane
@@ -554,7 +554,24 @@ class notmuch_master_view(edlib.Pane):
                 return 1
             direction = 1 if key[-1] in "na" else -1
             m = mark
-            if key == "Chr-a" and self.message_pane:
+            if op:
+                # secondary window exists, so move
+                pl=[]
+                p.call("doc:dup-point", 0, -2, lambda key,**a:take("mark", pl, a))
+                m = pl[0]
+                if p.call("Move-Line", direction, m) == 1:
+                    p.call("Move-to", m)
+                    p.damaged(edlib.DAMAGED_CURSOR)
+            p.call("notmuch:select", m, 1)
+            return 1
+
+        if key in [ "Chr-a"]:
+            p = self.query_pane
+            op = self.message_pane
+            if not p:
+                return 1
+            m = mark
+            if self.message_pane:
                 if self.query_pane:
                     self.query_pane.call("doc:notmuch:remove-tag-inbox", self.message_pane.ctid,
                                          self.message_pane.cmid)
@@ -565,7 +582,7 @@ class notmuch_master_view(edlib.Pane):
                 pl=[]
                 p.call("doc:dup-point", 0, -2, lambda key,**a:take("mark", pl, a))
                 m = pl[0]
-                if p.call("Move-Line", direction, m) == 1:
+                if p.call("Move-Line", 1, m) == 1:
                     p.call("Move-to", m)
                     p.damaged(edlib.DAMAGED_CURSOR)
             p.call("notmuch:select", m, 1)
