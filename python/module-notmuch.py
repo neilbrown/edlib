@@ -526,11 +526,21 @@ class notmuch_master_view(edlib.Pane):
             self.resize()
             return 1
 
-        if key == "Return":
+        if key == "Chr-.":
+            # select thing under point, but don't move
             focus.call("notmuch:select", mark, 0)
             return 1
-        if key == "Chr- ":
+        if key == "Return":
+            # select thing under point, and enter it
             focus.call("notmuch:select", mark, 1)
+            return 1
+        if key == "Chr- ":
+            if self.message_pane:
+                self.message_pane.call(key)
+            elif self.query_pane:
+                self.query_pane.call("Return")
+            else:
+                self.list_pane.call("Return")
             return 1
 
         if key in [ "M-Chr-n", "M-Chr-p", "Chr-n", "Chr-p", "Chr-a"]:
