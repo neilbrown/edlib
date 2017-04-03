@@ -729,7 +729,7 @@ static PyObject *Pane_get_scale(Pane *self safe)
 static PyObject *Pane_mychild(Pane *self safe, PyObject *args)
 {
 	Pane *child = NULL;
-	int ret = PyArg_ParseTuple(args, "O!s", &PaneType, &child);
+	int ret = PyArg_ParseTuple(args, "O!", &PaneType, &child);
 	if (ret <= 0 || !child)
 		return NULL;
 	if (self->pane && child->pane) {
