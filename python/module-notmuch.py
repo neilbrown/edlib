@@ -366,11 +366,19 @@ class notmuch_main(edlib.Doc):
         if key[:23] == "doc:notmuch:remove-tag-":
             tag = key[23:]
             with writeable_db() as db:
-                m = db.find_message(str2)
-                if m:
-                    t = list(m.get_tags())
-                    if tag in t:
-                        m.remove_tag(tag)
+                if str2:
+                    m = db.find_message(str2)
+                    if m:
+                        t = list(m.get_tags())
+                        if tag in t:
+                            m.remove_tag(tag)
+                else:
+                    q = db.create_query("thread:%s" % str)
+                    for t in q.search_threads():
+                        ml = t.get_messages()
+                        for m in ml:
+                            if tag in m.get_tags():
+                                m.remove_tag(tag)
             return 1
 
         if key == "doc:notmuch:remember-seen-thread" and str:
@@ -454,6 +462,11 @@ class notmuch_master_view(edlib.Pane):
     # and will provide common handling for keystrokes
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
+        self.maxlen = 0 # length of longest query name
+        self.list_pane = None
+        self.query_pane = None
+        self.query = None
+        self.message_pane = None
         pl = []
         self.call("attach-tile", "notmuch", "main", lambda key,**a:take('focus',pl,a))
         p = pl[-1]
@@ -461,12 +474,7 @@ class notmuch_master_view(edlib.Pane):
         p = pl[-1]
         p = p.render_attach("format")
         p = notmuch_main_view(p)
-
-        self.maxlen = 0 # length of longest query name
         self.list_pane = p
-        self.query_pane = None
-        self.query = None
-        self.message_pane = None
 
     def resize(self):
         if self.list_pane and (self.query_pane or self.message_pane):
@@ -507,6 +515,16 @@ class notmuch_master_view(edlib.Pane):
                 tile.call("Window:y+", "notmuch", h - tile.h)
 
     def handle(self, key, focus, mark, numeric, str, str2, **a):
+
+        in_message = False
+        in_query = False
+        in_main = False
+        if self.message_pane and self.mychild(focus) == self.mychild(self.message_pane):
+            in_message = True
+        elif self.query_pane and self.mychild(focus) == self.mychild(self.query_pane):
+            in_query = True
+        else:
+            in_main = True
 
         if key == "docs:choose":
             # don't choose anything
@@ -565,27 +583,33 @@ class notmuch_master_view(edlib.Pane):
             p.call("notmuch:select", m, 1)
             return 1
 
-        if key in [ "Chr-a"]:
-            p = self.query_pane
-            op = self.message_pane
-            if not p:
+        if key == "Chr-a":
+            if in_message:
+                mp = self.message_pane
+                if mp.cmid and mp.ctid:
+                    if self.query_pane:
+                        self.query_pane.call("doc:notmuch:remove-tag-inbox",
+                                             mp.ctid, mp.cmid)
+                    else:
+                        self.call("doc:notmuch:remove-tag-inbox", mp.ctid, mp.cmid)
+                self.call("Chr-n")
                 return 1
-            m = mark
-            if self.message_pane:
-                if self.query_pane:
-                    self.query_pane.call("doc:notmuch:remove-tag-inbox", self.message_pane.ctid,
-                                         self.message_pane.cmid)
-                else:
-                    self.call("notmuch:remove-tag", self.message_pane.cmid, "inbox")
-            if op:
-                # secondary window exists, so move
+            if in_query:
+                sl = []
+                focus.call("doc:get-attr", "thread-id", 1, mark, lambda key,**a:take('str',sl,a))
+                focus.call("doc:get-attr", "message-id", 1, mark, lambda key,**a:take('str',sl,a))
+                self.query_pane.call("doc:notmuch:remove-tag-inbox", sl[0], sl[1])
+                # Move to next message.
                 pl=[]
-                p.call("doc:dup-point", 0, -2, lambda key,**a:take("mark", pl, a))
+                focus.call("doc:dup-point", 0, -2, lambda key,**a:take("mark", pl, a))
                 m = pl[0]
-                if p.call("Move-Line", 1, m) == 1:
-                    p.call("Move-to", m)
-                    p.damaged(edlib.DAMAGED_CURSOR)
-            p.call("notmuch:select", m, 1)
+                if focus.call("Move-Line", 1, m) == 1:
+                    focus.call("Move-to", m)
+                    focus.damaged(edlib.DAMAGED_CURSOR)
+                if self.message_pane:
+                    # Message was displayed, so display this one
+                    focus.call("notmuch:select", m, 0)
+                return 1
             return 1
 
         if key == "doc:notmuch-close-message":
@@ -844,13 +868,14 @@ class notmuch_list(edlib.Doc):
             self.call("doc:notmuch:query-updated")
             return -1
         # request some more
+        self.offset += found - 3
         if found < 5:
             # stop worrying about age
             self.age = None
+            self.offset = 0
         if found < 100 and self.age:
             self.age += 1
         # allow for a little over-lap across successive calls
-        self.offset += found - 3
         self.start_load()
         return -1
 
@@ -1227,11 +1252,17 @@ class notmuch_list(edlib.Doc):
 
         if key[:23] == "doc:notmuch:remove-tag-":
             tag = key[23:]
+            t = self.threads[str]
+            if tag in t["tags"]:
+                t["tags"].remove(tag)
+            if not str2 or str not in self.threadinfo:
+                return 0
+
             ti = self.threadinfo[str]
             m = ti[str2]
             tags = m[6]
             if tag not in tags:
-                return
+                return 0
             tags.remove(tag)
 
             is_tagged = False
@@ -1291,7 +1322,7 @@ class notmuch_query_view(edlib.Pane):
                 focus.damaged(edlib.DAMAGED_VIEW)
                 focus.damaged(edlib.DAMAGED_CONTENT)
             focus.call("doc:get-attr", "message-id", 1, mark, lambda key,**a:take('str',sl,a))
-            if len(sl) == 2 and sl[-1]:
+            if len(sl) == 2 and sl[-1] and numeric >= 0:
                 focus.call("notmuch:select-message", sl[-1], sl[0], numeric)
             return 1
 
