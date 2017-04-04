@@ -403,6 +403,7 @@ struct mark *doc_new_mark(struct doc *d safe, int view)
 	INIT_HLIST_NODE(&ret->all);
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	ret->viewnum = view;
+	hlist_add_head(&ret->all, &d->marks);
 	mark_reset(d, ret, 0);
 	if (hlist_unhashed(&ret->all)) {
 		/* Document misbehaved, fail gracefully */
