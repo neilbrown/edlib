@@ -167,7 +167,7 @@ struct point_links {
 
 struct mark *safe mark_dup(struct mark *m safe, int notype);
 void mark_free(struct mark *m);
-struct mark *safe doc_new_mark(struct doc *d safe, int view);
+struct mark *doc_new_mark(struct doc *d safe, int view);
 struct mark *doc_first_mark_all(struct doc *d safe);
 struct mark *doc_next_mark_all(struct mark *m safe);
 struct mark *doc_prev_mark_all(struct mark *m safe);

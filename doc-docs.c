@@ -390,7 +390,7 @@ DEF_CMD(doc_damage)
 	struct mark *m = doc_new_mark(p->data, MARK_UNGROUPED);
 	struct pane *child = pane_my_child(p, ci->focus);
 
-	if (!child)
+	if (!child || !m)
 		return -1;
 	do {
 		if (m->ref.p == child) {

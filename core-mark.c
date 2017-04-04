@@ -387,7 +387,7 @@ struct mark *doc_prev_mark_all(struct mark *m safe)
 	return NULL;
 }
 
-struct mark *safe doc_new_mark(struct doc *d safe, int view)
+struct mark *doc_new_mark(struct doc *d safe, int view)
 {
 	/* FIXME view is >= -1 */
 	struct mark *ret;
