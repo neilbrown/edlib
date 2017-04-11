@@ -29,28 +29,42 @@ import json
 import time
 import fcntl
 
+class notmuch_db():
+    def __init__(self):
+        self.lock_path = os.environ["HOME"]+"/.notmuch-config"
+        self.want_write = False
+        self.fd = None
+        self.nest = 0
 
-class locked_db():
+    def get_write(self):
+        if self.want_write:
+            return self
+        if self.nest:
+            return None
+        self.want_write = True
+        return self
     def __enter__(self):
-        self.fd = open(os.environ["HOME"]+"/.notmuch-config")
-        fcntl.flock(self.fd.fileno(), fcntl.LOCK_SH)
-        self.db = notmuch.Database()
+        if self.nest:
+            self.nest += 1
+            return self.db
+        self.fd = open(self.lock_path)
+        self.nest = 1
+        if self.want_write:
+            fcntl.flock(self.fd.fileno(), fcntl.LOCK_EX);
+            self.db = notmuch.Database(mode = notmuch.Database.MODE.READ_WRITE)
+        else:
+            fcntl.flock(self.fd.fileno(), fcntl.LOCK_SH);
+            self.db = notmuch.Database()
         return self.db
 
     def __exit__(self, a,b,c):
+        self.nest -= 1
+        if self.nest:
+            return
         self.db.close()
         self.fd.close()
-
-class writeable_db():
-    def __enter__(self):
-        self.fd = open(os.environ["HOME"]+"/.notmuch-config")
-        fcntl.flock(self.fd.fileno(), fcntl.LOCK_EX)
-        self.db = notmuch.Database(mode = notmuch.Database.MODE.READ_WRITE)
-        return self.db
-
-    def __exit__(self, a,b,c):
-        self.db.close()
-        self.fd.close()
+        self.db = None
+        self.fd = None
 
 def take(name, place, args, default=None):
     if args[name] is not None:
@@ -222,6 +236,7 @@ class notmuch_main(edlib.Doc):
         self.updating = None
         self.seen_threads = {}
         self.seen_msgs = {}
+        self.db = notmuch_db()
 
     def handle(self, key, focus, mark, mark2, numeric, extra, str, str2, comm2, **a):
 
@@ -335,7 +350,7 @@ class notmuch_main(edlib.Doc):
         if key == "doc:notmuch:byid":
             # return a document for the email message,
             # this is a global document
-            with locked_db() as db:
+            with self.db as db:
                 m = db.find_message(str)
                 fn = m.get_filename() + ""
             pl = []
@@ -353,7 +368,7 @@ class notmuch_main(edlib.Doc):
             return 1
 
         if key == "doc:notmuch:mark-read":
-            with writeable_db() as db:
+            with self.db.get_write() as db:
                 m = db.find_message(str2)
                 if m:
                     t = list(m.get_tags())
@@ -365,7 +380,7 @@ class notmuch_main(edlib.Doc):
 
         if key[:23] == "doc:notmuch:remove-tag-":
             tag = key[23:]
-            with writeable_db() as db:
+            with self.db.get_write() as db:
                 if str2:
                     m = db.find_message(str2)
                     if m:
@@ -388,7 +403,7 @@ class notmuch_main(edlib.Doc):
             self.seen_msgs[str] = focus
             return 1
         if key == "doc:notmuch:mark-seen":
-            with writeable_db() as db:
+            with self.db.get_write() as db:
                 todel = []
                 for id in self.seen_msgs:
                     if self.seen_msgs[id] == focus:
@@ -795,6 +810,7 @@ def notmuch_mode(key, home, focus, **a):
 class notmuch_list(edlib.Doc):
     def __init__(self, focus, query):
         edlib.Doc.__init__(self, focus, self.handle)
+        self.db = notmuch_db()
         self.query = query
         self['query'] = query
         self.threadids = []
@@ -895,7 +911,7 @@ class notmuch_list(edlib.Doc):
             self.add_message(l[-1], lst, info, depth + [0])
 
     def load_thread(self, tid):
-        with locked_db() as db:
+        with self.db as db:
             q = notmuch.Query(db, "thread:%s and (%s)" % (tid, self.query))
             tl = list(q.search_threads())
             if not tl:
