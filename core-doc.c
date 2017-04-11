@@ -382,7 +382,7 @@ DEF_CMD(doc_request_notify)
 DEF_CMD(doc_notify)
 {
 	return pane_notify(ci->home, ci->key, ci->mark, ci->mark2,
-			   ci->str, ci->numeric, ci->comm2);
+			   ci->str, ci->str2, ci->numeric, ci->extra, ci->comm2);
 }
 
 DEF_CMD(doc_delview)
@@ -433,7 +433,7 @@ DEF_CMD(doc_delayed_close)
 	/* If there are any doc-displays open, then will return '1' and
 	 * we will know not to destroy document yet.
 	 */
-	ret = pane_notify(p, "Notify:doc:viewers", NULL, NULL, NULL, 0, NULL);
+	ret = pane_notify(p, "Notify:doc:viewers", NULL, NULL, NULL, NULL, 0, 0, NULL);
 	if (ret == 0)
 		call3("doc:drop-cache", p, 0, NULL);
 	return 1;

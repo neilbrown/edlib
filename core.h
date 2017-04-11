@@ -91,7 +91,7 @@ struct notifier {
 };
 void pane_add_notify(struct pane *target safe, struct pane *source safe, char *msg safe);
 int pane_notify(struct pane *p safe, char *notification safe, struct mark *m, struct mark *m2,
-		char *str, int numeric, struct command *comm2);
+		char *str, char *str2, int numeric, int extra, struct command *comm2);
 void pane_drop_notifiers(struct pane *p safe, char *notification);
 
 void editor_delayed_free(struct pane *ed safe, struct pane *p safe);
@@ -607,6 +607,28 @@ static inline int comm_call_pane(struct pane *home, char *key safe,
 	ci.mark = m;
 	ci.mark2 = m2;
 	ci.str = str;
+	ci.extra = extra;
+	ci.comm = home->handle;
+	ci.comm2 = comm2;
+	return ci.comm->func(&ci);
+}
+
+static inline int comm_call_pane8(struct pane *home, char *key safe,
+				  struct pane *focus safe,
+				  int numeric, struct mark *m, char *str, char *str2,
+				  int extra,
+				  struct mark *m2, struct command *comm2)
+{
+	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
+
+	if (!home || !home->handle)
+		return -1;
+	ci.home = home;
+	ci.numeric = numeric;
+	ci.mark = m;
+	ci.mark2 = m2;
+	ci.str = str;
+	ci.str2 = str2;
 	ci.extra = extra;
 	ci.comm = home->handle;
 	ci.comm2 = comm2;

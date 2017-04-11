@@ -59,7 +59,8 @@ DEF_CMD(keystroke)
 	if (!ci->str)
 		return -1;
 
-	pane_notify(ci->home, "Notify:Keystroke", NULL, NULL, ci->str, 0, NULL);
+	pane_notify(ci->home, "Notify:Keystroke", NULL, NULL,
+		    ci->str, NULL, 0, 0, NULL);
 
 	l = strlen(im->mode) + strlen(ci->str) + 1;
 	key = malloc(l);
@@ -97,7 +98,8 @@ DEF_CMD(mouse_event)
 	if (!ci->str)
 		return -1;
 
-	pane_notify(ci->home, "Notify:Mouse-event", NULL, NULL, ci->str, 0, NULL);
+	pane_notify(ci->home, "Notify:Mouse-event", NULL, NULL,
+		    ci->str, NULL, 0, 0, NULL);
 
 	l = strlen(im->mode) + strlen(ci->str) + 1;
 	key = malloc(l);

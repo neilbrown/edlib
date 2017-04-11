@@ -968,7 +968,7 @@ struct mark *do_vmark_at_or_before(struct pane *p safe, struct doc *d safe,
 
 void doc_notify_change(struct doc *d safe, struct mark *m, struct mark *m2)
 {
-	pane_notify(d->home, "Notify:Replace", m, m2, NULL, 0, NULL);
+	pane_notify(d->home, "Notify:Replace", m, m2, NULL, NULL, 0, 0, NULL);
 }
 
 void doc_check_consistent(struct doc *d safe)
