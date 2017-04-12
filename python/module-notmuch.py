@@ -1223,13 +1223,13 @@ class notmuch_list(edlib.Doc):
                 elif attr == "thread-id":
                     val = tid
                 elif attr == "hilite":
-                    if "new" in t["tags"] and "unread" in t["tags"]:
+                    if "inbox" not in t["tags"]:
+                        # FIXME this test is wrong once we have generic searches
+                        val = "fg:grey"
+                    elif "new" in t["tags"] and "unread" in t["tags"]:
                         val = "fg:red,bold"
                     elif "unread" in t["tags"]:
                         val = "fg:blue"
-                    elif "inbox" not in t["tags"]:
-                        # FIXME this test is wrong once we have generic searches
-                        val = "fg:grey"
                     else:
                         val = "fg:black"
                 elif attr == "date_relative":
