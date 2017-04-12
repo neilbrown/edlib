@@ -360,6 +360,27 @@ class notmuch_main(edlib.Doc):
                 comm2("callback", pl[0])
             return 1
 
+        if key == "doc:notmuch:byid:tags":
+            # return a string with tags of message
+            with self.db as db:
+                m = db.find_message(str)
+                tags = ",".join(m.get_tags())
+            comm2("callback", focus, tags)
+            return 1
+
+        if key == "doc:notmuch:bythread:tags":
+            # return a string with tags of message
+            with self.db as db:
+                q = db.create_query("thread:%s" % str)
+                tg = []
+                for t in q.search_threads():
+                    ml = t.get_messages()
+                    for m in ml:
+                        tg.extend(m.get_tags())
+            tags = ",".join(set(tg))
+            comm2("callback", focus, tags)
+
+
         if key == "doc:notmuch:search-maxlen":
             return self.searches.maxlen + 1
 
@@ -371,11 +392,16 @@ class notmuch_main(edlib.Doc):
             with self.db.get_write() as db:
                 m = db.find_message(str2)
                 if m:
+                    changed=False
                     t = list(m.get_tags())
                     if "unread" in t:
                         m.remove_tag("unread")
+                        changed=True
                     if "new" in t:
                         m.remove_tag("new")
+                        changed=True
+                    if changed:
+                        self.notify("Notify:Tag", str, str2)
             return 1
 
         if key[:23] == "doc:notmuch:remove-tag-":
@@ -387,13 +413,18 @@ class notmuch_main(edlib.Doc):
                         t = list(m.get_tags())
                         if tag in t:
                             m.remove_tag(tag)
+                            self.notify("Notify:Tag", str, str2)
                 else:
                     q = db.create_query("thread:%s" % str)
+                    changed = False
                     for t in q.search_threads():
                         ml = t.get_messages()
                         for m in ml:
                             if tag in m.get_tags():
                                 m.remove_tag(tag)
+                                changed = True
+                    if changed:
+                        self.notify("Notify:Tag", str)
             return 1
 
         if key == "doc:notmuch:remember-seen-thread" and str:
@@ -408,22 +439,26 @@ class notmuch_main(edlib.Doc):
                 for id in self.seen_msgs:
                     if self.seen_msgs[id] == focus:
                         m = db.find_message(id)
-                        if m:
+                        if m and "new" in m.get_tags():
                             m.remove_tag("new")
+                            self.notify("Notify:Tag", m.get_thread_id(), id)
                         todel.append(id)
                 for id in todel:
                     del self.seen_msgs[id]
                 todel = []
                 for id in self.seen_threads:
                     if self.seen_threads[id] == focus:
+                        changed = False
                         q = db.create_query("thread:%s" % id)
                         for t in q.search_threads():
                             ml = t.get_messages()
                             for m in ml:
                                 if "new" in m.get_tags():
                                     m.remove_tag("new")
+                                    changed = True
                             break
                         todel.append(id)
+                    self.notify("Notify:Tag", id)
                 for id in todel:
                     del self.seen_threads[id]
             return 1
@@ -819,6 +854,7 @@ class notmuch_list(edlib.Doc):
         self.threadinfo = {}
         self["render-default"] = "notmuch:query"
         self["line-format"] = "<%hilite>%date_relative</><tab:130></> <fg:blue>%+authors</><tab:350>%threadinfo<tab:450><%hilite>%subject</>                      "
+        self.add_notify(self.parent, "Notify:Tag")
         self.load_full()
 
     def load_full(self):
@@ -1087,6 +1123,27 @@ class notmuch_list(edlib.Doc):
         return ret + "> "
 
     def handle(self, key, mark, mark2, numeric, extra, focus, xy, str, str2, comm2, **a):
+        if key == "Notify:Tag":
+            if str2:
+                # re-evaluate tags of a single message
+                if str in self.threadinfo:
+                    t = self.threadinfo[str]
+                    if str2 in t:
+                        tg = t[str2][6]
+                        sl=[]
+                        self.call("doc:notmuch:byid:tags", str2,
+                                  lambda key,**a:take('str',sl,a))
+                        tg[:] = sl[0].split(",")
+
+            if str in self.threads:
+                t = self.threads[str]
+                sl=[]
+                self.call("doc:notmuch:bythread:tags", str,
+                          lambda key,**a:take('str',sl,a))
+                t['tags'] = sl[0].split(",")
+            self.notify("Notify:Replace")
+            return 1
+
         if key == "doc:set-ref":
             mark.pos = None
             if numeric == 1 and len(self.threadids) > 0:
@@ -1265,38 +1322,6 @@ class notmuch_list(edlib.Doc):
             self.notify("Notify:Replace")
             # Let this fall though to database document.
             return 0
-
-        if key[:23] == "doc:notmuch:remove-tag-":
-            tag = key[23:]
-            t = self.threads[str]
-            if tag in t["tags"]:
-                t["tags"].remove(tag)
-            if not str2 or str not in self.threadinfo:
-                return 0
-
-            ti = self.threadinfo[str]
-            m = ti[str2]
-            tags = m[6]
-            if tag not in tags:
-                return 0
-            tags.remove(tag)
-
-            is_tagged = False
-            for mid in ti:
-                if tag in ti[mid][6]:
-                    # still has tagged messages
-                    is_tagged = True
-                    break
-            if not is_tagged:
-                # thread is no longer tagged
-                j = self.threads[str]
-                t = j["tags"]
-                if tag in t:
-                    t.remove(tag)
-            self.notify("Notify:Replace")
-            # Let this fall though to database document.
-            return 0
-
 
 class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
