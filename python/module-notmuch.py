@@ -165,8 +165,9 @@ class searches:
             self.cb = None
             return False
         n = self.todo[0]
-        self.p = Popen("/usr/bin/notmuch count --batch", shell=True, stdin=PIPE,
-                       stdout = PIPE)
+        # HACK WARNING .bin and /dev/null
+        self.p = Popen("/usr/bin/notmuch.bin count --batch", shell=True, stdin=PIPE,
+                       stdout = PIPE, stderr = open("/dev/null", 'w'))
         self.p.stdin.write(self.make_search(n, False) + "\n")
         self.p.stdin.write(self.make_search(n, 'unread') + "\n")
         self.p.stdin.write(self.make_search(n, 'new') + "\n")
