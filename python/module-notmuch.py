@@ -836,7 +836,7 @@ def notmuch_mode(key, home, focus, **a):
 # on extra arguments in the
 #    doc:set-ref doc:mark-same doc:step doc:get-attr
 # messages.
-# By default, when 'str' is None, only the separate threads a visible as objects.
+# By default, when 'str' is None, only the separate threads are visible as objects.
 # If 'str' is a thread id and 'xy.x' is 0, then in place of that thread a
 #   list of 'matching' message is given
 # If 'str' is a thread id and 'xy.x' is non-zero, then only the messages in
@@ -950,6 +950,9 @@ class notmuch_list(edlib.Doc):
         with self.db as db:
             q = notmuch.Query(db, "thread:%s and (%s)" % (tid, self.query))
             tl = list(q.search_threads())
+            if not tl:
+                q = notmuch.Query(db, "thread:%s" % (tid))
+                tl = list(q.search_threads())
             if not tl:
                 return
             thread = tl[0]
@@ -1287,7 +1290,9 @@ class notmuch_list(edlib.Doc):
         if key == "doc:notmuch:load-thread":
             if str not in self.threadinfo:
                 self.load_thread(str)
-            return 1
+            if str in self.threadinfo:
+                return 1
+            return 2
 
         if key == "doc:notmuch:same-search":
             if self.query == str2:
@@ -1358,8 +1363,10 @@ class notmuch_query_view(edlib.Pane):
             sl = []
             focus.call("doc:get-attr", "thread-id", 1, mark, lambda key,**a:take('str',sl,a))
             if sl[0] != self.selected:
-                self.call("doc:notmuch:load-thread", sl[0])
-                self.selected = sl[0]
+                if self.call("doc:notmuch:load-thread", sl[0]) == 1:
+                    self.selected = sl[0]
+                else:
+                    self.selected = None
                 focus.damaged(edlib.DAMAGED_VIEW)
                 focus.damaged(edlib.DAMAGED_CONTENT)
             focus.call("doc:get-attr", "message-id", 1, mark, lambda key,**a:take('str',sl,a))
