@@ -575,7 +575,7 @@ DEF_CMD(docs_get_attr)
 	else if (strcmp(attr, "heading") == 0)
 			val = "<bold,underline> Mod Document             File</>";
 	else if (strcmp(attr, "line-format") == 0)
-			val = " %doc-modified:3 %+name:20 %filename";
+			val = " %doc-modified:3 %+name:20 %.filename";
 	else if (strcmp(attr, "render-default") == 0)
 			val = "format";
 	else if (strcmp(attr, "doc-type") == 0)

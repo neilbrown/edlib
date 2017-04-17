@@ -305,7 +305,7 @@ class notmuch_main(edlib.Doc):
                     else:
                         val = "fg:grey"
                 elif attr == 'name':
-                        val = "%-12s" % s
+                        val = s
                 elif attr == 'count':
                     c = self.searches.new[s]
                     if not c:
@@ -854,7 +854,7 @@ class notmuch_list(edlib.Doc):
         self.messageids = {}
         self.threadinfo = {}
         self["render-default"] = "notmuch:query"
-        self["line-format"] = "<%hilite>%date_relative</><tab:130></> <fg:blue>%+authors</><tab:350>%threadinfo<tab:450><%hilite>%subject</>                      "
+        self["line-format"] = "<%hilite>%date_relative</><tab:130></> <fg:blue>%+authors</><tab:350>%.threadinfo<tab:450><%hilite>%.subject</>                      "
         self.add_notify(self.parent, "Notify:Tag")
         self.load_full()
 

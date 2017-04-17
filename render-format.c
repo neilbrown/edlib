@@ -64,7 +64,8 @@ DEF_CMD(render_line)
 			n += 1;
 			continue;
 		}
-		field += 1;
+		if (n[1] == '+' || n[1] == '.')
+			field += 1;
 		m->rpos = field - rf->home_field;
 
 		if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
@@ -79,7 +80,8 @@ DEF_CMD(render_line)
 			home = field;
 			if (rf->home_field < 0)
 				rf->home_field = home;
-		}
+		} else if (*n == '.')
+			n += 1;
 		b = buf;
 		while (*n == '-' || *n == '_' || isalnum(*n)) {
 			if (b < buf + sizeof(buf) - 2)
@@ -92,7 +94,10 @@ DEF_CMD(render_line)
 			buf_append(&ret, ch);
 			continue;
 		}
-		val = pane_mark_attr(ci->focus, m, 1, buf);
+		if (!buf[0])
+			val = "";
+		else
+			val = pane_mark_attr(ci->focus, m, 1, buf);
 		if (!val)
 			val = "-";
 
@@ -138,7 +143,7 @@ endwhile:
 	if (!*n) {
 		rf->fields = field;
 		rf->home_field = home;
-		m->rpos = field + 1 - rf->home_field;
+		m->rpos = field - rf->home_field;
 		if (pm && pm->rpos == m->rpos)
 			;
 		else if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC)
@@ -207,7 +212,7 @@ DEF_CMD(format_move_line)
 	if (rpt < 0)
 		ci->mark->rpos = -rf->home_field;
 	if (rpt > 0)
-		ci->mark->rpos = rf->fields + 1 - rf->home_field;
+		ci->mark->rpos = rf->fields - rf->home_field;
 
 	return 1;
 }
@@ -222,10 +227,8 @@ DEF_CMD(format_move_horiz)
 
 	if (!ci->mark)
 		return -1;
-	if (rf->fields < 2)
-		return 1;
 	while (rpt > 0 && doc_following_pane(ci->focus, ci->mark) != WEOF) {
-		if (ci->mark->rpos < rf->fields - rf->home_field + 1)
+		if (ci->mark->rpos < rf->fields - rf->home_field)
 			ci->mark->rpos += 1;
 		else {
 			if (mark_next_pane(ci->focus, ci->mark) == WEOF)
@@ -240,7 +243,7 @@ DEF_CMD(format_move_horiz)
 		else {
 			if (mark_prev_pane(ci->focus, ci->mark) == WEOF)
 				break;
-			ci->mark->rpos = rf->fields - rf->home_field + 1;
+			ci->mark->rpos = rf->fields - rf->home_field;
 		}
 		rpt += 1;
 	}

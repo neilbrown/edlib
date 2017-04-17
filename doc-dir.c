@@ -524,7 +524,7 @@ DEF_CMD(dir_get_attr)
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "dir";
 	else if (strcmp(attr, "line-format") == 0)
-		val = " <fg:red>%perms</> %mdate:13 %user:10 %group:10 <fg:blue>%+name</>";
+		val = " <fg:red>%.perms</> %.mdate:13 %.user:10 %.group:10 <fg:blue>%+name</>";
 	else if (strcmp(attr, "filename") == 0)
 		val = dr->fname;
 	else
