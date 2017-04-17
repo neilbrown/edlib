@@ -1419,8 +1419,8 @@ class notmuch_message_view(edlib.Pane):
         if key == "Replace":
             return 1
         if key == "Chr- ":
-            focus.call("Next", 1, mark)
-            # FIXME detect EOF and move to next message
+            if focus.call("Next", 1, mark) == 2:
+                focus.call("Chr-n", mark)
             return 1
         if key == "map-attr" and str == "render:rfc822header":
             comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed", 21)
