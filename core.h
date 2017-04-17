@@ -384,7 +384,7 @@ static inline wint_t doc_prior_pane(struct pane *p safe, struct mark *m safe)
 }
 static inline int doc_undo(struct pane *p safe, bool redo)
 {
-	struct cmd_info ci = {.key = "doc:redo", .focus=p, .home=p, .comm = safe_cast 0 };
+	struct cmd_info ci = {.key = "doc:reundo", .focus=p, .home=p, .comm = safe_cast 0 };
 
 	ci.numeric = redo ? 1 : 0;
 	return key_handle(&ci);
