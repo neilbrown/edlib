@@ -237,23 +237,23 @@ static int flush_line(struct pane *p, struct render_list **rlp safe,
 	}
 	if (last_wrap)
 		last_rl = last_wrap;
-	if (p) {
-		for (rl = *rlp; rl && rl != last_wrap; rl = rl->next) {
-			int cp = rl->cursorpos;
-			if (wrap_pos && cp == (int)strlen(rl->text))
-				cp = -1;
-			x = rl->x;
+	for (rl = *rlp; rl && rl != last_wrap; rl = rl->next) {
+		int cp = rl->cursorpos;
+		if (wrap_pos && cp == (int)strlen(rl->text))
+			cp = -1;
+		x = rl->x;
+		if (p)
 			call_xy7("Draw:text", p, cp, scale,
 				 rl->text, rl->attr, x, y, NULL, NULL);
-			x += rl->width;
-		}
-		if (wrap_pos && last_rl) {
-			char *e = get_last_attr(last_rl->attr, "wrap-tail");
-			call_xy7("Draw:text", p, -1, scale,
-				 e ?: "\\", "underline,fg:blue", wrap_pos, y, NULL, NULL);
-			free(e);
-		}
+		x += rl->width;
 	}
+	if (wrap_pos && last_rl && p) {
+		char *e = get_last_attr(last_rl->attr, "wrap-tail");
+		call_xy7("Draw:text", p, -1, scale,
+			 e ?: "\\", "underline,fg:blue", wrap_pos, y, NULL, NULL);
+		free(e);
+	}
+
 	tofree = *rlp;
 	*rlp = end_wrap;
 	if (p && x > p->w)
