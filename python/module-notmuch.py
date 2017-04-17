@@ -1422,6 +1422,10 @@ class notmuch_message_view(edlib.Pane):
             if focus.call("Next", 1, mark) == 2:
                 focus.call("Chr-n", mark)
             return 1
+        if key == "Backspace":
+            if focus.call("Prior", 1, mark) == 2:
+                focus.call("Chr-p", mark)
+            return 1
         if key == "map-attr" and str == "render:rfc822header":
             comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed", 21)
             comm2("attr:callback", focus, 10000, mark, "wrap-tail: ,wrap-head:    ", 19)
