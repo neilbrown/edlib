@@ -292,12 +292,13 @@ DEF_CMD(doc_page)
 {
 	struct pane *p = ci->home;
 	struct doc_data *dd = p->data;
-	struct mark *m = ci->mark;
+	struct mark *m = ci->mark, *old;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 
 	if (!m)
 		m = dd->point;
+	old = mark_dup(m, 0);
 
 	rpt *= ci->home->h-2;
 	while (rpt > 0 && ch != WEOF) {
@@ -312,6 +313,11 @@ DEF_CMD(doc_page)
 			;
 		rpt += 1;
 	}
+	if (mark_same_pane(p, m, old)) {
+		mark_free(old);
+		return 2;
+	}
+	mark_free(old);
 	return 1;
 }
 

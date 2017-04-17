@@ -625,7 +625,8 @@ class PresenterPane(edlib.Pane):
                 mark.to_mark(page)
                 focus.call("Move-View-Pos", page)
                 focus.damaged(edlib.DAMAGED_CURSOR)
-            return 1
+                return 1
+            return 2
 
         if key == "Close":
             m = self.first_page()

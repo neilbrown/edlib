@@ -1269,13 +1269,15 @@ DEF_CMD(render_lines_move)
 	struct pane *focus = ci->focus;
 	int rpt = RPT_NUM(ci);
 	struct rl_data *rl = p->data;
-	struct mark *top;
+	struct mark *top, *old_top;
 	int pagesize = rl->line_height;
 	struct xy scale = pane_scale(focus);
 
 	top = vmark_first(focus, rl->typenum);
 	if (!top)
 		return 0;
+
+	old_top = mark_dup(top, 1);
 	if (strcmp(ci->key, "Move-View-Large") == 0)
 		pagesize = p->h - 2 * rl->line_height;
 	rpt *= pagesize;
@@ -1357,6 +1359,12 @@ DEF_CMD(render_lines_move)
 	}
 	rl->repositioned = 1;
 	pane_damaged(ci->home, DAMAGED_VIEW);
+	top = vmark_first(focus, rl->typenum);
+	if (top && mark_same_pane(focus, top, old_top)) {
+		mark_free(old_top);
+		return 2;
+	}
+	mark_free(old_top);
 	return 1;
 }
 
