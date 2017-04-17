@@ -331,6 +331,7 @@ struct mark *safe point_new(struct doc *d safe)
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	ret->attrs = NULL;
 	ret->viewnum = MARK_POINT;
+	hlist_add_head(&ret->all, &d->marks);
 	ret->mdata = lnk;
 	ret->mtype = NULL;
 	lnk->size = d->nviews;

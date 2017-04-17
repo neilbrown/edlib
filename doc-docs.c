@@ -485,7 +485,7 @@ DEF_CMD(docs_set_ref)
 
 	if (!m)
 		return -1;
-	if (call3("doc:mymark", ci->home, 0, ci->mark) != 1)
+	if (call3("doc:mymark", ci->home, 0, m) != 1)
 		return -1;
 
 	if (ci->numeric == 1 && !list_empty(&d->doc.home->children))
