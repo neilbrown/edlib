@@ -537,7 +537,6 @@ static void init_doc_cmds(void)
 DEF_CMD(doc_handle)
 {
 	struct doc_data *dd = ci->home->data;
-	struct cmd_info ci2;
 	int retval;
 
 	retval = key_lookup(doc_handle_cmd, ci);
@@ -631,18 +630,14 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
-	ci2 = *ci;
-	ci2.home = dd->doc;
-	ci2.comm = safe_cast NULL;
-
-	if (ci2.mark == NULL)
-		ci2.mark = dd->point;
 	if (strncmp(ci->key, "doc:", 4) != 0 &&
 	    strncmp(ci->key, "Request:Notify:doc:", 19) != 0 &&
 	    strncmp(ci->key, "Notify:doc:", 11) != 0)
 		/* doesn't get sent to the doc */
 		return 0;
-	return key_handle(&ci2);
+	return call_home9(dd->doc, ci->key, ci->focus, ci->numeric,
+			  ci->mark ?: dd->point, ci->str, ci->extra, ci->str2,
+			  ci->mark2, ci->comm2, ci->x, ci->y);
 }
 
 static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
@@ -807,21 +802,16 @@ DEF_CMD(doc_attr_callback)
 
 char *doc_attr(struct pane *dp safe, struct mark *m, bool forward, char *attr, int *done)
 {
-	struct cmd_info ci = {.key = "doc:get-attr", .home = dp, .focus = dp, .comm = safe_cast dp->handle};
 	struct call_return cr;
 	int ret;
 
 	if (done)
 		*done = 0;
-	if (!m)
-		ci.key = "get-attr";
-	ci.mark = m;
-	ci.numeric = forward ? 1 : 0;
-	ci.str = attr;
 	cr.c = doc_attr_callback;
 	cr.s = NULL;
-	ci.comm2 = &cr.c;
-	if (!dp->handle || (ret = dp->handle->func(&ci)) == 0)
+	ret = comm_call_pane(dp, m ? "doc:get-attr" : "get-attr", dp, !!forward, m,
+			     attr, 0, NULL, &cr.c);
+	if (ret == 0)
 		return NULL;
 	if (ret > 0 && done)
 		*done = 1;

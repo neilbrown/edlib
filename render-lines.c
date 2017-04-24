@@ -840,21 +840,15 @@ DEF_CMD(get_len)
 static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
 				     struct mark *start safe)
 {
-	struct cmd_info ci = {.key="render-line",.focus=p,.home=p,.comm=safe_cast 0};
 	int len;
+	struct mark *m = mark_dup(start, 0);
 
-	ci.mark2 = pm;
-	ci.mark = mark_dup(start, 0);
-	ci.numeric = -1;
-	ci.comm2 = &get_len;
-	len = key_handle(&ci);
-	if (len <= 0) {
-		mark_free(ci.mark);
+	len = call_comm8("render-line", p, -1, m, NULL, 0, pm, NULL, &get_len);
+	mark_free(m);
+	if (len <= 0)
 		return 0;
-	}
-	len -= 1;
-	mark_free(ci.mark);
-	return len;
+
+	return len - 1;
 }
 
 static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *focus safe)

@@ -444,6 +444,23 @@ static inline int call_home7(struct pane *home safe, char *key safe, struct pane
 	return key_handle(&ci);
 }
 
+static inline int call_home9(struct pane *home safe, char *key safe, struct pane *focus safe,
+			     int numeric, struct mark *m, char *str, int extra, char *str2, struct mark *m2, struct command *comm, int x, int y)
+{
+	struct cmd_info ci = {.key=key, .focus=focus, .home=home, .comm = safe_cast 0};
+
+	ci.numeric = numeric;
+	ci.mark = m;
+	ci.str = str;
+	ci.extra = extra;
+	ci.str2 = str2;
+	ci.mark2 = m2;
+	ci.comm2 = comm;
+	ci.x = x;
+	ci.y = y;
+	return key_handle(&ci);
+}
+
 static inline int call_home(struct pane *home safe, char *key safe, struct pane *focus safe,
 			    int numeric, struct mark *m, struct command *comm)
 {

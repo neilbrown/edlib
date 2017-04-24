@@ -713,12 +713,7 @@ void mark_to_mark(struct mark *m safe, struct mark *target safe)
 
 int mark_same_pane(struct pane *p safe, struct mark *m1 safe, struct mark *m2 safe)
 {
-	struct cmd_info ci = {.key = "doc:mark-same", .focus = p, .home = p,
-			      .comm = safe_cast 0};
-
-	ci.mark = m1;
-	ci.mark2 = m2;
-	return key_handle(&ci) == 1;
+	return 1 == call7("doc:mark-same", p, 0, m1, NULL, 0, NULL, m2);
 }
 
 /* A 'vmark' is a mark in a particular view.  We can walk around those
@@ -812,18 +807,11 @@ DEF_CMD(take_marks)
 static int vmark_get(struct pane *p safe, int view,
 		     struct mark **first, struct mark **last, struct mark **point, struct mark **new)
 {
-	struct cmd_info ci = {.key = "doc:vmark-get", .focus = p, .home = p, .comm = safe_cast 0};
 	struct call_return cr;
 
-	ci.numeric = view;
 	cr.c = take_marks;
 	cr.m = cr.m2 = NULL;
-	ci.comm2 = &cr.c;
-	if (point)
-		ci.extra = 1;
-	else if (new)
-		ci.extra = 2;
-	if (key_handle(&ci) == 0)
+	if (call_comm("doc:vmark-get", p, view, NULL, NULL, point ? 1 : new ? 2 : 0, &cr.c) == 0)
 		return 0;
 	if (first)
 		*first = cr.m;
@@ -862,16 +850,11 @@ struct mark *vmark_at_point(struct pane *p safe, int view)
 
 struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe, int view)
 {
-	struct cmd_info ci = {.key = "doc:vmark-get", .focus = p, .home = p, .comm = safe_cast 0};
 	struct call_return cr;
 
-	ci.numeric = view;
-	ci.extra = 3;
-	ci.mark = m;
 	cr.c = take_marks;
 	cr.m = cr.m2 = NULL;
-	ci.comm2 = &cr.c;
-	if (key_handle(&ci) == 0)
+	if (call_comm("doc:vmark-get", p, view, m, NULL, 3, &cr.c) == 0)
 		return NULL;
 	return cr.m2;
 }

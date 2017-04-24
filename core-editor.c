@@ -66,18 +66,12 @@ DEF_CMD(global_get_command)
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
 	struct command *cm;
-	struct cmd_info ci2 = {.key = "callback:comm", .focus = ci->focus, .home = ci->focus, .comm = safe_cast 0};
 
 	if (!ci->str ||
 	    !(cm = key_lookup_cmd(map, ci->str)))
 		return -1;
-	ci2.str = ci->str;
-	ci2.comm2 = cm;
-	if (ci->comm2) {
-		ci2.comm = ci->comm2;
-		return ci2.comm->func(&ci2);
-	}
-	return -1;
+	return comm_call8(ci->comm2, ci->focus, "callback:comm", ci->focus, 0, NULL, ci->str,
+			  0, NULL, NULL, cm);
 }
 
 DEF_CMD(editor_load_module)

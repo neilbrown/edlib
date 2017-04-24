@@ -359,15 +359,9 @@ static void pane_close2(struct pane *p safe, struct pane *other safe)
 	pane_drop_notifiers(p, NULL);
 
 	if (p->parent && (void*)p->parent->handle &&
-	    !(p->parent->damaged & DAMAGED_CLOSED)) {
-		struct cmd_info ci = {.key = "ChildClosed",
-				      .focus = p,
-				      .home = p->parent,
-				      .comm = p->parent->handle};
+	    !(p->parent->damaged & DAMAGED_CLOSED))
+		comm_call_pane(p->parent, "ChildClosed", p, 0, NULL, NULL, 0, NULL, NULL);
 
-		ci.comm = p->parent->handle;
-		ci.comm->func(&ci);
-	}
 	list_del_init(&p->siblings);
 
 restart:
@@ -383,11 +377,8 @@ restart:
 		p->parent->focus = NULL;
 	}
 	pane_notify_close(p);
-	if (p->handle) {
-		struct cmd_info ci = {.key = "Close", .focus = p, .home = p, .comm = p->handle};
+	comm_call_pane(p, "Close", p, 0, NULL, NULL, 0, NULL, NULL);
 
-		p->handle->func(&ci);
-	}
 	pane_damaged(p->parent, DAMAGED_CONTENT);
 	/* If a child has not yet has "Close" called, we need to leave
 	 * ->parent in place so a full range of commands are available.
@@ -594,10 +585,7 @@ void pane_set_extra(struct pane *p safe, int extra)
 
 void pane_clear(struct pane *p safe, char *attrs)
 {
-	struct cmd_info ci = {.key = "pane-clear", .focus = p, .home = p, .comm = safe_cast 0};
-
-	ci.str2 = attrs;
-	key_handle(&ci);
+	call7("pane-clear", p, 0, NULL, NULL, 0, attrs, NULL);
 }
 
 char *pane_attr_get(struct pane *p, char *key safe)
