@@ -48,7 +48,7 @@ DEF_CMD(utf8_step)
 	if (!m || !p)
 		return 0;
 
-	ch = mark_step_pane(p, m, forward, move, NULL);
+	ch = mark_step_pane(p, m, forward, move);
 	if (ch == WEOF || (ch & 0x7f) == ch)
 		return CHAR_RET(ch);
 	if (!move)

@@ -518,7 +518,7 @@ wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move)
 		return ret & 0xfffff;
 }
 
-wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int move, struct cmd_info *ci)
+wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int move)
 {
 	int ret = call5("doc:step", p, forward, m, NULL, move);
 
@@ -542,7 +542,7 @@ wint_t mark_next(struct doc *d safe, struct mark *m safe)
 
 wint_t mark_next_pane(struct pane *p safe, struct mark *m safe)
 {
-	return mark_step_pane(p, m, 1, 1, NULL);
+	return mark_step_pane(p, m, 1, 1);
 }
 
 wint_t mark_prev(struct doc *d safe, struct mark *m safe)
@@ -552,7 +552,7 @@ wint_t mark_prev(struct doc *d safe, struct mark *m safe)
 
 wint_t mark_prev_pane(struct pane *p safe, struct mark *m safe)
 {
-	return mark_step_pane(p, m, 0, 1, NULL);
+	return mark_step_pane(p, m, 0, 1);
 }
 
 /* Move the point so it is at the same location as the mark, both in the

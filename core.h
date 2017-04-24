@@ -189,7 +189,7 @@ struct mark *safe point_new(struct doc *d safe);
 struct mark *safe point_dup(struct mark *p safe);
 wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move);
 wint_t mark_step2(struct doc *d safe, struct mark *m safe, int forward, int move);
-wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int move, struct cmd_info *ci);
+wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int move);
 
 wint_t mark_next(struct doc *d safe, struct mark *m safe);
 wint_t mark_prev(struct doc *d safe, struct mark *m safe);
@@ -376,11 +376,11 @@ static inline int pane_attr_get_int(struct pane *p safe, char *key safe)
 
 static inline wint_t doc_following_pane(struct pane *p safe, struct mark *m safe)
 {
-	return mark_step_pane(p, m, 1, 0, NULL);
+	return mark_step_pane(p, m, 1, 0);
 }
 static inline wint_t doc_prior_pane(struct pane *p safe, struct mark *m safe)
 {
-	return mark_step_pane(p, m, 0, 0, NULL);
+	return mark_step_pane(p, m, 0, 0);
 }
 static inline int doc_undo(struct pane *p safe, bool redo)
 {

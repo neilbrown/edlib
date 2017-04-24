@@ -49,7 +49,7 @@ DEF_CMD(qp_step)
 
 	retry:
 	if (forward) {
-		ch = mark_step_pane(p, m, 1, move, NULL);
+		ch = mark_step_pane(p, m, 1, move);
 		if (ch != '=' && ch != ' ' && ch != '\t' && ch != '\r') {
 			if (m != ci->mark) {
 				mark_to_mark(ci->mark, m);
@@ -102,7 +102,7 @@ DEF_CMD(qp_step)
 		mark_free(m);
 		return CHAR_RET(ch);
 	} else {
-		ch = mark_step_pane(p, m, 0, move, NULL);
+		ch = mark_step_pane(p, m, 0, move);
 		if (ch == '\n') {
 			if (m == ci->mark)
 				m = mark_dup(m, 1);
