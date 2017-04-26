@@ -115,6 +115,11 @@ REDEF_CMD(emacs_move)
 		else
 			y = cursor_pane->h - 1;
 		call5("Refresh", cursor_pane, 0, ci->mark, NULL, DAMAGED_CURSOR);
+		/* Calling "Refresh" like this is a big of a hack and
+		 * doesn't result in Postorder being called.  So make
+		 * sure the normal refresh handling still happens. FIXME
+		 */
+		pane_damaged(cursor_pane, DAMAGED_CURSOR);
 		for (p = cursor_pane; p && p->cx < 0; p = p->parent)
 			;
 		if (p) {
