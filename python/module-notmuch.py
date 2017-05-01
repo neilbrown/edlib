@@ -319,6 +319,12 @@ class notmuch_main(edlib.Doc):
             comm2("callback", focus, val)
             return 1
 
+        if key == "get-attr" and comm2:
+            if str == "doc-type":
+                comm2("callback", focus, "notmuch")
+                return 1
+            return 0
+
         if key == "doc:notmuch:update":
             if not self.timer_set:
                 self.timer_set = True
@@ -1287,6 +1293,12 @@ class notmuch_list(edlib.Doc):
 
             comm2("callback", focus, val)
             return 1
+
+        if key == "get-attr" and comm2:
+            if str == "doc-type":
+                comm2("callback", focus, "notmuch-list")
+                return 1
+            return 0
 
         if key == "doc:notmuch:load-thread":
             if str not in self.threadinfo:

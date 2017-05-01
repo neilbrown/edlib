@@ -536,6 +536,9 @@ static char *__docs_get_attr(struct doc *doc safe, struct mark *m safe,
 		struct doc *d = p->data;
 		return d->name;
 	}
+	if (strcmp(attr, "doc-type") == 0)
+		return "docs";
+
 	return doc_attr(p, NULL, 0, attr, NULL);
 }
 
@@ -573,11 +576,11 @@ DEF_CMD(docs_get_attr)
 	if ((val = attr_find(d->home->attrs, attr)) != NULL)
 		;
 	else if (strcmp(attr, "heading") == 0)
-			val = "<bold,underline> Mod Document             File</>";
+		val = "<bold,underline> Mod Document             File</>";
 	else if (strcmp(attr, "line-format") == 0)
-			val = " %doc-modified:3 %+name:20 %.filename";
+		val = " %doc-modified:3 %+name:20 %.filename";
 	else if (strcmp(attr, "render-default") == 0)
-			val = "format";
+		val = "format";
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "docs";
 	else
