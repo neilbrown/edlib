@@ -724,7 +724,7 @@ DEF_CMD(doc_open)
 		} else if (sl-name < PATH_MAX-4) {
 			char nbuf[PATH_MAX];
 			strncpy(nbuf, name, sl-name);
-			nbuf[sl-name+1] = 0;
+			nbuf[sl-name] = 0;
 			rp = realpath(nbuf, pathbuf);
 		}
 
