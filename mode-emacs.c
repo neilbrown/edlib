@@ -867,8 +867,6 @@ DEF_CMD(emacs_search_highlight)
 
 	if (view <= 0)
 		return 0;
-	if (!ci->mark)
-		return -1;
 
 	start = vmark_first(ci->focus, view);
 	end = vmark_last(ci->focus, view);
@@ -921,16 +919,21 @@ DEF_CMD(emacs_reposition)
 	int view = attr_find_int(ci->focus->attrs, "emacs-search-view");
 	char *patn = attr_find(ci->focus->attrs, "emacs-search-patn");
 	struct mark *vstart, *vend;
+	int damage = 0;
 
 	if (view < 0 || patn == NULL || !start || !end)
 		return 0;
 
 	while ((m = vmark_first(ci->focus, view)) != NULL &&
-	       m->seq < start->seq)
+	       m->seq < start->seq) {
 		mark_free(m);
+		damage = 1;
+	}
 	while ((m = vmark_last(ci->focus, view)) != NULL &&
-	       m->seq > end->seq)
+	       m->seq > end->seq){
 		mark_free(m);
+		damage = 1;
+	}
 
 	vstart = vmark_first(ci->focus, view);
 	vend = vmark_last(ci->focus, view);
@@ -944,8 +947,12 @@ DEF_CMD(emacs_reposition)
 		/* search from last match to end */
 		do_searches(ci->focus, view, patn, vend, end);
 	}
+	if (vstart != vmark_first(ci->focus, view) ||
+	    vend != vmark_last(ci->focus, view))
+		damage = 1;
 
-	pane_damaged(ci->focus, DAMAGED_CONTENT|DAMAGED_VIEW);
+	if (damage)
+		pane_damaged(ci->focus, DAMAGED_CONTENT|DAMAGED_VIEW);
 	return 0;
 }
 
