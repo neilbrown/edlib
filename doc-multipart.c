@@ -147,7 +147,6 @@ DEF_CMD(mp_set_ref)
 			mark_to_end(&mpi->doc, ci->mark, 0);
 			reset_mark(ci->mark);
 		}
-		m1 = ci->mark->ref.m;
 	}
 	if (!ci->mark)
 		return -1;
@@ -160,6 +159,8 @@ DEF_CMD(mp_set_ref)
 		if (ci->mark->ref.docnum != mpi->nparts - 1)
 			change_part(mpi, ci->mark, mpi->nparts - 1, 1);
 	}
+
+	m1 = ci->mark->ref.m;
 
 	ret = call_home7(mpi->parts[ci->mark->ref.docnum],
 			 ci->key, ci->focus, ci->numeric, m1, ci->str,
