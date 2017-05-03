@@ -27,15 +27,20 @@ struct evt {
 	struct command *comm safe;
 	struct list_head lst;
 	int seconds;
+	int fd;
 };
 
 static void call_event(int thing, short sev, void *evv)
 {
 	struct evt *ev safe = safe_cast evv;
+	int ret;
+	int oldfd = ev->fd;
 
-	if (comm_call(ev->comm, "callback:event", ev->home, thing,
-		      NULL, NULL, 0) < 0) {
-		event_del(ev->l);
+	if ((ret=comm_call(ev->comm, "callback:event", ev->home, thing,
+			   NULL, NULL, 0)) < 0) {
+		if (oldfd == ev->fd)
+			/* No early removal */
+			event_del(ev->l);
 		event_free(ev->l);
 		list_del(&ev->lst);
 		command_put(ev->comm);
@@ -68,6 +73,17 @@ DEF_CMD(libevent_read)
 	if (!ci->comm2)
 		return -1;
 
+	/* If there is already an event with this 'fd', we need
+	 * to remove it now, else libevent gets confused.
+	 * Presumably call_event() is now running and will clean up
+	 * soon.
+	 */
+	list_for_each_entry(ev, &event_list, lst)
+		if (ci->numeric >= 0 && ev->fd == ci->numeric) {
+			event_del(ev->l);
+			ev->fd = -1;
+		}
+
 	ev = malloc(sizeof(*ev));
 
 	if (!base)
@@ -77,6 +93,7 @@ DEF_CMD(libevent_read)
 				    call_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
+	ev->fd = ci->numeric;
 	list_add(&ev->lst, &event_list);
 	event_add(ev->l, NULL);
 	return 1;
@@ -98,6 +115,7 @@ DEF_CMD(libevent_signal)
 				    call_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
+	ev->fd = -1;
 	list_add(&ev->lst, &event_list);
 	event_add(ev->l, NULL);
 	return 1;
@@ -121,6 +139,7 @@ DEF_CMD(libevent_timer)
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
 	ev->seconds = ci->numeric;
+	ev->fd = -1;
 	list_add(&ev->lst, &event_list);
 	tv.tv_sec = ev->seconds;
 	tv.tv_usec = 0;
