@@ -89,7 +89,6 @@ REDEF_CMD(emacs_move)
 {
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 	struct pane *cursor_pane = ci->focus;
-	struct pane *p;
 	int ret = 0;
 
 	if (!ci->mark)
@@ -99,52 +98,8 @@ REDEF_CMD(emacs_move)
 	if (!ret)
 		return 0;
 
-	if (strcmp(mv->type, "Move-View-Large") == 0) {
-		/* Might have lost the cursor - place it at top or
-		 * bottom of view, but make sure it moves only in the
-		 * right direction.
-		 */
-		int ok;
-		struct mark *old_point = mark_at_point(cursor_pane,
-						       ci->mark, MARK_UNGROUPED);
-		int y;
-		if (!old_point)
-			return -1;
-		if (mv->direction == 1)
-			y = 0;
-		else
-			y = cursor_pane->h - 1;
-		call5("Refresh", cursor_pane, 0, ci->mark, NULL, DAMAGED_CURSOR);
-		/* Calling "Refresh" like this is a big of a hack and
-		 * doesn't result in Postorder being called.  So make
-		 * sure the normal refresh handling still happens. FIXME
-		 */
-		pane_damaged(cursor_pane, DAMAGED_CURSOR);
-		for (p = cursor_pane; p && p->cx < 0; p = p->parent)
-			;
-		if (p) {
-			/* Cursor is visible, so no need to move it */
-			mark_free(old_point);
-			return ret;
-		}
-
-		call_xy7("Mouse-event", cursor_pane, 1, 0, "Move-CursorXY", NULL,
-			 -1, y, ci->mark, NULL);
-		if (mv->direction == 1)
-			ok = mark_ordered_not_same_pane(cursor_pane, old_point, ci->mark);
-		else
-			ok = mark_ordered_not_same_pane(cursor_pane, ci->mark, old_point);
-		if (!ok) {
-			/* Try other end of pane */
-			if (mv->direction != 1)
-				y = 0;
-			else
-				y = cursor_pane->h - 1;
-			call_xy7("Mouse-event", cursor_pane, 1, 0, "Move-CursorXY",
-				 NULL, -1, y, ci->mark, NULL);
-		}
-		mark_free(old_point);
-	}
+	if (strcmp(mv->type, "Move-View-Large") == 0)
+		attr_set_int(&cursor_pane->attrs, "emacs-repoint", mv->direction*2);
 
 	return ret;
 }
@@ -918,8 +873,34 @@ DEF_CMD(emacs_reposition)
 	struct mark *m;
 	int view = attr_find_int(ci->focus->attrs, "emacs-search-view");
 	char *patn = attr_find(ci->focus->attrs, "emacs-search-patn");
+	int repoint = attr_find_int(ci->focus->attrs, "emacs-repoint");
 	struct mark *vstart, *vend;
 	int damage = 0;
+
+	if (repoint != -1) {
+		/* Move point to end of display, if that is in
+		 * the right direction.  That will mean it have moved
+		 * off the display.
+		 */
+		m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
+		if (m) {
+			struct mark *m2 = mark_dup(m ,1);
+			call_xy7("Mouse-event", ci->focus, 1, 0, "Move-CursorXY",
+				 NULL, -1,
+				 repoint < 0 ? ci->focus->h-1 : 0, m, NULL);
+			if (repoint < 0)
+				/* can only move point backwards */
+				if (m->seq < m2->seq)
+					call3("Move-to", ci->focus, 0, m);
+			if (repoint > 0)
+				/* can only move point forwards */
+				if (m->seq > m2->seq)
+					call3("Move-to", ci->focus, 0, m);
+			mark_free(m);
+			mark_free(m2);
+		}
+		attr_set_str(&ci->focus->attrs, "emacs-repoint", NULL);
+	}
 
 	if (view < 0 || patn == NULL || !start || !end)
 		return 0;
