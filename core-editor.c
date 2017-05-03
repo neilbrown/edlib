@@ -166,6 +166,7 @@ DEF_CMD(editor_clean_up)
 		struct idle_call *i = ei->idle_calls;
 		ei->idle_calls = i->next;
 		comm_call(i->callback, "idle-callback", i->focus, 0, NULL, NULL, 0);
+		command_put(i->callback);
 		free(i);
 	}
 	while (ei->freelist) {
@@ -193,7 +194,7 @@ DEF_CMD(editor_on_idle)
 
 	ic = calloc(1, sizeof(*ic));
 	ic->focus = ci->focus;
-	ic->callback = ci->comm2;
+	ic->callback = command_get(ci->comm2);
 	ic->next = ei->idle_calls;
 	ei->idle_calls = ic;
 	return 1;
