@@ -835,7 +835,7 @@ def notmuch_mode(key, home, focus, **a):
 # search query.
 # We generate the thread-ids using "notmuch search --output=threads"
 # For a full-scan we collect at most 100 and at most 1 month at a time, until
-# we reach and empty month, then get all the rest together
+# we reach an empty month, then get all the rest together
 # For an update, we just check the last day and add anything missing.
 # We keep an array of thread-ids
 #
@@ -927,14 +927,14 @@ class notmuch_list(edlib.Doc):
             self.call("doc:notmuch:query-updated")
             return -1
         # request some more
-        self.offset += found - 3
+        if found > 3:
+            # allow for a little over-lap across successive calls
+            self.offset += found - 3
         if found < 5:
             # stop worrying about age
             self.age = None
-            self.offset = 0
         if found < 100 and self.age:
             self.age += 1
-        # allow for a little over-lap across successive calls
         self.start_load()
         return -1
 
