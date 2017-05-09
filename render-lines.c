@@ -221,10 +221,9 @@ static int flush_line(struct pane *p, struct render_list **rlp safe,
 	if (!*rlp)
 		return 0;
 	for (rl = *rlp; wrap_pos && rl; rl = rl->next) {
-		if (strstr(rl->attr, "wrap,")) {
+		if (strstr(rl->attr, "wrap,") && rl != *rlp) {
 			if (!in_wrap) {
 				last_wrap = rl;
-				end_wrap = NULL;
 				in_wrap = 1;
 			}
 			end_wrap = rl;
