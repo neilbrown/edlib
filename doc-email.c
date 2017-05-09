@@ -92,12 +92,12 @@ DEF_CMD(open_email)
 
 	type = attr_find(h2->attrs, "rfc822-content-type");
 	xfer = attr_find(h2->attrs, "rfc822-content-transfer-encoding");
-	if (xfer && strcasecmp(xfer, "quoted-printable") == 0) {
+	if (xfer && strcmp(xfer, "quoted-printable") == 0) {
 		struct pane *hx = call_pane("attach-quoted_printable", h, 0, NULL, 0);
 		if (hx)
 			h = hx;
 	}
-	if (xfer && strcasecmp(xfer, "base64") == 0) {
+	if (xfer && strcmp(xfer, "base64") == 0) {
 		struct pane *hx = call_pane("attach-base64", h, 0, NULL, 0);
 		if (hx)
 			h = hx;
