@@ -141,7 +141,7 @@ static void copy_header(struct pane *p safe, struct hdr_list *hdr safe,
 	/* FIXME decode RFC2047 words */
 	while ((ch = mark_next_pane(doc, m)) != WEOF &&
 	       m->seq < end->seq) {
-		if (ch < ' ') {
+		if (ch < ' ' && ch != '\t') {
 			sol = 1;
 			continue;
 		}
