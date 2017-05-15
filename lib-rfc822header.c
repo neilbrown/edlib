@@ -193,16 +193,11 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 {
 	/* This is used for headers that control parsing, such as
 	 * MIME-Version and Content-type.
-	 * Returned result has (comments) removed and letters down-cased.
-	 * Multiple spaces are squashed to 1, and spaces are start/end
-	 * are discarded.
 	 */
 	struct mark *m;
 	int found = 0;
 	struct buf buf;
 	wint_t ch;
-	int in_comment = 0;
-	int in_space = 0;
 
 	buf_init(&buf);
 	m = mark_dup(start, 1);
@@ -214,25 +209,7 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 		}
 		if (!found)
 			continue;
-		if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
-			if (buf.len > 0)
-				in_space = 1;
-			continue;
-		}
-		if (isupper(ch))
-			ch = tolower(ch);
-		if (ch == '(')
-			in_comment = 1;
-		if (in_comment) {
-			in_space = 1;
-			if (ch == ')')
-				in_comment = 0;
-		} else {
-			if (in_space)
-				buf_append(&buf, ' ');
-			in_space = 0;
-			buf_append(&buf, ch);
-		}
+		buf_append(&buf, ch);
 	}
 	return buf_final(&buf);
 }
