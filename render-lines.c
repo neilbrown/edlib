@@ -865,13 +865,25 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 
 	top = vmark_first(focus, rl->typenum);
 	bot = vmark_last(focus, rl->typenum);
+	/* Don't consider the top or bottom lines as currently being
+	 * displayed - they might not be.
+	 */
+	if (top)
+		top = doc_next_mark_view(top);
+	if (bot)
+		bot = doc_prev_mark_view(bot);
+	/* Protect top/bot from being freed by call_render_line */
+	if (top)
+		top = mark_dup(top, 1);
+	if (bot)
+		bot = mark_dup(bot, 1);
 	m = vmark_new(focus, rl->typenum);
 	if (!m)
-		return;
+		goto abort;
 	mark_to_mark(m, pm);
 	m = call_render_line_prev(focus, m, 0, &rl->top_sol);
 	if (!m)
-		return;
+		goto abort;
 	start = m;
 	offset = call_render_line_to_point(focus, pm, start);
 	if (start->mdata == NULL)
@@ -881,7 +893,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 
 	end = m;
 	if (!end)
-		return; /* FIXME can I prove this? */
+		goto abort; /* FIXME can I prove this? */
 
 	x = -1; lines_above = -1; y = 0;
 	render_line(p, focus, start->mdata ?: "", &y, 0, scale.x,
@@ -892,13 +904,6 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 	 * Rendering just that "line" uses a height of 'y', of which
 	 * 'lines_above' is above the cursor, and 'lines_below' is below.
 	 */
-	/* Don't consider the top or bottom lines as currently being
-	 * displayed - they might not be.
-	 */
-	if (top)
-		top = doc_next_mark_view(top);
-	if (bot)
-		bot = doc_prev_mark_view(bot);
 	if (bot && !mark_ordered_or_same_pane(focus, bot, start))
 		/* already before 'bot', so will never "cross over" bot, so
 		 * ignore 'bot'
@@ -1004,6 +1009,10 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 	}
 	free(end->mdata);
 	end->mdata = NULL;
+
+abort:
+	mark_free(top);
+	mark_free(bot);
 }
 
 static int render(struct mark *pm, struct pane *p safe,
