@@ -49,6 +49,110 @@ static void email_init_map(void)
 }
 DEF_LOOKUP_CMD(email_handle, email_map);
 
+static char tspecials[] = "()<>@,;:\\\"/[]?=";
+
+static int lws(char c) {
+	return c == ' '  || c == '\t' || c == '\r' || c == '\n';
+}
+
+static char *get_822_token(char **hdrp safe, int *len safe)
+{
+	/* A "token" is one of:
+	 * Quoted string ""
+	 * single char from tspecials
+	 * string on of LWS, and none tspecials
+	 *
+	 * (comments) are skipped.
+	 * Start is returned, hdrp is moved, len is reported.
+	 */
+	char *hdr = *hdrp;
+	char *start;
+	*len = 0;
+	if (!hdr)
+		return NULL;
+	while (1) {
+		while (lws(*hdr))
+			hdr++;
+		if (*hdr == '(') {
+			while (*hdr && *hdr != ')')
+				hdr++;
+			continue;
+		}
+		if (*hdr == '"') {
+			start = ++hdr;
+			while (*hdr && *hdr != '"')
+				hdr++;
+			*len = hdr - start;
+			hdr++;
+			*hdrp = hdr;
+			return start;
+		}
+		if (!*hdr) {
+			*hdrp = NULL;
+			return NULL;
+		}
+		if (strchr(tspecials, *hdr)) {
+			start = hdr;
+			hdr++;
+			*len = 1;
+			*hdrp = hdr;
+			return start;
+		}
+		start = hdr;
+		while (*hdr && !lws(*hdr) && !strchr(tspecials, *hdr))
+			hdr++;
+		*len = hdr - start;
+		*hdrp = hdr;
+		return start;
+	}
+}
+
+static char *get_822_attr(char *shdr safe, char *attr safe)
+{
+	/* If 'hdr' contains "$attr=...", return "..."
+	 * with "quotes" stripped
+	 */
+	int len, alen;
+	char *hdr = shdr;
+	char *h;
+	static char *last = NULL;
+
+	free(last);
+	last = NULL;
+
+	alen = strlen(attr);
+	while (hdr) {
+		while ((h = get_822_token(&hdr, &len)) != NULL &&
+		       (len != alen || strncasecmp(h, attr, alen) != 0))
+			;
+		h = get_822_token(&hdr, &len);
+		if (!h || len != 1 || *h != '=')
+			continue;
+		h = get_822_token(&hdr, &len);
+		if (!h)
+			continue;
+		last = strndup(h, len);
+		return last;
+	}
+	return NULL;
+}
+
+static char *get_822_word(char *hdr safe)
+{
+	/* Get the first word from header, is static space */
+	static char *last = NULL;
+	int len;
+	char *h;
+
+	free(last);
+	last = NULL;
+	h = get_822_token(&hdr, &len);
+	if (!h)
+		return h;
+	last = strndup(h, len);
+	return last;
+}
+
 DEF_CMD(open_email)
 {
 	int fd;
@@ -56,7 +160,7 @@ DEF_CMD(open_email)
 	struct mark *start, *end;
 	struct pane *p, *h, *h2;
 	char *mime;
-	char *xfer = NULL, *type = NULL;
+	char *xfer = NULL, *type = NULL, *charset = NULL;
 	struct pane *doc;
 	struct mark *point;
 
@@ -98,28 +202,38 @@ DEF_CMD(open_email)
 	call_home7(h2, "get-header", h2, 0, NULL, "content-type", 0, "cmd", NULL, NULL);
 	call_home7(h2, "get-header", h2, 0, NULL, "content-transfer-encoding", 0, "cmd", NULL, NULL);
 	mime = attr_find(h2->attrs, "rfc822-mime-version");
+	if (mime)
+		mime = get_822_word(mime);
 	if (mime && strcmp(mime, "1.0") == 0) {
 		type = attr_find(h2->attrs, "rfc822-content-type");
 		xfer = attr_find(h2->attrs, "rfc822-content-transfer-encoding");
 	}
 	pane_close(h2);
+
 	/* Assume text/plain for now */
 	h = call_pane8("attach-crop", p, 0, start, end, 0, NULL, NULL);
 	if (!h)
 		goto out;
 
-	if (xfer && strcmp(xfer, "quoted-printable") == 0) {
-		struct pane *hx = call_pane("attach-quoted_printable", h, 0, NULL, 0);
-		if (hx)
-			h = hx;
+	if (xfer) {
+		int xlen;
+		xfer = get_822_token(&xfer, &xlen);
+		if (xfer && xlen == 16 &&
+		    strncasecmp(xfer, "quoted-printable", 16) == 0) {
+			struct pane *hx = call_pane("attach-quoted_printable", h, 0, NULL, 0);
+			if (hx)
+				h = hx;
+		}
+		if (xfer && xlen == 6 &&
+		    strncasecmp(xfer, "base64", 6) == 0) {
+			struct pane *hx = call_pane("attach-base64", h, 0, NULL, 0);
+			if (hx)
+				h = hx;
+		}
 	}
-	if (xfer && strcmp(xfer, "base64") == 0) {
-		struct pane *hx = call_pane("attach-base64", h, 0, NULL, 0);
-		if (hx)
-			h = hx;
-	}
-	if (type && (strstr(type, "charset=\"utf-8\"") ||
-		     strstr(type, "charset=utf-8"))) {
+	if (type &&
+	    (charset = get_822_attr(type, "charset")) != NULL &&
+	    strcasecmp(charset, "utf-8") == 0) {
 		struct pane *hx = call_pane("attach-utf8", h, 0, NULL, 0);
 		if (hx)
 			h = hx;
