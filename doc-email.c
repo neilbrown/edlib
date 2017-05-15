@@ -54,9 +54,11 @@ DEF_CMD(open_email)
 	int fd;
 	struct email_info *ei;
 	struct mark *start, *end;
-	wint_t prev = 0, ch = 0;
 	struct pane *p, *h, *h2;
-	char *xfer, *type;
+	char *mime;
+	char *xfer = NULL, *type = NULL;
+	struct pane *doc;
+	struct mark *point;
 
 	if (ci->str == NULL ||
 	    strncmp(ci->str, "email:", 6) != 0)
@@ -69,29 +71,43 @@ DEF_CMD(open_email)
 	if (!start)
 		return 0;
 	end = mark_dup(start, 1);
-	while ((ch = mark_next_pane(p, end)) != WEOF) {
-		if (ch == '\n' && prev == '\n')
-			break;
-		if (ch != '\r')
-			prev = ch;
-	}
+	call3("doc:set-ref", p, 0, end);
+
 	ei = calloc(1, sizeof(*ei));
 	ei->email = p;
-	h = call_pane8("attach-crop", p, 0, start, end, 0, NULL, NULL);
-	if (!h)
-		goto out;
-	h2 = call_pane("attach-rfc822header", h, 0, NULL, 0);
+	h2 = call_pane8("attach-rfc822header", p, 0, start, end, 0, NULL, NULL);
 	if (!h2)
 		goto out;
 
-	/* move 'start' to end of file */
-	call3("doc:set-ref", p, 0, start);
-	h = call_pane8("attach-crop", p, 0, end, start, 0, NULL, NULL);
+	doc = doc_new(ci->focus, "text", ci->focus);
+	if (!doc)
+		goto out;
+	call3("doc:autoclose", doc, 1, NULL);
+	point = vmark_new(doc, MARK_POINT);
+	if (!point)
+		goto out;
+	call_home7(h2, "get-header", doc, 0, point, "From", 0, NULL, NULL, NULL);
+	call_home7(h2, "get-header", doc, 0, point, "Date", 0, NULL, NULL, NULL);
+	call_home7(h2, "get-header", doc, 0, point, "Subject", 0, "text", NULL, NULL);
+	call_home7(h2, "get-header", doc, 0, point, "To", 0, "list", NULL, NULL);
+	call_home7(h2, "get-header", doc, 0, point, "Cc", 0, "list", NULL, NULL);
+
+	call7("doc:replace", doc, 1, point, "\n", 1, NULL, NULL);
+
+	call_home7(h2, "get-header", h2, 0, NULL, "MIME-Version", 0, "cmd", NULL, NULL);
+	call_home7(h2, "get-header", h2, 0, NULL, "content-type", 0, "cmd", NULL, NULL);
+	call_home7(h2, "get-header", h2, 0, NULL, "content-transfer-encoding", 0, "cmd", NULL, NULL);
+	mime = attr_find(h2->attrs, "rfc822-mime-version");
+	if (mime && strcmp(mime, "1.0") == 0) {
+		type = attr_find(h2->attrs, "rfc822-content-type");
+		xfer = attr_find(h2->attrs, "rfc822-content-transfer-encoding");
+	}
+	pane_close(h2);
+	/* Assume text/plain for now */
+	h = call_pane8("attach-crop", p, 0, start, end, 0, NULL, NULL);
 	if (!h)
 		goto out;
 
-	type = attr_find(h2->attrs, "rfc822-content-type");
-	xfer = attr_find(h2->attrs, "rfc822-content-transfer-encoding");
 	if (xfer && strcmp(xfer, "quoted-printable") == 0) {
 		struct pane *hx = call_pane("attach-quoted_printable", h, 0, NULL, 0);
 		if (hx)
@@ -112,7 +128,7 @@ DEF_CMD(open_email)
 	p = doc_new(ci->home, "multipart", ei->email);
 	if (!p)
 		goto out;
-	call_home(p, "multipart-add", h2, 0, NULL, NULL);
+	call_home(p, "multipart-add", doc, 0, NULL, NULL);
 	call_home(p, "multipart-add", h, 0, NULL, NULL);
 	call3("doc:autoclose", p, 1, NULL);
 

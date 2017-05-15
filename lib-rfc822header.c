@@ -2,11 +2,15 @@
  * Copyright Neil Brown ©2016 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
- * lib-ref822header: display a document containing rfc822 headers, in
- * a nicely readable way.
- * As we need to re-order lines (so headers are in a standard order)
- * and decode RFC2047 charset encoding, we don't try to translate on the fly,
- * but instead create a secondary document (plain text) and present that.
+ * lib-rfc822header: parse rfc822 email headers.
+ * When instanciated, headers in the parent document are parsed and a mark
+ * is moved beyond the headers.
+ * Subsequently the "get-header" command and be used to extract headers.
+ * If a focus/point is given, the header is copied into the target pane
+ * with charset decoding performed and some attributes added to allow
+ * control over the display.
+ * If no point is given, the named header is parsed and added to this
+ * pane as an attribute. Optionally comments are removed.
  *
  * RFC2047 allows headers to contains words:
  *  =?charset?encoding?text?=
@@ -17,6 +21,7 @@
  *     B is base64.
  */
 
+#define _GNU_SOURCE /*  for asprintf */
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -27,30 +32,9 @@
 #include "core.h"
 #include "misc.h"
 
-struct hdr_list {
-	struct list_head list;
-	int is_list; // do commas separate units
-	int is_text; // wrap on spaces
-	char header[];
-};
-
 struct header_info {
-	struct list_head headers;
 	int vnum;
-	struct pane *orig safe;
 };
-
-#define IS_LIST 1
-#define IS_TEXT 2
-
-static void header_add(struct header_info *hi safe, char *header safe, int type)
-{
-	struct hdr_list *hl = malloc(sizeof(*hl) + strlen(header) + 1);
-	strcpy(hl->header, header);
-	hl->is_list = type & IS_LIST;
-	hl->is_text = type & IS_TEXT;
-	list_add_tail(&hl->list, &hi->headers);
-}
 
 DEF_CMD(header_close)
 {
@@ -58,20 +42,12 @@ DEF_CMD(header_close)
 	struct header_info *hi = p->data;
 	struct mark *m;
 
-	while ((m = vmark_first(hi->orig, hi->vnum)) != NULL)
+	while ((m = vmark_first(p, hi->vnum)) != NULL)
 		mark_free(m);
-	doc_del_view(hi->orig, hi->vnum);
+	doc_del_view(p, hi->vnum);
 	p->data = safe_cast NULL;
 	free(hi);
 	return 1;
-}
-
-static struct map *header_map safe;
-
-static void header_init_map(void)
-{
-	header_map = key_alloc();
-	key_add(header_map, "Close", &header_close);
 }
 
 static char *get_hname(struct pane *p safe, struct mark *m safe)
@@ -81,59 +57,72 @@ static char *get_hname(struct pane *p safe, struct mark *m safe)
 	wint_t ch;
 
 	while ((ch = mark_next_pane(p, m)) != ':' &&
-	       (ch >= 33 && ch <= 126)) {
+	       (ch > ' ' && ch <= '~')) {
 		hdr[len++] = ch;
 		if (len > 77)
 			break;
 	}
 	hdr[len] = 0;
-	if (ch == WEOF)
+	if (len == 0 || ch != ':')
 		return NULL;
 	return strdup(hdr);
 }
 
-static void find_headers(struct pane *p safe)
+static void find_headers(struct pane *p safe, struct mark *start safe,
+			 struct mark *end safe)
 {
 	struct header_info *hi = p->data;
 	struct mark *m, *hm safe;
 	wint_t ch;
 	char *hname;
-	struct pane *doc = hi->orig;
 
-	m = vmark_new(doc, hi->vnum);
+	m = vmark_new(p, hi->vnum);
 	if (!m)
 		return;
-	call3("doc:set-ref", doc, 1, m);
+	mark_to_mark(m, start);
 	hm = mark_dup(m, 0);
-	while ((hname = get_hname(doc, m)) != NULL) {
+	while (m->seq < end->seq &&
+	       (hname = get_hname(p, m)) != NULL) {
 		attr_set_str(&hm->attrs, "header", hname);
 		free(hname);
-		while ((ch = mark_next_pane(doc, m)) != WEOF &&
+		while ((ch = mark_next_pane(p, m)) != WEOF &&
+		       m->seq < end->seq &&
 		       (ch != '\n' ||
-			(ch = doc_following_pane(doc, m)) == ' ' || ch == '\t'))
+			(ch = doc_following_pane(p, m)) == ' ' || ch == '\t'))
 			;
 		hm = mark_dup(m, 0);
 	}
+	/* Skip over trailing blank line */
+	if (doc_following_pane(p, m) == '\r')
+		mark_next_pane(p, m);
+	if (doc_following_pane(p, m) == '\n')
+		mark_next_pane(p, m);
+	mark_to_mark(start, m);
 	mark_free(m);
 }
 
-static void copy_header(struct pane *p safe, struct hdr_list *hdr safe,
-			struct mark *start safe, struct mark *end safe)
+static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
+			struct mark *start safe, struct mark *end safe,
+			struct pane *p safe, struct mark *point safe)
 {
+	/* Copy the header in 'doc' from 'start' to 'end' into
+	 * the document 'p' at 'point'.
+	 * 'type' can be:
+	 *  NULL : no explicit wrapping
+	 *  "text": add wrap points between words
+	 *  "list": convert commas to wrap points.
+	 * 'hdr' is the name of the header -  before the ':'.
+	 */
 	struct mark *m;
-	struct mark *point = vmark_new(p, MARK_POINT);
 	struct mark *hstart;
 	int sol = 0;
 	char buf[5];
 	wint_t ch;
-	struct header_info *hi = p->data;
-	struct pane *doc = hi->orig;
 	char attr[100];
+	int is_text = type && strcmp(type, "text") == 0;
+	int is_list = type && strcmp(type, "list") == 0;
 
-	if (!point)
-		return;
 	m = mark_dup(start, 1);
-	call3("doc:set-ref", p, 0, point);
 	hstart = mark_dup(point, 1);
 	if (hstart->seq > point->seq)
 		/* put hstart before point, so it stays here */
@@ -149,16 +138,16 @@ static void copy_header(struct pane *p safe, struct hdr_list *hdr safe,
 			continue;
 		if (sol) {
 			call7("doc:replace", p, 1, NULL, " ", 1,
-			      hdr->is_text ? ",render:rfc822header-wrap=1" : NULL,
+			      is_text ? ",render:rfc822header-wrap=1" : NULL,
 			      point);
 			sol = 0;
 		}
 		buf[0] = ch;
 		buf[1] = 0;
 		call7("doc:replace", p, 1, NULL, buf, 1,
-		      ch == ' ' && hdr->is_text ? ",render:rfc822header-wrap=1" : NULL,
+		      ch == ' ' && is_text ? ",render:rfc822header-wrap=1" : NULL,
 		      point);
-		if (ch == ',' && hdr->is_list) {
+		if (ch == ',' && is_list) {
 			struct mark *p2 = mark_dup(point, 1);
 			int cnt = 1;
 			mark_prev_pane(p, p2);
@@ -175,32 +164,32 @@ static void copy_header(struct pane *p safe, struct hdr_list *hdr safe,
 		}
 	}
 	call7("doc:replace", p, 1, NULL, "\n", 1, NULL, point);
-	sprintf(buf, "%zd", strlen(hdr->header)+1);
+	sprintf(buf, "%zd", strlen(hdr)+1);
 	call7("doc:set-attr", p, 1, hstart, "render:rfc822header", 0, buf, NULL);
-	snprintf(attr, sizeof(attr), "render:rfc822header-%s", hdr->header);
+	snprintf(attr, sizeof(attr), "render:rfc822header-%s", hdr);
 	call7("doc:set-attr", p, 1, hstart, attr, 0, "10000", NULL);
 
 	mark_free(hstart);
-	mark_free(point);
-
 	mark_free(m);
 }
 
-static void add_headers(struct pane *p safe, struct hdr_list *hdr safe)
+static void copy_headers(struct pane *p safe, char *hdr safe, char *type,
+			 struct pane *doc safe, struct mark *pt safe)
 {
 	struct header_info *hi = p->data;
 	struct mark *m, *n;
 
-	for (m = vmark_first(hi->orig, hi->vnum); m ; m = n) {
+	for (m = vmark_first(p, hi->vnum); m ; m = n) {
 		char *h = attr_find(m->attrs, "header");
 		n = vmark_next(m);
-		if (n && h && strcasecmp(h, hdr->header) == 0)
-			copy_header(p, hdr, m, n);
+		if (n && h && strcasecmp(h, hdr) == 0)
+			copy_header(p, hdr, type, m, n, doc, pt);
 	}
 }
 
 static char *extract_header(struct pane *p safe, struct mark *start safe,
 			    struct mark *end safe)
+
 {
 	/* This is used for headers that control parsing, such as
 	 * MIME-Version and Content-type.
@@ -209,8 +198,6 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 	 * are discarded.
 	 */
 	struct mark *m;
-	struct header_info *hi = p->data;
-	struct pane *doc = hi->orig;
 	int found = 0;
 	struct buf buf;
 	wint_t ch;
@@ -219,7 +206,7 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 
 	buf_init(&buf);
 	m = mark_dup(start, 1);
-	while ((ch = mark_next_pane(doc, m)) != WEOF &&
+	while ((ch = mark_next_pane(p, m)) != WEOF &&
 	       m->seq < end->seq) {
 		if (!found && ch == ':') {
 			found = 1;
@@ -250,68 +237,74 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 	return buf_final(&buf);
 }
 
-static char *load_header(struct pane *p safe, char *hdr safe)
+static char *load_header(struct pane *home safe, char *hdr safe)
 {
-	struct header_info *hi = p->data;
+	struct header_info *hi = home->data;
 	struct mark *m, *n;
 
-	for (m = vmark_first(hi->orig, hi->vnum); m; m = n) {
+	for (m = vmark_first(home, hi->vnum); m; m = n) {
 		char *h = attr_find(m->attrs, "header");
 		n = vmark_next(m);
 		if (n && h && strcasecmp(h, hdr) == 0)
-			return extract_header(p, m, n);
+			return extract_header(home, m, n);
 	}
 	return NULL;
 }
 
+DEF_CMD(header_get)
+{
+	char *hdr = ci->str;
+	char *type = ci->str2;
+	char *attr = NULL;
+	char *c, *t;
+
+	if (!hdr)
+		return -1;
+
+	if (ci->mark) {
+		copy_headers(ci->home, hdr, type, ci->focus, ci->mark);
+		return 1;
+	}
+	asprintf(&attr, "rfc822-%s", hdr);
+	if (!attr)
+		return -1;
+	for (c = attr; *c; c++)
+		if (isupper(*c))
+			*c = tolower(*c);
+	t = load_header(ci->home, hdr);
+	attr_set_str(&ci->home->attrs, attr, t);
+	free(attr);
+	free(t);
+	return t ? 1 : 2;
+}
+
+static struct map *header_map safe;
+
+static void header_init_map(void)
+{
+	header_map = key_alloc();
+	key_add(header_map, "Close", &header_close);
+	key_add(header_map, "get-header", &header_get);
+}
 
 DEF_LOOKUP_CMD(header_handle, header_map);
 DEF_CMD(header_attach)
 {
 	struct header_info *hi;
 	struct pane *p;
-	struct hdr_list *he;
-	struct pane *doc;
-	char *t;
+	struct mark *start = ci->mark;
+	struct mark *end = ci->mark2;
 
-	doc = doc_new(ci->focus, "text", ci->focus);
-	if (!doc)
-		return -1;
-	call3("doc:autoclose", doc, 1, NULL);
 	hi = calloc(1, sizeof(*hi));
-	INIT_LIST_HEAD(&hi->headers);
-	hi->orig = ci->focus;
-	p = pane_register(doc, 0, &header_handle.c, hi, NULL);
+	p = pane_register(ci->focus, 0, &header_handle.c, hi, NULL);
 	if (!p) {
 		free(hi);
-		pane_close(doc);
 		return -1;
 	}
-	if (ci->numeric == 0) {
-		/* add defaults */
-		header_add(hi, "from", 0);
-		header_add(hi, "date", 0);
-		header_add(hi, "subject", IS_TEXT);
-		header_add(hi, "to", IS_LIST);
-		header_add(hi, "cc", IS_LIST);
-	}
-	hi->vnum = doc_add_view(hi->orig);
-	find_headers(p);
-	list_for_each_entry(he, &hi->headers, list)
-		add_headers(p, he);
-	call7("doc:replace", p, 1, NULL, "\n", 1, NULL, NULL);
 
-	t = load_header(p, "MIME-Version");
-	if (t && strcmp(t, "1.0") == 0) {
-		free(t);
-		t = load_header(p, "Content-Type");
-		attr_set_str(&p->attrs, "rfc822-content-type", t);
-		free(t);
-		t = load_header(p, "Content-Transfer-Encoding");
-		attr_set_str(&p->attrs, "rfc822-content-transfer-encoding", t);
-		free(t);
-	} else
-		free(t);
+	hi->vnum = doc_add_view(p);
+	if (start && end)
+		find_headers(p, start, end);
 
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
