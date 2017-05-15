@@ -161,6 +161,7 @@ DEF_CMD(open_email)
 	struct pane *p, *h, *h2;
 	char *mime;
 	char *xfer = NULL, *type = NULL, *charset = NULL;
+	int need_charset = 0;
 	struct pane *doc;
 	struct mark *point;
 
@@ -221,17 +222,21 @@ DEF_CMD(open_email)
 		if (xfer && xlen == 16 &&
 		    strncasecmp(xfer, "quoted-printable", 16) == 0) {
 			struct pane *hx = call_pane("attach-quoted_printable", h, 0, NULL, 0);
-			if (hx)
+			if (hx) {
 				h = hx;
+				need_charset = 1;
+			}
 		}
 		if (xfer && xlen == 6 &&
 		    strncasecmp(xfer, "base64", 6) == 0) {
 			struct pane *hx = call_pane("attach-base64", h, 0, NULL, 0);
-			if (hx)
+			if (hx) {
 				h = hx;
+				need_charset = 1;
+			}
 		}
 	}
-	if (type &&
+	if (type && need_charset &&
 	    (charset = get_822_attr(type, "charset")) != NULL &&
 	    strcasecmp(charset, "utf-8") == 0) {
 		struct pane *hx = call_pane("attach-utf8", h, 0, NULL, 0);
