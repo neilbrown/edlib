@@ -153,6 +153,57 @@ static char *get_822_word(char *hdr safe)
 	return last;
 }
 
+static void handle_text_plain(struct pane *p safe, char *type, char *xfer,
+			      struct mark *start safe, struct mark *end safe,
+			      struct pane *mp safe)
+{
+	struct pane *h;
+	int need_charset = 0;
+	char *charset;
+
+	h = call_pane8("attach-crop", p, 0, start, end, 0, NULL, NULL);
+	if (!h)
+		return;
+
+	if (xfer) {
+		int xlen;
+		xfer = get_822_token(&xfer, &xlen);
+		if (xfer && xlen == 16 &&
+		    strncasecmp(xfer, "quoted-printable", 16) == 0) {
+			struct pane *hx = call_pane("attach-quoted_printable", h, 0, NULL, 0);
+			if (hx) {
+				h = hx;
+				need_charset = 1;
+			}
+		}
+		if (xfer && xlen == 6 &&
+		    strncasecmp(xfer, "base64", 6) == 0) {
+			struct pane *hx = call_pane("attach-base64", h, 0, NULL, 0);
+			if (hx) {
+				h = hx;
+				need_charset = 1;
+			}
+		}
+	}
+	if (type && need_charset &&
+	    (charset = get_822_attr(type, "charset")) != NULL &&
+	    strcasecmp(charset, "utf-8") == 0) {
+		struct pane *hx = call_pane("attach-utf8", h, 0, NULL, 0);
+		if (hx)
+			h = hx;
+	}
+	call_home(mp, "multipart-add", h, 0, NULL, NULL);
+}
+
+
+static void handle_content(struct pane *p safe, char *type, char *xfer,
+			   struct mark *start safe, struct mark *end safe,
+			   struct pane *mp safe)
+{
+	/* Assume text/plain for now */
+	handle_text_plain(p, type, xfer, start, end, mp);
+}
+
 DEF_CMD(open_email)
 {
 	int fd;
@@ -160,8 +211,7 @@ DEF_CMD(open_email)
 	struct mark *start, *end;
 	struct pane *p, *h, *h2;
 	char *mime;
-	char *xfer = NULL, *type = NULL, *charset = NULL;
-	int need_charset = 0;
+	char *xfer = NULL, *type = NULL;
 	struct pane *doc;
 	struct mark *point;
 
@@ -211,45 +261,13 @@ DEF_CMD(open_email)
 	}
 	pane_close(h2);
 
-	/* Assume text/plain for now */
-	h = call_pane8("attach-crop", p, 0, start, end, 0, NULL, NULL);
-	if (!h)
-		goto out;
-
-	if (xfer) {
-		int xlen;
-		xfer = get_822_token(&xfer, &xlen);
-		if (xfer && xlen == 16 &&
-		    strncasecmp(xfer, "quoted-printable", 16) == 0) {
-			struct pane *hx = call_pane("attach-quoted_printable", h, 0, NULL, 0);
-			if (hx) {
-				h = hx;
-				need_charset = 1;
-			}
-		}
-		if (xfer && xlen == 6 &&
-		    strncasecmp(xfer, "base64", 6) == 0) {
-			struct pane *hx = call_pane("attach-base64", h, 0, NULL, 0);
-			if (hx) {
-				h = hx;
-				need_charset = 1;
-			}
-		}
-	}
-	if (type && need_charset &&
-	    (charset = get_822_attr(type, "charset")) != NULL &&
-	    strcasecmp(charset, "utf-8") == 0) {
-		struct pane *hx = call_pane("attach-utf8", h, 0, NULL, 0);
-		if (hx)
-			h = hx;
-	}
-
 	p = doc_new(ci->home, "multipart", ei->email);
 	if (!p)
 		goto out;
 	call_home(p, "multipart-add", doc, 0, NULL, NULL);
-	call_home(p, "multipart-add", h, 0, NULL, NULL);
 	call3("doc:autoclose", p, 1, NULL);
+
+	handle_content(ei->email, type, xfer, start, end, p);
 
 	h = pane_register(p, 0, &email_handle.c, ei, NULL);
 	if (h) {
