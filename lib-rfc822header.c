@@ -101,6 +101,138 @@ static void find_headers(struct pane *p safe, struct mark *start safe,
 	mark_free(m);
 }
 
+static int from_hex(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'a' && c <= 'f')
+		return 10 + c - 'a';
+	if (c >= 'A' && c <= 'F')
+		return 10 + c - 'A';
+	return 0;
+}
+
+static int is_b64(char c)
+{
+	return (c >= 'A' && c <= 'Z') ||
+		(c >= 'a' && c <= 'z') ||
+		(c >= '0' && c <= '9') ||
+		c == '+' || c == '/' || c == '=';
+}
+
+static int from_b64(char c)
+{
+	/* This assumes that 'c' is_b64() */
+	if (c <= '+')
+		return 62;
+	else if (c <= '9')
+		return (c - '0') + 52;
+	else if (c == '=')
+		return 64;
+	else if (c <= 'Z')
+		return (c - 'A') + 0;
+	else if (c == '/')
+		return 63;
+	else
+		return (c - 'a') + 26;
+}
+
+static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
+{
+	/* RFC2047  decoding.
+	 * Search for second '?' (assume utf-8), detect 'Q' or 'B',
+	 * then decode based on that.
+	 * Finish on ?= or non-printable
+	 * =?charset?encoding?code?=
+	 */
+	struct buf buf;
+	int qmarks = 0;
+	char code;
+	int bits = -1;
+	int tmp;
+	static char *last = NULL;
+	wint_t ch;
+	struct mark *m2;
+
+	free(last);
+	last = NULL;
+
+	buf_init(&buf);
+	while ((ch = mark_next_pane(doc, m)) != WEOF &&
+	       ch > ' ' && ch < 0x7f && qmarks < 4) {
+		if (ch == '?') {
+			qmarks++;
+			continue;
+		}
+		if (qmarks == 2 && (ch == 'q' ||ch == 'Q'))
+			code = 'q';
+		if (qmarks == 2 && (ch == 'b' || ch == 'B'))
+			code = 'b';
+		if (qmarks != 3)
+			continue;
+		switch(code) {
+		default:
+			buf_append(&buf, ch);
+			break;
+		case 'q':
+			if (bits >= 0) {
+				tmp = (tmp<<4) + from_hex(ch);
+				bits += 4;
+				if (bits == 8) {
+					buf_append_byte(&buf, tmp);
+					tmp = 0;
+					bits = -1;
+				}
+				break;
+			}
+			switch(ch) {
+			default:
+				buf_append(&buf, ch);
+				break;
+			case '_':
+				buf_append(&buf, ' ');
+				break;
+			case '=':
+				tmp = 0;
+				bits = 0;
+				break;
+			}
+			break;
+
+		case 'b':
+			if (bits < 0) {
+				bits = 0;
+				tmp = 0;
+			}
+			if (!is_b64(ch) || ch == '=')
+				break;
+			tmp = (tmp << 6) | from_b64(ch);
+			bits += 6;
+			if (bits >= 8) {
+				bits -= 8;
+				buf_append_byte(&buf, (tmp >> bits) & 255);
+			}
+			break;
+		}
+	}
+	last = buf_final(&buf);
+	/* If there is only LWS to the next quoted word,
+	 * skip that so words join up
+	 */
+	m2 = mark_dup(m, 1);
+	if (!m2)
+		return last;
+	while ((ch = mark_next_pane(doc, m2)) == ' ' ||
+	       ch == '\t' || ch == '\r' || ch == '\n')
+		;
+	if (ch == '=' && doc_following_pane(doc, m2) == '?') {
+		mark_prev_pane(doc, m2);
+		mark_to_mark(m, m2);
+	}
+	mark_free(m2);
+	return last;
+}
+
 static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 			struct mark *start safe, struct mark *end safe,
 			struct pane *p safe, struct mark *point safe)
@@ -130,6 +262,8 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 	/* FIXME decode RFC2047 words */
 	while ((ch = mark_next_pane(doc, m)) != WEOF &&
 	       m->seq < end->seq) {
+		char *b;
+
 		if (ch < ' ' && ch != '\t') {
 			sol = 1;
 			continue;
@@ -144,7 +278,11 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 		}
 		buf[0] = ch;
 		buf[1] = 0;
-		call7("doc:replace", p, 1, NULL, buf, 1,
+		if (ch == '=' && doc_following_pane(doc, m) == '?')
+			b = charset_word(doc, m);
+		else
+			b = buf;
+		call7("doc:replace", p, 1, NULL, b, 1,
 		      ch == ' ' && is_text ? ",render:rfc822header-wrap=1" : NULL,
 		      point);
 		if (ch == ',' && is_list) {
@@ -209,7 +347,11 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 		}
 		if (!found)
 			continue;
-		buf_append(&buf, ch);
+		if (ch == '=' && doc_following_pane(p, m) == '?') {
+			char *b = charset_word(p, m);
+			buf_concat(&buf, b);
+		} else
+			buf_append(&buf, ch);
 	}
 	return buf_final(&buf);
 }
