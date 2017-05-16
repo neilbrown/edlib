@@ -30,6 +30,9 @@ struct email_info {
 	struct pane	*email safe;
 };
 
+static int handle_content(struct pane *p safe, char *type, char *xfer,
+			  struct mark *start safe, struct mark *end safe,
+			  struct pane *mp safe);
 
 DEF_CMD(email_close)
 {
@@ -153,9 +156,18 @@ static char *get_822_word(char *hdr safe)
 	return last;
 }
 
-static void handle_text_plain(struct pane *p safe, char *type, char *xfer,
-			      struct mark *start safe, struct mark *end safe,
-			      struct pane *mp safe)
+static int tok_matches(char *tok, int len, char *match safe)
+{
+	if (!tok)
+		return 0;
+	if (len != (int)strlen(match))
+		return 0;
+	return strncasecmp(tok, match, len) == 0;
+}
+
+static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
+			     struct mark *start safe, struct mark *end safe,
+			     struct pane *mp safe)
 {
 	struct pane *h;
 	int need_charset = 0;
@@ -163,7 +175,7 @@ static void handle_text_plain(struct pane *p safe, char *type, char *xfer,
 
 	h = call_pane8("attach-crop", p, 0, start, end, 0, NULL, NULL);
 	if (!h)
-		return;
+		return 0;
 
 	if (xfer) {
 		int xlen;
@@ -193,15 +205,136 @@ static void handle_text_plain(struct pane *p safe, char *type, char *xfer,
 			h = hx;
 	}
 	call_home(mp, "multipart-add", h, 0, NULL, NULL);
+	return 1;
 }
 
+/* Found a multipart boundary between start and end, moving
+ * 'start' to after the boundary, and 'pos' to just before it.
+ */
+static int find_boundary(struct pane *p safe,
+			 struct mark *start safe, struct mark *end safe,
+			 struct mark *pos,
+			 char *boundary safe)
+{
+	char *bpos = NULL;
+	int dashcnt = 0;
 
-static void handle_content(struct pane *p safe, char *type, char *xfer,
+	while (start->seq < end->seq) {
+		wint_t ch = mark_next_pane(p, start);
+
+		if (ch == WEOF)
+			break;
+
+		if (bpos && *bpos == (char)ch) {
+			bpos++;
+			if (*bpos)
+				continue;
+			bpos = NULL;
+			dashcnt = 0;
+			while ( (ch = mark_next_pane(p, start)) != '\n') {
+				if (ch == '\r')
+					continue;
+				if (ch == '-') {
+					dashcnt++;
+					continue;
+				}
+				break;
+			}
+			if (ch != '\n')
+				continue;
+			if (dashcnt == 0)
+				return 0;
+			if (dashcnt == 2)
+				return 1;
+			dashcnt = -1;
+			continue;
+		}
+		bpos = NULL;
+		if (dashcnt >= 0 && ch == '-') {
+			dashcnt++;
+			if (dashcnt < 2)
+				continue;
+			dashcnt = -1;
+			bpos = boundary;
+			continue;
+		}
+		dashcnt = -1;
+		if (ch == '\n') {
+			if (pos)
+				mark_to_mark(pos, start);
+			dashcnt = 0;
+		}
+	}
+	return -1;
+}
+
+static int handle_multipart(struct pane *p safe, char *type safe,
+			    struct mark *start safe, struct mark *end safe,
+			    struct pane *mp safe)
+{
+	char *boundary = get_822_attr(type, "boundary");
+	int found_end = 0;
+	struct mark *pos, *part_end;
+
+	if (!boundary)
+		/* FIXME need a way to say "just display the text" */
+		return 1;
+
+	found_end = find_boundary(p, start, end, NULL, boundary);
+	if (found_end != 0)
+		return 1;
+	boundary = strdup(boundary);
+	pos = mark_dup(start, 1);
+	part_end = mark_dup(pos, 1);
+	while (found_end == 0 &&
+	       (found_end = find_boundary(p, pos, end, part_end, boundary)) >= 0) {
+		struct pane *hdr = call_pane8("attach-rfc822header", p, 0, start,
+					      part_end, 0, NULL, NULL);
+		char *ptype, *pxfer;
+
+		if (!hdr)
+			break;
+		call_home7(hdr, "get-header", hdr, 0, NULL, "content-type",
+			   0, "cmd", NULL, NULL);
+		call_home7(hdr, "get-header", hdr, 0, NULL, "content-transfer-encoding",
+			   0, "cmd", NULL, NULL);
+		ptype = attr_find(hdr->attrs, "rfc822-content-type");
+		pxfer = attr_find(hdr->attrs, "rfc822-content-transfer-encoding");
+
+		pane_close(hdr);
+		handle_content(p, ptype, pxfer, start, part_end, mp);
+		mark_to_mark(start, pos);
+	}
+	mark_to_mark(start, pos);
+	mark_free(pos);
+	mark_free(part_end);
+	free(boundary);
+	return 1;
+}
+
+static int handle_content(struct pane *p safe, char *type, char *xfer,
 			   struct mark *start safe, struct mark *end safe,
 			   struct pane *mp safe)
 {
-	/* Assume text/plain for now */
-	handle_text_plain(p, type, xfer, start, end, mp);
+	char *hdr = type;
+	char *major, *minor = NULL;
+	int mjlen, mnlen;
+
+	major = get_822_token(&hdr, &mjlen);
+	if (major) {
+		minor = get_822_token(&hdr, &mnlen);
+		if (minor && minor[0] == '/')
+			minor = get_822_token(&hdr, &mnlen);
+	}
+	if (major == NULL ||
+	    tok_matches(major, mjlen, "text"))
+		return handle_text_plain(p, type, xfer, start, end, mp);
+
+	if (tok_matches(major, mjlen, "multipart"))
+		return handle_multipart(p, type, start, end, mp);
+
+	/* default to plain text until we get a better default */
+	return handle_text_plain(p, type, xfer, start, end, mp);
 }
 
 DEF_CMD(open_email)
@@ -267,7 +400,8 @@ DEF_CMD(open_email)
 	call_home(p, "multipart-add", doc, 0, NULL, NULL);
 	call3("doc:autoclose", p, 1, NULL);
 
-	handle_content(ei->email, type, xfer, start, end, p);
+	if (handle_content(ei->email, type, xfer, start, end, p) == 0)
+		goto out;
 
 	h = pane_register(p, 0, &email_handle.c, ei, NULL);
 	if (h) {
