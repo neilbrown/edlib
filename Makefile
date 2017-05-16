@@ -124,7 +124,7 @@ test:
 	        done || exit 2; \
 	done; echo SUCCESS
 
-checksym:
+checksym: edlib
 	@nm edlib  | awk '$$2 == "T" {print $$3}' | while read a; do grep $$a *.h > /dev/null || echo  $$a; done | grep -vE '^(_.*|main)$$' ||:
 
 clean:
