@@ -261,6 +261,7 @@ class PresenterPane(edlib.Pane):
                         pm.next().release()
                     pm = None
 
+        # FIXME first_valid might not exist - if single large page.
         if not self.first_valid:
             # need to update globals
             t = edlib.Mark(self)
