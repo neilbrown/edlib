@@ -332,12 +332,25 @@ static void mp_resize(struct mp_info *mpi safe, int size)
 DEF_CMD(mp_add)
 {
 	struct mp_info *mpi = ci->home->data;
+	struct mark *m;
 	int n;
 
 	mp_resize(mpi, mpi->nparts+1);
-	n = mpi->nparts;
+	if (ci->mark == NULL)
+		n = mpi->nparts;
+	else
+		n = ci->mark->ref.docnum;
+	memmove(&mpi->parts[n+1], &mpi->parts[n],
+		(mpi->nparts - n)*sizeof(mpi->parts[0]));
 	mpi->nparts += 1;
 	mpi->parts[n] = ci->focus;
+	hlist_for_each_entry(m, &mpi->doc.marks, all)
+		if (m->ref.docnum >= n)
+			m->ref.docnum ++;
+	if (ci->mark)
+		/* move mark to start of new part */
+		change_part(mpi, ci->mark, n, 0);
+
 	pane_add_notify(ci->home, ci->focus, "Notify:Close");
 	call_home(ci->focus, "Request:Notify:doc:viewers", ci->home, 0, NULL, NULL);
 
