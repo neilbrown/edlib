@@ -29,9 +29,9 @@ static int hex(wint_t c)
 {
 	if (c >= '0' && c <= '9')
 		return c - '0';
-	if (c >= 'A' && c <= 'Z')
+	if (c >= 'A' && c <= 'F')
 		return c - 'A' + 10;
-	if (c >= 'a' && c <= 'z')
+	if (c >= 'a' && c <= 'f')
 		return c - 'a' + 10;
 	return -1;
 }
@@ -52,7 +52,8 @@ DEF_CMD(qp_step)
 		ch = mark_step_pane(p, m, 1, move);
 		if (ch != '=' && ch != ' ' && ch != '\t' && ch != '\r') {
 			if (m != ci->mark) {
-				mark_to_mark(ci->mark, m);
+				if (move)
+					mark_to_mark(ci->mark, m);
 				mark_free(m);
 			}
 			return CHAR_RET(ch);
@@ -62,7 +63,8 @@ DEF_CMD(qp_step)
 			if (move)
 				mark_next_pane(p, m);
 			if (m != ci->mark) {
-				mark_to_mark(ci->mark, m);
+				if (move)
+					mark_to_mark(ci->mark, m);
 				mark_free(m);
 			}
 			return CHAR_RET('\n');
@@ -88,6 +90,8 @@ DEF_CMD(qp_step)
 			return CHAR_RET(ch);
 		}
 		/* Whitespace, ignore if at eol */
+		if (move)
+			mark_to_mark(ci->mark, m);
 		while ((c2 = mark_next_pane(p, m)) == ' ' || c2 == '\t')
 			;
 		if (c2 == '\r')
@@ -125,7 +129,7 @@ DEF_CMD(qp_step)
 			return CHAR_RET(ch);
 		if (m == ci->mark)
 			m = mark_dup(m, 1);
-		else
+		else if (move)
 			mark_to_mark(ci->mark, m);
 		if (!move)
 			mark_prev_pane(p, m);
@@ -187,7 +191,7 @@ DEF_CMD(qp_same)
 			break;
 		mark_next_pane(p, m1);
 	}
-	if (mark_same_pane(p, m1, m2)) {
+	if (m1->seq > m2->seq || mark_same_pane(p, m1, m2)) {
 		mark_free(m1);
 		return 1;
 	}
