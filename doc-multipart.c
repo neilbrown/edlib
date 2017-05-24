@@ -31,7 +31,9 @@ struct mp_info {
 	struct doc	doc;
 	int		nparts;
 	int		parts_size;
-	struct pane	* safe *parts safe;
+	struct part {
+		struct pane	*pane safe;
+	} *parts safe;
 };
 
 static struct map *mp_map safe;
@@ -106,16 +108,16 @@ static void mp_check_consistent(struct mp_info *mpi safe)
 static void change_part(struct mp_info *mpi safe, struct mark *m safe, int part, int end)
 {
 	struct mark *m1;
-	struct pane *p;
+	struct part *p;
 
 	if (part < 0 || part > mpi->nparts)
 		return;
 	if (m->ref.m)
 		mark_free(m->ref.m);
 	if (part < mpi->nparts) {
-		p = mpi->parts[part];
-		m1 = vmark_new(p, MARK_UNGROUPED);
-		call3("doc:set-ref", p, !end, m1);
+		p = &mpi->parts[part];
+		m1 = vmark_new(p->pane, MARK_UNGROUPED);
+		call3("doc:set-ref", p->pane, !end, m1);
 		m->ref.m = m1;
 	} else
 		m->ref.m = NULL;
@@ -128,7 +130,7 @@ DEF_CMD(mp_close)
 	struct mp_info *mpi = ci->home->data;
 	int i;
 	for (i = 0; i < mpi->nparts; i++)
-		call3("doc:closed", mpi->parts[i], 0, NULL);
+		call3("doc:closed", mpi->parts[i].pane, 0, NULL);
 	doc_free(&mpi->doc);
 	free(mpi->parts);
 	free(mpi);
@@ -179,11 +181,11 @@ DEF_CMD(mp_same)
 		if (ci->mark->ref.docnum == mpi->nparts || !m1)
 			p1 = NULL;
 		else
-			p1 = mpi->parts[ci->mark->ref.docnum];
+			p1 = mpi->parts[ci->mark->ref.docnum].pane;
 		if (ci->mark2->ref.docnum == mpi->nparts || !m2)
 			p2 = NULL;
 		else
-			p2 = mpi->parts[ci->mark2->ref.docnum];
+			p2 = mpi->parts[ci->mark2->ref.docnum].pane;
 		if (ci->mark->ref.docnum + 1 == ci->mark2->ref.docnum) {
 			if (p1 && doc_following_pane(p1, m1) == CHAR_RET(WEOF) &&
 			    (!p2 || doc_prior_pane(p2, m2) == CHAR_RET(WEOF)))
@@ -197,7 +199,7 @@ DEF_CMD(mp_same)
 	}
 	if (ci->mark->ref.docnum == mpi->nparts)
 		return 1;
-	ret = call_home7(mpi->parts[ci->mark->ref.docnum],
+	ret = call_home7(mpi->parts[ci->mark->ref.docnum].pane,
 			 ci->key, ci->focus, ci->numeric, m1, ci->str,
 			 ci->extra,ci->str2, m2, ci->comm2);
 	reset_mark(ci->mark);
@@ -229,7 +231,7 @@ DEF_CMD(mp_step)
 	if (ci->mark->ref.docnum == mpi->nparts)
 		ret = -1;
 	else
-		ret = call_home7(mpi->parts[ci->mark->ref.docnum],
+		ret = call_home7(mpi->parts[ci->mark->ref.docnum].pane,
 				 ci->key, ci->focus, ci->numeric, m1, ci->str,
 				 ci->extra,ci->str2, NULL, ci->comm2);
 	while (ret == CHAR_RET(WEOF) || ret == -1) {
@@ -246,7 +248,7 @@ DEF_CMD(mp_step)
 		if (ci->mark->ref.docnum == mpi->nparts)
 			ret = -1;
 		else
-			ret = call_home7(mpi->parts[ci->mark->ref.docnum],
+			ret = call_home7(mpi->parts[ci->mark->ref.docnum].pane,
 					 ci->key, ci->focus, ci->numeric, m1, ci->str,
 					 ci->extra,ci->str2, NULL, ci->comm2);
 	}
@@ -272,7 +274,7 @@ DEF_CMD(mp_attr)
 	if (ci->mark->ref.docnum >= mpi->nparts)
 		ret = 1;
 	else
-		ret = call_home7(mpi->parts[ci->mark->ref.docnum],
+		ret = call_home7(mpi->parts[ci->mark->ref.docnum].pane,
 				 ci->key, ci->focus, ci->numeric, m1, ci->str,
 				 ci->extra,ci->str2, NULL, ci->comm2);
 	reset_mark(ci->mark);
@@ -301,7 +303,7 @@ static void mp_resize(struct mp_info *mpi safe, int size)
 	if (mpi->parts_size >= size)
 		return;
 	size += 4;
-	mpi->parts = realloc(mpi->parts, size * sizeof(struct pane*));
+	mpi->parts = realloc(mpi->parts, size * sizeof(struct part*));
 	mpi->parts_size = size;
 }
 
@@ -319,7 +321,7 @@ DEF_CMD(mp_add)
 	memmove(&mpi->parts[n+1], &mpi->parts[n],
 		(mpi->nparts - n)*sizeof(mpi->parts[0]));
 	mpi->nparts += 1;
-	mpi->parts[n] = ci->focus;
+	mpi->parts[n].pane = ci->focus;
 	hlist_for_each_entry(m, &mpi->doc.marks, all)
 		if (m->ref.docnum >= n)
 			m->ref.docnum ++;
