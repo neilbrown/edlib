@@ -208,7 +208,7 @@ DEF_CMD(docs_modified_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "Notify:Replace") == 0) {
+	if (strcmp(ci->key, "Notify:doc:Replace") == 0) {
 		int all_gone;
 		m = vmark_new(ci->home->parent, MARK_UNGROUPED);
 		if (!m)
@@ -356,9 +356,9 @@ DEF_CMD(docs_callback)
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
 		p = doc_attach_view(ci->focus, doc->doc.home, NULL);
 		p = pane_register(p, 0, &docs_modified_handle, doc, NULL);
-		call3("Request:Notify:Replace", p, 0, NULL);
-		/* And trigger Notify:Replace handling immediately...*/
-		call3("Notify:Replace", p, 0, NULL);
+		call3("Request:Notify:doc:Replace", p, 0, NULL);
+		/* And trigger Notify:doc:Replace handling immediately...*/
+		call3("Notify:doc:Replace", p, 0, NULL);
 		return 1;
 	}
 

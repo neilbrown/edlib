@@ -242,7 +242,7 @@ DEF_CMD(view_handle)
 	}
 	if (strcmp(ci->key, "Refresh") == 0)
 		return view_refresh(ci);
-	if (strcmp(ci->key, "Notify:Replace") == 0) {
+	if (strcmp(ci->key, "Notify:doc:Replace") == 0) {
 		pane_damaged(p, DAMAGED_CONTENT);
 		return 1;
 	}
@@ -278,7 +278,7 @@ static struct pane *safe do_view_attach(struct pane *par, int border)
 	p = pane_register(par, 0, &view_handle, vd, NULL);
 	/* Capture Replace notification so we can update 'changed' flag in
 	 * status line FIXME need better method */
-	call3("Request:Notify:Replace", p, 0, NULL);
+	call3("Request:Notify:doc:Replace", p, 0, NULL);
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }

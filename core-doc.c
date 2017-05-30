@@ -556,11 +556,6 @@ DEF_CMD(doc_handle)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "Request:Notify:Replace") == 0) {
-		pane_add_notify(ci->focus, dd->doc, "Notify:Replace");
-		return 1;
-	}
-
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = doc_attach(ci->focus, dd->doc);
 

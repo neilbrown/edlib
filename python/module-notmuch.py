@@ -330,7 +330,7 @@ class notmuch_main(edlib.Doc):
                 self.timer_set = True
                 self.call("event:timer", 5*60, self.tick)
             self.searches.load(False)
-            self.notify("Notify:Replace")
+            self.notify("Notify:doc:Replace")
             self.updating = "counts"
             if not self.searches.update(self, self.updated):
                 self.update_next()
@@ -481,7 +481,7 @@ class notmuch_main(edlib.Doc):
     def updated(self, key, **a):
         if not self.searches.updated():
             self.update_next()
-        self.notify("Notify:Replace")
+        self.notify("Notify:doc:Replace")
         return -1
 
     def update_next(self):
@@ -781,7 +781,7 @@ class notmuch_main_view(edlib.Pane):
         self['render-wrap'] = 'no'
         self['background'] = 'color:#A0FFFF'
         self['line-format'] = '<%fmt>%count %+name</>'
-        self.call("Request:Notify:Replace")
+        self.call("Request:Notify:doc:Replace")
         self.maxlen = 0
         self.selected = None
 
@@ -790,7 +790,7 @@ class notmuch_main_view(edlib.Pane):
             p = notmuch_main_view(focus)
             self.clone_children(focus.focus)
             return 1
-        if key == "Notify:Replace":
+        if key == "Notify:doc:Replace":
             self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
             return 0
 
@@ -921,7 +921,7 @@ class notmuch_list(edlib.Doc):
                     m.pos = (self.new[0],)
                 m = m.next_any()
         self.threadids = self.new + self.old
-        self.notify("Notify:Replace")
+        self.notify("Notify:doc:Replace")
         if found < 100 and self.age == None:
             # must have found them all
             self.call("doc:notmuch:query-updated")
@@ -1151,7 +1151,7 @@ class notmuch_list(edlib.Doc):
                 self.call("doc:notmuch:bythread:tags", str,
                           lambda key,**a:take('str',sl,a))
                 t['tags'] = sl[0].split(",")
-            self.notify("Notify:Replace")
+            self.notify("Notify:doc:Replace")
             return 1
 
         if key == "doc:set-ref":
@@ -1337,7 +1337,7 @@ class notmuch_list(edlib.Doc):
                 t = j["tags"]
                 if "unread" in t:
                     t.remove("unread")
-            self.notify("Notify:Replace")
+            self.notify("Notify:doc:Replace")
             # Let this fall though to database document.
             return 0
 

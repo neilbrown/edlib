@@ -62,7 +62,7 @@ DEF_CMD(history_handle)
 		return 0;
 	}
 
-	if (strcmp(ci->key, "Notify:Replace") == 0) {
+	if (strcmp(ci->key, "Notify:doc:Replace") == 0) {
 		hi->changed = 1;
 		return 1;
 	}
@@ -146,7 +146,7 @@ DEF_CMD(history_attach)
 	buf_init(&hi->search);
 	p = pane_register(ci->focus, 0, &history_handle, hi, NULL);
 	pane_add_notify(p, hi->history, "Notify:Close");
-	call3("Request:Notify:Replace", p, 0, NULL);
+	call3("Request:Notify:doc:Replace", p, 0, NULL);
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 

@@ -196,7 +196,7 @@ static void render_hex_register_map(void)
 
 	key_add(he_map, "Close", &render_hex_close);
 	key_add(he_map, "Clone", &render_hex_clone);
-	key_add(he_map, "Notify:Replace", &render_hex_notify_replace);
+	key_add(he_map, "Notify:doc:Replace", &render_hex_notify_replace);
 }
 
 static struct pane *do_render_hex_attach(struct pane *parent safe)
@@ -208,7 +208,7 @@ static struct pane *do_render_hex_attach(struct pane *parent safe)
 		render_hex_register_map();
 
 	p = pane_register(parent, 0, &render_hex_handle.c, he, NULL);
-	call3("Request:Notify:Replace", p, 0, NULL);
+	call3("Request:Notify:doc:Replace", p, 0, NULL);
 	attr_set_str(&p->attrs, "render-wrap", "no");
 	attr_set_str(&p->attrs, "heading", "<bold>          00 11 22 33 44 55 66 77  88 99 aa bb cc dd ee ff   0 1 2 3 4 5 6 7  8 9 a b c d e f</>");
 	he->pane = p;

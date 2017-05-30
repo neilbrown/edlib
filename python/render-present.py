@@ -542,7 +542,7 @@ class PresenterPane(edlib.Pane):
                 comm2("callback", self, line)
             return 1
 
-        if key == "Notify:Replace":
+        if key == "Notify:doc:Replace":
             # A change has happened at 'mark'.  The following page might not
             # be valid, and the previous may not be valid or have next-valid.
             # If no previous, self.first_valid may not be.
@@ -664,7 +664,7 @@ def present_attach(key, focus, comm2, **a):
     p['background'] = 'color:yellow'
     p['hide-cursor'] = 'yes'
 
-    p.call("Request:Notify:Replace")
+    p.call("Request:Notify:doc:Replace")
     p.call("Request:Notify:doc:Recentre")
     comm2("callback", p)
     return 1

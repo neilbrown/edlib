@@ -219,7 +219,7 @@ DEF_CMD(handle_count_lines)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "Notify:Replace") == 0) {
+	if (strcmp(ci->key, "Notify:doc:Replace") == 0) {
 		if (ci->mark) {
 			struct mark *end;
 
@@ -256,7 +256,7 @@ DEF_CMD(count_lines)
 		cli = calloc(1, sizeof(*cli));
 		cli->view_num = doc_add_view(ci->focus);
 		p = pane_register(NULL, 0, &handle_count_lines, cli, NULL);
-		call_home(ci->focus, "Request:Notify:Replace", p, 0, NULL, NULL);
+		call_home(ci->focus, "Request:Notify:doc:Replace", p, 0, NULL, NULL);
 		call_home(ci->focus, "Request:Notify:doc:CountLines", p,
 			  0, NULL, NULL);
 		call3("Notify:doc:CountLines", ci->focus, 1, ci->mark);

@@ -231,7 +231,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "C-Chr-R", &search_backward);
 	key_add(es_map, "Close", &search_close);
 	key_add(es_map, "Return", &search_done);
-	key_add(es_map, "Notify:Replace", &search_again);
+	key_add(es_map, "Notify:doc:Replace", &search_again);
 }
 
 DEF_LOOKUP_CMD(search_handle, es_map);
@@ -263,7 +263,7 @@ DEF_CMD(emacs_search)
 
 	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);
 	if (p) {
-		call3("Request:Notify:Replace", p, 0, NULL);
+		call3("Request:Notify:doc:Replace", p, 0, NULL);
 		comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 	}
 	return 1;

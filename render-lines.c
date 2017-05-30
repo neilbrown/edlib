@@ -1593,7 +1593,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Refresh", &render_lines_refresh);
 	key_add(rl_map, "Refresh:view", &render_lines_refresh_view);
 
-	key_add(rl_map, "Notify:Replace", &render_lines_notify_replace);
+	key_add(rl_map, "Notify:doc:Replace", &render_lines_notify_replace);
 }
 
 REDEF_CMD(render_lines_attach)
@@ -1612,7 +1612,7 @@ REDEF_CMD(render_lines_attach)
 	if (strcmp(ci->key, "attach-render-text") == 0)
 		p = call_pane("attach-renderline", p, 0, NULL, 0);
 	p = pane_register(p, 0, &render_lines_handle.c, rl, NULL);
-	call3("Request:Notify:Replace", p, 0, NULL);
+	call3("Request:Notify:doc:Replace", p, 0, NULL);
 
 	return comm_call(ci->comm2, "callback:attach", p,
 			 0, NULL, NULL, 0);

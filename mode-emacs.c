@@ -846,7 +846,7 @@ DEF_CMD(emacs_search_highlight)
 		mark_to_mark(m, ci->mark);
 		attr_set_int(&m->attrs, "render:search", ci->numeric);
 		call3("Move-View-Pos", ci->focus, 0, m);
-		call3("Notify:Replace", ci->focus, 0, NULL);
+		call3("Notify:doc:Replace", ci->focus, 0, NULL);
 		if (start) {
 			m = mark_dup(start, 1);
 			do_searches(ci->focus, view, ci->str,
@@ -854,7 +854,7 @@ DEF_CMD(emacs_search_highlight)
 			mark_free(m);
 		}
 	} else
-		call3("Notify:Replace", ci->focus, 0, NULL);
+		call3("Notify:doc:Replace", ci->focus, 0, NULL);
 	pane_damaged(ci->home, DAMAGED_CONTENT|DAMAGED_VIEW);
 	return 1;
 }
