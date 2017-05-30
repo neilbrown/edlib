@@ -303,7 +303,7 @@ static void mp_resize(struct mp_info *mpi safe, int size)
 	if (mpi->parts_size >= size)
 		return;
 	size += 4;
-	mpi->parts = realloc(mpi->parts, size * sizeof(struct part*));
+	mpi->parts = realloc(mpi->parts, size * sizeof(struct part));
 	mpi->parts_size = size;
 }
 
