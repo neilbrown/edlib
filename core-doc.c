@@ -327,6 +327,10 @@ DEF_CMD(doc_attr_set)
 
 	if (!ci->str)
 		return -1;
+	if (strcmp(ci->str, "doc:autoclose") == 0 && ci->extra == 1) {
+		d->autoclose = ci->numeric;
+		return 1;
+	}
 
 	if (ci->str2 == NULL && ci->extra == 1)
 		attr_set_int(&d->home->attrs, ci->str, ci->numeric);
@@ -459,13 +463,6 @@ DEF_CMD(doc_do_closed)
 	return 1;
 }
 
-DEF_CMD(doc_set_autoclose)
-{
-	struct doc *d = ci->home->data;
-	d->autoclose = ci->numeric;
-	return 1;
-}
-
 DEF_CMD(doc_do_destroy)
 {
 	pane_close(ci->home);
@@ -522,7 +519,6 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
 	key_add(doc_default_cmd, "doc:set-parent", &doc_set_parent);
-	key_add(doc_default_cmd, "doc:autoclose", &doc_set_autoclose);
 	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);
 	key_add(doc_default_cmd, "doc:revisit", &doc_do_revisit);
 	key_add(doc_default_cmd, "doc:drop-cache", &doc_drop_cache);
@@ -749,7 +745,7 @@ DEF_CMD(doc_open)
 			return -1;
 		}
 		if (autoclose)
-			call3("doc:autoclose", p, 1, NULL);
+			call5("doc:set-attr", p, 1, NULL, "doc:autoclose", 1);
 		call5("doc:load-file", p, 0, NULL, name, fd);
 		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	}

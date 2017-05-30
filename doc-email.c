@@ -370,7 +370,7 @@ DEF_CMD(open_email)
 	doc = doc_new(ci->focus, "text", ci->focus);
 	if (!doc)
 		goto out;
-	call3("doc:autoclose", doc, 1, NULL);
+	call5("doc:set-attr", doc, 1, NULL, "doc:autoclose", 1);
 	point = vmark_new(doc, MARK_POINT);
 	if (!point)
 		goto out;
@@ -398,7 +398,7 @@ DEF_CMD(open_email)
 	if (!p)
 		goto out;
 	call_home(p, "multipart-add", doc, 0, NULL, NULL);
-	call3("doc:autoclose", p, 1, NULL);
+	call5("doc:set-attr", doc, 1, NULL, "doc:autoclose", 1);
 
 	if (handle_content(ei->email, type, xfer, start, end, p) == 0)
 		goto out;

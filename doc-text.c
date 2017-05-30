@@ -1651,16 +1651,17 @@ DEF_CMD(text_set_attr)
 	c = ci->mark->ref.c;
 	if (!c)
 		/* EOF */
-		return -1;
+		return 0;
 	if (o >= c->end) {
 		/* End of chunk, need to look at next */
 		if (c->lst.next == &t->text)
-			return -1;
+			return 0;
 		c = list_next_entry(c, lst);
 		o = c->start;
 	}
 	doc_notify_change(&t->doc, ci->mark, NULL);
-	return attr_set_str_key(&c->attrs, attr, val, o);
+	attr_set_str_key(&c->attrs, attr, val, o);
+	return 0;
 }
 
 DEF_CMD(text_modified)

@@ -197,7 +197,7 @@ DEF_CMD(popup_attach)
 		    (p = doc_attach_view(ppi->popup, doc, NULL)) != NULL) {
 
 			call3("Move-File", p, 1, NULL);
-			call3("doc:autoclose", p, 1, NULL);
+			call5("doc:set-attr", p, 1, NULL, "doc:autoclose", 1);
 		}
 	}
 
