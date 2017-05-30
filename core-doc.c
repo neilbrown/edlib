@@ -515,7 +515,7 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd, "Move-Line", &doc_line);
 	key_add(doc_handle_cmd, "Move-View-Large", &doc_page);
 
-	key_add(doc_default_cmd, "doc:attr-set", &doc_attr_set);
+	key_add(doc_default_cmd, "doc:set-attr", &doc_attr_set);
 	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
 	key_add(doc_default_cmd, "doc:del-view", &doc_delview);
 	key_add(doc_default_cmd, "doc:vmark-get", &doc_vmarkget);

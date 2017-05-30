@@ -196,9 +196,9 @@ done:
 		attr_set_int(attrs, "words", words);
 		attr_set_int(attrs, "chars", chars);
 	} else {
-		call5("doc:attr-set", p, lines, NULL, "lines", 1);
-		call5("doc:attr-set", p, words, NULL, "words", 1);
-		call5("doc:attr-set", p, chars, NULL, "chars", 1);
+		call5("doc:set-attr", p, lines, NULL, "lines", 1);
+		call5("doc:set-attr", p, words, NULL, "words", 1);
+		call5("doc:set-attr", p, chars, NULL, "chars", 1);
 	}
 }
 
@@ -229,9 +229,9 @@ DEF_CMD(handle_count_lines)
 				attr_del(mark_attr(end), "words");
 				attr_del(mark_attr(end), "chars");
 			}
-			call5("doc:attr-set", d, 0, NULL, "lines", 0);
-			call5("doc:attr-set", d, 0, NULL, "words", 0);
-			call5("doc:attr-set", d, 0, NULL, "chars", 0);
+			call5("doc:set-attr", d, 0, NULL, "lines", 0);
+			call5("doc:set-attr", d, 0, NULL, "words", 0);
+			call5("doc:set-attr", d, 0, NULL, "chars", 0);
 		}
 		return 1;
 	}
