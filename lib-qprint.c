@@ -206,6 +206,7 @@ DEF_CMD(qp_attach)
 	p = pane_register(ci->focus, 0, &qp_handle.c, NULL, NULL);
 	if (!p)
 		return -1;
+	call5("doc:set-attr", p, 1, NULL, "doc:filter", 1);
 
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }

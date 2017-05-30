@@ -405,6 +405,7 @@ DEF_CMD(open_email)
 
 	h = pane_register(p, 0, &email_handle.c, ei, NULL);
 	if (h) {
+		call5("doc:set-attr", h, 1, NULL, "doc:filter", 1);
 		mark_free(start);
 		mark_free(end);
 		attr_set_str(&h->attrs, "render-default", "text");

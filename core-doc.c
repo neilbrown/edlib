@@ -110,6 +110,7 @@ void doc_init(struct doc *d safe)
 	d->nviews = 0;
 	d->name = NULL;
 	d->autoclose = 0;
+	d->filter = 0;
 	d->home = safe_cast NULL;
 }
 
@@ -331,6 +332,10 @@ DEF_CMD(doc_attr_set)
 		d->autoclose = ci->numeric;
 		return 1;
 	}
+	if (strcmp(ci->str, "doc:filter") == 0 && ci->extra == 1) {
+		d->filter = ci->numeric;
+		return 1;
+	}
 
 	if (ci->str2 == NULL && ci->extra == 1)
 		attr_set_int(&d->home->attrs, ci->str, ci->numeric);
@@ -385,8 +390,9 @@ DEF_CMD(doc_set_parent)
 
 DEF_CMD(doc_request_notify)
 {
+	struct doc *d = ci->home->data;
 	pane_add_notify(ci->focus, ci->home, ci->key+8);
-	return 1;
+	return d->filter ? 0 : 1;
 }
 
 DEF_CMD(doc_notify)
@@ -699,7 +705,8 @@ DEF_CMD(doc_open)
 	char *name = ci->str;
 	struct stat stb;
 	struct pane *p;
-	int autoclose = ci->extra;
+	int autoclose = ci->extra & 1;
+	int filter = ci->extra & 2;
 	char pathbuf[PATH_MAX], *rp = NULL;
 
 	if (!name)
@@ -746,6 +753,8 @@ DEF_CMD(doc_open)
 		}
 		if (autoclose)
 			call5("doc:set-attr", p, 1, NULL, "doc:autoclose", 1);
+		if (filter)
+			call5("doc:set-attr", p, 1, NULL, "doc:filter", 1);
 		call5("doc:load-file", p, 0, NULL, name, fd);
 		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	}
