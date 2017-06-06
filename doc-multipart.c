@@ -33,6 +33,7 @@ struct mp_info {
 	int		parts_size;
 	struct part {
 		struct pane	*pane safe;
+		int		visible;
 	} *parts safe;
 };
 
@@ -166,48 +167,71 @@ DEF_CMD(mp_set_ref)
 DEF_CMD(mp_same)
 {
 	struct mp_info *mpi = ci->home->data;
-	struct mark *m1 = NULL, *m2 = NULL;
-	struct pane *p1, *p2;
-	int ret;
+	struct doc_ref d1, d2;
 
 	if (!ci->mark || !ci->mark2)
 		return -1;
 
-	m1 = ci->mark->ref.m;
-	m2 = ci->mark2->ref.m;
-
 	mp_check_consistent(mpi);
-	if (ci->mark->ref.docnum != ci->mark2->ref.docnum) {
-		if (ci->mark->ref.docnum == mpi->nparts || !m1)
-			p1 = NULL;
-		else
-			p1 = mpi->parts[ci->mark->ref.docnum].pane;
-		if (ci->mark2->ref.docnum == mpi->nparts || !m2)
-			p2 = NULL;
-		else
-			p2 = mpi->parts[ci->mark2->ref.docnum].pane;
-		if (ci->mark->ref.docnum + 1 == ci->mark2->ref.docnum) {
-			if (p1 && doc_following_pane(p1, m1) == CHAR_RET(WEOF) &&
-			    (!p2 || doc_prior_pane(p2, m2) == CHAR_RET(WEOF)))
-				return 1;
-		} else if (ci->mark->ref.docnum - 1 == ci->mark2->ref.docnum) {
-			if ((!p1 || doc_prior_pane(p1, m1) == CHAR_RET(WEOF)) &&
-			    p2 && doc_following_pane(p2, m2) == CHAR_RET(WEOF))
-				return 1;
-		}
-		return 2;
+
+	if (ci->mark->seq < ci->mark2->seq) {
+		d1 = ci->mark->ref;
+		d2 = ci->mark2->ref;
+	} else {
+		d1 = ci->mark2->ref;
+		d2 = ci->mark->ref;
 	}
-	if (ci->mark->ref.docnum == mpi->nparts)
-		return 1;
-	ret = call_home7(mpi->parts[ci->mark->ref.docnum].pane,
-			 ci->key, ci->focus, ci->numeric, m1, ci->str,
-			 ci->extra,ci->str2, m2, ci->comm2);
-	reset_mark(ci->mark);
-	reset_mark(ci->mark2);
-	reset_mark(ci->mark);
 
-	mp_check_consistent(mpi);
-	return ret;
+	if (d1.m &&
+	    mpi->parts[d1.docnum].visible &&
+	    doc_following_pane(mpi->parts[d1.docnum].pane, d1.m) == CHAR_RET(WEOF)) {
+		/* End of part */
+		d1.docnum++;
+		d1.m = NULL;
+	}
+	if (d2.m && d2.docnum &&
+	    mpi->parts[d2.docnum].visible &&
+	    doc_prior_pane(mpi->parts[d2.docnum].pane, d2.m) == CHAR_RET(WEOF)) {
+		/* Start of part */
+		d2.docnum--;
+		d2.m = NULL;
+	}
+	while (d1.docnum < mpi->nparts - 1 &&
+	       !mpi->parts[d1.docnum].visible &&
+	       !mpi->parts[d1.docnum+1].visible) {
+		d1.m = NULL;
+		d1.docnum++;
+	}
+	while (d2.docnum > 0 &&
+	       !mpi->parts[d2.docnum].visible &&
+	       !mpi->parts[d2.docnum-1].visible) {
+		d2.m = NULL;
+		d2.docnum--;
+	}
+	if (d2.docnum < d1.docnum)
+		/* Nothing visible between the points */
+		return 1;
+	if (d1.docnum == d2.docnum) {
+		if (ci->mark->ref.docnum == mpi->nparts)
+			return 1;
+		if (!mpi->parts[d1.docnum].visible)
+			return 1;
+		if (!d1.m || !d2.m)
+			/* marks are at either end of a visible part.
+			 * Assume part is not empty...
+			 */
+			return 2;
+		return call_home7(mpi->parts[ci->mark->ref.docnum].pane,
+				  "doc:mark-same", ci->focus, 0, d1.m, NULL,
+				  0, NULL, d2.m, NULL);
+	}
+
+	/* Marks are in different visible documents.
+	 * If they had been at the end, they would have
+	 * been moved to the next.
+	 * So the marks cannot be the same.
+	 */
+	return 2;
 }
 
 DEF_CMD(mp_step)
@@ -228,7 +252,8 @@ DEF_CMD(mp_step)
 
 	mp_check_consistent(mpi);
 
-	if (ci->mark->ref.docnum == mpi->nparts)
+	if (ci->mark->ref.docnum == mpi->nparts ||
+	    !mpi->parts[ci->mark->ref.docnum].visible)
 		ret = -1;
 	else
 		ret = call_home7(mpi->parts[ci->mark->ref.docnum].pane,
@@ -238,14 +263,21 @@ DEF_CMD(mp_step)
 		if (ci->numeric) {
 			if (ci->mark->ref.docnum >= mpi->nparts)
 				break;
-			change_part(mpi, ci->mark, ci->mark->ref.docnum + 1, 0);
+			do {
+				change_part(mpi, ci->mark, ci->mark->ref.docnum + 1, 0);
+			} while (ci->mark->ref.docnum < mpi->nparts &&
+				 !mpi->parts[ci->mark->ref.docnum].visible);
 		} else {
 			if (ci->mark->ref.docnum == 0)
 				break;
-			change_part(mpi, ci->mark, ci->mark->ref.docnum - 1, 1);
+			do {
+				change_part(mpi, ci->mark, ci->mark->ref.docnum - 1, 1);
+			} while (ci->mark->ref.docnum > 0 &&
+				 !mpi->parts[ci->mark->ref.docnum].visible);
 		}
 		m1 = ci->mark->ref.m;
-		if (ci->mark->ref.docnum == mpi->nparts)
+		if (ci->mark->ref.docnum == mpi->nparts ||
+		    !mpi->parts[ci->mark->ref.docnum].visible)
 			ret = -1;
 		else
 			ret = call_home7(mpi->parts[ci->mark->ref.docnum].pane,
@@ -255,7 +287,7 @@ DEF_CMD(mp_step)
 	reset_mark(ci->mark);
 
 	mp_check_consistent(mpi);
-	return ret;
+	return ret == -1 ? (int)CHAR_RET(WEOF) : ret;
 }
 
 DEF_CMD(mp_attr)
@@ -264,8 +296,17 @@ DEF_CMD(mp_attr)
 	struct mark *m1 = NULL;
 	int ret;
 
-	if (!ci->mark)
+	if (!ci->mark || !ci->str)
 		return -1;
+
+	if (strcmp(ci->str, "multipart:visible") == 0) {
+		if (ci->mark->ref.docnum < mpi->nparts &&
+		    mpi->parts[ci->mark->ref.docnum].visible)
+			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "1", 0);
+		else
+			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "0", 0);
+		return 1;
+	}
 
 	m1 = ci->mark->ref.m;
 
@@ -280,6 +321,27 @@ DEF_CMD(mp_attr)
 	reset_mark(ci->mark);
 	mp_check_consistent(mpi);
 	return ret;
+}
+
+DEF_CMD(mp_set_attr)
+{
+	struct mp_info *mpi = ci->home->data;
+	struct mark *m = ci->mark;
+
+	if (!m || !ci->str)
+		return -1;
+	if (strcmp(ci->str, "multipart:visible") != 0)
+		return 0;
+
+	if (m->ref.docnum >= mpi->nparts)
+		return -1;
+	if ((ci->str2 && atoi(ci->str2) > 0) ||
+	    (ci->str2 == NULL && ci->extra == 1 && ci->numeric > 0))
+		mpi->parts[m->ref.docnum].visible = 1;
+	else
+		mpi->parts[m->ref.docnum].visible = 0;
+	pane_notify(ci->home, "Notify:doc:Replace", m, NULL, NULL, NULL, 0, 0, NULL);
+	return 1;
 }
 
 DEF_CMD(mp_notify_close)
@@ -322,6 +384,7 @@ DEF_CMD(mp_add)
 		(mpi->nparts - n)*sizeof(mpi->parts[0]));
 	mpi->nparts += 1;
 	mpi->parts[n].pane = ci->focus;
+	mpi->parts[n].visible = 1;
 	hlist_for_each_entry(m, &mpi->doc.marks, all)
 		if (m->ref.docnum >= n)
 			m->ref.docnum ++;
@@ -342,6 +405,7 @@ static void mp_init_map(void)
 	key_add(mp_map, "doc:mark-same", &mp_same);
 	key_add(mp_map, "doc:step", &mp_step);
 	key_add(mp_map, "doc:get-attr", &mp_attr);
+	key_add(mp_map, "doc:set-attr", &mp_set_attr);
 	key_add(mp_map, "Close", &mp_close);
 	key_add(mp_map, "Notify:Close", &mp_notify_close);
 	key_add(mp_map, "Notify:doc:viewers", &mp_notify_viewers);
