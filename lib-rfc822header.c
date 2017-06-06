@@ -211,6 +211,7 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 			if (bits >= 8) {
 				bits -= 8;
 				buf_append_byte(&buf, (tmp >> bits) & 255);
+				tmp &= (1<<bits)-1;
 			}
 			break;
 		}
