@@ -150,9 +150,9 @@ struct mark {
 	struct attrset		*attrs;
 	int			seq;
 	short			viewnum;
-	short			rpos;	/* use by renderer to identify positions with
+	short			rpos;	/* Used by renderer to identify positions within
 					 * a document object (which displays as more than
-					 * a char
+					 * one char).
 					 */
 	MARK_DATA_PTR		*mdata;
 	void			*mtype;	/* can be used to validate type of mdata */
