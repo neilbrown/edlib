@@ -223,6 +223,7 @@ DEF_CMD(render_line)
 	int ret;
 	struct attr_return ar;
 	int add_newline = 0;
+	char *attr;
 
 	ar.rtn = text_attr_callback;
 	ar.fwd = text_attr_forward;
@@ -232,6 +233,13 @@ DEF_CMD(render_line)
 	if (!m)
 		return -1;
 
+	if (doc_following_pane(p, m) == '\n' &&
+	    (attr = doc_attr(p, m, 1, "renderline:func", NULL)) != NULL) {
+		/* An alternate function handles this line */
+		ret = call_comm8(attr, ci->focus, o, m, NULL, ci->extra, pm, NULL, ci->comm2);
+		if (ret)
+			return ret;
+	}
 	boundary = vmark_at_or_before(p, m, rl->view);
 	if (boundary)
 		boundary = vmark_next(boundary);
