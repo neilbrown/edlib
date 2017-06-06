@@ -295,6 +295,7 @@ DEF_CMD(mp_attr)
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m1 = NULL;
 	int ret;
+	int d;
 
 	if (!ci->mark || !ci->str)
 		return -1;
@@ -309,17 +310,34 @@ DEF_CMD(mp_attr)
 	}
 
 	m1 = ci->mark->ref.m;
+	d = ci->mark->ref.docnum;
+	if (ci->numeric != 0) {
+		/* forward */
+		while (d < mpi->nparts && !mpi->parts[d].visible)
+			d++;
+		if (d >= mpi->nparts)
+			return 1;
+		if (d != ci->mark->ref.docnum) {
+			m1 = vmark_new(mpi->parts[d].pane, MARK_UNGROUPED);
+			call3("doc:set-ref", mpi->parts[d].pane, 1, m1);
+		}
+	} else {
+		/* backward */
+		while (d >= 0 && !mpi->parts[d].visible)
+			d++;
+		if (d < 0)
+			return 1;
+		if (d != ci->mark->ref.docnum) {
+			m1 = vmark_new(mpi->parts[d].pane, MARK_UNGROUPED);
+			call3("doc:set-ref", mpi->parts[d].pane, 0, m1);
+		}
+	}
 
-	mp_check_consistent(mpi);
-
-	if (ci->mark->ref.docnum >= mpi->nparts)
-		ret = 1;
-	else
-		ret = call_home7(mpi->parts[ci->mark->ref.docnum].pane,
-				 ci->key, ci->focus, ci->numeric, m1, ci->str,
-				 ci->extra,ci->str2, NULL, ci->comm2);
-	reset_mark(ci->mark);
-	mp_check_consistent(mpi);
+	ret = call_home7(mpi->parts[d].pane,
+			 ci->key, ci->focus, ci->numeric, m1, ci->str,
+			 ci->extra,ci->str2, NULL, ci->comm2);
+	if (d != ci->mark->ref.docnum)
+		mark_free(m1);
 	return ret;
 }
 
