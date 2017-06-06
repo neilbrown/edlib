@@ -1430,6 +1430,16 @@ class notmuch_message_view(edlib.Pane):
             return 1
         if key == "Replace":
             return 1
+        if key == "Chr-/":
+            sl = []
+            focus.call("doc:get-attr", mark, "multipart:visible", lambda key,**a:take('str',sl,a))
+            if not sl:
+                return 1
+            if sl[0] == "0":
+                focus.call("doc:set-attr", mark, "multipart:visible", "1")
+            else:
+                focus.call("doc:set-attr", mark, "multipart:visible", "0")
+            return 1
         if key == "Chr- ":
             if focus.call("Next", 1, mark) == 2:
                 focus.call("Chr-n", mark)
