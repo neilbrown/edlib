@@ -397,8 +397,10 @@ DEF_CMD(doc_request_notify)
 
 DEF_CMD(doc_notify)
 {
-	return pane_notify(ci->home, ci->key, ci->mark, ci->mark2,
-			   ci->str, ci->str2, ci->numeric, ci->extra, ci->comm2);
+	int ret = pane_notify(ci->home, ci->key, ci->mark, ci->mark2,
+			      ci->str, ci->str2, ci->numeric, ci->extra, ci->comm2);
+	/* Mustn't return 0, else will fall through to next doc */
+	return ret ?: 1;
 }
 
 DEF_CMD(doc_delview)
