@@ -28,16 +28,18 @@
 
 struct email_info {
 	struct pane	*email safe;
+	struct pane	*spacer safe;
 };
 
 static int handle_content(struct pane *p safe, char *type, char *xfer,
 			  struct mark *start safe, struct mark *end safe,
-			  struct pane *mp safe);
+			  struct pane *mp safe, struct pane *spacer safe);
 
 DEF_CMD(email_close)
 {
 	struct email_info *ei = ci->home->data;
 	// ??? ;
+	pane_close(ei->spacer);
 	free(ei);
 	return 1;
 }
@@ -167,7 +169,7 @@ static int tok_matches(char *tok, int len, char *match safe)
 
 static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 			     struct mark *start safe, struct mark *end safe,
-			     struct pane *mp safe)
+			     struct pane *mp safe, struct pane *spacer safe)
 {
 	struct pane *h;
 	int need_charset = 0;
@@ -205,6 +207,7 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 			h = hx;
 	}
 	call_home(mp, "multipart-add", h, 0, NULL, NULL);
+	call_home(mp, "multipart-add", spacer, 0, NULL, NULL);
 	return 1;
 }
 
@@ -270,7 +273,7 @@ static int find_boundary(struct pane *p safe,
 
 static int handle_multipart(struct pane *p safe, char *type safe,
 			    struct mark *start safe, struct mark *end safe,
-			    struct pane *mp safe)
+			    struct pane *mp safe, struct pane *spacer safe)
 {
 	char *boundary = get_822_attr(type, "boundary");
 	int found_end = 0;
@@ -302,7 +305,7 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 		pxfer = attr_find(hdr->attrs, "rfc822-content-transfer-encoding");
 
 		pane_close(hdr);
-		handle_content(p, ptype, pxfer, start, part_end, mp);
+		handle_content(p, ptype, pxfer, start, part_end, mp, spacer);
 		mark_to_mark(start, pos);
 	}
 	mark_to_mark(start, pos);
@@ -313,8 +316,8 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 }
 
 static int handle_content(struct pane *p safe, char *type, char *xfer,
-			   struct mark *start safe, struct mark *end safe,
-			   struct pane *mp safe)
+			  struct mark *start safe, struct mark *end safe,
+			  struct pane *mp safe, struct pane *spacer safe)
 {
 	char *hdr = type;
 	char *major, *minor = NULL;
@@ -328,13 +331,13 @@ static int handle_content(struct pane *p safe, char *type, char *xfer,
 	}
 	if (major == NULL ||
 	    tok_matches(major, mjlen, "text"))
-		return handle_text_plain(p, type, xfer, start, end, mp);
+		return handle_text_plain(p, type, xfer, start, end, mp, spacer);
 
 	if (tok_matches(major, mjlen, "multipart"))
-		return handle_multipart(p, type, start, end, mp);
+		return handle_multipart(p, type, start, end, mp, spacer);
 
 	/* default to plain text until we get a better default */
-	return handle_text_plain(p, type, xfer, start, end, mp);
+	return handle_text_plain(p, type, xfer, start, end, mp, spacer);
 }
 
 DEF_CMD(open_email)
@@ -366,6 +369,12 @@ DEF_CMD(open_email)
 	h2 = call_pane8("attach-rfc822header", p, 0, start, end, 0, NULL, NULL);
 	if (!h2)
 		goto out;
+	p = call_pane7("doc:from-text", p, 0, NULL, 0, NULL, "\n");
+	if (!p) {
+		pane_close(h2);
+		goto out;
+	}
+	ei->spacer = p;
 
 	doc = doc_new(ci->focus, "text", ci->focus);
 	if (!doc)
@@ -379,8 +388,6 @@ DEF_CMD(open_email)
 	call_home7(h2, "get-header", doc, 0, point, "Subject", 0, "text", NULL, NULL);
 	call_home7(h2, "get-header", doc, 0, point, "To", 0, "list", NULL, NULL);
 	call_home7(h2, "get-header", doc, 0, point, "Cc", 0, "list", NULL, NULL);
-
-	call7("doc:replace", doc, 1, point, "\n", 1, NULL, NULL);
 
 	call_home7(h2, "get-header", h2, 0, NULL, "MIME-Version", 0, "cmd", NULL, NULL);
 	call_home7(h2, "get-header", h2, 0, NULL, "content-type", 0, "cmd", NULL, NULL);
@@ -398,9 +405,10 @@ DEF_CMD(open_email)
 	if (!p)
 		goto out;
 	call_home(p, "multipart-add", doc, 0, NULL, NULL);
+	call_home(p, "multipart-add", ei->spacer, 0, NULL, NULL);
 	call5("doc:set-attr", doc, 1, NULL, "doc:autoclose", 1);
 
-	if (handle_content(ei->email, type, xfer, start, end, p) == 0)
+	if (handle_content(ei->email, type, xfer, start, end, p, ei->spacer) == 0)
 		goto out;
 
 	h = pane_register(p, 0, &email_handle.c, ei, NULL);
