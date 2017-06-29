@@ -361,7 +361,7 @@ DEF_CMD(doc_get_attr)
 	if (a)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
 				 NULL, a, 0);
-	/* One a get-attr request reaches a document, it needs to stop there,
+	/* Once a get-attr request reaches a document, it needs to stop there,
 	 * as parents might have a different idea about attributes, and about marks
 	 */
 	return 1;
