@@ -788,8 +788,10 @@ DEF_CMD(doc_from_text)
 	p = doc_new(parent, "text", NULL);
 	if (!p)
 		return -1;
-	call5("doc:set-name", p, 0, NULL, name, 0);
-	call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
+	if (name) {
+		call5("doc:set-name", p, 0, NULL, name, 0);
+		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
+	}
 	call7("doc:replace", p, 1, NULL, text, 1, NULL, NULL);
 	return comm_call(ci->comm2, "callback", p, 0, NULL,
 			 NULL, 0);
