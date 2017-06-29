@@ -346,8 +346,10 @@ DEF_CMD(mp_set_attr)
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m = ci->mark;
 
-	if (!m || !ci->str)
+	if (!ci->str)
 		return -1;
+	if (!m)
+		return 0;
 	if (strcmp(ci->str, "multipart:visible") != 0)
 		return 0;
 

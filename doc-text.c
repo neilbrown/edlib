@@ -1644,8 +1644,10 @@ DEF_CMD(text_set_attr)
 	struct text *t = container_of(d, struct text, doc);
 	int o;
 
-	if (!ci->mark || !attr)
+	if (!attr)
 		return -1;
+	if (!ci->mark)
+		return 0;
 
 	o = ci->mark->ref.o;
 	c = ci->mark->ref.c;
