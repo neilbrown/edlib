@@ -398,8 +398,8 @@ struct mark *doc_new_mark(struct doc *d safe, int view)
 	if (view >= d->nviews ||
 	    view < MARK_UNGROUPED ||
 	    (view >= 0 && (!d->views || d->views[view].state != 1)))
-		/* Erroneous call: fail-safe */
-		view = MARK_UNGROUPED;
+		/* Erroneous call, or race with document closing down */
+		return NULL;
 	ret = calloc(1, sizeof(*ret));
 	INIT_HLIST_NODE(&ret->all);
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
