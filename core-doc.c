@@ -801,31 +801,6 @@ DEF_CMD(doc_from_text)
 			 NULL, 0);
 }
 
-DEF_CMD(doc_attr_callback)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->s = strsave(ci->focus, ci->str);
-	return 1;
-}
-
-char *doc_attr(struct pane *dp safe, struct mark *m, bool forward, char *attr, int *done)
-{
-	struct call_return cr;
-	int ret;
-
-	if (done)
-		*done = 0;
-	cr.c = doc_attr_callback;
-	cr.s = NULL;
-	ret = comm_call_pane(dp, m ? "doc:get-attr" : "get-attr", dp, !!forward, m,
-			     attr, 0, NULL, &cr.c);
-	if (ret == 0)
-		return NULL;
-	if (ret > 0 && done)
-		*done = 1;
-	return cr.s;
-}
-
 DEF_CMD(doc_str_callback)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
