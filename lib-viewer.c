@@ -80,8 +80,7 @@ DEF_CMD(viewer_appeared)
 {
 	char *t = pane_attr_get(ci->focus, "doc-type");
 	if (t && strcmp(t, "text") == 0)
-		call7("doc:set-attr", ci->focus, 0, NULL, "render-Chr-V", 0,
-		      "default:viewer", NULL);
+		attr_set_str(&ci->focus->attrs, "render-Chr-V", "default:viewer");
 	return 0;
 }
 

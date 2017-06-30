@@ -678,8 +678,8 @@ def markdown_attach(key, focus, comm2, **a):
 def markdown_appeared(key, focus, **a):
     n = focus["filename"]
     if n and n[-3:] == ".md":
-        focus.call("doc:set-attr", "render-Chr-P", "present")
-        focus.call("doc:set-attr", "render-default", "markdown")
+        focus["render-Chr-P"] = "present"
+        focus["render-default"] = "markdown"
     return 0
 
 editor.call("global-set-command", "attach-render-markdown", markdown_attach)
