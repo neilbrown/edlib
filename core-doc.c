@@ -400,7 +400,8 @@ DEF_CMD(doc_notify)
 	int ret = pane_notify(ci->home, ci->key, ci->mark, ci->mark2,
 			      ci->str, ci->str2, ci->numeric, ci->extra, ci->comm2);
 	/* Mustn't return 0, else will fall through to next doc */
-	return ret ?: 1;
+	/* HACK remove this when docs isn't the parent of all documents */
+	return ret ?: -2;
 }
 
 DEF_CMD(doc_delview)
