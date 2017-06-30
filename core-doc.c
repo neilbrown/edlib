@@ -617,7 +617,7 @@ DEF_CMD(doc_handle)
 				  ci->extra, NULL, dd->point, NULL);
 	}
 
-	if (strcmp(ci->key, "get-attr") == 0 && ci->mark == NULL) {
+	if (strcmp(ci->key, "get-attr") == 0) {
 		char *a;
 		if (!ci->str)
 			return -1;
