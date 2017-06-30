@@ -588,19 +588,31 @@ void pane_clear(struct pane *p safe, char *attrs)
 	call7("pane-clear", p, 0, NULL, NULL, 0, attrs, NULL);
 }
 
+DEF_CMD(attr_get_callback)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	cr->s = strsave(ci->focus, ci->str);
+	return 1;
+}
+
 char *pane_attr_get(struct pane *p, char *key safe)
 {
+	struct call_return cr;
+
+	cr.c = attr_get_callback;
 	while (p) {
 		char *a = attr_find(p->attrs, key);
-		int done;
+		int ret;
+
 		if (a)
 			return a;
-		a = doc_attr(p, NULL, 0, key, &done);
-		if (a || done)
-			return a;
+		cr.s = NULL;
+		ret = comm_call_pane(p, "get-attr", p, 0, NULL,
+				     key, 0, NULL, &cr.c);
+		if (ret > 0)
+			return cr.s;
 		p = p->parent;
 	}
-	/* FIXME do I want editor-wide attributes too? */
 	return NULL;
 }
 
