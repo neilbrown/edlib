@@ -539,7 +539,7 @@ static char *__docs_get_attr(struct doc *doc safe, struct mark *m safe,
 	if (strcmp(attr, "doc-type") == 0)
 		return "docs";
 
-	return doc_attr(p, NULL, 0, attr, NULL);
+	return pane_attr_get(p, attr);
 }
 
 DEF_CMD(docs_doc_get_attr)
