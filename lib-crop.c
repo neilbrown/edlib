@@ -110,7 +110,7 @@ DEF_CMD(crop_attach)
 		free(cd);
 		return -1;
 	}
-	call5("doc:set-attr", p, 1, NULL, "doc:filter", 1);
+	call5("doc:set:filter", p, 1, NULL, NULL, 0);
 	cd->start = mark_dup(ci->mark, 1);
 	cd->end = mark_dup(ci->mark2, 1);
 

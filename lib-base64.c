@@ -221,7 +221,7 @@ DEF_CMD(b64_attach)
 		free(bi);
 		return -1;
 	}
-	call5("doc:set-attr", p, 1, NULL, "doc:filter", 1);
+	call5("doc:set:filter", p, 1, NULL, NULL, 0);
 
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }

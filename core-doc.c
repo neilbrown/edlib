@@ -326,24 +326,25 @@ DEF_CMD(doc_attr_set)
 {
 	struct doc *d = ci->home->data;
 
-	if (!ci->str)
-		return -1;
-	if (strcmp(ci->str, "doc:autoclose") == 0 && ci->extra == 1) {
+	/* if a non-filter doesn't support attr_set, don't let it fall through */
+	return d->filter ? 0 : 1;
+}
+
+DEF_CMD(doc_set)
+{
+	struct doc *d = ci->home->data;
+	char *val = ci->key + 8;
+
+	if (strcmp(val, "autoclose") == 0) {
 		d->autoclose = ci->numeric;
 		return 1;
 	}
-	if (strcmp(ci->str, "doc:filter") == 0 && ci->extra == 1) {
+	if (strcmp(val, "filter") == 0) {
 		d->filter = ci->numeric;
 		return 1;
 	}
-
-	if (ci->str2 == NULL && ci->extra == 1)
-		attr_set_int(&d->home->attrs, ci->str, ci->numeric);
-	else
-		attr_set_str(&d->home->attrs, ci->str, ci->str2);
-	return 1;
+	return d->filter ? 0 : 1;
 }
-
 DEF_CMD(doc_get_attr)
 {
 	struct pane *p = ci->home; struct doc *d = p->data;
@@ -537,6 +538,8 @@ static void init_doc_cmds(void)
 		      &doc_request_notify);
 	key_add_range(doc_default_cmd, "Notify:doc:", "Notify:doc;",
 		      &doc_notify);
+	key_add_range(doc_default_cmd, "doc:set:", "doc:set;",
+		      &doc_set);
 }
 
 DEF_CMD(doc_handle)
@@ -755,9 +758,9 @@ DEF_CMD(doc_open)
 			return -1;
 		}
 		if (autoclose)
-			call5("doc:set-attr", p, 1, NULL, "doc:autoclose", 1);
+			call5("doc:set:autoclose", p, 1, NULL, NULL, 0);
 		if (filter)
-			call5("doc:set-attr", p, 1, NULL, "doc:filter", 1);
+			call5("doc:set:filter", p, 1, NULL, NULL, 0);
 		call5("doc:load-file", p, 0, NULL, name, fd);
 		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	}

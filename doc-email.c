@@ -379,7 +379,7 @@ DEF_CMD(open_email)
 	doc = doc_new(ci->focus, "text", ci->focus);
 	if (!doc)
 		goto out;
-	call5("doc:set-attr", doc, 1, NULL, "doc:autoclose", 1);
+	call5("doc:set:autoclose", doc, 1, NULL, NULL, 0);
 	point = vmark_new(doc, MARK_POINT);
 	if (!point)
 		goto out;
@@ -406,14 +406,14 @@ DEF_CMD(open_email)
 		goto out;
 	call_home(p, "multipart-add", doc, 0, NULL, NULL);
 	call_home(p, "multipart-add", ei->spacer, 0, NULL, NULL);
-	call5("doc:set-attr", doc, 1, NULL, "doc:autoclose", 1);
+	call5("doc:set:autoclose", doc, 1, NULL, NULL, 0);
 
 	if (handle_content(ei->email, type, xfer, start, end, p, ei->spacer) == 0)
 		goto out;
 
 	h = pane_register(p, 0, &email_handle.c, ei, NULL);
 	if (h) {
-		call5("doc:set-attr", h, 1, NULL, "doc:filter", 1);
+		call5("doc:set:filter", h, 1, NULL, NULL, 0);
 		mark_free(start);
 		mark_free(end);
 		attr_set_str(&h->attrs, "render-default", "text");
