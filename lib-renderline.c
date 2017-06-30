@@ -234,7 +234,7 @@ DEF_CMD(render_line)
 		return -1;
 
 	if (doc_following_pane(p, m) == '\n' &&
-	    (attr = doc_attr(p, m, 1, "renderline:func", NULL)) != NULL) {
+	    (attr = pane_mark_attr(p, m, 1, "renderline:func")) != NULL) {
 		/* An alternate function handles this line */
 		ret = call_comm8(attr, ci->focus, o, m, NULL, ci->extra, pm, NULL, ci->comm2);
 		if (ret)
