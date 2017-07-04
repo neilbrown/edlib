@@ -1,24 +1,31 @@
 /*
- * Copyright Neil Brown ©2016 <neil@brown.name>
+ * Copyright Neil Brown ©2016-2017 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * Document management is eased by having a well defined collection
- * of documents.  This module provides a pane to manage that collection.
+ * of documents.  This module provides a pane and a document to manage
+ * that collection.
  *
- * Collected documents are attached as children of this pane.  The pane
- * itself provides a "*Documents*" document which can be used to browse
- * the document list.
+ * The document presents as a list of documents, called "*Documents*",
+ * providing a "line-format" to guide display of each line.
+ * The auxiliary pane becomes the parent of all attached documents, so
+ * that the list of children is exactly the content of the document.
+ * This pane responds to doc:revisit and doc:status-changed commands that
+ * come down from the individual documents.
  *
- * Supported operations include:
+ * Supported global operations include:
  * docs:byname - report pane with given (str)name
- * docs:byid - find pane for doc with given (str)id - ID provided by handler and
- *             typically involves device/inode information
- * docs:attach - the (focus) document is added to the list if not already there,
- *               and placed at the top, or bottom if numeric < 0
- * docs:setname - assign the (str)name to the (focus)document, but ensure it is unique.
+ * docs:byfd - find a document given a path and file-descriptor.  Each document is asked
+ *    whether it matches the path and/or fd.
+ * docs:choose - choose and return a document which is not currently displayed somewhere.
+ * docs:save-all - each each document to save itself
+ * docs:show-modified - display a pane, in given window, listing just the documents
+ *   that are modified and might need saving.  Pane auto-closes when empty.
  *
- * After a document is created and bound to a pane "docs:attach" is called
- * which adds that pane to the list.
+ * After a document is created and bound to a pane "doc:appeared-*" is called
+ * which adds that pane to the list if it isn't already attached somewhere else.
+ * If docs sees two documents with the same name, it changes one to keep them
+ * all unique.
  *
  */
 
@@ -38,6 +45,7 @@ struct doc_ref {
 struct docs {
 	struct doc		doc;
 	struct command		callback;
+	struct pane		*collection safe;
 };
 
 static void docs_demark(struct docs *doc safe, struct pane *p safe)
@@ -46,12 +54,13 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 	 * Any mark pointing at it is moved forward
 	 */
 	struct mark *m;
+	struct pane *col = doc->collection;
 
 	for (m = doc_first_mark_all(&doc->doc);
 	     m;
 	     m = doc_next_mark_all(m))
 		if (m->ref.p == p) {
-			if (p == list_last_entry(&doc->doc.home->children,
+			if (p == list_last_entry(&col->children,
 						 struct pane, siblings))
 				m->ref.p = NULL;
 			else if (!p->parent || list_empty(&p->siblings))
@@ -72,8 +81,9 @@ static void docs_enmark(struct docs *doc safe, struct pane *p safe)
 	 */
 	struct mark *m;
 	struct pane *next;
+	struct pane *col = doc->collection;
 
-	if (p == list_last_entry(&doc->doc.home->children, struct pane, siblings))
+	if (p == list_last_entry(&col->children, struct pane, siblings))
 		next = NULL;
 	else
 		next = list_next_entry(p, siblings);
@@ -119,7 +129,7 @@ static void check_name(struct docs *docs safe, struct pane *pane safe)
 			sprintf(nname, "%s<%d>", d->name, unique);
 		else
 			strcpy(nname, d->name);
-		list_for_each_entry(p, &docs->doc.home->children, siblings) {
+		list_for_each_entry(p, &docs->collection->children, siblings) {
 			struct doc *d2 = p->data;
 			if (d != d2 && d2->name && strcmp(nname, d2->name) == 0) {
 				conflict = 1;
@@ -142,9 +152,9 @@ static void doc_checkname(struct pane *p safe, struct docs *ds safe, int n)
 	if (n) {
 		docs_demark(ds, p);
 		if (n > 0)
-			list_move(&p->siblings, &ds->doc.home->children);
+			list_move(&p->siblings, &ds->collection->children);
 		else
-			list_move_tail(&p->siblings, &ds->doc.home->children);
+			list_move_tail(&p->siblings, &ds->collection->children);
 		docs_enmark(ds, p);
 	}
 }
@@ -191,6 +201,9 @@ DEF_CMD(docs_modified_handle)
 {
 	struct mark *m;
 
+	/* This is a view showing the list of modified documents.
+	 * home->parent is a view on the docs doc.
+	 */
 	if (!ci->home->parent)
 		/* Should never happen */
 		return -1;
@@ -267,13 +280,13 @@ DEF_CMD(docs_modified_handle)
 		struct docs *doc = ci->home->data;
 		struct pane *p1 = ci->mark->ref.p;
 		struct pane *p2 = ci->mark2->ref.p;
-		list_for_each_entry_from(p1, &doc->doc.home->children, siblings) {
+		list_for_each_entry_from(p1, &doc->collection->children, siblings) {
 			char *fn = pane_attr_get(p1, "filename");
 			char *mod = pane_attr_get(p1, "doc-modified");
 			if (fn && *fn && mod && strcmp(mod, "yes") == 0)
 				break;
 		}
-		list_for_each_entry_from(p2, &doc->doc.home->children, siblings) {
+		list_for_each_entry_from(p2, &doc->collection->children, siblings) {
 			char *fn = pane_attr_get(p2, "filename");
 			char *mod = pane_attr_get(p2, "doc-modified");
 			if (fn && *fn && mod && strcmp(mod, "yes") == 0)
@@ -302,7 +315,7 @@ DEF_CMD(docs_callback)
 		if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0)
 			return comm_call(ci->comm2, "callback:doc", doc->doc.home,
 					 0, NULL, NULL, 0);
-		list_for_each_entry(p, &doc->doc.home->children, siblings) {
+		list_for_each_entry(p, &doc->collection->children, siblings) {
 			struct doc *dc = p->data;
 			char *n = dc->name;
 			if (n && strcmp(ci->str, n) == 0)
@@ -312,7 +325,7 @@ DEF_CMD(docs_callback)
 		return -1;
 	}
 	if (strcmp(ci->key, "docs:byfd") == 0) {
-		list_for_each_entry(p, &doc->doc.home->children, siblings) {
+		list_for_each_entry(p, &doc->collection->children, siblings) {
 			if (call5("doc:same-file", p, 0, NULL, ci->str,
 				    ci->extra) > 0)
 				return comm_call(ci->comm2, "callback:doc", p, 0,
@@ -325,7 +338,7 @@ DEF_CMD(docs_callback)
 		 * but ignore 'deleting' */
 		struct pane *choice = NULL, *last = NULL;
 
-		list_for_each_entry(p, &doc->doc.home->children, siblings) {
+		list_for_each_entry(p, &doc->collection->children, siblings) {
 			struct doc *d = p->data;
 			if (p->damaged & DAMAGED_CLOSED)
 				continue;
@@ -348,7 +361,7 @@ DEF_CMD(docs_callback)
 	}
 
 	if (strcmp(ci->key, "docs:save-all") == 0) {
-		list_for_each_entry(p, &doc->doc.home->children, siblings)
+		list_for_each_entry(p, &doc->collection->children, siblings)
 			doc_save(p, p);
 		return 1;
 	}
@@ -373,9 +386,9 @@ DEF_CMD(docs_callback)
 			 */
 			return 0;
 		if (p == doc->doc.home)
-			/* The docs doc is implicitly attached */
+			/* The docs doc is attached separately */
 			return 0;
-		call_home(p, "doc:set-parent", doc->doc.home,
+		call_home(p, "doc:set-parent", doc->collection,
 			  0, NULL, NULL);
 		if (p->parent)
 			doc_checkname(p, doc, ci->numeric);
@@ -408,9 +421,9 @@ DEF_CMD(doc_revisit)
 	struct docs *docs = container_of(ci->home->data, struct docs, doc);
 	if (!p)
 		return -1;
-	if (p->parent != ci->home)
+	if (p->parent != docs->collection)
 		return 0;
-	if (p == docs->doc.home)
+	if (p == ci->home)
 		return 1;
 	doc_checkname(p, docs, ci->numeric);
 	return 1;
@@ -425,6 +438,7 @@ DEF_CMD(docs_step)
 	bool move = ci->extra;
 	int ret;
 	struct pane *p, *next;
+	struct docs *d = container_of(doc, struct docs, doc);
 
 	if (!m)
 		return -1;
@@ -434,7 +448,7 @@ DEF_CMD(docs_step)
 	p = m->ref.p;
 	if (forward) {
 		/* report on d */
-		if (p == NULL || p == list_last_entry(&doc->home->children,
+		if (p == NULL || p == list_last_entry(&d->collection->children,
 						      struct pane, siblings))
 			next = NULL;
 		else
@@ -446,12 +460,12 @@ DEF_CMD(docs_step)
 				target = m2;
 	} else {
 		next = p;
-		if (list_empty(&doc->home->children))
+		if (list_empty(&d->collection->children))
 			p = NULL;
 		else if (!p)
-			p = list_last_entry(&doc->home->children,
+			p = list_last_entry(&d->collection->children,
 					    struct pane, siblings);
-		else if (p != list_first_entry(&doc->home->children,
+		else if (p != list_first_entry(&d->collection->children,
 					       struct pane, siblings))
 			p = list_prev_entry(p, siblings);
 		else
@@ -473,8 +487,8 @@ DEF_CMD(docs_step)
 		ret = WEOF;
 	else
 		ret = ' ';
-	/* return value must be +ve, so use high bits to ensure this. */
-	return (ret & 0xFFFFF) | 0x100000;
+
+	return CHAR_RET(ret);
 }
 
 DEF_CMD(docs_set_ref)
@@ -488,8 +502,8 @@ DEF_CMD(docs_set_ref)
 	if (call3("doc:mymark", ci->home, 0, m) != 1)
 		return -1;
 
-	if (ci->numeric == 1 && !list_empty(&d->doc.home->children))
-		m->ref.p = list_first_entry(&d->doc.home->children,
+	if (ci->numeric == 1 && !list_empty(&d->collection->children))
+		m->ref.p = list_first_entry(&d->collection->children,
 					    struct pane, siblings);
 	else
 		m->ref.p = NULL;
@@ -515,15 +529,16 @@ static char *__docs_get_attr(struct doc *doc safe, struct mark *m safe,
 			     bool forward, char *attr safe)
 {
 	struct pane *p;
+	struct docs *d = container_of(doc, struct docs, doc);
 
 	p = m->ref.p;
 	if (!forward) {
-		if (list_empty(&doc->home->children))
+		if (list_empty(&d->collection->children))
 			p = NULL;
 		else if (!p)
-			p = list_last_entry(&doc->home->children,
+			p = list_last_entry(&d->collection->children,
 					    struct pane, siblings);
-		else if (p != list_first_entry(&doc->home->children,
+		else if (p != list_first_entry(&d->collection->children,
 					       struct pane, siblings))
 			p = list_prev_entry(p, siblings);
 		else
@@ -533,11 +548,9 @@ static char *__docs_get_attr(struct doc *doc safe, struct mark *m safe,
 		return NULL;
 
 	if (strcmp(attr, "name") == 0) {
-		struct doc *d = p->data;
-		return d->name;
+		struct doc *d2 = p->data;
+		return d2->name;
 	}
-	if (strcmp(attr, "doc-type") == 0)
-		return "docs";
 
 	return pane_attr_get(p, attr);
 }
@@ -716,7 +729,7 @@ static int docs_toggle(struct pane *focus safe, struct mark *m)
 
 DEF_CMD(docs_destroy)
 {
-	/* Not allowed to destroy this document 
+	/* Not allowed to destroy this document
 	 * So handle command here, so we don't get
 	 * to the default handler
 	 */
@@ -763,13 +776,14 @@ DEF_CMD(docs_cmd)
 	}
 }
 
-static struct map *docs_map;
+static struct map *docs_map, *docs_aux_map;
 
 static void docs_init_map(void)
 {
 	if (docs_map)
 		return;
 	docs_map = key_alloc();
+	docs_aux_map = key_alloc();
 	/* A "docs" document provides services to children and also behaves as
 	 * a document which lists those children
 	 */
@@ -778,16 +792,18 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:get-attr", &docs_doc_get_attr);
 	key_add(docs_map, "doc:mark-same", &docs_mark_same);
 	key_add(docs_map, "doc:step", &docs_step);
-	key_add(docs_map, "doc:revisit", &doc_revisit);
-	key_add(docs_map, "doc:status-changed", &doc_damage);
 	key_add(docs_map, "doc:destroy", &docs_destroy);
 	key_add(docs_map, "doc:replace", &docs_cmd);
 
 	key_add(docs_map, "get-attr", &docs_get_attr);
-	key_add(docs_map, "ChildClosed", &docs_child_closed);
+
+	key_add(docs_aux_map, "doc:revisit", &doc_revisit);
+	key_add(docs_aux_map, "doc:status-changed", &doc_damage);
+	key_add(docs_aux_map, "ChildClosed", &docs_child_closed);
 }
 
 DEF_LOOKUP_CMD_DFLT(docs_handle, docs_map, doc_default_cmd);
+DEF_LOOKUP_CMD(docs_aux, docs_aux_map);
 
 DEF_CMD(attach_docs)
 {
@@ -808,6 +824,12 @@ DEF_CMD(attach_docs)
 		return -1;
 	}
 	doc->doc.home = p;
+	p = pane_register(ci->home, 0, &docs_aux.c, doc, NULL);
+	if (!p) {
+		pane_close(doc->doc.home);
+		return -1;
+	}
+	doc->collection = p;
 
 	doc->callback = docs_callback;
 	call_comm7("global-set-command", ci->home, 0, NULL, "docs:", 0, "docs;",
@@ -815,7 +837,10 @@ DEF_CMD(attach_docs)
 	call_comm("global-set-command", ci->home, 0, NULL,
 		  "doc:appeared-docs-register", 0, &doc->callback);
 
-	return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
+	call_home(p, "doc:set-parent", doc->collection,
+		  0, NULL, NULL);
+
+	return comm_call(ci->comm2, "callback:doc", doc->doc.home, 0, NULL, NULL, 0);
 }
 
 void edlib_init(struct pane *ed safe)
