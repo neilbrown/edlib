@@ -309,6 +309,23 @@ DEF_CMD(mp_attr)
 		return 1;
 	}
 
+	if (strcmp(ci->str, "multipart:visible-next") == 0) {
+		if (ci->mark->ref.docnum+1 < mpi->nparts &&
+		    mpi->parts[ci->mark->ref.docnum+1].visible)
+			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "1", 0);
+		else
+			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "0", 0);
+		return 1;
+	}
+	if (strcmp(ci->str, "multipart:visible-prev") == 0) {
+		if (ci->mark->ref.docnum-1 >= 0 &&
+		    mpi->parts[ci->mark->ref.docnum-1].visible)
+			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "1", 0);
+		else
+			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "0", 0);
+		return 1;
+	}
+
 	m1 = ci->mark->ref.m;
 	d = ci->mark->ref.docnum;
 	if (ci->numeric != 0) {
@@ -345,22 +362,30 @@ DEF_CMD(mp_set_attr)
 {
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m = ci->mark;
+	int dn;
 
 	if (!ci->str)
 		return -1;
 	if (!m)
 		return 0;
-	if (strcmp(ci->str, "multipart:visible") != 0)
+	if (strcmp(ci->str, "multipart:visible") == 0)
+		dn = m->ref.docnum;
+	else if (strcmp(ci->str, "multipart:visible-prev") == 0)
+		dn = m->ref.docnum - 1;
+	else if (strcmp(ci->str, "multipart:visible-next") == 0)
+		dn = m->ref.docnum + 1;
+	else
 		return 0;
 
-	if (m->ref.docnum >= mpi->nparts)
+	if (dn < 0 || dn >= mpi->nparts)
 		return -1;
+
 	if ((ci->str2 && atoi(ci->str2) > 0) ||
 	    (ci->str2 == NULL && ci->extra == 1 && ci->numeric > 0))
-		mpi->parts[m->ref.docnum].visible = 1;
+		mpi->parts[dn].visible = 1;
 	else
-		mpi->parts[m->ref.docnum].visible = 0;
-	pane_notify(ci->home, "Notify:doc:Replace", m, NULL, NULL, NULL, 0, 0, NULL);
+		mpi->parts[dn].visible = 0;
+	pane_notify(ci->home, "Notify:doc:Replace", NULL, NULL, NULL, NULL, 0, 0, NULL);
 	return 1;
 }
 
