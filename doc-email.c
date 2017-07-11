@@ -25,6 +25,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "core.h"
+#include "misc.h"
 
 struct email_info {
 	struct pane	*email safe;
@@ -39,11 +40,81 @@ DEF_CMD(email_close)
 {
 	struct email_info *ei = ci->home->data;
 	// ??? ;
-	pane_close(ei->spacer);
+	call3("doc:closed", ei->spacer, 0, NULL);
 	free(ei);
 	return 1;
 }
 
+static int cond_append(struct buf *b safe, char *txt safe, int offset,
+			struct mark *pm, struct mark *m safe)
+{
+	if (offset != NO_NUMERIC && offset >= 0 && offset < b->len + (int)strlen(txt))
+		return 0;
+	if (pm && pm->rpos == m->rpos) {
+		buf_concat_len(b, txt, strlen(txt)/2);
+		return 0;
+	}
+	buf_concat(b, txt);
+	m->rpos += 1;
+	return 1;
+}
+
+DEF_CMD(email_spacer)
+{
+	struct buf b;
+	int visible = 1;
+	struct mark *m = ci->mark;
+	struct mark *pm = ci->mark2;
+	int o = ci->numeric;
+	char *attr;
+	int ret;
+
+	if (!m)
+		return -1;
+
+	attr = pane_mark_attr(ci->home, m, 1, "multipart:visible-prev");
+	if (attr && *attr == '0')
+		visible = 0;
+
+	m->rpos = 0;
+	buf_init(&b);
+	buf_concat(&b, "<fg:red>");
+
+	if (cond_append(&b, visible ? "[HIDE]" : "[SHOW]", o, pm, m) &&
+	    cond_append(&b, "[Save]",  o, pm, m) &&
+	    cond_append(&b, "[Open]",  o, pm, m) &&
+	    cond_append(&b, "</>\n", o, pm, m)) {
+		m->rpos = 0;
+		mark_next_pane(ci->home, m);
+	}
+
+	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
+			buf_final(&b), 0);
+	free(b.b);
+	return ret;
+}
+
+DEF_CMD(email_select)
+{
+	/* If mark is on a button, press it... */
+	struct mark *m = ci->mark;
+	char *a;
+
+	if (!m)
+		return -1;
+	a = pane_mark_attr(ci->home, m, 1, "renderline:func");
+	if (!a || strcmp(a, "doc:email:render-spacer") != 0)
+		return 0;
+	switch(m->rpos) {
+	case 0:
+		a = pane_mark_attr(ci->home, m, 1, "multipart:visible-prev");
+		if (a && *a == '0')
+			call7("doc:set-attr", ci->home, 1, m, "multipart:visible-prev", 0, "1", NULL);
+		else
+			call7("doc:set-attr", ci->home, 1, m, "multipart:visible-prev", 0, "0", NULL);
+	}
+	return 1;
+}
 
 static struct map *email_map safe;
 
@@ -51,6 +122,8 @@ static void email_init_map(void)
 {
 	email_map = key_alloc();
 	key_add(email_map, "Close", &email_close);
+	key_add(email_map, "doc:email:render-spacer", &email_spacer);
+	key_add(email_map, "doc:email:select", &email_select);
 }
 DEF_LOOKUP_CMD(email_handle, email_map);
 
@@ -375,6 +448,11 @@ DEF_CMD(open_email)
 		goto out;
 	}
 	ei->spacer = p;
+	point = vmark_new(p, MARK_POINT);
+	call3("doc:set-ref", p, 1, point);
+	call7("doc:set-attr", p, 1, point, "renderline:func", 0,
+	      "doc:email:render-spacer", NULL);
+	mark_free(point);
 
 	doc = doc_new(ci->focus, "text", ci->focus);
 	if (!doc)
