@@ -229,17 +229,17 @@ DEF_CMD(doc_eol)
 
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next_pane(p, m)) != WEOF &&
-		       ch != '\n')
+		       !is_eol(ch))
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
 		while ((ch = mark_prev_pane(p, m)) != WEOF &&
-		       ch != '\n')
+		       !is_eol(ch))
 			;
 		rpt += 1;
 	}
-	if (ch == '\n') {
+	if (is_eol(ch)) {
 		if (RPT_NUM(ci) > 0)
 			mark_prev_pane(p, m);
 		else if (RPT_NUM(ci) < 0)
@@ -276,13 +276,13 @@ DEF_CMD(doc_line)
 
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next_pane(p, m)) != WEOF &&
-		       ch != '\n')
+		       !is_eol(ch))
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
 		while ((ch = mark_prev_pane(p, m)) != WEOF &&
-		       ch != '\n')
+		       !is_eol(ch))
 			;
 		rpt += 1;
 	}
@@ -304,13 +304,13 @@ DEF_CMD(doc_page)
 	rpt *= ci->home->h-2;
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next_pane(p, m)) != WEOF &&
-		       ch != '\n')
+		       !is_eol(ch))
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
 		while ((ch = mark_prev_pane(p, m)) != WEOF &&
-		       ch != '\n')
+		       !is_eol(ch))
 			;
 		rpt += 1;
 	}

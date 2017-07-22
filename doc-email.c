@@ -442,7 +442,7 @@ DEF_CMD(open_email)
 	h2 = call_pane8("attach-rfc822header", p, 0, start, end, 0, NULL, NULL);
 	if (!h2)
 		goto out;
-	p = call_pane7("doc:from-text", p, 0, NULL, 0, NULL, "\n");
+	p = call_pane7("doc:from-text", p, 0, NULL, 0, NULL, "\v");
 	if (!p) {
 		pane_close(h2);
 		goto out;

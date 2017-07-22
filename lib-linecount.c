@@ -51,7 +51,7 @@ static void do_count(struct pane *p safe, struct mark *start safe, struct mark *
 	while ((end == NULL || (mark_ordered_not_same_pane(p, m, end))) &&
 	       (ch = mark_next_pane(p, m)) != WEOF) {
 		chars += 1;
-		if (ch == '\n')
+		if (is_eol(ch))
 			lines += 1;
 		if (!inword && (iswprint(ch) && !iswspace(ch))) {
 			inword = 1;
@@ -95,7 +95,7 @@ static int need_recalc(struct pane *p safe, struct mark *m)
 		next = doc_next_mark_view(m);
 		if (!next)
 			break;
-		if (doc_prior_pane(p, next) == '\n' &&
+		if (is_eol(doc_prior_pane(p, next)) &&
 		    attr_find_int(*mark_attr(next), "lines") > 10)
 			break;
 		/* discard next - we'll find or create another */

@@ -117,7 +117,7 @@ REDEF_CMD(emacs_delete)
 
 	if (strcmp(mv->type, "Move-EOL") == 0 &&
 	    mv->direction == 1 && RPT_NUM(ci) == 1 &&
-	    doc_following_pane(ci->focus, m) == '\n')
+	    is_eol(doc_following_pane(ci->focus, m)))
 		ret = call3("Move-Char", ci->focus, mv->direction * RPT_NUM(ci), m);
 	else
 		ret = call3(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);

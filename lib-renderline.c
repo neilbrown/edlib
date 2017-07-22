@@ -2,6 +2,14 @@
  * Copyright Neil Brown ©2016 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
+ * This module provides render-line and render-line-prev, making use of
+ * the chars returned by doc:step.
+ * A line is normally text ending with a newline.  However if no newline
+ * is found in a long distance, we drop a mark and use that as the start
+ * of a line.
+ * A vertial tab '\v' acts like a newline but forces it to be a blank line.
+ * A "\v" immediately after "\m" or "\v" is exactly like a newline, while
+ * "\v" after anything else terminates the line without consuming the newline.
  */
 
 
@@ -49,7 +57,7 @@ DEF_CMD(render_prev)
 		return -1;
 
 	while ((ch = mark_prev_pane(p, m)) != WEOF &&
-	       (ch != '\n' || rpt > 0) &&
+	       (!is_eol(ch) || rpt > 0) &&
 	       count < LARGE_LINE &&
 	       (!boundary || mark_ordered(boundary, m))) {
 		rpt = 0;
@@ -57,7 +65,7 @@ DEF_CMD(render_prev)
 			boundary = vmark_at_or_before(p, m, rl->view);
 		count += 1;
 	}
-	if (ch != WEOF && ch != '\n') {
+	if (ch != WEOF && !is_eol(ch)) {
 		/* need to ensure there is a stable boundary here */
 		if (!boundary || !mark_ordered(boundary, m)) {
 			boundary = vmark_new(p, rl->view);
@@ -68,8 +76,9 @@ DEF_CMD(render_prev)
 	}
 	if (ch == WEOF && rpt)
 		return -2;
-	if (ch == '\n')
-		/* Found a '\n', so step back over it for start-of-line. */
+	if (ch == '\n' || (ch == '\v' &&
+			   ((ch = doc_prior_pane(p, m)) == WEOF || !is_eol(ch))))
+		/* Found a '\n', so step forward over it for start-of-line. */
 		mark_next_pane(p, m);
 	return 1;
 }
@@ -218,7 +227,7 @@ DEF_CMD(render_line)
 	struct mark *pm = ci->mark2; /* The location to render as cursor */
 	struct mark *boundary;
 	int o = ci->numeric;
-	wint_t ch = WEOF;
+	wint_t ch;
 	int chars = 0;
 	int ret;
 	struct attr_return ar;
@@ -233,7 +242,8 @@ DEF_CMD(render_line)
 	if (!m)
 		return -1;
 
-	if (doc_following_pane(p, m) == '\n' &&
+	ch = doc_following_pane(p, m);
+	if (is_eol(ch) &&
 	    (attr = pane_mark_attr(p, m, 1, "renderline:func")) != NULL) {
 		/* An alternate function handles this line */
 		ret = call_comm8(attr, ci->focus, o, m, NULL, ci->extra, pm, NULL, ci->comm2);
@@ -276,8 +286,10 @@ DEF_CMD(render_line)
 		ch = mark_next_pane(p, m);
 		if (ch == WEOF)
 			break;
-		if (ch == '\n') {
+		if (is_eol(ch)) {
 			add_newline = 1;
+			if (ch == '\v' && b.len > 0)
+				mark_prev_pane(p, m);
 			break;
 		}
 		if (boundary && boundary->seq <= m->seq)
@@ -289,7 +301,7 @@ DEF_CMD(render_line)
 			}
 			buf_append(&b, '<');
 		}
-		if (ch < ' ' && ch != '\t' && ch != '\n') {
+		if (ch < ' ' && ch != '\t' && !is_eol(ch)) {
 			buf_concat(&b, "<fg:red>^");
 			buf_append(&b, '@' + ch);
 			buf_concat(&b, "</>");
