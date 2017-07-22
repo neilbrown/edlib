@@ -1236,7 +1236,6 @@ DEF_CMD(text_set_ref)
 		m->ref.c = list_first_entry(&t->text, struct text_chunk, lst);
 		m->ref.o = m->ref.c->start;
 	}
-	m->rpos = 0;
 	mark_to_end(d, m, ci->numeric != 1);
 	return 1;
 }

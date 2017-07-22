@@ -249,7 +249,6 @@ class notmuch_main(edlib.Doc):
                 mark.offset = 0
             else:
                 mark.offset = len(self.searches.current)
-            mark.rpos = 0
             self.to_end(mark, numeric == 0);
 
             return 1
@@ -1159,7 +1158,6 @@ class notmuch_list(edlib.Doc):
             if numeric == 1 and len(self.threadids) > 0:
                 i,j,moved,mark.pos = self.pos_index((self.threadids[0],),[str2], str2 and xy[0])
             mark.offset = 0
-            mark.rpos = 0
             self.to_end(mark, numeric == 0)
             return 1
 

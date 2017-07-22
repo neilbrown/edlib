@@ -340,7 +340,6 @@ DEF_CMD(dir_set_ref)
 	else
 		m->ref.d = list_first_entry(&dr->ents, struct dir_ent, lst);
 	m->ref.ignore = 0;
-	m->rpos = 0;
 	mark_to_end(d, m, ci->numeric != 1);
 	return 1;
 }
