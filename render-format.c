@@ -46,7 +46,9 @@ DEF_CMD(render_line)
 	if (!body)
 		body = "%+name";
 	n = body;
-	m->rpos = field - rf->home_field;
+	m->rpos = field;
+	if (pm && (pm->rpos == NO_RPOS|| pm->rpos == NEVER_RPOS))
+		pm->rpos = rf->home_field;
 	if (pm && pm->rpos == m->rpos)
 		goto endwhile;
 	if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
@@ -66,7 +68,7 @@ DEF_CMD(render_line)
 		}
 		if (n[1] == '+' || n[1] == '.')
 			field += 1;
-		m->rpos = field - rf->home_field;
+		m->rpos = field;
 
 		if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
 		    ret.len >= ci->numeric)
@@ -143,7 +145,7 @@ endwhile:
 	if (!*n) {
 		rf->fields = field;
 		rf->home_field = home;
-		m->rpos = field - rf->home_field;
+		m->rpos = field;
 		if (pm && pm->rpos == m->rpos)
 			;
 		else if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC)
@@ -195,10 +197,12 @@ DEF_CMD(format_move_line)
 {
 	int rpt = RPT_NUM(ci);
 	struct rf_data *rf = ci->home->data;
+	int f;
 
 	if (!ci->mark)
 		return -1;
 
+	f = ci->mark->rpos;
 	while (rpt > 1) {
 		if (mark_next_pane(ci->focus, ci->mark) == WEOF)
 			break;
@@ -210,9 +214,11 @@ DEF_CMD(format_move_line)
 		rpt += 1;
 	}
 	if (rpt < 0)
-		ci->mark->rpos = -rf->home_field;
+		ci->mark->rpos = 0;
 	if (rpt > 0)
-		ci->mark->rpos = rf->fields - rf->home_field;
+		ci->mark->rpos = rf->fields;
+	if (rpt == 0)
+		ci->mark->rpos = f;
 
 	return 1;
 }
@@ -228,26 +234,38 @@ DEF_CMD(format_move_horiz)
 	if (!ci->mark)
 		return -1;
 	while (rpt > 0 && doc_following_pane(ci->focus, ci->mark) != WEOF) {
-		if (ci->mark->rpos < rf->fields - rf->home_field)
+		if (ci->mark->rpos < rf->fields)
 			ci->mark->rpos += 1;
 		else {
 			if (mark_next_pane(ci->focus, ci->mark) == WEOF)
 				break;
-			ci->mark->rpos = -rf->home_field;
+			ci->mark->rpos = 0;
 		}
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		if (ci->mark->rpos > -rf->home_field)
+		if (ci->mark->rpos > 0)
 			ci->mark->rpos -= 1;
 		else {
 			if (mark_prev_pane(ci->focus, ci->mark) == WEOF)
 				break;
-			ci->mark->rpos = rf->fields - rf->home_field;
+			ci->mark->rpos = rf->fields;
 		}
 		rpt += 1;
 	}
 	return 1;
+}
+
+DEF_CMD(format_move_file)
+{
+	struct rf_data *rf = ci->home->data;
+	int ret;
+
+	if (!ci->mark || !ci->home->parent)
+		return -1;
+	ret = call3(ci->key, ci->home->parent, ci->numeric, ci->mark);
+	ci->mark->rpos = rf->home_field;
+	return ret;
 }
 
 static struct map *rf_map;
@@ -265,6 +283,7 @@ static void render_format_register_map(void)
 	key_add(rf_map, "Move-Char", &format_move_horiz);
 	key_add(rf_map, "Move-Word", &format_move_horiz);
 	key_add(rf_map, "Move-WORD", &format_move_horiz);
+	key_add(rf_map, "Move-File", &format_move_file);
 }
 
 DEF_LOOKUP_CMD(render_format_handle, rf_map);

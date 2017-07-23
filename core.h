@@ -152,14 +152,18 @@ struct mark {
 	struct attrset		*attrs;
 	int			seq;
 	short			viewnum;
-	short			rpos;	/* Used by renderer to identify positions within
-					 * a document object (which displays as more than
-					 * one char).
+	unsigned short		rpos;	/* Used by renderer to identify
+					 * positions within a document object
+					 * (which displays as more than one
+					 * char).
 					 */
 	MARK_DATA_PTR		*mdata;
 	void			*mtype;	/* can be used to validate type of mdata */
 	void			(*refcnt)(struct mark *m safe, int cnt);
 };
+
+#define NEVER_RPOS (USHRT_MAX)
+#define NO_RPOS (USHRT_MAX-1)
 
 /* A point uses this for the mdata */
 struct point_links {

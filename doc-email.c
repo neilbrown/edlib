@@ -77,6 +77,8 @@ DEF_CMD(email_spacer)
 		visible = 0;
 
 	m->rpos = 0;
+	if (pm && (pm->rpos == NO_RPOS || pm->rpos == NEVER_RPOS))
+		pm->rpos = 0;
 	buf_init(&b);
 	buf_concat(&b, "<fg:red>");
 

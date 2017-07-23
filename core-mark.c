@@ -165,6 +165,7 @@ struct mark *do_mark_at_point(struct mark *pt safe, int view)
 
 	dup_mark(pt, ret);
 	ret->viewnum = view;
+	ret->rpos = pt->rpos;
 	if (view >= 0)
 		tlist_add(&ret->view, GRP_MARK, &lnk->lists[view]);
 	else
@@ -274,7 +275,8 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 	int seq = 0;
 	struct point_links *lnk;
 
-	m->rpos = 0;
+	if (m->rpos != NEVER_RPOS)
+		m->rpos = NO_RPOS;
 	hlist_del(&m->all);
 	if (end) {
 		if (hlist_empty(&d->marks))
@@ -344,6 +346,7 @@ struct mark *safe point_new(struct doc *d safe)
 
 void mark_reset(struct doc *d safe, struct mark *m safe, int end)
 {
+	m->rpos = NEVER_RPOS;
 	comm_call_pane(d->home, "doc:set-ref", d->home, !end, m, NULL, 0, NULL, NULL);
 }
 
@@ -507,8 +510,12 @@ void mark_backward_over(struct mark *m safe, struct mark *mp safe)
 
 wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move)
 {
-	int ret = comm_call_pane(d->home, "doc:step", d->home, forward, m, NULL, move,
-				 NULL, NULL);
+	int ret;
+
+	if (move && m->rpos != NEVER_RPOS)
+		m->rpos = NO_RPOS;
+	ret = comm_call_pane(d->home, "doc:step", d->home, forward, m, NULL, move,
+			     NULL, NULL);
 
 	if (ret <= 0)
 		return WEOF;
@@ -520,7 +527,10 @@ wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move)
 
 wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int move)
 {
-	int ret = call5("doc:step", p, forward, m, NULL, move);
+	int ret;
+	if (move && m->rpos != NEVER_RPOS)
+		m->rpos = NO_RPOS;
+	ret = call5("doc:step", p, forward, m, NULL, move);
 
 	if (ret <= 0)
 		return WEOF;
@@ -709,6 +719,7 @@ void mark_to_mark(struct mark *m safe, struct mark *target safe)
 			mark_backward_over(m, n);
 		} while (mark_ordered(target, m));
 	mark_ref_copy(m, target);
+	m->rpos = target->rpos;
 }
 
 int mark_same_pane(struct pane *p safe, struct mark *m1 safe, struct mark *m2 safe)
