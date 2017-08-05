@@ -486,7 +486,7 @@ DEF_CMD(docs_step)
 	if (p == NULL)
 		ret = WEOF;
 	else
-		ret = ' ';
+		ret = '\n';
 
 	return CHAR_RET(ret);
 }

@@ -4,16 +4,7 @@
  *
  * directory listing as a document.
  *
- * The 'text' of the document is a single char per director entry:
- * .  current directory
- * : parent directory
- * d  other directory
- * f  regular file
- * l  link
- * c  char-special
- * b  block-special
- * p  named-pipe
- * s  socket
+ * The 'text' of the document is a single '\n' char per director entry:
  *
  * Each char has a set of attributes which give details
  * name   file name
@@ -25,6 +16,16 @@
  * group
  * modes
  * nlinks
+ * type:
+ *  .  current directory
+ *  : parent directory
+ *  d  other directory
+ *  f  regular file
+ *  l  link
+ *  c  char-special
+ *  b  block-special
+ *  p  named-pipe
+ *  s  socket
  *
  */
 
@@ -279,7 +280,7 @@ DEF_CMD(dir_step)
 	bool move = ci->extra;
 	struct directory *dr = container_of(doc, struct directory, doc);
 	struct dir_ent *d;
-	wint_t ret;
+	wint_t ret = '\n';
 
 	if (!m)
 		return -1;
@@ -288,7 +289,6 @@ DEF_CMD(dir_step)
 		if (d == NULL)
 			ret = WEOF;
 		else {
-			ret = d->ch;
 			if (d == list_last_entry(&dr->ents, struct dir_ent, lst))
 				d = NULL;
 			else
@@ -306,9 +306,7 @@ DEF_CMD(dir_step)
 			d = list_last_entry(&dr->ents, struct dir_ent, lst);
 		else
 			d = list_prev_entry(d, lst);
-		if (d)
-			ret = d->ch;
-		else {
+		if (!d) {
 			ret = WEOF;
 			d = m->ref.d;
 		}
@@ -323,7 +321,7 @@ DEF_CMD(dir_step)
 		m->ref.d = d;
 	}
 	/* return value must be +ve, so use high bits to ensure this. */
-	return (ret & 0xFFFFF) | 0x100000;
+	return CHAR_RET(ret);
 }
 
 DEF_CMD(dir_set_ref)
@@ -408,6 +406,10 @@ static char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 		return NULL;
 	if (strcmp(attr, "name") == 0) {
 		return de->name;
+	} else if (strcmp(attr, "type") == 0) {
+		de->nbuf[0] = de->ch;
+		de->nbuf[1] = 0;
+		return de->nbuf;
 	} else if (strcmp(attr, "mtime") == 0) {
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_mtime);
@@ -476,8 +478,7 @@ static char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 		*c = 0;
 		return de->nbuf;
 	} else if (strcmp(attr, "suffix") == 0) {
-		get_stat(dr, de);
-		if ((de->st.st_mode & S_IFMT) == S_IFDIR)
+		if (strchr(".:d", de->ch))
 			return "/";
 		else
 			return "";
@@ -523,7 +524,7 @@ DEF_CMD(dir_get_attr)
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "dir";
 	else if (strcmp(attr, "line-format") == 0)
-		val = " <fg:red>%.perms</> %.mdate:13 %.user:10 %.group:10 <fg:blue>%+name</>";
+		val = " <fg:red>%.perms</> %.mdate:13 %.user:10 %.group:10 <fg:blue>%+name%.suffix</>";
 	else if (strcmp(attr, "filename") == 0)
 		val = dr->fname;
 	else
