@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdio.h>
 #include "core.h"
 #include "misc.h"
 
@@ -193,79 +194,18 @@ DEF_CMD(format_clone)
 	return 1;
 }
 
-DEF_CMD(format_move_line)
+
+DEF_CMD(format_get_attr)
 {
-	int rpt = RPT_NUM(ci);
+	char attr[20];
 	struct rf_data *rf = ci->home->data;
-	int f;
 
-	if (!ci->mark)
-		return -1;
-
-	f = ci->mark->rpos;
-	while (rpt > 1) {
-		if (mark_next_pane(ci->focus, ci->mark) == WEOF)
-			break;
-		rpt -= 1;
-	}
-	while (rpt < -1) {
-		if (mark_prev_pane(ci->focus, ci->mark) == WEOF)
-			break;
-		rpt += 1;
-	}
-	if (rpt < 0)
-		ci->mark->rpos = 0;
-	if (rpt > 0)
-		ci->mark->rpos = rf->fields;
-	if (rpt == 0)
-		ci->mark->rpos = f;
-
-	return 1;
-}
-
-DEF_CMD(format_move_horiz)
-{
-	/* Horizonal movement - adjust ->rpos within fields, or
-	 * move to next line
-	 */
-	struct rf_data *rf = ci->home->data;
-	int rpt = RPT_NUM(ci);
-
-	if (!ci->mark)
-		return -1;
-	while (rpt > 0 && doc_following_pane(ci->focus, ci->mark) != WEOF) {
-		if (ci->mark->rpos < rf->fields)
-			ci->mark->rpos += 1;
-		else {
-			if (mark_next_pane(ci->focus, ci->mark) == WEOF)
-				break;
-			ci->mark->rpos = 0;
-		}
-		rpt -= 1;
-	}
-	while (rpt < 0) {
-		if (ci->mark->rpos > 0)
-			ci->mark->rpos -= 1;
-		else {
-			if (mark_prev_pane(ci->focus, ci->mark) == WEOF)
-				break;
-			ci->mark->rpos = rf->fields;
-		}
-		rpt += 1;
-	}
-	return 1;
-}
-
-DEF_CMD(format_move_file)
-{
-	struct rf_data *rf = ci->home->data;
-	int ret;
-
-	if (!ci->mark || !ci->home->parent)
-		return -1;
-	ret = call3(ci->key, ci->home->parent, ci->numeric, ci->mark);
-	ci->mark->rpos = rf->home_field;
-	return ret;
+	if (!ci->mark ||
+	    !ci->str ||
+	    strcmp(ci->str, "renderline:sub-pos") != 0)
+		return 0;
+	sprintf(attr, "%u:%u", rf->home_field, rf->fields);
+	return comm_call(ci->comm2, "attr", ci->focus, 0, ci->mark, attr, 0);
 }
 
 static struct map *rf_map;
@@ -278,12 +218,7 @@ static void render_format_register_map(void)
 	key_add(rf_map, "render-line-prev", &render_line_prev);
 	key_add(rf_map, "Close", &format_close);
 	key_add(rf_map, "Clone", &format_clone);
-
-	key_add(rf_map, "Move-EOL", &format_move_line);
-	key_add(rf_map, "Move-Char", &format_move_horiz);
-	key_add(rf_map, "Move-Word", &format_move_horiz);
-	key_add(rf_map, "Move-WORD", &format_move_horiz);
-	key_add(rf_map, "Move-File", &format_move_file);
+	key_add(rf_map, "doc:get-attr", &format_get_attr);
 }
 
 DEF_LOOKUP_CMD(render_format_handle, rf_map);

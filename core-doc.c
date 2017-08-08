@@ -114,10 +114,78 @@ void doc_init(struct doc *d safe)
 	d->home = safe_cast NULL;
 }
 
+static void parse_sub_pos(char *attr, int *home safe, int *max safe)
+{
+	char *c;
+	if (!attr) {
+		*home = 0;
+		*max = 1;
+		return;
+	}
+	c = strchr(attr, ':');
+	if (c) {
+		*home = atoi(attr);
+		*max = atoi(c+1);
+	} else {
+		*home = 0;
+		*max = atoi(attr);
+	}
+	if (*max <= 0)
+		*max = 1;
+	if (*home < 0 || *home > *max)
+		*home = 0;
+}
+
+static wint_t doc_move_horiz(struct pane *p safe, struct mark *m safe,
+			     int forward,
+			     int *field)
+{
+	/* If subfields are present, move one step, else move one
+	 * char.  We we move a char and land in subfields, make
+	 * sure rpos is correct.
+	 */
+	wint_t ret = '\n';
+
+	if (field)
+		*field = 0;
+	if (m->rpos == NEVER_RPOS)
+		return mark_step_pane(p, m, forward, 1);
+	if (m->rpos != NO_RPOS) {
+		char *a = pane_mark_attr(p, m, 1, "renderline:sub-pos");
+		int home, max;
+		parse_sub_pos(a, &home, &max);
+		if (forward && m->rpos < max)
+			m->rpos += 1;
+		else if (!forward && m->rpos > 0)
+			m->rpos -= 1;
+		else
+			m->rpos = NO_RPOS;
+	}
+	if (m->rpos == NO_RPOS) {
+		ret = mark_step_pane(p, m, forward, 1);
+		if (is_eol(ret)) {
+			char *a = pane_mark_attr(p, m, 1, "renderline:sub-pos");
+			int home, max;
+			parse_sub_pos(a, &home, &max);
+			if (a) {
+				if (field)
+					*field = 1;
+				if (forward)
+					m->rpos = 0;
+				else
+					m->rpos = max;
+			}
+		}
+	} else if (field)
+		*field = 1;
+	return ret;
+}
+
 /* For these 'default commands', home->data is struct doc */
 DEF_CMD(doc_char)
 {
 	struct pane *p = ci->home;
+	struct pane *f = ci->focus;
 	struct doc_data *dd = p->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
@@ -126,12 +194,12 @@ DEF_CMD(doc_char)
 		m = dd->point;
 
 	while (rpt > 0) {
-		if (mark_next_pane(p, m) == WEOF)
+		if (doc_move_horiz(f, m, 1, NULL) == WEOF)
 			break;
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		if (mark_prev_pane(p, m) == WEOF)
+		if (doc_move_horiz(f, m, 0, NULL) == WEOF)
 			break;
 		rpt += 1;
 	}
@@ -142,6 +210,7 @@ DEF_CMD(doc_char)
 DEF_CMD(doc_word)
 {
 	struct pane *p = ci->home;
+	struct pane *f = ci->focus;
 	struct doc_data *dd = p->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
@@ -151,30 +220,36 @@ DEF_CMD(doc_word)
 
 	/* We skip spaces, then either alphanum or non-space/alphanum */
 	while (rpt > 0) {
-		while (iswspace(doc_following_pane(p, m)))
-			mark_next_pane(p, m);
-		if (iswalnum(doc_following_pane(p, m))) {
-			while (iswalnum(doc_following_pane(p, m)))
-				mark_next_pane(p, m);
+		int field = 0;
+		while (!field &&
+		       iswspace(doc_following_pane(p, m)))
+			doc_move_horiz(f, m, 1, &field);
+		if (m->rpos < NO_RPOS || iswalnum(doc_following_pane(p, m))) {
+			while (!field && iswalnum(doc_following_pane(p, m)))
+				doc_move_horiz(f, m, 1, &field);
 		} else {
 			wint_t wi;
-			while ((wi=doc_following_pane(p, m)) != WEOF &&
+			while (!field &&
+			       (wi=doc_following_pane(p, m)) != WEOF &&
 			       !iswspace(wi) && !iswalnum(wi))
-				mark_next_pane(p, m);
+				doc_move_horiz(f, m, 1, &field);
 		}
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		while (iswspace(doc_prior_pane(p, m)))
-			mark_prev_pane(p, m);
-		if (iswalnum(doc_prior_pane(p, m))) {
-			while (iswalnum(doc_prior_pane(p, m)))
-				mark_prev_pane(p, m);
+		int field = 0;
+		while (!field &&
+		       iswspace(doc_prior_pane(p, m)))
+			doc_move_horiz(f, m, 0, &field);
+		if (m->rpos < NO_RPOS || iswalnum(doc_prior_pane(p, m))) {
+			while (!field && iswalnum(doc_prior_pane(p, m)))
+				doc_move_horiz(f, m, 0, &field);
 		} else {
 			wint_t wi;
-			while ((wi=doc_prior_pane(p, m)) != WEOF &&
+			while (!field &&
+			       (wi=doc_prior_pane(p, m)) != WEOF &&
 			       !iswspace(wi) && !iswalnum(wi))
-				mark_prev_pane(p, m);
+				doc_move_horiz(f, m, 0, &field);
 		}
 		rpt += 1;
 	}
@@ -185,6 +260,7 @@ DEF_CMD(doc_word)
 DEF_CMD(doc_WORD)
 {
 	struct pane *p = ci->home;
+	struct pane *f = ci->focus;
 	struct doc_data *dd = p->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
@@ -195,21 +271,27 @@ DEF_CMD(doc_WORD)
 	/* We skip spaces, then non-spaces */
 	while (rpt > 0) {
 		wint_t wi;
-		while (iswspace(doc_following_pane(p, m)))
-			mark_next_pane(p, m);
+		int field = 0;
+		while (!field &&
+		       iswspace(doc_following_pane(p, m)))
+			doc_move_horiz(f, m, 1, &field);
 
-		while ((wi=doc_following_pane(p, m)) != WEOF &&
+		while (!field &&
+		       (wi=doc_following_pane(p, m)) != WEOF &&
 		       !iswspace(wi))
-			mark_next_pane(p, m);
+			doc_move_horiz(f, m, 1, &field);
 		rpt -= 1;
 	}
 	while (rpt < 0) {
 		wint_t wi;
-		while (iswspace(doc_prior_pane(p, m)))
-			mark_prev_pane(p, m);
-		while ((wi=doc_prior_pane(p, m)) != WEOF &&
+		int  field = 0;
+		while (!field &&
+		       iswspace(doc_prior_pane(p, m)))
+			doc_move_horiz(p, m, 0, &field);
+		while (!field &&
+		       (wi=doc_prior_pane(p, m)) != WEOF &&
 		       !iswspace(wi))
-			mark_prev_pane(p, m);
+			doc_move_horiz(f, m, 0, &field);
 		rpt += 1;
 	}
 
