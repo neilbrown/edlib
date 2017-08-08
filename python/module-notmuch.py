@@ -262,7 +262,7 @@ class notmuch_main(edlib.Doc):
             ret = edlib.WEOF
             target = mark
             if forward and mark.offset < len(self.searches.current):
-                ret = ' '
+                ret = '\n'
                 if move:
                     m2 = mark.next_any()
                     while m2 and m2.offset <= mark.offset + 1:
@@ -272,7 +272,7 @@ class notmuch_main(edlib.Doc):
                     mark.to_mark(target)
                     mark.offset = o+1
             if not forward and mark.offset > 0:
-                ret = ' '
+                ret = '\n'
                 if move:
                     m2 = mark.prev_any()
                     while m2 and m2.offset >= mark.offset - 1:
@@ -1178,7 +1178,7 @@ class notmuch_list(edlib.Doc):
             if forward:
                 i2,j2,pos = self.next(i, j, [str2], str2 and xy[0])
                 if mark.pos is not None:
-                    ret = ' '
+                    ret = '\n'
                 if move:
                     m2 = mark.next_any()
                     target = None
@@ -1194,7 +1194,7 @@ class notmuch_list(edlib.Doc):
             if not forward:
                 i2,j2,pos = self.prev(i,j, [str2], str2 and xy[0])
                 if i2 >= 0:
-                    ret = ' '
+                    ret = '\n'
                     if move:
                         m2 = mark.prev_any()
                         target = None
