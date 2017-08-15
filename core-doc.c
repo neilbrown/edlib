@@ -300,8 +300,8 @@ DEF_CMD(doc_WORD)
 
 DEF_CMD(doc_eol)
 {
-	struct pane *p = ci->home;
-	struct doc_data *dd = p->data;
+	struct pane *p = ci->focus;
+	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
@@ -340,15 +340,15 @@ DEF_CMD(doc_file)
 	if (!m)
 		m = dd->point;
 
-	call3("doc:set-ref", p, (rpt <= 0), m);
+	call3("doc:set-ref", ci->focus, (rpt <= 0), m);
 
 	return 1;
 }
 
 DEF_CMD(doc_line)
 {
-	struct pane *p = ci->home;
-	struct doc_data *dd = p->data;
+	struct pane *p = ci->focus;
+	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
@@ -373,8 +373,8 @@ DEF_CMD(doc_line)
 
 DEF_CMD(doc_page)
 {
-	struct pane *p = ci->home;
-	struct doc_data *dd = p->data;
+	struct pane *p = ci->focus;
+	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark, *old;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
@@ -429,7 +429,8 @@ DEF_CMD(doc_set)
 }
 DEF_CMD(doc_get_attr)
 {
-	struct pane *p = ci->home; struct doc *d = p->data;
+	struct pane *p = ci->home;
+	struct doc *d = p->data;
 	char *a;
 
 	if (!ci->str)
