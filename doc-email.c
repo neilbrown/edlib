@@ -84,10 +84,14 @@ DEF_CMD(email_spacer)
 
 	if (cond_append(&b, visible ? "[HIDE]" : "[SHOW]", o, pm, m) &&
 	    cond_append(&b, "[Save]",  o, pm, m) &&
-	    cond_append(&b, "[Open]",  o, pm, m) &&
-	    cond_append(&b, "</>\n", o, pm, m)) {
-		m->rpos = 0;
-		mark_next_pane(ci->home, m);
+	    cond_append(&b, "[Open]",  o, pm, m)) {
+		/* end of line */
+		if ((o < 0 || o == NO_NUMERIC)) {
+			buf_concat(&b, "</>\n");
+			m->rpos = 0;
+			mark_next_pane(ci->home, m);
+		} else
+			m->rpos -= 1;
 	}
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
