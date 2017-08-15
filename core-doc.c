@@ -163,11 +163,12 @@ static wint_t doc_move_horiz(struct pane *p safe, struct mark *m safe,
 	}
 	if (m->rpos == NO_RPOS) {
 		ret = mark_step_pane(p, m, forward, 1);
-		if (is_eol(ret)) {
+		if (is_eol(forward ? mark_step_pane(p, m, forward, 0) : ret)) {
 			char *a = pane_mark_attr(p, m, 1, "renderline:sub-pos");
 			int home, max;
 			parse_sub_pos(a, &home, &max);
 			if (a) {
+				ret = '\n';
 				if (field)
 					*field = 1;
 				if (forward)
