@@ -234,6 +234,9 @@ DEF_CMD(render_line)
 	int add_newline = 0;
 	char *attr;
 
+	if (o == NO_NUMERIC)
+		o = -1;
+
 	ar.rtn = text_attr_callback;
 	ar.fwd = text_attr_forward;
 	ar.ast = ar.tmpst = NULL;
@@ -314,8 +317,13 @@ DEF_CMD(render_line)
 	while (ar.ast)
 		as_pop(&ar.ast, &ar.tmpst, 100, &b);
 	as_repush(&ar.tmpst, &ar.ast, 10000000, &b);
-	if (add_newline)
-		buf_append(&b, '\n');
+	if (add_newline) {
+		if (o >= 0 && b.len >= o)
+			/* skip the newline */
+			mark_prev_pane(p, m);
+		else
+			buf_append(&b, '\n');
+	}
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
 			buf_final(&b), 0);
