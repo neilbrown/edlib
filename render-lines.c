@@ -222,6 +222,7 @@ static int flush_line(struct pane *p safe, int dodraw,
 {
 	struct render_list *last_wrap = NULL, *end_wrap = NULL, *last_rl = NULL;
 	int in_wrap = 0;
+	int wrap_len = 0;
 	struct render_list *rl, *tofree;
 	int x = 0;
 	char *head;
@@ -233,7 +234,9 @@ static int flush_line(struct pane *p safe, int dodraw,
 			if (!in_wrap) {
 				last_wrap = rl;
 				in_wrap = 1;
+				wrap_len = 0;
 			}
+			wrap_len += strlen(rl->text);
 			end_wrap = rl;
 		} else {
 			if (in_wrap)
@@ -246,7 +249,8 @@ static int flush_line(struct pane *p safe, int dodraw,
 		last_rl = last_wrap;
 	for (rl = *rlp; rl && rl != last_wrap; rl = rl->next) {
 		int cp = rl->cursorpos;
-		if (wrap_pos && cp == (int)strlen(rl->text))
+		if (wrap_pos &&
+		    cp >= (int)strlen(rl->text) + wrap_len)
 			cp = -1;
 		x = rl->x;
 		if (dodraw)
@@ -255,6 +259,15 @@ static int flush_line(struct pane *p safe, int dodraw,
 		x += rl->width;
 		if (curspos && rl->curs)
 			*curspos = rl->curs;
+	}
+	for (; rl && rl != end_wrap; rl = rl->next) {
+		int cp = rl->cursorpos;
+		if (cp >= (int)strlen(rl->text))
+			cp = -1;
+
+		if (cp >= 0 && dodraw)
+			call_xy7("Draw:text", p, cp, scale,
+				 rl->text, rl->attr, rl->x, y, NULL, NULL);
 	}
 	if (wrap_pos && last_rl && dodraw) {
 		char *e = get_last_attr(last_rl->attr, "wrap-tail");
