@@ -458,8 +458,8 @@ DEF_CMD(open_email)
 	call3("doc:set-ref", p, 1, point);
 	call7("doc:set-attr", p, 1, point, "renderline:func", 0,
 	      "doc:email:render-spacer", NULL);
-	call7("doc:set-attr", p, 1, point, "renderline:sub-pos", 0,
-	      "2", NULL);
+	call7("doc:set-attr", p, 1, point, "renderline:fields", 0,
+	      "3", NULL);
 	mark_free(point);
 
 	doc = doc_new(ci->focus, "text", ci->focus);
