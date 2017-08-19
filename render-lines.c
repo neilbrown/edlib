@@ -264,7 +264,8 @@ static int flush_line(struct pane *p safe, int dodraw,
 	tofree = *rlp;
 	*rlp = end_wrap;
 
-	if (wrap_pos && last_rl && (head = get_last_attr(last_rl->attr, "wrap-head"))) {
+	if (wrap_pos && last_rl &&
+	    (head = get_last_attr(last_rl->attr, "wrap-head"))) {
 		struct call_return cr = {};
 		cr.c = text_size_callback;
 		call_comm7("text-size", p, p->w, NULL, head, scale, last_rl->attr, &cr.c);
@@ -552,7 +553,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		if (ret == WRAP|| x >= p->w - mwidth) {
 			/* No room for more text */
 			if (wrap) {
-				int len = flush_line(p, dodraw, &rlst, y+ascent, scale,
+				int len = flush_line(p, dodraw, &rlst, y+ascent,
+						     scale,
 						     p->w - mwidth, &curspos);
 				wrap_offset += len;
 				x -= len;
