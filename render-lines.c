@@ -145,7 +145,13 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x 
 	int ret = WRAP;
 	int rmargin = p->w - margin;
 
-	if (len == 0 && cursorpos != 0)
+	if (len == 0 && cursorpos < 0)
+		return 0;
+	if ((*rlp == NULL || ((*rlp)->next == NULL && (*rlp)->text_orig == NULL)) &&
+	    strstr(attr, "wrap,") && (cursorpos < 0|| cursorpos > len))
+		/* No wrap text at start of line, unless it
+		 * contains cursor.
+		 */
 		return 0;
 	str = strndup(start, len);
 	if (cursx >= 0 && cursx >= *x && cursx < rmargin) {
@@ -237,7 +243,7 @@ static int flush_line(struct pane *p safe, int dodraw,
 				wrap_len = 0;
 			}
 			wrap_len += strlen(rl->text);
-			end_wrap = rl;
+			end_wrap = rl->next;
 		} else {
 			if (in_wrap)
 				end_wrap = rl;
@@ -268,6 +274,7 @@ static int flush_line(struct pane *p safe, int dodraw,
 		if (cp >= 0 && dodraw)
 			call_xy7("Draw:text", p, cp, scale,
 				 rl->text, rl->attr, rl->x, y, NULL, NULL);
+		x = rl->x + rl->width;
 	}
 	if (wrap_pos && last_rl && dodraw) {
 		char *e = get_last_attr(last_rl->attr, "wrap-tail");
