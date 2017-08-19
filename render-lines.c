@@ -132,7 +132,8 @@ static int draw_some(struct pane *p safe, struct render_list **rlp, int *x safe,
 	 * Everything will be drawn with the same attributes: attr.
 	 * If the text would get closer to right end than 'margin',
 	 * when stop drawing before then.  If this happens, WRAP is returned.
-	 * If drawing would pass cursx, then it stops before cursx and CURS is returned.
+	 * If drawing would pass cursx, stop there and record pointer
+	 * into 'start'.
 	 * If cursorpos is between 0 and len inclusive, a cursor is drawn there.
 	 */
 	int len = *endp - start;
@@ -209,7 +210,8 @@ static char *get_last_attr(char *attrs safe, char *attr safe)
 	return NULL;
 }
 
-static int flush_line(struct pane *p, struct render_list **rlp safe,
+static int flush_line(struct pane *p safe, int dodraw,
+		      struct render_list **rlp safe,
 		      int y, int scale, int wrap_pos)
 {
 	struct render_list *last_wrap = NULL, *end_wrap = NULL, *last_rl = NULL;
@@ -241,12 +243,12 @@ static int flush_line(struct pane *p, struct render_list **rlp safe,
 		if (wrap_pos && cp == (int)strlen(rl->text))
 			cp = -1;
 		x = rl->x;
-		if (p)
+		if (dodraw)
 			call_xy7("Draw:text", p, cp, scale,
 				 rl->text, rl->attr, x, y, NULL, NULL);
 		x += rl->width;
 	}
-	if (wrap_pos && last_rl && p) {
+	if (wrap_pos && last_rl && dodraw) {
 		char *e = get_last_attr(last_rl->attr, "wrap-tail");
 		call_xy7("Draw:text", p, -1, scale,
 			 e ?: "\\", "underline,fg:blue", wrap_pos, y, NULL, NULL);
@@ -255,10 +257,10 @@ static int flush_line(struct pane *p, struct render_list **rlp safe,
 
 	tofree = *rlp;
 	*rlp = end_wrap;
-	if (p && x > p->w)
+	if (x > p->w)
 		x = p->w;
 
-	if (p && wrap_pos && last_rl && (head = get_last_attr(last_rl->attr, "wrap-head"))) {
+	if (wrap_pos && last_rl && (head = get_last_attr(last_rl->attr, "wrap-head"))) {
 		struct call_return cr = {};
 		cr.c = text_size_callback;
 		call_comm7("text-size", p, p->w, NULL, head, scale, last_rl->attr, &cr.c);
@@ -546,7 +548,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		if (ret == WRAP|| x >= p->w - mwidth) {
 			/* No room for more text */
 			if (wrap) {
-				int len = flush_line(dodraw ? p : NULL, &rlst, y+ascent, scale,
+				int len = flush_line(p, dodraw, &rlst, y+ascent, scale,
 						     p->w - mwidth);
 				wrap_offset += len;
 				x -= len;
@@ -646,7 +648,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 
 		line += 1;
 		if (ch == '\n') {
-			flush_line(dodraw ? p : NULL, &rlst, y+ascent, scale, 0);
+			flush_line(p, dodraw, &rlst, y+ascent, scale, 0);
 			y += line_height;
 			x = 0;
 			wrap_offset = 0;
@@ -694,7 +696,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			  wrap ? mwidth : 0, offset - (start - line_start), cx, scale);
 	}
 
-	flush_line(dodraw ? p : NULL, &rlst, y+ascent, scale, 0);
+	flush_line(p, dodraw, &rlst, y+ascent, scale, 0);
 
 	if (y + line_height < cy ||
 	    (y <= cy && x <= cx))
