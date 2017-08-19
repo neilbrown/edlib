@@ -115,6 +115,7 @@ DEF_CMD(text_size_callback)
 
 struct render_list {
 	struct render_list *next;
+	char	*text_orig;
 	char	*text safe, *attr safe; // both are allocated
 	int	x, width;
 	int	cursorpos;
@@ -168,6 +169,7 @@ static int draw_some(struct pane *p safe, struct render_list **rlp, int *x safe,
 	}
 	if (rlp) {
 		struct render_list *rl = calloc(1, sizeof(*rl));
+		rl->text_orig = start;
 		rl->text = str; str = NULL;
 		rl->attr = strdup(attr);
 		rl->width = cr.x;
@@ -417,6 +419,24 @@ static void render_image(struct pane *p safe, char *line safe, int *yp safe,
 	free(fname);
 }
 
+static void find_cursor(struct render_list *rlst, struct pane *p safe, int cx,
+			int scale, char **curspos safe)
+{
+	while (rlst &&
+	       rlst->x + rlst->width < cx)
+		rlst = rlst->next;
+	if (!rlst)
+		return;
+	if (rlst->x > cx)
+		*curspos = rlst->text_orig;
+	else {
+		struct call_return cr = {};
+		cr.c = text_size_callback;
+		call_comm7("text-size", p, cx - rlst->x, NULL, rlst->text,
+			   scale, rlst->attr, &cr.c);
+		*curspos = rlst->text_orig + cr.i;
+	}
+}
 /* Render a line, with attributes and wrapping.
  * Report line offset where cursor point cx,cy is passed. -1 if never seen.
  * Report cx,cy location where char at 'offsetp' was drawn, or -1.
@@ -562,6 +582,12 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 					x = 0;
 				y += line_height;
 				if (offsetp) {
+					if (y+line_height >= cy &&
+					    y <= cy && x > cx) {
+						/* cursor is in field move down */
+						find_cursor(rlst, p, cx, scale,
+							    &curspos);
+					}
 					if (curspos) {
 						*offsetp = curspos - line_start;
 						offsetp = NULL;
