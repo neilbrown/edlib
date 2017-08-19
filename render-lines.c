@@ -125,7 +125,7 @@ struct render_list {
 #define WRAP 1
 #define CURS 2
 
-static int draw_some(struct pane *p safe, struct render_list **rlp, int *x safe,
+static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x safe,
 		     char *start safe, char **endp safe,
 		     char *attr safe, int margin, int cursorpos, int cursx, int scale)
 {
@@ -167,24 +167,24 @@ static int draw_some(struct pane *p safe, struct render_list **rlp, int *x safe,
 		str[max] = 0;
 		call_comm7("text-size", p, rmargin - *x, NULL, str, scale, attr, &cr.c);
 	}
-	if (rlp) {
-		struct render_list *rl = calloc(1, sizeof(*rl));
-		rl->text_orig = start;
-		rl->text = str; str = NULL;
-		rl->attr = strdup(attr);
-		rl->width = cr.x;
-		rl->x = *x;
-		if (ret == CURS)
-			rl->curs = start + strlen(rl->text);
 
-		if (cursorpos >= 0 && cursorpos <= len && cursorpos <= max)
-			rl->cursorpos = cursorpos;
-		else
-			rl->cursorpos = -1;
-		while (*rlp)
-			rlp = &(*rlp)->next;
-		*rlp = rl;
-	}
+	struct render_list *rl = calloc(1, sizeof(*rl));
+	rl->text_orig = start;
+	rl->text = str; str = NULL;
+	rl->attr = strdup(attr);
+	rl->width = cr.x;
+	rl->x = *x;
+	if (ret == CURS)
+		rl->curs = start + strlen(rl->text);
+
+	if (cursorpos >= 0 && cursorpos <= len && cursorpos <= max)
+		rl->cursorpos = cursorpos;
+	else
+		rl->cursorpos = -1;
+	while (*rlp)
+		rlp = &(*rlp)->next;
+	*rlp = rl;
+
 	free(str);
 	*x += cr.x;
 	if (max >= len)
