@@ -590,7 +590,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				/* In the middle of a UTF-8 */
 				continue;
 			if (offset == (line - line_start) ||
-			    (line-start) * mwidth > p->w - x) {
+			    (line-start) * mwidth > p->w - x ||
+			    (CX>x && (line - start)*mwidth > CX - x)) {
 				ret = draw_some(p, &rlst, &x, start,
 						&line,
 						buf_final(&attr),
