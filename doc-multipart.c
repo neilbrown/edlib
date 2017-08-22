@@ -238,6 +238,7 @@ DEF_CMD(mp_step)
 {
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m1 = NULL;
+	struct mark *m = ci->mark;
 	int ret;
 
 	/* Document access commands are handled by the 'cropper'.
@@ -245,46 +246,53 @@ DEF_CMD(mp_step)
 	 * which calls the document.  Then make sure the marks are still in order.
 	 */
 	mp_check_consistent(mpi);
-	if (!ci->mark)
+	if (!m)
 		return -1;
 
-	m1 = ci->mark->ref.m;
+	m1 = m->ref.m;
 
 	mp_check_consistent(mpi);
 
-	if (ci->mark->ref.docnum == mpi->nparts ||
-	    !mpi->parts[ci->mark->ref.docnum].visible)
+	if (m->ref.docnum == mpi->nparts ||
+	    !mpi->parts[m->ref.docnum].visible)
 		ret = -1;
 	else
-		ret = call_home7(mpi->parts[ci->mark->ref.docnum].pane,
+		ret = call_home7(mpi->parts[m->ref.docnum].pane,
 				 ci->key, ci->focus, ci->numeric, m1, ci->str,
 				 ci->extra,ci->str2, NULL, ci->comm2);
 	while (ret == CHAR_RET(WEOF) || ret == -1) {
-		if (ci->numeric) {
-			if (ci->mark->ref.docnum >= mpi->nparts)
-				break;
-			do {
-				change_part(mpi, ci->mark, ci->mark->ref.docnum + 1, 0);
-			} while (ci->mark->ref.docnum < mpi->nparts &&
-				 !mpi->parts[ci->mark->ref.docnum].visible);
-		} else {
-			if (ci->mark->ref.docnum == 0)
-				break;
-			do {
-				change_part(mpi, ci->mark, ci->mark->ref.docnum - 1, 1);
-			} while (ci->mark->ref.docnum > 0 &&
-				 !mpi->parts[ci->mark->ref.docnum].visible);
+		if (!ci->extra && m == ci->mark) {
+			/* don't change ci->mark when not moving */
+			m = mark_dup(m, 1);
 		}
-		m1 = ci->mark->ref.m;
-		if (ci->mark->ref.docnum == mpi->nparts ||
-		    !mpi->parts[ci->mark->ref.docnum].visible)
+		if (ci->numeric) {
+			if (m->ref.docnum >= mpi->nparts)
+				break;
+			do {
+				change_part(mpi, m, m->ref.docnum + 1, 0);
+			} while (m->ref.docnum < mpi->nparts &&
+				 !mpi->parts[m->ref.docnum].visible);
+		} else {
+			if (m->ref.docnum == 0)
+				break;
+			do {
+				change_part(mpi, m, m->ref.docnum - 1, 1);
+			} while (m->ref.docnum > 0 &&
+				 !mpi->parts[m->ref.docnum].visible);
+		}
+		m1 = m->ref.m;
+		if (m->ref.docnum == mpi->nparts ||
+		    !mpi->parts[m->ref.docnum].visible)
 			ret = -1;
 		else
-			ret = call_home7(mpi->parts[ci->mark->ref.docnum].pane,
+			ret = call_home7(mpi->parts[m->ref.docnum].pane,
 					 ci->key, ci->focus, ci->numeric, m1, ci->str,
 					 ci->extra,ci->str2, NULL, ci->comm2);
 	}
-	reset_mark(ci->mark);
+	if (ci->extra)
+		reset_mark(ci->mark);
+	if (m != ci->mark)
+		mark_free(m);
 
 	mp_check_consistent(mpi);
 	return ret == -1 ? (int)CHAR_RET(WEOF) : ret;
