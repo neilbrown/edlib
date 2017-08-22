@@ -296,58 +296,55 @@ DEF_CMD(mp_attr)
 	struct mark *m1 = NULL;
 	int ret;
 	int d;
+	char *attr = ci->str;
 
-	if (!ci->mark || !ci->str)
+	if (!ci->mark || !attr)
 		return -1;
-
-	if (strcmp(ci->str, "multipart:visible") == 0) {
-		if (ci->mark->ref.docnum < mpi->nparts &&
-		    mpi->parts[ci->mark->ref.docnum].visible)
-			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "1", 0);
-		else
-			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "0", 0);
-		return 1;
-	}
-
-	if (strcmp(ci->str, "multipart:visible-next") == 0) {
-		if (ci->mark->ref.docnum+1 < mpi->nparts &&
-		    mpi->parts[ci->mark->ref.docnum+1].visible)
-			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "1", 0);
-		else
-			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "0", 0);
-		return 1;
-	}
-	if (strcmp(ci->str, "multipart:visible-prev") == 0) {
-		if (ci->mark->ref.docnum-1 >= 0 &&
-		    mpi->parts[ci->mark->ref.docnum-1].visible)
-			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "1", 0);
-		else
-			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "0", 0);
-		return 1;
-	}
 
 	m1 = ci->mark->ref.m;
 	d = ci->mark->ref.docnum;
-	if (ci->numeric != 0) {
-		/* forward */
-		while (d < mpi->nparts && !mpi->parts[d].visible)
-			d++;
+
+	if (strncmp(attr, "multipart-next:", 15) == 0) {
+		d += 1;
+		attr += 15;
 		if (d >= mpi->nparts)
 			return 1;
-		if (d != ci->mark->ref.docnum) {
-			m1 = vmark_new(mpi->parts[d].pane, MARK_UNGROUPED);
-			call3("doc:set-ref", mpi->parts[d].pane, 1, m1);
-		}
-	} else {
-		/* backward */
-		while (d >= 0 && !mpi->parts[d].visible)
-			d++;
+	} else if (strncmp(attr, "multipart-prev:", 15) == 0) {
+		d -= 1;
+		attr += 15;
 		if (d < 0)
 			return 1;
-		if (d != ci->mark->ref.docnum) {
-			m1 = vmark_new(mpi->parts[d].pane, MARK_UNGROUPED);
-			call3("doc:set-ref", mpi->parts[d].pane, 0, m1);
+	}
+
+	if (strcmp(attr, "multipart:visible") == 0) {
+		if (d >= 0 && d < mpi->nparts &&
+		    mpi->parts[d].visible)
+			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "1", 0);
+		else
+			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "0", 0);
+		return 1;
+	}
+
+	if (d == ci->mark->ref.docnum) {
+		/* choose a visible document */
+		if (ci->numeric != 0) {
+			/* forward */
+			while (d < mpi->nparts && !mpi->parts[d].visible)
+				d++;
+			if (d >= mpi->nparts)
+				return 1;
+		} else {
+			/* backward */
+			while (d >= 0 && !mpi->parts[d].visible)
+				d++;
+			if (d < 0)
+				return 1;
 		}
+	}
+	if (d != ci->mark->ref.docnum) {
+		m1 = vmark_new(mpi->parts[d].pane, MARK_UNGROUPED);
+		call3("doc:set-ref", mpi->parts[d].pane,
+		      (d > ci->mark->ref.docnum), m1);
 	}
 
 	ret = call_home7(mpi->parts[d].pane,
@@ -363,18 +360,21 @@ DEF_CMD(mp_set_attr)
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m = ci->mark;
 	int dn;
+	char *attr = ci->str;
 
-	if (!ci->str)
+	if (!attr)
 		return -1;
 	if (!m)
 		return 0;
-	if (strcmp(ci->str, "multipart:visible") == 0)
-		dn = m->ref.docnum;
-	else if (strcmp(ci->str, "multipart:visible-prev") == 0)
-		dn = m->ref.docnum - 1;
-	else if (strcmp(ci->str, "multipart:visible-next") == 0)
-		dn = m->ref.docnum + 1;
-	else
+	dn = m->ref.docnum;
+	if (strncmp(attr, "multipart-prev:", 15) == 0) {
+		dn -= 1;
+		attr += 15;
+	} else if (strncmp(attr, "multipart-next:", 15) == 0) {
+		dn += 1;
+		attr += 15;
+	}
+	if (strcmp(attr, "multipart:visible") != 0)
 		return 0;
 
 	if (dn < 0 || dn >= mpi->nparts)
