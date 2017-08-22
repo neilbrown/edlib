@@ -343,6 +343,9 @@ DEF_CMD(mp_attr)
 		return 1;
 	}
 
+	if (d >= mpi->nparts || d < 0)
+		return 1;
+
 	if (attr != ci->str) {
 		/* Get a pane attribute, not char attribute */
 		char *s = pane_attr_get(mpi->parts[d].pane, attr);
