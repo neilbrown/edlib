@@ -59,6 +59,16 @@ static int cond_append(struct buf *b safe, char *txt safe, int offset,
 	return 1;
 }
 
+static int is_attr(char *a safe, char *attrs safe)
+{
+	int l = strlen(a);
+	if (strncmp(a, attrs, l) != 0)
+		return 0;
+	if (attrs[l] == ':' || attrs[l] == '\0')
+		return 1;
+	return 0;
+}
+
 DEF_CMD(email_spacer)
 {
 	struct buf b;
@@ -68,6 +78,7 @@ DEF_CMD(email_spacer)
 	int o = ci->numeric;
 	char *attr;
 	int ret;
+	int ok = 1;
 
 	if (!m)
 		return -1;
@@ -75,6 +86,9 @@ DEF_CMD(email_spacer)
 	attr = pane_mark_attr(ci->home, m, 1, "multipart-prev:multipart:visible");
 	if (attr && *attr == '0')
 		visible = 0;
+	attr = pane_mark_attr(ci->home, m, 1, "multipart-prev:email:actions");
+	if (!attr)
+		attr = "hide";
 
 	m->rpos = 0;
 	if (pm && (pm->rpos == NO_RPOS || pm->rpos == NEVER_RPOS))
@@ -82,10 +96,19 @@ DEF_CMD(email_spacer)
 	buf_init(&b);
 	buf_concat(&b, "<fg:red>");
 
-	if (cond_append(&b, visible ? "[HIDE]" : "[SHOW]", o, pm, m) &&
-	    cond_append(&b, "[Save]",  o, pm, m) &&
-	    cond_append(&b, "[Open]",  o, pm, m)) {
-		/* end of line */
+	while (ok && attr && *attr) {
+		if (is_attr("hide", attr))
+			ok = cond_append(&b, visible ? "[HIDE]" : "[SHOW]", o, pm, m);
+		else if (is_attr("save", attr))
+			ok = cond_append(&b, "[Save]",  o, pm, m);
+		else if (is_attr("open", attr))
+			ok =cond_append(&b, "[Open]",  o, pm, m);
+		attr = strchr(attr, ':');
+		if (attr)
+			attr += 1;
+	}
+	/* end of line */
+	if (ok) {
 		if ((o < 0 || o == NO_NUMERIC)) {
 			buf_concat(&b, "</>\n");
 			m->rpos = 0;
@@ -105,14 +128,24 @@ DEF_CMD(email_select)
 	/* If mark is on a button, press it... */
 	struct mark *m = ci->mark;
 	char *a;
+	int r;
 
 	if (!m)
 		return -1;
 	a = pane_mark_attr(ci->home, m, 1, "renderline:func");
 	if (!a || strcmp(a, "doc:email:render-spacer") != 0)
 		return 0;
-	switch(m->rpos) {
-	case 0:
+	a = pane_mark_attr(ci->home, m, 1, "multipart-prev:email:actions");
+	if (!a)
+		a = "hide";
+	r = m->rpos;
+	while (r > 0 && a) {
+		a = strchr(a, ':');
+		if (a)
+			a += 1;
+		r -= 1;
+	}
+	if (a && is_attr("hide", a)) {
 		a = pane_mark_attr(ci->home, m, 1, "multipart-prev:multipart:visible");
 		if (a && *a == '0')
 			call7("doc:set-attr", ci->home, 1, m, "multipart-prev:multipart:visible", 0, "1", NULL);
@@ -253,6 +286,8 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 	struct pane *h;
 	int need_charset = 0;
 	char *charset;
+	char *major;
+	int mlen;
 
 	h = call_pane8("attach-crop", p, 0, start, end, 0, NULL, NULL);
 	if (!h)
@@ -285,6 +320,12 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 		if (hx)
 			h = hx;
 	}
+	major = get_822_token(&type, &mlen);
+	if (major && tok_matches(major, mlen, "text"))
+		attr_set_str(&h->attrs, "email:actions", "hide:save");
+	else
+		attr_set_str(&h->attrs, "email:actions", "hide:open");
+
 	call_home(mp, "multipart-add", h, 0, NULL, NULL);
 	call_home(mp, "multipart-add", spacer, 0, NULL, NULL);
 	return 1;
@@ -490,6 +531,7 @@ DEF_CMD(open_email)
 	p = doc_new(ci->home, "multipart", ei->email);
 	if (!p)
 		goto out;
+	attr_set_str(&doc->attrs, "email:actions", "hide");
 	call_home(p, "multipart-add", doc, 0, NULL, NULL);
 	call_home(p, "multipart-add", ei->spacer, 0, NULL, NULL);
 	call5("doc:set:autoclose", doc, 1, NULL, NULL, 0);
