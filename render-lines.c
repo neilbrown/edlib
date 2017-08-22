@@ -1132,7 +1132,8 @@ restart:
 		m2 = vmark_next(m);
 		if (!hide_cursor && p->cx <= 0 && pm &&
 		    mark_ordered_or_same_pane(focus, m, pm) &&
-		    (!m2 || mark_ordered_not_same_pane(focus, pm, m2))) {
+		    (!(m2 && doc_following_pane(p, m2) != WEOF) ||
+		     mark_ordered_not_same_pane(focus, pm, m2))) {
 			int len = call_render_line_to_point(focus, pm,
 							    m);
 			rl->cursor_line = y;
