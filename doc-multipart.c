@@ -304,6 +304,15 @@ DEF_CMD(mp_attr)
 	m1 = ci->mark->ref.m;
 	d = ci->mark->ref.docnum;
 
+	if (d < mpi->nparts && m1 &&
+	    mark_step_pane(mpi->parts[d].pane, m1, ci->numeric, 0) == WEOF) {
+		/* at the wrong end of a part */
+		if (ci->numeric)
+			d += 1;
+		else if (d > 0)
+			d -= 1;
+	}
+
 	if (strncmp(attr, "multipart-next:", 15) == 0) {
 		d += 1;
 		attr += 15;
@@ -369,6 +378,7 @@ DEF_CMD(mp_set_attr)
 {
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m = ci->mark;
+	struct mark *m1;
 	int dn;
 	char *attr = ci->str;
 
@@ -377,6 +387,17 @@ DEF_CMD(mp_set_attr)
 	if (!m)
 		return 0;
 	dn = m->ref.docnum;
+	m1 = m->ref.m;
+
+	if (dn < mpi->nparts && m1 &&
+	    mark_step_pane(mpi->parts[dn].pane, m1, ci->numeric, 0) == WEOF) {
+		/* at the wrong end of a part */
+		if (ci->numeric)
+			dn += 1;
+		else if (dn > 0)
+			dn -= 1;
+	}
+
 	if (strncmp(attr, "multipart-prev:", 15) == 0) {
 		dn -= 1;
 		attr += 15;
