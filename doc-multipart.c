@@ -314,7 +314,8 @@ DEF_CMD(mp_attr)
 		attr += 15;
 		if (d < 0)
 			return 1;
-	}
+	} else if (strncmp(attr, "multipart-this:", 15) == 0)
+		attr += 15;
 
 	if (strcmp(attr, "multipart:visible") == 0) {
 		if (d >= 0 && d < mpi->nparts &&
@@ -322,6 +323,15 @@ DEF_CMD(mp_attr)
 			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "1", 0);
 		else
 			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "0", 0);
+		return 1;
+	}
+
+	if (attr != ci->str) {
+		/* Get a pane attribute, not char attribute */
+		char *s = pane_attr_get(mpi->parts[d].pane, attr);
+		if (s)
+			return comm_call(ci->comm2, "callback", ci->focus, 0, NULL,
+					 s, 0);
 		return 1;
 	}
 
