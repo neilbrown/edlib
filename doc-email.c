@@ -155,6 +155,32 @@ DEF_CMD(email_select)
 	return 1;
 }
 
+DEF_CMD(email_get_attr)
+{
+	/* The "renderline:fields" attribute needs to be synthesized
+	 * from the per-part email:actions attribute
+	 */
+	char *a;
+	int fields;
+	char ret[10];
+	if (!ci->str || strcmp(ci->str, "renderline:fields") != 0)
+		return 0;
+	if (!ci->mark || !ci->home->parent)
+		return 0;
+
+	a = pane_mark_attr(ci->home->parent, ci->mark, ci->numeric, "multipart-prev:email:actions");
+	if (!a)
+		return 1;
+	fields = 0;
+	while (a && *a) {
+		a = strchr(a, ':');
+		if (a)
+			a += 1;
+		fields += 1;
+	}
+	sprintf(ret, "%d", fields);
+	return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark, ret, 0);
+}
 static struct map *email_map safe;
 
 static void email_init_map(void)
@@ -163,6 +189,7 @@ static void email_init_map(void)
 	key_add(email_map, "Close", &email_close);
 	key_add(email_map, "doc:email:render-spacer", &email_spacer);
 	key_add(email_map, "doc:email:select", &email_select);
+	key_add(email_map, "doc:get-attr", &email_get_attr);
 }
 DEF_LOOKUP_CMD(email_handle, email_map);
 
@@ -499,8 +526,6 @@ DEF_CMD(open_email)
 	call3("doc:set-ref", p, 1, point);
 	call7("doc:set-attr", p, 1, point, "renderline:func", 0,
 	      "doc:email:render-spacer", NULL);
-	call7("doc:set-attr", p, 1, point, "renderline:fields", 0,
-	      "3", NULL);
 	mark_free(point);
 
 	doc = doc_new(ci->focus, "text", ci->focus);
