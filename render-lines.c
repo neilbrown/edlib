@@ -144,6 +144,7 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x 
 	int max;
 	int ret = WRAP;
 	int rmargin = p->w - margin;
+	struct render_list *rl;
 
 	if (len == 0 && cursorpos < 0)
 		return 0;
@@ -174,7 +175,7 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x 
 		call_comm7("text-size", p, rmargin - *x, NULL, str, scale, attr, &cr.c);
 	}
 
-	struct render_list *rl = calloc(1, sizeof(*rl));
+	rl = calloc(1, sizeof(*rl));
 	rl->text_orig = start;
 	rl->text = str; str = NULL;
 	rl->attr = strdup(attr);

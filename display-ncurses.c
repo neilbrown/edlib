@@ -25,6 +25,11 @@
 
 #include "core.h"
 
+#ifdef __CHECKER__
+#undef NCURSES_OK_ADDR
+#define NCURSES_OK_ADDR(p) ((void*)0 != NCURSES_CAST(const void *, (p)))
+#endif
+
 struct display_data {
 	SCREEN			*scr;
 	struct {int x,y;}	cursor;
