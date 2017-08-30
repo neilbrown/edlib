@@ -45,16 +45,25 @@ DEF_CMD(email_close)
 	return 1;
 }
 
-static int cond_append(struct buf *b safe, char *txt safe, int offset,
-			struct mark *pm, struct mark *m safe)
+static int cond_append(struct buf *b safe, char *txt safe, char *tag safe,
+		       int offset, struct mark *pm, struct mark *m safe)
 {
-	if (offset != NO_NUMERIC && offset >= 0 && offset < b->len + (int)strlen(txt))
+	char *tagf = "active-tag:email-";
+	int prelen = 1 + strlen(tagf) + strlen(tag) + 1 + 1;
+	int postlen = 1 + 3;
+	int len = prelen + strlen(txt) + postlen;
+	if (offset != NO_NUMERIC && offset >= 0 && offset <= b->len + len)
 		return 0;
+	buf_concat(b, "<");
+	buf_concat(b, tagf);
+	buf_concat(b, tag);
+	buf_concat(b, ">[");
 	if (pm && pm->rpos == m->rpos) {
 		buf_concat_len(b, txt, strlen(txt)/2);
 		return 0;
 	}
 	buf_concat(b, txt);
+	buf_concat(b, "]</>");
 	m->rpos += 1;
 	return 1;
 }
@@ -98,11 +107,11 @@ DEF_CMD(email_spacer)
 
 	while (ok && attr && *attr) {
 		if (is_attr("hide", attr))
-			ok = cond_append(&b, visible ? "[HIDE]" : "[SHOW]", o, pm, m);
+			ok = cond_append(&b, visible ? "HIDE" : "SHOW", "1", o, pm, m);
 		else if (is_attr("save", attr))
-			ok = cond_append(&b, "[Save]",  o, pm, m);
+			ok = cond_append(&b, "Save", "2", o, pm, m);
 		else if (is_attr("open", attr))
-			ok =cond_append(&b, "[Open]",  o, pm, m);
+			ok = cond_append(&b, "Open", "3", o, pm, m);
 		attr = strchr(attr, ':');
 		if (attr)
 			attr += 1;

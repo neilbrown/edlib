@@ -1449,6 +1449,9 @@ class notmuch_message_view(edlib.Pane):
         if key == "Return":
             focus.call("doc:email:select", mark);
             return 1
+        if key == "Mouse-Activate":
+            focus.call("doc:email:select", mark);
+            return 1
         if key == "map-attr" and str == "render:rfc822header":
             comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed", 21)
             comm2("attr:callback", focus, 10000, mark, "wrap-tail: ,wrap-head:    ", 19)
