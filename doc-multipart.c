@@ -313,7 +313,8 @@ DEF_CMD(mp_attr)
 	d = ci->mark->ref.docnum;
 
 	if (d < mpi->nparts && m1 &&
-	    mark_step_pane(mpi->parts[d].pane, m1, ci->numeric, 0) == WEOF) {
+	    (!mpi->parts[d].visible ||
+	     mark_step_pane(mpi->parts[d].pane, m1, ci->numeric, 0) == WEOF)) {
 		/* at the wrong end of a part */
 		if (ci->numeric)
 			d += 1;
@@ -401,7 +402,8 @@ DEF_CMD(mp_set_attr)
 	m1 = m->ref.m;
 
 	if (dn < mpi->nparts && m1 &&
-	    mark_step_pane(mpi->parts[dn].pane, m1, ci->numeric, 0) == WEOF) {
+	    (!mpi->parts[dn].visible ||
+	     mark_step_pane(mpi->parts[dn].pane, m1, ci->numeric, 0) == WEOF)) {
 		/* at the wrong end of a part */
 		if (ci->numeric)
 			dn += 1;
