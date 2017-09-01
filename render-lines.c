@@ -155,16 +155,20 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x 
 		 */
 		return 0;
 	str = strndup(start, len);
+	if (*str == '\t')
+		*str = ' ';
 	if (cursx >= 0 && cursx >= *x && cursx < rmargin) {
 		rmargin = cursx;
 		ret = CURS;
 	}
 
+	rl = calloc(1, sizeof(*rl));
 	cr.c = text_size_callback;
 	call_comm7("text-size", p, rmargin - *x, NULL, str, scale, attr, &cr.c);
 	max = cr.i;
 	if (max == 0 && ret == CURS) {
 		/* must already have CURS position. */
+		rl->curs = start;
 		ret = WRAP;
 		rmargin = p->w - margin;
 		call_comm7("text-size", p, rmargin - *x, NULL, str, scale, attr, &cr.c);
@@ -175,7 +179,6 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x 
 		call_comm7("text-size", p, rmargin - *x, NULL, str, scale, attr, &cr.c);
 	}
 
-	rl = calloc(1, sizeof(*rl));
 	rl->text_orig = start;
 	rl->text = str; str = NULL;
 	rl->attr = strdup(attr);
@@ -740,11 +743,9 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			wrap_offset = 0;
 			end_of_page = 1;
 		} else if (ch == '\t') {
-			char buf[2]= " ", *b;
 			int xc = (wrap_offset + x) / mwidth;
 			int w = 8 - xc % 8;
-			b = buf+1;
-			ret = draw_some(p, &rlst, &x, buf, &b,
+			ret = draw_some(p, &rlst, &x, start, &line,
 					buf_final(&attr),
 					wrap ? mwidth*2: 0,
 					offset == (start - line_start) ? in_tab : -1, CX, scale);
