@@ -313,9 +313,16 @@ DEF_CMD(mp_attr)
 	d = ci->mark->ref.docnum;
 
 	if (d < mpi->nparts && m1 &&
-	    (!mpi->parts[d].visible ||
+	    (mpi->parts[d].visible &&
 	     mark_step_pane(mpi->parts[d].pane, m1, ci->numeric, 0) == WEOF)) {
 		/* at the wrong end of a part */
+		if (ci->numeric)
+			d += 1;
+		else if (d > 0)
+			d -= 1;
+	}
+	while (d < mpi->nparts && m1 &&
+	       !mpi->parts[d].visible) {
 		if (ci->numeric)
 			d += 1;
 		else if (d > 0)
@@ -356,22 +363,6 @@ DEF_CMD(mp_attr)
 		return 1;
 	}
 
-	if (d == ci->mark->ref.docnum) {
-		/* choose a visible document */
-		if (ci->numeric != 0) {
-			/* forward */
-			while (d < mpi->nparts && !mpi->parts[d].visible)
-				d++;
-			if (d >= mpi->nparts)
-				return 1;
-		} else {
-			/* backward */
-			while (d >= 0 && !mpi->parts[d].visible)
-				d++;
-			if (d < 0)
-				return 1;
-		}
-	}
 	if (d != ci->mark->ref.docnum) {
 		m1 = vmark_new(mpi->parts[d].pane, MARK_UNGROUPED);
 		call3("doc:set-ref", mpi->parts[d].pane,
@@ -402,9 +393,16 @@ DEF_CMD(mp_set_attr)
 	m1 = m->ref.m;
 
 	if (dn < mpi->nparts && m1 &&
-	    (!mpi->parts[dn].visible ||
+	    (mpi->parts[dn].visible &&
 	     mark_step_pane(mpi->parts[dn].pane, m1, ci->numeric, 0) == WEOF)) {
 		/* at the wrong end of a part */
+		if (ci->numeric)
+			dn += 1;
+		else if (dn > 0)
+			dn -= 1;
+	}
+	while (dn < mpi->nparts && m1 &&
+	       !mpi->parts[dn].visible) {
 		if (ci->numeric)
 			dn += 1;
 		else if (dn > 0)
