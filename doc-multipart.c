@@ -471,7 +471,7 @@ DEF_CMD(mp_add)
 		(mpi->nparts - n)*sizeof(mpi->parts[0]));
 	mpi->nparts += 1;
 	mpi->parts[n].pane = ci->focus;
-	mpi->parts[n].visible = 1;
+	mpi->parts[n].visible = !ci->numeric;
 	hlist_for_each_entry(m, &mpi->doc.marks, all)
 		if (m->ref.docnum >= n)
 			m->ref.docnum ++;
