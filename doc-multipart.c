@@ -485,6 +485,58 @@ DEF_CMD(mp_add)
 	return 1;
 }
 
+DEF_CMD(mp_forward)
+{
+	/* forward this command to this/next/prev document based on
+	 * ci->mark2.
+	 * ci->mark is forwarded if it is in same document
+	 */
+	struct mp_info *mpi = ci->home->data;
+	struct mark *m1, *m2;
+	char *key;
+	int d;
+
+	if (!ci->mark2)
+		return -1;
+
+	m2 = ci->mark2->ref.m;
+	d = ci->mark2->ref.docnum;
+
+	if (d < mpi->nparts && m2 &&
+	    (mpi->parts[d].visible &&
+	     mark_step_pane(mpi->parts[d].pane, m2, 1, 0) == WEOF))
+		/* at the wrong end of a part */
+		d += 1;
+	while (d < mpi->nparts && m2 &&
+	       !mpi->parts[d].visible)
+		d += 1;
+
+	key = ci->key;
+	if (strncmp(key, "multipart-next:", 15) == 0) {
+		d += 1;
+		key += 15;
+		if (d >= mpi->nparts)
+			return 1;
+	} else if (strncmp(key, "multipart-prev:", 15) == 0) {
+		d -= 1;
+		key += 15;
+		if (d < 0)
+			return 1;
+	} else if (strncmp(key, "multipart-this:", 15) == 0)
+		key += 15;
+	else return -1;
+
+	if (d >= mpi->nparts || d < 0)
+		return 1;
+
+	m1 = NULL;
+	if (ci->mark && ci->mark->ref.docnum == d)
+		m1 = ci->mark->ref.m;
+	return call_comm8(key, mpi->parts[d].pane, ci->numeric, m1,
+			  ci->str, ci->extra, NULL, ci->str2, ci->comm2);
+}
+
+
 static void mp_init_map(void)
 {
 	mp_map = key_alloc();
@@ -497,6 +549,9 @@ static void mp_init_map(void)
 	key_add(mp_map, "Notify:Close", &mp_notify_close);
 	key_add(mp_map, "Notify:doc:viewers", &mp_notify_viewers);
 	key_add(mp_map, "multipart-add", &mp_add);
+	key_add_range(mp_map, "multipart-this:", "multipart-this;", &mp_forward);
+	key_add_range(mp_map, "multipart-next:", "multipart-next;", &mp_forward);
+	key_add_range(mp_map, "multipart-prev:", "multipart-prev;", &mp_forward);
 }
 DEF_LOOKUP_CMD_DFLT(mp_handle, mp_map, doc_default_cmd);
 
