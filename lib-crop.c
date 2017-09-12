@@ -68,6 +68,14 @@ DEF_CMD(crop_handle)
 	}
 	if (!p)
 		return 0;
+
+	if (strcmp(ci->key, "doc:write-file") == 0)
+		return call_home7(p, ci->key, ci->focus, ci->numeric,
+				  ci->mark ?: cd->start,
+				  ci->str, ci->extra, ci->str2,
+				  ci->mark2 ?: cd->end,
+				  ci->comm2);
+
 	if (!ci->mark && !ci->mark2)
 		/* No mark, do give it straight to parent */
 		return comm_call_pane(p, ci->key, ci->focus, ci->numeric,
