@@ -10,7 +10,8 @@ export SMATCH_CHECK_SAFE
 LDLIBS= -ldl
 CPPFLAGS= -I.
 CC = gcc
-SPARSEFLAGS= -Wsparse-all -Wno-transparent-union -Wsparse-error
+SMATCH_FLAGS= -D_BITS_FLOATN_H -D__HAVE_FLOAT128=0 -D__FLT_EVAL_METHOD__=1 -D__HAVE_DISTINCT_FLOAT128=0
+SPARSEFLAGS= -Wsparse-all -Wno-transparent-union -Wsparse-error $(SMATCH_FLAGS)
 # Create files .DEBUG and .LEAK for extra checking
 ifeq "$(wildcard .DEBUG)" ".DEBUG"
  ifeq "$(wildcard .LEAK)" ".LEAK"
@@ -25,7 +26,7 @@ else
 endif
 ifeq "$(wildcard .SMATCH)" ".SMATCH"
  # SYMLINK .SMATCH to the smatch binary for testing.
- SMATCH_CMD=$(shell readlink .SMATCH)
+ SMATCH_CMD=$(shell readlink .SMATCH) $(SMATCH_FLAGS)
  QUIET_SMATCH  = $(Q:@=@echo    '     SMATCH   '$<;)$(SMATCH_CMD)
 else
  QUIET_SMATCH  = @: skip
@@ -83,7 +84,7 @@ $(OBJ) : O/%.o : %.c
 	$(QUIET_CC)$(CC) $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
-	$(QUIET_CHECK)sparse -D__FLT_EVAL_METHOD__=1  $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
+	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
 	$(QUIET_SMATCH) -I/usr/include/x86_64-linux-gnu/ $(CPPFLAGS) $(INC-$*) $<
 	$(QUIET_CC)$(CC) -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
