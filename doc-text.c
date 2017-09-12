@@ -241,7 +241,36 @@ err:
 	return 0;
 }
 
-static int do_text_write_file(struct text *t safe, char *fname safe)
+static int do_text_output_file(struct text *t safe, struct doc_ref *start,
+			       struct doc_ref *end, int fd)
+{
+	struct text_chunk *c;
+	int offset = 0;
+
+	if (start) {
+		c = start->c;
+		offset = start->o;
+	} else
+		c = list_first_entry_or_null(&t->text, struct text_chunk, lst);
+
+	list_for_each_entry_from(c, &t->text, lst) {
+		char *s = c->txt + c->start;
+		int ln = c->end - c->start;
+		if (end && end->c == c)
+			ln = end->o;
+		if (write(fd, s + offset, ln - offset) != ln - offset)
+			return -1;
+		offset = 0;
+		if (end && end->c == c)
+			break;
+	}
+	if (fsync(fd) != 0)
+		return -1;
+	return 0;
+}
+
+static int do_text_write_file(struct text *t safe, struct doc_ref *start, struct doc_ref *end,
+			      char *fname safe)
 {
 	/* Don't worry about links for now
 	 * Create a temp file with #basename#~, write to that,
@@ -251,7 +280,6 @@ static int do_text_write_file(struct text *t safe, char *fname safe)
 	char *base, *tbase;
 	int cnt = 0;
 	int fd = -1;
-	struct text_chunk *c;
 
 	strcpy(tempname, fname);
 	base = strrchr(fname, '/');
@@ -273,13 +301,7 @@ static int do_text_write_file(struct text *t safe, char *fname safe)
 	if (fd < 0)
 		return -1;
 
-	list_for_each_entry(c, &t->text, lst) {
-		char *s = c->txt + c->start;
-		int ln = c->end - c->start;
-		if (write(fd, s, ln) != ln)
-			goto error;
-	}
-	if (fsync(fd) != 0)
+	if (do_text_output_file(t, start, end, fd) < 0)
 		goto error;
 	if (rename(tempname, fname) < 0)
 		goto error;
@@ -306,7 +328,7 @@ DEF_CMD(text_save_file)
 		asprintf(&msg, "** No file name known for %s ***", d->name);
 		ret = -1;
 	} else {
-		ret = do_text_write_file(t, t->fname);
+		ret = do_text_write_file(t, NULL, NULL, t->fname);
 		if (ret == 0) {
 			asprintf(&msg, "Successfully wrote %s", t->fname);
 			t->saved = t->undo;
@@ -320,6 +342,29 @@ DEF_CMD(text_save_file)
 		call3("doc:status-changed", d->home, 0, NULL);
 	if (ret == 0)
 		return 1;
+	return -1;
+}
+
+DEF_CMD(text_write_file)
+{
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+	int ret;
+
+	if (ci->str) {
+		ret = do_text_write_file(t,
+					 ci->mark ? &ci->mark->ref: NULL,
+					 ci->mark2 ? &ci->mark2->ref: NULL,
+					 ci->str);
+		return ret == 0 ? 1 : -1;
+	}
+	if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC) {
+		ret = do_text_output_file(t,
+					  ci->mark ? &ci->mark->ref: NULL,
+					  ci->mark2 ? &ci->mark2->ref: NULL,
+					  ci->numeric);
+		return ret = 0 ? 1 : -1;
+	}
 	return -1;
 }
 
@@ -1729,6 +1774,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:get-str", &text_get_str);
 	key_add(text_map, "doc:set-ref", &text_set_ref);
 	key_add(text_map, "doc:save-file", &text_save_file);
+	key_add(text_map, "doc:write-file", &text_write_file);
 	key_add(text_map, "doc:reundo", &text_reundo);
 	key_add(text_map, "doc:set-attr", &text_set_attr);
 	key_add(text_map, "doc:get-attr", &text_doc_get_attr);
