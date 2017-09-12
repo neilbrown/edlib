@@ -590,6 +590,72 @@ DEF_CMD(doc_mymark)
 	return m ? 1 : -1;
 }
 
+DEF_CMD(doc_write_file)
+{
+	/* Default write-file handler
+	 * We just step through the file writing each character
+	 * Requires that "doc:charset" attribute to be either "utf-8"
+	 * or "8bit".
+	 */
+	struct mark *m;
+	wint_t ch = 0;
+	FILE *f = NULL;
+	int ret = 1;
+	int utf8 = 1;
+	char *charset;
+
+	charset = pane_attr_get(ci->focus, "doc:charset");
+	if (charset && strcmp(charset, "8bit") == 0)
+		utf8 = 0;
+	else if (charset && strcmp(charset, "utf-8") == 0)
+		utf8 = 1;
+	else
+		return -1;
+
+	if (ci->str)
+		f = fopen(ci->str, "w");
+	else if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC)
+		f = fdopen(dup(ci->numeric), "w");
+	if (!f)
+		return -1;
+
+	if (ci->mark)
+		m = mark_dup(ci->mark, 1);
+	else
+		m = vmark_new(ci->focus, MARK_UNGROUPED);
+
+	while(m) {
+		ch = mark_next_pane(ci->focus, m);
+		if (ch == WEOF)
+			break;
+		if (ci->mark2 && mark_ordered_not_same_pane(ci->focus, ci->mark2, m))
+			break;
+		if (utf8) {
+			if (ch <= 0x7f)
+				fputc(ch, f);
+			else if (ch < 0x7ff) {
+				fputc(((ch>>6) & 0x1f) | 0xc0, f);
+				fputc((ch & 0x3f) | 0x80, f);
+			} else if (ch < 0xFFFF) {
+				fputc(((ch>>12) & 0x0f) | 0xe0, f);
+				fputc(((ch>>6) & 0x3f) | 0x80, f);
+				fputc((ch & 0x3f) | 0x80, f);
+			} else if (ch < 0x10FFFF) {
+				fputc(((ch>>18) & 0x07) | 0xf0, f);
+				fputc(((ch>>12) & 0x3f) | 0x80, f);
+				fputc(((ch>>6) & 0x3f) | 0x80, f);
+				fputc((ch & 0x3f) | 0x80, f);
+			}
+		} else
+			fputc(ch, f);
+	}
+	if (fflush(f))
+		ret = -1;
+	fclose(f);
+	mark_free(m);
+	return ret;
+}
+
 struct map *doc_default_cmd safe;
 static struct map *doc_handle_cmd safe;
 
@@ -618,6 +684,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:drop-cache", &doc_drop_cache);
 	key_add(doc_default_cmd, "doc:closed", &doc_do_closed);
 	key_add(doc_default_cmd, "doc:mymark", &doc_mymark);
+	key_add(doc_default_cmd, "doc:write-file", &doc_write_file);
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
 		      &doc_request_notify);
 	key_add_range(doc_default_cmd, "Notify:doc:", "Notify:doc;",
