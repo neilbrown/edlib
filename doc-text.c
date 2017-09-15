@@ -1312,6 +1312,10 @@ static int text_advance_towards(struct text *t safe,
 			return 1;
 		return 0;
 	}
+	if (text_ref_same(t, ref, target)) {
+		*ref = *target;
+		return 1;
+	}
 	if (ref->o >= ref->c->end) {
 		if (ref->c->lst.next == &t->text) {
 			if (target->c == NULL) {
@@ -1351,6 +1355,10 @@ static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
 			return 0;
 		ref->c = list_entry(t->text.prev, struct text_chunk, lst);
 		ref->o = ref->c->end;
+	}
+	if (text_ref_same(t, ref, target)) {
+		*ref = *target;
+		return 1;
 	}
 	if (ref->o <= ref->c->start) {
 		if (ref->c->lst.prev == &t->text)
