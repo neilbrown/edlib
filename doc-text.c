@@ -553,7 +553,7 @@ static int text_update_prior_after_change(struct text *t safe, struct doc_ref *p
 
 	if (pos->c->start >= pos->c->end) {
 		/* This chunk was deleted */
-		*pos = *epos;
+		*pos = *spos;
 		return 1;
 	}
 	if (text_ref_same(t, pos, epos)) {
@@ -570,6 +570,11 @@ static int text_update_prior_after_change(struct text *t safe, struct doc_ref *p
 		pos->o = pos->c->end;
 		return 1;
 	}
+	if (pos->o == pos->c->end)
+		/* This mark is OK, but previous mark might be
+		 * at start of next chunk, so keep looking
+		 */
+		return 1;
 	/* no insert or delete here, so all done */
 	return 0;
 }
@@ -630,6 +635,11 @@ static int text_update_following_after_change(struct text *t safe, struct doc_re
 		*pos = *epos;
 		return 1;
 	}
+	if (pos->o == pos->c->start)
+		/* This mark is OK, but next mark might be
+		 * at end of previous chunk, so keep looking
+		 */
+		return 1;
 	/* This is beyond the change point and no deletion or split
 	 * happened here, so all done.
 	 */
