@@ -525,7 +525,7 @@ class PresenterPane(edlib.Pane):
                     return 1
 
                 line = re.sub("\*([A-Za-z0-9][^*<]*)\*", "<italic>\\1</>", line)
-                line = re.sub("`([/A-Za-z0-9][^*<]*)`", "<family:mono>\\1</>", line)
+                line = re.sub("`([/A-Za-z0-9][^`<]*)`", "<family:mono>\\1</>", line)
                 b = re.match(".*,bullet:([^:,]*)", v)
                 if b:
                     vb = self.get_attr(mark, 'bullet', page)
