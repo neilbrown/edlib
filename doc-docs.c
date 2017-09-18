@@ -10,8 +10,8 @@
  * providing a "line-format" to guide display of each line.
  * The auxiliary pane becomes the parent of all attached documents, so
  * that the list of children is exactly the content of the document.
- * This pane responds to doc:revisit and doc:status-changed commands that
- * come down from the individual documents.
+ * This pane responds to doc:revisit commands that come down from the
+ * individual documents, and requests notification of Notify:doc:status-changed.
  *
  * Supported global operations include:
  * docs:byname - report pane with given (str)name
@@ -390,6 +390,8 @@ DEF_CMD(docs_callback)
 			return 0;
 		call_home(p, "doc:set-parent", doc->collection,
 			  0, NULL, NULL);
+		call_home(p, "Request:Notify:doc:status-changed", doc->collection,
+			  0, NULL, NULL);
 		if (p->parent)
 			doc_checkname(p, doc, ci->numeric);
 		return 0;
@@ -401,7 +403,7 @@ DEF_CMD(doc_damage)
 {
 	struct pane *p = ci->home;
 	struct mark *m = doc_new_mark(p->data, MARK_UNGROUPED);
-	struct pane *child = pane_my_child(p, ci->focus);
+	struct pane *child = ci->focus;
 
 	if (!child || !m)
 		return -1;
@@ -797,7 +799,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "get-attr", &docs_get_attr);
 
 	key_add(docs_aux_map, "doc:revisit", &doc_revisit);
-	key_add(docs_aux_map, "doc:status-changed", &doc_damage);
+	key_add(docs_aux_map, "Notify:doc:status-changed", &doc_damage);
 	key_add(docs_aux_map, "ChildClosed", &docs_child_closed);
 }
 
