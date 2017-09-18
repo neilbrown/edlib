@@ -1346,11 +1346,16 @@ class notmuch_query_view(edlib.Pane):
         self.whole_thread = 0
         self.seen_threads = {}
         self.seen_msgs = {}
+        self.call("Request:Notify:doc:Replace")
 
     def handle(self, key, focus, mark, mark2, numeric, **a):
         if key == "Clone":
             p = notmuch_query_view(focus)
             self.clone_children(focus.focus)
+            return 1
+
+        if key == "Notify:doc:Replace":
+            self.damaged(edlib.DAMAGED_CONTENT)
             return 1
 
         if key in ["doc:step", "doc:get-attr", "doc:mark-same"]:
