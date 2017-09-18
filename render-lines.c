@@ -722,6 +722,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 
 		line += 1;
 		if (ch == '\n') {
+			curspos = line-1;
 			flush_line(p, dodraw, &rlst, y+ascent, scale, 0,
 				   &curspos, &cursattr);
 			y += line_height;
