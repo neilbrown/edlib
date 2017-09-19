@@ -42,6 +42,17 @@
 
 default_attrs = "normal 10 family:sans fg:black bg:white left:5 space-after:1 space-before:1 xscale:10 yscale:40"
 
+# We keep two sets of marks in document for guiding the presentation view.
+# self.pageview provides a mark at the start of each page.  Each mark has two attributes
+#    'valid' and 'next-valid' which can be 'yes' or 'no'.
+# self.attrview provides a mark at the start of each line in the currently displayed page.
+#    Mark attributes are:
+#       'type' 'attr:foo' or 'text' or 'unknown' ('unknown' set when Replace modification happens).
+#       'value'  attribute contents
+#       'mode'  para-mode for the text
+# When change happens, type changed to 'unknown' which triggers self.line_reval() which
+# reparses.
+
 import re
 import os
 
@@ -300,7 +311,29 @@ class PresenterPane(edlib.Pane):
             mark['value'] = m.group(2)
         else:
             mark['type'] = 'text'
-            mark['value'] = '-None-'
+            mode = 'P'
+            prefix = None
+            for pf in self.paras:
+                if pf == None and line == "":
+                    mode = self.paras[pf]
+                    break
+                if (pf and (prefix is None or len(pf) > len(prefix)) and
+                    pf == line[0:len(pf)]):
+                    mode = self.paras[pf]
+                    prefix = pf
+            if type(mode) == dict:
+                # look up type of previous line.
+                pmode = None
+                if mark.prev() is not None:
+                    pmode = mark.prev()['mode']
+                if pmode in mode:
+                    mode = mode[pmode]
+                else:
+                    mode = mode[None]
+            mark['mode'] = mode
+            if prefix:
+                line = line[len(prefix):]
+            mark['value'] = line.strip('\n')
 
     def mark_lines(self, page):
         first = self.first_line()
@@ -321,7 +354,7 @@ class PresenterPane(edlib.Pane):
         line.release()
 
     def line_reval(self, l, page):
-        while l.prev() is not None and l.prev()['type'] == 'unknown':
+        while l is not None and l['type'] == 'unknown':
             l2 = l.prev()
             l.release()
             l = l2
@@ -331,6 +364,10 @@ class PresenterPane(edlib.Pane):
             l.to_mark(page)
         # l is a good starting point.  parse until l.next or page.next
         end = l.next()
+        while end and end['type'] == 'unknown':
+            l2 = end.next()
+            end.release()
+            end = l2
         if end is None:
             end = page.next()
 
@@ -466,45 +503,29 @@ class PresenterPane(edlib.Pane):
             linemark = None
             while end is None or mark < end:
                 linemark = self.prev_line(mark)
-                lines = []
-                self.parent.call("render-line", mark, numeric,
-                                 lambda key2, **aa: take('str', lines, aa))
-                if len(lines) == 0 or lines[0] is None:
-                    line = None
-                    break
-                line = lines[0]
-                if line[0] == ':':
+                if linemark.next():
+                    mark.to_mark(linemark.next())
+                elif end:
+                    mark.to_mark(end)
+                else:
+                    self.call("doc:set-ref", 0, mark)
+                if not linemark or linemark['type'] == 'unknown':
+                    self.line_reval(linemark, page)
+                    continue
+                if linemark['type'] != 'text':
                     #skip attributes
                     continue
-                line = line.strip("\n")
+                line = linemark['value']
                 break
 
             if line is None:
                 comm2("callback", self)
             else:
-                mode = 'P'
-                prefix = None
-                for pf in self.paras:
-                    if pf == None and line == "":
-                        mode = self.paras[pf]
-                        break
-                    if (pf and (prefix is None or len(pf) > len(prefix)) and
-                        pf == line[0:len(pf)]):
-                        mode = self.paras[pf]
-                        prefix = pf
-
+                mode = linemark['mode']
+                line = linemark['value']
+                prefix = linemark['prefix']
                 if prefix:
                     line = line[len(prefix):]
-                if type(mode) == dict:
-                    # look up type of previous line.
-                    pmode = None
-                    if linemark.prev() is not None:
-                        pmode = linemark.prev()['mode']
-                    if pmode in mode:
-                        mode = mode[pmode]
-                    else:
-                        mode = mode[None]
-                linemark['mode'] = mode
                 v = self.get_attr(mark, mode, page)
 
                 # leading spaces will confuse 'centre', and using spaces for formating
