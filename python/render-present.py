@@ -15,6 +15,7 @@
 # - a line starting "    " after a list item is more text in that list item
 # - a line starting "    " elsewhere is a code fragment (C)
 # - a line starting "!" treats rest of line a name of file containing an image
+# - an empty line is blank (BL)
 # - other lines are text (P)
 #
 # A level-1 heading (H1) starts a new page. attribute lines immediately preceding
@@ -504,6 +505,9 @@ class PresenterPane(edlib.Pane):
                 mark['mode'] = mode
                 v = self.get_attr(mark, mode, page)
 
+                # leading spaces will confuse 'centre', and using spaces for formating
+                # is to be discourged.  Hard spaces can still be used when needed.
+                line = line.strip(' ')
                 if mode == 'IM':
                     width=200; height=100
                     if len(line) > 1 and line[0].isdigit():
@@ -524,8 +528,20 @@ class PresenterPane(edlib.Pane):
                     comm2("callback", self, "<image:"+self.pathto(line)+",width:%d,height:%d>"%(width,height))
                     return 1
 
-                line = re.sub("\*([A-Za-z0-9][^*<]*)\*", "<italic>\\1</>", line)
-                line = re.sub("`([/A-Za-z0-9][^`<]*)`", "<family:mono>\\1</>", line)
+                vb = self.get_attr(mark, 'mono', page)
+                if not vb:
+                    vb = 'family:mono'
+                line = re.sub("`(\\S[^`<]*)`", "<"+vb+">\\1</>", line)
+
+                vb = self.get_attr(mark, 'italic', page)
+                if not vb:
+                    vb = 'italic'
+                line = re.sub("\\b_(\B[^_<]*)_", "<"+vb+">\\1</>", line)
+
+                vb = self.get_attr(mark, 'bold', page)
+                if not vb:
+                    vb = 'bold'
+                line = re.sub("\*(\S[^*<]*)\*", "<"+vb+">\\1</>", line)
                 b = re.match(".*,bullet:([^:,]*)", v)
                 if b:
                     vb = self.get_attr(mark, 'bullet', page)
