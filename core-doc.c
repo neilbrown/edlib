@@ -219,39 +219,47 @@ DEF_CMD(doc_word)
 	if (!m)
 		m = dd->point;
 
-	/* We skip spaces, then either alphanum or non-space/alphanum */
+	/* We skip spaces, then a group of alphanum and one of non-space/alphanum.
+	 * When going backwards, skip spaces, then non-alphanum, then alphanum
+	 */
 	while (rpt > 0) {
 		int field = 0;
+		wint_t wi;
+
 		while (!field &&
 		       iswspace(doc_following_pane(p, m)))
 			doc_move_horiz(f, m, 1, &field);
+
 		if (m->rpos < NO_RPOS || iswalnum(doc_following_pane(p, m))) {
 			while (!field && iswalnum(doc_following_pane(p, m)))
 				doc_move_horiz(f, m, 1, &field);
-		} else {
-			wint_t wi;
-			while (!field &&
-			       (wi=doc_following_pane(p, m)) != WEOF &&
-			       !iswspace(wi) && !iswalnum(wi))
-				doc_move_horiz(f, m, 1, &field);
 		}
+
+		while (!field &&
+		       (wi=doc_following_pane(p, m)) != WEOF &&
+		       !iswspace(wi) && !iswalnum(wi))
+				doc_move_horiz(f, m, 1, &field);
+
 		rpt -= 1;
 	}
 	while (rpt < 0) {
 		int field = 0;
+		wint_t wi;
+
 		while (!field &&
 		       iswspace(doc_prior_pane(p, m)))
 			doc_move_horiz(f, m, 0, &field);
+
+		while (!field &&
+		       (wi=doc_prior_pane(p, m)) != WEOF &&
+		       !iswspace(wi) && !iswalnum(wi))
+			doc_move_horiz(f, m, 0, &field);
+
 		if (m->rpos < NO_RPOS || iswalnum(doc_prior_pane(p, m))) {
 			while (!field && iswalnum(doc_prior_pane(p, m)))
 				doc_move_horiz(f, m, 0, &field);
-		} else {
-			wint_t wi;
-			while (!field &&
-			       (wi=doc_prior_pane(p, m)) != WEOF &&
-			       !iswspace(wi) && !iswalnum(wi))
-				doc_move_horiz(f, m, 0, &field);
 		}
+
 		rpt += 1;
 	}
 
