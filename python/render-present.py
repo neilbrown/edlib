@@ -288,7 +288,7 @@ class PresenterPane(edlib.Pane):
         next = page.next()
         first = self.first_line()
         while first and ((first < page and not self.marks_same(first,page)) or
-                         (next and first > next and not self.marks_same(first, next))):
+                         (next and (first > next or self.marks_same(first, next)))):
             # first is outside this page
             first.release(); first = None
             first = self.first_line()
@@ -463,7 +463,9 @@ class PresenterPane(edlib.Pane):
             end = page.next()
 
             line = None
+            linemark = None
             while end is None or mark < end:
+                linemark = self.prev_line(mark)
                 lines = []
                 self.parent.call("render-line", mark, numeric,
                                  lambda key2, **aa: take('str', lines, aa))
@@ -496,13 +498,13 @@ class PresenterPane(edlib.Pane):
                 if type(mode) == dict:
                     # look up type of previous line.
                     pmode = None
-                    if mark.prev() is not None:
-                        pmode = mark.prev()['mode']
+                    if linemark.prev() is not None:
+                        pmode = linemark.prev()['mode']
                     if pmode in mode:
                         mode = mode[pmode]
                     else:
                         mode = mode[None]
-                mark['mode'] = mode
+                linemark['mode'] = mode
                 v = self.get_attr(mark, mode, page)
 
                 # leading spaces will confuse 'centre', and using spaces for formating
