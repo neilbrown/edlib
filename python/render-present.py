@@ -357,16 +357,21 @@ class PresenterPane(edlib.Pane):
         if not first:
             return
 
+        # set extra_change if some line that isn't 'unknown' gets changed
+        extra_change = False
         while not next or (first < next and not self.marks_same(first, next)):
             # There is a line there that we care about - unless EOF
             this = first.dup()
             l = self.get_line_at(this)
             if not l:
                 break
+            if first['type'] != 'unknown':
+                extra_change = True
             self.annotate(first, l)
             while first.next() and first.next() < this and not self.marks_same(first.next(), this):
                 # first.next() is within the line just rendered
                 first.next().release()
+                extra_change = True
             if first.next() and self.marks_same(first.next(), this):
                 first = first.next()
                 while first and first['type'] != 'unknown':
@@ -379,8 +384,12 @@ class PresenterPane(edlib.Pane):
 
         if first:
             while first.next():
+                extra_change = True
                 first.next().release()
             first.release()
+        if extra_change:
+            # force full refresh
+            self.damaged(edlib.DAMAGED_VIEW)
 
 
     def get_local_attr(self, m, attr, page):
