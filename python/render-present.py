@@ -50,8 +50,8 @@ default_attrs = "normal 10 family:sans fg:black bg:white left:5 space-after:1 sp
 #       'type' 'attr:foo' or 'text' or 'unknown' ('unknown' set when Replace modification happens).
 #       'value'  attribute contents
 #       'mode'  para-mode for the text
-# When change happens, type changed to 'unknown' which triggers self.line_reval() which
-# reparses.
+# When change happens, type changed to 'unknown' which triggers self.mark_lines() to
+# reparse some of the page.
 
 import re
 import os
@@ -71,6 +71,8 @@ class PresenterPane(edlib.Pane):
         self.attrview = focus.call("doc:add-view") - 1
         self.borderless = False
         self.target_mark = None
+        self.first_valid = False
+        self.lines_damaged = True
 
     def marks_same(self, m1, m2):
         if isinstance(m1, edlib.Mark) and isinstance(m1, edlib.Mark):
@@ -156,7 +158,7 @@ class PresenterPane(edlib.Pane):
                         self.damaged(edlib.DAMAGED_VIEW)
                     return maybe
             else:
-                # not part of start-of-page
+                # not part of start-of-page block
                 skipping = False
                 maybe = None
                 if globals is not None:
@@ -167,6 +169,7 @@ class PresenterPane(edlib.Pane):
         # This was the start of a page, but might not be any more.  Must check.
         # Following lines must be ":attr:" or "# ".
         # Preceeding line, if any must not be ":attr:"
+        # and must end at 'start'
         m = start.dup()
         l = self.get_line_at(m)
         while l and l[0] == ':':
@@ -178,6 +181,8 @@ class PresenterPane(edlib.Pane):
         m = start.dup()
         l = self.get_line_before(m)
         if l and l[0] == ':':
+            return False
+        if not self.marks_same(m, start):
             return False
         return True
 
@@ -219,7 +224,7 @@ class PresenterPane(edlib.Pane):
                     first = self.find_page(t, True)
                     if not first:
                         # no pages any more
-                        pass
+                        pm.release()
                     elif self.marks_same(pm, first):
                         # Oh good!
                         self.first_valid = True
@@ -273,7 +278,6 @@ class PresenterPane(edlib.Pane):
                         pm.next().release()
                     pm = None
 
-        # FIXME first_valid might not exist - if single large page.
         if not self.first_valid:
             # need to update globals
             t = edlib.Mark(self)
@@ -337,58 +341,52 @@ class PresenterPane(edlib.Pane):
 
     def mark_lines(self, page):
         first = self.first_line()
-        if first:
+        if first and not self.lines_damaged:
             return
-        # there are currently no lines
+        self.lines_damaged = False
+        # There are no lines marked, or some are 'unknown'
         next = page.next()
-        line = edlib.Mark(self, self.attrview)
-        line.to_mark(page)
+        if not first or not self.marks_same(first, page):
+            # no first mark, or it has been moved off page start
+            first = edlib.Mark(self, self.attrview)
+            first.to_mark(page)
+        else:
+            while first and first['type'] != 'unknown':
+                first = first.next()
+        # first is now the start of a line we need to parse.
+        if not first:
+            return
 
-        while not next or (line < next and not self.marks_same(line, next)):
+        while not next or (first < next and not self.marks_same(first, next)):
             # There is a line there that we care about - unless EOF
-            this = edlib.Mark(orig=line)
-            l = self.get_line_at(line)
+            this = first.dup()
+            l = self.get_line_at(this)
             if not l:
                 break
-            self.annotate(this, l)
-        line.release()
+            self.annotate(first, l)
+            while first.next() and first.next() < this and not self.marks_same(first.next(), this):
+                # first.next() is within the line just rendered
+                first.next().release()
+            if first.next() and self.marks_same(first.next(), this):
+                first = first.next()
+                while first and first['type'] != 'unknown':
+                    first = first.next()
+                if not first:
+                    break
+            else:
+                first = edlib.Mark(orig=first)
+                first.to_mark(this)
 
-    def line_reval(self, l, page):
-        while l is not None and l['type'] == 'unknown':
-            l2 = l.prev()
-            l.release()
-            l = l2
+        if first:
+            while first.next():
+                first.next().release()
+            first.release()
 
-        if l is None:
-            l = edlib.Mark(self, self.attrview)
-            l.to_mark(page)
-        # l is a good starting point.  parse until l.next or page.next
-        end = l.next()
-        while end and end['type'] == 'unknown':
-            l2 = end.next()
-            end.release()
-            end = l2
-        if end is None:
-            end = page.next()
-
-        while not end or (l < end and not self.marks_same(l, end)):
-            # There is a line there that we care about - unless EOF
-            this = edlib.Mark(orig=l)
-            txt = self.get_line_at(l)
-            if not txt:
-                break
-            self.annotate(this, txt)
-        l.release()
 
     def get_local_attr(self, m, attr, page):
         t = 'attr:' + attr
         l = self.prev_line(m)
         while l:
-            if l['type'] == 'unknown':
-                self.line_reval(l, page)
-                l = self.prev_line(m)
-                continue
-
             if l['type'] == t:
                 return l['value']
             l = l.prev()
@@ -501,17 +499,17 @@ class PresenterPane(edlib.Pane):
 
             line = None
             linemark = None
-            while end is None or mark < end:
+            while end is None or (mark < end and not self.marks_same(mark, end)):
                 linemark = self.prev_line(mark)
+                if not linemark:
+                    break
                 if linemark.next():
                     mark.to_mark(linemark.next())
                 elif end:
                     mark.to_mark(end)
                 else:
                     self.call("doc:set-ref", 0, mark)
-                if not linemark or linemark['type'] == 'unknown':
-                    self.line_reval(linemark, page)
-                    continue
+
                 if linemark['type'] != 'text':
                     #skip attributes
                     continue
@@ -575,9 +573,10 @@ class PresenterPane(edlib.Pane):
                     line = bl +"<"+v+">"+ line + "</>"
                 else:
                     line = "<"+v+">"+ line + "</>"
-                line += '\n'
                 if end and (mark > end or self.marks_same(mark,end)):
                     line += '\f'
+                else:
+                    line += '\n'
                 comm2("callback", self, line)
             return 1
 
@@ -603,6 +602,10 @@ class PresenterPane(edlib.Pane):
 
             l = self.prev_line(mark)
             if l:
+                self.lines_damaged = True
+                if self.marks_same(l, mark) and l.prev():
+                    l['type'] = 'unknown'
+                    l = l.prev()
                 if l['type'] and l['type'][0:5] == "attr:":
                     self.damaged(edlib.DAMAGED_VIEW)
                 l['type'] = 'unknown'
