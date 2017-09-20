@@ -327,13 +327,16 @@ class PresenterPane(edlib.Pane):
                     prefix = pf
             if type(mode) == dict:
                 # look up type of previous line.
-                pmode = None
+                pmode = "-None-"
                 if mark.prev() is not None:
                     pmode = mark.prev()['mode']
                 if pmode in mode:
                     mode = mode[pmode]
                 else:
-                    mode = mode[None]
+                    mode = mode["-None-"]
+                mark['prev'] = pmode
+            else:
+                mark['prev'] = None
             mark['mode'] = mode
             if prefix:
                 line = line[len(prefix):]
@@ -374,7 +377,8 @@ class PresenterPane(edlib.Pane):
                 extra_change = True
             if first.next() and self.marks_same(first.next(), this):
                 first = first.next()
-                while first and first['type'] != 'unknown':
+                while first and first['type'] != 'unknown' and (
+                        first['prev'] == None or first['prev'] == first.prev()['mode']):
                     first = first.next()
                 if not first:
                     break
@@ -390,7 +394,6 @@ class PresenterPane(edlib.Pane):
         if extra_change:
             # force full refresh
             self.damaged(edlib.DAMAGED_VIEW)
-
 
     def get_local_attr(self, m, attr, page):
         t = 'attr:' + attr
@@ -410,9 +413,9 @@ class PresenterPane(edlib.Pane):
         ''   : 'P',
         None : 'BL',
         '    - ': 'L2',
-        '     ': {'L2':'L2c', 'L2c':'L2c', 'L1':'L1c', 'L1c': 'L1c', None: 'C'},
-        '    ' : {'L2':'L1c', 'L2c':'L1c', 'L1':'L1c', 'L1c': 'L1c', None: 'C'},
-        ' '    : {'L2':'L1c', 'L2c':'L1c', 'L1':'L1c', 'L1c': 'L1c', None: 'P'},
+        '     ': {'L2':'L2c', 'L2c':'L2c', 'L1':'L1c', 'L1c': 'L1c', '-None-': 'C'},
+        '    ' : {'L2':'L1c', 'L2c':'L1c', 'L1':'L1c', 'L1c': 'L1c', '-None-': 'C'},
+        ' '    : {'L2':'L1c', 'L2c':'L1c', 'L1':'L1c', 'L1c': 'L1c', '-None-': 'P'},
         }
     defaults = {
         'H1': 'center,30,family:serif',
