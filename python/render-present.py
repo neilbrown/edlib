@@ -636,6 +636,15 @@ class PresenterPane(edlib.Pane):
                     m2.to_mark(m)
                     if comm2 is not None:
                         comm2("callback", focus, m)
+            if numeric == 3:
+                # Move 'm2' to start of previous page
+                m = self.find_pages(m2)
+                if m:
+                    m = m.prev()
+                if m:
+                    m2.to_mark(m)
+                    if comm2 is not None:
+                        comm2("callback", focus, m)
             self.target_mark = m2;
             self.damaged(edlib.DAMAGED_VIEW)
             return 1
@@ -706,6 +715,12 @@ class MarkdownPane(edlib.Pane):
         if key == "Move-View-Large" and numeric >= 0:
             m2 = mark.dup()
             if focus.call("Notify:doc:Recentre", m2, 2,
+                          lambda key, **a: mark.to_mark(a['mark'])) > 0:
+                focus.damaged(edlib.DAMAGED_CURSOR)
+                return 1
+        if key == "Move-View-Large" and numeric < 0:
+            m2 = mark.dup()
+            if focus.call("Notify:doc:Recentre", m2, 3,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 focus.damaged(edlib.DAMAGED_CURSOR)
                 return 1
