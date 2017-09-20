@@ -955,7 +955,7 @@ static int Pane_set_item(Pane *self safe, PyObject *key, PyObject *val)
 		return -1;
 	}
 	v = python_as_string(val, &t2);
-	if (!v) {
+	if (val != Py_None && !v) {
 		PyErr_SetString(PyExc_TypeError, "value must be a string or unicode");
 		Py_XDECREF(t1);
 		return -1;
@@ -1518,7 +1518,7 @@ static int mark_set_item(Mark *self safe, PyObject *key safe, PyObject *val safe
 		return -1;
 	}
 	v = python_as_string(val, &t2);
-	if (!v) {
+	if (val != Py_None && !v) {
 		PyErr_SetString(PyExc_TypeError, "value must be a string or unicode");
 		Py_XDECREF(t1);
 		return -1;
