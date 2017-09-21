@@ -164,19 +164,19 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x 
 
 	rl = calloc(1, sizeof(*rl));
 	cr.c = text_size_callback;
-	call_comm7("text-size", p, rmargin - *x, NULL, str, scale, attr, &cr.c);
+	call_comm("text-size", p, rmargin - *x, NULL, str, scale, NULL, attr, &cr.c);
 	max = cr.i;
 	if (max == 0 && ret == CURS) {
 		/* must already have CURS position. */
 		rl->curs = start;
 		ret = WRAP;
 		rmargin = p->w - margin;
-		call_comm7("text-size", p, rmargin - *x, NULL, str, scale, attr, &cr.c);
+		call_comm("text-size", p, rmargin - *x, NULL, str, scale, NULL, attr, &cr.c);
 		max = cr.i;
 	}
 	if (max < len) {
 		str[max] = 0;
-		call_comm7("text-size", p, rmargin - *x, NULL, str, scale, attr, &cr.c);
+		call_comm("text-size", p, rmargin - *x, NULL, str, scale, NULL, attr, &cr.c);
 	}
 
 	rl->text_orig = start;
@@ -301,7 +301,7 @@ static int flush_line(struct pane *p safe, int dodraw,
 	    (head = get_last_attr(last_rl->attr, "wrap-head"))) {
 		struct call_return cr = {};
 		cr.c = text_size_callback;
-		call_comm7("text-size", p, p->w, NULL, head, scale, last_rl->attr, &cr.c);
+		call_comm("text-size", p, p->w, NULL, head, scale, NULL, last_rl->attr, &cr.c);
 		rl = calloc(1, sizeof(*rl));
 		rl->text = head;
 		rl->attr = strdup(last_rl->attr); // FIXME underline,fg:blue ???
@@ -330,7 +330,7 @@ static void update_line_height_attr(struct pane *p safe, int *h safe, int *a saf
 {
 	struct call_return cr;
 	cr.c = text_size_callback;
-	call_comm7("text-size", p, -1, NULL, str, scale, attr, &cr.c);
+	call_comm("text-size", p, -1, NULL, str, scale, NULL, attr, &cr.c);
 	if (cr.y > *h)
 		*h = cr.y;
 	if (cr.i2 > *a)
@@ -463,8 +463,8 @@ static void find_cursor(struct render_list *rlst, struct pane *p safe, int cx,
 	else {
 		struct call_return cr = {};
 		cr.c = text_size_callback;
-		call_comm7("text-size", p, cx - rlst->x, NULL, rlst->text,
-			   scale, rlst->attr, &cr.c);
+		call_comm("text-size", p, cx - rlst->x, NULL, rlst->text,
+			  scale, NULL, rlst->attr, &cr.c);
 		*curspos = rlst->text_orig + cr.i;
 	}
 	*cursattr = strdup(rlst->attr);
@@ -572,8 +572,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			struct call_return cr;
 			cr.c = text_size_callback;
 			cr.x = 0;
-			call_comm7("text-size", p, -1, NULL, "M", 0,
-				   buf_final(&attr), &cr.c);
+			call_comm("text-size", p, -1, NULL, "M", 0, NULL,
+				  buf_final(&attr), &cr.c);
 			mwidth = cr.x;
 			if (mwidth <= 0)
 				mwidth = 1;
@@ -870,7 +870,7 @@ static struct mark *call_render_line(struct pane *p safe, struct mark *start saf
 	 * of the pane
 	 */
 	if (call_comm("render-line", p, NO_NUMERIC,
-		      m, NULL, 0, &cr.c) <= 0) {
+		      m, NULL, &cr.c) <= 0) {
 		mark_free(m);
 		return NULL;
 	}
@@ -911,7 +911,7 @@ static struct mark *call_render_line_offset(struct pane *p safe,
 
 	m = mark_dup(start, 0);
 	if (call_comm("render-line", p, offset, m,
-		      NULL, 0, &no_save) <= 0) {
+		      &no_save) <= 0) {
 		mark_free(m);
 		return NULL;
 	}
@@ -935,7 +935,7 @@ static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
 	int len;
 	struct mark *m = mark_dup(start, 0);
 
-	len = call_comm8("render-line", p, -1, m, NULL, 0, pm, NULL, &get_len);
+	len = call_comm("render-line", p, -1, m, NULL, 0, pm, &get_len);
 	mark_free(m);
 	if (len <= 0)
 		return 0;
@@ -1184,8 +1184,8 @@ restart:
 				if (mwidth < 0) {
 					struct call_return cr;
 					cr.c = text_size_callback;
-					call_comm7("text-size", p, -1, NULL, "M", 0,
-						   "", &cr.c);
+					call_comm("text-size", p, -1, NULL, "M", 0,
+						  NULL, "", &cr.c);
 					mwidth = cr.x;
 					if (mwidth <= 0)
 						mwidth = 1;
@@ -1209,8 +1209,8 @@ restart:
 				if (mwidth < 0) {
 					struct call_return cr;
 					cr.c = text_size_callback;
-					call_comm7("text-size", p, -1, NULL, "M", 0,
-						   "", &cr.c);
+					call_comm("text-size", p, -1, NULL, "M", 0,
+						  NULL, "", &cr.c);
 					mwidth = cr.x;
 					if (mwidth <= 0)
 						mwidth = 1;
@@ -1743,7 +1743,7 @@ REDEF_CMD(render_lines_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-render-lines",
-		  0, &render_lines_attach);
+		  &render_lines_attach);
 	call_comm("global-set-command", ed, 0, NULL, "attach-render-text",
-		  0, &render_lines_attach);
+		  &render_lines_attach);
 }

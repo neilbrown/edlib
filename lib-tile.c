@@ -889,5 +889,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(tile_map, "ChildRegistered", &tile_child_registered);
 
 	call_comm("global-set-command", ed, 0, NULL, "attach-tile",
-		  0, &tile_attach);
+		  &tile_attach);
 }

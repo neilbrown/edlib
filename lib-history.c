@@ -153,5 +153,5 @@ DEF_CMD(history_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-history",
-		  0, &history_attach);
+		  &history_attach);
 }

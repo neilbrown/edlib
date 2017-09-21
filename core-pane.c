@@ -624,7 +624,7 @@ char *pane_mark_attr(struct pane *p safe, struct mark *m safe, bool forward,
 
 	cr.c = attr_get_callback;
 	cr.s = NULL;
-	ret = call_comm("doc:get-attr", p, !!forward, m, key, 0, &cr.c);
+	ret = call_comm("doc:get-attr", p, !!forward, m, key, &cr.c);
 	if (ret > 0)
 		return cr.s;
 	return NULL;

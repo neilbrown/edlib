@@ -49,7 +49,7 @@ static struct command *get_command(struct pane *p safe, char *cmd)
 	int ret;
 
 	cr.c = get_command_callback;
-	ret = call_comm("global-get-command", p, 0, NULL, cmd, 0, &cr.c);
+	ret = call_comm("global-get-command", p, 0, NULL, cmd, &cr.c);
 	if (ret > 0)
 		return cr.comm;
 	return NULL;
@@ -171,5 +171,5 @@ DEF_CMD(keymap_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-global-keymap",
-		  0, &keymap_attach);
+		  &keymap_attach);
 }

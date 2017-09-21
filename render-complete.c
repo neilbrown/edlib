@@ -84,8 +84,8 @@ DEF_CMD(render_complete_line)
 	cr.c = save_highlighted;
 	cr.i = plen;
 	cr.s = NULL;
-	if (call_comm8(ci->key, ci->home->parent, ci->numeric, ci->mark, NULL,
-		       0, ci->mark2, NULL, &cr.c) == 0)
+	if (call_comm(ci->key, ci->home->parent, ci->numeric, ci->mark, NULL,
+		      0, ci->mark2, &cr.c) == 0)
 		return 0;
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cr.s, 0);
@@ -99,8 +99,8 @@ DEF_CMD(render_complete_line)
 		cb.plen = plen;
 		cb.prefix = cd->prefix;
 		cb.cmp = 0;
-		call_comm8(ci->key, ci->home->parent, ci->numeric, m, NULL,
-			   0, ci->mark2, NULL, &cb.c);
+		call_comm(ci->key, ci->home->parent, ci->numeric, m, NULL,
+			  0, ci->mark2, &cb.c);
 
 		if (cb.cmp == 0)
 			break;
@@ -160,7 +160,7 @@ static int do_render_complete_prev(struct complete_data *cd safe, struct mark *m
 		m3 = mark_dup(m2, 1);
 		cb.keep = n2 == 1 && savestr;
 		cb.str = NULL;
-		if (call_comm("render-line", focus, NO_NUMERIC, m3, NULL, 0, &cb.c)
+		if (call_comm("render-line", focus, NO_NUMERIC, m3, &cb.c)
 		    != 1) {
 			mark_free(m3);
 			break;
@@ -409,5 +409,5 @@ REDEF_CMD(complete_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-render-complete",
-		  0, &complete_attach);
+		  &complete_attach);
 }

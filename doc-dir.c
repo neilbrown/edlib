@@ -664,9 +664,9 @@ DEF_CMD(dir_cmd)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-doc-dir",
-		  0, &dir_new);
+		  &dir_new);
 	call_comm("global-set-command", ed, 0, NULL, "open-doc-dir",
-		  0, &dir_new2);
+		  &dir_new2);
 
 	doc_map = key_alloc();
 

@@ -234,6 +234,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(b64_map, "doc:step", &base64_step);
 	key_add(b64_map, "Close", &b64_close);
 
-	call_comm("global-set-command", ed, 0, NULL, "attach-base64", 0,
+	call_comm("global-set-command", ed, 0, NULL, "attach-base64",
 		  &b64_attach);
 }

@@ -454,7 +454,7 @@ static inline void doc_del_view(struct pane *p safe, int num)
 #define _VFUNC(name, n) _VFUNC_(name, n)
 #define VFUNC(func, ...) _VFUNC(func, __NARG__(__VA_ARGS__)) (__VA_ARGS__)
 
-// definition for FOO
+
 #define call(...) VFUNC(call, __VA_ARGS__)
 #define call12(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home) \
 	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home)
@@ -501,6 +501,28 @@ static inline void doc_del_view(struct pane *p safe, int num)
 #define call_home3(home, key, focus) \
 	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, home)
 
+/* comm2 is a bit like 'home' - often irrelevant, sometime important.
+ * The *last* arg is always comm2 (unlike first for home in call_home)
+ */
+#define call_comm(...) VFUNC(call_comm, __VA_ARGS__)
+#define call_comm11(key, focus, numeric, mark, str, extra, mark2, str2, x, y, comm2) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, NULL)
+#define call_comm9(key, focus, numeric, mark, str, extra, mark2, str2, comm2) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, 0, 0, NULL)
+#define call_comm8(key, focus, numeric, mark, str, extra, mark2, comm2) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, NULL, comm2, 0, 0, NULL)
+#define call_comm7(key, focus, numeric, mark, str, extra, comm2) \
+	do_call(key, focus, numeric, mark, str, extra, NULL, NULL, comm2, 0, 0, NULL)
+#define call_comm6(key, focus, numeric, mark, str, comm2) \
+	do_call(key, focus, numeric, mark, str, 0, NULL, NULL, comm2, 0, 0, NULL)
+#define call_comm5(key, focus, numeric, mark, comm2) \
+	do_call(key, focus, numeric, mark, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
+#define call_comm4(key, focus, numeric, comm2) \
+	do_call(key, focus, numeric, NULL, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
+#define call_comm3(key, focus, comm2) \
+	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
+
+
 
 static inline int do_call(char *key safe, struct pane *focus safe, int numeric, struct mark *m,
 			  char *str, int extra, struct mark *m2, char *str2,
@@ -524,48 +546,6 @@ struct call_return {
 	int x,y;
 	struct command *comm;
 };
-
-static inline int call_comm(char *key safe, struct pane *focus safe, int numeric, struct mark *m,
-			    char *str, int extra, struct command *comm)
-{
-	struct cmd_info ci = { .key = key, .focus = focus, .home = focus, .comm=safe_cast 0};
-
-	ci.numeric = numeric;
-	ci.mark = m;
-	ci.str = str;
-	ci.extra = extra;
-	ci.comm2 = comm;
-	return key_handle(&ci);
-}
-
-static inline int call_comm7(char *key safe, struct pane *focus safe, int numeric, struct mark *m,
-			     char *str, int extra, char *str2, struct command *comm)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
-
-	ci.numeric = numeric;
-	ci.mark = m;
-	ci.str = str;
-	ci.str2 = str2;
-	ci.extra = extra;
-	ci.comm2 = comm;
-	return key_handle(&ci);
-}
-
-static inline int call_comm8(char *key safe, struct pane *focus safe, int numeric, struct mark *m,
-			     char *str, int extra, struct mark *m2, char *str2, struct command *comm)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
-
-	ci.numeric = numeric;
-	ci.mark = m;
-	ci.mark2 = m2;
-	ci.str = str;
-	ci.str2 = str2;
-	ci.extra = extra;
-	ci.comm2 = comm;
-	return key_handle(&ci);
-}
 
 static inline int comm_call(struct command *comm, char *key safe, struct pane *focus safe,
 			    int numeric, struct mark *m, char *str, int extra)

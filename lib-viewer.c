@@ -98,7 +98,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(viewer_map, "Clone", &viewer_clone);
 
 	call_comm("global-set-command", ed, 0, NULL, "attach-viewer",
-		  0, &viewer_attach);
+		  &viewer_attach);
 	call_comm("global-set-command", ed, 0, NULL, "doc:appeared-viewer",
-		  0, &viewer_appeared);
+		  &viewer_appeared);
 }

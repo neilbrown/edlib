@@ -178,15 +178,15 @@ DEF_CMD(libevent_activate)
 {
 	/* These are defaults, so make them sort late */
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:read-zz",
-		  0, &libevent_read);
+		  &libevent_read);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:signal-zz",
-		  0, &libevent_signal);
+		  &libevent_signal);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:timer-zz",
-		  0, &libevent_timer);
+		  &libevent_timer);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:run-zz",
-		  0, &libevent_run);
+		  &libevent_run);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:deactivate-zz",
-		  0, &libevent_deactivate);
+		  &libevent_deactivate);
 
 	return 1;
 }
@@ -195,5 +195,5 @@ void edlib_init(struct pane *ed safe)
 {
 	INIT_LIST_HEAD(&event_list);
 	call_comm("global-set-command", ed, 0, NULL, "attach-libevent",
-		  0, &libevent_activate);
+		  &libevent_activate);
 }

@@ -79,8 +79,8 @@ DEF_CMD(messageline_handle)
 		if (mli->height == 0) {
 			struct call_return cr;
 			cr.c = text_size_callback;
-			call_comm7("text-size", ci->home, -1, NULL,
-				   "M", 0, "bold", &cr.c);
+			call_comm("text-size", ci->home, -1, NULL,
+				  "M", 0, NULL, "bold", &cr.c);
 			mli->height = cr.y;
 			mli->ascent = cr.i;
 		}
@@ -159,5 +159,5 @@ DEF_CMD(messageline_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-messageline",
-		  0, &messageline_attach);
+		  &messageline_attach);
 }

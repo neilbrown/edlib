@@ -49,7 +49,7 @@ static int line_height(struct pane *p safe)
 	struct call_return cr;
 
 	cr.c = text_size_callback;
-	call_comm7("text-size", p, -1, NULL, "x", 0, "", &cr.c);
+	call_comm("text-size", p, -1, NULL, "x", 0, NULL, "", &cr.c);
 	return cr.y;
 }
 
@@ -209,5 +209,5 @@ DEF_CMD(popup_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "PopupTile",
-		  0, &popup_attach);
+		  &popup_attach);
 }

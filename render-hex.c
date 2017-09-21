@@ -237,7 +237,7 @@ DEF_CMD(hex_appeared)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-render-hex",
-		  0, &render_hex_attach);
+		  &render_hex_attach);
 	call_comm("global-set-command", ed, 0, NULL, "doc:appeared-hex",
-		  0, &hex_appeared);
+		  &hex_appeared);
 }

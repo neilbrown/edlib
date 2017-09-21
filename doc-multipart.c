@@ -532,8 +532,8 @@ DEF_CMD(mp_forward)
 	m1 = NULL;
 	if (ci->mark && ci->mark->ref.docnum == d)
 		m1 = ci->mark->ref.m;
-	return call_comm8(key, mpi->parts[d].pane, ci->numeric, m1,
-			  ci->str, ci->extra, NULL, ci->str2, ci->comm2);
+	return call_comm(key, mpi->parts[d].pane, ci->numeric, m1,
+			 ci->str, ci->extra, NULL, ci->str2, ci->comm2);
 }
 
 
@@ -576,5 +576,5 @@ DEF_CMD(attach_mp)
 void edlib_init(struct pane *ed safe)
 {
 	mp_init_map();
-	call_comm("global-set-command", ed, 0, NULL, "attach-doc-multipart", 0, &attach_mp);
+	call_comm("global-set-command", ed, 0, NULL, "attach-doc-multipart", &attach_mp);
 }

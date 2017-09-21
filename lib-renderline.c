@@ -188,7 +188,8 @@ DEF_CMD(text_attr_forward)
 	struct attr_return *ar = container_of(ci->comm, struct attr_return, fwd);
 	if (!ci->str || !ci->str2)
 		return 0;
-	return call_comm7("map-attr", ci->focus, 0, ci->mark, ci->str2, 0, ci->str, &ar->rtn);
+	return call_comm("map-attr", ci->focus, 0, ci->mark, ci->str2,
+			 0, NULL, ci->str, &ar->rtn);
 }
 
 DEF_CMD(text_attr_callback)
@@ -210,7 +211,7 @@ static void call_map_mark(struct pane *f safe, struct mark *m safe,
 	char *val;
 
 	while ((key = attr_get_next_key(m->attrs, key, -1, &val)) != NULL)
-		call_comm7("map-attr", f, 0, m, key, 0, val, &ar->rtn);
+		call_comm("map-attr", f, 0, m, key, 0, NULL, val, &ar->rtn);
 }
 
 DEF_CMD(render_line)
@@ -249,7 +250,7 @@ DEF_CMD(render_line)
 	if (is_eol(ch) &&
 	    (attr = pane_mark_attr(p, m, 1, "renderline:func")) != NULL) {
 		/* An alternate function handles this line */
-		ret = call_comm8(attr, ci->focus, o, m, NULL, ci->extra, pm, NULL, ci->comm2);
+		ret = call_comm(attr, ci->focus, o, m, NULL, ci->extra, pm, ci->comm2);
 		if (ret)
 			return ret;
 	}
@@ -271,7 +272,7 @@ DEF_CMD(render_line)
 		}
 
 		ar.chars = chars;
-		call_comm7("doc:get-attr", ci->focus, 1, m, "render:", 1, NULL, &ar.fwd);
+		call_comm("doc:get-attr", ci->focus, 1, m, "render:", 1, &ar.fwd);
 
 		/* find all marks "here" - they might be fore or aft */
 		for (m2 = doc_prev_mark_all(m); m2 && mark_same_pane(p, m, m2);
@@ -386,5 +387,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(rl_map, "Close", &rl_close);
 
 	call_comm("global-set-command", ed, 0, NULL, "attach-renderline",
-		  0, &renderline_attach);
+		  &renderline_attach);
 }

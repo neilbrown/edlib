@@ -250,5 +250,5 @@ DEF_CMD(render_format_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-render-format",
-		  0, &render_format_attach);
+		  &render_format_attach);
 }

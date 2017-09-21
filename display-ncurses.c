@@ -450,5 +450,5 @@ DEF_CMD(display_ncurses)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "attach-display-ncurses",
-		  0, &display_ncurses);
+		  &display_ncurses);
 }

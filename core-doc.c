@@ -561,7 +561,7 @@ DEF_CMD(doc_do_closed)
 	if (child)
 		pane_close(child);
 
-	call_comm("editor-on-idle", p, 0, NULL, NULL, 0, &doc_delayed_close);
+	call_comm("editor-on-idle", p, &doc_delayed_close);
 	return 1;
 }
 
@@ -1010,9 +1010,9 @@ void doc_free(struct doc *d safe)
 
 void doc_setup(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "doc:open", 0, &doc_open);
-	call_comm("global-set-command", ed, 0, NULL, "doc:from-text", 0, &doc_from_text);
-	call_comm("global-set-command", ed, 0, NULL, "doc:attach", 0, &doc_do_attach);
+	call_comm("global-set-command", ed, 0, NULL, "doc:open", &doc_open);
+	call_comm("global-set-command", ed, 0, NULL, "doc:from-text", &doc_from_text);
+	call_comm("global-set-command", ed, 0, NULL, "doc:attach", &doc_do_attach);
 	if (!(void*)doc_default_cmd)
 		init_doc_cmds();
 }

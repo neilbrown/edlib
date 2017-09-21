@@ -194,8 +194,8 @@ DEF_CMD(view_handle)
 		if (vd->line_height < 0) {
 			struct call_return cr;
 			cr.c = text_size_callback;
-			if (call_comm7("text-size", ci->home, -1, NULL,
-				       "M", 0, "bold", &cr.c) == 0) {
+			if (call_comm("text-size", ci->home, -1, NULL,
+				      "M", 0, NULL, "bold", &cr.c) == 0) {
 				cr.x = cr.y =1;
 				cr.i = 0;
 			}
@@ -377,5 +377,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "Refresh:view", &view_refresh_view);
 
 	call_comm("global-set-command", ed, 0, NULL, "attach-view",
-		  0, &view_attach);
+		  &view_attach);
 }

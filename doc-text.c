@@ -1782,8 +1782,8 @@ DEF_CMD(text_destroy)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "attach-doc-text", 0, &text_new);
-	call_comm("global-set-command", ed, 0, NULL, "open-doc-text", 0, &text_new2);
+	call_comm("global-set-command", ed, 0, NULL, "attach-doc-text", &text_new);
+	call_comm("global-set-command", ed, 0, NULL, "open-doc-text", &text_new2);
 
 	text_map = key_alloc();
 

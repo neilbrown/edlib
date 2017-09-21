@@ -272,5 +272,5 @@ DEF_CMD(count_lines)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, 0, NULL, "CountLines",
-		  0, &count_lines);
+		  &count_lines);
 }
