@@ -25,7 +25,7 @@ static struct pane *do_messageline_attach(struct pane *p);
 
 static void pane_str(struct pane *p safe, char *s, char *attr, int x, int y)
 {
-	call_xy("Draw:text", p, -1, s, attr, x, y);
+	call("Draw:text", p, -1, NULL, s, 0, NULL, attr, NULL, x, y);
 }
 
 DEF_CMD(text_size_callback)

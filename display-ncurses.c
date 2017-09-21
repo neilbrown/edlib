@@ -388,7 +388,7 @@ static void send_key(int keytype, wint_t c, struct pane *p safe)
 
 static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe)
 {
-	call_xy("Mouse-event", p, 0, cmd, NULL, x, y);
+	call("Mouse-event", p, 0, NULL, cmd, 0, NULL, NULL, NULL, x, y);
 }
 
 static void send_mouse(MEVENT *mev safe, struct pane *p safe)

@@ -515,36 +515,6 @@ static inline int do_call(char *key safe, struct pane *focus safe, int numeric, 
 	return key_handle(&ci);
 }
 
-static inline int call_xy(char *key safe, struct pane *focus safe, int numeric,
-			  char *str, char *str2, int x, int y)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
-
-	ci.numeric = numeric;
-	ci.str = str;
-	ci.str2 = str2;
-	ci.x = x;
-	ci.y = y;
-	return key_handle(&ci);
-}
-
-static inline int call_xy7(char *key safe, struct pane *focus safe, int numeric, int extra,
-			   char *str, char *str2, int x, int y,
-			   struct mark *m, struct mark *m2)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
-
-	ci.numeric = numeric;
-	ci.extra = extra;
-	ci.str = str;
-	ci.str2 = str2;
-	ci.x = x;
-	ci.y = y;
-	ci.mark = m;
-	ci.mark2 = m2;
-	return key_handle(&ci);
-}
-
 struct call_return {
 	struct command c;
 	struct mark *m, *m2;

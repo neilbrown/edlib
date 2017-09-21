@@ -885,9 +885,9 @@ DEF_CMD(emacs_reposition)
 		m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 		if (m) {
 			struct mark *m2 = mark_dup(m ,1);
-			call_xy7("Mouse-event", ci->focus, 1, 0, "Move-CursorXY",
-				 NULL, -1,
-				 repoint < 0 ? ci->focus->h-1 : 0, m, NULL);
+			call("Mouse-event", ci->focus, 1, m, "Move-CursorXY",
+			     0, NULL, NULL, NULL,
+			     -1, repoint < 0 ? ci->focus->h-1 : 0);
 			if (repoint < 0)
 				/* can only move point backwards */
 				if (m->seq < m2->seq)

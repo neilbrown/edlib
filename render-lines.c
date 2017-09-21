@@ -265,8 +265,9 @@ static int flush_line(struct pane *p safe, int dodraw,
 			cp = -1;
 		x = rl->x;
 		if (dodraw)
-			call_xy7("Draw:text", p, cp, scale,
-				 rl->text, rl->attr, x, y, NULL, NULL);
+			call("Draw:text", p, cp, NULL, rl->text,
+			     scale, NULL, rl->attr, NULL,
+			     x, y);
 		x += rl->width;
 		if (curspos && rl->curs) {
 			*curspos = rl->curs;
@@ -280,14 +281,16 @@ static int flush_line(struct pane *p safe, int dodraw,
 			cp = -1;
 
 		if (cp >= 0 && dodraw)
-			call_xy7("Draw:text", p, cp, scale,
-				 rl->text, rl->attr, rl->x, y, NULL, NULL);
+			call("Draw:text", p, cp, NULL, rl->text,
+			     scale, NULL, rl->attr, NULL,
+			     rl->x, y);
 		x = rl->x + rl->width;
 	}
 	if (wrap_pos && last_rl && dodraw) {
 		char *e = get_last_attr(last_rl->attr, "wrap-tail");
-		call_xy7("Draw:text", p, -1, scale,
-			 e ?: "\\", "underline,fg:blue", wrap_pos, y, NULL, NULL);
+		call("Draw:text", p, -1, NULL, e ?: "\\",
+		     scale, NULL, "underline,fg:blue", NULL,
+		     wrap_pos, y);
 		free(e);
 	}
 
@@ -1261,10 +1264,11 @@ DEF_CMD(render_lines_refresh)
 	if (m) {
 		rl->lines = render(ci->mark, p, focus, &rl->cols);
 		if (!ci->mark || rl->ignore_point || (p->cx >= 0 && p->cy < p->h)) {
-			call_xy7("render:reposition", focus, rl->lines, rl->cols, NULL, NULL,
-				 p->cx, p->cy,
-				 vmark_first(focus, rl->typenum),
-				 vmark_last(focus, rl->typenum));
+			call("render:reposition", focus,
+			     rl->lines, vmark_first(focus, rl->typenum), NULL,
+			     rl->cols, vmark_last(focus, rl->typenum), NULL, NULL,
+			     p->cx, p->cy);
+
 			return 0;
 		}
 	}
@@ -1276,10 +1280,10 @@ DEF_CMD(render_lines_refresh)
 	find_lines(m, p, focus);
 	rl->lines = render(m, p, focus, &rl->cols);
 	rl->repositioned = 0;
-	call_xy7("render:reposition", focus, rl->lines, rl->cols, NULL, NULL,
-		 p->cx, p->cy,
-		 vmark_first(focus, rl->typenum),
-		 vmark_last(focus, rl->typenum));
+	call("render:reposition", focus,
+	     rl->lines, vmark_first(focus, rl->typenum), NULL,
+	     rl->cols, vmark_last(focus, rl->typenum), NULL, NULL,
+		 p->cx, p->cy);
 	if (!ci->mark)
 		mark_free(m);
 	return 0;
@@ -1305,10 +1309,10 @@ DEF_CMD(render_lines_refresh_view)
 	if (p->damaged & (DAMAGED_CONTENT|DAMAGED_SIZE))
 		; /* wait for a proper redraw */
 	else
-		call_xy7("render:reposition", focus, rl->lines, rl->cols, NULL, NULL,
-			 p->cx, p->cy,
-			 vmark_first(focus, rl->typenum),
-			 vmark_last(focus, rl->typenum));
+		call("render:reposition", focus,
+		     rl->lines, vmark_first(focus, rl->typenum), NULL,
+		     rl->cols, vmark_last(focus, rl->typenum), NULL, NULL,
+		     p->cx, p->cy);
 	return 0;
 }
 

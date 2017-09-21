@@ -137,7 +137,7 @@ DEF_CMD(mouse_event)
 			m = chld->pointer;
 	}
 
-	call_xy7(key, focus, num, ex, NULL, NULL, x, y, m, NULL);
+	call(key, focus, num, m, NULL, ex, NULL, NULL, NULL, x, y);
 	return 0;
 }
 
