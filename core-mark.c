@@ -347,7 +347,7 @@ struct mark *safe point_new(struct doc *d safe)
 void mark_reset(struct doc *d safe, struct mark *m safe, int end)
 {
 	m->rpos = NEVER_RPOS;
-	comm_call_pane(d->home, "doc:set-ref", d->home, !end, m, NULL, 0, NULL, NULL);
+	pane_call(d->home, "doc:set-ref", d->home, !end, m);
 }
 
 struct mark *doc_next_mark_view(struct mark *m safe)
@@ -514,8 +514,7 @@ wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move)
 
 	if (move && m->rpos != NEVER_RPOS)
 		m->rpos = NO_RPOS;
-	ret = comm_call_pane(d->home, "doc:step", d->home, forward, m, NULL, move,
-			     NULL, NULL);
+	ret = pane_call(d->home, "doc:step", d->home, forward, m, NULL, move);
 
 	if (ret <= 0)
 		return WEOF;

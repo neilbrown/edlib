@@ -122,7 +122,7 @@ struct pane *safe pane_register(struct pane *parent, int z,
 		p->data = data;
 	if (parent && parent->focus == NULL)
 		parent->focus = p;
-	comm_call_pane(parent, "ChildRegistered", p, 0, NULL, NULL, 0, NULL, NULL);
+	pane_call(parent, "ChildRegistered", p);
 	return p;
 }
 
@@ -161,8 +161,8 @@ static void pane_do_resize(struct pane *p safe, int damage, struct mark *pointer
 			&p->children, struct pane, siblings);
 
 	if (damage & (DAMAGED_SIZE))
-		if (comm_call_pane(p, "Refresh:size", p, 0, pointer,
-				   NULL, damage, NULL, NULL) != 0)
+		if (pane_call(p, "Refresh:size", p, 0, pointer,
+				   NULL, damage) != 0)
 			/* No need to propagate, just check on children */
 			damage = 0;
 
@@ -221,8 +221,7 @@ static void pane_do_refresh(struct pane *p safe, int damage, struct mark *pointe
 	if (p->damaged & DAMAGED_POSTORDER) {
 		/* post-order call was triggered */
 		p->damaged &= ~DAMAGED_POSTORDER;
-		comm_call_pane(p, "Refresh:postorder", p, 0, pointer, NULL, damage,
-			       NULL, NULL);
+		pane_call(p, "Refresh:postorder", p, 0, pointer, NULL, damage);
 	}
 }
 
@@ -308,8 +307,7 @@ void pane_notify_close(struct pane *p safe)
 		list_del_init(&n->notifiee_link);
 		list_del_init(&n->notifier_link);
 		if (strcmp(n->notification, "Notify:Close") == 0)
-			comm_call_pane(n->notifiee, n->notification, p,
-				       0, NULL, NULL, 0, NULL, NULL);
+			pane_call(n->notifiee, n->notification, p);
 		free(n->notification);
 		free(n);
 	}
@@ -332,8 +330,8 @@ restart:
 			continue;
 		n->noted = 1;
 		if (strcmp(n->notification, notification) == 0) {
-			int r = comm_call_pane8(n->notifiee, notification, p,
-						numeric, m, str, str2, extra, m2, comm2);
+			int r = pane_call(n->notifiee, notification, p,
+					  numeric, m, str, extra, m2, str2, comm2);
 			if (abs(r) > abs(ret))
 				ret = r;
 			goto restart;
@@ -360,7 +358,7 @@ static void pane_close2(struct pane *p safe, struct pane *other safe)
 
 	if (p->parent && (void*)p->parent->handle &&
 	    !(p->parent->damaged & DAMAGED_CLOSED))
-		comm_call_pane(p->parent, "ChildClosed", p, 0, NULL, NULL, 0, NULL, NULL);
+		pane_call(p->parent, "ChildClosed", p);
 
 	list_del_init(&p->siblings);
 
@@ -377,7 +375,7 @@ restart:
 		p->parent->focus = NULL;
 	}
 	pane_notify_close(p);
-	comm_call_pane(p, "Close", p, 0, NULL, NULL, 0, NULL, NULL);
+	pane_call(p, "Close", p);
 
 	pane_damaged(p->parent, DAMAGED_CONTENT);
 	/* If a child has not yet has "Close" called, we need to leave
@@ -607,8 +605,8 @@ char *pane_attr_get(struct pane *p, char *key safe)
 		if (a)
 			return a;
 		cr.s = NULL;
-		ret = comm_call_pane(p, "get-attr", p, 0, NULL,
-				     key, 0, NULL, &cr.c);
+		ret = pane_call(p, "get-attr", p, 0, NULL,
+				key, 0, NULL, NULL, &cr.c);
 		if (ret > 0)
 			return cr.s;
 		p = p->parent;
@@ -643,7 +641,7 @@ void pane_clone_children(struct pane *from, struct pane *to)
 	list_for_each_entry(c, &from->children, siblings) {
 		if (c->z > 0)
 			continue;
-		comm_call_pane(c, "Clone", to, 0, NULL, NULL, 0, NULL, NULL);
+		pane_call(c, "Clone", to);
 	}
 }
 

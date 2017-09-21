@@ -579,6 +579,47 @@ static inline int do_comm_call(struct command *comm,
 	return ci.comm->func(&ci);
 }
 
+/* pane_call() is a cross between comm_call and call_home.  The home pane is
+ * given first, and home->handle is explicitly called.
+ */
+#define pane_call(...) VFUNC(pane_call, __VA_ARGS__)
+#define pane_call12(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y) \
+	do_pane_call(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y)
+#define pane_call10(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2) \
+	do_pane_call(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2, 0, 0)
+#define pane_call9(home, key, focus, numeric, mark, str, extra, mark2, str2) \
+	do_pane_call(home, key, focus, numeric, mark, str, extra, mark2, str2, NULL, 0, 0)
+#define pane_call8(home, key, focus, numeric, mark, str, extra, mark2) \
+	do_pane_call(home, key, focus, numeric, mark, str, extra, mark2, NULL, NULL, 0, 0)
+#define pane_call7(home, key, focus, numeric, mark, str, extra) \
+	do_pane_call(home, key, focus, numeric, mark, str, extra, NULL, NULL, NULL, 0, 0)
+#define pane_call6(home, key, focus, numeric, mark, str) \
+	do_pane_call(home, key, focus, numeric, mark, str, 0, NULL, NULL, NULL, 0, 0)
+#define pane_call5(home, key, focus, numeric, mark) \
+	do_pane_call(home, key, focus, numeric, mark, NULL, 0, NULL, NULL, NULL, 0, 0)
+#define pane_call4(home, key, focus, numeric) \
+	do_pane_call(home, key, focus, numeric, NULL, NULL, 0, NULL, NULL, NULL, 0, 0)
+#define pane_call3(home, key, focus) \
+	do_pane_call(home, key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0)
+
+static inline int do_pane_call(struct pane *home,
+			       char *key safe, struct pane *focus safe, int numeric, struct mark *m,
+			       char *str, int extra, struct mark *m2, char *str2,
+			       struct command *comm2, int x, int y)
+{
+	struct cmd_info ci = {.key = key, .focus = focus, .home = home ?: focus,
+			      .numeric = numeric, .mark = m, .str = str,
+			      .extra = extra, .mark2 = m2, .str2 = str2,
+			      .comm2 = comm2, .x = x, .y = y,
+			      .comm = safe_cast 0};
+
+	if (!home || !home->handle)
+		return -1;
+	ci.home = home;
+	ci.comm = home->handle;
+	return ci.comm->func(&ci);
+}
+
 struct call_return {
 	struct command c;
 	struct mark *m, *m2;
@@ -588,45 +629,3 @@ struct call_return {
 	int x,y;
 	struct command *comm;
 };
-
-static inline int comm_call_pane(struct pane *home, char *key safe,
-				 struct pane *focus safe,
-				 int numeric, struct mark *m, char *str, int extra,
-				 struct mark *m2, struct command *comm2)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
-
-	if (!home || !home->handle)
-		return -1;
-	ci.home = home;
-	ci.numeric = numeric;
-	ci.mark = m;
-	ci.mark2 = m2;
-	ci.str = str;
-	ci.extra = extra;
-	ci.comm = home->handle;
-	ci.comm2 = comm2;
-	return ci.comm->func(&ci);
-}
-
-static inline int comm_call_pane8(struct pane *home, char *key safe,
-				  struct pane *focus safe,
-				  int numeric, struct mark *m, char *str, char *str2,
-				  int extra,
-				  struct mark *m2, struct command *comm2)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
-
-	if (!home || !home->handle)
-		return -1;
-	ci.home = home;
-	ci.numeric = numeric;
-	ci.mark = m;
-	ci.mark2 = m2;
-	ci.str = str;
-	ci.str2 = str2;
-	ci.extra = extra;
-	ci.comm = home->handle;
-	ci.comm2 = comm2;
-	return ci.comm->func(&ci);
-}

@@ -78,15 +78,15 @@ DEF_CMD(crop_handle)
 
 	if (!ci->mark && !ci->mark2)
 		/* No mark, do give it straight to parent */
-		return comm_call_pane(p, ci->key, ci->focus, ci->numeric,
-				      NULL, ci->str, ci->extra, NULL, ci->comm2);
+		return pane_call(p, ci->key, ci->focus, ci->numeric,
+				 NULL, ci->str, ci->extra, NULL, NULL, ci->comm2);
 
 	/* Always force marks to be in range */
 	crop(ci->mark, cd, p);
 	crop(ci->mark2, cd, p);
 
-	ret = comm_call_pane(p, ci->key, ci->focus, ci->numeric,
-				      ci->mark, ci->str, ci->extra, ci->mark2, ci->comm2);
+	ret = pane_call(p, ci->key, ci->focus, ci->numeric,
+			ci->mark, ci->str, ci->extra, ci->mark2, ci->str2, ci->comm2);
 	if (crop(ci->mark, cd, p) || crop(ci->mark2, cd, p)) {
 		if (strcmp(ci->key, "doc:step") == 0)
 			ret = CHAR_RET(WEOF);
