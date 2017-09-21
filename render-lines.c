@@ -532,7 +532,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		char *s = prefix + strlen(prefix);
 		update_line_height_attr(p, &line_height, &ascent, NULL,
 					"bold", prefix, scale);
-		draw_some(p, &rlst, &x, prefix, &s, "bold", 0, -1, -1, scale);
+		draw_some(focus, &rlst, &x, prefix, &s, "bold", 0, -1, -1, scale);
 	}
 	rl->prefix_len = x + rl->shift_left;
 	if (center == 1)
@@ -612,7 +612,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		if (ret == WRAP|| x >= p->w - mwidth) {
 			/* No room for more text */
 			if (wrap) {
-				int len = flush_line(p, dodraw, &rlst, y+ascent,
+				int len = flush_line(focus, dodraw, &rlst, y+ascent,
 						     scale,
 						     p->w - mwidth,
 						     &curspos, &cursattr);
@@ -663,7 +663,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			if (offset == (line - line_start) ||
 			    (line-start) * mwidth > p->w - x ||
 			    (CX>x && (line - start)*mwidth > CX - x)) {
-				ret = draw_some(p, &rlst, &x, start,
+				ret = draw_some(focus, &rlst, &x, start,
 						&line,
 						buf_final(&attr),
 						wrap ? mwidth : 0,
@@ -672,7 +672,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			}
 			continue;
 		}
-		ret = draw_some(p, &rlst, &x, start, &line,
+		ret = draw_some(focus, &rlst, &x, start, &line,
 				buf_final(&attr),
 				wrap ? mwidth : 0,
 				offset - (start - line_start), CX, scale);
@@ -726,7 +726,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		line += 1;
 		if (ch == '\n') {
 			curspos = line-1;
-			flush_line(p, dodraw, &rlst, y+ascent, scale, 0,
+			flush_line(focus, dodraw, &rlst, y+ascent, scale, 0,
 				   &curspos, &cursattr);
 			y += line_height;
 			x = 0;
@@ -749,7 +749,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		} else if (ch == '\t') {
 			int xc = (wrap_offset + x) / mwidth;
 			int w = 8 - xc % 8;
-			ret = draw_some(p, &rlst, &x, start, &line,
+			ret = draw_some(focus, &rlst, &x, start, &line,
 					buf_final(&attr),
 					wrap ? mwidth*2: 0,
 					offset == (start - line_start) ? in_tab : -1, CX, scale);
@@ -767,7 +767,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			buf[2] = 0;
 			b = buf+2;
 			buf_concat(&attr, ",underline,fg:red");
-			ret = draw_some(p, &rlst, &x, buf, &b,
+			ret = draw_some(focus, &rlst, &x, buf, &b,
 					buf_final(&attr),
 					wrap ? mwidth*2: 0, offset - (start - line_start), CX, scale);
 			attr.len = l;
@@ -777,12 +777,12 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	}
 	if (!*line && (line > start || offset == start - line_start)) {
 		/* Some more to draw */
-		draw_some(p, &rlst, &x, start, &line,
+		draw_some(focus, &rlst, &x, start, &line,
 			  buf_final(&attr),
 			  wrap ? mwidth : 0, offset - (start - line_start), cx, scale);
 	}
 
-	flush_line(p, dodraw, &rlst, y+ascent, scale, 0, &curspos, &cursattr);
+	flush_line(focus, dodraw, &rlst, y+ascent, scale, 0, &curspos, &cursattr);
 
 	if (offsetp && curspos) {
 		*offsetp = curspos - line_start;
@@ -1135,7 +1135,7 @@ restart:
 	found_end = 0;
 	m = vmark_first(focus, rl->typenum);
 	if (!s)
-		pane_clear(p, NULL);
+		pane_clear(focus, NULL);
 	else if (strncmp(s, "color:", 6) == 0) {
 		char *a = strdup(s);
 		strcpy(a, "bg:");
@@ -1149,7 +1149,7 @@ restart:
 		if (call_home(focus, s+5, p, 0, m) <= 0)
 			pane_clear(p, NULL);
 	} else
-		pane_clear(p, NULL);
+		pane_clear(focus, NULL);
 
 	y = 0;
 	if (hdr) {
