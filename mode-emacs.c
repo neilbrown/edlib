@@ -1195,6 +1195,7 @@ static void emacs_init(void)
 	key_add(m, "emCX-Chr-s", &emacs_save_all);
 
 	key_add(m, "C-Chr-S", &emacs_start_search);
+	key_add(m, "C-Chr-R", &emacs_start_search);
 	key_add(m, "render:reposition", &emacs_reposition);
 
 	key_add(m, "emCX-C-Chr-C", &emacs_exit);

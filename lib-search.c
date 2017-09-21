@@ -13,12 +13,40 @@
 #include "core.h"
 #include "rexel.h"
 
+
+static int search_forward(struct pane *p safe, struct mark *m safe, struct mark *m2,
+			  unsigned short *rxl safe,
+			  struct mark *endmark safe)
+{
+	/* Search forward from @m in @p for @rxl looking as far as @m2, and leaving
+	 * @endmark at the end point, and returning the length of the match, or -1.
+	 */
+	int since_start = -1, len = 0;
+	struct match_state *st;
+
+	st = rxl_prepare(rxl);
+	while ((since_start < 0 || len != -2) &&
+	       (m2 == NULL || m->seq < m2->seq)) {
+		wint_t wch = mark_next_pane(p, m);
+		if (wch == WEOF)
+			break;
+
+		len = rxl_advance(st, wch, 0, since_start < 0);
+		if (len >= 0 &&
+		    (since_start < 0 || len > since_start)) {
+			since_start = len;
+			mark_to_mark(endmark, m);
+		}
+	}
+	rxl_free_state(st);
+	return since_start;
+}
+
 DEF_CMD(text_search)
 {
 	struct mark *m, *endmark = NULL;
 	unsigned short *rxl;
-	struct match_state *st;
-	int since_start, len;
+	int since_start;
 
 	if (!ci->str|| !ci->mark)
 		return -1;
@@ -27,28 +55,16 @@ DEF_CMD(text_search)
 	rxl = rxl_parse(ci->str, NULL, 1);
 	if (!rxl)
 		return -1;
-	st = rxl_prepare(rxl);
 	since_start = -1;
-	while ((since_start < 0 || len != -2) &&
-	       (ci->mark2 == NULL || m->seq < ci->mark2->seq)) {
-		wint_t wch = mark_next_pane(ci->focus, m);
-		if (wch == WEOF)
-			break;
+	endmark = mark_dup(m, 1);
+	if (!endmark)
+		return -1;
 
-		len = rxl_advance(st, wch, 0, since_start < 0);
-		if (len >= 0 &&
-		    (since_start < 0 || len > since_start)) {
-			since_start = len;
-			if (endmark)
-				mark_free(endmark);
-			endmark = mark_dup(m, 1);
-		}
-	}
-	if (since_start > 0 && endmark) {
+	since_start = search_forward(ci->focus, m, ci->mark2, rxl, endmark);
+
+	if (since_start > 0)
 		mark_to_mark(m, endmark);
-		mark_free(endmark);
-	}
-	rxl_free_state(st);
+	mark_free(endmark);
 	free(rxl);
 	if (since_start < 0)
 		return -2;
