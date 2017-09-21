@@ -327,7 +327,7 @@ DEF_CMD(render_line)
 	}
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
-			buf_final(&b), 0);
+			buf_final(&b));
 	free(b.b);
 	return ret;
 }
@@ -352,7 +352,7 @@ DEF_CMD(renderline_attach)
 	ret = do_renderline_attach(ci->focus);
 	if (!ret)
 		return -1;
-	return comm_call(ci->comm2, "callback:attach", ret, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", ret);
 }
 
 DEF_CMD(rl_clone)

@@ -112,8 +112,7 @@ DEF_CMD(popup_handle)
 		return 1;
 	}
 	if (strcmp(ci->key, "popup:get-target") == 0)
-		return comm_call(ci->comm2, "callback:get-target",
-				 ppi->target, 0, NULL, NULL, 0);
+		return comm_call(ci->comm2, "callback:get-target", ppi->target);
 
 	if (strcmp(ci->key, "popup:close") == 0) {
 		char *key, *str;
@@ -203,7 +202,7 @@ DEF_CMD(popup_attach)
 
 	if (!p)
 		return -1;
-	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", p);
 }
 
 void edlib_init(struct pane *ed safe)

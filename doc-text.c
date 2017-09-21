@@ -1171,7 +1171,7 @@ DEF_CMD(text_new)
 	p = pane_register(ci->home, 0, &text_handle.c, &t->doc, NULL);
 	t->doc.home = p;
 	if (p)
-		return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
+		return comm_call(ci->comm2, "callback:doc", p);
 	return -1;
 }
 
@@ -1271,7 +1271,7 @@ DEF_CMD(text_get_str)
 			break;
 	}
 	ret[l] = 0;
-	comm_call(ci->comm2, "callback:get-str", ci->focus, 0, NULL, ret, 0);
+	comm_call(ci->comm2, "callback:get-str", ci->focus, 0, NULL, ret);
 	free(ret);
 	return 1;
 }
@@ -1658,14 +1658,14 @@ DEF_CMD(text_doc_get_attr)
 		return -1;
 	a = text_attrset(d, m, forward, &o);
 	val = attr_get_str(a, attr, o);
-	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val, 0);
+	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
 	if (ci->extra == 1) {
 		char *key = attr;
 		int len = strlen(attr);
 		while ((key = attr_get_next_key(a, key, o, &val)) != NULL &&
 		       strncmp(key, attr, len) == 0)
-			comm_call7(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val, 0,
-				   key, NULL);
+			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val, 0,
+				   NULL, key);
 	}
 	return 1;
 }
@@ -1693,7 +1693,7 @@ DEF_CMD(text_get_attr)
 	else
 		return 0;
 
-	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val, 0);
+	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
 	return 1;
 }
 

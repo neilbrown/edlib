@@ -294,10 +294,8 @@ DEF_CMD(view_attach)
 	if (strchr(borderstr, 'L')) borders |= BORDER_LEFT;
 	if (strchr(borderstr, 'R')) borders |= BORDER_RIGHT;
 
-	return comm_call(ci->comm2, "callback:attach", do_view_attach(ci->focus, borders),
-			 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", do_view_attach(ci->focus, borders));
 }
-
 DEF_CMD(view_click)
 {
 	struct pane *p = ci->home;

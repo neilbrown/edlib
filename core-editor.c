@@ -70,8 +70,8 @@ DEF_CMD(global_get_command)
 	if (!ci->str ||
 	    !(cm = key_lookup_cmd(map, ci->str)))
 		return -1;
-	return comm_call8(ci->comm2, ci->focus, "callback:comm", ci->focus, 0, NULL, ci->str,
-			  0, NULL, NULL, cm);
+	return comm_call(ci->comm2, "callback:comm", ci->focus, 0, NULL, ci->str,
+			 0, NULL, NULL, cm);
 }
 
 DEF_CMD(editor_load_module)
@@ -165,7 +165,7 @@ DEF_CMD(editor_clean_up)
 	while (ei->idle_calls) {
 		struct idle_call *i = ei->idle_calls;
 		ei->idle_calls = i->next;
-		comm_call(i->callback, "idle-callback", i->focus, 0, NULL, NULL, 0);
+		comm_call(i->callback, "idle-callback", i->focus);
 		command_put(i->callback);
 		free(i);
 	}

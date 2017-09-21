@@ -122,7 +122,7 @@ DEF_CMD(crop_attach)
 	cd->start = mark_dup(ci->mark, 1);
 	cd->end = mark_dup(ci->mark2, 1);
 
-	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", p);
 }
 
 void edlib_init(struct pane *ed safe)

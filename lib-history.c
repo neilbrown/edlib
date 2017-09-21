@@ -147,7 +147,7 @@ DEF_CMD(history_attach)
 	p = pane_register(ci->focus, 0, &history_handle, hi, NULL);
 	pane_add_notify(p, hi->history, "Notify:Close");
 	call("Request:Notify:doc:Replace", p);
-	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", p);
 }
 
 void edlib_init(struct pane *ed safe)

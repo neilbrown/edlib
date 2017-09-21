@@ -88,7 +88,7 @@ DEF_CMD(render_complete_line)
 		      0, ci->mark2, &cr.c) == 0)
 		return 0;
 
-	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cr.s, 0);
+	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cr.s);
 	free(cr.s);
 	if (ci->numeric != NO_NUMERIC)
 		return ret;
@@ -252,9 +252,9 @@ DEF_CMD(complete_eol)
 	while (rpt > 1) {
 		struct call_return cr;
 		cr.c = eol_cb;
-		if (comm_call8(&render_complete_line, ci->home, "render-line",
-			       ci->focus, NO_NUMERIC, ci->mark, NULL,
-			       0, NULL, NULL, &cr.c) <= 0)
+		if (comm_call(&render_complete_line, "render-line",
+			      ci->focus, NO_NUMERIC, ci->mark, NULL,
+			      0, NULL, NULL, &cr.c, 0, 0, ci->home) <= 0)
 			rpt = 1;
 		rpt -= 1;
 	}
@@ -307,7 +307,7 @@ DEF_CMD(complete_set_prefix)
 			common[common_len(c, common)] = 0;
 		cnt += 1;
 	}
-	comm_call(ci->comm2, "callback:prefix", ci->focus, 0, NULL, common, 0);
+	comm_call(ci->comm2, "callback:prefix", ci->focus, 0, NULL, common);
 	free(common);
 	call("Move-to", ci->focus, 0, m);
 	mark_free(m);
@@ -336,9 +336,9 @@ DEF_CMD(complete_return)
 
 	cr.c = save_str;
 	cr.s = NULL;
-	comm_call8(&render_complete_line, ci->home, "render-line",
-		   ci->home, NO_NUMERIC, ci->mark, NULL, 0, NULL,
-		   NULL, &cr.c);
+	comm_call(&render_complete_line, "render-line",
+		  ci->home, NO_NUMERIC, ci->mark, NULL, 0, NULL,
+		  NULL, &cr.c, 0, 0, ci->home);
 	if (!cr.s)
 		return 1;
 	l = strlen(cr.s);
@@ -403,7 +403,7 @@ REDEF_CMD(complete_attach)
 	}
 	cd->prefix = strdup("");
 
-	return comm_call(ci->comm2, "callback:attach", complete, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", complete);
 }
 
 void edlib_init(struct pane *ed safe)

@@ -128,7 +128,7 @@ DEF_CMD(email_spacer)
 	}
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
-			buf_final(&b), 0);
+			buf_final(&b));
 	free(b.b);
 	return ret;
 }
@@ -189,7 +189,7 @@ DEF_CMD(email_get_attr)
 		fields += 1;
 	}
 	sprintf(ret, "%d", fields);
-	return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark, ret, 0);
+	return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark, ret);
 }
 static struct map *email_map safe;
 
@@ -598,7 +598,7 @@ DEF_CMD(open_email)
 		attr_set_str(&h->attrs, "render-default", "text");
 		attr_set_str(&p->attrs, "filename", ci->str+6);
 		attr_set_str(&p->attrs, "doc-type", "email");
-		return comm_call(ci->comm2, "callback:attach", h, 0, NULL, NULL, 0);
+		return comm_call(ci->comm2, "callback:attach", h);
 	}
 out:
 	mark_free(start);

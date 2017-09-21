@@ -345,9 +345,9 @@ DEF_CMD(mp_attr)
 	if (strcmp(attr, "multipart:visible") == 0) {
 		if (d >= 0 && d < mpi->nparts &&
 		    mpi->parts[d].visible)
-			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "1", 0);
+			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "1");
 		else
-			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "0", 0);
+			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "0");
 		return 1;
 	}
 
@@ -358,8 +358,7 @@ DEF_CMD(mp_attr)
 		/* Get a pane attribute, not char attribute */
 		char *s = pane_attr_get(mpi->parts[d].pane, attr);
 		if (s)
-			return comm_call(ci->comm2, "callback", ci->focus, 0, NULL,
-					 s, 0);
+			return comm_call(ci->comm2, "callback", ci->focus, 0, NULL, s);
 		return 1;
 	}
 
@@ -566,7 +565,7 @@ DEF_CMD(attach_mp)
 	h = pane_register(ci->home, 0, &mp_handle.c, &mpi->doc, NULL);
 	mpi->doc.home = h;
 	if (h)
-		return comm_call(ci->comm2, "callback:doc", h, 0, NULL, NULL, 0);
+		return comm_call(ci->comm2, "callback:doc", h);
 
 
 	free(mpi);

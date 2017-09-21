@@ -424,7 +424,7 @@ DEF_CMD(header_attach)
 	if (start && end)
 		find_headers(p, start, end);
 
-	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", p);
 }
 
 void edlib_init(struct pane *ed safe)

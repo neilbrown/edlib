@@ -153,7 +153,7 @@ DEF_CMD(messageline_attach)
 	ret = do_messageline_attach(ci->focus);
 	if (!ret)
 		return -1;
-	return comm_call(ci->comm2, "callback:attach", ret, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", ret);
 }
 
 void edlib_init(struct pane *ed safe)

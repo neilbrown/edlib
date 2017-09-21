@@ -153,8 +153,9 @@ DEF_CMD(ncurses_handle)
 			if (size <= max_space)
 				max_bytes = offset;
 		}
-		return comm_call_xy(ci->comm2, "callback:size", ci->focus,
-				    max_bytes, 0, size, 1);
+		return comm_call(ci->comm2, "callback:size", ci->focus,
+				 max_bytes, NULL, NULL,
+				 0, NULL, NULL, NULL, size, 1);
 	}
 	if (strcmp(ci->key, "Draw:text") == 0 && ci->str) {
 		int attr = cvt_attrs(ci->str2);
@@ -442,8 +443,7 @@ DEF_CMD(display_ncurses)
 {
 	struct pane *p = ncurses_init(ci->focus);
 	if (p)
-		return comm_call(ci->comm2, "callback:display", p, 0, NULL,
-				 NULL, 0);
+		return comm_call(ci->comm2, "callback:display", p);
 	return -1;
 }
 

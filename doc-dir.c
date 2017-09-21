@@ -129,7 +129,7 @@ DEF_CMD(dir_new)
 	p = pane_register(ci->home, 0, &doc_handle.c, &dr->doc, NULL);
 	dr->doc.home = p;
 	if (p)
-		return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
+		return comm_call(ci->comm2, "callback:doc", p);
 	return -1;
 }
 
@@ -500,8 +500,7 @@ DEF_CMD(dir_doc_get_attr)
 
 	if (!val)
 		return 0;
-	comm_call(ci->comm2, "callback:get_attr", ci->focus,
-		  0, NULL, val, 0);
+	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
 	return 1;
 }
 
@@ -529,8 +528,7 @@ DEF_CMD(dir_get_attr)
 		val = dr->fname;
 	else
 		return 0;
-	comm_call(ci->comm2, "callback:get_attr", ci->focus,
-		  0, NULL, val, 0);
+	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
 	return 1;
 }
 

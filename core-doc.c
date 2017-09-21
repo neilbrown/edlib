@@ -453,7 +453,7 @@ DEF_CMD(doc_get_attr)
 		a = "no";
 	if (a)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
-				 NULL, a, 0);
+				 NULL, a);
 	/* Once a get-attr request reaches a document, it needs to stop there,
 	 * as parents might have a different idea about attributes, and about marks
 	 */
@@ -523,8 +523,8 @@ DEF_CMD(doc_vmarkget)
 		m2 = doc_new_mark(ci->home->data, ci->numeric);
 	if (ci->extra == 3 && ci->mark)
 		m2 = do_vmark_at_or_before(ci->focus, ci->home->data, ci->mark, ci->numeric);
-	return comm_call7(ci->comm2, "callback:vmark", ci->focus,
-			  0, m, NULL, 0, NULL, m2);
+	return comm_call(ci->comm2, "callback:vmark", ci->focus,
+			 0, m, NULL, 0, m2);
 }
 
 DEF_CMD(doc_drop_cache)
@@ -757,7 +757,7 @@ DEF_CMD(doc_handle)
 			m = do_mark_at_point(pt, ci->extra);
 
 		return comm_call(ci->comm2, "callback:dup-point", ci->focus,
-				 0, m, NULL, 0);
+				 0, m);
 	}
 
 	if (strcmp(ci->key, "doc:assign") == 0) {
@@ -767,7 +767,7 @@ DEF_CMD(doc_handle)
 		p2 = doc_assign(ci->home, ci->focus, ci->numeric, ci->str);
 		if (!p2)
 			return -1;
-		comm_call(ci->comm2, "callback:doc", p2, 0, NULL, NULL, 0);
+		comm_call(ci->comm2, "callback:doc", p2);
 		return 1;
 	}
 
@@ -783,7 +783,7 @@ DEF_CMD(doc_handle)
 		a = pane_attr_get(dd->doc, ci->str);
 		if (!a)
 			return 0;
-		return comm_call(ci->comm2, "callback", ci->focus, 0, NULL, a, 0);
+		return comm_call(ci->comm2, "callback", ci->focus, 0, NULL, a);
 	}
 
 	if (strcmp(ci->key, "Move-to") == 0) {
@@ -861,7 +861,7 @@ DEF_CMD(doc_do_attach)
 	struct pane *p = doc_attach(ci->focus, NULL);
 	if (!p)
 		return -1;
-	return comm_call(ci->comm2, "callback:doc", p, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:doc", p);
 }
 
 DEF_CMD(doc_open)
@@ -926,8 +926,7 @@ DEF_CMD(doc_open)
 	}
 	if (fd != ci->numeric)
 		close(fd);
-	return comm_call(ci->comm2, "callback", p, 0, NULL,
-			 NULL, 0);
+	return comm_call(ci->comm2, "callback", p);
 }
 
 struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe, char *render)
@@ -957,8 +956,7 @@ DEF_CMD(doc_from_text)
 		call("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	}
 	call("doc:replace", p, 1, NULL, text, 1, NULL, NULL);
-	return comm_call(ci->comm2, "callback", p, 0, NULL,
-			 NULL, 0);
+	return comm_call(ci->comm2, "callback", p);
 }
 
 DEF_CMD(doc_str_callback)

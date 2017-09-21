@@ -272,7 +272,7 @@ DEF_CMD(docs_modified_handle)
 			prev_modified(ci->home->parent, m);
 		attr = pane_mark_attr(ci->home->parent, m, 1, ci->str);
 		mark_free(m);
-		comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, attr, 0);
+		comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, attr);
 		return 1;
 	}
 	if (strcmp(ci->key, "doc:mark-same") == 0 &&
@@ -301,7 +301,7 @@ DEF_CMD(docs_modified_handle)
 	    ci->str &&
 	    strcmp(ci->str, "doc-name") == 0)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus,
-				 0, NULL, "*Modified Documents*", 0);
+				 0, NULL, "*Modified Documents*");
 
 	return 0;
 }
@@ -313,14 +313,12 @@ DEF_CMD(docs_callback)
 
 	if (strcmp(ci->key, "docs:byname") == 0) {
 		if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0)
-			return comm_call(ci->comm2, "callback:doc", doc->doc.home,
-					 0, NULL, NULL, 0);
+			return comm_call(ci->comm2, "callback:doc", doc->doc.home);
 		list_for_each_entry(p, &doc->collection->children, siblings) {
 			struct doc *dc = p->data;
 			char *n = dc->name;
 			if (n && strcmp(ci->str, n) == 0)
-				return comm_call(ci->comm2, "callback:doc", p, 0,
-						 NULL, NULL, 0);
+				return comm_call(ci->comm2, "callback:doc", p);
 		}
 		return -1;
 	}
@@ -328,8 +326,7 @@ DEF_CMD(docs_callback)
 		list_for_each_entry(p, &doc->collection->children, siblings) {
 			if (call("doc:same-file", p, 0, NULL, ci->str,
 				 ci->extra) > 0)
-				return comm_call(ci->comm2, "callback:doc", p, 0,
-						 NULL, NULL, 0);
+				return comm_call(ci->comm2, "callback:doc", p);
 		}
 		return -1;
 	}
@@ -356,8 +353,7 @@ DEF_CMD(docs_callback)
 			choice = last;
 		if (!choice)
 			choice = doc->doc.home;
-		return comm_call(ci->comm2, "callback:doc", choice, 0,
-				 NULL, NULL, 0);
+		return comm_call(ci->comm2, "callback:doc", choice);
 	}
 
 	if (strcmp(ci->key, "docs:save-all") == 0) {
@@ -571,8 +567,7 @@ DEF_CMD(docs_doc_get_attr)
 
 	if (!val)
 		return 0;
-	comm_call(ci->comm2, "callback:get_attr", ci->focus,
-		  0, NULL, val, 0);
+	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
 	return 1;
 }
 
@@ -599,7 +594,7 @@ DEF_CMD(docs_get_attr)
 		return 0;
 
 	comm_call(ci->comm2, "callback:get_attr", ci->focus,
-		  0, NULL, val, 0);
+		  0, NULL, val);
 	return 1;
 }
 
@@ -838,7 +833,7 @@ DEF_CMD(attach_docs)
 
 	call_home(p, "doc:set-parent", doc->collection);
 
-	return comm_call(ci->comm2, "callback:doc", doc->doc.home, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:doc", doc->doc.home);
 }
 
 void edlib_init(struct pane *ed safe)

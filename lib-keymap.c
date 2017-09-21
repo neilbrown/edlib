@@ -164,7 +164,7 @@ DEF_CMD(keymap_attach)
 {
 	struct pane *p = do_keymap_attach(ci->focus, 1);
 	if (p)
-		return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+		return comm_call(ci->comm2, "callback:attach", p);
 	return -1;
 }
 

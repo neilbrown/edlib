@@ -182,7 +182,7 @@ DEF_CMD(input_attach)
 
 	p = pane_register(ci->focus, 0, &input_handle.c, im, NULL);
 	if (p)
-		return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+		return comm_call(ci->comm2, "callback:attach", p);
 	return -1;
 }
 

@@ -264,7 +264,7 @@ DEF_CMD(emacs_search)
 	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);
 	if (p) {
 		call("Request:Notify:doc:Replace", p);
-		comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+		comm_call(ci->comm2, "callback:attach", p);
 	}
 	return 1;
 }

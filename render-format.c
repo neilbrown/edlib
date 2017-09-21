@@ -157,7 +157,7 @@ endwhile:
 		}
 	}
 	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
-		       buf_final(&ret), 0);
+		       buf_final(&ret));
 	free(ret.b);
 	return rv;
 }
@@ -205,7 +205,7 @@ DEF_CMD(format_get_attr)
 	    strcmp(ci->str, "renderline:fields") != 0)
 		return 0;
 	sprintf(attr, "%u:%u", rf->home_field, rf->fields);
-	return comm_call(ci->comm2, "attr", ci->focus, 0, ci->mark, attr, 0);
+	return comm_call(ci->comm2, "attr", ci->focus, 0, ci->mark, attr);
 }
 
 static struct map *rf_map;
@@ -244,7 +244,7 @@ DEF_CMD(render_format_attach)
 	p = do_render_format_attach(ci->focus);
 	if (!p)
 		return -1;
-	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL);
 }
 
 void edlib_init(struct pane *ed safe)

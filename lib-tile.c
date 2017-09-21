@@ -145,7 +145,7 @@ DEF_CMD(tile_attach)
 		ti->name = strdup(ci->str2);
 	INIT_LIST_HEAD(&ti->tiles);
 	attr_set_str(&p->attrs, "borders", "BL");
-	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", p);
 }
 
 static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char *name,
@@ -784,8 +784,7 @@ DEF_CMD(tile_other)
 
 	ti2 = tile_next_named(ti, ci->str2);
 	if (ti2 != ti)
-		return comm_call(ci->comm2, "callback:pane", ti2->p, 0,
-				 NULL, NULL, 0);
+		return comm_call(ci->comm2, "callback:pane", ti2->p);
 
 	/* Need to create a tile.  If wider than 120 (FIXME configurable?),
 	 * horiz-split else vert
@@ -800,8 +799,7 @@ DEF_CMD(tile_other)
 		p2 = tile_split(&p, p->w * 1000 >= 1200 * xy.x, 1, ci->str2, 0);
 	}
 	if (p2)
-		return comm_call(ci->comm2, "callback:pane", p2, 0,
-				 NULL, NULL, 0);
+		return comm_call(ci->comm2, "callback:pane", p2);
 	return -1;
 }
 
@@ -818,7 +816,7 @@ DEF_CMD(tile_this)
 		/* same group - continue */
 	}
 	return comm_call(ci->comm2, "callback:pane", ci->home, 0,
-			 NULL, ti->name, 0);
+			 NULL, ti->name);
 }
 
 DEF_CMD(tile_root)
@@ -836,8 +834,7 @@ DEF_CMD(tile_root)
 		/* same group - continue */
 	}
 
-	return comm_call(ci->comm2, "callback:pane", p, 0,
-			 NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:pane", p);
 }
 
 DEF_CMD(tile_child_closed)

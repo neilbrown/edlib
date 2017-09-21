@@ -90,7 +90,7 @@ DEF_CMD(utf8_attach)
 		return -1;
 	call("doc:set:filter", p, 1, NULL, NULL, 0);
 
-	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", p);
 }
 
 void edlib_init(struct pane *ed safe)

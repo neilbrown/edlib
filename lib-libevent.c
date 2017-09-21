@@ -36,8 +36,7 @@ static void call_event(int thing, short sev, void *evv)
 	int ret;
 	int oldfd = ev->fd;
 
-	if ((ret=comm_call(ev->comm, "callback:event", ev->home, thing,
-			   NULL, NULL, 0)) < 0) {
+	if ((ret=comm_call(ev->comm, "callback:event", ev->home, thing)) < 0) {
 		if (oldfd == ev->fd)
 			/* No early removal */
 			event_del(ev->l);
@@ -52,8 +51,7 @@ static void call_timeout_event(int thing, short sev, void *evv)
 {
 	struct evt *ev safe = safe_cast evv;
 
-	if (comm_call(ev->comm, "callback:event", ev->home, thing,
-		      NULL, NULL, 0) < 0) {
+	if (comm_call(ev->comm, "callback:event", ev->home, thing) < 0) {
 		event_free(ev->l);
 		list_del(&ev->lst);
 		command_put(ev->comm);

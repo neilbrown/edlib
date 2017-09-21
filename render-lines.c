@@ -1736,8 +1736,7 @@ REDEF_CMD(render_lines_attach)
 	p = pane_register(p, 0, &render_lines_handle.c, rl, NULL);
 	call("Request:Notify:doc:Replace", p, 0, NULL);
 
-	return comm_call(ci->comm2, "callback:attach", p,
-			 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", p);
 }
 
 void edlib_init(struct pane *ed safe)

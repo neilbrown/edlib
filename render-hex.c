@@ -158,7 +158,7 @@ done:
 	if (m)
 		mark_free(m);
 	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
-		       buf_final(&ret), 0);
+		       buf_final(&ret));
 	free(ret.b);
 	return rv;
 }
@@ -221,9 +221,7 @@ DEF_CMD(render_hex_attach)
 
 	if (!p)
 		return -1;
-	return comm_call(ci->comm2, "callback:attach",
-			 p,
-			 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", p);
 }
 
 DEF_CMD(hex_appeared)

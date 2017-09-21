@@ -28,8 +28,7 @@ static struct pane *safe do_viewer_attach(struct pane *par)
 
 DEF_CMD(viewer_attach)
 {
-	return comm_call(ci->comm2, "callback:attach", do_viewer_attach(ci->focus),
-			 0, NULL, NULL, 0);
+	return comm_call(ci->comm2, "callback:attach", do_viewer_attach(ci->focus));
 }
 
 DEF_CMD(no_replace)
