@@ -87,6 +87,7 @@ DEF_CMD(popup_handle)
 	struct popup_info *ppi = p->data;
 
 	if (strcmp(ci->key, "Close") == 0) {
+		free(ppi->style);
 		free(ppi);
 		return 1;
 	}
@@ -107,6 +108,23 @@ DEF_CMD(popup_handle)
 		return 1;
 	}
 
+	if (strcmp(ci->key, "popup:style") == 0 && ci->str) {
+		char border[5];
+		int i, j;;
+
+		free(ppi->style);
+		ppi->style = strdup(ci->str);
+		for (i = 0, j = 0; i < 4; i++) {
+			if (strchr(ppi->style, "TLBR"[i]) == NULL)
+				border[j++] = "TLBR"[i];
+		}
+		border[j] = 0;
+		attr_set_str(&ppi->popup->attrs, "Popup", "true");
+		attr_set_str(&ppi->popup->attrs, "borders", border);
+		popup_resize(p, ppi->style);
+		pane_damaged(p, DAMAGED_VIEW);
+		return 1;
+	}
 	if (strcmp(ci->key, "Refresh:size") == 0) {
 		popup_resize(p, ppi->style);
 		return 1;
@@ -174,7 +192,7 @@ DEF_CMD(popup_attach)
 		z = 1;
 
 	ppi->popup = p = pane_register(root, z + 1, &popup_handle, ppi, NULL);
-	ppi->style = style;
+	ppi->style = strdup(style);
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
 		if (strchr(style, "TLBR"[i]) == NULL)
