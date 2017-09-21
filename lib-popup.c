@@ -122,7 +122,6 @@ DEF_CMD(popup_handle)
 		attr_set_str(&ppi->popup->attrs, "Popup", "true");
 		attr_set_str(&ppi->popup->attrs, "borders", border);
 		popup_resize(p, ppi->style);
-		pane_damaged(p, DAMAGED_VIEW);
 		return 1;
 	}
 	if (strcmp(ci->key, "Refresh:size") == 0) {
