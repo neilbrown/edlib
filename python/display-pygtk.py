@@ -293,6 +293,14 @@ class EdDisplay(gtk.Window):
         return fgc, bgc
 
     def get_pixmap(self, p):
+        # find pixmap attached to root-most pane with
+        # same size as this, with no x,y,z offset
+        while p.parent and p.w == p.parent.w and p.h == p.parent.h and \
+              p.x == 0 and p.y == 0 and p.z == 0:
+            if p in self.panes:
+                del self.panes[p]
+            p = p.parent
+
         if p in self.panes:
             pm = self.panes[p]
             (w,h) = pm.get_size()
