@@ -57,19 +57,19 @@ int main(int argc, char *argv[])
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 
 	doc_new(ed, "docs", NULL);
-	//call5("global-load-module", ed, 0, NULL, "lib-linecount", 0);
-	call5("global-load-module", ed, 0, NULL, "lib-search", 0);
-	call5("global-load-module", ed, 0, NULL, "lib-popup", 0);
-	call5("global-load-module", ed, 0, NULL, "lang-python", 0);
-	call5("global-load-module", ed, 0, NULL, "doc-text", 0);
-	call5("global-load-module", ed, 0, NULL, "doc-dir", 0);
-	call5("global-load-module", ed, 0, NULL, "render-hex", 0);
-	call5("global-load-module", ed, 0, NULL, "render-present", 0);
-	call5("global-load-module", ed, 0, NULL, "render-lines", 0);
-	call5("global-load-module", ed, 0, NULL, "module-notmuch", 0);
-	call5("global-load-module", ed, 0, NULL, "doc-email", 0);
-	call5("global-load-module", ed, 0, NULL, "lib-viewer", 0);
-	call5("global-load-module", ed, 0, NULL, "lib-qprint", 0);
+	//call("global-load-module", ed, 0, NULL, "lib-linecount", 0);
+	call("global-load-module", ed, 0, NULL, "lib-search", 0);
+	call("global-load-module", ed, 0, NULL, "lib-popup", 0);
+	call("global-load-module", ed, 0, NULL, "lang-python", 0);
+	call("global-load-module", ed, 0, NULL, "doc-text", 0);
+	call("global-load-module", ed, 0, NULL, "doc-dir", 0);
+	call("global-load-module", ed, 0, NULL, "render-hex", 0);
+	call("global-load-module", ed, 0, NULL, "render-present", 0);
+	call("global-load-module", ed, 0, NULL, "render-lines", 0);
+	call("global-load-module", ed, 0, NULL, "module-notmuch", 0);
+	call("global-load-module", ed, 0, NULL, "doc-email", 0);
+	call("global-load-module", ed, 0, NULL, "lib-viewer", 0);
+	call("global-load-module", ed, 0, NULL, "lib-qprint", 0);
 
 	p = call_pane("attach-input", ed, 0, NULL, 0);
 	if (p) {
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 		p = call_pane("attach-global-keymap", p, 0, NULL, 0);
 
 	if (p)
-		call3("attach-mode-emacs", p, 0, NULL);
+		call("attach-mode-emacs", p);
 
 	if (p)
 		p = call_pane("attach-tile", p, 0, NULL, 0);
@@ -98,8 +98,8 @@ int main(int argc, char *argv[])
 
 	if (p) {
 		pane_refresh(ed, NULL);
-		while (call3("event:run", ed, 0, NULL) == 1) {
-			call3("global-multicall-on_idle-", ed, 0, NULL);
+		while (call("event:run", ed) == 1) {
+			call("global-multicall-on_idle-", ed);
 			pane_refresh(ed, NULL);
 		}
 	}

@@ -94,7 +94,7 @@ REDEF_CMD(emacs_move)
 	if (!ci->mark)
 		return 0;
 
-	ret = call3(mv->type, ci->focus, mv->direction * RPT_NUM(ci), ci->mark);
+	ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), ci->mark);
 	if (!ret)
 		return 0;
 
@@ -118,15 +118,15 @@ REDEF_CMD(emacs_delete)
 	if (strcmp(mv->type, "Move-EOL") == 0 &&
 	    mv->direction == 1 && RPT_NUM(ci) == 1 &&
 	    is_eol(doc_following_pane(ci->focus, m)))
-		ret = call3("Move-Char", ci->focus, mv->direction * RPT_NUM(ci), m);
+		ret = call("Move-Char", ci->focus, mv->direction * RPT_NUM(ci), m);
 	else
-		ret = call3(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);
+		ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);
 
 	if (!ret) {
 		mark_free(m);
 		return 0;
 	}
-	ret = call5("Replace", ci->focus, 1, m, NULL, !ci->extra);
+	ret = call("Replace", ci->focus, 1, m, NULL, !ci->extra);
 	mark_free(m);
 	pane_set_extra(ci->focus, 1);
 
@@ -157,7 +157,7 @@ REDEF_CMD(emacs_case)
 	while (cnt > 0) {
 		struct mark *m = mark_dup(ci->mark, 1);
 
-		ret = call3(mv->type+1, ci->focus, dir, ci->mark);
+		ret = call(mv->type+1, ci->focus, dir, ci->mark);
 		if (ret <= 0 || mark_same_pane(ci->focus, ci->mark, m))
 			/* Hit end of file */
 			cnt = 1;
@@ -200,9 +200,9 @@ REDEF_CMD(emacs_case)
 				}
 			}
 			if (changed) {
-				ret = call5("Replace", ci->focus, 1, m, str, !ci->extra);
+				ret = call("Replace", ci->focus, 1, m, str, !ci->extra);
 				if (dir < 0)
-					call3(mv->type+1, ci->focus, dir, ci->mark);
+					call(mv->type+1, ci->focus, dir, ci->mark);
 			}
 			free(str);
 			pane_set_extra(ci->focus, 1);
@@ -246,28 +246,28 @@ REDEF_CMD(emacs_swap)
 		struct mark *as, *ae, *bs, *be;
 		char *astr, *bstr;
 
-		ret = call3(mv->type, ci->focus, -dir, ci->mark);
+		ret = call(mv->type, ci->focus, -dir, ci->mark);
 		if (ret <= 0)
 			break;
 		as = mark_dup(ci->mark, 1);
-		ret = call3(mv->type, ci->focus, dir, ci->mark);
+		ret = call(mv->type, ci->focus, dir, ci->mark);
 		if (ret <= 0 || mark_same_pane(ci->focus, ci->mark, as)) {
 			mark_free(as);
 			break;
 		}
 		ae = mark_dup(ci->mark, 1);
-		call3(mv->type, ci->focus, dir, ci->mark);
+		call(mv->type, ci->focus, dir, ci->mark);
 		be = mark_dup(ci->mark, 1);
-		call3(mv->type, ci->focus, -dir, ci->mark);
+		call(mv->type, ci->focus, -dir, ci->mark);
 		bs = mark_dup(ci->mark, 1);
 		astr = doc_getstr(ci->focus, as, ae);
 		bstr = doc_getstr(ci->focus, bs, be);
 		mark_to_mark(ci->mark, ae);
-		call5("Replace", ci->focus, 1, as, bstr, 1);
+		call("Replace", ci->focus, 1, as, bstr, 1);
 		mark_to_mark(ci->mark, be);
-		call5("Replace", ci->focus, 1, bs, astr, 0);
+		call("Replace", ci->focus, 1, bs, astr, 0);
 		if (dir < 0)
-			call3(mv->type, ci->focus, dir, ci->mark);
+			call(mv->type, ci->focus, dir, ci->mark);
 		free(astr);
 		free(bstr);
 		mark_free(as);
@@ -318,7 +318,7 @@ REDEF_CMD(emacs_simple)
 	if (!ci->mark)
 		return -1;
 
-	return call5(sc->type, ci->focus, ci->numeric, ci->mark, NULL, ci->extra);
+	return call(sc->type, ci->focus, ci->numeric, ci->mark, NULL, ci->extra);
 }
 
 REDEF_CMD(emacs_simple_neg)
@@ -328,7 +328,7 @@ REDEF_CMD(emacs_simple_neg)
 	if (!ci->mark)
 		return -1;
 
-	return call5(sc->type, ci->focus, -RPT_NUM(ci), ci->mark, NULL, ci->extra);
+	return call(sc->type, ci->focus, -RPT_NUM(ci), ci->mark, NULL, ci->extra);
 }
 
 DEF_CMD(emacs_exit)
@@ -340,9 +340,9 @@ DEF_CMD(emacs_exit)
 		if (!p)
 			return 0;
 		attr_set_str(&p->attrs, "done-key", "event:deactivate");
-		return call3("docs:show-modified", p, 0, NULL);
+		return call("docs:show-modified", p, 0, NULL);
 	} else
-		call3("event:deactivate", ci->focus, 0, NULL);
+		call("event:deactivate", ci->focus, 0, NULL);
 	return 1;
 }
 
@@ -356,7 +356,7 @@ DEF_CMD(emacs_insert)
 
 	/* Key is "Chr-X" - skip 4 bytes to get X */
 	str = ci->key + 4;
-	ret = call5("Replace", ci->focus, 1, ci->mark, str, !ci->extra);
+	ret = call("Replace", ci->focus, 1, ci->mark, str, !ci->extra);
 	pane_set_extra(ci->focus, 1);
 
 	return ret;
@@ -386,7 +386,7 @@ DEF_CMD(emacs_insert_other)
 	if (other_inserts[i].key == NULL)
 		return 0;
 
-	ret = call5("Replace", ci->focus, 1, ci->mark, other_inserts[i].insert,
+	ret = call("Replace", ci->focus, 1, ci->mark, other_inserts[i].insert,
 		    !ci->extra);
 	pane_set_extra(ci->focus, 0); /* A newline starts a new undo */
 	return ret;
@@ -423,7 +423,7 @@ DEF_CMD(find_done)
 	int ret;
 	char *str = doc_getstr(ci->focus, NULL, NULL);
 
-	ret = call5("popup:close", ci->focus, 0, NULL, str, 0);
+	ret = call("popup:close", ci->focus, 0, NULL, str, 0);
 	free(str);
 	return ret;
 }
@@ -474,7 +474,7 @@ DEF_CMD(emacs_findfile)
 			attr_set_str(&p->attrs, "prefix", "Find File: ");
 			attr_set_str(&p->attrs, "done-key", "File Found");
 		}
-		call5("doc:set-name", p, 0, NULL, "Find File", 0);
+		call("doc:set-name", p, 0, NULL, "Find File", 0);
 
 		pane_register(p, 0, &find_handle.c, "file", NULL);
 		return 1;
@@ -579,7 +579,7 @@ REDEF_CMD(emacs_file_complete)
 		/* add the extra chars from ci2.str */
 		c = cr.s + strlen(b);
 
-		call5("Replace", ci->focus, 1, ci->mark, c, 0);
+		call("Replace", ci->focus, 1, ci->mark, c, 0);
 		free(cr.s);
 	}
 	/* Now need to close the popup */
@@ -606,7 +606,7 @@ DEF_CMD(emacs_finddoc)
 			attr_set_str(&p->attrs, "prefix", "Find Document: ");
 			attr_set_str(&p->attrs, "done-key", "Doc Found");
 		}
-		call5("doc:set-name", p, 0, NULL, "Find Document", 0);
+		call("doc:set-name", p, 0, NULL, "Find Document", 0);
 
 		pane_register(p, 0, &find_handle.c, "doc", NULL);
 		return 1;
@@ -676,7 +676,7 @@ REDEF_CMD(emacs_doc_complete)
 		/* add the extra chars from cr.s */
 		char *c = cr.s + strlen(str);
 
-		call5("Replace", ci->focus, 1, ci->mark, c, 0);
+		call("Replace", ci->focus, 1, ci->mark, c, 0);
 		free(cr.s);
 	}
 	/* Now need to close the popup */
@@ -712,7 +712,7 @@ DEF_CMD(emacs_shell)
 			return 0;
 		attr_set_str(&p->attrs, "prefix", "Shell command: ");
 		attr_set_str(&p->attrs, "done-key", "Shell Command");
-		call5("doc:set-name", p, 0, NULL, "Shell Command", 0);
+		call("doc:set-name", p, 0, NULL, "Shell Command", 0);
 		p = call_pane7("attach-history", p, 0, NULL, 0,
 			       "*Shell History*", "popup:close");
 		pane_register(p, 0, &find_handle.c, "cmd", NULL);
@@ -773,7 +773,7 @@ DEF_CMD(emacs_neg)
 
 DEF_CMD(emacs_kill_doc)
 {
-	return call3("doc:destroy", ci->focus, 0, NULL);
+	return call("doc:destroy", ci->focus, 0, NULL);
 }
 
 DEF_CMD(emacs_save_all)
@@ -782,9 +782,9 @@ DEF_CMD(emacs_save_all)
 		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
 					    "DM", NULL);
 		if (p)
-			return call3("docs:show-modified", p, 0, NULL);
+			return call("docs:show-modified", p, 0, NULL);
 	}
-	return call3("docs:save-all", ci->focus, 0, NULL);
+	return call("docs:save-all", ci->focus, 0, NULL);
 }
 
 static void do_searches(struct pane *p safe, int view, char *patn,
@@ -794,7 +794,7 @@ static void do_searches(struct pane *p safe, int view, char *patn,
 	if (!m)
 		return;
 	m = mark_dup(m, 1);
-	while ((ret = call7("text-search", p, 0, m, patn, 0, NULL, end)) >= 1) {
+	while ((ret = call("text-search", p, 0, m, patn, 0, end)) >= 1) {
 		struct mark *m2, *m3;
 		int len = ret - 1;
 		m2 = vmark_new(p, view);
@@ -845,8 +845,8 @@ DEF_CMD(emacs_search_highlight)
 			return -1;
 		mark_to_mark(m, ci->mark);
 		attr_set_int(&m->attrs, "render:search", ci->numeric);
-		call3("Move-View-Pos", ci->focus, 0, m);
-		call3("Notify:doc:Replace", ci->focus, 0, NULL);
+		call("Move-View-Pos", ci->focus, 0, m);
+		call("Notify:doc:Replace", ci->focus, 0, NULL);
 		if (start) {
 			m = mark_dup(start, 1);
 			do_searches(ci->focus, view, ci->str,
@@ -854,7 +854,7 @@ DEF_CMD(emacs_search_highlight)
 			mark_free(m);
 		}
 	} else
-		call3("Notify:doc:Replace", ci->focus, 0, NULL);
+		call("Notify:doc:Replace", ci->focus, 0, NULL);
 	pane_damaged(ci->home, DAMAGED_CONTENT|DAMAGED_VIEW);
 	return 1;
 }
@@ -891,11 +891,11 @@ DEF_CMD(emacs_reposition)
 			if (repoint < 0)
 				/* can only move point backwards */
 				if (m->seq < m2->seq)
-					call3("Move-to", ci->focus, 0, m);
+					call("Move-to", ci->focus, 0, m);
 			if (repoint > 0)
 				/* can only move point forwards */
 				if (m->seq > m2->seq)
-					call3("Move-to", ci->focus, 0, m);
+					call("Move-to", ci->focus, 0, m);
 			mark_free(m);
 			mark_free(m2);
 		}
@@ -950,7 +950,7 @@ DEF_CMD(emacs_start_search)
 
 	attr_set_str(&p->attrs, "prefix", "Search: ");
 	attr_set_str(&p->attrs, "done-key", "Search String");
-	call5("doc:set-name", p, 0, NULL, "Search", 0);
+	call("doc:set-name", p, 0, NULL, "Search", 0);
 	call_pane("attach-emacs-search", p, 0, NULL, 0);
 
 	view = doc_add_view(ci->focus);
@@ -992,11 +992,11 @@ DEF_CMD(emacs_search_done)
 
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 
-	call7("global-set-attr", ci->focus, 0, NULL, "Search String",
-	      0, ci->str, NULL);
+	call("global-set-attr", ci->focus, 0, NULL, "Search String",
+	     0, NULL, ci->str);
 
-	if (call5("text-search", ci->focus, 0, m, ci->str, 0) > 1)
-		call3("Move-to", ci->focus, 0, m);
+	if (call("text-search", ci->focus, 0, m, ci->str, 0) > 1)
+		call("Move-to", ci->focus, 0, m);
 
 	mark_free(m);
 	return 1;
@@ -1009,7 +1009,7 @@ DEF_CMD(emacs_bury)
 	tile = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 	if (!tile)
 		return 1;
-	call3("doc:revisit", ci->focus, -1, NULL);
+	call("doc:revisit", ci->focus, -1, NULL);
 	doc = call_pane("docs:choose", ci->focus, 0, NULL, 0);
 	if (doc)
 		doc_attach_view(tile, doc, NULL);
@@ -1025,7 +1025,7 @@ DEF_CMD(emacs_command)
 		return 0;
 	attr_set_str(&p->attrs, "prefix", "Cmd: ");
 	attr_set_str(&p->attrs, "done-key", "emacs:command");
-	call5("doc:set-name", p, 0, NULL, "M-x command", 0);
+	call("doc:set-name", p, 0, NULL, "M-x command", 0);
 	pane_register(p, 0, &find_handle.c, "file", NULL);
 	return 1;
 }
@@ -1036,20 +1036,20 @@ DEF_CMD(emacs_do_command)
 	int ret;
 
 	snprintf(cmd, sizeof(cmd), "interactive-cmd-%s", ci->str);
-	ret = call5(cmd, ci->focus, 0, ci->mark, ci->str, 0);
+	ret = call(cmd, ci->focus, 0, ci->mark, ci->str, 0);
 	if (ret == 0) {
 		snprintf(cmd, sizeof(cmd), "Command %s not found", ci->str);
-		call5("Message", ci->focus, 0, NULL, cmd, 0);
+		call("Message", ci->focus, 0, NULL, cmd, 0);
 	} else if (ret < 0) {
 		snprintf(cmd, sizeof(cmd), "Command %s Failed", ci->str);
-		call5("Message", ci->focus, 0, NULL, cmd, 0);
+		call("Message", ci->focus, 0, NULL, cmd, 0);
 	}
 	return 1;
 }
 
 DEF_CMD(emacs_version)
 {
-	call5("Message", ci->focus, 0, NULL, "Version: edlib-0.0-devel", 0);
+	call("Message", ci->focus, 0, NULL, "Version: edlib-0.0-devel", 0);
 	return 1;
 }
 

@@ -148,7 +148,7 @@ static int do_render_complete_prev(struct complete_data *cd safe, struct mark *m
 	cb.plen = strlen(cb.prefix);
 	cb.cmp = 0;
 	while (1) {
-		ret = call3("render-line-prev", focus, n2, m2);
+		ret = call("render-line-prev", focus, n2, m2);
 		if (ret <= 0 || n == 0)
 			/* Either hit start-of-file, or have what we need */
 			break;
@@ -295,7 +295,7 @@ DEF_CMD(complete_set_prefix)
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 	if (!m || !p->parent)
 		return -1;
-	call3("Move-File", ci->focus, 1, m);
+	call("Move-File", ci->focus, 1, m);
 
 	while (do_render_complete_prev(cd, m, p->parent, 1, &c) > 0 && c) {
 		int l = strlen(c);
@@ -309,7 +309,7 @@ DEF_CMD(complete_set_prefix)
 	}
 	comm_call(ci->comm2, "callback:prefix", ci->focus, 0, NULL, common, 0);
 	free(common);
-	call3("Move-to", ci->focus, 0, m);
+	call("Move-to", ci->focus, 0, m);
 	mark_free(m);
 	pane_damaged(ci->focus, DAMAGED_VIEW);
 	return cnt + 1;
@@ -360,7 +360,7 @@ DEF_CMD(complete_return)
 	}
 	*c1 = 0;
 
-	call5("popup:close", ci->home->parent, NO_NUMERIC, NULL,
+	call("popup:close", ci->home->parent, NO_NUMERIC, NULL,
 	      cr.s + strlen(cd->prefix), 0);
 	free(cr.s);
 	return 1;

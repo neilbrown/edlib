@@ -231,10 +231,10 @@ DEF_CMD(text_load_file)
 			dname += 1;
 		else
 			dname = name;
-		call5("doc:set-name", ci->home, 0, NULL, dname, 0);
+		call("doc:set-name", ci->home, 0, NULL, dname, 0);
 	}
 	t->saved = t->undo;
-	call3("Notify:doc:status-changed", ci->home, 0, NULL);
+	call("Notify:doc:status-changed", ci->home);
 	return 1;
 err:
 	free(c);
@@ -336,10 +336,10 @@ DEF_CMD(text_save_file)
 		} else
 			asprintf(&msg, "*** Faild to write %s ***", t->fname);
 	}
-	call5("Message", ci->focus, 0, NULL, msg, 0);
+	call("Message", ci->focus, 0, NULL, msg, 0);
 	free(msg);
 	if (change_status)
-		call3("Notify:doc:status-changed", d->home, 0, NULL);
+		call("Notify:doc:status-changed", d->home);
 	if (ret == 0)
 		return 1;
 	return -1;
@@ -792,7 +792,7 @@ static int text_undo(struct text *t safe,
 		}
 	}
 	if (status_change)
-		call3("Notify:doc:status-changed", t->doc.home, 0, NULL);
+		call("Notify:doc:status-changed", t->doc.home);
 	if (e->first)
 		return 1;
 	else
@@ -1598,7 +1598,7 @@ DEF_CMD(text_replace)
 
 	}
 	if (status_change)
-		call3("Notify:doc:status-changed", d->home, 0, NULL);
+		call("Notify:doc:status-changed", d->home);
 	doc_notify_change(&t->doc, pm, early);
 	if (!ci->mark2)
 		mark_free(pm);
@@ -1742,7 +1742,7 @@ DEF_CMD(text_modified)
 		t->saved = NULL;
 	else
 		t->saved = t->undo;
-	call3("Notify:doc:status-changed", d->home, 0, NULL);
+	call("Notify:doc:status-changed", d->home);
 	return 1;
 }
 

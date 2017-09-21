@@ -56,7 +56,7 @@ DEF_CMD(search_forward)
 		if (ss)
 			ss = pane_attr_get(ci->focus, ss);
 		if (ss) {
-			call5("Replace", ci->home, 1, NULL, ss, 1);
+			call("Replace", ci->home, 1, NULL, ss, 1);
 			return 1;
 		}
 		if (!str)
@@ -74,10 +74,10 @@ DEF_CMD(search_forward)
 	else {
 		esi->start = mark_dup(s->m, 1);
 		esi->wrapped = 1;
-		call3("Move-File", esi->target, -1, esi->start);
+		call("Move-File", esi->target, -1, esi->start);
 	}
 	/* Trigger notification so isearch watcher searches again */
-	call5("Replace", ci->home, 1, NULL, "", 1);
+	call("Replace", ci->home, 1, NULL, "", 1);
 	return 1;
 }
 
@@ -104,7 +104,7 @@ DEF_CMD(search_retreat)
 	esi->wrapped = s->wrapped;
 	free(s);
 	/* Trigger notification so isearch watcher searches again */
-	call5("Replace", ci->home, 1, NULL, "", 1);
+	call("Replace", ci->home, 1, NULL, "", 1);
 	return 1;
 }
 
@@ -117,7 +117,7 @@ DEF_CMD(search_add)
 	int l;
 
 	do {
-		call3("search:highlight", esi->target, 0, NULL);
+		call("search:highlight", esi->target);
 		wch = mark_next_pane(esi->target, esi->end);
 		if (wch == WEOF)
 			return 1;
@@ -136,7 +136,7 @@ DEF_CMD(search_add)
 		} else
 			l = wcrtomb(b, wch, &ps);
 		b[l] = 0;
-		call5("Replace", ci->focus, 1, NULL, b, 0);
+		call("Replace", ci->focus, 1, NULL, b, 0);
 	} while (strcmp(ci->key, "C-Chr-C") != 0 && wch != ' ');
 	return 1;
 }
@@ -150,7 +150,7 @@ DEF_CMD(search_close)
 {
 	struct es_info *esi = ci->home->data;
 
-	call3("search:highlight", esi->target, 0, NULL);
+	call("search:highlight", esi->target);
 	mark_free(esi->end);
 	esi->end = safe_cast NULL;
 	mark_free(esi->start);
@@ -173,10 +173,10 @@ DEF_CMD(search_again)
 	struct mark *m;
 	char *str;
 
-	call3("search:highlight", esi->target, 0, NULL);
+	call("search:highlight", esi->target);
 	m = mark_dup(esi->start, 1);
 	str = doc_getstr(ci->home, NULL, NULL);
-	ret = call5("text-search", esi->target, 0, m, str, 0);
+	ret = call("text-search", esi->target, 0, m, str, 0);
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
 	else if (ret == -2) {
@@ -189,7 +189,7 @@ DEF_CMD(search_again)
 		point_to_mark(esi->end, m);
 		while (ret > 0 && mark_prev_pane(esi->target, m) != WEOF)
 			ret -= 1;
-		call5("search:highlight", esi->target, len, m, str, 0);
+		call("search:highlight", esi->target, len, m, str, 0);
 		esi->matched = 1;
 		pfx = "Search: ";
 		if (esi->wrapped)
@@ -215,8 +215,8 @@ DEF_CMD(search_done)
 	struct es_info *esi = ci->home->data;
 	char *str = doc_getstr(ci->focus, NULL, NULL);
 
-	call3("Move-to", esi->target, 0, esi->start);
-	call5("popup:close", safe_cast ci->focus->parent, 0, NULL, str, 0);
+	call("Move-to", esi->target, 0, esi->start);
+	call("popup:close", safe_cast ci->focus->parent, 0, NULL, str, 0);
 	free(str);
 	return 1;
 }
@@ -263,7 +263,7 @@ DEF_CMD(emacs_search)
 
 	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);
 	if (p) {
-		call3("Request:Notify:doc:Replace", p, 0, NULL);
+		call("Request:Notify:doc:Replace", p);
 		comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 	}
 	return 1;

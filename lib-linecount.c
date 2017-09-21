@@ -248,7 +248,7 @@ DEF_CMD(handle_count_lines)
 DEF_CMD(count_lines)
 {
 	/* FIXME optimise this away most of the time */
-	if (call3("Notify:doc:CountLines", ci->focus, 0, NULL) == -2) {
+	if (call("Notify:doc:CountLines", ci->focus) == -2) {
 		/* No counter in place, add one */
 		struct count_info *cli;
 		struct pane *p;
@@ -259,14 +259,14 @@ DEF_CMD(count_lines)
 		call_home(ci->focus, "Request:Notify:doc:Replace", p, 0, NULL, NULL);
 		call_home(ci->focus, "Request:Notify:doc:CountLines", p,
 			  0, NULL, NULL);
-		call3("Notify:doc:CountLines", ci->focus, 1, ci->mark);
+		call("Notify:doc:CountLines", ci->focus, 1, ci->mark);
 	}
 	if (ci->mark)
-		call7("Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
-		      0, NULL, ci->mark);
+		call("Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
+		      0, ci->mark);
 	if (ci->mark2)
-		call7("Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
-		      0, NULL, ci->mark2);
+		call("Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
+		      0, ci->mark2);
 	return 1;
 }
 

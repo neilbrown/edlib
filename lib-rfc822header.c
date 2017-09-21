@@ -272,9 +272,8 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 		if (sol && (ch == ' ' || ch == '\t'))
 			continue;
 		if (sol) {
-			call7("doc:replace", p, 1, NULL, " ", 1,
-			      is_text ? ",render:rfc822header-wrap=1" : NULL,
-			      point);
+			call("doc:replace", p, 1, NULL, " ", 1, point,
+			     is_text ? ",render:rfc822header-wrap=1" : NULL);
 			sol = 0;
 		}
 		buf[0] = ch;
@@ -283,30 +282,29 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 			b = charset_word(doc, m);
 		else
 			b = buf;
-		call7("doc:replace", p, 1, NULL, b, 1,
-		      ch == ' ' && is_text ? ",render:rfc822header-wrap=1" : NULL,
-		      point);
+		call("doc:replace", p, 1, NULL, b, 1, point,
+		     ch == ' ' && is_text ? ",render:rfc822header-wrap=1" : NULL);
 		if (ch == ',' && is_list) {
 			struct mark *p2 = mark_dup(point, 1);
 			int cnt = 1;
 			mark_prev_pane(p, p2);
 			while ((ch = doc_following_pane(doc, m)) == ' ') {
-				call7("doc:replace", p, 1, NULL, " ", 1, NULL, point);
+				call("doc:replace", p, 1, NULL, " ", 1, point);
 				mark_next_pane(doc, m);
 				cnt += 1;
 			}
 			if (ch == '\n' || ch == '\r')
 				cnt += 1;
 			sprintf(buf, "%d", cnt);
-			call7("doc:set-attr", p, 1, p2, "render:rfc822header-wrap", 0, buf, NULL);
+			call("doc:set-attr", p, 1, p2, "render:rfc822header-wrap", 0, NULL, buf);
 			mark_free(p2);
 		}
 	}
-	call7("doc:replace", p, 1, NULL, "\n", 1, NULL, point);
+	call("doc:replace", p, 1, NULL, "\n", 1, point);
 	sprintf(buf, "%zd", strlen(hdr)+1);
-	call7("doc:set-attr", p, 1, hstart, "render:rfc822header", 0, buf, NULL);
+	call("doc:set-attr", p, 1, hstart, "render:rfc822header", 0, NULL, buf);
 	snprintf(attr, sizeof(attr), "render:rfc822header-%s", hdr);
-	call7("doc:set-attr", p, 1, hstart, attr, 0, "10000", NULL);
+	call("doc:set-attr", p, 1, hstart, attr, 0, NULL, "10000");
 
 	mark_free(hstart);
 	mark_free(m);

@@ -56,9 +56,9 @@ DEF_CMD(history_handle)
 	}
 
 	if (hi->donekey && strcmp(ci->key, hi->donekey) == 0 && ci->str) {
-		call3("Move-File", hi->history, 1, hi->m);
-		call7("doc:replace", hi->history, 1, NULL, ci->str, 1, NULL, hi->m);
-		call7("doc:replace", hi->history, 1, NULL, "\n", 1, NULL, hi->m);
+		call("Move-File", hi->history, 1, hi->m);
+		call("doc:replace", hi->history, 1, NULL, ci->str, 1, hi->m);
+		call("doc:replace", hi->history, 1, NULL, "\n", 1, hi->m);
 		return 0;
 	}
 
@@ -72,13 +72,13 @@ DEF_CMD(history_handle)
 		char *l, *e;
 		if (ci->key[6] == 'p') {
 			m = mark_dup(hi->m, 1);
-			call3("Move-EOL", hi->history, -2, hi->m);
+			call("Move-EOL", hi->history, -2, hi->m);
 		} else {
-			call3("Move-EOL", hi->history, 1, hi->m);
-			call3("Move-Char", hi->history, 1, hi->m);
+			call("Move-EOL", hi->history, 1, hi->m);
+			call("Move-Char", hi->history, 1, hi->m);
 			m = mark_dup(hi->m, 1);
-			call3("Move-EOL", hi->history, 1, m);
-			call3("Move-Char", hi->history, 1, m);
+			call("Move-EOL", hi->history, 1, m);
+			call("Move-Char", hi->history, 1, m);
 		}
 		if (mark_same_pane(hi->history, m, hi->m)) {
 			/* No more history */
@@ -94,15 +94,15 @@ DEF_CMD(history_handle)
 			if (e)
 				*e = 0;
 		}
-		call3("Move-EOL", ci->focus, -1, ci->mark);
+		call("Move-EOL", ci->focus, -1, ci->mark);
 		m = mark_dup(ci->mark, 1);
-		call3("Move-EOL", ci->focus, 1, m);
+		call("Move-EOL", ci->focus, 1, m);
 		if (hi->changed) {
 			if (l != hi->saved)
 				free(hi->saved);
 			hi->saved = doc_getstr(ci->focus, ci->mark, m);
 		}
-		call5("Replace", ci->focus, 1, m, l, 1);
+		call("Replace", ci->focus, 1, m, l, 1);
 		if (l != hi->saved){
 			free(l);
 			hi->changed = 0;
@@ -142,11 +142,11 @@ DEF_CMD(history_attach)
 	}
 	hi->history = p;
 	hi->m = m;
-	call3("Move-File", hi->history, 1, hi->m);
+	call("Move-File", hi->history, 1, hi->m);
 	buf_init(&hi->search);
 	p = pane_register(ci->focus, 0, &history_handle, hi, NULL);
 	pane_add_notify(p, hi->history, "Notify:Close");
-	call3("Request:Notify:doc:Replace", p, 0, NULL);
+	call("Request:Notify:doc:Replace", p);
 	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL, 0);
 }
 

@@ -102,11 +102,11 @@ static void doc_save(struct pane *p safe, struct pane *focus safe)
 	char *fn = pane_attr_get(p, "filename");
 	char *mod = pane_attr_get(p, "doc-modified");
 	if (!fn || !*fn)
-		call5("Message", focus, 0, NULL,
-		      "File has no filename - cannot be saved.", 0);
+		call("Message", focus, 0, NULL,
+		     "File has no filename - cannot be saved.");
 	else if (!mod || strcmp(mod, "yes") != 0)
-		call5("Message", focus, 0, NULL,
-		      "File not modified - no need to save.", 0);
+		call("Message", focus, 0, NULL,
+		     "File not modified - no need to save.");
 	else
 		call_home(p, "doc:save-file", focus, 0, NULL, NULL);
 }
@@ -232,7 +232,7 @@ DEF_CMD(docs_modified_handle)
 		if (ci->mark)
 			pane_damaged(ci->home, DAMAGED_VIEW);
 		if (all_gone)
-			call5("popup:close", ci->home, 0, NULL, NULL, 0);
+			call("popup:close", ci->home);
 		return 1;
 	}
 
@@ -326,8 +326,8 @@ DEF_CMD(docs_callback)
 	}
 	if (strcmp(ci->key, "docs:byfd") == 0) {
 		list_for_each_entry(p, &doc->collection->children, siblings) {
-			if (call5("doc:same-file", p, 0, NULL, ci->str,
-				    ci->extra) > 0)
+			if (call("doc:same-file", p, 0, NULL, ci->str,
+				 ci->extra) > 0)
 				return comm_call(ci->comm2, "callback:doc", p, 0,
 						 NULL, NULL, 0);
 		}
@@ -369,9 +369,9 @@ DEF_CMD(docs_callback)
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
 		p = doc_attach_view(ci->focus, doc->doc.home, NULL);
 		p = pane_register(p, 0, &docs_modified_handle, doc, NULL);
-		call3("Request:Notify:doc:Replace", p, 0, NULL);
+		call("Request:Notify:doc:Replace", p);
 		/* And trigger Notify:doc:Replace handling immediately...*/
-		call3("Notify:doc:Replace", p, 0, NULL);
+		call("Notify:doc:Replace", p);
 		return 1;
 	}
 
@@ -444,7 +444,7 @@ DEF_CMD(docs_step)
 
 	if (!m)
 		return -1;
-	if (call3("doc:mymark", ci->home, 0, ci->mark) != 1)
+	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
 		return -1;
 
 	p = m->ref.p;
@@ -501,7 +501,7 @@ DEF_CMD(docs_set_ref)
 
 	if (!m)
 		return -1;
-	if (call3("doc:mymark", ci->home, 0, m) != 1)
+	if (call("doc:mymark", ci->home, 0, m) != 1)
 		return -1;
 
 	if (ci->numeric == 1 && !list_empty(&d->collection->children))
@@ -517,9 +517,9 @@ DEF_CMD(docs_set_ref)
 
 DEF_CMD(docs_mark_same)
 {
-	if (call3("doc:mymark", ci->home, 0, ci->mark) != 1)
+	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
 		return -1;
-	if (call3("doc:mymark", ci->home, 0, ci->mark2) != 1)
+	if (call("doc:mymark", ci->home, 0, ci->mark2) != 1)
 		return -1;
 	if (!ci->mark || !ci->mark2)
 		return -1;
@@ -566,7 +566,7 @@ DEF_CMD(docs_doc_get_attr)
 
 	if (!m || !attr)
 		return -1;
-	if (call3("doc:mymark", ci->home, 0, ci->mark) != 1)
+	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
 		return -1;
 
 	val = __docs_get_attr(d, m, forward, attr);
@@ -676,7 +676,7 @@ static int docs_bury(struct pane *focus safe)
 	if (!tile)
 		return 1;
 	/* Discourage this doc from being chosen again */
-	call3("doc:revisit", focus, -1, NULL);
+	call("doc:revisit", focus, -1);
 	doc = call_pane("docs:choose", focus, 0, NULL, 0);
 	if (doc)
 		doc_attach_view(tile, doc, NULL);
@@ -709,11 +709,11 @@ static int docs_kill(struct pane *focus safe, struct mark *m, int numeric)
 	mod = pane_attr_get(dp, "doc-modified");
 	if (mod && strcmp(mod, "yes") == 0 &&
 	    numeric == NO_NUMERIC) {
-		call5("Message", focus, 0, NULL,
-		      "File modified, cannot kill.", 0);
+		call("Message", focus, 0, NULL,
+		     "File modified, cannot kill.");
 		return 1;
 	}
-	call3("doc:destroy", dp, 0, NULL);
+	call("doc:destroy", dp);
 	return 1;
 }
 
@@ -724,7 +724,7 @@ static int docs_toggle(struct pane *focus safe, struct mark *m)
 		return -1;
 	dp = m->ref.p;
 	if (dp)
-		return call3("doc:modified", dp, 0, NULL);
+		return call("doc:modified", dp);
 	return 0;
 }
 
@@ -754,7 +754,7 @@ DEF_CMD(docs_cmd)
 
 	if (!ci->str)
 		return -1;
-	if (call3("doc:mymark", ci->home, 0, ci->mark) != 1)
+	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
 		return -1;
 	cmd = ci->str[0];
 	switch(cmd) {

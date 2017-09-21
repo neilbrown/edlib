@@ -40,20 +40,20 @@ DEF_CMD(no_replace)
 
 DEF_CMD(viewer_page_down)
 {
-	call3("Next", ci->focus, ci->numeric, ci->mark);
+	call("Next", ci->focus, ci->numeric, ci->mark);
 	return 1;
 }
 
 DEF_CMD(viewer_page_up)
 {
-	call3("Prior", ci->focus, ci->numeric, ci->mark);
+	call("Prior", ci->focus, ci->numeric, ci->mark);
 	return 1;
 }
 
 DEF_CMD(viewer_bury)
 {
 	struct pane *tile;
-	call3("doc:revisit", ci->focus, -1, NULL);
+	call("doc:revisit", ci->focus, -1);
 	tile = call_pane("ThisPane", ci->focus, 0, NULL, 0);
 	if (tile)
 		tile = pane_my_child(tile, ci->focus);

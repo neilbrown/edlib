@@ -349,7 +349,7 @@ DEF_CMD(doc_file)
 	if (!m)
 		m = dd->point;
 
-	call3("doc:set-ref", ci->focus, (rpt <= 0), m);
+	call("doc:set-ref", ci->focus, (rpt <= 0), m);
 
 	return 1;
 }
@@ -468,7 +468,7 @@ DEF_CMD(doc_set_name)
 		return -1;
 	free(d->name);
 	d->name = strdup(ci->str);
-	return call3("doc:revisit", d->home, 0, NULL);
+	return call("doc:revisit", d->home);
 }
 
 DEF_CMD(doc_set_parent)
@@ -547,7 +547,7 @@ DEF_CMD(doc_delayed_close)
 	 */
 	ret = pane_notify(p, "Notify:doc:viewers", NULL, NULL, NULL, NULL, 0, 0, NULL);
 	if (ret == 0)
-		call3("doc:drop-cache", p, 0, NULL);
+		call("doc:drop-cache", p);
 	return 1;
 }
 
@@ -734,7 +734,7 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "Close") == 0) {
 		mark_free(dd->point);
-		call3("doc:closed", dd->doc, 0, NULL);
+		call("doc:closed", dd->doc);
 		free(dd);
 		ci->home->data = safe_cast NULL;
 		return 1;
@@ -817,7 +817,7 @@ static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
 	pane_add_notify(p, doc, "Notify:Close");
 	pane_add_notify(p, doc, "Notify:doc:viewers");
 	p->pointer = m;
-	call3("doc:revisit", doc, 1, NULL);
+	call("doc:revisit", doc, 1);
 	if (numeric || str) {
 		p2 = call_pane("attach-view", p, 0, NULL, 0);
 		if (p2)
@@ -917,11 +917,11 @@ DEF_CMD(doc_open)
 			return -1;
 		}
 		if (autoclose)
-			call5("doc:set:autoclose", p, 1, NULL, NULL, 0);
+			call("doc:set:autoclose", p, 1, NULL, NULL, 0);
 		if (filter)
-			call5("doc:set:filter", p, 1, NULL, NULL, 0);
-		call5("doc:load-file", p, 0, NULL, name, fd);
-		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
+			call("doc:set:filter", p, 1, NULL, NULL, 0);
+		call("doc:load-file", p, 0, NULL, name, fd);
+		call("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	}
 	if (fd != ci->numeric)
 		close(fd);
@@ -952,10 +952,10 @@ DEF_CMD(doc_from_text)
 	if (!p)
 		return -1;
 	if (name) {
-		call5("doc:set-name", p, 0, NULL, name, 0);
-		call5("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
+		call("doc:set-name", p, 0, NULL, name, 0);
+		call("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
 	}
-	call7("doc:replace", p, 1, NULL, text, 1, NULL, NULL);
+	call("doc:replace", p, 1, NULL, text, 1, NULL, NULL);
 	return comm_call(ci->comm2, "callback", p, 0, NULL,
 			 NULL, 0);
 }

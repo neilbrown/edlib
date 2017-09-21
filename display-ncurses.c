@@ -383,7 +383,7 @@ static void send_key(int keytype, wint_t c, struct pane *p safe)
 			sprintf(buf, "Chr-%lc", c);
 	}
 
-	call5("Keystroke", p, 0, NULL, buf, 0);
+	call("Keystroke", p, 0, NULL, buf, 0);
 }
 
 static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe)

@@ -78,10 +78,10 @@ DEF_CMD(keystroke)
 			m = p->pointer;
 	}
 
-	ret = call5(key, p, numeric, m, NULL, extra);
+	ret = call(key, p, numeric, m, NULL, extra);
 	free(key);
 	if (ret < 0)
-		call5("Message", ci->focus, 0, NULL, "** Command Failed **", 1);
+		call("Message", ci->focus, 0, NULL, "** Command Failed **", 1);
 	return 0;
 }
 

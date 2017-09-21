@@ -426,12 +426,69 @@ static inline void doc_del_view(struct pane *p safe, int num)
 	key_handle(&ci);
 }
 
-static inline int call3(char *key safe, struct pane *focus safe, int numeric, struct mark *m)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
+/* Macro magic taken from
+ * https://stackoverflow.com/questions/11761703/overloading-macro-on-number-of-arguments
+ */
+// get number of arguments with __NARG__
+#define __NARG__(...)  __NARG_I_(__VA_ARGS__,__RSEQ_N())
+#define __NARG_I_(...) __ARG_N(__VA_ARGS__)
+#define __ARG_N( \
+      _1, _2, _3, _4, _5, _6, _7, _8, _9,_10, \
+     _11,_12,_13,_14,_15,_16,_17,_18,_19,_20, \
+     _21,_22,_23,_24,_25,_26,_27,_28,_29,_30, \
+     _31,_32,_33,_34,_35,_36,_37,_38,_39,_40, \
+     _41,_42,_43,_44,_45,_46,_47,_48,_49,_50, \
+     _51,_52,_53,_54,_55,_56,_57,_58,_59,_60, \
+     _61,_62,_63,N,...) N
+#define __RSEQ_N() \
+     63,62,61,60,                   \
+     59,58,57,56,55,54,53,52,51,50, \
+     49,48,47,46,45,44,43,42,41,40, \
+     39,38,37,36,35,34,33,32,31,30, \
+     29,28,27,26,25,24,23,22,21,20, \
+     19,18,17,16,15,14,13,12,11,10, \
+     9,8,7,6,5,4,3,2,1,0
 
-	ci.numeric = numeric;
-	ci.mark = m;
+// general definition for any function name
+#define _VFUNC_(name, n) name##n
+#define _VFUNC(name, n) _VFUNC_(name, n)
+#define VFUNC(func, ...) _VFUNC(func, __NARG__(__VA_ARGS__)) (__VA_ARGS__)
+
+// definition for FOO
+#define call(...) VFUNC(call, __VA_ARGS__)
+#define call12(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home)
+#define call11(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, NULL)
+#define call9(key, focus, numeric, mark, str, extra, mark2, str2, comm2) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, 0, 0, NULL)
+#define call8(key, focus, numeric, mark, str, extra, mark2, str2) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, str2, NULL, 0, 0, NULL)
+#define call7(key, focus, numeric, mark, str, extra, mark2) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, NULL, NULL, 0, 0, NULL)
+#define call6(key, focus, numeric, mark, str, extra) \
+	do_call(key, focus, numeric, mark, str, extra, NULL, NULL, NULL, 0, 0, NULL)
+#define call5(key, focus, numeric, mark, str) \
+	do_call(key, focus, numeric, mark, str, 0, NULL, NULL, NULL, 0, 0, NULL)
+#define call4(key, focus, numeric, mark) \
+	do_call(key, focus, numeric, mark, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
+#define call3(key, focus, numeric) \
+	do_call(key, focus, numeric, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
+#define call2(key, focus) \
+	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
+
+
+
+static inline int do_call(char *key safe, struct pane *focus safe, int numeric, struct mark *m,
+			  char *str, int extra, struct mark *m2, char *str2,
+			  struct command *comm2, int x, int y, struct pane *home)
+{
+	struct cmd_info ci = {.key = key, .focus = focus, .home = home ?: focus,
+			      .numeric = numeric, .mark = m, .str = str,
+			      .extra = extra, .mark2 = m2, .str2 = str2,
+			      .comm2 = comm2, .x = x, .y = y,
+			      .comm = safe_cast 0};
+
 	return key_handle(&ci);
 }
 
@@ -478,17 +535,6 @@ static inline int call_home(struct pane *home safe, char *key safe, struct pane 
 	return key_handle(&ci);
 }
 
-static inline int call5(char *key safe, struct pane *focus safe, int numeric, struct mark *m,
-			 char *str, int extra)
-{
-	struct cmd_info ci = {.key=key, .focus=focus, .home=focus, .comm = safe_cast 0};
-
-	ci.numeric = numeric;
-	ci.mark = m;
-	ci.str = str;
-	ci.extra = extra;
-	return key_handle(&ci);
-}
 
 static inline int call_xy(char *key safe, struct pane *focus safe, int numeric,
 			  char *str, char *str2, int x, int y)
@@ -517,20 +563,6 @@ static inline int call_xy7(char *key safe, struct pane *focus safe, int numeric,
 	ci.y = y;
 	ci.mark = m;
 	ci.mark2 = m2;
-	return key_handle(&ci);
-}
-
-static inline int call7(char *key safe, struct pane *focus safe, int numeric, struct mark *m,
-			char *str, int extra, char *str2, struct mark *m2)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
-
-	ci.numeric = numeric;
-	ci.mark = m;
-	ci.mark2 = m2;
-	ci.str = str;
-	ci.str2 = str2;
-	ci.extra = extra;
 	return key_handle(&ci);
 }
 

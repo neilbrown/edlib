@@ -122,7 +122,7 @@ DEF_CMD(editor_auto_load)
 		}
 	}
 
-	ret = call5("global-load-module", ci->home, 0, NULL,
+	ret = call("global-load-module", ci->home, 0, NULL,
 		    mod, 0);
 	if (mod != ci->key + 7)
 		free(mod);
@@ -145,7 +145,7 @@ DEF_CMD(editor_auto_event)
 
 	if (ret)
 		return ret;
-	call3("attach-libevent", ci->home, 0, NULL);
+	call("attach-libevent", ci->home);
 	return key_lookup_prefix(map, ci);
 }
 

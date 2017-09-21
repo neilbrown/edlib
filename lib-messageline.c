@@ -60,7 +60,7 @@ DEF_CMD(messageline_handle)
 	if (strcmp(ci->key, "Message") == 0 && ci->str) {
 		if (ci->extra == 0 || mli->message == NULL) {
 			if (!mli->message)
-				call3("Request:Notify:Keystroke", ci->home, 0, NULL);
+				call("Request:Notify:Keystroke", ci->home);
 			free(mli->message);
 			mli->message = strdup(ci->str);
 			pane_damaged(mli->line, DAMAGED_CONTENT);
@@ -69,7 +69,7 @@ DEF_CMD(messageline_handle)
 	}
 	if (strcmp(ci->key, "Abort") == 0) {
 		if (!mli->message)
-			call3("Request:Notify:Keystroke", ci->home, 0, NULL);
+			call("Request:Notify:Keystroke", ci->home);
 		free(mli->message);
 		mli->message = strdup("ABORTED");
 		pane_damaged(mli->line, DAMAGED_CONTENT);

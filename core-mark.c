@@ -530,7 +530,7 @@ wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int
 	int ret;
 	if (move && m->rpos != NEVER_RPOS)
 		m->rpos = NO_RPOS;
-	ret = call5("doc:step", p, forward, m, NULL, move);
+	ret = call("doc:step", p, forward, m, NULL, move);
 
 	if (ret <= 0)
 		return WEOF;
@@ -724,7 +724,7 @@ void mark_to_mark(struct mark *m safe, struct mark *target safe)
 
 int mark_same_pane(struct pane *p safe, struct mark *m1 safe, struct mark *m2 safe)
 {
-	return 1 == call7("doc:mark-same", p, 0, m1, NULL, 0, NULL, m2);
+	return 1 == call("doc:mark-same", p, 0, m1, NULL, 0, m2);
 }
 
 /* A 'vmark' is a mark in a particular view.  We can walk around those

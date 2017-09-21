@@ -96,7 +96,7 @@ DEF_CMD(tile_clone)
 	INIT_LIST_HEAD(&ti->tiles);
 	ti->p = p2 = pane_register(parent, 0, &tile_handle, ti, NULL);
 	/* Remove borders as our children will provide their own. */
-	call3("Window:border", p2, 0, NULL);
+	call("Window:border", p2);
 	attr_set_str(&p2->attrs, "borders", "BL");
 	while (!cti->leaf && child->focus) {
 		child = child->focus;
@@ -134,7 +134,7 @@ DEF_CMD(tile_attach)
 	struct pane *p = pane_register(display, 0, &tile_handle, ti, NULL);
 
 	/* Remove borders as our children will provide their own. */
-	call3("Window:border", display, 0, NULL);
+	call("Window:border", display);
 
 	ti->leaf = 1;
 	ti->p = p;

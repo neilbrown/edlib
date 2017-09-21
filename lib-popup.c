@@ -102,7 +102,7 @@ DEF_CMD(popup_handle)
 
 	if (strcmp(ci->key, "Abort") == 0) {
 		pane_focus(ppi->target);
-		call3("Abort", ppi->target, 0, NULL);
+		call("Abort", ppi->target);
 		pane_close(ppi->popup);
 		return 1;
 	}
@@ -126,7 +126,7 @@ DEF_CMD(popup_handle)
 		str = ci->str;
 		pane_close(ppi->popup);
 		/* This pane is closed now, ppi is gone. Be careful */
-		call5(key, target, 1, NULL, str, 0);
+		call(key, target, 1, NULL, str, 0);
 		return 1;
 	}
 
@@ -196,8 +196,8 @@ DEF_CMD(popup_attach)
 		if (doc &&
 		    (p = doc_attach_view(ppi->popup, doc, NULL)) != NULL) {
 
-			call3("Move-File", p, 1, NULL);
-			call5("doc:set:autoclose", p, 1, NULL, NULL, 0);
+			call("Move-File", p, 1);
+			call("doc:set:autoclose", p, 1, NULL, NULL, 0);
 		}
 	}
 

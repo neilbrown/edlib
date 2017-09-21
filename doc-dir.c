@@ -243,7 +243,7 @@ DEF_CMD(dir_load_file)
 			dname += 1;
 		else
 			dname = name;
-		call5("doc:set-name", ci->home, 0, NULL, dname, 0);
+		call("doc:set-name", ci->home, 0, NULL, dname, 0);
 		if (l > 1)
 			strcat(dr->fname, "/");
 	}
@@ -652,7 +652,7 @@ DEF_CMD(dir_cmd)
 		return comm_call(&dir_load_file, "doc:load-file", ci->focus,
 				 0, NULL, NULL, -1);
 	case 'q':
-		return call3("doc:destroy", ci->home, 0, NULL);
+		return call("doc:destroy", ci->home);
 	default:
 		if (cmd >= 'A' && cmd <= 'Z')
 			return dir_open_alt(ci->home, ci->focus, ci->mark, cmd);

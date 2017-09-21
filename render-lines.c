@@ -439,7 +439,7 @@ static void render_image(struct pane *p safe, char *line safe, int *yp safe,
 
 		pane_resize(tmp, (p->w - width)/2, *yp, width, height);
 		tmp->parent = p;
-		call5("Draw:image", tmp, 0, NULL, fname, 5);
+		call("Draw:image", tmp, 0, NULL, fname, 5);
 		tmp->parent = NULL;
 		pane_close(tmp);
 	}
@@ -822,7 +822,7 @@ static struct mark *call_render_line_prev(struct pane *p safe,
 	int ret;
 	struct mark *m2;
 
-	ret = call3("render-line-prev", p, n, m);
+	ret = call("render-line-prev", p, n, m);
 	if (ret <= 0) {
 		mark_free(m);
 		return NULL;
@@ -1140,7 +1140,7 @@ restart:
 		pane_clear(p, a);
 		free(a);
 	} else if (strncmp(s, "image:", 6) == 0) {
-		if (call5("Draw:image", focus, 1, NULL, s+6, 0) <= 0)
+		if (call("Draw:image", focus, 1, NULL, s+6, 0) <= 0)
 			pane_clear(p, NULL);
 	} else if (strncmp(s, "call:", 5) == 0) {
 		if (call_home(focus, s+5, p, 0, m, NULL) <= 0)
@@ -1522,7 +1522,8 @@ DEF_CMD(render_lines_set_cursor)
 			if (m2) {
 				char *tag = get_active_tag(oattrs);
 				if (tag)
-					call7("Mouse-Activate", focus, 0, m2, tag, 0, oattrs, ci->mark);
+					call("Mouse-Activate", focus, 0, m2, tag,
+					     0, ci->mark, oattrs);
 				free(tag);
 				mark_to_mark(ci->mark, m2);
 				mark_free(m2);
@@ -1604,11 +1605,11 @@ DEF_CMD(render_lines_move_line)
 		num -= 1;
 	else
 		num += 1;
-	if (!call5("Move-EOL", ci->focus, num, ci->mark, NULL, 0))
+	if (!call("Move-EOL", ci->focus, num, ci->mark, NULL, 0))
 		return -1;
 	if (RPT_NUM(ci) > 0) {
 		/* at end of target line, move to start */
-		if (!call5("Move-EOL", ci->focus, -1, ci->mark, NULL, 0))
+		if (!call("Move-EOL", ci->focus, -1, ci->mark, NULL, 0))
 			return -1;
 	}
 
@@ -1729,7 +1730,7 @@ REDEF_CMD(render_lines_attach)
 	if (strcmp(ci->key, "attach-render-text") == 0)
 		p = call_pane("attach-renderline", p, 0, NULL, 0);
 	p = pane_register(p, 0, &render_lines_handle.c, rl, NULL);
-	call3("Request:Notify:doc:Replace", p, 0, NULL);
+	call("Request:Notify:doc:Replace", p, 0, NULL);
 
 	return comm_call(ci->comm2, "callback:attach", p,
 			 0, NULL, NULL, 0);

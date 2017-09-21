@@ -41,7 +41,7 @@ DEF_CMD(email_close)
 {
 	struct email_info *ei = ci->home->data;
 	// ??? ;
-	call3("doc:closed", ei->spacer, 0, NULL);
+	call("doc:closed", ei->spacer);
 	free(ei);
 	return 1;
 }
@@ -158,9 +158,9 @@ DEF_CMD(email_select)
 	if (a && is_attr("hide", a)) {
 		a = pane_mark_attr(ci->home, m, 1, "multipart-prev:multipart:visible");
 		if (a && *a == '0')
-			call7("doc:set-attr", ci->home, 1, m, "multipart-prev:multipart:visible", 0, "1", NULL);
+			call("doc:set-attr", ci->home, 1, m, "multipart-prev:multipart:visible", 0, NULL, "1");
 		else
-			call7("doc:set-attr", ci->home, 1, m, "multipart-prev:multipart:visible", 0, "0", NULL);
+			call("doc:set-attr", ci->home, 1, m, "multipart-prev:multipart:visible", 0, NULL, "0");
 	}
 	return 1;
 }
@@ -535,7 +535,7 @@ DEF_CMD(open_email)
 	if (!start)
 		return 0;
 	end = mark_dup(start, 1);
-	call3("doc:set-ref", p, 0, end);
+	call("doc:set-ref", p, 0, end);
 
 	ei = calloc(1, sizeof(*ei));
 	ei->email = p;
@@ -549,15 +549,15 @@ DEF_CMD(open_email)
 	}
 	ei->spacer = p;
 	point = vmark_new(p, MARK_POINT);
-	call3("doc:set-ref", p, 1, point);
-	call7("doc:set-attr", p, 1, point, "renderline:func", 0,
-	      "doc:email:render-spacer", NULL);
+	call("doc:set-ref", p, 1, point);
+	call("doc:set-attr", p, 1, point, "renderline:func", 0,
+	     NULL, "doc:email:render-spacer");
 	mark_free(point);
 
 	doc = doc_new(ci->focus, "text", ci->focus);
 	if (!doc)
 		goto out;
-	call5("doc:set:autoclose", doc, 1, NULL, NULL, 0);
+	call("doc:set:autoclose", doc, 1, NULL, NULL, 0);
 	point = vmark_new(doc, MARK_POINT);
 	if (!point)
 		goto out;
@@ -585,14 +585,14 @@ DEF_CMD(open_email)
 	attr_set_str(&doc->attrs, "email:actions", "hide");
 	call_home(p, "multipart-add", doc, 0, NULL, NULL);
 	call_home(p, "multipart-add", ei->spacer, 0, NULL, NULL);
-	call5("doc:set:autoclose", doc, 1, NULL, NULL, 0);
+	call("doc:set:autoclose", doc, 1, NULL, NULL, 0);
 
 	if (handle_content(ei->email, type, xfer, start, end, p, ei->spacer, 0) == 0)
 		goto out;
 
 	h = pane_register(p, 0, &email_handle.c, ei, NULL);
 	if (h) {
-		call5("doc:set:filter", h, 1, NULL, NULL, 0);
+		call("doc:set:filter", h, 1, NULL, NULL, 0);
 		mark_free(start);
 		mark_free(end);
 		attr_set_str(&h->attrs, "render-default", "text");

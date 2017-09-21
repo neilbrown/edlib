@@ -85,7 +85,7 @@ static int view_refresh(const struct cmd_info *ci safe)
 			if (vd->viewpoint)
 				m = vd->viewpoint;
 
-			call3("CountLines", p, 0, m);
+			call("CountLines", p, 0, m);
 
 			if (m)
 				ln = attr_find_int(*mark_attr(m), "lines");
@@ -247,7 +247,7 @@ DEF_CMD(view_handle)
 		return 1;
 	}
 	if (strcmp(ci->key, "render:reposition") == 0) {
-		if (call3("doc:mymark", ci->home, 0, ci->mark) != 1)
+		if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
 			/* mark for some other document */
 			return 0;
 		if (vd->viewpoint != ci->mark) {
@@ -278,7 +278,7 @@ static struct pane *safe do_view_attach(struct pane *par, int border)
 	p = pane_register(par, 0, &view_handle, vd, NULL);
 	/* Capture status-changed notification so we can update 'changed' flag in
 	 * status line */
-	call3("Request:Notify:doc:status-changed", p, 0, NULL);
+	call("Request:Notify:doc:status-changed", p);
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }
@@ -343,11 +343,11 @@ DEF_CMD(view_refresh_view)
 	struct view_data *vd = p->data;
 
 	if (vd->move_large) {
-		call3("Move-View-Large", ci->focus, vd->move_large, ci->mark);
+		call("Move-View-Large", ci->focus, vd->move_large, ci->mark);
 		vd->move_large = 0;
 	}
 	if (vd->move_small) {
-		call3("Move-View-Small", ci->focus, vd->move_small, ci->mark);
+		call("Move-View-Small", ci->focus, vd->move_small, ci->mark);
 		vd->move_small = 0;
 	}
 	return 0;

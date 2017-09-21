@@ -212,7 +212,7 @@ static void pane_do_refresh(struct pane *p safe, int damage, struct mark *pointe
 		if (damage & (DAMAGED_NEED_CALL)) {
 			if (damage & DAMAGED_CONTENT)
 				damage |= DAMAGED_CURSOR;
-			call5("Refresh", p, 0, pointer, NULL, damage);
+			call("Refresh", p, 0, pointer, NULL, damage);
 		}
 	} else
 		list_for_each_entry(c, &p->children, siblings)
@@ -242,7 +242,7 @@ static void pane_do_review(struct pane *p safe, int damage, struct mark *pointer
 		return;
 	if (list_empty(&p->children)) {
 		if (damage & (DAMAGED_VIEW))
-			call5("Refresh:view", p, 0, pointer, NULL, damage);
+			call("Refresh:view", p, 0, pointer, NULL, damage);
 	} else
 		list_for_each_entry(c, &p->children, siblings)
 			pane_do_review(c, damage, pointer);
@@ -570,22 +570,22 @@ struct pane *render_attach(char *name, struct pane *parent safe)
 
 void pane_set_mode(struct pane *p safe, char *mode)
 {
-	call5("Mode:set-mode", p, 0, NULL, mode, 0);
+	call("Mode:set-mode", p, 0, NULL, mode, 0);
 }
 
 void pane_set_numeric(struct pane *p safe, int numeric)
 {
-	call3("Mode:set-numeric", p, numeric, NULL);
+	call("Mode:set-numeric", p, numeric);
 }
 
 void pane_set_extra(struct pane *p safe, int extra)
 {
-	call5("Mode:set-extra", p, 0, NULL, NULL, extra);
+	call("Mode:set-extra", p, 0, NULL, NULL, extra);
 }
 
 void pane_clear(struct pane *p safe, char *attrs)
 {
-	call7("pane-clear", p, 0, NULL, NULL, 0, attrs, NULL);
+	call("pane-clear", p, 0, NULL, NULL, 0, NULL, attrs);
 }
 
 DEF_CMD(attr_get_callback)
