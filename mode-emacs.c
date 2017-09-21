@@ -699,6 +699,7 @@ DEF_CMD(emacs_shell)
 {
 	char *name = "*Shell Command Output*";
 	struct pane *p, *doc, *par;
+	char *path;
 
 	if (strcmp(ci->key, "Shell Command") != 0) {
 		p = call_pane("PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
@@ -711,6 +712,12 @@ DEF_CMD(emacs_shell)
 			      0, NULL, "popup:close");
 		pane_register(p, 0, &find_handle.c, "cmd", NULL);
 		return 1;
+	}
+	path = pane_attr_get(ci->focus, "filename");
+	if (path) {
+		char *e = strrchr(path, '/');
+		if (e && e > path)
+			*e = 0;
 	}
 	par = call_pane("OtherPane", ci->focus);
 	if (!par)
@@ -725,7 +732,7 @@ DEF_CMD(emacs_shell)
 	if (!p)
 		return -1;
 	call_home(p, "doc:assign", doc);
-	call_pane("attach-shellcmd", p, 0, NULL, ci->str);
+	call_pane("attach-shellcmd", p, 0, NULL, ci->str, 0, NULL, path);
 	doc_attach_view(par, doc, "default:viewer");
 	return 1;
 }
