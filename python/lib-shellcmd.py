@@ -9,9 +9,10 @@ class ShellPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
 
-    def run(self, cmd):
+    def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
         self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
+                                     cwd=cwd,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT,
                                      stdin = FNULL)
@@ -58,14 +59,14 @@ class ShellPane(edlib.Pane):
                 self.call("Replace", "\nProcess Aborted\n");
             return 1
 
-def shell_attach(key, focus, comm2, str, **a):
+def shell_attach(key, focus, comm2, str, str2, **a):
     m = edlib.Mark(focus)
     focus.call("Move-File", 1)
     focus.call("Replace", m)
     p = ShellPane(focus)
     if not p:
         return -1;
-    if not p.run(str):
+    if not p.run(str, str2):
         p.close()
         return -1;
     comm2("callback", p)
