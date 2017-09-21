@@ -71,27 +71,27 @@ int main(int argc, char *argv[])
 	call("global-load-module", ed, 0, NULL, "lib-viewer", 0);
 	call("global-load-module", ed, 0, NULL, "lib-qprint", 0);
 
-	p = call_pane("attach-input", ed, 0, NULL, 0);
+	p = call_pane("attach-input", ed);
 	if (p) {
 		if (gtk)
-			p = call_pane("attach-display-pygtk", p, 0, NULL, 0);
+			p = call_pane("attach-display-pygtk", p);
 		else
-			p = call_pane("attach-display-ncurses", p, 0, NULL, 0);
+			p = call_pane("attach-display-ncurses", p);
 	}
 
 	if (p)
-		p = call_pane("attach-messageline", p, 0, NULL, 0);
+		p = call_pane("attach-messageline", p);
 	if (p)
-		p = call_pane("attach-global-keymap", p, 0, NULL, 0);
+		p = call_pane("attach-global-keymap", p);
 
 	if (p)
 		call("attach-mode-emacs", p);
 
 	if (p)
-		p = call_pane("attach-tile", p, 0, NULL, 0);
+		p = call_pane("attach-tile", p);
 	if (p) {
-		struct pane *d = call_pane7("doc:from-text", p, 0, NULL, 0,
-					    "*Welcome*", WelcomeText);
+		struct pane *d = call_pane("doc:from-text", p, 0, NULL,
+					   "*Welcome*", 0, NULL, WelcomeText);
 		if (d)
 			p = doc_attach_view(p, d, NULL);
 	}

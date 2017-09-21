@@ -334,8 +334,7 @@ REDEF_CMD(emacs_simple_neg)
 DEF_CMD(emacs_exit)
 {
 	if (ci->numeric == NO_NUMERIC) {
-		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
-					    "DM", NULL);
+		struct pane *p = call_pane("PopupTile", ci->focus, 0, NULL, "DM");
 		// FIXME if called from a popup, this fails.
 		if (!p)
 			return 0;
@@ -461,7 +460,7 @@ DEF_CMD(emacs_findfile)
 			path = realpath(".", buf);
 		if (!path)
 			path = "/";
-		p = call_pane7("PopupTile", ci->focus, 0, NULL, 0, "D2", path);
+		p = call_pane("PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, path);
 		if (!p)
 			return 0;
 
@@ -481,20 +480,20 @@ DEF_CMD(emacs_findfile)
 	}
 
 	if (strcmp(ci->key, "File Found Other Window") == 0)
-		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+		par = call_pane("OtherPane", ci->focus);
 	else
-		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+		par = call_pane("ThisPane", ci->focus);
 
 	if (!par)
 		return -1;
 
 	fd = open(ci->str, O_RDONLY);
 	if (fd >= 0) {
-		p = call_pane7("doc:open", ci->focus, fd, NULL, 0, ci->str, NULL);
+		p = call_pane("doc:open", ci->focus, fd, NULL, ci->str);
 		close(fd);
 	} else
-		p = call_pane7("doc:from-text", par, 0, NULL, 0,
-			       ci->str, "File not found\n");
+		p = call_pane("doc:from-text", par, 0, NULL, ci->str,
+			      0, NULL, "File not found\n");
 	if (p)
 		doc_attach_view(par, p, NULL);
 	if (!p)
@@ -546,11 +545,11 @@ REDEF_CMD(emacs_file_complete)
 		free(str);
 		return -1;
 	}
-	docp = call_pane7("doc:open", ci->focus, fd, NULL, 0, d, NULL);
+	docp = call_pane("doc:open", ci->focus, fd, NULL, d);
 	close(fd);
 	if (!docp)
 		return -1;
-	pop = call_pane7("PopupTile", ci->focus, 0, NULL, 0, "DM1r", NULL);
+	pop = call_pane("PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		return -1;
 	par = doc_attach_view(pop, docp, NULL);
@@ -592,7 +591,7 @@ DEF_CMD(emacs_finddoc)
 
 	if (strncmp(ci->key, "Doc Found", 9) != 0) {
 
-		p = call_pane7("PopupTile", ci->focus, 0, NULL, 0, "D2", "");
+		p = call_pane("PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
 		if (!p)
 			return 0;
 
@@ -611,14 +610,14 @@ DEF_CMD(emacs_finddoc)
 		return 1;
 	}
 
-	p = call_pane7("docs:byname", ci->focus, 0, NULL, 0, ci->str, NULL);
+	p = call_pane("docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)
 		return -1;
 
 	if (strcmp(ci->key, "Doc Found Other Window") == 0)
-		par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+		par = call_pane("OtherPane", ci->focus);
 	else
-		par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+		par = call_pane("ThisPane", ci->focus);
 	if (!p || !par)
 		return -1;
 
@@ -642,12 +641,10 @@ REDEF_CMD(emacs_doc_complete)
 	str = doc_getstr(ci->focus, NULL, NULL);
 	if (!str)
 		return -1;
-	pop = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
-			 "DM1r", NULL);
+	pop = call_pane("PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		return -1;
-	docs = call_pane7("docs:byname", ci->focus, 0, NULL,
-			  0, NULL, NULL);
+	docs = call_pane("docs:byname", ci->focus);
 	if (!docs)
 		return -1;
 	par = doc_attach_view(pop, docs, NULL);
@@ -687,10 +684,10 @@ DEF_CMD(emacs_viewdocs)
 	struct pane *p, *par;
 	struct pane *docs;
 
-	docs = call_pane7("docs:byname", ci->focus, 0, NULL, 0, "*Documents*", NULL);
+	docs = call_pane("docs:byname", ci->focus, 0, NULL, "*Documents*");
 	if (!docs)
 		return -1;
-	par = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	par = call_pane("ThisPane", ci->focus);
 	if (!par)
 		return -1;
 
@@ -704,32 +701,31 @@ DEF_CMD(emacs_shell)
 	struct pane *p, *doc, *par;
 
 	if (strcmp(ci->key, "Shell Command") != 0) {
-		p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
-			       "D2", "");
+		p = call_pane("PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
 		if (!p)
 			return 0;
 		attr_set_str(&p->attrs, "prefix", "Shell command: ");
 		attr_set_str(&p->attrs, "done-key", "Shell Command");
 		call("doc:set-name", p, 0, NULL, "Shell Command", 0);
-		p = call_pane7("attach-history", p, 0, NULL, 0,
-			       "*Shell History*", "popup:close");
+		p = call_pane("attach-history", p, 0, NULL, "*Shell History*",
+			      0, NULL, "popup:close");
 		pane_register(p, 0, &find_handle.c, "cmd", NULL);
 		return 1;
 	}
-	par = call_pane("OtherPane", ci->focus, 0, NULL, 0);
+	par = call_pane("OtherPane", ci->focus);
 	if (!par)
 		return -1;
 	/* Find or create "*Shell Command Output*" */
-	doc = call_pane7("docs:byname", ci->focus, 0, NULL, 0, name, NULL);
+	doc = call_pane("docs:byname", ci->focus, 0, NULL, name);
 	if (!doc)
-		doc = call_pane7("doc:from-text", par, 0, NULL, 0, name, "");
+		doc = call_pane("doc:from-text", par, 0, NULL, name, 0, NULL, "");
 	if (!doc)
 		return -1;
-	p = call_pane("doc:attach", doc, 0, NULL, 0);
+	p = call_pane("doc:attach", doc);
 	if (!p)
 		return -1;
 	call_home(p, "doc:assign", doc);
-	call_pane7("attach-shellcmd", p, 0, NULL, 0, ci->str, NULL);
+	call_pane("attach-shellcmd", p, 0, NULL, ci->str);
 	doc_attach_view(par, doc, "default:viewer");
 	return 1;
 }
@@ -777,8 +773,7 @@ DEF_CMD(emacs_kill_doc)
 DEF_CMD(emacs_save_all)
 {
 	if (ci->numeric == NO_NUMERIC) {
-		struct pane *p = call_pane7("PopupTile", ci->focus, 0, NULL, 0,
-					    "DM", NULL);
+		struct pane *p = call_pane("PopupTile", ci->focus, 0, NULL, "DM");
 		if (p)
 			return call("docs:show-modified", p, 0, NULL);
 	}
@@ -940,8 +935,7 @@ DEF_CMD(emacs_start_search)
 	struct pane *p;
 	int view;
 
-	p = call_pane7("PopupTile", ci->focus, 0, NULL,
-		       0, "TR2", "");
+	p = call_pane("PopupTile", ci->focus, 0, NULL, "TR2", 0, NULL, "");
 
 	if (!p)
 		return 0;
@@ -949,7 +943,7 @@ DEF_CMD(emacs_start_search)
 	attr_set_str(&p->attrs, "prefix", "Search: ");
 	attr_set_str(&p->attrs, "done-key", "Search String");
 	call("doc:set-name", p, 0, NULL, "Search", 0);
-	call_pane("attach-emacs-search", p, 0, NULL, 0);
+	call_pane("attach-emacs-search", p);
 
 	view = doc_add_view(ci->focus);
 	attr_set_int(&ci->focus->attrs, "emacs-search-view", view);
@@ -1004,11 +998,11 @@ DEF_CMD(emacs_bury)
 {
 	/* Display something else in this tile. */
 	struct pane *tile, *doc;
-	tile = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	tile = call_pane("ThisPane", ci->focus);
 	if (!tile)
 		return 1;
 	call("doc:revisit", ci->focus, -1, NULL);
-	doc = call_pane("docs:choose", ci->focus, 0, NULL, 0);
+	doc = call_pane("docs:choose", ci->focus);
 	if (doc)
 		doc_attach_view(tile, doc, NULL);
 	return 1;
@@ -1018,7 +1012,7 @@ DEF_CMD(emacs_command)
 {
 	struct pane *p;
 
-	p = call_pane7("PopupTile", ci->focus, 0, NULL, 0, "D2", "");
+	p = call_pane("PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
 	if (!p)
 		return 0;
 	attr_set_str(&p->attrs, "prefix", "Cmd: ");

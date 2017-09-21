@@ -357,12 +357,10 @@ char *pane_mark_attr(struct pane *p safe, struct mark *m safe, bool forward, cha
 void pane_absxy(struct pane *p, int *x safe, int *y safe, int *w safe, int *h safe);
 void pane_relxy(struct pane *p, int *x safe, int *y safe);
 void pane_map_xy(struct pane *orig, struct pane *target, int *x safe, int *y safe);
-struct pane *call_pane(char *key safe, struct pane *focus safe, int numeric,
-		       struct mark *m, int extra);
-struct pane *call_pane7(char *key safe, struct pane *focus safe, int numeric,
-			struct mark *m, int extra, char *str, char *str2);
-struct pane *call_pane8(char *key safe, struct pane *focus safe, int numeric,
-			struct mark *m, struct mark *m2, int extra, char *str, char *str2);
+struct pane *do_call_pane(char *key safe, struct pane *focus safe,
+			  int numeric, struct mark *m, char *str,
+			  int extra, struct mark *m2, char *str2,
+			  int x, int y);
 struct xy pane_scale(struct pane *p safe);
 
 static inline int pane_attr_get_int(struct pane *p safe, char *key safe)
@@ -620,6 +618,9 @@ static inline int do_pane_call(struct pane *home,
 	return ci.comm->func(&ci);
 }
 
+/* call_pane() is similar to call(), but returns a pane that was sent via a
+ * standard callback.
+ */
 struct call_return {
 	struct command c;
 	struct mark *m, *m2;
@@ -629,3 +630,21 @@ struct call_return {
 	int x,y;
 	struct command *comm;
 };
+
+#define call_pane(...) VFUNC(call_pane, __VA_ARGS__)
+#define call_pane10(key, focus, numeric, mark, str, extra, mark2, str2, x, y) \
+	do_call_pane(key, focus, numeric, mark, str, extra, mark2, str2, x, y)
+#define call_pane8(key, focus, numeric, mark, str, extra, mark2, str2) \
+	do_call_pane(key, focus, numeric, mark, str, extra, mark2, str2, 0, 0)
+#define call_pane7(key, focus, numeric, mark, str, extra, mark2) \
+	do_call_pane(key, focus, numeric, mark, str, extra, mark2, NULL, 0, 0)
+#define call_pane6(key, focus, numeric, mark, str, extra) \
+	do_call_pane(key, focus, numeric, mark, str, extra, NULL, NULL, 0, 0)
+#define call_pane5(key, focus, numeric, mark, str) \
+	do_call_pane(key, focus, numeric, mark, str, 0, NULL, NULL, 0, 0)
+#define call_pane4(key, focus, numeric, mark) \
+	do_call_pane(key, focus, numeric, mark, NULL, 0, NULL, NULL, 0, 0)
+#define call_pane3(key, focus, numeric) \
+	do_call_pane(key, focus, numeric, NULL, NULL, 0, NULL, NULL, 0, 0)
+#define call_pane2(key, focus) \
+	do_call_pane(key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0)

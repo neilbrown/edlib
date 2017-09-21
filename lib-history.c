@@ -128,11 +128,10 @@ DEF_CMD(history_attach)
 
 	hi = calloc(1, sizeof(*hi));
 	hi->donekey = ci->str2;
-	p = call_pane7("docs:byname", ci->focus, 0, NULL, 0,
-		       ci->str, NULL);
+	p = call_pane("docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)
-		p = call_pane7("doc:from-text", ci->focus, 0, NULL, 0,
-			       ci->str, "");
+		p = call_pane("doc:from-text", ci->focus, 0, NULL, ci->str,
+			      0, NULL, "");
 	if (!p)
 		return 0;
 	m = vmark_new(p, MARK_UNGROUPED);

@@ -553,13 +553,13 @@ struct pane *render_attach(char *name, struct pane *parent safe)
 		return NULL;
 
 	sprintf(buf, "attach-render-%s", renderer);
-	p = call_pane(buf, parent, 0, NULL, 0);
+	p = call_pane(buf, parent);
 	if (!p)
 		return NULL;
 	parent = p;
 	if (name && strncmp(name, "default:", 8) == 0) {
 		sprintf(buf, "attach-%s", name+8);
-		p = call_pane(buf, parent, 0, NULL, 0);
+		p = call_pane(buf, parent);
 		if (p)
 			parent = p;
 	}
@@ -659,56 +659,17 @@ DEF_CMD(take_pane)
 	return 1;
 }
 
-struct pane *call_pane(char *key safe, struct pane *focus safe, int numeric,
-		       struct mark *m, int extra)
+struct pane *do_call_pane(char *key safe, struct pane *focus safe,
+			  int numeric, struct mark *m, char *str,
+			  int extra, struct mark *m2, char *str2,
+			  int x, int y)
 {
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
+	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0,
+			      .numeric = numeric, .mark = m, .str = str,
+			      .extra = extra, .mark2 = m2, .str2 = str2,
+			      .x = x, .y = y };
 	struct call_return cr;
 
-	ci.key = key;
-	ci.focus = focus;
-	ci.numeric = numeric;
-	ci.extra = extra;
-	ci.mark = m;
-	cr.c = take_pane;
-	cr.p = NULL;
-	ci.comm2 = &cr.c;
-	if (!key_handle(&ci))
-		return NULL;
-	return cr.p;
-}
-
-struct pane *call_pane7(char *key safe, struct pane *focus safe, int numeric,
-			struct mark *m, int extra, char *str, char *str2)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
-	struct call_return cr;
-
-	ci.numeric = numeric;
-	ci.extra = extra;
-	ci.mark = m;
-	ci.str = str;
-	ci.str2 = str2;
-	cr.c = take_pane;
-	cr.p = NULL;
-	ci.comm2 = &cr.c;
-	if (!key_handle(&ci))
-		return NULL;
-	return cr.p;
-}
-
-struct pane *call_pane8(char *key safe, struct pane *focus safe, int numeric,
-			 struct mark *m, struct mark *m2, int extra, char *str, char *str2)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0};
-	struct call_return cr;
-
-	ci.numeric = numeric;
-	ci.extra = extra;
-	ci.mark = m;
-	ci.mark2 = m2;
-	ci.str = str;
-	ci.str2 = str2;
 	cr.c = take_pane;
 	cr.p = NULL;
 	ci.comm2 = &cr.c;

@@ -820,7 +820,7 @@ static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
 	p->pointer = m;
 	call("doc:revisit", doc, 1);
 	if (numeric || str) {
-		p2 = call_pane("attach-view", p, 0, NULL, 0);
+		p2 = call_pane("attach-view", p);
 		if (p2)
 			p2 = render_attach(str, p2);
 	}
@@ -845,7 +845,7 @@ struct pane *doc_new(struct pane *p safe, char *type, struct pane *parent)
 	struct pane *np;
 
 	snprintf(buf, sizeof(buf), "attach-doc-%s", type);
-	np = call_pane(buf, p, 0, NULL, 0);
+	np = call_pane(buf, p);
 	if (np && parent)
 		call_home(np, "doc:set-parent", parent);
 	return np;
@@ -906,11 +906,11 @@ DEF_CMD(doc_open)
 	if (fd >= 0)
 		fstat(fd, &stb);
 
-	p = call_pane7("docs:byfd", ed, 0, NULL, fd, rp, NULL);
+	p = call_pane("docs:byfd", ed, 0, NULL, rp, fd);
 
 	if (!p) {
-		p = call_pane7("global-multicall-open-doc-", ed, fd, NULL,
-			       stb.st_mode & S_IFMT, name, NULL);
+		p = call_pane("global-multicall-open-doc-", ed, fd, NULL, name,
+			      stb.st_mode & S_IFMT);
 
 		if (!p) {
 			if (fd != ci->numeric)
@@ -935,7 +935,7 @@ struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe, ch
 
 	p = doc_attach(parent, doc);
 	if (p)
-		p = call_pane("attach-view", p, 0, NULL, 0);
+		p = call_pane("attach-view", p);
 	if (p)
 		p = render_attach(render, p);
 	return p;

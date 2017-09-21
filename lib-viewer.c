@@ -53,7 +53,7 @@ DEF_CMD(viewer_bury)
 {
 	struct pane *tile;
 	call("doc:revisit", ci->focus, -1);
-	tile = call_pane("ThisPane", ci->focus, 0, NULL, 0);
+	tile = call_pane("ThisPane", ci->focus);
 	if (tile)
 		tile = pane_my_child(tile, ci->focus);
 	if (tile)

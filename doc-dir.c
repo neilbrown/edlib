@@ -569,16 +569,16 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
 	if (cmd == 'o')
-		par = call_pane("OtherPane", focus, 0, NULL, 0);
+		par = call_pane("OtherPane", focus);
 	else
-		par = call_pane("ThisPane", focus, 0, NULL, 0);
+		par = call_pane("ThisPane", focus);
 
 	if (fd >= 0) {
-		p = call_pane7("doc:open", focus, fd, NULL, 0, fname, NULL);
+		p = call_pane("doc:open", focus, fd, NULL, fname);
 		close(fd);
 	} else
-		p = call_pane7("doc:from-text", focus, 0, NULL, 0, fname,
-			       "File not found\n");
+		p = call_pane("doc:from-text", focus, 0, NULL, fname, 0, NULL,
+			      "File not found\n");
 	free(fname);
 	if (par && p) {
 		p = doc_attach_view(par, p, NULL);
@@ -609,11 +609,11 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 	fd = open(fname, O_RDONLY);
 
 	if (fd >= 0) {
-		struct pane *new = call_pane7("doc:open", home, fd, NULL, 0, fname, NULL);
+		struct pane *new = call_pane("doc:open", home, fd, NULL, fname);
 		if (new) {
 			renderer = pane_attr_get(new, buf);
 			if (renderer) {
-				par = call_pane("ThisPane", focus, 0, NULL, 0);
+				par = call_pane("ThisPane", focus);
 				if (!par)
 					return -1;
 
@@ -622,9 +622,9 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 		}
 		close(fd);
 	} else {
-		struct pane *doc = call_pane7("doc:from-text", par, 0, NULL, 0,
-					      fname, "File not found\n");
-		par = call_pane("ThisPane", focus, 0, NULL, 0);
+		struct pane *doc = call_pane("doc:from-text", par, 0, NULL, fname,
+					     0, NULL, "File not found\n");
+		par = call_pane("ThisPane", focus);
 		if (!par || !doc)
 			return -1;
 		p = doc_attach_view(par, doc, NULL);
