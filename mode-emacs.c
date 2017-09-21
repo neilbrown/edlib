@@ -827,6 +827,7 @@ static void do_searches(struct pane *p safe, int view, char *patn,
 struct highlight_info {
 	int view;
 	char *patn;
+	struct pane *popup safe;
 };
 
 DEF_CMD(emacs_search_highlight)
@@ -873,6 +874,32 @@ DEF_CMD(emacs_search_highlight)
 		call("Notify:doc:Replace", ci->focus);
 	pane_damaged(ci->home, DAMAGED_CONTENT|DAMAGED_VIEW);
 	return 1;
+}
+
+DEF_CMD(highlight_draw)
+{
+	struct highlight_info *hi = ci->home->data;
+	struct pane *pp = hi->popup;
+
+	if (!ci->str2 || !strstr(ci->str2, ",focus"))
+		return 0;
+
+	/* here is where the user will be looking, make sure
+	 * the popup doesn't obscure it.
+	 */
+
+	while (pp->parent && pp->z == 0)
+		pp = pp->parent;
+	if (pp->x == 0) {
+		/* currently TL, should we move it back */
+		if (ci->y > pp->h || ci->x < pp->w)
+			call("popup:style", hi->popup, 0, NULL, "TR2");
+	} else {
+		/* currently TR, should we move it out of way */
+		if (ci->y <= pp->h && ci->x >= pp->x)
+			call("popup:style", hi->popup, 0, NULL, "TL2");
+	}
+	return 0;
 }
 
 DEF_CMD(emacs_reposition)
@@ -973,6 +1000,7 @@ DEF_CMD(emacs_start_search)
 
 	if (!p)
 		return 0;
+	hi->popup = p;
 
 	attr_set_str(&p->attrs, "prefix", "Search: ");
 	attr_set_str(&p->attrs, "done-key", "Search String");
@@ -1082,7 +1110,7 @@ DEF_CMD(emacs_attrs)
 		if (hi->view >= 0 && ci->mark && ci->mark->viewnum == hi->view) {
 			int  len = atoi(ci->str2);
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-					 ci->mark, "fg:red,inverse", 20);
+					 ci->mark, "fg:red,inverse,focus", 20);
 		}
 	}
 	if (strcmp(ci->str, "render:search2") == 0) {
@@ -1173,6 +1201,7 @@ static void emacs_init(void)
 	key_add(m, "render:reposition", &emacs_search_reposition);
 	key_add(m, "search:highlight", &emacs_search_highlight);
 	key_add(m, "map-attr", &emacs_attrs);
+	key_add(m, "Draw:text", &highlight_draw);
 	key_add(m, "Close", &emacs_highlight_close);
 	hl_map = m;
 }
