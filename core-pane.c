@@ -85,10 +85,12 @@ static void pane_check(struct pane *p safe)
  */
 void pane_damaged(struct pane *p, int type)
 {
+	int z;
 	if (!p || (p->damaged | type) == p->damaged)
 		return;
 	p->damaged |= type;
 
+	z = p->z;
 	p = p->parent;
 	if (type & DAMAGED_SIZE)
 		type = DAMAGED_SIZE_CHILD;
@@ -100,7 +102,10 @@ void pane_damaged(struct pane *p, int type)
 		return;
 
 	while (p && (p->damaged | type) != p->damaged) {
+		if (z && (type & DAMAGED_SIZE_CHILD))
+			p->damaged |= DAMAGED_CONTENT;
 		p->damaged |= type;
+		z = p->z;
 		p = p->parent;
 	}
 }
@@ -402,7 +407,7 @@ void pane_resize(struct pane *p safe, int x, int y, int w, int h)
 	int damage = 0;
 	if (x >= 0 &&
 	    (p->x != x || p->y != y)) {
-		damage |= DAMAGED_CONTENT;
+		damage |= DAMAGED_CONTENT | DAMAGED_SIZE;
 		p->x = x;
 		p->y = y;
 	}
