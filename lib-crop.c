@@ -70,11 +70,11 @@ DEF_CMD(crop_handle)
 		return 0;
 
 	if (strcmp(ci->key, "doc:write-file") == 0)
-		return call_home7(p, ci->key, ci->focus, ci->numeric,
-				  ci->mark ?: cd->start,
-				  ci->str, ci->extra, ci->str2,
-				  ci->mark2 ?: cd->end,
-				  ci->comm2);
+		return call_home(p, ci->key, ci->focus, ci->numeric,
+				 ci->mark ?: cd->start,
+				 ci->str, ci->extra,
+				 ci->mark2 ?: cd->end, ci->str2,
+				 ci->comm2);
 
 	if (!ci->mark && !ci->mark2)
 		/* No mark, do give it straight to parent */

@@ -1143,7 +1143,7 @@ restart:
 		if (call("Draw:image", focus, 1, NULL, s+6, 0) <= 0)
 			pane_clear(p, NULL);
 	} else if (strncmp(s, "call:", 5) == 0) {
-		if (call_home(focus, s+5, p, 0, m, NULL) <= 0)
+		if (call_home(focus, s+5, p, 0, m) <= 0)
 			pane_clear(p, NULL);
 	} else
 		pane_clear(p, NULL);

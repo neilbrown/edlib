@@ -477,6 +477,29 @@ static inline void doc_del_view(struct pane *p safe, int num)
 #define call2(key, focus) \
 	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
 
+/* Often the 'home' arg is not need and defaults to 'focus', so it is at the
+ * end of 'call'.  Often enough it has an important place, so have a set of
+ * macros with 'home' first
+ */
+#define call_home(...) VFUNC(call_home, __VA_ARGS__)
+#define call_home12(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home)
+#define call_home10(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, 0, 0, home)
+#define call_home9(home, key, focus, numeric, mark, str, extra, mark2, str2) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, str2, NULL, 0, 0, home)
+#define call_home8(home, key, focus, numeric, mark, str, extra, mark2) \
+	do_call(key, focus, numeric, mark, str, extra, mark2, NULL, NULL, 0, 0, home)
+#define call_home7(home, key, focus, numeric, mark, str, extra) \
+	do_call(key, focus, numeric, mark, str, extra, NULL, NULL, NULL, 0, 0, home)
+#define call_home6(home, key, focus, numeric, mark, str) \
+	do_call(key, focus, numeric, mark, str, 0, NULL, NULL, NULL, 0, 0, home)
+#define call_home5(home, key, focus, numeric, mark) \
+	do_call(key, focus, numeric, mark, NULL, 0, NULL, NULL, NULL, 0, 0, home)
+#define call_home4(home, key, focus, numeric) \
+	do_call(key, focus, numeric, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, home)
+#define call_home3(home, key, focus) \
+	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, home)
 
 
 static inline int do_call(char *key safe, struct pane *focus safe, int numeric, struct mark *m,
@@ -491,50 +514,6 @@ static inline int do_call(char *key safe, struct pane *focus safe, int numeric, 
 
 	return key_handle(&ci);
 }
-
-static inline int call_home7(struct pane *home safe, char *key safe, struct pane *focus safe,
-			     int numeric, struct mark *m, char *str, int extra, char *str2, struct mark *m2, struct command *comm)
-{
-	struct cmd_info ci = {.key=key, .focus=focus, .home=home, .comm = safe_cast 0};
-
-	ci.numeric = numeric;
-	ci.mark = m;
-	ci.str = str;
-	ci.extra = extra;
-	ci.str2 = str2;
-	ci.mark2 = m2;
-	ci.comm2 = comm;
-	return key_handle(&ci);
-}
-
-static inline int call_home9(struct pane *home safe, char *key safe, struct pane *focus safe,
-			     int numeric, struct mark *m, char *str, int extra, char *str2, struct mark *m2, struct command *comm, int x, int y)
-{
-	struct cmd_info ci = {.key=key, .focus=focus, .home=home, .comm = safe_cast 0};
-
-	ci.numeric = numeric;
-	ci.mark = m;
-	ci.str = str;
-	ci.extra = extra;
-	ci.str2 = str2;
-	ci.mark2 = m2;
-	ci.comm2 = comm;
-	ci.x = x;
-	ci.y = y;
-	return key_handle(&ci);
-}
-
-static inline int call_home(struct pane *home safe, char *key safe, struct pane *focus safe,
-			    int numeric, struct mark *m, struct command *comm)
-{
-	struct cmd_info ci = {.key=key, .focus=focus, .home=home, .comm = safe_cast 0};
-
-	ci.numeric = numeric;
-	ci.mark = m;
-	ci.comm2 = comm;
-	return key_handle(&ci);
-}
-
 
 static inline int call_xy(char *key safe, struct pane *focus safe, int numeric,
 			  char *str, char *str2, int x, int y)

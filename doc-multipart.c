@@ -221,9 +221,9 @@ DEF_CMD(mp_same)
 			 * Assume part is not empty...
 			 */
 			return 2;
-		return call_home7(mpi->parts[ci->mark->ref.docnum].pane,
-				  "doc:mark-same", ci->focus, 0, d1.m, NULL,
-				  0, NULL, d2.m, NULL);
+		return call_home(mpi->parts[ci->mark->ref.docnum].pane,
+				 "doc:mark-same", ci->focus, 0, d1.m, NULL,
+				 0, d2.m);
 	}
 
 	/* Marks are in different visible documents.
@@ -257,9 +257,9 @@ DEF_CMD(mp_step)
 	    !mpi->parts[m->ref.docnum].visible)
 		ret = -1;
 	else
-		ret = call_home7(mpi->parts[m->ref.docnum].pane,
-				 ci->key, ci->focus, ci->numeric, m1, ci->str,
-				 ci->extra,ci->str2, NULL, ci->comm2);
+		ret = call_home(mpi->parts[m->ref.docnum].pane,
+				ci->key, ci->focus, ci->numeric, m1, ci->str,
+				ci->extra, NULL, ci->str2, ci->comm2);
 	while (ret == CHAR_RET(WEOF) || ret == -1) {
 		if (!ci->extra && m == ci->mark) {
 			/* don't change ci->mark when not moving */
@@ -285,9 +285,9 @@ DEF_CMD(mp_step)
 		    !mpi->parts[m->ref.docnum].visible)
 			ret = -1;
 		else
-			ret = call_home7(mpi->parts[m->ref.docnum].pane,
-					 ci->key, ci->focus, ci->numeric, m1, ci->str,
-					 ci->extra,ci->str2, NULL, ci->comm2);
+			ret = call_home(mpi->parts[m->ref.docnum].pane,
+					ci->key, ci->focus, ci->numeric, m1, ci->str,
+					ci->extra, NULL, ci->str2, ci->comm2);
 	}
 	if (ci->extra)
 		reset_mark(ci->mark);
@@ -369,9 +369,9 @@ DEF_CMD(mp_attr)
 		      (d > ci->mark->ref.docnum), m1);
 	}
 
-	ret = call_home7(mpi->parts[d].pane,
-			 ci->key, ci->focus, ci->numeric, m1, ci->str,
-			 ci->extra,ci->str2, NULL, ci->comm2);
+	ret = call_home(mpi->parts[d].pane,
+			ci->key, ci->focus, ci->numeric, m1, ci->str,
+			ci->extra, NULL, ci->str2, ci->comm2);
 	if (d != ci->mark->ref.docnum)
 		mark_free(m1);
 	return ret;
@@ -480,7 +480,7 @@ DEF_CMD(mp_add)
 		change_part(mpi, ci->mark, n, 0);
 
 	pane_add_notify(ci->home, ci->focus, "Notify:Close");
-	call_home(ci->focus, "Request:Notify:doc:viewers", ci->home, 0, NULL, NULL);
+	call_home(ci->focus, "Request:Notify:doc:viewers", ci->home);
 
 	return 1;
 }

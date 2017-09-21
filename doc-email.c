@@ -364,8 +364,8 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 	else
 		attr_set_str(&h->attrs, "email:actions", "hide:open");
 
-	call_home(mp, "multipart-add", h, hidden, NULL, NULL);
-	call_home(mp, "multipart-add", spacer, 0, NULL, NULL);
+	call_home(mp, "multipart-add", h, hidden);
+	call_home(mp, "multipart-add", spacer, 0);
 	return 1;
 }
 
@@ -467,10 +467,10 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 
 		if (!hdr)
 			break;
-		call_home7(hdr, "get-header", hdr, 0, NULL, "content-type",
-			   0, "cmd", NULL, NULL);
-		call_home7(hdr, "get-header", hdr, 0, NULL, "content-transfer-encoding",
-			   0, "cmd", NULL, NULL);
+		call_home(hdr, "get-header", hdr, 0, NULL, "content-type",
+			  0, NULL, "cmd");
+		call_home(hdr, "get-header", hdr, 0, NULL, "content-transfer-encoding",
+			  0, NULL, "cmd");
 		ptype = attr_find(hdr->attrs, "rfc822-content-type");
 		pxfer = attr_find(hdr->attrs, "rfc822-content-transfer-encoding");
 
@@ -561,15 +561,15 @@ DEF_CMD(open_email)
 	point = vmark_new(doc, MARK_POINT);
 	if (!point)
 		goto out;
-	call_home7(h2, "get-header", doc, 0, point, "From", 0, NULL, NULL, NULL);
-	call_home7(h2, "get-header", doc, 0, point, "Date", 0, NULL, NULL, NULL);
-	call_home7(h2, "get-header", doc, 0, point, "Subject", 0, "text", NULL, NULL);
-	call_home7(h2, "get-header", doc, 0, point, "To", 0, "list", NULL, NULL);
-	call_home7(h2, "get-header", doc, 0, point, "Cc", 0, "list", NULL, NULL);
+	call_home(h2, "get-header", doc, 0, point, "From");
+	call_home(h2, "get-header", doc, 0, point, "Date");
+	call_home(h2, "get-header", doc, 0, point, "Subject", 0, NULL, "text");
+	call_home(h2, "get-header", doc, 0, point, "To", 0, NULL, "list");
+	call_home(h2, "get-header", doc, 0, point, "Cc", 0, NULL, "list");
 
-	call_home7(h2, "get-header", h2, 0, NULL, "MIME-Version", 0, "cmd", NULL, NULL);
-	call_home7(h2, "get-header", h2, 0, NULL, "content-type", 0, "cmd", NULL, NULL);
-	call_home7(h2, "get-header", h2, 0, NULL, "content-transfer-encoding", 0, "cmd", NULL, NULL);
+	call_home(h2, "get-header", h2, 0, NULL, "MIME-Version", 0, NULL, "cmd");
+	call_home(h2, "get-header", h2, 0, NULL, "content-type", 0, NULL, "cmd");
+	call_home(h2, "get-header", h2, 0, NULL, "content-transfer-encoding", 0, NULL, "cmd");
 	mime = attr_find(h2->attrs, "rfc822-mime-version");
 	if (mime)
 		mime = get_822_word(mime);
@@ -583,8 +583,8 @@ DEF_CMD(open_email)
 	if (!p)
 		goto out;
 	attr_set_str(&doc->attrs, "email:actions", "hide");
-	call_home(p, "multipart-add", doc, 0, NULL, NULL);
-	call_home(p, "multipart-add", ei->spacer, 0, NULL, NULL);
+	call_home(p, "multipart-add", doc);
+	call_home(p, "multipart-add", ei->spacer);
 	call("doc:set:autoclose", doc, 1, NULL, NULL, 0);
 
 	if (handle_content(ei->email, type, xfer, start, end, p, ei->spacer, 0) == 0)
