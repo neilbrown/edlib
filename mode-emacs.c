@@ -370,6 +370,7 @@ static struct {
 	{"Tab", "\t"},
 	{"LF", "\n"},
 	{"Return", "\n"},
+	{"C-Chr-O", "\0\n"},
 	{NULL, NULL}
 };
 
@@ -377,6 +378,8 @@ DEF_CMD(emacs_insert_other)
 {
 	int ret;
 	int i;
+	struct mark *m = NULL;
+	char *ins;
 
 	if (!ci->mark)
 		return -1;
@@ -384,11 +387,23 @@ DEF_CMD(emacs_insert_other)
 	for (i = 0; other_inserts[i].key; i++)
 		if (strcmp(safe_cast other_inserts[i].key, ci->key) == 0)
 			break;
-	if (other_inserts[i].key == NULL)
+	ins = other_inserts[i].insert;
+	if (ins == NULL)
 		return 0;
 
-	ret = call("Replace", ci->focus, 1, ci->mark, other_inserts[i].insert,
-		    !ci->extra);
+	if (!*ins) {
+		ins++;
+		m = mark_dup(ci->mark, 1);
+		if (m->seq > ci->mark->seq)
+			/* Move m before ci->mark, so it doesn't move when we insert */
+			mark_to_mark(m, ci->mark);
+	}
+
+	ret = call("Replace", ci->focus, 1, ci->mark, ins, !ci->extra);
+	if (m) {
+		mark_to_mark(ci->mark, m);
+		mark_free(m);
+	}
 	pane_set_extra(ci->focus, 0); /* A newline starts a new undo */
 	return ret;
 }
@@ -1157,6 +1172,8 @@ static void emacs_init(void)
 	key_add(m, "Tab", &emacs_insert_other);
 	key_add(m, "LF", &emacs_insert_other);
 	key_add(m, "Return", &emacs_insert_other);
+	key_add(m, "C-Chr-O", &emacs_insert_other);
+
 
 	key_add(m, "C-Chr-_", &emacs_undo);
 	key_add(m, "M-C-Chr-_", &emacs_redo);
