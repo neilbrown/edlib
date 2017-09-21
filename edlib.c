@@ -57,19 +57,19 @@ int main(int argc, char *argv[])
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 
 	doc_new(ed, "docs", NULL);
-	//call("global-load-module", ed, 0, NULL, "lib-linecount", 0);
-	call("global-load-module", ed, 0, NULL, "lib-search", 0);
-	call("global-load-module", ed, 0, NULL, "lib-popup", 0);
-	call("global-load-module", ed, 0, NULL, "lang-python", 0);
-	call("global-load-module", ed, 0, NULL, "doc-text", 0);
-	call("global-load-module", ed, 0, NULL, "doc-dir", 0);
-	call("global-load-module", ed, 0, NULL, "render-hex", 0);
-	call("global-load-module", ed, 0, NULL, "render-present", 0);
-	call("global-load-module", ed, 0, NULL, "render-lines", 0);
-	call("global-load-module", ed, 0, NULL, "module-notmuch", 0);
-	call("global-load-module", ed, 0, NULL, "doc-email", 0);
-	call("global-load-module", ed, 0, NULL, "lib-viewer", 0);
-	call("global-load-module", ed, 0, NULL, "lib-qprint", 0);
+	//call("global-load-module", ed, 0, NULL, "lib-linecount");
+	call("global-load-module", ed, 0, NULL, "lib-search");
+	call("global-load-module", ed, 0, NULL, "lib-popup");
+	call("global-load-module", ed, 0, NULL, "lang-python");
+	call("global-load-module", ed, 0, NULL, "doc-text");
+	call("global-load-module", ed, 0, NULL, "doc-dir");
+	call("global-load-module", ed, 0, NULL, "render-hex");
+	call("global-load-module", ed, 0, NULL, "render-present");
+	call("global-load-module", ed, 0, NULL, "render-lines");
+	call("global-load-module", ed, 0, NULL, "module-notmuch");
+	call("global-load-module", ed, 0, NULL, "doc-email");
+	call("global-load-module", ed, 0, NULL, "lib-viewer");
+	call("global-load-module", ed, 0, NULL, "lib-qprint");
 
 	p = call_pane("attach-input", ed);
 	if (p) {

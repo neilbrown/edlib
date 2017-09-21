@@ -918,11 +918,11 @@ DEF_CMD(doc_open)
 			return -1;
 		}
 		if (autoclose)
-			call("doc:set:autoclose", p, 1, NULL, NULL, 0);
+			call("doc:set:autoclose", p, 1);
 		if (filter)
-			call("doc:set:filter", p, 1, NULL, NULL, 0);
+			call("doc:set:filter", p, 1);
 		call("doc:load-file", p, 0, NULL, name, fd);
-		call("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
+		call("global-multicall-doc:appeared-", p, 1);
 	}
 	if (fd != ci->numeric)
 		close(fd);
@@ -952,10 +952,10 @@ DEF_CMD(doc_from_text)
 	if (!p)
 		return -1;
 	if (name) {
-		call("doc:set-name", p, 0, NULL, name, 0);
-		call("global-multicall-doc:appeared-", p, 1, NULL, NULL, 0);
+		call("doc:set-name", p, 0, NULL, name);
+		call("global-multicall-doc:appeared-", p, 1);
 	}
-	call("doc:replace", p, 1, NULL, text, 1, NULL, NULL);
+	call("doc:replace", p, 1, NULL, text, 1);
 	return comm_call(ci->comm2, "callback", p);
 }
 

@@ -244,7 +244,7 @@ DEF_CMD(render_format_attach)
 	p = do_render_format_attach(ci->focus);
 	if (!p)
 		return -1;
-	return comm_call(ci->comm2, "callback:attach", p, 0, NULL, NULL);
+	return comm_call(ci->comm2, "callback:attach", p);
 }
 
 void edlib_init(struct pane *ed safe)

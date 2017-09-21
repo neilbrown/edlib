@@ -125,7 +125,7 @@ DEF_CMD(popup_handle)
 		str = ci->str;
 		pane_close(ppi->popup);
 		/* This pane is closed now, ppi is gone. Be careful */
-		call(key, target, 1, NULL, str, 0);
+		call(key, target, 1, NULL, str);
 		return 1;
 	}
 
@@ -196,7 +196,7 @@ DEF_CMD(popup_attach)
 		    (p = doc_attach_view(ppi->popup, doc, NULL)) != NULL) {
 
 			call("Move-File", p, 1);
-			call("doc:set:autoclose", p, 1, NULL, NULL, 0);
+			call("doc:set:autoclose", p, 1);
 		}
 	}
 

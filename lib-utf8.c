@@ -88,7 +88,7 @@ DEF_CMD(utf8_attach)
 	p = pane_register(ci->focus, 0, &utf8_handle.c, NULL, NULL);
 	if (!p)
 		return -1;
-	call("doc:set:filter", p, 1, NULL, NULL, 0);
+	call("doc:set:filter", p, 1);
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }

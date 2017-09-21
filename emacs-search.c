@@ -136,7 +136,7 @@ DEF_CMD(search_add)
 		} else
 			l = wcrtomb(b, wch, &ps);
 		b[l] = 0;
-		call("Replace", ci->focus, 1, NULL, b, 0);
+		call("Replace", ci->focus, 1, NULL, b);
 	} while (strcmp(ci->key, "C-Chr-C") != 0 && wch != ' ');
 	return 1;
 }
@@ -176,7 +176,7 @@ DEF_CMD(search_again)
 	call("search:highlight", esi->target);
 	m = mark_dup(esi->start, 1);
 	str = doc_getstr(ci->home, NULL, NULL);
-	ret = call("text-search", esi->target, 0, m, str, 0);
+	ret = call("text-search", esi->target, 0, m, str);
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
 	else if (ret == -2) {
@@ -189,7 +189,7 @@ DEF_CMD(search_again)
 		point_to_mark(esi->end, m);
 		while (ret > 0 && mark_prev_pane(esi->target, m) != WEOF)
 			ret -= 1;
-		call("search:highlight", esi->target, len, m, str, 0);
+		call("search:highlight", esi->target, len, m, str);
 		esi->matched = 1;
 		pfx = "Search: ";
 		if (esi->wrapped)
@@ -216,7 +216,7 @@ DEF_CMD(search_done)
 	char *str = doc_getstr(ci->focus, NULL, NULL);
 
 	call("Move-to", esi->target, 0, esi->start);
-	call("popup:close", safe_cast ci->focus->parent, 0, NULL, str, 0);
+	call("popup:close", safe_cast ci->focus->parent, 0, NULL, str);
 	free(str);
 	return 1;
 }

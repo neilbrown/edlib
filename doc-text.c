@@ -231,7 +231,7 @@ DEF_CMD(text_load_file)
 			dname += 1;
 		else
 			dname = name;
-		call("doc:set-name", ci->home, 0, NULL, dname, 0);
+		call("doc:set-name", ci->home, 0, NULL, dname);
 	}
 	t->saved = t->undo;
 	call("Notify:doc:status-changed", ci->home);
@@ -336,7 +336,7 @@ DEF_CMD(text_save_file)
 		} else
 			asprintf(&msg, "*** Faild to write %s ***", t->fname);
 	}
-	call("Message", ci->focus, 0, NULL, msg, 0);
+	call("Message", ci->focus, 0, NULL, msg);
 	free(msg);
 	if (change_status)
 		call("Notify:doc:status-changed", d->home);

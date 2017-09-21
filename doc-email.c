@@ -365,7 +365,7 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 		attr_set_str(&h->attrs, "email:actions", "hide:open");
 
 	call_home(mp, "multipart-add", h, hidden);
-	call_home(mp, "multipart-add", spacer, 0);
+	call_home(mp, "multipart-add", spacer);
 	return 1;
 }
 
@@ -557,7 +557,7 @@ DEF_CMD(open_email)
 	doc = doc_new(ci->focus, "text", ci->focus);
 	if (!doc)
 		goto out;
-	call("doc:set:autoclose", doc, 1, NULL, NULL, 0);
+	call("doc:set:autoclose", doc, 1);
 	point = vmark_new(doc, MARK_POINT);
 	if (!point)
 		goto out;
@@ -585,14 +585,14 @@ DEF_CMD(open_email)
 	attr_set_str(&doc->attrs, "email:actions", "hide");
 	call_home(p, "multipart-add", doc);
 	call_home(p, "multipart-add", ei->spacer);
-	call("doc:set:autoclose", doc, 1, NULL, NULL, 0);
+	call("doc:set:autoclose", doc, 1);
 
 	if (handle_content(ei->email, type, xfer, start, end, p, ei->spacer, 0) == 0)
 		goto out;
 
 	h = pane_register(p, 0, &email_handle.c, ei, NULL);
 	if (h) {
-		call("doc:set:filter", h, 1, NULL, NULL, 0);
+		call("doc:set:filter", h, 1);
 		mark_free(start);
 		mark_free(end);
 		attr_set_str(&h->attrs, "render-default", "text");

@@ -1734,7 +1734,7 @@ REDEF_CMD(render_lines_attach)
 	if (strcmp(ci->key, "attach-render-text") == 0)
 		p = call_pane("attach-renderline", p, 0, NULL, 0);
 	p = pane_register(p, 0, &render_lines_handle.c, rl, NULL);
-	call("Request:Notify:doc:Replace", p, 0, NULL);
+	call("Request:Notify:doc:Replace", p);
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }

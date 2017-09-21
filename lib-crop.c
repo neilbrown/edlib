@@ -118,7 +118,7 @@ DEF_CMD(crop_attach)
 		free(cd);
 		return -1;
 	}
-	call("doc:set:filter", p, 1, NULL, NULL, 0);
+	call("doc:set:filter", p, 1, NULL, NULL);
 	cd->start = mark_dup(ci->mark, 1);
 	cd->end = mark_dup(ci->mark2, 1);
 

@@ -568,7 +568,7 @@ struct pane *render_attach(char *name, struct pane *parent safe)
 
 void pane_set_mode(struct pane *p safe, char *mode)
 {
-	call("Mode:set-mode", p, 0, NULL, mode, 0);
+	call("Mode:set-mode", p, 0, NULL, mode);
 }
 
 void pane_set_numeric(struct pane *p safe, int numeric)
