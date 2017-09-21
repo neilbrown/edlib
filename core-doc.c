@@ -34,7 +34,7 @@ struct doc_ref {
 #include "core.h"
 
 static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe, int, char *);
-struct pane *doc_attach(struct pane *parent, struct pane *d);
+static struct pane *doc_attach(struct pane *parent, struct pane *d);
 
 static inline wint_t doc_following(struct doc *d safe, struct mark *m safe)
 {
@@ -827,7 +827,7 @@ static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
 	return p2;
 }
 
-struct pane *doc_attach(struct pane *parent, struct pane *d)
+static struct pane *doc_attach(struct pane *parent, struct pane *d)
 {
 	struct pane *p;
 	struct doc_data *dd = calloc(1, sizeof(*dd));
