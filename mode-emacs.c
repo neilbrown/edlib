@@ -501,8 +501,7 @@ DEF_CMD(emacs_findfile)
 		p = call_pane("doc:open", ci->focus, fd, NULL, ci->str);
 		close(fd);
 	} else
-		p = call_pane("doc:from-text", par, 0, NULL, ci->str,
-			      0, NULL, "File not found\n");
+		p = call_pane("doc:open", ci->focus, -2, NULL, ci->str);
 	if (p)
 		doc_attach_view(par, p, NULL);
 	if (!p)

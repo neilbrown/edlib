@@ -196,15 +196,20 @@ DEF_CMD(text_load_file)
 	struct doc *d = ci->home->data;
 	int fd = ci->extra;
 	char *name = ci->str;
-	off_t size = lseek(fd, 0, SEEK_END);
+	off_t size;
 	struct text_alloc *a;
 	struct text_chunk *c = NULL;
 	int len;
 	struct text *t = container_of(d, struct text, doc);
 
+	if (fd < 0)
+		size = 0;
+	else {
+		size = lseek(fd, 0, SEEK_END);
+		lseek(fd, 0, SEEK_SET);
+	}
 	if (size < 0)
 		goto err;
-	lseek(fd, 0, SEEK_SET);
 	if (size > 0) {
 		c = malloc(sizeof(*c));
 		a = text_new_alloc(t, size);
@@ -305,6 +310,7 @@ static int do_text_write_file(struct text *t safe, struct doc_ref *start, struct
 		goto error;
 	if (rename(tempname, fname) < 0)
 		goto error;
+	fstat(fd, &t->stat);
 	close(fd);
 	free(tempname);
 	return 0;

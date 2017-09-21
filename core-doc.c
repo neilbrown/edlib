@@ -905,6 +905,8 @@ DEF_CMD(doc_open)
 
 	if (fd >= 0)
 		fstat(fd, &stb);
+	else
+		stb.st_mode = S_IFREG;
 
 	p = call_pane("docs:byfd", ed, 0, NULL, rp, fd);
 
