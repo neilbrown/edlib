@@ -24,7 +24,6 @@
 
 struct history_info {
 	struct pane	*history;
-	struct mark	*m safe;
 	char		*saved;
 	char		*donekey;
 	struct buf	search;
@@ -38,7 +37,8 @@ DEF_CMD(history_handle)
 	struct mark *m;
 
 	if (strcmp(ci->key, "Close") == 0) {
-		mark_free(hi->m);
+		if (hi->history)
+			pane_close(hi->history);
 		free(hi->search.b);
 		free(hi->saved);
 		free(hi);
@@ -56,9 +56,9 @@ DEF_CMD(history_handle)
 	}
 
 	if (hi->donekey && strcmp(ci->key, hi->donekey) == 0 && ci->str) {
-		call("Move-File", hi->history, 1, hi->m);
-		call("doc:replace", hi->history, 1, NULL, ci->str, 1, hi->m);
-		call("doc:replace", hi->history, 1, NULL, "\n", 1, hi->m);
+		call("Move-File", hi->history, 1);
+		call("Replace", hi->history, 1, NULL, ci->str, 1);
+		call("Replace", hi->history, 1, NULL, "\n", 1);
 		return 0;
 	}
 
@@ -71,24 +71,25 @@ DEF_CMD(history_handle)
 	    (strcmp(ci->key, "M-Chr-p") == 0 || strcmp(ci->key, "M-Chr-n") == 0)) {
 		char *l, *e;
 		if (ci->key[6] == 'p') {
-			m = mark_dup(hi->m, 1);
-			call("Move-EOL", hi->history, -2, hi->m);
+			m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
+			call("Move-EOL", hi->history, -2);
 		} else {
-			call("Move-EOL", hi->history, 1, hi->m);
-			call("Move-Char", hi->history, 1, hi->m);
-			m = mark_dup(hi->m, 1);
+			call("Move-EOL", hi->history, 1);
+			call("Move-Char", hi->history, 1);
+			m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
 			call("Move-EOL", hi->history, 1, m);
 			call("Move-Char", hi->history, 1, m);
 		}
-		if (mark_same_pane(hi->history, m, hi->m)) {
+		l = doc_getstr(hi->history, NULL, m);
+		if (!l || !*l) {
 			/* No more history */
+			free(l);
 			if (ci->key[6] == 'p') {
 				mark_free(m);
 				return 1;
 			} else
 				l = hi->saved;
-		} else
-			l = doc_getstr(hi->history, m, hi->m);
+		}
 		if (l) {
 			e = strchr(l, '\n');
 			if (e)
@@ -121,7 +122,6 @@ DEF_CMD(history_attach)
 
 	struct history_info *hi;
 	struct pane *p;
-	struct mark *m;
 
 	if (!ci->str)
 		return -1;
@@ -132,16 +132,15 @@ DEF_CMD(history_attach)
 	if (!p)
 		p = call_pane("doc:from-text", ci->focus, 0, NULL, ci->str,
 			      0, NULL, "");
-	if (!p)
+	if (!p) {
+		free(hi);
 		return 0;
-	m = vmark_new(p, MARK_UNGROUPED);
-	if (!m) {
-		pane_close(p);
-		return -1;
 	}
-	hi->history = p;
-	hi->m = m;
-	call("Move-File", hi->history, 1, hi->m);
+	hi->history = call_pane("doc:attach", p);
+	if (!hi->history)
+		return 0;
+	call_home(hi->history, "doc:assign", p);
+	call("Move-File", hi->history, 1);
 	buf_init(&hi->search);
 	p = pane_register(ci->focus, 0, &history_handle, hi, NULL);
 	pane_add_notify(p, hi->history, "Notify:Close");
