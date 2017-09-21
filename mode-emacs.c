@@ -446,6 +446,7 @@ DEF_CMD(emacs_findfile)
 	if (strncmp(ci->key, "File Found", 10) != 0) {
 		char *path = NULL;
 		char buf[PATH_MAX];
+		char *e;
 
 		path = pane_attr_get(ci->focus, "filename");
 		if (path) {
@@ -458,8 +459,16 @@ DEF_CMD(emacs_findfile)
 
 		if (!path)
 			path = realpath(".", buf);
-		if (!path)
-			path = "/";
+
+		if (!path) {
+			strcpy(buf, "/");
+			path = buf;
+		}
+		e = buf + strlen(buf);
+		if (e < buf + sizeof(buf)-1 && e > buf && e[-1] != '/') {
+			*e++ = '/';
+			*e++ = '\0';
+		}
 		p = call_pane("PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, path);
 		if (!p)
 			return 0;
