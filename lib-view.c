@@ -69,7 +69,7 @@ static int view_refresh(const struct cmd_info *ci safe)
 	char *modified = "??";
 
 //	p->cx = 0; p->cy = 0;
-	if (!vd->border)
+	if (vd->border <= 0)
 		return 0;
 	if (vd->line_height <= 0)
 		return 0;
@@ -190,6 +190,7 @@ DEF_CMD(view_handle)
 		int x = 0, y = 0;
 		int w = p->w;
 		int h = p->h;
+		int b = vd->border <= 0 ? 0 : vd->border;
 
 		if (vd->line_height < 0) {
 			struct call_return cr;
@@ -205,30 +206,30 @@ DEF_CMD(view_handle)
 			vd->ascent = cr.i;
 
 			if (h < vd->border_height * 3 &&
-			    (vd->border & (BORDER_TOP|BORDER_BOT)) ==
+			    (b & (BORDER_TOP|BORDER_BOT)) ==
 			    (BORDER_TOP|BORDER_BOT)) {
-				vd->border &= ~BORDER_TOP;
-				vd->border &= ~BORDER_BOT;
+				b &= ~BORDER_TOP;
+				b &= ~BORDER_BOT;
 			}
 			if (w < vd->border_width * 3 &&
-			    (vd->border & (BORDER_LEFT|BORDER_RIGHT)) ==
+			    (b & (BORDER_LEFT|BORDER_RIGHT)) ==
 			    (BORDER_LEFT|BORDER_RIGHT)) {
-				vd->border &= ~BORDER_LEFT;
-				vd->border &= ~BORDER_RIGHT;
+				b &= ~BORDER_LEFT;
+				b &= ~BORDER_RIGHT;
 			}
 
 		}
 
-		if (vd->border & BORDER_LEFT) {
+		if (b & BORDER_LEFT) {
 			x += vd->border_width; w -= vd->border_width;
 		}
-		if (vd->border & BORDER_RIGHT) {
+		if (b & BORDER_RIGHT) {
 			w -= vd->border_width;
 		}
-		if (vd->border & BORDER_TOP) {
+		if (b & BORDER_TOP) {
 			y += vd->border_height; h -= vd->border_height;
 		}
-		if (vd->border & BORDER_BOT) {
+		if (b & BORDER_BOT) {
 			h -= vd->border_height;
 		}
 		if (w <= 0)
@@ -283,19 +284,26 @@ static struct pane *safe do_view_attach(struct pane *par, int border)
 	return p;
 }
 
-DEF_CMD(view_attach)
+static int calc_border(struct pane *p safe)
 {
 	int borders = 0;
-	char *borderstr = pane_attr_get(ci->focus, "borders");
+	char *borderstr = pane_attr_get(p, "borders");
 	if (!borderstr)
 		borderstr = "";
 	if (strchr(borderstr, 'T')) borders |= BORDER_TOP;
 	if (strchr(borderstr, 'B')) borders |= BORDER_BOT;
 	if (strchr(borderstr, 'L')) borders |= BORDER_LEFT;
 	if (strchr(borderstr, 'R')) borders |= BORDER_RIGHT;
+	return borders;
+}
+
+DEF_CMD(view_attach)
+{
+	int borders = calc_border(ci->focus);
 
 	return comm_call(ci->comm2, "callback:attach", do_view_attach(ci->focus, borders));
 }
+
 DEF_CMD(view_click)
 {
 	struct pane *p = ci->home;
@@ -339,6 +347,7 @@ DEF_CMD(view_refresh_view)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
+	int border;
 
 	if (vd->move_large) {
 		call("Move-View-Large", ci->focus, vd->move_large, ci->mark);
@@ -347,6 +356,12 @@ DEF_CMD(view_refresh_view)
 	if (vd->move_small) {
 		call("Move-View-Small", ci->focus, vd->move_small, ci->mark);
 		vd->move_small = 0;
+	}
+
+	border = calc_border(ci->focus);
+	if (vd->border >= 0 && border != vd->border) {
+		vd->border = border;
+		pane_damaged(p, DAMAGED_SIZE);
 	}
 	return 0;
 }
@@ -357,7 +372,7 @@ DEF_CMD(view_border)
 	struct view_data *vd = p->data;
 
 	if (ci->numeric <= 0)
-		vd->border = 0;
+		vd->border = -1;
 	else
 		vd->border = vd->old_border;
 
