@@ -126,7 +126,7 @@ DEF_CMD(popup_handle)
 	}
 	if (strcmp(ci->key, "Refresh:size") == 0) {
 		popup_resize(p, ppi->style);
-		return 1;
+		return 0;
 	}
 	if (strcmp(ci->key, "popup:get-target") == 0)
 		return comm_call(ci->comm2, "callback:get-target", ppi->target);
