@@ -19,6 +19,8 @@
 
 #include "core.h"
 
+static struct map *emacs_map, *hl_map;
+
 REDEF_CMD(emacs_move);
 REDEF_CMD(emacs_delete);
 REDEF_CMD(emacs_case);
@@ -822,17 +824,22 @@ static void do_searches(struct pane *p safe, int view, char *patn,
 	mark_free(m);
 }
 
+struct highlight_info {
+	int view;
+	char *patn;
+};
+
 DEF_CMD(emacs_search_highlight)
 {
 	/* from 'mark' for 'numeric' chars there is a match for 'str' */
-	int view = attr_find_int(ci->focus->attrs, "emacs-search-view");
 	struct mark *m, *start, *end;
+	struct highlight_info *hi = ci->home->data;
 
-	if (view <= 0)
+	if (hi->view <= 0)
 		return 0;
 
-	start = vmark_first(ci->focus, view);
-	end = vmark_last(ci->focus, view);
+	start = vmark_first(ci->focus, hi->view);
+	end = vmark_last(ci->focus, hi->view);
 	while (start && (m = vmark_next(start)) != NULL && m != end)
 		mark_free(m);
 	if (start) {
@@ -844,11 +851,12 @@ DEF_CMD(emacs_search_highlight)
 		attr_set_str(&end->attrs, "render:search2", NULL);
 	}
 
-	attr_set_str(&ci->focus->attrs, "emacs-search-patn", NULL);
+	free(hi->patn);
+	hi->patn = NULL;
 
-	if (ci->mark && ci->numeric > 0) {
-		attr_set_str(&ci->focus->attrs, "emacs-search-patn", ci->str);
-		m = vmark_new(ci->focus, view);
+	if (ci->mark && ci->numeric > 0 && ci->str) {
+		hi->patn = strdup(ci->str);
+		m = vmark_new(ci->focus, hi->view);
 		if (!m)
 			return -1;
 		mark_to_mark(m, ci->mark);
@@ -857,7 +865,7 @@ DEF_CMD(emacs_search_highlight)
 		call("Notify:doc:Replace", ci->focus);
 		if (start) {
 			m = mark_dup(start, 1);
-			do_searches(ci->focus, view, ci->str,
+			do_searches(ci->focus, hi->view, ci->str,
 				    m, end);
 			mark_free(m);
 		}
@@ -869,21 +877,8 @@ DEF_CMD(emacs_search_highlight)
 
 DEF_CMD(emacs_reposition)
 {
-	/* If new range and old range don't over-lap, discard
-	 * old range and re-fill new range.
-	 * Otherwise delete anything in range that is no longer visible.
-	 * If they overlap before, search from start to first match.
-	 * If they overlap after, search from last match to end.
-	 */
-	/* delete every match before new start and after end */
-	struct mark *start = ci->mark;
-	struct mark *end = ci->mark2;
 	struct mark *m;
-	int view = attr_find_int(ci->focus->attrs, "emacs-search-view");
-	char *patn = attr_find(ci->focus->attrs, "emacs-search-patn");
 	int repoint = attr_find_int(ci->focus->attrs, "emacs-repoint");
-	struct mark *vstart, *vend;
-	int damage = 0;
 
 	if (repoint != -1) {
 		/* Move point to end of display, if that is in
@@ -909,35 +904,54 @@ DEF_CMD(emacs_reposition)
 		}
 		attr_set_str(&ci->focus->attrs, "emacs-repoint", NULL);
 	}
+	return 0;
+}
 
-	if (view < 0 || patn == NULL || !start || !end)
+DEF_CMD(emacs_search_reposition)
+{
+	/* If new range and old range don't over-lap, discard
+	 * old range and re-fill new range.
+	 * Otherwise delete anything in range that is no longer visible.
+	 * If they overlap before, search from start to first match.
+	 * If they overlap after, search from last match to end.
+	 */
+	/* delete every match before new start and after end */
+	struct highlight_info *hi = ci->home->data;
+	struct mark *start = ci->mark;
+	struct mark *end = ci->mark2;
+	struct mark *vstart, *vend;
+	char *patn = hi->patn;
+	int damage = 0;
+	struct mark *m;
+
+	if (hi->view < 0 || patn == NULL || !start || !end)
 		return 0;
 
-	while ((m = vmark_first(ci->focus, view)) != NULL &&
+	while ((m = vmark_first(ci->focus, hi->view)) != NULL &&
 	       m->seq < start->seq) {
 		mark_free(m);
 		damage = 1;
 	}
-	while ((m = vmark_last(ci->focus, view)) != NULL &&
+	while ((m = vmark_last(ci->focus, hi->view)) != NULL &&
 	       m->seq > end->seq){
 		mark_free(m);
 		damage = 1;
 	}
 
-	vstart = vmark_first(ci->focus, view);
-	vend = vmark_last(ci->focus, view);
+	vstart = vmark_first(ci->focus, hi->view);
+	vend = vmark_last(ci->focus, hi->view);
 	if (vstart == NULL || start->seq < vstart->seq) {
 		/* search from 'start' to first match or 'end' */
-		do_searches(ci->focus, view, patn, start, vstart ?: end);
+		do_searches(ci->focus, hi->view, patn, start, vstart ?: end);
 		if (vend)
-			do_searches(ci->focus, view, patn,
+			do_searches(ci->focus, hi->view, patn,
 				    vend, end);
 	} else if (vend && end->seq > vend->seq) {
 		/* search from last match to end */
-		do_searches(ci->focus, view, patn, vend, end);
+		do_searches(ci->focus, hi->view, patn, vend, end);
 	}
-	if (vstart != vmark_first(ci->focus, view) ||
-	    vend != vmark_last(ci->focus, view))
+	if (vstart != vmark_first(ci->focus, hi->view) ||
+	    vend != vmark_last(ci->focus, hi->view))
 		damage = 1;
 
 	if (damage)
@@ -945,12 +959,17 @@ DEF_CMD(emacs_reposition)
 	return 0;
 }
 
+DEF_LOOKUP_CMD(highlight_handle, hl_map);
+
 DEF_CMD(emacs_start_search)
 {
-	struct pane *p;
-	int view;
+	struct pane *p, *hp;
+	struct highlight_info *hi = calloc(1, sizeof(*hi));
 
-	p = call_pane("PopupTile", ci->focus, 0, NULL, "TR2", 0, NULL, "");
+	hi->view = doc_add_view(ci->focus);
+	hp = pane_register(ci->focus, 0, &highlight_handle.c, hi, NULL);
+
+	p = call_pane("PopupTile", hp, 0, NULL, "TR2", 0, NULL, "");
 
 	if (!p)
 		return 0;
@@ -960,52 +979,43 @@ DEF_CMD(emacs_start_search)
 	call("doc:set-name", p, 0, NULL, "Search");
 	call_pane("attach-emacs-search", p);
 
-	view = doc_add_view(ci->focus);
-	attr_set_int(&ci->focus->attrs, "emacs-search-view", view);
-	/* Make sure we find out when the focus closes, so we can
-	 * delete that view
-	 */
-	pane_add_notify(ci->home, ci->focus, "Notify:Close");
 	return 1;
 }
 
-DEF_CMD(emacs_notify_close)
+DEF_CMD(emacs_highlight_close)
 {
 	/* ci->focus is being closed */
-	int view = attr_find_int(ci->focus->attrs, "emacs-search-view");
-	if (view >= 0) {
+	struct highlight_info *hi = ci->home->data;
+
+	free(hi->patn);
+	if (hi->view >= 0) {
 		struct mark *m;
-		attr_set_str(&ci->focus->attrs, "emacs-search-view", NULL);
-		while ((m = vmark_first(ci->focus, view)) != NULL)
+
+		while ((m = vmark_first(ci->focus, hi->view)) != NULL)
 			mark_free(m);
-		doc_del_view(ci->focus, view);
+		doc_del_view(ci->focus, hi->view);
 	}
+	free(hi);
 	return 0;
 }
 
 DEF_CMD(emacs_search_done)
 {
 	struct mark *m;
-	int view = attr_find_int(ci->focus->attrs, "emacs-search-view");
 
-	if (view >= 0) {
-		attr_set_str(&ci->focus->attrs, "emacs-search-view", NULL);
-		while ((m = vmark_first(ci->focus, view)) != NULL)
-			mark_free(m);
-		doc_del_view(ci->focus, view);
+	if (ci->str && ci->str[0]) {
+
+		m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
+
+		call("global-set-attr", ci->focus, 0, NULL, "Search String",
+		     0, NULL, ci->str);
+
+		if (call("text-search", ci->focus, 0, m, ci->str) > 1)
+			call("Move-to", ci->focus, 0, m);
+
+		mark_free(m);
 	}
-	if (!ci->str || !ci->str[0])
-		return -1;
-
-	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
-
-	call("global-set-attr", ci->focus, 0, NULL, "Search String",
-	     0, NULL, ci->str);
-
-	if (call("text-search", ci->focus, 0, m, ci->str) > 1)
-		call("Move-to", ci->focus, 0, m);
-
-	mark_free(m);
+	pane_close(ci->home);
 	return 1;
 }
 
@@ -1062,14 +1072,14 @@ DEF_CMD(emacs_version)
 
 DEF_CMD(emacs_attrs)
 {
-	int view = attr_find_int(ci->focus->attrs, "emacs-search-view");
+	struct highlight_info *hi = ci->home->data;
 
 	if (!ci->str)
 		return 0;
 
 	if (strcmp(ci->str, "render:search") == 0) {
 		/* Current search match -  "20" is a priority */
-		if (view >= 0 && ci->mark && ci->mark->viewnum == view) {
+		if (hi->view >= 0 && ci->mark && ci->mark->viewnum == hi->view) {
 			int  len = atoi(ci->str2);
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
 					 ci->mark, "fg:red,inverse", 20);
@@ -1077,7 +1087,7 @@ DEF_CMD(emacs_attrs)
 	}
 	if (strcmp(ci->str, "render:search2") == 0) {
 		/* alternate matches in current view */
-		if (view >= 0 && ci->mark && ci->mark->viewnum == view) {
+		if (hi->view >= 0 && ci->mark && ci->mark->viewnum == hi->view) {
 			int len = atoi(ci->str2);
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
 					 ci->mark, "fg:blue,inverse", 20);
@@ -1086,7 +1096,6 @@ DEF_CMD(emacs_attrs)
 
 	return 0;
 }
-static struct map *emacs_map;
 
 static void emacs_init(void)
 {
@@ -1141,11 +1150,7 @@ static void emacs_init(void)
 	key_add(m, "emCX-Chr-s", &emacs_save_all);
 
 	key_add(m, "C-Chr-S", &emacs_start_search);
-	key_add(m, "search:highlight", &emacs_search_highlight);
-	key_add(m, "Search String", &emacs_search_done);
 	key_add(m, "render:reposition", &emacs_reposition);
-	key_add(m, "Notify:Close", &emacs_notify_close);
-	key_add(m, "map-attr", &emacs_attrs);
 
 	key_add(m, "emCX-C-Chr-C", &emacs_exit);
 
@@ -1162,6 +1167,14 @@ static void emacs_init(void)
 	key_add(m, "interactive-cmd-version", &emacs_version);
 
 	emacs_map = m;
+
+	m = key_alloc();
+	key_add(m, "Search String", &emacs_search_done);
+	key_add(m, "render:reposition", &emacs_search_reposition);
+	key_add(m, "search:highlight", &emacs_search_highlight);
+	key_add(m, "map-attr", &emacs_attrs);
+	key_add(m, "Close", &emacs_highlight_close);
+	hl_map = m;
 }
 
 DEF_LOOKUP_CMD(mode_emacs, emacs_map);
