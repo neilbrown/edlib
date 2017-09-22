@@ -29,8 +29,10 @@
 #include "core.h"
 
 #ifdef RECORD_REPLAY
+#include <unistd.h>
 #include <stdio.h>
 #include "md5.h"
+typedef char hash_t[MD5_DIGEST_SIZE*2+1];
 #endif
 
 #ifdef __CHECKER__
@@ -38,12 +40,19 @@
 #define NCURSES_OK_ADDR(p) ((void*)0 != NCURSES_CAST(const void *, (p)))
 #endif
 
+
 struct display_data {
 	SCREEN			*scr;
-	struct {int x,y;}	cursor;
+	struct xy		cursor;
 	#ifdef RECORD_REPLAY
 	FILE			*log;
 	FILE			*input;
+	char			last_screen[MD5_DIGEST_SIZE*2+1];
+	char			next_screen[MD5_DIGEST_SIZE*2+1];
+	/* The next event to generate when idle */
+	enum { DoNil, DoMouse, DoKey, DoCheck, DoClose} next_event;
+	char			event_info[30];
+	struct xy		event_pos;
 	#endif
 };
 
@@ -52,6 +61,8 @@ static void ncurses_clear(struct pane *p safe, struct pane *display safe,
 			  int attr, int x, int y, int w, int h);
 static void ncurses_text(struct pane *p safe, struct pane *display safe,
 			 wchar_t ch, int attr, int x, int y, int cursor);
+DEF_CMD(input_handle);
+DEF_CMD(handle_winch);
 
 static void set_screen(SCREEN *scr)
 {
@@ -62,7 +73,11 @@ static void set_screen(SCREEN *scr)
 }
 
 #ifdef RECORD_REPLAY
-void prepare_recrep(struct pane *p safe)
+DEF_CMD(next_evt);
+DEF_CMD(abort_replay);
+
+static int parse_event(struct pane *p safe);
+static int prepare_recrep(struct pane *p safe)
 {
 	struct display_data *dd = p->data;
 	char *name;
@@ -70,9 +85,19 @@ void prepare_recrep(struct pane *p safe)
 	name = getenv("EDLIB_RECORD");
 	if (name)
 		dd->log = fopen(name, "w");
+	name = getenv("EDLIB_REPLAY");
+	if (name)
+		dd->input = fopen(name, "r");
+	if (getenv("EDLIB_PAUSE"))
+		sleep(atoi(getenv("EDLIB_PAUSE")));
+	if (dd->input) {
+		parse_event(p);
+		return 1;
+	}
+	return 0;
 }
 
-void close_recrep(struct pane *p safe)
+static void close_recrep(struct pane *p safe)
 {
 	struct display_data *dd = p->data;
 
@@ -82,7 +107,7 @@ void close_recrep(struct pane *p safe)
 	}
 }
 
-void record_key(struct pane *p safe, char *key safe)
+static void record_key(struct pane *p safe, char *key safe)
 {
 	struct display_data *dd = p->data;
 	char q;
@@ -100,7 +125,7 @@ void record_key(struct pane *p safe, char *key safe)
 	fprintf(dd->log, "Key %c%s%c\n", q,key,q);
 }
 
-void record_mouse(struct pane *p safe, char *key safe, int x, int y)
+static void record_mouse(struct pane *p safe, char *key safe, int x, int y)
 {
 	struct display_data *dd = p->data;
 	char q;
@@ -117,7 +142,7 @@ void record_mouse(struct pane *p safe, char *key safe, int x, int y)
 	fprintf(dd->log, "Mouse %c%s%c %d,%d\n", q,key,q, x, y);
 }
 
-void record_screen(struct pane *p safe)
+static void record_screen(struct pane *p safe)
 {
 	struct display_data *dd = p->data;
 	struct md5_state ctx;
@@ -125,7 +150,7 @@ void record_screen(struct pane *p safe)
 	char out[MD5_DIGEST_SIZE*2+1];
 	int r,c;
 
-	if (!dd->log)
+	if (!dd->log && !(dd->input && dd->next_event == DoCheck))
 		return;
 	md5_init(&ctx);
 	for (r = 0; r < p->h; r++)
@@ -145,21 +170,158 @@ void record_screen(struct pane *p safe)
 			md5_update(&ctx, (uint8_t*)buf, (l+2) * 2);
 		}
 	md5_final_txt(&ctx, out);
-	fprintf(dd->log, "Display %d,%d %s", p->w, p->h, out);
-	if (dd->cursor.x >= 0)
-		fprintf(dd->log, " %d,%d", dd->cursor.x, dd->cursor.y);
-	fprintf(dd->log, "\n");
+	if (dd->log) {
+		fprintf(dd->log, "Display %d,%d %s", p->w, p->h, out);
+		strcpy(dd->last_screen, out);
+		if (dd->cursor.x >= 0)
+			fprintf(dd->log, " %d,%d", dd->cursor.x, dd->cursor.y);
+		fprintf(dd->log, "\n");
+	}
+	if (dd->input && dd->next_event == DoCheck) {
+		call_comm("event:free", p, &abort_replay);
+//		if (strcmp(dd->last_screen, dd->next_screen) != 0)
+//			dd->next_event = DoClose;
+		call_comm("editor-on-idle", p, &next_evt);
+	}
+}
+
+static inline int match(char *line safe, char *w safe)
+{
+	return strncmp(line, w, strlen(w)) == 0;
+}
+
+static char *copy_quote(char *line safe, char *buf safe)
+{
+	char q;
+	while (*line == ' ')
+		line++;
+	q = *line++;
+	if (q != '"' && q != '\'' && q != '/')
+		return NULL;
+	while (*line != q && *line)
+		*buf++ = *line++;
+	if (!*line)
+		return NULL;
+	*buf = '\0';
+	return line+1;
+}
+
+static char *get_coord(char *line safe, struct xy *co safe)
+{
+	long v;
+	char *ep;
+
+	while (*line == ' ')
+		line ++;
+	v = strtol(line, &ep, 10);
+	if (!ep || ep == line || *ep != ',')
+		return NULL;
+	co->x = v;
+	line = ep+1;
+	v = strtol(line, &ep, 10);
+	if (!ep || ep == line || (*ep && *ep != ' ' && *ep != '\n'))
+		return NULL;
+	co->y = v;
+	return ep;
+}
+
+static char *get_hash(char *line safe, hash_t hash safe)
+{
+	int i;
+	while (*line == ' ')
+		line++;
+	for (i = 0; i < MD5_DIGEST_SIZE*2 && *line; i++)
+		hash[i] = *line++;
+	if (!*line)
+		return NULL;
+	return line;
+}
+
+REDEF_CMD(abort_replay)
+{
+	struct display_data *dd = ci->home->data;
+
+	dd->next_event = DoClose;
+	return next_evt_func(ci);
+}
+
+static int parse_event(struct pane *p safe)
+{
+	struct display_data *dd = p->data;
+	char line[80];
+
+	line[79] = 0;
+	dd->next_event = DoNil;
+	if (!dd->input ||
+	    fgets(line, sizeof(line)-1, dd->input) == NULL)
+		;
+	else if (match(line, "Key ")) {
+		if (!copy_quote(line+4, dd->event_info))
+			return 0;
+		dd->next_event = DoKey;
+	} else if (match(line, "Mouse ")) {
+		char *f = copy_quote(line+6, dd->event_info);
+		if (!f)
+			return 0;
+		f = get_coord(f, &dd->event_pos);
+		if (!f)
+			return 0;
+		dd->next_event = DoMouse;
+	} else if (match(line, "Display ")) {
+		char *f = get_coord(line+8, &dd->event_pos);
+		if (!f)
+			return 0;
+		f = get_hash(f, dd->next_screen);
+		dd->next_event = DoCheck;
+	} else if (match(line, "Close")) {
+		dd->next_event = DoClose;
+	}
+
+	if (dd->next_event != DoCheck)
+		call_comm("editor-on-idle", p, &next_evt);
+	else
+		call_comm("event:timer", p, 10, &abort_replay);
+	return 1;
+}
+
+REDEF_CMD(next_evt)
+{
+	struct pane *p = ci->home;
+	struct display_data *dd = p->data;
+
+	switch(dd->next_event) {
+	case DoKey:
+		record_key(p, dd->event_info);
+		call("Keystroke", p, 0, NULL, dd->event_info);
+		break;
+	case DoMouse:
+		record_mouse(p, dd->event_info, dd->event_pos.x, dd->event_pos.y);
+		call("Mouse-event", p, 0, NULL, dd->event_info, 0, NULL, NULL, NULL,
+		     dd->event_pos.x, dd->event_pos.y);
+		break;
+	case DoCheck:
+		if (strcmp(dd->next_screen, dd->last_screen) != 0)
+			printf("MISMATCH\n");
+		break;
+	case DoClose:
+		call("event:deactivate", p);
+		pane_close(p);
+		return 1;
+	case DoNil:
+		call_home(p, "event:read", p, 0, NULL, NULL, 0, NULL, NULL, &input_handle);
+		call_home(p, "event:signal", p, SIGWINCH, NULL, NULL, 0, NULL, NULL, &handle_winch);
+		return 1;
+	}
+	parse_event(p);
+	return 1;
 }
 #else
-static inline void prepare_recrep(struct pane *p safe) {}
+static inline int  prepare_recrep(struct pane *p safe) {return 0;}
 static inline void record_key(struct pane *p safe, char *key) {}
 static inline void record_mouse(struct pane *p safe, char *key safe, int x, int y) {}
 static inline void record_screen(struct pane *p safe) {}
 static inline void close_recrep(struct pane *p safe) {}
 #endif
-
-DEF_CMD(input_handle);
-DEF_CMD(handle_winch);
 
 DEF_CMD(nc_misc)
 {
@@ -339,10 +501,10 @@ static struct pane *ncurses_init(struct pane *ed)
 
 	getmaxyx(stdscr, p->h, p->w);
 
-	prepare_recrep(p);
-
-	call_home(p, "event:read", p, 0, NULL, NULL, 0, NULL, NULL, &input_handle);
-	call_home(p, "event:signal", p, SIGWINCH, NULL, NULL, 0, NULL, NULL, &handle_winch);
+	if (!prepare_recrep(p)) {
+		call_home(p, "event:read", p, 0, NULL, NULL, 0, NULL, NULL, &input_handle);
+		call_home(p, "event:signal", p, SIGWINCH, NULL, NULL, 0, NULL, NULL, &handle_winch);
+	}
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }
