@@ -11,6 +11,7 @@ class ShellPane(edlib.Pane):
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
+        self.call("Replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
         self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
                                      cwd=cwd,
                                      stdout=subprocess.PIPE,
