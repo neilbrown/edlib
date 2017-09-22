@@ -9,6 +9,11 @@
 #include <memory.h>
 #include <endian.h>
 
+#ifndef safe
+#define safe
+#define safe_cast
+#endif
+
 #define MD5_DIGEST_SIZE		16
 #define MD5_HMAC_BLOCK_SIZE	64
 #define MD5_BLOCK_WORDS		16
@@ -133,13 +138,13 @@ static inline void cpu_to_le32_hash(uint32_t buf[MD5_HASH_WORDS])
 		buf[i] = htole32(buf[i]);
 }
 
-static inline void md5_transform_helper(struct md5_state *ctx)
+static inline void md5_transform_helper(struct md5_state *ctx safe)
 {
 	le32_to_cpu_block(ctx->block);
 	md5_transform(ctx->hash, ctx->block);
 }
 
-static int md5_init(struct md5_state *mctx)
+static int md5_init(struct md5_state *mctx safe)
 {
 	mctx->hash[0] = MD5_H0;
 	mctx->hash[1] = MD5_H1;
@@ -150,7 +155,7 @@ static int md5_init(struct md5_state *mctx)
 	return 0;
 }
 
-static int md5_update(struct md5_state *mctx, const uint8_t *data, unsigned int len)
+static int md5_update(struct md5_state *mctx safe, const uint8_t *data safe, unsigned int len)
 {
 	uint32_t avail = sizeof(mctx->block) - (mctx->byte_count & 0x3f);
 
@@ -170,10 +175,10 @@ static int md5_update(struct md5_state *mctx, const uint8_t *data, unsigned int 
 	return 0;
 }
 
-static void md5_final(struct md5_state *mctx, uint8_t out[MD5_DIGEST_SIZE])
+static void md5_final(struct md5_state *mctx safe, uint8_t out[MD5_DIGEST_SIZE])
 {
 	const unsigned int offset = mctx->byte_count & 0x3f;
-	char *p = (char *)mctx->block + offset;
+	char *p = safe_cast (char *)mctx->block + offset;
 	int padding = 56 - (offset + 1);
 
 	*p++ = 0x80;
@@ -192,4 +197,18 @@ static void md5_final(struct md5_state *mctx, uint8_t out[MD5_DIGEST_SIZE])
 	cpu_to_le32_hash(mctx->hash);
 	memcpy(out, mctx->hash, sizeof(mctx->hash));
 	memset(mctx, 0, sizeof(*mctx));
+}
+
+static char _md5_hex[] = "0123456789ABCDEF";
+static void md5_final_txt(struct md5_state *mctx safe, char out[MD5_DIGEST_SIZE*2+1])
+{
+	uint8_t outb[MD5_DIGEST_SIZE];
+	int i;
+
+	md5_final(mctx, outb);
+	for (i = 0; i < MD5_DIGEST_SIZE; i++) {
+		out[i*2]   = _md5_hex[outb[i]>>4];
+		out[i*2+1] = _md5_hex[outb[i]&0xf];
+	}
+	out[i*2] = '\0';
 }
