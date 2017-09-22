@@ -1020,7 +1020,7 @@ DEF_CMD(emacs_start_search)
 	attr_set_str(&p->attrs, "prefix", "Search: ");
 	attr_set_str(&p->attrs, "done-key", "Search String");
 	call("doc:set-name", p, 0, NULL, "Search");
-	call_pane("attach-emacs-search", p);
+	call_pane("attach-emacs-search", p, ci->key[6] == 'R');
 
 	return 1;
 }

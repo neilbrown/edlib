@@ -26,7 +26,7 @@ struct es_info {
 	struct stk {
 		struct stk *next;
 		struct mark *m safe; /* Start of search */
-		unsigned int len; /* current length of match string */
+		unsigned int len; /* current length of search string */
 		int wrapped;
 	} *s;
 	struct mark *start safe; /* where searching starts */
@@ -34,6 +34,7 @@ struct es_info {
 	struct pane *target safe;
 	short matched;
 	short wrapped;
+	short backwards;
 };
 
 static struct map *es_map;
@@ -43,7 +44,9 @@ DEF_CMD(search_forward)
 	struct es_info *esi = ci->home->data;
 	struct stk *s;
 	char *str;
+	int backward = ci->key[6] == 'R';
 
+	esi->backwards = backward;
 	if (esi->s && mark_same_pane(esi->target, esi->s->m, esi->end)) {
 		/* already pushed and didn't find anything new */
 		return 1;
@@ -74,7 +77,7 @@ DEF_CMD(search_forward)
 	else {
 		esi->start = mark_dup(s->m, 1);
 		esi->wrapped = 1;
-		call("Move-File", esi->target, -1, esi->start);
+		call("Move-File", esi->target, backward ? 1 : -1, esi->start);
 	}
 	/* Trigger notification so isearch watcher searches again */
 	call("Replace", ci->home, 1, NULL, "", 1);
@@ -141,11 +144,6 @@ DEF_CMD(search_add)
 	return 1;
 }
 
-DEF_CMD(search_backward)
-{
-	return 1;
-}
-
 DEF_CMD(search_close)
 {
 	struct es_info *esi = ci->home->data;
@@ -176,7 +174,10 @@ DEF_CMD(search_again)
 	call("search:highlight", esi->target);
 	m = mark_dup(esi->start, 1);
 	str = doc_getstr(ci->home, NULL, NULL);
-	ret = call("text-search", esi->target, 0, m, str);
+	if (esi->backwards && mark_prev_pane(esi->target, m) == WEOF)
+		ret = -2;
+	else
+		ret = call("text-search", esi->target, 0, m, str, esi->backwards);
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
 	else if (ret == -2) {
@@ -187,13 +188,14 @@ DEF_CMD(search_again)
 	} else {
 		int len = --ret;
 		point_to_mark(esi->end, m);
-		while (ret > 0 && mark_prev_pane(esi->target, m) != WEOF)
-			ret -= 1;
+		if (!esi->backwards)
+			while (ret > 0 && mark_prev_pane(esi->target, m) != WEOF)
+				ret -= 1;
 		call("search:highlight", esi->target, len, m, str);
 		esi->matched = 1;
-		pfx = "Search: ";
+		pfx = esi->backwards ? "Reverse Search: ":"Search: ";
 		if (esi->wrapped)
-			pfx = "Wrapped Search: ";
+			pfx = esi->backwards ? "Wrapped Reverse Search: ":"Wrapped Search: ";
 	}
 	/* HACK */
 	for (p = ci->home; p; p = p->parent) {
@@ -229,7 +231,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "Backspace", &search_retreat);
 	key_add(es_map, "C-Chr-W", &search_add);
 	key_add(es_map, "C-Chr-C", &search_add);
-	key_add(es_map, "C-Chr-R", &search_backward);
+	key_add(es_map, "C-Chr-R", &search_forward);
 	key_add(es_map, "Close", &search_close);
 	key_add(es_map, "Return", &search_done);
 	key_add(es_map, "Notify:doc:Replace", &search_again);
@@ -261,6 +263,7 @@ DEF_CMD(emacs_search)
 	esi->s = NULL;
 	esi->matched = 0;
 	esi->wrapped = 0;
+	esi->backwards = ci->numeric;
 
 	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);
 	if (p) {
