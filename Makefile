@@ -57,6 +57,7 @@ INC-lang-python = -I/usr/include/python2.7
 
 LIBS-display-ncurses = -lncursesw
 INC-display-ncurses = -I/usr/include/ncursesw
+O/display-ncurses.o : md5.h
 
 LIBS-lib-libevent = -levent
 

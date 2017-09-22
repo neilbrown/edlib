@@ -12,8 +12,11 @@
  *  erase with attributes in rectangle
  */
 
+#define RECORD_REPLAY
+
 #define _XOPEN_SOURCE
 #define _XOPEN_SOURCE_EXTENDED
+#define _DEFAULT_SOURCE
 
 #include <stdlib.h>
 #include <curses.h>
@@ -25,6 +28,11 @@
 
 #include "core.h"
 
+#ifdef RECORD_REPLAY
+#include <stdio.h>
+#include "md5.h"
+#endif
+
 #ifdef __CHECKER__
 #undef NCURSES_OK_ADDR
 #define NCURSES_OK_ADDR(p) ((void*)0 != NCURSES_CAST(const void *, (p)))
@@ -33,6 +41,10 @@
 struct display_data {
 	SCREEN			*scr;
 	struct {int x,y;}	cursor;
+	#ifdef RECORD_REPLAY
+	FILE			*log;
+	FILE			*input;
+	#endif
 };
 
 static SCREEN *current_screen;
@@ -49,6 +61,103 @@ static void set_screen(SCREEN *scr)
 	current_screen = scr;
 }
 
+#ifdef RECORD_REPLAY
+void prepare_recrep(struct pane *p safe)
+{
+	struct display_data *dd = p->data;
+	char *name;
+
+	name = getenv("EDLIB_RECORD");
+	if (name)
+		dd->log = fopen(name, "w");
+}
+
+void close_recrep(struct pane *p safe)
+{
+	struct display_data *dd = p->data;
+
+	if (dd->log) {
+		fprintf(dd->log, "Close\n");
+		fclose(dd->log);
+	}
+}
+
+void record_key(struct pane *p safe, char *key safe)
+{
+	struct display_data *dd = p->data;
+	char q;
+
+	if (!dd->log)
+		return;
+	if (!strchr(key, '"'))
+		q = '"';
+	else if (!strchr(key, '\''))
+		q = '\'';
+	else if (!strchr(key, '/'))
+		q = '/';
+	else
+		return;
+	fprintf(dd->log, "Key %c%s%c\n", q,key,q);
+}
+
+void record_mouse(struct pane *p safe, char *key safe, int x, int y)
+{
+	struct display_data *dd = p->data;
+	char q;
+	if (!dd->log)
+		return;
+	if (!strchr(key, '"'))
+		q = '"';
+	else if (!strchr(key, '\''))
+		q = '\'';
+	else if (!strchr(key, '/'))
+		q = '/';
+	else
+		return;
+	fprintf(dd->log, "Mouse %c%s%c %d,%d\n", q,key,q, x, y);
+}
+
+void record_screen(struct pane *p safe)
+{
+	struct display_data *dd = p->data;
+	struct md5_state ctx;
+	uint16_t buf[CCHARW_MAX+4];
+	char out[MD5_DIGEST_SIZE*2+1];
+	int r,c;
+
+	if (!dd->log)
+		return;
+	md5_init(&ctx);
+	for (r = 0; r < p->h; r++)
+		for (c = 0; c < p->w; c++) {
+			cchar_t cc;
+			wchar_t wc[CCHARW_MAX+2];
+			attr_t a;
+			short color;
+			int l;
+
+			mvin_wch(r,c,&cc);
+			getcchar(&cc, wc, &a, &color, NULL);
+			buf[0] = htole16(color);
+			for (l = 0; l < CCHARW_MAX && wc[l]; l++)
+				buf[l+2] = htole16(wc[l]);
+			buf[1] = htole16(l);
+			md5_update(&ctx, (uint8_t*)buf, (l+2) * 2);
+		}
+	md5_final_txt(&ctx, out);
+	fprintf(dd->log, "Display %d,%d %s", p->w, p->h, out);
+	if (dd->cursor.x >= 0)
+		fprintf(dd->log, " %d,%d", dd->cursor.x, dd->cursor.y);
+	fprintf(dd->log, "\n");
+}
+#else
+static inline void prepare_recrep(struct pane *p safe) {}
+static inline void record_key(struct pane *p safe, char *key) {}
+static inline void record_mouse(struct pane *p safe, char *key safe, int x, int y) {}
+static inline void record_screen(struct pane *p safe) {}
+static inline void close_recrep(struct pane *p safe) {}
+#endif
+
 DEF_CMD(input_handle);
 DEF_CMD(handle_winch);
 
@@ -64,8 +173,9 @@ DEF_CMD(nc_misc)
 	return 0;
 }
 
-static void ncurses_end(void)
+static void ncurses_end(struct pane *p safe)
 {
+	close_recrep(p);
 	nl();
 	endwin();
 }
@@ -123,7 +233,7 @@ DEF_CMD(ncurses_handle)
 		return nc_misc.func(ci);
 
 	if (strcmp(ci->key, "Close") == 0) {
-		ncurses_end();
+		ncurses_end(p);
 		return 1;
 	}
 	if (strcmp(ci->key, "pane-clear") == 0) {
@@ -197,6 +307,7 @@ DEF_CMD(ncurses_handle)
 		if (dd->cursor.x >= 0)
 			move(dd->cursor.y, dd->cursor.x);
 		refresh();
+		record_screen(p);
 		return 1;
 	}
 	return 0;
@@ -206,7 +317,7 @@ static struct pane *ncurses_init(struct pane *ed)
 {
 	WINDOW *w = initscr();
 	struct pane *p;
-	struct display_data *dd = malloc(sizeof(*dd));
+	struct display_data *dd = calloc(1, sizeof(*dd));
 
 	start_color();
 	use_default_colors();
@@ -226,6 +337,8 @@ static struct pane *ncurses_init(struct pane *ed)
 	p = pane_register(ed, 0, &ncurses_handle, dd, NULL);
 
 	getmaxyx(stdscr, p->h, p->w);
+
+	prepare_recrep(p);
 
 	call_home(p, "event:read", p, 0, NULL, NULL, 0, NULL, NULL, &input_handle);
 	call_home(p, "event:signal", p, SIGWINCH, NULL, NULL, 0, NULL, NULL, &handle_winch);
@@ -384,11 +497,13 @@ static void send_key(int keytype, wint_t c, struct pane *p safe)
 			sprintf(buf, "Chr-%lc", c);
 	}
 
+	record_key(p, buf);
 	call("Keystroke", p, 0, NULL, buf);
 }
 
 static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe)
 {
+	record_mouse(p, cmd, x, y);
 	call("Mouse-event", p, 0, NULL, cmd, 0, NULL, NULL, NULL, x, y);
 }
 
