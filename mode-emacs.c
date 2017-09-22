@@ -1174,7 +1174,6 @@ static void emacs_init(void)
 	key_add(m, "Return", &emacs_insert_other);
 	key_add(m, "C-Chr-O", &emacs_insert_other);
 
-
 	key_add(m, "C-Chr-_", &emacs_undo);
 	key_add(m, "M-C-Chr-_", &emacs_redo);
 

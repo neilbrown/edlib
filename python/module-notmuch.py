@@ -386,7 +386,6 @@ class notmuch_main(edlib.Doc):
             tags = ",".join(set(tg))
             comm2("callback", focus, tags)
 
-
         if key == "doc:notmuch:search-maxlen":
             return self.searches.maxlen + 1
 
@@ -499,7 +498,6 @@ class notmuch_main(edlib.Doc):
                     if c['query'] == q:
                         c("doc:notmuch:query-refresh")
                         return
-
 
 def notmuch_doc(key, home, focus, comm2, **a):
     # Create the root notmuch document
@@ -1119,7 +1117,6 @@ class notmuch_list(edlib.Doc):
             # move to previous thread
             i -= 1
             j = -1
-
 
     def cvt_depth(self, depth):
         ret = ""

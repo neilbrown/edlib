@@ -193,7 +193,7 @@ struct mark *mark_at_point(struct pane *p safe, struct mark *pm, int view)
 	return cr.m;
 }
 
-struct mark *safe point_dup(struct mark *p safe) 
+struct mark *safe point_dup(struct mark *p safe)
 {
 	int i;
 	struct point_links *old = safe_cast p->mdata;

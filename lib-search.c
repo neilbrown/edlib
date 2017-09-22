@@ -13,7 +13,6 @@
 #include "core.h"
 #include "rexel.h"
 
-
 static int search_forward(struct pane *p safe, struct mark *m safe, struct mark *m2,
 			  unsigned short *rxl safe,
 			  struct mark *endmark safe)

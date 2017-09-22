@@ -112,7 +112,7 @@ static PyTypeObject CommType;
 static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject *kwds,
 			PyObject **s1 safe, PyObject **s2 safe);
 
-static inline PyObject *safe Pane_Frompane(struct pane *p) 
+static inline PyObject *safe Pane_Frompane(struct pane *p)
 {
 	Pane *pane;
 	if (p && p->handle && p->handle->func == python_call.func) {
@@ -130,7 +130,7 @@ static inline PyObject *safe Pane_Frompane(struct pane *p)
 	return (PyObject*)pane;
 }
 
-static inline PyObject *safe Mark_Frommark(struct mark *m safe, int local) 
+static inline PyObject *safe Mark_Frommark(struct mark *m safe, int local)
 {
 	Mark *mark;
 
@@ -147,7 +147,7 @@ static inline PyObject *safe Mark_Frommark(struct mark *m safe, int local)
 	return (PyObject*)mark;
 }
 
-static inline PyObject *safe Comm_Fromcomm(struct command *c safe) 
+static inline PyObject *safe Comm_Fromcomm(struct command *c safe)
 {
 	if (c->func == python_call_func && 0) {
 		struct python_command *pc = container_of(c, struct python_command, c);
@@ -346,7 +346,6 @@ static Pane *pane_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
 	return self;
 }
 
-
 static Doc *Doc_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
 {
 	Doc *self;
@@ -418,7 +417,7 @@ static int Pane_init(Pane *self safe, PyObject *args, PyObject *kwds)
 	Py_INCREF(self);
 	self->pane = pane_register(parent->pane, z, &self->handle.c, self, NULL);
 	return 0;
-} 
+}
 
 static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 {
@@ -1086,7 +1085,6 @@ static PyMethodDef doc_methods[] = {
 	 "Move mark to one end of document"},
 	{NULL}
 };
-
 
 static PyTypeObject DocType = {
     PyObject_HEAD_INIT(NULL)

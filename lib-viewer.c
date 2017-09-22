@@ -11,7 +11,6 @@
  *  q     : bury-document
  */
 
-
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>

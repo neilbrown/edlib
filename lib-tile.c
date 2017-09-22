@@ -425,7 +425,7 @@ static void tile_adjust(struct pane *p safe)
 		if (t->z)
 			continue;
 		ti = t->data;
- 		if (ti->direction == Horiz) {
+		if (ti->direction == Horiz) {
 			t->y = 0;
 			t->h = p->h;
 			used += t->w;
@@ -645,7 +645,7 @@ static struct pane *tile_root_popup(struct tileinfo *ti safe)
 	return next_child(ti->p, NULL, 1);
 }
 
-static struct tileinfo *safe tile_next_named(struct tileinfo *ti safe, char *name) 
+static struct tileinfo *safe tile_next_named(struct tileinfo *ti safe, char *name)
 {
 	struct tileinfo *t = ti;
 	while ((t = list_next_entry(t, tiles)) != ti) {

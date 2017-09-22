@@ -1149,7 +1149,7 @@ unsigned short *rxl_parse(char *patn safe, int *lenp, int nocase)
 	return st.rxl;
 }
 
-unsigned short *safe rxl_parse_verbatim(char *patn safe, int nocase) 
+unsigned short *safe rxl_parse_verbatim(char *patn safe, int nocase)
 {
 	struct parse_state st;
 	int i, l;
@@ -1189,7 +1189,7 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe)
 	st->link[st->active][0] = 0;
 }
 
-struct match_state *safe rxl_prepare(unsigned short *rxl safe) 
+struct match_state *safe rxl_prepare(unsigned short *rxl safe)
 {
 	struct match_state *ret;
 

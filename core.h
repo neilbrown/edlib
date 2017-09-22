@@ -452,7 +452,6 @@ static inline void doc_del_view(struct pane *p safe, int num)
 #define _VFUNC(name, n) _VFUNC_(name, n)
 #define VFUNC(func, ...) _VFUNC(func, __NARG__(__VA_ARGS__)) (__VA_ARGS__)
 
-
 #define call(...) VFUNC(call, __VA_ARGS__)
 #define call12(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home) \
 	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home)
@@ -519,7 +518,6 @@ static inline void doc_del_view(struct pane *p safe, int num)
 	do_call(key, focus, numeric, NULL, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
 #define call_comm3(key, focus, comm2) \
 	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
-
 
 static inline int do_call(char *key safe, struct pane *focus safe, int numeric, struct mark *m,
 			  char *str, int extra, struct mark *m2, char *str2,

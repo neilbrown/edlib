@@ -170,7 +170,6 @@ retry:
 		}
 	}
 
-
 	if (c1 == WEOF || c2 == WEOF)
 		return CHAR_RET(WEOF);
 

@@ -12,7 +12,6 @@
  * "\v" after anything else terminates the line without consuming the newline.
  */
 
-
 #include <unistd.h>
 #include <stdlib.h>
 #include <wchar.h>

@@ -608,7 +608,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			}
 		}
 
-
 		if (ret == WRAP|| x >= p->w - mwidth) {
 			/* No room for more text */
 			if (wrap) {

@@ -608,7 +608,6 @@ out:
 	return -1;
 }
 
-
 void edlib_init(struct pane *ed safe)
 {
 	email_init_map();

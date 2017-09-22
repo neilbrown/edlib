@@ -194,7 +194,6 @@ DEF_CMD(format_clone)
 	return 1;
 }
 
-
 DEF_CMD(format_get_attr)
 {
 	char attr[20];

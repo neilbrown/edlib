@@ -535,7 +535,6 @@ DEF_CMD(mp_forward)
 			 ci->str, ci->extra, NULL, ci->str2, ci->comm2);
 }
 
-
 static void mp_init_map(void)
 {
 	mp_map = key_alloc();
@@ -566,7 +565,6 @@ DEF_CMD(attach_mp)
 	mpi->doc.home = h;
 	if (h)
 		return comm_call(ci->comm2, "callback:doc", h);
-
 
 	free(mpi);
 	return -1;
