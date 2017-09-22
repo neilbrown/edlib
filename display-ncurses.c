@@ -176,6 +176,7 @@ DEF_CMD(nc_misc)
 static void ncurses_end(struct pane *p safe)
 {
 	close_recrep(p);
+	call("event:free", p);
 	nl();
 	endwin();
 }

@@ -172,6 +172,25 @@ DEF_CMD(libevent_deactivate)
 	return 1;
 }
 
+DEF_CMD(libevent_free)
+{
+	/* destroy for ci->focus and, if comm2 given, which activate
+	 * comm2
+	 */
+	struct evt *ev;
+	struct list_head *tmp;
+
+	list_for_each_entry_safe(ev, tmp, &event_list, lst)
+		if (ev->home == ci->focus &&
+		    (ci->comm2 == NULL || ev->comm == ci->comm2)) {
+			event_del(ev->l);
+			list_del(&ev->lst);
+			command_put(ev->comm);
+			free(ev);
+		}
+	return 1;
+}
+
 DEF_CMD(libevent_activate)
 {
 	/* These are defaults, so make them sort late */
@@ -185,6 +204,8 @@ DEF_CMD(libevent_activate)
 		  &libevent_run);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:deactivate-zz",
 		  &libevent_deactivate);
+	call_comm("global-set-command", ci->focus, 0, NULL, "event:free-zz",
+		  &libevent_free);
 
 	return 1;
 }

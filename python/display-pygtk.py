@@ -434,32 +434,51 @@ def new_display(key, focus, comm2, **a):
 class events:
     def __init__(self):
         self.active = True
+        self.events = {}
+        self.ev_num = 0
+
+    def add_ev(self, home, comm):
+        ev = self.ev_num
+        self.events[ev] = [home, comm]
+        self.ev_num += 1
+        return ev
 
     def read(self, key, home, comm2, numeric, **a):
         self.active = True
-        gobject.io_add_watch(numeric, gobject.IO_IN | gobject.IO_HUP, self.docall, comm2, home, numeric)
+        ev = self.add_ev(home, comm2)
+        gev = gobject.io_add_watch(numeric, gobject.IO_IN | gobject.IO_HUP,
+                                  self.docall, comm2, home, numeric, ev)
+        self.events[ev].append(gev)
         return 1
 
-    def docall(self, source, condition, comm2, home, fd):
+    def docall(self, evfd, condition, comm2, home, fd, ev):
+        if ev not in self.events:
+            return False
         try:
             comm2("callback", home, fd)
             return True
         except edlib.commandfailed:
+            del self.events[ev]
             return False
 
     def signal(self, key, focus, comm2, numeric, **a):
         return 1
 
-    def timer(self, key, focus, comm2, numeric, **a):
+    def timer(self, key, focus, home, comm2, numeric, **a):
         self.active = True
-        gobject.timeout_add(numeric*1000, self.dotimeout, comm2, focus)
+        ev = self.add_ev(home, comm2)
+        gev = gobject.timeout_add(numeric*1000, self.dotimeout, comm2, focus, ev)
+        self.events[ev].append(gev)
         return 1
 
-    def dotimeout(self, comm2, home):
+    def dotimeout(self, comm2, home, ev):
+        if ev not in self.events:
+            return False
         try:
             comm2("callback", home);
             return True
         except edlib.commandfailed:
+            del self.events[ev]
             return False
 
     def run(self, key, **a):
@@ -478,6 +497,28 @@ class events:
         ev = None
         return 1
 
+    def free(self, key, home, comm2, **a):
+        try_again = True
+        while try_again:
+            try_again = False
+            for source in self.events:
+                e = self.events[source]
+                if e[0] != home:
+                    continue
+                if comm2 and e[1] != comm2:
+                    continue
+                del self.events[source]
+                if len(e) == 3:
+                    try:
+                        gobject.source_remove(e[2])
+                    except:
+                        # must be already gone
+                        pass
+                try_again = True
+                break
+
+        return 1
+
 ev = None
 def events_activate(home):
     global ev
@@ -489,6 +530,7 @@ def events_activate(home):
     home.call("global-set-command", home, "event:timer-python", ev.timer)
     home.call("global-set-command", home, "event:run-python", ev.run)
     home.call("global-set-command", home, "event:deactivate-python", ev.deactivate)
+    home.call("global-set-command", home, "event:free-python", ev.free)
 
     return 1
 
