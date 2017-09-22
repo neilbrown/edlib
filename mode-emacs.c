@@ -1044,19 +1044,9 @@ DEF_CMD(emacs_highlight_close)
 
 DEF_CMD(emacs_search_done)
 {
-	struct mark *m;
-
 	if (ci->str && ci->str[0]) {
-
-		m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
-
 		call("global-set-attr", ci->focus, 0, NULL, "Search String",
 		     0, NULL, ci->str);
-
-		if (call("text-search", ci->focus, 0, m, ci->str) > 1)
-			call("Move-to", ci->focus, 0, m);
-
-		mark_free(m);
 	}
 	pane_close(ci->home);
 	return 1;

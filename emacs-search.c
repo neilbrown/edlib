@@ -215,7 +215,8 @@ DEF_CMD(search_done)
 	struct es_info *esi = ci->home->data;
 	char *str = doc_getstr(ci->focus, NULL, NULL);
 
-	call("Move-to", esi->target, 0, esi->start);
+	if (esi->matched)
+		call("Move-to", esi->target, 0, esi->end);
 	call("popup:close", safe_cast ci->focus->parent, 0, NULL, str);
 	free(str);
 	return 1;
