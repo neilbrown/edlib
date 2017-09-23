@@ -942,7 +942,18 @@ static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
 	return len - 1;
 }
 
-static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *focus safe)
+/* Choose a new set of lines to display, and mark each one with a line marker.
+ * We start at pm and move both backwards and forwards one line at a time.
+ * We stop moving in one of the directions when
+ *  - we hit start/end of file
+ *  - when the edge in the *other* direction enters the previously visible
+ *     area (if there was one).  This increases stability of display when
+ *     we move off a line or 2.
+ *  - when we reach the given line count (vline).  A positive count restricts
+ *    backward movement, a negative restricts forwards movement.
+ */
+static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *focus safe,
+		       int vline)
 {
 	struct rl_data *rl = p->data;
 	struct mark *top, *bot;
@@ -950,6 +961,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 	struct mark *start, *end;
 	int x;
 	int y = 0;
+	int y_above = 0, y_below = 0;
 	int offset;
 	int found_start = 0, found_end = 0;
 	int lines_above = 0, lines_below = 0;
@@ -957,6 +969,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 
 	top = vmark_first(focus, rl->typenum);
 	bot = vmark_last(focus, rl->typenum);
+	if (!top && vline == 0 && rl->line_height)
+		vline = (p->h - rl->header_lines) / rl->line_height / 2;
 	/* Don't consider the top or bottom lines as currently being
 	 * displayed - they might not be.
 	 */
@@ -1005,6 +1019,12 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 		top = NULL;
 
 	while ((!found_start || !found_end) && y < p->h - rl->header_lines) {
+		if (vline != NO_NUMERIC) {
+			if (!found_start && vline > 0 && y_above >= (vline-1) * rl->line_height)
+				found_start = 1;
+			if (!found_end && vline < 0 && y_below >= (-vline-1) * rl->line_height)
+				found_end = 1;
+		}
 		if (!found_start && lines_above == 0) {
 			/* step backwards moving start */
 			m = call_render_line_prev(focus, mark_dup(start, 0),
@@ -1055,16 +1075,21 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 		}
 		if (lines_above > 0 && lines_below > 0) {
 			int consume = (lines_above > lines_below ? lines_below : lines_above) * 2;
+			int above, below;
 			if (consume > (p->h - rl->header_lines) - y)
 				consume = (p->h - rl->header_lines) - y;
 			if (lines_above > lines_below) {
-				lines_above -= consume - (consume/2);
-				lines_below -= consume/2;
+				above = consume - (consume/2);
+				below = consume/2;
 			} else {
-				lines_below -= consume - (consume/2);
-				lines_above -= consume/2;
+				below = consume - (consume/2);
+				above = consume/2;
 			}
-			y += consume;
+			y += above + below;
+			lines_above -= above;
+			y_above += above;
+			lines_below -= below;
+			y_below += below;
 			/* We have just consumed all of one of lines_{above,below}
 			 * so they are no longer both > 0 */
 		}
@@ -1074,6 +1099,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 				consume = lines_above;
 			lines_above -= consume;
 			y += consume;
+			y_above += consume;
 		}
 		if (found_start && lines_below) {
 			int consume = p->h - rl->header_lines - y;
@@ -1081,6 +1107,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 				consume = lines_below;
 			lines_below -= consume;
 			y += consume;
+			y_below += consume;
 		}
 	}
 	rl->skip_lines = lines_above;
@@ -1276,7 +1303,7 @@ DEF_CMD(render_lines_refresh)
 		m = vmark_new(focus, MARK_UNGROUPED);
 	if (!m)
 		return -1;
-	find_lines(m, p, focus);
+	find_lines(m, p, focus, NO_NUMERIC);
 	rl->lines = render(m, p, focus, &rl->cols);
 	rl->repositioned = 0;
 	call("render:reposition", focus,
@@ -1566,7 +1593,33 @@ DEF_CMD(render_lines_move_pos)
 	    mark_ordered(pm, bot) && !mark_same_pane(focus, pm, bot))
 		/* pos already displayed */
 		return 1;
-	find_lines(pm, p, focus);
+	find_lines(pm, p, focus, NO_NUMERIC);
+	pane_damaged(p, DAMAGED_VIEW);
+	rl->repositioned = 1;
+	return 1;
+}
+
+DEF_CMD(render_lines_view_line)
+{
+	struct pane *p = ci->home;
+	struct pane *focus = ci->focus;
+	struct rl_data *rl = p->data;
+	struct mark *pm = ci->mark;
+	struct mark *top;
+	int line = ci->numeric;
+
+	if (!pm)
+		return -1;
+	if (line == NO_NUMERIC)
+		return -1;
+
+	while ((top = vmark_first(focus, rl->typenum)) != NULL) {
+		free(top->mdata);
+		top->mdata = NULL;
+		mark_free(top);
+	}
+	rl->ignore_point = 0;
+	find_lines(pm, p, focus, line);
 	pane_damaged(p, DAMAGED_VIEW);
 	rl->repositioned = 1;
 	return 1;
@@ -1700,6 +1753,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Move-View-Small", &render_lines_move);
 	key_add(rl_map, "Move-View-Large", &render_lines_move);
 	key_add(rl_map, "Move-View-Pos", &render_lines_move_pos);
+	key_add(rl_map, "Move-View-Line", &render_lines_view_line);
 	key_add(rl_map, "Move-CursorXY", &render_lines_set_cursor);
 	key_add(rl_map, "Click-1", &render_lines_set_cursor);
 	key_add(rl_map, "Press-1", &render_lines_set_cursor);

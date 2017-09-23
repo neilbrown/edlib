@@ -286,6 +286,38 @@ REDEF_CMD(emacs_swap)
 	return ret;
 }
 
+DEF_CMD(emacs_recenter)
+{
+	int step = 0;
+	if (ci->numeric == NO_NUMERIC && (ci->extra & 2)) {
+		/* Repeated command - go to top, or bottom, or middle in order */
+		switch (ci->extra & 0xF000) {
+		default:
+		case 0: /* was center, go to top */
+			call("Move-View-Line", ci->focus, 1, ci->mark);
+			step = 0x1000;
+			break;
+		case 0x1000: /* was top, go to bottom */
+			call("Move-View-Line", ci->focus, -1, ci->mark);
+			step = 0x2000;
+			break;
+		case 0x2000: /* was bottom, go to middle */
+			call("Move-View-Line", ci->focus, 0, ci->mark);
+			step = 0;
+			break;
+		}
+	} else if (ci->numeric != NO_NUMERIC) {
+		/* Move point to display line N */
+		call("Move-View-Line", ci->focus, ci->numeric, ci->mark);
+	} else {
+		/* Move point to middle and refresh */
+		call("Move-View-Line", ci->focus, 0, ci->mark);
+		call("Display:refresh", ci->focus);
+	}
+	call("Mode:set-extra", ci->focus, 0, NULL, NULL, 2| step);
+	return 1;
+}
+
 REDEF_CMD(emacs_simple);
 REDEF_CMD(emacs_simple_neg);
 static struct simple_command {
@@ -304,7 +336,6 @@ static struct simple_command {
 	{CMD(emacs_simple), "Window:close", "emCX-Chr-0"},
 	{CMD(emacs_simple), "Window:scale-relative", "emCX-C-Chr-="},
 	{CMD(emacs_simple_neg), "Window:scale-relative", "emCX-C-Chr--"},
-	{CMD(emacs_simple), "Display:refresh", "C-Chr-L"},
 	{CMD(emacs_simple), "Display:new", "emCX5-Chr-2"},
 	{CMD(emacs_simple), "Abort", "C-Chr-G"},
 	{CMD(emacs_simple), "NOP", "M-Chr-G"},
@@ -1166,6 +1197,8 @@ static void emacs_init(void)
 
 	key_add(m, "C-Chr-_", &emacs_undo);
 	key_add(m, "M-C-Chr-_", &emacs_redo);
+
+	key_add(m, "C-Chr-L", &emacs_recenter);
 
 	key_add(m, "emCX-C-Chr-F", &emacs_findfile);
 	key_add(m, "emCX4-C-Chr-F", &emacs_findfile);
