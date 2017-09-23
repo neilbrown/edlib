@@ -18,8 +18,11 @@
 #include <event.h>
 #include "core.h"
 
-static struct event_base *base;
-static struct list_head event_list;
+struct event_info {
+	struct event_base *base;
+	struct list_head event_list;
+	struct command read, signal, timer, run, deactivate, free;
+};
 
 struct evt {
 	struct event *l safe;
@@ -66,6 +69,7 @@ static void call_timeout_event(int thing, short sev, void *evv)
 
 DEF_CMD(libevent_read)
 {
+	struct event_info *ei = container_of(ci->comm, struct event_info, read);
 	struct evt *ev;
 
 	if (!ci->comm2)
@@ -76,7 +80,7 @@ DEF_CMD(libevent_read)
 	 * Presumably call_event() is now running and will clean up
 	 * soon.
 	 */
-	list_for_each_entry(ev, &event_list, lst)
+	list_for_each_entry(ev, &ei->event_list, lst)
 		if (ci->numeric >= 0 && ev->fd == ci->numeric) {
 			event_del(ev->l);
 			ev->fd = -1;
@@ -84,21 +88,22 @@ DEF_CMD(libevent_read)
 
 	ev = malloc(sizeof(*ev));
 
-	if (!base)
-		base = event_base_new();
+	if (!ei->base)
+		ei->base = event_base_new();
 
-	ev->l = safe_cast event_new(base, ci->numeric, EV_READ|EV_PERSIST,
+	ev->l = safe_cast event_new(ei->base, ci->numeric, EV_READ|EV_PERSIST,
 				    call_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
 	ev->fd = ci->numeric;
-	list_add(&ev->lst, &event_list);
+	list_add(&ev->lst, &ei->event_list);
 	event_add(ev->l, NULL);
 	return 1;
 }
 
 DEF_CMD(libevent_signal)
 {
+	struct event_info *ei = container_of(ci->comm, struct event_info, signal);
 	struct evt *ev;
 
 	if (!ci->comm2)
@@ -106,21 +111,22 @@ DEF_CMD(libevent_signal)
 
 	ev = malloc(sizeof(*ev));
 
-	if (!base)
-		base = event_base_new();
+	if (!ei->base)
+		ei->base = event_base_new();
 
-	ev->l = safe_cast event_new(base, ci->numeric, EV_SIGNAL|EV_PERSIST,
+	ev->l = safe_cast event_new(ei->base, ci->numeric, EV_SIGNAL|EV_PERSIST,
 				    call_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
 	ev->fd = -1;
-	list_add(&ev->lst, &event_list);
+	list_add(&ev->lst, &ei->event_list);
 	event_add(ev->l, NULL);
 	return 1;
 }
 
 DEF_CMD(libevent_timer)
 {
+	struct event_info *ei = container_of(ci->comm, struct event_info, timer);
 	struct evt *ev;
 	struct timeval tv;
 
@@ -129,16 +135,16 @@ DEF_CMD(libevent_timer)
 
 	ev = malloc(sizeof(*ev));
 
-	if (!base)
-		base = event_base_new();
+	if (!ei->base)
+		ei->base = event_base_new();
 
-	ev->l = safe_cast event_new(base, -1, 0,
+	ev->l = safe_cast event_new(ei->base, -1, 0,
 				    call_timeout_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
 	ev->seconds = ci->numeric;
 	ev->fd = -1;
-	list_add(&ev->lst, &event_list);
+	list_add(&ev->lst, &ei->event_list);
 	tv.tv_sec = ev->seconds;
 	tv.tv_usec = 0;
 	event_add(ev->l, &tv);
@@ -147,15 +153,17 @@ DEF_CMD(libevent_timer)
 
 DEF_CMD(libevent_run)
 {
-	struct event_base *b = base;
+	struct event_info *ei = container_of(ci->comm, struct event_info, run);
+	struct event_base *b = ei->base;
+
 	if (!b)
 		return 0;
 
 	event_base_loop(b, EVLOOP_ONCE);
-	if (base == b)
+	if (ei->base == b)
 		return 1;
-	while (!list_empty(&event_list)) {
-		struct evt *ev = list_first_entry(&event_list, struct evt, lst);
+	while (!list_empty(&ei->event_list)) {
+		struct evt *ev = list_first_entry(&ei->event_list, struct evt, lst);
 		list_del(&ev->lst);
 		event_del(ev->l);
 		event_free(ev->l);
@@ -168,7 +176,8 @@ DEF_CMD(libevent_run)
 
 DEF_CMD(libevent_deactivate)
 {
-	base = NULL;
+	struct event_info *ei = container_of(ci->comm, struct event_info, deactivate);
+	ei->base = NULL;
 	return 1;
 }
 
@@ -179,8 +188,9 @@ DEF_CMD(libevent_free)
 	 */
 	struct evt *ev;
 	struct list_head *tmp;
+	struct event_info *ei = container_of(ci->comm, struct event_info, free);
 
-	list_for_each_entry_safe(ev, tmp, &event_list, lst)
+	list_for_each_entry_safe(ev, tmp, &ei->event_list, lst)
 		if (ev->home == ci->focus &&
 		    (ci->comm2 == NULL || ev->comm == ci->comm2)) {
 			event_del(ev->l);
@@ -193,26 +203,35 @@ DEF_CMD(libevent_free)
 
 DEF_CMD(libevent_activate)
 {
+	struct event_info *ei = calloc(1, sizeof(*ei));
+
+	INIT_LIST_HEAD(&ei->event_list);
+	ei->read = libevent_read;
+	ei->signal = libevent_signal;
+	ei->timer = libevent_timer;
+	ei->run = libevent_run;
+	ei->deactivate = libevent_deactivate;
+	ei->free = libevent_free;
+
 	/* These are defaults, so make them sort late */
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:read-zz",
-		  &libevent_read);
+		  &ei->read);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:signal-zz",
-		  &libevent_signal);
+		  &ei->signal);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:timer-zz",
-		  &libevent_timer);
+		  &ei->timer);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:run-zz",
-		  &libevent_run);
+		  &ei->run);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:deactivate-zz",
-		  &libevent_deactivate);
+		  &ei->deactivate);
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:free-zz",
-		  &libevent_free);
+		  &ei->free);
 
 	return 1;
 }
 
 void edlib_init(struct pane *ed safe)
 {
-	INIT_LIST_HEAD(&event_list);
 	call_comm("global-set-command", ed, 0, NULL, "attach-libevent",
 		  &libevent_activate);
 }
