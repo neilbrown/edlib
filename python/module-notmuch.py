@@ -1163,6 +1163,26 @@ class notmuch_list(edlib.Doc):
 
         return ret + "> "
 
+    def cmp1(self, a, b):
+        if a == b:
+            return False
+        if a < 0:
+            # a is bigger, so not ordered
+            return False
+        if b < 0:
+            return True
+        return a < b
+
+    def pairs_ordered(self, p1, p2):
+        # True if not equal and p2 is later
+        if p1 == p2:
+            return False
+        if p1[0] == p2[0]:
+            return self.cmp1(p1[1], p2[1])
+        else:
+            return self.cmp1(p1[0], p2[0])
+
+
     def handle(self, key, mark, mark2, numeric, extra, focus, xy, str, str2, comm2, **a):
         if key == "Notify:Tag":
             if str2:
@@ -1216,7 +1236,7 @@ class notmuch_list(edlib.Doc):
                     target = None
                     while m2:
                         i3,j3,moved3,pos3 = self.pos_index(m2.pos, [str2], str2 and xy[0])
-                        if (i3,j3) >= (i2,j2):
+                        if self.pairs_ordered((i2,j2), (i3,j3)):
                             break
                         target = m2
                         m2 = m2.next_any()
@@ -1232,7 +1252,7 @@ class notmuch_list(edlib.Doc):
                         target = None
                         while m2:
                             i3,j3,moved3,pos3 = self.pos_index(m2.pos, [str2], str2 and xy[0])
-                            if (i3,j3) <= (i2,j2):
+                            if self.pairs_ordered((i3,j3), (i2,j2)):
                                 break
                             target = m2
                             m2 = m2.prev_any()
