@@ -787,7 +787,7 @@ DEF_CMD(emacs_shell)
 	p = call_pane("doc:attach", doc);
 	if (!p)
 		return -1;
-	call_home(p, "doc:assign", doc);
+	home_call(p, "doc:assign", doc);
 	call_pane("attach-shellcmd", p, 0, NULL, ci->str, 0, NULL, path);
 	doc_attach_view(par, doc, "default:viewer");
 	return 1;

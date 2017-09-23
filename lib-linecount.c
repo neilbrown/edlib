@@ -256,8 +256,8 @@ DEF_CMD(count_lines)
 		cli = calloc(1, sizeof(*cli));
 		cli->view_num = doc_add_view(ci->focus);
 		p = pane_register(NULL, 0, &handle_count_lines, cli, NULL);
-		call_home(ci->focus, "Request:Notify:doc:Replace", p);
-		call_home(ci->focus, "Request:Notify:doc:CountLines", p);
+		home_call(ci->focus, "Request:Notify:doc:Replace", p);
+		home_call(ci->focus, "Request:Notify:doc:CountLines", p);
 		call("Notify:doc:CountLines", ci->focus, 1, ci->mark);
 	}
 	if (ci->mark)

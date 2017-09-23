@@ -70,7 +70,7 @@ DEF_CMD(crop_handle)
 		return 0;
 
 	if (strcmp(ci->key, "doc:write-file") == 0)
-		return call_home(p, ci->key, ci->focus, ci->numeric,
+		return home_call(p, ci->key, ci->focus, ci->numeric,
 				 ci->mark ?: cd->start,
 				 ci->str, ci->extra,
 				 ci->mark2 ?: cd->end, ci->str2,

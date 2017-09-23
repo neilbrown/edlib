@@ -221,7 +221,7 @@ DEF_CMD(mp_same)
 			 * Assume part is not empty...
 			 */
 			return 2;
-		return call_home(mpi->parts[ci->mark->ref.docnum].pane,
+		return home_call(mpi->parts[ci->mark->ref.docnum].pane,
 				 "doc:mark-same", ci->focus, 0, d1.m, NULL,
 				 0, d2.m);
 	}
@@ -257,7 +257,7 @@ DEF_CMD(mp_step)
 	    !mpi->parts[m->ref.docnum].visible)
 		ret = -1;
 	else
-		ret = call_home(mpi->parts[m->ref.docnum].pane,
+		ret = home_call(mpi->parts[m->ref.docnum].pane,
 				ci->key, ci->focus, ci->numeric, m1, ci->str,
 				ci->extra, NULL, ci->str2, ci->comm2);
 	while (ret == CHAR_RET(WEOF) || ret == -1) {
@@ -285,7 +285,7 @@ DEF_CMD(mp_step)
 		    !mpi->parts[m->ref.docnum].visible)
 			ret = -1;
 		else
-			ret = call_home(mpi->parts[m->ref.docnum].pane,
+			ret = home_call(mpi->parts[m->ref.docnum].pane,
 					ci->key, ci->focus, ci->numeric, m1, ci->str,
 					ci->extra, NULL, ci->str2, ci->comm2);
 	}
@@ -368,7 +368,7 @@ DEF_CMD(mp_attr)
 		      (d > ci->mark->ref.docnum), m1);
 	}
 
-	ret = call_home(mpi->parts[d].pane,
+	ret = home_call(mpi->parts[d].pane,
 			ci->key, ci->focus, ci->numeric, m1, ci->str,
 			ci->extra, NULL, ci->str2, ci->comm2);
 	if (d != ci->mark->ref.docnum)
@@ -479,7 +479,7 @@ DEF_CMD(mp_add)
 		change_part(mpi, ci->mark, n, 0);
 
 	pane_add_notify(ci->home, ci->focus, "Notify:Close");
-	call_home(ci->focus, "Request:Notify:doc:viewers", ci->home);
+	home_call(ci->focus, "Request:Notify:doc:viewers", ci->home);
 
 	return 1;
 }

@@ -478,28 +478,28 @@ static inline void doc_del_view(struct pane *p safe, int num)
  * end of 'call'.  Often enough it has an important place, so have a set of
  * macros with 'home' first
  */
-#define call_home(...) VFUNC(call_home, __VA_ARGS__)
-#define call_home12(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y) \
+#define home_call(...) VFUNC(home_call, __VA_ARGS__)
+#define home_call12(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y) \
 	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home)
-#define call_home10(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2) \
+#define home_call10(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2) \
 	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, 0, 0, home)
-#define call_home9(home, key, focus, numeric, mark, str, extra, mark2, str2) \
+#define home_call9(home, key, focus, numeric, mark, str, extra, mark2, str2) \
 	do_call(key, focus, numeric, mark, str, extra, mark2, str2, NULL, 0, 0, home)
-#define call_home8(home, key, focus, numeric, mark, str, extra, mark2) \
+#define home_call8(home, key, focus, numeric, mark, str, extra, mark2) \
 	do_call(key, focus, numeric, mark, str, extra, mark2, NULL, NULL, 0, 0, home)
-#define call_home7(home, key, focus, numeric, mark, str, extra) \
+#define home_call7(home, key, focus, numeric, mark, str, extra) \
 	do_call(key, focus, numeric, mark, str, extra, NULL, NULL, NULL, 0, 0, home)
-#define call_home6(home, key, focus, numeric, mark, str) \
+#define home_call6(home, key, focus, numeric, mark, str) \
 	do_call(key, focus, numeric, mark, str, 0, NULL, NULL, NULL, 0, 0, home)
-#define call_home5(home, key, focus, numeric, mark) \
+#define home_call5(home, key, focus, numeric, mark) \
 	do_call(key, focus, numeric, mark, NULL, 0, NULL, NULL, NULL, 0, 0, home)
-#define call_home4(home, key, focus, numeric) \
+#define home_call4(home, key, focus, numeric) \
 	do_call(key, focus, numeric, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, home)
-#define call_home3(home, key, focus) \
+#define home_call3(home, key, focus) \
 	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, home)
 
 /* comm2 is a bit like 'home' - often irrelevant, sometime important.
- * The *last* arg is always comm2 (unlike first for home in call_home)
+ * The *last* arg is always comm2 (unlike first for home in home_call)
  */
 #define call_comm(...) VFUNC(call_comm, __VA_ARGS__)
 #define call_comm11(key, focus, numeric, mark, str, extra, mark2, str2, x, y, comm2) \
@@ -575,7 +575,7 @@ static inline int do_comm_call(struct command *comm,
 	return ci.comm->func(&ci);
 }
 
-/* pane_call() is a cross between comm_call and call_home.  The home pane is
+/* pane_call() is a cross between comm_call and home_call.  The home pane is
  * given first, and home->handle is explicitly called.
  */
 #define pane_call(...) VFUNC(pane_call, __VA_ARGS__)

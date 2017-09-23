@@ -581,7 +581,7 @@ DEF_CMD(doc_do_revisit)
 	 */
 	if (!ci->home->parent)
 		return -1;
-	return call_home(ci->home->parent, ci->key, ci->home, ci->numeric, ci->mark);
+	return home_call(ci->home->parent, ci->key, ci->home, ci->numeric, ci->mark);
 }
 
 DEF_CMD(doc_mymark)
@@ -772,7 +772,7 @@ DEF_CMD(doc_handle)
 	}
 
 	if (strcmp(ci->key, "Replace") == 0) {
-		return call_home(dd->doc, "doc:replace", ci->focus, 1, ci->mark, ci->str,
+		return home_call(dd->doc, "doc:replace", ci->focus, 1, ci->mark, ci->str,
 				 ci->extra, dd->point);
 	}
 
@@ -797,7 +797,7 @@ DEF_CMD(doc_handle)
 	    strncmp(ci->key, "Notify:doc:", 11) != 0)
 		/* doesn't get sent to the doc */
 		return 0;
-	return call_home(dd->doc, ci->key, ci->focus, ci->numeric,
+	return home_call(dd->doc, ci->key, ci->focus, ci->numeric,
 			 ci->mark ?: dd->point, ci->str,
 			 ci->extra, ci->mark2, ci->str2,
 			 ci->comm2, ci->x, ci->y);
@@ -847,7 +847,7 @@ struct pane *doc_new(struct pane *p safe, char *type, struct pane *parent)
 	snprintf(buf, sizeof(buf), "attach-doc-%s", type);
 	np = call_pane(buf, p);
 	if (np && parent)
-		call_home(np, "doc:set-parent", parent);
+		home_call(np, "doc:set-parent", parent);
 	return np;
 }
 

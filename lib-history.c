@@ -139,7 +139,7 @@ DEF_CMD(history_attach)
 	hi->history = call_pane("doc:attach", p);
 	if (!hi->history)
 		return 0;
-	call_home(hi->history, "doc:assign", p);
+	home_call(hi->history, "doc:assign", p);
 	call("Move-File", hi->history, 1);
 	buf_init(&hi->search);
 	p = pane_register(ci->focus, 0, &history_handle, hi, NULL);

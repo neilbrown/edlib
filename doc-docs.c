@@ -108,7 +108,7 @@ static void doc_save(struct pane *p safe, struct pane *focus safe)
 		call("Message", focus, 0, NULL,
 		     "File not modified - no need to save.");
 	else
-		call_home(p, "doc:save-file", focus);
+		home_call(p, "doc:save-file", focus);
 }
 
 static void check_name(struct docs *docs safe, struct pane *pane safe)
@@ -384,8 +384,8 @@ DEF_CMD(docs_callback)
 		if (p == doc->doc.home)
 			/* The docs doc is attached separately */
 			return 0;
-		call_home(p, "doc:set-parent", doc->collection);
-		call_home(p, "Request:Notify:doc:status-changed", doc->collection);
+		home_call(p, "doc:set-parent", doc->collection);
+		home_call(p, "Request:Notify:doc:status-changed", doc->collection);
 		if (p->parent)
 			doc_checkname(p, doc, ci->numeric);
 		return 0;
@@ -831,7 +831,7 @@ DEF_CMD(attach_docs)
 	call_comm("global-set-command", ci->home, 0, NULL,
 		  "doc:appeared-docs-register", &doc->callback);
 
-	call_home(p, "doc:set-parent", doc->collection);
+	home_call(p, "doc:set-parent", doc->collection);
 
 	return comm_call(ci->comm2, "callback:doc", doc->doc.home);
 }
