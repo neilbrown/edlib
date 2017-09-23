@@ -66,8 +66,11 @@ class EdDisplay(gtk.Window):
             return True
 
         if key == "pane-clear":
-            if str2 is not None:
-                fg, bg = self.get_colours(str2)
+            attr = str2
+            if attr is None:
+                attr = str
+            if attr is not None:
+                fg, bg = self.get_colours(attr)
             else:
                 fg, bg = self.get_colours("bg:white")
             pm = self.get_pixmap(focus)

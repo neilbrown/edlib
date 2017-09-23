@@ -125,7 +125,7 @@ DEF_CMD(messageline_line_handle)
 	struct mlinfo *mli = ci->home->data;
 
 	if (strcmp(ci->key, "Refresh") == 0) {
-		pane_clear(mli->line, "bg:white");
+		call("pane-clear", mli->line, 0, NULL, "bg:white");
 		if (mli->message)
 			pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
 				 0, 0 + mli->ascent);

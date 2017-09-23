@@ -400,7 +400,7 @@ DEF_CMD(ncurses_handle)
 		return 1;
 	}
 	if (strcmp(ci->key, "pane-clear") == 0) {
-		int attr = cvt_attrs(ci->str2);
+		int attr = cvt_attrs(ci->str2?:ci->str);
 		ncurses_clear(ci->focus, p, attr, 0, 0, 0, 0);
 		pane_damaged(p, DAMAGED_POSTORDER);
 		return 1;

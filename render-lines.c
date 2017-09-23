@@ -1161,21 +1161,21 @@ restart:
 	found_end = 0;
 	m = vmark_first(focus, rl->typenum);
 	if (!s)
-		pane_clear(focus, NULL);
+		call("pane-clear", focus);
 	else if (strncmp(s, "color:", 6) == 0) {
 		char *a = strdup(s);
 		strcpy(a, "bg:");
 		strcpy(a+3, s+6);
-		pane_clear(p, a);
+		call("pane-clear", p, 0, NULL, a);
 		free(a);
 	} else if (strncmp(s, "image:", 6) == 0) {
 		if (call("Draw:image", focus, 1, NULL, s+6, 0) <= 0)
-			pane_clear(p, NULL);
+			call("pane-clear", p);
 	} else if (strncmp(s, "call:", 5) == 0) {
 		if (home_call(focus, s+5, p, 0, m) <= 0)
-			pane_clear(p, NULL);
+			call("pane-clear", p);
 	} else
-		pane_clear(focus, NULL);
+		call("pane-clear", focus);
 
 	y = 0;
 	if (hdr) {

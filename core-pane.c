@@ -571,11 +571,6 @@ struct pane *render_attach(char *name, struct pane *parent safe)
 	return parent;
 }
 
-void pane_clear(struct pane *p safe, char *attrs)
-{
-	call("pane-clear", p, 0, NULL, NULL, 0, NULL, attrs);
-}
-
 DEF_CMD(attr_get_callback)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
