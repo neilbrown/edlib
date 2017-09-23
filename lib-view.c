@@ -191,9 +191,11 @@ DEF_CMD(view_handle)
 		int x = 0, y = 0;
 		int w = p->w;
 		int h = p->h;
-		int b = vd->border <= 0 ? 0 : vd->border;
+		int b;
 
-		vd->border = calc_border(ci->focus);
+		if (vd->border >= 0)
+			vd->border = calc_border(ci->focus);
+		b = vd->border < 0 ? 0 : vd->border;
 		if (vd->line_height < 0) {
 			struct call_return cr;
 			cr.c = text_size_callback;
