@@ -74,12 +74,23 @@ DEF_CMD(global_get_command)
 			 0, NULL, NULL, cm);
 }
 
+#ifdef edlib_init
+#include "O/mod-list-decl.h"
+typedef void init_func(struct pane *ed);
+static struct builtin {
+	char *name;
+	init_func *func;
+} builtins[]={
+	#include "O/mod-list.h"
+};
+#endif
 DEF_CMD(editor_load_module)
 {
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
 	char *name = ci->str;
 	char buf[PATH_MAX];
+#ifndef edlib_init
 	void *h;
 	void (*s)(struct pane *p);
 
@@ -97,6 +108,19 @@ DEF_CMD(editor_load_module)
 			return 1;
 		}
 	}
+#else
+	unsigned int i;
+
+	strcpy(buf, name);
+	for (i = 0; buf[i]; i++)
+		if (buf[i] == '-')
+			buf[i] = '_';
+	for (i = 0; i < sizeof(builtins)/sizeof(builtins[0]); i++)
+		if (strcmp(builtins[i].name, buf) == 0) {
+			builtins[i].func(ci->home);
+			return 1;
+		}
+#endif
 	return key_lookup_prefix(map, ci);
 }
 

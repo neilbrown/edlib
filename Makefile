@@ -34,7 +34,7 @@ endif
 CFLAGS=-g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG)
 #Doesn't work :-( -fsanitize=address
 
-all: dirs edlib checksym lib shared
+all: edlib checksym lib shared
 
 OBJ = O/edlib.o
 LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
@@ -61,23 +61,33 @@ O/display-ncurses.o : md5.h
 
 LIBS-lib-libevent = -levent
 
+O/core-editor-static.o : O/mod-list-decl.h O/mod-list.h
+
+STATICOBJ = $(SHOBJ:.o=-static.o) $(LIBOBJ:.o=-static.o)
+
 #
 # Pretty print - borrowed from 'sparse'
 #
 V	      = @
 Q	      = $(V:1=)
 QUIET_CC      = $(Q:@=@echo    '     CC       '$@;)
+QUIET_CCSTATIC= $(Q:@=@echo    '     CCstatic '$@;)
 QUIET_AR      = $(Q:@=@echo    '     AR       '$@;)
 QUIET_GEN     = $(Q:@=@echo    '     GEN      '$@;)
 QUIET_LINK    = $(Q:@=@echo    '     LINK     '$@;)
 QUIET_LIB     = $(Q:@=@echo    '     LIB      '$@;)
+QUIET_SCRIPT  = $(Q:@=@echo    '     SCRIPT   '$@;)
 
 SO = $(patsubst O/%.o,lib/edlib-%.so,$(SHOBJ))
 H = list.h core.h misc.h
 edlib: $(OBJ) lib/libedlib.so
-	$(QUIET_LINK)$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -Wl,--disable-new-dtags -o edlib $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
+	$(QUIET_LINK)$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -Wl,--disable-new-dtags -o $@ $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
 
-$(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) : $(H)
+edlib-static: $(OBJ) $(STATICOBJ)  $(XOBJ)
+	$(QUIET_LINK)$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LIBS-lang-python) $(LIBS-display-ncurses) $(LIBS-lib-libevent)
+
+
+$(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) $(STATICOBJ) : $(H) O/.exists
 
 $(OBJ) : O/%.o : %.c
 	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
@@ -88,6 +98,9 @@ $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
 	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
 	$(QUIET_SMATCH) -I/usr/include/x86_64-linux-gnu/ $(CPPFLAGS) $(INC-$*) $<
 	$(QUIET_CC)$(CC) -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
+
+$(STATICOBJ) : O/%-static.o : %.c
+	$(QUIET_CCSTATIC)$(CC) -Dedlib_init=$(subst -,_,$*)_edlib_init $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 .PHONY: TAGS
 TAGS :
@@ -101,10 +114,15 @@ TAGS :
 	fi
 	@rm -f .TAGS1 .TAGS2
 
-dirs :
-	@mkdir -p lib O
+O/.exists:
+	@mkdir -p O
+	@touch $@
+lib/.exists:
+	@mkdir -p lib
+	@touch $@
 
-lib: lib/libedlib.so
+.PHONY: lib
+lib: lib/libedlib.so lib/.exists
 lib/libedlib.so: $(LIBOBJ)
 	@mkdir -p lib
 	$(QUIET_CC)$(CC) -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ)
@@ -113,9 +131,14 @@ shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o O/rexel.o
 lib/edlib-mode-emacs.so : O/mode-emacs.o O/emacs-search.o
 
-$(SO) : lib/edlib-%.so : O/%.o
+$(SO) : lib/edlib-%.so : O/%.o lib/.exists
 	@mkdir -p lib
-	$(QUIET_LIB)$(CC) -shared -Wl,-soname,edlib-$*.so -o $@ $^ $(LIBS-$*)
+	$(QUIET_LIB)$(CC) -shared -Wl,-soname,edlib-$*.so -o $@ $< $(LIBS-$*)
+
+O/mod-list.h : Makefile
+	$(QUIET_SCRIPT)for file in $(patsubst O/%.o,%,$(subst -,_,$(SHOBJ))); do echo "{ \"$$file\", $${file}_edlib_init}," ; done | sort > $@
+O/mod-list-decl.h : Makefile
+	$(QUIET_SCRIPT)for file in $(patsubst O/%.o,%_edlib_init,$(subst -,_,$(SHOBJ))); do echo void $$file"(struct pane *ed);" ; done > $@
 
 CSRC= attr.c
 
@@ -129,6 +152,7 @@ test:
 checksym: edlib
 	@nm edlib  | awk '$$2 == "T" {print $$3}' | while read a; do grep $$a *.h > /dev/null || echo  $$a; done | grep -vE '^(_.*|main)$$' ||:
 
+.PHONY: clean
 clean:
-	rm -f edlib
+	rm -f edlib edlib-static
 	rm -rf lib O
