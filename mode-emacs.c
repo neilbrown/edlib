@@ -796,7 +796,7 @@ DEF_CMD(emacs_shell)
 DEF_CMD(emacs_meta)
 {
 	pane_set_mode(ci->focus, "M-");
-	pane_set_numeric(ci->focus, ci->numeric);
+	call("Mode:set-numeric", ci->focus, ci->numeric);
 	call("Mode:set-extra", ci->focus, ci->extra);
 	return 1;
 }
@@ -816,14 +816,14 @@ DEF_CMD(emacs_num)
 
 	rpt = rpt * 10 + *last - '0';
 
-	pane_set_numeric(ci->focus, neg ? -rpt : rpt);
+	call("Mode:set-numeric", ci->focus, neg ? -rpt : rpt);
 	call("Mode:set-extra", ci->focus, ci->extra);
 	return 1;
 }
 
 DEF_CMD(emacs_neg)
 {
-	pane_set_numeric(ci->focus, - ci->numeric);
+	call("Mode:set-numeric", ci->focus, - ci->numeric);
 	call("Mode:set-extra", ci->focus, ci->extra);
 	return 1;
 }

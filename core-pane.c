@@ -576,11 +576,6 @@ void pane_set_mode(struct pane *p safe, char *mode)
 	call("Mode:set-mode", p, 0, NULL, mode);
 }
 
-void pane_set_numeric(struct pane *p safe, int numeric)
-{
-	call("Mode:set-numeric", p, numeric);
-}
-
 void pane_clear(struct pane *p safe, char *attrs)
 {
 	call("pane-clear", p, 0, NULL, NULL, 0, NULL, attrs);
