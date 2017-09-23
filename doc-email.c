@@ -582,6 +582,7 @@ DEF_CMD(open_email)
 	p = doc_new(ci->home, "multipart", ei->email);
 	if (!p)
 		goto out;
+	call("doc:set:autoclose", p, 1);
 	attr_set_str(&doc->attrs, "email:actions", "hide");
 	home_call(p, "multipart-add", doc);
 	home_call(p, "multipart-add", ei->spacer);
