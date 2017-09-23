@@ -1705,6 +1705,7 @@ DEF_CMD(render_lines_notify_replace)
 
 	if (!ci->mark /* FIXME redundant*/ || !start) {
 		pane_damaged(p, DAMAGED_VIEW);
+		pane_damaged(p, DAMAGED_CONTENT);
 		return 1;
 	}
 
