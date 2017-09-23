@@ -308,8 +308,8 @@ REDEF_CMD(next_evt)
 		pane_close(p);
 		return 1;
 	case DoNil:
-		call_home(p, "event:read", p, 0, NULL, NULL, 0, NULL, NULL, &input_handle);
-		call_home(p, "event:signal", p, SIGWINCH, NULL, NULL, 0, NULL, NULL, &handle_winch);
+		call("event:read", p, 0, NULL, NULL, 0, NULL, NULL, &input_handle);
+		call("event:signal", p, SIGWINCH, NULL, NULL, 0, NULL, NULL, &handle_winch);
 		return 1;
 	}
 	parse_event(p);
@@ -502,8 +502,8 @@ static struct pane *ncurses_init(struct pane *ed)
 	getmaxyx(stdscr, p->h, p->w);
 
 	if (!prepare_recrep(p)) {
-		call_home(p, "event:read", p, 0, NULL, NULL, 0, NULL, NULL, &input_handle);
-		call_home(p, "event:signal", p, SIGWINCH, NULL, NULL, 0, NULL, NULL, &handle_winch);
+		call("event:read", p, 0, NULL, NULL, 0, NULL, NULL, &input_handle);
+		call("event:signal", p, SIGWINCH, NULL, NULL, 0, NULL, NULL, &handle_winch);
 	}
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;

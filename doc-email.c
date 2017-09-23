@@ -467,10 +467,10 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 
 		if (!hdr)
 			break;
-		call_home(hdr, "get-header", hdr, 0, NULL, "content-type",
-			  0, NULL, "cmd");
-		call_home(hdr, "get-header", hdr, 0, NULL, "content-transfer-encoding",
-			  0, NULL, "cmd");
+		call("get-header", hdr, 0, NULL, "content-type",
+		     0, NULL, "cmd");
+		call("get-header", hdr, 0, NULL, "content-transfer-encoding",
+		     0, NULL, "cmd");
 		ptype = attr_find(hdr->attrs, "rfc822-content-type");
 		pxfer = attr_find(hdr->attrs, "rfc822-content-transfer-encoding");
 
@@ -567,9 +567,9 @@ DEF_CMD(open_email)
 	call_home(h2, "get-header", doc, 0, point, "To", 0, NULL, "list");
 	call_home(h2, "get-header", doc, 0, point, "Cc", 0, NULL, "list");
 
-	call_home(h2, "get-header", h2, 0, NULL, "MIME-Version", 0, NULL, "cmd");
-	call_home(h2, "get-header", h2, 0, NULL, "content-type", 0, NULL, "cmd");
-	call_home(h2, "get-header", h2, 0, NULL, "content-transfer-encoding", 0, NULL, "cmd");
+	call("get-header", h2, 0, NULL, "MIME-Version", 0, NULL, "cmd");
+	call("get-header", h2, 0, NULL, "content-type", 0, NULL, "cmd");
+	call("get-header", h2, 0, NULL, "content-transfer-encoding", 0, NULL, "cmd");
 	mime = attr_find(h2->attrs, "rfc822-mime-version");
 	if (mime)
 		mime = get_822_word(mime);
