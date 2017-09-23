@@ -51,7 +51,6 @@ class ShellPane(edlib.Pane):
                     p.communicate()
                 except IOError:
                     pass
-            self.call("event:free")
             return 1
         if key == "Abort":
             if self.pipe is not None:
