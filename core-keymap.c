@@ -239,7 +239,7 @@ static int key_prefix(const struct cmd_info *ci safe)
 
 	pane_set_mode(ci->focus, m->name);
 	pane_set_numeric(ci->focus, ci->numeric);
-	pane_set_extra(ci->focus, ci->extra);
+	call("Mode:set-extra", ci->focus, ci->extra);
 	return 1;
 }
 

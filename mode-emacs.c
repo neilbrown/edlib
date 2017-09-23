@@ -130,7 +130,7 @@ REDEF_CMD(emacs_delete)
 	}
 	ret = call("Replace", ci->focus, 1, m, NULL, !ci->extra);
 	mark_free(m);
-	pane_set_extra(ci->focus, 1);
+	call("Mode:set-extra", ci->focus, 1);
 
 	return ret;
 }
@@ -207,7 +207,7 @@ REDEF_CMD(emacs_case)
 					call(mv->type+1, ci->focus, dir, ci->mark);
 			}
 			free(str);
-			pane_set_extra(ci->focus, 1);
+			call("Mode:set-extra", ci->focus, 1);
 		}
 		mark_free(m);
 		cnt -= 1;
@@ -314,7 +314,7 @@ DEF_CMD(emacs_recenter)
 		call("Move-View-Line", ci->focus, 0, ci->mark);
 		call("Display:refresh", ci->focus);
 	}
-	call("Mode:set-extra", ci->focus, 0, NULL, NULL, 2| step);
+	call("Mode:set-extra", ci->focus, 2 | step);
 	return 1;
 }
 
@@ -389,7 +389,7 @@ DEF_CMD(emacs_insert)
 	/* Key is "Chr-X" - skip 4 bytes to get X */
 	str = ci->key + 4;
 	ret = call("Replace", ci->focus, 1, ci->mark, str, !ci->extra);
-	pane_set_extra(ci->focus, 1);
+	call("Mode:set-extra", ci->focus, 1);
 
 	return ret;
 }
@@ -435,7 +435,7 @@ DEF_CMD(emacs_insert_other)
 		mark_to_mark(ci->mark, m);
 		mark_free(m);
 	}
-	pane_set_extra(ci->focus, 0); /* A newline starts a new undo */
+	call("Mode:set-extra", ci->focus, 0); /* A newline starts a new undo */
 	return ret;
 }
 
@@ -797,7 +797,7 @@ DEF_CMD(emacs_meta)
 {
 	pane_set_mode(ci->focus, "M-");
 	pane_set_numeric(ci->focus, ci->numeric);
-	pane_set_extra(ci->focus, ci->extra);
+	call("Mode:set-extra", ci->focus, ci->extra);
 	return 1;
 }
 
@@ -817,14 +817,14 @@ DEF_CMD(emacs_num)
 	rpt = rpt * 10 + *last - '0';
 
 	pane_set_numeric(ci->focus, neg ? -rpt : rpt);
-	pane_set_extra(ci->focus, ci->extra);
+	call("Mode:set-extra", ci->focus, ci->extra);
 	return 1;
 }
 
 DEF_CMD(emacs_neg)
 {
 	pane_set_numeric(ci->focus, - ci->numeric);
-	pane_set_extra(ci->focus, ci->extra);
+	call("Mode:set-extra", ci->focus, ci->extra);
 	return 1;
 }
 

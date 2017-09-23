@@ -41,7 +41,7 @@ DEF_CMD(set_extra)
 {
 	struct input_mode *im = ci->home->data;
 
-	im->extra = ci->extra;
+	im->extra = ci->numeric;
 	return 1;
 }
 
