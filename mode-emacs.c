@@ -795,7 +795,7 @@ DEF_CMD(emacs_shell)
 
 DEF_CMD(emacs_meta)
 {
-	pane_set_mode(ci->focus, "M-");
+	call("Mode:set-mode", ci->focus, 0, NULL, "M-");
 	call("Mode:set-numeric", ci->focus, ci->numeric);
 	call("Mode:set-extra", ci->focus, ci->extra);
 	return 1;

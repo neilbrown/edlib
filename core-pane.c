@@ -571,11 +571,6 @@ struct pane *render_attach(char *name, struct pane *parent safe)
 	return parent;
 }
 
-void pane_set_mode(struct pane *p safe, char *mode)
-{
-	call("Mode:set-mode", p, 0, NULL, mode);
-}
-
 void pane_clear(struct pane *p safe, char *attrs)
 {
 	call("pane-clear", p, 0, NULL, NULL, 0, NULL, attrs);
