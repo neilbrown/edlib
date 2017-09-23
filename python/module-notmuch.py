@@ -86,6 +86,8 @@ class searches:
         self.count = {}
         self.unread = {}
         self.new = {}
+        self.todo = []
+        self.p = None
 
         if 'NOTMUCH_CONFIG' in os.environ:
             self.path = os.environ['NOTMUCH_CONFIG']
@@ -154,17 +156,29 @@ class searches:
             self.new[i] = q.count_messages()
 
     def update(self, pane, cb):
-        self.todo = [] + self.current
+        for i in self.current:
+            if i not in self.todo:
+                self.todo.append(i)
         self.pane = pane
         self.cb = cb
-        return self.update_one()
+        if self.p is None:
+            return self.update_next()
+        return False
 
-    def update_one(self):
+    def update_one(self, search, pane, cb):
+        self.todo.insert(0, search)
+        self.pane = pane
+        self.cb = cb
+        if self.p is None:
+            self.update_next()
+
+    def update_next(self):
         if not self.todo:
             self.pane = None
             self.cb = None
             return False
-        n = self.todo[0]
+        n = self.todo.pop(0)
+        self.todoing = n
         # HACK WARNING .bin and /dev/null
         self.p = Popen("/usr/bin/notmuch.bin count --batch", shell=True, stdin=PIPE,
                        stdout = PIPE, stderr = open("/dev/null", 'w'))
@@ -176,9 +190,9 @@ class searches:
         return True
 
     def updated(self, *a):
-        if not self.todo:
+        if not self.todoing:
             return False
-        n = self.todo.pop(0)
+        n = self.todoing
         try:
             c = self.p.stdout.readline()
             self.count[n] = int(c)
@@ -190,7 +204,7 @@ class searches:
             pass
         p = self.p
         self.p = None
-        more = self.update_one()
+        more = self.update_next()
         p.wait()
         return more
 
@@ -339,6 +353,10 @@ class notmuch_main(edlib.Doc):
                 self.update_next()
             return 1
 
+        if key == "doc:notmuch:update-one":
+            self.searches.update_one(str, self, self.updated)
+            return 1
+
         if key == "doc:notmuch:query":
             # note: this is a private document that doesn't
             # get registered in the global list
@@ -351,7 +369,7 @@ class notmuch_main(edlib.Doc):
                         nm = child
                         break
             if not nm:
-                nm = notmuch_list(self, q)
+                nm = notmuch_list(self, str, q)
                 nm.call("doc:set-name", str)
             if comm2:
                 comm2("callback", nm)
@@ -686,6 +704,12 @@ class notmuch_master_view(edlib.Pane):
                     self.query_pane.call("doc:notmuch:mark-seen")
                 p = self.query_pane
                 self.query_pane = None
+
+                sl = []
+                p.call("get-attr", "qname", 1, lambda key,**a:take('str',sl,a))
+                if sl:
+                    p.call("doc:notmuch:update-one", sl[0])
+
                 p.call("Window:close", "notmuch")
             else:
                 pl=[]
@@ -727,7 +751,14 @@ class notmuch_master_view(edlib.Pane):
                 p.call("Window:close", "notmuch")
             if self.query_pane:
                 self.query_pane.call("doc:notmuch:mark-seen")
+            if self.query_pane:
+                sl = []
+                self.query_pane.call("get-attr", "qname", 1, lambda key,**a:take('str',sl,a))
+                if sl:
+                    self.list_pane.call("doc:notmuch:update-one", sl[0])
+
             pl = []
+
             self.call("doc:notmuch:query", str,lambda key,**a:take('focus',pl,a))
             self.list_pane.call("OtherPane", "notmuch", "threads", 3,
                                     lambda key,**a:take('focus', pl, a))
@@ -851,10 +882,11 @@ def notmuch_mode(key, home, focus, **a):
 #   the thread are visible, but all are visible, including non-matching threads
 
 class notmuch_list(edlib.Doc):
-    def __init__(self, focus, query):
+    def __init__(self, focus, qname, query):
         edlib.Doc.__init__(self, focus, self.handle)
         self.db = notmuch_db()
         self.query = query
+        self['qname'] = qname
         self['query'] = query
         self.threadids = []
         self.threads = {}
