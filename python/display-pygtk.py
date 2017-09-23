@@ -435,12 +435,18 @@ def new_display(key, focus, comm2, **a):
     return 1
 
 class events:
-    def __init__(self):
+    def __init__(self, home):
         self.active = True
         self.events = {}
         self.ev_num = 0
+        self.home = edlib.Pane(home, self.handle)
+
+    def handle(self, key, focus, **a):
+        self.free("free", focus, None)
+        return 1
 
     def add_ev(self, home, comm):
+        self.home.add_notify(home, "Notify:Close")
         ev = self.ev_num
         self.events[ev] = [home, comm]
         self.ev_num += 1
@@ -527,7 +533,7 @@ def events_activate(home):
     global ev
     if ev:
         return 1
-    ev = events()
+    ev = events(home)
     home.call("global-set-command", home, "event:read-python", ev.read)
     home.call("global-set-command", home, "event:signal-python", ev.signal)
     home.call("global-set-command", home, "event:timer-python", ev.timer)
