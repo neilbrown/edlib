@@ -16,11 +16,13 @@
 
 #include <stdlib.h>
 #include <event.h>
+#include <string.h>
 #include "core.h"
 
 struct event_info {
 	struct event_base *base;
 	struct list_head event_list;
+	struct pane *home safe;
 	struct command read, signal, timer, run, deactivate, free;
 };
 
@@ -96,6 +98,7 @@ DEF_CMD(libevent_read)
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
 	ev->fd = ci->numeric;
+	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
 	event_add(ev->l, NULL);
 	return 1;
@@ -119,6 +122,7 @@ DEF_CMD(libevent_signal)
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
 	ev->fd = -1;
+	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
 	event_add(ev->l, NULL);
 	return 1;
@@ -144,6 +148,7 @@ DEF_CMD(libevent_timer)
 	ev->comm = command_get(ci->comm2);
 	ev->seconds = ci->numeric;
 	ev->fd = -1;
+	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
 	tv.tv_sec = ev->seconds;
 	tv.tv_usec = 0;
@@ -201,6 +206,17 @@ DEF_CMD(libevent_free)
 	return 1;
 }
 
+DEF_CMD(libevent_handle)
+{
+	struct event_info *ei = ci->home->data;
+
+	if (strcmp(ci->key, "Notify:Close") == 0) {
+		comm_call(&ei->free, "free", ci->focus);
+		return 1;
+	}
+	return 1;
+}
+
 DEF_CMD(libevent_activate)
 {
 	struct event_info *ei = calloc(1, sizeof(*ei));
@@ -212,6 +228,7 @@ DEF_CMD(libevent_activate)
 	ei->run = libevent_run;
 	ei->deactivate = libevent_deactivate;
 	ei->free = libevent_free;
+	ei->home = pane_register(ei->home, 0, &libevent_handle, ei, NULL);
 
 	/* These are defaults, so make them sort late */
 	call_comm("global-set-command", ci->focus, 0, NULL, "event:read-zz",
