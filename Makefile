@@ -133,7 +133,7 @@ lib/edlib-mode-emacs.so : O/mode-emacs.o O/emacs-search.o
 
 $(SO) : lib/edlib-%.so : O/%.o lib/.exists
 	@mkdir -p lib
-	$(QUIET_LIB)$(CC) -shared -Wl,-soname,edlib-$*.so -o $@ $< $(LIBS-$*)
+	$(QUIET_LIB)$(CC) -shared -Wl,-soname,edlib-$*.so -o $@ $(filter %.o,$^) $(LIBS-$*)
 
 O/mod-list.h : Makefile
 	$(QUIET_SCRIPT)for file in $(patsubst O/%.o,%,$(subst -,_,$(SHOBJ))); do echo "{ \"$$file\", $${file}_edlib_init}," ; done | sort > $@
