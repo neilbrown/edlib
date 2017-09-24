@@ -28,15 +28,6 @@ static void pane_str(struct pane *p safe, char *s, char *attr, int x, int y)
 	call("Draw:text", p, -1, NULL, s, 0, NULL, attr, NULL, x, y);
 }
 
-DEF_CMD(text_size_callback)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->x = ci->x;
-	cr->y = ci->y;
-	cr->i = ci->num2;
-	return 1;
-}
-
 DEF_CMD(messageline_handle)
 {
 	struct mlinfo *mli = ci->home->data;
@@ -77,12 +68,11 @@ DEF_CMD(messageline_handle)
 	}
 	if (strcmp(ci->key, "Refresh:size") == 0) {
 		if (mli->height == 0) {
-			struct call_return cr;
-			cr.c = text_size_callback;
-			call_comm("text-size", ci->home, -1, NULL,
-				  "M", 0, NULL, "bold", &cr.c);
+			struct call_return cr =
+				call_ret(all, "text-size", ci->home, -1, NULL, "M",
+					 0, NULL, "bold");
 			mli->height = cr.y;
-			mli->ascent = cr.i;
+			mli->ascent = cr.i2;
 		}
 
 		if (mli->hidden) {

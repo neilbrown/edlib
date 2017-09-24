@@ -669,10 +669,9 @@ struct pane *do_call_pane(char *key safe, struct pane *focus safe,
 			      .num = num, .mark = m, .str = str,
 			      .num2 = num2, .mark2 = m2, .str2 = str2,
 			      .x = x, .y = y };
-	struct call_return cr;
+	struct call_return cr = {};
 
 	cr.c = take_simple;
-	cr.p = NULL;
 	ci.comm2 = &cr.c;
 	if (!key_handle(&ci))
 		return NULL;
@@ -688,10 +687,9 @@ struct mark *do_call_mark(char *key safe, struct pane *focus safe,
 			      .num = num, .mark = m, .str = str,
 			      .num2 = num2, .mark2 = m2, .str2 = str2,
 			      .x = x, .y = y };
-	struct call_return cr;
+	struct call_return cr = {};
 
 	cr.c = take_simple;
-	cr.p = NULL;
 	ci.comm2 = &cr.c;
 	if (!key_handle(&ci))
 		return NULL;
@@ -707,14 +705,31 @@ struct mark *do_call_mark2(char *key safe, struct pane *focus safe,
 			      .num = num, .mark = m, .str = str,
 			      .num2 = num2, .mark2 = m2, .str2 = str2,
 			      .x = x, .y = y };
-	struct call_return cr;
+	struct call_return cr = {};
 
 	cr.c = take_simple;
-	cr.p = NULL;
 	ci.comm2 = &cr.c;
 	if (!key_handle(&ci))
 		return NULL;
 	return cr.m2;
+}
+
+struct call_return do_call_all(char *key safe, struct pane *focus safe,
+			       int num, struct mark *m, char *str,
+			       int num2, struct mark *m2, char *str2,
+			       int x, int y)
+{
+	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0,
+			      .num = num, .mark = m, .str = str,
+			      .num2 = num2, .mark2 = m2, .str2 = str2,
+			      .x = x, .y = y };
+	struct call_return cr = {};
+
+	cr.c = take_simple;
+	ci.comm2 = &cr.c;
+	cr.ret = key_handle(&ci);
+	memset(&cr.c, 0, sizeof(cr.c));
+	return cr;
 }
 
 char *do_call_str(char *key safe, struct pane *focus safe,
@@ -726,10 +741,9 @@ char *do_call_str(char *key safe, struct pane *focus safe,
 			      .num = num, .mark = m, .str = str,
 			      .num2 = num2, .mark2 = m2, .str2 = str2,
 			      .x = x, .y = y };
-	struct call_return cr;
+	struct call_return cr = {};
 
 	cr.c = take_str;
-	cr.p = NULL;
 	ci.comm2 = &cr.c;
 	if (key_handle(&ci) < 0) {
 		free(cr.s);

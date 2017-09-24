@@ -352,22 +352,7 @@ char *pane_mark_attr(struct pane *p safe, struct mark *m safe, bool forward, cha
 void pane_absxy(struct pane *p, int *x safe, int *y safe, int *w safe, int *h safe);
 void pane_relxy(struct pane *p, int *x safe, int *y safe);
 void pane_map_xy(struct pane *orig, struct pane *target, int *x safe, int *y safe);
-struct pane *do_call_pane(char *key safe, struct pane *focus safe,
-			  int num, struct mark *m, char *str,
-			  int num2, struct mark *m2, char *str2,
-			  int x, int y);
-struct mark *do_call_mark(char *key safe, struct pane *focus safe,
-			  int num, struct mark *m, char *str,
-			  int num2, struct mark *m2, char *str2,
-			  int x, int y);
-struct mark *do_call_mark2(char *key safe, struct pane *focus safe,
-			   int num, struct mark *m, char *str,
-			   int num2, struct mark *m2, char *str2,
-			   int x, int y);
-char *do_call_str(char *key safe, struct pane *focus safe,
-		  int num, struct mark *m, char *str,
-		  int num2, struct mark *m2, char *str2,
-		  int x, int y);
+
 struct xy pane_scale(struct pane *p safe);
 
 static inline int pane_attr_get_int(struct pane *p safe, char *key safe)
@@ -634,7 +619,28 @@ struct call_return {
 	int i, i2;
 	int x,y;
 	struct command *comm;
+	int ret;
 };
+struct pane *do_call_pane(char *key safe, struct pane *focus safe,
+			  int num, struct mark *m, char *str,
+			  int num2, struct mark *m2, char *str2,
+			  int x, int y);
+struct mark *do_call_mark(char *key safe, struct pane *focus safe,
+			  int num, struct mark *m, char *str,
+			  int num2, struct mark *m2, char *str2,
+			  int x, int y);
+struct mark *do_call_mark2(char *key safe, struct pane *focus safe,
+			   int num, struct mark *m, char *str,
+			   int num2, struct mark *m2, char *str2,
+			   int x, int y);
+char *do_call_str(char *key safe, struct pane *focus safe,
+		  int num, struct mark *m, char *str,
+		  int num2, struct mark *m2, char *str2,
+		  int x, int y);
+struct call_return do_call_all(char *key safe, struct pane *focus safe,
+			       int num, struct mark *m, char *str,
+			       int num2, struct mark *m2, char *str2,
+			       int x, int y);
 
 #define call_pane(...) VFUNC(call_pane, __VA_ARGS__)
 #define call_pane10(key, focus, num, mark, str, num2, mark2, str2, x, y) \

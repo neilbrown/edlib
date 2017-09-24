@@ -49,15 +49,6 @@ static void one_char(struct pane *p safe, char *s, char *attr, int x, int y)
 	call("Draw:text", p, -1, NULL, s, 0, NULL, attr, NULL, x, y);
 }
 
-DEF_CMD(text_size_callback)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->x = ci->x;
-	cr->y = ci->y;
-	cr->i = ci->num2;
-	return 1;
-}
-
 static int view_refresh(const struct cmd_info *ci safe)
 {
 	struct pane *p = ci->home;
@@ -197,17 +188,17 @@ DEF_CMD(view_handle)
 			vd->border = calc_border(ci->focus);
 		b = vd->border < 0 ? 0 : vd->border;
 		if (vd->line_height < 0) {
-			struct call_return cr;
-			cr.c = text_size_callback;
-			if (call_comm("text-size", ci->home, -1, NULL,
-				      "M", 0, NULL, "bold", &cr.c) == 0) {
+			struct call_return cr = call_ret(all, "text-size", ci->home,
+							 -1, NULL, "M",
+							 0, NULL, "bold");
+			if (cr.ret == 0) {
 				cr.x = cr.y =1;
-				cr.i = 0;
+				cr.i2 = 0;
 			}
 			vd->line_height = cr.y;
 			vd->border_height = cr.y;
 			vd->border_width = cr.x;
-			vd->ascent = cr.i;
+			vd->ascent = cr.i2;
 
 			if (h < vd->border_height * 3 &&
 			    (b & (BORDER_TOP|BORDER_BOT)) ==

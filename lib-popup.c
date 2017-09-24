@@ -34,22 +34,11 @@ struct popup_info {
 	char		*style safe;
 };
 
-DEF_CMD(text_size_callback)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->x = ci->x;
-	cr->y = ci->y;
-	cr->i = ci->num;
-	cr->i2 = ci->num2;
-	return 1;
-}
-
 static int line_height(struct pane *p safe)
 {
-	struct call_return cr;
-
-	cr.c = text_size_callback;
-	call_comm("text-size", p, -1, NULL, "x", 0, NULL, "", &cr.c);
+	struct call_return cr =
+		call_ret(all, "text-size", p, -1, NULL, "x",
+			 0, NULL, "");
 	return cr.y;
 }
 

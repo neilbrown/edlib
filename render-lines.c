@@ -103,16 +103,6 @@ struct rl_data {
 	int		cols; /* columns used for longest line */
 };
 
-DEF_CMD(text_size_callback)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->x = ci->x;
-	cr->y = ci->y;
-	cr->i = ci->num;
-	cr->i2 = ci->num2;
-	return 1;
-}
-
 struct render_list {
 	struct render_list *next;
 	char	*text_orig;
@@ -163,20 +153,22 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x 
 	}
 
 	rl = calloc(1, sizeof(*rl));
-	cr.c = text_size_callback;
-	call_comm("text-size", p, rmargin - *x, NULL, str, scale, NULL, attr, &cr.c);
+	cr = call_ret(all, "text-size", p, rmargin - *x, NULL, str,
+		      scale, NULL, attr);
 	max = cr.i;
 	if (max == 0 && ret == CURS) {
 		/* must already have CURS position. */
 		rl->curs = start;
 		ret = WRAP;
 		rmargin = p->w - margin;
-		call_comm("text-size", p, rmargin - *x, NULL, str, scale, NULL, attr, &cr.c);
+		cr = call_ret(all, "text-size", p, rmargin - *x, NULL, str,
+			      scale, NULL, attr);
 		max = cr.i;
 	}
 	if (max < len) {
 		str[max] = 0;
-		call_comm("text-size", p, rmargin - *x, NULL, str, scale, NULL, attr, &cr.c);
+		cr = call_ret(all, "text-size", p, rmargin - *x, NULL, str,
+			      scale, NULL, attr);
 	}
 
 	rl->text_orig = start;
@@ -299,9 +291,8 @@ static int flush_line(struct pane *p safe, int dodraw,
 
 	if (wrap_pos && last_rl &&
 	    (head = get_last_attr(last_rl->attr, "wrap-head"))) {
-		struct call_return cr = {};
-		cr.c = text_size_callback;
-		call_comm("text-size", p, p->w, NULL, head, scale, NULL, last_rl->attr, &cr.c);
+		struct call_return cr = call_ret(all, "text-size", p, p->w, NULL, head,
+						 scale, NULL, last_rl->attr);
 		rl = calloc(1, sizeof(*rl));
 		rl->text = head;
 		rl->attr = strdup(last_rl->attr); // FIXME underline,fg:blue ???
@@ -328,9 +319,8 @@ static int flush_line(struct pane *p safe, int dodraw,
 static void update_line_height_attr(struct pane *p safe, int *h safe, int *a safe,
 				    int *w, char *attr safe, char *str safe, int scale)
 {
-	struct call_return cr;
-	cr.c = text_size_callback;
-	call_comm("text-size", p, -1, NULL, str, scale, NULL, attr, &cr.c);
+	struct call_return cr = call_ret(all, "text-size", p, -1, NULL, str,
+					 scale, NULL, attr);
 	if (cr.y > *h)
 		*h = cr.y;
 	if (cr.i2 > *a)
@@ -461,10 +451,9 @@ static void find_cursor(struct render_list *rlst, struct pane *p safe, int cx,
 	if (rlst->x > cx)
 		*curspos = rlst->text_orig;
 	else {
-		struct call_return cr = {};
-		cr.c = text_size_callback;
-		call_comm("text-size", p, cx - rlst->x, NULL, rlst->text,
-			  scale, NULL, rlst->attr, &cr.c);
+		struct call_return cr = call_ret(all, "text-size", p,
+						 cx - rlst->x, NULL, rlst->text,
+						 scale, NULL, rlst->attr);
 		*curspos = rlst->text_orig + cr.i;
 	}
 	*cursattr = strdup(rlst->attr);
@@ -569,11 +558,9 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		int CX;
 
 		if (mwidth <= 0) {
-			struct call_return cr;
-			cr.c = text_size_callback;
-			cr.x = 0;
-			call_comm("text-size", p, -1, NULL, "M", 0, NULL,
-				  buf_final(&attr), &cr.c);
+			struct call_return cr = call_ret(all, "text-size", p,
+							 -1, NULL, "M",
+							 0, NULL, buf_final(&attr));
 			mwidth = cr.x;
 			if (mwidth <= 0)
 				mwidth = 1;
@@ -1208,10 +1195,9 @@ restart:
 				p->cx = -1;
 			if (!rl->do_wrap && p->cy >= 0 && p->cx < rl->prefix_len) {
 				if (mwidth < 0) {
-					struct call_return cr;
-					cr.c = text_size_callback;
-					call_comm("text-size", p, -1, NULL, "M", 0,
-						  NULL, "", &cr.c);
+					struct call_return cr = call_ret(all, "text-size", p,
+									 -1, NULL, "M",
+									 0,  NULL, "");
 					mwidth = cr.x;
 					if (mwidth <= 0)
 						mwidth = 1;
@@ -1233,10 +1219,9 @@ restart:
 			}
 			if (p->cx >= p->w && !rl->do_wrap) {
 				if (mwidth < 0) {
-					struct call_return cr;
-					cr.c = text_size_callback;
-					call_comm("text-size", p, -1, NULL, "M", 0,
-						  NULL, "", &cr.c);
+					struct call_return cr = call_ret(all, "text-size", p,
+									 -1, NULL, "M",
+									 0, NULL, "");
 					mwidth = cr.x;
 					if (mwidth <= 0)
 						mwidth = 1;
