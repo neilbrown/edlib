@@ -30,6 +30,9 @@ import time
 import fcntl
 
 class notmuch_db():
+    # This class is designed to be used with "with ... as" and provides
+    # locking within the body o the clause.
+
     def __init__(self):
         self.lock_path = os.environ["HOME"]+"/.notmuch-config"
         self.want_write = False
@@ -146,15 +149,6 @@ class searches:
         self.mtime = mtime
         return True
 
-    def old_update(self):
-        for i in self.current:
-            q = notmuch.Query(self.db, self.make_search(i, False))
-            self.count[i] = q.count_messages()
-            q = notmuch.Query(self.db, self.make_search(i, 'unread'))
-            self.unread[i] = q.count_messages()
-            q = notmuch.Query(self.db, self.make_search(i, 'new'))
-            self.new[i] = q.count_messages()
-
     def update(self, pane, cb):
         for i in self.current:
             if i not in self.todo:
@@ -166,6 +160,8 @@ class searches:
         return False
 
     def update_one(self, search, pane, cb):
+        if search in self.todo:
+            self.todo.remove(search)
         self.todo.insert(0, search)
         self.pane = pane
         self.cb = cb
@@ -259,6 +255,9 @@ class notmuch_main(edlib.Doc):
             return 1
 
         if key == "doc:revisit":
+            # Individual search-result documents are children of this
+            # document, and we don't want doc:revisit from them to escape
+            # to the global document list
             return 1
 
         if key == "doc:set-ref":
@@ -281,23 +280,23 @@ class notmuch_main(edlib.Doc):
             if forward and mark.offset < len(self.searches.current):
                 ret = '\n'
                 if move:
+                    o = mark.offset + 1
                     m2 = mark.next_any()
-                    while m2 and m2.offset <= mark.offset + 1:
+                    while m2 and m2.offset <= o:
                         target = m2
                         m2 = m2.next_any()
-                    o = mark.offset
                     mark.to_mark(target)
-                    mark.offset = o+1
+                    mark.offset = o
             if not forward and mark.offset > 0:
                 ret = '\n'
                 if move:
+                    o = mark.offset - 1
                     m2 = mark.prev_any()
-                    while m2 and m2.offset >= mark.offset - 1:
+                    while m2 and m2.offset >= o:
                         target = m2
                         m2 = m2.prev_any()
-                    o = mark.offset
                     mark.to_mark(target)
-                    mark.offset = o - 1
+                    mark.offset = o
             return ret
 
         if key == "doc:get-attr":
@@ -357,16 +356,16 @@ class notmuch_main(edlib.Doc):
             return 1
 
         if key == "doc:notmuch:query":
-            # note: this is a private document that doesn't
-            # get registered in the global list
+            # Find or create a search-result document as a
+            # child of this document - it remains private
+            # and doesn't get registered in the global list
             q = self.searches.make_search(str, None)
             nm = None
             it = self.children()
-            if it:
-                for child in it:
-                    if child("doc:notmuch:same-search", str, q) > 0:
-                        nm = child
-                        break
+            for child in it:
+                if child("doc:notmuch:same-search", str, q) == 1:
+                    nm = child
+                    break
             if not nm:
                 nm = notmuch_list(self, str, q)
                 nm.call("doc:set-name", str)
@@ -375,8 +374,8 @@ class notmuch_main(edlib.Doc):
             return 1
 
         if key == "doc:notmuch:byid":
-            # return a document for the email message,
-            # this is a global document
+            # Return a document for the email message.
+            # This is a global document.
             with self.db as db:
                 m = db.find_message(str)
                 fn = m.get_filename() + ""
@@ -396,7 +395,7 @@ class notmuch_main(edlib.Doc):
             return 1
 
         if key == "doc:notmuch:bythread:tags":
-            # return a string with tags of message
+            # return a string with tags of all messages in thread
             with self.db as db:
                 q = db.create_query("thread:%s" % str)
                 tg = []
@@ -411,6 +410,7 @@ class notmuch_main(edlib.Doc):
             return self.searches.maxlen + 1
 
         if key == "doc:notmuch:query-updated":
+            # A child search document has finished updating.
             self.update_next()
             return 1
 
@@ -434,6 +434,7 @@ class notmuch_main(edlib.Doc):
             tag = key[23:]
             with self.db.get_write() as db:
                 if str2:
+                    # remove just from 1 message
                     m = db.find_message(str2)
                     if m:
                         t = list(m.get_tags())
@@ -441,6 +442,7 @@ class notmuch_main(edlib.Doc):
                             m.remove_tag(tag)
                             self.notify("Notify:Tag", str, str2)
                 else:
+                    # remove from whole thread
                     q = db.create_query("thread:%s" % str)
                     changed = False
                     for t in q.search_threads():
@@ -533,14 +535,13 @@ def notmuch_doc(key, home, focus, comm2, **a):
 
 class notmuch_master_view(edlib.Pane):
     # This pane controls one visible instance of the notmuch application.
-    # It will eventually manage the size and position of the 3 panes
-    # and will provide common handling for keystrokes
+    # It manages the size and position of the 3 panes and provide common
+    # handling for some keystrokes.
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
-        self.maxlen = 0 # length of longest query name
+        self.maxlen = 0 # length of longest query name in list_pane
         self.list_pane = None
         self.query_pane = None
-        self.query = None
         self.message_pane = None
         pl = []
         self.call("attach-tile", "notmuch", "main", lambda key,**a:take('focus',pl,a))
@@ -573,7 +574,7 @@ class notmuch_master_view(edlib.Pane):
                 tile.call("Window:x+", "notmuch", w - tile.w)
         if self.query_pane and self.message_pane:
             # query_pane much be at least 4 lines, else 1/4 height
-            # but never more than half the height
+            # but never more than 1/2 the height
             pl = []
             self.query_pane.call("ThisPane", "notmuch", lambda key,**a:take('focus',pl,a))
             tile = pl[0]
@@ -733,7 +734,12 @@ class notmuch_master_view(edlib.Pane):
 
         if key == "Chr-o":
             # focus to next window
-            focus.call("Window:next", "notmuch", numeric)
+            focus.call("Window:next", "notmuch")
+            return 1
+
+        if key == "Chr-O":
+            # focus to prev window
+            focus.call("Window:prev", "notmuch")
             return 1
 
         if key == "Chr-g":
@@ -785,7 +791,7 @@ class notmuch_master_view(edlib.Pane):
             pl[-1].call("doc:assign", pl[0], "notmuch:message",
                         lambda key,**a:take('focus', pl, a))
 
-            # This still doesn't work: there are races: attaching a doc to
+            # FIXME This still doesn't work: there are races: attaching a doc to
             # the pane causes the current doc to be closed.  But the new doc
             # hasn't been anchored yet so if they are the same, we lose.
             # Need a better way to anchor a document.
@@ -813,7 +819,6 @@ class notmuch_main_view(edlib.Pane):
         self['background'] = 'color:#A0FFFF'
         self['line-format'] = '<%fmt>%count %+name</>'
         self.call("Request:Notify:doc:Replace")
-        self.maxlen = 0
         self.selected = None
 
     def handle(self, key, focus, mark, numeric, **a):
@@ -1270,10 +1275,7 @@ class notmuch_list(edlib.Doc):
             if not forward:
                 i,j,newpos = self.prev(i, j, [str2], str2 and xy[0])
 
-            if attr in ["message-id","thread-id"]:
-                val = None
-            else:
-                val = "["+attr+"]"
+            val = None
             if i >= 0 and j == -1 and self.threadids[i] != str2:
                 # report on thread, not message
                 tid = self.threadids[i]
@@ -1360,7 +1362,7 @@ class notmuch_list(edlib.Doc):
         if key == "doc:notmuch:same-search":
             if self.query == str2:
                 return 1
-            return 0
+            return 2
 
         if key == "doc:notmuch:query-refresh":
             self.load_update()
