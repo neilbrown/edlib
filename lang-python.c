@@ -533,11 +533,38 @@ static PyObject *pane_iter_next(PaneIter *self safe)
 	return ret;
 }
 
+struct pyret {
+	struct command comm;
+	PyObject *ret;
+};
+
+DEF_CMD(take_focus)
+{
+	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
+	struct pane *p = ci->focus;
+
+	if (!p)
+		return -1;
+	if (pr->ret)
+		return 0;
+	pr->ret = Pane_Frompane(ci->focus);
+	return 1;
+}
+
+static struct command *map_ret(char *ret safe)
+{
+	if (strcmp(ret, "focus") == 0)
+		return &take_focus;
+	return NULL;
+}
+
 static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 {
 	struct cmd_info ci = SAFE_CI;
 	int rv;
-	PyObject *s1, *s2;
+	PyObject *s1, *s2, *s3 = NULL;
+	PyObject *ret;
+	struct pyret pr;
 
 	if (!self->pane)
 		return NULL;
@@ -551,11 +578,45 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 		command_put(ci.comm2);
 		return NULL;
 	}
+	ret = kwds ? PyDict_GetItemString(kwds, "ret") : NULL ;
+	if (ret) {
+		char *rets;
+		struct command *c;
+		if (ci.comm2) {
+			PyErr_SetString(PyExc_TypeError, "ret= not permitted with comm2");
+			Py_XDECREF(s1); Py_XDECREF(s2);
+			command_put(ci.comm2);
+			return NULL;
+		}
+		if (!(PyUnicode_Check(ret) || PyString_Check(ret)) ||
+		    (rets = python_as_string(ret, &s3)) == NULL) {
+			PyErr_SetString(PyExc_TypeError, "ret= must be given a string");
+			Py_XDECREF(s1); Py_XDECREF(s2);
+			return NULL;
+		}
+		pr.ret = NULL;
+		c = map_ret(rets);
+		if (!c) {
+			PyErr_SetString(PyExc_TypeError, "ret= type not valid");
+			Py_XDECREF(s1); Py_XDECREF(s2); Py_XDECREF(s3);
+			return NULL;
+		}
+		pr.comm = *c;
+		ci.comm2 = &pr.comm;
+	}
 
 	rv = key_handle(&ci);
 
-	Py_XDECREF(s1); Py_XDECREF(s2);
+	Py_XDECREF(s1); Py_XDECREF(s2);Py_XDECREF(s3);
 	command_put(ci.comm2);
+	if (ret && rv > 0) {
+		if (pr.ret)
+			return pr.ret;
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	if (ret)
+		Py_XDECREF(pr.ret);
 	if (!rv) {
 		Py_INCREF(Py_None);
 		return Py_None;

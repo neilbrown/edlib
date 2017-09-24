@@ -379,11 +379,10 @@ class notmuch_main(edlib.Doc):
             with self.db as db:
                 m = db.find_message(str)
                 fn = m.get_filename() + ""
-            pl = []
-            focus.call("doc:open", "email:"+fn, -2, lambda key,**a:take('focus',pl,a))
-            if pl:
-                pl[0].call("doc:set-parent", self)
-                comm2("callback", pl[0])
+            doc = focus.call("doc:open", "email:"+fn, -2, ret='focus')
+            if doc:
+                doc.call("doc:set-parent", self)
+                comm2("callback", doc)
             return 1
 
         if key == "doc:notmuch:byid:tags":
@@ -532,11 +531,9 @@ class notmuch_master_view(edlib.Pane):
         self.list_pane = None
         self.query_pane = None
         self.message_pane = None
-        pl = []
-        self.call("attach-tile", "notmuch", "main", lambda key,**a:take('focus',pl,a))
-        p = pl[-1]
-        p.call("attach-view", lambda key,**a:take('focus',pl,a))
-        p = pl[-1]
+
+        p = self.call("attach-tile", "notmuch", "main", ret='focus')
+        p = p.call("attach-view", ret='focus')
         p = p.render_attach("format")
         p = notmuch_main_view(p)
         self.list_pane = p
@@ -549,9 +546,7 @@ class notmuch_master_view(edlib.Pane):
                 self.maxlen = self.call("doc:notmuch:search-maxlen")
                 if self.maxlen > 1:
                     self.maxlen -= 1
-            pl = []
-            self.list_pane.call("ThisPane", "notmuch", lambda key,**a:take('focus',pl,a))
-            tile = pl[0]
+            tile = self.list_pane.call("ThisPane", "notmuch", ret='focus')
             space = self.w
             ch,ln = tile.scale()
             max = 5 + 1 + self.maxlen + 1
@@ -564,9 +559,7 @@ class notmuch_master_view(edlib.Pane):
         if self.query_pane and self.message_pane:
             # query_pane much be at least 4 lines, else 1/4 height
             # but never more than 1/2 the height
-            pl = []
-            self.query_pane.call("ThisPane", "notmuch", lambda key,**a:take('focus',pl,a))
-            tile = pl[0]
+            tile = self.query_pane.call("ThisPane", "notmuch", ret='focus')
             ch,ln = tile.scale()
             space = self.h
             min = 4
@@ -701,24 +694,22 @@ class notmuch_master_view(edlib.Pane):
 
                 p.call("Window:close", "notmuch")
             else:
-                pl=[]
-                self.call("ThisPane", lambda key,**a:take('focus',pl, a))
-                if pl and pl[0].focus:
-                    pl[0].focus.close()
+                p = self.call("ThisPane", ret='focus')
+                if p and p.focus:
+                    p.focus.close()
             return 1
 
         if key in [ "Chr-V" ]:
             if not self.message_pane:
                 return 1
-            pl = []
-            self.call("OtherPane", lambda key,**a:take('focus', pl, a))
-            if not pl:
+            p0 = self.call("OtherPane", ret='focus')
+            if not p0:
                 return 1
-            pl[0].call("doc:attach", lambda key,**a:take('focus', pl, a))
-            self.call("doc:open", self.message_pane["filename"], -1,
-                       lambda key,**a:take('focus', pl, a))
-            pl[2].call("doc:set:autoclose", 1)
-            pl[1].call("doc:assign",pl[2], "default:viewer")
+            p1 = p0.call("doc:attach", ret='focus')
+            p2 = self.call("doc:open", self.message_pane["filename"], -1,
+                           ret = 'focus')
+            p2.call("doc:set:autoclose", 1)
+            p1.call("doc:assign",p2, "default:viewer")
             return 1
 
         if key == "Chr-o":
@@ -751,17 +742,14 @@ class notmuch_master_view(edlib.Pane):
                 if sl:
                     self.list_pane.call("doc:notmuch:update-one", sl[0])
 
-            pl = []
 
-            self.call("doc:notmuch:query", str,lambda key,**a:take('focus',pl,a))
-            self.list_pane.call("OtherPane", "notmuch", "threads", 3,
-                                    lambda key,**a:take('focus', pl, a))
-            self.query_pane = pl[-1]
-            pl[-1].call("doc:attach",
-                        lambda key,**a:take('focus',pl,a))
-            pl[-1].call("doc:assign", pl[0], "notmuch:threads",
-                                    lambda key,**a:take('focus', pl, a))
-            self.query_pane = pl[-1]
+            p0 = self.call("doc:notmuch:query", str, ret='focus')
+            p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 3,
+                                     ret = 'focus')
+            self.query_pane = p1
+            p2 = p1.call("doc:attach", ret='focus')
+            p3 = p2.call("doc:assign", p0, "notmuch:threads", ret='focus')
+            self.query_pane = p3
             if numeric:
                 self.query_pane.take_focus()
             self.resize()
@@ -771,21 +759,19 @@ class notmuch_master_view(edlib.Pane):
             # a thread or message was selected. id in 'str'. threadid in str2
             # Find the file and display it in a 'message' pane
             self.mark_read()
-            pl=[]
-            self.call("doc:notmuch:byid", str, lambda key,**a:take('focus',pl,a))
-            self.query_pane.call("OtherPane", "notmuch", "message", 2,
-                                 lambda key,**a:take('focus',pl,a))
-            pl[-1].call("doc:attach",
-                        lambda key,**a:take('focus',pl,a))
-            pl[-1].call("doc:assign", pl[0], "notmuch:message",
-                        lambda key,**a:take('focus', pl, a))
+
+            p0 = self.call("doc:notmuch:byid", str, ret='focus')
+            p1 = self.query_pane.call("OtherPane", "notmuch", "message", 2,
+                                      ret='focus')
+            p2 = p1.call("doc:attach", ret='focus')
+            p3 = p2.call("doc:assign", p0, "notmuch:message", ret='focus')
 
             # FIXME This still doesn't work: there are races: attaching a doc to
             # the pane causes the current doc to be closed.  But the new doc
             # hasn't been anchored yet so if they are the same, we lose.
             # Need a better way to anchor a document.
-            #pl[0].call("doc:set:autoclose", 1)
-            p = self.message_pane = pl[-1]
+            #p0.call("doc:set:autoclose", 1)
+            p = self.message_pane = p3
             p.ctid = str2
             p.cmid = str
             if numeric:
@@ -1526,17 +1512,15 @@ def render_master_view_attach(key, focus, comm2, **a):
     return 1
 
 def notmuch_mode(key, home, focus, **a):
-    pl=[]
-    focus.call("ThisPane", lambda key, **a:take('focus', pl, a))
+    p0 = focus.call("ThisPane", ret = 'focus')
     try:
-        home.call("docs:byname", "*Notmuch*", lambda key, **a:take('focus', pl, a))
+        p1 = home.call("docs:byname", "*Notmuch*", ret='focus')
     except:
-        home.call("attach-doc-notmuch", lambda key, **a:take('focus', pl, a))
-    if len(pl) != 2:
+        p1 = home.call("attach-doc-notmuch", ret='focus')
+    if not p1:
         return -1
-    pl[0].call("doc:attach",
-               lambda key,**a:take('focus', pl, a))
-    pl[-1].call("doc:assign", pl[1], 1)
+    p2 = p0.call("doc:attach", ret = 'focus')
+    p2.call("doc:assign", p1, 1)
     return 1
 
 if "editor" in globals():
