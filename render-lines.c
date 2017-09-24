@@ -835,35 +835,27 @@ static struct mark *call_render_line_prev(struct pane *p safe,
 	return m2;
 }
 
-DEF_CMD(save_str)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->s = ci->str ? strdup(ci->str) : NULL;
-	return 1;
-}
-
 static struct mark *call_render_line(struct pane *p safe, struct mark *start safe)
 {
-	struct call_return cr;
 	struct mark *m, *m2;
+	char *s;
 
 	m = mark_dup(start, 0);
-	cr.c = save_str;
-	cr.s = NULL;
+
 	/* Allow for filling the rest of the pane, given that
 	 * some has been used.
 	 * 'used' can be negative if the mark is before the start
 	 * of the pane
 	 */
-	if (call_comm("render-line", p, NO_NUMERIC,
-		      m, NULL, &cr.c) <= 0) {
+	s = call_ret(str, "render-line", p, NO_NUMERIC, m, NULL);
+	if (!s) {
 		mark_free(m);
 		return NULL;
 	}
 
 	if (start->mdata)
 		free(start->mdata);
-	start->mdata = cr.s;
+	start->mdata = s;
 
 	m2 = vmark_matching(p, m);
 	if (m2)
