@@ -15,18 +15,6 @@ import thread
 import gobject
 import glib
 
-def take(name, place, args, default=None):
-    if args[name] is not None:
-        place.append(args[name])
-    else:
-        place.append(default)
-    return 1
-
-def attach(p, mode):
-    pl=[]
-    p.call("attach-%s"%mode, lambda key,**a:take('focus', pl, a))
-    return pl[0]
-
 class EdDisplay(gtk.Window):
     def __init__(self, home):
         events_activate(home)

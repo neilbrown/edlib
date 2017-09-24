@@ -56,13 +56,6 @@ default_attrs = "normal 10 family:sans fg:black bg:white left:5 space-after:1 sp
 import re
 import os
 
-def take(name, place, args, default=None):
-    if name in args:
-        place.append(args[name])
-    else:
-        place.append(default)
-    return 1
-
 class PresenterPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
@@ -80,30 +73,21 @@ class PresenterPane(edlib.Pane):
         return None
 
     def first_page(self):
-        m = [None]
-        self.call("doc:vmark-get", self.pageview, lambda key, **a: take('mark', m, a))
-        return m[-1]
+        return self.call("doc:vmark-get", self.pageview, ret = 'mark')
 
     def first_line(self):
-        m = [None]
-        self.call("doc:vmark-get", self.attrview, lambda key, **a: take('mark', m, a))
-        return m[-1]
+        return self.call("doc:vmark-get", self.attrview, ret= 'mark')
 
     def prev_page(self, m):
-        m2 = []
-        self.call("doc:vmark-get", self.pageview, 3, m, lambda key, **a: take('mark2', m2, a))
-        return m2[0]
+        return self.call("doc:vmark-get", self.pageview, 3, m, ret = 'mark2')
 
     def prev_line(self, m):
-        m2 = []
-        self.call("doc:vmark-get", self.attrview, 3, m, lambda key, **a: take('mark2', m2, a))
-        return m2[0]
+        return self.call("doc:vmark-get", self.attrview, 3, m, ret = 'mark2')
 
     def get_line_at(self, m):
         # call render-line at m
-        line = []
-        self.parent.call("render-line", m, -1, lambda key, **a: take('str', line, a, ''))
-        return line[0]
+        s = self.parent.call("render-line", m, -1, ret = 'str')
+        return s if s else ''
 
     def get_line_before(self, m):
         m2 = m.dup()

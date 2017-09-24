@@ -565,6 +565,20 @@ DEF_CMD(take_mark)
 	return 1;
 }
 
+DEF_CMD(take_mark2)
+{
+	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
+	int local = ci->home->handle &&
+		ci->home->handle->func == python_doc_call.func;
+
+	if (pr->ret)
+		return 0;
+	if (!ci->mark2)
+		return 0;
+	pr->ret = Mark_Frommark(ci->mark2, local);
+	return 1;
+}
+
 DEF_CMD(take_str)
 {
 	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
@@ -583,6 +597,8 @@ static struct command *map_ret(char *ret safe)
 		return &take_focus;
 	if (strcmp(ret, "mark") == 0)
 		return &take_mark;
+	if (strcmp(ret, "mark2") == 0)
+		return &take_mark2;
 	if (strcmp(ret, "str") == 0)
 		return &take_str;
 	return NULL;
