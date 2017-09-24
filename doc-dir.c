@@ -135,7 +135,7 @@ DEF_CMD(dir_new)
 
 DEF_CMD(dir_new2)
 {
-	if (ci->extra != S_IFDIR)
+	if (ci->num2 != S_IFDIR)
 		return 0;
 	return dir_new_func(ci);
 }
@@ -143,7 +143,7 @@ DEF_CMD(dir_new2)
 DEF_CMD(dir_load_file)
 {
 	struct doc *d = ci->home->data;
-	int fd = ci->extra;
+	int fd = ci->num2;
 	char *name = ci->str;
 	struct directory *dr = container_of(d, struct directory, doc);
 	struct list_head new;
@@ -255,7 +255,7 @@ DEF_CMD(dir_load_file)
 DEF_CMD(dir_same_file)
 {
 	struct doc *d = ci->home->data;
-	int fd = ci->extra;
+	int fd = ci->num2;
 	struct stat stb;
 	struct directory *dr = container_of(d, struct directory, doc);
 
@@ -276,8 +276,8 @@ DEF_CMD(dir_step)
 	struct doc *doc = ci->home->data;
 	struct mark *m = ci->mark;
 	struct mark *m2, *target = m;
-	bool forward = ci->numeric;
-	bool move = ci->extra;
+	bool forward = ci->num;
+	bool move = ci->num2;
 	struct directory *dr = container_of(doc, struct directory, doc);
 	struct dir_ent *d;
 	wint_t ret = '\n';
@@ -333,12 +333,12 @@ DEF_CMD(dir_set_ref)
 	if (!m)
 		return -1;
 
-	if (list_empty(&dr->ents) || ci->numeric != 1)
+	if (list_empty(&dr->ents) || ci->num != 1)
 		m->ref.d = NULL;
 	else
 		m->ref.d = list_first_entry(&dr->ents, struct dir_ent, lst);
 	m->ref.ignore = 0;
-	mark_to_end(d, m, ci->numeric != 1);
+	mark_to_end(d, m, ci->num != 1);
 	return 1;
 }
 
@@ -490,7 +490,7 @@ DEF_CMD(dir_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	bool forward = ci->numeric != 0;
+	bool forward = ci->num != 0;
 	char *attr = ci->str;
 	char *val;
 

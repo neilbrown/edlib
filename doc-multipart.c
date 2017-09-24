@@ -153,7 +153,7 @@ DEF_CMD(mp_set_ref)
 		reset_mark(ci->mark);
 	}
 
-	if (ci->numeric == 1)
+	if (ci->num == 1)
 		/* start */
 		change_part(mpi, ci->mark, 0, 0);
 	else
@@ -258,14 +258,14 @@ DEF_CMD(mp_step)
 		ret = -1;
 	else
 		ret = home_call(mpi->parts[m->ref.docnum].pane,
-				ci->key, ci->focus, ci->numeric, m1, ci->str,
-				ci->extra, NULL, ci->str2, ci->comm2);
+				ci->key, ci->focus, ci->num, m1, ci->str,
+				ci->num2, NULL, ci->str2, ci->comm2);
 	while (ret == CHAR_RET(WEOF) || ret == -1) {
-		if (!ci->extra && m == ci->mark) {
+		if (!ci->num2 && m == ci->mark) {
 			/* don't change ci->mark when not moving */
 			m = mark_dup(m, 1);
 		}
-		if (ci->numeric) {
+		if (ci->num) {
 			if (m->ref.docnum >= mpi->nparts)
 				break;
 			do {
@@ -286,10 +286,10 @@ DEF_CMD(mp_step)
 			ret = -1;
 		else
 			ret = home_call(mpi->parts[m->ref.docnum].pane,
-					ci->key, ci->focus, ci->numeric, m1, ci->str,
-					ci->extra, NULL, ci->str2, ci->comm2);
+					ci->key, ci->focus, ci->num, m1, ci->str,
+					ci->num2, NULL, ci->str2, ci->comm2);
 	}
-	if (ci->extra)
+	if (ci->num2)
 		reset_mark(ci->mark);
 	if (m != ci->mark)
 		mark_free(m);
@@ -314,16 +314,16 @@ DEF_CMD(mp_attr)
 
 	if (d < mpi->nparts && m1 &&
 	    (mpi->parts[d].visible &&
-	     mark_step_pane(mpi->parts[d].pane, m1, ci->numeric, 0) == WEOF)) {
+	     mark_step_pane(mpi->parts[d].pane, m1, ci->num, 0) == WEOF)) {
 		/* at the wrong end of a part */
-		if (ci->numeric)
+		if (ci->num)
 			d += 1;
 		else if (d > 0)
 			d -= 1;
 	}
 	while (d < mpi->nparts && m1 &&
 	       !mpi->parts[d].visible) {
-		if (ci->numeric)
+		if (ci->num)
 			d += 1;
 		else if (d > 0)
 			d -= 1;
@@ -369,8 +369,8 @@ DEF_CMD(mp_attr)
 	}
 
 	ret = home_call(mpi->parts[d].pane,
-			ci->key, ci->focus, ci->numeric, m1, ci->str,
-			ci->extra, NULL, ci->str2, ci->comm2);
+			ci->key, ci->focus, ci->num, m1, ci->str,
+			ci->num2, NULL, ci->str2, ci->comm2);
 	if (d != ci->mark->ref.docnum)
 		mark_free(m1);
 	return ret;
@@ -393,16 +393,16 @@ DEF_CMD(mp_set_attr)
 
 	if (dn < mpi->nparts && m1 &&
 	    (mpi->parts[dn].visible &&
-	     mark_step_pane(mpi->parts[dn].pane, m1, ci->numeric, 0) == WEOF)) {
+	     mark_step_pane(mpi->parts[dn].pane, m1, ci->num, 0) == WEOF)) {
 		/* at the wrong end of a part */
-		if (ci->numeric)
+		if (ci->num)
 			dn += 1;
 		else if (dn > 0)
 			dn -= 1;
 	}
 	while (dn < mpi->nparts && m1 &&
 	       !mpi->parts[dn].visible) {
-		if (ci->numeric)
+		if (ci->num)
 			dn += 1;
 		else if (dn > 0)
 			dn -= 1;
@@ -422,7 +422,7 @@ DEF_CMD(mp_set_attr)
 		return -1;
 
 	if ((ci->str2 && atoi(ci->str2) > 0) ||
-	    (ci->str2 == NULL && ci->extra == 1 && ci->numeric > 0))
+	    (ci->str2 == NULL && ci->num2 == 1 && ci->num > 0))
 		mpi->parts[dn].visible = 1;
 	else
 		mpi->parts[dn].visible = 0;
@@ -470,7 +470,7 @@ DEF_CMD(mp_add)
 		(mpi->nparts - n)*sizeof(mpi->parts[0]));
 	mpi->nparts += 1;
 	mpi->parts[n].pane = ci->focus;
-	mpi->parts[n].visible = !ci->numeric;
+	mpi->parts[n].visible = !ci->num;
 	hlist_for_each_entry(m, &mpi->doc.marks, all)
 		if (m->ref.docnum >= n)
 			m->ref.docnum ++;
@@ -531,8 +531,8 @@ DEF_CMD(mp_forward)
 	m1 = NULL;
 	if (ci->mark && ci->mark->ref.docnum == d)
 		m1 = ci->mark->ref.m;
-	return call_comm(key, mpi->parts[d].pane, ci->numeric, m1,
-			 ci->str, ci->extra, NULL, ci->str2, ci->comm2);
+	return call_comm(key, mpi->parts[d].pane, ci->num, m1,
+			 ci->str, ci->num2, NULL, ci->str2, ci->comm2);
 }
 
 static void mp_init_map(void)

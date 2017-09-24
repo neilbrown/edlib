@@ -237,7 +237,7 @@ DEF_CMD(handle_count_lines)
 	}
 	if (strcmp(ci->key, "Notify:doc:CountLines") == 0) {
 		/* Option mark is "mark2" as "mark" get the "point" */
-		if (ci->numeric)
+		if (ci->num)
 			pane_add_notify(p, d, "Notify:Close");
 		count_calculate(d, NULL, ci->mark2, cli->view_num);
 		return 1;

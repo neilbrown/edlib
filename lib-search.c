@@ -5,7 +5,7 @@
  * Searching.
  * "text-search" command searches from given mark until it
  * finds the given string or end of buffer.
- * Leave mark at end of match and set ->extra to length of match.
+ * Leave mark at end of match and set ->num2 to length of match.
  * If mark2 is given, don't go beyond there.
  */
 
@@ -92,7 +92,7 @@ DEF_CMD(text_search)
 	if (!endmark)
 		return -1;
 
-	if (ci->extra)
+	if (ci->num2)
 		since_start = search_backward(ci->focus, m, ci->mark2, rxl, endmark);
 	else
 		since_start = search_forward(ci->focus, m, ci->mark2, rxl, endmark);

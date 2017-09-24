@@ -8,18 +8,18 @@
  * This takes a mark and moves it to the end of the rendered line
  * so that another call will produce another line.
  * "render-line" must always return a full line including '\n' unless the result
- * would be bigger than the 'max' passed in ->extra.  In that case it can stop
+ * would be bigger than the 'max' passed in ->num2.  In that case it can stop
  * after 'max' and before a '\n'.
- * If ->numeric is >= 0, then rendering must only preceed for that many bytes
+ * If ->num is >= 0, then rendering must only preceed for that many bytes
  * in the returned string.  It then returns with the mark only moved part way.
  * This allows a mark to be found for a given character position.
- * If ->numeric is -1, then rendering only continues until 'point' is reached.
+ * If ->num is -1, then rendering only continues until 'point' is reached.
  * This allows the cursor position to be determined.
- * For the standard 'render the whole line' functionality, ->numeric should
+ * For the standard 'render the whole line' functionality, ->num should
  * be NO_NUMERIC
  *
  * The document must also provide "render-line-prev" which moves mark to a
- * start-of-line.  If numeric is 0, then don't skip over any newlines.
+ * start-of-line.  If num is 0, then don't skip over any newlines.
  * If it is '1', then skip one newline.
  *
  * The returned line can contain attribute markings as <attr,attr>.
@@ -108,8 +108,8 @@ DEF_CMD(text_size_callback)
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 	cr->x = ci->x;
 	cr->y = ci->y;
-	cr->i = ci->numeric;
-	cr->i2 = ci->extra;
+	cr->i = ci->num;
+	cr->i2 = ci->num2;
 	return 1;
 }
 
@@ -1606,7 +1606,7 @@ DEF_CMD(render_lines_view_line)
 	struct rl_data *rl = p->data;
 	struct mark *pm = ci->mark;
 	struct mark *top;
-	int line = ci->numeric;
+	int line = ci->num;
 
 	if (!pm)
 		return -1;

@@ -194,7 +194,7 @@ text_new_alloc(struct text *t safe, int size)
 DEF_CMD(text_load_file)
 {
 	struct doc *d = ci->home->data;
-	int fd = ci->extra;
+	int fd = ci->num2;
 	char *name = ci->str;
 	off_t size;
 	struct text_alloc *a;
@@ -364,11 +364,11 @@ DEF_CMD(text_write_file)
 					 ci->str);
 		return ret == 0 ? 1 : -1;
 	}
-	if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC) {
+	if (ci->num >= 0 && ci->num != NO_NUMERIC) {
 		ret = do_text_output_file(t,
 					  ci->mark ? &ci->mark->ref: NULL,
 					  ci->mark2 ? &ci->mark2->ref: NULL,
-					  ci->numeric);
+					  ci->num);
 		return ret = 0 ? 1 : -1;
 	}
 	return -1;
@@ -379,7 +379,7 @@ DEF_CMD(text_same_file)
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
 	struct stat stb;
-	int fd = ci->extra;
+	int fd = ci->num2;
 
 	if (t->fname == NULL)
 		return 0;
@@ -876,7 +876,7 @@ DEF_CMD(text_reundo)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	bool redo = ci->numeric != 0;
+	bool redo = ci->num != 0;
 	struct doc_ref start, end;
 	int did_do = 2;
 	bool first = 1;
@@ -1068,8 +1068,8 @@ DEF_CMD(text_step)
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	struct mark *m2, *target = m;
-	bool forward = ci->numeric;
-	bool move = ci->extra;
+	bool forward = ci->num;
+	bool move = ci->num2;
 	struct text *t = container_of(d, struct text, doc);
 	struct doc_ref r;
 	wint_t ret;
@@ -1183,7 +1183,7 @@ DEF_CMD(text_new)
 
 DEF_CMD(text_new2)
 {
-	if (ci->extra != S_IFREG)
+	if (ci->num2 != S_IFREG)
 		return 0;
 	return text_new_func(ci);
 }
@@ -1290,14 +1290,14 @@ DEF_CMD(text_set_ref)
 
 	if (!m)
 		return -1;
-	if (list_empty(&t->text) || ci->numeric != 1) {
+	if (list_empty(&t->text) || ci->num != 1) {
 		m->ref.c = NULL;
 		m->ref.o = 0;
 	} else {
 		m->ref.c = list_first_entry(&t->text, struct text_chunk, lst);
 		m->ref.o = m->ref.c->start;
 	}
-	mark_to_end(d, m, ci->numeric != 1);
+	mark_to_end(d, m, ci->num != 1);
 	return 1;
 }
 
@@ -1541,7 +1541,7 @@ DEF_CMD(text_replace)
 	struct mark *end = ci->mark;
 	char *str = ci->str;
 	char *newattrs = ci->str2;
-	bool first = ci->extra;
+	bool first = ci->num2;
 	struct mark *early = NULL;
 	int status_change = 0;
 
@@ -1654,7 +1654,7 @@ DEF_CMD(text_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	bool forward = ci->numeric != 0;
+	bool forward = ci->num != 0;
 	char *attr = ci->str;
 	char *val;
 	struct attrset *a;
@@ -1665,7 +1665,7 @@ DEF_CMD(text_doc_get_attr)
 	a = text_attrset(d, m, forward, &o);
 	val = attr_get_str(a, attr, o);
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
-	if (ci->extra == 1) {
+	if (ci->num2 == 1) {
 		char *key = attr;
 		int len = strlen(attr);
 		while ((key = attr_get_next_key(a, key, o, &val)) != NULL &&
@@ -1739,12 +1739,12 @@ DEF_CMD(text_modified)
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
 
-	if (ci->numeric == 0) {
+	if (ci->num == 0) {
 		if (t->saved == t->undo)
 			t->saved = NULL;
 		else
 			t->saved = t->undo;
-	} else if (ci->numeric > 1)
+	} else if (ci->num > 1)
 		t->saved = NULL;
 	else
 		t->saved = t->undo;

@@ -243,9 +243,9 @@ DEF_CMD(docs_modified_handle)
 		 */
 		wint_t ch, ret;
 		mark_to_modified(ci->home->parent, ci->mark);
-		if (ci->numeric) {
+		if (ci->num) {
 			ret = doc_following_pane(ci->home->parent, ci->mark);
-			if (ci->extra && ret != WEOF) {
+			if (ci->num2 && ret != WEOF) {
 				mark_next_pane(ci->home->parent, ci->mark);
 				mark_to_modified(ci->home->parent, ci->mark);
 			}
@@ -255,7 +255,7 @@ DEF_CMD(docs_modified_handle)
 			if (ch == WEOF)
 				ret = ch;
 			else {
-				if (ci->extra)
+				if (ci->num2)
 					mark_to_mark(ci->mark, m);
 				ret = mark_next_pane(ci->home->parent, m);
 			}
@@ -268,7 +268,7 @@ DEF_CMD(docs_modified_handle)
 		char *attr;
 		m = mark_dup(ci->mark, 1);
 		mark_to_modified(ci->home->parent, m);
-		if (!ci->numeric)
+		if (!ci->num)
 			prev_modified(ci->home->parent, m);
 		attr = pane_mark_attr(ci->home->parent, m, 1, ci->str);
 		mark_free(m);
@@ -325,7 +325,7 @@ DEF_CMD(docs_callback)
 	if (strcmp(ci->key, "docs:byfd") == 0) {
 		list_for_each_entry(p, &doc->collection->children, siblings) {
 			if (call("doc:same-file", p, 0, NULL, ci->str,
-				 ci->extra) > 0)
+				 ci->num2) > 0)
 				return comm_call(ci->comm2, "callback:doc", p);
 		}
 		return -1;
@@ -387,7 +387,7 @@ DEF_CMD(docs_callback)
 		home_call(p, "doc:set-parent", doc->collection);
 		home_call(p, "Request:Notify:doc:status-changed", doc->collection);
 		if (p->parent)
-			doc_checkname(p, doc, ci->numeric);
+			doc_checkname(p, doc, ci->num);
 		return 0;
 	}
 	return 0;
@@ -421,7 +421,7 @@ DEF_CMD(doc_revisit)
 		return 0;
 	if (p == ci->home)
 		return 1;
-	doc_checkname(p, docs, ci->numeric);
+	doc_checkname(p, docs, ci->num);
 	return 1;
 }
 
@@ -430,8 +430,8 @@ DEF_CMD(docs_step)
 	struct doc *doc = ci->home->data;
 	struct mark *m = ci->mark;
 	struct mark *m2, *target = m;
-	bool forward = ci->numeric;
-	bool move = ci->extra;
+	bool forward = ci->num;
+	bool move = ci->num2;
 	int ret;
 	struct pane *p, *next;
 	struct docs *d = container_of(doc, struct docs, doc);
@@ -498,14 +498,14 @@ DEF_CMD(docs_set_ref)
 	if (call("doc:mymark", ci->home, 0, m) != 1)
 		return -1;
 
-	if (ci->numeric == 1 && !list_empty(&d->collection->children))
+	if (ci->num == 1 && !list_empty(&d->collection->children))
 		m->ref.p = list_first_entry(&d->collection->children,
 					    struct pane, siblings);
 	else
 		m->ref.p = NULL;
 
 	m->ref.ignore = 0;
-	mark_to_end(dc, m, ci->numeric != 1);
+	mark_to_end(dc, m, ci->num != 1);
 	return 1;
 }
 
@@ -554,7 +554,7 @@ DEF_CMD(docs_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	bool forward = ci->numeric != 0;
+	bool forward = ci->num != 0;
 	char *attr = ci->str;
 	char *val;
 
@@ -689,7 +689,7 @@ static int docs_save(struct pane *focus safe, struct mark *m)
 	return 1;
 }
 
-static int docs_kill(struct pane *focus safe, struct mark *m, int numeric)
+static int docs_kill(struct pane *focus safe, struct mark *m, int num)
 {
 	struct pane *dp;
 	char *mod;
@@ -701,7 +701,7 @@ static int docs_kill(struct pane *focus safe, struct mark *m, int numeric)
 		return 0;
 	mod = pane_attr_get(dp, "doc-modified");
 	if (mod && strcmp(mod, "yes") == 0 &&
-	    numeric == NO_NUMERIC) {
+	    num == NO_NUMERIC) {
 		call("Message", focus, 0, NULL,
 		     "File modified, cannot kill.");
 		return 1;
@@ -760,7 +760,7 @@ DEF_CMD(docs_cmd)
 	case 's':
 		return docs_save(ci->focus, ci->mark);
 	case 'k':
-		return docs_kill(ci->focus, ci->mark, ci->numeric);
+		return docs_kill(ci->focus, ci->mark, ci->num);
 	case '%':
 		return docs_toggle(ci->focus, ci->mark);
 	default:

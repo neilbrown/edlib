@@ -263,7 +263,7 @@ DEF_CMD(emacs_search)
 	esi->s = NULL;
 	esi->matched = 0;
 	esi->wrapped = 0;
-	esi->backwards = ci->numeric;
+	esi->backwards = ci->num;
 
 	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);
 	if (p) {

@@ -16,7 +16,7 @@
 
 struct input_mode {
 	char	*mode safe;
-	int	numeric, extra;
+	int	num, num2;
 };
 
 DEF_CMD(set_mode)
@@ -29,19 +29,19 @@ DEF_CMD(set_mode)
 	return 1;
 }
 
-DEF_CMD(set_numeric)
+DEF_CMD(set_num)
 {
 	struct input_mode *im = ci->home->data;
 
-	im->numeric = ci->numeric;
+	im->num = ci->num;
 	return 1;
 }
 
-DEF_CMD(set_extra)
+DEF_CMD(set_num2)
 {
 	struct input_mode *im = ci->home->data;
 
-	im->extra = ci->numeric;
+	im->num2 = ci->num;
 	return 1;
 }
 
@@ -52,8 +52,8 @@ DEF_CMD(keystroke)
 	struct pane *p;
 	int l;
 	int ret;
-	int numeric = im->numeric;
-	int extra = im->extra;
+	int num = im->num;
+	int num2 = im->num2;
 	struct mark *m;
 
 	if (!ci->str)
@@ -67,8 +67,8 @@ DEF_CMD(keystroke)
 	strcat(strcpy(key, im->mode), ci->str);
 
 	im->mode = "";
-	im->numeric = NO_NUMERIC;
-	im->extra = 0;
+	im->num = NO_NUMERIC;
+	im->num2 = 0;
 
 	m = ci->mark;
 	p = ci->focus;
@@ -78,7 +78,7 @@ DEF_CMD(keystroke)
 			m = p->pointer;
 	}
 
-	ret = call(key, p, numeric, m, NULL, extra);
+	ret = call(key, p, num, m, NULL, num2);
 	free(key);
 	if (ret < 0)
 		call("Message", ci->focus, 0, NULL, "** Command Failed **", 1);
@@ -105,16 +105,16 @@ DEF_CMD(mouse_event)
 	key = malloc(l);
 	strcat(strcpy(key, im->mode), ci->str);
 	focus = ci->focus;
-	num = im->numeric;
-	ex = im->extra;
+	num = im->num;
+	ex = im->num2;
 	m = ci->mark;
 	x = ci->x; y = ci->y;
 	/* FIXME is there any point in this? */
 	pane_map_xy(ci->focus, focus, &x, &y);
 
 	im->mode = "";
-	im->numeric = NO_NUMERIC;
-	im->extra = 0;
+	im->num = NO_NUMERIC;
+	im->num2 = 0;
 
 	while (1) {
 		struct pane *t, *chld = NULL;
@@ -163,8 +163,8 @@ static void register_map(void)
 	key_add(im_map, "Keystroke", &keystroke);
 	key_add(im_map, "Mouse-event", &mouse_event);
 	key_add(im_map, "Mode:set-mode", &set_mode);
-	key_add(im_map, "Mode:set-numeric", &set_numeric);
-	key_add(im_map, "Mode:set-extra", &set_extra);
+	key_add(im_map, "Mode:set-num", &set_num);
+	key_add(im_map, "Mode:set-num2", &set_num2);
 	key_add_range(im_map, "Request:Notify:", "Request:Notify;", &request_notify);
 }
 
@@ -177,8 +177,8 @@ DEF_CMD(input_attach)
 	register_map();
 
 	im->mode = "";
-	im->numeric = NO_NUMERIC;
-	im->extra = 0;
+	im->num = NO_NUMERIC;
+	im->num2 = 0;
 
 	p = pane_register(ci->focus, 0, &input_handle.c, im, NULL);
 	if (p)

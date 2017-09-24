@@ -125,8 +125,8 @@ DEF_CMD(render_line)
 
 		if (pm && mark_same_pane(ci->home, m2, pm))
 			goto done;
-		if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC &&
-		    ci->numeric <= ret.len)
+		if (ci->num >= 0 && ci->num != NO_NUMERIC &&
+		    ci->num <= ret.len)
 			goto done;
 
 		ch = mark_next_pane(ci->focus, m2);
@@ -165,7 +165,7 @@ done:
 
 DEF_CMD(render_line_prev)
 {
-	/* If ->numeric is 0, round down to multiple of 16.
+	/* If ->num is 0, round down to multiple of 16.
 	 * if it is 1, subtract a further 16.
 	 */
 	int to, from;
@@ -176,7 +176,7 @@ DEF_CMD(render_line_prev)
 
 	from = attr_find_int(*mark_attr(ci->mark), "chars");
 	to = from & ~0xF;
-	if (ci->numeric && to >= 16)
+	if (ci->num && to >= 16)
 		to -= 16;
 	while (to < from) {
 		mark_prev_pane(ci->focus, ci->mark);

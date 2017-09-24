@@ -33,7 +33,7 @@ DEF_CMD(text_size_callback)
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 	cr->x = ci->x;
 	cr->y = ci->y;
-	cr->i = ci->extra;
+	cr->i = ci->num2;
 	return 1;
 }
 
@@ -49,7 +49,7 @@ DEF_CMD(messageline_handle)
 	}
 
 	if (strcmp(ci->key, "Display:border") == 0) {
-		if (ci->numeric > 0)
+		if (ci->num > 0)
 			mli->hidden = 0;
 		else
 			mli->hidden = 1;
@@ -58,7 +58,7 @@ DEF_CMD(messageline_handle)
 	}
 
 	if (strcmp(ci->key, "Message") == 0 && ci->str) {
-		if (ci->extra == 0 || mli->message == NULL) {
+		if (ci->num2 == 0 || mli->message == NULL) {
 			if (!mli->message)
 				call("Request:Notify:Keystroke", ci->home);
 			free(mli->message);

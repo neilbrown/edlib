@@ -405,7 +405,7 @@ DEF_CMD(ncurses_handle)
 		return 1;
 	}
 	if (strcmp(ci->key, "text-size") == 0 && ci->str) {
-		int max_space = ci->numeric;
+		int max_space = ci->num;
 		int max_bytes = 0;
 		int size = 0;
 		int offset = 0;
@@ -431,7 +431,7 @@ DEF_CMD(ncurses_handle)
 	}
 	if (strcmp(ci->key, "Draw:text") == 0 && ci->str) {
 		int attr = cvt_attrs(ci->str2);
-		int cursor_offset = ci->numeric;
+		int cursor_offset = ci->num;
 		int offset = 0;
 		int x = ci->x, y = ci->y;
 		mbstate_t mbs = {};

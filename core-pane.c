@@ -319,7 +319,7 @@ void pane_notify_close(struct pane *p safe)
 }
 
 int pane_notify(struct pane *p safe, char *notification safe, struct mark *m, struct mark *m2,
-		char *str, char *str2, int numeric, int extra, struct command *comm2)
+		char *str, char *str2, int num, int num2, struct command *comm2)
 {
 	/* Return the largest absolute return value. If no notifiees are found.
 	 * return 0
@@ -336,7 +336,7 @@ restart:
 		n->noted = 1;
 		if (strcmp(n->notification, notification) == 0) {
 			int r = pane_call(n->notifiee, notification, p,
-					  numeric, m, str, extra, m2, str2, comm2);
+					  num, m, str, num2, m2, str2, comm2);
 			if (abs(r) > abs(ret))
 				ret = r;
 			goto restart;
@@ -645,13 +645,13 @@ DEF_CMD(take_pane)
 }
 
 struct pane *do_call_pane(char *key safe, struct pane *focus safe,
-			  int numeric, struct mark *m, char *str,
-			  int extra, struct mark *m2, char *str2,
+			  int num, struct mark *m, char *str,
+			  int num2, struct mark *m2, char *str2,
 			  int x, int y)
 {
 	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0,
-			      .numeric = numeric, .mark = m, .str = str,
-			      .extra = extra, .mark2 = m2, .str2 = str2,
+			      .num = num, .mark = m, .str = str,
+			      .num2 = num2, .mark2 = m2, .str2 = str2,
 			      .x = x, .y = y };
 	struct call_return cr;
 

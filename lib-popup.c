@@ -39,8 +39,8 @@ DEF_CMD(text_size_callback)
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 	cr->x = ci->x;
 	cr->y = ci->y;
-	cr->i = ci->numeric;
-	cr->i2 = ci->extra;
+	cr->i = ci->num;
+	cr->i2 = ci->num2;
 	return 1;
 }
 

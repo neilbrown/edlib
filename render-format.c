@@ -52,8 +52,8 @@ DEF_CMD(render_line)
 		pm->rpos = rf->home_field;
 	if (pm && pm->rpos == m->rpos)
 		goto endwhile;
-	if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
-	    ret.len >= ci->numeric)
+	if (ci->num != NO_NUMERIC && ci->num >= 0 &&
+	    ret.len >= ci->num)
 		goto endwhile;
 
 	while (*n) {
@@ -71,8 +71,8 @@ DEF_CMD(render_line)
 			field += 1;
 		m->rpos = field;
 
-		if (ci->numeric != NO_NUMERIC && ci->numeric >= 0 &&
-		    ret.len >= ci->numeric)
+		if (ci->num != NO_NUMERIC && ci->num >= 0 &&
+		    ret.len >= ci->num)
 			break;
 		if (pm && pm->rpos == m->rpos)
 			break;
@@ -149,7 +149,7 @@ endwhile:
 		m->rpos = field;
 		if (pm && pm->rpos == m->rpos)
 			;
-		else if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC)
+		else if (ci->num >= 0 && ci->num != NO_NUMERIC)
 			;
 		else {
 			buf_append(&ret, '\n');

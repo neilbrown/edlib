@@ -196,9 +196,9 @@ DEF_CMD(text_attr_callback)
 	struct attr_return *ar = container_of(ci->comm, struct attr_return, rtn);
 	if (!ci->str)
 		return -1;
-	as_add(&ar->ast, &ar->tmpst, ar->chars + ci->numeric, ci->extra, ci->str);
-	if (ar->min_end < 0 || ar->chars + ci->numeric < ar->min_end)
-		ar->min_end = ar->chars + ci->numeric;
+	as_add(&ar->ast, &ar->tmpst, ar->chars + ci->num, ci->num2, ci->str);
+	if (ar->min_end < 0 || ar->chars + ci->num < ar->min_end)
+		ar->min_end = ar->chars + ci->num;
 	// FIXME ->str2 should be inserted
 	return 1;
 }
@@ -216,7 +216,7 @@ static void call_map_mark(struct pane *f safe, struct mark *m safe,
 DEF_CMD(render_line)
 {
 	/* Render the line from 'mark' to the first '\n' or until
-	 * 'extra' chars.
+	 * 'num2' chars.
 	 * Convert '<' to '<<' and if a char has the 'highlight' attribute,
 	 * include that between '<>'.
 	 */
@@ -226,7 +226,7 @@ DEF_CMD(render_line)
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2; /* The location to render as cursor */
 	struct mark *boundary;
-	int o = ci->numeric;
+	int o = ci->num;
 	wint_t ch;
 	int chars = 0;
 	int ret;
@@ -249,7 +249,7 @@ DEF_CMD(render_line)
 	if (is_eol(ch) &&
 	    (attr = pane_mark_attr(p, m, 1, "renderline:func")) != NULL) {
 		/* An alternate function handles this line */
-		ret = call_comm(attr, ci->focus, o, m, NULL, ci->extra, pm, ci->comm2);
+		ret = call_comm(attr, ci->focus, o, m, NULL, ci->num2, pm, ci->comm2);
 		if (ret)
 			return ret;
 	}

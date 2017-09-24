@@ -38,8 +38,8 @@ static int hex(wint_t c)
 
 DEF_CMD(qp_step)
 {
-	int forward = ci->numeric;
-	int move = ci->extra;
+	int forward = ci->num;
+	int move = ci->num2;
 	struct pane *p = ci->home->parent;
 	wint_t ch, c2, c3;
 	struct mark *m = ci->mark;

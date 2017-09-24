@@ -238,8 +238,8 @@ static int key_prefix(const struct cmd_info *ci safe)
 	struct modmap *m = container_of(ci->comm, struct modmap, comm);
 
 	call("Mode:set-mode", ci->focus, 0, NULL, m->name);
-	call("Mode:set-numeric", ci->focus, ci->numeric);
-	call("Mode:set-extra", ci->focus, ci->extra);
+	call("Mode:set-num", ci->focus, ci->num);
+	call("Mode:set-num2", ci->focus, ci->num2);
 	return 1;
 }
 

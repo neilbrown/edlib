@@ -30,14 +30,14 @@ class EdDisplay(gtk.Window):
         self.pane.h = self.lineheight * 24
         self.show()
 
-    def handle(self, key, numeric, extra, home, focus, str, str2, comm2, xy, **a):
+    def handle(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
 
         if key == "Refresh:postorder":
             self.text.queue_draw()
             return 1
 
         if key == "Display:fullscreen":
-            if numeric > 0:
+            if num > 0:
                 self.fullscreen()
             else:
                 self.unfullscreen()
@@ -70,8 +70,8 @@ class EdDisplay(gtk.Window):
             attr=""
             if str2 is not None:
                 attr = str2
-            if extra is not None:
-                scale = extra * 10 / self.charwidth
+            if num2 is not None:
+                scale = num2 * 10 / self.charwidth
             else:
                 scale = 1000
             fd = self.extract_font(attr, scale)
@@ -81,11 +81,11 @@ class EdDisplay(gtk.Window):
             metric = ctx.get_metrics(fd)
             ink,(x,y,width,height) = layout.get_pixel_extents()
             ascent = metric.get_ascent() / pango.SCALE
-            if numeric >= 0:
-                if width <= numeric:
+            if num >= 0:
+                if width <= num:
                     max_bytes = len(str.encode("utf-8"))
                 else:
-                    max_chars,extra = layout.xy_to_index(pango.SCALE*numeric,
+                    max_chars,extra = layout.xy_to_index(pango.SCALE*num,
                                                          metric.get_ascent())
                     max_bytes = len(str[:max_chars].encode("utf-8"))
             else:
@@ -108,8 +108,8 @@ class EdDisplay(gtk.Window):
             attr=""
             if str2 is not None:
                 attr = str2
-            if extra is not None:
-                scale = extra * 10 / self.charwidth
+            if num2 is not None:
+                scale = num2 * 10 / self.charwidth
             else:
                 scale = 1000
             fd = self.extract_font(attr, scale)
@@ -125,8 +125,8 @@ class EdDisplay(gtk.Window):
                 self.bg.set_foreground(bg)
                 pm.draw_rectangle(self.bg, True, x+lx, y-ascent+ly, width, height)
             pm.draw_layout(self.gc, x, y-ascent, layout, fg, bg)
-            if numeric >= 0:
-                cx,cy,cw,ch = layout.index_to_pos(numeric)
+            if num >= 0:
+                cx,cy,cw,ch = layout.index_to_pos(num)
                 if cw <= 0:
                     cw = metric.get_approximate_char_width()
                 cx /= pango.SCALE
@@ -145,10 +145,10 @@ class EdDisplay(gtk.Window):
                         self.gc.set_foreground(fg)
                     pm.draw_rectangle(self.gc, True, x+cx, y-ascent+cy,
                                       cw, ch);
-                    if numeric < len(str):
+                    if num < len(str):
                         l2 = pango.Layout(ctx)
                         l2.set_font_description(fd)
-                        l2.set_text(str[numeric])
+                        l2.set_text(str[num])
                         fg, bg = self.get_colours(attr+",inverse")
                         pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, fg, bg)
                     else:
@@ -159,13 +159,13 @@ class EdDisplay(gtk.Window):
         if key == "Draw:image":
             self.pane.damaged(edlib.DAMAGED_POSTORDER)
             # 'str' is the file name of an image
-            # 'numeric' is '1' if image should be stretched to fill pane
-            # if 'numeric is '0', then 'extra' is 'or' of
+            # 'num' is '1' if image should be stretched to fill pane
+            # if 'num is '0', then 'num2' is 'or' of
             #   0,1,2 for left/middle/right in x direction
             #   0,4,8 for top/middle/bottom in y direction
             # only one of these can be used as image will fill pane in other direction.
-            stretch = numeric
-            pos = extra
+            stretch = num
+            pos = num2
             w, h = focus.w, focus.h
             x, y = 0, 0
             try:
@@ -440,11 +440,11 @@ class events:
         self.ev_num += 1
         return ev
 
-    def read(self, key, home, comm2, numeric, **a):
+    def read(self, key, home, comm2, num, **a):
         self.active = True
         ev = self.add_ev(home, comm2)
-        gev = gobject.io_add_watch(numeric, gobject.IO_IN | gobject.IO_HUP,
-                                  self.docall, comm2, home, numeric, ev)
+        gev = gobject.io_add_watch(num, gobject.IO_IN | gobject.IO_HUP,
+                                  self.docall, comm2, home, num, ev)
         self.events[ev].append(gev)
         return 1
 
@@ -458,13 +458,13 @@ class events:
             del self.events[ev]
             return False
 
-    def signal(self, key, focus, comm2, numeric, **a):
+    def signal(self, key, focus, comm2, num, **a):
         return 1
 
-    def timer(self, key, focus, home, comm2, numeric, **a):
+    def timer(self, key, focus, home, comm2, num, **a):
         self.active = True
         ev = self.add_ev(home, comm2)
-        gev = gobject.timeout_add(numeric*1000, self.dotimeout, comm2, focus, ev)
+        gev = gobject.timeout_add(num*1000, self.dotimeout, comm2, focus, ev)
         self.events[ev].append(gev)
         return 1
 

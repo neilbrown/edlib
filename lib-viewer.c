@@ -38,13 +38,13 @@ DEF_CMD(no_replace)
 
 DEF_CMD(viewer_page_down)
 {
-	call("Next", ci->focus, ci->numeric, ci->mark);
+	call("Next", ci->focus, ci->num, ci->mark);
 	return 1;
 }
 
 DEF_CMD(viewer_page_up)
 {
-	call("Prior", ci->focus, ci->numeric, ci->mark);
+	call("Prior", ci->focus, ci->num, ci->mark);
 	return 1;
 }
 

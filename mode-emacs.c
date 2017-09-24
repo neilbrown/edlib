@@ -128,9 +128,9 @@ REDEF_CMD(emacs_delete)
 		mark_free(m);
 		return 0;
 	}
-	ret = call("Replace", ci->focus, 1, m, NULL, !ci->extra);
+	ret = call("Replace", ci->focus, 1, m, NULL, !ci->num2);
 	mark_free(m);
-	call("Mode:set-extra", ci->focus, 1);
+	call("Mode:set-num2", ci->focus, 1);
 
 	return ret;
 }
@@ -202,12 +202,12 @@ REDEF_CMD(emacs_case)
 				}
 			}
 			if (changed) {
-				ret = call("Replace", ci->focus, 1, m, str, !ci->extra);
+				ret = call("Replace", ci->focus, 1, m, str, !ci->num2);
 				if (dir < 0)
 					call(mv->type+1, ci->focus, dir, ci->mark);
 			}
 			free(str);
-			call("Mode:set-extra", ci->focus, 1);
+			call("Mode:set-num2", ci->focus, 1);
 		}
 		mark_free(m);
 		cnt -= 1;
@@ -289,9 +289,9 @@ REDEF_CMD(emacs_swap)
 DEF_CMD(emacs_recenter)
 {
 	int step = 0;
-	if (ci->numeric == NO_NUMERIC && (ci->extra & 2)) {
+	if (ci->num == NO_NUMERIC && (ci->num2 & 2)) {
 		/* Repeated command - go to top, or bottom, or middle in order */
-		switch (ci->extra & 0xF000) {
+		switch (ci->num2 & 0xF000) {
 		default:
 		case 0: /* was center, go to top */
 			call("Move-View-Line", ci->focus, 1, ci->mark);
@@ -306,15 +306,15 @@ DEF_CMD(emacs_recenter)
 			step = 0;
 			break;
 		}
-	} else if (ci->numeric != NO_NUMERIC) {
+	} else if (ci->num != NO_NUMERIC) {
 		/* Move point to display line N */
-		call("Move-View-Line", ci->focus, ci->numeric, ci->mark);
+		call("Move-View-Line", ci->focus, ci->num, ci->mark);
 	} else {
 		/* Move point to middle and refresh */
 		call("Move-View-Line", ci->focus, 0, ci->mark);
 		call("Display:refresh", ci->focus);
 	}
-	call("Mode:set-extra", ci->focus, 2 | step);
+	call("Mode:set-num2", ci->focus, 2 | step);
 	return 1;
 }
 
@@ -351,7 +351,7 @@ REDEF_CMD(emacs_simple)
 	if (!ci->mark)
 		return -1;
 
-	return call(sc->type, ci->focus, ci->numeric, ci->mark, NULL, ci->extra);
+	return call(sc->type, ci->focus, ci->num, ci->mark, NULL, ci->num2);
 }
 
 REDEF_CMD(emacs_simple_neg)
@@ -361,12 +361,12 @@ REDEF_CMD(emacs_simple_neg)
 	if (!ci->mark)
 		return -1;
 
-	return call(sc->type, ci->focus, -RPT_NUM(ci), ci->mark, NULL, ci->extra);
+	return call(sc->type, ci->focus, -RPT_NUM(ci), ci->mark, NULL, ci->num2);
 }
 
 DEF_CMD(emacs_exit)
 {
-	if (ci->numeric == NO_NUMERIC) {
+	if (ci->num == NO_NUMERIC) {
 		struct pane *p = call_pane("PopupTile", ci->focus, 0, NULL, "DM");
 		// FIXME if called from a popup, this fails.
 		if (!p)
@@ -388,8 +388,8 @@ DEF_CMD(emacs_insert)
 
 	/* Key is "Chr-X" - skip 4 bytes to get X */
 	str = ci->key + 4;
-	ret = call("Replace", ci->focus, 1, ci->mark, str, !ci->extra);
-	call("Mode:set-extra", ci->focus, 1);
+	ret = call("Replace", ci->focus, 1, ci->mark, str, !ci->num2);
+	call("Mode:set-num2", ci->focus, 1);
 
 	return ret;
 }
@@ -430,12 +430,12 @@ DEF_CMD(emacs_insert_other)
 			mark_to_mark(m, ci->mark);
 	}
 
-	ret = call("Replace", ci->focus, 1, ci->mark, ins, !ci->extra);
+	ret = call("Replace", ci->focus, 1, ci->mark, ins, !ci->num2);
 	if (m) {
 		mark_to_mark(ci->mark, m);
 		mark_free(m);
 	}
-	call("Mode:set-extra", ci->focus, 0); /* A newline starts a new undo */
+	call("Mode:set-num2", ci->focus, 0); /* A newline starts a new undo */
 	return ret;
 }
 
@@ -796,14 +796,14 @@ DEF_CMD(emacs_shell)
 DEF_CMD(emacs_meta)
 {
 	call("Mode:set-mode", ci->focus, 0, NULL, "M-");
-	call("Mode:set-numeric", ci->focus, ci->numeric);
-	call("Mode:set-extra", ci->focus, ci->extra);
+	call("Mode:set-num", ci->focus, ci->num);
+	call("Mode:set-num2", ci->focus, ci->num2);
 	return 1;
 }
 
 DEF_CMD(emacs_num)
 {
-	int rpt = ci->numeric;
+	int rpt = ci->num;
 	char *last = ci->key + strlen(ci->key)-1;
 	int neg = 0;
 
@@ -816,15 +816,15 @@ DEF_CMD(emacs_num)
 
 	rpt = rpt * 10 + *last - '0';
 
-	call("Mode:set-numeric", ci->focus, neg ? -rpt : rpt);
-	call("Mode:set-extra", ci->focus, ci->extra);
+	call("Mode:set-num", ci->focus, neg ? -rpt : rpt);
+	call("Mode:set-num2", ci->focus, ci->num2);
 	return 1;
 }
 
 DEF_CMD(emacs_neg)
 {
-	call("Mode:set-numeric", ci->focus, - ci->numeric);
-	call("Mode:set-extra", ci->focus, ci->extra);
+	call("Mode:set-num", ci->focus, - ci->num);
+	call("Mode:set-num2", ci->focus, ci->num2);
 	return 1;
 }
 
@@ -835,7 +835,7 @@ DEF_CMD(emacs_kill_doc)
 
 DEF_CMD(emacs_save_all)
 {
-	if (ci->numeric == NO_NUMERIC) {
+	if (ci->num == NO_NUMERIC) {
 		struct pane *p = call_pane("PopupTile", ci->focus, 0, NULL, "DM");
 		if (p)
 			return call("docs:show-modified", p);
@@ -878,7 +878,7 @@ struct highlight_info {
 
 DEF_CMD(emacs_search_highlight)
 {
-	/* from 'mark' for 'numeric' chars there is a match for 'str' */
+	/* from 'mark' for 'num' chars there is a match for 'str' */
 	struct mark *m, *start, *end;
 	struct highlight_info *hi = ci->home->data;
 
@@ -901,13 +901,13 @@ DEF_CMD(emacs_search_highlight)
 	free(hi->patn);
 	hi->patn = NULL;
 
-	if (ci->mark && ci->numeric > 0 && ci->str) {
+	if (ci->mark && ci->num > 0 && ci->str) {
 		hi->patn = strdup(ci->str);
 		m = vmark_new(ci->focus, hi->view);
 		if (!m)
 			return -1;
 		mark_to_mark(m, ci->mark);
-		attr_set_int(&m->attrs, "render:search", ci->numeric);
+		attr_set_int(&m->attrs, "render:search", ci->num);
 		call("Move-View-Pos", ci->focus, 0, m);
 		call("Notify:doc:Replace", ci->focus);
 		if (start) {

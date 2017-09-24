@@ -36,8 +36,8 @@ static wint_t decode_utf8(char *b safe, int len)
 
 DEF_CMD(utf8_step)
 {
-	int forward = ci->numeric;
-	int move = ci->extra;
+	int forward = ci->num;
+	int move = ci->num2;
 	struct pane *p = ci->home->parent;
 	wint_t ch;
 	struct mark *m = ci->mark;

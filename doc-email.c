@@ -85,7 +85,7 @@ DEF_CMD(email_spacer)
 	int visible = 1;
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2;
-	int o = ci->numeric;
+	int o = ci->num;
 	char *attr;
 	int ret;
 	int ok = 1;
@@ -178,7 +178,7 @@ DEF_CMD(email_get_attr)
 	if (!ci->mark || !ci->home->parent)
 		return 0;
 
-	a = pane_mark_attr(ci->home->parent, ci->mark, ci->numeric, "multipart-prev:email:actions");
+	a = pane_mark_attr(ci->home->parent, ci->mark, ci->num, "multipart-prev:email:actions");
 	if (!a)
 		return 1;
 	fields = 0;

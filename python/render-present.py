@@ -435,7 +435,7 @@ class PresenterPane(edlib.Pane):
             return f
         return os.path.dirname(path)+'/'+f
 
-    def handle(self, key, focus, mark, numeric, comm2, **a):
+    def handle(self, key, focus, mark, num, comm2, **a):
         if key[:10] == "Present-BG":
             cmds = key[11:].split(',')
             ret = 0
@@ -463,7 +463,7 @@ class PresenterPane(edlib.Pane):
             return ret
         if key == "render-line-prev":
             # Go to start of page
-            if numeric == 0:
+            if num == 0:
                 # just make sure at start of line
                 return self.parent.call("render-line-prev", mark, 0)
 
@@ -615,14 +615,14 @@ class PresenterPane(edlib.Pane):
         if key == "Notify:doc:Recentre":
             m2 = edlib.Mark(self)
             m2.to_mark(mark)
-            if numeric == 2:
+            if num == 2:
                 # Move 'm2' to start of next page
                 m = self.find_page(m2)
                 if m:
                     m2.to_mark(m)
                     if comm2 is not None:
                         comm2("callback", focus, m)
-            if numeric == 3:
+            if num == 3:
                 # Move 'm2' to start of previous page
                 m = self.find_pages(m2)
                 if m:
@@ -663,7 +663,7 @@ class PresenterPane(edlib.Pane):
 
         if key == "Move-View-Large":
             page = self.find_pages(mark)
-            if numeric < 0:
+            if num < 0:
                 page = page.prev()
             else:
                 page = page.next()
@@ -692,19 +692,19 @@ class MarkdownPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
 
-    def handle(self, key, focus, mark, numeric, **a):
+    def handle(self, key, focus, mark, num, **a):
         # Refresh causes presentation page to recenter
         # page-down just moves down to start of next page.
         if key == "Display:refresh":
             focus.call("Notify:doc:Recentre", mark)
             return 0
-        if key == "Move-View-Large" and numeric >= 0:
+        if key == "Move-View-Large" and num >= 0:
             m2 = mark.dup()
             if focus.call("Notify:doc:Recentre", m2, 2,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 focus.damaged(edlib.DAMAGED_CURSOR)
                 return 1
-        if key == "Move-View-Large" and numeric < 0:
+        if key == "Move-View-Large" and num < 0:
             m2 = mark.dup()
             if focus.call("Notify:doc:Recentre", m2, 3,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:

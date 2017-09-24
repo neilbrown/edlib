@@ -242,7 +242,7 @@ class notmuch_main(edlib.Doc):
         self.seen_msgs = {}
         self.db = notmuch_db()
 
-    def handle(self, key, focus, mark, mark2, numeric, extra, str, str2, comm2, **a):
+    def handle(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
 
         if key == "Close":
             return 1
@@ -254,11 +254,11 @@ class notmuch_main(edlib.Doc):
             return 1
 
         if key == "doc:set-ref":
-            if numeric == 1:
+            if num == 1:
                 mark.offset = 0
             else:
                 mark.offset = len(self.searches.current)
-            self.to_end(mark, numeric == 0);
+            self.to_end(mark, num == 0);
 
             return 1
 
@@ -266,8 +266,8 @@ class notmuch_main(edlib.Doc):
             return 1 if mark.offset == mark2.offset else 2
 
         if key == "doc:step":
-            forward = numeric
-            move = extra
+            forward = num
+            move = num2
             ret = edlib.WEOF
             target = mark
             if forward and mark.offset < len(self.searches.current):
@@ -294,7 +294,7 @@ class notmuch_main(edlib.Doc):
 
         if key == "doc:get-attr":
             attr = str
-            forward = numeric
+            forward = num
             o = mark.offset
             if not forward:
                 o -= 1
@@ -566,7 +566,7 @@ class notmuch_master_view(edlib.Pane):
             if tile.h != h:
                 tile.call("Window:y+", "notmuch", h - tile.h)
 
-    def handle(self, key, focus, mark, numeric, str, str2, **a):
+    def handle(self, key, focus, mark, num, str, str2, **a):
 
         in_message = False
         in_query = False
@@ -737,7 +737,7 @@ class notmuch_master_view(edlib.Pane):
             p2 = p1.call("doc:attach", ret='focus')
             p3 = p2.call("doc:assign", p0, "notmuch:threads", ret='focus')
             self.query_pane = p3
-            if numeric:
+            if num:
                 self.query_pane.take_focus()
             self.resize()
             return 1
@@ -761,7 +761,7 @@ class notmuch_master_view(edlib.Pane):
             p = self.message_pane = p3
             p.ctid = str2
             p.cmid = str
-            if numeric:
+            if num:
                 self.message_pane.take_focus()
             self.resize()
             return 1
@@ -783,7 +783,7 @@ class notmuch_main_view(edlib.Pane):
         self.call("Request:Notify:doc:Replace")
         self.selected = None
 
-    def handle(self, key, focus, mark, numeric, **a):
+    def handle(self, key, focus, mark, num, **a):
         if key == "Clone":
             p = notmuch_main_view(focus)
             self.clone_children(focus.focus)
@@ -795,7 +795,7 @@ class notmuch_main_view(edlib.Pane):
         if key == "notmuch:select":
             s = focus.call("doc:get-attr", "query", mark, 1, ret='str')
             if s:
-                focus.call("notmuch:select-query", s, numeric)
+                focus.call("notmuch:select-query", s, num)
             return 1
 
 ##################
@@ -1120,7 +1120,7 @@ class notmuch_list(edlib.Doc):
             return self.cmp1(p1[0], p2[0])
 
 
-    def handle(self, key, mark, mark2, numeric, extra, focus, xy, str, str2, comm2, **a):
+    def handle(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
         if key == "Notify:Tag":
             if str2:
                 # re-evaluate tags of a single message
@@ -1140,10 +1140,10 @@ class notmuch_list(edlib.Doc):
 
         if key == "doc:set-ref":
             mark.pos = None
-            if numeric == 1 and len(self.threadids) > 0:
+            if num == 1 and len(self.threadids) > 0:
                 i,j,moved,mark.pos = self.pos_index((self.threadids[0],),[str2], str2 and xy[0])
             mark.offset = 0
-            self.to_end(mark, numeric == 0)
+            self.to_end(mark, num == 0)
             return 1
 
         if key == "doc:mark-same":
@@ -1154,8 +1154,8 @@ class notmuch_list(edlib.Doc):
             return 1 if (i1,j1)==(i2,j2) else 2
 
         if key == "doc:step":
-            forward = numeric
-            move = extra
+            forward = num
+            move = num2
             ret = edlib.WEOF
             i,j,moved,pos = self.pos_index(mark.pos, [str2], str2 and xy[0])
             if moved:
@@ -1196,7 +1196,7 @@ class notmuch_list(edlib.Doc):
 
         if key == "doc:get-attr":
             attr = str
-            forward = numeric
+            forward = num
             i,j,moved,pos = self.pos_index(mark.pos, [str2], str2 and xy[0])
             if moved:
                 mark.pos = pos
@@ -1330,7 +1330,7 @@ class notmuch_query_view(edlib.Pane):
         self.seen_msgs = {}
         self.call("Request:Notify:doc:Replace")
 
-    def handle(self, key, focus, mark, mark2, numeric, **a):
+    def handle(self, key, focus, mark, mark2, num, **a):
         if key == "Clone":
             p = notmuch_query_view(focus)
             self.clone_children(focus.focus)
@@ -1349,7 +1349,7 @@ class notmuch_query_view(edlib.Pane):
             del a['home']
             del a['comm']
             del a['xy']
-            return self.parent.call(key, focus, mark, mark2, numeric, s, self.selected,
+            return self.parent.call(key, focus, mark, mark2, num, s, self.selected,
                                     (self.whole_thread, 0), *(a.values()))
 
         if key == 'Chr-Z':
@@ -1367,8 +1367,8 @@ class notmuch_query_view(edlib.Pane):
                 focus.damaged(edlib.DAMAGED_VIEW)
                 focus.damaged(edlib.DAMAGED_CONTENT)
             s2 = focus.call("doc:get-attr", "message-id", 1, mark, ret='str')
-            if s2 and numeric >= 0:
-                focus.call("notmuch:select-message", s2, s, numeric)
+            if s2 and num >= 0:
+                focus.call("notmuch:select-message", s2, s, num)
             return 1
 
         if key == "render:reposition":
@@ -1403,7 +1403,7 @@ class notmuch_message_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
 
-    def handle(self, key, focus, mark, numeric, str, str2, comm2, **a):
+    def handle(self, key, focus, mark, num, str, str2, comm2, **a):
         if key == "Close":
             self.call("doc:notmuch-close-message")
             return 1

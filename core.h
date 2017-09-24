@@ -91,7 +91,7 @@ struct notifier {
 };
 void pane_add_notify(struct pane *target safe, struct pane *source safe, char *msg safe);
 int pane_notify(struct pane *p safe, char *notification safe, struct mark *m, struct mark *m2,
-		char *str, char *str2, int numeric, int extra, struct command *comm2);
+		char *str, char *str2, int num, int num2, struct command *comm2);
 void pane_drop_notifiers(struct pane *p safe, char *notification);
 
 void editor_delayed_free(struct pane *ed safe, struct pane *p safe);
@@ -281,7 +281,7 @@ int key_lookup_cmd_func(const struct cmd_info *ci safe);
 
 /* Each event (above) is accompanied by a cmd_info structure.
  * 'key' and 'home' are always present, others only if relevant.
- * Numeric is present for 'key' and 'move'.  INT_MAX/2 means no number was
+ * Num is present for 'key' and 'move'.  INT_MAX/2 means no number was
  *   requested so is usually treated like '1'.  Negative numbers are quite
  *   possible.
  * x,y are present for mouse events
@@ -291,7 +291,7 @@ int key_lookup_cmd_func(const struct cmd_info *ci safe);
 struct cmd_info {
 	char		*key safe;
 	struct pane	*home safe, *focus safe;
-	int		numeric, extra;
+	int		num, num2;
 	int		x,y;		/* relative to focus */
 	char		*str, *str2;
 	struct mark	*mark, *mark2;
@@ -300,7 +300,7 @@ struct cmd_info {
 };
 
 #define	NO_NUMERIC	(INT_MAX/2)
-#define	RPT_NUM(ci)	((ci)->numeric == NO_NUMERIC ? 1 : (ci)->numeric == -NO_NUMERIC ? -1 : (ci)->numeric)
+#define	RPT_NUM(ci)	((ci)->num == NO_NUMERIC ? 1 : (ci)->num == -NO_NUMERIC ? -1 : (ci)->num)
 
 struct map *safe key_alloc(void);
 void key_free(struct map *m safe);
@@ -354,8 +354,8 @@ void pane_absxy(struct pane *p, int *x safe, int *y safe, int *w safe, int *h sa
 void pane_relxy(struct pane *p, int *x safe, int *y safe);
 void pane_map_xy(struct pane *orig, struct pane *target, int *x safe, int *y safe);
 struct pane *do_call_pane(char *key safe, struct pane *focus safe,
-			  int numeric, struct mark *m, char *str,
-			  int extra, struct mark *m2, char *str2,
+			  int num, struct mark *m, char *str,
+			  int num2, struct mark *m2, char *str2,
 			  int x, int y);
 struct xy pane_scale(struct pane *p safe);
 
@@ -386,7 +386,7 @@ static inline int doc_undo(struct pane *p safe, bool redo)
 {
 	struct cmd_info ci = {.key = "doc:reundo", .focus=p, .home=p, .comm = safe_cast 0 };
 
-	ci.numeric = redo ? 1 : 0;
+	ci.num = redo ? 1 : 0;
 	return key_handle(&ci);
 }
 
@@ -416,7 +416,7 @@ static inline void doc_del_view(struct pane *p safe, int num)
 {
 	struct cmd_info ci = {.key = "doc:del-view", .focus = p, .home = p, .comm = safe_cast 0};
 
-	ci.numeric = num;
+	ci.num = num;
 	key_handle(&ci);
 }
 
@@ -449,24 +449,24 @@ static inline void doc_del_view(struct pane *p safe, int num)
 #define VFUNC(func, ...) _VFUNC(func, __NARG__(__VA_ARGS__)) (__VA_ARGS__)
 
 #define call(...) VFUNC(call, __VA_ARGS__)
-#define call12(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home)
-#define call11(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, NULL)
-#define call9(key, focus, numeric, mark, str, extra, mark2, str2, comm2) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, 0, 0, NULL)
-#define call8(key, focus, numeric, mark, str, extra, mark2, str2) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, str2, NULL, 0, 0, NULL)
-#define call7(key, focus, numeric, mark, str, extra, mark2) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, NULL, NULL, 0, 0, NULL)
-#define call6(key, focus, numeric, mark, str, extra) \
-	do_call(key, focus, numeric, mark, str, extra, NULL, NULL, NULL, 0, 0, NULL)
-#define call5(key, focus, numeric, mark, str) \
-	do_call(key, focus, numeric, mark, str, 0, NULL, NULL, NULL, 0, 0, NULL)
-#define call4(key, focus, numeric, mark) \
-	do_call(key, focus, numeric, mark, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
-#define call3(key, focus, numeric) \
-	do_call(key, focus, numeric, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
+#define call12(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, home) \
+	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, home)
+#define call11(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y) \
+	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, NULL)
+#define call9(key, focus, num, mark, str, num2, mark2, str2, comm2) \
+	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, 0, 0, NULL)
+#define call8(key, focus, num, mark, str, num2, mark2, str2) \
+	do_call(key, focus, num, mark, str, num2, mark2, str2, NULL, 0, 0, NULL)
+#define call7(key, focus, num, mark, str, num2, mark2) \
+	do_call(key, focus, num, mark, str, num2, mark2, NULL, NULL, 0, 0, NULL)
+#define call6(key, focus, num, mark, str, num2) \
+	do_call(key, focus, num, mark, str, num2, NULL, NULL, NULL, 0, 0, NULL)
+#define call5(key, focus, num, mark, str) \
+	do_call(key, focus, num, mark, str, 0, NULL, NULL, NULL, 0, 0, NULL)
+#define call4(key, focus, num, mark) \
+	do_call(key, focus, num, mark, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
+#define call3(key, focus, num) \
+	do_call(key, focus, num, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
 #define call2(key, focus) \
 	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
 
@@ -475,22 +475,22 @@ static inline void doc_del_view(struct pane *p safe, int num)
  * macros with 'home' first
  */
 #define home_call(...) VFUNC(home_call, __VA_ARGS__)
-#define home_call12(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home)
-#define home_call10(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, 0, 0, home)
-#define home_call9(home, key, focus, numeric, mark, str, extra, mark2, str2) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, str2, NULL, 0, 0, home)
-#define home_call8(home, key, focus, numeric, mark, str, extra, mark2) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, NULL, NULL, 0, 0, home)
-#define home_call7(home, key, focus, numeric, mark, str, extra) \
-	do_call(key, focus, numeric, mark, str, extra, NULL, NULL, NULL, 0, 0, home)
-#define home_call6(home, key, focus, numeric, mark, str) \
-	do_call(key, focus, numeric, mark, str, 0, NULL, NULL, NULL, 0, 0, home)
-#define home_call5(home, key, focus, numeric, mark) \
-	do_call(key, focus, numeric, mark, NULL, 0, NULL, NULL, NULL, 0, 0, home)
-#define home_call4(home, key, focus, numeric) \
-	do_call(key, focus, numeric, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, home)
+#define home_call12(home, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y) \
+	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, home)
+#define home_call10(home, key, focus, num, mark, str, num2, mark2, str2, comm2) \
+	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, 0, 0, home)
+#define home_call9(home, key, focus, num, mark, str, num2, mark2, str2) \
+	do_call(key, focus, num, mark, str, num2, mark2, str2, NULL, 0, 0, home)
+#define home_call8(home, key, focus, num, mark, str, num2, mark2) \
+	do_call(key, focus, num, mark, str, num2, mark2, NULL, NULL, 0, 0, home)
+#define home_call7(home, key, focus, num, mark, str, num2) \
+	do_call(key, focus, num, mark, str, num2, NULL, NULL, NULL, 0, 0, home)
+#define home_call6(home, key, focus, num, mark, str) \
+	do_call(key, focus, num, mark, str, 0, NULL, NULL, NULL, 0, 0, home)
+#define home_call5(home, key, focus, num, mark) \
+	do_call(key, focus, num, mark, NULL, 0, NULL, NULL, NULL, 0, 0, home)
+#define home_call4(home, key, focus, num) \
+	do_call(key, focus, num, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, home)
 #define home_call3(home, key, focus) \
 	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, home)
 
@@ -498,30 +498,30 @@ static inline void doc_del_view(struct pane *p safe, int num)
  * The *last* arg is always comm2 (unlike first for home in home_call)
  */
 #define call_comm(...) VFUNC(call_comm, __VA_ARGS__)
-#define call_comm11(key, focus, numeric, mark, str, extra, mark2, str2, x, y, comm2) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, NULL)
-#define call_comm9(key, focus, numeric, mark, str, extra, mark2, str2, comm2) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, str2, comm2, 0, 0, NULL)
-#define call_comm8(key, focus, numeric, mark, str, extra, mark2, comm2) \
-	do_call(key, focus, numeric, mark, str, extra, mark2, NULL, comm2, 0, 0, NULL)
-#define call_comm7(key, focus, numeric, mark, str, extra, comm2) \
-	do_call(key, focus, numeric, mark, str, extra, NULL, NULL, comm2, 0, 0, NULL)
-#define call_comm6(key, focus, numeric, mark, str, comm2) \
-	do_call(key, focus, numeric, mark, str, 0, NULL, NULL, comm2, 0, 0, NULL)
-#define call_comm5(key, focus, numeric, mark, comm2) \
-	do_call(key, focus, numeric, mark, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
-#define call_comm4(key, focus, numeric, comm2) \
-	do_call(key, focus, numeric, NULL, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
+#define call_comm11(key, focus, num, mark, str, num2, mark2, str2, x, y, comm2) \
+	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, NULL)
+#define call_comm9(key, focus, num, mark, str, num2, mark2, str2, comm2) \
+	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, 0, 0, NULL)
+#define call_comm8(key, focus, num, mark, str, num2, mark2, comm2) \
+	do_call(key, focus, num, mark, str, num2, mark2, NULL, comm2, 0, 0, NULL)
+#define call_comm7(key, focus, num, mark, str, num2, comm2) \
+	do_call(key, focus, num, mark, str, num2, NULL, NULL, comm2, 0, 0, NULL)
+#define call_comm6(key, focus, num, mark, str, comm2) \
+	do_call(key, focus, num, mark, str, 0, NULL, NULL, comm2, 0, 0, NULL)
+#define call_comm5(key, focus, num, mark, comm2) \
+	do_call(key, focus, num, mark, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
+#define call_comm4(key, focus, num, comm2) \
+	do_call(key, focus, num, NULL, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
 #define call_comm3(key, focus, comm2) \
 	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
 
-static inline int do_call(char *key safe, struct pane *focus safe, int numeric, struct mark *m,
-			  char *str, int extra, struct mark *m2, char *str2,
+static inline int do_call(char *key safe, struct pane *focus safe, int num, struct mark *m,
+			  char *str, int num2, struct mark *m2, char *str2,
 			  struct command *comm2, int x, int y, struct pane *home)
 {
 	struct cmd_info ci = {.key = key, .focus = focus, .home = home ?: focus,
-			      .numeric = numeric, .mark = m, .str = str,
-			      .extra = extra, .mark2 = m2, .str2 = str2,
+			      .num = num, .mark = m, .str = str,
+			      .num2 = num2, .mark2 = m2, .str2 = str2,
 			      .comm2 = comm2, .x = x, .y = y,
 			      .comm = safe_cast 0};
 
@@ -533,35 +533,35 @@ static inline int do_call(char *key safe, struct pane *focus safe, int numeric, 
  * This is mostly used for callback.
  */
 #define comm_call(...) VFUNC(comm_call, __VA_ARGS__)
-#define comm_call13(comm, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home) \
-	do_comm_call(comm, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, home)
-#define comm_call12(comm, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y) \
-	do_comm_call(comm, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y, NULL)
-#define comm_call10(comm, key, focus, numeric, mark, str, extra, mark2, str2, comm2) \
-	do_comm_call(comm, key, focus, numeric, mark, str, extra, mark2, str2, comm2, 0, 0, NULL)
-#define comm_call9(comm, key, focus, numeric, mark, str, extra, mark2, str2) \
-	do_comm_call(comm, key, focus, numeric, mark, str, extra, mark2, str2, NULL, 0, 0, NULL)
-#define comm_call8(comm, key, focus, numeric, mark, str, extra, mark2) \
-	do_comm_call(comm, key, focus, numeric, mark, str, extra, mark2, NULL, NULL, 0, 0, NULL)
-#define comm_call7(comm, key, focus, numeric, mark, str, extra) \
-	do_comm_call(comm, key, focus, numeric, mark, str, extra, NULL, NULL, NULL, 0, 0, NULL)
-#define comm_call6(comm, key, focus, numeric, mark, str) \
-	do_comm_call(comm, key, focus, numeric, mark, str, 0, NULL, NULL, NULL, 0, 0, NULL)
-#define comm_call5(comm, key, focus, numeric, mark) \
-	do_comm_call(comm, key, focus, numeric, mark, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
-#define comm_call4(comm, key, focus, numeric) \
-	do_comm_call(comm, key, focus, numeric, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
+#define comm_call13(comm, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, home) \
+	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, home)
+#define comm_call12(comm, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y) \
+	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, NULL)
+#define comm_call10(comm, key, focus, num, mark, str, num2, mark2, str2, comm2) \
+	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, comm2, 0, 0, NULL)
+#define comm_call9(comm, key, focus, num, mark, str, num2, mark2, str2) \
+	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, NULL, 0, 0, NULL)
+#define comm_call8(comm, key, focus, num, mark, str, num2, mark2) \
+	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, NULL, NULL, 0, 0, NULL)
+#define comm_call7(comm, key, focus, num, mark, str, num2) \
+	do_comm_call(comm, key, focus, num, mark, str, num2, NULL, NULL, NULL, 0, 0, NULL)
+#define comm_call6(comm, key, focus, num, mark, str) \
+	do_comm_call(comm, key, focus, num, mark, str, 0, NULL, NULL, NULL, 0, 0, NULL)
+#define comm_call5(comm, key, focus, num, mark) \
+	do_comm_call(comm, key, focus, num, mark, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
+#define comm_call4(comm, key, focus, num) \
+	do_comm_call(comm, key, focus, num, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
 #define comm_call3(comm, key, focus) \
 	do_comm_call(comm, key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
 
 static inline int do_comm_call(struct command *comm,
-			       char *key safe, struct pane *focus safe, int numeric, struct mark *m,
-			       char *str, int extra, struct mark *m2, char *str2,
+			       char *key safe, struct pane *focus safe, int num, struct mark *m,
+			       char *str, int num2, struct mark *m2, char *str2,
 			       struct command *comm2, int x, int y, struct pane *home)
 {
 	struct cmd_info ci = {.key = key, .focus = focus, .home = home ?: focus,
-			      .numeric = numeric, .mark = m, .str = str,
-			      .extra = extra, .mark2 = m2, .str2 = str2,
+			      .num = num, .mark = m, .str = str,
+			      .num2 = num2, .mark2 = m2, .str2 = str2,
 			      .comm2 = comm2, .x = x, .y = y,
 			      .comm = safe_cast 0};
 
@@ -575,33 +575,33 @@ static inline int do_comm_call(struct command *comm,
  * given first, and home->handle is explicitly called.
  */
 #define pane_call(...) VFUNC(pane_call, __VA_ARGS__)
-#define pane_call12(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y) \
-	do_pane_call(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2, x, y)
-#define pane_call10(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2) \
-	do_pane_call(home, key, focus, numeric, mark, str, extra, mark2, str2, comm2, 0, 0)
-#define pane_call9(home, key, focus, numeric, mark, str, extra, mark2, str2) \
-	do_pane_call(home, key, focus, numeric, mark, str, extra, mark2, str2, NULL, 0, 0)
-#define pane_call8(home, key, focus, numeric, mark, str, extra, mark2) \
-	do_pane_call(home, key, focus, numeric, mark, str, extra, mark2, NULL, NULL, 0, 0)
-#define pane_call7(home, key, focus, numeric, mark, str, extra) \
-	do_pane_call(home, key, focus, numeric, mark, str, extra, NULL, NULL, NULL, 0, 0)
-#define pane_call6(home, key, focus, numeric, mark, str) \
-	do_pane_call(home, key, focus, numeric, mark, str, 0, NULL, NULL, NULL, 0, 0)
-#define pane_call5(home, key, focus, numeric, mark) \
-	do_pane_call(home, key, focus, numeric, mark, NULL, 0, NULL, NULL, NULL, 0, 0)
-#define pane_call4(home, key, focus, numeric) \
-	do_pane_call(home, key, focus, numeric, NULL, NULL, 0, NULL, NULL, NULL, 0, 0)
+#define pane_call12(home, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y) \
+	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y)
+#define pane_call10(home, key, focus, num, mark, str, num2, mark2, str2, comm2) \
+	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, comm2, 0, 0)
+#define pane_call9(home, key, focus, num, mark, str, num2, mark2, str2) \
+	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, NULL, 0, 0)
+#define pane_call8(home, key, focus, num, mark, str, num2, mark2) \
+	do_pane_call(home, key, focus, num, mark, str, num2, mark2, NULL, NULL, 0, 0)
+#define pane_call7(home, key, focus, num, mark, str, num2) \
+	do_pane_call(home, key, focus, num, mark, str, num2, NULL, NULL, NULL, 0, 0)
+#define pane_call6(home, key, focus, num, mark, str) \
+	do_pane_call(home, key, focus, num, mark, str, 0, NULL, NULL, NULL, 0, 0)
+#define pane_call5(home, key, focus, num, mark) \
+	do_pane_call(home, key, focus, num, mark, NULL, 0, NULL, NULL, NULL, 0, 0)
+#define pane_call4(home, key, focus, num) \
+	do_pane_call(home, key, focus, num, NULL, NULL, 0, NULL, NULL, NULL, 0, 0)
 #define pane_call3(home, key, focus) \
 	do_pane_call(home, key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0)
 
 static inline int do_pane_call(struct pane *home,
-			       char *key safe, struct pane *focus safe, int numeric, struct mark *m,
-			       char *str, int extra, struct mark *m2, char *str2,
+			       char *key safe, struct pane *focus safe, int num, struct mark *m,
+			       char *str, int num2, struct mark *m2, char *str2,
 			       struct command *comm2, int x, int y)
 {
 	struct cmd_info ci = {.key = key, .focus = focus, .home = home ?: focus,
-			      .numeric = numeric, .mark = m, .str = str,
-			      .extra = extra, .mark2 = m2, .str2 = str2,
+			      .num = num, .mark = m, .str = str,
+			      .num2 = num2, .mark2 = m2, .str2 = str2,
 			      .comm2 = comm2, .x = x, .y = y,
 			      .comm = safe_cast 0};
 
@@ -626,19 +626,19 @@ struct call_return {
 };
 
 #define call_pane(...) VFUNC(call_pane, __VA_ARGS__)
-#define call_pane10(key, focus, numeric, mark, str, extra, mark2, str2, x, y) \
-	do_call_pane(key, focus, numeric, mark, str, extra, mark2, str2, x, y)
-#define call_pane8(key, focus, numeric, mark, str, extra, mark2, str2) \
-	do_call_pane(key, focus, numeric, mark, str, extra, mark2, str2, 0, 0)
-#define call_pane7(key, focus, numeric, mark, str, extra, mark2) \
-	do_call_pane(key, focus, numeric, mark, str, extra, mark2, NULL, 0, 0)
-#define call_pane6(key, focus, numeric, mark, str, extra) \
-	do_call_pane(key, focus, numeric, mark, str, extra, NULL, NULL, 0, 0)
-#define call_pane5(key, focus, numeric, mark, str) \
-	do_call_pane(key, focus, numeric, mark, str, 0, NULL, NULL, 0, 0)
-#define call_pane4(key, focus, numeric, mark) \
-	do_call_pane(key, focus, numeric, mark, NULL, 0, NULL, NULL, 0, 0)
-#define call_pane3(key, focus, numeric) \
-	do_call_pane(key, focus, numeric, NULL, NULL, 0, NULL, NULL, 0, 0)
+#define call_pane10(key, focus, num, mark, str, num2, mark2, str2, x, y) \
+	do_call_pane(key, focus, num, mark, str, num2, mark2, str2, x, y)
+#define call_pane8(key, focus, num, mark, str, num2, mark2, str2) \
+	do_call_pane(key, focus, num, mark, str, num2, mark2, str2, 0, 0)
+#define call_pane7(key, focus, num, mark, str, num2, mark2) \
+	do_call_pane(key, focus, num, mark, str, num2, mark2, NULL, 0, 0)
+#define call_pane6(key, focus, num, mark, str, num2) \
+	do_call_pane(key, focus, num, mark, str, num2, NULL, NULL, 0, 0)
+#define call_pane5(key, focus, num, mark, str) \
+	do_call_pane(key, focus, num, mark, str, 0, NULL, NULL, 0, 0)
+#define call_pane4(key, focus, num, mark) \
+	do_call_pane(key, focus, num, mark, NULL, 0, NULL, NULL, 0, 0)
+#define call_pane3(key, focus, num) \
+	do_call_pane(key, focus, num, NULL, NULL, 0, NULL, NULL, 0, 0)
 #define call_pane2(key, focus) \
 	do_call_pane(key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0)

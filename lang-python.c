@@ -281,10 +281,10 @@ REDEF_CMD(python_call)
 	rv = rv && dict_add(kwds, "comm2",
 			    ci->comm2 ? Comm_Fromcomm(ci->comm2):
 			    (Py_INCREF(Py_None), Py_None));
-	rv = rv && dict_add(kwds, "numeric",
-			    Py_BuildValue("i", ci->numeric));
-	rv = rv && dict_add(kwds, "extra",
-			    Py_BuildValue("i", ci->extra));
+	rv = rv && dict_add(kwds, "num",
+			    Py_BuildValue("i", ci->num));
+	rv = rv && dict_add(kwds, "num2",
+			    Py_BuildValue("i", ci->num2));
 	rv = rv && dict_add(kwds, "xy",
 			    Py_BuildValue("ii", ci->x, ci->y));
 
@@ -727,7 +727,7 @@ static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwd
 	}
 
 	rv = pane_notify(ci.focus, ci.key, ci.mark, ci.mark2, ci.str, ci.str2,
-			 ci.numeric, ci.extra, ci.comm2);
+			 ci.num, ci.num2, ci.comm2);
 
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
@@ -1801,7 +1801,7 @@ static void python_free_command(struct command *c safe)
  * Panes are assigned to focus, then home.
  * Strings (after the key) are assigned to 'str' then 'str2'.
 
- * Ints are assigned to numeric then extra
+ * Ints are assigned to num then num2
  * Pairs (must be of ints) are assigned to x,y then hx,hy.
  * Marks are assigned to mark then mark2
  * A command is assigned to comm2 (comm is set automatically)
@@ -1815,7 +1815,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 	int argc;
 	PyObject *a;
 	int i;
-	int numeric_set = 0, extra_set = 0;
+	int num_set = 0, num2_set = 0;
 	int xy_set = 0;
 
 	*s1 = *s2 = NULL;
@@ -1873,12 +1873,12 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			else
 				ci->str2 = str;
 		} else if (PyInt_Check(a)) {
-			if (!numeric_set) {
-				ci->numeric = PyInt_AsLong(a);
-				numeric_set = 1;
-			} else if (!extra_set) {
-				ci->extra = PyInt_AsLong(a);
-				extra_set = 1;
+			if (!num_set) {
+				ci->num = PyInt_AsLong(a);
+				num_set = 1;
+			} else if (!num2_set) {
+				ci->num2 = PyInt_AsLong(a);
+				num2_set = 1;
 			} else {
 				PyErr_SetString(PyExc_TypeError, "Only 2 Number args permitted");
 				return 0;

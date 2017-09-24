@@ -427,11 +427,11 @@ DEF_CMD(doc_set)
 	char *val = ci->key + 8;
 
 	if (strcmp(val, "autoclose") == 0) {
-		d->autoclose = ci->numeric;
+		d->autoclose = ci->num;
 		return 1;
 	}
 	if (strcmp(val, "filter") == 0) {
-		d->filter = ci->numeric;
+		d->filter = ci->num;
 		return 1;
 	}
 	return d->filter ? 0 : 1;
@@ -491,7 +491,7 @@ DEF_CMD(doc_request_notify)
 DEF_CMD(doc_notify)
 {
 	int ret = pane_notify(ci->home, ci->key, ci->mark, ci->mark2,
-			      ci->str, ci->str2, ci->numeric, ci->extra, ci->comm2);
+			      ci->str, ci->str2, ci->num, ci->num2, ci->comm2);
 	/* Mustn't return 0, else will fall through to next doc */
 	/* HACK remove this when docs isn't the parent of all documents */
 	return ret ?: -2;
@@ -499,8 +499,8 @@ DEF_CMD(doc_notify)
 
 DEF_CMD(doc_delview)
 {
-	if (ci->numeric >= 0)
-		do_doc_del_view(ci->home->data, ci->numeric);
+	if (ci->num >= 0)
+		do_doc_del_view(ci->home->data, ci->num);
 	else
 		return -1;
 	return 1;
@@ -514,15 +514,15 @@ DEF_CMD(doc_addview)
 DEF_CMD(doc_vmarkget)
 {
 	struct mark *m, *m2;
-	m = do_vmark_first(ci->home->data, ci->numeric);
-	m2 = do_vmark_last(ci->home->data, ci->numeric);
-	if (ci->extra == 1 && ci->mark)
+	m = do_vmark_first(ci->home->data, ci->num);
+	m2 = do_vmark_last(ci->home->data, ci->num);
+	if (ci->num2 == 1 && ci->mark)
 		m2 = do_vmark_at_point(ci->focus, ci->home->data, ci->mark,
-				       ci->numeric);
-	if (ci->extra == 2)
-		m2 = doc_new_mark(ci->home->data, ci->numeric);
-	if (ci->extra == 3 && ci->mark)
-		m2 = do_vmark_at_or_before(ci->focus, ci->home->data, ci->mark, ci->numeric);
+				       ci->num);
+	if (ci->num2 == 2)
+		m2 = doc_new_mark(ci->home->data, ci->num);
+	if (ci->num2 == 3 && ci->mark)
+		m2 = do_vmark_at_or_before(ci->focus, ci->home->data, ci->mark, ci->num);
 	return comm_call(ci->comm2, "callback:vmark", ci->focus,
 			 0, m, NULL, 0, m2);
 }
@@ -581,7 +581,7 @@ DEF_CMD(doc_do_revisit)
 	 */
 	if (!ci->home->parent)
 		return -1;
-	return home_call(ci->home->parent, ci->key, ci->home, ci->numeric, ci->mark);
+	return home_call(ci->home->parent, ci->key, ci->home, ci->num, ci->mark);
 }
 
 DEF_CMD(doc_mymark)
@@ -622,8 +622,8 @@ DEF_CMD(doc_write_file)
 
 	if (ci->str)
 		f = fopen(ci->str, "w");
-	else if (ci->numeric >= 0 && ci->numeric != NO_NUMERIC)
-		f = fdopen(dup(ci->numeric), "w");
+	else if (ci->num >= 0 && ci->num != NO_NUMERIC)
+		f = fdopen(dup(ci->num), "w");
 	if (!f)
 		return -1;
 
@@ -749,12 +749,12 @@ DEF_CMD(doc_handle)
 		if (!pt || !ci->comm2)
 			return -1;
 
-		if (ci->extra == MARK_POINT)
+		if (ci->num2 == MARK_POINT)
 			m = point_dup(pt);
-		else if (ci->extra == MARK_UNGROUPED)
+		else if (ci->num2 == MARK_UNGROUPED)
 			m = mark_dup(pt, 1);
 		else
-			m = do_mark_at_point(pt, ci->extra);
+			m = do_mark_at_point(pt, ci->num2);
 
 		return comm_call(ci->comm2, "callback:dup-point", ci->focus,
 				 0, m);
@@ -764,7 +764,7 @@ DEF_CMD(doc_handle)
 		struct pane *p2;
 		if ((void*) (dd->doc))
 			return -1;
-		p2 = doc_assign(ci->home, ci->focus, ci->numeric, ci->str);
+		p2 = doc_assign(ci->home, ci->focus, ci->num, ci->str);
 		if (!p2)
 			return -1;
 		comm_call(ci->comm2, "callback:doc", p2);
@@ -773,7 +773,7 @@ DEF_CMD(doc_handle)
 
 	if (strcmp(ci->key, "Replace") == 0) {
 		return home_call(dd->doc, "doc:replace", ci->focus, 1, ci->mark, ci->str,
-				 ci->extra, dd->point);
+				 ci->num2, dd->point);
 	}
 
 	if (strcmp(ci->key, "get-attr") == 0) {
@@ -797,14 +797,14 @@ DEF_CMD(doc_handle)
 	    strncmp(ci->key, "Notify:doc:", 11) != 0)
 		/* doesn't get sent to the doc */
 		return 0;
-	return home_call(dd->doc, ci->key, ci->focus, ci->numeric,
+	return home_call(dd->doc, ci->key, ci->focus, ci->num,
 			 ci->mark ?: dd->point, ci->str,
-			 ci->extra, ci->mark2, ci->str2,
+			 ci->num2, ci->mark2, ci->str2,
 			 ci->comm2, ci->x, ci->y);
 }
 
 static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
-			       int numeric, char *str)
+			       int num, char *str)
 {
 	struct doc_data *dd = p->data;
 	struct pane *p2 = NULL;
@@ -819,7 +819,7 @@ static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
 	pane_add_notify(p, doc, "Notify:doc:viewers");
 	p->pointer = m;
 	call("doc:revisit", doc, 1);
-	if (numeric || str) {
+	if (num || str) {
 		p2 = call_pane("attach-view", p);
 		if (p2)
 			p2 = render_attach(str, p2);
@@ -867,12 +867,12 @@ DEF_CMD(doc_do_attach)
 DEF_CMD(doc_open)
 {
 	struct pane *ed = ci->home;
-	int fd = ci->numeric;
+	int fd = ci->num;
 	char *name = ci->str;
 	struct stat stb;
 	struct pane *p;
-	int autoclose = ci->extra & 1;
-	int filter = ci->extra & 2;
+	int autoclose = ci->num2 & 1;
+	int filter = ci->num2 & 2;
 	char pathbuf[PATH_MAX], *rp = NULL;
 
 	if (!name)
@@ -915,7 +915,7 @@ DEF_CMD(doc_open)
 			      stb.st_mode & S_IFMT);
 
 		if (!p) {
-			if (fd != ci->numeric)
+			if (fd != ci->num)
 				close(fd);
 			return -1;
 		}
@@ -926,7 +926,7 @@ DEF_CMD(doc_open)
 		call("doc:load-file", p, 0, NULL, name, fd);
 		call("global-multicall-doc:appeared-", p, 1);
 	}
-	if (fd != ci->numeric)
+	if (fd != ci->num)
 		close(fd);
 	return comm_call(ci->comm2, "callback", p);
 }

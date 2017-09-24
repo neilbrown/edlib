@@ -84,13 +84,13 @@ DEF_CMD(render_complete_line)
 	cr.c = save_highlighted;
 	cr.i = plen;
 	cr.s = NULL;
-	if (call_comm(ci->key, ci->home->parent, ci->numeric, ci->mark, NULL,
+	if (call_comm(ci->key, ci->home->parent, ci->num, ci->mark, NULL,
 		      0, ci->mark2, &cr.c) == 0)
 		return 0;
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cr.s);
 	free(cr.s);
-	if (ci->numeric != NO_NUMERIC)
+	if (ci->num != NO_NUMERIC)
 		return ret;
 	/* Need to continue over other matching lines */
 	m = mark_dup(ci->mark, 1);
@@ -99,7 +99,7 @@ DEF_CMD(render_complete_line)
 		cb.plen = plen;
 		cb.prefix = cd->prefix;
 		cb.cmp = 0;
-		call_comm(ci->key, ci->home->parent, ci->numeric, m, NULL,
+		call_comm(ci->key, ci->home->parent, ci->num, m, NULL,
 			  0, ci->mark2, &cb.c);
 
 		if (cb.cmp == 0)
@@ -187,7 +187,7 @@ static int do_render_complete_prev(struct complete_data *cd safe, struct mark *m
 
 DEF_CMD(render_complete_prev)
 {
-	/* If ->numeric is 0 we just need 'start of line' so use
+	/* If ->num is 0 we just need 'start of line' so use
 	 * underlying function.
 	 * otherwise call repeatedly and then render the line and see if
 	 * it matches the prefix.
@@ -195,7 +195,7 @@ DEF_CMD(render_complete_prev)
 	struct complete_data *cd = ci->home->data;
 	if (!ci->mark || !ci->home->parent)
 		return -1;
-	return do_render_complete_prev(cd, ci->mark, ci->home->parent, ci->numeric, NULL);
+	return do_render_complete_prev(cd, ci->mark, ci->home->parent, ci->num, NULL);
 }
 
 DEF_CMD(complete_close)
@@ -277,7 +277,7 @@ DEF_CMD(complete_set_prefix)
 	/* Set the prefix, force a full refresh, and move point
 	 * to the first match.
 	 * If there is no match, return -1.
-	 * Otherwise return number of matches in ->extra and
+	 * Otherwise return number of matches in ->num2 and
 	 * the longest common prefix in ->str.
 	 */
 	struct pane *p = ci->home;

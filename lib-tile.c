@@ -789,10 +789,10 @@ DEF_CMD(tile_other)
 	/* Need to create a tile.  If wider than 120 (FIXME configurable?),
 	 * horiz-split else vert
 	 */
-	if (ci->numeric) {
-		int horiz = ci->numeric & 1;
-		int after = ci->numeric & 2;
-		p2 = tile_split(&p, horiz, after, ci->str2, ci->extra);
+	if (ci->num) {
+		int horiz = ci->num & 1;
+		int after = ci->num & 2;
+		p2 = tile_split(&p, horiz, after, ci->str2, ci->num2);
 	} else {
 		struct xy xy = pane_scale(p);
 

@@ -54,7 +54,7 @@ DEF_CMD(text_size_callback)
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 	cr->x = ci->x;
 	cr->y = ci->y;
-	cr->i = ci->extra;
+	cr->i = ci->num2;
 	return 1;
 }
 
@@ -375,7 +375,7 @@ DEF_CMD(view_border)
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
 
-	if (ci->numeric <= 0)
+	if (ci->num <= 0)
 		vd->border = -1;
 	else
 		vd->border = vd->old_border;

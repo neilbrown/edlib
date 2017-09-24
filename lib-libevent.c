@@ -83,7 +83,7 @@ DEF_CMD(libevent_read)
 	 * soon.
 	 */
 	list_for_each_entry(ev, &ei->event_list, lst)
-		if (ci->numeric >= 0 && ev->fd == ci->numeric) {
+		if (ci->num >= 0 && ev->fd == ci->num) {
 			event_del(ev->l);
 			ev->fd = -1;
 		}
@@ -93,11 +93,11 @@ DEF_CMD(libevent_read)
 	if (!ei->base)
 		ei->base = event_base_new();
 
-	ev->l = safe_cast event_new(ei->base, ci->numeric, EV_READ|EV_PERSIST,
+	ev->l = safe_cast event_new(ei->base, ci->num, EV_READ|EV_PERSIST,
 				    call_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
-	ev->fd = ci->numeric;
+	ev->fd = ci->num;
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
 	event_add(ev->l, NULL);
@@ -117,7 +117,7 @@ DEF_CMD(libevent_signal)
 	if (!ei->base)
 		ei->base = event_base_new();
 
-	ev->l = safe_cast event_new(ei->base, ci->numeric, EV_SIGNAL|EV_PERSIST,
+	ev->l = safe_cast event_new(ei->base, ci->num, EV_SIGNAL|EV_PERSIST,
 				    call_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
@@ -146,7 +146,7 @@ DEF_CMD(libevent_timer)
 				    call_timeout_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
-	ev->seconds = ci->numeric;
+	ev->seconds = ci->num;
 	ev->fd = -1;
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);

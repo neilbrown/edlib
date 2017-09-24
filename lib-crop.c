@@ -70,31 +70,31 @@ DEF_CMD(crop_handle)
 		return 0;
 
 	if (strcmp(ci->key, "doc:write-file") == 0)
-		return home_call(p, ci->key, ci->focus, ci->numeric,
+		return home_call(p, ci->key, ci->focus, ci->num,
 				 ci->mark ?: cd->start,
-				 ci->str, ci->extra,
+				 ci->str, ci->num2,
 				 ci->mark2 ?: cd->end, ci->str2,
 				 ci->comm2);
 
 	if (!ci->mark && !ci->mark2)
 		/* No mark, do give it straight to parent */
-		return pane_call(p, ci->key, ci->focus, ci->numeric,
-				 NULL, ci->str, ci->extra, NULL, NULL, ci->comm2);
+		return pane_call(p, ci->key, ci->focus, ci->num,
+				 NULL, ci->str, ci->num2, NULL, NULL, ci->comm2);
 
 	/* Always force marks to be in range */
 	crop(ci->mark, cd, p);
 	crop(ci->mark2, cd, p);
 
-	ret = pane_call(p, ci->key, ci->focus, ci->numeric,
-			ci->mark, ci->str, ci->extra, ci->mark2, ci->str2, ci->comm2);
+	ret = pane_call(p, ci->key, ci->focus, ci->num,
+			ci->mark, ci->str, ci->num2, ci->mark2, ci->str2, ci->comm2);
 	if (crop(ci->mark, cd, p) || crop(ci->mark2, cd, p)) {
 		if (strcmp(ci->key, "doc:step") == 0)
 			ret = CHAR_RET(WEOF);
 		else if (strcmp(ci->key, "doc:set-ref") != 0)
 			ret = -1;
 	}
-	if (strcmp(ci->key, "doc:step")==0 && ci->extra == 0 && ci->mark) {
-		if (ci->numeric) {
+	if (strcmp(ci->key, "doc:step")==0 && ci->num2 == 0 && ci->mark) {
+		if (ci->num) {
 			if (mark_same_pane(p, ci->mark, cd->end))
 				ret = CHAR_RET(WEOF);
 		} else {

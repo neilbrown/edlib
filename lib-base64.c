@@ -124,8 +124,8 @@ static int locate_mark(struct pane *p safe, int view, struct mark *m safe)
 DEF_CMD(base64_step)
 {
 	int pos = 0;
-	int forward = ci->numeric;
-	int move = ci->extra;
+	int forward = ci->num;
+	int move = ci->num2;
 	struct mark *m;
 	struct pane *p = ci->home->parent;
 	wint_t c1, c2, b;
