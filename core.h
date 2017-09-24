@@ -187,7 +187,6 @@ void mark_forward_over(struct mark *m safe, struct mark *m2 safe);
 void mark_backward_over(struct mark *m safe, struct mark *mp safe);
 void doc_notify_change(struct doc *d safe, struct mark *m, struct mark *m2);
 void doc_check_consistent(struct doc *d safe);
-char *doc_getstr(struct pane *from safe, struct mark *to, struct mark *m2);
 void point_to_mark(struct mark *p safe, struct mark *m safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);
 int mark_same_pane(struct pane *p safe, struct mark *m1 safe, struct mark *m2 safe);
@@ -365,6 +364,10 @@ struct mark *do_call_mark2(char *key safe, struct pane *focus safe,
 			   int num, struct mark *m, char *str,
 			   int num2, struct mark *m2, char *str2,
 			   int x, int y);
+char *do_call_str(char *key safe, struct pane *focus safe,
+		  int num, struct mark *m, char *str,
+		  int num2, struct mark *m2, char *str2,
+		  int x, int y);
 struct xy pane_scale(struct pane *p safe);
 
 static inline int pane_attr_get_int(struct pane *p safe, char *key safe)

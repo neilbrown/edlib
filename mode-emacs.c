@@ -164,7 +164,9 @@ REDEF_CMD(emacs_case)
 			/* Hit end of file */
 			cnt = 1;
 		else {
-			char *str = doc_getstr(ci->focus, ci->mark, m);
+			char *str = call_ret(str, "doc:get-str", ci->focus,
+					     0, ci->mark, NULL,
+					     0, m);
 			char *c;
 			int changed = 0;
 			int found = 0;
@@ -262,8 +264,12 @@ REDEF_CMD(emacs_swap)
 		be = mark_dup(ci->mark, 1);
 		call(mv->type, ci->focus, -dir, ci->mark);
 		bs = mark_dup(ci->mark, 1);
-		astr = doc_getstr(ci->focus, as, ae);
-		bstr = doc_getstr(ci->focus, bs, be);
+		astr = call_ret(str, "doc:get-str", ci->focus,
+				0, as, NULL,
+				0, ae);
+		bstr = call_ret(str, "doc:get-str", ci->focus,
+				0, bs, NULL,
+				0, be);
 		mark_to_mark(ci->mark, ae);
 		call("Replace", ci->focus, 1, as, bstr, 1);
 		mark_to_mark(ci->mark, be);
@@ -468,7 +474,7 @@ DEF_CMD(find_complete)
 DEF_CMD(find_done)
 {
 	int ret;
-	char *str = doc_getstr(ci->focus, NULL, NULL);
+	char *str = call_ret(str, "doc:get-str", ci->focus);
 
 	ret = call("popup:close", ci->focus, 0, NULL, str);
 	free(str);
@@ -581,7 +587,7 @@ REDEF_CMD(emacs_file_complete)
 	if (!ci->mark)
 		return -1;
 
-	str = doc_getstr(ci->focus, NULL, NULL);
+	str = call_ret(str, "doc:get-str", ci->focus);
 	if (!str)
 		return -1;
 	d = str;
@@ -694,7 +700,7 @@ REDEF_CMD(emacs_doc_complete)
 	if (!ci->mark)
 		return -1;
 
-	str = doc_getstr(ci->focus, NULL, NULL);
+	str = call_ret(str, "doc:get-str", ci->focus);
 	if (!str)
 		return -1;
 	pop = call_pane("PopupTile", ci->focus, 0, NULL, "DM1r");

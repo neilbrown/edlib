@@ -51,7 +51,7 @@ DEF_CMD(search_forward)
 		/* already pushed and didn't find anything new */
 		return 1;
 	}
-	str = doc_getstr(ci->focus, NULL, NULL);
+	str = call_ret(str, "doc:get-str", ci->focus);
 	if (!str || !*str) {
 		/* re-use old string; Is there any point to this indirection? */
 		char *ss;
@@ -92,7 +92,7 @@ DEF_CMD(search_retreat)
 
 	if (esi->s == NULL)
 		return 0;
-	str = doc_getstr(ci->focus, NULL, NULL);
+	str = call_ret(str, "doc:get-str", ci->focus);
 	if (!str)
 		return -1;
 	if (strlen(str) > esi->s->len) {
@@ -173,7 +173,7 @@ DEF_CMD(search_again)
 
 	call("search:highlight", esi->target);
 	m = mark_dup(esi->start, 1);
-	str = doc_getstr(ci->home, NULL, NULL);
+	str = call_ret(str, "doc:get-str", ci->home);
 	if (esi->backwards && mark_prev_pane(esi->target, m) == WEOF)
 		ret = -2;
 	else
@@ -215,7 +215,7 @@ DEF_CMD(search_done)
 {
 	/* need to advance the target view to 'start' */
 	struct es_info *esi = ci->home->data;
-	char *str = doc_getstr(ci->focus, NULL, NULL);
+	char *str = call_ret(str, "doc:get-str", ci->focus);
 
 	if (esi->matched)
 		call("Move-to", esi->target, 0, esi->end);

@@ -961,35 +961,6 @@ DEF_CMD(doc_from_text)
 	return comm_call(ci->comm2, "callback", p);
 }
 
-DEF_CMD(doc_str_callback)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-
-	if (!ci->str)
-		return -1;
-	cr->s = strdup(ci->str);
-	return 1;
-}
-
-char *doc_getstr(struct pane *from safe, struct mark *to, struct mark *m2)
-{
-	struct cmd_info ci = {.key = "doc:get-str", .focus = from, .home = from, .comm = safe_cast 0};
-	int ret;
-	struct call_return cr;
-
-	ci.key = "doc:get-str";
-	ci.focus = from;
-	ci.mark = to;
-	ci.mark2 = m2;
-	cr.c = doc_str_callback;
-	cr.s = NULL;
-	ci.comm2 = &cr.c;
-	ret = key_handle(&ci);
-	if (!ret)
-		return NULL;
-	return cr.s;
-}
-
 void doc_free(struct doc *d safe)
 {
 	int i;

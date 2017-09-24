@@ -80,7 +80,7 @@ DEF_CMD(history_handle)
 			call("Move-EOL", hi->history, 1, m);
 			call("Move-Char", hi->history, 1, m);
 		}
-		l = doc_getstr(hi->history, NULL, m);
+		l = call_ret(str, "doc:get-str", hi->history, 0, NULL, NULL, 0, m);
 		if (!l || !*l) {
 			/* No more history */
 			free(l);
@@ -101,7 +101,9 @@ DEF_CMD(history_handle)
 		if (hi->changed) {
 			if (l != hi->saved)
 				free(hi->saved);
-			hi->saved = doc_getstr(ci->focus, ci->mark, m);
+			hi->saved = call_ret(str, "doc:get-str", ci->focus,
+					     0, ci->mark, NULL,
+					     0, m);
 		}
 		call("Replace", ci->focus, 1, m, l, 1);
 		if (l != hi->saved){
