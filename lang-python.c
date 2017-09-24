@@ -551,10 +551,40 @@ DEF_CMD(take_focus)
 	return 1;
 }
 
+DEF_CMD(take_mark)
+{
+	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
+	int local = ci->home->handle &&
+		ci->home->handle->func == python_doc_call.func;
+
+	if (pr->ret)
+		return 0;
+	if (!ci->mark)
+		return 0;
+	pr->ret = Mark_Frommark(ci->mark, local);
+	return 1;
+}
+
+DEF_CMD(take_str)
+{
+	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
+
+	if (pr->ret)
+		return 0;
+	if (!ci->str)
+		return 0;
+	pr->ret = python_string(ci->str);
+	return 1;
+}
+
 static struct command *map_ret(char *ret safe)
 {
 	if (strcmp(ret, "focus") == 0)
 		return &take_focus;
+	if (strcmp(ret, "mark") == 0)
+		return &take_mark;
+	if (strcmp(ret, "str") == 0)
+		return &take_str;
 	return NULL;
 }
 
@@ -609,7 +639,7 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 
 	Py_XDECREF(s1); Py_XDECREF(s2);Py_XDECREF(s3);
 	command_put(ci.comm2);
-	if (ret && rv > 0) {
+	if (ret && rv >= 0) {
 		if (pr.ret)
 			return pr.ret;
 		Py_INCREF(Py_None);

@@ -69,13 +69,6 @@ class notmuch_db():
         self.db = None
         self.fd = None
 
-def take(name, place, args, default=None):
-    if args[name] is not None:
-        place.append(args[name])
-    else:
-        place.append(default)
-    return 1
-
 class searches:
     # Manage the saved searches
     # We read all searches from the config file and periodically
@@ -404,6 +397,7 @@ class notmuch_main(edlib.Doc):
                         tg.extend(m.get_tags())
             tags = ",".join(set(tg))
             comm2("callback", focus, tags)
+            return 1
 
         if key == "doc:notmuch:search-maxlen":
             return self.searches.maxlen + 1
@@ -632,9 +626,7 @@ class notmuch_master_view(edlib.Pane):
             m = mark
             if op:
                 # secondary window exists, so move
-                pl=[]
-                p.call("doc:dup-point", 0, -2, lambda key,**a:take("mark", pl, a))
-                m = pl[0]
+                m = p.call("doc:dup-point", 0, -2, ret='mark')
                 if p.call("Move-Line", direction, m) == 1:
                     p.call("Move-to", m)
                     p.damaged(edlib.DAMAGED_CURSOR)
@@ -653,14 +645,11 @@ class notmuch_master_view(edlib.Pane):
                 self.call("Chr-n")
                 return 1
             if in_query:
-                sl = []
-                focus.call("doc:get-attr", "thread-id", 1, mark, lambda key,**a:take('str',sl,a))
-                focus.call("doc:get-attr", "message-id", 1, mark, lambda key,**a:take('str',sl,a))
-                self.query_pane.call("doc:notmuch:remove-tag-inbox", sl[0], sl[1])
+                thid = focus.call("doc:get-attr", "thread-id", 1, mark, ret = 'str')
+                msid = focus.call("doc:get-attr", "message-id", 1, mark, ret = 'str')
+                self.query_pane.call("doc:notmuch:remove-tag-inbox", thid, msid)
                 # Move to next message.
-                pl=[]
-                focus.call("doc:dup-point", 0, -2, lambda key,**a:take("mark", pl, a))
-                m = pl[0]
+                m = focus.call("doc:dup-point", 0, -2, ret='mark')
                 if focus.call("Move-Line", 1, m) == 1:
                     focus.call("Move-to", m)
                     focus.damaged(edlib.DAMAGED_CURSOR)
@@ -687,10 +676,9 @@ class notmuch_master_view(edlib.Pane):
                 p = self.query_pane
                 self.query_pane = None
 
-                sl = []
-                p.call("get-attr", "qname", 1, lambda key,**a:take('str',sl,a))
-                if sl:
-                    p.call("doc:notmuch:update-one", sl[0])
+                s = p.call("get-attr", "qname", 1, ret='str')
+                if s:
+                    p.call("doc:notmuch:update-one", s)
 
                 p.call("Window:close", "notmuch")
             else:
@@ -737,10 +725,9 @@ class notmuch_master_view(edlib.Pane):
             if self.query_pane:
                 self.query_pane.call("doc:notmuch:mark-seen")
             if self.query_pane:
-                sl = []
-                self.query_pane.call("get-attr", "qname", 1, lambda key,**a:take('str',sl,a))
-                if sl:
-                    self.list_pane.call("doc:notmuch:update-one", sl[0])
+                s = self.query_pane.call("get-attr", "qname", 1, ret='str')
+                if s:
+                    self.list_pane.call("doc:notmuch:update-one", s)
 
 
             p0 = self.call("doc:notmuch:query", str, ret='focus')
@@ -806,10 +793,9 @@ class notmuch_main_view(edlib.Pane):
             return 0
 
         if key == "notmuch:select":
-            sl = []
-            focus.call("doc:get-attr", "query", mark, 1, lambda key,**a:take('str',sl,a))
-            if sl and sl[0]:
-                focus.call("notmuch:select-query", sl[0], numeric)
+            s = focus.call("doc:get-attr", "query", mark, 1, ret='str')
+            if s:
+                focus.call("notmuch:select-query", s, numeric)
             return 1
 
 ##################
@@ -1142,17 +1128,13 @@ class notmuch_list(edlib.Doc):
                     t = self.threadinfo[str]
                     if str2 in t:
                         tg = t[str2][6]
-                        sl=[]
-                        self.call("doc:notmuch:byid:tags", str2,
-                                  lambda key,**a:take('str',sl,a))
-                        tg[:] = sl[0].split(",")
+                        s = self.call("doc:notmuch:byid:tags", str2, ret='str')
+                        tg[:] = s.split(",")
 
             if str in self.threads:
                 t = self.threads[str]
-                sl=[]
-                self.call("doc:notmuch:bythread:tags", str,
-                          lambda key,**a:take('str',sl,a))
-                t['tags'] = sl[0].split(",")
+                s = self.call("doc:notmuch:bythread:tags", str, ret='str')
+                t['tags'] = s.split(",")
             self.notify("Notify:doc:Replace")
             return 1
 
@@ -1376,18 +1358,17 @@ class notmuch_query_view(edlib.Pane):
             focus.damaged(edlib.DAMAGED_CONTENT)
             return 1
         if key == "notmuch:select":
-            sl = []
-            focus.call("doc:get-attr", "thread-id", 1, mark, lambda key,**a:take('str',sl,a))
-            if sl[0] != self.selected:
-                if self.call("doc:notmuch:load-thread", sl[0]) == 1:
-                    self.selected = sl[0]
+            s = focus.call("doc:get-attr", "thread-id", 1, mark, ret='str')
+            if s != self.selected:
+                if self.call("doc:notmuch:load-thread", s) == 1:
+                    self.selected = s
                 else:
                     self.selected = None
                 focus.damaged(edlib.DAMAGED_VIEW)
                 focus.damaged(edlib.DAMAGED_CONTENT)
-            focus.call("doc:get-attr", "message-id", 1, mark, lambda key,**a:take('str',sl,a))
-            if len(sl) == 2 and sl[-1] and numeric >= 0:
-                focus.call("notmuch:select-message", sl[-1], sl[0], numeric)
+            s2 = focus.call("doc:get-attr", "message-id", 1, mark, ret='str')
+            if s2 and numeric >= 0:
+                focus.call("notmuch:select-message", s2, s, numeric)
             return 1
 
         if key == "render:reposition":
@@ -1398,16 +1379,15 @@ class notmuch_query_view(edlib.Pane):
             m = mark.dup()
 
             while m < mark2:
-                i = []
-                focus.call("doc:get-attr", "thread-id", 1, m, lambda key,**a:take('str',i,a))
-                focus.call("doc:get-attr", "message-id", 1, m, lambda key,**a:take('str',i,a))
-                if i[0] and not i[1] and i[0] not in self.seen_threads:
-                    self.seen_threads[i[0]] = True
-                if i[0] and i[1]:
-                    if i[0] in self.seen_threads:
-                        del self.seen_threads[i[0]]
-                    if  i[1] not in self.seen_msgs:
-                        self.seen_msgs[i[1]] = True
+                i1 = focus.call("doc:get-attr", "thread-id", 1, m, ret='str')
+                i2 = focus.call("doc:get-attr", "message-id", 1, m, ret='str')
+                if i1 and not i2 and i1 not in self.seen_threads:
+                    self.seen_threads[i1] = True
+                if i1 and i2:
+                    if i1 in self.seen_threads:
+                        del self.seen_threads[i1]
+                    if  i2 not in self.seen_msgs:
+                        self.seen_msgs[i2] = True
                 if edlib.WEOF == focus.call("doc:step", 1, 1, m):
                     break
 
@@ -1434,11 +1414,10 @@ class notmuch_message_view(edlib.Pane):
         if key == "Replace":
             return 1
         if key == "Chr-/":
-            sl = []
-            focus.call("doc:get-attr", mark, "multipart:visible", lambda key,**a:take('str',sl,a))
-            if not sl:
+            s = focus.call("doc:get-attr", mark, "multipart:visible", ret='str')
+            if not s:
                 return 1
-            if sl[0] == "0":
+            if s == "0":
                 focus.call("doc:set-attr", mark, "multipart:visible", "1")
             else:
                 focus.call("doc:set-attr", mark, "multipart:visible", "0")
