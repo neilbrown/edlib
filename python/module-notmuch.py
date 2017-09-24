@@ -522,17 +522,6 @@ class notmuch_main(edlib.Doc):
                         c("doc:notmuch:query-refresh")
                         return
 
-def notmuch_doc(key, home, focus, comm2, **a):
-    # Create the root notmuch document
-    nm = notmuch_main(home)
-    nm['render-default'] = "notmuch:master-view"
-    nm.call("doc:set-name", "*Notmuch*")
-    nm.call("global-multicall-doc:appeared-")
-    nm.call("doc:notmuch:update")
-    if comm2 is not None:
-        comm2("callback", focus, nm)
-    return 1
-
 class notmuch_master_view(edlib.Pane):
     # This pane controls one visible instance of the notmuch application.
     # It manages the size and position of the 3 panes and provide common
@@ -836,35 +825,6 @@ class notmuch_main_view(edlib.Pane):
             if sl and sl[0]:
                 focus.call("notmuch:select-query", sl[0], numeric)
             return 1
-
-def render_master_view_attach(key, focus, comm2, **a):
-    # The master view for the '*Notmuch*' document uses multiple tiles
-    # to display the available searches, the current search results, and the
-    # current message, though each of these is optional.
-    # The tile which displays the search list does not have a document, as it
-    # refers down the main document.  So it doesn't automatically get borders
-    # from a 'view', so we must add one explicitly.
-    p = focus
-    p = notmuch_master_view(focus)
-    while p.focus:
-        p = p.focus
-    p.take_focus()
-    comm2("callback", p)
-    return 1
-
-def notmuch_mode(key, home, focus, **a):
-    pl=[]
-    focus.call("ThisPane", lambda key, **a:take('focus', pl, a))
-    try:
-        home.call("docs:byname", "*Notmuch*", lambda key, **a:take('focus', pl, a))
-    except:
-        home.call("attach-doc-notmuch", lambda key, **a:take('focus', pl, a))
-    if len(pl) != 2:
-        return -1
-    pl[0].call("doc:attach",
-               lambda key,**a:take('focus', pl, a))
-    pl[-1].call("doc:assign", pl[1], 1)
-    return 1
 
 ##################
 # list-view shows a list of threads/messages that match a given
@@ -1525,6 +1485,17 @@ class notmuch_message_view(edlib.Pane):
             comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 20)
             return 1
 
+def notmuch_doc(key, home, focus, comm2, **a):
+    # Create the root notmuch document
+    nm = notmuch_main(home)
+    nm['render-default'] = "notmuch:master-view"
+    nm.call("doc:set-name", "*Notmuch*")
+    nm.call("global-multicall-doc:appeared-")
+    nm.call("doc:notmuch:update")
+    if comm2 is not None:
+        comm2("callback", focus, nm)
+    return 1
+
 def render_query_attach(key, home, focus, comm2, **a):
     p = focus.render_attach("format")
     p = notmuch_query_view(p)
@@ -1537,6 +1508,35 @@ def render_message_attach(key, home, focus, comm2, **a):
     p = notmuch_message_view(p)
     if comm2:
         comm2("callback", p)
+    return 1
+
+def render_master_view_attach(key, focus, comm2, **a):
+    # The master view for the '*Notmuch*' document uses multiple tiles
+    # to display the available searches, the current search results, and the
+    # current message, though each of these is optional.
+    # The tile which displays the search list does not have a document, as it
+    # refers down the main document.  So it doesn't automatically get borders
+    # from a 'view', so we must add one explicitly.
+    p = focus
+    p = notmuch_master_view(focus)
+    while p.focus:
+        p = p.focus
+    p.take_focus()
+    comm2("callback", p)
+    return 1
+
+def notmuch_mode(key, home, focus, **a):
+    pl=[]
+    focus.call("ThisPane", lambda key, **a:take('focus', pl, a))
+    try:
+        home.call("docs:byname", "*Notmuch*", lambda key, **a:take('focus', pl, a))
+    except:
+        home.call("attach-doc-notmuch", lambda key, **a:take('focus', pl, a))
+    if len(pl) != 2:
+        return -1
+    pl[0].call("doc:attach",
+               lambda key,**a:take('focus', pl, a))
+    pl[-1].call("doc:assign", pl[1], 1)
     return 1
 
 if "editor" in globals():
