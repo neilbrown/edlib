@@ -637,10 +637,16 @@ struct pane *pane_my_child(struct pane *p, struct pane *c)
 	return c;
 }
 
-DEF_CMD(take_pane)
+DEF_CMD(take_simple)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 	cr->p = ci->focus;
+	cr->m = ci->mark;
+	cr->m2 = ci->mark2;
+	cr->i = ci->num;
+	cr->i2 = ci->num2;
+	cr->x = ci->x;
+	cr->y = ci->y;
 	return 1;
 }
 
@@ -655,12 +661,50 @@ struct pane *do_call_pane(char *key safe, struct pane *focus safe,
 			      .x = x, .y = y };
 	struct call_return cr;
 
-	cr.c = take_pane;
+	cr.c = take_simple;
 	cr.p = NULL;
 	ci.comm2 = &cr.c;
 	if (!key_handle(&ci))
 		return NULL;
 	return cr.p;
+}
+
+struct mark *do_call_mark(char *key safe, struct pane *focus safe,
+			  int num, struct mark *m, char *str,
+			  int num2, struct mark *m2, char *str2,
+			  int x, int y)
+{
+	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0,
+			      .num = num, .mark = m, .str = str,
+			      .num2 = num2, .mark2 = m2, .str2 = str2,
+			      .x = x, .y = y };
+	struct call_return cr;
+
+	cr.c = take_simple;
+	cr.p = NULL;
+	ci.comm2 = &cr.c;
+	if (!key_handle(&ci))
+		return NULL;
+	return cr.m;
+}
+
+struct mark *do_call_mark2(char *key safe, struct pane *focus safe,
+			  int num, struct mark *m, char *str,
+			  int num2, struct mark *m2, char *str2,
+			  int x, int y)
+{
+	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0,
+			      .num = num, .mark = m, .str = str,
+			      .num2 = num2, .mark2 = m2, .str2 = str2,
+			      .x = x, .y = y };
+	struct call_return cr;
+
+	cr.c = take_simple;
+	cr.p = NULL;
+	ci.comm2 = &cr.c;
+	if (!key_handle(&ci))
+		return NULL;
+	return cr.m2;
 }
 
 /* convert pane-relative co-ords to absolute */

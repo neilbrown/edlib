@@ -806,75 +806,29 @@ struct mark *do_vmark_last(struct doc *d safe, int view)
 	return NULL;
 }
 
-DEF_CMD(take_marks)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->m = ci->mark;
-	cr->m2 = ci->mark2;
-	return 1;
-}
-
-static int vmark_get(struct pane *p safe, int view,
-		     struct mark **first, struct mark **last, struct mark **point, struct mark **new)
-{
-	struct call_return cr;
-
-	cr.c = take_marks;
-	cr.m = cr.m2 = NULL;
-	if (call_comm("doc:vmark-get", p, view, NULL, NULL, point ? 1 : new ? 2 : 0, &cr.c) == 0)
-		return 0;
-	if (first)
-		*first = cr.m;
-	if (point)
-		*point = cr.m2;
-	else if (new)
-		*new = cr.m2;
-	else if (last)
-		*last = cr.m2;
-	return 1;
-}
-
 struct mark *vmark_first(struct pane *p safe, int view)
 {
-	struct mark *first = NULL;
-	if (vmark_get(p, view, &first, NULL, NULL, NULL) == 0)
-		return NULL;
-	return first;
+	return call_ret(mark, "doc:vmark-get", p, view);
 }
 
 struct mark *vmark_last(struct pane *p safe, int view)
 {
-	struct mark *last = NULL;
-	if (vmark_get(p, view, NULL, &last, NULL, NULL) == 0)
-		return NULL;
-	return last;
+	return call_ret(mark2, "doc:vmark-get", p, view);
 }
 
 struct mark *vmark_at_point(struct pane *p safe, int view)
 {
-	struct mark *point = NULL;
-	if (vmark_get(p, view, NULL, NULL, &point, NULL) == 0)
-		return NULL;
-	return point;
+	return call_ret(mark2, "doc:vmark-get", p, view, NULL, NULL, 1);
 }
 
 struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe, int view)
 {
-	struct call_return cr;
-
-	cr.c = take_marks;
-	cr.m = cr.m2 = NULL;
-	if (call_comm("doc:vmark-get", p, view, m, NULL, 3, &cr.c) == 0)
-		return NULL;
-	return cr.m2;
+	return call_ret(mark2, "doc:vmark-get", p, view, m, NULL, 3);
 }
 
 struct mark *vmark_new(struct pane *p safe, int view)
 {
-	struct mark *new = NULL;
-	if (vmark_get(p, view, NULL, NULL, NULL, &new) == 0)
-		return NULL;
-	return new;
+	return call_ret(mark2, "doc:vmark-get", p, view, NULL, NULL, 2);
 }
 
 struct mark *vmark_matching(struct pane *p safe, struct mark *m safe)

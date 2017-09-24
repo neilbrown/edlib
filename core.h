@@ -357,6 +357,14 @@ struct pane *do_call_pane(char *key safe, struct pane *focus safe,
 			  int num, struct mark *m, char *str,
 			  int num2, struct mark *m2, char *str2,
 			  int x, int y);
+struct mark *do_call_mark(char *key safe, struct pane *focus safe,
+			  int num, struct mark *m, char *str,
+			  int num2, struct mark *m2, char *str2,
+			  int x, int y);
+struct mark *do_call_mark2(char *key safe, struct pane *focus safe,
+			   int num, struct mark *m, char *str,
+			   int num2, struct mark *m2, char *str2,
+			   int x, int y);
 struct xy pane_scale(struct pane *p safe);
 
 static inline int pane_attr_get_int(struct pane *p safe, char *key safe)
@@ -642,3 +650,25 @@ struct call_return {
 	do_call_pane(key, focus, num, NULL, NULL, 0, NULL, NULL, 0, 0)
 #define call_pane2(key, focus) \
 	do_call_pane(key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0)
+
+/* The first arg of call_ret() is the name of the field to return
+ * but using a comm2 callback
+ */
+
+#define call_ret(...) VFUNC(call_ret, __VA_ARGS__)
+#define call_ret12(ret, key, focus, num, mark, str, num2, mark2, str2, x, y) \
+	do_call_ ## ret(key, focus, num, mark, str, num2, mark2, str2, x, y)
+#define call_ret9(ret, key, focus, num, mark, str, num2, mark2, str2) \
+	do_call_ ## ret(key, focus, num, mark, str, num2, mark2, str2, 0, 0)
+#define call_ret8(ret, key, focus, num, mark, str, num2, mark2) \
+	do_call_ ## ret(key, focus, num, mark, str, num2, mark2, NULL, 0, 0)
+#define call_ret7(ret, key, focus, num, mark, str, num2) \
+	do_call_ ## ret(key, focus, num, mark, str, num2, NULL, NULL, 0, 0)
+#define call_ret6(ret, key, focus, num, mark, str) \
+	do_call_ ## ret(key, focus, num, mark, str, 0, NULL, NULL, 0, 0)
+#define call_ret5(ret, key, focus, num, mark) \
+	do_call_ ## ret(key, focus, num, mark, NULL, 0, NULL, NULL, 0, 0)
+#define call_ret4(ret, key, focus, num) \
+	do_call_ ## ret(key, focus, num, NULL, NULL, 0, NULL, NULL, 0, 0)
+#define call_ret3(ret, key, focus) \
+	do_call_ ## ret(key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0)
