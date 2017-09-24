@@ -173,24 +173,9 @@ struct mark *do_mark_at_point(struct mark *pt safe, int view)
 	return ret;
 }
 
-DEF_CMD(dup_point_callback)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->m = ci->mark;
-	return 1;
-}
-
 struct mark *mark_at_point(struct pane *p safe, struct mark *pm, int view)
 {
-	struct call_return cr;
-	int ret;
-
-	cr.c = dup_point_callback;
-	cr.m = NULL;
-	ret = call_comm("doc:dup-point", p, 0, pm, NULL, view, &cr.c);
-	if (ret <= 0)
-		return NULL;
-	return cr.m;
+	return call_ret(mark, "doc:dup-point", p, 0, pm, NULL, view);
 }
 
 struct mark *safe point_dup(struct mark *p safe)
