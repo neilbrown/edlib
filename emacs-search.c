@@ -277,6 +277,5 @@ DEF_CMD(emacs_search)
 void emacs_search_init(struct pane *ed safe);
 void emacs_search_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "attach-emacs-search",
-		  &emacs_search);
+	call_comm("global-set-command", ed, &emacs_search, 0, NULL, "attach-emacs-search");
 }

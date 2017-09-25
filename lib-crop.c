@@ -127,6 +127,5 @@ DEF_CMD(crop_attach)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "attach-crop",
-		  &crop_attach);
+	call_comm("global-set-command", ed, &crop_attach, 0, NULL, "attach-crop");
 }

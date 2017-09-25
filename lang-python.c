@@ -1986,9 +1986,9 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, NO_RPOS);
 	PyModule_AddIntMacro(m, NEVER_RPOS);
 	PyModule_AddIntConstant(m, "WEOF", 0x1FFFFF);
-	call_comm("global-set-command", ed, 0, NULL, "python-load", &python_load);
-	call_comm("global-set-command", ed, 0, NULL, "global-load-modules:python",
-		  &python_load_module);
+	call_comm("global-set-command", ed, &python_load, 0, NULL, "python-load");
+	call_comm("global-set-command", ed, &python_load_module,
+		  0, NULL, "global-load-modules:python");
 
 	Edlib_CommandFailed = PyErr_NewException("edlib.commandfailed", NULL, NULL);
 	Py_INCREF(Edlib_CommandFailed);

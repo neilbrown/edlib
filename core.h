@@ -491,22 +491,22 @@ static inline void doc_del_view(struct pane *p safe, int num)
 	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, home)
 
 /* comm2 is a bit like 'home' - often irrelevant, sometime important.
- * The *last* arg is always comm2 (unlike first for home in home_call)
+ * The 3rd arg, after mandatory key and focus, is comm2.
  */
 #define call_comm(...) VFUNC(call_comm, __VA_ARGS__)
-#define call_comm11(key, focus, num, mark, str, num2, mark2, str2, x, y, comm2) \
+#define call_comm11(key, focus, comm2, num, mark, str, num2, mark2, str2, x, y) \
 	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, NULL)
-#define call_comm9(key, focus, num, mark, str, num2, mark2, str2, comm2) \
+#define call_comm9(key, focus, comm2, num, mark, str, num2, mark2, str2) \
 	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, 0, 0, NULL)
-#define call_comm8(key, focus, num, mark, str, num2, mark2, comm2) \
+#define call_comm8(key, focus, comm2, num, mark, str, num2, mark2) \
 	do_call(key, focus, num, mark, str, num2, mark2, NULL, comm2, 0, 0, NULL)
-#define call_comm7(key, focus, num, mark, str, num2, comm2) \
+#define call_comm7(key, focus, comm2, num, mark, str, num2) \
 	do_call(key, focus, num, mark, str, num2, NULL, NULL, comm2, 0, 0, NULL)
-#define call_comm6(key, focus, num, mark, str, comm2) \
+#define call_comm6(key, focus, comm2, num, mark, str) \
 	do_call(key, focus, num, mark, str, 0, NULL, NULL, comm2, 0, 0, NULL)
-#define call_comm5(key, focus, num, mark, comm2) \
+#define call_comm5(key, focus, comm2, num, mark) \
 	do_call(key, focus, num, mark, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
-#define call_comm4(key, focus, num, comm2) \
+#define call_comm4(key, focus, comm2, num) \
 	do_call(key, focus, num, NULL, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
 #define call_comm3(key, focus, comm2) \
 	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)

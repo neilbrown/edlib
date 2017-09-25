@@ -219,8 +219,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(qp_map, "doc:step", &qp_step);
 	key_add(qp_map, "doc:mark-same", &qp_same);
 
-	call_comm("global-set-command", ed, 0, NULL, "attach-quoted_printable",
-		  &qp_attach);
-	call_comm("global-set-command", ed, 0, NULL, "attach-qprint",
-		  &qp_attach);
+	call_comm("global-set-command", ed, &qp_attach, 0, NULL, "attach-quoted_printable");
+	call_comm("global-set-command", ed, &qp_attach, 0, NULL, "attach-qprint");
 }

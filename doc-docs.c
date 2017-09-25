@@ -826,10 +826,11 @@ DEF_CMD(attach_docs)
 	doc->collection = p;
 
 	doc->callback = docs_callback;
-	call_comm("global-set-command", ci->home, 0, NULL, "docs:", 0, NULL, "docs;",
-		  &doc->callback);
-	call_comm("global-set-command", ci->home, 0, NULL,
-		  "doc:appeared-docs-register", &doc->callback);
+	call_comm("global-set-command", ci->home, &doc->callback,
+		  0, NULL, "docs:",
+		  0, NULL, "docs;");
+	call_comm("global-set-command", ci->home, &doc->callback,
+		  0, NULL, "doc:appeared-docs-register");
 
 	home_call(p, "doc:set-parent", doc->collection);
 
@@ -838,6 +839,5 @@ DEF_CMD(attach_docs)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "attach-doc-docs",
-		  &attach_docs);
+	call_comm("global-set-command", ed, &attach_docs, 0, NULL, "attach-doc-docs");
 }

@@ -612,5 +612,5 @@ out:
 void edlib_init(struct pane *ed safe)
 {
 	email_init_map();
-	call_comm("global-set-command", ed, 0, NULL, "open-doc-email", &open_email);
+	call_comm("global-set-command", ed, &open_email, 0, NULL, "open-doc-email");
 }

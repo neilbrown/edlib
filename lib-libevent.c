@@ -231,24 +231,17 @@ DEF_CMD(libevent_activate)
 	ei->home = pane_register(ei->home, 0, &libevent_handle, ei, NULL);
 
 	/* These are defaults, so make them sort late */
-	call_comm("global-set-command", ci->focus, 0, NULL, "event:read-zz",
-		  &ei->read);
-	call_comm("global-set-command", ci->focus, 0, NULL, "event:signal-zz",
-		  &ei->signal);
-	call_comm("global-set-command", ci->focus, 0, NULL, "event:timer-zz",
-		  &ei->timer);
-	call_comm("global-set-command", ci->focus, 0, NULL, "event:run-zz",
-		  &ei->run);
-	call_comm("global-set-command", ci->focus, 0, NULL, "event:deactivate-zz",
-		  &ei->deactivate);
-	call_comm("global-set-command", ci->focus, 0, NULL, "event:free-zz",
-		  &ei->free);
+	call_comm("global-set-command", ci->focus, &ei->read, 0, NULL, "event:read-zz");
+	call_comm("global-set-command", ci->focus, &ei->signal, 0, NULL, "event:signal-zz");
+	call_comm("global-set-command", ci->focus, &ei->timer, 0, NULL, "event:timer-zz");
+	call_comm("global-set-command", ci->focus, &ei->run, 0, NULL, "event:run-zz");
+	call_comm("global-set-command", ci->focus, &ei->deactivate, 0, NULL, "event:deactivate-zz");
+	call_comm("global-set-command", ci->focus, &ei->free, 0, NULL, "event:free-zz");
 
 	return 1;
 }
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "attach-libevent",
-		  &libevent_activate);
+	call_comm("global-set-command", ed, &libevent_activate, 0, NULL, "attach-libevent");
 }

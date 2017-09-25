@@ -148,6 +148,5 @@ DEF_CMD(messageline_attach)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "attach-messageline",
-		  &messageline_attach);
+	call_comm("global-set-command", ed, &messageline_attach, 0, NULL, "attach-messageline");
 }

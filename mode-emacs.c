@@ -626,7 +626,7 @@ REDEF_CMD(emacs_file_complete)
 		return -1;
 	cr.c = save_str;
 	cr.s = NULL;
-	ret = call_comm("Complete:prefix", p, 0, NULL, b, &cr.c);
+	ret = call_comm("Complete:prefix", p, &cr.c, 0, NULL, b);
 	free(d);
 	if (cr.s && (strlen(cr.s) <= strlen(b) && ret-1 > 1)) {
 		/* We need the dropdown */
@@ -721,7 +721,7 @@ REDEF_CMD(emacs_doc_complete)
 		return -1;
 	cr.c = save_str;
 	cr.s = NULL;
-	ret = call_comm("Complete:prefix", p, 0, NULL, str, &cr.c);
+	ret = call_comm("Complete:prefix", p, &cr.c, 0, NULL, str);
 	if (cr.s && (strlen(cr.s) <= strlen(str) && ret - 1 > 1)) {
 		/* We need the dropdown */
 		pane_damaged(par, DAMAGED_CONTENT);
@@ -1266,7 +1266,6 @@ void edlib_init(struct pane *ed safe)
 		emacs_init();
 	if (fh_map == NULL)
 		findmap_init();
-	call_comm("global-set-command", ed, 0, NULL, "attach-mode-emacs",
-		  &attach_mode_emacs);
+	call_comm("global-set-command", ed, &attach_mode_emacs, 0, NULL, "attach-mode-emacs");
 	emacs_search_init(ed);
 }

@@ -280,7 +280,7 @@ static int parse_event(struct pane *p safe)
 	if (dd->next_event != DoCheck)
 		call_comm("editor-on-idle", p, &next_evt);
 	else
-		call_comm("event:timer", p, 10, &abort_replay);
+		call_comm("event:timer", p, &abort_replay, 10);
 	return 1;
 }
 
@@ -726,6 +726,5 @@ DEF_CMD(display_ncurses)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "attach-display-ncurses",
-		  &display_ncurses);
+	call_comm("global-set-command", ed, &display_ncurses, 0, NULL, "attach-display-ncurses");
 }

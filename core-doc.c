@@ -981,9 +981,9 @@ void doc_free(struct doc *d safe)
 
 void doc_setup(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "doc:open", &doc_open);
-	call_comm("global-set-command", ed, 0, NULL, "doc:from-text", &doc_from_text);
-	call_comm("global-set-command", ed, 0, NULL, "doc:attach", &doc_do_attach);
+	call_comm("global-set-command", ed, &doc_open, 0, NULL, "doc:open");
+	call_comm("global-set-command", ed, &doc_from_text, 0, NULL, "doc:from-text");
+	call_comm("global-set-command", ed, &doc_do_attach, 0, NULL, "doc:attach");
 	if (!(void*)doc_default_cmd)
 		init_doc_cmds();
 }

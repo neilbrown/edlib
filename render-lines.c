@@ -888,8 +888,7 @@ static struct mark *call_render_line_offset(struct pane *p safe,
 	struct mark *m;
 
 	m = mark_dup(start, 0);
-	if (call_comm("render-line", p, offset, m,
-		      &no_save) <= 0) {
+	if (call_comm("render-line", p, &no_save, offset, m) <= 0) {
 		mark_free(m);
 		return NULL;
 	}
@@ -913,7 +912,7 @@ static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
 	int len;
 	struct mark *m = mark_dup(start, 0);
 
-	len = call_comm("render-line", p, -1, m, NULL, 0, pm, &get_len);
+	len = call_comm("render-line", p, &get_len, -1, m, NULL, 0, pm);
 	mark_free(m);
 	if (len <= 0)
 		return 0;
@@ -1772,8 +1771,6 @@ REDEF_CMD(render_lines_attach)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "attach-render-lines",
-		  &render_lines_attach);
-	call_comm("global-set-command", ed, 0, NULL, "attach-render-text",
-		  &render_lines_attach);
+	call_comm("global-set-command", ed, &render_lines_attach, 0, NULL, "attach-render-lines");
+	call_comm("global-set-command", ed, &render_lines_attach, 0, NULL, "attach-render-text");
 }

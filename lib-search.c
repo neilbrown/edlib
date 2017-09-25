@@ -108,6 +108,5 @@ DEF_CMD(text_search)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "text-search",
-		  &text_search);
+	call_comm("global-set-command", ed, &text_search, 0, NULL, "text-search");
 }

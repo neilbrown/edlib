@@ -430,6 +430,5 @@ DEF_CMD(header_attach)
 void edlib_init(struct pane *ed safe)
 {
 	header_init_map();
-	call_comm("global-set-command", ed, 0, NULL, "attach-rfc822header",
-		  &header_attach);
+	call_comm("global-set-command", ed, &header_attach, 0, NULL, "attach-rfc822header");
 }

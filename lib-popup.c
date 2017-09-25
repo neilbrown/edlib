@@ -213,6 +213,5 @@ DEF_CMD(popup_attach)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, 0, NULL, "PopupTile",
-		  &popup_attach);
+	call_comm("global-set-command", ed, &popup_attach, 0, NULL, "PopupTile");
 }
