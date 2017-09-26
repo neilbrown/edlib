@@ -252,9 +252,9 @@ DEF_CMD(complete_eol)
 	while (rpt > 1) {
 		struct call_return cr;
 		cr.c = eol_cb;
-		if (comm_call(&render_complete_line, "render-line",
+		if (pane_call(ci->home, "render-line",
 			      ci->focus, NO_NUMERIC, ci->mark, NULL,
-			      0, NULL, NULL, &cr.c, 0, 0, ci->home) <= 0)
+			      0, NULL, NULL, &cr.c, 0, 0) <= 0)
 			rpt = 1;
 		rpt -= 1;
 	}
@@ -336,9 +336,9 @@ DEF_CMD(complete_return)
 
 	cr.c = save_str;
 	cr.s = NULL;
-	comm_call(&render_complete_line, "render-line",
+	pane_call(ci->home, "render-line",
 		  ci->home, NO_NUMERIC, ci->mark, NULL, 0, NULL,
-		  NULL, &cr.c, 0, 0, ci->home);
+		  NULL, &cr.c, 0, 0);
 	if (!cr.s)
 		return 1;
 	l = strlen(cr.s);
