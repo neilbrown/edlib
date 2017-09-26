@@ -532,7 +532,7 @@ DEF_CMD(mp_forward)
 	if (ci->mark && ci->mark->ref.docnum == d)
 		m1 = ci->mark->ref.m;
 	return call(key, mpi->parts[d].pane, ci->num, m1, ci->str,
-		    ci->num2, NULL, ci->str2, ci->comm2);
+		    ci->num2, NULL, ci->str2, 0,0, ci->comm2);
 }
 
 static void mp_init_map(void)

@@ -296,7 +296,7 @@ REDEF_CMD(next_evt)
 		break;
 	case DoMouse:
 		record_mouse(p, dd->event_info, dd->event_pos.x, dd->event_pos.y);
-		call("Mouse-event", p, 0, NULL, dd->event_info, 0, NULL, NULL, NULL,
+		call("Mouse-event", p, 0, NULL, dd->event_info, 0, NULL, NULL,
 		     dd->event_pos.x, dd->event_pos.y);
 		break;
 	case DoCheck:
@@ -308,8 +308,8 @@ REDEF_CMD(next_evt)
 		pane_close(p);
 		return 1;
 	case DoNil:
-		call("event:read", p, 0, NULL, NULL, 0, NULL, NULL, &input_handle);
-		call("event:signal", p, SIGWINCH, NULL, NULL, 0, NULL, NULL, &handle_winch);
+		call_comm("event:read", p, &input_handle, 0);
+		call_comm("event:signal", p, &handle_winch, SIGWINCH);
 		return 1;
 	}
 	parse_event(p);
@@ -501,8 +501,8 @@ static struct pane *ncurses_init(struct pane *ed)
 	getmaxyx(stdscr, p->h, p->w);
 
 	if (!prepare_recrep(p)) {
-		call("event:read", p, 0, NULL, NULL, 0, NULL, NULL, &input_handle);
-		call("event:signal", p, SIGWINCH, NULL, NULL, 0, NULL, NULL, &handle_winch);
+		call_comm("event:read", p, &input_handle, 0);
+		call_comm("event:signal", p, &handle_winch, SIGWINCH);
 	}
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;
@@ -666,7 +666,7 @@ static void send_key(int keytype, wint_t c, struct pane *p safe)
 static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe)
 {
 	record_mouse(p, cmd, x, y);
-	call("Mouse-event", p, 0, NULL, cmd, 0, NULL, NULL, NULL, x, y);
+	call("Mouse-event", p, 0, NULL, cmd, 0, NULL, NULL, x, y);
 }
 
 static void send_mouse(MEVENT *mev safe, struct pane *p safe)

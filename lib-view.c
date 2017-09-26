@@ -46,7 +46,7 @@ static int calc_border(struct pane *p safe);
 
 static void one_char(struct pane *p safe, char *s, char *attr, int x, int y)
 {
-	call("Draw:text", p, -1, NULL, s, 0, NULL, attr, NULL, x, y);
+	call("Draw:text", p, -1, NULL, s, 0, NULL, attr, x, y);
 }
 
 static int view_refresh(const struct cmd_info *ci safe)

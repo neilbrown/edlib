@@ -258,7 +258,7 @@ static int flush_line(struct pane *p safe, int dodraw,
 		x = rl->x;
 		if (dodraw)
 			call("Draw:text", p, cp, NULL, rl->text,
-			     scale, NULL, rl->attr, NULL,
+			     scale, NULL, rl->attr,
 			     x, y);
 		x += rl->width;
 		if (curspos && rl->curs) {
@@ -274,14 +274,14 @@ static int flush_line(struct pane *p safe, int dodraw,
 
 		if (cp >= 0 && dodraw)
 			call("Draw:text", p, cp, NULL, rl->text,
-			     scale, NULL, rl->attr, NULL,
+			     scale, NULL, rl->attr,
 			     rl->x, y);
 		x = rl->x + rl->width;
 	}
 	if (wrap_pos && last_rl && dodraw) {
 		char *e = get_last_attr(last_rl->attr, "wrap-tail");
 		call("Draw:text", p, -1, NULL, e ?: "\\",
-		     scale, NULL, "underline,fg:blue", NULL,
+		     scale, NULL, "underline,fg:blue",
 		     wrap_pos, y);
 		free(e);
 	}
@@ -1268,7 +1268,7 @@ DEF_CMD(render_lines_refresh)
 		if (!ci->mark || rl->ignore_point || (p->cx >= 0 && p->cy < p->h)) {
 			call("render:reposition", focus,
 			     rl->lines, vmark_first(focus, rl->typenum), NULL,
-			     rl->cols, vmark_last(focus, rl->typenum), NULL, NULL,
+			     rl->cols, vmark_last(focus, rl->typenum), NULL,
 			     p->cx, p->cy);
 
 			return 0;
@@ -1284,8 +1284,8 @@ DEF_CMD(render_lines_refresh)
 	rl->repositioned = 0;
 	call("render:reposition", focus,
 	     rl->lines, vmark_first(focus, rl->typenum), NULL,
-	     rl->cols, vmark_last(focus, rl->typenum), NULL, NULL,
-		 p->cx, p->cy);
+	     rl->cols, vmark_last(focus, rl->typenum), NULL,
+	     p->cx, p->cy);
 	if (!ci->mark)
 		mark_free(m);
 	return 0;
@@ -1313,7 +1313,7 @@ DEF_CMD(render_lines_refresh_view)
 	else
 		call("render:reposition", focus,
 		     rl->lines, vmark_first(focus, rl->typenum), NULL,
-		     rl->cols, vmark_last(focus, rl->typenum), NULL, NULL,
+		     rl->cols, vmark_last(focus, rl->typenum), NULL,
 		     p->cx, p->cy);
 	return 0;
 }

@@ -445,12 +445,10 @@ static inline void doc_del_view(struct pane *p safe, int num)
 #define VFUNC(func, ...) _VFUNC(func, __NARG__(__VA_ARGS__)) (__VA_ARGS__)
 
 #define call(...) VFUNC(call, __VA_ARGS__)
-#define call12(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, home) \
-	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, home)
-#define call11(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y) \
+#define call11(key, focus, num, mark, str, num2, mark2, str2, x, y, comm2)	\
 	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, NULL)
-#define call9(key, focus, num, mark, str, num2, mark2, str2, comm2) \
-	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, 0, 0, NULL)
+#define call10(key, focus, num, mark, str, num2, mark2, str2, x, y)	\
+	do_call(key, focus, num, mark, str, num2, mark2, str2, NULL, x, y, NULL)
 #define call8(key, focus, num, mark, str, num2, mark2, str2) \
 	do_call(key, focus, num, mark, str, num2, mark2, str2, NULL, 0, 0, NULL)
 #define call7(key, focus, num, mark, str, num2, mark2) \

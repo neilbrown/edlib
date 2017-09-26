@@ -968,7 +968,7 @@ DEF_CMD(emacs_reposition)
 		if (m) {
 			struct mark *m2 = mark_dup(m ,1);
 			call("Mouse-event", ci->focus, 1, m, "Move-CursorXY",
-			     0, NULL, NULL, NULL,
+			     0, NULL, NULL,
 			     -1, repoint < 0 ? ci->focus->h-1 : 0);
 			if (repoint < 0)
 				/* can only move point backwards */
