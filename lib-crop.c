@@ -78,14 +78,14 @@ DEF_CMD(crop_handle)
 
 	if (!ci->mark && !ci->mark2)
 		/* No mark, do give it straight to parent */
-		return pane_call(p, ci->key, ci->focus, ci->num,
+		return home_call(p, ci->key, ci->focus, ci->num,
 				 NULL, ci->str, ci->num2, NULL, NULL, 0,0, ci->comm2);
 
 	/* Always force marks to be in range */
 	crop(ci->mark, cd, p);
 	crop(ci->mark2, cd, p);
 
-	ret = pane_call(p, ci->key, ci->focus, ci->num,
+	ret = home_call(p, ci->key, ci->focus, ci->num,
 			ci->mark, ci->str, ci->num2, ci->mark2, ci->str2, 0,0, ci->comm2);
 	if (crop(ci->mark, cd, p) || crop(ci->mark2, cd, p)) {
 		if (strcmp(ci->key, "doc:step") == 0)

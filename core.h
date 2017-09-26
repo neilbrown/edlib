@@ -527,6 +527,11 @@ char *do_call_str(enum target_type type, struct pane *home, struct command *comm
 #define call(key, _focus, ...) CALL(val, focus, _focus, key, NULL, _focus, ##__VA_ARGS__)
 /* comm_call() is only for callbacks, is it doesn't allow a separate 'home' */
 #define comm_call(_comm, key, ...) CALL(val, comm, _comm, key, NULL, ##__VA_ARGS__)
+/* pane_call() is used when a very specific pane must be informed, rather than
+ * the first responder in a chain of panes.  This mostly used for notifications,
+ * both generic notification, and special things like a child appearing or disappearing
+ * or the pane being closed.
+ */
 #define pane_call(_pane, key, ...) CALL(val, pane, _pane, key, NULL, ##__VA_ARGS__)
 #define home_call(_home, key, ...) CALL(val, home, _home, key, NULL, ##__VA_ARGS__)
 #define call_ret(ret, key, _focus, ...) CALL(ret, focus, _focus, key, NULL, _focus, ##__VA_ARGS__)
