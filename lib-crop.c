@@ -74,7 +74,7 @@ DEF_CMD(crop_handle)
 				 ci->mark ?: cd->start,
 				 ci->str, ci->num2,
 				 ci->mark2 ?: cd->end, ci->str2,
-				 ci->comm2);
+				 0,0, ci->comm2);
 
 	if (!ci->mark && !ci->mark2)
 		/* No mark, do give it straight to parent */

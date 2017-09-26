@@ -471,10 +471,10 @@ static inline void doc_del_view(struct pane *p safe, int num)
  * macros with 'home' first
  */
 #define home_call(...) VFUNC(home_call, __VA_ARGS__)
-#define home_call12(home, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y) \
+#define home_call12(home, key, focus, num, mark, str, num2, mark2, str2, x, y, comm2) \
 	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, home)
-#define home_call10(home, key, focus, num, mark, str, num2, mark2, str2, comm2) \
-	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, 0, 0, home)
+#define home_call11(home, key, focus, num, mark, str, num2, mark2, str2, x, y) \
+	do_call(key, focus, num, mark, str, num2, mark2, str2, NULL, x, y, home)
 #define home_call9(home, key, focus, num, mark, str, num2, mark2, str2) \
 	do_call(key, focus, num, mark, str, num2, mark2, str2, NULL, 0, 0, home)
 #define home_call8(home, key, focus, num, mark, str, num2, mark2) \

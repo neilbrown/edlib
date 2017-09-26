@@ -259,7 +259,7 @@ DEF_CMD(mp_step)
 	else
 		ret = home_call(mpi->parts[m->ref.docnum].pane,
 				ci->key, ci->focus, ci->num, m1, ci->str,
-				ci->num2, NULL, ci->str2, ci->comm2);
+				ci->num2, NULL, ci->str2, 0,0, ci->comm2);
 	while (ret == CHAR_RET(WEOF) || ret == -1) {
 		if (!ci->num2 && m == ci->mark) {
 			/* don't change ci->mark when not moving */
@@ -287,7 +287,7 @@ DEF_CMD(mp_step)
 		else
 			ret = home_call(mpi->parts[m->ref.docnum].pane,
 					ci->key, ci->focus, ci->num, m1, ci->str,
-					ci->num2, NULL, ci->str2, ci->comm2);
+					ci->num2, NULL, ci->str2, 0,0, ci->comm2);
 	}
 	if (ci->num2)
 		reset_mark(ci->mark);
@@ -370,7 +370,7 @@ DEF_CMD(mp_attr)
 
 	ret = home_call(mpi->parts[d].pane,
 			ci->key, ci->focus, ci->num, m1, ci->str,
-			ci->num2, NULL, ci->str2, ci->comm2);
+			ci->num2, NULL, ci->str2, 0,0, ci->comm2);
 	if (d != ci->mark->ref.docnum)
 		mark_free(m1);
 	return ret;

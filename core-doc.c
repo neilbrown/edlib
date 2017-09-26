@@ -800,7 +800,7 @@ DEF_CMD(doc_handle)
 	return home_call(dd->doc, ci->key, ci->focus, ci->num,
 			 ci->mark ?: dd->point, ci->str,
 			 ci->num2, ci->mark2, ci->str2,
-			 ci->comm2, ci->x, ci->y);
+			 ci->x, ci->y, ci->comm2);
 }
 
 static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
