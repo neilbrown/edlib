@@ -660,92 +660,81 @@ DEF_CMD(take_str)
 	return 1;
 }
 
-struct pane *do_call_pane(char *key safe, struct pane *focus safe,
-			  int num, struct mark *m, char *str,
+
+struct pane *do_call_pane(enum target_type type, struct pane *home, struct command *comm2a,
+			  char *key safe, struct pane *focus safe,
+			  int num,  struct mark *m,  char *str,
 			  int num2, struct mark *m2, char *str2,
-			  int x, int y)
+			  int x, int y, struct command *comm2b)
 {
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0,
-			      .num = num, .mark = m, .str = str,
-			      .num2 = num2, .mark2 = m2, .str2 = str2,
-			      .x = x, .y = y };
 	struct call_return cr = {};
 
 	cr.c = take_simple;
-	ci.comm2 = &cr.c;
-	if (!key_handle(&ci))
+	cr.ret = do_call_val(type, home, comm2a, key, focus, num, m, str,
+			     num2, m2, str2, x, y, &cr.c);
+	if (cr.ret < 0)
 		return NULL;
 	return cr.p;
 }
 
-struct mark *do_call_mark(char *key safe, struct pane *focus safe,
-			  int num, struct mark *m, char *str,
+struct mark *do_call_mark(enum target_type type, struct pane *home, struct command *comm2a,
+			  char *key safe, struct pane *focus safe,
+			  int num,  struct mark *m,  char *str,
 			  int num2, struct mark *m2, char *str2,
-			  int x, int y)
+			  int x, int y, struct command *comm2b)
 {
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0,
-			      .num = num, .mark = m, .str = str,
-			      .num2 = num2, .mark2 = m2, .str2 = str2,
-			      .x = x, .y = y };
 	struct call_return cr = {};
 
 	cr.c = take_simple;
-	ci.comm2 = &cr.c;
-	if (!key_handle(&ci))
+	cr.ret = do_call_val(type, home, comm2a, key, focus, num, m, str,
+			     num2, m2, str2, x, y, &cr.c);
+	if (cr.ret < 0)
 		return NULL;
 	return cr.m;
 }
 
-struct mark *do_call_mark2(char *key safe, struct pane *focus safe,
-			  int num, struct mark *m, char *str,
+struct mark *do_call_mark2(enum target_type type, struct pane *home, struct command *comm2a,
+			  char *key safe, struct pane *focus safe,
+			  int num,  struct mark *m,  char *str,
 			  int num2, struct mark *m2, char *str2,
-			  int x, int y)
+			  int x, int y, struct command *comm2b)
 {
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0,
-			      .num = num, .mark = m, .str = str,
-			      .num2 = num2, .mark2 = m2, .str2 = str2,
-			      .x = x, .y = y };
 	struct call_return cr = {};
 
 	cr.c = take_simple;
-	ci.comm2 = &cr.c;
-	if (!key_handle(&ci))
+	cr.ret = do_call_val(type, home, comm2a, key, focus, num, m, str,
+			       num2, m2, str2, x, y, &cr.c);
+	if (cr.ret < 0)
 		return NULL;
 	return cr.m2;
 }
 
-struct call_return do_call_all(char *key safe, struct pane *focus safe,
-			       int num, struct mark *m, char *str,
+struct call_return do_call_all(enum target_type type, struct pane *home, struct command *comm2a,
+			       char *key safe, struct pane *focus safe,
+			       int num,  struct mark *m,  char *str,
 			       int num2, struct mark *m2, char *str2,
-			       int x, int y)
+			       int x, int y, struct command *comm2b)
 {
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0,
-			      .num = num, .mark = m, .str = str,
-			      .num2 = num2, .mark2 = m2, .str2 = str2,
-			      .x = x, .y = y };
 	struct call_return cr = {};
 
 	cr.c = take_simple;
-	ci.comm2 = &cr.c;
-	cr.ret = key_handle(&ci);
-	memset(&cr.c, 0, sizeof(cr.c));
+	cr.ret = do_call_val(type, home, comm2a, key, focus, num, m, str,
+			     num2, m2, str2, x, y, &cr.c);
 	return cr;
 }
 
-char *do_call_str(char *key safe, struct pane *focus safe,
-		  int num, struct mark *m, char *str,
+char *do_call_str(enum target_type type, struct pane *home, struct command *comm2a,
+		  char *key safe, struct pane *focus safe,
+		  int num,  struct mark *m,  char *str,
 		  int num2, struct mark *m2, char *str2,
-		  int x, int y)
+		  int x, int y, struct command *comm2b)
 {
-	struct cmd_info ci = {.key = key, .focus = focus, .home = focus, .comm = safe_cast 0,
-			      .num = num, .mark = m, .str = str,
-			      .num2 = num2, .mark2 = m2, .str2 = str2,
-			      .x = x, .y = y };
 	struct call_return cr = {};
 
 	cr.c = take_str;
-	ci.comm2 = &cr.c;
-	if (key_handle(&ci) < 0) {
+	cr.ret = do_call_val(type, home, comm2a, key, focus, num, m, str,
+			     num2, m2, str2, x, y, &cr.c);
+	if (cr.ret < 0) {
 		free(cr.s);
 		return NULL;
 	}

@@ -444,169 +444,6 @@ static inline void doc_del_view(struct pane *p safe, int num)
 #define _VFUNC(name, n) _VFUNC_(name, n)
 #define VFUNC(func, ...) _VFUNC(func, __NARG__(__VA_ARGS__)) (__VA_ARGS__)
 
-#define call(...) VFUNC(call, __VA_ARGS__)
-#define call11(key, focus, num, mark, str, num2, mark2, str2, x, y, comm2)	\
-	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, NULL)
-#define call10(key, focus, num, mark, str, num2, mark2, str2, x, y)	\
-	do_call(key, focus, num, mark, str, num2, mark2, str2, NULL, x, y, NULL)
-#define call8(key, focus, num, mark, str, num2, mark2, str2) \
-	do_call(key, focus, num, mark, str, num2, mark2, str2, NULL, 0, 0, NULL)
-#define call7(key, focus, num, mark, str, num2, mark2) \
-	do_call(key, focus, num, mark, str, num2, mark2, NULL, NULL, 0, 0, NULL)
-#define call6(key, focus, num, mark, str, num2) \
-	do_call(key, focus, num, mark, str, num2, NULL, NULL, NULL, 0, 0, NULL)
-#define call5(key, focus, num, mark, str) \
-	do_call(key, focus, num, mark, str, 0, NULL, NULL, NULL, 0, 0, NULL)
-#define call4(key, focus, num, mark) \
-	do_call(key, focus, num, mark, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
-#define call3(key, focus, num) \
-	do_call(key, focus, num, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
-#define call2(key, focus) \
-	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
-
-/* Often the 'home' arg is not need and defaults to 'focus', so it is at the
- * end of 'call'.  Often enough it has an important place, so have a set of
- * macros with 'home' first
- */
-#define home_call(...) VFUNC(home_call, __VA_ARGS__)
-#define home_call12(home, key, focus, num, mark, str, num2, mark2, str2, x, y, comm2) \
-	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, home)
-#define home_call11(home, key, focus, num, mark, str, num2, mark2, str2, x, y) \
-	do_call(key, focus, num, mark, str, num2, mark2, str2, NULL, x, y, home)
-#define home_call9(home, key, focus, num, mark, str, num2, mark2, str2) \
-	do_call(key, focus, num, mark, str, num2, mark2, str2, NULL, 0, 0, home)
-#define home_call8(home, key, focus, num, mark, str, num2, mark2) \
-	do_call(key, focus, num, mark, str, num2, mark2, NULL, NULL, 0, 0, home)
-#define home_call7(home, key, focus, num, mark, str, num2) \
-	do_call(key, focus, num, mark, str, num2, NULL, NULL, NULL, 0, 0, home)
-#define home_call6(home, key, focus, num, mark, str) \
-	do_call(key, focus, num, mark, str, 0, NULL, NULL, NULL, 0, 0, home)
-#define home_call5(home, key, focus, num, mark) \
-	do_call(key, focus, num, mark, NULL, 0, NULL, NULL, NULL, 0, 0, home)
-#define home_call4(home, key, focus, num) \
-	do_call(key, focus, num, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, home)
-#define home_call3(home, key, focus) \
-	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, home)
-
-/* comm2 is a bit like 'home' - often irrelevant, sometime important.
- * The 3rd arg, after mandatory key and focus, is comm2.
- */
-#define call_comm(...) VFUNC(call_comm, __VA_ARGS__)
-#define call_comm11(key, focus, comm2, num, mark, str, num2, mark2, str2, x, y) \
-	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, NULL)
-#define call_comm9(key, focus, comm2, num, mark, str, num2, mark2, str2) \
-	do_call(key, focus, num, mark, str, num2, mark2, str2, comm2, 0, 0, NULL)
-#define call_comm8(key, focus, comm2, num, mark, str, num2, mark2) \
-	do_call(key, focus, num, mark, str, num2, mark2, NULL, comm2, 0, 0, NULL)
-#define call_comm7(key, focus, comm2, num, mark, str, num2) \
-	do_call(key, focus, num, mark, str, num2, NULL, NULL, comm2, 0, 0, NULL)
-#define call_comm6(key, focus, comm2, num, mark, str) \
-	do_call(key, focus, num, mark, str, 0, NULL, NULL, comm2, 0, 0, NULL)
-#define call_comm5(key, focus, comm2, num, mark) \
-	do_call(key, focus, num, mark, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
-#define call_comm4(key, focus, comm2, num) \
-	do_call(key, focus, num, NULL, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
-#define call_comm3(key, focus, comm2) \
-	do_call(key, focus, 0, NULL, NULL, 0, NULL, NULL, comm2, 0, 0, NULL)
-
-static inline int do_call(char *key safe, struct pane *focus safe, int num, struct mark *m,
-			  char *str, int num2, struct mark *m2, char *str2,
-			  struct command *comm2, int x, int y, struct pane *home)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = home ?: focus,
-			      .num = num, .mark = m, .str = str,
-			      .num2 = num2, .mark2 = m2, .str2 = str2,
-			      .comm2 = comm2, .x = x, .y = y,
-			      .comm = safe_cast 0};
-
-	return key_handle(&ci);
-}
-
-/* comm_call() is quite different to call*(). It calls a specific command,
- * not a stack of panes.  The comm comes first.
- * This is mostly used for callback.
- */
-#define comm_call(...) VFUNC(comm_call, __VA_ARGS__)
-#define comm_call12(comm, key, focus, num, mark, str, num2, mark2, str2, x, y, comm2) \
-	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, NULL, x, y, NULL)
-#define comm_call11(comm, key, focus, num, mark, str, num2, mark2, str2, x, y) \
-	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, NULL, x, y, NULL)
-#define comm_call9(comm, key, focus, num, mark, str, num2, mark2, str2) \
-	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, NULL, 0, 0, NULL)
-#define comm_call8(comm, key, focus, num, mark, str, num2, mark2) \
-	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, NULL, NULL, 0, 0, NULL)
-#define comm_call7(comm, key, focus, num, mark, str, num2) \
-	do_comm_call(comm, key, focus, num, mark, str, num2, NULL, NULL, NULL, 0, 0, NULL)
-#define comm_call6(comm, key, focus, num, mark, str) \
-	do_comm_call(comm, key, focus, num, mark, str, 0, NULL, NULL, NULL, 0, 0, NULL)
-#define comm_call5(comm, key, focus, num, mark) \
-	do_comm_call(comm, key, focus, num, mark, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
-#define comm_call4(comm, key, focus, num) \
-	do_comm_call(comm, key, focus, num, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
-#define comm_call3(comm, key, focus) \
-	do_comm_call(comm, key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL)
-
-static inline int do_comm_call(struct command *comm,
-			       char *key safe, struct pane *focus safe, int num, struct mark *m,
-			       char *str, int num2, struct mark *m2, char *str2,
-			       struct command *comm2, int x, int y, struct pane *home)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = home ?: focus,
-			      .num = num, .mark = m, .str = str,
-			      .num2 = num2, .mark2 = m2, .str2 = str2,
-			      .comm2 = comm2, .x = x, .y = y,
-			      .comm = safe_cast 0};
-
-	if (!comm)
-		return -1;
-	ci.comm = comm;
-	return ci.comm->func(&ci);
-}
-
-/* pane_call() is a cross between comm_call and home_call.  The home pane is
- * given first, and home->handle is explicitly called.
- */
-#define pane_call(...) VFUNC(pane_call, __VA_ARGS__)
-#define pane_call12(home, key, focus, num, mark, str, num2, mark2, str2, x, y, comm2) \
-	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, x, y, comm2)
-#define pane_call11(home, key, focus, num, mark, str, num2, mark2, str2, x, y) \
-	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, x, y)
-#define pane_call9(home, key, focus, num, mark, str, num2, mark2, str2) \
-	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, 0, 0, NULL)
-#define pane_call8(home, key, focus, num, mark, str, num2, mark2) \
-	do_pane_call(home, key, focus, num, mark, str, num2, mark2, NULL, 0, 0, NULL)
-#define pane_call7(home, key, focus, num, mark, str, num2) \
-	do_pane_call(home, key, focus, num, mark, str, num2, NULL, NULL, 0, 0, NULL)
-#define pane_call6(home, key, focus, num, mark, str) \
-	do_pane_call(home, key, focus, num, mark, str, 0, NULL, NULL, 0, 0, NULL)
-#define pane_call5(home, key, focus, num, mark) \
-	do_pane_call(home, key, focus, num, mark, NULL, 0, NULL, NULL, 0, 0, NULL)
-#define pane_call4(home, key, focus, num) \
-	do_pane_call(home, key, focus, num, NULL, NULL, 0, NULL, NULL, 0, 0, NULL)
-#define pane_call3(home, key, focus) \
-	do_pane_call(home, key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0, NULL)
-
-static inline int do_pane_call(struct pane *home,
-			       char *key safe, struct pane *focus safe, int num, struct mark *m,
-			       char *str, int num2, struct mark *m2, char *str2,
-			       int x, int y, struct command *comm2)
-{
-	struct cmd_info ci = {.key = key, .focus = focus, .home = home ?: focus,
-			      .num = num, .mark = m, .str = str,
-			      .num2 = num2, .mark2 = m2, .str2 = str2,
-			      .comm2 = comm2, .x = x, .y = y,
-			      .comm = safe_cast 0};
-
-	if (!home || !home->handle)
-		return -1;
-	ci.home = home;
-	ci.comm = home->handle;
-	return ci.comm->func(&ci);
-}
-
-/* call_pane() is similar to call(), but returns a pane that was sent via a
- * standard callback.
- */
 struct call_return {
 	struct command c;
 	struct mark *m, *m2;
@@ -617,63 +454,116 @@ struct call_return {
 	struct command *comm;
 	int ret;
 };
-struct pane *do_call_pane(char *key safe, struct pane *focus safe,
-			  int num, struct mark *m, char *str,
+
+enum target_type {
+	TYPE_focus,
+	TYPE_home,
+	TYPE_pane,
+	TYPE_comm,
+};
+
+struct pane *do_call_pane(enum target_type type, struct pane *home, struct command *comm2a,
+			  char *key safe, struct pane *focus safe,
+			  int num,  struct mark *m,  char *str,
 			  int num2, struct mark *m2, char *str2,
-			  int x, int y);
-struct mark *do_call_mark(char *key safe, struct pane *focus safe,
-			  int num, struct mark *m, char *str,
+			  int x, int y, struct command *comm2b);
+struct mark *do_call_mark(enum target_type type, struct pane *home, struct command *comm2a,
+			  char *key safe, struct pane *focus safe,
+			  int num,  struct mark *m,  char *str,
 			  int num2, struct mark *m2, char *str2,
-			  int x, int y);
-struct mark *do_call_mark2(char *key safe, struct pane *focus safe,
-			   int num, struct mark *m, char *str,
+			  int x, int y, struct command *comm2b);
+struct mark *do_call_mark2(enum target_type type, struct pane *home, struct command *comm2a,
+			   char *key safe, struct pane *focus safe,
+			   int num,  struct mark *m,  char *str,
 			   int num2, struct mark *m2, char *str2,
-			   int x, int y);
-char *do_call_str(char *key safe, struct pane *focus safe,
-		  int num, struct mark *m, char *str,
-		  int num2, struct mark *m2, char *str2,
-		  int x, int y);
-struct call_return do_call_all(char *key safe, struct pane *focus safe,
-			       int num, struct mark *m, char *str,
+			   int x, int y, struct command *comm2b);
+struct call_return do_call_all(enum target_type type, struct pane *home, struct command *comm2a,
+			       char *key safe, struct pane *focus safe,
+			       int num,  struct mark *m,  char *str,
 			       int num2, struct mark *m2, char *str2,
-			       int x, int y);
+			       int x, int y, struct command *comm2b);
+char *do_call_str(enum target_type type, struct pane *home, struct command *comm2a,
+		  char *key safe, struct pane *focus safe,
+		  int num,  struct mark *m,  char *str,
+		  int num2, struct mark *m2, char *str2,
+		  int x, int y, struct command *comm2b);
 
-#define call_pane(...) VFUNC(call_pane, __VA_ARGS__)
-#define call_pane10(key, focus, num, mark, str, num2, mark2, str2, x, y) \
-	do_call_pane(key, focus, num, mark, str, num2, mark2, str2, x, y)
-#define call_pane8(key, focus, num, mark, str, num2, mark2, str2) \
-	do_call_pane(key, focus, num, mark, str, num2, mark2, str2, 0, 0)
-#define call_pane7(key, focus, num, mark, str, num2, mark2) \
-	do_call_pane(key, focus, num, mark, str, num2, mark2, NULL, 0, 0)
-#define call_pane6(key, focus, num, mark, str, num2) \
-	do_call_pane(key, focus, num, mark, str, num2, NULL, NULL, 0, 0)
-#define call_pane5(key, focus, num, mark, str) \
-	do_call_pane(key, focus, num, mark, str, 0, NULL, NULL, 0, 0)
-#define call_pane4(key, focus, num, mark) \
-	do_call_pane(key, focus, num, mark, NULL, 0, NULL, NULL, 0, 0)
-#define call_pane3(key, focus, num) \
-	do_call_pane(key, focus, num, NULL, NULL, 0, NULL, NULL, 0, 0)
-#define call_pane2(key, focus) \
-	do_call_pane(key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0)
+#define T_focus(_p, _c) _p
+#define T_home(_p, _c) _p
+#define T_pane(_p, _c) _p
+#define T_comm(_p, _c) _c
 
-/* The first arg of call_ret() is the name of the field to return
- * but using a comm2 callback
- */
+#define CH(f,a,b) f(a,b)
 
-#define call_ret(...) VFUNC(call_ret, __VA_ARGS__)
-#define call_ret12(ret, key, focus, num, mark, str, num2, mark2, str2, x, y) \
-	do_call_ ## ret(key, focus, num, mark, str, num2, mark2, str2, x, y)
-#define call_ret9(ret, key, focus, num, mark, str, num2, mark2, str2) \
-	do_call_ ## ret(key, focus, num, mark, str, num2, mark2, str2, 0, 0)
-#define call_ret8(ret, key, focus, num, mark, str, num2, mark2) \
-	do_call_ ## ret(key, focus, num, mark, str, num2, mark2, NULL, 0, 0)
-#define call_ret7(ret, key, focus, num, mark, str, num2) \
-	do_call_ ## ret(key, focus, num, mark, str, num2, NULL, NULL, 0, 0)
-#define call_ret6(ret, key, focus, num, mark, str) \
-	do_call_ ## ret(key, focus, num, mark, str, 0, NULL, NULL, 0, 0)
-#define call_ret5(ret, key, focus, num, mark) \
-	do_call_ ## ret(key, focus, num, mark, NULL, 0, NULL, NULL, 0, 0)
-#define call_ret4(ret, key, focus, num) \
-	do_call_ ## ret(key, focus, num, NULL, NULL, 0, NULL, NULL, 0, 0)
-#define call_ret3(ret, key, focus) \
-	do_call_ ## ret(key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0)
+#define CALL(...) VFUNC(CALL, __VA_ARGS__)
+#define CALL15(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2, str2, x, y, comm2) \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2,target), \
+		      key, focus, num, mark, str, num2, mark2, str2, x, y, comm2)
+#define CALL14(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2, str2, x, y) \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+		      key, focus, num, mark, str, num2, mark2, str2, x, y, NULL)
+#define CALL12(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2, str2) \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+		      key, focus, num, mark, str, num2, mark2, str2, 0, 0, NULL)
+#define CALL11(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2) \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+		      key, focus, num, mark, str, num2, mark2, NULL, 0, 0, NULL)
+#define CALL10(ret, t_type, target, key, comm2a, focus, num, mark, str, num2) \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+		      key, focus, num, mark, str, num2, NULL, NULL, 0, 0, NULL)
+#define CALL9(ret, t_type, target, key, comm2a, focus, num, mark, str) \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+		      key, focus, num, mark, str, 0, NULL, NULL, 0, 0, NULL)
+#define CALL8(ret, t_type, target, key, comm2a, focus, num, mark) \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+		      key, focus, num, mark, NULL, 0, NULL, NULL, 0, 0, NULL)
+#define CALL7(ret, t_type, target, key, comm2a, focus, num) \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+		      key, focus, num, NULL, NULL, 0, NULL, NULL, 0, 0, NULL)
+#define CALL6(ret, t_type, target, key, comm2a, focus) \
+	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
+		      key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0, NULL)
+
+#define call(key, _focus, ...) CALL(val, focus, _focus, key, NULL, _focus, ##__VA_ARGS__)
+#define comm_call(_comm, key, ...) CALL(val, comm, _comm, key, NULL, ##__VA_ARGS__)
+#define pane_call(_pane, key, ...) CALL(val, pane, _pane, key, NULL, ##__VA_ARGS__)
+#define home_call(_home, key, ...) CALL(val, home, _home, key, NULL, ##__VA_ARGS__)
+#define call_ret(ret, key, _focus, ...) CALL(ret, focus, _focus, key, NULL, _focus, ##__VA_ARGS__)
+#define call_comm(key, _focus, comm, ...) CALL(val, focus, _focus, key, comm, _focus, ##__VA_ARGS__)
+#define call_pane(key, _focus, ...) CALL(pane, focus, _focus, key, NULL, _focus, ##__VA_ARGS__)
+
+static inline int do_call_val(enum target_type type, struct pane *home, struct command *comm2a,
+			      char *key safe, struct pane *focus safe,
+			      int num,  struct mark *m,  char *str,
+			      int num2, struct mark *m2, char *str2,
+			      int x, int y, struct command *comm2b)
+{
+	struct cmd_info ci = {.key = key, .focus = focus,
+			      .home =  (type == TYPE_home || type == TYPE_pane) ? safe_cast home : focus,
+			      .num = num, .mark = m, .str = str,
+			      .num2 = num2, .mark2 = m2, .str2 = str2,
+			      .comm2 = comm2a ?: comm2b, .x = x, .y = y,
+			      .comm = safe_cast 0};
+
+	if ((type == TYPE_pane || type == TYPE_home) && !home)
+		return 0;
+	if (type == TYPE_comm && !comm2a)
+		return 0;
+	ASSERT(!comm2a || !comm2b || comm2a == comm2b);
+
+	switch(type) {
+	default:
+	case TYPE_focus:
+	case TYPE_home:
+		return key_handle(&ci);
+	case TYPE_pane:
+		if (!home->handle)
+			return -1;
+		ci.comm = home->handle;
+		return ci.comm->func(&ci);
+	case TYPE_comm:
+		ci.comm = comm2a;
+		ci.comm2 = comm2b;
+		return ci.comm->func(&ci);
+	}
+}
