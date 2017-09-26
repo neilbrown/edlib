@@ -30,7 +30,6 @@ struct md5_state {
 	uint64_t byte_count;
 };
 
-
 #define F1(x, y, z)	(z ^ (x & (y ^ z)))
 #define F2(x, y, z)	F1(z, x, y)
 #define F3(x, y, z)	(x ^ y ^ z)
@@ -39,7 +38,7 @@ struct md5_state {
 #define MD5STEP(f, w, x, y, z, in, s) \
 	(w += f(x, y, z) + in, w = (w<<s | w>>(32-s)) + x)
 
-void md5_transform(uint32_t hash[MD5_HASH_WORDS], uint32_t const in[MD5_BLOCK_WORDS])
+static void md5_transform(uint32_t hash[MD5_HASH_WORDS], uint32_t const in[MD5_BLOCK_WORDS])
 {
 	uint32_t a, b, c, d;
 
