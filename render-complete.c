@@ -254,7 +254,7 @@ DEF_CMD(complete_eol)
 		cr.c = eol_cb;
 		if (pane_call(ci->home, "render-line",
 			      ci->focus, NO_NUMERIC, ci->mark, NULL,
-			      0, NULL, NULL, &cr.c, 0, 0) <= 0)
+			      0, NULL, NULL, 0,0, &cr.c) <= 0)
 			rpt = 1;
 		rpt -= 1;
 	}
@@ -338,7 +338,7 @@ DEF_CMD(complete_return)
 	cr.s = NULL;
 	pane_call(ci->home, "render-line",
 		  ci->home, NO_NUMERIC, ci->mark, NULL, 0, NULL,
-		  NULL, &cr.c, 0, 0);
+		  NULL, 0,0, &cr.c);
 	if (!cr.s)
 		return 1;
 	l = strlen(cr.s);

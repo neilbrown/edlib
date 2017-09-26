@@ -336,7 +336,7 @@ restart:
 		n->noted = 1;
 		if (strcmp(n->notification, notification) == 0) {
 			int r = pane_call(n->notifiee, notification, p,
-					  num, m, str, num2, m2, str2, comm2);
+					  num, m, str, num2, m2, str2, 0,0, comm2);
 			if (abs(r) > abs(ret))
 				ret = r;
 			goto restart;
@@ -591,7 +591,7 @@ char *pane_attr_get(struct pane *p, char *key safe)
 			return a;
 		cr.s = NULL;
 		ret = pane_call(p, "get-attr", p, 0, NULL,
-				key, 0, NULL, NULL, &cr.c);
+				key, 0, NULL, NULL, 0,0, &cr.c);
 		if (ret > 0)
 			return cr.s;
 		p = p->parent;

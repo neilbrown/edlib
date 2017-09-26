@@ -571,29 +571,29 @@ static inline int do_comm_call(struct command *comm,
  * given first, and home->handle is explicitly called.
  */
 #define pane_call(...) VFUNC(pane_call, __VA_ARGS__)
-#define pane_call12(home, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y) \
-	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y)
-#define pane_call10(home, key, focus, num, mark, str, num2, mark2, str2, comm2) \
-	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, comm2, 0, 0)
+#define pane_call12(home, key, focus, num, mark, str, num2, mark2, str2, x, y, comm2) \
+	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, x, y, comm2)
+#define pane_call11(home, key, focus, num, mark, str, num2, mark2, str2, x, y) \
+	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, x, y)
 #define pane_call9(home, key, focus, num, mark, str, num2, mark2, str2) \
-	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, NULL, 0, 0)
+	do_pane_call(home, key, focus, num, mark, str, num2, mark2, str2, 0, 0, NULL)
 #define pane_call8(home, key, focus, num, mark, str, num2, mark2) \
-	do_pane_call(home, key, focus, num, mark, str, num2, mark2, NULL, NULL, 0, 0)
+	do_pane_call(home, key, focus, num, mark, str, num2, mark2, NULL, 0, 0, NULL)
 #define pane_call7(home, key, focus, num, mark, str, num2) \
-	do_pane_call(home, key, focus, num, mark, str, num2, NULL, NULL, NULL, 0, 0)
+	do_pane_call(home, key, focus, num, mark, str, num2, NULL, NULL, 0, 0, NULL)
 #define pane_call6(home, key, focus, num, mark, str) \
-	do_pane_call(home, key, focus, num, mark, str, 0, NULL, NULL, NULL, 0, 0)
+	do_pane_call(home, key, focus, num, mark, str, 0, NULL, NULL, 0, 0, NULL)
 #define pane_call5(home, key, focus, num, mark) \
-	do_pane_call(home, key, focus, num, mark, NULL, 0, NULL, NULL, NULL, 0, 0)
+	do_pane_call(home, key, focus, num, mark, NULL, 0, NULL, NULL, 0, 0, NULL)
 #define pane_call4(home, key, focus, num) \
-	do_pane_call(home, key, focus, num, NULL, NULL, 0, NULL, NULL, NULL, 0, 0)
+	do_pane_call(home, key, focus, num, NULL, NULL, 0, NULL, NULL, 0, 0, NULL)
 #define pane_call3(home, key, focus) \
-	do_pane_call(home, key, focus, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 0)
+	do_pane_call(home, key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0, NULL)
 
 static inline int do_pane_call(struct pane *home,
 			       char *key safe, struct pane *focus safe, int num, struct mark *m,
 			       char *str, int num2, struct mark *m2, char *str2,
-			       struct command *comm2, int x, int y)
+			       int x, int y, struct command *comm2)
 {
 	struct cmd_info ci = {.key = key, .focus = focus, .home = home ?: focus,
 			      .num = num, .mark = m, .str = str,
