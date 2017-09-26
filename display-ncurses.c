@@ -40,7 +40,6 @@ typedef char hash_t[MD5_DIGEST_SIZE*2+1];
 #define NCURSES_OK_ADDR(p) ((void*)0 != NCURSES_CAST(const void *, (p)))
 #endif
 
-
 struct display_data {
 	SCREEN			*scr;
 	struct xy		cursor;

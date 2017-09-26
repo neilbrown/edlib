@@ -729,7 +729,6 @@ class notmuch_master_view(edlib.Pane):
                 if s:
                     self.list_pane.call("doc:notmuch:update-one", s)
 
-
             p0 = self.call("doc:notmuch:query", str, ret='focus')
             p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 3,
                                      ret = 'focus')
@@ -1118,7 +1117,6 @@ class notmuch_list(edlib.Doc):
             return self.cmp1(p1[1], p2[1])
         else:
             return self.cmp1(p1[0], p2[0])
-
 
     def handle(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
         if key == "Notify:Tag":

@@ -86,7 +86,6 @@ edlib: $(OBJ) lib/libedlib.so
 edlib-static: $(OBJ) $(STATICOBJ)  $(XOBJ)
 	$(QUIET_LINK)$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LIBS-lang-python) $(LIBS-display-ncurses) $(LIBS-lib-libevent)
 
-
 $(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) $(STATICOBJ) : $(H) O/.exists
 
 $(OBJ) : O/%.o : %.c
