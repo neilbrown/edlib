@@ -267,7 +267,7 @@ DEF_CMD(dir_same_file)
 	       dr->stat.st_dev == stb.st_dev))
 		return 0;
 	/* Let's reload it now */
-	comm_call(&dir_load_file, "doc:load-file", ci->focus, 0, NULL, NULL, fd);
+	home_call(ci->home, "doc:load-file", ci->focus, 0, NULL, NULL, fd);
 	return 1;
 }
 
@@ -647,7 +647,7 @@ DEF_CMD(dir_cmd)
 	case 'o':
 		return dir_open(ci->home, ci->focus, ci->mark, cmd);
 	case 'g':
-		return comm_call(&dir_load_file, "doc:load-file", ci->focus,
+		return home_call(ci->home, "doc:load-file", ci->focus,
 				 0, NULL, NULL, -1);
 	case 'q':
 		return call("doc:destroy", ci->home);
