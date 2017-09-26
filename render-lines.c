@@ -847,7 +847,7 @@ static struct mark *call_render_line(struct pane *p safe, struct mark *start saf
 	 * 'used' can be negative if the mark is before the start
 	 * of the pane
 	 */
-	s = call_ret(str, "render-line", p, NO_NUMERIC, m, NULL);
+	s = call_ret(str, "render-line", p, NO_NUMERIC, m);
 	if (!s) {
 		mark_free(m);
 		return NULL;
@@ -1147,7 +1147,7 @@ restart:
 		call("pane-clear", p, 0, NULL, a);
 		free(a);
 	} else if (strncmp(s, "image:", 6) == 0) {
-		if (call("Draw:image", focus, 1, NULL, s+6, 0) <= 0)
+		if (call("Draw:image", focus, 1, NULL, s+6) <= 0)
 			call("pane-clear", p);
 	} else if (strncmp(s, "call:", 5) == 0) {
 		if (home_call(focus, s+5, p, 0, m) <= 0)
@@ -1637,11 +1637,11 @@ DEF_CMD(render_lines_move_line)
 		num -= 1;
 	else
 		num += 1;
-	if (!call("Move-EOL", ci->focus, num, ci->mark, NULL, 0))
+	if (!call("Move-EOL", ci->focus, num, ci->mark))
 		return -1;
 	if (RPT_NUM(ci) > 0) {
 		/* at end of target line, move to start */
-		if (!call("Move-EOL", ci->focus, -1, ci->mark, NULL, 0))
+		if (!call("Move-EOL", ci->focus, -1, ci->mark))
 			return -1;
 	}
 
@@ -1762,7 +1762,7 @@ REDEF_CMD(render_lines_attach)
 	rl->typenum = doc_add_view(ci->focus);
 	p = ci->focus;
 	if (strcmp(ci->key, "attach-render-text") == 0)
-		p = call_pane("attach-renderline", p, 0, NULL, 0);
+		p = call_pane("attach-renderline", p);
 	p = pane_register(p, 0, &render_lines_handle.c, rl, NULL);
 	call("Request:Notify:doc:Replace", p);
 

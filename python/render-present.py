@@ -465,7 +465,7 @@ class PresenterPane(edlib.Pane):
             # Go to start of page
             if num == 0:
                 # just make sure at start of line
-                return self.parent.call("render-line-prev", mark, 0)
+                return self.parent.call("render-line-prev", mark)
 
             start = self.find_pages(mark)
             if not start:
