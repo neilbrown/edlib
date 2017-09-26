@@ -71,7 +71,7 @@ DEF_CMD(global_get_command)
 	    !(cm = key_lookup_cmd(map, ci->str)))
 		return -1;
 	return comm_call(ci->comm2, "callback:comm", ci->focus, 0, NULL, ci->str,
-			 0, NULL, NULL, cm);
+			 0, NULL, NULL, 0,0, cm);
 }
 
 #ifdef edlib_init

@@ -529,12 +529,10 @@ static inline int do_call(char *key safe, struct pane *focus safe, int num, stru
  * This is mostly used for callback.
  */
 #define comm_call(...) VFUNC(comm_call, __VA_ARGS__)
-#define comm_call13(comm, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, home) \
-	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, home)
-#define comm_call12(comm, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y) \
-	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, comm2, x, y, NULL)
-#define comm_call10(comm, key, focus, num, mark, str, num2, mark2, str2, comm2) \
-	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, comm2, 0, 0, NULL)
+#define comm_call12(comm, key, focus, num, mark, str, num2, mark2, str2, x, y, comm2) \
+	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, NULL, x, y, NULL)
+#define comm_call11(comm, key, focus, num, mark, str, num2, mark2, str2, x, y) \
+	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, NULL, x, y, NULL)
 #define comm_call9(comm, key, focus, num, mark, str, num2, mark2, str2) \
 	do_comm_call(comm, key, focus, num, mark, str, num2, mark2, str2, NULL, 0, 0, NULL)
 #define comm_call8(comm, key, focus, num, mark, str, num2, mark2) \

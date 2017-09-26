@@ -427,7 +427,7 @@ DEF_CMD(ncurses_handle)
 		}
 		return comm_call(ci->comm2, "callback:size", ci->focus,
 				 max_bytes, NULL, NULL,
-				 0, NULL, NULL, NULL, size, 1);
+				 0, NULL, NULL, size, 1);
 	}
 	if (strcmp(ci->key, "Draw:text") == 0 && ci->str) {
 		int attr = cvt_attrs(ci->str2);
