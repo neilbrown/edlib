@@ -36,23 +36,9 @@ struct key_data {
 
 static struct pane *safe do_keymap_attach(struct pane *p, int global);
 
-DEF_CMD(get_command_callback)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return , c);
-	cr->comm = ci->comm2;
-	return 1;
-}
-
 static struct command *get_command(struct pane *p safe, char *cmd)
 {
-	struct call_return cr = {};
-	int ret;
-
-	cr.c = get_command_callback;
-	ret = call_comm("global-get-command", p, &cr.c, 0, NULL, cmd);
-	if (ret > 0)
-		return cr.comm;
-	return NULL;
+	return call_ret(comm, "global-get-command", p, 0, NULL, cmd);
 }
 
 DEF_CMD(keymap_handle)

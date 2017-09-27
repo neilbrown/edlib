@@ -477,6 +477,11 @@ struct mark *do_call_mark2(enum target_type type, struct pane *home, struct comm
 			   int num,  struct mark *m,  char *str,
 			   int num2, struct mark *m2, char *str2,
 			   int x, int y, struct command *comm2b);
+struct command *do_call_comm(enum target_type type, struct pane *home, struct command *comm2a,
+			     char *key safe, struct pane *focus safe,
+			     int num,  struct mark *m,  char *str,
+			     int num2, struct mark *m2, char *str2,
+			     int x, int y, struct command *comm2b);
 struct call_return do_call_all(enum target_type type, struct pane *home, struct command *comm2a,
 			       char *key safe, struct pane *focus safe,
 			       int num,  struct mark *m,  char *str,

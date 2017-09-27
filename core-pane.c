@@ -626,6 +626,7 @@ DEF_CMD(take_simple)
 	cr->i2 = ci->num2;
 	cr->x = ci->x;
 	cr->y = ci->y;
+	cr->comm = ci->comm2;
 	cr->s = strsave(ci->focus, ci->str);
 	return 1;
 }
@@ -687,6 +688,22 @@ struct mark *do_call_mark2(enum target_type type, struct pane *home, struct comm
 	if (cr.ret < 0)
 		return NULL;
 	return cr.m2;
+}
+
+struct command *do_call_comm(enum target_type type, struct pane *home, struct command *comm2a,
+			     char *key safe, struct pane *focus safe,
+			     int num,  struct mark *m,  char *str,
+			     int num2, struct mark *m2, char *str2,
+			     int x, int y, struct command *comm2b)
+{
+	struct call_return cr = {};
+
+	cr.c = take_simple;
+	cr.ret = do_call_val(type, home, comm2a, key, focus, num, m, str,
+			       num2, m2, str2, x, y, &cr.c);
+	if (cr.ret < 0)
+		return NULL;
+	return cr.comm;
 }
 
 char *do_call_strsave(enum target_type type, struct pane *home, struct command *comm2a,
