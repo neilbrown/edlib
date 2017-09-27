@@ -571,29 +571,16 @@ struct pane *render_attach(char *name, struct pane *parent safe)
 	return parent;
 }
 
-DEF_CMD(attr_get_callback)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->s = strsave(ci->focus, ci->str);
-	return 1;
-}
-
 char *pane_attr_get(struct pane *p, char *key safe)
 {
-	struct call_return cr;
-
-	cr.c = attr_get_callback;
 	while (p) {
 		char *a = attr_find(p->attrs, key);
-		int ret;
 
 		if (a)
 			return a;
-		cr.s = NULL;
-		ret = pane_call(p, "get-attr", p, 0, NULL,
-				key, 0, NULL, NULL, 0,0, &cr.c);
-		if (ret > 0)
-			return cr.s;
+		a = CALL(strsave, pane, p, "get-attr", NULL, p, 0, NULL, key);
+		if (a)
+			return a;
 		p = p->parent;
 	}
 	return NULL;
@@ -602,15 +589,7 @@ char *pane_attr_get(struct pane *p, char *key safe)
 char *pane_mark_attr(struct pane *p safe, struct mark *m safe, bool forward,
 		     char *key safe)
 {
-	struct call_return cr;
-	int ret;
-
-	cr.c = attr_get_callback;
-	cr.s = NULL;
-	ret = call_comm("doc:get-attr", p, &cr.c, !!forward, m, key);
-	if (ret > 0)
-		return cr.s;
-	return NULL;
+	return call_ret(strsave, "doc:get-attr", p, !!forward, m, key);
 }
 
 void pane_clone_children(struct pane *from, struct pane *to)
@@ -647,6 +626,7 @@ DEF_CMD(take_simple)
 	cr->i2 = ci->num2;
 	cr->x = ci->x;
 	cr->y = ci->y;
+	cr->s = strsave(ci->focus, ci->str);
 	return 1;
 }
 
@@ -707,6 +687,20 @@ struct mark *do_call_mark2(enum target_type type, struct pane *home, struct comm
 	if (cr.ret < 0)
 		return NULL;
 	return cr.m2;
+}
+
+char *do_call_strsave(enum target_type type, struct pane *home, struct command *comm2a,
+		      char *key safe, struct pane *focus safe,
+		      int num,  struct mark *m,  char *str,
+		      int num2, struct mark *m2, char *str2,
+		      int x, int y, struct command *comm2b)
+{
+	struct call_return cr = {};
+
+	cr.c = take_simple;
+	cr.ret = do_call_val(type, home, comm2a, key, focus, num, m, str,
+			     num2, m2, str2, x, y, &cr.c);
+	return cr.s;
 }
 
 struct call_return do_call_all(enum target_type type, struct pane *home, struct command *comm2a,

@@ -487,6 +487,11 @@ char *do_call_str(enum target_type type, struct pane *home, struct command *comm
 		  int num,  struct mark *m,  char *str,
 		  int num2, struct mark *m2, char *str2,
 		  int x, int y, struct command *comm2b);
+char *do_call_strsave(enum target_type type, struct pane *home, struct command *comm2a,
+		      char *key safe, struct pane *focus safe,
+		      int num,  struct mark *m,  char *str,
+		      int num2, struct mark *m2, char *str2,
+		      int x, int y, struct command *comm2b);
 
 #define T_focus(_p, _c) _p
 #define T_home(_p, _c) _p
