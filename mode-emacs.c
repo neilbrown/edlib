@@ -564,13 +564,6 @@ DEF_CMD(emacs_findfile)
 	return 1;
 }
 
-DEF_CMD(save_str)
-{
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->s = ci->str ? strdup(ci->str) : NULL;
-	return 1;
-}
-
 REDEF_CMD(emacs_file_complete)
 {
 	/* Extract a directory name and a basename from the document.
@@ -686,12 +679,11 @@ REDEF_CMD(emacs_doc_complete)
 	char *str;
 	struct pane *par, *pop, *docs, *p;
 	struct call_return cr;
-	int ret;
 
 	if (!ci->mark)
 		return -1;
 
-	str = call_ret(str, "doc:get-str", ci->focus);
+	str = call_ret(strsave, "doc:get-str", ci->focus);
 	if (!str)
 		return -1;
 	pop = call_pane("PopupTile", ci->focus, 0, NULL, "DM1r");
@@ -710,14 +702,10 @@ REDEF_CMD(emacs_doc_complete)
 	p = render_attach("complete", par);
 	if (!p)
 		return -1;
-	cr.c = save_str;
-	cr.s = NULL;
-	ret = call_comm("Complete:prefix", p, &cr.c, 0, NULL, str);
-	if (cr.s && (strlen(cr.s) <= strlen(str) && ret - 1 > 1)) {
+	cr = call_ret(all, "Complete:prefix", p, 0, NULL, str);
+	if (cr.s && (strlen(cr.s) <= strlen(str) && cr.ret - 1 > 1)) {
 		/* We need the dropdown */
 		pane_damaged(par, DAMAGED_CONTENT);
-		free(str);
-		free(cr.s);
 		return 1;
 	}
 	if (cr.s) {
@@ -725,7 +713,6 @@ REDEF_CMD(emacs_doc_complete)
 		char *c = cr.s + strlen(str);
 
 		call("Replace", ci->focus, 1, ci->mark, c);
-		free(cr.s);
 	}
 	/* Now need to close the popup */
 	pane_close(pop);
