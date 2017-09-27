@@ -578,7 +578,7 @@ char *pane_attr_get(struct pane *p, char *key safe)
 
 		if (a)
 			return a;
-		a = CALL(strsave, pane, p, "get-attr", NULL, p, 0, NULL, key);
+		a = CALL(strsave, pane, p, "get-attr", p, 0, NULL, key);
 		if (a)
 			return a;
 		p = p->parent;
