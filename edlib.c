@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 	setlocale(LC_CTYPE, "enUS.UTF-8");
 
 	doc_new(ed, "docs", NULL);
-	//call("global-load-module", ed, 0, NULL, "lib-linecount");
+	call("global-load-module", ed, 0, NULL, "lib-linecount");
 	call("global-load-module", ed, 0, NULL, "lib-search");
 	call("global-load-module", ed, 0, NULL, "lib-popup");
 	call("global-load-module", ed, 0, NULL, "lang-python");
