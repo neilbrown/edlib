@@ -98,6 +98,7 @@ void editor_delayed_free(struct pane *ed safe, struct pane *p safe);
 struct pane *editor_new(void);
 void *memsave(struct pane *p safe, char *buf, int len);
 char *strsave(struct pane *p safe, char *buf);
+char *strnsave(struct pane *p safe, char *buf, int len);
 
 /* This is declared here so sparse knows it is global */
 void edlib_init(struct pane *ed safe);

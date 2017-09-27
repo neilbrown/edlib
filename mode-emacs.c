@@ -582,12 +582,11 @@ REDEF_CMD(emacs_file_complete)
 	int fd;
 	struct pane *par, *pop, *docp, *p;
 	struct call_return cr;
-	int ret;
 
 	if (!ci->mark)
 		return -1;
 
-	str = call_ret(str, "doc:get-str", ci->focus);
+	str = call_ret(strsave, "doc:get-str", ci->focus);
 	if (!str)
 		return -1;
 	d = str;
@@ -596,15 +595,13 @@ REDEF_CMD(emacs_file_complete)
 	b = strrchr(d, '/');
 	if (b) {
 		b += 1;
-		d = strndup(d, b-d);
+		d = strnsave(ci->focus, d, b-d);
 	} else {
 		b = d;
-		d = strdup(".");
+		d = strsave(ci->focus, ".");
 	}
 	fd = open(d, O_DIRECTORY|O_RDONLY);
 	if (fd < 0) {
-		free(d);
-		free(str);
 		return -1;
 	}
 	docp = call_pane("doc:open", ci->focus, fd, NULL, d);
@@ -624,23 +621,17 @@ REDEF_CMD(emacs_file_complete)
 	p = render_attach("complete", par);
 	if (!p)
 		return -1;
-	cr.c = save_str;
-	cr.s = NULL;
-	ret = call_comm("Complete:prefix", p, &cr.c, 0, NULL, b);
-	free(d);
-	if (cr.s && (strlen(cr.s) <= strlen(b) && ret-1 > 1)) {
+	cr = call_ret(all, "Complete:prefix", p, 0, NULL, b);
+	if (cr.s && (strlen(cr.s) <= strlen(b) && cr.ret-1 > 1)) {
 		/* We need the dropdown */
 		pane_damaged(par, DAMAGED_CONTENT);
-		free(str);
-		free(cr.s);
 		return 1;
 	}
 	if (cr.s) {
-		/* add the extra chars from ci2.str */
+		/* Add the extra prefix chars from cr.s */
 		c = cr.s + strlen(b);
 
 		call("Replace", ci->focus, 1, ci->mark, c);
-		free(cr.s);
 	}
 	/* Now need to close the popup */
 	pane_close(pop);
