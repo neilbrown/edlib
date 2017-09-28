@@ -16,10 +16,10 @@ import gobject
 import glib
 
 class EdDisplay(gtk.Window):
-    def __init__(self, home):
-        events_activate(home)
+    def __init__(self, focus):
+        events_activate(focus)
         gtk.Window.__init__(self)
-        self.pane = edlib.Pane(home, self.handle)
+        self.pane = edlib.Pane(focus, self.handle)
         self.panes = {}
         self.set_title("EDLIB")
         self.connect('destroy', self.close_win)
@@ -423,36 +423,36 @@ def new_display(key, focus, comm2, **a):
     return 1
 
 class events:
-    def __init__(self, home):
+    def __init__(self, focus):
         self.active = True
         self.events = {}
         self.ev_num = 0
-        self.home = edlib.Pane(home, self.handle)
+        self.home = edlib.Pane(focus, self.handle)
 
     def handle(self, key, focus, **a):
         self.free("free", focus, None)
         return 1
 
-    def add_ev(self, home, comm):
-        self.home.add_notify(home, "Notify:Close")
+    def add_ev(self, focus, comm):
+        self.home.add_notify(focus, "Notify:Close")
         ev = self.ev_num
-        self.events[ev] = [home, comm]
+        self.events[ev] = [focus, comm]
         self.ev_num += 1
         return ev
 
-    def read(self, key, home, comm2, num, **a):
+    def read(self, key, focus, comm2, num, **a):
         self.active = True
-        ev = self.add_ev(home, comm2)
+        ev = self.add_ev(focus, comm2)
         gev = gobject.io_add_watch(num, gobject.IO_IN | gobject.IO_HUP,
-                                  self.docall, comm2, home, num, ev)
+                                  self.docall, comm2, focus, num, ev)
         self.events[ev].append(gev)
         return 1
 
-    def docall(self, evfd, condition, comm2, home, fd, ev):
+    def docall(self, evfd, condition, comm2, focus, fd, ev):
         if ev not in self.events:
             return False
         try:
-            comm2("callback", home, fd)
+            comm2("callback", focus, fd)
             return True
         except edlib.commandfailed:
             del self.events[ev]
@@ -461,18 +461,18 @@ class events:
     def signal(self, key, focus, comm2, num, **a):
         return 1
 
-    def timer(self, key, focus, home, comm2, num, **a):
+    def timer(self, key, focus, comm2, num, **a):
         self.active = True
-        ev = self.add_ev(home, comm2)
+        ev = self.add_ev(focus, comm2)
         gev = gobject.timeout_add(num*1000, self.dotimeout, comm2, focus, ev)
         self.events[ev].append(gev)
         return 1
 
-    def dotimeout(self, comm2, home, ev):
+    def dotimeout(self, comm2, focus, ev):
         if ev not in self.events:
             return False
         try:
-            comm2("callback", home);
+            comm2("callback", focus);
             return True
         except edlib.commandfailed:
             del self.events[ev]
@@ -494,13 +494,13 @@ class events:
         ev = None
         return 1
 
-    def free(self, key, home, comm2, **a):
+    def free(self, key, focus, comm2, **a):
         try_again = True
         while try_again:
             try_again = False
             for source in self.events:
                 e = self.events[source]
-                if e[0] != home:
+                if e[0] != focus:
                     continue
                 if comm2 and e[1] != comm2:
                     continue
@@ -517,17 +517,17 @@ class events:
         return 1
 
 ev = None
-def events_activate(home):
+def events_activate(focus):
     global ev
     if ev:
         return 1
-    ev = events(home)
-    home.call("global-set-command", home, "event:read-python", ev.read)
-    home.call("global-set-command", home, "event:signal-python", ev.signal)
-    home.call("global-set-command", home, "event:timer-python", ev.timer)
-    home.call("global-set-command", home, "event:run-python", ev.run)
-    home.call("global-set-command", home, "event:deactivate-python", ev.deactivate)
-    home.call("global-set-command", home, "event:free-python", ev.free)
+    ev = events(focus)
+    focus.call("global-set-command", focus, "event:read-python", ev.read)
+    focus.call("global-set-command", focus, "event:signal-python", ev.signal)
+    focus.call("global-set-command", focus, "event:timer-python", ev.timer)
+    focus.call("global-set-command", focus, "event:run-python", ev.run)
+    focus.call("global-set-command", focus, "event:deactivate-python", ev.deactivate)
+    focus.call("global-set-command", focus, "event:free-python", ev.free)
 
     return 1
 
