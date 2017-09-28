@@ -13,6 +13,7 @@
 #include <wchar.h>
 #include <dirent.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "core.h"
 
@@ -42,16 +43,46 @@ static char WelcomeText[] =
 	"Mouse clicks move the cursor, and clicking on the scroll bar scrolls\n"
 	;
 
+static char shortopt[] = "gt";
+
+static struct pane *make_stack(struct pane *p, struct pane *doc)
+{
+	if (p)
+		p = call_pane("attach-messageline", p);
+	if (p)
+		p = call_pane("attach-global-keymap", p);
+	if (p)
+		call("attach-mode-emacs", p);
+	if (p)
+		p = call_pane("attach-tile", p);
+	if (p && doc)
+		p = doc_attach_view(p, doc, NULL);
+	return p;
+}
+
 int main(int argc, char *argv[])
 {
 	struct pane *ed = editor_new();
-	struct pane *p;
-	int gtk = 0;
+	struct pane *p, *doc;
+	int gtk = 0, term = 0;
+	int opt;
 
 	if (!ed)
 		exit(1);
-	if (argc > 1 && argv[1] && strcmp(argv[1], "-g") == 0)
-		gtk = 1;
+
+	while ((opt = getopt(argc, argv, shortopt)) != EOF) {
+		switch (opt) {
+		case 'g': gtk = 1;
+			break;
+		case 't': term = 1;
+			break;
+		default:
+			fprintf(stderr, "Usage: edlib [-g] [-t]\n");
+			exit(2);
+		}
+	}
+	if (!gtk && !term)
+		term = 1;
 
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
@@ -72,31 +103,16 @@ int main(int argc, char *argv[])
 	call("global-load-module", ed, 0, NULL, "lib-qprint");
 
 	p = call_pane("attach-input", ed);
+	if (p)
+		doc = call_pane("doc:from-text", p, 0, NULL,
+				"*Welcome*", 0, NULL, WelcomeText);
+
 	if (p) {
+		if (term)
+			make_stack(call_pane("attach-display-ncurses", p), doc);
 		if (gtk)
-			p = call_pane("attach-display-pygtk", p);
-		else
-			p = call_pane("attach-display-ncurses", p);
-	}
+			make_stack(call_pane("attach-display-pygtk", p), doc);
 
-	if (p)
-		p = call_pane("attach-messageline", p);
-	if (p)
-		p = call_pane("attach-global-keymap", p);
-
-	if (p)
-		call("attach-mode-emacs", p);
-
-	if (p)
-		p = call_pane("attach-tile", p);
-	if (p) {
-		struct pane *d = call_pane("doc:from-text", p, 0, NULL,
-					   "*Welcome*", 0, NULL, WelcomeText);
-		if (d)
-			p = doc_attach_view(p, d, NULL);
-	}
-
-	if (p) {
 		pane_refresh(ed, NULL);
 		while (call("event:run", ed) == 1) {
 			call("global-multicall-on_idle-", ed);
