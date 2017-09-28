@@ -8,6 +8,7 @@
 
 import sys
 import os
+import signal
 import pygtk
 import gtk
 import pango
@@ -426,6 +427,7 @@ class events:
     def __init__(self, focus):
         self.active = True
         self.events = {}
+        self.sigs = {}
         self.ev_num = 0
         self.home = edlib.Pane(focus, self.handle)
 
@@ -459,7 +461,26 @@ class events:
             return False
 
     def signal(self, key, focus, comm2, num, **a):
+        ev = self.add_ev(focus, comm2)
+        self.sigs[num] = (focus, comm2, ev)
+        signal.signal(num, self.sighan)
         return 1
+
+    def sighan(self, sig, frame):
+        (focus, comm2, ev) = self.sigs[sig]
+        gobject.idle_add(self.dosig, comm2, focus, sig, ev)
+        return 1
+
+    def dosig(self, comm, focus, sig, ev):
+        if ev not in self.events:
+            return False
+        try:
+            comm("callback", focus, sig)
+            return False
+        except edlib.commandfailed:
+            del self.events[ev]
+            signal.signal(sig, signal.SIG_DFL)
+            return False
 
     def timer(self, key, focus, comm2, num, **a):
         self.active = True
