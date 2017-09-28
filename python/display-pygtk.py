@@ -543,12 +543,12 @@ def events_activate(focus):
     if ev:
         return 1
     ev = events(focus)
-    focus.call("global-set-command", focus, "event:read-python", ev.read)
-    focus.call("global-set-command", focus, "event:signal-python", ev.signal)
-    focus.call("global-set-command", focus, "event:timer-python", ev.timer)
-    focus.call("global-set-command", focus, "event:run-python", ev.run)
-    focus.call("global-set-command", focus, "event:deactivate-python", ev.deactivate)
-    focus.call("global-set-command", focus, "event:free-python", ev.free)
+    focus.call("global-set-command", "event:read-python", ev.read)
+    focus.call("global-set-command", "event:signal-python", ev.signal)
+    focus.call("global-set-command", "event:timer-python", ev.timer)
+    focus.call("global-set-command", "event:run-python", ev.run)
+    focus.call("global-set-command", "event:deactivate-python", ev.deactivate)
+    focus.call("global-set-command", "event:free-python", ev.free)
 
     return 1
 
