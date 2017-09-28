@@ -435,16 +435,16 @@ class events:
         self.free("free", focus, None)
         return 1
 
-    def add_ev(self, focus, comm):
+    def add_ev(self, focus, comm, event, num):
         self.home.add_notify(focus, "Notify:Close")
         ev = self.ev_num
-        self.events[ev] = [focus, comm]
+        self.events[ev] = [focus, comm, event, num]
         self.ev_num += 1
         return ev
 
     def read(self, key, focus, comm2, num, **a):
         self.active = True
-        ev = self.add_ev(focus, comm2)
+        ev = self.add_ev(focus, comm2, 'event:read', num)
         gev = gobject.io_add_watch(num, gobject.IO_IN | gobject.IO_HUP,
                                   self.docall, comm2, focus, num, ev)
         self.events[ev].append(gev)
@@ -461,13 +461,13 @@ class events:
             return False
 
     def signal(self, key, focus, comm2, num, **a):
-        ev = self.add_ev(focus, comm2)
+        ev = self.add_ev(focus, comm2, 'event:signal', num)
         self.sigs[num] = (focus, comm2, ev)
         signal.signal(num, self.sighan)
         return 1
 
     def sighan(self, sig, frame):
-        (focus, comm2, ev) = self.sigs[sig]
+        (focus, comm2, event, num, ev) = self.sigs[sig]
         gobject.idle_add(self.dosig, comm2, focus, sig, ev)
         return 1
 
@@ -484,7 +484,7 @@ class events:
 
     def timer(self, key, focus, comm2, num, **a):
         self.active = True
-        ev = self.add_ev(focus, comm2)
+        ev = self.add_ev(focus, comm2, 'event:timer', num)
         gev = gobject.timeout_add(num*1000, self.dotimeout, comm2, focus, ev)
         self.events[ev].append(gev)
         return 1
@@ -526,9 +526,9 @@ class events:
                 if comm2 and e[1] != comm2:
                     continue
                 del self.events[source]
-                if len(e) == 3:
+                if len(e) == 5:
                     try:
-                        gobject.source_remove(e[2])
+                        gobject.source_remove(e[4])
                     except:
                         # must be already gone
                         pass
@@ -536,6 +536,21 @@ class events:
                 break
 
         return 1
+    def refresh(self, key, focus, **a):
+        # all active events a re-enabled.  This will presumably send them
+        # to the new primary event handler
+        k = self.events.keys()
+        for e in k:
+            (focus, comm, event, num) = self.events[e][:4]
+            if event != "event:signal" and len(self.events[e]) == 5:
+                try:
+                    gobject.source_remove(self.events[4])
+                except:
+                    pass
+            del self.events[e]
+            focus.call(event, num, comm)
+        # allow other event handlers to do likewise
+        return 0
 
 ev = None
 def events_activate(focus):
@@ -549,6 +564,8 @@ def events_activate(focus):
     focus.call("global-set-command", "event:run-python", ev.run)
     focus.call("global-set-command", "event:deactivate-python", ev.deactivate)
     focus.call("global-set-command", "event:free-python", ev.free)
+    focus.call("global-set-command", "event:refresh-python", ev.refresh)
+    focus.call("event:refresh");
 
     return 1
 

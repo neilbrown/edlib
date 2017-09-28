@@ -169,6 +169,9 @@ DEF_CMD(editor_auto_event)
 
 	if (ret)
 		return ret;
+	if (strcmp(ci->key, "event:refresh") == 0)
+		/* pointless to autoload for refresh */
+		return 0;
 	call("attach-libevent", ci->home);
 	return key_lookup_prefix(map, ci);
 }

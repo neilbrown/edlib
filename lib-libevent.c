@@ -23,14 +23,16 @@ struct event_info {
 	struct event_base *base;
 	struct list_head event_list;
 	struct pane *home safe;
-	struct command read, signal, timer, run, deactivate, free;
+	struct command read, signal, timer, run, deactivate, free, refresh;
 };
 
 struct evt {
 	struct event *l safe;
 	struct pane *home safe;
+	char *event safe;
 	struct command *comm safe;
 	struct list_head lst;
+	int num;
 	int seconds;
 	int fd;
 };
@@ -98,6 +100,8 @@ DEF_CMD(libevent_read)
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
 	ev->fd = ci->num;
+	ev->num = ci->num;
+	ev->event = "event:read";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
 	event_add(ev->l, NULL);
@@ -122,6 +126,8 @@ DEF_CMD(libevent_signal)
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
 	ev->fd = -1;
+	ev->num = ci->num;
+	ev->event = "event:signal";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
 	event_add(ev->l, NULL);
@@ -148,6 +154,8 @@ DEF_CMD(libevent_timer)
 	ev->comm = command_get(ci->comm2);
 	ev->seconds = ci->num;
 	ev->fd = -1;
+	ev->num = ci->num;
+	ev->event = "event:timer";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
 	tv.tv_sec = ev->seconds;
@@ -206,6 +214,25 @@ DEF_CMD(libevent_free)
 	return 1;
 }
 
+DEF_CMD(libevent_refresh)
+{
+	struct evt *ev;
+	struct list_head *tmp;
+	struct event_info *ei = container_of(ci->comm, struct event_info, refresh);
+	struct list_head old;
+
+	list_add(&old, &ei->event_list);
+	list_del_init(&ei->event_list);
+	list_for_each_entry_safe(ev, tmp, &old, lst) {
+		event_del(ev->l);
+		list_del(&ev->lst);
+		call_comm(ev->event, ev->home, ev->comm, ev->num);
+		command_put(ev->comm);
+		free(ev);
+	}
+	return 0;
+}
+
 DEF_CMD(libevent_handle)
 {
 	struct event_info *ei = ci->home->data;
@@ -228,6 +255,7 @@ DEF_CMD(libevent_activate)
 	ei->run = libevent_run;
 	ei->deactivate = libevent_deactivate;
 	ei->free = libevent_free;
+	ei->refresh = libevent_refresh;
 	ei->home = pane_register(ei->home, 0, &libevent_handle, ei, NULL);
 
 	/* These are defaults, so make them sort late */
@@ -237,6 +265,8 @@ DEF_CMD(libevent_activate)
 	call_comm("global-set-command", ci->focus, &ei->run, 0, NULL, "event:run-zz");
 	call_comm("global-set-command", ci->focus, &ei->deactivate, 0, NULL, "event:deactivate-zz");
 	call_comm("global-set-command", ci->focus, &ei->free, 0, NULL, "event:free-zz");
+	call_comm("global-set-command", ci->focus, &ei->refresh, 0, NULL, "event:refresh-zz");
+	call("event:refresh", ci->focus);
 
 	return 1;
 }
