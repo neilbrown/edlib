@@ -63,7 +63,7 @@ static struct pane *make_stack(struct pane *p, struct pane *doc)
 int main(int argc, char *argv[])
 {
 	struct pane *ed = editor_new();
-	struct pane *p, *doc;
+	struct pane *p, *doc = NULL;
 	int gtk = 0, term = 0;
 	int opt;
 
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 		case 't': term = 1;
 			break;
 		default:
-			fprintf(stderr, "Usage: edlib [-g] [-t]\n");
+			fprintf(stderr, "Usage: edlib [-g] [-t] [file ...]\n");
 			exit(2);
 		}
 	}
@@ -102,8 +102,20 @@ int main(int argc, char *argv[])
 	call("global-load-module", ed, 0, NULL, "lib-viewer");
 	call("global-load-module", ed, 0, NULL, "lib-qprint");
 
+	while (optind < argc) {
+		char *file = argv[optind++];
+		int fd = open(file, O_RDONLY);
+		if (fd < 0) {
+			perror("edlib: open");
+			fprintf(stderr, "edlib: Cannot open: %s\n", file);
+			exit(2);
+		}
+		doc = call_pane("doc:open", ed, fd, NULL, file);
+		close(fd);
+	}
+
 	p = call_pane("attach-input", ed);
-	if (p)
+	if (p && !doc)
 		doc = call_pane("doc:from-text", p, 0, NULL,
 				"*Welcome*", 0, NULL, WelcomeText);
 
