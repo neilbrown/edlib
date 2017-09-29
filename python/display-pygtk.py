@@ -323,9 +323,12 @@ class EdDisplay(gtk.Window):
         self.gc = None
         self.bg = None
 
+        self.im = gtk.IMContextSimple()
+        self.im.set_client_window(self.window)
         self.text.connect("expose-event", self.refresh)
         self.text.connect("button-press-event", self.press)
         self.text.connect("key-press-event", self.keystroke)
+        self.im.connect("commit", self.keyinput)
         self.text.connect("configure-event", self.reconfigure)
         self.text.set_events(gtk.gdk.EXPOSURE_MASK|
                              gtk.gdk.STRUCTURE_MASK|
@@ -383,7 +386,14 @@ class EdDisplay(gtk.Window):
                  "Page_Up" : "Prior",
                  "Page_Down" : "Next",
                  }
+
+    def keyinput(self, c, strng):
+        self.pane.call("Keystroke", "Chr-" + strng)
+
     def keystroke(self, c, event):
+        if self.im.filter_keypress(event):
+            return
+
         kv = gtk.gdk.keyval_name(event.keyval)
         if kv in self.eventmap:
             s = self.eventmap[kv]
