@@ -16,7 +16,9 @@
 
 #define _XOPEN_SOURCE
 #define _XOPEN_SOURCE_EXTENDED
+#ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
+#endif
 
 #include <stdlib.h>
 #include <curses.h>

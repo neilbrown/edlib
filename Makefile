@@ -8,7 +8,6 @@ SMATCH_CHECK_SAFE=1
 export SMATCH_CHECK_SAFE
 
 LDLIBS= -ldl
-CPPFLAGS= -I.
 CC = gcc
 SMATCH_FLAGS= -D_BITS_FLOATN_H -D__HAVE_FLOAT128=0 -D__FLT_EVAL_METHOD__=1 -D__HAVE_DISTINCT_FLOAT128=0
 SPARSEFLAGS= -Wsparse-all -Wno-transparent-union -Wsparse-error $(SMATCH_FLAGS)
@@ -52,14 +51,14 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/display-ncurses.o
 XOBJ = O/rexel.o O/emacs-search.o
 
-LIBS-lang-python = -lpython2.7
-INC-lang-python = -I/usr/include/python2.7
+LIBS-lang-python = $(shell pkg-config --libs python-2.7)
+INC-lang-python = $(shell pkg-config --cflags python-2.7)
 
-LIBS-display-ncurses = -lncursesw
-INC-display-ncurses = -I/usr/include/ncursesw
+LIBS-display-ncurses = $(shell pkg-config --libs ncursesw)
+INC-display-ncurses = $(shell pkg-config --cflags ncursesw)
 O/display-ncurses.o : md5.h
 
-LIBS-lib-libevent = -levent
+LIBS-lib-libevent = $(shell pkg-config --libs libevent)
 
 O/core-editor-static.o : O/mod-list-decl.h O/mod-list.h
 
@@ -90,12 +89,12 @@ $(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) $(STATICOBJ) : $(H) O/.exists
 
 $(OBJ) : O/%.o : %.c
 	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
-	$(QUIET_SMATCH) -I/usr/include/x86_64-linux-gnu/ $(CPPFLAGS) $(INC-$*) $<
+	$(QUIET_SMATCH) $(CPPFLAGS) $(INC-$*) $<
 	$(QUIET_CC)$(CC) $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
 	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
-	$(QUIET_SMATCH) -I/usr/include/x86_64-linux-gnu/ $(CPPFLAGS) $(INC-$*) $<
+	$(QUIET_SMATCH) $(CPPFLAGS) $(INC-$*) $<
 	$(QUIET_CC)$(CC) -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
 $(STATICOBJ) : O/%-static.o : %.c
