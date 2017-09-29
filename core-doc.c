@@ -890,11 +890,12 @@ DEF_CMD(doc_open)
 			strncpy(nbuf, name, sl-name);
 			nbuf[sl-name] = 0;
 			rp = realpath(nbuf, pathbuf);
+			sl += 1;
 		}
 
 		if (rp) {
 			strcat(rp, "/");
-			strcat(rp, sl+1);
+			strcat(rp, sl);
 			name = rp;
 		}
 	}
