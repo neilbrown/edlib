@@ -338,6 +338,19 @@ DEF_CMD(view_click)
 	return 1;
 }
 
+DEF_CMD(view_scroll)
+{
+	struct pane *p = ci->home;
+	struct view_data *vd = p->data;
+
+	if (ci->key[6] == '4')
+		vd->move_small -= 2;
+	else
+		vd->move_small += 2;
+	pane_damaged(p, DAMAGED_VIEW);
+	return 1;
+}
+
 DEF_CMD(view_refresh_view)
 {
 	struct pane *p = ci->home;
@@ -381,6 +394,8 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(view_map, "Click-1", &view_click);
 	key_add(view_map, "Press-1", &view_click);
+	key_add(view_map, "Press-4", &view_scroll);
+	key_add(view_map, "Press-5", &view_scroll);
 	key_add(view_map, "Window:border", &view_border);
 	key_add(view_map, "Refresh:view", &view_refresh_view);
 
