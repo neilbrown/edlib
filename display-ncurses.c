@@ -678,7 +678,7 @@ static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 	char buf[100];
 
 	/* MEVENT has lots of bits.  We want a few numbers */
-	for (b = 1 ; b <= 4; b++) {
+	for (b = 1 ; b <= (NCURSES_MOUSE_VERSION <= 1 ? 3 : 5); b++) {
 		mmask_t s = mev->bstate;
 		char *action;
 		if (BUTTON_PRESS(s, b))
