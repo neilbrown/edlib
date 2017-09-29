@@ -136,8 +136,8 @@ class EdDisplay(gtk.Window):
                 ch /= pango.SCALE
                 pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
                                   cw-1, ch-1);
-                extra = True
-                while focus.parent and focus.parent.parent:
+                extra = self.in_focus
+                while focus.parent and focus.parent.parent and focus.parent != self.pane:
                     if focus.parent.focus != focus:
                         extra = False
                     focus = focus.parent
@@ -324,8 +324,11 @@ class EdDisplay(gtk.Window):
         self.bg = None
 
         self.im = gtk.IMContextSimple()
+        self.in_focus = True
         self.im.set_client_window(self.window)
         self.text.connect("expose-event", self.refresh)
+        self.text.connect("focus-in-event", self.focus_in)
+        self.text.connect("focus-out-event", self.focus_out)
         self.text.connect("button-press-event", self.press)
         self.text.connect("key-press-event", self.keystroke)
         self.im.connect("commit", self.keyinput)
@@ -347,6 +350,16 @@ class EdDisplay(gtk.Window):
             self.text.window.draw_drawable(self.bg, pm, 0, 0,
                                            rx, ry,
                                            rw, rh)
+
+    def focus_in(self, *a):
+        self.im.focus_in()
+        self.in_focus = True
+        self.pane.damaged(edlib.DAMAGED_CURSOR)
+
+    def focus_out(self, *a):
+        self.im.focus_out()
+        self.in_focus = False
+        self.pane.damaged(edlib.DAMAGED_CURSOR)
 
     def reconfigure(self, w, ev):
         alloc = w.get_allocation()
