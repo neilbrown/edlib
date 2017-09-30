@@ -463,12 +463,12 @@ REDEF_CMD(emacs_doc_complete);
 DEF_CMD(find_complete)
 {
 	char *type = ci->home->data;
-	if (strcmp(type, "cmd") == 0)
-		return 0;
+
 	if (strcmp(type, "file") == 0)
 		return emacs_file_complete_func(ci);
-	else
+	if (strcmp(type, "doc") == 0)
 		return emacs_doc_complete_func(ci);
+	return 0;
 }
 
 DEF_CMD(find_done)
@@ -1091,7 +1091,7 @@ DEF_CMD(emacs_command)
 	attr_set_str(&p->attrs, "prefix", "Cmd: ");
 	attr_set_str(&p->attrs, "done-key", "emacs:command");
 	call("doc:set-name", p, 0, NULL, "M-x command");
-	pane_register(p, 0, &find_handle.c, "file", NULL);
+	pane_register(p, 0, &find_handle.c, "cmd", NULL);
 	return 1;
 }
 
