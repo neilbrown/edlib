@@ -1252,11 +1252,13 @@ DEF_CMD(render_lines_refresh)
 	struct pane *p = ci->home;
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
-	struct mark *m;
+	struct mark *m, *pm;
 	char *a;
 
 	a = pane_attr_get(focus, "render-wrap");
 	rl->do_wrap = (!a || strcmp(a, "yes") == 0);
+
+	pm = call_ret(mark, "doc:point", focus);
 
 	m = vmark_first(focus, rl->typenum);
 	if (rl->top_sol && m)
@@ -1264,8 +1266,8 @@ DEF_CMD(render_lines_refresh)
 					  &rl->top_sol);
 
 	if (m) {
-		rl->lines = render(ci->mark, p, focus, &rl->cols);
-		if (!ci->mark || rl->ignore_point || (p->cx >= 0 && p->cy < p->h)) {
+		rl->lines = render(pm, p, focus, &rl->cols);
+		if (!pm || rl->ignore_point || (p->cx >= 0 && p->cy < p->h)) {
 			call("render:reposition", focus,
 			     rl->lines, vmark_first(focus, rl->typenum), NULL,
 			     rl->cols, vmark_last(focus, rl->typenum), NULL,
@@ -1274,7 +1276,7 @@ DEF_CMD(render_lines_refresh)
 			return 0;
 		}
 	}
-	m = ci->mark;
+	m = pm;
 	if (!m)
 		m = vmark_new(focus, MARK_UNGROUPED);
 	if (!m)
@@ -1286,7 +1288,7 @@ DEF_CMD(render_lines_refresh)
 	     rl->lines, vmark_first(focus, rl->typenum), NULL,
 	     rl->cols, vmark_last(focus, rl->typenum), NULL,
 	     p->cx, p->cy);
-	if (!ci->mark)
+	if (!pm)
 		mark_free(m);
 	return 0;
 }
@@ -1305,8 +1307,10 @@ DEF_CMD(render_lines_refresh_view)
 		m->mdata = NULL;
 	}
 
-	if (rl->repositioned)
-		rl->lines = render(ci->mark, p, focus, &rl->cols);
+	if (rl->repositioned) {
+		struct mark *pm = call_ret(mark, "doc:point", focus);
+		rl->lines = render(pm, p, focus, &rl->cols);
+	}
 	rl->repositioned = 0;
 	if (p->damaged & (DAMAGED_CONTENT|DAMAGED_SIZE))
 		; /* wait for a proper redraw */
