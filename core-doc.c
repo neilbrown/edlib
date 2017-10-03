@@ -735,8 +735,9 @@ DEF_CMD(doc_handle)
 	if (strcmp(ci->key, "Clone") == 0) {
 		struct pane *p = doc_attach(ci->focus, dd->doc);
 
-		if (p && p->pointer && ci->home->pointer)
-			point_to_mark(p->pointer, ci->home->pointer);
+		if (!p)
+			return 0;
+		call("Move-to", p, 0, dd->point);
 		pane_clone_children(ci->home, p);
 		return 1;
 	}
