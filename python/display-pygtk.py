@@ -398,6 +398,7 @@ class EdDisplay(gtk.Window):
                  "Insert" : "Ins",
                  "Page_Up" : "Prior",
                  "Page_Down" : "Next",
+                 "space" : "Chr- ",
                  }
 
     def keyinput(self, c, strng):

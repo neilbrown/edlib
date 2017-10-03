@@ -627,6 +627,7 @@ static struct namelist {
 	{'\n', "LF"},
 	{'\r', "Return"},
 	{'\t', "Tab"},
+	{'\0', "C-Chr- "},
 	{0, NULL}
 };
 
