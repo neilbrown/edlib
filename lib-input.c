@@ -99,7 +99,6 @@ DEF_CMD(mouse_event)
 	int x,y;
 	int num, ex;
 	struct pane *focus;
-	struct mark *m;
 	char *key;
 
 	if (!ci->str)
@@ -114,7 +113,6 @@ DEF_CMD(mouse_event)
 	focus = ci->focus;
 	num = im->num;
 	ex = im->num2;
-	m = ci->mark;
 	x = ci->x; y = ci->y;
 	/* FIXME is there any point in this? */
 	pane_map_xy(ci->focus, focus, &x, &y);
@@ -140,11 +138,9 @@ DEF_CMD(mouse_event)
 		x -= chld->x;
 		y -= chld->y;
 		focus = chld;
-		if (!ci->mark && chld->pointer)
-			m = chld->pointer;
 	}
 
-	call(key, focus, num, m, NULL, ex, NULL, NULL, x, y);
+	call(key, focus, num, NULL, NULL, ex, NULL, NULL, x, y);
 	return 0;
 }
 
