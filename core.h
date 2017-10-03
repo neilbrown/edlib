@@ -341,7 +341,7 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe);
 void pane_close(struct pane *p safe);
 void pane_notify_close(struct pane *p safe);
 void pane_resize(struct pane *p safe, int x, int y, int w, int h);
-void pane_refresh(struct pane *p safe, struct mark *pointer);
+void pane_refresh(struct pane *p safe);
 void pane_focus(struct pane *p);
 void pane_damaged(struct pane *p, int type);
 void pane_clone_children(struct pane *from, struct pane *to);

@@ -125,10 +125,10 @@ int main(int argc, char *argv[])
 		if (gtk)
 			make_stack(call_pane("attach-display-pygtk", p), doc);
 
-		pane_refresh(ed, NULL);
+		pane_refresh(ed);
 		while (call("event:run", ed) == 1) {
 			call("global-multicall-on_idle-", ed);
-			pane_refresh(ed, NULL);
+			pane_refresh(ed);
 		}
 	}
 	pane_close(ed);

@@ -502,12 +502,8 @@ static PyObject *Pane_focus(Pane *self safe)
 
 static PyObject *Pane_refresh(Pane *self safe, PyObject *args)
 {
-	Mark *pointer = NULL;
-	int ret = PyArg_ParseTuple(args, "|O!", &MarkType, &pointer);
-	if (ret <= 0 || !pointer)
-		return NULL;
 	if (self->pane)
-		pane_refresh(self->pane, pointer->mark);
+		pane_refresh(self->pane);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
