@@ -827,7 +827,6 @@ static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
 	dd->point = m;
 	pane_add_notify(p, doc, "Notify:Close");
 	pane_add_notify(p, doc, "Notify:doc:viewers");
-	p->pointer = m;
 	call("doc:revisit", doc, 1);
 	if (num || str) {
 		p2 = call_pane("attach-view", p);

@@ -57,7 +57,6 @@ struct pane {
 
 	struct command		*handle;
 	void			*data safe;
-	struct mark		*pointer;
 	struct attrset		*attrs;
 	struct list_head	notifiers, notifiees;
 };

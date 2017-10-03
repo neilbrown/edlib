@@ -58,7 +58,6 @@ void pane_init(struct pane *p safe, struct pane *par, struct list_head *here)
 	p->handle = NULL;
 	p->data = safe_cast NULL;
 	p->damaged = 0;
-	p->pointer = NULL;
 	p->attrs = NULL;
 	if (par)
 		pane_damaged(p, DAMAGED_SIZE);
@@ -436,12 +435,11 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 {
 	/* move all content from p into parent, which must be empty,
 	 * except possibly for 'p'.
-	 * 'data', 'point' and 'handle' are swapped.
+	 * 'data' and 'handle' are swapped.
 	 * Finally, p is freed
 	 */
 	void *data;
 	struct command *handle;
-	struct mark *point;
 	struct pane *c;
 
 	list_del_init(&p->siblings);
@@ -465,10 +463,6 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 	data = parent->data;
 	parent->data = p->data;
 	p->data = data;
-
-	point = parent->pointer;
-	parent->pointer = p->pointer;
-	p->pointer = point;
 
 	parent->damaged |= p->damaged;
 
