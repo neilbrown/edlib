@@ -15,8 +15,10 @@
 #include "core.h"
 
 struct input_mode {
-	char	*mode safe;
-	int	num, num2;
+	char		*mode safe;
+	int		num, num2;
+	struct pane	*focus;
+	struct mark	*point;
 };
 
 DEF_CMD(set_mode)
@@ -70,13 +72,18 @@ DEF_CMD(keystroke)
 	im->num = NO_NUMERIC;
 	im->num2 = 0;
 
-	m = ci->mark;
-	p = ci->focus;
-	while (p->focus) {
-		p = p->focus;
-		if (!ci->mark && p->pointer)
-			m = p->pointer;
+	if (!im->focus) {
+		p = ci->focus;
+		while (p->focus)
+			p = p->focus;
+		im->focus = p;
+		pane_add_notify(ci->home, p, "Notify:Close");
 	}
+	p = im->focus;
+
+	if (!im->point)
+		im->point = call_ret(mark, "doc:point", p);
+	m = im->point;
 
 	ret = call(key, p, num, m, NULL, num2);
 	free(key);
@@ -154,6 +161,26 @@ DEF_CMD(request_notify)
 	return 0;
 }
 
+DEF_CMD(refocus)
+{
+	struct input_mode *im = ci->home->data;
+
+	im->focus = NULL;
+	im->point = NULL;
+	return 0;
+}
+
+DEF_CMD(close_focus)
+{
+	struct input_mode *im = ci->home->data;
+
+	if (im->focus == ci->focus) {
+		im->focus = NULL;
+		im->point = NULL;
+	}
+	return 1;
+}
+
 static struct map *im_map;
 static void register_map(void)
 {
@@ -165,13 +192,15 @@ static void register_map(void)
 	key_add(im_map, "Mode:set-mode", &set_mode);
 	key_add(im_map, "Mode:set-num", &set_num);
 	key_add(im_map, "Mode:set-num2", &set_num2);
+	key_add(im_map, "pane:refocus", &refocus);
+	key_add(im_map, "Notify:Close", &close_focus);
 	key_add_range(im_map, "Request:Notify:", "Request:Notify;", &request_notify);
 }
 
 DEF_LOOKUP_CMD(input_handle, im_map);
 DEF_CMD(input_attach)
 {
-	struct input_mode *im = malloc(sizeof(*im));
+	struct input_mode *im = calloc(1,sizeof(*im));
 	struct pane *p;
 
 	register_map();

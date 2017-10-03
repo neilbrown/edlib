@@ -519,8 +519,9 @@ int pane_masked(struct pane *p safe, int x, int y, int abs_z, int *w, int *h)
 	return 0;
 }
 
-void pane_focus(struct pane *p)
+void pane_focus(struct pane *focus)
 {
+	struct pane *p = focus;
 	if (!p)
 		return;
 	pane_damaged(p, DAMAGED_CURSOR);
@@ -533,6 +534,7 @@ void pane_focus(struct pane *p)
 		}
 		p = p->parent;
 	}
+	call("pane:refocus", focus);
 }
 
 struct pane *render_attach(char *name, struct pane *parent safe)
