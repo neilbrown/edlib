@@ -72,10 +72,12 @@ static int view_refresh(const struct cmd_info *ci safe)
 			one_char(p, "|", "inverse", 0, i + vd->ascent);
 
 		if (p->h > 4 * vd->line_height) {
-			struct mark *m = ci->mark;
+			struct mark *m;
 
 			if (vd->viewpoint)
 				m = vd->viewpoint;
+			else
+				m = call_ret(mark, "doc:point", ci->focus);
 
 			call("CountLines", p, 0, m);
 

@@ -598,6 +598,14 @@ DEF_CMD(doc_mymark)
 	return m ? 1 : -1;
 }
 
+DEF_CMD(doc_get_point)
+{
+	struct doc_data *dd = ci->home->data;
+
+	comm_call(ci->comm2, "callback", ci->focus, 0, dd->point);
+	return 1;
+}
+
 DEF_CMD(doc_write_file)
 {
 	/* Default write-file handler
@@ -679,6 +687,7 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd, "Move-File", &doc_file);
 	key_add(doc_handle_cmd, "Move-Line", &doc_line);
 	key_add(doc_handle_cmd, "Move-View-Large", &doc_page);
+	key_add(doc_handle_cmd, "doc:point", &doc_get_point);
 
 	key_add(doc_default_cmd, "doc:set-attr", &doc_attr_set);
 	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
