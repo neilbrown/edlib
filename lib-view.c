@@ -360,11 +360,11 @@ DEF_CMD(view_refresh_view)
 	int border;
 
 	if (vd->move_large) {
-		call("Move-View-Large", ci->focus, vd->move_large, ci->mark);
+		call("Move-View-Large", ci->focus, vd->move_large);
 		vd->move_large = 0;
 	}
 	if (vd->move_small) {
-		call("Move-View-Small", ci->focus, vd->move_small, ci->mark);
+		call("Move-View-Small", ci->focus, vd->move_small);
 		vd->move_small = 0;
 	}
 

@@ -662,16 +662,19 @@ class PresenterPane(edlib.Pane):
             return 1
 
         if key == "Move-View-Large":
-            page = self.find_pages(mark)
-            if num < 0:
-                page = page.prev()
-            else:
-                page = page.next()
-            if page is not None:
-                mark.to_mark(page)
-                focus.call("Move-View-Pos", page)
-                focus.damaged(edlib.DAMAGED_CURSOR)
-                return 1
+            # If mark isn't set, the movement might come
+            # from scroll-bar or similar, ignore that.
+            if mark:
+                page = self.find_pages(mark)
+                if num < 0:
+                    page = page.prev()
+                else:
+                    page = page.next()
+                if page is not None:
+                    mark.to_mark(page)
+                    focus.call("Move-View-Pos", page)
+                    focus.damaged(edlib.DAMAGED_CURSOR)
+                    return 1
             return 2
 
         if key == "Close":
@@ -698,13 +701,13 @@ class MarkdownPane(edlib.Pane):
         if key == "Display:refresh":
             focus.call("Notify:doc:Recentre", mark)
             return 0
-        if key == "Move-View-Large" and num >= 0:
+        if key == "Move-View-Large" and num >= 0 and mark:
             m2 = mark.dup()
             if focus.call("Notify:doc:Recentre", m2, 2,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 focus.damaged(edlib.DAMAGED_CURSOR)
                 return 1
-        if key == "Move-View-Large" and num < 0:
+        if key == "Move-View-Large" and num < 0 and mark:
             m2 = mark.dup()
             if focus.call("Notify:doc:Recentre", m2, 3,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
