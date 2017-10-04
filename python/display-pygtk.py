@@ -330,6 +330,7 @@ class EdDisplay(gtk.Window):
         self.text.connect("focus-in-event", self.focus_in)
         self.text.connect("focus-out-event", self.focus_out)
         self.text.connect("button-press-event", self.press)
+        self.text.connect("scroll-event", self.scroll)
         self.text.connect("key-press-event", self.keystroke)
         self.im.connect("commit", self.keyinput)
         self.text.connect("configure-event", self.reconfigure)
@@ -381,7 +382,23 @@ class EdDisplay(gtk.Window):
             s = "C-" + s;
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
-        self.pane.call("Mouse-event", "Click-1", self.pane, (x,y))
+        self.pane.call("Mouse-event", s, self.pane, (x,y))
+
+    def scroll(self, c, event):
+        c.grab_focus()
+        x = int(event.x)
+        y = int(event.y)
+        if event.direction == gtk.gdk.SCROLL_UP:
+            s = "Press-4"
+        else:
+            s = "Press-5"
+        if event.state & gtk.gdk.SHIFT_MASK:
+            s = "S-" + s;
+        if event.state & gtk.gdk.CONTROL_MASK:
+            s = "C-" + s;
+        if event.state & gtk.gdk.MOD1_MASK:
+            s = "M-" + s;
+        self.pane.call("Mouse-event", s, self.pane, (x,y))
 
     eventmap = { "Return" : "Return",
                  "Tab" : "Tab",
