@@ -8,6 +8,7 @@
  * We register an 'emacs' mode and associate keys with that
  * in the global keymap.
  */
+#define _GNU_SOURCE /*  for asprintf */
 #include <unistd.h>
 #include <stdlib.h>
 #include <wchar.h>
@@ -1114,7 +1115,12 @@ DEF_CMD(emacs_do_command)
 
 DEF_CMD(emacs_version)
 {
-	call("Message", ci->focus, 0, NULL, "Version: edlib-0.0-devel");
+	char *v = NULL;
+
+	asprintf(&v, "%s ; emacs-mode - v" VERSION " - " VERS_DATE, edlib_version);
+	if (v)
+		call("Message", ci->focus, 0, NULL, v);
+	free(v);
 	return 1;
 }
 

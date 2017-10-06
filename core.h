@@ -14,10 +14,19 @@
 #include <wchar.h>
 #include <limits.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 #include "safe.h"
 
 #include "list.h"
+
+extern char edlib_version[];
+#ifndef VERSION
+#define VERSION "unreleased"
+#endif
+#ifndef VERS_DATE
+#define VERS_DATE "unreleased"
+#endif
 
 #undef bool
 typedef _Bool bool;

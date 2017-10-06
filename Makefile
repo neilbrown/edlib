@@ -7,10 +7,16 @@ MAKEFLAGS += -j
 SMATCH_CHECK_SAFE=1
 export SMATCH_CHECK_SAFE
 
+VERSION = $(shell [ -d .git ] && git describe --always HEAD | sed 's/edlib-//')
+VERS_DATE = $(shell [ -d .git ] && date --iso-8601 --date="`git log -n1 --format=format:%cd --date=iso --date=short`")
+DVERS = $(if $(VERSION),-DVERSION=\"$(VERSION)\",)
+DDATE = $(if $(VERS_DATE),-DVERS_DATE="\"$(VERS_DATE)\"",)
+VCFLAGS += $(DVERS) $(DDATE)
+
 LDLIBS= -ldl
 CC = gcc
-SMATCH_FLAGS= -D_BITS_FLOATN_H -D__HAVE_FLOAT128=0 -D__FLT_EVAL_METHOD__=1 -D__HAVE_DISTINCT_FLOAT128=0
-SPARSEFLAGS= -Wsparse-all -Wno-transparent-union -Wsparse-error $(SMATCH_FLAGS)
+SMATCH_FLAGS= -D_BITS_FLOATN_H -D__HAVE_FLOAT128=0 -D__FLT_EVAL_METHOD__=1 -D__HAVE_DISTINCT_FLOAT128=0 $(VCFLAGS)
+SPARSEFLAGS= -Wsparse-all -Wno-transparent-union -Wsparse-error $(SMATCH_FLAGS) $(VCFLAGS)
 # Create files .DEBUG and .LEAK for extra checking
 ifeq "$(wildcard .DEBUG)" ".DEBUG"
  ifeq "$(wildcard .LEAK)" ".LEAK"
@@ -30,7 +36,7 @@ ifeq "$(wildcard .SMATCH)" ".SMATCH"
 else
  QUIET_SMATCH  = @: skip
 endif
-CFLAGS=-g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG)
+CFLAGS=-g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG) $(VCFLAGS)
 #Doesn't work :-( -fsanitize=address
 
 all: edlib checksym lib shared
@@ -121,9 +127,10 @@ lib/.exists:
 
 .PHONY: lib
 lib: lib/libedlib.so lib/.exists
-lib/libedlib.so: $(LIBOBJ)
+lib/libedlib.so: $(LIBOBJ) core-version.c
+	@$(CC) $(CFLAGS) -c -o O/core-version.o core-version.c
 	@mkdir -p lib
-	$(QUIET_CC)$(CC) -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ)
+	$(QUIET_CC)$(CC) -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ) O/core-version.o
 
 shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o O/rexel.o
