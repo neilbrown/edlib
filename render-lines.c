@@ -848,10 +848,6 @@ static struct mark *call_render_line(struct pane *p safe, struct mark *start saf
 	 * of the pane
 	 */
 	s = call_ret(str, "render-line", p, NO_NUMERIC, m);
-	if (!s) {
-		mark_free(m);
-		return NULL;
-	}
 
 	if (start->mdata)
 		free(start->mdata);
