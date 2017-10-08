@@ -41,6 +41,7 @@ enum {
 };
 
 static struct map *view_map safe;
+DEF_LOOKUP_CMD(view_handle, view_map);
 static struct pane *safe do_view_attach(struct pane *par, int border);
 static int calc_border(struct pane *p safe);
 
@@ -49,7 +50,7 @@ static void one_char(struct pane *p safe, char *s, char *attr, int x, int y)
 	call("Draw:text", p, -1, NULL, s, 0, NULL, attr, x, y);
 }
 
-static int view_refresh(const struct cmd_info *ci safe)
+DEF_CMD(view_refresh)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
@@ -151,114 +152,125 @@ static int view_refresh(const struct cmd_info *ci safe)
 	return 0;
 }
 
-DEF_CMD(view_handle)
+DEF_CMD(view_close)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
-	int ret;
 
-	ret = key_lookup(view_map, ci);
-	if (ret)
-		return ret;
+	if (vd->viewpoint)
+		mark_free(vd->viewpoint);
+	free(vd);
+	return 1;
+}
 
-	if (strcmp(ci->key, "Close") == 0) {
+DEF_CMD(view_clone)
+{
+	struct pane *p = ci->home;
+	struct view_data *vd = p->data;
+	struct pane *parent = ci->focus;
+	struct pane *p2;
+
+	p2 = do_view_attach(parent, vd->old_border);
+	pane_clone_children(p, p2);
+	return 1;
+}
+
+DEF_CMD(view_child_registered)
+{
+	struct pane *p = ci->home;
+	struct view_data *vd = p->data;
+	vd->child = ci->focus;
+	pane_damaged(p, DAMAGED_SIZE|DAMAGED_CONTENT);
+	return 1;
+}
+
+DEF_CMD(view_refresh_size)
+{
+	struct pane *p = ci->home;
+	struct view_data *vd = p->data;
+	int x = 0, y = 0;
+	int w = p->w;
+	int h = p->h;
+	int b;
+
+	if (vd->border >= 0)
+		vd->border = calc_border(ci->focus);
+	b = vd->border < 0 ? 0 : vd->border;
+	if (vd->line_height < 0) {
+		struct call_return cr = call_ret(all, "text-size", ci->home,
+						 -1, NULL, "M",
+						 0, NULL, "bold");
+		if (cr.ret == 0) {
+			cr.x = cr.y =1;
+			cr.i2 = 0;
+		}
+		vd->line_height = cr.y;
+		vd->border_height = cr.y;
+		vd->border_width = cr.x;
+		vd->ascent = cr.i2;
+
+		if (h < vd->border_height * 3 &&
+		    (b & (BORDER_TOP|BORDER_BOT)) ==
+		    (BORDER_TOP|BORDER_BOT)) {
+			b &= ~BORDER_TOP;
+			b &= ~BORDER_BOT;
+		}
+		if (w < vd->border_width * 3 &&
+		    (b & (BORDER_LEFT|BORDER_RIGHT)) ==
+		    (BORDER_LEFT|BORDER_RIGHT)) {
+			b &= ~BORDER_LEFT;
+			b &= ~BORDER_RIGHT;
+		}
+
+	}
+
+	if (b & BORDER_LEFT) {
+		x += vd->border_width; w -= vd->border_width;
+	}
+	if (b & BORDER_RIGHT) {
+		w -= vd->border_width;
+	}
+	if (b & BORDER_TOP) {
+		y += vd->border_height; h -= vd->border_height;
+	}
+	if (b & BORDER_BOT) {
+		h -= vd->border_height;
+	}
+	if (w <= 0)
+		w = 1;
+	if (h <= 0)
+		h = 1;
+	if (vd->child)
+		pane_resize(vd->child, x, y, w, h);
+
+	return 1;
+}
+
+DEF_CMD(view_status_changed)
+{
+	struct pane *p = ci->home;
+
+	pane_damaged(p, DAMAGED_CONTENT);
+	return 1;
+}
+
+DEF_CMD(view_reposition)
+{
+	struct pane *p = ci->home;
+	struct view_data *vd = p->data;
+	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
+		/* mark for some other document */
+		return 0;
+	if (vd->viewpoint != ci->mark) {
+		if (!vd->viewpoint || !ci->mark ||
+		    !mark_same_pane(ci->focus, vd->viewpoint, ci->mark))
+			pane_damaged(p, DAMAGED_CONTENT);
 		if (vd->viewpoint)
 			mark_free(vd->viewpoint);
-		free(vd);
-		return 1;
-	}
-	if (strcmp(ci->key, "Clone") == 0) {
-		struct pane *parent = ci->focus;
-		struct pane *p2;
-
-		p2 = do_view_attach(parent, vd->old_border);
-		pane_clone_children(p, p2);
-		return 1;
-	}
-	if (strcmp(ci->key, "ChildRegistered") == 0) {
-		vd->child = ci->focus;
-		pane_damaged(p, DAMAGED_SIZE|DAMAGED_CONTENT);
-		return 1;
-	}
-	if (strcmp(ci->key, "Refresh:size") == 0) {
-		int x = 0, y = 0;
-		int w = p->w;
-		int h = p->h;
-		int b;
-
-		if (vd->border >= 0)
-			vd->border = calc_border(ci->focus);
-		b = vd->border < 0 ? 0 : vd->border;
-		if (vd->line_height < 0) {
-			struct call_return cr = call_ret(all, "text-size", ci->home,
-							 -1, NULL, "M",
-							 0, NULL, "bold");
-			if (cr.ret == 0) {
-				cr.x = cr.y =1;
-				cr.i2 = 0;
-			}
-			vd->line_height = cr.y;
-			vd->border_height = cr.y;
-			vd->border_width = cr.x;
-			vd->ascent = cr.i2;
-
-			if (h < vd->border_height * 3 &&
-			    (b & (BORDER_TOP|BORDER_BOT)) ==
-			    (BORDER_TOP|BORDER_BOT)) {
-				b &= ~BORDER_TOP;
-				b &= ~BORDER_BOT;
-			}
-			if (w < vd->border_width * 3 &&
-			    (b & (BORDER_LEFT|BORDER_RIGHT)) ==
-			    (BORDER_LEFT|BORDER_RIGHT)) {
-				b &= ~BORDER_LEFT;
-				b &= ~BORDER_RIGHT;
-			}
-
-		}
-
-		if (b & BORDER_LEFT) {
-			x += vd->border_width; w -= vd->border_width;
-		}
-		if (b & BORDER_RIGHT) {
-			w -= vd->border_width;
-		}
-		if (b & BORDER_TOP) {
-			y += vd->border_height; h -= vd->border_height;
-		}
-		if (b & BORDER_BOT) {
-			h -= vd->border_height;
-		}
-		if (w <= 0)
-			w = 1;
-		if (h <= 0)
-			h = 1;
-		if (vd->child)
-			pane_resize(vd->child, x, y, w, h);
-
-		return 1;
-	}
-	if (strcmp(ci->key, "Refresh") == 0)
-		return view_refresh(ci);
-	if (strcmp(ci->key, "Notify:doc:status-changed") == 0) {
-		pane_damaged(p, DAMAGED_CONTENT);
-		return 1;
-	}
-	if (strcmp(ci->key, "render:reposition") == 0) {
-		if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
-			/* mark for some other document */
-			return 0;
-		if (vd->viewpoint != ci->mark) {
-			if (!vd->viewpoint || !ci->mark ||
-			    !mark_same_pane(ci->focus, vd->viewpoint, ci->mark))
-				pane_damaged(p, DAMAGED_CONTENT);
-			if (vd->viewpoint)
-				mark_free(vd->viewpoint);
-			if (ci->mark)
-				vd->viewpoint = mark_dup(ci->mark, 1);
-			else
-				vd->viewpoint = NULL;
-		}
+		if (ci->mark)
+			vd->viewpoint = mark_dup(ci->mark, 1);
+		else
+			vd->viewpoint = NULL;
 	}
 	return 0;
 }
@@ -273,7 +285,7 @@ static struct pane *safe do_view_attach(struct pane *par, int border)
 	vd->old_border = border;
 	vd->line_height = -1;
 	vd->border_width = vd->border_height = -1;
-	p = pane_register(par, 0, &view_handle, vd, NULL);
+	p = pane_register(par, 0, &view_handle.c, vd, NULL);
 	/* Capture status-changed notification so we can update 'changed' flag in
 	 * status line */
 	call("Request:Notify:doc:status-changed", p);
@@ -400,6 +412,14 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "Press-5", &view_scroll);
 	key_add(view_map, "Window:border", &view_border);
 	key_add(view_map, "Refresh:view", &view_refresh_view);
+	key_add(view_map, "Close", &view_close);
+	key_add(view_map, "Clone", &view_clone);
+	key_add(view_map, "ChildRegistered", &view_child_registered);
+	key_add(view_map, "Refresh:size", &view_refresh_size);
+	key_add(view_map, "Refresh", &view_refresh);
+	key_add(view_map, "Notify:doc:status-changed", &view_status_changed);
+	key_add(view_map, "render:reposition", &view_reposition);
+
 
 	call_comm("global-set-command", ed, &view_attach, 0, NULL, "attach-view");
 }
