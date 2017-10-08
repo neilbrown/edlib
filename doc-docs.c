@@ -42,6 +42,11 @@ struct doc_ref {
 };
 #include "core.h"
 
+static struct map *docs_map, *docs_aux_map, *docs_modified_map;
+DEF_LOOKUP_CMD_DFLT(docs_handle, docs_map, doc_default_cmd);
+DEF_LOOKUP_CMD(docs_aux, docs_aux_map);
+DEF_LOOKUP_CMD(docs_modified_handle, docs_modified_map);
+
 struct docs {
 	struct doc		doc;
 	struct command		callback;
@@ -197,109 +202,116 @@ static wchar_t prev_modified(struct pane *p safe, struct mark *m safe)
 	return doc_following_pane(p, m);
 }
 
-DEF_CMD(docs_modified_handle)
+
+DEF_CMD(docs_modified_replace)
 {
+	if (ci->str &&
+	    strchr("sk%", ci->str[0]) != NULL)
+		return 0;
+	/* Suppress all others */
+	return 1;
+}
+
+DEF_CMD(docs_modified_notify_replace)
+{
+	int all_gone;
 	struct mark *m;
 
-	/* This is a view showing the list of modified documents.
-	 * home->parent is a view on the docs doc.
-	 */
 	if (!ci->home->parent)
-		/* Should never happen */
+		return 0;
+	m = vmark_new(ci->home->parent, MARK_UNGROUPED);
+	if (!m)
 		return -1;
-
+	mark_to_modified(ci->home->parent, m);
+	all_gone = (m->ref.p == NULL);
+	mark_free(m);
 	if (ci->mark)
-		mark_to_modified(ci->home->parent, ci->mark);
-	if (ci->mark2)
-		mark_to_modified(ci->home->parent, ci->mark2);
+		pane_damaged(ci->home, DAMAGED_VIEW);
+	if (all_gone)
+		call("popup:close", ci->home);
+	return 1;
+}
 
-	if (strcmp(ci->key, "doc:replace") == 0) {
-		if (ci->str &&
-		    strchr("sk%", ci->str[0]) != NULL)
-			return 0;
-		/* Suppress all others */
-		return 1;
-	}
+DEF_CMD(docs_modified_step)
+{
+	/* Only permit stepping to a document that is modified and
+	 * has a file name
+	 */
+	wint_t ch, ret;
+	if (!ci->home->parent || !ci->mark)
+		return 0;
 
-	if (strcmp(ci->key, "Notify:doc:Replace") == 0) {
-		int all_gone;
-		m = vmark_new(ci->home->parent, MARK_UNGROUPED);
-		if (!m)
-			return -1;
-		mark_to_modified(ci->home->parent, m);
-		all_gone = (m->ref.p == NULL);
+	mark_to_modified(ci->home->parent, ci->mark);
+	if (ci->num) {
+		ret = doc_following_pane(ci->home->parent, ci->mark);
+		if (ci->num2 && ret != WEOF) {
+			mark_next_pane(ci->home->parent, ci->mark);
+			mark_to_modified(ci->home->parent, ci->mark);
+		}
+	} else {
+		struct mark *m = mark_dup(ci->mark, 1);
+		ch = prev_modified(ci->home->parent, m);
+		if (ch == WEOF)
+			ret = ch;
+		else {
+			if (ci->num2)
+				mark_to_mark(ci->mark, m);
+			ret = mark_next_pane(ci->home->parent, m);
+		}
 		mark_free(m);
-		if (ci->mark)
-			pane_damaged(ci->home, DAMAGED_VIEW);
-		if (all_gone)
-			call("popup:close", ci->home);
-		return 1;
 	}
+	return ret;
+}
 
-	if (strcmp(ci->key, "doc:step") == 0 &&
-	    ci->mark) {
-		/* Only permit stepping to a document that is modified and
-		 * has a file name
-		 */
-		wint_t ch, ret;
-		mark_to_modified(ci->home->parent, ci->mark);
-		if (ci->num) {
-			ret = doc_following_pane(ci->home->parent, ci->mark);
-			if (ci->num2 && ret != WEOF) {
-				mark_next_pane(ci->home->parent, ci->mark);
-				mark_to_modified(ci->home->parent, ci->mark);
-			}
-		} else {
-			m = mark_dup(ci->mark, 1);
-			ch = prev_modified(ci->home->parent, m);
-			if (ch == WEOF)
-				ret = ch;
-			else {
-				if (ci->num2)
-					mark_to_mark(ci->mark, m);
-				ret = mark_next_pane(ci->home->parent, m);
-			}
-			mark_free(m);
-		}
-		return ret;
+DEF_CMD(docs_modified_doc_get_attr)
+{
+	char *attr;
+	struct mark *m;
+
+	if (!ci->str || !ci->mark || !ci->home->parent)
+		return 0;
+	mark_to_modified(ci->home->parent, ci->mark);
+	m = mark_dup(ci->mark, 1);
+	if (!ci->num)
+		prev_modified(ci->home->parent, m);
+	attr = pane_mark_attr(ci->home->parent, m, 1, ci->str);
+	mark_free(m);
+	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, attr);
+	return 1;
+}
+
+DEF_CMD(docs_modified_mark_same)
+{
+	struct docs *doc = ci->home->data;
+	struct pane *p1, *p2;
+
+	if (!ci->mark || !ci->mark2 || !ci->home->parent)
+		return 0;
+	mark_to_modified(ci->home->parent, ci->mark);
+	mark_to_modified(ci->home->parent, ci->mark2);
+	p1 = ci->mark->ref.p;
+	p2 = ci->mark2->ref.p;
+	list_for_each_entry_from(p1, &doc->collection->children, siblings) {
+		char *fn = pane_attr_get(p1, "filename");
+		char *mod = pane_attr_get(p1, "doc-modified");
+		if (fn && *fn && mod && strcmp(mod, "yes") == 0)
+			break;
 	}
-	if (strcmp(ci->key, "doc:get-attr") == 0 &&
-	    ci->str && ci->mark) {
-		char *attr;
-		m = mark_dup(ci->mark, 1);
-		mark_to_modified(ci->home->parent, m);
-		if (!ci->num)
-			prev_modified(ci->home->parent, m);
-		attr = pane_mark_attr(ci->home->parent, m, 1, ci->str);
-		mark_free(m);
-		comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, attr);
+	list_for_each_entry_from(p2, &doc->collection->children, siblings) {
+		char *fn = pane_attr_get(p2, "filename");
+		char *mod = pane_attr_get(p2, "doc-modified");
+		if (fn && *fn && mod && strcmp(mod, "yes") == 0)
+			break;
+	}
+	if (p1 == p2)
 		return 1;
-	}
-	if (strcmp(ci->key, "doc:mark-same") == 0 &&
-	    ci->mark && ci->mark2) {
-		struct docs *doc = ci->home->data;
-		struct pane *p1 = ci->mark->ref.p;
-		struct pane *p2 = ci->mark2->ref.p;
-		list_for_each_entry_from(p1, &doc->collection->children, siblings) {
-			char *fn = pane_attr_get(p1, "filename");
-			char *mod = pane_attr_get(p1, "doc-modified");
-			if (fn && *fn && mod && strcmp(mod, "yes") == 0)
-				break;
-		}
-		list_for_each_entry_from(p2, &doc->collection->children, siblings) {
-			char *fn = pane_attr_get(p2, "filename");
-			char *mod = pane_attr_get(p2, "doc-modified");
-			if (fn && *fn && mod && strcmp(mod, "yes") == 0)
-				break;
-		}
-		if (p1 == p2)
-			return 1;
-		else
-			return 2;
-	}
-	if (strcmp(ci->key, "get-attr") == 0 &&
-	    ci->str &&
-	    strcmp(ci->str, "doc-name") == 0)
+	else
+		return 2;
+}
+
+DEF_CMD(docs_modified_get_attr)
+{
+	if (ci->str &&  strcmp(ci->str, "doc-name") == 0)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus,
 				 0, NULL, "*Modified Documents*");
 
@@ -364,7 +376,7 @@ DEF_CMD(docs_callback)
 
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
 		p = doc_attach_view(ci->focus, doc->doc.home, NULL);
-		p = pane_register(p, 0, &docs_modified_handle, doc, NULL);
+		p = pane_register(p, 0, &docs_modified_handle.c, doc, NULL);
 		call("Request:Notify:doc:Replace", p);
 		/* And trigger Notify:doc:Replace handling immediately...*/
 		call("Notify:doc:Replace", p);
@@ -770,14 +782,13 @@ DEF_CMD(docs_cmd)
 	}
 }
 
-static struct map *docs_map, *docs_aux_map;
-
 static void docs_init_map(void)
 {
 	if (docs_map)
 		return;
 	docs_map = key_alloc();
 	docs_aux_map = key_alloc();
+	docs_modified_map = key_alloc();
 	/* A "docs" document provides services to children and also behaves as
 	 * a document which lists those children
 	 */
@@ -794,10 +805,14 @@ static void docs_init_map(void)
 	key_add(docs_aux_map, "doc:revisit", &doc_revisit);
 	key_add(docs_aux_map, "Notify:doc:status-changed", &doc_damage);
 	key_add(docs_aux_map, "ChildClosed", &docs_child_closed);
-}
 
-DEF_LOOKUP_CMD_DFLT(docs_handle, docs_map, doc_default_cmd);
-DEF_LOOKUP_CMD(docs_aux, docs_aux_map);
+	key_add(docs_modified_map, "doc:replace", &docs_modified_replace);
+	key_add(docs_modified_map, "Notify:doc:Replace", &docs_modified_notify_replace);
+	key_add(docs_modified_map, "doc:step", &docs_modified_step);
+	key_add(docs_modified_map, "doc:get-attr", &docs_modified_doc_get_attr);
+	key_add(docs_modified_map, "doc:mark-same", &docs_modified_mark_same);
+	key_add(docs_modified_map, "get-attr", &docs_modified_get_attr);
+}
 
 DEF_CMD(attach_docs)
 {
