@@ -655,105 +655,192 @@ static struct tileinfo *safe tile_next_named(struct tileinfo *ti safe, char *nam
 	return t;
 }
 
-DEF_CMD(tile_command)
+static int wrong_pane(struct cmd_info const *ci safe)
 {
+	struct tileinfo *ti = ci->home->data;
+
+	if (ci->str || ti->group) {
+		if (!ci->str || !ti->group)
+			return 1;
+		if (strcmp(ci->str, ti->group) != 0)
+			return 1;
+		/* same group - continue */
+	}
+	return 0;
+}
+
+DEF_CMD(tile_window_next)
+{
+	/* If currently on a popup, go to next popup if there is one, else
+	 * to this tile.
+	 * If was not on a pop-up, go to next tile and if there is a popup,
+	 * go there.
+	 */
 	struct pane *p = ci->home;
 	struct pane *p2;
 	struct tileinfo *ti = p->data;
 	struct tileinfo *t2;
-	char *cmd = ci->key + 7; /* "Window:" */
 
-	if (ci->str || ti->group) {
-		if (!ci->str || !ti->group)
-			return 0;
-		if (strcmp(ci->str, ti->group) != 0)
-			return 0;
-		/* same group - continue */
-	}
-
-	if (strcmp(cmd, "next")==0) {
-		/* If currently on a popup, go to next popup if there is one, else
-		 * to this tile.
-		 * If was not on a pop-up, go to next tile and if there is a popup,
-		 * go there.
-		 */
-		if (p->focus && p->focus->z) {
-			p2 = next_child(p, p->focus, 1);
-			if (p2) {
+	if (wrong_pane(ci))
+		return 0;
+	if (p->focus && p->focus->z) {
+		p2 = next_child(p, p->focus, 1);
+		if (p2) {
+			pane_focus(p2);
+			return 1;
+		} else if (ti->leaf) {
+			pane_focus(ti->content);
+			return 1;
+		}
+		t2 = tile_first(ti);
+	} else {
+		if (ti->leaf) {
+			t2 = tile_next_named(ti, ci->str2);
+			if (tile_is_first(t2) &&
+			    (p2 = tile_root_popup(t2)) != NULL) {
 				pane_focus(p2);
-				return 1;
-			} else if (ti->leaf) {
-				pane_focus(ti->content);
 				return 1;
 			}
+		} else
 			t2 = tile_first(ti);
-		} else {
-			if (ti->leaf) {
-				t2 = tile_next_named(ti, ci->str2);
-				if (tile_is_first(t2) &&
-				    (p2 = tile_root_popup(t2)) != NULL) {
-					pane_focus(p2);
-					return 1;
-				}
-			} else
-				t2 = tile_first(ti);
-		}
-		if (t2) {
-			pane_focus(t2->p);
-			p2 = next_child(t2->p, NULL, 1);
-			if (p2)
-				pane_focus(p2);
-		}
-	} else if (strcmp(cmd, "prev")==0) {
-		t2 = list_prev_entry(ti, tiles);
+	}
+	if (t2) {
 		pane_focus(t2->p);
-	} else if (strcmp(cmd, "x+")==0) {
-		tile_grow(p, 1, RPT_NUM(ci));
-		pane_damaged(p, DAMAGED_SIZE);
-	} else if (strcmp(cmd, "x-")==0) {
-		tile_grow(p, 1, -RPT_NUM(ci));
-		pane_damaged(p, DAMAGED_SIZE);
-	} else if (strcmp(cmd, "y+")==0) {
-		tile_grow(p, 0, RPT_NUM(ci));
-		pane_damaged(p, DAMAGED_SIZE);
-	} else if (strcmp(cmd, "y-")==0) {
-		tile_grow(p, 0, -RPT_NUM(ci));
-		pane_damaged(p, DAMAGED_SIZE);
-	} else if (strcmp(cmd, "split-x")==0) {
-		p2 = tile_split(&p, 1, 1, ci->str2, 0);
-		pane_clone_children(p, p2);
-	} else if (strcmp(cmd, "split-y")==0) {
-		p2 = tile_split(&p, 0, 1, ci->str2, 0);
-		pane_clone_children(p, p2);
-	} else if (strcmp(cmd, "close")==0) {
-		if (ti->direction != Neither)
-			pane_close(p);
-	} else if (strcmp(cmd, "close-others") == 0) {
-		/* close all other panes in the 'tiles' list. */
-		while (!list_empty(&ti->tiles)) {
-			struct tileinfo *ti2 = list_next_entry(ti, tiles);
-			pane_close(ti2->p);
-		}
-	} else if (strcmp(cmd, "scale-relative") == 0) {
-		int scale = get_scale(p);
-		int rpt = RPT_NUM(ci);
+		p2 = next_child(t2->p, NULL, 1);
+		if (p2)
+			pane_focus(p2);
+	}
+	return 1;
+}
 
-		if (rpt > 10) rpt = 10;
-		if (rpt < -10) rpt = -10;
-		while (rpt > 0) {
-			scale = scale * 11/10;
-			rpt -= 1;
-		}
-		while (rpt < 0) {
-			scale = scale * 9 / 10;
-			rpt += 1;
-		}
+DEF_CMD(tile_window_prev)
+{
+	struct pane *p = ci->home;
+	struct tileinfo *ti = p->data;
+	struct tileinfo *t2;
 
-		attr_set_int(&p->attrs, "scale", scale);
-		pane_damaged(p, DAMAGED_SIZE);
-		return 1;
-	} else
+	if (wrong_pane(ci))
 		return 0;
+	t2 = list_prev_entry(ti, tiles);
+	pane_focus(t2->p);
+	return 1;
+}
+
+DEF_CMD(tile_window_xplus)
+{
+	struct pane *p = ci->home;
+
+	if (wrong_pane(ci))
+		return 0;
+	tile_grow(p, 1, RPT_NUM(ci));
+	pane_damaged(p, DAMAGED_SIZE);
+	return 1;
+}
+
+DEF_CMD(tile_window_xminus)
+{
+	struct pane *p = ci->home;
+
+	if (wrong_pane(ci))
+		return 0;
+	tile_grow(p, 1, -RPT_NUM(ci));
+	pane_damaged(p, DAMAGED_SIZE);
+	return 1;
+}
+DEF_CMD(tile_window_yplus)
+{
+	struct pane *p = ci->home;
+
+	if (wrong_pane(ci))
+		return 0;
+	tile_grow(p, 0, RPT_NUM(ci));
+	pane_damaged(p, DAMAGED_SIZE);
+	return 1;
+}
+DEF_CMD(tile_window_yminus)
+{
+	struct pane *p = ci->home;
+
+	if (wrong_pane(ci))
+		return 0;
+	tile_grow(p, 0, -RPT_NUM(ci));
+	pane_damaged(p, DAMAGED_SIZE);
+	return 1;
+}
+
+DEF_CMD(tile_window_splitx)
+{
+	struct pane *p = ci->home;
+	struct pane *p2;
+
+	if (wrong_pane(ci))
+		return 0;
+	p2 = tile_split(&p, 1, 1, ci->str2, 0);
+	pane_clone_children(p, p2);
+	return 1;
+}
+
+DEF_CMD(tile_window_splity)
+{
+	struct pane *p = ci->home;
+	struct pane *p2;
+
+	if (wrong_pane(ci))
+		return 0;
+	p2 = tile_split(&p, 0, 1, ci->str2, 0);
+	pane_clone_children(p, p2);
+	return 1;
+}
+
+DEF_CMD(tile_window_close)
+{
+	struct pane *p = ci->home;
+	struct tileinfo *ti = p->data;
+
+	if (wrong_pane(ci))
+		return 0;
+	if (ti->direction != Neither)
+		pane_close(p);
+	return 1;
+}
+
+DEF_CMD(tile_window_close_others)
+{
+	struct pane *p = ci->home;
+	struct tileinfo *ti = p->data;
+
+	if (wrong_pane(ci))
+		return 0;
+	/* close all other panes in the 'tiles' list. */
+	while (!list_empty(&ti->tiles)) {
+		struct tileinfo *ti2 = list_next_entry(ti, tiles);
+		pane_close(ti2->p);
+	}
+	return 1;
+}
+
+DEF_CMD(tile_window_scale_relative)
+{
+	struct pane *p = ci->home;
+	int scale = get_scale(p);
+	int rpt = RPT_NUM(ci);
+
+	if (wrong_pane(ci))
+		return 0;
+
+	if (rpt > 10) rpt = 10;
+	if (rpt < -10) rpt = -10;
+	while (rpt > 0) {
+		scale = scale * 11/10;
+		rpt -= 1;
+	}
+	while (rpt < 0) {
+		scale = scale * 9 / 10;
+		rpt += 1;
+	}
+
+	attr_set_int(&p->attrs, "scale", scale);
+	pane_damaged(p, DAMAGED_SIZE);
 	return 1;
 }
 
@@ -874,7 +961,18 @@ void edlib_init(struct pane *ed safe)
 {
 	tile_map = key_alloc();
 
-	key_add_range(tile_map, "Window:", "Window;", &tile_command);
+	key_add(tile_map, "Window:next", &tile_window_next);
+	key_add(tile_map, "Window:prev", &tile_window_prev);
+	key_add(tile_map, "Window:x+", &tile_window_xplus);
+	key_add(tile_map, "Window:x-", &tile_window_xminus);
+	key_add(tile_map, "Window:y+", &tile_window_yplus);
+	key_add(tile_map, "Window:y-", &tile_window_yminus);
+	key_add(tile_map, "Window:split-x", &tile_window_splitx);
+	key_add(tile_map, "Window:split-y", &tile_window_splity);
+	key_add(tile_map, "Window:close", &tile_window_close);
+	key_add(tile_map, "Window:close-others", &tile_window_close_others);
+	key_add(tile_map, "Window:scale-relative", &tile_window_scale_relative);
+
 	key_add(tile_map, "OtherPane", &tile_other);
 	key_add(tile_map, "ThisPane", &tile_this);
 	key_add(tile_map, "RootPane", &tile_root);
