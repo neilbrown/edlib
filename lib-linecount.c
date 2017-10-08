@@ -28,6 +28,9 @@
 
 #include "core.h"
 
+static struct map *linecount_map;
+DEF_LOOKUP_CMD(handle_count_lines, linecount_map);
+
 struct count_info {
 	int view_num;
 };
@@ -202,47 +205,52 @@ done:
 	}
 }
 
-DEF_CMD(handle_count_lines)
+DEF_CMD(linecount_close)
 {
 	struct pane *p = ci->home;
 	struct pane *d = ci->focus;
 	struct count_info *cli = p->data;
+	struct mark *m;
+	while ((m = vmark_first(d, cli->view_num)) != NULL)
+		mark_free(m);
+	doc_del_view(d, cli->view_num);
+	free(cli);
+	p->data = safe_cast NULL;
+	pane_close(p);
+	return 1;
+}
 
-	if (strcmp(ci->key, "Notify:Close") == 0) {
-		struct mark *m;
-		while ((m = vmark_first(d, cli->view_num)) != NULL)
-			mark_free(m);
-		doc_del_view(d, cli->view_num);
-		free(cli);
-		p->data = safe_cast NULL;
-		pane_close(p);
-		return 1;
-	}
+DEF_CMD(linecount_notify_replace)
+{
+	struct pane *p = ci->home;
+	struct pane *d = ci->focus;
+	struct count_info *cli = p->data;
+	if (ci->mark) {
+		struct mark *end;
 
-	if (strcmp(ci->key, "Notify:doc:Replace") == 0) {
-		if (ci->mark) {
-			struct mark *end;
-
-			end = vmark_at_or_before(d, ci->mark, cli->view_num);
-			if (end) {
-				attr_del(mark_attr(end), "lines");
-				attr_del(mark_attr(end), "words");
-				attr_del(mark_attr(end), "chars");
-			}
-			attr_del(&d->attrs, "lines");
-			attr_del(&d->attrs, "words");
-			attr_del(&d->attrs, "chars");
+		end = vmark_at_or_before(d, ci->mark, cli->view_num);
+		if (end) {
+			attr_del(mark_attr(end), "lines");
+			attr_del(mark_attr(end), "words");
+			attr_del(mark_attr(end), "chars");
 		}
-		return 1;
+		attr_del(&d->attrs, "lines");
+		attr_del(&d->attrs, "words");
+		attr_del(&d->attrs, "chars");
 	}
-	if (strcmp(ci->key, "Notify:doc:CountLines") == 0) {
-		/* Option mark is "mark2" as "mark" get the "point" */
-		if (ci->num)
-			pane_add_notify(p, d, "Notify:Close");
-		count_calculate(d, NULL, ci->mark2, cli->view_num);
-		return 1;
-	}
-	return 0;
+	return 1;
+}
+
+DEF_CMD(linecount_notify_count)
+{
+	struct pane *p = ci->home;
+	struct pane *d = ci->focus;
+	struct count_info *cli = p->data;
+	/* Option mark is "mark2" as "mark" get the "point" */
+	if (ci->num)
+		pane_add_notify(p, d, "Notify:Close");
+	count_calculate(d, NULL, ci->mark2, cli->view_num);
+	return 1;
 }
 
 DEF_CMD(count_lines)
@@ -255,7 +263,7 @@ DEF_CMD(count_lines)
 
 		cli = calloc(1, sizeof(*cli));
 		cli->view_num = doc_add_view(ci->focus);
-		p = pane_register(NULL, 0, &handle_count_lines, cli, NULL);
+		p = pane_register(NULL, 0, &handle_count_lines.c, cli, NULL);
 		home_call(ci->focus, "Request:Notify:doc:Replace", p);
 		home_call(ci->focus, "Request:Notify:doc:CountLines", p);
 		call("Notify:doc:CountLines", ci->focus, 1, ci->mark);
@@ -272,4 +280,12 @@ DEF_CMD(count_lines)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &count_lines, 0, NULL, "CountLines");
+
+	if (linecount_map)
+		return;
+
+	linecount_map = key_alloc();
+	key_add(linecount_map, "Notify:Close", &linecount_close);
+	key_add(linecount_map, "Notify:doc:Replace", &linecount_notify_replace);
+	key_add(linecount_map, "Notify:doc:CountLines", &linecount_notify_count);
 }
