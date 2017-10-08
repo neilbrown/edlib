@@ -64,6 +64,10 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 			 wchar_t ch, int attr, int x, int y, int cursor);
 DEF_CMD(input_handle);
 DEF_CMD(handle_winch);
+static struct map *nc_map;
+DEF_LOOKUP_CMD(ncurses_handle, nc_map);
+
+
 
 static void set_screen(SCREEN *scr)
 {
@@ -324,16 +328,13 @@ static inline void record_screen(struct pane *p safe) {}
 static inline void close_recrep(struct pane *p safe) {}
 #endif
 
-DEF_CMD(nc_misc)
+DEF_CMD(nc_refresh)
 {
 	struct pane *p = ci->home;
 
-	if (strcmp(ci->key, "Display:refresh") == 0) {
-		clear();
-		pane_damaged(p,  DAMAGED_SIZE);
-		return 1;
-	}
-	return 0;
+	clear();
+	pane_damaged(p,  DAMAGED_SIZE);
+	return 1;
 }
 
 static void ncurses_end(struct pane *p safe)
@@ -387,93 +388,110 @@ static int make_cursor(int attr)
 	return attr ^ A_STANDOUT;
 }
 
-DEF_CMD(ncurses_handle)
+DEF_CMD(nc_close)
+{
+	struct pane *p = ci->home;
+	ncurses_end(p);
+	return 1;
+}
+
+DEF_CMD(nc_clear)
+{
+	struct pane *p = ci->home;
+	int attr = cvt_attrs(ci->str2?:ci->str);
+
+	ncurses_clear(ci->focus, p, attr, 0, 0, 0, 0);
+	pane_damaged(p, DAMAGED_POSTORDER);
+	return 1;
+}
+
+DEF_CMD(nc_text_size)
+{
+	int max_space = ci->num;
+	int max_bytes = 0;
+	int size = 0;
+	int offset = 0;
+	mbstate_t mbs = {};
+	char *str = ci->str;
+	int len;
+
+	if (!str)
+		return -1;
+	len = strlen(str);
+	while (str[offset] != 0) {
+		wchar_t wc;
+		int skip = mbrtowc(&wc, str+offset, len-offset, &mbs);
+		if (skip < 0)
+			break;
+		offset += skip;
+		skip = wcwidth(wc);
+		if (skip < 0)
+			break;
+		size += skip;
+		if (size <= max_space)
+			max_bytes = offset;
+	}
+	return comm_call(ci->comm2, "callback:size", ci->focus,
+			 max_bytes, NULL, NULL,
+			 0, NULL, NULL, size, 1);
+}
+
+DEF_CMD(nc_draw_text)
+{
+	struct pane *p = ci->home;
+	int attr = cvt_attrs(ci->str2);
+	int cursor_offset = ci->num;
+	int offset = 0;
+	int x = ci->x, y = ci->y;
+	mbstate_t mbs = {};
+	char *str = ci->str;
+	int len;
+
+	if (!str)
+		return -1;
+	len = strlen(str);
+	while (str[offset] != 0) {
+		wchar_t wc;
+		int skip = mbrtowc(&wc, str+offset, len-offset, &mbs);
+		int width;
+		if (skip < 0)
+			break;
+		width = wcwidth(wc);
+		if (width < 0)
+			break;
+		if (cursor_offset >= offset &&
+		    cursor_offset < offset + skip)
+			ncurses_text(ci->focus, p, wc, attr, x, y, 1);
+		else
+			ncurses_text(ci->focus, p, wc, attr, x, y, 0);
+		offset += skip;
+		x += width;
+	}
+	if (offset == cursor_offset)
+		ncurses_text(ci->focus, p, ' ', 0, x, y, 1);
+	pane_damaged(p, DAMAGED_POSTORDER);
+	return 1;
+}
+
+DEF_CMD(nc_refresh_size)
 {
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
-
-	if (strncmp(ci->key, "Display:", 8) == 0)
-		return nc_misc.func(ci);
-
-	if (strcmp(ci->key, "Close") == 0) {
-		ncurses_end(p);
-		return 1;
-	}
-	if (strcmp(ci->key, "pane-clear") == 0) {
-		int attr = cvt_attrs(ci->str2?:ci->str);
-		ncurses_clear(ci->focus, p, attr, 0, 0, 0, 0);
-		pane_damaged(p, DAMAGED_POSTORDER);
-		return 1;
-	}
-	if (strcmp(ci->key, "text-size") == 0 && ci->str) {
-		int max_space = ci->num;
-		int max_bytes = 0;
-		int size = 0;
-		int offset = 0;
-		mbstate_t mbs = {};
-		char *str = ci->str;
-		int len = strlen(str);
-		while (str[offset] != 0) {
-			wchar_t wc;
-			int skip = mbrtowc(&wc, str+offset, len-offset, &mbs);
-			if (skip < 0)
-				break;
-			offset += skip;
-			skip = wcwidth(wc);
-			if (skip < 0)
-				break;
-			size += skip;
-			if (size <= max_space)
-				max_bytes = offset;
-		}
-		return comm_call(ci->comm2, "callback:size", ci->focus,
-				 max_bytes, NULL, NULL,
-				 0, NULL, NULL, size, 1);
-	}
-	if (strcmp(ci->key, "Draw:text") == 0 && ci->str) {
-		int attr = cvt_attrs(ci->str2);
-		int cursor_offset = ci->num;
-		int offset = 0;
-		int x = ci->x, y = ci->y;
-		mbstate_t mbs = {};
-		char *str = ci->str;
-		int len = strlen(str);
-		while (str[offset] != 0) {
-			wchar_t wc;
-			int skip = mbrtowc(&wc, str+offset, len-offset, &mbs);
-			int width;
-			if (skip < 0)
-				break;
-			width = wcwidth(wc);
-			if (width < 0)
-				break;
-			if (cursor_offset >= offset &&
-			    cursor_offset < offset + skip)
-				ncurses_text(ci->focus, p, wc, attr, x, y, 1);
-			else
-				ncurses_text(ci->focus, p, wc, attr, x, y, 0);
-			offset += skip;
-			x += width;
-		}
-		if (offset == cursor_offset)
-			ncurses_text(ci->focus, p, ' ', 0, x, y, 1);
-		pane_damaged(p, DAMAGED_POSTORDER);
-		return 1;
-	}
-	if (strcmp(ci->key, "Refresh:size") == 0) {
-		set_screen(dd->scr);
-		getmaxyx(stdscr, p->h, p->w);
-		return 0;
-	}
-	if (strcmp(ci->key, "Refresh:postorder") == 0) {
-		set_screen(dd->scr);
-		if (dd->cursor.x >= 0)
-			move(dd->cursor.y, dd->cursor.x);
-		refresh();
-		record_screen(p);
-		return 1;
-	}
+	set_screen(dd->scr);
+	getmaxyx(stdscr, p->h, p->w);
 	return 0;
+}
+
+DEF_CMD(nc_refresh_post)
+{
+	struct pane *p = ci->home;
+	struct display_data *dd = p->data;
+	set_screen(dd->scr);
+	if (dd->cursor.x >= 0)
+		move(dd->cursor.y, dd->cursor.x);
+	refresh();
+	record_screen(p);
+	return 1;
 }
 
 static struct pane *ncurses_init(struct pane *ed)
@@ -497,7 +515,7 @@ static struct pane *ncurses_init(struct pane *ed)
 	dd->cursor.x = dd->cursor.y = -1;
 
 	current_screen = NULL;
-	p = pane_register(ed, 0, &ncurses_handle, dd, NULL);
+	p = pane_register(ed, 0, &ncurses_handle.c, dd, NULL);
 
 	getmaxyx(stdscr, p->h, p->w);
 
@@ -729,4 +747,13 @@ DEF_CMD(display_ncurses)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &display_ncurses, 0, NULL, "attach-display-ncurses");
+
+	nc_map = key_alloc();
+	key_add(nc_map, "Display:refresh", &nc_refresh);
+	key_add(nc_map, "Close", &nc_close);
+	key_add(nc_map, "pane-clear", &nc_clear);
+	key_add(nc_map, "text-size", &nc_text_size);
+	key_add(nc_map, "Draw:text", &nc_draw_text);
+	key_add(nc_map, "Refresh:size", &nc_refresh_size);
+	key_add(nc_map, "Refresh:postorder", &nc_refresh_post);
 }
