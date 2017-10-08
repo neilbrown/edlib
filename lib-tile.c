@@ -51,30 +51,27 @@ static struct map *tile_map safe;
 static void tile_adjust(struct pane *p safe);
 static void tile_avail(struct pane *p safe, struct pane *ignore);
 static int tile_destroy(struct pane *p safe);
+DEF_LOOKUP_CMD(tile_handle, tile_map);
 
-DEF_CMD(tile_handle)
+
+DEF_CMD(tile_close)
+{
+	struct pane *p = ci->home;
+
+	tile_destroy(p);
+	return 0;
+}
+
+DEF_CMD(tile_refresh_size)
 {
 	struct pane *p = ci->home;
 	struct tileinfo *ti = p->data;
-	int ret;
 
-	ret = key_lookup(tile_map, ci);
-	if (ret)
-		return ret;
-
-	if (strcmp(ci->key, "Close") == 0) {
-		tile_destroy(p);
-		return 0;
+	if (ti->direction == Neither) {
+		tile_avail(p, NULL);
+		tile_adjust(p);
 	}
-
-	if (strcmp(ci->key, "Refresh:size") == 0) {
-		if (ti->direction == Neither) {
-			tile_avail(p, NULL);
-			tile_adjust(p);
-		}
-		return !ti->leaf;
-	}
-	return 0;
+	return !ti->leaf;
 }
 
 DEF_CMD(tile_clone)
@@ -94,7 +91,7 @@ DEF_CMD(tile_clone)
 	if (cti->group)
 		ti->group = strdup(cti->group);
 	INIT_LIST_HEAD(&ti->tiles);
-	ti->p = p2 = pane_register(parent, 0, &tile_handle, ti, NULL);
+	ti->p = p2 = pane_register(parent, 0, &tile_handle.c, ti, NULL);
 	/* Remove borders as our children will provide their own. */
 	call("Window:border", p2);
 	attr_set_str(&p2->attrs, "borders", "BL");
@@ -131,7 +128,7 @@ DEF_CMD(tile_attach)
 {
 	struct pane *display = ci->focus;
 	struct tileinfo *ti = calloc(1, sizeof(*ti));
-	struct pane *p = pane_register(display, 0, &tile_handle, ti, NULL);
+	struct pane *p = pane_register(display, 0, &tile_handle.c, ti, NULL);
 
 	/* Remove borders as our children will provide their own. */
 	call("Window:border", display);
@@ -190,7 +187,7 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char
 		INIT_LIST_HEAD(&ti2->tiles);
 		p->data = ti2;
 		ti2->p = p;
-		p2 = pane_register(p, 0, &tile_handle, ti, NULL);
+		p2 = pane_register(p, 0, &tile_handle.c, ti, NULL);
 		ti->p = p2;
 		ti->direction = horiz ? Horiz : Vert;
 		/* All children of p must be moved to p2, except p2 */
@@ -211,7 +208,7 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char
 		list_add(&ti2->tiles, &ti->tiles);
 	else
 		list_add_tail(&ti2->tiles, &ti->tiles);
-	ret = pane_register(p->parent, 0, &tile_handle, ti2, here);
+	ret = pane_register(p->parent, 0, &tile_handle.c, ti2, here);
 	ti2->p = ret;
 	switch (!!horiz + 2 * !!after) {
 	case 0: /* vert before */
@@ -884,6 +881,8 @@ void edlib_init(struct pane *ed safe)
 	key_add(tile_map, "Clone", &tile_clone);
 	key_add(tile_map, "ChildClosed", &tile_child_closed);
 	key_add(tile_map, "ChildRegistered", &tile_child_registered);
+	key_add(tile_map, "Close", &tile_close);
+	key_add(tile_map, "Refresh:size", &tile_refresh_size);
 
 	call_comm("global-set-command", ed, &tile_attach, 0, NULL, "attach-tile");
 }
