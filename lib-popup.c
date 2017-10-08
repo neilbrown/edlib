@@ -29,6 +29,9 @@
 
 #include "core.h"
 
+static struct map *popup_map;
+DEF_LOOKUP_CMD(popup_handle, popup_map);
+
 struct popup_info {
 	struct pane	*target safe, *popup safe;
 	char		*style safe;
@@ -70,72 +73,94 @@ static void popup_resize(struct pane *p safe, char *style safe)
 	pane_resize(p, x, y, w, h);
 }
 
-DEF_CMD(popup_handle)
+DEF_CMD(popup_close)
+{
+	struct pane *p = ci->home;
+	struct popup_info *ppi = p->data;
+	free(ppi->style);
+	free(ppi);
+	return 1;
+}
+
+DEF_CMD(popup_notify_close)
 {
 	struct pane *p = ci->home;
 	struct popup_info *ppi = p->data;
 
-	if (strcmp(ci->key, "Close") == 0) {
-		free(ppi->style);
-		free(ppi);
-		return 1;
+	if (ci->focus == ppi->target) {
+		/* target is closing, so we close too */
+		ppi->target = safe_cast NULL;
+		pane_close(p);
 	}
+	return 1;
+}
 
-	if (strcmp(ci->key, "Notify:Close") == 0) {
-		if (ci->focus == ppi->target) {
-			/* target is closing, so we close too */
-			ppi->target = safe_cast NULL;
-			pane_close(p);
-		}
-		return 1;
-	}
+DEF_CMD(popup_abort)
+{
+	struct pane *p = ci->home;
+	struct popup_info *ppi = p->data;
 
-	if (strcmp(ci->key, "Abort") == 0) {
-		pane_focus(ppi->target);
-		call("Abort", ppi->target);
-		pane_close(ppi->popup);
-		return 1;
-	}
+	pane_focus(ppi->target);
+	call("Abort", ppi->target);
+	pane_close(ppi->popup);
+	return 1;
+}
 
-	if (strcmp(ci->key, "popup:style") == 0 && ci->str) {
-		char border[5];
-		int i, j;;
+DEF_CMD(popup_style)
+{
+	struct pane *p = ci->home;
+	struct popup_info *ppi = p->data;
+	char border[5];
+	int i, j;;
 
-		free(ppi->style);
-		ppi->style = strdup(ci->str);
-		for (i = 0, j = 0; i < 4; i++) {
-			if (strchr(ppi->style, "TLBR"[i]) == NULL)
-				border[j++] = "TLBR"[i];
-		}
-		border[j] = 0;
-		attr_set_str(&ppi->popup->attrs, "Popup", "true");
-		attr_set_str(&ppi->popup->attrs, "borders", border);
-		popup_resize(p, ppi->style);
-		return 1;
-	}
-	if (strcmp(ci->key, "Refresh:size") == 0) {
-		popup_resize(p, ppi->style);
+	if (!ci->str)
 		return 0;
+
+	free(ppi->style);
+	ppi->style = strdup(ci->str);
+	for (i = 0, j = 0; i < 4; i++) {
+		if (strchr(ppi->style, "TLBR"[i]) == NULL)
+			border[j++] = "TLBR"[i];
 	}
-	if (strcmp(ci->key, "popup:get-target") == 0)
-		return comm_call(ci->comm2, "callback:get-target", ppi->target);
+	border[j] = 0;
+	attr_set_str(&ppi->popup->attrs, "Popup", "true");
+	attr_set_str(&ppi->popup->attrs, "borders", border);
+	popup_resize(p, ppi->style);
+	return 1;
+}
 
-	if (strcmp(ci->key, "popup:close") == 0) {
-		char *key, *str;
-		struct pane *target = ppi->target;
+DEF_CMD(popup_refresh_size)
+{
+	struct pane *p = ci->home;
+	struct popup_info *ppi = p->data;
 
-		pane_focus(target);
-		key = pane_attr_get(ci->focus, "done-key");
-		if (!key)
-			key = "PopupDone";
-		str = ci->str;
-		pane_close(ppi->popup);
-		/* This pane is closed now, ppi is gone. Be careful */
-		call(key, target, 1, NULL, str);
-		return 1;
-	}
-
+	popup_resize(p, ppi->style);
 	return 0;
+}
+
+DEF_CMD(popup_get_target)
+{
+	struct pane *p = ci->home;
+	struct popup_info *ppi = p->data;
+	return comm_call(ci->comm2, "callback:get-target", ppi->target);
+}
+
+DEF_CMD(popup_do_close)
+{
+	struct pane *p = ci->home;
+	struct popup_info *ppi = p->data;
+	char *key, *str;
+	struct pane *target = ppi->target;
+
+	pane_focus(target);
+	key = pane_attr_get(ci->focus, "done-key");
+	if (!key)
+		key = "PopupDone";
+	str = ci->str;
+	pane_close(ppi->popup);
+	/* This pane is closed now, ppi is gone. Be careful */
+	call(key, target, 1, NULL, str);
+	return 1;
 }
 
 DEF_CMD(popup_attach)
@@ -179,7 +204,7 @@ DEF_CMD(popup_attach)
 	if (z < 0)
 		z = 1;
 
-	ppi->popup = p = pane_register(root, z + 1, &popup_handle, ppi, NULL);
+	ppi->popup = p = pane_register(root, z + 1, &popup_handle.c, ppi, NULL);
 	ppi->style = strdup(style);
 	popup_resize(ppi->popup, style);
 	for (i = 0, j = 0; i < 4; i++) {
@@ -214,4 +239,14 @@ DEF_CMD(popup_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &popup_attach, 0, NULL, "PopupTile");
+
+	popup_map = key_alloc();
+
+	key_add(popup_map, "Close", &popup_close);
+	key_add(popup_map, "Notify:Close", &popup_notify_close);
+	key_add(popup_map, "Abort", &popup_abort);
+	key_add(popup_map, "popup:style", &popup_style);
+	key_add(popup_map, "Refresh:size", &popup_refresh_size);
+	key_add(popup_map, "popup:get-target", &popup_get_target);
+	key_add(popup_map, "popup:close", &popup_do_close);
 }
