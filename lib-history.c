@@ -25,98 +25,116 @@
 struct history_info {
 	struct pane	*history;
 	char		*saved;
-	char		*donekey;
 	struct buf	search;
 	int		changed;
+	struct map	*done_map;
+	struct lookup_cmd handle;
 };
 
-DEF_CMD(history_handle)
+static struct map *history_map;
+DEF_LOOKUP_CMD(history_handle, history_map);
+
+DEF_CMD(history_close)
+{
+	struct pane *p = ci->home;
+	struct history_info *hi = p->data;
+
+	if (hi->history)
+		pane_close(hi->history);
+	free(hi->search.b);
+	free(hi->saved);
+	free(hi);
+	p->data = safe_cast NULL;
+	return 1;
+}
+
+DEF_CMD(history_notify_close)
+{
+	struct pane *p = ci->home;
+	struct history_info *hi = p->data;
+
+	if (ci->focus == hi->history)
+		/* The history document is going away!!! */
+		hi->history = NULL;
+	return 1;
+}
+
+DEF_CMD(history_done)
+{
+	struct pane *p = ci->home;
+	struct history_info *hi = p->data;
+
+	if (!hi->history)
+		/* history document was destroyed */
+		return 0;
+	call("Move-File", hi->history, 1);
+	call("Replace", hi->history, 1, NULL, ci->str, 1);
+	call("Replace", hi->history, 1, NULL, "\n", 1);
+	return 0;
+}
+
+
+DEF_CMD(history_notify_replace)
+{
+	struct pane *p = ci->home;
+	struct history_info *hi = p->data;
+
+	if (hi->history)
+		hi->changed = 1;
+	return 1;
+}
+
+DEF_CMD(history_move)
 {
 	struct pane *p = ci->home;
 	struct history_info *hi = p->data;
 	struct mark *m;
+	char *l, *e;
 
-	if (strcmp(ci->key, "Close") == 0) {
-		if (hi->history)
-			pane_close(hi->history);
-		free(hi->search.b);
-		free(hi->saved);
-		free(hi);
-		p->data = safe_cast NULL;
-		return 1;
-	}
-	if (!hi->history)
-		/* history document was destroyed */
+	if (!hi->history || !ci->mark)
 		return 0;
-
-	if (strcmp(ci->key, "Notify:Close") == 0 && ci->focus == hi->history) {
-		/* The history document is going away!!! */
-		hi->history = NULL;
-		return 1;
+	if (ci->key[6] == 'p') {
+		m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
+		call("Move-EOL", hi->history, -2);
+	} else {
+		call("Move-EOL", hi->history, 1);
+		call("Move-Char", hi->history, 1);
+		m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
+		call("Move-EOL", hi->history, 1, m);
+		call("Move-Char", hi->history, 1, m);
 	}
-
-	if (hi->donekey && strcmp(ci->key, hi->donekey) == 0 && ci->str) {
-		call("Move-File", hi->history, 1);
-		call("Replace", hi->history, 1, NULL, ci->str, 1);
-		call("Replace", hi->history, 1, NULL, "\n", 1);
-		return 0;
-	}
-
-	if (strcmp(ci->key, "Notify:doc:Replace") == 0) {
-		hi->changed = 1;
-		return 1;
-	}
-
-	if (ci->mark &&
-	    (strcmp(ci->key, "M-Chr-p") == 0 || strcmp(ci->key, "M-Chr-n") == 0)) {
-		char *l, *e;
+	l = call_ret(str, "doc:get-str", hi->history, 0, NULL, NULL, 0, m);
+	if (!l || !*l) {
+		/* No more history */
+		free(l);
 		if (ci->key[6] == 'p') {
-			m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
-			call("Move-EOL", hi->history, -2);
-		} else {
-			call("Move-EOL", hi->history, 1);
-			call("Move-Char", hi->history, 1);
-			m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
-			call("Move-EOL", hi->history, 1, m);
-			call("Move-Char", hi->history, 1, m);
-		}
-		l = call_ret(str, "doc:get-str", hi->history, 0, NULL, NULL, 0, m);
-		if (!l || !*l) {
-			/* No more history */
-			free(l);
-			if (ci->key[6] == 'p') {
-				mark_free(m);
-				return 1;
-			} else
-				l = hi->saved;
-		}
-		if (l) {
-			e = strchr(l, '\n');
-			if (e)
-				*e = 0;
-		}
-		call("Move-EOL", ci->focus, -1, ci->mark);
-		m = mark_dup(ci->mark, 1);
-		call("Move-EOL", ci->focus, 1, m);
-		if (hi->changed) {
-			if (l != hi->saved)
-				free(hi->saved);
-			hi->saved = call_ret(str, "doc:get-str", ci->focus,
-					     0, ci->mark, NULL,
-					     0, m);
-		}
-		call("Replace", ci->focus, 1, m, l, 1);
-		if (l != hi->saved){
-			free(l);
-			hi->changed = 0;
-		}
-		mark_free(m);
-		return 1;
+			mark_free(m);
+			return 1;
+		} else
+			l = hi->saved;
 	}
-
-	if (strcmp(ci->key, "M-Chr-r") == 0) {
+	if (l) {
+		e = strchr(l, '\n');
+		if (e)
+			*e = 0;
 	}
-	return 0;
+	call("Move-EOL", ci->focus, -1, ci->mark);
+	m = mark_dup(ci->mark, 1);
+	call("Move-EOL", ci->focus, 1, m);
+	if (hi->changed) {
+		if (l != hi->saved)
+			free(hi->saved);
+		hi->saved = call_ret(str, "doc:get-str", ci->focus,
+				     0, ci->mark, NULL,
+				     0, m);
+	}
+	call("Replace", ci->focus, 1, m, l, 1);
+	if (l != hi->saved){
+		free(l);
+		hi->changed = 0;
+	}
+	mark_free(m);
+	return 1;
 }
 
 DEF_CMD(history_attach)
@@ -125,11 +143,14 @@ DEF_CMD(history_attach)
 	struct history_info *hi;
 	struct pane *p;
 
-	if (!ci->str)
+	if (!ci->str || !ci->str2)
 		return -1;
 
 	hi = calloc(1, sizeof(*hi));
-	hi->donekey = ci->str2;
+	hi->done_map = key_alloc();
+	hi->handle = history_handle;
+	hi->handle.dflt = &hi->done_map;
+	key_add(hi->done_map, ci->str2, &history_done);
 	p = call_pane("docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)
 		p = call_pane("doc:from-text", ci->focus, 0, NULL, ci->str,
@@ -144,7 +165,7 @@ DEF_CMD(history_attach)
 	home_call(hi->history, "doc:assign", p);
 	call("Move-File", hi->history, 1);
 	buf_init(&hi->search);
-	p = pane_register(ci->focus, 0, &history_handle, hi, NULL);
+	p = pane_register(ci->focus, 0, &hi->handle.c, hi, NULL);
 	pane_add_notify(p, hi->history, "Notify:Close");
 	call("Request:Notify:doc:Replace", p);
 	return comm_call(ci->comm2, "callback:attach", p);
@@ -153,4 +174,14 @@ DEF_CMD(history_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &history_attach, 0, NULL, "attach-history");
+
+	if (history_map)
+		return;
+
+	history_map = key_alloc();
+	key_add(history_map, "Close", &history_close);
+	key_add(history_map, "Notify:Close", &history_notify_close);
+	key_add(history_map, "Notify:doc:Replace", &history_notify_replace);
+	key_add(history_map, "M-Chr-p", &history_move);
+	key_add(history_map, "M-Chr-n", &history_move);
 }
