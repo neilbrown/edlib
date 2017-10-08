@@ -33,7 +33,7 @@ struct doc_ref {
 
 #include "core.h"
 
-static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe, int, char *);
+static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe, int, char *);
 static struct pane *doc_attach(struct pane *parent, struct pane *d);
 
 static inline wint_t doc_following(struct doc *d safe, struct mark *m safe)
@@ -672,13 +672,128 @@ DEF_CMD(doc_write_file)
 	return ret;
 }
 
+
+DEF_CMD(doc_notify_viewers)
+{
+	/* The autoclose document wants to know if it should close.
+	 * tell it "no" */
+	return 1;
+}
+
+DEF_CMD(doc_notify_close)
+{
+	/* This pane has to go away */
+
+	pane_close(ci->home);
+	return 1;
+}
+
+DEF_CMD(doc_clone)
+{
+	struct doc_data *dd = ci->home->data;
+	struct pane *p = doc_attach(ci->focus, dd->doc);
+
+	if (!p)
+		return 0;
+	call("Move-to", p, 0, dd->point);
+	pane_clone_children(ci->home, p);
+	return 1;
+}
+
+DEF_CMD(doc_close)
+{
+	struct doc_data *dd = ci->home->data;
+	mark_free(dd->point);
+	call("doc:closed", dd->doc);
+	free(dd);
+	ci->home->data = safe_cast NULL;
+	return 1;
+}
+
+DEF_CMD(doc_dup_point)
+{
+	struct doc_data *dd = ci->home->data;
+	struct mark *pt = dd->point;
+	struct mark *m;
+	if (ci->mark && ci->mark->viewnum == MARK_POINT)
+		pt = ci->mark;
+
+	if (!pt || !ci->comm2)
+		return -1;
+
+	if (ci->num2 == MARK_POINT)
+		m = point_dup(pt);
+	else if (ci->num2 == MARK_UNGROUPED)
+		m = mark_dup(pt, 1);
+	else
+		m = do_mark_at_point(pt, ci->num2);
+
+	return comm_call(ci->comm2, "callback:dup-point", ci->focus,
+			 0, m);
+}
+
+DEF_CMD(doc_assign)
+{
+	struct doc_data *dd = ci->home->data;
+	struct pane *p2;
+	if ((void*) (dd->doc))
+		return -1;
+	p2 = do_doc_assign(ci->home, ci->focus, ci->num, ci->str);
+	if (!p2)
+		return -1;
+	comm_call(ci->comm2, "callback:doc", p2);
+	return 1;
+}
+
+DEF_CMD(doc_replace)
+{
+	struct doc_data *dd = ci->home->data;
+	return home_call(dd->doc, "doc:replace", ci->focus, 1, ci->mark, ci->str,
+			 ci->num2, dd->point);
+}
+
+DEF_CMD(doc_handle_get_attr)
+{
+	struct doc_data *dd = ci->home->data;
+	char *a;
+	if (!ci->str)
+		return -1;
+	a = pane_attr_get(dd->doc, ci->str);
+	if (!a)
+		return 0;
+	return comm_call(ci->comm2, "callback", ci->focus, 0, NULL, a);
+}
+
+DEF_CMD(doc_move_to)
+{
+	struct doc_data *dd = ci->home->data;
+	if (ci->mark)
+		point_to_mark(dd->point, ci->mark);
+	return 1;
+}
+
+DEF_CMD(doc_pass_on)
+{
+	struct doc_data *dd = ci->home->data;
+	return home_call(dd->doc, ci->key, ci->focus, ci->num,
+			 ci->mark ?: dd->point, ci->str,
+			 ci->num2, ci->mark2, ci->str2,
+			 ci->x, ci->y, ci->comm2);
+}
+
 struct map *doc_default_cmd safe;
 static struct map *doc_handle_cmd safe;
+
+DEF_LOOKUP_CMD(doc_handle, doc_handle_cmd);
 
 static void init_doc_cmds(void)
 {
 	doc_default_cmd = key_alloc();
 	doc_handle_cmd = key_alloc();
+
+	key_add_range(doc_handle_cmd, "doc:", "doc;", &doc_pass_on);
+	key_add_range(doc_handle_cmd, "Request:Notify:doc:", "Request:Notify:doc;", &doc_pass_on);
+	key_add_range(doc_handle_cmd, "Notify:doc:", "Notify:doc;", &doc_pass_on);
 
 	key_add(doc_handle_cmd, "Move-Char", &doc_char);
 	key_add(doc_handle_cmd, "Move-Word", &doc_word);
@@ -688,6 +803,16 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd, "Move-Line", &doc_line);
 	key_add(doc_handle_cmd, "Move-View-Large", &doc_page);
 	key_add(doc_handle_cmd, "doc:point", &doc_get_point);
+
+	key_add(doc_handle_cmd, "Notify:doc:viewers", &doc_notify_viewers);
+	key_add(doc_handle_cmd,	"Notify:Close", &doc_notify_close);
+	key_add(doc_handle_cmd,	"Clone", &doc_clone);
+	key_add(doc_handle_cmd,	"Close", &doc_close);
+	key_add(doc_handle_cmd, "doc:dup-point", &doc_dup_point);
+	key_add(doc_handle_cmd, "doc:assign", &doc_assign);
+	key_add(doc_handle_cmd, "Replace", &doc_replace);
+	key_add(doc_handle_cmd, "get-attr", &doc_handle_get_attr);
+	key_add(doc_handle_cmd, "Move-to", &doc_move_to);
 
 	key_add(doc_default_cmd, "doc:set-attr", &doc_attr_set);
 	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
@@ -710,110 +835,7 @@ static void init_doc_cmds(void)
 		      &doc_set);
 }
 
-DEF_CMD(doc_handle)
-{
-	struct doc_data *dd = ci->home->data;
-	int retval;
-
-	retval = key_lookup(doc_handle_cmd, ci);
-	if (retval)
-		return retval;
-
-	if (strcmp(ci->key, "Notify:doc:viewers") == 0) {
-		/* The autoclose document wants to know if it should close.
-		 * tell it "no" */
-		return 1;
-	}
-
-	if (strcmp(ci->key, "Notify:Close") == 0) {
-		/* This pane has to go away */
-
-		pane_close(ci->home);
-		return 1;
-	}
-
-	if (strcmp(ci->key, "Clone") == 0) {
-		struct pane *p = doc_attach(ci->focus, dd->doc);
-
-		if (!p)
-			return 0;
-		call("Move-to", p, 0, dd->point);
-		pane_clone_children(ci->home, p);
-		return 1;
-	}
-
-	if (strcmp(ci->key, "Close") == 0) {
-		mark_free(dd->point);
-		call("doc:closed", dd->doc);
-		free(dd);
-		ci->home->data = safe_cast NULL;
-		return 1;
-	}
-
-	if (strcmp(ci->key, "doc:dup-point") == 0) {
-		struct mark *pt = dd->point;
-		struct mark *m;
-		if (ci->mark && ci->mark->viewnum == MARK_POINT)
-			pt = ci->mark;
-
-		if (!pt || !ci->comm2)
-			return -1;
-
-		if (ci->num2 == MARK_POINT)
-			m = point_dup(pt);
-		else if (ci->num2 == MARK_UNGROUPED)
-			m = mark_dup(pt, 1);
-		else
-			m = do_mark_at_point(pt, ci->num2);
-
-		return comm_call(ci->comm2, "callback:dup-point", ci->focus,
-				 0, m);
-	}
-
-	if (strcmp(ci->key, "doc:assign") == 0) {
-		struct pane *p2;
-		if ((void*) (dd->doc))
-			return -1;
-		p2 = doc_assign(ci->home, ci->focus, ci->num, ci->str);
-		if (!p2)
-			return -1;
-		comm_call(ci->comm2, "callback:doc", p2);
-		return 1;
-	}
-
-	if (strcmp(ci->key, "Replace") == 0) {
-		return home_call(dd->doc, "doc:replace", ci->focus, 1, ci->mark, ci->str,
-				 ci->num2, dd->point);
-	}
-
-	if (strcmp(ci->key, "get-attr") == 0) {
-		char *a;
-		if (!ci->str)
-			return -1;
-		a = pane_attr_get(dd->doc, ci->str);
-		if (!a)
-			return 0;
-		return comm_call(ci->comm2, "callback", ci->focus, 0, NULL, a);
-	}
-
-	if (strcmp(ci->key, "Move-to") == 0) {
-		if (ci->mark)
-			point_to_mark(dd->point, ci->mark);
-		return 1;
-	}
-
-	if (strncmp(ci->key, "doc:", 4) != 0 &&
-	    strncmp(ci->key, "Request:Notify:doc:", 19) != 0 &&
-	    strncmp(ci->key, "Notify:doc:", 11) != 0)
-		/* doesn't get sent to the doc */
-		return 0;
-	return home_call(dd->doc, ci->key, ci->focus, ci->num,
-			 ci->mark ?: dd->point, ci->str,
-			 ci->num2, ci->mark2, ci->str2,
-			 ci->x, ci->y, ci->comm2);
-}
-
-static struct pane *doc_assign(struct pane *p safe, struct pane *doc safe,
+static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe,
 			       int num, char *str)
 {
 	struct doc_data *dd = p->data;
@@ -841,10 +863,10 @@ static struct pane *doc_attach(struct pane *parent, struct pane *d)
 	struct pane *p;
 	struct doc_data *dd = calloc(1, sizeof(*dd));
 
-	p = pane_register(parent, 0, &doc_handle, dd, NULL);
+	p = pane_register(parent, 0, &doc_handle.c, dd, NULL);
 	/* non-home panes need to be notified so they can self-destruct */
 	if (d)
-		doc_assign(p, d, 0, NULL);
+		do_doc_assign(p, d, 0, NULL);
 	return p;
 }
 
