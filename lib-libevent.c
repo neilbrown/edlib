@@ -19,6 +19,9 @@
 #include <string.h>
 #include "core.h"
 
+static struct map *libevent_map;
+DEF_LOOKUP_CMD(libevent_handle, libevent_map);
+
 struct event_info {
 	struct event_base *base;
 	struct list_head event_list;
@@ -233,14 +236,11 @@ DEF_CMD(libevent_refresh)
 	return 0;
 }
 
-DEF_CMD(libevent_handle)
+DEF_CMD(libevent_notify)
 {
 	struct event_info *ei = ci->home->data;
 
-	if (strcmp(ci->key, "Notify:Close") == 0) {
-		comm_call(&ei->free, "free", ci->focus);
-		return 1;
-	}
+	comm_call(&ei->free, "free", ci->focus);
 	return 1;
 }
 
@@ -256,7 +256,7 @@ DEF_CMD(libevent_activate)
 	ei->deactivate = libevent_deactivate;
 	ei->free = libevent_free;
 	ei->refresh = libevent_refresh;
-	ei->home = pane_register(ei->home, 0, &libevent_handle, ei, NULL);
+	ei->home = pane_register(ei->home, 0, &libevent_handle.c, ei, NULL);
 
 	/* These are defaults, so make them sort late */
 	call_comm("global-set-command", ci->focus, &ei->read, 0, NULL, "event:read-zz");
@@ -274,4 +274,9 @@ DEF_CMD(libevent_activate)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &libevent_activate, 0, NULL, "attach-libevent");
+
+	if (libevent_map)
+		return;
+	libevent_map = key_alloc();
+	key_add(libevent_map, "Notify:Close", &libevent_notify);
 }
