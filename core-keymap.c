@@ -45,7 +45,12 @@
 
 #include "core.h"
 
+#include "jhash.h"
+
 struct map {
+	unsigned long bloom[256 / (sizeof(long)*8) ];
+	short	changed;
+	short	prefix_len;
 	int	size;
 	char	* safe *keys safe;
 	struct command * safe *comms safe;
@@ -74,8 +79,9 @@ static int size2alloc(int size)
 
 struct map *safe key_alloc(void)
 {
-	struct map *m = malloc(sizeof(*m));
-	memset(m, 0, sizeof(*m));
+	struct map *m = calloc(1, sizeof(*m));
+
+	m->prefix_len = -1;
 	return m;
 }
 
@@ -84,6 +90,48 @@ void key_free(struct map *m safe)
 	free(m->keys);
 	free(m->comms);
 	free(m);
+}
+
+static int hash_str(char *key safe, int len)
+{
+	int l = strlen(key);
+	if (len > 0 && len < l)
+		l = len;
+	return jhash(key, l, 0);
+}
+
+inline static void set_bit(unsigned long *set safe, int bit)
+{
+	set[bit/(sizeof(unsigned long)*8)] |= 1UL << (bit % (sizeof(unsigned long)*8));
+}
+
+inline static int test_bit(unsigned long *set safe, int bit)
+{
+	return !! (set[bit/(sizeof(unsigned long)*8)] & (1UL << (bit % (sizeof(unsigned long)*8))));
+}
+
+
+static int key_present(struct map *map safe, char *key, int klen, unsigned int *hashp safe)
+{
+	int hash;
+
+	if (map->changed) {
+		int i;
+		for (i = 0; i < map->size; i++) {
+			hash = hash_str(map->keys[i], map->prefix_len);
+			set_bit(map->bloom, hash&0xff);
+			set_bit(map->bloom, (hash>>8)&0xff);
+			set_bit(map->bloom, (hash>>16)&0xff);
+		}
+		map->changed = 0;
+	}
+	if (map->prefix_len < 0 || klen <= map->prefix_len)
+		hash = hashp[0];
+	else
+		hash = hashp[map->prefix_len];
+	return (test_bit(map->bloom, hash&0xff) &&
+		test_bit(map->bloom, (hash>>8)&0xff) &&
+		test_bit(map->bloom, (hash>>16)&0xff));
 }
 
 /* Find first entry >= k */
@@ -165,6 +213,7 @@ void key_add(struct map *map safe, char *k safe, struct command *comm)
 		map->comms[pos+1] = SET_RANGE(command_get(GETCOMM(comm2)));
 	}
 	map->size += ins_cnt;
+	map->changed = 1;
 }
 
 void key_add_range(struct map *map safe, char *first safe, char *last safe,
@@ -172,6 +221,7 @@ void key_add_range(struct map *map safe, char *first safe, char *last safe,
 {
 	int size, move_size;
 	int pos, pos2;
+	int prefix;
 
 	if (!comm || strcmp(first, last) >= 0)
 		return;
@@ -208,7 +258,13 @@ void key_add_range(struct map *map safe, char *first safe, char *last safe,
 	map->keys[pos+1] = last;
 	map->comms[pos+1] = command_get(comm);
 	map->size += move_size;
-	return;
+	map->changed = 1;
+	for (prefix = 0;
+	     first[prefix] && first[prefix+1] == last[prefix+1];
+	     prefix += 1)
+		;
+	if (map->prefix_len < 0 || map->prefix_len > prefix)
+		map->prefix_len = prefix;
 }
 
 #if 0
@@ -216,7 +272,7 @@ void key_del(struct map *map, wint_t k)
 {
 	int pos;
 
-	pos = key_find(map, k);
+	pos = key_find(map, k, -1);
 	if (pos >= map->size || strcmp(map->keys[pos], k) == 0)
 		return;
 
@@ -225,6 +281,7 @@ void key_del(struct map *map, wint_t k)
 	memmove(map->comms+pos, map->comms+pos+1,
 		(map->size-pos-1) * sizeof(struct command *));
 	map->size -= 1;
+	map->changed = 1;
 }
 #endif
 
@@ -273,9 +330,13 @@ struct command *key_lookup_cmd(struct map *m safe, char *c safe)
 
 int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 {
-	int pos = key_find(m, ci->key);
+	int pos;
 	struct command *comm;
 
+	if (ci->hash && !key_present(m, ci->key, strlen(ci->key), ci->hash))
+		return 0;
+
+	pos = key_find(m, ci->key);
 	if (pos >= m->size)
 		return 0;
 	if (strcmp(m->keys[pos], ci->key) == 0) {
@@ -330,9 +391,19 @@ int key_handle(const struct cmd_info *ci safe)
 {
 	struct cmd_info *vci = (struct cmd_info*)ci;
 	struct pane *p;
+	unsigned int hash[30];
 
 	if ((void*) ci->comm)
 		return ci->comm->func(ci);
+
+	if (strlen(ci->key) < 30) {
+		int l = strlen(ci->key);
+		int i;
+		hash[0] = hash_str(ci->key, l);
+		for (i = 1; i < l; i++)
+			hash[i] = hash_str(ci->key, i);
+		vci->hash = hash;
+	}
 
 	/* If 'home' is set, search from there, else search
 	 * from focus

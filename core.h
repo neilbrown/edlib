@@ -305,6 +305,12 @@ struct cmd_info {
 	struct mark	*mark, *mark2;
 	struct command	*comm safe;
 	struct command	*comm2;
+
+	/* Hopefully this is a temporary hack.
+	 * The array should have on entry for each byte in the length
+	 * of 'key' with a hash of that prefix
+	 */
+	unsigned int	*hash;
 };
 
 #define	NO_NUMERIC	(INT_MAX/2)
