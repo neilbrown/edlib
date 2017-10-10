@@ -1526,9 +1526,12 @@ DEF_CMD(render_lines_set_cursor)
 				char *tag = get_active_tag(oattrs);
 				if (tag)
 					call("Mouse-Activate", focus, 0, m2, tag,
-					     0, NULL, oattrs);
+					     0, ci->mark, oattrs);
 				free(tag);
-				call("Move-to", focus, 0, m2);
+				if (ci->mark)
+					mark_to_mark(ci->mark, m2);
+				else
+					call("Move-to", focus, 0, m2);
 				mark_free(m2);
 				found = 1;
 			}
