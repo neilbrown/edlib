@@ -1124,6 +1124,43 @@ DEF_CMD(emacs_version)
 	return 1;
 }
 
+DEF_CMD(emacs_mark)
+{
+	call("Move-to", ci->focus, 1);
+	return 1;
+}
+
+DEF_CMD(emacs_abort)
+{
+	/* On abort, forget mark */
+	call("Move-to", ci->focus, 2);
+	return 0;
+}
+
+DEF_CMD(emacs_swap_mark)
+{
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	struct mark *m;
+
+	if (!mk)
+		return 1;
+	m = mark_dup(mk, 1);
+	call("Move-to", ci->focus, 1); /* Move mark to point */
+	call("Move-to", ci->focus, 0, m); /* Move point to old mark */
+	mark_free(m);
+	return 1;
+}
+
+DEF_CMD(emacs_wipe)
+{
+	/* Delete text from point to mark - later should copy first */
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+
+	if (!mk)
+		return 1;
+	return call("Replace", ci->focus, 1, mk, NULL, 1);
+}
+
 DEF_CMD(emacs_attrs)
 {
 	struct highlight_info *hi = ci->home->data;
@@ -1219,6 +1256,10 @@ static void emacs_init(void)
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &emacs_num);
 	key_add(m, "M-Chr--", &emacs_neg);
+	key_add(m, "C-Chr- ", &emacs_mark);
+	key_add(m, "emCX-C-Chr-X", &emacs_swap_mark);
+	key_add(m, "Abort", &emacs_abort);
+	key_add(m, "C-Chr-W", &emacs_wipe);
 
 	key_add(m, "M-Chr-x", &emacs_command);
 	key_add(m, "emacs:command", &emacs_do_command);

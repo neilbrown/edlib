@@ -50,6 +50,7 @@ static inline wint_t doc_prior(struct doc *d safe, struct mark *m safe)
 struct doc_data {
 	struct pane		*doc safe;
 	struct mark		*point safe;
+	struct mark		*mark;
 };
 
 static int do_doc_add_view(struct doc *d safe)
@@ -602,7 +603,8 @@ DEF_CMD(doc_get_point)
 {
 	struct doc_data *dd = ci->home->data;
 
-	comm_call(ci->comm2, "callback", ci->focus, 0, dd->point);
+	comm_call(ci->comm2, "callback", ci->focus, 0, dd->point, NULL,
+		  0, dd->mark);
 	return 1;
 }
 
@@ -704,6 +706,7 @@ DEF_CMD(doc_close)
 {
 	struct doc_data *dd = ci->home->data;
 	mark_free(dd->point);
+	mark_free(dd->mark);
 	call("doc:closed", dd->doc);
 	free(dd);
 	ci->home->data = safe_cast NULL;
@@ -767,8 +770,24 @@ DEF_CMD(doc_handle_get_attr)
 DEF_CMD(doc_move_to)
 {
 	struct doc_data *dd = ci->home->data;
-	if (ci->mark)
-		point_to_mark(dd->point, ci->mark);
+
+	switch(ci->num) {
+	case 1:
+		if (!dd->mark)
+			dd->mark = mark_dup(dd->point, 1);
+		if (!dd->mark)
+			return -1;
+		mark_to_mark(dd->mark, ci->mark ?: dd->point);
+		break;
+	case 2:
+		mark_free(dd->mark);
+		dd->mark = NULL;
+		break;
+	case 0:
+		if (ci->mark)
+			point_to_mark(dd->point, ci->mark);
+		break;
+	}
 	return 1;
 }
 
