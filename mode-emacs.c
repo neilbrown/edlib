@@ -940,13 +940,13 @@ DEF_CMD(emacs_reposition)
 
 	if (repoint != -1) {
 		/* Move point to end of display, if that is in
-		 * the right direction.  That will mean it have moved
+		 * the right direction.  That will mean it has moved
 		 * off the display.
 		 */
 		m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 		if (m) {
 			struct mark *m2 = mark_dup(m ,1);
-			call("Mouse-event", ci->focus, 1, m, "Move-CursorXY",
+			call("Move-CursorXY", ci->focus, 1, m, NULL,
 			     0, NULL, NULL,
 			     -1, repoint < 0 ? ci->focus->h-1 : 0);
 			if (repoint < 0)
