@@ -773,10 +773,12 @@ DEF_CMD(doc_move_to)
 
 	switch(ci->num) {
 	case 1:
-		if (!dd->mark)
+		if (!dd->mark) {
 			dd->mark = mark_dup(dd->point, 1);
-		if (!dd->mark)
-			return -1;
+			if (!dd->mark)
+				return -1;
+			attr_set_str(&dd->mark->attrs, "render:interactive-mark", "yes");
+		}
 		mark_to_mark(dd->mark, ci->mark ?: dd->point);
 		break;
 	case 2:
@@ -866,6 +868,8 @@ static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe,
 		return NULL;
 	dd->doc = doc;
 	dd->point = m;
+	attr_set_str(&m->attrs, "render:interactive-point", "yes");
+
 	pane_add_notify(p, doc, "Notify:Close");
 	pane_add_notify(p, doc, "Notify:doc:viewers");
 	call("doc:revisit", doc, 1);
