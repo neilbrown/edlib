@@ -1163,6 +1163,43 @@ DEF_CMD(emacs_wipe)
 
 DEF_CMD(emacs_attrs)
 {
+	struct call_return cr;
+
+	if (!ci->str)
+		return 0;
+
+	cr = call_ret(all, "doc:point", ci->focus);
+	if (cr.ret <= 0 || !cr.m || !cr.m2 || !ci->mark)
+		return 1;
+	if (mark_same_pane(ci->focus, cr.m, cr.m2))
+		return 1;
+	if (strcmp(ci->str, "render:interactive-mark") == 0) {
+		if (ci->mark == cr.m2 && cr.m2->seq < cr.m->seq)
+			return comm_call(ci->comm2, "attr:callback", ci->focus, 2000000,
+					 ci->mark, "bg:pink", 2);
+		if (ci->mark == cr.m2)
+			return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
+					 ci->mark, "bg:pink", 2);
+	}
+	if (strcmp(ci->str, "render:interactive-point") == 0) {
+		if (cr.m == ci->mark && cr.m->seq < cr.m2->seq)
+			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
+					 ci->mark, "bg:pink", 2);
+		if (cr.m == ci->mark)
+			return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
+					 ci->mark, "bg:pink", 2);
+	}
+	if (strcmp(ci->str, "start-of-line") == 0) {
+		if ((cr.m->seq < ci->mark->seq && ci->mark->seq < cr.m2->seq) ||
+		    (cr.m2->seq < ci->mark->seq && ci->mark->seq < cr.m->seq))
+			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
+					ci->mark, "bg:pink", 2);
+	}
+	return 0;
+}
+
+DEF_CMD(emacs_hl_attrs)
+{
 	struct highlight_info *hi = ci->home->data;
 
 	if (!ci->str)
@@ -1260,6 +1297,7 @@ static void emacs_init(void)
 	key_add(m, "emCX-C-Chr-X", &emacs_swap_mark);
 	key_add(m, "Abort", &emacs_abort);
 	key_add(m, "C-Chr-W", &emacs_wipe);
+	key_add(m, "map-attr", &emacs_attrs);
 
 	key_add(m, "M-Chr-x", &emacs_command);
 	key_add(m, "emacs:command", &emacs_do_command);
@@ -1271,7 +1309,7 @@ static void emacs_init(void)
 	key_add(m, "Search String", &emacs_search_done);
 	key_add(m, "render:reposition", &emacs_search_reposition);
 	key_add(m, "search:highlight", &emacs_search_highlight);
-	key_add(m, "map-attr", &emacs_attrs);
+	key_add(m, "map-attr", &emacs_hl_attrs);
 	key_add(m, "Draw:text", &highlight_draw);
 	key_add(m, "Close", &emacs_highlight_close);
 	hl_map = m;
