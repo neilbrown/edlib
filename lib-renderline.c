@@ -257,6 +257,7 @@ DEF_CMD(render_line)
 	if (boundary)
 		boundary = vmark_next(boundary);
 	buf_init(&b);
+	call_comm("map-attr", ci->focus, &ar.rtn, 0, m, "start-of-line");
 	while (1) {
 		struct mark *m2;
 
