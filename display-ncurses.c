@@ -377,6 +377,10 @@ static int cvt_attrs(char *attrs)
 			/* HORRIBLE HACK - MUST FIXME */
 			init_pair(3, COLOR_YELLOW, -1);
 			attr |= COLOR_PAIR(3);
+		} else if (strcmp(tmp, "bg:pink")  == 0) {
+			/* HORRIBLE HACK - MUST FIXME */
+			init_pair(4, -1, COLOR_CYAN);
+			attr |= COLOR_PAIR(4);
 		}
 		a = c;
 	}
