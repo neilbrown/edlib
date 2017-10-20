@@ -1669,6 +1669,8 @@ DEF_CMD(render_lines_move_line)
 			pane_damaged(p, DAMAGED_CONTENT);
 			return 1;
 		}
+		/* FIXME only do this if point is active/volatile*/
+		call_render_line(focus, start);
 		render_line(p, focus, start->mdata, &y, 0, scale.x,
 			    &target_x, &target_y, &o, NULL, NULL, NULL);
 		/* 'o' is the distance from start-of-line of the target */
