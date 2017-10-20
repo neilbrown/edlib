@@ -174,6 +174,19 @@ static void as_add(struct attr_stack **fromp safe, struct attr_stack **top safe,
 	*fromp = from;
 }
 
+static void as_clear(struct attr_stack **fromp safe, struct attr_stack **top safe,
+		     int end, int prio, char *attr safe)
+{
+	struct attr_stack *from = *fromp;
+
+	while (from && from->priority >= prio) {
+		if (from->priority == prio && strcmp(from->attr, attr) == 0)
+			if (from->end >= end)
+				from->end = end;
+		from = from->next;
+	}
+}
+
 struct attr_return {
 	struct command rtn;
 	struct command fwd;
@@ -196,7 +209,10 @@ DEF_CMD(text_attr_callback)
 	struct attr_return *ar = container_of(ci->comm, struct attr_return, rtn);
 	if (!ci->str)
 		return -1;
-	as_add(&ar->ast, &ar->tmpst, ar->chars + ci->num, ci->num2, ci->str);
+	if (ci->num >= 0)
+		as_add(&ar->ast, &ar->tmpst, ar->chars + ci->num, ci->num2, ci->str);
+	else
+		as_clear(&ar->ast, &ar->tmpst, ar->chars, ci->num2, ci->str);
 	if (ar->min_end < 0 || ar->chars + ci->num < ar->min_end)
 		ar->min_end = ar->chars + ci->num;
 	// FIXME ->str2 should be inserted
