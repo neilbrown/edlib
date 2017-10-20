@@ -86,6 +86,7 @@
 struct rl_data {
 	int		top_sol; /* true when first mark is at a start-of-line */
 	int		ignore_point;
+	struct mark	*old_point; /* where was 'point' last time we rendered */
 	int		skip_lines; /* Skip display-lines for first "line" */
 	int		cursor_line; /* line that contains the cursor starts
 				      * on this line */
@@ -1256,6 +1257,16 @@ DEF_CMD(render_lines_refresh)
 
 	pm = call_ret(mark, "doc:point", focus);
 
+	if (pm) {
+		if (rl->old_point && !mark_same_pane(focus, pm, rl->old_point)) {
+			call("Notify:change", focus, 0, rl->old_point, NULL, 0, pm);
+			mark_free(rl->old_point);
+			rl->old_point = NULL;
+		}
+		if (!rl->old_point)
+			rl->old_point = mark_dup(pm, 1);
+	}
+
 	m = vmark_first(focus, rl->typenum);
 	if (rl->top_sol && m)
 		m = call_render_line_prev(focus, mark_dup(m, 0), 0,
@@ -1331,6 +1342,7 @@ DEF_CMD(render_lines_close)
 	}
 
 	doc_del_view(p, rl->typenum);
+	mark_free(rl->old_point);
 	p->data = safe_cast NULL;
 	p->handle = NULL;
 	free(rl);
