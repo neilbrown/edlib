@@ -1168,13 +1168,17 @@ DEF_CMD(emacs_wipe)
 	/* Delete text from point to mark - later should copy first */
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	char *str;
+	int ret;
 
 	if (!mk)
 		return 1;
 	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 	if (str && *str)
 		call("copy:save", ci->focus, 0, NULL, str);
-	return call("Replace", ci->focus, 1, mk, NULL, 1);
+	ret = call("Replace", ci->focus, 1, mk, NULL, 1);
+	/* Clear mark */
+	call("Move-to", ci->focus, 2);
+	return ret;
 }
 
 DEF_CMD(emacs_yank)
