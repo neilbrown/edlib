@@ -1126,6 +1126,12 @@ DEF_CMD(emacs_version)
 
 DEF_CMD(emacs_mark)
 {
+	struct mark *p = call_ret(mark, "doc:point", ci->focus);
+	struct mark *m = call_ret(mark2, "doc:point", ci->focus);
+
+	if (m)
+		/* Clear current highlight */
+		call("Notify:change", ci->focus, 0, p, NULL, 0, m);
 	call("Move-to", ci->focus, 1);
 	return 1;
 }
@@ -1133,6 +1139,12 @@ DEF_CMD(emacs_mark)
 DEF_CMD(emacs_abort)
 {
 	/* On abort, forget mark */
+	struct mark *p = call_ret(mark, "doc:point", ci->focus);
+	struct mark *m = call_ret(mark2, "doc:point", ci->focus);
+
+	if (m)
+		/* Clear current highlight */
+		call("Notify:change", ci->focus, 0, p, NULL, 0, m);
 	call("Move-to", ci->focus, 2);
 	return 0;
 }

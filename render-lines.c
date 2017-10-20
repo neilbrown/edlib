@@ -1685,7 +1685,11 @@ DEF_CMD(render_lines_notify_replace)
 		return 1;
 	}
 
-	end = vmark_at_or_before(ci->home, ci->mark, rl->typenum);
+	if (ci->mark->seq < start->seq && /* redundant */ ci->mark2) {
+		start = ci->mark;
+		end = vmark_at_or_before(ci->home, ci->mark2, rl->typenum);
+	} else
+		end = vmark_at_or_before(ci->home, ci->mark, rl->typenum);
 
 	if (!end)
 		/* Change before visible region */
@@ -1746,6 +1750,9 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Refresh:view", &render_lines_refresh_view);
 
 	key_add(rl_map, "Notify:doc:Replace", &render_lines_notify_replace);
+	/* Notify:change is sent to a tile when the display might need
+	 * to change, even though the doc may not have*/
+	key_add(rl_map, "Notify:change", &render_lines_notify_replace);
 }
 
 REDEF_CMD(render_lines_attach)
