@@ -1202,8 +1202,10 @@ DEF_CMD(emacs_attrs)
 					 ci->mark, "bg:pink", 2);
 	}
 	if (strcmp(ci->str, "start-of-line") == 0) {
-		if ((cr.m->seq < ci->mark->seq && ci->mark->seq < cr.m2->seq) ||
-		    (cr.m2->seq < ci->mark->seq && ci->mark->seq < cr.m->seq))
+		if ((cr.m->seq < ci->mark->seq && ci->mark->seq < cr.m2->seq &&
+		     !mark_same_pane(ci->focus, ci->mark, cr.m2)) ||
+		    (cr.m2->seq < ci->mark->seq && ci->mark->seq < cr.m->seq &&
+		     !mark_same_pane(ci->focus, ci->mark, cr.m)))
 			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
 					ci->mark, "bg:pink", 2);
 	}
