@@ -1167,10 +1167,23 @@ DEF_CMD(emacs_wipe)
 {
 	/* Delete text from point to mark - later should copy first */
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	char *str;
 
 	if (!mk)
 		return 1;
+	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
+	if (str && *str)
+		call("copy:save", ci->focus, 0, NULL, str);
 	return call("Replace", ci->focus, 1, mk, NULL, 1);
+}
+
+DEF_CMD(emacs_yank)
+{
+	char *str = call_ret(strsave, "copy:get", ci->focus);
+
+	if (str && *str)
+		return call("Replace", ci->focus, 1, NULL, str);
+	return 1;
 }
 
 DEF_CMD(emacs_attrs)
@@ -1311,6 +1324,7 @@ static void emacs_init(void)
 	key_add(m, "emCX-C-Chr-X", &emacs_swap_mark);
 	key_add(m, "Abort", &emacs_abort);
 	key_add(m, "C-Chr-W", &emacs_wipe);
+	key_add(m, "C-Chr-Y", &emacs_yank);
 	key_add(m, "map-attr", &emacs_attrs);
 
 	key_add(m, "M-Chr-x", &emacs_command);
