@@ -101,6 +101,7 @@ int main(int argc, char *argv[])
 	call("global-load-module", ed, 0, NULL, "doc-email");
 	call("global-load-module", ed, 0, NULL, "lib-viewer");
 	call("global-load-module", ed, 0, NULL, "lib-qprint");
+	call("global-load-module", ed, 0, NULL, "lib-copybuf");
 
 	while (optind < argc) {
 		char *file = argv[optind++];
