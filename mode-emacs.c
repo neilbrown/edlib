@@ -1133,6 +1133,9 @@ DEF_CMD(emacs_mark)
 		/* Clear current highlight */
 		call("Notify:change", ci->focus, 0, p, NULL, 0, m);
 	call("Move-to", ci->focus, 1);
+	m = call_ret(mark2, "doc:point", ci->focus);
+	if (m)
+		attr_set_int(&m->attrs, "emacs:active", 1);
 	return 1;
 }
 
@@ -1142,10 +1145,11 @@ DEF_CMD(emacs_abort)
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
 	struct mark *m = call_ret(mark2, "doc:point", ci->focus);
 
-	if (m)
+	if (m && attr_find_int(m->attrs, "emacs:active") >= 1) {
 		/* Clear current highlight */
 		call("Notify:change", ci->focus, 0, p, NULL, 0, m);
-	call("Move-to", ci->focus, 2);
+		attr_set_int(&m->attrs, "emacs:active", 0);
+	}
 	return 0;
 }
 
@@ -1159,6 +1163,7 @@ DEF_CMD(emacs_swap_mark)
 	m = mark_dup(mk, 1);
 	call("Move-to", ci->focus, 1); /* Move mark to point */
 	call("Move-to", ci->focus, 0, m); /* Move point to old mark */
+	attr_set_int(&mk->attrs, "emacs:active", 1);
 	mark_free(m);
 	return 1;
 }
@@ -1177,7 +1182,8 @@ DEF_CMD(emacs_wipe)
 		call("copy:save", ci->focus, 0, NULL, str);
 	ret = call("Replace", ci->focus, 1, mk, NULL, 1);
 	/* Clear mark */
-	call("Move-to", ci->focus, 2);
+	attr_set_int(&mk->attrs, "emacs:active", 0);
+
 	return ret;
 }
 
@@ -1195,17 +1201,32 @@ DEF_CMD(emacs_copy)
 		call("copy:save", ci->focus, 0, NULL, str);
 	/* Clear current highlight */
 	call("Notify:change", ci->focus, 0, p, NULL, 0, mk);
-	/* Clear mark (should make it invisible) */
-	call("Move-to", ci->focus, 2);
+	/* Disable mark */
+	attr_set_int(&mk->attrs, "emacs:active", 0);
 	return 1;
 }
 
 DEF_CMD(emacs_yank)
 {
 	char *str = call_ret(strsave, "copy:get", ci->focus);
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	struct mark *m = NULL;
 
-	if (str && *str)
-		return call("Replace", ci->focus, 1, NULL, str);
+	if (!str || !*str)
+		return 1;
+	/* If mark exists and is active, replace marked regions */
+	if (mk && attr_find_int(mk->attrs, "emacs:active") > 0) {
+		char *str2 = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
+		if (str2 && *str2)
+			call("copy:save", ci->focus, 0, NULL, str2);
+		m = mark_dup(mk, 1);
+	}
+
+	call("Move-to", ci->focus, 1);
+	call("Replace", ci->focus, 1, m, str, 0);
+	mk = call_ret(mark2, "doc:point", ci->focus);
+	if (mk)
+		attr_set_int(&mk->attrs, "emacs:active", 0);
 	return 1;
 }
 
@@ -1218,6 +1239,8 @@ DEF_CMD(emacs_attrs)
 
 	cr = call_ret(all, "doc:point", ci->focus);
 	if (cr.ret <= 0 || !cr.m || !cr.m2 || !ci->mark)
+		return 1;
+	if (attr_find_int(cr.m2->attrs, "emacs:active") <= 0)
 		return 1;
 	if (mark_same_pane(ci->focus, cr.m, cr.m2))
 		return 1;
