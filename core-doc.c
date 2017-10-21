@@ -770,6 +770,7 @@ DEF_CMD(doc_handle_get_attr)
 DEF_CMD(doc_move_to)
 {
 	struct doc_data *dd = ci->home->data;
+	struct mark *m;
 
 	switch(ci->num) {
 	case 1:
@@ -779,7 +780,11 @@ DEF_CMD(doc_move_to)
 				return -1;
 			attr_set_str(&dd->mark->attrs, "render:interactive-mark", "yes");
 		}
-		mark_to_mark(dd->mark, ci->mark ?: dd->point);
+		m = ci->mark ?: dd->point;
+		mark_to_mark(dd->mark, m);
+		/* Make sure mark is *before* point so insertion leave mark alone */
+		if (dd->mark->seq > m->seq)
+			mark_to_mark(dd->mark, m);
 		break;
 	case 2:
 		mark_free(dd->mark);
