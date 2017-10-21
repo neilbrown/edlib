@@ -118,9 +118,19 @@ DEF_CMD(search_add)
 	char b[5];
 	mbstate_t ps = {};
 	int l;
+	struct mark *m;
+	int limit = 1000;
 
-	do {
-		wch = mark_next_pane(esi->target, esi->end);
+	m = mark_dup(esi->end, 1);
+	if (strcmp(ci->key, "C-Chr-W")==0)
+		call("Move-Word", esi->target, 1, m);
+	else
+		call("Move-Char", esi->target, 1, m);
+
+	while (esi->end->seq < m->seq && !mark_same_pane(esi->target, esi->end, m)) {
+		if (limit-- <= 0)
+			break;
+		wch = doc_following_pane(esi->target, esi->end);
 		if (wch == WEOF)
 			return 1;
 		if (wch == '\n') {
@@ -128,7 +138,6 @@ DEF_CMD(search_add)
 			/* Sending this will cause a call-back to
 			 * close everything down.
 			 */
-			mark_prev_pane(esi->target, esi->end);
 			return 1;
 		}
 		/* FIXME utf-8! and quote regexp chars */
@@ -139,7 +148,7 @@ DEF_CMD(search_add)
 			l = wcrtomb(b, wch, &ps);
 		b[l] = 0;
 		call("Replace", ci->focus, 1, NULL, b);
-	} while (strcmp(ci->key, "C-Chr-C") != 0 && wch != ' ');
+	}
 	return 1;
 }
 
