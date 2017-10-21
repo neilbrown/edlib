@@ -1237,6 +1237,36 @@ DEF_CMD(emacs_yank)
 	mk = call_ret(mark2, "doc:point", ci->focus);
 	if (mk)
 		attr_set_int(&mk->attrs, "emacs:active", 0);
+	call("Mode:set-num2", ci->focus, 1024);
+	return 1;
+}
+
+DEF_CMD(emacs_yank_pop)
+{
+	struct mark *mk, *m;
+	char *str;
+	int num = ci->num2 & 1023;
+
+	if (!(ci->num2 & 1024))
+		return -1;
+	mk = call_ret(mark2, "doc:point", ci->focus);
+	if (!mk)
+		return 1;
+	num += 1;
+	str = call_ret(strsave, "copy:get", ci->focus, num);
+	if (!str) {
+		num = 0;
+		str = call_ret(strsave, "copy:get", ci->focus, num);
+	}
+	if (!str)
+		return -1;
+	m = mark_dup(mk, 1);
+	if (m->seq > mk->seq)
+		mark_to_mark(m, mk);
+	call("Replace", ci->focus, 1, mk, str);
+	call("Move-to", ci->focus, 1, m);
+	mark_free(m);
+	call("Mode:set-num2", ci->focus, num | 1024);
 	return 1;
 }
 
@@ -1382,6 +1412,7 @@ static void emacs_init(void)
 	key_add(m, "C-Chr-W", &emacs_wipe);
 	key_add(m, "M-Chr-w", &emacs_copy);
 	key_add(m, "C-Chr-Y", &emacs_yank);
+	key_add(m, "M-Chr-y", &emacs_yank_pop);
 	key_add(m, "map-attr", &emacs_attrs);
 
 	key_add(m, "M-Chr-x", &emacs_command);
