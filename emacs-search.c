@@ -120,7 +120,6 @@ DEF_CMD(search_add)
 	int l;
 
 	do {
-		call("search:highlight", esi->target);
 		wch = mark_next_pane(esi->target, esi->end);
 		if (wch == WEOF)
 			return 1;
