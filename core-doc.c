@@ -216,52 +216,39 @@ DEF_CMD(doc_word)
 	struct doc_data *dd = p->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
+	int dir;
 
 	if (!m)
 		m = dd->point;
-
-	/* We skip spaces, then a group of alphanum and one of non-space/alphanum.
-	 * When going backwards, skip spaces, then non-alphanum, then alphanum
+	/* Move-word should finish at a word boundary, which usually means
+	 * an alphanum (possibly including '_' depending on doc attributes?).
+	 * However it should never cross two different sets of spaces or
+	 * punctuation.  So if we cross space and punct and don't find alphanum,
+	 * then we treat end of punct as a word boundary.  We never stop immediately
+	 * after a space.
+	 * So skip spaces, then punct, then alphanum.
+	 * Same in either direction.
 	 */
-	while (rpt > 0) {
+	dir = rpt > 0 ? 1 : 0;
+	while (rpt != 0) {
 		int field = 0;
 		wint_t wi;
 
 		while (!field &&
-		       iswspace(doc_following_pane(p, m)))
-			doc_move_horiz(f, m, 1, &field);
+		       iswspace(mark_step_pane(p, m, dir, 0)))
+			doc_move_horiz(f, m, dir, &field);
 
-		if (m->rpos < NO_RPOS || iswalnum(doc_following_pane(p, m))) {
-			while (!field && iswalnum(doc_following_pane(p, m)))
-				doc_move_horiz(f, m, 1, &field);
+		while (!field &&
+		       (wi=mark_step_pane(p, m, dir, 0)) != WEOF &&
+		       !iswspace(wi) && !iswalnum(wi))
+			doc_move_horiz(f, m, dir, &field);
+
+		if (m->rpos < NO_RPOS || iswalnum(mark_step_pane(p, m, dir, 0))) {
+			while (!field && iswalnum(mark_step_pane(p, m, dir, 0)))
+				doc_move_horiz(f, m, dir, &field);
 		}
 
-		while (!field &&
-		       (wi=doc_following_pane(p, m)) != WEOF &&
-		       !iswspace(wi) && !iswalnum(wi))
-				doc_move_horiz(f, m, 1, &field);
-
-		rpt -= 1;
-	}
-	while (rpt < 0) {
-		int field = 0;
-		wint_t wi;
-
-		while (!field &&
-		       iswspace(doc_prior_pane(p, m)))
-			doc_move_horiz(f, m, 0, &field);
-
-		while (!field &&
-		       (wi=doc_prior_pane(p, m)) != WEOF &&
-		       !iswspace(wi) && !iswalnum(wi))
-			doc_move_horiz(f, m, 0, &field);
-
-		if (m->rpos < NO_RPOS || iswalnum(doc_prior_pane(p, m))) {
-			while (!field && iswalnum(doc_prior_pane(p, m)))
-				doc_move_horiz(f, m, 0, &field);
-		}
-
-		rpt += 1;
+		rpt -= dir * 2 - 1;
 	}
 
 	return 1;
