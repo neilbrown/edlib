@@ -1217,7 +1217,8 @@ DEF_CMD(emacs_copy)
 
 DEF_CMD(emacs_yank)
 {
-	char *str = call_ret(strsave, "copy:get", ci->focus);
+	int n = RPT_NUM(ci);
+	char *str = call_ret(strsave, "copy:get", ci->focus, n - 1);
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *m = NULL;
 
