@@ -132,16 +132,11 @@ DEF_CMD(search_add)
 			break;
 		wch = doc_following_pane(esi->target, esi->end);
 		if (wch == WEOF)
-			return 1;
+			break;
 		if (wch == '\n') {
-			/* ugly hack */
-			/* Sending this will cause a call-back to
-			 * close everything down.
-			 */
-			return 1;
-		}
-		/* FIXME utf-8! and quote regexp chars */
-		if (strchr("|*+?{}()?^$\\", wch)) {
+			strcpy(b, "\\n");
+			l = 2;
+		} else if (strchr("|*+?{}()?^$\\", wch)) {
 			b[0] = '\\';
 			l = wcrtomb(b+1, wch, &ps) + 1;
 		} else
