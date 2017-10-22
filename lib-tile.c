@@ -848,6 +848,10 @@ DEF_CMD(tile_other)
 {
 	/* Choose some other tile.  If there aren't any, make one.
 	 * Result is returned in ci->focus
+	 * ci->num has flags:
+	 *  1: if new needed, split horizontally
+	 *  2: if new needed, split vertically
+	 *  4: find a tile visiting the document behind ci->focus
 	 */
 	struct pane *p = ci->home;
 	struct pane *p2;
@@ -866,6 +870,21 @@ DEF_CMD(tile_other)
 	if (ci->str2 && ti->name && strcmp(ci->str2, ti->name) == 0)
 		return -1;
 
+	if (ci->num & 4) {
+		struct tileinfo *t = ti;
+		char *name = pane_attr_get(ci->focus, "doc-name");
+		while ((t = list_next_entry(t, tiles)) != ti) {
+			char *n;
+			struct pane *f = t->p;
+			while (f->focus)
+				f = f->focus;
+			n = pane_attr_get(f, "doc-name");
+			if (name && n && strcmp(n, name) == 0)
+				return comm_call(ci->comm2, "callback:pane", t->p);
+		}
+	}
+
+
 	ti2 = tile_next_named(ti, ci->str2);
 	if (ti2 != ti)
 		return comm_call(ci->comm2, "callback:pane", ti2->p);
@@ -873,7 +892,7 @@ DEF_CMD(tile_other)
 	/* Need to create a tile.  If wider than 120 (FIXME configurable?),
 	 * horiz-split else vert
 	 */
-	if (ci->num) {
+	if (ci->num & 3) {
 		int horiz = ci->num & 1;
 		int after = ci->num & 2;
 		p2 = tile_split(&p, horiz, after, ci->str2, ci->num2);

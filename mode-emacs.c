@@ -552,24 +552,25 @@ DEF_CMD(emacs_findfile)
 		return 1;
 	}
 
-	if (strcmp(ci->key, "File Found Other Window") == 0)
-		par = call_pane("OtherPane", ci->focus);
-	else
-		par = call_pane("ThisPane", ci->focus);
-
-	if (!par)
-		return -1;
-
 	fd = open(ci->str, O_RDONLY);
 	if (fd >= 0) {
 		p = call_pane("doc:open", ci->focus, fd, NULL, ci->str);
 		close(fd);
 	} else
 		p = call_pane("doc:open", ci->focus, -2, NULL, ci->str);
-	if (p)
-		doc_attach_view(par, p, NULL);
 	if (!p)
 		return -1;
+	if (strcmp(ci->key, "File Found Other Window") == 0)
+		par = CALL(pane, home, ci->focus, "OtherPane", p, 4);
+	else
+		par = call_pane("ThisPane", ci->focus);
+
+	if (!par) {
+		pane_close(p);
+		return -1;
+	}
+
+	doc_attach_view(par, p, NULL);
 	pane_focus(p);
 	return 1;
 }
@@ -671,7 +672,7 @@ DEF_CMD(emacs_finddoc)
 		return -1;
 
 	if (strcmp(ci->key, "Doc Found Other Window") == 0)
-		par = call_pane("OtherPane", ci->focus);
+		par = CALL(pane, home, ci->focus, "OtherPane", p, 4);
 	else
 		par = call_pane("ThisPane", ci->focus);
 	if (!p || !par)
@@ -769,14 +770,14 @@ DEF_CMD(emacs_shell)
 		if (e && e > path)
 			*e = 0;
 	}
-	par = call_pane("OtherPane", ci->focus);
-	if (!par)
-		return -1;
 	/* Find or create "*Shell Command Output*" */
 	doc = call_pane("docs:byname", ci->focus, 0, NULL, name);
 	if (!doc)
-		doc = call_pane("doc:from-text", par, 0, NULL, name, 0, NULL, "");
+		doc = call_pane("doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
 	if (!doc)
+		return -1;
+	par = CALL(pane, home, ci->focus, "OtherPane", doc, 4);
+	if (!par)
 		return -1;
 	p = call_pane("doc:attach", doc);
 	if (!p)

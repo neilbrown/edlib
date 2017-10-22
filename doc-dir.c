@@ -568,10 +568,6 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
-	if (cmd == 'o')
-		par = call_pane("OtherPane", focus);
-	else
-		par = call_pane("ThisPane", focus);
 
 	if (fd >= 0) {
 		p = call_pane("doc:open", focus, fd, NULL, fname);
@@ -580,7 +576,13 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 		p = call_pane("doc:from-text", focus, 0, NULL, fname, 0, NULL,
 			      "File not found\n");
 	free(fname);
-	if (par && p) {
+	if (!p)
+		return -1;
+	if (cmd == 'o')
+		par = CALL(pane, home, focus, "OtherPane", p, 4);
+	else
+		par = call_pane("ThisPane", focus);
+	if (par) {
 		p = doc_attach_view(par, p, NULL);
 		pane_focus(p);
 	}

@@ -690,13 +690,13 @@ class notmuch_master_view(edlib.Pane):
         if key in [ "Chr-V" ]:
             if not self.message_pane:
                 return 1
-            p0 = self.call("OtherPane", ret='focus')
-            if not p0:
-                return 1
-            p1 = p0.call("doc:attach", ret='focus')
             p2 = self.call("doc:open", self.message_pane["filename"], -1,
                            ret = 'focus')
             p2.call("doc:set:autoclose", 1)
+            p0 = self.call("OtherPane", 4, p2, ret='focus')
+            if not p0:
+                return 1
+            p1 = p0.call("doc:attach", ret='focus')
             p1.call("doc:assign",p2, "default:viewer")
             return 1
 
