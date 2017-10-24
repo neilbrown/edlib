@@ -220,7 +220,7 @@ DEF_CMD(b64_attach)
 		free(bi);
 		return -1;
 	}
-	call("doc:set:filter", p, 1, NULL, NULL);
+	call("doc:set:filter", p, 1);
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }
