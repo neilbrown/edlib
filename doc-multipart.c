@@ -426,7 +426,7 @@ DEF_CMD(mp_set_attr)
 		mpi->parts[dn].visible = 1;
 	else
 		mpi->parts[dn].visible = 0;
-	pane_notify(ci->home, "Notify:doc:Replace", NULL, NULL, NULL, NULL, 0, 0, NULL);
+	pane_notify("Notify:doc:Replace", ci->home);
 	return 1;
 }
 

@@ -478,8 +478,8 @@ DEF_CMD(doc_request_notify)
 
 DEF_CMD(doc_notify)
 {
-	int ret = pane_notify(ci->home, ci->key, ci->mark, ci->mark2,
-			      ci->str, ci->str2, ci->num, ci->num2, ci->comm2);
+	int ret = pane_notify(ci->key, ci->home, ci->num, ci->mark, ci->str,
+			      ci->num2, ci->mark2, ci->str2, ci->comm2);
 	/* Mustn't return 0, else will fall through to next doc */
 	/* HACK remove this when docs isn't the parent of all documents */
 	return ret ?: -2;
@@ -533,7 +533,7 @@ DEF_CMD(doc_delayed_close)
 	/* If there are any doc-displays open, then will return '1' and
 	 * we will know not to destroy document yet.
 	 */
-	ret = pane_notify(p, "Notify:doc:viewers", NULL, NULL, NULL, NULL, 0, 0, NULL);
+	ret = pane_notify("Notify:doc:viewers", p);
 	if (ret == 0)
 		call("doc:drop-cache", p);
 	return 1;

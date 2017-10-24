@@ -308,8 +308,8 @@ void pane_notify_close(struct pane *p safe)
 	}
 }
 
-int pane_notify(struct pane *p safe, char *notification safe, struct mark *m, struct mark *m2,
-		char *str, char *str2, int num, int num2, struct command *comm2)
+int do_pane_notify(char *notification safe, struct pane *p safe, int num, struct mark *m,
+		   char *str, int num2, struct mark *m2, char *str2, struct command *comm2)
 {
 	/* Return the largest absolute return value. If no notifiees are found.
 	 * return 0

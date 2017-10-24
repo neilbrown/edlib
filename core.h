@@ -98,8 +98,8 @@ struct notifier {
 	int			noted;
 };
 void pane_add_notify(struct pane *target safe, struct pane *source safe, char *msg safe);
-int pane_notify(struct pane *p safe, char *notification safe, struct mark *m, struct mark *m2,
-		char *str, char *str2, int num, int num2, struct command *comm2);
+int do_pane_notify(char *notification safe, struct pane *p safe, int num, struct mark *m,
+		   char *str, int num2, struct mark *m2, char *str2, struct command *comm2);
 void pane_drop_notifiers(struct pane *p safe, char *notification);
 
 void editor_delayed_free(struct pane *ed safe, struct pane *p safe);
@@ -600,3 +600,21 @@ static inline int do_call_val(enum target_type type, struct pane *home, struct c
 		return ci.comm->func(&ci);
 	}
 }
+
+#define pane_notify(...) VFUNC(NOTIFY, __VA_ARGS__)
+#define NOTIFY9(not, focus, num, m, str, num2, m2, str2, comm2) \
+	do_pane_notify(not, focus, num, m, str, num2, m2, str2, comm2)
+#define NOTIFY8(not, focus, num, m, str, num2, m2, str2) \
+	do_pane_notify(not, focus, num, m, str, num2, m2, str2, NULL)
+#define NOTIFY7(not, focus, num, m, str, num2, m2) \
+	do_pane_notify(not, focus, num, m, str, num2, m2, NULL, NULL)
+#define NOTIFY6(not, focus, num, m, str, num2) \
+	do_pane_notify(not, focus, num, m, str, num2, NULL, NULL, NULL)
+#define NOTIFY5(not, focus, num, m, str) \
+	do_pane_notify(not, focus, num, m, str, 0, NULL, NULL, NULL)
+#define NOTIFY4(not, focus, num, m) \
+	do_pane_notify(not, focus, num, m, NULL, 0, NULL, NULL, NULL)
+#define NOTIFY3(not, focus, num) \
+	do_pane_notify(not, focus, num, NULL, NULL, 0, NULL, NULL, NULL)
+#define NOTIFY2(not, focus) \
+	do_pane_notify(not, focus, 0, NULL, NULL, 0, NULL, NULL, NULL)
