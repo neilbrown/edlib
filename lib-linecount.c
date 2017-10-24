@@ -246,10 +246,41 @@ DEF_CMD(linecount_notify_count)
 	struct pane *p = ci->home;
 	struct pane *d = ci->focus;
 	struct count_info *cli = p->data;
-	/* Option mark is "mark2" as "mark" get the "point" */
+	/* Option mark is "mark2" as "mark" gets the "point" */
 	if (ci->num)
 		pane_add_notify(p, d, "Notify:Close");
 	count_calculate(d, NULL, ci->mark2, cli->view_num);
+	return 1;
+}
+
+DEF_CMD(linecount_notify_goto)
+{
+	struct pane *p = ci->home;
+	struct pane *d = ci->focus;
+	struct count_info *cli = p->data;
+	int lineno, l;
+	struct mark *m, *m2;
+	wint_t ch;
+
+	if (!ci->mark)
+		return 1;
+
+	/* FIXME I might need to recalculate here */
+	m = vmark_first(d, cli->view_num);
+	if (!m)
+		return 1;
+	lineno = 1;
+	while ((m2 = doc_next_mark_view(m)) != NULL &&
+	       (l = attr_find_int(*mark_attr(m), "lines")) >= 0 &&
+	       lineno + l < ci->num) {
+		m = m2;
+		lineno += l;
+	}
+	mark_to_mark(ci->mark, m);
+	while (lineno < ci->num && (ch = mark_next_pane(d, ci->mark)) != WEOF) {
+		if (is_eol(ch))
+			lineno += 1;
+	}
 	return 1;
 }
 
@@ -266,11 +297,18 @@ DEF_CMD(count_lines)
 		p = pane_register(NULL, 0, &handle_count_lines.c, cli, NULL);
 		home_call(ci->focus, "Request:Notify:doc:Replace", p);
 		home_call(ci->focus, "Request:Notify:doc:CountLines", p);
+		home_call(ci->focus, "Request:Notify:doc:GotoLine", p);
 		call("Notify:doc:CountLines", ci->focus, 1, ci->mark);
 	}
-	if (ci->mark)
+	if (ci->mark) {
+		if (ci->str && strcmp(ci->str, "goto:line") == 0 &&
+		    ci->num != NO_NUMERIC) {
+			call("Notify:doc:GotoLine", ci->focus, ci->num, NULL, NULL,
+			     0, ci->mark);
+		}
 		call("Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
-		      0, ci->mark);
+		     0, ci->mark);
+	}
 	if (ci->mark2)
 		call("Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
 		      0, ci->mark2);
@@ -288,4 +326,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(linecount_map, "Notify:Close", &linecount_close);
 	key_add(linecount_map, "Notify:doc:Replace", &linecount_notify_replace);
 	key_add(linecount_map, "Notify:doc:CountLines", &linecount_notify_count);
+	key_add(linecount_map, "Notify:doc:GotoLine", &linecount_notify_goto);
 }

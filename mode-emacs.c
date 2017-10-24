@@ -1339,6 +1339,15 @@ DEF_CMD(emacs_hl_attrs)
 	return 0;
 }
 
+DEF_CMD(emacs_goto_line)
+{
+	if (ci->num == NO_NUMERIC)
+		return 1;
+	call("CountLines", ci->focus, ci->num, ci->mark, "goto:line");
+	pane_damaged(ci->focus, DAMAGED_CURSOR);
+	return 1;
+}
+
 static void emacs_init(void)
 {
 	unsigned i;
@@ -1416,6 +1425,7 @@ static void emacs_init(void)
 	key_add(m, "M-Chr-y", &emacs_yank_pop);
 	key_add(m, "map-attr", &emacs_attrs);
 
+	key_add(m, "M-Chr-g", &emacs_goto_line);
 	key_add(m, "M-Chr-x", &emacs_command);
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);
