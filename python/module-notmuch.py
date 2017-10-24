@@ -810,10 +810,10 @@ class notmuch_main_view(edlib.Pane):
 # on extra arguments in the
 #    doc:set-ref doc:mark-same doc:step doc:get-attr
 # messages.
-# By default, when 'str' is None, only the separate threads are visible as objects.
-# If 'str' is a thread id and 'xy.x' is 0, then in place of that thread a
+# By default, when 'str2' is None, only the separate threads are visible as objects.
+# If 'str2' is a thread id and 'xy.x' is 0, then in place of that thread a
 #   list of 'matching' message is given
-# If 'str' is a thread id and 'xy.x' is non-zero, then only the messages in
+# If 'str2' is a thread id and 'xy.x' is non-zero, then only the messages in
 #   the thread are visible, but all are visible, including non-matching threads
 
 class notmuch_list(edlib.Doc):
