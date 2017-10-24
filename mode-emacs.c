@@ -1078,6 +1078,12 @@ DEF_CMD(emacs_search_done)
 	return 1;
 }
 
+DEF_CMD(emacs_highlight_abort)
+{
+	pane_close(ci->home);
+	return 0;
+}
+
 DEF_CMD(emacs_bury)
 {
 	/* Display something else in this tile. */
@@ -1439,6 +1445,7 @@ static void emacs_init(void)
 	key_add(m, "map-attr", &emacs_hl_attrs);
 	key_add(m, "Draw:text", &highlight_draw);
 	key_add(m, "Close", &emacs_highlight_close);
+	key_add(m, "Abort", &emacs_highlight_abort);
 	hl_map = m;
 }
 
