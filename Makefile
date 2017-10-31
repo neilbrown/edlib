@@ -2,7 +2,6 @@
 # Copyright Neil Brown ©2015 <neil@brown.name>
 # May be distrubuted under terms of GPLv2 - see file:COPYING
 #
-MAKEFLAGS += -j
 
 SMATCH_CHECK_SAFE=1
 export SMATCH_CHECK_SAFE
