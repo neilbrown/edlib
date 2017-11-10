@@ -20,6 +20,7 @@ struct ed_info {
 		struct command *callback safe;
 	} *idle_calls;
 	struct map *map safe;
+	struct lookup_cmd cmd;
 	struct store {
 		struct store *next;
 		int size;
@@ -27,17 +28,8 @@ struct ed_info {
 	} *store;
 };
 
-DEF_CMD(ed_handle)
-{
-	struct ed_info *ei = ci->home->data;
-	struct map *map = ei->map;
-	int ret;
+DEF_LOOKUP_CMD_DFLT(ed_handle, ed_map, ed_map);
 
-	ret = key_lookup(map, ci);
-	if (!ret)
-		ret = key_lookup(ed_map, ci);
-	return ret;
-}
 
 DEF_CMD(global_set_attr)
 {
@@ -301,7 +293,9 @@ struct pane *editor_new(void)
 	}
 	ei->map = key_alloc();
 	key_add(ei->map, "on_idle-clean_up", &editor_clean_up);
-	ed = pane_register(NULL, 0, &ed_handle, ei, NULL);
+	ei->cmd = ed_handle;
+	ei->cmd.m = &ei->map;
+	ed = pane_register(NULL, 0, &ei->cmd.c, ei, NULL);
 
 	doc_setup(ed);
 	return ed;
