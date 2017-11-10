@@ -288,7 +288,7 @@ DEF_CMD(render_line)
 		}
 
 		ar.chars = chars;
-		call_comm("doc:get-attr", ci->focus, &ar.fwd, 1, m, "render:", 1);
+		call_comm("doc:get-attr", ci->focus, &ar.fwd, 0, m, "render:", 1);
 
 		/* find all marks "here" - they might be fore or aft */
 		for (m2 = doc_prev_mark_all(m); m2 && mark_same_pane(p, m, m2);

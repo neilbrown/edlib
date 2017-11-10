@@ -272,8 +272,6 @@ DEF_CMD(docs_modified_doc_get_attr)
 		return 0;
 	mark_to_modified(ci->home->parent, ci->mark);
 	m = mark_dup(ci->mark, 1);
-	if (!ci->num)
-		prev_modified(ci->home->parent, m);
 	attr = pane_mark_attr(ci->home->parent, m, ci->str);
 	mark_free(m);
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, attr);
@@ -533,24 +531,11 @@ DEF_CMD(docs_mark_same)
 }
 
 static char *__docs_get_attr(struct doc *doc safe, struct mark *m safe,
-			     bool forward, char *attr safe)
+			     char *attr safe)
 {
 	struct pane *p;
-	struct docs *d = container_of(doc, struct docs, doc);
 
 	p = m->ref.p;
-	if (!forward) {
-		if (list_empty(&d->collection->children))
-			p = NULL;
-		else if (!p)
-			p = list_last_entry(&d->collection->children,
-					    struct pane, siblings);
-		else if (p != list_first_entry(&d->collection->children,
-					       struct pane, siblings))
-			p = list_prev_entry(p, siblings);
-		else
-			p = NULL;
-	}
 	if (!p)
 		return NULL;
 
@@ -566,7 +551,6 @@ DEF_CMD(docs_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	bool forward = ci->num != 0;
 	char *attr = ci->str;
 	char *val;
 
@@ -575,7 +559,7 @@ DEF_CMD(docs_doc_get_attr)
 	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
 		return -1;
 
-	val = __docs_get_attr(d, m, forward, attr);
+	val = __docs_get_attr(d, m, attr);
 
 	if (!val)
 		return 0;

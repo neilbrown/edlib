@@ -387,21 +387,13 @@ static char *fmt_date(struct dir_ent *de safe, time_t t)
 }
 
 static char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
-			    bool forward, char *attr safe)
+			    char *attr safe)
 
 {
 	struct dir_ent *de;
 	struct directory *dr = container_of(d, struct directory, doc);
 
 	de = m->ref.d;
-	if (!forward) {
-		if (!de)
-			de = list_last_entry(&dr->ents, struct dir_ent, lst);
-		else
-		de = list_prev_entry(de, lst);
-		if (&de->lst == &dr->ents)
-			return NULL;
-	}
 	if (!de)
 		return NULL;
 	if (strcmp(attr, "name") == 0) {
@@ -490,13 +482,12 @@ DEF_CMD(dir_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	bool forward = ci->num != 0;
 	char *attr = ci->str;
 	char *val;
 
 	if (!m || !attr)
 		return -1;
-	val = __dir_get_attr(d, m, forward, attr);
+	val = __dir_get_attr(d, m, attr);
 
 	if (!val)
 		return 0;

@@ -314,20 +314,13 @@ DEF_CMD(mp_attr)
 
 	if (d < mpi->nparts && m1 &&
 	    (mpi->parts[d].visible &&
-	     mark_step_pane(mpi->parts[d].pane, m1, ci->num, 0) == WEOF)) {
+	     mark_step_pane(mpi->parts[d].pane, m1, 1, 0) == WEOF))
 		/* at the wrong end of a part */
-		if (ci->num)
-			d += 1;
-		else if (d > 0)
-			d -= 1;
-	}
+		d += 1;
+
 	while (d < mpi->nparts && m1 &&
-	       !mpi->parts[d].visible) {
-		if (ci->num)
-			d += 1;
-		else if (d > 0)
-			d -= 1;
-	}
+	       !mpi->parts[d].visible)
+		d += 1;
 
 	if (strncmp(attr, "multipart-next:", 15) == 0) {
 		d += 1;

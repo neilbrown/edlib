@@ -294,10 +294,7 @@ class notmuch_main(edlib.Doc):
 
         if key == "doc:get-attr":
             attr = str
-            forward = num
             o = mark.offset
-            if not forward:
-                o -= 1
             val = None
             if o >= 0 and o < len(self.searches.current):
                 s = self.searches.current[o]
@@ -645,8 +642,8 @@ class notmuch_master_view(edlib.Pane):
                 self.call("Chr-n")
                 return 1
             if in_query:
-                thid = focus.call("doc:get-attr", "thread-id", 1, mark, ret = 'str')
-                msid = focus.call("doc:get-attr", "message-id", 1, mark, ret = 'str')
+                thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
+                msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
                 self.query_pane.call("doc:notmuch:remove-tag-inbox", thid, msid)
                 # Move to next message.
                 m = focus.call("doc:dup-point", 0, -2, ret='mark')
@@ -792,7 +789,7 @@ class notmuch_main_view(edlib.Pane):
             return 0
 
         if key == "notmuch:select":
-            s = focus.call("doc:get-attr", "query", mark, 1, ret='str')
+            s = focus.call("doc:get-attr", "query", mark, ret='str')
             if s:
                 focus.call("notmuch:select-query", s, num)
             return 1
@@ -1194,12 +1191,9 @@ class notmuch_list(edlib.Doc):
 
         if key == "doc:get-attr":
             attr = str
-            forward = num
             i,j,moved,pos = self.pos_index(mark.pos, [str2], str2 and xy[0])
             if moved:
                 mark.pos = pos
-            if not forward:
-                i,j,newpos = self.prev(i, j, [str2], str2 and xy[0])
 
             val = None
             if i >= 0 and j == -1 and self.threadids[i] != str2:
@@ -1356,7 +1350,7 @@ class notmuch_query_view(edlib.Pane):
             focus.damaged(edlib.DAMAGED_CONTENT)
             return 1
         if key == "notmuch:select":
-            s = focus.call("doc:get-attr", "thread-id", 1, mark, ret='str')
+            s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
             if s != self.selected:
                 if self.call("doc:notmuch:load-thread", s) == 1:
                     self.selected = s
@@ -1364,7 +1358,7 @@ class notmuch_query_view(edlib.Pane):
                     self.selected = None
                 focus.damaged(edlib.DAMAGED_VIEW)
                 focus.damaged(edlib.DAMAGED_CONTENT)
-            s2 = focus.call("doc:get-attr", "message-id", 1, mark, ret='str')
+            s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
             if s2 and num >= 0:
                 focus.call("notmuch:select-message", s2, s, num)
             return 1
@@ -1377,8 +1371,8 @@ class notmuch_query_view(edlib.Pane):
             m = mark.dup()
 
             while m < mark2:
-                i1 = focus.call("doc:get-attr", "thread-id", 1, m, ret='str')
-                i2 = focus.call("doc:get-attr", "message-id", 1, m, ret='str')
+                i1 = focus.call("doc:get-attr", "thread-id", m, ret='str')
+                i2 = focus.call("doc:get-attr", "message-id", m, ret='str')
                 if i1 and not i2 and i1 not in self.seen_threads:
                     self.seen_threads[i1] = True
                 if i1 and i2:

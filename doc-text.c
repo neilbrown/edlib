@@ -1612,7 +1612,7 @@ DEF_CMD(text_replace)
 }
 
 static struct attrset *text_attrset(struct doc *d safe, struct mark *m safe,
-				    bool forward, int *op safe)
+				    int *op safe)
 {
 	struct text_chunk *c;
 	struct text *t = container_of(d, struct text, doc);
@@ -1620,32 +1620,18 @@ static struct attrset *text_attrset(struct doc *d safe, struct mark *m safe,
 
 	c = m->ref.c;
 	o = m->ref.o;
-	if (forward) {
-		if (!c)
-			/* EOF */
+
+	if (!c)
+		/* EOF */
+		return NULL;
+	if (o >= c->end) {
+		/* End of chunk, need to look at next */
+		if (c->lst.next == &t->text)
 			return NULL;
-		if (o >= c->end) {
-			/* End of chunk, need to look at next */
-			if (c->lst.next == &t->text)
-				return NULL;
-			c = list_next_entry(c, lst);
-			o = c->start;
-		}
-	} else {
-		if (!c) {
-			if (list_empty(&t->text))
-				return NULL;
-			c = list_entry(t->text.prev, struct text_chunk, lst);
-			o = c->end;
-		}
-		if (o == 0) {
-			if (c->lst.prev == &t->text)
-				return NULL;
-			c = list_entry(c->lst.prev, struct text_chunk, lst);
-			o = c->end;
-		}
-		o -= 1;
+		c = list_next_entry(c, lst);
+		o = c->start;
 	}
+
 	*op = o;
 	return c->attrs;
 }
@@ -1654,7 +1640,6 @@ DEF_CMD(text_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	bool forward = ci->num != 0;
 	char *attr = ci->str;
 	char *val;
 	struct attrset *a;
@@ -1662,7 +1647,7 @@ DEF_CMD(text_doc_get_attr)
 
 	if (!m || !attr)
 		return -1;
-	a = text_attrset(d, m, forward, &o);
+	a = text_attrset(d, m, &o);
 	val = attr_get_str(a, attr, o);
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
 	if (ci->num2 == 1) {

@@ -576,7 +576,7 @@ char *pane_attr_get(struct pane *p, char *key safe)
 char *pane_mark_attr(struct pane *p safe, struct mark *m safe,
 		     char *key safe)
 {
-	return call_ret(strsave, "doc:get-attr", p, 1, m, key);
+	return call_ret(strsave, "doc:get-attr", p, 0, m, key);
 }
 
 void pane_clone_children(struct pane *from, struct pane *to)
