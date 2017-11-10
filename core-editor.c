@@ -28,7 +28,7 @@ struct ed_info {
 	} *store;
 };
 
-DEF_LOOKUP_CMD_DFLT(ed_handle, ed_map, ed_map);
+DEF_LOOKUP_CMD(ed_handle, ed_map);
 
 
 DEF_CMD(global_set_attr)
@@ -293,6 +293,7 @@ struct pane *editor_new(void)
 	}
 	ei->map = key_alloc();
 	key_add(ei->map, "on_idle-clean_up", &editor_clean_up);
+	key_add_chain(ei->map, ed_map);
 	ei->cmd = ed_handle;
 	ei->cmd.m = &ei->map;
 	ed = pane_register(NULL, 0, &ei->cmd.c, ei, NULL);

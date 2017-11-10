@@ -1161,7 +1161,7 @@ DEF_CMD(text_mark_same)
 	return text_ref_same(t, &ci->mark->ref, &ci->mark2->ref) ? 1 : 2;
 }
 
-DEF_LOOKUP_CMD_DFLT(text_handle, text_map, doc_default_cmd);
+DEF_LOOKUP_CMD(text_handle, text_map);
 
 DEF_CMD(text_new)
 {
@@ -1778,6 +1778,7 @@ void edlib_init(struct pane *ed safe)
 
 	text_map = key_alloc();
 
+	key_add_chain(text_map, doc_default_cmd);
 	key_add(text_map, "doc:load-file", &text_load_file);
 	key_add(text_map, "doc:same-file", &text_same_file);
 	key_add(text_map, "doc:get-str", &text_get_str);

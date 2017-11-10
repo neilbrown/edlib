@@ -43,7 +43,7 @@ struct doc_ref {
 #include "core.h"
 
 static struct map *docs_map, *docs_aux_map, *docs_modified_map;
-DEF_LOOKUP_CMD_DFLT(docs_handle, docs_map, doc_default_cmd);
+DEF_LOOKUP_CMD(docs_handle, docs_map);
 DEF_LOOKUP_CMD(docs_aux, docs_aux_map);
 DEF_LOOKUP_CMD(docs_modified_handle, docs_modified_map);
 
@@ -764,7 +764,7 @@ static void docs_init_map(void)
 	/* A "docs" document provides services to children and also behaves as
 	 * a document which lists those children
 	 */
-
+	key_add_chain(docs_map, doc_default_cmd);
 	key_add(docs_map, "doc:set-ref", &docs_set_ref);
 	key_add(docs_map, "doc:get-attr", &docs_doc_get_attr);
 	key_add(docs_map, "doc:mark-same", &docs_mark_same);

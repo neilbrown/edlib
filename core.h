@@ -267,7 +267,6 @@ void attr_free(struct attrset **setp safe);
 struct lookup_cmd {
 	struct command	c;
 	struct map	**m safe;
-	struct map	**dflt;
 };
 
 #define CMD(_name) {_name ## _func , 0, NULL}
@@ -279,9 +278,7 @@ struct lookup_cmd {
 	static int _name ## _func(const struct cmd_info *ci safe)
 
 #define DEF_LOOKUP_CMD(_name, _map) \
-	static struct lookup_cmd _name = { { key_lookup_cmd_func, 0, NULL }, &_map, NULL };
-#define DEF_LOOKUP_CMD_DFLT(_name, _map, _dflt)				\
-	static struct lookup_cmd _name = { { key_lookup_cmd_func, 0, NULL}, &_map, &_dflt };
+	static struct lookup_cmd _name = { { key_lookup_cmd_func, 0, NULL }, &_map};
 
 int key_lookup_cmd_func(const struct cmd_info *ci safe);
 
@@ -325,6 +322,7 @@ struct command *key_lookup_cmd(struct map *m safe, char *c safe);
 void key_add(struct map *map safe, char *k safe, struct command *comm);
 void key_add_range(struct map *map safe, char *first safe, char *last safe,
 		   struct command *comm);
+void key_add_chain(struct map *map safe, struct map *chain);
 struct command *key_register_prefix(char *name safe);
 
 /* DAMAGED_CURSOR, and DAMAGED_SIZE propagate down.

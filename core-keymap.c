@@ -52,6 +52,7 @@ struct map {
 	short	changed;
 	short	prefix_len;
 	int	size;
+	struct map *chain;
 	char	* safe *keys safe;
 	struct command * safe *comms safe;
 };
@@ -267,6 +268,14 @@ void key_add_range(struct map *map safe, char *first safe, char *last safe,
 		map->prefix_len = prefix;
 }
 
+void key_add_chain(struct map *map safe, struct map *chain)
+{
+	while (map->chain)
+		map = map->chain;
+	map->chain = chain;
+}
+
+
 #if 0
 void key_del(struct map *map, wint_t k)
 {
@@ -378,10 +387,13 @@ int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe)
 int key_lookup_cmd_func(const struct cmd_info *ci safe)
 {
 	struct lookup_cmd *l = container_of(ci->comm, struct lookup_cmd, c);
-	int ret = key_lookup(safe_cast *l->m, ci);
+	struct map *m = safe_cast *l->m;
+	int ret = key_lookup(m, ci);
 
-	if (!ret && l->dflt && *l->dflt)
-		ret = key_lookup(*l->dflt, ci);
+	while (!ret && m->chain) {
+		m = m->chain;
+		ret = key_lookup(m, ci);
+	}
 	return ret;
 }
 

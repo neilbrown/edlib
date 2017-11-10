@@ -149,7 +149,8 @@ DEF_CMD(history_attach)
 	hi = calloc(1, sizeof(*hi));
 	hi->done_map = key_alloc();
 	hi->handle = history_handle;
-	hi->handle.dflt = &hi->done_map;
+	hi->handle.m = &hi->done_map;
+	key_add_chain(hi->done_map, history_map);
 	key_add(hi->done_map, ci->str2, &history_done);
 	p = call_pane("docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)

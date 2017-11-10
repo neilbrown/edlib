@@ -116,7 +116,7 @@ static void load_dir(struct list_head *lst safe, int fd)
 	closedir(dir);
 }
 
-DEF_LOOKUP_CMD_DFLT(doc_handle, doc_map, doc_default_cmd);
+DEF_LOOKUP_CMD(doc_handle, doc_map);
 
 DEF_CMD(dir_new)
 {
@@ -658,6 +658,7 @@ void edlib_init(struct pane *ed safe)
 	call_comm("global-set-command", ed, &dir_new2, 0, NULL, "open-doc-dir");
 
 	doc_map = key_alloc();
+	key_add_chain(doc_map, doc_default_cmd);
 
 	key_add(doc_map, "doc:load-file", &dir_load_file);
 	key_add(doc_map, "doc:same-file", &dir_same_file);

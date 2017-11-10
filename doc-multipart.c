@@ -531,6 +531,7 @@ DEF_CMD(mp_forward)
 static void mp_init_map(void)
 {
 	mp_map = key_alloc();
+	key_add_chain(mp_map, doc_default_cmd);
 	key_add(mp_map, "doc:set-ref", &mp_set_ref);
 	key_add(mp_map, "doc:mark-same", &mp_same);
 	key_add(mp_map, "doc:step", &mp_step);
@@ -544,7 +545,7 @@ static void mp_init_map(void)
 	key_add_range(mp_map, "multipart-next:", "multipart-next;", &mp_forward);
 	key_add_range(mp_map, "multipart-prev:", "multipart-prev;", &mp_forward);
 }
-DEF_LOOKUP_CMD_DFLT(mp_handle, mp_map, doc_default_cmd);
+DEF_LOOKUP_CMD(mp_handle, mp_map);
 
 DEF_CMD(attach_mp)
 {
