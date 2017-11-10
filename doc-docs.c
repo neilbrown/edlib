@@ -448,8 +448,6 @@ DEF_CMD(docs_step)
 
 	if (!m)
 		return -1;
-	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
-		return -1;
 
 	p = m->ref.p;
 	if (forward) {
@@ -505,8 +503,6 @@ DEF_CMD(docs_set_ref)
 
 	if (!m)
 		return -1;
-	if (call("doc:mymark", ci->home, 0, m) != 1)
-		return -1;
 
 	if (ci->num == 1 && !list_empty(&d->collection->children))
 		m->ref.p = list_first_entry(&d->collection->children,
@@ -521,10 +517,6 @@ DEF_CMD(docs_set_ref)
 
 DEF_CMD(docs_mark_same)
 {
-	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
-		return -1;
-	if (call("doc:mymark", ci->home, 0, ci->mark2) != 1)
-		return -1;
 	if (!ci->mark || !ci->mark2)
 		return -1;
 	return ci->mark->ref.p == ci->mark2->ref.p ? 1 : 2;
@@ -555,8 +547,6 @@ DEF_CMD(docs_doc_get_attr)
 	char *val;
 
 	if (!m || !attr)
-		return -1;
-	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
 		return -1;
 
 	val = __docs_get_attr(d, m, attr);
@@ -742,8 +732,6 @@ DEF_CMD(docs_cmd)
 	char cmd;
 
 	if (!ci->str)
-		return -1;
-	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
 		return -1;
 	cmd = ci->str[0];
 	switch(cmd) {
