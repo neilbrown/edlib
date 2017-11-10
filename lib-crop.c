@@ -54,27 +54,72 @@ static int crop(struct mark *m, struct crop_data *cd safe, struct pane *p safe)
 	return 1;
 }
 
-DEF_CMD(crop_handle)
+DEF_CMD(crop_close)
+{
+	struct crop_data *cd = ci->home->data;
+
+	mark_free(cd->start);
+	mark_free(cd->end);
+	free(cd);
+	return 1;
+}
+
+DEF_CMD(crop_write)
+{
+	struct pane *p = ci->home->parent;
+	struct crop_data *cd = ci->home->data;
+
+	if (!p)
+		return 0;
+
+	return home_call(p, ci->key, ci->focus, ci->num,
+			 ci->mark ?: cd->start,
+			 ci->str, ci->num2,
+			 ci->mark2 ?: cd->end, ci->str2,
+			 0,0, ci->comm2);
+}
+
+DEF_CMD(crop_step)
 {
 	struct pane *p = ci->home->parent;
 	struct crop_data *cd = ci->home->data;
 	int ret;
 
-	if (strcmp(ci->key, "Close") == 0) {
-		mark_free(cd->start);
-		mark_free(cd->end);
-		free(cd);
-		return 1;
-	}
 	if (!p)
 		return 0;
 
-	if (strcmp(ci->key, "doc:write-file") == 0)
-		return home_call(p, ci->key, ci->focus, ci->num,
-				 ci->mark ?: cd->start,
-				 ci->str, ci->num2,
-				 ci->mark2 ?: cd->end, ci->str2,
-				 0,0, ci->comm2);
+	if (!ci->mark && !ci->mark2)
+		return 0;
+
+	/* Always force marks to be in range */
+	crop(ci->mark, cd, p);
+	crop(ci->mark2, cd, p);
+
+	ret = home_call(p, ci->key, ci->focus, ci->num,
+			ci->mark, ci->str, ci->num2, ci->mark2, ci->str2, 0,0, ci->comm2);
+	if (crop(ci->mark, cd, p) || crop(ci->mark2, cd, p))
+		ret = CHAR_RET(WEOF);
+
+	if (ci->num2 == 0 && ci->mark) {
+		if (ci->num) {
+			if (mark_same_pane(p, ci->mark, cd->end))
+				ret = CHAR_RET(WEOF);
+		} else {
+			if (mark_same_pane(p, ci->mark, cd->start))
+				ret = CHAR_RET(WEOF);
+		}
+	}
+	return ret;
+}
+
+DEF_CMD(crop_generic)
+{
+	struct pane *p = ci->home->parent;
+	struct crop_data *cd = ci->home->data;
+	int ret;
+
+	if (!p)
+		return 0;
 
 	if (!ci->mark && !ci->mark2)
 		/* No mark, do give it straight to parent */
@@ -88,22 +133,14 @@ DEF_CMD(crop_handle)
 	ret = home_call(p, ci->key, ci->focus, ci->num,
 			ci->mark, ci->str, ci->num2, ci->mark2, ci->str2, 0,0, ci->comm2);
 	if (crop(ci->mark, cd, p) || crop(ci->mark2, cd, p)) {
-		if (strcmp(ci->key, "doc:step") == 0)
-			ret = CHAR_RET(WEOF);
-		else if (strcmp(ci->key, "doc:set-ref") != 0)
+		if (strcmp(ci->key, "doc:set-ref") != 0)
 			ret = -1;
-	}
-	if (strcmp(ci->key, "doc:step")==0 && ci->num2 == 0 && ci->mark) {
-		if (ci->num) {
-			if (mark_same_pane(p, ci->mark, cd->end))
-				ret = CHAR_RET(WEOF);
-		} else {
-			if (mark_same_pane(p, ci->mark, cd->start))
-				ret = CHAR_RET(WEOF);
-		}
 	}
 	return ret;
 }
+
+static struct map *crop_map safe;
+DEF_LOOKUP_CMD(crop_handle, crop_map);
 
 DEF_CMD(crop_attach)
 {
@@ -113,7 +150,7 @@ DEF_CMD(crop_attach)
 	if (!ci->mark || !ci->mark2)
 		return -1;
 	cd = calloc(1, sizeof(*cd));
-	p = pane_register(ci->focus, 0, &crop_handle, cd, NULL);
+	p = pane_register(ci->focus, 0, &crop_handle.c, cd, NULL);
 	if (!p) {
 		free(cd);
 		return -1;
@@ -128,4 +165,11 @@ DEF_CMD(crop_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &crop_attach, 0, NULL, "attach-crop");
+	if ((void*)crop_map)
+		return;
+	crop_map = key_alloc();
+	key_add_range(crop_map, "doc:", "doc;", &crop_generic);
+	key_add(crop_map, "Close", &crop_close);
+	key_add(crop_map, "doc:write_file", &crop_write);
+	key_add(crop_map, "doc:step", &crop_step);
 }
