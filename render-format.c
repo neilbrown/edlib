@@ -100,7 +100,7 @@ DEF_CMD(render_line)
 		if (!buf[0])
 			val = "";
 		else
-			val = pane_mark_attr(ci->focus, m, 1, buf);
+			val = pane_mark_attr(ci->focus, m, buf);
 		if (!val)
 			val = "-";
 

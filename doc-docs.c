@@ -176,10 +176,10 @@ static int mark_is_modified(struct pane *p safe, struct mark *m safe)
 {
 	char *fn, *mod;
 
-	mod = pane_mark_attr(p, m, 1, "doc-modified");
+	mod = pane_mark_attr(p, m, "doc-modified");
 	if (!mod || strcmp(mod, "yes") != 0)
 		return 0;
-	fn = pane_mark_attr(p, m, 1, "filename");
+	fn = pane_mark_attr(p, m, "filename");
 	return fn && *fn;
 }
 
@@ -274,7 +274,7 @@ DEF_CMD(docs_modified_doc_get_attr)
 	m = mark_dup(ci->mark, 1);
 	if (!ci->num)
 		prev_modified(ci->home->parent, m);
-	attr = pane_mark_attr(ci->home->parent, m, 1, ci->str);
+	attr = pane_mark_attr(ci->home->parent, m, ci->str);
 	mark_free(m);
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, attr);
 	return 1;

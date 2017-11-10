@@ -363,7 +363,7 @@ struct pane *pane_my_child(struct pane *p, struct pane *c);
 
 int pane_masked(struct pane *p safe, int x, int y, int abs_z, int *w, int *h);
 char *pane_attr_get(struct pane *p, char *key safe);
-char *pane_mark_attr(struct pane *p safe, struct mark *m safe, bool forward, char *key safe);
+char *pane_mark_attr(struct pane *p safe, struct mark *m safe, char *key safe);
 void pane_absxy(struct pane *p, int *x safe, int *y safe, int *w safe, int *h safe);
 void pane_relxy(struct pane *p, int *x safe, int *y safe);
 void pane_map_xy(struct pane *orig, struct pane *target, int *x safe, int *y safe);

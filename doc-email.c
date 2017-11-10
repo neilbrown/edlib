@@ -93,10 +93,10 @@ DEF_CMD(email_spacer)
 	if (!m)
 		return -1;
 
-	attr = pane_mark_attr(ci->home, m, 1, "multipart-prev:multipart:visible");
+	attr = pane_mark_attr(ci->home, m, "multipart-prev:multipart:visible");
 	if (attr && *attr == '0')
 		visible = 0;
-	attr = pane_mark_attr(ci->home, m, 1, "multipart-prev:email:actions");
+	attr = pane_mark_attr(ci->home, m, "multipart-prev:email:actions");
 	if (!attr)
 		attr = "hide";
 
@@ -142,10 +142,10 @@ DEF_CMD(email_select)
 
 	if (!m)
 		return -1;
-	a = pane_mark_attr(ci->home, m, 1, "renderline:func");
+	a = pane_mark_attr(ci->home, m, "renderline:func");
 	if (!a || strcmp(a, "doc:email:render-spacer") != 0)
 		return 0;
-	a = pane_mark_attr(ci->home, m, 1, "multipart-prev:email:actions");
+	a = pane_mark_attr(ci->home, m, "multipart-prev:email:actions");
 	if (!a)
 		a = "hide";
 	r = m->rpos;
@@ -156,7 +156,7 @@ DEF_CMD(email_select)
 		r -= 1;
 	}
 	if (a && is_attr("hide", a)) {
-		a = pane_mark_attr(ci->home, m, 1, "multipart-prev:multipart:visible");
+		a = pane_mark_attr(ci->home, m, "multipart-prev:multipart:visible");
 		if (a && *a == '0')
 			call("doc:set-attr", ci->home, 1, m, "multipart-prev:multipart:visible", 0, NULL, "1");
 		else
@@ -178,7 +178,7 @@ DEF_CMD(email_get_attr)
 	if (!ci->mark || !ci->home->parent)
 		return 0;
 
-	a = pane_mark_attr(ci->home->parent, ci->mark, ci->num, "multipart-prev:email:actions");
+	a = pane_mark_attr(ci->home->parent, ci->mark, "multipart-prev:email:actions");
 	if (!a)
 		return 1;
 	fields = 0;

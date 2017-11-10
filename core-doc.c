@@ -152,7 +152,7 @@ static wint_t doc_move_horiz(struct pane *p safe, struct mark *m safe,
 	if (m->rpos == NEVER_RPOS)
 		return mark_step_pane(p, m, forward, 1);
 	if (m->rpos != NO_RPOS) {
-		char *a = pane_mark_attr(p, m, 1, "renderline:fields");
+		char *a = pane_mark_attr(p, m, "renderline:fields");
 		int home, cnt;
 		parse_sub_pos(a, &home, &cnt);
 		if (forward && m->rpos+1 < cnt)
@@ -165,7 +165,7 @@ static wint_t doc_move_horiz(struct pane *p safe, struct mark *m safe,
 	if (m->rpos == NO_RPOS) {
 		ret = mark_step_pane(p, m, forward, 1);
 		if (is_eol(forward ? mark_step_pane(p, m, forward, 0) : ret)) {
-			char *a = pane_mark_attr(p, m, 1, "renderline:fields");
+			char *a = pane_mark_attr(p, m, "renderline:fields");
 			int home, cnt;
 			parse_sub_pos(a, &home, &cnt);
 			if (a) {
