@@ -115,11 +115,16 @@ TODO:
 
 #include <stdlib.h>
 #include <unistd.h>
-#include <getopt.h>
 #include <wchar.h>
 #include <ctype.h>
 #include <wctype.h>
 #include <memory.h>
+#ifdef DEBUG
+#include <getopt.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#endif
 
 #include "safe.h"
 
@@ -1362,6 +1367,7 @@ int main(int argc, char *argv[])
 	int start;
 	int thelen;
 	int used;
+	int use_file = 0;
 	int ccnt = 0;
 	int ignore_case = 0;
 	int verbatim = 0;
@@ -1370,8 +1376,10 @@ int main(int argc, char *argv[])
 	mbstate_t ps = {};
 	char *patn, *target;
 
-	while ((opt = getopt(argc, argv, "ivlT")) > 0)
+	while ((opt = getopt(argc, argv, "ivlTf")) > 0)
 		switch (opt) {
+		case 'f':
+			use_file = 1; break;
 		case 'i':
 			ignore_case = 1; break;
 		case 'v':
@@ -1392,7 +1400,18 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	patn = argv[optind];
-	target = argv[optind+1];
+	if (use_file) {
+		int fd = open(argv[optind+1], O_RDONLY);
+		struct stat st;
+		if (fd < 0) {
+			perror(target);
+			exit(1);
+		}
+		fstat(fd, &st);
+		target = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+		close(fd);
+	} else
+		target = argv[optind+1];
 
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
@@ -1410,7 +1429,7 @@ int main(int argc, char *argv[])
 
 	setup_match(&st, rxl);
 	#ifdef DEBUG
-	st.trace = 1;
+	st.trace = 0;
 	#endif
 	i = 0;
 	len = -1;
@@ -1456,10 +1475,22 @@ int main(int argc, char *argv[])
 	else {
 		int j;
 		wchar_t wc;
-		printf("%s\n", target);
+		char *tstart, *tend;
+		tstart = target;
+		if (use_file) {
+			tstart = target + start;
+			while (tstart > target && tstart[-1] != '\n')
+				tstart--;
+			tend = tstart;
+			while (*tend && *tend != '\n')
+				tend += 1;
+		} else {
+			tend = tstart + strlen(tstart);
+		}
+		printf("%0.*s\n", tend-tstart, tstart);
 		memset(&ps, 0, sizeof(ps));
 		i = 0;
-		ccnt = 0;
+		ccnt = tstart-target;
 		while ((used = mbrtowc(&wc, target+i, 5, &ps)) > 0) {
 			if (ccnt < start)
 				putchar(' ');
@@ -1469,6 +1500,8 @@ int main(int argc, char *argv[])
 				putchar('.');
 			i+= used;
 			ccnt += 1;
+			if (tstart + i > tend)
+				break;
 		}
 		putchar('\n');
 	}
