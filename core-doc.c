@@ -595,6 +595,37 @@ DEF_CMD(doc_get_point)
 	return 1;
 }
 
+DEF_CMD(doc_default_content)
+{
+	/* doc:content delivers one char at a time to a callback.
+	 * The chars are the apparent content, rather than the actual
+	 * content.  So for a directory listing, it is the listing, not
+	 * one newline per file.
+	 * This is used for 'search' and 'copy'.
+	 * This default version calls doc:step and is used when the actual
+	 * and apparent content are the same.
+	 *
+	 * .mark is 'location': to start.  This is moved forwards
+	 * .comm2 is 'consume': pass char mark and report if finished.
+	 *
+	 */
+	struct mark *m = ci->mark;
+	struct commcache dstep = CCINIT;
+	int nxt;
+
+	if (!m || !ci->comm2)
+		return -1;
+
+	nxt = ccall(&dstep, "doc:step", ci->home, 1, m);
+	while (nxt != CHAR_RET(WEOF) &&
+	       comm_call(ci->comm2, "consume", ci->home, nxt, m)) {
+		ccall(&dstep, "doc:step", ci->home, 1, m, NULL, 1);
+		nxt = ccall(&dstep, "doc:step", ci->home, 1, m);
+	}
+
+	return 1;
+}
+
 DEF_CMD(doc_write_file)
 {
 	/* Default write-file handler
@@ -840,6 +871,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:closed", &doc_do_closed);
 	key_add(doc_default_cmd, "doc:mymark", &doc_mymark);
 	key_add(doc_default_cmd, "doc:write-file", &doc_write_file);
+	key_add(doc_default_cmd, "doc:content", &doc_default_content);
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
 		      &doc_request_notify);
 	key_add_range(doc_default_cmd, "Notify:doc:", "Notify:doc;",
