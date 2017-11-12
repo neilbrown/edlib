@@ -610,7 +610,6 @@ static void point_forward_to_mark(struct mark *p safe, struct mark *m safe)
 	hlist_del(&p->all);
 	hlist_add_after(&m->all, &p->all);
 	assign_seq(p, m->seq);
-	mark_ref_copy(p, m);
 }
 
 static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
@@ -665,7 +664,6 @@ static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
 	hlist_del(&p->all);
 	hlist_add_before(&p->all, &m->all);
 	assign_seq(p, m->seq);
-	mark_ref_copy(p, m);
 }
 
 static void point_to_mark(struct mark *p safe, struct mark *m safe)
@@ -674,10 +672,9 @@ static void point_to_mark(struct mark *p safe, struct mark *m safe)
 		point_forward_to_mark(p, m);
 	else if (p->seq > m->seq)
 		point_backward_to_mark(p, m);
-	p->rpos = m->rpos;
 }
 
-void mark_to_mark(struct mark *m safe, struct mark *target safe)
+void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 {
 	if (m->seq == target->seq)
 		return;
@@ -702,6 +699,13 @@ void mark_to_mark(struct mark *m safe, struct mark *target safe)
 				break;
 			mark_backward_over(m, n);
 		} while (mark_ordered(target, m));
+}
+
+void mark_to_mark(struct mark *m safe, struct mark *target safe)
+{
+	if (m->seq == target->seq)
+		return;
+	mark_to_mark_noref(m, target);
 	mark_ref_copy(m, target);
 	m->rpos = target->rpos;
 }

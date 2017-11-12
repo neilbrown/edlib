@@ -1469,6 +1469,18 @@ static PyObject *Mark_to_mark(Mark *self safe, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Mark_to_mark_noref(Mark *self safe, PyObject *args)
+{
+	Mark *other = NULL;
+	int ret = PyArg_ParseTuple(args, "O!", &MarkType, &other);
+	if (ret <= 0 || !other || !self->mark || !other->mark)
+		return NULL;
+	mark_to_mark_noref(self->mark, other->mark);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyObject *Mark_next(Mark *self safe)
 {
 	struct mark *next;
@@ -1569,6 +1581,8 @@ static PyObject *Mark_release(Mark *self safe)
 static PyMethodDef mark_methods[] = {
 	{"to_mark", (PyCFunction)Mark_to_mark, METH_VARARGS,
 	 "Move one mark to another"},
+	{"to_mark_noref", (PyCFunction)Mark_to_mark_noref, METH_VARARGS,
+	 "Move one mark to another but don't update ref"},
 	{"next", (PyCFunction)Mark_next, METH_NOARGS,
 	 "next vmark"},
 	{"prev", (PyCFunction)Mark_prev, METH_NOARGS,

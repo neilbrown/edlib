@@ -197,6 +197,7 @@ void mark_backward_over(struct mark *m safe, struct mark *mp safe);
 void doc_notify_change(struct doc *d safe, struct mark *m, struct mark *m2);
 void doc_check_consistent(struct doc *d safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);
+void mark_to_mark_noref(struct mark *m safe, struct mark *target safe);
 int mark_same_pane(struct pane *p safe, struct mark *m1 safe, struct mark *m2 safe);
 struct mark *safe point_new(struct doc *d safe);
 struct mark *safe point_dup(struct mark *p safe);
