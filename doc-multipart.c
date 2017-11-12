@@ -54,7 +54,7 @@ static void reset_mark(struct mark *m)
 		 m2->ref.m && m->ref.m &&
 		 m2->ref.m->seq < m->ref.m->seq))) {
 		/* m should be after m2 */
-		mark_forward_over(m, m2);
+		mark_to_mark_noref(m, m2);
 	}
 
 	while ((m2 = doc_prev_mark_all(m)) != NULL &&
@@ -63,7 +63,7 @@ static void reset_mark(struct mark *m)
 		 m2->ref.m && m->ref.m &&
 		 m2->ref.m->seq > m->ref.m->seq))) {
 		/* m should be before m2 */
-		mark_backward_over(m, m2);
+		mark_to_mark_noref(m, m2);
 	}
 }
 

@@ -425,7 +425,7 @@ static void swap_lists(struct mark *p1 safe, struct mark *p2 safe)
 	tmp->pt = p1;
 }
 
-void mark_forward_over(struct mark *m safe, struct mark *m2 safe)
+static void mark_forward_over(struct mark *m safe, struct mark *m2 safe)
 {
 	int seq;
 
@@ -459,7 +459,7 @@ void mark_forward_over(struct mark *m safe, struct mark *m2 safe)
 	m2->seq = seq;
 }
 
-void mark_backward_over(struct mark *m safe, struct mark *mp safe)
+static void mark_backward_over(struct mark *m safe, struct mark *mp safe)
 {
 	int seq;
 
