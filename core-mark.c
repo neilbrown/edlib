@@ -668,7 +668,7 @@ static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
 	mark_ref_copy(p, m);
 }
 
-void point_to_mark(struct mark *p safe, struct mark *m safe)
+static void point_to_mark(struct mark *p safe, struct mark *m safe)
 {
 	if (p->seq < m->seq)
 		point_forward_to_mark(p, m);

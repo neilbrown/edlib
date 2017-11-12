@@ -779,7 +779,7 @@ DEF_CMD(doc_move_to)
 		break;
 	case 0:
 		if (ci->mark)
-			point_to_mark(dd->point, ci->mark);
+			mark_to_mark(dd->point, ci->mark);
 		break;
 	}
 	return 1;

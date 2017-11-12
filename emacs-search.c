@@ -190,7 +190,7 @@ DEF_CMD(search_again)
 		pfx = "Search (incomplete): ";
 	} else {
 		int len = --ret;
-		point_to_mark(esi->end, m);
+		mark_to_mark(esi->end, m);
 		if (!esi->backwards)
 			while (ret > 0 && mark_prev_pane(esi->target, m) != WEOF)
 				ret -= 1;
