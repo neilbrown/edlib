@@ -13,6 +13,37 @@
 #include "core.h"
 #include "rexel.h"
 
+struct search_state {
+	struct match_state *st safe;
+	struct mark *end;
+	struct mark *endmark safe;
+	int since_start;
+	struct command c;
+};
+
+DEF_CMD(search_test)
+{
+	wint_t wch = ci->num & 0xFFFFF;
+	int len;
+	struct search_state *ss = container_of(ci->comm, struct search_state, c);
+
+	if (!ci->mark)
+		return 0;
+
+	len = rxl_advance(ss->st, wch, 0, ss->since_start < 0);
+	if (len >= 0 &&
+	    (ss->since_start < 0 || len > ss->since_start)) {
+		ss->since_start = len;
+		mark_to_mark(ss->endmark, ci->mark);
+		mark_next_pane(ci->home, ss->endmark);
+	}
+	if ((ss->since_start < 0 || len != -2) &&
+	    (ss->end == NULL || ci->mark->seq < ss->end->seq))
+		/* I like that one, more please */
+		return 1;
+	return 0;
+}
+
 static int search_forward(struct pane *p safe, struct mark *m safe, struct mark *m2,
 			  unsigned short *rxl safe,
 			  struct mark *endmark safe)
@@ -20,25 +51,19 @@ static int search_forward(struct pane *p safe, struct mark *m safe, struct mark 
 	/* Search forward from @m in @p for @rxl looking as far as @m2, and leaving
 	 * @endmark at the end point, and returning the length of the match, or -1.
 	 */
-	int since_start = -1, len = 0;
-	struct match_state *st;
+	struct search_state ss;
 
-	st = rxl_prepare(rxl);
-	while ((since_start < 0 || len != -2) &&
-	       (m2 == NULL || m->seq < m2->seq)) {
-		wint_t wch = mark_next_pane(p, m);
-		if (wch == WEOF)
-			break;
+	if (m2 && m->seq >= m2->seq)
+		return -1;
+	ss.st = rxl_prepare(rxl);
+	ss.since_start = -1;
+	ss.end = m2;
+	ss.endmark = endmark;
+	ss.c = search_test;
 
-		len = rxl_advance(st, wch, 0, since_start < 0);
-		if (len >= 0 &&
-		    (since_start < 0 || len > since_start)) {
-			since_start = len;
-			mark_to_mark(endmark, m);
-		}
-	}
-	rxl_free_state(st);
-	return since_start;
+	call_comm("doc:content", p, &ss.c, 0, m);
+	rxl_free_state(ss.st);
+	return ss.since_start;
 }
 
 static int search_backward(struct pane *p safe, struct mark *m safe, struct mark *m2,
