@@ -45,7 +45,10 @@
 
 #include "core.h"
 
-#include "jhash.h"
+inline static int qhash(char key, int start)
+{
+	return (start ^ key) * 0x61C88647;
+}
 
 struct map {
 	unsigned long bloom[256 / (sizeof(long)*8) ];
@@ -95,10 +98,11 @@ void key_free(struct map *m safe)
 
 static int hash_str(char *key safe, int len)
 {
-	int l = strlen(key);
-	if (len > 0 && len < l)
-		l = len;
-	return jhash(key, l, 0);
+	int i;
+	int h = 0;
+	for (i = 0; (len < 0 || i < len) && key[i]; i++)
+		h = qhash(key[i], h);
+	return h;
 }
 
 inline static void set_bit(unsigned long *set safe, int bit)
@@ -404,18 +408,20 @@ int key_handle(const struct cmd_info *ci safe)
 	struct cmd_info *vci = (struct cmd_info*)ci;
 	struct pane *p;
 	unsigned int hash[30];
+	int h= 0;
+	int i;
 
 	if ((void*) ci->comm)
 		return ci->comm->func(ci);
 
-	if (strlen(ci->key) < 30) {
-		int l = strlen(ci->key);
-		int i;
-		hash[0] = hash_str(ci->key, l);
-		for (i = 1; i < l; i++)
-			hash[i] = hash_str(ci->key, i);
-		vci->hash = hash;
+	for (i = 0; i < 30 && ci->key[i]; i++) {
+		h = qhash(ci->key[i], h);
+		if (i+1 < 30)
+			hash[i+1] = h;
 	}
+	hash[0] = h;
+	if (i < 30)
+		vci->hash = hash;
 
 	/* If 'home' is set, search from there, else search
 	 * from focus

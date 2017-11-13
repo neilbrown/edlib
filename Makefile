@@ -67,7 +67,6 @@ O/display-ncurses.o : md5.h
 LIBS-lib-libevent = $(shell pkg-config --libs libevent)
 
 O/core-editor-static.o : O/mod-list-decl.h O/mod-list.h
-O/core-keymap.o : jhash.h
 
 STATICOBJ = $(SHOBJ:.o=-static.o) $(LIBOBJ:.o=-static.o)
 
