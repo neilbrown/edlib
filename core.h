@@ -308,6 +308,12 @@ struct cmd_info {
 	unsigned int	*hash;
 };
 
+struct commcache {
+	struct pane	*home safe;
+	struct command	*comm safe;
+};
+#define CCINIT {safe_cast 0, safe_cast 0}
+
 #define	NO_NUMERIC	(INT_MAX/2)
 #define	RPT_NUM(ci)	((ci)->num == NO_NUMERIC ? 1 : (ci)->num == -NO_NUMERIC ? -1 : (ci)->num)
 
@@ -477,37 +483,44 @@ struct pane *do_call_pane(enum target_type type, struct pane *home, struct comma
 			  char *key safe, struct pane *focus safe,
 			  int num,  struct mark *m,  char *str,
 			  int num2, struct mark *m2, char *str2,
-			  int x, int y, struct command *comm2b);
+			  int x, int y, struct command *comm2b,
+			  struct commcache *cache);
 struct mark *do_call_mark(enum target_type type, struct pane *home, struct command *comm2a,
 			  char *key safe, struct pane *focus safe,
 			  int num,  struct mark *m,  char *str,
 			  int num2, struct mark *m2, char *str2,
-			  int x, int y, struct command *comm2b);
+			  int x, int y, struct command *comm2b,
+			  struct commcache *cache);
 struct mark *do_call_mark2(enum target_type type, struct pane *home, struct command *comm2a,
 			   char *key safe, struct pane *focus safe,
 			   int num,  struct mark *m,  char *str,
 			   int num2, struct mark *m2, char *str2,
-			   int x, int y, struct command *comm2b);
+			   int x, int y, struct command *comm2b,
+			   struct commcache *cache);
 struct command *do_call_comm(enum target_type type, struct pane *home, struct command *comm2a,
 			     char *key safe, struct pane *focus safe,
 			     int num,  struct mark *m,  char *str,
 			     int num2, struct mark *m2, char *str2,
-			     int x, int y, struct command *comm2b);
+			     int x, int y, struct command *comm2b,
+			     struct commcache *cache);
 struct call_return do_call_all(enum target_type type, struct pane *home, struct command *comm2a,
 			       char *key safe, struct pane *focus safe,
 			       int num,  struct mark *m,  char *str,
 			       int num2, struct mark *m2, char *str2,
-			       int x, int y, struct command *comm2b);
+			       int x, int y, struct command *comm2b,
+			       struct commcache *cache);
 char *do_call_str(enum target_type type, struct pane *home, struct command *comm2a,
 		  char *key safe, struct pane *focus safe,
 		  int num,  struct mark *m,  char *str,
 		  int num2, struct mark *m2, char *str2,
-		  int x, int y, struct command *comm2b);
+		  int x, int y, struct command *comm2b,
+		  struct commcache *cache);
 char *do_call_strsave(enum target_type type, struct pane *home, struct command *comm2a,
 		      char *key safe, struct pane *focus safe,
 		      int num,  struct mark *m,  char *str,
 		      int num2, struct mark *m2, char *str2,
-		      int x, int y, struct command *comm2b);
+		      int x, int y, struct command *comm2b,
+		      struct commcache *cache);
 
 #define T_focus(_p, _c) _p
 #define T_home(_p, _c) _p
@@ -519,31 +532,31 @@ char *do_call_strsave(enum target_type type, struct pane *home, struct command *
 #define _CALL(...) VFUNC(CALL, __VA_ARGS__)
 #define CALL15(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2, str2, x, y, comm2) \
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2,target), \
-		      key, focus, num, mark, str, num2, mark2, str2, x, y, comm2)
+		      key, focus, num, mark, str, num2, mark2, str2, x, y, comm2, NULL)
 #define CALL14(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2, str2, x, y) \
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
-		      key, focus, num, mark, str, num2, mark2, str2, x, y, NULL)
+		      key, focus, num, mark, str, num2, mark2, str2, x, y, NULL, NULL)
 #define CALL12(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2, str2) \
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
-		      key, focus, num, mark, str, num2, mark2, str2, 0, 0, NULL)
+		      key, focus, num, mark, str, num2, mark2, str2, 0, 0, NULL, NULL)
 #define CALL11(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2) \
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
-		      key, focus, num, mark, str, num2, mark2, NULL, 0, 0, NULL)
+		      key, focus, num, mark, str, num2, mark2, NULL, 0, 0, NULL, NULL)
 #define CALL10(ret, t_type, target, key, comm2a, focus, num, mark, str, num2) \
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
-		      key, focus, num, mark, str, num2, NULL, NULL, 0, 0, NULL)
+		      key, focus, num, mark, str, num2, NULL, NULL, 0, 0, NULL, NULL)
 #define CALL9(ret, t_type, target, key, comm2a, focus, num, mark, str) \
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
-		      key, focus, num, mark, str, 0, NULL, NULL, 0, 0, NULL)
+		      key, focus, num, mark, str, 0, NULL, NULL, 0, 0, NULL, NULL)
 #define CALL8(ret, t_type, target, key, comm2a, focus, num, mark) \
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
-		      key, focus, num, mark, NULL, 0, NULL, NULL, 0, 0, NULL)
+		      key, focus, num, mark, NULL, 0, NULL, NULL, 0, 0, NULL, NULL)
 #define CALL7(ret, t_type, target, key, comm2a, focus, num) \
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
-		      key, focus, num, NULL, NULL, 0, NULL, NULL, 0, 0, NULL)
+		      key, focus, num, NULL, NULL, 0, NULL, NULL, 0, 0, NULL, NULL)
 #define CALL6(ret, t_type, target, key, comm2a, focus) \
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2a,target), \
-		      key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0, NULL)
+		      key, focus, 0, NULL, NULL, 0, NULL, NULL, 0, 0, NULL, NULL)
 
 #define CALL(ret, t_type, target, key, ...) _CALL(ret, t_type, target, key, NULL, __VA_ARGS__)
 
@@ -565,14 +578,16 @@ static inline int do_call_val(enum target_type type, struct pane *home, struct c
 			      char *key safe, struct pane *focus safe,
 			      int num,  struct mark *m,  char *str,
 			      int num2, struct mark *m2, char *str2,
-			      int x, int y, struct command *comm2b)
+			      int x, int y, struct command *comm2b,
+			      struct commcache *ccache)
 {
 	struct cmd_info ci = {.key = key, .focus = focus,
 			      .home =  (type == TYPE_home || type == TYPE_pane) ? safe_cast home : focus,
 			      .num = num, .mark = m, .str = str,
 			      .num2 = num2, .mark2 = m2, .str2 = str2,
 			      .comm2 = comm2a ?: comm2b, .x = x, .y = y,
-			      .comm = safe_cast 0};
+			      .comm = safe_cast NULL};
+	int ret;
 
 	if ((type == TYPE_pane || type == TYPE_home) && !home)
 		return 0;
@@ -584,17 +599,28 @@ static inline int do_call_val(enum target_type type, struct pane *home, struct c
 	default:
 	case TYPE_focus:
 	case TYPE_home:
-		return key_handle(&ci);
+		if (ccache) {
+			ci.home = ccache->home;
+			ci.comm = ccache->comm;
+		}
+		ret = key_handle(&ci);
+		break;
 	case TYPE_pane:
 		if (!home->handle)
 			return -1;
 		ci.comm = home->handle;
-		return ci.comm->func(&ci);
+		ret = ci.comm->func(&ci);
+		break;
 	case TYPE_comm:
 		ci.comm = comm2a;
 		ci.comm2 = comm2b;
 		return ci.comm->func(&ci);
 	}
+	if (ccache) {
+		ccache->comm = ci.comm;
+		ccache->home = ci.home;
+	}
+	return ret;
 }
 
 #define pane_notify(...) VFUNC(NOTIFY, __VA_ARGS__)
