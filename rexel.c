@@ -290,7 +290,7 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag, int restart)
 	int len;
 	unsigned short i;
 	int advance = 0;
-	wint_t uch;
+	wint_t uch = ch;
 
 	if (RXL_IS_CASELESS(st->rxl)) {
 		uch = towupper(ch);
@@ -996,7 +996,7 @@ static int parse_piece(struct parse_state *st safe)
 	char c;
 	int min, max;
 	char *ep;
-	int skip;
+	int skip = 0;
 
 	if (!parse_atom(st))
 		return 0;

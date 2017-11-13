@@ -410,7 +410,7 @@ static void tile_adjust(struct pane *p safe)
 	int cnt = 0;
 	int avail_cnt = 0;
 	int pos;
-	int size;
+	int size = 0;
 	struct tileinfo *ti = p->data;
 
 	if (ti->leaf)

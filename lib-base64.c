@@ -183,6 +183,8 @@ retry:
 	case 2:
 		b = ((c1 << 6) & 0xC0) | c2;
 		break;
+	default:
+		b = 0;
 	}
 	if (forward) {
 		pos = (pos + 1) % 3;

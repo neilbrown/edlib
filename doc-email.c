@@ -172,7 +172,7 @@ DEF_CMD(email_get_attr)
 	 */
 	char *a;
 	int fields;
-	char ret[10];
+	char ret[12];
 	if (!ci->str || strcmp(ci->str, "renderline:fields") != 0)
 		return 0;
 	if (!ci->mark || !ci->home->parent)
@@ -188,7 +188,7 @@ DEF_CMD(email_get_attr)
 			a += 1;
 		fields += 1;
 	}
-	sprintf(ret, "%d", fields);
+	snprintf(ret, sizeof(ret), "%d", fields);
 	return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark, ret);
 }
 static struct map *email_map safe;

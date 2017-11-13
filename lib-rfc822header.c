@@ -147,7 +147,7 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 	 */
 	struct buf buf;
 	int qmarks = 0;
-	char code;
+	char code = 0;
 	int bits = -1;
 	int tmp;
 	static char *last = NULL;
@@ -249,7 +249,7 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 	struct mark *m;
 	struct mark *hstart;
 	int sol = 0;
-	char buf[5];
+	char buf[20];
 	wint_t ch;
 	char attr[100];
 	int is_text = type && strcmp(type, "text") == 0;
@@ -295,13 +295,13 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 			}
 			if (ch == '\n' || ch == '\r')
 				cnt += 1;
-			sprintf(buf, "%d", cnt);
+			snprintf(buf, sizeof(buf), "%d", cnt);
 			call("doc:set-attr", p, 1, p2, "render:rfc822header-wrap", 0, NULL, buf);
 			mark_free(p2);
 		}
 	}
 	call("doc:replace", p, 1, NULL, "\n", 1, point);
-	sprintf(buf, "%zd", strlen(hdr)+1);
+	snprintf(buf, sizeof(buf), "%zd", strlen(hdr)+1);
 	call("doc:set-attr", p, 1, hstart, "render:rfc822header", 0, NULL, buf);
 	snprintf(attr, sizeof(attr), "render:rfc822header-%s", hdr);
 	call("doc:set-attr", p, 1, hstart, attr, 0, NULL, "10000");

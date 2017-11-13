@@ -1643,7 +1643,7 @@ DEF_CMD(text_doc_get_attr)
 	char *attr = ci->str;
 	char *val;
 	struct attrset *a;
-	int o;
+	int o = 0;
 
 	if (!m || !attr)
 		return -1;

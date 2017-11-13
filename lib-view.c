@@ -58,7 +58,7 @@ DEF_CMD(view_refresh)
 	char msg[100];
 	int i;
 	int mid;
-	char *name;
+	char *name = NULL;
 	char *modified = "??";
 
 //	p->cx = 0; p->cy = 0;

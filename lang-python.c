@@ -1394,7 +1394,7 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 	Mark *orig = NULL;
 	static char *keywords[] = {"pane","view","orig", NULL};
 	int ret;
-	int local;
+	int local = 0;
 
 	if (!PyTuple_Check(args) ||
 	    (PyTuple_GET_SIZE(args) == 0 && kwds == NULL))

@@ -30,7 +30,7 @@ DEF_CMD(render_line)
 	struct mark *pm = ci->mark2;
 	char *n;
 	wint_t ch;
-	int home;
+	int home = 0;
 	int field = 0;
 	int rv;
 
