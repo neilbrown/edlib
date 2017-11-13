@@ -305,8 +305,8 @@ REDEF_CMD(next_evt)
 		     dd->event_pos.x, dd->event_pos.y);
 		break;
 	case DoCheck:
-		if (strcmp(dd->next_screen, dd->last_screen) != 0)
-			printf("MISMATCH\n");
+		/* No point checking, just do a diff against new trace log. */
+		/* not; (strcmp(dd->next_screen, dd->last_screen) != 0) */
 		break;
 	case DoClose:
 		call("event:deactivate", p);
