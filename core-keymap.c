@@ -45,9 +45,9 @@
 
 #include "core.h"
 
-inline static int qhash(char key, int start)
+inline static int qhash(char key, unsigned int start)
 {
-	return (start ^ key) * 0x61C88647;
+	return (start ^ key) * 0x61C88647U;
 }
 
 struct map {
