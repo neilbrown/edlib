@@ -150,6 +150,40 @@ endwhile:
 	return buf_final(&ret);
 }
 
+DEF_CMD(format_content)
+{
+	struct rf_data *rf = ci->home->data;
+
+	if (!ci->mark || !ci->comm2)
+		return -1;
+
+	while (doc_following_pane(ci->focus, ci->mark) != WEOF) {
+		char *l;
+		mbstate_t ps = {};
+		wchar_t w;
+		int o = 0;
+		int len;
+
+		l = do_format(rf, ci->focus, ci->mark, NULL, -1, 0);
+		if (!l)
+			break;
+		len = strlen(l);
+		while (o < len) {
+			int err = mbrtowc(&w, l+o, len-o, &ps);
+			if (err <= 0 ||
+			    comm_call(ci->comm2, "consume", ci->home, w, ci->mark) <= 0)
+				/* Finished */
+				break;
+			o += err;
+		}
+		free(l);
+		if (o < len)
+			break;
+		mark_next_pane(ci->focus, ci->mark);
+	}
+	return 1;
+}
+
 DEF_CMD(render_line)
 {
 	struct rf_data *rf = ci->home->data;
@@ -234,6 +268,7 @@ static void render_format_register_map(void)
 	key_add(rf_map, "Close", &format_close);
 	key_add(rf_map, "Clone", &format_clone);
 	key_add(rf_map, "doc:get-attr", &format_get_attr);
+	key_add(rf_map, "doc:content", &format_content);
 }
 
 DEF_LOOKUP_CMD(render_format_handle, rf_map);
