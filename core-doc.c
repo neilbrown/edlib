@@ -32,6 +32,7 @@ struct doc_ref {
 };
 
 #include "core.h"
+#include "misc.h"
 
 static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe, int, char *);
 static struct pane *doc_attach(struct pane *parent, struct pane *d);
@@ -626,6 +627,60 @@ DEF_CMD(doc_default_content)
 	return 1;
 }
 
+struct getstr {
+	struct buf b;
+	struct mark *end;
+	struct command c;
+};
+
+DEF_CMD(get_str_callback)
+{
+	wint_t wch = ci->num & 0xFFFFF;
+	struct getstr *g = container_of(ci->comm, struct getstr, c);
+
+	if (!ci->mark)
+		return 0;
+	if (g->end && ci->mark->seq >= g->end->seq)
+		return 0;
+	buf_append(&g->b, wch);
+	return 1;
+}
+
+DEF_CMD(doc_get_str)
+{
+	/* Default doc_get_str
+	 * uses doc:content to collect the content
+	 * into a buf.
+	 */
+	struct getstr g;
+	struct mark *from = NULL, *to = NULL, *m;
+
+	if (ci->mark && ci->mark2) {
+		if (mark_ordered(ci->mark2, ci->mark)) {
+			from = ci->mark2;
+			to = ci->mark;
+		} else {
+			from = ci->mark;
+			to = ci->mark2;
+		}
+	}
+
+	g.c = get_str_callback;
+	buf_init(&g.b);
+	g.end = to;
+	if (from)
+		m = mark_dup(from, 1);
+	else
+		m = vmark_new(ci->focus, MARK_UNGROUPED);
+	if (!m)
+		return -1;
+	call_comm("doc:content", ci->focus, &g.c, 0, m);
+	mark_free(m);
+	comm_call(ci->comm2, "callback:get-str", ci->focus, 0, NULL, buf_final(&g.b));
+	free(g.b.b);
+	return 1;
+}
+
 DEF_CMD(doc_write_file)
 {
 	/* Default write-file handler
@@ -870,6 +925,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:drop-cache", &doc_drop_cache);
 	key_add(doc_default_cmd, "doc:closed", &doc_do_closed);
 	key_add(doc_default_cmd, "doc:mymark", &doc_mymark);
+	key_add(doc_default_cmd, "doc:get-str", &doc_get_str);
 	key_add(doc_default_cmd, "doc:write-file", &doc_write_file);
 	key_add(doc_default_cmd, "doc:content", &doc_default_content);
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
