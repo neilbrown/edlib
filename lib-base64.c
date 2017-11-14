@@ -118,6 +118,7 @@ static int locate_mark(struct pane *p safe, int view, struct mark *m safe)
 		}
 		mark_next_pane(p, tmp); pos++;
 	}
+	mark_free(tmp);
 	return pos%4;
 }
 
@@ -170,8 +171,10 @@ retry:
 		}
 	}
 
-	if (c1 == WEOF || c2 == WEOF)
+	if (c1 == WEOF || c2 == WEOF) {
+		mark_free(m);
 		return CHAR_RET(WEOF);
+	}
 
 	switch(pos) {
 	case 0:
