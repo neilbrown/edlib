@@ -21,27 +21,18 @@ struct rf_data {
 	int fields;
 };
 
-DEF_CMD(render_line)
+static char *do_format(struct rf_data *rf safe, struct pane *focus safe,
+		       struct mark *m safe, struct mark *pm,
+		       int len, int attrs)
 {
-	char *body = pane_attr_get(ci->focus, "line-format");
-	struct rf_data *rf = ci->home->data;
+	char *body = pane_attr_get(focus, "line-format");
 	struct buf ret;
-	struct mark *m = ci->mark;
-	struct mark *pm = ci->mark2;
 	char *n;
-	wint_t ch;
 	int home = 0;
 	int field = 0;
-	int rv;
 
-	if (!ci->mark)
-		return -1;
-
-	if (pm && !mark_same_pane(ci->focus, pm, m))
+	if (pm && !mark_same_pane(focus, pm, m))
 		pm = NULL;
-	ch = doc_following_pane(ci->focus, m);
-	if (ch == WEOF)
-		return 1;
 	buf_init(&ret);
 
 	if (!body)
@@ -52,14 +43,22 @@ DEF_CMD(render_line)
 		pm->rpos = rf->home_field;
 	if (pm && pm->rpos == m->rpos)
 		goto endwhile;
-	if (ci->num != NO_NUMERIC && ci->num >= 0 &&
-	    ret.len >= ci->num)
+	if (len >= 0 && ret.len >= len)
 		goto endwhile;
 
 	while (*n) {
 		char buf[40], *b, *val;
 		int w, adjust, l;
 
+		if (!attrs && *n == '<' && n[1] != '<') {
+			/* an attribute, skip it */
+			n += 1;
+			while (*n && *n != '>')
+				n += 1;
+			if (*n == '>')
+				n += 1;
+			continue;
+		}
 		if (*n != '%' || n[1] == '%') {
 			buf_append_byte(&ret, *n);
 			if (*n == '%')
@@ -71,8 +70,7 @@ DEF_CMD(render_line)
 			field += 1;
 		m->rpos = field;
 
-		if (ci->num != NO_NUMERIC && ci->num >= 0 &&
-		    ret.len >= ci->num)
+		if (len >= 0 && ret.len >= len)
 			break;
 		if (pm && pm->rpos == m->rpos)
 			break;
@@ -92,21 +90,16 @@ DEF_CMD(render_line)
 			n += 1;
 		}
 		*b = 0;
-		if (strcmp(buf, "c") == 0) {
-			/* Display the char under cursor */
-			buf_append(&ret, ch);
-			continue;
-		}
 		if (!buf[0])
 			val = "";
 		else
-			val = pane_mark_attr(ci->focus, m, buf);
+			val = pane_mark_attr(focus, m, buf);
 		if (!val)
 			val = "-";
 
 		if (*n != ':') {
 			while (*val) {
-				if (*val == '<')
+				if (*val == '<' && attrs)
 					buf_append_byte(&ret, '<');
 				buf_append_byte(&ret, *val);
 				val += 1;
@@ -131,7 +124,7 @@ DEF_CMD(render_line)
 		}
 
 		while (*val && w > 0 ) {
-			if (*val == '<')
+			if (*val == '<' && attrs)
 				buf_append_byte(&ret, '<');
 			buf_append_byte(&ret, *val);
 			w -= 1;
@@ -149,16 +142,39 @@ endwhile:
 		m->rpos = field;
 		if (pm && pm->rpos == m->rpos)
 			;
-		else if (ci->num >= 0 && ci->num != NO_NUMERIC)
+		else if (len >= 0)
 			;
-		else {
+		else
 			buf_append(&ret, '\n');
-			mark_next_pane(ci->focus, m);
-		}
 	}
-	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
-		       buf_final(&ret));
-	free(ret.b);
+	return buf_final(&ret);
+}
+
+DEF_CMD(render_line)
+{
+	struct rf_data *rf = ci->home->data;
+	struct mark *m = ci->mark;
+	struct mark *pm = ci->mark2;
+	char *ret;
+	int rv;
+	int len;
+
+	if (!ci->mark)
+		return -1;
+	if (doc_following_pane(ci->focus, ci->mark) == WEOF)
+		return 1;
+
+	if (pm && !mark_same_pane(ci->focus, pm, m))
+		pm = NULL;
+	if (ci->num == NO_NUMERIC || ci->num < 0)
+		len = -1;
+	else
+		len = ci->num;
+	ret = do_format(rf, ci->focus, ci->mark, pm, len, 1);
+	if (!pm && len < 0)
+		mark_next_pane(ci->focus, m);
+	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, ret);
+	free(ret);
 	return rv;
 }
 
