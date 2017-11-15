@@ -64,7 +64,9 @@
 /* A doc_ref is treated as a pointer to a chunk, and an offset
  * from the start of 'txt'.  So 'o' must be between c->start and
  * c->end inclusive.
-
+ * A 'c' of NULL means end of file.
+ * The normalized form requires that 'o' does
+ * not point to the end of the chunk.
  */
 #define PRIVATE_DOC_REF
 
@@ -143,9 +145,12 @@ static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
 				struct doc_ref *target safe);
 static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
 			 struct doc_ref *r2 safe);
+static int _text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
+			  struct doc_ref *r2 safe);
 static int text_locate(struct text *t safe, struct doc_ref *r safe,
 		       struct doc_ref *dest safe);
 static void text_check_consistent(struct text *t safe);
+static void text_normalize(struct text *t safe, struct doc_ref *r safe);
 
 static struct map *text_map;
 /*
@@ -550,39 +555,32 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe, char *st
 static int text_update_prior_after_change(struct text *t safe, struct doc_ref *pos safe,
 					  struct doc_ref *spos safe, struct doc_ref *epos safe)
 {
+	int ret = 1;
 
-	if (pos->c == NULL) {
+	if (pos->c == NULL)
 		/* Was at the end, now must be at the start of the change */
 		*pos = *spos;
-		return 1;
-	}
-
-	if (pos->c->start >= pos->c->end) {
+	else if (pos->c->start >= pos->c->end)
 		/* This chunk was deleted */
 		*pos = *spos;
-		return 1;
-	}
-	if (text_ref_same(t, pos, epos)) {
+	else if (_text_ref_same(t, pos, epos))
 		*pos = *spos;
-		return 1;
-	}
-	if (pos->o < pos->c->start) {
+	else if (pos->o < pos->c->start)
 		/* Text deleted from under me */
 		pos->o = pos->c->start;
-		return 1;
-	}
-	if (pos->o > pos->c->end) {
+	else if (pos->o > pos->c->end)
 		/* Text deleted under me */
 		pos->o = pos->c->end;
-		return 1;
-	}
-	if (pos->o == pos->c->end)
+	else if (pos->o == pos->c->end)
 		/* This mark is OK, but previous mark might be
 		 * at start of next chunk, so keep looking
 		 */
-		return 1;
-	/* no insert or delete here, so all done */
-	return 0;
+		;
+	else
+		/* no insert or delete here, so all done */
+		ret = 0;
+	text_normalize(t, pos);
+	return ret;
 }
 
 static int text_update_following_after_change(struct text *t safe, struct doc_ref *pos safe,
@@ -592,6 +590,7 @@ static int text_update_following_after_change(struct text *t safe, struct doc_re
 	 * epos.
 	 */
 	struct text_chunk *c;
+	int ret = 1;
 
 	if (pos->c == NULL)
 		return 1;
@@ -606,20 +605,14 @@ static int text_update_following_after_change(struct text *t safe, struct doc_re
 			pos->c = epos->c;
 		else
 			*pos = *epos;
-		return 1;
-	}
-	if (pos->c == epos->c &&
-	    pos->o < epos->o) {
+	} else if (pos->c == epos->c &&
+	    pos->o < epos->o)
 		/* Text inserted, need to push forward. */
 		pos->o = epos->o;
-		return 1;
-	}
-	if (pos->o < pos->c->start) {
+	else if (pos->o < pos->c->start)
 		/* must have been deleted... */
 		pos->o = pos->c->start;
-		return 1;
-	}
-	if (pos->o > pos->c->end) {
+	else if (pos->o > pos->c->end) {
 		/* This was split, or text was deleted off the end */
 
 		c = epos->c;
@@ -635,21 +628,20 @@ static int text_update_following_after_change(struct text *t safe, struct doc_re
 		if (pos->o > pos->c->end)
 			/* no split found, so just a delete */
 			pos->o = pos->c->end;
-		return 1;
-	}
-	if (text_ref_same(t, pos, spos)) {
+	} else if (_text_ref_same(t, pos, spos))
 		*pos = *epos;
-		return 1;
-	}
-	if (pos->o == pos->c->start)
+	else if (pos->o == pos->c->start)
 		/* This mark is OK, but next mark might be
 		 * at end of previous chunk, so keep looking
 		 */
-		return 1;
-	/* This is beyond the change point and no deletion or split
-	 * happened here, so all done.
-	 */
-	return 0;
+		;
+	else
+		/* This is beyond the change point and no deletion or split
+		 * happened here, so all done.
+		 */
+		ret = 0;
+	text_normalize(t, pos);
+	return ret;
 }
 
 static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
@@ -898,6 +890,9 @@ DEF_CMD(text_reundo)
 		if (did_do == 0)
 			break;
 
+		text_normalize(t, &start);
+		text_normalize(t, &end);
+
 		if (first) {
 			/* Not nearby, look from the start */
 			mark_reset(d, m, 0);
@@ -934,7 +929,7 @@ DEF_CMD(text_reundo)
 			} while (i == 2);
 		}
 
-		if (!text_ref_same(t, &m->ref, &end))
+		if (!_text_ref_same(t, &m->ref, &end))
 			/* eek! */
 			break;
 		/* point is now at location of undo */
@@ -950,6 +945,7 @@ DEF_CMD(text_reundo)
 							       &start, &end) == 0)
 				break;
 
+		text_normalize(t, &m->ref);
 		early = doc_prev_mark_all(m);
 		if (early && !text_ref_same(t, &early->ref, &start))
 			early = NULL;
@@ -1008,29 +1004,35 @@ static int text_str_cmp(struct text *t, struct doc_ref *r, char *s)
 }
 #endif
 
+static void text_normalize(struct text *t safe, struct doc_ref *r safe)
+{
+	while (r->c && r->o >= r->c->end) {
+		if (r->c->lst.next == &t->text) {
+			r->c = NULL;
+			r->o = 0;
+		} else {
+			r->c = list_next_entry(r->c, lst);
+			r->o = r->c->start;
+		}
+	}
+}
 static wint_t text_next(struct text *t safe, struct doc_ref *r safe)
 {
 	wchar_t ret;
 	int err;
 	mbstate_t ps = {};
 
+	text_normalize(t, r);
 	if (r->c == NULL)
 		return WEOF;
-
-	if (r->o >= r->c->end) {
-		if (r->c->lst.next == &t->text)
-			return WEOF;
-		r->c = list_next_entry(r->c, lst);
-		r->o = r->c->start;
-	}
 
 	err = mbrtowc(&ret, r->c->txt + r->o, r->c->end - r->o, &ps);
 	if (err > 0) {
 		ASSERT(text_round_len(r->c->txt, r->o+err-1) == r->o);
 		r->o += err;
-		return ret;
-	}
-	ret = (unsigned char)r->c->txt[r->o++];
+	} else
+		ret = (unsigned char)r->c->txt[r->o++];
+	text_normalize(t, r);
 	return ret;
 }
 
@@ -1105,7 +1107,7 @@ DEF_CMD(text_step)
 	return CHAR_RET(ret);
 }
 
-static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct doc_ref *r2 safe)
+static int _text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct doc_ref *r2 safe)
 {
 	if (r1->c == r2->c) {
 		if (r1->o == r2->o)
@@ -1149,6 +1151,14 @@ static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct do
 		return 1;
 	return 0;
 }
+
+static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct doc_ref *r2 safe)
+{
+	int ret = _text_ref_same(t, r1, r2);
+	ASSERT(ret == (r1->c == r2->c && r1->o == r2->o));
+	return ret;
+}
+
 
 DEF_CMD(text_mark_same)
 {
@@ -1312,6 +1322,8 @@ static int text_advance_towards(struct text *t safe,
 	 * 1 - found target
 	 * 2 - on a new chunk, keep looking.
 	 */
+	if (ref->c && ref->o >= ref->c->end)
+		text_normalize(t, ref);
 	if (ref->c == target->c) {
 		if (ref->o > target->o)
 			/* will never find it */
@@ -1319,38 +1331,9 @@ static int text_advance_towards(struct text *t safe,
 		ref->o = target->o;
 		return 1;
 	}
-	if (ref->c == NULL) {
-		/* FIXME impossible */
-		if (target->c == NULL) return 0;
-
-		if (target->c->lst.next == &t->text &&
-		    target->o == target->c->end)
-			return 1;
+	if (ref->c == NULL)
+		/* Reached EOF, haven't found */
 		return 0;
-	}
-	if (text_ref_same(t, ref, target)) {
-		*ref = *target;
-		return 1;
-	}
-	if (ref->o >= ref->c->end) {
-		if (ref->c->lst.next == &t->text) {
-			if (target->c == NULL) {
-				ref->c = NULL;
-				ref->o = 0;
-				return 1;
-			}
-			return 0;
-		}
-		ref->c = list_next_entry(ref->c, lst);
-		ref->o = ref->c->start;
-	}
-	if (ref->c == target->c) {
-		if (ref->o > target->o)
-			/* will never find it */
-			return 0;
-		ref->o = target->o;
-		return 1;
-	}
 	ref->o = ref->c->end;
 	return 2;
 }
@@ -1366,27 +1349,19 @@ static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
 	 * 1 - found target
 	 * 2 - on a new chunk, keep looking.
 	 */
-	if (ref->c == NULL) {
-		if (list_empty(&t->text))
-			return 0;
-		ref->c = list_entry(t->text.prev, struct text_chunk, lst);
-		ref->o = ref->c->end;
-	}
-	if (text_ref_same(t, ref, target)) {
-		*ref = *target;
-		return 1;
-	}
-	if (ref->o <= ref->c->start) {
-		if (ref->c->lst.prev == &t->text)
-			return 0;
-		ref->c = list_prev_entry(ref->c, lst);
-		ref->o = ref->c->end;
-	}
+
 	if (ref->c == target->c) {
+		if (ref->c == NULL)
+			return 1;
+		if (target->o > ref->o)
+			return 0;
 		ref->o = target->o;
 		return 1;
 	}
-	ref->o = ref->c->start;
+	if (ref->c)
+		ref->o = ref->c->start;
+	if (text_prev(t, ref) == WEOF)
+		return 0;
 	return 2;
 }
 
@@ -1499,7 +1474,7 @@ static void text_check_consistent(struct text *t safe)
 		if (prev) {
 			struct doc_ref r = prev->ref;/* SMATCH Bug things prev has no state*/
 			int i;
-
+			text_normalize(t, &m->ref);
 			while ((i = text_advance_towards(t, &r, &m->ref)) != 1) {
 				if (i == 0)
 					abort();
