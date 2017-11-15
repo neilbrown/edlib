@@ -841,11 +841,11 @@ static int text_redo(struct text *t safe,
 			start->o = e->target->start;
 	} else {
 		e->target->end += e->len;
-		if (e->len > 0)
+		if (is_split)
+			start->o = end->o = e->target->start;
+		else if (e->len > 0)
 			/* Insertion at end */
 			end->o = e->target->end;
-		else if (is_split)
-			start->o = end->o = e->target->start;
 		else
 			/* Deletion at end */
 			start->o = end->o = e->target->end;
