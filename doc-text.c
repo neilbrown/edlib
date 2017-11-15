@@ -1016,7 +1016,7 @@ static void text_normalize(struct text *t safe, struct doc_ref *r safe)
 		}
 	}
 }
-static wint_t text_next(struct text *t safe, struct doc_ref *r safe)
+static wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
 {
 	wchar_t ret;
 	int err;
@@ -1026,7 +1026,7 @@ static wint_t text_next(struct text *t safe, struct doc_ref *r safe)
 	if (r->c == NULL)
 		return WEOF;
 
-	err = mbrtowc(&ret, r->c->txt + r->o, r->c->end - r->o, &ps);
+	err = bytes ? 0 : mbrtowc(&ret, r->c->txt + r->o, r->c->end - r->o, &ps);
 	if (err > 0) {
 		ASSERT(text_round_len(r->c->txt, r->o+err-1) == r->o);
 		r->o += err;
@@ -1036,7 +1036,7 @@ static wint_t text_next(struct text *t safe, struct doc_ref *r safe)
 	return ret;
 }
 
-static wint_t text_prev(struct text *t safe, struct doc_ref *r safe)
+static wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
 {
 	wchar_t ret;
 	int err;
@@ -1055,11 +1055,15 @@ static wint_t text_prev(struct text *t safe, struct doc_ref *r safe)
 		r->c = list_prev_entry(r->c, lst);
 		r->o = r->c->end;
 	}
-	r->o = r->c->start +
-		text_round_len(r->c->txt+r->c->start, r->o - r->c->start - 1);
-	err = mbrtowc(&ret, r->c->txt + r->o, r->c->end - r->o, &ps);
-	if (err > 0)
-		return ret;
+	if (bytes)
+		r->o -= 1;
+	else {
+		r->o = r->c->start +
+			text_round_len(r->c->txt+r->c->start, r->o - r->c->start - 1);
+		err = mbrtowc(&ret, r->c->txt + r->o, r->c->end - r->o, &ps);
+		if (err > 0)
+			return ret;
+	}
 
 	ret = (unsigned char)r->c->txt[r->o];
 	return ret;
@@ -1081,7 +1085,7 @@ DEF_CMD(text_step)
 
 	r = m->ref;
 	if (forward) {
-		ret = text_next(t, &r);
+		ret = text_next(t, &r, 0);
 		if (move)
 			for (m2 = doc_next_mark_all(m);
 			     m2 &&
@@ -1090,7 +1094,49 @@ DEF_CMD(text_step)
 			     m2 = doc_next_mark_all(m2))
 				target = m2;
 	} else {
-		ret = text_prev(t, &r);
+		ret = text_prev(t, &r, 0);
+		if (move)
+			for (m2 = doc_prev_mark_all(m);
+			     m2 &&
+				     (text_ref_same(t, &m2->ref, &m->ref) ||
+				      text_ref_same(t, &m2->ref, &r));
+			     m2 = doc_prev_mark_all(m2))
+				target = m2;
+	}
+	if (move) {
+		mark_to_mark(m, target);
+		m->ref = r;
+	}
+	/* return value must be +ve, so use high bits to ensure this. */
+	return CHAR_RET(ret);
+}
+
+DEF_CMD(text_step_bytes)
+{
+	struct doc *d = ci->home->data;
+	struct mark *m = ci->mark;
+	struct mark *m2, *target = m;
+	bool forward = ci->num;
+	bool move = ci->num2;
+	struct text *t = container_of(d, struct text, doc);
+	struct doc_ref r;
+	wint_t ret;
+
+	if (!m)
+		return -1;
+
+	r = m->ref;
+	if (forward) {
+		ret = text_next(t, &r, 1);
+		if (move)
+			for (m2 = doc_next_mark_all(m);
+			     m2 &&
+				     (text_ref_same(t, &m2->ref, &m->ref) ||
+				      text_ref_same(t, &m2->ref, &r));
+			     m2 = doc_next_mark_all(m2))
+				target = m2;
+	} else {
+		ret = text_prev(t, &r, 1);
 		if (move)
 			for (m2 = doc_prev_mark_all(m);
 			     m2 &&
@@ -1110,6 +1156,9 @@ DEF_CMD(text_step)
 static int _text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct doc_ref *r2 safe)
 {
 	if (r1->c == r2->c) {
+#if 1
+		return r1->o == r2->o;
+#else
 		if (r1->o == r2->o)
 			return 1;
 		if (r1->c == NULL)
@@ -1125,6 +1174,7 @@ static int _text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct d
 			return 0;
 		return text_round_len(r1->c->txt, r1->o) ==
 			text_round_len(r1->c->txt, r2->o);
+#endif
 	}
 	if (r1->c == NULL /*FIXME redundant*/ && r2->c != NULL) {
 		if (list_empty(&t->text))
@@ -1360,7 +1410,7 @@ static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
 	}
 	if (ref->c)
 		ref->o = ref->c->start;
-	if (text_prev(t, ref) == WEOF)
+	if (text_prev(t, ref, 1) == WEOF)
 		return 0;
 	return 2;
 }
@@ -1652,6 +1702,8 @@ DEF_CMD(text_get_attr)
 		val = "text";
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "text";
+	else if (strcmp(attr, "doc:charset") == 0)
+		val = "utf-8";
 	else if (strcmp(attr, "filename") == 0)
 		val = t->fname;
 	else if (strcmp(attr, "doc-modified") == 0)
@@ -1766,6 +1818,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:replace", &text_replace);
 	key_add(text_map, "doc:mark-same", &text_mark_same);
 	key_add(text_map, "doc:step", &text_step);
+	key_add(text_map, "doc:step-bytes", &text_step_bytes);
 	key_add(text_map, "doc:modified", &text_modified);
 
 	key_add(text_map, "Close", &text_destroy);

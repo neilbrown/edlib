@@ -21,6 +21,7 @@
 
 struct he_data {
 	struct pane	*pane;
+	bool bytes;
 };
 
 static struct map *he_map;
@@ -185,11 +186,23 @@ DEF_CMD(render_line_prev)
 	return 1;
 }
 
+DEF_CMD(hex_step)
+{
+	struct he_data *he = ci->home->data;
+
+	if (!he->bytes || !ci->home->parent)
+		return 0;
+	return home_call(ci->home->parent, "doc:step-bytes", ci->focus,
+			 ci->num, ci->mark, ci->str,
+			 ci->num2, ci->mark2, ci->str2);
+}
+
 static void render_hex_register_map(void)
 {
 	he_map = key_alloc();
 
 	key_add(he_map, "Move-EOL", &render_hex_eol);
+	key_add(he_map, "doc:step", &hex_step);
 
 	key_add(he_map, "render-line-prev", &render_line_prev);
 	key_add(he_map, "render-line", &render_line);
@@ -203,6 +216,7 @@ static struct pane *do_render_hex_attach(struct pane *parent safe)
 {
 	struct he_data *he = malloc(sizeof(*he));
 	struct pane *p;
+	char *charset = pane_attr_get(parent, "doc:charset");
 
 	if (!he_map)
 		render_hex_register_map();
@@ -212,6 +226,7 @@ static struct pane *do_render_hex_attach(struct pane *parent safe)
 	attr_set_str(&p->attrs, "render-wrap", "no");
 	attr_set_str(&p->attrs, "heading", "<bold>          00 11 22 33 44 55 66 77  88 99 aa bb cc dd ee ff   0 1 2 3 4 5 6 7  8 9 a b c d e f</>");
 	he->pane = p;
+	he->bytes = (charset && strcmp(charset, "8bit") != 0);
 	return render_attach("lines", p);
 }
 
