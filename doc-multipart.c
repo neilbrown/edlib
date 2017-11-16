@@ -314,6 +314,30 @@ DEF_CMD(mp_step)
 	return ret == -1 ? (int)CHAR_RET(WEOF) : ret;
 }
 
+DEF_CMD(mp_step_part)
+{
+	/* Step forward or backward to part boundary.
+	 * Stepping forward takes us to start of next part.
+	 * Stepping backward takes us to start of this
+	 * part - we might not move.
+	 * Return part number plus 1.
+	 */
+	struct mp_info *mpi = ci->home->data;
+	struct mark *m = ci->mark;
+
+	if (!m)
+		return -1;
+	if (ci->num > 0)
+		/* Forward - next part */
+		change_part(mpi, m, m->ref.docnum + 1, 0);
+	else
+		/* Backward - this part */
+		change_part(mpi, m, m->ref.docnum, 0);
+
+	mp_normalize(mpi, m);
+	return m->ref.docnum + 1;
+}
+
 DEF_CMD(mp_attr)
 {
 	struct mp_info *mpi = ci->home->data;
@@ -560,6 +584,7 @@ static void mp_init_map(void)
 	key_add(mp_map, "doc:step", &mp_step);
 	key_add(mp_map, "doc:get-attr", &mp_attr);
 	key_add(mp_map, "doc:set-attr", &mp_set_attr);
+	key_add(mp_map, "doc:step-part", &mp_step_part);
 	key_add(mp_map, "Close", &mp_close);
 	key_add(mp_map, "Notify:Close", &mp_notify_close);
 	key_add(mp_map, "Notify:doc:viewers", &mp_notify_viewers);
