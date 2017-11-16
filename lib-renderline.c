@@ -58,7 +58,7 @@ DEF_CMD(render_prev)
 	while ((ch = mark_prev_pane(p, m)) != WEOF &&
 	       (!is_eol(ch) || rpt > 0) &&
 	       count < LARGE_LINE &&
-	       (!boundary || mark_ordered(boundary, m))) {
+	       (!boundary || boundary->seq< m->seq)) {
 		rpt = 0;
 		if (!count)
 			boundary = vmark_at_or_before(p, m, rl->view);
@@ -66,7 +66,7 @@ DEF_CMD(render_prev)
 	}
 	if (ch != WEOF && !is_eol(ch)) {
 		/* need to ensure there is a stable boundary here */
-		if (!boundary || !mark_ordered(boundary, m)) {
+		if (!boundary || boundary->seq >= m->seq) {
 			boundary = vmark_new(p, rl->view);
 			if (boundary)
 				mark_to_mark(boundary, m);

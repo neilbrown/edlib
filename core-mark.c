@@ -682,7 +682,7 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 		point_to_mark(m, target);
 		return;
 	}
-	if (mark_ordered(m, target))
+	if (m->seq < target->seq)
 		do {
 			struct mark *n = doc_next_mark_all(m);
 			if (!n)
@@ -691,14 +691,14 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 				 */
 				break;
 			mark_forward_over(m, n);
-		} while (mark_ordered(m, target));
+		} while (m->seq < target->seq);
 	else
 		do {
 			struct mark *n = doc_prev_mark_all(m);
 			if (!n)
 				break;
 			mark_backward_over(m, n);
-		} while (mark_ordered(target, m));
+		} while (target->seq < m->seq);
 }
 
 void mark_to_mark(struct mark *m safe, struct mark *target safe)

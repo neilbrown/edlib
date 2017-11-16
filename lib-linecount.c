@@ -158,7 +158,7 @@ static void count_calculate(struct pane *p safe,
 	 * if 'm' is not before 'end' either, just count from
 	 * start to end.
 	 */
-	if (end && !mark_ordered(m, end)) {
+	if (end && m->seq >= end->seq) {
 		do_count(p, start?:m, end, &lines, &words, &chars, 0);
 		goto done;
 	}
@@ -172,7 +172,7 @@ static void count_calculate(struct pane *p safe,
 	else
 		do_count(p, start, m, &lines, &words, &chars, 0);
 	while ((m2 = doc_next_mark_view(m)) != NULL &&
-	       (!end || mark_ordered(m2, end))) {
+	       (!end || m2->seq < end->seq)) {
 		/* Need everything from m to m2 */
 		lines += attr_find_int(*mark_attr(m), "lines");
 		words += attr_find_int(*mark_attr(m), "words");

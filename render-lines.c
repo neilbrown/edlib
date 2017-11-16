@@ -865,7 +865,7 @@ static struct mark *call_render_line(struct pane *p safe, struct mark *start saf
 	/* Any mark between start and m2 must be discarded,
 	 */
 	while ((m = vmark_next(start)) != NULL &&
-	       mark_ordered(m, m2)) {
+	       m->seq < m2->seq) {
 			free(m->mdata);
 			m->mdata = NULL;
 			mark_free(m);
@@ -1021,7 +1021,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 				else
 					found_start = 1;
 			}
-			if (bot && mark_ordered(start, bot))
+			if (bot && start->seq < bot->seq)
 				found_end = 1;
 		}
 		if (!found_end && lines_below == 0) {
@@ -1045,7 +1045,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 					lines_below = rl->line_height * 2;
 				}
 			}
-			if (top && mark_ordered(top, end))
+			if (top && top->seq < end->seq)
 				found_start = 1;
 		}
 		if (lines_above > 0 && lines_below > 0) {
@@ -1577,8 +1577,8 @@ DEF_CMD(render_lines_move_pos)
 		/* last line might not be fully displayed, so don't assume */
 		bot = doc_prev_mark_view(bot);
 	if (top && bot &&
-	    mark_ordered(top, pm) &&
-	    mark_ordered(pm, bot) && !mark_same_pane(focus, pm, bot))
+	    top->seq < pm->seq &&
+	    pm->seq < bot->seq && !mark_same_pane(focus, pm, bot))
 		/* pos already displayed */
 		return 1;
 	find_lines(pm, p, focus, NO_NUMERIC);

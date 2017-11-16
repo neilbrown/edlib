@@ -1289,7 +1289,7 @@ DEF_CMD(text_get_str)
 	int l = 0, head, tail;
 
 	if (ci->mark && ci->mark2) {
-		if (mark_ordered(ci->mark2, ci->mark)) {
+		if (ci->mark2->seq < ci->mark->seq) {
 			from = ci->mark2;
 			to = ci->mark;
 		} else {
@@ -1585,7 +1585,7 @@ DEF_CMD(text_replace)
 		if (t->undo == t->saved)
 			status_change = 1;
 
-		if (!mark_ordered(pm, end)) {
+		if (pm->seq >= end->seq) {
 			myend = mark_dup(pm, 1);
 			mark_to_mark(pm, end);
 		} else

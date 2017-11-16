@@ -656,7 +656,7 @@ DEF_CMD(doc_get_str)
 	struct mark *from = NULL, *to = NULL, *m;
 
 	if (ci->mark && ci->mark2) {
-		if (mark_ordered(ci->mark2, ci->mark)) {
+		if (ci->mark2->seq < ci->mark->seq) {
 			from = ci->mark2;
 			to = ci->mark;
 		} else {

@@ -223,21 +223,16 @@ struct mark *vmark_at_point(struct pane *p safe, int view);
 struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe, int view);
 struct mark *vmark_new(struct pane *p safe, int view);
 
-static inline int mark_ordered(struct mark *m1 safe, struct mark *m2 safe)
-{
-	return m1->seq < m2->seq;
-}
-
 static inline int mark_ordered_or_same_pane(struct pane *p safe,
 						    struct mark *m1 safe, struct mark *m2 safe)
 {
-	return mark_ordered(m1, m2) || mark_same_pane(p, m1, m2);
+	return m1->seq < m2->seq || mark_same_pane(p, m1, m2);
 }
 
 static inline int mark_ordered_not_same_pane(struct pane *p safe, struct mark *m1 safe,
 					     struct mark *m2 safe)
 {
-	return mark_ordered(m1, m2) && !mark_same_pane(p, m1, m2);
+	return m1->seq < m2->seq && !mark_same_pane(p, m1, m2);
 }
 
 static inline struct attrset **safe mark_attr(struct mark *m safe)
