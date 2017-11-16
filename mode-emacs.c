@@ -1084,6 +1084,14 @@ DEF_CMD(emacs_highlight_abort)
 	return 0;
 }
 
+DEF_CMD(emacs_highlight_clip)
+{
+	struct highlight_info *hi = ci->home->data;
+
+	marks_clip(ci->home, ci->mark, ci->mark2, hi->view);
+	return 1;
+}
+
 DEF_CMD(emacs_bury)
 {
 	/* Display something else in this tile. */
@@ -1446,6 +1454,7 @@ static void emacs_init(void)
 	key_add(m, "Draw:text", &highlight_draw);
 	key_add(m, "Close", &emacs_highlight_close);
 	key_add(m, "Abort", &emacs_highlight_abort);
+	key_add(m, "Notify:clip", &emacs_highlight_clip);
 	hl_map = m;
 }
 

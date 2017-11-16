@@ -396,6 +396,14 @@ DEF_CMD(header_get)
 	return t ? 1 : 2;
 }
 
+DEF_CMD(header_clip)
+{
+	struct header_info *hi = ci->home->data;
+
+	marks_clip(ci->home, ci->mark, ci->mark2, hi->vnum);
+	return 1;
+}
+
 static struct map *header_map safe;
 
 static void header_init_map(void)
@@ -403,6 +411,7 @@ static void header_init_map(void)
 	header_map = key_alloc();
 	key_add(header_map, "Close", &header_close);
 	key_add(header_map, "get-header", &header_get);
+	key_add(header_map, "Notify:clip", &header_clip);
 }
 
 DEF_LOOKUP_CMD(header_handle, header_map);

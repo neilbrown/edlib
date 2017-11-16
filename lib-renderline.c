@@ -379,6 +379,14 @@ DEF_CMD(rl_clone)
 	return 1;
 }
 
+DEF_CMD(rl_clip)
+{
+	struct rl_info *rl = ci->home->data;
+
+	marks_clip(ci->home, ci->mark, ci->mark2, rl->view);
+	return 1;
+}
+
 DEF_CMD(rl_close)
 {
 	struct pane *p = ci->home;
@@ -401,6 +409,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(rl_map, "render-line-prev", &render_prev);
 	key_add(rl_map, "Clone", &rl_clone);
 	key_add(rl_map, "Close", &rl_close);
+	key_add(rl_map, "Notify:clip", &rl_clip);
 
 	call_comm("global-set-command", ed, &renderline_attach, 0, NULL, "attach-renderline");
 }

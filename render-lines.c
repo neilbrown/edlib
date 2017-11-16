@@ -1726,6 +1726,14 @@ DEF_CMD(render_lines_notify_replace)
 	return 1;
 }
 
+DEF_CMD(render_lines_clip)
+{
+	struct rl_data *rl = ci->home->data;
+
+	marks_clip(ci->home, ci->mark, ci->mark2, rl->typenum);
+	return 1;
+}
+
 DEF_CMD(render_lines_attach);
 DEF_CMD(render_lines_clone)
 {
@@ -1762,6 +1770,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Clone", &render_lines_clone);
 	key_add(rl_map, "Refresh", &render_lines_refresh);
 	key_add(rl_map, "Refresh:view", &render_lines_refresh_view);
+	key_add(rl_map, "Notify:clip", &render_lines_clip);
 
 	key_add(rl_map, "Notify:doc:Replace", &render_lines_notify_replace);
 	/* Notify:change is sent to a tile when the display might need

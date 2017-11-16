@@ -435,7 +435,7 @@ class PresenterPane(edlib.Pane):
             return f
         return os.path.dirname(path)+'/'+f
 
-    def handle(self, key, focus, mark, num, comm2, **a):
+    def handle(self, key, focus, mark, mark2, num, comm2, **a):
         if key[:10] == "Present-BG":
             cmds = key[11:].split(',')
             ret = 0
@@ -461,6 +461,12 @@ class PresenterPane(edlib.Pane):
                 if rv != None:
                     ret |= rv
             return ret
+
+        if key == "Notify:clip":
+            self.clip(self.attrview, mark, mark2);
+            self.clip(self.pageview, mark, mark2);
+            return 1
+
         if key == "render-line-prev":
             # Go to start of page
             if num == 0:

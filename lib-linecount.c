@@ -284,6 +284,14 @@ DEF_CMD(linecount_notify_goto)
 	return 1;
 }
 
+DEF_CMD(linecount_clip)
+{
+	struct count_info *cli = ci->home->data;
+
+	marks_clip(ci->home, ci->mark, ci->mark2, cli->view_num);
+	return 1;
+}
+
 DEF_CMD(count_lines)
 {
 	/* FIXME optimise this away most of the time */
@@ -327,4 +335,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(linecount_map, "Notify:doc:Replace", &linecount_notify_replace);
 	key_add(linecount_map, "Notify:doc:CountLines", &linecount_notify_count);
 	key_add(linecount_map, "Notify:doc:GotoLine", &linecount_notify_goto);
+	key_add(linecount_map, "Notify:clip", &linecount_clip);
 }
