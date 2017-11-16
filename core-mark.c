@@ -903,11 +903,6 @@ struct mark *do_vmark_at_or_before(struct pane *p safe, struct doc *d safe,
 	return vm;
 }
 
-void doc_notify_change(struct doc *d safe, struct mark *m, struct mark *m2)
-{
-	pane_notify("Notify:doc:Replace", d->home, 0, m, NULL, 0, m2);
-}
-
 void doc_check_consistent(struct doc *d safe)
 {
 	/* Check consistency of marks, and abort if not.

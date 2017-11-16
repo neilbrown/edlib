@@ -75,7 +75,7 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 				m->ref.p = NULL;
 			else
 				m->ref.p = list_next_entry(p, siblings);
-			doc_notify_change(&doc->doc, m, NULL);
+			pane_notify("Notify:doc:Replace", doc->doc.home, 0, m);
 		}
 }
 
@@ -98,7 +98,7 @@ static void docs_enmark(struct docs *doc safe, struct pane *p safe)
 	     m = doc_next_mark_all(m))
 		if (m->ref.p == next) {
 			m->ref.p = p;
-			doc_notify_change(&doc->doc, m, NULL);
+			pane_notify("Notify:doc:Replace", doc->doc.home, 0, m);
 		}
 }
 
@@ -408,12 +408,13 @@ DEF_CMD(doc_damage)
 	struct pane *p = ci->home;
 	struct mark *m = doc_new_mark(p->data, MARK_UNGROUPED);
 	struct pane *child = ci->focus;
+	struct doc *d = p->data;
 
 	if (!child || !m)
 		return -1;
 	do {
 		if (m->ref.p == child) {
-			doc_notify_change(p->data, m, NULL);
+			pane_notify("Notify:doc:Replace", d->home, 0, m);
 			break;
 		}
 	} while (mark_next(p->data, m) != WEOF);

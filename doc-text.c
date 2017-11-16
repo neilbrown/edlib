@@ -950,7 +950,8 @@ DEF_CMD(text_reundo)
 		if (early && !text_ref_same(t, &early->ref, &start))
 			early = NULL;
 
-		doc_notify_change(&t->doc, ci->mark, early);
+		pane_notify("Notify:doc:Replace", t->doc.home, 0, ci->mark, NULL,
+			    0, early);
 
 		text_check_consistent(t);
 	}
@@ -1632,7 +1633,8 @@ DEF_CMD(text_replace)
 	}
 	if (status_change)
 		call("Notify:doc:status-changed", d->home);
-	doc_notify_change(&t->doc, pm, early);
+	pane_notify("Notify:doc:Replace", t->doc.home, 0, pm, NULL,
+		    0, early);
 	if (!ci->mark2)
 		mark_free(pm);
 	return first ? 1 : 2;
@@ -1743,7 +1745,7 @@ DEF_CMD(text_set_attr)
 		c = list_next_entry(c, lst);
 		o = c->start;
 	}
-	doc_notify_change(&t->doc, ci->mark, NULL);
+	pane_notify("Notify:doc:Replace", ci->home, 0, ci->mark);
 	attr_set_str_key(&c->attrs, attr, val, o);
 	return 0;
 }

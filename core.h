@@ -192,7 +192,6 @@ struct mark *doc_prev_mark_view(struct mark *m safe);
 void point_reset(struct mark *p);
 void mark_reset(struct doc *d safe, struct mark *m safe, int end);
 void mark_to_end(struct doc *d safe, struct mark *m safe, int end);
-void doc_notify_change(struct doc *d safe, struct mark *m, struct mark *m2);
 void doc_check_consistent(struct doc *d safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe);
