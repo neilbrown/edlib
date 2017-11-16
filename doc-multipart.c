@@ -126,6 +126,18 @@ static void change_part(struct mp_info *mpi safe, struct mark *m safe, int part,
 	m->refcnt = mp_mark_refcnt;
 }
 
+static void mp_normalize(struct mp_info *mpi safe, struct mark *m safe)
+{
+	/* If points the end of a document, point to the start
+	 * of the next instead.
+	 */
+	while (m->ref.m &&
+	       doc_following_pane(mpi->parts[m->ref.docnum].pane,
+				  m->ref.m) == CHAR_RET(WEOF)) {
+		change_part(mpi, m, m->ref.docnum + 1, 0);
+	}
+}
+
 DEF_CMD(mp_close)
 {
 	struct mp_info *mpi = ci->home->data;
@@ -153,10 +165,11 @@ DEF_CMD(mp_set_ref)
 		reset_mark(ci->mark);
 	}
 
-	if (ci->num == 1)
+	if (ci->num == 1) {
 		/* start */
 		change_part(mpi, ci->mark, 0, 0);
-	else
+		mp_normalize(mpi, ci->mark);
+	} else
 		change_part(mpi, ci->mark, mpi->nparts, 1);
 
 	reset_mark(ci->mark);
@@ -289,8 +302,11 @@ DEF_CMD(mp_step)
 					ci->key, ci->focus, ci->num, m1, ci->str,
 					ci->num2, NULL, ci->str2, 0,0, ci->comm2);
 	}
-	if (ci->num2)
+	if (ci->num2) {
+		mp_normalize(mpi, ci->mark);
 		reset_mark(ci->mark);
+	}
+
 	if (m != ci->mark)
 		mark_free(m);
 
@@ -341,6 +357,13 @@ DEF_CMD(mp_attr)
 			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "1");
 		else
 			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, "0");
+		return 1;
+	}
+
+	if (strcmp(attr, "multipart:part-num") == 0) {
+		char n[11];
+		snprintf(n, sizeof(n), "%d", d);
+		comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, n);
 		return 1;
 	}
 
