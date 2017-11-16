@@ -222,6 +222,9 @@ struct mark *vmark_last(struct pane *p safe, int view);
 struct mark *vmark_at_point(struct pane *p safe, int view);
 struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe, int view);
 struct mark *vmark_new(struct pane *p safe, int view);
+void mark_clip(struct mark *m safe, struct mark *start, struct mark *end);
+void marks_clip(struct pane *p safe, struct mark *start, struct mark *end, int view);
+
 
 static inline int mark_ordered_or_same_pane(struct pane *p safe,
 						    struct mark *m1 safe, struct mark *m2 safe)

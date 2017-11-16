@@ -903,6 +903,30 @@ struct mark *do_vmark_at_or_before(struct pane *p safe, struct doc *d safe,
 	return vm;
 }
 
+void mark_clip(struct mark *m safe, struct mark *start, struct mark *end)
+{
+	if (!start || !end)
+		return;
+	if (m->seq > start->seq &&
+	    m->seq < end->seq)
+		mark_to_mark(m, start);
+}
+
+void marks_clip(struct pane *p safe, struct mark *start, struct mark *end, int view)
+{
+	struct mark *m;
+
+	if (!start || !end)
+		return;
+
+	m = vmark_at_or_before(p, start, view);
+
+	while (m && m->seq < end->seq) {
+		mark_clip(m, start, end);
+		m = vmark_next(m);
+	}
+}
+
 void doc_check_consistent(struct doc *d safe)
 {
 	/* Check consistency of marks, and abort if not.

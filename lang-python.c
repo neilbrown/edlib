@@ -844,6 +844,20 @@ static PyObject *Pane_mychild(Pane *self safe, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Pane_clip(Pane *self safe, PyObject *args)
+{
+	Mark *start = NULL, *end = NULL;
+	int view = -1;
+	int ret = PyArg_ParseTuple(args, "i|O!O!", &view, &start, &MarkType,
+				   &end, &MarkType);
+
+	if (ret > 0 && start && end && self->pane &&
+	    start->mark && end->mark && view >= 0)
+		marks_clip(self->pane, start->mark, end->mark, view);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef pane_methods[] = {
 	{"close", (PyCFunction)Pane_close, METH_NOARGS,
 	 "close the pane"},
@@ -873,6 +887,8 @@ static PyMethodDef pane_methods[] = {
 	 "Get the x,y scale numbers for this pane"},
 	{"mychild", (PyCFunction)Pane_mychild, METH_VARARGS,
 	 "Get ancestor of pane which is my child, or None"},
+	{"clip", (PyCFunction)Pane_clip, METH_VARARGS,
+	 "clip all 'type' marks in the given range"},
 	{NULL}
 };
 
@@ -1481,6 +1497,19 @@ static PyObject *Mark_to_mark_noref(Mark *self safe, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Mark_clip(Mark *self safe, PyObject *args)
+{
+	Mark *start = NULL, *end = NULL;
+	int ret = PyArg_ParseTuple(args, "O!O!", &MarkType, &start, &MarkType, &end);
+
+	if (ret > 0 && start && end && self->mark &&
+	    start->mark && end->mark)
+		mark_clip(self->mark, start->mark, end->mark);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyObject *Mark_next(Mark *self safe)
 {
 	struct mark *next;
@@ -1593,6 +1622,8 @@ static PyMethodDef mark_methods[] = {
 	 "previous any_mark"},
 	{"dup", (PyCFunction)Mark_dup, METH_NOARGS,
 	 "duplicate a mark, as ungrouped"},
+	{"clip", (PyCFunction)Mark_clip, METH_VARARGS,
+	 "If this mark is in range, move to start"},
 	{"release", (PyCFunction)Mark_release, METH_NOARGS,
 	 "release a vmark so it can disappear"},
 	{NULL}
