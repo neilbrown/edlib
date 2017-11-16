@@ -1592,6 +1592,7 @@ DEF_CMD(text_replace)
 		l = count_bytes(t, pm, myend);
 		mark_free(myend);
 		text_del(t, &pm->ref, l, &first);
+		text_normalize(t, &pm->ref);
 
 		for (m = doc_prev_mark_all(pm);
 		     m && text_update_prior_after_change(t, &m->ref, &pm->ref, &pm->ref);
@@ -1615,6 +1616,7 @@ DEF_CMD(text_replace)
 			status_change = 1;
 
 		text_add_str(t, &pm->ref, str, &start, &first);
+		text_normalize(t, &pm->ref);
 		for (m = doc_prev_mark_all(pm);
 		     m && text_update_prior_after_change(t, &m->ref, &start, &pm->ref);
 		     m = doc_prev_mark_all(m))
