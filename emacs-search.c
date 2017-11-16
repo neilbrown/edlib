@@ -235,6 +235,18 @@ DEF_CMD(search_done)
 	return 1;
 }
 
+DEF_CMD(search_clip)
+{
+	struct es_info *esi = ci->home->data;
+	struct stk *s;
+
+	mark_clip(esi->start, ci->mark, ci->mark2);
+	mark_clip(esi->end, ci->mark, ci->mark2);
+	for (s = esi->s; s; s = s->next)
+		mark_clip(s->m, ci->mark, ci->mark2);
+	return 1;
+}
+
 static void emacs_search_init_map(void)
 {
 	es_map = key_alloc();
@@ -246,6 +258,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "Close", &search_close);
 	key_add(es_map, "Return", &search_done);
 	key_add(es_map, "Notify:doc:Replace", &search_again);
+	key_add(es_map, "Notify:clip", &search_clip);
 }
 
 DEF_LOOKUP_CMD(search_handle, es_map);

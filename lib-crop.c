@@ -112,6 +112,15 @@ DEF_CMD(crop_step)
 	return ret;
 }
 
+DEF_CMD(crop_clip)
+{
+	struct crop_data *cd = ci->home->data;
+
+	mark_clip(cd->start, ci->mark, ci->mark2);
+	mark_clip(cd->end, ci->mark, ci->mark2);
+	return 1;
+}
+
 DEF_CMD(crop_generic)
 {
 	struct pane *p = ci->home->parent;
@@ -172,4 +181,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(crop_map, "Close", &crop_close);
 	key_add(crop_map, "doc:write_file", &crop_write);
 	key_add(crop_map, "doc:step", &crop_step);
+	key_add(crop_map, "Notify:clip", &crop_clip);
 }

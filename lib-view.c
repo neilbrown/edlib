@@ -388,6 +388,15 @@ DEF_CMD(view_refresh_view)
 	return 0;
 }
 
+DEF_CMD(view_clip)
+{
+	struct view_data *vd = ci->home->data;
+
+	if (vd->viewpoint)
+		mark_clip(vd->viewpoint, ci->mark, ci->mark2);
+	return 1;
+}
+
 DEF_CMD(view_border)
 {
 	struct pane *p = ci->home;
@@ -419,6 +428,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "Refresh", &view_refresh);
 	key_add(view_map, "Notify:doc:status-changed", &view_status_changed);
 	key_add(view_map, "render:reposition", &view_reposition);
+	key_add(view_map, "Notify:clip", &view_clip);
 
 
 	call_comm("global-set-command", ed, &view_attach, 0, NULL, "attach-view");

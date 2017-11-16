@@ -871,6 +871,16 @@ DEF_CMD(doc_move_to)
 	return 1;
 }
 
+DEF_CMD(doc_clip)
+{
+	struct doc_data *dd = ci->home->data;
+
+	mark_clip(dd->point, ci->mark, ci->mark2);
+	if (dd->mark)
+		mark_clip(dd->mark, ci->mark, ci->mark2);
+	return 1;
+}
+
 DEF_CMD(doc_pass_on)
 {
 	struct doc_data *dd = ci->home->data;
@@ -912,6 +922,7 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd, "Replace", &doc_replace);
 	key_add(doc_handle_cmd, "get-attr", &doc_handle_get_attr);
 	key_add(doc_handle_cmd, "Move-to", &doc_move_to);
+	key_add(doc_handle_cmd, "Notify:clip", &doc_clip);
 
 	key_add(doc_default_cmd, "doc:set-attr", &doc_attr_set);
 	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
