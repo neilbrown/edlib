@@ -446,6 +446,7 @@ DEF_CMD(mp_set_attr)
 			dn += 1;
 		else if (dn > 0)
 			dn -= 1;
+		else break;
 	}
 
 	if (strncmp(attr, "multipart-prev:", 15) == 0) {
