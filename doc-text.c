@@ -1017,6 +1017,25 @@ static void text_normalize(struct text *t safe, struct doc_ref *r safe)
 		}
 	}
 }
+
+static void text_denormalize(struct text *t safe, struct doc_ref *r safe)
+{
+	if (r->c && r->o > r->c->start)
+		/* nothing to do */
+		return;
+	if (r->c == NULL) {
+		if (list_empty(&t->text))
+			return;
+		r->c = list_entry(t->text.prev, struct text_chunk, lst);
+		r->o = r->c->end;
+		return;
+	}
+	if (r->c->lst.prev == &t->text)
+		return;
+	r->c = list_prev_entry(r->c, lst);
+	r->o = r->c->end;
+}
+
 static wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
 {
 	wchar_t ret;
@@ -1616,6 +1635,7 @@ DEF_CMD(text_replace)
 		if (t->undo == t->saved)
 			status_change = 1;
 
+		text_denormalize(t, &pm->ref);
 		text_add_str(t, &pm->ref, str, &start, &first);
 		text_normalize(t, &pm->ref);
 		for (m = doc_prev_mark_all(pm);
