@@ -192,16 +192,10 @@ DEF_CMD(email_get_attr)
 	return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark, ret);
 }
 static struct map *email_map safe;
+static struct map *email_view_map safe;
 
-static void email_init_map(void)
-{
-	email_map = key_alloc();
-	key_add(email_map, "Close", &email_close);
-	key_add(email_map, "doc:email:render-spacer", &email_spacer);
-	key_add(email_map, "doc:email:select", &email_select);
-	key_add(email_map, "doc:get-attr", &email_get_attr);
-}
 DEF_LOOKUP_CMD(email_handle, email_map);
+DEF_LOOKUP_CMD(email_view_handle, email_view_map);
 
 static char tspecials[] = "()<>@,;:\\\"/[]?=";
 
@@ -609,8 +603,192 @@ out:
 	return -1;
 }
 
+struct email_view {
+	int	parts;
+	char	*invis safe;
+};
+
+DEF_CMD(email_view_close)
+{
+	struct email_view *evi = ci->home->data;
+
+	free(evi->invis);
+	free(evi);
+	return 1;
+}
+
+static int get_part(struct pane *p safe, struct mark *m safe)
+{
+	char *a = pane_mark_attr(p, m, "multipart:part-num");
+
+	if (!a)
+		return -1;
+	return atoi(a);
+}
+
+DEF_CMD(email_step)
+{
+	struct pane *p = ci->home;
+	struct email_view *evi = p->data;
+	int ret;
+	int n;
+
+	if (!p->parent || !ci->mark)
+		return -1;
+	if (ci->num) {
+		ret = home_call(p->parent, ci->key, ci->focus, ci->num, ci->mark, ci->str,
+				ci->num2);
+		if (ci->num2 && ret != CHAR_RET(WEOF))
+			while ((n = get_part(p->parent, ci->mark)) >= 0 &&
+			       n < evi->parts &&
+			       evi->invis[n])
+				home_call(p->parent, "doc:step-part", ci->focus,
+					  ci->num, ci->mark);
+	} else {
+		/* When moving backwards we need a tmp mark to see
+		 * if the result was from an invisible pane.
+		 * Note: we could optimize a bit using the knowledge that
+		 * every other pane contains only a '\v' and is visible
+		 */
+		struct mark *m = mark_dup(ci->mark, 1);
+
+		ret = home_call(p->parent, ci->key, ci->focus, ci->num, m, ci->str, 1);
+		while (ret != CHAR_RET(WEOF) &&
+		       (n = get_part(p->parent, m)) >= 0 &&
+		       n < evi->parts &&
+		       evi->invis[n]) {
+			/* ret is from an invisible pane - sorry */
+			home_call(p->parent, "doc:step-part", ci->focus, ci->num, m);
+			ret = home_call(p->parent, ci->key, ci->focus, ci->num,
+					m, ci->str, 1);
+		}
+		if (ci->num2)
+			mark_to_mark(ci->mark, m);
+		mark_free(m);
+	}
+	return ret;
+}
+
+DEF_CMD(email_set_ref)
+{
+	struct pane *p = ci->home;
+	struct email_view *evi = p->data;
+	int n;
+
+	if (!p->parent || !ci->mark)
+		return -1;
+	home_call(p->parent, ci->key, ci->focus, ci->num);
+	if (ci->num) {
+		/* set to start, need to normalize */
+		while ((n = get_part(p->parent, ci->mark)) >= 0 &&
+		       n < evi->parts &&
+		       evi->invis[n])
+			home_call(p->parent, "doc:step-part", ci->focus, 1, ci->mark);
+	}
+	/* When move to the end, no need to normalize */
+	return 1;
+}
+
+DEF_CMD(email_view_get_attr)
+{
+	int p, v;
+	struct email_view *evi = ci->home->data;
+
+	if (!ci->str || !ci->mark || !ci->home->parent)
+		return -1;
+	if (strcmp(ci->str, "email:visible") == 0) {
+		p = get_part(ci->home->parent, ci->mark);
+		/* only parts can be invisible, not separators */
+		p &= ~1;
+		v = (p >= 0 && p < evi->parts) ? !evi->invis[p] : 0;
+
+		return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark,
+				 v ? "1":"0");
+	}
+	return 0;
+}
+
+DEF_CMD(email_view_set_attr)
+{
+	int p, v;
+	struct email_view *evi = ci->home->data;
+
+	if (!ci->str || !ci->mark || !ci->home->parent)
+		return -1;
+	if (strcmp(ci->str, "email:visible") == 0) {
+		p = get_part(ci->home->parent, ci->mark);
+		/* only parts can be invisible, not separators */
+		p &= ~1;
+		v = ci->str2 && atoi(ci->str2) > 1;
+		if (p >= 0 && p < evi->parts)
+			evi->invis[p] = !v;
+		if (!v) {
+			/* Tell viewers that visibility has changed */
+			struct mark *m1, *m2;
+			m1 = mark_dup(ci->mark, 1);
+			home_call(ci->home->parent, "doc:step-part", ci->focus, 0, m1);
+			if (get_part(ci->home->parent, m1) != p) {
+				mark_prev_pane(ci->home->parent, m1);
+				home_call(ci->home->parent, "doc:step-part", ci->focus, 0, m1);
+			}
+			m2 = mark_dup(m1, 1);
+			home_call(ci->home->parent, "doc:step-part", ci->focus, 1, m1);
+			call("Notify:clip", ci->focus, 0, m1, NULL, 0, m2);
+			mark_free(m1);
+			mark_free(m2);
+		}
+
+		return 1;
+	}
+	return 0;
+}
+
+DEF_CMD(attach_email_view)
+{
+	struct pane *p;
+	struct email_view *evi;
+	struct mark *m;
+	int n;
+
+	m = vmark_new(ci->focus, MARK_UNGROUPED);
+	if (!m)
+		return -1;
+	call("doc:set-ref", ci->focus, 0, m);
+	n = get_part(ci->focus, m);
+	mark_free(m);
+	if (n <= 0 || n > 1000 )
+		return -1;
+
+	evi = calloc(1, sizeof(*evi));
+	evi->parts = n;
+	evi->invis = calloc(n, sizeof(char));
+	p = pane_register(ci->focus, 0, &email_view_handle.c, evi, NULL);
+	if (!p) {
+		free(evi);
+		return -1;
+	}
+	return comm_call(ci->comm2, "callback:attach", p);
+}
+
+static void email_init_map(void)
+{
+	email_map = key_alloc();
+	key_add(email_map, "Close", &email_close);
+	key_add(email_map, "doc:email:render-spacer", &email_spacer);
+	key_add(email_map, "doc:email:select", &email_select);
+	key_add(email_map, "doc:get-attr", &email_get_attr);
+
+	email_view_map = key_alloc();
+	key_add(email_view_map, "Close", &email_view_close);
+	key_add(email_view_map, "doc:step", &email_step);
+	key_add(email_view_map, "doc:set-ref", &email_set_ref);
+	key_add(email_view_map, "doc:set-attr", &email_view_set_attr);
+	key_add(email_view_map, "doc:get-attr", &email_view_get_attr);
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	email_init_map();
 	call_comm("global-set-command", ed, &open_email, 0, NULL, "open-doc-email");
+	call_comm("global-set-command", ed, &attach_email_view, 0, NULL, "attach-email-view");
 }
