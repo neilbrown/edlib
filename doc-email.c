@@ -122,7 +122,7 @@ DEF_CMD(email_spacer)
 		if ((o < 0 || o == NO_NUMERIC)) {
 			buf_concat(&b, "</>\n");
 			m->rpos = 0;
-			mark_next_pane(ci->home, m);
+			mark_next_pane(ci->focus, m);
 		} else
 			m->rpos -= 1;
 	}
