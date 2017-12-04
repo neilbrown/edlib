@@ -238,6 +238,7 @@ DEF_CMD(render_line)
 	 */
 	struct buf b;
 	struct pane *p = ci->home;
+	struct pane *focus = ci->focus;
 	struct rl_info *rl = p->data;
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2; /* The location to render as cursor */
@@ -261,25 +262,25 @@ DEF_CMD(render_line)
 	if (!m)
 		return -1;
 
-	ch = doc_following_pane(p, m);
+	ch = doc_following_pane(focus, m);
 	if (is_eol(ch) &&
-	    (attr = pane_mark_attr(p, m, "renderline:func")) != NULL) {
+	    (attr = pane_mark_attr(focus, m, "renderline:func")) != NULL) {
 		/* An alternate function handles this line */
-		ret = call_comm(attr, ci->focus, ci->comm2, o, m, NULL, ci->num2, pm);
+		ret = call_comm(attr, focus, ci->comm2, o, m, NULL, ci->num2, pm);
 		if (ret)
 			return ret;
 	}
-	boundary = vmark_at_or_before(p, m, rl->view);
+	boundary = vmark_at_or_before(focus, m, rl->view);
 	if (boundary)
 		boundary = vmark_next(boundary);
 	buf_init(&b);
-	call_comm("map-attr", ci->focus, &ar.rtn, 0, m, "start-of-line");
+	call_comm("map-attr", focus, &ar.rtn, 0, m, "start-of-line");
 	while (1) {
 		struct mark *m2;
 
 		if (o >= 0 && b.len >= o)
 			break;
-		if (pm && mark_same_pane(p, m, pm))
+		if (pm && mark_same_pane(focus, m, pm))
 			break;
 
 		if (ar.ast && ar.min_end <= chars) {
@@ -288,35 +289,35 @@ DEF_CMD(render_line)
 		}
 
 		ar.chars = chars;
-		call_comm("doc:get-attr", ci->focus, &ar.fwd, 0, m, "render:", 1);
+		call_comm("doc:get-attr", focus, &ar.fwd, 0, m, "render:", 1);
 
 		/* find all marks "here" - they might be fore or aft */
-		for (m2 = doc_prev_mark_all(m); m2 && mark_same_pane(p, m, m2);
+		for (m2 = doc_prev_mark_all(m); m2 && mark_same_pane(focus, m, m2);
 		     m2 = doc_prev_mark_all(m2))
-			call_map_mark(ci->focus, m2, &ar);
-		for (m2 = doc_next_mark_all(m); m2 && mark_same_pane(p, m, m2);
+			call_map_mark(focus, m2, &ar);
+		for (m2 = doc_next_mark_all(m); m2 && mark_same_pane(focus, m, m2);
 		     m2 = doc_next_mark_all(m2))
-			call_map_mark(ci->focus, m2, &ar);
+			call_map_mark(focus, m2, &ar);
 
 		as_repush(&ar.tmpst, &ar.ast, chars, &b);
 
 		if (o >= 0 && b.len >= o)
 			break;
 
-		ch = mark_next_pane(p, m);
+		ch = mark_next_pane(focus, m);
 		if (ch == WEOF)
 			break;
 		if (is_eol(ch)) {
 			add_newline = 1;
 			if (ch == '\v' && b.len > 0)
-				mark_prev_pane(p, m);
+				mark_prev_pane(focus, m);
 			break;
 		}
 		if (boundary && boundary->seq <= m->seq)
 			break;
 		if (ch == '<') {
 			if (o >= 0 && b.len+1 >= o) {
-				mark_prev_pane(p, m);
+				mark_prev_pane(focus, m);
 				break;
 			}
 			buf_append(&b, '<');
@@ -337,12 +338,12 @@ DEF_CMD(render_line)
 	if (add_newline) {
 		if (o >= 0 && b.len >= o)
 			/* skip the newline */
-			mark_prev_pane(p, m);
+			mark_prev_pane(focus, m);
 		else
 			buf_append(&b, '\n');
 	}
 
-	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
+	ret = comm_call(ci->comm2, "callback:render", focus, 0, NULL,
 			buf_final(&b));
 	free(b.b);
 	return ret;
