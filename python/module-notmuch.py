@@ -1406,13 +1406,13 @@ class notmuch_message_view(edlib.Pane):
         if key == "Replace":
             return 1
         if key == "Chr-/":
-            s = focus.call("doc:get-attr", mark, "multipart:visible", ret='str')
+            s = focus.call("doc:get-attr", mark, "email:visible", ret='str')
             if not s:
                 return 1
             if s == "0":
-                focus.call("doc:set-attr", mark, "multipart:visible", "1")
+                focus.call("doc:set-attr", mark, "email:visible", "1")
             else:
-                focus.call("doc:set-attr", mark, "multipart:visible", "0")
+                focus.call("doc:set-attr", mark, "email:visible", "0")
             return 1
         if key == "Chr- ":
             if focus.call("Next", 1, mark) == 2:
@@ -1461,7 +1461,7 @@ def render_query_attach(key, home, focus, comm2, **a):
     return 1
 
 def render_message_attach(key, home, focus, comm2, **a):
-    p = focus.render_attach()
+    p = focus.render_attach("default:email-view")
     p = notmuch_message_view(p)
     if comm2:
         comm2("callback", p)
