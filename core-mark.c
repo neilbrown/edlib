@@ -909,7 +909,7 @@ void mark_clip(struct mark *m safe, struct mark *start, struct mark *end)
 		return;
 	if (m->seq > start->seq &&
 	    m->seq < end->seq)
-		mark_to_mark(m, start);
+		mark_to_mark(m, end);
 }
 
 void marks_clip(struct pane *p safe, struct mark *start, struct mark *end, int view)
@@ -919,11 +919,14 @@ void marks_clip(struct pane *p safe, struct mark *start, struct mark *end, int v
 	if (!start || !end)
 		return;
 
-	m = vmark_at_or_before(p, start, view);
+	m = vmark_at_or_before(p, end, view);
+	while (m && m->seq >= end->seq)
+		m = vmark_prev(m);
 
-	while (m && m->seq < end->seq) {
+	while (m && m->seq > start->seq) {
+		struct mark *m2 = vmark_prev(m);
 		mark_clip(m, start, end);
-		m = vmark_next(m);
+		m = m2;
 	}
 }
 
