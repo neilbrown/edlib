@@ -45,8 +45,8 @@ DEF_CMD(render_prev)
 	 * If we hit start-of-file without finding newline, return -1;
 	 */
 	struct mark *m = ci->mark;
-	struct pane *p = ci->home;
-	struct rl_info *rl = p->data;
+	struct pane *f = ci->focus;
+	struct rl_info *rl = ci->home->data;
 	struct mark *boundary = NULL;
 	int count = 0;
 	int rpt = RPT_NUM(ci);
@@ -55,19 +55,19 @@ DEF_CMD(render_prev)
 	if (!m)
 		return -1;
 
-	while ((ch = mark_prev_pane(p, m)) != WEOF &&
+	while ((ch = mark_prev_pane(f, m)) != WEOF &&
 	       (!is_eol(ch) || rpt > 0) &&
 	       count < LARGE_LINE &&
 	       (!boundary || boundary->seq< m->seq)) {
 		rpt = 0;
 		if (!count)
-			boundary = vmark_at_or_before(p, m, rl->view);
+			boundary = vmark_at_or_before(f, m, rl->view);
 		count += 1;
 	}
 	if (ch != WEOF && !is_eol(ch)) {
 		/* need to ensure there is a stable boundary here */
 		if (!boundary || boundary->seq >= m->seq) {
-			boundary = vmark_new(p, rl->view);
+			boundary = vmark_new(f, rl->view);
 			if (boundary)
 				mark_to_mark(boundary, m);
 		}
@@ -76,9 +76,9 @@ DEF_CMD(render_prev)
 	if (ch == WEOF && rpt)
 		return -2;
 	if (ch == '\n' || (ch == '\v' &&
-			   ((ch = doc_prior_pane(p, m)) == WEOF || !is_eol(ch))))
+			   ((ch = doc_prior_pane(f, m)) == WEOF || !is_eol(ch))))
 		/* Found a '\n', so step forward over it for start-of-line. */
-		mark_next_pane(p, m);
+		mark_next_pane(f, m);
 	return 1;
 }
 
@@ -237,9 +237,8 @@ DEF_CMD(render_line)
 	 * include that between '<>'.
 	 */
 	struct buf b;
-	struct pane *p = ci->home;
 	struct pane *focus = ci->focus;
-	struct rl_info *rl = p->data;
+	struct rl_info *rl = ci->home->data;
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2; /* The location to render as cursor */
 	struct mark *boundary;

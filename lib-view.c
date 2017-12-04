@@ -154,8 +154,7 @@ DEF_CMD(view_refresh)
 
 DEF_CMD(view_close)
 {
-	struct pane *p = ci->home;
-	struct view_data *vd = p->data;
+	struct view_data *vd = ci->home->data;
 
 	if (vd->viewpoint)
 		mark_free(vd->viewpoint);
@@ -165,13 +164,12 @@ DEF_CMD(view_close)
 
 DEF_CMD(view_clone)
 {
-	struct pane *p = ci->home;
-	struct view_data *vd = p->data;
+	struct view_data *vd = ci->home->data;
 	struct pane *parent = ci->focus;
 	struct pane *p2;
 
 	p2 = do_view_attach(parent, vd->old_border);
-	pane_clone_children(p, p2);
+	pane_clone_children(ci->home, p2);
 	return 1;
 }
 
@@ -248,23 +246,20 @@ DEF_CMD(view_refresh_size)
 
 DEF_CMD(view_status_changed)
 {
-	struct pane *p = ci->home;
-
-	pane_damaged(p, DAMAGED_CONTENT);
+	pane_damaged(ci->home, DAMAGED_CONTENT);
 	return 1;
 }
 
 DEF_CMD(view_reposition)
 {
-	struct pane *p = ci->home;
-	struct view_data *vd = p->data;
+	struct view_data *vd = ci->home->data;
 	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
 		/* mark for some other document */
 		return 0;
 	if (vd->viewpoint != ci->mark) {
 		if (!vd->viewpoint || !ci->mark ||
 		    !mark_same_pane(ci->focus, vd->viewpoint, ci->mark))
-			pane_damaged(p, DAMAGED_CONTENT);
+			pane_damaged(ci->home, DAMAGED_CONTENT);
 		if (vd->viewpoint)
 			mark_free(vd->viewpoint);
 		if (ci->mark)
@@ -354,14 +349,13 @@ DEF_CMD(view_click)
 
 DEF_CMD(view_scroll)
 {
-	struct pane *p = ci->home;
-	struct view_data *vd = p->data;
+	struct view_data *vd = ci->home->data;
 
 	if (ci->key[6] == '4')
 		vd->move_small -= 2;
 	else
 		vd->move_small += 2;
-	pane_damaged(p, DAMAGED_VIEW);
+	pane_damaged(ci->home, DAMAGED_VIEW);
 	return 1;
 }
 

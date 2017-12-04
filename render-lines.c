@@ -1709,7 +1709,7 @@ DEF_CMD(render_lines_notify_replace)
 		/* Change before visible region */
 		return 1;
 
-	while (end && mark_ordered_or_same_pane(p, start, end)) {
+	while (end && mark_ordered_or_same_pane(ci->focus, start, end)) {
 		if (end->mdata) {
 			free(end->mdata);
 			end->mdata = NULL;

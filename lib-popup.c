@@ -75,8 +75,7 @@ static void popup_resize(struct pane *p safe, char *style safe)
 
 DEF_CMD(popup_close)
 {
-	struct pane *p = ci->home;
-	struct popup_info *ppi = p->data;
+	struct popup_info *ppi = ci->home->data;
 	free(ppi->style);
 	free(ppi);
 	return 1;
@@ -84,21 +83,19 @@ DEF_CMD(popup_close)
 
 DEF_CMD(popup_notify_close)
 {
-	struct pane *p = ci->home;
-	struct popup_info *ppi = p->data;
+	struct popup_info *ppi = ci->home->data;
 
 	if (ci->focus == ppi->target) {
 		/* target is closing, so we close too */
 		ppi->target = safe_cast NULL;
-		pane_close(p);
+		pane_close(ci->home);
 	}
 	return 1;
 }
 
 DEF_CMD(popup_abort)
 {
-	struct pane *p = ci->home;
-	struct popup_info *ppi = p->data;
+	struct popup_info *ppi = ci->home->data;
 
 	pane_focus(ppi->target);
 	call("Abort", ppi->target);
@@ -108,8 +105,7 @@ DEF_CMD(popup_abort)
 
 DEF_CMD(popup_style)
 {
-	struct pane *p = ci->home;
-	struct popup_info *ppi = p->data;
+	struct popup_info *ppi = ci->home->data;
 	char border[5];
 	int i, j;;
 
@@ -125,30 +121,27 @@ DEF_CMD(popup_style)
 	border[j] = 0;
 	attr_set_str(&ppi->popup->attrs, "Popup", "true");
 	attr_set_str(&ppi->popup->attrs, "borders", border);
-	popup_resize(p, ppi->style);
+	popup_resize(ci->home, ppi->style);
 	return 1;
 }
 
 DEF_CMD(popup_refresh_size)
 {
-	struct pane *p = ci->home;
-	struct popup_info *ppi = p->data;
+	struct popup_info *ppi = ci->home->data;
 
-	popup_resize(p, ppi->style);
+	popup_resize(ci->home, ppi->style);
 	return 0;
 }
 
 DEF_CMD(popup_get_target)
 {
-	struct pane *p = ci->home;
-	struct popup_info *ppi = p->data;
+	struct popup_info *ppi = ci->home->data;
 	return comm_call(ci->comm2, "callback:get-target", ppi->target);
 }
 
 DEF_CMD(popup_do_close)
 {
-	struct pane *p = ci->home;
-	struct popup_info *ppi = p->data;
+	struct popup_info *ppi = ci->home->data;
 	char *key, *str;
 	struct pane *target = ppi->target;
 

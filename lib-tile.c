@@ -56,9 +56,7 @@ DEF_LOOKUP_CMD(tile_handle, tile_map);
 
 DEF_CMD(tile_close)
 {
-	struct pane *p = ci->home;
-
-	tile_destroy(p);
+	tile_destroy(ci->home);
 	return 0;
 }
 

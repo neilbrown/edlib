@@ -200,8 +200,8 @@ DEF_CMD(render_complete_prev)
 
 DEF_CMD(complete_close)
 {
-	struct pane *p = ci->home;
-	struct complete_data *cd = p->data;
+	struct complete_data *cd = ci->home->data;
+
 	free(cd->prefix);
 	free(cd);
 	return 1;
@@ -325,8 +325,7 @@ DEF_CMD(save_str)
 DEF_CMD(complete_return)
 {
 	/* submit the selected entry to the popup */
-	struct pane *p = ci->home;
-	struct complete_data *cd = p->data;
+	struct complete_data *cd = ci->home->data;
 	struct call_return cr;
 	int l;
 	char *c1, *c2;

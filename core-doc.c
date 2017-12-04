@@ -187,9 +187,8 @@ static wint_t doc_move_horiz(struct pane *p safe, struct mark *m safe,
 /* For these 'default commands', home->data is struct doc */
 DEF_CMD(doc_char)
 {
-	struct pane *p = ci->home;
 	struct pane *f = ci->focus;
-	struct doc_data *dd = p->data;
+	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
 
@@ -212,9 +211,8 @@ DEF_CMD(doc_char)
 
 DEF_CMD(doc_word)
 {
-	struct pane *p = ci->home;
 	struct pane *f = ci->focus;
-	struct doc_data *dd = p->data;
+	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
 	int dir;
@@ -236,16 +234,16 @@ DEF_CMD(doc_word)
 		wint_t wi;
 
 		while (!field &&
-		       iswspace(mark_step_pane(p, m, dir, 0)))
+		       iswspace(mark_step_pane(f, m, dir, 0)))
 			doc_move_horiz(f, m, dir, &field);
 
 		while (!field &&
-		       (wi=mark_step_pane(p, m, dir, 0)) != WEOF &&
+		       (wi=mark_step_pane(f, m, dir, 0)) != WEOF &&
 		       !iswspace(wi) && !iswalnum(wi))
 			doc_move_horiz(f, m, dir, &field);
 
-		if (m->rpos < NO_RPOS || iswalnum(mark_step_pane(p, m, dir, 0))) {
-			while (!field && iswalnum(mark_step_pane(p, m, dir, 0)))
+		if (m->rpos < NO_RPOS || iswalnum(mark_step_pane(f, m, dir, 0))) {
+			while (!field && iswalnum(mark_step_pane(f, m, dir, 0)))
 				doc_move_horiz(f, m, dir, &field);
 		}
 
@@ -257,9 +255,8 @@ DEF_CMD(doc_word)
 
 DEF_CMD(doc_WORD)
 {
-	struct pane *p = ci->home;
 	struct pane *f = ci->focus;
-	struct doc_data *dd = p->data;
+	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
 
@@ -271,11 +268,11 @@ DEF_CMD(doc_WORD)
 		wint_t wi;
 		int field = 0;
 		while (!field &&
-		       iswspace(doc_following_pane(p, m)))
+		       iswspace(doc_following_pane(f, m)))
 			doc_move_horiz(f, m, 1, &field);
 
 		while (!field &&
-		       (wi=doc_following_pane(p, m)) != WEOF &&
+		       (wi=doc_following_pane(f, m)) != WEOF &&
 		       !iswspace(wi))
 			doc_move_horiz(f, m, 1, &field);
 		rpt -= 1;
@@ -284,10 +281,10 @@ DEF_CMD(doc_WORD)
 		wint_t wi;
 		int  field = 0;
 		while (!field &&
-		       iswspace(doc_prior_pane(p, m)))
-			doc_move_horiz(p, m, 0, &field);
+		       iswspace(doc_prior_pane(f, m)))
+			doc_move_horiz(f, m, 0, &field);
 		while (!field &&
-		       (wi=doc_prior_pane(p, m)) != WEOF &&
+		       (wi=doc_prior_pane(f, m)) != WEOF &&
 		       !iswspace(wi))
 			doc_move_horiz(f, m, 0, &field);
 		rpt += 1;
@@ -298,7 +295,7 @@ DEF_CMD(doc_WORD)
 
 DEF_CMD(doc_eol)
 {
-	struct pane *p = ci->focus;
+	struct pane *f = ci->focus;
 	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	wint_t ch = 1;
@@ -308,30 +305,29 @@ DEF_CMD(doc_eol)
 		m = dd->point;
 
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next_pane(p, m)) != WEOF &&
+		while ((ch = mark_next_pane(f, m)) != WEOF &&
 		       !is_eol(ch))
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev_pane(p, m)) != WEOF &&
+		while ((ch = mark_prev_pane(f, m)) != WEOF &&
 		       !is_eol(ch))
 			;
 		rpt += 1;
 	}
 	if (is_eol(ch)) {
 		if (RPT_NUM(ci) > 0)
-			mark_prev_pane(p, m);
+			mark_prev_pane(f, m);
 		else if (RPT_NUM(ci) < 0)
-			mark_next_pane(p, m);
+			mark_next_pane(f, m);
 	}
 	return 1;
 }
 
 DEF_CMD(doc_file)
 {
-	struct pane *p = ci->home;
-	struct doc_data *dd = p->data;
+	struct doc_data *dd = ci->home->data;
 	int rpt = RPT_NUM(ci);
 	struct mark *m = ci->mark;
 
@@ -381,7 +377,7 @@ DEF_CMD(doc_page)
 		m = dd->point;
 	old = mark_dup(m, 0);
 
-	rpt *= ci->home->h-2;
+	rpt *= p->h-2;
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = mark_next_pane(p, m)) != WEOF &&
 		       !is_eol(ch))
@@ -427,8 +423,7 @@ DEF_CMD(doc_set)
 }
 DEF_CMD(doc_get_attr)
 {
-	struct pane *p = ci->home;
-	struct doc *d = p->data;
+	struct doc *d = ci->home->data;
 	char *a;
 
 	if (!ci->str)

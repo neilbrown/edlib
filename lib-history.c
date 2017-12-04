@@ -36,22 +36,20 @@ DEF_LOOKUP_CMD(history_handle, history_map);
 
 DEF_CMD(history_close)
 {
-	struct pane *p = ci->home;
-	struct history_info *hi = p->data;
+	struct history_info *hi = ci->home->data;
 
 	if (hi->history)
 		pane_close(hi->history);
 	free(hi->search.b);
 	free(hi->saved);
 	free(hi);
-	p->data = safe_cast NULL;
+	ci->home->data = safe_cast NULL;
 	return 1;
 }
 
 DEF_CMD(history_notify_close)
 {
-	struct pane *p = ci->home;
-	struct history_info *hi = p->data;
+	struct history_info *hi = ci->home->data;
 
 	if (ci->focus == hi->history)
 		/* The history document is going away!!! */
@@ -61,8 +59,7 @@ DEF_CMD(history_notify_close)
 
 DEF_CMD(history_done)
 {
-	struct pane *p = ci->home;
-	struct history_info *hi = p->data;
+	struct history_info *hi = ci->home->data;
 
 	if (!hi->history)
 		/* history document was destroyed */
@@ -76,8 +73,7 @@ DEF_CMD(history_done)
 
 DEF_CMD(history_notify_replace)
 {
-	struct pane *p = ci->home;
-	struct history_info *hi = p->data;
+	struct history_info *hi = ci->home->data;
 
 	if (hi->history)
 		hi->changed = 1;
@@ -86,8 +82,7 @@ DEF_CMD(history_notify_replace)
 
 DEF_CMD(history_move)
 {
-	struct pane *p = ci->home;
-	struct history_info *hi = p->data;
+	struct history_info *hi = ci->home->data;
 	struct mark *m;
 	char *l, *e;
 

@@ -207,24 +207,22 @@ done:
 
 DEF_CMD(linecount_close)
 {
-	struct pane *p = ci->home;
 	struct pane *d = ci->focus;
-	struct count_info *cli = p->data;
+	struct count_info *cli = ci->home->data;
 	struct mark *m;
 	while ((m = vmark_first(d, cli->view_num)) != NULL)
 		mark_free(m);
 	doc_del_view(d, cli->view_num);
 	free(cli);
-	p->data = safe_cast NULL;
-	pane_close(p);
+	ci->home->data = safe_cast NULL;
+	pane_close(ci->home);
 	return 1;
 }
 
 DEF_CMD(linecount_notify_replace)
 {
-	struct pane *p = ci->home;
 	struct pane *d = ci->focus;
-	struct count_info *cli = p->data;
+	struct count_info *cli = ci->home->data;
 	if (ci->mark) {
 		struct mark *end;
 
@@ -243,21 +241,19 @@ DEF_CMD(linecount_notify_replace)
 
 DEF_CMD(linecount_notify_count)
 {
-	struct pane *p = ci->home;
 	struct pane *d = ci->focus;
-	struct count_info *cli = p->data;
+	struct count_info *cli = ci->home->data;
 	/* Option mark is "mark2" as "mark" gets the "point" */
 	if (ci->num)
-		pane_add_notify(p, d, "Notify:Close");
+		pane_add_notify(ci->home, d, "Notify:Close");
 	count_calculate(d, NULL, ci->mark2, cli->view_num);
 	return 1;
 }
 
 DEF_CMD(linecount_notify_goto)
 {
-	struct pane *p = ci->home;
 	struct pane *d = ci->focus;
-	struct count_info *cli = p->data;
+	struct count_info *cli = ci->home->data;
 	int lineno, l;
 	struct mark *m, *m2;
 	wint_t ch;
