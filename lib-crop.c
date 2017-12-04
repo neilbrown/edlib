@@ -118,7 +118,7 @@ DEF_CMD(crop_clip)
 
 	mark_clip(cd->start, ci->mark, ci->mark2);
 	mark_clip(cd->end, ci->mark, ci->mark2);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(crop_generic)

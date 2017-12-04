@@ -289,7 +289,7 @@ DEF_CMD(linecount_clip)
 	struct count_info *cli = ci->home->data;
 
 	marks_clip(ci->home, ci->mark, ci->mark2, cli->view_num);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(count_lines)

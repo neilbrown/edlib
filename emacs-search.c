@@ -244,7 +244,7 @@ DEF_CMD(search_clip)
 	mark_clip(esi->end, ci->mark, ci->mark2);
 	for (s = esi->s; s; s = s->next)
 		mark_clip(s->m, ci->mark, ci->mark2);
-	return 1;
+	return 0;
 }
 
 static void emacs_search_init_map(void)

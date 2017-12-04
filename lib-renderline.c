@@ -384,7 +384,7 @@ DEF_CMD(rl_clip)
 	struct rl_info *rl = ci->home->data;
 
 	marks_clip(ci->home, ci->mark, ci->mark2, rl->view);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(rl_close)

@@ -465,7 +465,7 @@ class PresenterPane(edlib.Pane):
         if key == "Notify:clip":
             self.clip(self.attrview, mark, mark2);
             self.clip(self.pageview, mark, mark2);
-            return 1
+            return 0
 
         if key == "render-line-prev":
             # Go to start of page

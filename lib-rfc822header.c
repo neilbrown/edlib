@@ -401,7 +401,7 @@ DEF_CMD(header_clip)
 	struct header_info *hi = ci->home->data;
 
 	marks_clip(ci->home, ci->mark, ci->mark2, hi->vnum);
-	return 1;
+	return 0;
 }
 
 static struct map *header_map safe;

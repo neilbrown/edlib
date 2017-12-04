@@ -394,7 +394,7 @@ DEF_CMD(view_clip)
 
 	if (vd->viewpoint)
 		mark_clip(vd->viewpoint, ci->mark, ci->mark2);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(view_border)

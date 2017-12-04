@@ -218,7 +218,7 @@ DEF_CMD(b64_clip)
 	struct b64info *bi = ci->home->data;
 
 	marks_clip(ci->home, ci->mark, ci->mark2, bi->view);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(b64_attach)

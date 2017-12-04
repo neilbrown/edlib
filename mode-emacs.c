@@ -1089,7 +1089,7 @@ DEF_CMD(emacs_highlight_clip)
 	struct highlight_info *hi = ci->home->data;
 
 	marks_clip(ci->home, ci->mark, ci->mark2, hi->view);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(emacs_bury)

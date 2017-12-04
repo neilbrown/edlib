@@ -1733,7 +1733,7 @@ DEF_CMD(render_lines_clip)
 	marks_clip(ci->home, ci->mark, ci->mark2, rl->typenum);
 	if (rl->old_point)
 		mark_clip(rl->old_point, ci->mark, ci->mark2);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(render_lines_attach);

@@ -878,7 +878,7 @@ DEF_CMD(doc_clip)
 	mark_clip(dd->point, ci->mark, ci->mark2);
 	if (dd->mark)
 		mark_clip(dd->mark, ci->mark, ci->mark2);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(doc_pass_on)
