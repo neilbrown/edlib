@@ -133,7 +133,7 @@ static void mp_normalize(struct mp_info *mpi safe, struct mark *m safe)
 	 */
 	while (m->ref.m &&
 	       doc_following_pane(mpi->parts[m->ref.docnum].pane,
-				  m->ref.m) == CHAR_RET(WEOF)) {
+				  m->ref.m) == WEOF) {
 		change_part(mpi, m, m->ref.docnum + 1, 0);
 	}
 }
@@ -197,14 +197,14 @@ DEF_CMD(mp_same)
 
 	if (d1.m &&
 	    mpi->parts[d1.docnum].visible &&
-	    doc_following_pane(mpi->parts[d1.docnum].pane, d1.m) == CHAR_RET(WEOF)) {
+	    doc_following_pane(mpi->parts[d1.docnum].pane, d1.m) == WEOF) {
 		/* End of part */
 		d1.docnum++;
 		d1.m = NULL;
 	}
 	if (d2.m && d2.docnum &&
 	    mpi->parts[d2.docnum].visible &&
-	    doc_prior_pane(mpi->parts[d2.docnum].pane, d2.m) == CHAR_RET(WEOF)) {
+	    doc_prior_pane(mpi->parts[d2.docnum].pane, d2.m) == WEOF) {
 		/* Start of part */
 		d2.docnum--;
 		d2.m = NULL;
@@ -335,6 +335,7 @@ DEF_CMD(mp_step_part)
 		change_part(mpi, m, m->ref.docnum, 0);
 
 	mp_normalize(mpi, m);
+	reset_mark(m);
 	return m->ref.docnum + 1;
 }
 
