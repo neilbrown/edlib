@@ -159,11 +159,16 @@ DEF_CMD(email_select)
 		r -= 1;
 	}
 	if (a && is_attr("hide", a)) {
+		int vis = 1;
+		a = pane_mark_attr(ci->focus, m, "email:visible");
+		if (a && *a == '0')
+			vis = 0;
 		a = pane_mark_attr(ci->home, m, "multipart-prev:multipart:visible");
 		if (a && *a == '0')
-			call("doc:set-attr", ci->home, 1, m, "multipart-prev:multipart:visible", 0, NULL, "1");
-		else
-			call("doc:set-attr", ci->home, 1, m, "multipart-prev:multipart:visible", 0, NULL, "0");
+			vis = 0;
+		call("doc:set-attr", ci->home, 1, m, "multipart-prev:multipart:visible", 0, NULL, "1");
+		call("doc:set-attr", ci->focus, 1, m, "email:visible", 0, NULL,
+		     vis ? "0" : "1");
 	}
 	return 1;
 }
@@ -722,7 +727,7 @@ DEF_CMD(email_view_set_attr)
 		p = get_part(ci->home->parent, ci->mark);
 		/* only parts can be invisible, not separators */
 		p &= ~1;
-		v = ci->str2 && atoi(ci->str2) > 1;
+		v = ci->str2 && atoi(ci->str2) >= 1;
 		if (p >= 0 && p < evi->parts)
 			evi->invis[p] = !v;
 		if (!v) {
