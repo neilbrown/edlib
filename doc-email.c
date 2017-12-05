@@ -666,6 +666,11 @@ DEF_CMD(email_step)
 		       n < evi->parts &&
 		       evi->invis[n]) {
 			/* ret is from an invisible pane - sorry */
+			if (n == 0) {
+				/* No where to go, so go nowhere */
+				mark_free(m);
+				return CHAR_RET(WEOF);
+			}
 			home_call(p->parent, "doc:step-part", ci->focus, ci->num, m);
 			ret = home_call(p->parent, ci->key, ci->focus, ci->num,
 					m, ci->str, 1);

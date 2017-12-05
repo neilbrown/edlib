@@ -35,7 +35,7 @@ ifeq "$(wildcard .SMATCH)" ".SMATCH"
 else
  QUIET_SMATCH  = @: skip
 endif
-CFLAGS= -O3 -g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG) $(VCFLAGS)
+CFLAGS= -g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG) $(VCFLAGS)
 #Doesn't work :-( -fsanitize=address
 
 all: edlib checksym lib shared
