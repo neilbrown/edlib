@@ -95,9 +95,6 @@ DEF_CMD(email_spacer)
 	if (!m)
 		return -1;
 
-	attr = pane_mark_attr(ci->home, m, "multipart-prev:multipart:visible");
-	if (attr && *attr == '0')
-		visible = 0;
 	attr = pane_mark_attr(ci->focus, m, "email:visible");
 	if (attr && *attr == '0')
 		visible = 0;
@@ -165,10 +162,6 @@ DEF_CMD(email_select)
 		a = pane_mark_attr(ci->focus, m, "email:visible");
 		if (a && *a == '0')
 			vis = 0;
-		a = pane_mark_attr(ci->home, m, "multipart-prev:multipart:visible");
-		if (a && *a == '0')
-			vis = 0;
-		call("doc:set-attr", ci->home, 1, m, "multipart-prev:multipart:visible", 0, NULL, "1");
 		call("doc:set-attr", ci->focus, 1, m, "email:visible", 0, NULL,
 		     vis ? "0" : "1");
 	}
