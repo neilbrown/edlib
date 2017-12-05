@@ -321,8 +321,10 @@ class notmuch_main(edlib.Doc):
                         val = "%5s" % "?"
                     else:
                         val = "%5d" % c
-            comm2("callback", focus, val)
-            return 1
+            if val:
+                comm2("callback", focus, val)
+                return 1
+            return 0
 
         if key == "get-attr" and comm2:
             if str == "doc-type":
