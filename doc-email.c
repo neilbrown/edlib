@@ -19,10 +19,12 @@
  *  doc:replace doc:reundo doc:get-str doc:modified
  */
 
+#define _GNU_SOURCE /* for asprintf */
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
+#include <ctype.h>
 #include <stdio.h>
 #include "core.h"
 #include "misc.h"
@@ -35,6 +37,7 @@ struct email_info {
 static int handle_content(struct pane *p safe, char *type, char *xfer,
 			  struct mark *start safe, struct mark *end safe,
 			  struct pane *mp safe, struct pane *spacer safe,
+			  char *path safe,
 			  int hidden);
 
 DEF_CMD(email_close)
@@ -321,13 +324,15 @@ static int tok_matches(char *tok, int len, char *match safe)
 static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 			     struct mark *start safe, struct mark *end safe,
 			     struct pane *mp safe, struct pane *spacer safe,
+			     char *path,
 			     int hidden)
 {
 	struct pane *h;
 	int need_charset = 0;
 	char *charset;
-	char *major;
-	int mlen;
+	char *major, *minor = NULL;
+	int majlen, minlen;
+	char *ctype = NULL;
 
 	h = call_pane("attach-crop", p, 0, start, NULL, 0, end);
 	if (!h)
@@ -360,11 +365,31 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 		if (hx)
 			h = hx;
 	}
-	major = get_822_token(&type, &mlen);
-	if (major && tok_matches(major, mlen, "text"))
+	major = get_822_token(&type, &majlen);
+	if (major && tok_matches(major, majlen, "text"))
 		attr_set_str(&h->attrs, "email:actions", "hide:save");
 	else
 		attr_set_str(&h->attrs, "email:actions", "hide:open");
+	if (major) {
+		minor = get_822_token(&type, &minlen);
+		if (minor && tok_matches(minor, minlen, "/"))
+			minor = get_822_token(&type, &minlen);
+		else
+			minor = NULL;
+	}
+	if (minor)
+		asprintf(&ctype, "%1.*s/%1.*s", majlen, major, minlen, minor);
+	else
+		asprintf(&ctype, "%1.*s", majlen, major);
+	if (ctype) {
+		int i;
+		for (i = 0; ctype[i]; i++)
+			if (isupper(ctype[i]))
+				ctype[i] = tolower(ctype[i]);
+		attr_set_str(&h->attrs, "email:content-type", ctype);
+		free(ctype);
+	}
+	attr_set_str(&h->attrs, "email:path", path);
 
 	home_call(mp, "multipart-add", h, hidden);
 	home_call(mp, "multipart-add", spacer);
@@ -434,6 +459,7 @@ static int find_boundary(struct pane *p safe,
 static int handle_multipart(struct pane *p safe, char *type safe,
 			    struct mark *start safe, struct mark *end safe,
 			    struct pane *mp safe, struct pane *spacer safe,
+			    char *path safe,
 			    int hidden)
 {
 	char *boundary = get_822_attr(type, "boundary");
@@ -442,6 +468,8 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 	char *tok;
 	int len;
 	int alt = 0;
+	int partnum = 0;
+	char *newpath;
 
 	if (!boundary)
 		/* FIXME need a way to say "just display the text" */
@@ -477,7 +505,15 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 		pxfer = attr_find(hdr->attrs, "rfc822-content-transfer-encoding");
 
 		pane_close(hdr);
-		handle_content(p, ptype, pxfer, start, part_end, mp, spacer, hidden);
+
+		newpath = NULL;
+		asprintf(&newpath, "%s%s%1.*s:%d", path, path[0] ? ",":"",
+			 len, tok, partnum);
+		partnum++;
+
+		handle_content(p, ptype, pxfer, start, part_end, mp, spacer,
+			       newpath ?:"", hidden);
+		free(newpath);
 		mark_to_mark(start, pos);
 		if (alt)
 			hidden = 1;
@@ -492,6 +528,7 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 static int handle_content(struct pane *p safe, char *type, char *xfer,
 			  struct mark *start safe, struct mark *end safe,
 			  struct pane *mp safe, struct pane *spacer safe,
+			  char *path safe,
 			  int hidden)
 {
 	char *hdr = type;
@@ -506,13 +543,13 @@ static int handle_content(struct pane *p safe, char *type, char *xfer,
 	}
 	if (major == NULL ||
 	    tok_matches(major, mjlen, "text"))
-		return handle_text_plain(p, type, xfer, start, end, mp, spacer, hidden);
+		return handle_text_plain(p, type, xfer, start, end, mp, spacer, path, hidden);
 
 	if (tok_matches(major, mjlen, "multipart"))
-		return handle_multipart(p, type, start, end, mp, spacer, hidden);
+		return handle_multipart(p, type, start, end, mp, spacer, path, hidden);
 
 	/* default to plain text until we get a better default */
-	return handle_text_plain(p, type, xfer, start, end, mp, spacer, 1);
+	return handle_text_plain(p, type, xfer, start, end, mp, spacer, path, 1);
 }
 
 DEF_CMD(open_email)
@@ -590,7 +627,7 @@ DEF_CMD(open_email)
 	home_call(p, "multipart-add", ei->spacer);
 	call("doc:set:autoclose", doc, 1);
 
-	if (handle_content(ei->email, type, xfer, start, end, p, ei->spacer, 0) == 0)
+	if (handle_content(ei->email, type, xfer, start, end, p, ei->spacer, "", 0) == 0)
 		goto out;
 
 	h = pane_register(p, 0, &email_handle.c, ei, NULL);
