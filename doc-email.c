@@ -96,6 +96,9 @@ DEF_CMD(email_spacer)
 	attr = pane_mark_attr(ci->home, m, "multipart-prev:multipart:visible");
 	if (attr && *attr == '0')
 		visible = 0;
+	attr = pane_mark_attr(ci->focus, m, "email:visible");
+	if (attr && *attr == '0')
+		visible = 0;
 	attr = pane_mark_attr(ci->home, m, "multipart-prev:email:actions");
 	if (!attr)
 		attr = "hide";
