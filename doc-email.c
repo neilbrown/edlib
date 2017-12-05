@@ -37,8 +37,7 @@ struct email_info {
 static int handle_content(struct pane *p safe, char *type, char *xfer,
 			  struct mark *start safe, struct mark *end safe,
 			  struct pane *mp safe, struct pane *spacer safe,
-			  char *path safe,
-			  int hidden);
+			  char *path safe);
 
 DEF_CMD(email_close)
 {
@@ -324,8 +323,7 @@ static int tok_matches(char *tok, int len, char *match safe)
 static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 			     struct mark *start safe, struct mark *end safe,
 			     struct pane *mp safe, struct pane *spacer safe,
-			     char *path,
-			     int hidden)
+			     char *path)
 {
 	struct pane *h;
 	int need_charset = 0;
@@ -391,7 +389,7 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 	}
 	attr_set_str(&h->attrs, "email:path", path);
 
-	home_call(mp, "multipart-add", h, hidden);
+	home_call(mp, "multipart-add", h);
 	home_call(mp, "multipart-add", spacer);
 	return 1;
 }
@@ -459,15 +457,13 @@ static int find_boundary(struct pane *p safe,
 static int handle_multipart(struct pane *p safe, char *type safe,
 			    struct mark *start safe, struct mark *end safe,
 			    struct pane *mp safe, struct pane *spacer safe,
-			    char *path safe,
-			    int hidden)
+			    char *path safe)
 {
 	char *boundary = get_822_attr(type, "boundary");
 	int found_end = 0;
 	struct mark *pos, *part_end;
 	char *tok;
 	int len;
-	int alt = 0;
 	int partnum = 0;
 	char *newpath;
 
@@ -483,8 +479,6 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 		tok = get_822_token(&type, &len);
 		if (tok && tok[0] == '/')
 			tok = get_822_token(&type, &len);
-		if (tok_matches(tok, len, "alternative"))
-			alt = 1;
 	}
 	boundary = strdup(boundary);
 	pos = mark_dup(start, 1);
@@ -512,11 +506,9 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 		partnum++;
 
 		handle_content(p, ptype, pxfer, start, part_end, mp, spacer,
-			       newpath ?:"", hidden);
+			       newpath ?:"");
 		free(newpath);
 		mark_to_mark(start, pos);
-		if (alt)
-			hidden = 1;
 	}
 	mark_to_mark(start, pos);
 	mark_free(pos);
@@ -528,8 +520,7 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 static int handle_content(struct pane *p safe, char *type, char *xfer,
 			  struct mark *start safe, struct mark *end safe,
 			  struct pane *mp safe, struct pane *spacer safe,
-			  char *path safe,
-			  int hidden)
+			  char *path safe)
 {
 	char *hdr = type;
 	char *major, *minor = NULL;
@@ -543,13 +534,13 @@ static int handle_content(struct pane *p safe, char *type, char *xfer,
 	}
 	if (major == NULL ||
 	    tok_matches(major, mjlen, "text"))
-		return handle_text_plain(p, type, xfer, start, end, mp, spacer, path, hidden);
+		return handle_text_plain(p, type, xfer, start, end, mp, spacer, path);
 
 	if (tok_matches(major, mjlen, "multipart"))
-		return handle_multipart(p, type, start, end, mp, spacer, path, hidden);
+		return handle_multipart(p, type, start, end, mp, spacer, path);
 
 	/* default to plain text until we get a better default */
-	return handle_text_plain(p, type, xfer, start, end, mp, spacer, path, 1);
+	return handle_text_plain(p, type, xfer, start, end, mp, spacer, path);
 }
 
 DEF_CMD(open_email)
@@ -627,7 +618,7 @@ DEF_CMD(open_email)
 	home_call(p, "multipart-add", ei->spacer);
 	call("doc:set:autoclose", doc, 1);
 
-	if (handle_content(ei->email, type, xfer, start, end, p, ei->spacer, "", 0) == 0)
+	if (handle_content(ei->email, type, xfer, start, end, p, ei->spacer, "") == 0)
 		goto out;
 
 	h = pane_register(p, 0, &email_handle.c, ei, NULL);

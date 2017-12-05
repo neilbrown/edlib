@@ -1396,6 +1396,35 @@ class notmuch_query_view(edlib.Pane):
 class notmuch_message_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
+        # Need to set default visibility on each part.
+        # step forward with doc:step-part and for any 'odd' part,
+        # which is a spacer, we look at email:path and email:content-type.
+        # If alternative:[1-9] is found, or type isn't "text*", make it
+        # invisible.
+        p = 0
+        m = edlib.Mark(focus)
+        while True:
+            newp = self.call("doc:step-part", m, 1)
+            # retval is offset by 1 to avoid zero
+            newp -= 1
+            if newp <= p:
+                # reached the end
+                break
+            p = newp
+            if not (p & 1):
+                continue
+            if p < 2:
+                continue
+            path = focus.call("doc:get-attr", "multipart-prev:email:path", m, ret='str')
+            type = focus.call("doc:get-attr", "multipart-prev:email:content-type", m, ret='str')
+            vis = True
+            for  el in path.split('.'):
+                if el[:12] == "alternative:" and el != "alternative:0":
+                    vis = False
+            if type[:4] != "text" and type != "":
+                vis = False
+            if not vis:
+                focus.call("doc:set-attr", "email:visible", m, 0)
 
     def handle(self, key, focus, mark, num, str, str2, comm2, **a):
         if key == "Close":
