@@ -1232,13 +1232,14 @@ static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct do
 
 DEF_CMD(text_mark_same)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
-
 	if (!ci->mark || !ci->mark2)
 		return -1;
 
-	return text_ref_same(t, &ci->mark->ref, &ci->mark2->ref) ? 1 : 2;
+	if (ci->mark->ref.c == ci->mark2->ref.c &&
+	    ci->mark->ref.o == ci->mark2->ref.o)
+		return 1;
+	else
+		return 2;
 }
 
 DEF_LOOKUP_CMD(text_handle, text_map);
