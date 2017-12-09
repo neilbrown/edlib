@@ -56,7 +56,7 @@ DEF_CMD(qp_step)
 					mark_to_mark(ci->mark, m);
 				mark_free(m);
 			}
-			return CHAR_RET(ch);
+			goto normalize;
 		}
 		if (ch == '\r') {
 			/* assume CR-LF */
@@ -67,7 +67,8 @@ DEF_CMD(qp_step)
 					mark_to_mark(ci->mark, m);
 				mark_free(m);
 			}
-			return CHAR_RET('\n');
+			ch = '\n';
+			goto normalize;
 		}
 		if (m == ci->mark)
 			m = mark_dup(m, 1);
@@ -87,7 +88,7 @@ DEF_CMD(qp_step)
 					mark_to_mark(ci->mark, m);
 			}
 			mark_free(m);
-			return CHAR_RET(ch);
+			goto normalize;
 		}
 		/* Whitespace, ignore if at eol */
 		if (move)
@@ -104,7 +105,27 @@ DEF_CMD(qp_step)
 		}
 		/* Just normal white space */
 		mark_free(m);
-		return CHAR_RET(ch);
+	normalize:
+		if (!move)
+			return CHAR_RET(ch);
+	normalize_more:
+		m = ci->mark;
+		/* If next is "=\n" we need to skip over it. */
+		if (doc_following_pane(p, m) != '=')
+			return CHAR_RET(ch);
+		m = mark_dup(ci->mark, 1);
+		mark_next_pane(p, m);
+		while ((c2 = mark_next_pane(p, m)) == ' ' ||
+		       c2 == '\t' || c2 == '\r')
+			;
+		if (c2 != '\n') {
+			/* Don't need to skip this */
+			mark_free(m);
+			return CHAR_RET(ch);
+		}
+		mark_to_mark(ci->mark, m);
+		mark_free(m);
+		goto normalize_more;
 	} else {
 		ch = mark_step_pane(p, m, 0, move);
 		if (ch == '\n') {
@@ -125,8 +146,14 @@ DEF_CMD(qp_step)
 			mark_free(m);
 			return CHAR_RET('\n');
 		}
-		if (hex(ch) < 0)
+		if (hex(ch) < 0) {
+			if (m != ci->mark) {
+				if (move)
+					mark_to_mark(ci->mark, m);
+				mark_free(m);
+			}
 			return CHAR_RET(ch);
+		}
 		if (m == ci->mark)
 			m = mark_dup(m, 1);
 		else if (move)
@@ -153,52 +180,6 @@ DEF_CMD(qp_step)
 	}
 }
 
-DEF_CMD(qp_same)
-{
-	struct pane *p = ci->home->parent;
-	struct mark *m1 = ci->mark;
-	struct mark *m2 = ci->mark2;
-
-	if (!p || !m1 || !m2)
-		return -1;
-	if (m1 == m2)
-		return 1;
-	if (mark_same_pane(p, m1, m2))
-		return 1;
-	/* If the only thing separating the earlier one from the later one
-	 * is "=space\r\n" sequences, then they are the same
-	 */
-	if (m1->seq > m2->seq) {
-		struct mark *m = m1;
-		m1 = m2;
-		m2 = m;
-	}
-	if (doc_following_pane(p, m1) != '=')
-		return 2;
-	m1 = mark_dup(m1, 1);
-	while (1) {
-		wint_t ch = doc_following_pane(p, m1);
-		if (ch != '=')
-			break;
-		mark_next_pane(p, m1);
-		while (m1->seq < m2->seq &&
-		       ((ch = doc_following_pane(p, m1)) == ' ' ||
-			ch == '\t' || ch == '\r')) {
-			mark_next_pane(p, m1);
-			continue;
-		}
-		if (ch != '\n')
-			break;
-		mark_next_pane(p, m1);
-	}
-	if (m1->seq > m2->seq || mark_same_pane(p, m1, m2)) {
-		mark_free(m1);
-		return 1;
-	}
-	mark_free(m1);
-	return 2;
-}
-
 DEF_CMD(qp_attach)
 {
 	struct pane *p;
@@ -217,7 +198,6 @@ void edlib_init(struct pane *ed safe)
 	qp_map = key_alloc();
 
 	key_add(qp_map, "doc:step", &qp_step);
-	key_add(qp_map, "doc:mark-same", &qp_same);
 
 	call_comm("global-set-command", ed, &qp_attach, 0, NULL, "attach-quoted_printable");
 	call_comm("global-set-command", ed, &qp_attach, 0, NULL, "attach-qprint");
