@@ -224,11 +224,53 @@ DEF_CMD(docs_modified_notify_replace)
 		return -1;
 	mark_to_modified(ci->home->parent, m);
 	all_gone = (m->ref.p == NULL);
+	if (!all_gone && ci->mark) {
+		/* Need to send Notify:clip to ensure mark is
+		 * no longer visible */
+		struct mark *m2;
+		m2 = vmark_new(ci->home->parent, MARK_UNGROUPED);
+		while (m2 && m2->ref.p != NULL) {
+			if (mark_ordered_or_same_pane(ci->home, m2, ci->mark) &&
+			    mark_ordered_or_same_pane(ci->home, ci->mark, m))
+				/* FIXME I really should wait for Refresh:view
+				 * and then send Notify:clip to the focus,
+				 * but that seems clumsy, and this works...
+				 * for now.
+				 */
+				call("Notify:clip", ci->home, 0, m2, NULL, 0, m);
+			mark_to_mark(m2, m);
+			if (mark_next_pane(ci->home->parent, m) == WEOF)
+				break;
+			mark_to_modified(ci->home->parent, m);
+		}
+		mark_free(m2);
+	}
 	mark_free(m);
 	if (ci->mark)
 		pane_damaged(ci->home, DAMAGED_VIEW);
 	if (all_gone)
 		call("popup:close", ci->home);
+	return 1;
+}
+
+DEF_CMD(docs_modified_set_ref)
+{
+	struct doc *dc = ci->home->data;
+	struct docs *d = container_of(dc, struct docs, doc);
+	struct mark *m = ci->mark;
+
+	if (!m)
+		return -1;
+
+	if (ci->num == 1 && !list_empty(&d->collection->children)) {
+		m->ref.p = list_first_entry(&d->collection->children,
+					    struct pane, siblings);
+		mark_to_modified(ci->home, m);
+	} else
+		m->ref.p = NULL;
+
+	m->ref.ignore = 0;
+	mark_to_end(dc, m, ci->num != 1);
 	return 1;
 }
 
@@ -241,7 +283,6 @@ DEF_CMD(docs_modified_step)
 	if (!ci->home->parent || !ci->mark)
 		return 0;
 
-	mark_to_modified(ci->home->parent, ci->mark);
 	if (ci->num) {
 		ret = doc_following_pane(ci->home->parent, ci->mark);
 		if (ci->num2 && ret != WEOF) {
@@ -270,7 +311,6 @@ DEF_CMD(docs_modified_doc_get_attr)
 
 	if (!ci->str || !ci->mark || !ci->home->parent)
 		return 0;
-	mark_to_modified(ci->home->parent, ci->mark);
 	m = mark_dup(ci->mark, 1);
 	attr = pane_mark_attr(ci->home->parent, m, ci->str);
 	mark_free(m);
@@ -280,28 +320,9 @@ DEF_CMD(docs_modified_doc_get_attr)
 
 DEF_CMD(docs_modified_mark_same)
 {
-	struct docs *doc = ci->home->data;
-	struct pane *p1, *p2;
-
-	if (!ci->mark || !ci->mark2 || !ci->home->parent)
+	if (!ci->mark || !ci->mark2)
 		return 0;
-	mark_to_modified(ci->home->parent, ci->mark);
-	mark_to_modified(ci->home->parent, ci->mark2);
-	p1 = ci->mark->ref.p;
-	p2 = ci->mark2->ref.p;
-	list_for_each_entry_from(p1, &doc->collection->children, siblings) {
-		char *fn = pane_attr_get(p1, "filename");
-		char *mod = pane_attr_get(p1, "doc-modified");
-		if (fn && *fn && mod && strcmp(mod, "yes") == 0)
-			break;
-	}
-	list_for_each_entry_from(p2, &doc->collection->children, siblings) {
-		char *fn = pane_attr_get(p2, "filename");
-		char *mod = pane_attr_get(p2, "doc-modified");
-		if (fn && *fn && mod && strcmp(mod, "yes") == 0)
-			break;
-	}
-	if (p1 == p2)
+	if (ci->mark->ref.p == ci->mark2->ref.p)
 		return 1;
 	else
 		return 2;
@@ -406,9 +427,9 @@ DEF_CMD(docs_callback)
 DEF_CMD(doc_damage)
 {
 	struct pane *p = ci->home;
-	struct mark *m = doc_new_mark(p->data, MARK_UNGROUPED);
-	struct pane *child = ci->focus;
 	struct doc *d = p->data;
+	struct mark *m = doc_new_mark(d, MARK_UNGROUPED);
+	struct pane *child = ci->focus;
 
 	if (!child || !m)
 		return -1;
@@ -417,7 +438,7 @@ DEF_CMD(doc_damage)
 			pane_notify("Notify:doc:Replace", d->home, 0, m);
 			break;
 		}
-	} while (mark_next(p->data, m) != WEOF);
+	} while (mark_next(d, m) != WEOF);
 	mark_free(m);
 	return 1;
 }
@@ -783,6 +804,7 @@ static void docs_init_map(void)
 	key_add(docs_modified_map, "Notify:doc:Replace", &docs_modified_notify_replace);
 	key_add(docs_modified_map, "doc:step", &docs_modified_step);
 	key_add(docs_modified_map, "doc:get-attr", &docs_modified_doc_get_attr);
+	key_add(docs_modified_map, "doc:set-ref", &docs_modified_set_ref);
 	key_add(docs_modified_map, "doc:mark-same", &docs_modified_mark_same);
 	key_add(docs_modified_map, "get-attr", &docs_modified_get_attr);
 }
