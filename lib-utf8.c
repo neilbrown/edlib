@@ -76,11 +76,6 @@ DEF_CMD(utf8_step)
 	return CHAR_RET(ret);
 }
 
-DEF_CMD(utf8_same)
-{
-	return 0;
-}
-
 DEF_CMD(utf8_attach)
 {
 	struct pane *p;
@@ -99,7 +94,6 @@ void edlib_init(struct pane *ed safe)
 	utf8_map = key_alloc();
 
 	key_add(utf8_map, "doc:step", &utf8_step);
-	key_add(utf8_map, "doc:mark-same", &utf8_same);
 
 	call_comm("global-set-command", ed, &utf8_attach, 0, NULL, "attach-charset-utf_8");
 	call_comm("global-set-command", ed, &utf8_attach, 0, NULL, "attach-utf8");
