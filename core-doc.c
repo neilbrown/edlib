@@ -874,16 +874,20 @@ DEF_CMD(doc_clip)
 	mark_clip(dd->point, ci->mark, ci->mark2);
 	if (dd->mark)
 		mark_clip(dd->mark, ci->mark, ci->mark2);
-	return 0;
+	return 1;
 }
 
 DEF_CMD(doc_pass_on)
 {
 	struct doc_data *dd = ci->home->data;
-	return home_call(dd->doc, ci->key, ci->focus, ci->num,
+	int ret = home_call(dd->doc, ci->key, ci->focus, ci->num,
 			 ci->mark ?: dd->point, ci->str,
 			 ci->num2, ci->mark2, ci->str2,
 			 ci->x, ci->y, ci->comm2);
+	if (!ret && (ci->mark || ci->mark2))
+		/* Mark won't be meaningful to any other document */
+		ret = 1;
+	return ret;
 }
 
 struct map *doc_default_cmd safe;
