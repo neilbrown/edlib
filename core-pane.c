@@ -373,7 +373,7 @@ restart:
 	pane_call(p, "Close", p);
 
 	pane_damaged(p->parent, DAMAGED_CONTENT);
-	/* If a child has not yet has "Close" called, we need to leave
+	/* If a child has not yet had "Close" called, we need to leave
 	 * ->parent in place so a full range of commands are available.
 	 */
 	// p->parent = NULL;
