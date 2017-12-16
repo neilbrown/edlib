@@ -542,7 +542,7 @@ DEF_CMD(take_focus)
 	if (!p)
 		return -1;
 	if (pr->ret)
-		return 0;
+		return -1;
 	pr->ret = Pane_Frompane(ci->focus);
 	return 1;
 }
@@ -554,7 +554,7 @@ DEF_CMD(take_mark)
 		ci->home->handle->func == python_doc_call.func;
 
 	if (pr->ret)
-		return 0;
+		return -1;
 	if (!ci->mark)
 		return 0;
 	pr->ret = Mark_Frommark(ci->mark, local);
@@ -568,7 +568,7 @@ DEF_CMD(take_mark2)
 		ci->home->handle->func == python_doc_call.func;
 
 	if (pr->ret)
-		return 0;
+		return -1;
 	if (!ci->mark2)
 		return 0;
 	pr->ret = Mark_Frommark(ci->mark2, local);
@@ -580,7 +580,7 @@ DEF_CMD(take_str)
 	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
 
 	if (pr->ret)
-		return 0;
+		return -1;
 	if (!ci->str)
 		return 0;
 	pr->ret = python_string(ci->str);
