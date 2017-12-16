@@ -799,8 +799,9 @@ DEF_CMD(doc_dup_point)
 	else
 		m = do_mark_at_point(pt, ci->num2);
 
-	return comm_call(ci->comm2, "callback:dup-point", ci->focus,
-			 0, m);
+	comm_call(ci->comm2, "callback:dup-point", ci->focus,
+		  0, m);
+	return 1;
 }
 
 DEF_CMD(doc_assign)
