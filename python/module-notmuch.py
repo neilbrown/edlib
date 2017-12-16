@@ -658,7 +658,7 @@ class notmuch_master_view(edlib.Pane):
                 return 1
             return 1
 
-        if key == "doc:notmuch-close-message":
+        if key == "notmuch-close-message":
             self.message_pane = None
             return 1
 
@@ -827,7 +827,7 @@ class notmuch_list(edlib.Doc):
         self.messageids = {}
         self.threadinfo = {}
         self["render-default"] = "notmuch:query"
-        self["line-format"] = "<%hilite>%date_relative</><tab:130></> <fg:blue>%+authors</><tab:350>%.threadinfo<tab:450><%hilite>%.subject</>                      "
+        self["line-format"] = "<%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%+TM-authors</><tab:350>%.TM-threadinfo<tab:450><%TM-hilite>%.TM-subject</>                      "
         self.add_notify(self.parent, "Notify:Tag")
         self.load_full()
 
@@ -885,7 +885,7 @@ class notmuch_list(edlib.Doc):
             m = self.first_mark()
             while m:
                 if m.pos is None:
-                    m.pos = (self.new[0],)
+                    m.pos = (self.new[0], None)
                 m = m.next_any()
         self.threadids = self.new + self.old
         self.notify("Notify:doc:Replace")
@@ -920,7 +920,8 @@ class notmuch_list(edlib.Doc):
                 self.add_message(m, lst, info, depth + [1])
             self.add_message(l[-1], lst, info, depth + [0])
 
-    def load_thread(self, tid):
+    def load_thread(self, mark):
+        (tid, mid) = mark.pos
         with self.db as db:
             q = notmuch.Query(db, "thread:%s and (%s)" % (tid, self.query))
             tl = list(q.search_threads())
@@ -938,6 +939,17 @@ class notmuch_list(edlib.Doc):
                 self.add_message(m, midlist, minfo, [2])
             self.messageids[tid] = midlist
             self.threadinfo[tid] = minfo
+        if mid is None:
+            # need to update all marks at this location to old mid
+            m = mark
+            pos = (tid, midlist[0])
+            while m and m.pos and m.pos[0] == tid:
+                m.pos = pos
+                m = m.prev_any()
+            m = mark.next_any()
+            while m and m.pos and m.pos[0] == tid:
+                m.pos = pos
+                m = m.next_any()
 
     def rel_date(self, sec):
         then = time.localtime(sec)
@@ -965,128 +977,6 @@ class notmuch_list(edlib.Doc):
         val = "              " + val
         val = val[-13:]
         return val
-
-    def pos_index(self, pos, visible, whole_thread):
-        # return (threadnum, messagenum, moved, pos)
-        # by finding the first position at or after pos
-        # and 'threadnum' being index into self.threadids
-        # 'messagenum' being -1 if thread not in visible, else
-        # index into self.messageids[threadid',
-        # 'moved' being true of 'pos' wasn't visible, and
-        # 'pos' being the new position.
-        # End-of-file is -1 -1 None
-        if pos is None:
-            return (-1, -1, False, None)
-        th = pos[0]
-        moved = False
-        i = self.threadids.index(th)
-        j = -1
-        while whole_thread and th not in visible:
-            # invisible thread, move to next
-            moved = True
-            i += 1
-            if i >= len(self.threadids):
-                return (-1, -1, moved, None)
-            th = self.threadids[i]
-            pos = (th,)
-        # This thread is a valid location
-        if th not in visible:
-            if len(pos) == 2:
-                # move to whole of thread
-                pos = (th,)
-                moved = True
-            return (i, -1, moved, pos)
-        # Thread is open, need to find a valid message, either after or before
-        # FIXME I get a key-error below sometimes.  Maybe out-of-sync with DB
-        mi = self.messageids[th]
-        ti = self.threadinfo[th]
-        if len(pos) == 1:
-            j = 0
-            moved = True
-        else:
-            j = mi.index(pos[1])
-        while j < len(mi):
-            if whole_thread or ti[mi[j]][2]:
-                return (i, j, moved, (th, mi[j]))
-            j += 1
-            moved = True
-        # search backwards
-        while j > 0:
-            j -= 1
-            if whole_thread or ti[mi[j]][2]:
-                return (i, j, True, (th, mi[j]))
-        # IMPOSSIBLE
-        return (-1, -1, True, None)
-
-    def next(self, i, j, visible, whole_thread):
-        # 'visible' is a list of visible thread-ids.
-        # We move pos forward either to the next message in a visible thread
-        # or the first message of the next thread
-        # Return index into thread list and index into message list of original pos,
-        # and new pos.
-        # Normally only select messages which 'match' (info[2])
-        # If whole_thread, then only select messages in a visible thread, and
-        #  select any of them, including non-matched.
-        # return i,j,pos
-        if j == -1 and i >= 0:
-            i += 1
-        else:
-            j += 1
-        while True:
-            if i == -1 or i >= len(self.threadids):
-                return (-1, -1, None)
-            th = self.threadids[i]
-            if th in visible:
-                # thread is visible, move to next message
-                mi = self.messageids[th]
-                ti = self.threadinfo[th]
-                if j < 0:
-                    j = 0
-                while j < len(mi) and not whole_thread and not ti[mi[j]][2]:
-                    j += 1
-                if j < len(mi):
-                    return (i, j, (th, mi[j]))
-            elif not whole_thread:
-                return (i, -1, (th,))
-            # Move to next thread
-            i += 1
-            j = -1
-
-    def prev(self, i, j, visible, whole_thread):
-        # 'visible' is a list of visible thread-ids
-        # We move pos backward either to previous message in a visible thread
-        # or the last message of the previous thread.
-        # Return index into thread list, index into message list, and new pos
-        # (Indexs are new pos!)
-        # Normally only select messages which 'match' (info[2])
-        # If whole_thread, then only select messages in a visible thread,
-        #   and select any of them, including non-matched.
-        if i < 0:
-            i = len(self.threadids) - 1
-            j = -1;
-        elif j <= 0:
-            j = -1
-            i -= 1
-        else:
-            j -= 1
-        while True:
-            if i < 0:
-                return (-1, -1, None)
-            th = self.threadids[i]
-            if th in visible:
-                mi = self.messageids[th]
-                ti = self.threadinfo[th]
-                if j < 0 or j >= len(mi):
-                    j = len(mi) -1
-                while j >= 0 and not whole_thread and not ti[mi[j]][2]:
-                    j -= 1
-                if j >= 0:
-                    return (i, j, (th, mi[j]))
-            elif not whole_thread:
-                return (i, -1, (th,))
-            # move to previous thread
-            i -= 1
-            j = -1
 
     def cvt_depth(self, depth):
         ret = ""
@@ -1117,6 +1007,73 @@ class notmuch_list(edlib.Doc):
         else:
             return self.cmp1(p1[0], p2[0])
 
+    def step(self, mark, forward, move):
+        ret = edlib.WEOF
+        if forward:
+            if mark.pos is None:
+                return ret
+            if not move:
+                return '\n'
+            (tid,mid) = mark.pos
+            m2 = mark.next_any()
+            while m2 and m2.pos == mark.pos:
+                mark.to_mark(m2)
+                m2 = mark.next_any()
+            i = self.threadids.index(tid)
+            if mid:
+                j = self.messageids[tid].index(mid) + 1
+            if mid and j < len(self.messageids[tid]):
+                mark.pos = (tid, self.messageids[tid][j])
+            elif i+1 < len(self.threadids):
+                tid = self.threadids[i+1]
+                if tid in self.messageids:
+                    mark.pos = (tid, self.messageids[tid][0])
+                else:
+                    mark.pos = (tid, None)
+            else:
+                mark.pos = None
+            m2 = mark.next_any()
+            while m2 and m2.pos == mark.pos:
+                mark.to_mark(m2)
+                m2 = mark.next_any()
+            return '\n'
+        else:
+            j = 0
+            if mark.pos == None:
+                i = len(self.threadids)
+            else:
+                (tid,mid) = mark.pos
+                i = self.threadids.index(tid)
+                if mid:
+                    j = self.messageids[tid].index(mid)
+            if i == 0 and j == 0:
+                return edlib.WEOF
+            if not move:
+                return '\n'
+            m2 = mark.prev_any()
+            while m2 and m2.pos == mark.pos:
+                mark.to_mark(m2)
+                m2 = mark.prev_any()
+
+            if j == 0:
+                i -= 1
+                tid = self.threadids[i]
+                if tid in self.messageids:
+                    j = len(self.messageids[tid])
+                else:
+                    j = 1
+            j -= 1
+            if tid in self.messageids:
+                mark.pos = (tid, self.messageids[tid][j])
+            else:
+                mark.pos = (tid, None)
+
+            m2 = mark.prev_any()
+            while m2 and m2.pos == mark.pos:
+                mark.to_mark(m2)
+                m2 = mark.prev_any()
+            return '\n'
+
     def handle(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
         if key == "Notify:Tag":
             if str2:
@@ -1138,7 +1095,11 @@ class notmuch_list(edlib.Doc):
         if key == "doc:set-ref":
             mark.pos = None
             if num == 1 and len(self.threadids) > 0:
-                i,j,moved,mark.pos = self.pos_index((self.threadids[0],),[str2], str2 and xy[0])
+                tid = self.threadids[0]
+                if tid in self.messageids:
+                    mark.pos = (self.threadids[0],self.messageids[tid][0])
+                else:
+                    mark.pos = (self.threadids[0],None)
             mark.offset = 0
             self.to_end(mark, num == 0)
             return 1
@@ -1146,126 +1107,150 @@ class notmuch_list(edlib.Doc):
         if key == "doc:mark-same":
             if mark.pos == mark2.pos:
                 return 1
-            i1,j1,moved1,pos1 = self.pos_index(mark.pos, [str2], str2 and xy[0])
-            i2,j2,moved2,pos2 = self.pos_index(mark2.pos, [str2], str2 and xy[0])
-            return 1 if (i1,j1)==(i2,j2) else 2
+            return 2
 
         if key == "doc:step":
             forward = num
             move = num2
-            ret = edlib.WEOF
-            i,j,moved,pos = self.pos_index(mark.pos, [str2], str2 and xy[0])
-            if moved:
-                mark.pos = pos
+            return self.step(mark, forward, move)
+
+        if key == "doc:step-thread":
+            # Move to the start of the current thread, or the start
+            # of the next one.
+            forward = num
+            move = num2
             if forward:
-                i2,j2,pos = self.next(i, j, [str2], str2 and xy[0])
-                if mark.pos is not None:
-                    ret = '\n'
-                if move:
+                if mark.pos == None:
+                    return edlib.WEOF
+                if not move:
+                    return "\n"
+                (tid,mid) = mark.pos
+                m2 = mark.next_any()
+                while m2 and m2.pos != None and m2.pos[0] == tid:
+                    mark.to_mark(m2)
                     m2 = mark.next_any()
-                    target = None
-                    while m2:
-                        i3,j3,moved3,pos3 = self.pos_index(m2.pos, [str2], str2 and xy[0])
-                        if self.pairs_ordered((i2,j2), (i3,j3)):
-                            break
-                        target = m2
-                        m2 = m2.next_any()
-                    if target:
-                        mark.to_mark(target)
-                    mark.pos = pos
-            if not forward:
-                i2,j2,pos = self.prev(i,j, [str2], str2 and xy[0])
-                if i2 >= 0:
-                    ret = '\n'
-                    if move:
-                        m2 = mark.prev_any()
-                        target = None
-                        while m2:
-                            i3,j3,moved3,pos3 = self.pos_index(m2.pos, [str2], str2 and xy[0])
-                            if self.pairs_ordered((i3,j3), (i2,j2)):
-                                break
-                            target = m2
-                            m2 = m2.prev_any()
-                        if target:
-                            mark.to_mark(target)
-                        mark.pos = pos
+                i = self.threadids.index(tid) + 1
+                if i < len(self.threadids):
+                    tid = self.threadids[i]
+                    if tid in self.messageids:
+                        mark.pos = (tid, self.messageids[tid][0])
+                    else:
+                        mark.pos = (tid, None)
+                else:
+                    mark.pos = None
+                return '\n'
+            else:
+                if mark.pos == None:
+                    if len(self.threadids) == 0:
+                        return edlib.WEOF
+                    tid = self.threadids[-1]
+                else:
+                    (tid,mid) = mark.pos
+                m2 = mark.prev_any()
+                while m2 and (m2.pos == None or m2.pos[0] == tid):
+                    mark.to_mark(m2)
+                    m2 = mark.prev_any()
+                if tid in self.messageids:
+                    mark.pos = (tid, self.messageids[tid][0])
+                else:
+                    mark.pos = (tid, None)
+                return '\n'
+
+        if key == "doc:step-matched":
+            # Move to the next/prev message which is matched.
+            forward = num
+            move = num2
+            m = mark
+            if not move:
+                m = mark.dup()
+            ret = self.step(m, forward, 1)
+            while ret != edlib.WEOF and m.pos != None:
+                (tid,mid) = m.pos
+                if not mid:
+                    break
+                ms = self.threadinfo[tid][mid]
+                if ms[2]:
+                    break
+                ret = self.step(m, forward, 1)
             return ret
 
         if key == "doc:get-attr":
             attr = str
-            i,j,moved,pos = self.pos_index(mark.pos, [str2], str2 and xy[0])
-            if moved:
-                mark.pos = pos
+            if mark.pos == None:
+                # No attributes for EOF
+                return 1
+            (tid,mid) = mark.pos
+            i = self.threadids.index(tid)
+            j = 0;
+            if mid:
+                j = self.messageids[tid].index(mid)
 
             val = None
-            if i >= 0 and j == -1 and self.threadids[i] != str2:
-                # report on thread, not message
-                tid = self.threadids[i]
-                t = self.threads[tid]
-                if attr == "message-id":
-                    val = None
-                elif attr == "thread-id":
-                    val = tid
-                elif attr == "hilite":
-                    if "inbox" not in t["tags"]:
-                        # FIXME this test is wrong once we have generic searches
-                        val = "fg:grey"
-                    elif "new" in t["tags"] and "unread" in t["tags"]:
-                        val = "fg:red,bold"
-                    elif "unread" in t["tags"]:
-                        val = "fg:blue"
-                    else:
-                        val = "fg:black"
-                elif attr == "date_relative":
-                    val = self.rel_date(t['timestamp'])
-                elif attr == "threadinfo":
-                    val = "[%d/%d]" % (t['matched'],t['total'])
-                elif attr in t:
-                    val = t[attr]
-                    if type(val) == int:
-                        val = "%d" % val
-                    else:
-                        val = unicode(t[attr])
-                    if attr == 'date_relative':
-                        val = "           " + val
-                        val = val[-13:]
-                    if attr == "authors":
-                        val = val[:20]
 
-            if j >= 0 or (i >= 0 and self.threadids[i] == str2):
-                # report on an individual message
-                if j < 0:
-                    j = 0
-                tid = self.threadids[i]
-                mid = self.messageids[tid][j]
+            tid = self.threadids[i]
+            t = self.threads[tid]
+            if mid:
                 m = self.threadinfo[tid][mid]
                 (fn, dt, matched, depth, author, subj, tags) = m
-                if attr == "message-id":
-                    val = mid
-                elif attr == "thread-id":
-                    val = tid
-                elif attr == "hilite":
-                    # FIXME this inbox test is wrong once we allow generic searches
-                    if not matched or "inbox" not in tags:
-                        val = "fg:grey"
-                        if "new" in tags and "unread" in tags:
-                            val = "fg:pink"
-                    elif "new" in tags and "unread" in tags:
-                        val = "fg:red,bold"
-                    elif "unread" in tags:
-                        val = "fg:blue"
-                    else:
-                        val = "fg:black"
-                elif attr == "date_relative":
-                    val = self.rel_date(dt)
-                elif attr == "authors":
-                    val = author[:20]
-                elif attr == "subject":
-                    val = subj
-                elif attr == "threadinfo":
-                    val = self.cvt_depth(depth)
+            else:
+                (fn, dt, matched, depth, author, subj, tags) = (
+                    "", 0, False, [0], "" ,"", [])
+            if attr == "message-id":
+                val = mid
+            elif attr == "thread-id":
+                val = tid
+            elif attr == "T-hilite":
+                if "inbox" not in t["tags"]:
+                    # FIXME this test is wrong once we have generic searches
+                    val = "fg:grey"
+                elif "new" in t["tags"] and "unread" in t["tags"]:
+                    val = "fg:red,bold"
+                elif "unread" in t["tags"]:
+                    val = "fg:blue"
+                else:
+                    val = "fg:black"
+            elif attr == "T-date_relative":
+                val = self.rel_date(t['timestamp'])
+            elif attr == "T-threadinfo":
+                val = "[%d/%d]" % (t['matched'],t['total'])
+            elif attr[:2] == "T-" and attr[2:] in t:
+                val = t[attr[2:]]
+                if type(val) == int:
+                    val = "%d" % val
+                else:
+                    val = unicode(t[attr[2:]])
+                if attr == "T-authors":
+                    val = val[:20]
 
-            comm2("callback", focus, val)
+            elif attr == "message-id":
+                val = mid
+            elif attr == "thread-id":
+                val = tid
+            elif attr == "matched":
+                val = "True" if matched else "False"
+            elif attr == "M-hilite":
+                # FIXME this inbox test is wrong once we allow generic searches
+                if not matched or "inbox" not in tags:
+                    val = "fg:grey"
+                    if "new" in tags and "unread" in tags:
+                        val = "fg:pink"
+                elif "new" in tags and "unread" in tags:
+                    val = "fg:red,bold"
+                elif "unread" in tags:
+                    val = "fg:blue"
+                else:
+                    val = "fg:black"
+            elif attr == "M-date_relative":
+                val = self.rel_date(dt)
+            elif attr == "M-authors":
+                val = author[:20]
+            elif attr == "M-subject":
+                val = subj
+            elif attr == "M-threadinfo":
+                val = self.cvt_depth(depth)
+
+            if not val is None:
+                comm2("callback", focus, val)
             return 1
 
         if key == "get-attr" and comm2:
@@ -1275,9 +1260,12 @@ class notmuch_list(edlib.Doc):
             return 0
 
         if key == "doc:notmuch:load-thread":
-            if str not in self.threadinfo:
-                self.load_thread(str)
-            if str in self.threadinfo:
+            if mark.pos is None:
+                return -1
+            (tid,mid) = mark.pos
+            if tid not in self.threadinfo:
+                self.load_thread(mark)
+            if tid in self.threadinfo:
                 return 1
             return 2
 
@@ -1322,9 +1310,15 @@ class notmuch_query_view(edlib.Pane):
         self.whole_thread = 0
         self.seen_threads = {}
         self.seen_msgs = {}
+        # thread_start and thread_end are marks which deliniate
+        # the 'current' thread. thread_matched is the first matched
+        # message in the thread.
+        self.thread_start = None
+        self.thread_end = None
+        self.thread_matched = None
         self.call("Request:Notify:doc:Replace")
 
-    def handle(self, key, focus, mark, mark2, num, **a):
+    def handle(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
         if key == "Clone":
             p = notmuch_query_view(focus)
             self.clone_children(focus.focus)
@@ -1334,32 +1328,139 @@ class notmuch_query_view(edlib.Pane):
             self.damaged(edlib.DAMAGED_CONTENT)
             return 1
 
-        if key in ["doc:step", "doc:get-attr", "doc:mark-same"]:
-            s = a['str']
-            if s is None:
-                s = ""
-            del a['str']
-            del a['str2']
-            del a['home']
-            del a['comm']
-            del a['xy']
-            return self.parent.call(key, focus, mark, mark2, num, s, self.selected,
-                                    (self.whole_thread, 0), *(a.values()))
+        if key == "doc:set-ref":
+            start = num
+            if start:
+                if self.whole_thread:
+                    self.mark.to_mark(self.thread_start)
+                    return 1
+                if self.thread_matched and self.parent.call("doc:step", 0, mark) == edlib.WEOF:
+                    # first thread is open
+                    self.mark.to_mark(self.thread_matched)
+                    return 1;
+            # otherwise fall-through to real start or end
+            return 0
+
+        if key == "doc:step":
+            forward = num
+            move = num2
+            if self.whole_thread:
+                # move one message, but stop at thread_start/thread_end
+                if forward:
+                    ret = self.parent.call("doc:step", focus, forward, move, mark)
+                    if move and mark > self.thread_end or \
+                       1 == self.parent.call("doc:mark-same", focus, mark, self.thread_end):
+                        # If at end of thread, move to end of document
+                        self.parent.call("doc:set-ref", focus, mark, 0)
+                else:
+                    if mark < self.thread_start or \
+                       1 == self.parent.call("doc:mark-same", focus, mark, self.thread_start):
+                        # at start already
+                        ret = edlib.WEOF
+                    else:
+                        ret = self.parent.call("doc:step", focus, forward, move, mark)
+                return ret
+            else:
+                # if between thread_start/thread_end, move one message,
+                # else move one thread
+                if not self.thread_start:
+                    in_thread = False
+                elif forward and (mark > self.thread_end or
+                                  1 == self.parent.call("doc:mark-same", focus, mark, self.thread_end)):
+                    in_thread = False
+                elif not forward and (mark < self.thread_matched or
+                                      1 == self.parent.call("doc:mark-same", focus, mark, self.thread_matched)):
+                    in_thread = False
+                elif forward and (mark < self.thread_matched and
+                                  2 == self.parent.call("doc:mark-same", focus, mark, self.thread_matched)):
+                    in_thread = False
+                elif not forward and (mark > self.thread_end and
+                                      2 == self.parent.call("doc:mark-same", focus, mark, self.thread_end)):
+                    in_thread = False
+                else:
+                    in_thread = True
+                if in_thread:
+                    # move one matched message
+                    ret = self.parent.call("doc:step-matched", focus, mark, forward, move)
+                    # If moving forward, we might be in the next thread,
+                    # make sure we didn't go further than thread_end
+                    if forward and move and mark > self.thread_end:
+                        mark.to_mark(self.thread_end)
+                    return ret
+                else:
+                    # move one thread
+                    if forward:
+                        ret = self.parent.call("doc:step-thread", focus, mark, forward, move)
+                        if self.thread_start and 1 == self.parent.call("doc:mark-same", focus, mark, self.thread_start):
+                            mark.to_mark(self.thread_matched)
+                    else:
+                        ret = self.parent.call("doc:step", focus, mark, forward, move)
+                        if move and ret != edlib.WEOF:
+                            self.parent.call("doc:step-thread", focus, mark, forward, move)
+                    return ret
+
+        if key == "doc:get-attr":
+            if mark is None:
+                mark = self.call("doc:point", ret='mark')
+            attr = str
+            if attr[:3] == "TM-":
+                if self.thread_start and mark < self.thread_end and 2 == self.parent.call("doc:mark-same", mark, self.thread_end, focus) and (
+                        mark > self.thread_start or 1 == self.parent.call("doc:mark-same", mark, self.thread_start, focus)):
+                    return self.parent.call("doc:get-attr", focus, num, num2, mark, "M-" + str[3:], comm2)
+                else:
+                    return self.parent.call("doc:get-attr", focus, num, num2, mark, "T-" + str[3:], comm2)
+            return 0
 
         if key == 'Chr-Z':
+            if not self.thread_start:
+                return 1
+            if self.whole_thread:
+                # all non-match messages in this thread are about to
+                # disappear, we need to clip them.
+                mk = self.thread_start.dup()
+                mt = self.thread_matched.dup()
+                while mk < self.thread_end:
+                    if mk < mt:
+                        focus.call("Notify:clip", mk, mt)
+                    mk.to_mark(mt)
+                    self.parent.call("doc:step-matched", mt, 1, 1)
+                    self.parent.call("doc:step", mk, 1, 1)
+            else:
+                # everything before the read, and after the thread disappears
+                m = edlib.Mark(self)
+                focus.call("Notify:clip", m, self.thread_start)
+                self.call("doc:set-ref", m, 0)
+                focus.call("Notify:clip", self.thread_end, m)
             self.whole_thread = 1 - self.whole_thread
-            focus.damaged(edlib.DAMAGED_VIEW)
-            focus.damaged(edlib.DAMAGED_CONTENT)
+            # notify that everything is changed, don't worry about details.
+            focus.call("Notify:change")
             return 1
+
         if key == "notmuch:select":
             s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
             if s != self.selected:
-                if self.call("doc:notmuch:load-thread", s) == 1:
-                    self.selected = s
-                else:
+                if self.selected:
+                    # old thread is disappearing.
+                    focus.call("Notify:clip", self.thread_start, self.thread_end)
+                    focus.call("Notify:change", self.thread_start, self.thread_end)
                     self.selected = None
-                focus.damaged(edlib.DAMAGED_VIEW)
-                focus.damaged(edlib.DAMAGED_CONTENT)
+                    self.thread_start = None
+                    self.thread_end = None
+                    self.thread_matched = None
+
+                if self.call("doc:notmuch:load-thread", mark) == 1:
+                    self.selected = s
+                    if mark:
+                        self.thread_start = mark.dup()
+                    else:
+                        self.thread_start = focus.call("doc:dup-point", 0, -2, ret='mark')
+                    self.parent.call("doc:step-thread", 0, 1, self.thread_start)
+                    self.thread_end = self.thread_start.dup()
+                    self.parent.call("doc:step-thread", 1, 1, self.thread_end)
+                    self.thread_matched = self.thread_start.dup()
+                    if self.parent.call("doc:get-attr", self.thread_matched, "matched", ret="str") != "True":
+                        self.parent.call("doc:step-matched", 1, 1, self.thread_matched)
+                    focus.call("Notify:change", self.thread_start, self.thread_end)
             s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
             if s2 and num >= 0:
                 focus.call("notmuch:select-message", s2, s, num)
@@ -1428,7 +1529,7 @@ class notmuch_message_view(edlib.Pane):
 
     def handle(self, key, focus, mark, num, str, str2, comm2, **a):
         if key == "Close":
-            self.call("doc:notmuch-close-message")
+            self.call("notmuch-close-message")
             return 1
         if key == "Clone":
             p = notmuch_message_view(focus)
