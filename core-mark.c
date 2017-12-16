@@ -66,6 +66,7 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <memory.h>
 
 #include "core.h"
 
@@ -125,6 +126,7 @@ void mark_free(struct mark *m)
 	mark_delete(m);
 	if (m->refcnt)
 		m->refcnt(m, -1);
+	memset(m, 0xff, sizeof(*m));
 	free(m);
 }
 
