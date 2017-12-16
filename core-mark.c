@@ -678,6 +678,16 @@ static void point_to_mark(struct mark *p safe, struct mark *m safe)
 
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 {
+	/* Make sure they are on same list */
+	struct mark *a = m;
+	if (m->seq < target->seq)
+		a = m;
+	else
+		a = target;
+	while (a && a != target)
+		a = doc_next_mark_all(a);
+	ASSERT(a == target);
+
 	if (m->seq == target->seq)
 		return;
 	if (m->viewnum == MARK_POINT) {
