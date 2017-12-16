@@ -850,9 +850,11 @@ static struct mark *call_render_line(struct pane *p safe, struct mark *start saf
 	 */
 	s = call_ret(str, "render-line", p, NO_NUMERIC, m);
 
-	if (start->mdata)
-		free(start->mdata);
-	start->mdata = s;
+	if (s) {
+		if (start->mdata)
+			free(start->mdata);
+		start->mdata = s;
+	}
 
 	m2 = vmark_matching(p, m);
 	if (m2)
@@ -1671,7 +1673,7 @@ DEF_CMD(render_lines_move_line)
 		}
 		/* FIXME only do this if point is active/volatile*/
 		call_render_line(focus, start);
-		render_line(p, focus, start->mdata, &y, 0, scale.x,
+		render_line(p, focus, start->mdata?:"", &y, 0, scale.x,
 			    &target_x, &target_y, &o, NULL, NULL, NULL);
 		/* 'o' is the distance from start-of-line of the target */
 		if (o >= 0) {
