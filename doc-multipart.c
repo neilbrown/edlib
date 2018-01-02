@@ -25,7 +25,23 @@ struct doc_ref {
 	int docnum; /* may be 'nparts', in which case 'm' == NULL */
 };
 
+/* mark->mdata in marks we create on individual component documents
+ * is used to track if the mark is shared among multiple marks in the
+ * multipart document.
+ * mdata must be a pointer, subtract ZERO to get a count, and add
+ * ZERO to convert back to a pointer.
+ */
+#define MARK_DATA_PTR char
+#define ZERO ((char *)0)
+#define ONE (ZERO + 1)
+
 #include "core.h"
+
+static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
+{
+	return m1->ref.m == m2->ref.m &&
+		m1->ref.docnum == m2->ref.docnum;
+}
 
 struct mp_info {
 	struct doc	doc;
@@ -38,15 +54,35 @@ struct mp_info {
 
 static struct map *mp_map safe;
 
-static void reset_mark(struct mark *m)
+/* Before moving a mark, we make sure m->ref.m is not shared.
+ * After moving, we make sure the mark is correctly ordered among
+ * siblings, and then share if m->ref.m should be shared.
+ */
+static void pre_move(struct mark *m safe)
+{
+	struct mark *m2;
+
+	if (!m->ref.m || m->ref.m->mdata == ONE)
+		return;
+	/* Mark is shared, make it unshared */
+	m2 = mark_dup(m->ref.m, 1);
+	m->ref.m->mdata = ZERO + (m->ref.m->mdata - ONE);
+	m2->mdata = ONE;
+	m->ref.m = m2;
+}
+
+static void post_move(struct mark *m)
 {
 	/* m->ref.m might have moved.  If so, move m in the list of
 	 * marks so marks in this document are still properly ordered
+	 * Then ensure that if neighbouring marks are at same location,
+	 * they use same marks.
 	 */
 	struct mark *m2;
 
 	if (!m || hlist_unhashed(&m->all))
 		return;
+	ASSERT(m->ref.m == NULL || m->ref.m->mdata == ONE);
 	while ((m2 = doc_next_mark_all(m)) != NULL &&
 	       (m2->ref.docnum < m->ref.docnum ||
 		(m2->ref.docnum == m->ref.docnum &&
@@ -64,20 +100,47 @@ static void reset_mark(struct mark *m)
 		/* m should be before m2 */
 		mark_to_mark_noref(m, m2);
 	}
+	if (!m->ref.m)
+		return;
+	ASSERT(m->ref.m->mdata == ONE);
+	/* Check if it should be shared */
+	m2 = doc_next_mark_all(m);
+	if (m2 && m2->ref.docnum == m->ref.docnum && m2->ref.m) {
+		if (m->ref.m != m2->ref.m &&
+		    mark_same(m->ref.m, m2->ref.m)) {
+			m->ref.m->mdata = ZERO;
+			mark_free(m->ref.m);
+			m->ref.m = m2->ref.m;
+			m->ref.m->mdata = ONE + (m->ref.m->mdata - ZERO);
+			return;
+		}
+	}
+	m2 = doc_prev_mark_all(m);
+	if (m2 && m2->ref.docnum == m->ref.docnum && m2->ref.m) {
+		if (m->ref.m != m2->ref.m &&
+		    mark_same(m->ref.m, m2->ref.m)) {
+			m->ref.m->mdata = ZERO;
+			mark_free(m->ref.m);
+			m->ref.m = m2->ref.m;
+			m->ref.m->mdata = ONE + (m->ref.m->mdata - ZERO);
+			return;
+		}
+	}
 }
 
 static void mp_mark_refcnt(struct mark *m safe, int inc)
 {
-	if (inc > 0) {
+	if (!m->ref.m)
+		return;
+
+	if (inc > 0)
 		/* Duplicate being created of this mark */
-		if (m->ref.m) {
-			m->ref.m = mark_dup(m->ref.m, 1);
-			reset_mark(m);
-		}
-	}
+		m->ref.m->mdata = ONE + (m->ref.m->mdata - ZERO);
+
 	if (inc < 0) {
 		/* mark is being discarded, or ref over-written */
-		if (m->ref.m)
+		m->ref.m->mdata = ZERO + (m->ref.m->mdata - ONE);
+		if (m->ref.m->mdata == ZERO)
 			mark_free(m->ref.m);
 		m->ref.m = NULL;
 	}
@@ -112,13 +175,19 @@ static void change_part(struct mp_info *mpi safe, struct mark *m safe, int part,
 
 	if (part < 0 || part > mpi->nparts)
 		return;
-	if (m->ref.m)
+	if (m->ref.m) {
+		ASSERT(m->ref.m->mdata == ONE);
+		m->ref.m->mdata = ZERO;
 		mark_free(m->ref.m);
+	}
 	if (part < mpi->nparts) {
 		p = &mpi->parts[part];
 		m1 = vmark_new(p->pane, MARK_UNGROUPED);
-		call("doc:set-ref", p->pane, !end, m1);
-		m->ref.m = m1;
+		if (m1) {
+			call("doc:set-ref", p->pane, !end, m1);
+			m->ref.m = m1;
+			m1->mdata = ONE;
+		}
 	} else
 		m->ref.m = NULL;
 	m->ref.docnum = part;
@@ -141,6 +210,16 @@ DEF_CMD(mp_close)
 {
 	struct mp_info *mpi = ci->home->data;
 	int i;
+	struct mark *m;
+
+	for (m = doc_first_mark_all(&mpi->doc); m ; m = doc_next_mark_all(m))
+		if (m->ref.m) {
+			struct mark *m2 = m->ref.m;
+			m->ref.m = NULL;
+			m2->mdata = ZERO + (m2->mdata - ONE);
+			if (m2->mdata == ZERO)
+				mark_free(m2);
+		}
 	for (i = 0; i < mpi->nparts; i++)
 		call("doc:closed", mpi->parts[i].pane);
 	doc_free(&mpi->doc);
@@ -159,10 +238,12 @@ DEF_CMD(mp_set_ref)
 
 	if (!ci->mark->ref.m && !ci->mark->ref.docnum) {
 		/* First time set-ref was called */
+		pre_move(ci->mark);
 		change_part(mpi, ci->mark, 0, 0);
 		mark_to_end(&mpi->doc, ci->mark, 0);
-		reset_mark(ci->mark);
+		post_move(ci->mark);
 	}
+	pre_move(ci->mark);
 
 	if (ci->num == 1) {
 		/* start */
@@ -171,7 +252,7 @@ DEF_CMD(mp_set_ref)
 	} else
 		change_part(mpi, ci->mark, mpi->nparts, 1);
 
-	reset_mark(ci->mark);
+	post_move(ci->mark);
 	mp_check_consistent(mpi);
 	return ret;
 }
@@ -179,55 +260,16 @@ DEF_CMD(mp_set_ref)
 DEF_CMD(mp_same)
 {
 	struct mp_info *mpi = ci->home->data;
-	struct doc_ref d1, d2;
 
 	if (!ci->mark || !ci->mark2)
 		return -1;
 
 	mp_check_consistent(mpi);
 
-	if (ci->mark->seq < ci->mark2->seq) {
-		d1 = ci->mark->ref;
-		d2 = ci->mark2->ref;
-	} else {
-		d1 = ci->mark2->ref;
-		d2 = ci->mark->ref;
-	}
-
-	if (d1.m &&
-	    doc_following_pane(mpi->parts[d1.docnum].pane, d1.m) == WEOF) {
-		/* End of part */
-		d1.docnum++;
-		d1.m = NULL;
-	}
-	if (d2.m && d2.docnum &&
-	    doc_prior_pane(mpi->parts[d2.docnum].pane, d2.m) == WEOF) {
-		/* Start of part */
-		d2.docnum--;
-		d2.m = NULL;
-	}
-	if (d2.docnum < d1.docnum)
-		/* Nothing between the points */
+	if (mark_same(ci->mark, ci->mark2))
 		return 1;
-	if (d1.docnum == d2.docnum) {
-		if (ci->mark->ref.docnum == mpi->nparts)
-			return 1;
-		if (!d1.m || !d2.m)
-			/* marks are at either end of a visible part.
-			 * Assume part is not empty...
-			 */
-			return 2;
-		return home_call(mpi->parts[ci->mark->ref.docnum].pane,
-				 "doc:mark-same", ci->focus, 0, d1.m, NULL,
-				 0, d2.m);
-	}
-
-	/* Marks are in different visible documents.
-	 * If they had been at the end, they would have
-	 * been moved to the next.
-	 * So the marks cannot be the same.
-	 */
-	return 2;
+	else
+		return 2;
 }
 
 DEF_CMD(mp_step)
@@ -245,9 +287,12 @@ DEF_CMD(mp_step)
 	if (!m)
 		return -1;
 
-	m1 = m->ref.m;
-
 	mp_check_consistent(mpi);
+
+	if (ci->num2)
+		pre_move(m);
+
+	m1 = m->ref.m;
 
 	if (m->ref.docnum == mpi->nparts)
 		ret = -1;
@@ -259,6 +304,7 @@ DEF_CMD(mp_step)
 		if (!ci->num2 && m == ci->mark) {
 			/* don't change ci->mark when not moving */
 			m = mark_dup(m, 1);
+			pre_move(m);
 		}
 		if (ci->num) {
 			if (m->ref.docnum >= mpi->nparts)
@@ -279,7 +325,7 @@ DEF_CMD(mp_step)
 	}
 	if (ci->num2) {
 		mp_normalize(mpi, ci->mark);
-		reset_mark(ci->mark);
+		post_move(ci->mark);
 	}
 
 	if (m != ci->mark)
@@ -302,6 +348,7 @@ DEF_CMD(mp_step_part)
 
 	if (!m)
 		return -1;
+	pre_move(m);
 	if (ci->num > 0)
 		/* Forward - next part */
 		change_part(mpi, m, m->ref.docnum + 1, 0);
@@ -310,7 +357,7 @@ DEF_CMD(mp_step_part)
 		change_part(mpi, m, m->ref.docnum, 0);
 
 	mp_normalize(mpi, m);
-	reset_mark(m);
+	post_move(m);
 	return m->ref.docnum + 1;
 }
 
