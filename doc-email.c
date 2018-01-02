@@ -11,7 +11,6 @@
  * Not so easy.  Need to be careful about redirecting doc commands.
  * A document needs:
  *  doc:set-ref
- *  doc:mark-same
  *  doc:step
  *  doc:get-attr doc:set-attr?
  * and might capture doc:revisit to hide??

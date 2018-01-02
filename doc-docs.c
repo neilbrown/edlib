@@ -318,16 +318,6 @@ DEF_CMD(docs_modified_doc_get_attr)
 	return 1;
 }
 
-DEF_CMD(docs_modified_mark_same)
-{
-	if (!ci->mark || !ci->mark2)
-		return 0;
-	if (ci->mark->ref.p == ci->mark2->ref.p)
-		return 1;
-	else
-		return 2;
-}
-
 DEF_CMD(docs_modified_get_attr)
 {
 	if (ci->str &&  strcmp(ci->str, "doc-name") == 0)
@@ -535,13 +525,6 @@ DEF_CMD(docs_set_ref)
 	m->ref.ignore = 0;
 	mark_to_end(dc, m, ci->num != 1);
 	return 1;
-}
-
-DEF_CMD(docs_mark_same)
-{
-	if (!ci->mark || !ci->mark2)
-		return -1;
-	return ci->mark->ref.p == ci->mark2->ref.p ? 1 : 2;
 }
 
 static char *__docs_get_attr(struct doc *doc safe, struct mark *m safe,
@@ -789,7 +772,6 @@ static void docs_init_map(void)
 	key_add_chain(docs_map, doc_default_cmd);
 	key_add(docs_map, "doc:set-ref", &docs_set_ref);
 	key_add(docs_map, "doc:get-attr", &docs_doc_get_attr);
-	key_add(docs_map, "doc:mark-same", &docs_mark_same);
 	key_add(docs_map, "doc:step", &docs_step);
 	key_add(docs_map, "doc:destroy", &docs_destroy);
 	key_add(docs_map, "doc:replace", &docs_cmd);
@@ -805,7 +787,6 @@ static void docs_init_map(void)
 	key_add(docs_modified_map, "doc:step", &docs_modified_step);
 	key_add(docs_modified_map, "doc:get-attr", &docs_modified_doc_get_attr);
 	key_add(docs_modified_map, "doc:set-ref", &docs_modified_set_ref);
-	key_add(docs_modified_map, "doc:mark-same", &docs_modified_mark_same);
 	key_add(docs_modified_map, "get-attr", &docs_modified_get_attr);
 }
 

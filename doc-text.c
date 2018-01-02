@@ -1229,19 +1229,6 @@ static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct do
 	return ret;
 }
 
-
-DEF_CMD(text_mark_same)
-{
-	if (!ci->mark || !ci->mark2)
-		return -1;
-
-	if (ci->mark->ref.c == ci->mark2->ref.c &&
-	    ci->mark->ref.o == ci->mark2->ref.o)
-		return 1;
-	else
-		return 2;
-}
-
 DEF_LOOKUP_CMD(text_handle, text_map);
 
 DEF_CMD(text_new)
@@ -1841,7 +1828,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:set-attr", &text_set_attr);
 	key_add(text_map, "doc:get-attr", &text_doc_get_attr);
 	key_add(text_map, "doc:replace", &text_replace);
-	key_add(text_map, "doc:mark-same", &text_mark_same);
 	key_add(text_map, "doc:step", &text_step);
 	key_add(text_map, "doc:step-bytes", &text_step_bytes);
 	key_add(text_map, "doc:modified", &text_modified);

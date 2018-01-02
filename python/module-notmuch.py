@@ -262,9 +262,6 @@ class notmuch_main(edlib.Doc):
 
             return 1
 
-        if key == "doc:mark-same":
-            return 1 if mark.offset == mark2.offset else 2
-
         if key == "doc:step":
             forward = num
             move = num2
@@ -1085,11 +1082,6 @@ class notmuch_list(edlib.Doc):
             mark.offset = 0
             self.to_end(mark, num == 0)
             return 1
-
-        if key == "doc:mark-same":
-            if mark.pos == mark2.pos:
-                return 1
-            return 2
 
         if key == "doc:step":
             forward = num

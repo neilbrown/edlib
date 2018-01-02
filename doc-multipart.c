@@ -251,21 +251,6 @@ DEF_CMD(mp_set_ref)
 	return ret;
 }
 
-DEF_CMD(mp_same)
-{
-	struct mp_info *mpi = ci->home->data;
-
-	if (!ci->mark || !ci->mark2)
-		return -1;
-
-	mp_check_consistent(mpi);
-
-	if (mark_same(ci->mark, ci->mark2))
-		return 1;
-	else
-		return 2;
-}
-
 DEF_CMD(mp_step)
 {
 	struct mp_info *mpi = ci->home->data;
@@ -558,7 +543,6 @@ static void mp_init_map(void)
 	mp_map = key_alloc();
 	key_add_chain(mp_map, doc_default_cmd);
 	key_add(mp_map, "doc:set-ref", &mp_set_ref);
-	key_add(mp_map, "doc:mark-same", &mp_same);
 	key_add(mp_map, "doc:step", &mp_step);
 	key_add(mp_map, "doc:get-attr", &mp_attr);
 	key_add(mp_map, "doc:set-attr", &mp_set_attr);
