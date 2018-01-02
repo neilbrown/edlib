@@ -18,7 +18,7 @@ struct crop_data {
 	struct mark *end safe;
 };
 
-static int in_range(struct mark *m, struct crop_data *cd safe, struct pane *p safe)
+static int in_range(struct mark *m, struct crop_data *cd safe)
 {
 	if (!m)
 		/* NULL is always in range */
@@ -29,23 +29,23 @@ static int in_range(struct mark *m, struct crop_data *cd safe, struct pane *p sa
 	return 0;
 }
 
-static int crop(struct mark *m, struct crop_data *cd safe, struct pane *p safe)
+static int crop(struct mark *m, struct crop_data *cd safe)
 {
 	/* If mark is outside of range, move it back, and report if more was
 	 * required than just updating the ->seq
 	 */
-	if (!m || in_range(m, cd, p))
+	if (!m || in_range(m, cd))
 		return 0;
 
 	if (m->seq < cd->start->seq) {
-		if (mark_same_pane(p, m, cd->start)) {
+		if (mark_same(m, cd->start)) {
 			mark_to_mark(m, cd->start);
 			return 0;
 		}
 		mark_to_mark(m, cd->start);
 	}
 	if (m->seq > cd->end->seq) {
-		if (mark_same_pane(p, m, cd->end)) {
+		if (mark_same(m, cd->end)) {
 			mark_to_mark(m, cd->end);
 			return 0;
 		}
@@ -92,20 +92,20 @@ DEF_CMD(crop_step)
 		return 0;
 
 	/* Always force marks to be in range */
-	crop(ci->mark, cd, p);
-	crop(ci->mark2, cd, p);
+	crop(ci->mark, cd);
+	crop(ci->mark2, cd);
 
 	ret = home_call(p, ci->key, ci->focus, ci->num,
 			ci->mark, ci->str, ci->num2, ci->mark2, ci->str2, 0,0, ci->comm2);
-	if (crop(ci->mark, cd, p) || crop(ci->mark2, cd, p))
+	if (crop(ci->mark, cd) || crop(ci->mark2, cd))
 		ret = CHAR_RET(WEOF);
 
 	if (ci->num2 == 0 && ci->mark) {
 		if (ci->num) {
-			if (mark_same_pane(p, ci->mark, cd->end))
+			if (mark_same(ci->mark, cd->end))
 				ret = CHAR_RET(WEOF);
 		} else {
-			if (mark_same_pane(p, ci->mark, cd->start))
+			if (mark_same(ci->mark, cd->start))
 				ret = CHAR_RET(WEOF);
 		}
 	}
@@ -136,12 +136,12 @@ DEF_CMD(crop_generic)
 				 NULL, ci->str, ci->num2, NULL, NULL, 0,0, ci->comm2);
 
 	/* Always force marks to be in range */
-	crop(ci->mark, cd, p);
-	crop(ci->mark2, cd, p);
+	crop(ci->mark, cd);
+	crop(ci->mark2, cd);
 
 	ret = home_call(p, ci->key, ci->focus, ci->num,
 			ci->mark, ci->str, ci->num2, ci->mark2, ci->str2, 0,0, ci->comm2);
-	if (crop(ci->mark, cd, p) || crop(ci->mark2, cd, p)) {
+	if (crop(ci->mark, cd) || crop(ci->mark2, cd)) {
 		if (strcmp(ci->key, "doc:set-ref") != 0)
 			ret = -1;
 	}

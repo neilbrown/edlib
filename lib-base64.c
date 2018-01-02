@@ -107,7 +107,7 @@ static int locate_mark(struct pane *p safe, int view, struct mark *m safe)
 	if (!tmp)
 		return 0;
 	while ((ch = get_b64_x(p, tmp)) != WEOF) {
-		if (tmp->seq >= m->seq || mark_same_pane(p, tmp, m))
+		if (tmp->seq >= m->seq || mark_same(tmp, m))
 			break;
 
 		if ((pos %4) == 0 && pos/4 >= MAX_QUAD) {

@@ -170,7 +170,7 @@ REDEF_CMD(emacs_case)
 		struct mark *m = mark_dup(ci->mark, 1);
 
 		ret = call(mv->type+1, ci->focus, dir, ci->mark);
-		if (ret <= 0 || mark_same_pane(ci->focus, ci->mark, m))
+		if (ret <= 0 || mark_same(ci->mark, m))
 			/* Hit end of file */
 			cnt = 1;
 		else {
@@ -265,7 +265,7 @@ REDEF_CMD(emacs_swap)
 			break;
 		as = mark_dup(ci->mark, 1);
 		ret = call(mv->type, ci->focus, dir, ci->mark);
-		if (ret <= 0 || mark_same_pane(ci->focus, ci->mark, as)) {
+		if (ret <= 0 || mark_same(ci->mark, as)) {
 			mark_free(as);
 			break;
 		}
@@ -854,7 +854,7 @@ static void do_searches(struct pane *p safe, int view, char *patn,
 		mark_to_mark(m2, m);
 		while (ret > 1 && mark_prev_pane(p, m2) != WEOF)
 			ret -= 1;
-		m3 = vmark_matching(p, m2);
+		m3 = vmark_matching(m2);
 		if (m3) {
 			mark_free(m2);
 			m2 = m3;
@@ -1297,7 +1297,7 @@ DEF_CMD(emacs_attrs)
 		return 1;
 	if (attr_find_int(cr.m2->attrs, "emacs:active") <= 0)
 		return 1;
-	if (mark_same_pane(ci->focus, cr.m, cr.m2))
+	if (mark_same(cr.m, cr.m2))
 		return 1;
 	if (strcmp(ci->str, "render:interactive-mark") == 0) {
 		if (ci->mark == cr.m2 && cr.m2->seq < cr.m->seq)
@@ -1317,9 +1317,9 @@ DEF_CMD(emacs_attrs)
 	}
 	if (strcmp(ci->str, "start-of-line") == 0) {
 		if ((cr.m->seq < ci->mark->seq && ci->mark->seq < cr.m2->seq &&
-		     !mark_same_pane(ci->focus, ci->mark, cr.m2)) ||
+		     !mark_same(ci->mark, cr.m2)) ||
 		    (cr.m2->seq < ci->mark->seq && ci->mark->seq < cr.m->seq &&
-		     !mark_same_pane(ci->focus, ci->mark, cr.m)))
+		     !mark_same(ci->mark, cr.m)))
 			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
 					ci->mark, "bg:pink", 2);
 	}

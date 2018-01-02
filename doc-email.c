@@ -766,7 +766,7 @@ DEF_CMD(email_view_set_attr)
 				home_call(ci->home->parent, "doc:step-part", ci->focus, 0, m1);
 			}
 			while ((m2 = doc_prev_mark_all(m1)) != NULL &&
-			       mark_same_pane(ci->home->parent, m1, m2))
+			       mark_same(m1, m2))
 				mark_to_mark(m1, m2);
 			m2 = mark_dup(m1, 1);
 			home_call(ci->home->parent, "doc:step-part", ci->focus, 1, m2);

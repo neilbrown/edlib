@@ -47,7 +47,7 @@ DEF_CMD(search_forward)
 	int backward = ci->key[6] == 'R';
 
 	esi->backwards = backward;
-	if (esi->s && mark_same_pane(esi->target, esi->s->m, esi->end)) {
+	if (esi->s && mark_same(esi->s->m, esi->end)) {
 		/* already pushed and didn't find anything new */
 		return 1;
 	}
@@ -127,7 +127,7 @@ DEF_CMD(search_add)
 	else
 		call("Move-Char", esi->target, 1, m);
 
-	while (esi->end->seq < m->seq && !mark_same_pane(esi->target, esi->end, m)) {
+	while (esi->end->seq < m->seq && !mark_same(esi->end, m)) {
 		if (limit-- <= 0)
 			break;
 		wch = doc_following_pane(esi->target, esi->end);

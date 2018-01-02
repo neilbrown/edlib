@@ -230,8 +230,8 @@ DEF_CMD(docs_modified_notify_replace)
 		struct mark *m2;
 		m2 = vmark_new(ci->home->parent, MARK_UNGROUPED);
 		while (m2 && m2->ref.p != NULL) {
-			if (mark_ordered_or_same_pane(ci->home, m2, ci->mark) &&
-			    mark_ordered_or_same_pane(ci->home, ci->mark, m))
+			if (mark_ordered_or_same(m2, ci->mark) &&
+			    mark_ordered_or_same(ci->mark, m))
 				/* FIXME I really should wait for Refresh:view
 				 * and then send Notify:clip to the focus,
 				 * but that seems clumsy, and this works...

@@ -51,7 +51,7 @@ static void do_count(struct pane *p safe, struct mark *start safe, struct mark *
 	*linep = 0;
 	*wordp = 0;
 	*charp = 0;
-	while ((end == NULL || (mark_ordered_not_same_pane(p, m, end))) &&
+	while ((end == NULL || (mark_ordered_not_same(m, end))) &&
 	       (ch = mark_next_pane(p, m)) != WEOF) {
 		chars += 1;
 		if (is_eol(ch))
@@ -62,7 +62,7 @@ static void do_count(struct pane *p safe, struct mark *start safe, struct mark *
 		} else if (inword && !(iswprint(ch) && !iswspace(ch)))
 			inword = 0;
 		if (add_marks && lines >= 50 &&
-		    (end == NULL || (mark_ordered_not_same_pane(p, m, end)))) {
+		    (end == NULL || (mark_ordered_not_same(m, end)))) {
 			/* leave a mark here and keep going */
 			attr_set_int(mark_attr(start), "lines", lines);
 			attr_set_int(mark_attr(start), "words", words);
@@ -136,7 +136,7 @@ static void count_calculate(struct pane *p safe,
 		/* find the first mark that isn't before 'start', and count
 		 * from there.
 		 */
-		while (m && mark_ordered_not_same_pane(p, m, start)) {
+		while (m && mark_ordered_not_same(m, start)) {
 			/* Force and update to make sure spacing stays sensible */
 			if (need_recalc(p, m))
 				/* need to update this one */
@@ -167,7 +167,7 @@ static void count_calculate(struct pane *p safe,
 	 * So count from start to m, then add totals from m and subsequent.
 	 * Then count to 'end'.
 	 */
-	if (!start || mark_same_pane(p, m, start))
+	if (!start || mark_same(m, start))
 		lines = words = chars = 0;
 	else
 		do_count(p, start, m, &lines, &words, &chars, 0);
@@ -186,7 +186,7 @@ static void count_calculate(struct pane *p safe,
 		lines += attr_find_int(*mark_attr(m), "lines");
 		words += attr_find_int(*mark_attr(m), "words");
 		chars += attr_find_int(*mark_attr(m), "chars");
-	} else if (!mark_same_pane(p, m, end)) {
+	} else if (!mark_same(m, end)) {
 		do_count(p, m, end, &l, &w, &c, 0);
 		lines += l;
 		words += w;

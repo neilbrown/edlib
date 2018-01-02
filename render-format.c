@@ -31,7 +31,7 @@ static char *do_format(struct rf_data *rf safe, struct pane *focus safe,
 	int home = 0;
 	int field = 0;
 
-	if (pm && !mark_same_pane(focus, pm, m))
+	if (pm && !mark_same(pm, m))
 		pm = NULL;
 	buf_init(&ret);
 
@@ -198,7 +198,7 @@ DEF_CMD(render_line)
 	if (doc_following_pane(ci->focus, ci->mark) == WEOF)
 		return 1;
 
-	if (pm && !mark_same_pane(ci->focus, pm, m))
+	if (pm && !mark_same(pm, m))
 		pm = NULL;
 	if (ci->num == NO_NUMERIC || ci->num < 0)
 		len = -1;

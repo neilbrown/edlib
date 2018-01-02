@@ -390,7 +390,7 @@ DEF_CMD(doc_page)
 			;
 		rpt += 1;
 	}
-	if (mark_same_pane(p, m, old)) {
+	if (mark_same(m, old)) {
 		mark_free(old);
 		return 2;
 	}
@@ -501,12 +501,12 @@ DEF_CMD(doc_vmarkget)
 	m = do_vmark_first(ci->home->data, ci->num);
 	m2 = do_vmark_last(ci->home->data, ci->num);
 	if (ci->num2 == 1 && ci->mark)
-		m2 = do_vmark_at_point(ci->focus, ci->home->data, ci->mark,
+		m2 = do_vmark_at_point(ci->home->data, ci->mark,
 				       ci->num);
 	if (ci->num2 == 2)
 		m2 = doc_new_mark(ci->home->data, ci->num);
 	if (ci->num2 == 3 && ci->mark)
-		m2 = do_vmark_at_or_before(ci->focus, ci->home->data, ci->mark, ci->num);
+		m2 = do_vmark_at_or_before(ci->home->data, ci->mark, ci->num);
 	return comm_call(ci->comm2, "callback:vmark", ci->focus,
 			 0, m, NULL, 0, m2);
 }
@@ -714,7 +714,7 @@ DEF_CMD(doc_write_file)
 		ch = mark_next_pane(ci->focus, m);
 		if (ch == WEOF)
 			break;
-		if (ci->mark2 && mark_ordered_not_same_pane(ci->focus, ci->mark2, m))
+		if (ci->mark2 && mark_ordered_not_same(ci->mark2, m))
 			break;
 		if (utf8) {
 			if (ch <= 0x7f)

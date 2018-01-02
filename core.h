@@ -44,6 +44,11 @@ struct doc_ref {
 	int	i;
 };
 #endif
+struct generic_doc_ref {
+	void	*p;
+	int	i;
+};
+
 
 /* The 'editor' contains (by reference) everything else.
  * This captures and documents the global states, and allows
@@ -195,12 +200,19 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end);
 void doc_check_consistent(struct doc *d safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe);
-int mark_same_pane(struct pane *p safe, struct mark *m1 safe, struct mark *m2 safe);
 struct mark *safe point_new(struct doc *d safe);
 struct mark *safe point_dup(struct mark *p safe);
 wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move);
 wint_t mark_step2(struct doc *d safe, struct mark *m safe, int forward, int move);
 wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int move);
+
+static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
+{
+	struct generic_doc_ref *r1 = (void*)&m1->ref;
+	struct generic_doc_ref *r2 = (void*)&m2->ref;
+
+	return r1->p == r2->p && r1->i == r2->i;
+}
 
 wint_t mark_next(struct doc *d safe, struct mark *m safe);
 wint_t mark_prev(struct doc *d safe, struct mark *m safe);
@@ -214,9 +226,9 @@ struct mark *vmark_next(struct mark *m safe);
 struct mark *vmark_prev(struct mark *m safe);
 struct mark *do_vmark_first(struct doc *d safe, int view);
 struct mark *do_vmark_last(struct doc *d safe, int view);
-struct mark *vmark_matching(struct pane *p safe, struct mark *m safe);
-struct mark *do_vmark_at_point(struct pane *p safe, struct doc *d safe, struct mark *pt safe, int view);
-struct mark *do_vmark_at_or_before(struct pane *p safe, struct doc *d safe, struct mark *m safe, int view);
+struct mark *vmark_matching(struct mark *m safe);
+struct mark *do_vmark_at_point(struct doc *d safe, struct mark *pt safe, int view);
+struct mark *do_vmark_at_or_before(struct doc *d safe, struct mark *m safe, int view);
 struct mark *vmark_first(struct pane *p safe, int view);
 struct mark *vmark_last(struct pane *p safe, int view);
 struct mark *vmark_at_point(struct pane *p safe, int view);
@@ -226,16 +238,15 @@ void mark_clip(struct mark *m safe, struct mark *start, struct mark *end);
 void marks_clip(struct pane *p safe, struct mark *start, struct mark *end, int view);
 
 
-static inline int mark_ordered_or_same_pane(struct pane *p safe,
-						    struct mark *m1 safe, struct mark *m2 safe)
+static inline int mark_ordered_or_same(struct mark *m1 safe, struct mark *m2 safe)
 {
-	return m1->seq < m2->seq || mark_same_pane(p, m1, m2);
+	return m1->seq < m2->seq || mark_same(m1, m2);
 }
 
-static inline int mark_ordered_not_same_pane(struct pane *p safe, struct mark *m1 safe,
-					     struct mark *m2 safe)
+static inline int mark_ordered_not_same(struct mark *m1 safe,
+					struct mark *m2 safe)
 {
-	return m1->seq < m2->seq && !mark_same_pane(p, m1, m2);
+	return m1->seq < m2->seq && !mark_same(m1, m2);
 }
 
 static inline struct attrset **safe mark_attr(struct mark *m safe)

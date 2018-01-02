@@ -828,7 +828,7 @@ static struct mark *call_render_line_prev(struct pane *p safe,
 		return NULL;
 	}
 
-	m2 = vmark_matching(p, m);
+	m2 = vmark_matching(m);
 	if (m2)
 		mark_free(m);
 	else
@@ -856,7 +856,7 @@ static struct mark *call_render_line(struct pane *p safe, struct mark *start saf
 		start->mdata = s;
 	}
 
-	m2 = vmark_matching(p, m);
+	m2 = vmark_matching(m);
 	if (m2)
 		mark_free(m);
 	else
@@ -987,12 +987,12 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 	 * Rendering just that "line" uses a height of 'y', of which
 	 * 'lines_above' is above the cursor, and 'lines_below' is below.
 	 */
-	if (bot && !mark_ordered_or_same_pane(focus, bot, start))
+	if (bot && !mark_ordered_or_same(bot, start))
 		/* already before 'bot', so will never "cross over" bot, so
 		 * ignore 'bot'
 		 */
 		bot = NULL;
-	if (top && !mark_ordered_or_same_pane(focus, end, top))
+	if (top && !mark_ordered_or_same(end, top))
 		top = NULL;
 
 	while ((!found_start || !found_end) && y < p->h - rl->header_lines) {
@@ -1173,9 +1173,9 @@ restart:
 		}
 		m2 = vmark_next(m);
 		if (!hide_cursor && p->cx <= 0 && pm &&
-		    mark_ordered_or_same_pane(focus, m, pm) &&
+		    mark_ordered_or_same(m, pm) &&
 		    (!(m2 && doc_following_pane(focus, m2) != WEOF) ||
-		     mark_ordered_not_same_pane(focus, pm, m2))) {
+		     mark_ordered_not_same(pm, m2))) {
 			int len = call_render_line_to_point(focus, pm,
 							    m);
 			rl->cursor_line = y;
@@ -1260,7 +1260,7 @@ DEF_CMD(render_lines_refresh)
 	pm = call_ret(mark, "doc:point", focus);
 
 	if (pm) {
-		if (rl->old_point && !mark_same_pane(focus, pm, rl->old_point)) {
+		if (rl->old_point && !mark_same(pm, rl->old_point)) {
 			call("Notify:change", focus, 0, rl->old_point, NULL, 0, pm);
 			mark_free(rl->old_point);
 			rl->old_point = NULL;
@@ -1425,7 +1425,7 @@ DEF_CMD(render_lines_move)
 				break;
 			m = top;
 			while (m && m->seq < prevtop->seq &&
-			       !mark_same_pane(focus, m, prevtop)) {
+			       !mark_same(m, prevtop)) {
 				if (m->mdata == NULL)
 					call_render_line(focus, m);
 				if (m->mdata == NULL) {
@@ -1476,7 +1476,7 @@ DEF_CMD(render_lines_move)
 	rl->repositioned = 1;
 	pane_damaged(ci->home, DAMAGED_VIEW);
 	top = vmark_first(focus, rl->typenum);
-	if (top && mark_same_pane(focus, top, old_top)) {
+	if (top && mark_same(top, old_top)) {
 		mark_free(old_top);
 		return 2;
 	}
@@ -1580,7 +1580,7 @@ DEF_CMD(render_lines_move_pos)
 		bot = doc_prev_mark_view(bot);
 	if (top && bot &&
 	    top->seq < pm->seq &&
-	    pm->seq < bot->seq && !mark_same_pane(focus, pm, bot))
+	    pm->seq < bot->seq && !mark_same(pm, bot))
 		/* pos already displayed */
 		return 1;
 	find_lines(pm, p, focus, NO_NUMERIC);
@@ -1711,7 +1711,7 @@ DEF_CMD(render_lines_notify_replace)
 		/* Change before visible region */
 		return 1;
 
-	while (end && mark_ordered_or_same_pane(ci->focus, start, end)) {
+	while (end && mark_ordered_or_same(start, end)) {
 		if (end->mdata) {
 			free(end->mdata);
 			end->mdata = NULL;

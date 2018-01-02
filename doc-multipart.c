@@ -37,12 +37,6 @@ struct doc_ref {
 
 #include "core.h"
 
-static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
-{
-	return m1->ref.m == m2->ref.m &&
-		m1->ref.docnum == m2->ref.docnum;
-}
-
 struct mp_info {
 	struct doc	doc;
 	int		nparts;
