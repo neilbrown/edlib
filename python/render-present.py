@@ -67,11 +67,6 @@ class PresenterPane(edlib.Pane):
         self.first_valid = False
         self.lines_damaged = True
 
-    def marks_same(self, m1, m2):
-        if isinstance(m1, edlib.Mark) and isinstance(m1, edlib.Mark):
-            return 1 == self.call("doc:mark-same", m1, m2);
-        return None
-
     def first_page(self):
         return self.call("doc:vmark-get", self.pageview, ret = 'mark')
 
@@ -166,7 +161,7 @@ class PresenterPane(edlib.Pane):
         l = self.get_line_before(m)
         if l and l[0] == ':':
             return False
-        if not self.marks_same(m, start):
+        if m != start:
             return False
         return True
 
@@ -209,7 +204,7 @@ class PresenterPane(edlib.Pane):
                     if not first:
                         # no pages any more
                         pm.release()
-                    elif self.marks_same(pm, first):
+                    elif pm == first:
                         # Oh good!
                         self.first_valid = True
                         pm['valid'] = 'yes'
@@ -254,9 +249,9 @@ class PresenterPane(edlib.Pane):
                     pm['next-valid'] = 'yes'
                     pm = None
                 else:
-                    if self.marks_same(next, pm.next()):
+                    if next == pm.next():
                         pm['next-valid'] = 'yes'
-                    elif next <= pm.next():
+                    elif next < pm.next():
                         pm.next().to_mark(next)
                     else:
                         pm.next().release()
@@ -286,8 +281,7 @@ class PresenterPane(edlib.Pane):
     def clean_lines(self, page):
         next = page.next()
         first = self.first_line()
-        while first and ((first < page and not self.marks_same(first,page)) or
-                         (next and (first > next or self.marks_same(first, next)))):
+        while first and (first < page or (next and first >= next)):
             # first is outside this page
             first.release(); first = None
             first = self.first_line()
@@ -333,7 +327,7 @@ class PresenterPane(edlib.Pane):
         self.lines_damaged = False
         # There are no lines marked, or some are 'unknown'
         next = page.next()
-        if not first or not self.marks_same(first, page):
+        if not first or first != page:
             # no first mark, or it has been moved off page start
             first = edlib.Mark(self, self.attrview)
             first.to_mark(page)
@@ -346,7 +340,7 @@ class PresenterPane(edlib.Pane):
 
         # set extra_change if some line that isn't 'unknown' gets changed
         extra_change = False
-        while not next or (first < next and not self.marks_same(first, next)):
+        while not next or first < next:
             # There is a line there that we care about - unless EOF
             this = first.dup()
             l = self.get_line_at(this)
@@ -355,11 +349,11 @@ class PresenterPane(edlib.Pane):
             if first['type'] != 'unknown':
                 extra_change = True
             self.annotate(first, l)
-            while first.next() and first.next() < this and not self.marks_same(first.next(), this):
+            while first.next() and first.next() < this:
                 # first.next() is within the line just rendered
                 first.next().release()
                 extra_change = True
-            if first.next() and self.marks_same(first.next(), this):
+            if first.next() and first.next() == this:
                 first = first.next()
                 while first and first['type'] != 'unknown' and (
                         first['prev'] == None or first['prev'] == first.prev()['mode']):
@@ -476,10 +470,10 @@ class PresenterPane(edlib.Pane):
             start = self.find_pages(mark)
             if not start:
                 return -2
-            if start > mark:
+            if start.seq > mark.seq:
                 start = mark
 
-            if self.marks_same(start, mark):
+            if start == mark:
                 return -2
             mark.to_mark(start)
             return 1
@@ -491,7 +485,7 @@ class PresenterPane(edlib.Pane):
                 comm2("callback", self)
                 return 1
 
-            if mark < page:
+            if mark.seq < page.seq:
                 mark.to_mark(page)
 
             self.clean_lines(page)
@@ -501,7 +495,7 @@ class PresenterPane(edlib.Pane):
 
             line = None
             linemark = None
-            while end is None or (mark < end and not self.marks_same(mark, end)):
+            while end is None or mark < end:
                 if not end and focus.call("doc:step", mark) == edlib.WEOF:
                     break
                 linemark = self.prev_line(mark)
@@ -577,7 +571,7 @@ class PresenterPane(edlib.Pane):
                     line = bl +"<"+v+">"+ line + "</>"
                 else:
                     line = "<"+v+">"+ line + "</>"
-                if end and (mark > end or self.marks_same(mark,end)):
+                if end and mark >= end:
                     line += '\f'
                 else:
                     line += '\n'
@@ -607,7 +601,7 @@ class PresenterPane(edlib.Pane):
             l = self.prev_line(mark)
             if l:
                 self.lines_damaged = True
-                if self.marks_same(l, mark) and l.prev():
+                if l == mark and l.prev():
                     l['type'] = 'unknown'
                     l = l.prev()
                 if l['type'] and l['type'][0:5] == "attr:":

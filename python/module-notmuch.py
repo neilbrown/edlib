@@ -230,7 +230,7 @@ class searches:
 
 class notmuch_main(edlib.Doc):
     # This is the document interface for the saved-search list.
-    # It contain the searches as item which have attributes
+    # It contains the searches as items which have attributes
     # providing name, count, unread-count
     # Once activated it auto-updates every 5 minutes
     def __init__(self, focus):
@@ -516,7 +516,7 @@ class notmuch_main(edlib.Doc):
 
 class notmuch_master_view(edlib.Pane):
     # This pane controls one visible instance of the notmuch application.
-    # It manages the size and position of the 3 panes and provide common
+    # It manages the size and position of the 3 panes and provides common
     # handling for some keystrokes.
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus, self.handle)
@@ -805,15 +805,16 @@ class notmuch_main_view(edlib.Pane):
 # For an update, we just check the last day and add anything missing.
 # We keep an array of thread-ids
 #
-# Three different views are presented of this document depending
-# on extra arguments in the
-#    doc:set-ref doc:mark-same doc:step doc:get-attr
-# messages.
-# By default, when 'str2' is None, only the separate threads are visible as objects.
-# If 'str2' is a thread id and 'xy.x' is 0, then in place of that thread a
-#   list of 'matching' message is given
-# If 'str2' is a thread id and 'xy.x' is non-zero, then only the messages in
-#   the thread are visible, but all are visible, including non-matching threads
+# Three different views are presented of this document by notmuch_query_view
+# depending on whether 'selected' and possibly 'whole_thread' are set.
+#
+# By default when neither is set, only the threads are displayed.
+# If a threadid is 'selected' but not 'whole_thread', then other threads
+# appear as a single line, but the selected thread displays as all
+# matching messages.
+# If whole_thread is set, then only the selected thread is visible,
+# and all messages, matched or not, of that thread are visisble.
+#
 
 class notmuch_list(edlib.Doc):
     def __init__(self, focus, qname, query):
@@ -1175,7 +1176,7 @@ class notmuch_list(edlib.Doc):
                 (fn, dt, matched, depth, author, subj, tags) = m
             else:
                 (fn, dt, matched, depth, author, subj, tags) = (
-                    "", 0, False, [0], "" ,"", [])
+                    "", 0, False, [0,0], "" ,"", [])
             if attr == "message-id":
                 val = mid
             elif attr == "thread-id":
@@ -1329,13 +1330,11 @@ class notmuch_query_view(edlib.Pane):
                 # move one message, but stop at thread_start/thread_end
                 if forward:
                     ret = self.parent.call("doc:step", focus, forward, move, mark)
-                    if move and mark > self.thread_end or \
-                       1 == self.parent.call("doc:mark-same", focus, mark, self.thread_end):
+                    if move and mark >= self.thread_end:
                         # If at end of thread, move to end of document
                         self.parent.call("doc:set-ref", focus, mark, 0)
                 else:
-                    if mark < self.thread_start or \
-                       1 == self.parent.call("doc:mark-same", focus, mark, self.thread_start):
+                    if mark <= self.thread_start:
                         # at start already
                         ret = edlib.WEOF
                     else:
@@ -1346,17 +1345,13 @@ class notmuch_query_view(edlib.Pane):
                 # else move one thread
                 if not self.thread_start:
                     in_thread = False
-                elif forward and (mark > self.thread_end or
-                                  1 == self.parent.call("doc:mark-same", focus, mark, self.thread_end)):
+                elif forward and mark >= self.thread_end:
                     in_thread = False
-                elif not forward and (mark < self.thread_matched or
-                                      1 == self.parent.call("doc:mark-same", focus, mark, self.thread_matched)):
+                elif not forward and mark <= self.thread_matched:
                     in_thread = False
-                elif forward and (mark < self.thread_matched and
-                                  2 == self.parent.call("doc:mark-same", focus, mark, self.thread_matched)):
+                elif forward and mark < self.thread_matched:
                     in_thread = False
-                elif not forward and (mark > self.thread_end and
-                                      2 == self.parent.call("doc:mark-same", focus, mark, self.thread_end)):
+                elif not forward and mark > self.thread_end:
                     in_thread = False
                 else:
                     in_thread = True
@@ -1365,14 +1360,14 @@ class notmuch_query_view(edlib.Pane):
                     ret = self.parent.call("doc:step-matched", focus, mark, forward, move)
                     # If moving forward, we might be in the next thread,
                     # make sure we didn't go further than thread_end
-                    if forward and move and mark > self.thread_end:
+                    if forward and move and mark.seq > self.thread_end.seq:
                         mark.to_mark(self.thread_end)
                     return ret
                 else:
                     # move one thread
                     if forward:
                         ret = self.parent.call("doc:step-thread", focus, mark, forward, move)
-                        if self.thread_start and 1 == self.parent.call("doc:mark-same", focus, mark, self.thread_start):
+                        if self.thread_start and mark == self.thread_start:
                             mark.to_mark(self.thread_matched)
                     else:
                         ret = self.parent.call("doc:step", focus, mark, forward, move)
@@ -1385,8 +1380,7 @@ class notmuch_query_view(edlib.Pane):
                 mark = self.call("doc:point", ret='mark')
             attr = str
             if attr[:3] == "TM-":
-                if self.thread_start and mark < self.thread_end and 2 == self.parent.call("doc:mark-same", mark, self.thread_end, focus) and (
-                        mark > self.thread_start or 1 == self.parent.call("doc:mark-same", mark, self.thread_start, focus)):
+                if self.thread_start and mark < self.thread_end and mark >= self.thread_start:
                     return self.parent.call("doc:get-attr", focus, num, num2, mark, "M-" + str[3:], comm2)
                 else:
                     return self.parent.call("doc:get-attr", focus, num, num2, mark, "T-" + str[3:], comm2)
@@ -1400,8 +1394,8 @@ class notmuch_query_view(edlib.Pane):
                 # disappear, we need to clip them.
                 mk = self.thread_start.dup()
                 mt = self.thread_matched.dup()
-                while mk < self.thread_end:
-                    if mk < mt:
+                while mk.seq < self.thread_end.seq:
+                    if mk.seq < mt.seq:
                         focus.call("Notify:clip", mk, mt)
                     mk.to_mark(mt)
                     self.parent.call("doc:step-matched", mt, 1, 1)
@@ -1454,7 +1448,7 @@ class notmuch_query_view(edlib.Pane):
                 return 0
             m = mark.dup()
 
-            while m < mark2:
+            while m.seq < mark2.seq:
                 i1 = focus.call("doc:get-attr", "thread-id", m, ret='str')
                 i2 = focus.call("doc:get-attr", "message-id", m, ret='str')
                 if i1 and not i2 and i1 not in self.seen_threads:

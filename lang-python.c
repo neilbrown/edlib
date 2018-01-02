@@ -1283,6 +1283,21 @@ static int mark_setrpos(Mark *m safe, PyObject *v safe, void *x)
 	return 0;
 }
 
+static PyObject *mark_getseq(Mark *m safe, void *x)
+{
+	if (m->mark == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
+		return NULL;
+	}
+	return PyInt_FromLong(m->mark->seq);
+}
+
+static int mark_nosetseq(Mark *m, PyObject *v, void *which)
+{
+	PyErr_SetString(PyExc_TypeError, "Cannot set mark seq number");
+	return -1;
+}
+
 static void mark_refcnt(struct mark *m safe, int inc)
 {
 	if (!m->ref.c)
@@ -1376,6 +1391,8 @@ static PyObject *mark_compare(Mark *a safe, Mark *b safe, int op)
 		return NULL;
 	else {
 		int cmp = a->mark->seq - b->mark->seq;
+		if (mark_same(a->mark, b->mark))
+			cmp = 0;
 		switch(op) {
 		case Py_LT: ret = cmp <  0; break;
 		case Py_LE: ret = cmp <= 0; break;
@@ -1403,6 +1420,9 @@ static PyGetSetDef mark_getseters[] = {
     {"viewnum",
      (getter)mark_getview, (setter)mark_nosetview,
      "Index for view list", NULL},
+    {"seq",
+     (getter)mark_getseq, (setter)mark_nosetseq,
+     "Sequence number of mark", NULL},
     {NULL}  /* Sentinel */
 };
 
