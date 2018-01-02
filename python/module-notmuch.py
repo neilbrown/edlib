@@ -988,25 +988,6 @@ class notmuch_list(edlib.Doc):
 
         return ret + "> "
 
-    def cmp1(self, a, b):
-        if a == b:
-            return False
-        if a < 0:
-            # a is bigger, so not ordered
-            return False
-        if b < 0:
-            return True
-        return a < b
-
-    def pairs_ordered(self, p1, p2):
-        # True if not equal and p2 is later
-        if p1 == p2:
-            return False
-        if p1[0] == p2[0]:
-            return self.cmp1(p1[1], p2[1])
-        else:
-            return self.cmp1(p1[0], p2[0])
-
     def step(self, mark, forward, move):
         ret = edlib.WEOF
         if forward:
