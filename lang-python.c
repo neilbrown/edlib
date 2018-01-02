@@ -1314,6 +1314,7 @@ static PyObject *mark_getpos(Mark *m safe, void *x)
 
 static int mark_setpos(Mark *m safe, PyObject *v, void *x)
 {
+	struct mark *m2;
 	if (m->mark == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return -1;
@@ -1324,7 +1325,20 @@ static int mark_setpos(Mark *m safe, PyObject *v, void *x)
 	}
 	if (m->mark->refcnt)
 		m->mark->refcnt(m->mark, -1);
-	m->mark->ref.c = v;
+	/* If an adjacent mark has a ref.c with a matching value
+	 * use that instead, so that mark_same() works.
+	 */
+	m2 = doc_next_mark_all(m->mark);
+	if (m2 && m2->refcnt == mark_refcnt && m2->ref.c != NULL &&
+	    PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
+			m->mark->ref.c = m2->ref.c;
+	else if ((m2 = doc_prev_mark_all(m->mark)) != NULL &&
+		 m2->refcnt == mark_refcnt &&
+		 m2->ref.c != NULL &&
+		 PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
+			m->mark->ref.c = m2->ref.c;
+	else
+		m->mark->ref.c = v;
 	m->mark->refcnt = mark_refcnt;
 	m->mark->refcnt(m->mark, 1);
 	return 0;
