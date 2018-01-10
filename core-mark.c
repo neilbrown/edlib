@@ -416,85 +416,6 @@ struct mark *doc_new_mark(struct doc *d safe, int view)
  *
  */
 
-static void swap_lists(struct mark *p1 safe, struct mark *p2 safe)
-{
-	struct point_links *tmp;
-	tmp = safe_cast p1->mdata;
-	p1->mdata = safe_cast p2->mdata;
-	p2->mdata = tmp;
-	tmp->pt = p2;
-	tmp = safe_cast p1->mdata;
-	tmp->pt = p1;
-}
-
-static void mark_forward_over(struct mark *m safe, struct mark *m2 safe)
-{
-	int seq;
-
-	ASSERT(m2 == doc_next_mark_all(m));
-	hlist_del(&m->all);
-	hlist_add_after(&m2->all, &m->all);
-	if (m->viewnum == m2->viewnum && m->viewnum != MARK_UNGROUPED) {
-		tlist_del(&m->view);
-		tlist_add(&m->view, GRP_MARK, &m2->view);
-	}
-	if (m->viewnum == MARK_POINT && m2->viewnum == MARK_POINT) {
-		/* moving a point over a point */
-		swap_lists(m, m2);
-	} else if (m->viewnum == MARK_POINT) {
-		/* Moving a point over a mark */
-		struct point_links *lnk = safe_cast m->mdata;
-		if (m2->viewnum >= 0) {
-			tlist_del(&m2->view);
-			tlist_add_tail(&m2->view, GRP_MARK, &lnk->lists[m2->viewnum]);
-		}
-	} else if (m2->viewnum == MARK_POINT) {
-		/* stepping a mark over a point */
-		struct point_links *lnk = safe_cast m2->mdata;
-		if (m->viewnum >= 0) {
-			tlist_del(&m->view);
-			tlist_add(&m->view, GRP_MARK, &lnk->lists[m->viewnum]);
-		}
-	}
-	seq = m->seq;
-	m->seq = m2->seq;
-	m2->seq = seq;
-}
-
-static void mark_backward_over(struct mark *m safe, struct mark *mp safe)
-{
-	int seq;
-
-	ASSERT(mp == doc_prev_mark_all(m));
-	hlist_del(&m->all);
-	hlist_add_before(&m->all, &mp->all);
-	if (m->viewnum == mp->viewnum && m->viewnum != MARK_UNGROUPED) {
-		tlist_del(&m->view);
-		tlist_add_tail(&m->view, GRP_MARK, &mp->view);
-	}
-	if (m->viewnum == MARK_POINT && mp->viewnum == MARK_POINT) {
-		/* moving a point over a point */
-		swap_lists(m, mp);
-	} else if (m->viewnum == MARK_POINT) {
-		/* Moving a point over a mark */
-		struct point_links *lnks = safe_cast m->mdata;
-		if (mp->viewnum >= 0) {
-			tlist_del(&mp->view);
-			tlist_add(&mp->view, GRP_MARK, &lnks->lists[mp->viewnum]);
-		}
-	} else if (mp->viewnum == MARK_POINT) {
-		/* Step back over a point */
-		struct point_links *lnks = safe_cast mp->mdata;
-		if (m->viewnum >= 0) {
-			tlist_del(&m->view);
-			tlist_add_tail(&m->view, GRP_MARK, &lnks->lists[m->viewnum]);
-		}
-	}
-	seq = m->seq;
-	m->seq = mp->seq;
-	mp->seq = seq;
-}
-
 wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move)
 {
 	int ret;
@@ -668,17 +589,9 @@ static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
 	assign_seq(p, m->seq);
 }
 
-static void point_to_mark(struct mark *p safe, struct mark *m safe)
-{
-	if (p->seq < m->seq)
-		point_forward_to_mark(p, m);
-	else if (p->seq > m->seq)
-		point_backward_to_mark(p, m);
-}
-
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 {
-	/* Make sure they are on same list */
+	/* DEBUG: Make sure they are on same list */
 	struct mark *a = m;
 	if (m->seq < target->seq)
 		a = m;
@@ -687,30 +600,105 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 	while (a && a != target)
 		a = doc_next_mark_all(a);
 	ASSERT(a == target);
+	/* END DEBUG */
 
 	if (m->seq == target->seq)
 		return;
 	if (m->viewnum == MARK_POINT) {
-		point_to_mark(m, target);
+		/* Lots of linkage to fix up */
+		if (m->seq < target->seq)
+			point_forward_to_mark(m, target);
+		else
+			point_backward_to_mark(m, target);
 		return;
 	}
-	if (m->seq < target->seq)
-		do {
-			struct mark *n = doc_next_mark_all(m);
-			if (!n)
-				/* Should be impossible, but mark-ordering
-				 * tests could be broken - fail safe!
-				 */
-				break;
-			mark_forward_over(m, n);
-		} while (m->seq < target->seq);
-	else
-		do {
-			struct mark *n = doc_prev_mark_all(m);
-			if (!n)
-				break;
-			mark_backward_over(m, n);
-		} while (target->seq < m->seq);
+	if (m->viewnum == MARK_UNGROUPED) {
+		/* Only one linked list to worry about */
+		if (m->seq < target->seq) {
+			hlist_del(&m->all);
+			hlist_add_after(&target->all, &m->all);
+			assign_seq(m, target->seq);
+		} else {
+			hlist_del(&m->all);
+			hlist_add_before(&m->all, &target->all);
+			m->seq = target->seq;
+			assign_seq(target, m->seq);
+		}
+		return;
+	}
+	if (m->viewnum == target->viewnum) {
+		/* Same view, both on the same 2 lists */
+		if (m->seq < target->seq) {
+			hlist_del(&m->all);
+			hlist_add_after(&target->all, &m->all);
+			tlist_del(&m->view);
+			tlist_add(&m->view, GRP_MARK, &target->view);
+			assign_seq(m, target->seq);
+		} else {
+			hlist_del(&m->all);
+			hlist_add_before(&m->all, &target->all);
+			tlist_del(&m->view);
+			tlist_add_tail(&m->view, GRP_MARK, &target->view);
+			m->seq = target->seq;
+			assign_seq(target, m->seq);
+		}
+		return;
+	}
+	if (target->viewnum == MARK_POINT) {
+		/* A vmark and a point, both on the only 2 lists that need changing */
+		struct point_links *lnks = safe_cast target->mdata;
+		if (m->seq < target->seq) {
+			hlist_del(&m->all);
+			hlist_add_after(&target->all, &m->all);
+			tlist_del(&m->view);
+			tlist_add(&m->view, GRP_MARK, &lnks->lists[m->viewnum]);
+			assign_seq(m, target->seq);
+		} else {
+			hlist_del(&m->all);
+			hlist_add_before(&m->all, &target->all);
+			tlist_del(&m->view);
+			tlist_add_tail(&m->view, GRP_MARK, &lnks->lists[m->viewnum]);
+			m->seq = target->seq;
+			assign_seq(target, m->seq);
+		}
+		return;
+	}
+	/* Hard case: We have a vmark and a mark which isn't on the same list.
+	 * We need to find a matching vmark 'close' to the destination and link
+	 * after that.
+	 */
+	if (m->seq < target->seq) {
+		struct mark *m1 = m, *n;
+		while ((n = vmark_or_point_next(m1, m->viewnum)) != NULL && n->seq <= target->seq)
+			m1 = n;
+		if (m1 != m) {
+			tlist_del(&m->view);
+			if (m1->viewnum == MARK_POINT) {
+				struct point_links *lnks = safe_cast m1->mdata;
+				tlist_add(&m->view, GRP_MARK, &lnks->lists[m->viewnum]);
+			} else
+				tlist_add(&m->view, GRP_MARK, &m1->view);
+		}
+		hlist_del(&m->all);
+		hlist_add_after(&target->all, &m->all);
+		assign_seq(m, target->seq);
+	} else {
+		struct mark *m1 = m, *n;
+		while ((n = vmark_or_point_prev(m1, m->viewnum)) != NULL && n->seq >= target->seq)
+			m1 = n;
+		if (m1 != m) {
+			tlist_del(&m->view);
+			if (m1->viewnum == MARK_POINT) {
+				struct point_links *lnks = safe_cast m1->mdata;
+				tlist_add_tail(&m->view, GRP_MARK, &lnks->lists[m->viewnum]);
+			} else
+				tlist_add_tail(&m->view, GRP_MARK, &m1->view);
+		}
+		hlist_del(&m->all);
+		hlist_add_before(&m->all, &target->all);
+		m->seq = target->seq;
+		assign_seq(target, m->seq);
+	}
 }
 
 void mark_to_mark(struct mark *m safe, struct mark *target safe)
@@ -746,6 +734,30 @@ struct mark *vmark_next(struct mark *m safe)
 	return __vmark_next(tl);
 }
 
+struct mark *vmark_or_point_next(struct mark *m safe, int view)
+{
+	struct tlist_head *tl;
+	struct point_links *lnk;
+
+	if (m->viewnum == view)
+		tl = TLIST_PTR(m->view.next);
+	else if (m->viewnum == MARK_POINT) {
+		lnk = safe_cast m->mdata;
+		tl = TLIST_PTR(lnk->lists[view].next);
+	} else
+		return NULL;
+	switch(TLIST_TYPE(tl)) {
+	default:
+	case GRP_HEAD:
+		return NULL;
+	case GRP_MARK:
+		return container_of(tl, struct mark, view);
+	case GRP_LIST:
+		lnk = container_of_array(tl, struct point_links, lists, m->viewnum);
+		return lnk->pt;
+	}
+}
+
 static struct mark *__vmark_prev(struct tlist_head *tl safe)
 {
 	while (TLIST_TYPE(tl) != GRP_HEAD) {
@@ -764,6 +776,30 @@ struct mark *vmark_prev(struct mark *m safe)
 
 	tl = TLIST_PTR(m->view.prev);
 	return __vmark_prev(tl);
+}
+
+struct mark *vmark_or_point_prev(struct mark *m safe, int view)
+{
+	struct tlist_head *tl;
+	struct point_links *lnk;
+
+	if (m->viewnum == view)
+		tl = TLIST_PTR(m->view.prev);
+	else if (m->viewnum == MARK_POINT) {
+		lnk = safe_cast m->mdata;
+		tl = TLIST_PTR(lnk->lists[view].prev);
+	} else
+		return NULL;
+	switch(TLIST_TYPE(tl)) {
+	default:
+	case GRP_HEAD:
+		return NULL;
+	case GRP_MARK:
+		return container_of(tl, struct mark, view);
+	case GRP_LIST:
+		lnk = container_of_array(tl, struct point_links, lists, m->viewnum);
+		return lnk->pt;
+	}
 }
 
 struct mark *do_vmark_first(struct doc *d safe, int view)
@@ -865,7 +901,7 @@ struct mark *do_vmark_at_point(struct doc *d safe,
 struct mark *do_vmark_at_or_before(struct doc *d safe,
 				   struct mark *m safe, int view)
 {
-	/* First the last 'view' mark that is not later in the document than 'm'.
+	/* Find the last 'view' mark that is not later in the document than 'm'.
 	 * It might be later in the mark list, but not in the document.
 	 * Return NULL if all 'view' marks are after 'm' in the document.
 	 */

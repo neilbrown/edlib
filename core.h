@@ -224,6 +224,8 @@ void points_resize(struct doc *d safe);
 void points_attach(struct doc *d safe, int view);
 struct mark *vmark_next(struct mark *m safe);
 struct mark *vmark_prev(struct mark *m safe);
+struct mark *vmark_or_point_next(struct mark *m safe, int view);
+struct mark *vmark_or_point_prev(struct mark *m safe, int view);
 struct mark *do_vmark_first(struct doc *d safe, int view);
 struct mark *do_vmark_last(struct doc *d safe, int view);
 struct mark *vmark_matching(struct mark *m safe);
