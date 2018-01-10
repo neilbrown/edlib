@@ -290,6 +290,7 @@ DEF_CMD(linecount_clip)
 
 DEF_CMD(count_lines)
 {
+	return 1;
 	/* FIXME optimise this away most of the time */
 	if (call("Notify:doc:CountLines", ci->focus) == -2) {
 		/* No counter in place, add one */
