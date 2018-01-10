@@ -10,7 +10,7 @@
  * quartets of base64 chars (which means start of triplets of visible chars)
  * We intercept doc:step.
  * To find how to interpret a given position, we find the previous mark,
- * and move forwar, counting chars, until we reach the position.
+ * and move forward, counting chars, until we reach the position.
  * Every MAX_QUAD we create a new mark.
  * A position should only ever be on the 1st, 2nd, or 3rd char of a quad,
  * never on the last.
@@ -93,16 +93,18 @@ static int get_b64_rev(struct pane *p safe, struct mark *m safe)
 
 static int locate_mark(struct pane *p safe, int view, struct mark *m safe)
 {
-	struct mark *st, *tmp;
+	struct mark *st, *tmp, *prev;
 	int pos = 0;
 	wint_t ch;
 
 	st = vmark_at_or_before(p, m, view);
 	if (st) {
 		tmp = mark_dup(st, 1);
+		prev = st;
 	} else {
 		tmp = vmark_new(p, MARK_UNGROUPED);
 		pos = (MAX_QUAD + 1) * 4;
+		prev = NULL;
 	}
 	if (!tmp)
 		return 0;
@@ -112,8 +114,12 @@ static int locate_mark(struct pane *p safe, int view, struct mark *m safe)
 
 		if ((pos %4) == 0 && pos/4 >= MAX_QUAD) {
 			struct mark *m2 = vmark_new(p, view);
-			if (m2)
+			if (m2) {
+				if (prev)
+					mark_to_mark(m2, prev);
 				mark_to_mark(m2, tmp);
+				prev = m2;
+			}
 			pos = 0;
 		}
 		mark_next_pane(p, tmp); pos++;
