@@ -69,11 +69,13 @@ struct python_command {
 };
 DEF_CMD(python_call);
 DEF_CMD(python_doc_call);
+static void python_free_command(struct command *c safe);
 
 typedef struct {
 	PyObject_HEAD
 	struct pane	*pane;
 	struct python_command handle;
+	struct map	*map;
 } Pane;
 static PyTypeObject PaneType;
 
@@ -87,6 +89,7 @@ typedef struct {
 	PyObject_HEAD
 	struct pane	*pane;
 	struct python_command handle;
+	struct map	*map;
 	struct doc	doc;
 } Doc;
 static PyTypeObject DocType;
@@ -335,6 +338,16 @@ REDEF_CMD(python_doc_call)
 	return rv;
 }
 
+DEF_CMD(python_map_call)
+{
+	Pane *home = container_of(ci->comm, Pane, handle.c);
+	int ret = 0;
+
+	if (home && home->map)
+		ret = key_lookup(home->map, ci);
+	return ret;
+}
+
 static Pane *pane_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
 {
 	Pane *self;
@@ -366,14 +379,17 @@ static void python_pane_free(struct command *c safe)
 	if (p->handle.callable)
 		Py_DECREF(p->handle.callable);
 	p->handle.callable = NULL;
+	if (p->map)
+		key_free(p->map);
+	p->map = NULL;
 	Py_DECREF(p);
 }
 
 static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds, Pane **parentp safe,
 		       int *zp)
 {
-	Pane *parent;
-	PyObject *py_handler;
+	Pane *parent = NULL;
+	PyObject *py_handler = NULL;
 	int ret;
 	static char *keywords[] = {"parent", "handler", "z", NULL};
 
@@ -386,20 +402,86 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds, Pane **p
 		/* Probably an internal Pane_Frompane call */
 		return 0;
 
-	ret = PyArg_ParseTupleAndKeywords(args, kwds, "O!O|i", keywords,
+	ret = PyArg_ParseTupleAndKeywords(args, kwds, "O!|Oi", keywords,
 					  &PaneType, &parent, &py_handler,
 					  zp);
 	if (ret <= 0)
 		return -1;
-	if (!PyCallable_Check(py_handler)) {
+	if (py_handler && !PyCallable_Check(py_handler)) {
 		PyErr_SetString(PyExc_TypeError, "'handler' is not callable");
 		return -1;
 	}
-	self->handle.c = python_call;
-	self->handle.c.free = python_pane_free;
-	Py_INCREF(py_handler);
-	self->handle.callable = py_handler;
 	*parentp = parent;
+	if (py_handler) {
+		self->handle.c = python_call;
+		self->handle.c.free = python_pane_free;
+		command_get(&self->handle.c);
+		Py_INCREF(py_handler);
+		self->handle.callable = py_handler;
+		self->map = NULL;
+	} else {
+		int i;
+		//PyTypeObject *type = self->ob_type;
+		PyObject *l = PyObject_Dir((PyObject*)/*type*/self);
+		int n = PyList_Size(l);
+
+		self->map = key_alloc();
+		self->handle.c = python_map_call;
+		self->handle.c.free = python_pane_free;
+		command_get(&self->handle.c);
+		self->handle.callable = NULL;
+
+		for (i = 0; i < n ; i++) {
+			PyObject *e = PyList_GetItem(l, i);
+			PyObject *m = PyObject_GetAttr((PyObject*)/*type*/self, e);
+			if (m && PyMethod_Check(m)) {
+				PyObject *doc = PyObject_GetAttrString(m, "__doc__");
+				if (doc && doc != Py_None) {
+					PyObject *tofree = NULL;
+					char *docs = python_as_string(doc, &tofree);
+					if (docs &&
+					    strncmp(docs, "handle:", 7) == 0) {
+						struct python_command *comm =
+							malloc(sizeof(*comm));
+						comm->c = python_call;
+						comm->c.free = python_free_command;
+						comm->c.refcnt = 1;
+						Py_INCREF(m);
+						comm->callable = m;
+						key_add(self->map, docs+7, &comm->c);
+						command_put(&comm->c);
+					}
+					if (docs &&
+					    strncmp(docs, "handle-range", 12) == 0 &&
+					    docs[12]) {
+						char sep = docs[12];
+						char *s1 = strchr(docs+13, sep);
+						char *s2 = s1 ? strchr(s1+1, sep) : NULL;
+						if (s2) {
+							char *a = strndup(docs+13, s1-(docs+13));
+							char *b = strndup(s1+1, s2-(s1+1));
+
+							struct python_command *comm =
+								malloc(sizeof(*comm));
+							comm->c = python_call;
+							comm->c.free = python_free_command;
+							comm->c.refcnt = 1;
+							Py_INCREF(m);
+							comm->callable = m;
+							key_add_range(self->map, a, b,
+								      &comm->c);
+							free(a); free(b);
+							command_put(&comm->c);
+						}
+					}
+					Py_XDECREF(tofree);
+				}
+				Py_XDECREF(doc);
+			}
+			Py_XDECREF(m);
+		}
+		Py_XDECREF(l);
+	}
 	return 1;
 }
 
