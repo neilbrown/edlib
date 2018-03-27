@@ -91,6 +91,11 @@ struct map *safe key_alloc(void)
 
 void key_free(struct map *m safe)
 {
+	int i;
+	for (i = 0; i < m->size; i++) {
+		free(m->keys[i]);
+		command_put(GETCOMM(m->comms[i]));
+	}
 	free(m->keys);
 	free(m->comms);
 	free(m);
@@ -214,7 +219,7 @@ void key_add(struct map *map safe, char *k safe, struct command *comm)
 	map->keys[pos] = strdup(k);
 	map->comms[pos] = command_get(comm);
 	if (comm2) {
-		map->keys[pos+1] = k;
+		map->keys[pos+1] = strdup(k);
 		map->comms[pos+1] = SET_RANGE(command_get(GETCOMM(comm2)));
 	}
 	map->size += ins_cnt;
@@ -260,7 +265,7 @@ void key_add_range(struct map *map safe, char *first safe, char *last safe,
 		(map->size - pos2) * sizeof(struct command *));
 
 	map->comms[pos] = SET_RANGE(comm);
-	map->keys[pos+1] = last;
+	map->keys[pos+1] = strdup(last);
 	map->comms[pos+1] = command_get(comm);
 	map->size += move_size;
 	map->changed = 1;
