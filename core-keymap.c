@@ -186,10 +186,10 @@ void key_add(struct map *map safe, char *k safe, struct command *comm)
 	} else if (strcmp(k, map->keys[pos]) == 0) {
 		/* match: need to check if range-start */
 		if (IS_RANGE(map->comms[pos])) {
-			/* Changing the start of a range, insert and exact match */
+			/* Changing the start of a range, insert an exact match */
 		} else {
 			/* replace a non-range */
-			/* FIXME do I need to release the old command */
+			command_put(map->comms[pos]);
 			map->comms[pos] = command_get(comm);
 			return;
 		}
@@ -232,6 +232,7 @@ void key_add_range(struct map *map safe, char *first safe, char *last safe,
 	int size, move_size;
 	int pos, pos2;
 	int prefix;
+	int i;
 
 	if (!comm || strcmp(first, last) >= 0)
 		return;
@@ -258,7 +259,10 @@ void key_add_range(struct map *map safe, char *first safe, char *last safe,
 		map->comms = realloc(map->comms,
 				     size * sizeof(struct command *));
 	}
-
+	for (i = pos + 1; i < pos2; i++) {
+		free(map->keys[i]);
+		command_put(GETCOMM(map->comms[i]));
+	}
 	memmove(map->keys+pos2 + move_size, map->keys+pos2,
 		(map->size - pos2) * sizeof(map->keys[0]));
 	memmove(map->comms+pos2+ move_size, map->comms+pos2,
