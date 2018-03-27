@@ -14,7 +14,10 @@ VCFLAGS += $(DVERS) $(DDATE)
 
 LDLIBS= -ldl
 CC = gcc
-SMATCH_FLAGS= -D_BITS_FLOATN_H -D__HAVE_FLOAT128=0 -D__FLT_EVAL_METHOD__=1 -D__HAVE_DISTINCT_FLOAT128=0 $(VCFLAGS)
+floats= 16 32 64 128 16X 32X 64X 128X
+have_float=$(foreach n,$(floats),-D__HAVE_FLOAT$(n)=0 -D__HAVE_DISTINCT_FLOAT$(n)=0)
+SMATCH_FLAGS= -D_BITS_FLOATN_H $(have_float) -D__FLT_EVAL_METHOD__=1 $(VCFLAGS)
+
 SPARSEFLAGS= -Wsparse-all -Wno-transparent-union -Wsparse-error $(SMATCH_FLAGS) $(VCFLAGS)
 # Create files .DEBUG and .LEAK for extra checking
 ifeq "$(wildcard .DEBUG)" ".DEBUG"
@@ -36,6 +39,7 @@ else
  QUIET_SMATCH  = @: skip
 endif
 CFLAGS= -g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG) $(VCFLAGS)
+#CFLAGS= -pg -fno-pie -fno-PIC -g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG) $(VCFLAGS)
 #Doesn't work :-( -fsanitize=address
 
 all: edlib checksym lib shared
@@ -88,7 +92,7 @@ H = list.h core.h misc.h
 edlib: $(OBJ) lib/libedlib.so
 	$(QUIET_LINK)$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -Wl,--disable-new-dtags -o $@ $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
 
-edlib-static: $(OBJ) $(STATICOBJ)  $(XOBJ)
+edlib-static: $(OBJ) $(STATICOBJ)  $(XOBJ) O/core-version.o
 	$(QUIET_LINK)$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LIBS-lang-python) $(LIBS-display-ncurses) $(LIBS-lib-libevent)
 
 $(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) $(STATICOBJ) : $(H) O/.exists
