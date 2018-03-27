@@ -68,6 +68,7 @@ struct python_command {
 	PyObject	*callable;
 };
 DEF_CMD(python_call);
+DEF_CMD(python_pane_call);
 DEF_CMD(python_doc_call);
 static void python_free_command(struct command *c safe);
 
@@ -118,7 +119,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 static inline PyObject *safe Pane_Frompane(struct pane *p)
 {
 	Pane *pane;
-	if (p && p->handle && p->handle->func == python_call.func) {
+	if (p && p->handle && p->handle->func == python_pane_call.func) {
 		pane = p->data;
 		Py_INCREF(pane);
 	} else if (p && p->handle && p->handle->func == python_doc_call.func) {
@@ -319,7 +320,7 @@ REDEF_CMD(python_call)
 
 REDEF_CMD(python_doc_call)
 {
-	int rv = python_call_func(ci);
+	int rv = python_pane_call_func(ci);
 	if (rv == 0)
 		rv = key_lookup(doc_default_cmd, ci);
 	if (strcmp(ci->key, "Close") == 0) {
@@ -338,13 +339,15 @@ REDEF_CMD(python_doc_call)
 	return rv;
 }
 
-DEF_CMD(python_map_call)
+REDEF_CMD(python_pane_call)
 {
 	Pane *home = container_of(ci->comm, Pane, handle.c);
 	int ret = 0;
 
 	if (home && home->map)
 		ret = key_lookup(home->map, ci);
+	else if (home && home->handle.callable)
+		ret = python_call_func(ci);
 	return ret;
 }
 
@@ -413,7 +416,7 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds, Pane **p
 	}
 	*parentp = parent;
 	if (py_handler) {
-		self->handle.c = python_call;
+		self->handle.c = python_pane_call;
 		self->handle.c.free = python_pane_free;
 		command_get(&self->handle.c);
 		Py_INCREF(py_handler);
@@ -426,7 +429,7 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds, Pane **p
 		int n = PyList_Size(l);
 
 		self->map = key_alloc();
-		self->handle.c = python_map_call;
+		self->handle.c = python_pane_call;
 		self->handle.c.free = python_pane_free;
 		command_get(&self->handle.c);
 		self->handle.callable = NULL;
