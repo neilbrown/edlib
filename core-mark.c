@@ -753,7 +753,7 @@ struct mark *vmark_or_point_next(struct mark *m safe, int view)
 	case GRP_MARK:
 		return container_of(tl, struct mark, view);
 	case GRP_LIST:
-		lnk = container_of_array(tl, struct point_links, lists, m->viewnum);
+		lnk = container_of_array(tl, struct point_links, lists, view);
 		return lnk->pt;
 	}
 }
@@ -797,7 +797,7 @@ struct mark *vmark_or_point_prev(struct mark *m safe, int view)
 	case GRP_MARK:
 		return container_of(tl, struct mark, view);
 	case GRP_LIST:
-		lnk = container_of_array(tl, struct point_links, lists, m->viewnum);
+		lnk = container_of_array(tl, struct point_links, lists, view);
 		return lnk->pt;
 	}
 }
