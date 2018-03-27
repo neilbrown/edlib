@@ -65,7 +65,7 @@ static PyObject *EdlibModule;
  */
 struct python_command {
 	struct command	c;
-	PyObject	*callable safe;
+	PyObject	*callable;
 };
 DEF_CMD(python_call);
 DEF_CMD(python_doc_call);
@@ -151,6 +151,8 @@ static inline PyObject *safe Comm_Fromcomm(struct command *c safe)
 {
 	if (c->func == python_call_func && 0) {
 		struct python_command *pc = container_of(c, struct python_command, c);
+		if (!pc->callable)
+			return NULL;
 		Py_INCREF(pc->callable);
 		return pc->callable;
 	} else {
@@ -254,7 +256,7 @@ static int dict_add(PyObject *kwds, char *name, PyObject *val)
 REDEF_CMD(python_call)
 {
 	struct python_command *pc = container_of(ci->comm, struct python_command, c);
-	PyObject *ret, *args, *kwds;
+	PyObject *ret = NULL, *args, *kwds;
 	int rv = 1;
 	int local;
 
@@ -288,9 +290,7 @@ REDEF_CMD(python_call)
 	rv = rv && dict_add(kwds, "xy",
 			    Py_BuildValue("ii", ci->x, ci->y));
 
-	if (!rv)
-		ret = NULL;
-	else
+	if (rv && pc->callable)
 		ret = PyObject_Call(pc->callable, args, kwds);
 
 	Py_DECREF(args);
@@ -363,8 +363,9 @@ static void python_pane_free(struct command *c safe)
 	Pane *p = container_of(c, Pane, handle.c);
 	/* pane has been closed */
 	p->pane = NULL;
-	Py_DECREF(p->handle.callable);
-	p->handle.callable = safe_cast NULL;
+	if (p->handle.callable)
+		Py_DECREF(p->handle.callable);
+	p->handle.callable = NULL;
 	Py_DECREF(p);
 }
 
@@ -1866,7 +1867,7 @@ static void python_free_command(struct command *c safe)
 {
 	struct python_command *pc = container_of(c, struct python_command, c);
 
-	if ((void*)pc->callable)
+	if (pc->callable)
 		Py_DECREF(pc->callable);
 	free(pc);
 }
