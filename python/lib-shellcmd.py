@@ -7,7 +7,7 @@ import subprocess, os, fcntl
 
 class ShellPane(edlib.Pane):
     def __init__(self, focus):
-        edlib.Pane.__init__(self, focus, self.handle)
+        edlib.Pane.__init__(self, focus)
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
@@ -41,24 +41,27 @@ class ShellPane(edlib.Pane):
         self.call("Replace", r);
         return 1
 
-    def handle(self, key, **a):
-        if key == "Close":
-            if self.pipe is not None:
-                p = self.pipe
-                self.pipe = None
-                p.terminate()
-                try:
-                    p.communicate()
-                except IOError:
-                    pass
-            return 1
-        if key == "Abort":
-            if self.pipe is not None:
-                self.pipe.terminate()
-                self.pipe.communicate()
-                self.pipe = None
-                self.call("Replace", "\nProcess Aborted\n");
-            return 1
+    def handle_close(self, key, **a):
+        print "Closed"
+        if self.pipe is not None:
+            p = self.pipe
+            self.pipe = None
+            p.terminate()
+            try:
+                p.communicate()
+            except IOError:
+                pass
+        return 1
+
+    def handle_abort(self, key, **a):
+        # FIXME there is no way to send an Abort to this pane
+        print "Aborted"
+        if self.pipe is not None:
+            self.pipe.terminate()
+            self.pipe.communicate()
+            self.pipe = None
+            self.call("Replace", "\nProcess Aborted\n");
+        return 1
 
 def shell_attach(key, focus, comm2, str, str2, **a):
     m = edlib.Mark(focus)
