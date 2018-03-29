@@ -578,7 +578,7 @@ class events:
 
         return 1
     def refresh(self, key, focus, **a):
-        # all active events a re-enabled.  This will presumably send them
+        # all active events are re-enabled.  This will presumably send them
         # to the new primary event handler
         k = self.events.keys()
         for e in k:
