@@ -58,7 +58,7 @@ import os
 
 class PresenterPane(edlib.Pane):
     def __init__(self, focus):
-        edlib.Pane.__init__(self, focus, self.handle)
+        edlib.Pane.__init__(self, focus)
         self.globals = {}
         self.pageview = focus.call("doc:add-view") - 1
         self.attrview = focus.call("doc:add-view") - 1
@@ -429,267 +429,277 @@ class PresenterPane(edlib.Pane):
             return f
         return os.path.dirname(path)+'/'+f
 
-    def handle(self, key, focus, mark, mark2, num, comm2, **a):
-        if key[:10] == "Present-BG":
-            cmds = key[11:].split(',')
-            ret = 0
-            for c in cmds:
-                rv = None
-                if c[:6] == 'color:':
-                    rv = focus.call('pane-clear', c[6:])
-                if c[:14] == "image-stretch:":
-                    rv = focus.call('Draw:image', 1, self.pathto(c[14:]))
-                if c[:6] == "image:":
-                    rv = focus.call('Draw:image', 0, 5, self.pathto(c[6:]))
-                if c[:8] == "overlay:":
-                    rv = focus.call('Draw:image', 0, 2, self.pathto(c[8:]))
-                if c[:9] == "overlayC:":
-                    rv = focus.call('Draw:image', self.w/6, self.h*3/4, self.pathto(c[9:]), (self.w*5/12, self.h/8))
-                if c == "page-local":
-                    page = self.find_pages(mark)
-                    self.clean_lines(page)
-                    self.mark_lines(page)
-                    cm = self.get_local_attr(mark, "background", page)
-                    if cm:
-                        cmds.extend(cm.split(','))
-                if rv != None:
-                    ret |= rv
-            return ret
+    def handle_present_bg(self, key, focus, mark, mark2, num, comm2, **a):
+        "handle-range/Present-BG:/Present-BG;/"
+        cmds = key[11:].split(',')
+        ret = 0
+        for c in cmds:
+            rv = None
+            if c[:6] == 'color:':
+                rv = focus.call('pane-clear', c[6:])
+            if c[:14] == "image-stretch:":
+                rv = focus.call('Draw:image', 1, self.pathto(c[14:]))
+            if c[:6] == "image:":
+                rv = focus.call('Draw:image', 0, 5, self.pathto(c[6:]))
+            if c[:8] == "overlay:":
+                rv = focus.call('Draw:image', 0, 2, self.pathto(c[8:]))
+            if c[:9] == "overlayC:":
+                rv = focus.call('Draw:image', self.w/6, self.h*3/4, self.pathto(c[9:]), (self.w*5/12, self.h/8))
+            if c == "page-local":
+                page = self.find_pages(mark)
+                self.clean_lines(page)
+                self.mark_lines(page)
+                cm = self.get_local_attr(mark, "background", page)
+                if cm:
+                    cmds.extend(cm.split(','))
+            if rv != None:
+                ret |= rv
+        return ret
 
-        if key == "Notify:clip":
-            self.clip(self.attrview, mark, mark2);
-            self.clip(self.pageview, mark, mark2);
-            return 0
+    def handle_clip(self, key, focus, mark, mark2, num, comm2, **a):
+        "handle:Notify:clip"
+        self.clip(self.attrview, mark, mark2);
+        self.clip(self.pageview, mark, mark2);
+        return 0
 
-        if key == "render-line-prev":
-            # Go to start of page
-            if num == 0:
-                # just make sure at start of line
-                return self.parent.call("render-line-prev", mark)
+    def handle_render_prev(self, key, focus, mark, mark2, num, comm2, **a):
+        "handle:render-line-prev"
+        # Go to start of page
+        if num == 0:
+            # just make sure at start of line
+            return self.parent.call("render-line-prev", mark)
 
-            start = self.find_pages(mark)
-            if not start:
-                return -2
-            if start.seq > mark.seq:
-                start = mark
+        start = self.find_pages(mark)
+        if not start:
+            return -2
+        if start.seq > mark.seq:
+            start = mark
 
-            if start == mark:
-                return -2
-            mark.to_mark(start)
+        if start == mark:
+            return -2
+        mark.to_mark(start)
+        return 1
+
+    def handle_render_line(self, key, focus, mark, mark2, num, comm2, **a):
+        "handle:render-line"
+        page = self.find_pages(mark)
+        if not page:
+            # No pages at all
+            comm2("callback", self)
             return 1
 
-        if key == "render-line":
-            page = self.find_pages(mark)
-            if not page:
-                # No pages at all
-                comm2("callback", self)
+        if mark.seq < page.seq:
+            mark.to_mark(page)
+
+        self.clean_lines(page)
+        self.mark_lines(page)
+
+        end = page.next()
+
+        line = None
+        linemark = None
+        while end is None or mark < end:
+            if not end and focus.call("doc:step", mark) == edlib.WEOF:
+                break
+            linemark = self.prev_line(mark)
+            if not linemark:
+                break
+            if linemark.next():
+                mark.to_mark(linemark.next())
+            elif end:
+                mark.to_mark(end)
+            else:
+                self.call("doc:set-ref", 0, mark)
+
+            if linemark['type'] != 'text':
+                #skip attributes
+                continue
+            line = linemark['value']
+            break
+
+        if line is None:
+            comm2("callback", self)
+        else:
+            mode = linemark['mode']
+            line = linemark['value']
+            prefix = linemark['prefix']
+            if prefix:
+                line = line[len(prefix):]
+            v = self.get_attr(mark, mode, page)
+
+            # leading spaces will confuse 'centre', and using spaces for formating
+            # is to be discourged.  Hard spaces can still be used when needed.
+            line = line.strip(' ')
+            if mode == 'IM':
+                width=200; height=100
+                if len(line) > 1 and line[0].isdigit():
+                    try:
+                        c = line.index(':')
+                        width = int(line[:c])
+                    except:
+                        c = -1
+
+                    line = line[c+1:]
+                    try:
+                        c = line.index(':')
+                        height = int(line[:c])
+                    except:
+                        c = -1
+                    line = line[c+1:]
+
+                comm2("callback", self, "<image:"+self.pathto(line)+",width:%d,height:%d>"%(width,height))
                 return 1
 
-            if mark.seq < page.seq:
-                mark.to_mark(page)
+            vb = self.get_attr(mark, 'mono', page)
+            if not vb:
+                vb = 'family:mono'
+            line = re.sub("`(\\S[^`<]*)`", "<"+vb+">\\1</>", line)
 
-            self.clean_lines(page)
-            self.mark_lines(page)
+            vb = self.get_attr(mark, 'italic', page)
+            if not vb:
+                vb = 'italic'
+            line = re.sub("\\b_(\B[^_<]*)_", "<"+vb+">\\1</>", line)
 
-            end = page.next()
-
-            line = None
-            linemark = None
-            while end is None or mark < end:
-                if not end and focus.call("doc:step", mark) == edlib.WEOF:
-                    break
-                linemark = self.prev_line(mark)
-                if not linemark:
-                    break
-                if linemark.next():
-                    mark.to_mark(linemark.next())
-                elif end:
-                    mark.to_mark(end)
+            vb = self.get_attr(mark, 'bold', page)
+            if not vb:
+                vb = 'bold'
+            line = re.sub("\*(\S[^*<]*)\*", "<"+vb+">\\1</>", line)
+            b = re.match(".*,bullet:([^:,]*)", v)
+            if b:
+                vb = self.get_attr(mark, 'bullet', page)
+                if vb:
+                    bl = "<%s>%s</>" % (vb, b.group(1))
                 else:
-                    self.call("doc:set-ref", 0, mark)
-
-                if linemark['type'] != 'text':
-                    #skip attributes
-                    continue
-                line = linemark['value']
-                break
-
-            if line is None:
-                comm2("callback", self)
+                    bl = b.group(1)
+                line = bl +"<"+v+">"+ line + "</>"
             else:
-                mode = linemark['mode']
-                line = linemark['value']
-                prefix = linemark['prefix']
-                if prefix:
-                    line = line[len(prefix):]
-                v = self.get_attr(mark, mode, page)
-
-                # leading spaces will confuse 'centre', and using spaces for formating
-                # is to be discourged.  Hard spaces can still be used when needed.
-                line = line.strip(' ')
-                if mode == 'IM':
-                    width=200; height=100
-                    if len(line) > 1 and line[0].isdigit():
-                        try:
-                            c = line.index(':')
-                            width = int(line[:c])
-                        except:
-                            c = -1
-
-                        line = line[c+1:]
-                        try:
-                            c = line.index(':')
-                            height = int(line[:c])
-                        except:
-                            c = -1
-                        line = line[c+1:]
-
-                    comm2("callback", self, "<image:"+self.pathto(line)+",width:%d,height:%d>"%(width,height))
-                    return 1
-
-                vb = self.get_attr(mark, 'mono', page)
-                if not vb:
-                    vb = 'family:mono'
-                line = re.sub("`(\\S[^`<]*)`", "<"+vb+">\\1</>", line)
-
-                vb = self.get_attr(mark, 'italic', page)
-                if not vb:
-                    vb = 'italic'
-                line = re.sub("\\b_(\B[^_<]*)_", "<"+vb+">\\1</>", line)
-
-                vb = self.get_attr(mark, 'bold', page)
-                if not vb:
-                    vb = 'bold'
-                line = re.sub("\*(\S[^*<]*)\*", "<"+vb+">\\1</>", line)
-                b = re.match(".*,bullet:([^:,]*)", v)
-                if b:
-                    vb = self.get_attr(mark, 'bullet', page)
-                    if vb:
-                        bl = "<%s>%s</>" % (vb, b.group(1))
-                    else:
-                        bl = b.group(1)
-                    line = bl +"<"+v+">"+ line + "</>"
-                else:
-                    line = "<"+v+">"+ line + "</>"
-                if end and mark >= end:
-                    line += '\f'
-                else:
-                    line += '\n'
-                comm2("callback", self, line)
-            return 1
-
-        if key == "Notify:doc:Replace":
-            # A change has happened at 'mark'.  The following page might not
-            # be valid, and the previous may not be valid or have next-valid.
-            # If no previous, self.first_valid may not be.
-            page = self.prev_page(mark)
-            if not page:
-                # mark is before first page
-                page = self.first_page()
-                if page:
-                    self.first_valid = False
-                    page['valid'] = 'no'
-                # attributes probably changed so...
-                self.damaged(edlib.DAMAGED_VIEW)
+                line = "<"+v+">"+ line + "</>"
+            if end and mark >= end:
+                line += '\f'
             else:
+                line += '\n'
+            comm2("callback", self, line)
+        return 1
+
+    def handle_notify_replace(self, key, focus, mark, mark2, num, comm2, **a):
+        "handle:Notify:doc:Replace"
+        # A change has happened at 'mark'.  The following page might not
+        # be valid, and the previous may not be valid or have next-valid.
+        # If no previous, self.first_valid may not be.
+        page = self.prev_page(mark)
+        if not page:
+            # mark is before first page
+            page = self.first_page()
+            if page:
+                self.first_valid = False
                 page['valid'] = 'no'
-                page['next-valid'] = 'no'
-                page = page.next()
-                if page:
-                    page['valid'] = 'no'
-
-            l = self.prev_line(mark)
-            if l:
-                self.lines_damaged = True
-                if l == mark and l.prev():
-                    l['type'] = 'unknown'
-                    l = l.prev()
-                if l['type'] and l['type'][0:5] == "attr:":
-                    self.damaged(edlib.DAMAGED_VIEW)
-                l['type'] = 'unknown'
-                l = l.next()
-                if l:
-                    l['type'] = 'unknown'
-            return 1
-
-        if key == "Notify:doc:Recentre":
-            m2 = edlib.Mark(self)
-            m2.to_mark(mark)
-            if num == 2:
-                # Move 'm2' to start of next page
-                m = self.find_page(m2)
-                if m:
-                    m2.to_mark(m)
-                    if comm2 is not None:
-                        comm2("callback", focus, m)
-            if num == 3:
-                # Move 'm2' to start of previous page
-                m = self.find_pages(m2)
-                if m:
-                    m = m.prev()
-                if m:
-                    m2.to_mark(m)
-                    if comm2 is not None:
-                        comm2("callback", focus, m)
-            self.target_mark = m2;
+            # attributes probably changed so...
             self.damaged(edlib.DAMAGED_VIEW)
-            return 1
+        else:
+            page['valid'] = 'no'
+            page['next-valid'] = 'no'
+            page = page.next()
+            if page:
+                page['valid'] = 'no'
+        l = self.prev_line(mark)
 
-        if key == "Refresh:view":
-            m = self.target_mark
-            self.target_mark = None
-            if not m:
-                return 0
-            focus.call("Move-View-Pos", m)
-            m.release()
+        if l:
+            self.lines_damaged = True
+            if l == mark and l.prev():
+                l['type'] = 'unknown'
+                l = l.prev()
+            if l['type'] and l['type'][0:5] == "attr:":
+                self.damaged(edlib.DAMAGED_VIEW)
+            l['type'] = 'unknown'
+            l = l.next()
+            if l:
+                l['type'] = 'unknown'
+        return 1
+
+    def handle_recentre(self, key, focus, mark, mark2, num, comm2, **a):
+        "handle:Notify:doc:Recentre"
+        m2 = edlib.Mark(self)
+        m2.to_mark(mark)
+        if num == 2:
+            # Move 'm2' to start of next page
+            m = self.find_page(m2)
+            if m:
+                m2.to_mark(m)
+                if comm2 is not None:
+                    comm2("callback", focus, m)
+        if num == 3:
+            # Move 'm2' to start of previous page
+            m = self.find_pages(m2)
+            if m:
+                m = m.prev()
+            if m:
+                m2.to_mark(m)
+                if comm2 is not None:
+                    comm2("callback", focus, m)
+        self.target_mark = m2;
+        self.damaged(edlib.DAMAGED_VIEW)
+        return 1
+
+    def handle_refresh_view(self, key, focus, mark, mark2, num, comm2, **a):
+        "handle:Refresh:view"
+        m = self.target_mark
+        self.target_mark = None
+        if not m:
             return 0
+        focus.call("Move-View-Pos", m)
+        m.release()
+        return 0
 
-        if key == "Clone":
-            # Need to create a new PresenterPane I guess, then recurse on children
-            pass
+    def handle_clone(self, key, focus, mark, mark2, num, comm2, **a):
+        "handle:Clone"
+        # Need to create a new PresenterPane I guess, then recurse on children
+        return 0
 
-        if key == "M-Chr-f":
-            if self.borderless:
-                self.call("Window:border", 1)
-                self.call("Display:border", 1)
-                self.call("Display:fullscreen", -1)
-                self.borderless = False
+    def handle_M_f(self, key, focus, mark, mark2, num, comm2, **a):
+        "handle:M-Chr-f"
+        if self.borderless:
+            self.call("Window:border", 1)
+            self.call("Display:border", 1)
+            self.call("Display:fullscreen", -1)
+            self.borderless = False
+        else:
+            self.call("Window:border", -1)
+            self.call("Display:border", -1)
+            self.call("Display:fullscreen", 1)
+            self.borderless = True
+        return 1
+
+    def handle_mvl(self, key, focus, mark, mark2, num, comm2, **a):
+        "handle:Move-View-Large"
+        # If mark isn't set, the movement might come
+        # from scroll-bar or similar, ignore that.
+        if mark:
+            page = self.find_pages(mark)
+            if num < 0:
+                page = page.prev()
             else:
-                self.call("Window:border", -1)
-                self.call("Display:border", -1)
-                self.call("Display:fullscreen", 1)
-                self.borderless = True
-            return 1
+                page = page.next()
+            if page is not None:
+                mark.to_mark(page)
+                focus.call("Move-View-Pos", page)
+                focus.damaged(edlib.DAMAGED_CURSOR)
+                return 1
+        return 2
 
-        if key == "Move-View-Large":
-            # If mark isn't set, the movement might come
-            # from scroll-bar or similar, ignore that.
-            if mark:
-                page = self.find_pages(mark)
-                if num < 0:
-                    page = page.prev()
-                else:
-                    page = page.next()
-                if page is not None:
-                    mark.to_mark(page)
-                    focus.call("Move-View-Pos", page)
-                    focus.damaged(edlib.DAMAGED_CURSOR)
-                    return 1
-            return 2
-
-        if key == "Close":
+    def handle_close(self, key, focus, mark, mark2, num, comm2, **a):
+        "handle:Close"
+        m = self.first_page()
+        while m:
+            m.release()
             m = self.first_page()
-            while m:
-                m.release()
-                m = self.first_page()
-            self.call("doc:del-view", self.pageview)
+        self.call("doc:del-view", self.pageview)
+        m = self.first_line()
+        while m:
+            m.release()
             m = self.first_line()
-            while m:
-                m.release()
-                m = self.first_line()
-            self.call("doc:del-view", self.attrview)
+        self.call("doc:del-view", self.attrview)
 
-        return None
+        return 1
 
 class MarkdownPane(edlib.Pane):
     def __init__(self, focus):
