@@ -77,6 +77,7 @@ typedef struct {
 	struct pane	*pane;
 	struct python_command handle;
 	struct map	*map;
+	int		map_init;
 } Pane;
 static PyTypeObject PaneType;
 
@@ -91,6 +92,7 @@ typedef struct {
 	struct pane	*pane;
 	struct python_command handle;
 	struct map	*map;
+	int		map_init;
 	struct doc	doc;
 } Doc;
 static PyTypeObject DocType;
@@ -341,14 +343,80 @@ REDEF_CMD(python_doc_call)
 	return rv;
 }
 
+static void do_map_init(Pane *self safe)
+{
+	int i;
+	PyObject *l = PyObject_Dir((PyObject*)self);
+	int n = PyList_Size(l);
+
+	if (!self->map)
+		return;
+	for (i = 0; i < n ; i++) {
+		PyObject *e = PyList_GetItem(l, i);
+		PyObject *m = PyObject_GetAttr((PyObject*)self, e);
+
+		if (m && PyMethod_Check(m)) {
+			PyObject *doc = PyObject_GetAttrString(m, "__doc__");
+			if (doc && doc != Py_None) {
+				PyObject *tofree = NULL;
+				char *docs = python_as_string(doc, &tofree);
+				if (docs &&
+				    strncmp(docs, "handle:", 7) == 0) {
+					struct python_command *comm =
+						malloc(sizeof(*comm));
+					comm->c = python_call;
+					comm->c.free = python_free_command;
+					command_get(&comm->c);
+					Py_INCREF(m);
+					comm->callable = m;
+					key_add(self->map, docs+7, &comm->c);
+					command_put(&comm->c);
+				}
+				if (docs &&
+				    strncmp(docs, "handle-range", 12) == 0 &&
+				    docs[12]) {
+					char sep = docs[12];
+					char *s1 = strchr(docs+13, sep);
+					char *s2 = s1 ? strchr(s1+1, sep) : NULL;
+					if (s2) {
+						char *a = strndup(docs+13, s1-(docs+13));
+						char *b = strndup(s1+1, s2-(s1+1));
+
+						struct python_command *comm =
+							malloc(sizeof(*comm));
+						comm->c = python_call;
+						comm->c.free = python_free_command;
+						command_get(&comm->c);
+						Py_INCREF(m);
+						comm->callable = m;
+						key_add_range(self->map, a, b,
+							      &comm->c);
+						free(a); free(b);
+						command_put(&comm->c);
+					}
+				}
+				Py_XDECREF(tofree);
+			}
+			Py_XDECREF(doc);
+		}
+		Py_XDECREF(m);
+	}
+	Py_XDECREF(l);
+	self->map_init = 1;
+}
+
 REDEF_CMD(python_pane_call)
 {
 	Pane *home = container_of(ci->comm, Pane, handle.c);
 	int ret = 0;
 
-	if (home && home->map)
+	if (!home)
+		return 0;
+	if (home->map) {
+		if (!home->map_init)
+			do_map_init(home);
 		ret = key_lookup(home->map, ci);
-	else if (home && home->handle.callable)
+	} else if (home->handle.callable)
 		ret = python_call_func(ci);
 	return ret;
 }
@@ -425,67 +493,12 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds, Pane **p
 		self->handle.callable = py_handler;
 		self->map = NULL;
 	} else {
-		int i;
-		//PyTypeObject *type = self->ob_type;
-		PyObject *l = PyObject_Dir((PyObject*)/*type*/self);
-		int n = PyList_Size(l);
 
 		self->map = key_alloc();
 		self->handle.c = python_pane_call;
 		self->handle.c.free = python_pane_free;
 		command_get(&self->handle.c);
 		self->handle.callable = NULL;
-
-		for (i = 0; i < n ; i++) {
-			PyObject *e = PyList_GetItem(l, i);
-			PyObject *m = PyObject_GetAttr((PyObject*)/*type*/self, e);
-			if (m && PyMethod_Check(m)) {
-				PyObject *doc = PyObject_GetAttrString(m, "__doc__");
-				if (doc && doc != Py_None) {
-					PyObject *tofree = NULL;
-					char *docs = python_as_string(doc, &tofree);
-					if (docs &&
-					    strncmp(docs, "handle:", 7) == 0) {
-						struct python_command *comm =
-							malloc(sizeof(*comm));
-						comm->c = python_call;
-						comm->c.free = python_free_command;
-						comm->c.refcnt = 1;
-						Py_INCREF(m);
-						comm->callable = m;
-						key_add(self->map, docs+7, &comm->c);
-						command_put(&comm->c);
-					}
-					if (docs &&
-					    strncmp(docs, "handle-range", 12) == 0 &&
-					    docs[12]) {
-						char sep = docs[12];
-						char *s1 = strchr(docs+13, sep);
-						char *s2 = s1 ? strchr(s1+1, sep) : NULL;
-						if (s2) {
-							char *a = strndup(docs+13, s1-(docs+13));
-							char *b = strndup(s1+1, s2-(s1+1));
-
-							struct python_command *comm =
-								malloc(sizeof(*comm));
-							comm->c = python_call;
-							comm->c.free = python_free_command;
-							comm->c.refcnt = 1;
-							Py_INCREF(m);
-							comm->callable = m;
-							key_add_range(self->map, a, b,
-								      &comm->c);
-							free(a); free(b);
-							command_put(&comm->c);
-						}
-					}
-					Py_XDECREF(tofree);
-				}
-				Py_XDECREF(doc);
-			}
-			Py_XDECREF(m);
-		}
-		Py_XDECREF(l);
 	}
 	return 1;
 }
