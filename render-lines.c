@@ -664,7 +664,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				wrap ? mwidth : 0,
 				offset - (start - line_start), CX, scale);
 		start = line;
-		if (ret)
+		if (ret || !ch)
 			continue;
 		if (ch == '<') {
 			line += 1;
