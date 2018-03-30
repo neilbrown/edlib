@@ -1491,7 +1491,7 @@ class notmuch_query_view(edlib.Pane):
 
 class notmuch_message_view(edlib.Pane):
     def __init__(self, focus):
-        edlib.Pane.__init__(self, focus, self.handle)
+        edlib.Pane.__init__(self, focus)
         # Need to set default visibility on each part.
         # step forward with doc:step-part and for any 'odd' part,
         # which is a spacer, we look at email:path and email:content-type.
@@ -1522,50 +1522,66 @@ class notmuch_message_view(edlib.Pane):
             if not vis:
                 focus.call("doc:set-attr", "email:visible", m, 0)
 
-    def handle(self, key, focus, mark, num, str, str2, comm2, **a):
-        if key == "Close":
-            self.call("notmuch-close-message")
+    def handle_close(self, key, focus, mark, num, str, str2, comm2, **a):
+        "handle:Close"
+        self.call("notmuch-close-message")
+        return 1
+
+    def handle_clone(self, key, focus, mark, num, str, str2, comm2, **a):
+        "handle:Clone"
+        p = notmuch_message_view(focus)
+        self.clone_children(focus.focus)
+        return 1
+
+    def handle_replace(self, key, focus, mark, num, str, str2, comm2, **a):
+        "handle:Replace"
+        return 1
+
+    def handle_slash(self, key, focus, mark, num, str, str2, comm2, **a):
+        "handle:Chr-/"
+        s = focus.call("doc:get-attr", mark, "email:visible", ret='str')
+        if not s:
             return 1
-        if key == "Clone":
-            p = notmuch_message_view(focus)
-            self.clone_children(focus.focus)
-            return 1
-        if key == "Replace":
-            return 1
-        if key == "Chr-/":
-            s = focus.call("doc:get-attr", mark, "email:visible", ret='str')
-            if not s:
-                return 1
-            if s == "0":
-                focus.call("doc:set-attr", mark, "email:visible", "1")
-            else:
-                focus.call("doc:set-attr", mark, "email:visible", "0")
-            return 1
-        if key == "Chr- ":
-            if focus.call("Next", 1, mark) == 2:
-                focus.call("Chr-n", mark)
-            return 1
-        if key == "Backspace":
-            if focus.call("Prior", 1, mark) == 2:
-                focus.call("Chr-p", mark)
-            return 1
-        if key == "Return":
-            focus.call("doc:email:select", mark);
-            return 1
-        if key == "Mouse-Activate":
-            focus.call("doc:email:select", mark);
-            return 1
-        if key == "map-attr" and str == "render:rfc822header":
+        if s == "0":
+            focus.call("doc:set-attr", mark, "email:visible", "1")
+        else:
+            focus.call("doc:set-attr", mark, "email:visible", "0")
+        return 1
+
+    def handle_space(self, key, focus, mark, num, str, str2, comm2, **a):
+        "handle:Chr- "
+        if focus.call("Next", 1, mark) == 2:
+            focus.call("Chr-n", mark)
+        return 1
+
+    def handle_backspace(self, key, focus, mark, num, str, str2, comm2, **a):
+        "handle:Backspace"
+        if focus.call("Prior", 1, mark) == 2:
+            focus.call("Chr-p", mark)
+        return 1
+
+    def handle_return(self, key, focus, mark, num, str, str2, comm2, **a):
+        "handle:Return"
+        focus.call("doc:email:select", mark);
+        return 1
+
+    def handle_activate(self, key, focus, mark, num, str, str2, comm2, **a):
+        "handle:Mouse-Activate"
+        focus.call("doc:email:select", mark);
+        return 1
+
+    def handle_map_attr(self, key, focus, mark, num, str, str2, comm2, **a):
+        if str == "render:rfc822header":
             comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed", 21)
             comm2("attr:callback", focus, 10000, mark, "wrap-tail: ,wrap-head:    ", 19)
             return 1
-        if key == "map-attr" and str == "render:rfc822header-wrap":
+        if str == "render:rfc822header-wrap":
             comm2("attr:callback", focus, int(str2), mark, "wrap", 20)
             return 1
-        if key == "map-attr" and str == "render:rfc822header-subject":
+        if str == "render:rfc822header-subject":
             comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 20)
             return 1
-        if key == "map-attr" and str == "render:rfc822header-to":
+        if str == "render:rfc822header-to":
             comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 20)
             return 1
 
