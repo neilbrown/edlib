@@ -20,7 +20,7 @@ class EdDisplay(gtk.Window):
     def __init__(self, focus):
         events_activate(focus)
         gtk.Window.__init__(self)
-        self.pane = edlib.Pane(focus, self.handle)
+        self.pane = edlib.Pane(focus, self)
         self.panes = {}
         self.set_title("EDLIB")
         self.connect('destroy', self.close_win)
@@ -31,187 +31,193 @@ class EdDisplay(gtk.Window):
         self.pane.h = self.lineheight * 24
         self.show()
 
-    def handle(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+    def handle_postorder(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+        "handle:Refresh:postorder"
+        self.text.queue_draw()
+        return 1
 
-        if key == "Refresh:postorder":
-            self.text.queue_draw()
-            return 1
+    def handle_fullscreen(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+        "handle:Display:fullscreen"
+        if num > 0:
+            self.fullscreen()
+        else:
+            self.unfullscreen()
+        return 1
 
-        if key == "Display:fullscreen":
-            if num > 0:
-                self.fullscreen()
-            else:
-                self.unfullscreen()
-            return 1
+    def handle_new(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+        "handle:Display:new"
+        newdisp = EdDisplay(home.parent)
+        home.clone_children(newdisp.pane);
+        return 1
 
-        if key == "Display:new":
-            newdisp = EdDisplay(home.parent)
-            home.clone_children(newdisp.pane);
-            return 1
+    def handle_close(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+        "handle:Close"
+        self.pane.close()
+        # FIXME close the window??
+        return True
 
-        if key == "Close":
-            self.pane.close()
-            # FIXME close the window??
-            return True
-
-        if key == "pane-clear":
-            attr = str2
-            if attr is None:
-                attr = str
-            if attr is not None:
-                fg, bg = self.get_colours(attr)
-            else:
-                fg, bg = self.get_colours("bg:white")
-            pm = self.get_pixmap(focus)
-            self.do_clear(pm, bg)
-            self.pane.damaged(edlib.DAMAGED_POSTORDER)
-            return True
-
-        if key == "text-size":
-            attr=""
-            if str2 is not None:
-                attr = str2
-            if num2 is not None:
-                scale = num2 * 10 / self.charwidth
-            else:
-                scale = 1000
-            fd = self.extract_font(attr, scale)
-            layout = self.text.create_pango_layout(str)
-            layout.set_font_description(fd)
-            ctx = layout.get_context()
-            metric = ctx.get_metrics(fd)
-            ink,(x,y,width,height) = layout.get_pixel_extents()
-            ascent = metric.get_ascent() / pango.SCALE
-            if num >= 0:
-                if width <= num:
-                    max_bytes = len(str.encode("utf-8"))
-                else:
-                    max_chars,extra = layout.xy_to_index(pango.SCALE*num,
-                                                         metric.get_ascent())
-                    max_bytes = len(str[:max_chars].encode("utf-8"))
-            else:
-                max_bytes = 0
-            return comm2("callback:size", focus, max_bytes, ascent, (width, height))
-
-        if key == "Draw:text":
-            self.pane.damaged(edlib.DAMAGED_POSTORDER)
-            if not self.gc or not self.bg:
-                fg, bg = self.get_colours("fg:blue,bg:white")
-                t = self.text
-                if not self.gc:
-                    self.gc = t.window.new_gc()
-                    self.gc.set_foreground(fg)
-                if not self.bg:
-                    self.bg = t.window.new_gc()
-                    self.bg.set_foreground(bg)
-
-            (x,y) = xy
-            attr=""
-            if str2 is not None:
-                attr = str2
-            if num2 is not None:
-                scale = num2 * 10 / self.charwidth
-            else:
-                scale = 1000
-            fd = self.extract_font(attr, scale)
-            layout = self.text.create_pango_layout(str)
-            layout.set_font_description(fd)
-            ctx = layout.get_context()
+    def handle_clear(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+        "handle:pane-clear"
+        attr = str2
+        if attr is None:
+            attr = str
+        if attr is not None:
             fg, bg = self.get_colours(attr)
-            pm = self.get_pixmap(focus)
-            metric = ctx.get_metrics(fd)
-            ascent = metric.get_ascent() / pango.SCALE
-            ink,(lx,ly,width,height) = layout.get_pixel_extents()
-            if bg:
+        else:
+            fg, bg = self.get_colours("bg:white")
+        pm = self.get_pixmap(focus)
+        self.do_clear(pm, bg)
+        self.pane.damaged(edlib.DAMAGED_POSTORDER)
+        return True
+
+    def handle_text_size(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+        "handle:text-size"
+        attr=""
+        if str2 is not None:
+            attr = str2
+        if num2 is not None:
+            scale = num2 * 10 / self.charwidth
+        else:
+            scale = 1000
+        fd = self.extract_font(attr, scale)
+        layout = self.text.create_pango_layout(str)
+        layout.set_font_description(fd)
+        ctx = layout.get_context()
+        metric = ctx.get_metrics(fd)
+        ink,(x,y,width,height) = layout.get_pixel_extents()
+        ascent = metric.get_ascent() / pango.SCALE
+        if num >= 0:
+            if width <= num:
+                max_bytes = len(str.encode("utf-8"))
+            else:
+                max_chars,extra = layout.xy_to_index(pango.SCALE*num,
+                                                     metric.get_ascent())
+                max_bytes = len(str[:max_chars].encode("utf-8"))
+        else:
+            max_bytes = 0
+        return comm2("callback:size", focus, max_bytes, ascent, (width, height))
+
+    def handle_draw_text(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+        "handle:Draw:text"
+        self.pane.damaged(edlib.DAMAGED_POSTORDER)
+        if not self.gc or not self.bg:
+            fg, bg = self.get_colours("fg:blue,bg:white")
+            t = self.text
+            if not self.gc:
+                self.gc = t.window.new_gc()
+                self.gc.set_foreground(fg)
+            if not self.bg:
+                self.bg = t.window.new_gc()
                 self.bg.set_foreground(bg)
-                pm.draw_rectangle(self.bg, True, x+lx, y-ascent+ly, width, height)
-            pm.draw_layout(self.gc, x, y-ascent, layout, fg, bg)
-            if num >= 0:
-                cx,cy,cw,ch = layout.index_to_pos(num)
-                if cw <= 0:
-                    cw = metric.get_approximate_char_width()
-                cx /= pango.SCALE
-                cy /= pango.SCALE
-                cw /= pango.SCALE
-                ch /= pango.SCALE
-                pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
-                                  cw-1, ch-1);
-                extra = self.in_focus
-                while focus.parent and focus.parent.parent and focus.parent != self.pane:
-                    if focus.parent.focus != focus:
-                        extra = False
-                    focus = focus.parent
-                if extra:
-                    if fg:
-                        self.gc.set_foreground(fg)
-                    pm.draw_rectangle(self.gc, True, x+cx, y-ascent+cy,
-                                      cw, ch);
-                    if num < len(str):
-                        l2 = pango.Layout(ctx)
-                        l2.set_font_description(fd)
-                        l2.set_text(str[num])
-                        fg, bg = self.get_colours(attr+",inverse")
-                        pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, fg, bg)
-                    else:
-                        pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
-                                          cw-1, ch-1)
-            return True
 
-        if key == "Draw:image":
-            self.pane.damaged(edlib.DAMAGED_POSTORDER)
-            # 'str' is the file name of an image
-            # 'num' is '1' if image should be stretched to fill pane
-            # if 'num is '0', then 'num2' is 'or' of
-            #   0,1,2 for left/middle/right in x direction
-            #   0,4,8 for top/middle/bottom in y direction
-            # only one of these can be used as image will fill pane in other direction.
-            stretch = num
-            pos = num2
-            w, h = focus.w, focus.h
-            x, y = 0, 0
-            try:
-                pb = gtk.gdk.pixbuf_new_from_file(str)
-            except:
-                # create a red error image
-                pb = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
-                pb.fill(0xff000000)
-            if not stretch:
-                if pb.get_width() * h > pb.get_height() * w:
-                    # image is wider than space, reduce height
-                    h2 = pb.get_height() * w / pb.get_width()
-                    if pos & 12 == 4:
-                        y = (h - h2) / 2
-                    if pos & 12 == 8:
-                        y = h - h2
-                    h = h2
-                else:
-                    # image is too tall, reduce width
-                    w2 = pb.get_width() * h / pb.get_height()
-                    if pos & 3 == 1:
-                        x = (w - w2) / 2
-                    if pos & 3 == 2:
-                        x = w - w2
-                    w = w2
-            scale = pb.scale_simple(w, h, gtk.gdk.INTERP_HYPER)
-            # I'm not sure I'm completely happy with this, but when
-            # not stretching and when z == 0, draw on a parent pane unless
-            # a pixmap has already been allocated.  This allows
-            # a temp pane to be created to draw an image, then it can
-            # be discarded and the image remains
-            while focus.z == 0 and not stretch and focus not in self.panes and focus.parent:
-                x += focus.x
-                y += focus.y
+        (x,y) = xy
+        attr=""
+        if str2 is not None:
+            attr = str2
+        if num2 is not None:
+            scale = num2 * 10 / self.charwidth
+        else:
+            scale = 1000
+        fd = self.extract_font(attr, scale)
+        layout = self.text.create_pango_layout(str)
+        layout.set_font_description(fd)
+        ctx = layout.get_context()
+        fg, bg = self.get_colours(attr)
+        pm = self.get_pixmap(focus)
+        metric = ctx.get_metrics(fd)
+        ascent = metric.get_ascent() / pango.SCALE
+        ink,(lx,ly,width,height) = layout.get_pixel_extents()
+        if bg:
+            self.bg.set_foreground(bg)
+            pm.draw_rectangle(self.bg, True, x+lx, y-ascent+ly, width, height)
+        pm.draw_layout(self.gc, x, y-ascent, layout, fg, bg)
+        if num >= 0:
+            cx,cy,cw,ch = layout.index_to_pos(num)
+            if cw <= 0:
+                cw = metric.get_approximate_char_width()
+            cx /= pango.SCALE
+            cy /= pango.SCALE
+            cw /= pango.SCALE
+            ch /= pango.SCALE
+            pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
+                              cw-1, ch-1);
+            extra = self.in_focus
+            while focus.parent and focus.parent.parent and focus.parent != self.pane:
+                if focus.parent.focus != focus:
+                    extra = False
                 focus = focus.parent
-            pm = self.get_pixmap(focus)
-            pm.draw_pixbuf(self.gc, scale, 0, 0, x, y)
-            return True
+            if extra:
+                if fg:
+                    self.gc.set_foreground(fg)
+                pm.draw_rectangle(self.gc, True, x+cx, y-ascent+cy,
+                                  cw, ch);
+                if num < len(str):
+                    l2 = pango.Layout(ctx)
+                    l2.set_font_description(fd)
+                    l2.set_text(str[num])
+                    fg, bg = self.get_colours(attr+",inverse")
+                    pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, fg, bg)
+                else:
+                    pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
+                                      cw-1, ch-1)
+        return True
 
-        if key == "Notify:Close":
-            if focus and focus in self.panes:
-                del self.panes[focus]
-            return True
+    def handle_image(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+        "handle:Draw:image"
+        self.pane.damaged(edlib.DAMAGED_POSTORDER)
+        # 'str' is the file name of an image
+        # 'num' is '1' if image should be stretched to fill pane
+        # if 'num is '0', then 'num2' is 'or' of
+        #   0,1,2 for left/middle/right in x direction
+        #   0,4,8 for top/middle/bottom in y direction
+        # only one of these can be used as image will fill pane in other direction.
+        stretch = num
+        pos = num2
+        w, h = focus.w, focus.h
+        x, y = 0, 0
+        try:
+            pb = gtk.gdk.pixbuf_new_from_file(str)
+        except:
+            # create a red error image
+            pb = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
+            pb.fill(0xff000000)
+        if not stretch:
+            if pb.get_width() * h > pb.get_height() * w:
+                # image is wider than space, reduce height
+                h2 = pb.get_height() * w / pb.get_width()
+                if pos & 12 == 4:
+                    y = (h - h2) / 2
+                if pos & 12 == 8:
+                    y = h - h2
+                h = h2
+            else:
+                # image is too tall, reduce width
+                w2 = pb.get_width() * h / pb.get_height()
+                if pos & 3 == 1:
+                    x = (w - w2) / 2
+                if pos & 3 == 2:
+                    x = w - w2
+                w = w2
+        scale = pb.scale_simple(w, h, gtk.gdk.INTERP_HYPER)
+        # I'm not sure I'm completely happy with this, but when
+        # not stretching and when z == 0, draw on a parent pane unless
+        # a pixmap has already been allocated.  This allows
+        # a temp pane to be created to draw an image, then it can
+        # be discarded and the image remains
+        while focus.z == 0 and not stretch and focus not in self.panes and focus.parent:
+            x += focus.x
+            y += focus.y
+            focus = focus.parent
+        pm = self.get_pixmap(focus)
+        pm.draw_pixbuf(self.gc, scale, 0, 0, x, y)
+        return True
 
-        return None
+    def handle_notify_close(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+        "handle:Notify:Close"
+        if focus and focus in self.panes:
+            del self.panes[focus]
+        return True
+
 
     styles=["oblique","italic","bold","small-caps"]
 

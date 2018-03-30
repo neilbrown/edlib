@@ -78,6 +78,7 @@ typedef struct {
 	struct python_command handle;
 	struct map	*map;
 	int		map_init;
+	PyObject	*refer;
 } Pane;
 static PyTypeObject PaneType;
 
@@ -93,6 +94,7 @@ typedef struct {
 	struct python_command handle;
 	struct map	*map;
 	int		map_init;
+	PyObject	*refer;
 	struct doc	doc;
 } Doc;
 static PyTypeObject DocType;
@@ -346,14 +348,15 @@ REDEF_CMD(python_doc_call)
 static void do_map_init(Pane *self safe)
 {
 	int i;
-	PyObject *l = PyObject_Dir((PyObject*)self);
+	PyObject *refer = self->refer ?: (PyObject*)self;
+	PyObject *l = PyObject_Dir(refer);
 	int n = PyList_Size(l);
 
 	if (!self->map)
 		return;
 	for (i = 0; i < n ; i++) {
 		PyObject *e = PyList_GetItem(l, i);
-		PyObject *m = PyObject_GetAttr((PyObject*)self, e);
+		PyObject *m = PyObject_GetAttr(refer, e);
 
 		if (m && PyMethod_Check(m)) {
 			PyObject *doc = PyObject_GetAttrString(m, "__doc__");
@@ -435,17 +438,13 @@ static void do_map_init(Pane *self safe)
 REDEF_CMD(python_pane_call)
 {
 	Pane *home = container_of(ci->comm, Pane, handle.c);
-	int ret = 0;
 
-	if (!home)
+	if (!home || !home->map)
 		return 0;
-	if (home->map) {
-		if (!home->map_init)
-			do_map_init(home);
-		ret = key_lookup(home->map, ci);
-	} else if (home->handle.callable)
-		ret = python_call_func(ci);
-	return ret;
+
+	if (!home->map_init)
+		do_map_init(home);
+	return key_lookup(home->map, ci);
 }
 
 static Pane *pane_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
@@ -476,9 +475,10 @@ static void python_pane_free(struct command *c safe)
 	Pane *p = container_of(c, Pane, handle.c);
 	/* pane has been closed */
 	p->pane = NULL;
-	if (p->handle.callable)
-		Py_DECREF(p->handle.callable);
+	Py_XDECREF(p->handle.callable);
 	p->handle.callable = NULL;
+	Py_XDECREF(p->refer);
+	p->refer = NULL;
 	if (p->map)
 		key_free(p->map);
 	p->map = NULL;
@@ -507,26 +507,16 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds, Pane **p
 					  zp);
 	if (ret <= 0)
 		return -1;
-	if (py_handler && !PyCallable_Check(py_handler)) {
-		PyErr_SetString(PyExc_TypeError, "'handler' is not callable");
-		return -1;
-	}
-	*parentp = parent;
-	if (py_handler) {
-		self->handle.c = python_pane_call;
-		self->handle.c.free = python_pane_free;
-		command_get(&self->handle.c);
-		Py_INCREF(py_handler);
-		self->handle.callable = py_handler;
-		self->map = NULL;
-	} else {
+	self->refer = py_handler;
 
-		self->map = key_alloc();
-		self->handle.c = python_pane_call;
-		self->handle.c.free = python_pane_free;
-		command_get(&self->handle.c);
-		self->handle.callable = NULL;
-	}
+	*parentp = parent;
+
+	self->map = key_alloc();
+	self->handle.c = python_pane_call;
+	self->handle.c.free = python_pane_free;
+	command_get(&self->handle.c);
+	self->handle.callable = NULL;
+
 	return 1;
 }
 
