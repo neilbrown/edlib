@@ -1326,11 +1326,11 @@ class notmuch_query_view(edlib.Pane):
             start = num
             if start:
                 if self.whole_thread:
-                    self.mark.to_mark(self.thread_start)
+                    mark.to_mark(self.thread_start)
                     return 1
                 if self.thread_matched and self.parent.call("doc:step", 0, mark) == edlib.WEOF:
                     # first thread is open
-                    self.mark.to_mark(self.thread_matched)
+                    mark.to_mark(self.thread_matched)
                     return 1;
             # otherwise fall-through to real start or end
             return 0
