@@ -1299,7 +1299,7 @@ class notmuch_list(edlib.Doc):
 
 class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
-        edlib.Pane.__init__(self, focus, self.handle)
+        edlib.Pane.__init__(self, focus)
         self.selected = None
         self.whole_thread = 0
         self.seen_threads = {}
@@ -1312,174 +1312,182 @@ class notmuch_query_view(edlib.Pane):
         self.thread_matched = None
         self.call("Request:Notify:doc:Replace")
 
-    def handle(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
-        if key == "Clone":
-            p = notmuch_query_view(focus)
-            self.clone_children(focus.focus)
-            return 1
+    def handle_clone(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+        "handle:Clone"
+        p = notmuch_query_view(focus)
+        self.clone_children(focus.focus)
+        return 1
 
-        if key == "Notify:doc:Replace":
-            self.damaged(edlib.DAMAGED_CONTENT)
-            return 1
+    def handle_notify_replace(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+        "handle:Notify:doc:Replace"
+        self.damaged(edlib.DAMAGED_CONTENT)
+        return 1
 
-        if key == "doc:set-ref":
-            start = num
-            if start:
-                if self.whole_thread:
-                    mark.to_mark(self.thread_start)
-                    return 1
-                if self.thread_matched and self.parent.call("doc:step", 0, mark) == edlib.WEOF:
-                    # first thread is open
-                    mark.to_mark(self.thread_matched)
-                    return 1;
-            # otherwise fall-through to real start or end
-            return 0
-
-        if key == "doc:step":
-            forward = num
-            move = num2
+    def handle_set_ref(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+        "handle:doc:set-ref"
+        start = num
+        if start:
             if self.whole_thread:
-                # move one message, but stop at thread_start/thread_end
-                if forward:
-                    ret = self.parent.call("doc:step", focus, forward, move, mark)
-                    if move and mark >= self.thread_end:
-                        # If at end of thread, move to end of document
-                        self.parent.call("doc:set-ref", focus, mark, 0)
+                mark.to_mark(self.thread_start)
+                return 1
+            if self.thread_matched and self.parent.call("doc:step", 0, mark) == edlib.WEOF:
+                # first thread is open
+                mark.to_mark(self.thread_matched)
+                return 1;
+        # otherwise fall-through to real start or end
+        return 0
+
+    def handle_step(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+        "handle:doc:step"
+        forward = num
+        move = num2
+        if self.whole_thread:
+            # move one message, but stop at thread_start/thread_end
+            if forward:
+                ret = self.parent.call("doc:step", focus, forward, move, mark)
+                if move and mark >= self.thread_end:
+                    # If at end of thread, move to end of document
+                    self.parent.call("doc:set-ref", focus, mark, 0)
+            else:
+                if mark <= self.thread_start:
+                    # at start already
+                    ret = edlib.WEOF
                 else:
-                    if mark <= self.thread_start:
-                        # at start already
-                        ret = edlib.WEOF
-                    else:
-                        ret = self.parent.call("doc:step", focus, forward, move, mark)
+                    ret = self.parent.call("doc:step", focus, forward, move, mark)
+            return ret
+        else:
+            # if between thread_start/thread_end, move one message,
+            # else move one thread
+            if not self.thread_start:
+                in_thread = False
+            elif forward and mark >= self.thread_end:
+                in_thread = False
+            elif not forward and mark <= self.thread_matched:
+                in_thread = False
+            elif forward and mark < self.thread_matched:
+                in_thread = False
+            elif not forward and mark > self.thread_end:
+                in_thread = False
+            else:
+                in_thread = True
+            if in_thread:
+                # move one matched message
+                ret = self.parent.call("doc:step-matched", focus, mark, forward, move)
+                # If moving forward, we might be in the next thread,
+                # make sure we didn't go further than thread_end
+                if forward and move and mark.seq > self.thread_end.seq:
+                    mark.to_mark(self.thread_end)
                 return ret
             else:
-                # if between thread_start/thread_end, move one message,
-                # else move one thread
-                if not self.thread_start:
-                    in_thread = False
-                elif forward and mark >= self.thread_end:
-                    in_thread = False
-                elif not forward and mark <= self.thread_matched:
-                    in_thread = False
-                elif forward and mark < self.thread_matched:
-                    in_thread = False
-                elif not forward and mark > self.thread_end:
-                    in_thread = False
+                # move one thread
+                if forward:
+                    ret = self.parent.call("doc:step-thread", focus, mark, forward, move)
+                    if self.thread_start and mark == self.thread_start:
+                        mark.to_mark(self.thread_matched)
                 else:
-                    in_thread = True
-                if in_thread:
-                    # move one matched message
-                    ret = self.parent.call("doc:step-matched", focus, mark, forward, move)
-                    # If moving forward, we might be in the next thread,
-                    # make sure we didn't go further than thread_end
-                    if forward and move and mark.seq > self.thread_end.seq:
-                        mark.to_mark(self.thread_end)
-                    return ret
-                else:
-                    # move one thread
-                    if forward:
-                        ret = self.parent.call("doc:step-thread", focus, mark, forward, move)
-                        if self.thread_start and mark == self.thread_start:
-                            mark.to_mark(self.thread_matched)
-                    else:
-                        ret = self.parent.call("doc:step", focus, mark, forward, move)
-                        if move and ret != edlib.WEOF:
-                            self.parent.call("doc:step-thread", focus, mark, forward, move)
-                    return ret
+                    ret = self.parent.call("doc:step", focus, mark, forward, move)
+                    if move and ret != edlib.WEOF:
+                        self.parent.call("doc:step-thread", focus, mark, forward, move)
+                return ret
 
-        if key == "doc:get-attr":
-            if mark is None:
-                mark = self.call("doc:point", ret='mark')
-            attr = str
-            if attr[:3] == "TM-":
-                if self.thread_start and mark < self.thread_end and mark >= self.thread_start:
-                    return self.parent.call("doc:get-attr", focus, num, num2, mark, "M-" + str[3:], comm2)
-                else:
-                    return self.parent.call("doc:get-attr", focus, num, num2, mark, "T-" + str[3:], comm2)
-            return 0
-
-        if key == 'Chr-Z':
-            if not self.thread_start:
-                return 1
-            if self.whole_thread:
-                # all non-match messages in this thread are about to
-                # disappear, we need to clip them.
-                mk = self.thread_start.dup()
-                mt = self.thread_matched.dup()
-                while mk.seq < self.thread_end.seq:
-                    if mk.seq < mt.seq:
-                        focus.call("Notify:clip", mk, mt)
-                    mk.to_mark(mt)
-                    self.parent.call("doc:step-matched", mt, 1, 1)
-                    self.parent.call("doc:step", mk, 1, 1)
+    def handle_get_attr(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+        "handle:doc:get-attr"
+        if mark is None:
+            mark = self.call("doc:point", ret='mark')
+        attr = str
+        if attr[:3] == "TM-":
+            if self.thread_start and mark < self.thread_end and mark >= self.thread_start:
+                return self.parent.call("doc:get-attr", focus, num, num2, mark, "M-" + str[3:], comm2)
             else:
-                # everything before the read, and after the thread disappears
-                m = edlib.Mark(self)
-                focus.call("Notify:clip", m, self.thread_start)
-                self.call("doc:set-ref", m, 0)
-                focus.call("Notify:clip", self.thread_end, m)
-            self.whole_thread = 1 - self.whole_thread
-            # notify that everything is changed, don't worry about details.
-            focus.call("Notify:change")
+                return self.parent.call("doc:get-attr", focus, num, num2, mark, "T-" + str[3:], comm2)
+        return 0
+
+    def handle_Z(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+        "handle:Chr-Z"
+        if not self.thread_start:
             return 1
+        if self.whole_thread:
+            # all non-match messages in this thread are about to
+            # disappear, we need to clip them.
+            mk = self.thread_start.dup()
+            mt = self.thread_matched.dup()
+            while mk.seq < self.thread_end.seq:
+                if mk.seq < mt.seq:
+                    focus.call("Notify:clip", mk, mt)
+                mk.to_mark(mt)
+                self.parent.call("doc:step-matched", mt, 1, 1)
+                self.parent.call("doc:step", mk, 1, 1)
+        else:
+            # everything before the read, and after the thread disappears
+            m = edlib.Mark(self)
+            focus.call("Notify:clip", m, self.thread_start)
+            self.call("doc:set-ref", m, 0)
+            focus.call("Notify:clip", self.thread_end, m)
+        self.whole_thread = 1 - self.whole_thread
+        # notify that everything is changed, don't worry about details.
+        focus.call("Notify:change")
+        return 1
 
-        if key == "notmuch:select":
-            s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
-            if s != self.selected:
-                if self.selected:
-                    # old thread is disappearing.
-                    focus.call("Notify:clip", self.thread_start, self.thread_end)
-                    focus.call("Notify:change", self.thread_start, self.thread_end)
-                    self.selected = None
-                    self.thread_start = None
-                    self.thread_end = None
-                    self.thread_matched = None
+    def handle_select(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+        "handle:notmuch:select"
+        s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
+        if s != self.selected:
+            if self.selected:
+                # old thread is disappearing.
+                focus.call("Notify:clip", self.thread_start, self.thread_end)
+                focus.call("Notify:change", self.thread_start, self.thread_end)
+                self.selected = None
+                self.thread_start = None
+                self.thread_end = None
+                self.thread_matched = None
 
-                if self.call("doc:notmuch:load-thread", mark) == 1:
-                    self.selected = s
-                    if mark:
-                        self.thread_start = mark.dup()
-                    else:
-                        self.thread_start = focus.call("doc:dup-point", 0, -2, ret='mark')
-                    self.parent.call("doc:step-thread", 0, 1, self.thread_start)
-                    self.thread_end = self.thread_start.dup()
-                    self.parent.call("doc:step-thread", 1, 1, self.thread_end)
-                    self.thread_matched = self.thread_start.dup()
-                    if self.parent.call("doc:get-attr", self.thread_matched, "matched", ret="str") != "True":
-                        self.parent.call("doc:step-matched", 1, 1, self.thread_matched)
-                    focus.call("Notify:change", self.thread_start, self.thread_end)
-            s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
-            if s2 and num >= 0:
-                focus.call("notmuch:select-message", s2, s, num)
-            return 1
+            if self.call("doc:notmuch:load-thread", mark) == 1:
+                self.selected = s
+                if mark:
+                    self.thread_start = mark.dup()
+                else:
+                    self.thread_start = focus.call("doc:dup-point", 0, -2, ret='mark')
+                self.parent.call("doc:step-thread", 0, 1, self.thread_start)
+                self.thread_end = self.thread_start.dup()
+                self.parent.call("doc:step-thread", 1, 1, self.thread_end)
+                self.thread_matched = self.thread_start.dup()
+                if self.parent.call("doc:get-attr", self.thread_matched, "matched", ret="str") != "True":
+                    self.parent.call("doc:step-matched", 1, 1, self.thread_matched)
+                focus.call("Notify:change", self.thread_start, self.thread_end)
+        s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
+        if s2 and num >= 0:
+            focus.call("notmuch:select-message", s2, s, num)
+        return 1
 
-        if key == "render:reposition":
-            # some messages have been displayed, from mark to mark2
-            # collect threadids and message ids
-            if not mark or not mark2:
-                return 0
-            m = mark.dup()
+    def handle_reposition(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+        "handle:render:reposition"
+        # some messages have been displayed, from mark to mark2
+        # collect threadids and message ids
+        if not mark or not mark2:
+            return 0
+        m = mark.dup()
 
-            while m.seq < mark2.seq:
-                i1 = focus.call("doc:get-attr", "thread-id", m, ret='str')
-                i2 = focus.call("doc:get-attr", "message-id", m, ret='str')
-                if i1 and not i2 and i1 not in self.seen_threads:
-                    self.seen_threads[i1] = True
-                if i1 and i2:
-                    if i1 in self.seen_threads:
-                        del self.seen_threads[i1]
-                    if  i2 not in self.seen_msgs:
-                        self.seen_msgs[i2] = True
-                if edlib.WEOF == focus.call("doc:step", 1, 1, m):
-                    break
+        while m.seq < mark2.seq:
+            i1 = focus.call("doc:get-attr", "thread-id", m, ret='str')
+            i2 = focus.call("doc:get-attr", "message-id", m, ret='str')
+            if i1 and not i2 and i1 not in self.seen_threads:
+                self.seen_threads[i1] = True
+            if i1 and i2:
+                if i1 in self.seen_threads:
+                    del self.seen_threads[i1]
+                if  i2 not in self.seen_msgs:
+                    self.seen_msgs[i2] = True
+            if edlib.WEOF == focus.call("doc:step", 1, 1, m):
+                break
 
-        if key == "doc:notmuch:mark-seen":
-            for i in self.seen_threads:
-                self.parent.call("doc:notmuch:remember-seen-thread", i)
-            for i in self.seen_msgs:
-                self.parent.call("doc:notmuch:remember-seen-msg", i)
-            self.parent.call("doc:notmuch:mark-seen")
-            return 1
+    def handle_mark_seen(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+        "handle:doc:notmuch:mark-seen"
+        for i in self.seen_threads:
+            self.parent.call("doc:notmuch:remember-seen-thread", i)
+        for i in self.seen_msgs:
+            self.parent.call("doc:notmuch:remember-seen-msg", i)
+        self.parent.call("doc:notmuch:mark-seen")
+        return 1
 
 class notmuch_message_view(edlib.Pane):
     def __init__(self, focus):
