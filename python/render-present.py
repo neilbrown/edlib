@@ -703,21 +703,24 @@ class PresenterPane(edlib.Pane):
 
 class MarkdownPane(edlib.Pane):
     def __init__(self, focus):
-        edlib.Pane.__init__(self, focus, self.handle)
+        edlib.Pane.__init__(self, focus)
 
-    def handle(self, key, focus, mark, num, **a):
+    def handle_refresh(self, key, focus, mark, num, **a):
+        "handle:Display:refresh"
         # Refresh causes presentation page to recenter
         # page-down just moves down to start of next page.
-        if key == "Display:refresh":
-            focus.call("Notify:doc:Recentre", mark)
-            return 0
-        if key == "Move-View-Large" and num >= 0 and mark:
+        focus.call("Notify:doc:Recentre", mark)
+        return 0
+
+    def handle_mvl(self, key, focus, mark, num, **a):
+        "handle:Move-View-Large"
+        if num >= 0 and mark:
             m2 = mark.dup()
             if focus.call("Notify:doc:Recentre", m2, 2,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 focus.damaged(edlib.DAMAGED_CURSOR)
                 return 1
-        if key == "Move-View-Large" and num < 0 and mark:
+        if num < 0 and mark:
             m2 = mark.dup()
             if focus.call("Notify:doc:Recentre", m2, 3,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
