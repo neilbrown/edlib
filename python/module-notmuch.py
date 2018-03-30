@@ -516,7 +516,7 @@ class notmuch_master_view(edlib.Pane):
     # It manages the size and position of the 3 panes and provides common
     # handling for some keystrokes.
     def __init__(self, focus):
-        edlib.Pane.__init__(self, focus, self.handle)
+        edlib.Pane.__init__(self, focus)
         self.maxlen = 0 # length of longest query name in list_pane
         self.list_pane = None
         self.query_pane = None
@@ -562,8 +562,73 @@ class notmuch_master_view(edlib.Pane):
             if tile.h != h:
                 tile.call("Window:y+", "notmuch", h - tile.h)
 
-    def handle(self, key, focus, mark, num, str, str2, **a):
 
+    def handle_choose(self, key, focus, mark, num, str, str2, **a):
+        "handle:docs:choose"
+        # don't choose anything
+        return 1
+
+    def handle_clone(self, key, focus, mark, num, str, str2, **a):
+        "handle:Clone"
+        p = notmuch_master_view(focus)
+        # We don't clone children, we create our own
+        return 1
+
+    def handle_size(self, key, focus, mark, num, str, str2, **a):
+        "handle:Refresh:size"
+        # First, make sure the tiler has adjusted to the new size
+        self.focus.w = self.w
+        self.focus.h = self.h
+        self.focus("Refresh:size")
+        # then make sure children are OK
+        self.resize()
+        return 1
+
+    def handle_dot(self, key, focus, mark, num, str, str2, **a):
+        "handle:Chr-."
+        # select thing under point, but don't move
+        focus.call("notmuch:select", mark, 0)
+        return 1
+
+    def handle_return(self, key, focus, mark, num, str, str2, **a):
+        "handle:Return"
+        # select thing under point, and enter it
+        focus.call("notmuch:select", mark, 1)
+        return 1
+
+    def handle_space(self, key, focus, mark, num, str, str2, **a):
+        "handle:Chr- "
+        if self.message_pane:
+            self.message_pane.call(key)
+        elif self.query_pane:
+            self.query_pane.call("Return")
+        else:
+            self.list_pane.call("Return")
+        return 1
+
+    def handle_move(self, key, focus, mark, num, str, str2, **a):
+        "handle-list/M-Chr-n/M-Chr-p/Chr-n/Chr-p"
+        if key[0] == "M" or not self.query_pane:
+            p = self.list_pane
+            op = self.query_pane
+        else:
+            p = self.query_pane
+            op = self.message_pane
+        if not p:
+            return 1
+        direction = 1 if key[-1] in "na" else -1
+        m = mark
+        if op:
+            # secondary window exists, so move
+            m = p.call("doc:dup-point", 0, -2, ret='mark')
+            if p.call("Move-Line", direction, m) == 1:
+                p.call("Move-to", m)
+                p.damaged(edlib.DAMAGED_CURSOR)
+        p.call("notmuch:select", m, 1)
+        return 1
+
+    def handle_A(self, key, focus, mark, num, str, str2, **a):
+        "handle:Chr-a"
         in_message = False
         in_query = False
         in_main = False
@@ -574,192 +639,144 @@ class notmuch_master_view(edlib.Pane):
         else:
             in_main = True
 
-        if key == "docs:choose":
-            # don't choose anything
+        if in_message:
+            mp = self.message_pane
+            if mp.cmid and mp.ctid:
+                if self.query_pane:
+                    self.query_pane.call("doc:notmuch:remove-tag-inbox",
+                                         mp.ctid, mp.cmid)
+                else:
+                    self.call("doc:notmuch:remove-tag-inbox", mp.ctid, mp.cmid)
+            self.call("Chr-n")
             return 1
-
-        if key == "Clone":
-            p = notmuch_master_view(focus)
-            # We don't clone children, we create our own
-            return 1
-
-        if key == "Refresh:size":
-            # First, make sure the tiler has adjusted to the new size
-            self.focus.w = self.w
-            self.focus.h = self.h
-            self.focus("Refresh:size")
-            # then make sure children are OK
-            self.resize()
-            return 1
-
-        if key == "Chr-.":
-            # select thing under point, but don't move
-            focus.call("notmuch:select", mark, 0)
-            return 1
-        if key == "Return":
-            # select thing under point, and enter it
-            focus.call("notmuch:select", mark, 1)
-            return 1
-        if key == "Chr- ":
+        if in_query:
+            thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
+            msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
+            self.query_pane.call("doc:notmuch:remove-tag-inbox", thid, msid)
+            # Move to next message.
+            m = focus.call("doc:dup-point", 0, -2, ret='mark')
+            if focus.call("Move-Line", 1, m) == 1:
+                focus.call("Move-to", m)
+                focus.damaged(edlib.DAMAGED_CURSOR)
             if self.message_pane:
-                self.message_pane.call(key)
-            elif self.query_pane:
-                self.query_pane.call("Return")
-            else:
-                self.list_pane.call("Return")
+                # Message was displayed, so display this one
+                focus.call("notmuch:select", m, 0)
             return 1
+        return 1
 
-        if key in [ "M-Chr-n", "M-Chr-p", "Chr-n", "Chr-p"]:
-            if key[0] == "M" or not self.query_pane:
-                p = self.list_pane
-                op = self.query_pane
-            else:
-                p = self.query_pane
-                op = self.message_pane
-            if not p:
-                return 1
-            direction = 1 if key[-1] in "na" else -1
-            m = mark
-            if op:
-                # secondary window exists, so move
-                m = p.call("doc:dup-point", 0, -2, ret='mark')
-                if p.call("Move-Line", direction, m) == 1:
-                    p.call("Move-to", m)
-                    p.damaged(edlib.DAMAGED_CURSOR)
-            p.call("notmuch:select", m, 1)
-            return 1
+    def handle_close_message(self, key, focus, mark, num, str, str2, **a):
+        "handle:notmuch-close-message"
+        self.message_pane = None
+        return 1
 
-        if key == "Chr-a":
-            if in_message:
-                mp = self.message_pane
-                if mp.cmid and mp.ctid:
-                    if self.query_pane:
-                        self.query_pane.call("doc:notmuch:remove-tag-inbox",
-                                             mp.ctid, mp.cmid)
-                    else:
-                        self.call("doc:notmuch:remove-tag-inbox", mp.ctid, mp.cmid)
-                self.call("Chr-n")
-                return 1
-            if in_query:
-                thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
-                msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
-                self.query_pane.call("doc:notmuch:remove-tag-inbox", thid, msid)
-                # Move to next message.
-                m = focus.call("doc:dup-point", 0, -2, ret='mark')
-                if focus.call("Move-Line", 1, m) == 1:
-                    focus.call("Move-to", m)
-                    focus.damaged(edlib.DAMAGED_CURSOR)
-                if self.message_pane:
-                    # Message was displayed, so display this one
-                    focus.call("notmuch:select", m, 0)
-                return 1
-            return 1
-
-        if key == "notmuch-close-message":
+    def handle_xq(self, key, focus, mark, num, str, str2, **a):
+        "handle-list/Chr-x/Chr-q"
+        if self.message_pane:
+            if key != "Chr-x":
+                self.mark_read()
+            p = self.message_pane
             self.message_pane = None
-            return 1
-
-        if key in [ "Chr-x", "Chr-q" ]:
-            if self.message_pane:
-                if key != "Chr-x":
-                    self.mark_read()
-                p = self.message_pane
-                self.message_pane = None
-                p.call("Window:close", "notmuch")
-            elif self.query_pane:
-                if key != "Chr-x":
-                    self.query_pane.call("doc:notmuch:mark-seen")
-                p = self.query_pane
-                self.query_pane = None
-
-                s = p.call("get-attr", "qname", 1, ret='str')
-                if s:
-                    p.call("doc:notmuch:update-one", s)
-
-                p.call("Window:close", "notmuch")
-            else:
-                p = self.call("ThisPane", ret='focus')
-                if p and p.focus:
-                    p.focus.close()
-            return 1
-
-        if key in [ "Chr-V" ]:
-            if not self.message_pane:
-                return 1
-            p2 = self.call("doc:open", self.message_pane["filename"], -1,
-                           ret = 'focus')
-            p2.call("doc:set:autoclose", 1)
-            p0 = self.call("OtherPane", 4, p2, ret='focus')
-            if not p0:
-                return 1
-            p1 = p0.call("doc:attach", ret='focus')
-            p1.call("doc:assign",p2, "default:viewer")
-            return 1
-
-        if key == "Chr-o":
-            # focus to next window
-            focus.call("Window:next", "notmuch")
-            return 1
-
-        if key == "Chr-O":
-            # focus to prev window
-            focus.call("Window:prev", "notmuch")
-            return 1
-
-        if key == "Chr-g":
-            focus.call("doc:notmuch:update")
-            self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
-            return 1
-
-        if key == "notmuch:select-query":
-            # A query was selected, identifed by 'str'.  Close the
-            # message window and open a threads window.
-            if self.message_pane:
-                p = self.message_pane
-                self.message_pane = None
-                p.call("Window:close", "notmuch")
-            if self.query_pane:
+            p.call("Window:close", "notmuch")
+        elif self.query_pane:
+            if key != "Chr-x":
                 self.query_pane.call("doc:notmuch:mark-seen")
-            if self.query_pane:
-                s = self.query_pane.call("get-attr", "qname", 1, ret='str')
-                if s:
-                    self.list_pane.call("doc:notmuch:update-one", s)
+            p = self.query_pane
+            self.query_pane = None
 
-            p0 = self.call("doc:notmuch:query", str, ret='focus')
-            p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 3,
-                                     ret = 'focus')
-            self.query_pane = p1
-            p2 = p1.call("doc:attach", ret='focus')
-            p3 = p2.call("doc:assign", p0, "notmuch:threads", ret='focus')
-            self.query_pane = p3
-            if num:
-                self.query_pane.take_focus()
-            self.resize()
+            s = p.call("get-attr", "qname", 1, ret='str')
+            if s:
+                p.call("doc:notmuch:update-one", s)
+
+            p.call("Window:close", "notmuch")
+        else:
+            p = self.call("ThisPane", ret='focus')
+            if p and p.focus:
+                p.focus.close()
+        return 1
+
+    def handle_v(self, key, focus, mark, num, str, str2, **a):
+        "handle:Chr-V"
+        if not self.message_pane:
             return 1
-
-        if key == "notmuch:select-message":
-            # a thread or message was selected. id in 'str'. threadid in str2
-            # Find the file and display it in a 'message' pane
-            self.mark_read()
-
-            p0 = self.call("doc:notmuch:byid", str, ret='focus')
-            p1 = self.query_pane.call("OtherPane", "notmuch", "message", 2,
-                                      ret='focus')
-            p2 = p1.call("doc:attach", ret='focus')
-            p3 = p2.call("doc:assign", p0, "notmuch:message", ret='focus')
-
-            # FIXME This still doesn't work: there are races: attaching a doc to
-            # the pane causes the current doc to be closed.  But the new doc
-            # hasn't been anchored yet so if they are the same, we lose.
-            # Need a better way to anchor a document.
-            #p0.call("doc:set:autoclose", 1)
-            p = self.message_pane = p3
-            p.ctid = str2
-            p.cmid = str
-            if num:
-                self.message_pane.take_focus()
-            self.resize()
+        p2 = self.call("doc:open", self.message_pane["filename"], -1,
+                       ret = 'focus')
+        p2.call("doc:set:autoclose", 1)
+        p0 = self.call("OtherPane", 4, p2, ret='focus')
+        if not p0:
             return 1
+        p1 = p0.call("doc:attach", ret='focus')
+        p1.call("doc:assign",p2, "default:viewer")
+        return 1
+
+    def handle_o(self, key, focus, mark, num, str, str2, **a):
+        "handle:Chr-o"
+        # focus to next window
+        focus.call("Window:next", "notmuch")
+        return 1
+
+    def handle_O(self, key, focus, mark, num, str, str2, **a):
+        "handle:Chr-O"
+        # focus to prev window
+        focus.call("Window:prev", "notmuch")
+        return 1
+
+    def handle_g(self, key, focus, mark, num, str, str2, **a):
+        "handle:Chr-g"
+        focus.call("doc:notmuch:update")
+        self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
+        return 1
+
+    def handle_select_query(self, key, focus, mark, num, str, str2, **a):
+        "handle:notmuch:select-query"
+        # A query was selected, identifed by 'str'.  Close the
+        # message window and open a threads window.
+        if self.message_pane:
+            p = self.message_pane
+            self.message_pane = None
+            p.call("Window:close", "notmuch")
+        if self.query_pane:
+            self.query_pane.call("doc:notmuch:mark-seen")
+        if self.query_pane:
+            s = self.query_pane.call("get-attr", "qname", 1, ret='str')
+            if s:
+                self.list_pane.call("doc:notmuch:update-one", s)
+
+        p0 = self.call("doc:notmuch:query", str, ret='focus')
+        p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 3,
+                                 ret = 'focus')
+        self.query_pane = p1
+        p2 = p1.call("doc:attach", ret='focus')
+        p3 = p2.call("doc:assign", p0, "notmuch:threads", ret='focus')
+        self.query_pane = p3
+        if num:
+            self.query_pane.take_focus()
+        self.resize()
+        return 1
+
+    def handle_select_message(self, key, focus, mark, num, str, str2, **a):
+        "handle:notmuch:select-message"
+        # a thread or message was selected. id in 'str'. threadid in str2
+        # Find the file and display it in a 'message' pane
+        self.mark_read()
+
+        p0 = self.call("doc:notmuch:byid", str, ret='focus')
+        p1 = self.query_pane.call("OtherPane", "notmuch", "message", 2,
+                                  ret='focus')
+        p2 = p1.call("doc:attach", ret='focus')
+        p3 = p2.call("doc:assign", p0, "notmuch:message", ret='focus')
+
+        # FIXME This still doesn't work: there are races: attaching a doc to
+        # the pane causes the current doc to be closed.  But the new doc
+        # hasn't been anchored yet so if they are the same, we lose.
+        # Need a better way to anchor a document.
+        #p0.call("doc:set:autoclose", 1)
+        p = self.message_pane = p3
+        p.ctid = str2
+        p.cmid = str
+        if num:
+            self.message_pane.take_focus()
+        self.resize()
+        return 1
 
     def mark_read(self):
         p = self.message_pane

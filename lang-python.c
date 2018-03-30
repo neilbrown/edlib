@@ -395,6 +395,33 @@ static void do_map_init(Pane *self safe)
 						command_put(&comm->c);
 					}
 				}
+				if (docs &&
+				    strncmp(docs, "handle-list", 11) == 0 &&
+				    docs[11]) {
+					char sep = docs[11];
+					char *s1 = docs + 12;
+					while (s1 && *s1 && *s1 != sep) {
+						struct python_command *comm =
+							malloc(sizeof(*comm));
+						char *a;
+						char *s2 = strchr(s1, sep);
+						if (s2) {
+							a = strndup(s1, s2-s1);
+							s1 = s2+1;
+						} else {
+							a = strdup(s1);
+							s1 = NULL;
+						}
+						comm->c = python_call;
+						comm->c.free = python_free_command;
+						command_get(&comm->c);
+						Py_INCREF(m);
+						comm->callable = m;
+						key_add(self->map, a, &comm->c);
+						free(a);
+						command_put(&comm->c);
+					}
+				}
 				Py_XDECREF(tofree);
 			}
 			Py_XDECREF(doc);
