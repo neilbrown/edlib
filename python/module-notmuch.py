@@ -856,7 +856,7 @@ class notmuch_main_view(edlib.Pane):
 
 class notmuch_list(edlib.Doc):
     def __init__(self, focus, qname, query):
-        edlib.Doc.__init__(self, focus, self.handle)
+        edlib.Doc.__init__(self, focus)
         self.db = notmuch_db()
         self.query = query
         self['qname'] = qname
@@ -1094,229 +1094,239 @@ class notmuch_list(edlib.Doc):
                 m2 = mark.prev_any()
             return '\n'
 
-    def handle(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
-        if key == "Notify:Tag":
-            if str2:
-                # re-evaluate tags of a single message
-                if str in self.threadinfo:
-                    t = self.threadinfo[str]
-                    if str2 in t:
-                        tg = t[str2][6]
-                        s = self.call("doc:notmuch:byid:tags", str2, ret='str')
-                        tg[:] = s.split(",")
+    def handle_notoify_tag(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+        "handle:Notify:Tag"
+        if str2:
+        # re-evaluate tags of a single message
+            if str in self.threadinfo:
+                t = self.threadinfo[str]
+                if str2 in t:
+                    tg = t[str2][6]
+                    s = self.call("doc:notmuch:byid:tags", str2, ret='str')
+                    tg[:] = s.split(",")
 
-            if str in self.threads:
-                t = self.threads[str]
-                s = self.call("doc:notmuch:bythread:tags", str, ret='str')
-                t['tags'] = s.split(",")
-            self.notify("Notify:doc:Replace")
-            return 1
+        if str in self.threads:
+            t = self.threads[str]
+            s = self.call("doc:notmuch:bythread:tags", str, ret='str')
+            t['tags'] = s.split(",")
+        self.notify("Notify:doc:Replace")
+        return 1
 
-        if key == "doc:set-ref":
-            mark.pos = None
-            if num == 1 and len(self.threadids) > 0:
-                tid = self.threadids[0]
-                if tid in self.messageids:
-                    mark.pos = (self.threadids[0],self.messageids[tid][0])
-                else:
-                    mark.pos = (self.threadids[0],None)
-            mark.offset = 0
-            self.to_end(mark, num == 0)
-            return 1
-
-        if key == "doc:step":
-            forward = num
-            move = num2
-            return self.step(mark, forward, move)
-
-        if key == "doc:step-thread":
-            # Move to the start of the current thread, or the start
-            # of the next one.
-            forward = num
-            move = num2
-            if forward:
-                if mark.pos == None:
-                    return edlib.WEOF
-                if not move:
-                    return "\n"
-                (tid,mid) = mark.pos
-                m2 = mark.next_any()
-                while m2 and m2.pos != None and m2.pos[0] == tid:
-                    mark.to_mark(m2)
-                    m2 = mark.next_any()
-                i = self.threadids.index(tid) + 1
-                if i < len(self.threadids):
-                    tid = self.threadids[i]
-                    if tid in self.messageids:
-                        mark.pos = (tid, self.messageids[tid][0])
-                    else:
-                        mark.pos = (tid, None)
-                else:
-                    mark.pos = None
-                return '\n'
+    def handle_set_ref(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+        "handle:doc:set-ref"
+        mark.pos = None
+        if num == 1 and len(self.threadids) > 0:
+            tid = self.threadids[0]
+            if tid in self.messageids:
+                mark.pos = (self.threadids[0],self.messageids[tid][0])
             else:
-                if mark.pos == None:
-                    if len(self.threadids) == 0:
-                        return edlib.WEOF
-                    tid = self.threadids[-1]
-                else:
-                    (tid,mid) = mark.pos
-                m2 = mark.prev_any()
-                while m2 and (m2.pos == None or m2.pos[0] == tid):
-                    mark.to_mark(m2)
-                    m2 = mark.prev_any()
+                mark.pos = (self.threadids[0],None)
+        mark.offset = 0
+        self.to_end(mark, num == 0)
+        return 1
+
+    def handle_step(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+        "handle:doc:step"
+        forward = num
+        move = num2
+        return self.step(mark, forward, move)
+
+    def handle_step_thread(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+        "handle:doc:step-thread"
+        # Move to the start of the current thread, or the start
+        # of the next one.
+        forward = num
+        move = num2
+        if forward:
+            if mark.pos == None:
+                return edlib.WEOF
+            if not move:
+                return "\n"
+            (tid,mid) = mark.pos
+            m2 = mark.next_any()
+            while m2 and m2.pos != None and m2.pos[0] == tid:
+                mark.to_mark(m2)
+                m2 = mark.next_any()
+            i = self.threadids.index(tid) + 1
+            if i < len(self.threadids):
+                tid = self.threadids[i]
                 if tid in self.messageids:
                     mark.pos = (tid, self.messageids[tid][0])
                 else:
                     mark.pos = (tid, None)
-                return '\n'
-
-        if key == "doc:step-matched":
-            # Move to the next/prev message which is matched.
-            forward = num
-            move = num2
-            m = mark
-            if not move:
-                m = mark.dup()
-            ret = self.step(m, forward, 1)
-            while ret != edlib.WEOF and m.pos != None:
-                (tid,mid) = m.pos
-                if not mid:
-                    break
-                ms = self.threadinfo[tid][mid]
-                if ms[2]:
-                    break
-                ret = self.step(m, forward, 1)
-            return ret
-
-        if key == "doc:get-attr":
-            attr = str
-            if mark.pos == None:
-                # No attributes for EOF
-                return 1
-            (tid,mid) = mark.pos
-            i = self.threadids.index(tid)
-            j = 0;
-            if mid:
-                j = self.messageids[tid].index(mid)
-
-            val = None
-
-            tid = self.threadids[i]
-            t = self.threads[tid]
-            if mid:
-                m = self.threadinfo[tid][mid]
-                (fn, dt, matched, depth, author, subj, tags) = m
             else:
-                (fn, dt, matched, depth, author, subj, tags) = (
-                    "", 0, False, [0,0], "" ,"", [])
-            if attr == "message-id":
-                val = mid
-            elif attr == "thread-id":
-                val = tid
-            elif attr == "T-hilite":
-                if "inbox" not in t["tags"]:
-                    # FIXME this test is wrong once we have generic searches
-                    val = "fg:grey"
-                elif "new" in t["tags"] and "unread" in t["tags"]:
-                    val = "fg:red,bold"
-                elif "unread" in t["tags"]:
-                    val = "fg:blue"
-                else:
-                    val = "fg:black"
-            elif attr == "T-date_relative":
-                val = self.rel_date(t['timestamp'])
-            elif attr == "T-threadinfo":
-                val = "[%d/%d]" % (t['matched'],t['total'])
-            elif attr[:2] == "T-" and attr[2:] in t:
-                val = t[attr[2:]]
-                if type(val) == int:
-                    val = "%d" % val
-                else:
-                    val = unicode(t[attr[2:]])
-                if attr == "T-authors":
-                    val = val[:20]
+                mark.pos = None
+            return '\n'
+        else:
+            if mark.pos == None:
+                if len(self.threadids) == 0:
+                    return edlib.WEOF
+                tid = self.threadids[-1]
+            else:
+                (tid,mid) = mark.pos
+            m2 = mark.prev_any()
+            while m2 and (m2.pos == None or m2.pos[0] == tid):
+                mark.to_mark(m2)
+                m2 = mark.prev_any()
+            if tid in self.messageids:
+                mark.pos = (tid, self.messageids[tid][0])
+            else:
+                mark.pos = (tid, None)
+            return '\n'
 
-            elif attr == "message-id":
-                val = mid
-            elif attr == "thread-id":
-                val = tid
-            elif attr == "matched":
-                val = "True" if matched else "False"
-            elif attr == "M-hilite":
-                # FIXME this inbox test is wrong once we allow generic searches
-                if not matched or "inbox" not in tags:
-                    val = "fg:grey"
-                    if "new" in tags and "unread" in tags:
-                        val = "fg:pink"
-                elif "new" in tags and "unread" in tags:
-                    val = "fg:red,bold"
-                elif "unread" in tags:
-                    val = "fg:blue"
-                else:
-                    val = "fg:black"
-            elif attr == "M-date_relative":
-                val = self.rel_date(dt)
-            elif attr == "M-authors":
-                val = author[:20]
-            elif attr == "M-subject":
-                val = subj
-            elif attr == "M-threadinfo":
-                val = self.cvt_depth(depth)
+    def handle_step_matched(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+        "handle:doc:step-matched"
+        # Move to the next/prev message which is matched.
+        forward = num
+        move = num2
+        m = mark
+        if not move:
+            m = mark.dup()
+        ret = self.step(m, forward, 1)
+        while ret != edlib.WEOF and m.pos != None:
+            (tid,mid) = m.pos
+            if not mid:
+                break
+            ms = self.threadinfo[tid][mid]
+            if ms[2]:
+                break
+            ret = self.step(m, forward, 1)
+        return ret
 
-            if not val is None:
-                comm2("callback", focus, val)
+    def handle_doc_get_attr(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+        "handle:doc:get-attr"
+        attr = str
+        if mark.pos == None:
+            # No attributes for EOF
             return 1
+        (tid,mid) = mark.pos
+        i = self.threadids.index(tid)
+        j = 0;
+        if mid:
+            j = self.messageids[tid].index(mid)
 
-        if key == "get-attr" and comm2:
-            if str == "doc-type":
-                comm2("callback", focus, "notmuch-list")
-                return 1
-            return 0
+        val = None
 
-        if key == "doc:notmuch:load-thread":
-            if mark.pos is None:
-                return -1
-            (tid,mid) = mark.pos
-            if tid not in self.threadinfo:
-                self.load_thread(mark)
-            if tid in self.threadinfo:
-                return 1
-            return 2
+        tid = self.threadids[i]
+        t = self.threads[tid]
+        if mid:
+            m = self.threadinfo[tid][mid]
+            (fn, dt, matched, depth, author, subj, tags) = m
+        else:
+            (fn, dt, matched, depth, author, subj, tags) = (
+                "", 0, False, [0,0], "" ,"", [])
+        if attr == "message-id":
+            val = mid
+        elif attr == "thread-id":
+            val = tid
+        elif attr == "T-hilite":
+            if "inbox" not in t["tags"]:
+                # FIXME this test is wrong once we have generic searches
+                val = "fg:grey"
+            elif "new" in t["tags"] and "unread" in t["tags"]:
+                val = "fg:red,bold"
+            elif "unread" in t["tags"]:
+                val = "fg:blue"
+            else:
+                val = "fg:black"
+        elif attr == "T-date_relative":
+            val = self.rel_date(t['timestamp'])
+        elif attr == "T-threadinfo":
+            val = "[%d/%d]" % (t['matched'],t['total'])
+        elif attr[:2] == "T-" and attr[2:] in t:
+            val = t[attr[2:]]
+            if type(val) == int:
+                val = "%d" % val
+            else:
+                val = unicode(t[attr[2:]])
+            if attr == "T-authors":
+                val = val[:20]
 
-        if key == "doc:notmuch:same-search":
-            if self.query == str2:
-                return 1
-            return 2
+        elif attr == "message-id":
+            val = mid
+        elif attr == "thread-id":
+            val = tid
+        elif attr == "matched":
+            val = "True" if matched else "False"
+        elif attr == "M-hilite":
+            # FIXME this inbox test is wrong once we allow generic searches
+            if not matched or "inbox" not in tags:
+                val = "fg:grey"
+                if "new" in tags and "unread" in tags:
+                    val = "fg:pink"
+            elif "new" in tags and "unread" in tags:
+                val = "fg:red,bold"
+            elif "unread" in tags:
+                val = "fg:blue"
+            else:
+                val = "fg:black"
+        elif attr == "M-date_relative":
+            val = self.rel_date(dt)
+        elif attr == "M-authors":
+            val = author[:20]
+        elif attr == "M-subject":
+            val = subj
+        elif attr == "M-threadinfo":
+            val = self.cvt_depth(depth)
 
-        if key == "doc:notmuch:query-refresh":
-            self.load_update()
+        if not val is None:
+            comm2("callback", focus, val)
+        return 1
 
-        if key == "doc:notmuch:mark-read":
-            ti = self.threadinfo[str]
-            m = ti[str2]
-            tags = m[6]
-            if "unread" not in tags and "new" not in tags:
-                return
-            if "unread" in tags:
-                tags.remove("unread")
-            if "new" in tags:
-                tags.remove("new")
-            is_unread = False
-            for mid in ti:
-                if "unread" in ti[mid][6]:
-                    # still has unread messages
-                    is_unread = True
-                    break
-            if not is_unread:
-                # thread is no longer 'unread'
-                j = self.threads[str]
-                t = j["tags"]
-                if "unread" in t:
-                    t.remove("unread")
-            self.notify("Notify:doc:Replace")
-            # Let this fall though to database document.
-            return 0
+    def handle_get_attr(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+        "handle:get-attr" and comm2
+        if str == "doc-type":
+            comm2("callback", focus, "notmuch-list")
+            return 1
+        return 0
+
+    def handle_load_thread(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+        "handle:doc:notmuch:load-thread"
+        if mark.pos is None:
+            return -1
+        (tid,mid) = mark.pos
+        if tid not in self.threadinfo:
+            self.load_thread(mark)
+        if tid in self.threadinfo:
+            return 1
+        return 2
+
+    def handle_same_search(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+        "handle:doc:notmuch:same-search"
+        if self.query == str2:
+            return 1
+        return 2
+
+    def handle_query_refresh(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+        "handle:doc:notmuch:query-refresh"
+        self.load_update()
+
+    def handle_mark_read(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+        "handle:doc:notmuch:mark-read"
+        ti = self.threadinfo[str]
+        m = ti[str2]
+        tags = m[6]
+        if "unread" not in tags and "new" not in tags:
+            return
+        if "unread" in tags:
+            tags.remove("unread")
+        if "new" in tags:
+            tags.remove("new")
+        is_unread = False
+        for mid in ti:
+            if "unread" in ti[mid][6]:
+                # still has unread messages
+                is_unread = True
+                break
+        if not is_unread:
+            # thread is no longer 'unread'
+            j = self.threads[str]
+            t = j["tags"]
+            if "unread" in t:
+                t.remove("unread")
+        self.notify("Notify:doc:Replace")
+        # Let this fall though to database document.
+        return 0
 
 class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
