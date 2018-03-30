@@ -234,7 +234,7 @@ class notmuch_main(edlib.Doc):
     # providing name, count, unread-count
     # Once activated it auto-updates every 5 minutes
     def __init__(self, focus):
-        edlib.Doc.__init__(self, focus, self.handle)
+        edlib.Doc.__init__(self, focus)
         self.searches = searches()
         self.timer_set = False
         self.updating = None
@@ -242,243 +242,264 @@ class notmuch_main(edlib.Doc):
         self.seen_msgs = {}
         self.db = notmuch_db()
 
-    def handle(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_close(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:Close"
+        return 1
 
-        if key == "Close":
+    def handle_revisit(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:revisit"
+        # Individual search-result documents are children of this
+        # document, and we don't want doc:revisit from them to escape
+        # to the global document list
+        return 1
+
+    def handle_set_ref(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:set-ref"
+        if num == 1:
+            mark.offset = 0
+        else:
+            mark.offset = len(self.searches.current)
+        self.to_end(mark, num == 0);
+        return 1
+
+    def handle_step(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:step"
+        forward = num
+        move = num2
+        ret = edlib.WEOF
+        target = mark
+        if forward and mark.offset < len(self.searches.current):
+            ret = '\n'
+            if move:
+                o = mark.offset + 1
+                m2 = mark.next_any()
+                while m2 and m2.offset <= o:
+                    target = m2
+                    m2 = m2.next_any()
+                mark.to_mark(target)
+                mark.offset = o
+        if not forward and mark.offset > 0:
+            ret = '\n'
+            if move:
+                o = mark.offset - 1
+                m2 = mark.prev_any()
+                while m2 and m2.offset >= o:
+                    target = m2
+                    m2 = m2.prev_any()
+                mark.to_mark(target)
+                mark.offset = o
+        return ret
+
+    def handle_doc_get_attr(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:get-attr"
+        attr = str
+        o = mark.offset
+        val = None
+        if o >= 0 and o < len(self.searches.current):
+            s = self.searches.current[o]
+            if attr == 'query':
+                val = s
+            elif attr == 'fmt':
+                if self.searches.new[s]:
+                    val = "bold,fg:red"
+                elif self.searches.unread[s]:
+                    val = "bold,fg:blue"
+                elif self.searches.count[s]:
+                    val = "fg:black"
+                else:
+                    val = "fg:grey"
+            elif attr == 'name':
+                val = s
+            elif attr == 'count':
+                c = self.searches.new[s]
+                if not c:
+                    c = self.searches.unread[s]
+                if not c:
+                    c = self.searches.count[s]
+                if c is None:
+                    val = "%5s" % "?"
+                else:
+                    val = "%5d" % c
+        if val:
+            comm2("callback", focus, val)
             return 1
+        return 0
 
-        if key == "doc:revisit":
-            # Individual search-result documents are children of this
-            # document, and we don't want doc:revisit from them to escape
-            # to the global document list
-            return 1
-
-        if key == "doc:set-ref":
-            if num == 1:
-                mark.offset = 0
-            else:
-                mark.offset = len(self.searches.current)
-            self.to_end(mark, num == 0);
-
-            return 1
-
-        if key == "doc:step":
-            forward = num
-            move = num2
-            ret = edlib.WEOF
-            target = mark
-            if forward and mark.offset < len(self.searches.current):
-                ret = '\n'
-                if move:
-                    o = mark.offset + 1
-                    m2 = mark.next_any()
-                    while m2 and m2.offset <= o:
-                        target = m2
-                        m2 = m2.next_any()
-                    mark.to_mark(target)
-                    mark.offset = o
-            if not forward and mark.offset > 0:
-                ret = '\n'
-                if move:
-                    o = mark.offset - 1
-                    m2 = mark.prev_any()
-                    while m2 and m2.offset >= o:
-                        target = m2
-                        m2 = m2.prev_any()
-                    mark.to_mark(target)
-                    mark.offset = o
-            return ret
-
-        if key == "doc:get-attr":
-            attr = str
-            o = mark.offset
-            val = None
-            if o >= 0 and o < len(self.searches.current):
-                s = self.searches.current[o]
-                if attr == 'query':
-                    val = s
-                elif attr == 'fmt':
-                    if self.searches.new[s]:
-                        val = "bold,fg:red"
-                    elif self.searches.unread[s]:
-                        val = "bold,fg:blue"
-                    elif self.searches.count[s]:
-                        val = "fg:black"
-                    else:
-                        val = "fg:grey"
-                elif attr == 'name':
-                        val = s
-                elif attr == 'count':
-                    c = self.searches.new[s]
-                    if not c:
-                        c = self.searches.unread[s]
-                    if not c:
-                        c = self.searches.count[s]
-                    if c is None:
-                        val = "%5s" % "?"
-                    else:
-                        val = "%5d" % c
-            if val:
-                comm2("callback", focus, val)
-                return 1
-            return 0
-
-        if key == "get-attr" and comm2:
+    def handle_get_attr(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:get-attr"
+        if comm2:
             if str == "doc-type":
                 comm2("callback", focus, "notmuch")
                 return 1
-            return 0
+        return 0
 
-        if key == "doc:notmuch:update":
-            if not self.timer_set:
-                self.timer_set = True
-                self.call("event:timer", 5*60, self.tick)
-            self.searches.load(False)
-            self.notify("Notify:doc:Replace")
-            self.updating = "counts"
-            if not self.searches.update(self, self.updated):
-                self.update_next()
-            return 1
+    def handle_notmuch_update(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:update"
+        if not self.timer_set:
+            self.timer_set = True
+            self.call("event:timer", 5*60, self.tick)
+        self.searches.load(False)
+        self.notify("Notify:doc:Replace")
+        self.updating = "counts"
+        if not self.searches.update(self, self.updated):
+            self.update_next()
+        return 1
 
-        if key == "doc:notmuch:update-one":
-            self.searches.update_one(str, self, self.updated)
-            return 1
+    def handle_notmuch_update_one(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:update-one"
+        self.searches.update_one(str, self, self.updated)
+        return 1
 
-        if key == "doc:notmuch:query":
-            # Find or create a search-result document as a
-            # child of this document - it remains private
-            # and doesn't get registered in the global list
-            q = self.searches.make_search(str, None)
-            nm = None
-            it = self.children()
-            for child in it:
-                if child("doc:notmuch:same-search", str, q) == 1:
-                    nm = child
-                    break
-            if not nm:
-                nm = notmuch_list(self, str, q)
-                nm.call("doc:set-name", str)
-            if comm2:
-                comm2("callback", nm)
-            return 1
+    def handle_notmuch_query(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:query"
+        # Find or create a search-result document as a
+        # child of this document - it remains private
+        # and doesn't get registered in the global list
+        q = self.searches.make_search(str, None)
+        nm = None
+        it = self.children()
+        for child in it:
+            if child("doc:notmuch:same-search", str, q) == 1:
+                nm = child
+                break
+        if not nm:
+            nm = notmuch_list(self, str, q)
+            nm.call("doc:set-name", str)
+        if comm2:
+            comm2("callback", nm)
+        return 1
 
-        if key == "doc:notmuch:byid":
-            # Return a document for the email message.
-            # This is a global document.
-            with self.db as db:
-                m = db.find_message(str)
-                fn = m.get_filename() + ""
-            doc = focus.call("doc:open", "email:"+fn, -2, ret='focus')
-            if doc:
-                doc.call("doc:set-parent", self)
-                comm2("callback", doc)
-            return 1
+    def handle_notmuch_byid(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:byid"
+        # Return a document for the email message.
+        # This is a global document.
+        with self.db as db:
+            m = db.find_message(str)
+            fn = m.get_filename() + ""
+        doc = focus.call("doc:open", "email:"+fn, -2, ret='focus')
+        if doc:
+            doc.call("doc:set-parent", self)
+            comm2("callback", doc)
+        return 1
 
-        if key == "doc:notmuch:byid:tags":
-            # return a string with tags of message
-            with self.db as db:
-                m = db.find_message(str)
-                tags = ",".join(m.get_tags())
-            comm2("callback", focus, tags)
-            return 1
+    def handle_notmuch_byid_tags(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:byid:tags"
+        # return a string with tags of message
+        with self.db as db:
+            m = db.find_message(str)
+            tags = ",".join(m.get_tags())
+        comm2("callback", focus, tags)
+        return 1
 
-        if key == "doc:notmuch:bythread:tags":
-            # return a string with tags of all messages in thread
-            with self.db as db:
+    def handle_notmuch_bythread_tags(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:bythread:tags"
+        # return a string with tags of all messages in thread
+        with self.db as db:
+            q = db.create_query("thread:%s" % str)
+            tg = []
+            for t in q.search_threads():
+                ml = t.get_messages()
+                for m in ml:
+                    tg.extend(m.get_tags())
+        tags = ",".join(set(tg))
+        comm2("callback", focus, tags)
+        return 1
+
+    def handle_notmuch_search_max(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:search-maxlen"
+        return self.searches.maxlen + 1
+
+    def handle_notmuch_query_updated(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:query-updated"
+        # A child search document has finished updating.
+        self.update_next()
+        return 1
+
+    def handle_notmuch_mark_read(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:mark-read"
+        with self.db.get_write() as db:
+            m = db.find_message(str2)
+            if m:
+                changed=False
+                t = list(m.get_tags())
+                if "unread" in t:
+                    m.remove_tag("unread")
+                    changed=True
+                if "new" in t:
+                    m.remove_tag("new")
+                    changed=True
+                if changed:
+                    self.notify("Notify:Tag", str, str2)
+        return 1
+
+    def handle_notmuch_remove_tag(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle-range/doc:notmuch:remove-tag-/doc:notmuch:remove-tag./"
+        tag = key[23:]
+        with self.db.get_write() as db:
+            if str2:
+                # remove just from 1 message
+                m = db.find_message(str2)
+                if m:
+                    t = list(m.get_tags())
+                    if tag in t:
+                        m.remove_tag(tag)
+                        self.notify("Notify:Tag", str, str2)
+            else:
+                # remove from whole thread
                 q = db.create_query("thread:%s" % str)
-                tg = []
+                changed = False
                 for t in q.search_threads():
                     ml = t.get_messages()
                     for m in ml:
-                        tg.extend(m.get_tags())
-            tags = ",".join(set(tg))
-            comm2("callback", focus, tags)
-            return 1
-
-        if key == "doc:notmuch:search-maxlen":
-            return self.searches.maxlen + 1
-
-        if key == "doc:notmuch:query-updated":
-            # A child search document has finished updating.
-            self.update_next()
-            return 1
-
-        if key == "doc:notmuch:mark-read":
-            with self.db.get_write() as db:
-                m = db.find_message(str2)
-                if m:
-                    changed=False
-                    t = list(m.get_tags())
-                    if "unread" in t:
-                        m.remove_tag("unread")
-                        changed=True
-                    if "new" in t:
-                        m.remove_tag("new")
-                        changed=True
-                    if changed:
-                        self.notify("Notify:Tag", str, str2)
-            return 1
-
-        if key[:23] == "doc:notmuch:remove-tag-":
-            tag = key[23:]
-            with self.db.get_write() as db:
-                if str2:
-                    # remove just from 1 message
-                    m = db.find_message(str2)
-                    if m:
-                        t = list(m.get_tags())
-                        if tag in t:
+                        if tag in m.get_tags():
                             m.remove_tag(tag)
-                            self.notify("Notify:Tag", str, str2)
-                else:
-                    # remove from whole thread
-                    q = db.create_query("thread:%s" % str)
+                            changed = True
+                if changed:
+                    self.notify("Notify:Tag", str)
+        return 1
+
+    def handle_notmuch_remember_seen_thread(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:remember-seen-thread"
+        if str:
+            self.seen_threads[str] = focus
+            return 1
+
+    def handle_notmuch_remember_seen_msg(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:remember-seen-msg"
+        if str:
+            self.seen_msgs[str] = focus
+            return 1
+
+    def handle_notmuch_mark_seen(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+        "handle:doc:notmuch:mark-seen"
+        with self.db.get_write() as db:
+            todel = []
+            for id in self.seen_msgs:
+                if self.seen_msgs[id] == focus:
+                    m = db.find_message(id)
+                    if m and "new" in m.get_tags():
+                        m.remove_tag("new")
+                        self.notify("Notify:Tag", m.get_thread_id(), id)
+                    todel.append(id)
+            for id in todel:
+                del self.seen_msgs[id]
+            todel = []
+            for id in self.seen_threads:
+                if self.seen_threads[id] == focus:
                     changed = False
+                    q = db.create_query("thread:%s" % id)
                     for t in q.search_threads():
                         ml = t.get_messages()
                         for m in ml:
-                            if tag in m.get_tags():
-                                m.remove_tag(tag)
+                            if "new" in m.get_tags():
+                                m.remove_tag("new")
                                 changed = True
-                    if changed:
-                        self.notify("Notify:Tag", str)
-            return 1
-
-        if key == "doc:notmuch:remember-seen-thread" and str:
-            self.seen_threads[str] = focus
-            return 1
-        if key == "doc:notmuch:remember-seen-msg" and str:
-            self.seen_msgs[str] = focus
-            return 1
-        if key == "doc:notmuch:mark-seen":
-            with self.db.get_write() as db:
-                todel = []
-                for id in self.seen_msgs:
-                    if self.seen_msgs[id] == focus:
-                        m = db.find_message(id)
-                        if m and "new" in m.get_tags():
-                            m.remove_tag("new")
-                            self.notify("Notify:Tag", m.get_thread_id(), id)
-                        todel.append(id)
-                for id in todel:
-                    del self.seen_msgs[id]
-                todel = []
-                for id in self.seen_threads:
-                    if self.seen_threads[id] == focus:
-                        changed = False
-                        q = db.create_query("thread:%s" % id)
-                        for t in q.search_threads():
-                            ml = t.get_messages()
-                            for m in ml:
-                                if "new" in m.get_tags():
-                                    m.remove_tag("new")
-                                    changed = True
-                            break
-                        todel.append(id)
-                    self.notify("Notify:Tag", id)
-                for id in todel:
-                    del self.seen_threads[id]
-            return 1
+                        break
+                    todel.append(id)
+                self.notify("Notify:Tag", id)
+            for id in todel:
+                del self.seen_threads[id]
+        return 1
 
     def tick(self, key, **a):
         if not self.updating:
