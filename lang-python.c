@@ -556,7 +556,7 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 	if (ret <= 0 || !parent || !self)
 		return ret;
 
-	self->handle.c = python_doc_call;
+	self->handle.c.func = python_doc_call_func;
 	doc_init(&self->doc);
 	self->pane = pane_register(parent->pane, z, &self->handle.c, &self->doc, NULL);
 	self->doc.home = self->pane;
