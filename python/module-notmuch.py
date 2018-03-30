@@ -788,27 +788,30 @@ class notmuch_master_view(edlib.Pane):
 class notmuch_main_view(edlib.Pane):
     # This pane provides view on the search-list document.
     def __init__(self, focus):
-        edlib.Pane.__init__(self, focus, self.handle)
+        edlib.Pane.__init__(self, focus)
         self['render-wrap'] = 'no'
         self['background'] = 'color:#A0FFFF'
         self['line-format'] = '<%fmt>%count %+name</>'
         self.call("Request:Notify:doc:Replace")
         self.selected = None
 
-    def handle(self, key, focus, mark, num, **a):
-        if key == "Clone":
-            p = notmuch_main_view(focus)
-            self.clone_children(focus.focus)
-            return 1
-        if key == "Notify:doc:Replace":
-            self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
-            return 0
+    def handle_clone(self, key, focus, mark, num, **a):
+        "handle:Clone"
+        p = notmuch_main_view(focus)
+        self.clone_children(focus.focus)
+        return 1
 
-        if key == "notmuch:select":
-            s = focus.call("doc:get-attr", "query", mark, ret='str')
-            if s:
-                focus.call("notmuch:select-query", s, num)
-            return 1
+    def handle_notify_replace(self, key, focus, mark, num, **a):
+        "handle:Notify:doc:Replace"
+        self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
+        return 0
+
+    def handle_select(self, key, focus, mark, num, **a):
+        "handle:notmuch:select"
+        s = focus.call("doc:get-attr", "query", mark, ret='str')
+        if s:
+            focus.call("notmuch:select-query", s, num)
+        return 1
 
 ##################
 # list-view shows a list of threads/messages that match a given
