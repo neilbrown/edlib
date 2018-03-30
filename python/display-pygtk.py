@@ -464,20 +464,21 @@ def new_display(key, focus, comm2, **a):
     comm2('callback', disp.pane)
     return 1
 
-class events:
+class events(edlib.Pane):
     def __init__(self, focus):
+        edlib.Pane.__init__(self, focus)
         self.active = True
         self.events = {}
         self.sigs = {}
         self.ev_num = 0
-        self.home = edlib.Pane(focus, self.handle)
 
-    def handle(self, key, focus, **a):
+    def handle_close(self, key, focus, **a):
+        "handle:Notify:Close"
         self.free("free", focus, None)
         return 1
 
     def add_ev(self, focus, comm, event, num):
-        self.home.add_notify(focus, "Notify:Close")
+        self.add_notify(focus, "Notify:Close")
         ev = self.ev_num
         self.events[ev] = [focus, comm, event, num]
         self.ev_num += 1
