@@ -54,6 +54,7 @@
 #define _GNU_SOURCE /* for asprintf */
 #include <unistd.h>
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 #include <memory.h>
 #include <locale.h>
@@ -137,6 +138,11 @@ struct text {
 	struct stat		stat;
 	char			*fname;
 	struct text_edit	*saved;
+	struct auto_save {
+		int		changes;
+		int		timer_started;
+		time_t		last_change;
+	} as;
 };
 
 static int text_advance_towards(struct text *t safe, struct doc_ref *ref safe,
@@ -327,6 +333,78 @@ error:
 
 }
 
+static void do_text_autosave(struct text *t)
+{
+	char *tempname = malloc(strlen(t->fname) + 3 + 10);
+	char *base, *tbase;
+	int fd = -1;
+
+	strcpy(tempname, t->fname);
+	base = strrchr(t->fname, '/');
+	if (base)
+		base += 1;
+	else
+		base = t->fname;
+	tbase = tempname + (base - t->fname);
+	sprintf(tbase, "#%s#", base);
+	if (t->as.changes == 0) {
+		unlink(tempname);
+		return;
+	}
+	fd = open(tempname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+	if (fd < 0)
+		return;
+
+	if (do_text_output_file(t, NULL, NULL, fd) < 0) {
+		close(fd);
+		unlink(tempname);
+		free(tempname);
+		return;
+	}
+	t->as.changes = 0;
+	close(fd);
+	free(tempname);
+}
+
+DEF_CMD(text_autosave_tick)
+{
+	struct pane *home = ci->home;
+	struct text *t = home->data;
+
+	t->as.timer_started = 0;
+	if (!t->fname)
+		return -1;
+	if (t->as.changes == 0)
+		/* This will delete the file */
+		do_text_autosave(t);
+	if (time(0L) - t->as.last_change >= 30)
+		do_text_autosave(t);
+	else {
+		t->as.timer_started = 1;
+		call_comm("event:timer", t->doc.home, &text_autosave_tick,
+			  t->as.last_change + 30 - time(0L));
+	}
+	return -1;
+}
+
+static void text_check_autosave(struct text *t safe)
+{
+	if (t->undo == t->saved)
+		t->as.changes = 0;
+	else
+		t->as.changes += 1;
+	t->as.last_change = time(0L);
+	if (!t->fname)
+		return;
+	if (t->as.changes > 300)
+		do_text_autosave(t);
+	else if (!t->as.timer_started) {
+		t->as.timer_started = 1;
+		call_comm("event:timer", t->doc.home, &text_autosave_tick, 30);
+	}
+}
+
+
 DEF_CMD(text_save_file)
 {
 	struct doc *d = ci->home->data;
@@ -351,6 +429,7 @@ DEF_CMD(text_save_file)
 	free(msg);
 	if (change_status)
 		call("Notify:doc:status-changed", d->home);
+	text_check_autosave(t);
 	if (ret == 0)
 		return 1;
 	return -1;
@@ -791,6 +870,7 @@ static int text_undo(struct text *t safe,
 	}
 	if (status_change)
 		call("Notify:doc:status-changed", t->doc.home);
+	text_check_autosave(t);
 	if (e->first)
 		return 1;
 	else
@@ -1241,6 +1321,9 @@ DEF_CMD(text_new)
 	t->saved = t->undo = t->redo = NULL;
 	doc_init(&t->doc);
 	t->fname = NULL;
+	t->as.changes = 0;
+	t->as.timer_started = 0;
+	t->as.last_change = 0;
 	text_new_alloc(t, 0);
 	p = pane_register(ci->home, 0, &text_handle.c, &t->doc, NULL);
 	t->doc.home = p;
@@ -1639,6 +1722,7 @@ DEF_CMD(text_replace)
 		text_check_consistent(t);
 
 	}
+	text_check_autosave(t);
 	if (status_change)
 		call("Notify:doc:status-changed", d->home);
 	pane_notify("Notify:doc:Replace", t->doc.home, 0, pm, NULL,
@@ -1772,6 +1856,7 @@ DEF_CMD(text_modified)
 		t->saved = NULL;
 	else
 		t->saved = t->undo;
+	text_check_autosave(t);
 	call("Notify:doc:status-changed", d->home);
 	return 1;
 }
