@@ -829,8 +829,15 @@ DEF_CMD(doc_write_file)
 
 DEF_CMD(doc_notify_viewers)
 {
-	/* The autoclose document wants to know if it should close.
-	 * tell it "no" */
+	/* The autoclose document wants to know if it should close,
+	 * or a new view wants to find an active point.
+	 * If a mark was provided, move it to point, then
+	 * report that there are active viewers by returning 1
+	 */
+	struct doc_data *dd = ci->home->data;
+
+	if (ci->mark && dd->point)
+		mark_to_mark(ci->mark, dd->point);
 	return 1;
 }
 
@@ -1042,6 +1049,7 @@ static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe,
 	m = vmark_new(doc, MARK_POINT);
 	if (!m)
 		return NULL;
+	pane_notify("Notify:doc:viewers", doc, 0, m);
 	dd->doc = doc;
 	dd->point = m;
 	attr_set_str(&m->attrs, "render:interactive-point", "yes");
