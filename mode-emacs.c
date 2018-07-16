@@ -30,65 +30,69 @@ REDEF_CMD(emacs_swap);
 static struct move_command {
 	struct command	cmd;
 	char		*type safe;
-	int		direction;
+	int		direction, extra;
 	char		*k1 safe, *k2, *k3;
 } move_commands[] = {
-	{CMD(emacs_move), "Move-Char", 1,
+	{CMD(emacs_move), "Move-Char", 1, 0,
 	 "C-Chr-F", "Right", NULL},
-	{CMD(emacs_move), "Move-Char", -1,
+	{CMD(emacs_move), "Move-Char", -1, 0,
 	 "C-Chr-B", "Left", NULL},
-	{CMD(emacs_move), "Move-Word", 1,
+	{CMD(emacs_move), "Move-Word", 1, 0,
 	 "M-Chr-f", "M-Right", NULL},
-	{CMD(emacs_move), "Move-Word", -1,
+	{CMD(emacs_move), "Move-Word", -1, 0,
 	 "M-Chr-b", "M-Left", NULL},
-	{CMD(emacs_move), "Move-Expr", 1,
+	{CMD(emacs_move), "Move-Expr", 1, 0,
 	 "M-C-Chr-F", NULL, NULL},
-	{CMD(emacs_move), "Move-Expr", -1,
+	{CMD(emacs_move), "Move-Expr", -1, 0,
 	 "M-C-Chr-B", NULL, NULL},
-	{CMD(emacs_move), "Move-WORD", 1,
+	{CMD(emacs_move), "Move-Expr", -1, 1,
+	 "M-C-Chr-U", NULL, NULL},
+	{CMD(emacs_move), "Move-Expr", 1, 1,
+	 "M-C-Chr-D", NULL, NULL},
+	{CMD(emacs_move), "Move-WORD", 1, 0,
 	 "M-Chr-F", NULL, NULL},
-	{CMD(emacs_move), "Move-WORD", -1,
+	{CMD(emacs_move), "Move-WORD", -1, 0,
 	 "M-Chr-B", NULL, NULL},
-	{CMD(emacs_move), "Move-EOL", 1,
+	{CMD(emacs_move), "Move-EOL", 1, 0,
 	 "C-Chr-E", "End", NULL},
-	{CMD(emacs_move), "Move-EOL", -1,
+	{CMD(emacs_move), "Move-EOL", -1, 0,
 	 "C-Chr-A", "Home", NULL},
-	{CMD(emacs_move), "Move-Line", -1,
+	{CMD(emacs_move), "Move-Line", -1, 0,
 	 "C-Chr-P", "Up", NULL},
-	{CMD(emacs_move), "Move-Line", 1,
+	{CMD(emacs_move), "Move-Line", 1, 0,
 	 "C-Chr-N", "Down", NULL},
-	{CMD(emacs_move), "Move-File", 1,
+	{CMD(emacs_move), "Move-File", 1, 0,
 	 "M-Chr->", "S-End", NULL},
-	{CMD(emacs_move), "Move-File", -1,
+	{CMD(emacs_move), "Move-File", -1, 0,
 	 "M-Chr-<", "S-Home", NULL},
-	{CMD(emacs_move), "Move-View-Large", 1,
+	{CMD(emacs_move), "Move-View-Large", 1, 0,
 	 "Next", "C-Chr-V", NULL},
-	{CMD(emacs_move), "Move-View-Large", -1,
+	{CMD(emacs_move), "Move-View-Large", -1, 0,
 	 "Prior", "M-Chr-v", NULL},
 
-	{CMD(emacs_delete), "Move-Char", 1,
+	{CMD(emacs_delete), "Move-Char", 1, 0,
 	 "C-Chr-D", "Del", "del"},
-	{CMD(emacs_delete), "Move-Char", -1,
+	{CMD(emacs_delete), "Move-Char", -1, 0,
 	 "C-Chr-H", "Backspace", NULL},
-	{CMD(emacs_delete), "Move-Word", 1,
+	{CMD(emacs_delete), "Move-Word", 1, 0,
 	 "M-Chr-d", NULL, NULL},
-	{CMD(emacs_delete), "Move-Word", -1,
+	{CMD(emacs_delete), "Move-Word", -1, 0,
 	 "M-C-Chr-H", "M-Backspace", NULL},
-	{CMD(emacs_delete), "Move-EOL", 1,
+	{CMD(emacs_delete), "Move-EOL", 1, 0,
 	 "C-Chr-K", NULL, NULL},
 
-	{CMD(emacs_case), "LMove-Word", 1,
+	{CMD(emacs_case), "LMove-Word", 1, 0,
 	 "M-Chr-l", NULL, NULL},
-	{CMD(emacs_case), "UMove-Word", 1,
+	{CMD(emacs_case), "UMove-Word", 1, 0,
 	 "M-Chr-u", NULL, NULL},
-	{CMD(emacs_case), "CMove-Word", 1,
+	{CMD(emacs_case), "CMove-Word", 1, 0,
 	 "M-Chr-c", NULL, NULL},
-	{CMD(emacs_case), "TMove-Char", 1,
+	{CMD(emacs_case), "TMove-Char", 1, 0,
 	 "M-Chr-`", NULL, NULL},
 
-	{CMD(emacs_swap), "Move-Char", 1,
+	{CMD(emacs_swap), "Move-Char", 1, 0,
 	 "C-Chr-T", NULL, NULL},
-	{CMD(emacs_swap), "Move-Word", 1,
+	{CMD(emacs_swap), "Move-Word", 1, 0,
 	 "M-Chr-t", NULL, NULL},
 };
 
@@ -106,11 +110,13 @@ REDEF_CMD(emacs_move)
 		struct mark *mk;
 		call("Move-to", ci->focus, 1, ci->mark);
 		mk = call_ret(mark2, "doc:point", ci->focus);
+
 		if (mk)
 			attr_set_int(&mk->attrs, "emacs:active", 0);
 	}
 
-	ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), ci->mark);
+	ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), ci->mark,
+		   NULL, mv->extra);
 	if (!ret)
 		return 0;
 

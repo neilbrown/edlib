@@ -261,11 +261,15 @@ DEF_CMD(doc_expr)
 	 * If we see open going forward or close going backward, or quote,
 	 * we skip to matching close/open/quote, allowing for nested
 	 * open/close etc. Inside quotes, we stop at EOL.
+	 * If num2 is 1, then if we reach a true 'open' we continue
+	 * one more character to enter (going forward) or leave (backward)
+	 * the expression.
 	 */
 	struct pane *f = ci->focus;
 	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
+	int enter_leave = ci->num2;
 	int dir;
 	char *open;
 	char *close;
@@ -290,16 +294,22 @@ DEF_CMD(doc_expr)
 		       (wi > 255 || strchr(special, wi) == NULL))
 			mark_step_pane(f, m, dir, 1);
 
-		if (strchr(close, wi))
-			/* hit a close */
-			break;
-		if (strchr(open, wi)) {
+		if (strchr(close, wi)) {
+			if (!dir && enter_leave)
+				mark_step_pane(f, m, dir, 1);
+			else
+				/* hit a close */
+				break;
+		} else if (strchr(open, wi)) {
 			/* skip bracketed expression */
 			int depth = 1;
 			wint_t q = 0;
 
 			mark_step_pane(f, m, dir, 1);
-			while (depth > 0 && (wi = mark_step_pane(f, m, dir, 1)) != WEOF) {
+			if (enter_leave && dir)
+				/* Just entered the expression */
+				;
+			else while (depth > 0 && (wi = mark_step_pane(f, m, dir, 1)) != WEOF) {
 				if (q) {
 					if (wi == q || is_eol(wi))
 						q = 0;
