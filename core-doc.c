@@ -253,6 +253,80 @@ DEF_CMD(doc_word)
 	return 1;
 }
 
+DEF_CMD(doc_expr)
+{
+	/* doc_expr skips an 'expression' which is the same as a word
+	 * unless we see open '({[' or close ')}]' or quote ('").
+	 * If we see close going forward, or open going backward, we stop.
+	 * If we see open going forward or close going backward, or quote,
+	 * we skip to matching close/open/quote, allowing for nested
+	 * open/close etc. Inside quotes, we stop at EOL.
+	 */
+	struct pane *f = ci->focus;
+	struct doc_data *dd = ci->home->data;
+	struct mark *m = ci->mark;
+	int rpt = RPT_NUM(ci);
+	int dir;
+	char *open;
+	char *close;
+	const char *special = "[](){}'\"";
+
+	if (!m)
+		m = dd->point;
+	dir = rpt > 0 ? 1 : 0;
+	if (dir) {
+		open = "([{"; close = ")]}";
+	} else {
+		open = ")]}"; close = "([{";
+	}
+	while (rpt != 0) {
+		wint_t wi = ' ';
+
+		while (iswspace(mark_step_pane(f, m, dir, 0)))
+			mark_step_pane(f, m, dir, 1);
+
+		while ((wi = mark_step_pane(f, m, dir, 0)) != WEOF &&
+		       !iswspace(wi) && !iswalnum(wi) &&
+		       (wi > 255 || strchr(special, wi) == NULL))
+			mark_step_pane(f, m, dir, 1);
+
+		if (strchr(close, wi))
+			/* hit a close */
+			break;
+		if (strchr(open, wi)) {
+			/* skip bracketed expression */
+			int depth = 1;
+			wint_t q = 0;
+
+			mark_step_pane(f, m, dir, 1);
+			while (depth > 0 && (wi = mark_step_pane(f, m, dir, 1)) != WEOF) {
+				if (q) {
+					if (wi == q || is_eol(wi))
+						q = 0;
+				} else if (strchr(open, wi))
+					depth += 1;
+				else if (strchr(close, wi))
+					depth -= 1;
+				else if (wi == '"' || wi == '\'')
+					q = wi;
+			}
+		} else if (wi == '"' || wi == '\'') {
+			/* skip quoted or to EOL */
+			wint_t q = wi;
+			mark_step_pane(f, m, dir, 1);
+			while ((wi = mark_step_pane(f, m, dir, 0)) != WEOF &&
+			       !is_eol(wi) && wi != q)
+				mark_step_pane(f, m, dir, 1);
+			if (wi == q)
+				mark_step_pane(f, m, dir, 1);
+		} else while (iswalnum(mark_step_pane(f, m, dir, 0)))
+			mark_step_pane(f, m, dir, 1);
+
+		rpt -= dir * 2 - 1;
+	}
+	return 1;
+}
+
 DEF_CMD(doc_WORD)
 {
 	struct pane *f = ci->focus;
@@ -906,6 +980,7 @@ static void init_doc_cmds(void)
 
 	key_add(doc_handle_cmd, "Move-Char", &doc_char);
 	key_add(doc_handle_cmd, "Move-Word", &doc_word);
+	key_add(doc_handle_cmd, "Move-Expr", &doc_expr);
 	key_add(doc_handle_cmd, "Move-WORD", &doc_WORD);
 	key_add(doc_handle_cmd, "Move-EOL", &doc_eol);
 	key_add(doc_handle_cmd, "Move-File", &doc_file);
