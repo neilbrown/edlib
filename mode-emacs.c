@@ -86,6 +86,8 @@ static struct move_command {
 	 "M-C-Chr-H", "M-Backspace", NULL},
 	{CMD(emacs_delete), "Move-EOL", 1, 0,
 	 "C-Chr-K", NULL, NULL},
+	{CMD(emacs_delete), "Move-Expr", 1, 0,
+	 "M-C-Chr-K", NULL, NULL},
 
 	{CMD(emacs_case), "LMove-Word", 1, 0,
 	 "M-Chr-l", NULL, NULL},
