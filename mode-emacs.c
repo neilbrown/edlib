@@ -1391,6 +1391,9 @@ REDEF_CMD(emacs_function_move)
 	int rpt = RPT_NUM(ci);
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 
+	if (!ci->mark)
+		return -1;
+
 	rpt *= mv->direction;
 	if (rpt > 0) {
 		/* To find end of function, we first move to the start,

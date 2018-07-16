@@ -333,12 +333,15 @@ error:
 
 }
 
-static void do_text_autosave(struct text *t)
+static void do_text_autosave(struct text *t safe)
 {
-	char *tempname = malloc(strlen(t->fname) + 3 + 10);
+	char *tempname;
 	char *base, *tbase;
 	int fd = -1;
 
+	if (!t->fname)
+		return;
+	tempname = malloc(strlen(t->fname) + 3 + 10);
 	strcpy(tempname, t->fname);
 	base = strrchr(t->fname, '/');
 	if (base)
