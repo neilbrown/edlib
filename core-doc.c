@@ -111,6 +111,7 @@ void doc_init(struct doc *d safe)
 	d->views = NULL;
 	d->nviews = 0;
 	d->name = NULL;
+	memset(d->recent_points, 0, sizeof(d->recent_points));
 	d->autoclose = 0;
 	d->filter = 0;
 	d->home = safe_cast NULL;
@@ -864,7 +865,8 @@ DEF_CMD(doc_clone)
 DEF_CMD(doc_close)
 {
 	struct doc_data *dd = ci->home->data;
-	mark_free(dd->point);
+	if (call("doc:push-point", dd->doc, 0, dd->point) <= 0)
+		mark_free(dd->point);
 	mark_free(dd->mark);
 	call("doc:closed", dd->doc);
 	free(dd);
@@ -981,6 +983,39 @@ DEF_CMD(doc_pass_on)
 	return ret;
 }
 
+DEF_CMD(doc_push_point)
+{
+	struct doc *d = ci->home->data;
+	int n = ARRAY_SIZE(d->recent_points);
+	if (ci->mark && ci->mark->viewnum == MARK_POINT) {
+		mark_free(d->recent_points[n-1]);
+		memmove(&d->recent_points[1],
+			&d->recent_points[0],
+			(n-1)*sizeof(d->recent_points[0]));
+		d->recent_points[0] = ci->mark;
+		return 1;
+	} else
+		return -1;
+}
+
+DEF_CMD(doc_pop_point)
+{
+	struct doc *d = ci->home->data;
+	int n = ARRAY_SIZE(d->recent_points);
+
+	if (!ci->mark)
+		return -1;
+	if (!d->recent_points[0])
+		return -1;
+	mark_to_mark(ci->mark, d->recent_points[0]);
+	mark_free(d->recent_points[0]);
+	memmove(&d->recent_points[0],
+		&d->recent_points[1],
+		(n-1) * sizeof(d->recent_points[0]));
+	d->recent_points[n-1] = NULL;
+	return 1;
+}
+
 struct map *doc_default_cmd safe;
 static struct map *doc_handle_cmd safe;
 
@@ -1031,6 +1066,9 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:get-str", &doc_get_str);
 	key_add(doc_default_cmd, "doc:write-file", &doc_write_file);
 	key_add(doc_default_cmd, "doc:content", &doc_default_content);
+	key_add(doc_default_cmd, "doc:push-point", &doc_push_point);
+	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
+
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
 		      &doc_request_notify);
 	key_add_range(doc_default_cmd, "Notify:doc:", "Notify:doc;",
@@ -1049,7 +1087,8 @@ static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe,
 	m = vmark_new(doc, MARK_POINT);
 	if (!m)
 		return NULL;
-	pane_notify("Notify:doc:viewers", doc, 0, m);
+	if (call("doc:pop-point", doc, 0, m) <= 0)
+		pane_notify("Notify:doc:viewers", doc, 0, m);
 	dd->doc = doc;
 	dd->point = m;
 	attr_set_str(&m->attrs, "render:interactive-point", "yes");
@@ -1202,9 +1241,13 @@ DEF_CMD(doc_from_text)
 
 void doc_free(struct doc *d safe)
 {
-	int i;
+	unsigned int i;
 
-	for (i = 0; i < d->nviews; i++)
+	for (i = 0; i < ARRAY_SIZE(d->recent_points); i++) {
+		mark_free(d->recent_points[i]);
+		d->recent_points[i] = NULL;
+	}
+	for (i = 0; i < (unsigned int)d->nviews; i++)
 		ASSERT(d->views && !d->views[i].state);
 	free(d->views);
 	free(d->name);

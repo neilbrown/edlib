@@ -124,6 +124,7 @@ struct doc {
 		short		  state;	/* 0 = unused, 1 = active, 2 = being deleted */
 	} /* safe iff nviews > 0 */ *views;
 	int			nviews;
+	struct mark		*recent_points[8];
 	struct pane		*home safe; /* pane which owns this doc*/
 	char			*name;
 	bool			autoclose;
