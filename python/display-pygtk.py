@@ -406,7 +406,7 @@ class EdDisplay(gtk.Window):
             s = "M-" + s;
         self.pane.call("Mouse-event", s, self.pane, (x,y))
 
-    eventmap = { "Return" : "Return",
+    eventmap = { "Return" : "Enter",
                  "Tab" : "Tab",
                  "Escape" : "ESC",
                  "Linefeed" : "LF",

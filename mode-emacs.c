@@ -434,7 +434,7 @@ static struct {
 } other_inserts[] = {
 	{"Tab", "\t"},
 	{"LF", "\n"},
-	{"Return", "\n"},
+	{"Enter", "\n"},
 	{"C-Chr-O", "\0\n"},
 	{NULL, NULL}
 };
@@ -515,7 +515,7 @@ static void findmap_init(void)
 {
 	fh_map = key_alloc();
 	key_add(fh_map, "Tab", &find_complete);
-	key_add(fh_map, "Return", &find_done);
+	key_add(fh_map, "Enter", &find_done);
 }
 
 DEF_LOOKUP_CMD(find_handle, fh_map);
@@ -1459,7 +1459,7 @@ static void emacs_init(void)
 	key_add_range(m, "Chr-\200", "Chr-\377\377\377\377", &emacs_insert);
 	key_add(m, "Tab", &emacs_insert_other);
 	key_add(m, "LF", &emacs_insert_other);
-	key_add(m, "Return", &emacs_insert_other);
+	key_add(m, "Enter", &emacs_insert_other);
 	key_add(m, "C-Chr-O", &emacs_insert_other);
 
 	key_add(m, "C-Chr-_", &emacs_undo);

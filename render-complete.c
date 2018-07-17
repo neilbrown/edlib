@@ -381,7 +381,7 @@ static void register_map(void)
 	key_add_range(rc_map, "Move-", "Move-\377", &complete_nomove);
 	key_add(rc_map, "Move-EOL", &complete_eol);
 
-	key_add(rc_map, "Return", &complete_return);
+	key_add(rc_map, "Enter", &complete_return);
 
 	key_add(rc_map, "Complete:prefix", &complete_set_prefix);
 }

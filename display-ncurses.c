@@ -647,7 +647,7 @@ static struct namelist {
 }, char_names[] = {
 	{'\e', "ESC"},
 	{'\n', "LF"},
-	{'\r', "Return"},
+	{'\r', "Enter"},
 	{'\t', "Tab"},
 	{'\0', "C-Chr- "},
 	{0, NULL}

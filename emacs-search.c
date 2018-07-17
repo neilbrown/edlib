@@ -256,7 +256,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "C-Chr-C", &search_add);
 	key_add(es_map, "C-Chr-R", &search_forward);
 	key_add(es_map, "Close", &search_close);
-	key_add(es_map, "Return", &search_done);
+	key_add(es_map, "Enter", &search_done);
 	key_add(es_map, "Notify:doc:Replace", &search_again);
 	key_add(es_map, "Notify:clip", &search_clip);
 }
