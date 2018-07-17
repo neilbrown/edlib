@@ -20,7 +20,26 @@ class CModePane(edlib.Pane):
                 self.call("doc:step", focus, 1, 1, m)
                 break
             c = self.call("doc:step", focus, 0, 1, m)
-        return self.call("Replace", focus, 1, m, "\n")
+        new = self.find_indent(focus, m.dup())
+        return self.call("Replace", focus, 1, m, "\n" + new)
+
+    def find_indent(self, focus, m):
+        # Find previous line which is not empty and return
+        # a string containing the leading tabs/spaces.
+        while self.call("doc:step", focus, 0, m) == 0x10000a:
+            self.call("doc:step", focus, 0, 1, m)
+        if self.call("doc:step", focus, 0, m) == edlib.WEOF:
+            return ""
+        # line before m is not empty
+        m2 = m.dup()
+        c = self.call("doc:step", focus, 0, m2)
+        while c != edlib.WEOF and (c & 0xfffff) != 10:
+            self.call("doc:step", focus, 0, 1, m2)
+            if chr(c&0xfffff) not in " \t":
+                m.to_mark(m2)
+            c = self.call("doc:step", focus, 0, m2)
+        # m2 .. m is the prefix
+        return focus.call("doc:get-str", m2, m, ret = 'str')
 
 def c_mode_attach(key, focus, comm2, **a):
     p = focus.render_attach("text")
