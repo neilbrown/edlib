@@ -103,6 +103,8 @@ int main(int argc, char *argv[])
 	call("global-load-module", ed, 0, NULL, "lib-qprint");
 	call("global-load-module", ed, 0, NULL, "lib-copybuf");
 
+	call("global-load-module", ed, 0, NULL, "render-c-mode");
+
 	while (optind < argc) {
 		char *file = argv[optind++];
 		int fd = open(file, O_RDONLY);
