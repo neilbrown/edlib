@@ -399,7 +399,7 @@ static void text_check_autosave(struct text *t safe)
 	t->as.last_change = time(0L);
 	if (!t->fname)
 		return;
-	if (t->as.changes > 300)
+	if (t->as.changes > 300 || t->as.changes == 0)
 		do_text_autosave(t);
 	else if (!t->as.timer_started) {
 		t->as.timer_started = 1;
