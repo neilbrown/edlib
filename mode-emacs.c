@@ -588,9 +588,10 @@ DEF_CMD(emacs_findfile)
 		return -1;
 	}
 
-	doc_attach_view(par, p, NULL);
-	pane_focus(p);
-	return 1;
+	p = doc_attach_view(par, p, NULL);
+	if (p)
+		pane_focus(p);
+	return p ? 1 : -1;
 }
 
 REDEF_CMD(emacs_file_complete)
@@ -705,7 +706,9 @@ DEF_CMD(emacs_finddoc)
 		return -1;
 
 	p = doc_attach_view(par, p, NULL);
-	return !!p;
+	if (p)
+		pane_focus(p);
+	return p ? 1 : -1;
 }
 
 REDEF_CMD(emacs_doc_complete)
