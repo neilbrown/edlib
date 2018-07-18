@@ -27,10 +27,14 @@ class CModePane(edlib.Pane):
         focus.call("Move-Expr", -1, 1, expr)
         if expr > indent_end:
             focus.call("doc:step", expr, 1, 1)
-            extra = focus.call("doc:get-str", indent_end, expr, ret='str')
-            extra = "".ljust(len(extra),' ')
+            if focus.call("doc:step", expr, 1, 0) == 0x10000a:
+                extra = "\t"
+            else:
+                extra = focus.call("doc:get-str", indent_end, expr, ret='str')
+                extra = "".ljust(len(extra),' ')
         else:
-            extra = ""
+                extra = ""
+
         return focus.call("Replace", 1, m, "\n" + new + extra)
 
     def find_indent(self, focus, m):
