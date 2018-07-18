@@ -20,12 +20,23 @@ class CModePane(edlib.Pane):
                 self.call("doc:step", focus, 1, 1, m)
                 break
             c = self.call("doc:step", focus, 0, 1, m)
-        new = self.find_indent(focus, m.dup())
-        return self.call("Replace", focus, 1, m, "\n" + new)
+        indent_end = m.dup()
+        new = self.find_indent(focus, indent_end)
+        # now see if a () expression started since the indent.
+        expr = m.dup()
+        focus.call("Move-Expr", -1, 1, expr)
+        if expr > indent_end:
+            focus.call("doc:step", expr, 1, 1)
+            extra = focus.call("doc:get-str", indent_end, expr, ret='str')
+            extra = "".ljust(len(extra),' ')
+        else:
+            extra = ""
+        return focus.call("Replace", 1, m, "\n" + new + extra)
 
     def find_indent(self, focus, m):
         # Find previous line which is not empty and return
         # a string containing the leading tabs/spaces.
+        # The mark is moved to the end of the indent.
         while self.call("doc:step", focus, 0, m) == 0x10000a:
             self.call("doc:step", focus, 0, 1, m)
         if self.call("doc:step", focus, 0, m) == edlib.WEOF:
