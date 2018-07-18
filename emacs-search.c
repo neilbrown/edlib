@@ -221,15 +221,15 @@ DEF_CMD(search_done)
 	 */
 	struct es_info *esi = ci->home->data;
 	char *str = call_ret(str, "doc:get-str", ci->focus);
+	struct mark *mk;
 
-	if (esi->matched) {
-		struct mark *mk;
-		call("Move-to", esi->target, 1);
-		mk = call_ret(mark2, "doc:point", esi->target);
-		if (mk)
-			attr_set_int(&mk->attrs, "emacs:active", 0);
-		call("Move-to", esi->target, 0, esi->end);
-	}
+	/* More to last location, found */
+	call("Move-to", esi->target, 1);
+	mk = call_ret(mark2, "doc:point", esi->target);
+	if (mk)
+		attr_set_int(&mk->attrs, "emacs:active", 0);
+	call("Move-to", esi->target, 0, esi->end);
+
 	call("popup:close", safe_cast ci->focus->parent, 0, NULL, str);
 	free(str);
 	return 1;
