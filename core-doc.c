@@ -296,9 +296,10 @@ DEF_CMD(doc_expr)
 			mark_step_pane(f, m, dir, 1);
 
 		if (strchr(close, wi)) {
-			if (!dir && enter_leave)
+			if (!dir && enter_leave) {
 				mark_step_pane(f, m, dir, 1);
-			else
+				rpt += 1;
+			} else
 				/* hit a close */
 				break;
 		} else if (strchr(open, wi)) {
@@ -309,7 +310,7 @@ DEF_CMD(doc_expr)
 			mark_step_pane(f, m, dir, 1);
 			if (enter_leave && dir)
 				/* Just entered the expression */
-				;
+				rpt -= 1;
 			else while (depth > 0 && (wi = mark_step_pane(f, m, dir, 1)) != WEOF) {
 				if (q) {
 					if (wi == q || is_eol(wi))
@@ -333,7 +334,10 @@ DEF_CMD(doc_expr)
 		} else while (iswalnum(mark_step_pane(f, m, dir, 0)))
 			mark_step_pane(f, m, dir, 1);
 
-		rpt -= dir * 2 - 1;
+		if (!enter_leave)
+			rpt -= dir * 2 - 1;
+		if (wi == WEOF)
+			break;
 	}
 	return 1;
 }
