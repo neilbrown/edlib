@@ -58,11 +58,30 @@ def c_mode_attach(key, focus, comm2, **a):
     comm2("callback", p)
     return 1
 
+def py_mode_attach(key, focus, comm2, **a):
+    p = focus.render_attach("text")
+    p = CModePane(p)
+    comm2("callback", p)
+    return 1
+
 def c_mode_appeared(key, focus, **a):
     n = focus["filename"]
     if n and n[-2:] in [".c", ".h"]:
         focus["render-default"] = "c-mode"
     return 0
 
+def py_mode_appeared(key, focus, **a):
+    n = focus["filename"]
+    if n and n[-3:] in [".py"]:
+        focus["render-default"] = "py-mode"
+    return 0
+
+def attach_indent(key, focus, **a):
+    CModePane(focus)
+    return 1
+
 editor.call("global-set-command", "doc:appeared-c-mode", c_mode_appeared)
+editor.call("global-set-command", "doc:appeared-py-mode", py_mode_appeared)
 editor.call("global-set-command", "attach-render-c-mode", c_mode_attach)
+editor.call("global-set-command", "attach-render-py-mode", py_mode_attach)
+editor.call("global-set-command", "interactive-cmd-indent", attach_indent)
