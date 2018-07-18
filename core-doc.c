@@ -869,8 +869,8 @@ DEF_CMD(doc_clone)
 DEF_CMD(doc_close)
 {
 	struct doc_data *dd = ci->home->data;
-	if (call("doc:push-point", dd->doc, 0, dd->point) <= 0)
-		mark_free(dd->point);
+	call("doc:push-point", dd->doc, 0, dd->point);
+	mark_free(dd->point);
 	mark_free(dd->mark);
 	call("doc:closed", dd->doc);
 	free(dd);
@@ -991,12 +991,12 @@ DEF_CMD(doc_push_point)
 {
 	struct doc *d = ci->home->data;
 	int n = ARRAY_SIZE(d->recent_points);
-	if (ci->mark && ci->mark->viewnum == MARK_POINT) {
+	if (ci->mark) {
 		mark_free(d->recent_points[n-1]);
 		memmove(&d->recent_points[1],
 			&d->recent_points[0],
 			(n-1)*sizeof(d->recent_points[0]));
-		d->recent_points[0] = ci->mark;
+		d->recent_points[0] = mark_dup(ci->mark, 1);
 		return 1;
 	} else
 		return -1;
