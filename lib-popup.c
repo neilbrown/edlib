@@ -18,6 +18,7 @@
  *
  * A popup is created by "PopupTile"
  * A prefix to be displayed can be added by setting "prefix" on the popup pane.
+ * A default value can be given with attr "default" which is displated after prefix
  * The event sent when the popup is closed can be set by setting attribute "done-key"
  * otherwise "PopupDone" is used.
  */
@@ -33,7 +34,7 @@ static struct map *popup_map;
 DEF_LOOKUP_CMD(popup_handle, popup_map);
 
 struct popup_info {
-	struct pane	*target safe, *popup safe;
+	struct pane	*target safe, *popup safe, *handle safe;
 	char		*style safe;
 };
 
@@ -128,6 +129,22 @@ DEF_CMD(popup_style)
 DEF_CMD(popup_refresh_size)
 {
 	struct popup_info *ppi = ci->home->data;
+	char *prompt, *dflt, *prefix;
+
+	prefix = attr_find(ppi->handle->attrs, "prefix");
+	prompt = attr_find(ppi->handle->attrs, "prompt");
+	if (!prefix && prompt) {
+		char *t = NULL;
+		dflt = attr_find(ppi->handle->attrs, "default");
+		if (!prompt)
+			prompt = "";
+		if (dflt)
+			asprintf(&t, "%s(%s): ", prompt, dflt);
+		else
+			asprintf(&t, "%s: ", prompt);
+		attr_set_str(&ppi->handle->attrs, "prefix", t);
+		free(t);
+	}
 
 	popup_resize(ci->home, ppi->style);
 	return 0;
@@ -150,6 +167,8 @@ DEF_CMD(popup_do_close)
 	if (!key)
 		key = "PopupDone";
 	str = ci->str;
+	if (!str || !str[0])
+		str = pane_attr_get(ci->focus, "default");
 	pane_close(ppi->popup);
 	/* This pane is closed now, ppi is gone. Be careful */
 	call(key, target, 1, NULL, str);
@@ -226,6 +245,7 @@ DEF_CMD(popup_attach)
 
 	if (!p)
 		return -1;
+	ppi->handle = p;
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 
