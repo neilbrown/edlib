@@ -859,6 +859,12 @@ DEF_CMD(emacs_kill_doc)
 
 DEF_CMD(emacs_save_all)
 {
+	int ret = call("docs:save-all", ci->focus, 0, NULL, NULL, 1);
+
+	if (ret == 1) {
+		call("Message", ci->focus, 0, NULL, "No files need to be saved.");
+		return 1;
+	}
 	if (ci->num == NO_NUMERIC) {
 		struct pane *p = call_pane("PopupTile", ci->focus, 0, NULL, "DM");
 		if (p)

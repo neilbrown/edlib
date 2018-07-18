@@ -102,7 +102,7 @@ static void docs_enmark(struct docs *doc safe, struct pane *p safe)
 		}
 }
 
-static void doc_save(struct pane *p safe, struct pane *focus safe)
+static int doc_save(struct pane *p safe, struct pane *focus safe, int test)
 {
 	char *fn = pane_attr_get(p, "filename");
 	char *mod = pane_attr_get(p, "doc-modified");
@@ -112,8 +112,11 @@ static void doc_save(struct pane *p safe, struct pane *focus safe)
 	else if (!mod || strcmp(mod, "yes") != 0)
 		call("Message", focus, 0, NULL,
 		     "File not modified - no need to save.");
+	else if (test)
+		return 1;
 	else
 		home_call(p, "doc:save-file", focus);
+	return 0;
 }
 
 static void check_name(struct docs *docs safe, struct pane *pane safe)
@@ -379,7 +382,9 @@ DEF_CMD(docs_callback)
 
 	if (strcmp(ci->key, "docs:save-all") == 0) {
 		list_for_each_entry(p, &doc->collection->children, siblings)
-			doc_save(p, p);
+			if (doc_save(p, p, ci->num2) > 0)
+				/* Something needs to be saved */
+				return 2;
 		return 1;
 	}
 
@@ -676,7 +681,7 @@ static int docs_save(struct pane *focus safe, struct mark *m)
 	dp = m->ref.p;
 	if (!dp)
 		return 0;
-	doc_save(dp, focus);
+	doc_save(dp, focus, 0);
 	return 1;
 }
 
