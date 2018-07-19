@@ -362,7 +362,6 @@ class EdDisplay(gtk.Window):
         self.im.focus_in()
         self.in_focus = True
         self.pane.damaged(edlib.DAMAGED_CURSOR)
-        self.pane.call("pane:refocus")
 
     def focus_out(self, *a):
         self.im.focus_out()

@@ -17,7 +17,7 @@
 struct input_mode {
 	char		*mode safe;
 	int		num, num2;
-	struct pane	*focus;
+	struct pane	*focus, *source;
 	struct mark	*point;
 };
 
@@ -70,6 +70,12 @@ DEF_CMD(keystroke)
 	im->mode = "";
 	im->num = NO_NUMERIC;
 	im->num2 = 0;
+
+	if (im->source != ci->focus) {
+		im->source = ci->focus;
+		im->focus = NULL;
+		im->point = NULL;
+	}
 
 	if (!im->focus) {
 		p = ci->focus;
@@ -161,6 +167,7 @@ DEF_CMD(refocus)
 
 	im->focus = NULL;
 	im->point = NULL;
+	im->source = NULL;
 	return 0;
 }
 
@@ -171,6 +178,7 @@ DEF_CMD(close_focus)
 	if (im->focus == ci->focus) {
 		im->focus = NULL;
 		im->point = NULL;
+		im->source = NULL;
 	}
 	return 1;
 }
