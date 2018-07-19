@@ -1665,7 +1665,7 @@ def notmuch_mode(key, home, focus, **a):
     if not p1:
         return -1
     p2 = p0.call("doc:attach", ret = 'focus')
-    p2.call("doc:assign", p1, 1)
+    p2.call("doc:assign", p1, "")
     return 1
 
 if "editor" in globals():

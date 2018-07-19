@@ -1100,10 +1100,10 @@ static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe,
 	pane_add_notify(p, doc, "Notify:Close");
 	pane_add_notify(p, doc, "Notify:doc:viewers");
 	call("doc:revisit", doc, 1);
-	if (num || str) {
+	if (str) {
 		p2 = call_pane("attach-view", p);
 		if (p2)
-			p2 = render_attach(str, p2);
+			p2 = render_attach(str[0] ? str : NULL, p2);
 	}
 	return p2;
 }
