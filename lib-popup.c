@@ -169,6 +169,8 @@ DEF_CMD(popup_do_close)
 	str = ci->str;
 	if (!str || !str[0])
 		str = pane_attr_get(ci->focus, "default");
+	if (!str)
+		str = "";
 	pane_close(ppi->popup);
 	/* This pane is closed now, ppi is gone. Be careful */
 	call(key, target, 1, NULL, str);
