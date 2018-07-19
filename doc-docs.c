@@ -389,7 +389,7 @@ DEF_CMD(docs_callback)
 	}
 
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
-		p = doc_attach_view(ci->focus, doc->doc.home, NULL);
+		p = doc_attach_view(ci->focus, doc->doc.home, NULL, 1);
 		p = pane_register(p, 0, &docs_modified_handle.c, doc, NULL);
 		call("Request:Notify:doc:Replace", p);
 		/* And trigger Notify:doc:Replace handling immediately...*/
@@ -614,7 +614,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 		par = call_pane("ThisPane", focus);
 	if (!par)
 		return -1;
-	p = doc_attach_view(par, dp, NULL);
+	p = doc_attach_view(par, dp, NULL, 1);
 	if (p) {
 		pane_focus(p);
 		return 1;
@@ -647,7 +647,7 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 	par = call_pane("ThisPane", focus);
 	if (!par)
 		return -1;
-	p = doc_attach_view(par, dp, renderer);
+	p = doc_attach_view(par, dp, renderer, 1);
 	if (p) {
 		pane_focus(p);
 		return 1;
@@ -668,7 +668,7 @@ static int docs_bury(struct pane *focus safe)
 	call("doc:revisit", focus, -1);
 	doc = call_pane("docs:choose", focus);
 	if (doc)
-		doc_attach_view(tile, doc, NULL);
+		doc_attach_view(tile, doc, NULL, 1);
 	return 1;
 }
 

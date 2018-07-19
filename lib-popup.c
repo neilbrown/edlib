@@ -236,7 +236,7 @@ DEF_CMD(popup_attach)
 			call_pane("doc:from-text", ppi->popup, 0, NULL,
 				  "*popup*", 0, NULL, ci->str2);
 		if (doc &&
-		    (p = doc_attach_view(ppi->popup, doc, NULL)) != NULL) {
+		    (p = doc_attach_view(ppi->popup, doc, NULL, 0)) != NULL) {
 
 			call("Move-File", p, 1);
 			call("doc:set:autoclose", p, 1);

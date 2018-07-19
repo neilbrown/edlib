@@ -134,7 +134,8 @@ struct doc {
 void doc_init(struct doc *d safe);
 void doc_free(struct doc *d safe);
 struct pane *doc_new(struct pane *p safe, char *type, struct pane *parent);
-struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe, char *render);
+struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe,
+                             char *render, int raise);
 extern struct map *doc_default_cmd safe;
 void doc_setup(struct pane *ed safe);
 

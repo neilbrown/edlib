@@ -567,7 +567,7 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 	else
 		par = call_pane("ThisPane", focus);
 	if (par) {
-		p = doc_attach_view(par, p, NULL);
+		p = doc_attach_view(par, p, NULL, 1);
 		pane_focus(p);
 	}
 	return 1;
@@ -603,7 +603,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 				if (!par)
 					return -1;
 
-				p = doc_attach_view(par, new, renderer);
+				p = doc_attach_view(par, new, renderer, 1);
 			}
 		}
 		close(fd);
@@ -613,7 +613,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 		par = call_pane("ThisPane", focus);
 		if (!par || !doc)
 			return -1;
-		p = doc_attach_view(par, doc, NULL);
+		p = doc_attach_view(par, doc, NULL, 1);
 	}
 	free(fname);
 	pane_focus(p);

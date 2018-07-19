@@ -951,7 +951,7 @@ DEF_CMD(tile_child_closed)
 	/* Child closed, but we weren't, so find something else to display */
 	c = call_pane("docs:choose", p);
 	if (c)
-		doc_attach_view(p, c, NULL);
+		doc_attach_view(p, c, NULL, 1);
 	else if (ti->direction != Neither)
 		pane_close(p);
 	return 1;

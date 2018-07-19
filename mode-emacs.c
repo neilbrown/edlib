@@ -588,7 +588,7 @@ DEF_CMD(emacs_findfile)
 		return -1;
 	}
 
-	p = doc_attach_view(par, p, NULL);
+	p = doc_attach_view(par, p, NULL, 1);
 	if (p)
 		pane_focus(p);
 	return p ? 1 : -1;
@@ -634,7 +634,7 @@ REDEF_CMD(emacs_file_complete)
 	pop = call_pane("PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		return -1;
-	par = doc_attach_view(pop, docp, NULL);
+	par = doc_attach_view(pop, docp, NULL, 0);
 	if (!par)
 		return -1;
 
@@ -705,7 +705,7 @@ DEF_CMD(emacs_finddoc)
 	if (!p || !par)
 		return -1;
 
-	p = doc_attach_view(par, p, NULL);
+	p = doc_attach_view(par, p, NULL, 1);
 	if (p)
 		pane_focus(p);
 	return p ? 1 : -1;
@@ -732,7 +732,7 @@ REDEF_CMD(emacs_doc_complete)
 	docs = call_pane("docs:byname", ci->focus);
 	if (!docs)
 		return -1;
-	par = doc_attach_view(pop, docs, NULL);
+	par = doc_attach_view(pop, docs, NULL, 0);
 	if (!par)
 		return -1;
 
@@ -771,7 +771,7 @@ DEF_CMD(emacs_viewdocs)
 	if (!par)
 		return -1;
 
-	p = doc_attach_view(par, docs, NULL);
+	p = doc_attach_view(par, docs, NULL, 1);
 	return !!p;
 }
 
@@ -813,7 +813,7 @@ DEF_CMD(emacs_shell)
 		return -1;
 	home_call(p, "doc:assign", doc);
 	call_pane("attach-shellcmd", p, 0, NULL, ci->str, 0, NULL, path);
-	doc_attach_view(par, doc, "default:viewer");
+	doc_attach_view(par, doc, "default:viewer", 1);
 	return 1;
 }
 
@@ -1137,7 +1137,7 @@ DEF_CMD(emacs_bury)
 	call("doc:revisit", ci->focus, -1);
 	doc = call_pane("docs:choose", ci->focus);
 	if (doc)
-		doc_attach_view(tile, doc, NULL);
+		doc_attach_view(tile, doc, NULL, 1);
 	return 1;
 }
 

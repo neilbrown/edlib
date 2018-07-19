@@ -1209,13 +1209,13 @@ DEF_CMD(doc_open)
 	return comm_call(ci->comm2, "callback", p);
 }
 
-struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe, char *render)
+struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe, char *render, int raise)
 {
 	struct pane *p;
 
 	p = doc_attach(parent);
 	if (p) {
-		do_doc_assign(p, doc, 1, NULL);
+		do_doc_assign(p, doc, raise, NULL);
 		p = call_pane("attach-view", p);
 	}
 	if (p)
