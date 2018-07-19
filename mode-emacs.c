@@ -931,13 +931,14 @@ DEF_CMD(emacs_search_highlight)
 	free(hi->patn);
 	hi->patn = NULL;
 
-	if (ci->mark && ci->num > 0 && ci->str) {
+	if (ci->mark && ci->num >= 0 && ci->str) {
 		hi->patn = strdup(ci->str);
 		m = vmark_new(ci->focus, hi->view);
 		if (!m)
 			return -1;
 		mark_to_mark(m, ci->mark);
-		attr_set_int(&m->attrs, "render:search", ci->num);
+		if (ci->num > 0)
+			attr_set_int(&m->attrs, "render:search", ci->num);
 		call("Move-View-Pos", ci->focus, 0, m);
 		call("Notify:doc:Replace", ci->focus);
 		if (start) {

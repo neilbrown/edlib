@@ -185,6 +185,7 @@ DEF_CMD(search_again)
 		pfx = "Search (unavailable): ";
 	else if (ret == -2) {
 		esi->matched = 0;
+		call("search:highlight", esi->target, 0, m, str);
 		pfx = "Failed Search: ";
 	} else if (ret < 0) {
 		pfx = "Search (incomplete): ";
