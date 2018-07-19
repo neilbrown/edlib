@@ -861,7 +861,7 @@ DEF_CMD(doc_clone)
 
 	if (!p)
 		return 0;
-	do_doc_assign(p, dd->doc, 0, NULL);
+	do_doc_assign(p, dd->doc, 1, NULL);
 	call("Move-to", p, 0, dd->point);
 	pane_clone_children(ci->home, p);
 	return 1;
@@ -1100,7 +1100,7 @@ static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe,
 
 	pane_add_notify(p, doc, "Notify:Close");
 	pane_add_notify(p, doc, "Notify:doc:viewers");
-	call("doc:revisit", doc, 1);
+	call("doc:revisit", doc, num);
 	if (str) {
 		p2 = call_pane("attach-view", p);
 		if (p2)
@@ -1215,7 +1215,7 @@ struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe, ch
 
 	p = doc_attach(parent);
 	if (p) {
-		do_doc_assign(p, doc, 0, NULL);
+		do_doc_assign(p, doc, 1, NULL);
 		p = call_pane("attach-view", p);
 	}
 	if (p)
