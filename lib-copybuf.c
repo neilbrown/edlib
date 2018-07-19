@@ -25,7 +25,7 @@
 struct copy_info {
 	struct txt {
 		struct txt *next;
-		char	*txt;
+		char	*txt safe;
 	} *store;
 	int		count;
 	struct command	cmd;
@@ -59,7 +59,7 @@ DEF_CMD(copy_do)
 {
 	struct copy_info *cyi = container_of(ci->comm, struct copy_info, cmd);
 
-	if (strcmp(ci->key, "copy:save") == 0 && ci->str) {
+	if (strcmp(ci->key, "copy:save") == 0 && ci->str && ci->num == 0) {
 		struct txt *t;
 		if (cyi->count >= 10) {
 			struct txt **tp = &cyi->store;
@@ -74,6 +74,25 @@ DEF_CMD(copy_do)
 		t->next = cyi->store;
 		t->txt = strdup(ci->str);
 		cyi->store = t;
+		return 1;
+	}
+	if (strcmp(ci->key, "copy:save") == 0 && ci->str && ci->num == 1) {
+		/* Append str to the latest copy */
+		struct txt *t;
+		char *txt;
+
+		t = cyi->store;
+		if (t) {
+			txt = t->txt;
+			t->txt = malloc(strlen(txt) + strlen(ci->str) + 1);
+			strcat(strcpy(t->txt, txt), ci->str);
+			free(txt);
+		} else {
+			t = calloc(1, sizeof(*t));
+			t->next = cyi->store;
+			t->txt = strdup(ci->str);
+			cyi->store = t;
+		}
 		return 1;
 	}
 	if (strcmp(ci->key, "copy:get") == 0) {

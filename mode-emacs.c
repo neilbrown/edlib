@@ -25,6 +25,7 @@ static struct map *emacs_map, *hl_map;
 REDEF_CMD(emacs_move);
 REDEF_CMD(emacs_function_move);
 REDEF_CMD(emacs_delete);
+REDEF_CMD(emacs_kill);
 REDEF_CMD(emacs_case);
 REDEF_CMD(emacs_swap);
 
@@ -84,9 +85,9 @@ static struct move_command {
 	 "M-Chr-d", NULL, NULL},
 	{CMD(emacs_delete), "Move-Word", -1, 0,
 	 "M-C-Chr-H", "M-Backspace", NULL},
-	{CMD(emacs_delete), "Move-EOL", 1, 0,
+	{CMD(emacs_kill), "Move-EOL", 1, 0,
 	 "C-Chr-K", NULL, NULL},
-	{CMD(emacs_delete), "Move-Expr", 1, 0,
+	{CMD(emacs_kill), "Move-Expr", 1, 0,
 	 "M-C-Chr-K", NULL, NULL},
 
 	{CMD(emacs_case), "LMove-Word", 1, 0,
@@ -145,6 +146,32 @@ REDEF_CMD(emacs_delete)
 
 	m = mark_dup(ci->mark, 1);
 
+	ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);
+
+	if (!ret) {
+		mark_free(m);
+		return 0;
+	}
+	ret = call("Replace", ci->focus, 1, m, NULL, !ci->num2);
+	mark_free(m);
+	call("Mode:set-num2", ci->focus, 1);
+
+	return ret;
+}
+
+REDEF_CMD(emacs_kill)
+{
+	/* Like delete, but copy to copy-buffer */
+	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
+	int ret = 0;
+	struct mark *m;
+	char *str;
+
+	if (!ci->mark)
+		return -1;
+
+	m = mark_dup(ci->mark, 1);
+
 	if (strcmp(mv->type, "Move-EOL") == 0 &&
 	    mv->direction == 1 && RPT_NUM(ci) == 1 &&
 	    is_eol(doc_following_pane(ci->focus, m)))
@@ -156,6 +183,9 @@ REDEF_CMD(emacs_delete)
 		mark_free(m);
 		return 0;
 	}
+	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, m);
+	if (str && *str)
+		call("copy:save", ci->focus, !!ci->num2, NULL, str);
 	ret = call("Replace", ci->focus, 1, m, NULL, !ci->num2);
 	mark_free(m);
 	call("Mode:set-num2", ci->focus, 1);
