@@ -823,11 +823,14 @@ DEF_CMD(emacs_shell)
 		pane_register(p, 0, &find_handle.c, "cmd", NULL);
 		return 1;
 	}
-	path = pane_attr_get(ci->focus, "filename");
-	if (path) {
-		char *e = strrchr(path, '/');
-		if (e && e > path)
-			*e = 0;
+	path = pane_attr_get(ci->focus, "dirname");
+	if (!path) {
+		path = pane_attr_get(ci->focus, "filename");
+		if (path) {
+			char *e = strrchr(path, '/');
+			if (e)
+				e[1] = 0;
+		}
 	}
 	/* Find or create "*Shell Command Output*" */
 	doc = call_pane("docs:byname", ci->focus, 0, NULL, name);
@@ -835,6 +838,7 @@ DEF_CMD(emacs_shell)
 		doc = call_pane("doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
 	if (!doc)
 		return -1;
+	attr_set_str(&doc->attrs, "dirname", path);
 	par = CALL(pane, home, ci->focus, "OtherPane", doc, 4);
 	if (!par)
 		return -1;
