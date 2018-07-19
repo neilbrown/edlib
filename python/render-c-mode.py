@@ -6,6 +6,12 @@ class CModePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
 
+    def handle_clone(self, key, focus, **a):
+        "handle:Clone"
+        p = CModePane(focus)
+        self.clone_children(p)
+        return 1
+
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
         # If there is white space at the end of the line,
