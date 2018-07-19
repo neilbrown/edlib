@@ -35,7 +35,7 @@ struct doc_ref {
 #include "misc.h"
 
 static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe, int, char *);
-static struct pane *doc_attach(struct pane *parent, struct pane *d);
+static struct pane *doc_attach(struct pane *parent);
 
 static inline wint_t doc_following(struct doc *d safe, struct mark *m safe)
 {
@@ -857,10 +857,11 @@ DEF_CMD(doc_notify_close)
 DEF_CMD(doc_clone)
 {
 	struct doc_data *dd = ci->home->data;
-	struct pane *p = doc_attach(ci->focus, dd->doc);
+	struct pane *p = doc_attach(ci->focus);
 
 	if (!p)
 		return 0;
+	do_doc_assign(p, dd->doc, 0, NULL);
 	call("Move-to", p, 0, dd->point);
 	pane_clone_children(ci->home, p);
 	return 1;
@@ -1108,16 +1109,11 @@ static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe,
 	return p2;
 }
 
-static struct pane *doc_attach(struct pane *parent, struct pane *d)
+static struct pane *doc_attach(struct pane *parent)
 {
-	struct pane *p;
 	struct doc_data *dd = calloc(1, sizeof(*dd));
 
-	p = pane_register(parent, 0, &doc_handle.c, dd, NULL);
-	/* non-home panes need to be notified so they can self-destruct */
-	if (d)
-		do_doc_assign(p, d, 0, NULL);
-	return p;
+	return  pane_register(parent, 0, &doc_handle.c, dd, NULL);
 }
 
 struct pane *doc_new(struct pane *p safe, char *type, struct pane *parent)
@@ -1139,7 +1135,7 @@ struct pane *doc_new(struct pane *p safe, char *type, struct pane *parent)
  */
 DEF_CMD(doc_do_attach)
 {
-	struct pane *p = doc_attach(ci->focus, NULL);
+	struct pane *p = doc_attach(ci->focus);
 	if (!p)
 		return -1;
 	return comm_call(ci->comm2, "callback:doc", p);
@@ -1217,9 +1213,11 @@ struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe, ch
 {
 	struct pane *p;
 
-	p = doc_attach(parent, doc);
-	if (p)
+	p = doc_attach(parent);
+	if (p) {
+		do_doc_assign(p, doc, 0, NULL);
 		p = call_pane("attach-view", p);
+	}
 	if (p)
 		p = render_attach(render, p);
 	return p;
