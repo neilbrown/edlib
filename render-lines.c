@@ -662,7 +662,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		ret = draw_some(focus, &rlst, &x, start, &line,
 				buf_final(&attr),
 				wrap ? mwidth : 0,
-				offset - (start - line_start), CX, scale);
+				in_tab ?:offset - (start - line_start), CX, scale);
 		start = line;
 		if (ret || !ch)
 			continue;
@@ -760,7 +760,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			attr.len = l;
 			start = line;
 		}
-		continue;
 	}
 	if (!*line && (line > start || offset == start - line_start)) {
 		/* Some more to draw */

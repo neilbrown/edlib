@@ -389,7 +389,7 @@ static int cvt_attrs(char *attrs)
 
 static int make_cursor(int attr)
 {
-	return attr ^ A_STANDOUT;
+	return attr ^ A_UNDERLINE;
 }
 
 DEF_CMD(nc_close)
@@ -598,10 +598,12 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 	dd = display->data;
 	set_screen(dd->scr);
 	if (cursor == 2) {
+		/* Cursor is in-focus */
 		dd->cursor.x = x;
 		dd->cursor.y = y;
 	}
 	if (cursor == 1)
+		/* Cursor here, but not focus */
 		attr = make_cursor(attr);
 	cc.attr = attr;
 	cc.chars[0] = ch;
