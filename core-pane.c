@@ -87,6 +87,18 @@ void pane_damaged(struct pane *p, int type)
 	int z;
 	if (!p || (p->damaged | type) == p->damaged)
 		return;
+	if (type & (type-1)) {
+		/* multiple bits are set, handle
+		 * them separately
+		 */
+		int b;
+		for (b = 1; type; b <<= 1) {
+			if (b & type)
+				pane_damaged(p, b);
+			type &= ~b;
+		}
+		return;
+	}
 	p->damaged |= type;
 
 	z = p->z;
