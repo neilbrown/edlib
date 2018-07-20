@@ -942,47 +942,35 @@ struct highlight_info {
 
 DEF_CMD(emacs_search_highlight)
 {
-	/* from 'mark' for 'num' chars there is a match for 'str' */
-	struct mark *m, *start, *end;
+	/* from 'mark' for 'num' chars there is a match for 'str'.
+	 * Here were remove any existing highlighting and highlight
+	 * just the match.  A subsequent call to emacs_search_reposition
+	 * will highlight other near-by matches.
+	 */
+	struct mark *m, *start;
 	struct highlight_info *hi = ci->home->data;
 
 	if (hi->view <= 0)
 		return 0;
 
-	start = vmark_first(ci->focus, hi->view);
-	end = vmark_last(ci->focus, hi->view);
-	while (start && (m = vmark_next(start)) != NULL && m != end)
-		mark_free(m);
-	if (start) {
-		attr_set_str(&start->attrs, "render:search", NULL);
-		attr_set_str(&start->attrs, "render:search2", NULL);
-	}
-	if (end) {
-		attr_set_str(&end->attrs, "render:search", NULL);
-		attr_set_str(&end->attrs, "render:search2", NULL);
-	}
+	while ((start = vmark_first(ci->focus, hi->view)) != NULL)
+		mark_free(start);
 
 	free(hi->patn);
-	hi->patn = NULL;
-
-	if (ci->mark && ci->num >= 0 && ci->str) {
+	if (ci->str)
 		hi->patn = strdup(ci->str);
+	else
+		hi->patn = NULL;
+
+	if (ci->mark && ci->num > 0 && ci->str) {
 		m = vmark_new(ci->focus, hi->view);
 		if (!m)
 			return -1;
 		mark_to_mark(m, ci->mark);
-		if (ci->num > 0)
-			attr_set_int(&m->attrs, "render:search", ci->num);
+		attr_set_int(&m->attrs, "render:search", ci->num);
 		call("Move-View-Pos", ci->focus, 0, m);
-		call("Notify:doc:Replace", ci->focus);
-		if (start) {
-			m = mark_dup(start, 1);
-			do_searches(ci->focus, hi->view, ci->str,
-				    m, end);
-			mark_free(m);
-		}
-	} else
-		call("Notify:doc:Replace", ci->focus);
+	}
+	call("Notify:doc:Replace", ci->focus);
 	pane_damaged(ci->home, DAMAGED_CONTENT|DAMAGED_VIEW);
 	return 1;
 }
@@ -1091,9 +1079,10 @@ DEF_CMD(emacs_search_reposition)
 	if (vstart != vmark_first(ci->focus, hi->view) ||
 	    vend != vmark_last(ci->focus, hi->view))
 		damage = 1;
-
-	if (damage)
-		pane_damaged(ci->focus, DAMAGED_CONTENT|DAMAGED_VIEW);
+	if (damage) {
+		pane_damaged(ci->focus, DAMAGED_CONTENT);
+		pane_damaged(ci->focus, DAMAGED_VIEW);
+	}
 	return 0;
 }
 
