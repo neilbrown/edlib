@@ -339,7 +339,7 @@ DEF_CMD(doc_expr)
 		if (wi == WEOF)
 			break;
 	}
-	return 1;
+	return rpt ? 2 : 1;
 }
 
 DEF_CMD(doc_WORD)

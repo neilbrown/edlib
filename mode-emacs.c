@@ -1447,8 +1447,10 @@ REDEF_CMD(emacs_function_move)
 	}
 	while (rpt < 0) {
 		wint_t c;
-		if (call("Move-Expr", p, -1, ci->mark, NULL, 1) <= 0)
-			break;
+		if (call("Move-Expr", p, -1, ci->mark) == 2)
+			/* need to escape this expression */
+			if (call("Move-Expr", p, -1, ci->mark, NULL, 1) <= 0)
+				break;
 		c = doc_prior_pane(p, ci->mark);
 		if (c == WEOF)
 			break;
