@@ -71,7 +71,7 @@ DEF_CMD(qp_step)
 			goto normalize;
 		}
 		if (m == ci->mark)
-			m = mark_dup(m, 1);
+			m = mark_dup(m);
 		if (!move)
 			mark_next_pane(p, m);
 		if (ch == '=') {
@@ -113,7 +113,7 @@ DEF_CMD(qp_step)
 		/* If next is "=\n" we need to skip over it. */
 		if (doc_following_pane(p, m) != '=')
 			return CHAR_RET(ch);
-		m = mark_dup(ci->mark, 1);
+		m = mark_dup(ci->mark);
 		mark_next_pane(p, m);
 		while ((c2 = mark_next_pane(p, m)) == ' ' ||
 		       c2 == '\t' || c2 == '\r')
@@ -130,7 +130,7 @@ DEF_CMD(qp_step)
 		ch = mark_step_pane(p, m, 0, move);
 		if (ch == '\n') {
 			if (m == ci->mark)
-				m = mark_dup(m, 1);
+				m = mark_dup(m);
 			if (!move)
 				mark_prev_pane(p, m);
 			/* '\n', skip '\r' and white space */
@@ -155,7 +155,7 @@ DEF_CMD(qp_step)
 			return CHAR_RET(ch);
 		}
 		if (m == ci->mark)
-			m = mark_dup(m, 1);
+			m = mark_dup(m);
 		else if (move)
 			mark_to_mark(ci->mark, m);
 		if (!move)

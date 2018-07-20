@@ -59,7 +59,7 @@ static void pre_move(struct mark *m safe)
 	if (!m->ref.m || m->ref.m->mdata == ONE)
 		return;
 	/* Mark is shared, make it unshared */
-	m2 = mark_dup(m->ref.m, 1);
+	m2 = mark_dup(m->ref.m);
 	m->ref.m->mdata = ZERO + (m->ref.m->mdata - ONE);
 	m2->mdata = ONE;
 	m->ref.m = m2;
@@ -282,7 +282,7 @@ DEF_CMD(mp_step)
 	while (ret == CHAR_RET(WEOF) || ret == -1) {
 		if (!ci->num2 && m == ci->mark) {
 			/* don't change ci->mark when not moving */
-			m = mark_dup(m, 1);
+			m = mark_dup(m);
 			pre_move(m);
 		}
 		if (ci->num) {

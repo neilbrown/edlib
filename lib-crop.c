@@ -165,8 +165,8 @@ DEF_CMD(crop_attach)
 		return -1;
 	}
 	call("doc:set:filter", p, 1);
-	cd->start = mark_dup(ci->mark, 1);
-	cd->end = mark_dup(ci->mark2, 1);
+	cd->start = mark_dup(ci->mark);
+	cd->end = mark_dup(ci->mark2);
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }

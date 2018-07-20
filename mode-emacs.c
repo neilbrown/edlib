@@ -144,7 +144,7 @@ REDEF_CMD(emacs_delete)
 	if (!ci->mark)
 		return -1;
 
-	m = mark_dup(ci->mark, 1);
+	m = mark_dup(ci->mark);
 
 	ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);
 
@@ -170,7 +170,7 @@ REDEF_CMD(emacs_kill)
 	if (!ci->mark)
 		return -1;
 
-	m = mark_dup(ci->mark, 1);
+	m = mark_dup(ci->mark);
 
 	if (strcmp(mv->type, "Move-EOL") == 0 &&
 	    mv->direction == 1 && RPT_NUM(ci) == 1 &&
@@ -211,11 +211,11 @@ REDEF_CMD(emacs_case)
 	} else {
 		dir = -1;
 		cnt = -cnt;
-		start = mark_dup(ci->mark, 1);
+		start = mark_dup(ci->mark);
 	}
 
 	while (cnt > 0) {
-		struct mark *m = mark_dup(ci->mark, 1);
+		struct mark *m = mark_dup(ci->mark);
 
 		ret = call(mv->type+1, ci->focus, dir, ci->mark);
 		if (ret <= 0 || mark_same(ci->mark, m))
@@ -301,7 +301,7 @@ REDEF_CMD(emacs_swap)
 	} else {
 		dir = -1;
 		cnt = -cnt;
-		start = mark_dup(ci->mark, 1);
+		start = mark_dup(ci->mark);
 	}
 
 	while (cnt > 0) {
@@ -311,17 +311,17 @@ REDEF_CMD(emacs_swap)
 		ret = call(mv->type, ci->focus, -dir, ci->mark);
 		if (ret <= 0)
 			break;
-		as = mark_dup(ci->mark, 1);
+		as = mark_dup(ci->mark);
 		ret = call(mv->type, ci->focus, dir, ci->mark);
 		if (ret <= 0 || mark_same(ci->mark, as)) {
 			mark_free(as);
 			break;
 		}
-		ae = mark_dup(ci->mark, 1);
+		ae = mark_dup(ci->mark);
 		call(mv->type, ci->focus, dir, ci->mark);
-		be = mark_dup(ci->mark, 1);
+		be = mark_dup(ci->mark);
 		call(mv->type, ci->focus, -dir, ci->mark);
-		bs = mark_dup(ci->mark, 1);
+		bs = mark_dup(ci->mark);
 		astr = call_ret(str, "doc:get-str", ci->focus,
 				0, as, NULL,
 				0, ae);
@@ -488,7 +488,7 @@ DEF_CMD(emacs_insert_other)
 
 	if (!*ins) {
 		ins++;
-		m = mark_dup(ci->mark, 1);
+		m = mark_dup(ci->mark);
 		if (m->seq > ci->mark->seq)
 			/* Move m before ci->mark, so it doesn't move when we insert */
 			mark_to_mark(m, ci->mark);
@@ -913,7 +913,7 @@ static void do_searches(struct pane *p safe, int view, char *patn,
 	int ret;
 	if (!m)
 		return;
-	m = mark_dup(m, 1);
+	m = mark_dup(m);
 	while ((ret = call("text-search", p, 0, m, patn, 0, end)) >= 1) {
 		struct mark *m2, *m3;
 		int len = ret - 1;
@@ -1013,7 +1013,7 @@ DEF_CMD(emacs_reposition)
 		 */
 		m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 		if (m) {
-			struct mark *m2 = mark_dup(m ,1);
+			struct mark *m2 = mark_dup(m);
 			call("Move-CursorXY", ci->focus, 1, m, NULL,
 			     0, NULL, NULL,
 			     -1, repoint < 0 ? ci->focus->h-1 : 0);
@@ -1243,7 +1243,7 @@ DEF_CMD(emacs_swap_mark)
 
 	if (!mk)
 		return 1;
-	m = mark_dup(mk, 1);
+	m = mark_dup(mk);
 	call("Move-to", ci->focus, 1); /* Move mark to point */
 	call("Move-to", ci->focus, 0, m); /* Move point to old mark */
 	attr_set_int(&mk->attrs, "emacs:active", 1);
@@ -1303,7 +1303,7 @@ DEF_CMD(emacs_yank)
 		char *str2 = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 		if (str2 && *str2)
 			call("copy:save", ci->focus, 0, NULL, str2);
-		m = mark_dup(mk, 1);
+		m = mark_dup(mk);
 	}
 
 	call("Move-to", ci->focus, 1);
@@ -1334,7 +1334,7 @@ DEF_CMD(emacs_yank_pop)
 	}
 	if (!str)
 		return -1;
-	m = mark_dup(mk, 1);
+	m = mark_dup(mk);
 	if (m->seq > mk->seq)
 		mark_to_mark(m, mk);
 	call("Replace", ci->focus, 1, mk, str);

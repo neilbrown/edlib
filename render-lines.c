@@ -956,9 +956,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 		bot = doc_prev_mark_view(bot);
 	/* Protect top/bot from being freed by call_render_line */
 	if (top)
-		top = mark_dup(top, 1);
+		top = mark_dup(top);
 	if (bot)
-		bot = mark_dup(bot, 1);
+		bot = mark_dup(bot);
 	m = vmark_new(focus, rl->typenum);
 	if (!m)
 		goto abort;
@@ -1265,7 +1265,7 @@ DEF_CMD(render_lines_refresh)
 			rl->old_point = NULL;
 		}
 		if (!rl->old_point)
-			rl->old_point = mark_dup(pm, 1);
+			rl->old_point = mark_dup(pm);
 	}
 
 	m = vmark_first(focus, rl->typenum);
@@ -1391,7 +1391,7 @@ DEF_CMD(render_lines_move)
 	if (!top)
 		return 0;
 
-	old_top = mark_dup(top, 1);
+	old_top = mark_dup(top);
 	if (strcmp(ci->key, "Move-View-Large") == 0)
 		pagesize = p->h - 2 * rl->line_height;
 	rpt *= pagesize;
@@ -1415,7 +1415,7 @@ DEF_CMD(render_lines_move)
 						    1, &rl->top_sol);
 			if (!top && doc_prior_pane(focus, prevtop) != WEOF) {
 				/* Double check - maybe a soft top-of-file */
-				m = mark_dup_view(prevtop);
+				m = mark_dup(prevtop);
 				mark_prev_pane(focus, m);
 				top = call_render_line_prev(focus, m,
 							    1, &rl->top_sol);

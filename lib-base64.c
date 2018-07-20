@@ -99,7 +99,7 @@ static int locate_mark(struct pane *p safe, int view, struct mark *m safe)
 
 	st = vmark_at_or_before(p, m, view);
 	if (st) {
-		tmp = mark_dup(st, 1);
+		tmp = mark_dup(st);
 		prev = st;
 	} else {
 		tmp = vmark_new(p, MARK_UNGROUPED);
@@ -142,7 +142,7 @@ DEF_CMD(base64_step)
 		return 0;
 	pos = locate_mark(p, bi->view, ci->mark);
 
-	m = mark_dup(ci->mark, 1);
+	m = mark_dup(ci->mark);
 retry:
 	if (forward) {
 		c1 = get_b64(p, m);

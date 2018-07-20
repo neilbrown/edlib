@@ -220,7 +220,7 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 	/* If there is only LWS to the next quoted word,
 	 * skip that so words join up
 	 */
-	m2 = mark_dup(m, 1);
+	m2 = mark_dup(m);
 	if (!m2)
 		return last;
 	while ((ch = mark_next_pane(doc, m2)) == ' ' ||
@@ -255,8 +255,8 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 	int is_text = type && strcmp(type, "text") == 0;
 	int is_list = type && strcmp(type, "list") == 0;
 
-	m = mark_dup(start, 1);
-	hstart = mark_dup(point, 1);
+	m = mark_dup(start);
+	hstart = mark_dup(point);
 	if (hstart->seq > point->seq)
 		/* put hstart before point, so it stays here */
 		mark_to_mark(hstart, point);
@@ -285,7 +285,7 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 		call("doc:replace", p, 1, NULL, b, 1, point,
 		     ch == ' ' && is_text ? ",render:rfc822header-wrap=1" : NULL);
 		if (ch == ',' && is_list) {
-			struct mark *p2 = mark_dup(point, 1);
+			struct mark *p2 = mark_dup(point);
 			int cnt = 1;
 			mark_prev_pane(p, p2);
 			while ((ch = doc_following_pane(doc, m)) == ' ') {
@@ -337,7 +337,7 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 	wint_t ch;
 
 	buf_init(&buf);
-	m = mark_dup(start, 1);
+	m = mark_dup(start);
 	while ((ch = mark_next_pane(p, m)) != WEOF &&
 	       m->seq < end->seq) {
 		if (!found && ch == ':') {

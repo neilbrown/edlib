@@ -114,7 +114,7 @@ DEF_CMD(history_move)
 			*e = 0;
 	}
 	call("Move-EOL", ci->focus, -1, ci->mark);
-	m = mark_dup(ci->mark, 1);
+	m = mark_dup(ci->mark);
 	call("Move-EOL", ci->focus, 1, m);
 	if (hi->changed) {
 		if (l != hi->saved)

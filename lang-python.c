@@ -1744,7 +1744,7 @@ static PyObject *Mark_dup(Mark *self safe)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	new = mark_dup(self->mark, 1);
+	new = mark_dup(self->mark);
 	if (new) {
 		Mark *ret = (Mark*)Mark_Frommark(new, self->local);
 		ret->owned = 1;

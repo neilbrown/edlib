@@ -52,7 +52,7 @@ DEF_CMD(utf8_step)
 	if (ch == WEOF || (ch & 0x7f) == ch)
 		return CHAR_RET(ch);
 	if (!move)
-		m = mark_dup(m, 1);
+		m = mark_dup(m);
 	if (forward) {
 		i = 0;
 		buf[i++] = ch;

@@ -293,7 +293,7 @@ DEF_CMD(docs_modified_step)
 			mark_to_modified(ci->home->parent, ci->mark);
 		}
 	} else {
-		struct mark *m = mark_dup(ci->mark, 1);
+		struct mark *m = mark_dup(ci->mark);
 		ch = prev_modified(ci->home->parent, m);
 		if (ch == WEOF)
 			ret = ch;
@@ -314,7 +314,7 @@ DEF_CMD(docs_modified_doc_get_attr)
 
 	if (!ci->str || !ci->mark || !ci->home->parent)
 		return 0;
-	m = mark_dup(ci->mark, 1);
+	m = mark_dup(ci->mark);
 	attr = pane_mark_attr(ci->home->parent, m, ci->str);
 	mark_free(m);
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, attr);

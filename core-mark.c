@@ -233,28 +233,17 @@ void points_attach(struct doc *d safe, int view)
 	}
 }
 
-struct mark *safe mark_dup(struct mark *m safe, int notype)
+struct mark *safe mark_dup(struct mark *m safe)
 {
 	struct mark *ret;
 
-	if (!notype && m->viewnum == MARK_POINT)
-		return point_dup(m);
-
 	ret = calloc(1, sizeof(*ret));
 	dup_mark(m, ret);
-	if (notype) {
-		ret->viewnum = MARK_UNGROUPED;
-		INIT_TLIST_HEAD(&ret->view, GRP_MARK);
-	} else {
-		if (m->viewnum == MARK_POINT) abort();
-		ret->viewnum = m->viewnum;
-		if (ret->viewnum == MARK_UNGROUPED)
-			INIT_TLIST_HEAD(&ret->view, GRP_MARK);
-		else
-			tlist_add(&ret->view, GRP_MARK, &m->view);
-	}
+	ret->viewnum = MARK_UNGROUPED;
+	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	return ret;
 }
+
 struct mark *safe mark_dup_view(struct mark *m safe)
 {
 	struct mark *ret;

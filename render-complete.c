@@ -93,7 +93,7 @@ DEF_CMD(render_complete_line)
 	if (ci->num != NO_NUMERIC)
 		return ret;
 	/* Need to continue over other matching lines */
-	m = mark_dup(ci->mark, 1);
+	m = mark_dup(ci->mark);
 	while (1) {
 		cb.c = rcl_cb;
 		cb.plen = plen;
@@ -156,8 +156,8 @@ static int do_render_complete_prev(struct complete_data *cd safe, struct mark *m
 		 * line
 		 */
 		if (m2 == m)
-			m2 = mark_dup(m, 1);
-		m3 = mark_dup(m2, 1);
+			m2 = mark_dup(m);
+		m3 = mark_dup(m2);
 		cb.keep = n2 == 1 && savestr;
 		cb.str = NULL;
 		if (call_comm("render-line", focus, &cb.c, NO_NUMERIC, m3)

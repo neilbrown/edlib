@@ -49,7 +49,7 @@ static void do_count(struct pane *p safe, struct mark *start safe, struct mark *
 	if (add_marks)
 		m = mark_dup_view(start);
 	else
-		m = mark_dup(start, 1);
+		m = mark_dup(start);
 
 	*linep = 0;
 	*wordp = 0;

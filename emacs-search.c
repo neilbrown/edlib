@@ -73,9 +73,9 @@ DEF_CMD(search_forward)
 	s->next = esi->s;
 	esi->s = s;
 	if (esi->matched)
-		esi->start = mark_dup(esi->end, 1);
+		esi->start = mark_dup(esi->end);
 	else {
-		esi->start = mark_dup(s->m, 1);
+		esi->start = mark_dup(s->m);
 		esi->wrapped = 1;
 		call("Move-File", esi->target, backward ? 1 : -1, esi->start);
 	}
@@ -121,7 +121,7 @@ DEF_CMD(search_add)
 	struct mark *m;
 	int limit = 1000;
 
-	m = mark_dup(esi->end, 1);
+	m = mark_dup(esi->end);
 	if (strcmp(ci->key, "C-Chr-W")==0)
 		call("Move-Word", esi->target, 1, m);
 	else
@@ -175,7 +175,7 @@ DEF_CMD(search_again)
 	char *str;
 
 	call("search:highlight", esi->target);
-	m = mark_dup(esi->start, 1);
+	m = mark_dup(esi->start);
 	str = call_ret(str, "doc:get-str", ci->home);
 	if (esi->backwards && mark_prev_pane(esi->target, m) == WEOF)
 		ret = -2;
@@ -284,7 +284,7 @@ DEF_CMD(emacs_search)
 	}
 	esi->end = m;
 
-	esi->start = mark_dup(m, 1);
+	esi->start = mark_dup(m);
 	esi->s = NULL;
 	esi->matched = 0;
 	esi->wrapped = 0;

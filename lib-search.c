@@ -113,7 +113,7 @@ DEF_CMD(text_search)
 	if (!rxl)
 		return -1;
 	since_start = -1;
-	endmark = mark_dup(m, 1);
+	endmark = mark_dup(m);
 	if (!endmark)
 		return -1;
 

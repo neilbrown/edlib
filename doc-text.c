@@ -1679,10 +1679,10 @@ DEF_CMD(text_replace)
 			status_change = 1;
 
 		if (pm->seq >= end->seq) {
-			myend = mark_dup(pm, 1);
+			myend = mark_dup(pm);
 			mark_to_mark(pm, end);
 		} else
-			myend = mark_dup(end, 1);
+			myend = mark_dup(end);
 		l = count_bytes(t, pm, myend);
 		mark_free(myend);
 		text_del(t, &pm->ref, l, &first);

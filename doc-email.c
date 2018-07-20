@@ -473,8 +473,8 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 			tok = get_822_token(&type, &len);
 	}
 	boundary = strdup(boundary);
-	pos = mark_dup(start, 1);
-	part_end = mark_dup(pos, 1);
+	pos = mark_dup(start);
+	part_end = mark_dup(pos);
 	while (found_end == 0 &&
 	       (found_end = find_boundary(p, pos, end, part_end, boundary)) >= 0) {
 		struct pane *hdr = call_pane("attach-rfc822header", p, 0, start, NULL,
@@ -556,7 +556,7 @@ DEF_CMD(open_email)
 	start = vmark_new(p, MARK_UNGROUPED);
 	if (!start)
 		return 0;
-	end = mark_dup(start, 1);
+	end = mark_dup(start);
 	call("doc:set-ref", p, 0, end);
 
 	ei = calloc(1, sizeof(*ei));
@@ -678,7 +678,7 @@ DEF_CMD(email_step)
 		 * Note: we could optimize a bit using the knowledge that
 		 * every other pane contains only a '\v' and is visible
 		 */
-		struct mark *m = mark_dup(ci->mark, 1);
+		struct mark *m = mark_dup(ci->mark);
 
 		ret = home_call(p->parent, ci->key, ci->focus, ci->num, m, ci->str, 1);
 		while (ret != CHAR_RET(WEOF) &&
@@ -758,7 +758,7 @@ DEF_CMD(email_view_set_attr)
 		if (!v) {
 			/* Tell viewers that visibility has changed */
 			struct mark *m1, *m2;
-			m1 = mark_dup(ci->mark, 1);
+			m1 = mark_dup(ci->mark);
 			home_call(ci->home->parent, "doc:step-part", ci->focus, 0, m1);
 			if (get_part(ci->home->parent, m1) != p) {
 				mark_prev_pane(ci->home->parent, m1);
@@ -767,7 +767,7 @@ DEF_CMD(email_view_set_attr)
 			while ((m2 = doc_prev_mark_all(m1)) != NULL &&
 			       mark_same(m1, m2))
 				mark_to_mark(m1, m2);
-			m2 = mark_dup(m1, 1);
+			m2 = mark_dup(m1);
 			home_call(ci->home->parent, "doc:step-part", ci->focus, 1, m2);
 			call("Notify:change", ci->focus, 0, m1, NULL, 0, m2);
 			call("Notify:clip", ci->focus, 0, m1, NULL, 0, m2);

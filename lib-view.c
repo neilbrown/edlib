@@ -263,7 +263,7 @@ DEF_CMD(view_reposition)
 		if (vd->viewpoint)
 			mark_free(vd->viewpoint);
 		if (ci->mark)
-			vd->viewpoint = mark_dup(ci->mark, 1);
+			vd->viewpoint = mark_dup(ci->mark);
 		else
 			vd->viewpoint = NULL;
 	}

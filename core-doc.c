@@ -464,7 +464,7 @@ DEF_CMD(doc_page)
 
 	if (!m)
 		m = dd->point;
-	old = mark_dup(m, 1);
+	old = mark_dup(m);
 
 	rpt *= p->h-2;
 	while (rpt > 0 && ch != WEOF) {
@@ -753,7 +753,7 @@ DEF_CMD(doc_get_str)
 	buf_init(&g.b);
 	g.end = to;
 	if (from)
-		m = mark_dup(from, 1);
+		m = mark_dup(from);
 	else
 		m = vmark_new(ci->focus, MARK_UNGROUPED);
 	if (!m)
@@ -795,7 +795,7 @@ DEF_CMD(doc_write_file)
 		return -1;
 
 	if (ci->mark)
-		m = mark_dup(ci->mark, 1);
+		m = mark_dup(ci->mark);
 	else
 		m = vmark_new(ci->focus, MARK_UNGROUPED);
 
@@ -893,7 +893,7 @@ DEF_CMD(doc_dup_point)
 	if (ci->num2 == MARK_POINT)
 		m = point_dup(pt);
 	else if (ci->num2 == MARK_UNGROUPED)
-		m = mark_dup(pt, 1);
+		m = mark_dup(pt);
 	else
 		m = do_mark_at_point(pt, ci->num2);
 
@@ -942,7 +942,7 @@ DEF_CMD(doc_move_to)
 	switch(ci->num) {
 	case 1:
 		if (!dd->mark) {
-			dd->mark = mark_dup(dd->point, 1);
+			dd->mark = mark_dup(dd->point);
 			if (!dd->mark)
 				return -1;
 			attr_set_str(&dd->mark->attrs, "render:interactive-mark", "yes");
@@ -997,7 +997,7 @@ DEF_CMD(doc_push_point)
 		memmove(&d->recent_points[1],
 			&d->recent_points[0],
 			(n-1)*sizeof(d->recent_points[0]));
-		d->recent_points[0] = mark_dup(ci->mark, 1);
+		d->recent_points[0] = mark_dup(ci->mark);
 		return 1;
 	} else
 		return -1;
