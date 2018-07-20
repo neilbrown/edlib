@@ -132,6 +132,8 @@ class EdDisplay(gtk.Window):
             pm.draw_rectangle(self.bg, True, x+lx, y-ascent+ly, width, height)
         pm.draw_layout(self.gc, x, y-ascent, layout, fg, bg)
         if num >= 0:
+            # draw a cursor - outline box if not in-focus,
+            # inverse-video if it is.
             cx,cy,cw,ch = layout.index_to_pos(num)
             if cw <= 0:
                 cw = metric.get_approximate_char_width()
@@ -141,12 +143,12 @@ class EdDisplay(gtk.Window):
             ch /= pango.SCALE
             pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
                               cw-1, ch-1);
-            extra = self.in_focus
-            while focus.parent and focus.parent.parent and focus.parent != self.pane:
+            in_focus = self.in_focus
+            while in_focus and focus.parent and focus.parent.parent and focus.parent != self.pane:
                 if focus.parent.focus != focus:
-                    extra = False
+                    in_focus = False
                 focus = focus.parent
-            if extra:
+            if in_focus:
                 if fg:
                     self.gc.set_foreground(fg)
                 pm.draw_rectangle(self.gc, True, x+cx, y-ascent+cy,
@@ -157,9 +159,7 @@ class EdDisplay(gtk.Window):
                     l2.set_text(str[num])
                     fg, bg = self.get_colours(attr+",inverse")
                     pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, fg, bg)
-                else:
-                    pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
-                                      cw-1, ch-1)
+
         return True
 
     def handle_image(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
