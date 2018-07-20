@@ -80,7 +80,7 @@ static void find_headers(struct pane *p safe, struct mark *start safe,
 	if (!m)
 		return;
 	mark_to_mark(m, start);
-	hm = mark_dup(m, 0);
+	hm = mark_dup_view(m);
 	while (m->seq < end->seq &&
 	       (hname = get_hname(p, m)) != NULL) {
 		attr_set_str(&hm->attrs, "header", hname);
@@ -90,7 +90,7 @@ static void find_headers(struct pane *p safe, struct mark *start safe,
 		       (ch != '\n' ||
 			(ch = doc_following_pane(p, m)) == ' ' || ch == '\t'))
 			;
-		hm = mark_dup(m, 0);
+		hm = mark_dup_view(m);
 	}
 	/* Skip over trailing blank line */
 	if (doc_following_pane(p, m) == '\r')

@@ -119,7 +119,7 @@ DEF_CMD(render_line)
 		goto done;
 	snprintf(buf, sizeof(buf), "<bold>%08x:</> ", pos);
 	buf_concat(&ret, buf);
-	m = mark_dup(ci->mark, 0);
+	m = mark_dup_view(ci->mark);
 	for (i = 0; i < 16; i++) {
 		wint_t ch;
 		struct mark *m2 = ci->mark;

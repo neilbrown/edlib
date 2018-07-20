@@ -46,7 +46,10 @@ static void do_count(struct pane *p safe, struct mark *start safe, struct mark *
 	wint_t ch;
 	struct mark *m;
 
-	m = mark_dup(start, !add_marks);
+	if (add_marks)
+		m = mark_dup_view(start);
+	else
+		m = mark_dup(start, 1);
 
 	*linep = 0;
 	*wordp = 0;
@@ -72,7 +75,7 @@ static void do_count(struct pane *p safe, struct mark *start safe, struct mark *
 			*wordp += words;
 			*charp += chars;
 			lines = words = chars = 0;
-			m = mark_dup(m, 0);
+			m = mark_dup_view(m);
 		}
 	}
 	if (add_marks) {

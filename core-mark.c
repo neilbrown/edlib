@@ -255,6 +255,23 @@ struct mark *safe mark_dup(struct mark *m safe, int notype)
 	}
 	return ret;
 }
+struct mark *safe mark_dup_view(struct mark *m safe)
+{
+	struct mark *ret;
+
+	if (m->viewnum == MARK_POINT)
+		return point_dup(m);
+
+	ret = calloc(1, sizeof(*ret));
+	dup_mark(m, ret);
+	if (m->viewnum == MARK_POINT) abort();
+	ret->viewnum = m->viewnum;
+	if (ret->viewnum == MARK_UNGROUPED)
+		INIT_TLIST_HEAD(&ret->view, GRP_MARK);
+	else
+		tlist_add(&ret->view, GRP_MARK, &m->view);
+	return ret;
+}
 
 void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 {

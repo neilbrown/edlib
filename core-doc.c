@@ -464,7 +464,7 @@ DEF_CMD(doc_page)
 
 	if (!m)
 		m = dd->point;
-	old = mark_dup(m, 0);
+	old = mark_dup(m, 1);
 
 	rpt *= p->h-2;
 	while (rpt > 0 && ch != WEOF) {

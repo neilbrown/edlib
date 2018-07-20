@@ -840,7 +840,7 @@ static struct mark *call_render_line(struct pane *p safe, struct mark *start saf
 	struct mark *m, *m2;
 	char *s;
 
-	m = mark_dup(start, 0);
+	m = mark_dup_view(start);
 
 	/* Allow for filling the rest of the pane, given that
 	 * some has been used.
@@ -885,7 +885,7 @@ static struct mark *call_render_line_offset(struct pane *p safe,
 {
 	struct mark *m;
 
-	m = mark_dup(start, 0);
+	m = mark_dup_view(start);
 	if (call_comm("render-line", p, &no_save, offset, m) <= 0) {
 		mark_free(m);
 		return NULL;
@@ -908,7 +908,7 @@ static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
 				     struct mark *start safe)
 {
 	int len;
-	struct mark *m = mark_dup(start, 0);
+	struct mark *m = mark_dup_view(start);
 
 	len = call_comm("render-line", p, &get_len, -1, m, NULL, 0, pm);
 	mark_free(m);
@@ -1003,7 +1003,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 		}
 		if (!found_start && lines_above == 0) {
 			/* step backwards moving start */
-			m = call_render_line_prev(focus, mark_dup(start, 0),
+			m = call_render_line_prev(focus, mark_dup_view(start),
 						  1, &rl->top_sol);
 			if (!m) {
 				/* no text before 'start' */
@@ -1270,7 +1270,7 @@ DEF_CMD(render_lines_refresh)
 
 	m = vmark_first(focus, rl->typenum);
 	if (rl->top_sol && m)
-		m = call_render_line_prev(focus, mark_dup(m, 0), 0,
+		m = call_render_line_prev(focus, mark_dup_view(m), 0,
 					  &rl->top_sol);
 
 	if (m) {
@@ -1410,12 +1410,12 @@ DEF_CMD(render_lines_move)
 				continue;
 			}
 
-			m = mark_dup(top, 0);
+			m = mark_dup_view(top);
 			top = call_render_line_prev(focus, m,
 						    1, &rl->top_sol);
 			if (!top && doc_prior_pane(focus, prevtop) != WEOF) {
 				/* Double check - maybe a soft top-of-file */
-				m = mark_dup(prevtop, 0);
+				m = mark_dup_view(prevtop);
 				mark_prev_pane(focus, m);
 				top = call_render_line_prev(focus, m,
 							    1, &rl->top_sol);

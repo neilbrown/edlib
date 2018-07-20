@@ -1602,7 +1602,7 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 		local = p->handle &&
 			p->handle->func == python_doc_call.func;
 	} else if (orig && orig->mark) {
-		self->mark = mark_dup(orig->mark, 0);
+		self->mark = mark_dup_view(orig->mark);
 		local = orig->local;
 	}
 	if (!self->mark) {
