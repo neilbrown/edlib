@@ -725,6 +725,7 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 	PyObject *s1, *s2, *s3 = NULL;
 	PyObject *ret;
 	struct pyret pr;
+	int return_char = 0;
 
 	if (!self->pane)
 		return NULL;
@@ -742,27 +743,33 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 	if (ret) {
 		char *rets;
 		struct command *c;
-		if (ci.comm2) {
-			PyErr_SetString(PyExc_TypeError, "ret= not permitted with comm2");
-			Py_XDECREF(s1); Py_XDECREF(s2);
-			command_put(ci.comm2);
-			return NULL;
-		}
+
 		if (!(PyUnicode_Check(ret) || PyString_Check(ret)) ||
 		    (rets = python_as_string(ret, &s3)) == NULL) {
 			PyErr_SetString(PyExc_TypeError, "ret= must be given a string");
 			Py_XDECREF(s1); Py_XDECREF(s2);
 			return NULL;
 		}
-		pr.ret = NULL;
-		c = map_ret(rets);
-		if (!c) {
-			PyErr_SetString(PyExc_TypeError, "ret= type not valid");
-			Py_XDECREF(s1); Py_XDECREF(s2); Py_XDECREF(s3);
-			return NULL;
+		if (strcmp(rets, "char") == 0) {
+			return_char = 1;
+			ret = NULL;
+		} else {
+			if (ci.comm2) {
+				PyErr_SetString(PyExc_TypeError, "ret= not permitted with comm2");
+				Py_XDECREF(s1); Py_XDECREF(s2); Py_XDECREF(s3);
+				command_put(ci.comm2);
+				return NULL;
+			}
+			pr.ret = NULL;
+			c = map_ret(rets);
+			if (!c) {
+				PyErr_SetString(PyExc_TypeError, "ret= type not valid");
+				Py_XDECREF(s1); Py_XDECREF(s2); Py_XDECREF(s3);
+				return NULL;
+			}
+			pr.comm = *c;
+			ci.comm2 = &pr.comm;
 		}
-		pr.comm = *c;
-		ci.comm2 = &pr.comm;
 	}
 
 	rv = key_handle(&ci);
@@ -785,7 +792,13 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
 		return NULL;
 	}
-	return PyInt_FromLong(rv);
+	if (!return_char)
+		return PyInt_FromLong(rv);
+	if (rv == CHAR_RET(WEOF)) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	return PyUnicode_FromFormat("%c", rv & 0xFFFFF);
 }
 
 static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject *kwds)

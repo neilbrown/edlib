@@ -19,18 +19,17 @@ class CModePane(edlib.Pane):
         # should be, base on last non-empty line, and insert
         # that much space.
         m = mark.dup()
-        c = self.call("doc:step", focus, 1, 0, m)
-        while chr(c&0xfffff) in " \t":
+        c = self.call("doc:step", focus, 1, 0, m, ret="char")
+        while c in " \t":
 	        self.call("doc:step", focus, 1, 1, m)
-	        c = self.call("doc:step", focus, 1, 0, m)
+	        c = self.call("doc:step", focus, 1, 0, m, ret="char")
 	focus.call("Move-to", m)
-        c = self.call("doc:step", focus, 0, 1, m)
-        while c != edlib.WEOF:
-            ch = chr(c&0xfffff)
-            if ch not in " \t":
+        c = self.call("doc:step", focus, 0, 1, m, ret="char")
+        while c != None:
+            if c not in " \t":
                 self.call("doc:step", focus, 1, 1, m)
                 break
-            c = self.call("doc:step", focus, 0, 1, m)
+            c = self.call("doc:step", focus, 0, 1, m, ret="char")
         indent_end = m.dup()
         new = self.find_indent(focus, indent_end)
         # now see if a () expression started since the indent.
@@ -38,7 +37,7 @@ class CModePane(edlib.Pane):
         focus.call("Move-Expr", -1, 1, expr)
         if expr > indent_end:
             focus.call("doc:step", expr, 1, 1)
-            if focus.call("doc:step", expr, 1, 0) == 0x10000a:
+            if focus.call("doc:step", expr, 1, 0, ret="char") == '\n':
                 extra = "\t"
             else:
                 extra = focus.call("doc:get-str", indent_end, expr, ret='str')
@@ -52,18 +51,18 @@ class CModePane(edlib.Pane):
         # Find previous line which is not empty and return
         # a string containing the leading tabs/spaces.
         # The mark is moved to the end of the indent.
-        while self.call("doc:step", focus, 0, m) == 0x10000a:
+        while self.call("doc:step", focus, 0, m, ret="char") == '\n':
             self.call("doc:step", focus, 0, 1, m)
         if self.call("doc:step", focus, 0, m) == edlib.WEOF:
             return ""
         # line before m is not empty
         m2 = m.dup()
-        c = self.call("doc:step", focus, 0, m2)
-        while c != edlib.WEOF and (c & 0xfffff) != 10:
+        c = self.call("doc:step", focus, 0, m2, ret="char")
+        while c != None and c != '\n':
             self.call("doc:step", focus, 0, 1, m2)
-            if chr(c&0xfffff) not in " \t":
+            if c not in " \t":
                 m.to_mark(m2)
-            c = self.call("doc:step", focus, 0, m2)
+            c = self.call("doc:step", focus, 0, m2, ret="char")
         # m2 .. m is the prefix
         return focus.call("doc:get-str", m2, m, ret = 'str')
 
