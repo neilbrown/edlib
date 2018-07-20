@@ -14,11 +14,16 @@ class CModePane(edlib.Pane):
 
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
-        # If there is white space at the end of the line,
+        # If there is white space before or after the cursor,
         # remove it.  Then work out how indented this line
         # should be, base on last non-empty line, and insert
         # that much space.
         m = mark.dup()
+        c = self.call("doc:step", focus, 1, 0, m)
+        while chr(c&0xfffff) in " \t":
+	        self.call("doc:step", focus, 1, 1, m)
+	        c = self.call("doc:step", focus, 1, 0, m)
+	focus.call("Move-to", m)
         c = self.call("doc:step", focus, 0, 1, m)
         while c != edlib.WEOF:
             ch = chr(c&0xfffff)
