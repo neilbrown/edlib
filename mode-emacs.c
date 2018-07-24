@@ -1185,7 +1185,7 @@ DEF_CMD(emacs_do_command)
 	int ret;
 
 	snprintf(cmd, sizeof(cmd), "interactive-cmd-%s", ci->str);
-	ret = call(cmd, ci->focus, 0, ci->mark, ci->str);
+	ret = call(cmd, ci->focus, 0, ci->mark);
 	if (ret == 0) {
 		snprintf(cmd, sizeof(cmd), "Command %s not found", ci->str);
 		call("Message", ci->focus, 0, NULL, cmd);
