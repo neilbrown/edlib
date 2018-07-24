@@ -824,14 +824,6 @@ DEF_CMD(emacs_shell)
 		return 1;
 	}
 	path = pane_attr_get(ci->focus, "dirname");
-	if (!path) {
-		path = pane_attr_get(ci->focus, "filename");
-		if (path) {
-			char *e = strrchr(path, '/');
-			if (e)
-				e[1] = 0;
-		}
-	}
 	/* Find or create "*Shell Command Output*" */
 	doc = call_pane("docs:byname", ci->focus, 0, NULL, name);
 	if (!doc)

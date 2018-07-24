@@ -524,6 +524,16 @@ DEF_CMD(doc_get_attr)
 		a = d->name;
 	else if (strcmp(ci->str, "doc-modified") == 0)
 		a = "no";
+	else if (strcmp(ci->str, "dirname") == 0) {
+		char *sl;
+		a = pane_attr_get(d->home, "filename");
+		if (!a)
+			a = "/";
+		sl = strrchr(a, '/');
+		if (!sl)
+			sl = a = "/";
+		a = strnsave(ci->focus, a, (sl-a)+1);
+	}
 	if (a)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
 				 NULL, a);
