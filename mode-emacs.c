@@ -842,11 +842,13 @@ DEF_CMD(emacs_shell)
 	par = CALL(pane, home, ci->focus, "OtherPane", doc, 4);
 	if (!par)
 		return -1;
-	p = call_pane("doc:attach", doc);
-	if (!p)
-		return -1;
-	home_call(p, "doc:assign", doc);
-	call_pane("attach-shellcmd", p, 0, NULL, ci->str, 0, NULL, path);
+	/* shellcmd is attached directly to the document, not in the view
+	 * stack.  It is go-between for document and external command.
+	 * We don't need a doc attachment as no point is needed - we
+	 * always insert at the end.
+	 */
+	call_pane("attach-shellcmd", doc, 0, NULL, ci->str, 0, NULL, path);
+
 	doc_attach_view(par, doc, "default:viewer", 1);
 	return 1;
 }

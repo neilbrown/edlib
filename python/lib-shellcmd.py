@@ -11,7 +11,7 @@ class ShellPane(edlib.Pane):
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
-        self.call("Replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
+        self.call("doc:replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
         self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
                                      cwd=cwd,
                                      stdout=subprocess.PIPE,
@@ -36,13 +36,13 @@ class ShellPane(edlib.Pane):
         if r is None or len(r) == 0:
             self.pipe.communicate()
             self.pipe = None
-            self.call("Replace", "\nProcess Finished\n");
+            self.call("doc:replace", "\nProcess Finished\n");
             return -1
-        self.call("Replace", r);
+        self.call("doc:replace", r);
         return 1
 
     def handle_close(self, key, **a):
-        print "Closed"
+        "handle:Close"
         if self.pipe is not None:
             p = self.pipe
             self.pipe = None
@@ -54,26 +54,26 @@ class ShellPane(edlib.Pane):
         return 1
 
     def handle_abort(self, key, **a):
+        "handle:Abort"
         # FIXME there is no way to send an Abort to this pane
-        print "Aborted"
         if self.pipe is not None:
             self.pipe.terminate()
             self.pipe.communicate()
             self.pipe = None
-            self.call("Replace", "\nProcess Aborted\n");
+            self.call("doc:replace", "\nProcess Aborted\n");
         return 1
 
 def shell_attach(key, focus, comm2, str, str2, **a):
     m = edlib.Mark(focus)
-    focus.call("Move-File", 1)
-    focus.call("Replace", m)
+    focus.call("doc:replace", m)
     p = ShellPane(focus)
     if not p:
         return -1;
     if not p.run(str, str2):
         p.close()
         return -1;
-    comm2("callback", p)
+    if comm2:
+        comm2("callback", p)
     return 1
 
 editor.call("global-set-command", "attach-shellcmd", shell_attach)
