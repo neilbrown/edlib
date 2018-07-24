@@ -278,10 +278,6 @@ static int set_match(struct match_state *st safe, unsigned short addr, wchar_t c
  * Advance the match state to process 'ch' and/or flag.
  * flag indicates start/end of word/line, and whether to ignore ch.
  */
-#define	RXL_SOL	1
-#define RXL_EOL	2
-#define	RXL_SOW	4
-#define	RXL_EOW	8
 int rxl_advance(struct match_state *st safe, wint_t ch, int flag, int restart)
 {
 	int active = st->active;

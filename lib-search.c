@@ -25,23 +25,44 @@ DEF_CMD(search_test)
 {
 	wint_t wch = ci->num & 0xFFFFF;
 	int len;
+	int i;
 	struct search_state *ss = container_of(ci->comm, struct search_state, c);
 
 	if (!ci->mark)
 		return 0;
 
-	len = rxl_advance(ss->st, wch, 0, ss->since_start < 0);
-	if (len >= 0 &&
-	    (ss->since_start < 0 || len > ss->since_start)) {
-		ss->since_start = len;
-		mark_to_mark(ss->endmark, ci->mark);
-		mark_next_pane(ci->home, ss->endmark);
+	for (i = -1; i <= 1; i++) {
+		switch(i) {
+		case -1:
+			if (wch == '\n')
+				len = rxl_advance(ss->st, WEOF, RXL_EOL, 1);
+			else
+				continue;
+			break;
+		case 0:
+			len = rxl_advance(ss->st, wch, 0, ss->since_start < 0);
+			break;
+		case 1:
+			if (wch == '\n')
+				len = rxl_advance(ss->st, WEOF, RXL_SOL, 1);
+			else
+				continue;
+			break;
+		}
+		if (len >= 0 &&
+		    (ss->since_start < 0 || len > ss->since_start)) {
+			ss->since_start = len;
+			mark_to_mark(ss->endmark, ci->mark);
+			if (i >= 0)
+				mark_next_pane(ci->home, ss->endmark);
+		}
+		if ((ss->since_start < 0 || len != -2) &&
+		    (ss->end == NULL || ci->mark->seq < ss->end->seq))
+			/* I like that one, more please */
+			continue;
+		return 0;
 	}
-	if ((ss->since_start < 0 || len != -2) &&
-	    (ss->end == NULL || ci->mark->seq < ss->end->seq))
-		/* I like that one, more please */
-		return 1;
-	return 0;
+	return 1;
 }
 
 static int search_forward(struct pane *p safe, struct mark *m safe, struct mark *m2,
