@@ -35,7 +35,7 @@ DEF_CMD(search_test)
 		switch(i) {
 		case -1:
 			if (wch == '\n')
-				len = rxl_advance(ss->st, WEOF, RXL_EOL, 1);
+				len = rxl_advance(ss->st, WEOF, RXL_EOL, ss->since_start < 0);
 			else
 				continue;
 			break;
@@ -44,7 +44,7 @@ DEF_CMD(search_test)
 			break;
 		case 1:
 			if (wch == '\n')
-				len = rxl_advance(ss->st, WEOF, RXL_SOL, 1);
+				len = rxl_advance(ss->st, WEOF, RXL_SOL, ss->since_start < 0);
 			else
 				continue;
 			break;

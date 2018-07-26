@@ -641,8 +641,6 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 		}
 		len -= 2;
 	}
-	if (st->invert)
-		len += 1;
 	st->len = len;
 	return 0;
 }
@@ -792,9 +790,12 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 			/* We have a set, not empty.  Store size and leading zero
 			 * if inverted */
 			unsigned short l = st->len;
-			st->sets[st->set] = l;
-			if (st->invert)
+			if (st->invert) {
+				st->len += 1;
+				l += 1;
 				st->sets[st->set + 1] = 0;
+			}
+			st->sets[st->set] = l;
 		}
 	}
 	st->set += st->len+1;
