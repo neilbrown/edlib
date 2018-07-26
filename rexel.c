@@ -31,19 +31,20 @@ TODO:
  * or Regular EXpression ELements.
  * This involves some cheating as wctype_t (unsigned long int) values
  * are stored in 16 bits.
- * There are three sorts of subarrays, and entry zero is a size of regex array.
- *  A "char class" subarray starts with a count and the 1 or more char
- *    class numbers (squeezed into 16 bytes).
- *  A "char set" subarray.  These have a count and a order list of
+ * There are three sorts of subarrays, and entry zero is a size of a regex array.
+ * Sets start immediately after this.
+ *  A "char class" subarray starts with a count and then 1 or more char
+ *    class numbers (squeezed into 16 bits).
+ *  A "char set" subarray.  These have a count and an ordered list of
  *    char values (or the low 16bits there-of).  If a binary search
- *    finds an even index, that char is in the set,  If it find an odd
+ *    finds an even index, that char is in the set, if it find an odd
  *    index, it isn't.  The top 6 bits of the count are used to match
  *    the bits 16-21 of the char, so only 10bits are available for length.
  *  A "regexp" subarray.  This is a list of numbers with a variety
  *    of meanings.  Each location can represent a point in an ongoing
  *    match.  As a new character is processed, that point might advance
  *    or it might be discarded, or might fork.
- *   The different 'commands' in 4 groups based on first 2 bits.
+ *   The different 'commands' are in 4 groups based on first 2 bits.
  *   0x: 15 bit unicode number.  Other unicode numbers cannot be matched
  *           this way
  *   10: address of a "regex" subarray.   The match forks at this point,
@@ -66,7 +67,7 @@ TODO:
  * One pair is 'before', one pair is 'after'.  They swap on each char.
  * One contains a threaded linkage among all points in regex subarray
  * which are currently matched.  A 'zero' marks the end of the chain.
- * The other records the length of that longest match at that point.
+ * The other records the length of the longest match at that point.
  * So when a char is matched, the length+1 of the 'before' moves
  * to the 'after' position.
  *
@@ -521,23 +522,27 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 		return -1;
 	if (!st->sets) {
 		/* guess 2 entries for each plane, plus 1
-		 * if we add a plane
+		 * if we add a plane.  Each plane needs an extra slot
+		 * if the set is inverted.
 		 */
 		for (p = (start & 0x1F0000)>>16; p <= (end & 0x1F0000)>>16 ; p++) {
 			if (!((*planes) & (1 << p))) {
 				*planes |= 1 << p;
 				st->len += 1;
+				if (st->invert)
+					st->len += 1;
 			}
 			st->len += 2;
-			if (st->invert)
-				st->len += 1;
 		}
+		/* All planes handled, so set *newplane beyond
+		 * the last.
+		 */
 		*newplane = 0x11 << 16;
 		return 0;
 	}
 	/* OK, for real this time, need to build up set 'plane' */
 	if (start >= ((plane+1) << 16)) {
-		/* Nothing to do for this plane */
+		/* Nothing to do for this plane, move to 'start' */
 		*newplane = start >> 16;
 		return 0;
 	}
@@ -610,7 +615,7 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 				len = lo+1;
 			else {
 				set[lo+1] = end+1;
-				len+= 2;
+				len += 2;
 			}
 		}
 	} else {
@@ -624,7 +629,7 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 		lo |= 1;
 	else
 		lo &= ~1;
-	/* Lo now points to the end of a range. If it overlap next,
+	/* Lo now points to the end of a range. If it overlaps th next,
 	 * merge the ranges.
 	 */
 	/* FIXME not right starting place */
