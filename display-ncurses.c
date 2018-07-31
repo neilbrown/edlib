@@ -14,7 +14,9 @@
 
 #define RECORD_REPLAY
 
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE
+#endif
 #define _XOPEN_SOURCE_EXTENDED
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
