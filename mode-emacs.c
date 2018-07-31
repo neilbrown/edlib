@@ -1465,6 +1465,11 @@ REDEF_CMD(emacs_function_move)
 	return 1;
 }
 
+DEF_CMD(emacs_next_match)
+{
+	return call("interactive-cmd-next-match", ci->focus, ci->num);
+}
+
 static void emacs_init(void)
 {
 	unsigned i;
@@ -1528,6 +1533,8 @@ static void emacs_init(void)
 
 	key_add(m, "M-Chr-!", &emacs_shell);
 	key_add(m, "Shell Command", &emacs_shell);
+
+	key_add(m, "emCX-Chr-`", &emacs_next_match);
 
 	key_add(m, "M-Chr-B", &emacs_bury);
 

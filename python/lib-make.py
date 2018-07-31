@@ -8,6 +8,10 @@ import subprocess, os, fcntl
 class MakePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
+        self.add_notify(focus, "make-next")
+        self.viewnum = focus.call("doc:add-view") - 1
+        self.point = None
+        self.map = []
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
@@ -41,6 +45,74 @@ class MakePane(edlib.Pane):
         self.call("doc:replace", r);
         return 1
 
+    def do_parse(self):
+        last = self.call("doc:vmark-get", self.viewnum, ret='mark2')
+        if last:
+            m = last.dup()
+            self.call("doc:step", m, 1, 1)
+        else:
+            m = edlib.Mark(self)
+
+        while True:
+            try:
+                self.call("text-search", "^[^: \t]+:[0-9]+[: ]", m)
+            except edlib.commandfailed:
+                break
+            self.call("doc:step", m, 0, 1)
+            e = m.dup()
+            while self.call("doc:step", m, 0, 1, ret='char') in "0123456789":
+                pass
+            s = m.dup()
+            self.call("doc:step", s, 1, 1)
+            lineno = self.call("doc:get-str", s, e, ret="str")
+            e = m.dup()
+            while self.call("doc:step", m, 0, 1, ret='char') not in ['\n', None]:
+                pass
+            self.call("doc:step", m, 1, 1)
+            fname = self.call("doc:get-str", m, e, ret="str")
+            d = edlib.Mark(self, self.viewnum)
+            d.to_mark(m)
+            d["ref"] = "%d" % len(self.map)
+            self.map.append((fname, lineno))
+
+            m.to_mark(e)
+
+    def find_next(self):
+        p = self.point
+        if p:
+            p = p.next()
+        else:
+            p = self.call("doc:vmark-get", self.viewnum, ret='mark')
+        if not p:
+            return None
+        self.point = p
+        return self.map[int(p['ref'])]
+
+    def make_next(self, key, focus, **a):
+        "handle:make-next"
+        self.do_parse()
+        n = self.find_next()
+        if not n:
+            focus.call("Message", "No further matches")
+            return 1
+        (fname, lineno) = n
+
+        d = focus.call("doc:open", -1, self['dirname']+fname, ret='focus')
+        if not d:
+            focus.call("Message", "File %s not found." % fname)
+            return -1
+        par = focus.call("ThisPane", 4, d, ret='focus')
+        if not par:
+            d.close()
+            focus.call("Message", "Failed to open pane");
+            return -1
+        par = par.call("doc:attach", ret='focus')
+        par = par.call("doc:assign", d, "", 1, ret='focus')
+        par.take_focus()
+        par.call("Move-File", -1)
+        par.call("Move-Line", int(lineno)-1)
+        return 1
+
     def handle_close(self, key, **a):
         "handle:Close"
         if self.pipe is not None:
@@ -51,6 +123,11 @@ class MakePane(edlib.Pane):
                 p.communicate()
             except IOError:
                 pass
+        m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+        while m:
+            m.release()
+            m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+        self.call("doc:del-view", self.viewnum)
         return 1
 
     def handle_abort(self, key, **a):
@@ -96,8 +173,10 @@ def make_request(key, focus, str, **a):
 
     if str is not None:
         # pop-up has completed
-        print "Run", cmd, "as:", str
-        doc = focus.call("doc:byname", docname, ret='focus')
+        try:
+            doc = focus.call("docs:byname", docname, ret='focus')
+        except edlib.commandfailed:
+            doc = None
         if not doc:
             doc = focus.call("doc:from-text", docname, "", ret='focus')
         if not doc:
@@ -108,10 +187,11 @@ def make_request(key, focus, str, **a):
         if not p:
             return -1
         focus.call("global-set-attr", "make-target-doc", docname)
-        d = p.call("doc:attach", ret='focus')
-        d.call("doc:assign", doc, "", 1)
-        p = d.call("attach-makecmd", str, path, ret='focus')
+        p = p.call("doc:attach", ret='focus')
+        p.call("doc:assign", doc, "", 1)
         p = p.call("attach-viewer", ret='focus')
+
+        p = doc.call("attach-makecmd", str, path, ret='focus')
         return 1
     # Create a popup to ask for make command
     p = focus.call("PopupTile", "D2", dflt, ret="focus")
@@ -123,6 +203,19 @@ def make_request(key, focus, str, **a):
     makeprompt(p)
     return 1
 
+def next_match(key, focus, **a):
+    docname = focus["make-target-doc"]
+    if not docname:
+        focus.call("Message", "No make output!")
+        return 1
+    doc = focus.call("docs:byname", docname, ret='focus')
+    if not doc:
+        focus.call("Message", "Make document %s missing" % docname)
+        return 1
+    doc.notify("make-next", focus)
+    return 1
+
 editor.call("global-set-command", "attach-makecmd", make_attach)
 editor.call("global-set-command", "interactive-cmd-make", make_request)
 editor.call("global-set-command", "interactive-cmd-grep", make_request)
+editor.call("global-set-command", "interactive-cmd-next-match", next_match)
