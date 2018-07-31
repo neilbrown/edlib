@@ -320,19 +320,24 @@ void pane_notify_close(struct pane *p safe)
 	}
 }
 
-int do_pane_notify(char *notification safe, struct pane *p safe, int num, struct mark *m,
-		   char *str, int num2, struct mark *m2, char *str2, struct command *comm2)
+int do_pane_notify(struct pane *home, char *notification safe, struct pane *p safe,
+		   int num, struct mark *m, char *str,
+		   int num2, struct mark *m2, char *str2,
+		   struct command *comm2)
 {
 	/* Return the largest absolute return value. If no notifiees are found.
 	 * return 0
 	 */
 	int ret = 0;
 	struct notifier *n;
+
+	if (!home)
+		home = p;
 	/* FIXME why no error below */
-	list_for_each_entry(n, &p->notifiees, notifier_link)
+	list_for_each_entry(n, &home->notifiees, notifier_link)
 		n->noted = 0;
 restart:
-	list_for_each_entry(n, &p->notifiees, notifier_link) {
+	list_for_each_entry(n, &home->notifiees, notifier_link) {
 		if (n->noted)
 			continue;
 		n->noted = 1;

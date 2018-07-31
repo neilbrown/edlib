@@ -853,9 +853,9 @@ static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwd
 		return NULL;
 	}
 
-	rv = pane_notify(ci.key, ci.focus, ci.num, ci.mark, ci.str,
-			 ci.num2, ci.mark2, ci.str2,
-			 ci.comm2);
+	rv = home_pane_notify(ci.home, ci.key, ci.focus, ci.num, ci.mark, ci.str,
+			      ci.num2, ci.mark2, ci.str2,
+			      ci.comm2);
 
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
