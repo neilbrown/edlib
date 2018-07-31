@@ -1631,8 +1631,11 @@ DEF_CMD(render_lines_move_line)
 	int o = -1;
 	struct xy scale = pane_scale(focus);
 	int num;
+	struct mark *m = ci->mark;
 
-	if (!ci->mark)
+	if (!m)
+		m = call_ret(mark, "doc:point", focus);
+	if (!m)
 		return -1;
 
 	rl->ignore_point = 0;
@@ -1650,11 +1653,11 @@ DEF_CMD(render_lines_move_line)
 		num -= 1;
 	else
 		num += 1;
-	if (!call("Move-EOL", ci->focus, num, ci->mark))
+	if (!call("Move-EOL", ci->focus, num, m))
 		return -1;
 	if (RPT_NUM(ci) > 0) {
 		/* at end of target line, move to start */
-		if (!call("Move-EOL", ci->focus, -1, ci->mark))
+		if (!call("Move-EOL", ci->focus, -1, m))
 			return -1;
 	}
 
@@ -1664,7 +1667,7 @@ DEF_CMD(render_lines_move_line)
 
 	if (target_x >= 0 || target_y >= 0) {
 		struct mark *start =
-			vmark_at_or_before(focus, ci->mark, rl->typenum);
+			vmark_at_or_before(focus, m, rl->typenum);
 		int y = 0;
 		if (!start || !start->mdata) {
 			pane_damaged(p, DAMAGED_CONTENT);
@@ -1679,7 +1682,7 @@ DEF_CMD(render_lines_move_line)
 			struct mark *m2 = call_render_line_offset(
 				focus, start, o);
 			if (m2)
-				mark_to_mark(ci->mark, m2);
+				mark_to_mark(m, m2);
 			mark_free(m2);
 		}
 	}
