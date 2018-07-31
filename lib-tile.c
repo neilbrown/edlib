@@ -916,6 +916,21 @@ DEF_CMD(tile_this)
 			return 0;
 		/* same group - continue */
 	}
+	if (ci->num & 4) {
+		/* If 'focus' is already open, use that */
+		struct tileinfo *t = ti;
+		char *name = pane_attr_get(ci->focus, "doc-name");
+		while ((t = list_next_entry(t, tiles)) != ti) {
+			char *n;
+			struct pane *f = t->p;
+			while (f->focus)
+				f = f->focus;
+			n = pane_attr_get(f, "doc-name");
+			if (name && n && strcmp(n, name) == 0)
+				return comm_call(ci->comm2, "callback:pane", t->p,
+						 0, NULL, t->name);
+		}
+	}
 	return comm_call(ci->comm2, "callback:pane", ci->home, 0,
 			 NULL, ti->name);
 }
