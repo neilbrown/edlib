@@ -143,7 +143,7 @@ DEF_CMD(crop_generic)
 			ci->mark, ci->str, ci->num2, ci->mark2, ci->str2, 0,0, ci->comm2);
 	if (crop(ci->mark, cd) || crop(ci->mark2, cd)) {
 		if (strcmp(ci->key, "doc:set-ref") != 0)
-			ret = -1;
+			ret = Einval;
 	}
 	return ret;
 }
@@ -157,12 +157,12 @@ DEF_CMD(crop_attach)
 	struct crop_data *cd;
 
 	if (!ci->mark || !ci->mark2)
-		return -1;
+		return Enoarg;
 	cd = calloc(1, sizeof(*cd));
 	p = pane_register(ci->focus, 0, &crop_handle.c, cd, NULL);
 	if (!p) {
 		free(cd);
-		return -1;
+		return Esys;
 	}
 	call("doc:set:filter", p, 1);
 	cd->start = mark_dup(ci->mark);

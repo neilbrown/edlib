@@ -155,7 +155,7 @@ DEF_CMD(format_content)
 	struct rf_data *rf = ci->home->data;
 
 	if (!ci->mark || !ci->comm2)
-		return -1;
+		return Enoarg;
 
 	while (doc_following_pane(ci->focus, ci->mark) != WEOF) {
 		char *l;
@@ -194,7 +194,7 @@ DEF_CMD(render_line)
 	int len;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 	if (doc_following_pane(ci->focus, ci->mark) == WEOF)
 		return 1;
 
@@ -217,13 +217,13 @@ DEF_CMD(render_line_prev)
 	struct mark *m = ci->mark;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 	if (RPT_NUM(ci) == 0)
 		/* always at start-of-line */
 		return 1;
 	if (mark_prev_pane(ci->focus, m) == WEOF)
 		/* Hit start-of-file */
-		return -1;
+		return Efail;
 	return 1;
 }
 
@@ -293,7 +293,7 @@ DEF_CMD(render_format_attach)
 
 	p = do_render_format_attach(ci->focus);
 	if (!p)
-		return -1;
+		return Esys;
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 

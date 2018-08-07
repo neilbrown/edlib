@@ -62,7 +62,7 @@ DEF_CMD(keymap_handle)
 		struct key_data *kd_old = ci->home->data;
 		struct key_data *kd_new;
 		if (!p)
-			return -1;
+			return Esys;
 		kd_new = p->data;
 		if (kd_old->globalcmd)
 			kd_new->globalcmd = command_get(kd_old->globalcmd);
@@ -97,7 +97,7 @@ DEF_CMD(keymap_handle)
 			if (!cm && ci->str)
 				cm = get_command(ci->home, ci->str);
 			if (!cm)
-				return -1;
+				return Einval;
 			kd->globalcmd = command_get(cm);
 			kd->cmds = (struct command *safe*)&kd->globalcmd;
 			kd->cmdcount = 1;
@@ -108,7 +108,7 @@ DEF_CMD(keymap_handle)
 		if (strcmp(ci->key, "local-add-keymap") == 0) {
 			struct command *cm = get_command(ci->home, ci->str);
 			if (!cm)
-				return -1;
+				return Einval;
 			kd->cmds = realloc(kd->cmds, ((kd->cmdcount+1)*
 						      sizeof(kd->cmds[0])));
 			kd->cmds[kd->cmdcount++] = command_get(cm);
@@ -117,7 +117,7 @@ DEF_CMD(keymap_handle)
 		if (strcmp(ci->key, "local-set-key") == 0) {
 			struct command *cm = get_command(ci->home, ci->str);
 			if (!cm || !ci->str2)
-				return -1;
+				return Einval;
 			key_add(kd->map, ci->str2, cm);
 			return 1;
 		}
@@ -151,7 +151,7 @@ DEF_CMD(keymap_attach)
 	struct pane *p = do_keymap_attach(ci->focus, 1);
 	if (p)
 		return comm_call(ci->comm2, "callback:attach", p);
-	return -1;
+	return Esys;
 }
 
 void edlib_init(struct pane *ed safe)

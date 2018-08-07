@@ -387,6 +387,7 @@ int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe)
 			((struct cmd_info*)ci)->comm = comm;
 			((struct cmd_info*)ci)->key = m->keys[pos];
 			ret = comm->func(ci);
+			ASSERT(ret >= 0 || ret < Eunused);
 			if (ret)
 				return ret;
 			prev = comm;

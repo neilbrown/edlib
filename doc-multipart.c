@@ -228,7 +228,7 @@ DEF_CMD(mp_set_ref)
 	int ret = 1;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	if (!ci->mark->ref.m && !ci->mark->ref.docnum) {
 		/* First time set-ref was called */
@@ -264,7 +264,7 @@ DEF_CMD(mp_step)
 	 */
 	mp_check_consistent(mpi);
 	if (!m)
-		return -1;
+		return Enoarg;
 
 	mp_check_consistent(mpi);
 
@@ -326,7 +326,7 @@ DEF_CMD(mp_step_part)
 	struct mark *m = ci->mark;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 	pre_move(m);
 	if (ci->num > 0)
 		/* Forward - next part */
@@ -349,7 +349,7 @@ DEF_CMD(mp_attr)
 	char *attr = ci->str;
 
 	if (!ci->mark || !attr)
-		return -1;
+		return Enoarg;
 
 	m1 = ci->mark->ref.m;
 	d = ci->mark->ref.docnum;
@@ -413,9 +413,9 @@ DEF_CMD(mp_set_attr)
 	char *attr = ci->str;
 
 	if (!attr)
-		return -1;
+		return Enoarg;
 	if (!m)
-		return 0;
+		return Efallthrough;
 	dn = m->ref.docnum;
 	m1 = m->ref.m;
 
@@ -435,7 +435,7 @@ DEF_CMD(mp_set_attr)
 		dn += 1;
 		attr += 15;
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(mp_notify_close)
@@ -503,7 +503,7 @@ DEF_CMD(mp_forward)
 	int d;
 
 	if (!ci->mark2)
-		return -1;
+		return Enoarg;
 
 	m2 = ci->mark2->ref.m;
 	d = ci->mark2->ref.docnum;
@@ -526,7 +526,7 @@ DEF_CMD(mp_forward)
 			return 1;
 	} else if (strncmp(key, "multipart-this:", 15) == 0)
 		key += 15;
-	else return -1;
+	else return Einval;
 
 	if (d >= mpi->nparts || d < 0)
 		return 1;
@@ -571,7 +571,7 @@ DEF_CMD(attach_mp)
 		return comm_call(ci->comm2, "callback:doc", h);
 
 	free(mpi);
-	return -1;
+	return Esys;
 }
 
 void edlib_init(struct pane *ed safe)

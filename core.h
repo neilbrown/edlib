@@ -81,6 +81,18 @@ struct command {
 	void	(*free)(struct command *c safe);
 };
 
+enum edlib_errors {
+	Efallthrough = 0,
+	Enoarg = -1000,
+	Enotarget,
+	Einval,
+	Efalse,
+	Esys,
+	Enosup,
+	Efail,
+	Eunused,
+};
+
 static inline struct command *safe command_get(struct command * safe c)
 {
 	if (!(void*) c)
@@ -654,7 +666,7 @@ static inline int do_call_val(enum target_type type, struct pane *home, struct c
 		break;
 	case TYPE_pane:
 		if (!home->handle)
-			return -1;
+			return Esys;
 		ci.comm = home->handle;
 		ret = ci.comm->func(&ci);
 		break;

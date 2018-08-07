@@ -42,7 +42,7 @@ DEF_CMD(render_prev)
 	 *
 	 * If RPT_NUM == 1, step back at least one character so we get
 	 * the previous line and not the line we are on.
-	 * If we hit start-of-file without finding newline, return -1;
+	 * If we hit start-of-file without finding newline, return Efail;
 	 */
 	struct mark *m = ci->mark;
 	struct pane *f = ci->focus;
@@ -53,7 +53,7 @@ DEF_CMD(render_prev)
 	wint_t ch;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 
 	while ((ch = mark_prev_pane(f, m)) != WEOF &&
 	       (!is_eol(ch) || rpt > 0) &&
@@ -74,7 +74,7 @@ DEF_CMD(render_prev)
 		return 1;
 	}
 	if (ch == WEOF && rpt)
-		return -2;
+		return Efail;
 	if (ch == '\n' || (ch == '\v' &&
 			   ((ch = doc_prior_pane(f, m)) == WEOF || !is_eol(ch))))
 		/* Found a '\n', so step forward over it for start-of-line. */
@@ -208,7 +208,7 @@ DEF_CMD(text_attr_callback)
 {
 	struct attr_return *ar = container_of(ci->comm, struct attr_return, rtn);
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 	if (ci->num >= 0)
 		as_add(&ar->ast, &ar->tmpst, ar->chars + ci->num, ci->num2, ci->str);
 	else
@@ -259,7 +259,7 @@ DEF_CMD(render_line)
 	ar.min_end = -1;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 
 	ch = doc_following_pane(focus, m);
 	if (is_eol(ch) &&
@@ -367,7 +367,7 @@ DEF_CMD(renderline_attach)
 
 	ret = do_renderline_attach(ci->focus);
 	if (!ret)
-		return -1;
+		return Esys;
 	return comm_call(ci->comm2, "callback:attach", ret);
 }
 

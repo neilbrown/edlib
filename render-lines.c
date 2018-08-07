@@ -1288,7 +1288,7 @@ DEF_CMD(render_lines_refresh)
 	if (!m)
 		m = vmark_new(focus, MARK_UNGROUPED);
 	if (!m)
-		return -1;
+		return Esys;
 	find_lines(m, p, focus, NO_NUMERIC);
 	rl->lines = render(m, p, focus, &rl->cols);
 	rl->repositioned = 0;
@@ -1567,7 +1567,7 @@ DEF_CMD(render_lines_move_pos)
 	struct mark *top, *bot;
 
 	if (!pm)
-		return -1;
+		return Enoarg;
 	rl->ignore_point = 1;
 	top = vmark_first(focus, rl->typenum);
 	bot = vmark_last(focus, rl->typenum);
@@ -1598,9 +1598,9 @@ DEF_CMD(render_lines_view_line)
 	int line = ci->num;
 
 	if (!pm)
-		return -1;
+		return Enoarg;
 	if (line == NO_NUMERIC)
-		return -1;
+		return Einval;
 
 	while ((top = vmark_first(focus, rl->typenum)) != NULL) {
 		free(top->mdata);
@@ -1636,7 +1636,7 @@ DEF_CMD(render_lines_move_line)
 	if (!m)
 		m = call_ret(mark, "doc:point", focus);
 	if (!m)
-		return -1;
+		return Esys;
 
 	rl->ignore_point = 0;
 
@@ -1654,11 +1654,11 @@ DEF_CMD(render_lines_move_line)
 	else
 		num += 1;
 	if (!call("Move-EOL", ci->focus, num, m))
-		return -1;
+		return Efail;
 	if (RPT_NUM(ci) > 0) {
 		/* at end of target line, move to start */
 		if (!call("Move-EOL", ci->focus, -1, m))
-			return -1;
+			return Efail;
 	}
 
 	/* restore target: Move-EOL might have changed it */

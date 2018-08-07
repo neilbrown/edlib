@@ -377,7 +377,7 @@ DEF_CMD(header_get)
 	char *c, *t;
 
 	if (!hdr)
-		return -1;
+		return Enoarg;
 
 	if (ci->mark) {
 		copy_headers(ci->home, hdr, type, ci->focus, ci->mark);
@@ -385,7 +385,7 @@ DEF_CMD(header_get)
 	}
 	asprintf(&attr, "rfc822-%s", hdr);
 	if (!attr)
-		return -1;
+		return Esys;
 	for (c = attr; *c; c++)
 		if (isupper(*c))
 			*c = tolower(*c);
@@ -426,7 +426,7 @@ DEF_CMD(header_attach)
 	p = pane_register(ci->focus, 0, &header_handle.c, hi, NULL);
 	if (!p) {
 		free(hi);
-		return -1;
+		return Esys;
 	}
 
 	hi->vnum = doc_add_view(p);

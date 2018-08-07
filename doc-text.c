@@ -254,7 +254,7 @@ DEF_CMD(text_load_file)
 	return 1;
 err:
 	free(c);
-	return 0;
+	return Efallthrough;
 }
 
 static int do_text_output_file(struct text *t safe, struct doc_ref *start,
@@ -281,7 +281,7 @@ static int do_text_output_file(struct text *t safe, struct doc_ref *start,
 			break;
 	}
 	if (fsync(fd) != 0)
-		return -1;
+		return Esys;
 	return 0;
 }
 
@@ -315,7 +315,7 @@ static int do_text_write_file(struct text *t safe, struct doc_ref *start, struct
 		cnt += 1;
 	}
 	if (fd < 0)
-		return -1;
+		return Efail;
 
 	if (do_text_output_file(t, start, end, fd) < 0)
 		goto error;
@@ -329,7 +329,7 @@ error:
 	close(fd);
 	unlink(tempname);
 	free(tempname);
-	return -1;
+	return Efail;
 
 }
 
@@ -376,7 +376,7 @@ DEF_CMD(text_autosave_tick)
 
 	t->as.timer_started = 0;
 	if (!t->fname)
-		return -1;
+		return Efalse;
 	if (t->as.changes == 0)
 		/* This will delete the file */
 		do_text_autosave(t);
@@ -387,7 +387,7 @@ DEF_CMD(text_autosave_tick)
 		call_comm("event:timer", t->doc.home, &text_autosave_tick,
 			  t->as.last_change + 30 - time(0L));
 	}
-	return -1;
+	return Efalse;
 }
 
 static void text_check_autosave(struct text *t safe)
@@ -418,7 +418,7 @@ DEF_CMD(text_save_file)
 
 	if (!t->fname) {
 		asprintf(&msg, "** No file name known for %s ***", d->name);
-		ret = -1;
+		ret = Efail;
 	} else {
 		ret = do_text_write_file(t, NULL, NULL, t->fname);
 		if (ret == 0) {
@@ -435,7 +435,7 @@ DEF_CMD(text_save_file)
 	text_check_autosave(t);
 	if (ret == 0)
 		return 1;
-	return -1;
+	return Efail;
 }
 
 DEF_CMD(text_write_file)
@@ -449,16 +449,16 @@ DEF_CMD(text_write_file)
 					 ci->mark ? &ci->mark->ref: NULL,
 					 ci->mark2 ? &ci->mark2->ref: NULL,
 					 ci->str);
-		return ret == 0 ? 1 : -1;
+		return ret == 0 ? 1 : Efail;
 	}
 	if (ci->num >= 0 && ci->num != NO_NUMERIC) {
 		ret = do_text_output_file(t,
 					  ci->mark ? &ci->mark->ref: NULL,
 					  ci->mark2 ? &ci->mark2->ref: NULL,
 					  ci->num);
-		return ret = 0 ? 1 : -1;
+		return ret = 0 ? 1 : Efail;
 	}
-	return -1;
+	return Enoarg;
 }
 
 DEF_CMD(text_same_file)
@@ -469,13 +469,13 @@ DEF_CMD(text_same_file)
 	int fd = ci->num2;
 
 	if (t->fname == NULL)
-		return 0;
+		return Efallthrough;
 	if (fstat(fd, &stb) != 0)
 		return 0;
 	if (t->stat.st_ino == stb.st_ino &&
 	    t->stat.st_dev == stb.st_dev)
 		return 1;
-	return 0;
+	return Efallthrough;
 }
 
 static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
@@ -958,7 +958,7 @@ DEF_CMD(text_reundo)
 	struct text *t = container_of(d, struct text, doc);
 
 	if (!m)
-		return -1;
+		return Enoarg;
 
 	while (did_do != 1) {
 		struct mark *m2;
@@ -1184,7 +1184,7 @@ DEF_CMD(text_step)
 	wint_t ret;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 
 	r = m->ref;
 	if (forward) {
@@ -1226,7 +1226,7 @@ DEF_CMD(text_step_bytes)
 	wint_t ret;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 
 	r = m->ref;
 	if (forward) {
@@ -1332,13 +1332,13 @@ DEF_CMD(text_new)
 	t->doc.home = p;
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p);
-	return -1;
+	return Esys;
 }
 
 DEF_CMD(text_new2)
 {
 	if (ci->num2 != S_IFREG)
-		return 0;
+		return Efallthrough;
 	return text_new_func(ci);
 }
 
@@ -1443,7 +1443,7 @@ DEF_CMD(text_set_ref)
 	struct text *t = container_of(d, struct text, doc);
 
 	if (!m)
-		return -1;
+		return Enoarg;
 	if (list_empty(&t->text) || ci->num != 1) {
 		m->ref.c = NULL;
 		m->ref.o = 0;
@@ -1770,7 +1770,7 @@ DEF_CMD(text_doc_get_attr)
 	int o = 0;
 
 	if (!m || !attr)
-		return -1;
+		return Enoarg;
 	a = text_attrset(d, m, &o);
 	val = attr_get_str(a, attr, o);
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
@@ -1793,7 +1793,7 @@ DEF_CMD(text_get_attr)
 	char *val;
 
 	if (!attr)
-		return -1;
+		return Enoarg;
 
 	if ((val = attr_find(d->home->attrs, attr)) != NULL)
 		;
@@ -1808,7 +1808,7 @@ DEF_CMD(text_get_attr)
 	else if (strcmp(attr, "doc-modified") == 0)
 		val = (t->saved != t->undo) ? "yes" : "no";
 	else
-		return 0;
+		return Efallthrough;
 
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
 	return 1;
@@ -1824,25 +1824,25 @@ DEF_CMD(text_set_attr)
 	int o;
 
 	if (!attr)
-		return -1;
+		return Enoarg;
 	if (!ci->mark)
-		return 0;
+		return Efallthrough;
 
 	o = ci->mark->ref.o;
 	c = ci->mark->ref.c;
 	if (!c)
 		/* EOF */
-		return 0;
+		return Efallthrough;
 	if (o >= c->end) {
 		/* End of chunk, need to look at next */
 		if (c->lst.next == &t->text)
-			return 0;
+			return Efallthrough;
 		c = list_next_entry(c, lst);
 		o = c->start;
 	}
 	pane_notify("Notify:doc:Replace", ci->home, 0, ci->mark);
 	attr_set_str_key(&c->attrs, attr, val, o);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(text_modified)

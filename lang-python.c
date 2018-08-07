@@ -178,14 +178,14 @@ DEF_CMD(python_load)
 	PyObject *Ed;
 
 	if (!fname)
-		return -1;
+		return Enoarg;
 	fp = fopen(fname, "r");
 	if (!fp)
-		return -1;
+		return Efail;
 
 	main_mod = PyImport_AddModule("__main__");
 	if (main_mod == NULL)
-		return -1;
+		return Einval;
 	globals = PyModule_GetDict(main_mod);
 
 	Ed = Pane_Frompane(ci->home);
@@ -207,15 +207,15 @@ DEF_CMD(python_load_module)
 	char buf [PATH_MAX];
 
 	if (!name)
-		return -1;
+		return Enoarg;
 	snprintf(buf, sizeof(buf), "python/%s.py", name);
 	fp = fopen(buf, "r");
 	if (!fp)
-		return -1;
+		return Efail;
 
 	main_mod = PyImport_AddModule("__main__");
 	if (main_mod == NULL)
-		return -1;
+		return Einval;
 	globals = PyModule_GetDict(main_mod);
 
 	Ed = Pane_Frompane(ci->home);
@@ -306,7 +306,7 @@ REDEF_CMD(python_call)
 	if (!ret) {
 		PyErr_Print();
 		/* FIXME cancel error?? */
-		return -1;
+		return Esys;
 	}
 	if (ret == Py_None)
 		rv = 0;
@@ -440,7 +440,7 @@ REDEF_CMD(python_pane_call)
 	Pane *home = container_of(ci->comm, Pane, handle.c);
 
 	if (!home || !home->map)
-		return 0;
+		return Efallthrough;
 
 	if (!home->map_init)
 		do_map_init(home);
@@ -658,9 +658,9 @@ DEF_CMD(take_focus)
 	struct pane *p = ci->focus;
 
 	if (!p)
-		return -1;
+		return Enoarg;
 	if (pr->ret)
-		return -1;
+		return Einval;
 	pr->ret = Pane_Frompane(ci->focus);
 	return 1;
 }
@@ -672,9 +672,9 @@ DEF_CMD(take_mark)
 		ci->home->handle->func == python_doc_call.func;
 
 	if (pr->ret)
-		return -1;
+		return Einval;
 	if (!ci->mark)
-		return 0;
+		return Efallthrough;
 	pr->ret = Mark_Frommark(ci->mark, local);
 	return 1;
 }
@@ -686,9 +686,9 @@ DEF_CMD(take_mark2)
 		ci->home->handle->func == python_doc_call.func;
 
 	if (pr->ret)
-		return -1;
+		return Einval;
 	if (!ci->mark2)
-		return 0;
+		return Efallthrough;
 	pr->ret = Mark_Frommark(ci->mark2, local);
 	return 1;
 }
@@ -698,9 +698,9 @@ DEF_CMD(take_str)
 	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
 
 	if (pr->ret)
-		return -1;
+		return Einval;
 	if (!ci->str)
-		return 0;
+		return Efallthrough;
 	pr->ret = python_string(ci->str);
 	return 1;
 }
@@ -873,7 +873,7 @@ static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwd
 static PyObject *Pane_abs(Pane *self safe, PyObject *args)
 {
 	int x,y;
-	int w=-1, h=-1;
+	int w= -1, h= -1;
 	int have_height = 0;
 	int ret = PyArg_ParseTuple(args, "ii|ii", &x, &y, &w, &h);
 	if (ret <= 0)
@@ -2192,6 +2192,14 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, DAMAGED_CLOSED);
 	PyModule_AddIntMacro(m, NO_RPOS);
 	PyModule_AddIntMacro(m, NEVER_RPOS);
+	PyModule_AddIntMacro(m, Efallthrough);
+	PyModule_AddIntMacro(m, Enoarg);
+	PyModule_AddIntMacro(m, Enotarget);
+	PyModule_AddIntMacro(m, Einval);
+	PyModule_AddIntMacro(m, Efalse);
+	PyModule_AddIntMacro(m, Esys);
+	PyModule_AddIntMacro(m, Enosup);
+	PyModule_AddIntMacro(m, Efail);
 	PyModule_AddIntConstant(m, "WEOF", 0x1FFFFF);
 	call_comm("global-set-command", ed, &python_load, 0, NULL, "python-load");
 	call_comm("global-set-command", ed, &python_load_module,

@@ -127,16 +127,16 @@ DEF_CMD(text_search)
 	int since_start;
 
 	if (!ci->str|| !ci->mark)
-		return -1;
+		return Enoarg;
 
 	m = ci->mark;
 	rxl = rxl_parse(ci->str, NULL, 1);
 	if (!rxl)
-		return -1;
+		return Einval;
 	since_start = -1;
 	endmark = mark_dup(m);
 	if (!endmark)
-		return -1;
+		return Esys;
 
 	if (ci->num2)
 		since_start = search_backward(ci->focus, m, ci->mark2, rxl, endmark);
@@ -148,7 +148,7 @@ DEF_CMD(text_search)
 	mark_free(endmark);
 	free(rxl);
 	if (since_start < 0)
-		return -2;
+		return Efail;
 	return since_start + 1;
 }
 

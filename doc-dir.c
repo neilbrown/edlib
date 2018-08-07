@@ -130,7 +130,7 @@ DEF_CMD(dir_new)
 	dr->doc.home = p;
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p);
-	return -1;
+	return Esys;
 }
 
 DEF_CMD(dir_new2)
@@ -154,10 +154,10 @@ DEF_CMD(dir_load_file)
 
 	if (fd < 0) {
 		if (!dr->fname)
-			return -1;
+			return Esys;
 		fd = open(dr->fname, O_RDONLY|O_DIRECTORY);
 		if (fd < 0)
-			return -1;
+			return Efail;
 		doclose = 1;
 	}
 
@@ -283,7 +283,7 @@ DEF_CMD(dir_step)
 	wint_t ret = '\n';
 
 	if (!m)
-		return -1;
+		return Enoarg;
 	d = m->ref.d;
 	if (forward) {
 		if (d == NULL)
@@ -331,7 +331,7 @@ DEF_CMD(dir_set_ref)
 	struct mark *m = ci->mark;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 
 	if (list_empty(&dr->ents) || ci->num != 1)
 		m->ref.d = NULL;
@@ -479,7 +479,7 @@ DEF_CMD(dir_doc_get_attr)
 	char *val;
 
 	if (!m || !attr)
-		return -1;
+		return Enoarg;
 	val = __dir_get_attr(d, m, attr);
 
 	if (!val)
@@ -496,7 +496,7 @@ DEF_CMD(dir_get_attr)
 	char *val;
 
 	if (!attr)
-		return -1;
+		return Enoarg;
 
 	if ((val = attr_find(d->home->attrs, attr)) != NULL)
 		;
@@ -544,7 +544,7 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 	char *fname = NULL;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 	de = m->ref.d;
 	/* close this pane, open the given file. */
 	if (de == NULL)
@@ -561,7 +561,7 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 			      "File not found\n");
 	free(fname);
 	if (!p)
-		return -1;
+		return Efail;
 	if (cmd == 'o')
 		par = CALL(pane, home, focus, "OtherPane", p, 4);
 	else
@@ -585,11 +585,11 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 	char buf[100];
 
 	if (!m || !par)
-		return -1;
+		return Enoarg;
 	de = m->ref.d;
 	/* close this pane, open the given file. */
 	if (de == NULL)
-		return -1;
+		return Esys;
 	snprintf(buf, sizeof(buf), "render-Chr-%c", cmd);
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
@@ -601,7 +601,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 			if (renderer) {
 				par = call_pane("ThisPane", focus);
 				if (!par)
-					return -1;
+					return Esys;
 
 				p = doc_attach_view(par, new, renderer, 1);
 			}
@@ -610,9 +610,11 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 	} else {
 		struct pane *doc = call_pane("doc:from-text", par, 0, NULL, fname,
 					     0, NULL, "File not found\n");
+		if (!doc)
+			return Efail;
 		par = call_pane("ThisPane", focus);
-		if (!par || !doc)
-			return -1;
+		if (!par)
+			return Esys;
 		p = doc_attach_view(par, doc, NULL, 1);
 	}
 	free(fname);
@@ -625,7 +627,7 @@ DEF_CMD(dir_cmd)
 	char cmd;
 
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 	cmd = ci->str[0];
 	switch(cmd) {
 	case 'f':

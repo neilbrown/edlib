@@ -556,7 +556,7 @@ class events(edlib.Pane):
         if self.active:
             return 1
         else:
-            return -1
+            return edlib.Efalse
 
     def deactivate(self, key, **a):
         self.active = False

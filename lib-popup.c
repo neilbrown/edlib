@@ -246,7 +246,7 @@ DEF_CMD(popup_attach)
 	}
 
 	if (!p)
-		return -1;
+		return Esys;
 	ppi->handle = p;
 	return comm_call(ci->comm2, "callback:attach", p);
 }

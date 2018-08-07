@@ -34,7 +34,7 @@ DEF_LOOKUP_CMD(ed_handle, ed_map);
 DEF_CMD(global_set_attr)
 {
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 	attr_set_str(&ci->home->attrs, ci->str, ci->str2);
 	return 1;
 }
@@ -45,7 +45,7 @@ DEF_CMD(global_set_command)
 	struct map *map = ei->map;
 
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 	if (ci->str2)
 		key_add_range(map, ci->str, ci->str2, ci->comm2);
 	else
@@ -61,7 +61,7 @@ DEF_CMD(global_get_command)
 
 	if (!ci->str ||
 	    !(cm = key_lookup_cmd(map, ci->str)))
-		return -1;
+		return Efail;
 	return comm_call(ci->comm2, "callback:comm", ci->focus, 0, NULL, ci->str,
 			 0, NULL, NULL, 0,0, cm);
 }
@@ -209,7 +209,7 @@ DEF_CMD(editor_on_idle)
 	struct idle_call *ic;
 
 	if (!ci->comm2)
-		return -1;
+		return Enoarg;
 
 	ic = calloc(1, sizeof(*ic));
 	ic->focus = ci->focus;

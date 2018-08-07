@@ -142,7 +142,7 @@ REDEF_CMD(emacs_delete)
 	struct mark *m;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	m = mark_dup(ci->mark);
 
@@ -168,7 +168,7 @@ REDEF_CMD(emacs_kill)
 	char *str;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	m = mark_dup(ci->mark);
 
@@ -202,7 +202,7 @@ REDEF_CMD(emacs_case)
 	int dir;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	if (cnt == 0)
 		return 1;
@@ -292,7 +292,7 @@ REDEF_CMD(emacs_swap)
 	int dir;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	if (cnt == 0)
 		return 1;
@@ -413,7 +413,7 @@ REDEF_CMD(emacs_simple)
 	struct simple_command *sc = container_of(ci->comm, struct simple_command, cmd);
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	return call(sc->type, ci->focus, ci->num, ci->mark, NULL, ci->num2);
 }
@@ -423,7 +423,7 @@ REDEF_CMD(emacs_simple_neg)
 	struct simple_command *sc = container_of(ci->comm, struct simple_command, cmd);
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	return call(sc->type, ci->focus, -RPT_NUM(ci), ci->mark, NULL, ci->num2);
 }
@@ -448,7 +448,7 @@ DEF_CMD(emacs_insert)
 	char *str;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	/* Key is "Chr-X" - skip 4 bytes to get X */
 	str = ci->key + 4;
@@ -477,7 +477,7 @@ DEF_CMD(emacs_insert_other)
 	char *ins;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	for (i = 0; other_inserts[i].key; i++)
 		if (strcmp(safe_cast other_inserts[i].key, ci->key) == 0)
@@ -607,7 +607,7 @@ DEF_CMD(emacs_findfile)
 	} else
 		p = call_pane("doc:open", ci->focus, -2, NULL, ci->str);
 	if (!p)
-		return -1;
+		return Efail;
 	if (strcmp(ci->key, "File Found Other Window") == 0)
 		par = CALL(pane, home, ci->focus, "OtherPane", p, 4);
 	else
@@ -615,13 +615,13 @@ DEF_CMD(emacs_findfile)
 
 	if (!par) {
 		pane_close(p);
-		return -1;
+		return Esys;
 	}
 
 	p = doc_attach_view(par, p, NULL, 1);
 	if (p)
 		pane_focus(p);
-	return p ? 1 : -1;
+	return p ? 1 : Esys;
 }
 
 REDEF_CMD(emacs_file_complete)
@@ -637,11 +637,11 @@ REDEF_CMD(emacs_file_complete)
 	struct call_return cr;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	str = call_ret(strsave, "doc:get-str", ci->focus);
 	if (!str)
-		return -1;
+		return Einval;
 	d = str;
 	while ((c = strstr(d, "//")) != NULL)
 		d = c+1;
@@ -655,25 +655,25 @@ REDEF_CMD(emacs_file_complete)
 	}
 	fd = open(d, O_DIRECTORY|O_RDONLY);
 	if (fd < 0) {
-		return -1;
+		return Efail;
 	}
 	docp = call_pane("doc:open", ci->focus, fd, NULL, d);
 	close(fd);
 	if (!docp)
-		return -1;
+		return Efail;
 	pop = call_pane("PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
-		return -1;
+		return Esys;
 	par = doc_attach_view(pop, docp, NULL, 0);
 	if (!par)
-		return -1;
+		return Esys;
 
 	attr_set_str(&par->attrs, "line-format", "%+name%suffix");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
 	p = render_attach("complete", par);
 	if (!p)
-		return -1;
+		return Esys;
 	cr = call_ret(all, "Complete:prefix", p, 0, NULL, b);
 	if (cr.s && (strlen(cr.s) <= strlen(b) && cr.ret-1 > 1)) {
 		/* We need the dropdown */
@@ -726,19 +726,19 @@ DEF_CMD(emacs_finddoc)
 
 	p = call_pane("docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)
-		return -1;
+		return Efail;
 
 	if (strcmp(ci->key, "Doc Found Other Window") == 0)
 		par = CALL(pane, home, ci->focus, "OtherPane", p, 4);
 	else
 		par = call_pane("ThisPane", ci->focus);
 	if (!p || !par)
-		return -1;
+		return Esys;
 
 	p = doc_attach_view(par, p, NULL, 1);
 	if (p)
 		pane_focus(p);
-	return p ? 1 : -1;
+	return p ? 1 : Esys;
 }
 
 REDEF_CMD(emacs_doc_complete)
@@ -751,27 +751,27 @@ REDEF_CMD(emacs_doc_complete)
 	struct call_return cr;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	str = call_ret(strsave, "doc:get-str", ci->focus);
 	if (!str)
-		return -1;
+		return Einval;
 	pop = call_pane("PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
-		return -1;
+		return Esys;
 	docs = call_pane("docs:byname", ci->focus);
 	if (!docs)
-		return -1;
+		return Efail;
 	par = doc_attach_view(pop, docs, NULL, 0);
 	if (!par)
-		return -1;
+		return Esys;
 
 	attr_set_str(&par->attrs, "line-format", "%+name");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
 	p = render_attach("complete", par);
 	if (!p)
-		return -1;
+		return Esys;
 	cr = call_ret(all, "Complete:prefix", p, 0, NULL, str);
 	if (cr.s && (strlen(cr.s) <= strlen(str) && cr.ret - 1 > 1)) {
 		/* We need the dropdown */
@@ -796,10 +796,10 @@ DEF_CMD(emacs_viewdocs)
 
 	docs = call_pane("docs:byname", ci->focus, 0, NULL, "*Documents*");
 	if (!docs)
-		return -1;
+		return Efail;
 	par = call_pane("ThisPane", ci->focus);
 	if (!par)
-		return -1;
+		return Esys;
 
 	p = doc_attach_view(par, docs, NULL, 1);
 	return !!p;
@@ -829,11 +829,11 @@ DEF_CMD(emacs_shell)
 	if (!doc)
 		doc = call_pane("doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
 	if (!doc)
-		return -1;
+		return Esys;
 	attr_set_str(&doc->attrs, "dirname", path);
 	par = CALL(pane, home, ci->focus, "OtherPane", doc, 4);
 	if (!par)
-		return -1;
+		return Esys;
 	/* shellcmd is attached directly to the document, not in the view
 	 * stack.  It is go-between for document and external command.
 	 * We don't need a doc attachment as no point is needed - we
@@ -959,7 +959,7 @@ DEF_CMD(emacs_search_highlight)
 	if (ci->mark && ci->num > 0 && ci->str) {
 		m = vmark_new(ci->focus, hi->view);
 		if (!m)
-			return -1;
+			return Esys;
 		mark_to_mark(m, ci->mark);
 		attr_set_int(&m->attrs, "render:search", ci->num);
 		call("Move-View-Pos", ci->focus, 0, m);
@@ -1316,7 +1316,7 @@ DEF_CMD(emacs_yank_pop)
 	int num = ci->num2 & 1023;
 
 	if (!(ci->num2 & 1024))
-		return -1;
+		return Einval;
 	mk = call_ret(mark2, "doc:point", ci->focus);
 	if (!mk)
 		return 1;
@@ -1327,7 +1327,7 @@ DEF_CMD(emacs_yank_pop)
 		str = call_ret(strsave, "copy:get", ci->focus, num);
 	}
 	if (!str)
-		return -1;
+		return Efail;
 	m = mark_dup(mk);
 	if (m->seq > mk->seq)
 		mark_to_mark(m, mk);
@@ -1427,7 +1427,7 @@ REDEF_CMD(emacs_function_move)
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	rpt *= mv->direction;
 	if (rpt > 0) {

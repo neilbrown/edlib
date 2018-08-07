@@ -471,12 +471,12 @@ class PresenterPane(edlib.Pane):
 
         start = self.find_pages(mark)
         if not start:
-            return -2
+            return edlib.Efalse
         if start.seq > mark.seq:
             start = mark
 
         if start == mark:
-            return -2
+            return edlib.Efalse
         mark.to_mark(start)
         return 1
 

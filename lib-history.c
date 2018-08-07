@@ -139,7 +139,7 @@ DEF_CMD(history_attach)
 	struct pane *p;
 
 	if (!ci->str || !ci->str2)
-		return -1;
+		return Enoarg;
 
 	hi = calloc(1, sizeof(*hi));
 	hi->done_map = key_alloc();

@@ -80,7 +80,7 @@ DEF_CMD(libevent_read)
 	struct evt *ev;
 
 	if (!ci->comm2)
-		return -1;
+		return Enoarg;
 
 	/* If there is already an event with this 'fd', we need
 	 * to remove it now, else libevent gets confused.
@@ -117,7 +117,7 @@ DEF_CMD(libevent_signal)
 	struct evt *ev;
 
 	if (!ci->comm2)
-		return -1;
+		return Enoarg;
 
 	ev = malloc(sizeof(*ev));
 
@@ -144,7 +144,7 @@ DEF_CMD(libevent_timer)
 	struct timeval tv;
 
 	if (!ci->comm2)
-		return -1;
+		return Enoarg;
 
 	ev = malloc(sizeof(*ev));
 
@@ -187,7 +187,7 @@ DEF_CMD(libevent_run)
 		free(ev);
 	}
 	event_base_free(b);
-	return -1;
+	return Efail;
 }
 
 DEF_CMD(libevent_deactivate)

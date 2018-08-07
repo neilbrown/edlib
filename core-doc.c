@@ -516,7 +516,7 @@ DEF_CMD(doc_get_attr)
 	char *a;
 
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 
 	if ((a = attr_find(d->home->attrs, ci->str)) != NULL)
 		;
@@ -548,7 +548,7 @@ DEF_CMD(doc_set_name)
 	struct doc *d = ci->home->data;
 
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 	free(d->name);
 	d->name = strdup(ci->str);
 	return call("doc:revisit", d->home);
@@ -577,7 +577,7 @@ DEF_CMD(doc_notify)
 			      ci->num2, ci->mark2, ci->str2, ci->comm2);
 	/* Mustn't return 0, else will fall through to next doc */
 	/* HACK remove this when docs isn't the parent of all documents */
-	return ret ?: -2;
+	return ret ?: Enotarget;
 }
 
 DEF_CMD(doc_delview)
@@ -585,7 +585,7 @@ DEF_CMD(doc_delview)
 	if (ci->num >= 0)
 		do_doc_del_view(ci->home->data, ci->num);
 	else
-		return -1;
+		return Einval;
 	return 1;
 }
 
@@ -663,7 +663,7 @@ DEF_CMD(doc_do_revisit)
 	 * to revisit.
 	 */
 	if (!ci->home->parent)
-		return -1;
+		return Einval;
 	return home_call(ci->home->parent, ci->key, ci->home, ci->num, ci->mark);
 }
 
@@ -678,7 +678,7 @@ DEF_CMD(doc_mymark)
 	m = doc_first_mark_all(d);
 	while (m && m != ci->mark)
 		m = doc_next_mark_all(m);
-	return m ? 1 : -1;
+	return m ? 1 : Efalse;
 }
 
 DEF_CMD(doc_get_point)
@@ -709,7 +709,7 @@ DEF_CMD(doc_default_content)
 	int nxt;
 
 	if (!m || !ci->comm2)
-		return -1;
+		return Enoarg;
 
 	nxt = ccall(&dstep, "doc:step", ci->home, 1, m);
 	while (nxt != CHAR_RET(WEOF) &&
@@ -767,7 +767,7 @@ DEF_CMD(doc_get_str)
 	else
 		m = vmark_new(ci->focus, MARK_UNGROUPED);
 	if (!m)
-		return -1;
+		return Esys;
 	call_comm("doc:content", ci->focus, &g.c, 0, m);
 	mark_free(m);
 	comm_call(ci->comm2, "callback:get-str", ci->focus, 0, NULL, buf_final(&g.b));
@@ -795,14 +795,16 @@ DEF_CMD(doc_write_file)
 	else if (charset && strcmp(charset, "utf-8") == 0)
 		utf8 = 1;
 	else
-		return -1;
+		return Enosup;
 
 	if (ci->str)
 		f = fopen(ci->str, "w");
 	else if (ci->num >= 0 && ci->num != NO_NUMERIC)
 		f = fdopen(dup(ci->num), "w");
+	else
+		return Enoarg;
 	if (!f)
-		return -1;
+		return Efail;
 
 	if (ci->mark)
 		m = mark_dup(ci->mark);
@@ -835,12 +837,11 @@ DEF_CMD(doc_write_file)
 			fputc(ch, f);
 	}
 	if (fflush(f))
-		ret = -1;
+		ret = Esys;
 	fclose(f);
 	mark_free(m);
 	return ret;
 }
-
 
 DEF_CMD(doc_notify_viewers)
 {
@@ -898,7 +899,7 @@ DEF_CMD(doc_dup_point)
 		pt = ci->mark;
 
 	if (!pt || !ci->comm2)
-		return -1;
+		return Enoarg;
 
 	if (ci->num2 == MARK_POINT)
 		m = point_dup(pt);
@@ -917,10 +918,10 @@ DEF_CMD(doc_assign)
 	struct doc_data *dd = ci->home->data;
 	struct pane *p2;
 	if ((void*) (dd->doc))
-		return -1;
+		return Einval;
 	p2 = do_doc_assign(ci->home, ci->focus, ci->num, ci->str);
 	if (!p2)
-		return -1;
+		return Esys;
 	comm_call(ci->comm2, "callback:doc", p2);
 	return 1;
 }
@@ -937,10 +938,10 @@ DEF_CMD(doc_handle_get_attr)
 	struct doc_data *dd = ci->home->data;
 	char *a;
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 	a = pane_attr_get(dd->doc, ci->str);
 	if (!a)
-		return 0;
+		return Efallthrough;
 	return comm_call(ci->comm2, "callback", ci->focus, 0, NULL, a);
 }
 
@@ -954,7 +955,7 @@ DEF_CMD(doc_move_to)
 		if (!dd->mark) {
 			dd->mark = mark_dup(dd->point);
 			if (!dd->mark)
-				return -1;
+				return Esys;
 			attr_set_str(&dd->mark->attrs, "render:interactive-mark", "yes");
 		}
 		m = ci->mark ?: dd->point;
@@ -1002,15 +1003,14 @@ DEF_CMD(doc_push_point)
 {
 	struct doc *d = ci->home->data;
 	int n = ARRAY_SIZE(d->recent_points);
-	if (ci->mark) {
-		mark_free(d->recent_points[n-1]);
-		memmove(&d->recent_points[1],
-			&d->recent_points[0],
-			(n-1)*sizeof(d->recent_points[0]));
-		d->recent_points[0] = mark_dup(ci->mark);
-		return 1;
-	} else
-		return -1;
+	if (!ci->mark)
+		return Enoarg;
+	mark_free(d->recent_points[n-1]);
+	memmove(&d->recent_points[1],
+		&d->recent_points[0],
+		(n-1)*sizeof(d->recent_points[0]));
+	d->recent_points[0] = mark_dup(ci->mark);
+	return 1;
 }
 
 DEF_CMD(doc_pop_point)
@@ -1019,9 +1019,9 @@ DEF_CMD(doc_pop_point)
 	int n = ARRAY_SIZE(d->recent_points);
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 	if (!d->recent_points[0])
-		return -1;
+		return Efail;
 	mark_to_mark(ci->mark, d->recent_points[0]);
 	mark_free(d->recent_points[0]);
 	memmove(&d->recent_points[0],
@@ -1147,7 +1147,7 @@ DEF_CMD(doc_do_attach)
 {
 	struct pane *p = doc_attach(ci->focus);
 	if (!p)
-		return -1;
+		return Esys;
 	return comm_call(ci->comm2, "callback:doc", p);
 }
 
@@ -1163,7 +1163,7 @@ DEF_CMD(doc_open)
 	char pathbuf[PATH_MAX], *rp = NULL;
 
 	if (!name)
-		return -1;
+		return Enoarg;
 	stb.st_mode = 0;
 	if (fd >= -1) {
 		/* Try to canonicalize directory part of path */
@@ -1205,7 +1205,7 @@ DEF_CMD(doc_open)
 		if (!p) {
 			if (fd != ci->num)
 				close(fd);
-			return -1;
+			return Esys;
 		}
 		if (autoclose)
 			call("doc:set:autoclose", p, 1);
@@ -1242,7 +1242,7 @@ DEF_CMD(doc_from_text)
 
 	p = doc_new(parent, "text", NULL);
 	if (!p)
-		return -1;
+		return Esys;
 	if (name) {
 		call("doc:set-name", p, 0, NULL, name);
 		call("global-multicall-doc:appeared-", p, 1);

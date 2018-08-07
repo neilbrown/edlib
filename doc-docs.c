@@ -210,7 +210,7 @@ DEF_CMD(docs_modified_replace)
 {
 	if (ci->str &&
 	    strchr("sk%", ci->str[0]) != NULL)
-		return 0;
+		return Efallthrough;
 	/* Suppress all others */
 	return 1;
 }
@@ -221,10 +221,10 @@ DEF_CMD(docs_modified_notify_replace)
 	struct mark *m;
 
 	if (!ci->home->parent)
-		return 0;
+		return Esys;
 	m = vmark_new(ci->home->parent, MARK_UNGROUPED);
 	if (!m)
-		return -1;
+		return Esys;
 	mark_to_modified(ci->home->parent, m);
 	all_gone = (m->ref.p == NULL);
 	if (!all_gone && ci->mark) {
@@ -263,7 +263,7 @@ DEF_CMD(docs_modified_set_ref)
 	struct mark *m = ci->mark;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 
 	if (ci->num == 1 && !list_empty(&d->collection->children)) {
 		m->ref.p = list_first_entry(&d->collection->children,
@@ -284,7 +284,7 @@ DEF_CMD(docs_modified_step)
 	 */
 	wint_t ch, ret;
 	if (!ci->home->parent || !ci->mark)
-		return 0;
+		return Enoarg;
 
 	if (ci->num) {
 		ret = doc_following_pane(ci->home->parent, ci->mark);
@@ -313,7 +313,7 @@ DEF_CMD(docs_modified_doc_get_attr)
 	struct mark *m;
 
 	if (!ci->str || !ci->mark || !ci->home->parent)
-		return 0;
+		return Enoarg;
 	m = mark_dup(ci->mark);
 	attr = pane_mark_attr(ci->home->parent, m, ci->str);
 	mark_free(m);
@@ -327,7 +327,7 @@ DEF_CMD(docs_modified_get_attr)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus,
 				 0, NULL, "*Modified Documents*");
 
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(docs_callback)
@@ -344,7 +344,7 @@ DEF_CMD(docs_callback)
 			if (n && strcmp(ci->str, n) == 0)
 				return comm_call(ci->comm2, "callback:doc", p);
 		}
-		return -1;
+		return Efail;
 	}
 	if (strcmp(ci->key, "docs:byfd") == 0) {
 		list_for_each_entry(p, &doc->collection->children, siblings) {
@@ -352,7 +352,7 @@ DEF_CMD(docs_callback)
 				 ci->num2) > 0)
 				return comm_call(ci->comm2, "callback:doc", p);
 		}
-		return -1;
+		return Efail;
 	}
 	if (strcmp(ci->key, "docs:choose") == 0) {
 		/* Choose a documents with no notifiees or no pointer,
@@ -398,25 +398,25 @@ DEF_CMD(docs_callback)
 	}
 
 	if (strcmp(ci->key, "doc:appeared-docs-register") == 0) {
-		/* Always return 0 so other handlers get a chance */
+		/* Always return Efallthrough so other handlers get a chance */
 		p = ci->focus;
 		if (!p)
-			return 0;
+			return Efallthrough;
 		if (p->parent && p->parent->parent)
 			/* This has a parent which is not the root,
 			 * so we shouldn't interfere.
 			 */
-			return 0;
+			return Efallthrough;
 		if (p == doc->doc.home)
 			/* The docs doc is attached separately */
-			return 0;
+			return Efallthrough;
 		home_call(p, "doc:set-parent", doc->collection);
 		home_call(p, "Request:Notify:doc:status-changed", doc->collection);
 		if (p->parent)
 			doc_checkname(p, doc, ci->num);
-		return 0;
+		return Efallthrough;
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(doc_damage)
@@ -427,7 +427,7 @@ DEF_CMD(doc_damage)
 	struct pane *child = ci->focus;
 
 	if (!child || !m)
-		return -1;
+		return Enoarg;
 	do {
 		if (m->ref.p == child) {
 			pane_notify("Notify:doc:Replace", d->home, 0, m);
@@ -443,9 +443,9 @@ DEF_CMD(doc_revisit)
 	struct pane *p = pane_my_child(ci->home, ci->focus);
 	struct docs *docs = container_of(ci->home->data, struct docs, doc);
 	if (!p)
-		return -1;
+		return Einval;
 	if (p->parent != docs->collection)
-		return 0;
+		return Efallthrough;
 	if (p == ci->home)
 		return 1;
 	doc_checkname(p, docs, ci->num);
@@ -464,7 +464,7 @@ DEF_CMD(docs_step)
 	struct docs *d = container_of(doc, struct docs, doc);
 
 	if (!m)
-		return -1;
+		return Enoarg;
 
 	p = m->ref.p;
 	if (forward) {
@@ -519,7 +519,7 @@ DEF_CMD(docs_set_ref)
 	struct mark *m = ci->mark;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 
 	if (ci->num == 1 && !list_empty(&d->collection->children))
 		m->ref.p = list_first_entry(&d->collection->children,
@@ -557,12 +557,12 @@ DEF_CMD(docs_doc_get_attr)
 	char *val;
 
 	if (!m || !attr)
-		return -1;
+		return Enoarg;
 
 	val = __docs_get_attr(d, m, attr);
 
 	if (!val)
-		return 0;
+		return Efallthrough;
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
 	return 1;
 }
@@ -574,7 +574,7 @@ DEF_CMD(docs_get_attr)
 	struct doc *d = ci->home->data;
 
 	if (!attr)
-		return -1;
+		return Enoarg;
 
 	if ((val = attr_find(d->home->attrs, attr)) != NULL)
 		;
@@ -587,7 +587,7 @@ DEF_CMD(docs_get_attr)
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "docs";
 	else
-		return 0;
+		return Efallthrough;
 
 	comm_call(ci->comm2, "callback:get_attr", ci->focus,
 		  0, NULL, val);
@@ -602,7 +602,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 	struct pane *par;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 	dp = m->ref.p;
 	/* close this pane, open the given document. */
 	if (dp == NULL)
@@ -613,7 +613,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 	else
 		par = call_pane("ThisPane", focus);
 	if (!par)
-		return -1;
+		return Esys;
 	p = doc_attach_view(par, dp, NULL, 1);
 	if (p) {
 		pane_focus(p);
@@ -633,7 +633,7 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 	char buf[100];
 
 	if (!m)
-		return -1;
+		return Enoarg;
 	dp = m->ref.p;
 	/* close this pane, open the given document. */
 	if (dp == NULL)
@@ -642,11 +642,11 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 	snprintf(buf, sizeof(buf), "render-Chr-%c", cmd);
 	renderer = pane_attr_get(dp, buf);
 	if (!renderer)
-		return -1;
+		return Efail;
 
 	par = call_pane("ThisPane", focus);
 	if (!par)
-		return -1;
+		return Esys;
 	p = doc_attach_view(par, dp, renderer, 1);
 	if (p) {
 		pane_focus(p);
@@ -677,7 +677,7 @@ static int docs_save(struct pane *focus safe, struct mark *m)
 	struct pane *dp;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 	dp = m->ref.p;
 	if (!dp)
 		return 0;
@@ -691,7 +691,7 @@ static int docs_kill(struct pane *focus safe, struct mark *m, int num)
 	char *mod;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 	dp = m->ref.p;
 	if (!dp)
 		return 0;
@@ -710,7 +710,7 @@ static int docs_toggle(struct pane *focus safe, struct mark *m)
 {
 	struct pane *dp;
 	if (!m)
-		return -1;
+		return Enoarg;
 	dp = m->ref.p;
 	if (dp)
 		return call("doc:modified", dp);
@@ -731,8 +731,9 @@ DEF_CMD(docs_child_closed)
 	struct doc *d = ci->home->data;
 	struct docs *docs = container_of(d, struct docs, doc);
 	struct pane *child = pane_my_child(ci->home, ci->focus);
+
 	if (!child)
-		return -1;
+		return Einval;
 	docs_demark(docs, child);
 	return 1;
 }
@@ -742,7 +743,7 @@ DEF_CMD(docs_cmd)
 	char cmd;
 
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 	cmd = ci->str[0];
 	switch(cmd) {
 	case 'f':
@@ -811,13 +812,13 @@ DEF_CMD(attach_docs)
 	if (!p) {
 		free(doc->doc.name);
 		free(doc);
-		return -1;
+		return Esys;
 	}
 	doc->doc.home = p;
 	p = pane_register(ci->home, 0, &docs_aux.c, doc, NULL);
 	if (!p) {
 		pane_close(doc->doc.home);
-		return -1;
+		return Esys;
 	}
 	doc->collection = p;
 

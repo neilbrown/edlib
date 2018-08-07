@@ -63,7 +63,7 @@ DEF_CMD(search_forward)
 			return 1;
 		}
 		if (!str)
-			return -1;
+			return Einval;
 	}
 	s = calloc(1, sizeof(*s));
 	s->m = esi->start;
@@ -91,13 +91,13 @@ DEF_CMD(search_retreat)
 	struct stk *s;
 
 	if (esi->s == NULL)
-		return 0;
+		return Efallthrough;
 	str = call_ret(str, "doc:get-str", ci->focus);
 	if (!str)
-		return -1;
+		return Einval;
 	if (strlen(str) > esi->s->len) {
 		free(str);
-		return 0;
+		return Efallthrough;
 	}
 	free(str);
 	s = esi->s;
@@ -245,7 +245,7 @@ DEF_CMD(search_clip)
 	mark_clip(esi->end, ci->mark, ci->mark2);
 	for (s = esi->s; s; s = s->next)
 		mark_clip(s->m, ci->mark, ci->mark2);
-	return 0;
+	return Efallthrough;
 }
 
 static void emacs_search_init_map(void)
@@ -274,13 +274,13 @@ DEF_CMD(emacs_search)
 		emacs_search_init_map();
 	p = call_pane("popup:get-target", ci->focus);
 	if (!p)
-		return -1;
+		return Esys;
 	esi = calloc(1, sizeof(*esi));
 	esi->target = p;
 	m = mark_at_point(p, NULL, MARK_POINT);
 	if (!m) {
 		free(esi);
-		return -1;
+		return Esys;
 	}
 	esi->end = m;
 

@@ -422,7 +422,7 @@ DEF_CMD(nc_text_size)
 	int len;
 
 	if (!str)
-		return -1;
+		return Enoarg;
 	len = strlen(str);
 	while (str[offset] != 0) {
 		wchar_t wc;
@@ -454,7 +454,7 @@ DEF_CMD(nc_draw_text)
 	int len;
 
 	if (!str)
-		return -1;
+		return Enoarg;
 	len = strlen(str);
 	while (str[offset] != 0) {
 		wchar_t wc;
@@ -749,7 +749,7 @@ DEF_CMD(display_ncurses)
 	struct pane *p = ncurses_init(ci->focus);
 	if (p)
 		return comm_call(ci->comm2, "callback:display", p);
-	return -1;
+	return Esys;
 }
 
 void edlib_init(struct pane *ed safe)

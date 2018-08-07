@@ -32,7 +32,7 @@ class MakePane(edlib.Pane):
 
     def read(self, key, **a):
         if not self.pipe:
-            return -1
+            return edlib.Efalse
         try:
             r = os.read(self.pipe.stdout.fileno(), 1024)
         except IOError:
@@ -41,7 +41,7 @@ class MakePane(edlib.Pane):
             self.pipe.communicate()
             self.pipe = None
             self.call("doc:replace", "\nProcess Finished\n");
-            return -1
+            return edlib.Efalse
         self.call("doc:replace", r);
         return 1
 
@@ -100,12 +100,12 @@ class MakePane(edlib.Pane):
         d = focus.call("doc:open", -1, self['dirname']+fname, ret='focus')
         if not d:
             focus.call("Message", "File %s not found." % fname)
-            return -1
+            return edlib.Efail
         par = focus.call("ThisPane", 4, d, ret='focus')
         if not par:
             d.close()
             focus.call("Message", "Failed to open pane");
-            return -1
+            return edlib.Esys
         par = par.call("doc:attach", ret='focus')
         par = par.call("doc:assign", d, "", 1, ret='focus')
         par.take_focus()
@@ -144,10 +144,10 @@ def make_attach(key, focus, comm2, str, str2, **a):
     focus.call("doc:replace", m)
     p = MakePane(focus)
     if not p:
-        return -1;
+        return edlib.Esys;
     if not p.run(str, str2):
         p.close()
-        return -1;
+        return edlib.Esys;
     if comm2:
         comm2("callback", p)
     return 1
@@ -180,12 +180,12 @@ def make_request(key, focus, str, **a):
         if not doc:
             doc = focus.call("doc:from-text", docname, "", ret='focus')
         if not doc:
-            return -1
+            return edlib.Esys
         path = focus["dirname"]
         doc['dirname'] = path
         p = focus.call("OtherPane", doc, 4, ret='focus')
         if not p:
-            return -1
+            return edlib.Esys
         focus.call("global-set-attr", "make-target-doc", docname)
         p = p.call("doc:attach", ret='focus')
         p.call("doc:assign", doc, "", 1)

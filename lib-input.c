@@ -26,7 +26,7 @@ DEF_CMD(set_mode)
 	struct input_mode *im = ci->home->data;
 
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 	im->mode = ci->str;
 	return 1;
 }
@@ -59,7 +59,7 @@ DEF_CMD(keystroke)
 	struct mark *m;
 
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 
 	pane_notify("Notify:Keystroke", ci->home, 0, NULL, ci->str);
 
@@ -107,7 +107,7 @@ DEF_CMD(mouse_event)
 	char *key;
 
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 
 	pane_notify("Notify:Mouse-event", ci->home, 0, NULL, ci->str);
 
@@ -214,7 +214,7 @@ DEF_CMD(input_attach)
 	p = pane_register(ci->focus, 0, &input_handle.c, im, NULL);
 	if (p)
 		return comm_call(ci->comm2, "callback:attach", p);
-	return -1;
+	return Esys;
 }
 
 void edlib_init(struct pane *ed safe)

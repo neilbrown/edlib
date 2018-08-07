@@ -237,7 +237,7 @@ DEF_CMD(b64_attach)
 	if (!p) {
 		doc_del_view(ci->focus, bi->view);
 		free(bi);
-		return -1;
+		return Esys;
 	}
 	call("doc:set:filter", p, 1);
 

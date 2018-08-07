@@ -79,7 +79,7 @@ DEF_CMD(render_complete_line)
 	struct mark *m;
 
 	if (!ci->mark || !ci->home->parent)
-		return -1;
+		return Enoarg;
 
 	cr.c = save_highlighted;
 	cr.i = plen;
@@ -194,7 +194,7 @@ DEF_CMD(render_complete_prev)
 	 */
 	struct complete_data *cd = ci->home->data;
 	if (!ci->mark || !ci->home->parent)
-		return -1;
+		return Enoarg;
 	return do_render_complete_prev(cd, ci->mark, ci->home->parent, ci->num, NULL);
 }
 
@@ -239,7 +239,7 @@ DEF_CMD(complete_eol)
 	int rpt = RPT_NUM(ci);
 
 	if (!ci->mark || !ci->focus->parent)
-		return -1;
+		return Enoarg;
 	if (rpt >= -1 && rpt <= 1)
 		/* movement within the line */
 		return 1;
@@ -288,13 +288,13 @@ DEF_CMD(complete_set_prefix)
 	char *common = NULL;
 
 	if (!ci->str)
-		return -1;
+		return Enoarg;
 	free(cd->prefix);
 	cd->prefix = strdup(ci->str);
 
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 	if (!m || !p->parent)
-		return -1;
+		return Esys;
 	call("Move-File", ci->focus, 1, m);
 
 	while (do_render_complete_prev(cd, m, p->parent, 1, &c) > 0 && c) {
@@ -331,7 +331,7 @@ DEF_CMD(complete_return)
 	char *c1, *c2;
 
 	if (!ci->mark || !ci->home->parent)
-		return -1;
+		return Enoarg;
 
 	cr.c = save_str;
 	cr.s = NULL;
@@ -398,7 +398,7 @@ REDEF_CMD(complete_attach)
 	complete = pane_register(ci->focus, 0, &complete_handle.c, cd, NULL);
 	if (!complete) {
 		free(cd);
-		return -1;
+		return Esys;
 	}
 	cd->prefix = strdup("");
 

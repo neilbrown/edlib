@@ -513,7 +513,7 @@ class notmuch_main(edlib.Doc):
         if not self.searches.updated():
             self.update_next()
         self.notify("Notify:doc:Replace")
-        return -1
+        return edlib.Efalse
 
     def update_next(self):
         if self.updating == "counts":
@@ -931,7 +931,7 @@ class notmuch_list(edlib.Doc):
         if found < 100 and self.age == None:
             # must have found them all
             self.call("doc:notmuch:query-updated")
-            return -1
+            return edlib.Efalse
         # request some more
         if found > 3:
             # allow for a little over-lap across successive calls
@@ -942,7 +942,7 @@ class notmuch_list(edlib.Doc):
         if found < 100 and self.age:
             self.age += 1
         self.start_load()
-        return -1
+        return edlib.Efalse
 
     def add_message(self, m, lst, info, depth):
         mid = m.get_message_id()
@@ -1283,7 +1283,7 @@ class notmuch_list(edlib.Doc):
     def handle_load_thread(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
         "handle:doc:notmuch:load-thread"
         if mark.pos is None:
-            return -1
+            return edlib.Esys
         (tid,mid) = mark.pos
         if tid not in self.threadinfo:
             self.load_thread(mark)
@@ -1663,7 +1663,7 @@ def notmuch_mode(key, home, focus, **a):
     except:
         p1 = home.call("attach-doc-notmuch", ret='focus')
     if not p1:
-        return -1
+        return edlib.Esys
     p2 = p0.call("doc:attach", ret = 'focus')
     p2.call("doc:assign", p1, "", 1)
     return 1

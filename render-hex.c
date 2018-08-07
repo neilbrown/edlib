@@ -70,7 +70,7 @@ DEF_CMD(render_hex_eol)
 	int pos;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 	call("CountLines", ci->home, 0, ci->mark);
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 
@@ -109,7 +109,7 @@ DEF_CMD(render_line)
 	int rv;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 
 	call("CountLines", ci->home, 0, ci->mark);
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
@@ -172,7 +172,7 @@ DEF_CMD(render_line_prev)
 	int to, from;
 
 	if (!ci->mark)
-		return -1;
+		return Enoarg;
 	call("CountLines", ci->home, 0, ci->mark);
 
 	from = attr_find_int(*mark_attr(ci->mark), "chars");
@@ -235,7 +235,7 @@ DEF_CMD(render_hex_attach)
 	struct pane *p = do_render_hex_attach(ci->focus);
 
 	if (!p)
-		return -1;
+		return Esys;
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 

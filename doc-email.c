@@ -92,7 +92,7 @@ DEF_CMD(email_spacer)
 	int ok = 1;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 
 	attr = pane_mark_attr(ci->focus, m, "email:visible");
 	if (attr && *attr == '0')
@@ -142,10 +142,10 @@ DEF_CMD(email_select)
 	int r;
 
 	if (!m)
-		return -1;
+		return Enoarg;
 	a = pane_mark_attr(ci->home, m, "renderline:func");
 	if (!a || strcmp(a, "doc:email:render-spacer") != 0)
-		return 0;
+		return Efallthrough;
 	a = pane_mark_attr(ci->home, m, "multipart-prev:email:actions");
 	if (!a)
 		a = "hide";
@@ -176,9 +176,9 @@ DEF_CMD(email_get_attr)
 	int fields;
 	char ret[12];
 	if (!ci->str || strcmp(ci->str, "renderline:fields") != 0)
-		return 0;
+		return Efallthrough;
 	if (!ci->mark || !ci->home->parent)
-		return 0;
+		return Efallthrough;
 
 	a = pane_mark_attr(ci->home->parent, ci->mark, "multipart-prev:email:actions");
 	if (!a)
@@ -548,14 +548,14 @@ DEF_CMD(open_email)
 
 	if (ci->str == NULL ||
 	    strncmp(ci->str, "email:", 6) != 0)
-		return 0;
+		return Efallthrough;
 	fd = open(ci->str+6, O_RDONLY);
 	p = call_pane("doc:open", ci->focus, fd, NULL, ci->str + 6, 1);
 	if (!p)
-		return 0;
+		return Efallthrough;
 	start = vmark_new(p, MARK_UNGROUPED);
 	if (!start)
-		return 0;
+		return Efallthrough;
 	end = mark_dup(start);
 	call("doc:set-ref", p, 0, end);
 
@@ -628,7 +628,7 @@ out:
 	mark_free(end);
 	free(ei);
 	// FIXME free stuff
-	return -1;
+	return Efail;
 }
 
 struct email_view {
@@ -650,7 +650,7 @@ static int get_part(struct pane *p safe, struct mark *m safe)
 	char *a = pane_mark_attr(p, m, "multipart:part-num");
 
 	if (!a)
-		return -1;
+		return Efail;
 	return atoi(a);
 }
 
@@ -662,7 +662,7 @@ DEF_CMD(email_step)
 	int n;
 
 	if (!p->parent || !ci->mark)
-		return -1;
+		return Enoarg;
 	if (ci->num) {
 		ret = home_call(p->parent, ci->key, ci->focus, ci->num, ci->mark, ci->str,
 				ci->num2);
@@ -709,7 +709,7 @@ DEF_CMD(email_set_ref)
 	int n;
 
 	if (!p->parent || !ci->mark)
-		return -1;
+		return Enoarg;
 	home_call(p->parent, ci->key, ci->focus, ci->num);
 	if (ci->num) {
 		/* set to start, need to normalize */
@@ -728,7 +728,7 @@ DEF_CMD(email_view_get_attr)
 	struct email_view *evi = ci->home->data;
 
 	if (!ci->str || !ci->mark || !ci->home->parent)
-		return -1;
+		return Enoarg;
 	if (strcmp(ci->str, "email:visible") == 0) {
 		p = get_part(ci->home->parent, ci->mark);
 		/* only parts can be invisible, not separators */
@@ -738,7 +738,7 @@ DEF_CMD(email_view_get_attr)
 		return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark,
 				 v ? "1":"0");
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(email_view_set_attr)
@@ -747,7 +747,7 @@ DEF_CMD(email_view_set_attr)
 	struct email_view *evi = ci->home->data;
 
 	if (!ci->str || !ci->mark || !ci->home->parent)
-		return -1;
+		return Enoarg;
 	if (strcmp(ci->str, "email:visible") == 0) {
 		p = get_part(ci->home->parent, ci->mark);
 		/* only parts can be invisible, not separators */
@@ -777,7 +777,7 @@ DEF_CMD(email_view_set_attr)
 
 		return 1;
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(attach_email_view)
@@ -789,12 +789,12 @@ DEF_CMD(attach_email_view)
 
 	m = vmark_new(ci->focus, MARK_UNGROUPED);
 	if (!m)
-		return -1;
+		return Esys;
 	call("doc:set-ref", ci->focus, 0, m);
 	n = get_part(ci->focus, m);
 	mark_free(m);
 	if (n <= 0 || n > 1000 )
-		return -1;
+		return Einval;
 
 	evi = calloc(1, sizeof(*evi));
 	evi->parts = n;
@@ -802,7 +802,7 @@ DEF_CMD(attach_email_view)
 	p = pane_register(ci->focus, 0, &email_view_handle.c, evi, NULL);
 	if (!p) {
 		free(evi);
-		return -1;
+		return Esys;
 	}
 	return comm_call(ci->comm2, "callback:attach", p);
 }

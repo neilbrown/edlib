@@ -866,7 +866,7 @@ DEF_CMD(tile_other)
 		/* same group - continue */
 	}
 	if (ci->str2 && ti->name && strcmp(ci->str2, ti->name) == 0)
-		return -1;
+		return Einval;
 
 	if (ci->num & 4) {
 		struct tileinfo *t = ti;
@@ -901,7 +901,7 @@ DEF_CMD(tile_other)
 	}
 	if (p2)
 		return comm_call(ci->comm2, "callback:pane", p2);
-	return -1;
+	return Esys;
 }
 
 DEF_CMD(tile_this)

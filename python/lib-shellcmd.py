@@ -28,7 +28,7 @@ class ShellPane(edlib.Pane):
 
     def read(self, key, **a):
         if not self.pipe:
-            return -1
+            return edlib.Efalse
         try:
             r = os.read(self.pipe.stdout.fileno(), 1024)
         except IOError:
@@ -37,7 +37,7 @@ class ShellPane(edlib.Pane):
             self.pipe.communicate()
             self.pipe = None
             self.call("doc:replace", "\nProcess Finished\n");
-            return -1
+            return edlib.Efalse
         self.call("doc:replace", r);
         return 1
 
@@ -68,10 +68,10 @@ def shell_attach(key, focus, comm2, str, str2, **a):
     focus.call("doc:replace", m)
     p = ShellPane(focus)
     if not p:
-        return -1;
+        return edlib.Esys;
     if not p.run(str, str2):
         p.close()
-        return -1;
+        return edlib.Esys;
     if comm2:
         comm2("callback", p)
     return 1
