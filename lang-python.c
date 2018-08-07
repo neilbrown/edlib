@@ -564,7 +564,7 @@ static void pane_dealloc(Pane *self safe)
 	do_free((PyObject*safe)self);
 }
 
-static PyObject *pane_children(Pane *self safe)
+static PyObject *pane_children(Pane *self safe, PyObject *args)
 {
 	PaneIter *ret;
 	if (!self->pane) {
@@ -610,7 +610,7 @@ static PyObject *Pane_clone_children(Pane *self safe, PyObject *args)
 	return Py_None;
 }
 
-static PyObject *Pane_focus(Pane *self safe)
+static PyObject *Pane_focus(Pane *self safe, PyObject *args)
 {
 	if (self->pane)
 		pane_focus(self->pane);
@@ -939,7 +939,7 @@ static PyObject *Pane_damaged(Pane *self safe, PyObject *args)
 	return Py_None;
 }
 
-static PyObject *Pane_close(Pane *self safe)
+static PyObject *Pane_close(Pane *self safe, PyObject *args)
 {
 	struct pane *p = self->pane;
 	if (p) {
@@ -950,7 +950,7 @@ static PyObject *Pane_close(Pane *self safe)
 	return Py_None;
 }
 
-static PyObject *Pane_get_scale(Pane *self safe)
+static PyObject *Pane_get_scale(Pane *self safe, PyObject *args)
 {
 	struct pane *p = self->pane;
 	struct xy xy = {1000, 1000};
@@ -1000,9 +1000,9 @@ static PyMethodDef pane_methods[] = {
 	 "Claim the focus for this pane"},
 	{"refresh", (PyCFunction)Pane_refresh, METH_VARARGS,
 	 "Trigger refresh on this pane"},
-	{"call", (PyCFunction)Pane_call, METH_VARARGS|METH_KEYWORDS,
+	{"call", (void*)(PyCFunctionWithKeywords)Pane_call, METH_VARARGS|METH_KEYWORDS,
 	 "Call a command from a pane"},
-	{"notify", (PyCFunction)Pane_notify, METH_VARARGS|METH_KEYWORDS,
+	{"notify", (void*)(PyCFunctionWithKeywords)Pane_notify, METH_VARARGS|METH_KEYWORDS,
 	 "Send a notification from a pane"},
 	{"abs", (PyCFunction)Pane_abs, METH_VARARGS,
 	 "Convert pane-relative co-ords to absolute co-ords"},
@@ -1125,7 +1125,7 @@ static long pane_hash(Pane *p safe)
 	return (long)p->pane;
 }
 
-static long pane_cmp(Pane *p1 safe, Pane *p2 safe)
+static int pane_cmp(Pane *p1 safe, Pane *p2 safe)
 {
 	if (p1->pane == p2->pane)
 		return 0;
@@ -1306,7 +1306,7 @@ static PyTypeObject PaneIterType = {
     .tp_new = (newfunc)pane_iter_new,/* tp_new */
 };
 
-static PyObject *first_mark(Doc *self safe)
+static PyObject *first_mark(Doc *self safe, PyObject *args)
 {
 	struct mark *m = doc_first_mark_all(&self->doc);
 	if (!m) {
@@ -1675,7 +1675,7 @@ static PyObject *Mark_clip(Mark *self safe, PyObject *args)
 	return Py_None;
 }
 
-static PyObject *Mark_next(Mark *self safe)
+static PyObject *Mark_next(Mark *self safe, PyObject *args)
 {
 	struct mark *next;
 	if (!self->mark) {
@@ -1692,7 +1692,7 @@ static PyObject *Mark_next(Mark *self safe)
 	return Py_None;
 }
 
-static PyObject *Mark_prev(Mark *self safe)
+static PyObject *Mark_prev(Mark *self safe, PyObject *args)
 {
 	struct mark *prev;
 	if (!self->mark) {
@@ -1709,7 +1709,7 @@ static PyObject *Mark_prev(Mark *self safe)
 	return Py_None;
 }
 
-static PyObject *Mark_next_any(Mark *self safe)
+static PyObject *Mark_next_any(Mark *self safe, PyObject *args)
 {
 	struct mark *next;
 	if (!self->mark) {
@@ -1723,7 +1723,7 @@ static PyObject *Mark_next_any(Mark *self safe)
 	return Py_None;
 }
 
-static PyObject *Mark_prev_any(Mark *self safe)
+static PyObject *Mark_prev_any(Mark *self safe, PyObject *args)
 {
 	struct mark *prev;
 	if (!self->mark) {
@@ -1737,7 +1737,7 @@ static PyObject *Mark_prev_any(Mark *self safe)
 	return Py_None;
 }
 
-static PyObject *Mark_dup(Mark *self safe)
+static PyObject *Mark_dup(Mark *self safe, PyObject *args)
 {
 	struct mark *new;
 	if (!self->mark) {
@@ -1755,7 +1755,7 @@ static PyObject *Mark_dup(Mark *self safe)
 	return Py_None;
 }
 
-static PyObject *Mark_release(Mark *self safe)
+static PyObject *Mark_release(Mark *self safe, PyObject *args)
 {
 	if (self->mark && self->mark->viewnum >= 0 &&
 	    self->released == 0 &&
