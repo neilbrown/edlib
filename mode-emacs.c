@@ -521,13 +521,13 @@ DEF_CMD(emacs_insert_other)
 
 DEF_CMD(emacs_undo)
 {
-	doc_undo(ci->focus, 0);
+	call("doc:reundo", ci->focus);
 	return 1;
 }
 
 DEF_CMD(emacs_redo)
 {
-	doc_undo(ci->focus, 1);
+	call("doc:reundo", ci->focus, 1);
 	return 1;
 }
 
