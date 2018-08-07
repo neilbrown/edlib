@@ -355,7 +355,7 @@ static struct pane *do_renderline_attach(struct pane *p safe)
 	struct pane *ret;
 	struct rl_info *rl = calloc(1, sizeof(*rl));
 
-	rl->view = doc_add_view(p);
+	rl->view = call("doc:add-view", p) - 1;
 	ret = pane_register(p, 0, &renderline_handle.c, rl, NULL);
 
 	return ret;
@@ -394,7 +394,7 @@ DEF_CMD(rl_close)
 	struct mark *m;
 	while ((m = vmark_first(p, rl->view)) != NULL)
 		mark_free(m);
-	doc_del_view(p, rl->view);
+	call("doc:del-view", p, rl->view);
 	free(rl);
 	p->data = safe_cast NULL;
 	p->handle = NULL;

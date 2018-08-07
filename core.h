@@ -424,36 +424,6 @@ static inline wint_t doc_prior_pane(struct pane *p safe, struct mark *m safe)
 	return mark_step_pane(p, m, 0, 0);
 }
 
-static inline int doc_set_attr(struct pane *p safe, struct mark *pt safe,
-			       char *attr safe, char *val)
-{
-	struct cmd_info ci = {.key = "doc:set-attr", .focus = p, .home = p, .comm = safe_cast 0};
-
-	ci.mark = pt;
-	ci.str = attr;
-	ci.str2 = val;
-	return key_handle(&ci);
-}
-
-static inline int doc_add_view(struct pane *p safe)
-{
-	struct cmd_info ci = {.key = "doc:add-view", .focus = p, .home = p, .comm = safe_cast 0};
-	int ret;
-
-	ret = key_handle(&ci);
-	if (ret <= 0)
-		return -1;
-	return ret - 1;
-}
-
-static inline void doc_del_view(struct pane *p safe, int num)
-{
-	struct cmd_info ci = {.key = "doc:del-view", .focus = p, .home = p, .comm = safe_cast 0};
-
-	ci.num = num;
-	key_handle(&ci);
-}
-
 /* Macro magic taken from
  * https://stackoverflow.com/questions/11761703/overloading-macro-on-number-of-arguments
  */

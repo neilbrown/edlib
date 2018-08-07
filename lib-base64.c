@@ -214,7 +214,7 @@ DEF_CMD(b64_close)
 
 	while ((m = vmark_first(ci->home, bi->view)) != NULL)
 		mark_free(m);
-	doc_del_view(ci->home, bi->view);
+	call("doc:del-view", ci->home, bi->view);
 	free(bi);
 	return 1;
 }
@@ -232,10 +232,10 @@ DEF_CMD(b64_attach)
 	struct pane *p;
 	struct b64info *bi = calloc(1, sizeof(*bi));
 
-	bi->view = doc_add_view(ci->focus);
+	bi->view = call("doc:add-view", ci->focus) - 1;
 	p = pane_register(ci->focus, 0, &b64_handle.c, bi, NULL);
 	if (!p) {
-		doc_del_view(ci->focus, bi->view);
+		call("doc:del-view", ci->focus, bi->view);
 		free(bi);
 		return Esys;
 	}

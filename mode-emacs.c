@@ -1109,7 +1109,7 @@ DEF_CMD(emacs_start_search)
 	struct pane *p, *hp;
 	struct highlight_info *hi = calloc(1, sizeof(*hi));
 
-	hi->view = doc_add_view(ci->focus);
+	hi->view = call("doc:add-view", ci->focus) - 1;
 	hp = pane_register(ci->focus, 0, &highlight_handle.c, hi, NULL);
 
 	p = call_pane("PopupTile", hp, 0, NULL, "TR2", 0, NULL, "");
@@ -1137,7 +1137,7 @@ DEF_CMD(emacs_highlight_close)
 
 		while ((m = vmark_first(ci->focus, hi->view)) != NULL)
 			mark_free(m);
-		doc_del_view(ci->focus, hi->view);
+		call("doc:del-view", ci->focus, hi->view);
 	}
 	free(hi);
 	return 0;

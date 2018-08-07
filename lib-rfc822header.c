@@ -44,7 +44,7 @@ DEF_CMD(header_close)
 
 	while ((m = vmark_first(p, hi->vnum)) != NULL)
 		mark_free(m);
-	doc_del_view(p, hi->vnum);
+	call("doc:del-view", p, hi->vnum);
 	p->data = safe_cast NULL;
 	free(hi);
 	return 1;
@@ -429,7 +429,7 @@ DEF_CMD(header_attach)
 		return Esys;
 	}
 
-	hi->vnum = doc_add_view(p);
+	hi->vnum = call("doc:add-view", p) - 1;
 	if (start && end)
 		find_headers(p, start, end);
 

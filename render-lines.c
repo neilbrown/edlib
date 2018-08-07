@@ -1342,7 +1342,7 @@ DEF_CMD(render_lines_close)
 		mark_free(m);
 	}
 
-	doc_del_view(p, rl->typenum);
+	call("doc:del-view", p, rl->typenum);
 	mark_free(rl->old_point);
 	p->data = safe_cast NULL;
 	p->handle = NULL;
@@ -1795,7 +1795,7 @@ REDEF_CMD(render_lines_attach)
 	rl->target_x = -1;
 	rl->target_y = -1;
 	rl->do_wrap = 1;
-	rl->typenum = doc_add_view(ci->focus);
+	rl->typenum = call("doc:add-view", ci->focus) - 1;
 	p = ci->focus;
 	if (strcmp(ci->key, "attach-render-text") == 0)
 		p = call_pane("attach-renderline", p);
