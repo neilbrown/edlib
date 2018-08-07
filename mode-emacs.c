@@ -22,6 +22,20 @@
 
 static struct map *emacs_map, *hl_map;
 
+/* num2 is used to track if successive commands are related.
+ * Only low 16 bits identify command, other bits are free.
+ */
+enum {
+	N2_zero = 0,
+	N2_undo,	/* adjacent commands form a single undo set */
+	N2_recentre,	/* repeated recentre goes to different places */
+	N2_yank,	/* repeated yank-pop takes different result */
+};
+static inline int N2(const struct cmd_info *ci safe)
+{
+	return ci->num2 & 0xffff;
+}
+
 REDEF_CMD(emacs_move);
 REDEF_CMD(emacs_function_move);
 REDEF_CMD(emacs_delete);
@@ -152,9 +166,9 @@ REDEF_CMD(emacs_delete)
 		mark_free(m);
 		return 0;
 	}
-	ret = call("Replace", ci->focus, 1, m, NULL, !ci->num2);
+	ret = call("Replace", ci->focus, 1, m, NULL, N2(ci) != N2_undo);
 	mark_free(m);
-	call("Mode:set-num2", ci->focus, 1);
+	call("Mode:set-num2", ci->focus, N2_undo);
 
 	return ret;
 }
@@ -185,10 +199,10 @@ REDEF_CMD(emacs_kill)
 	}
 	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, m);
 	if (str && *str)
-		call("copy:save", ci->focus, !!ci->num2, NULL, str);
-	ret = call("Replace", ci->focus, 1, m, NULL, !ci->num2);
+		call("copy:save", ci->focus, N2(ci) == N2_undo, NULL, str);
+	ret = call("Replace", ci->focus, 1, m, NULL, N2(ci) != N2_undo);
 	mark_free(m);
-	call("Mode:set-num2", ci->focus, 1);
+	call("Mode:set-num2", ci->focus, N2_undo);
 
 	return ret;
 }
@@ -262,12 +276,12 @@ REDEF_CMD(emacs_case)
 				}
 			}
 			if (changed) {
-				ret = call("Replace", ci->focus, 1, m, str, !ci->num2);
+				ret = call("Replace", ci->focus, 1, m, str, N2(ci) != N2_undo);
 				if (dir < 0)
 					call(mv->type+1, ci->focus, dir, ci->mark);
 			}
 			free(str);
-			call("Mode:set-num2", ci->focus, 1);
+			call("Mode:set-num2", ci->focus, N2_undo);
 		}
 		mark_free(m);
 		cnt -= 1;
@@ -353,19 +367,19 @@ REDEF_CMD(emacs_swap)
 DEF_CMD(emacs_recenter)
 {
 	int step = 0;
-	if (ci->num == NO_NUMERIC && (ci->num2 & 2)) {
+	if (ci->num == NO_NUMERIC && N2(ci) == N2_recentre) {
 		/* Repeated command - go to top, or bottom, or middle in order */
-		switch (ci->num2 & 0xF000) {
+		switch (ci->num2 & 0xF0000) {
 		default:
 		case 0: /* was center, go to top */
 			call("Move-View-Line", ci->focus, 1, ci->mark);
-			step = 0x1000;
+			step = 0x10000;
 			break;
-		case 0x1000: /* was top, go to bottom */
+		case 0x10000: /* was top, go to bottom */
 			call("Move-View-Line", ci->focus, -1, ci->mark);
-			step = 0x2000;
+			step = 0x20000;
 			break;
-		case 0x2000: /* was bottom, go to middle */
+		case 0x20000: /* was bottom, go to middle */
 			call("Move-View-Line", ci->focus, 0, ci->mark);
 			step = 0;
 			break;
@@ -378,7 +392,7 @@ DEF_CMD(emacs_recenter)
 		call("Move-View-Line", ci->focus, 0, ci->mark);
 		call("Display:refresh", ci->focus);
 	}
-	call("Mode:set-num2", ci->focus, 2 | step);
+	call("Mode:set-num2", ci->focus, N2_recentre | step);
 	return 1;
 }
 
@@ -452,8 +466,8 @@ DEF_CMD(emacs_insert)
 
 	/* Key is "Chr-X" - skip 4 bytes to get X */
 	str = ci->key + 4;
-	ret = call("Replace", ci->focus, 1, ci->mark, str, !ci->num2);
-	call("Mode:set-num2", ci->focus, 1);
+	ret = call("Replace", ci->focus, 1, ci->mark, str, N2(ci) != N2_undo);
+	call("Mode:set-num2", ci->focus, N2_undo);
 
 	return ret;
 }
@@ -494,12 +508,13 @@ DEF_CMD(emacs_insert_other)
 			mark_to_mark(m, ci->mark);
 	}
 
-	ret = call("Replace", ci->focus, 1, ci->mark, ins, !ci->num2);
+	ret = call("Replace", ci->focus, 1, ci->mark, ins, N2(ci) != N2_undo);
 	if (m) {
 		mark_to_mark(ci->mark, m);
 		mark_free(m);
 	}
-	call("Mode:set-num2", ci->focus, 0); /* A newline starts a new undo */
+	/* A newline starts a new undo */
+	call("Mode:set-num2", ci->focus, (*ins == '\n') ? 0 : N2_undo);
 	return ret;
 }
 
@@ -1311,7 +1326,7 @@ DEF_CMD(emacs_yank)
 	mk = call_ret(mark2, "doc:point", ci->focus);
 	if (mk)
 		attr_set_int(&mk->attrs, "emacs:active", 0);
-	call("Mode:set-num2", ci->focus, 1024);
+	call("Mode:set-num2", ci->focus, N2_yank);
 	return 1;
 }
 
@@ -1319,9 +1334,9 @@ DEF_CMD(emacs_yank_pop)
 {
 	struct mark *mk, *m;
 	char *str;
-	int num = ci->num2 & 1023;
+	int num = ci->num2 >> 16;
 
-	if (!(ci->num2 & 1024))
+	if (N2(ci) != N2_yank)
 		return Einval;
 	mk = call_ret(mark2, "doc:point", ci->focus);
 	if (!mk)
@@ -1340,7 +1355,7 @@ DEF_CMD(emacs_yank_pop)
 	call("Replace", ci->focus, 1, mk, str);
 	call("Move-to", ci->focus, 1, m);
 	mark_free(m);
-	call("Mode:set-num2", ci->focus, num | 1024);
+	call("Mode:set-num2", ci->focus, (num << 16) | N2_yank);
 	return 1;
 }
 
