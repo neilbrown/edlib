@@ -421,8 +421,12 @@ int key_handle(const struct cmd_info *ci safe)
 	int h= 0;
 	int i;
 
-	if ((void*) ci->comm)
-		return ci->comm->func(ci);
+	if ((void*) ci->comm) {
+		int ret = ci->comm->func(ci);
+		if (ret == Enotarget)
+			ret = Efallthrough;
+		return ret;
+	}
 
 	for (i = 0; i < 30 && ci->key[i]; i++) {
 		h = qhash(ci->key[i], h);
@@ -449,7 +453,7 @@ int key_handle(const struct cmd_info *ci safe)
 		}
 		if (ret)
 			/* 'p' might have been destroyed */
-			return ret;
+			return ret == Enotarget ? Efallthrough : ret;
 		p = p->parent;
 	}
 	return 0;

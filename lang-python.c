@@ -660,7 +660,7 @@ DEF_CMD(take_focus)
 	if (!p)
 		return Enoarg;
 	if (pr->ret)
-		return Einval;
+		return Efallthrough;
 	pr->ret = Pane_Frompane(ci->focus);
 	return 1;
 }
@@ -788,7 +788,7 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 		Py_INCREF(Py_None);
 		return Py_None;
 	}
-	if (rv < 0) {
+	if (rv < Efalse) {
 		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
 		return NULL;
 	}
@@ -824,7 +824,7 @@ static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject
 
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
-	if (!rv) {
+	if (rv == Efallthrough || rv == Enotarget) {
 		Py_INCREF(Py_None);
 		return Py_None;
 	}
@@ -1930,7 +1930,7 @@ static PyObject *Comm_call(Comm *c safe, PyObject *args safe, PyObject *kwds)
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
 
-	if (!rv) {
+	if (rv == Efallthrough || rv == Enotarget) {
 		Py_INCREF(Py_None);
 		return Py_None;
 	}

@@ -576,7 +576,6 @@ DEF_CMD(doc_notify)
 	int ret = pane_notify(ci->key, ci->home, ci->num, ci->mark, ci->str,
 			      ci->num2, ci->mark2, ci->str2, ci->comm2);
 	/* Mustn't return 0, else will fall through to next doc */
-	/* HACK remove this when docs isn't the parent of all documents */
 	return ret ?: Enotarget;
 }
 
@@ -995,7 +994,7 @@ DEF_CMD(doc_pass_on)
 			 ci->x, ci->y, ci->comm2);
 	if (!ret && (ci->mark || ci->mark2))
 		/* Mark won't be meaningful to any other document */
-		ret = 1;
+		ret = Enotarget;
 	return ret;
 }
 

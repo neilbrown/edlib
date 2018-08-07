@@ -84,12 +84,13 @@ struct command {
 enum edlib_errors {
 	Efallthrough = 0,
 	Enoarg = -1000,
-	Enotarget,
 	Einval,
-	Efalse,
 	Esys,
 	Enosup,
 	Efail,
+	/* following errors are soft and don't create exceptions */
+	Efalse,
+	Enotarget,
 	Eunused,
 };
 
@@ -673,12 +674,16 @@ static inline int do_call_val(enum target_type type, struct pane *home, struct c
 	case TYPE_comm:
 		ci.comm = comm2a;
 		ci.comm2 = comm2b;
-		return ci.comm->func(&ci);
+		ret = ci.comm->func(&ci);
+		ccache = NULL;
+		break;
 	}
 	if (ccache) {
 		ccache->comm = ci.comm;
 		ccache->home = ci.home;
 	}
+	if (ret == Enotarget)
+		return Efallthrough;
 	return ret;
 }
 
