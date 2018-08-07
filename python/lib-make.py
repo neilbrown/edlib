@@ -101,7 +101,9 @@ class MakePane(edlib.Pane):
         if not d:
             focus.call("Message", "File %s not found." % fname)
             return edlib.Efail
-        par = focus.call("ThisPane", 4, d, ret='focus')
+        par = focus.call("DocPane", d, ret='focus')
+        if not par:
+            par = focus.call("ThisPane", d, ret='focus')
         if not par:
             d.close()
             focus.call("Message", "Failed to open pane");
@@ -183,7 +185,9 @@ def make_request(key, focus, str, **a):
             return edlib.Esys
         path = focus["dirname"]
         doc['dirname'] = path
-        p = focus.call("OtherPane", doc, 4, ret='focus')
+        p = focus.call("DocPane", doc, ret='focus')
+        if not p:
+            p = focus.call("OtherPane", doc, ret='focus')
         if not p:
             return edlib.Esys
         focus.call("global-set-attr", "make-target-doc", docname)

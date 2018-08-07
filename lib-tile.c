@@ -849,7 +849,6 @@ DEF_CMD(tile_other)
 	 * ci->num has flags:
 	 *  1: if new needed, split horizontally
 	 *  2: if new needed, split vertically
-	 *  4: find a tile visiting the document behind ci->focus
 	 */
 	struct pane *p = ci->home;
 	struct pane *p2;
@@ -867,21 +866,6 @@ DEF_CMD(tile_other)
 	}
 	if (ci->str2 && ti->name && strcmp(ci->str2, ti->name) == 0)
 		return Einval;
-
-	if (ci->num & 4) {
-		struct tileinfo *t = ti;
-		char *name = pane_attr_get(ci->focus, "doc-name");
-		while ((t = list_next_entry(t, tiles)) != ti) {
-			char *n;
-			struct pane *f = t->p;
-			while (f->focus)
-				f = f->focus;
-			n = pane_attr_get(f, "doc-name");
-			if (name && n && strcmp(n, name) == 0)
-				return comm_call(ci->comm2, "callback:pane", t->p);
-		}
-	}
-
 
 	ti2 = tile_next_named(ti, ci->str2);
 	if (ti2 != ti)
@@ -916,23 +900,40 @@ DEF_CMD(tile_this)
 			return 0;
 		/* same group - continue */
 	}
-	if (ci->num & 4) {
-		/* If 'focus' is already open, use that */
-		struct tileinfo *t = ti;
-		char *name = pane_attr_get(ci->focus, "doc-name");
-		while ((t = list_next_entry(t, tiles)) != ti) {
-			char *n;
-			struct pane *f = t->p;
-			while (f->focus)
-				f = f->focus;
-			n = pane_attr_get(f, "doc-name");
-			if (name && n && strcmp(n, name) == 0)
-				return comm_call(ci->comm2, "callback:pane", t->p,
-						 0, NULL, t->name);
-		}
-	}
 	return comm_call(ci->comm2, "callback:pane", ci->home, 0,
 			 NULL, ti->name);
+}
+
+DEF_CMD(tile_doc)
+{
+	/* Find the pane displaying given document */
+	struct tileinfo *ti = ci->home->data;
+	struct tileinfo *t;
+	char *name;
+
+	if (!ti->leaf)
+		return Efallthrough;
+	if (ci->str || ti->group) {
+		if (!ci->str || !ti->group)
+			return Efallthrough;
+		if (strcmp(ci->str, ti->group) != 0)
+			return Efallthrough;
+		/* same group - continue */
+	}
+	/* Find where 'focus' is open */
+	name = pane_attr_get(ci->focus, "doc-name");
+	t = ti;
+	while ((t = list_next_entry(t, tiles)) != ti) {
+		char *n;
+		struct pane *f = t->p;
+		while (f->focus)
+			f = f->focus;
+		n = pane_attr_get(f, "doc-name");
+		if (name && n && strcmp(n, name) == 0)
+			return comm_call(ci->comm2, "callback:pane", t->p,
+					 0, NULL, t->name);
+	}
+	return Enotarget;
 }
 
 DEF_CMD(tile_root)
@@ -1007,6 +1008,7 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(tile_map, "OtherPane", &tile_other);
 	key_add(tile_map, "ThisPane", &tile_this);
+	key_add(tile_map, "DocPane", &tile_doc);
 	key_add(tile_map, "RootPane", &tile_root);
 	key_add(tile_map, "Clone", &tile_clone);
 	key_add(tile_map, "ChildClosed", &tile_child_closed);

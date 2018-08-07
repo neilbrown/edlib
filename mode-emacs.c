@@ -608,9 +608,11 @@ DEF_CMD(emacs_findfile)
 		p = call_pane("doc:open", ci->focus, -2, NULL, ci->str);
 	if (!p)
 		return Efail;
-	if (strcmp(ci->key, "File Found Other Window") == 0)
-		par = CALL(pane, home, ci->focus, "OtherPane", p, 4);
-	else
+	if (strcmp(ci->key, "File Found Other Window") == 0) {
+		par = CALL(pane, home, ci->focus, "DocPane", p);
+		if (!par)
+			par = call_pane("OtherPane", ci->focus);
+	} else
 		par = call_pane("ThisPane", ci->focus);
 
 	if (!par) {
@@ -728,9 +730,11 @@ DEF_CMD(emacs_finddoc)
 	if (!p)
 		return Efail;
 
-	if (strcmp(ci->key, "Doc Found Other Window") == 0)
-		par = CALL(pane, home, ci->focus, "OtherPane", p, 4);
-	else
+	if (strcmp(ci->key, "Doc Found Other Window") == 0) {
+		par = CALL(pane, home, ci->focus, "DocPane", p);
+		if (!par)
+			par = call_pane("OtherPane", ci->focus);
+	} else
 		par = call_pane("ThisPane", ci->focus);
 	if (!p || !par)
 		return Esys;
@@ -831,7 +835,9 @@ DEF_CMD(emacs_shell)
 	if (!doc)
 		return Esys;
 	attr_set_str(&doc->attrs, "dirname", path);
-	par = CALL(pane, home, ci->focus, "OtherPane", doc, 4);
+	par = CALL(pane, home, ci->focus, "DocPane", doc);
+	if (!par)
+		par = call_pane("OtherPane", ci->focus);
 	if (!par)
 		return Esys;
 	/* shellcmd is attached directly to the document, not in the view

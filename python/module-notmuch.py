@@ -722,7 +722,9 @@ class notmuch_master_view(edlib.Pane):
         p2 = self.call("doc:open", self.message_pane["filename"], -1,
                        ret = 'focus')
         p2.call("doc:set:autoclose", 1)
-        p0 = self.call("OtherPane", 4, p2, ret='focus')
+        p0 = self.call("DocPane", p2, ret='focus')
+        if not p0:
+            p0 = self.call("OtherPane", ret = 'focus')
         if not p0:
             return 1
         p1 = p0.call("doc:attach", ret='focus')

@@ -608,9 +608,11 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 	if (dp == NULL)
 		return 0;
 
-	if (cmd == 'o')
-		par = CALL(pane, home, focus, "OtherPane", dp, 4);
-	else
+	if (cmd == 'o') {
+		par = CALL(pane, home, focus, "DocPane", dp);
+		if (!par)
+			par = call_pane("OtherPane", focus);
+	} else
 		par = call_pane("ThisPane", focus);
 	if (!par)
 		return Esys;
