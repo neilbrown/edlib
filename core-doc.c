@@ -526,13 +526,21 @@ DEF_CMD(doc_get_attr)
 		a = "no";
 	else if (strcmp(ci->str, "dirname") == 0) {
 		char *sl;
+		char pathbuf[PATH_MAX];
 		a = pane_attr_get(d->home, "filename");
-		if (!a)
-			a = "/";
-		sl = strrchr(a, '/');
-		if (!sl)
-			sl = a = "/";
-		a = strnsave(ci->focus, a, (sl-a)+1);
+		if (!a) {
+			a = realpath(".", pathbuf);
+			if (a != pathbuf)
+				strcpy(pathbuf, a);
+			if (pathbuf[1])
+				strcat(pathbuf, "/");
+			a = strsave(ci->focus, pathbuf);
+		} else {
+			sl = strrchr(a, '/');
+			if (!sl)
+				sl = a = "/";
+			a = strnsave(ci->focus, a, (sl-a)+1);
+		}
 	}
 	if (a)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
