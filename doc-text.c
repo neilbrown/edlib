@@ -1039,6 +1039,8 @@ DEF_CMD(text_reundo)
 		text_check_consistent(t);
 	}
 	text_check_consistent(t);
+	/* Point probably moved, so */
+	pane_damaged(ci->focus, DAMAGED_CURSOR);
 	return did_do;
 }
 
@@ -1668,7 +1670,9 @@ DEF_CMD(text_replace)
 		/* Default to insert at end */
 		pm = point_new(d);
 		mark_reset(d, pm, 1);
-	}
+	} else
+		/* probably move point */
+		pane_damaged(ci->focus, DAMAGED_CURSOR);
 
 	/* First delete, then insert */
 	if (end && !text_ref_same(t, &pm->ref, &end->ref)) {
