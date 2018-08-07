@@ -30,6 +30,7 @@ enum {
 	N2_undo,	/* adjacent commands form a single undo set */
 	N2_recentre,	/* repeated recentre goes to different places */
 	N2_yank,	/* repeated yank-pop takes different result */
+	N2_match,	/* repeated ` after Cx` repeats the search */
 };
 static inline int N2(const struct cmd_info *ci safe)
 {
@@ -1488,7 +1489,17 @@ REDEF_CMD(emacs_function_move)
 
 DEF_CMD(emacs_next_match)
 {
+	call("Mode:set-num2", ci->focus, N2_match);
+	call("Message", ci->focus, 0, NULL, "Type ` to search again");
 	return call("interactive-cmd-next-match", ci->focus, ci->num);
+}
+
+DEF_CMD(emacs_match_again)
+{
+	if (N2(ci) != N2_match)
+		return emacs_insert_func(ci);
+	else
+		return emacs_next_match_func(ci);
 }
 
 static void emacs_init(void)
@@ -1556,6 +1567,7 @@ static void emacs_init(void)
 	key_add(m, "Shell Command", &emacs_shell);
 
 	key_add(m, "emCX-Chr-`", &emacs_next_match);
+	key_add(m, "Chr-`", &emacs_match_again);
 
 	key_add(m, "M-Chr-B", &emacs_bury);
 
