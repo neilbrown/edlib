@@ -127,7 +127,8 @@ DEF_CMD(search_add)
 	else
 		call("Move-Char", esi->target, 1, m);
 
-	while (esi->end->seq < m->seq && !mark_same(esi->end, m)) {
+	while (esi->matched
+	       && esi->end->seq < m->seq && !mark_same(esi->end, m)) {
 		if (limit-- <= 0)
 			break;
 		wch = doc_following_pane(esi->target, esi->end);
@@ -175,16 +176,19 @@ DEF_CMD(search_again)
 	char *str;
 
 	call("search:highlight", esi->target);
+	esi->matched = 0;
 	m = mark_dup(esi->start);
 	str = call_ret(str, "doc:get-str", ci->home);
-	if (esi->backwards && mark_prev_pane(esi->target, m) == WEOF)
+	if (str == NULL || strlen(str) == 0)
+		/* empty string always matches */
+		ret = 1;
+	else if (esi->backwards && mark_prev_pane(esi->target, m) == WEOF)
 		ret = -2;
 	else
 		ret = call("text-search", esi->target, 0, m, str, esi->backwards);
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
 	else if (ret == -2) {
-		esi->matched = 0;
 		call("search:highlight", esi->target, 0, m, str);
 		pfx = "Failed Search: ";
 	} else if (ret < 0) {
@@ -286,7 +290,7 @@ DEF_CMD(emacs_search)
 
 	esi->start = mark_dup(m);
 	esi->s = NULL;
-	esi->matched = 0;
+	esi->matched = 1;
 	esi->wrapped = 0;
 	esi->backwards = ci->num;
 
