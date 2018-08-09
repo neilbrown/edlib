@@ -188,11 +188,13 @@ DEF_CMD(search_again)
 		ret = call("text-search", esi->target, 0, m, str, esi->backwards);
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
-	else if (ret == -2) {
+	else if (ret == Efail) {
 		call("search:highlight", esi->target, 0, m, str);
 		pfx = "Failed Search: ";
-	} else if (ret < 0) {
+	} else if (ret == Einval) {
 		pfx = "Search (incomplete): ";
+	} else if (ret < 0) {
+		pfx = "Search (sys-error): ";
 	} else {
 		int len = --ret;
 		mark_to_mark(esi->end, m);
