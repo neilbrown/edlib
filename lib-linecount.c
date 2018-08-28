@@ -293,9 +293,8 @@ DEF_CMD(linecount_clip)
 
 DEF_CMD(count_lines)
 {
-	return 1;
 	/* FIXME optimise this away most of the time */
-	if (call("Notify:doc:CountLines", ci->focus) == Enotarget) {
+	if (call("Notify:doc:CountLines", ci->focus) == 0) {
 		/* No counter in place, add one */
 		struct count_info *cli;
 		struct pane *p;
