@@ -72,7 +72,6 @@ DEF_CMD(render_hex_eol)
 	if (!ci->mark)
 		return Enoarg;
 	call("CountLines", ci->home, 0, ci->mark);
-	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 	while (rpt > 0 && ch != WEOF) {
