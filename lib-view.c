@@ -130,11 +130,18 @@ DEF_CMD(view_refresh)
 				  p->h-vd->border_height+vd->ascent);
 
 		if (!(vd->border & BORDER_TOP)) {
+			char *doc_status = NULL;
 			if (c >= 0)
 				snprintf(msg, sizeof(msg), "L%d W%d C%d M%s D:%s",
 					 l,w,c, modified, name);
 			else
 				snprintf(msg, sizeof(msg), "%s-%s", modified, name);
+			doc_status = pane_attr_get(ci->focus, "doc:status");
+			if (doc_status) {
+				strncat(msg, ": ", sizeof(msg)-strlen(msg));
+				strncat(msg, doc_status, sizeof(msg)-strlen(msg));
+				msg[sizeof(msg)-1] = 0;
+			}
 			one_char(p, msg, "inverse",
 				 4*vd->border_width,
 				 p->h-vd->border_height + vd->ascent);
@@ -423,7 +430,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "Notify:doc:status-changed", &view_status_changed);
 	key_add(view_map, "render:reposition", &view_reposition);
 	key_add(view_map, "Notify:clip", &view_clip);
-
 
 	call_comm("global-set-command", ed, &view_attach, 0, NULL, "attach-view");
 }

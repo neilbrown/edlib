@@ -508,6 +508,9 @@ DEF_CMD(doc_set)
 		d->filter = ci->num;
 		return 1;
 	}
+	if (ci->str)
+		attr_set_str(&d->home->attrs, val, ci->str);
+
 	return d->filter ? 0 : 1;
 }
 DEF_CMD(doc_get_attr)
@@ -530,7 +533,7 @@ DEF_CMD(doc_get_attr)
 		a = pane_attr_get(d->home, "filename");
 		if (!a) {
 			a = realpath(".", pathbuf);
-			if (a != pathbuf)
+			if (a != pathbuf && a)
 				strcpy(pathbuf, a);
 			if (pathbuf[1])
 				strcat(pathbuf, "/");
