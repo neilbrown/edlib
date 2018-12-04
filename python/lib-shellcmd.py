@@ -64,6 +64,8 @@ class ShellPane(edlib.Pane):
         return 1
 
 def shell_attach(key, focus, comm2, str, str2, **a):
+    # Clear document by getting mark at start, and replacing
+    # from there to end.
     m = edlib.Mark(focus)
     focus.call("doc:replace", m)
     p = ShellPane(focus)

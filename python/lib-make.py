@@ -6,6 +6,15 @@
 import subprocess, os, fcntl
 
 class MakePane(edlib.Pane):
+    # This pane over-sees the running of "make" or "grep" command,
+    # leaving output in a text document and handling make-next
+    # notifications sent to the document.
+    # Such notifications cause the "next" match to be found
+    # and the document containing it will be displayed
+    # in the 'focus' window, with point at the target location.
+    # A set 'view' of marks is used to track the start of each line
+    # found.  Each mark has a 'ref' which indexes into a local 'map'
+    # which records the filename and line number.
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.add_notify(focus, "make-next")
@@ -187,10 +196,10 @@ def make_request(key, focus, str, **a):
         # pop-up has completed
         try:
             doc = focus.call("docs:byname", docname, ret='focus')
+            doc.call("doc:destroy")
         except edlib.commandfailed:
-            doc = None
-        if not doc:
-            doc = focus.call("doc:from-text", docname, "", ret='focus')
+            pass
+        doc = focus.call("doc:from-text", docname, "", ret='focus')
         if not doc:
             return edlib.Esys
         path = focus["dirname"]
