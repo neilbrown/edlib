@@ -621,7 +621,7 @@ DEF_CMD(emacs_findfile)
 		p = call_pane("doc:open", ci->focus, fd, NULL, ci->str);
 		close(fd);
 	} else
-		p = call_pane("doc:open", ci->focus, -2, NULL, ci->str);
+		p = call_pane("doc:open", ci->focus, -1, NULL, ci->str);
 	if (!p)
 		return Efail;
 	if (strcmp(ci->key, "File Found Other Window") == 0) {

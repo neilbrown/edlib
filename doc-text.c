@@ -470,11 +470,19 @@ DEF_CMD(text_same_file)
 
 	if (t->fname == NULL)
 		return Efallthrough;
-	if (fstat(fd, &stb) != 0)
-		return 0;
+	if (ci->str && strcmp(ci->str, t->fname) == 0)
+		return 1;
+	if (fd < 0 || fstat(fd, &stb) != 0)
+		return Efallthrough;
+	if (t->stat.st_ino != stb.st_ino ||
+	    t->stat.st_dev != stb.st_dev)
+		return Efallthrough;
+	/* Must check file hasn't changed beneath us */
+	if (stat(t->fname, &t->stat) != 0)
+		t->stat.st_ino = 0;
 	if (t->stat.st_ino == stb.st_ino &&
 	    t->stat.st_dev == stb.st_dev)
-		return 1;
+		return 0;
 	return Efallthrough;
 }
 
