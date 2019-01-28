@@ -110,7 +110,10 @@ class MakePane(edlib.Pane):
             return 1
         (fname, lineno) = n
 
-        d = focus.call("doc:open", -1, self['dirname']+fname, ret='focus')
+        try:
+	    d = focus.call("doc:open", -1, self['dirname']+fname, ret='focus')
+	except edlib.commandfailed:
+	    d = None
         if not d:
             focus.call("Message", "File %s not found." % fname)
             return edlib.Efail
@@ -235,7 +238,10 @@ def next_match(key, focus, **a):
     if not doc:
         focus.call("Message", "Make document %s missing" % docname)
         return 1
-    doc.notify("make-next", focus)
+    try:
+        doc.notify("make-next", focus)
+    except edlib.commandfailed:
+        pass
     return 1
 
 editor.call("global-set-command", "attach-makecmd", make_attach)

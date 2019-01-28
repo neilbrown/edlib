@@ -621,9 +621,15 @@ DEF_CMD(emacs_findfile)
 		p = call_pane("doc:open", ci->focus, fd, NULL, ci->str);
 		close(fd);
 	} else
-		p = call_pane("doc:open", ci->focus, -1, NULL, ci->str);
-	if (!p)
+		/* '4' says 'allow create' */
+		p = call_pane("doc:open", ci->focus, -1, NULL, ci->str, 4);
+	if (!p) {
+		char *m = NULL;
+		asprintf(&m, "Failed to open file: %s", ci->str);
+		call("Message", ci->focus, 0, NULL, m);
+		free(m);
 		return Efail;
+	}
 	if (strcmp(ci->key, "File Found Other Window") == 0) {
 		par = CALL(pane, home, ci->focus, "DocPane", p);
 		if (!par)

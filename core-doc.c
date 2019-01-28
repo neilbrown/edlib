@@ -1170,6 +1170,7 @@ DEF_CMD(doc_open)
 	struct pane *p;
 	int autoclose = ci->num2 & 1;
 	int filter = ci->num2 & 2;
+	int create_ok = ci->num2 & 4;
 	char pathbuf[PATH_MAX], *rp = NULL;
 
 	if (!name)
@@ -1203,8 +1204,10 @@ DEF_CMD(doc_open)
 
 	if (fd >= 0)
 		fstat(fd, &stb);
-	else
+	else if (create_ok)
 		stb.st_mode = S_IFREG;
+	else
+		stb.st_mode = 0;
 
 	p = call_pane("docs:byfd", ed, 0, NULL, rp, fd);
 
