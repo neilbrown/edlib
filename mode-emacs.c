@@ -1508,18 +1508,26 @@ DEF_CMD(emacs_match_again)
 		return emacs_next_match_func(ci);
 }
 
+DEF_CMD(emacs_make)
+{
+	call("interactive-cmd-make", ci->focus, 0, ci->mark);
+	return 1;
+}
+
 static void emacs_init(void)
 {
 	unsigned i;
 	struct command *cx_cmd = key_register_prefix("emCX-");
 	struct command *cx4_cmd = key_register_prefix("emCX4-");
 	struct command *cx5_cmd = key_register_prefix("emCX5-");
+	struct command *cc_cmd = key_register_prefix("emCC-");
 	struct map *m = key_alloc();
 
 	key_add(m, "C-Chr-X", cx_cmd);
 	key_add(m, "emCX-Chr-4", cx4_cmd);
 	key_add(m, "emCX-Chr-5", cx5_cmd);
 	key_add(m, "ESC", &emacs_meta);
+	key_add(m, "C-Chr-C", cc_cmd);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
 		struct move_command *mc = &move_commands[i];
@@ -1590,6 +1598,10 @@ static void emacs_init(void)
 
 	key_add(m, "M-Chr-g", &emacs_goto_line);
 	key_add(m, "M-Chr-x", &emacs_command);
+	key_add(m, "emCC-Chr-m", &emacs_make);
+	key_add(m, "emCC-Enter", &emacs_make);
+
+
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);
 
