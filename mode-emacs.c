@@ -1197,6 +1197,8 @@ DEF_CMD(emacs_command)
 	attr_set_str(&p->attrs, "prompt", "Cmd");
 	attr_set_str(&p->attrs, "done-key", "emacs:command");
 	call("doc:set-name", p, 0, NULL, "M-x command");
+	p = call_pane("attach-history", p, 0, NULL, "*Command History*",
+		      0, NULL, "popup:close");
 	pane_register(p, 0, &find_handle.c, "cmd", NULL);
 	return 1;
 }
