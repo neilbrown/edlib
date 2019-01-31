@@ -6,7 +6,7 @@
  *
  * This should be attached between render-lines and the pane which
  * provides the lines.  It is given a prefix and it suppresses all
- * lines which start with the prefix.
+ * lines which don't start with the prefix.
  * All events are redirected to the controlling window (where the text
  * to be completed is being entered)
  *
@@ -21,23 +21,31 @@
 
 struct complete_data {
 	char *prefix safe;
+	int prefix_only;
 };
 
 struct rlcb {
 	struct command c;
 	int keep, plen, cmp;
+	int prefix_only;
 	char *prefix safe, *str;
 };
 
-static char *add_highlight_prefix(char *orig, int plen, char *attr safe)
+static char *add_highlight_prefix(char *orig, int start, int plen, char *attr safe)
 {
 	struct buf ret;
 	char *c safe;
 
 	if (orig == NULL)
 		return orig;
-	c = orig;
 	buf_init(&ret);
+	c = orig;
+	while (start > 0 && *c) {
+		if (*c == '<')
+			buf_append_byte(&ret, *c++);
+		buf_append_byte(&ret, *c++);
+		start -= 1;
+	}
 	buf_concat(&ret, attr);
 	while (plen > 0 && *c) {
 		if (*c == '<')
@@ -52,8 +60,16 @@ static char *add_highlight_prefix(char *orig, int plen, char *attr safe)
 
 DEF_CMD(save_highlighted)
 {
-	struct call_return *cr = container_of(ci->comm, struct call_return, c);
-	cr->s = add_highlight_prefix(ci->str, cr->i, "<fg:red>");
+	struct rlcb *cb = container_of(ci->comm, struct rlcb, c);
+	char *start;
+
+	if (!ci->str)
+		return 1;
+
+	start = strstr(ci->str, cb->prefix);
+	if (!start)
+		start = ci->str;
+	cb->str = add_highlight_prefix(ci->str, start - ci->str, cb->plen, "<fg:red>");
 	return 1;
 }
 
@@ -62,8 +78,10 @@ DEF_CMD(rcl_cb)
 	struct rlcb *cb = container_of(ci->comm, struct rlcb, c);
 	if (ci->str == NULL)
 		cb->cmp = 0;
-	else
+	else if (cb->prefix_only)
 		cb->cmp = strncmp(ci->str, cb->prefix, cb->plen);
+	else
+		cb->cmp = strstr(ci->str, cb->prefix) ? 0 : 1;
 	return 1;
 }
 DEF_CMD(render_complete_line)
@@ -73,7 +91,6 @@ DEF_CMD(render_complete_line)
 	 */
 	struct complete_data *cd = ci->home->data;
 	int plen = strlen(cd->prefix);
-	struct call_return cr;
 	struct rlcb cb;
 	int ret;
 	struct mark *m;
@@ -81,15 +98,17 @@ DEF_CMD(render_complete_line)
 	if (!ci->mark || !ci->home->parent)
 		return Enoarg;
 
-	cr.c = save_highlighted;
-	cr.i = plen;
-	cr.s = NULL;
-	if (call_comm(ci->key, ci->home->parent, &cr.c, ci->num, ci->mark, NULL,
+	cb.c = save_highlighted;
+	cb.plen = plen;
+	cb.prefix_only = cd->prefix_only;
+	cb.prefix = cd->prefix;
+	cb.str = NULL;
+	if (call_comm(ci->key, ci->home->parent, &cb.c, ci->num, ci->mark, NULL,
 		      0, ci->mark2) == 0)
 		return 0;
 
-	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cr.s);
-	free(cr.s);
+	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cb.str);
+	free(cb.str);
 	if (ci->num != NO_NUMERIC)
 		return ret;
 	/* Need to continue over other matching lines */
@@ -98,6 +117,7 @@ DEF_CMD(render_complete_line)
 		cb.c = rcl_cb;
 		cb.plen = plen;
 		cb.prefix = cd->prefix;
+		cb.prefix_only = cd->prefix_only;
 		cb.cmp = 0;
 		call_comm(ci->key, ci->home->parent, &cb.c, ci->num, m, NULL,
 			  0, ci->mark2);
@@ -117,8 +137,10 @@ DEF_CMD(rlcb)
 	struct rlcb *cb = container_of(ci->comm, struct rlcb, c);
 	if (ci->str == NULL)
 		cb->cmp = -1;
-	else
+	else if (cb->prefix_only)
 		cb->cmp = strncmp(ci->str, cb->prefix, cb->plen);
+	else
+		cb->cmp = strstr(ci->str, cb->prefix) ? 0 : 1;
 	if (cb->cmp == 0 && cb->keep && ci->str)
 		cb->str = strdup(ci->str);
 	return 1;
@@ -145,6 +167,7 @@ static int do_render_complete_prev(struct complete_data *cd safe, struct mark *m
 	cb.c = rlcb;
 	cb.str = NULL;
 	cb.prefix = cd->prefix;
+	cb.prefix_only = cd->prefix_only;
 	cb.plen = strlen(cb.prefix);
 	cb.cmp = 0;
 	while (1) {
@@ -291,6 +314,7 @@ DEF_CMD(complete_set_prefix)
 		return Enoarg;
 	free(cd->prefix);
 	cd->prefix = strdup(ci->str);
+	cd->prefix_only = !ci->num;
 
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 	if (!m || !p->parent)
@@ -325,7 +349,6 @@ DEF_CMD(save_str)
 DEF_CMD(complete_return)
 {
 	/* submit the selected entry to the popup */
-	struct complete_data *cd = ci->home->data;
 	struct call_return cr;
 	int l;
 	char *c1, *c2;
@@ -360,7 +383,7 @@ DEF_CMD(complete_return)
 	*c1 = 0;
 
 	call("popup:close", ci->home->parent, NO_NUMERIC, NULL,
-	      cr.s + strlen(cd->prefix), 0);
+	      cr.s, 0);
 	free(cr.s);
 	return 1;
 }
@@ -401,6 +424,7 @@ REDEF_CMD(complete_attach)
 		return Esys;
 	}
 	cd->prefix = strdup("");
+	cd->prefix_only = 1;
 
 	return comm_call(ci->comm2, "callback:attach", complete);
 }

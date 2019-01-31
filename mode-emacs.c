@@ -698,17 +698,29 @@ REDEF_CMD(emacs_file_complete)
 	p = render_attach("complete", par);
 	if (!p)
 		return Esys;
-	cr = call_ret(all, "Complete:prefix", p, 0, NULL, b);
+	cr = call_ret(all, "Complete:prefix", p, 1, NULL, b);
 	if (cr.s && (strlen(cr.s) <= strlen(b) && cr.ret-1 > 1)) {
-		/* We need the dropdown */
+		/* We need the dropdown - delete prefix a drop-down will
+		 * insert result.
+		 */
+		struct mark *start;
+
+		start = mark_dup(ci->mark);
+		call("Move-Char", ci->focus, -strlen(b), start);
+		call("Replace", ci->focus, 1, start, NULL);
+		mark_free(start);
+
 		pane_damaged(par, DAMAGED_CONTENT);
 		return 1;
 	}
 	if (cr.s) {
-		/* Add the extra prefix chars from cr.s */
-		c = cr.s + strlen(b);
+		/* Replace 'b' with the result. */
+		struct mark *start;
 
-		call("Replace", ci->focus, 1, ci->mark, c);
+		start = mark_dup(ci->mark);
+		call("Move-Char", ci->focus, -strlen(b), start);
+		call("Replace", ci->focus, 1, start, cr.s);
+		mark_free(start);
 	}
 	/* Now need to close the popup */
 	pane_close(pop);
@@ -769,7 +781,7 @@ DEF_CMD(emacs_finddoc)
 
 REDEF_CMD(emacs_doc_complete)
 {
-	/* Extract a document from the document.
+	/* Extract a document name from the document.
 	 * Attach the 'docs' document as a completing popup menu
 	 */
 	char *str;
@@ -798,17 +810,28 @@ REDEF_CMD(emacs_doc_complete)
 	p = render_attach("complete", par);
 	if (!p)
 		return Esys;
-	cr = call_ret(all, "Complete:prefix", p, 0, NULL, str);
+	cr = call_ret(all, "Complete:prefix", p, 1, NULL, str);
 	if (cr.s && (strlen(cr.s) <= strlen(str) && cr.ret - 1 > 1)) {
 		/* We need the dropdown */
+		struct mark *start;
+
+		start = mark_dup(ci->mark);
+		call("doc:set-ref", ci->focus, 1, start);
+
+		call("Replace", ci->focus, 1, start, NULL);
+		mark_free(start);
 		pane_damaged(par, DAMAGED_CONTENT);
 		return 1;
 	}
 	if (cr.s) {
-		/* add the extra chars from cr.s */
-		char *c = cr.s + strlen(str);
+		/* Replace the prefix with the new value */
+		struct mark *start;
 
-		call("Replace", ci->focus, 1, ci->mark, c);
+		start = mark_dup(ci->mark);
+		call("doc:set-ref", ci->focus, 1, start);
+
+		call("Replace", ci->focus, 1, start, cr.s, 0);
+		mark_free(start);
 	}
 	/* Now need to close the popup */
 	pane_close(pop);
