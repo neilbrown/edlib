@@ -352,25 +352,18 @@ struct command *key_lookup_cmd(struct map *m safe, char *c safe)
 
 int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 {
-	int pos;
 	struct command *comm;
 
 	if (ci->hash && !key_present(m, ci->key, strlen(ci->key), ci->hash))
-		return 0;
+		return Efallthrough;
 
-	pos = key_find(m, ci->key);
-	if (pos >= m->size)
-		return 0;
-	if (strcmp(m->keys[pos], ci->key) == 0) {
-		/* Exact match - use this entry */
-		comm = GETCOMM(m->comms[pos]);
-	} else if (pos > 0 && IS_RANGE(m->comms[pos-1])) {
-		/* In a range, use previous */
-		comm = GETCOMM(m->comms[pos-1]);
-	} else
-		return 0;
-	((struct cmd_info*)ci)->comm = comm;
-	return comm->func(ci);
+	comm = key_lookup_cmd(m, ci->key);
+	if (comm == NULL)
+		return Efallthrough;
+	else {
+		((struct cmd_info*)ci)->comm = comm;
+		return comm->func(ci);
+	}
 }
 
 int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe)
