@@ -680,9 +680,11 @@ static void send_key(int keytype, wint_t c, struct pane *p safe)
 	} else {
 		n = find_name(char_names, c);
 		if (n)
-			strcpy(buf, n);
+			sprintf(buf, "%s\037C-Chr-%c\037C-Chr-%c",
+			        n, c+64, c+96);
 		else if (c < ' ')
-			sprintf(buf, "C-Chr-%c", c+64);
+			sprintf(buf, "C-Chr-%c\037C-Chr-%c",
+			        c+64, c+96);
 		else
 			sprintf(buf, "Chr-%lc", c);
 	}
