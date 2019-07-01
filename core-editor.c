@@ -151,7 +151,7 @@ DEF_CMD(editor_auto_load)
 
 DEF_CMD(editor_auto_event)
 {
-	/* Event handled register under a private name so we
+	/* Event handlers register under a private name so we
 	 * have to use key_lookup_prefix to find them.
 	 * If nothing is found, autoload lib-libevent (hack?)
 	 */
