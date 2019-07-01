@@ -63,9 +63,33 @@ DEF_CMD(keystroke)
 
 	pane_notify("Notify:Keystroke", ci->home, 0, NULL, ci->str);
 
-	l = strlen(im->mode) + strlen(ci->str) + 1;
-	key = malloc(l);
-	strcat(strcpy(key, im->mode), ci->str);
+	if (im->mode[0]) {
+		int cnt = 1;
+		char *k = ci->str;
+		char *end;
+		while ((end = strchr(k, '\037')) != NULL) {
+			cnt += 1;
+			k = end + 1;
+			while (*k == '\037')
+				k++;
+		}
+		l = strlen(im->mode) * cnt + strlen(ci->str) + 1;
+
+		key = malloc(l);
+		memset(key, 0, l);
+		k = ci->str;
+		while ((end = strchr(k, '\037')) != NULL) {
+			end += 1;
+			strcat(key, im->mode);
+			strncat(key, k, end-k);
+			k = end;
+			while (*k == '\037')
+				k++;
+		}
+		strcat(key, im->mode);
+		strcat(key, k);
+	} else
+		key = ci->str;
 
 	im->mode = "";
 	im->num = NO_NUMERIC;
@@ -91,7 +115,8 @@ DEF_CMD(keystroke)
 	m = im->point;
 
 	ret = call(key, p, num, m, NULL, num2);
-	free(key);
+	if (key != ci->str)
+		free(key);
 	if (ret < 0)
 		call("Message", ci->focus, 0, NULL, "** Command Failed **", 1);
 	return 0;
