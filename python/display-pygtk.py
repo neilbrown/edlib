@@ -444,7 +444,7 @@ class EdDisplay(gtk.Window):
             if len(s) == 0:
                 return
             if ord(s[0]) < 32:
-                s = "C-Chr-" + chr(ord(s[0])+64)
+                s = "C-Chr-" + chr(ord(s[0])+64) + "\037C-Chr-" + chr(ord(s[0]) + 96)
             else:
                 s = "Chr-" + s
                 if event.state & gtk.gdk.CONTROL_MASK:
