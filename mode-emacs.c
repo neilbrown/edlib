@@ -1624,7 +1624,7 @@ static void emacs_init(void)
 	key_add(m, "M-Chr-g", &emacs_goto_line);
 	key_add(m, "M-Chr-x", &emacs_command);
 	key_add(m, "emCC-Chr-m", &emacs_make);
-	key_add(m, "emCC-Enter", &emacs_make);
+	key_add(m, "emCC-C-Chr-M", &emacs_make);
 
 
 	key_add(m, "emacs:command", &emacs_do_command);
