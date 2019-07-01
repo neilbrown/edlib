@@ -145,7 +145,7 @@ static int key_present(struct map *map safe, char *key, int klen, unsigned int *
 }
 
 /* Find first entry >= k */
-static int key_find(struct map *map safe, char *k safe)
+static int key_find_len(struct map *map safe, char *k safe, int len)
 {
 	int lo = 0;
 	int hi = map->size;
@@ -156,12 +156,18 @@ static int key_find(struct map *map safe, char *k safe)
 	 */
 	while (hi > lo) {
 		int mid = (hi + lo)/ 2;
-		if (strcmp(map->keys[mid], k) < 0)
+		int cmp = strncmp(map->keys[mid], k, len);
+		if (cmp < 0)
 			lo = mid+1;
 		else
 			hi = mid;
 	}
 	return hi;
+}
+
+static int key_find(struct map *map safe, char *k safe)
+{
+	return key_find_len(map, k, strlen(k));
 }
 
 void key_add(struct map *map safe, char *k safe, struct command *comm)
@@ -336,18 +342,33 @@ struct command *key_register_prefix(char *name safe)
 
 struct command *key_lookup_cmd(struct map *m safe, char *c safe)
 {
-	int pos = key_find(m, c);
+	/* If 'k' contains an ASCII US (Unit Separator, 0o37 0x1f 31),
+	 * it represents multiple keys.
+	 * Call key_find() on each of them until success.
+	 */
+	while (*c) {
+		char *end = strchr(c, '\037');
+		int pos;
 
-	if (pos >= m->size)
-		return NULL;
-	if (strcmp(m->keys[pos], c) == 0) {
-		/* Exact match - use this entry */
-		return GETCOMM(m->comms[pos]);
-	} else if (pos > 0 && IS_RANGE(m->comms[pos-1])) {
-		/* In a range, use previous */
-		return GETCOMM(m->comms[pos-1]);
-	} else
-		return NULL;
+		if (!end)
+			end = c + strlen(c);
+		pos = key_find_len(m, c, end - c);
+
+		if (pos >= m->size)
+			;
+		else if (strncmp(m->keys[pos], c, end - c) == 0 &&
+		         m->keys[pos][end - c] == '\0') {
+			/* Exact match - use this entry */
+			return GETCOMM(m->comms[pos]);
+		} else if (pos > 0 && IS_RANGE(m->comms[pos-1])) {
+			/* In a range, use previous */
+			return GETCOMM(m->comms[pos-1]);
+		}
+		c = end;
+		while (*c == '\037')
+			c++;
+	}
+	return NULL;
 }
 
 int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
@@ -425,6 +446,9 @@ int key_handle(const struct cmd_info *ci safe)
 		h = qhash(ci->key[i], h);
 		if (i+1 < 30)
 			hash[i+1] = h;
+		if (ci->key[i] == '\037')
+			// Disable hash for multi-keys
+			i = 30;
 	}
 	hash[0] = h;
 	if (i < 30)
