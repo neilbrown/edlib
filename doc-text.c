@@ -426,7 +426,7 @@ DEF_CMD(text_save_file)
 			t->saved = t->undo;
 			change_status = 1;
 		} else
-			asprintf(&msg, "*** Faild to write %s ***", t->fname);
+			asprintf(&msg, "*** Failed to write %s ***", t->fname);
 	}
 	call("Message", ci->focus, 0, NULL, msg);
 	free(msg);
