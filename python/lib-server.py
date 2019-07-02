@@ -6,7 +6,10 @@
 
 import socket, os, sys
 
-sockpath = "/tmp/edlib-neilb"
+if 'EDLIB_SOCK' in os.environ:
+	sockpath = os.environ['EDLIB_SOCK']
+else:
+	sockpath = "/tmp/edlib-neilb"
 
 try:
 	class ServerPane(edlib.Pane):
