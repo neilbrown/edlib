@@ -394,6 +394,12 @@ static int make_cursor(int attr)
 	return attr ^ A_UNDERLINE;
 }
 
+DEF_CMD(nc_notify_display)
+{
+	comm_call(ci->comm2, "callback:display", ci->home);
+	return 0;
+}
+
 DEF_CMD(nc_close)
 {
 	struct pane *p = ci->home;
@@ -525,6 +531,7 @@ static struct pane *ncurses_init(struct pane *ed)
 
 	getmaxyx(stdscr, p->h, p->w);
 
+	call("Request:Notify:global-displays", p);
 	if (!prepare_recrep(p)) {
 		call_comm("event:read", p, &input_handle, 0);
 		call_comm("event:signal", p, &handle_winch, SIGWINCH);
@@ -766,4 +773,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(nc_map, "Draw:text", &nc_draw_text);
 	key_add(nc_map, "Refresh:size", &nc_refresh_size);
 	key_add(nc_map, "Refresh:postorder", &nc_refresh_post);
+	key_add(nc_map, "Notify:global-displays", &nc_notify_display);
 }

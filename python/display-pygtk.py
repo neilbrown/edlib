@@ -29,7 +29,13 @@ class EdDisplay(gtk.Window):
         self.pane["scale:M"] = "%dx%d" % (self.charwidth, self.lineheight)
         self.pane.w = self.charwidth * 80
         self.pane.h = self.lineheight * 24
+        self.pane.call("Request:Notify:global-displays")
         self.show()
+
+    def handle_notify_displays(self, key, focus, comm2, **a):
+        "handle:Notify:global-displays"
+        comm2("callback:display", self.pane)
+        return 0
 
     def handle_postorder(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
         "handle:Refresh:postorder"
