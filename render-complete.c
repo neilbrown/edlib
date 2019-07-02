@@ -298,7 +298,7 @@ static int common_len(char *a safe, char *b safe)
 DEF_CMD(complete_set_prefix)
 {
 	/* Set the prefix, force a full refresh, and move point
-	 * to the first match.
+	 * to the first match at start-of-line, or first match
 	 * If there is no match, return -1.
 	 * Otherwise return number of matches in ->num2 and
 	 * the longest common prefix in ->str.
@@ -306,6 +306,7 @@ DEF_CMD(complete_set_prefix)
 	struct pane *p = ci->home;
 	struct complete_data *cd = p->data;
 	struct mark *m;
+	struct mark *m2 = NULL;
 	char *c;
 	int cnt = 0;
 	char *common = NULL;
@@ -319,6 +320,7 @@ DEF_CMD(complete_set_prefix)
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 	if (!m || !p->parent)
 		return Esys;
+	/* Move to end-of-document */
 	call("Move-File", ci->focus, 1, m);
 
 	while (do_render_complete_prev(cd, m, p->parent, 1, &c) > 0 && c) {
@@ -329,12 +331,22 @@ DEF_CMD(complete_set_prefix)
 			common = strndup(c, l);
 		else
 			common[common_len(c, common)] = 0;
+		if (!cd->prefix_only && strncmp(c, cd->prefix, strlen(cd->prefix)) == 0) {
+			if (m2)
+				mark_free(m2);
+			m2 = mark_dup(m);
+		}
 		cnt += 1;
 	}
 	comm_call(ci->comm2, "callback:prefix", ci->focus, 0, NULL, common);
 	free(common);
-	call("Move-to", ci->focus, 0, m);
+	if (m2) {
+		call("Move-to", ci->focus, 0, m2);
+		mark_free(m2);
+	} else
+		call("Move-to", ci->focus, 0, m);
 	mark_free(m);
+	
 	pane_damaged(ci->focus, DAMAGED_VIEW);
 	return cnt + 1;
 }
