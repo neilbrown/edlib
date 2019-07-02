@@ -177,6 +177,18 @@ DEF_CMD(editor_multicall)
 	return key_lookup_prefix(map, ci);
 }
 
+DEF_CMD(editor_global_request_notify)
+{
+	pane_add_notify(ci->focus, ci->home, ci->key + 8);
+	return 1;
+}
+
+DEF_CMD(editor_global_notify)
+{
+	return pane_notify(ci->key, ci->home, ci->num, ci->mark, ci->str,
+	                   ci->num2, ci->mark2, ci->str2, ci->comm2);
+}
+
 DEF_CMD(editor_clean_up)
 {
 	struct ed_info *ei = ci->home->data;
@@ -290,6 +302,10 @@ struct pane *editor_new(void)
 		key_add_range(ed_map, "event:", "event;", &editor_auto_event);
 		key_add_range(ed_map, "global-multicall-", "global-multicall.",
 			      &editor_multicall);
+		key_add_range(ed_map, "Request:Notify:global-", "Request:Notify:global.",
+		              &editor_global_request_notify);
+		key_add_range(ed_map, "Notify:global-", "Notify:global.",
+		              &editor_global_notify);
 	}
 	ei->map = key_alloc();
 	key_add(ei->map, "on_idle-clean_up", &editor_clean_up);
