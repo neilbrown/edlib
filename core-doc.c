@@ -1171,6 +1171,8 @@ DEF_CMD(doc_open)
 	int autoclose = ci->num2 & 1;
 	int filter = ci->num2 & 2;
 	int create_ok = ci->num2 & 4;
+	int reload = ci->num2 & 8;
+	int force_reload = ci->num2 & 16;
 	char pathbuf[PATH_MAX], *rp = NULL;
 
 	if (!name)
@@ -1226,6 +1228,8 @@ DEF_CMD(doc_open)
 			call("doc:set:filter", p, 1);
 		call("doc:load-file", p, 0, NULL, name, fd);
 		call("global-multicall-doc:appeared-", p, 1);
+	} else if (reload || force_reload) {
+		call("doc:load-file", p, force_reload?0:1, NULL, name, fd);
 	}
 	if (fd != ci->num)
 		close(fd);

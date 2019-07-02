@@ -33,7 +33,8 @@ try:
 			else:
 				if msg[:5] == "open:":
 					path = msg[5:]
-					d = editor.call("doc:open", -1, path, ret = "focus")
+					# 8==reload
+					d = editor.call("doc:open", -1, 8, path, ret = "focus")
 					if not d:
 						self.sock.send("FAIL")
 						return 1

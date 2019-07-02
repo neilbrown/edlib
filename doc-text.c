@@ -157,6 +157,7 @@ static int text_locate(struct text *t safe, struct doc_ref *r safe,
 		       struct doc_ref *dest safe);
 static void text_check_consistent(struct text *t safe);
 static void text_normalize(struct text *t safe, struct doc_ref *r safe);
+static void text_cleanout(struct text *t);
 
 static struct map *text_map;
 /*
@@ -213,6 +214,13 @@ DEF_CMD(text_load_file)
 	int len;
 	struct text *t = container_of(d, struct text, doc);
 
+	if (t->saved != t->undo)
+		return Einval;
+	if (fd < 0 && (ci->num & 2) && t->fname) {
+		/* re-open existing file name */
+		fd = open(t->fname, O_RDONLY);
+		name = t->fname;
+	}
 	if (fd < 0)
 		size = 0;
 	else {
@@ -221,7 +229,23 @@ DEF_CMD(text_load_file)
 	}
 	if (size < 0)
 		goto err;
+	if ((ci->num & 1) && t->fname && fd >= 0) {
+		struct stat stb;
+
+		fstat(fd, &stb);
+		if (stb.st_ino == t->stat.st_ino &&
+		    stb.st_dev == t->stat.st_dev &&
+		    stb.st_size == t->stat.st_size &&
+		    stb.st_mtime == t->stat.st_mtime) {
+			if (fd != ci->num2)
+				close(fd);
+			return Efalse;
+		}
+	}
+
 	if (size > 0) {
+		struct mark *m;
+		text_cleanout(t);
 		c = malloc(sizeof(*c));
 		a = text_new_alloc(t, size);
 		if (!a)
@@ -235,25 +259,36 @@ DEF_CMD(text_load_file)
 		c->start = 0;
 		c->end = a->free;
 		list_add(&c->lst, &t->text);
+		hlist_for_each_entry(m, &t->doc.marks, all) {
+			m->ref.c = c;
+			m->ref.o = 0;
+		}
 	}
 	if (name) {
 		char *dname;
 
 		fstat(fd, &t->stat);
-		free(t->fname);
-		t->fname = strdup(name);
-		dname = strrchr(name, '/');
-		if (dname)
-			dname += 1;
-		else
-			dname = name;
-		call("doc:set-name", ci->home, 0, NULL, dname);
+		if (name != t->fname) {
+			free(t->fname);
+			t->fname = strdup(name);
+			dname = strrchr(name, '/');
+			if (dname)
+				dname += 1;
+			else
+				dname = name;
+			call("doc:set-name", ci->home, 0, NULL, dname);
+		}
 	}
 	t->saved = t->undo;
 	call("Notify:doc:status-changed", ci->home);
+	pane_notify("Notify:doc:Replace", t->doc.home);
+	if (fd != ci->num2)
+		close(fd);
 	return 1;
 err:
 	free(c);
+	if (fd != ci->num2)
+		close(fd);
 	return Efallthrough;
 }
 
@@ -1876,11 +1911,15 @@ DEF_CMD(text_modified)
 	return 1;
 }
 
-DEF_CMD(text_destroy)
+static void text_cleanout(struct text *t)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
 	struct text_alloc *ta;
+	struct mark *m;
+
+	hlist_for_each_entry(m, &t->doc.marks, all) {
+		m->ref.c = NULL;
+		m->ref.o = 0;
+	}
 
 	while (!list_empty(&t->text)) {
 		struct text_chunk *c = list_entry(t->text.next, struct text_chunk, lst);
@@ -1894,6 +1933,7 @@ DEF_CMD(text_destroy)
 		ta = tmp->prev;
 		free(tmp);
 	}
+	t->alloc = NULL;
 	while (t->undo) {
 		struct text_edit *te = t->undo;
 		t->undo = te->next;
@@ -1904,6 +1944,14 @@ DEF_CMD(text_destroy)
 		t->redo = te->next;
 		free(te);
 	}
+}
+
+DEF_CMD(text_destroy)
+{
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+
+	text_cleanout(t);
 	free(t->fname);
 	doc_free(d);
 	free(t);

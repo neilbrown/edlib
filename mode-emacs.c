@@ -937,6 +937,11 @@ DEF_CMD(emacs_kill_doc)
 	return call("doc:destroy", ci->focus);
 }
 
+DEF_CMD(emacs_revisit)
+{
+	return call("doc:load-file", ci->focus, 2, NULL, NULL, -1);
+}
+
 DEF_CMD(emacs_save_all)
 {
 	int ret = call("docs:save-all", ci->focus, 0, NULL, NULL, 1);
@@ -1596,6 +1601,8 @@ static void emacs_init(void)
 	key_add(m, "emCX-Chr-k", &emacs_kill_doc);
 
 	key_add(m, "emCX-Chr-s", &emacs_save_all);
+
+	key_add(m, "emCX-C-Chr-v", &emacs_revisit);
 
 	key_add(m, "C-Chr-S", &emacs_start_search);
 	key_add(m, "C-Chr-R", &emacs_start_search);
