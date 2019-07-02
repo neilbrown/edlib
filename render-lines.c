@@ -494,6 +494,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	struct render_list *rlst = NULL;
 	char *curspos = NULL;
 	char *cursattr = NULL;
+	char *cstart = NULL;
 
 	if (strncmp(line, "<image:",7) == 0) {
 		/* For now an <image> must be on a line by itself.
@@ -548,6 +549,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		cy = *cyp;
 		cx = *cxp;
 		offset = *offsetp;
+		*cxp = -1;
+		*cyp = -1;
 	}
 	if (cy >= 0 && cy < y) {
 		/* cursor is not here */
@@ -589,8 +592,11 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 
 		if (offset >= 0 && start - line_start <= offset) {
 			if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
-				*cyp = y;
-				*cxp = x;
+				if (cstart != start) {
+					*cyp = y;
+					*cxp = x;
+					cstart = start;
+				}
 			} else {
 				*cyp = *cxp = -1;
 			}
@@ -783,8 +789,11 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	if (offset >= 0 && line - line_start <= offset
 	    &&/* Must be true when offset >= 0 */ cyp && cxp) {
 		if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
-			*cyp = y;
-			*cxp = x;
+			if (cstart != start) {
+				*cyp = y;
+				*cxp = x;
+				cstart = start;
+			}
 		} else {
 			*cyp = *cxp = -1;
 		}
@@ -1677,7 +1686,7 @@ DEF_CMD(render_lines_move_line)
 		call_render_line(focus, start);
 		render_line(p, focus, start->mdata?:"", &y, 0, scale.x,
 			    &target_x, &target_y, &o, NULL, NULL, NULL);
-		/* 'o' is the distance from start-of-line of the target */
+		/* 'o' is the distance from start-of-line to the target */
 		if (o >= 0) {
 			struct mark *m2 = call_render_line_offset(
 				focus, start, o);
