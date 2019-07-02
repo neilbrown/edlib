@@ -20,7 +20,7 @@ class CModePane(edlib.Pane):
         # that much space.
         m = mark.dup()
         c = self.call("doc:step", focus, 1, 0, m, ret="char")
-        while c in " \t":
+        while c and c in " \t":
 	        self.call("doc:step", focus, 1, 1, m)
 	        c = self.call("doc:step", focus, 1, 0, m, ret="char")
 	focus.call("Move-to", m)
