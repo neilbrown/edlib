@@ -354,6 +354,16 @@ DEF_CMD(docs_callback)
 		}
 		return Efail;
 	}
+	if (strcmp(ci->key, "docs:byeach") == 0) {
+		list_for_each_entry(p, &doc->collection->children, siblings) {
+			int r;
+			r = comm_call(ci->comm2, "callback:doc", p);
+			if (r)
+				return r;
+		}
+		return 1;
+	}
+
 	if (strcmp(ci->key, "docs:choose") == 0) {
 		/* Choose a documents with no notifiees or no pointer,
 		 * but ignore 'deleting' */
