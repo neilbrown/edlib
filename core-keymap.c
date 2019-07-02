@@ -340,7 +340,8 @@ struct command *key_register_prefix(char *name safe)
 	return &mm->comm;
 }
 
-struct command *key_lookup_cmd(struct map *m safe, char *c safe)
+struct command *key_lookup_cmd(struct map *m safe, char *c safe,
+                               char **cret, int *lenret)
 {
 	/* If 'k' contains an ASCII US (Unit Separator, 0o37 0x1f 31),
 	 * it represents multiple keys.
@@ -359,9 +360,17 @@ struct command *key_lookup_cmd(struct map *m safe, char *c safe)
 		else if (strncmp(m->keys[pos], c, end - c) == 0 &&
 		         m->keys[pos][end - c] == '\0') {
 			/* Exact match - use this entry */
+			if (cret)
+				*cret = c;
+			if (lenret)
+				*lenret = end - c;
 			return GETCOMM(m->comms[pos]);
 		} else if (pos > 0 && IS_RANGE(m->comms[pos-1])) {
 			/* In a range, use previous */
+			if (cret)
+				*cret = c;
+			if (lenret)
+				*lenret = end - c;
 			return GETCOMM(m->comms[pos-1]);
 		}
 		c = end;
@@ -374,16 +383,31 @@ struct command *key_lookup_cmd(struct map *m safe, char *c safe)
 int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 {
 	struct command *comm;
+	char *key;
+	int len;
 
 	if (ci->hash && !key_present(m, ci->key, strlen(ci->key), ci->hash))
 		return Efallthrough;
 
-	comm = key_lookup_cmd(m, ci->key);
+	comm = key_lookup_cmd(m, ci->key, &key, &len);
 	if (comm == NULL)
 		return Efallthrough;
 	else {
+		/* This is message, but when there are multiple
+		 * keys, we need to pass down the one that was matched.
+		 */
+		int ret;
+		char *oldkey = ci->key;
+		char tail = key[len];
+		if (key[len])
+			key[len] = 0;
 		((struct cmd_info*)ci)->comm = comm;
-		return comm->func(ci);
+		((struct cmd_info*)ci)->key = key;
+		ret = comm->func(ci);
+		((struct cmd_info*)ci)->key = oldkey;
+		if (tail)
+			key[len] = tail;
+		return ret;
 	}
 }
 
