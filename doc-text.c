@@ -325,12 +325,13 @@ static int do_text_write_file(struct text *t safe, struct doc_ref *start, struct
 {
 	/* Don't worry about links for now
 	 * Create a temp file with #basename#~, write to that,
-	 * fsync and then rename
+	 * copy mode across, fsync and then rename
 	 */
 	char *tempname = malloc(strlen(fname) + 3 + 10);
 	char *base, *tbase;
 	int cnt = 0;
 	int fd = -1;
+	struct stat stb;
 
 	strcpy(tempname, fname);
 	base = strrchr(fname, '/');
@@ -354,6 +355,10 @@ static int do_text_write_file(struct text *t safe, struct doc_ref *start, struct
 
 	if (do_text_output_file(t, start, end, fd) < 0)
 		goto error;
+	if (stat(fname, &stb) == 0 &&
+	    S_ISREG(stb.st_mode))
+		/* Preserve modes, but not setuid */
+		fchmod(fd, stb.st_mode & 0777);
 	if (rename(tempname, fname) < 0)
 		goto error;
 	fstat(fd, &t->stat);
