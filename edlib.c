@@ -105,6 +105,7 @@ int main(int argc, char *argv[])
 
 	call("global-load-module", ed, 0, NULL, "render-c-mode");
 	call("global-load-module", ed, 0, NULL, "lib-make");
+	call("global-load-module", ed, 0, NULL, "lib-server");
 
 	while (optind < argc) {
 		char *file = argv[optind++];
