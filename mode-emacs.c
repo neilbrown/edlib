@@ -577,18 +577,11 @@ DEF_CMD(emacs_findfile)
 		char buf[PATH_MAX];
 		char *e;
 
-		path = pane_attr_get(ci->focus, "filename");
+		path = pane_attr_get(ci->focus, "dirname");
 		if (path) {
 			strcpy(buf, path);
-			path = strrchr(buf, '/');
-			if (path)
-				path[1] = '\0';
 			path = buf;
 		}
-
-		if (!path)
-			path = realpath(".", buf);
-
 		if (!path) {
 			strcpy(buf, "/");
 			path = buf;
