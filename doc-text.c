@@ -1443,9 +1443,10 @@ DEF_CMD(text_get_str)
 
 	first = list_first_entry_or_null(&t->text, struct text_chunk, lst);
 	head = 0;
-	if (from && from->ref.c) {
+	if (from) {
 		first = from->ref.c;
-		head = from->ref.o - first->start;
+		if (first)
+			head = from->ref.o - first->start;
 	}
 	last = NULL;
 	tail = 0;
