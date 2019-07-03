@@ -35,22 +35,7 @@ class CModePane(edlib.Pane):
             c = focus.call("doc:step", 0, 1, m, ret="char")
         indent_end = m.dup()
         new = self.find_indent(focus, indent_end)
-        # now see if a () expression started since the indent.
-        expr = m.dup()
-        focus.call("Move-Expr", -1, 1, expr)
-        if expr > indent_end:
-            focus.call("doc:step", expr, 1, 1)
-            if focus.call("doc:step", expr, 1, 0, ret="char") == '\n':
-                # open-bracket at end-of-line, so add a standard indent
-                if self.spaces:
-                    extra = ' ' * self.spaces
-                else:
-                    extra = "\t"
-            else:
-                extra = focus.call("doc:get-str", indent_end, expr, ret='str')
-                extra = ' ' * len(extra)
-        else:
-                extra = ""
+        extra = self.find_extra_indent(focus, m, indent_end)
 
         return focus.call("Replace", 1, m, "\n" + new + extra)
 
@@ -72,6 +57,25 @@ class CModePane(edlib.Pane):
             c = focus.call("doc:step", 0, m2, ret="char")
         # m2 .. m is the prefix
         return focus.call("doc:get-str", m2, m, ret = 'str')
+
+    def find_extra_indent(self, focus, m, indent_end):
+        # now see if a () expression started since the indent.
+        expr = m.dup()
+        focus.call("Move-Expr", -1, 1, expr)
+        if expr > indent_end:
+            focus.call("doc:step", expr, 1, 1)
+            if focus.call("doc:step", expr, 1, 0, ret="char") == '\n':
+                # open-bracket at end-of-line, so add a standard indent
+                if self.spaces:
+                    extra = ' ' * self.spaces
+                else:
+                    extra = "\t"
+            else:
+                extra = focus.call("doc:get-str", indent_end, expr, ret='str')
+                extra = ' ' * len(extra)
+        else:
+                extra = ""
+        return extra
 
     def handle_replace(self, key, focus, **a):
 	"handle:Replace"
