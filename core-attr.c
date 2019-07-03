@@ -91,7 +91,7 @@ static int getcmptok(char **ap safe)
  */
 static int attr_cmp(char *a safe, char *b safe, int bnum)
 {
-	while (*a && *b) {
+	while (*a && (*b || bnum >= 0)) {
 		int ai, bi;
 		ai = getcmptok(&a);
 		if (bnum >= 0) {
@@ -479,12 +479,10 @@ void attr_free(struct attrset **setp safe)
 
 void attr_trim(struct attrset **setp safe, int nkey)
 {
-	char key[22];
 	int offset;
 	struct attrset *set;
 
-	sprintf(key, "%d", nkey);
-	__attr_find(&setp, key, &offset, 0);
+	__attr_find(&setp, "", &offset, nkey);
 	set = *setp;
 	if (!set)
 		return;
