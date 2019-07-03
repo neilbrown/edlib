@@ -39,6 +39,41 @@ class CModePane(edlib.Pane):
 
         return focus.call("Replace", 1, m, "\n" + new + extra)
 
+    def handle_tab(self, key, focus, mark, **a):
+        "handle:Tab"
+        # if there is only white-space before cursor (up to newline) then:
+        # move to end of white-space
+        # - choose an indent as for Return
+        # - If we don't have exactly that, replace with that
+        # - if we do and chosen indent has no extra, add one indent level
+        m = mark.dup()
+        c = focus.call("doc:step", 0, 0, m, ret="char")
+        while c and c in " \t":
+            focus.call("doc:step", 0, 1, m)
+            c = focus.call("doc:step", 0, 0, m, ret="char")
+        if not (c is None or c == "\n"):
+            # not at start of line, just fall through
+            return 0
+        # m at start-of-line, move mark (point) to first non-white-space
+        c = focus.call("doc:step", 1, 0, mark, ret="char")
+        while c and c in " \t":
+            focus.call("doc:step", 1, 1, mark)
+            c = focus.call("doc:step", 1, 0, mark, ret="char")
+        indent_end = m.dup()
+        indent = self.find_indent(focus, indent_end)
+        extra = self.find_extra_indent(focus, m, indent_end)
+        current = focus.call("doc:get-str", m, mark, ret="str")
+        if indent + extra != current:
+            return focus.call("Replace", 1, m, mark, indent+extra)
+        if extra == "":
+            if self.spaces:
+                extra = ' ' * self.spaces
+            else:
+                extra = '\t'
+            return focus.call("Replace", 1, m, mark, indent+extra)
+        # No change needed
+        return 1
+
     def find_indent(self, focus, m):
         # Find previous line which is not empty and return
         # a string containing the leading tabs/spaces.
@@ -60,6 +95,8 @@ class CModePane(edlib.Pane):
 
     def find_extra_indent(self, focus, m, indent_end):
         # now see if a () expression started since the indent.
+        # If so, either line-up with open, or add a tab if open
+        # is at end-of-line
         expr = m.dup()
         focus.call("Move-Expr", -1, 1, expr)
         if expr > indent_end:
