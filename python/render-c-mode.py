@@ -5,6 +5,8 @@
 class CModePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
+        self.paren_start = None
+        self.paren_end = None
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
@@ -16,7 +18,7 @@ class CModePane(edlib.Pane):
         "handle:Enter"
         # If there is white space before or after the cursor,
         # remove it.  Then work out how indented this line
-        # should be, base on last non-empty line, and insert
+        # should be, based on last non-empty line, and insert
         # that much space.
         m = mark.dup()
         c = self.call("doc:step", focus, 1, 0, m, ret="char")
@@ -65,6 +67,46 @@ class CModePane(edlib.Pane):
             c = self.call("doc:step", focus, 0, m2, ret="char")
         # m2 .. m is the prefix
         return focus.call("doc:get-str", m2, m, ret = 'str')
+
+    def handle_replace(self, key, focus, **a):
+	"handle:Replace"
+	if self.paren_end:
+	    focus.call("doc:step", self.paren_end, 1, 1)
+	    focus.call("Notify:change", self.paren_start, self.paren_end)
+	self.paren_start = None
+	self.paren_end = None
+	return 0
+
+    def handle_refresh(self, key, focus, **a):
+	"handle:Refresh"
+	point = focus.call("doc:point", ret = 'mark')
+	if self.paren_end:
+	    # maybe marks are still OK
+	    m = point.dup()
+	    if focus.call("doc:step", m, 0, 1, ret='char') and m == self.paren_end:
+		return 0
+	    focus.call("doc:step", self.paren_end, 1, 1)
+	    focus.call("Notify:change", self.paren_start, self.paren_end)
+	    self.paren_end = None
+	    self.paren_start = None
+
+	c = focus.call("doc:step", point, 0, 0, ret = 'char')
+	if c and c in ')}]':
+		m = point.dup()
+		focus.call("doc:step", m, 0, 1)
+		self.paren_end = m
+		m['render:paren'] = "close"
+		m = point.dup()
+		focus.call("Move-Expr", m, -1)
+		m['render:paren'] = "open"
+		self.paren_start = m
+		focus.call("Notify:change", self.paren_start, point)
+	return 0
+
+    def handle_map_attr(self, key, focus, str, str2, comm2, **a):
+	"handle:map-attr"
+	if str == "render:paren":
+		comm2("cb", focus, "bg:pink,bold", 1)
 
 def c_mode_attach(key, focus, comm2, **a):
     p = focus.render_attach("text")
