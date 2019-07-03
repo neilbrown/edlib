@@ -1098,12 +1098,12 @@ DEF_CMD(emacs_search_reposition)
 		return 0;
 
 	while ((m = vmark_first(ci->focus, hi->view)) != NULL &&
-	       m->seq < start->seq) {
+	       mark_ordered_not_same(m, start)) {
 		mark_free(m);
 		damage = 1;
 	}
 	while ((m = vmark_last(ci->focus, hi->view)) != NULL &&
-	       m->seq > end->seq){
+	       mark_ordered_not_same(end, m)) {
 		mark_free(m);
 		damage = 1;
 	}
