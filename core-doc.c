@@ -940,7 +940,7 @@ DEF_CMD(doc_replace)
 {
 	struct doc_data *dd = ci->home->data;
 	return home_call(dd->doc, "doc:replace", ci->focus, 1, ci->mark, ci->str,
-			 ci->num2, dd->point);
+			 ci->num2, dd->point, ci->str2);
 }
 
 DEF_CMD(doc_handle_get_attr)
