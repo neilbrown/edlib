@@ -225,7 +225,8 @@ static void call_map_mark(struct pane *f safe, struct mark *m safe,
 	char *key = "render:";
 	char *val;
 
-	while ((key = attr_get_next_key(m->attrs, key, -1, &val)) != NULL)
+	while ((key = attr_get_next_key(m->attrs, key, -1, &val)) != NULL &&
+	       strncmp(key, "render:", 7) == 0)
 		call_comm("map-attr", f, &ar->rtn, 0, m, key, 0, NULL, val);
 }
 
