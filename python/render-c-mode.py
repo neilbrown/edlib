@@ -24,9 +24,9 @@ class CModePane(edlib.Pane):
         m = mark.dup()
         c = focus.call("doc:step", 1, 0, m, ret="char")
         while c and c in " \t":
-	        focus.call("doc:step", 1, 1, m)
-	        c = focus.call("doc:step", 1, 0, m, ret="char")
-	focus.call("Move-to", m)
+            focus.call("doc:step", 1, 1, m)
+            c = focus.call("doc:step", 1, 0, m, ret="char")
+        focus.call("Move-to", m)
         c = focus.call("doc:step", 0, 1, m, ret="char")
         while c != None:
             if c not in " \t":
@@ -74,48 +74,48 @@ class CModePane(edlib.Pane):
                 extra = focus.call("doc:get-str", indent_end, expr, ret='str')
                 extra = ' ' * len(extra)
         else:
-                extra = ""
+            extra = ""
         return extra
 
     def handle_replace(self, key, focus, **a):
-	"handle:Replace"
-	if self.paren_end:
-	    focus.call("doc:step", self.paren_end, 1, 1)
-	    focus.call("Notify:change", self.paren_start, self.paren_end)
-	self.paren_start = None
-	self.paren_end = None
-	return 0
+        "handle:Replace"
+        if self.paren_end:
+            focus.call("doc:step", self.paren_end, 1, 1)
+            focus.call("Notify:change", self.paren_start, self.paren_end)
+        self.paren_start = None
+        self.paren_end = None
+        return 0
 
     def handle_refresh(self, key, focus, **a):
-	"handle:Refresh"
-	point = focus.call("doc:point", ret = 'mark')
-	if self.paren_end:
-	    # maybe marks are still OK
-	    m = point.dup()
-	    if focus.call("doc:step", m, 0, 1, ret='char') and m == self.paren_end:
-		return 0
-	    focus.call("doc:step", self.paren_end, 1, 1)
-	    focus.call("Notify:change", self.paren_start, self.paren_end)
-	    self.paren_end = None
-	    self.paren_start = None
+        "handle:Refresh"
+        point = focus.call("doc:point", ret = 'mark')
+        if self.paren_end:
+            # maybe marks are still OK
+            m = point.dup()
+            if focus.call("doc:step", m, 0, 1, ret='char') and m == self.paren_end:
+                return 0
+            focus.call("doc:step", self.paren_end, 1, 1)
+            focus.call("Notify:change", self.paren_start, self.paren_end)
+            self.paren_end = None
+            self.paren_start = None
 
-	c = focus.call("doc:step", point, 0, 0, ret = 'char')
-	if c and c in ')}]':
-		m = point.dup()
-		focus.call("doc:step", m, 0, 1)
-		self.paren_end = m
-		m['render:paren'] = "close"
-		m = point.dup()
-		focus.call("Move-Expr", m, -1)
-		m['render:paren'] = "open"
-		self.paren_start = m
-		focus.call("Notify:change", self.paren_start, point)
-	return 0
+        c = focus.call("doc:step", point, 0, 0, ret = 'char')
+        if c and c in ')}]':
+            m = point.dup()
+            focus.call("doc:step", m, 0, 1)
+            self.paren_end = m
+            m['render:paren'] = "close"
+            m = point.dup()
+            focus.call("Move-Expr", m, -1)
+            m['render:paren'] = "open"
+            self.paren_start = m
+            focus.call("Notify:change", self.paren_start, point)
+        return 0
 
     def handle_map_attr(self, key, focus, str, str2, comm2, **a):
-	"handle:map-attr"
-	if str == "render:paren":
-		comm2("cb", focus, "bg:pink,bold", 1)
+        "handle:map-attr"
+        if str == "render:paren":
+            comm2("cb", focus, "bg:pink,bold", 1)
 
 def c_mode_attach(key, focus, comm2, **a):
     p = focus.render_attach("text")
