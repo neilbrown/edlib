@@ -1,0 +1,171 @@
+Edlib provides
+  render-lines
+and
+  lib-renderline
+
+to support rendering of documents.  It is possibly to create a completely 
+separate rendering for a given document which does make use of these,
+but often it will be easiest to use these with added enhancements rather 
+than writing a complete renderer.
+
+lib-renderline provides two methods which identify lines within a text buffer,
+and convert them to marked-up text.
+render-lines makes use of these interfaces to render lines from the relevant
+part of the buffer, and to display them in a pane.  It takes the marked-up lines
+provided by lib-renderline (or a replacement) and passes them to the display manager
+as text with attributes.
+
+lib-renderline
+--------------
+
+The two interfaces are "render-line" and "render-line-prev"
+"render-line" is the main worker, "render-line-prev" moves backwards
+through a text buffer looking for a suitable place to start the line before 
+the given location.
+
+"render-line-prev" args are:
+  mark: current location
+  num: if 0, move to start of current line.  If 1, move back beyond start of
+      current line, then to the start of the previous line
+
+"render-line"  args are:
+  mark: start of the line to be rendered.  Line continues until first '\n'
+        or until 'num2' chars have been examined with no '\n' found
+        mark will be moved to the end of the range that was rendered (often
+        the end of the line)
+  mark2: location where a cursor should be drawn
+  num: if >= 0, max number of screen-units (pixels or chars) to convert before
+       aborting.  'mark' will be moved to the location that would draw
+       at or beyond this place on the screen.  This can be used to
+       convert a screen location (from a mouse click) back to a document
+       location.
+       if == -1, Rendering stops when mark reaches mark2.  This allows the
+       cursor to be found, and action to be taken if it is off-screen
+       if == NoNumeric, ignored.
+  num2: maximum number of chars to be considered
+  comm2: a callback used to return the rendered string in "str".  The string
+       will be freed after the callback returns, so it must duplicate it if
+       later access is needed.
+
+Normally, text is rendered with default font/size/color etc.
+The attributes of part of a line can be modified using attributes in the document,
+and attributes attached to marks.
+
+When an attribute with a "render:" prefix is found in the document or on a mark
+in the document, the "map-attr" function is called on the focus pane.
+This is passed:
+ - 'mark' - the location in the document.  For mark attributes, this will be
+    the mark with the attribute.  For document attributes, it will be any mark
+    at the relevant location
+- 'str' - the name of the attribute
+- 'str2' - the value of the attribute
+- 'comm2' - a callback to return the text attributes
+
+"map-attr" is also called at the start of each line with 'str' set to "start-of-line"
+and str2 unset.  This is useful when the start and end of a region are marked, and
+the region can cover multiple lines.
+
+When "map-attr" calls the comm2 callback, it should pass:
+- 'str' - the attributes to add or remove
+- 'num' - Either a positive number of document characters that the attributes should
+          apply to, or '-1' meaning the attributes should be cancelled
+- 'num2' - priority for these attributes.  If multiple conflicting attributes are 
+          requested for the one piece of text, the higher priority value will take effect.
+- 'str2' - a string to be inserted with the given attributes.  This is not currently
+           implmented.
+
+Text attributes are given as a comma separate list of whatever the relevant "Draw:text"
+method understands.  Unrecognized attributes will be ignored, so you can add extras
+for your own purposes.
+When "num=-1" is used to clear attributes, a string-comparison of the full attribute
+string is used, so for example a nounce could be added to ensure a different mapping
+doesn't clear your attributes.
+
+The 'emacs' mode uses a 'focus' attribute when highlighting seearch results to indicate
+the primary focus text.  It also procides a "Draw:text" overlay which notices this,
+checks if it is being drawn beneach the "search" pop-up, and if so - moves the pop-up.
+
+Standard attributes are:
+ inverse
+ bold
+ italic     (not ncurse)
+ oblique     ""
+ small-caps  ""
+ underline  (not pygtk)
+ fg:colour  (blue, red, grey understood for ncurses)
+ bg:colour  (pink understood for ncurses)
+ 
+  center   center within the margins
+  left:N  left-margin of N
+  right:N right-margin of N
+  space-above:
+  space-below
+  wrap     If line-wrapping is enabled and required and
+           the line contains any text with the "wrap" attribute,
+           then the last such text is used as the wrap point, and
+           the text isn't displayed.  If there is no "wrap" point,
+           the the wrap happens at the last character that fits.
+  wrap-tail: when text is wrapped, a blue "\" is placed at the end of
+           the line to mark this.  If the wrap-tail attribute is in
+           effect, the content of the attribute is used instead
+  wrap-head: if this attribute is in effect when text is wrapped
+           the following line is prefixed with the value of the
+           attribute.
+
+only on pygtk:
+  NN      font size
+  large   font=14
+  small   font=9
+  family:  font family
+  tab:N
+  
+
+render-lines
+------------
+Render-lines provide generic rendering functionality for any
+document that is generally line-based.  The visible pane is conceptually
+several lines, which correspond to consecutive sections of the document,
+and each of which use the full width of the pane (possibly with padding)
+but only some of the height (thus allowing for other lines).
+It supports mapping from mouse actions to document locations, and placing
+a cursor at the location of "point" in the document.
+It handles "Refresh" and related commands and calls "Draw:text" etc
+to update the display.
+
+render-lines will call "render-line" and "render-line-prev" to find out what should be drawn.
+They should return marked-up text providing attributes to guide drawing.
+The markup uses <> to enclose attributes - anything else is text.
+A '<' can be included in text by doubling it '<<'
+The end of the attributed text is marked with '</>'
+The attributes can be a list of text attributes or:
+
+At the start of the line "<image:" indicates an image to be drawn - no text 
+should appeear on this line.
+The listed attributes can include:
+  image:filename - typically jpg or png
+  width:pixels
+  heigth:pixels
+       width and height are in virtual pixels.  The expected size of the pane
+       is declared with virtual pixels in a "scale" attribute.  The actual size
+       at any given time is used to determine a scale factor from virtual to
+       actual pixels.
+
+Several pane attributes can affect the pane as a whole:
+ - "heading" is a rendered text line to put at the top of the pane, not to be scolled off.
+ - "hide-cursor": if "yes", no cursor is displayed
+ - "background": if not set, the background is simply cleared.  Otherwise it can be:
+      "color:some-color" set a uniform background color for the pane
+      "image:file" image to be scaled (but not stretched) and displayed
+      "call:function" a function to be called, which can draw on the pane before the document
+          is drawn.
+ - "scale:M" - this is set by the display manager and given the number of pixels for
+          a capital M.  It is used for approximate size calculations.  When variable width
+          fonts are in use, each text string is measured precisely.
+          Value is i for m "WxH", e.g. "8x8"
+ - "scale" - width/height values to aim for - in "points" which are 1/10 for an M
+          e.g. if 800x240, then text is scaled so that at least 80 M's fit across,
+          and 24 M's fit down.
+ - "render-wrap" - if define by not "yes", don't wrap long lines, else shift left to
+          fit cursor on pane.
+ - "prefix" - text to place at start of each line.  This can be used as a prompt in a
+          dialogue box.
