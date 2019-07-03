@@ -8,6 +8,7 @@ class CModePane(edlib.Pane):
         self.paren_start = None
         self.paren_end = None
         self.spaces = None   # is set to a number, use spaces, else TABs
+        self.indent_colon = False
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
@@ -152,6 +153,18 @@ class CModePane(edlib.Pane):
             else:
                 extra = focus.call("doc:get-str", indent_end, expr, ret='str')
                 extra = ' ' * len(extra)
+        elif self.indent_colon:
+            cl = m.dup()
+            c = focus.call("doc:step", cl, 0, 1, ret="char")
+            if c == '\n':
+                c = focus.call("doc:step", cl, 0, 1, ret="char")
+            if c == ':':
+                if self.spaces:
+                    extra = ' ' * self.spaces
+                else:
+                    extra = "\t"
+            else:
+                extra = ""
         else:
             extra = ""
         return extra
@@ -206,6 +219,7 @@ def py_mode_attach(key, focus, comm2, **a):
     p = focus.render_attach("text")
     p = CModePane(p)
     p.spaces = 4
+    p.indent_colon = True
     comm2("callback", p)
     return 1
 
