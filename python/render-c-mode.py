@@ -74,6 +74,48 @@ class CModePane(edlib.Pane):
         # No change needed
         return 1
 
+    def handle_bs(self, key, focus, mark, **a):
+        "handle:Backspace"
+        # If in the indent, remove one level of indent
+        m = mark.dup()
+        c = focus.call("doc:step", 1, m, ret="char")
+        if c and c in " \t":
+            # Not at end of indent, fall through
+            return 0
+        c = focus.call("doc:step", 0, 0, m, ret="char")
+        while c and c in " \t":
+            focus.call("doc:step", 0, 1, m)
+            c = focus.call("doc:step", 0, 0, m, ret="char")
+        if not (c is None or c == "\n"):
+            # not at start of line, just fall through
+            return 0
+        if m == mark:
+            # at start-of-line, fall-through
+            return 0
+        indent_end = m.dup()
+        indent = self.find_indent(focus, indent_end)
+        extra = self.find_extra_indent(focus, m, indent_end)
+        current = focus.call("doc:get-str", m, mark, ret="str")
+        if extra:
+            # if in the extra, delete back to 'indent'
+            if len(current) > len(indent):
+                return focus.call("Replace", 1, m, mark, indent)
+        cnt = self.spaces
+        if not cnt:
+            cnt = 8
+        m = mark.dup()
+        c = focus.call("doc:step", 0, 0, m, ret="char")
+        while c and c in " \t":
+            focus.call("doc:step", 0, 1, m)
+            if c == ' ':
+                cnt -= 1
+            else:
+                cnt -= 8
+            if cnt <= 0:
+                break
+            c = focus.call("doc:step", 0, 0, m, ret="char")
+        return focus.call("Replace", 1, m, mark)            
+
     def find_indent(self, focus, m):
         # Find previous line which is not empty and return
         # a string containing the leading tabs/spaces.
