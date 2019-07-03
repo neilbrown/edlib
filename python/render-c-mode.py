@@ -22,17 +22,17 @@ class CModePane(edlib.Pane):
         # should be, based on last non-empty line, and insert
         # that much space.
         m = mark.dup()
-        c = self.call("doc:step", focus, 1, 0, m, ret="char")
+        c = focus.call("doc:step", 1, 0, m, ret="char")
         while c and c in " \t":
-	        self.call("doc:step", focus, 1, 1, m)
-	        c = self.call("doc:step", focus, 1, 0, m, ret="char")
+	        focus.call("doc:step", 1, 1, m)
+	        c = focus.call("doc:step", 1, 0, m, ret="char")
 	focus.call("Move-to", m)
-        c = self.call("doc:step", focus, 0, 1, m, ret="char")
+        c = focus.call("doc:step", 0, 1, m, ret="char")
         while c != None:
             if c not in " \t":
-                self.call("doc:step", focus, 1, 1, m)
+                focus.call("doc:step", 1, 1, m)
                 break
-            c = self.call("doc:step", focus, 0, 1, m, ret="char")
+            c = focus.call("doc:step", 0, 1, m, ret="char")
         indent_end = m.dup()
         new = self.find_indent(focus, indent_end)
         # now see if a () expression started since the indent.
@@ -58,18 +58,18 @@ class CModePane(edlib.Pane):
         # Find previous line which is not empty and return
         # a string containing the leading tabs/spaces.
         # The mark is moved to the end of the indent.
-        while self.call("doc:step", focus, 0, m, ret="char") == '\n':
-            self.call("doc:step", focus, 0, 1, m)
-        if self.call("doc:step", focus, 0, m) == edlib.WEOF:
+        while focus.call("doc:step", 0, m, ret="char") == '\n':
+            focus.call("doc:step", 0, 1, m)
+        if focus.call("doc:step", 0, m) == edlib.WEOF:
             return ""
         # line before m is not empty
         m2 = m.dup()
-        c = self.call("doc:step", focus, 0, m2, ret="char")
+        c = focus.call("doc:step", 0, m2, ret="char")
         while c != None and c != '\n':
-            self.call("doc:step", focus, 0, 1, m2)
+            focus.call("doc:step", 0, 1, m2)
             if c not in " \t":
                 m.to_mark(m2)
-            c = self.call("doc:step", focus, 0, m2, ret="char")
+            c = focus.call("doc:step", 0, m2, ret="char")
         # m2 .. m is the prefix
         return focus.call("doc:get-str", m2, m, ret = 'str')
 
