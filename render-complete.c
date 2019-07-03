@@ -324,13 +324,17 @@ DEF_CMD(complete_set_prefix)
 	call("Move-File", ci->focus, 1, m);
 
 	while (do_render_complete_prev(cd, m, p->parent, 1, &c) > 0 && c) {
-		int l = strlen(c);
-		if (c[l-1] == '\n')
+		int l;
+		char *match = c;
+		if (!cd->prefix_only)
+			match = strstr(match, cd->prefix);
+		l = strlen(match);
+		if (match[l-1] == '\n')
 			l -= 1;
 		if (common == NULL)
-			common = strndup(c, l);
+			common = strndup(match, l);
 		else
-			common[common_len(c, common)] = 0;
+			common[common_len(match, common)] = 0;
 		if (!cd->prefix_only && strncmp(c, cd->prefix, strlen(cd->prefix)) == 0) {
 			if (m2)
 				mark_free(m2);
