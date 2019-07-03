@@ -12,6 +12,8 @@
  * We capture:
  *   C-s - if we have a match, save end of match as new start
  *   Backspace - is search string is same as saved start, pop
+ *         otherwise remove whatever was last entered, which
+ *         must be multiple chars if C-w was used.
  *   C-w - collect word from target and add to search string
  *   C-c - collect char from target and add to search string.
  *   C-r - search backwards.. tricky.
@@ -89,15 +91,17 @@ DEF_CMD(search_retreat)
 	struct es_info *esi = ci->home->data;
 	char *str;
 	struct stk *s;
+	char *attr;
+	struct mark *mk;
 
 	if (esi->s == NULL)
-		return Efallthrough;
+		goto just_delete;
 	str = call_ret(str, "doc:get-str", ci->focus);
 	if (!str)
 		return Einval;
 	if (strlen(str) > esi->s->len) {
 		free(str);
-		return Efallthrough;
+		goto just_delete;
 	}
 	free(str);
 	s = esi->s;
@@ -108,6 +112,25 @@ DEF_CMD(search_retreat)
 	free(s);
 	/* Trigger notification so isearch watcher searches again */
 	call("Replace", ci->home, 1, NULL, "", 1);
+	return 1;
+
+ just_delete:
+	if (call("doc:step", ci->focus, 1) != CHAR_RET(WEOF))
+		/* Not at end-of-buffer, just delete one char */
+		return Efallthrough;
+
+	mk = call_ret(mark, "doc:point", ci->focus);
+	if (!mk)
+		return Efallthrough;
+	mk = mark_dup(mk);
+	do {
+		if (call("doc:step", ci->focus, 0, mk, NULL, 1) == CHAR_RET(WEOF))
+			break;
+		attr = call_ret(strsave, "doc:get-attr", ci->focus, 0, mk, "auto");
+	} while (attr && strcmp(attr, "1") == 0);
+
+	call("Replace", ci->focus, 1, mk);
+	mark_free(mk);
 	return 1;
 }
 
@@ -120,6 +143,7 @@ DEF_CMD(search_add)
 	int l;
 	struct mark *m;
 	int limit = 1000;
+	char *attr = NULL;
 
 	m = mark_dup(esi->end);
 	if (strcmp(ci->key, "C-Chr-W")==0)
@@ -129,21 +153,27 @@ DEF_CMD(search_add)
 
 	while (esi->matched
 	       && esi->end->seq < m->seq && !mark_same(esi->end, m)) {
+		int slash = 0;
 		if (limit-- <= 0)
 			break;
 		wch = doc_following_pane(esi->target, esi->end);
 		if (wch == WEOF)
 			break;
+		l = wcrtomb(b, wch, &ps);
 		if (wch == '\n') {
-			strcpy(b, "\\n");
-			l = 2;
+			slash = 1;
+			strcpy(b, "n");
+			l = 1;
 		} else if (strchr("|*+?{}()?^$\\", wch)) {
-			b[0] = '\\';
-			l = wcrtomb(b+1, wch, &ps) + 1;
-		} else
-			l = wcrtomb(b, wch, &ps);
+			slash = 1;
+		}
 		b[l] = 0;
-		call("Replace", ci->focus, 1, NULL, b);
+		if (slash) {
+			call("Replace", ci->focus, 1, NULL, "\\", 0, NULL, attr);
+			attr = ",auto=1";
+		}
+		call("Replace", ci->focus, 1, NULL, b, 0, NULL, attr);
+		attr = ",auto=1";
 	}
 	return 1;
 }
