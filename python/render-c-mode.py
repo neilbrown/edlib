@@ -210,14 +210,12 @@ class CModePane(edlib.Pane):
             comm2("cb", focus, "bg:pink,bold", 1)
 
 def c_mode_attach(key, focus, comm2, **a):
-    p = focus.call("attach-render-text", ret='focus')
-    p = CModePane(p)
+    p = CModePane(focus)
     comm2("callback", p)
     return 1
 
 def py_mode_attach(key, focus, comm2, **a):
-    p = focus.call("attach-render-text", ret='focus')
-    p = CModePane(p)
+    p = CModePane(focus)
     p.spaces = 4
     p.indent_colon = True
     comm2("callback", p)
@@ -226,13 +224,13 @@ def py_mode_attach(key, focus, comm2, **a):
 def c_mode_appeared(key, focus, **a):
     n = focus["filename"]
     if n and n[-2:] in [".c", ".h"]:
-        focus["render-default"] = "c-mode"
+        focus["view-default"] = "c-mode"
     return 0
 
 def py_mode_appeared(key, focus, **a):
     n = focus["filename"]
     if n and n[-3:] in [".py"]:
-        focus["render-default"] = "py-mode"
+        focus["view-default"] = "py-mode"
     return 0
 
 def attach_indent(key, focus, **a):
@@ -241,6 +239,6 @@ def attach_indent(key, focus, **a):
 
 editor.call("global-set-command", "doc:appeared-c-mode", c_mode_appeared)
 editor.call("global-set-command", "doc:appeared-py-mode", py_mode_appeared)
-editor.call("global-set-command", "attach-render-c-mode", c_mode_attach)
-editor.call("global-set-command", "attach-render-py-mode", py_mode_attach)
+editor.call("global-set-command", "attach-c-mode", c_mode_attach)
+editor.call("global-set-command", "attach-py-mode", py_mode_attach)
 editor.call("global-set-command", "interactive-cmd-indent", attach_indent)

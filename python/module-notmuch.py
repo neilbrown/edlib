@@ -728,7 +728,7 @@ class notmuch_master_view(edlib.Pane):
         if not p0:
             return 1
         p1 = p0.call("doc:attach", ret='focus')
-        p1.call("doc:assign-view",p2, "default:viewer")
+        p1.call("doc:assign-view",p2, "default", "viewer")
         return 1
 
     def handle_o(self, key, focus, mark, num, str, str2, **a):
@@ -769,7 +769,7 @@ class notmuch_master_view(edlib.Pane):
                                  ret = 'focus')
         self.query_pane = p1
         p2 = p1.call("doc:attach", ret='focus')
-        p3 = p2.call("doc:assign-view", p0, "notmuch:threads", ret='focus')
+        p3 = p2.call("doc:assign-view", p0, ret='focus')
         self.query_pane = p3
         if num:
             self.query_pane.take_focus()
@@ -868,7 +868,7 @@ class notmuch_list(edlib.Doc):
         self.threads = {}
         self.messageids = {}
         self.threadinfo = {}
-        self["render-default"] = "notmuch:query"
+        self["render-default"] = "notmuch:threads"
         self["line-format"] = "<%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%+TM-authors</><tab:350>%.TM-threadinfo<tab:450><%TM-hilite>%.TM-subject</>                      "
         self.add_notify(self.parent, "Notify:Tag")
         self.load_full()

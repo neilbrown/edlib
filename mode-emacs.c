@@ -637,7 +637,7 @@ DEF_CMD(emacs_findfile)
 		return Esys;
 	}
 
-	p = doc_attach_view(par, p, NULL, 1);
+	p = doc_attach_view(par, p, NULL, NULL, 1);
 	if (p)
 		pane_focus(p);
 	return p ? 1 : Esys;
@@ -683,7 +683,7 @@ REDEF_CMD(emacs_file_complete)
 	pop = call_pane("PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		return Esys;
-	par = doc_attach_view(pop, docp, NULL, 0);
+	par = doc_attach_view(pop, docp, NULL, NULL, 0);
 	if (!par)
 		return Esys;
 
@@ -768,7 +768,7 @@ DEF_CMD(emacs_finddoc)
 	if (!p || !par)
 		return Esys;
 
-	p = doc_attach_view(par, p, NULL, 1);
+	p = doc_attach_view(par, p, NULL, NULL, 1);
 	if (p)
 		pane_focus(p);
 	return p ? 1 : Esys;
@@ -795,7 +795,7 @@ REDEF_CMD(emacs_doc_complete)
 	docs = call_pane("docs:byname", ci->focus);
 	if (!docs)
 		return Efail;
-	par = doc_attach_view(pop, docs, NULL, 0);
+	par = doc_attach_view(pop, docs, NULL, NULL, 0);
 	if (!par)
 		return Esys;
 
@@ -845,7 +845,7 @@ DEF_CMD(emacs_viewdocs)
 	if (!par)
 		return Esys;
 
-	p = doc_attach_view(par, docs, NULL, 1);
+	p = doc_attach_view(par, docs, NULL, NULL, 1);
 	return !!p;
 }
 
@@ -887,7 +887,7 @@ DEF_CMD(emacs_shell)
 	 */
 	call_pane("attach-shellcmd", doc, 0, NULL, ci->str, 0, NULL, path);
 
-	doc_attach_view(par, doc, "default:viewer", 1);
+	doc_attach_view(par, doc, NULL, "viewer", 1);
 	return 1;
 }
 

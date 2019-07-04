@@ -729,8 +729,7 @@ class MarkdownPane(edlib.Pane):
         return 0
 
 def present_attach(key, focus, comm2, **a):
-    p = focus.call("attach-render-text", ret='focus')
-    p = PresenterPane(p)
+    p = PresenterPane(focus)
     p['render-wrap'] = 'no'
     p['background'] = 'color:yellow'
     p['hide-cursor'] = 'yes'
@@ -741,18 +740,17 @@ def present_attach(key, focus, comm2, **a):
     return 1
 
 def markdown_attach(key, focus, comm2, **a):
-    p = focus.call("attach-render-text", ret='focus')
-    p = MarkdownPane(p)
+    p = MarkdownPane(focus)
     comm2("callback", p)
     return 1
 
 def markdown_appeared(key, focus, **a):
     n = focus["filename"]
     if n and n[-3:] == ".md":
-        focus["render-Chr-P"] = "present"
-        focus["render-default"] = "markdown"
+        focus["view-Chr-P"] = "present"
+        focus["view-default"] = "markdown"
     return 0
 
-editor.call("global-set-command", "attach-render-markdown", markdown_attach)
-editor.call("global-set-command", "attach-render-present", present_attach)
+editor.call("global-set-command", "attach-markdown", markdown_attach)
+editor.call("global-set-command", "attach-present", present_attach)
 editor.call("global-set-command", "doc:appeared-markdown", markdown_appeared)

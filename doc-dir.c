@@ -569,7 +569,7 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 	} else
 		par = call_pane("ThisPane", focus);
 	if (par) {
-		p = doc_attach_view(par, p, NULL, 1);
+		p = doc_attach_view(par, p, NULL, NULL, 1);
 		pane_focus(p);
 	}
 	return 1;
@@ -583,7 +583,6 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 	struct pane *p = home,  *par = home->parent;
 	int fd;
 	char *fname = NULL;
-	char *renderer = NULL;
 	char buf[100];
 
 	if (!m || !par)
@@ -592,20 +591,24 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 	/* close this pane, open the given file. */
 	if (de == NULL)
 		return Esys;
-	snprintf(buf, sizeof(buf), "render-Chr-%c", cmd);
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
 
 	if (fd >= 0) {
 		struct pane *new = call_pane("doc:open", home, fd, NULL, fname);
 		if (new) {
+			char *renderer = NULL;
+			char *viewer = NULL;
+			snprintf(buf, sizeof(buf), "render-Chr-%c", cmd);
 			renderer = pane_attr_get(new, buf);
-			if (renderer) {
+			snprintf(buf, sizeof(buf), "view-Chr-%c", cmd);
+			viewer = pane_attr_get(new, buf);
+			if (renderer || viewer) {
 				par = call_pane("ThisPane", focus);
 				if (!par)
 					return Esys;
 
-				p = doc_attach_view(par, new, renderer, 1);
+				p = doc_attach_view(par, new, renderer, viewer, 1);
 			}
 		}
 		close(fd);
@@ -617,7 +620,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 		par = call_pane("ThisPane", focus);
 		if (!par)
 			return Esys;
-		p = doc_attach_view(par, doc, NULL, 1);
+		p = doc_attach_view(par, doc, NULL, NULL, 1);
 	}
 	free(fname);
 	pane_focus(p);

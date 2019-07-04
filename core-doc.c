@@ -933,6 +933,33 @@ DEF_CMD(doc_assign)
 	return 1;
 }
 
+static struct pane *
+render_attach(char *render, char *view, struct pane *parent safe)
+{
+	char buf[100]; /* FIXME */
+	struct pane *p;
+
+	if (!render)
+		render = pane_attr_get(parent, "render-default");
+	if (!render)
+		return NULL;
+
+	sprintf(buf, "attach-render-%s", render);
+	p = call_pane(buf, parent);
+	if (!p)
+		return NULL;
+	parent = p;
+	if (!view)
+		view = pane_attr_get(parent, "view-default");
+	if (view) {
+		sprintf(buf, "attach-%s", view);
+		p = call_pane(buf, parent);
+		if (p)
+			parent = p;
+	}
+	return parent;
+}
+
 DEF_CMD(doc_assign_view)
 {
 	struct doc_data *dd = ci->home->data;
@@ -943,7 +970,8 @@ DEF_CMD(doc_assign_view)
 	call("doc:revisit", ci->focus, ci->num?:1);
 	p2 = call_pane("attach-view", ci->home);
 	if (p2)
-		p2 = render_attach(ci->str && ci->str[0] ? ci->str : NULL, p2);
+		p2 = render_attach(ci->str && ci->str[0] ? ci->str : NULL,
+		                   ci->str2, p2);
 	if (!p2)
 		return Esys;
 	comm_call(ci->comm2, "callback:doc", p2);
@@ -1244,13 +1272,16 @@ DEF_CMD(doc_open)
 	return comm_call(ci->comm2, "callback", p);
 }
 
-struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe, char *render, int raise)
+struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe,
+                             char *render, char *view, int raise)
 {
 	struct pane *p;
 
 	p = call_pane("doc:attach", parent);
 	if (p)
-		p = home_call_pane(p, "doc:assign-view", doc, raise, NULL, render);
+		p = home_call_pane(p, "doc:assign-view", doc,
+		                   raise, NULL, render,
+		                   0, NULL, view);
 	return p;
 }
 

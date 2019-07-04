@@ -548,33 +548,6 @@ void pane_focus(struct pane *focus)
 	call("pane:refocus", focus);
 }
 
-struct pane *render_attach(char *name, struct pane *parent safe)
-{
-	char buf[100]; /* FIXME */
-	char *renderer = name;
-	struct pane *p;
-
-	if (name && strncmp(name, "default:", 8) == 0)
-		renderer = NULL;
-	if (!renderer)
-		renderer = pane_attr_get(parent, "render-default");
-	if (!renderer)
-		return NULL;
-
-	sprintf(buf, "attach-render-%s", renderer);
-	p = call_pane(buf, parent);
-	if (!p)
-		return NULL;
-	parent = p;
-	if (name && strncmp(name, "default:", 8) == 0) {
-		sprintf(buf, "attach-%s", name+8);
-		p = call_pane(buf, parent);
-		if (p)
-			parent = p;
-	}
-	return parent;
-}
-
 char *pane_attr_get(struct pane *p, char *key safe)
 {
 	while (p) {

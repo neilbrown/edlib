@@ -399,7 +399,7 @@ DEF_CMD(docs_callback)
 	}
 
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
-		p = doc_attach_view(ci->focus, doc->doc.home, NULL, 1);
+		p = doc_attach_view(ci->focus, doc->doc.home, NULL, NULL, 1);
 		p = pane_register(p, 0, &docs_modified_handle.c, doc, NULL);
 		call("Request:Notify:doc:Replace", p);
 		/* And trigger Notify:doc:Replace handling immediately...*/
@@ -626,7 +626,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 		par = call_pane("ThisPane", focus);
 	if (!par)
 		return Esys;
-	p = doc_attach_view(par, dp, NULL, 1);
+	p = doc_attach_view(par, dp, NULL, NULL, 1);
 	if (p) {
 		pane_focus(p);
 		return 1;
@@ -641,6 +641,7 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 	struct pane *p;
 	struct pane *dp;
 	char *renderer = NULL;
+	char *viewer = NULL;
 	struct pane *par;
 	char buf[100];
 
@@ -653,13 +654,15 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 
 	snprintf(buf, sizeof(buf), "render-Chr-%c", cmd);
 	renderer = pane_attr_get(dp, buf);
-	if (!renderer)
+	snprintf(buf, sizeof(buf), "view-Chr-%c", cmd);
+	viewer = pane_attr_get(dp, buf);
+	if (!renderer && !viewer)
 		return Efail;
 
 	par = call_pane("ThisPane", focus);
 	if (!par)
 		return Esys;
-	p = doc_attach_view(par, dp, renderer, 1);
+	p = doc_attach_view(par, dp, renderer, viewer, 1);
 	if (p) {
 		pane_focus(p);
 		return 1;
@@ -680,7 +683,7 @@ static int docs_bury(struct pane *focus safe)
 	call("doc:revisit", focus, -1);
 	doc = call_pane("docs:choose", focus);
 	if (doc)
-		doc_attach_view(tile, doc, NULL, 1);
+		doc_attach_view(tile, doc, NULL, NULL, 1);
 	return 1;
 }
 
