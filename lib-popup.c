@@ -161,6 +161,15 @@ DEF_CMD(popup_ignore)
 	return 1;
 }
 
+DEF_CMD(popup_defocus)
+{
+	struct popup_info *ppi = ci->home->data;
+
+	if (strchr(ppi->style, 't'))
+		pane_close(ppi->popup);
+	return 0;
+}
+
 DEF_CMD(popup_do_close)
 {
 	struct popup_info *ppi = ci->home->data;
@@ -193,6 +202,7 @@ DEF_CMD(popup_attach)
 	 * M  - multi line, else one line
 	 * 1234 - how many quarters of width to use.(default 2);
 	 * r  - allow recursive popup
+	 * t  - temp pane, disappears when it loses focus
 	 */
 	struct pane *root, *p;
 	struct popup_info *ppi;
@@ -279,4 +289,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "Window:y+", &popup_ignore);
 	key_add(popup_map, "Window:y-", &popup_ignore);
 	key_add(popup_map, "Window:close-others", &popup_ignore);
+	key_add(popup_map, "pane:defocus", &popup_defocus);
 }
