@@ -50,13 +50,7 @@ DEF_CMD(viewer_page_up)
 
 DEF_CMD(viewer_bury)
 {
-	struct pane *tile;
-	call("doc:revisit", ci->focus, -1);
-	tile = call_pane("ThisPane", ci->focus);
-	if (tile)
-		tile = pane_my_child(tile, ci->focus);
-	if (tile)
-		pane_close(tile);
+	call("Window:bury", ci->focus);
 	return 1;
 }
 
