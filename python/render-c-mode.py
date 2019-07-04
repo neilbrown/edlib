@@ -13,6 +13,8 @@ class CModePane(edlib.Pane):
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
         p = CModePane(focus)
+        p.spaces = self.spaces
+        p.indent_colon = self.indent_colon
         self.clone_children(p)
         return 1
 
