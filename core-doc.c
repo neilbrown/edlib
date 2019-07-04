@@ -584,7 +584,7 @@ DEF_CMD(doc_request_notify)
 
 DEF_CMD(doc_notify)
 {
-	int ret = pane_notify(ci->key, ci->home, ci->num, ci->mark, ci->str,
+	int ret = home_pane_notify(ci->home, ci->key, ci->focus, ci->num, ci->mark, ci->str,
 			      ci->num2, ci->mark2, ci->str2, ci->comm2);
 	/* Mustn't return 0, else will fall through to next doc */
 	return ret ?: Enotarget;
