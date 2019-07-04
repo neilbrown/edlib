@@ -563,7 +563,7 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 	if (!p)
 		return Efail;
 	if (cmd == 'o') {
-		par = CALL(pane, home, focus, "DocPane", p);
+		par = home_call_pane(focus, "DocPane", p);
 		if (!par)
 			par = call_pane("OtherPane", focus);
 	} else

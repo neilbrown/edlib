@@ -619,7 +619,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 		return 0;
 
 	if (cmd == 'o') {
-		par = CALL(pane, home, focus, "DocPane", dp);
+		par = home_call_pane(focus, "DocPane", dp);
 		if (!par)
 			par = call_pane("OtherPane", focus);
 	} else

@@ -626,7 +626,7 @@ DEF_CMD(emacs_findfile)
 		return Efail;
 	}
 	if (strcmp(ci->key, "File Found Other Window") == 0) {
-		par = CALL(pane, home, ci->focus, "DocPane", p);
+		par = home_call_pane(ci->focus, "DocPane", p);
 		if (!par)
 			par = call_pane("OtherPane", ci->focus);
 	} else
@@ -760,7 +760,7 @@ DEF_CMD(emacs_finddoc)
 		return Efail;
 
 	if (strcmp(ci->key, "Doc Found Other Window") == 0) {
-		par = CALL(pane, home, ci->focus, "DocPane", p);
+		par = home_call_pane(ci->focus, "DocPane", p);
 		if (!par)
 			par = call_pane("OtherPane", ci->focus);
 	} else
@@ -875,7 +875,7 @@ DEF_CMD(emacs_shell)
 	if (!doc)
 		return Esys;
 	attr_set_str(&doc->attrs, "dirname", path);
-	par = CALL(pane, home, ci->focus, "DocPane", doc);
+	par = home_call_pane(ci->focus, "DocPane", doc);
 	if (!par)
 		par = call_pane("OtherPane", ci->focus);
 	if (!par)
