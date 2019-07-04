@@ -252,7 +252,10 @@ def make_request(key, focus, str, **a):
         doc['dirname'] = path
         p = focus.call("DocPane", doc, ret='focus')
         if not p:
-            p = focus.call("OtherPane", doc, ret='focus')
+            if cmd == "make":
+                p = focus.call("OtherPane", doc, ret='focus')
+            else:
+                p = focus.call("PopupTile", "MD3", ret='focus')
         if not p:
             return edlib.Esys
         focus.call("global-set-attr", "make-target-doc", docname)
