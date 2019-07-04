@@ -69,9 +69,13 @@ class CModePane(edlib.Pane):
         if indent + extra != current:
             return focus.call("Replace", 1, m, mark, indent+extra)
         if extra == "":
+            # round down to whole number of indents, and add 1
             if self.spaces:
-                extra = ' ' * self.spaces
+                s = len(indent) % self.spaces
+                extra = ' ' * (self.spaces - s)
             else:
+                while indent and indent[-1] == ' ':
+                    indent = indent[:-1]
                 extra = '\t'
             return focus.call("Replace", 1, m, mark, indent+extra)
         # No change needed
@@ -109,6 +113,9 @@ class CModePane(edlib.Pane):
         m = mark.dup()
         c = focus.call("doc:step", 0, 0, m, ret="char")
         while c and c in " \t":
+            if c == '\t' and cnt < 8:
+                # don't go too far
+                break
             focus.call("doc:step", 0, 1, m)
             if c == ' ':
                 cnt -= 1
