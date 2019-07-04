@@ -34,7 +34,7 @@ struct doc_ref {
 #include "core.h"
 #include "misc.h"
 
-static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe, int, char *);
+static void do_doc_assign(struct pane *p safe, struct pane *doc safe);
 static struct pane *doc_attach(struct pane *parent);
 
 static inline wint_t doc_following(struct doc *d safe, struct mark *m safe)
@@ -882,7 +882,7 @@ DEF_CMD(doc_clone)
 
 	if (!p)
 		return 0;
-	do_doc_assign(p, dd->doc, 1, NULL);
+	do_doc_assign(p, dd->doc);
 	call("Move-to", p, 0, dd->point);
 	pane_clone_children(ci->home, p);
 	return 1;
@@ -926,10 +926,24 @@ DEF_CMD(doc_dup_point)
 DEF_CMD(doc_assign)
 {
 	struct doc_data *dd = ci->home->data;
+
+	if ((void*) (dd->doc))
+		return Einval;
+	do_doc_assign(ci->home, ci->focus);
+	return 1;
+}
+
+DEF_CMD(doc_assign_view)
+{
+	struct doc_data *dd = ci->home->data;
 	struct pane *p2;
 	if ((void*) (dd->doc))
 		return Einval;
-	p2 = do_doc_assign(ci->home, ci->focus, ci->num, ci->str);
+	do_doc_assign(ci->home, ci->focus);
+	call("doc:revisit", ci->focus, ci->num?:1);
+	p2 = call_pane("attach-view", ci->home);
+	if (p2)
+		p2 = render_attach(ci->str && ci->str[0] ? ci->str : NULL, p2);
 	if (!p2)
 		return Esys;
 	comm_call(ci->comm2, "callback:doc", p2);
@@ -1071,6 +1085,7 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd,	"Close", &doc_close);
 	key_add(doc_handle_cmd, "doc:dup-point", &doc_dup_point);
 	key_add(doc_handle_cmd, "doc:assign", &doc_assign);
+	key_add(doc_handle_cmd, "doc:assign-view", &doc_assign_view);
 	key_add(doc_handle_cmd, "Replace", &doc_replace);
 	key_add(doc_handle_cmd, "get-attr", &doc_handle_get_attr);
 	key_add(doc_handle_cmd, "Move-to", &doc_move_to);
@@ -1102,16 +1117,14 @@ static void init_doc_cmds(void)
 		      &doc_set);
 }
 
-static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe,
-			       int num, char *str)
+static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 {
 	struct doc_data *dd = p->data;
-	struct pane *p2 = NULL;
 	struct mark *m;
 
 	m = vmark_new(doc, MARK_POINT);
 	if (!m)
-		return NULL;
+		return;
 	if (call("doc:pop-point", doc, 0, m) <= 0)
 		pane_notify("Notify:doc:viewers", doc, 0, m);
 	dd->doc = doc;
@@ -1120,13 +1133,7 @@ static struct pane *do_doc_assign(struct pane *p safe, struct pane *doc safe,
 
 	pane_add_notify(p, doc, "Notify:Close");
 	pane_add_notify(p, doc, "Notify:doc:viewers");
-	call("doc:revisit", doc, num);
-	if (str) {
-		p2 = call_pane("attach-view", p);
-		if (p2)
-			p2 = render_attach(str[0] ? str : NULL, p2);
-	}
-	return p2;
+	call("doc:revisit", doc, 0);
 }
 
 static struct pane *doc_attach(struct pane *parent)
@@ -1151,7 +1158,8 @@ struct pane *doc_new(struct pane *p safe, char *type, struct pane *parent)
 /*
  * If you have a document and want to view it, you call "doc:attach"
  * passing the attachment point as the focus.
- * Then call "doc:assign" on the resulting pane to provide the document.
+ * Then call "doc:assign" or "doc:assign-view" on the resulting pane to
+ * provide the document and display info.
  */
 DEF_CMD(doc_do_attach)
 {
@@ -1240,13 +1248,9 @@ struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe, ch
 {
 	struct pane *p;
 
-	p = doc_attach(parent);
-	if (p) {
-		do_doc_assign(p, doc, raise, NULL);
-		p = call_pane("attach-view", p);
-	}
+	p = call_pane("doc:attach", parent);
 	if (p)
-		p = render_attach(render, p);
+		p = home_call_pane(p, "doc:assign-view", doc, raise, NULL, render);
 	return p;
 }
 

@@ -125,7 +125,7 @@ class MakePane(edlib.Pane):
             focus.call("Message", "Failed to open pane");
             return edlib.Esys
         par = par.call("doc:attach", ret='focus')
-        par = par.call("doc:assign", d, "", 1, ret='focus')
+        par = par.call("doc:assign-view", d, ret='focus')
         par.take_focus()
         par.call("Move-File", -1)
         par.call("Move-Line", int(lineno)-1)
@@ -214,7 +214,7 @@ def make_request(key, focus, str, **a):
             return edlib.Esys
         focus.call("global-set-attr", "make-target-doc", docname)
         p = p.call("doc:attach", ret='focus')
-        p = p.call("doc:assign", doc, "", 1, ret='focus')
+        p = p.call("doc:assign-view", doc, ret='focus')
         p = p.call("attach-viewer", ret='focus')
 
         p = doc.call("attach-makecmd", str, path, ret='focus')

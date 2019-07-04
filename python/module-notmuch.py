@@ -728,7 +728,7 @@ class notmuch_master_view(edlib.Pane):
         if not p0:
             return 1
         p1 = p0.call("doc:attach", ret='focus')
-        p1.call("doc:assign",p2, "default:viewer", 1)
+        p1.call("doc:assign-view",p2, "default:viewer")
         return 1
 
     def handle_o(self, key, focus, mark, num, str, str2, **a):
@@ -769,7 +769,7 @@ class notmuch_master_view(edlib.Pane):
                                  ret = 'focus')
         self.query_pane = p1
         p2 = p1.call("doc:attach", ret='focus')
-        p3 = p2.call("doc:assign", p0, "notmuch:threads", "", 1, ret='focus')
+        p3 = p2.call("doc:assign-view", p0, "notmuch:threads", ret='focus')
         self.query_pane = p3
         if num:
             self.query_pane.take_focus()
@@ -786,7 +786,7 @@ class notmuch_master_view(edlib.Pane):
         p1 = self.query_pane.call("OtherPane", "notmuch", "message", 2,
                                   ret='focus')
         p2 = p1.call("doc:attach", ret='focus')
-        p3 = p2.call("doc:assign", p0, "", 1, ret='focus')
+        p3 = p2.call("doc:assign-view", p0, ret='focus')
         p3 = p3.call("attach-render-notmuch:message", ret='focus')
 
         # FIXME This still doesn't work: there are races: attaching a doc to
@@ -1668,7 +1668,7 @@ def notmuch_mode(key, home, focus, **a):
     if not p1:
         return edlib.Esys
     p2 = p0.call("doc:attach", ret = 'focus')
-    p2.call("doc:assign", p1, "", 1)
+    p2.call("doc:assign-view", p1)
     return 1
 
 if "editor" in globals():

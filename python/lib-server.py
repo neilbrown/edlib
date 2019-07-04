@@ -50,7 +50,7 @@ try:
 							p = p.focus
 						p = p.call("ThisPane", ret='focus')
 						p = p.call("doc:attach", ret='focus')
-						p = p.call("doc:assign", d, "", 1, ret='focus')
+						p = p.call("doc:assign-view", d, ret='focus')
 						p.take_focus()
 						self.sock.send("OK")
 					else:
@@ -149,7 +149,7 @@ else:
 				par = focus.call("ThisPane", ret='focus')
 				if par:
 					par = par.call("doc:attach", ret='focus')
-					par = par.call("doc:assign", choice[0], "", 1, ret='focus')
+					par = par.call("doc:assign-view", choice[0], ret='focus')
 					par.take_focus()
 
 		return 1
