@@ -126,12 +126,12 @@ class MakePane(edlib.Pane):
         par = focus.call("DocPane", d, ret='focus')
         if not par:
             par = focus.call(where, d, ret='focus')
-        if not par:
-            d.close()
-            focus.call("Message", "Failed to open pane");
-            return edlib.Esys
-        par = par.call("doc:attach", ret='focus')
-        par = par.call("doc:assign-view", d, ret='focus')
+            if not par:
+                d.close()
+                focus.call("Message", "Failed to open pane");
+                return edlib.Esys
+            par = par.call("doc:attach", ret='focus')
+            par = par.call("doc:assign-view", d, ret='focus')
         par.take_focus()
         par.call("Move-File", -1)
         par.call("Move-Line", int(lineno)-1)
@@ -250,12 +250,10 @@ def make_request(key, focus, str, **a):
             return edlib.Esys
         path = focus["dirname"]
         doc['dirname'] = path
-        p = focus.call("DocPane", doc, ret='focus')
-        if not p:
-            if cmd == "make":
-                p = focus.call("OtherPane", doc, ret='focus')
-            else:
-                p = focus.call("PopupTile", "MD3t", ret='focus')
+        if cmd == "make":
+            p = focus.call("OtherPane", ret='focus')
+        else:
+            p = focus.call("PopupTile", "MD3t", ret='focus')
         if not p:
             return edlib.Esys
         focus.call("global-set-attr", "make-target-doc", docname)
