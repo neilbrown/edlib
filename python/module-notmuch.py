@@ -786,7 +786,8 @@ class notmuch_master_view(edlib.Pane):
         p1 = self.query_pane.call("OtherPane", "notmuch", "message", 2,
                                   ret='focus')
         p2 = p1.call("doc:attach", ret='focus')
-        p3 = p2.call("doc:assign", p0, "notmuch:message", 1, ret='focus')
+        p3 = p2.call("doc:assign", p0, "", 1, ret='focus')
+        p3 = p3.call("attach-render-notmuch:message", ret='focus')
 
         # FIXME This still doesn't work: there are races: attaching a doc to
         # the pane causes the current doc to be closed.  But the new doc
@@ -1637,7 +1638,7 @@ def render_query_attach(key, home, focus, comm2, **a):
     return 1
 
 def render_message_attach(key, home, focus, comm2, **a):
-    p = focus.render_attach("default:email-view")
+    p = focus.call("attach-email-view", ret='focus')
     p = notmuch_message_view(p)
     if comm2:
         comm2("callback", p)
