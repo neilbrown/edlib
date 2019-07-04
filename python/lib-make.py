@@ -214,8 +214,8 @@ def make_request(key, focus, str, **a):
             return edlib.Esys
         focus.call("global-set-attr", "make-target-doc", docname)
         p = p.call("doc:attach", ret='focus')
+        doc["view-default"] = "viewer"
         p = p.call("doc:assign-view", doc, ret='focus')
-        p = p.call("attach-viewer", ret='focus')
 
         p = doc.call("attach-makecmd", str, path, ret='focus')
         return 1
