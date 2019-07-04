@@ -48,7 +48,8 @@ try:
 						self.destpane = None
 						while p.focus:
 							p = p.focus
-						p = p.call("ThisPane", ret='focus')
+						p = p.call("PopupTile", "MD3t", ret='focus')
+						#p = p.call("ThisPane", ret='focus')
 						p = p.call("doc:attach", ret='focus')
 						p = p.call("doc:assign-view", d, ret='focus')
 						p.take_focus()
