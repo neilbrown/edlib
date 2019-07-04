@@ -156,6 +156,11 @@ DEF_CMD(popup_get_target)
 	return comm_call(ci->comm2, "callback:get-target", ppi->target);
 }
 
+DEF_CMD(popup_ignore)
+{
+	return 1;
+}
+
 DEF_CMD(popup_do_close)
 {
 	struct popup_info *ppi = ci->home->data;
@@ -264,4 +269,14 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "Refresh:size", &popup_refresh_size);
 	key_add(popup_map, "popup:get-target", &popup_get_target);
 	key_add(popup_map, "popup:close", &popup_do_close);
+
+	key_add(popup_map, "Window:bury", &popup_abort);
+	key_add(popup_map, "Window:close", &popup_abort);
+	key_add(popup_map, "Window:split-x", &popup_ignore);
+	key_add(popup_map, "Window:split-y", &popup_ignore);
+	key_add(popup_map, "Window:x+", &popup_ignore);
+	key_add(popup_map, "Window:x-", &popup_ignore);
+	key_add(popup_map, "Window:y+", &popup_ignore);
+	key_add(popup_map, "Window:y-", &popup_ignore);
+	key_add(popup_map, "Window:close-others", &popup_ignore);
 }
