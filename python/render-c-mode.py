@@ -151,7 +151,7 @@ class CModePane(edlib.Pane):
         # is at end-of-line
         expr = m.dup()
         focus.call("Move-Expr", -1, 1, expr)
-        if expr > indent_end:
+        if expr >= indent_end:
             focus.call("doc:step", expr, 1, 1)
             if focus.call("doc:step", expr, 1, 0, ret="char") == '\n':
                 # open-bracket at end-of-line, so add a standard indent
