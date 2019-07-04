@@ -541,8 +541,12 @@ void pane_focus(struct pane *focus)
 	while (p->parent && p->parent->parent) {
 		if (p->parent->focus &&
 		    p->parent->focus != p) {
-			pane_damaged(p->parent->focus, DAMAGED_CURSOR);
+			struct pane *old = p->parent->focus;
+			pane_damaged(old, DAMAGED_CURSOR);
 			p->parent->focus = p;
+			while (old->focus)
+				old = old->focus;
+			call("pane:defocus", old);
 		}
 		p = p->parent;
 	}
