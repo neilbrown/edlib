@@ -18,6 +18,7 @@ class MakePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.add_notify(focus, "make-next")
+        self.add_notify(focus, "Notify:doc:make-revisit");
         self.viewnum = focus.call("doc:add-view") - 1
         self.point = None
         self.map = []
@@ -108,18 +109,23 @@ class MakePane(edlib.Pane):
         if not n:
             focus.call("Message", "No further matches")
             return 1
-        (fname, lineno) = n
+        return self.goto_mark(focus, n, "ThisPane")
 
+    def goto_mark(self, focus, n, where):
+        (fname, lineno) = n
         try:
-	    d = focus.call("doc:open", -1, self['dirname']+fname, ret='focus')
-	except edlib.commandfailed:
-	    d = None
+            dir = self['dirname']
+            if not dir:
+                dir = ""
+            d = focus.call("doc:open", -1, dir+fname, ret='focus')
+        except edlib.commandfailed:
+            d = None
         if not d:
             focus.call("Message", "File %s not found." % fname)
             return edlib.Efail
         par = focus.call("DocPane", d, ret='focus')
         if not par:
-            par = focus.call("ThisPane", d, ret='focus')
+            par = focus.call(where, d, ret='focus')
         if not par:
             d.close()
             focus.call("Message", "Failed to open pane");
@@ -135,6 +141,17 @@ class MakePane(edlib.Pane):
             while par.focus:
                 par = par.focus
             par.call("Move-to", self.point)
+        return 1
+
+    def handle_revisit(self, key, focus, mark, **a):
+        "handle:Notify:doc:make-revisit"
+        self.do_parse()
+        p = self.call("doc:vmark-get", self.viewnum, mark, 3, ret='mark2')
+        if p:
+            self.point = p
+            n = self.map[int(p['ref'])]
+            if n:
+                return self.goto_mark(focus, n, "OtherPane")
         return 1
 
     def handle_close(self, key, **a):
@@ -168,13 +185,39 @@ def make_attach(key, focus, comm2, str, str2, **a):
     focus.call("doc:replace", m)
     p = MakePane(focus)
     if not p:
-        return edlib.Esys;
+        return edlib.Esys
     if not p.run(str, str2):
         p.close()
-        return edlib.Esys;
+        return edlib.Esys
     if comm2:
         comm2("callback", p)
     return 1
+
+class MakeViewerPane(edlib.Pane):
+    # This is a simple overlay to allow Enter to
+    # jump to a given match, and similar
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus)
+
+    def handle_enter(self, key, focus, mark, **a):
+        "handle:Enter"
+        focus.call("Notify:doc:make-revisit", mark)
+        return 1
+
+    def handle_clone(self, key, focus, home, **a):
+        "handle:Clone"
+        p = MakeViewerPane(focus)
+        home.clone_children(p)
+
+def make_view_attach(key, focus, comm2, **a):
+    p = focus.call("attach-viewer", ret='focus')
+    p = MakeViewerPane(p)
+
+    if not p:
+        return edlib.Esys
+    if comm2:
+        comm2("callback", p)
+    return 0
 
 class makeprompt(edlib.Pane):
     def __init__(self, focus):
@@ -214,7 +257,7 @@ def make_request(key, focus, str, **a):
             return edlib.Esys
         focus.call("global-set-attr", "make-target-doc", docname)
         p = p.call("doc:attach", ret='focus')
-        doc["view-default"] = "viewer"
+        doc["view-default"] = "make-viewer"
         p = p.call("doc:assign-view", doc, ret='focus')
 
         p = doc.call("attach-makecmd", str, path, ret='focus')
@@ -245,6 +288,7 @@ def next_match(key, focus, **a):
     return 1
 
 editor.call("global-set-command", "attach-makecmd", make_attach)
+editor.call("global-set-command", "attach-make-viewer", make_view_attach)
 editor.call("global-set-command", "interactive-cmd-make", make_request)
 editor.call("global-set-command", "interactive-cmd-grep", make_request)
 editor.call("global-set-command", "interactive-cmd-next-match", next_match)
