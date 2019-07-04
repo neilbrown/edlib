@@ -133,7 +133,8 @@ else:
 			else:
 				focus.call("Notify:doc:done")
 				# FIXME need something better than 'bury'
-				focus.call("M-Chr-B")
+				# If it was already visible, it should stay that way
+				focus.call("Window:bury")
 		else:
 			# Find and visit a doc waiting to be done
 			choice = []

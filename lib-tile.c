@@ -802,6 +802,23 @@ DEF_CMD(tile_window_close)
 	return 1;
 }
 
+DEF_CMD(tile_window_bury)
+{
+	/* Bury the document in this tile.
+	 * Find some other document to display
+	 */
+	struct pane *doc;
+
+	/* First, push the doc to the end of the 'recently used' list */
+	call("doc:revisit", ci->focus, -1);
+	/* Now choose a replacement */
+	doc = call_pane("docs:choose", ci->focus);
+	if (doc)
+		/* display that doc in this pane */
+		doc_attach_view(ci->home, doc, NULL, 1);
+	return 1;
+}
+
 DEF_CMD(tile_window_close_others)
 {
 	struct pane *p = ci->home;
@@ -1005,6 +1022,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(tile_map, "Window:close", &tile_window_close);
 	key_add(tile_map, "Window:close-others", &tile_window_close_others);
 	key_add(tile_map, "Window:scale-relative", &tile_window_scale_relative);
+	key_add(tile_map, "Window:bury", &tile_window_bury);
 
 	key_add(tile_map, "OtherPane", &tile_other);
 	key_add(tile_map, "ThisPane", &tile_this);

@@ -415,6 +415,7 @@ static struct simple_command {
 	{CMD(emacs_simple), "Window:close", "emCX-Chr-0"},
 	{CMD(emacs_simple), "Window:scale-relative", "emCX-C-Chr-="},
 	{CMD(emacs_simple_neg), "Window:scale-relative", "emCX-C-Chr--"},
+	{CMD(emacs_simple), "Window:bury", "M-Chr-B"},
 	{CMD(emacs_simple), "Display:new", "emCX5-Chr-2"},
 	{CMD(emacs_simple), "lib-server:done", "emCX-Chr-#"},
 	{CMD(emacs_simple), "Abort", "C-Chr-G"},
@@ -1195,20 +1196,6 @@ DEF_CMD(emacs_highlight_clip)
 	return 0;
 }
 
-DEF_CMD(emacs_bury)
-{
-	/* Display something else in this tile. */
-	struct pane *tile, *doc;
-	tile = call_pane("ThisPane", ci->focus);
-	if (!tile)
-		return 1;
-	call("doc:revisit", ci->focus, -1);
-	doc = call_pane("docs:choose", ci->focus);
-	if (doc)
-		doc_attach_view(tile, doc, NULL, 1);
-	return 1;
-}
-
 DEF_CMD(emacs_command)
 {
 	struct pane *p;
@@ -1608,8 +1595,6 @@ static void emacs_init(void)
 
 	key_add(m, "emCX-Chr-`", &emacs_next_match);
 	key_add(m, "Chr-`", &emacs_match_again);
-
-	key_add(m, "M-Chr-B", &emacs_bury);
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &emacs_num);
 	key_add(m, "M-Chr--", &emacs_neg);
