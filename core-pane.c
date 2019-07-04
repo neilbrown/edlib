@@ -210,6 +210,7 @@ static void pane_do_resize(struct pane *p safe, int damage)
 static void pane_do_refresh(struct pane *p safe, int damage)
 {
 	struct pane *c;
+	struct list_head *tmp;
 
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
@@ -225,7 +226,7 @@ static void pane_do_refresh(struct pane *p safe, int damage)
 			call("Refresh", p, 0, NULL, NULL, damage);
 		}
 	} else
-		list_for_each_entry(c, &p->children, siblings)
+		list_for_each_entry_safe(c, tmp, &p->children, siblings)
 			pane_do_refresh(c, damage);
 
 	if (p->damaged & DAMAGED_POSTORDER) {
