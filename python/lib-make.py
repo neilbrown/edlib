@@ -229,14 +229,17 @@ class makeprompt(edlib.Pane):
         return focus.call("popup:close", str)
 
 def make_request(key, focus, str, **a):
+    history = None
     if key[-4:] == "grep":
         dflt = "grep -nH "
         cmd = "grep"
         docname = "*grep output*"
+        history = "*Grep History*"
     else:
         dflt = "make -k"
         cmd = "make"
         docname = "*Compile Output*"
+        history = "*Make History*"
 
     if str is not None:
         # pop-up has completed
@@ -270,6 +273,8 @@ def make_request(key, focus, str, **a):
     p["prompt"] = "%s Command" % cmd
     p["done-key"] = key
     p.call("doc:set-name", "%s Command" % cmd)
+    if history:
+        p = p.call("attach-history", history, "popup:close", ret='focus')
     makeprompt(p)
     return 1
 
