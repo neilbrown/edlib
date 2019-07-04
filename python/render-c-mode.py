@@ -210,13 +210,13 @@ class CModePane(edlib.Pane):
             comm2("cb", focus, "bg:pink,bold", 1)
 
 def c_mode_attach(key, focus, comm2, **a):
-    p = focus.render_attach("text")
+    p = focus.call("attach-render-text", ret='focus')
     p = CModePane(p)
     comm2("callback", p)
     return 1
 
 def py_mode_attach(key, focus, comm2, **a):
-    p = focus.render_attach("text")
+    p = focus.call("attach-render-text", ret='focus')
     p = CModePane(p)
     p.spaces = 4
     p.indent_colon = True

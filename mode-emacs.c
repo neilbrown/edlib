@@ -690,7 +690,7 @@ REDEF_CMD(emacs_file_complete)
 	attr_set_str(&par->attrs, "line-format", "%+name%suffix");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
-	p = render_attach("complete", par);
+	p = call_pane("attach-render-complete", par);
 	if (!p)
 		return Esys;
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, b);
@@ -802,7 +802,7 @@ REDEF_CMD(emacs_doc_complete)
 	attr_set_str(&par->attrs, "line-format", "%+name");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
-	p = render_attach("complete", par);
+	p = call_pane("attach-render-complete", par);
 	if (!p)
 		return Esys;
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, str);

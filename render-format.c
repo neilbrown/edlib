@@ -284,7 +284,7 @@ static struct pane *do_render_format_attach(struct pane *parent)
 	rf->home_field = -1;
 	p = pane_register(parent, 0, &render_format_handle.c, rf, NULL);
 	attr_set_str(&p->attrs, "render-wrap", "no");
-	return render_attach("lines", p);
+	return call_pane("attach-render-lines", p);
 }
 
 DEF_CMD(render_format_attach)

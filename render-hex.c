@@ -226,7 +226,7 @@ static struct pane *do_render_hex_attach(struct pane *parent safe)
 	attr_set_str(&p->attrs, "heading", "<bold>          00 11 22 33 44 55 66 77  88 99 aa bb cc dd ee ff   0 1 2 3 4 5 6 7  8 9 a b c d e f</>");
 	he->pane = p;
 	he->bytes = (charset && strcmp(charset, "8bit") != 0);
-	return render_attach("lines", p);
+	return call_pane("attach-render-lines", p);
 }
 
 DEF_CMD(render_hex_attach)

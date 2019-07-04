@@ -729,7 +729,7 @@ class MarkdownPane(edlib.Pane):
         return 0
 
 def present_attach(key, focus, comm2, **a):
-    p = focus.render_attach("text")
+    p = focus.call("attach-render-text", ret='focus')
     p = PresenterPane(p)
     p['render-wrap'] = 'no'
     p['background'] = 'color:yellow'
@@ -741,7 +741,7 @@ def present_attach(key, focus, comm2, **a):
     return 1
 
 def markdown_attach(key, focus, comm2, **a):
-    p = focus.render_attach("text")
+    p = focus.call("attach-render-text", ret='focus')
     p = MarkdownPane(p)
     comm2("callback", p)
     return 1

@@ -545,7 +545,7 @@ class notmuch_master_view(edlib.Pane):
 
         p = self.call("attach-tile", "notmuch", "main", ret='focus')
         p = p.call("attach-view", ret='focus')
-        p = p.render_attach("format")
+        p = p.call("attach-render-format", ret='focus')
         p = notmuch_main_view(p)
         self.list_pane = p
 
@@ -1630,7 +1630,7 @@ def notmuch_doc(key, home, focus, comm2, **a):
     return 1
 
 def render_query_attach(key, home, focus, comm2, **a):
-    p = focus.render_attach("format")
+    p = focus.call("attach-render-format", ret='focus')
     p = notmuch_query_view(p)
     if comm2:
         comm2("callback", p)
