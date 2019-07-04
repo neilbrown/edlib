@@ -161,12 +161,20 @@ DEF_CMD(popup_ignore)
 	return 1;
 }
 
+DEF_CMD(popup_delayed_close)
+{
+	/* nothing should be using this pane any more */
+	pane_close(ci->focus);
+	return 1;
+}
+
 DEF_CMD(popup_defocus)
 {
 	struct popup_info *ppi = ci->home->data;
 
-	if (strchr(ppi->style, 't'))
-		pane_close(ppi->popup);
+	if (strchr(ppi->style, 't')) {
+		call_comm("editor-on-idle", ci->home, &popup_delayed_close);
+	}
 	return 0;
 }
 
