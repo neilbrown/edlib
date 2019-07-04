@@ -123,6 +123,12 @@ DEF_CMD(editor_auto_load)
 	struct map *map = ei->map;
 	char *mod = ci->key + 7;
 
+	/* Check the key really doesn't exist, rather than
+	 * it fails
+	 */
+	if (key_lookup_cmd(map, ci->key, NULL, NULL))
+		return 0;
+
 	if (strncmp(mod, "doc-", 4) == 0 ||
 	    strncmp(mod, "render-", 7) == 0 ||
 	    strncmp(mod, "mode-", 5) == 0 ||
