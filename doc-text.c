@@ -84,7 +84,7 @@ struct doc_ref {
 /* text is allocated is large blocks - possibly a whole
  * file or some other large unit being added to a document.
  * For small additions (normal typing) the default allocation
- * size of 4K.
+ * size is 4K.
  * When more is allocated than needed, extra can be added on to
  * the end - 'free' is the next index with free space.
  */
@@ -98,8 +98,12 @@ struct text_alloc {
 #define DEFAULT_SIZE (4096 - sizeof(struct text_alloc))
 
 /* The text document is a list of text_chunk.
- * The 'txt' pointer is the text[] of a text_alloc.
+ * The 'txt' pointer is within the text[] of a text_alloc.
  * 'start' and 'end' narrow that.
+ * Each alloc potentially is divided into multiple
+ * separate chunks which are never merged.  The only
+ * chunk that can change size is the last one allocated,
+ * which may grow into the free space.
  */
 struct text_chunk {
 	char			*txt safe;
@@ -118,13 +122,27 @@ struct text_chunk {
  * added to the 'start' pointer (subtracted for undo).  Otherwise
  * the len added to the end.  If the resulting length is zero, the
  * chunk is removed from the list.
+ *
+ * Each edit can have an altnext.
+ * For the undo list, the is an alternate redo to reflect a branching
+ * change history.
+ * For the redo list, this is a second change that happened from the
+ * same starting point.  If there is a third change, we insert a no-op
+ * edit so as to get an extra altnext.
+ * In the undo list, altnext is an alternate forward path.
+ * if alt_is_second, then we are currently on the second path, and after
+ * undoing it, will go up the first.
+ * if !alt_is_second, we are currently on the first path, and
+ * don't want to go back up the second (until we undo all the way to the
+ * start and try again).
  */
 struct text_edit {
 	struct text_chunk	*target safe;
-	struct text_edit	*next;
+	struct text_edit	*next, *altnext;
 	bool			first:1;
 	bool			at_start:1;
-	signed int		len:30; // bytes add, -ve for removed.
+	bool			alt_is_second:1;
+	signed int		len:29; // bytes add, -ve for removed.
 };
 
 /* A text document is a document with allocations, a list
@@ -136,6 +154,11 @@ struct text {
 	struct text_alloc	*alloc safe;
 	struct list_head	text;
 	struct text_edit	*undo, *redo;
+	/* If prev_edit is Redo then next edit is ->redo or ->undo->altnext or ->undo
+	 * If prev_edit is Undo, then next edit is ->undo->altnext or ->undo
+	 * If prev_edit is AltUndo, then next edit is ->undo
+	 */
+	enum { Redo, Undo, AltUndo } prev_edit;
 
 	struct stat		stat;
 	char			*fname;
@@ -535,6 +558,28 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 
 	if (len == 0)
 		return;
+
+	if (t->redo) {
+		/* Cannot add an edit before some redo edits, as they
+		 * will get confused.  We need to record the redo history
+		 * here in the undo history, possibly allocating
+		 * a nop edit (len == 0)
+		 */
+		if (t->undo == NULL || t->undo->altnext != NULL) {
+			e = malloc(sizeof(*e));
+			e->target = target; /* ignored */
+			e->first = 0;
+			e->at_start = 0;
+			e->len = 0; /* This is a no-op */
+			e->next = t->undo;
+			e->altnext = NULL;
+			t->undo = e;
+		}
+		t->undo->altnext = t->redo;
+		t->undo->alt_is_second = 0;
+		t->redo = NULL;
+	}
+		
 	e = malloc(sizeof(*e));
 	e->target = target;
 	e->first = *first;
@@ -542,6 +587,8 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 	e->len = len;
 	*first = 0;
 	e->next = t->undo;
+	e->altnext = NULL;
+	e->alt_is_second = 0;
 	t->undo = e;
 }
 
@@ -853,25 +900,19 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 	}
 }
 
-/* text_undo and text_redo return:
- * 0 - there are no more changes to do
- * 1 - A change has been done, there are no more parts to it.
- * 2 - A change has been partially undone - call again to undo more.
+/* text_undo and text_redo:
  *
  * The 'start' and 'end' reported identify the range changed.  For a reversed insertion
  * they will be the same.  If the undo results in the buffer being empty,
  * both start and end will point to a NULL chunk.
  * When undoing a split, both will be at the point of the split.
  */
-static int text_undo(struct text *t safe,
-			     struct doc_ref *start safe, struct doc_ref *end safe)
+static void text_undo(struct text *t safe, struct text_edit *e,
+                      struct doc_ref *start safe, struct doc_ref *end safe)
 {
-	struct text_edit *e = t->undo;
-	int status_change = 0;
-
-	if (!e)
-		return 0;
-
+	if (e->len == 0)
+		/* no-op */
+		return;
 	if (e->target->end == e->target->start) {
 		/* need to re-link */
 		struct list_head *l = e->target->lst.prev;
@@ -898,11 +939,6 @@ static int text_undo(struct text *t safe,
 			/* Was deletion, now inserting */
 			end->o = e->target->end;
 	}
-	if (t->undo == t->saved || e->next == t->saved)
-		status_change = 1;
-	t->undo = e->next;
-	e->next = t->redo;
-	t->redo = e;
 	if (e->target->start == e->target->end) {
 		/* The undo deletes this chunk, so it must have been inserted,
 		 * either as new text or for a chunk-split.
@@ -930,23 +966,16 @@ static int text_undo(struct text *t safe,
 				c->end += e->len;
 		}
 	}
-	if (status_change)
-		call("Notify:doc:status-changed", t->doc.home);
-	text_check_autosave(t);
-	if (e->first)
-		return 1;
-	else
-		return 2;
 }
 
-static int text_redo(struct text *t safe,
-		     struct doc_ref *start safe, struct doc_ref *end safe)
+static void text_redo(struct text *t safe, struct text_edit *e,
+                      struct doc_ref *start safe, struct doc_ref *end safe)
 {
-	struct text_edit *e = t->redo;
 	int is_split = 0;
 
-	if (!e)
-		return 0;
+	if (e->len == 0)
+		/* no-op */
+		return;
 
 	if (e->target->end == e->target->start) {
 		/* need to re-link */
@@ -985,9 +1014,6 @@ static int text_redo(struct text *t safe,
 			/* Deletion at end */
 			start->o = end->o = e->target->end;
 	}
-	t->redo = e->next;
-	e->next = t->undo;
-	t->undo = e;
 	if (e->target->start == e->target->end) {
 		/* This chunk is deleted, so leave start/end pointing beyond it */
 		if (e->target->lst.next == &t->text) {
@@ -1001,37 +1027,74 @@ static int text_redo(struct text *t safe,
 
 		__list_del(e->target->lst.prev, e->target->lst.next);
 	}
-	if (t->redo && t->redo->first)
-		return 1;
-	else
-		return 2;
 }
 
 DEF_CMD(text_reundo)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	bool redo = ci->num != 0;
 	struct doc_ref start, end;
-	int did_do = 2;
+	int last = 0;
+	struct text_edit *ed = NULL;
 	bool first = 1;
+	int status;
 	struct text *t = container_of(d, struct text, doc);
 
 	if (!m)
 		return Enoarg;
 
-	while (did_do != 1) {
+	status = (t->undo == t->saved);
+
+	do {
 		struct mark *m2;
 		struct mark *early = NULL;
 		int where;
 		int i;
 
-		if (redo)
-			did_do = text_redo(t, &start, &end);
-		else
-			did_do = text_undo(t, &start, &end);
-		if (did_do == 0)
+		ed = NULL;
+		if (t->prev_edit <= Redo && t->redo) {
+			ed = t->redo;
+			text_redo(t, ed, &start, &end);
+			t->redo = ed->next;
+			ed->next = t->undo;
+			ed->alt_is_second = 0;
+			t->prev_edit = Redo;
+			t->undo = ed;
+			last = t->redo == NULL || t->redo->first;
+		} else if (t->prev_edit <= Undo &&
+		           t->undo &&
+		           t->undo->altnext && !t->undo->alt_is_second) {
+			ed = t->undo->altnext;
+			text_redo(t, ed, &start, &end);
+			t->prev_edit = Redo;
+			t->undo->altnext = t->redo;
+			t->undo->alt_is_second = 1;
+			t->redo = ed->next;
+			ed->next = t->undo;
+			ed->alt_is_second = 0;
+			t->undo = ed;
+			last = t->redo == NULL || t->redo->first;
+		} else if (t->undo) {
+			ed = t->undo;
+			text_undo(t, ed, &start, &end);
+			t->undo = ed->next;
+			if (ed->alt_is_second) {
+				t->prev_edit = AltUndo;
+				ed->next = ed->altnext;
+				ed->altnext = t->redo;
+			} else {
+				t->prev_edit = Undo;
+				ed->next = t->redo;
+			}
+			t->redo = ed;
+			last = ed->first;
+		}
+
+		if (!ed)
 			break;
+		if (ed->len == 0)
+			/* That was just a no-op, keep going */
+			continue;
 
 		text_normalize(t, &start);
 		text_normalize(t, &end);
@@ -1097,11 +1160,21 @@ DEF_CMD(text_reundo)
 			    0, early);
 
 		text_check_consistent(t);
-	}
+
+	} while (ed && !last);
+
 	text_check_consistent(t);
+
+	if (status != (t->undo == t->saved))
+		call("Notify:doc:status-changed", t->doc.home);
+	text_check_autosave(t);
+
 	/* Point probably moved, so */
 	pane_damaged(ci->focus, DAMAGED_CURSOR);
-	return did_do;
+
+	if (!ed)
+		t->prev_edit = Redo;
+	return ed ? 1 : Efalse;
 }
 
 #ifdef DEBUG
@@ -1384,6 +1457,7 @@ DEF_CMD(text_new)
 	t->alloc = safe_cast NULL;
 	INIT_LIST_HEAD(&t->text);
 	t->saved = t->undo = t->redo = NULL;
+	t->prev_edit = Redo;
 	doc_init(&t->doc);
 	t->fname = NULL;
 	t->as.changes = 0;

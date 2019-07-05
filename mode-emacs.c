@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2015-2019 <neil@brown.name>
+ * Copyright Neil Brown ©2015 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * Define some keystrokes to create an editor with an
@@ -537,13 +537,11 @@ DEF_CMD(emacs_insert_other)
 
 DEF_CMD(emacs_undo)
 {
-	call("doc:reundo", ci->focus);
-	return 1;
-}
+	int ret;
 
-DEF_CMD(emacs_redo)
-{
-	call("doc:reundo", ci->focus, 1);
+	ret = call("doc:reundo", ci->focus);
+	if (ret == Efalse)
+		call("Message", ci->focus, 0, NULL, "No further undo information");
 	return 1;
 }
 
@@ -1576,7 +1574,8 @@ static void emacs_init(void)
 	key_add(m, "C-Chr-O", &emacs_insert_other);
 
 	key_add(m, "C-Chr-_", &emacs_undo);
-	key_add(m, "M-C-Chr-_", &emacs_redo);
+	key_add(m, "emCX-Chr-_", &emacs_undo);
+	key_add(m, "C-Chr=/", &emacs_undo);
 
 	key_add(m, "C-Chr-L", &emacs_recenter);
 
