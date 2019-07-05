@@ -875,6 +875,7 @@ static int text_undo(struct text *t safe,
 	if (e->target->end == e->target->start) {
 		/* need to re-link */
 		struct list_head *l = e->target->lst.prev;
+		if (e->target->lst.next != l->next) abort();
 		list_add(&e->target->lst, l);
 	}
 	start->c = end->c = e->target;
@@ -908,7 +909,7 @@ static int text_undo(struct text *t safe,
 		 * If new text, leave start/end pointing just past the chunk.
 		 * if split, leave them at the point of splitting.
 		 */
-		if (e->target->lst.next == &t->text) {
+		if (e->target == list_last_entry(&t->text, struct text_chunk, lst)) {
 			end->c = NULL;
 			end->o = 0;
 		} else {
@@ -919,7 +920,7 @@ static int text_undo(struct text *t safe,
 
 		__list_del(e->target->lst.prev, e->target->lst.next);
 		/* If this was created for a split, we need to extend the other half */
-		if (e->target->lst.prev != &t->text) {
+		if (e->target != list_first_entry(&t->text, struct text_chunk, lst)) {
 			struct text_chunk *c = list_prev_entry(e->target, lst);
 			start->c = end->c = c;
 			start->o = end->o = c->end;
@@ -950,9 +951,10 @@ static int text_redo(struct text *t safe,
 	if (e->target->end == e->target->start) {
 		/* need to re-link */
 		struct list_head *l = e->target->lst.prev;
+		if (e->target->lst.next != l->next) abort();
 		list_add(&e->target->lst, l);
 		/* If this is a split, need to truncate prior */
-		if (e->target->lst.prev != &t->text) {
+		if (e->target != list_first_entry(&t->text, struct text_chunk, lst)) {
 			struct text_chunk *c = list_prev_entry(e->target, lst);
 			if (c->txt == e->target->txt &&
 			    c->end > e->target->start) {
