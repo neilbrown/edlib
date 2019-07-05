@@ -399,6 +399,7 @@ DEF_CMD(emacs_recenter)
 
 REDEF_CMD(emacs_simple);
 REDEF_CMD(emacs_simple_neg);
+REDEF_CMD(emacs_simple_num);
 static struct simple_command {
 	struct command	cmd;
 	char		*type safe;
@@ -423,6 +424,9 @@ static struct simple_command {
 	{CMD(emacs_simple), "NOP", "emCX-C-Chr-G"},
 	{CMD(emacs_simple), "NOP", "emCX4-C-Chr-G"},
 	{CMD(emacs_simple), "doc:save-file", "emCX-C-Chr-S"},
+	/* one day, this will be "find definition", now it is same as "find any" */
+	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "emCX-M-Chr-."},
+	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "M-Chr-."},
 };
 
 REDEF_CMD(emacs_simple)
@@ -443,6 +447,16 @@ REDEF_CMD(emacs_simple_neg)
 		return Enoarg;
 
 	return call(sc->type, ci->focus, -RPT_NUM(ci), ci->mark, NULL, ci->num2);
+}
+
+REDEF_CMD(emacs_simple_num)
+{
+	struct simple_command *sc = container_of(ci->comm, struct simple_command, cmd);
+
+	if (!ci->mark)
+		return Enoarg;
+
+	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, NULL, ci->num2);
 }
 
 DEF_CMD(emacs_exit)

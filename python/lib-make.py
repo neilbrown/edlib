@@ -228,9 +228,15 @@ class makeprompt(edlib.Pane):
         str = focus.call("doc:get-str", ret="str")
         return focus.call("popup:close", str)
 
+def isword(c):
+    return c and c.isalnum() or c == '_'
+
 def run_make(key, focus, str, **a):
     # pop-up has completed
-    if key[-4:] == "grep":
+    if key[-8:] == "git-grep":
+        cmd = "git-grep"
+        docname = "*Grep Output*"
+    elif key[-4:] == "grep":
         cmd = "grep"
         docname = "*grep output*"
     else:
@@ -245,6 +251,16 @@ def run_make(key, focus, str, **a):
     if not doc:
         return edlib.Esys
     path = focus["dirname"]
+    if key == "full-git-grep":
+        # Find a parent with a ".git"
+        d = focus["dirname"]
+        while d and d != "/":
+            p = os.path.join(d, ".git")
+            if os.path.isdir(p):
+                break
+            d = os.path.dirname(d)
+        if d:
+            path = d
     doc['dirname'] = path
     if cmd == "make":
         p = focus.call("OtherPane", ret='focus')
@@ -261,9 +277,13 @@ def run_make(key, focus, str, **a):
     return 1
     
 
-def make_request(key, focus, str, **a):
+def make_request(key, focus, num, mark, **a):
     history = None
-    if key[-4:] == "grep":
+    if key[-8:] == "git-grep":
+        dflt = "git grep -nH "
+        cmd = "git-grep"
+        history = "*Git-grep History*"
+    elif key[-4:] == "grep":
         dflt = "grep -nH "
         cmd = "grep"
         history = "*Grep History*"
@@ -271,6 +291,26 @@ def make_request(key, focus, str, **a):
         dflt = "make -k"
         cmd = "make"
         history = "*Make History*"
+    callback_cmd = cmd
+
+    if cmd == "git-grep" and num and num > 0:
+        # git grep, and not request for local-tree only
+        callback_cmd = "full-git-grep"    
+
+    if num and mark:
+        # choose the word under the cursor
+        m1 = mark.dup()
+        c = focus.call("doc:step", m1, ret='char')
+        while isword(c):
+            focus.call("doc:step", m1, 0, 1)
+            c = focus.call("doc:step", m1, ret='char')
+        m2 = mark.dup()
+        c = focus.call("doc:step", m2, 1, ret='char')
+        while isword(c):
+            focus.call("doc:step", m2, 1, 1)
+            c = focus.call("doc:step", m2, 1, ret='char')
+        str = focus.call("doc:get-str", m1, m2, ret='str')
+        dflt = dflt + str
 
     # Create a popup to ask for make command
     p = focus.call("PopupTile", "D2", dflt, ret="focus")
@@ -278,7 +318,7 @@ def make_request(key, focus, str, **a):
         return 0
     p.call("popup:set-callback", run_make)
     p["prompt"] = "%s Command" % cmd
-    p["done-key"] = key
+    p["done-key"] = callback_cmd
     p.call("doc:set-name", "%s Command" % cmd)
     if history:
         p = p.call("attach-history", history, "popup:close", ret='focus')
@@ -304,4 +344,5 @@ editor.call("global-set-command", "attach-makecmd", make_attach)
 editor.call("global-set-command", "attach-make-viewer", make_view_attach)
 editor.call("global-set-command", "interactive-cmd-make", make_request)
 editor.call("global-set-command", "interactive-cmd-grep", make_request)
+editor.call("global-set-command", "interactive-cmd-git-grep", make_request)
 editor.call("global-set-command", "interactive-cmd-next-match", next_match)
