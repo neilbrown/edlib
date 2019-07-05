@@ -288,6 +288,11 @@ def make_request(key, focus, num, mark, **a):
         cmd = "grep"
         history = "*Grep History*"
     else:
+        if focus.call("docs:save-all", 0, 1) != 1:
+            p = focus.call("PopupTile", "DM", ret='focus');
+            p['done-key'] = key
+            p.call("docs:show-modified")
+            return 1
         dflt = "make -k"
         cmd = "make"
         history = "*Make History*"
