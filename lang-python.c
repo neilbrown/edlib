@@ -291,10 +291,17 @@ REDEF_CMD(python_call)
 	rv = rv && dict_add(kwds, "comm2",
 			    ci->comm2 ? Comm_Fromcomm(ci->comm2):
 			    (Py_INCREF(Py_None), Py_None));
-	rv = rv && dict_add(kwds, "num",
-			    Py_BuildValue("i", ci->num));
+	if (ci->num == NO_NUMERIC)
+		rv = rv && dict_add(kwds, "num",
+		                    (Py_INCREF(Py_None), Py_None));
+	else if (ci->num == -NO_NUMERIC)
+		rv = rv && dict_add(kwds, "num",
+		                    (Py_INCREF(Py_False), Py_False));
+	else
+		rv = rv && dict_add(kwds, "num",
+		                    Py_BuildValue("i", ci->num));
 	rv = rv && dict_add(kwds, "num2",
-			    Py_BuildValue("i", ci->num2));
+	                    Py_BuildValue("i", ci->num2));
 	rv = rv && dict_add(kwds, "xy",
 			    Py_BuildValue("ii", ci->x, ci->y));
 
