@@ -404,6 +404,10 @@ DEF_CMD(docs_callback)
 		call("Request:Notify:doc:Replace", p);
 		/* And trigger Notify:doc:Replace handling immediately...*/
 		call("Notify:doc:Replace", p);
+		/* Don't want to inherit position from some earlier instance,
+		 * always move to the start.
+		 */
+		call("Move-File", p, -1);
 		return 1;
 	}
 
