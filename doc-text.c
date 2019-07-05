@@ -24,10 +24,12 @@
  * ranges of text.  Unlike the text itself, these are not immutable.  Only
  * the 'current' attributes are stored.  It is assumed that following
  * 'undo', the appropriate attributes can be re-computed.  i.e. they are
- * an optimization.
+ * a cache.  The owner can get notified of changes which imply that
+ * attributes may have been lost.
  *
  * When text is removed from a document, the 'chunk' is modified to
- * reference less text.  If the chunk becomes empty, it is discarded.
+ * reference less text.  If the chunk becomes empty, it is removed
+ * from the list, but not freed - as it will be in the undo list.
  * When text is added to a document a new chunk is created which
  * points to the next free space in the latest allocation, and text is
  * added there.  If the text is being added to the end of a chunk and
@@ -35,19 +37,19 @@
  * chunk is allocated.
  *
  * Text is assumed to be UTF-8 encoded.  This becomes relevant when adding
- * a string to the document, and it wont all fit in the current allocation.
+ * a string to the document and it won't all fit in the current allocation.
  * In that case we ensure the first byte that goes in the next allocation
  * matches 0xxxxxxx or 11xxxxxx., not 10xxxxxx.
  *
  * Undo/redo information is stored as a list of edits.  Each edit
- * changes either the start of the end of a 'chunk'. When a chunk becomes
+ * changes either the start or the end of a 'chunk'. When a chunk becomes
  * empty it is removed from the chunk list.  The 'prev' pointer is preserved
- * so when an undo make it non-empty, it knows where to be added back.
+ * so when an undo makes it non-empty, it knows where to be added back.
  *
  * A text always has a least one allocation which is created with the text.
  * If the text is empty, there will not be any chunks though, so all text refs
  * will point to NULL.  The NULL chunk is at the end of the text.
- * The ->txt pointer of chunk never changes.  It is set when the chunk is created
+ * The ->txt pointer of a chunk never changes.  It is set when the chunk is created
  * and then only start and end are changed.
  */
 
@@ -571,15 +573,15 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe, char *st
 	    pos->c->txt + pos->o == a->text + a->free &&
 	    (a->size - a->free >= len ||
 	     (len2 = text_round_len(str, a->size - a->free)) > 0)) {
-		/* Some of this ('len') can be added to the current chunk */
+		/* Some of this ('len2') can be added to the current chunk */
 		len = len2;
-		memcpy(a->text+a->free, str, len);
-		a->free += len;
-		pos->c->end += len;
-		pos->o += len;
-		str += len;
-		text_add_edit(t, pos->c, first_edit, 0, len);
-		len = strlen(str);
+		memcpy(a->text+a->free, str, len2);
+		a->free += len2;
+		pos->c->end += len2;
+		pos->o += len2;
+		str += len2;
+		text_add_edit(t, pos->c, first_edit, 0, len2);
+		len -= len2;
 	}
 	if (!len)
 		return;
@@ -604,18 +606,19 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe, char *st
 			pos->c = c;
 			pos->o = c->start;
 		} else {
+			/* Not at the start, so we need to split at pos->o */
 			c->txt = pos->c->txt;
 			c->start = pos->o;
 			c->end = pos->c->end;
 			c->attrs = attr_copy_tail(pos->c->attrs, c->start);
-			attr_trim(&pos->c->attrs, c->start);
 			pos->c->end = pos->o;
+			attr_trim(&pos->c->attrs, pos->c->end);
 			list_add(&c->lst, &pos->c->lst);
 			text_add_edit(t, c, first_edit, 0, c->end - c->start);
 			/* this implicitly truncates pos->c, so don't need to record that. */
 		}
 	}
-	while ((len = strlen(str)) > 0) {
+	while (len > 0) {
 		/* Make sure we have an empty chunk */
 		if (pos->c->end > pos->c->start) {
 			struct text_chunk *c = malloc(sizeof(*c));
@@ -630,20 +633,22 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe, char *st
 			pos->o = c->start;
 		}
 		/* Make sure we have some space in 'a' */
+		len2 = len;
 		if (a->size - a->free < len &&
-		    (len = text_round_len(str, a->size - a->free)) == 0) {
+		    (len2 = text_round_len(str, a->size - a->free)) == 0) {
 			a = text_new_alloc(t, 0);
-			len = strlen(str);
-			if (len > a->size)
-				len = text_round_len(str, a->size);
+			len2 = len;
+			if (len2 > a->size)
+				len2 = text_round_len(str, a->size);
 		}
 		pos->c->txt = a->text + a->free;
-		pos->c->end = len;
-		pos->o = len;
-		memcpy(a->text + a->free, str, len);
-		text_add_edit(t, pos->c, first_edit, 0, len);
-		a->free += len;
-		str += len;
+		pos->c->end = len2;
+		pos->o = len2;
+		memcpy(pos->c->txt, str, len2);
+		text_add_edit(t, pos->c, first_edit, 0, len2);
+		a->free += len2;
+		str += len2;
+		len -= len2;
 	}
 }
 
@@ -782,13 +787,13 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 		if (c == NULL)
 			/* nothing more to delete */
 			break;
-		if (pos->o == pos->c->start &&
-		    len >= pos->c->end - pos->c->start) {
+		if (pos->o == c->start &&
+		    len >= c->end - c->start) {
 			/* The whole chunk is deleted, simply disconnect it */
-			if (c->lst.next != &t->text) {
+			if (c != list_last_entry(&t->text, struct text_chunk, lst)) {
 				pos->c = list_next_entry(c, lst);
 				pos->o = pos->c->start;
-			} else if (c->lst.prev != &t->text) {
+			} else if (c != list_first_entry(&t->text, struct text_chunk, lst)) {
 				pos->c = list_prev_entry(c, lst);
 				pos->o = pos->c->end;
 			} else {
@@ -800,9 +805,13 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 			attr_free(&c->attrs);
 			text_add_edit(t, c, first_edit, 0, c->start - c->end);
 			len -= c->end - c->start;
+			/* make sure undo knows this is empty at not attached */
 			c->end = c->start;
-		} else if (pos->o == pos->c->start) {
-			/* If the start of the chunk is deleted, just update */
+		} else if (pos->o == c->start) {
+			/* If the start of the chunk is deleted, just update.
+			 * Note that len must be less that full size, else previous
+			 * branch would have been taken.
+			 */
 			struct attrset *s;
 			c->start += len;
 			pos->o = c->start;
@@ -819,7 +828,7 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 			c->end = pos->o;
 			attr_trim(&c->attrs, c->end);
 			text_add_edit(t, c, first_edit, 0, -diff);
-			if (len && c->lst.next != &t->text) {
+			if (len && c != list_last_entry(&t->text, struct text_chunk, lst)) {
 				pos->c = list_next_entry(c, lst);
 				pos->o = pos->c->start;
 			} else
@@ -836,6 +845,7 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 			c2->attrs = attr_copy_tail(c->attrs, c2->start);
 			attr_trim(&c->attrs, c->end);
 			list_add(&c2->lst, &c->lst);
+			/* This implicitly trims c, so we only have len left to trim */
 			text_add_edit(t, c2, first_edit, 0, c2->end - c2->start);
 			text_add_edit(t, c, first_edit, 0, -len);
 			len = 0;
