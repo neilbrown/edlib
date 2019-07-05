@@ -16,6 +16,7 @@
 #include <stdio.h>
 
 #include "core.h"
+#include "misc.h"
 
 static char WelcomeText[] =
 	"\n"
@@ -130,10 +131,16 @@ int main(int argc, char *argv[])
 		if (gtk)
 			make_stack(call_pane("attach-display-pygtk", p), doc);
 
+		time_start(TIME_REFRESH);
 		pane_refresh(ed);
+		time_stop(TIME_REFRESH);
 		while (call("event:run", ed) == 1) {
+			time_start(TIME_IDLE);
 			call("global-multicall-on_idle-", ed);
+			time_stop(TIME_IDLE);
+			time_start(TIME_REFRESH);
 			pane_refresh(ed);
+			time_stop(TIME_REFRESH);
 		}
 	}
 	pane_close(ed);

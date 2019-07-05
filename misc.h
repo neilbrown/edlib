@@ -23,3 +23,20 @@ static inline char *safe buf_final(struct buf *b safe)
 		b->b[b->len] = 0;
 	return b->b;
 }
+
+
+/* Performance measurements.
+ * 1/ timers.
+ */
+enum timetype {
+	TIME_KEY,
+	TIME_WINDOW,
+	TIME_READ,
+	TIME_SIG,
+	TIME_TIMER,
+	TIME_IDLE,
+	TIME_REFRESH,
+	__TIME_COUNT,
+};
+void time_start(enum timetype);
+void time_stop(enum timetype);

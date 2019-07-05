@@ -422,6 +422,7 @@ static inline wint_t doc_prior_pane(struct pane *p safe, struct mark *m safe)
 	return mark_step_pane(p, m, 0, 0);
 }
 
+
 /* Macro magic taken from
  * https://stackoverflow.com/questions/11761703/overloading-macro-on-number-of-arguments
  */

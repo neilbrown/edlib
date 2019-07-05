@@ -50,6 +50,7 @@ struct doc_ref {
 	int o;
 };
 #include "core.h"
+#include "misc.h"
 
 #define SAFE_CI {.key=safe_cast NULL,\
 			.home=safe_cast NULL,\
@@ -990,7 +991,7 @@ static PyMethodDef pane_methods[] = {
 	 "Clone all children onto the target"},
 	{"take_focus", (PyCFunction)Pane_focus, METH_NOARGS,
 	 "Claim the focus for this pane"},
-	{"refresh", (PyCFunction)Pane_refresh, METH_VARARGS,
+	{"refresh", (PyCFunction)Pane_refresh, METH_NOARGS,
 	 "Trigger refresh on this pane"},
 	{"call", (void*)(PyCFunctionWithKeywords)Pane_call, METH_VARARGS|METH_KEYWORDS,
 	 "Call a command from a pane"},
@@ -2143,6 +2144,40 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 	return xy_set ? 2 : 1;
 }
 
+static PyObject *py_time_start(PyObject *self, PyObject *args)
+{
+	int type;
+	int ret = PyArg_ParseTuple(args, "i", &type);
+
+	if (ret <= 0)
+		return NULL;
+	time_start(type);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyObject *py_time_stop(PyObject *self, PyObject *args)
+{
+	int type;
+	int ret = PyArg_ParseTuple(args, "i", &type);
+
+	if (ret <= 0)
+		return NULL;
+	time_stop(type);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyMethodDef edlib_methods[] = {
+	{"time_start", py_time_start, METH_VARARGS,
+	 "Record start time"},
+	{"time_stop", py_time_stop, METH_VARARGS,
+	 "Record stop time"},
+	{NULL, NULL, 0, NULL}
+};
+
 void edlib_init(struct pane *ed safe)
 {
 	PyObject *m;
@@ -2162,7 +2197,7 @@ void edlib_init(struct pane *ed safe)
 	    PyType_Ready(&CommType) < 0)
 		return;
 
-	m = Py_InitModule3("edlib", NULL,
+	m = Py_InitModule3("edlib", edlib_methods,
 			   "edlib - one more editor is never enough.");
 
 	if (!m)
@@ -2190,6 +2225,15 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, Esys);
 	PyModule_AddIntMacro(m, Enosup);
 	PyModule_AddIntMacro(m, Efail);
+
+	PyModule_AddIntMacro(m, TIME_KEY);
+	PyModule_AddIntMacro(m, TIME_WINDOW);
+	PyModule_AddIntMacro(m, TIME_READ);
+	PyModule_AddIntMacro(m, TIME_SIG);
+	PyModule_AddIntMacro(m, TIME_TIMER);
+	PyModule_AddIntMacro(m, TIME_IDLE);
+	PyModule_AddIntMacro(m, TIME_REFRESH);
+
 	PyModule_AddIntConstant(m, "WEOF", 0x1FFFFF);
 	call_comm("global-set-command", ed, &python_load, 0, NULL, "python-load");
 	call_comm("global-set-command", ed, &python_load_module,

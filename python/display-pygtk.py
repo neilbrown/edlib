@@ -355,6 +355,7 @@ class EdDisplay(gtk.Window):
         self.text.set_property("can-focus", True)
 
     def refresh(self, *a):
+        edlib.time_start(edlib.TIME_WINDOW)
         l = self.panes.keys()
         l.sort(key=lambda pane: pane.abs_z)
         for p in l:
@@ -363,19 +364,25 @@ class EdDisplay(gtk.Window):
             self.text.window.draw_drawable(self.bg, pm, 0, 0,
                                            rx, ry,
                                            rw, rh)
+        edlib.time_stop(edlib.TIME_WINDOW)
 
     def focus_in(self, *a):
+        edlib.time_start(edlib.TIME_WINDOW)
         self.im.focus_in()
         self.in_focus = True
         self.pane.damaged(edlib.DAMAGED_CURSOR)
         self.pane.call("pane:refocus")
+        edlib.time_stop(edlib.TIME_WINDOW)
 
     def focus_out(self, *a):
+        edlib.time_start(edlib.TIME_WINDOW)
         self.im.focus_out()
         self.in_focus = False
         self.pane.damaged(edlib.DAMAGED_CURSOR)
+        edlib.time_stop(edlib.TIME_WINDOW)
 
     def reconfigure(self, w, ev):
+        edlib.time_start(edlib.TIME_WINDOW)
         alloc = w.get_allocation()
         if self.pane.w == alloc.width and self.pane.h == alloc.height:
             return None
@@ -383,8 +390,10 @@ class EdDisplay(gtk.Window):
         self.pane.h = alloc.height
         self.need_refresh = True
         self.text.queue_draw()
+        edlib.time_stop(edlib.TIME_WINDOW)
 
     def press(self, c, event):
+        edlib.time_start(edlib.TIME_KEY)
         c.grab_focus()
         x = int(event.x)
         y = int(event.y)
@@ -396,8 +405,10 @@ class EdDisplay(gtk.Window):
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
         self.pane.call("Mouse-event", s, self.pane, (x,y))
+        edlib.time_stop(edlib.TIME_KEY)
 
     def scroll(self, c, event):
+        edlib.time_start(edlib.TIME_KEY)
         c.grab_focus()
         x = int(event.x)
         y = int(event.y)
@@ -412,6 +423,7 @@ class EdDisplay(gtk.Window):
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
         self.pane.call("Mouse-event", s, self.pane, (x,y))
+        edlib.time_stop(edlib.TIME_KEY)
 
     eventmap = { "Return" : "Enter",
                  "Tab" : "Tab",
@@ -432,10 +444,14 @@ class EdDisplay(gtk.Window):
                  }
 
     def keyinput(self, c, strng):
+        edlib.time_start(edlib.TIME_KEY)
         self.pane.call("Keystroke", "Chr-" + strng)
+        edlib.time_stop(edlib.TIME_KEY)
 
     def keystroke(self, c, event):
+        edlib.time_start(edlib.TIME_KEY)
         if self.im.filter_keypress(event):
+            edlib.time_stop(edlib.TIME_KEY)
             return
 
         kv = gtk.gdk.keyval_name(event.keyval)
@@ -458,6 +474,7 @@ class EdDisplay(gtk.Window):
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
         self.pane.call("Keystroke", self.pane, s)
+        edlib.time_stop(edlib.TIME_KEY)
 
     def do_clear(self, pm, colour):
 
@@ -501,15 +518,17 @@ class events(edlib.Pane):
         self.active = True
         ev = self.add_ev(focus, comm2, 'event:read', num)
         gev = gobject.io_add_watch(num, gobject.IO_IN | gobject.IO_HUP,
-                                  self.docall, comm2, focus, num, ev)
+                                  self.doread, comm2, focus, num, ev)
         self.events[ev].append(gev)
         return 1
 
-    def docall(self, evfd, condition, comm2, focus, fd, ev):
+    def doread(self, evfd, condition, comm2, focus, fd, ev):
         if ev not in self.events:
             return False
         try:
+            edlib.time_start(edlib.TIME_READ)
             comm2("callback", focus, fd)
+            edlib.time_stop(edlib.TIME_READ)
             return True
         except edlib.commandfailed:
             del self.events[ev]
@@ -530,7 +549,9 @@ class events(edlib.Pane):
         if ev not in self.events:
             return False
         try:
+            edlib.time_start(edlib.TIME_SIG)
             comm("callback", focus, sig)
+            edlib.time_stop(edlib.TIME_SIG)
             return False
         except edlib.commandfailed:
             del self.events[ev]
@@ -548,7 +569,9 @@ class events(edlib.Pane):
         if ev not in self.events:
             return False
         try:
+            edlib.time_start(edlib.TIME_TIMER)
             comm2("callback", focus);
+            edlib.time_stop(edlib.TIME_TIMER)
             return True
         except edlib.commandfailed:
             del self.events[ev]

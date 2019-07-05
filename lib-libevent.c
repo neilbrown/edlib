@@ -18,6 +18,7 @@
 #include <event.h>
 #include <string.h>
 #include "core.h"
+#include "misc.h"
 
 static struct map *libevent_map;
 DEF_LOOKUP_CMD(libevent_handle, libevent_map);
@@ -45,7 +46,14 @@ static void call_event(int thing, short sev, void *evv)
 	struct evt *ev safe = safe_cast evv;
 	int ret;
 	int oldfd = ev->fd;
+	int type;
 
+	if (sev & EV_SIGNAL)
+		type = TIME_SIG;
+	else
+		type = TIME_READ;
+
+	time_start(type);
 	if ((ret=comm_call(ev->comm, "callback:event", ev->home, thing)) < 0) {
 		if (oldfd == ev->fd)
 			/* No early removal */
@@ -55,12 +63,14 @@ static void call_event(int thing, short sev, void *evv)
 		command_put(ev->comm);
 		free(ev);
 	}
+	time_stop(type);
 }
 
 static void call_timeout_event(int thing, short sev, void *evv)
 {
 	struct evt *ev safe = safe_cast evv;
 
+	time_start(TIME_TIMER);
 	if (comm_call(ev->comm, "callback:event", ev->home, thing) < 0) {
 		event_free(ev->l);
 		list_del(&ev->lst);
@@ -72,6 +82,7 @@ static void call_timeout_event(int thing, short sev, void *evv)
 		tv.tv_usec = 0;
 		event_add(ev->l, &tv);
 	}
+	time_stop(TIME_TIMER);
 }
 
 DEF_CMD(libevent_read)
