@@ -228,48 +228,55 @@ class makeprompt(edlib.Pane):
         str = focus.call("doc:get-str", ret="str")
         return focus.call("popup:close", str)
 
+def run_make(key, focus, str, **a):
+    # pop-up has completed
+    if key[-4:] == "grep":
+        cmd = "grep"
+        docname = "*grep output*"
+    else:
+        cmd = "make"
+        docname = "*Compile Output*"
+    try:
+        doc = focus.call("docs:byname", docname, ret='focus')
+        doc.call("doc:destroy")
+    except edlib.commandfailed:
+        pass
+    doc = focus.call("doc:from-text", docname, "", ret='focus')
+    if not doc:
+        return edlib.Esys
+    path = focus["dirname"]
+    doc['dirname'] = path
+    if cmd == "make":
+        p = focus.call("OtherPane", ret='focus')
+    else:
+        p = focus.call("PopupTile", "MD3t", ret='focus')
+    if not p:
+        return edlib.Esys
+    focus.call("global-set-attr", "make-target-doc", docname)
+    p = p.call("doc:attach", ret='focus')
+    doc["view-default"] = "make-viewer"
+    p = p.call("doc:assign-view", doc, ret='focus')
+
+    p = doc.call("attach-makecmd", str, path, ret='focus')
+    return 1
+    
+
 def make_request(key, focus, str, **a):
     history = None
     if key[-4:] == "grep":
         dflt = "grep -nH "
         cmd = "grep"
-        docname = "*grep output*"
         history = "*Grep History*"
     else:
         dflt = "make -k"
         cmd = "make"
-        docname = "*Compile Output*"
         history = "*Make History*"
 
-    if str is not None:
-        # pop-up has completed
-        try:
-            doc = focus.call("docs:byname", docname, ret='focus')
-            doc.call("doc:destroy")
-        except edlib.commandfailed:
-            pass
-        doc = focus.call("doc:from-text", docname, "", ret='focus')
-        if not doc:
-            return edlib.Esys
-        path = focus["dirname"]
-        doc['dirname'] = path
-        if cmd == "make":
-            p = focus.call("OtherPane", ret='focus')
-        else:
-            p = focus.call("PopupTile", "MD3t", ret='focus')
-        if not p:
-            return edlib.Esys
-        focus.call("global-set-attr", "make-target-doc", docname)
-        p = p.call("doc:attach", ret='focus')
-        doc["view-default"] = "make-viewer"
-        p = p.call("doc:assign-view", doc, ret='focus')
-
-        p = doc.call("attach-makecmd", str, path, ret='focus')
-        return 1
     # Create a popup to ask for make command
     p = focus.call("PopupTile", "D2", dflt, ret="focus")
     if not p:
         return 0
+    p.call("popup:set-callback", run_make)
     p["prompt"] = "%s Command" % cmd
     p["done-key"] = key
     p.call("doc:set-name", "%s Command" % cmd)

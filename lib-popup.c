@@ -36,6 +36,7 @@ DEF_LOOKUP_CMD(popup_handle, popup_map);
 struct popup_info {
 	struct pane	*target safe, *popup safe, *handle safe;
 	char		*style safe;
+	struct command	*done;
 };
 
 static int line_height(struct pane *p safe)
@@ -77,6 +78,7 @@ static void popup_resize(struct pane *p safe, char *style safe)
 DEF_CMD(popup_close)
 {
 	struct popup_info *ppi = ci->home->data;
+	command_put(ppi->done);
 	free(ppi->style);
 	free(ppi);
 	return 1;
@@ -161,6 +163,18 @@ DEF_CMD(popup_ignore)
 	return 1;
 }
 
+DEF_CMD(popup_set_callback)
+{
+	struct popup_info *ppi = ci->home->data;
+
+	if (ppi->done)
+		command_put(ppi->done);
+	ppi->done = NULL;
+	if (ci->comm2)
+		ppi->done = command_get(ci->comm2);
+	return 1;
+}
+
 DEF_CMD(popup_delayed_close)
 {
 	/* nothing should be using this pane any more */
@@ -183,6 +197,7 @@ DEF_CMD(popup_do_close)
 	struct popup_info *ppi = ci->home->data;
 	char *key, *str;
 	struct pane *target = ppi->target;
+	struct command *done;
 
 	pane_focus(target);
 	key = pane_attr_get(ci->focus, "done-key");
@@ -193,9 +208,14 @@ DEF_CMD(popup_do_close)
 		str = pane_attr_get(ci->focus, "default");
 	if (!str)
 		str = "";
+	done = ppi->done;
+	ppi->done = NULL;
 	pane_close(ppi->popup);
 	/* This pane is closed now, ppi is gone. Be careful */
-	call(key, target, 1, NULL, str);
+	if (done)
+		comm_call(done, key, target, 1, NULL, str);
+	else
+		call(key, target, 1, NULL, str);
 	return 1;
 }
 
@@ -235,6 +255,7 @@ DEF_CMD(popup_attach)
 		return 0;
 
 	ppi = malloc(sizeof(*ppi));
+	ppi->done = NULL;
 	ppi->target = ci->focus;
 	/* HACK this is because of +1 in pane_do_resize */
 	z = ci->focus->abs_z - root->abs_z;
@@ -287,6 +308,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "Refresh:size", &popup_refresh_size);
 	key_add(popup_map, "popup:get-target", &popup_get_target);
 	key_add(popup_map, "popup:close", &popup_do_close);
+	key_add(popup_map, "popup:set-callback", &popup_set_callback);
 
 	key_add(popup_map, "Window:bury", &popup_abort);
 	key_add(popup_map, "Window:close", &popup_abort);
