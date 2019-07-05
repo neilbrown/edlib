@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2016 <neil@brown.name>
+ * Copyright Neil Brown ©2016-2018 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * lib-rfc822header: parse rfc822 email headers.

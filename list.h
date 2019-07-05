@@ -1,7 +1,7 @@
 /*
  * Taken from Linux kernel.
  * Some parts:
- * Copyright Neil Brown ©2015 <neil@brown.name>
+ * Copyright Neil Brown ©2015-2016 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  */

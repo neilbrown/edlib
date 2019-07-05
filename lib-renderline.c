@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2016 <neil@brown.name>
+ * Copyright Neil Brown ©2016-2019 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * This module provides render-line and render-line-prev, making use of

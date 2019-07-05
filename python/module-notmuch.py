@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Copyright Neil Brown ©2016-2019 <neil@brown.name>
+# May be distributed under terms of GPLv2 - see file:COPYING
+#
 # edlib module for working with "notmuch" email.
 #
 # Two document types:

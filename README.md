@@ -1,7 +1,7 @@
 <meta HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
 
 <!--
-# Copyright Neil Brown ©2015 <neil@brown.name>
+# Copyright Neil Brown ©2015-2016 <neil@brown.name>
 # May be distrubuted under terms of GPLv2 - see file:COPYING
 -->
 

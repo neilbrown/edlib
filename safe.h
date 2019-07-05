@@ -1,3 +1,7 @@
+/*
+ * Copyright Neil Brown ©2016-2017 <neil@brown.name>
+ * May be distributed under terms of GPLv2 - see file:COPYING
+ */
 #ifndef __CHECK_SAFE__
 #define __CHECK_SAFE__ 1
 #ifdef __CHECKER__
