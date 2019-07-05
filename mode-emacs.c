@@ -385,6 +385,10 @@ DEF_CMD(emacs_recenter)
 			step = 0;
 			break;
 		}
+	} else if (ci->num == -NO_NUMERIC) {
+		/* Move point to bottom */
+		call("Move-View-Line", ci->focus, -1, ci->mark);
+		step = 0x20000;
 	} else if (ci->num != NO_NUMERIC) {
 		/* Move point to display line N */
 		call("Move-View-Line", ci->focus, ci->num, ci->mark);
@@ -1611,6 +1615,7 @@ static void emacs_init(void)
 
 	key_add_range(m, "M-Chr-0", "M-Chr-9", &emacs_num);
 	key_add(m, "M-Chr--", &emacs_neg);
+	key_add(m, "C-Chr--", &emacs_neg);
 	key_add(m, "C-Chr- ", &emacs_mark);
 	key_add(m, "emCX-C-Chr-X", &emacs_swap_mark);
 	key_add(m, "Abort", &emacs_abort);
