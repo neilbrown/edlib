@@ -134,7 +134,6 @@ DEF_CMD(history_move)
 
 DEF_CMD(history_attach)
 {
-
 	struct history_info *hi;
 	struct pane *p;
 
@@ -167,9 +166,32 @@ DEF_CMD(history_attach)
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 
+DEF_CMD(history_last)
+{
+	/* Get last line from the given history document */
+	struct pane *doc;
+	struct mark *m, *m2;
+
+	doc = call_pane("docs:byname", ci->focus, 0, NULL, ci->str);
+	if (!doc)
+		return 1;
+	m = vmark_new(doc, MARK_UNGROUPED);
+	if (!m)
+		return 1;
+	call("doc:set-ref", doc, 0, m);
+	call("doc:set", doc, 0, m, NULL, 1);
+	mark_step_pane(doc, m, 0, 1);
+	m2 = mark_dup(m);
+	while (doc_prior_pane(doc, m) != '\n')
+		if (mark_step_pane(doc, m, 0, 1) == WEOF)
+			break;
+	return call_comm("doc:get-str", doc, ci->comm2, 0, m, NULL, 0, m2);
+}	
+
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &history_attach, 0, NULL, "attach-history");
+	call_comm("global-set-command", ed, &history_last, 0, NULL, "history-get-last");
 
 	if (history_map)
 		return;

@@ -1537,7 +1537,8 @@ DEF_CMD(emacs_match_again)
 
 DEF_CMD(emacs_make)
 {
-	call("interactive-cmd-make", ci->focus, 0, ci->mark);
+	call("interactive-cmd-make", ci->focus,
+	     strcmp(ci->key, "emCC-C-Chr-M") == 0, ci->mark);
 	return 1;
 }
 
