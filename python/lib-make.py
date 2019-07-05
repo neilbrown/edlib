@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright Neil Brown ©2016-2019 <neil@brown.name>
+# Copyright Neil Brown ©2016 <neil@brown.name>
 # May be distributed under terms of GPLv2 - see file:COPYING
 #
 
@@ -330,7 +330,10 @@ def next_match(key, focus, **a):
     if not docname:
         focus.call("Message", "No make output!")
         return 1
-    doc = focus.call("docs:byname", docname, ret='focus')
+    try:
+        doc = focus.call("docs:byname", docname, ret='focus')
+    except edlib.commandfailed:
+        doc = None
     if not doc:
         focus.call("Message", "Make document %s missing" % docname)
         return 1
