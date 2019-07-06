@@ -328,8 +328,10 @@ DEF_CMD(complete_set_prefix)
 		char *match = c;
 		if (!cd->prefix_only)
 			match = strstr(match, cd->prefix);
+		if (!match)
+			break;
 		l = strlen(match);
-		if (match[l-1] == '\n')
+		if (l && match[l-1] == '\n')
 			l -= 1;
 		if (common == NULL)
 			common = strndup(match, l);

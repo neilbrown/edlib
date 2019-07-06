@@ -163,7 +163,8 @@ static int hash_str(char *key safe, int len)
 {
 	int i;
 	int h = 0;
-for (i = 0; (len < 0 || i < len) && key[i]; i++)
+
+	for (i = 0; (len < 0 || i < len) && key[i]; i++)
 		h = qhash(key[i], h);
 	return h;
 }
@@ -184,7 +185,7 @@ struct kstack {
 } kstack[20];
 int ktos = 0;
 
-void time_start_key(char *key)
+void time_start_key(char *key safe)
 {
 	struct timespec start;
 
@@ -198,7 +199,7 @@ void time_start_key(char *key)
 	kstack[ktos-1].name = key;
 }
 
-static struct khash *hash_find(struct khash **table, char *key)
+static struct khash *hash_find(struct khash **table, char *key safe)
 {
 	struct khash *h, **hp;
 	int hash;
@@ -219,7 +220,7 @@ static struct khash *hash_find(struct khash **table, char *key)
 	return h;
 }
 
-void time_stop_key(char *key)
+void time_stop_key(char *key safe)
 {
 	struct timespec stop;
 	struct khash *h;
@@ -268,7 +269,7 @@ static void dump_key_hash(void)
 
 struct khash *count_tab[1024];
 
-void stat_count(char *name)
+void stat_count(char *name safe)
 {
 	struct khash *h;
 
@@ -303,7 +304,7 @@ static void dump_count_hash(void)
 	fprintf(dump_file, " nhash:%d:%d:%d", cnt, buckets, max);
 }
 
-static void hash_free(struct khash **tab)
+static void hash_free(struct khash **tab safe)
 {
 	int i;
 

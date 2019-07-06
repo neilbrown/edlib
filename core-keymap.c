@@ -393,7 +393,7 @@ int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 	}
 
 	comm = key_lookup_cmd(m, ci->key, &key, &len);
-	if (comm == NULL) {
+	if (comm == NULL || key == NULL) {
 		stat_count("bloom-hit-bad");
 		return Efallthrough;
 	} else {

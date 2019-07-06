@@ -907,7 +907,7 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
  * both start and end will point to a NULL chunk.
  * When undoing a split, both will be at the point of the split.
  */
-static void text_undo(struct text *t safe, struct text_edit *e,
+static void text_undo(struct text *t safe, struct text_edit *e safe,
                       struct doc_ref *start safe, struct doc_ref *end safe)
 {
 	if (e->len == 0)
@@ -968,7 +968,7 @@ static void text_undo(struct text *t safe, struct text_edit *e,
 	}
 }
 
-static void text_redo(struct text *t safe, struct text_edit *e,
+static void text_redo(struct text *t safe, struct text_edit *e safe,
                       struct doc_ref *start safe, struct doc_ref *end safe)
 {
 	int is_split = 0;
@@ -2003,7 +2003,7 @@ DEF_CMD(text_modified)
 	return 1;
 }
 
-static void text_cleanout(struct text *t)
+static void text_cleanout(struct text *t safe)
 {
 	struct text_alloc *ta;
 	struct mark *m;
@@ -2025,7 +2025,7 @@ static void text_cleanout(struct text *t)
 		ta = tmp->prev;
 		free(tmp);
 	}
-	t->alloc = NULL;
+	t->alloc = safe_cast NULL;
 	while (t->undo) {
 		struct text_edit *te = t->undo;
 		t->undo = te->next;

@@ -40,9 +40,9 @@ enum timetype {
 };
 void time_start(enum timetype);
 void time_stop(enum timetype);
-void time_start_key(char *key);
-void time_stop_key(char *key);
+void time_start_key(char *key safe);
+void time_stop_key(char *key safe);
 
-void stat_count(char *name);
+void stat_count(char *name safe);
 
 void stat_free(void);
