@@ -75,6 +75,8 @@ static int stats_enabled = 1;
 static time_t last_dump = 0;
 static FILE *dump_file;
 
+static void dump_hash(void);
+
 char *tnames[] = {
 	[TIME_KEY]     = "KEY",
 	[TIME_WINDOW]  = "WINDOW",
@@ -138,7 +140,112 @@ void time_stop(enum timetype type)
 		tcount[i] = 0;
 		tsum[i] = 0;
 	}
+	dump_hash();
 	fprintf(dump_file, "\n");
 	fflush(dump_file);
 	last_dump = stop.tv_sec;
+}
+
+inline static int qhash(char key, unsigned int start)
+{
+	return (start ^ key) * 0x61C88647U;
+}
+
+static int hash_str(char *key safe, int len)
+{
+	int i;
+	int h = 0;
+	for (i = 0; (len < 0 || i < len) && key[i]; i++)
+		h = qhash(key[i], h);
+	return h;
+}
+
+struct khash {
+	struct khash *next;
+	int hash;
+	long long tsum;
+	int tcount;
+	char name[];
+};
+
+struct khash *khashtab[1024];
+
+struct kstack {
+	long long tstart;
+	char *name;
+} kstack[20];
+int ktos = 0;
+
+void time_start_key(char *key)
+{
+	struct timespec start;
+
+	if (!stats_enabled)
+		return;
+	ktos += 1;
+	if (ktos > 20)
+		return;
+	clock_gettime(CLOCK_MONOTONIC, &start);
+	kstack[ktos-1].tstart = start.tv_sec * NSEC + start.tv_nsec;
+	kstack[ktos-1].name = key;
+}
+
+void time_stop_key(char *key)
+{
+	struct timespec stop;
+	int hash;
+	struct khash *h, **hp;
+
+	if (!stats_enabled)
+		return;
+	if (ktos <= 0)
+		abort();
+	ktos -= 1;
+	if (key != kstack[ktos].name)
+		abort();
+	hash = hash_str(key, -1);
+	clock_gettime(CLOCK_MONOTONIC, &stop);
+
+	hp = &khashtab[hash & 1023];
+	while ( (h = *hp) && (h->hash != hash || strcmp(h->name, key) != 0))
+		hp = &h->next;
+	if (!h) {
+		h = malloc(sizeof(*h) + strlen(key) + 1);
+		h->hash = hash;
+		h->tsum = 0;
+		h->tcount = 0;
+		strcpy(h->name, key);
+		h->next = *hp;
+		*hp = h;
+	}
+	h->tcount += 1;
+	h->tsum += stop.tv_sec * NSEC + stop.tv_nsec - kstack[ktos].tstart;
+}
+
+static void dump_hash(void)
+{
+	int i;
+	int cnt = 0;
+	int buckets = 0;
+	int max = 0;
+
+	for (i = 0; i < 1024; i++) {
+		struct khash *h;
+		int c = 0;
+		for (h = khashtab[i]; h ; h = h->next) {
+			c += 1;
+			if (!h->tcount)
+				continue;
+			fprintf(dump_file, " %s:%d:%lld",
+			        h->name, h->tcount,
+			        h->tsum / (h->tcount?:1));
+			h->tcount = 0;
+			h->tsum = 0;
+		}
+		cnt += c;
+		buckets += !!c;
+		if (c > max)
+			max = c;
+	}
+	fprintf(dump_file, " khash:%d:%d:%d", cnt, buckets, max);
 }
