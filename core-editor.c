@@ -9,6 +9,7 @@
 #include <dlfcn.h>
 
 #include "core.h"
+#include "misc.h"
 
 static struct map *ed_map safe;
 struct ed_info {
@@ -237,6 +238,13 @@ DEF_CMD(editor_on_idle)
 	return 1;
 }
 
+DEF_CMD(editor_close)
+{
+
+	stat_free();
+	return 0;
+}
+
 void *memsave(struct pane *p safe, char *buf, int len)
 {
 	struct ed_info *ei;
@@ -312,6 +320,7 @@ struct pane *editor_new(void)
 		              &editor_global_request_notify);
 		key_add_range(ed_map, "Notify:global-", "Notify:global.",
 		              &editor_global_notify);
+		key_add(ed_map, "Close", &editor_close);
 	}
 	ei->map = key_alloc();
 	key_add(ei->map, "on_idle-clean_up", &editor_clean_up);

@@ -77,6 +77,7 @@ static FILE *dump_file;
 
 static void dump_key_hash(void);
 static void dump_count_hash(void);
+static void stat_dump(void);
 
 char *tnames[] = {
 	[TIME_KEY]     = "KEY",
@@ -102,7 +103,6 @@ void time_stop(enum timetype type)
 {
 	struct timespec stop;
 	long long nsec;
-	int i;
 
 	if (type < 0 || type >= __TIME_COUNT || !stats_enabled)
 		return;
@@ -122,6 +122,13 @@ void time_stop(enum timetype type)
 		stats_enabled = 0;
 		return;
 	}
+	last_dump = stop.tv_sec;
+	stat_dump();
+}
+
+static void stat_dump(void)
+{
+	int i;
 
 	if (!dump_file) {
 		char *fname = NULL;
@@ -134,7 +141,7 @@ void time_stop(enum timetype type)
 			return;
 		}
 	}
-	fprintf(dump_file, "%ld:", (long)stop.tv_sec);
+	fprintf(dump_file, "%ld:", (long)time(0L));
 	for (i = 0; i< __TIME_COUNT; i++) {
 		fprintf(dump_file, " %s:%d:%lld", tnames[i], tcount[i],
 		        tsum[i] / (tcount[i]?:1));
@@ -145,7 +152,6 @@ void time_stop(enum timetype type)
 	dump_count_hash();
 	fprintf(dump_file, "\n");
 	fflush(dump_file);
-	last_dump = stop.tv_sec;
 }
 
 inline static int qhash(char key, unsigned int start)
@@ -157,7 +163,7 @@ static int hash_str(char *key safe, int len)
 {
 	int i;
 	int h = 0;
-	for (i = 0; (len < 0 || i < len) && key[i]; i++)
+for (i = 0; (len < 0 || i < len) && key[i]; i++)
 		h = qhash(key[i], h);
 	return h;
 }
@@ -297,3 +303,25 @@ static void dump_count_hash(void)
 	fprintf(dump_file, " nhash:%d:%d:%d", cnt, buckets, max);
 }
 
+static void hash_free(struct khash **tab)
+{
+	int i;
+
+	for (i = 0; i < 1024; i++) {
+		struct khash *h;
+
+		while ((h = tab[i]) != NULL) {
+			tab[i] = h->next;
+			free(h);
+		}
+	}
+}
+
+void stat_free(void)
+{
+	if (stats_enabled)
+		stat_dump();
+	hash_free(count_tab);
+	hash_free(khashtab);
+	stats_enabled = 0;
+}
