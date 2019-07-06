@@ -387,17 +387,23 @@ int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 	char *key;
 	int len;
 
-	if (ci->hash && !key_present(m, ci->key, strlen(ci->key), ci->hash))
+	if (ci->hash && !key_present(m, ci->key, strlen(ci->key), ci->hash)) {
+		stat_count("bloom-miss");
 		return Efallthrough;
+	}
 
 	comm = key_lookup_cmd(m, ci->key, &key, &len);
-	if (comm == NULL)
+	if (comm == NULL) {
+		stat_count("bloom-hit-bad");
 		return Efallthrough;
-	else {
+	} else {
 		/* This is message, but when there are multiple
 		 * keys, we need to pass down the one that was matched.
 		 */
 		int ret;
+
+		stat_count("bloom-hit-good");
+
 		char *oldkey = ci->key;
 		char tail = key[len];
 		if (key[len])

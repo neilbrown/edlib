@@ -42,3 +42,5 @@ void time_start(enum timetype);
 void time_stop(enum timetype);
 void time_start_key(char *key);
 void time_stop_key(char *key);
+
+void stat_count(char *name);

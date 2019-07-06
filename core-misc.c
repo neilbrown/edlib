@@ -75,7 +75,8 @@ static int stats_enabled = 1;
 static time_t last_dump = 0;
 static FILE *dump_file;
 
-static void dump_hash(void);
+static void dump_key_hash(void);
+static void dump_count_hash(void);
 
 char *tnames[] = {
 	[TIME_KEY]     = "KEY",
@@ -140,7 +141,8 @@ void time_stop(enum timetype type)
 		tcount[i] = 0;
 		tsum[i] = 0;
 	}
-	dump_hash();
+	dump_key_hash();
+	dump_count_hash();
 	fprintf(dump_file, "\n");
 	fflush(dump_file);
 	last_dump = stop.tv_sec;
@@ -165,7 +167,7 @@ struct khash {
 	int hash;
 	long long tsum;
 	int tcount;
-	char name[];
+	char name[1];
 };
 
 struct khash *khashtab[1024];
@@ -190,11 +192,31 @@ void time_start_key(char *key)
 	kstack[ktos-1].name = key;
 }
 
+static struct khash *hash_find(struct khash **table, char *key)
+{
+	struct khash *h, **hp;
+	int hash;
+
+	hash = hash_str(key, -1);
+	hp = &table[hash & 1023];
+	while ( (h = *hp) && (h->hash != hash || strcmp(h->name, key) != 0))
+		hp = &h->next;
+	if (!h) {
+		h = malloc(sizeof(*h) + strlen(key));
+		h->hash = hash;
+		h->tsum = 0;
+		h->tcount = 0;
+		strcpy(h->name, key);
+		h->next = *hp;
+		*hp = h;
+	}
+	return h;
+}
+
 void time_stop_key(char *key)
 {
 	struct timespec stop;
-	int hash;
-	struct khash *h, **hp;
+	struct khash *h;
 
 	if (!stats_enabled)
 		return;
@@ -203,26 +225,14 @@ void time_stop_key(char *key)
 	ktos -= 1;
 	if (key != kstack[ktos].name)
 		abort();
-	hash = hash_str(key, -1);
 	clock_gettime(CLOCK_MONOTONIC, &stop);
 
-	hp = &khashtab[hash & 1023];
-	while ( (h = *hp) && (h->hash != hash || strcmp(h->name, key) != 0))
-		hp = &h->next;
-	if (!h) {
-		h = malloc(sizeof(*h) + strlen(key) + 1);
-		h->hash = hash;
-		h->tsum = 0;
-		h->tcount = 0;
-		strcpy(h->name, key);
-		h->next = *hp;
-		*hp = h;
-	}
+	h = hash_find(khashtab, key);
 	h->tcount += 1;
 	h->tsum += stop.tv_sec * NSEC + stop.tv_nsec - kstack[ktos].tstart;
 }
 
-static void dump_hash(void)
+static void dump_key_hash(void)
 {
 	int i;
 	int cnt = 0;
@@ -249,3 +259,41 @@ static void dump_hash(void)
 	}
 	fprintf(dump_file, " khash:%d:%d:%d", cnt, buckets, max);
 }
+
+struct khash *count_tab[1024];
+
+void stat_count(char *name)
+{
+	struct khash *h;
+
+	if (!stats_enabled)
+		return;
+	h = hash_find(count_tab, name);
+	h->tcount += 1;
+}
+
+static void dump_count_hash(void)
+{
+	int i;
+	int cnt = 0;
+	int buckets = 0;
+	int max = 0;
+
+	for (i = 0; i < 1024; i++) {
+		struct khash *h;
+		int c = 0;
+		for (h = count_tab[i]; h ; h = h->next) {
+			c += 1;
+			fprintf(dump_file, " %s:%d:-",
+			        h->name, h->tcount);
+			h->tcount = 0;
+			h->tsum = 0;
+		}
+		cnt += c;
+		buckets += !!c;
+		if (c > max)
+			max = c;
+	}
+	fprintf(dump_file, " nhash:%d:%d:%d", cnt, buckets, max);
+}
+
