@@ -468,7 +468,7 @@ static void find_cursor(struct render_list *rlst, struct pane *p safe, int cx,
  */
 static void render_line(struct pane *p safe, struct pane *focus safe,
 			char *line safe, int *yp safe, int dodraw, int scale,
-			int *cxp, int *cyp, int *offsetp, char **offset_attrs,
+			int *cxp, int *cyp, int *cwp, int *offsetp, char **offset_attrs,
 			int *end_of_pagep, int *cols)
 {
 	int x = 0;
@@ -507,6 +507,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			*cxp = -1;
 		if (cyp)
 			*cyp = -1;
+		if (cwp)
+			*cwp = 0;
 		if (offsetp)
 			*offsetp = -1;
 		if (cols && *cols < p->w)
@@ -551,6 +553,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		offset = *offsetp;
 		*cxp = -1;
 		*cyp = -1;
+		if (cwp)
+			*cwp = 0;
 	}
 	if (cy >= 0 && cy < y) {
 		/* cursor is not here */
@@ -568,6 +572,9 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			mwidth = cr.x;
 			if (mwidth <= 0)
 				mwidth = 1;
+			/* Assume mwidth is the cursor width */
+			if (cwp)
+				*cwp = mwidth;
 		}
 
 		if (ret == CURS) {
@@ -988,7 +995,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 
 	x = -1; lines_above = -1; y = 0;
 	render_line(p, focus, start->mdata ?: "", &y, 0, scale.x,
-		    &x, &lines_above, &offset, NULL, &found_end, NULL);
+		    &x, &lines_above, NULL, &offset, NULL, &found_end, NULL);
 	lines_above = lines_below = 0;
 
 	/* We have start/end of the focus line, and its height.
@@ -1024,7 +1031,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 					call_render_line(focus, start);
 				if (start->mdata)
 					render_line(p, focus, start->mdata, &h, 0, scale.x,
-						    NULL, NULL, NULL, NULL,
+						    NULL, NULL, NULL, NULL, NULL,
 						    &found_end, NULL);
 				if (h)
 					lines_above = h;
@@ -1046,7 +1053,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 			} else {
 				int h = 0;
 				render_line(p, focus, end->mdata, &h, 0, scale.x,
-					    NULL, NULL, NULL, NULL, &found_end, NULL);
+				            NULL, NULL, NULL, NULL, NULL, &found_end, NULL);
 				end = next;
 				if (h)
 					lines_below = h;
@@ -1166,7 +1173,7 @@ restart:
 	if (hdr) {
 		rl->header_lines = 0;
 		render_line(p, focus, hdr, &y, 1, scale.x,
-			    NULL, NULL, NULL, NULL, NULL, cols);
+			    NULL, NULL, NULL, NULL, NULL, NULL, cols);
 		rl->header_lines = y;
 	}
 	y -= rl->skip_lines;
@@ -1184,11 +1191,12 @@ restart:
 		    mark_ordered_or_same(m, pm) &&
 		    (!(m2 && doc_following_pane(focus, m2) != WEOF) ||
 		     mark_ordered_not_same(pm, m2))) {
+			int cw = -1;
 			int len = call_render_line_to_point(focus, pm,
 							    m);
 			rl->cursor_line = y;
 			render_line(p, focus, m->mdata ?: "", &y, 1, scale.x,
-				    &p->cx, &p->cy, &len, NULL,  NULL, cols);
+				    &p->cx, &p->cy, &cw, &len, NULL,  NULL, cols);
 			if (p->cy < 0)
 				p->cx = -1;
 			if (!rl->do_wrap && p->cy >= 0 && p->cx < rl->prefix_len) {
@@ -1215,7 +1223,7 @@ restart:
 					goto restart;
 				}
 			}
-			if (p->cx >= p->w && !rl->do_wrap) {
+			if (p->cx + cw >= p->w && !rl->do_wrap) {
 				if (mwidth < 0) {
 					struct call_return cr = call_ret(all, "text-size", p,
 									 -1, NULL, "M",
@@ -1225,7 +1233,7 @@ restart:
 						mwidth = 1;
 				}
 				/* Need to shift to the left */
-				while (p->cx >= p->w) {
+				while (p->cx + cw >= p->w) {
 					rl->shift_left += 8 * mwidth;
 					p->cx -= 8 * mwidth;
 				}
@@ -1236,7 +1244,7 @@ restart:
 			}
 		} else
 			render_line(p, focus, m->mdata?:"", &y, 1, scale.x, NULL, NULL, NULL,
-				    NULL, &found_end, cols);
+				    NULL, NULL, &found_end, cols);
 		if (!m2)
 			break;
 		m = m2;
@@ -1440,7 +1448,8 @@ DEF_CMD(render_lines_move)
 					rpt = 0;
 					break;
 				}
-				render_line(p, focus, m->mdata, &y, 0, scale.x, NULL, NULL, NULL, NULL, NULL, NULL);
+				render_line(p, focus, m->mdata, &y, 0, scale.x, NULL, NULL, NULL,
+				            NULL, NULL, NULL, NULL);
 				m = vmark_next(m);
 			}
 			rl->skip_lines = y;
@@ -1455,7 +1464,7 @@ DEF_CMD(render_lines_move)
 			if (top->mdata == NULL)
 				break;
 			render_line(p, focus, top->mdata, &y, 0, scale.x, NULL, NULL,
-				    NULL, NULL, &page_end, NULL);
+				    NULL, NULL, NULL, &page_end, NULL);
 			if (page_end)
 				y = rpt % pagesize;
 			if (rl->skip_lines + rpt < y) {
@@ -1540,7 +1549,7 @@ DEF_CMD(render_lines_set_cursor)
 	while (y <= cihy && m && m->mdata) {
 		int cx = cihx, cy = cihy, o = -1;
 		char *oattrs = NULL;
-		render_line(p, focus, m->mdata, &y, 0, scale.x, &cx, &cy,
+		render_line(p, focus, m->mdata, &y, 0, scale.x, &cx, &cy, NULL,
 			    &o, &oattrs, NULL, NULL);
 		if (o >= 0) {
 			struct mark *m2 = call_render_line_offset(focus, m, o);
@@ -1685,7 +1694,7 @@ DEF_CMD(render_lines_move_line)
 		/* FIXME only do this if point is active/volatile*/
 		call_render_line(focus, start);
 		render_line(p, focus, start->mdata?:"", &y, 0, scale.x,
-			    &target_x, &target_y, &o, NULL, NULL, NULL);
+			    &target_x, &target_y, NULL, &o, NULL, NULL, NULL);
 		/* 'o' is the distance from start-of-line to the target */
 		if (o >= 0) {
 			struct mark *m2 = call_render_line_offset(
