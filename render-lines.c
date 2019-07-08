@@ -1572,7 +1572,8 @@ DEF_CMD(render_lines_set_cursor)
 		m = vmark_next(m);
 	}
 
-	pane_focus(p);
+	if (strncmp(ci->key, "Move-", 5) != 0)
+		pane_focus(p);
 	return 1;
 }
 

@@ -83,7 +83,7 @@ static struct move_command {
 	{CMD(emacs_move), "Move-File", -1, 0,
 	 "M-Chr-<", "S-Home", NULL},
 	{CMD(emacs_move), "Move-View-Large", 1, 0,
-	 "Next", "C-Chr-V", NULL},
+	 "Next", "C-Chr-V", "emacs-move-large-other"},
 	{CMD(emacs_move), "Move-View-Large", -1, 0,
 	 "Prior", "M-Chr-v", NULL},
 
@@ -363,6 +363,19 @@ REDEF_CMD(emacs_swap)
 		mark_free(start);
 	}
 	return ret;
+}
+
+DEF_CMD(emacs_move_view_other)
+{
+	/* If there is an 'other' pane', Send "Next" there */
+	struct pane *p;
+
+	p = call_pane("OtherPane", ci->focus, 4);
+	if (!p)
+		return 1;
+	call("Mode:set-num", p, ci->num);
+	call("Keystroke", p, 0, NULL, "emacs-move-large-other");
+	return 1;
 }
 
 DEF_CMD(emacs_recenter)
@@ -1733,6 +1746,7 @@ static void emacs_init(void)
 	key_add(m, "emCC-Chr-m", &emacs_make);
 	key_add(m, "emCC-C-Chr-M", &emacs_make);
 
+	key_add(m, "M-C-Chr-V", &emacs_move_view_other);
 
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);

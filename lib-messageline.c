@@ -175,7 +175,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(messageline_map, "Refresh:size", &messageline_refresh_size);
 	key_add(messageline_map, "ChildRegistered", &messageline_child_registered);
 	key_add(messageline_map, "Notify:Keystroke", &messageline_notify);
-	key_add(messageline_map, "Keystroke", &messageline_notify);
 
 	messageline_line_map = key_alloc();
 	key_add(messageline_line_map, "Refresh", &messageline_line_refresh);

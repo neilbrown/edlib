@@ -866,6 +866,7 @@ DEF_CMD(tile_other)
 	 * ci->num has flags:
 	 *  1: if new needed, split horizontally
 	 *  2: if new needed, split vertically
+	 *  4: don't split, just return Efalse
 	 */
 	struct pane *p = ci->home;
 	struct pane *p2;
@@ -898,6 +899,9 @@ DEF_CMD(tile_other)
 	/* Need to create a tile.  If wider than 120 (FIXME configurable?),
 	 * horiz-split else vert
 	 */
+	if (ci->num & 4)
+		return Efalse;
+
 	if (ci->num & 3) {
 		int horiz = ci->num & 1;
 		int after = ci->num & 2;
