@@ -121,7 +121,7 @@ class MakePane(edlib.Pane):
         except edlib.commandfailed:
             d = None
         if not d:
-            focus.call("Message", "File %s not found." % fname)
+            focus.call("Message", "File %s not found in %s." %( fname, dir))
             return edlib.Efail
         par = focus.call("DocPane", d, ret='focus')
         if not par:
@@ -260,7 +260,10 @@ def run_make(key, focus, str, **a):
                 break
             d = os.path.dirname(d)
         if d:
-            path = d
+            if d[-1] == '/':
+                path = d
+            else:
+                path = d+'/'
     doc['dirname'] = path
     if cmd == "make":
         p = focus.call("OtherPane", ret='focus')
