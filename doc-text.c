@@ -1043,6 +1043,10 @@ DEF_CMD(text_reundo)
 	if (!m)
 		return Enoarg;
 
+	if (!ci->num)
+		/* New undo sequence - do redo first */
+		t->prev_edit = Redo;
+
 	status = (t->undo == t->saved);
 
 	do {

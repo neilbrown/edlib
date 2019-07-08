@@ -27,10 +27,13 @@ static struct map *emacs_map, *hl_map;
  */
 enum {
 	N2_zero = 0,
-	N2_undo,	/* adjacent commands form a single undo set */
+	N2_undo_insert,	/* adjacent commands form a single undo set */
+	N2_undo_delete,	/* adjacent commands form a single undo set */
+	N2_undo_change,	/* adjacent commands form a single undo set */
 	N2_recentre,	/* repeated recentre goes to different places */
 	N2_yank,	/* repeated yank-pop takes different result */
 	N2_match,	/* repeated ` after Cx` repeats the search */
+	N2_undo,	/* Last command was 'undo' too */
 };
 static inline int N2(const struct cmd_info *ci safe)
 {
@@ -167,9 +170,9 @@ REDEF_CMD(emacs_delete)
 		mark_free(m);
 		return 0;
 	}
-	ret = call("Replace", ci->focus, 1, m, NULL, N2(ci) != N2_undo);
+	ret = call("Replace", ci->focus, 1, m, NULL, N2(ci) != N2_undo_delete);
 	mark_free(m);
-	call("Mode:set-num2", ci->focus, N2_undo);
+	call("Mode:set-num2", ci->focus, N2_undo_delete);
 
 	return ret;
 }
@@ -200,10 +203,10 @@ REDEF_CMD(emacs_kill)
 	}
 	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, m);
 	if (str && *str)
-		call("copy:save", ci->focus, N2(ci) == N2_undo, NULL, str);
-	ret = call("Replace", ci->focus, 1, m, NULL, N2(ci) != N2_undo);
+		call("copy:save", ci->focus, N2(ci) == N2_undo_delete, NULL, str);
+	ret = call("Replace", ci->focus, 1, m, NULL, N2(ci) != N2_undo_delete);
 	mark_free(m);
-	call("Mode:set-num2", ci->focus, N2_undo);
+	call("Mode:set-num2", ci->focus, N2_undo_delete);
 
 	return ret;
 }
@@ -277,12 +280,12 @@ REDEF_CMD(emacs_case)
 				}
 			}
 			if (changed) {
-				ret = call("Replace", ci->focus, 1, m, str, N2(ci) != N2_undo);
+				ret = call("Replace", ci->focus, 1, m, str, N2(ci) != N2_undo_change);
 				if (dir < 0)
 					call(mv->type+1, ci->focus, dir, ci->mark);
 			}
 			free(str);
-			call("Mode:set-num2", ci->focus, N2_undo);
+			call("Mode:set-num2", ci->focus, N2_undo_change);
 		}
 		mark_free(m);
 		cnt -= 1;
@@ -500,8 +503,8 @@ DEF_CMD(emacs_insert)
 
 	/* Key is "Chr-X" - skip 4 bytes to get X */
 	str = ci->key + 4;
-	ret = call("Replace", ci->focus, 1, ci->mark, str, N2(ci) != N2_undo);
-	call("Mode:set-num2", ci->focus, N2_undo);
+	ret = call("Replace", ci->focus, 1, ci->mark, str, N2(ci) != N2_undo_insert);
+	call("Mode:set-num2", ci->focus, N2_undo_insert);
 
 	return ret;
 }
@@ -542,13 +545,13 @@ DEF_CMD(emacs_insert_other)
 			mark_to_mark(m, ci->mark);
 	}
 
-	ret = call("Replace", ci->focus, 1, ci->mark, ins, N2(ci) != N2_undo);
+	ret = call("Replace", ci->focus, 1, ci->mark, ins, N2(ci) != N2_undo_insert);
 	if (m) {
 		mark_to_mark(ci->mark, m);
 		mark_free(m);
 	}
 	/* A newline starts a new undo */
-	call("Mode:set-num2", ci->focus, (*ins == '\n') ? 0 : N2_undo);
+	call("Mode:set-num2", ci->focus, (*ins == '\n') ? 0 : N2_undo_insert);
 	return ret;
 }
 
@@ -556,7 +559,8 @@ DEF_CMD(emacs_undo)
 {
 	int ret;
 
-	ret = call("doc:reundo", ci->focus);
+	ret = call("doc:reundo", ci->focus, N2(ci) == N2_undo);
+	call("Mode:set-num2", ci->focus, N2_undo);
 	if (ret == Efalse)
 		call("Message", ci->focus, 0, NULL, "No further undo information");
 	return 1;
