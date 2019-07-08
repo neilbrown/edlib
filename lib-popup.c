@@ -106,6 +106,17 @@ DEF_CMD(popup_abort)
 	return 1;
 }
 
+DEF_CMD(popup_child_closed)
+{
+	/* When the child is closed, we have to disappear too */
+	struct popup_info *ppi = ci->home->data;
+
+	pane_focus(ppi->target);
+	pane_close(ppi->popup);
+	return 1;
+}
+	
+
 DEF_CMD(popup_style)
 {
 	struct popup_info *ppi = ci->home->data;
@@ -309,6 +320,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "popup:get-target", &popup_get_target);
 	key_add(popup_map, "popup:close", &popup_do_close);
 	key_add(popup_map, "popup:set-callback", &popup_set_callback);
+	key_add(popup_map, "ChildClosed", &popup_child_closed);
 
 	key_add(popup_map, "Window:bury", &popup_abort);
 	key_add(popup_map, "Window:close", &popup_abort);
