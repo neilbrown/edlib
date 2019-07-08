@@ -310,6 +310,7 @@ DEF_CMD(complete_set_prefix)
 	char *c;
 	int cnt = 0;
 	char *common = NULL;
+	int at_start = 0;
 
 	if (!ci->str)
 		return Enoarg;
@@ -333,14 +334,25 @@ DEF_CMD(complete_set_prefix)
 		l = strlen(match);
 		if (l && match[l-1] == '\n')
 			l -= 1;
-		if (common == NULL)
-			common = strndup(match, l);
-		else
-			common[common_len(match, common)] = 0;
 		if (!cd->prefix_only && strncmp(c, cd->prefix, strlen(cd->prefix)) == 0) {
 			if (m2)
 				mark_free(m2);
 			m2 = mark_dup(m);
+			if (!at_start) {
+				/* If there are matches at the start, the common prefix
+				 * calculation only noticed them
+				 */
+				at_start = 1;
+				free(common);
+				common = NULL;
+			}
+		} else if (at_start)
+			at_start = 2;
+		if (at_start != 2) {
+			if (common == NULL)
+				common = strndup(match, l);
+			else
+				common[common_len(match, common)] = 0;
 		}
 		cnt += 1;
 	}
