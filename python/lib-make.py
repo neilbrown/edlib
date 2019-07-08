@@ -302,7 +302,7 @@ def make_request(key, focus, num, mark, **a):
         # git grep, and not request for local-tree only
         callback_cmd = "full-git-grep"    
 
-    if cmd != "make" and num and mark:
+    if cmd != "make" and num and mark and focus['doc-type'] == "text":
         # choose the word under the cursor
         m1 = mark.dup()
         c = focus.call("doc:step", m1, ret='char')
@@ -315,7 +315,8 @@ def make_request(key, focus, num, mark, **a):
             focus.call("doc:step", m2, 1, 1)
             c = focus.call("doc:step", m2, 1, ret='char')
         str = focus.call("doc:get-str", m1, m2, ret='str')
-        dflt = dflt + str
+        if not ('\n' in str):
+            dflt = dflt + str
 
     if cmd == "make" and num:
         # re-use previous command
