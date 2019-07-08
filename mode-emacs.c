@@ -573,6 +573,99 @@ DEF_CMD(find_done)
 	return ret;
 }
 
+struct find_helper {
+	char *name;
+	int want_prev;
+	struct pane *ret;
+	struct command c;
+};
+
+DEF_CMD(find_helper)
+{
+	struct find_helper *h = container_of(ci->comm, struct find_helper, c);
+	struct pane *p = ci->focus;
+	char *name;
+
+	if (!p)
+		return 1;
+	if (!h->name) {
+		if (h->want_prev) {
+			/* want the pane before nothing, so the last.
+			 * So return this one and keep looking.
+			 */
+			h->ret = p;
+			return 0;
+		} else {
+			/* Want the pane that is after nothing, so
+			 * the first.  This one. All done.
+			 */
+			h->ret = p;
+			return 1;
+		}
+		return 0;
+	}
+	name = pane_attr_get(ci->focus, "doc-name");
+	if (!name)
+		return 0;
+	if (strcmp(name, h->name) == 0) {
+		if (h->want_prev) {
+			/* Want the previous one, which is
+			 * already in ->ret
+			 */
+			return 1;
+		} else {
+			/* Want the next one, so clear name
+			 * and keep going.
+			 */
+			h->name = NULL;
+			return 0;
+		}
+	} else {
+		if (h->want_prev) {
+			/* This might be what I want - keep it in case */
+			h->ret = p;
+			return 0;
+		} else {
+			/* Don't want this - just keep going */
+			return 0;
+		}
+	}
+}
+
+DEF_CMD(find_prevnext)
+{
+	/* Find the previous document lru or, which is "next" as we
+	 * walk the list in mru order.
+	 * When we find it, insert the name into ci->focus document
+	 */
+	char *type = ci->home->data;
+	struct find_helper h;
+
+	if (strcmp(type, "doc") != 0)
+		return 0;
+	h.name = attr_find(ci->home->attrs, "find-doc");
+	h.ret = NULL;
+	h.c = find_helper;
+	h.want_prev = strcmp(ci->key, "M-Chr-n") == 0;
+	
+	call_comm("docs:byeach", ci->focus, &h.c);
+	if (h.ret) {
+		char *name = pane_attr_get(h.ret, "doc-name");
+		struct mark *m, *m2;
+
+		attr_set_str(&ci->home->attrs, "find-doc", name);
+		m = vmark_new(ci->focus, MARK_UNGROUPED);
+		m2 = mark_dup(m);
+		call("Move-file", ci->focus, -1, m);
+		call("Move-file", ci->focus, 1, m);
+		call("Replace", ci->focus, 1, m, name, 0, m2);
+		mark_free(m);
+		mark_free(m2);
+	}
+	return 1;
+
+}
+
 static struct
 map *fh_map;
 static void findmap_init(void)
@@ -580,6 +673,8 @@ static void findmap_init(void)
 	fh_map = key_alloc();
 	key_add(fh_map, "Tab", &find_complete);
 	key_add(fh_map, "Enter", &find_done);
+	key_add(fh_map, "M-Chr-p", &find_prevnext);
+	key_add(fh_map, "M-Chr-n", &find_prevnext);
 }
 
 DEF_LOOKUP_CMD(find_handle, fh_map);
