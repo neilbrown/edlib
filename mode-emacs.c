@@ -588,6 +588,7 @@ DEF_CMD(emacs_findfile)
 {
 	int fd;
 	struct pane *p, *par;
+	char *path;
 
 	if (strncmp(ci->key, "File Found", 10) != 0) {
 		char *path = NULL;
@@ -627,16 +628,22 @@ DEF_CMD(emacs_findfile)
 		return 1;
 	}
 
-	fd = open(ci->str, O_RDONLY);
+	path = ci->str;
+	while (path && strstr(path, "//"))
+		path = strstr(path, "//") + 1;
+	if (!path)
+		return Esys;
+
+	fd = open(path, O_RDONLY);
 	if (fd >= 0) {
-		p = call_pane("doc:open", ci->focus, fd, NULL, ci->str);
+		p = call_pane("doc:open", ci->focus, fd, NULL, path);
 		close(fd);
 	} else
 		/* '4' says 'allow create' */
-		p = call_pane("doc:open", ci->focus, -1, NULL, ci->str, 4);
+		p = call_pane("doc:open", ci->focus, -1, NULL, path, 4);
 	if (!p) {
 		char *m = NULL;
-		asprintf(&m, "Failed to open file: %s", ci->str);
+		asprintf(&m, "Failed to open file: %s", path);
 		call("Message", ci->focus, 0, NULL, m);
 		free(m);
 		return Efail;
