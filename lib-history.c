@@ -60,12 +60,18 @@ DEF_CMD(history_notify_close)
 DEF_CMD(history_done)
 {
 	struct history_info *hi = ci->home->data;
+	char *eol;
+	char *line = ci->str;
 
-	if (!hi->history)
+	if (!hi->history || !ci->str)
 		/* history document was destroyed */
 		return 0;
+	/* Must never include a newline in a history entry! */
+	eol = strchr(ci->str, '\n');
+	if (eol)
+		line = strnsave(ci->home, ci->str, eol - ci->str);
 	call("Move-File", hi->history, 1);
-	call("Replace", hi->history, 1, NULL, ci->str, 1);
+	call("Replace", hi->history, 1, NULL, line, 1);
 	call("Replace", hi->history, 1, NULL, "\n", 1);
 	return 0;
 }
