@@ -86,8 +86,10 @@ DEF_CMD(rcl_cb)
 }
 DEF_CMD(render_complete_line)
 {
-	/* The first line *must* match the prefix.
-	 * skip over any following lines that don't
+	/* Skip any line that doesn't match, and
+	 * return a highlighted version of the firs one
+	 * that does.
+	 * Then skip over any other non-matches.
 	 */
 	struct complete_data *cd = ci->home->data;
 	int plen = strlen(cd->prefix);
@@ -98,36 +100,39 @@ DEF_CMD(render_complete_line)
 	if (!ci->mark || !ci->home->parent)
 		return Enoarg;
 
-	cb.c = save_highlighted;
+	m = mark_dup(ci->mark);
 	cb.plen = plen;
 	cb.prefix_only = cd->prefix_only;
 	cb.prefix = cd->prefix;
 	cb.str = NULL;
-	if (call_comm(ci->key, ci->home->parent, &cb.c, ci->num, ci->mark, NULL,
-		      0, ci->mark2) == 0)
+	cb.cmp = 0;
+	cb.c = rcl_cb;
+	do {
+		mark_to_mark(ci->mark, m);
+		cb.cmp = 0;
+		call_comm(ci->key, ci->home->parent, &cb.c, NO_NUMERIC, m);
+	} while (cb.cmp);
+	mark_free(m);
+	cb.c = save_highlighted;
+	if (call_comm(ci->key, ci->home->parent, &cb.c, ci->num, ci->mark,
+	              NULL, 0, ci->mark2) == 0)
 		return 0;
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cb.str);
 	free(cb.str);
 	if (ci->num != NO_NUMERIC)
+		/* Was rendering to find a cursor, don't need to skip */
 		return ret;
 	/* Need to continue over other matching lines */
 	m = mark_dup(ci->mark);
-	while (1) {
-		cb.c = rcl_cb;
-		cb.plen = plen;
-		cb.prefix = cd->prefix;
-		cb.prefix_only = cd->prefix_only;
-		cb.cmp = 0;
-		call_comm(ci->key, ci->home->parent, &cb.c, ci->num, m, NULL,
-			  0, ci->mark2);
-
-		if (cb.cmp == 0)
-			break;
-
+	cb.c = rcl_cb;
+	do {
 		/* have a non-match, so move the mark over it. */
 		mark_to_mark(ci->mark, m);
-	}
+		cb.cmp = 0;
+		call_comm(ci->key, ci->home->parent, &cb.c, NO_NUMERIC, m);
+	} while (cb.cmp);
+
 	mark_free(m);
 	return ret;
 }
