@@ -69,14 +69,14 @@ DEF_CMD(handle_winch);
 static struct map *nc_map;
 DEF_LOOKUP_CMD(ncurses_handle, nc_map);
 
-
-
-static void set_screen(SCREEN *scr)
+static void set_screen(struct pane *p)
 {
-	if (scr == current_screen)
+	struct display_data *dd = p->data;
+
+	if (dd->scr == current_screen)
 		return;
-	set_term(scr);
-	current_screen = scr;
+	set_term(dd->scr);
+	current_screen = dd->scr;
 }
 
 #ifdef RECORD_REPLAY
@@ -159,6 +159,7 @@ static void record_screen(struct pane *p safe)
 
 	if (!dd->log && !(dd->input && dd->next_event == DoCheck))
 		return;
+	set_screen(p);
 	md5_init(&ctx);
 	for (r = 0; r < p->h; r++)
 		for (c = 0; c < p->w; c++) {
@@ -334,6 +335,7 @@ DEF_CMD(nc_refresh)
 {
 	struct pane *p = ci->home;
 
+	set_screen(p);
 	clear();
 	pane_damaged(p,  DAMAGED_SIZE);
 	return 1;
@@ -341,6 +343,7 @@ DEF_CMD(nc_refresh)
 
 static void ncurses_end(struct pane *p safe)
 {
+	set_screen(p);
 	close_recrep(p);
 	nl();
 	endwin();
@@ -461,6 +464,7 @@ DEF_CMD(nc_draw_text)
 
 	if (!str)
 		return Enoarg;
+	set_screen(p);
 	len = strlen(str);
 	while (str[offset] != 0) {
 		wchar_t wc;
@@ -488,8 +492,8 @@ DEF_CMD(nc_draw_text)
 DEF_CMD(nc_refresh_size)
 {
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
-	set_screen(dd->scr);
+
+	set_screen(p);
 	getmaxyx(stdscr, p->h, p->w);
 	return 0;
 }
@@ -498,7 +502,7 @@ DEF_CMD(nc_refresh_post)
 {
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
-	set_screen(dd->scr);
+	set_screen(p);
 	if (dd->cursor.x >= 0)
 		move(dd->cursor.y, dd->cursor.x);
 	refresh();
@@ -528,7 +532,7 @@ static struct pane *ncurses_init(struct pane *ed)
 
 	current_screen = NULL;
 	p = pane_register(ed, 0, &ncurses_handle.c, dd, NULL);
-
+	set_screen(p);
 	getmaxyx(stdscr, p->h, p->w);
 
 	call("Request:Notify:global-displays", p);
@@ -545,6 +549,7 @@ REDEF_CMD(handle_winch)
 	struct pane *p = ci->home;
 	struct winsize size;
 	ioctl(1, TIOCGWINSZ, &size);
+	set_screen(p);
 	resize_term(size.ws_row, size.ws_col);
 
 	clear();
@@ -556,7 +561,6 @@ static void ncurses_clear(struct pane *p safe, struct pane *display safe,
 			  int attr, int x, int y, int w, int h)
 {
 	int r, c;
-	struct display_data *dd;
 	int w0, h0;
 
 	if (w == 0)
@@ -568,8 +572,7 @@ static void ncurses_clear(struct pane *p safe, struct pane *display safe,
 	if (pane_masked(display, x, y, p->abs_z, &w0, &h0))
 		w0 = h0 = 0;
 
-	dd = display->data;
-	set_screen(dd->scr);
+	set_screen(display);
 	attrset(attr);
 	for (r = y; r < y+h; r++)
 		for (c = x; c < x+w; c++)
@@ -605,7 +608,7 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 		return;
 
 	dd = display->data;
-	set_screen(dd->scr);
+	set_screen(display);
 	if (cursor == 2) {
 		/* Cursor is in-focus */
 		dd->cursor.x = x;
@@ -742,6 +745,7 @@ REDEF_CMD(input_handle)
 	wint_t c;
 	int is_keycode;
 
+	set_screen(p);
 	while ((is_keycode = get_wch(&c)) != ERR) {
 		if (c == KEY_MOUSE) {
 			MEVENT mev;
