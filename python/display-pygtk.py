@@ -30,8 +30,75 @@ class EdDisplay(gtk.Window):
         self.pane.w = self.charwidth * 80
         self.pane.h = self.lineheight * 24
         self.pane.call("Request:Notify:global-displays")
+        self.primary_cb = gtk.Clipboard(selection="PRIMARY")
+        self.clipboard_cb = gtk.Clipboard(selection="CLIPBOARD")
+        self.targets = [ (gtk.gdk.SELECTION_TYPE_STRING, 0, 0) ]
+        self.have_primary = False
+        self.have_clipboard = False
         self.show()
 
+    def claim_primary(self):
+        if self.have_primary:
+            return
+        self.primary_cb.set_with_data(self.targets,
+                                     self.request_clip,
+                                     self.lost_clip, "PRIMARY")
+        self.have_primary = True
+
+    def claim_both(self):
+        self.claim_primary()
+        if self.have_clipboard:
+            return
+        self.clipboard_cb.set_with_data(self.targets,
+                                        self.request_clip,
+                                        self.lost_clip, "CLIPBOARD")
+        self.have_clipboard = True
+
+    def request_clip(self, sel, seldata, info, data):
+        s = self.pane.call("copy:get", 0, ret='str')
+        if not s:
+            s = ""
+        seldata.set_text(s)
+
+    def lost_clip(self, cb, data):
+        if data == "PRIMARY":
+            self.have_primary = False
+        if data == "CLIPBOARD":
+            self.have_clipboard = False
+
+    def copy_save(self, key, focus, num2, **a):
+        "handle:copy:save"
+        if num2:
+            # mouse-only
+            self.claim_primary()
+        else:
+            self.claim_both()
+        return 0
+
+    def copy_get(self, key, focus, num, comm2, **a):
+        "handle:copy:get"
+        if not self.have_primary:
+            if num == 0:
+                s = self.primary_cb.wait_for_text()
+                if s is not None:
+                    if comm2:
+                        comm2("cb", focus, s)
+                    return 1
+            else:
+                if self.primary_cb.wait_is_text_available():
+                    num -= 1
+        if not self.have_clipboard:
+            if num == 0:
+                s = self.clipboard_cb.wait_for_text()
+                if s is not None:
+                    if comm2:
+                        comm2("cb", focus, s)
+                    return 1
+            else:
+                if self.clipboard_cb.wait_is_text_available():
+                    num -= 1
+        return self.pane.parent.call(key, focus, num, comm2)
+        
     def handle_notify_displays(self, key, focus, comm2, **a):
         "handle:Notify:global-displays"
         comm2("callback:display", self.pane)

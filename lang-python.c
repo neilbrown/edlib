@@ -2025,7 +2025,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 		/* First positional arg must be the key */
 		a = PyTuple_GetItem(args, 0);
 		if (!PyString_Check(a)) {
-			PyErr_SetString(PyExc_TypeError, "First are must be key");
+			PyErr_SetString(PyExc_TypeError, "First arg must be key");
 			return 0;
 		}
 		ci->key = safe_cast PyString_AsString(a);
