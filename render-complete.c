@@ -354,6 +354,20 @@ static int common_len(char *a safe, char *b safe)
 	return len;
 }
 
+static void adjust_pre(char *common, char *new, int len)
+{
+	int l = strlen(common);
+	int newlen = 0;
+
+	while (l && len && common[l-1] == new[len-1]) {
+		l -= 1;
+		len -= 1;
+		newlen += 1;
+	}
+	if (l)
+		memmove(common, common+l, newlen+1);
+}
+
 DEF_CMD(complete_set_prefix)
 {
 	/* Set the prefix, force a full refresh, and move point
@@ -369,6 +383,7 @@ DEF_CMD(complete_set_prefix)
 	char *c;
 	int cnt = 0;
 	char *common = NULL;
+	char *common_pre = NULL;
 	int at_start = 0;
 
 	if (!ci->str)
@@ -412,11 +427,28 @@ DEF_CMD(complete_set_prefix)
 				common = strndup(match, l);
 			else
 				common[common_len(match, common)] = 0;
+			if (match != c) {
+				if (!common_pre) {
+					common_pre = strndup(c, l + match-c);
+					strncpy(common_pre, c, match-c);
+					common_pre[match-c] = 0;
+				} else
+					adjust_pre(common_pre, c, match-c);
+			} else {
+				free(common_pre);
+				common_pre = NULL;
+			}
 		}
 		cnt += 1;
 	}
-	comm_call(ci->comm2, "callback:prefix", ci->focus, cnt,
-	          NULL, common);
+	if (common_pre && common_pre[0]) {
+		strcat(common_pre, common);
+		comm_call(ci->comm2, "callback:prefix", ci->focus, cnt,
+		          NULL, common_pre);
+		free(common_pre);
+	} else
+		comm_call(ci->comm2, "callback:prefix", ci->focus, cnt,
+		          NULL, common);
 	free(common);
 	if (m2) {
 		call("Move-to", ci->focus, 0, m2);
