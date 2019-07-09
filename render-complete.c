@@ -256,6 +256,60 @@ DEF_CMD(complete_nomove)
 	return 1;
 }
 
+DEF_CMD(complete_ignore_replace)
+{
+	return 1;
+}
+
+DEF_CMD(complete_escape)
+{
+	/* submit the original prefix back*/
+	struct complete_data *cd = ci->home->data;
+
+	/* This pane might be closed before the reply string is used,
+	 * so we need to save it.
+	 */
+	call("popup:close", ci->home->parent, NO_NUMERIC, NULL,
+	     strsave(ci->home, cd->prefix));
+	return 1;
+}
+
+DEF_CMD(complete_char)
+{
+	struct complete_data *cd = ci->home->data;
+	char *np;
+	struct call_return cr;
+	int pl = strlen(cd->prefix);
+
+	np = malloc(pl + 2);
+	strcpy(np, cd->prefix);
+	np[pl] = ci->key[4];
+	np[pl+1] = 0;
+	cr = call_ret(all, "Complete:prefix", ci->focus, !cd->prefix_only, NULL, np);
+	if (cr.i == 0) {
+		/* No matches, revert */
+		np[pl] = 0;
+		call("Complete:prefix", ci->focus, !cd->prefix_only, NULL, np);
+	} else if (cr.s && strlen(cr.s) > strlen(np))
+		call("Complete:prefix", ci->focus, !cd->prefix_only, NULL, cr.s);
+	free(np);
+	return 1;
+}
+
+DEF_CMD(complete_bs)
+{
+	struct complete_data *cd = ci->home->data;
+	char *np;
+	int pl = strlen(cd->prefix);
+
+	np = malloc(pl + 1);
+	strcpy(np, cd->prefix);
+	np[pl-1] = 0;
+	call("Complete:prefix", ci->focus, !cd->prefix_only, NULL, np);
+	free(np);
+	return 1;
+}
+
 DEF_CMD(eol_cb)
 {
 	/* don't save anything */
@@ -361,7 +415,8 @@ DEF_CMD(complete_set_prefix)
 		}
 		cnt += 1;
 	}
-	comm_call(ci->comm2, "callback:prefix", ci->focus, 0, NULL, common);
+	comm_call(ci->comm2, "callback:prefix", ci->focus, cnt,
+	          NULL, common);
 	free(common);
 	if (m2) {
 		call("Move-to", ci->focus, 0, m2);
@@ -435,6 +490,11 @@ static void register_map(void)
 	key_add(rc_map, "render-line-prev", &render_complete_prev);
 	key_add(rc_map, "Close", &complete_close);
 	key_add(rc_map, "Clone", &complete_clone);
+
+	key_add(rc_map, "Replace", &complete_ignore_replace);
+	key_add(rc_map, "ESC", &complete_escape);
+	key_add_range(rc_map, "Chr- ", "Chr-~", &complete_char);
+	key_add(rc_map, "Backspace", &complete_bs);
 
 	key_add_range(rc_map, "Move-", "Move-\377", &complete_nomove);
 	key_add(rc_map, "Move-EOL", &complete_eol);
