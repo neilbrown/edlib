@@ -34,7 +34,7 @@ static struct map *popup_map;
 DEF_LOOKUP_CMD(popup_handle, popup_map);
 
 struct popup_info {
-	struct pane	*target safe, *popup safe, *handle safe;
+	struct pane	*target safe, *handle safe;
 	char		*style safe;
 	struct command	*done;
 };
@@ -102,7 +102,7 @@ DEF_CMD(popup_abort)
 
 	pane_focus(ppi->target);
 	call("Abort", ppi->target);
-	pane_close(ppi->popup);
+	pane_close(ci->home);
 	return 1;
 }
 
@@ -112,7 +112,7 @@ DEF_CMD(popup_child_closed)
 	struct popup_info *ppi = ci->home->data;
 
 	pane_focus(ppi->target);
-	pane_close(ppi->popup);
+	pane_close(ci->home);
 	return 1;
 }
 	
@@ -133,8 +133,8 @@ DEF_CMD(popup_style)
 			border[j++] = "TLBR"[i];
 	}
 	border[j] = 0;
-	attr_set_str(&ppi->popup->attrs, "Popup", "true");
-	attr_set_str(&ppi->popup->attrs, "borders", border);
+	attr_set_str(&ci->home->attrs, "Popup", "true");
+	attr_set_str(&ci->home->attrs, "borders", border);
 	popup_resize(ci->home, ppi->style);
 	return 1;
 }
@@ -221,7 +221,7 @@ DEF_CMD(popup_do_close)
 		str = "";
 	done = ppi->done;
 	ppi->done = NULL;
-	pane_close(ppi->popup);
+	pane_close(ci->home);;
 	/* This pane is closed now, ppi is gone. Be careful */
 	if (done)
 		comm_call(done, key, target, 1, NULL, str);
@@ -273,27 +273,27 @@ DEF_CMD(popup_attach)
 	if (z < 0)
 		z = 1;
 
-	ppi->popup = p = pane_register(root, z + 1, &popup_handle.c, ppi, NULL);
+	p = pane_register(root, z + 1, &popup_handle.c, ppi, NULL);
 	ppi->style = strdup(style);
-	popup_resize(ppi->popup, style);
+	popup_resize(p, style);
 	for (i = 0, j = 0; i < 4; i++) {
 		if (strchr(style, "TLBR"[i]) == NULL)
 			border[j++] = "TLBR"[i];
 	}
 	border[j] = 0;
-	attr_set_str(&ppi->popup->attrs, "Popup", "true");
-	attr_set_str(&ppi->popup->attrs, "borders", border);
-	attr_set_str(&ppi->popup->attrs, "render-wrap", "no");
+	attr_set_str(&p->attrs, "Popup", "true");
+	attr_set_str(&p->attrs, "borders", border);
+	attr_set_str(&p->attrs, "render-wrap", "no");
 
-	pane_add_notify(ppi->popup, ppi->target, "Notify:Close");
-	pane_focus(ppi->popup);
+	pane_add_notify(p, ppi->target, "Notify:Close");
+	pane_focus(p);
 
 	if (ci->str2) {
 		struct pane *doc =
-			call_pane("doc:from-text", ppi->popup, 0, NULL,
+			call_pane("doc:from-text", p, 0, NULL,
 				  "*popup*", 0, NULL, ci->str2);
 		if (doc &&
-		    (p = doc_attach_view(ppi->popup, doc, NULL, NULL, 0)) != NULL) {
+		    (p = doc_attach_view(p, doc, NULL, NULL, 0)) != NULL) {
 
 			call("Move-File", p, 1);
 			call("doc:set:autoclose", p, 1);
