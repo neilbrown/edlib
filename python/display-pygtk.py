@@ -608,7 +608,7 @@ class events(edlib.Pane):
         return 1
 
     def sighan(self, sig, frame):
-        (focus, comm2, event, num, ev) = self.sigs[sig]
+        (focus, comm2, ev) = self.sigs[sig]
         gobject.idle_add(self.dosig, comm2, focus, sig, ev)
         return 1
 
