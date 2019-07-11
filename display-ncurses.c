@@ -72,12 +72,36 @@ DEF_LOOKUP_CMD(ncurses_handle, nc_map);
 
 static void set_screen(struct pane *p)
 {
-	struct display_data *dd = p->data;
+	struct display_data *dd;
+	extern void *_nc_globals[100];
+	int i;
+	static int index = -1, offset=0;
 
+	if (!p) {
+		if (current_screen && index >= 0)
+			_nc_globals[index] = 0;
+		current_screen = NULL;
+		return;
+	}
+	dd = p->data;
 	if (dd->scr == current_screen)
 		return;
+
+	if (index == -1) {
+		index = -2;
+		for (i=0; i<100; i++)
+			if (_nc_globals[i] < (void*)stdscr &&
+			    _nc_globals[i]+4*(sizeof(void*)) >= (void*)stdscr) {
+				index = i;
+				offset = ((void*)stdscr) - _nc_globals[i];
+			}
+	}
+
 	set_term(dd->scr);
 	current_screen = dd->scr;
+	if (index >= 0) {
+		_nc_globals[index] = ((void*)stdscr) - offset;
+	}
 }
 
 #ifdef RECORD_REPLAY
@@ -519,6 +543,7 @@ static struct pane *ncurses_init(struct pane *ed, char *tty, char *term)
 	struct display_data *dd;
 	FILE *f;
 
+	set_screen(NULL);
 	if (tty)
 		f = fopen(tty, "r+");
 	else
