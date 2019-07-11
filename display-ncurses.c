@@ -46,6 +46,7 @@ typedef char hash_t[MD5_DIGEST_SIZE*2+1];
 
 struct display_data {
 	SCREEN			*scr;
+	FILE			*scr_file;
 	struct xy		cursor;
 	#ifdef RECORD_REPLAY
 	FILE			*log;
@@ -335,6 +336,7 @@ DEF_CMD(nc_refresh)
 {
 	struct pane *p = ci->home;
 
+	call("Sig:Winch", p);
 	set_screen(p);
 	clear();
 	pane_damaged(p,  DAMAGED_SIZE);
@@ -510,11 +512,30 @@ DEF_CMD(nc_refresh_post)
 	return 1;
 }
 
-static struct pane *ncurses_init(struct pane *ed)
+static struct pane *ncurses_init(struct pane *ed, char *tty, char *term)
 {
-	WINDOW *w = initscr();
+	SCREEN *scr;
 	struct pane *p;
-	struct display_data *dd = calloc(1, sizeof(*dd));
+	struct display_data *dd;
+	FILE *f;
+
+	if (tty)
+		f = fopen(tty, "r+");
+	else
+		f = fdopen(1, "r+");
+	if (!f)
+		return NULL;
+	scr = newterm(term, f, f);
+	if (!scr)
+		return NULL;
+
+	dd = calloc(1, sizeof(*dd));
+	dd->scr = scr;
+	dd->scr_file = f;
+	dd->cursor.x = dd->cursor.y = -1;
+
+	p = pane_register(ed, 0, &ncurses_handle.c, dd, NULL);
+	set_screen(p);
 
 	start_color();
 	use_default_colors();
@@ -523,22 +544,17 @@ static struct pane *ncurses_init(struct pane *ed)
 	nonl();
 	timeout(0);
 	set_escdelay(100);
-	intrflush(w, FALSE);
-	keypad(w, TRUE);
+	intrflush(stdscr, FALSE);
+	keypad(stdscr, TRUE);
 	mousemask(ALL_MOUSE_EVENTS, NULL);
 
-	dd->scr = NULL;
-	dd->cursor.x = dd->cursor.y = -1;
-
-	current_screen = NULL;
-	p = pane_register(ed, 0, &ncurses_handle.c, dd, NULL);
-	set_screen(p);
 	getmaxyx(stdscr, p->h, p->w);
 
 	call("Request:Notify:global-displays", p);
 	if (!prepare_recrep(p)) {
-		call_comm("event:read", p, &input_handle, 0);
-		call_comm("event:signal", p, &handle_winch, SIGWINCH);
+		call_comm("event:read", p, &input_handle, fileno(f));
+		if (!tty)
+			call_comm("event:signal", p, &handle_winch, SIGWINCH);
 	}
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;
@@ -547,8 +563,9 @@ static struct pane *ncurses_init(struct pane *ed)
 REDEF_CMD(handle_winch)
 {
 	struct pane *p = ci->home;
+	struct display_data *dd = p->data;
 	struct winsize size;
-	ioctl(1, TIOCGWINSZ, &size);
+	ioctl(fileno(dd->scr_file), TIOCGWINSZ, &size);
 	set_screen(p);
 	resize_term(size.ws_row, size.ws_col);
 
@@ -753,13 +770,17 @@ REDEF_CMD(input_handle)
 				send_mouse(&mev, p);
 		} else
 			send_key(is_keycode, c, p);
+		/* Don't know what other code might have done,
+		 * so re-set the screen
+		 */
+		set_screen(p);
 	}
 	return 1;
 }
 
 DEF_CMD(display_ncurses)
 {
-	struct pane *p = ncurses_init(ci->focus);
+	struct pane *p = ncurses_init(ci->focus, ci->str, ci->str2);
 	if (p)
 		return comm_call(ci->comm2, "callback:display", p);
 	return Esys;
@@ -778,4 +799,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(nc_map, "Refresh:size", &nc_refresh_size);
 	key_add(nc_map, "Refresh:postorder", &nc_refresh_post);
 	key_add(nc_map, "Notify:global-displays", &nc_notify_display);
+	key_add(nc_map, "Sig:Winch", &handle_winch);
 }
