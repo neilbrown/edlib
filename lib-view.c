@@ -70,7 +70,7 @@ DEF_CMD(view_refresh)
 	if (vd->border & BORDER_LEFT) {
 		/* Left border is (currently) always a scroll bar */
 		for (i = 0; i < p->h; i += vd->line_height)
-			one_char(p, "|", "inverse", 0, i + vd->ascent);
+			one_char(p, "┃", "inverse", 0, i + vd->ascent);
 
 		if (p->h > 4 * vd->line_height) {
 			struct mark *m;
@@ -102,7 +102,7 @@ DEF_CMD(view_refresh)
 	}
 	if (vd->border & BORDER_RIGHT) {
 		for (i = 0; i < p->h; i += vd->line_height)
-			one_char(p, "|", "inverse", p->w-vd->border_width,
+			one_char(p, "┃", "inverse", p->w-vd->border_width,
 				  i + vd->ascent);
 	}
 	if (vd->border & (BORDER_TOP | BORDER_BOT)) {
@@ -111,12 +111,12 @@ DEF_CMD(view_refresh)
 		if (modified && strcmp(modified, "yes") == 0)
 			modified = "*";
 		else
-			modified = "-";
+			modified = "━";
 	}
 	if (vd->border & BORDER_TOP) {
 		int label;
 		for (i = 0; i < p->w; i += vd->border_width)
-			one_char(p, "-", "inverse", i, vd->ascent);
+			one_char(p, "━", "inverse", i, vd->ascent);
 		snprintf(msg, sizeof(msg), "%s", name);
 		label = (p->w - strlen(msg) * vd->border_width) / 2;
 		if (label < vd->border_width)
@@ -126,7 +126,7 @@ DEF_CMD(view_refresh)
 	}
 	if (vd->border & BORDER_BOT) {
 		for (i = 0; i < p->w; i+= vd->border_width)
-			one_char(p, "=", "inverse", i,
+			one_char(p, "═", "inverse", i,
 				  p->h-vd->border_height+vd->ascent);
 
 		if (!(vd->border & BORDER_TOP)) {
@@ -149,13 +149,13 @@ DEF_CMD(view_refresh)
 	}
 	if (!(~vd->border & (BORDER_LEFT|BORDER_BOT)))
 		/* Both are set */
-		one_char(p, "+", "inverse", 0, p->h-vd->border_height+vd->ascent);
+		one_char(p, "┗", "inverse", 0, p->h-vd->border_height+vd->ascent);
 	if (!(~vd->border & (BORDER_RIGHT|BORDER_TOP)))
-		one_char(p, "X", "inverse", p->w-vd->border_width, vd->ascent);
+		one_char(p, "╳", "inverse", p->w-vd->border_width, vd->ascent);
 	if (!(~vd->border & (BORDER_LEFT|BORDER_TOP)))
-		one_char(p, "/", "inverse", 0, vd->ascent);
+		one_char(p, "┏", "inverse", 0, vd->ascent);
 	if (!(~vd->border & (BORDER_RIGHT|BORDER_BOT)))
-		one_char(p, "/", "inverse", p->w-vd->border_width, p->h-vd->border_height+vd->ascent);
+		one_char(p, "┛", "inverse", p->w-vd->border_width, p->h-vd->border_height+vd->ascent);
 	return 0;
 }
 
