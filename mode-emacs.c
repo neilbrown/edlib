@@ -438,6 +438,7 @@ static struct simple_command {
 	{CMD(emacs_simple_neg), "Window:scale-relative", "emCX-C-Chr--"},
 	{CMD(emacs_simple), "Window:bury", "M-Chr-B"},
 	{CMD(emacs_simple), "Display:new", "emCX5-Chr-2"},
+	{CMD(emacs_simple), "Display:close", "emCX5-Chr-0"},
 	{CMD(emacs_simple), "lib-server:done", "emCX-Chr-#"},
 	{CMD(emacs_simple), "Abort", "C-Chr-G"},
 	{CMD(emacs_simple), "NOP", "M-Chr-G"},

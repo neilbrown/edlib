@@ -109,6 +109,11 @@ class EdDisplay(gtk.Window):
         self.text.queue_draw()
         return 1
 
+    def handle_close_window(self, key, **a):
+        "handle:Display:close"
+        self.close()
+        return 1
+
     def handle_fullscreen(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
         "handle:Display:fullscreen"
         if num > 0:

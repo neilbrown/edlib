@@ -367,6 +367,12 @@ DEF_CMD(nc_refresh)
 	return 1;
 }
 
+DEF_CMD(nc_close_display)
+{
+	pane_close(ci->home);
+	return 1;
+}
+
 static void ncurses_end(struct pane *p safe)
 {
 	set_screen(p);
@@ -817,6 +823,7 @@ void edlib_init(struct pane *ed safe)
 
 	nc_map = key_alloc();
 	key_add(nc_map, "Display:refresh", &nc_refresh);
+	key_add(nc_map, "Display:close", &nc_close_display);
 	key_add(nc_map, "Close", &nc_close);
 	key_add(nc_map, "pane-clear", &nc_clear);
 	key_add(nc_map, "text-size", &nc_text_size);
