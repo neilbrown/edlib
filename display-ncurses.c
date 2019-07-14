@@ -711,6 +711,7 @@ static struct namelist {
 	{'\n', "LF"},
 	{'\r', "Enter"},
 	{'\t', "Tab"},
+	{'\177', "Delete"},
 	{'\0', "C-Chr- "},
 	{0, NULL}
 };
