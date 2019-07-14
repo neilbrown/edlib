@@ -21,6 +21,9 @@ class EdDisplay(gtk.Window):
         events_activate(focus)
         gtk.Window.__init__(self)
         self.pane = edlib.Pane(focus, self)
+        # panes is a mapping from edlib.Pane objects to gtk.gdk.Pixmap objects.
+        # While a pane has the same size as its parent, only the parent can have
+        # a Pixmap
         self.panes = {}
         self.set_title("EDLIB")
         self.connect('destroy', self.close_win)
@@ -98,7 +101,7 @@ class EdDisplay(gtk.Window):
                 if self.clipboard_cb.wait_is_text_available():
                     num -= 1
         return self.pane.parent.call(key, focus, num, comm2)
-        
+
     def handle_notify_displays(self, key, focus, comm2, **a):
         "handle:Notify:global-displays"
         comm2("callback:display", self.pane)
