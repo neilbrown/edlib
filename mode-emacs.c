@@ -40,6 +40,11 @@ static inline int N2(const struct cmd_info *ci safe)
 	return ci->num2 & 0xffff;
 }
 
+static inline int N2a(const struct cmd_info *ci safe)
+{
+	return ci->num2 >> 16;
+}
+
 REDEF_CMD(emacs_move);
 REDEF_CMD(emacs_function_move);
 REDEF_CMD(emacs_delete);
@@ -386,17 +391,17 @@ DEF_CMD(emacs_recenter)
 	int step = 0;
 	if (ci->num == NO_NUMERIC && N2(ci) == N2_recentre) {
 		/* Repeated command - go to top, or bottom, or middle in order */
-		switch (ci->num2 & 0xF0000) {
+		switch (N2a(ci)) {
 		default:
 		case 0: /* was center, go to top */
 			call("Move-View-Line", ci->focus, 1, ci->mark);
-			step = 0x10000;
+			step = 1;
 			break;
-		case 0x10000: /* was top, go to bottom */
+		case 1: /* was top, go to bottom */
 			call("Move-View-Line", ci->focus, -1, ci->mark);
-			step = 0x20000;
+			step = 2;
 			break;
-		case 0x20000: /* was bottom, go to middle */
+		case 2: /* was bottom, go to middle */
 			call("Move-View-Line", ci->focus, 0, ci->mark);
 			step = 0;
 			break;
@@ -404,7 +409,7 @@ DEF_CMD(emacs_recenter)
 	} else if (ci->num == -NO_NUMERIC) {
 		/* Move point to bottom */
 		call("Move-View-Line", ci->focus, -1, ci->mark);
-		step = 0x20000;
+		step = 2;
 	} else if (ci->num != NO_NUMERIC) {
 		/* Move point to display line N */
 		call("Move-View-Line", ci->focus, ci->num, ci->mark);
@@ -413,7 +418,7 @@ DEF_CMD(emacs_recenter)
 		call("Move-View-Line", ci->focus, 0, ci->mark);
 		call("Display:refresh", ci->focus);
 	}
-	call("Mode:set-num2", ci->focus, N2_recentre | step);
+	call("Mode:set-num2", ci->focus, N2_recentre | (step << 16));
 	return 1;
 }
 
@@ -1554,7 +1559,7 @@ DEF_CMD(emacs_yank_pop)
 {
 	struct mark *mk, *m;
 	char *str;
-	int num = ci->num2 >> 16;
+	int num = N2a(ci);
 
 	if (N2(ci) != N2_yank)
 		return Einval;
