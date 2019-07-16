@@ -620,7 +620,6 @@ DEF_CMD(find_helper)
 			h->ret = p;
 			return 1;
 		}
-		return 0;
 	}
 	name = pane_attr_get(ci->focus, "doc-name");
 	if (!name)
@@ -673,9 +672,9 @@ DEF_CMD(find_prevnext)
 
 		attr_set_str(&ci->home->attrs, "find-doc", name);
 		m = vmark_new(ci->focus, MARK_UNGROUPED);
-		m2 = mark_dup(m);
+		m2 = m ? mark_dup(m) : NULL;
 		call("Move-file", ci->focus, -1, m);
-		call("Move-file", ci->focus, 1, m);
+		call("Move-file", ci->focus, 1, m2);
 		call("Replace", ci->focus, 1, m, name, 0, m2);
 		mark_free(m);
 		mark_free(m2);

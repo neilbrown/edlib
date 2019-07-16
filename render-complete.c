@@ -269,8 +269,9 @@ DEF_CMD(complete_escape)
 	/* This pane might be closed before the reply string is used,
 	 * so we need to save it.
 	 */
-	call("popup:close", ci->home->parent, NO_NUMERIC, NULL,
-	     strsave(ci->home, cd->prefix));
+	if (ci->home->parent)
+		call("popup:close", ci->home->parent, NO_NUMERIC, NULL,
+		     strsave(ci->home, cd->prefix));
 	return 1;
 }
 
@@ -354,7 +355,7 @@ static int common_len(char *a safe, char *b safe)
 	return len;
 }
 
-static void adjust_pre(char *common, char *new, int len)
+static void adjust_pre(char *common safe, char *new safe, int len)
 {
 	int l = strlen(common);
 	int newlen = 0;
