@@ -1,7 +1,7 @@
 <meta HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
 
 <!--
-# Copyright Neil Brown ©2015-2016 <neil@brown.name>
+# Copyright Neil Brown ©2015-2019 <neil@brown.name>
 # May be distrubuted under terms of GPLv2 - see file:COPYING
 -->
 
@@ -46,48 +46,55 @@ written in another language, and they are the preferred way to
 interact between different modules even in the same language.
 
 All commands receive the same types of arguments and produce an integer
-result.  The arguments include two panes, two marks, three
-strings, two numbers, two co-ordinate pairs and one command.  Extra
-result values can be effected by passing them to a call to the
-“command” argument - i.e the command can be used as a call-back.
+result.  The arguments include two panes (“home” and “focus”),
+two marks (“mark” and “mark2”),
+three strings (“key”, “str”, “str2”),
+two numbers (“num” and “num2”),
+a co-ordinate pair (“x”, “y”) and two commands (“comm1” and “comm2”).
+Extra result values can be effected by passing them to a call to
+the “comm2” argument - i.e the command can be used as a call-back.
 
-Commands can be used internally to a module and externally for
-communication between modules.  Externally visible commands appear
-primarily in two sorts of places.  Each “pane” has a command which
-performs all the actions required of, or provided by, that pane.  A
-pane may also maintain a set of commands with assigned names that
-are provided to it from elsewhere.  In particular the root pane
-maintains a set of global named commands.
+Each “pane” has a dedicate command which handles messages sent to
+the pane, as will be described later.  Commands can also be passed
+to other commands, which can either call them directly (like the
+call-back mentioned above) or store them for later use, or
+both.
 
-Two of the arguments provided to a command have very special
+Three of the arguments provided to a command have very special
 meanings.  One of the strings, known as “key”, identifies what action
-should be performed.  For commands that have been assigned a name, the
-“key” string passed will always be exactly the name by which the
-command was found.  For commands which are assigned to a pane, the
-“key” could be anything.  The command must determine if it understands
-that key.  If it does it should perform the action (possibly
-calling some other command internally).  If not it should return 0.
-This return code usually causes the caller to look elsewhere for a
-command to perform the desired action.
+should be performed.  The pane handler will normal use this key to
+select some other command to actually handle the message.  Other
+commands may ignore the key, or use it however they please.
 
-The other special argument is one of the panes, called “home”.  This
-always identifies the pane in which the command was found, either as a
-dedicated “pane” command or as a named command.  One of the primary
+When a message is sent to a pane and the handler command is called,
+the “home” argument is set to the pane, so it acts a bit like the
+“self” argument in some object-oriented languages.  One of the primary
 uses of “home” is to access “home->data” which a private data
-structure owned by the pane.  The command associated with a
-particular pane is typically the only code which can understand the
-data.
+structure owned by the pane.  The command associated with a particular
+pane is typically the only code which can understand the data.
+
+Finally the “comm1” argument passed to a command always identifies
+exactly the command that is being run.  “comm1” is a pointer to a
+structure containing a pointer to the function being called.  This
+structure can be embedded is some other data structure which contains
+context for the command.  This context might be read-only, to refine
+the behaviour of the command, or read/write to provide storage for the
+command to use.  For example, the call-back commands described earlier
+are normally embedded in a data structure that can store the extra
+values to return.
 
 Apart from the return value of zero which indicates “command not
 understood”, a command can return a positive result on success or a
-negative result indicating lack of success.  In particular, “-1” is a
-generic failure return code, and “-2” indicates that the command will
-complete asynchronously.  Commands only return this if they are
-specifically documented to do say.  It is usually only relevant if a
-callback was passed as the “command” argument and it indicates that
-the callback has not yet been called, but otherwise no error has been
-detected. (Actually, async commands are purely theoretical, so details
-are likely to change).
+negative result indicating lack of success.  Known error codes include:
+
+- Enoarg : missing argument
+- Einval : some wrong with the context of the request
+- Esys : request makes sense, but didn't work
+- Enosup: request makes sense, but isn't allowed for some reason
+- Efail:  This is similar to Esys - I need to clarify the difference
+       if there is one.
+- Efalse: Not really an error, just a Boolean status
+- Enotarget: Similar to zero, but no more parents are attempted.
 
 Panes
 -----
@@ -100,16 +107,17 @@ previously mentioned, panes can also store module-specific data.
 All panes are arranged as a tree with all but the root having a parent
 and many having siblings and children.  When a pane represents a
 rectangle of display all children are restricted to just that
-rectangle or less.  Often a child will cover exactly the same areas as
+rectangle or less.  Often a child will cover exactly the same area as
 its parent.  In other cases several children will share out the area.
 
 Events are often generated at a leaf of the tree of panes (i.e. a pane
 with no children).  They travel up the tree towards the root until
 they find a pane which can handle them.  That pane might handle the
-event bey generating other events.  They will typically start looking
-for handler at the same leaf.  For this reason branches of the pane
-tree usually have more generic panes closer to the root and more
-special-purpose panes near the leaves.
+event by generating other events.  They will typically start looking
+for handler at the same leaf which is available as the “focus”
+argument.  For this reason branches of the pane tree usually have more
+generic panes closer to the root and more special-purpose panes near
+the leaves.
 
 It is quite normal for there to be panes in the tree that are not
 directly involves in displaying anything - these are just useful
@@ -125,7 +133,7 @@ pane has:
   absolute.
 - a “z” value which indicates display priority with respect to
   siblings.  When siblings overlap, the sibling with the higher “z”
-  value will be draw “over” siblings with a lower “z” value, including
+  value will be drawn “over” siblings with a lower “z” value, including
   all the children of that sibling (independent of their z value).
 - a selected child referred to as the “focus”. Keyboard input at a
   display is forwarded down the chain of focus links until it reaches
@@ -137,16 +145,16 @@ pane has:
 Each pane may also request notifications from other panes.  These
 include, but are not limited to, a notification when the pane is
 destroyed and a notification when a document attached to the pane
-changes.  This notifications are effected by calling the panes command
+changes.  These notifications are effected by calling the pane's command
 with a key like “notify:close” and with the second pane argument
-(known as “focus”) set to the pane which is sending the notification.
+(the “focus”) set to the pane which is sending the notification.
 
 Documents
 ---------
 
-A document provides access to whatever data is being edited.  There
-can be multiple implementations for documents but they all have a
-common interface.
+A document provides access to whatever data is being edited, or just
+displayed.  There can be multiple implementations for documents but
+they all have a common interface.
 
 A “document” is assumed to be a linear sequence of elements each of
 which presents as a single character and may have some attributes
@@ -155,13 +163,13 @@ typically Unicode characters stored as UTF-8 and the attributes, if
 any, are hints for parsing or display.
 For a “directory” document, the elements are entries in the directory
 and the associated character reflects the type of entry.  The
-attributes contain the useful information such as file name, size,
+attributes contain other information such as file name, size,
 modify time etc.
 
-A document is represents by a non-display pane.  These panes are
+A document is represented by a non-display pane.  These panes are
 typically collected together as children of a “document-list” pane
-which can be asked to add or find documents.  To display and a
-document a document-display pane is normally created.  This contains,
+which can be asked to add or find documents.  To display a
+document, a document-display pane is normally created.  This contains,
 in its private data, a reference to the document pane and a “point”
 (see below) indicating where changes will happen.  Events that arrive
 at the document-display pane will typically be forwarded to the
@@ -170,7 +178,7 @@ document, though they maybe be handled directly by the display pane.
 Attributes
 ----------
 
-An attribute is a simple name/value pair, both being strings.
+An attribute is a simple name=value pair, both being strings.
 Attributes can be associated with various other objects, including
 marks, panes, and elements in a document.  Parsing code can
 annotate a buffer with attributes, and rendering code can use these
@@ -193,7 +201,7 @@ remains at that location despite any edits that do not affect
 neighbouring elements.
 
 Marks come in three different sorts: ungrouped, grouped, and points.
-All of these appear in document-order a singly linked list, all have a
+All of these appear in document-order in a linked list, all have a
 sequence number in the list so ordering-tests are easy, and each can
 have a set of attributes attached.
 
@@ -211,7 +219,7 @@ same group.  This group is owned by a specific pane and keeps
 information relevant to the task of that pane.  A pane responsible for
 rendering part of a document might have marks identifying the start
 and end of the visible portion, and maybe even the start of each line
-in the visible portion.  An ungrouped mark also has a reference to an
+in the visible portion.  A grouped mark also has a reference to an
 arbitrary data structure which is understood by the pane which owns
 the group.
 
@@ -248,7 +256,7 @@ responds to commands like “pane-clear”, “text-display”, and
 “pane” tree, but this is not a requirement.
 
 A display is also expected to call “Keystroke” and “Mouse-event”
-commands in response to appropriate events.  There will propagate
+commands in response to appropriate events.  These will propagate
 towards the root and normally hit an input-management pane which will
 find the appropriate target leaf, will convert to a full event,
 e.g. adding a repeat count or indication of a prefix key, and will
@@ -264,6 +272,9 @@ strings can be mapped to a command, then exceptions can be recorded.
 
 Keymaps are a bit like attributes in that the concept is valuable but
 it isn't yet clear how central a particular implementation should be.
+
+The handler for a pain typically looks up the passed “key” in a
+keymap, locates the target command, and passes control to that command.
 
 Handling Commands
 -----------------
@@ -282,7 +293,8 @@ The other common mechanism is to follow the "notifier" chain from a
 pane.  This lists a number of panes which have requested
 notifications.  When calling notifiers, all target panes have their
 handler called and if any return a non-zero value, the over-all return
-value will be non-zero.
+value will be non-zero.  More precisely it will be the value returns
+which has the largest absolute value.
 
 Each handler can perform further lookup however it likes.  It may
 just compare the “key” against a number of supported keys, or it might
@@ -339,7 +351,7 @@ Documents Document
 ------------------
 
 There is typically one pane of this type and it registers an
-“attach-doc” handler with the root pane to get notified when documents
+“doc:appeared-” handler with the root pane to get notified when documents
 are created.  It will reparent the document that that it becomes a
 child of the “Documents” pane.  Then all documents can be found in the
 list of children.
@@ -356,19 +368,23 @@ various attributes such as colour, bold, underline etc.  It also
 receives keyboard and mouse input and sends “Mouse-event” or
 “Keystroke” command up to the input manage.
 
+There can be multiple ncurses displays, each attached to a different terminal.
+
 Line-Renderer
 -------------
 
 The line renderer is designed to work with any document that presents
 as a list of lines.  Lines that are wider than the pane can either be
 truncated (with side-scrolling) or wrapped.  The line renderer moves
-back and forwards from the cursor “point” to determine which lines
+backwards and forwards from the cursor “point” to determine which lines
 should be drawn and sends a “render-line” command to get the
 displayed text for those lines.
 
-The “text” document provides direct support for “render-line”, but
-needs a better way of provides stable limited-sized lines when at file
-doesn't contain as many newline characters as we would like.
+There is “render-line” pane type which provides the “render-line”
+function for a simple text document.  It looks for particular
+attributes in the document and on marks in the document and interprets
+them to allow highlighting different parts of the text.  It returns a
+line with markup which the line renderer understands.
 
 Attribute Format Renderer
 -------------------------
@@ -388,8 +404,9 @@ Completion Render
 
 The “completion” render is a filter.  In response to a “render-line”
 call it calls “render-line” on its parent and only returns lines that
-start with a given prefix.  It can also add highlights to rendered
-text to distinguish the common prefix from the remainder.
+start with a given prefix, or contain a given substring.  It can also
+add highlights to rendered text to distinguish the common prefix from
+the remainder.
 
 A prefix is set by a “set-prefix” command.  The response to this
 indicates if the selected lines have a longer common prefix, and if
@@ -447,25 +464,25 @@ Line-Counter
 
 The line-counter uses the model described earlier of placing marks
 every few hundred lines in a document and using them to expedite line
-counting.  This currently isn't implemented as a pane.  I wonder if it
-should be.
+counting.  This is implemented as a pane which attaches directly to
+the document pane.
 
 Keymap
 ------
 
-“Keymap” allows both global and local keys (or arbitrary commands) to
-be defined.  The global mappings are handled at a pane which must be
-stacked before the tiler.  A pane to handle local mappings is added on
-demand at the current focus pane.
+“Keymap” pane allows both global and local keys (or arbitrary
+commands) to be defined.  The global mappings are handled at a pane
+which must be stacked before the tiler.  A pane to handle local
+mappings is added on demand at the current focus pane.
 
 Search
 ------
 
-“search” is like line-counter in that it provides a global command
-rather than a pane.  This command can perform a reg-ex search through
-a document.  Currently it only searches the per-element characters, so
-it isn't useful on directory listings.  It should be extended to work
-with the results of “render-line”.
+“search” provides a global command rather than a pane.  This command
+can perform a reg-ex search through a document.  Currently it only
+searches the per-element characters, so it isn't useful on directory
+listings.  It should be extended to work with the results of
+“render-line”.
 
 Messageline
 -----------
@@ -498,13 +515,12 @@ as a global key map.  In provides a number of emacs-like bindings.
 Python Interface
 ----------------
 
-This module allows python code to be run, provide an interface to
+This module allows python code to be run, provides an interface to
 panes, marks, and commands, and allows commands to be called on a
 given pane.  It also allows commands to be defined in python that can
-be called from other modules just like any other command.  It is, or
-will be, a complete two-way interface between python and other
-languages to access the core edlib functionality.
-
+be called from other modules just like any other command.  It is a
+complete two-way interface between python and other languages to
+access the core edlib functionality.
 
 Pygtk Display
 -------------
@@ -517,7 +533,7 @@ allocates a pixmap (arranging for it to be destroyed when the pane is
 closed) and performs the drawings there.  When a refresh is required,
 the various pixmaps are combined and drawn to the target window.
 
-Variable with fonts are supported as are images.  An image is
+Variable width fonts are supported as are images.  An image is
 typically the only thing drawn in a pane, so sub-panes must be used to
 draw images within a document.
 
@@ -541,16 +557,18 @@ TO-DO
 
 There is still so very much to do.  At time of writing a lot of things
 work and I can load and save files with filename completion, and I can
-browse directories and search in text files.  This is encouraging but
-it is barely a start.
+browse directories and search in text files.  I can edit C and python
+code fairly well, and can compile C code and jump to errors.  I can
+even write a presentation using a form for Markdown, and display it in
+a full-screen window.  So I've passed the proof-of-concept stage I
+think, but am still a long way from anything that looks like completion.
 
 This a list of just some of the things I want to work on soon.  You
 might noticed that the above texts might suggest that some of them are
 done already.  In those cases I was being a little ahead of myself above.
 
 - The “complete” popup should be positioned above/below the file name,
-  not over the top of it.  And typing should increase/decrease the
-  prefix.
+  not over the top of it.
 
 - render-lines should always re-render the line containing point, so
   the location of “point” can affect the rendering.
@@ -578,13 +596,7 @@ done already.  In those cases I was being a little ahead of myself above.
 
 - improve format options for status line.
 
-- autosave
-
-- cut/copy,  paste
-
 - lots of work on pygtk interface
-
-- allow a second (and more) ncurses display to be created.
 
 - improve ncurses code for choosing colours.
 
@@ -613,13 +625,6 @@ but I can probably live without that if everything else works well.
 Attached images, including PDF, is important.  I would certainly like
 to be able to show images in a pane but have not designed anything for
 that yet.
-
-Text mode server
-----------------
-
-I only recently discovered “emacsclient -t”.  I think I like it.  I
-certainly want edlib to have a “server” mode and to be able to perform
-editing in arbitrary terminal windows where I do other work.
 
 calculator in floating pane
 ---------------------------
