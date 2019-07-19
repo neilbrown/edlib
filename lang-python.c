@@ -295,10 +295,12 @@ REDEF_CMD(python_call)
 	if (ci->num == NO_NUMERIC)
 		rv = rv && dict_add(kwds, "num",
 		                    (Py_INCREF(Py_None), Py_None));
-	else if (ci->num == -NO_NUMERIC)
+	else if (ci->num == -NO_NUMERIC) {
+		/* This indirect sinces a type-punned warning */
+		PyObject *false = Py_False;
 		rv = rv && dict_add(kwds, "num",
-		                    (Py_INCREF(Py_False), Py_False));
-	else
+		                    (Py_INCREF(false), false));
+	} else
 		rv = rv && dict_add(kwds, "num",
 		                    Py_BuildValue("i", ci->num));
 	rv = rv && dict_add(kwds, "num2",
