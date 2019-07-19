@@ -381,7 +381,7 @@ DEF_CMD(nc_close_display)
 	struct call_return cr;
 	cr.c = cnt_disp;
 	cr.i = 0;
-	call_comm("Notify:global-displays", ci->home->parent ?: ci->home, &cr.c);
+	call_comm("Call:Notify:global-displays", ci->focus, &cr.c);
 	if (cr.i > 1)
 		pane_close(ci->home);
 	else

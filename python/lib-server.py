@@ -52,7 +52,7 @@ try:
 						p.take_focus()
 						self.sock.send("OK")
                                                 return 1
-				        self.call("Notify:global-displays", self.display_callback)
+				        self.call("Call:Notify:global-displays", self.display_callback)
 					if self.destpane:
 						p = self.destpane
 						self.destpane = None

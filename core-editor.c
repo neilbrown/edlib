@@ -192,7 +192,7 @@ DEF_CMD(editor_global_request_notify)
 
 DEF_CMD(editor_global_notify)
 {
-	return pane_notify(ci->key, ci->home, ci->num, ci->mark, ci->str,
+	return pane_notify(ci->key + 5, ci->home, ci->num, ci->mark, ci->str,
 	                   ci->num2, ci->mark2, ci->str2, ci->comm2);
 }
 
@@ -318,7 +318,7 @@ struct pane *editor_new(void)
 			      &editor_multicall);
 		key_add_range(ed_map, "Request:Notify:global-", "Request:Notify:global.",
 		              &editor_global_request_notify);
-		key_add_range(ed_map, "Notify:global-", "Notify:global.",
+		key_add_range(ed_map, "Call:Notify:global-", "Call:Notify:global.",
 		              &editor_global_notify);
 		key_add(ed_map, "Close", &editor_close);
 	}

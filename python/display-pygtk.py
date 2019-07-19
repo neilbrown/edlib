@@ -115,8 +115,7 @@ class EdDisplay(gtk.Window):
     def handle_close_window(self, key, home, focus, **a):
         "handle:Display:close"
         x = []
-        if home.parent:
-            home.parent.call("Notify:global-displays", lambda key,**a:x.append(1))
+        focus.call("Call:Notify:global-displays", lambda key,**a:x.append(1))
         if len(x) > 1:
             self.close_win()
         else:
