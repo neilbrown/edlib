@@ -112,9 +112,15 @@ class EdDisplay(gtk.Window):
         self.text.queue_draw()
         return 1
 
-    def handle_close_window(self, key, **a):
+    def handle_close_window(self, key, home, focus, **a):
         "handle:Display:close"
-        self.close()
+        x = []
+        if home.parent:
+            home.parent.call("Notify:global-displays", lambda key,**a:x.append(1))
+        if len(x) > 1:
+            self.close_win()
+        else:
+            focus.call("Message", "Cannot close only window.")
         return 1
 
     def handle_fullscreen(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
@@ -393,6 +399,7 @@ class EdDisplay(gtk.Window):
         return self.panes[p]
 
     def close_win(self, *a):
+        self.pane.close()
         self.destroy()
 
     def create_ui(self):

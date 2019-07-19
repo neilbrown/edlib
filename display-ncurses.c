@@ -367,9 +367,25 @@ DEF_CMD(nc_refresh)
 	return 1;
 }
 
+DEF_CMD(cnt_disp)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+
+	cr->i += 1;
+	return 1;
+}
+
 DEF_CMD(nc_close_display)
 {
-	pane_close(ci->home);
+	/* If this is only display, then refuse to close this one */
+	struct call_return cr;
+	cr.c = cnt_disp;
+	cr.i = 0;
+	call_comm("Notify:global-displays", ci->home->parent ?: ci->home, &cr.c);
+	if (cr.i > 1)
+		pane_close(ci->home);
+	else
+		call("Message", ci->focus, 0, NULL, "Cannot close only window.");
 	return 1;
 }
 
