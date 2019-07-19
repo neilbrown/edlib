@@ -285,7 +285,8 @@ int attr_set_str_key(struct attrset **setp safe, char *key safe, char *val, int 
 	if (keynum >= 0) {
 		snprintf(nkey, sizeof(nkey), "%d ", keynum);
 		nkeylen = strlen(nkey);
-	}
+	} else
+		nkey[0] = 0;
 	len = nkeylen + strlen(key) + 1 + strlen(val) + 1;
 	if (set == NULL || set->len + len > set->size) {
 		/* Need to re-alloc or alloc new */
@@ -321,7 +322,7 @@ int attr_set_str_key(struct attrset **setp safe, char *key safe, char *val, int 
 		}
 	}
 	memmove(set->attrs + offset + len, set->attrs + offset, set->len - offset);
-	strncpy(set->attrs + offset, nkey, nkeylen);
+	strcpy(set->attrs + offset, nkey);
 	strcpy(set->attrs + offset + nkeylen, key);
 	strcpy(set->attrs + offset + nkeylen + strlen(key) + 1, val);
 	set->len += len;
