@@ -34,8 +34,9 @@ class ShellPane(edlib.Pane):
         except IOError:
             return 1
         if r is None or len(r) == 0:
-            self.pipe.communicate()
+            (out,err) = self.pipe.communicate()
             self.pipe = None
+            self.call("doc:replace", out)
             self.call("doc:replace", "\nProcess Finished\n");
             return edlib.Efalse
         self.call("doc:replace", r);
