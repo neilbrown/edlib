@@ -21,14 +21,16 @@ SMATCH_FLAGS= -D_BITS_FLOATN_H $(have_float) -D__FLT_EVAL_METHOD__=1 $(VCFLAGS)
 SPARSEFLAGS= -Wsparse-all -Wno-transparent-union -Wsparse-error $(SMATCH_FLAGS) $(VCFLAGS)
 # Create files .DEBUG and .LEAK for extra checking
 ifeq "$(wildcard .DEBUG)" ".DEBUG"
+ DBG := -Werror -fno-omit-frame-pointer
+ ifeq "$(wildcard .SANITIZE)" ".SANITIZE"
+  DBG += -fsanitize=undefined
+ endif
  ifeq "$(wildcard .LEAK)" ".LEAK"
-  DBG= -Werror -fno-omit-frame-pointer -fsanitize=undefined -fsanitize=leak
- else
-  DBG= -Werror -fno-omit-frame-pointer -fsanitize=undefined
+  DBG += -fsanitize=leak
  endif
  QUIET_CHECK   = $(Q:@=@echo    '     CHECK    '$<;)
 else
- DBG=
+ DBG=-O3
  QUIET_CHECK   = @: skip
 endif
 ifeq "$(wildcard .SMATCH)" ".SMATCH"
