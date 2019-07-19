@@ -274,7 +274,7 @@ DEF_CMD(doc_expr)
 	int dir;
 	char *open;
 	char *close;
-	const char *special = "[](){}'\"";
+	const char *special safe = "[](){}'\"";
 
 	if (!m)
 		m = dd->point;
@@ -862,7 +862,7 @@ DEF_CMD(doc_notify_viewers)
 	 */
 	struct doc_data *dd = ci->home->data;
 
-	if (ci->mark && dd->point)
+	if (ci->mark)
 		mark_to_mark(ci->mark, dd->point);
 	return 1;
 }

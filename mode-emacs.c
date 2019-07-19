@@ -725,7 +725,6 @@ DEF_CMD(emacs_findfile)
 	char *path;
 
 	if (strncmp(ci->key, "File Found", 10) != 0) {
-		char *path = NULL;
 		char buf[PATH_MAX];
 		char *e;
 

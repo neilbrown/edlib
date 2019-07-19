@@ -182,7 +182,7 @@ static int text_locate(struct text *t safe, struct doc_ref *r safe,
 		       struct doc_ref *dest safe);
 static void text_check_consistent(struct text *t safe);
 static void text_normalize(struct text *t safe, struct doc_ref *r safe);
-static void text_cleanout(struct text *t);
+static void text_cleanout(struct text *t safe);
 
 static struct map *text_map;
 /*
@@ -445,12 +445,12 @@ DEF_CMD(text_autosave_tick)
 	if (t->as.changes == 0)
 		/* This will delete the file */
 		do_text_autosave(t);
-	if (time(0L) - t->as.last_change >= 30)
+	if (time(NULL) - t->as.last_change >= 30)
 		do_text_autosave(t);
 	else {
 		t->as.timer_started = 1;
 		call_comm("event:timer", t->doc.home, &text_autosave_tick,
-			  t->as.last_change + 30 - time(0L));
+			  t->as.last_change + 30 - time(NULL));
 	}
 	return Efalse;
 }
@@ -461,7 +461,7 @@ static void text_check_autosave(struct text *t safe)
 		t->as.changes = 0;
 	else
 		t->as.changes += 1;
-	t->as.last_change = time(0L);
+	t->as.last_change = time(NULL);
 	if (!t->fname)
 		return;
 	if (t->as.changes > 300 || t->as.changes == 0)

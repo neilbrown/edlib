@@ -79,7 +79,7 @@ static void dump_key_hash(void);
 static void dump_count_hash(void);
 static void stat_dump(void);
 
-char *tnames[] = {
+static char *tnames[] = {
 	[TIME_KEY]     = "KEY",
 	[TIME_WINDOW]  = "WINDOW",
 	[TIME_READ]    = "READ",
@@ -141,7 +141,7 @@ static void stat_dump(void)
 			return;
 		}
 	}
-	fprintf(dump_file, "%ld:", (long)time(0L));
+	fprintf(dump_file, "%ld:", (long)time(NULL));
 	for (i = 0; i< __TIME_COUNT; i++) {
 		fprintf(dump_file, " %s:%d:%lld", tnames[i], tcount[i],
 		        tsum[i] / (tcount[i]?:1));
@@ -177,13 +177,13 @@ struct khash {
 	char name[1];
 };
 
-struct khash *khashtab[1024];
+static struct khash *khashtab[1024];
 
-struct kstack {
+static struct kstack {
 	long long tstart;
 	char *name;
 } kstack[20];
-int ktos = 0;
+static int ktos = 0;
 
 void time_start_key(char *key safe)
 {
@@ -267,7 +267,7 @@ static void dump_key_hash(void)
 	fprintf(dump_file, " khash:%d:%d:%d", cnt, buckets, max);
 }
 
-struct khash *count_tab[1024];
+static struct khash *count_tab[1024];
 
 void stat_count(char *name safe)
 {

@@ -79,7 +79,7 @@ static void set_screen(struct pane *p)
 
 	if (!p) {
 		if (current_screen && index >= 0)
-			_nc_globals[index] = 0;
+			_nc_globals[index] = NULL;
 		current_screen = NULL;
 		return;
 	}

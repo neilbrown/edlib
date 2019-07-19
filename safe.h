@@ -18,9 +18,9 @@ extern char *safe strcpy(char *a safe, char *b safe);
 extern char *safe strncpy(char *a safe, char *b safe, int n);
 extern char *safe strcat(char *a safe, char *b safe);
 extern char *safe strncat(char *a safe, char *b safe, int n);
-extern char *strchr(char *a safe, char b);
-extern char *strrchr(char *a safe, char b);
-extern int strlen(char *a safe);
+extern char *strchr(const char *a safe, char b);
+extern char *strrchr(const char *a safe, char b);
+extern int strlen(const char *a safe);
 
 extern const unsigned short int **safe __ctype_b_loc(void);
 extern int *safe __errno_location(void);

@@ -401,11 +401,10 @@ int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 		 * keys, we need to pass down the one that was matched.
 		 */
 		int ret;
-
-		stat_count("bloom-hit-good");
-
 		char *oldkey = ci->key;
 		char tail = key[len];
+
+		stat_count("bloom-hit-good");
 		if (key[len])
 			key[len] = 0;
 		((struct cmd_info*)ci)->comm = comm;
