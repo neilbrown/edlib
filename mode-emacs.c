@@ -480,10 +480,32 @@ REDEF_CMD(emacs_simple_num)
 	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, NULL, ci->num2);
 }
 
+DEF_CMD(cnt_disp)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+
+	cr->i += 1;
+	return 1;
+}
+
 DEF_CMD(emacs_exit)
 {
+	struct call_return cr;
+
+	cr.c = cnt_disp;
+	cr.i = 0;
 	if (ci->num == NO_NUMERIC) {
-		struct pane *p = call_pane("PopupTile", ci->focus, 0, NULL, "DM");
+		struct pane *p;
+
+		/* If this is not only display, then refuse to exit */
+		call_comm("Call:Notify:global-displays", ci->focus, &cr.c);
+		if (cr.i > 1) {
+			call("Message", ci->focus, 0, NULL,
+			     "Cannot exit when there are multiple windows.");
+			return 1;
+		}
+
+		p = call_pane("PopupTile", ci->focus, 0, NULL, "DM");
 		// FIXME if called from a popup, this fails.
 		if (!p)
 			return 0;

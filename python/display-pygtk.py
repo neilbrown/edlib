@@ -138,8 +138,7 @@ class EdDisplay(gtk.Window):
 
     def handle_close(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
         "handle:Close"
-        self.pane.close()
-        # FIXME close the window??
+        self.destroy()
         return True
 
     def handle_clear(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
@@ -399,7 +398,7 @@ class EdDisplay(gtk.Window):
 
     def close_win(self, *a):
         self.pane.close()
-        self.destroy()
+        self.pane = None
 
     def create_ui(self):
         text = gtk.DrawingArea()
