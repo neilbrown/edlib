@@ -305,7 +305,7 @@ DEF_CMD(text_load_file)
 		}
 	}
 	t->saved = t->undo;
-	call("Notify:doc:status-changed", ci->home);
+	call("Call:Notify:doc:status-changed", ci->home);
 	pane_notify("Notify:doc:Replace", t->doc.home);
 	if (fd != ci->num2)
 		close(fd);
@@ -496,7 +496,7 @@ DEF_CMD(text_save_file)
 	call("Message", ci->focus, 0, NULL, msg);
 	free(msg);
 	if (change_status)
-		call("Notify:doc:status-changed", d->home);
+		call("Call:Notify:doc:status-changed", d->home);
 	text_check_autosave(t);
 	if (ret == 0)
 		return 1;
@@ -1170,7 +1170,7 @@ DEF_CMD(text_reundo)
 	text_check_consistent(t);
 
 	if (status != (t->undo == t->saved))
-		call("Notify:doc:status-changed", t->doc.home);
+		call("Call:Notify:doc:status-changed", t->doc.home);
 	text_check_autosave(t);
 
 	/* Point probably moved, so */
@@ -1870,7 +1870,7 @@ DEF_CMD(text_replace)
 	}
 	text_check_autosave(t);
 	if (status_change)
-		call("Notify:doc:status-changed", d->home);
+		call("Call:Notify:doc:status-changed", d->home);
 	pane_notify("Notify:doc:Replace", t->doc.home, 0, pm, NULL,
 		    0, early);
 	if (!ci->mark2)
@@ -2003,7 +2003,7 @@ DEF_CMD(text_modified)
 	else
 		t->saved = t->undo;
 	text_check_autosave(t);
-	call("Notify:doc:status-changed", d->home);
+	call("Call:Notify:doc:status-changed", d->home);
 	return 1;
 }
 

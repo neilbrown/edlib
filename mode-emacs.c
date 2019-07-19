@@ -1150,7 +1150,7 @@ DEF_CMD(emacs_search_highlight)
 		attr_set_int(&m->attrs, "render:search", ci->num);
 		call("Move-View-Pos", ci->focus, 0, m);
 	}
-	call("Notify:doc:Replace", ci->focus);
+	call("Call:Notify:doc:Replace", ci->focus);
 	pane_damaged(ci->home, DAMAGED_CONTENT|DAMAGED_VIEW);
 	return 1;
 }

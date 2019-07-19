@@ -584,7 +584,7 @@ DEF_CMD(doc_request_notify)
 
 DEF_CMD(doc_notify)
 {
-	int ret = home_pane_notify(ci->home, ci->key, ci->focus, ci->num, ci->mark, ci->str,
+	int ret = home_pane_notify(ci->home, ci->key + 5, ci->focus, ci->num, ci->mark, ci->str,
 			      ci->num2, ci->mark2, ci->str2, ci->comm2);
 	/* Mustn't return 0, else will fall through to next doc */
 	return ret ?: Enotarget;
@@ -1095,7 +1095,7 @@ static void init_doc_cmds(void)
 
 	key_add_range(doc_handle_cmd, "doc:", "doc;", &doc_pass_on);
 	key_add_range(doc_handle_cmd, "Request:Notify:doc:", "Request:Notify:doc;", &doc_pass_on);
-	key_add_range(doc_handle_cmd, "Notify:doc:", "Notify:doc;", &doc_pass_on);
+	key_add_range(doc_handle_cmd, "Call:Notify:doc:", "Call:Notify:doc;", &doc_pass_on);
 
 	key_add(doc_handle_cmd, "Move-Char", &doc_char);
 	key_add(doc_handle_cmd, "Move-Word", &doc_word);
@@ -1139,7 +1139,7 @@ static void init_doc_cmds(void)
 
 	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
 		      &doc_request_notify);
-	key_add_range(doc_default_cmd, "Notify:doc:", "Notify:doc;",
+	key_add_range(doc_default_cmd, "Call:Notify:doc:", "Call:Notify:doc;",
 		      &doc_notify);
 	key_add_range(doc_default_cmd, "doc:set:", "doc:set;",
 		      &doc_set);

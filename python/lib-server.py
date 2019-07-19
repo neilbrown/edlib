@@ -206,7 +206,7 @@ else:
 		ServerPane(new)
 
 	def server_done(key, focus, **a):
-		ret = focus.call("Notify:doc:done", "test")
+		ret = focus.call("Call:Notify:doc:done", "test")
 		if ret > 0:
 			# maybe save, then notify properly
 			fn = focus["filename"]
@@ -214,7 +214,7 @@ else:
 			if fn and mod == "yes":
 				focus.call("Message", "Please save first!")
 			else:
-				focus.call("Notify:doc:done")
+				focus.call("Call:Notify:doc:done")
 				# FIXME need something better than 'bury'
 				# If it was already visible, it should stay that way
 				focus.call("Window:bury")

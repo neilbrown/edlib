@@ -403,7 +403,7 @@ DEF_CMD(docs_callback)
 		p = pane_register(p, 0, &docs_modified_handle.c, doc, NULL);
 		call("Request:Notify:doc:Replace", p);
 		/* And trigger Notify:doc:Replace handling immediately...*/
-		call("Notify:doc:Replace", p);
+		call("Call:Notify:doc:Replace", p);
 		/* Don't want to inherit position from some earlier instance,
 		 * always move to the start.
 		 */

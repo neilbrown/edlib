@@ -294,7 +294,7 @@ DEF_CMD(linecount_clip)
 DEF_CMD(count_lines)
 {
 	/* FIXME optimise this away most of the time */
-	if (call("Notify:doc:CountLines", ci->focus) == 0) {
+	if (call("Call:Notify:doc:CountLines", ci->focus) == 0) {
 		/* No counter in place, add one */
 		struct count_info *cli;
 		struct pane *p;
@@ -305,19 +305,19 @@ DEF_CMD(count_lines)
 		home_call(ci->focus, "Request:Notify:doc:Replace", p);
 		home_call(ci->focus, "Request:Notify:doc:CountLines", p);
 		home_call(ci->focus, "Request:Notify:doc:GotoLine", p);
-		call("Notify:doc:CountLines", ci->focus, 1, ci->mark);
+		call("Call:Notify:doc:CountLines", ci->focus, 1, ci->mark);
 	}
 	if (ci->mark) {
 		if (ci->str && strcmp(ci->str, "goto:line") == 0 &&
 		    ci->num != NO_NUMERIC) {
-			call("Notify:doc:GotoLine", ci->focus, ci->num, NULL, NULL,
+			call("Call:Notify:doc:GotoLine", ci->focus, ci->num, NULL, NULL,
 			     0, ci->mark);
 		}
-		call("Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
+		call("Call:Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
 		     0, ci->mark);
 	}
 	if (ci->mark2)
-		call("Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
+		call("Call:Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
 		      0, ci->mark2);
 	return 1;
 }
