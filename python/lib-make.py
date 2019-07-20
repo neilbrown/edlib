@@ -274,7 +274,7 @@ def run_make(key, focus, str, **a):
     focus.call("global-set-attr", "make-target-doc", docname)
     p = p.call("doc:attach", ret='focus')
     doc["view-default"] = "make-viewer"
-    p = p.call("doc:assign-view", doc, ret='focus')
+    p = p.call("doc:assign-view", doc, -1, ret='focus')
 
     p = doc.call("attach-makecmd", str, path, ret='focus')
     return 1

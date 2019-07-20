@@ -1280,7 +1280,7 @@ struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe,
 	p = call_pane("doc:attach", parent);
 	if (p)
 		p = home_call_pane(p, "doc:assign-view", doc,
-		                   raise, NULL, render,
+		                   raise ? 1 : -1, NULL, render,
 		                   0, NULL, view);
 	return p;
 }
