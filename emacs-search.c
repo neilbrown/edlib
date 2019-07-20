@@ -43,7 +43,7 @@ struct es_info {
 };
 
 static struct map *es_map;
-static const char must_quote[] = ".|*+?{}()?^$\\";
+static const char must_quote[] = ".|*+?{}()?^$\\[]";
 
 
 DEF_CMD(search_forward)
@@ -204,6 +204,38 @@ DEF_CMD(search_insert_quoted)
 	return 1;
 }
 
+#include <stdio.h>
+DEF_CMD(search_insert_meta)
+{
+	/* Insert a regexp meta char.
+	 * If it is 'open', insert the 'close' too.
+	 * If it is 'close', skip over a close instead if possible
+	 */
+	char *bracket;
+	const char *brackets = "{}()[]";
+	if (strchr(must_quote, ci->key[6]) == NULL || !ci->mark)
+		return 0;
+	bracket = strchr(brackets, ci->key[6]);
+	if (!bracket) {
+		call("Replace", ci->focus, 1, NULL, ci->key + 6);
+	} else if ((bracket - brackets) % 2) {
+		/* Close bracket */
+		if (doc_following_pane(ci->focus, ci->mark) == (wint_t)ci->key[6])
+			call("Move-Char", ci->focus, 1);
+		else
+			call("Replace", ci->focus, 1, NULL, ci->key + 6);
+	} else {
+		/* Open bracket */
+		char b[3];
+		strncpy(b, bracket, 2);
+		b[2] = 0;
+		call("Replace", ci->focus, 1, NULL, b);
+		call("Move-Char", ci->focus, -1);
+	}
+	return 1;
+
+}
+
 DEF_CMD(search_close)
 {
 	struct es_info *esi = ci->home->data;
@@ -349,8 +381,9 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "Notify:doc:Replace", &search_again);
 	key_add(es_map, "Notify:clip", &search_clip);
 	key_add(es_map, "C-Chr-L", &search_recentre);
+	key_add_range(es_map, "Chr- ", "Chr-~", &search_insert_quoted);
+	key_add_range(es_map, "M-Chr- ", "M-Chr-~", &search_insert_meta);
 	key_add(es_map, "M-Chr-c", &search_toggle_ci);
-	key_add_range(es_map, "Chr-", "Chr-~", &search_insert_quoted);
 }
 
 DEF_LOOKUP_CMD(search_handle, es_map);
