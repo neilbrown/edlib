@@ -1641,6 +1641,7 @@ DEF_CMD(emacs_goto_line)
 	if (ci->num == NO_NUMERIC)
 		return 1;
 	call("CountLines", ci->focus, ci->num, ci->mark, "goto:line");
+	call("Move-View-Pos", ci->focus, 0, ci->mark);
 	pane_damaged(ci->focus, DAMAGED_CURSOR);
 	return 1;
 }
