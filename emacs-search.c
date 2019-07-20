@@ -214,8 +214,11 @@ DEF_CMD(search_again)
 		ret = 1;
 	else if (esi->backwards && mark_prev_pane(esi->target, m) == WEOF)
 		ret = -2;
-	else
+	else {
+		if (mark_same(esi->start, esi->end))
+			mark_step_pane(esi->target, m, !esi->backwards, 1);
 		ret = call("text-search", esi->target, 0, m, str, esi->backwards);
+	}
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
 	else if (ret == Efail) {

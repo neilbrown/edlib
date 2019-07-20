@@ -1131,6 +1131,9 @@ static void do_searches(struct pane *p safe, int view, char *patn,
 		}
 		if (attr_find(m2->attrs, "render:search") == NULL)
 			attr_set_int(&m2->attrs, "render:search2", len);
+		if (len == 0)
+			/* Need to move forward, or we'll just match here again*/
+			mark_next_pane(p, m);
 	}
 	mark_free(m);
 }
