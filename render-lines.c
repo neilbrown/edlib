@@ -1626,7 +1626,7 @@ DEF_CMD(render_lines_view_line)
 		top->mdata = NULL;
 		mark_free(top);
 	}
-	rl->ignore_point = 0;
+	rl->ignore_point = 1;
 	find_lines(pm, p, focus, line);
 	pane_damaged(p, DAMAGED_VIEW);
 	rl->repositioned = 1;

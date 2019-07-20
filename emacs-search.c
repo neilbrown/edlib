@@ -284,6 +284,15 @@ DEF_CMD(search_clip)
 	return Efallthrough;
 }
 
+DEF_CMD(search_recentre)
+{
+	/* Send this command through to target, at current location */
+	struct es_info *esi = ci->home->data;
+
+	return call(ci->key, esi->target, ci->num, esi->end, NULL,
+	            ci->num2);
+}
+
 static void emacs_search_init_map(void)
 {
 	es_map = key_alloc();
@@ -296,6 +305,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "Enter", &search_done);
 	key_add(es_map, "Notify:doc:Replace", &search_again);
 	key_add(es_map, "Notify:clip", &search_clip);
+	key_add(es_map, "C-Chr-L", &search_recentre);
 }
 
 DEF_LOOKUP_CMD(search_handle, es_map);
