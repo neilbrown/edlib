@@ -233,12 +233,15 @@ def isword(c):
 
 def run_make(key, focus, str, **a):
     # pop-up has completed
-    if key[-8:] == "git-grep":
+    c = key.index(':')
+    dir = key[c+1:]
+    mode = key[:c-1]
+    if mode == "git":
         cmd = "git-grep"
         docname = "*Grep Output*"
-    elif key[-4:] == "grep":
+    elif mode == "grep" or mode == "TAGS" or mode == "quilt":
         cmd = "grep"
-        docname = "*grep output*"
+        docname = "*Grep Output*"
     else:
         cmd = "make"
         docname = "*Compile Output*"
@@ -251,20 +254,8 @@ def run_make(key, focus, str, **a):
     if not doc:
         return edlib.Esys
     path = focus["dirname"]
-    if key == "full-git-grep":
-        # Find a parent with a ".git"
-        d = focus["dirname"]
-        while d and d != "/":
-            p = os.path.join(d, ".git")
-            if os.path.isdir(p):
-                break
-            d = os.path.dirname(d)
-        if d:
-            if d[-1] == '/':
-                path = d
-            else:
-                path = d+'/'
-    doc['dirname'] = path
+
+    doc['dirname'] = dir
     if cmd == "make":
         p = focus.call("OtherPane", ret='focus')
     else:
@@ -283,7 +274,7 @@ def run_make(key, focus, str, **a):
 def make_request(key, focus, num, mark, **a):
     history = None
     if key[-8:] == "git-grep":
-        dflt = "git grep -nH "
+        dflt = "grep -rnH "
         cmd = "git-grep"
         history = "*Git-grep History*"
     elif key[-4:] == "grep":
@@ -299,11 +290,28 @@ def make_request(key, focus, num, mark, **a):
         dflt = "make -k"
         cmd = "make"
         history = "*Make History*"
-    callback_cmd = cmd
+    mode = cmd
 
-    if cmd == "git-grep" and num and num > 0:
-        # git grep, and not request for local-tree only
-        callback_cmd = "full-git-grep"    
+    dir = focus['dirname']
+    if cmd == "git-grep":
+        # Walk up tree looking for .git or .pc or TAGS
+        # depending on what is found, choose an approach
+        d = dir
+        mode = "grep"
+        while d and d != '/' and mode == "grep":
+            if os.path.isdir(os.path.join(d, ".git")):
+                mode = "git"
+                dflt = "git grep -nH "
+            elif os.path.isfile(os.path.join(d, "TAGS")):
+                mode = "TAGS"
+                dflt = "grep -rnH "
+            elif os.path.isdir(os.path.join(d, ".pc")):
+                mode = "quilt"
+                dflt = "grep -rnH --exclude-dir=.pc"
+            d = os.path.dirname(d)
+
+        if num and num > 0 and mode != "grep":
+            dir = d + '/'
 
     if cmd != "make" and num and mark and focus['doc-type'] == "text":
         # choose the word under the cursor
@@ -325,7 +333,7 @@ def make_request(key, focus, num, mark, **a):
         # re-use previous command
         make_cmd = focus.call("history-get-last", history, ret='str')
         if make_cmd:
-            run_make(callback_cmd, focus, make_cmd)
+            run_make("%s:%s"%(mode,dir), focus, make_cmd)
             return 1
 
     # Create a popup to ask for make command
@@ -334,7 +342,7 @@ def make_request(key, focus, num, mark, **a):
         return 0
     p.call("popup:set-callback", run_make)
     p["prompt"] = "%s Command" % cmd
-    p["done-key"] = callback_cmd
+    p["done-key"] = "%s:%s" % (mode, dir)
     p.call("doc:set-name", "%s Command" % cmd)
     if history:
         p = p.call("attach-history", history, "popup:close", ret='focus')
