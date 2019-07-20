@@ -143,6 +143,7 @@ O/.exists:
 	@touch $@
 lib/.exists:
 	@mkdir -p lib
+	@ln -s ../python lib/python
 	@touch $@
 
 .PHONY: lib

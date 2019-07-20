@@ -2,6 +2,7 @@
  * Copyright Neil Brown ©2015-2019 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  */
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -86,6 +87,8 @@ DEF_CMD(editor_load_module)
 #ifndef edlib_init
 	void *h;
 	void (*s)(struct pane *p);
+	char **path;
+	char pbuf[PATH_MAX];
 
 	sprintf(buf, "edlib-%s.so", name);
 	/* RTLD_GLOBAL is needed for python, else we get
@@ -95,9 +98,16 @@ DEF_CMD(editor_load_module)
 	 */
 	h = dlopen(buf, RTLD_NOW | RTLD_GLOBAL);
 	if (h) {
+		path = dlsym(h, "edlib_module_path");
+		if (path) {
+			if (dlinfo(h, RTLD_DI_ORIGIN, pbuf) == 0)
+				*path = pbuf;
+		}
 		s = dlsym(h, "edlib_init");
 		if (s) {
 			s(ci->home);
+			if (path)
+				*path = NULL;
 			return 1;
 		}
 	}

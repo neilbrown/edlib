@@ -61,6 +61,8 @@ struct doc_ref {
 static PyObject *Edlib_CommandFailed;
 static PyObject *EdlibModule;
 
+static char *module_dir;
+
 /* When a python callable is passed to edlib_call() we combine it
  * with this "python_call" for edlib to call back that callable.
  */
@@ -209,7 +211,7 @@ DEF_CMD(python_load_module)
 
 	if (!name)
 		return Enoarg;
-	snprintf(buf, sizeof(buf), "python/%s.py", name);
+	snprintf(buf, sizeof(buf), "%s/python/%s.py", module_dir, name);
 	fp = fopen(buf, "r");
 	if (!fp)
 		return Efail;
@@ -2180,9 +2182,16 @@ static PyMethodDef edlib_methods[] = {
 	{NULL, NULL, 0, NULL}
 };
 
+extern char *edlib_module_path;
+char *edlib_module_path;
 void edlib_init(struct pane *ed safe)
 {
 	PyObject *m;
+
+	if (edlib_module_path)
+		module_dir = strdup(edlib_module_path);
+	else
+		module_dir = ".";
 
 	Py_SetProgramName("edlib");
 	Py_Initialize();
