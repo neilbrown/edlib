@@ -258,6 +258,7 @@ DEF_CMD(render_line)
 	ar.fwd = text_attr_forward;
 	ar.ast = ar.tmpst = NULL;
 	ar.min_end = -1;
+	ar.chars = 0;
 
 	if (!m)
 		return Enoarg;
