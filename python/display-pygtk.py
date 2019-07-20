@@ -33,6 +33,7 @@ class EdDisplay(gtk.Window):
         self.pane.w = self.charwidth * 80
         self.pane.h = self.lineheight * 24
         self.pane.call("Request:Notify:global-displays")
+        self.noclose = None
         self.primary_cb = gtk.Clipboard(selection="PRIMARY")
         self.clipboard_cb = gtk.Clipboard(selection="CLIPBOARD")
         self.targets = [ (gtk.gdk.SELECTION_TYPE_STRING, 0, 0) ]
@@ -114,12 +115,20 @@ class EdDisplay(gtk.Window):
 
     def handle_close_window(self, key, home, focus, **a):
         "handle:Display:close"
+        if self.noclose:
+            focus.call("Message", self.noclose)
+            return 1
         x = []
         focus.call("Call:Notify:global-displays", lambda key,**a:x.append(1))
         if len(x) > 1:
             self.close_win()
         else:
             focus.call("Message", "Cannot close only window.")
+        return 1
+
+    def handle_set_noclose(self, key, str, **a):
+        "handle:Display:set-noclose"
+        self.noclose = str
         return 1
 
     def handle_fullscreen(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):

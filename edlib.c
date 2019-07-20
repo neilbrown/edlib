@@ -128,8 +128,15 @@ int main(int argc, char *argv[])
 				"*Welcome*", 0, NULL, WelcomeText);
 
 	if (p) {
-		if (term)
-			make_stack(call_pane("attach-display-ncurses", p), doc);
+		if (term) {
+			struct pane *disp;
+			disp = call_pane("attach-display-ncurses", p);
+			if (disp) {
+				make_stack(disp, doc);
+				call("Display:set-noclose", disp, 1, NULL,
+				     "Cannot close primary display");
+			}
+		}
 		if (gtk)
 			make_stack(call_pane("attach-display-pygtk", p), doc);
 

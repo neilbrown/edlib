@@ -48,6 +48,7 @@ struct display_data {
 	SCREEN			*scr;
 	FILE			*scr_file;
 	struct xy		cursor;
+	char			*noclose;
 	#ifdef RECORD_REPLAY
 	FILE			*log;
 	FILE			*input;
@@ -379,6 +380,13 @@ DEF_CMD(nc_close_display)
 {
 	/* If this is only display, then refuse to close this one */
 	struct call_return cr;
+	struct display_data *dd = ci->home->data;
+
+	if (dd->noclose) {
+		call("Message", ci->focus, 0, NULL, dd->noclose);
+		return 1;
+	}
+
 	cr.c = cnt_disp;
 	cr.i = 0;
 	call_comm("Call:Notify:global-displays", ci->focus, &cr.c);
@@ -386,6 +394,17 @@ DEF_CMD(nc_close_display)
 		pane_close(ci->home);
 	else
 		call("Message", ci->focus, 0, NULL, "Cannot close only window.");
+	return 1;
+}
+
+DEF_CMD(nc_set_noclose)
+{
+	struct display_data *dd = ci->home->data;
+
+	free(dd->noclose);
+	dd->noclose = NULL;
+	if (ci->str)
+		dd->noclose = strdup(ci->str);
 	return 1;
 }
 
@@ -841,6 +860,7 @@ void edlib_init(struct pane *ed safe)
 	nc_map = key_alloc();
 	key_add(nc_map, "Display:refresh", &nc_refresh);
 	key_add(nc_map, "Display:close", &nc_close_display);
+	key_add(nc_map, "Display:set-noclose", &nc_set_noclose);
 	key_add(nc_map, "Close", &nc_close);
 	key_add(nc_map, "pane-clear", &nc_clear);
 	key_add(nc_map, "text-size", &nc_text_size);
