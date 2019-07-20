@@ -1109,13 +1109,14 @@ DEF_CMD(emacs_save_all)
 }
 
 static void do_searches(struct pane *p safe, int view, char *patn,
+                        int ci,
 			struct mark *m, struct mark *end)
 {
 	int ret;
 	if (!m)
 		return;
 	m = mark_dup(m);
-	while ((ret = call("text-search", p, 0, m, patn, 0, end)) >= 1) {
+	while ((ret = call("text-search", p, ci, m, patn, 0, end)) >= 1) {
 		struct mark *m2, *m3;
 		int len = ret - 1;
 		m2 = vmark_new(p, view);
@@ -1141,6 +1142,7 @@ static void do_searches(struct pane *p safe, int view, char *patn,
 struct highlight_info {
 	int view;
 	char *patn;
+	int ci;
 	struct mark *start, *end;
 	struct pane *popup safe;
 };
@@ -1166,6 +1168,7 @@ DEF_CMD(emacs_search_highlight)
 		hi->patn = strdup(ci->str);
 	else
 		hi->patn = NULL;
+	hi->ci = ci->num2;
 
 	if (ci->mark && ci->num > 0 && ci->str) {
 		m = vmark_new(ci->focus, hi->view);
@@ -1254,13 +1257,13 @@ DEF_CMD(emacs_search_reposition_delayed)
 	vend = vmark_last(ci->focus, hi->view);
 	if (vstart == NULL || start->seq < vstart->seq) {
 		/* search from 'start' to first match or 'end' */
-		do_searches(ci->focus, hi->view, patn, start, vstart ?: end);
+		do_searches(ci->focus, hi->view, patn, hi->ci, start, vstart ?: end);
 		if (vend)
-			do_searches(ci->focus, hi->view, patn,
+			do_searches(ci->focus, hi->view, patn, hi->ci,
 				    vend, end);
 	} else if (vend && end->seq > vend->seq) {
 		/* search from last match to end */
-		do_searches(ci->focus, hi->view, patn, vend, end);
+		do_searches(ci->focus, hi->view, patn, hi->ci, vend, end);
 	}
 	if (vstart != vmark_first(ci->focus, hi->view) ||
 	    vend != vmark_last(ci->focus, hi->view))

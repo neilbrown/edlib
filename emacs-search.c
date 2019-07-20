@@ -17,6 +17,7 @@
  *   C-w - collect word from target and add to search string
  *   C-c - collect char from target and add to search string.
  *   C-r - search backwards.. tricky.
+ *   M-c - toggle case sensitivity (currently invisible)
  *
  */
 
@@ -29,7 +30,8 @@ struct es_info {
 		struct stk *next;
 		struct mark *m safe; /* Start of search */
 		unsigned int len; /* current length of search string */
-		int wrapped;
+		short wrapped;
+		short case_sensitive;
 	} *s;
 	struct mark *start safe; /* where searching starts */
 	struct mark *end safe; /* where last success ended */
@@ -37,6 +39,7 @@ struct es_info {
 	short matched;
 	short wrapped;
 	short backwards;
+	short case_sensitive;
 };
 
 static struct map *es_map;
@@ -50,8 +53,10 @@ DEF_CMD(search_forward)
 
 	esi->backwards = backward;
 	if (esi->s && mark_same(esi->s->m, esi->end)) {
-		/* already pushed and didn't find anything new */
-		return 1;
+		if (esi->s->case_sensitive == esi->case_sensitive)
+			/* already pushed and didn't find anything new */
+			return 1;
+		esi->s->case_sensitive = esi->case_sensitive;
 	}
 	str = call_ret(str, "doc:get-str", ci->focus);
 	if (!str || !*str) {
@@ -71,6 +76,7 @@ DEF_CMD(search_forward)
 	s->m = esi->start;
 	s->len = strlen(str);
 	s->wrapped = esi->wrapped;
+	s->case_sensitive = esi->case_sensitive;
 	free(str);
 	s->next = esi->s;
 	esi->s = s;
@@ -152,8 +158,7 @@ DEF_CMD(search_add)
 
 	if (esi->backwards)
 		/* Move to end of match */
-		call("text-search", esi->target, 0, addpos, str);
-
+		call("text-search", esi->target, !esi->case_sensitive, addpos, str);
 	m = mark_dup(addpos);
 	if (strcmp(ci->key, "C-Chr-W")==0)
 		call("Move-Word", esi->target, 1, m);
@@ -226,7 +231,8 @@ DEF_CMD(search_again)
 	else {
 		if (mark_same(esi->start, esi->end))
 			mark_step_pane(esi->target, m, !esi->backwards, 1);
-		ret = call("text-search", esi->target, 0, m, str, esi->backwards);
+		ret = call("text-search", esi->target,
+		           !esi->case_sensitive, m, str, esi->backwards);
 	}
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
@@ -243,7 +249,8 @@ DEF_CMD(search_again)
 		if (!esi->backwards)
 			while (ret > 0 && mark_prev_pane(esi->target, m) != WEOF)
 				ret -= 1;
-		call("search:highlight", esi->target, len, m, str);
+		call("search:highlight", esi->target, len, m, str,
+		     !esi->case_sensitive);
 		esi->matched = 1;
 		pfx = esi->backwards ? "Reverse Search: ":"Search: ";
 		if (esi->wrapped)
@@ -305,6 +312,18 @@ DEF_CMD(search_recentre)
 	            ci->num2);
 }
 
+DEF_CMD(search_toggle_ci)
+{
+	struct es_info *esi = ci->home->data;
+
+	/* If not at end of doc, fall through */
+	if (ci->mark && doc_following_pane(ci->focus, ci->mark) != WEOF)
+		return 0;
+	esi->case_sensitive = !esi->case_sensitive;
+	call("Call:Notify:doc:Replace", ci->focus);
+	return 1;
+}
+
 static void emacs_search_init_map(void)
 {
 	es_map = key_alloc();
@@ -318,6 +337,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "Notify:doc:Replace", &search_again);
 	key_add(es_map, "Notify:clip", &search_clip);
 	key_add(es_map, "C-Chr-L", &search_recentre);
+	key_add(es_map, "M-Chr-c", &search_toggle_ci);
 }
 
 DEF_LOOKUP_CMD(search_handle, es_map);

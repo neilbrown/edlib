@@ -130,7 +130,7 @@ DEF_CMD(text_search)
 		return Enoarg;
 
 	m = ci->mark;
-	rxl = rxl_parse(ci->str, NULL, 1);
+	rxl = rxl_parse(ci->str, NULL, ci->num);
 	if (!rxl)
 		return Einval;
 	since_start = -1;
