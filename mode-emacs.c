@@ -1141,6 +1141,7 @@ static void do_searches(struct pane *p safe, int view, char *patn,
 struct highlight_info {
 	int view;
 	char *patn;
+	struct mark *start, *end;
 	struct pane *popup safe;
 };
 
@@ -1237,36 +1238,17 @@ DEF_CMD(emacs_reposition)
 	return 0;
 }
 
-DEF_CMD(emacs_search_reposition)
+DEF_CMD(emacs_search_reposition_delayed)
 {
-	/* If new range and old range don't over-lap, discard
-	 * old range and re-fill new range.
-	 * Otherwise delete anything in range that is no longer visible.
-	 * If they overlap before, search from start to first match.
-	 * If they overlap after, search from last match to end.
-	 */
-	/* delete every match before new start and after end */
 	struct highlight_info *hi = ci->home->data;
-	struct mark *start = ci->mark;
-	struct mark *end = ci->mark2;
+	struct mark *start = hi->start;
+	struct mark *end = hi->end;
 	struct mark *vstart, *vend;
 	char *patn = hi->patn;
 	int damage = 0;
-	struct mark *m;
 
-	if (hi->view < 0 || patn == NULL || !start || !end)
-		return 0;
-
-	while ((m = vmark_first(ci->focus, hi->view)) != NULL &&
-	       mark_ordered_not_same(m, start)) {
-		mark_free(m);
-		damage = 1;
-	}
-	while ((m = vmark_last(ci->focus, hi->view)) != NULL &&
-	       mark_ordered_not_same(end, m)) {
-		mark_free(m);
-		damage = 1;
-	}
+	if (!start || !end)
+		return Efalse;
 
 	vstart = vmark_first(ci->focus, hi->view);
 	vend = vmark_last(ci->focus, hi->view);
@@ -1287,7 +1269,52 @@ DEF_CMD(emacs_search_reposition)
 		pane_damaged(ci->focus, DAMAGED_CONTENT);
 		pane_damaged(ci->focus, DAMAGED_VIEW);
 	}
+	mark_free(hi->start);
+	mark_free(hi->end);
+	hi->start = hi->end = NULL;
 	return 0;
+}
+
+DEF_CMD(emacs_search_reposition)
+{
+	/* If new range and old range don't over-lap, discard
+	 * old range and re-fill new range.
+	 * Otherwise delete anything in range that is no longer visible.
+	 * If they overlap before, search from start to first match.
+	 * If they overlap after, search from last match to end.
+	 */
+	/* delete every match before new start and after end */
+	struct highlight_info *hi = ci->home->data;
+	struct mark *start = ci->mark;
+	struct mark *end = ci->mark2;
+	char *patn = hi->patn;
+	int damage = 0;
+	struct mark *m;
+
+	if (hi->view < 0 || patn == NULL || !start || !end)
+		return 0;
+
+	while ((m = vmark_first(ci->focus, hi->view)) != NULL &&
+	       mark_ordered_not_same(m, start)) {
+		mark_free(m);
+		damage = 1;
+	}
+	while ((m = vmark_last(ci->focus, hi->view)) != NULL &&
+	       mark_ordered_not_same(end, m)) {
+		mark_free(m);
+		damage = 1;
+	}
+	mark_free(hi->start);
+	mark_free(hi->end);
+	hi->start = mark_dup(start);
+	hi->end = mark_dup(end);
+
+	if (damage) {
+		pane_damaged(ci->focus, DAMAGED_CONTENT);
+		pane_damaged(ci->focus, DAMAGED_VIEW);
+	}
+	call_comm("event:timer", ci->focus, &emacs_search_reposition_delayed, 1);
+	return 1;
 }
 
 DEF_LOOKUP_CMD(highlight_handle, hl_map);
@@ -1327,6 +1354,8 @@ DEF_CMD(emacs_highlight_close)
 			mark_free(m);
 		call("doc:del-view", ci->focus, hi->view);
 	}
+	mark_free(hi->start);
+	mark_free(hi->end);
 	free(hi);
 	return 0;
 }
