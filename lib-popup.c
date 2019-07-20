@@ -322,7 +322,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "popup:set-callback", &popup_set_callback);
 	key_add(popup_map, "ChildClosed", &popup_child_closed);
 
-	key_add(popup_map, "Window:bury", &popup_abort);
+	key_add(popup_map, "Window:bury", &popup_child_closed);
 	key_add(popup_map, "Window:close", &popup_abort);
 	key_add(popup_map, "Window:split-x", &popup_ignore);
 	key_add(popup_map, "Window:split-y", &popup_ignore);

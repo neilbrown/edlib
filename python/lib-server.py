@@ -33,8 +33,9 @@ try:
 
 			if not msg :
                                 if self.disp:
-                                        self.disp.close()
-				self.sock.close()
+                                    self.disp.close()
+                                if self.sock:
+                                    self.sock.close()
 				self.sock = None
 				self.close()
 				return edlib.Efalse
