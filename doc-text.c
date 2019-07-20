@@ -621,7 +621,6 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe, char *st
 	    (a->size - a->free >= len ||
 	     (len2 = text_round_len(str, a->size - a->free)) > 0)) {
 		/* Some of this ('len2') can be added to the current chunk */
-		len = len2;
 		memcpy(a->text+a->free, str, len2);
 		a->free += len2;
 		pos->c->end += len2;
