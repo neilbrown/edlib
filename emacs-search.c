@@ -144,19 +144,28 @@ DEF_CMD(search_add)
 	struct mark *m;
 	int limit = 1000;
 	char *attr = NULL;
+	struct mark *addpos = mark_dup(esi->end);
+	char *str = call_ret(strsave, "doc:get-str", ci->home);
 
-	m = mark_dup(esi->end);
+	if (!str)
+		return 1;
+
+	if (esi->backwards)
+		/* Move to end of match */
+		call("text-search", esi->target, 0, addpos, str);
+
+	m = mark_dup(addpos);
 	if (strcmp(ci->key, "C-Chr-W")==0)
 		call("Move-Word", esi->target, 1, m);
 	else
 		call("Move-Char", esi->target, 1, m);
 
 	while (esi->matched
-	       && esi->end->seq < m->seq && !mark_same(esi->end, m)) {
+	       && addpos->seq < m->seq && !mark_same(addpos, m)) {
 		int slash = 0;
 		if (limit-- <= 0)
 			break;
-		wch = doc_following_pane(esi->target, esi->end);
+		wch = mark_next_pane(esi->target, addpos);
 		if (wch == WEOF)
 			break;
 		l = wcrtomb(b, wch, &ps);
