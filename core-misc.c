@@ -320,7 +320,10 @@ static void hash_free(struct khash **tab safe)
 
 void stat_free(void)
 {
-	if (stats_enabled)
+	/* stats_enabled is only valid after 30 seconds, so
+	 * so we need to check EDLIB_STATS directly
+	 */
+	if (stats_enabled && getenv("EDLIB_STATS"))
 		stat_dump();
 	hash_free(count_tab);
 	hash_free(khashtab);
