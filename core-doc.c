@@ -870,7 +870,10 @@ DEF_CMD(doc_notify_viewers)
 DEF_CMD(doc_notify_close)
 {
 	/* This pane has to go away */
+	struct doc_data *dd = ci->home->data;
 
+	mark_free(dd->point);
+	dd->point = safe_cast NULL;
 	pane_close(ci->home);
 	return 1;
 }
