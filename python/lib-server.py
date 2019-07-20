@@ -74,6 +74,9 @@ try:
 						self.sock.send("FAIL")
 						return 1
 					self.add_notify(d, "Notify:doc:done")
+					if self.term:
+					    self.term.call("Display:set-noclose",
+					                   "Cannot close display until document done - use 'C-x #'")
 					self.sock.send("OK")
 					return 1
                                 if msg == "Request:Notify:Close":
@@ -122,7 +125,9 @@ try:
 		def handle_done(self, key, str, **a):
 			"handle:Notify:doc:done"
 			if str != "test":
-				self.sock.send("Done")
+			    if self.term:
+			        self.term.call("Window:set-noclose")
+			    self.sock.send("Done")
 			return 1
 
 		def display_callback(self, key, focus, num, **a):
