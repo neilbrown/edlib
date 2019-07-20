@@ -43,6 +43,8 @@ struct es_info {
 };
 
 static struct map *es_map;
+static const char must_quote[] = ".|*+?{}()?^$\\";
+
 
 DEF_CMD(search_forward)
 {
@@ -178,7 +180,7 @@ DEF_CMD(search_add)
 			slash = 1;
 			strcpy(b, "n");
 			l = 1;
-		} else if (strchr("|*+?{}()?^$\\", wch)) {
+		} else if (strchr(must_quote, wch)) {
 			slash = 1;
 		}
 		b[l] = 0;
@@ -189,6 +191,16 @@ DEF_CMD(search_add)
 		call("Replace", ci->focus, 1, NULL, b, 0, NULL, attr);
 		attr = ",auto=1";
 	}
+	return 1;
+}
+
+DEF_CMD(search_insert_quoted)
+{
+	if (strchr(must_quote, ci->key[4]) == NULL)
+		return 0;
+	call("Replace", ci->focus, 1, NULL, "\\");
+	call("Replace", ci->focus, 1, NULL, ci->key + 4,
+	     0, NULL, ",auto=1");
 	return 1;
 }
 
@@ -338,6 +350,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "Notify:clip", &search_clip);
 	key_add(es_map, "C-Chr-L", &search_recentre);
 	key_add(es_map, "M-Chr-c", &search_toggle_ci);
+	key_add_range(es_map, "Chr-", "Chr-~", &search_insert_quoted);
 }
 
 DEF_LOOKUP_CMD(search_handle, es_map);
