@@ -54,7 +54,7 @@ DEF_CMD(view_refresh)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
-	int ln, l, w, c = -1;
+	int vpln = 0, cursln = 0, l = 0, c = -1;
 	char msg[100];
 	int i;
 	int mid;
@@ -75,23 +75,24 @@ DEF_CMD(view_refresh)
 		if (p->h > 4 * vd->line_height) {
 			struct mark *m;
 
-			if (vd->viewpoint)
-				m = vd->viewpoint;
-			else
-				m = call_ret(mark, "doc:point", ci->focus);
-
+			m = call_ret(mark, "doc:point", ci->focus);
 			call("CountLines", p, 0, m);
-
 			if (m)
-				ln = attr_find_int(*mark_attr(m), "lines");
-			else
-				ln = 0;
+				cursln = attr_find_int(*mark_attr(m), "lines");
+
+			if (vd->viewpoint) {
+				m = vd->viewpoint;
+				call("CountLines", p, 0, m);
+				vpln = attr_find_int(*mark_attr(m), "lines");
+			} else
+				vpln = cursln;
+
 			l = pane_attr_get_int(ci->home, "lines");
-			w = pane_attr_get_int(ci->home, "words");
+			//w = pane_attr_get_int(ci->home, "words");
 			c = pane_attr_get_int(ci->home, "chars");
 			if (l <= 0)
 				l = 1;
-			mid = vd->line_height + (p->h - 4 * vd->line_height) * ln / l;
+			mid = vd->line_height + (p->h - 4 * vd->line_height) * vpln / l;
 			one_char(p, "^", NULL, 0, mid-vd->line_height + vd->ascent);
 			one_char(p, "#", "inverse", 0, mid + vd->ascent);
 			one_char(p, "v", NULL, 0, mid+vd->line_height + vd->ascent);
@@ -111,7 +112,7 @@ DEF_CMD(view_refresh)
 		if (modified && strcmp(modified, "yes") == 0)
 			modified = "*";
 		else
-			modified = "━";
+			modified = "-";
 	}
 	if (vd->border & BORDER_TOP) {
 		int label;
@@ -132,8 +133,8 @@ DEF_CMD(view_refresh)
 		if (!(vd->border & BORDER_TOP)) {
 			char *doc_status = NULL;
 			if (c >= 0)
-				snprintf(msg, sizeof(msg), "L%d W%d C%d M%s D:%s",
-					 l,w,c, modified, name);
+				snprintf(msg, sizeof(msg), " M%s D:%-15s L%d/%d ",
+				         modified, name, cursln+1,l);
 			else
 				snprintf(msg, sizeof(msg), "%s-%s", modified, name);
 			doc_status = pane_attr_get(ci->focus, "doc:status");
