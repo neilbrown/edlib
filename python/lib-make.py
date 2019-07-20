@@ -201,7 +201,7 @@ class MakeViewerPane(edlib.Pane):
 
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
-        focus.call("Notify:doc:make-revisit", mark)
+        focus.call("Call:Notify:doc:make-revisit", mark)
         return 1
 
     def handle_clone(self, key, focus, home, **a):
