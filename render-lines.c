@@ -611,7 +611,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 
 		if (ret == WRAP|| x >= p->w - mwidth) {
 			/* No room for more text */
-			if (wrap) {
+			if (wrap && *line && *line != '\n' &&
+			    (line[0] != '<' || line[1] == '<')) {
 				int len = flush_line(focus, dodraw, &rlst, y+ascent,
 						     scale,
 						     p->w - mwidth,
