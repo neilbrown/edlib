@@ -1,11 +1,19 @@
 #
-# Copyright Neil Brown ©2015-2018 <neil@brown.name>
+# Copyright Neil Brown ©2015-2019 <neil@brown.name>
 # May be distrubuted under terms of GPLv2 - see file:COPYING
 #
 
 SMATCH_CHECK_SAFE=1
 export SMATCH_CHECK_SAFE
 
+# if C=0 is given on command line, disable all checking.
+# if C=1 is given, enable it
+C=auto
+ifeq "$(wildcard .CHECK)" ".CHECK"
+ CHECK=$(C:auto=1)
+else
+ CHECK=$(C:auto=0)
+endif
 VERSION = $(shell [ -d .git ] && git describe --always HEAD | sed 's/edlib-//')
 VERS_DATE = $(shell [ -d .git ] && date --iso-8601 --date="`git log -n1 --format=format:%cd --date=iso --date=short`")
 DVERS = $(if $(VERSION),-DVERSION=\"$(VERSION)\",)
@@ -33,7 +41,13 @@ else
  DBG=-O3
  QUIET_CHECK   = @: skip
 endif
-ifeq "$(wildcard .SMATCH)" ".SMATCH"
+ifeq "$(CHECK)" "1"
+ QUIET_CHECK   = $(Q:@=@echo    '     CHECK    '$<;)
+else
+ QUIET_CHECK   = @: skip
+endif
+
+ifeq "$(wildcard .SMATCH) $(CHECK)" ".SMATCH 1"
  # SYMLINK .SMATCH to the smatch binary for testing.
  SMATCH_CMD=$(shell readlink .SMATCH) $(SMATCH_FLAGS)
  QUIET_SMATCH  = $(Q:@=@echo    '     SMATCH   '$<;)$(SMATCH_CMD)
