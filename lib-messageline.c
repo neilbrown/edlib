@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
 
 #include "core.h"
 
@@ -135,7 +137,26 @@ DEF_CMD(messageline_line_refresh)
 	if (mli->message)
 		pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
 			 0, 0 + mli->ascent);
+	else {
+		char buf[80];
+		time_t t;
+		struct tm *tm;
+		t = time(NULL);
+		tm = localtime(&t);
+		if (tm)
+			strftime(buf, sizeof(buf), "%H:%M %d-%b-%Y", tm);
+		else
+			buf[0] = 0;
+		pane_str(mli->line, buf, "bold,fg:blue",
+			 0, 0 + mli->ascent);
+	}
 	return 0;
+}
+
+DEF_CMD(force_refresh)
+{
+	pane_damaged(ci->home, DAMAGED_CONTENT);
+	return 1;
 }
 
 static struct pane *do_messageline_attach(struct pane *p)
@@ -146,7 +167,8 @@ static struct pane *do_messageline_attach(struct pane *p)
 	ret = pane_register(p, 0, &messageline_handle.c, mli, NULL);
 	/* z=1 to avoid clone_children affecting it */
 	mli->line = pane_register(ret, 1, &messageline_line_handle.c, mli, NULL);
-	pane_focus(p);
+	pane_focus(ret);
+	call_comm("event:timer", mli->line, &force_refresh, 15000);
 
 	return ret;
 }
