@@ -14,6 +14,15 @@ ifeq "$(wildcard .CHECK)" ".CHECK"
 else
  CHECK=$(C:auto=0)
 endif
+# if D=0 is given, don't add debug flags, fully optimize
+# if D=1, add debugging, no optimization
+# otherwise, .DEBUG file means compile with debugging
+D=auto
+ifeq "$(wildcard .DEBUG)" ".DEBUG"
+ DEBUG=$(D:auto=1)
+else
+ DEBUG=$(D:auto=0)
+endif
 VERSION = $(shell [ -d .git ] && git describe --always HEAD | sed 's/edlib-//')
 VERS_DATE = $(shell [ -d .git ] && date --iso-8601 --date="`git log -n1 --format=format:%cd --date=iso --date=short`")
 DVERS = $(if $(VERSION),-DVERSION=\"$(VERSION)\",)
@@ -28,7 +37,7 @@ SMATCH_FLAGS= -D_BITS_FLOATN_H $(have_float) -D__FLT_EVAL_METHOD__=1 $(VCFLAGS)
 
 SPARSEFLAGS= -Wsparse-all -Wno-transparent-union -Wsparse-error $(SMATCH_FLAGS) $(VCFLAGS)
 # Create files .DEBUG and .LEAK for extra checking
-ifeq "$(wildcard .DEBUG)" ".DEBUG"
+ifeq "$(DEBUG)" "1"
  DBG := -Werror -fno-omit-frame-pointer
  ifeq "$(wildcard .SANITIZE)" ".SANITIZE"
   DBG += -fsanitize=undefined
@@ -36,10 +45,8 @@ ifeq "$(wildcard .DEBUG)" ".DEBUG"
  ifeq "$(wildcard .LEAK)" ".LEAK"
   DBG += -fsanitize=leak
  endif
- QUIET_CHECK   = $(Q:@=@echo    '     CHECK    '$<;)
 else
  DBG=-O3
- QUIET_CHECK   = @: skip
 endif
 ifeq "$(CHECK)" "1"
  QUIET_CHECK   = $(Q:@=@echo    '     CHECK    '$<;)
