@@ -254,7 +254,6 @@ def run_make(key, focus, str, **a):
     doc = focus.call("doc:from-text", docname, "", ret='focus')
     if not doc:
         return edlib.Esys
-    path = focus["dirname"]
 
     doc['dirname'] = dir
     if cmd == "make":
@@ -268,7 +267,7 @@ def run_make(key, focus, str, **a):
     doc["view-default"] = "make-viewer"
     p = p.call("doc:assign-view", doc, -1, ret='focus')
 
-    p = doc.call("attach-makecmd", str, path, ret='focus')
+    p = doc.call("attach-makecmd", str, dir, ret='focus')
     return 1
     
 
@@ -308,8 +307,9 @@ def make_request(key, focus, num, mark, **a):
                 dflt = "grep -rnH "
             elif os.path.isdir(os.path.join(d, ".pc")):
                 mode = "quilt"
-                dflt = "grep -rnH --exclude-dir=.pc"
-            d = os.path.dirname(d)
+                dflt = "grep -rnH --exclude-dir=.pc "
+            else:
+                d = os.path.dirname(d)
 
         if num and num > 0 and mode != "grep":
             dir = d + '/'
