@@ -650,7 +650,7 @@ class events(edlib.Pane):
     def timer(self, key, focus, comm2, num, **a):
         self.active = True
         ev = self.add_ev(focus, comm2, 'event:timer', num)
-        gev = gobject.timeout_add(num*1000, self.dotimeout, comm2, focus, ev)
+        gev = gobject.timeout_add(num, self.dotimeout, comm2, focus, ev)
         self.events[ev].append(gev)
         return 1
 

@@ -340,7 +340,7 @@ class notmuch_main(edlib.Doc):
         "handle:doc:notmuch:update"
         if not self.timer_set:
             self.timer_set = True
-            self.call("event:timer", 5*60, self.tick)
+            self.call("event:timer", 5*60*1000, self.tick)
         self.searches.load(False)
         self.notify("Notify:doc:Replace")
         self.updating = "counts"

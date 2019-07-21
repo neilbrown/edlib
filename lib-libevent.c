@@ -37,7 +37,7 @@ struct evt {
 	struct command *comm safe;
 	struct list_head lst;
 	int num;
-	int seconds;
+	int mseconds;
 	int fd;
 };
 
@@ -78,8 +78,8 @@ static void call_timeout_event(int thing, short sev, void *evv)
 		free(ev);
 	} else {
 		struct timeval tv;
-		tv.tv_sec = ev->seconds;
-		tv.tv_usec = 0;
+		tv.tv_sec = ev->mseconds / 1000;
+		tv.tv_usec = (ev->mseconds % 1000) * 1000;
 		event_add(ev->l, &tv);
 	}
 	time_stop(TIME_TIMER);
@@ -166,14 +166,14 @@ DEF_CMD(libevent_timer)
 				    call_timeout_event, ev);
 	ev->home = ci->focus;
 	ev->comm = command_get(ci->comm2);
-	ev->seconds = ci->num;
+	ev->mseconds = ci->num;
 	ev->fd = -1;
 	ev->num = ci->num;
 	ev->event = "event:timer";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
-	tv.tv_sec = ev->seconds;
-	tv.tv_usec = 0;
+	tv.tv_sec = ev->mseconds / 1000;
+	tv.tv_usec = (ev->mseconds % 1000) * 1000;
 	event_add(ev->l, &tv);
 	return 1;
 }

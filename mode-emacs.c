@@ -1316,7 +1316,8 @@ DEF_CMD(emacs_search_reposition)
 		pane_damaged(ci->focus, DAMAGED_CONTENT);
 		pane_damaged(ci->focus, DAMAGED_VIEW);
 	}
-	call_comm("event:timer", ci->focus, &emacs_search_reposition_delayed, 1);
+	call_comm("event:timer", ci->focus, &emacs_search_reposition_delayed,
+	          500);
 	return 1;
 }
 

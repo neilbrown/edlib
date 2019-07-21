@@ -314,7 +314,7 @@ static int parse_event(struct pane *p safe)
 	if (dd->next_event != DoCheck)
 		call_comm("editor-on-idle", p, &next_evt);
 	else
-		call_comm("event:timer", p, &abort_replay, 10);
+		call_comm("event:timer", p, &abort_replay, 10*1000);
 	return 1;
 }
 
