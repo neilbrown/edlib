@@ -598,6 +598,8 @@ DEF_CMD(find_complete)
 
 	if (strcmp(type, "file") == 0)
 		return emacs_file_complete_func(ci);
+	if (strcmp(type, "shellcmd") == 0)
+		return emacs_file_complete_func(ci);
 	if (strcmp(type, "doc") == 0)
 		return emacs_doc_complete_func(ci);
 	return 0;
@@ -810,6 +812,8 @@ REDEF_CMD(emacs_file_complete)
 	int fd;
 	struct pane *par, *pop, *docp, *p;
 	struct call_return cr;
+	char *type = ci->home->data;
+	int wholebuf = strcmp(type, "file") == 0;
 
 	if (!ci->mark)
 		return Enoarg;
@@ -817,9 +821,15 @@ REDEF_CMD(emacs_file_complete)
 	str = call_ret(strsave, "doc:get-str", ci->focus);
 	if (!str)
 		return Einval;
-	d = str;
-	while ((c = strstr(d, "//")) != NULL)
-		d = c+1;
+	if (wholebuf) {
+		d = str;
+		while ((c = strstr(d, "//")) != NULL)
+			d = c+1;
+	} else {
+		d = str + strlen(str);
+		while (d > str && d[-1] != ' ')
+			d -= 1;
+	}
 	b = strrchr(d, '/');
 	if (b) {
 		b += 1;
@@ -1020,7 +1030,7 @@ DEF_CMD(emacs_shell)
 		call("doc:set-name", p, 0, NULL, "Shell Command");
 		p = call_pane("attach-history", p, 0, NULL, "*Shell History*",
 			      0, NULL, "popup:close");
-		pane_register(p, 0, &find_handle.c, "cmd", NULL);
+		pane_register(p, 0, &find_handle.c, "shellcmd", NULL);
 		return 1;
 	}
 	path = pane_attr_get(ci->focus, "dirname");
@@ -1834,6 +1844,12 @@ DEF_CMD(attach_mode_emacs)
 	return call_comm("global-set-keymap", ci->focus, &mode_emacs.c);
 }
 
+DEF_CMD(attach_file_entry)
+{
+	pane_register(ci->focus, 0, &find_handle.c, ci->str ?: "shellcmd", NULL);
+	return 1;
+}
+
 void emacs_search_init(struct pane *ed safe);
 void edlib_init(struct pane *ed safe)
 {
@@ -1842,5 +1858,6 @@ void edlib_init(struct pane *ed safe)
 	if (fh_map == NULL)
 		findmap_init();
 	call_comm("global-set-command", ed, &attach_mode_emacs, 0, NULL, "attach-mode-emacs");
+	call_comm("global-set-command", ed, &attach_file_entry, 0, NULL, "attach-file-entry");
 	emacs_search_init(ed);
 }

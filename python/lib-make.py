@@ -222,6 +222,7 @@ def make_view_attach(key, focus, comm2, **a):
 class makeprompt(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
+        self.call("attach-file-entry", "shellcmd")
 
     def enter(self, key, focus, **a):
         "handle:Enter"
