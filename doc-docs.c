@@ -623,11 +623,11 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 		return 0;
 
 	if (cmd == 'o') {
-		par = home_call_pane(focus, "DocPane", dp);
+		par = home_call_ret(pane, focus, "DocPane", dp);
 		if (!par)
-			par = call_pane("OtherPane", focus);
+			par = call_ret(pane, "OtherPane", focus);
 	} else
-		par = call_pane("ThisPane", focus);
+		par = call_ret(pane, "ThisPane", focus);
 	if (!par)
 		return Esys;
 	p = doc_attach_view(par, dp, NULL, NULL, 1);
@@ -663,7 +663,7 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 	if (!renderer && !viewer)
 		return Efail;
 
-	par = call_pane("ThisPane", focus);
+	par = call_ret(pane, "ThisPane", focus);
 	if (!par)
 		return Esys;
 	p = doc_attach_view(par, dp, renderer, viewer, 1);
@@ -680,12 +680,12 @@ static int docs_bury(struct pane *focus safe)
 	/* If the docs list is in a tile, put something else there. */
 	/* FIXME should this be a function of the pane manager? */
 	struct pane *tile, *doc;
-	tile = call_pane("ThisPane", focus);
+	tile = call_ret(pane, "ThisPane", focus);
 	if (!tile)
 		return 1;
 	/* Discourage this doc from being chosen again */
 	call("doc:revisit", focus, -1);
-	doc = call_pane("docs:choose", focus);
+	doc = call_ret(pane, "docs:choose", focus);
 	if (doc)
 		doc_attach_view(tile, doc, NULL, NULL, 1);
 	return 1;

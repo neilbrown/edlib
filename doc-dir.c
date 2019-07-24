@@ -554,20 +554,20 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 	fd = open(fname, O_RDONLY);
 
 	if (fd >= 0) {
-		p = call_pane("doc:open", focus, fd, NULL, fname);
+		p = call_ret(pane, "doc:open", focus, fd, NULL, fname);
 		close(fd);
 	} else
-		p = call_pane("doc:from-text", focus, 0, NULL, fname, 0, NULL,
-			      "File not found\n");
+		p = call_ret(pane, "doc:from-text", focus, 0, NULL, fname, 0, NULL,
+		             "File not found\n");
 	free(fname);
 	if (!p)
 		return Efail;
 	if (cmd == 'o') {
-		par = home_call_pane(focus, "DocPane", p);
+		par = home_call_ret(pane, focus, "DocPane", p);
 		if (!par)
-			par = call_pane("OtherPane", focus);
+			par = call_ret(pane, "OtherPane", focus);
 	} else
-		par = call_pane("ThisPane", focus);
+		par = call_ret(pane, "ThisPane", focus);
 	if (par) {
 		p = doc_attach_view(par, p, NULL, NULL, 1);
 		pane_focus(p);
@@ -595,7 +595,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 	fd = open(fname, O_RDONLY);
 
 	if (fd >= 0) {
-		struct pane *new = call_pane("doc:open", home, fd, NULL, fname);
+		struct pane *new = call_ret(pane, "doc:open", home, fd, NULL, fname);
 		if (new) {
 			char *renderer = NULL;
 			char *viewer = NULL;
@@ -604,7 +604,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 			snprintf(buf, sizeof(buf), "view-Chr-%c", cmd);
 			viewer = pane_attr_get(new, buf);
 			if (renderer || viewer) {
-				par = call_pane("ThisPane", focus);
+				par = call_ret(pane, "ThisPane", focus);
 				if (!par)
 					return Esys;
 
@@ -613,11 +613,11 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 		}
 		close(fd);
 	} else {
-		struct pane *doc = call_pane("doc:from-text", par, 0, NULL, fname,
-					     0, NULL, "File not found\n");
+		struct pane *doc = call_ret(pane, "doc:from-text", par, 0, NULL, fname,
+		                            0, NULL, "File not found\n");
 		if (!doc)
 			return Efail;
-		par = call_pane("ThisPane", focus);
+		par = call_ret(pane, "ThisPane", focus);
 		if (!par)
 			return Esys;
 		p = doc_attach_view(par, doc, NULL, NULL, 1);

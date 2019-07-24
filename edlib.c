@@ -51,13 +51,13 @@ static char shortopt[] = "gt";
 static struct pane *make_stack(struct pane *p, struct pane *doc)
 {
 	if (p)
-		p = call_pane("attach-messageline", p);
+		p = call_ret(pane, "attach-messageline", p);
 	if (p)
-		p = call_pane("attach-global-keymap", p);
+		p = call_ret(pane, "attach-global-keymap", p);
 	if (p)
 		call("attach-mode-emacs", p);
 	if (p)
-		p = call_pane("attach-tile", p);
+		p = call_ret(pane, "attach-tile", p);
 	if (p && doc)
 		p = doc_attach_view(p, doc, NULL, NULL, 1);
 	return p;
@@ -118,19 +118,19 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "edlib: Cannot open: %s\n", file);
 			exit(2);
 		}
-		doc = call_pane("doc:open", ed, fd, NULL, file);
+		doc = call_ret(pane, "doc:open", ed, fd, NULL, file);
 		close(fd);
 	}
 
-	p = call_pane("attach-input", ed);
+	p = call_ret(pane, "attach-input", ed);
 	if (p && !doc)
-		doc = call_pane("doc:from-text", p, 0, NULL,
-				"*Welcome*", 0, NULL, WelcomeText);
+		doc = call_ret(pane, "doc:from-text", p, 0, NULL,
+		               "*Welcome*", 0, NULL, WelcomeText);
 
 	if (p) {
 		if (term) {
 			struct pane *disp;
-			disp = call_pane("attach-display-ncurses", p);
+			disp = call_ret(pane, "attach-display-ncurses", p);
 			if (disp) {
 				make_stack(disp, doc);
 				call("Display:set-noclose", disp, 1, NULL,
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		if (gtk)
-			make_stack(call_pane("attach-display-pygtk", p), doc);
+			make_stack(call_ret(pane, "attach-display-pygtk", p), doc);
 
 		time_start(TIME_REFRESH);
 		pane_refresh(ed);

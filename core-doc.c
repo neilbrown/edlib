@@ -948,7 +948,7 @@ render_attach(char *render, char *view, struct pane *parent safe)
 		return NULL;
 
 	sprintf(buf, "attach-render-%s", render);
-	p = call_pane(buf, parent);
+	p = call_ret(pane, buf, parent);
 	if (!p)
 		return NULL;
 	parent = p;
@@ -956,7 +956,7 @@ render_attach(char *render, char *view, struct pane *parent safe)
 		view = pane_attr_get(parent, "view-default");
 	if (view) {
 		sprintf(buf, "attach-%s", view);
-		p = call_pane(buf, parent);
+		p = call_ret(pane, buf, parent);
 		if (p)
 			parent = p;
 	}
@@ -971,7 +971,7 @@ DEF_CMD(doc_assign_view)
 		return Einval;
 	do_doc_assign(ci->home, ci->focus);
 	call("doc:revisit", ci->focus, ci->num?:1);
-	p2 = call_pane("attach-view", ci->home);
+	p2 = call_ret(pane, "attach-view", ci->home);
 	if (p2)
 		p2 = render_attach(ci->str && ci->str[0] ? ci->str : NULL,
 		                   ci->str2, p2);
@@ -1180,7 +1180,7 @@ struct pane *doc_new(struct pane *p safe, char *type, struct pane *parent)
 	struct pane *np;
 
 	snprintf(buf, sizeof(buf), "attach-doc-%s", type);
-	np = call_pane(buf, p);
+	np = call_ret(pane, buf, p);
 	if (np && parent)
 		home_call(np, "doc:set-parent", parent);
 	return np;
@@ -1250,11 +1250,11 @@ DEF_CMD(doc_open)
 	else
 		stb.st_mode = 0;
 
-	p = call_pane("docs:byfd", ed, 0, NULL, rp, fd);
+	p = call_ret(pane, "docs:byfd", ed, 0, NULL, rp, fd);
 
 	if (!p) {
-		p = call_pane("global-multicall-open-doc-", ed, fd, NULL, name,
-			      stb.st_mode & S_IFMT);
+		p = call_ret(pane, "global-multicall-open-doc-", ed, fd, NULL, name,
+		             stb.st_mode & S_IFMT);
 
 		if (!p) {
 			if (fd != ci->num)
@@ -1280,11 +1280,11 @@ struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe,
 {
 	struct pane *p;
 
-	p = call_pane("doc:attach", parent);
+	p = call_ret(pane, "doc:attach", parent);
 	if (p)
-		p = home_call_pane(p, "doc:assign-view", doc,
-		                   raise ? 1 : -1, NULL, render,
-		                   0, NULL, view);
+		p = home_call_ret(pane, p, "doc:assign-view", doc,
+		                  raise ? 1 : -1, NULL, render,
+		                  0, NULL, view);
 	return p;
 }
 

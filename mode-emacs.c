@@ -378,7 +378,7 @@ DEF_CMD(emacs_move_view_other)
 	/* If there is an 'other' pane', Send "Next" there */
 	struct pane *p;
 
-	p = call_pane("OtherPane", ci->focus, 4);
+	p = call_ret(pane, "OtherPane", ci->focus, 4);
 	if (!p)
 		return 1;
 	call("Mode:set-num", p, ci->num);
@@ -510,7 +510,7 @@ DEF_CMD(emacs_exit)
 			return 1;
 		}
 
-		p = call_pane("PopupTile", ci->focus, 0, NULL, "DM");
+		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM");
 		// FIXME if called from a popup, this fails.
 		if (!p)
 			return 0;
@@ -749,7 +749,7 @@ DEF_CMD(emacs_findfile)
 			*e++ = '/';
 			*e++ = '\0';
 		}
-		p = call_pane("PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, path);
+		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, path);
 		if (!p)
 			return 0;
 
@@ -776,11 +776,11 @@ DEF_CMD(emacs_findfile)
 
 	fd = open(path, O_RDONLY);
 	if (fd >= 0) {
-		p = call_pane("doc:open", ci->focus, fd, NULL, path);
+		p = call_ret(pane, "doc:open", ci->focus, fd, NULL, path);
 		close(fd);
 	} else
 		/* '4' says 'allow create' */
-		p = call_pane("doc:open", ci->focus, -1, NULL, path, 4);
+		p = call_ret(pane, "doc:open", ci->focus, -1, NULL, path, 4);
 	if (!p) {
 		char *m = NULL;
 		asprintf(&m, "Failed to open file: %s", path);
@@ -789,11 +789,11 @@ DEF_CMD(emacs_findfile)
 		return Efail;
 	}
 	if (strcmp(ci->key, "File Found Other Window") == 0) {
-		par = home_call_pane(ci->focus, "DocPane", p);
+		par = home_call_ret(pane, ci->focus, "DocPane", p);
 		if (!par)
-			par = call_pane("OtherPane", ci->focus);
+			par = call_ret(pane, "OtherPane", ci->focus);
 	} else
-		par = call_pane("ThisPane", ci->focus);
+		par = call_ret(pane, "ThisPane", ci->focus);
 
 	if (!par) {
 		pane_close(p);
@@ -847,11 +847,11 @@ REDEF_CMD(emacs_file_complete)
 	if (fd < 0) {
 		return Efail;
 	}
-	docp = call_pane("doc:open", ci->focus, fd, NULL, d);
+	docp = call_ret(pane, "doc:open", ci->focus, fd, NULL, d);
 	close(fd);
 	if (!docp)
 		return Efail;
-	pop = call_pane("PopupTile", ci->focus, 0, NULL, "DM1r");
+	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		return Esys;
 	par = doc_attach_view(pop, docp, NULL, NULL, 0);
@@ -861,7 +861,7 @@ REDEF_CMD(emacs_file_complete)
 	attr_set_str(&par->attrs, "line-format", "%+name%suffix");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
-	p = call_pane("attach-render-complete", par);
+	p = call_ret(pane, "attach-render-complete", par);
 	if (!p)
 		return Esys;
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, b);
@@ -901,11 +901,11 @@ DEF_CMD(emacs_finddoc)
 		struct pane *dflt;
 		char *defname = NULL;
 
-		dflt = call_pane("docs:choose", ci->focus);
+		dflt = call_ret(pane, "docs:choose", ci->focus);
 		if (dflt)
 			defname = pane_attr_get(dflt, "doc-name");
 
-		p = call_pane("PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
+		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
 		if (!p)
 			return 0;
 
@@ -926,16 +926,16 @@ DEF_CMD(emacs_finddoc)
 		return 1;
 	}
 
-	p = call_pane("docs:byname", ci->focus, 0, NULL, ci->str);
+	p = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)
 		return Efail;
 
 	if (strcmp(ci->key, "Doc Found Other Window") == 0) {
-		par = home_call_pane(ci->focus, "DocPane", p);
+		par = home_call_ret(pane, ci->focus, "DocPane", p);
 		if (!par)
-			par = call_pane("OtherPane", ci->focus);
+			par = call_ret(pane, "OtherPane", ci->focus);
 	} else
-		par = call_pane("ThisPane", ci->focus);
+		par = call_ret(pane, "ThisPane", ci->focus);
 	if (!p || !par)
 		return Esys;
 
@@ -960,10 +960,10 @@ REDEF_CMD(emacs_doc_complete)
 	str = call_ret(strsave, "doc:get-str", ci->focus);
 	if (!str)
 		return Einval;
-	pop = call_pane("PopupTile", ci->focus, 0, NULL, "DM1r");
+	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		return Esys;
-	docs = call_pane("docs:byname", ci->focus);
+	docs = call_ret(pane, "docs:byname", ci->focus);
 	if (!docs)
 		return Efail;
 	par = doc_attach_view(pop, docs, NULL, NULL, 0);
@@ -973,7 +973,7 @@ REDEF_CMD(emacs_doc_complete)
 	attr_set_str(&par->attrs, "line-format", "%+name");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
-	p = call_pane("attach-render-complete", par);
+	p = call_ret(pane, "attach-render-complete", par);
 	if (!p)
 		return Esys;
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, str);
@@ -1009,10 +1009,10 @@ DEF_CMD(emacs_viewdocs)
 	struct pane *p, *par;
 	struct pane *docs;
 
-	docs = call_pane("docs:byname", ci->focus, 0, NULL, "*Documents*");
+	docs = call_ret(pane, "docs:byname", ci->focus, 0, NULL, "*Documents*");
 	if (!docs)
 		return Efail;
-	par = call_pane("ThisPane", ci->focus);
+	par = call_ret(pane, "ThisPane", ci->focus);
 	if (!par)
 		return Esys;
 
@@ -1027,28 +1027,28 @@ DEF_CMD(emacs_shell)
 	char *path;
 
 	if (strcmp(ci->key, "Shell Command") != 0) {
-		p = call_pane("PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
+		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
 		if (!p)
 			return 0;
 		attr_set_str(&p->attrs, "prompt", "Shell command");
 		attr_set_str(&p->attrs, "done-key", "Shell Command");
 		call("doc:set-name", p, 0, NULL, "Shell Command");
-		p = call_pane("attach-history", p, 0, NULL, "*Shell History*",
-			      0, NULL, "popup:close");
+		p = call_ret(pane, "attach-history", p, 0, NULL, "*Shell History*",
+		             0, NULL, "popup:close");
 		pane_register(p, 0, &find_handle.c, "shellcmd", NULL);
 		return 1;
 	}
 	path = pane_attr_get(ci->focus, "dirname");
 	/* Find or create "*Shell Command Output*" */
-	doc = call_pane("docs:byname", ci->focus, 0, NULL, name);
+	doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL, name);
 	if (!doc)
-		doc = call_pane("doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
+		doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
 	if (!doc)
 		return Esys;
 	attr_set_str(&doc->attrs, "dirname", path);
-	par = home_call_pane(ci->focus, "DocPane", doc);
+	par = home_call_ret(pane, ci->focus, "DocPane", doc);
 	if (!par)
-		par = call_pane("OtherPane", ci->focus);
+		par = call_ret(pane, "OtherPane", ci->focus);
 	if (!par)
 		return Esys;
 	/* shellcmd is attached directly to the document, not in the view
@@ -1056,7 +1056,7 @@ DEF_CMD(emacs_shell)
 	 * We don't need a doc attachment as no point is needed - we
 	 * always insert at the end.
 	 */
-	call_pane("attach-shellcmd", doc, 0, NULL, ci->str, 0, NULL, path);
+	call_ret(pane, "attach-shellcmd", doc, 0, NULL, ci->str, 0, NULL, path);
 
 	doc_attach_view(par, doc, NULL, "viewer", 1);
 	return 1;
@@ -1116,7 +1116,7 @@ DEF_CMD(emacs_save_all)
 		return 1;
 	}
 	if (ci->num == NO_NUMERIC) {
-		struct pane *p = call_pane("PopupTile", ci->focus, 0, NULL, "DM");
+		struct pane *p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM");
 		if (p)
 			return call("docs:show-modified", p);
 	}
@@ -1346,7 +1346,7 @@ DEF_CMD(emacs_start_search)
 	hi->view = call("doc:add-view", ci->focus) - 1;
 	hp = pane_register(ci->focus, 0, &highlight_handle.c, hi, NULL);
 
-	p = call_pane("PopupTile", hp, 0, NULL, "TR2", 0, NULL, "");
+	p = call_ret(pane, "PopupTile", hp, 0, NULL, "TR2", 0, NULL, "");
 
 	if (!p)
 		return 0;
@@ -1355,7 +1355,7 @@ DEF_CMD(emacs_start_search)
 	attr_set_str(&p->attrs, "prompt", "Search");
 	attr_set_str(&p->attrs, "done-key", "Search String");
 	call("doc:set-name", p, 0, NULL, "Search");
-	call_pane("attach-emacs-search", p, ci->key[6] == 'R');
+	call_ret(pane, "attach-emacs-search", p, ci->key[6] == 'R');
 
 	return 1;
 }
@@ -1407,14 +1407,14 @@ DEF_CMD(emacs_command)
 {
 	struct pane *p;
 
-	p = call_pane("PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
+	p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
 	if (!p)
 		return 0;
 	attr_set_str(&p->attrs, "prompt", "Cmd");
 	attr_set_str(&p->attrs, "done-key", "emacs:command");
 	call("doc:set-name", p, 0, NULL, "M-x command");
-	p = call_pane("attach-history", p, 0, NULL, "*Command History*",
-		      0, NULL, "popup:close");
+	p = call_ret(pane, "attach-history", p, 0, NULL, "*Command History*",
+	             0, NULL, "popup:close");
 	pane_register(p, 0, &find_handle.c, "cmd", NULL);
 	return 1;
 }

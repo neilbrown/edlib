@@ -324,7 +324,7 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 	int majlen, minlen;
 	char *ctype = NULL;
 
-	h = call_pane("attach-crop", p, 0, start, NULL, 0, end);
+	h = call_ret(pane, "attach-crop", p, 0, start, NULL, 0, end);
 	if (!h)
 		return 0;
 
@@ -333,7 +333,7 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 		xfer = get_822_token(&xfer, &xlen);
 		if (xfer && xlen == 16 &&
 		    strncasecmp(xfer, "quoted-printable", 16) == 0) {
-			struct pane *hx = call_pane("attach-quoted_printable", h);
+			struct pane *hx = call_ret(pane, "attach-quoted_printable", h);
 			if (hx) {
 				h = hx;
 				need_charset = 1;
@@ -341,7 +341,7 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 		}
 		if (xfer && xlen == 6 &&
 		    strncasecmp(xfer, "base64", 6) == 0) {
-			struct pane *hx = call_pane("attach-base64", h);
+			struct pane *hx = call_ret(pane, "attach-base64", h);
 			if (hx) {
 				h = hx;
 				need_charset = 1;
@@ -351,7 +351,7 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 	if (type && need_charset &&
 	    (charset = get_822_attr(type, "charset")) != NULL &&
 	    strcasecmp(charset, "utf-8") == 0) {
-		struct pane *hx = call_pane("attach-utf8", h);
+		struct pane *hx = call_ret(pane, "attach-utf8", h);
 		if (hx)
 			h = hx;
 	}
@@ -477,8 +477,8 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 	part_end = mark_dup(pos);
 	while (found_end == 0 &&
 	       (found_end = find_boundary(p, pos, end, part_end, boundary)) >= 0) {
-		struct pane *hdr = call_pane("attach-rfc822header", p, 0, start, NULL,
-					     0, part_end);
+		struct pane *hdr = call_ret(pane, "attach-rfc822header", p, 0, start, NULL,
+		                            0, part_end);
 		char *ptype, *pxfer;
 
 		if (!hdr)
@@ -550,7 +550,7 @@ DEF_CMD(open_email)
 	    strncmp(ci->str, "email:", 6) != 0)
 		return Efallthrough;
 	fd = open(ci->str+6, O_RDONLY);
-	p = call_pane("doc:open", ci->focus, fd, NULL, ci->str + 6, 1);
+	p = call_ret(pane, "doc:open", ci->focus, fd, NULL, ci->str + 6, 1);
 	if (!p)
 		return Efallthrough;
 	start = vmark_new(p, MARK_UNGROUPED);
@@ -561,10 +561,10 @@ DEF_CMD(open_email)
 
 	ei = calloc(1, sizeof(*ei));
 	ei->email = p;
-	h2 = call_pane("attach-rfc822header", p, 0, start, NULL, 0, end);
+	h2 = call_ret(pane, "attach-rfc822header", p, 0, start, NULL, 0, end);
 	if (!h2)
 		goto out;
-	p = call_pane("doc:from-text", p, 0, NULL, NULL, 0, NULL, "\v");
+	p = call_ret(pane, "doc:from-text", p, 0, NULL, NULL, 0, NULL, "\v");
 	if (!p) {
 		pane_close(h2);
 		goto out;

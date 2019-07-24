@@ -399,7 +399,7 @@ DEF_CMD(emacs_search)
 
 	if (!es_map)
 		emacs_search_init_map();
-	p = call_pane("popup:get-target", ci->focus);
+	p = call_ret(pane, "popup:get-target", ci->focus);
 	if (!p)
 		return Esys;
 	esi = calloc(1, sizeof(*esi));

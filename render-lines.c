@@ -1818,7 +1818,7 @@ REDEF_CMD(render_lines_attach)
 	rl->typenum = call("doc:add-view", ci->focus) - 1;
 	p = ci->focus;
 	if (strcmp(ci->key, "attach-render-text") == 0)
-		p = call_pane("attach-renderline", p);
+		p = call_ret(pane, "attach-renderline", p);
 	p = pane_register(p, 0, &render_lines_handle.c, rl, NULL);
 	call("Request:Notify:doc:Replace", p);
 

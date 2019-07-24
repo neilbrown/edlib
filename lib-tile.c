@@ -812,7 +812,7 @@ DEF_CMD(tile_window_bury)
 	/* First, push the doc to the end of the 'recently used' list */
 	call("doc:revisit", ci->focus, -1);
 	/* Now choose a replacement */
-	doc = call_pane("docs:choose", ci->focus);
+	doc = call_ret(pane, "docs:choose", ci->focus);
 	if (doc)
 		/* display that doc in this pane */
 		doc_attach_view(ci->home, doc, NULL, NULL, 1);
@@ -993,7 +993,7 @@ DEF_CMD(tile_child_closed)
 	if (ci->focus->z != 0)
 		return 1;
 	/* Child closed, but we weren't, so find something else to display */
-	c = call_pane("docs:choose", p);
+	c = call_ret(pane, "docs:choose", p);
 	if (c)
 		doc_attach_view(p, c, NULL, NULL, 1);
 	else if (ti->direction != Neither)

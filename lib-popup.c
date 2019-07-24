@@ -259,9 +259,9 @@ DEF_CMD(popup_attach)
 		return 0;
 
 	if (strchr(style, 'D')) {
-		root = call_pane("RootPane", ci->focus);
+		root = call_ret(pane, "RootPane", ci->focus);
 	} else
-		root = call_pane("ThisPane", ci->focus);
+		root = call_ret(pane, "ThisPane", ci->focus);
 	if (!root)
 		return 0;
 
@@ -290,8 +290,8 @@ DEF_CMD(popup_attach)
 
 	if (ci->str2) {
 		struct pane *doc =
-			call_pane("doc:from-text", p, 0, NULL,
-				  "*popup*", 0, NULL, ci->str2);
+			call_ret(pane, "doc:from-text", p, 0, NULL,
+			         "*popup*", 0, NULL, ci->str2);
 		if (doc &&
 		    (p = doc_attach_view(p, doc, NULL, NULL, 0)) != NULL) {
 

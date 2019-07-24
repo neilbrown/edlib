@@ -152,16 +152,16 @@ DEF_CMD(history_attach)
 	hi->handle.m = &hi->done_map;
 	key_add_chain(hi->done_map, history_map);
 	key_add(hi->done_map, ci->str2, &history_done);
-	p = call_pane("docs:byname", ci->focus, 0, NULL, ci->str);
+	p = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)
-		p = call_pane("doc:from-text", ci->focus, 0, NULL, ci->str,
-			      0, NULL, "");
+		p = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, ci->str,
+		             0, NULL, "");
 	if (!p) {
 		free(hi);
 		return 0;
 	}
 	call("doc:revisit", p, -1);
-	hi->history = call_pane("doc:attach", p);
+	hi->history = call_ret(pane, "doc:attach", p);
 	if (!hi->history)
 		return 0;
 	home_call(hi->history, "doc:assign", p);
@@ -179,7 +179,7 @@ DEF_CMD(history_last)
 	struct pane *doc;
 	struct mark *m, *m2;
 
-	doc = call_pane("docs:byname", ci->focus, 0, NULL, ci->str);
+	doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!doc)
 		return 1;
 	m = vmark_new(doc, MARK_UNGROUPED);
