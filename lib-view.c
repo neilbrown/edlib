@@ -78,12 +78,12 @@ DEF_CMD(view_refresh)
 			m = call_ret(mark, "doc:point", ci->focus);
 			call("CountLines", p, 0, m);
 			if (m)
-				cursln = attr_find_int(*mark_attr(m), "lines");
+				cursln = attr_find_int(*mark_attr(m), "line");
 
 			if (vd->viewpoint) {
 				m = vd->viewpoint;
 				call("CountLines", p, 0, m);
-				vpln = attr_find_int(*mark_attr(m), "lines");
+				vpln = attr_find_int(*mark_attr(m), "line");
 			} else
 				vpln = cursln;
 
@@ -134,7 +134,7 @@ DEF_CMD(view_refresh)
 			char *doc_status = NULL;
 			if (c >= 0)
 				snprintf(msg, sizeof(msg), " M%s D:%-15s L%d/%d ",
-				         modified, name, cursln+1,l);
+				         modified, name, cursln,l);
 			else
 				snprintf(msg, sizeof(msg), "%s-%s", modified, name);
 			doc_status = pane_attr_get(ci->focus, "doc:status");

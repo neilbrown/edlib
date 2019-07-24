@@ -18,6 +18,12 @@
  * When recalculating a range, we drop a new mark every 50 lines.
  * When we find a mark the needs updating, we discard it if previous mark is
  * closer than 10 lines.
+ *
+ * When CountLines is called on a doc-pane, pane attributes are set
+ * to record the number of lines, words, chars.
+ * When it is calld on a mark in the pane attributes are set on the
+ * mark to indicate the line, work and char where the mark is.
+ * These are always at least 1.
  */
 
 #include <unistd.h>
@@ -198,9 +204,9 @@ static void count_calculate(struct pane *p safe,
 done:
 	if (end) {
 		struct attrset **attrs = &end->attrs;
-		attr_set_int(attrs, "lines", lines);
-		attr_set_int(attrs, "words", words);
-		attr_set_int(attrs, "chars", chars);
+		attr_set_int(attrs, "line", lines + 1);
+		attr_set_int(attrs, "word", words + 1);
+		attr_set_int(attrs, "char", chars + 1);
 	} else {
 		attr_set_int(&p->attrs, "lines", lines);
 		attr_set_int(&p->attrs, "words", words);
