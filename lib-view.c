@@ -19,6 +19,7 @@
 #include <stdio.h>
 
 #include "core.h"
+#include "misc.h"
 
 struct view_data {
 	int		border;
@@ -45,6 +46,109 @@ DEF_LOOKUP_CMD(view_handle, view_map);
 static struct pane *safe do_view_attach(struct pane *par, int border);
 static int calc_border(struct pane *p safe);
 
+static char default_status[] =
+"{!CountLines}M:{doc-modified?,*,-} D:{doc-name:-15} L{^line}/{lines} {doc:status}";
+static char default_title[] =
+"{doc-name}";
+
+static char *format_status(char *status safe,
+                                 struct pane *focus safe,
+                                 struct mark *pm)
+{
+	struct buf b;
+	char *close;
+	char *f;
+	char type;
+	int width;
+	char *attr;
+	char sep;
+
+	buf_init(&b);
+	while (*status) {
+		int point_attr = 0;
+		int l;
+
+		if (*status != '{') {
+			buf_append(&b, *status);
+			status++;
+			continue;
+		}
+		status += 1;
+		close = strchr(status, '}');
+		if (!close)
+			break;
+		f = strnsave(focus, status, close-status);
+		if (!f)
+			break;
+		status = close + 1;
+
+		if (*f == '!' && pm) {
+			/* This is a command to call */
+			call(f+1, focus, 0, pm);
+			continue;
+		}
+		if (*f == '^') {
+			point_attr = 1;
+			f += 1;
+		}
+		/* Some extras here for future expansion */
+		l = strcspn(f, ":+?#!@$%^&*=<>");
+		type = f[l];
+		f[l] = 0;
+		if (point_attr && pm)
+			attr = attr_find(*mark_attr(pm), f);
+		else
+			attr = pane_attr_get(focus, f);
+		if (!attr)
+			attr = "";
+		switch (type) {
+		case ':':
+			/* Format in a field */
+			width = atoi(f+l+1);
+			if (width < 0) {
+				buf_concat(&b, attr);
+				width += strlen(attr);
+				while (width < 0) {
+					buf_append(&b, ' ');
+					width += 1;
+				}
+			} else {
+				width -= strlen(attr);
+				while (width > 0) {
+					buf_append(&b, ' ');
+					width -= 1;
+				}
+				buf_concat(&b, attr);
+			}
+			break;
+		case '?':
+			/* flag - no, 0, empty, false are second option */
+			f += l+1;
+			sep = *f++;
+			if (!sep)
+				break;
+			if (strcasecmp(attr, "no") == 0 ||
+			    strcasecmp(attr, "false") == 0 ||
+			    strcmp(attr, "0") == 0 ||
+			    strlen(attr) == 0) {
+				f = strchr(f, sep);
+				if (f)
+					f += 1;
+				else
+					f = "";
+			}
+			while (*f && *f != sep) {
+				buf_append(&b, *f);
+				f += 1;
+			}
+			break;
+		default:
+			buf_concat(&b, attr);
+		}
+	}
+	return buf_final(&b);
+}
+
 static void one_char(struct pane *p safe, char *s, char *attr, int x, int y)
 {
 	call("Draw:text", p, -1, NULL, s, 0, NULL, attr, x, y);
@@ -54,18 +158,25 @@ DEF_CMD(view_refresh)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
-	int vpln = 0, cursln = 0, l = 0, c = -1;
-	char msg[100];
 	int i;
-	int mid;
-	char *name = NULL;
-	char *modified = "??";
+	struct mark *pm;
+	char *status;
+	char *title;
 
-//	p->cx = 0; p->cy = 0;
 	if (vd->border <= 0)
 		return 0;
 	if (vd->line_height <= 0)
 		return 0;
+
+	pm = call_ret(mark, "doc:point", ci->focus);
+	status = pane_attr_get(ci->focus, "status-line");
+	if (!status)
+		status = default_status;
+	status = format_status(status, ci->focus, pm);
+	title = pane_attr_get(ci->focus, "pane-title");
+	if (!title)
+		title = default_title;
+	title = format_status(title, ci->focus, pm);
 
 	if (vd->border & BORDER_LEFT) {
 		/* Left border is (currently) always a scroll bar */
@@ -73,23 +184,20 @@ DEF_CMD(view_refresh)
 			one_char(p, "┃", "inverse", 0, i + vd->ascent);
 
 		if (p->h > 4 * vd->line_height) {
-			struct mark *m;
-
-			m = call_ret(mark, "doc:point", ci->focus);
-			call("CountLines", p, 0, m);
-			if (m)
-				cursln = attr_find_int(*mark_attr(m), "line");
+			int l;
+			int vpln = 0;
+			int mid;
 
 			if (vd->viewpoint) {
-				m = vd->viewpoint;
-				call("CountLines", p, 0, m);
-				vpln = attr_find_int(*mark_attr(m), "line");
-			} else
-				vpln = cursln;
+				call("CountLines", p, 0, vd->viewpoint);
+				vpln = attr_find_int(*mark_attr(vd->viewpoint),
+				                     "line");
+			} else if (pm) {
+				call("CountLines", p, 0, pm);
+				vpln = attr_find_int(*mark_attr(pm), "line");
+			}
 
 			l = pane_attr_get_int(ci->home, "lines");
-			//w = pane_attr_get_int(ci->home, "words");
-			c = pane_attr_get_int(ci->home, "chars");
 			if (l <= 0)
 				l = 1;
 			mid = vd->line_height + (p->h - 4 * vd->line_height) * vpln / l;
@@ -106,23 +214,14 @@ DEF_CMD(view_refresh)
 			one_char(p, "┃", "inverse", p->w-vd->border_width,
 				  i + vd->ascent);
 	}
-	if (vd->border & (BORDER_TOP | BORDER_BOT)) {
-		name = pane_attr_get(p, "doc-name");
-		modified = pane_attr_get(p, "doc-modified");
-		if (modified && strcmp(modified, "yes") == 0)
-			modified = "*";
-		else
-			modified = "-";
-	}
 	if (vd->border & BORDER_TOP) {
 		int label;
 		for (i = 0; i < p->w; i += vd->border_width)
 			one_char(p, "━", "inverse", i, vd->ascent);
-		snprintf(msg, sizeof(msg), "%s", name);
-		label = (p->w - strlen(msg) * vd->border_width) / 2;
+		label = (p->w - strlen(title?:"") * vd->border_width) / 2;
 		if (label < vd->border_width)
 			label = 1;
-		one_char(p, msg, "inverse",
+		one_char(p, title, "inverse",
 			 label * vd->border_width, vd->ascent);
 	}
 	if (vd->border & BORDER_BOT) {
@@ -131,19 +230,7 @@ DEF_CMD(view_refresh)
 				  p->h-vd->border_height+vd->ascent);
 
 		if (!(vd->border & BORDER_TOP)) {
-			char *doc_status = NULL;
-			if (c >= 0)
-				snprintf(msg, sizeof(msg), " M%s D:%-15s L%d/%d ",
-				         modified, name, cursln,l);
-			else
-				snprintf(msg, sizeof(msg), "%s-%s", modified, name);
-			doc_status = pane_attr_get(ci->focus, "doc:status");
-			if (doc_status) {
-				strncat(msg, ": ", sizeof(msg)-strlen(msg));
-				strncat(msg, doc_status, sizeof(msg)-strlen(msg));
-				msg[sizeof(msg)-1] = 0;
-			}
-			one_char(p, msg, "inverse",
+			one_char(p, status, "inverse",
 				 4*vd->border_width,
 				 p->h-vd->border_height + vd->ascent);
 		}
@@ -157,6 +244,10 @@ DEF_CMD(view_refresh)
 		one_char(p, "┏", "inverse", 0, vd->ascent);
 	if (!(~vd->border & (BORDER_RIGHT|BORDER_BOT)))
 		one_char(p, "┛", "inverse", p->w-vd->border_width, p->h-vd->border_height+vd->ascent);
+
+	free(status);
+	free(title);
+
 	return 0;
 }
 
