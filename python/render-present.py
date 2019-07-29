@@ -81,12 +81,12 @@ class PresenterPane(edlib.Pane):
 
     def get_line_at(self, m):
         # call render-line at m
-        s = self.parent.call("render-line", m, -1, ret = 'str')
+        s = self.parent.call("doc:render-line", m, -1, ret = 'str')
         return s if s else ''
 
     def get_line_before(self, m):
         m2 = m.dup()
-        ret = self.parent.call("render-line-prev", m2, 1)
+        ret = self.parent.call("doc:render-line-prev", m2, 1)
         if ret <= 0:
             return None
         l = self.get_line_at(m2)
@@ -467,7 +467,7 @@ class PresenterPane(edlib.Pane):
         # Go to start of page
         if num == 0:
             # just make sure at start of line
-            return self.parent.call("render-line-prev", mark)
+            return self.parent.call("doc:render-line-prev", mark)
 
         start = self.find_pages(mark)
         if not start:

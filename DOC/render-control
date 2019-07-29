@@ -22,17 +22,17 @@ as text with attributes.
 lib-renderline
 --------------
 
-The two interfaces are "render-line" and "render-line-prev"
-"render-line" is the main worker, "render-line-prev" moves backwards
+The two interfaces are "doc:render-line" and "doc:render-line-prev"
+"doc:render-line" is the main worker, "doc:render-line-prev" moves backwards
 through a text buffer looking for a suitable place to start the line before 
 the given location.
 
-"render-line-prev" args are:
+"doc:render-line-prev" args are:
   mark: current location
   num: if 0, move to start of current line.  If 1, move back beyond start of
       current line, then to the start of the previous line
 
-"render-line"  args are:
+"doc:render-line"  args are:
   mark: start of the line to be rendered.  Line continues until first '\n'
         or until 'num2' chars have been examined with no '\n' found
         mark will be moved to the end of the range that was rendered (often
@@ -136,7 +136,8 @@ a cursor at the location of "point" in the document.
 It handles "Refresh" and related commands and calls "Draw:text" etc
 to update the display.
 
-render-lines will call "render-line" and "render-line-prev" to find out what should be drawn.
+render-lines will call "doc:render-line" and "doc:render-line-prev" to find
+out what should be drawn.
 They should return marked-up text providing attributes to guide drawing.
 The markup uses <> to enclose attributes - anything else is text.
 A '<' can be included in text by doubling it '<<'

@@ -263,8 +263,8 @@ static void render_format_register_map(void)
 {
 	rf_map = key_alloc();
 
-	key_add(rf_map, "render-line", &render_line);
-	key_add(rf_map, "render-line-prev", &render_line_prev);
+	key_add(rf_map, "doc:render-line", &render_line);
+	key_add(rf_map, "doc:render-line-prev", &render_line_prev);
 	key_add(rf_map, "Close", &format_close);
 	key_add(rf_map, "Clone", &format_clone);
 	key_add(rf_map, "doc:get-attr", &format_get_attr);

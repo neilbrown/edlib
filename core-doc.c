@@ -144,7 +144,7 @@ static wint_t doc_move_horiz(struct pane *p safe, struct mark *m safe,
 			     int *field)
 {
 	/* If subfields are present, move one step, else move one
-	 * char.  We we move a char and land in subfields, make
+	 * char.  If we move a char and land in subfields, make
 	 * sure rpos is correct.
 	 */
 	wint_t ret = '\n';

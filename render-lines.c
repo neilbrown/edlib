@@ -4,10 +4,10 @@
  *
  * Rendering for any document which presents as a sequence of lines.
  * The underlying document must return lines of text in response to
- * the "render-line" command.
+ * the "doc:render-line" command.
  * This takes a mark and moves it to the end of the rendered line
  * so that another call will produce another line.
- * "render-line" must always return a full line including '\n' unless the result
+ * "doc:render-line" must always return a full line including '\n' unless the result
  * would be bigger than the 'max' passed in ->num2.  In that case it can stop
  * after 'max' and before a '\n'.
  * If ->num is >= 0, then rendering must only preceed for that many bytes
@@ -18,7 +18,7 @@
  * For the standard 'render the whole line' functionality, ->num should
  * be NO_NUMERIC
  *
- * The document must also provide "render-line-prev" which moves mark to a
+ * The document must also provide "doc:render-line-prev" which moves mark to a
  * start-of-line.  If num is 0, then don't skip over any newlines.
  * If it is '1', then skip one newline.
  *
@@ -46,13 +46,13 @@
  * In the worst case of there being no newlines in the document, there will be precisely
  * two marks: one contains a partial line and one that marks the end of that line.
  * When point moves outside that range a new start will be chosen before point
- * using "render-line-prev' and the old start is discarded.
+ * using "doc:render-line-prev" and the old start is discarded.
  *
  * To render the pane we:
  * 1/ call 'render-line-prev' on a mark at the point and look for that mark
  *    in the view.
  * 2/ If the mark matches and has a string, we have a starting point, else we
- *    call "render-line" and store the result, thus producing a starting point.
+ *    call "doc:render-line" and store the result, thus producing a starting point.
  *    We determine how many display lines are needed to display this text-line and
  *    set 'y' accordingly.
  *    At this point we have two marks: start and end, with known text of known
@@ -828,7 +828,7 @@ static struct mark *call_render_line_prev(struct pane *p safe,
 	int ret;
 	struct mark *m2;
 
-	ret = call("render-line-prev", p, n, m);
+	ret = call("doc:render-line-prev", p, n, m);
 	if (ret <= 0) {
 		mark_free(m);
 		return NULL;
@@ -864,7 +864,7 @@ static struct mark *call_render_line(struct pane *p safe, struct mark *start saf
 	 * 'used' can be negative if the mark is before the start
 	 * of the pane
 	 */
-	s = call_ret(str, "render-line", p, NO_NUMERIC, m);
+	s = call_ret(str, "doc:render-line", p, NO_NUMERIC, m);
 
 	if (s) {
 		if (start->mdata)
@@ -903,7 +903,7 @@ static struct mark *call_render_line_offset(struct pane *p safe,
 	struct mark *m;
 
 	m = mark_dup_view(start);
-	if (call_comm("render-line", p, &no_save, offset, m) <= 0) {
+	if (call_comm("doc:render-line", p, &no_save, offset, m) <= 0) {
 		mark_free(m);
 		return NULL;
 	}
@@ -927,7 +927,7 @@ static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
 	int len;
 	struct mark *m = mark_dup_view(start);
 
-	len = call_comm("render-line", p, &get_len, -1, m, NULL, 0, pm);
+	len = call_comm("doc:render-line", p, &get_len, -1, m, NULL, 0, pm);
 	mark_free(m);
 	if (len <= 0)
 		return 0;
