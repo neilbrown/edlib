@@ -57,8 +57,10 @@ DEF_CMD(messageline_msg)
 	struct mlinfo *mli = ci->home->data;
 
 	if (ci->str && (ci->num2 == 0 || mli->message == NULL)) {
-		if (!mli->message)
+		if (!mli->message) {
 			call("Request:Notify:Keystroke", ci->home);
+			call("Request:Notify:Mouse-event", ci->home);
+		}
 		free(mli->message);
 		mli->message = strdup(ci->str);
 		pane_damaged(mli->line, DAMAGED_CONTENT);
@@ -70,8 +72,10 @@ DEF_CMD(messageline_abort)
 {
 	struct mlinfo *mli = ci->home->data;
 
-	if (!mli->message)
+	if (!mli->message) {
 		call("Request:Notify:Keystroke", ci->home);
+		call("Request:Notify:Mouse-event", ci->home);
+	}
 	free(mli->message);
 	mli->message = strdup("ABORTED");
 	pane_damaged(mli->line, DAMAGED_CONTENT);
@@ -124,6 +128,7 @@ DEF_CMD(messageline_notify)
 		free(mli->message);
 		mli->message = NULL;
 		pane_drop_notifiers(ci->home, "Notify:Keystroke");
+		pane_drop_notifiers(ci->home, "Notify:Mouse-event");
 		pane_damaged(mli->line, DAMAGED_CONTENT);
 	}
 	return 1;
@@ -197,6 +202,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(messageline_map, "Refresh:size", &messageline_refresh_size);
 	key_add(messageline_map, "ChildRegistered", &messageline_child_registered);
 	key_add(messageline_map, "Notify:Keystroke", &messageline_notify);
+	key_add(messageline_map, "Notify:Mouse-event", &messageline_notify);
 
 	messageline_line_map = key_alloc();
 	key_add(messageline_line_map, "Refresh", &messageline_line_refresh);
