@@ -858,6 +858,7 @@ REDEF_CMD(emacs_file_complete)
 	if (!par)
 		return Esys;
 
+	attr_set_str(&par->attrs, "render-wrap", "yes");
 	attr_set_str(&par->attrs, "line-format", "%+name%suffix");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
@@ -970,6 +971,7 @@ REDEF_CMD(emacs_doc_complete)
 	if (!par)
 		return Esys;
 
+	attr_set_str(&par->attrs, "render-wrap", "yes");
 	attr_set_str(&par->attrs, "line-format", "%+name");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
