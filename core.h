@@ -136,7 +136,7 @@ struct doc {
 	struct tlist_head	points;
 	struct docview {
 		struct tlist_head head;
-		short		  state;	/* 0 = unused, 1 = active, 2 = being deleted */
+		struct pane	  *owner;
 	} /* safe iff nviews > 0 */ *views;
 	int			nviews;
 	struct mark		*recent_points[8];

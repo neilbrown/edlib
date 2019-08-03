@@ -1815,11 +1815,11 @@ REDEF_CMD(render_lines_attach)
 	rl->target_x = -1;
 	rl->target_y = -1;
 	rl->do_wrap = 1;
-	rl->typenum = call("doc:add-view", ci->focus) - 1;
 	p = ci->focus;
 	if (strcmp(ci->key, "attach-render-text") == 0)
 		p = call_ret(pane, "attach-renderline", p);
 	p = pane_register(p, 0, &render_lines_handle.c, rl, NULL);
+	rl->typenum = home_call(ci->focus, "doc:add-view", p) - 1;
 	call("Request:Notify:doc:Replace", p);
 
 	return comm_call(ci->comm2, "callback:attach", p);

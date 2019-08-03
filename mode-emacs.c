@@ -858,7 +858,6 @@ REDEF_CMD(emacs_file_complete)
 	if (!par)
 		return Esys;
 
-	attr_set_str(&par->attrs, "render-wrap", "yes");
 	attr_set_str(&par->attrs, "line-format", "%+name%suffix");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
@@ -971,7 +970,6 @@ REDEF_CMD(emacs_doc_complete)
 	if (!par)
 		return Esys;
 
-	attr_set_str(&par->attrs, "render-wrap", "yes");
 	attr_set_str(&par->attrs, "line-format", "%+name");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
@@ -1345,8 +1343,8 @@ DEF_CMD(emacs_start_search)
 	struct pane *p, *hp;
 	struct highlight_info *hi = calloc(1, sizeof(*hi));
 
-	hi->view = call("doc:add-view", ci->focus) - 1;
 	hp = pane_register(ci->focus, 0, &highlight_handle.c, hi, NULL);
+	hi->view = home_call(ci->focus, "doc:add-view", hp) - 1;
 
 	p = call_ret(pane, "PopupTile", hp, 0, NULL, "TR2", 0, NULL, "");
 
@@ -1373,7 +1371,7 @@ DEF_CMD(emacs_highlight_close)
 
 		while ((m = vmark_first(ci->focus, hi->view)) != NULL)
 			mark_free(m);
-		call("doc:del-view", ci->focus, hi->view);
+		call("doc:del-view", ci->home, hi->view);
 	}
 	mark_free(hi->start);
 	mark_free(hi->end);

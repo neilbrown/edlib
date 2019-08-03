@@ -221,7 +221,7 @@ DEF_CMD(linecount_close)
 	struct mark *m;
 	while ((m = vmark_first(d, cli->view_num)) != NULL)
 		mark_free(m);
-	call("doc:del-view", d, cli->view_num);
+	home_call(d, "doc:del-view", ci->home, cli->view_num);
 	free(cli);
 	ci->home->data = safe_cast NULL;
 	pane_close(ci->home);
@@ -306,8 +306,8 @@ DEF_CMD(count_lines)
 		struct pane *p;
 
 		cli = calloc(1, sizeof(*cli));
-		cli->view_num = call("doc:add-view", ci->focus) - 1;
 		p = pane_register(NULL, 0, &handle_count_lines.c, cli, NULL);
+		cli->view_num = home_call(ci->focus, "doc:add-view", p) - 1;
 		home_call(ci->focus, "Request:Notify:doc:Replace", p);
 		home_call(ci->focus, "Request:Notify:doc:CountLines", p);
 		home_call(ci->focus, "Request:Notify:doc:GotoLine", p);

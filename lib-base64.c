@@ -232,13 +232,12 @@ DEF_CMD(b64_attach)
 	struct pane *p;
 	struct b64info *bi = calloc(1, sizeof(*bi));
 
-	bi->view = call("doc:add-view", ci->focus) - 1;
 	p = pane_register(ci->focus, 0, &b64_handle.c, bi, NULL);
 	if (!p) {
-		call("doc:del-view", ci->focus, bi->view);
 		free(bi);
 		return Esys;
 	}
+	bi->view = home_call(ci->focus, "doc:add-view", p) - 1;
 	call("doc:set:filter", p, 1);
 
 	return comm_call(ci->comm2, "callback:attach", p);

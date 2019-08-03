@@ -54,56 +54,6 @@ struct doc_data {
 	struct mark		*mark;
 };
 
-static int do_doc_add_view(struct doc *d safe)
-{
-	struct docview *g;
-	int ret;
-	int i;
-
-	for (ret = 0; d->views && ret < d->nviews; ret++)
-		if (d->views[ret].state == 0)
-			break;
-	if (!d->views || ret == d->nviews) {
-		/* Resize the view list */
-		d->nviews += 4;
-		g = malloc(sizeof(*g) * d->nviews);
-		for (i = 0; d->views && i < ret; i++) {
-			tlist_add(&g[i].head, GRP_HEAD, &d->views[i].head);
-			tlist_del(&d->views[i].head);
-			g[i].state = d->views[i].state;
-		}
-		for (; i < d->nviews; i++) {
-			INIT_TLIST_HEAD(&g[i].head, GRP_HEAD);
-			g[i].state = 0;
-		}
-		free(d->views);
-		d->views = g;
-		/* now resize all the points */
-		points_resize(d);
-	}
-	if (d->views /* FIXME always true */) {
-		points_attach(d, ret);
-		d->views[ret].state = 1;
-	}
-	return ret;
-}
-
-static void do_doc_del_view(struct doc *d safe, int i)
-{
-	/* This view should only have points on the list, not typed
-	 * marks.  Just delete everything and clear the 'notify' pointer
-	 */
-	if (i < 0 || i >= d->nviews || d->views == NULL)
-		return;
-	d->views[i].state = 0;
-	while (!tlist_empty(&d->views[i].head)) {
-		struct tlist_head *tl = d->views[i].head.next;
-		if (TLIST_TYPE(tl) != GRP_LIST)
-			abort();
-		tlist_del_init(tl);
-	}
-}
-
 void doc_init(struct doc *d safe)
 {
 	INIT_HLIST_HEAD(&d->marks);
@@ -592,16 +542,60 @@ DEF_CMD(doc_notify)
 
 DEF_CMD(doc_delview)
 {
-	if (ci->num >= 0)
-		do_doc_del_view(ci->home->data, ci->num);
-	else
+	struct doc *d = ci->home->data;
+	int i = ci->num;
+
+	/* This view should only have points on the list, not typed
+	 * marks.  Just delete everything and clear the 'notify' pointer
+	 */
+	if (i < 0 || i >= d->nviews || d->views == NULL)
 		return Einval;
+	if (d->views[i].owner != ci->focus) abort();
+	d->views[i].owner = NULL;
+	while (!tlist_empty(&d->views[i].head)) {
+		struct tlist_head *tl = d->views[i].head.next;
+		if (TLIST_TYPE(tl) != GRP_LIST)
+			abort();
+		tlist_del_init(tl);
+	}
+
 	return 1;
 }
 
 DEF_CMD(doc_addview)
 {
-	return 1 + do_doc_add_view(ci->home->data);
+	struct doc *d = ci->home->data;
+	struct docview *g;
+	int ret;
+	int i;
+
+	for (ret = 0; d->views && ret < d->nviews; ret++)
+		if (d->views[ret].owner == NULL)
+			break;
+	if (!d->views || ret == d->nviews) {
+		/* Resize the view list */
+		d->nviews += 4;
+		g = malloc(sizeof(*g) * d->nviews);
+		for (i = 0; d->views && i < ret; i++) {
+			tlist_add(&g[i].head, GRP_HEAD, &d->views[i].head);
+			tlist_del(&d->views[i].head);
+			g[i].owner = d->views[i].owner;
+		}
+		for (; i < d->nviews; i++) {
+			INIT_TLIST_HEAD(&g[i].head, GRP_HEAD);
+			g[i].owner = NULL;
+		}
+		free(d->views);
+		d->views = g;
+		/* now resize all the points */
+		points_resize(d);
+	}
+	if (d->views /* FIXME always true */) {
+		points_attach(d, ret);
+		d->views[ret].owner = ci->focus;
+		// FIXME get close notificiation
+	}
+	return 1 + ret;
 }
 
 DEF_CMD(doc_vmarkget)
@@ -1315,7 +1309,7 @@ void doc_free(struct doc *d safe)
 		d->recent_points[i] = NULL;
 	}
 	for (i = 0; i < (unsigned int)d->nviews; i++)
-		ASSERT(d->views && !d->views[i].state);
+		ASSERT(d->views && !d->views[i].owner);
 	free(d->views);
 	free(d->name);
 	while (!hlist_empty(&d->marks)) {

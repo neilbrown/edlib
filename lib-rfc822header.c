@@ -429,7 +429,7 @@ DEF_CMD(header_attach)
 		return Esys;
 	}
 
-	hi->vnum = call("doc:add-view", p) - 1;
+	hi->vnum = home_call(ci->focus, "doc:add-view", p) - 1;
 	if (start && end)
 		find_headers(p, start, end);
 

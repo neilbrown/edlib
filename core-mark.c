@@ -305,7 +305,7 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 
 	lnk = safe_cast m->mdata;
 	for (i = 0; d->views && i < lnk->size; i++)
-		if (d->views[i].state) {
+		if (d->views[i].owner) {
 			tlist_del(&lnk->lists[i]);
 			if (end)
 				tlist_add_tail(&lnk->lists[i], GRP_LIST,
@@ -393,7 +393,7 @@ struct mark *doc_new_mark(struct doc *d safe, int view)
 		return point_new(d);
 	if (view >= d->nviews ||
 	    view < MARK_UNGROUPED ||
-	    (view >= 0 && (!d->views || d->views[view].state != 1)))
+	    (view >= 0 && (!d->views || d->views[view].owner == NULL)))
 		/* Erroneous call, or race with document closing down */
 		return NULL;
 	ret = calloc(1, sizeof(*ret));
@@ -996,7 +996,7 @@ void doc_check_consistent(struct doc *d safe)
 		seq = m->seq + 1;
 	}
 	for (i = 0; d->views && i < d->nviews; i++)
-		if (d->views[i].state == 0) {
+		if (d->views[i].owner == NULL) {
 			if (!tlist_empty(&d->views[i].head)) abort();
 		} else {
 			struct tlist_head *tl;

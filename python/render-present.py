@@ -60,8 +60,8 @@ class PresenterPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.globals = {}
-        self.pageview = focus.call("doc:add-view") - 1
-        self.attrview = focus.call("doc:add-view") - 1
+        self.pageview = focus.call("doc:add-view", self) - 1
+        self.attrview = focus.call("doc:add-view", self) - 1
         self.borderless = False
         self.target_mark = None
         self.first_valid = False

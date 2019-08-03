@@ -357,8 +357,8 @@ static struct pane *do_renderline_attach(struct pane *p safe)
 	struct pane *ret;
 	struct rl_info *rl = calloc(1, sizeof(*rl));
 
-	rl->view = call("doc:add-view", p) - 1;
 	ret = pane_register(p, 0, &renderline_handle.c, rl, NULL);
+	rl->view = home_call(p, "doc:add-view", ret) - 1;
 
 	return ret;
 }

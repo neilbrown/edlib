@@ -19,7 +19,7 @@ class MakePane(edlib.Pane):
         edlib.Pane.__init__(self, focus)
         self.add_notify(focus, "make-next")
         self.add_notify(focus, "Notify:doc:make-revisit");
-        self.viewnum = focus.call("doc:add-view") - 1
+        self.viewnum = focus.call("doc:add-view", self) - 1
         self.point = None
         self.map = []
 
