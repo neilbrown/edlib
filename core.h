@@ -227,6 +227,13 @@ static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
 	struct generic_doc_ref *r1 = (void*)&m1->ref;
 	struct generic_doc_ref *r2 = (void*)&m2->ref;
 
+	/* Compile-time check that size of doc_ref is correct */
+	switch(0){
+	case 0: break;
+	case (sizeof(struct doc_ref) == sizeof(struct generic_doc_ref)):
+		break;
+	}
+
 	return r1->p == r2->p && r1->i == r2->i;
 }
 
