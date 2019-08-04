@@ -119,22 +119,22 @@ static int need_recalc(struct pane *p safe, struct mark *m)
 
 static void count_calculate(struct pane *p safe,
 			    struct mark *start, struct mark *end,
-			    int type)
+			    struct pane *owner safe, int type)
 {
 	int lines, words, chars, l, w, c;
 	struct mark *m, *m2;
 
-	m = vmark_first(p, type);
+	m = vmark_first(p, type, owner);
 	if (m == NULL) {
 		/* No marks yet, let's make some */
-		m = vmark_new(p, type);
+		m = vmark_new(p, type, owner);
 		if (!m)
 			return;
 		do_count(p, m, NULL, &l, &w, &c, 1);
 	}
 	if (doc_prior_pane(p, m) != WEOF) {
 		/* no mark at start of file */
-		m2 = vmark_new(p, type);
+		m2 = vmark_new(p, type, owner);
 		if (!m2)
 			return;
 		do_count(p, m2, m, &l, &w, &c, 1);
@@ -219,7 +219,7 @@ DEF_CMD(linecount_close)
 	struct pane *d = ci->focus;
 	struct count_info *cli = ci->home->data;
 	struct mark *m;
-	while ((m = vmark_first(d, cli->view_num)) != NULL)
+	while ((m = vmark_first(d, cli->view_num, ci->home)) != NULL)
 		mark_free(m);
 	home_call(d, "doc:del-view", ci->home, cli->view_num);
 	free(cli);
@@ -235,7 +235,7 @@ DEF_CMD(linecount_notify_replace)
 	if (ci->mark) {
 		struct mark *end;
 
-		end = vmark_at_or_before(d, ci->mark, cli->view_num);
+		end = vmark_at_or_before(d, ci->mark, cli->view_num, ci->home);
 		if (end) {
 			attr_del(mark_attr(end), "lines");
 			attr_del(mark_attr(end), "words");
@@ -255,7 +255,7 @@ DEF_CMD(linecount_notify_count)
 	/* Option mark is "mark2" as "mark" gets the "point" */
 	if (ci->num)
 		pane_add_notify(ci->home, d, "Notify:Close");
-	count_calculate(d, NULL, ci->mark2, cli->view_num);
+	count_calculate(d, NULL, ci->mark2, ci->home, cli->view_num);
 	return 1;
 }
 
@@ -271,7 +271,7 @@ DEF_CMD(linecount_notify_goto)
 		return 1;
 
 	/* FIXME I might need to recalculate here */
-	m = vmark_first(d, cli->view_num);
+	m = vmark_first(d, cli->view_num, ci->home);
 	if (!m)
 		return 1;
 	lineno = 1;
@@ -293,7 +293,7 @@ DEF_CMD(linecount_clip)
 {
 	struct count_info *cli = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, cli->view_num);
+	marks_clip(ci->home, ci->mark, ci->mark2, cli->view_num, ci->home);
 	return 0;
 }
 

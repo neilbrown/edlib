@@ -182,7 +182,7 @@ DEF_CMD(history_last)
 	doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!doc)
 		return 1;
-	m = vmark_new(doc, MARK_UNGROUPED);
+	m = vmark_new(doc, MARK_UNGROUPED, NULL);
 	if (!m)
 		return 1;
 	call("doc:set-ref", doc, 0, m);

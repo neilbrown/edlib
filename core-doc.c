@@ -601,15 +601,16 @@ DEF_CMD(doc_addview)
 DEF_CMD(doc_vmarkget)
 {
 	struct mark *m, *m2;
-	m = do_vmark_first(ci->home->data, ci->num);
-	m2 = do_vmark_last(ci->home->data, ci->num);
+	m = do_vmark_first(ci->home->data, ci->num, ci->focus);
+	m2 = do_vmark_last(ci->home->data, ci->num, ci->focus);
 	if (ci->num2 == 1 && ci->mark)
 		m2 = do_vmark_at_point(ci->home->data, ci->mark,
-				       ci->num);
+				       ci->num, ci->focus);
 	if (ci->num2 == 2)
-		m2 = doc_new_mark(ci->home->data, ci->num);
+		m2 = doc_new_mark(ci->home->data, ci->num, ci->focus);
 	if (ci->num2 == 3 && ci->mark)
-		m2 = do_vmark_at_or_before(ci->home->data, ci->mark, ci->num);
+		m2 = do_vmark_at_or_before(ci->home->data, ci->mark,
+		                           ci->num, ci->focus);
 	return comm_call(ci->comm2, "callback:vmark", ci->focus,
 			 0, m, NULL, 0, m2);
 }
@@ -769,7 +770,7 @@ DEF_CMD(doc_get_str)
 	if (from)
 		m = mark_dup(from);
 	else
-		m = vmark_new(ci->focus, MARK_UNGROUPED);
+		m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	if (!m)
 		return Esys;
 	call_comm("doc:content", ci->focus, &g.c, 0, m);
@@ -813,7 +814,7 @@ DEF_CMD(doc_write_file)
 	if (ci->mark)
 		m = mark_dup(ci->mark);
 	else
-		m = vmark_new(ci->focus, MARK_UNGROUPED);
+		m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 
 	while(m) {
 		ch = mark_next_pane(ci->focus, m);
@@ -1147,7 +1148,7 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 	struct doc_data *dd = p->data;
 	struct mark *m;
 
-	m = vmark_new(doc, MARK_POINT);
+	m = vmark_new(doc, MARK_POINT, NULL);
 	if (!m)
 		return;
 	if (call("doc:pop-point", doc, 0, m) <= 0)

@@ -981,7 +981,7 @@ static PyObject *Pane_clip(Pane *self safe, PyObject *args)
 
 	if (ret > 0 && start && end && self->pane &&
 	    start->mark && end->mark && view >= 0)
-		marks_clip(self->pane, start->mark, end->mark, view);
+		marks_clip(self->pane, start->mark, end->mark, view, self->pane);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -1593,7 +1593,7 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 	}
 	if (doc && doc->pane) {
 		struct pane *p = doc->pane;
-		self->mark = vmark_new(p, view);
+		self->mark = vmark_new(p, view, p/*FIXME*/);
 		local = p->handle &&
 			p->handle->func == python_doc_call.func;
 	} else if (orig && orig->mark) {

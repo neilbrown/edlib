@@ -700,7 +700,7 @@ DEF_CMD(find_prevnext)
 		struct mark *m, *m2;
 
 		attr_set_str(&ci->home->attrs, "find-doc", name);
-		m = vmark_new(ci->focus, MARK_UNGROUPED);
+		m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 		m2 = m ? mark_dup(m) : NULL;
 		call("Move-file", ci->focus, -1, m);
 		call("Move-file", ci->focus, 1, m2);
@@ -1123,7 +1123,8 @@ DEF_CMD(emacs_save_all)
 	return call("docs:save-all", ci->focus);
 }
 
-static void do_searches(struct pane *p safe, int view, char *patn,
+static void do_searches(struct pane *p safe,
+                        struct pane *owner, int view, char *patn,
                         int ci,
 			struct mark *m, struct mark *end)
 {
@@ -1134,7 +1135,7 @@ static void do_searches(struct pane *p safe, int view, char *patn,
 	while ((ret = call("text-search", p, ci, m, patn, 0, end)) >= 1) {
 		struct mark *m2, *m3;
 		int len = ret - 1;
-		m2 = vmark_new(p, view);
+		m2 = vmark_new(p, view, owner);
 		if (!m2)
 			break;
 		mark_to_mark(m2, m);
@@ -1175,7 +1176,7 @@ DEF_CMD(emacs_search_highlight)
 	if (hi->view <= 0)
 		return 0;
 
-	while ((start = vmark_first(ci->focus, hi->view)) != NULL)
+	while ((start = vmark_first(ci->focus, hi->view, ci->home)) != NULL)
 		mark_free(start);
 
 	free(hi->patn);
@@ -1186,7 +1187,7 @@ DEF_CMD(emacs_search_highlight)
 	hi->ci = ci->num2;
 
 	if (ci->mark && ci->num > 0 && ci->str) {
-		m = vmark_new(ci->focus, hi->view);
+		m = vmark_new(ci->focus, hi->view, ci->home);
 		if (!m)
 			return Esys;
 		mark_to_mark(m, ci->mark);
@@ -1268,20 +1269,20 @@ DEF_CMD(emacs_search_reposition_delayed)
 	if (!start || !end)
 		return Efalse;
 
-	vstart = vmark_first(ci->focus, hi->view);
-	vend = vmark_last(ci->focus, hi->view);
+	vstart = vmark_first(ci->focus, hi->view, ci->home);
+	vend = vmark_last(ci->focus, hi->view, ci->home);
 	if (vstart == NULL || start->seq < vstart->seq) {
 		/* search from 'start' to first match or 'end' */
-		do_searches(ci->focus, hi->view, patn, hi->ci, start, vstart ?: end);
+		do_searches(ci->focus, ci->home, hi->view, patn, hi->ci, start, vstart ?: end);
 		if (vend)
-			do_searches(ci->focus, hi->view, patn, hi->ci,
+			do_searches(ci->focus, ci->home, hi->view, patn, hi->ci,
 				    vend, end);
 	} else if (vend && end->seq > vend->seq) {
 		/* search from last match to end */
-		do_searches(ci->focus, hi->view, patn, hi->ci, vend, end);
+		do_searches(ci->focus, ci->home, hi->view, patn, hi->ci, vend, end);
 	}
-	if (vstart != vmark_first(ci->focus, hi->view) ||
-	    vend != vmark_last(ci->focus, hi->view))
+	if (vstart != vmark_first(ci->focus, hi->view, ci->home) ||
+	    vend != vmark_last(ci->focus, hi->view, ci->home))
 		damage = 1;
 	if (damage) {
 		pane_damaged(ci->focus, DAMAGED_CONTENT);
@@ -1312,12 +1313,12 @@ DEF_CMD(emacs_search_reposition)
 	if (hi->view < 0 || patn == NULL || !start || !end)
 		return 0;
 
-	while ((m = vmark_first(ci->focus, hi->view)) != NULL &&
+	while ((m = vmark_first(ci->focus, hi->view, ci->home)) != NULL &&
 	       mark_ordered_not_same(m, start)) {
 		mark_free(m);
 		damage = 1;
 	}
-	while ((m = vmark_last(ci->focus, hi->view)) != NULL &&
+	while ((m = vmark_last(ci->focus, hi->view, ci->home)) != NULL &&
 	       mark_ordered_not_same(end, m)) {
 		mark_free(m);
 		damage = 1;
@@ -1369,7 +1370,7 @@ DEF_CMD(emacs_highlight_close)
 	if (hi->view >= 0) {
 		struct mark *m;
 
-		while ((m = vmark_first(ci->focus, hi->view)) != NULL)
+		while ((m = vmark_first(ci->focus, hi->view, ci->home)) != NULL)
 			mark_free(m);
 		call("doc:del-view", ci->home, hi->view);
 	}
@@ -1399,7 +1400,7 @@ DEF_CMD(emacs_highlight_clip)
 {
 	struct highlight_info *hi = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, hi->view);
+	marks_clip(ci->home, ci->mark, ci->mark2, hi->view, ci->home);
 	return 0;
 }
 

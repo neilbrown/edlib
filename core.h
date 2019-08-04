@@ -204,7 +204,7 @@ struct point_links {
 struct mark *safe mark_dup(struct mark *m safe);
 struct mark *safe mark_dup_view(struct mark *m safe);
 void mark_free(struct mark *m);
-struct mark *doc_new_mark(struct doc *d safe, int view);
+struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner);
 struct mark *doc_first_mark_all(struct doc *d safe);
 struct mark *doc_next_mark_all(struct mark *m safe);
 struct mark *doc_prev_mark_all(struct mark *m safe);
@@ -249,18 +249,19 @@ struct mark *vmark_next(struct mark *m safe);
 struct mark *vmark_prev(struct mark *m safe);
 struct mark *vmark_or_point_next(struct mark *m safe, int view);
 struct mark *vmark_or_point_prev(struct mark *m safe, int view);
-struct mark *do_vmark_first(struct doc *d safe, int view);
-struct mark *do_vmark_last(struct doc *d safe, int view);
+struct mark *do_vmark_first(struct doc *d safe, int view, struct pane *owner safe);
+struct mark *do_vmark_last(struct doc *d safe, int view, struct pane *owner safe);
 struct mark *vmark_matching(struct mark *m safe);
-struct mark *do_vmark_at_point(struct doc *d safe, struct mark *pt safe, int view);
-struct mark *do_vmark_at_or_before(struct doc *d safe, struct mark *m safe, int view);
-struct mark *vmark_first(struct pane *p safe, int view);
-struct mark *vmark_last(struct pane *p safe, int view);
-struct mark *vmark_at_point(struct pane *p safe, int view);
-struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe, int view);
-struct mark *vmark_new(struct pane *p safe, int view);
+struct mark *do_vmark_at_point(struct doc *d safe, struct mark *pt safe, int view, struct pane *owner safe);
+struct mark *do_vmark_at_or_before(struct doc *d safe, struct mark *m safe, int view, struct pane *owner);
+struct mark *vmark_first(struct pane *p safe, int view, struct pane *owner safe);
+struct mark *vmark_last(struct pane *p safe, int view, struct pane *owner safe);
+struct mark *vmark_at_point(struct pane *p safe, int view, struct pane *owner safe);
+struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe, int view, struct pane *owner);
+struct mark *vmark_new(struct pane *p safe, int view, struct pane *owner);
 void mark_clip(struct mark *m safe, struct mark *start, struct mark *end);
-void marks_clip(struct pane *p safe, struct mark *start, struct mark *end, int view);
+void marks_clip(struct pane *p safe, struct mark *start, struct mark *end,
+                int view, struct pane *owner);
 
 
 static inline int mark_ordered_or_same(struct mark *m1 safe, struct mark *m2 safe)

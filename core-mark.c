@@ -191,7 +191,6 @@ struct mark *safe point_dup(struct mark *p safe)
 	dup_mark(p, ret);
 	ret->viewnum = MARK_POINT;
 	ret->mdata = lnk;
-	ret->mtype = NULL;
 	lnk->size = old->size;
 	lnk->pt = ret;
 	tlist_add(&ret->view, GRP_MARK, &p->view);
@@ -328,7 +327,6 @@ struct mark *safe point_new(struct doc *d safe)
 	ret->viewnum = MARK_POINT;
 	hlist_add_head(&ret->all, &d->marks);
 	ret->mdata = lnk;
-	ret->mtype = NULL;
 	lnk->size = d->nviews;
 	lnk->pt = ret;
 	for (i = 0; i < d->nviews; i++)
@@ -384,7 +382,7 @@ struct mark *doc_prev_mark_all(struct mark *m safe)
 	return NULL;
 }
 
-struct mark *doc_new_mark(struct doc *d safe, int view)
+struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner)
 {
 	/* FIXME view is >= -1 */
 	struct mark *ret;
@@ -393,9 +391,10 @@ struct mark *doc_new_mark(struct doc *d safe, int view)
 		return point_new(d);
 	if (view >= d->nviews ||
 	    view < MARK_UNGROUPED ||
-	    (view >= 0 && (!d->views || d->views[view].owner == NULL)))
+	    (view >= 0 && (!d->views || d->views[view].owner != owner))) {
 		/* Erroneous call, or race with document closing down */
 		return NULL;
+	}
 	ret = calloc(1, sizeof(*ret));
 	INIT_HLIST_NODE(&ret->all);
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
@@ -808,11 +807,13 @@ struct mark *vmark_or_point_prev(struct mark *m safe, int view)
 	}
 }
 
-struct mark *do_vmark_first(struct doc *d safe, int view)
+struct mark *do_vmark_first(struct doc *d safe, int view, struct pane *owner safe)
 {
 	struct tlist_head *tl;
 
 	if (view < 0 || view >= d->nviews || d->views == NULL)
+		return NULL;
+	if (d->views[view].owner != owner)
 		return NULL;
 
 	tl = TLIST_PTR(d->views[view].head.next);
@@ -826,11 +827,13 @@ struct mark *do_vmark_first(struct doc *d safe, int view)
 	return NULL;
 }
 
-struct mark *do_vmark_last(struct doc *d safe, int view)
+struct mark *do_vmark_last(struct doc *d safe, int view, struct pane *owner safe)
 {
 	struct tlist_head *tl;
 
 	if (view < 0 || view >= d->nviews || d->views == NULL)
+		return NULL;
+	if (d->views[view].owner != owner)
 		return NULL;
 
 	tl = TLIST_PTR(d->views[view].head.prev);
@@ -844,29 +847,30 @@ struct mark *do_vmark_last(struct doc *d safe, int view)
 	return NULL;
 }
 
-struct mark *vmark_first(struct pane *p safe, int view)
+struct mark *vmark_first(struct pane *p safe, int view, struct pane *owner safe)
 {
-	return call_ret(mark, "doc:vmark-get", p, view);
+	return home_call_ret(mark, p, "doc:vmark-get", owner, view);
 }
 
-struct mark *vmark_last(struct pane *p safe, int view)
+struct mark *vmark_last(struct pane *p safe, int view, struct pane *owner safe)
 {
-	return call_ret(mark2, "doc:vmark-get", p, view);
+	return home_call_ret(mark2, p, "doc:vmark-get", owner, view);
 }
 
-struct mark *vmark_at_point(struct pane *p safe, int view)
+struct mark *vmark_at_point(struct pane *p safe, int view, struct pane *owner safe)
 {
-	return call_ret(mark2, "doc:vmark-get", p, view, NULL, NULL, 1);
+	return home_call_ret(mark2, p, "doc:vmark-get", owner, view, NULL, NULL, 1);
 }
 
-struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe, int view)
+struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe, int view, struct pane *owner)
 {
-	return call_ret(mark2, "doc:vmark-get", p, view, m, NULL, 3);
+	return home_call_ret(mark2, p, "doc:vmark-get", owner?:p, view, m, NULL, 3);
 }
 
-struct mark *vmark_new(struct pane *p safe, int view)
+struct mark *vmark_new(struct pane *p safe, int view, struct pane *owner)
 {
-	return call_ret(mark2, "doc:vmark-get", p, view, NULL, NULL, 2);
+	return home_call_ret(mark2, p, "doc:vmark-get", owner?:p, view,
+	                     NULL, NULL, 2);
 }
 
 struct mark *vmark_matching(struct mark *m safe)
@@ -884,13 +888,16 @@ struct mark *vmark_matching(struct mark *m safe)
 }
 
 struct mark *do_vmark_at_point(struct doc *d safe,
-			       struct mark *pt safe, int view)
+			       struct mark *pt safe,
+			       int view, struct pane *owner safe)
 {
 	struct tlist_head *tl;
 	struct mark *m;
 	struct point_links *lnk = safe_cast pt->mdata;
 
-	if (view < 0 || view >= d->nviews)
+	if (view < 0 || view >= d->nviews || d->views == NULL)
+		return NULL;
+	if (d->views[view].owner != owner)
 		return NULL;
 
 	tl = &lnk->lists[view];
@@ -905,13 +912,18 @@ struct mark *do_vmark_at_point(struct doc *d safe,
 }
 
 struct mark *do_vmark_at_or_before(struct doc *d safe,
-				   struct mark *m safe, int view)
+				   struct mark *m safe,
+				   int view, struct pane *owner)
 {
 	/* Find the last 'view' mark that is not later in the document than 'm'.
 	 * It might be later in the mark list, but not in the document.
 	 * Return NULL if all 'view' marks are after 'm' in the document.
 	 */
 	struct mark *vm = m;
+
+	if ((view < 0 && view != MARK_POINT) || view >= d->nviews ||
+	    d->views == NULL || d->views[view].owner != owner)
+		return NULL;
 
 	/* might need to hunt along 'all' list for something suitable */
 	while (vm && vm->viewnum != MARK_POINT && vm->viewnum != view)
@@ -961,14 +973,14 @@ void mark_clip(struct mark *m safe, struct mark *start, struct mark *end)
 		mark_to_mark(m, end);
 }
 
-void marks_clip(struct pane *p safe, struct mark *start, struct mark *end, int view)
+void marks_clip(struct pane *p safe, struct mark *start, struct mark *end, int view, struct pane *owner)
 {
 	struct mark *m;
 
 	if (!start || !end)
 		return;
 
-	m = vmark_at_or_before(p, end, view);
+	m = vmark_at_or_before(p, end, view, owner);
 	while (m && m->seq >= end->seq)
 		m = vmark_prev(m);
 

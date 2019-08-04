@@ -42,7 +42,7 @@ DEF_CMD(header_close)
 	struct header_info *hi = p->data;
 	struct mark *m;
 
-	while ((m = vmark_first(p, hi->vnum)) != NULL)
+	while ((m = vmark_first(p, hi->vnum, p)) != NULL)
 		mark_free(m);
 	call("doc:del-view", p, hi->vnum);
 	p->data = safe_cast NULL;
@@ -76,7 +76,7 @@ static void find_headers(struct pane *p safe, struct mark *start safe,
 	wint_t ch;
 	char *hname;
 
-	m = vmark_new(p, hi->vnum);
+	m = vmark_new(p, hi->vnum, p);
 	if (!m)
 		return;
 	mark_to_mark(m, start);
@@ -316,7 +316,7 @@ static void copy_headers(struct pane *p safe, char *hdr safe, char *type,
 	struct header_info *hi = p->data;
 	struct mark *m, *n;
 
-	for (m = vmark_first(p, hi->vnum); m ; m = n) {
+	for (m = vmark_first(p, hi->vnum, p); m ; m = n) {
 		char *h = attr_find(m->attrs, "header");
 		n = vmark_next(m);
 		if (n && h && strcasecmp(h, hdr) == 0)
@@ -360,7 +360,7 @@ static char *load_header(struct pane *home safe, char *hdr safe)
 	struct header_info *hi = home->data;
 	struct mark *m, *n;
 
-	for (m = vmark_first(home, hi->vnum); m; m = n) {
+	for (m = vmark_first(home, hi->vnum, home); m; m = n) {
 		char *h = attr_find(m->attrs, "header");
 		n = vmark_next(m);
 		if (n && h && strcasecmp(h, hdr) == 0)
@@ -400,7 +400,7 @@ DEF_CMD(header_clip)
 {
 	struct header_info *hi = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, hi->vnum);
+	marks_clip(ci->home, ci->mark, ci->mark2, hi->vnum, ci->home);
 	return 0;
 }
 

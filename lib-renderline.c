@@ -61,13 +61,13 @@ DEF_CMD(render_prev)
 	       (!boundary || boundary->seq< m->seq)) {
 		rpt = 0;
 		if (!count)
-			boundary = vmark_at_or_before(f, m, rl->view);
+			boundary = vmark_at_or_before(f, m, rl->view, ci->home);
 		count += 1;
 	}
 	if (ch != WEOF && !is_eol(ch)) {
 		/* need to ensure there is a stable boundary here */
 		if (!boundary || boundary->seq >= m->seq) {
-			boundary = vmark_new(f, rl->view);
+			boundary = vmark_new(f, rl->view, ci->home);
 			if (boundary)
 				mark_to_mark(boundary, m);
 		}
@@ -271,7 +271,7 @@ DEF_CMD(render_line)
 		if (ret)
 			return ret;
 	}
-	boundary = vmark_at_or_before(focus, m, rl->view);
+	boundary = vmark_at_or_before(focus, m, rl->view, ci->home);
 	if (boundary)
 		boundary = vmark_next(boundary);
 	buf_init(&b);
@@ -385,7 +385,7 @@ DEF_CMD(rl_clip)
 {
 	struct rl_info *rl = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, rl->view);
+	marks_clip(ci->home, ci->mark, ci->mark2, rl->view, ci->home);
 	return 0;
 }
 
@@ -394,7 +394,7 @@ DEF_CMD(rl_close)
 	struct pane *p = ci->home;
 	struct rl_info *rl = p->data;
 	struct mark *m;
-	while ((m = vmark_first(p, rl->view)) != NULL)
+	while ((m = vmark_first(p, rl->view, p)) != NULL)
 		mark_free(m);
 	call("doc:del-view", p, rl->view);
 	free(rl);

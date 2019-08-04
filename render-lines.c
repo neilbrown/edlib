@@ -960,8 +960,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 	int lines_above = 0, lines_below = 0;
 	struct xy scale = pane_scale(focus);
 
-	top = vmark_first(focus, rl->typenum);
-	bot = vmark_last(focus, rl->typenum);
+	top = vmark_first(focus, rl->typenum, p);
+	bot = vmark_last(focus, rl->typenum, p);
 	if (!top && vline == 0 && rl->line_height)
 		vline = (p->h - rl->header_lines) / rl->line_height / 2;
 	/* Don't consider the top or bottom lines as currently being
@@ -976,7 +976,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 		top = mark_dup(top);
 	if (bot)
 		bot = mark_dup(bot);
-	m = vmark_new(focus, rl->typenum);
+	m = vmark_new(focus, rl->typenum, p);
 	if (!m)
 		goto abort;
 	mark_to_mark(m, pm);
@@ -1152,7 +1152,7 @@ static int render(struct mark *pm, struct pane *p safe,
 
 restart:
 	found_end = 0;
-	m = vmark_first(focus, rl->typenum);
+	m = vmark_first(focus, rl->typenum, p);
 	if (!s)
 		call("pane-clear", focus);
 	else if (strncmp(s, "color:", 6) == 0) {
@@ -1286,7 +1286,7 @@ DEF_CMD(render_lines_refresh)
 			rl->old_point = mark_dup(pm);
 	}
 
-	m = vmark_first(focus, rl->typenum);
+	m = vmark_first(focus, rl->typenum, p);
 	if (rl->top_sol && m)
 		m = call_render_line_prev(focus, mark_dup_view(m), 0,
 					  &rl->top_sol);
@@ -1295,8 +1295,8 @@ DEF_CMD(render_lines_refresh)
 		rl->lines = render(pm, p, focus, &rl->cols);
 		if (!pm || rl->ignore_point || (p->cx >= 0 && p->cy < p->h)) {
 			call("render:reposition", focus,
-			     rl->lines, vmark_first(focus, rl->typenum), NULL,
-			     rl->cols, vmark_last(focus, rl->typenum), NULL,
+			     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
+			     rl->cols, vmark_last(focus, rl->typenum, p), NULL,
 			     p->cx, p->cy);
 
 			return 0;
@@ -1304,15 +1304,15 @@ DEF_CMD(render_lines_refresh)
 	}
 	m = pm;
 	if (!m)
-		m = vmark_new(focus, MARK_UNGROUPED);
+		m = vmark_new(focus, MARK_UNGROUPED, NULL);
 	if (!m)
 		return Esys;
 	find_lines(m, p, focus, NO_NUMERIC);
 	rl->lines = render(m, p, focus, &rl->cols);
 	rl->repositioned = 0;
 	call("render:reposition", focus,
-	     rl->lines, vmark_first(focus, rl->typenum), NULL,
-	     rl->cols, vmark_last(focus, rl->typenum), NULL,
+	     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
+	     rl->cols, vmark_last(focus, rl->typenum, p), NULL,
 	     p->cx, p->cy);
 	if (!pm)
 		mark_free(m);
@@ -1326,7 +1326,7 @@ DEF_CMD(render_lines_refresh_view)
 	struct rl_data *rl = p->data;
 	struct mark *m;
 
-	for (m = vmark_first(p, rl->typenum);
+	for (m = vmark_first(p, rl->typenum, p);
 	     m;
 	     m = vmark_next(m)) {
 		free(m->mdata);
@@ -1342,8 +1342,8 @@ DEF_CMD(render_lines_refresh_view)
 		; /* wait for a proper redraw */
 	else
 		call("render:reposition", focus,
-		     rl->lines, vmark_first(focus, rl->typenum), NULL,
-		     rl->cols, vmark_last(focus, rl->typenum), NULL,
+		     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
+		     rl->cols, vmark_last(focus, rl->typenum, p), NULL,
 		     p->cx, p->cy);
 	return 0;
 }
@@ -1354,7 +1354,7 @@ DEF_CMD(render_lines_close)
 	struct rl_data *rl = p->data;
 	struct mark *m;
 
-	while ((m = vmark_first(p, rl->typenum)) != NULL) {
+	while ((m = vmark_first(p, rl->typenum, p)) != NULL) {
 		free(m->mdata);
 		m->mdata = NULL;
 		mark_free(m);
@@ -1405,7 +1405,7 @@ DEF_CMD(render_lines_move)
 	int pagesize = rl->line_height;
 	struct xy scale = pane_scale(focus);
 
-	top = vmark_first(focus, rl->typenum);
+	top = vmark_first(focus, rl->typenum, p);
 	if (!top)
 		return 0;
 
@@ -1483,7 +1483,7 @@ DEF_CMD(render_lines_move)
 			 * everything before 'top'
 			 */
 			struct mark *old;
-			while ((old = vmark_first(focus, rl->typenum)) != NULL &&
+			while ((old = vmark_first(focus, rl->typenum, p)) != NULL &&
 			       old != top) {
 				free(old->mdata);
 				old->mdata = NULL;
@@ -1493,7 +1493,7 @@ DEF_CMD(render_lines_move)
 	}
 	rl->repositioned = 1;
 	pane_damaged(ci->home, DAMAGED_VIEW);
-	top = vmark_first(focus, rl->typenum);
+	top = vmark_first(focus, rl->typenum, p);
 	if (top && mark_same(top, old_top)) {
 		mark_free(old_top);
 		return 2;
@@ -1530,7 +1530,7 @@ DEF_CMD(render_lines_set_cursor)
 
 	render_lines_other_move_func(ci);
 
-	m = vmark_first(p, rl->typenum);
+	m = vmark_first(p, rl->typenum, p);
 
 	if (ci->x >= 0)
 		cihx = ci->x;
@@ -1589,8 +1589,8 @@ DEF_CMD(render_lines_move_pos)
 	if (!pm)
 		return Enoarg;
 	rl->ignore_point = 1;
-	top = vmark_first(focus, rl->typenum);
-	bot = vmark_last(focus, rl->typenum);
+	top = vmark_first(focus, rl->typenum, p);
+	bot = vmark_last(focus, rl->typenum, p);
 	if (top && rl->skip_lines)
 		/* top line not fully displayed, being in that line is no sufficient */
 		top = doc_next_mark_view(top);
@@ -1622,7 +1622,7 @@ DEF_CMD(render_lines_view_line)
 	if (line == NO_NUMERIC)
 		return Einval;
 
-	while ((top = vmark_first(focus, rl->typenum)) != NULL) {
+	while ((top = vmark_first(focus, rl->typenum, p)) != NULL) {
 		free(top->mdata);
 		top->mdata = NULL;
 		mark_free(top);
@@ -1687,7 +1687,7 @@ DEF_CMD(render_lines_move_line)
 
 	if (target_x >= 0 || target_y >= 0) {
 		struct mark *start =
-			vmark_at_or_before(focus, m, rl->typenum);
+			vmark_at_or_before(focus, m, rl->typenum, p);
 		int y = 0;
 		if (!start || !start->mdata) {
 			pane_damaged(p, DAMAGED_CONTENT);
@@ -1725,9 +1725,9 @@ DEF_CMD(render_lines_notify_replace)
 
 	if (ci->mark->seq < start->seq && /* redundant */ ci->mark2) {
 		start = ci->mark;
-		end = vmark_at_or_before(ci->home, ci->mark2, rl->typenum);
+		end = vmark_at_or_before(ci->home, ci->mark2, rl->typenum, p);
 	} else
-		end = vmark_at_or_before(ci->home, ci->mark, rl->typenum);
+		end = vmark_at_or_before(ci->home, ci->mark, rl->typenum, p);
 
 	if (!end)
 		/* Change before visible region */
@@ -1754,7 +1754,7 @@ DEF_CMD(render_lines_clip)
 {
 	struct rl_data *rl = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, rl->typenum);
+	marks_clip(ci->home, ci->mark, ci->mark2, rl->typenum, ci->home);
 	if (rl->old_point)
 		mark_clip(rl->old_point, ci->mark, ci->mark2);
 	return 0;

@@ -222,7 +222,7 @@ DEF_CMD(docs_modified_notify_replace)
 
 	if (!ci->home->parent)
 		return Esys;
-	m = vmark_new(ci->home->parent, MARK_UNGROUPED);
+	m = vmark_new(ci->home->parent, MARK_UNGROUPED, NULL);
 	if (!m)
 		return Esys;
 	mark_to_modified(ci->home->parent, m);
@@ -231,7 +231,7 @@ DEF_CMD(docs_modified_notify_replace)
 		/* Need to send Notify:clip to ensure mark is
 		 * no longer visible */
 		struct mark *m2;
-		m2 = vmark_new(ci->home->parent, MARK_UNGROUPED);
+		m2 = vmark_new(ci->home->parent, MARK_UNGROUPED, NULL);
 		while (m2 && m2->ref.p != NULL) {
 			if (mark_ordered_or_same(m2, ci->mark) &&
 			    mark_ordered_or_same(ci->mark, m))
@@ -437,7 +437,7 @@ DEF_CMD(doc_damage)
 {
 	struct pane *p = ci->home;
 	struct doc *d = p->data;
-	struct mark *m = doc_new_mark(d, MARK_UNGROUPED);
+	struct mark *m = doc_new_mark(d, MARK_UNGROUPED, NULL);
 	struct pane *child = ci->focus;
 
 	if (!child || !m)

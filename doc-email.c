@@ -553,7 +553,7 @@ DEF_CMD(open_email)
 	p = call_ret(pane, "doc:open", ci->focus, fd, NULL, ci->str + 6, 1);
 	if (!p)
 		return Efallthrough;
-	start = vmark_new(p, MARK_UNGROUPED);
+	start = vmark_new(p, MARK_UNGROUPED, NULL);
 	if (!start)
 		return Efallthrough;
 	end = mark_dup(start);
@@ -570,7 +570,7 @@ DEF_CMD(open_email)
 		goto out;
 	}
 	ei->spacer = p;
-	point = vmark_new(p, MARK_POINT);
+	point = vmark_new(p, MARK_POINT, NULL);
 	call("doc:set-ref", p, 1, point);
 	call("doc:set-attr", p, 1, point, "renderline:func", 0,
 	     NULL, "doc:email:render-spacer");
@@ -580,7 +580,7 @@ DEF_CMD(open_email)
 	if (!doc)
 		goto out;
 	call("doc:set:autoclose", doc, 1);
-	point = vmark_new(doc, MARK_POINT);
+	point = vmark_new(doc, MARK_POINT, NULL);
 	if (!point)
 		goto out;
 	home_call(h2, "get-header", doc, 0, point, "From");
@@ -787,7 +787,7 @@ DEF_CMD(attach_email_view)
 	struct mark *m;
 	int n;
 
-	m = vmark_new(ci->focus, MARK_UNGROUPED);
+	m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	if (!m)
 		return Esys;
 	call("doc:set-ref", ci->focus, 0, m);

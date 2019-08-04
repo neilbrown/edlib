@@ -91,18 +91,19 @@ static int get_b64_rev(struct pane *p safe, struct mark *m safe)
 	return from_b64(c);
 }
 
-static int locate_mark(struct pane *p safe, int view, struct mark *m safe)
+static int locate_mark(struct pane *p safe, struct pane *owner,
+                       int view, struct mark *m safe)
 {
 	struct mark *st, *tmp, *prev;
 	int pos = 0;
 	wint_t ch;
 
-	st = vmark_at_or_before(p, m, view);
+	st = vmark_at_or_before(p, m, view, owner);
 	if (st) {
 		tmp = mark_dup(st);
 		prev = st;
 	} else {
-		tmp = vmark_new(p, MARK_UNGROUPED);
+		tmp = vmark_new(p, MARK_UNGROUPED, NULL);
 		pos = (MAX_QUAD + 1) * 4;
 		prev = NULL;
 	}
@@ -113,7 +114,7 @@ static int locate_mark(struct pane *p safe, int view, struct mark *m safe)
 			break;
 
 		if ((pos %4) == 0 && pos/4 >= MAX_QUAD) {
-			struct mark *m2 = vmark_new(p, view);
+			struct mark *m2 = vmark_new(p, view, owner);
 			if (m2) {
 				if (prev)
 					mark_to_mark(m2, prev);
@@ -140,7 +141,7 @@ DEF_CMD(base64_step)
 
 	if (!ci->mark || !p)
 		return 0;
-	pos = locate_mark(p, bi->view, ci->mark);
+	pos = locate_mark(p, ci->home, bi->view, ci->mark);
 
 	m = mark_dup(ci->mark);
 retry:
@@ -212,7 +213,7 @@ DEF_CMD(b64_close)
 	struct b64info *bi = ci->home->data;
 	struct mark *m;
 
-	while ((m = vmark_first(ci->home, bi->view)) != NULL)
+	while ((m = vmark_first(ci->home, bi->view, ci->home)) != NULL)
 		mark_free(m);
 	call("doc:del-view", ci->home, bi->view);
 	free(bi);
@@ -223,7 +224,7 @@ DEF_CMD(b64_clip)
 {
 	struct b64info *bi = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, bi->view);
+	marks_clip(ci->home, ci->mark, ci->mark2, bi->view, ci->home);
 	return 0;
 }
 
