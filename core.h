@@ -186,6 +186,9 @@ struct mark {
 					 * (which displays as more than one
 					 * char).
 					 */
+	unsigned short		refs;	/* create of mark can use this for
+					 * e.g. refcounting
+					 */
 	MARK_DATA_PTR		*mdata;
 	void			*mtype;	/* can be used to validate type of mdata */
 	void			(*refcnt)(struct mark *m safe, int cnt);

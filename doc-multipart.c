@@ -25,15 +25,10 @@ struct doc_ref {
 	int docnum; /* may be 'nparts', in which case 'm' == NULL */
 };
 
-/* mark->mdata in marks we create on individual component documents
+/* mark->refs in marks we create on individual component documents
  * is used to track if the mark is shared among multiple marks in the
  * multipart document.
- * mdata must be a pointer, subtract ZERO to get a count, and add
- * ZERO to convert back to a pointer.
  */
-#define MARK_DATA_PTR char
-#define ZERO ((char *)0)
-#define ONE (ZERO + 1)
 
 #include "core.h"
 
@@ -56,12 +51,12 @@ static void pre_move(struct mark *m safe)
 {
 	struct mark *m2;
 
-	if (!m->ref.m || m->ref.m->mdata == ONE)
+	if (!m->ref.m || m->ref.m->refs == 1)
 		return;
 	/* Mark is shared, make it unshared */
 	m2 = mark_dup(m->ref.m);
-	m->ref.m->mdata = ZERO + (m->ref.m->mdata - ONE);
-	m2->mdata = ONE;
+	m->ref.m->refs -= 1;
+	m2->refs = 1;
 	m->ref.m = m2;
 }
 
@@ -76,7 +71,7 @@ static void post_move(struct mark *m)
 
 	if (!m || hlist_unhashed(&m->all))
 		return;
-	ASSERT(m->ref.m == NULL || m->ref.m->mdata == ONE);
+	ASSERT(m->ref.m == NULL || m->ref.m->refs == 1);
 	while ((m2 = doc_next_mark_all(m)) != NULL &&
 	       (m2->ref.docnum < m->ref.docnum ||
 		(m2->ref.docnum == m->ref.docnum &&
@@ -96,16 +91,16 @@ static void post_move(struct mark *m)
 	}
 	if (!m->ref.m)
 		return;
-	ASSERT(m->ref.m->mdata == ONE);
+	ASSERT(m->ref.m->refs == 1);
 	/* Check if it should be shared */
 	m2 = doc_next_mark_all(m);
 	if (m2 && m2->ref.docnum == m->ref.docnum && m2->ref.m) {
 		if (m->ref.m != m2->ref.m &&
 		    mark_same(m->ref.m, m2->ref.m)) {
-			m->ref.m->mdata = ZERO;
+			m->ref.m->refs = 0;
 			mark_free(m->ref.m);
 			m->ref.m = m2->ref.m;
-			m->ref.m->mdata = ONE + (m->ref.m->mdata - ZERO);
+			m->ref.m->refs += 1;
 			return;
 		}
 	}
@@ -113,10 +108,10 @@ static void post_move(struct mark *m)
 	if (m2 && m2->ref.docnum == m->ref.docnum && m2->ref.m) {
 		if (m->ref.m != m2->ref.m &&
 		    mark_same(m->ref.m, m2->ref.m)) {
-			m->ref.m->mdata = ZERO;
+			m->ref.m->refs = 0;
 			mark_free(m->ref.m);
 			m->ref.m = m2->ref.m;
-			m->ref.m->mdata = ONE + (m->ref.m->mdata - ZERO);
+			m->ref.m->refs += 1;
 			return;
 		}
 	}
@@ -129,12 +124,12 @@ static void mp_mark_refcnt(struct mark *m safe, int inc)
 
 	if (inc > 0)
 		/* Duplicate being created of this mark */
-		m->ref.m->mdata = ONE + (m->ref.m->mdata - ZERO);
+		m->ref.m->refs += 1;
 
 	if (inc < 0) {
 		/* mark is being discarded, or ref over-written */
-		m->ref.m->mdata = ZERO + (m->ref.m->mdata - ONE);
-		if (m->ref.m->mdata == ZERO)
+		m->ref.m->refs -= 1;
+		if (m->ref.m->refs == 0)
 			mark_free(m->ref.m);
 		m->ref.m = NULL;
 	}
@@ -170,8 +165,8 @@ static void change_part(struct mp_info *mpi safe, struct mark *m safe, int part,
 	if (part < 0 || part > mpi->nparts)
 		return;
 	if (m->ref.m) {
-		ASSERT(m->ref.m->mdata == ONE);
-		m->ref.m->mdata = ZERO;
+		ASSERT(m->ref.m->refs == 1);
+		m->ref.m->refs = 0;
 		mark_free(m->ref.m);
 	}
 	if (part < mpi->nparts) {
@@ -180,7 +175,7 @@ static void change_part(struct mp_info *mpi safe, struct mark *m safe, int part,
 		if (m1) {
 			call("doc:set-ref", p->pane, !end, m1);
 			m->ref.m = m1;
-			m1->mdata = ONE;
+			m1->refs = 1;
 		}
 	} else
 		m->ref.m = NULL;
@@ -210,8 +205,8 @@ DEF_CMD(mp_close)
 		if (m->ref.m) {
 			struct mark *m2 = m->ref.m;
 			m->ref.m = NULL;
-			m2->mdata = ZERO + (m2->mdata - ONE);
-			if (m2->mdata == ZERO)
+			m2->refs -= 1;
+			if (m2->refs == 0)
 				mark_free(m2);
 		}
 	for (i = 0; i < mpi->nparts; i++)
