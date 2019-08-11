@@ -1052,7 +1052,7 @@ DEF_CMD(text_reundo)
 	do {
 		struct mark *m2;
 		struct mark *early = NULL;
-		int where;
+		int where = 0;
 		int i;
 
 		ed = NULL;
@@ -1103,15 +1103,14 @@ DEF_CMD(text_reundo)
 		text_normalize(t, &start);
 		text_normalize(t, &end);
 
-		if (first) {
+		if (!first)
+			where = text_locate(t, &m->ref, &end);
+		if (!where) {
 			/* Not nearby, look from the start */
 			mark_reset(d, m, 0);
 			where = 1;
 			first = 0;
-		} else
-			where = text_locate(t, &m->ref, &end);
-		if (!where)
-			break;
+		}
 
 		if (where == 1) {
 			do {
@@ -1627,13 +1626,17 @@ static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
 				struct doc_ref *target safe)
 {
 	/* Move 'ref' towards 'target'.
-	 * If at end of chunk, step to next chunk, then
-	 * advance to 'target' or to end of chunk, whichever comes first.
+	 * If at start of chunk, step to previous chunk, then
+	 * retreat to 'target' or to start of chunk, whichever comes first.
 	 * return:
 	 * 0 - reached start of text
 	 * 1 - found target
 	 * 2 - on a new chunk, keep looking.
 	 */
+
+	if (ref->c && ref->c != target->c && ref->o <= ref->c->start)
+		if (text_prev(t, ref, 1) == WEOF)
+			return 0;
 
 	if (ref->c == target->c) {
 		if (ref->c == NULL)
@@ -1645,8 +1648,6 @@ static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
 	}
 	if (ref->c)
 		ref->o = ref->c->start;
-	if (text_prev(t, ref, 1) == WEOF)
-		return 0;
 	return 2;
 }
 
