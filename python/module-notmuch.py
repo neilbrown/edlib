@@ -245,18 +245,18 @@ class notmuch_main(edlib.Doc):
         self.seen_msgs = {}
         self.db = notmuch_db()
 
-    def handle_close(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_close(self, key, **a):
         "handle:Close"
         return 1
 
-    def handle_revisit(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_revisit(self, key, **a):
         "handle:doc:revisit"
         # Individual search-result documents are children of this
         # document, and we don't want doc:revisit from them to escape
         # to the global document list
         return 1
 
-    def handle_set_ref(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
         if num == 1:
             mark.offset = 0
@@ -265,7 +265,7 @@ class notmuch_main(edlib.Doc):
         self.to_end(mark, num == 0);
         return 1
 
-    def handle_step(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_step(self, key, mark, num, num2, **a):
         "handle:doc:step"
         forward = num
         move = num2
@@ -293,7 +293,7 @@ class notmuch_main(edlib.Doc):
                 mark.offset = o
         return ret
 
-    def handle_doc_get_attr(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_doc_get_attr(self, key, focus, mark, str, comm2, **a):
         "handle:doc:get-attr"
         attr = str
         o = mark.offset
@@ -328,7 +328,7 @@ class notmuch_main(edlib.Doc):
             return 1
         return 0
 
-    def handle_get_attr(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_get_attr(self, key, focus, str, comm2, **a):
         "handle:get-attr"
         if comm2:
             if str == "doc-type":
@@ -336,7 +336,7 @@ class notmuch_main(edlib.Doc):
                 return 1
         return 0
 
-    def handle_notmuch_update(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_update(self, key, **a):
         "handle:doc:notmuch:update"
         if not self.timer_set:
             self.timer_set = True
@@ -348,12 +348,12 @@ class notmuch_main(edlib.Doc):
             self.update_next()
         return 1
 
-    def handle_notmuch_update_one(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_update_one(self, key, str, **a):
         "handle:doc:notmuch:update-one"
         self.searches.update_one(str, self, self.updated)
         return 1
 
-    def handle_notmuch_query(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_query(self, key, focus, str, comm2, **a):
         "handle:doc:notmuch:query"
         # Find or create a search-result document as a
         # child of this document - it remains private
@@ -369,10 +369,10 @@ class notmuch_main(edlib.Doc):
             nm = notmuch_list(self, str, q)
             nm.call("doc:set-name", str)
         if comm2:
-            comm2("callback", nm)
+            comm2("callback", focus, nm)
         return 1
 
-    def handle_notmuch_byid(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_byid(self, key, focus, str, comm2, **a):
         "handle:doc:notmuch:byid"
         # Return a document for the email message.
         # This is a global document.
@@ -385,7 +385,7 @@ class notmuch_main(edlib.Doc):
             comm2("callback", doc)
         return 1
 
-    def handle_notmuch_byid_tags(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_byid_tags(self, key, focus, num2, str, comm2, **a):
         "handle:doc:notmuch:byid:tags"
         # return a string with tags of message
         with self.db as db:
@@ -394,7 +394,7 @@ class notmuch_main(edlib.Doc):
         comm2("callback", focus, tags)
         return 1
 
-    def handle_notmuch_bythread_tags(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_bythread_tags(self, key, focus, str, comm2, **a):
         "handle:doc:notmuch:bythread:tags"
         # return a string with tags of all messages in thread
         with self.db as db:
@@ -408,17 +408,17 @@ class notmuch_main(edlib.Doc):
         comm2("callback", focus, tags)
         return 1
 
-    def handle_notmuch_search_max(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_search_max(self, key, **a):
         "handle:doc:notmuch:search-maxlen"
         return self.searches.maxlen + 1
 
-    def handle_notmuch_query_updated(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_query_updated(self, key, **a):
         "handle:doc:notmuch:query-updated"
         # A child search document has finished updating.
         self.update_next()
         return 1
 
-    def handle_notmuch_mark_read(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_mark_read(self, key, str, str2, **a):
         "handle:doc:notmuch:mark-read"
         with self.db.get_write() as db:
             m = db.find_message(str2)
@@ -435,7 +435,7 @@ class notmuch_main(edlib.Doc):
                     self.notify("Notify:Tag", str, str2)
         return 1
 
-    def handle_notmuch_remove_tag(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_remove_tag(self, key, str, str2, **a):
         "handle-range/doc:notmuch:remove-tag-/doc:notmuch:remove-tag./"
         tag = key[23:]
         with self.db.get_write() as db:
@@ -461,19 +461,19 @@ class notmuch_main(edlib.Doc):
                     self.notify("Notify:Tag", str)
         return 1
 
-    def handle_notmuch_remember_seen_thread(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_remember_seen_thread(self, key, focus, str, **a):
         "handle:doc:notmuch:remember-seen-thread"
         if str:
             self.seen_threads[str] = focus
             return 1
 
-    def handle_notmuch_remember_seen_msg(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_remember_seen_msg(self, key, focus, str, **a):
         "handle:doc:notmuch:remember-seen-msg"
         if str:
             self.seen_msgs[str] = focus
             return 1
 
-    def handle_notmuch_mark_seen(self, key, focus, mark, mark2, num, num2, str, str2, comm2, **a):
+    def handle_notmuch_mark_seen(self, key, focus, **a):
         "handle:doc:notmuch:mark-seen"
         with self.db.get_write() as db:
             todel = []
@@ -587,18 +587,18 @@ class notmuch_master_view(edlib.Pane):
                 tile.call("Window:y+", "notmuch", h - tile.h)
 
 
-    def handle_choose(self, key, focus, mark, num, str, str2, **a):
+    def handle_choose(self, key, **a):
         "handle:docs:choose"
         # don't choose anything
         return 1
 
-    def handle_clone(self, key, focus, mark, num, str, str2, **a):
+    def handle_clone(self, key, focus, **a):
         "handle:Clone"
         p = notmuch_master_view(focus)
         # We don't clone children, we create our own
         return 1
 
-    def handle_size(self, key, focus, mark, num, str, str2, **a):
+    def handle_size(self, key, **a):
         "handle:Refresh:size"
         # First, make sure the tiler has adjusted to the new size
         self.focus.w = self.w
@@ -608,19 +608,19 @@ class notmuch_master_view(edlib.Pane):
         self.resize()
         return 1
 
-    def handle_dot(self, key, focus, mark, num, str, str2, **a):
+    def handle_dot(self, key, focus, mark, **a):
         "handle:Chr-."
         # select thing under point, but don't move
         focus.call("notmuch:select", mark, 0)
         return 1
 
-    def handle_return(self, key, focus, mark, num, str, str2, **a):
+    def handle_return(self, key, focus, mark, **a):
         "handle:Enter"
         # select thing under point, and enter it
         focus.call("notmuch:select", mark, 1)
         return 1
 
-    def handle_space(self, key, focus, mark, num, str, str2, **a):
+    def handle_space(self, key, **a):
         "handle:Chr- "
         if self.message_pane:
             self.message_pane.call(key)
@@ -630,7 +630,7 @@ class notmuch_master_view(edlib.Pane):
             self.list_pane.call("Enter")
         return 1
 
-    def handle_move(self, key, focus, mark, num, str, str2, **a):
+    def handle_move(self, key, mark, **a):
         "handle-list/M-Chr-n/M-Chr-p/Chr-n/Chr-p"
         if key[0] == "M" or not self.query_pane:
             p = self.list_pane
@@ -651,7 +651,7 @@ class notmuch_master_view(edlib.Pane):
         p.call("notmuch:select", m, 1)
         return 1
 
-    def handle_A(self, key, focus, mark, num, str, str2, **a):
+    def handle_A(self, key, focus, mark, str, **a):
         "handle:Chr-a"
         in_message = False
         in_query = False
@@ -688,12 +688,12 @@ class notmuch_master_view(edlib.Pane):
             return 1
         return 1
 
-    def handle_close_message(self, key, focus, mark, num, str, str2, **a):
+    def handle_close_message(self, key, **a):
         "handle:notmuch-close-message"
         self.message_pane = None
         return 1
 
-    def handle_xq(self, key, focus, mark, num, str, str2, **a):
+    def handle_xq(self, key, **a):
         "handle-list/Chr-x/Chr-q"
         if self.message_pane:
             if key != "Chr-x":
@@ -718,7 +718,7 @@ class notmuch_master_view(edlib.Pane):
                 p.focus.close()
         return 1
 
-    def handle_v(self, key, focus, mark, num, str, str2, **a):
+    def handle_v(self, key, **a):
         "handle:Chr-V"
         if not self.message_pane:
             return 1
@@ -734,25 +734,25 @@ class notmuch_master_view(edlib.Pane):
         p1.call("doc:assign-view",p2, "default", "viewer")
         return 1
 
-    def handle_o(self, key, focus, mark, num, str, str2, **a):
+    def handle_o(self, key, focus, **a):
         "handle:Chr-o"
         # focus to next window
         focus.call("Window:next", "notmuch")
         return 1
 
-    def handle_O(self, key, focus, mark, num, str, str2, **a):
+    def handle_O(self, key, focus, **a):
         "handle:Chr-O"
         # focus to prev window
         focus.call("Window:prev", "notmuch")
         return 1
 
-    def handle_g(self, key, focus, mark, num, str, str2, **a):
+    def handle_g(self, key, focus, **a):
         "handle:Chr-g"
         focus.call("doc:notmuch:update")
         self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
         return 1
 
-    def handle_select_query(self, key, focus, mark, num, str, str2, **a):
+    def handle_select_query(self, key, num, str, **a):
         "handle:notmuch:select-query"
         # A query was selected, identifed by 'str'.  Close the
         # message window and open a threads window.
@@ -779,7 +779,7 @@ class notmuch_master_view(edlib.Pane):
         self.resize()
         return 1
 
-    def handle_select_message(self, key, focus, mark, num, str, str2, **a):
+    def handle_select_message(self, key, num, str, str2, **a):
         "handle:notmuch:select-message"
         # a thread or message was selected. id in 'str'. threadid in str2
         # Find the file and display it in a 'message' pane
@@ -822,13 +822,13 @@ class notmuch_main_view(edlib.Pane):
         self.call("Request:Notify:doc:Replace")
         self.selected = None
 
-    def handle_clone(self, key, focus, mark, num, **a):
+    def handle_clone(self, key, focus, **a):
         "handle:Clone"
         p = notmuch_main_view(focus)
         self.clone_children(focus.focus)
         return 1
 
-    def handle_notify_replace(self, key, focus, mark, num, **a):
+    def handle_notify_replace(self, key, **a):
         "handle:Notify:doc:Replace"
         self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
         return 0
@@ -1100,7 +1100,7 @@ class notmuch_list(edlib.Doc):
                 m2 = mark.prev_any()
             return '\n'
 
-    def handle_notoify_tag(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+    def handle_notify_tag(self, key, str, str2, **a):
         "handle:Notify:Tag"
         if str2:
         # re-evaluate tags of a single message
@@ -1118,7 +1118,7 @@ class notmuch_list(edlib.Doc):
         self.notify("Notify:doc:Replace")
         return 1
 
-    def handle_set_ref(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+    def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
         mark.pos = None
         if num == 1 and len(self.threadids) > 0:
@@ -1131,13 +1131,13 @@ class notmuch_list(edlib.Doc):
         self.to_end(mark, num == 0)
         return 1
 
-    def handle_step(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+    def handle_step(self, key, mark, num, num2, **a):
         "handle:doc:step"
         forward = num
         move = num2
         return self.step(mark, forward, move)
 
-    def handle_step_thread(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+    def handle_step_thread(self, key, mark, num, num2, **a):
         "handle:doc:step-thread"
         # Move to the start of the current thread, or the start
         # of the next one.
@@ -1180,7 +1180,7 @@ class notmuch_list(edlib.Doc):
                 mark.pos = (tid, None)
             return '\n'
 
-    def handle_step_matched(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+    def handle_step_matched(self, key, mark, num, num2, **a):
         "handle:doc:step-matched"
         # Move to the next/prev message which is matched.
         forward = num
@@ -1199,7 +1199,7 @@ class notmuch_list(edlib.Doc):
             ret = self.step(m, forward, 1)
         return ret
 
-    def handle_doc_get_attr(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+    def handle_doc_get_attr(self, key, mark, focus, str, comm2, **a):
         "handle:doc:get-attr"
         attr = str
         if mark.pos == None:
@@ -1279,14 +1279,14 @@ class notmuch_list(edlib.Doc):
             comm2("callback", focus, val)
         return 1
 
-    def handle_get_attr(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+    def handle_get_attr(self, key, focus, str, comm2, **a):
         "handle:get-attr" and comm2
         if str == "doc-type":
             comm2("callback", focus, "notmuch-list")
             return 1
         return 0
 
-    def handle_load_thread(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+    def handle_load_thread(self, key, mark, **a):
         "handle:doc:notmuch:load-thread"
         if mark.pos is None:
             return edlib.Esys
@@ -1297,17 +1297,17 @@ class notmuch_list(edlib.Doc):
             return 1
         return 2
 
-    def handle_same_search(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+    def handle_same_search(self, key, str2, **a):
         "handle:doc:notmuch:same-search"
         if self.query == str2:
             return 1
         return 2
 
-    def handle_query_refresh(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+    def handle_query_refresh(self, key, **a):
         "handle:doc:notmuch:query-refresh"
         self.load_update()
 
-    def handle_mark_read(self, key, mark, mark2, num, num2, focus, xy, str, str2, comm2, **a):
+    def handle_mark_read(self, key, str, str2, **a):
         "handle:doc:notmuch:mark-read"
         ti = self.threadinfo[str]
         m = ti[str2]
@@ -1559,22 +1559,22 @@ class notmuch_message_view(edlib.Pane):
             if not vis:
                 focus.call("doc:set-attr", "email:visible", m, 0)
 
-    def handle_close(self, key, focus, mark, num, str, str2, comm2, **a):
+    def handle_close(self, key, **a):
         "handle:Close"
         self.call("notmuch-close-message")
         return 1
 
-    def handle_clone(self, key, focus, mark, num, str, str2, comm2, **a):
+    def handle_clone(self, key, focus, **a):
         "handle:Clone"
         p = notmuch_message_view(focus)
         self.clone_children(focus.focus)
         return 1
 
-    def handle_replace(self, key, focus, mark, num, str, str2, comm2, **a):
+    def handle_replace(self, key, **a):
         "handle:Replace"
         return 1
 
-    def handle_slash(self, key, focus, mark, num, str, str2, comm2, **a):
+    def handle_slash(self, key, focus, mark, **a):
         "handle:Chr-/"
         s = focus.call("doc:get-attr", mark, "email:visible", ret='str')
         if not s:
@@ -1585,24 +1585,24 @@ class notmuch_message_view(edlib.Pane):
             focus.call("doc:set-attr", mark, "email:visible", "0")
         return 1
 
-    def handle_space(self, key, focus, mark, num, str, str2, comm2, **a):
+    def handle_space(self, key, focus, mark, **a):
         "handle:Chr- "
         if focus.call("Next", 1, mark) == 2:
             focus.call("Chr-n", mark)
         return 1
 
-    def handle_backspace(self, key, focus, mark, num, str, str2, comm2, **a):
+    def handle_backspace(self, key, focus, mark, **a):
         "handle:Backspace"
         if focus.call("Prior", 1, mark) == 2:
             focus.call("Chr-p", mark)
         return 1
 
-    def handle_return(self, key, focus, mark, num, str, str2, comm2, **a):
+    def handle_return(self, key, focus, mark, **a):
         "handle:Enter"
         focus.call("doc:email:select", mark);
         return 1
 
-    def handle_activate(self, key, focus, mark, num, str, str2, comm2, **a):
+    def handle_activate(self, key, focus, mark, **a):
         "handle:Mouse-Activate"
         focus.call("doc:email:select", mark);
         return 1
