@@ -864,6 +864,7 @@ class notmuch_list(edlib.Doc):
     def __init__(self, focus, qname, query):
         edlib.Doc.__init__(self, focus)
         self.db = notmuch_db()
+        self.maindoc = focus
         self.query = query
         self['qname'] = qname
         self['query'] = query
@@ -873,7 +874,8 @@ class notmuch_list(edlib.Doc):
         self.threadinfo = {}
         self["render-default"] = "notmuch:threads"
         self["line-format"] = "<%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%+TM-authors</><tab:350>%.TM-threadinfo<tab:450><%TM-hilite>%.TM-subject</>                      "
-        self.add_notify(self.parent, "Notify:Tag")
+        self.add_notify(self.maindoc, "Notify:Tag")
+        self.add_notify(self.maindoc, "Notify:Close")
         self.load_full()
 
     def load_full(self):
@@ -1118,6 +1120,12 @@ class notmuch_list(edlib.Doc):
         self.notify("Notify:doc:Replace")
         return 1
 
+    def handle_notify_close(self, **a);
+        "handle:Notify:Close"
+        # Main doc is closing, so must we
+        self.close()
+        return 1
+
     def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
         mark.pos = None
@@ -1306,6 +1314,7 @@ class notmuch_list(edlib.Doc):
     def handle_query_refresh(self, key, **a):
         "handle:doc:notmuch:query-refresh"
         self.load_update()
+        return 1
 
     def handle_mark_read(self, key, str, str2, **a):
         "handle:doc:notmuch:mark-read"
@@ -1331,7 +1340,8 @@ class notmuch_list(edlib.Doc):
             if "unread" in t:
                 t.remove("unread")
         self.notify("Notify:doc:Replace")
-        # Let this fall though to database document.
+        # Pass this down to database document.
+        self.maindoc.call(key, str, str2)
         return 0
 
 class notmuch_query_view(edlib.Pane):
