@@ -1461,13 +1461,12 @@ DEF_CMD(text_new)
 	INIT_LIST_HEAD(&t->text);
 	t->saved = t->undo = t->redo = NULL;
 	t->prev_edit = Redo;
-	doc_init(&t->doc);
 	t->fname = NULL;
 	t->as.changes = 0;
 	t->as.timer_started = 0;
 	t->as.last_change = 0;
 	text_new_alloc(t, 0);
-	p = pane_register(ci->home, 0, &text_handle.c, &t->doc, NULL);
+	p = doc_register(ci->home, 0, &text_handle.c, &t->doc, NULL);
 	t->doc.home = p;
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p);

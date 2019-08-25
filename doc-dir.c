@@ -123,10 +123,9 @@ DEF_CMD(dir_new)
 	struct directory *dr = malloc(sizeof(*dr));
 	struct pane *p;
 
-	doc_init(&dr->doc);
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	p = pane_register(ci->home, 0, &doc_handle.c, &dr->doc, NULL);
+	p = doc_register(ci->home, 0, &doc_handle.c, &dr->doc, NULL);
 	dr->doc.home = p;
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p);

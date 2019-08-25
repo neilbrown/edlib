@@ -558,9 +558,8 @@ DEF_CMD(attach_mp)
 	struct pane *h;
 
 	mpi = calloc(1, sizeof(*mpi));
-	doc_init(&mpi->doc);
 
-	h = pane_register(ci->home, 0, &mp_handle.c, &mpi->doc, NULL);
+	h = doc_register(ci->home, 0, &mp_handle.c, &mpi->doc, NULL);
 	mpi->doc.home = h;
 	if (h)
 		return comm_call(ci->comm2, "callback:doc", h);

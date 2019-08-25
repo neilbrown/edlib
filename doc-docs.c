@@ -824,10 +824,9 @@ DEF_CMD(attach_docs)
 	struct pane *p;
 
 	docs_init_map();
-	doc_init(&doc->doc);
 
 	doc->doc.name = strdup("*Documents*");
-	p = pane_register(ci->home, 0, &docs_handle.c, &doc->doc, NULL);
+	p = doc_register(ci->home, 0, &docs_handle.c, &doc->doc, NULL);
 	if (!p) {
 		free(doc->doc.name);
 		free(doc);

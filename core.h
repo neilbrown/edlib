@@ -388,6 +388,10 @@ struct xy {int x,y;};
 struct pane *safe pane_register(struct pane *parent, int z,
 				struct command *handle safe, void *data,
 				struct list_head *here);
+struct pane *safe doc_register(struct pane *parent, int z,
+                               struct command *handle safe,
+                               struct doc *doc safe,
+                               struct list_head *here);
 void pane_init(struct pane *p safe, struct pane *par, struct list_head *here);
 void pane_reparent(struct pane *p safe, struct pane *newparent safe);
 void pane_subsume(struct pane *p safe, struct pane *parent safe);

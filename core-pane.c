@@ -122,8 +122,8 @@ void pane_damaged(struct pane *p, int type)
 }
 
 struct pane *safe pane_register(struct pane *parent, int z,
-			   struct command *handle safe, void *data,
-			   struct list_head *here)
+                                struct command *handle safe, void *data,
+                                struct list_head *here)
 {
 	struct pane *p = malloc(sizeof(*p));
 	pane_init(p, parent, here);
@@ -140,6 +140,18 @@ struct pane *safe pane_register(struct pane *parent, int z,
 		parent->focus = p;
 	pane_call(parent, "ChildRegistered", p);
 	return p;
+}
+
+struct pane *safe doc_register(struct pane *parent, int z,
+                               struct command *handle safe,
+                               struct doc *doc safe,
+                               struct list_head *here)
+{
+	/* Documents are always registered against the root */
+	while (parent && parent->parent)
+		parent = parent->parent;
+	doc_init(doc);
+	return pane_register(parent, z, handle, doc, here);
 }
 
 /* 'abs_z' is a global z-depth number.
