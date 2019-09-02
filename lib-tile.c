@@ -1018,6 +1018,17 @@ DEF_CMD(tile_child_registered)
 	return 1;
 }
 
+DEF_CMD(tile_child_replaced)
+{
+	struct pane *p = ci->home;
+	struct tileinfo *ti = p->data;
+	struct pane *c = ci->focus;
+
+	if (ti->leaf && c->z == 0)
+		ti->content = c;
+	return 1;
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	tile_map = key_alloc();
@@ -1042,6 +1053,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(tile_map, "Clone", &tile_clone);
 	key_add(tile_map, "ChildClosed", &tile_child_closed);
 	key_add(tile_map, "ChildRegistered", &tile_child_registered);
+	key_add(tile_map, "ChildReplaced", &tile_child_replaced);
 	key_add(tile_map, "Close", &tile_close);
 	key_add(tile_map, "Refresh:size", &tile_refresh_size);
 
