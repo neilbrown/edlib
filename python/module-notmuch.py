@@ -539,18 +539,20 @@ class notmuch_master_view(edlib.Pane):
     # This pane controls one visible instance of the notmuch application.
     # It manages the size and position of the 3 panes and provides common
     # handling for some keystrokes.
-    def __init__(self, focus):
+    # 'focus' is normally None and we are created parentless.  The creator
+    # then attaches us and a tiler beneath the main notmuch document.
+    #
+    def __init__(self, focus = None):
         edlib.Pane.__init__(self, focus)
         self.maxlen = 0 # length of longest query name in list_pane
         self.list_pane = None
         self.query_pane = None
         self.message_pane = None
 
-        p = self.call("attach-tile", "notmuch", "main", ret='focus')
-        p = p.call("attach-view", ret='focus')
-        p = p.call("attach-render-format", ret='focus')
-        p = notmuch_main_view(p)
-        self.list_pane = p
+    def handle_set_main_view(self, key, focus, **a):
+        "handle:notmuch:set_list_pane"
+        self.list_pane = focus
+        return 1
 
     def resize(self):
         if self.list_pane and (self.query_pane or self.message_pane):
@@ -596,8 +598,10 @@ class notmuch_master_view(edlib.Pane):
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
-        p = notmuch_master_view(focus)
-        # We don't clone children, we create our own
+        main = notmuch_master_view(focus)
+        p = main.call("attach-tile", "notmuch", "main", ret='focus')
+        frm = self.list_pane.call("ThisPane", "notmuch", ret='focus')
+        frm.clone_children(p)
         return 1
 
     def handle_size(self, key, **a):
@@ -821,6 +825,7 @@ class notmuch_main_view(edlib.Pane):
         self['render-wrap'] = 'no'
         self['background'] = 'color:#A0FFFF'
         self['line-format'] = '<%fmt>%count %+name</>'
+        self.call("notmuch:set_list_pane")
         self.call("Request:Notify:doc:Replace")
         self.selected = None
 
@@ -1657,10 +1662,15 @@ def render_master_view_attach(key, focus, comm2, **a):
     # The tile which displays the search list does not have a document, as it
     # refers down the main document.  So it doesn't automatically get borders
     # from a 'view', so we must add one explicitly.
-    p = focus
-    p = notmuch_master_view(focus)
-    while p.focus:
-        p = p.focus
+
+    doc = focus.parent
+    main = notmuch_master_view()
+    doc.reparent(main)
+    p = main.call("attach-tile", "notmuch", "main", ret='focus')
+    doc.reparent(p)
+    p = focus.call("attach-render-format", ret='focus')
+    p = notmuch_main_view(p)
+    main.list_pane = p
     p.take_focus()
     comm2("callback", p)
     return 1
