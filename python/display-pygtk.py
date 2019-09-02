@@ -28,7 +28,6 @@ class EdDisplay(gtk.Window):
         self.set_title("EDLIB")
         self.connect('destroy', self.close_win)
         self.create_ui()
-        self.need_refresh = True
         self.pane["scale:M"] = "%dx%d" % (self.charwidth, self.lineheight)
         self.pane.w = self.charwidth * 80
         self.pane.h = self.lineheight * 24
@@ -477,8 +476,6 @@ class EdDisplay(gtk.Window):
             return None
         self.pane.w = alloc.width
         self.pane.h = alloc.height
-        self.need_refresh = True
-        self.text.queue_draw()
         edlib.time_stop(edlib.TIME_WINDOW)
 
     def press(self, c, event):
