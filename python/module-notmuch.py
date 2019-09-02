@@ -557,7 +557,7 @@ class notmuch_master_view(edlib.Pane):
             # list_pane must be no more than 25% total width, and no more than
             # 5+1+maxlen+1
             if self.maxlen <= 0:
-                m = self.call("doc:notmuch:search-maxlen")
+                m = self.list_pane.call("doc:notmuch:search-maxlen")
                 if m and m > 1:
                     self.maxlen = m - 1
                 else:
@@ -672,7 +672,7 @@ class notmuch_master_view(edlib.Pane):
                     self.query_pane.call("doc:notmuch:remove-tag-inbox",
                                          mp.ctid, mp.cmid)
                 else:
-                    self.call("doc:notmuch:remove-tag-inbox", mp.ctid, mp.cmid)
+                    self.list_pane.call("doc:notmuch:remove-tag-inbox", mp.ctid, mp.cmid)
             self.call("Chr-n")
             return 1
         if in_query:
@@ -769,7 +769,7 @@ class notmuch_master_view(edlib.Pane):
             if s:
                 self.list_pane.call("doc:notmuch:update-one", s)
 
-        p0 = self.call("doc:notmuch:query", str, ret='focus')
+        p0 = self.list_pane.call("doc:notmuch:query", str, ret='focus')
         p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 15,
                                  ret = 'focus')
         self.query_pane = p1
@@ -787,7 +787,7 @@ class notmuch_master_view(edlib.Pane):
         # Find the file and display it in a 'message' pane
         self.mark_read()
 
-        p0 = self.call("doc:notmuch:byid", str, ret='focus')
+        p0 = self.list_pane.call("doc:notmuch:byid", str, ret='focus')
         p1 = self.query_pane.call("OtherPane", "notmuch", "message", 13,
                                   ret='focus')
         p2 = p1.call("doc:attach", ret='focus')
