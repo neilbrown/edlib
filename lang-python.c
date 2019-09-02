@@ -123,6 +123,7 @@ static PyTypeObject CommType;
 static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject *kwds,
 			PyObject **s1 safe, PyObject **s2 safe);
 
+static int in_pane_frompane = 0;
 static inline PyObject *safe Pane_Frompane(struct pane *p)
 {
 	Pane *pane;
@@ -135,7 +136,9 @@ static inline PyObject *safe Pane_Frompane(struct pane *p)
 		pane = (Pane*)pdoc;
 		Py_INCREF(pane);
 	} else {
+		in_pane_frompane = 1;
 		pane = (Pane * safe)PyObject_CallObject((PyObject*)&PaneType, NULL);
+		in_pane_frompane = 0;
 		pane->pane = p;
 	}
 	return (PyObject*)pane;
@@ -510,15 +513,28 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds, Pane **p
 		return -1;
 	}
 	/* Pane(parent, handler, data, z=0 */
-	if (!PyTuple_Check(args) || PyTuple_GET_SIZE(args) == 0)
-		/* Probably an internal Pane_Frompane call */
+	if (in_pane_frompane)
+		/* An internal Pane_Frompane call - it will set .pane,
+		 * and we don't want a .handler.
+		 */
 		return 0;
 
-	ret = PyArg_ParseTupleAndKeywords(args, kwds, "O!|Oi", keywords,
-					  &PaneType, &parent, &py_handler,
+	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|OOi", keywords,
+					  &parent, &py_handler,
 					  zp);
 	if (ret <= 0)
 		return -1;
+
+	if ((PyObject*)parent == Py_None) {
+		Py_DECREF(parent);
+		parent = NULL;
+	}
+	if (parent && !PyObject_TypeCheck(parent, &PaneType)) {
+		PyErr_SetString(PyExc_TypeError, "First arg must be edlib.Pane or None");
+		Py_DECREF(parent);
+		Py_XDECREF(py_handler);
+		return -1;
+	}
 	self->refer = py_handler;
 
 	*parentp = parent;
@@ -538,14 +554,15 @@ static int Pane_init(Pane *self safe, PyObject *args, PyObject *kwds)
 	int z = 0;
 	int ret = __Pane_init(self, args, kwds, &parent, &z);
 
-	if (ret < 0 || !parent)
+	if (ret < 0)
 		return ret;
 
 	/* The pane holds a reference to the Pane through the ->handle
 	 * function
 	 */
 	Py_INCREF(self);
-	self->pane = pane_register(parent->pane, z, &self->handle.c, self, NULL);
+	self->pane = pane_register(parent ? parent->pane : NULL,
+	                           z, &self->handle.c, self, NULL);
 	return 0;
 }
 
@@ -555,11 +572,12 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 	int z = 0;
 	int ret = __Pane_init((Pane*safe)self, args, kwds, &parent, &z);
 
-	if (ret <= 0 || !parent || !self)
+	if (ret <= 0 || !self)
 		return ret;
 
 	self->handle.c.func = python_doc_call_func;
-	self->pane = doc_register(parent->pane, z, &self->handle.c, &self->doc, NULL);
+	self->pane = doc_register(parent ? parent->pane : NULL,
+	                          z, &self->handle.c, &self->doc, NULL);
 	self->doc.home = self->pane;
 	return 0;
 }
