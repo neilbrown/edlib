@@ -378,7 +378,8 @@ DEF_CMD(emacs_move_view_other)
 	/* If there is an 'other' pane', Send "Next" there */
 	struct pane *p;
 
-	p = call_ret(pane, "OtherPane", ci->focus, 4);
+	/* '512' means 'fail if no other pane' */
+	p = call_ret(pane, "OtherPane", ci->focus, 512);
 	if (!p)
 		return 1;
 	call("Mode:set-num", p, ci->num);

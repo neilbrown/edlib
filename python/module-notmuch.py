@@ -768,7 +768,7 @@ class notmuch_master_view(edlib.Pane):
                 self.list_pane.call("doc:notmuch:update-one", s)
 
         p0 = self.call("doc:notmuch:query", str, ret='focus')
-        p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 3,
+        p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 15,
                                  ret = 'focus')
         self.query_pane = p1
         p2 = p1.call("doc:attach", ret='focus')
@@ -786,7 +786,7 @@ class notmuch_master_view(edlib.Pane):
         self.mark_read()
 
         p0 = self.call("doc:notmuch:byid", str, ret='focus')
-        p1 = self.query_pane.call("OtherPane", "notmuch", "message", 2,
+        p1 = self.query_pane.call("OtherPane", "notmuch", "message", 13,
                                   ret='focus')
         p2 = p1.call("doc:attach", ret='focus')
         p3 = p2.call("doc:assign-view", p0, ret='focus')

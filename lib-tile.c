@@ -143,8 +143,7 @@ DEF_CMD(tile_attach)
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 
-static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char *name,
-			       int new_space)
+static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char *name)
 {
 	/* Create a new pane near the given one, reducing its size,
 	 * and possibly the size of other siblings.
@@ -153,7 +152,7 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char
 	 * This may require creating a new parent and moving 'p' down
 	 * in the hierarchy.
 	 */
-	int space;
+	int space, new_space;
 	struct pane *p = safe_cast *pp;
 	struct pane *ret;
 	struct tileinfo *ti = p->data;
@@ -167,8 +166,7 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char
 	/* FIXME ask the leafs */
 	if (space < 8)
 		return NULL;
-	if (new_space <= 2 || new_space >= space-2)
-		new_space = space / 2;
+	new_space = space / 2;
 	space -= new_space;
 
 	if (ti->direction != (horiz? Horiz : Vert)) {
@@ -773,7 +771,7 @@ DEF_CMD(tile_window_splitx)
 
 	if (wrong_pane(ci))
 		return 0;
-	p2 = tile_split(&p, 1, 1, ci->str2, 0);
+	p2 = tile_split(&p, 1, 1, ci->str2);
 	pane_clone_children(p, p2);
 	return 1;
 }
@@ -785,7 +783,7 @@ DEF_CMD(tile_window_splity)
 
 	if (wrong_pane(ci))
 		return 0;
-	p2 = tile_split(&p, 0, 1, ci->str2, 0);
+	p2 = tile_split(&p, 0, 1, ci->str2);
 	pane_clone_children(p, p2);
 	return 1;
 }
@@ -864,14 +862,17 @@ DEF_CMD(tile_other)
 	/* Choose some other tile.  If there aren't any, make one.
 	 * Result is returned in ci->focus
 	 * ci->num has flags:
-	 *  1: if new needed, split horizontally
-	 *  2: if new needed, split vertically
-	 *  4: don't split, just return Efalse
+	 *  1: if split is need, use 2 to determine direction, else default
+	 *  2: if split needed, split horizontally, else vertically
+	 *  4: if split needed use 8 to determine which is new, else default
+	 *  8: if split is needed, new pane is to the right/down.
+	 *  512: don't split, just return Efalse
 	 */
 	struct pane *p = ci->home;
 	struct pane *p2;
 	struct tileinfo *ti = p->data;
 	struct tileinfo *ti2;
+	int horiz, after;
 
 	if (!ti->leaf) {
 		/* probably coming from a pop-up. Just use first tile */
@@ -899,18 +900,20 @@ DEF_CMD(tile_other)
 	/* Need to create a tile.  If wider than 120 (FIXME configurable?),
 	 * horiz-split else vert
 	 */
-	if (ci->num & 4)
+	if (ci->num & 512)
 		return Efalse;
 
-	if (ci->num & 3) {
-		int horiz = ci->num & 1;
-		int after = ci->num & 2;
-		p2 = tile_split(&p, horiz, after, ci->str2, ci->num2);
+	if (ci->num & 1) {
+		horiz = ci->num & 2;
 	} else {
 		struct xy xy = pane_scale(p);
-
-		p2 = tile_split(&p, p->w * 1000 >= 1200 * xy.x, 1, ci->str2, 0);
+		horiz = p->w * 1000 >= 1200 * xy.x;
 	}
+	if (ci->num & 4)
+		after = ci->num & 8;
+	else
+		after = 1;
+	p2 = tile_split(&p, horiz, after, ci->str2);
 	if (p2)
 		return comm_call(ci->comm2, "callback:pane", p2);
 	return Esys;
