@@ -975,8 +975,8 @@ static PyObject *Pane_clip(Pane *self safe, PyObject *args)
 {
 	Mark *start = NULL, *end = NULL;
 	int view = -1;
-	int ret = PyArg_ParseTuple(args, "i|O!O!", &view, &start, &MarkType,
-				   &end, &MarkType);
+	int ret = PyArg_ParseTuple(args, "i|O!O!", &view, &MarkType, &start,
+				   &MarkType, &end);
 
 	if (ret > 0 && start && end && self->pane &&
 	    start->mark && end->mark && view >= 0)
