@@ -557,9 +557,11 @@ class notmuch_master_view(edlib.Pane):
             # list_pane must be no more than 25% total width, and no more than
             # 5+1+maxlen+1
             if self.maxlen <= 0:
-                self.maxlen = self.call("doc:notmuch:search-maxlen")
-                if self.maxlen > 1:
-                    self.maxlen -= 1
+                m = self.call("doc:notmuch:search-maxlen")
+                if m and m > 1:
+                    self.maxlen = m - 1
+                else:
+                    self.maxlen = 20
             tile = self.list_pane.call("ThisPane", "notmuch", ret='focus')
             space = self.w
             ch,ln = tile.scale()
