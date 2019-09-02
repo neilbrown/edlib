@@ -450,15 +450,27 @@ void pane_resize(struct pane *p safe, int x, int y, int w, int h)
 void pane_reparent(struct pane *p safe, struct pane *newparent safe)
 {
 	/* detach p from its parent and attach beneath its sibling newparent */
-	ASSERT(p->parent && p->parent == newparent->parent);
+	int replaced = 0;
+	// FIXME this should be a failure, possibly with warning, but an
+	// assert.  I'm not sure just now how best to do warnings.
+	ASSERT(p->parent && (newparent->parent == NULL || newparent->parent == p->parent));
 	list_del(&p->siblings);
 	if (p->parent->focus == p)
 		p->parent->focus = newparent;
+	if (!newparent->parent) {
+		newparent->parent = p->parent;
+		list_add(&newparent->siblings, &p->parent->children);
+		pane_resize(newparent, 0, 0, p->parent->w, p->parent->h);
+		replaced = 1;
+	}
 	p->parent = newparent;
 	newparent->damaged |= p->damaged;
 	if (newparent->focus == NULL)
 		newparent->focus = p;
 	list_add(&p->siblings, &newparent->children);
+	pane_call(newparent->parent, "ChildMoved", p);
+	if (replaced)
+		pane_call(newparent->parent, "ChildReplaced", newparent);
 }
 
 void pane_subsume(struct pane *p safe, struct pane *parent safe)
@@ -549,7 +561,7 @@ void pane_focus(struct pane *focus)
 	if (!p)
 		return;
 	pane_damaged(p, DAMAGED_CURSOR);
-	/* refocus up to the display, but not do the root */
+	/* refocus up to the display, but not to the root */
 	while (p->parent && p->parent->parent) {
 		if (p->parent->focus &&
 		    p->parent->focus != p) {

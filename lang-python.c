@@ -985,6 +985,17 @@ static PyObject *Pane_clip(Pane *self safe, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Pane_reparent(Pane *self safe, PyObject *args)
+{
+	Pane *newparent = NULL;
+	int ret = PyArg_ParseTuple(args, "O!", &PaneType, &newparent);
+
+	if (ret > 0 && newparent && self->pane && newparent->pane)
+		pane_reparent(self->pane, newparent->pane);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef pane_methods[] = {
 	{"close", (PyCFunction)Pane_close, METH_NOARGS,
 	 "close the pane"},
@@ -1014,6 +1025,8 @@ static PyMethodDef pane_methods[] = {
 	 "Get ancestor of pane which is my child, or None"},
 	{"clip", (PyCFunction)Pane_clip, METH_VARARGS,
 	 "clip all 'type' marks in the given range"},
+	{"reparent", (PyCFunction)Pane_reparent, METH_VARARGS,
+	 "Give a pane a new parent"},
 	{NULL}
 };
 
