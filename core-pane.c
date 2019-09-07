@@ -74,9 +74,7 @@ static void __pane_check(struct pane *p safe)
 
 static void pane_check(struct pane *p safe)
 {
-	while (p->parent)
-		p = p->parent;
-	__pane_check(p);
+	__pane_check(pane_root(p));
 }
 /*
  * pane_damaged: mark a pane as being 'damaged', and make
@@ -148,8 +146,8 @@ struct pane *safe doc_register(struct pane *parent, int z,
                                struct list_head *here)
 {
 	/* Documents are always registered against the root */
-	while (parent && parent->parent)
-		parent = parent->parent;
+	if (parent)
+		parent = pane_root(parent);
 	doc_init(doc);
 	return pane_register(parent, z, handle, doc, here);
 }
@@ -375,9 +373,7 @@ static void pane_close2(struct pane *p safe, struct pane *other safe)
 	p->damaged |= DAMAGED_CLOSED;
 	pane_check(p);
 
-	ed = other;
-	while (ed && ed->parent)
-		ed = ed->parent;
+	ed = pane_root(other);
 
 	pane_drop_notifiers(p, NULL);
 

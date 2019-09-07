@@ -260,8 +260,7 @@ void *memsave(struct pane *p safe, char *buf, int len)
 	struct ed_info *ei;
 	if (!buf || !len)
 		return NULL;
-	while (p->parent)
-		p = p->parent;
+	p = pane_root(p);
 	ei = p->data;
 	ASSERT(ei->magic==0x4321765498765432UL);
 	if (ei->store == NULL || ei->store->size < len) {

@@ -1116,6 +1116,8 @@ static Pane *pane_getpane(Pane *p safe, char *which safe)
 		new = p->pane->parent;
 	if (*which == 'f')
 		new = p->pane->focus;
+	if (*which == 'r')
+		new = pane_root(p->pane);
 	if (new == NULL) {
 		Py_INCREF(Py_None);
 		newpane = (Pane*)Py_None;
@@ -1190,6 +1192,9 @@ static PyGetSetDef pane_getseters[] = {
     {"focus",
      (getter)pane_getpane, (setter)pane_nosetpane,
      "Focal child", "f"},
+    {"root",
+     (getter)pane_getpane, (setter)pane_nosetpane,
+     "Root pant", "r"},
     {NULL}  /* Sentinel */
 };
 
