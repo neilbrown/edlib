@@ -300,7 +300,7 @@ DEF_CMD(linecount_clip)
 DEF_CMD(count_lines)
 {
 	/* FIXME optimise this away most of the time */
-	if (call("Call:Notify:doc:CountLines", ci->focus) == 0) {
+	if (call("doc:Notify:doc:CountLines", ci->focus) == 0) {
 		/* No counter in place, add one */
 		struct count_info *cli;
 		struct pane *p;
@@ -308,22 +308,22 @@ DEF_CMD(count_lines)
 		cli = calloc(1, sizeof(*cli));
 		p = pane_register(NULL, 0, &handle_count_lines.c, cli, NULL);
 		cli->view_num = home_call(ci->focus, "doc:add-view", p) - 1;
-		home_call(ci->focus, "Request:Notify:doc:Replace", p);
-		home_call(ci->focus, "Request:Notify:doc:CountLines", p);
-		home_call(ci->focus, "Request:Notify:doc:GotoLine", p);
-		call("Call:Notify:doc:CountLines", ci->focus, 1, ci->mark);
+		home_call(ci->focus, "doc:Request:Notify:doc:Replace", p);
+		home_call(ci->focus, "doc:Request:Notify:doc:CountLines", p);
+		home_call(ci->focus, "doc:Request:Notify:doc:GotoLine", p);
+		call("doc:Notify:doc:CountLines", ci->focus, 1, ci->mark);
 	}
 	if (ci->mark) {
 		if (ci->str && strcmp(ci->str, "goto:line") == 0 &&
 		    ci->num != NO_NUMERIC) {
-			call("Call:Notify:doc:GotoLine", ci->focus, ci->num, NULL, NULL,
+			call("doc:Notify:doc:GotoLine", ci->focus, ci->num, NULL, NULL,
 			     0, ci->mark);
 		}
-		call("Call:Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
+		call("doc:Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
 		     0, ci->mark);
 	}
 	if (ci->mark2)
-		call("Call:Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
+		call("doc:Notify:doc:CountLines", ci->focus, 0, NULL, NULL,
 		      0, ci->mark2);
 	return 1;
 }

@@ -401,7 +401,7 @@ DEF_CMD(docs_callback)
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
 		p = doc_attach_view(ci->focus, doc->doc.home, NULL, NULL, 1);
 		p = pane_register(p, 0, &docs_modified_handle.c, doc, NULL);
-		call("Request:Notify:doc:Replace", p);
+		call("doc:Request:Notify:doc:Replace", p);
 		/* And trigger Notify:doc:Replace handling immediately...*/
 		pane_call(p, "Notify:doc:Replace", p);
 		/* Don't want to inherit position from some earlier instance,
@@ -425,7 +425,7 @@ DEF_CMD(docs_callback)
 			/* The docs doc is attached separately */
 			return Efallthrough;
 		home_call(p, "doc:set-parent", doc->collection);
-		home_call(p, "Request:Notify:doc:status-changed", doc->collection);
+		home_call(p, "doc:Request:Notify:doc:status-changed", doc->collection);
 		if (p->parent)
 			doc_checkname(p, doc, ci->num);
 		return Efallthrough;

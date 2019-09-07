@@ -169,7 +169,7 @@ DEF_CMD(history_attach)
 	buf_init(&hi->search);
 	p = pane_register(ci->focus, 0, &hi->handle.c, hi, NULL);
 	pane_add_notify(p, hi->history, "Notify:Close");
-	call("Request:Notify:doc:Replace", p);
+	call("doc:Request:Notify:doc:Replace", p);
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 

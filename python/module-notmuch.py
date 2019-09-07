@@ -826,7 +826,7 @@ class notmuch_main_view(edlib.Pane):
         self['background'] = 'color:#A0FFFF'
         self['line-format'] = '<%fmt>%count %+name</>'
         self.call("notmuch:set_list_pane")
-        self.call("Request:Notify:doc:Replace")
+        self.call("doc:Request:Notify:doc:Replace")
         self.selected = None
 
     def handle_clone(self, key, focus, **a):
@@ -1355,7 +1355,7 @@ class notmuch_query_view(edlib.Pane):
         self.thread_start = None
         self.thread_end = None
         self.thread_matched = None
-        self.call("Request:Notify:doc:Replace")
+        self.call("doc:Request:Notify:doc:Replace")
 
     def handle_clone(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
         "handle:Clone"

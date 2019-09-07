@@ -382,7 +382,7 @@ static struct pane *safe do_view_attach(struct pane *par, int border)
 	p = pane_register(par, 0, &view_handle.c, vd, NULL);
 	/* Capture status-changed notification so we can update 'changed' flag in
 	 * status line */
-	call("Request:Notify:doc:status-changed", p);
+	call("doc:Request:Notify:doc:status-changed", p);
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }

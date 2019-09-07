@@ -709,20 +709,20 @@ class MarkdownPane(edlib.Pane):
         "handle:Display:refresh"
         # Refresh causes presentation page to recenter
         # page-down just moves down to start of next page.
-        focus.call("Call:Notify:doc:Recentre", mark)
+        focus.call("doc:Notify:doc:Recentre", mark)
         return 0
 
     def handle_mvl(self, key, focus, mark, num, **a):
         "handle:Move-View-Large"
         if num >= 0 and mark:
             m2 = mark.dup()
-            if focus.call("Call:Notify:doc:Recentre", m2, 2,
+            if focus.call("doc:Notify:doc:Recentre", m2, 2,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 focus.damaged(edlib.DAMAGED_CURSOR)
                 return 1
         if num < 0 and mark:
             m2 = mark.dup()
-            if focus.call("Call:Notify:doc:Recentre", m2, 3,
+            if focus.call("doc:Notify:doc:Recentre", m2, 3,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 focus.damaged(edlib.DAMAGED_CURSOR)
                 return 1
@@ -734,8 +734,8 @@ def present_attach(key, focus, comm2, **a):
     p['background'] = 'color:yellow'
     p['hide-cursor'] = 'yes'
 
-    p.call("Request:Notify:doc:Replace")
-    p.call("Request:Notify:doc:Recentre")
+    p.call("doc:Request:Notify:doc:Replace")
+    p.call("doc:Request:Notify:doc:Recentre")
     comm2("callback", p)
     return 1
 

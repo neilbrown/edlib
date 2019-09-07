@@ -364,7 +364,7 @@ DEF_CMD(search_toggle_ci)
 	if (ci->mark && doc_following_pane(ci->focus, ci->mark) != WEOF)
 		return 0;
 	esi->case_sensitive = !esi->case_sensitive;
-	call("Call:Notify:doc:Replace", ci->focus);
+	call("doc:Notify:doc:Replace", ci->focus);
 	attr_set_str(&ci->home->attrs, "status-line",
 	             esi->case_sensitive ? " Search: case sensitive " :
 	             " Search: case insensitive ");
@@ -419,7 +419,7 @@ DEF_CMD(emacs_search)
 
 	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);
 	if (p) {
-		call("Request:Notify:doc:Replace", p);
+		call("doc:Request:Notify:doc:Replace", p);
 		attr_set_str(&p->attrs, "status-line", " Search: case insensitive ");
 		comm_call(ci->comm2, "callback:attach", p);
 	}

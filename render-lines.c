@@ -1820,7 +1820,7 @@ REDEF_CMD(render_lines_attach)
 		p = call_ret(pane, "attach-renderline", p);
 	p = pane_register(p, 0, &render_lines_handle.c, rl, NULL);
 	rl->typenum = home_call(ci->focus, "doc:add-view", p) - 1;
-	call("Request:Notify:doc:Replace", p);
+	call("doc:Request:Notify:doc:Replace", p);
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }

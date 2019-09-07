@@ -528,14 +528,18 @@ DEF_CMD(doc_set_parent)
 DEF_CMD(doc_request_notify)
 {
 	struct doc *d = ci->home->data;
-	pane_add_notify(ci->focus, ci->home, ci->key+8);
+
+	/* Key starts "doc:Request:Notify:" */
+	pane_add_notify(ci->focus, ci->home, ci->key+12);
 	return d->filter ? 0 : 1;
 }
 
 DEF_CMD(doc_notify)
 {
-	int ret = home_pane_notify(ci->home, ci->key + 5, ci->focus, ci->num, ci->mark, ci->str,
-			      ci->num2, ci->mark2, ci->str2, ci->comm2);
+	/* Key is "doc:Notify:..." */
+	int ret = home_pane_notify(ci->home, ci->key + 4, ci->focus,
+	                           ci->num, ci->mark, ci->str,
+	                           ci->num2, ci->mark2, ci->str2, ci->comm2);
 	/* Mustn't return 0, else will fall through to next doc */
 	return ret ?: Enotarget;
 }
@@ -1092,8 +1096,6 @@ static void init_doc_cmds(void)
 	doc_handle_cmd = key_alloc();
 
 	key_add_range(doc_handle_cmd, "doc:", "doc;", &doc_pass_on);
-	key_add_range(doc_handle_cmd, "Request:Notify:doc:", "Request:Notify:doc;", &doc_pass_on);
-	key_add_range(doc_handle_cmd, "Call:Notify:doc:", "Call:Notify:doc;", &doc_pass_on);
 
 	key_add(doc_handle_cmd, "Move-Char", &doc_char);
 	key_add(doc_handle_cmd, "Move-Word", &doc_word);
@@ -1135,9 +1137,9 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:push-point", &doc_push_point);
 	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
 
-	key_add_range(doc_default_cmd, "Request:Notify:doc:", "Request:Notify:doc;",
+	key_add_range(doc_default_cmd, "doc:Request:Notify:", "doc:Request:Notify;",
 		      &doc_request_notify);
-	key_add_range(doc_default_cmd, "Call:Notify:doc:", "Call:Notify:doc;",
+	key_add_range(doc_default_cmd, "doc:Notify:", "doc:Notify;",
 		      &doc_notify);
 	key_add_range(doc_default_cmd, "doc:set:", "doc:set;",
 		      &doc_set);

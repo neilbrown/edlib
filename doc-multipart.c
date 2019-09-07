@@ -481,7 +481,7 @@ DEF_CMD(mp_add)
 		change_part(mpi, ci->mark, n, 0);
 
 	pane_add_notify(ci->home, ci->focus, "Notify:Close");
-	home_call(ci->focus, "Request:Notify:doc:viewers", ci->home);
+	home_call(ci->focus, "doc:Request:Notify:doc:viewers", ci->home);
 
 	return 1;
 }

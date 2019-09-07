@@ -68,8 +68,8 @@ try:
 					else:
 						self.sock.send("No Display!")
 					return 1
-				if msg[:24] == "Request:Notify:doc:done:":
-					path = msg[24:]
+				if msg[:28] == "doc:Request:Notify:doc:done:":
+					path = msg[28:]
 					d = editor.call("doc:open", -1, path, ret="focus")
 					if not d:
 						self.sock.send("FAIL")
@@ -189,7 +189,7 @@ if is_client:
 	        if ret != "OK":
 		        print "Cannot open: ", ret
 		        sys.exit(1)
-	        s.send("Request:Notify:doc:done:"+file)
+	        s.send("doc:Request:Notify:doc:done:"+file)
         else:
                 s.send("Request:Notify:Close")
         ret = s.recv(100)
@@ -212,7 +212,7 @@ else:
 		ServerPane(new)
 
 	def server_done(key, focus, **a):
-		ret = focus.call("Call:Notify:doc:done", "test")
+		ret = focus.call("doc:Notify:doc:done", "test")
 		if ret > 0:
 			# maybe save, then notify properly
 			fn = focus["filename"]
@@ -220,7 +220,7 @@ else:
 			if fn and mod == "yes":
 				focus.call("Message", "Please save first!")
 			else:
-				focus.call("Call:Notify:doc:done")
+				focus.call("doc:Notify:doc:done")
 				# FIXME need something better than 'bury'
 				# If it was already visible, it should stay that way
 				focus.call("Window:bury")
