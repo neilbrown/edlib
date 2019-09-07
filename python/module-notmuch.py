@@ -236,6 +236,9 @@ class notmuch_main(edlib.Doc):
     # It contains the searches as items which have attributes
     # providing name, count, unread-count
     # Once activated it auto-updates every 5 minutes
+    #
+    # We create a container pane to collect all thread-list documents
+
     def __init__(self, focus):
         edlib.Doc.__init__(self, focus)
         self.searches = searches()
@@ -243,10 +246,12 @@ class notmuch_main(edlib.Doc):
         self.updating = None
         self.seen_threads = {}
         self.seen_msgs = {}
+        self.container = edlib.Pane(self.root)
         self.db = notmuch_db()
 
     def handle_close(self, key, **a):
         "handle:Close"
+        self.container.close()
         return 1
 
     def handle_set_ref(self, key, mark, num, **a):
@@ -349,17 +354,18 @@ class notmuch_main(edlib.Doc):
     def handle_notmuch_query(self, key, focus, str, comm2, **a):
         "handle:doc:notmuch:query"
         # Find or create a search-result document as a
-        # child of this document - it remains private
+        # child of the collection document - it remains private
         # and doesn't get registered in the global list
         q = self.searches.make_search(str, None)
         nm = None
-        it = self.children()
+        it = self.container.children()
         for child in it:
             if child("doc:notmuch:same-search", str, q) == 1:
                 nm = child
                 break
         if not nm:
             nm = notmuch_list(self, str, q)
+            nm.reparent(self.container)
             nm.call("doc:set-name", str)
         if comm2:
             comm2("callback", focus, nm)
@@ -515,7 +521,7 @@ class notmuch_main(edlib.Doc):
         if self.updating == "counts":
             self.updating = "queries"
             qlist = []
-            for c in self.children():
+            for c in self.container.children():
                 qlist.append(c['query'])
             self.qlist = qlist
         while self.updating == "queries":
@@ -523,7 +529,7 @@ class notmuch_main(edlib.Doc):
                 self.updating = None
             else:
                 q = self.qlist.pop(0)
-                for c in self.children():
+                for c in self.container.children():
                     if c['query'] == q:
                         c("doc:notmuch:query-refresh")
                         return
