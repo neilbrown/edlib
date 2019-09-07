@@ -1157,18 +1157,6 @@ static struct pane *doc_attach(struct pane *parent)
 	return  pane_register(parent, 0, &doc_handle.c, dd, NULL);
 }
 
-struct pane *doc_new(struct pane *p safe, char *type, struct pane *parent)
-{
-	char buf[100];
-	struct pane *np;
-
-	snprintf(buf, sizeof(buf), "attach-doc-%s", type);
-	np = call_ret(pane, buf, p);
-	if (np && parent)
-		home_call(np, "doc:set-parent", parent);
-	return np;
-}
-
 /*
  * If you have a document and want to view it, you call "doc:attach"
  * passing the attachment point as the focus.
@@ -1273,12 +1261,11 @@ struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe,
 
 DEF_CMD(doc_from_text)
 {
-	struct pane *parent = ci->focus;
 	char *name = ci->str;
 	char *text = ci->str2;
 	struct pane *p;
 
-	p = doc_new(parent, "text", NULL);
+	p = call_ret(pane, "attach-doc-text", ci->focus);
 	if (!p)
 		return Esys;
 	if (name) {

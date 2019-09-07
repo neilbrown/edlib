@@ -576,7 +576,7 @@ DEF_CMD(open_email)
 	     NULL, "doc:email:render-spacer");
 	mark_free(point);
 
-	doc = doc_new(ci->focus, "text", ci->focus);
+	doc = call_ret(pane, "attach-doc-text", ci->focus);
 	if (!doc)
 		goto out;
 	call("doc:set:autoclose", doc, 1);
@@ -601,7 +601,7 @@ DEF_CMD(open_email)
 	}
 	pane_close(h2);
 
-	p = doc_new(ci->home, "multipart", ei->email);
+	p = call_ret(pane, "attach-doc-multipart", ci->home);
 	if (!p)
 		goto out;
 	call("doc:set:autoclose", p, 1);
