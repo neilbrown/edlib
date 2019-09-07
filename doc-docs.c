@@ -424,7 +424,7 @@ DEF_CMD(docs_callback)
 		if (p == doc->doc.home)
 			/* The docs doc is attached separately */
 			return Efallthrough;
-		home_call(p, "doc:set-parent", doc->collection);
+		pane_reparent(p, doc->collection);
 		home_call(p, "doc:Request:Notify:doc:revisit", doc->collection);
 		home_call(p, "doc:Request:Notify:doc:status-changed", doc->collection);
 		if (p->parent)
@@ -849,7 +849,7 @@ DEF_CMD(attach_docs)
 	call_comm("global-set-command", ci->home, &doc->callback,
 		  0, NULL, "doc:appeared-docs-register");
 
-	home_call(p, "doc:set-parent", doc->collection);
+	pane_reparent(doc->doc.home, doc->collection);
 
 	return comm_call(ci->comm2, "callback:doc", doc->doc.home);
 }

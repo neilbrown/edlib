@@ -515,16 +515,6 @@ DEF_CMD(doc_set_name)
 	return call("doc:Notify:doc:revisit", d->home);
 }
 
-DEF_CMD(doc_set_parent)
-{
-	if (ci->focus != ci->home->parent) {
-		list_move(&ci->home->siblings, &ci->focus->children);
-		ci->home->parent = ci->focus;
-	}
-
-	return 1;
-}
-
 DEF_CMD(doc_request_notify)
 {
 	struct doc *d = ci->home->data;
@@ -1112,7 +1102,6 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:vmark-get", &doc_vmarkget);
 	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
-	key_add(doc_default_cmd, "doc:set-parent", &doc_set_parent);
 	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);
 	key_add(doc_default_cmd, "doc:drop-cache", &doc_drop_cache);
 	key_add(doc_default_cmd, "doc:closed", &doc_do_closed);

@@ -380,7 +380,6 @@ class notmuch_main(edlib.Doc):
             fn = m.get_filename() + ""
         doc = focus.call("doc:open", "email:"+fn, -2, ret='focus')
         if doc:
-            doc.call("doc:set-parent", self)
             comm2("callback", doc)
         return 1
 
