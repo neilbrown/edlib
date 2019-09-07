@@ -160,7 +160,7 @@ DEF_CMD(history_attach)
 		free(hi);
 		return 0;
 	}
-	call("doc:revisit", p, -1);
+	call("doc:Notify:doc:revisit", p, -1);
 	hi->history = call_ret(pane, "doc:attach", p);
 	if (!hi->history)
 		return 0;

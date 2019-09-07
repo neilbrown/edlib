@@ -13,7 +13,7 @@
  *  doc:set-ref
  *  doc:step
  *  doc:get-attr doc:set-attr?
- * and might capture doc:revisit to hide??
+ * and might capture Notify:doc:revisit to hide??
  * others are doc:load-file,same-file,save-file
  *  doc:replace doc:reundo doc:get-str doc:modified
  */

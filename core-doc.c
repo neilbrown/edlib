@@ -512,7 +512,7 @@ DEF_CMD(doc_set_name)
 		return Enoarg;
 	free(d->name);
 	d->name = strdup(ci->str);
-	return call("doc:revisit", d->home);
+	return call("doc:Notify:doc:revisit", d->home);
 }
 
 DEF_CMD(doc_set_parent)
@@ -661,19 +661,6 @@ DEF_CMD(doc_do_destroy)
 {
 	pane_close(ci->home);
 	return 1;
-}
-
-DEF_CMD(doc_do_revisit)
-{
-	/* If the document doesn't handle doc:revisit directly,
-	 * ask it's parent, which is probably a document manager.
-	 * We need this indirection to pass the document as the
-	 * focus, so the document handler knows which document
-	 * to revisit.
-	 */
-	if (!ci->home->parent)
-		return Einval;
-	return home_call(ci->home->parent, ci->key, ci->home, ci->num, ci->mark);
 }
 
 DEF_CMD(doc_mymark)
@@ -969,7 +956,7 @@ DEF_CMD(doc_assign_view)
 	if ((void*) (dd->doc))
 		return Einval;
 	do_doc_assign(ci->home, ci->focus);
-	call("doc:revisit", ci->focus, ci->num?:1);
+	call("doc:Notify:doc:revisit", ci->focus, ci->num?:1);
 	p2 = call_ret(pane, "attach-view", ci->home);
 	if (p2)
 		p2 = render_attach(ci->str && ci->str[0] ? ci->str : NULL,
@@ -1127,7 +1114,6 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
 	key_add(doc_default_cmd, "doc:set-parent", &doc_set_parent);
 	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);
-	key_add(doc_default_cmd, "doc:revisit", &doc_do_revisit);
 	key_add(doc_default_cmd, "doc:drop-cache", &doc_drop_cache);
 	key_add(doc_default_cmd, "doc:closed", &doc_do_closed);
 	key_add(doc_default_cmd, "doc:mymark", &doc_mymark);
@@ -1161,7 +1147,7 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 
 	pane_add_notify(p, doc, "Notify:Close");
 	pane_add_notify(p, doc, "Notify:doc:viewers");
-	call("doc:revisit", doc, 0);
+	call("doc:Notify:doc:revisit", doc, 0);
 }
 
 static struct pane *doc_attach(struct pane *parent)

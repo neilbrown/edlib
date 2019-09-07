@@ -808,7 +808,7 @@ DEF_CMD(tile_window_bury)
 	struct pane *doc;
 
 	/* First, push the doc to the end of the 'recently used' list */
-	call("doc:revisit", ci->focus, -1);
+	call("doc:Notify:doc:revisit", ci->focus, -1);
 	/* Now choose a replacement */
 	doc = call_ret(pane, "docs:choose", ci->focus);
 	if (doc)

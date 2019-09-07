@@ -249,13 +249,6 @@ class notmuch_main(edlib.Doc):
         "handle:Close"
         return 1
 
-    def handle_revisit(self, key, **a):
-        "handle:doc:revisit"
-        # Individual search-result documents are children of this
-        # document, and we don't want doc:revisit from them to escape
-        # to the global document list
-        return 1
-
     def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
         if num == 1:

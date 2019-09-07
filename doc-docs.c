@@ -10,8 +10,8 @@
  * providing a "line-format" to guide display of each line.
  * The auxiliary pane becomes the parent of all attached documents, so
  * that the list of children is exactly the content of the document.
- * This pane responds to doc:revisit commands that come down from the
- * individual documents, and requests notification of Notify:doc:status-changed.
+ * This pane receives Notify:doc:revisit notification  from the
+ * individual documents, and also requests notification of Notify:doc:status-changed.
  *
  * Supported global operations include:
  * docs:byname - report pane with given (str)name
@@ -425,6 +425,7 @@ DEF_CMD(docs_callback)
 			/* The docs doc is attached separately */
 			return Efallthrough;
 		home_call(p, "doc:set-parent", doc->collection);
+		home_call(p, "doc:Request:Notify:doc:revisit", doc->collection);
 		home_call(p, "doc:Request:Notify:doc:status-changed", doc->collection);
 		if (p->parent)
 			doc_checkname(p, doc, ci->num);
@@ -454,8 +455,9 @@ DEF_CMD(doc_damage)
 
 DEF_CMD(doc_revisit)
 {
-	struct pane *p = pane_my_child(ci->home, ci->focus);
+	struct pane *p = ci->focus;
 	struct docs *docs = container_of(ci->home->data, struct docs, doc);
+
 	if (!p)
 		return Einval;
 	if (p->parent != docs->collection)
@@ -684,7 +686,7 @@ static int docs_bury(struct pane *focus safe)
 	if (!tile)
 		return 1;
 	/* Discourage this doc from being chosen again */
-	call("doc:revisit", focus, -1);
+	call("doc:Request:revisit", focus, -1);
 	doc = call_ret(pane, "docs:choose", focus);
 	if (doc)
 		doc_attach_view(tile, doc, NULL, NULL, 1);
@@ -803,7 +805,7 @@ static void docs_init_map(void)
 
 	key_add(docs_map, "get-attr", &docs_get_attr);
 
-	key_add(docs_aux_map, "doc:revisit", &doc_revisit);
+	key_add(docs_aux_map, "Notify:doc:revisit", &doc_revisit);
 	key_add(docs_aux_map, "Notify:doc:status-changed", &doc_damage);
 	key_add(docs_aux_map, "ChildClosed", &docs_child_closed);
 
