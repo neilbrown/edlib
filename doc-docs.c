@@ -751,11 +751,8 @@ DEF_CMD(docs_child_closed)
 {
 	struct doc *d = ci->home->data;
 	struct docs *docs = container_of(d, struct docs, doc);
-	struct pane *child = pane_my_child(ci->home, ci->focus);
 
-	if (!child)
-		return Einval;
-	docs_demark(docs, child);
+	docs_demark(docs, ci->focus);
 	return 1;
 }
 
