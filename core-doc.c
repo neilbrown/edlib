@@ -638,20 +638,6 @@ DEF_CMD(doc_do_destroy)
 	return 1;
 }
 
-DEF_CMD(doc_mymark)
-{
-	/* Check if ci->mark is a mark in this document.
-	 * 1 for 'yes', -1 for 'no'
-	 */
-	struct doc *d = ci->home->data;
-	struct mark *m;
-
-	m = doc_first_mark_all(d);
-	while (m && m != ci->mark)
-		m = doc_next_mark_all(m);
-	return m ? 1 : Efalse;
-}
-
 DEF_CMD(doc_get_point)
 {
 	struct doc_data *dd = ci->home->data;
@@ -1089,7 +1075,6 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);
 	key_add(doc_default_cmd, "doc:drop-cache", &doc_drop_cache);
 	key_add(doc_default_cmd, "doc:closed", &doc_do_closed);
-	key_add(doc_default_cmd, "doc:mymark", &doc_mymark);
 	key_add(doc_default_cmd, "doc:get-str", &doc_get_str);
 	key_add(doc_default_cmd, "doc:write-file", &doc_write_file);
 	key_add(doc_default_cmd, "doc:content", &doc_default_content);

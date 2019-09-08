@@ -352,9 +352,7 @@ DEF_CMD(view_status_changed)
 DEF_CMD(view_reposition)
 {
 	struct view_data *vd = ci->home->data;
-	if (call("doc:mymark", ci->home, 0, ci->mark) != 1)
-		/* mark for some other document */
-		return 0;
+
 	if (vd->viewpoint != ci->mark) {
 		if (!vd->viewpoint || !ci->mark ||
 		    !mark_same(vd->viewpoint, ci->mark))
