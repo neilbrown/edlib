@@ -486,9 +486,6 @@ DEF_CMD(doc_get_attr)
 	if (a)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
 				 NULL, a);
-	/* Once a get-attr request reaches a document, it needs to stop there,
-	 * as parents might have a different idea about attributes, and about marks
-	 */
 	return 1;
 }
 
@@ -516,7 +513,9 @@ DEF_CMD(doc_notify)
 	int ret = home_pane_notify(ci->home, ci->key + 4, ci->focus,
 	                           ci->num, ci->mark, ci->str,
 	                           ci->num2, ci->mark2, ci->str2, ci->comm2);
-	/* Mustn't return 0, else will fall through to next doc */
+	/* If nothing returned non-zero, assume there is no target, don't fall
+	 * through as our job is done
+	 */
 	return ret ?: Enotarget;
 }
 
