@@ -239,7 +239,6 @@ DEF_CMD(b64_attach)
 		return Esys;
 	}
 	bi->view = home_call(ci->focus, "doc:add-view", p) - 1;
-	call("doc:set:filter", p, 1);
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }

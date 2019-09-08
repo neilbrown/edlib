@@ -63,7 +63,6 @@ void doc_init(struct doc *d safe)
 	d->name = NULL;
 	memset(d->recent_points, 0, sizeof(d->recent_points));
 	d->autoclose = 0;
-	d->filter = 0;
 	d->home = safe_cast NULL;
 }
 
@@ -437,14 +436,6 @@ DEF_CMD(doc_page)
 	return 1;
 }
 
-DEF_CMD(doc_attr_set)
-{
-	struct doc *d = ci->home->data;
-
-	/* if a non-filter doesn't support attr_set, don't let it fall through */
-	return d->filter ? 0 : 1;
-}
-
 DEF_CMD(doc_set)
 {
 	struct doc *d = ci->home->data;
@@ -454,15 +445,12 @@ DEF_CMD(doc_set)
 		d->autoclose = ci->num;
 		return 1;
 	}
-	if (strcmp(val, "filter") == 0) {
-		d->filter = ci->num;
-		return 1;
-	}
 	if (ci->str)
 		attr_set_str(&d->home->attrs, val, ci->str);
 
-	return d->filter ? 0 : 1;
+	return 1;
 }
+
 DEF_CMD(doc_get_attr)
 {
 	struct doc *d = ci->home->data;
@@ -517,11 +505,9 @@ DEF_CMD(doc_set_name)
 
 DEF_CMD(doc_request_notify)
 {
-	struct doc *d = ci->home->data;
-
 	/* Key starts "doc:Request:Notify:" */
 	pane_add_notify(ci->focus, ci->home, ci->key+12);
-	return d->filter ? 0 : 1;
+	return 1;
 }
 
 DEF_CMD(doc_notify)
@@ -1096,7 +1082,6 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd, "Move-to", &doc_move_to);
 	key_add(doc_handle_cmd, "Notify:clip", &doc_clip);
 
-	key_add(doc_default_cmd, "doc:set-attr", &doc_attr_set);
 	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
 	key_add(doc_default_cmd, "doc:del-view", &doc_delview);
 	key_add(doc_default_cmd, "doc:vmark-get", &doc_vmarkget);
@@ -1168,7 +1153,6 @@ DEF_CMD(doc_open)
 	struct stat stb;
 	struct pane *p;
 	int autoclose = ci->num2 & 1;
-	int filter = ci->num2 & 2;
 	int create_ok = ci->num2 & 4;
 	int reload = ci->num2 & 8;
 	int force_reload = ci->num2 & 16;
@@ -1223,8 +1207,6 @@ DEF_CMD(doc_open)
 		}
 		if (autoclose)
 			call("doc:set:autoclose", p, 1);
-		if (filter)
-			call("doc:set:filter", p, 1);
 		call("doc:load-file", p, 0, NULL, name, fd);
 		call("global-multicall-doc:appeared-", p, 1);
 	} else if (reload || force_reload) {

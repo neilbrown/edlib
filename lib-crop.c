@@ -164,7 +164,6 @@ DEF_CMD(crop_attach)
 		free(cd);
 		return Esys;
 	}
-	call("doc:set:filter", p, 1);
 	cd->start = mark_dup(ci->mark);
 	cd->end = mark_dup(ci->mark2);
 

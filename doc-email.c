@@ -615,7 +615,6 @@ DEF_CMD(open_email)
 
 	h = pane_register(p, 0, &email_handle.c, ei, NULL);
 	if (h) {
-		call("doc:set:filter", h, 1);
 		mark_free(start);
 		mark_free(end);
 		attr_set_str(&h->attrs, "render-default", "text");

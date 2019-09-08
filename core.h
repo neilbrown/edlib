@@ -143,7 +143,6 @@ struct doc {
 	struct pane		*home safe; /* pane which owns this doc*/
 	char			*name;
 	bool			autoclose;
-	bool			filter;
 };
 
 void doc_init(struct doc *d safe);
