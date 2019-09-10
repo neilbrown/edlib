@@ -54,7 +54,7 @@ struct doc_data {
 	struct mark		*mark;
 };
 
-void doc_init(struct doc *d safe)
+static void doc_init(struct doc *d safe)
 {
 	INIT_HLIST_HEAD(&d->marks);
 	INIT_TLIST_HEAD(&d->points, 0);
@@ -64,6 +64,18 @@ void doc_init(struct doc *d safe)
 	memset(d->recent_points, 0, sizeof(d->recent_points));
 	d->autoclose = 0;
 	d->home = safe_cast NULL;
+}
+
+struct pane *safe doc_register(struct pane *parent, int z,
+                               struct command *handle safe,
+                               struct doc *doc safe)
+{
+	/* Documents are always registered against the root */
+	if (parent)
+		parent = pane_root(parent);
+	doc_init(doc);
+	doc->home = pane_register(parent, z, handle, doc, NULL);
+	return doc->home;
 }
 
 static void parse_sub_pos(char *attr, int *home safe, int *max safe)

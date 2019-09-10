@@ -559,8 +559,7 @@ DEF_CMD(attach_mp)
 
 	mpi = calloc(1, sizeof(*mpi));
 
-	h = doc_register(ci->home, 0, &mp_handle.c, &mpi->doc, NULL);
-	mpi->doc.home = h;
+	h = doc_register(ci->home, 0, &mp_handle.c, &mpi->doc);
 	if (h)
 		return comm_call(ci->comm2, "callback:doc", h);
 

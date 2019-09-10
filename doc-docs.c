@@ -825,13 +825,12 @@ DEF_CMD(attach_docs)
 	docs_init_map();
 
 	doc->doc.name = strdup("*Documents*");
-	p = doc_register(ci->home, 0, &docs_handle.c, &doc->doc, NULL);
+	p = doc_register(ci->home, 0, &docs_handle.c, &doc->doc);
 	if (!p) {
 		free(doc->doc.name);
 		free(doc);
 		return Esys;
 	}
-	doc->doc.home = p;
 	p = pane_register(ci->home, 0, &docs_aux.c, doc, NULL);
 	if (!p) {
 		pane_close(doc->doc.home);

@@ -125,8 +125,7 @@ DEF_CMD(dir_new)
 
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	p = doc_register(ci->home, 0, &doc_handle.c, &dr->doc, NULL);
-	dr->doc.home = p;
+	p = doc_register(ci->home, 0, &doc_handle.c, &dr->doc);
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p);
 	return Esys;

@@ -140,18 +140,6 @@ struct pane *safe pane_register(struct pane *parent, int z,
 	return p;
 }
 
-struct pane *safe doc_register(struct pane *parent, int z,
-                               struct command *handle safe,
-                               struct doc *doc safe,
-                               struct list_head *here)
-{
-	/* Documents are always registered against the root */
-	if (parent)
-		parent = pane_root(parent);
-	doc_init(doc);
-	return pane_register(parent, z, handle, doc, here);
-}
-
 /* 'abs_z' is a global z-depth number.
  * 'abs_z' of root is 0, and abs_z of every other pane is 1 more than abs_zhi
  * of siblings with lower 'z', or same as parent if no such siblings.

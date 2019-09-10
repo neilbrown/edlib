@@ -1466,8 +1466,7 @@ DEF_CMD(text_new)
 	t->as.timer_started = 0;
 	t->as.last_change = 0;
 	text_new_alloc(t, 0);
-	p = doc_register(ci->home, 0, &text_handle.c, &t->doc, NULL);
-	t->doc.home = p;
+	p = doc_register(ci->home, 0, &text_handle.c, &t->doc);
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p);
 	return Esys;

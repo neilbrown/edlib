@@ -480,7 +480,6 @@ static Doc *Doc_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
 	self = (Doc *)type->tp_alloc(type, 0);
 	if (self) {
 		self->pane = NULL;
-		doc_init(&self->doc);
 	}
 	return self;
 }
@@ -577,8 +576,7 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 
 	self->handle.c.func = python_doc_call_func;
 	self->pane = doc_register(parent ? parent->pane : NULL,
-	                          z, &self->handle.c, &self->doc, NULL);
-	self->doc.home = self->pane;
+	                          z, &self->handle.c, &self->doc);
 	return 0;
 }
 
@@ -1338,7 +1336,12 @@ static PyTypeObject PaneIterType = {
 
 static PyObject *first_mark(Doc *self safe, PyObject *args)
 {
-	struct mark *m = doc_first_mark_all(&self->doc);
+	struct mark *m;
+
+	if (!self->pane)
+		return NULL;
+
+	m = doc_first_mark_all(&self->doc);
 	if (!m) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -1351,7 +1354,7 @@ static PyObject *to_end(Doc *self safe, PyObject *args)
 	Mark *mark = NULL;
 	int end = 0;
 	int ret = PyArg_ParseTuple(args, "O!i", &MarkType, &mark, &end);
-	if (ret <= 0 || !mark || !mark->mark)
+	if (ret <= 0 || !mark || !mark->mark || !self->pane)
 		return NULL;
 
 	mark_to_end(&self->doc, mark->mark, end);

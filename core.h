@@ -145,7 +145,6 @@ struct doc {
 	bool			autoclose;
 };
 
-void doc_init(struct doc *d safe);
 void doc_free(struct doc *d safe);
 struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe,
                              char *render, char *view, int raise);
@@ -388,8 +387,7 @@ struct pane *safe pane_register(struct pane *parent, int z,
 				struct list_head *here);
 struct pane *safe doc_register(struct pane *parent, int z,
                                struct command *handle safe,
-                               struct doc *doc safe,
-                               struct list_head *here);
+                               struct doc *doc safe);
 static inline struct pane * safe pane_root(struct pane *p safe)
 {
 	while (p->parent)
