@@ -557,11 +557,6 @@ static char *__docs_get_attr(struct doc *doc safe, struct mark *m safe,
 	if (!p)
 		return NULL;
 
-	if (strcmp(attr, "name") == 0) {
-		struct doc *d2 = p->data;
-		return d2->name;
-	}
-
 	return pane_attr_get(p, attr);
 }
 
@@ -597,7 +592,7 @@ DEF_CMD(docs_get_attr)
 	else if (strcmp(attr, "heading") == 0)
 		val = "<bold,underline> Mod Document             File</>";
 	else if (strcmp(attr, "line-format") == 0)
-		val = " %doc-modified:3 %+name:20 %.filename";
+		val = " %doc-modified:3 %+doc-name:20 %.filename";
 	else if (strcmp(attr, "render-default") == 0)
 		val = "format";
 	else if (strcmp(attr, "doc-type") == 0)
@@ -824,13 +819,13 @@ DEF_CMD(attach_docs)
 
 	docs_init_map();
 
-	doc->doc.name = strdup("*Documents*");
 	p = doc_register(ci->home, 0, &docs_handle.c, &doc->doc);
 	if (!p) {
 		free(doc->doc.name);
 		free(doc);
 		return Esys;
 	}
+	doc->doc.name = strdup("*Documents*");
 	p = pane_register(ci->home, 0, &docs_aux.c, doc, NULL);
 	if (!p) {
 		pane_close(doc->doc.home);

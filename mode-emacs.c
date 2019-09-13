@@ -971,7 +971,7 @@ REDEF_CMD(emacs_doc_complete)
 	if (!par)
 		return Esys;
 
-	attr_set_str(&par->attrs, "line-format", "%+name");
+	attr_set_str(&par->attrs, "line-format", "%+doc-name");
 	attr_set_str(&par->attrs, "heading", "");
 	attr_set_str(&par->attrs, "done-key", "Replace");
 	p = call_ret(pane, "attach-render-complete", par);
