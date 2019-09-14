@@ -1632,7 +1632,7 @@ static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
 	 * 2 - on a new chunk, keep looking.
 	 */
 
-	if (ref->c && ref->c != target->c && ref->o <= ref->c->start)
+	if (ref->c != target->c && (!ref->c || ref->o <= ref->c->start))
 		if (text_prev(t, ref, 1) == WEOF)
 			return 0;
 
