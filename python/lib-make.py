@@ -355,6 +355,9 @@ def make_request(key, focus, num, str, mark, **a):
     p.call("doc:set-name", "%s Command" % cmd)
     if history:
         p = p.call("attach-history", history, "popup:close", ret='focus')
+    dn = focus["dirname"]
+    if dn:
+        p["dirname"] = dn
     makeprompt(p)
     return 1
 

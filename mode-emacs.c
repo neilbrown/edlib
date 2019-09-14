@@ -835,6 +835,11 @@ REDEF_CMD(emacs_file_complete)
 		d = str + strlen(str);
 		while (d > str && d[-1] != ' ')
 			d -= 1;
+		if (d[0] != '/') {
+			char *dirname = pane_attr_get(ci->focus, "dirname");
+			if (dirname)
+				d = strconcat(ci->focus, dirname, d, NULL);
+		}
 	}
 	b = strrchr(d, '/');
 	if (b) {
@@ -1018,9 +1023,13 @@ DEF_CMD(emacs_shell)
 	char *path;
 
 	if (strcmp(ci->key, "Shell Command") != 0) {
+		char *dirname;
+
 		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
 		if (!p)
 			return 0;
+		dirname = call_ret(strsave, "get-attr", ci->focus, 0, NULL, "dirname");
+		attr_set_str(&p->attrs, "dirname", dirname ?: ".");
 		attr_set_str(&p->attrs, "prompt", "Shell command");
 		attr_set_str(&p->attrs, "done-key", "Shell Command");
 		call("doc:set-name", p, 0, NULL, "Shell Command");
