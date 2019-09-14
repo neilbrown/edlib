@@ -111,7 +111,7 @@ DEF_CMD(render_complete_line)
 		mark_to_mark(ci->mark, m);
 		cb.cmp = 0;
 		call_comm(ci->key, ci->home->parent, &cb.c, NO_NUMERIC, m);
-	} while (cb.cmp);
+	} while (cb.cmp && !mark_same(ci->mark, m));
 	mark_free(m);
 	cb.c = save_highlighted;
 	if (call_comm(ci->key, ci->home->parent, &cb.c, ci->num, ci->mark,
@@ -131,7 +131,7 @@ DEF_CMD(render_complete_line)
 		mark_to_mark(ci->mark, m);
 		cb.cmp = 0;
 		call_comm(ci->key, ci->home->parent, &cb.c, NO_NUMERIC, m);
-	} while (cb.cmp);
+	} while (cb.cmp && !mark_same(ci->mark, m));
 
 	mark_free(m);
 	return ret;
