@@ -255,7 +255,7 @@ static void pane_do_review(struct pane *p safe, int damage)
 
 void pane_refresh(struct pane *p safe)
 {
-	int cnt = 3;
+	int cnt = 5;
 	if (p->parent == NULL)
 		p->abs_z = 0;
 
