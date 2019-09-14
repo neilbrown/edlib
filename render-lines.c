@@ -1209,18 +1209,20 @@ restart:
 					if (mwidth <= 0)
 						mwidth = 1;
 				}
-				/* Need to shift to right */
-				while (rl->shift_left > 0 && p->cx < rl->prefix_len) {
-					if (rl->shift_left < 8* mwidth) {
-						p->cx += rl->shift_left;
-						rl->shift_left = 0;
-					} else {
-						p->cx += 8 * mwidth;
-						rl->shift_left -= 8 * mwidth;
+				if (p->cx + cw + 8 * mwidth < p->w) {
+					/* Need to shift to right, and there is room */
+					while (rl->shift_left > 0 && p->cx < rl->prefix_len) {
+						if (rl->shift_left < 8* mwidth) {
+							p->cx += rl->shift_left;
+							rl->shift_left = 0;
+						} else {
+							p->cx += 8 * mwidth;
+							rl->shift_left -= 8 * mwidth;
+						}
 					}
+					shifted = 1;
+					goto restart;
 				}
-				shifted = 1;
-				goto restart;
 			}
 			if (p->cx + cw >= p->w && !rl->do_wrap &&
 			    shifted != 1) {
