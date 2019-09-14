@@ -51,6 +51,7 @@ struct docs {
 	struct doc		doc;
 	struct command		callback;
 	struct pane		*collection safe;
+	struct pane		*rendering;
 };
 
 static void docs_demark(struct docs *doc safe, struct pane *p safe)
@@ -348,8 +349,12 @@ DEF_CMD(docs_callback)
 		return Efail;
 	}
 	if (strcmp(ci->key, "docs:byname") == 0) {
-		if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0)
+		if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0) {
+			if (doc->rendering)
+				return comm_call(ci->comm2, "callback:doc",
+				                 doc->rendering);
 			return comm_call(ci->comm2, "callback:doc", doc->doc.home);
+		}
 		list_for_each_entry(p, &doc->collection->children, siblings) {
 			struct doc *dc = p->data;
 			char *n = dc->name;
@@ -852,9 +857,22 @@ DEF_CMD(attach_docs)
 	call_comm("global-set-command", ci->home, &doc->callback,
 		  0, NULL, "doc:appeared-docs-register");
 
-	pane_reparent(doc->doc.home, doc->collection);
+	/* The document that we put in the document list is a view on
+	 * the primary document made with doc-rendering, as that is more
+	 * accessible when a regular document is expected
+	 */
+	p = call_ret(pane, "attach-render-format", doc->doc.home, 1);
+	if (p)
+		p = call_ret(pane, "attach-doc-rendering", p);
+	doc->rendering = p;
+	if (!p)
+		/* fall back to basic doc */
+		p = doc->doc.home;
+	if (!p)
+		return 1;
+	pane_reparent(p, doc->collection);
 
-	return comm_call(ci->comm2, "callback:doc", doc->doc.home);
+	return comm_call(ci->comm2, "callback:doc", p);
 }
 
 void edlib_init(struct pane *ed safe)
