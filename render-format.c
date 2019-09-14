@@ -234,12 +234,12 @@ DEF_CMD(format_close)
 	return 1;
 }
 
-static struct pane *do_render_format_attach(struct pane *parent);
+static struct pane *do_render_format_attach(struct pane *parent, int nolines);
 DEF_CMD(format_clone)
 {
 	struct pane *p;
 
-	p = do_render_format_attach(ci->focus);
+	p = do_render_format_attach(ci->focus, 0);
 	pane_clone_children(ci->home, p);
 	return 1;
 }
@@ -273,7 +273,7 @@ static void render_format_register_map(void)
 
 DEF_LOOKUP_CMD(render_format_handle, rf_map);
 
-static struct pane *do_render_format_attach(struct pane *parent)
+static struct pane *do_render_format_attach(struct pane *parent, int nolines)
 {
 	struct rf_data *rf = calloc(1, sizeof(*rf));
 	struct pane *p;
@@ -284,6 +284,8 @@ static struct pane *do_render_format_attach(struct pane *parent)
 	rf->home_field = -1;
 	p = pane_register(parent, 0, &render_format_handle.c, rf, NULL);
 	attr_set_str(&p->attrs, "render-wrap", "no");
+	if (nolines)
+		return p;
 	return call_ret(pane, "attach-render-lines", p);
 }
 
@@ -291,7 +293,7 @@ DEF_CMD(render_format_attach)
 {
 	struct pane *p;
 
-	p = do_render_format_attach(ci->focus);
+	p = do_render_format_attach(ci->focus, ci->num);
 	if (!p)
 		return Esys;
 	return comm_call(ci->comm2, "callback:attach", p);
