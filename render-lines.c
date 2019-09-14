@@ -3,32 +3,31 @@
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * Rendering for any document which presents as a sequence of lines.
- * The underlying document must return lines of text in response to
- * the "doc:render-line" command.
+ * The underlying document, or an intervening filter, must return lines of
+ * text in response to the "doc:render-line" command.
  * This takes a mark and moves it to the end of the rendered line
  * so that another call will produce another line.
  * "doc:render-line" must always return a full line including '\n' unless the result
- * would be bigger than the 'max' passed in ->num2.  In that case it can stop
- * after 'max' and before a '\n'.
- * If ->num is >= 0, then rendering must only preceed for that many bytes
- * in the returned string.  It then returns with the mark only moved part way.
- * This allows a mark to be found for a given character position.
- * If ->num is -1, then rendering only continues until 'point' is reached.
- * This allows the cursor position to be determined.
+ * would be bigger than the 'max' passed in ->num or, when ->num==-1, unless
+ * the rendering would go beyond the location in ->mark2.  In these cases it
+ * can stop before a '\n'.  In each case, the mark is moved to the end of the
+ * region that was rendered;
+ * This allows a mark to be found for a given character position, or a display
+ * position found for a given mark.
  * For the standard 'render the whole line' functionality, ->num should
  * be NO_NUMERIC
  *
- * The document must also provide "doc:render-line-prev" which moves mark to a
- * start-of-line.  If num is 0, then don't skip over any newlines.
+ * The document or filter must also provide "doc:render-line-prev" which
+ * moves mark to a start-of-line.  If num is 0, then don't skip over any newlines.
  * If it is '1', then skip one newline.
  *
  * The returned line can contain attribute markings as <attr,attr>.
  * </> is used to pop most recent attributes.  << is used to include a literal '<'.
  * Lines generally contains UTF-8.  Control character '\n' is end of line and
- * '\t' tabs 1-8 spaces.  Other control characters should be rendered as
+ * '\t' tabs 1-8 spaces.  '\f' marks end of page - nothing after this will be
+ * displayed.
+ * Other control characters should be rendered as
  * e.g. <fg:red>^X</> - in particular, nul must not appear in the line.
- *
- * We currently assume a constant-width font 1x1.
  *
  * We store all the marks found while rendering a pane in a 'view' on
  * the document.  The line returned for a given mark is attached to

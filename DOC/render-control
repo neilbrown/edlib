@@ -7,8 +7,8 @@ Edlib provides
 and
   lib-renderline
 
-to support rendering of documents.  It is possibly to create a completely 
-separate rendering for a given document which does make use of these,
+to support rendering of documents.  It is possible to create a completely 
+separate rendering for a given document which doesn't make use of these,
 but often it will be easiest to use these with added enhancements rather 
 than writing a complete renderer.
 
@@ -29,24 +29,25 @@ the given location.
 
 "doc:render-line-prev" args are:
   mark: current location
-  num: if 0, move to start of current line.  If 1, move back beyond start of
-      current line, then to the start of the previous line
+  num: if 0, move mark to start of current line.  If 1, move mark back
+      beyond start of current line, then to the start of the previous line.
 
 "doc:render-line"  args are:
   mark: start of the line to be rendered.  Line continues until first '\n'
         or until 'num2' chars have been examined with no '\n' found
         mark will be moved to the end of the range that was rendered (often
         the end of the line)
-  mark2: location where a cursor should be drawn
-  num: if >= 0, max number of screen-units (pixels or chars) to convert before
+  mark2: if num==-1, location not to render beyond.  This is typically set
+       to the current "point", and a cursor will be drawn where the returned
+       string end.
+  num: if >= 0, max number of result characters to return before
        aborting.  'mark' will be moved to the location that would draw
        at or beyond this place on the screen.  This can be used to
        convert a screen location (from a mouse click) back to a document
        location.
        if == -1, Rendering stops when mark reaches mark2.  This allows the
        cursor to be found, and action to be taken if it is off-screen
-       if == NoNumeric, ignored.
-  num2: maximum number of chars to be considered
+       if == NO_NUMERIC, ignored.
   comm2: a callback used to return the rendered string in "str".  The string
        will be freed after the callback returns, so it must duplicate it if
        later access is needed.
