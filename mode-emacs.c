@@ -952,7 +952,7 @@ REDEF_CMD(emacs_doc_complete)
 	 * Attach the 'docs' document as a completing popup menu
 	 */
 	char *str;
-	struct pane *par, *pop, *docs, *p;
+	struct pane *pop, *p = NULL;
 	struct call_return cr;
 
 	if (!ci->mark)
@@ -964,17 +964,7 @@ REDEF_CMD(emacs_doc_complete)
 	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		return Esys;
-	docs = call_ret(pane, "docs:byname", ci->focus);
-	if (!docs)
-		return Efail;
-	par = doc_attach_view(pop, docs, NULL, NULL, 0);
-	if (!par)
-		return Esys;
-
-	attr_set_str(&par->attrs, "line-format", "%+doc-name");
-	attr_set_str(&par->attrs, "heading", "");
-	attr_set_str(&par->attrs, "done-key", "Replace");
-	p = call_ret(pane, "attach-render-complete", par);
+	p = call_ret(pane, "docs:complete", pop);
 	if (!p)
 		return Esys;
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, str);
@@ -987,7 +977,7 @@ REDEF_CMD(emacs_doc_complete)
 
 		call("Replace", ci->focus, 1, start, NULL);
 		mark_free(start);
-		pane_damaged(par, DAMAGED_CONTENT);
+		pane_damaged(p, DAMAGED_CONTENT);
 		return 1;
 	}
 	if (cr.s) {

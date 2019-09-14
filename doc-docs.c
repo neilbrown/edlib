@@ -335,6 +335,18 @@ DEF_CMD(docs_callback)
 	struct docs *doc = container_of(ci->comm, struct docs, callback);
 	struct pane *p;
 
+	if (strcmp(ci->key, "docs:complete") == 0) {
+		p = doc_attach_view(ci->focus, doc->doc.home, NULL, NULL, 0);
+		if (p) {
+			attr_set_str(&p->attrs, "line-format", "%+doc-name");
+			attr_set_str(&p->attrs, "heading", "");
+			attr_set_str(&p->attrs, "done-key", "Replace");
+			p = call_ret(pane, "attach-render-complete", p);
+		}
+		if (p)
+			return comm_call(ci->comm2, "callback:doc", p);
+		return Efail;
+	}
 	if (strcmp(ci->key, "docs:byname") == 0) {
 		if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0)
 			return comm_call(ci->comm2, "callback:doc", doc->doc.home);
