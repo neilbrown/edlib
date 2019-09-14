@@ -271,7 +271,7 @@ def run_make(key, focus, str, **a):
     return 1
     
 
-def make_request(key, focus, num, mark, **a):
+def make_request(key, focus, num, str, mark, **a):
     history = None
     if key[-8:] == "git-grep":
         dflt = "grep -rnH "
@@ -285,8 +285,16 @@ def make_request(key, focus, num, mark, **a):
         if focus.call("docs:save-all", 0, 1) != 1:
             p = focus.call("PopupTile", "DM", ret='focus');
             p['done-key'] = key
+            # Make 'num' available after save-ll
+            p['default'] = "%d" % num
             p.call("docs:show-modified")
             return 1
+        if num == 1 and not (str is None):
+            # We did a save-all, restore num
+            try:
+                num = int(str)
+            except:
+                num = 0
         dflt = "make -k"
         cmd = "make"
         history = "*Make History*"
