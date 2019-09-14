@@ -124,9 +124,10 @@ void pane_drop_notifiers(struct pane *p safe, char *notification);
 
 void editor_delayed_free(struct pane *ed safe, struct pane *p safe);
 struct pane *editor_new(void);
-void *memsave(struct pane *p safe, char *buf, int len);
+void * safe memsave(struct pane *p safe, char *buf, int len);
 char *strsave(struct pane *p safe, char *buf);
 char *strnsave(struct pane *p safe, char *buf, int len);
+char * safe strconcat(struct pane *p safe, char *s1 safe, ...);
 
 /* This is declared here so sparse knows it is global */
 void edlib_init(struct pane *ed safe);

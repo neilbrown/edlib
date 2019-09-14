@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <dlfcn.h>
 
 #include "core.h"
@@ -255,11 +256,10 @@ DEF_CMD(editor_close)
 	return 0;
 }
 
-void *memsave(struct pane *p safe, char *buf, int len)
+void * safe memsave(struct pane *p safe, char *buf, int len)
 {
 	struct ed_info *ei;
-	if (!buf || !len)
-		return NULL;
+
 	p = pane_root(p);
 	ei = p->data;
 	ASSERT(ei->magic==0x4321765498765432UL);
@@ -274,7 +274,10 @@ void *memsave(struct pane *p safe, char *buf, int len)
 		ei->store = s;
 	}
 	ei->store->size -= len;
-	return memcpy(ei->store->space+ei->store->size, buf, len);
+	if (buf)
+		return memcpy(ei->store->space+ei->store->size, buf, len);
+	else
+		return ei->store->space+ei->store->size;
 }
 
 char *strsave(struct pane *p safe, char *buf)
@@ -293,6 +296,28 @@ char *strnsave(struct pane *p safe, char *buf, int len)
 	if (s)
 		s[len] = 0;
 	return s;
+}
+
+char * safe strconcat(struct pane *p safe, char *s1 safe, ...)
+{
+	va_list ap;
+	char *s;
+	int len = 0;
+	char *ret;
+
+	len = strlen(s1);
+	va_start(ap, s1);
+	while ((s = va_arg(ap, char*)) != NULL)
+		len += strlen(s);
+	va_end(ap);
+
+	ret = memsave(p, NULL, len+1);
+	strcpy(ret, s1);
+	va_start(ap, s1);
+	while ((s = va_arg(ap, char*)) != NULL)
+		strcat(ret, s);
+	va_end(ap);
+	return ret;
 }
 
 void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
