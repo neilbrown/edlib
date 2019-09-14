@@ -1133,7 +1133,7 @@ static int render(struct mark *pm, struct pane *p safe,
 	struct rl_data *rl = p->data;
 	int y;
 	struct mark *m, *m2;
-	int restarted = 0;
+	int shifted = 0;
 	char *hdr;
 	struct xy scale = pane_scale(focus);
 	char *s;
@@ -1199,7 +1199,8 @@ restart:
 				    &p->cx, &p->cy, &cw, &len, NULL,  NULL, cols);
 			if (p->cy < 0)
 				p->cx = -1;
-			if (!rl->do_wrap && p->cy >= 0 && p->cx < rl->prefix_len) {
+			if (!rl->do_wrap && p->cy >= 0 && p->cx < rl->prefix_len &&
+			    shifted != 2) {
 				if (mwidth < 0) {
 					struct call_return cr = call_ret(all, "text-size", p,
 									 -1, NULL, "M",
@@ -1218,12 +1219,11 @@ restart:
 						rl->shift_left -= 8 * mwidth;
 					}
 				}
-				if (restarted != 2) {
-					restarted = 1;
-					goto restart;
-				}
+				shifted = 1;
+				goto restart;
 			}
-			if (p->cx + cw >= p->w && !rl->do_wrap) {
+			if (p->cx + cw >= p->w && !rl->do_wrap &&
+			    shifted != 1) {
 				if (mwidth < 0) {
 					struct call_return cr = call_ret(all, "text-size", p,
 									 -1, NULL, "M",
@@ -1237,10 +1237,8 @@ restart:
 					rl->shift_left += 8 * mwidth;
 					p->cx -= 8 * mwidth;
 				}
-				if (restarted != 1) {
-					restarted = 2;
-					goto restart;
-				}
+				shifted = 2;
+				goto restart;
 			}
 		} else
 			render_line(p, focus, m->mdata?:"", &y, 1, scale.x, NULL, NULL, NULL,
