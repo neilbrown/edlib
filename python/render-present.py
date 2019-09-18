@@ -463,7 +463,7 @@ class PresenterPane(edlib.Pane):
         return 0
 
     def handle_render_prev(self, key, focus, mark, mark2, num, comm2, **a):
-        "handle:render-line-prev"
+        "handle:doc:render-line-prev"
         # Go to start of page
         if num == 0:
             # just make sure at start of line
@@ -481,7 +481,7 @@ class PresenterPane(edlib.Pane):
         return 1
 
     def handle_render_line(self, key, focus, mark, mark2, num, comm2, **a):
-        "handle:render-line"
+        "handle:doc:render-line"
         page = self.find_pages(mark)
         if not page:
             # No pages at all
