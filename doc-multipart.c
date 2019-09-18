@@ -560,8 +560,10 @@ DEF_CMD(attach_mp)
 	mpi = calloc(1, sizeof(*mpi));
 
 	h = doc_register(ci->home, 0, &mp_handle.c, &mpi->doc);
-	if (h)
+	if (h) {
+		attr_set_str(&h->attrs, "render-default", "text");
 		return comm_call(ci->comm2, "callback:doc", h);
+	}
 
 	free(mpi);
 	return Esys;
