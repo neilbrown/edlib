@@ -553,7 +553,7 @@ static int Pane_init(Pane *self safe, PyObject *args, PyObject *kwds)
 	int z = 0;
 	int ret = __Pane_init(self, args, kwds, &parent, &z);
 
-	if (ret < 0)
+	if (ret <= 0)
 		return ret;
 
 	/* The pane holds a reference to the Pane through the ->handle
