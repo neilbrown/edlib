@@ -250,6 +250,7 @@ DEF_CMD(search_close)
 		mark_free(n->m);
 		free(n);
 	}
+	free(esi);
 	return 1;
 }
 
