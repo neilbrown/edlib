@@ -417,11 +417,14 @@ static void do_text_autosave(struct text *t safe)
 	sprintf(tbase, "#%s#", base);
 	if (t->as.changes == 0) {
 		unlink(tempname);
+		free(tempname);
 		return;
 	}
 	fd = open(tempname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
-	if (fd < 0)
+	if (fd < 0) {
+		free(tempname);
 		return;
+	}
 
 	if (do_text_output_file(t, NULL, NULL, fd) < 0) {
 		close(fd);
