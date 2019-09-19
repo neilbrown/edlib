@@ -25,125 +25,125 @@ try:
             editor.call("event:read", sock.fileno(),
                         self.read)
 
-            def read(self, key, **a):
-                if self.sock:
-                    msg = self.sock.recv(1000)
-                else:
-                    msg = None
+        def read(self, key, **a):
+            if self.sock:
+                msg = self.sock.recv(1000)
+            else:
+                msg = None
 
-                if not msg :
-                    if self.disp:
-                        self.disp.close()
-                    if self.sock:
-                        self.sock.close()
-                    self.sock = None
-                    self.close()
-                    return edlib.Efalse
-                else:
-                    if msg[:5] == "open:":
-                        path = msg[5:]
-                        # 8==reload
-                        d = editor.call("doc:open", -1, 8, path, ret = "focus")
-                        if not d:
-                            self.sock.send("FAIL")
-                            return 1
-                        if self.term:
-                            d.call("doc:attach-view", self.term,
-                                   ret='focus')
-                            p.take_focus()
-                            self.sock.send("OK")
-                            return 1
-                        self.call("Call:Notify:global-displays", self.display_callback)
-                        if self.destpane:
-                            p = self.destpane
-                            self.destpane = None
-                            while p.focus:
-                                p = p.focus
-                            p = p.call("PopupTile", "MD3t", ret='focus')
-                            #p = p.call("ThisPane", ret='focus')
-                            d.call("doc:attach-view", p, ret='focus')
-                            p.take_focus()
-                            self.sock.send("OK")
-                        else:
-                            self.sock.send("No Display!")
-                        return 1
-                    if msg[:28] == "doc:Request:Notify:doc:done:":
-                        path = msg[28:]
-                        d = editor.call("doc:open", -1, path, ret="focus")
-                        if not d:
-                            self.sock.send("FAIL")
-                            return 1
-                        self.add_notify(d, "Notify:doc:done")
-                        if self.term:
-                            self.term.call("Display:set-noclose",
-                                           "Cannot close display until document done - use 'C-x #'")
-                        self.sock.send("OK")
-                        return 1
-                    if msg == "Request:Notify:Close":
-                        if self.term:
-                            # trigger finding a new document
-                            self.term.call("Window:bury")
-                        self.want_close = True
-                        self.sock.send("OK")
-                        return 1
-                    if msg[:5] == "term:":
-                        path = msg[5:]
-                        p = editor.call("attach-input", ret='focus')
-                        p = p.call("attach-display-ncurses", path,
-                                   "xterm", ret="focus")
-                        self.disp = p
-                        p = p.call("attach-messageline", ret='focus')
-                        p = p.call("attach-global-keymap", ret='focus')
-                        p.call("attach-mode-emacs")
-                        p = p.call("attach-tile", ret='focus')
-                        p.take_focus()
-                        self.term = p
-                        self.add_notify(self.disp, "Notify:Close")
-                        self.sock.send("OK")
-                        return 1
-                    if msg == "Close":
-                        if self.disp:
-                            self.disp.close()
-                            self.disp = None
-                        self.sock.close()
-                        self.sock = None
-                        self.close()
-                        return 1
-                    self.sock.send("Unknown")
-                    return 1
-
-            def handle_term_close(self, key, focus, **a):
-                "handle:Notify:Close"
-                if focus == self.disp:
-                    self.disp = None
-                    self.term = None
-                if self.want_close:
-                    self.sock.send("Close")
-                    self.want_close = False
-                return 0
-
-            def handle_done(self, key, str, **a):
-                "handle:Notify:doc:done"
-                if str != "test":
-                    if self.term:
-                        self.term.call("Window:set-noclose")
-                    self.sock.send("Done")
-                return 1
-
-            def display_callback(self, key, focus, num, **a):
-                self.destpane = focus
-                return 0
-
-            def handle_close(self, key, **a):
-                "handle:Close"
-                if self.sock:
-                    if self.want_close:
-                        self.sock.send("Close")
-                    self.sock.close()
-                    self.sock = None
+            if not msg :
                 if self.disp:
                     self.disp.close()
-                    self.disp = None
+                if self.sock:
+                    self.sock.close()
+                self.sock = None
+                self.close()
+                return edlib.Efalse
+            else:
+                if msg[:5] == "open:":
+                    path = msg[5:]
+                    # 8==reload
+                    d = editor.call("doc:open", -1, 8, path, ret = "focus")
+                    if not d:
+                        self.sock.send("FAIL")
+                        return 1
+                    if self.term:
+                        d.call("doc:attach-view", self.term,
+                               ret='focus')
+                        p.take_focus()
+                        self.sock.send("OK")
+                        return 1
+                    self.call("Call:Notify:global-displays", self.display_callback)
+                    if self.destpane:
+                        p = self.destpane
+                        self.destpane = None
+                        while p.focus:
+                            p = p.focus
+                        p = p.call("PopupTile", "MD3t", ret='focus')
+                        #p = p.call("ThisPane", ret='focus')
+                        d.call("doc:attach-view", p, ret='focus')
+                        p.take_focus()
+                        self.sock.send("OK")
+                    else:
+                        self.sock.send("No Display!")
+                    return 1
+                if msg[:28] == "doc:Request:Notify:doc:done:":
+                    path = msg[28:]
+                    d = editor.call("doc:open", -1, path, ret="focus")
+                    if not d:
+                        self.sock.send("FAIL")
+                        return 1
+                    self.add_notify(d, "Notify:doc:done")
+                    if self.term:
+                        self.term.call("Display:set-noclose",
+                                       "Cannot close display until document done - use 'C-x #'")
+                    self.sock.send("OK")
+                    return 1
+                if msg == "Request:Notify:Close":
+                    if self.term:
+                        # trigger finding a new document
+                        self.term.call("Window:bury")
+                    self.want_close = True
+                    self.sock.send("OK")
+                    return 1
+                if msg[:5] == "term:":
+                    path = msg[5:]
+                    p = editor.call("attach-input", ret='focus')
+                    p = p.call("attach-display-ncurses", path,
+                               "xterm", ret="focus")
+                    self.disp = p
+                    p = p.call("attach-messageline", ret='focus')
+                    p = p.call("attach-global-keymap", ret='focus')
+                    p.call("attach-mode-emacs")
+                    p = p.call("attach-tile", ret='focus')
+                    p.take_focus()
+                    self.term = p
+                    self.add_notify(self.disp, "Notify:Close")
+                    self.sock.send("OK")
+                    return 1
+                if msg == "Close":
+                    if self.disp:
+                        self.disp.close()
+                        self.disp = None
+                    self.sock.close()
+                    self.sock = None
+                    self.close()
+                    return 1
+                self.sock.send("Unknown")
+                return 1
+
+        def handle_term_close(self, key, focus, **a):
+            "handle:Notify:Close"
+            if focus == self.disp:
+                self.disp = None
+                self.term = None
+            if self.want_close:
+                self.sock.send("Close")
+                self.want_close = False
+            return 0
+
+        def handle_done(self, key, str, **a):
+            "handle:Notify:doc:done"
+            if str != "test":
+                if self.term:
+                    self.term.call("Window:set-noclose")
+                self.sock.send("Done")
+            return 1
+
+        def display_callback(self, key, focus, num, **a):
+            self.destpane = focus
+            return 0
+
+        def handle_close(self, key, **a):
+            "handle:Close"
+            if self.sock:
+                if self.want_close:
+                    self.sock.send("Close")
+                self.sock.close()
+                self.sock = None
+            if self.disp:
+                self.disp.close()
+                self.disp = None
 
     is_client = False
 except:
