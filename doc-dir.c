@@ -62,6 +62,7 @@ struct dir_ent {
 struct directory {
 	struct doc		doc;
 	struct list_head	ents;
+	struct pane		*rendering;
 
 	struct stat		stat;
 	char			*fname;
@@ -125,10 +126,12 @@ DEF_CMD(dir_new)
 
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	p = doc_register(ci->home, 0, &doc_handle.c, &dr->doc);
+	doc_register(ci->home, 0, &doc_handle.c, &dr->doc);
+	p = call_ret(pane, "attach-render-format", dr->doc.home, 1);
 	if (p)
-		return comm_call(ci->comm2, "callback:doc", p);
-	return Esys;
+		p = call_ret(pane, "attach-doc-rendering", p);
+	dr->rendering = p;
+	return comm_call(ci->comm2, "callback:doc", dr->doc.home);
 }
 
 DEF_CMD(dir_new2)
@@ -527,6 +530,8 @@ DEF_CMD(dir_destroy)
 		list_del(&de->lst);
 		free(de);
 	}
+	if (dr->rendering)
+		pane_close(dr->rendering);
 	doc_free(d);
 	free(dr);
 	return 1;
@@ -643,6 +648,42 @@ DEF_CMD(dir_cmd)
 	}
 }
 
+DEF_CMD(dir_attach)
+{
+	struct doc *d = ci->home->data;
+	struct directory *dr = container_of(d, struct directory, doc);
+	char *type = ci->str ?: "default";
+
+	if (strcmp(type, "invisible") == 0 || ci->num == (int)(unsigned long)dir_attach_func)
+		/* use default core-doc implementation */
+		return Efallthrough;
+	if (strcmp(type, "complete") == 0) {
+		struct pane *p;
+
+		p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
+		                  0, NULL, "invisible");
+		if (p)
+			p = call_ret(pane, "attach-view", p);
+		if (p)
+			p = call_ret(pane, "attach-render-format", p);
+		if (p) {
+			attr_set_str(&p->attrs, "line-format", "%+name%suffix");
+			attr_set_str(&p->attrs, "heading", "");
+			attr_set_str(&p->attrs, "done-key", "Replace");
+			p = call_ret(pane, "attach-render-complete", p);
+		}
+		if (p)
+			return comm_call(ci->comm2, "callback:doc", p);
+		return Esys;
+	}
+	/* any other type gets the default handling for the rendering */
+	return home_call(dr->rendering?:ci->home,
+	                 ci->key, ci->focus,
+	                 (int)(unsigned long)dir_attach_func, NULL, ci->str,
+	                 0, NULL, NULL,
+	                 0, 0, ci->comm2);
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &dir_new, 0, NULL, "attach-doc-dir");
@@ -657,6 +698,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
 	key_add(doc_map, "doc:step", &dir_step);
 	key_add(doc_map, "doc:replace", &dir_cmd);
+	key_add(doc_map, "doc:attach-view", &dir_attach);
 
 	key_add(doc_map, "get-attr", &dir_get_attr);
 	key_add(doc_map, "Close", &dir_destroy);

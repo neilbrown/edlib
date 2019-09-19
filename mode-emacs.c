@@ -816,7 +816,7 @@ REDEF_CMD(emacs_file_complete)
 	char *str;
 	char *d, *b, *c;
 	int fd;
-	struct pane *par, *pop, *docp, *p;
+	struct pane *pop, *docp, *p;
 	struct call_return cr;
 	char *type = ci->home->data;
 	int wholebuf = strcmp(type, "file") == 0;
@@ -860,19 +860,13 @@ REDEF_CMD(emacs_file_complete)
 	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		return Esys;
-	par = home_call_ret(pane, docp, "doc:attach-view", pop);
-	if (!par)
-		return Esys;
-
-	attr_set_str(&par->attrs, "line-format", "%+name%suffix");
-	attr_set_str(&par->attrs, "heading", "");
-	attr_set_str(&par->attrs, "done-key", "Replace");
-	p = call_ret(pane, "attach-render-complete", par);
+	p = home_call_ret(pane, docp, "doc:attach-view", pop, 0, NULL, "complete");
 	if (!p)
 		return Esys;
+
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, b);
 	if (cr.s && (strlen(cr.s) <= strlen(b) && cr.ret-1 > 1)) {
-		/* We need the dropdown - delete prefix a drop-down will
+		/* We need the dropdown - delete prefix and drop-down will
 		 * insert result.
 		 */
 		struct mark *start;
@@ -882,7 +876,7 @@ REDEF_CMD(emacs_file_complete)
 		call("Replace", ci->focus, 1, start, NULL);
 		mark_free(start);
 
-		pane_damaged(par, DAMAGED_CONTENT);
+		pane_damaged(p, DAMAGED_CONTENT);
 		return 1;
 	}
 	if (cr.s) {
