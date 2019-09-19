@@ -1115,12 +1115,12 @@ class notmuch_list(edlib.Doc):
                 t = self.threadinfo[str]
                 if str2 in t:
                     tg = t[str2][6]
-                    s = self.call("doc:notmuch:byid:tags", str2, ret='str')
+                    s = self.maindoc.call("doc:notmuch:byid:tags", str2, ret='str')
                     tg[:] = s.split(",")
 
         if str in self.threads:
             t = self.threads[str]
-            s = self.call("doc:notmuch:bythread:tags", str, ret='str')
+            s = self.maindoc.call("doc:notmuch:bythread:tags", str, ret='str')
             t['tags'] = s.split(",")
         self.notify("Notify:doc:Replace")
         return 1
@@ -1493,7 +1493,7 @@ class notmuch_query_view(edlib.Pane):
                 self.thread_end = None
                 self.thread_matched = None
 
-            if self.call("doc:notmuch:load-thread", mark) == 1:
+            if self.maindoc.call("doc:notmuch:load-thread", mark) == 1:
                 self.selected = s
                 if mark:
                     self.thread_start = mark.dup()
@@ -1535,10 +1535,10 @@ class notmuch_query_view(edlib.Pane):
     def handle_mark_seen(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
         "handle:doc:notmuch:mark-seen"
         for i in self.seen_threads:
-            self.parent.call("doc:notmuch:remember-seen-thread", i)
+            self.maindoc.call("doc:notmuch:remember-seen-thread", i)
         for i in self.seen_msgs:
-            self.parent.call("doc:notmuch:remember-seen-msg", i)
-        self.parent.call("doc:notmuch:mark-seen")
+            self.maindoc.call("doc:notmuch:remember-seen-msg", i)
+        self.maindoc.call("doc:notmuch:mark-seen")
         return 1
 
 class notmuch_message_view(edlib.Pane):
