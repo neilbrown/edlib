@@ -160,11 +160,9 @@ DEF_CMD(history_attach)
 		free(hi);
 		return 0;
 	}
-	call("doc:Notify:doc:revisit", p, -1);
-	hi->history = call_ret(pane, "doc:attach", p);
+	hi->history = call_ret(pane, "doc:attach-view", p, -1, NULL, "invisible");
 	if (!hi->history)
 		return 0;
-	home_call(hi->history, "doc:assign", p);
 	call("Move-File", hi->history, 1);
 	buf_init(&hi->search);
 	p = pane_register(ci->focus, 0, &hi->handle.c, hi, NULL);

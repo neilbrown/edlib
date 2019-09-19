@@ -813,7 +813,7 @@ DEF_CMD(tile_window_bury)
 	doc = call_ret(pane, "docs:choose", ci->focus);
 	if (doc)
 		/* display that doc in this pane */
-		doc_attach_view(ci->home, doc, NULL, NULL, 1);
+		home_call(doc, "doc:attach-view", ci->home);
 	return 1;
 }
 
@@ -998,7 +998,7 @@ DEF_CMD(tile_child_closed)
 	/* Child closed, but we weren't, so find something else to display */
 	c = call_ret(pane, "docs:choose", p);
 	if (c)
-		doc_attach_view(p, c, NULL, NULL, 1);
+		home_call(c, "doc:attach-view", p);
 	else if (ti->direction != Neither)
 		pane_close(p);
 	return 1;

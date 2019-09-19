@@ -91,4 +91,11 @@ void edlib_init(struct pane *ed safe)
 
 	call_comm("global-set-command", ed, &viewer_attach, 0, NULL, "attach-viewer");
 	call_comm("global-set-command", ed, &viewer_appeared, 0, NULL, "doc:appeared-viewer");
+	/* FIXME this doesn't seem quite right...
+	 * The goal is that if 'viewer' is requested of doc:attach-pane,
+	 * this pane gets attached, in place of any default.
+	 * I'm not sure it should be "in-place", and I feel it should be easier
+	 * to over-ride..
+	 */
+	attr_set_str(&ed->attrs, "view-viewer", "viewer");
 }

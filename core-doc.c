@@ -35,7 +35,7 @@ struct doc_ref {
 #include "misc.h"
 
 static void do_doc_assign(struct pane *p safe, struct pane *doc safe);
-static struct pane *doc_attach(struct pane *parent);
+static struct pane *safe doc_attach(struct pane *parent);
 
 static inline wint_t doc_following(struct doc *d safe, struct mark *m safe)
 {
@@ -842,8 +842,6 @@ DEF_CMD(doc_clone)
 	struct doc_data *dd = ci->home->data;
 	struct pane *p = doc_attach(ci->focus);
 
-	if (!p)
-		return 0;
 	do_doc_assign(p, dd->doc);
 	call("Move-to", p, 0, dd->point);
 	pane_clone_children(ci->home, p);
@@ -882,61 +880,6 @@ DEF_CMD(doc_dup_point)
 
 	comm_call(ci->comm2, "callback:dup-point", ci->focus,
 		  0, m);
-	return 1;
-}
-
-DEF_CMD(doc_assign)
-{
-	struct doc_data *dd = ci->home->data;
-
-	if ((void*) (dd->doc))
-		return Einval;
-	do_doc_assign(ci->home, ci->focus);
-	return 1;
-}
-
-static struct pane *
-render_attach(char *render, char *view, struct pane *parent safe)
-{
-	char buf[100]; /* FIXME */
-	struct pane *p;
-
-	if (!render)
-		render = pane_attr_get(parent, "render-default");
-	if (!render)
-		return NULL;
-
-	sprintf(buf, "attach-render-%s", render);
-	p = call_ret(pane, buf, parent);
-	if (!p)
-		return NULL;
-	parent = p;
-	if (!view)
-		view = pane_attr_get(parent, "view-default");
-	if (view) {
-		sprintf(buf, "attach-%s", view);
-		p = call_ret(pane, buf, parent);
-		if (p)
-			parent = p;
-	}
-	return parent;
-}
-
-DEF_CMD(doc_assign_view)
-{
-	struct doc_data *dd = ci->home->data;
-	struct pane *p2;
-	if ((void*) (dd->doc))
-		return Einval;
-	do_doc_assign(ci->home, ci->focus);
-	call("doc:Notify:doc:revisit", ci->focus, ci->num?:1);
-	p2 = call_ret(pane, "attach-view", ci->home);
-	if (p2)
-		p2 = render_attach(ci->str && ci->str[0] ? ci->str : NULL,
-		                   ci->str2, p2);
-	if (!p2)
-		return Esys;
-	comm_call(ci->comm2, "callback:doc", p2);
 	return 1;
 }
 
@@ -1045,6 +988,58 @@ DEF_CMD(doc_pop_point)
 	return 1;
 }
 
+DEF_CMD(doc_attach_view)
+{
+	struct pane *focus = ci->focus;
+	struct pane *doc = ci->home;
+	struct pane *p, *p2;
+	char *s;
+	char *type = ci->str ?: "default";
+
+	p = doc_attach(focus);
+	if (!p)
+		return Esys;
+	do_doc_assign(p, doc);
+
+	call("doc:Notify:doc:revisit", p, ci->num?:1);
+	if (strcmp(type, "invisible") != 0) {
+		/* Attach renderer */
+		p2 = call_ret(pane, "attach-view", p);
+		if (!p2)
+			goto out;
+		p = p2;
+
+		s = strconcat(p, "render-", type, NULL);
+		if (s)
+			s = pane_attr_get(doc, s);
+		if (!s)
+			s = pane_attr_get(doc, "render-default");
+		if (!s)
+			goto out;
+		s = strconcat(p, "attach-render-", s, NULL);
+		p2 = call_ret(pane, s, p);
+		if (!p2)
+			goto out;
+		p = p2;
+
+		s = strconcat(p, "view-", type, NULL);
+		if (s)
+			s = pane_attr_get(doc, s);
+		if (!s)
+			s = pane_attr_get(doc, "view-default");
+		if (s) {
+			s = strconcat(p, "attach-", s, NULL);
+			p2 = call_ret(pane, s, p);
+			if (p2)
+				p = p2;
+		}
+	}
+out:
+	comm_call(ci->comm2, "callback:doc", p);
+	return 1;
+}
+
+
 struct map *doc_default_cmd safe;
 static struct map *doc_handle_cmd safe;
 
@@ -1072,8 +1067,6 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd,	"Clone", &doc_clone);
 	key_add(doc_handle_cmd,	"Close", &doc_close);
 	key_add(doc_handle_cmd, "doc:dup-point", &doc_dup_point);
-	key_add(doc_handle_cmd, "doc:assign", &doc_assign);
-	key_add(doc_handle_cmd, "doc:assign-view", &doc_assign_view);
 	key_add(doc_handle_cmd, "Replace", &doc_replace);
 	key_add(doc_handle_cmd, "get-attr", &doc_handle_get_attr);
 	key_add(doc_handle_cmd, "Move-to", &doc_move_to);
@@ -1092,6 +1085,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:content", &doc_default_content);
 	key_add(doc_default_cmd, "doc:push-point", &doc_push_point);
 	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
+	key_add(doc_default_cmd, "doc:attach-view", &doc_attach_view);
 
 	key_add_range(doc_default_cmd, "doc:Request:Notify:", "doc:Request:Notify;",
 		      &doc_request_notify);
@@ -1120,25 +1114,11 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 	call("doc:Notify:doc:revisit", doc, 0);
 }
 
-static struct pane *doc_attach(struct pane *parent)
+static struct pane *safe doc_attach(struct pane *parent)
 {
 	struct doc_data *dd = calloc(1, sizeof(*dd));
 
 	return  pane_register(parent, 0, &doc_handle.c, dd, NULL);
-}
-
-/*
- * If you have a document and want to view it, you call "doc:attach"
- * passing the attachment point as the focus.
- * Then call "doc:assign" or "doc:assign-view" on the resulting pane to
- * provide the document and display info.
- */
-DEF_CMD(doc_do_attach)
-{
-	struct pane *p = doc_attach(ci->focus);
-	if (!p)
-		return Esys;
-	return comm_call(ci->comm2, "callback:doc", p);
 }
 
 DEF_CMD(doc_open)
@@ -1213,19 +1193,6 @@ DEF_CMD(doc_open)
 	return comm_call(ci->comm2, "callback", p);
 }
 
-struct pane *doc_attach_view(struct pane *parent safe, struct pane *doc safe,
-                             char *render, char *view, int raise)
-{
-	struct pane *p;
-
-	p = call_ret(pane, "doc:attach", parent);
-	if (p)
-		p = home_call_ret(pane, p, "doc:assign-view", doc,
-		                  raise ? 1 : -1, NULL, render,
-		                  0, NULL, view);
-	return p;
-}
-
 DEF_CMD(doc_from_text)
 {
 	char *name = ci->str;
@@ -1269,7 +1236,6 @@ void doc_setup(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &doc_open, 0, NULL, "doc:open");
 	call_comm("global-set-command", ed, &doc_from_text, 0, NULL, "doc:from-text");
-	call_comm("global-set-command", ed, &doc_do_attach, 0, NULL, "doc:attach");
 	if (!(void*)doc_default_cmd)
 		init_doc_cmds();
 }

@@ -293,8 +293,7 @@ DEF_CMD(popup_attach)
 			call_ret(pane, "doc:from-text", p, 0, NULL,
 			         "*popup*", 0, NULL, ci->str2);
 		if (doc &&
-		    (p = doc_attach_view(p, doc, NULL, NULL, 0)) != NULL) {
-
+		    (p = home_call_ret(pane, doc, "doc:attach-view", p)) != NULL) {
 			call("Move-File", p, 1);
 			call("doc:set:autoclose", p, 1);
 		}

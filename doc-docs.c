@@ -337,7 +337,7 @@ DEF_CMD(docs_callback)
 	struct pane *p;
 
 	if (strcmp(ci->key, "docs:complete") == 0) {
-		p = doc_attach_view(ci->focus, doc->doc.home, NULL, NULL, 0);
+		p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus);
 		if (p) {
 			attr_set_str(&p->attrs, "line-format", "%+doc-name");
 			attr_set_str(&p->attrs, "heading", "");
@@ -416,7 +416,7 @@ DEF_CMD(docs_callback)
 	}
 
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
-		p = doc_attach_view(ci->focus, doc->doc.home, NULL, NULL, 1);
+		p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus);
 		p = pane_register(p, 0, &docs_modified_handle.c, doc, NULL);
 		call("doc:Request:Notify:doc:Replace", p);
 		/* And trigger Notify:doc:Replace handling immediately...*/
@@ -644,7 +644,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 		par = call_ret(pane, "ThisPane", focus);
 	if (!par)
 		return Esys;
-	p = doc_attach_view(par, dp, NULL, NULL, 1);
+	p = home_call_ret(pane, dp, "doc:attach-view", par);
 	if (p) {
 		pane_focus(p);
 		return 1;
@@ -680,7 +680,7 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 	par = call_ret(pane, "ThisPane", focus);
 	if (!par)
 		return Esys;
-	p = doc_attach_view(par, dp, renderer, viewer, 1);
+	p = home_call_ret(pane, dp, "doc:attach-view", par, 1, NULL, buf+5);
 	if (p) {
 		pane_focus(p);
 		return 1;
@@ -701,7 +701,7 @@ static int docs_bury(struct pane *focus safe)
 	call("doc:Request:revisit", focus, -1);
 	doc = call_ret(pane, "docs:choose", focus);
 	if (doc)
-		doc_attach_view(tile, doc, NULL, NULL, 1);
+		home_call(doc, "doc:attach-view", tile);
 	return 1;
 }
 

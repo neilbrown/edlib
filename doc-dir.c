@@ -567,7 +567,7 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 	} else
 		par = call_ret(pane, "ThisPane", focus);
 	if (par) {
-		p = doc_attach_view(par, p, NULL, NULL, 1);
+		p = home_call_ret(pane, p, "doc:attach-view", par);
 		pane_focus(p);
 	}
 	return 1;
@@ -595,19 +595,12 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 	if (fd >= 0) {
 		struct pane *new = call_ret(pane, "doc:open", home, fd, NULL, fname);
 		if (new) {
-			char *renderer = NULL;
-			char *viewer = NULL;
-			snprintf(buf, sizeof(buf), "render-Chr-%c", cmd);
-			renderer = pane_attr_get(new, buf);
-			snprintf(buf, sizeof(buf), "view-Chr-%c", cmd);
-			viewer = pane_attr_get(new, buf);
-			if (renderer || viewer) {
-				par = call_ret(pane, "ThisPane", focus);
-				if (!par)
-					return Esys;
+			snprintf(buf, sizeof(buf), "Chr-%c", cmd);
+			par = call_ret(pane, "ThisPane", focus);
+			if (!par)
+				return Esys;
 
-				p = doc_attach_view(par, new, renderer, viewer, 1);
-			}
+			p = home_call_ret(pane, new, "doc:attach-view", par, 1, NULL, buf);
 		}
 		close(fd);
 	} else {
@@ -618,7 +611,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 		par = call_ret(pane, "ThisPane", focus);
 		if (!par)
 			return Esys;
-		p = doc_attach_view(par, doc, NULL, NULL, 1);
+		p = home_call_ret(pane, doc, "doc:attach-view", par);
 	}
 	free(fname);
 	pane_focus(p);

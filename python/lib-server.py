@@ -48,8 +48,8 @@ try:
                             self.sock.send("FAIL")
                             return 1
                         if self.term:
-                            p = self.term.call("doc:attach", ret='focus')
-                            p = p.call("doc:assign-view", d, ret='focus')
+                            d.call("doc:attach-view", self.term,
+                                   ret='focus')
                             p.take_focus()
                             self.sock.send("OK")
                             return 1
@@ -61,8 +61,7 @@ try:
                                 p = p.focus
                             p = p.call("PopupTile", "MD3t", ret='focus')
                             #p = p.call("ThisPane", ret='focus')
-                            p = p.call("doc:attach", ret='focus')
-                            p = p.call("doc:assign-view", d, ret='focus')
+                            d.call("doc:attach-view", p, ret='focus')
                             p.take_focus()
                             self.sock.send("OK")
                         else:
@@ -236,8 +235,7 @@ else:
             if len(choice):
                 par = focus.call("ThisPane", ret='focus')
                 if par:
-                    par = par.call("doc:attach", ret='focus')
-                    par = par.call("doc:assign-view", choice[0], ret='focus')
+                    par = choice[0].call("doc:attach-view", par, ret='focus')
                     par.take_focus()
 
         return 1
