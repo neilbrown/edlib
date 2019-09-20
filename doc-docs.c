@@ -698,7 +698,7 @@ static int docs_bury(struct pane *focus safe)
 	if (!tile)
 		return 1;
 	/* Discourage this doc from being chosen again */
-	call("doc:Request:revisit", focus, -1);
+	call("doc:Notify:doc:revisit", focus, -1);
 	doc = call_ret(pane, "docs:choose", focus);
 	if (doc)
 		home_call(doc, "doc:attach-view", tile);
