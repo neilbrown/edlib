@@ -130,6 +130,8 @@ DEF_CMD(dir_new)
 	p = call_ret(pane, "attach-render-format", dr->doc.home, 1);
 	if (p)
 		p = call_ret(pane, "attach-doc-rendering", p);
+	if (p)
+		pane_add_notify(dr->doc.home, p, "Notify:Close");
 	dr->rendering = p;
 	return comm_call(ci->comm2, "callback:doc", dr->doc.home);
 }
@@ -653,12 +655,12 @@ DEF_CMD(dir_attach)
 	struct doc *d = ci->home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
 	char *type = ci->str ?: "default";
+	struct pane *p;
 
 	if (strcmp(type, "invisible") == 0 || ci->num == (int)(unsigned long)dir_attach_func)
 		/* use default core-doc implementation */
 		return Efallthrough;
 	if (strcmp(type, "complete") == 0) {
-		struct pane *p;
 
 		p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
 		                  0, NULL, "invisible");
@@ -677,11 +679,29 @@ DEF_CMD(dir_attach)
 		return Esys;
 	}
 	/* any other type gets the default handling for the rendering */
-	return home_call(dr->rendering?:ci->home,
-	                 ci->key, ci->focus,
+	p = dr->rendering;
+	if (!p || p->damaged & DAMAGED_CLOSED)
+		p = ci->home;
+	return home_call(p, ci->key, ci->focus,
 	                 (int)(unsigned long)dir_attach_func, NULL, ci->str,
 	                 0, NULL, NULL,
 	                 0, 0, ci->comm2);
+}
+
+DEF_CMD(dir_notify_close)
+{
+	struct doc *d = ci->home->data;
+	struct directory *dr = container_of(d, struct directory, doc);
+
+	if (ci->focus == dr->rendering) {
+		dr->rendering = NULL;
+		/* one out - all out ! - but it isn't safe
+		 * to close yet, because that pane might have
+		 * active views FIXME.
+		 */
+		//pane_close(ci->home);
+	}
+	return 1;
 }
 
 void edlib_init(struct pane *ed safe)
@@ -701,5 +721,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:attach-view", &dir_attach);
 
 	key_add(doc_map, "get-attr", &dir_get_attr);
+	key_add(doc_map, "Notify:Close", &dir_notify_close);
 	key_add(doc_map, "Close", &dir_destroy);
 }
