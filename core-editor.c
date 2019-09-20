@@ -298,7 +298,7 @@ char *strnsave(struct pane *p safe, char *buf, int len)
 	return s;
 }
 
-char * safe strconcat(struct pane *p safe, char *s1 safe, ...)
+char * safe __strconcat(struct pane *p safe, char *s1 safe, ...)
 {
 	va_list ap;
 	char *s;

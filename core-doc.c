@@ -1009,26 +1009,26 @@ DEF_CMD(doc_attach_view)
 			goto out;
 		p = p2;
 
-		s = strconcat(p, "render-", type, NULL);
+		s = strconcat(p, "render-", type);
 		if (s)
 			s = pane_attr_get(doc, s);
 		if (!s)
 			s = pane_attr_get(doc, "render-default");
 		if (!s)
 			goto out;
-		s = strconcat(p, "attach-render-", s, NULL);
+		s = strconcat(p, "attach-render-", s);
 		p2 = call_ret(pane, s, p);
 		if (!p2)
 			goto out;
 		p = p2;
 
-		s = strconcat(p, "view-", type, NULL);
+		s = strconcat(p, "view-", type);
 		if (s)
 			s = pane_attr_get(doc, s);
 		if (!s)
 			s = pane_attr_get(doc, "view-default");
 		if (s) {
-			s = strconcat(p, "attach-", s, NULL);
+			s = strconcat(p, "attach-", s);
 			p2 = call_ret(pane, s, p);
 			if (p2)
 				p = p2;

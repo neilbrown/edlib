@@ -127,7 +127,8 @@ struct pane *editor_new(void);
 void * safe memsave(struct pane *p safe, char *buf, int len);
 char *strsave(struct pane *p safe, char *buf);
 char *strnsave(struct pane *p safe, char *buf, int len);
-char * safe strconcat(struct pane *p safe, char *s1 safe, ...);
+char * safe __strconcat(struct pane *p safe, char *s1 safe, ...);
+#define strconcat(p, s1, ...) __strconcat(p, s1, __VA_ARGS__, NULL)
 
 /* This is declared here so sparse knows it is global */
 void edlib_init(struct pane *ed safe);

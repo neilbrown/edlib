@@ -838,7 +838,7 @@ REDEF_CMD(emacs_file_complete)
 		if (d[0] != '/') {
 			char *dirname = pane_attr_get(ci->focus, "dirname");
 			if (dirname)
-				d = strconcat(ci->focus, dirname, d, NULL);
+				d = strconcat(ci->focus, dirname, d);
 		}
 	}
 	b = strrchr(d, '/');
