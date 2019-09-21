@@ -78,6 +78,8 @@ Module features
       instead of catching abort.
 - [ ] ask before killing modified buffer.
 - [ ] maybe meta-, does c-x` if that is the recent search?
+- [ ] Support write-file (providing a file name) - currently I only save
+      to the file I loaded from.
 
 ### ncurses
 
@@ -93,6 +95,12 @@ Module features
       important when first line displayed is(was) first line of file.
 - [ ] make renderlines "refresh everything when point moves" optional.
 - [ ] if flush_line from render_line() keeps returning zero, abort
+- [ ] render-lines should always re-render the line containing point, so
+      the location of “point” can affect the rendering.
+
+### lib-input
+- [ ] keep log of keystrokes in a restricted document
+- [ ] support keyboard macros
 
 ### doc-dir
 
@@ -113,6 +121,8 @@ Module features
 ### completion
 
 - [ ] case insensitive substring match for fn or doc completion?
+- [ ] The “complete” popup should be positioned above/below the file name,
+      not over the top of it.
 
 ### view
 
@@ -344,7 +354,27 @@ New Modules
       alt-S looks for TAGS or .git and either does a tags-search or a grep-l and
       check every match.  So maybe this is part of the 'make' module
 - [ ] white-space: Highlight trailing spaces - and space before TAB - and any TAB
-- [ ] interactive shell
+- [ ] interactive shell / terminal emulator
+
+      I never quite got into using shell-mode in emacs - it never felt quite
+      as raw as an xterm.  And the infinite history bothered me - possibly
+      irrationally.
+
+      Still, a shell mode for edlib  might be a useful thing, though having
+      edlib easily available in any terminal window might be just as good.
+
+      If I did a shell mode, I would capture the output of each command into
+      a separate buffer, and display all those buffers in the one view.
+      Sufficiently old buffers would be discarded.  Output from any recent
+      command could easily be saved or piped.  It would be possible to
+      arrange for some interactive commands to also send output of each
+      command to a separate buffer.
+
+      Auto paging would be disabled (where possible) and edlib would page
+      output as needed.  This means that `cat bigfile` could move the whole
+      file into a buffer, which wouldn't be good.  If a “less” command could
+      give the filename to edlib and let it display, that might be nice.
+
 - [ ] IDE
 
     - build
@@ -354,8 +384,61 @@ New Modules
     - outline
     - gdb
 
+
+- [ ] Outline code rendering.
+
+      I like the principle of outlines and only showing the heading of
+      nearby sections, but the detail of the current section.  I've always
+      found them a bit clumsy to use.  I want the rendering to automatically
+      do what I want, partly depending on where the cursor is, partly
+      depending on space.
+
+      So when I am editing I want to see a lot of immediately surrounding
+      text, but I also want to see nearby minor headings and all major
+      headings.
+      If headings are short enough and there are enough of them, the having
+      several to a line would be a good idea - maybe even abbreviated.  If I
+      click on an abbreviated heading in the middle of a line at the top of
+      the screen, then that section should open up, and the nearby sections
+      should get a bit more space.
+
+      When searching, I probably don't need as much context of the current
+      point, so less of the current section would be displayed, more of
+      surrounding sections.  If those surrounding sections also contained
+      matches, then that would be the part of those sections that was shown.
+
+      I would like to implement this sort of view for markright mode, but
+      more importantly I want to implement it for C-mode.  When editing C
+      code (which I do a lot) I want the few lines at the top and bottom of
+      the view to just list some function names.  Then maybe a few lines
+      with function signature one the whole line.
+
+      Certainly the start of the current function would appear somewhere no
+      matter where in the function I am editing, and as many of the
+      variables as possible.  If I am in an “if” statement in a “for” look,
+      then the loop header and the if condition would be displayed if at all
+      possible.
+
+
+- [ ] simple calculator in floating pane
 - [ ] Markdown/rst/Markright
-- [ ] calculator using markX
+
+      Markdown?  Commonmark?  Some sort of markup is useful and there are
+      few if any that are both easy to write and highly functional.
+
+      I like writing with markdown, but it is far from complete.  So I'd
+      like to create a mark-down mode that format as I type and which can
+      render to PDF.  Then I would start extending it.  Some extensions like
+      table are fairly standard - maybe ASCII-Math too.
+
+      Description-lists are an obvious (to me) omission.  Anchors for links,
+      structure tags (author, title), foot notes, insets for
+      table/figure/equation etc, with labeling.  Index, contents...
+
+      Figure Drawings?  There are lots of drawing languages.  It would be
+      nice to find a simple but versatile one to embed in markright.
+
+- [ ] calculator/spreadsheet using markX
 - [ ] outlining with markX
 - [ ] git-mode
 
@@ -368,7 +451,7 @@ New Modules
 
 
 - [ ] email composition
-- [ ] hex edit block device
+- [ ] hex edit block device - mmap document type
 - [ ] dir-edit
 - [ ] menus
 - [ ] config
@@ -378,3 +461,5 @@ New Modules
 - [ ] gpg / compress /
 - [ ] spell check
 - [ ] calendar/diary/planner
+- [ ] a “reflection” document so I can view the internal data structures.
+
