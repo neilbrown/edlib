@@ -342,21 +342,8 @@ REDEF_CMD(python_call)
 REDEF_CMD(python_doc_call)
 {
 	int rv = python_pane_call_func(ci);
-	if (rv == 0)
+	if (rv == Efallthrough || rv == Enotarget)
 		rv = key_lookup(doc_default_cmd, ci);
-	if (strcmp(ci->key, "Close") == 0) {
-		struct doc *d = ci->home->data;
-		Doc *pd = container_of(d, Doc, doc);
-		struct pane *p = pd->pane;
-
-		doc_free(d);
-		if (p) {
-			p->handle = NULL;
-			p->data = safe_cast NULL;
-			pd->pane = NULL;
-		}
-		Py_DECREF(pd);
-	}
 	return rv;
 }
 
@@ -496,6 +483,10 @@ static void python_pane_free(struct command *c safe)
 	if (p->map)
 		key_free(p->map);
 	p->map = NULL;
+	if (PyObject_TypeCheck(p, &DocType)) {
+		Doc *d = (Doc*)p;
+		doc_free(&d->doc);
+	}
 	Py_DECREF(p);
 }
 
@@ -541,7 +532,6 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds, Pane **p
 	self->map = key_alloc();
 	self->handle.c = python_pane_call;
 	self->handle.c.free = python_pane_free;
-	command_get(&self->handle.c);
 	self->handle.callable = NULL;
 
 	return 1;
