@@ -213,9 +213,9 @@ class CModePane(edlib.Pane):
             focus.call("Notify:change", self.paren_start, point)
         return 0
 
-    def handle_map_attr(self, key, focus, str, str2, comm2, **a):
+    def handle_map_attr(self, key, focus, mark, str, comm2, **a):
         "handle:map-attr"
-        if str == "render:paren":
+        if str == "render:paren" and (mark in [self.paren_start, self.paren_end]):
             comm2("cb", focus, "bg:pink,bold", 1)
 
 def c_mode_attach(key, focus, comm2, **a):
