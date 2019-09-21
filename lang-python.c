@@ -1536,7 +1536,7 @@ static PyObject *mark_compare(Mark *a safe, Mark *b safe, int op)
 	if ((PyObject*)a == Py_None)
 		ret = (op == Py_LT || op == Py_LE || op == Py_NE);
 	else if ((PyObject*)b == Py_None)
-		ret = (op == Py_GT || op == Py_GE || op == Py_EQ);
+		ret = (op == Py_GT || op == Py_GE || op == Py_NE);
 	else if (PyObject_TypeCheck(a, &MarkType) == 0 ||
 		 PyObject_TypeCheck(b, &MarkType) == 0) {
 		PyErr_SetString(PyExc_TypeError, "Mark compared with non-Mark");
