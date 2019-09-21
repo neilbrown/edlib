@@ -8,6 +8,8 @@
 Edlib - a library for building a document editor
 ==============================================
 
+I also have a [TO-DO list](DOC/TODO.md).
+
 edlib is an extensible document editor.  It is inspired in part by
 emacs, both by its strengths and its weaknesses.
 
