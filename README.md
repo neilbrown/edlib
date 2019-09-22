@@ -8,20 +8,17 @@
 Edlib - a library for building a document editor
 ==============================================
 
-I also have a separate [TO-DO list](DOC/TODO.md).
-
-edlib is an extensible document editor.  It is inspired in part by
+Edlib is an extensible document editor.  It is inspired in part by
 emacs, both by its strengths and its weaknesses.
 
 emacs provides a programming language — E-lisp — for configuring and
-extending the editor.  edlib doesn't.  It allows various pre-existing
+extending the editor.  Edlib doesn't.  It allows various pre-existing
 languages to be used to configure and extend the editor.  It does
 this by providing a library of core editing tools and providing
 bindings to various languages.
 
-At least, that is the plan.  At time if writing, only provides
-bindings for C and Python, and these are incomplete.  Other languages
-should be fairly easy.
+At least, that is the plan.  At time if writing, edlib only provides
+bindings for C and Python.  Other languages should be fairly easy.
 
 The particular value-add of edlib over emacs (apart from the obvious
 “NIH” issues) is that both document storage and document rendering are
@@ -33,10 +30,10 @@ show very different things: scriptable code is run whenever
 rendering is required.  This should make implementing documents with
 non-trivial structures a lot easier.
 
-edlib is designed to have well defined abstractions that can be
+Edlib is designed to have well defined abstractions that can be
 exported to various languages for them to manipulate.  They include
-primarily commands, panes and marks, and also
-attributes, documents, displays, events, and keymaps.
+primarily commands, panes, and marks, and also attributes, documents,
+displays, events, and keymaps.
 
 Commands
 --------
@@ -64,16 +61,16 @@ both.
 
 Three of the arguments provided to a command have very special
 meanings.  One of the strings, known as “key”, identifies what action
-should be performed.  The pane handler will normal use this key to
+should be performed.  The pane handler will normally use this key to
 select some other command to actually handle the message.  Other
 commands may ignore the key, or use it however they please.
 
 When a message is sent to a pane and the handler command is called,
-the “home” argument is set to the pane, so it acts a bit like the
-“self” argument in some object-oriented languages.  One of the primary
-uses of “home” is to access “home->data” which a private data
-structure owned by the pane.  The command associated with a particular
-pane is typically the only code which can understand the data.
+the “home” argument is set to the pane that owns the handle, so it acts
+a bit like the “self” argument in some object-oriented languages.
+One of the primary uses of “home” is to access “home->data” which is a
+private data structure owned by the pane.  The command associated with
+a particular pane is typically the only code which can understand the data.
 
 Finally the “comm1” argument passed to a command always identifies
 exactly the command that is being run.  “comm1” is a pointer to a
@@ -90,7 +87,7 @@ understood”, a command can return a positive result on success or a
 negative result indicating lack of success.  Known error codes include:
 
 - Enoarg : missing argument
-- Einval : some wrong with the context of the request
+- Einval : something is wrong with the context of the request
 - Esys : request makes sense, but didn't work
 - Enosup: request makes sense, but isn't allowed for some reason
 - Efail:  This is similar to Esys - I need to clarify the difference
@@ -102,9 +99,9 @@ Panes
 -----
 
 A pane combines an optional rectangular area of display with some
-functionality.  As such it can receive mouse and keyboard events,
-can draw on a display, and can send commands to other panes.  As
-previously mentioned, panes can also store module-specific data.
+data storage and some functionality.  As such it can receive mouse and
+keyboard events, can draw on a display, and can send commands to other
+panes.
 
 All panes are arranged as a tree with all but the root having a parent
 and many having siblings and children.  When a pane represents a
@@ -112,14 +109,15 @@ rectangle of display all children are restricted to just that
 rectangle or less.  Often a child will cover exactly the same area as
 its parent.  In other cases several children will share out the area.
 
-Events are often generated at a leaf of the tree of panes (i.e. a pane
-with no children).  They travel up the tree towards the root until
-they find a pane which can handle them.  That pane might handle the
-event by generating other events.  They will typically start looking
-for handler at the same leaf which is available as the “focus”
-argument.  For this reason branches of the pane tree usually have more
-generic panes closer to the root and more special-purpose panes near
-the leaves.
+An “event” is a set of arguments to a command which is being sent to
+a pane.  Events are often generated at a leaf of the tree of panes
+(i.e. a pane with no children).  They travel up the tree towards the
+root until they find a pane which can handle them.  That pane (or its
+handler command) might handle the event by generating other events.
+They will typically start looking for a handler at the same leaf which
+is available as the “focus” argument.  For this reason branches of the
+pane tree usually have more generic panes closer to the root and more
+special-purpose panes near the leaves.
 
 It is quite normal for there to be panes in the tree that are not
 directly involves in displaying anything - these are just useful
@@ -148,15 +146,15 @@ Each pane may also request notifications from other panes.  These
 include, but are not limited to, a notification when the pane is
 destroyed and a notification when a document attached to the pane
 changes.  These notifications are effected by calling the pane's command
-with a key like “notify:close” and with the second pane argument
+with a key like “Notify:Close” and with the second pane argument
 (the “focus”) set to the pane which is sending the notification.
 
 Documents
 ---------
 
 A document provides access to whatever data is being edited, or just
-displayed.  There can be multiple implementations for documents but
-they all have a common interface.
+being displayed.  There can be multiple implementations for documents
+but they all have a common interface.
 
 A “document” is assumed to be a linear sequence of elements each of
 which presents as a single character and may have some attributes
@@ -186,13 +184,7 @@ marks, panes, and elements in a document.  Parsing code can
 annotate a buffer with attributes, and rendering code can use these
 attributes to guide rendering.  e.g. parsing code can attach
 “spelling=wrong” or “spelling=doubtful” and rendering can underline in
-red or whatever.
-
-Currently most attributes have to be stored using a particular
-implementation of attribute storage.  I'm not sure I want that in the
-longer term.  I'm considering having the pane command support a
-“attribute:get” command though there are still unresolved issues with
-that idea.
+red or whatever is appropriate.
 
 Marks and Points
 ----------------
@@ -254,7 +246,7 @@ Displays
 
 A “display” is just a pane which can create an image somehow, and
 responds to commands like “pane-clear”, “text-display”, and
-“image-display”.  Displays are typically just below the root of the
+“image-display”.  Displays are typically quite close to the root of the
 “pane” tree, but this is not a requirement.
 
 A display is also expected to call “Keystroke” and “Mouse-event”
@@ -267,13 +259,10 @@ submit the new event at the target.
 Keymaps
 -------
 
-A keymap is a mapping from command names to commands.  In many cases a
-similar data structure such as a Python “dict” could be used.  The
-keymap implemented in edlib has one small advantage in that a range of
-strings can be mapped to a command, then exceptions can be recorded.
-
-Keymaps are a bit like attributes in that the concept is valuable but
-it isn't yet clear how central a particular implementation should be.
+A keymap is a mapping from command names to commands.  While a
+pane hander could use any mapping it likes, the keymap implemented in
+edlib has one small advantage in that a range of strings can be mapped to
+a command, then exceptions can be recorded.
 
 The handler for a pain typically looks up the passed “key” in a
 keymap, locates the target command, and passes control to that command.
@@ -285,17 +274,18 @@ Now that we have plenty of context, it is time to revisit commands to
 discuss how they are called.  It is possible to invoke a specific
 command directly if you have a reference to it but most often a more
 general mechanism is used to find the appropriate command.  The most
-common mechanism is to identify a “home” pane and the handler for that
-pane and each ancestor will be tried in turn until the handler returns
-a non-zero value, or until the root pane has been tried.  Very often
-the starting home pane will also be the focus pane so when the two are
-the same it is not necessary to specify both.
+common mechanism is to pass and "Event" (i.e. a set of arguments) to a
+“home” pane.  The handler for that pane and each ancestor will be tried
+in turn until a handler returns a non-zero value (i.e. it accepts the event),
+or until the root pane has been tried.  Very often the starting home pane
+will also be the focus pane so when the two are the same it is not necessary
+to specify both.
 
-The other common mechanism is to follow the "notifier" chain from a
-pane.  This lists a number of panes which have requested
-notifications.  When calling notifiers, all target panes have their
+The other common mechanism is a “notification event” which follows the
+"notifier" chain from a pane.  This chain lists a number of panes which
+have requested notifications.  When calling notifiers, all target panes have their
 handler called and if any return a non-zero value, the over-all return
-value will be non-zero.  More precisely it will be the value returns
+value will be non-zero.  More precisely it will be the value returned
 which has the largest absolute value.
 
 Each handler can perform further lookup however it likes.  It may
@@ -311,14 +301,14 @@ everything but the directory document type would reject the request.
 
 Another example worth understanding is the document-display pane
 type.  When this receives an event it will handle it directly if it
-understands the key, otherwise it will pass it to the document pane.
-If that doesn't recognize the event it will continue up the tree from
-the document-display pane.
+understands the key, otherwise if it starts with “doc:” it will pass it
+to the document pane.  If that doesn't recognize the event it will
+continue up the tree from the document-display pane.
 
 Like document-display, other pane types are free to direct events
 elsewhere as appropriate.  The “input” handler takes keystroke events
 and redirects them to the current focus pane, and take mouse events
-and redirects them to the pane with the greatest 'z' depth which cover
+and redirects them to the pane with the greatest 'z' depth which covers
 the mouse location.
 
 
@@ -326,8 +316,9 @@ Core Extensions
 ===============
 
 These are the basic common objects which can (I hope) be used to build
-a rich document editor.  There need to be lots of extensions of course
+a rich document editor.  There needs to be lots of extensions of course
 to make them useful.  The current extensions that are available include:
+
 
 Text Document
 -------------
@@ -339,7 +330,9 @@ identify a start and end in one of those allocations.  Edits can
 add text to the last allocation, can change the endpoints of a chuck,
 and can insert new chunks or delete old chunks.
 
-Each chunk has a list of attributes each with an offset into the allocation.
+Each chunk has a list of attributes each with an offset into the allocation,
+so they each apply to a single character, though are often interpreted
+to apply to follow characters as well.
 
 Directory Document
 ------------------
@@ -354,13 +347,58 @@ Documents Document
 
 There is typically one pane of this type and it registers an
 “doc:appeared-” handler with the root pane to get notified when documents
-are created.  It will reparent the document that that it becomes a
-child of the “Documents” pane.  Then all documents can be found in the
+are created.  It will reparent the document so that it becomes a
+child of a separate “collection” pane.  Then all documents can be found in the
 list of children.
 
 The “documents” pane presents as a document which can be viewed and
 appears as a list of document names.  Various keystroke events allow
 documents to be opened, deleted, etc.
+
+Rendering virtual document
+--------------------------
+
+Working directory with the "directory" or "documents" document is sometimes
+a bit awkward as a mark can only point to a while directory entry or
+document.  When these are displayed one-per-line it isn't possible to move 
+the cursor within that line, which can feel strnage, particularly if the line
+is wider than that display pane.  Also selecting  an copying
+text cannot select part of a line.
+
+To overcome these problems, a "rendering" document can be layed over
+the main document.  It presents a virtual document which contains
+all the character that are use to display (to render) the underlying
+document.  This then "feels" more like a regular documet and can respond
+to select and copy just like a text document.
+
+Multipart document, and "crop" filter
+-------------------------------------
+
+Multipart is another virtual document, which appears to contain
+the content of a sequence of other documents.  This allows a sequence
+of documents to appear to be combined into one.  This can co-operate
+with the "crop" filter which limits access to a given document to the
+section between two marks.  By combinding multipart and crop,
+one document can be divided up and re-assembled in any order, or
+parts of multiple documents can be merged.
+
+Email document; base64, qprint, utf8, rfc822header filters
+----------------------------------------------------------
+
+The Email document handler uses crop and multipart and other tools to
+present an email message as a readable document.  The different
+parts of an email message (header, body, attachments) are identified
+and cropped out with appropriate filters attached.
+
+Notmuch email reader
+--------------------
+
+"notmuch" as a email indexing and management tools.    The notmuch
+email reader provides one document which displays various
+saved searches with a count of the number of items, and another
+document type which can show a summary line for each message
+found by a given search.  They work with the email document
+pane to allow reading and managing an e-mail mailbox.
 
 Ncurses Display
 ---------------
@@ -372,12 +410,27 @@ receives keyboard and mouse input and sends “Mouse-event” or
 
 There can be multiple ncurses displays, each attached to a different terminal.
 
-Line-Renderer
+Pygtk Display
 -------------
 
-The line renderer is designed to work with any document that presents
+This is a display module written in python and using pygtk for
+drawing.
+
+When a “text” or “clear” request is made on a pane, the module
+allocates a pixmap (arranging for it to be destroyed when the pane is
+closed) and performs the drawings there.  When a refresh is required,
+the various pixmaps are combined and drawn to the target window.
+
+Variable width fonts are supported as are images.  An image is
+typically the only thing drawn in a pane, so sub-panes must be used to
+draw images within a document.
+
+Lines-Renderer and render-line filter.
+--------------------------------------
+
+The lines renderer is designed to work with any document that presents
 as a list of lines.  Lines that are wider than the pane can either be
-truncated (with side-scrolling) or wrapped.  The line renderer moves
+truncated (with side-scrolling) or wrapped.  The lines renderer moves
 backwards and forwards from the cursor “point” to determine which lines
 should be drawn and sends a “render-line” command to get the
 displayed text for those lines.
@@ -425,6 +478,19 @@ The HEX renderer provides an alternate “render-line” for a document
 which starts each line at a multiple of 16 bytes from the start of the
 document, and formats the next 16 bytes as hex and ASCII.  Each
 rendered line starts with the byte offset of the start of the line.
+
+Presentation renderer
+---------------------
+
+The presentation rendering accepts a text document and interprets
+it as describing pages of a presentation in a language similar
+to MarkDown.  It generates a marked-up rendering the various
+lines of text which are given to the lines renderer to produce
+a single page of the presentation.
+
+There is a partner "markdown" mode which interacts with a presentation
+pane and can ask it to move forward or backward one page, or  to
+redraw some other arbitrary page.
 
 Tiler
 -----
@@ -481,10 +547,7 @@ Search
 ------
 
 “search” provides a global command rather than a pane.  This command
-can perform a reg-ex search through a document.  Currently it only
-searches the per-element characters, so it isn't useful on directory
-listings.  It should be extended to work with the results of
-“render-line”.
+can perform a reg-ex search through a document.
 
 Messageline
 -----------
@@ -508,11 +571,64 @@ example “Meta-1” might multiply the repeat count in the command by 10,
 add 1, and then ask “input” to set that as the new repeat count for
 the next keystroke.
 
+Shell-command
+-------------
+
+This pane makes it easy to run a command in the background and capture
+the output in a text document, which can then be displayed like
+any other document.
+
+make/grep
+---------
+
+This allows make or grep to be running with the output captured and parsed.
+A simple keystroke then causes the editor to open a file mentioned
+in the output, and to go to the identified line.
+
+Viewer
+------
+
+The viewer pane suppresses any commands that would modify the document,
+and repurposes some of them to make it easier to move around a document
+being viewed - so 'space' pages forward, and 'backspace' pages backwards.
+
+history
+-------
+
+A history pane stores data a bit like a document, but provides
+access in a different way.  Individual lines can be recalled and
+new lines can be appended.  It makes it easy to provide a history
+of lines of text entered for some purpose, such as running a shell
+command or an editor command selected by name.
+
+copybuf
+-------
+
+Similar im principle to "history", a copybuf pane can store a series
+of arbitrary slabs of text.  It is used to provide copy/paste functionality.
+
+server
+------
+
+The server pane listens on a socket for request to open a file,
+or to create an ncurses pane on the current terminal.
+It also reports to the request when the file has been edited,
+or when the ncurses pane is closed.
+
 Emacs Mode
 ----------
 
 This provides a set of named commands which can be given to “keymap”
 as a global key map.  In provides a number of emacs-like bindings.
+
+
+C/Python mode
+-------------
+
+This pane capture various editing command and taylors them
+to suite editing C or Python code.  It helps with correct
+indenting, highlight matching brackets, and will eventually do
+a lot more.
 
 Python Interface
 ----------------
@@ -523,21 +639,6 @@ given pane.  It also allows commands to be defined in python that can
 be called from other modules just like any other command.  It is a
 complete two-way interface between python and other languages to
 access the core edlib functionality.
-
-Pygtk Display
--------------
-
-This is a display module written in python and using pygtk for
-drawing.
-
-When a “text” or “clear” request is made on a pane, the module
-allocates a pixmap (arranging for it to be destroyed when the pane is
-closed) and performs the drawings there.  When a refresh is required,
-the various pixmaps are combined and drawn to the target window.
-
-Variable width fonts are supported as are images.  An image is
-typically the only thing drawn in a pane, so sub-panes must be used to
-draw images within a document.
 
 libEvent
 --------
@@ -552,4 +653,10 @@ low-priority set of event handler which use libevent.
 I'm not entirely happy about this arrangement.  In particular I would
 like to be able to have multiple event loops running in separate
 threads.  So expect things to change here.
+
+Next steps
+----------
+
+The [TO-DO list](DOC/TODO.md) is now a separate document.
+
 

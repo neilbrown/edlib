@@ -39,7 +39,9 @@ Core features
 - [ ] Change tlist to use one bit from each pointer
 - [ ] Need a debug mode where every mark usage is checked for validity.
       also check the setref sets up all linkages.
-- [ ] - ?? restrict prefix key lookup to punctuation.
+- [ ]  ?? restrict prefix key lookup to punctuation.
+- [ ] clarify difference between Efail and Esys, or remove one of them.
+- [ ] Consider removing Enotarget as no longer relevant
 
       Current ranges are:
 
