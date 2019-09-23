@@ -788,7 +788,7 @@ DEF_CMD(attach_email_view)
 
 	m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	if (!m)
-		return Esys;
+		return Efail;
 	call("doc:set-ref", ci->focus, 0, m);
 	n = get_part(ci->focus, m);
 	mark_free(m);
@@ -801,7 +801,7 @@ DEF_CMD(attach_email_view)
 	p = pane_register(ci->focus, 0, &email_view_handle.c, evi, NULL);
 	if (!p) {
 		free(evi);
-		return Esys;
+		return Efail;
 	}
 	return comm_call(ci->comm2, "callback:attach", p);
 }

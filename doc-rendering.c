@@ -144,7 +144,7 @@ DEF_CMD(dr_set_ref)
 
 	m2 = vmark_new(p, MARK_UNGROUPED, NULL);
 	if (!m2)
-		return Esys;
+		return Efail;
 	call("doc:set-ref", p, ci->num, m2);
 
 	m->ref.offset = 0;
@@ -279,7 +279,7 @@ DEF_CMD(dr_step)
 	}
 
 	if (!line)
-		return Esys;
+		return Efail;
 	if (m->ref.offset < 0)
 		m->ref.offset = strlen(line) - 1;
 	if (forward) {
@@ -426,7 +426,7 @@ DEF_CMD(dr_render_line)
 		line = m->ref.m->mdata;
 	}
 	if (!line)
-		return Esys;
+		return Efail;
 	if (m->ref.offset < 0)
 		m->ref.offset = strlen(line)-1;
 	if (ci->num == -1 && m2) {
@@ -553,7 +553,7 @@ DEF_CMD(attach_dr)
 	p = doc_register(ci->focus, 0, &dr_handle.c, &dri->doc);
 	if (!p) {
 		free(dri);
-		return Esys;
+		return Efail;
 	}
 	dri->base = ci->focus;
 

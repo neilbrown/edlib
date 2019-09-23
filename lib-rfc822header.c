@@ -385,7 +385,7 @@ DEF_CMD(header_get)
 	}
 	asprintf(&attr, "rfc822-%s", hdr);
 	if (!attr)
-		return Esys;
+		return Efail;
 	for (c = attr; *c; c++)
 		if (isupper(*c))
 			*c = tolower(*c);
@@ -426,7 +426,7 @@ DEF_CMD(header_attach)
 	p = pane_register(ci->focus, 0, &header_handle.c, hi, NULL);
 	if (!p) {
 		free(hi);
-		return Esys;
+		return Efail;
 	}
 
 	hi->vnum = home_call(ci->focus, "doc:add-view", p) - 1;

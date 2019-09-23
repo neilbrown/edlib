@@ -82,7 +82,7 @@ DEF_CMD(utf8_attach)
 
 	p = pane_register(ci->focus, 0, &utf8_handle.c, NULL, NULL);
 	if (!p)
-		return Esys;
+		return Efail;
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }

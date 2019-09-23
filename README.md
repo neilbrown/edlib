@@ -88,10 +88,8 @@ negative result indicating lack of success.  Known error codes include:
 
 - Enoarg : missing argument
 - Einval : something is wrong with the context of the request
-- Esys : request makes sense, but didn't work
+- Efail : request makes sense, but didn't work
 - Enosup: request makes sense, but isn't allowed for some reason
-- Efail:  This is similar to Esys - I need to clarify the difference
-       if there is one.
 - Efalse: Not really an error, just a Boolean status
 
 Panes

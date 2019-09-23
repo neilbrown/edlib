@@ -136,7 +136,7 @@ DEF_CMD(text_search)
 	since_start = -1;
 	endmark = mark_dup(m);
 	if (!endmark)
-		return Esys;
+		return Efail;
 
 	if (ci->num2)
 		since_start = search_backward(ci->focus, m, ci->mark2, rxl, endmark);

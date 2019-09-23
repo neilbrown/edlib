@@ -402,13 +402,13 @@ DEF_CMD(emacs_search)
 		emacs_search_init_map();
 	p = call_ret(pane, "popup:get-target", ci->focus);
 	if (!p)
-		return Esys;
+		return Efail;
 	esi = calloc(1, sizeof(*esi));
 	esi->target = p;
 	m = mark_at_point(p, NULL, MARK_POINT);
 	if (!m) {
 		free(esi);
-		return Esys;
+		return Efail;
 	}
 	esi->end = m;
 

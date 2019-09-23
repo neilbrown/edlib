@@ -369,7 +369,7 @@ DEF_CMD(renderline_attach)
 
 	ret = do_renderline_attach(ci->focus);
 	if (!ret)
-		return Esys;
+		return Efail;
 	return comm_call(ci->comm2, "callback:attach", ret);
 }
 

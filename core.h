@@ -85,7 +85,6 @@ enum edlib_errors {
 	Efallthrough = 0,
 	Enoarg = -1000,
 	Einval,
-	Esys,
 	Enosup,
 	Efail,
 	/* following errors are soft and don't create exceptions */
@@ -645,7 +644,7 @@ static inline int do_call_val(enum target_type type, struct pane *home, struct c
 		break;
 	case TYPE_pane:
 		if (!home->handle)
-			return Esys;
+			return Efail;
 		ci.comm = home->handle;
 		ret = ci.comm->func(&ci);
 		break;

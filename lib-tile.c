@@ -916,7 +916,7 @@ DEF_CMD(tile_other)
 	p2 = tile_split(&p, horiz, after, ci->str2);
 	if (p2)
 		return comm_call(ci->comm2, "callback:pane", p2);
-	return Esys;
+	return Efail;
 }
 
 DEF_CMD(tile_this)

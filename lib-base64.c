@@ -236,7 +236,7 @@ DEF_CMD(b64_attach)
 	p = pane_register(ci->focus, 0, &b64_handle.c, bi, NULL);
 	if (!p) {
 		free(bi);
-		return Esys;
+		return Efail;
 	}
 	bi->view = home_call(ci->focus, "doc:add-view", p) - 1;
 

@@ -850,7 +850,7 @@ DEF_CMD(display_ncurses)
 	struct pane *p = ncurses_init(ci->focus, ci->str, ci->str2);
 	if (p)
 		return comm_call(ci->comm2, "callback:display", p);
-	return Esys;
+	return Efail;
 }
 
 void edlib_init(struct pane *ed safe)

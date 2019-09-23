@@ -239,7 +239,7 @@ DEF_CMD(input_attach)
 	p = pane_register(ci->focus, 0, &input_handle.c, im, NULL);
 	if (p)
 		return comm_call(ci->comm2, "callback:attach", p);
-	return Esys;
+	return Efail;
 }
 
 void edlib_init(struct pane *ed safe)

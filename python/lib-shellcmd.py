@@ -71,10 +71,10 @@ def shell_attach(key, focus, comm2, str, str2, **a):
     focus.call("doc:replace", m)
     p = ShellPane(focus)
     if not p:
-        return edlib.Esys;
+        return edlib.Efail;
     if not p.run(str, str2):
         p.close()
-        return edlib.Esys;
+        return edlib.Efail;
     if comm2:
         comm2("callback", p)
     return 1

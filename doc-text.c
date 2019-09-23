@@ -341,7 +341,7 @@ static int do_text_output_file(struct text *t safe, struct doc_ref *start,
 			break;
 	}
 	if (fsync(fd) != 0)
-		return Esys;
+		return Efail;
 	return 0;
 }
 
@@ -1472,7 +1472,7 @@ DEF_CMD(text_new)
 	p = doc_register(ci->home, 0, &text_handle.c, &t->doc);
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p);
-	return Esys;
+	return Efail;
 }
 
 DEF_CMD(text_new2)

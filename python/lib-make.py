@@ -129,7 +129,7 @@ class MakePane(edlib.Pane):
             if not par:
                 d.close()
                 focus.call("Message", "Failed to open pane");
-                return edlib.Esys
+                return edlib.Efail
             par = d.call("doc:attach-view", par, ret='focus')
         par.take_focus()
         par.call("Move-File", -1)
@@ -184,10 +184,10 @@ def make_attach(key, focus, comm2, str, str2, **a):
     focus.call("doc:replace", m)
     p = MakePane(focus)
     if not p:
-        return edlib.Esys
+        return edlib.Efail
     if not p.run(str, str2):
         p.close()
-        return edlib.Esys
+        return edlib.Efail
     if comm2:
         comm2("callback", p)
     return 1
@@ -212,7 +212,7 @@ def make_view_attach(key, focus, comm2, **a):
     p = MakeViewerPane(focus)
 
     if not p:
-        return edlib.Esys
+        return edlib.Efail
     if comm2:
         comm2("callback", p)
     return 0
@@ -251,7 +251,7 @@ def run_make(key, focus, str, **a):
         pass
     doc = focus.call("doc:from-text", docname, "", ret='focus')
     if not doc:
-        return edlib.Esys
+        return edlib.Efail
 
     doc['dirname'] = dir
     if cmd == "make":
@@ -259,7 +259,7 @@ def run_make(key, focus, str, **a):
     else:
         p = focus.call("PopupTile", "MD3t", ret='focus')
     if not p:
-        return edlib.Esys
+        return edlib.Efail
     focus.call("global-set-attr", "make-target-doc", docname)
     p = doc.call("doc:attach-view", p, "viewer", ret='focus')
     p.call("attach-make-viewer", p);

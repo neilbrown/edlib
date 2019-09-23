@@ -1305,7 +1305,7 @@ DEF_CMD(render_lines_refresh)
 	if (!m)
 		m = vmark_new(focus, MARK_UNGROUPED, NULL);
 	if (!m)
-		return Esys;
+		return Efail;
 	find_lines(m, p, focus, NO_NUMERIC);
 	rl->lines = render(m, p, focus, &rl->cols);
 	rl->repositioned = 0;
@@ -1655,7 +1655,7 @@ DEF_CMD(render_lines_move_line)
 	if (!m)
 		m = call_ret(mark, "doc:point", focus);
 	if (!m)
-		return Esys;
+		return Efail;
 
 	rl->ignore_point = 0;
 

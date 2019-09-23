@@ -295,7 +295,7 @@ DEF_CMD(render_format_attach)
 
 	p = do_render_format_attach(ci->focus, ci->num);
 	if (!p)
-		return Esys;
+		return Efail;
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 

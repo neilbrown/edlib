@@ -773,7 +773,7 @@ DEF_CMD(emacs_findfile)
 	while (path && strstr(path, "//"))
 		path = strstr(path, "//") + 1;
 	if (!path)
-		return Esys;
+		return Efail;
 
 	fd = open(path, O_RDONLY);
 	if (fd >= 0) {
@@ -798,13 +798,13 @@ DEF_CMD(emacs_findfile)
 
 	if (!par) {
 		pane_close(p);
-		return Esys;
+		return Efail;
 	}
 
 	p = home_call_ret(pane, p, "doc:attach-view", par);
 	if (p)
 		pane_focus(p);
-	return p ? 1 : Esys;
+	return p ? 1 : Efail;
 }
 
 REDEF_CMD(emacs_file_complete)
@@ -859,10 +859,10 @@ REDEF_CMD(emacs_file_complete)
 		return Efail;
 	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
-		return Esys;
+		return Efail;
 	p = home_call_ret(pane, docp, "doc:attach-view", pop, 0, NULL, "complete");
 	if (!p)
-		return Esys;
+		return Efail;
 
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, b);
 	if (cr.s && (strlen(cr.s) <= strlen(b) && cr.ret-1 > 1)) {
@@ -937,12 +937,12 @@ DEF_CMD(emacs_finddoc)
 	} else
 		par = call_ret(pane, "ThisPane", ci->focus);
 	if (!p || !par)
-		return Esys;
+		return Efail;
 
 	p = home_call_ret(pane, p, "doc:attach-view", par);
 	if (p)
 		pane_focus(p);
-	return p ? 1 : Esys;
+	return p ? 1 : Efail;
 }
 
 REDEF_CMD(emacs_doc_complete)
@@ -962,13 +962,13 @@ REDEF_CMD(emacs_doc_complete)
 		return Einval;
 	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
-		return Esys;
+		return Efail;
 	p = call_ret(pane, "docs:byname", ci->focus);
 	if (p)
 		p = home_call_ret(pane, p, "doc:attach-view", pop,
 		                  0, NULL, "complete");
 	if (!p)
-		return Esys;
+		return Efail;
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, str);
 	if (cr.s && (strlen(cr.s) <= strlen(str) && cr.ret - 1 > 1)) {
 		/* We need the dropdown */
@@ -1007,7 +1007,7 @@ DEF_CMD(emacs_viewdocs)
 		return Efail;
 	par = call_ret(pane, "ThisPane", ci->focus);
 	if (!par)
-		return Esys;
+		return Efail;
 
 	p = home_call_ret(pane, docs, "doc:attach-view", par);
 	return !!p;
@@ -1041,13 +1041,13 @@ DEF_CMD(emacs_shell)
 	if (!doc)
 		doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
 	if (!doc)
-		return Esys;
+		return Efail;
 	attr_set_str(&doc->attrs, "dirname", path);
 	par = home_call_ret(pane, ci->focus, "DocPane", doc);
 	if (!par)
 		par = call_ret(pane, "OtherPane", ci->focus);
 	if (!par)
-		return Esys;
+		return Efail;
 	/* shellcmd is attached directly to the document, not in the view
 	 * stack.  It is go-between for document and external command.
 	 * We don't need a doc attachment as no point is needed - we
@@ -1187,7 +1187,7 @@ DEF_CMD(emacs_search_highlight)
 	if (ci->mark && ci->num > 0 && ci->str) {
 		m = vmark_new(ci->focus, hi->view, ci->home);
 		if (!m)
-			return Esys;
+			return Efail;
 		mark_to_mark(m, ci->mark);
 		attr_set_int(&m->attrs, "render:search", ci->num);
 		call("Move-View-Pos", ci->focus, 0, m);

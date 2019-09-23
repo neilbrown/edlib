@@ -39,7 +39,7 @@ Core features
 - [ ] Change tlist to use one bit from each pointer
 - [ ] Need a debug mode where every mark usage is checked for validity.
       also check the setref sets up all linkages.
-- [ ] clarify difference between Efail and Esys, or remove one of them.
+- [X] clarify difference between Efail and Esys, or remove one of them.
 - [ ]  ?? restrict prefix key lookup to punctuation.
 
       Current ranges are:

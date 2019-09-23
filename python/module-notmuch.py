@@ -1297,7 +1297,7 @@ class notmuch_list(edlib.Doc):
     def handle_load_thread(self, key, mark, **a):
         "handle:doc:notmuch:load-thread"
         if mark.pos is None:
-            return edlib.Esys
+            return edlib.Efail
         (tid,mid) = mark.pos
         if tid not in self.threadinfo:
             self.load_thread(mark)
@@ -1684,7 +1684,7 @@ def notmuch_mode(key, home, focus, **a):
     except:
         p1 = home.call("attach-doc-notmuch", ret='focus')
     if not p1:
-        return edlib.Esys
+        return edlib.Efail
     p1.call("doc:attach-view", p0);
     return 1
 

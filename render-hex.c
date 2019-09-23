@@ -234,7 +234,7 @@ DEF_CMD(render_hex_attach)
 	struct pane *p = do_render_hex_attach(ci->focus);
 
 	if (!p)
-		return Esys;
+		return Efail;
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 

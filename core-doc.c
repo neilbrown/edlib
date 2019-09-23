@@ -733,7 +733,7 @@ DEF_CMD(doc_get_str)
 	else
 		m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	if (!m)
-		return Esys;
+		return Efail;
 	call_comm("doc:content", ci->focus, &g.c, 0, m);
 	mark_free(m);
 	comm_call(ci->comm2, "callback:get-str", ci->focus, 0, NULL, buf_final(&g.b));
@@ -803,7 +803,7 @@ DEF_CMD(doc_write_file)
 			fputc(ch, f);
 	}
 	if (fflush(f))
-		ret = Esys;
+		ret = Efail;
 	fclose(f);
 	mark_free(m);
 	return ret;
@@ -909,7 +909,7 @@ DEF_CMD(doc_move_to)
 		if (!dd->mark) {
 			dd->mark = mark_dup(dd->point);
 			if (!dd->mark)
-				return Esys;
+				return Efail;
 			attr_set_str(&dd->mark->attrs, "render:interactive-mark", "yes");
 		}
 		m = ci->mark ?: dd->point;
@@ -992,7 +992,7 @@ DEF_CMD(doc_attach_view)
 
 	p = doc_attach(focus);
 	if (!p)
-		return Esys;
+		return Efail;
 	do_doc_assign(p, doc);
 
 	call("doc:Notify:doc:revisit", p, ci->num?:1);
@@ -1173,7 +1173,7 @@ DEF_CMD(doc_open)
 		if (!p) {
 			if (fd != ci->num)
 				close(fd);
-			return Esys;
+			return Efail;
 		}
 		if (autoclose)
 			call("doc:set:autoclose", p, 1);
@@ -1195,7 +1195,7 @@ DEF_CMD(doc_from_text)
 
 	p = call_ret(pane, "attach-doc-text", ci->focus);
 	if (!p)
-		return Esys;
+		return Efail;
 	if (name) {
 		call("doc:set-name", p, 0, NULL, name);
 		call("global-multicall-doc:appeared-", p, 1);

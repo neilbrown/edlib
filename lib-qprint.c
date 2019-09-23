@@ -186,7 +186,7 @@ DEF_CMD(qp_attach)
 
 	p = pane_register(ci->focus, 0, &qp_handle.c, NULL, NULL);
 	if (!p)
-		return Esys;
+		return Efail;
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }

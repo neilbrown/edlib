@@ -222,10 +222,10 @@ DEF_CMD(docs_modified_notify_replace)
 	struct mark *m;
 
 	if (!ci->home->parent)
-		return Esys;
+		return Efail;
 	m = vmark_new(ci->home->parent, MARK_UNGROUPED, NULL);
 	if (!m)
-		return Esys;
+		return Efail;
 	mark_to_modified(ci->home->parent, m);
 	all_gone = (m->ref.p == NULL);
 	if (!all_gone && ci->mark) {
@@ -404,7 +404,7 @@ DEF_CMD(docs_callback)
 		p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus,
 		                  0, NULL, "modified");
 		if (!p)
-			return Esys;
+			return Efail;
 		return comm_call(ci->comm2, "callback:doc", p);
 	}
 
@@ -623,7 +623,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 	} else
 		par = call_ret(pane, "ThisPane", focus);
 	if (!par)
-		return Esys;
+		return Efail;
 	p = home_call_ret(pane, dp, "doc:attach-view", par);
 	if (p) {
 		pane_focus(p);
@@ -659,7 +659,7 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 
 	par = call_ret(pane, "ThisPane", focus);
 	if (!par)
-		return Esys;
+		return Efail;
 	p = home_call_ret(pane, dp, "doc:attach-view", par, 1, NULL, buf+5);
 	if (p) {
 		pane_focus(p);
@@ -802,7 +802,7 @@ DEF_CMD(docs_attach)
 		}
 		if (p)
 			return comm_call(ci->comm2, "callback:doc", p);
-		return Esys;
+		return Efail;
 	}
 	if (strcmp(type, "modified") == 0) {
 		p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
@@ -827,7 +827,7 @@ DEF_CMD(docs_attach)
 		}
 		if (p)
 			return comm_call(ci->comm2, "callback:doc", p);
-		return Esys;
+		return Efail;
 	}
 	/* any other type gets the default handling for the rendering */
 	p = docs->rendering;
@@ -907,14 +907,14 @@ DEF_CMD(attach_docs)
 	if (!p) {
 		free(doc->doc.name);
 		free(doc);
-		return Esys;
+		return Efail;
 	}
 	doc->rendering = NULL;
 	doc->doc.name = strdup("*Documents*");
 	p = pane_register(ci->home, 0, &docs_aux.c, doc, NULL);
 	if (!p) {
 		pane_close(doc->doc.home);
-		return Esys;
+		return Efail;
 	}
 	doc->collection = p;
 

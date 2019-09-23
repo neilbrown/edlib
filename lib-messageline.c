@@ -184,7 +184,7 @@ DEF_CMD(messageline_attach)
 
 	ret = do_messageline_attach(ci->focus);
 	if (!ret)
-		return Esys;
+		return Efail;
 	return comm_call(ci->comm2, "callback:attach", ret);
 }
 

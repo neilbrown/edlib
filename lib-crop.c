@@ -162,7 +162,7 @@ DEF_CMD(crop_attach)
 	p = pane_register(ci->focus, 0, &crop_handle.c, cd, NULL);
 	if (!p) {
 		free(cd);
-		return Esys;
+		return Efail;
 	}
 	cd->start = mark_dup(ci->mark);
 	cd->end = mark_dup(ci->mark2);

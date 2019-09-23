@@ -566,7 +566,7 @@ DEF_CMD(attach_mp)
 	}
 
 	free(mpi);
-	return Esys;
+	return Efail;
 }
 
 void edlib_init(struct pane *ed safe)

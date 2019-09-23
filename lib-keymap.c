@@ -62,7 +62,7 @@ DEF_CMD(keymap_handle)
 		struct key_data *kd_old = ci->home->data;
 		struct key_data *kd_new;
 		if (!p)
-			return Esys;
+			return Efail;
 		kd_new = p->data;
 		if (kd_old->globalcmd)
 			kd_new->globalcmd = command_get(kd_old->globalcmd);
@@ -151,7 +151,7 @@ DEF_CMD(keymap_attach)
 	struct pane *p = do_keymap_attach(ci->focus, 1);
 	if (p)
 		return comm_call(ci->comm2, "callback:attach", p);
-	return Esys;
+	return Efail;
 }
 
 void edlib_init(struct pane *ed safe)

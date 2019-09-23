@@ -395,7 +395,7 @@ DEF_CMD(complete_set_prefix)
 
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 	if (!m || !p->parent)
-		return Esys;
+		return Efail;
 	/* Move to end-of-document */
 	call("Move-File", ci->focus, 1, m);
 
@@ -549,7 +549,7 @@ REDEF_CMD(complete_attach)
 	complete = pane_register(ci->focus, 0, &complete_handle.c, cd, NULL);
 	if (!complete) {
 		free(cd);
-		return Esys;
+		return Efail;
 	}
 	cd->prefix = strdup("");
 	cd->prefix_only = 1;

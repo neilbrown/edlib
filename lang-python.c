@@ -321,7 +321,7 @@ REDEF_CMD(python_call)
 	if (!ret) {
 		PyErr_Print();
 		/* FIXME cancel error?? */
-		return Esys;
+		return Efail;
 	}
 	if (ret == Py_None)
 		rv = 0;
@@ -2260,7 +2260,7 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, Enoarg);
 	PyModule_AddIntMacro(m, Einval);
 	PyModule_AddIntMacro(m, Efalse);
-	PyModule_AddIntMacro(m, Esys);
+	PyModule_AddIntMacro(m, Efail);
 	PyModule_AddIntMacro(m, Enosup);
 	PyModule_AddIntMacro(m, Efail);
 

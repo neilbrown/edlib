@@ -157,7 +157,7 @@ DEF_CMD(dir_load_file)
 
 	if (fd < 0) {
 		if (!dr->fname)
-			return Esys;
+			return Efail;
 		fd = open(dr->fname, O_RDONLY|O_DIRECTORY);
 		if (fd < 0)
 			return Efail;
@@ -595,7 +595,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 	de = m->ref.d;
 	/* close this pane, open the given file. */
 	if (de == NULL)
-		return Esys;
+		return Efail;
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
 
@@ -605,7 +605,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 			snprintf(buf, sizeof(buf), "Chr-%c", cmd);
 			par = call_ret(pane, "ThisPane", focus);
 			if (!par)
-				return Esys;
+				return Efail;
 
 			p = home_call_ret(pane, new, "doc:attach-view", par, 1, NULL, buf);
 		}
@@ -617,7 +617,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 			return Efail;
 		par = call_ret(pane, "ThisPane", focus);
 		if (!par)
-			return Esys;
+			return Efail;
 		p = home_call_ret(pane, doc, "doc:attach-view", par);
 	}
 	free(fname);
@@ -676,7 +676,7 @@ DEF_CMD(dir_attach)
 		}
 		if (p)
 			return comm_call(ci->comm2, "callback:doc", p);
-		return Esys;
+		return Efail;
 	}
 	/* any other type gets the default handling for the rendering */
 	p = dr->rendering;
