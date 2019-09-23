@@ -120,6 +120,22 @@ typedef struct {
 } Comm;
 static PyTypeObject CommType;
 
+static inline int pane_valid(Pane *p safe)
+{
+	if (p->pane && p->pane->handle)
+		return 1;
+	PyErr_SetString(PyExc_TypeError, "Pane has been freed");
+	return 0;
+}
+
+static inline int doc_valid(Doc *p safe)
+{
+	if (p->pane && p->pane->handle)
+		return 1;
+	PyErr_SetString(PyExc_TypeError, "Doc pane has been freed");
+	return 0;
+}
+
 static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject *kwds,
 			PyObject **s1 safe, PyObject **s2 safe);
 
@@ -584,10 +600,9 @@ static void pane_dealloc(Pane *self safe)
 static PyObject *pane_children(Pane *self safe, PyObject *args)
 {
 	PaneIter *ret;
-	if (!self->pane) {
-		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
+
+	if (!pane_valid(self))
 		return NULL;
-	}
 	ret = (PaneIter*)PyObject_CallObject((PyObject*)&PaneIterType, NULL);
 	if (ret) {
 		if (list_empty(&self->pane->children))
@@ -617,11 +632,15 @@ static void paneiter_dealloc(PaneIter *self safe)
 static PyObject *Pane_clone_children(Pane *self safe, PyObject *args)
 {
 	Pane *other = NULL;
-	int ret = PyArg_ParseTuple(args, "O!", &PaneType, &other);
+	int ret;
 
+	if (!pane_valid(self))
+		return NULL;
+
+	ret = PyArg_ParseTuple(args, "O!", &PaneType, &other);
 	if (ret <= 0 || !other)
 		return NULL;
-	if (self->pane && other->pane)
+	if (other->pane)
 		pane_clone_children(self->pane, other->pane);
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -629,16 +648,20 @@ static PyObject *Pane_clone_children(Pane *self safe, PyObject *args)
 
 static PyObject *Pane_focus(Pane *self safe, PyObject *args)
 {
-	if (self->pane)
-		pane_focus(self->pane);
+	if (!pane_valid(self))
+		return NULL;
+
+	pane_focus(self->pane);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
 
 static PyObject *Pane_refresh(Pane *self safe, PyObject *args)
 {
-	if (self->pane)
-		pane_refresh(self->pane);
+	if (!pane_valid(self))
+		return NULL;
+
+	pane_refresh(self->pane);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -744,7 +767,7 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 	struct pyret pr;
 	int return_char = 0;
 
-	if (!self->pane)
+	if (!pane_valid(self))
 		return NULL;
 
 	ci.home = self->pane;
@@ -824,8 +847,9 @@ static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject
 	int rv;
 	PyObject *s1, *s2;
 
-	if (!self->pane || !self->pane->handle)
+	if (!pane_valid(self))
 		return NULL;
+
 	ci.home = self->pane;
 
 	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
@@ -858,8 +882,9 @@ static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwd
 	int rv;
 	PyObject *s1, *s2;
 
-	if (!self->pane)
+	if (!pane_valid(self))
 		return NULL;
+
 	ci.home = self->pane;
 
 	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
@@ -1039,10 +1064,10 @@ static PyMethodDef pane_methods[] = {
 static PyObject *pane_getnum(Pane *p safe, char *which safe)
 {
 	long n = 0;
-	if (p->pane == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
+
+	if (!pane_valid(p))
 		return NULL;
-	}
+
 	switch(*which) {
 	case 'x': n = p->pane->x; break;
 	case 'y': n = p->pane->y; break;
@@ -1061,10 +1086,9 @@ static int pane_setnum(Pane *p safe, PyObject *v, char *which safe)
 	int x,y,w,h;
 	long val;
 
-	if (p->pane == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
+	if (!pane_valid(p))
 		return -1;
-	}
+
 	if (*which == 'z') {
 		PyErr_SetString(PyExc_TypeError, "z cannot be set");
 		return -1;
@@ -1096,10 +1120,9 @@ static Pane *pane_getpane(Pane *p safe, char *which safe)
 	struct pane *new = NULL;
 	Pane *newpane;
 
-	if (p->pane == NULL) {
-		PyErr_SetString(PyExc_TypeError, "pane not initialized");
+	if (!pane_valid(p))
 		return NULL;
-	}
+
 	if (*which == 'p')
 		new = p->pane->parent;
 	if (*which == 'f')
@@ -1191,10 +1214,9 @@ static PyObject *Pane_get_item(Pane *self safe, PyObject *key safe)
 	char *k, *v;
 	PyObject *t1 = NULL;
 
-	if (!self->pane) {
-		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
+	if (!pane_valid(self))
 		return NULL;
-	}
+
 	k = python_as_string(key, &t1);
 	if (!k) {
 		PyErr_SetString(PyExc_TypeError, "Key must be a string or unicode");
@@ -1213,10 +1235,9 @@ static int Pane_set_item(Pane *self safe, PyObject *key, PyObject *val)
 	char *k, *v;
 	PyObject *t1 = NULL, *t2 = NULL;
 
-	if (!self->pane) {
-		PyErr_SetString(PyExc_TypeError, "Pane is NULL");
+	if (!pane_valid(self))
 		return -1;
-	}
+
 	k = python_as_string(key, &t1);
 	if (!k) {
 		PyErr_SetString(PyExc_TypeError, "Key must be a string or unicode");
@@ -1328,7 +1349,7 @@ static PyObject *first_mark(Doc *self safe, PyObject *args)
 {
 	struct mark *m;
 
-	if (!self->pane)
+	if (!doc_valid(self))
 		return NULL;
 
 	m = doc_first_mark_all(&self->doc);
@@ -1343,9 +1364,16 @@ static PyObject *to_end(Doc *self safe, PyObject *args)
 {
 	Mark *mark = NULL;
 	int end = 0;
-	int ret = PyArg_ParseTuple(args, "O!i", &MarkType, &mark, &end);
-	if (ret <= 0 || !mark || !mark->mark || !self->pane)
+	int ret;
+
+	if (!doc_valid(self))
 		return NULL;
+
+	ret = PyArg_ParseTuple(args, "O!i", &MarkType, &mark, &end);
+	if (ret <= 0 || !mark || !mark->mark) {
+		PyErr_SetString(PyExc_TypeError, "Mark undefined or uninitialized");
+		return NULL;
+	}
 
 	mark_to_end(&self->doc, mark->mark, end);
 	Py_INCREF(Py_None);
