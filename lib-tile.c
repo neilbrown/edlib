@@ -954,7 +954,7 @@ DEF_CMD(tile_doc)
 	/* Find where 'focus' is open */
 	name = pane_attr_get(ci->focus, "doc-name");
 	t = ti;
-	while ((t = list_next_entry(t, tiles)) != ti) {
+	do {
 		char *n;
 		struct pane *f = t->p;
 		while (f->focus)
@@ -963,7 +963,8 @@ DEF_CMD(tile_doc)
 		if (name && n && strcmp(n, name) == 0)
 			return comm_call(ci->comm2, "callback:pane", t->p,
 					 0, NULL, t->name);
-	}
+	} while ((t = list_next_entry(t, tiles)) != ti);
+
 	return Efallthrough;
 }
 
