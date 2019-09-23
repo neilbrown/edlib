@@ -90,7 +90,6 @@ enum edlib_errors {
 	Efail,
 	/* following errors are soft and don't create exceptions */
 	Efalse,
-	Enotarget,
 	Eunused,
 };
 
@@ -661,8 +660,6 @@ static inline int do_call_val(enum target_type type, struct pane *home, struct c
 		ccache->comm = ci.comm;
 		ccache->home = ci.home;
 	}
-	if (ret == Enotarget)
-		return Efallthrough;
 	return ret;
 }
 

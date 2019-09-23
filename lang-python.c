@@ -342,7 +342,7 @@ REDEF_CMD(python_call)
 REDEF_CMD(python_doc_call)
 {
 	int rv = python_pane_call_func(ci);
-	if (rv == Efallthrough || rv == Enotarget)
+	if (rv == Efallthrough)
 		rv = key_lookup(doc_default_cmd, ci);
 	return rv;
 }
@@ -841,7 +841,7 @@ static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject
 
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
-	if (rv == Efallthrough || rv == Enotarget) {
+	if (rv == Efallthrough) {
 		Py_INCREF(Py_None);
 		return Py_None;
 	}
@@ -1953,7 +1953,7 @@ static PyObject *Comm_call(Comm *c safe, PyObject *args safe, PyObject *kwds)
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
 
-	if (rv == Efallthrough || rv == Enotarget) {
+	if (rv == Efallthrough) {
 		Py_INCREF(Py_None);
 		return Py_None;
 	}
@@ -2258,7 +2258,6 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, NEVER_RPOS);
 	PyModule_AddIntMacro(m, Efallthrough);
 	PyModule_AddIntMacro(m, Enoarg);
-	PyModule_AddIntMacro(m, Enotarget);
 	PyModule_AddIntMacro(m, Einval);
 	PyModule_AddIntMacro(m, Efalse);
 	PyModule_AddIntMacro(m, Esys);

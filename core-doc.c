@@ -525,10 +525,7 @@ DEF_CMD(doc_notify)
 	int ret = home_pane_notify(ci->home, ci->key + 4, ci->focus,
 	                           ci->num, ci->mark, ci->str,
 	                           ci->num2, ci->mark2, ci->str2, ci->comm2);
-	/* If nothing returned non-zero, assume there is no target, don't fall
-	 * through as our job is done
-	 */
-	return ret ?: Enotarget;
+	return ret;
 }
 
 DEF_CMD(doc_delview)
@@ -950,9 +947,6 @@ DEF_CMD(doc_pass_on)
 			 ci->mark ?: dd->point, ci->str,
 			 ci->num2, ci->mark2, ci->str2,
 			 ci->x, ci->y, ci->comm2);
-	if (!ret && (ci->mark || ci->mark2))
-		/* Mark won't be meaningful to any other document */
-		ret = Enotarget;
 	return ret;
 }
 

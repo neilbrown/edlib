@@ -93,7 +93,6 @@ negative result indicating lack of success.  Known error codes include:
 - Efail:  This is similar to Esys - I need to clarify the difference
        if there is one.
 - Efalse: Not really an error, just a Boolean status
-- Enotarget: Similar to zero, but no more parents are attempted.
 
 Panes
 -----

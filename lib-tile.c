@@ -964,7 +964,7 @@ DEF_CMD(tile_doc)
 			return comm_call(ci->comm2, "callback:pane", t->p,
 					 0, NULL, t->name);
 	}
-	return Enotarget;
+	return Efallthrough;
 }
 
 DEF_CMD(tile_root)

@@ -468,8 +468,6 @@ int key_handle(const struct cmd_info *ci safe)
 	time_start_key(ci->key);
 	if ((void*) ci->comm) {
 		int ret = ci->comm->func(ci);
-		if (ret == Enotarget)
-			ret = Efallthrough;
 		time_stop_key(ci->key);
 		return ret;
 	}
@@ -503,7 +501,7 @@ int key_handle(const struct cmd_info *ci safe)
 		if (ret) {
 			time_stop_key(ci->key);
 			/* 'p' might have been destroyed */
-			return ret == Enotarget ? Efallthrough : ret;
+			return ret;
 		}
 		p = p->parent;
 	}
