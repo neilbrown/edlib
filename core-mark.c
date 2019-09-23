@@ -341,26 +341,6 @@ void mark_reset(struct doc *d safe, struct mark *m safe, int end)
 	pane_call(d->home, "doc:set-ref", d->home, !end, m);
 }
 
-struct mark *doc_next_mark_view(struct mark *m safe)
-{
-	struct tlist_head *tl = &m->view;
-
-	tlist_for_each_continue(tl, GRP_HEAD)
-		if (TLIST_TYPE(tl) == GRP_MARK)
-			return tlist_entry(tl, struct mark, view);
-	return NULL;
-}
-
-struct mark *doc_prev_mark_view(struct mark *m safe)
-{
-	struct tlist_head *tl = &m->view;
-
-	tlist_for_each_continue_reverse(tl, GRP_HEAD)
-		if (TLIST_TYPE(tl) == GRP_MARK)
-			return tlist_entry(tl, struct mark, view);
-	return NULL;
-}
-
 struct mark *doc_first_mark_all(struct doc *d safe)
 {
 	if (!hlist_empty(&d->marks))

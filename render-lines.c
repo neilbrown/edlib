@@ -967,9 +967,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 	 * displayed - they might not be.
 	 */
 	if (top)
-		top = doc_next_mark_view(top);
+		top = vmark_next(top);
 	if (bot)
-		bot = doc_prev_mark_view(bot);
+		bot = vmark_prev(bot);
 	/* Protect top/bot from being freed by call_render_line */
 	if (top)
 		top = mark_dup(top);
@@ -1592,10 +1592,10 @@ DEF_CMD(render_lines_move_pos)
 	bot = vmark_last(focus, rl->typenum, p);
 	if (top && rl->skip_lines)
 		/* top line not fully displayed, being in that line is no sufficient */
-		top = doc_next_mark_view(top);
+		top = vmark_next(top);
 	if (bot)
 		/* last line might not be fully displayed, so don't assume */
-		bot = doc_prev_mark_view(bot);
+		bot = vmark_prev(bot);
 	if (top && bot &&
 	    top->seq < pm->seq &&
 	    pm->seq < bot->seq && !mark_same(pm, bot))
@@ -1737,7 +1737,7 @@ DEF_CMD(render_lines_notify_replace)
 			free(end->mdata);
 			end->mdata = NULL;
 		}
-		end = doc_prev_mark_view(end);
+		end = vmark_prev(end);
 	}
 	/* Must be sure to clear the line *before* the change */
 	if (end && end->mdata) {

@@ -206,8 +206,6 @@ struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner);
 struct mark *doc_first_mark_all(struct doc *d safe);
 struct mark *doc_next_mark_all(struct mark *m safe);
 struct mark *doc_prev_mark_all(struct mark *m safe);
-struct mark *doc_next_mark_view(struct mark *m safe);
-struct mark *doc_prev_mark_view(struct mark *m safe);
 void point_reset(struct mark *p);
 void mark_reset(struct doc *d safe, struct mark *m safe, int end);
 void mark_to_end(struct doc *d safe, struct mark *m safe, int end);

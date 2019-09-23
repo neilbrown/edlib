@@ -104,7 +104,7 @@ static int need_recalc(struct pane *p safe, struct mark *m)
 	if (!attr_find(*mark_attr(m), "lines"))
 		ret = 1;
 	while (1) {
-		next = doc_next_mark_view(m);
+		next = vmark_next(m);
 		if (!next)
 			break;
 		if (is_eol(doc_prior_pane(p, next)) &&
@@ -149,9 +149,9 @@ static void count_calculate(struct pane *p safe,
 			/* Force and update to make sure spacing stays sensible */
 			if (need_recalc(p, m))
 				/* need to update this one */
-				do_count(p, m, doc_next_mark_view(m), &l, &w, &c, 1);
+				do_count(p, m, vmark_next(m), &l, &w, &c, 1);
 
-			m = doc_next_mark_view(m);
+			m = vmark_next(m);
 		}
 		if (!m) {
 			/* fell off the end, just count directly */
@@ -161,7 +161,7 @@ static void count_calculate(struct pane *p safe,
 	}
 	if (need_recalc(p, m))
 		/* need to update this one */
-		do_count(p, m, doc_next_mark_view(m), &l, &w, &c, 1);
+		do_count(p, m, vmark_next(m), &l, &w, &c, 1);
 
 	/* 'm' is not before 'start', it might be after.
 	 * if 'm' is not before 'end' either, just count from
@@ -180,7 +180,7 @@ static void count_calculate(struct pane *p safe,
 		lines = words = chars = 0;
 	else
 		do_count(p, start, m, &lines, &words, &chars, 0);
-	while ((m2 = doc_next_mark_view(m)) != NULL &&
+	while ((m2 = vmark_next(m)) != NULL &&
 	       (!end || m2->seq < end->seq)) {
 		/* Need everything from m to m2 */
 		lines += attr_find_int(*mark_attr(m), "lines");
@@ -188,7 +188,7 @@ static void count_calculate(struct pane *p safe,
 		chars += attr_find_int(*mark_attr(m), "chars");
 		m = m2;
 		if (need_recalc(p, m))
-			do_count(p, m, doc_next_mark_view(m), &l, &w, &c, 1);
+			do_count(p, m, vmark_next(m), &l, &w, &c, 1);
 	}
 	/* m is the last mark before end */
 	if (!end) {
@@ -275,7 +275,7 @@ DEF_CMD(linecount_notify_goto)
 	if (!m)
 		return 1;
 	lineno = 1;
-	while ((m2 = doc_next_mark_view(m)) != NULL &&
+	while ((m2 = vmark_next(m)) != NULL &&
 	       (l = attr_find_int(*mark_attr(m), "lines")) >= 0 &&
 	       lineno + l < ci->num) {
 		m = m2;
