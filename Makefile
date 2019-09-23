@@ -23,8 +23,8 @@ ifeq "$(wildcard .DEBUG)" ".DEBUG"
 else
  DEBUG=$(D:auto=0)
 endif
-VERSION = $(shell [ -d .git ] && git describe --always HEAD | sed 's/edlib-//')
-VERS_DATE = $(shell [ -d .git ] && date --iso-8601 --date="`git log -n1 --format=format:%cd --date=iso --date=short`")
+VERSION = $(shell [ -e .git ] && git describe --always HEAD | sed 's/edlib-//')
+VERS_DATE = $(shell [ -e .git ] && date --iso-8601 --date="`git log -n1 --format=format:%cd --date=iso --date=short`")
 DVERS = $(if $(VERSION),-DVERSION=\"$(VERSION)\",)
 DDATE = $(if $(VERS_DATE),-DVERS_DATE="\"$(VERS_DATE)\"",)
 VCFLAGS += $(DVERS) $(DDATE)
