@@ -135,7 +135,7 @@ class MakePane(edlib.Pane):
         par.call("Move-File", -1)
         par.call("Move-Line", int(lineno)-1)
 
-        par = focus.call("DocPane", self, ret='focus')
+        par = par.call("DocPane", self, ret='focus')
         if par:
             while par.focus:
                 par = par.focus
