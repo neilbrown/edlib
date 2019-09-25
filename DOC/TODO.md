@@ -14,7 +14,7 @@ Bugs to be fixed
 - [ ] undo sometimes gathers too much into a single change.  Cursor movement
         should break the change.
 - [ ] when move down causes a scroll, we temp lose target column
-- [ ] Commands should *never* fall-through as marks get completely messed up.
+- [X] Commands should *never* fall-through as marks get completely messed up.
       there are still places that try to protect against this.
 - [ ] mouse-click before the end of an active selection picks the wrong place.
 - [ ] mouse actions need to affect selection: set or clear.
@@ -36,9 +36,10 @@ Core features
       large allocations use different API and can fail.
 - [ ] add '~' support for patchname lookup - and $SUBST??
 - [ ] graceful failure when closing doc that still has views.
+      Then call doc_free() internally so the module doesn't need to.
 - [ ] clarify and document the use of Notify:doc:Replace.  What are the two
       marks exactly.
-- [ ] unify doc_next_mark_view and vmark_next.  Any others?
+- [X] unify doc_next_mark_view and vmark_next.  Any others?
 - [ ] some way to find column of point, or at least: width of line
 - [ ] Change tlist to use one bit from each pointer
 - [ ] Need a debug mode where every mark usage is checked for validity.
@@ -196,8 +197,6 @@ Module features
 - [ ] when I unhide an email part which is a single v.long line,
     redraw gets confused and point goes off-screen, which seems
     to leave it confused.
-- [ ] hide view-num inside pane so number cannot be misused.
-     i.e. each view is owned by a pane and can only be used by that pane.
 - [ ] make min top/bottom margin configurable, set for message list
 - [ ] error check Popen of notmuch - don't want EPIPE when we write.
 - [ ] render-lines calls render:reposition with m2 beyond the end of displayed region.
