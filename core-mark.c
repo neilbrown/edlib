@@ -315,27 +315,6 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 		}
 }
 
-static struct mark *safe point_new(struct doc *d safe)
-{
-	struct mark *ret = calloc(1, sizeof(*ret));
-	struct point_links *lnk = malloc(sizeof(*lnk) +
-					 d->nviews * sizeof(lnk->lists[0]));
-	int i;
-
-	INIT_HLIST_NODE(&ret->all);
-	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
-	ret->attrs = NULL;
-	ret->viewnum = MARK_POINT;
-	hlist_add_head(&ret->all, &d->marks);
-	ret->mdata = lnk;
-	lnk->size = d->nviews;
-	lnk->pt = ret;
-	for (i = 0; i < d->nviews; i++)
-		INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
-	mark_reset(d, ret, 0);
-	return ret;
-}
-
 void mark_reset(struct doc *d safe, struct mark *m safe, int end)
 {
 	m->rpos = NEVER_RPOS;
@@ -368,8 +347,6 @@ struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner)
 	/* FIXME view is >= -1 */
 	struct mark *ret;
 
-	if (view == MARK_POINT)
-		return point_new(d);
 	if (view >= d->nviews ||
 	    view < MARK_UNGROUPED ||
 	    (view >= 0 && (!d->views || d->views[view].owner != owner))) {
@@ -381,6 +358,18 @@ struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner)
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	ret->viewnum = view;
 	hlist_add_head(&ret->all, &d->marks);
+
+	if (view == MARK_POINT) {
+		struct point_links *lnk = malloc(sizeof(*lnk) +
+		                                 d->nviews * sizeof(lnk->lists[0]));
+		int i;
+
+		lnk->size = d->nviews;
+		lnk->pt = ret;
+		for (i = 0; i < d->nviews; i++)
+			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
+		ret->mdata = lnk;
+	}
 	mark_reset(d, ret, 0);
 	if (hlist_unhashed(&ret->all)) {
 		/* Document misbehaved, fail gracefully */
