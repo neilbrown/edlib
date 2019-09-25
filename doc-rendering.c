@@ -334,7 +334,8 @@ DEF_CMD(dr_step)
 
 DEF_CMD(dr_close)
 {
-	struct dr_info *dri = ci->home->data;
+	struct doc *d = ci->home->data;
+	struct dr_info *dri = container_of(d, struct dr_info, doc);
 	struct pane *p = dri->base;
 	struct mark *m;
 
@@ -361,6 +362,7 @@ DEF_CMD(dr_close)
 
 	if (p)
 		home_call(p, "doc:del-view", ci->home, dri->vnum);
+	doc_free(d);
 	free(dri);
 	ci->home->data = safe_cast NULL;
 	return 1;
@@ -375,7 +377,8 @@ DEF_CMD(dr_notify_viewers)
 DEF_CMD(dr_notify_replace)
 {
 	/* Something has changed, invalidate all cached content */
-	struct dr_info *dri = ci->home->data;
+	struct doc *d = ci->home->data;
+	struct dr_info *dri = container_of(d, struct dr_info, doc);
 	struct pane *p = dri->base;
 	struct mark *m;
 
@@ -403,7 +406,8 @@ DEF_CMD(dr_render_line)
 	struct mark *m = ci->mark;
 	struct mark *m2 = ci->mark2;
 	struct mark *mt;
-	struct dr_info *dri = ci->home->data;
+	struct doc *d = ci->home->data;
+	struct dr_info *dri = container_of(d, struct dr_info, doc);
 	char *line;
 	int ret;
 
@@ -463,7 +467,8 @@ DEF_CMD(dr_render_prev)
 {
 	struct mark *m = ci->mark;
 	struct mark *mt;
-	struct dr_info *dri = ci->home->data;
+	struct doc *d = ci->home->data;
+	struct dr_info *dri = container_of(d, struct dr_info, doc);
 	int ret;
 
 	if (!m)
@@ -488,7 +493,8 @@ DEF_CMD(dr_replace)
 {
 	int ret;
 	struct mark *m1, *m2;
-	struct dr_info *dri = ci->home->data;
+	struct doc *d = ci->home->data;
+	struct dr_info *dri = container_of(d, struct dr_info, doc);
 
 	m1 = ci->mark && ci->mark->ref.m ? mark_dup(ci->mark->ref.m) : NULL;
 	m2 = ci->mark2 && ci->mark2->ref.m ? mark_dup(ci->mark2->ref.m) : NULL;
@@ -507,7 +513,8 @@ DEF_CMD(dr_get_attr)
 {
 	char *attr = ci->str;
 	char *val;
-	struct dr_info *dri = ci->home->data;
+	struct doc *d = ci->home->data;
+	struct dr_info *dri = container_of(d, struct dr_info, doc);
 
 	if (!attr)
 		return Enoarg;

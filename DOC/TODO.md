@@ -21,6 +21,10 @@ Bugs to be fixed
 - [ ] detect when file has changed since it was read.
 - [ ] alert when finding a name that is a link to another
 - [ ] make sure *Welcome* has a dirname (it didn't once..)
+- [ ] temp docs, such as pop-up input, can be inline with the pop-up
+      rather than separate.  However then the support provided by
+      core-doc is hard to provide.  Maybe there is a simpler way to
+      array for that support.
 
 Core features
 -------------
