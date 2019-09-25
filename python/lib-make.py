@@ -304,7 +304,7 @@ def make_request(key, focus, num, str, mark, **a):
         d = dir
         mode = "grep"
         while d and d != '/' and mode == "grep":
-            if os.path.isdir(os.path.join(d, ".git")):
+            if os.path.exists(os.path.join(d, ".git")):
                 mode = "git"
                 dflt = "git grep -nH "
             elif os.path.isfile(os.path.join(d, "TAGS")):
