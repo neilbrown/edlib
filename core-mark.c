@@ -402,7 +402,7 @@ struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner)
  *
  */
 
-wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move)
+static wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move)
 {
 	int ret;
 

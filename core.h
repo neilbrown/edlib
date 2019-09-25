@@ -206,15 +206,11 @@ void mark_free(struct mark *m);
 struct mark *doc_first_mark_all(struct doc *d safe);
 struct mark *doc_next_mark_all(struct mark *m safe);
 struct mark *doc_prev_mark_all(struct mark *m safe);
-void point_reset(struct mark *p);
 void mark_reset(struct doc *d safe, struct mark *m safe, int end);
 void mark_to_end(struct doc *d safe, struct mark *m safe, int end);
 void doc_check_consistent(struct doc *d safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe);
-struct mark *safe point_dup(struct mark *p safe);
-wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move);
-wint_t mark_step2(struct doc *d safe, struct mark *m safe, int forward, int move);
 wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int move);
 
 static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
@@ -238,17 +234,11 @@ wint_t mark_next_pane(struct pane *p safe, struct mark *m safe);
 wint_t mark_prev_pane(struct pane *p safe, struct mark *m safe);
 struct mark *mark_at_point(struct pane *p safe, struct mark *pm, int view);
 struct mark *do_mark_at_point(struct mark *pt safe, int view);
-void points_resize(struct doc *d safe);
-void points_attach(struct doc *d safe, int view);
 struct mark *vmark_next(struct mark *m safe);
 struct mark *vmark_prev(struct mark *m safe);
 struct mark *vmark_or_point_next(struct mark *m safe, int view);
 struct mark *vmark_or_point_prev(struct mark *m safe, int view);
-struct mark *do_vmark_first(struct doc *d safe, int view, struct pane *owner safe);
-struct mark *do_vmark_last(struct doc *d safe, int view, struct pane *owner safe);
 struct mark *vmark_matching(struct mark *m safe);
-struct mark *do_vmark_at_point(struct doc *d safe, struct mark *pt safe, int view, struct pane *owner safe);
-struct mark *do_vmark_at_or_before(struct doc *d safe, struct mark *m safe, int view, struct pane *owner);
 struct mark *vmark_first(struct pane *p safe, int view, struct pane *owner safe);
 struct mark *vmark_last(struct pane *p safe, int view, struct pane *owner safe);
 struct mark *vmark_at_point(struct pane *p safe, int view, struct pane *owner safe);
@@ -389,11 +379,9 @@ static inline struct pane * safe pane_root(struct pane *p safe)
 		p = p->parent;
 	return p;
 }
-void pane_init(struct pane *p safe, struct pane *par, struct list_head *here);
 void pane_reparent(struct pane *p safe, struct pane *newparent safe);
 void pane_subsume(struct pane *p safe, struct pane *parent safe);
 void pane_close(struct pane *p safe);
-void pane_notify_close(struct pane *p safe);
 void pane_resize(struct pane *p safe, int x, int y, int w, int h);
 void pane_refresh(struct pane *p safe);
 void pane_focus(struct pane *p);

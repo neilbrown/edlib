@@ -33,7 +33,7 @@
 
 #include "core.h"
 
-void pane_init(struct pane *p safe, struct pane *par, struct list_head *here)
+static void pane_init(struct pane *p safe, struct pane *par, struct list_head *here)
 {
 	p->parent = par;
 	if (par && !here)
@@ -304,7 +304,7 @@ void pane_drop_notifiers(struct pane *p safe, char *notification)
 	}
 }
 
-void pane_notify_close(struct pane *p safe)
+static void pane_notify_close(struct pane *p safe)
 {
 	while (!list_empty(&p->notifiees)) {
 		struct notifier *n = list_first_entry(&p->notifiees,
