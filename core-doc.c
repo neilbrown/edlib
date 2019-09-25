@@ -33,6 +33,7 @@ struct doc_ref {
 
 #include "core.h"
 #include "misc.h"
+#include "internal.h"
 
 static void do_doc_assign(struct pane *p safe, struct pane *doc safe);
 static struct pane *safe doc_attach(struct pane *parent);

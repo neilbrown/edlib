@@ -69,6 +69,7 @@
 #include <memory.h>
 
 #include "core.h"
+#include "internal.h"
 
 /* seq numbers added to the end are given a gap of 128.
  * seq numbers at other locations are placed at mean of before and after.
