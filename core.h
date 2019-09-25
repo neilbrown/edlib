@@ -212,7 +212,6 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end);
 void doc_check_consistent(struct doc *d safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe);
-struct mark *safe point_new(struct doc *d safe);
 struct mark *safe point_dup(struct mark *p safe);
 wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, int move);
 wint_t mark_step2(struct doc *d safe, struct mark *m safe, int forward, int move);

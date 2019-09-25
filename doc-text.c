@@ -1809,7 +1809,9 @@ DEF_CMD(text_replace)
 
 	if (!pm) {
 		/* Default to insert at end */
-		pm = point_new(d);
+		pm = vmark_new(ci->home, MARK_POINT, NULL);
+		if (!pm)
+			return Efail;
 		mark_reset(d, pm, 1);
 	} else
 		/* probably move point */

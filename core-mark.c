@@ -315,7 +315,7 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 		}
 }
 
-struct mark *safe point_new(struct doc *d safe)
+static struct mark *safe point_new(struct doc *d safe)
 {
 	struct mark *ret = calloc(1, sizeof(*ret));
 	struct point_links *lnk = malloc(sizeof(*lnk) +
