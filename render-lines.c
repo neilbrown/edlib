@@ -1552,6 +1552,7 @@ DEF_CMD(render_lines_set_cursor)
 	while (y <= cihy && m && m->mdata) {
 		int cx = cihx, cy = cihy, o = -1;
 		char *oattrs = NULL;
+		call_render_line(focus, m);
 		render_line(p, focus, m->mdata, &y, 0, scale.x, &cx, &cy, NULL,
 			    &o, &oattrs, NULL, NULL);
 		if (o >= 0) {
@@ -1800,8 +1801,6 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Move-View-Pos", &render_lines_move_pos);
 	key_add(rl_map, "Move-View-Line", &render_lines_view_line);
 	key_add(rl_map, "Move-CursorXY", &render_lines_set_cursor);
-	key_add(rl_map, "Click-1", &render_lines_set_cursor);
-	key_add(rl_map, "Press-1", &render_lines_set_cursor);
 	key_add(rl_map, "Move-Line", &render_lines_move_line);
 
 	key_add(rl_map, "Replace", &render_lines_other_move);

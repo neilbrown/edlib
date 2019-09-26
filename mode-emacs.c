@@ -1733,6 +1733,49 @@ DEF_CMD(emacs_make)
 	return 1;
 }
 
+DEF_CMD(emacs_click)
+{
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+
+	if (mk) {
+		attr_set_int(&mk->attrs, "emacs:active", 0);
+		call("Notify:change", ci->focus, 0, NULL, NULL, 0, mk);
+	}
+	call("Move-CursorXY", ci->focus,
+	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
+	call("Move-to", ci->focus, 1);
+	return 1;
+}
+
+DEF_CMD(emacs_press)
+{
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+
+	if (mk) {
+		attr_set_int(&mk->attrs, "emacs:active", 0);
+		call("Notify:change", ci->focus, 0, NULL, NULL, 0, mk);
+	}
+	call("Move-CursorXY", ci->focus,
+	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
+	call("Move-to", ci->focus, 1);
+	return 1;
+}
+
+DEF_CMD(emacs_release)
+{
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	struct mark *p = call_ret(mark, "doc:point", ci->focus);
+
+	call("Move-CursorXY", ci->focus,
+	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
+
+	if (mk && p && !mark_same(mk, p)) {
+		attr_set_int(&mk->attrs, "emacs:active", 1);
+		call("Notify:change", ci->focus, 0, p, NULL, 0, mk);
+	}
+	return 1;
+}
+
 static void emacs_init(void)
 {
 	unsigned i;
@@ -1826,6 +1869,10 @@ static void emacs_init(void)
 
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);
+
+	key_add(m, "Click-1", &emacs_click);
+	key_add(m, "Press-1", &emacs_press);
+	key_add(m, "Release-1", &emacs_release);
 
 	emacs_map = m;
 

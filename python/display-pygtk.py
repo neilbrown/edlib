@@ -430,6 +430,7 @@ class EdDisplay(gtk.Window):
         self.text.connect("focus-in-event", self.focus_in)
         self.text.connect("focus-out-event", self.focus_out)
         self.text.connect("button-press-event", self.press)
+        self.text.connect("button-release-event", self.release)
         self.text.connect("scroll-event", self.scroll)
         self.text.connect("key-press-event", self.keystroke)
         self.im.connect("commit", self.keyinput)
@@ -484,6 +485,21 @@ class EdDisplay(gtk.Window):
         x = int(event.x)
         y = int(event.y)
         s = "Click-" + ("%d"%event.button)
+        if event.state & gtk.gdk.SHIFT_MASK:
+            s = "S-" + s;
+        if event.state & gtk.gdk.CONTROL_MASK:
+            s = "C-" + s;
+        if event.state & gtk.gdk.MOD1_MASK:
+            s = "M-" + s;
+        self.pane.call("Mouse-event", s, self.pane, (x,y))
+        edlib.time_stop(edlib.TIME_KEY)
+
+    def release(self, c, event):
+        edlib.time_start(edlib.TIME_KEY)
+        c.grab_focus()
+        x = int(event.x)
+        y = int(event.y)
+        s = "Release-" + ("%d"%event.button)
         if event.state & gtk.gdk.SHIFT_MASK:
             s = "S-" + s;
         if event.state & gtk.gdk.CONTROL_MASK:
