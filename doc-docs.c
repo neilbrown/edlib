@@ -435,14 +435,14 @@ DEF_CMD(doc_damage)
 {
 	struct pane *p = ci->home;
 	struct doc *d = p->data;
-	struct mark *m = vmark_new(p, MARK_UNGROUPED, NULL);
+	struct mark *m = vmark_new(d->home, MARK_UNGROUPED, NULL);
 	struct pane *child = ci->focus;
 
 	if (!child || !m)
 		return Enoarg;
 	do {
 		if (m->ref.p == child) {
-			pane_notify("Notify:doc:Replace", p, 0, m);
+			pane_notify("Notify:doc:Replace", d->home, 0, m);
 			break;
 		}
 	} while (mark_next(d, m) != WEOF);
