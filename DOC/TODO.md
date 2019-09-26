@@ -16,7 +16,7 @@ Bugs to be fixed
 - [X] when move down causes a scroll, we temp lose target column
 - [X] Commands should *never* fall-through as marks get completely messed up.
       there are still places that try to protect against this.
-- [ ] mouse-click before the end of an active selection picks the wrong place.
+- [X] mouse-click before the end of an active selection picks the wrong place.
 - [ ] mouse actions need to affect selection: set or clear.
 - [ ] detect when file has changed since it was read.
 - [ ] alert when finding a name that is a link to another

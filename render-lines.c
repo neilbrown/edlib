@@ -1524,6 +1524,7 @@ DEF_CMD(render_lines_set_cursor)
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
 	struct mark *m;
+	struct mark *newpoint = NULL;
 	int y = rl->header_lines - rl->skip_lines;
 	int found = 0;
 	int cihx = 0, cihy = 0;
@@ -1561,10 +1562,10 @@ DEF_CMD(render_lines_set_cursor)
 					call("Mouse-Activate", focus, 0, m2, tag,
 					     0, ci->mark, oattrs);
 				free(tag);
-				if (ci->mark)
-					mark_to_mark(ci->mark, m2);
+				if (!newpoint)
+					newpoint = mark_dup(m2);
 				else
-					call("Move-to", focus, 0, m2);
+					mark_to_mark(newpoint, m2);
 				mark_free(m2);
 				found = 1;
 			}
@@ -1574,6 +1575,13 @@ DEF_CMD(render_lines_set_cursor)
 		m = vmark_next(m);
 	}
 
+	if (newpoint) {
+		if (ci->mark)
+			mark_to_mark(ci->mark, newpoint);
+		else
+			call("Move-to", focus, 0, newpoint);
+		mark_free(newpoint);
+	}
 	if (strncmp(ci->key, "Move-", 5) != 0)
 		pane_focus(p);
 	return 1;
