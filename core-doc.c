@@ -64,6 +64,7 @@ static void doc_init(struct doc *d safe)
 	d->name = NULL;
 	memset(d->recent_points, 0, sizeof(d->recent_points));
 	d->autoclose = 0;
+	d->readonly = 0;
 	d->home = safe_cast NULL;
 }
 
@@ -458,6 +459,11 @@ DEF_CMD(doc_set)
 		d->autoclose = ci->num;
 		return 1;
 	}
+	if (strcmp(val, "readonly") == 0) {
+		d->readonly = ci->num;
+		call("doc:Notify:doc:status-changed", d->home);
+		return 1;
+	}
 	if (ci->str)
 		attr_set_str(&d->home->attrs, val, ci->str);
 
@@ -478,7 +484,9 @@ DEF_CMD(doc_get_attr)
 		a = d->name;
 	else if (strcmp(ci->str, "doc-modified") == 0)
 		a = "no";
-	else if (strcmp(ci->str, "dirname") == 0) {
+	else if (strcmp(ci->str, "doc-readonly") == 0) {
+		a = d->readonly ? "yes":"no";
+	} else if (strcmp(ci->str, "dirname") == 0) {
 		char *sl;
 		char pathbuf[PATH_MAX];
 		a = pane_attr_get(d->home, "filename");

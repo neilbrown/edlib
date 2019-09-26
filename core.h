@@ -30,6 +30,8 @@ extern char edlib_version[];
 
 #undef bool
 typedef _Bool bool;
+#define True ((bool)1)
+#define False ((bool)0)
 
 struct doc;
 struct mark;
@@ -143,6 +145,7 @@ struct doc {
 	struct pane		*home safe; /* pane which owns this doc*/
 	char			*name;
 	bool			autoclose;
+	bool			readonly;
 };
 
 void doc_free(struct doc *d safe);

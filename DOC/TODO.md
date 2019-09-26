@@ -20,6 +20,7 @@ Bugs to be fixed
 - [X] mouse actions need to affect selection: set or clear.
 - [ ] detect when file has changed since it was read.
 - [ ] alert when finding a name that is a link to another
+- [ ] dirname sometimes has 2 trailing '/'.
 - [ ] make sure *Welcome* has a dirname (it didn't once..)
 - [ ] temp docs, such as pop-up input, can be inline with the pop-up
       rather than separate.  However then the support provided by
@@ -86,6 +87,7 @@ Module features
 - [ ] maybe meta-, does c-x` if that is the recent search?
 - [ ] Support write-file (providing a file name) - currently I only save
       to the file I loaded from.
+- [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 
 ### ncurses
 
@@ -119,11 +121,19 @@ Module features
 
 ### doc-text
 
+- [X] add 'read-only' mode - warn when change attempted.
+- [ ] add 'file-changed' mode and check before switching to "modified"
+      If changed, abort change and switch to read-only instead.
+- [ ] On visit, reload if file changed and doc not modified.
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
 - [ ] doc-text: don't use mb* funcs, use bespoke utf8 coding
 - [ ] merge adjacent undo records that can be merged.
+- [ ] Possible move read-only handling to core-doc, once docs/dir
+      respond to something other than 'replace' to open files.
 - [ ] how to prune old undo history?
+- [ ] allow undo across re-read file. Keeping marks in the right place
+      will be tricky, but might not be critical.
 - [ ] report stats on:
         undo usage, chunk usage
 - [ ] if 'find-file' finds same inode/inum, check the name is still valid.
@@ -165,6 +175,7 @@ Module features
 
 - [ ] timeout message-line messages and revert to time/date
 - [ ] have *Messages* buffer to log recent messages.
+- [ ] Differentiate warnings from info, and blink-screen for warnings.
 
 ### regexp
 

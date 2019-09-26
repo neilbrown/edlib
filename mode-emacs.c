@@ -1776,6 +1776,19 @@ DEF_CMD(emacs_release)
 	return 1;
 }
 
+DEF_CMD(emacs_readonly)
+{
+	char *ro;
+
+	ro = pane_attr_get(ci->focus, "doc-readonly");
+
+	if (ro && strcmp(ro,"yes") == 0)
+		call("doc:set:readonly", ci->focus, 0);
+	else
+		call("doc:set:readonly", ci->focus, 1);
+	return 1;
+}
+
 static void emacs_init(void)
 {
 	unsigned i;
@@ -1866,6 +1879,8 @@ static void emacs_init(void)
 	key_add(m, "emCC-C-Chr-M", &emacs_make);
 
 	key_add(m, "M-C-Chr-V", &emacs_move_view_other);
+
+	key_add(m, "emCX-C-Chr-Q", &emacs_readonly);
 
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);

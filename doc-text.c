@@ -1032,6 +1032,16 @@ static void text_redo(struct text *t safe, struct text_edit *e safe,
 	}
 }
 
+static bool check_readonly(const struct cmd_info *ci safe)
+{
+	struct doc *d = ci->home->data;
+
+	if (!d->readonly)
+		return False;
+	call("Message", ci->focus, 0, NULL, "Document is read-only");
+	return True;
+}
+
 DEF_CMD(text_reundo)
 {
 	struct doc *d = ci->home->data;
@@ -1045,6 +1055,9 @@ DEF_CMD(text_reundo)
 
 	if (!m)
 		return Enoarg;
+
+	if (check_readonly(ci))
+		return Efail;
 
 	if (!ci->num)
 		/* New undo sequence - do redo first */
@@ -1806,6 +1819,9 @@ DEF_CMD(text_replace)
 	bool first = ci->num2;
 	struct mark *early = NULL;
 	int status_change = 0;
+
+	if (check_readonly(ci))
+		return Efail;
 
 	if (!pm) {
 		/* Default to insert at end */
