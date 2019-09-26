@@ -149,7 +149,7 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 	int qmarks = 0;
 	char code = 0;
 	int bits = -1;
-	int tmp;
+	int tmp = 0;
 	static char *last = NULL;
 	wint_t ch;
 	struct mark *m2;
