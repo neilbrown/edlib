@@ -160,6 +160,9 @@ struct text {
 	 */
 	enum { Redo, Undo, AltUndo } prev_edit;
 
+	char			file_changed; /* '2' means it has changed, but we are
+					       * editing anyway
+					       */
 	struct stat		stat;
 	char			*fname;
 	struct text_edit	*saved;
@@ -226,6 +229,38 @@ text_new_alloc(struct text *t safe, int size)
 	new->size = size;
 	new->free = 0;
 	return new;
+}
+
+static bool check_file_changed(struct text *t safe)
+{
+	struct stat st;
+
+	if (t->file_changed)
+		/* '1' means it has change, '2' means 'but we don't care */
+		return t->file_changed == 2;
+	if (!t->fname)
+		return False;
+	if (stat(t->fname, &st) != 0 ||
+	    st.st_ino != t->stat.st_ino ||
+	    st.st_dev != t->stat.st_dev ||
+	    st.st_mtime != t->stat.st_mtime ||
+	    st.st_mtim.tv_nsec != t->stat.st_mtim.tv_nsec) {
+	    	t->file_changed = True;
+		call("doc:Notify:doc:status-changed", t->doc.home);
+	    	return True;
+	}
+	return False;
+}
+
+DEF_CMD(text_readonly)
+{
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+
+	if (t->file_changed && !d->readonly && ci->num)
+		t->file_changed = 2;
+	/* Use default handling */
+	return 0;
 }
 
 DEF_CMD(text_load_file)
@@ -305,6 +340,7 @@ DEF_CMD(text_load_file)
 		}
 	}
 	t->saved = t->undo;
+	t->file_changed = 0;
 	call("doc:Notify:doc:status-changed", ci->home);
 	pane_notify("Notify:doc:Replace", t->doc.home);
 	if (fd != ci->num2)
@@ -406,6 +442,8 @@ static void do_text_autosave(struct text *t safe)
 
 	if (!t->fname)
 		return;
+	check_file_changed(t);
+
 	tempname = malloc(strlen(t->fname) + 3 + 10);
 	strcpy(tempname, t->fname);
 	base = strrchr(t->fname, '/');
@@ -494,6 +532,7 @@ DEF_CMD(text_save_file)
 			asprintf(&msg, "Successfully wrote %s", t->fname);
 			t->saved = t->undo;
 			change_status = 1;
+			t->file_changed = 0;
 		} else
 			asprintf(&msg, "*** Failed to write %s ***", t->fname);
 	}
@@ -1035,7 +1074,12 @@ static void text_redo(struct text *t safe, struct text_edit *e safe,
 static bool check_readonly(const struct cmd_info *ci safe)
 {
 	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
 
+	if (t->undo == t->saved && check_file_changed(t) && !d->readonly) {
+		call("doc:Notify:doc:status-changed", d->home);
+		d->readonly = 1;
+	}
 	if (!d->readonly)
 		return False;
 	call("Message", ci->focus, 0, NULL, "Document is read-only");
@@ -1478,6 +1522,8 @@ DEF_CMD(text_new)
 	t->saved = t->undo = t->redo = NULL;
 	t->prev_edit = Redo;
 	t->fname = NULL;
+	t->file_changed = 0;
+	t->stat.st_ino = 0;
 	t->as.changes = 0;
 	t->as.timer_started = 0;
 	t->as.last_change = 0;
@@ -1968,6 +2014,8 @@ DEF_CMD(text_get_attr)
 		val = "utf-8";
 	else if (strcmp(attr, "filename") == 0)
 		val = t->fname;
+	else if (strcmp(attr, "doc-file-changed") == 0)
+		val = t->file_changed ? "yes" : "no";
 	else if (strcmp(attr, "doc-modified") == 0)
 		val = (t->saved != t->undo) ? "yes" : "no";
 	else
@@ -2095,6 +2143,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:step", &text_step);
 	key_add(text_map, "doc:step-bytes", &text_step_bytes);
 	key_add(text_map, "doc:modified", &text_modified);
+	key_add(text_map, "doc:set:readonly", &text_readonly);
 
 	key_add(text_map, "Close", &text_destroy);
 	key_add(text_map, "get-attr", &text_get_attr);

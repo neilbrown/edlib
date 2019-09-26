@@ -122,9 +122,10 @@ Module features
 ### doc-text
 
 - [X] add 'read-only' mode - warn when change attempted.
-- [ ] add 'file-changed' mode and check before switching to "modified"
+- [X] add 'file-changed' mode and check before switching to "modified"
       If changed, abort change and switch to read-only instead.
 - [ ] On visit, reload if file changed and doc not modified.
+- [ ] When writing to a changed file, make a backup first.
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
 - [ ] doc-text: don't use mb* funcs, use bespoke utf8 coding
