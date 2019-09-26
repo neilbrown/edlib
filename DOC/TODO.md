@@ -134,6 +134,7 @@ Module features
 
 - [ ] review use of line-drawing chars for window boarders
 - [ ] improve scroll bars
+- [ ] scroll bar should show part of doc displayed, not location of point.
 
 ### doc-rendering
 
