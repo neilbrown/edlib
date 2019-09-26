@@ -1546,7 +1546,7 @@ DEF_CMD(emacs_yank)
 	}
 
 	call("Move-to", ci->focus, 1);
-	call("Replace", ci->focus, 1, m, str, 0);
+	call("Replace", ci->focus, 1, m, str, 1);
 	mk = call_ret(mark2, "doc:point", ci->focus);
 	if (mk)
 		attr_set_int(&mk->attrs, "emacs:active", 0);
@@ -1576,7 +1576,7 @@ DEF_CMD(emacs_yank_pop)
 	m = mark_dup(mk);
 	if (m->seq > mk->seq)
 		mark_to_mark(m, mk);
-	call("Replace", ci->focus, 1, mk, str);
+	call("Replace", ci->focus, 1, mk, str, 1);
 	call("Move-to", ci->focus, 1, m);
 	mark_free(m);
 	call("Mode:set-num2", ci->focus, (num << 16) | N2_yank);
@@ -1771,7 +1771,7 @@ static void emacs_init(void)
 
 	key_add(m, "C-Chr-_", &emacs_undo);
 	key_add(m, "emCX-Chr-_", &emacs_undo);
-	key_add(m, "C-Chr=/", &emacs_undo);
+	key_add(m, "C-Chr-/", &emacs_undo);
 
 	key_add(m, "C-Chr-L", &emacs_recenter);
 

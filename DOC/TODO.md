@@ -10,9 +10,9 @@ Active issue and pre-requisites
 Bugs to be fixed
 ----------------
 
-- [ ] start with "-g", open a -t, close the -g, then the -t : get into a spin
-- [ ] undo sometimes gathers too much into a single change.  Cursor movement
-        should break the change.
+- [X] start with "-g", open a -t, close the -g, then the -t : get into a spin
+- [X] undo sometimes gathers too much into a single change.  Cursor movement
+        should break the change. -- yank was the problem
 - [ ] when move down causes a scroll, we temp lose target column
 - [X] Commands should *never* fall-through as marks get completely messed up.
       there are still places that try to protect against this.
