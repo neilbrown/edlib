@@ -827,6 +827,8 @@ static struct mark *call_render_line_prev(struct pane *p safe,
 	int ret;
 	struct mark *m2;
 
+	if (m->viewnum < 0)
+		return NULL;
 	ret = call("doc:render-line-prev", p, n, m);
 	if (ret <= 0) {
 		mark_free(m);
@@ -1685,14 +1687,21 @@ DEF_CMD(render_lines_move_line)
 	rl->target_y = target_y;
 
 	if (target_x >= 0 || target_y >= 0) {
-		struct mark *start =
-			vmark_at_or_before(focus, m, rl->typenum, p);
 		int y = 0;
-		if (!start || !start->mdata) {
+		struct mark *start = vmark_new(focus, rl->typenum, p);
+
+		if (start) {
+			mark_to_mark(start, m);
+			start = call_render_line_prev(focus, start, 0, NULL);
+		}
+
+		if (!start) {
 			pane_damaged(p, DAMAGED_CONTENT);
 			return 1;
 		}
-		/* FIXME only do this if point is active/volatile*/
+		/* FIXME only do this if point is active/volatile, or
+		 * if start->mdata is NULL
+		 */
 		call_render_line(focus, start);
 		render_line(p, focus, start->mdata?:"", &y, 0, scale.x,
 			    &target_x, &target_y, NULL, &o, NULL, NULL, NULL);
