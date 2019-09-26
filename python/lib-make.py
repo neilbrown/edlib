@@ -124,7 +124,10 @@ class MakePane(edlib.Pane):
             focus.call("Message", "File %s not found in %s." %( fname, dir))
             return edlib.Efail
         par = focus.call("DocPane", d, ret='focus')
-        if not par:
+        if par:
+            while par.focus:
+                par = par.focus
+        else:
             par = focus.call(where, d, ret='focus')
             if not par:
                 d.close()
