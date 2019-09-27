@@ -531,7 +531,7 @@ DEF_CMD(doc_request_notify)
 DEF_CMD(doc_notify)
 {
 	/* Key is "doc:Notify:..." */
-	int ret = home_pane_notify(ci->home, ci->key + 4, ci->focus,
+	int ret = home_pane_notify(ci->home, ci->key + 4, ci->home,
 	                           ci->num, ci->mark, ci->str,
 	                           ci->num2, ci->mark2, ci->str2, ci->comm2);
 	return ret;
