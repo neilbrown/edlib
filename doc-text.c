@@ -2075,6 +2075,22 @@ DEF_CMD(text_modified)
 	return 1;
 }
 
+DEF_CMD(text_revisited)
+{
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+
+	if (ci->num <= 0)
+		/* Being buried, not visited */
+		return Efallthrough;
+
+	if (t->saved == t->undo && check_file_changed(t)) {
+		call("doc:load-file", ci->home, 2, NULL, NULL, -1);
+		call("Message", ci->focus, 0, NULL, "File Reloaded");
+	}
+	return Efallthrough;
+}
+
 static void text_cleanout(struct text *t safe)
 {
 	struct text_alloc *ta;
@@ -2144,6 +2160,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:step-bytes", &text_step_bytes);
 	key_add(text_map, "doc:modified", &text_modified);
 	key_add(text_map, "doc:set:readonly", &text_readonly);
+	key_add(text_map, "doc:Notify:doc:revisit", &text_revisited);
 
 	key_add(text_map, "Close", &text_destroy);
 	key_add(text_map, "get-attr", &text_get_attr);

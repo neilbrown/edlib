@@ -532,6 +532,15 @@ DEF_CMD(dr_get_attr)
 
 }
 
+DEF_CMD(dr_revisit)
+{
+	struct doc *d = ci->home->data;
+	struct dr_info *dri = container_of(d, struct dr_info, doc);
+
+	home_call(dri->base, ci->key, ci->focus, ci->num);
+	return 1;
+}
+
 static void dr_init_map(void)
 {
 	if ((void*)dr_map)
@@ -544,6 +553,7 @@ static void dr_init_map(void)
 	key_add(dr_map, "Notify:doc:viewers", &dr_notify_viewers);
 	key_add(dr_map, "Notify:doc:Replace", &dr_notify_replace);
 	key_add(dr_map, "Notify:Close", &dr_notify_close);
+	key_add(dr_map, "doc:Notify:doc:revisit", &dr_revisit);
 	key_add(dr_map, "doc:render-line", &dr_render_line);
 	key_add(dr_map, "doc:render-line-prev", &dr_render_prev);
 	key_add(dr_map, "doc:replace", &dr_replace);

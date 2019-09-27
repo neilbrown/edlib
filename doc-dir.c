@@ -255,6 +255,27 @@ DEF_CMD(dir_load_file)
 	return 1;
 }
 
+DEF_CMD(dir_revisited)
+{
+	struct doc *d = ci->home->data;
+	struct directory *dr = container_of(d, struct directory, doc);
+	struct stat st;
+
+	if (ci->num <= 0)
+		/* Being buried, not visited */
+		return Efallthrough;
+
+	if (stat(dr->fname, &st) == 0 &&
+	    (st.st_ino != dr->stat.st_ino ||
+	     st.st_dev != dr->stat.st_dev ||
+	     st.st_mtime != dr->stat.st_mtime ||
+	     st.st_mtim.tv_nsec != dr->stat.st_mtim.tv_nsec)) {
+		call("doc:load-file", ci->home, 2, NULL, NULL, -1);
+		call("Message", ci->focus, 0, NULL, "Directory Reloaded");
+	}
+	return Efallthrough;
+}
+
 DEF_CMD(dir_same_file)
 {
 	struct doc *d = ci->home->data;
@@ -683,7 +704,8 @@ DEF_CMD(dir_attach)
 	if (!p || p->damaged & DAMAGED_CLOSED)
 		p = ci->home;
 	return home_call(p, ci->key, ci->focus,
-	                 (int)(unsigned long)dir_attach_func, NULL, ci->str,
+	                 p == ci->home ? (int)(unsigned long)dir_attach_func : 0,
+	                 NULL, ci->str,
 	                 0, NULL, NULL,
 	                 0, 0, ci->comm2);
 }
@@ -719,6 +741,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:step", &dir_step);
 	key_add(doc_map, "doc:replace", &dir_cmd);
 	key_add(doc_map, "doc:attach-view", &dir_attach);
+	key_add(doc_map, "doc:Notify:doc:revisit", &dir_revisited);
 
 	key_add(doc_map, "get-attr", &dir_get_attr);
 	key_add(doc_map, "Notify:Close", &dir_notify_close);
