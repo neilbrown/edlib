@@ -66,7 +66,7 @@ Core features
 - [ ] revise and document behaviour of doc:open etc, particularly for
        reloading and filenames etc.
 - [ ] Record where auto-save files are, and recover them.
-- [ ] remove all FIXMEs ... and any HACKs.
+- [ ] remove all FIXMEs (there are 55) ... and any HACKs (5).
 - [ ] hide view-num inside pane so number cannot be misused.
      i.e. each view is owned by a pane and can only be used by that pane.
 
@@ -232,7 +232,7 @@ Module features
 - [ ]  A multipart still had an active view.
 - [ ] display counts of current thread somewhere, so I know where I'm up to.
 - [ ] allow refresh of current search, especially when re-visit
-- [ ] background color for current message/thread
+- [ ] background colour for current message/thread
 - [ ] how do work with multiple thread?
 - [ ] in text/plain, wrap long lines on 'space'.
 - [ ] need to resolve how charsets are handled.  Maybe an attribute to
@@ -249,7 +249,7 @@ Module features
 - [ ] highlight current summary line
 - [ ] if a subject line in wrapped in the email, the summary line look weird
 - [ ] Add Close handler for doc-docs.c
-- [ ] handle all unicode newline chars.
+- [ ] handle all Unicode newline chars.
 - [ ] should multipart/visible be per-view somehow?
 - [ ] dynamic search/filter pattern
 - [ ] Handle \r\n e-o-l and display sensibly
@@ -286,7 +286,7 @@ Module features
 - [ ] 'Z' should work in email-view window, not just summary window
 - [ ] better feedback to 'g' - e.g flag that update is happening
 - [ ] I don't think summary updates correctly
-     when count noticies a difference, it should trigger a refresh
+     when count notices a difference, it should trigger a refresh
 - [ ] Chr-a should affect thing under cursor, not current thing
 - [ ] detect and hide cited text
 - [ ] detect and highlight links
@@ -302,10 +302,10 @@ Module features
 - [ ] partial-view-points. Only render beyond here if mark here or beyond.
     page-down goes to next such point
 - [ ] temp attribute.  :bold: etc only apply to para, :: is appended to para format
-- [ ] should doc attribtes append to defaults, or replace?
-- [ ] word-wrap.  Interesting task for centering
+- [ ] should doc attributes append to defaults, or replace?
+- [ ] word-wrap.  Interesting task for centring
 - [ ] force x:scale to be maximum width of any line - to avoid surprises
-- [ ] proportial vertical space ??
+- [ ] proportional vertical space ??
 - [ ] right:0 and right:1 don't do what I expect
 - [ ] thumbnails for easy select?
 - [ ] \_  etc to escape special chars
@@ -335,7 +335,11 @@ Module features
      -   We search back - skipping bracketed bit, until we find one, and
          base everything on that.
 
-- [ ] show-paren should use different color if bracket doesn't match.
+- [ ] show-paren should use different colour if bracket doesn't match.
+- [ ] show-paren should work when next char is an 'open'
+- [ ] start of function should not get confused by comments, and should
+      go to the real start.
+- [ ] re-indent statement - one auto-indent is reliable.
 
 New Modules - simple
 --------------------
@@ -347,28 +351,49 @@ Possibly some of these will end up being features in other modules.
       preferred column" ??  Maybe use for make output so I can see current
       match more easily.
 
-- [ ] search-replace
+- [ ] search-replace.
+      This might just be an extension of the current search.  I would have
+      two input boxes, maybe left and right, or one above the other.
+      I like to be able to see the result after the change, particularly
+      if the change as '\1' style references, so maybe some key-stroke to
+      replace without moving forward.
+      Also want an easy "undo" of the last changed.
+      Changing the replace string during the process should be allowed too.
 - [ ] dynamic completion Alt-/
+      My question here is how far to search for completions.  All of this doc?
+      Which other docs?  Most recently visited I guess.
+      I think I want options to appear in a drop-down menu so I can select one.
 - [ ] create a pane-type that just renders a marked-up line and use
       several of these for render-lines, and one for messageline.
       side-scrolling will be interesting.
       pane_clear might want to copy relevant region from underlying pane.
+      Hopefully this will cure my performance problems with gtk on my slowish
+      notebook.
 
 - [ ] fill command / fill-mode
 
     - need to choose a prefix of first line, and of subsequent lines.
+    - possibly determine a suffix too - useful in comments.
     - alt-Q - reformat para
 
-- [ ] - tags handling - and easy tag-search without tags. e.g. git-search.
+- [ ] tags handling - and easy tag-search without tags. e.g. git-search.
       alt-S looks for TAGS or .git and either does a tags-search or a grep-l and
       check every match.  So maybe this is part of the 'make' module
 - [ ] white-space: Highlight trailing spaces - and space before TAB - and any TAB
-- [ ] simple calculator in floating pane
+      This might work best as a post-processor for the render-line output.
+- [ ] simple calculator in floating pane.
+      Must display result in hex and dec (and others?)
+      Must allow hex/dec etc entry
+      Allow chained expressions, with ability to edit earlier ones to change final result.
+      Maybe each line is $N and typing '$' gets the most recent N, but Alt-P changes.
 - [ ] menus
+      This might support a menu-bar, or drop-downs for spelling or dynamic completion.
 - [ ] hex edit block device - mmap document type
 - [ ] spell check
+      This leave attributes where errors are found, and needs to be notified of
+      all changes so it can queue some checks.
 
-New Moules - more complex
+New Modules - more complex
 -------------------------
 
 ### threaded-panes
@@ -386,7 +411,7 @@ Some of the use-cases for threading that have occurred to me are:
   for everything if anything needs it.  But I don't like this approach.
 
   If I could have threads, I'd have the edlib event loop handling
-  the main editor loop, and gtk could be in a seperate thread with its
+  the main editor loop, and gtk could be in a separate thread with its
   own event loop, exchanging messages with the main loop as needed.
 
 - long-running tasks:: word count and spell check can each be divided
@@ -398,7 +423,7 @@ Some of the use-cases for threading that have occurred to me are:
   It would be nice if the main thread could just write out the file,
   then a separate thread could call fsync() and report when that was done.
 
-- remote editting::  It probably doesn't require threads, but they might 
+- remote editing::  It probably doesn't require threads, but they might 
   be a suitable abstraction for allowing one editor instance to work
   with another over a socket - possibly between machines.  I imagine
   an editor running on my notebook communicating with the editor
@@ -481,7 +506,7 @@ possible.
 There a several parts to composing an email message:
 
 - Adding addresses - with auto-completion from address book or recent
-  correspondants.
+  correspondents.
 - adding text, possibly with mark-up (maybe to be converted to HTML).
 - General text-edit support: wrap, auto-indent, spell-check
 - adding attachments - with MIME-type and inline/attachment flags
@@ -493,7 +518,7 @@ from external tools.
 
 ### git-mode
 
-Git adds an extra dimension to editting code - the dimension of history.
+Git adds an extra dimension to editing code - the dimension of history.
 Somethings that the editor can help with:
 
 - creating a commit, including writing the comment message and selection
@@ -502,9 +527,9 @@ Somethings that the editor can help with:
   a view on a patch, or on a file at the time of the commit.
 - editing history - using "git rebase --interactive" or similar.
   The editor could open either a file or a diff at the time of a commit
-  and allow them to be editting.  For smaller changes, editting the diff
+  and allow them to be editing.  For smaller changes, editing the diff
   directly would be nice.  In either case, having one auto-update when the
-  other is editted would be cool
+  other is edited would be cool
 - editing just the comments of recent commits is useful.
 - Showing a current 'diff' which is dynamically updated and which distinguishes
   between staged and unstaged changes - and lets them be toggled - would be
@@ -583,7 +608,7 @@ Functionality includes:
    a separate pane containing that.
 - search::  jump to definition or use of function, types, variables, structure fields etc.
   Most of this needs an external tool, whether 'grep' or 'git grep' or 'cscope'.
-- syntax highlight:: different colors for different types of symbols is sometimes nice.
+- syntax highlight:: different colours for different types of symbols is sometimes nice.
 - auto-format:: indenting and comment wrapping are particularly helpful to have
   automatic support for.  I've never found I wanted key-strokes to insert
   structured commands, but maybe having a close-bracket auto-added when
@@ -591,7 +616,7 @@ Functionality includes:
   the already existing one.
 - outlining:: I would really like to always be able to see the function name and
   signature - and probably the names of surrounding functions so that I can easily
-  navigate to them.  Seee "Outline code rendering" above.
+  navigate to them.  See "Outline code rendering" above.
 
 Interaction with gdb would be nice too - things like
 

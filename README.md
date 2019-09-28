@@ -2,7 +2,7 @@
 
 <!--
 # Copyright Neil Brown ©2015-2019 <neil@brown.name>
-# May be distrubuted under terms of GPLv2 - see file:COPYING
+# May be distributed under terms of GPLv2 - see file:COPYING
 -->
 
 Edlib - a library for building a document editor
@@ -299,7 +299,7 @@ everything but the directory document type would reject the request.
 Another example worth understanding is the document-display pane
 type.  When this receives an event it will handle it directly if it
 understands the key, otherwise if it starts with “doc:” it will pass it
-to the document pane.  If that doesn't recognize the event it will
+to the document pane.  If that doesn't recognise the event it will
 continue up the tree from the document-display pane.
 
 Like document-display, other pane types are free to direct events
@@ -358,14 +358,14 @@ Rendering virtual document
 Working directory with the "directory" or "documents" document is sometimes
 a bit awkward as a mark can only point to a while directory entry or
 document.  When these are displayed one-per-line it isn't possible to move 
-the cursor within that line, which can feel strnage, particularly if the line
+the cursor within that line, which can feel strange, particularly if the line
 is wider than that display pane.  Also selecting  an copying
 text cannot select part of a line.
 
-To overcome these problems, a "rendering" document can be layed over
+To overcome these problems, a "rendering" document can be layered over
 the main document.  It presents a virtual document which contains
 all the character that are use to display (to render) the underlying
-document.  This then "feels" more like a regular documet and can respond
+document.  This then "feels" more like a regular document and can respond
 to select and copy just like a text document.
 
 Multipart document, and "crop" filter
@@ -375,7 +375,7 @@ Multipart is another virtual document, which appears to contain
 the content of a sequence of other documents.  This allows a sequence
 of documents to appear to be combined into one.  This can co-operate
 with the "crop" filter which limits access to a given document to the
-section between two marks.  By combinding multipart and crop,
+section between two marks.  By combining multipart and crop,
 one document can be divided up and re-assembled in any order, or
 parts of multiple documents can be merged.
 
@@ -494,7 +494,7 @@ Tiler
 
 The “tile” handler takes a pane (typically the root pane of a display)
 and divides it up into 1 or more non-overlapping tiles.  Tiles are
-grouped in horizonal and vertical stacks.  Tiles can be split, can be
+grouped in horizontal and vertical stacks.  Tiles can be split, can be
 discarded, or can be resized.  Any of these operations may affect other
 tiles.
 
@@ -601,7 +601,7 @@ command or an editor command selected by name.
 copybuf
 -------
 
-Similar im principle to "history", a copybuf pane can store a series
+Similar in principle to "history", a copybuf pane can store a series
 of arbitrary slabs of text.  It is used to provide copy/paste functionality.
 
 server
@@ -622,7 +622,7 @@ as a global key map.  In provides a number of emacs-like bindings.
 C/Python mode
 -------------
 
-This pane capture various editing command and taylors them
+This pane capture various editing command and tailors them
 to suite editing C or Python code.  It helps with correct
 indenting, highlight matching brackets, and will eventually do
 a lot more.
