@@ -4,6 +4,9 @@ To-do list for edlib
 Active issue and pre-requisites
 -------------------------------
 
+- [ ] Add 16bit semi-unique number to doc panes, which is inherited
+      by any view pane and by every mark.  Check there numbers are
+      consistent and fail with a warning when not.
 - [ ] change notmuch-query-view to use doc-rendering
 - [ ] Discard rpos handling
 
@@ -40,12 +43,25 @@ Core features
       Then call doc_free() internally so the module doesn't need to.
 - [ ] clarify and document the use of Notify:doc:Replace.  What are the two
       marks exactly.
+- [ ] possible merge mark->refcnt, mark->owner, and Mark->local
+- [ ] Make x,y,z,h,w short ?? or unsigned short with an "undefined" instead of -1.
 - [X] unify doc_next_mark_view and vmark_next.  Any others?
 - [ ] some way to find column of point, or at least: width of line
 - [ ] Change tlist to use one bit from each pointer
 - [ ] Need a debug mode where every mark usage is checked for validity.
       also check the setref sets up all linkages.
 - [X] clarify difference between Efail and Esys, or remove one of them.
+- [ ] replace key_add(..key_register_prefix) with a macro that defines a static modmap.
+- [ ] Make key names shorted and easier.
+      There are two name spaces - characters and names
+      characters are preceded by '-', names by ':'.
+      K-E is the key "Captial E"
+      K:Enter is the key "Enter"
+      K:M-n  is meta-n
+      K:M:C:Up  is Meta-Control-Up
+      K:M:C-U   is Meta-Control-U
+      K:Cx-f    is Control-X f -- assuming K:C-x causes Cx to be set as prefix.
+- [ ] add key_add_prefix()
 - [ ]  ?? restrict prefix key lookup to punctuation.
 
       Current ranges are:
@@ -62,11 +78,14 @@ Core features
       Require ranges to have 4-char common prefix
       Add hash of 4-chars for ranges.  For a lookup. hash first-4
       and full.
+      ... NO, I think 'hash up to - or :, both for key_add_range and for lookup
 
 - [ ] revise and document behaviour of doc:open etc, particularly for
        reloading and filenames etc.
 - [ ] Record where auto-save files are, and recover them.
+        A directory of symlinks
 - [ ] remove all FIXMEs (there are 55) ... and any HACKs (5).
+- [ ] Replace asserts with warnings where possible.
 - [ ] hide view-num inside pane so number cannot be misused.
      i.e. each view is owned by a pane and can only be used by that pane.
 
@@ -184,6 +203,8 @@ Module features
 - [ ] timeout message-line messages and revert to time/date
 - [ ] have *Messages* buffer to log recent messages.
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
+- [ ] register a global-message function which sends global notifications
+      to all message lines.
 
 ### regexp
 
@@ -202,8 +223,11 @@ Module features
 
 ### shell mode
 
-- [ ]  detect grep output and ?? goto line
-- [ ]  detect diff (And git-diff) output and goto line
+- [ ]  Use pattern-match on command to optionally choose an overlay
+       which can highlight output and allow actions.
+       e.g. (git )?grep   - highlight file names and jump to match
+            git log  - highlight hash and jump to "git show"
+            diff -u  - some diffmode handling
 - [ ]  If no output, don't create a pane??  Or just one online.
 - [ ]  Detect ^M in output and handle it... delete from start of line?
 
@@ -340,6 +364,10 @@ Module features
 - [ ] start of function should not get confused by comments, and should
       go to the real start.
 - [ ] re-indent statement - one auto-indent is reliable.
+
+### lang-python
+
+- [ ] key_register_prefix functionality.
 
 New Modules - simple
 --------------------
@@ -549,6 +577,11 @@ wiggle already has a built-in editor (--browse) which supports some of
 this, but I find it hard to use.  Embedding wiggle into edlib should allow
 me to re-think the problem and find out what works.
 
+One thing to do would be to show the conflicts (why the patch doesn't apply)
+and the needed changes.  If editing causes either of those to become empty,
+it should be easy to apply or abort the hunk.  Note if, in either case,
+the differences are just white-space.
+
 ### vi mode
 
 I currently support emacs-like editing, but that is mostly kept local to one module.
@@ -634,7 +667,15 @@ Interaction with gdb would be nice too - things like
 - This could be entirely inside ncurses.  It records events and content,
       and/or replay a previous recording.
 - This has parts, so:
-
+    - [ ] set of files to work with
+    - [ ] identify source of uninterestin variability and allow them
+          to be blocked
+          - time in status line
+          - full path name in find-file and docs listing
+          - possible changes in support programs (grep?). Maybe make
+            all "program output" be generated from saved files.
+    - [ ] Make it easy to reply a test up to the point of failure, and watch
+          the output.
     - [ ] harness for running tests
     - [ ] collection of tests
 
