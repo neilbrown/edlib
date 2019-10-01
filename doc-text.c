@@ -420,6 +420,25 @@ static int do_text_write_file(struct text *t safe, struct doc_ref *start, struct
 	    S_ISREG(stb.st_mode))
 		/* Preserve modes, but not setuid */
 		fchmod(fd, stb.st_mode & 0777);
+	if (fname == t->fname && check_file_changed(t)) {
+		/* We are saving to a file which changed since we read it,
+		 * so let's move that changed file to a backup
+		 */
+		int i;
+
+		for (i = 1 ; i < 1000; i++) {
+			char *new = NULL;
+			if (asprintf(&new, "%s~%d~", fname, i) < 0)
+				break;
+			if (link(fname, new) == 0) {
+				free(new);
+				break;
+			}
+			free(new);
+			if (errno != EEXIST)
+				break;
+		}
+	}
 	if (rename(tempname, fname) < 0)
 		goto error;
 	fstat(fd, &t->stat);

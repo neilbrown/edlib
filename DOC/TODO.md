@@ -21,7 +21,7 @@ Bugs to be fixed
       there are still places that try to protect against this.
 - [X] mouse-click before the end of an active selection picks the wrong place.
 - [X] mouse actions need to affect selection: set or clear.
-- [ ] detect when file has changed since it was read.
+- [X] detect when file has changed since it was read.
 - [ ] alert when finding a name that is a link to another
 - [ ] dirname sometimes has 2 trailing '/'.
 - [ ] make sure *Welcome* has a dirname (it didn't once..)
@@ -150,7 +150,7 @@ Module features
 - [X] add 'file-changed' mode and check before switching to "modified"
       If changed, abort change and switch to read-only instead.
 - [X] On visit, reload if file changed and doc not modified.
-- [ ] When writing to a changed file, make a backup first.
+- [X] When writing to a changed file, make a backup first.
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
 - [ ] don't use mb* funcs, use bespoke utf8 coding
