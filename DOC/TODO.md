@@ -24,7 +24,7 @@ Bugs to be fixed
 - [X] detect when file has changed since it was read.
 - [ ] alert when finding a name that is a link to another
 - [X] dirname sometimes has 2 trailing '/'.
-- [ ] make sure *Welcome* has a dirname (it didn't once..)
+- [X] make sure *Welcome* has a dirname (it didn't once..) ... seems to work now
 - [ ] temp docs, such as pop-up input, can be inline with the pop-up
       rather than separate.  However then the support provided by
       core-doc is hard to provide.  Maybe there is a simpler way to
@@ -38,12 +38,12 @@ Core features
       stats regularly
 - [ ] malloc anti-fail policy.  Small allocations don't fail but use pre-allocated.
       large allocations use different API and can fail.
-- [ ] add '~' support for patchname lookup - and $SUBST??
+- [ ] add '~' support for pathname lookup - and $SUBST??
 - [ ] graceful failure when closing doc that still has views.
       Then call doc_free() internally so the module doesn't need to.
 - [ ] clarify and document the use of Notify:doc:Replace.  What are the two
       marks exactly.
-- [ ] possible merge mark->refcnt, mark->owner, and Mark->local
+- [ ] possibly merge mark->refcnt, mark->owner, and Mark->local
 - [ ] Make x,y,z,h,w short ?? or unsigned short with an "undefined" instead of -1.
 - [X] unify doc_next_mark_view and vmark_next.  Any others?
 - [ ] some way to find column of point, or at least: width of line
