@@ -393,7 +393,7 @@ restart:
 	// p->parent = NULL;
 	command_put(p->handle);
 	p->handle = NULL;
-	if (ed)
+	if (p->parent || other != p)
 		editor_delayed_free(ed, p);
 	else {
 		attr_free(&p->attrs);

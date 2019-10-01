@@ -402,6 +402,11 @@ static void update_line_height(struct pane *p safe, int *h safe, int *a safe, in
 	free(buf_final(&attr));
 }
 
+DEF_CMD(null)
+{
+	return 0;
+}
+
 static void render_image(struct pane *p safe, char *line safe, int *yp safe,
 			 int dodraw, int scale)
 {
@@ -428,10 +433,11 @@ static void render_image(struct pane *p safe, char *line safe, int *yp safe,
 		line += strspn(line, ",");
 	}
 	if (fname && dodraw) {
-		struct pane *tmp = pane_register(NULL, 0, safe_cast NULL, NULL, NULL);
+		struct pane *tmp = pane_register(NULL, 0, &null, NULL, NULL);
 
 		pane_resize(tmp, (p->w - width)/2, *yp, width, height);
-		tmp->parent = p;
+		tmp->parent = p; // FIXME this fiddling with ->parent is ugly,
+		// But without it: WARNING non-root pane damaged after refresh: 17
 		call("Draw:image", tmp, 0, NULL, fname, 5);
 		tmp->parent = NULL;
 		pane_close(tmp);
