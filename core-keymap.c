@@ -315,31 +315,14 @@ void key_del(struct map *map, wint_t k)
 }
 #endif
 
-struct modmap {
-	char	*name;
-	struct command comm;
-};
-
-static int key_prefix(const struct cmd_info *ci safe)
+int key_pfx_func(const struct cmd_info *ci safe)
 {
-	struct modmap *m = container_of(ci->comm, struct modmap, comm);
+	struct pfx_cmd *m = container_of(ci->comm, struct pfx_cmd, c);
 
-	call("Mode:set-mode", ci->focus, 0, NULL, m->name);
+	call("Mode:set-mode", ci->focus, 0, NULL, m->pfx);
 	call("Mode:set-num", ci->focus, ci->num);
 	call("Mode:set-num2", ci->focus, ci->num2);
 	return 1;
-}
-
-struct command *key_register_prefix(char *name safe)
-{
-	struct modmap *mm = malloc(sizeof(*mm));
-
-	/* FIXME refcount these */
-	mm->name = strdup(name);
-	mm->comm.func = key_prefix;
-	mm->comm.refcnt = 0;
-	mm->comm.free = NULL;
-	return &mm->comm;
 }
 
 struct command *key_lookup_cmd(struct map *m safe, char *c safe,

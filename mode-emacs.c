@@ -1060,14 +1060,6 @@ DEF_CMD(emacs_shell)
 	return 1;
 }
 
-DEF_CMD(emacs_meta)
-{
-	call("Mode:set-mode", ci->focus, 0, NULL, "M-");
-	call("Mode:set-num", ci->focus, ci->num);
-	call("Mode:set-num2", ci->focus, ci->num2);
-	return 1;
-}
-
 DEF_CMD(emacs_num)
 {
 	int rpt = ci->num;
@@ -1789,20 +1781,22 @@ DEF_CMD(emacs_readonly)
 	return 1;
 }
 
+DEF_PFX_CMD(meta_cmd, "M-");
+DEF_PFX_CMD(cx_cmd, "emCX-");
+DEF_PFX_CMD(cx4_cmd, "emCX4-");
+DEF_PFX_CMD(cx5_cmd, "emCX5-");
+DEF_PFX_CMD(cc_cmd, "emCC-");
+
 static void emacs_init(void)
 {
 	unsigned i;
-	struct command *cx_cmd = key_register_prefix("emCX-");
-	struct command *cx4_cmd = key_register_prefix("emCX4-");
-	struct command *cx5_cmd = key_register_prefix("emCX5-");
-	struct command *cc_cmd = key_register_prefix("emCC-");
 	struct map *m = key_alloc();
 
-	key_add(m, "C-Chr-X", cx_cmd);
-	key_add(m, "emCX-Chr-4", cx4_cmd);
-	key_add(m, "emCX-Chr-5", cx5_cmd);
-	key_add(m, "ESC", &emacs_meta);
-	key_add(m, "C-Chr-C", cc_cmd);
+	key_add(m, "ESC", &meta_cmd.c);
+	key_add(m, "C-Chr-X", &cx_cmd.c);
+	key_add(m, "emCX-Chr-4", &cx4_cmd.c);
+	key_add(m, "emCX-Chr-5", &cx5_cmd.c);
+	key_add(m, "C-Chr-C", &cc_cmd.c);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
 		struct move_command *mc = &move_commands[i];

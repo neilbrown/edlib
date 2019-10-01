@@ -51,7 +51,7 @@ Core features
 - [ ] Need a debug mode where every mark usage is checked for validity.
       also check the setref sets up all linkages.
 - [X] clarify difference between Efail and Esys, or remove one of them.
-- [ ] replace key_add(..key_register_prefix) with a macro that defines a static modmap.
+- [X] replace key_add(..key_register_prefix) with a macro that defines a static modmap.
 - [ ] Make key names shorted and easier.
       There are two name spaces - characters and names
       characters are preceded by '-', names by ':'.

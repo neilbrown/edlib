@@ -294,6 +294,16 @@ struct lookup_cmd {
 
 int key_lookup_cmd_func(const struct cmd_info *ci safe);
 
+struct pfx_cmd {
+	struct command	c;
+	char		*pfx safe;
+};
+
+int key_pfx_func(const struct cmd_info *ci safe);
+
+#define DEF_PFX_CMD(_name, _pfx)	\
+	static struct pfx_cmd _name = { { key_pfx_func, 0, NULL}, _pfx};
+
 #define	ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 
 /* Each event (above) is accompanied by a cmd_info structure.
