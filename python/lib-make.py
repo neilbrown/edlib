@@ -102,14 +102,16 @@ class MakePane(edlib.Pane):
         self.point = p
         return self.map[int(p['ref'])]
 
-    def make_next(self, key, focus, **a):
+    def make_next(self, key, focus, str, **a):
         "handle:make-next"
         self.do_parse()
         n = self.find_next()
         if not n:
             focus.call("Message", "No further matches")
             return 1
-        return self.goto_mark(focus, n, "ThisPane")
+        if not str:
+            str = "ThisPane"
+        return self.goto_mark(focus, n, str)
 
     def goto_mark(self, focus, n, where):
         (fname, lineno) = n
@@ -150,10 +152,7 @@ class MakePane(edlib.Pane):
         self.do_parse()
         p = self.call("doc:vmark-get", self.viewnum, mark, 3, ret='mark2')
         if p:
-            self.point = p
-            n = self.map[int(p['ref'])]
-            if n:
-                return self.goto_mark(focus, n, "OtherPane")
+            self.point = p.prev()
         return 1
 
     def handle_close(self, key, **a):
@@ -204,6 +203,7 @@ class MakeViewerPane(edlib.Pane):
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
         focus.call("doc:Notify:doc:make-revisit", mark)
+        focus.call("interactive-cmd-next-match", "OtherPane");
         return 1
 
     def handle_clone(self, key, focus, home, **a):
@@ -361,7 +361,7 @@ def make_request(key, focus, num, str, mark, **a):
     makeprompt(p)
     return 1
 
-def next_match(key, focus, **a):
+def next_match(key, focus, str, **a):
     docname = focus["make-target-doc"]
     if not docname:
         focus.call("Message", "No make output!")
@@ -374,7 +374,7 @@ def next_match(key, focus, **a):
         focus.call("Message", "Make document %s missing" % docname)
         return 1
     try:
-        doc.notify("make-next", focus)
+        doc.notify("make-next", focus, str)
     except edlib.commandfailed:
         pass
     return 1
