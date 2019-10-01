@@ -176,7 +176,7 @@ void edlib_init(struct pane *ed safe)
 	if ((void*)crop_map)
 		return;
 	crop_map = key_alloc();
-	key_add_range(crop_map, "doc:", "doc;", &crop_generic);
+	key_add_prefix(crop_map, "doc:", &crop_generic);
 	key_add(crop_map, "Close", &crop_close);
 	key_add(crop_map, "doc:write_file", &crop_write);
 	key_add(crop_map, "doc:step", &crop_step);

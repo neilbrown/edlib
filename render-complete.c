@@ -529,7 +529,7 @@ static void register_map(void)
 	key_add_range(rc_map, "Chr- ", "Chr-~", &complete_char);
 	key_add(rc_map, "Backspace", &complete_bs);
 
-	key_add_range(rc_map, "Move-", "Move-\377", &complete_nomove);
+	key_add_prefix(rc_map, "Move-", &complete_nomove);
 	key_add(rc_map, "Move-EOL", &complete_eol);
 
 	key_add(rc_map, "Enter", &complete_return);

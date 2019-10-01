@@ -128,7 +128,7 @@ void * safe memsave(struct pane *p safe, char *buf, int len);
 char *strsave(struct pane *p safe, char *buf);
 char *strnsave(struct pane *p safe, char *buf, int len);
 char * safe __strconcat(struct pane *p safe, char *s1 safe, ...);
-#define strconcat(p, s1, ...) __strconcat(p, s1, __VA_ARGS__, NULL)
+#define strconcat(p, ...) __strconcat(p, __VA_ARGS__, NULL)
 
 /* This is declared here so sparse knows it is global */
 void edlib_init(struct pane *ed safe);
@@ -340,6 +340,8 @@ struct command *key_lookup_cmd(struct map *m safe, char *c safe, char **cret, in
 void key_add(struct map *map safe, char *k safe, struct command *comm);
 void key_add_range(struct map *map safe, char *first safe, char *last safe,
 		   struct command *comm);
+#define key_add_prefix(map, prefix, comm) \
+	key_add_range(map, prefix, prefix "\xFF\xFF\xFF\xFF", comm)
 void key_add_chain(struct map *map safe, struct map *chain);
 struct command *key_register_prefix(char *name safe);
 

@@ -430,7 +430,7 @@ class PresenterPane(edlib.Pane):
         return os.path.dirname(path)+'/'+f
 
     def handle_present_bg(self, key, focus, mark, mark2, num, comm2, **a):
-        "handle-range/Present-BG:/Present-BG;/"
+        "handle-prefix:Present-BG:"
         cmds = key[11:].split(',')
         ret = 0
         for c in cmds:

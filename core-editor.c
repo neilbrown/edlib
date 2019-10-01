@@ -346,14 +346,13 @@ struct pane *editor_new(void)
 		key_add(ed_map, "global-get-command", &global_get_command);
 		key_add(ed_map, "global-load-module", &editor_load_module);
 		key_add(ed_map, "editor-on-idle", &editor_on_idle);
-		key_add_range(ed_map, "attach-", "attach.", &editor_auto_load);
-		key_add_range(ed_map, "event:", "event;", &editor_auto_event);
-		key_add_range(ed_map, "global-multicall-", "global-multicall.",
-			      &editor_multicall);
-		key_add_range(ed_map, "Request:Notify:global-", "Request:Notify:global.",
-		              &editor_global_request_notify);
-		key_add_range(ed_map, "Call:Notify:global-", "Call:Notify:global.",
-		              &editor_global_notify);
+		key_add_prefix(ed_map, "attach-", &editor_auto_load);
+		key_add_prefix(ed_map, "event:", &editor_auto_event);
+		key_add_prefix(ed_map, "global-multicall-", &editor_multicall);
+		key_add_prefix(ed_map, "Request:Notify:global-",
+		               &editor_global_request_notify);
+		key_add_prefix(ed_map, "Call:Notify:global-",
+		               &editor_global_notify);
 		key_add(ed_map, "Close", &editor_close);
 	}
 	ei->map = key_alloc();

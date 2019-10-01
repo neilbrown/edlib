@@ -546,9 +546,9 @@ static void mp_init_map(void)
 	key_add(mp_map, "Notify:Close", &mp_notify_close);
 	key_add(mp_map, "Notify:doc:viewers", &mp_notify_viewers);
 	key_add(mp_map, "multipart-add", &mp_add);
-	key_add_range(mp_map, "multipart-this:", "multipart-this;", &mp_forward);
-	key_add_range(mp_map, "multipart-next:", "multipart-next;", &mp_forward);
-	key_add_range(mp_map, "multipart-prev:", "multipart-prev;", &mp_forward);
+	key_add_prefix(mp_map, "multipart-this:", &mp_forward);
+	key_add_prefix(mp_map, "multipart-next:", &mp_forward);
+	key_add_prefix(mp_map, "multipart-prev:", &mp_forward);
 }
 DEF_LOOKUP_CMD(mp_handle, mp_map);
 

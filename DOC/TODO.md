@@ -61,7 +61,7 @@ Core features
       K:M:C:Up  is Meta-Control-Up
       K:M:C-U   is Meta-Control-U
       K:Cx-f    is Control-X f -- assuming K:C-x causes Cx to be set as prefix.
-- [ ] add key_add_prefix()
+- [X] add key_add_prefix()
 - [ ]  ?? restrict prefix key lookup to punctuation.
 
       Current ranges are:
@@ -185,6 +185,7 @@ Module features
 
 ### grep/make
 
+- [ ] leave marks at every match as soon as possible
 - [ ] clarify and document the role of numeric args to git-grep
 - [ ] make/grep - when insert at end-of-file, a pointer that was at EOF should
       stay there.

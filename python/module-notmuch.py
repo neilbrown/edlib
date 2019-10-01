@@ -434,7 +434,7 @@ class notmuch_main(edlib.Doc):
         return 1
 
     def handle_notmuch_remove_tag(self, key, str, str2, **a):
-        "handle-range/doc:notmuch:remove-tag-/doc:notmuch:remove-tag./"
+        "handle-prefix:doc:notmuch:remove-tag-"
         tag = key[23:]
         with self.db.get_write() as db:
             if str2:

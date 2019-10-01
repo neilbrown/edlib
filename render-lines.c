@@ -1795,7 +1795,7 @@ static void render_lines_register_map(void)
 {
 	rl_map = key_alloc();
 
-	key_add_range(rl_map, "Move-", "Move-\377", &render_lines_other_move);
+	key_add_prefix(rl_map, "Move-", &render_lines_other_move);
 	key_add(rl_map, "Move-View-Small", &render_lines_move);
 	key_add(rl_map, "Move-View-Large", &render_lines_move);
 	key_add(rl_map, "Move-View-Pos", &render_lines_move_pos);

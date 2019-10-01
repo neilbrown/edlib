@@ -369,7 +369,7 @@ static void do_map_init(Pane *self safe)
 	PyObject *l = PyObject_Dir(refer);
 	int n = PyList_Size(l);
 
-	if (!self->map)
+	if (!self->map || !self->pane)
 		return;
 	for (i = 0; i < n ; i++) {
 		PyObject *e = PyList_GetItem(l, i);
@@ -414,6 +414,22 @@ static void do_map_init(Pane *self safe)
 						free(a); free(b);
 						command_put(&comm->c);
 					}
+				}
+				if (docs &&
+				    strncmp(docs, "handle-prefix:", 14) == 0) {
+					char *a = strconcat(self->pane, docs+14);
+					char *b = strconcat(self->pane,
+					                    a, "\xFF\xFF\xFF\xFF");
+					struct python_command *comm =
+						malloc(sizeof(*comm));
+					comm->c = python_call;
+					comm->c.free = python_free_command;
+					command_get(&comm->c);
+					Py_INCREF(m);
+					comm->callable = m;
+					key_add_range(self->map, a, b,
+							      &comm->c);
+					command_put(&comm->c);
 				}
 				if (docs &&
 				    strncmp(docs, "handle-list", 11) == 0 &&

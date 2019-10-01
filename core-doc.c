@@ -978,7 +978,7 @@ static void init_doc_cmds(void)
 	doc_default_cmd = key_alloc();
 	doc_handle_cmd = key_alloc();
 
-	key_add_range(doc_handle_cmd, "doc:", "doc;", &doc_pass_on);
+	key_add_prefix(doc_handle_cmd, "doc:", &doc_pass_on);
 
 	key_add(doc_handle_cmd, "Move-Char", &doc_char);
 	key_add(doc_handle_cmd, "Move-Word", &doc_word);
@@ -1015,12 +1015,9 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
 	key_add(doc_default_cmd, "doc:attach-view", &doc_attach_view);
 
-	key_add_range(doc_default_cmd, "doc:Request:Notify:", "doc:Request:Notify;",
-		      &doc_request_notify);
-	key_add_range(doc_default_cmd, "doc:Notify:", "doc:Notify;",
-		      &doc_notify);
-	key_add_range(doc_default_cmd, "doc:set:", "doc:set;",
-		      &doc_set);
+	key_add_prefix(doc_default_cmd, "doc:Request:Notify:", &doc_request_notify);
+	key_add_prefix(doc_default_cmd, "doc:Notify:", &doc_notify);
+	key_add_prefix(doc_default_cmd, "doc:set:", &doc_set);
 }
 
 static void do_doc_assign(struct pane *p safe, struct pane *doc safe)

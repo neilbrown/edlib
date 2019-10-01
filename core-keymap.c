@@ -7,7 +7,7 @@
  * A keymap maps a key to a command.
  * Keys are ordered for fast binary-search lookup.
  * A "key" is an arbitrary string which typically contains
- * some 'mode' pr efix and some specific tail.
+ * some 'mode' prefix and some specific tail.
  * e.g emacs-M-C-Chr-x is Meta-Control-X in emacs mode.
  * As far as the map is concerned, it is just a lexically order string.
  *
@@ -24,7 +24,7 @@
  * lsb clear.
  *
  * If a key is registered a second time, the new over-rides the old.
- * This is particularly useful for registering a range, and then some exception.
+ * This is particularly useful for registering a range, and then some exceptions.
  * To delete a key from a range we need to make two ranges, one that ends
  * just before the new key, one that starts just after.
  * The 'ends just before' is easy - we just add the new key or range.
@@ -255,7 +255,8 @@ void key_add_range(struct map *map safe, char *first safe, char *last safe,
 	 * Then insert a stand-alone for 'last' and update 'pos' to be a range-start.
 	 */
 	if (pos2 - 1 > pos && IS_RANGE(map->comms[pos2-1])) {
-		map->keys[pos2-1] = last;
+		free(map->keys[pos2-1]);
+		map->keys[pos2-1] = strdup(last);
 		pos2 -= 1;
 	}
 	/* Need to insert 'last', and remove extras. so +1 and -(pos2-pos-1); */

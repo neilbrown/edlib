@@ -221,7 +221,7 @@ static void register_map(void)
 	key_add(im_map, "Mode:set-num2", &set_num2);
 	key_add(im_map, "pane:refocus", &refocus);
 	key_add(im_map, "Notify:Close", &close_focus);
-	key_add_range(im_map, "Request:Notify:", "Request:Notify;", &request_notify);
+	key_add_prefix(im_map, "Request:Notify:", &request_notify);
 }
 
 DEF_LOOKUP_CMD(input_handle, im_map);
