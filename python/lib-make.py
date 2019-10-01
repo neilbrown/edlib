@@ -320,7 +320,9 @@ def make_request(key, focus, num, str, mark, **a):
                 d = os.path.dirname(d)
 
         if num and num > 0 and mode != "grep":
-            dir = d + '/'
+            if d and d[-1] != '/':
+                d = d + '/'
+            dir = d
 
     if cmd != "make" and num and mark and focus['doc-type'] == "text":
         # choose the word under the cursor

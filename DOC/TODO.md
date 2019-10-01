@@ -23,7 +23,7 @@ Bugs to be fixed
 - [X] mouse actions need to affect selection: set or clear.
 - [X] detect when file has changed since it was read.
 - [ ] alert when finding a name that is a link to another
-- [ ] dirname sometimes has 2 trailing '/'.
+- [X] dirname sometimes has 2 trailing '/'.
 - [ ] make sure *Welcome* has a dirname (it didn't once..)
 - [ ] temp docs, such as pop-up input, can be inline with the pop-up
       rather than separate.  However then the support provided by
@@ -110,6 +110,7 @@ Module features
 - [ ] compare two panes somehow
 - [ ] copy/paste with mouse
 - [ ] pipe doc or selection to a command, optionally capture to replace with output.
+- [ ] if typing when selection active, replace selection with new text
 
 ### ncurses
 
@@ -196,7 +197,10 @@ Module features
 - [ ] make/grep fail-safe if target file doesn't exist
 - [ ] run make in a given parent
 - [ ] use notify chain to allow stack of 'greps'
-- [ ] detect and honour absolute patch names in error messages
+- [ ] detect and honour absolute file names in error messages
+- [ ] When choosing word from context to search for, if there is an
+      active selection, use that.  And select the text in the
+      input popup so that it is easy to replace.
 
 ### message-line
 
