@@ -38,10 +38,7 @@ static char *do_format(struct rf_data *rf safe, struct pane *focus safe,
 	if (!body)
 		body = "%+name";
 	n = body;
-	m->rpos = field;
-	if (pm && (pm->rpos == NO_RPOS|| pm->rpos == NEVER_RPOS))
-		pm->rpos = rf->home_field;
-	if (pm && pm->rpos == m->rpos)
+	if (pm)
 		goto endwhile;
 	if (len >= 0 && ret.len >= len)
 		goto endwhile;
@@ -68,11 +65,10 @@ static char *do_format(struct rf_data *rf safe, struct pane *focus safe,
 		}
 		if (n[1] == '+' || n[1] == '.')
 			field += 1;
-		m->rpos = field;
 
 		if (len >= 0 && ret.len >= len)
 			break;
-		if (pm && pm->rpos == m->rpos)
+		if (pm)
 			break;
 		n += 1;
 		if (*n == '+') {
@@ -139,10 +135,7 @@ endwhile:
 	if (!*n) {
 		rf->fields = field+1;
 		rf->home_field = home;
-		m->rpos = field;
-		if (pm && pm->rpos == m->rpos)
-			;
-		else if (len >= 0)
+		if (len >= 0)
 			;
 		else
 			buf_append(&ret, '\n');

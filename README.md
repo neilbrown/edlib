@@ -196,14 +196,6 @@ All of these appear in document-order in a linked list, all have a
 sequence number in the list so ordering-tests are easy, and each can
 have a set of attributes attached.
 
-As well as identifying a location in a document, a mark can identify a
-location in the display of that document location.  When a single
-element in a document is displayed using multiple characters (as for
-example a directory entry might be), the “rendering position” or
-“rpos” can record where in those multiple characters the mark really
-belongs.  I'm not yet sure how useful this is, but it seems like a good
-idea.
-
 An ungrouped mark has no property beyond the above.  A grouped marked
 is included in a second linked list with all the other marks in the
 same group.  This group is owned by a specific pane and keeps

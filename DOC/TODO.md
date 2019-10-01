@@ -8,7 +8,7 @@ Active issue and pre-requisites
       by any view pane and by every mark.  Check there numbers are
       consistent and fail with a warning when not.
 - [ ] change notmuch-query-view to use doc-rendering
-- [ ] Discard rpos handling
+- [X] Discard rpos handling
 
 Bugs to be fixed
 ----------------
@@ -293,7 +293,7 @@ Module features
 
 ###  multipart-email
 
-- [ ] I need more general support for rpos.  Does it only apply to point?  When rendered.
+- [X] I need more general support for rpos.  Does it only apply to point?  When rendered.
 - [ ] I need a more structured/extensible way to decide which button was pressed
 - [ ] I need key-click to work reliably somehow. Click on selected button?
 - [ ] Auto-hide depending on type - with extensible table

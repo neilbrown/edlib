@@ -22,7 +22,6 @@
  *  edlib.mark  - these reference locations in a document.  The document is
  *                not directly accessible, it can only be accessed through
  *                a pane (which may translate events and results).
- *                get/set operations for rpos.
  *                get/set for viewnum (cannot be set)
  *                iterator for both 'all' and 'view' lists.
  *                no methods yet.
@@ -1430,20 +1429,18 @@ static PyTypeObject DocType = {
     .tp_new = (newfunc)Doc_new,/* tp_new */
 };
 
-static PyObject *mark_getrpos(Mark *m safe, void *x)
+static PyObject *mark_getoffset(Mark *m safe, void *x)
 {
 	if (m->mark == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	if (x == NULL)
-		return PyInt_FromLong(m->mark->rpos);
 	if (m->local)
 		return PyInt_FromLong(m->mark->ref.o);
 	return PyInt_FromLong(0);
 }
 
-static int mark_setrpos(Mark *m safe, PyObject *v safe, void *x)
+static int mark_setoffset(Mark *m safe, PyObject *v safe, void *x)
 {
 	long val;
 
@@ -1454,9 +1451,7 @@ static int mark_setrpos(Mark *m safe, PyObject *v safe, void *x)
 	val = PyInt_AsLong(v);
 	if (val == -1 && PyErr_Occurred())
 		return -1;
-	if (x == NULL)
-		m->mark->rpos = val;
-	else if (m->local)
+	if (m->local)
 		m->mark->ref.o = val;
 	else {
 		PyErr_SetString(PyExc_TypeError, "Setting offset on non-local mark");
@@ -1594,11 +1589,8 @@ static PyGetSetDef mark_getseters[] = {
      (getter)mark_getpos, (setter)mark_setpos,
      "Position ref", NULL},
     {"offset",
-     (getter)mark_getrpos, (setter)mark_setrpos,
-     "Position offset", (void*)1},
-    {"rpos",
-     (getter)mark_getrpos, (setter)mark_setrpos,
-     "Rendering Position",  NULL},
+     (getter)mark_getoffset, (setter)mark_setoffset,
+     "Position offset", NULL},
     {"viewnum",
      (getter)mark_getview, (setter)mark_nosetview,
      "Index for view list", NULL},
@@ -2282,8 +2274,6 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, DAMAGED_CURSOR);
 	PyModule_AddIntMacro(m, DAMAGED_POSTORDER);
 	PyModule_AddIntMacro(m, DAMAGED_CLOSED);
-	PyModule_AddIntMacro(m, NO_RPOS);
-	PyModule_AddIntMacro(m, NEVER_RPOS);
 	PyModule_AddIntMacro(m, Efallthrough);
 	PyModule_AddIntMacro(m, Enoarg);
 	PyModule_AddIntMacro(m, Einval);

@@ -151,7 +151,6 @@ static void dup_mark(struct mark *orig safe, struct mark *new safe)
 	INIT_TLIST_HEAD(&new->view, GRP_MARK);
 	new->attrs= NULL;
 	assign_seq(new, orig->seq);
-	new->rpos = orig->rpos;
 	mark_ref_copy(new, orig);
 }
 
@@ -168,7 +167,6 @@ struct mark *do_mark_at_point(struct mark *pt safe, int view)
 
 	dup_mark(pt, ret);
 	ret->viewnum = view;
-	ret->rpos = pt->rpos;
 	if (view >= 0)
 		tlist_add(&ret->view, GRP_MARK, &lnk->lists[view]);
 	else
@@ -268,8 +266,6 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 	int seq = 0;
 	struct point_links *lnk;
 
-	if (m->rpos != NEVER_RPOS)
-		m->rpos = NO_RPOS;
 	hlist_del(&m->all);
 	if (end) {
 		if (hlist_empty(&d->marks))
@@ -317,7 +313,6 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 
 void mark_reset(struct doc *d safe, struct mark *m safe, int end)
 {
-	m->rpos = NEVER_RPOS;
 	pane_call(d->home, "doc:set-ref", d->home, !end, m);
 }
 
@@ -395,8 +390,6 @@ static wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, in
 {
 	int ret;
 
-	if (move && m->rpos != NEVER_RPOS)
-		m->rpos = NO_RPOS;
 	ret = pane_call(d->home, "doc:step", d->home, forward, m, NULL, move);
 
 	if (ret <= 0)
@@ -410,8 +403,7 @@ static wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, in
 wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int move)
 {
 	int ret;
-	if (move && m->rpos != NEVER_RPOS)
-		m->rpos = NO_RPOS;
+
 	ret = call("doc:step", p, forward, m, NULL, move);
 
 	if (ret <= 0)
@@ -682,7 +674,6 @@ void mark_to_mark(struct mark *m safe, struct mark *target safe)
 		return;
 	mark_to_mark_noref(m, target);
 	mark_ref_copy(m, target);
-	m->rpos = target->rpos;
 }
 
 /* A 'vmark' is a mark in a particular view.  We can walk around those

@@ -60,13 +60,8 @@ static int cond_append(struct buf *b safe, char *txt safe, char *tag safe,
 	buf_concat(b, tagf);
 	buf_concat(b, tag);
 	buf_concat(b, ">[");
-	if (pm && pm->rpos == m->rpos) {
-		buf_concat_len(b, txt, strlen(txt)/2);
-		return 0;
-	}
 	buf_concat(b, txt);
 	buf_concat(b, "]</>");
-	m->rpos += 1;
 	return 1;
 }
 
@@ -101,9 +96,6 @@ DEF_CMD(email_spacer)
 	if (!attr)
 		attr = "hide";
 
-	m->rpos = 0;
-	if (pm && (pm->rpos == NO_RPOS || pm->rpos == NEVER_RPOS))
-		pm->rpos = 0;
 	buf_init(&b);
 	buf_concat(&b, "<fg:red>");
 
@@ -122,10 +114,8 @@ DEF_CMD(email_spacer)
 	if (ok) {
 		if ((o < 0 || o == NO_NUMERIC)) {
 			buf_concat(&b, "</>\n");
-			m->rpos = 0;
 			mark_next_pane(ci->focus, m);
-		} else
-			m->rpos -= 1;
+		}
 	}
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
@@ -139,7 +129,7 @@ DEF_CMD(email_select)
 	/* If mark is on a button, press it... */
 	struct mark *m = ci->mark;
 	char *a;
-	int r;
+	int r = 0;
 
 	if (!m)
 		return Enoarg;
@@ -149,7 +139,6 @@ DEF_CMD(email_select)
 	a = pane_mark_attr(ci->home, m, "multipart-prev:email:actions");
 	if (!a)
 		a = "hide";
-	r = m->rpos;
 	while (r > 0 && a) {
 		a = strchr(a, ':');
 		if (a)
