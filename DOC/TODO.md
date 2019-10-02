@@ -5,7 +5,7 @@ Active issue and pre-requisites
 -------------------------------
 
 - [ ] Add 16bit semi-unique number to doc panes, which is inherited
-      by any view pane and by every mark.  Check there numbers are
+      by any view pane and by every mark.  Check the numbers are
       consistent and fail with a warning when not.
 - [ ] change notmuch-query-view to use doc-rendering
 - [X] Discard rpos handling
@@ -25,20 +25,22 @@ Bugs to be fixed
 - [ ] alert when finding a name that is a link to another
 - [X] dirname sometimes has 2 trailing '/'.
 - [X] make sure *Welcome* has a dirname (it didn't once..) ... seems to work now
-- [ ] temp docs, such as pop-up input, can be inline with the pop-up
+- [X] NO - nothing to be gained.
+      temp docs, such as pop-up input, can be inline with the pop-up
       rather than separate.  However then the support provided by
       core-doc is hard to provide.  Maybe there is a simpler way to
-      array for that support.
+      arrange for that support.
 
 Core features
 -------------
 
-- [ ] need a way to protect *Documents* from being killed manually.
+- [X] already have!!  a way to protect *Documents* from being killed manually.
 - [ ] account all mem allocation types separate, and (optionally) report
       stats regularly
 - [ ] malloc anti-fail policy.  Small allocations don't fail but use pre-allocated.
       large allocations use different API and can fail.
-- [ ] add '~' support for pathname lookup - and $SUBST??
+- [X] add '~' support for pathname lookup
+- [ ] ... and $SUBST??
 - [ ] graceful failure when closing doc that still has views.
       Then call doc_free() internally so the module doesn't need to.
 - [ ] clarify and document the use of Notify:doc:Replace.  What are the two
@@ -144,6 +146,7 @@ Module features
 
 - [ ] how to change sort order of a directory listing
 - [ ] chown/chmod/unlink/rename etc
+- [ ] times older than 1 year need to report the year.
 
 ### doc-text
 
@@ -165,6 +168,8 @@ Module features
         undo usage, chunk usage
 - [ ] if 'find-file' finds same inode/inum, check the name is still valid.
        file might have changed (stg pop/push) underneath us.
+- [ ] handle large files better - loading a 42M file took too long.
+      Maybe it was the linecount?
 
 ### completion
 

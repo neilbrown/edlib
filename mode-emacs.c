@@ -724,6 +724,36 @@ static void findmap_init(void)
 	key_add(fh_map, "M-Chr-n", &find_prevnext);
 }
 
+static char * safe file_normalize(struct pane *p safe, char *path, char *initial_path)
+{
+	int len = strlen(initial_path?:"");
+	char *dir;
+
+	if (!path)
+		return ".";
+	if (initial_path && strncmp(path, initial_path, len) == 0) {
+		if (path[len] == '/' || (path[len] == '~' &&
+		                         (path[len+1] == '/' || path[len+1] == 0)))
+		         path = path + len;
+	}
+	if (path[0] == '/')
+		return path;
+	if (path[0] == '~' && (path[1] == '/' || path[1] == 0)) {
+		char *home = getenv("HOME");
+		if (!home)
+			home = "/";
+		if (home[strlen(home) - 1] == '/' && path[1] == '/')
+			path += 1;
+		return strconcat(p, home, path+1);
+	}
+	dir = pane_attr_get(p, "dirname");
+	if (!dir)
+		dir = "/";
+	if (dir[strlen(dir)-1] == '/')
+		return strconcat(p, dir, path);
+	return strconcat(p, dir, "/", path);
+}
+
 DEF_LOOKUP_CMD(find_handle, fh_map);
 
 DEF_CMD(emacs_findfile)
@@ -731,25 +761,25 @@ DEF_CMD(emacs_findfile)
 	int fd;
 	struct pane *p, *par;
 	char *path;
+	char buf[PATH_MAX];
+	char *e;
+
+	path = pane_attr_get(ci->focus, "dirname");
+	if (path) {
+		strcpy(buf, path);
+		path = buf;
+	}
+	if (!path) {
+		strcpy(buf, "/");
+		path = buf;
+	}
+	e = buf + strlen(buf);
+	if (e < buf + sizeof(buf)-1 && e > buf && e[-1] != '/') {
+		*e++ = '/';
+		*e++ = '\0';
+	}
 
 	if (strncmp(ci->key, "File Found", 10) != 0) {
-		char buf[PATH_MAX];
-		char *e;
-
-		path = pane_attr_get(ci->focus, "dirname");
-		if (path) {
-			strcpy(buf, path);
-			path = buf;
-		}
-		if (!path) {
-			strcpy(buf, "/");
-			path = buf;
-		}
-		e = buf + strlen(buf);
-		if (e < buf + sizeof(buf)-1 && e > buf && e[-1] != '/') {
-			*e++ = '/';
-			*e++ = '\0';
-		}
 		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, path);
 		if (!p)
 			return 0;
@@ -765,13 +795,13 @@ DEF_CMD(emacs_findfile)
 		}
 		call("doc:set-name", p, 0, NULL, "Find File");
 
-		pane_register(p, 0, &find_handle.c, "file", NULL);
+		p = pane_register(p, 0, &find_handle.c, "file", NULL);
+		attr_set_str(&p->attrs, "initial_path", path);
 		return 1;
 	}
 
-	path = ci->str;
-	while (path && strstr(path, "//"))
-		path = strstr(path, "//") + 1;
+	path = file_normalize(ci->focus, ci->str, path);
+
 	if (!path)
 		return Efail;
 
@@ -814,11 +844,12 @@ REDEF_CMD(emacs_file_complete)
 	 * popup menu
 	 */
 	char *str;
-	char *d, *b, *c;
+	char *d, *b;
 	int fd;
 	struct pane *pop, *docp, *p;
 	struct call_return cr;
 	char *type = ci->home->data;
+	char *initial = attr_find(ci->home->attrs, "initial_path");
 	int wholebuf = strcmp(type, "file") == 0;
 
 	if (!ci->mark)
@@ -829,18 +860,13 @@ REDEF_CMD(emacs_file_complete)
 		return Einval;
 	if (wholebuf) {
 		d = str;
-		while ((c = strstr(d, "//")) != NULL)
-			d = c+1;
 	} else {
+		initial = "";
 		d = str + strlen(str);
 		while (d > str && d[-1] != ' ')
 			d -= 1;
-		if (d[0] != '/') {
-			char *dirname = pane_attr_get(ci->focus, "dirname");
-			if (dirname)
-				d = strconcat(ci->focus, dirname, d);
-		}
 	}
+	d = file_normalize(ci->focus, d, initial);
 	b = strrchr(d, '/');
 	if (b) {
 		b += 1;
