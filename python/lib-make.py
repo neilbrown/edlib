@@ -199,11 +199,23 @@ class MakeViewerPane(edlib.Pane):
     # jump to a given match, and similar
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
+        self.call("doc:Request:Notify:doc:Replace");
 
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
         focus.call("doc:Notify:doc:make-revisit", mark)
         focus.call("interactive-cmd-next-match", "OtherPane");
+        return 1
+
+    def handle_replace(self, key, focus, mark, mark2, **a):
+        "handle:Notify:doc:Replace"
+        if not mark or not mark2:
+            return 1
+        p = self.call("doc:point", ret='mark')
+        if p and p == mark2:
+            # point is where we inserted text, so move it to
+            # after the insertion point
+            p.to_mark(mark)
         return 1
 
     def handle_clone(self, key, focus, home, **a):

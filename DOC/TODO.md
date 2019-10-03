@@ -192,7 +192,7 @@ Module features
 
 - [ ] leave marks at every match as soon as possible
 - [ ] clarify and document the role of numeric args to git-grep
-- [ ] make/grep - when insert at end-of-file, a pointer that was at EOF should
+- [X] make/grep - when insert at end-of-file, a pointer that was at EOF should
       stay there.
 - [X] sometime the pane doesn't go to the right line.
 - [ ] move point of display pane to first match asap
@@ -240,6 +240,8 @@ Module features
             diff -u  - some diffmode handling
 - [ ]  If no output, don't create a pane??  Or just one online.
 - [ ]  Detect ^M in output and handle it... delete from start of line?
+- [ ] when insert at end-of-file, a pointer that was at EOF should
+      stay there.
 
 ###  edlibclient
 - [ ] run edlib directly if no socket
