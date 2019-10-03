@@ -49,7 +49,7 @@ Core features
 - [ ] Make x,y,z,h,w short ?? or unsigned short with an "undefined" instead of -1.
 - [X] unify doc_next_mark_view and vmark_next.  Any others?
 - [ ] some way to find column of point, or at least: width of line
-- [ ] Change tlist to use one bit from each pointer
+- [X] Change tlist to use one bit from each pointer
 - [ ] Need a debug mode where every mark usage is checked for validity.
       also check the setref sets up all linkages.
 - [X] clarify difference between Efail and Esys, or remove one of them.

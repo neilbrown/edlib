@@ -475,7 +475,7 @@ static inline void hlist_move_list(struct hlist_head *old safe,
 
 /*
  * tlists are lists with types.
- * The low 2 bits of each of the pointers provide 4 bits of type
+ * The lsbs of each of the two pointers provide 2 bits of type
  * information.  This is useful when different fields in different
  * structures can all be on the same list
  */
@@ -483,11 +483,11 @@ struct tlist_head {
 	struct tlist_head *next safe, *prev safe;
 };
 
-#define TLIST_PTR(p) ((struct tlist_head * safe)(((unsigned long)(p)) & ~3UL))
-#define __TLIST_TYPE(p,n) ((((unsigned long)(p)) & 3)<<2 | (((unsigned long)(n)) & 3))
+#define TLIST_PTR(p) ((struct tlist_head * safe)(((unsigned long)(p)) & ~1UL))
+#define __TLIST_TYPE(p,n) ((((unsigned long)(p)) & 1)<<1 | (((unsigned long)(n)) & 1))
 #define TLIST_TYPE(e) __TLIST_TYPE((e)->prev, (e)->next)
-#define TLIST_PREV(p,t) ((struct tlist_head * safe)((((t)>>2)&3)|(unsigned long)(p)))
-#define TLIST_NEXT(n,t) ((struct tlist_head * safe)(((t)&3)|(unsigned long)(n)))
+#define TLIST_PREV(p,t) ((struct tlist_head * safe)((((t)>>1)&1)|(unsigned long)(p)))
+#define TLIST_NEXT(n,t) ((struct tlist_head * safe)(((t)&1)|(unsigned long)(n)))
 
 #define TLIST_HEAD_INIT(name, type) { TLIST_NEXT(&(name),(type)),	\
 				      TLIST_PREV(&(name),(type)) }
