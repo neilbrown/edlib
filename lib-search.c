@@ -115,15 +115,29 @@ static int search_backward(struct pane *p safe, struct mark *m safe, struct mark
 	struct match_state *st = rxl_prepare(rxl);
 
 	do {
+		wint_t ch = doc_prior_pane(p, m);
+		int anchored = 0;
+
+		len = -1;
+		if (ch == WEOF || is_eol(ch)) {
+			len = rxl_advance(st, WEOF, RXL_SOL, 1);
+			anchored = 1;
+		}
+		ch = doc_following_pane(p, m);
+		if (ch == WEOF || is_eol(ch)) {
+			len = rxl_advance(st, WEOF, RXL_EOL, !anchored);
+			anchored = 1;
+		}
+
 		mark_to_mark(endmark, m);
 		since_start = 0;
-		len = -1;
 		while (len == -1) {
 			wint_t wch = mark_next_pane(p, m);
 			if (wch == WEOF)
 				break;
 			since_start += 1;
-			len = rxl_advance(st, wch, 0, since_start == 1);
+			len = rxl_advance(st, wch, 0, !anchored);
+			anchored = 1;
 		}
 		mark_to_mark(m, endmark);
 	} while(len < since_start &&

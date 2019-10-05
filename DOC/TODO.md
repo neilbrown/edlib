@@ -34,6 +34,7 @@ Bugs to be fixed
 Core features
 -------------
 
+- [ ] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
 - [X] already have!!  a way to protect *Documents* from being killed manually.
 - [ ] account all mem allocation types separate, and (optionally) report
       stats regularly
@@ -102,7 +103,8 @@ Module features
 - [ ] invent a way to reserve 'extra' values for command sets
       do I need this across panes ?? probably
 - [ ] search highlights don't cross EOL.
-- [ ] reverse search "fails" for patterns starting '^' or ending '$'
+- [ ] search highlight doesn't report empty match (eol)...
+- [X] reverse search "fails" for patterns starting '^' or ending '$'
 - [ ] emacs highlight should get close notification from popup,
       instead of catching abort.
 - [ ] ask before killing modified buffer.
@@ -226,13 +228,14 @@ Module features
       the length since a particular point.
       We then repeat the match process against the found string to get start
       and end points.
-- [ ] \b for word-break
-- [ ] rexel/rxl_advance: "clear out next lists" take too long on long patterns
+- [ ] \b for word-break - maybe provide a regexp set for 'is a word char'
+- [ ] rexel/rxl_advance: "clear out next lists" take too long on long patterns. memset?
+      or follow the existing chain?  Does 'leng' need to be cleared?
 
 ### docs
 
 - [ ] save-all should accept 'y' and 'n' as well as 's' and '%'
-      and I probably want to be told what to do.
+      and I probably want to be told what to do.  And '%' is probably not a good idea.
 - [ ] docs_callback should (maybe) use a keymap
 
 ### shell mode
