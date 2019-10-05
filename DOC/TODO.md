@@ -46,7 +46,7 @@ Core features
 - [ ] clarify and document the use of Notify:doc:Replace.  What are the two
       marks exactly.
 - [X] possibly merge mark->refcnt, mark->owner, and Mark->local
-- [ ] Make x,y,z,h,w short ?? or unsigned short with an "undefined" instead of -1.
+- [X] Make x,y,z,h,w short ?? or unsigned short with an "undefined" instead of -1.
 - [X] unify doc_next_mark_view and vmark_next.  Any others?
 - [ ] some way to find column of point, or at least: width of line
 - [X] Change tlist to use one bit from each pointer
@@ -54,7 +54,7 @@ Core features
       also check the setref sets up all linkages.
 - [X] clarify difference between Efail and Esys, or remove one of them.
 - [X] replace key_add(..key_register_prefix) with a macro that defines a static modmap.
-- [ ] Make key names shorted and easier.
+- [ ] Make key names shorter and easier.
       There are two name spaces - characters and names
       characters are preceded by '-', names by ':'.
       K-E is the key "Captial E"
@@ -141,6 +141,7 @@ Module features
 ### lib-input
 - [ ] keep log of keystrokes in a restricted document
 - [ ] support keyboard macros
+- [ ] if a prefix is unchange for a short while, display it in the message line
 
 ### doc-dir
 

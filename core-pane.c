@@ -119,7 +119,7 @@ void pane_damaged(struct pane *p, int type)
 	}
 }
 
-struct pane *safe pane_register(struct pane *parent, int z,
+struct pane *safe pane_register(struct pane *parent, short z,
                                 struct command *handle safe, void *data,
                                 struct list_head *here)
 {
@@ -495,7 +495,7 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 	pane_close2(p, parent);
 }
 
-int pane_masked(struct pane *p safe, int x, int y, int abs_z, int *w, int *h)
+int pane_masked(struct pane *p safe, short x, short y, short abs_z, short *w, short *h)
 {
 	/* Test if this pane, or its children, mask this location.
 	 * i.e. they have a higher 'abs_z' and might draw here.
@@ -750,7 +750,7 @@ char *do_call_str(enum target_type type, struct pane *home, struct command *comm
 }
 
 /* convert pane-relative co-ords to absolute */
-void pane_absxy(struct pane *p, int *x safe, int *y safe, int *w safe, int *h safe)
+void pane_absxy(struct pane *p, short *x safe, short *y safe, short *w safe, short *h safe)
 {
 	while (p) {
 		if (p->w > 0 && *x + *w > p->w)
@@ -764,7 +764,7 @@ void pane_absxy(struct pane *p, int *x safe, int *y safe, int *w safe, int *h sa
 }
 
 /* Convert absolute c-ords to relative */
-void pane_relxy(struct pane *p, int *x safe, int *y safe)
+void pane_relxy(struct pane *p, short *x safe, short *y safe)
 {
 	while (p) {
 		*x -= p->x;
@@ -773,9 +773,9 @@ void pane_relxy(struct pane *p, int *x safe, int *y safe)
 	}
 }
 
-void pane_map_xy(struct pane *orig, struct pane *target, int *x safe, int *y safe)
+void pane_map_xy(struct pane *orig, struct pane *target, short *x safe, short *y safe)
 {
-	int w=0, h=0;
+	short w=0, h=0;
 	pane_absxy(orig, x, y, &w, &h);
 	pane_relxy(target, x, y);
 }

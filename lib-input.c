@@ -126,7 +126,7 @@ DEF_CMD(mouse_event)
 {
 	struct input_mode *im = ci->home->data;
 	int l;
-	int x,y;
+	short x,y;
 	int num, ex;
 	struct pane *focus;
 	char *key;

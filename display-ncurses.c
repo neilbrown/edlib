@@ -63,9 +63,9 @@ struct display_data {
 
 static SCREEN *current_screen;
 static void ncurses_clear(struct pane *p safe, struct pane *display safe,
-			  int attr, int x, int y, int w, int h);
+			  int attr, short x, short y, short w, short h);
 static void ncurses_text(struct pane *p safe, struct pane *display safe,
-			 wchar_t ch, int attr, int x, int y, int cursor);
+			 wchar_t ch, int attr, short x, short y, short cursor);
 DEF_CMD(input_handle);
 DEF_CMD(handle_winch);
 static struct map *nc_map;
@@ -523,8 +523,8 @@ DEF_CMD(nc_draw_text)
 	struct pane *p = ci->home;
 	int attr = cvt_attrs(ci->str2);
 	int cursor_offset = ci->num;
-	int offset = 0;
-	int x = ci->x, y = ci->y;
+	short offset = 0;
+	short x = ci->x, y = ci->y;
 	mbstate_t mbs = {};
 	char *str = ci->str;
 	int len;
@@ -641,10 +641,10 @@ REDEF_CMD(handle_winch)
 }
 
 static void ncurses_clear(struct pane *p safe, struct pane *display safe,
-			  int attr, int x, int y, int w, int h)
+			  int attr, short x, short y, short w, short h)
 {
-	int r, c;
-	int w0, h0;
+	short r, c;
+	short w0, h0;
 
 	if (w == 0)
 		w = p->w - x;
@@ -665,11 +665,11 @@ static void ncurses_clear(struct pane *p safe, struct pane *display safe,
 }
 
 static void ncurses_text(struct pane *p safe, struct pane *display safe,
-			 wchar_t ch, int attr, int x, int y, int cursor)
+			 wchar_t ch, int attr, short x, short y, short cursor)
 {
 	struct display_data *dd;
 	cchar_t cc = {};
-	int w=1, h=1;
+	short w=1, h=1;
 
 	if (x < 0 || y < 0)
 		return;

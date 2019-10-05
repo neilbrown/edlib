@@ -69,7 +69,7 @@ static void doc_init(struct doc *d safe)
 	d->refcnt = NULL;
 }
 
-struct pane *safe doc_register(struct pane *parent, int z,
+struct pane *safe doc_register(struct pane *parent, short z,
                                struct command *handle safe,
                                struct doc *doc safe)
 {

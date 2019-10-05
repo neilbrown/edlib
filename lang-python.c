@@ -914,19 +914,19 @@ static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwd
 
 static PyObject *Pane_abs(Pane *self safe, PyObject *args)
 {
-	int x,y;
-	int w= -1, h= -1;
+	short x,y;
+	short w= -1, h= -1;
 	int have_height = 0;
-	int ret = PyArg_ParseTuple(args, "ii|ii", &x, &y, &w, &h);
+	int ret = PyArg_ParseTuple(args, "hh|hh", &x, &y, &w, &h);
 	if (ret <= 0)
 		return NULL;
 	if (h >= 0)
 		have_height = 1;
 	pane_absxy(self->pane, &x, &y, &w, &h);
 	if (have_height)
-		return Py_BuildValue("iiii", x, y, w, h);
+		return Py_BuildValue("hhhh", x, y, w, h);
 	else
-		return Py_BuildValue("ii", x, y);
+		return Py_BuildValue("hh", x, y);
 }
 
 static PyObject *Pane_add_notify(Pane *self safe, PyObject *args)
@@ -945,8 +945,8 @@ static PyObject *Pane_add_notify(Pane *self safe, PyObject *args)
 
 static PyObject *Pane_rel(Pane *self safe, PyObject *args)
 {
-	int x,y;
-	int ret = PyArg_ParseTuple(args, "ii", &x, &y);
+	short x,y;
+	int ret = PyArg_ParseTuple(args, "hh", &x, &y);
 	if (ret <= 0)
 		return NULL;
 	pane_relxy(self->pane, &x, &y);

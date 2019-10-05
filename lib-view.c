@@ -413,7 +413,7 @@ DEF_CMD(view_click)
 	int lh = vd->line_height;
 	int *size;
 	int num;
-	int cihx, cihy;
+	short cihx, cihy;
 
 	cihx = ci->x; cihy = ci->y;
 	pane_map_xy(ci->focus, ci->home, &cihx, &cihy);

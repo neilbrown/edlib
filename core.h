@@ -63,13 +63,13 @@ struct pane {
 	struct pane		*parent;
 	struct list_head	siblings;
 	struct list_head	children;
-	int			x,y,z;
-	int			h,w;
 	struct pane		*focus;
-	int			cx, cy;	/* cursor position */
-	int			abs_z, abs_zhi; /* 'hi' is the max of all children */
+	short			x,y,z;
+	short			h,w;
+	short			cx, cy;	/* cursor position */
+	short			abs_z, abs_zhi; /* 'hi' is the max of all children */
 
-	int			damaged;
+	short			damaged;
 
 	struct command		*handle;
 	void			*data safe;
@@ -375,11 +375,11 @@ enum {
 };
 #define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT | DAMAGED_CURSOR)
 
-struct xy {int x,y;};
-struct pane *safe pane_register(struct pane *parent, int z,
+struct xy {short x,y;};
+struct pane *safe pane_register(struct pane *parent, short z,
 				struct command *handle safe, void *data,
 				struct list_head *here);
-struct pane *safe doc_register(struct pane *parent, int z,
+struct pane *safe doc_register(struct pane *parent, short z,
                                struct command *handle safe,
                                struct doc *doc safe);
 static inline struct pane * safe pane_root(struct pane *p safe)
@@ -398,12 +398,12 @@ void pane_damaged(struct pane *p, int type);
 void pane_clone_children(struct pane *from, struct pane *to);
 struct pane *pane_my_child(struct pane *p, struct pane *c);
 
-int pane_masked(struct pane *p safe, int x, int y, int abs_z, int *w, int *h);
+int pane_masked(struct pane *p safe, short x, short y, short abs_z, short *w, short *h);
 char *pane_attr_get(struct pane *p, char *key safe);
 char *pane_mark_attr(struct pane *p safe, struct mark *m safe, char *key safe);
-void pane_absxy(struct pane *p, int *x safe, int *y safe, int *w safe, int *h safe);
-void pane_relxy(struct pane *p, int *x safe, int *y safe);
-void pane_map_xy(struct pane *orig, struct pane *target, int *x safe, int *y safe);
+void pane_absxy(struct pane *p, short *x safe, short *y safe, short *w safe, short *h safe);
+void pane_relxy(struct pane *p, short *x safe, short *y safe);
+void pane_map_xy(struct pane *orig, struct pane *target, short *x safe, short *y safe);
 
 struct xy pane_scale(struct pane *p safe);
 
