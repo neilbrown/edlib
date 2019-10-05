@@ -172,6 +172,19 @@ struct match_state {
 static int classcnt = 0;
 static wctype_t *classmap safe = NULL;
 
+/*
+ * the match_state contains several partial matches that lead to "here".
+ * rxl_advance() examines each of these to determine if they will still match
+ * after consuming either a character or a position-type flag (SOL, EOL, etc).
+ * It calls do_link for each case that is still a possible match.
+ * 'pos' is the position in the regexp that matches the new point in the target.
+ * 'dest' is the place in the new threaded list to record this match. i.e.
+ *         the slot that it currently the end of the list.
+ * 'len' is the length of the match of to this (new) point in the target.
+ * If there is already a match to this point in the pattern, we just update
+ * the length and don't relink anything.
+ *
+ */
 static int do_link(struct match_state *st safe, int pos, int dest, int len)
 {
 	unsigned short cmd = st->rxl[pos];
@@ -276,8 +289,18 @@ static int set_match(struct match_state *st safe, unsigned short addr, wchar_t c
 }
 
 /*
- * Advance the match state to process 'ch' and/or flag.
- * flag indicates start/end of word/line, and whether to ignore ch.
+ * Advance the match state to process 'ch' or a flag.
+ * flag indicates start/end of word/line.
+ * Returns -2 if there is no possibility of a match including this ch/flag
+ * Returns -1 if part of the pattern has matched, and more input is needed.
+ * Returns >=0 if a match has been found.  The return value is the number
+ *  of characters (not flags) in the match.
+ * When a >=0 return is given, it might still be useful to keep calling
+ * rxl_advance if a maximal match is wanted.
+ * If the match must be anchor to the first character, 'restart' should only
+ * be set the first time rxl_advance is called, otherwise it is typically set
+ * on every call until a non-negative length as been returned.  Then while
+ * looking to extent the current match, restart should be 0.
  */
 int rxl_advance(struct match_state *st safe, wint_t ch, int flag, int restart)
 {
