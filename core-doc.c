@@ -614,7 +614,7 @@ DEF_CMD(doc_default_content)
 
 	nxt = ccall(&dstep, "doc:step", ci->home, 1, m);
 	while (nxt != CHAR_RET(WEOF) &&
-	       comm_call(ci->comm2, "consume", ci->home, nxt, m)) {
+	       comm_call(ci->comm2, "consume", ci->home, nxt, m) > 0) {
 		ccall(&dstep, "doc:step", ci->home, 1, m, NULL, 1);
 		nxt = ccall(&dstep, "doc:step", ci->home, 1, m);
 	}
