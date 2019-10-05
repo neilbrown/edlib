@@ -4,7 +4,7 @@ To-do list for edlib
 Active issue and pre-requisites
 -------------------------------
 
-- [ ] Add 16bit semi-unique number to doc panes, which is inherited
+- [X] Add 16bit semi-unique number to doc panes, which is inherited
       by any view pane and by every mark.  Check the numbers are
       consistent and fail with a warning when not.
 - [ ] change notmuch-query-view to use doc-rendering
@@ -45,7 +45,7 @@ Core features
       Then call doc_free() internally so the module doesn't need to.
 - [ ] clarify and document the use of Notify:doc:Replace.  What are the two
       marks exactly.
-- [ ] possibly merge mark->refcnt, mark->owner, and Mark->local
+- [X] possibly merge mark->refcnt, mark->owner, and Mark->local
 - [ ] Make x,y,z,h,w short ?? or unsigned short with an "undefined" instead of -1.
 - [X] unify doc_next_mark_view and vmark_next.  Any others?
 - [ ] some way to find column of point, or at least: width of line
@@ -381,6 +381,8 @@ Module features
 ### lang-python
 
 - [ ] key_register_prefix functionality.
+- [ ] remove the pane 'handler' functionality after converting
+      display-pygtk to make EdDisplay an edlib.Pane.
 
 New Modules - simple
 --------------------

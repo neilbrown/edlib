@@ -1403,6 +1403,8 @@ DEF_CMD(text_step)
 	if (!m)
 		return Enoarg;
 
+	ASSERT(m->owner == d);
+
 	r = m->ref;
 	if (forward) {
 		ret = text_next(t, &r, 0);
@@ -1444,6 +1446,8 @@ DEF_CMD(text_step_bytes)
 
 	if (!m)
 		return Enoarg;
+
+	ASSERT(m->owner == d);
 
 	r = m->ref;
 	if (forward) {

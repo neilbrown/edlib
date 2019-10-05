@@ -270,6 +270,8 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 	int seq = 0;
 	struct point_links *lnk;
 
+	ASSERT(m->owner == d);
+
 	hlist_del(&m->all);
 	if (end) {
 		if (hlist_empty(&d->marks))
@@ -396,6 +398,7 @@ static wint_t mark_step(struct doc *d safe, struct mark *m safe, int forward, in
 {
 	int ret;
 
+	ASSERT(m->owner == d);
 	ret = pane_call(d->home, "doc:step", d->home, forward, m, NULL, move);
 
 	if (ret <= 0)
@@ -862,6 +865,8 @@ struct mark *do_vmark_at_point(struct doc *d safe,
 	struct mark *m;
 	struct point_links *lnk = safe_cast pt->mdata;
 
+	ASSERT(pt->owner == d);
+
 	if (view < 0 || view >= d->nviews || d->views == NULL)
 		return NULL;
 	if (d->views[view].owner != owner)
@@ -887,6 +892,8 @@ struct mark *do_vmark_at_or_before(struct doc *d safe,
 	 * Return NULL if all 'view' marks are after 'm' in the document.
 	 */
 	struct mark *vm = m;
+
+	ASSERT(m->owner == d);
 
 	if ((view < 0 && view != MARK_POINT) || view >= d->nviews ||
 	    d->views == NULL || d->views[view].owner != owner)
@@ -970,8 +977,8 @@ void doc_check_consistent(struct doc *d safe)
 	int i;
 
 	hlist_for_each_entry(m, &d->marks, all) {
-		if (m->seq < seq)
-			abort();
+		ASSERT(m->seq >= seq);
+		ASSERT(m->owner == d);
 		seq = m->seq + 1;
 	}
 	for (i = 0; d->views && i < d->nviews; i++)
