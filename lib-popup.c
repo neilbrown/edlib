@@ -57,10 +57,13 @@ static void popup_resize(struct pane *p safe, char *style safe)
 		return;
 	/* First find the size */
 	lh = line_height(p);
-	if (strchr(style, 'M'))
+	if (strchr(style, 'M')) {
 		h = p->parent->h/2 + 1;
-	else
+		attr_set_str(&p->attrs, "render-one-line", "no");
+	} else {
 		h = lh * 3;
+		attr_set_str(&p->attrs, "render-one-line", "yes");
+	}
 	w = p->parent->w/2;
 	if (strchr(style, '1')) w = (p->parent->w-2)/4 + 1;
 	if (strchr(style, '3')) w = 3 * (p->parent->w-2)/4;

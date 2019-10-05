@@ -249,6 +249,7 @@ DEF_CMD(render_line)
 	int ret;
 	struct attr_return ar;
 	int add_newline = 0;
+	char *oneline;
 	char *attr;
 
 	if (o == NO_NUMERIC)
@@ -262,6 +263,10 @@ DEF_CMD(render_line)
 
 	if (!m)
 		return Enoarg;
+
+	oneline = pane_attr_get(focus, "render-one-line");
+	if (oneline && strcmp(oneline, "yes") != 0)
+		oneline = NULL;
 
 	ch = doc_following_pane(focus, m);
 	if (is_eol(ch) &&
@@ -308,7 +313,7 @@ DEF_CMD(render_line)
 		ch = mark_next_pane(focus, m);
 		if (ch == WEOF)
 			break;
-		if (is_eol(ch)) {
+		if (!oneline && is_eol(ch)) {
 			add_newline = 1;
 			if (ch == '\v' && b.len > 0)
 				mark_prev_pane(focus, m);
@@ -323,7 +328,7 @@ DEF_CMD(render_line)
 			}
 			buf_append(&b, '<');
 		}
-		if (ch < ' ' && ch != '\t' && !is_eol(ch)) {
+		if (ch < ' ' && ch != '\t' && (oneline || !is_eol(ch))) {
 			buf_concat(&b, "<fg:red>^");
 			buf_append(&b, '@' + ch);
 			buf_concat(&b, "</>");
