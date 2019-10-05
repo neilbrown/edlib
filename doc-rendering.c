@@ -148,7 +148,6 @@ DEF_CMD(dr_set_ref)
 	call("doc:set-ref", p, ci->num, m2);
 
 	m->ref.offset = 0;
-	m->refcnt = dr_refcnt;
 	mark_to_end(d, m, ci->num != 1);
 
 	set_ref_mark(ci->home, m, p, dri->vnum, m2);
@@ -572,6 +571,7 @@ DEF_CMD(attach_dr)
 		free(dri);
 		return Efail;
 	}
+	dri->doc.refcnt = dr_refcnt;
 	dri->base = ci->focus;
 
 	home_call(ci->focus, "doc:Request:Notify:doc:viewers", p);

@@ -180,7 +180,6 @@ static void change_part(struct mp_info *mpi safe, struct mark *m safe, int part,
 	} else
 		m->ref.m = NULL;
 	m->ref.docnum = part;
-	m->refcnt = mp_mark_refcnt;
 }
 
 static void mp_normalize(struct mp_info *mpi safe, struct mark *m safe)
@@ -561,6 +560,7 @@ DEF_CMD(attach_mp)
 
 	h = doc_register(ci->home, 0, &mp_handle.c, &mpi->doc);
 	if (h) {
+		mpi->doc.refcnt = mp_mark_refcnt;
 		attr_set_str(&h->attrs, "render-default", "text");
 		return comm_call(ci->comm2, "callback:doc", h);
 	}

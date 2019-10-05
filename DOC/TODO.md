@@ -191,6 +191,7 @@ Module features
 ### grep/make
 
 - [ ] leave marks at every match as soon as possible
+- [ ] if two results are at the same location, ignore the second.
 - [ ] clarify and document the role of numeric args to git-grep
 - [X] make/grep - when insert at end-of-file, a pointer that was at EOF should
       stay there.

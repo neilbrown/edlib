@@ -125,24 +125,24 @@ void mark_free(struct mark *m)
 		point_free(m);
 	ASSERT(m->mdata == NULL);
 	mark_delete(m);
-	if (m->refcnt)
-		m->refcnt(m, -1);
+	if (m->owner->refcnt)
+		m->owner->refcnt(m, -1);
 	memset(m, 0xff, sizeof(*m));
 	free(m);
 }
 
 static void mark_ref_copy(struct mark *to safe, struct mark *from safe)
 {
+	ASSERT((void*)to->owner == NULL || to->owner == from->owner);
+	to->owner = from->owner;
 	if (to->ref.p == from->ref.p &&
-	    to->ref.i == from->ref.i &&
-	    to->refcnt == from->refcnt)
+	    to->ref.i == from->ref.i)
 		return;
-	if (to->refcnt)
-		to->refcnt(to, -1);
+	if (to->owner->refcnt)
+		to->owner->refcnt(to, -1);
 	to->ref = from->ref;
-	to->refcnt = from->refcnt;
-	if (to->refcnt)
-		to->refcnt(to, 1);
+	if (to->owner->refcnt)
+		to->owner->refcnt(to, 1);
 }
 
 static void dup_mark(struct mark *orig safe, struct mark *new safe)
@@ -313,6 +313,8 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 
 void mark_reset(struct doc *d safe, struct mark *m safe, int end)
 {
+	ASSERT((void*)m->owner == NULL || m->owner == d);
+	m->owner = d;
 	pane_call(d->home, "doc:set-ref", d->home, !end, m);
 }
 

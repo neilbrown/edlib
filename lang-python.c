@@ -112,6 +112,7 @@ typedef struct {
 	unsigned int	mine:1; /* mtype is  MarkType */
 } Mark;
 static PyTypeObject MarkType;
+static void mark_refcnt(struct mark *m safe, int inc);
 
 typedef struct {
 	PyObject_HEAD
@@ -598,6 +599,7 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 	self->handle.c.func = python_doc_call_func;
 	self->pane = doc_register(parent ? parent->pane : NULL,
 	                          z, &self->handle.c, &self->doc);
+	self->doc.refcnt = mark_refcnt;
 	return 0;
 }
 
@@ -1511,7 +1513,7 @@ static PyObject *mark_getpos(Mark *m safe, void *x)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	if (m->local && m->mark->refcnt == mark_refcnt && m->mark->ref.c) {
+	if (m->local && m->mark->owner->refcnt == mark_refcnt && m->mark->ref.c) {
 		Py_INCREF(m->mark->ref.c);
 		return m->mark->ref.c;
 	} else {
@@ -1527,28 +1529,26 @@ static int mark_setpos(Mark *m safe, PyObject *v, void *x)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return -1;
 	}
-	if (!m->local) {
+	if (!m->local || m->mark->owner->refcnt != mark_refcnt) {
 		PyErr_SetString(PyExc_TypeError, "Not set ref for non-local mark");
 		return -1;
 	}
-	if (m->mark->refcnt)
-		m->mark->refcnt(m->mark, -1);
+	m->mark->owner->refcnt(m->mark, -1);
 	/* If an adjacent mark has a ref.c with a matching value
 	 * use that instead, so that mark_same() works.
 	 */
 	m2 = doc_next_mark_all(m->mark);
-	if (m2 && m2->refcnt == mark_refcnt && m2->ref.c != NULL &&
+	if (m2 && m2->owner->refcnt == mark_refcnt && m2->ref.c != NULL &&
 	    PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
 			m->mark->ref.c = m2->ref.c;
 	else if ((m2 = doc_prev_mark_all(m->mark)) != NULL &&
-		 m2->refcnt == mark_refcnt &&
+		 m2->owner->refcnt == mark_refcnt &&
 		 m2->ref.c != NULL &&
 		 PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
 			m->mark->ref.c = m2->ref.c;
 	else
 		m->mark->ref.c = v;
-	m->mark->refcnt = mark_refcnt;
-	m->mark->refcnt(m->mark, 1);
+	m->mark->owner->refcnt(m->mark, 1);
 	return 0;
 }
 

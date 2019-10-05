@@ -66,6 +66,7 @@ static void doc_init(struct doc *d safe)
 	d->autoclose = 0;
 	d->readonly = 0;
 	d->home = safe_cast NULL;
+	d->refcnt = NULL;
 }
 
 struct pane *safe doc_register(struct pane *parent, int z,
