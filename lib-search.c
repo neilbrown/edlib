@@ -73,6 +73,7 @@ static int search_forward(struct pane *p safe, struct mark *m safe, struct mark 
 	 * @endmark at the end point, and returning the length of the match, or -1.
 	 */
 	struct search_state ss;
+	wint_t ch;
 
 	if (m2 && m->seq >= m2->seq)
 		return -1;
@@ -81,6 +82,12 @@ static int search_forward(struct pane *p safe, struct mark *m safe, struct mark 
 	ss.end = m2;
 	ss.endmark = endmark;
 	ss.c = search_test;
+	ch = doc_following_pane(p, m);
+	if (ch == WEOF || is_eol(ch))
+		rxl_advance(ss.st, WEOF, RXL_EOL, 1);
+	ch = doc_prior_pane(p, m);
+	if (ch == WEOF || is_eol(ch))
+		rxl_advance(ss.st, WEOF, RXL_SOL, 1);
 
 	call_comm("doc:content", p, &ss.c, 0, m);
 	rxl_free_state(ss.st);

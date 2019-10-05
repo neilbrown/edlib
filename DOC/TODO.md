@@ -102,6 +102,7 @@ Module features
 - [ ] invent a way to reserve 'extra' values for command sets
       do I need this across panes ?? probably
 - [ ] search highlights don't cross EOL.
+- [ ] reverse search "fails" for patterns starting '^' or ending '$'
 - [ ] emacs highlight should get close notification from popup,
       instead of catching abort.
 - [ ] ask before killing modified buffer.
@@ -225,6 +226,7 @@ Module features
       the length since a particular point.
       We then repeat the match process against the found string to get start
       and end points.
+- [ ] \b for word-break
 - [ ] rexel/rxl_advance: "clear out next lists" take too long on long patterns
 
 ### docs
