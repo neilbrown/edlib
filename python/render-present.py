@@ -647,7 +647,6 @@ class PresenterPane(edlib.Pane):
         if not m:
             return 0
         focus.call("Move-View-Pos", m)
-        m.release()
         return 0
 
     def handle_clone(self, key, focus, mark, mark2, num, comm2, **a):

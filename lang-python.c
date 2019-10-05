@@ -104,9 +104,6 @@ static PyTypeObject DocType;
 typedef struct {
 	PyObject_HEAD
 	struct mark	*mark;
-	unsigned int	released:1;
-	unsigned int	owned:1;
-	unsigned int	mine:1; /* mtype is  MarkType */
 } Mark;
 static PyTypeObject MarkType;
 static void mark_refcnt(struct mark *m safe, int inc);
@@ -167,9 +164,6 @@ static inline PyObject *safe Mark_Frommark(struct mark *m safe)
 	}
 	mark = (Mark * safe)PyObject_CallObject((PyObject*)&MarkType, NULL);
 	mark->mark = m;
-	mark->released = 1;
-	mark->owned = 0;
-	mark->mine = 0;
 	return (PyObject*)mark;
 }
 
@@ -1653,31 +1647,57 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 		PyErr_SetString(PyExc_TypeError, "Mark creation failed");
 		return -1;
 	}
-	if (self->mark->viewnum >= 0) {
+	if (self->mark->viewnum == MARK_POINT) {
+		if (self->mark->owner->refcnt == mark_refcnt) {
+			/* Python owns this point and can be expected to
+			 * .release it when it is done
+			 */
+			self->mark->mtype = self;
+			Py_INCREF(self);
+		}
+	} else if (self->mark->viewnum == MARK_UNGROUPED) {
+		/* We want this mark to be freed when the Mark
+		 * dies
+		 */
+		self->mark->mtype = self;
+	} else {
 		/* vmarks don't disappear until explicitly released */
-		self->released = 0;
-		self->mine = 1;
 		self->mark->mtype = &MarkType;
 		self->mark->mdata = (PyObject*)self;
 		Py_INCREF(self);
-	} else {
-		self->mine = 0;
-		self->released = 1;
 	}
-	self->owned = 1;
 	return 1;
 }
 
 static void mark_dealloc(Mark *self safe)
 {
-	if (self->mine && self->mark && self->mark->mtype == &MarkType) {
-		struct mark *m = self->mark;
-		self->mark = NULL;
-		m->mtype = NULL;
-		m->mdata = NULL;
+	if (self->mark) {
+		if (self->mark->viewnum == MARK_POINT) {
+			if (self->mark->owner->refcnt == mark_refcnt) {
+				/* This has been released, so free it */
+				mark_free(self->mark);
+				self->mark = NULL;
+			}
+		} else if (self->mark->viewnum == MARK_UNGROUPED) {
+			if (self->mark->mdata == (PyObject*)self) {
+				/* I created, I can destroy it */
+				struct mark *m = self->mark;
+				self->mark = NULL;
+				m->mdata = NULL;
+				m->mtype = NULL;
+				mark_free(m);
+			}
+		} else {
+			if (self->mark->mtype == &MarkType) {
+				struct mark *m = self->mark;
+				ASSERT(m->mdata == (PyObject*)self);
+				self->mark = NULL;
+				m->mtype = NULL;
+				m->mdata = NULL;
+				mark_free(self->mark);
+			}
+		}
 	}
-	if (self->owned && self->mark)
-		mark_free(self->mark);
 	do_free((PyObject*safe)self);
 }
 
@@ -1790,7 +1810,10 @@ static PyObject *Mark_dup(Mark *self safe, PyObject *args)
 	new = mark_dup(self->mark);
 	if (new) {
 		Mark *ret = (Mark*)Mark_Frommark(new);
-		ret->owned = 1;
+		/* We want this mark to be freed when the Mark
+		 * dies
+		 */
+		new->mtype = ret;
 		return (PyObject*)ret;
 	}
 
@@ -1800,17 +1823,29 @@ static PyObject *Mark_dup(Mark *self safe, PyObject *args)
 
 static PyObject *Mark_release(Mark *self safe, PyObject *args)
 {
-	if (self->mark && self->mark->viewnum >= 0 &&
-	    self->released == 0 &&
-	    self->mark->mtype == &MarkType) {
-		struct mark *m = self->mark;
+	struct mark *m = self->mark;
+
+	if (!m) {
+		PyErr_SetString(PyExc_TypeError, "Mark has been freed");
+		return NULL;
+	}
+	if (m->viewnum == MARK_UNGROUPED) {
+		PyErr_SetString(PyExc_TypeError, "Cannot release ungrouped mark");
+		return NULL;
+	}
+	if (m->viewnum == MARK_POINT && m->mtype == self) {
+		/* We created this, time for it to go */
+		m->mtype = NULL;
+		Py_DECREF(self);
+	} else if (m->viewnum >= 0 && m->mdata == (PyObject*)self) {
+		/* We are dropping this mark - there cannot be any other ref */
 		Py_DECREF(self);
 		m->mdata = NULL;
 		m->mtype = NULL;
 		self->mark = NULL;
 		mark_free(m);
-		self->released = 1;
 	}
+
 	Py_INCREF(Py_None);
 	return Py_None;
 }
