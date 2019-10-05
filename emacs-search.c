@@ -52,6 +52,7 @@ DEF_CMD(search_forward)
 	struct stk *s;
 	char *str;
 	int backward = ci->key[6] == 'R';
+	struct mark *newstart;
 
 	esi->backwards = backward;
 	if (esi->s && mark_same(esi->s->m, esi->end)) {
@@ -82,13 +83,22 @@ DEF_CMD(search_forward)
 	free(str);
 	s->next = esi->s;
 	esi->s = s;
-	if (esi->matched)
-		esi->start = mark_dup(esi->end);
-	else {
-		esi->start = mark_dup(s->m);
-		esi->wrapped = 1;
-		call("Move-File", esi->target, backward ? 1 : -1, esi->start);
+	newstart = NULL;
+	if (esi->matched) {
+		newstart = mark_dup(esi->end);
+		if (esi->matched == 1)
+			/* zero length match */
+			if (mark_step_pane(esi->target, newstart, !backward, 1) == WEOF) {
+				mark_free(newstart);
+				newstart = NULL;
+			}
 	}
+	if (!newstart) {
+		newstart = mark_dup(s->m);
+		esi->wrapped = 1;
+		call("Move-File", esi->target, backward ? 1 : -1, newstart);
+	}
+	esi->start = newstart;
 	/* Trigger notification so isearch watcher searches again */
 	call("Replace", ci->home, 1, NULL, "", 1);
 	return 1;
@@ -274,8 +284,8 @@ DEF_CMD(search_again)
 	else if (esi->backwards && mark_prev_pane(esi->target, m) == WEOF)
 		ret = -2;
 	else {
-		if (mark_same(esi->start, esi->end))
-			mark_step_pane(esi->target, m, !esi->backwards, 1);
+		//if (mark_same(esi->start, esi->end))
+		//	mark_step_pane(esi->target, m, !esi->backwards, 1);
 		ret = call("text-search", esi->target,
 		           !esi->case_sensitive, m, str, esi->backwards);
 	}
@@ -296,7 +306,7 @@ DEF_CMD(search_again)
 				ret -= 1;
 		call("search:highlight", esi->target, len, m, str,
 		     !esi->case_sensitive);
-		esi->matched = 1;
+		esi->matched = len + 1;
 		pfx = esi->backwards ? "Reverse Search: ":"Search: ";
 		if (esi->wrapped)
 			pfx = esi->backwards ? "Wrapped Reverse Search: ":"Wrapped Search: ";
