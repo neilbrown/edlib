@@ -1807,6 +1807,42 @@ DEF_CMD(emacs_readonly)
 	return 1;
 }
 
+DEF_CMD(emacs_curs_pos)
+{
+	struct mark *c;
+	int col = 0;
+	int chars = 0;
+	wint_t ch, nxt;
+	char *msg = NULL;
+
+	if (!ci->mark)
+		return Enoarg;
+	c = mark_dup(ci->mark);
+	nxt = doc_following_pane(ci->focus, c);
+		
+	while ((ch = mark_prev_pane(ci->focus, c)) != WEOF && !is_eol(ch))
+		;
+	while (mark_ordered_not_same(c, ci->mark)) {
+		ch = mark_next_pane(ci->focus, c);
+		if (is_eol(ch)) {
+			col = 0;
+			chars = 0;
+		} else if (ch == '\t') {
+			col = (col|7)+1;
+			chars += 1;
+		} else {
+			col += 1;
+			chars += 1;
+		}
+	}
+	mark_free(c);
+	asprintf(&msg, "Cursor at column %d (%d chars), char is %d (0x%x)",
+	         col, chars, nxt, nxt);
+	call("Message", ci->focus, 0, NULL, msg);
+	free(msg);
+	return 1;
+}
+
 DEF_PFX_CMD(meta_cmd, "M-");
 DEF_PFX_CMD(cx_cmd, "emCX-");
 DEF_PFX_CMD(cx4_cmd, "emCX4-");
@@ -1868,6 +1904,8 @@ static void emacs_init(void)
 	key_add(m, "emCX-Chr-s", &emacs_save_all);
 
 	key_add(m, "emCX-C-Chr-v", &emacs_revisit);
+
+	key_add(m, "emCX-Chr-=", &emacs_curs_pos);
 
 	key_add(m, "C-Chr-S", &emacs_start_search);
 	key_add(m, "C-Chr-R", &emacs_start_search);
