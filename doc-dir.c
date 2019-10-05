@@ -397,9 +397,15 @@ static char *save_str(struct dir_ent *de safe, char *str safe)
 static char *fmt_date(struct dir_ent *de safe, time_t t)
 {
 	struct tm tm;
+	time_t now = time(NULL);
+
 	localtime_r(&t, &tm);
-	strftime(de->nbuf, sizeof(de->nbuf),
-		 "%b %d %H:%M", &tm);
+	if (t > now || t < now - 10*30*24*3600)
+		strftime(de->nbuf, sizeof(de->nbuf),
+		         "%b %d  %Y", &tm);
+	else
+		strftime(de->nbuf, sizeof(de->nbuf),
+		         "%b %d %H:%M", &tm);
 	return de->nbuf;
 }
 

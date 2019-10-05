@@ -147,7 +147,7 @@ Module features
 
 - [ ] how to change sort order of a directory listing
 - [ ] chown/chmod/unlink/rename etc
-- [ ] times older than 1 year need to report the year.
+- [X] times older than 1 year need to report the year.
 
 ### doc-text
 
