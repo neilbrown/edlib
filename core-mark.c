@@ -119,6 +119,7 @@ static void point_free(struct mark *p safe)
 
 void mark_free(struct mark *m)
 {
+	struct doc *owner;
 	if (!m)
 		return;
 	if (m->viewnum == MARK_POINT)
@@ -127,8 +128,11 @@ void mark_free(struct mark *m)
 	mark_delete(m);
 	if (m->owner->refcnt)
 		m->owner->refcnt(m, -1);
+	owner = m->owner;
 	memset(m, 0xff, sizeof(*m));
-	free(m);
+	m->owner = owner;
+	m->viewnum = MARK_UNGROUPED;
+	editor_delayed_mark_free(m);
 }
 
 static void mark_ref_copy(struct mark *to safe, struct mark *from safe)

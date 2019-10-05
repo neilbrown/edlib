@@ -17,6 +17,7 @@ static struct map *ed_map safe;
 struct ed_info {
 	unsigned long magic;
 	struct pane *freelist;
+	struct mark *mark_free_list;
 	struct idle_call {
 		struct idle_call *next;
 		struct pane *focus safe;
@@ -224,6 +225,11 @@ DEF_CMD(editor_clean_up)
 		attr_free(&p->attrs);
 		free(p);
 	}
+	while (ei->mark_free_list) {
+		struct mark *m = ei->mark_free_list;
+		ei->mark_free_list = (struct mark*)m->all.next;
+		free(m);
+	}
 	while (ei->store) {
 		struct store *s = ei->store;
 		ei->store = s->next;
@@ -331,6 +337,20 @@ void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 	ASSERT(ei->magic==0x4321765498765432UL);
 	p->focus = ei->freelist;
 	ei->freelist = p;
+}
+
+void editor_delayed_mark_free(struct mark *m safe)
+{
+	struct pane *p = pane_root(m->owner->home);
+	struct ed_info *ei = p ? p->data : NULL;
+
+	if (!ei) {
+		free(m);
+		return;
+	}
+	ASSERT(ei->magic==0x4321765498765432UL);
+	m->all.next = (void*)ei->mark_free_list;
+	ei->mark_free_list = m;
 }
 
 struct pane *editor_new(void)

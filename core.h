@@ -123,6 +123,7 @@ int do_pane_notify(struct pane *home, char *notification safe, struct pane *p sa
 void pane_drop_notifiers(struct pane *p safe, char *notification);
 
 void editor_delayed_free(struct pane *ed safe, struct pane *p safe);
+void editor_delayed_mark_free(struct mark *m safe);
 struct pane *editor_new(void);
 void * safe memsave(struct pane *p safe, char *buf, int len);
 char *strsave(struct pane *p safe, char *buf);
