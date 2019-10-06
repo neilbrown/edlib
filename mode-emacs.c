@@ -1181,7 +1181,8 @@ struct highlight_info {
 
 DEF_CMD(emacs_search_highlight)
 {
-	/* from 'mark' for 'num' chars there is a match for 'str'.
+	/* from 'mark' for 'num' chars to 'mark2' there is a match for 'str',
+	 * or else there are no matches (num==0).
 	 * Here were remove any existing highlighting and highlight
 	 * just the match.  A subsequent call to emacs_search_reposition
 	 * will highlight other near-by matches.
@@ -1209,6 +1210,11 @@ DEF_CMD(emacs_search_highlight)
 		mark_to_mark(m, ci->mark);
 		attr_set_int(&m->attrs, "render:search", ci->num);
 		call("Move-View-Pos", ci->focus, 0, m);
+		if (ci->mark2 &&
+		    (m = vmark_new(ci->focus, hi->view, ci->home)) != NULL) {
+		    	mark_to_mark(m, ci->mark2);
+		    	attr_set_int(&m->attrs, "render:search-end", 0);
+		}
 	}
 	call("Notify:change", ci->focus);
 	pane_damaged(ci->home, DAMAGED_CONTENT|DAMAGED_VIEW);
@@ -1665,7 +1671,17 @@ DEF_CMD(emacs_hl_attrs)
 					 ci->mark, "fg:blue,inverse", 20);
 		}
 	}
-
+	if (strcmp(ci->str, "start-of-line") == 0 && ci->mark && hi->view >= 0) {
+		struct mark *m = vmark_at_or_before(ci->focus, ci->mark, hi->view, ci->home);
+		if (m && attr_find(m->attrs, "render:search"))
+			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
+			                 ci->mark, "fg:red,inverse", 20);
+	}
+	if (strcmp(ci->str, "render:search-end") ==0) {
+		/* Here endeth the match */
+		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
+		                 ci->mark, "fg:red,inverse", 20);
+	}
 	return 0;
 }
 

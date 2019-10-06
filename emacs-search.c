@@ -290,7 +290,7 @@ DEF_CMD(search_again)
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
 	else if (ret == Efail) {
-		call("search:highlight", esi->target, 0, m, str);
+		call("search:highlight", esi->target);
 		pfx = "Failed Search: ";
 	} else if (ret == Einval) {
 		pfx = "Search (incomplete): ";
@@ -299,11 +299,17 @@ DEF_CMD(search_again)
 	} else {
 		int len = --ret;
 		mark_to_mark(esi->end, m);
-		if (!esi->backwards)
+		if (esi->backwards) {
+			while (ret > 0 && mark_next_pane(esi->target, m) != WEOF)
+				ret -= 1;
+			call("search:highlight", esi->target, len, esi->end, str,
+			     !esi->case_sensitive, m);
+		} else {
 			while (ret > 0 && mark_prev_pane(esi->target, m) != WEOF)
 				ret -= 1;
-		call("search:highlight", esi->target, len, m, str,
-		     !esi->case_sensitive);
+			call("search:highlight", esi->target, len, m, str,
+			     !esi->case_sensitive, esi->end);
+		}
 		esi->matched = len + 1;
 		pfx = esi->backwards ? "Reverse Search: ":"Search: ";
 		if (esi->wrapped)
