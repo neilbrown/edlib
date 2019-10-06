@@ -10,6 +10,7 @@
  */
 
 #include <stdlib.h>
+#include <wctype.h>
 #include "core.h"
 #include "rexel.h"
 
@@ -18,8 +19,14 @@ struct search_state {
 	struct mark *end;
 	struct mark *endmark safe;
 	int since_start;
+	wint_t prev_ch;
 	struct command c;
 };
+
+static int is_word(wint_t ch)
+{
+	return iswalnum(ch);
+}
 
 DEF_CMD(search_test)
 {
@@ -31,22 +38,23 @@ DEF_CMD(search_test)
 	if (!ci->mark)
 		return 0;
 
-	for (i = -1; i <= 1; i++) {
+	for (i = -1; i <= 0; i++) {
 		switch(i) {
 		case -1:
-			if (wch == '\n')
+			len = -3;
+			if (is_eol(ss->prev_ch) || ss->prev_ch == WEOF)
+				len = rxl_advance(ss->st, WEOF, RXL_SOL);
+			if (!is_word(ss->prev_ch) && is_word(wch))
+				len = rxl_advance(ss->st, WEOF, RXL_SOW);
+			if (is_word(ss->prev_ch) && !is_word(wch))
+				len = rxl_advance(ss->st, WEOF, RXL_EOW);
+			if (is_eol(wch))
 				len = rxl_advance(ss->st, WEOF, RXL_EOL);
-			else
+			if (len == -3)
 				continue;
 			break;
 		case 0:
 			len = rxl_advance(ss->st, wch, 0);
-			break;
-		case 1:
-			if (wch == '\n')
-				len = rxl_advance(ss->st, WEOF, RXL_SOL);
-			else
-				continue;
 			break;
 		}
 		if (len >= 0 &&
@@ -62,6 +70,7 @@ DEF_CMD(search_test)
 			continue;
 		return 0;
 	}
+	ss->prev_ch = wch;
 	return 1;
 }
 
@@ -73,8 +82,6 @@ static int search_forward(struct pane *p safe, struct mark *m safe, struct mark 
 	 * @endmark at the end point, and returning the length of the match, or -1.
 	 */
 	struct search_state ss;
-	wint_t ch;
-	int len = -1;
 
 	if (m2 && m->seq >= m2->seq)
 		return -1;
@@ -83,18 +90,7 @@ static int search_forward(struct pane *p safe, struct mark *m safe, struct mark 
 	ss.end = m2;
 	ss.endmark = endmark;
 	ss.c = search_test;
-	ch = doc_following_pane(p, m);
-	if (ch == WEOF || is_eol(ch)) {
-		len = rxl_advance(ss.st, WEOF, RXL_EOL);
-		if (len >= 0)
-			ss.since_start = len;
-	}
-	ch = doc_prior_pane(p, m);
-	if (ch == WEOF || is_eol(ch)) {
-		len = rxl_advance(ss.st, WEOF, RXL_SOL);
-		if (len >= 0)
-			ss.since_start = len;
-	}
+	ss.prev_ch = doc_prior_pane(p, m);
 	call_comm("doc:content", p, &ss.c, 0, m);
 	rxl_free_state(ss.st);
 	return ss.since_start;
