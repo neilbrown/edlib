@@ -82,16 +82,43 @@ DEF_CMD(render_prev)
 	return 1;
 }
 
-struct attr_stack {
-	struct attr_stack	*next;
-	char			*attr safe;
-	int			end;
-	int			priority;
+/* 'ast' is a stack is all the attributes that should be applied "here".
+ * They are sorted by priority with the highest first.
+ * 'end' is an offset in chars-since-start-of-line where the attribute
+ * should stop applying.  The current chars-since-start-of-line is 'chars'.
+ * The stack structure reflects the nesting of <attr> and </>.
+ * To change an attribute (normally add or delete) we pop it and any attributes
+ * above it in the stack and push them onto tmpst, which is then in
+ * reverse priority order.  As we do that, we count them in 'popped'.
+ * Changes can be made in the secondard stack.
+ * When all change have been made, we add 'popped' "</>" marked to the output,
+ * then process everything in 'tmpst', either discarding it if end<=chars, or
+ * outputting the attributes and pushing back on 'ast'.
+ */
+struct attr_return {
+	struct command rtn;
+	struct command fwd;
+	struct attr_stack {
+		struct attr_stack	*next;
+		char			*attr safe;
+		int			end;
+		short			priority;
+	} *ast, *tmpst;
+	int min_end;
+	int chars;
+	short popped;
 };
 
+/* Find which attibutes should be finished by 'pos'.  The depth of
+ * to deepest such is returned, and the next time to endpoint is
+ * record in *nextp.
+ * Everything higher than that returned depth will need to be closed,
+ * so that the deepest one can be closed.
+ * Then some of the higher ones might get re-opened.
+ */
 static int find_finished(struct attr_stack *st, int pos, int *nextp safe)
 {
-	int depth = 0;
+	int depth = 1;
 	int fdepth = -1;
 	int next = -1;
 
@@ -105,34 +132,39 @@ static int find_finished(struct attr_stack *st, int pos, int *nextp safe)
 	return fdepth;
 }
 
-static void as_pop(struct attr_stack **fromp safe, struct attr_stack **top safe, int depth,
-	    struct buf *b safe)
+/* Move the top 'depth' attributes from 'ast' to 'tmpst', updating 'popped' */
+static void as_pop(struct attr_return *ar safe, int depth)
 {
-	struct attr_stack *from = *fromp;
-	struct attr_stack *to = *top;
+	struct attr_stack *from = ar->ast;
+	struct attr_stack *to = ar->tmpst;
 
-	while (from && depth >= 0) {
+	while (from && depth > 0) {
 		struct attr_stack *t;
-		buf_concat(b, "</>");
+		ar->popped += 1;
 		t = from;
 		from = t->next;
 		t->next = to;
 		to = t;
 		depth -= 1;
 	}
-	*fromp = from;
-	*top = to;
+	ar->ast = from;
+	ar->tmpst = to;
 }
 
-static void as_repush(struct attr_stack **fromp safe, struct attr_stack **top safe,
-		      int pos, struct buf *b safe)
+/* re-push any attriubtes that are still valid, freeing those that aren't */
+static void as_repush(struct attr_return *ar safe, struct buf *b safe)
 {
-	struct attr_stack *from = *fromp;
-	struct attr_stack *to = *top;
+	struct attr_stack *from = ar->tmpst;
+	struct attr_stack *to = ar->ast;
+
+	while (ar->popped > 0) {
+		buf_concat(b, "</>");
+		ar->popped -= 1;
+	}
 
 	while (from) {
 		struct attr_stack *t = from->next;
-		if (from->end <= pos) {
+		if (from->end <= ar->chars) {
 			free(from->attr);
 			free(from);
 		} else {
@@ -141,59 +173,48 @@ static void as_repush(struct attr_stack **fromp safe, struct attr_stack **top sa
 			buf_append(b, '>');
 			from->next = to;
 			to = from;
+			if (from->end < ar->min_end)
+				ar->min_end = from->end;
 		}
 		from = t;
 	}
-	*fromp = from;
-	*top = to;
+	ar->tmpst = from;
+	ar->ast = to;
 }
 
-static void as_add(struct attr_stack **fromp safe, struct attr_stack **top safe,
+static void as_add(struct attr_return *ar safe,
 		   int end, int prio, char *attr safe)
 {
-	struct attr_stack *from = *fromp;
-	struct attr_stack *to = *top;
 	struct attr_stack *new, **here;
 
-	while (from && from->priority > prio) {
-		struct attr_stack *t = from->next;
-		from->next = to;
-		to = from;
-		from = t;
-	}
-	here = &to;
+	while (ar->ast && ar->ast->priority > prio)
+		as_pop(ar, 1);
+
+	here = &ar->tmpst;
 	while (*here && (*here)->priority <= prio)
 		here = &(*here)->next;
 	new = calloc(1, sizeof(*new));
 	new->next = *here;
 	new->attr = strdup(attr);
-	new->end = end;
+	if (INT_MAX - end <= ar->chars)
+		end = INT_MAX - 1 - ar->chars;
+	new->end = ar->chars + end;
 	new->priority = prio;
 	*here = new;
-	*top = to;
-	*fromp = from;
 }
 
-static void as_clear(struct attr_stack **fromp safe, struct attr_stack **top safe,
-		     int end, int prio, char *attr safe)
+static void as_clear(struct attr_return *ar safe,
+		     int prio, char *attr safe)
 {
-	struct attr_stack *from = *fromp;
+	struct attr_stack *st;
 
-	while (from && from->priority >= prio) {
-		if (from->priority == prio && strcmp(from->attr, attr) == 0)
-			if (from->end >= end)
-				from->end = end;
-		from = from->next;
-	}
+	while (ar->ast && ar->ast->priority >= prio)
+		as_pop(ar, 1);
+
+	for (st = ar->tmpst; st && st->priority <= prio; st = st->next)
+		if (st->priority == prio && strcmp(st->attr, attr) == 0)
+			st->end = ar->chars;
 }
-
-struct attr_return {
-	struct command rtn;
-	struct command fwd;
-	struct attr_stack *ast, *tmpst;
-	int min_end;
-	int chars;
-};
 
 DEF_CMD(text_attr_forward)
 {
@@ -210,11 +231,9 @@ DEF_CMD(text_attr_callback)
 	if (!ci->str)
 		return Enoarg;
 	if (ci->num >= 0)
-		as_add(&ar->ast, &ar->tmpst, ar->chars + ci->num, ci->num2, ci->str);
+		as_add(ar, ci->num, ci->num2, ci->str);
 	else
-		as_clear(&ar->ast, &ar->tmpst, ar->chars, ci->num2, ci->str);
-	if (ar->min_end < 0 || ar->chars + ci->num < ar->min_end)
-		ar->min_end = ar->chars + ci->num;
+		as_clear(ar, ci->num2, ci->str);
 	// FIXME ->str2 should be inserted
 	return 1;
 }
@@ -260,6 +279,7 @@ DEF_CMD(render_line)
 	ar.ast = ar.tmpst = NULL;
 	ar.min_end = -1;
 	ar.chars = 0;
+	ar.popped = 0;
 
 	if (!m)
 		return Enoarg;
@@ -291,7 +311,7 @@ DEF_CMD(render_line)
 
 		if (ar.ast && ar.min_end <= chars) {
 			int depth = find_finished(ar.ast, chars, &ar.min_end);
-			as_pop(&ar.ast, &ar.tmpst, depth, &b);
+			as_pop(&ar, depth);
 		}
 
 		ar.chars = chars;
@@ -305,7 +325,7 @@ DEF_CMD(render_line)
 		     m2 = doc_next_mark_all(m2))
 			call_map_mark(focus, m2, &ar);
 
-		as_repush(&ar.tmpst, &ar.ast, chars, &b);
+		as_repush(&ar, &b);
 
 		if (o >= 0 && b.len >= o)
 			break;
@@ -339,8 +359,9 @@ DEF_CMD(render_line)
 		chars++;
 	}
 	while (ar.ast)
-		as_pop(&ar.ast, &ar.tmpst, 100, &b);
-	as_repush(&ar.tmpst, &ar.ast, 10000000, &b);
+		as_pop(&ar, 100);
+	ar.chars = INT_MAX;
+	as_repush(&ar, &b);
 	if (add_newline) {
 		if (o >= 0 && b.len >= o)
 			/* skip the newline */
