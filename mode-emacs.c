@@ -1196,7 +1196,7 @@ DEF_CMD(emacs_search_highlight)
 	struct mark *m, *start;
 	struct highlight_info *hi = ci->home->data;
 
-	if (hi->view <= 0)
+	if (hi->view < 0)
 		return 0;
 
 	while ((start = vmark_first(ci->focus, hi->view, ci->home)) != NULL)
