@@ -35,6 +35,8 @@ Core features
 -------------
 
 - [ ] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
+- [ ] undo often doesn't leave me where I expect to be left. - maybe it is the
+      location of the previous undo?
 - [X] already have!!  a way to protect *Documents* from being killed manually.
 - [ ] account all mem allocation types separate, and (optionally) report
       stats regularly
@@ -102,7 +104,7 @@ Module features
 - [ ] show status line in file-edit popup
 - [ ] invent a way to reserve 'extra' values for command sets
       do I need this across panes ?? probably
-- [ ] search highlights don't cross EOL.
+- [X] search highlights don't cross EOL.
 - [ ] search highlight doesn't report empty match (eol)...
 - [X] reverse search "fails" for patterns starting '^' or ending '$'
 - [ ] emacs highlight should get close notification from popup,

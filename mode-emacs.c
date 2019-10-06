@@ -1162,8 +1162,14 @@ static void do_searches(struct pane *p safe,
 			mark_free(m2);
 			m2 = m3;
 		}
-		if (attr_find(m2->attrs, "render:search") == NULL)
+		if (attr_find(m2->attrs, "render:search") == NULL) {
 			attr_set_int(&m2->attrs, "render:search2", len);
+			m2 = vmark_new(p, view, owner);
+			if (m2) {
+				mark_to_mark(m2, m);
+				attr_set_int(&m2->attrs, "render:search2-end", 0);
+			}
+		}
 		if (len == 0)
 			/* Need to move forward, or we'll just match here again*/
 			mark_next_pane(p, m);
@@ -1676,11 +1682,19 @@ DEF_CMD(emacs_hl_attrs)
 		if (m && attr_find(m->attrs, "render:search"))
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
 			                 ci->mark, "fg:red,inverse", 20);
+		if (m && attr_find(m->attrs, "render:search2"))
+			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
+			                 ci->mark, "fg:blue,inverse", 20);
 	}
 	if (strcmp(ci->str, "render:search-end") ==0) {
 		/* Here endeth the match */
 		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
 		                 ci->mark, "fg:red,inverse", 20);
+	}
+	if (strcmp(ci->str, "render:search2-end") ==0) {
+		/* Here endeth the match */
+		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
+		                 ci->mark, "fg:blue,inverse", 20);
 	}
 	return 0;
 }
