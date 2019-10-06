@@ -144,8 +144,9 @@ struct match_state {
 	int		trace;
 	#endif
 };
-#define NO_LINK	0x3FFF
-#define	LOOP_CHECK 0x3FFE
+#define	NO_LINK		0xFFFF
+#define	LOOP_CHECK	0xFFFE
+
 #define	REC_ANY		0xBFFF
 #define	REC_NONE	0xFFFF
 #define	REC_SOL		0xBFFE
@@ -403,10 +404,9 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 #endif /* DEBUG */
 	/* Firstly, clear out next lists */
 	len = RXL_SETSTART(st->rxl) - st->rxl;
-	for (i = 0; i < len; i++) {
-		st->link[next][i] = NO_LINK;
-		st->leng[next][i] = 0;
-	}
+	/* This works before NO_LINK is 0xffff */
+	memset(st->link[next], 0xff, len*2);
+	memset(st->leng[next], 0, len*2);
 	st->link[next][0] = 0;
 
 	/* Now advance each current match */

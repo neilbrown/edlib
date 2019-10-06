@@ -6,7 +6,7 @@ Current priorities
 
 - [X] simplify/document rxl_advance interface, particularly 'restart'.
 - [ ] \b for word-break - maybe provide a regexp set for 'is a word char'
-- [ ] rexel/rxl_advance: "clear out next lists" take too long on long patterns. memset?
+- [X] rexel/rxl_advance: "clear out next lists" take too long on long patterns. memset?
       or follow the existing chain?  Does 'leng' need to be cleared?
 - [ ] \1 substitutions
       Maybe to extract a given submatch we have a third array pair where we record
