@@ -44,6 +44,7 @@ struct es_info {
 
 static struct map *es_map;
 static const char must_quote[] = ".|*+?{}()?^$\\[]";
+static const char may_quote[] = "<>dDsSwWpPaA";
 
 
 DEF_CMD(search_forward)
@@ -223,6 +224,12 @@ DEF_CMD(search_insert_meta)
 	 */
 	char *bracket;
 	const char *brackets = "{}()[]";
+	if (strchr(may_quote, ci->key[6])) {
+		call("Replace", ci->focus, 1, NULL, "\\");
+		call("Replace", ci->focus, 1, NULL, ci->key+6,
+		     0, NULL, ",auto=1");
+		return 1;
+	}
 	if (strchr(must_quote, ci->key[6]) == NULL || !ci->mark)
 		return 0;
 	bracket = strchr(brackets, ci->key[6]);
