@@ -7,7 +7,7 @@ unsigned short *rxl_parse(char *patn safe, int *lenp, int nocase);
 unsigned short *safe rxl_parse_verbatim(char *patn safe, int nocase);
 struct match_state *safe rxl_prepare(unsigned short *rxl safe);
 void rxl_free_state(struct match_state *s safe);
-int rxl_advance(struct match_state *st safe, wint_t ch, int flag, int restart);
+int rxl_advance(struct match_state *st safe, wint_t ch, int flag);
 
 #define	RXL_SOL	1
 #define RXL_EOL	2

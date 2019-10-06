@@ -1,8 +1,32 @@
 To-do list for edlib
 ====================
 
-Active issue and pre-requisites
--------------------------------
+Current priorities
+------------------
+
+- [X] simplify/document rxl_advance interface, particularly 'restart'.
+- [ ] \b for word-break - maybe provide a regexp set for 'is a word char'
+- [ ] rexel/rxl_advance: "clear out next lists" take too long on long patterns. memset?
+      or follow the existing chain?  Does 'leng' need to be cleared?
+- [ ] \1 substitutions
+      Maybe to extract a given submatch we have a third array pair where we record
+      the length since a particular point.
+      We then repeat the match process against the found string to get start
+      and end points.
+- [ ] search-replace.
+      This might just be an extension of the current search.  I would have
+      two input boxes, maybe left and right, or one above the other.
+      I like to be able to see the result after the change, particularly
+      if the change as '\1' style references, so maybe some key-stroke to
+      replace without moving forward.
+      Also want an easy "undo" of the last changed.
+      Changing the replace string during the process should be allowed too.
+- [ ] fill command / fill-mode
+
+    - need to choose a prefix of first line, and of subsequent lines.
+    - possibly determine a suffix too - useful in comments.
+    - alt-Q - reformat para
+    - if there is a selection, that defines the para, else some sort of search.
 
 - [X] Add 16bit semi-unique number to doc panes, which is inherited
       by any view pane and by every mark.  Check the numbers are
@@ -225,14 +249,7 @@ Module features
 
 ### regexp
 
-- [ ] \1 substitutions
-      Maybe to extract a given submatch we have a third array pair where we record
-      the length since a particular point.
-      We then repeat the match process against the found string to get start
-      and end points.
-- [ ] \b for word-break - maybe provide a regexp set for 'is a word char'
-- [ ] rexel/rxl_advance: "clear out next lists" take too long on long patterns. memset?
-      or follow the existing chain?  Does 'leng' need to be cleared?
+(These have been moved to current-priority)
 
 ### docs
 
@@ -402,14 +419,6 @@ Possibly some of these will end up being features in other modules.
       preferred column" ??  Maybe use for make output so I can see current
       match more easily.
 
-- [ ] search-replace.
-      This might just be an extension of the current search.  I would have
-      two input boxes, maybe left and right, or one above the other.
-      I like to be able to see the result after the change, particularly
-      if the change as '\1' style references, so maybe some key-stroke to
-      replace without moving forward.
-      Also want an easy "undo" of the last changed.
-      Changing the replace string during the process should be allowed too.
 - [ ] dynamic completion Alt-/
       My question here is how far to search for completions.  All of this doc?
       Which other docs?  Most recently visited I guess.
@@ -420,12 +429,6 @@ Possibly some of these will end up being features in other modules.
       pane_clear might want to copy relevant region from underlying pane.
       Hopefully this will cure my performance problems with gtk on my slowish
       notebook.
-
-- [ ] fill command / fill-mode
-
-    - need to choose a prefix of first line, and of subsequent lines.
-    - possibly determine a suffix too - useful in comments.
-    - alt-Q - reformat para
 
 - [ ] tags handling - and easy tag-search without tags. e.g. git-search.
       alt-S looks for TAGS or .git and either does a tags-search or a grep-l and

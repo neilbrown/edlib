@@ -35,16 +35,16 @@ DEF_CMD(search_test)
 		switch(i) {
 		case -1:
 			if (wch == '\n')
-				len = rxl_advance(ss->st, WEOF, RXL_EOL, ss->since_start < 0);
+				len = rxl_advance(ss->st, WEOF, RXL_EOL);
 			else
 				continue;
 			break;
 		case 0:
-			len = rxl_advance(ss->st, wch, 0, ss->since_start < 0);
+			len = rxl_advance(ss->st, wch, 0);
 			break;
 		case 1:
 			if (wch == '\n')
-				len = rxl_advance(ss->st, WEOF, RXL_SOL, ss->since_start < 0);
+				len = rxl_advance(ss->st, WEOF, RXL_SOL);
 			else
 				continue;
 			break;
@@ -85,13 +85,13 @@ static int search_forward(struct pane *p safe, struct mark *m safe, struct mark 
 	ss.c = search_test;
 	ch = doc_following_pane(p, m);
 	if (ch == WEOF || is_eol(ch)) {
-		len = rxl_advance(ss.st, WEOF, RXL_EOL, 1);
+		len = rxl_advance(ss.st, WEOF, RXL_EOL);
 		if (len >= 0)
 			ss.since_start = len;
 	}
 	ch = doc_prior_pane(p, m);
 	if (ch == WEOF || is_eol(ch)) {
-		len = rxl_advance(ss.st, WEOF, RXL_SOL, ss.since_start < 0);
+		len = rxl_advance(ss.st, WEOF, RXL_SOL);
 		if (len >= 0)
 			ss.since_start = len;
 	}
@@ -116,18 +116,13 @@ static int search_backward(struct pane *p safe, struct mark *m safe, struct mark
 
 	do {
 		wint_t ch = doc_prior_pane(p, m);
-		int anchored = 0;
 
 		len = -1;
-		if (ch == WEOF || is_eol(ch)) {
-			len = rxl_advance(st, WEOF, RXL_SOL, 1);
-			anchored = 1;
-		}
+		if (ch == WEOF || is_eol(ch))
+			len = rxl_advance(st, WEOF, RXL_SOL);
 		ch = doc_following_pane(p, m);
-		if (ch == WEOF || is_eol(ch)) {
-			len = rxl_advance(st, WEOF, RXL_EOL, !anchored);
-			anchored = 1;
-		}
+		if (ch == WEOF || is_eol(ch))
+			len = rxl_advance(st, WEOF, RXL_EOL);
 
 		mark_to_mark(endmark, m);
 		since_start = 0;
@@ -136,8 +131,7 @@ static int search_backward(struct pane *p safe, struct mark *m safe, struct mark
 			if (wch == WEOF)
 				break;
 			since_start += 1;
-			len = rxl_advance(st, wch, 0, !anchored);
-			anchored = 1;
+			len = rxl_advance(st, wch, 0);
 		}
 		mark_to_mark(m, endmark);
 	} while(len < since_start &&

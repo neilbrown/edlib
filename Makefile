@@ -183,6 +183,10 @@ test:
 	        done || exit 2; \
 	done; echo SUCCESS
 
+rexel: rexel.c rexel.h
+	$(CC) -DDEBUG -o rexel rexel.c
+	./rexel -T
+
 checksym: edlib
 	@nm edlib  | awk '$$2 == "T" {print $$3}' | while read a; do grep $$a *.h > /dev/null || echo  $$a; done | grep -vE '^(_.*|main)$$' ||:
 

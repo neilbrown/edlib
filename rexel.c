@@ -297,12 +297,11 @@ static int set_match(struct match_state *st safe, unsigned short addr, wchar_t c
  *  of characters (not flags) in the match.
  * When a >=0 return is given, it might still be useful to keep calling
  * rxl_advance if a maximal match is wanted.
- * If the match must be anchor to the first character, 'restart' should only
- * be set the first time rxl_advance is called, otherwise it is typically set
- * on every call until a non-negative length as been returned.  Then while
- * looking to extent the current match, restart should be 0.
+ * If the match must be anchor to the first character, then the caller
+ * should stop as soon as -2 is returned.  Otherwise it should keep calling
+ * until >=0 is returned, then (optionally) continue until <0 is returned.
  */
-int rxl_advance(struct match_state *st safe, wint_t ch, int flag, int restart)
+int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 {
 	int active = st->active;
 	int next = 1-active;
@@ -318,9 +317,12 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag, int restart)
 	}
 
 	if (flag && ch != WEOF)
+		/* This is an illegal combination */
 		return -2;
-	if (restart) {
-		/* If start state is not currently matched, add it with
+	if (st->match < 0) {
+		/* We haven't found a match yet, but nor has the caller given
+		 * up, so prepare for a match that starts here.
+		 * If start state is not currently matched, add it with
 		 * length of zero
 		 */
 		eol = 0;
@@ -1353,13 +1355,13 @@ static void run_tests()
 		setup_match(&st, rxl);
 
 		mstart = -1;
-		rxl_advance(&st, WEOF, RXL_SOL, 1);
+		rxl_advance(&st, WEOF, RXL_SOL);
 		while (mstart < 0 || len > 0) {
 			wchar_t wc;
 			int used = mbrtowc(&wc, target, 5, &ps);
 			if (used <= 0)
 				break;
-			len = rxl_advance(&st, wc, 0, mstart < 0);
+			len = rxl_advance(&st, wc, 0);
 			target += used;
 			ccnt += 1;
 			if (len >= 0 &&
@@ -1370,7 +1372,7 @@ static void run_tests()
 			}
 		}
 		if (*target == 0) {
-			len = rxl_advance(&st, WEOF, RXL_EOL, mstart < 0);
+			len = rxl_advance(&st, WEOF, RXL_EOL);
 			if (mstart < 0 && len >= 0) {
 				mstart = ccnt - len;
 				mlen = len;
@@ -1460,13 +1462,13 @@ int main(int argc, char *argv[])
 	#endif
 	i = 0;
 	len = -1;
-	rxl_advance(&st, WEOF, RXL_SOL, 1);
+	rxl_advance(&st, WEOF, RXL_SOL);
 	while (len < 0) {
 		wchar_t wc;
 		used = mbrtowc(&wc, target+i, 5, &ps);
 		if (used <= 0)
 			break;
-		len = rxl_advance(&st, wc, 0, 1);
+		len = rxl_advance(&st, wc, 0);
 		i+= used;
 		ccnt+= 1;
 	}
@@ -1478,7 +1480,7 @@ int main(int argc, char *argv[])
 			used = mbrtowc(&wc, target+i, 5, &ps);
 			if (used <= 0)
 				break;
-			len = rxl_advance(&st, wc, 0, longest);
+			len = rxl_advance(&st, wc, 0);
 			i += used;
 			ccnt += 1;
 			if (longest) {
@@ -1495,7 +1497,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		if (target[i] == 0)
-			len = rxl_advance(&st, WEOF, RXL_EOL, longest);
+			len = rxl_advance(&st, WEOF, RXL_EOL);
 	}
 	if (thelen < 0)
 		printf("No match\n");
