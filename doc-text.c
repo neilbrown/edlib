@@ -245,9 +245,9 @@ static bool check_file_changed(struct text *t safe)
 	    st.st_dev != t->stat.st_dev ||
 	    st.st_mtime != t->stat.st_mtime ||
 	    st.st_mtim.tv_nsec != t->stat.st_mtim.tv_nsec) {
-	    	t->file_changed = True;
+		t->file_changed = True;
 		call("doc:Notify:doc:status-changed", t->doc.home);
-	    	return True;
+		return True;
 	}
 	return False;
 }
@@ -641,7 +641,7 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 		t->undo->alt_is_second = 0;
 		t->redo = NULL;
 	}
-		
+
 	e = malloc(sizeof(*e));
 	e->target = target;
 	e->first = *first;

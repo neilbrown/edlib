@@ -118,7 +118,6 @@ DEF_CMD(popup_child_closed)
 	pane_close(ci->home);
 	return 1;
 }
-	
 
 DEF_CMD(popup_style)
 {

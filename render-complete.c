@@ -457,7 +457,7 @@ DEF_CMD(complete_set_prefix)
 	} else
 		call("Move-to", ci->focus, 0, m);
 	mark_free(m);
-	
+
 	pane_damaged(ci->focus, DAMAGED_VIEW);
 	return cnt + 1;
 }

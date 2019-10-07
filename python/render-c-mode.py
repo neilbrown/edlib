@@ -124,7 +124,7 @@ class CModePane(edlib.Pane):
             if cnt <= 0:
                 break
             c = focus.call("doc:step", 0, 0, m, ret="char")
-        return focus.call("Replace", 1, m, mark)            
+        return focus.call("Replace", 1, m, mark)
 
     def find_indent(self, focus, m):
         # Find previous line which is not empty and return
@@ -220,6 +220,9 @@ class CModePane(edlib.Pane):
 
 def c_mode_attach(key, focus, comm2, **a):
     p = CModePane(focus)
+    p2 = p.call("attach-whitespace", ret='focus')
+    if p2:
+        p = p2
     comm2("callback", p)
     return 1
 
@@ -227,6 +230,9 @@ def py_mode_attach(key, focus, comm2, **a):
     p = CModePane(focus)
     p.spaces = 4
     p.indent_colon = True
+    p2 = p.call("attach-whitespace", ret='focus')
+    if p2:
+        p = p2
     comm2("callback", p)
     return 1
 

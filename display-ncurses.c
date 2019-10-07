@@ -445,6 +445,9 @@ static int cvt_attrs(char *attrs)
 		} else if (strcmp(tmp, "fg:red")  == 0) {
 			init_pair(2, COLOR_RED, -1);
 			attr |= COLOR_PAIR(2);
+		} else if (strcmp(tmp, "bg:red")  == 0) {
+			init_pair(5, -1, COLOR_RED);
+			attr |= COLOR_PAIR(5);
 		} else if (strcmp(tmp, "fg:grey")  == 0) {
 			/* HORRIBLE HACK - MUST FIXME */
 			init_pair(3, COLOR_YELLOW, -1);
@@ -453,6 +456,9 @@ static int cvt_attrs(char *attrs)
 			/* HORRIBLE HACK - MUST FIXME */
 			init_pair(4, -1, COLOR_CYAN);
 			attr |= COLOR_PAIR(4);
+		} else if (strcmp(tmp, "bg:yellow") == 0) {
+			init_pair(6, -1, COLOR_YELLOW);
+			attr |= COLOR_PAIR(6);
 		}
 		a = c;
 	}

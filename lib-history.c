@@ -191,7 +191,7 @@ DEF_CMD(history_last)
 		if (mark_step_pane(doc, m, 0, 1) == WEOF)
 			break;
 	return call_comm("doc:get-str", doc, ci->comm2, 0, m, NULL, 0, m2);
-}	
+}
 
 void edlib_init(struct pane *ed safe)
 {

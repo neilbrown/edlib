@@ -497,7 +497,7 @@ DEF_CMD(dr_replace)
 
 	m1 = ci->mark && ci->mark->ref.m ? mark_dup(ci->mark->ref.m) : NULL;
 	m2 = ci->mark2 && ci->mark2->ref.m ? mark_dup(ci->mark2->ref.m) : NULL;
-	
+
 	ret = home_call(dri->base,
 	                ci->key, ci->focus,
 	                ci->num, m1, ci->str,

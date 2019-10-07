@@ -694,7 +694,7 @@ DEF_CMD(find_prevnext)
 	h.ret = NULL;
 	h.c = find_helper;
 	h.want_prev = strcmp(ci->key, "M-Chr-n") == 0;
-	
+
 	call_comm("docs:byeach", ci->focus, &h.c);
 	if (h.ret) {
 		char *name = pane_attr_get(h.ret, "doc-name");
@@ -1218,8 +1218,8 @@ DEF_CMD(emacs_search_highlight)
 		call("Move-View-Pos", ci->focus, 0, m);
 		if (ci->mark2 &&
 		    (m = vmark_new(ci->focus, hi->view, ci->home)) != NULL) {
-		    	mark_to_mark(m, ci->mark2);
-		    	attr_set_int(&m->attrs, "render:search-end", 0);
+			mark_to_mark(m, ci->mark2);
+			attr_set_int(&m->attrs, "render:search-end", 0);
 		}
 	}
 	call("Notify:change", ci->focus);
@@ -1849,7 +1849,7 @@ DEF_CMD(emacs_curs_pos)
 		return Enoarg;
 	c = mark_dup(ci->mark);
 	nxt = doc_following_pane(ci->focus, c);
-		
+
 	while ((ch = mark_prev_pane(ci->focus, c)) != WEOF && !is_eol(ch))
 		;
 	while (mark_ordered_not_same(c, ci->mark)) {

@@ -30,6 +30,8 @@ Current priorities
     - alt-Q - reformat para
     - if there is a selection, that defines the para, else some sort of search.
 
+- [ ] rename lib-renderline to lib-markup and create 'renderline' for a single
+      line of render-lines.
 - [X] Add 16bit semi-unique number to doc panes, which is inherited
       by any view pane and by every mark.  Check the numbers are
       consistent and fail with a warning when not.
@@ -399,6 +401,8 @@ Module features
      -   We search back - skipping bracketed bit, until we find one, and
          base everything on that.
 
+- [ ] python-mode: when changing indent, make same change to the whole block.
+      Not sure how to handle 'else:' which looks like the next block.
 - [ ] show-paren should use different colour if bracket doesn't match.
 - [ ] show-paren should work when next char is an 'open'
 - [ ] start of function should not get confused by comments, and should
@@ -435,7 +439,7 @@ Possibly some of these will end up being features in other modules.
 - [ ] tags handling - and easy tag-search without tags. e.g. git-search.
       alt-S looks for TAGS or .git and either does a tags-search or a grep-l and
       check every match.  So maybe this is part of the 'make' module
-- [ ] white-space: Highlight trailing spaces - and space before TAB - and any TAB
+- [X] white-space: Highlight trailing spaces - and space before TAB - and any TAB
       This might work best as a post-processor for the render-line output.
 - [ ] simple calculator in floating pane.
       Must display result in hex and dec (and others?)
