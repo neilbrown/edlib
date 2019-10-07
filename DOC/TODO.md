@@ -5,7 +5,8 @@ Current priorities
 ------------------
 
 - [X] simplify/document rxl_advance interface, particularly 'restart'.
-- [ ] \b for word-break - maybe provide a regexp set for 'is a word char'
+- [X] \b for word-break - maybe provide a regexp set for 'is a word char'
+- [ ] \B for non-word-break.  This needs a change to how flags are handled.
 - [X] rexel/rxl_advance: "clear out next lists" take too long on long patterns. memset?
       or follow the existing chain?  Does 'leng' need to be cleared?
 - [ ] \1 substitutions
@@ -250,7 +251,7 @@ Module features
 
 ### regexp
 
-(These have been moved to current-priority)
+- [ ] '\' shouldn't be auto-inserted inside [] set.
 
 ### docs
 

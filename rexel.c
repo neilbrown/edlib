@@ -27,41 +27,57 @@ TODO:
  * a single character at a time.  When a match is found, the
  * length of that match is reported.
  *
- * Compiled form of a regex is an array of 16 bit positive numbers called rexels,
+ * Compiled form of a regex is an array of 16 bit unsigned numbers called rexels,
  * or Regular EXpression ELements.
  * This involves some cheating as wctype_t (unsigned long int) values
  * are stored in 16 bits.
- * There are three sorts of subarrays, and entry zero is a size of a regex array.
- * Sets start immediately after this.
- *  A "char class" subarray starts with a count and then 1 or more char
- *    class numbers (squeezed into 16 bits).
- *  A "char set" subarray.  These have a count and an ordered list of
- *    char values (or the low 16bits there-of).  If a binary search
- *    finds an even index, that char is in the set, if it find an odd
- *    index, it isn't.  The top 6 bits of the count are used to match
- *    the bits 16-21 of the char, so only 10bits are available for length.
- *  A "regexp" subarray.  This is a list of numbers with a variety
- *    of meanings.  Each location can represent a point in an ongoing
- *    match.  As a new character is processed, that point might advance
- *    or it might be discarded, or might fork.
- *   The different 'commands' are in 4 groups based on first 2 bits.
+ * This array is comprised of a "regexp" section follow by some a "set"
+ * section.
+ * The first entry in the regex section is the size of that section (including
+ * the length).  Adding this size to the start gives the start of the "set" section.
+ * The top two bits of the size have special meanings:
+ * 0x8000 means that the match ignores case
+ * 0x4000 means that 'space' matches 1 or more spaces/tabs/newlines. - "lax" matching
+ *
+ * The "set" section contains some "sets" each of which contains 1 or more subsections
+ * followed by a "zero".  Each subsection starts with its size.  The first section
+ * can have size zero, others cannot (as another zero marks the end of the "set").
+ * The first subsection of a set is a list of "character classes".
+ * An internal mapping is created from used character classes (like "digit" and "lower"
+ * etc) to small numbers.  If a set should match a given character class, the small
+ * number is stored in this subsection  If a set should *not* match, then
+ * the small number is added with the msb set.
+ *
+ * Subsequent subsection contain a general character-set each for a single
+ * unicode plane.  The top six bits of the first entry is the plane number,
+ * the remaining bits are the size.
+ * After this are "size" 16bit chars in sorted order. The values in even slots
+ * are in the set, values in odd slots are not. Value not in any slot are treated
+ * like the largest value less than it which does have a slot.
+ * So iff a search for "largest entry nor larger than" finds an even slot, the
+ * the targe is in the set.
+
+ * The rexels in the "regexp" section come in 4 groups.
  *   0x: 15 bit unicode number.  Other unicode numbers cannot be matched
- *           this way
+ *           this way, and must be matched with a "set".
  *   10: address of a "regex" subarray.   The match forks at this point,
  *       both the next entry and the addressed entry are considered.
- *       This limits total size to 4096 entries
- *   11: address of a char set.
+ *       This limits total size to 4096 entries.
+
+ *   11: address of a char set, up to 0xFFF0  This address is an offset from
+ *       the start of the "set" section.
  *
- *   The first 4 entries must be in a regexp subarray, or unused, as
- *   0xeffc-0xefff and 0xfffc to 0xffff have special meanings:
- *     0xefff - match any char
- *     0xeffe - match at start of line
- *     0xeffd - match at start of word
- *     0xeffc - reserved
- *     0xffff - match no char - dead end.
- *     0xfffe - match at end of line
- *     0xfffd - match at end of word
- *     0xfffc - report success.
+ *   The last 16 value have special meanings.
+ *     0xfff0 - match any char
+ *     0xfff1 - match any character except and EOL character
+ *     0xfff2 - match no char - dead end.
+ *     0xfff3 - report success.
+ *     0xfff4 - match at start of line
+ *     0xfff5 - match at start of word
+ *     0xfff6 - match at end of line
+ *     0xfff7 - match at end of word
+ *     0xfff8 - match a word break (start or end)
+ *     0xfff9 - match any point that isn't a word break.
  *
  * When matching, two pairs of extra arrays are allocated and used.
  * One pair is 'before', one pair is 'after'.  They swap on each char.
@@ -97,7 +113,7 @@ TODO:
  *    special meaning from that character.  This does not apply inside []
  *    as those characters have no special meaning, or a different meaning there.
  * - '\C', where 'C' is not in that list is an error except for those used for
- *    some special character classes.  Those classes which are no "everything except"
+ *    some special character classes.  Those classes which are not "everything except"
  *    are permitted equally inside character sets ([]).  The classes are:
  *    \d a digit
  *    \p a punctuation character
@@ -147,28 +163,33 @@ struct match_state {
 #define	NO_LINK		0xFFFF
 #define	LOOP_CHECK	0xFFFE
 
-#define	REC_ANY		0xBFFF
-#define	REC_NONE	0xFFFF
-#define	REC_SOL		0xBFFE
-#define	REC_EOL		0xFFFE
-#define	REC_SOW		0xBFFD
-#define	REC_EOW		0xFFFD
-#define	REC_MATCH	0xFFFC
+/* RExel Commands */
+#define	REC_ANY		0xFFF0
+#define	REC_ANY_NONL	0xFFF1
+#define	REC_NONE	0xFFF2
+#define	REC_MATCH	0xFFF3
+
+#define	REC_SOL		0xFFF4
+#define	REC_EOL		0xFFF5
+#define	REC_SOW		0xFFF6
+#define	REC_EOW		0xFFF7
+#define	REC_WBRK	0xFFF8
+#define	REC_NOWBRK	0xFFF9
 
 #define	REC_FORK	0x8000
 #define	REC_SET		0xc000
 #define	REC_ISCHAR(x)	(!((x) & 0x8000))
-#define	REC_ISSPEC(x)	(!REC_ISCHAR(x) && ((x)&0x3fff) >= 0x3ffc)
-#define	REC_ISFORK(x)	(!REC_ISSPEC(x) && ((x) & 0xc000) == REC_FORK)
+#define	REC_ISSPEC(x)	((x) >= REC_ANY)
+#define	REC_ISFORK(x)	(((x) & 0xc000) == REC_FORK)
 #define	REC_ISSET(x)	(!REC_ISSPEC(x) && ((x) & 0xc000) == REC_SET)
 #define	REC_ADDR(x)	((x) & 0x3fff)
 
 /* First entry contains start of maps, and flags */
 #define	RXL_CASELESS		0x8000
-#define	RXL_DOTALL		0x4000
+#define	RXL_LAX			0x4000
 #define	RXL_SETSTART(rxl)	((rxl) + ((rxl)[0] & 0x3fff))
 #define	RXL_IS_CASELESS(rxl)	((rxl)[0] & RXL_CASELESS)
-#define	RXL_IS_DOTALL(rxl)	((rxl)[0] & RXL_DOTALL)
+#define	RXL_IS_LAX(rxl)		((rxl)[0] & RXL_LAX)
 
 static int classcnt = 0;
 static wctype_t *classmap safe = NULL;
@@ -358,11 +379,14 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 					printf("S%-3d", REC_ADDR(cmd));
 				} else switch(cmd) {
 					case REC_ANY: printf(" .  "); break;
+					case REC_ANY_NONL: printf(" .? "); break;
 					case REC_NONE:printf(" ## "); break;
 					case REC_SOL: printf(" ^  "); break;
 					case REC_EOL: printf(" $  "); break;
 					case REC_SOW: printf(" \\< "); break;
 					case REC_EOW: printf(" \\> "); break;
+					case REC_WBRK: printf(" \\b "); break;
+					case REC_NOWBRK: printf(" \\B "); break;
 					case REC_MATCH:printf("!!! "); break;
 					default: printf("!%04x", cmd);
 					}
@@ -421,8 +445,12 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 			switch(cmd) {
 			case REC_ANY:
 				advance = 1;
-				if ((ch == '\n' || ch == '\r' || ch == '\f')
-				    && !RXL_IS_DOTALL(st->rxl))
+				if (flag)
+					advance = 0;
+				break;
+			case REC_ANY_NONL:
+				advance = 1;
+				if (ch == '\n' || ch == '\r' || ch == '\f')
 					advance = -1;
 				if (flag)
 					advance = 0;
@@ -464,6 +492,13 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 				else
 					advance = 0;
 				break;
+			case REC_WBRK:
+				if (flag & (RXL_SOW | RXL_EOW))
+					advance = 1;
+				else if (!flag)
+					advance = -1;
+				else
+					advance = 0;
 			}
 		} else if (flag) {
 			/* expecting a char, so ignore position info */
@@ -918,7 +953,7 @@ static int parse_atom(struct parse_state *st safe)
 	if (*st->patn == '\0')
 		return 0;
 	if (*st->patn == '.') {
-		add_cmd(st, REC_ANY);
+		add_cmd(st, REC_ANY_NONL);
 		st->patn++;
 		return 1;
 	}
@@ -973,6 +1008,8 @@ static int parse_atom(struct parse_state *st safe)
 			/* These are simple translations */
 		case '<': ch = REC_SOW; break;
 		case '>': ch = REC_EOW; break;
+		case 'b': ch = REC_WBRK; break;
+		case 'B': ch = REC_NOWBRK; break;
 		case 't': ch = '\t'; break;
 		case 'n': ch = '\n'; break;
 		case '0': ch = 0;
