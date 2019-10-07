@@ -35,9 +35,8 @@ TODO:
  * section.
  * The first entry in the regex section is the size of that section (including
  * the length).  Adding this size to the start gives the start of the "set" section.
- * The top two bits of the size have special meanings:
+ * The top bit of the size has a special meaning:
  * 0x8000 means that the match ignores case
- * 0x4000 means that 'space' matches 1 or more spaces/tabs/newlines. - "lax" matching
  *
  * The "set" section contains some "sets" each of which contains 1 or more subsections
  * followed by a "zero".  Each subsection starts with its size.  The first section
@@ -78,6 +77,7 @@ TODO:
  *     0xfff7 - match at end of word
  *     0xfff8 - match a word break (start or end)
  *     0xfff9 - match any point that isn't a word break.
+ *     0xfffa - match 1 or more spaces/tabs/newlines - lax searching.
  *
  * When matching, two pairs of extra arrays are allocated and used.
  * One pair is 'before', one pair is 'after'.  They swap on each char.
@@ -175,6 +175,7 @@ struct match_state {
 #define	REC_EOW		0xFFF7
 #define	REC_WBRK	0xFFF8
 #define	REC_NOWBRK	0xFFF9
+#define	REC_LAXSPC	0xFFFa
 
 #define	REC_FORK	0x8000
 #define	REC_SET		0xc000
@@ -186,10 +187,8 @@ struct match_state {
 
 /* First entry contains start of maps, and flags */
 #define	RXL_CASELESS		0x8000
-#define	RXL_LAX			0x4000
 #define	RXL_SETSTART(rxl)	((rxl) + ((rxl)[0] & 0x3fff))
 #define	RXL_IS_CASELESS(rxl)	((rxl)[0] & RXL_CASELESS)
-#define	RXL_IS_LAX(rxl)		((rxl)[0] & RXL_LAX)
 
 static int classcnt = 0;
 static wctype_t *classmap safe = NULL;
@@ -388,6 +387,7 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 					case REC_WBRK: printf(" \\b "); break;
 					case REC_NOWBRK: printf(" \\B "); break;
 					case REC_MATCH:printf("!!! "); break;
+					case REC_LAXSPC: printf(" x20! "); break;
 					default: printf("!%04x", cmd);
 					}
 			}
@@ -499,6 +499,17 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 					advance = -1;
 				else
 					advance = 0;
+				break;
+			case REC_LAXSPC:
+				if (strchr(" \t\r\n\f", ch) != NULL) {
+					/* link both retry-here, and try-next */
+					eol = do_link(st, i, eol, len);
+					advance = 1;
+				} else
+					advance = -1;
+				if (flag)
+					advance = 0;
+				break;
 			}
 		} else if (flag) {
 			/* expecting a char, so ignore position info */
@@ -978,6 +989,12 @@ static int parse_atom(struct parse_state *st safe)
 	}
 	if (*st->patn == '[')
 		return parse_set(st);
+	if (st->patn[0] == ' ' && st->patn[1] != ' ' && st->patn[1] != '\t' &&
+	    (st->next == 1 || (st->patn[-1] != ' ' && st->patn[-1] != '\t'))) {
+		add_cmd(st, REC_LAXSPC);
+		st->patn++;
+		return 1;
+	}
 	if (*st->patn & 0x80) {
 		mbstate_t ps = {};
 		int len = mbrtowc(&ch, st->patn, 5, &ps);
@@ -1337,6 +1354,9 @@ void rxl_print(unsigned short *rxl safe)
 			case REC_SOW: printf("match start-of-word\n"); break;
 			case REC_EOW: printf("match end-of-word\n"); break;
 			case REC_MATCH: printf("MATCHING COMPLETE\n"); break;
+			case REC_WBRK: printf("match word-break\n"); break;
+			case REC_NOWBRK: printf("match non-wordbreak\n"); break;
+			case REC_LAXSPC: printf("match lax-space\n"); break;
 			default: printf("ERROR %x\n", cmd); break;
 			}
 		} else if (REC_ISFORK(cmd))

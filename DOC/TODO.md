@@ -14,7 +14,7 @@ Current priorities
       the length since a particular point.
       We then repeat the match process against the found string to get start
       and end points.
-- [ ] lax search - single space when case insensitve matches multiple spaces/tabs/newlines
+- [X] lax search - single space when case insensitve matches multiple spaces/tabs/newlines
 - [ ] search-replace.
       This might just be an extension of the current search.  I would have
       two input boxes, maybe left and right, or one above the other.
