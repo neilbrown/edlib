@@ -17,7 +17,7 @@
 struct search_state {
 	struct match_state *st safe;
 	struct mark *end;
-	struct mark *endmark safe;
+	struct mark *endmark;
 	int since_start;
 	wint_t prev_ch;
 	struct command c;
@@ -57,8 +57,22 @@ DEF_CMD(search_test)
 			len = rxl_advance(ss->st, wch, 0);
 			break;
 		}
-		if (len >= 0 &&
-		    (ss->since_start < 0 || len > ss->since_start)) {
+		if (!ss->endmark) {
+			/* Search is anchored - just report length */
+			if (len >= 0) {
+				if (len > ss->since_start)
+					ss->since_start = len;
+				continue;
+			}
+			if (len == -1)
+				/* there could be another match */
+				continue;
+			/* len == -2 - no possible match */
+			if (ss->since_start >= 0)
+				return 1;
+			return 0;
+		}
+		if (len >= 0 && len > ss->since_start) {
 			ss->since_start = len;
 			mark_to_mark(ss->endmark, ci->mark);
 			if (i >= 0)
@@ -101,40 +115,32 @@ static int search_backward(struct pane *p safe, struct mark *m safe, struct mark
 			   struct mark *endmark safe)
 {
 	/* Search backward from @m in @p for a match of @s.  The match must start
-	 * before m, but may finish later.
+	 * at or before m, but may finish later.
 	 * Only search as far as @m2 (if set), and leave endmark pointing at the
 	 * start of the match, if one is found.
 	 * return length of match, or negative.
 	 */
+	struct search_state ss;
 
-	int since_start, len;
-	struct match_state *st = rxl_prepare(rxl);
+	ss.st = rxl_prepare(rxl);
+	ss.end = NULL;
+	ss.endmark = NULL;
+	ss.c = search_test;
 
 	do {
-		wint_t ch = doc_prior_pane(p, m);
-
-		len = -1;
-		if (ch == WEOF || is_eol(ch))
-			len = rxl_advance(st, WEOF, RXL_SOL);
-		ch = doc_following_pane(p, m);
-		if (ch == WEOF || is_eol(ch))
-			len = rxl_advance(st, WEOF, RXL_EOL);
+		ss.since_start = -1;
+		ss.prev_ch = doc_prior_pane(p, m);
 
 		mark_to_mark(endmark, m);
-		since_start = 0;
-		while (len == -1) {
-			wint_t wch = mark_next_pane(p, m);
-			if (wch == WEOF)
-				break;
-			since_start += 1;
-			len = rxl_advance(st, wch, 0);
-		}
-		mark_to_mark(m, endmark);
-	} while(len < since_start &&
-		(!m2 || m2->seq < m->seq) &&
+		call_comm("doc:content", p, &ss.c, 0, endmark);
+		if (ss.since_start >= 0)
+			/* found a match */
+			break;
+	} while((!m2 || m2->seq < m->seq) &&
 		(mark_prev_pane(p, m) != WEOF));
-	rxl_free_state(st);
-	return len == since_start ? len : -1;
+	mark_to_mark(endmark, m);
+	rxl_free_state(ss.st);
+	return ss.since_start;
 }
 
 DEF_CMD(text_search)
