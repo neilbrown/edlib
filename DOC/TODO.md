@@ -415,6 +415,16 @@ Module features
 - [ ] remove the pane 'handler' functionality after converting
       display-pygtk to make EdDisplay an edlib.Pane.
 
+### white-space
+
+- [ ] support highlight of long lines
+- [ ] support highlight of spaces-for-indent
+- [ ] support highlight of tabs-for-indent
+- [ ] make set of highlights, and colors, configurable
+- [ ] support highlight for hard spaces
+- [ ] support for blank lines near blanklines or start/end of file
+- [ ] support highlight for 8spaces after a tab
+
 New Modules - simple
 --------------------
 

@@ -53,12 +53,13 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 					rewind = cnt;
 				cnt += 1;
 			}
-			mark_prev_pane(focus, m);
+			if (ch != WEOF)
+				mark_prev_pane(focus, m);
 			/* 'm' is just after last spc/tab. - ch is next char.
 			 * 'cnt' is the number of chars, including first, all spc or tab
 			 * rewind is distance from start where first tab seen.
 			 */
-			if (is_eol(ch)) {
+			if (ch == WEOF || is_eol(ch)) {
 				while (cnt--)
 					mark_prev_pane(focus, m);
 				/* Set the first space/tab to red */
@@ -97,7 +98,7 @@ DEF_CMD(ws_attrs)
 		choose_next(ci->focus, ci->mark, ws);
 		return 0;
 	}
-	if (strcmp(ci->str, "render:whitespace") == 0) {
+	if (ci->mark == ws->mymark && strcmp(ci->str, "render:whitespace") == 0) {
 		char *s = strsave(ci->focus, ci->str2);
 		choose_next(ci->focus, ci->mark, ws);
 		return comm_call(ci->comm2, "attr:callback", ci->focus, 1,
@@ -106,8 +107,29 @@ DEF_CMD(ws_attrs)
 	return 0;
 }
 
+DEF_CMD(ws_close)
+{
+	struct ws_info *ws = ci->home->data;
+
+	mark_free(ws->mymark);
+	ws->mymark = NULL;
+	free(ws);
+	ci->home->data = safe_cast NULL;
+	return 1;
+}
+
 static struct map *ws_map safe;
 DEF_LOOKUP_CMD(whitespace_handle, ws_map);
+
+DEF_CMD(ws_clone)
+{
+	struct ws_info *ws = calloc(1, sizeof(*ws));
+	struct pane *p;
+
+	p = pane_register(ci->focus, 0, &whitespace_handle.c, ws, NULL);
+	pane_clone_children(ci->home, p);
+	return 0;
+}
 
 DEF_CMD(whitespace_attach)
 {
@@ -122,6 +144,8 @@ void edlib_init(struct pane *ed safe)
 	ws_map = key_alloc();
 
 	key_add(ws_map, "map-attr", &ws_attrs);
+	key_add(ws_map, "Close", &ws_close);
+	key_add(ws_map, "Clone", &ws_clone);
 	call_comm("global-set-command", ed, &whitespace_attach, 0, NULL, "attach-whitespace");
 }
 
