@@ -297,7 +297,7 @@ def make_request(key, focus, num, str, mark, **a):
         if focus.call("docs:save-all", 0, 1) != 1:
             p = focus.call("PopupTile", "DM", ret='focus');
             p['done-key'] = key
-            # Make 'num' available after save-ll
+            # Make 'num' available after save-all
             p['default'] = "%d" % num
             p.call("docs:show-modified")
             return 1
@@ -369,9 +369,8 @@ def make_request(key, focus, num, str, mark, **a):
     p.call("doc:set-name", "%s Command" % cmd)
     if history:
         p = p.call("attach-history", history, "popup:close", ret='focus')
-    dn = focus["dirname"]
-    if dn:
-        p["dirname"] = dn
+    if dir:
+        p["dirname"] = dir
     makeprompt(p)
     return 1
 
