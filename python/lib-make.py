@@ -281,7 +281,6 @@ def run_make(key, focus, str, **a):
 
     p = doc.call("attach-makecmd", str, dir, ret='focus')
     return 1
-    
 
 def make_request(key, focus, num, str, mark, **a):
     history = None
@@ -297,14 +296,21 @@ def make_request(key, focus, num, str, mark, **a):
         if focus.call("docs:save-all", 0, 1) != 1:
             p = focus.call("PopupTile", "DM", ret='focus');
             p['done-key'] = key
-            # Make 'num' available after save-all
-            p['default'] = "%d" % num
+            # Make 'num' and 'str' available after save-all
+            if str:
+                p['default'] = "%d,%s" % (num, str)
+            else:
+                p['default'] = "%d" % (num)
             p.call("docs:show-modified")
             return 1
         if num == 1 and not (str is None):
-            # We did a save-all, restore num
+            # We did a save-all, restore num and str
+            s = str.split(',',1)
+            str = None
+            if len(s) > 1:
+                str = s[1]
             try:
-                num = int(str)
+                num = int(s[0])
             except:
                 num = 0
         dflt = "make -k"
@@ -338,18 +344,23 @@ def make_request(key, focus, num, str, mark, **a):
 
     if cmd != "make" and num and mark and focus['doc-type'] == "text":
         # choose the word under the cursor
-        m1 = mark.dup()
-        c = focus.call("doc:step", m1, ret='char')
-        while isword(c):
-            focus.call("doc:step", m1, 0, 1)
+        if not str:
+            m1 = mark.dup()
             c = focus.call("doc:step", m1, ret='char')
-        m2 = mark.dup()
-        c = focus.call("doc:step", m2, 1, ret='char')
-        while isword(c):
-            focus.call("doc:step", m2, 1, 1)
+            while isword(c):
+                focus.call("doc:step", m1, 0, 1)
+                c = focus.call("doc:step", m1, ret='char')
+            m2 = mark.dup()
             c = focus.call("doc:step", m2, 1, ret='char')
-        str = focus.call("doc:get-str", m1, m2, ret='str')
+            while isword(c):
+                focus.call("doc:step", m2, 1, 1)
+                c = focus.call("doc:step", m2, 1, ret='char')
+            str = focus.call("doc:get-str", m1, m2, ret='str')
         if not ('\n' in str):
+            if not "'" in str:
+                str = "'" + str + "'"
+            elif not '"' in str:
+                str = '"' + str + '"'
             dflt = dflt + str
 
     if cmd == "make" and num:

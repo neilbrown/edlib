@@ -426,6 +426,7 @@ DEF_CMD(emacs_recenter)
 REDEF_CMD(emacs_simple);
 REDEF_CMD(emacs_simple_neg);
 REDEF_CMD(emacs_simple_num);
+REDEF_CMD(emacs_simple_str);
 static struct simple_command {
 	struct command	cmd;
 	char		*type safe;
@@ -453,7 +454,7 @@ static struct simple_command {
 	{CMD(emacs_simple), "doc:save-file", "emCX-C-Chr-S"},
 	/* one day, this will be "find definition", now it is same as "find any" */
 	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "emCX-M-Chr-."},
-	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "M-Chr-."},
+	{CMD(emacs_simple_str), "interactive-cmd-git-grep", "M-Chr-."},
 };
 
 REDEF_CMD(emacs_simple)
@@ -484,6 +485,26 @@ REDEF_CMD(emacs_simple_num)
 		return Enoarg;
 
 	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, NULL, ci->num2);
+}
+
+REDEF_CMD(emacs_simple_str)
+{
+	struct simple_command *sc = container_of(ci->comm, struct simple_command, cmd);
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	struct mark *p = call_ret(mark, "doc:point", ci->focus);
+	char *str = NULL;
+
+	if (!ci->mark)
+		return Enoarg;
+	if (mk) {
+		str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
+		/* Disable mark */
+		attr_set_int(&mk->attrs, "emacs:active", 0);
+		/* Clear current highlight */
+		call("Notify:change", ci->focus, 0, p, NULL, 0, mk);
+	}
+
+	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, str, ci->num2);
 }
 
 DEF_CMD(cnt_disp)

@@ -159,6 +159,8 @@ Module features
       Allow different colour-maps per pane so full redraw
       happens when changing colour-map.  This makes images
       practical.
+- [ ] automatically ensure the fg color contrasts with bg, unless explicitly disabled.
+      If bg is bright, reduce fg brightness.  If bg is dark, increase saturation.
 - [ ] maybe borrow xsel code to get direct access to X selection
 - [ ] merge 'catpic' code to draw low-res images.
 
@@ -260,6 +262,8 @@ Module features
 ### regexp
 
 - [ ] '\' shouldn't be auto-inserted inside [] set.
+- [ ] write an alternate back-tracking matcher which supports \n
+      in the pattern.
 
 ### docs
 
@@ -406,7 +410,8 @@ Module features
      -   correctly indented.
      -   We search back - skipping bracketed bit, until we find one, and
          base everything on that.
-
+- [ ] configuration: use tabs or spaces for indent
+- [ ] configuration: use only spaces for bracket-alignment indents - or tabs as well.
 - [ ] python-mode: when changing indent, make same change to the whole block.
       Not sure how to handle 'else:' which looks like the next block.
 - [ ] show-paren should use different colour if bracket doesn't match.
