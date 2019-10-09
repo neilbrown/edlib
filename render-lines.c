@@ -1590,8 +1590,6 @@ DEF_CMD(render_lines_set_cursor)
 			call("Move-to", focus, 0, newpoint);
 		mark_free(newpoint);
 	}
-	if (strncmp(ci->key, "Move-", 5) != 0)
-		pane_focus(p);
 	return 1;
 }
 

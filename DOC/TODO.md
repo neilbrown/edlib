@@ -42,7 +42,7 @@ Bugs to be fixed
 ----------------
 
 - [X] change to document with name ending <2> fails
-- [ ] 'click' no longer makes target window the focus
+- [X] 'click' no longer makes target window the focus
 - [ ] file-name completion in git-grep dialog works in current dir instead of target
 - [ ] M-0 M-.  does grep in current dir, but doesn't extract word from document.
 - [ ] directories used for name-compltion should go to bottom of doc list.
