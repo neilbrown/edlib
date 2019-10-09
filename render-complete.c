@@ -87,7 +87,7 @@ DEF_CMD(rcl_cb)
 DEF_CMD(render_complete_line)
 {
 	/* Skip any line that doesn't match, and
-	 * return a highlighted version of the firs one
+	 * return a highlighted version of the first one
 	 * that does.
 	 * Then skip over any other non-matches.
 	 */
@@ -140,14 +140,24 @@ DEF_CMD(render_complete_line)
 DEF_CMD(rlcb)
 {
 	struct rlcb *cb = container_of(ci->comm, struct rlcb, c);
-	if (ci->str == NULL)
+	char *c = ci->str ? strdup(ci->str) : NULL;
+	if (c) {
+		int i;
+		for (i = 0; c[i] ; i++) {
+			if (c[i] == '<')
+				memmove(c+i, c+i+1, strlen(c+i));
+		}
+	}
+	if (c == NULL)
 		cb->cmp = -1;
 	else if (cb->prefix_only)
-		cb->cmp = strncmp(ci->str, cb->prefix, cb->plen);
+		cb->cmp = strncmp(c, cb->prefix, cb->plen);
 	else
-		cb->cmp = strstr(ci->str, cb->prefix) ? 0 : 1;
-	if (cb->cmp == 0 && cb->keep && ci->str)
-		cb->str = strdup(ci->str);
+		cb->cmp = strstr(c, cb->prefix) ? 0 : 1;
+	if (cb->cmp == 0 && cb->keep && c)
+		cb->str = c;
+	else
+		free(c);
 	return 1;
 }
 
