@@ -60,6 +60,11 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 			 * rewind is distance from start where first tab seen.
 			 */
 			if (ch == WEOF || is_eol(ch)) {
+				struct mark *p = call_ret(mark, "doc:point", focus);
+				if (p && mark_same(m, p))
+					ch = 'x';
+			}
+			if (ch == WEOF || is_eol(ch)) {
 				while (cnt--)
 					mark_prev_pane(focus, m);
 				/* Set the first space/tab to red */
@@ -83,6 +88,7 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 		}
 		mark_next_pane(focus, m);
 	}
+	attr_set_str(&m->attrs, "render:whitespace", NULL);
 }
 
 DEF_CMD(ws_attrs)
