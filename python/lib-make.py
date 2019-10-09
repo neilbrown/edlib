@@ -135,7 +135,7 @@ class MakePane(edlib.Pane):
                 d.close()
                 focus.call("Message", "Failed to open pane");
                 return edlib.Efail
-            par = d.call("doc:attach-view", par, ret='focus')
+            par = d.call("doc:attach-view", par, 1, ret='focus')
         par.take_focus()
         par.call("Move-File", -1)
         par.call("Move-Line", int(lineno)-1)
@@ -276,7 +276,7 @@ def run_make(key, focus, str, **a):
     if not p:
         return edlib.Efail
     focus.call("global-set-attr", "make-target-doc", docname)
-    p = doc.call("doc:attach-view", p, "viewer", ret='focus')
+    p = doc.call("doc:attach-view", p, "viewer", 1, ret='focus')
     p.call("attach-make-viewer", p);
 
     p = doc.call("attach-makecmd", str, dir, ret='focus')

@@ -402,7 +402,7 @@ DEF_CMD(docs_callback)
 
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
 		p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus,
-		                  0, NULL, "modified");
+		                  ci->num, NULL, "modified");
 		if (!p)
 			return Efail;
 		return comm_call(ci->comm2, "callback:doc", p);
@@ -425,7 +425,7 @@ DEF_CMD(docs_callback)
 		home_call(p, "doc:Request:Notify:doc:revisit", doc->collection);
 		home_call(p, "doc:Request:Notify:doc:status-changed", doc->collection);
 		if (p->parent)
-			doc_checkname(p, doc, ci->num);
+			doc_checkname(p, doc, ci->num ?: -1);
 		return Efallthrough;
 	}
 	return Efallthrough;
@@ -624,7 +624,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 		par = call_ret(pane, "ThisPane", focus);
 	if (!par)
 		return Efail;
-	p = home_call_ret(pane, dp, "doc:attach-view", par);
+	p = home_call_ret(pane, dp, "doc:attach-view", par, 1);
 	if (p) {
 		pane_focus(p);
 		return 1;

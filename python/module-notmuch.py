@@ -734,7 +734,7 @@ class notmuch_master_view(edlib.Pane):
             p0 = self.call("OtherPane", ret = 'focus')
         if not p0:
             return 1
-        p2.call("doc:attach-view", p0, "viewer")
+        p2.call("doc:attach-view", p0, 1, "viewer")
         return 1
 
     def handle_o(self, key, focus, **a):

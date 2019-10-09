@@ -444,7 +444,7 @@ DEF_CMD(doc_set_name)
 		return Enoarg;
 	free(d->name);
 	d->name = strdup(ci->str);
-	return call("doc:Notify:doc:revisit", d->home);
+	return call("doc:Notify:doc:revisit", d->home, ci->num);
 }
 
 DEF_CMD(doc_request_notify)
@@ -930,7 +930,7 @@ DEF_CMD(doc_attach_view)
 		return Efail;
 	do_doc_assign(p, doc);
 
-	call("doc:Notify:doc:revisit", p, ci->num?:1);
+	call("doc:Notify:doc:revisit", p, ci->num);
 	if (strcmp(type, "invisible") != 0) {
 		/* Attach renderer */
 		p2 = call_ret(pane, "attach-view", p);
@@ -1110,7 +1110,7 @@ DEF_CMD(doc_open)
 		if (autoclose)
 			call("doc:set:autoclose", p, 1);
 		call("doc:load-file", p, 0, NULL, name, fd);
-		call("global-multicall-doc:appeared-", p, 1);
+		call("global-multicall-doc:appeared-", p);
 	} else if (reload || force_reload) {
 		call("doc:load-file", p, force_reload?0:1, NULL, name, fd);
 	}
@@ -1130,7 +1130,7 @@ DEF_CMD(doc_from_text)
 		return Efail;
 	if (name) {
 		call("doc:set-name", p, 0, NULL, name);
-		call("global-multicall-doc:appeared-", p, 1);
+		call("global-multicall-doc:appeared-", p);
 	}
 	call("doc:replace", p, 1, NULL, text, 1);
 	return comm_call(ci->comm2, "callback", p);

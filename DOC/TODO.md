@@ -46,7 +46,7 @@ Bugs to be fixed
 - [X] file-name completion in git-grep dialog works in current dir instead of target
 - [ ] M-0 M-.  does grep in current dir, but doesn't extract word from document.
         But M-- M-. does the right thing... what do I want?
-- [ ] directories used for name-compltion should go to bottom of doc list.
+- [X] directories used for name-completion should go to bottom of doc list.
 - [X] start with "-g", open a -t, close the -g, then the -t : get into a spin
 - [X] undo sometimes gathers too much into a single change.  Cursor movement
         should break the change. -- yank was the problem

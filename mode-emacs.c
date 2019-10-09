@@ -831,7 +831,7 @@ DEF_CMD(emacs_findfile)
 		return Efail;
 	}
 
-	p = home_call_ret(pane, p, "doc:attach-view", par);
+	p = home_call_ret(pane, p, "doc:attach-view", par, 1);
 	if (p)
 		pane_focus(p);
 	return p ? 1 : Efail;
@@ -886,9 +886,10 @@ REDEF_CMD(emacs_file_complete)
 	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		return Efail;
-	p = home_call_ret(pane, docp, "doc:attach-view", pop, 0, NULL, "complete");
+	p = home_call_ret(pane, docp, "doc:attach-view", pop, -1, NULL, "complete");
 	if (!p)
 		return Efail;
+	//call("doc:Notify:doc:revisit", p, -1);
 
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, b);
 	if (cr.s && (strlen(cr.s) <= strlen(b) && cr.ret-1 > 1)) {
@@ -946,7 +947,7 @@ DEF_CMD(emacs_finddoc)
 			attr_set_str(&p->attrs, "prompt", "Find Document");
 			attr_set_str(&p->attrs, "done-key", "Doc Found");
 		}
-		call("doc:set-name", p, 0, NULL, "Find Document");
+		call("doc:set-name", p, 0, NULL, "Find Document", -1);
 
 		pane_register(p, 0, &find_handle.c, "doc", NULL);
 		return 1;
@@ -965,7 +966,7 @@ DEF_CMD(emacs_finddoc)
 	if (!p || !par)
 		return Efail;
 
-	p = home_call_ret(pane, p, "doc:attach-view", par);
+	p = home_call_ret(pane, p, "doc:attach-view", par, 1);
 	if (p)
 		pane_focus(p);
 	return p ? 1 : Efail;
@@ -1035,7 +1036,7 @@ DEF_CMD(emacs_viewdocs)
 	if (!par)
 		return Efail;
 
-	p = home_call_ret(pane, docs, "doc:attach-view", par);
+	p = home_call_ret(pane, docs, "doc:attach-view", par, 1);
 	return !!p;
 }
 
@@ -1055,7 +1056,7 @@ DEF_CMD(emacs_shell)
 		attr_set_str(&p->attrs, "dirname", dirname ?: ".");
 		attr_set_str(&p->attrs, "prompt", "Shell command");
 		attr_set_str(&p->attrs, "done-key", "Shell Command");
-		call("doc:set-name", p, 0, NULL, "Shell Command");
+		call("doc:set-name", p, 0, NULL, "Shell Command", -1);
 		p = call_ret(pane, "attach-history", p, 0, NULL, "*Shell History*",
 		             0, NULL, "popup:close");
 		pane_register(p, 0, &find_handle.c, "shellcmd", NULL);
@@ -1383,7 +1384,7 @@ DEF_CMD(emacs_start_search)
 
 	attr_set_str(&p->attrs, "prompt", "Search");
 	attr_set_str(&p->attrs, "done-key", "Search String");
-	call("doc:set-name", p, 0, NULL, "Search");
+	call("doc:set-name", p, 0, NULL, "Search", -1);
 	call_ret(pane, "attach-emacs-search", p, ci->key[6] == 'R');
 
 	return 1;
@@ -1441,7 +1442,7 @@ DEF_CMD(emacs_command)
 		return 0;
 	attr_set_str(&p->attrs, "prompt", "Cmd");
 	attr_set_str(&p->attrs, "done-key", "emacs:command");
-	call("doc:set-name", p, 0, NULL, "M-x command");
+	call("doc:set-name", p, 0, NULL, "M-x command", -1);
 	p = call_ret(pane, "attach-history", p, 0, NULL, "*Command History*",
 	             0, NULL, "popup:close");
 	pane_register(p, 0, &find_handle.c, "cmd", NULL);

@@ -59,7 +59,7 @@ static struct pane *make_stack(struct pane *p, struct pane *doc)
 	if (p)
 		p = call_ret(pane, "attach-tile", p);
 	if (p && doc)
-		p = home_call_ret(pane, doc, "doc:attach-view", p);
+		p = home_call_ret(pane, doc, "doc:attach-view", p, 1);
 	return p;
 }
 

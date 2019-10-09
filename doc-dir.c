@@ -645,7 +645,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 		par = call_ret(pane, "ThisPane", focus);
 		if (!par)
 			return Efail;
-		p = home_call_ret(pane, doc, "doc:attach-view", par);
+		p = home_call_ret(pane, doc, "doc:attach-view", par, 1);
 	}
 	free(fname);
 	pane_focus(p);
@@ -684,13 +684,13 @@ DEF_CMD(dir_attach)
 	char *type = ci->str ?: "default";
 	struct pane *p;
 
-	if (strcmp(type, "invisible") == 0 || ci->num == (int)(unsigned long)dir_attach_func)
+	if (strcmp(type, "invisible") == 0 || ci->num2 == (int)(unsigned long)dir_attach_func)
 		/* use default core-doc implementation */
 		return Efallthrough;
 	if (strcmp(type, "complete") == 0) {
 
 		p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
-		                  0, NULL, "invisible");
+		                  ci->num, NULL, "invisible");
 		if (p)
 			p = call_ret(pane, "attach-view", p);
 		if (p)
@@ -710,9 +710,10 @@ DEF_CMD(dir_attach)
 	if (!p || p->damaged & DAMAGED_CLOSED)
 		p = ci->home;
 	return home_call(p, ci->key, ci->focus,
-	                 p == ci->home ? (int)(unsigned long)dir_attach_func : 0,
+	                 ci->num,
 	                 NULL, ci->str,
-	                 0, NULL, NULL,
+	                 p == ci->home ? (int)(unsigned long)dir_attach_func : 0,
+	                 NULL, NULL,
 	                 0, 0, ci->comm2);
 }
 
