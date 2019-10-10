@@ -41,6 +41,12 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] when visit a non-existant file, it is CHANGED and read-only.
+- [ ] Indent to always use tabs where possible (in C mode)
+- [ ] C-q tab should insert a literal tab
+- [ ] If completion has happened in open-file, but file doesn't exist,
+      require an extra Enter (or something)
+- [ ] ncurses - provide a suitable colour for  highlighting tabs. #f5f5dc
 - [X] change to document with name ending <2> fails
 - [X] 'click' no longer makes target window the focus
 - [X] file-name completion in git-grep dialog works in current dir instead of target
@@ -160,7 +166,7 @@ Module features
       happens when changing colour-map.  This makes images
       practical.
 - [ ] automatically ensure the fg color contrasts with bg, unless explicitly disabled.
-      If bg is bright, reduce fg brightness.  If bg is dark, increase saturation.
+      If bg is bright, reduce fg brightness.  If bg is dark, reduce saturation.
 - [ ] maybe borrow xsel code to get direct access to X selection
 - [ ] merge 'catpic' code to draw low-res images.
 

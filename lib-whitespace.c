@@ -83,7 +83,7 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 			if (doc_prior_pane(focus, m) == ' ')
 				attr_set_str(&m->attrs, "render:whitespace", "bg:red");
 			else
-				attr_set_str(&m->attrs, "render:whitespace", "bg:yellow");
+				attr_set_str(&m->attrs, "render:whitespace", "bg:#fefedc");
 			return;
 		}
 		mark_next_pane(focus, m);
