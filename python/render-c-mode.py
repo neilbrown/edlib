@@ -161,7 +161,13 @@ class CModePane(edlib.Pane):
                     extra = "\t"
             else:
                 extra = focus.call("doc:get-str", indent_end, expr, ret='str')
-                extra = ' ' * len(extra)
+                #extra = ' ' * len(extra)
+                if self.spaces:
+                    extra = ' ' * len(extra)
+                else:
+                    l = len(extra)
+                    extra = '\t' * (l/8)
+                    extra += ' ' * (l%8)
         elif self.indent_colon:
             cl = m.dup()
             c = focus.call("doc:step", cl, 0, 1, ret="char")
