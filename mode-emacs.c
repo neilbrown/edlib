@@ -559,6 +559,27 @@ DEF_CMD(emacs_insert)
 	return ret;
 }
 
+DEF_CMD(emacs_quote_insert)
+{
+	int ret;
+	char buf[2] = ".";
+	char *str = buf;
+
+	if (!ci->mark)
+		return Enoarg;
+
+	if (strncmp(ci->key, "emQ-Chr-", 8) == 0)
+		str = ci->key + 8;
+	else if (strncmp(ci->key, "emQ-C-Chr-", 10) == 0)
+		buf[0] = ci->key[10] & 0x1f;
+	else
+		str = "??";
+	ret = call("Replace", ci->focus, 1, ci->mark, str, N2(ci) != N2_undo_insert);
+	call("Mode:set-num2", ci->focus, N2_undo_insert);
+
+	return ret;
+}
+
 static struct {
 	char *key;
 	char *insert;
@@ -715,7 +736,7 @@ DEF_CMD(find_prevnext)
 	h.ret = NULL;
 	h.c = find_helper;
 	h.want_prev = strcmp(ci->key, "M-Chr-n") == 0;
-	
+
 	call_comm("docs:byeach", ci->focus, &h.c);
 	if (h.ret) {
 		char *name = pane_attr_get(h.ret, "doc-name");
@@ -1873,7 +1894,7 @@ DEF_CMD(emacs_curs_pos)
 		return Enoarg;
 	c = mark_dup(ci->mark);
 	nxt = doc_following_pane(ci->focus, c);
-		
+
 	while ((ch = mark_prev_pane(ci->focus, c)) != WEOF && !is_eol(ch))
 		;
 	while (mark_ordered_not_same(c, ci->mark)) {
@@ -1902,6 +1923,7 @@ DEF_PFX_CMD(cx_cmd, "emCX-");
 DEF_PFX_CMD(cx4_cmd, "emCX4-");
 DEF_PFX_CMD(cx5_cmd, "emCX5-");
 DEF_PFX_CMD(cc_cmd, "emCC-");
+DEF_PFX_CMD(quote_cmd, "emQ-");
 
 static void emacs_init(void)
 {
@@ -1913,6 +1935,7 @@ static void emacs_init(void)
 	key_add(m, "emCX-Chr-4", &cx4_cmd.c);
 	key_add(m, "emCX-Chr-5", &cx5_cmd.c);
 	key_add(m, "C-Chr-C", &cc_cmd.c);
+	key_add(m, "C-Chr-Q", &quote_cmd.c);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
 		struct move_command *mc = &move_commands[i];
@@ -1993,6 +2016,9 @@ static void emacs_init(void)
 	key_add(m, "M-C-Chr-V", &emacs_move_view_other);
 
 	key_add(m, "emCX-C-Chr-Q", &emacs_readonly);
+
+	key_add_prefix(m, "emQ-Chr-", &emacs_quote_insert);
+	key_add_prefix(m, "emQ-C-Chr-", &emacs_quote_insert);
 
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);

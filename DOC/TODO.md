@@ -46,7 +46,7 @@ Bugs to be fixed
 - [ ] Use the requested name rather than canonical name for UI as much as possible.
 - [X] when visit a non-existant file, it is CHANGED and read-only.
 - [X] Indent to always use tabs where possible (in C mode)
-- [ ] C-q tab should insert a literal tab
+- [X] C-q tab should insert a literal tab
 - [ ] If completion has happened in open-file, but file doesn't exist,
       require an extra Enter (or something)
 - [X] ncurses - provide a suitable colour for  highlighting tabs. #f5f5dc

@@ -527,17 +527,17 @@ class EdDisplay(gtk.Window):
         self.pane.call("Mouse-event", s, self.pane, (x,y))
         edlib.time_stop(edlib.TIME_KEY)
 
-    eventmap = { "Return" : "Enter",
-                 "Tab" : "Tab",
-                 "Escape" : "ESC",
-                 "Linefeed" : "LF",
+    eventmap = { "Return" : "Enter\037C-Chr-M",
+                 "Tab" : "Tab\037C-Chr-I",
+                 "Escape" : "ESC\037C-Chr-[",
+                 "Linefeed" : "LF\037C-Chr-J",
                  "Down" : "Down",
                  "Up" : "Up",
                  "Left" : "Left",
                  "Right" : "Right",
                  "Home" : "Home",
                  "End" : "End",
-                 "BackSpace" : "Backspace",
+                 "BackSpace" : "Backspace\037C-Chr-H",
                  "Delete" : "Del",
                  "Insert" : "Ins",
                  "Page_Up" : "Prior",
