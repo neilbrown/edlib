@@ -496,7 +496,7 @@ REDEF_CMD(emacs_simple_str)
 
 	if (!ci->mark)
 		return Enoarg;
-	if (mk) {
+	if (mk && attr_find_int(mk->attrs, "emacs:active") >= 1) {
 		str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 		/* Disable mark */
 		attr_set_int(&mk->attrs, "emacs:active", 0);
