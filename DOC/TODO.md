@@ -44,7 +44,7 @@ Bugs to be fixed
 - [ ] An indent can still get more than 8 spaces.  Maybe a higher-level check is needed.
 - [ ] fn-complete for a symlink-to-dir should add a '/'
 - [ ] Use the requested name rather than canonical name for UI as much as possible.
-- [ ] when visit a non-existant file, it is CHANGED and read-only.
+- [X] when visit a non-existant file, it is CHANGED and read-only.
 - [ ] Indent to always use tabs where possible (in C mode)
 - [ ] C-q tab should insert a literal tab
 - [ ] If completion has happened in open-file, but file doesn't exist,

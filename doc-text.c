@@ -163,6 +163,7 @@ struct text {
 	char			file_changed; /* '2' means it has changed, but we are
 					       * editing anyway
 					       */
+	char			newfile; /* file doesn't exist yet */
 	struct stat		stat;
 	char			*fname;
 	struct text_edit	*saved;
@@ -237,15 +238,19 @@ static bool check_file_changed(struct text *t safe)
 
 	if (t->file_changed)
 		/* '1' means it has change, '2' means 'but we don't care */
-		return t->file_changed == 2;
+		return t->file_changed == 1;
 	if (!t->fname)
 		return False;
-	if (stat(t->fname, &st) != 0 ||
-	    st.st_ino != t->stat.st_ino ||
+	if (stat(t->fname, &st) != 0) {
+		memset(&st, 0, sizeof(st));
+		if (t->newfile)
+			return False;
+	}
+	if (st.st_ino != t->stat.st_ino ||
 	    st.st_dev != t->stat.st_dev ||
 	    st.st_mtime != t->stat.st_mtime ||
 	    st.st_mtim.tv_nsec != t->stat.st_mtim.tv_nsec) {
-		t->file_changed = True;
+		t->file_changed = 1;
 		call("doc:Notify:doc:status-changed", t->doc.home);
 		return True;
 	}
@@ -281,9 +286,10 @@ DEF_CMD(text_load_file)
 		fd = open(t->fname, O_RDONLY);
 		name = t->fname;
 	}
-	if (fd < 0)
+	if (fd < 0) {
 		size = 0;
-	else {
+		t->newfile = 1;
+	} else {
 		size = lseek(fd, 0, SEEK_END);
 		lseek(fd, 0, SEEK_SET);
 	}
@@ -327,7 +333,10 @@ DEF_CMD(text_load_file)
 	if (name) {
 		char *dname;
 
-		fstat(fd, &t->stat);
+		if (fstat(fd, &t->stat) < 0) {
+			t->newfile = 1;
+			memset(&t->stat, 0, sizeof(t->stat));
+		}
 		if (name != t->fname) {
 			free(t->fname);
 			t->fname = strdup(name);
@@ -552,6 +561,7 @@ DEF_CMD(text_save_file)
 			t->saved = t->undo;
 			change_status = 1;
 			t->file_changed = 0;
+			t->newfile = 0;
 		} else
 			asprintf(&msg, "*** Failed to write %s ***", t->fname);
 	}
@@ -2107,7 +2117,7 @@ DEF_CMD(text_revisited)
 		/* Being buried, not visited */
 		return Efallthrough;
 
-	if (t->saved == t->undo && check_file_changed(t)) {
+	if (check_file_changed(t) && t->saved == t->undo) {
 		call("doc:load-file", ci->home, 2, NULL, NULL, -1);
 		call("Message", ci->focus, 0, NULL, "File Reloaded");
 	}
