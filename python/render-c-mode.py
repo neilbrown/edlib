@@ -18,6 +18,19 @@ class CModePane(edlib.Pane):
         self.clone_children(p)
         return 1
 
+    def tabify(self, indent):
+        if self.spaces:
+            return indent
+        i = 1
+        while i >= 0:
+            try:
+                i = indent.index('        ')
+            except ValueError:
+                i = -1
+            if i >= 0:
+                indent = indent[:i] + "\t" + indent[i+8:]
+        return indent
+
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
         # If there is white space before or after the cursor,
@@ -40,7 +53,7 @@ class CModePane(edlib.Pane):
         new = self.find_indent(focus, indent_end)
         extra = self.find_extra_indent(focus, m, indent_end)
 
-        return focus.call("Replace", 1, m, "\n" + new + extra)
+        return focus.call("Replace", 1, m, "\n" + self.tabify(new + extra))
 
     def handle_tab(self, key, focus, mark, **a):
         "handle:Tab"
@@ -66,8 +79,9 @@ class CModePane(edlib.Pane):
         indent = self.find_indent(focus, indent_end)
         extra = self.find_extra_indent(focus, m, indent_end)
         current = focus.call("doc:get-str", m, mark, ret="str")
-        if indent + extra != current:
-            return focus.call("Replace", 1, m, mark, indent+extra)
+        new = self.tabify(indent + extra)
+        if new != current:
+            return focus.call("Replace", 1, m, mark, new)
         if extra == "":
             # round down to whole number of indents, and add 1
             if self.spaces:
@@ -77,7 +91,7 @@ class CModePane(edlib.Pane):
                 while indent and indent[-1] == ' ':
                     indent = indent[:-1]
                 extra = '\t'
-            return focus.call("Replace", 1, m, mark, indent+extra)
+            return focus.call("Replace", 1, m, mark, self.tabify(indent + extra))
         # No change needed
         return 1
 
@@ -161,13 +175,7 @@ class CModePane(edlib.Pane):
                     extra = "\t"
             else:
                 extra = focus.call("doc:get-str", indent_end, expr, ret='str')
-                #extra = ' ' * len(extra)
-                if self.spaces:
-                    extra = ' ' * len(extra)
-                else:
-                    l = len(extra)
-                    extra = '\t' * (l/8)
-                    extra += ' ' * (l%8)
+                extra = ' ' * len(extra)
         elif self.indent_colon:
             cl = m.dup()
             c = focus.call("doc:step", cl, 0, 1, ret="char")
