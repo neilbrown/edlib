@@ -440,24 +440,18 @@ static int cvt_attrs(char *attrs)
 		else if (strcmp(tmp, "bold")==0) attr |= A_BOLD;
 		else if (strcmp(tmp, "underline")==0) attr |= A_UNDERLINE;
 		else if (strcmp(tmp, "fg:blue")  == 0) {
-			init_pair(1, COLOR_BLUE, -1);
 			attr |= COLOR_PAIR(1);
 		} else if (strcmp(tmp, "fg:red")  == 0) {
-			init_pair(2, COLOR_RED, -1);
 			attr |= COLOR_PAIR(2);
 		} else if (strcmp(tmp, "bg:red")  == 0) {
-			init_pair(5, -1, COLOR_RED);
 			attr |= COLOR_PAIR(5);
 		} else if (strcmp(tmp, "fg:grey")  == 0) {
 			/* HORRIBLE HACK - MUST FIXME */
-			init_pair(3, COLOR_YELLOW, -1);
 			attr |= COLOR_PAIR(3);
 		} else if (strcmp(tmp, "bg:pink")  == 0) {
 			/* HORRIBLE HACK - MUST FIXME */
-			init_pair(4, -1, COLOR_CYAN);
 			attr |= COLOR_PAIR(4);
-		} else if (strcmp(tmp, "bg:yellow") == 0) {
-			init_pair(6, -1, COLOR_YELLOW);
+		} else if (strcmp(tmp, "bg:#fefedc") == 0) {
 			attr |= COLOR_PAIR(6);
 		}
 		a = c;
@@ -619,6 +613,20 @@ static struct pane *ncurses_init(struct pane *ed, char *tty, char *term)
 	intrflush(stdscr, FALSE);
 	keypad(stdscr, TRUE);
 	mousemask(ALL_MOUSE_EVENTS, NULL);
+
+	ASSERT(can_change_color());
+
+	/* COLOR_WHITE is 680,680,680 - grey!!
+	 * add 8 for true color??
+	 */
+	init_pair(1, COLOR_BLUE, COLOR_WHITE+8);
+	init_pair(2, COLOR_RED, COLOR_WHITE+8);
+	init_pair(3, COLOR_YELLOW, COLOR_WHITE+8);
+	init_pair(4, COLOR_BLACK, COLOR_CYAN);
+	init_pair(5, COLOR_BLACK, COLOR_RED);
+	#define cvt(x) ((x)*1000/255)
+	init_color(18, cvt(0xf5), cvt(0xf5), cvt(0xdc));
+	init_pair(6, COLOR_BLACK, 18);
 
 	getmaxyx(stdscr, p->h, p->w);
 
