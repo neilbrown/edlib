@@ -81,9 +81,9 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 			/* handle tab */
 			/* If previous is space, then RED, else YELLOW */
 			if (doc_prior_pane(focus, m) == ' ')
-				attr_set_str(&m->attrs, "render:whitespace", "bg:red");
+				attr_set_str(&m->attrs, "render:whitespace", "bg:red-80");
 			else
-				attr_set_str(&m->attrs, "render:whitespace", "bg:#fefedc");
+				attr_set_str(&m->attrs, "render:whitespace", "bg:yellow-80+80");
 			return;
 		}
 		mark_next_pane(focus, m);

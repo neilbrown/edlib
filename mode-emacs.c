@@ -1659,6 +1659,7 @@ DEF_CMD(emacs_yank_pop)
 DEF_CMD(emacs_attrs)
 {
 	struct call_return cr;
+	static char selection[] = "bg:red+80"; // pink
 
 	if (!ci->str)
 		return 0;
@@ -1673,18 +1674,18 @@ DEF_CMD(emacs_attrs)
 	if (strcmp(ci->str, "render:interactive-mark") == 0) {
 		if (ci->mark == cr.m2 && cr.m2->seq < cr.m->seq)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 2000000,
-					 ci->mark, "bg:pink", 2);
+					 ci->mark, selection, 2);
 		if (ci->mark == cr.m2)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-					 ci->mark, "bg:pink", 2);
+					 ci->mark, selection, 2);
 	}
 	if (strcmp(ci->str, "render:interactive-point") == 0) {
 		if (cr.m == ci->mark && cr.m->seq < cr.m2->seq)
 			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
-					 ci->mark, "bg:pink", 2);
+					 ci->mark, selection, 2);
 		if (cr.m == ci->mark)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-					 ci->mark, "bg:pink", 2);
+					 ci->mark, selection, 2);
 	}
 	if (strcmp(ci->str, "start-of-line") == 0) {
 		if ((cr.m->seq < ci->mark->seq && ci->mark->seq < cr.m2->seq &&
@@ -1692,7 +1693,7 @@ DEF_CMD(emacs_attrs)
 		    (cr.m2->seq < ci->mark->seq && ci->mark->seq < cr.m->seq &&
 		     !mark_same(ci->mark, cr.m)))
 			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
-					ci->mark, "bg:pink", 2);
+					ci->mark, selection, 2);
 	}
 	return 0;
 }

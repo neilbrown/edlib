@@ -44,11 +44,14 @@ typedef char hash_t[MD5_DIGEST_SIZE*2+1];
 #define NCURSES_OK_ADDR(p) ((void*)0 != NCURSES_CAST(const void *, (p)))
 #endif
 
+struct col_hash;
+
 struct display_data {
 	SCREEN			*scr;
 	FILE			*scr_file;
 	struct xy		cursor;
 	char			*noclose;
+	struct col_hash		*col_hash;
 	#ifdef RECORD_REPLAY
 	FILE			*log;
 	FILE			*input;
@@ -85,6 +88,8 @@ static void set_screen(struct pane *p)
 		return;
 	}
 	dd = p->data;
+	if (!dd)
+		return;
 	if (dd->scr == current_screen)
 		return;
 
@@ -416,14 +421,108 @@ static void ncurses_end(struct pane *p safe)
 	endwin();
 }
 
-static int cvt_attrs(char *attrs)
+/*
+ * hash table for colours and pairs
+ * key is r,g,b (0-1000) in 10bit fields,
+ * or fg,bg in 16 bit fields with bit 31 set
+ * content is colour number of colour pair number.
+ * We never delete entries, unless we delete everything.
+ */
+
+struct chash {
+	struct chash *next;
+	int key, content;
+};
+#define COL_KEY(r,g,b) ((r<<20) | (g<<10) | b)
+#define PAIR_KEY(fg, bg) ((1<<31) | (fg<<16) | bg)
+#define hash_key(k) ((((k) * 0x61C88647) >> 20) & 0xff)
+
+struct col_hash {
+	int next_col, next_pair;
+	struct chash *tbl[256];
+};
+
+static struct col_hash *safe hash_init(struct display_data *dd safe)
 {
+	if (!dd->col_hash) {
+		dd->col_hash = malloc(sizeof(*dd->col_hash));
+		memset(dd->col_hash, 0, sizeof(*dd->col_hash));
+		dd->col_hash->next_col = 16;
+		dd->col_hash->next_pair = 1;
+	}
+	return dd->col_hash;
+}
+
+static void hash_free(struct display_data *dd safe)
+{
+	int h;
+	struct chash *c;
+	struct col_hash *ch;
+
+	ch = dd->col_hash;
+	if (!ch)
+		return;
+	for (h = 0; h < 255; h++)
+		while ((c = ch->tbl[h]) != NULL) {
+			ch->tbl[h] = c->next;
+			free(c);
+		}
+	free(ch);
+	dd->col_hash = NULL;
+}
+
+static int find_col(struct display_data *dd safe, int rgb[])
+{
+	struct col_hash *ch = hash_init(dd);
+	int k = COL_KEY(rgb[0], rgb[1], rgb[2]);
+	int h = hash_key(k);
+	struct chash *c;
+
+	for (c = ch->tbl[h]; c; c = c->next)
+		if (c->key == k)
+			return c->content;
+	c = malloc(sizeof(*c));
+	c->key = k;
+	c->content = ch->next_col++;
+	c->next = ch->tbl[h];
+	ch->tbl[h] = c;
+	init_color(c->content, rgb[0], rgb[1], rgb[2]);
+	return c->content;
+}
+
+static int to_pair(struct display_data *dd safe, int fg, int bg)
+{
+	struct col_hash *ch = hash_init(dd);
+	int k = PAIR_KEY(fg, bg);
+	int h = hash_key(k);
+	struct chash *c;
+
+	for (c = ch->tbl[h]; c; c = c->next)
+		if (c->key == k)
+			return c->content;
+	c = malloc(sizeof(*c));
+	c->key = k;
+	c->content = ch->next_pair++;
+	c->next = ch->tbl[h];
+	ch->tbl[h] = c;
+	init_pair(c->content, fg, bg);
+	return c->content;
+}
+
+
+static int cvt_attrs(struct pane *home safe, char *attrs)
+{
+	struct display_data *dd = home->data;
+
 	int attr = 0;
 	char tmp[40];
 	char *a;
+	int fg = COLOR_BLACK;
+	int bg = COLOR_WHITE+8;
 
 	if (!attrs)
 		return 0;
+	set_screen(home);
 	a = attrs;
 	while (a && *a) {
 		char *c;
@@ -439,22 +538,22 @@ static int cvt_attrs(char *attrs)
 		if (strcmp(tmp, "inverse")==0) attr |= A_STANDOUT;
 		else if (strcmp(tmp, "bold")==0) attr |= A_BOLD;
 		else if (strcmp(tmp, "underline")==0) attr |= A_UNDERLINE;
-		else if (strcmp(tmp, "fg:blue")  == 0) {
-			attr |= COLOR_PAIR(1);
-		} else if (strcmp(tmp, "fg:red")  == 0) {
-			attr |= COLOR_PAIR(2);
-		} else if (strcmp(tmp, "bg:red")  == 0) {
-			attr |= COLOR_PAIR(5);
-		} else if (strcmp(tmp, "fg:grey")  == 0) {
-			/* HORRIBLE HACK - MUST FIXME */
-			attr |= COLOR_PAIR(3);
-		} else if (strcmp(tmp, "bg:pink")  == 0) {
-			/* HORRIBLE HACK - MUST FIXME */
-			attr |= COLOR_PAIR(4);
-		} else if (strcmp(tmp, "bg:#fefedc") == 0) {
-			attr |= COLOR_PAIR(6);
+		else if (strncmp(tmp, "fg:", 3) == 0) {
+			struct call_return cr =
+				call_ret(all, "colour:map", home, 0, NULL, tmp+3);
+			int rgb[3] = {cr.i, cr.i2, cr.x};
+			fg = find_col(dd, rgb);
+		} else if (strncmp(tmp, "bg:", 3) == 0) {
+			struct call_return cr =
+				call_ret(all, "colour:map", home, 0, NULL, tmp+3);
+			int rgb[3] = {cr.i, cr.i2, cr.x};
+			bg = find_col(dd, rgb);
 		}
 		a = c;
+	}
+	if (fg != COLOR_BLACK || bg != COLOR_WHITE+8) {
+		int p = to_pair(dd, fg, bg);
+		attr |= COLOR_PAIR(p);
 	}
 	return attr;
 }
@@ -473,14 +572,18 @@ DEF_CMD(nc_notify_display)
 DEF_CMD(nc_close)
 {
 	struct pane *p = ci->home;
+	struct display_data *dd = p->data;
 	ncurses_end(p);
+	hash_free(dd);
+	free(dd);
+	p->data = safe_cast NULL;
 	return 1;
 }
 
 DEF_CMD(nc_clear)
 {
 	struct pane *p = ci->home;
-	int attr = cvt_attrs(ci->str2?:ci->str);
+	int attr = cvt_attrs(p, ci->str2?:ci->str);
 
 	ncurses_clear(ci->focus, p, attr, 0, 0, 0, 0);
 	pane_damaged(p, DAMAGED_POSTORDER);
@@ -521,7 +624,7 @@ DEF_CMD(nc_text_size)
 DEF_CMD(nc_draw_text)
 {
 	struct pane *p = ci->home;
-	int attr = cvt_attrs(ci->str2);
+	int attr = cvt_attrs(p, ci->str2);
 	int cursor_offset = ci->num;
 	short offset = 0;
 	short x = ci->x, y = ci->y;
@@ -615,18 +718,6 @@ static struct pane *ncurses_init(struct pane *ed, char *tty, char *term)
 	mousemask(ALL_MOUSE_EVENTS, NULL);
 
 	ASSERT(can_change_color());
-
-	/* COLOR_WHITE is 680,680,680 - grey!!
-	 * add 8 for true color??
-	 */
-	init_pair(1, COLOR_BLUE, COLOR_WHITE+8);
-	init_pair(2, COLOR_RED, COLOR_WHITE+8);
-	init_pair(3, COLOR_YELLOW, COLOR_WHITE+8);
-	init_pair(4, COLOR_BLACK, COLOR_CYAN);
-	init_pair(5, COLOR_BLACK, COLOR_RED);
-	#define cvt(x) ((x)*1000/255)
-	init_color(18, cvt(0xf5), cvt(0xf5), cvt(0xdc));
-	init_pair(6, COLOR_BLACK, 18);
 
 	getmaxyx(stdscr, p->h, p->w);
 
@@ -843,6 +934,9 @@ REDEF_CMD(input_handle)
 	wint_t c;
 	int is_keycode;
 
+	if (!(void*)p->data)
+		/* already closed */
+		return 0;
 	set_screen(p);
 	while ((is_keycode = get_wch(&c)) != ERR) {
 		if (c == KEY_MOUSE) {

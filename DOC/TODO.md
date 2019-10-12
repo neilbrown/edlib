@@ -41,6 +41,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] C-n causes 'target' column to be no more than EOL.
+- [ ] need a way to show that eol is highlighted - both for selection and search
+- [ ] C-x-o to change panes - if point is nor visible in other pane, the visible cursor
+      doesn't move (ncurses), which is confusing.
 - [X] An indent can still get more than 8 spaces.  Maybe a higher-level check is needed.
 - [ ] fn-complete for a symlink-to-dir should add a '/'
 - [ ] Use the requested name rather than canonical name for UI as much as possible.
@@ -164,11 +168,14 @@ Module features
 
 ### ncurses
 
-- [ ] add general colour handling to display-ncurses
-      Allow different colour-maps per pane so full redraw
+- [X] add general colour handling to display-ncurses
+- [ ] add full list of colour names (to lib-colourmap)
+- [ ] if we exhaust colours or pairs, reset and make use lower color depth.
+- [ ] handle !can_change_colors better.
+- [ ] Allow different colour-maps per pane so full redraw
       happens when changing colour-map.  This makes images
       practical.
-- [ ] automatically ensure the fg color contrasts with bg, unless explicitly disabled.
+- [ ] automatically ensure the fg colour contrasts with bg, unless explicitly disabled.
       If bg is bright, reduce fg brightness.  If bg is dark, reduce saturation.
 - [ ] maybe borrow xsel code to get direct access to X selection
 - [ ] merge 'catpic' code to draw low-res images.

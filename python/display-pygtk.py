@@ -340,6 +340,10 @@ class EdDisplay(gtk.Window):
             fd.set_size(fd.get_size() * scale / 1000)
         return fd
 
+    def color_parse(self, c):
+        col = self.pane.call("colour:map", c, ret='str')
+        return gtk.gdk.color_parse(col)
+
     def get_colours(self, attrs):
         "Return a foreground and a background colour - background might be None"
         fg = None
@@ -365,7 +369,7 @@ class EdDisplay(gtk.Window):
 
         if fg:
             try:
-                c = gtk.gdk.color_parse(fg)
+                c = self.color_parse(fg)
             except:
                 c = gtk.gdk.color_parse("black")
             fgc = cmap.alloc_color(c)
@@ -374,7 +378,7 @@ class EdDisplay(gtk.Window):
 
         if bg:
             try:
-                c = gtk.gdk.color_parse(bg)
+                c = self.color_parse(bg)
             except:
                 c = gtk.gdk.color_parse("white")
             bgc = cmap.alloc_color(c)

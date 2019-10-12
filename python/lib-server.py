@@ -90,7 +90,7 @@ try:
                     path = msg[5:]
                     p = editor.call("attach-input", ret='focus')
                     p = p.call("attach-display-ncurses", path,
-                               "xterm", ret="focus")
+                               "xterm-256color", ret="focus")
                     self.disp = p
                     p = p.call("attach-messageline", ret='focus')
                     p = p.call("attach-global-keymap", ret='focus')
