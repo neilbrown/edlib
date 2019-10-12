@@ -23,6 +23,7 @@
 
 struct ws_info {
 	struct mark *mymark;
+	int mycol;
 };
 
 static void choose_next(struct pane *focus safe, struct mark *pm safe,
@@ -35,32 +36,56 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 		ws->mymark = m;
 	} else {
 		/* Need to look beyond the current location */
+		wint_t ch;
 		m = ws->mymark;
 		mark_to_mark(m, pm);
-		mark_next_pane(focus, m);
+		ch = mark_next_pane(focus, m);
+		if (ch == '\t')
+			ws->mycol = (ws->mycol | 7) + 1;
+		else
+			ws->mycol += 1;
 	}
 
 	while(1) {
 		wint_t ch = doc_following_pane(focus, m);
 		if (ch == WEOF || is_eol(ch))
 			break;
+		if (ws->mycol >= 80) {
+			attr_set_str(&m->attrs, "render:whitespace",
+				     "bg:red-80+50");
+			return;
+		}
 		if (ch == ' ' || ch == '\t') {
-			/* If only spaces/tabs until EOL, then RED, else keep looking */
+			/* If only spaces/tabs until EOL, then RED,
+			 * else keep looking
+			 */
 			int cnt = 0;
 			int rewind = 1000;
-			while ((ch = mark_next_pane(focus, m)) == ' ' || ch == '\t') {
-				if (ch == '\t' && cnt < rewind)
+			int rewindcol = 0;
+			int col = ws->mycol;
+			while ((ch = mark_next_pane(focus, m)) == ' ' ||
+			       ch == '\t') {
+				if (ch == '\t' && cnt < rewind) {
 					rewind = cnt;
+					rewindcol = col;
+				}
+				if (ch == '\t')
+					col = (ws->mycol|7)+1;
+				else
+					col += 1;
 				cnt += 1;
 			}
 			if (ch != WEOF)
 				mark_prev_pane(focus, m);
-			/* 'm' is just after last spc/tab. - ch is next char.
-			 * 'cnt' is the number of chars, including first, all spc or tab
-			 * rewind is distance from start where first tab seen.
+			/*
+			 * 'm' is just after last spc/tab.  - ch is next
+			 * char.  'cnt' is the number of chars, including first,
+			 * all spc or tab rewind is distance from start where
+			 * first tab seen.
 			 */
 			if (ch == WEOF || is_eol(ch)) {
-				struct mark *p = call_ret(mark, "doc:point", focus);
+				struct mark *p = call_ret(mark, "doc:point",
+							  focus);
 				if (p && mark_same(m, p))
 					ch = 'x';
 			}
@@ -68,25 +93,33 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 				while (cnt--)
 					mark_prev_pane(focus, m);
 				/* Set the first space/tab to red */
-				attr_set_str(&m->attrs, "render:whitespace", "bg:red");
+				attr_set_str(&m->attrs, "render:whitespace",
+					     "bg:red");
 				return;
 			}
-			if (rewind > cnt)
+			if (rewind > cnt) {
 				/* no tabs, don't check all the spaces again */
+				ws->mycol = col;
 				continue;
+			}
 
-			while (cnt-- > rewind)
+			while (cnt-- > rewind) {
 				mark_prev_pane(focus, m);
+			}
+			ws->mycol = rewindcol;
 
 			/* handle tab */
 			/* If previous is space, then RED, else YELLOW */
 			if (doc_prior_pane(focus, m) == ' ')
-				attr_set_str(&m->attrs, "render:whitespace", "bg:red-80");
+				attr_set_str(&m->attrs, "render:whitespace",
+					     "bg:red-80");
 			else
-				attr_set_str(&m->attrs, "render:whitespace", "bg:yellow-80+80");
+				attr_set_str(&m->attrs, "render:whitespace",
+					     "bg:yellow-80+80");
 			return;
 		}
 		mark_next_pane(focus, m);
+		ws->mycol++;
 	}
 	attr_set_str(&m->attrs, "render:whitespace", NULL);
 }
@@ -101,10 +134,12 @@ DEF_CMD(ws_attrs)
 		if (ws->mymark)
 			mark_free(ws->mymark);
 		ws->mymark = NULL;
+		ws->mycol = 0;
 		choose_next(ci->focus, ci->mark, ws);
 		return 0;
 	}
-	if (ci->mark == ws->mymark && strcmp(ci->str, "render:whitespace") == 0) {
+	if (ci->mark == ws->mymark &&
+	    strcmp(ci->str, "render:whitespace") == 0) {
 		char *s = strsave(ci->focus, ci->str2);
 		choose_next(ci->focus, ci->mark, ws);
 		return comm_call(ci->comm2, "attr:callback", ci->focus, 1,
@@ -142,7 +177,8 @@ DEF_CMD(whitespace_attach)
 	struct ws_info *ws = calloc(1, sizeof(*ws));
 
 	return comm_call(ci->comm2, "callback:attach",
-	                 pane_register(ci->focus, 0, &whitespace_handle.c, ws, NULL));
+			 pane_register(ci->focus, 0, &whitespace_handle.c, ws,
+				       NULL));
 }
 
 void edlib_init(struct pane *ed safe)
@@ -152,6 +188,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(ws_map, "map-attr", &ws_attrs);
 	key_add(ws_map, "Close", &ws_close);
 	key_add(ws_map, "Clone", &ws_clone);
-	call_comm("global-set-command", ed, &whitespace_attach, 0, NULL, "attach-whitespace");
+	call_comm("global-set-command", ed, &whitespace_attach,
+		  0, NULL, "attach-whitespace");
 }
 
