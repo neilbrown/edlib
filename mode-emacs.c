@@ -1919,6 +1919,25 @@ DEF_CMD(emacs_curs_pos)
 	return 1;
 }
 
+DEF_CMD(emacs_fill)
+{
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	struct mark *p = call_ret(mark, "doc:point", ci->focus);
+	struct pane *p2;
+
+	if (mk) {
+		/* Clear current highlight */
+		call("Notify:change", ci->focus, 0, p, NULL, 0, mk);
+		attr_set_int(&mk->attrs, "emacs:active", 0);
+	}
+	if (call("fill-paragraph", ci->focus, ci->num, p, NULL, 0, mk) == 0) {
+		p2 = call_ret(pane, "attach-textfill", ci->focus);
+		if (p2)
+			call("fill-paragraph", p2, ci->num, p, NULL, 0, mk);
+	}
+	return 1;
+}
+
 DEF_PFX_CMD(meta_cmd, "M-");
 DEF_PFX_CMD(cx_cmd, "emCX-");
 DEF_PFX_CMD(cx4_cmd, "emCX4-");
@@ -2020,6 +2039,8 @@ static void emacs_init(void)
 
 	key_add_prefix(m, "emQ-Chr-", &emacs_quote_insert);
 	key_add_prefix(m, "emQ-C-Chr-", &emacs_quote_insert);
+
+	key_add(m, "M-Chr-q", &emacs_fill);
 
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);

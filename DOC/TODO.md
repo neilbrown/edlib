@@ -41,6 +41,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] doc:replace with 2 marks should leave them at either end of insertion.
+- [ ] C-space, M-> doesn't highlight the selection
 - [ ] C-n causes 'target' column to be no more than EOL.
 - [ ] need a way to show that eol is highlighted - both for selection and search
 - [ ] C-x-o to change panes - if point is nor visible in other pane, the visible cursor
@@ -231,6 +233,7 @@ Module features
 
 ### completion
 
+- [ ] filename completion should work for earlier component of path.
 - [ ] case insensitive substring match for fn or doc completion?
 - [ ] The “complete” popup should be positioned above/below the file name,
       not over the top of it.
