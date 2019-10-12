@@ -26,7 +26,36 @@ class FillMode(edlib.Pane):
     def do_fill(self, key, focus, num, mark, mark2, **a):
         "handle:fill-paragraph"
         if not mark or not mark2:
-            return edlib.Enoarg
+            # find the paragraph: between two non-alphanum lines.
+            if not mark:
+                mark = mark2
+            if not mark:
+                mark = focus.call("doc:point", ret='mark')
+            if not mark:
+                return edlib.Enoarg
+            mark = mark.dup()
+            m = mark.dup()
+            focus.call("Move-EOL", -100, m)
+            try:
+                leng = focus.call("text-search", "^[^a-zA-Z0-9\n]*$", mark, m, 1, 1)
+                # leng is length + 1, we want +1 to kill '\n'
+                focus.call("Move-Char", leng, mark)
+            except edlib.commandfailed:
+                if focus.call("doc:step", 0, m, ret='char') != None:
+                    return Efail
+                mark.to_mark(m)
+            # mark is at start of para - not indented yet.
+            mark2 = m
+            mark2.to_mark(mark)
+            m = mark2.dup()
+            focus.call("Move-EOL", 100, m)
+            try:
+                lenf = focus.call("text-search", "^[^a-zA-Z0-9\n]*$", mark2, m, 1)
+                focus.call("Move-Char", -leng, mark2)
+            except edlib.commandfailed:
+                if focus.call("doc:step", 1, m, ret='char') != None:
+                    return Efail
+                mark2.to_mark(m)
 
         if num and num > 8:
             width = num
@@ -44,7 +73,6 @@ class FillMode(edlib.Pane):
         if len(lines) == 0:
             return 1
 
-        # all spaces
         plen = len(prefix)
         use_prefix = False
         if plen:
@@ -54,7 +82,7 @@ class FillMode(edlib.Pane):
                     use_prefix = True
                 p = len(l) - len(l.lstrip())
                 if p < plen and not first:
-                    plen = 0
+                    plen = p
                 first = False
         if prefix.lstrip() == '':
             use_prefix = False

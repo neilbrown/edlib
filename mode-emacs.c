@@ -1925,11 +1925,13 @@ DEF_CMD(emacs_fill)
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
 	struct pane *p2;
 
-	if (mk) {
+	if (mk && attr_find_int(mk->attrs, "emacs:active") >= 1) {
 		/* Clear current highlight */
 		call("Notify:change", ci->focus, 0, p, NULL, 0, mk);
 		attr_set_int(&mk->attrs, "emacs:active", 0);
-	}
+	} else
+		mk = NULL;
+
 	if (call("fill-paragraph", ci->focus, ci->num, p, NULL, 0, mk) == 0) {
 		p2 = call_ret(pane, "attach-textfill", ci->focus);
 		if (p2)
