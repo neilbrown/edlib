@@ -633,8 +633,11 @@ class events(edlib.Pane):
             return False
         try:
             edlib.time_start(edlib.TIME_READ)
-            comm2("callback", focus, fd)
+            rv = comm2("callback", focus, fd)
             edlib.time_stop(edlib.TIME_READ)
+            if rv is not None and rv < 0:
+                del self.events[ev]
+                return False
             return True
         except edlib.commandfailed:
             del self.events[ev]

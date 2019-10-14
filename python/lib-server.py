@@ -108,7 +108,7 @@ try:
                     self.sock.close()
                     self.sock = None
                     self.close()
-                    return 1
+                    return edlib.Efalse
                 self.sock.send("Unknown")
                 return 1
 
