@@ -166,7 +166,7 @@ DEF_CMD(text_search)
 	else
 		since_start = search_forward(ci->focus, m, ci->mark2, rxl, endmark);
 
-	if (since_start > 0)
+	if (since_start >= 0)
 		mark_to_mark(m, endmark);
 	mark_free(endmark);
 	free(rxl);

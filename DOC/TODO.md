@@ -14,6 +14,7 @@ Current priorities
       the length since a particular point.
       We then repeat the match process against the found string to get start
       and end points.
+      Or write a back-tracking matcher that records all groups in the stack
 - [X] lax search - single space when case insensitve matches multiple spaces/tabs/newlines
 - [ ] search-replace.
       This might just be an extension of the current search.  I would have
@@ -41,6 +42,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [X] regexp ^[^a-zA-Z0-9]*$ doesn't match properly.
 - [ ] doc:replace with 2 marks should leave them at either end of insertion.
 - [ ] C-space, M-> doesn't highlight the selection
 - [ ] C-n causes 'target' column to be no more than EOL.
@@ -251,6 +253,8 @@ Module features
 
 ### grep/make
 
+- [ ] Keep 'make' and 'grep' output separate.
+- [ ] If there is an error followed by some 'note:'s, goto the last note(?)
 - [ ] leave marks at every match as soon as possible
 - [ ] if two results are at the same location, ignore the second.
 - [ ] clarify and document the role of numeric args to git-grep
