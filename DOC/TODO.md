@@ -437,8 +437,8 @@ Module features
 - [ ] configuration: use only spaces for bracket-alignment indents - or tabs as well.
 - [ ] python-mode: when changing indent, make same change to the whole block.
       Not sure how to handle 'else:' which looks like the next block.
-- [ ] show-paren should use different colour if bracket doesn't match.
-- [ ] show-paren should work when next char is an 'open'
+- [X] show-paren should use different colour if bracket doesn't match.
+- [X] show-paren should work when next char is an 'open'
 - [ ] start of function should not get confused by comments, and should
       go to the real start.
 - [ ] re-indent statement - one auto-indent is reliable.
