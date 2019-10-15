@@ -219,18 +219,25 @@ class CModePane(edlib.Pane):
             m = point.dup()
             focus.call("doc:step", m, 0, 1)
             self.paren_end = m
-            m['render:paren'] = "close"
             m = point.dup()
             focus.call("Move-Expr", m, -1)
-            m['render:paren'] = "open"
             self.paren_start = m
+            c2 = focus.call("doc:step", m, 1, 0, ret = 'char')
+            if c2+c in "(){}[]":
+                self.paren_start['render:paren'] = "open"
+                self.paren_end['render:paren'] = "close"
+            else:
+                self.paren_start['render:paren-mismatch'] = "open"
+                self.paren_end['render:paren-mismatch'] = "close"
             focus.call("Notify:change", self.paren_start, point)
         return 0
 
     def handle_map_attr(self, key, focus, mark, str, comm2, **a):
         "handle:map-attr"
         if str == "render:paren" and (mark in [self.paren_start, self.paren_end]):
-            comm2("cb", focus, "bg:pink,bold", 1)
+            comm2("cb", focus, "bg:blue+50,bold", 1)
+        if str == "render:paren-mismatch" and (mark in [self.paren_start, self.paren_end]):
+            comm2("cb", focus, "bg:red+50,bold", 1)
 
 def c_mode_attach(key, focus, comm2, **a):
     p = CModePane(focus)
