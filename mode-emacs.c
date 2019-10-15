@@ -140,11 +140,17 @@ REDEF_CMD(emacs_move)
 	/* if Move-file, leave inactive mark behind */
 	if (strcmp(mv->type, "Move-File") == 0) {
 		struct mark *mk;
-		call("Move-to", ci->focus, 1, ci->mark);
 		mk = call_ret(mark2, "doc:point", ci->focus);
-
 		if (mk)
-			attr_set_int(&mk->attrs, "emacs:active", 0);
+			/* Don't change emacs:active */
+			mark_to_mark(mk, ci->mark);
+		else {
+			call("Move-to", ci->focus, 1, ci->mark);
+			mk = call_ret(mark2, "doc:point", ci->focus);
+
+			if (mk)
+				attr_set_int(&mk->attrs, "emacs:active", 0);
+		}
 	}
 
 	ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), ci->mark,

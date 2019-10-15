@@ -44,7 +44,7 @@ Bugs to be fixed
 
 - [X] regexp ^[^a-zA-Z0-9]*$ doesn't match properly.
 - [ ] doc:replace with 2 marks should leave them at either end of insertion.
-- [ ] C-space, M-> doesn't highlight the selection
+- [X] C-space, M-> doesn't highlight the selection
 - [ ] C-n causes 'target' column to be no more than EOL.
 - [ ] need a way to show that eol is highlighted - both for selection and search
 - [ ] C-x-o to change panes - if point is nor visible in other pane, the visible cursor
