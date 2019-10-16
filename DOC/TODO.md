@@ -4,6 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] Fix c/python indenting
 - [X] simplify/document rxl_advance interface, particularly 'restart'.
 - [X] \b for word-break - maybe provide a regexp set for 'is a word char'
 - [ ] \B for non-word-break.  This needs a change to how flags are handled.
@@ -24,12 +25,18 @@ Current priorities
       replace without moving forward.
       Also want an easy "undo" of the last changed.
       Changing the replace string during the process should be allowed too.
-- [ ] fill command / fill-mode
+- [X] fill command
 
     - need to choose a prefix of first line, and of subsequent lines.
     - possibly determine a suffix too - useful in comments.
     - alt-Q - reformat para
     - if there is a selection, that defines the para, else some sort of search.
+
+- [ ] fill-mode
+      - some way to select it (configuration?) and to set width
+      - on space or enter, fill just current line, but use same mech as fill command
+        to determine prefix
+      - highlight text beyond width, which will wrap when space/enter is pressed.
 
 - [ ] rename lib-renderline to lib-markup and create 'renderline' for a single
       line of render-lines.
@@ -766,3 +773,14 @@ I don't know where this will fit in yet.
 
 What needs to be configured?  How is that done?
 
+- fill mode and with
+- default make command, and dir to run in
+- preferred white-space options, and width
+
+I want different configs in different trees.
+Either the single config file identifies path, or we put
+one in the tree root.  Or both.
+
+So config must be based on path, and on file type.
+Maybe the config is processed whenever a file is loaded, and attributes
+are attached to the document.  Though global attrs should go on root.
