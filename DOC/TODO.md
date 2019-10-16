@@ -42,6 +42,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] allow rpt-num to be accessed from python
 - [ ] move-expr needs to understand sloshed quotes.
 - [X] regexp ^[^a-zA-Z0-9]*$ doesn't match properly.
 - [ ] doc:replace with 2 marks should leave them at either end of insertion.

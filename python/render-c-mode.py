@@ -275,6 +275,33 @@ class CModePane(edlib.Pane):
         if str == "render:paren-mismatch" and self.post_paren and (mark in self.post_paren):
             comm2("cb", focus, "bg:red+50,bold", 1)
 
+    def handle_para(self, key, focus, mark, num, **a):
+        "handle:Move-Paragraph"
+        # A "Paragraph" is a function, which starts with a line that has no
+        # indent, but does have a '('
+        backward = 1
+        if num > 0:
+             backward = 0
+
+        while num:
+            try:
+                focus.call("doc:step", mark, 1-backward, 1)
+                l = focus.call("text-search", mark, "^([a-zA-Z0-9].*\(|\()",
+                               0, backward)
+                if not backward and l > 0:
+                    while l > 1:
+                        focus.call("doc:step", mark, 0, 1)
+                        l -= 1
+            except:
+                break
+
+            if num > 0:
+                num -= 1
+            else:
+                num += 1
+        focus.damaged(edlib.DAMAGED_CURSOR)
+        return 1
+
 def c_mode_attach(key, focus, comm2, **a):
     p = CModePane(focus)
     p2 = p.call("attach-whitespace", ret='focus')
