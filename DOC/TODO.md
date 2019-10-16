@@ -42,6 +42,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] move-expr needs to understand sloshed quotes.
 - [X] regexp ^[^a-zA-Z0-9]*$ doesn't match properly.
 - [ ] doc:replace with 2 marks should leave them at either end of insertion.
 - [X] C-space, M-> doesn't highlight the selection

@@ -9,8 +9,9 @@
 # - it support a fill-paragraph function to reformat a paragraph to
 #   fit a given width.
 #
-# This first version only has limited fill-paragragh.
-# Two marks are provided and the text between them is re-filled.  Any
+# This version only has fill-paragragh.
+#
+# If two marks are provided and the text between them is re-filled.  Any
 # text between the first mark and the start of that line is used to supply
 # characters for a prefix.  Any characters in that prefix, and any white
 # space, are striped from the start of every other line.  If there is a
@@ -18,6 +19,12 @@
 # the reformatted paragraph.  if there is no second line, then prefix
 # provides is the prefix of the first line with all non-tabs replaced with
 # spaces.
+#
+# If only one mark is provided, a paragraph is found bounded by
+# lines that contain no alpha-numerics.  A prefix for the first line
+# is then chosen as the maximal set of non-alphanumerics non-quote
+# characters.
+
 
 import re
 
@@ -71,13 +78,17 @@ class FillMode(edlib.Pane):
             m = mark2.dup()
             focus.call("Move-EOL", 100, m)
             try:
-                lenf = focus.call("text-search", "^[^a-zA-Z0-9\n]*$",
+                leng = focus.call("text-search", "^[^a-zA-Z0-9\n]*$",
                                   mark2, m, 1)
                 focus.call("Move-Char", -leng, mark2)
             except edlib.commandfailed:
                 if focus.call("doc:step", 1, m, ret='char') != None:
                     return Efail
                 mark2.to_mark(m)
+
+            # Now choose a prefix, which is non-alphanum or quotes.
+            # Possibly open brackets should be included too?
+            focus.call("text-search", "[^a-zA-Z0-9'\"\n]*", mark)
 
         if num and num > 8:
             width = num
