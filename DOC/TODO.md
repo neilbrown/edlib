@@ -411,6 +411,7 @@ Module features
 
 ### C-mode
 
+- [ ] TAB should *always* delete preceding spaces.
 - [ ]  auto-indent enhancements
       
      -   after "return" de-indent

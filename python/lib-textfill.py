@@ -37,7 +37,8 @@ class FillMode(edlib.Pane):
             m = mark.dup()
             focus.call("Move-EOL", -100, m)
             try:
-                leng = focus.call("text-search", "^[^a-zA-Z0-9\n]*$", mark, m, 1, 1)
+                leng = focus.call("text-search", "^[^a-zA-Z0-9\n]*$",
+                                  mark, m, 1, 1)
                 # leng is length + 1, we want +1 to kill '\n'
                 focus.call("Move-Char", leng, mark)
             except edlib.commandfailed:
@@ -50,7 +51,8 @@ class FillMode(edlib.Pane):
             m = mark2.dup()
             focus.call("Move-EOL", 100, m)
             try:
-                lenf = focus.call("text-search", "^[^a-zA-Z0-9\n]*$", mark2, m, 1)
+                lenf = focus.call("text-search", "^[^a-zA-Z0-9\n]*$",
+                                  mark2, m, 1)
                 focus.call("Move-Char", -leng, mark2)
             except edlib.commandfailed:
                 if focus.call("doc:step", 1, m, ret='char') != None:
