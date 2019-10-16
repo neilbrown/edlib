@@ -140,11 +140,17 @@ REDEF_CMD(emacs_move)
 	/* if Move-file, leave inactive mark behind */
 	if (strcmp(mv->type, "Move-File") == 0) {
 		struct mark *mk;
-		call("Move-to", ci->focus, 1, ci->mark);
 		mk = call_ret(mark2, "doc:point", ci->focus);
-
 		if (mk)
-			attr_set_int(&mk->attrs, "emacs:active", 0);
+			/* Don't change emacs:active */
+			mark_to_mark(mk, ci->mark);
+		else {
+			call("Move-to", ci->focus, 1, ci->mark);
+			mk = call_ret(mark2, "doc:point", ci->focus);
+
+			if (mk)
+				attr_set_int(&mk->attrs, "emacs:active", 0);
+		}
 	}
 
 	ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), ci->mark,
@@ -1252,7 +1258,7 @@ DEF_CMD(emacs_search_highlight)
 		hi->patn = NULL;
 	hi->ci = ci->num2;
 
-	if (ci->mark && ci->num > 0 && ci->str) {
+	if (ci->mark && ci->num >= 0 && ci->str) {
 		m = vmark_new(ci->focus, hi->view, ci->home);
 		if (!m)
 			return Efail;
@@ -1261,8 +1267,8 @@ DEF_CMD(emacs_search_highlight)
 		call("Move-View-Pos", ci->focus, 0, m);
 		if (ci->mark2 &&
 		    (m = vmark_new(ci->focus, hi->view, ci->home)) != NULL) {
-		    	mark_to_mark(m, ci->mark2);
-		    	attr_set_int(&m->attrs, "render:search-end", 0);
+			mark_to_mark(m, ci->mark2);
+			attr_set_int(&m->attrs, "render:search-end", 0);
 		}
 	}
 	call("Notify:change", ci->focus);
@@ -1723,10 +1729,10 @@ DEF_CMD(emacs_hl_attrs)
 	}
 	if (strcmp(ci->str, "start-of-line") == 0 && ci->mark && hi->view >= 0) {
 		struct mark *m = vmark_at_or_before(ci->focus, ci->mark, hi->view, ci->home);
-		if (m && attr_find(m->attrs, "render:search"))
+		if (m && attr_find_int(m->attrs, "render:search") > 0)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
 			                 ci->mark, "fg:red,inverse", 20);
-		if (m && attr_find(m->attrs, "render:search2"))
+		if (m && attr_find_int(m->attrs, "render:search2") > 0)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
 			                 ci->mark, "fg:blue,inverse", 20);
 	}

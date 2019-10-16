@@ -5,8 +5,8 @@
 class CModePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
-        self.paren_start = None
-        self.paren_end = None
+        self.pre_paren = None
+        self.post_paren = None
         self.spaces = None   # is set to a number, use spaces, else TABs
         self.indent_colon = False
 
@@ -194,43 +194,86 @@ class CModePane(edlib.Pane):
 
     def handle_replace(self, key, focus, **a):
         "handle:Replace"
-        if self.paren_end:
-            focus.call("doc:step", self.paren_end, 1, 1)
-            focus.call("Notify:change", self.paren_start, self.paren_end)
-        self.paren_start = None
-        self.paren_end = None
+        if self.pre_paren:
+            focus.call("doc:step", self.pre_paren[1], 1, 1)
+            focus.call("Notify:change", self.pre_paren[0], self.pre_paren[1])
+        self.pre_paren = None
+        if self.post_paren:
+            focus.call("doc:step", self.post_paren[1], 1, 1)
+            focus.call("Notify:change", self.post_paren[0], self.post_paren[1])
+        self.post_paren = None
         return 0
 
     def handle_refresh(self, key, focus, **a):
         "handle:Refresh"
         point = focus.call("doc:point", ret = 'mark')
-        if self.paren_end:
+        skip_pre = False
+        skip_post = False
+        if self.pre_paren:
             # maybe marks are still OK
             m = point.dup()
-            if focus.call("doc:step", m, 0, 1, ret='char') and m == self.paren_end:
-                return 0
-            focus.call("doc:step", self.paren_end, 1, 1)
-            focus.call("Notify:change", self.paren_start, self.paren_end)
-            self.paren_end = None
-            self.paren_start = None
+            if focus.call("doc:step", m, 0, 1, ret='char') and m == self.pre_paren[1]:
+                skip_pre = True
+            else:
+                focus.call("doc:step", self.pre_paren[1], 1, 1)
+                focus.call("Notify:change", self.pre_paren[0], self.pre_paren[1])
+                self.pre_paren = None
 
-        c = focus.call("doc:step", point, 0, 0, ret = 'char')
-        if c and c in ')}]':
-            m = point.dup()
-            focus.call("doc:step", m, 0, 1)
-            self.paren_end = m
-            m['render:paren'] = "close"
-            m = point.dup()
-            focus.call("Move-Expr", m, -1)
-            m['render:paren'] = "open"
-            self.paren_start = m
-            focus.call("Notify:change", self.paren_start, point)
+        if self.post_paren:
+            # maybe marks are still OK
+            if point == self.post_paren[0]:
+                skip_post = True
+            else:
+                focus.call("doc:step", self.post_paren[1], 1, 1)
+                focus.call("Notify:change", self.post_paren[0], self.post_paren[1])
+                self.post_paren = None
+
+        if not skip_pre:
+            c = focus.call("doc:step", point, 0, 0, ret = 'char')
+            if c and c in ')}]':
+                m2 = point.dup()
+                focus.call("doc:step", m2, 0, 1)
+                m1 = point.dup()
+                focus.call("Move-Expr", m1, -1)
+                c2 = focus.call("doc:step", m1, 1, 0, ret = 'char')
+                if c2+c in "(){}[]":
+                    m1['render:paren'] = "open"
+                    m2['render:paren'] = "close"
+                else:
+                    m1['render:paren-mismatch'] = "open"
+                    m2['render:paren-mismatch'] = "close"
+                self.pre_paren = (m1,m2)
+                focus.call("Notify:change", m1, point)
+
+        if not skip_post:
+            c = focus.call("doc:step", point, 1, 0, ret = 'char')
+            if c and c in '({[':
+                m1 = point.dup()
+                m2 = point.dup()
+                focus.call("Move-Expr", m2, 1)
+                focus.call("Notify:change", point, m2)
+                focus.call("doc:step", m2, 0, 1)
+                c2 = focus.call("doc:step", m2, 1, 0, ret = 'char')
+                if c+c2 in "(){}[]":
+                    m1['render:paren'] = "open"
+                    m2['render:paren'] = "close"
+                else:
+                    m1['render:paren-mismatch'] = "open"
+                    m2['render:paren-mismatch'] = "close"
+                self.post_paren = (m1,m2)
+
         return 0
 
     def handle_map_attr(self, key, focus, mark, str, comm2, **a):
         "handle:map-attr"
-        if str == "render:paren" and (mark in [self.paren_start, self.paren_end]):
-            comm2("cb", focus, "bg:pink,bold", 1)
+        if str == "render:paren" and self.pre_paren and (mark in self.pre_paren):
+            comm2("cb", focus, "bg:blue+50,bold", 1)
+        if str == "render:paren" and self.post_paren and (mark in self.post_paren):
+            comm2("cb", focus, "bg:blue+50,bold", 1)
+        if str == "render:paren-mismatch" and self.pre_paren and (mark in self.pre_paren):
+            comm2("cb", focus, "bg:red+50,bold", 1)
+        if str == "render:paren-mismatch" and self.post_paren and (mark in self.post_paren):
+            comm2("cb", focus, "bg:red+50,bold", 1)
 
 def c_mode_attach(key, focus, comm2, **a):
     p = CModePane(focus)

@@ -1523,8 +1523,10 @@ int main(int argc, char *argv[])
 	while (len < 0) {
 		wchar_t wc;
 		used = mbrtowc(&wc, target+i, 5, &ps);
-		if (used <= 0)
+		if (used <= 0) {
+			len = rxl_advance(&st, WEOF, RXL_EOL);
 			break;
+		}
 		len = rxl_advance(&st, wc, 0);
 		i+= used;
 		ccnt+= 1;
