@@ -46,7 +46,6 @@ static inline int N2a(const struct cmd_info *ci safe)
 }
 
 REDEF_CMD(emacs_move);
-REDEF_CMD(emacs_function_move);
 REDEF_CMD(emacs_delete);
 REDEF_CMD(emacs_kill);
 REDEF_CMD(emacs_case);
@@ -95,9 +94,9 @@ static struct move_command {
 	{CMD(emacs_move), "Move-View-Large", -1, 0,
 	 "Prior", "M-Chr-v", NULL},
 
-	{CMD(emacs_function_move), "", -1, 0,
+	{CMD(emacs_move), "Move-Paragraph", -1, 0,
 	 "M-C-Chr-A", NULL, NULL},
-	{CMD(emacs_function_move), "", 1, 0,
+	{CMD(emacs_move), "Move-Paragraph", 1, 0,
 	 "M-C-Chr-E", NULL, NULL},
 
 	{CMD(emacs_delete), "Move-Char", 1, 0,
@@ -1756,56 +1755,6 @@ DEF_CMD(emacs_goto_line)
 	call("CountLines", ci->focus, ci->num, ci->mark, "goto:line");
 	call("Move-View-Pos", ci->focus, 0, ci->mark);
 	pane_damaged(ci->focus, DAMAGED_CURSOR);
-	return 1;
-}
-
-REDEF_CMD(emacs_function_move)
-{
-	/* Move to start of a function.
-	 * Currently that means to the beginning
-	 * on an expression which is at the
-	 * start of a line.
-	 */
-	struct pane *p = ci->focus;
-	int rpt = RPT_NUM(ci);
-	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
-
-	if (!ci->mark)
-		return Enoarg;
-
-	rpt *= mv->direction;
-	if (rpt > 0) {
-		/* To find end of function, we first move to the start,
-		 * then step forward whole functions.
-		 * to ensure we move forward, we skip forward one expr
-		 * before finding start of function.
-		 */
-		call("Move-Expr", p, 1, ci->mark);
-		rpt = -1;
-	}
-	while (rpt < 0) {
-		wint_t c;
-		if (call("Move-Expr", p, -1, ci->mark) == 2)
-			/* need to escape this expression */
-			if (call("Move-Expr", p, -1, ci->mark, NULL, 1) <= 0)
-				break;
-		c = doc_prior_pane(p, ci->mark);
-		if (c == WEOF)
-			break;
-		if (is_eol(c))
-			rpt += 1;
-	}
-	rpt = RPT_NUM(ci) * mv->direction;
-	while (rpt > 0) {
-		wint_t c;
-		if (call("Move-Expr", p, 1, ci->mark) <= 0)
-			break;
-		c = doc_following_pane(p, ci->mark);
-		if (c == WEOF)
-			break;
-		if (is_eol(c))
-			rpt -= 1;
-	}
 	return 1;
 }
 

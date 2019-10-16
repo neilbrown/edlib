@@ -343,6 +343,48 @@ DEF_CMD(doc_line)
 	return 1;
 }
 
+DEF_CMD(doc_para)
+{
+	/* Default paragraph move - find blank line - two or more
+	 * is_eol() chars.
+	 * If moving forward, skip over all those chars.
+	 * If moving backward, stop before the first one.
+	 */
+	struct pane *p = ci->focus;
+	struct doc_data *dd = ci->home->data;
+	struct mark *m = ci->mark;
+	int rpt = RPT_NUM(ci);
+	wint_t ch = 0;
+	int nlcnt = 0;
+	int forwards = rpt > 0 ? 1 : 0;
+
+	if (!m)
+		m = dd->point;
+
+	while (!forwards && is_eol(doc_prior_pane(p, m)))
+		mark_prev_pane(p, m);
+
+	while (rpt && ch != WEOF) {
+		nlcnt = 0;
+		while (ch != WEOF) {
+			ch = mark_step_pane(p, m, forwards, 1);
+			if (is_eol(ch))
+				nlcnt += 1;
+			else if (nlcnt < 2)
+				nlcnt = 0;
+			else {
+				mark_step_pane(p, m, !forwards, 1);
+				break;
+			}
+		}
+		rpt += forwards ? -1 : 1;
+	}
+
+	while (!forwards && nlcnt-- > 0)
+		mark_next_pane(p, m);
+	return 1;
+}
+
 DEF_CMD(doc_page)
 {
 	struct pane *p = ci->focus;
@@ -988,6 +1030,7 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd, "Move-EOL", &doc_eol);
 	key_add(doc_handle_cmd, "Move-File", &doc_file);
 	key_add(doc_handle_cmd, "Move-Line", &doc_line);
+	key_add(doc_handle_cmd, "Move-Paragraph", &doc_para);
 	key_add(doc_handle_cmd, "Move-View-Large", &doc_page);
 	key_add(doc_handle_cmd, "doc:point", &doc_get_point);
 
