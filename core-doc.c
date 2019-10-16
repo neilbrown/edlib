@@ -147,10 +147,23 @@ DEF_CMD(doc_word)
 	return 1;
 }
 
+static int check_slosh(struct pane *p safe, struct mark *m safe)
+{
+	wint_t ch;
+	/* Check is preceded by exactly 1 '\' */
+	if (doc_prior_pane(p, m) != '\\')
+		return 0;
+	mark_step_pane(p, m, 0, 1);
+	ch = doc_prior_pane(p, m);
+	mark_step_pane(p, m, 1, 1);
+	return ch != '\\';
+}
+
 DEF_CMD(doc_expr)
 {
 	/* doc_expr skips an 'expression' which is the same as a word
-	 * unless we see open '({[' or close ')}]' or quote ('").
+	 * unless we see open '({[' or close ')}]' or quote (\'\").
+	 * We ignore quotes when preceeded by a single '\'
 	 * If we see close going forward, or open going backward, we stop.
 	 * If we see open going forward or close going backward, or quote,
 	 * we skip to matching close/open/quote, allowing for nested
@@ -204,26 +217,55 @@ DEF_CMD(doc_expr)
 			if (enter_leave && dir)
 				/* Just entered the expression */
 				rpt -= 1;
-			else while (depth > 0 && (wi = mark_step_pane(f, m, dir, 1)) != WEOF) {
+			else while (depth > 0 &&
+				    (wi = mark_step_pane(f, m, dir, 1)) != WEOF) {
 				if (q) {
-					if (wi == q || is_eol(wi))
+					if (dir)
+						mark_step_pane(f, m, 0, 1);
+					if ((!check_slosh(f, m) && wi == q) ||
+					    is_eol(wi))
 						q = 0;
+					if (dir)
+						mark_step_pane(f, m, 1, 1);
 				} else if (strchr(open, wi))
 					depth += 1;
 				else if (strchr(close, wi))
 					depth -= 1;
-				else if (wi == '"' || wi == '\'')
-					q = wi;
+				else if (wi == '"' || wi == '\'') {
+					if (dir)
+						mark_step_pane(f, m, 0, 1);
+					if (!check_slosh(f, m))
+						q = wi;
+					if (dir)
+						mark_step_pane(f, m, 1, 1);
+				}
 			}
 		} else if (wi == '"' || wi == '\'') {
 			/* skip quoted or to EOL */
 			wint_t q = wi;
-			mark_step_pane(f, m, dir, 1);
-			while ((wi = mark_step_pane(f, m, dir, 0)) != WEOF &&
-			       !is_eol(wi) && wi != q)
+			int slosh = 0;
+			if (dir) {
+				slosh = check_slosh(f, m);
 				mark_step_pane(f, m, dir, 1);
-			if (wi == q)
+			} else {
 				mark_step_pane(f, m, dir, 1);
+				slosh = check_slosh(f, m);
+			}
+			if (!slosh) {
+				while (((wi = mark_step_pane(f, m, dir, 0))
+					!= WEOF) &&
+				       !is_eol(wi)) {
+					if (dir) {
+						slosh = check_slosh(f, m);
+						mark_step_pane(f, m, dir, 1);
+					} else {
+						mark_step_pane(f, m, dir, 1);
+						slosh = check_slosh(f, m);
+					}
+					if (wi == q && !slosh)
+						break;
+				}
+			}
 		} else while (iswalnum(mark_step_pane(f, m, dir, 0)))
 			mark_step_pane(f, m, dir, 1);
 
