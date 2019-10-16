@@ -26,7 +26,7 @@ Current priorities
       Also want an easy "undo" of the last changed.
       Changing the replace string during the process should be allowed too.
 - [X] fill command
-
+    - highlight any chars beyond the fill-column
     - need to choose a prefix of first line, and of subsequent lines.
     - possibly determine a suffix too - useful in comments.
     - alt-Q - reformat para
@@ -244,6 +244,7 @@ Module features
 
 ### completion
 
+- [ ] mouse selection should work in completion pane
 - [ ] filename completion should work for earlier component of path.
 - [ ] case insensitive substring match for fn or doc completion?
 - [ ] The “complete” popup should be positioned above/below the file name,
@@ -461,7 +462,7 @@ Module features
 
 ### white-space
 
-- [ ] support highlight of long lines
+- [X] support highlight of long lines
 - [ ] support highlight of spaces-for-indent
 - [ ] support highlight of tabs-for-indent
 - [ ] make set of highlights, and colors, configurable
