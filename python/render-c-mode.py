@@ -64,11 +64,22 @@ class CModePane(edlib.Pane):
         # - if we do and chosen indent has no extra, add one indent level
         m = mark.dup()
         c = focus.call("doc:step", 0, 0, m, ret="char")
+        prevc = c
         while c and c in " \t":
             focus.call("doc:step", 0, 1, m)
             c = focus.call("doc:step", 0, 0, m, ret="char")
         if not (c is None or c == "\n"):
-            # not at start of line, just fall through
+            # not at start of line, maybe convert preceding spaces to tabs
+            if prevc != ' ':
+                return 0
+            m = mark.dup()
+            len = 0
+            while focus.call("doc:step", 0, 0, m, ret='char') == ' ':
+                len += 1
+                focus.call("doc:step", 0, 1, m)
+            new = "\t" * (len / 8)
+            focus.call("Replace", 1, m, mark, new)
+            # fall through it insert a new tab
             return 0
         # m at start-of-line, move mark (point) to first non-white-space
         c = focus.call("doc:step", 1, 0, mark, ret="char")
