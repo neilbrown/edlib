@@ -1840,6 +1840,25 @@ DEF_CMD(emacs_release)
 	return 1;
 }
 
+DEF_CMD(emacs_paste)
+{
+	char *str = call_ret(strsave, "copy:get", ci->focus);
+
+	call("Message", ci->focus, 0, NULL, "str");
+
+	call("Move-CursorXY", ci->focus,
+	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
+
+	if (!str || !*str)
+		return 1;
+
+	call("Replace", ci->focus, 0, NULL, str, 1);
+
+	pane_focus(ci->focus);
+
+	return 1;
+}
+
 DEF_CMD(emacs_readonly)
 {
 	char *ro;
@@ -2020,6 +2039,7 @@ static void emacs_init(void)
 	key_add(m, "Click-1", &emacs_click);
 	key_add(m, "Press-1", &emacs_press);
 	key_add(m, "Release-1", &emacs_release);
+	key_add(m, "Click-2", &emacs_paste);
 
 	emacs_map = m;
 
