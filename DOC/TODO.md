@@ -6,7 +6,7 @@ Current priorities
 
 - [X] message line timed updates - no change for 7 seconds, always revert after 30 seconds
 - [X] copy-paste with mouse
-- [ ] select buffer to not accept a non-existant buffer
+- [X] select buffer to not accept a non-existant buffer
 - [ ] Fix c/python indenting
 - [X] simplify/document rxl_advance interface, particularly 'restart'.
 - [X] \b for word-break - maybe provide a regexp set for 'is a word char'

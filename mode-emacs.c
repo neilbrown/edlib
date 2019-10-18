@@ -669,10 +669,15 @@ DEF_CMD(find_complete)
 DEF_CMD(find_done)
 {
 	int ret;
-	char *str = call_ret(str, "doc:get-str", ci->focus);
+	char *type = ci->home->data;
+	char *str = call_ret(strsave, "doc:get-str", ci->focus);
 
+	if (strcmp(type, "doc") == 0 && str && str[0] &&
+	    call_ret(pane, "docs:byname", ci->focus, 0, NULL, str) == NULL) {
+		call("Message", ci->focus, 0, NULL, "Document not found");
+		return 1;
+	}
 	ret = call("popup:close", ci->focus, 0, NULL, str);
-	free(str);
 	return ret;
 }
 
