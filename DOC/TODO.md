@@ -8,6 +8,8 @@ Current priorities
 - [X] copy-paste with mouse
 - [X] select buffer to not accept a non-existant buffer
 - [ ] Fix c/python indenting
+- [ ] search and status if file-edit popup
+- [ ] fix undo positioning of pointer and grouping of edits
 - [X] simplify/document rxl_advance interface, particularly 'restart'.
 - [X] \b for word-break - maybe provide a regexp set for 'is a word char'
 - [ ] \B for non-word-break.  This needs a change to how flags are handled.
@@ -162,7 +164,7 @@ Module features
 
 ### emacs
 
-- [ ] entering an unknown name to find-document should either create a doc, or
+- [X] entering an unknown name to find-document should either create a doc, or
       give an error, or something less silent
 - [ ] show status line in file-edit popup
 - [ ] invent a way to reserve 'extra' values for command sets
@@ -178,7 +180,7 @@ Module features
       to the file I loaded from.
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 - [ ] compare two panes somehow
-- [ ] copy/paste with mouse
+- [X] copy/paste with mouse
 - [ ] pipe doc or selection to a command, optionally capture to replace with output.
 - [ ] if typing when selection active, replace selection with new text
 
