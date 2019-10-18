@@ -22,6 +22,7 @@ struct mlinfo {
 	int height; /* height of line */
 	int ascent; /* how far down to baseline */
 	int hidden;
+	time_t last_message; /* message should stay for at least 10 seconds */
 };
 static struct pane *do_messageline_attach(struct pane *p);
 static struct map *messageline_map, *messageline_line_map;
@@ -63,6 +64,7 @@ DEF_CMD(messageline_msg)
 		}
 		free(mli->message);
 		mli->message = strdup(ci->str);
+		time(&mli->last_message);
 		pane_damaged(mli->line, DAMAGED_CONTENT);
 	}
 	return 0; /* allow other handlers */
@@ -78,6 +80,7 @@ DEF_CMD(messageline_abort)
 	}
 	free(mli->message);
 	mli->message = strdup("ABORTED");
+	time(&mli->last_message);
 	pane_damaged(mli->line, DAMAGED_CONTENT);
 	return 0;
 }
@@ -124,7 +127,7 @@ DEF_CMD(messageline_notify)
 	/* Keystroke notification clears the message line */
 	struct mlinfo *mli = ci->home->data;
 
-	if (mli->message) {
+	if (mli->message && time(NULL) >= mli->last_message + 7) {
 		free(mli->message);
 		mli->message = NULL;
 		pane_drop_notifiers(ci->home, "Notify:Keystroke");
@@ -139,6 +142,12 @@ DEF_CMD(messageline_line_refresh)
 	struct mlinfo *mli = ci->home->data;
 
 	call("pane-clear", mli->line, 0, NULL, "bg:white");
+	if (mli->message && time(NULL) >= mli->last_message + 30) {
+		free(mli->message);
+		mli->message = NULL;
+		pane_drop_notifiers(ci->home, "Notify:Keystroke");
+		pane_drop_notifiers(ci->home, "Notify:Mouse-event");
+	}
 	if (mli->message)
 		pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
 			 0, 0 + mli->ascent);
