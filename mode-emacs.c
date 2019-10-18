@@ -132,13 +132,13 @@ REDEF_CMD(emacs_move)
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 	struct pane *cursor_pane = ci->focus;
 	int ret = 0;
+	struct mark *mk;
 
 	if (!ci->mark)
 		return 0;
 
 	/* if Move-file, leave inactive mark behind */
 	if (strcmp(mv->type, "Move-File") == 0) {
-		struct mark *mk;
 		mk = call_ret(mark2, "doc:point", ci->focus);
 		if (mk)
 			/* Don't change emacs:active */
@@ -158,7 +158,15 @@ REDEF_CMD(emacs_move)
 		return 0;
 
 	if (strcmp(mv->type, "Move-View-Large") == 0)
-		attr_set_int(&cursor_pane->attrs, "emacs-repoint", mv->direction*2);
+		attr_set_int(&cursor_pane->attrs, "emacs-repoint",
+			     mv->direction*2);
+
+	mk = call_ret(mark2, "doc:point", ci->focus);
+	if (mk && attr_find_int(mk->attrs, "emacs:active") == 2) {
+		/* Transient highlight - discard it */
+		attr_set_int(&mk->attrs, "emacs:active", 0);
+		call("Notify:change", ci->focus, 0, NULL, NULL, 0, mk);
+	}
 
 	return ret;
 }
@@ -1819,8 +1827,15 @@ DEF_CMD(emacs_release)
 	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
 
 	if (mk && p && !mark_same(mk, p)) {
-		attr_set_int(&mk->attrs, "emacs:active", 1);
+		char *str;
+
+		attr_set_int(&mk->attrs, "emacs:active", 2);
 		call("Notify:change", ci->focus, 0, p, NULL, 0, mk);
+		str = call_ret(strsave, "doc:get-str", ci->focus,
+			       0, p, NULL,
+			       0, mk);
+		if (str && *str)
+			call("copy:save", ci->focus, 0, NULL, str, 1);
 	}
 	return 1;
 }
