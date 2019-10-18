@@ -58,7 +58,7 @@ class EdDisplay(gtk.Window):
         self.have_clipboard = True
 
     def request_clip(self, sel, seldata, info, data):
-        s = self.pane.call("copy:get", 0, ret='str')
+        s = self.pane.parent.call("copy:get", 0, ret='str')
         if not s:
             s = ""
         seldata.set_text(s)
