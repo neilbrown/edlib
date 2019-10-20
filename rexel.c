@@ -1394,6 +1394,9 @@ static struct test {
 } tests[] = {
 	{ "abc", "the abc", 0, 4, 3},
 	{ "a*", " aaaaac", 0, 1,  5},
+	// Search for start of a C function: non-label at start of line
+	{ "^([^ a-zA-Z0-9#]|[\\A\\a\n_]+[\\s]*[^: a-zA-Z0-9_])", "hello:  ",
+	 0, -1},
 };
 static void run_tests()
 {
