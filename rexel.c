@@ -1261,6 +1261,7 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe)
 	int len = RXL_SETSTART(rxl) - rxl;
 	int i;
 
+	memset(st, 0, sizeof(*st));
 	st->rxl = rxl;
 	st->link[0] = malloc(len * sizeof(unsigned short) * 4);
 	st->link[1] = st->link[0] + len;
@@ -1459,10 +1460,11 @@ int main(int argc, char *argv[])
 	int verbatim = 0;
 	int longest = 0;
 	int opt;
+	int trace = 0;
 	mbstate_t ps = {};
 	char *patn, *target;
 
-	while ((opt = getopt(argc, argv, "ivlTf")) > 0)
+	while ((opt = getopt(argc, argv, "itvlTf")) > 0)
 		switch (opt) {
 		case 'f':
 			use_file = 1; break;
@@ -1472,12 +1474,16 @@ int main(int argc, char *argv[])
 			verbatim = 1; break;
 		case 'l':
 			longest = 1; break;
+		case 't':
+			trace = 1; break;
 		case 'T':
 			run_tests();
 			printf("All tests passed successfully\n");
 			exit(0);
 		default:
-			fprintf(stderr, "Usage: rexel -ivl pattern target\n   or: rexel -T\n");
+			fprintf(stderr, "Usage: rexel -itvl pattern target\n");
+			fprintf(stderr, "     : rexel -itvl -f pattern file\n");
+			fprintf(stderr, "     : rexel -T\n");
 			exit(1);
 		}
 
@@ -1514,9 +1520,7 @@ int main(int argc, char *argv[])
 	rxl_print(rxl);
 
 	setup_match(&st, rxl);
-	#ifdef DEBUG
-	st.trace = 0;
-	#endif
+	st.trace = trace;
 	i = 0;
 	len = -1;
 	rxl_advance(&st, WEOF, RXL_SOL);
