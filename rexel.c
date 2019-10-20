@@ -290,6 +290,18 @@ static int set_match(struct match_state *st safe, unsigned short addr, wchar_t c
 		 */
 		lo = 0; /* Invar: No entry before lo is greater than target */
 		hi = len; /* Invar: Every entry at or after hi is greater than target */
+#ifdef DEBUG
+		/* Sanity check - array must be sorted */
+		for (lo = 1; lo < len; lo++)
+			if (set[lo-1] >= set[lo]) {
+				printf("Set %d, subset %d not ordered at %u\n",
+				       addr, set - RXL_SETSTART(st->rxl) - addr,
+				       lo);
+				exit(1);
+			}
+#endif
+
+
 		while (lo < hi) {
 			int mid = (lo + hi) / 2;
 			if (set[mid] > target)
