@@ -13,8 +13,9 @@ TODO:
  - If have decision points, match should record them in allocated space
  - Follow a decision path to extract substrings for particular () pair.
  - \ lower upper alpha space nonSpace digit wordBoundary...
- - *? lazy: is that possible?  This is only meaningful when collecting the match.
-    Maybe we can compare bit-sequences and prefer forward rather than backward.
+ - *? lazy: is that possible?  This is only meaningful when collecting the
+    match.  Maybe we can compare bit-sequences and prefer forward rather
+    than backward.
  - (?| like in perl
  - back references:  need to know what references to expect, and collect them
    (start,len) as we go.
@@ -27,33 +28,35 @@ TODO:
  * a single character at a time.  When a match is found, the
  * length of that match is reported.
  *
- * Compiled form of a regex is an array of 16 bit unsigned numbers called rexels,
- * or Regular EXpression ELements.
+ * Compiled form of a regex is an array of 16 bit unsigned numbers called
+ * rexels, or Regular EXpression ELements.
  * This involves some cheating as wctype_t (unsigned long int) values
  * are stored in 16 bits.
  * This array is comprised of a "regexp" section follow by some a "set"
  * section.
  * The first entry in the regex section is the size of that section (including
- * the length).  Adding this size to the start gives the start of the "set" section.
- * The top bit of the size has a special meaning:
+ * the length).  Adding this size to the start gives the start of the
+ * "set" section.  The top bit of the size has a special meaning:
  * 0x8000 means that the match ignores case
  *
- * The "set" section contains some "sets" each of which contains 1 or more subsections
- * followed by a "zero".  Each subsection starts with its size.  The first section
- * can have size zero, others cannot (as another zero marks the end of the "set").
+ * The "set" section contains some "sets" each of which contains 1 or
+ * more subsections followed by a "zero".  Each subsection starts with
+ * its size.  The first section can have size zero, others cannot (as
+ * another zero marks the end of the "set").
  * The first subsection of a set is a list of "character classes".
- * An internal mapping is created from used character classes (like "digit" and "lower"
- * etc) to small numbers.  If a set should match a given character class, the small
- * number is stored in this subsection  If a set should *not* match, then
- * the small number is added with the msb set.
+ * An internal mapping is created from used character classes (like
+ * "digit" and "lower" etc) to small numbers.  If a set should match a
+ * given character class, the small number is stored in this subsection
+ * If a set should *not* match, then the small number is added with the
+ * msb set.
  *
- * Subsequent subsection contain a general character-set each for a single
- * unicode plane.  The top six bits of the first entry is the plane number,
- * the remaining bits are the size.
- * After this are "size" 16bit chars in sorted order. The values in even slots
- * are in the set, values in odd slots are not. Value not in any slot are treated
- * like the largest value less than it which does have a slot.
- * So iff a search for "largest entry nor larger than" finds an even slot, the
+ * Subsequent subsection contain a general character-set each for a
+ * single unicode plane.  The top six bits of the first entry is the
+ * plane number, the remaining bits are the size.  After this are "size"
+ * 16bit chars in sorted order.  The values in even slots are in the
+ * set, values in odd slots are not.  Value not in any slot are treated
+ * like the largest value less than it which does have a slot.  So iff a
+ * search for "largest entry nor larger than" finds an even slot, the
  * the targe is in the set.
 
  * The rexels in the "regexp" section come in 4 groups.
@@ -114,8 +117,9 @@ TODO:
  *    special meaning from that character.  This does not apply inside []
  *    as those characters have no special meaning, or a different meaning there.
  * - '\C', where 'C' is not in that list is an error except for those used for
- *    some special character classes.  Those classes which are not "everything except"
- *    are permitted equally inside character sets ([]).  The classes are:
+ *    some special character classes.  Those classes which are not
+ *    "everything except" are permitted equally inside character sets ([]).
+ *    The classes are:
  *    \d a digit
  *    \p a punctuation character
  *    \s a spacing character
@@ -235,7 +239,8 @@ static int do_link(struct match_state *st safe, int pos, int dest, int len)
 	return dest;
 }
 
-static int set_match(struct match_state *st safe, unsigned short addr, wchar_t ch)
+static int set_match(struct match_state *st safe, unsigned short addr,
+		     wchar_t ch)
 {
 	unsigned short *set safe = RXL_SETSTART(st->rxl) + addr;
 	wchar_t uch = ch, lch = ch;
@@ -291,7 +296,8 @@ static int set_match(struct match_state *st safe, unsigned short addr, wchar_t c
 		 * than target.
 		 */
 		lo = 0; /* Invar: No entry before lo is greater than target */
-		hi = len; /* Invar: Every entry at or after hi is greater than target */
+		hi = len; /* Invar: Every entry at or after hi is greater
+			   * than target */
 #ifdef DEBUG
 		/* Sanity check - array must be sorted */
 		for (lo = 1; lo < len; lo++)
@@ -302,7 +308,6 @@ static int set_match(struct match_state *st safe, unsigned short addr, wchar_t c
 				exit(1);
 			}
 #endif
-
 
 		while (lo < hi) {
 			int mid = (lo + hi) / 2;
@@ -417,7 +422,8 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		if (flag)
 			printf("Flag: %x\n", flag);
 		else
-			printf("Match %lc(%x)\n", ch >= ' ' && ch < ' ' ? '?' : ch , ch);
+			printf("Match %lc(%x)\n",
+			       ch >= ' ' && ch < ' ' ? '?' : ch , ch);
 
 		/* Now check the linkage is correct.  The chain should lead
 		 * to 0 without seeing any 'NO_LINK' or any ISFORK, and
@@ -621,7 +627,9 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 		 * if we add a plane.  Each plane needs an extra slot
 		 * if the set is inverted.
 		 */
-		for (p = (start & 0x1F0000)>>16; p <= (end & 0x1F0000)>>16 ; p++) {
+		for (p = (start & 0x1F0000)>>16;
+		     p <= (end & 0x1F0000)>>16 ;
+		     p++) {
 			if (!((*planes) & (1 << p))) {
 				*planes |= 1 << p;
 				st->len += 1;
@@ -747,9 +755,11 @@ static int add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 	if (!st->nocase ||
 	    !iswalpha(start) || !iswalpha(end))
 		return __add_range(st, start, end, plane, planes, newplane);
-	if (__add_range(st, towlower(start), towlower(end), plane, planes, newplane) < 0)
+	if (__add_range(st, towlower(start), towlower(end),
+			plane, planes, newplane) < 0)
 		return -1;
-	return __add_range(st, towupper(start), towupper(end), plane, planes, newplane);
+	return __add_range(st, towupper(start), towupper(end),
+			   plane, planes, newplane);
 }
 
 static void add_class(struct parse_state *st safe, int plane, wctype_t cls)
@@ -883,8 +893,8 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 				l |= 0x8000;
 			st->sets[st->set] = l;
 		} else {
-			/* We have a set, not empty.  Store size and leading zero
-			 * if inverted */
+			/* We have a set, not empty.  Store size and
+			 * leading zero if inverted */
 			unsigned short l = st->len;
 			if (st->invert) {
 				st->len += 1;
@@ -953,9 +963,11 @@ static int cvt_hex(char *s safe, int len)
 	return rv;
 }
 
-static unsigned short  add_class_set(struct parse_state *st safe, char *cls safe, int in)
+static unsigned short  add_class_set(struct parse_state *st safe,
+				     char *cls safe, int in)
 {
-	if (!st->rxl /* FIXME redundant, rxl and sets are set at same time */|| !st->sets) {
+	if (!st->rxl /* FIXME redundant, rxl and sets are set at same time */
+	    || !st->sets) {
 		st->set += 3;
 		return REC_SET;
 	}
@@ -1037,7 +1049,8 @@ static int parse_atom(struct parse_state *st safe)
 		st->patn++;
 		ch = *st->patn;
 		switch (ch) {
-			/* These just fall through and are interpreted literally */
+			/* These just fall through and are interpreted
+			 * literally */
 		case '^':
 		case '.':
 		case '[':
@@ -1138,7 +1151,8 @@ static int parse_piece(struct parse_state *st safe)
 		if (st->rxl)
 			st->rxl[start] = REC_FORK | st->next;
 		return 1;
-	case '{':/* Need a number, maybe a comma, if no maybe a number, then } */
+	case '{':/* Need a number, maybe a comma, if not maybe a number,
+		  * then } */
 		min = strtoul(st->patn, &ep, 10);
 		if (min > 256 || !ep)
 			return 0;
@@ -1155,8 +1169,8 @@ static int parse_piece(struct parse_state *st safe)
 		if (*ep != '}')
 			return 0;
 		st->patn = ep+1;
-		/* Atom need to be repeated min times, and maybe as many as 'max',
-		 * or indefinitely if max < 0
+		/* Atom need to be repeated min times, and maybe as many
+		 * as 'max', or indefinitely if max < 0
 		 */
 		while (min > 1) {
 			/* Make a duplicate */
@@ -1522,7 +1536,9 @@ int main(int argc, char *argv[])
 		}
 
 	if (optind + 2 != argc) {
-		fprintf(stderr, "Usage: rexel -ivl pattern target\n   or: rexel -T\n");
+		fprintf(stderr,
+			"Usage: rexel -ivl pattern target\n"
+			"   or: rexel -T\n");
 		exit(1);
 	}
 	patn = argv[optind];
