@@ -122,7 +122,7 @@ DEF_CMD(popup_child_closed)
 DEF_CMD(popup_style)
 {
 	struct popup_info *ppi = ci->home->data;
-	char border[5];
+	char border[6];
 	int i, j;;
 
 	if (!ci->str)
@@ -134,6 +134,9 @@ DEF_CMD(popup_style)
 		if (strchr(ppi->style, "TLBR"[i]) == NULL)
 			border[j++] = "TLBR"[i];
 	}
+	if (strchr(ppi->style, 's'))
+		/* Force a status line */
+		border[j++] = 's';
 	border[j] = 0;
 	attr_set_str(&ci->home->attrs, "Popup", "true");
 	attr_set_str(&ci->home->attrs, "borders", border);
@@ -248,7 +251,7 @@ DEF_CMD(popup_attach)
 	struct pane *root, *p;
 	struct popup_info *ppi;
 	char *style = ci->str;
-	char border[5];
+	char border[6];
 	int i, j;
 	int z;
 
@@ -282,6 +285,9 @@ DEF_CMD(popup_attach)
 		if (strchr(style, "TLBR"[i]) == NULL)
 			border[j++] = "TLBR"[i];
 	}
+	if (strchr(style, 's'))
+		/* Force a status line */
+		border[j++] = 's';
 	border[j] = 0;
 	attr_set_str(&p->attrs, "Popup", "true");
 	attr_set_str(&p->attrs, "borders", border);

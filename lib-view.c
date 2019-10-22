@@ -39,6 +39,7 @@ enum {
 	BORDER_RIGHT	= 2,
 	BORDER_TOP	= 4,
 	BORDER_BOT	= 8,
+	BORDER_STATUS	= 16, // override
 };
 
 static struct map *view_map safe;
@@ -229,7 +230,8 @@ DEF_CMD(view_refresh)
 			one_char(p, "═", "inverse", i,
 				  p->h-vd->border_height+vd->ascent);
 
-		if (!(vd->border & BORDER_TOP)) {
+		if (!(vd->border & BORDER_TOP) ||
+		    (vd->border & BORDER_STATUS)) {
 			one_char(p, status, "inverse",
 				 4*vd->border_width,
 				 p->h-vd->border_height + vd->ascent);
@@ -395,6 +397,7 @@ static int calc_border(struct pane *p safe)
 	if (strchr(borderstr, 'B')) borders |= BORDER_BOT;
 	if (strchr(borderstr, 'L')) borders |= BORDER_LEFT;
 	if (strchr(borderstr, 'R')) borders |= BORDER_RIGHT;
+	if (strchr(borderstr, 's')) borders |= BORDER_STATUS;
 	return borders;
 }
 
@@ -402,7 +405,8 @@ DEF_CMD(view_attach)
 {
 	int borders = calc_border(ci->focus);
 
-	return comm_call(ci->comm2, "callback:attach", do_view_attach(ci->focus, borders));
+	return comm_call(ci->comm2, "callback:attach",
+			 do_view_attach(ci->focus, borders));
 }
 
 DEF_CMD(view_click)
