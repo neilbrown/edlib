@@ -1012,13 +1012,15 @@ static int parse_atom(struct parse_state *st safe)
 	}
 	if (*st->patn == '[')
 		return parse_set(st);
-	if (st->patn[0] == ' ' && st->patn[1] != ' ' && st->patn[1] != '\t' &&
+	if (st->nocase &&
+	    st->patn[0] == ' ' && st->patn[1] != ' ' && st->patn[1] != '\t' &&
 	    (st->next == 1 || (st->patn[-1] != ' ' && st->patn[-1] != '\t'))) {
 		add_cmd(st, REC_LAXSPC);
 		st->patn++;
 		return 1;
 	}
-	if (st->patn[0] == '-' || st->patn[0] == '_') {
+	if (st->nocase &&
+	    (st->patn[0] == '-' || st->patn[0] == '_')) {
 		add_cmd(st, REC_LAXDASH);
 		st->patn++;
 		return 1;
