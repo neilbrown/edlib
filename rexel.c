@@ -78,6 +78,7 @@ TODO:
  *     0xfff8 - match a word break (start or end)
  *     0xfff9 - match any point that isn't a word break.
  *     0xfffa - match 1 or more spaces/tabs/newlines - lax searching.
+ *     0xfffb - match - or _ - lax searching
  *
  * When matching, two pairs of extra arrays are allocated and used.
  * One pair is 'before', one pair is 'after'.  They swap on each char.
@@ -176,6 +177,7 @@ struct match_state {
 #define	REC_WBRK	0xFFF8
 #define	REC_NOWBRK	0xFFF9
 #define	REC_LAXSPC	0xFFFa
+#define	REC_LAXDASH	0xFFFb
 
 #define	REC_FORK	0x8000
 #define	REC_SET		0xc000
@@ -399,7 +401,8 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 					case REC_WBRK: printf(" \\b "); break;
 					case REC_NOWBRK: printf(" \\B "); break;
 					case REC_MATCH:printf("!!! "); break;
-					case REC_LAXSPC: printf(" x20! "); break;
+					case REC_LAXSPC: printf("x20!"); break;
+					case REC_LAXDASH: printf(" -! "); break;
 					default: printf("!%04x", cmd);
 					}
 			}
@@ -518,6 +521,14 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 					eol = do_link(st, i, eol, len);
 					advance = 1;
 				} else
+					advance = -1;
+				if (flag)
+					advance = 0;
+				break;
+			case REC_LAXDASH:
+				if (strchr("-_.", ch) != NULL)
+					advance = 1;
+				else
 					advance = -1;
 				if (flag)
 					advance = 0;
@@ -1007,6 +1018,11 @@ static int parse_atom(struct parse_state *st safe)
 		st->patn++;
 		return 1;
 	}
+	if (st->patn[0] == '-' || st->patn[0] == '_') {
+		add_cmd(st, REC_LAXDASH);
+		st->patn++;
+		return 1;
+	}
 	if (*st->patn & 0x80) {
 		mbstate_t ps = {};
 		int len = mbrtowc(&ch, st->patn, 5, &ps);
@@ -1370,6 +1386,7 @@ void rxl_print(unsigned short *rxl safe)
 			case REC_WBRK: printf("match word-break\n"); break;
 			case REC_NOWBRK: printf("match non-wordbreak\n"); break;
 			case REC_LAXSPC: printf("match lax-space\n"); break;
+			case REC_LAXDASH: printf("match lax-dash\n"); break;
 			default: printf("ERROR %x\n", cmd); break;
 			}
 		} else if (REC_ISFORK(cmd))

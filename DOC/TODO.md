@@ -56,14 +56,14 @@ Bugs to be fixed
 
 - [ ] capturing 'Enter' in c-mode for indent interrupts a sequence
       of N2_undo_insert.  Do I want that?
-- [ ] message line needs to keep some messages permanently - 
+- [X] message line needs to keep some messages permanently - 
       'type ` to search again' - and needs to clear it immediately.
 - [ ] allow rpt-num to be accessed from python
 - [X] move-expr needs to understand sloshed quotes.
 - [X] regexp ^[^a-zA-Z0-9]*$ doesn't match properly.
 - [ ] doc:replace with 2 marks should leave them at either end of insertion.
 - [X] C-space, M-> doesn't highlight the selection
-- [ ] C-n causes 'target' column to be no more than EOL.
+- [X] C-n causes 'target' column to be no more than EOL.
 - [ ] need a way to show that eol is highlighted - both for selection and search
 - [ ] C-x-o to change panes - if point is nor visible in other pane, the visible cursor
       doesn't move (ncurses), which is confusing.
