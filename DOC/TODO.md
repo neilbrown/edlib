@@ -8,7 +8,7 @@ Current priorities
 - [X] copy-paste with mouse
 - [X] select buffer to not accept a non-existant buffer
 - [ ] Fix c/python indenting
-- [ ] search and status if file-edit popup
+- [X] search and status if file-edit popup
 - [x] fix undo positioning of pointer and grouping of edits
 - [X] simplify/document rxl_advance interface, particularly 'restart'.
 - [X] \b for word-break - maybe provide a regexp set for 'is a word char'

@@ -117,6 +117,8 @@ DEF_CMD(popup_child_closed)
 	/* When the child is closed, we have to disappear too */
 	struct popup_info *ppi = ci->home->data;
 
+	if (ci->focus->z != 0)
+		return 1;
 	pane_focus(ppi->target);
 	pane_close(ci->home);
 	return 1;
@@ -136,7 +138,11 @@ static void popup_set_style(struct pane *p)
 		/* Force a status line */
 		border[j++] = 's';
 	border[j] = 0;
-	attr_set_str(&p->attrs, "Popup", "true");
+	if (strchr(ppi->style, 'a'))
+		/* allow recursion */
+		attr_set_str(&p->attrs, "Popup", "ignore");
+	else
+		attr_set_str(&p->attrs, "Popup", "true");
 	attr_set_str(&p->attrs, "borders", border);
 }
 
@@ -211,11 +217,31 @@ DEF_CMD(popup_delayed_close)
 DEF_CMD(popup_defocus)
 {
 	struct popup_info *ppi = ci->home->data;
+	struct pane *p;
+
+	for (p = ci->home; p->parent; p = p->parent)
+		if (p->parent->focus != p)
+			break;
+	if (!p->parent || !p->parent->parent)
+		/* We are still on the focal-path from display
+		 * Maybe we focussed in to a sub-popup
+		 */
+		return 1;
 
 	if (strchr(ppi->style, 't')) {
 		call_comm("editor-on-idle", ci->home, &popup_delayed_close);
 	}
 	return 0;
+}
+
+DEF_CMD(popup_this)
+{
+	struct popup_info *ppi = ci->home->data;
+
+	if (strchr(ppi->style, 'a') == NULL)
+		return 0;
+	return comm_call(ci->comm2, "callback:pane", ci->home,
+			 0, NULL, "Popup");
 }
 
 DEF_CMD(popup_do_close)
@@ -261,20 +287,23 @@ DEF_CMD(popup_attach)
 	struct pane *root, *p;
 	struct popup_info *ppi;
 	char *style = ci->str;
+	char *in_popup;
 	int z;
 
 	if (!style)
 		style = "D3";
 
 	if (!strchr(style, 'r') &&
-	    pane_attr_get(ci->focus, "Popup") != NULL)
+	    (in_popup = pane_attr_get(ci->focus, "Popup")) != NULL &&
+	    strcmp(in_popup, "ignore") != 0)
 		/* No recusive popups without permission */
 		return 0;
 
-	if (strchr(style, 'D')) {
+	if (strchr(style, 'D'))
 		root = call_ret(pane, "RootPane", ci->focus);
-	} else
+	else
 		root = call_ret(pane, "ThisPane", ci->focus);
+
 	if (!root)
 		return 0;
 
@@ -329,6 +358,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "popup:close", &popup_do_close);
 	key_add(popup_map, "popup:set-callback", &popup_set_callback);
 	key_add(popup_map, "ChildClosed", &popup_child_closed);
+	key_add(popup_map, "ThisPane", &popup_this);
 
 	key_add(popup_map, "Window:bury", &popup_child_closed);
 	key_add(popup_map, "Window:close", &popup_abort);
