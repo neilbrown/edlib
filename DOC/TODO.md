@@ -9,7 +9,7 @@ Current priorities
 - [X] select buffer to not accept a non-existant buffer
 - [ ] Fix c/python indenting
 - [ ] search and status if file-edit popup
-- [ ] fix undo positioning of pointer and grouping of edits
+- [x] fix undo positioning of pointer and grouping of edits
 - [X] simplify/document rxl_advance interface, particularly 'restart'.
 - [X] \b for word-break - maybe provide a regexp set for 'is a word char'
 - [ ] \B for non-word-break.  This needs a change to how flags are handled.
@@ -54,6 +54,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] capturing 'Enter' in c-mode for indent interrupts a sequence
+      of N2_undo_insert.  Do I want that?
+- [ ] message line needs to keep some messages permanently - 
+      'type ` to search again' - and needs to clear it immediately.
 - [ ] allow rpt-num to be accessed from python
 - [X] move-expr needs to understand sloshed quotes.
 - [X] regexp ^[^a-zA-Z0-9]*$ doesn't match properly.

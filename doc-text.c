@@ -1892,7 +1892,7 @@ DEF_CMD(text_replace)
 	struct mark *end = ci->mark;
 	char *str = ci->str;
 	char *newattrs = ci->str2;
-	bool first = ci->num2;
+	bool first = !ci->num2;
 	struct mark *early = NULL;
 	int status_change = 0;
 

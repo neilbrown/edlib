@@ -189,7 +189,7 @@ REDEF_CMD(emacs_delete)
 		mark_free(m);
 		return 0;
 	}
-	ret = call("Replace", ci->focus, 1, m, NULL, N2(ci) != N2_undo_delete);
+	ret = call("Replace", ci->focus, 1, m, NULL, N2(ci) == N2_undo_delete);
 	mark_free(m);
 	call("Mode:set-num2", ci->focus, N2_undo_delete);
 
@@ -223,7 +223,7 @@ REDEF_CMD(emacs_kill)
 	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, m);
 	if (str && *str)
 		call("copy:save", ci->focus, N2(ci) == N2_undo_delete, NULL, str);
-	ret = call("Replace", ci->focus, 1, m, NULL, N2(ci) != N2_undo_delete);
+	ret = call("Replace", ci->focus, 1, m, NULL, N2(ci) == N2_undo_delete);
 	mark_free(m);
 	call("Mode:set-num2", ci->focus, N2_undo_delete);
 
@@ -299,7 +299,8 @@ REDEF_CMD(emacs_case)
 				}
 			}
 			if (changed) {
-				ret = call("Replace", ci->focus, 1, m, str, N2(ci) != N2_undo_change);
+				ret = call("Replace", ci->focus, 1, m, str,
+					   N2(ci) == N2_undo_change);
 				if (dir < 0)
 					call(mv->type+1, ci->focus, dir, ci->mark);
 			}
@@ -366,9 +367,9 @@ REDEF_CMD(emacs_swap)
 				0, bs, NULL,
 				0, be);
 		mark_to_mark(ci->mark, ae);
-		call("Replace", ci->focus, 1, as, bstr, 1);
+		call("Replace", ci->focus, 1, as, bstr);
 		mark_to_mark(ci->mark, be);
-		call("Replace", ci->focus, 1, bs, astr);
+		call("Replace", ci->focus, 1, bs, astr, 1);
 		if (dir < 0)
 			call(mv->type, ci->focus, dir, ci->mark);
 		free(astr);
@@ -567,7 +568,8 @@ DEF_CMD(emacs_insert)
 
 	/* Key is "Chr-X" - skip 4 bytes to get X */
 	str = ci->key + 4;
-	ret = call("Replace", ci->focus, 1, ci->mark, str, N2(ci) != N2_undo_insert);
+	ret = call("Replace", ci->focus, 1, ci->mark, str,
+		   N2(ci) == N2_undo_insert);
 	call("Mode:set-num2", ci->focus, N2_undo_insert);
 
 	return ret;
@@ -588,7 +590,8 @@ DEF_CMD(emacs_quote_insert)
 		buf[0] = ci->key[10] & 0x1f;
 	else
 		str = "??";
-	ret = call("Replace", ci->focus, 1, ci->mark, str, N2(ci) != N2_undo_insert);
+	ret = call("Replace", ci->focus, 1, ci->mark, str,
+		   N2(ci) == N2_undo_insert);
 	call("Mode:set-num2", ci->focus, N2_undo_insert);
 
 	return ret;
@@ -630,7 +633,8 @@ DEF_CMD(emacs_insert_other)
 			mark_to_mark(m, ci->mark);
 	}
 
-	ret = call("Replace", ci->focus, 1, ci->mark, ins, N2(ci) != N2_undo_insert);
+	ret = call("Replace", ci->focus, 1, ci->mark, ins,
+		   N2(ci) == N2_undo_insert);
 	if (m) {
 		mark_to_mark(ci->mark, m);
 		mark_free(m);
@@ -1082,7 +1086,7 @@ REDEF_CMD(emacs_doc_complete)
 		start = mark_dup(ci->mark);
 		call("doc:set-ref", ci->focus, 1, start);
 
-		call("Replace", ci->focus, 1, start, cr.s, 0);
+		call("Replace", ci->focus, 1, start, cr.s);
 		mark_free(start);
 	}
 	/* Now need to close the popup */
@@ -1599,7 +1603,7 @@ DEF_CMD(emacs_wipe)
 	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 	if (str && *str)
 		call("copy:save", ci->focus, 0, NULL, str);
-	ret = call("Replace", ci->focus, 1, mk, NULL, 1);
+	ret = call("Replace", ci->focus, 1, mk, NULL);
 	/* Clear mark */
 	attr_set_int(&mk->attrs, "emacs:active", 0);
 
@@ -1643,7 +1647,7 @@ DEF_CMD(emacs_yank)
 	}
 
 	call("Move-to", ci->focus, 1);
-	call("Replace", ci->focus, 1, m, str, 1);
+	call("Replace", ci->focus, 1, m, str);
 	mk = call_ret(mark2, "doc:point", ci->focus);
 	if (mk)
 		attr_set_int(&mk->attrs, "emacs:active", 0);
@@ -1673,7 +1677,7 @@ DEF_CMD(emacs_yank_pop)
 	m = mark_dup(mk);
 	if (m->seq > mk->seq)
 		mark_to_mark(m, mk);
-	call("Replace", ci->focus, 1, mk, str, 1);
+	call("Replace", ci->focus, 1, mk, str);
 	call("Move-to", ci->focus, 1, m);
 	mark_free(m);
 	call("Mode:set-num2", ci->focus, (num << 16) | N2_yank);
@@ -1863,7 +1867,7 @@ DEF_CMD(emacs_paste)
 	if (!str || !*str)
 		return 1;
 
-	call("Replace", ci->focus, 0, NULL, str, 1);
+	call("Replace", ci->focus, 0, NULL, str);
 
 	pane_focus(ci->focus);
 

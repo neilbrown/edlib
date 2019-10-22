@@ -61,7 +61,6 @@ class CModePane(edlib.Pane):
         while c in ' \t\n':
             c = p.call("doc:step", 0, 1, m, ret='char')
         if c == ':':
-            print "colon found"
             indent[0].append(indent[0][-1]+self.spaces)
         return indent
 
@@ -69,7 +68,7 @@ class CModePane(edlib.Pane):
         # m is at the end of a line or start of next line in p - Don't move it
         # Find indent for 'next' line as a list of depths
         # and an alignment...
-        print type, self.indent_type
+
         if type == 'check':
             if self.indent_type == 'C':
                 return self.calc_indent_c(p, m)

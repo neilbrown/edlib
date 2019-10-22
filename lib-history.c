@@ -71,7 +71,7 @@ DEF_CMD(history_done)
 	if (eol)
 		line = strnsave(ci->home, ci->str, eol - ci->str);
 	call("Move-File", hi->history, 1);
-	call("Replace", hi->history, 1, NULL, line, 1);
+	call("Replace", hi->history, 1, NULL, line);
 	call("Replace", hi->history, 1, NULL, "\n", 1);
 	return 0;
 }
@@ -129,7 +129,7 @@ DEF_CMD(history_move)
 				     0, ci->mark, NULL,
 				     0, m);
 	}
-	call("Replace", ci->focus, 1, m, l, 1);
+	call("Replace", ci->focus, 1, m, l);
 	if (l != hi->saved){
 		free(l);
 		hi->changed = 0;

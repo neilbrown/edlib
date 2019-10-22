@@ -272,7 +272,7 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 		if (sol && (ch == ' ' || ch == '\t'))
 			continue;
 		if (sol) {
-			call("doc:replace", p, 1, NULL, " ", 1, point,
+			call("doc:replace", p, 1, NULL, " ", 0, point,
 			     is_text ? ",render:rfc822header-wrap=1" : NULL);
 			sol = 0;
 		}
@@ -282,14 +282,14 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 			b = charset_word(doc, m);
 		else
 			b = buf;
-		call("doc:replace", p, 1, NULL, b, 1, point,
+		call("doc:replace", p, 1, NULL, b, 0, point,
 		     ch == ' ' && is_text ? ",render:rfc822header-wrap=1" : NULL);
 		if (ch == ',' && is_list) {
 			struct mark *p2 = mark_dup(point);
 			int cnt = 1;
 			mark_prev_pane(p, p2);
 			while ((ch = doc_following_pane(doc, m)) == ' ') {
-				call("doc:replace", p, 1, NULL, " ", 1, point);
+				call("doc:replace", p, 1, NULL, " ", 0, point);
 				mark_next_pane(doc, m);
 				cnt += 1;
 			}
@@ -300,7 +300,7 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 			mark_free(p2);
 		}
 	}
-	call("doc:replace", p, 1, NULL, "\n", 1, point);
+	call("doc:replace", p, 1, NULL, "\n", 0, point);
 	snprintf(buf, sizeof(buf), "%zd", strlen(hdr)+1);
 	call("doc:set-attr", p, 1, hstart, "render:rfc822header", 0, NULL, buf);
 	snprintf(attr, sizeof(attr), "render:rfc822header-%s", hdr);

@@ -70,7 +70,7 @@ DEF_CMD(search_forward)
 		if (ss)
 			ss = pane_attr_get(ci->focus, ss);
 		if (ss) {
-			call("Replace", ci->home, 1, NULL, ss, 1);
+			call("Replace", ci->home, 1, NULL, ss);
 			return 1;
 		}
 		if (!str)
@@ -101,7 +101,7 @@ DEF_CMD(search_forward)
 	}
 	esi->start = newstart;
 	/* Trigger notification so isearch watcher searches again */
-	call("Replace", ci->home, 1, NULL, "", 1);
+	call("Replace", ci->home, 1, NULL, "");
 	return 1;
 }
 
@@ -130,7 +130,7 @@ DEF_CMD(search_retreat)
 	esi->wrapped = s->wrapped;
 	free(s);
 	/* Trigger notification so isearch watcher searches again */
-	call("Replace", ci->home, 1, NULL, "", 1);
+	call("Replace", ci->home, 1, NULL, "");
 	return 1;
 
  just_delete:
@@ -165,13 +165,15 @@ DEF_CMD(search_add)
 	char *attr = NULL;
 	struct mark *addpos = mark_dup(esi->end);
 	char *str = call_ret(strsave, "doc:get-str", ci->home);
+	int first = 1;
 
 	if (!str)
 		return 1;
 
 	if (esi->backwards)
 		/* Move to end of match */
-		call("text-search", esi->target, !esi->case_sensitive, addpos, str);
+		call("text-search", esi->target,
+		     !esi->case_sensitive, addpos, str);
 	m = mark_dup(addpos);
 	if (strcmp(ci->key, "C-Chr-W")==0)
 		call("Move-Word", esi->target, 1, m);
@@ -196,10 +198,14 @@ DEF_CMD(search_add)
 		}
 		b[l] = 0;
 		if (slash) {
-			call("Replace", ci->focus, 1, NULL, "\\", 0, NULL, attr);
+			call("Replace", ci->focus, 1, NULL, "\\",
+			     !first, NULL, attr);
 			attr = ",auto=1";
+			first = 0;
 		}
-		call("Replace", ci->focus, 1, NULL, b, 0, NULL, attr);
+		call("Replace", ci->focus, 1, NULL, b,
+		     !first, NULL, attr);
+		first = 0;
 		attr = ",auto=1";
 	}
 	return 1;
@@ -211,7 +217,7 @@ DEF_CMD(search_insert_quoted)
 		return 0;
 	call("Replace", ci->focus, 1, NULL, "\\");
 	call("Replace", ci->focus, 1, NULL, ci->key + 4,
-	     0, NULL, ",auto=1");
+	     1, NULL, ",auto=1");
 	return 1;
 }
 
@@ -227,7 +233,7 @@ DEF_CMD(search_insert_meta)
 	if (strchr(may_quote, ci->key[6])) {
 		call("Replace", ci->focus, 1, NULL, "\\");
 		call("Replace", ci->focus, 1, NULL, ci->key+6,
-		     0, NULL, ",auto=1");
+		     1, NULL, ",auto=1");
 		return 1;
 	}
 	if (strchr(must_quote, ci->key[6]) == NULL || !ci->mark)

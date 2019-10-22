@@ -1220,7 +1220,7 @@ DEF_CMD(doc_from_text)
 		call("doc:set-name", p, 0, NULL, name);
 		call("global-multicall-doc:appeared-", p);
 	}
-	call("doc:replace", p, 1, NULL, text, 1);
+	call("doc:replace", p, 1, NULL, text);
 	return comm_call(ci->comm2, "callback", p);
 }
 
