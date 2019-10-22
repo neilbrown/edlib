@@ -17,9 +17,12 @@
  * I need to find a way to control that.
  *
  * A popup is created by "PopupTile"
- * A prefix to be displayed can be added by setting "prefix" on the popup pane.
- * A default value can be given with attr "default" which is displated after prefix
- * The event sent when the popup is closed can be set by setting attribute "done-key"
+ * A prefix to be displayed can be added by setting "prefix" on
+ * the popup pane.
+ * A default value can be given with attr "default" which is displated
+ * after prefix
+ * The event sent when the popup is closed can be set by setting
+ * attribute "done-key"
  * otherwise "PopupDone" is used.
  */
 #define _GNU_SOURCE /*  for asprintf */
@@ -119,17 +122,12 @@ DEF_CMD(popup_child_closed)
 	return 1;
 }
 
-DEF_CMD(popup_style)
+static void popup_set_style(struct pane *p)
 {
-	struct popup_info *ppi = ci->home->data;
+	struct popup_info *ppi = p->data;
 	char border[6];
-	int i, j;;
+	int i, j;
 
-	if (!ci->str)
-		return 0;
-
-	free(ppi->style);
-	ppi->style = strdup(ci->str);
 	for (i = 0, j = 0; i < 4; i++) {
 		if (strchr(ppi->style, "TLBR"[i]) == NULL)
 			border[j++] = "TLBR"[i];
@@ -138,8 +136,20 @@ DEF_CMD(popup_style)
 		/* Force a status line */
 		border[j++] = 's';
 	border[j] = 0;
-	attr_set_str(&ci->home->attrs, "Popup", "true");
-	attr_set_str(&ci->home->attrs, "borders", border);
+	attr_set_str(&p->attrs, "Popup", "true");
+	attr_set_str(&p->attrs, "borders", border);
+}
+
+DEF_CMD(popup_style)
+{
+	struct popup_info *ppi = ci->home->data;
+
+	if (!ci->str)
+		return 0;
+
+	free(ppi->style);
+	ppi->style = strdup(ci->str);
+	popup_set_style(ci->home);
 	popup_resize(ci->home, ppi->style);
 	return 1;
 }
@@ -251,8 +261,6 @@ DEF_CMD(popup_attach)
 	struct pane *root, *p;
 	struct popup_info *ppi;
 	char *style = ci->str;
-	char border[6];
-	int i, j;
 	int z;
 
 	if (!style)
@@ -280,17 +288,8 @@ DEF_CMD(popup_attach)
 
 	p = pane_register(root, z + 1, &popup_handle.c, ppi, NULL);
 	ppi->style = strdup(style);
+	popup_set_style(p);
 	popup_resize(p, style);
-	for (i = 0, j = 0; i < 4; i++) {
-		if (strchr(style, "TLBR"[i]) == NULL)
-			border[j++] = "TLBR"[i];
-	}
-	if (strchr(style, 's'))
-		/* Force a status line */
-		border[j++] = 's';
-	border[j] = 0;
-	attr_set_str(&p->attrs, "Popup", "true");
-	attr_set_str(&p->attrs, "borders", border);
 	attr_set_str(&p->attrs, "render-wrap", "no");
 
 	pane_add_notify(p, ppi->target, "Notify:Close");
@@ -301,7 +300,8 @@ DEF_CMD(popup_attach)
 			call_ret(pane, "doc:from-text", p, 0, NULL,
 			         "*popup*", 0, NULL, ci->str2);
 		if (doc &&
-		    (p = home_call_ret(pane, doc, "doc:attach-view", p, -1)) != NULL) {
+		    (p = home_call_ret(pane, doc, "doc:attach-view",
+				       p, -1)) != NULL) {
 			call("Move-File", p, 1);
 			call("doc:set:autoclose", p, 1);
 		}
@@ -315,7 +315,8 @@ DEF_CMD(popup_attach)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, &popup_attach, 0, NULL, "PopupTile");
+	call_comm("global-set-command", ed, &popup_attach,
+		  0, NULL, "PopupTile");
 
 	popup_map = key_alloc();
 
