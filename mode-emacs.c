@@ -167,6 +167,7 @@ REDEF_CMD(emacs_move)
 		attr_set_int(&mk->attrs, "emacs:active", 0);
 		call("Notify:change", ci->focus, 0, NULL, NULL, 0, mk);
 	}
+	pane_damaged(cursor_pane, DAMAGED_CURSOR);
 
 	return ret;
 }
@@ -646,7 +647,12 @@ DEF_CMD(emacs_undo)
 	ret = call("doc:reundo", ci->focus, N2(ci) == N2_undo);
 	call("Mode:set-num2", ci->focus, N2_undo);
 	if (ret == Efalse)
-		call("Message", ci->focus, 0, NULL, "No further undo information");
+		call("Message", ci->focus, 0, NULL,
+		     "No further undo information");
+	else
+		/* Point probably moved, so */
+		pane_damaged(ci->focus, DAMAGED_CURSOR);
+
 	return 1;
 }
 

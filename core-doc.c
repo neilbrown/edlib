@@ -902,6 +902,7 @@ DEF_CMD(doc_dup_point)
 DEF_CMD(doc_replace)
 {
 	struct doc_data *dd = ci->home->data;
+	pane_damaged(ci->focus, DAMAGED_CURSOR);
 	return home_call(dd->doc, "doc:replace", ci->focus, 1, ci->mark, ci->str,
 			 ci->num2, dd->point, ci->str2);
 }
@@ -942,8 +943,10 @@ DEF_CMD(doc_move_to)
 		dd->mark = NULL;
 		break;
 	case 0:
-		if (ci->mark)
+		if (ci->mark) {
 			mark_to_mark(dd->point, ci->mark);
+			pane_damaged(ci->focus, DAMAGED_CURSOR);
+		}
 		break;
 	}
 	return 1;

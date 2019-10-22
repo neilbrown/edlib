@@ -651,7 +651,6 @@ class notmuch_master_view(edlib.Pane):
             m = p.call("doc:dup-point", 0, -2, ret='mark')
             if p.call("Move-Line", direction, m) == 1:
                 p.call("Move-to", m)
-                p.damaged(edlib.DAMAGED_CURSOR)
         p.call("notmuch:select", m, 1)
         return 1
 
@@ -685,7 +684,6 @@ class notmuch_master_view(edlib.Pane):
             m = focus.call("doc:dup-point", 0, -2, ret='mark')
             if focus.call("Move-Line", 1, m) == 1:
                 focus.call("Move-to", m)
-                focus.damaged(edlib.DAMAGED_CURSOR)
             if self.message_pane:
                 # Message was displayed, so display this one
                 focus.call("notmuch:select", m, 0)

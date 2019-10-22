@@ -1261,9 +1261,6 @@ DEF_CMD(text_reundo)
 		call("doc:Notify:doc:status-changed", t->doc.home);
 	text_check_autosave(t);
 
-	/* Point probably moved, so */
-	pane_damaged(ci->focus, DAMAGED_CURSOR);
-
 	if (!ed)
 		t->prev_edit = Redo;
 	return ed ? 1 : Efalse;
@@ -1908,9 +1905,7 @@ DEF_CMD(text_replace)
 		if (!pm)
 			return Efail;
 		mark_reset(d, pm, 1);
-	} else
-		/* probably move point */
-		pane_damaged(ci->focus, DAMAGED_CURSOR);
+	}
 
 	/* First delete, then insert */
 	if (end && !text_ref_same(t, &pm->ref, &end->ref)) {

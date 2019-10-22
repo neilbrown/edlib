@@ -361,7 +361,8 @@ class CModePane(edlib.Pane):
                 num -= 1
             else:
                 num += 1
-        focus.damaged(edlib.DAMAGED_CURSOR)
+        focus.call("Move-to", mark)
+
         return 1
 
 def c_mode_attach(key, focus, comm2, **a):

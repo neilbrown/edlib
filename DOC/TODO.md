@@ -164,9 +164,12 @@ Module features
 
 ### emacs
 
+- [X] Movement should always damage cursor.  Move-para and move-expr and
+      even 'undo' don't (sometimes?)
 - [X] entering an unknown name to find-document should either create a doc, or
       give an error, or something less silent
 - [ ] show status line in file-edit popup
+- [ ] filename completion should ignore uninteresting files like ".o"
 - [ ] invent a way to reserve 'extra' values for command sets
       do I need this across panes ?? probably
 - [X] search highlights don't cross EOL.
@@ -205,6 +208,10 @@ Module features
 
 ### render-lines
 
+- [X] Rules for when ignore_point gets cleared need to be worked out.
+      c-mode/Move-Paragraph shouldn't need to call Move-to just
+      to ensure cursor becomes visible.  Maybe DAMAGED_CURSOR
+      should be enough?
 - [ ] can render-lines ensure that lines appearing immediately
       before first line displayed, appear.  This is particularly
       important when first line displayed is(was) first line of file.
@@ -782,6 +789,7 @@ What needs to be configured?  How is that done?
 - fill mode and with
 - default make command, and dir to run in
 - preferred white-space options, and width
+- unintereting file names for find-file. .git-ignore??
 
 I want different configs in different trees.
 Either the single config file identifies path, or we put

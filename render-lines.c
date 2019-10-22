@@ -90,6 +90,9 @@ struct rl_data {
 	int		cursor_line; /* line that contains the cursor starts
 				      * on this line */
 	short		target_x, target_y;
+	short		i_moved;	/* I moved cursor, so don't clear
+					 * target
+					 */
 	int		do_wrap;
 	short		shift_left;
 	short		prefix_len;
@@ -1289,6 +1292,11 @@ DEF_CMD(render_lines_refresh)
 			call("Notify:change", focus, 0, rl->old_point, NULL, 0, pm);
 			mark_free(rl->old_point);
 			rl->old_point = NULL;
+			if (!rl->i_moved) {
+				rl->ignore_point = 0;
+				rl->target_x = -1;
+			} else
+				rl->i_moved = 0;
 		}
 		if (!rl->old_point)
 			rl->old_point = mark_dup(pm);
@@ -1376,20 +1384,18 @@ DEF_CMD(render_lines_close)
 	return 0;
 }
 
-DEF_CMD(render_lines_other_move)
+DEF_CMD(render_lines_abort)
 {
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
 
-	if (rl->ignore_point) {
-		pane_damaged(p, DAMAGED_CONTENT);
-		rl->ignore_point = 0;
-	}
+	rl->ignore_point = 0;
 	rl->target_x = -1;
 
+	pane_damaged(p, DAMAGED_CONTENT);
 	pane_damaged(p, DAMAGED_CURSOR);
 
-	/* Allow other handlers to complete the Replace */
+	/* Allow other handlers to complete the Abort */
 	return 0;
 }
 
@@ -1537,8 +1543,6 @@ DEF_CMD(render_lines_set_cursor)
 	short cihx = 0, cihy = 0;
 	struct xy scale = pane_scale(p);
 
-	render_lines_other_move_func(ci);
-
 	m = vmark_first(p, rl->typenum, p);
 
 	if (ci->x >= 0)
@@ -1673,8 +1677,6 @@ DEF_CMD(render_lines_move_line)
 	if (!m)
 		return Efail;
 
-	rl->ignore_point = 0;
-
 	/* save target as it might get changed */
 	target_x = rl->target_x;
 	target_y = rl->target_y;
@@ -1728,7 +1730,7 @@ DEF_CMD(render_lines_move_line)
 			mark_free(m2);
 		}
 	}
-	pane_damaged(p, DAMAGED_CURSOR);
+	rl->i_moved = 1;
 	return 1;
 }
 
@@ -1800,7 +1802,6 @@ static void render_lines_register_map(void)
 {
 	rl_map = key_alloc();
 
-	key_add_prefix(rl_map, "Move-", &render_lines_other_move);
 	key_add(rl_map, "Move-View-Small", &render_lines_move);
 	key_add(rl_map, "Move-View-Large", &render_lines_move);
 	key_add(rl_map, "Move-View-Pos", &render_lines_move_pos);
@@ -1808,9 +1809,8 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Move-CursorXY", &render_lines_set_cursor);
 	key_add(rl_map, "Move-Line", &render_lines_move_line);
 
-	key_add(rl_map, "Replace", &render_lines_other_move);
 	/* Make it easy to stop ignoring point */
-	key_add(rl_map, "Abort", &render_lines_other_move);
+	key_add(rl_map, "Abort", &render_lines_abort);
 
 	key_add(rl_map, "Close", &render_lines_close);
 	key_add(rl_map, "Clone", &render_lines_clone);
