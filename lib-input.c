@@ -118,7 +118,8 @@ DEF_CMD(keystroke)
 	if (key != ci->str)
 		free(key);
 	if (ret < 0)
-		call("Message", ci->focus, 0, NULL, "** Command Failed **", 1);
+		call("Message:default", ci->focus, 0, NULL,
+		     "** Command Failed **");
 	return 0;
 }
 

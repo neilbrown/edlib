@@ -1784,7 +1784,7 @@ DEF_CMD(emacs_goto_line)
 DEF_CMD(emacs_next_match)
 {
 	call("Mode:set-num2", ci->focus, N2_match);
-	call("Message", ci->focus, 0, NULL, "Type ` to search again");
+	call("Message:modal", ci->focus, 0, NULL, "Type ` to search again");
 	return call("interactive-cmd-next-match", ci->focus, ci->num);
 }
 

@@ -18,6 +18,9 @@
 
 struct mlinfo {
 	char *message;
+	int modal;	/* message displays a mode, and must
+			 * remain exactly until a keystroke
+			 */
 	struct pane *line safe, *child;
 	int height; /* height of line */
 	int ascent; /* how far down to baseline */
@@ -57,13 +60,15 @@ DEF_CMD(messageline_msg)
 {
 	struct mlinfo *mli = ci->home->data;
 
-	if (ci->str && (ci->num2 == 0 || mli->message == NULL)) {
+	if (ci->str && (strcmp(ci->key, "Message:default") != 0 ||
+			mli->message == NULL)) {
 		if (!mli->message) {
 			call("Request:Notify:Keystroke", ci->home);
 			call("Request:Notify:Mouse-event", ci->home);
 		}
 		free(mli->message);
 		mli->message = strdup(ci->str);
+		mli->modal = strcmp(ci->key, "Message:modal") == 0;
 		time(&mli->last_message);
 		pane_damaged(mli->line, DAMAGED_CONTENT);
 	}
@@ -80,6 +85,7 @@ DEF_CMD(messageline_abort)
 	}
 	free(mli->message);
 	mli->message = strdup("ABORTED");
+	mli->modal = 0;
 	time(&mli->last_message);
 	pane_damaged(mli->line, DAMAGED_CONTENT);
 	return 0;
@@ -127,7 +133,8 @@ DEF_CMD(messageline_notify)
 	/* Keystroke notification clears the message line */
 	struct mlinfo *mli = ci->home->data;
 
-	if (mli->message && time(NULL) >= mli->last_message + 7) {
+	if (mli->message &&
+	    (mli->modal || time(NULL) >= mli->last_message + 7)) {
 		free(mli->message);
 		mli->message = NULL;
 		pane_drop_notifiers(ci->home, "Notify:Keystroke");
@@ -142,7 +149,8 @@ DEF_CMD(messageline_line_refresh)
 	struct mlinfo *mli = ci->home->data;
 
 	call("pane-clear", mli->line, 0, NULL, "bg:white");
-	if (mli->message && time(NULL) >= mli->last_message + 30) {
+	if (mli->message && !mli->modal &&
+	    time(NULL) >= mli->last_message + 30) {
 		free(mli->message);
 		mli->message = NULL;
 		pane_drop_notifiers(ci->home, "Notify:Keystroke");
@@ -199,7 +207,8 @@ DEF_CMD(messageline_attach)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, &messageline_attach, 0, NULL, "attach-messageline");
+	call_comm("global-set-command", ed, &messageline_attach, 0, NULL,
+		  "attach-messageline");
 
 	if (messageline_map)
 		return;
@@ -207,9 +216,12 @@ void edlib_init(struct pane *ed safe)
 	key_add(messageline_map, "Clone", &messageline_clone);
 	key_add(messageline_map, "Display:border", &messageline_border);
 	key_add(messageline_map, "Message", &messageline_msg);
+	key_add(messageline_map, "Message:modal", &messageline_msg);
+	key_add(messageline_map, "Message:default", &messageline_msg);
 	key_add(messageline_map, "Abort", &messageline_abort);
 	key_add(messageline_map, "Refresh:size", &messageline_refresh_size);
-	key_add(messageline_map, "ChildRegistered", &messageline_child_registered);
+	key_add(messageline_map, "ChildRegistered",
+		&messageline_child_registered);
 	key_add(messageline_map, "Notify:Keystroke", &messageline_notify);
 	key_add(messageline_map, "Notify:Mouse-event", &messageline_notify);
 
