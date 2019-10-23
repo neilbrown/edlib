@@ -1292,10 +1292,10 @@ DEF_CMD(render_lines_refresh)
 			call("Notify:change", focus, 0, rl->old_point, NULL, 0, pm);
 			mark_free(rl->old_point);
 			rl->old_point = NULL;
-			if (!rl->i_moved) {
-				rl->ignore_point = 0;
+			rl->ignore_point = 0;
+			if (!rl->i_moved)
 				rl->target_x = -1;
-			} else
+			else
 				rl->i_moved = 0;
 		}
 		if (!rl->old_point)
