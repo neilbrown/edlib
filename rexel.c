@@ -215,10 +215,10 @@ static wctype_t *classmap safe = NULL;
 static int do_link(struct match_state *st safe, int pos, int dest, int len)
 {
 	unsigned short cmd = st->rxl[pos];
+
 	if (cmd == REC_MATCH) {
 		if (st->match < len)
 			st->match = len;
-		return dest;
 	}
 	if (!REC_ISFORK(cmd)) {
 		/* not a FORK, so just link it in. */
@@ -301,6 +301,7 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 				       lo);
 				exit(1);
 			}
+		lo = 0;
 #endif
 
 		while (lo < hi) {
@@ -392,16 +393,16 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 				} else switch(cmd) {
 					case REC_ANY: printf(" .  "); break;
 					case REC_ANY_NONL: printf(" .? "); break;
-					case REC_NONE:printf(" ## "); break;
+					case REC_NONE:printf("##  "); break;
 					case REC_SOL: printf(" ^  "); break;
 					case REC_EOL: printf(" $  "); break;
-					case REC_SOW: printf(" \\< "); break;
-					case REC_EOW: printf(" \\> "); break;
-					case REC_WBRK: printf(" \\b "); break;
-					case REC_NOWBRK: printf(" \\B "); break;
+					case REC_SOW: printf("\\<  "); break;
+					case REC_EOW: printf("\\>  "); break;
+					case REC_WBRK: printf("\\b  "); break;
+					case REC_NOWBRK: printf("\\B "); break;
 					case REC_MATCH:printf("!!! "); break;
 					case REC_LAXSPC: printf("x20!"); break;
-					case REC_LAXDASH: printf(" -! "); break;
+					case REC_LAXDASH: printf("-!  "); break;
 					default: printf("!%04x", cmd);
 					}
 			}
@@ -1423,10 +1424,10 @@ static struct test {
 	// Inverting set of multiple classes
 	{ "[^\\A\\a]", "a", 0, -1, -1},
 	// Search for start of a C function: non-label at start of line
-	{ "^([^ a-zA-Z0-9#]|[\\A\\a\n_]+[\\s]*[^: a-zA-Z0-9_])", "hello:  ",
+	{ "^([^ a-zA-Z0-9#]|[\\A\\a\\d_]+[\\s]*[^: a-zA-Z0-9_])", "hello:  ",
 	 0, -1, -1},
 };
-static void run_tests()
+static void run_tests(int trace)
 {
 	int cnt = sizeof(tests) / sizeof(tests[0]);
 	int i;
@@ -1453,7 +1454,11 @@ static void run_tests()
 			printf("test %d: No parse error found\n", i);
 			exit (1);
 		}
+
+		if (trace)
+			rxl_print(rxl);
 		setup_match(&st, rxl);
+		st.trace = trace;
 
 		mstart = -1;
 		mlen = -1;
@@ -1521,7 +1526,7 @@ int main(int argc, char *argv[])
 		case 't':
 			trace = 1; break;
 		case 'T':
-			run_tests();
+			run_tests(trace);
 			printf("All tests passed successfully\n");
 			exit(0);
 		default:
