@@ -768,7 +768,7 @@ static void add_class(struct parse_state *st safe, int plane, wctype_t cls)
 		/* one entry required per class */
 		st->len += 1;
 		return;
-	} else if (plane > 0)
+	} else if (plane >= 0)
 		/* already handled. */
 		return;
 
