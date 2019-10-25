@@ -671,7 +671,7 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 	/* Now insert range into the list.
 	 * 1/ Perform search for 'start'.
 	 * 2/ If at 'even' offset then not present yet.
-	 *   2a/ if 'start-1' is present, update that end
+	 *   2a/ if 'start-1' is present, update that to end
 	 *   2b/ if next is <= end, update that to start
 	 *   2c/ otherwise shift up and insert range - done.
 	 * 3/ if at 'odd' offset then is in already
@@ -705,11 +705,12 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 		/* Not yet present.*/
 		if (lo > 0 && set[lo-1] == start) {
 			/* Extend the earlier range */
+			lo -= 1;
 			if (end == 0xffff)
-				len = lo-1;
+				len = lo;
 			else
-				set[lo-1] = end+1;
-		} else if (lo < len && set[lo] <= end)
+				set[lo] = end+1;
+		} else if (lo < len && set[lo] <= end+1)
 			set[lo] = start;
 		else {
 			/* need to insert */
@@ -729,19 +730,17 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 		else
 			set[lo] = end+1;
 	}
-	if (lo)
-		lo |= 1;
-	else
-		lo &= ~1;
-	/* Lo now points to the end of a range. If it overlaps th next,
+	lo |= 1;
+	/* Lo now points to the end of a range. If it overlaps the next,
 	 * merge the ranges.
 	 */
-	/* FIXME not right starting place */
 	while (lo+1 < len && set[lo] >= set[lo+1]) {
+		/* Need to merge these ranges */
 		if (lo+2 < len){
 			if (set[lo] > set[lo+2])
 				set[lo+2] = set[lo];
-			memmove(set+lo, set+lo+2, len - (lo+2));
+			memmove(set+lo, set+lo+2,
+				sizeof(set[lo])*(len - (lo+2)));
 		}
 		len -= 2;
 	}
