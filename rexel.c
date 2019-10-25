@@ -260,16 +260,10 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 	if (len) {
 		int invert = len & 0x8000;
 		len &= 0x7fff;
-		for ( ; len--; set++) {
+		for ( ; len--; set++)
 			if (iswctype(uch, classmap[*set]) ||
-			    (uch != lch && iswctype(lch, classmap[*set]))) {
-				if (!invert)
-					return 1;
-			} else {
-				if (invert)
-					return 1;
-			}
-		}
+			    (uch != lch && iswctype(lch, classmap[*set])))
+				return !invert;
 	}
 	/* now there might be some sets.  Each set starts with a size with
 	 * top 5 bytes indicating top bytes of unicode planes, and bottom
@@ -1426,9 +1420,11 @@ static struct test {
 } tests[] = {
 	{ "abc", "the abc", 0, 4, 3},
 	{ "a*", " aaaaac", 0, 1,  5},
+	// Inverting set of multiple classes
+	{ "[^\\A\\a]", "a", 0, -1, -1},
 	// Search for start of a C function: non-label at start of line
 	{ "^([^ a-zA-Z0-9#]|[\\A\\a\n_]+[\\s]*[^: a-zA-Z0-9_])", "hello:  ",
-	 0, -1},
+	 0, -1, -1},
 };
 static void run_tests()
 {
@@ -1440,7 +1436,7 @@ static void run_tests()
 		char *patn = tests[i].patn;
 		char *target = tests[i].target;
 		unsigned short *rxl;
-		int mstart = -1, mlen;
+		int mstart, mlen;
 		int len, ccnt = 0;
 
 		mbstate_t ps = {};
@@ -1460,6 +1456,7 @@ static void run_tests()
 		setup_match(&st, rxl);
 
 		mstart = -1;
+		mlen = -1;
 		rxl_advance(&st, WEOF, RXL_SOL);
 		while (mstart < 0 || len > 0) {
 			wchar_t wc;
