@@ -29,23 +29,7 @@ class CModePane(edlib.Pane):
         self.clone_children(p)
         return 1
 
-    def tabify(self, indent):
-        if self.spaces:
-            return indent
-        i = 1
-        while i >= 0:
-            try:
-                i = indent.index('        ')
-            except ValueError:
-                i = -1
-            if i >= 0:
-                indent = indent[:i] + "\t" + indent[i+8:]
-        return indent
-
-    def mkwhite(self, ii):
-        (depth, align, intro) = ii
-        if align == 0:
-            align = depth[-1]
+    def mkwhite(self, align):
         rv = ''
         if not self.spaces:
             while align >= 8:
@@ -61,7 +45,10 @@ class CModePane(edlib.Pane):
         while c in ' \t\n':
             c = p.call("doc:step", 0, 1, m, ret='char')
         if c == ':':
-            indent[0].append(indent[0][-1]+self.spaces)
+            t=self.spaces
+            if not t:
+                t=8
+            indent[0].append(indent[0][-1]+t)
         return indent
 
     def calc_indent(self, p, m, type='check'):
@@ -125,16 +112,21 @@ class CModePane(edlib.Pane):
                 extra = p.call("doc:get-str", indent_end, expr, ret='str')
                 extra = len(extra)
             extra += r[-1]
+            # A further indent than this really isn't appropriate, so
+            # add it twice
+            r.append(extra)
+            r.append(extra)
         else:
-            extra = 0
-        return (r, extra, '')
+            # allow one extra indent
+            r.append(r[-1]+t)
+        return (r, '')
 
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
         # If there is white space before or after the cursor,
         # remove it.  Then work out how indented this line
-        # should be, based on last non-empty line, and insert
-        # that much space.
+        # should be, and insert that much space, plus any
+        # requested prefix
         m = mark.dup()
         # First, move point forward over any white space
         c = focus.call("doc:step", 1, 0, m, ret="char")
@@ -150,10 +142,11 @@ class CModePane(edlib.Pane):
                 break
             c = focus.call("doc:step", 0, 1, m, ret="char")
         # Now calculate the indent
-        indent = self.calc_indent(focus, m)
+        (depths,prefix) = self.calc_indent(focus, m)
 
         # and replace all that white space with a newline and the indent
-        return focus.call("Replace", 1, m, "\n" + self.mkwhite(indent))
+        return focus.call("Replace", 1, m,
+                          "\n" + self.mkwhite(depths[-2]) + prefix)
 
     def handle_tab(self, key, focus, mark, **a):
         "handle:Tab"
@@ -161,7 +154,7 @@ class CModePane(edlib.Pane):
         # move to end of white-space
         # - choose an indent as for Return
         # - If we don't have exactly that, replace with that
-        # - if we do and chosen indent has no extra, add one indent level
+        # - if we do have that, use the 'extra' indent level
         m = mark.dup()
         c = focus.call("doc:step", 0, 0, m, ret="char")
         prevc = c
@@ -188,31 +181,20 @@ class CModePane(edlib.Pane):
             focus.call("doc:step", 1, 1, mark)
             c = focus.call("doc:step", 1, 0, mark, ret="char")
 
-        indent = self.calc_indent(focus, m)
+        (depths,prefix) = self.calc_indent(focus, m)
 
-        new = self.mkwhite(indent)
+        new = self.mkwhite(depths[-2])
 
         current = focus.call("doc:get-str", m, mark, ret="str")
 
         if new != current:
             return focus.call("Replace", 1, m, mark, new)
-        if indent[1] > 0:
-            # There is alignment, so stay where we are
+        if depths[-1] == depths[-2]:
+            # There is extra indent allowed, so stay where we are
             return 1
 
-        # insert a tab, but remove spaces first.
-        if self.spaces:
-            return focus.call("Replace", 1, ' '*self.spaces)
-
-        m = mark.dup()
-        len = 0
-        while focus.call("doc:step", 0, 0, m, ret='char') == ' ':
-            len += 1
-            focus.call("doc:step", 0, 1, m)
-        new = "\t" * (len / 8)
-        focus.call("Replace", 1, m, mark, new)
-        # fall through it insert a new tab
-        return 0
+        new = self.mkwhite(depths[-1])
+        return focus.call("Replace", 1, m, mark, new)
 
     def handle_bs(self, key, focus, mark, **a):
         "handle:Backspace"
@@ -233,20 +215,17 @@ class CModePane(edlib.Pane):
             # at start-of-line, fall-through
             return 0
 
-        indent = self.calc_indent(focus, m)
-        new = self.mkwhite(indent)
+        (depths,prefix) = self.calc_indent(focus, m)
+        new = self.mkwhite(depths[-2])
         current = focus.call("doc:get-str", m, mark, ret="str")
         # if current is more than expected, return to expected
         if current.startswith(new) and current != new:
             return focus.call("Replace", 1, m, mark, new)
         # if current is a prefix of expectation, reduce expection until not
         if new.startswith(current):
-            while indent[0]:
-                if indent[1]:
-                    indent = (indent[0], 0, '')
-                else:
-                    indent[0].pop()
-                new = self.mkwhite(indent)
+            while len(depths) > 2:
+                depths.pop()
+                new = self.mkwhite(depths[-2])
                 if current.startswith(new) and current != new:
                     return focus.call("Replace", 1, m, mark, new)
             return focus.call("Replace", 1, m, mark)
