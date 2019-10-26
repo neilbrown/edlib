@@ -160,6 +160,7 @@ struct match_state {
 	unsigned short	* safe link[2];
 	unsigned short	* safe leng[2];
 	unsigned short	active;
+	unsigned short	anchored;
 	int		match;
 	#ifdef DEBUG
 	int		trace;
@@ -332,9 +333,13 @@ static int set_match(struct match_state *st safe, unsigned short addr,
  *  of characters (not flags) in the match.
  * When a >=0 return is given, it might still be useful to keep calling
  * rxl_advance if a maximal match is wanted.
- * If the match must be anchor to the first character, then the caller
- * should stop as soon as -2 is returned.  Otherwise it should keep calling
- * until >=0 is returned, then (optionally) continue until <0 is returned.
+ * If the match must be anchor to the first character, this must have been
+ * advised to rxl_prepare.  The caller should keep calling until no chars are
+ * left, or -2 is returned (no match), or >=0 is returned.  In the latter case
+ * the call might keep calling to see if a longer match is possible.  Once
+ * a non-negative return has been seen, the next negative return should stop
+ * the search.
+ * If the search is not anchored, then checking for -2 is not relevant.
  */
 int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 {
@@ -354,11 +359,9 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 	if (flag && ch != WEOF)
 		/* This is an illegal combination */
 		return -2;
-	if (st->match < 0) {
-		/* We haven't found a match yet, but nor has the caller given
-		 * up, so prepare for a match that starts here.
-		 * If start state is not currently matched, add it with
-		 * length of zero
+	if (st->match < 0 && !st->anchored) {
+		/* We haven't found a match yet and search is not anchored,
+		 * so possibly start a search here.
 		 */
 		eol = 0;
 		while (st->link[active][eol])
@@ -1294,7 +1297,8 @@ unsigned short *safe rxl_parse_verbatim(char *patn safe, int nocase)
 	return st.rxl;
 }
 
-static void setup_match(struct match_state *st safe, unsigned short *rxl safe)
+static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
+			int anchored)
 {
 	int len = RXL_SETSTART(rxl) - rxl;
 	int i;
@@ -1306,6 +1310,7 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe)
 	st->leng[0] = st->link[1] + len;
 	st->leng[1] = st->leng[0] + len;
 	st->active = 0;
+	st->anchored = anchored;
 	st->match = -1;
 	for (i = 0; i < len; i++) {
 		st->link[0][i] = NO_LINK;
@@ -1314,14 +1319,19 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe)
 	/* The list of states is empty */
 	st->link[1-st->active][0] = 0;
 	st->link[st->active][0] = 0;
+
+	/* Set linkage to say we have a zero-length match
+	 * at the start state.
+	 */
+	do_link(st, 1, 0, 0);
 }
 
-struct match_state *safe rxl_prepare(unsigned short *rxl safe)
+struct match_state *safe rxl_prepare(unsigned short *rxl safe, int anchored)
 {
 	struct match_state *ret;
 
 	ret = malloc(sizeof(*ret));
-	setup_match(ret, rxl);
+	setup_match(ret, rxl, anchored);
 	return ret;
 }
 
@@ -1457,7 +1467,7 @@ static void run_tests(int trace)
 
 		if (trace)
 			rxl_print(rxl);
-		setup_match(&st, rxl);
+		setup_match(&st, rxl, 0);
 		st.trace = trace;
 
 		mstart = -1;
@@ -1570,7 +1580,7 @@ int main(int argc, char *argv[])
 	}
 	rxl_print(rxl);
 
-	setup_match(&st, rxl);
+	setup_match(&st, rxl, 0);
 	st.trace = trace;
 	i = 0;
 	len = -1;
