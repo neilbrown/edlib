@@ -1985,7 +1985,7 @@ static void emacs_init(void)
 	key_add(m, "C-Chr-O", &emacs_insert_other);
 
 	key_add(m, "C-Chr-_", &emacs_undo);
-	key_add(m, "emCX-Chr-_", &emacs_undo);
+	key_add(m, "emCX-Chr-u", &emacs_undo);
 	key_add(m, "C-Chr-/", &emacs_undo);
 
 	key_add(m, "C-Chr-L", &emacs_recenter);
