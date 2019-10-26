@@ -347,7 +347,7 @@ class CModePane(edlib.Pane):
         while num:
             try:
                 focus.call("doc:step", mark, 1-backward, 1)
-                l = focus.call("text-search", mark, "^([a-zA-Z0-9].*\(|\()",
+                l = focus.call("text-search", mark, "^([_a-zA-Z0-9].*\(|\()",
                                0, backward)
                 if not backward and l > 0:
                     while l > 1:
