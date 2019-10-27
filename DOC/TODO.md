@@ -7,7 +7,7 @@ Current priorities
 - [X] message line timed updates - no change for 7 seconds, always revert after 30 seconds
 - [X] copy-paste with mouse
 - [X] select buffer to not accept a non-existant buffer
-- [ ] Fix c/python indenting
+- [X] Fix c/python indenting
 - [X] search and status if file-edit popup
 - [x] fix undo positioning of pointer and grouping of edits
 - [X] simplify/document rxl_advance interface, particularly 'restart'.
@@ -441,24 +441,24 @@ Module features
 
 ### C-mode
 
-- [ ] TAB should *always* delete preceding spaces.
+- [X] TAB should *always* delete preceding spaces.
 - [ ]  auto-indent enhancements
       
-     -   after "return" de-indent
+     -   py: after "return" de-indent
      -   type : in C, not in quote, re-indent
-     -   Indent of line starting '}' should match start of EXPR
+     X   Indent of line starting '}' should match start of EXPR
      -   when type '}', decrease indent. in C
-     -  '*' should check for comment, and add a space
-     -   Enter in comment should add a ' * ' for the indent.
-     -   Backspace in the indent after a comment deletes too much
-     -   Don't assume 'indent' is only tabs in python mode - round down to x4
-     -   Be careful of brackets in comments and quotes.
-     -   Try harder to find start of statement to align with
-     -   handle comments
-     -   detect end of statement in C (; } )
+     -??  '*' should check for comment, and add a space
+     X   Enter in comment should add a ' * ' for the indent.
+     X   Backspace in the indent after a comment deletes too much
+     X   Don't assume 'indent' is only tabs in python mode - round down to x4
+     X   Be careful of brackets in comments and quotes.
+     X   Try harder to find start of statement to align with
+     X   handle comments
+     X   detect end of statement in C (; } ) :
      -   A line after one ending ; or } or : or unindented is assumed to be
-     -   correctly indented.
-     -   We search back - skipping bracketed bit, until we find one, and
+         correctly indented.
+     X   We search back - skipping bracketed bit, until we find one, and
          base everything on that.
 - [ ] configuration: use tabs or spaces for indent
 - [ ] configuration: use only spaces for bracket-alignment indents - or tabs as well.
