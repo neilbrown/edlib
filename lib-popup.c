@@ -124,7 +124,7 @@ DEF_CMD(popup_child_closed)
 	return 1;
 }
 
-static void popup_set_style(struct pane *p)
+static void popup_set_style(struct pane *p safe)
 {
 	struct popup_info *ppi = p->data;
 	char border[6];
