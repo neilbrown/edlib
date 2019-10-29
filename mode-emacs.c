@@ -167,7 +167,6 @@ REDEF_CMD(emacs_move)
 		attr_set_int(&mk->attrs, "emacs:active", 0);
 		call("Notify:change", ci->focus, 0, NULL, NULL, 0, mk);
 	}
-	pane_damaged(cursor_pane, DAMAGED_CURSOR);
 
 	return ret;
 }
@@ -653,9 +652,6 @@ DEF_CMD(emacs_undo)
 	if (ret == Efalse)
 		call("Message", ci->focus, 0, NULL,
 		     "No further undo information");
-	else
-		/* Point probably moved, so */
-		pane_damaged(ci->focus, DAMAGED_CURSOR);
 
 	return 1;
 }
@@ -973,7 +969,6 @@ REDEF_CMD(emacs_file_complete)
 		call("Replace", ci->focus, 1, start, NULL);
 		mark_free(start);
 
-		pane_damaged(p, DAMAGED_CONTENT);
 		return 1;
 	}
 	if (cr.s) {
@@ -1076,7 +1071,6 @@ REDEF_CMD(emacs_doc_complete)
 
 		call("Replace", ci->focus, 1, start, NULL);
 		mark_free(start);
-		pane_damaged(p, DAMAGED_CONTENT);
 		return 1;
 	}
 	if (cr.s) {
@@ -1294,7 +1288,6 @@ DEF_CMD(emacs_search_highlight)
 		}
 	}
 	call("Notify:change", ci->focus);
-	pane_damaged(ci->home, DAMAGED_CONTENT|DAMAGED_VIEW);
 	return 1;
 }
 
@@ -1777,7 +1770,6 @@ DEF_CMD(emacs_goto_line)
 		return 1;
 	call("CountLines", ci->focus, ci->num, ci->mark, "goto:line");
 	call("Move-View-Pos", ci->focus, 0, ci->mark);
-	pane_damaged(ci->focus, DAMAGED_CURSOR);
 	return 1;
 }
 

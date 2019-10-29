@@ -842,6 +842,23 @@ DEF_CMD(doc_notify_viewers)
 	return 1;
 }
 
+DEF_CMD(doc_notify_moved)
+{
+	struct doc_data *dd = ci->home->data;
+
+	if (ci->mark == dd->point)
+		pane_damaged(ci->home, DAMAGED_CURSOR);
+	return 0;
+}
+
+DEF_CMD(doc_refresh)
+{
+	struct doc_data *dd = ci->home->data;
+
+	mark_ack(dd->point);
+	return 0;
+}
+
 DEF_CMD(doc_notify_close)
 {
 	/* This pane has to go away */
@@ -902,7 +919,6 @@ DEF_CMD(doc_dup_point)
 DEF_CMD(doc_replace)
 {
 	struct doc_data *dd = ci->home->data;
-	pane_damaged(ci->focus, DAMAGED_CURSOR);
 	return home_call(dd->doc, "doc:replace", ci->focus, 1, ci->mark, ci->str,
 			 ci->num2, dd->point, ci->str2);
 }
@@ -943,10 +959,8 @@ DEF_CMD(doc_move_to)
 		dd->mark = NULL;
 		break;
 	case 0:
-		if (ci->mark) {
+		if (ci->mark)
 			mark_to_mark(dd->point, ci->mark);
-			pane_damaged(ci->focus, DAMAGED_CURSOR);
-		}
 		break;
 	}
 	return 1;
@@ -1081,6 +1095,8 @@ static void init_doc_cmds(void)
 
 	key_add(doc_handle_cmd, "Notify:doc:viewers", &doc_notify_viewers);
 	key_add(doc_handle_cmd,	"Notify:Close", &doc_notify_close);
+	key_add(doc_handle_cmd,	"Notify:point:moved", &doc_notify_moved);
+	key_add(doc_handle_cmd,	"Refresh", &doc_refresh);
 	key_add(doc_handle_cmd,	"Clone", &doc_clone);
 	key_add(doc_handle_cmd,	"Close", &doc_close);
 	key_add(doc_handle_cmd, "doc:dup-point", &doc_dup_point);
@@ -1125,6 +1141,7 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 
 	pane_add_notify(p, doc, "Notify:Close");
 	pane_add_notify(p, doc, "Notify:doc:viewers");
+	pane_add_notify(p, doc, "Notify:point:moved");
 	call("doc:Notify:doc:revisit", doc, 0);
 }
 

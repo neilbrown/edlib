@@ -191,7 +191,8 @@ struct mark {
 
 /* A point uses this for the mdata */
 struct point_links {
-	int			size;
+	unsigned int		size:31;
+	unsigned int		moved:1;
 	struct mark		*pt safe;
 	struct tlist_head	lists[];
 };
@@ -199,6 +200,7 @@ struct point_links {
 struct mark *safe mark_dup(struct mark *m safe);
 struct mark *safe mark_dup_view(struct mark *m safe);
 void mark_free(struct mark *m);
+void mark_ack(struct mark *m);
 
 struct mark *doc_first_mark_all(struct doc *d safe);
 struct mark *doc_next_mark_all(struct mark *m safe);

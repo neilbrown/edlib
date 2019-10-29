@@ -716,13 +716,11 @@ class MarkdownPane(edlib.Pane):
             m2 = mark.dup()
             if focus.call("doc:Notify:doc:Recentre", m2, 2,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
-                focus.damaged(edlib.DAMAGED_CURSOR)
                 return 1
         if num < 0 and mark:
             m2 = mark.dup()
             if focus.call("doc:Notify:doc:Recentre", m2, 3,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
-                focus.damaged(edlib.DAMAGED_CURSOR)
                 return 1
         return 0
 

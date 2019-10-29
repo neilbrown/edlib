@@ -1850,6 +1850,19 @@ static PyObject *Mark_release(Mark *self safe, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Mark_ack(Mark *self safe, PyObject *args)
+{
+	struct mark *m = self->mark;
+
+	if (!m) {
+		PyErr_SetString(PyExc_TypeError, "Mark has been freed");
+		return NULL;
+	}
+	mark_ack(m);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef mark_methods[] = {
 	{"to_mark", (PyCFunction)Mark_to_mark, METH_VARARGS,
 	 "Move one mark to another"},
@@ -1869,6 +1882,8 @@ static PyMethodDef mark_methods[] = {
 	 "If this mark is in range, move to start"},
 	{"release", (PyCFunction)Mark_release, METH_NOARGS,
 	 "release a vmark so it can disappear"},
+	{"ack", (PyCFunction)Mark_ack, METH_NOARGS,
+	 "acknowledge movement of a point - allow further notifications"},
 	{NULL}
 };
 

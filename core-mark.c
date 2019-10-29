@@ -215,6 +215,7 @@ void points_resize(struct doc *d safe)
 						 d->nviews * sizeof(new->lists[0]));
 		new->pt = p;
 		new->size = d->nviews;
+		new->moved = old->moved;
 		p->mdata = new;
 		for (i = 0; i < old->size; i++) {
 			tlist_add(&new->lists[i], GRP_LIST, &old->lists[i]);
@@ -263,6 +264,25 @@ struct mark *safe mark_dup_view(struct mark *m safe)
 		tlist_add(&ret->view, GRP_MARK, &m->view);
 	return ret;
 }
+
+static void notify_point_moved(struct mark *m safe)
+{
+	struct point_links *plnk = safe_cast m->mdata;
+
+	if (plnk->moved)
+		return;
+	plnk->moved = 1;
+	pane_notify("Notify:point:moved", m->owner->home, 0, m);
+}
+
+void mark_ack(struct mark *m)
+{
+	if (m && m->viewnum == MARK_POINT) {
+		struct point_links *plnk = safe_cast m->mdata;
+		plnk->moved = 0;
+	}
+}
+
 
 void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 {
@@ -315,6 +335,7 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 			else
 				tlist_add(&lnk->lists[i], GRP_LIST, &d->views[i].head);
 		}
+	notify_point_moved(m);
 }
 
 void mark_reset(struct doc *d safe, struct mark *m safe, int end)
@@ -368,6 +389,7 @@ struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner)
 		int i;
 
 		lnk->size = d->nviews;
+		lnk->moved = 0;
 		lnk->pt = ret;
 		for (i = 0; i < d->nviews; i++)
 			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
@@ -578,16 +600,17 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 	ASSERT(a == target);
 	/* END DEBUG */
 
-	if (m->seq == target->seq)
-		return;
 	if (m->viewnum == MARK_POINT) {
 		/* Lots of linkage to fix up */
 		if (m->seq < target->seq)
 			point_forward_to_mark(m, target);
-		else
+		else if (m->seq > target->seq)
 			point_backward_to_mark(m, target);
+		notify_point_moved(m);
 		return;
 	}
+	if (m->seq == target->seq)
+		return;
 	if (m->viewnum == MARK_UNGROUPED) {
 		/* Only one linked list to worry about */
 		if (m->seq < target->seq) {
@@ -679,8 +702,6 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 
 void mark_to_mark(struct mark *m safe, struct mark *target safe)
 {
-	if (m->seq == target->seq)
-		return;
 	mark_to_mark_noref(m, target);
 	mark_ref_copy(m, target);
 }
