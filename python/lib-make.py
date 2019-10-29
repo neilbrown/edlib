@@ -116,14 +116,20 @@ class MakePane(edlib.Pane):
     def goto_mark(self, focus, n, where):
         (fname, lineno) = n
         try:
-            dir = self['dirname']
-            if not dir:
+            if fname[0] != '/':
+                dir = self['dirname']
+                if not dir:
+                    dir = ""
+            else:
                 dir = ""
             d = focus.call("doc:open", -1, dir+fname, ret='focus')
         except edlib.commandfailed:
             d = None
         if not d:
-            focus.call("Message", "File %s not found in %s." %( fname, dir))
+            if dir:
+                focus.call("Message", "File %s not found in %s." %( fname, dir))
+            else:
+                focus.call("Message", "File %s not found." % fname)
             return edlib.Efail
         par = focus.call("DocPane", d, ret='focus')
         if par:
