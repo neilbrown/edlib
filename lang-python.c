@@ -509,8 +509,9 @@ static void python_pane_free(struct command *c safe)
 	Py_DECREF(p);
 }
 
-static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds, Pane **parentp safe,
-		       int *zp)
+static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
+		       Pane **parentp safe,
+		       int *zp safe)
 {
 	Pane *parent = NULL;
 	PyObject *py_handler = NULL;
@@ -534,16 +535,16 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds, Pane **p
 	if (ret <= 0)
 		return -1;
 
-	if ((PyObject*)parent == Py_None) {
-		Py_DECREF(parent);
+	if ((PyObject*)parent == Py_None)
 		parent = NULL;
-	}
+
 	if (parent && !PyObject_TypeCheck(parent, &PaneType)) {
 		PyErr_SetString(PyExc_TypeError, "First arg must be edlib.Pane or None");
-		Py_DECREF(parent);
-		Py_XDECREF(py_handler);
 		return -1;
 	}
+
+	if (py_handler)
+		Py_INCREF(py_handler);
 	self->refer = py_handler;
 
 	*parentp = parent;
