@@ -119,7 +119,7 @@ void edlib_init(struct pane *ed safe)
 		key_add(copy_map, "Close", &copy_close);
 	}
 
-	cyi->pane = pane_register(ed, 0, &copy_handle.c, cyi, NULL);
+	cyi->pane = pane_register(ed, 0, &copy_handle.c, cyi);
 	call_comm("global-set-command", ed, &cyi->cmd, 0, NULL, "copy:save");
 	call_comm("global-set-command", ed, &cyi->cmd, 0, NULL, "copy:get");
 }

@@ -381,8 +381,7 @@ enum {
 
 struct xy {short x,y;};
 struct pane *safe pane_register(struct pane *parent, short z,
-				struct command *handle safe, void *data,
-				struct list_head *here);
+				struct command *handle safe, void *data);
 struct pane *safe doc_register(struct pane *parent, short z,
                                struct command *handle safe,
                                struct doc *doc safe);

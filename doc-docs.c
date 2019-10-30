@@ -815,7 +815,7 @@ DEF_CMD(docs_attach)
 			//attr_set_str(&p->attrs, "line-format", "%+doc-name");
 			//attr_set_str(&p->attrs, "heading", "");
 			//attr_set_str(&p->attrs, "done-key", "Replace");
-			p = pane_register(p, 0, &docs_modified_handle.c, docs, NULL);
+			p = pane_register(p, 0, &docs_modified_handle.c, docs);
 
 			call("doc:Request:Notify:doc:Replace", p);
 			/* And trigger Notify:doc:Replace handling immediately...*/
@@ -911,7 +911,7 @@ DEF_CMD(attach_docs)
 	}
 	doc->rendering = NULL;
 	doc->doc.name = strdup("*Documents*");
-	p = pane_register(ci->home, 0, &docs_aux.c, doc, NULL);
+	p = pane_register(ci->home, 0, &docs_aux.c, doc);
 	if (!p) {
 		pane_close(doc->doc.home);
 		return Efail;

@@ -167,7 +167,7 @@ DEF_CMD(ws_clone)
 	struct ws_info *ws = calloc(1, sizeof(*ws));
 	struct pane *p;
 
-	p = pane_register(ci->focus, 0, &whitespace_handle.c, ws, NULL);
+	p = pane_register(ci->focus, 0, &whitespace_handle.c, ws);
 	pane_clone_children(ci->home, p);
 	return 0;
 }
@@ -177,8 +177,7 @@ DEF_CMD(whitespace_attach)
 	struct ws_info *ws = calloc(1, sizeof(*ws));
 
 	return comm_call(ci->comm2, "callback:attach",
-			 pane_register(ci->focus, 0, &whitespace_handle.c, ws,
-				       NULL));
+			 pane_register(ci->focus, 0, &whitespace_handle.c, ws));
 }
 
 void edlib_init(struct pane *ed safe)

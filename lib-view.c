@@ -379,7 +379,7 @@ static struct pane *safe do_view_attach(struct pane *par, int border)
 	vd->old_border = border;
 	vd->line_height = -1;
 	vd->border_width = vd->border_height = -1;
-	p = pane_register(par, 0, &view_handle.c, vd, NULL);
+	p = pane_register(par, 0, &view_handle.c, vd);
 	/* Capture status-changed notification so we can update 'changed' flag in
 	 * status line */
 	call("doc:Request:Notify:doc:status-changed", p);

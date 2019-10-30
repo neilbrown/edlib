@@ -436,7 +436,7 @@ static void render_image(struct pane *p safe, char *line safe, short *yp safe,
 		line += strspn(line, ",");
 	}
 	if (fname && dodraw) {
-		struct pane *tmp = pane_register(NULL, 0, &null, NULL, NULL);
+		struct pane *tmp = pane_register(NULL, 0, &null, NULL);
 
 		pane_resize(tmp, (p->w - width)/2, *yp, width, height);
 		tmp->parent = p; // FIXME this fiddling with ->parent is ugly,
@@ -1838,7 +1838,7 @@ REDEF_CMD(render_lines_attach)
 	p = ci->focus;
 	if (strcmp(ci->key, "attach-render-text") == 0)
 		p = call_ret(pane, "attach-renderline", p);
-	p = pane_register(p, 0, &render_lines_handle.c, rl, NULL);
+	p = pane_register(p, 0, &render_lines_handle.c, rl);
 	rl->typenum = home_call(ci->focus, "doc:add-view", p) - 1;
 	call("doc:Request:Notify:doc:Replace", p);
 

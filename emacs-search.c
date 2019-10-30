@@ -445,7 +445,7 @@ DEF_CMD(emacs_search)
 	esi->wrapped = 0;
 	esi->backwards = ci->num;
 
-	p = pane_register(ci->focus, 0, &search_handle.c, esi, NULL);
+	p = pane_register(ci->focus, 0, &search_handle.c, esi);
 	if (p) {
 		call("doc:Request:Notify:doc:Replace", p);
 		attr_set_str(&p->attrs, "status-line", " Search: case insensitive ");

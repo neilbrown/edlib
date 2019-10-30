@@ -33,13 +33,11 @@
 
 #include "core.h"
 
-static void pane_init(struct pane *p safe, struct pane *par, struct list_head *here)
+static void pane_init(struct pane *p safe, struct pane *par)
 {
 	p->parent = par;
-	if (par && !here)
-		here = &par->children;
-	if (here)
-		list_add(&p->siblings, here);
+	if (par)
+		list_add(&p->siblings, &par->children);
 	else
 		INIT_LIST_HEAD(&p->siblings);
 	INIT_LIST_HEAD(&p->children);
@@ -120,11 +118,10 @@ void pane_damaged(struct pane *p, int type)
 }
 
 struct pane *safe pane_register(struct pane *parent, short z,
-                                struct command *handle safe, void *data,
-                                struct list_head *here)
+                                struct command *handle safe, void *data)
 {
 	struct pane *p = malloc(sizeof(*p));
-	pane_init(p, parent, here);
+	pane_init(p, parent);
 	p->z = z;
 	p->handle = command_get(handle);
 	if (!data)

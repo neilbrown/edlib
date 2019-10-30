@@ -703,7 +703,7 @@ static struct pane *ncurses_init(struct pane *ed, char *tty, char *term)
 	dd->scr_file = f;
 	dd->cursor.x = dd->cursor.y = -1;
 
-	p = pane_register(ed, 0, &ncurses_handle.c, dd, NULL);
+	p = pane_register(ed, 0, &ncurses_handle.c, dd);
 	set_screen(p);
 
 	start_color();

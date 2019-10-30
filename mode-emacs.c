@@ -861,7 +861,7 @@ DEF_CMD(emacs_findfile)
 		}
 		call("doc:set-name", p, 0, NULL, "Find File");
 
-		p = pane_register(p, 0, &find_handle.c, "file", NULL);
+		p = pane_register(p, 0, &find_handle.c, "file");
 		attr_set_str(&p->attrs, "initial_path", path);
 		return 1;
 	}
@@ -1014,7 +1014,7 @@ DEF_CMD(emacs_finddoc)
 		}
 		call("doc:set-name", p, 0, NULL, "Find Document", -1);
 
-		pane_register(p, 0, &find_handle.c, "doc", NULL);
+		pane_register(p, 0, &find_handle.c, "doc");
 		return 1;
 	}
 
@@ -1123,7 +1123,7 @@ DEF_CMD(emacs_shell)
 		call("doc:set-name", p, 0, NULL, "Shell Command", -1);
 		p = call_ret(pane, "attach-history", p, 0, NULL, "*Shell History*",
 		             0, NULL, "popup:close");
-		pane_register(p, 0, &find_handle.c, "shellcmd", NULL);
+		pane_register(p, 0, &find_handle.c, "shellcmd");
 		return 1;
 	}
 	path = pane_attr_get(ci->focus, "dirname");
@@ -1436,7 +1436,7 @@ DEF_CMD(emacs_start_search)
 	struct pane *p, *hp;
 	struct highlight_info *hi = calloc(1, sizeof(*hi));
 
-	hp = pane_register(ci->focus, 0, &highlight_handle.c, hi, NULL);
+	hp = pane_register(ci->focus, 0, &highlight_handle.c, hi);
 	hi->view = home_call(ci->focus, "doc:add-view", hp) - 1;
 
 	p = call_ret(pane, "PopupTile", hp, 0, NULL, "TR2", 0, NULL, "");
@@ -1508,7 +1508,7 @@ DEF_CMD(emacs_command)
 	call("doc:set-name", p, 0, NULL, "M-x command", -1);
 	p = call_ret(pane, "attach-history", p, 0, NULL, "*Command History*",
 	             0, NULL, "popup:close");
-	pane_register(p, 0, &find_handle.c, "cmd", NULL);
+	pane_register(p, 0, &find_handle.c, "cmd");
 	return 1;
 }
 
@@ -2071,7 +2071,7 @@ DEF_CMD(attach_mode_emacs)
 
 DEF_CMD(attach_file_entry)
 {
-	pane_register(ci->focus, 0, &find_handle.c, ci->str ?: "shellcmd", NULL);
+	pane_register(ci->focus, 0, &find_handle.c, ci->str ?: "shellcmd");
 	return 1;
 }
 

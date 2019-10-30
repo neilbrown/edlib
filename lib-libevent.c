@@ -267,7 +267,7 @@ DEF_CMD(libevent_activate)
 	ei->deactivate = libevent_deactivate;
 	ei->free = libevent_free;
 	ei->refresh = libevent_refresh;
-	ei->home = pane_register(ei->home, 0, &libevent_handle.c, ei, NULL);
+	ei->home = pane_register(ei->home, 0, &libevent_handle.c, ei);
 
 	/* These are defaults, so make them sort late */
 	call_comm("global-set-command", ci->focus, &ei->read, 0, NULL, "event:read-zz");

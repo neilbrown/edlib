@@ -237,7 +237,7 @@ DEF_CMD(input_attach)
 	im->num = NO_NUMERIC;
 	im->num2 = 0;
 
-	p = pane_register(ci->focus, 0, &input_handle.c, im, NULL);
+	p = pane_register(ci->focus, 0, &input_handle.c, im);
 	if (p)
 		return comm_call(ci->comm2, "callback:attach", p);
 	return Efail;

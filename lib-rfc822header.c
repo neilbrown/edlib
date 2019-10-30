@@ -423,7 +423,7 @@ DEF_CMD(header_attach)
 	struct mark *end = ci->mark2;
 
 	hi = calloc(1, sizeof(*hi));
-	p = pane_register(ci->focus, 0, &header_handle.c, hi, NULL);
+	p = pane_register(ci->focus, 0, &header_handle.c, hi);
 	if (!p) {
 		free(hi);
 		return Efail;

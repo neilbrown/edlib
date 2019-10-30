@@ -233,7 +233,7 @@ DEF_CMD(b64_attach)
 	struct pane *p;
 	struct b64info *bi = calloc(1, sizeof(*bi));
 
-	p = pane_register(ci->focus, 0, &b64_handle.c, bi, NULL);
+	p = pane_register(ci->focus, 0, &b64_handle.c, bi);
 	if (!p) {
 		free(bi);
 		return Efail;

@@ -602,7 +602,7 @@ DEF_CMD(open_email)
 	if (handle_content(ei->email, type, xfer, start, end, p, ei->spacer, "") == 0)
 		goto out;
 
-	h = pane_register(p, 0, &email_handle.c, ei, NULL);
+	h = pane_register(p, 0, &email_handle.c, ei);
 	if (h) {
 		mark_free(start);
 		mark_free(end);
@@ -787,7 +787,7 @@ DEF_CMD(attach_email_view)
 	evi = calloc(1, sizeof(*evi));
 	evi->parts = n;
 	evi->invis = calloc(n, sizeof(char));
-	p = pane_register(ci->focus, 0, &email_view_handle.c, evi, NULL);
+	p = pane_register(ci->focus, 0, &email_view_handle.c, evi);
 	if (!p) {
 		free(evi);
 		return Efail;

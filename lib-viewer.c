@@ -22,7 +22,7 @@ DEF_LOOKUP_CMD(viewer_handle, viewer_map);
 
 static struct pane *safe do_viewer_attach(struct pane *par)
 {
-	return pane_register(par, 0, &viewer_handle.c, NULL, NULL);
+	return pane_register(par, 0, &viewer_handle.c, NULL);
 }
 
 DEF_CMD(viewer_attach)

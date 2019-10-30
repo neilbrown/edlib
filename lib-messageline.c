@@ -186,9 +186,9 @@ static struct pane *do_messageline_attach(struct pane *p)
 	struct mlinfo *mli = calloc(1, sizeof(*mli));
 	struct pane *ret;
 
-	ret = pane_register(p, 0, &messageline_handle.c, mli, NULL);
+	ret = pane_register(p, 0, &messageline_handle.c, mli);
 	/* z=1 to avoid clone_children affecting it */
-	mli->line = pane_register(ret, 1, &messageline_line_handle.c, mli, NULL);
+	mli->line = pane_register(ret, 1, &messageline_line_handle.c, mli);
 	pane_focus(ret);
 	call_comm("event:timer", mli->line, &force_refresh, 15000);
 

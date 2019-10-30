@@ -159,7 +159,7 @@ DEF_CMD(crop_attach)
 	if (!ci->mark || !ci->mark2)
 		return Enoarg;
 	cd = calloc(1, sizeof(*cd));
-	p = pane_register(ci->focus, 0, &crop_handle.c, cd, NULL);
+	p = pane_register(ci->focus, 0, &crop_handle.c, cd);
 	if (!p) {
 		free(cd);
 		return Efail;

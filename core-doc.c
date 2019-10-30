@@ -77,7 +77,7 @@ struct pane *safe doc_register(struct pane *parent, short z,
 	if (parent)
 		parent = pane_root(parent);
 	doc_init(doc);
-	doc->home = pane_register(parent, z, handle, doc, NULL);
+	doc->home = pane_register(parent, z, handle, doc);
 	return doc->home;
 }
 
@@ -1149,7 +1149,7 @@ static struct pane *safe doc_attach(struct pane *parent)
 {
 	struct doc_data *dd = calloc(1, sizeof(*dd));
 
-	return  pane_register(parent, 0, &doc_handle.c, dd, NULL);
+	return  pane_register(parent, 0, &doc_handle.c, dd);
 }
 
 DEF_CMD(doc_open)

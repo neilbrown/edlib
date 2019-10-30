@@ -143,7 +143,7 @@ static struct pane *safe do_keymap_attach(struct pane *p, int global)
 	kd->globalcmd = NULL;
 	kd->cmdcount = 0;
 	kd->global = global;
-	return pane_register(p, 0, &keymap_handle, kd, NULL);
+	return pane_register(p, 0, &keymap_handle, kd);
 }
 
 DEF_CMD(keymap_attach)

@@ -184,7 +184,7 @@ DEF_CMD(qp_attach)
 {
 	struct pane *p;
 
-	p = pane_register(ci->focus, 0, &qp_handle.c, NULL, NULL);
+	p = pane_register(ci->focus, 0, &qp_handle.c, NULL);
 	if (!p)
 		return Efail;
 

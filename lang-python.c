@@ -570,7 +570,7 @@ static int Pane_init(Pane *self safe, PyObject *args, PyObject *kwds)
 	 */
 	Py_INCREF(self);
 	self->pane = pane_register(parent ? parent->pane : NULL,
-	                           z, &self->handle.c, self, NULL);
+	                           z, &self->handle.c, self);
 	return 0;
 }
 

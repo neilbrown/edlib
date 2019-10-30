@@ -556,7 +556,7 @@ REDEF_CMD(complete_attach)
 		register_map();
 
 	cd = calloc(1, sizeof(*cd));
-	complete = pane_register(ci->focus, 0, &complete_handle.c, cd, NULL);
+	complete = pane_register(ci->focus, 0, &complete_handle.c, cd);
 	if (!complete) {
 		free(cd);
 		return Efail;
