@@ -118,7 +118,7 @@ void pane_damaged(struct pane *p, int type)
 }
 
 struct pane *safe pane_register(struct pane *parent, short z,
-                                struct command *handle safe, void *data)
+				struct command *handle safe, void *data)
 {
 	struct pane *p = malloc(sizeof(*p));
 	pane_init(p, parent);
@@ -262,11 +262,13 @@ void pane_refresh(struct pane *p safe)
 		pane_do_refresh(p, 0);
 	}
 	if (p->damaged)
-		fprintf(stderr, "WARNING %sroot pane damaged after refresh: %d\n",
+		fprintf(stderr,
+			"WARNING %sroot pane damaged after refresh: %d\n",
 			p->parent ? "":"non-", p->damaged);
 }
 
-void pane_add_notify(struct pane *target safe, struct pane *source safe, char *msg safe)
+void pane_add_notify(struct pane *target safe, struct pane *source safe,
+		     char *msg safe)
 {
 	struct notifier *n;
 
@@ -316,7 +318,8 @@ static void pane_notify_close(struct pane *p safe)
 	}
 }
 
-int do_pane_notify(struct pane *home, char *notification safe, struct pane *p safe,
+int do_pane_notify(struct pane *home, char *notification safe,
+		   struct pane *p safe,
 		   int num, struct mark *m, char *str,
 		   int num2, struct mark *m2, char *str2,
 		   struct command *comm2)
@@ -339,7 +342,8 @@ restart:
 		n->noted = 1;
 		if (strcmp(n->notification, notification) == 0) {
 			int r = pane_call(n->notifiee, notification, p,
-					  num, m, str, num2, m2, str2, 0,0, comm2);
+					  num, m, str,
+					  num2, m2, str2, 0,0, comm2);
 			if (abs(r) > abs(ret))
 				ret = r;
 			goto restart;
@@ -400,7 +404,7 @@ restart:
 
 void pane_close(struct pane *p safe)
 {
-       pane_close2(p, p);
+	pane_close2(p, p);
 }
 
 void pane_resize(struct pane *p safe, int x, int y, int w, int h)
@@ -434,7 +438,8 @@ void pane_reparent(struct pane *p safe, struct pane *newparent safe)
 	int replaced = 0;
 	// FIXME this should be a failure, possibly with warning, but an
 	// assert.  I'm not sure just now how best to do warnings.
-	ASSERT(p->parent && (newparent->parent == NULL || newparent->parent == p->parent));
+	ASSERT(p->parent && (newparent->parent == NULL ||
+			     newparent->parent == p->parent));
 	list_del(&p->siblings);
 	if (p->parent->focus == p)
 		p->parent->focus = newparent;
@@ -506,7 +511,8 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 	pane_close2(p, parent);
 }
 
-int pane_masked(struct pane *p safe, short x, short y, short abs_z, short *w, short *h)
+int pane_masked(struct pane *p safe, short x, short y, short abs_z,
+		short *w, short *h)
 {
 	/* Test if this pane, or its children, mask this location.
 	 * i.e. they have a higher 'abs_z' and might draw here.
@@ -643,7 +649,8 @@ DEF_CMD(take_str)
 }
 
 
-struct pane *do_call_pane(enum target_type type, struct pane *home, struct command *comm2a,
+struct pane *do_call_pane(enum target_type type, struct pane *home,
+			  struct command *comm2a,
 			  char *key safe, struct pane *focus safe,
 			  int num,  struct mark *m,  char *str,
 			  int num2, struct mark *m2, char *str2,
@@ -660,7 +667,8 @@ struct pane *do_call_pane(enum target_type type, struct pane *home, struct comma
 	return cr.p;
 }
 
-struct mark *do_call_mark(enum target_type type, struct pane *home, struct command *comm2a,
+struct mark *do_call_mark(enum target_type type, struct pane *home,
+			  struct command *comm2a,
 			  char *key safe, struct pane *focus safe,
 			  int num,  struct mark *m,  char *str,
 			  int num2, struct mark *m2, char *str2,
@@ -677,7 +685,8 @@ struct mark *do_call_mark(enum target_type type, struct pane *home, struct comma
 	return cr.m;
 }
 
-struct mark *do_call_mark2(enum target_type type, struct pane *home, struct command *comm2a,
+struct mark *do_call_mark2(enum target_type type, struct pane *home,
+			   struct command *comm2a,
 			   char *key safe, struct pane *focus safe,
 			   int num,  struct mark *m,  char *str,
 			   int num2, struct mark *m2, char *str2,
@@ -694,7 +703,8 @@ struct mark *do_call_mark2(enum target_type type, struct pane *home, struct comm
 	return cr.m2;
 }
 
-struct command *do_call_comm(enum target_type type, struct pane *home, struct command *comm2a,
+struct command *do_call_comm(enum target_type type, struct pane *home,
+			     struct command *comm2a,
 			     char *key safe, struct pane *focus safe,
 			     int num,  struct mark *m,  char *str,
 			     int num2, struct mark *m2, char *str2,
@@ -711,7 +721,8 @@ struct command *do_call_comm(enum target_type type, struct pane *home, struct co
 	return cr.comm;
 }
 
-char *do_call_strsave(enum target_type type, struct pane *home, struct command *comm2a,
+char *do_call_strsave(enum target_type type, struct pane *home,
+		      struct command *comm2a,
 		      char *key safe, struct pane *focus safe,
 		      int num,  struct mark *m,  char *str,
 		      int num2, struct mark *m2, char *str2,
@@ -726,7 +737,8 @@ char *do_call_strsave(enum target_type type, struct pane *home, struct command *
 	return cr.s;
 }
 
-struct call_return do_call_all(enum target_type type, struct pane *home, struct command *comm2a,
+struct call_return do_call_all(enum target_type type, struct pane *home,
+			       struct command *comm2a,
 			       char *key safe, struct pane *focus safe,
 			       int num,  struct mark *m,  char *str,
 			       int num2, struct mark *m2, char *str2,
@@ -741,7 +753,8 @@ struct call_return do_call_all(enum target_type type, struct pane *home, struct 
 	return cr;
 }
 
-char *do_call_str(enum target_type type, struct pane *home, struct command *comm2a,
+char *do_call_str(enum target_type type, struct pane *home,
+		  struct command *comm2a,
 		  char *key safe, struct pane *focus safe,
 		  int num,  struct mark *m,  char *str,
 		  int num2, struct mark *m2, char *str2,
@@ -761,7 +774,8 @@ char *do_call_str(enum target_type type, struct pane *home, struct command *comm
 }
 
 /* convert pane-relative co-ords to absolute */
-void pane_absxy(struct pane *p, short *x safe, short *y safe, short *w safe, short *h safe)
+void pane_absxy(struct pane *p, short *x safe, short *y safe,
+		short *w safe, short *h safe)
 {
 	while (p) {
 		if (p->w > 0 && *x + *w > p->w)
@@ -784,7 +798,8 @@ void pane_relxy(struct pane *p, short *x safe, short *y safe)
 	}
 }
 
-void pane_map_xy(struct pane *orig, struct pane *target, short *x safe, short *y safe)
+void pane_map_xy(struct pane *orig, struct pane *target,
+		 short *x safe, short *y safe)
 {
 	short w=0, h=0;
 	pane_absxy(orig, x, y, &w, &h);
