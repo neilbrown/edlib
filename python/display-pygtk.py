@@ -293,11 +293,11 @@ class EdDisplay(gtk.Window):
                 w = w2
         scale = pb.scale_simple(w, h, gtk.gdk.INTERP_HYPER)
         # I'm not sure I'm completely happy with this, but when
-        # not stretching and when z == 0, draw on a parent pane unless
+        # not stretching and when z == None, draw on a parent pane unless
         # a pixmap has already been allocated.  This allows
         # a temp pane to be created to draw an image, then it can
         # be discarded and the image remains
-        while focus.z == 0 and not stretch and focus not in self.panes and focus.parent:
+        if focus.z < 0 and focus.parent:
             x += focus.x
             y += focus.y
             focus = focus.parent

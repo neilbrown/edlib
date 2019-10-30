@@ -118,6 +118,7 @@ DEF_CMD(popup_child_closed)
 	struct popup_info *ppi = ci->home->data;
 
 	if (ci->focus->z != 0)
+		/* Pop-up children don't count */
 		return 1;
 	pane_focus(ppi->target);
 	pane_close(ci->home);

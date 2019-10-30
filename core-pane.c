@@ -98,6 +98,9 @@ void pane_damaged(struct pane *p, int type)
 	p->damaged |= type;
 
 	z = p->z;
+	if (z < 0)
+		/* light-weight pane - never propagate damage */
+		return;
 	p = p->parent;
 	if (type & DAMAGED_SIZE)
 		type = DAMAGED_SIZE_CHILD;
@@ -109,7 +112,8 @@ void pane_damaged(struct pane *p, int type)
 		return;
 
 	while (p && (p->damaged | type) != p->damaged) {
-		if (z && (type & DAMAGED_SIZE_CHILD))
+		if (z > 0 && (type & DAMAGED_SIZE_CHILD))
+			/* overlay changed size, so we must refresh */
 			p->damaged |= DAMAGED_CONTENT;
 		p->damaged |= type;
 		z = p->z;
@@ -131,9 +135,11 @@ struct pane *safe pane_register(struct pane *parent, short z,
 		p->data = handle;
 	else
 		p->data = data;
-	if (parent && parent->focus == NULL)
-		parent->focus = p;
-	pane_call(parent, "ChildRegistered", p);
+	if (z >= 0) {
+		if (parent && parent->focus == NULL)
+			parent->focus = p;
+		pane_call(parent, "ChildRegistered", p);
+	}
 	return p;
 }
 
@@ -161,7 +167,7 @@ static void pane_do_resize(struct pane *p safe, int damage)
 
 	damage |= p->damaged & (DAMAGED_SIZE | DAMAGED_SIZE_CHILD);
 	if (!damage &&
-	    (p->parent == NULL || p->abs_z == p->parent->abs_z + p->z))
+	    (p->parent == NULL || p->abs_z == p->parent->abs_z + abs(p->z)))
 		return;
 
 	if (p->focus == NULL)
@@ -387,7 +393,8 @@ restart:
 	pane_notify_close(p);
 	pane_call(p, "Close", p);
 
-	pane_damaged(p->parent, DAMAGED_CONTENT);
+	if (p->z >= 0)
+		pane_damaged(p->parent, DAMAGED_CONTENT);
 	/* If a child has not yet had "Close" called, we need to leave
 	 * ->parent in place so a full range of commands are available.
 	 */
@@ -410,6 +417,7 @@ void pane_close(struct pane *p safe)
 void pane_resize(struct pane *p safe, int x, int y, int w, int h)
 {
 	int damage = 0;
+
 	if (x >= 0 &&
 	    (p->x != x || p->y != y)) {
 		damage |= DAMAGED_CONTENT | DAMAGED_SIZE;
@@ -533,7 +541,7 @@ int pane_masked(struct pane *p safe, short x, short y, short abs_z,
 		/* area is before this pane, no over lap possible */
 		return 0;
 
-	if (p->abs_z > abs_z && p->z) {
+	if (p->abs_z > abs_z && p->z > 0) {
 		/* This pane does mask some of the region */
 		if (x >= p->x || y >= p->y)
 			/* pane masks x,y itself */
