@@ -54,6 +54,16 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] c-mode indent should let me delete one level when it was due to bracketing,
+      so I can insert the close bracket.
+- [ ] comma sep list in enum doesn't get indented properly.  Need to recognize enum
+      and treat ',' as end-of-statement .
+- [ ] case 0: indent seems to be broken... in "if ()\n switch(){ case 0:"
+- [ ] If you wrap a list of global variables, it doesn't indent.
+- [ ] <40> in a line of text (immediately after wrap) can make big text.
+- [ ] accessing a different frame shouldn't make a transient-popup
+      disappear
+- [ ] server transient popups should use the most recently accessed frame
 - [ ] capturing 'Enter' in c-mode for indent interrupts a sequence
       of N2_undo_insert.  Do I want that?
 - [X] message line needs to keep some messages permanently - 

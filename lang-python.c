@@ -1027,6 +1027,21 @@ static PyObject *Pane_reparent(Pane *self safe, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Pane_move_after(Pane *self safe, PyObject *args)
+{
+	Pane *peer = NULL;
+	int ret = PyArg_ParseTuple(args, "O", &peer);
+
+	if (ret > 0 && peer && self->pane) {
+		if ((PyObject*)peer == Py_None)
+			pane_move_after(self->pane, NULL);
+		else if (PyObject_TypeCheck(peer, &PaneType) && peer->pane)
+			pane_move_after(self->pane, peer->pane);
+	}
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef pane_methods[] = {
 	{"close", (PyCFunction)Pane_close, METH_NOARGS,
 	 "close the pane"},
@@ -1058,6 +1073,8 @@ static PyMethodDef pane_methods[] = {
 	 "clip all 'type' marks in the given range"},
 	{"reparent", (PyCFunction)Pane_reparent, METH_VARARGS,
 	 "Give a pane a new parent"},
+	{"move_after", (PyCFunction)Pane_move_after, METH_VARARGS,
+	 "Move a pane after another in order of children"},
 	{NULL}
 };
 

@@ -457,6 +457,20 @@ void pane_reparent(struct pane *p safe, struct pane *newparent safe)
 		pane_call(newparent->parent, "ChildReplaced", newparent);
 }
 
+void pane_move_after(struct pane *p safe, struct pane *after)
+{
+	/* Move 'p' after 'after', or if !after, move to start */
+	if (!p->parent || p == after)
+		return;
+	if (after) {
+		if (p->parent != after->parent)
+			return;
+		list_move(&p->siblings, &after->siblings);
+	} else {
+		list_move(&p->siblings, &p->parent->children);
+	}
+}
+
 void pane_subsume(struct pane *p safe, struct pane *parent safe)
 {
 	/* move all content from p into parent, which must be empty,

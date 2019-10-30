@@ -156,7 +156,6 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char
 	struct pane *p = safe_cast *pp;
 	struct pane *ret;
 	struct tileinfo *ti = p->data;
-	struct list_head *here;
 	struct tileinfo *ti2;
 	if (horiz)
 		space = p->w;
@@ -192,7 +191,6 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char
 				pane_reparent(child, p2);
 		p = p2;
 	}
-	here = after ? &p->siblings : p->siblings.prev;
 	ti2 = calloc(1, sizeof(*ti2));
 	ti2->group = ti->group;
 	ti2->direction = ti->direction;
@@ -204,8 +202,15 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char
 		list_add(&ti2->tiles, &ti->tiles);
 	else
 		list_add_tail(&ti2->tiles, &ti->tiles);
-	ret = pane_register(p->parent, 0, &tile_handle.c, ti2, here);
+	ret = pane_register(p->parent, 0, &tile_handle.c, ti2, NULL);
 	ti2->p = ret;
+	if (after)
+		pane_move_after(ret, p);
+	else if (p == list_first_entry(&p->parent->children,
+				       struct pane, siblings))
+		pane_move_after(ret, NULL);
+	else
+		pane_move_after(ret, list_prev_entry(p, siblings));
 	switch (!!horiz + 2 * !!after) {
 	case 0: /* vert before */
 		pane_resize(ret, p->x, p->y, p->w, new_space);
