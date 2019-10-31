@@ -88,8 +88,8 @@ class FillMode(edlib.Pane):
 
             # Now choose a prefix, which is non-alphanum or quotes.
             # Possibly open brackets should be included too?
-            l = focus.call("text-search", "[^a-zA-Z0-9'\"\n]*", mark.dup())
-            while l > 0:
+            l = focus.call("text-match", "^[^a-zA-Z0-9'\"\n]*", mark.dup())
+            while l > 1:
                 focus.call("doc:step", 1, 1, mark)
                 l -= 1
 

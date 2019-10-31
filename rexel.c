@@ -476,6 +476,11 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 				break;
 			case REC_MATCH:
 				/* cannot match more chars here */
+				if (flag)
+					advance = 0;
+				else
+					advance = -1;
+				break;
 			case REC_NONE:
 				advance = -1;
 				break;
@@ -1297,8 +1302,8 @@ unsigned short *safe rxl_parse_verbatim(char *patn safe, int nocase)
 	return st.rxl;
 }
 
-static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
-			int anchored)
+static int setup_match(struct match_state *st safe, unsigned short *rxl safe,
+		       int anchored)
 {
 	int len = RXL_SETSTART(rxl) - rxl;
 	int i;
@@ -1324,14 +1329,19 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
 	 * at the start state.
 	 */
 	do_link(st, 1, 0, 0);
+	return st->match;
 }
 
-struct match_state *safe rxl_prepare(unsigned short *rxl safe, int anchored)
+struct match_state *safe rxl_prepare(unsigned short *rxl safe,
+				     int anchored, int *lenp)
 {
 	struct match_state *ret;
+	int len;
 
 	ret = malloc(sizeof(*ret));
-	setup_match(ret, rxl, anchored);
+	len = setup_match(ret, rxl, anchored);
+	if (lenp)
+		*lenp = len;
 	return ret;
 }
 
@@ -1430,12 +1440,17 @@ static struct test {
 	int flags, start, len;
 } tests[] = {
 	{ "abc", "the abc", 0, 4, 3},
-	{ "a*", " aaaaac", 0, 1,  5},
+	{ "a*", " aaaaac", 0, 0,  0},
+	{ "a*", "aaaaac", 0, 0,  5},
+	{ "a+", " aaaaac", 0, 1,  5},
 	// Inverting set of multiple classes
 	{ "[^\\A\\a]", "a", 0, -1, -1},
 	// Search for start of a C function: non-label at start of line
 	{ "^([^ a-zA-Z0-9#]|[\\A\\a\\d_]+[\\s]*[^: a-zA-Z0-9_])", "hello:  ",
 	 0, -1, -1},
+	// Match an empty string
+	{ "[^a-z]*", "abc", 0, 0, 0},
+	{ "^[^a-z]*", "abc", 0, 0, 0},
 };
 static void run_tests(int trace)
 {
@@ -1472,8 +1487,12 @@ static void run_tests(int trace)
 
 		mstart = -1;
 		mlen = -1;
-		rxl_advance(&st, WEOF, RXL_SOL);
-		while (mstart < 0 || len > 0) {
+		len = rxl_advance(&st, WEOF, RXL_SOL);
+		if (len >= 0) {
+			mstart = 0;
+			mlen = len;
+		}
+		while (mstart < 0 || len >= 0) {
 			wchar_t wc;
 			int used = mbrtowc(&wc, target, 5, &ps);
 			if (used <= 0)
@@ -1583,8 +1602,7 @@ int main(int argc, char *argv[])
 	setup_match(&st, rxl, 0);
 	st.trace = trace;
 	i = 0;
-	len = -1;
-	rxl_advance(&st, WEOF, RXL_SOL);
+	len = rxl_advance(&st, WEOF, RXL_SOL);
 	while (len < 0) {
 		wchar_t wc;
 		used = mbrtowc(&wc, target+i, 5, &ps);
