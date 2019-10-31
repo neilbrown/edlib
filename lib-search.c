@@ -20,7 +20,6 @@ struct search_state {
 	struct mark *end;
 	struct mark *endmark;
 	int since_start;
-	int anchored;
 	wint_t prev_ch;
 	struct command c;
 };
@@ -73,7 +72,7 @@ DEF_CMD(search_test)
 		if (len < 0 && ss->since_start >= 0)
 			/* Found longest match at this location */
 			return 0;
-		if (ss->anchored && len == -2)
+		if (len == -2)
 			/* No match here */
 			return 0;
 	}
@@ -98,7 +97,6 @@ static int search_forward(struct pane *p safe,
 	ss.end = m2;
 	ss.endmark = endmark;
 	ss.c = search_test;
-	ss.anchored = anchored;
 	ss.prev_ch = doc_prior_pane(p, m);
 	call_comm("doc:content", p, &ss.c, 0, m);
 	rxl_free_state(ss.st);
@@ -120,7 +118,6 @@ static int search_backward(struct pane *p safe,
 
 	ss.end = NULL;
 	ss.endmark = NULL;
-	ss.anchored = 1;
 	ss.c = search_test;
 
 	do {

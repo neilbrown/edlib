@@ -336,10 +336,8 @@ static int set_match(struct match_state *st safe, unsigned short addr,
  * If the match must be anchor to the first character, this must have been
  * advised to rxl_prepare.  The caller should keep calling until no chars are
  * left, or -2 is returned (no match), or >=0 is returned.  In the latter case
- * the call might keep calling to see if a longer match is possible.  Once
- * a non-negative return has been seen, the next negative return should stop
- * the search.
- * If the search is not anchored, then checking for -2 is not relevant.
+ * the call might keep calling to see if a longer match is possible.  Until -2
+ * is seen, a longer match is still possible.
  */
 int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 {
@@ -359,7 +357,7 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 	if (flag && ch != WEOF)
 		/* This is an illegal combination */
 		return -2;
-	if (st->match < 0 && !st->anchored) {
+	if (!st->anchored) {
 		/* We haven't found a match yet and search is not anchored,
 		 * so possibly start a search here.
 		 */
@@ -574,8 +572,12 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		eol = do_link(st, i+1, eol, len);
 	}
 	st->link[next][eol] = 0;
-	if (eol == 0 && st->match < 0)
+	if (eol == 0 && st->match < 0 && st->anchored)
+		/* No chance of finding (another) match now */
 		return -2;
+	if (st->match >= 0)
+		/* Don't accept another start point */
+		st->anchored = 1;
 	return st->match;
 }
 
@@ -1329,6 +1331,8 @@ static int setup_match(struct match_state *st safe, unsigned short *rxl safe,
 	 * at the start state.
 	 */
 	do_link(st, 1, 0, 0);
+	if (st->match >= 0)
+		st->anchored = 1;
 	return st->match;
 }
 
@@ -1451,6 +1455,8 @@ static struct test {
 	// Match an empty string
 	{ "[^a-z]*", "abc", 0, 0, 0},
 	{ "^[^a-z]*", "abc", 0, 0, 0},
+	// repeated long string - should match longest
+	{ "(hello |there )+", "I said hello there hello to you", 0, 7, 18},
 };
 static void run_tests(int trace)
 {
@@ -1492,7 +1498,7 @@ static void run_tests(int trace)
 			mstart = 0;
 			mlen = len;
 		}
-		while (mstart < 0 || len >= 0) {
+		while (mstart < 0 || len != -2) {
 			wchar_t wc;
 			int used = mbrtowc(&wc, target, 5, &ps);
 			if (used <= 0)
