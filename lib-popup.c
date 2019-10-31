@@ -328,7 +328,7 @@ DEF_CMD(popup_attach)
 	if (ci->str2) {
 		struct pane *doc =
 			call_ret(pane, "doc:from-text", p, 0, NULL,
-			         "*popup*", 0, NULL, ci->str2);
+				 "*popup*", 0, NULL, ci->str2);
 		if (doc &&
 		    (p = home_call_ret(pane, doc, "doc:attach-view",
 				       p, -1)) != NULL) {

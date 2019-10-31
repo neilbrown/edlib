@@ -521,7 +521,7 @@ DEF_CMD(text_autosave_tick)
 	else {
 		t->as.timer_started = 1;
 		call_comm("event:timer", t->doc.home, &text_autosave_tick,
-		          (t->as.last_change + 30 - time(NULL)) * 1000);
+			  (t->as.last_change + 30 - time(NULL)) * 1000);
 	}
 	return Efalse;
 }
@@ -540,7 +540,7 @@ static void text_check_autosave(struct text *t safe)
 	else if (!t->as.timer_started) {
 		t->as.timer_started = 1;
 		call_comm("event:timer", t->doc.home, &text_autosave_tick,
-		          30 * 1000);
+			  30 * 1000);
 	}
 }
 
@@ -1177,8 +1177,8 @@ DEF_CMD(text_reundo)
 			t->undo = ed;
 			last = t->redo == NULL || t->redo->first;
 		} else if (t->prev_edit <= Undo &&
-		           t->undo &&
-		           t->undo->altnext && !t->undo->alt_is_second) {
+			   t->undo &&
+			   t->undo->altnext && !t->undo->alt_is_second) {
 			ed = t->undo->altnext;
 			text_redo(t, ed, &start, &end);
 			t->prev_edit = Redo;

@@ -115,7 +115,7 @@ DEF_CMD(render_complete_line)
 	mark_free(m);
 	cb.c = save_highlighted;
 	if (call_comm(ci->key, ci->home->parent, &cb.c, ci->num, ci->mark,
-	              NULL, 0, ci->mark2) == 0)
+		      NULL, 0, ci->mark2) == 0)
 		return 0;
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cb.str);
@@ -455,11 +455,11 @@ DEF_CMD(complete_set_prefix)
 	if (common_pre && common_pre[0]) {
 		strcat(common_pre, common);
 		comm_call(ci->comm2, "callback:prefix", ci->focus, cnt,
-		          NULL, common_pre);
+			  NULL, common_pre);
 		free(common_pre);
 	} else
 		comm_call(ci->comm2, "callback:prefix", ci->focus, cnt,
-		          NULL, common);
+			  NULL, common);
 	free(common);
 	if (m2) {
 		call("Move-to", ci->focus, 0, m2);

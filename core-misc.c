@@ -144,7 +144,7 @@ static void stat_dump(void)
 	fprintf(dump_file, "%ld:", (long)time(NULL));
 	for (i = 0; i< __TIME_COUNT; i++) {
 		fprintf(dump_file, " %s:%d:%lld", tnames[i], tcount[i],
-		        tsum[i] / (tcount[i]?:1));
+			tsum[i] / (tcount[i]?:1));
 		tcount[i] = 0;
 		tsum[i] = 0;
 	}
@@ -254,8 +254,8 @@ static void dump_key_hash(void)
 			if (!h->tcount)
 				continue;
 			fprintf(dump_file, " %s:%d:%lld",
-			        h->name, h->tcount,
-			        h->tsum / (h->tcount?:1));
+				h->name, h->tcount,
+				h->tsum / (h->tcount?:1));
 			h->tcount = 0;
 			h->tsum = 0;
 		}
@@ -292,7 +292,7 @@ static void dump_count_hash(void)
 		for (h = count_tab[i]; h ; h = h->next) {
 			c += 1;
 			fprintf(dump_file, " %s:%d:-",
-			        h->name, h->tcount);
+				h->name, h->tcount);
 			h->tcount = 0;
 			h->tsum = 0;
 		}

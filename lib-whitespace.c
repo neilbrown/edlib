@@ -143,7 +143,7 @@ DEF_CMD(ws_attrs)
 		char *s = strsave(ci->focus, ci->str2);
 		choose_next(ci->focus, ci->mark, ws);
 		return comm_call(ci->comm2, "attr:callback", ci->focus, 1,
-		                 ci->mark, s, 10);
+				 ci->mark, s, 10);
 	}
 	return 0;
 }

@@ -409,7 +409,7 @@ DEF_CMD(docs_callback)
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
 		p = home_call_ret(pane, doc->doc.home, "doc:attach-view",
 				  ci->focus,
-		                  ci->num, NULL, "modified");
+				  ci->num, NULL, "modified");
 		if (!p)
 			return Efail;
 		return comm_call(ci->comm2, "callback:doc", p);
@@ -798,7 +798,7 @@ DEF_CMD(docs_attach)
 
 	if (strcmp(type, "complete") == 0) {
 		p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
-		                  0, NULL, "invisible");
+				  0, NULL, "invisible");
 		if (p)
 			p = call_ret(pane, "attach-view", p);
 		if (p)
@@ -815,7 +815,7 @@ DEF_CMD(docs_attach)
 	}
 	if (strcmp(type, "modified") == 0) {
 		p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
-		                  0, NULL, "invisible");
+				  0, NULL, "invisible");
 		if (p)
 			p = call_ret(pane, "attach-view", p);
 		if (p)
@@ -854,9 +854,9 @@ DEF_CMD(docs_attach)
 	if (!p || p->damaged & DAMAGED_CLOSED)
 		p = ci->home;
 	return home_call(p, ci->key, ci->focus,
-	                 (int)(unsigned long)docs_attach_func, NULL, ci->str,
-	                 0, NULL, NULL,
-	                 0, 0, ci->comm2);
+			 (int)(unsigned long)docs_attach_func, NULL, ci->str,
+			 0, NULL, NULL,
+			 0, 0, ci->comm2);
 }
 
 DEF_CMD(docs_notify_close)

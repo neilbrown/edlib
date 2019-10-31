@@ -799,8 +799,8 @@ static char * safe file_normalize(struct pane *p safe, char *path, char *initial
 		return ".";
 	if (initial_path && strncmp(path, initial_path, len) == 0) {
 		if (path[len] == '/' || (path[len] == '~' &&
-		                         (path[len+1] == '/' || path[len+1] == 0)))
-		         path = path + len;
+					 (path[len+1] == '/' || path[len+1] == 0)))
+			path = path + len;
 	}
 	if (path[0] == '/')
 		return path;
@@ -1058,7 +1058,7 @@ REDEF_CMD(emacs_doc_complete)
 	p = call_ret(pane, "docs:byname", ci->focus);
 	if (p)
 		p = home_call_ret(pane, p, "doc:attach-view", pop,
-		                  0, NULL, "complete");
+				  0, NULL, "complete");
 	if (!p)
 		return Efail;
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, str);
@@ -1122,7 +1122,7 @@ DEF_CMD(emacs_shell)
 		attr_set_str(&p->attrs, "done-key", "Shell Command");
 		call("doc:set-name", p, 0, NULL, "Shell Command", -1);
 		p = call_ret(pane, "attach-history", p, 0, NULL, "*Shell History*",
-		             0, NULL, "popup:close");
+			     0, NULL, "popup:close");
 		pane_register(p, 0, &find_handle.c, "shellcmd");
 		return 1;
 	}
@@ -1425,7 +1425,7 @@ DEF_CMD(emacs_search_reposition)
 		pane_damaged(ci->focus, DAMAGED_VIEW);
 	}
 	call_comm("event:timer", ci->focus, &emacs_search_reposition_delayed,
-	          500);
+		  500);
 	return 1;
 }
 
@@ -1507,7 +1507,7 @@ DEF_CMD(emacs_command)
 	attr_set_str(&p->attrs, "done-key", "emacs:command");
 	call("doc:set-name", p, 0, NULL, "M-x command", -1);
 	p = call_ret(pane, "attach-history", p, 0, NULL, "*Command History*",
-	             0, NULL, "popup:close");
+		     0, NULL, "popup:close");
 	pane_register(p, 0, &find_handle.c, "cmd");
 	return 1;
 }
@@ -1746,20 +1746,20 @@ DEF_CMD(emacs_hl_attrs)
 		struct mark *m = vmark_at_or_before(ci->focus, ci->mark, hi->view, ci->home);
 		if (m && attr_find_int(m->attrs, "render:search") > 0)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
-			                 ci->mark, "fg:red,inverse", 20);
+					 ci->mark, "fg:red,inverse", 20);
 		if (m && attr_find_int(m->attrs, "render:search2") > 0)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
-			                 ci->mark, "fg:blue,inverse", 20);
+					 ci->mark, "fg:blue,inverse", 20);
 	}
 	if (strcmp(ci->str, "render:search-end") ==0) {
 		/* Here endeth the match */
 		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-		                 ci->mark, "fg:red,inverse", 20);
+				 ci->mark, "fg:red,inverse", 20);
 	}
 	if (strcmp(ci->str, "render:search2-end") ==0) {
 		/* Here endeth the match */
 		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-		                 ci->mark, "fg:blue,inverse", 20);
+				 ci->mark, "fg:blue,inverse", 20);
 	}
 	return 0;
 }
@@ -1909,7 +1909,7 @@ DEF_CMD(emacs_curs_pos)
 	}
 	mark_free(c);
 	asprintf(&msg, "Cursor at column %d (%d chars), char is %d (0x%x)",
-	         col, chars, nxt, nxt);
+		 col, chars, nxt, nxt);
 	call("Message", ci->focus, 0, NULL, msg);
 	free(msg);
 	return 1;

@@ -349,7 +349,7 @@ struct command *key_lookup_cmd(struct map *m safe, char *c safe,
 		if (pos >= m->size)
 			;
 		else if (strncmp(m->keys[pos], c, end - c) == 0 &&
-		         m->keys[pos][end - c] == '\0') {
+			 m->keys[pos][end - c] == '\0') {
 			/* Exact match - use this entry */
 			if (cret)
 				*cret = c;

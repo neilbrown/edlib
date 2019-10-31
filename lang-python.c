@@ -302,17 +302,17 @@ REDEF_CMD(python_call)
 			    (Py_INCREF(Py_None), Py_None));
 	if (ci->num == NO_NUMERIC)
 		rv = rv && dict_add(kwds, "num",
-		                    (Py_INCREF(Py_None), Py_None));
+				    (Py_INCREF(Py_None), Py_None));
 	else if (ci->num == -NO_NUMERIC) {
 		/* This indirect sinces a type-punned warning */
 		PyObject *false = Py_False;
 		rv = rv && dict_add(kwds, "num",
-		                    (Py_INCREF(false), false));
+				    (Py_INCREF(false), false));
 	} else
 		rv = rv && dict_add(kwds, "num",
-		                    Py_BuildValue("i", ci->num));
+				    Py_BuildValue("i", ci->num));
 	rv = rv && dict_add(kwds, "num2",
-	                    Py_BuildValue("i", ci->num2));
+			    Py_BuildValue("i", ci->num2));
 	rv = rv && dict_add(kwds, "xy",
 			    Py_BuildValue("ii", ci->x, ci->y));
 
@@ -407,7 +407,7 @@ static void do_map_init(Pane *self safe)
 				    strncmp(docs, "handle-prefix:", 14) == 0) {
 					char *a = strconcat(self->pane, docs+14);
 					char *b = strconcat(self->pane,
-					                    a, "\xFF\xFF\xFF\xFF");
+							    a, "\xFF\xFF\xFF\xFF");
 					struct python_command *comm =
 						malloc(sizeof(*comm));
 					comm->c = python_call;
@@ -571,7 +571,7 @@ static int Pane_init(Pane *self safe, PyObject *args, PyObject *kwds)
 	 */
 	Py_INCREF(self);
 	self->pane = pane_register(parent ? parent->pane : NULL,
-	                           z, &self->handle.c, self);
+				   z, &self->handle.c, self);
 	return 0;
 }
 
@@ -586,7 +586,7 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 
 	self->handle.c.func = python_doc_call_func;
 	self->pane = doc_register(parent ? parent->pane : NULL,
-	                          z, &self->handle.c, &self->doc);
+				  z, &self->handle.c, &self->doc);
 	self->doc.refcnt = mark_refcnt;
 	return 0;
 }

@@ -1062,7 +1062,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 			} else {
 				short h = 0;
 				render_line(p, focus, end->mdata, &h, 0, scale.x,
-				            NULL, NULL, NULL, NULL, NULL, &found_end, NULL);
+					    NULL, NULL, NULL, NULL, NULL, &found_end, NULL);
 				end = next;
 				if (h)
 					lines_below = h;
@@ -1202,7 +1202,7 @@ restart:
 		     mark_ordered_not_same(pm, m2))) {
 			short cw = -1;
 			short len = call_render_line_to_point(focus, pm,
-			                                      m);
+							      m);
 			rl->cursor_line = y;
 			render_line(p, focus, m->mdata ?: "", &y, 1, scale.x,
 				    &p->cx, &p->cy, &cw, &len, NULL,  NULL, cols);
@@ -1461,7 +1461,7 @@ DEF_CMD(render_lines_move)
 					break;
 				}
 				render_line(p, focus, m->mdata, &y, 0, scale.x, NULL, NULL, NULL,
-				            NULL, NULL, NULL, NULL);
+					    NULL, NULL, NULL, NULL);
 				m = vmark_next(m);
 			}
 			rl->skip_lines = y;

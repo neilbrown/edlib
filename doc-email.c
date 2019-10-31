@@ -473,7 +473,7 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 					  boundary)) >= 0) {
 		struct pane *hdr = call_ret(pane, "attach-rfc822header", p,
 					    0, start, NULL,
-		                            0, part_end);
+					    0, part_end);
 		char *ptype, *pxfer;
 
 		if (!hdr)

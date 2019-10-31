@@ -206,7 +206,7 @@ DEF_CMD(editor_global_request_notify)
 DEF_CMD(editor_global_notify)
 {
 	return pane_notify(ci->key + 5, ci->home, ci->num, ci->mark, ci->str,
-	                   ci->num2, ci->mark2, ci->str2, ci->comm2);
+			   ci->num2, ci->mark2, ci->str2, ci->comm2);
 }
 
 DEF_CMD(editor_clean_up)
@@ -371,9 +371,9 @@ struct pane *editor_new(void)
 		key_add_prefix(ed_map, "event:", &editor_auto_event);
 		key_add_prefix(ed_map, "global-multicall-", &editor_multicall);
 		key_add_prefix(ed_map, "Request:Notify:global-",
-		               &editor_global_request_notify);
+			       &editor_global_request_notify);
 		key_add_prefix(ed_map, "Call:Notify:global-",
-		               &editor_global_notify);
+			       &editor_global_notify);
 		key_add(ed_map, "Close", &editor_close);
 	}
 	ei->map = key_alloc();

@@ -192,7 +192,7 @@ DEF_CMD(view_refresh)
 			if (vd->viewpoint) {
 				call("CountLines", p, 0, vd->viewpoint);
 				vpln = attr_find_int(*mark_attr(vd->viewpoint),
-				                     "line");
+						     "line");
 			} else if (pm) {
 				call("CountLines", p, 0, pm);
 				vpln = attr_find_int(*mark_attr(pm), "line");

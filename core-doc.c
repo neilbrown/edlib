@@ -542,8 +542,8 @@ DEF_CMD(doc_notify)
 {
 	/* Key is "doc:Notify:..." */
 	int ret = home_pane_notify(ci->home, ci->key + 4, ci->home,
-	                           ci->num, ci->mark, ci->str,
-	                           ci->num2, ci->mark2, ci->str2, ci->comm2);
+				   ci->num, ci->mark, ci->str,
+				   ci->num2, ci->mark2, ci->str2, ci->comm2);
 	return ret;
 }
 
@@ -617,7 +617,7 @@ DEF_CMD(doc_vmarkget)
 		m2 = doc_new_mark(ci->home->data, ci->num, ci->focus);
 	if (ci->num2 == 3 && ci->mark)
 		m2 = do_vmark_at_or_before(ci->home->data, ci->mark,
-		                           ci->num, ci->focus);
+					   ci->num, ci->focus);
 	return comm_call(ci->comm2, "callback:vmark", ci->focus,
 			 0, m, NULL, 0, m2);
 }
@@ -1211,7 +1211,7 @@ DEF_CMD(doc_open)
 	if (!p) {
 		p = call_ret(pane, "global-multicall-open-doc-", ed,
 			     fd, NULL, name,
-		             stb.st_mode & S_IFMT);
+			     stb.st_mode & S_IFMT);
 
 		if (!p) {
 			if (fd != ci->num)

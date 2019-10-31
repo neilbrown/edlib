@@ -410,10 +410,10 @@ static char *fmt_date(struct dir_ent *de safe, time_t t)
 	localtime_r(&t, &tm);
 	if (t > now || t < now - 10*30*24*3600)
 		strftime(de->nbuf, sizeof(de->nbuf),
-		         "%b %d  %Y", &tm);
+			 "%b %d  %Y", &tm);
 	else
 		strftime(de->nbuf, sizeof(de->nbuf),
-		         "%b %d %H:%M", &tm);
+			 "%b %d %H:%M", &tm);
 	return de->nbuf;
 }
 
@@ -653,7 +653,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe,
 	} else {
 		struct pane *doc = call_ret(pane, "doc:from-text", par,
 					    0, NULL, fname,
-		                            0, NULL, "File not found\n");
+					    0, NULL, "File not found\n");
 		if (!doc)
 			return Efail;
 		par = call_ret(pane, "ThisPane", focus);
@@ -705,7 +705,7 @@ DEF_CMD(dir_attach)
 	if (strcmp(type, "complete") == 0) {
 
 		p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
-		                  ci->num, NULL, "invisible");
+				  ci->num, NULL, "invisible");
 		if (p)
 			p = call_ret(pane, "attach-view", p);
 		if (p)
@@ -725,11 +725,11 @@ DEF_CMD(dir_attach)
 	if (!p || p->damaged & DAMAGED_CLOSED)
 		p = ci->home;
 	return home_call(p, ci->key, ci->focus,
-	                 ci->num,
-	                 NULL, ci->str,
-	                 p == ci->home ? (int)(unsigned long)dir_attach_func : 0,
-	                 NULL, NULL,
-	                 0, 0, ci->comm2);
+			 ci->num,
+			 NULL, ci->str,
+			 p == ci->home ? (int)(unsigned long)dir_attach_func : 0,
+			 NULL, NULL,
+			 0, 0, ci->comm2);
 }
 
 DEF_CMD(dir_notify_close)

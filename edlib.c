@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 	p = call_ret(pane, "attach-input", ed);
 	if (p && !doc)
 		doc = call_ret(pane, "doc:from-text", p, 0, NULL,
-		               "*Welcome*", 0, NULL, WelcomeText);
+			       "*Welcome*", 0, NULL, WelcomeText);
 
 	if (p) {
 		if (term) {

@@ -298,7 +298,7 @@ DEF_CMD(search_again)
 		ret = -2;
 	else {
 		ret = call("text-search", esi->target,
-		           !esi->case_sensitive, m, str, esi->backwards);
+			   !esi->case_sensitive, m, str, esi->backwards);
 	}
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
@@ -381,7 +381,7 @@ DEF_CMD(search_recentre)
 	struct es_info *esi = ci->home->data;
 
 	return call(ci->key, esi->target, ci->num, esi->end, NULL,
-	            ci->num2);
+		    ci->num2);
 }
 
 DEF_CMD(search_toggle_ci)
@@ -394,8 +394,8 @@ DEF_CMD(search_toggle_ci)
 	esi->case_sensitive = !esi->case_sensitive;
 	call("doc:Notify:doc:Replace", ci->focus);
 	attr_set_str(&ci->home->attrs, "status-line",
-	             esi->case_sensitive ? " Search: case sensitive " :
-	             " Search: case insensitive ");
+		     esi->case_sensitive ? " Search: case sensitive " :
+		     " Search: case insensitive ");
 	return 1;
 }
 

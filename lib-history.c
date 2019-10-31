@@ -155,7 +155,7 @@ DEF_CMD(history_attach)
 	p = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)
 		p = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, ci->str,
-		             0, NULL, "");
+			     0, NULL, "");
 	if (!p) {
 		free(hi);
 		return 0;

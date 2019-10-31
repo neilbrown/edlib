@@ -423,7 +423,7 @@ DEF_CMD(dr_render_line)
 		if (tmp)
 			m->ref.m->mdata =
 				call_ret(str, "doc:render-line", dri->base,
-				         NO_NUMERIC, tmp);
+					 NO_NUMERIC, tmp);
 		mark_free(tmp);
 		if (!m->ref.m->mdata)
 			m->ref.m->mdata = strdup("");
@@ -502,10 +502,10 @@ DEF_CMD(dr_replace)
 	m2 = ci->mark2 && ci->mark2->ref.m ? mark_dup(ci->mark2->ref.m) : NULL;
 
 	ret = home_call(dri->base,
-	                ci->key, ci->focus,
-	                ci->num, m1, ci->str,
-	                ci->num2, m2, ci->str2,
-	                ci->x, ci->y, ci->comm2);
+			ci->key, ci->focus,
+			ci->num, m1, ci->str,
+			ci->num2, m2, ci->str2,
+			ci->x, ci->y, ci->comm2);
 	mark_free(m1);
 	mark_free(m2);
 	return ret;
@@ -530,7 +530,7 @@ DEF_CMD(dr_get_attr)
 
 	if (val)
 		comm_call(ci->comm2, "callback:get_attr", ci->focus,
-		          0, NULL, val);
+			  0, NULL, val);
 	return 1;
 
 }
@@ -593,5 +593,5 @@ void edlib_init(struct pane *ed safe)
 {
 	dr_init_map();
 	call_comm("global-set-command", ed, &attach_dr, 0, NULL,
-	          "attach-doc-rendering");
+		  "attach-doc-rendering");
 }
