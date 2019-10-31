@@ -979,7 +979,7 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
  * When undoing a split, both will be at the point of the split.
  */
 static void text_undo(struct text *t safe, struct text_edit *e safe,
-                      struct doc_ref *start safe, struct doc_ref *end safe)
+		      struct doc_ref *start safe, struct doc_ref *end safe)
 {
 	if (e->len == 0)
 		/* no-op */
@@ -1040,7 +1040,7 @@ static void text_undo(struct text *t safe, struct text_edit *e safe,
 }
 
 static void text_redo(struct text *t safe, struct text_edit *e safe,
-                      struct doc_ref *start safe, struct doc_ref *end safe)
+		      struct doc_ref *start safe, struct doc_ref *end safe)
 {
 	int is_split = 0;
 

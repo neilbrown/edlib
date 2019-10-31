@@ -92,7 +92,7 @@ static int get_b64_rev(struct pane *p safe, struct mark *m safe)
 }
 
 static int locate_mark(struct pane *p safe, struct pane *owner,
-                       int view, struct mark *m safe)
+		       int view, struct mark *m safe)
 {
 	struct mark *st, *tmp, *prev;
 	int pos = 0;

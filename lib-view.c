@@ -53,8 +53,8 @@ static char default_title[] =
 "{doc-name}";
 
 static char *format_status(char *status safe,
-                                 struct pane *focus safe,
-                                 struct mark *pm)
+			   struct pane *focus safe,
+			   struct mark *pm)
 {
 	struct buf b;
 	char *close;

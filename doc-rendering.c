@@ -90,7 +90,7 @@ static void reposition_mark(struct mark *m safe)
 
 
 static void set_ref_mark(struct pane *home safe, struct mark *m safe,
-                         struct pane *p safe, int view, struct mark *loc safe)
+			 struct pane *p safe, int view, struct mark *loc safe)
 {
 	/* Set m->ref to refer to the given location in the given pane */
 	struct mark *m2;

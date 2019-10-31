@@ -70,8 +70,8 @@ static void doc_init(struct doc *d safe)
 }
 
 struct pane *safe doc_register(struct pane *parent, short z,
-                               struct command *handle safe,
-                               struct doc *doc safe)
+			       struct command *handle safe,
+			       struct doc *doc safe)
 {
 	/* Documents are always registered against the root */
 	if (parent)

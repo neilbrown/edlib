@@ -326,7 +326,7 @@ int key_pfx_func(const struct cmd_info *ci safe)
 }
 
 struct command *key_lookup_cmd(struct map *m safe, char *c safe,
-                               char **cret, int *lenret)
+			       char **cret, int *lenret)
 {
 	/* If 'k' contains an ASCII US (Unit Separator, 0o37 0x1f 31),
 	 * it represents multiple keys.

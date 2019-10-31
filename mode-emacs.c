@@ -1205,8 +1205,8 @@ DEF_CMD(emacs_save_all)
 }
 
 static void do_searches(struct pane *p safe,
-                        struct pane *owner, int view, char *patn,
-                        int ci,
+			struct pane *owner, int view, char *patn,
+			int ci,
 			struct mark *m, struct mark *end)
 {
 	int ret;

@@ -27,7 +27,7 @@ struct ws_info {
 };
 
 static void choose_next(struct pane *focus safe, struct mark *pm safe,
-                        struct ws_info *ws safe)
+			struct ws_info *ws safe)
 {
 	struct mark *m;
 
