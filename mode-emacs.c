@@ -966,7 +966,7 @@ REDEF_CMD(emacs_file_complete)
 
 		start = mark_dup(ci->mark);
 		call("Move-Char", ci->focus, -strlen(b), start);
-		call("Replace", ci->focus, 1, start, NULL);
+		call("Replace", ci->focus, 1, start);
 		mark_free(start);
 
 		return 1;
@@ -1069,7 +1069,7 @@ REDEF_CMD(emacs_doc_complete)
 		start = mark_dup(ci->mark);
 		call("doc:set-ref", ci->focus, 1, start);
 
-		call("Replace", ci->focus, 1, start, NULL);
+		call("Replace", ci->focus, 1, start);
 		mark_free(start);
 		return 1;
 	}
@@ -1596,7 +1596,7 @@ DEF_CMD(emacs_wipe)
 	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 	if (str && *str)
 		call("copy:save", ci->focus, 0, NULL, str);
-	ret = call("Replace", ci->focus, 1, mk, NULL);
+	ret = call("Replace", ci->focus, 1, mk);
 	/* Clear mark */
 	attr_set_int(&mk->attrs, "emacs:active", 0);
 
