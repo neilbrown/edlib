@@ -160,7 +160,7 @@ class FillMode(edlib.Pane):
         if para[-1] == '\n':
             newpara += '\n'
         if newpara != para:
-            focus.call("doc:replace", 1, mark, newpara, 1, mark2)
+            focus.call("doc:replace", 1, mark, newpara, mark2)
         return 1
 
 def fill_mode_attach(key, focus, comm2, **a):
