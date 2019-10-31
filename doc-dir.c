@@ -179,7 +179,8 @@ DEF_CMD(dir_load_file)
 			/* de1 doesn't exist in new: need to delete it. */
 			struct mark *m2;
 			struct dir_ent *de = de1;
-			if (de1 == list_last_entry(&dr->ents, struct dir_ent, lst))
+			if (de1 == list_last_entry(&dr->ents,
+						   struct dir_ent, lst))
 				de1 = NULL;
 			else
 				de1 = list_next_entry(de1, lst);
@@ -191,8 +192,10 @@ DEF_CMD(dir_load_file)
 			list_del(&de->lst);
 			free(de);
 			if (m && donotify) {
-				pane_notify("Notify:doc:Replace", ci->home, 0, prev);
-				pane_notify("Notify:doc:Replace", ci->home, 0, m);
+				pane_notify("Notify:doc:Replace", ci->home,
+					    0, prev);
+				pane_notify("Notify:doc:Replace", ci->home,
+					    0, m);
 			}
 		} else if (de2 &&
 			   (de1 == NULL || strcmp(de2->name, de1->name) < 0)) {
@@ -203,14 +206,17 @@ DEF_CMD(dir_load_file)
 			else
 				list_add_tail(&de2->lst, &dr->ents);
 			if (m && donotify) {
-				pane_notify("Notify:doc:Replace", ci->home, 0, prev);
-				pane_notify("Notify:doc:Replace", ci->home, 0, m);
+				pane_notify("Notify:doc:Replace", ci->home,
+					    0, prev);
+				pane_notify("Notify:doc:Replace", ci->home,
+					    0, m);
 			}
 		} else if (de1 /*FIXME should be assumed */) {
 			/* de1 and de2 are the same.  Just step over de1 and
 			 * delete de2
 			 */
-			if (de1 == list_last_entry(&dr->ents, struct dir_ent, lst))
+			if (de1 == list_last_entry(&dr->ents,
+						   struct dir_ent, lst))
 				de1 = NULL;
 			else
 				de1 = list_next_entry(de1, lst);
@@ -220,7 +226,8 @@ DEF_CMD(dir_load_file)
 			free(de2);
 		}
 		de2 = list_first_entry_or_null(&new, struct dir_ent, lst);
-		while (m && m->ref.d && de1 && strcmp(m->ref.d->name, de1->name) < 0) {
+		while (m && m->ref.d && de1 && strcmp(m->ref.d->name,
+						      de1->name) < 0) {
 			prev = m;
 			m = doc_next_mark_all(m);
 		}
@@ -313,7 +320,8 @@ DEF_CMD(dir_step)
 		if (d == NULL)
 			ret = WEOF;
 		else {
-			if (d == list_last_entry(&dr->ents, struct dir_ent, lst))
+			if (d == list_last_entry(&dr->ents,
+						 struct dir_ent, lst))
 				d = NULL;
 			else
 				d = list_next_entry(d, lst);
@@ -552,7 +560,8 @@ DEF_CMD(dir_destroy)
 	struct directory *dr = container_of(d, struct directory, doc);
 
 	while (!list_empty(&dr->ents)) {
-		struct dir_ent *de = list_entry(dr->ents.next, struct dir_ent, lst);
+		struct dir_ent *de = list_entry(dr->ents.next,
+						struct dir_ent, lst);
 
 		attr_free(&de->attrs);
 		free(de->name);
@@ -566,7 +575,8 @@ DEF_CMD(dir_destroy)
 	return 1;
 }
 
-static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark *m, char cmd)
+static int dir_open(struct pane *home safe, struct pane *focus safe,
+		    struct mark *m, char cmd)
 {
 	struct doc *d = home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
@@ -589,8 +599,8 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 		p = call_ret(pane, "doc:open", focus, fd, NULL, fname);
 		close(fd);
 	} else
-		p = call_ret(pane, "doc:from-text", focus, 0, NULL, fname, 0, NULL,
-		             "File not found\n");
+		p = call_ret(pane, "doc:from-text", focus, 0, NULL, fname,
+			     0, NULL, "File not found\n");
 	free(fname);
 	if (!p)
 		return Efail;
@@ -607,7 +617,8 @@ static int dir_open(struct pane *home safe, struct pane *focus safe, struct mark
 	return 1;
 }
 
-static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct mark *m, char cmd)
+static int dir_open_alt(struct pane *home safe, struct pane *focus safe,
+			struct mark *m, char cmd)
 {
 	struct doc *d = home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
@@ -627,18 +638,21 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe, struct 
 	fd = open(fname, O_RDONLY);
 
 	if (fd >= 0) {
-		struct pane *new = call_ret(pane, "doc:open", home, fd, NULL, fname);
+		struct pane *new = call_ret(pane, "doc:open", home,
+					    fd, NULL, fname);
 		if (new) {
 			snprintf(buf, sizeof(buf), "Chr-%c", cmd);
 			par = call_ret(pane, "ThisPane", focus);
 			if (!par)
 				return Efail;
 
-			p = home_call_ret(pane, new, "doc:attach-view", par, 1, NULL, buf);
+			p = home_call_ret(pane, new, "doc:attach-view", par,
+					  1, NULL, buf);
 		}
 		close(fd);
 	} else {
-		struct pane *doc = call_ret(pane, "doc:from-text", par, 0, NULL, fname,
+		struct pane *doc = call_ret(pane, "doc:from-text", par,
+					    0, NULL, fname,
 		                            0, NULL, "File not found\n");
 		if (!doc)
 			return Efail;
@@ -684,7 +698,8 @@ DEF_CMD(dir_attach)
 	char *type = ci->str ?: "default";
 	struct pane *p;
 
-	if (strcmp(type, "invisible") == 0 || ci->num2 == (int)(unsigned long)dir_attach_func)
+	if (strcmp(type, "invisible") == 0 ||
+	    ci->num2 == (int)(unsigned long)dir_attach_func)
 		/* use default core-doc implementation */
 		return Efallthrough;
 	if (strcmp(type, "complete") == 0) {

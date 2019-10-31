@@ -54,6 +54,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] in python code, protect Replace/doc:replace - file could be read-only
 - [ ] c-mode indent should let me delete one level when it was due to bracketing,
       so I can insert the close bracket.
 - [ ] comma sep list in enum doesn't get indented properly.  Need to recognize enum

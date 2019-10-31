@@ -16,15 +16,16 @@
  *
  * A range can be stored by setting the lsb of the command pointer at
  * the start of the range.
- * When searching for a key we find the first entry that is not less than the target.
- * If it is an exact match, use it.
- * If previous entry exists and has the lsb set, then use that command.
+ * When searching for a key we find the first entry that is not less
+ * than the target.  If it is an exact match, use it.  If previous entry
+ * exists and has the lsb set, then use that command.
  *
- * So to add a range, the start is entered with lsb set, and the end it entered with
- * lsb clear.
+ * So to add a range, the start is entered with lsb set, and the end it
+ * entered with lsb clear.
  *
  * If a key is registered a second time, the new over-rides the old.
- * This is particularly useful for registering a range, and then some exceptions.
+ * This is particularly useful for registering a range, and then some
+ * exceptions.
  * To delete a key from a range we need to make two ranges, one that ends
  * just before the new key, one that starts just after.
  * The 'ends just before' is easy - we just add the new key or range.
@@ -113,16 +114,19 @@ static int hash_str(char *key safe, int len)
 
 inline static void set_bit(unsigned long *set safe, int bit)
 {
-	set[bit/(sizeof(unsigned long)*8)] |= 1UL << (bit % (sizeof(unsigned long)*8));
+	set[bit/(sizeof(unsigned long)*8)] |=
+		1UL << (bit % (sizeof(unsigned long)*8));
 }
 
 inline static int test_bit(unsigned long *set safe, int bit)
 {
-	return !! (set[bit/(sizeof(unsigned long)*8)] & (1UL << (bit % (sizeof(unsigned long)*8))));
+	return !! (set[bit/(sizeof(unsigned long)*8)] &
+		   (1UL << (bit % (sizeof(unsigned long)*8))));
 }
 
 
-static int key_present(struct map *map safe, char *key, int klen, unsigned int *hashp safe)
+static int key_present(struct map *map safe, char *key, int klen,
+		       unsigned int *hashp safe)
 {
 	int hash;
 
@@ -193,7 +197,8 @@ void key_add(struct map *map safe, char *k safe, struct command *comm)
 	} else if (strcmp(k, map->keys[pos]) == 0) {
 		/* match: need to check if range-start */
 		if (IS_RANGE(map->comms[pos])) {
-			/* Changing the start of a range, insert an exact match */
+			/* Changing the start of a range,
+			 * insert an exact match */
 		} else {
 			/* replace a non-range */
 			command_put(map->comms[pos]);
@@ -252,7 +257,8 @@ void key_add_range(struct map *map safe, char *first safe, char *last safe,
 	/* Now 'pos' is a stand-alone entry for 'first'.
 	 * If the entry before pos2 is a range start, update to start at 'last',
 	 * else discard it, and discard everything else between pos and pos2.
-	 * Then insert a stand-alone for 'last' and update 'pos' to be a range-start.
+	 * Then insert a stand-alone for 'last' and update 'pos' to be a
+	 * range-start.
 	 */
 	if (pos2 - 1 > pos && IS_RANGE(map->comms[pos2-1])) {
 		free(map->keys[pos2-1]);

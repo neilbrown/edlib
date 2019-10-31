@@ -49,8 +49,8 @@
  * A text always has a least one allocation which is created with the text.
  * If the text is empty, there will not be any chunks though, so all text refs
  * will point to NULL.  The NULL chunk is at the end of the text.
- * The ->txt pointer of a chunk never changes.  It is set when the chunk is created
- * and then only start and end are changed.
+ * The ->txt pointer of a chunk never changes.  It is set when the chunk
+ * is created and then only start and end are changed.
  */
 
 #define _GNU_SOURCE /* for asprintf */
@@ -154,14 +154,15 @@ struct text {
 	struct text_alloc	*alloc safe;
 	struct list_head	text;
 	struct text_edit	*undo, *redo;
-	/* If prev_edit is Redo then next edit is ->redo or ->undo->altnext or ->undo
+	/* If prev_edit is Redo then next edit is ->redo or ->undo->altnext
+	 * or ->undo
 	 * If prev_edit is Undo, then next edit is ->undo->altnext or ->undo
 	 * If prev_edit is AltUndo, then next edit is ->undo
 	 */
 	enum { Redo, Undo, AltUndo } prev_edit;
 
-	char			file_changed; /* '2' means it has changed, but we are
-					       * editing anyway
+	char			file_changed; /* '2' means it has changed, but
+					       * we are editing anyway
 					       */
 	char			newfile; /* file doesn't exist yet */
 	struct stat		stat;
@@ -390,7 +391,8 @@ static int do_text_output_file(struct text *t safe, struct doc_ref *start,
 	return 0;
 }
 
-static int do_text_write_file(struct text *t safe, struct doc_ref *start, struct doc_ref *end,
+static int do_text_write_file(struct text *t safe, struct doc_ref *start,
+			      struct doc_ref *end,
 			      char *fname safe)
 {
 	/* Don't worry about links for now
@@ -664,7 +666,8 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 	t->undo = e;
 }
 
-static void text_add_str(struct text *t safe, struct doc_ref *pos safe, char *str safe,
+static void text_add_str(struct text *t safe, struct doc_ref *pos safe,
+			 char *str safe,
 			 struct doc_ref *start, bool *first_edit safe)
 {
 	/* Text is added to the end of the referenced chunk, or
@@ -733,7 +736,8 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe, char *st
 			attr_trim(&pos->c->attrs, pos->c->end);
 			list_add(&c->lst, &pos->c->lst);
 			text_add_edit(t, c, first_edit, 0, c->end - c->start);
-			/* this implicitly truncates pos->c, so don't need to record that. */
+			/* this implicitly truncates pos->c, so don't need
+			 * to record that. */
 		}
 	}
 	while (len > 0) {
@@ -805,8 +809,10 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe, char *st
  * If a location at the start is found, it is move to the end.
  */
 
-static int text_update_prior_after_change(struct text *t safe, struct doc_ref *pos safe,
-					  struct doc_ref *spos safe, struct doc_ref *epos safe)
+static int text_update_prior_after_change(struct text *t safe,
+					  struct doc_ref *pos safe,
+					  struct doc_ref *spos safe,
+					  struct doc_ref *epos safe)
 {
 	int ret = 1;
 
@@ -836,11 +842,13 @@ static int text_update_prior_after_change(struct text *t safe, struct doc_ref *p
 	return ret;
 }
 
-static int text_update_following_after_change(struct text *t safe, struct doc_ref *pos safe,
-					      struct doc_ref *spos safe, struct doc_ref *epos safe)
+static int text_update_following_after_change(struct text *t safe,
+					      struct doc_ref *pos safe,
+					      struct doc_ref *spos safe,
+					      struct doc_ref *epos safe)
 {
-	/* A change has happened between spos and epos. pos should be at or after
-	 * epos.
+	/* A change has happened between spos and epos. pos should be
+	 * at or after epos.
 	 */
 	struct text_chunk *c;
 	int ret = 1;
@@ -908,10 +916,13 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 		if (pos->o == c->start &&
 		    len >= c->end - c->start) {
 			/* The whole chunk is deleted, simply disconnect it */
-			if (c != list_last_entry(&t->text, struct text_chunk, lst)) {
+			if (c != list_last_entry(&t->text,
+						 struct text_chunk, lst)) {
 				pos->c = list_next_entry(c, lst);
 				pos->o = pos->c->start;
-			} else if (c != list_first_entry(&t->text, struct text_chunk, lst)) {
+			} else if (c != list_first_entry(&t->text,
+							 struct text_chunk,
+							 lst)) {
 				pos->c = list_prev_entry(c, lst);
 				pos->o = pos->c->end;
 			} else {
@@ -919,7 +930,9 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 				pos->c = NULL;
 				pos->o = 0;
 			}
-			__list_del(c->lst.prev, c->lst.next); /* no poison, retain place in list */
+			__list_del(c->lst.prev, c->lst.next); /* no poison,
+							       * retain place
+							       * in list */
 			attr_free(&c->attrs);
 			text_add_edit(t, c, first_edit, 0, c->start - c->end);
 			len -= c->end - c->start;
@@ -927,8 +940,8 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 			c->end = c->start;
 		} else if (pos->o == c->start) {
 			/* If the start of the chunk is deleted, just update.
-			 * Note that len must be less that full size, else previous
-			 * branch would have been taken.
+			 * Note that len must be less that full size, else
+			 * previous branch would have been taken.
 			 */
 			struct attrset *s;
 			c->start += len;
@@ -946,7 +959,9 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 			c->end = pos->o;
 			attr_trim(&c->attrs, c->end);
 			text_add_edit(t, c, first_edit, 0, -diff);
-			if (len && c != list_last_entry(&t->text, struct text_chunk, lst)) {
+			if (len && c != list_last_entry(&t->text,
+							struct text_chunk,
+							lst)) {
 				pos->c = list_next_entry(c, lst);
 				pos->o = pos->c->start;
 			} else
@@ -963,8 +978,10 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 			c2->attrs = attr_copy_tail(c->attrs, c2->start);
 			attr_trim(&c->attrs, c->end);
 			list_add(&c2->lst, &c->lst);
-			/* This implicitly trims c, so we only have len left to trim */
-			text_add_edit(t, c2, first_edit, 0, c2->end - c2->start);
+			/* This implicitly trims c, so we only have len
+			 * left to trim */
+			text_add_edit(t, c2, first_edit, 0,
+				      c2->end - c2->start);
 			text_add_edit(t, c, first_edit, 0, -len);
 			len = 0;
 		}
@@ -973,9 +990,9 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 
 /* text_undo and text_redo:
  *
- * The 'start' and 'end' reported identify the range changed.  For a reversed insertion
- * they will be the same.  If the undo results in the buffer being empty,
- * both start and end will point to a NULL chunk.
+ * The 'start' and 'end' reported identify the range changed.  For a reversed
+ * insertion they will be the same.  If the undo results in the buffer being
+ * empty, both start and end will point to a NULL chunk.
  * When undoing a split, both will be at the point of the split.
  */
 static void text_undo(struct text *t safe, struct text_edit *e safe,
@@ -1016,7 +1033,8 @@ static void text_undo(struct text *t safe, struct text_edit *e safe,
 		 * If new text, leave start/end pointing just past the chunk.
 		 * if split, leave them at the point of splitting.
 		 */
-		if (e->target == list_last_entry(&t->text, struct text_chunk, lst)) {
+		if (e->target == list_last_entry(&t->text,
+						 struct text_chunk, lst)) {
 			end->c = NULL;
 			end->o = 0;
 		} else {
@@ -1026,8 +1044,10 @@ static void text_undo(struct text *t safe, struct text_edit *e safe,
 		*start = *end;
 
 		__list_del(e->target->lst.prev, e->target->lst.next);
-		/* If this was created for a split, we need to extend the other half */
-		if (e->target != list_first_entry(&t->text, struct text_chunk, lst)) {
+		/* If this was created for a split, we need to extend the
+		 * other half */
+		if (e->target != list_first_entry(&t->text,
+						  struct text_chunk, lst)) {
 			struct text_chunk *c = list_prev_entry(e->target, lst);
 			start->c = end->c = c;
 			start->o = end->o = c->end;
@@ -1054,7 +1074,8 @@ static void text_redo(struct text *t safe, struct text_edit *e safe,
 		if (e->target->lst.next != l->next) abort();
 		list_add(&e->target->lst, l);
 		/* If this is a split, need to truncate prior */
-		if (e->target != list_first_entry(&t->text, struct text_chunk, lst)) {
+		if (e->target != list_first_entry(&t->text,
+						  struct text_chunk, lst)) {
 			struct text_chunk *c = list_prev_entry(e->target, lst);
 			if (c->txt == e->target->txt &&
 			    c->end > e->target->start) {
@@ -1086,7 +1107,8 @@ static void text_redo(struct text *t safe, struct text_edit *e safe,
 			start->o = end->o = e->target->end;
 	}
 	if (e->target->start == e->target->end) {
-		/* This chunk is deleted, so leave start/end pointing beyond it */
+		/* This chunk is deleted, so leave start/end pointing
+		 * beyond it */
 		if (e->target->lst.next == &t->text) {
 			end->c = NULL;
 			end->o = 0;
@@ -1240,7 +1262,8 @@ DEF_CMD(text_reundo)
 		m2 = m;
 		hlist_for_each_entry_continue(m2, all)
 			if (text_update_following_after_change(t, &m2->ref,
-							       &start, &end) == 0)
+							       &start,
+							       &end) == 0)
 				break;
 
 		text_normalize(t, &m->ref);
@@ -1248,7 +1271,8 @@ DEF_CMD(text_reundo)
 		if (early && !text_ref_same(t, &early->ref, &start))
 			early = NULL;
 
-		pane_notify("Notify:doc:Replace", t->doc.home, 0, ci->mark, NULL,
+		pane_notify("Notify:doc:Replace", t->doc.home,
+			    0, ci->mark, NULL,
 			    0, early);
 
 		text_check_consistent(t);
@@ -1353,7 +1377,8 @@ static wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
 	if (r->c == NULL)
 		return WEOF;
 
-	err = bytes ? 0 : mbrtowc(&ret, r->c->txt + r->o, r->c->end - r->o, &ps);
+	err = bytes ? 0 : mbrtowc(&ret, r->c->txt + r->o,
+				  r->c->end - r->o, &ps);
 	if (err > 0) {
 		ASSERT(text_round_len(r->c->txt, r->o+err-1) == r->o);
 		r->o += err;
@@ -1386,7 +1411,8 @@ static wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
 		r->o -= 1;
 	else {
 		r->o = r->c->start +
-			text_round_len(r->c->txt+r->c->start, r->o - r->c->start - 1);
+			text_round_len(r->c->txt+r->c->start,
+				       r->o - r->c->start - 1);
 		err = mbrtowc(&ret, r->c->txt + r->o, r->c->end - r->o, &ps);
 		if (err > 0)
 			return ret;
@@ -1484,7 +1510,8 @@ DEF_CMD(text_step_bytes)
 	return CHAR_RET(ret);
 }
 
-static int _text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct doc_ref *r2 safe)
+static int _text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
+			  struct doc_ref *r2 safe)
 {
 	if (r1->c == r2->c) {
 #if 1
@@ -1533,7 +1560,8 @@ static int _text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct d
 	return 0;
 }
 
-static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe, struct doc_ref *r2 safe)
+static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
+			 struct doc_ref *r2 safe)
 {
 	int ret = _text_ref_same(t, r1, r2);
 	ASSERT(ret == (r1->c == r2->c && r1->o == r2->o));
@@ -1686,7 +1714,8 @@ DEF_CMD(text_set_ref)
 }
 
 static int text_advance_towards(struct text *t safe,
-				struct doc_ref *ref safe, struct doc_ref *target safe)
+				struct doc_ref *ref safe,
+				struct doc_ref *target safe)
 {
 	/* Move 'ref' towards 'target'.
 	 * If at end of chunk, step to next chunk, then
@@ -1741,7 +1770,8 @@ static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
 	return 2;
 }
 
-static int text_locate(struct text *t safe, struct doc_ref *r safe, struct doc_ref *dest safe)
+static int text_locate(struct text *t safe, struct doc_ref *r safe,
+		       struct doc_ref *dest safe)
 {
 	/* move back/forward a little from 'r' looking for 'dest'.
 	 * return 0 if not found, -1 if dest found before r.
@@ -1770,8 +1800,10 @@ static int text_locate(struct text *t safe, struct doc_ref *r safe, struct doc_r
 	if (prev == dest->c)
 		return -1;
 
-	next = (next == NULL || next->lst.next == &t->text) ? NULL : list_next_entry(next, lst);
-	prev = (prev == NULL || prev->lst.prev == &t->text) ? NULL : list_prev_entry(prev, lst);
+	next = (next == NULL || next->lst.next == &t->text) ?
+		NULL : list_next_entry(next, lst);
+	prev = (prev == NULL || prev->lst.prev == &t->text) ?
+		NULL : list_prev_entry(prev, lst);
 	if (next == dest->c)
 		return 1;
 	if (prev == dest->c)
@@ -1848,10 +1880,12 @@ static void text_check_consistent(struct text *t safe)
 	prev = NULL;
 	for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(m)) {
 		if (prev) {
-			struct doc_ref r = prev->ref;/* SMATCH Bug things prev has no state*/
+			struct doc_ref r = prev->ref;/* SMATCH Bug things prev
+						      * has no state*/
 			int i;
 			text_normalize(t, &m->ref);
-			while ((i = text_advance_towards(t, &r, &m->ref)) != 1) {
+			while ((i = text_advance_towards(t, &r,
+							 &m->ref)) != 1) {
 				if (i == 0)
 					abort();
 			}
@@ -1926,11 +1960,14 @@ DEF_CMD(text_replace)
 		text_normalize(t, &pm->ref);
 
 		for (m = doc_prev_mark_all(pm);
-		     m && text_update_prior_after_change(t, &m->ref, &pm->ref, &pm->ref);
+		     m && text_update_prior_after_change(t, &m->ref,
+							 &pm->ref, &pm->ref);
 		     m = doc_prev_mark_all(m))
 			;
 		for (m = doc_next_mark_all(pm);
-		     m && text_update_following_after_change(t, &m->ref, &pm->ref, &pm->ref);
+		     m && text_update_following_after_change(t, &m->ref,
+							     &pm->ref,
+							     &pm->ref);
 		     m = doc_next_mark_all(m))
 			;
 		text_check_consistent(t);
@@ -1950,11 +1987,13 @@ DEF_CMD(text_replace)
 		text_add_str(t, &pm->ref, str, &start, &first);
 		text_normalize(t, &pm->ref);
 		for (m = doc_prev_mark_all(pm);
-		     m && text_update_prior_after_change(t, &m->ref, &start, &pm->ref);
+		     m && text_update_prior_after_change(t, &m->ref,
+							 &start, &pm->ref);
 		     m = doc_prev_mark_all(m))
 			;
 		for (m = doc_next_mark_all(pm);
-		     m && text_update_following_after_change(t, &m->ref, &start, &pm->ref);
+		     m && text_update_following_after_change(t, &m->ref,
+							     &start, &pm->ref);
 		     m = doc_next_mark_all(m))
 			;
 		if (newattrs && start.c)
@@ -2016,7 +2055,8 @@ DEF_CMD(text_doc_get_attr)
 		int len = strlen(attr);
 		while ((key = attr_get_next_key(a, key, o, &val)) != NULL &&
 		       strncmp(key, attr, len) == 0)
-			comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val, 0,
+			comm_call(ci->comm2, "callback:get_attr", ci->focus,
+				  0, NULL, val, 0,
 				   NULL, key);
 	}
 	return 1;
@@ -2130,7 +2170,8 @@ static void text_cleanout(struct text *t safe)
 	}
 
 	while (!list_empty(&t->text)) {
-		struct text_chunk *c = list_entry(t->text.next, struct text_chunk, lst);
+		struct text_chunk *c = list_entry(t->text.next,
+						  struct text_chunk, lst);
 		list_del(&c->lst);
 		attr_free(&c->attrs);
 		free(c);
@@ -2168,8 +2209,10 @@ DEF_CMD(text_destroy)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, &text_new, 0, NULL, "attach-doc-text");
-	call_comm("global-set-command", ed, &text_new2, 0, NULL, "open-doc-text");
+	call_comm("global-set-command", ed, &text_new, 0, NULL,
+		  "attach-doc-text");
+	call_comm("global-set-command", ed, &text_new2, 0, NULL,
+		  "open-doc-text");
 
 	text_map = key_alloc();
 

@@ -140,7 +140,8 @@ int main(int argc, char *argv[])
 			}
 		}
 		if (gtk)
-			make_stack(call_ret(pane, "attach-display-pygtk", p), doc);
+			make_stack(call_ret(pane, "attach-display-pygtk", p),
+				   doc);
 
 		time_start(TIME_REFRESH);
 		pane_refresh(ed);

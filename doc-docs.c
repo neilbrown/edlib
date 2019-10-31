@@ -11,16 +11,19 @@
  * The auxiliary pane becomes the parent of all attached documents, so
  * that the list of children is exactly the content of the document.
  * This pane receives Notify:doc:revisit notification  from the
- * individual documents, and also requests notification of Notify:doc:status-changed.
+ * individual documents, and also requests notification of
+ * Notify:doc:status-changed.
  *
  * Supported global operations include:
  * docs:byname - report pane with given (str)name
- * docs:byfd - find a document given a path and file-descriptor.  Each document is asked
- *    whether it matches the path and/or fd.
- * docs:choose - choose and return a document which is not currently displayed somewhere.
+ * docs:byfd - find a document given a path and file-descriptor.
+ * Each document is asked whether it matches the path and/or fd.
+ * docs:choose - choose and return a document which is not currently displayed
+ * somewhere.
  * docs:save-all - each each document to save itself
- * docs:show-modified - display a pane, in given window, listing just the documents
- *   that are modified and might need saving.  Pane auto-closes when empty.
+ * docs:show-modified - display a pane, in given window, listing just the
+ * documents that are modified and might need saving.
+ * Pane auto-closes when empty.
  *
  * After a document is created and bound to a pane "doc:appeared-*" is called
  * which adds that pane to the list if it isn't already attached somewhere else.
@@ -140,7 +143,8 @@ static void check_name(struct docs *docs safe, struct pane *pane safe)
 			strcpy(nname, d->name);
 		list_for_each_entry(p, &docs->collection->children, siblings) {
 			struct doc *d2 = p->data;
-			if (d != d2 && d2->name && strcmp(nname, d2->name) == 0) {
+			if (d != d2 && d2->name &&
+			    strcmp(nname, d2->name) == 0) {
 				conflict = 1;
 				unique += 1;
 				break;
@@ -241,7 +245,8 @@ DEF_CMD(docs_modified_notify_replace)
 				 * but that seems clumsy, and this works...
 				 * for now.
 				 */
-				call("Notify:clip", ci->home, 0, m2, NULL, 0, m);
+				call("Notify:clip", ci->home
+				     , 0, m2, NULL, 0, m);
 			mark_to_mark(m2, m);
 			if (mark_next_pane(ci->home->parent, m) == WEOF)
 				break;
@@ -338,7 +343,8 @@ DEF_CMD(docs_callback)
 
 	if (strcmp(ci->key, "docs:byname") == 0) {
 		if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0)
-			return comm_call(ci->comm2, "callback:doc", doc->doc.home);
+			return comm_call(ci->comm2, "callback:doc",
+					 doc->doc.home);
 
 		list_for_each_entry(p, &doc->collection->children, siblings) {
 			struct doc *dc = p->data;
@@ -401,7 +407,8 @@ DEF_CMD(docs_callback)
 	}
 
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
-		p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus,
+		p = home_call_ret(pane, doc->doc.home, "doc:attach-view",
+				  ci->focus,
 		                  ci->num, NULL, "modified");
 		if (!p)
 			return Efail;
@@ -423,7 +430,8 @@ DEF_CMD(docs_callback)
 			return Efallthrough;
 		pane_reparent(p, doc->collection);
 		home_call(p, "doc:Request:Notify:doc:revisit", doc->collection);
-		home_call(p, "doc:Request:Notify:doc:status-changed", doc->collection);
+		home_call(p, "doc:Request:Notify:doc:status-changed",
+			  doc->collection);
 		if (p->parent)
 			doc_checkname(p, doc, ci->num ?: -1);
 		return Efallthrough;
@@ -770,7 +778,8 @@ DEF_CMD(docs_cmd)
 		return docs_toggle(ci->focus, ci->mark);
 	default:
 		if (cmd >= 'A' && cmd <= 'Z')
-			return docs_open_alt(ci->home, ci->focus, ci->mark, cmd);
+			return docs_open_alt(ci->home,
+					     ci->focus, ci->mark, cmd);
 		return 1;
 	}
 }
@@ -818,10 +827,11 @@ DEF_CMD(docs_attach)
 			p = pane_register(p, 0, &docs_modified_handle.c, docs);
 
 			call("doc:Request:Notify:doc:Replace", p);
-			/* And trigger Notify:doc:Replace handling immediately...*/
+			/* And trigger Notify:doc:Replace
+			 * handling immediately...*/
 			pane_call(p, "Notify:doc:Replace", p);
-			/* Don't want to inherit position from some earlier instance,
-			 * always move to the start.
+			/* Don't want to inherit position from some
+			 * earlier instance, always move to the start.
 			 */
 			call("Move-File", p, -1);
 		}
@@ -886,7 +896,8 @@ static void docs_init_map(void)
 	key_add(docs_aux_map, "ChildClosed", &docs_child_closed);
 
 	key_add(docs_modified_map, "doc:replace", &docs_modified_replace);
-	key_add(docs_modified_map, "Notify:doc:Replace", &docs_modified_notify_replace);
+	key_add(docs_modified_map, "Notify:doc:Replace",
+		&docs_modified_notify_replace);
 	key_add(docs_modified_map, "doc:step", &docs_modified_step);
 	key_add(docs_modified_map, "doc:get-attr", &docs_modified_doc_get_attr);
 	key_add(docs_modified_map, "doc:set-ref", &docs_modified_set_ref);
@@ -935,5 +946,6 @@ DEF_CMD(attach_docs)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, &attach_docs, 0, NULL, "attach-doc-docs");
+	call_comm("global-set-command", ed, &attach_docs, 0, NULL,
+		  "attach-doc-docs");
 }

@@ -334,7 +334,8 @@ REDEF_CMD(next_evt)
 		call("Keystroke", p, 0, NULL, dd->event_info);
 		break;
 	case DoMouse:
-		record_mouse(p, dd->event_info, dd->event_pos.x, dd->event_pos.y);
+		record_mouse(p, dd->event_info, dd->event_pos.x,
+			     dd->event_pos.y);
 		call("Mouse-event", p, 0, NULL, dd->event_info, 0, NULL, NULL,
 		     dd->event_pos.x, dd->event_pos.y);
 		break;
@@ -357,7 +358,8 @@ REDEF_CMD(next_evt)
 #else
 static inline int  prepare_recrep(struct pane *p safe) {return 0;}
 static inline void record_key(struct pane *p safe, char *key) {}
-static inline void record_mouse(struct pane *p safe, char *key safe, int x, int y) {}
+static inline void record_mouse(struct pane *p safe, char *key safe,
+				int x, int y) {}
 static inline void record_screen(struct pane *p safe) {}
 static inline void close_recrep(struct pane *p safe) {}
 #endif
@@ -398,7 +400,8 @@ DEF_CMD(nc_close_display)
 	if (cr.i > 1)
 		pane_close(ci->home);
 	else
-		call("Message", ci->focus, 0, NULL, "Cannot close only window.");
+		call("Message", ci->focus, 0, NULL,
+		     "Cannot close only window.");
 	return 1;
 }
 
@@ -540,12 +543,14 @@ static int cvt_attrs(struct pane *home safe, char *attrs)
 		else if (strcmp(tmp, "underline")==0) attr |= A_UNDERLINE;
 		else if (strncmp(tmp, "fg:", 3) == 0) {
 			struct call_return cr =
-				call_ret(all, "colour:map", home, 0, NULL, tmp+3);
+				call_ret(all, "colour:map", home,
+					 0, NULL, tmp+3);
 			int rgb[3] = {cr.i, cr.i2, cr.x};
 			fg = find_col(dd, rgb);
 		} else if (strncmp(tmp, "bg:", 3) == 0) {
 			struct call_return cr =
-				call_ret(all, "colour:map", home, 0, NULL, tmp+3);
+				call_ret(all, "colour:map", home,
+					 0, NULL, tmp+3);
 			int rgb[3] = {cr.i, cr.i2, cr.x};
 			bg = find_col(dd, rgb);
 		}
@@ -963,7 +968,8 @@ DEF_CMD(display_ncurses)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, &display_ncurses, 0, NULL, "attach-display-ncurses");
+	call_comm("global-set-command", ed, &display_ncurses, 0, NULL,
+		  "attach-display-ncurses");
 
 	nc_map = key_alloc();
 	key_add(nc_map, "Display:refresh", &nc_refresh);

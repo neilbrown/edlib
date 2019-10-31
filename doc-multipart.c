@@ -145,9 +145,11 @@ static void mp_check_consistent(struct mp_info *mpi safe)
 #if 0
 	for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(m)) {
 		if (!m->ref.m || m->ref.m->seq <= s) {
-			for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(m))
+			for (m = doc_first_mark_all(d); m;
+			     m = doc_next_mark_all(m))
 				if (m && m->ref.m)
-					printf("%p %d %d\n", m, m->seq, m->ref.m->seq);
+					printf("%p %d %d\n", m, m->seq,
+					       m->ref.m->seq);
 
 			abort();
 		}
@@ -157,7 +159,8 @@ static void mp_check_consistent(struct mp_info *mpi safe)
 #endif
 }
 
-static void change_part(struct mp_info *mpi safe, struct mark *m safe, int part, int end)
+static void change_part(struct mp_info *mpi safe, struct mark *m safe,
+			int part, int end)
 {
 	struct mark *m1;
 	struct part *p;
@@ -252,9 +255,10 @@ DEF_CMD(mp_step)
 	struct mark *m = ci->mark;
 	int ret;
 
-	/* Document access commands are handled by the 'cropper'.
-	 * First we need to substitute the marks, then call the cropper
-	 * which calls the document.  Then make sure the marks are still in order.
+	/* Document access commands are handled by the 'cropper'.  First
+	 * we need to substitute the marks, then call the cropper which
+	 * calls the document.  Then make sure the marks are still in
+	 * order.
 	 */
 	mp_check_consistent(mpi);
 	if (!m)
@@ -293,8 +297,10 @@ DEF_CMD(mp_step)
 			ret = -1;
 		else
 			ret = home_call(mpi->parts[m->ref.docnum].pane,
-					ci->key, ci->focus, ci->num, m1, ci->str,
-					ci->num2, NULL, ci->str2, 0,0, ci->comm2);
+					ci->key, ci->focus,
+					ci->num, m1, ci->str,
+					ci->num2, NULL, ci->str2,
+					0,0, ci->comm2);
 	}
 	if (ci->num2) {
 		mp_normalize(mpi, ci->mark);
@@ -369,7 +375,8 @@ DEF_CMD(mp_attr)
 	if (strcmp(attr, "multipart:part-num") == 0) {
 		char n[11];
 		snprintf(n, sizeof(n), "%d", d);
-		comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, n);
+		comm_call(ci->comm2, "callback:get_attr", ci->focus,
+			  0, NULL, n);
 		return 1;
 	}
 
@@ -380,7 +387,8 @@ DEF_CMD(mp_attr)
 		/* Get a pane attribute, not char attribute */
 		char *s = pane_attr_get(mpi->parts[d].pane, attr);
 		if (s)
-			return comm_call(ci->comm2, "callback", ci->focus, 0, NULL, s);
+			return comm_call(ci->comm2, "callback", ci->focus,
+					 0, NULL, s);
 		return 1;
 	}
 
@@ -572,5 +580,6 @@ DEF_CMD(attach_mp)
 void edlib_init(struct pane *ed safe)
 {
 	mp_init_map();
-	call_comm("global-set-command", ed, &attach_mp, 0, NULL, "attach-doc-multipart");
+	call_comm("global-set-command", ed, &attach_mp, 0, NULL,
+		  "attach-doc-multipart");
 }

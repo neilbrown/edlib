@@ -270,7 +270,8 @@ DEF_CMD(dr_step)
 		struct mark *tmp = mark_dup(m->ref.m);
 		if (tmp)
 			m->ref.m->mdata =
-				call_ret(str, "doc:render-line", p, NO_NUMERIC, tmp);
+				call_ret(str, "doc:render-line", p,
+					 NO_NUMERIC, tmp);
 		mark_free(tmp);
 		if (!m->ref.m->mdata)
 			m->ref.m->mdata = strdup("");
@@ -437,7 +438,8 @@ DEF_CMD(dr_render_line)
 			if (m2->ref.offset < 0)
 				m2->ref.offset = strlen(line)-1;
 			line = strndup(line, m2->ref.offset);
-			ret = comm_call(ci->comm2, "callback:doc", ci->focus, 0, NULL, line);
+			ret = comm_call(ci->comm2, "callback:doc", ci->focus,
+					0, NULL, line);
 			free(line);
 			m->ref.offset = m2->ref.offset;
 			reposition_mark(m);
@@ -448,7 +450,8 @@ DEF_CMD(dr_render_line)
 	}
 	if (ci->num >= 0 && ci->num <= (int)strlen(line)) {
 		line = strndup(line, ci->num);
-		ret = comm_call(ci->comm2, "callback:doc", ci->focus, 0, NULL, line);
+		ret = comm_call(ci->comm2, "callback:doc", ci->focus,
+				0, NULL, line);
 		free(line);
 		m->ref.offset = ci->num;
 		reposition_mark(m);
@@ -522,7 +525,8 @@ DEF_CMD(dr_get_attr)
 	else if (strcmp(attr, "render-default") == 0)
 		val = "lines";
 	else
-		val = call_ret(strsave, ci->key, dri->base, ci->num, NULL, ci->str);
+		val = call_ret(strsave, ci->key, dri->base,
+			       ci->num, NULL, ci->str);
 
 	if (val)
 		comm_call(ci->comm2, "callback:get_attr", ci->focus,

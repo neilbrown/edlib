@@ -116,12 +116,12 @@ DEF_CMD(doc_word)
 
 	if (!m)
 		m = dd->point;
-	/* Move-word should finish at a word boundary, which usually means
-	 * an alphanum (possibly including '_' depending on doc attributes?).
-	 * However it should never cross two different sets of spaces or
-	 * punctuation.  So if we cross space and punct and don't find alphanum,
-	 * then we treat end of punct as a word boundary.  We never stop immediately
-	 * after a space.
+	/* Move-word should finish at a word boundary, which usually
+	 * means an alphanum (possibly including '_' depending on doc
+	 * attributes?).  However it should never cross two different
+	 * sets of spaces or punctuation.  So if we cross space and
+	 * punct and don't find alphanum, then we treat end of punct as
+	 * a word boundary.  We never stop immediately after a space.
 	 * So skip spaces, then punct, then alphanum.
 	 * Same in either direction.
 	 */
@@ -755,7 +755,8 @@ DEF_CMD(doc_get_str)
 		return Efail;
 	call_comm("doc:content", ci->focus, &g.c, 0, m);
 	mark_free(m);
-	comm_call(ci->comm2, "callback:get-str", ci->focus, 0, NULL, buf_final(&g.b));
+	comm_call(ci->comm2, "callback:get-str", ci->focus, 0, NULL,
+		  buf_final(&g.b));
 	free(g.b.b);
 	return 1;
 }
@@ -919,7 +920,8 @@ DEF_CMD(doc_dup_point)
 DEF_CMD(doc_replace)
 {
 	struct doc_data *dd = ci->home->data;
-	return home_call(dd->doc, "doc:replace", ci->focus, 1, ci->mark, ci->str,
+	return home_call(dd->doc, "doc:replace", ci->focus,
+			 1, ci->mark, ci->str,
 			 ci->num2, dd->point, ci->str2);
 }
 
@@ -946,11 +948,13 @@ DEF_CMD(doc_move_to)
 			dd->mark = mark_dup(dd->point);
 			if (!dd->mark)
 				return Efail;
-			attr_set_str(&dd->mark->attrs, "render:interactive-mark", "yes");
+			attr_set_str(&dd->mark->attrs,
+				     "render:interactive-mark", "yes");
 		}
 		m = ci->mark ?: dd->point;
 		mark_to_mark(dd->mark, m);
-		/* Make sure mark is *before* point so insertion leave mark alone */
+		/* Make sure mark is *before* point so insertion
+		 * leave mark alone */
 		if (dd->mark->seq > m->seq)
 			mark_to_mark(dd->mark, m);
 		break;
@@ -1120,7 +1124,8 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
 	key_add(doc_default_cmd, "doc:attach-view", &doc_attach_view);
 
-	key_add_prefix(doc_default_cmd, "doc:Request:Notify:", &doc_request_notify);
+	key_add_prefix(doc_default_cmd, "doc:Request:Notify:",
+		       &doc_request_notify);
 	key_add_prefix(doc_default_cmd, "doc:Notify:", &doc_notify);
 	key_add_prefix(doc_default_cmd, "doc:set:", &doc_set);
 }
@@ -1204,7 +1209,8 @@ DEF_CMD(doc_open)
 	p = call_ret(pane, "docs:byfd", ed, 0, NULL, rp, fd);
 
 	if (!p) {
-		p = call_ret(pane, "global-multicall-open-doc-", ed, fd, NULL, name,
+		p = call_ret(pane, "global-multicall-open-doc-", ed,
+			     fd, NULL, name,
 		             stb.st_mode & S_IFMT);
 
 		if (!p) {
@@ -1266,7 +1272,8 @@ void doc_free(struct doc *d safe)
 void doc_setup(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &doc_open, 0, NULL, "doc:open");
-	call_comm("global-set-command", ed, &doc_from_text, 0, NULL, "doc:from-text");
+	call_comm("global-set-command", ed, &doc_from_text, 0, NULL,
+		  "doc:from-text");
 	if (!(void*)doc_default_cmd)
 		init_doc_cmds();
 }

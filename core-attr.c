@@ -258,7 +258,8 @@ char *attr_get_next_key(struct attrset *set, char *key safe, int keynum,
 	return key;
 }
 
-int attr_set_str_key(struct attrset **setp safe, char *key safe, char *val, int keynum)
+int attr_set_str_key(struct attrset **setp safe, char *key safe, char *val,
+		     int keynum)
 {
 	int offset = 0;
 	int cmp;
@@ -309,7 +310,8 @@ int attr_set_str_key(struct attrset **setp safe, char *key safe, char *val, int 
 			       new->len);
 		} else {
 			/* Split follow in entries and store new entry there */
-			struct attrset *new = newattr(NULL, set->len - offset + len);
+			struct attrset *new = newattr(NULL,
+						      set->len - offset + len);
 
 			new->next = set->next;
 			set->next = new;
@@ -321,7 +323,8 @@ int attr_set_str_key(struct attrset **setp safe, char *key safe, char *val, int 
 			offset = 0;
 		}
 	}
-	memmove(set->attrs + offset + len, set->attrs + offset, set->len - offset);
+	memmove(set->attrs + offset + len, set->attrs + offset,
+		set->len - offset);
 	strcpy(set->attrs + offset, nkey);
 	strcpy(set->attrs + offset + nkeylen, key);
 	strcpy(set->attrs + offset + nkeylen + strlen(key) + 1, val);

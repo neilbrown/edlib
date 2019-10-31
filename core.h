@@ -67,7 +67,8 @@ struct pane {
 	short			x,y,z;
 	short			h,w;
 	short			cx, cy;	/* cursor position */
-	short			abs_z, abs_zhi; /* 'hi' is the max of all children */
+	short			abs_z, abs_zhi; /* 'hi' is the max of all
+						 * children */
 
 	short			damaged;
 
@@ -115,8 +116,10 @@ struct notifier {
 	struct list_head	notifier_link, notifiee_link;
 	int			noted;
 };
-void pane_add_notify(struct pane *target safe, struct pane *source safe, char *msg safe);
-int do_pane_notify(struct pane *home, char *notification safe, struct pane *p safe,
+void pane_add_notify(struct pane *target safe, struct pane *source safe,
+		     char *msg safe);
+int do_pane_notify(struct pane *home, char *notification safe,
+		   struct pane *p safe,
 		   int num, struct mark *m, char *str,
 		   int num2, struct mark *m2, char *str2,
 		   struct command *comm2);
@@ -185,7 +188,8 @@ struct mark {
 					 * e.g. refcounting
 					 */
 	MARK_DATA_PTR		*mdata;
-	void			*mtype;	/* can be used to validate type of mdata */
+	void			*mtype;	/* can be used to validate
+					 * type of mdata */
 	struct doc		*owner safe;
 };
 
@@ -210,7 +214,8 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end);
 void doc_check_consistent(struct doc *d safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe);
-wint_t mark_step_pane(struct pane *p safe, struct mark *m safe, int forward, int move);
+wint_t mark_step_pane(struct pane *p safe, struct mark *m safe,
+		      int forward, int move);
 
 static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
 {
@@ -238,17 +243,21 @@ struct mark *vmark_prev(struct mark *m safe);
 struct mark *vmark_or_point_next(struct mark *m safe, int view);
 struct mark *vmark_or_point_prev(struct mark *m safe, int view);
 struct mark *vmark_matching(struct mark *m safe);
-struct mark *vmark_first(struct pane *p safe, int view, struct pane *owner safe);
+struct mark *vmark_first(struct pane *p safe, int view,
+			 struct pane *owner safe);
 struct mark *vmark_last(struct pane *p safe, int view, struct pane *owner safe);
-struct mark *vmark_at_point(struct pane *p safe, int view, struct pane *owner safe);
-struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe, int view, struct pane *owner);
+struct mark *vmark_at_point(struct pane *p safe, int view,
+			    struct pane *owner safe);
+struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe,
+				int view, struct pane *owner);
 struct mark *vmark_new(struct pane *p safe, int view, struct pane *owner);
 void mark_clip(struct mark *m safe, struct mark *start, struct mark *end);
 void marks_clip(struct pane *p safe, struct mark *start, struct mark *end,
 		int view, struct pane *owner);
 
 
-static inline int mark_ordered_or_same(struct mark *m1 safe, struct mark *m2 safe)
+static inline int mark_ordered_or_same(struct mark *m1 safe,
+				       struct mark *m2 safe)
 {
 	return m1->seq < m2->seq || mark_same(m1, m2);
 }
@@ -268,7 +277,8 @@ static inline struct attrset **safe mark_attr(struct mark *m safe)
 char *attr_find(struct attrset *set, char *key safe);
 int attr_del(struct attrset **setp safe, char *key safe);
 int attr_set_str(struct attrset **setp safe, char *key safe, char *val);
-int attr_set_str_key(struct attrset **setp safe, char *key safe, char *val, int keynum);
+int attr_set_str_key(struct attrset **setp safe, char *key safe,
+		     char *val, int keynum);
 char *attr_get_str(struct attrset *setp, char *key safe, int keynum);
 char *attr_get_next_key(struct attrset *set, char *key safe, int keynum,
 			char **valp safe);
@@ -294,7 +304,8 @@ struct lookup_cmd {
 	static int _name ## _func(const struct cmd_info *ci safe)
 
 #define DEF_LOOKUP_CMD(_name, _map) \
-	static struct lookup_cmd _name = { { key_lookup_cmd_func, 0, NULL }, &_map};
+	static struct lookup_cmd _name = { { key_lookup_cmd_func, 0, NULL }, \
+					  &_map};
 
 int key_lookup_cmd_func(const struct cmd_info *ci safe);
 
@@ -343,14 +354,16 @@ struct commcache {
 #define CCINIT {safe_cast 0, safe_cast 0}
 
 #define	NO_NUMERIC	(INT_MAX/2)
-#define	RPT_NUM(ci)	((ci)->num == NO_NUMERIC ? 1 : (ci)->num == -NO_NUMERIC ? -1 : (ci)->num)
+#define	RPT_NUM(ci)	((ci)->num == NO_NUMERIC ? 1 :		\
+			 (ci)->num == -NO_NUMERIC ? -1 : (ci)->num)
 
 struct map *safe key_alloc(void);
 void key_free(struct map *m safe);
 int key_handle(const struct cmd_info *ci safe);
 int key_lookup(struct map *m safe, const struct cmd_info *ci safe);
 int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe);
-struct command *key_lookup_cmd(struct map *m safe, char *c safe, char **cret, int *lenret);
+struct command *key_lookup_cmd(struct map *m safe, char *c safe,
+			       char **cret, int *lenret);
 void key_add(struct map *map safe, char *k safe, struct command *comm);
 void key_add_range(struct map *map safe, char *first safe, char *last safe,
 		   struct command *comm);
@@ -402,12 +415,15 @@ void pane_damaged(struct pane *p, int type);
 void pane_clone_children(struct pane *from, struct pane *to);
 struct pane *pane_my_child(struct pane *p, struct pane *c);
 
-int pane_masked(struct pane *p safe, short x, short y, short abs_z, short *w, short *h);
+int pane_masked(struct pane *p safe, short x, short y, short abs_z,
+		short *w, short *h);
 char *pane_attr_get(struct pane *p, char *key safe);
 char *pane_mark_attr(struct pane *p safe, struct mark *m safe, char *key safe);
-void pane_absxy(struct pane *p, short *x safe, short *y safe, short *w safe, short *h safe);
+void pane_absxy(struct pane *p, short *x safe, short *y safe,
+		short *w safe, short *h safe);
 void pane_relxy(struct pane *p, short *x safe, short *y safe);
-void pane_map_xy(struct pane *orig, struct pane *target, short *x safe, short *y safe);
+void pane_map_xy(struct pane *orig, struct pane *target,
+		 short *x safe, short *y safe);
 
 struct xy pane_scale(struct pane *p safe);
 
@@ -426,7 +442,8 @@ static inline int pane_attr_get_int(struct pane *p safe, char *key safe)
 
 /* Inlines */
 
-static inline wint_t doc_following_pane(struct pane *p safe, struct mark *m safe)
+static inline wint_t doc_following_pane(struct pane *p safe,
+					struct mark *m safe)
 {
 	return mark_step_pane(p, m, 1, 0);
 }
@@ -482,43 +499,50 @@ enum target_type {
 	TYPE_comm,
 };
 
-struct pane *do_call_pane(enum target_type type, struct pane *home, struct command *comm2a,
+struct pane *do_call_pane(enum target_type type, struct pane *home,
+			  struct command *comm2a,
 			  char *key safe, struct pane *focus safe,
 			  int num,  struct mark *m,  char *str,
 			  int num2, struct mark *m2, char *str2,
 			  int x, int y, struct command *comm2b,
 			  struct commcache *cache);
-struct mark *do_call_mark(enum target_type type, struct pane *home, struct command *comm2a,
+struct mark *do_call_mark(enum target_type type, struct pane *home,
+			  struct command *comm2a,
 			  char *key safe, struct pane *focus safe,
 			  int num,  struct mark *m,  char *str,
 			  int num2, struct mark *m2, char *str2,
 			  int x, int y, struct command *comm2b,
 			  struct commcache *cache);
-struct mark *do_call_mark2(enum target_type type, struct pane *home, struct command *comm2a,
+struct mark *do_call_mark2(enum target_type type, struct pane *home,
+			   struct command *comm2a,
 			   char *key safe, struct pane *focus safe,
 			   int num,  struct mark *m,  char *str,
 			   int num2, struct mark *m2, char *str2,
 			   int x, int y, struct command *comm2b,
 			   struct commcache *cache);
-struct command *do_call_comm(enum target_type type, struct pane *home, struct command *comm2a,
+struct command *do_call_comm(enum target_type type, struct pane *home,
+			     struct command *comm2a,
 			     char *key safe, struct pane *focus safe,
 			     int num,  struct mark *m,  char *str,
 			     int num2, struct mark *m2, char *str2,
 			     int x, int y, struct command *comm2b,
 			     struct commcache *cache);
-struct call_return do_call_all(enum target_type type, struct pane *home, struct command *comm2a,
+struct call_return do_call_all(enum target_type type, struct pane *home,
+			       struct command *comm2a,
 			       char *key safe, struct pane *focus safe,
 			       int num,  struct mark *m,  char *str,
 			       int num2, struct mark *m2, char *str2,
 			       int x, int y, struct command *comm2b,
 			       struct commcache *cache);
-char *do_call_str(enum target_type type, struct pane *home, struct command *comm2a,
+char *do_call_str(enum target_type type, struct pane *home,
+		  struct command *comm2a,
 		  char *key safe, struct pane *focus safe,
 		  int num,  struct mark *m,  char *str,
 		  int num2, struct mark *m2, char *str2,
 		  int x, int y, struct command *comm2b,
 		  struct commcache *cache);
-char *do_call_strsave(enum target_type type, struct pane *home, struct command *comm2a,
+char *do_call_strsave(enum target_type type, struct pane *home,
+		      struct command *comm2a,
 		      char *key safe, struct pane *focus safe,
 		      int num,  struct mark *m,  char *str,
 		      int num2, struct mark *m2, char *str2,
@@ -533,7 +557,8 @@ char *do_call_strsave(enum target_type type, struct pane *home, struct command *
 #define CH(f,a,b) f(a,b)
 
 #define _CALL(...) VFUNC(CALL, __VA_ARGS__)
-#define CALL15(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2, str2, x, y, comm2) \
+#define CALL15(ret, t_type, target, key, comm2a, focus, num, mark, str,	\
+	       num2, mark2, str2, x, y, comm2) \
 	do_call_##ret(TYPE_##t_type, CH(T_##t_type,target, NULL), CH(T_##t_type,comm2,target), \
 		      key, focus, num, mark, str, num2, mark2, str2, x, y, comm2, NULL)
 #define CALL14(ret, t_type, target, key, comm2a, focus, num, mark, str, num2, mark2, str2, x, y) \
@@ -609,7 +634,8 @@ char *do_call_strsave(enum target_type type, struct pane *home, struct command *
 #define call_ret(_ret, key, _focus, ...) CALL(_ret, focus, _focus, key, _focus, ##__VA_ARGS__)
 #define call_comm(key, _focus, comm, ...) _CALL(val, focus, _focus, key, comm, _focus, ##__VA_ARGS__)
 
-static inline int do_call_val(enum target_type type, struct pane *home, struct command *comm2a,
+static inline int do_call_val(enum target_type type, struct pane *home,
+			      struct command *comm2a,
 			      char *key safe, struct pane *focus safe,
 			      int num,  struct mark *m,  char *str,
 			      int num2, struct mark *m2, char *str2,
@@ -617,7 +643,8 @@ static inline int do_call_val(enum target_type type, struct pane *home, struct c
 			      struct commcache *ccache)
 {
 	struct cmd_info ci = {.key = key, .focus = focus,
-			      .home =  (type == TYPE_home || type == TYPE_pane) ? safe_cast home : focus,
+			      .home =  (type == TYPE_home || type == TYPE_pane)
+				      ? safe_cast home : focus,
 			      .num = num, .mark = m, .str = str,
 			      .num2 = num2, .mark2 = m2, .str2 = str2,
 			      .comm2 = comm2a ?: comm2b, .x = x, .y = y,

@@ -66,7 +66,8 @@ DEF_CMD(global_get_command)
 	if (!ci->str ||
 	    !(cm = key_lookup_cmd(map, ci->str, NULL, NULL)))
 		return Efail;
-	return comm_call(ci->comm2, "callback:comm", ci->focus, 0, NULL, ci->str,
+	return comm_call(ci->comm2, "callback:comm", ci->focus,
+			 0, NULL, ci->str,
 			 0, NULL, NULL, 0,0, cm);
 }
 

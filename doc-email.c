@@ -101,7 +101,8 @@ DEF_CMD(email_spacer)
 
 	while (ok && attr && *attr) {
 		if (is_attr("hide", attr))
-			ok = cond_append(&b, visible ? "HIDE" : "SHOW", "1", o, pm, m);
+			ok = cond_append(&b, visible ? "HIDE" : "SHOW", "1",
+					 o, pm, m);
 		else if (is_attr("save", attr))
 			ok = cond_append(&b, "Save", "2", o, pm, m);
 		else if (is_attr("open", attr))
@@ -169,7 +170,8 @@ DEF_CMD(email_get_attr)
 	if (!ci->mark || !ci->home->parent)
 		return Efallthrough;
 
-	a = pane_mark_attr(ci->home->parent, ci->mark, "multipart-prev:email:actions");
+	a = pane_mark_attr(ci->home->parent, ci->mark,
+			   "multipart-prev:email:actions");
 	if (!a)
 		return 1;
 	fields = 0;
@@ -322,7 +324,9 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 		xfer = get_822_token(&xfer, &xlen);
 		if (xfer && xlen == 16 &&
 		    strncasecmp(xfer, "quoted-printable", 16) == 0) {
-			struct pane *hx = call_ret(pane, "attach-quoted_printable", h);
+			struct pane *hx = call_ret(pane,
+						   "attach-quoted_printable",
+						   h);
 			if (hx) {
 				h = hx;
 				need_charset = 1;
@@ -465,8 +469,10 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 	pos = mark_dup(start);
 	part_end = mark_dup(pos);
 	while (found_end == 0 &&
-	       (found_end = find_boundary(p, pos, end, part_end, boundary)) >= 0) {
-		struct pane *hdr = call_ret(pane, "attach-rfc822header", p, 0, start, NULL,
+	       (found_end = find_boundary(p, pos, end, part_end,
+					  boundary)) >= 0) {
+		struct pane *hdr = call_ret(pane, "attach-rfc822header", p,
+					    0, start, NULL,
 		                            0, part_end);
 		char *ptype, *pxfer;
 
@@ -477,7 +483,8 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 		call("get-header", hdr, 0, NULL, "content-transfer-encoding",
 		     0, NULL, "cmd");
 		ptype = attr_find(hdr->attrs, "rfc822-content-type");
-		pxfer = attr_find(hdr->attrs, "rfc822-content-transfer-encoding");
+		pxfer = attr_find(hdr->attrs,
+				  "rfc822-content-transfer-encoding");
 
 		pane_close(hdr);
 
@@ -515,7 +522,8 @@ static int handle_content(struct pane *p safe, char *type, char *xfer,
 	}
 	if (major == NULL ||
 	    tok_matches(major, mjlen, "text"))
-		return handle_text_plain(p, type, xfer, start, end, mp, spacer, path);
+		return handle_text_plain(p, type, xfer, start, end,
+					 mp, spacer, path);
 
 	if (tok_matches(major, mjlen, "multipart"))
 		return handle_multipart(p, type, start, end, mp, spacer, path);
@@ -580,7 +588,8 @@ DEF_CMD(open_email)
 
 	call("get-header", h2, 0, NULL, "MIME-Version", 0, NULL, "cmd");
 	call("get-header", h2, 0, NULL, "content-type", 0, NULL, "cmd");
-	call("get-header", h2, 0, NULL, "content-transfer-encoding", 0, NULL, "cmd");
+	call("get-header", h2, 0, NULL, "content-transfer-encoding",
+	     0, NULL, "cmd");
 	mime = attr_find(h2->attrs, "rfc822-mime-version");
 	if (mime)
 		mime = get_822_word(mime);
@@ -599,7 +608,8 @@ DEF_CMD(open_email)
 	home_call(p, "multipart-add", ei->spacer);
 	call("doc:set:autoclose", doc, 1);
 
-	if (handle_content(ei->email, type, xfer, start, end, p, ei->spacer, "") == 0)
+	if (handle_content(ei->email, type, xfer, start, end,
+			   p, ei->spacer, "") == 0)
 		goto out;
 
 	h = pane_register(p, 0, &email_handle.c, ei);
@@ -652,7 +662,8 @@ DEF_CMD(email_step)
 	if (!p->parent || !ci->mark)
 		return Enoarg;
 	if (ci->num) {
-		ret = home_call(p->parent, ci->key, ci->focus, ci->num, ci->mark, ci->str,
+		ret = home_call(p->parent, ci->key, ci->focus,
+				ci->num, ci->mark, ci->str,
 				ci->num2);
 		if (ci->num2 && ret != CHAR_RET(WEOF))
 			while ((n = get_part(p->parent, ci->mark)) >= 0 &&
@@ -668,7 +679,8 @@ DEF_CMD(email_step)
 		 */
 		struct mark *m = mark_dup(ci->mark);
 
-		ret = home_call(p->parent, ci->key, ci->focus, ci->num, m, ci->str, 1);
+		ret = home_call(p->parent, ci->key, ci->focus,
+				ci->num, m, ci->str, 1);
 		while (ret != CHAR_RET(WEOF) &&
 		       (n = get_part(p->parent, m)) >= 0 &&
 		       n < evi->parts &&
@@ -679,7 +691,8 @@ DEF_CMD(email_step)
 				mark_free(m);
 				return CHAR_RET(WEOF);
 			}
-			home_call(p->parent, "doc:step-part", ci->focus, ci->num, m);
+			home_call(p->parent, "doc:step-part", ci->focus,
+				  ci->num, m);
 			ret = home_call(p->parent, ci->key, ci->focus, ci->num,
 					m, ci->str, 1);
 		}
@@ -704,7 +717,8 @@ DEF_CMD(email_set_ref)
 		while ((n = get_part(p->parent, ci->mark)) >= 0 &&
 		       n < evi->parts &&
 		       evi->invis[n])
-			home_call(p->parent, "doc:step-part", ci->focus, 1, ci->mark);
+			home_call(p->parent, "doc:step-part", ci->focus,
+				  1, ci->mark);
 	}
 	/* When move to the end, no need to normalize */
 	return 1;
@@ -747,16 +761,19 @@ DEF_CMD(email_view_set_attr)
 			/* Tell viewers that visibility has changed */
 			struct mark *m1, *m2;
 			m1 = mark_dup(ci->mark);
-			home_call(ci->home->parent, "doc:step-part", ci->focus, 0, m1);
+			home_call(ci->home->parent, "doc:step-part", ci->focus,
+				  0, m1);
 			if (get_part(ci->home->parent, m1) != p) {
 				mark_prev_pane(ci->home->parent, m1);
-				home_call(ci->home->parent, "doc:step-part", ci->focus, 0, m1);
+				home_call(ci->home->parent, "doc:step-part",
+					  ci->focus, 0, m1);
 			}
 			while ((m2 = doc_prev_mark_all(m1)) != NULL &&
 			       mark_same(m1, m2))
 				mark_to_mark(m1, m2);
 			m2 = mark_dup(m1);
-			home_call(ci->home->parent, "doc:step-part", ci->focus, 1, m2);
+			home_call(ci->home->parent, "doc:step-part", ci->focus,
+				  1, m2);
 			call("Notify:change", ci->focus, 0, m1, NULL, 0, m2);
 			call("Notify:clip", ci->focus, 0, m1, NULL, 0, m2);
 			mark_free(m1);
@@ -814,6 +831,8 @@ static void email_init_map(void)
 void edlib_init(struct pane *ed safe)
 {
 	email_init_map();
-	call_comm("global-set-command", ed, &open_email, 0, NULL, "open-doc-email");
-	call_comm("global-set-command", ed, &attach_email_view, 0, NULL, "attach-email-view");
+	call_comm("global-set-command", ed, &open_email, 0, NULL,
+		  "open-doc-email");
+	call_comm("global-set-command", ed, &attach_email_view, 0, NULL,
+		  "attach-email-view");
 }
