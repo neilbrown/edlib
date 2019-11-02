@@ -261,9 +261,13 @@ class CModePane(edlib.Pane):
         if not start_stat and brackets and brackets[-1] in '{ ':
             depth.append(depth[-1]+tab)
 
-        # assume exactly this depth
+        # assume exactly this depth unless an '{' or '}' would make
+        # sense, then allow one level to be deleted.
         depth.insert(0,0)
-        ret = [ depth[-1], depth[-1] ]
+        if brackets and brackets[-1] in '{ ':
+            ret = [ depth[-2], depth[-1], depth[-1] ]
+        else:
+            ret = [ depth[-1], depth[-1] ]
 
         #check for label.  Need to be a start of line, but
         # may only step over white space.  When trying Enter, we
