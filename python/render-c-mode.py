@@ -89,7 +89,7 @@ class CModePane(edlib.Pane):
         #  But don't accept a match on this line
         m = mark.dup()
 
-        p.call("Move-eol", m, -1)
+        p.call("Move-EOL", m, -1)
         p.call("doc:step", m, 0, 1)
         try:
             n = p.call("text-search", 1, 1, m,
@@ -279,7 +279,6 @@ class CModePane(edlib.Pane):
         if c == '\n':
             p.call("doc:step", 1, 1, st)
 
-            #  '^[ \t]*(case\s[^:\n]*|default[^\A\a\d:\n]*|[_\A\a\d]+):'
             try:
                 l = p.call("text-match", st.dup(),
                            '^[ \t]*(case\\s[^:\\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):')
@@ -395,6 +394,36 @@ class CModePane(edlib.Pane):
             r.append(r[-1]+t)
         return (r, '')
 
+    def handle_close(self, key, focus, mark, **a):
+        "handle-list/Chr-}/Chr-)/Chr-]/Chr-{/"
+        # If at start of line - plus close/open, re-indent this line
+        self.parent.call(key, focus, mark, **a)
+        m = mark.dup()
+        focus.call("Move-EOL", m, -1)
+        try:
+            n = focus.call("text-match", m.dup(), "^[\\s]*[])}{]")
+            if n > 0:
+                self.handle_tab(key, focus, m)
+        except edlib.commandfailed:
+            pass
+        return 1
+
+    def handle_colon(self, key, focus, mark, **a):
+        "handle:Chr-:"
+        # If this looks like a lable line, re-indent
+        self.parent.call(key, focus, mark, **a)
+        m = mark.dup()
+        focus.call("Move-EOL", m, -1)
+        try:
+            n = focus.call("text-match", m.dup(),
+                           '^[ \t]*(case\\s[^:\\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):')
+            if n > 0:
+                self.handle_tab(key, focus, m)
+        except edlib.commandfailed:
+            pass
+        return 1
+
+
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
         # If there is white space before or after the cursor,
@@ -462,13 +491,13 @@ class CModePane(edlib.Pane):
         current = focus.call("doc:get-str", m, mark, ret="str")
 
         if new != current:
-            return focus.call("Replace", 1, m, mark, new)
+            return focus.call("doc:replace", 1, m, mark, new)
         if depths[-1] == depths[-2]:
             # There is extra indent allowed, so stay where we are
             return 1
 
         new = self.mkwhite(depths[-1])
-        return focus.call("Replace", 1, m, mark, new)
+        return focus.call("doc:replace", 1, m, mark, new)
 
     def handle_bs(self, key, focus, mark, **a):
         "handle:Backspace"

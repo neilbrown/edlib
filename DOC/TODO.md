@@ -55,11 +55,11 @@ Bugs to be fixed
 ----------------
 
 - [ ] in python code, protect Replace/doc:replace - file could be read-only
-- [ ] c-mode indent should let me delete one level when it was due to bracketing,
+- [X] c-mode indent should let me delete one level when it was due to bracketing,
       so I can insert the close bracket.
 - [ ] comma sep list in enum doesn't get indented properly.  Need to recognize enum
       and treat ',' as end-of-statement .
-- [ ] case 0: indent seems to be broken... in "if ()\n switch(){ case 0:"
+- [X] case 0: indent seems to be broken... in "if ()\n switch(){ case 0:"
 - [ ] If you wrap a list of global variables, it doesn't indent.
 - [ ] <40> in a line of text (immediately after wrap) can make big text.
 - [ ] accessing a different frame shouldn't make a transient-popup
@@ -456,9 +456,9 @@ Module features
 - [ ]  auto-indent enhancements
       
      -   py: after "return" de-indent
-     -   type : in C, not in quote, re-indent
+     X   type : in C, not in quote, re-indent
      X   Indent of line starting '}' should match start of EXPR
-     -   when type '}', decrease indent. in C
+     X   when type '}', decrease indent. in C
      -??  '*' should check for comment, and add a space
      X   Enter in comment should add a ' * ' for the indent.
      X   Backspace in the indent after a comment deletes too much
@@ -477,9 +477,9 @@ Module features
       Not sure how to handle 'else:' which looks like the next block.
 - [X] show-paren should use different colour if bracket doesn't match.
 - [X] show-paren should work when next char is an 'open'
-- [ ] start of function should not get confused by comments, and should
+- [X] start of function should not get confused by comments, and should
       go to the real start.
-- [ ] re-indent statement - one auto-indent is reliable.
+- [ ] re-indent statement - once auto-indent is reliable.
 
 ### lang-python
 
