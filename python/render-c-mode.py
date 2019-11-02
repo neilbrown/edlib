@@ -43,29 +43,44 @@ class CModePane(edlib.Pane):
         # We need to go back to the start of the function
         # (or structure?) and work forwards
         # We need to:
-        #  recognize labels (goto and case and default)
-        #  Skip comments, but recognize when in one
-        #  Skip {} sections
+        #  recognize labels (goto and case and default).  These don't affect
+        #   other lines, but decrease the indent of this line
+        #  Skip comments, but recognize when in one - comment are expected to
+        #   start at the prevailing indent, but must be consistently indented.
+        #  track nested {} [] (). Open at end-of-line increases indent by 1 tab,
+        #    open elsewhere sets an indent at current position.
         #  If a line ends with ';' or '}' then it ends a statement,
         #  else next line is indented
-        # The total indent is the nest-depth (of '{') plus one if not
-        #  on the first line of a statement.
+        #  Similarly after a ';' or '}' or label, a statement starts
+        #  labels are only recognised at a statement start.
+        #  If a statement starts "word spaces (", then another statement
+        #  starts after the ')', and if that is on a new line, it is indented.
+        # The total indent is the nest-depth of brackets or prefixed statements
+        # (switch,if,while), plus an extra tab when not on the the first line
+        # of a statement.
         # When inside a comment, set get an alignment of the '*' and
         # a prefix of '* '
         # When inside brackets '{[(' that start at end-of-line, indent
         # increments. If they start not at eol, they set an alignment.
         # 'eol' must be determined ignoring spaces and comments.
+        # A line starting with some close brackets and an option open has
+        # indent decreased by the number of brackets.
         #
         # So we find a zero-point, which is a non-label, non-comment, non-#
         # at start of line.
-        # Then we move forward tracking the state - possibly recording at
-        # each newline.
-        # elements of state are:
+        # Then we move forward tracking the state.
+        # Elements of state are:
         #  an array of depths which are either prev+self.spaces, or an alignment
+        #  a string identifying type of each indent.  Types are:
+        #    { ( [ - bracket nesting
+        #    p     - like ( but for a statement prefix, so closing ) starts a
+        #            statement and, if at eol, adds an indent
+        #    space - indent case by 'p' above. statement-end closes multiple
+        #            of these.
         #  flag "start of statement"
-        #  flag "label line"
         #  comment type none,line,block
         #  quote type none,single,double
+        #  flag (in_if) when possible in a prefix
         #  column
         #
 
@@ -73,16 +88,17 @@ class CModePane(edlib.Pane):
         #  white space, not #, not /, not }, and not "alphanum:"
         #  But don't accept a match on this line
         m = mark.dup()
+
         p.call("Move-eol", m, -1)
         p.call("doc:step", m, 0, 1)
         try:
             n = p.call("text-search", 1, 1, m,
-                       "^([^\s\a\A\d#/}]|[\A\a\d_]+[\s]*[^:\s\A\a\d_]|[\A\a\d_]+[\s]+[^:\s])")
+                       "^([^\\s\\a\\A\\d#/}]|[\\A\\a\\d_]+[\\s]*[^:\\s\\A\\a\\d_]|[\\A\\a\\d_]+[\\s]+[^:\\s])")
         except edlib.commandfailed:
             p.call("Move-file", m, -1)
 
         depth = [0]
-        brackets = ""
+        brackets = "^"
         start_stat = True
         comment = None
         quote = None
@@ -90,6 +106,8 @@ class CModePane(edlib.Pane):
         nextcol = 0
         open_col = 0
         comment_col = 0
+        in_if = False
+        have_prefix = False
 
         tab = self.spaces
         if not tab:
@@ -144,6 +162,8 @@ class CModePane(edlib.Pane):
                 if start_stat:
                     start_stat = False
                     maybe_label = True
+                    if c.isalpha():
+                        in_if = True
                 if open_col:
                     depth.append(open_col)
                     open_col = 0
@@ -152,23 +172,47 @@ class CModePane(edlib.Pane):
                 # if we haven't seen code since a group opened, then
                 # that group indents at an extra next level, else it indents
                 # at the opening column
+                if have_prefix:
+                    depth.append(depth[-1]+tab)
+                    brackets += ' '
+                    have_prefix = False
                 if open_col:
                     depth.append(depth[-1]+tab)
                     open_col = 0
                 maybe_label = False
             elif c in '{([':
-                brackets += c
                 if c == '{':
+                    if not have_prefix and brackets[-1] == ' ':
+                        # '{' at start of line subsumes ' '
+                        brackets = brackets[:-1]
+                        depth.pop()
+                    have_prefix = False
                     start_stat = True
+                if c == '(' and in_if:
+                    brackets += 'p'
+                else:
+                    brackets += c
                 open_col = column+1
             elif c in '})]':
-                if c == '}':
-                    start_stat = True
                 if depth:
+                    b = brackets[-1]
                     brackets = brackets[:-1]
                     depth.pop()
+                    if c == '}':
+                        start_stat = True
+                        while brackets and brackets[-1] == ' ':
+                            brackets = brackets[:-1]
+                            depth.pop()
+                    if b == 'p':
+                        # if/while/switch statement
+                        have_prefix = True
+                        start_stat = True
             elif c == ';':
                 start_stat = True
+                have_prefix = False
+                while brackets and brackets[-1] == ' ':
+                    brackets = brackets[:-1]
+                    depth.pop()
             elif c == ':':
                 # If this is a label, then starts-statement
                 if maybe_label:
@@ -188,54 +232,74 @@ class CModePane(edlib.Pane):
                     comment_col = column
                     p.call("doc:step", 1, 1, m)
                     nextcol += 1
+            if in_if and not c.isalpha() and not c.isspace():
+                in_if = False
 
+        if have_prefix:
+            depth.append(depth[-1]+tab)
+            brackets += ' '
+            have_prefix = False
         if open_col:
             depth.append(depth[-1]+tab)
+            open_col = 0
 
         br = m.dup()
         c = p.call("doc:step", 1, 1, br, ret='char')
-        while brackets and c and c in '\t }])':
+        while brackets and c and c in '\t }]){':
             if c in '}])':
                 brackets = brackets[:-1]
                 depth.pop()
                 if c == '}':
                     start_stat = True
+            if c == '{' and brackets[-1] == ' ':
+                brackets = brackets[:-1]
+                depth.pop()
             c = p.call("doc:step", 1, 1, br, ret='char')
 
-        if not start_stat and brackets and brackets[-1] == '{':
+        msg = "start_stat %r bracket <%s> oc=%d depth %d" % \
+            (start_stat, brackets, open_col, len(depth))
+        if not start_stat and brackets and brackets[-1] in '{ ':
             depth.append(depth[-1]+tab)
-
-        #check for label
-        st = m.dup()
-        c = p.call("doc:step", 0, 1, st, ret='char')
-        while c and c != '\n':
-            c = p.call("doc:step", 0, 1, st, ret='char')
-        p.call("doc:step", 1, 1, st)
 
         # assume exactly this depth
         depth.insert(0,0)
         ret = [ depth[-1], depth[-1] ]
 
-        try:
-            l = p.call("text-match", st,
-                       '^[ \t]*(case\s[^:\n]*|default[^\A\a\d:\n]*|[_\A\a\d]+):')
-        except edlib.commandfailed:
+        #check for label.  Need to be a start of line, but
+        # may only step over white space.  When trying Enter, we
+        # mustn't thing we can see the label at the start of this line.
+        st = m.dup()
+        c = p.call("doc:step", 0, 1, st, ret='char')
+        while c and c in ' \t':
+            c = p.call("doc:step", 0, 1, st, ret='char')
+        if c == '\n':
+            p.call("doc:step", 1, 1, st)
+
+            #  '^[ \t]*(case\s[^:\n]*|default[^\A\a\d:\n]*|[_\A\a\d]+):'
+            try:
+                l = p.call("text-match", st.dup(),
+                           '^[ \t]*(case\\s[^:\\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):')
+            except edlib.commandfailed:
+                l = 0
+        else:
             l = 0
         if l > 0:
             if p.call("doc:step", 1, st, ret='char') in ' \t':
                 label_line = "indented-label"
             else:
                 try:
-                    l = p.call("text-match", st, '^[ \t]*[_\A\a\d]+:')
+                    l = p.call("text-match", st, '^[ \t]*[_\\A\\a\\d]+:')
                     label_line = "margin-label"
                 except edlib.commandfailed:
                     label_line = "indented-label"
-            depth.insert(0,0)
+            msg += " " + label_line
+            depth.insert(0, 0)
             if label_line == "margin-label":
-                ret = [0, depth[-1]]
+                ret = [0, depth[-2]]
             else:
-                ret = [depth[-1],depth[-1]]
+                ret = [depth[-2],depth[-2]]
 
+        #p.call("Message", msg)
         if comment == "/*":
             prefix = "* "
             ret = [comment_col+1,comment_col+1]
@@ -532,7 +596,7 @@ class CModePane(edlib.Pane):
         while num:
             try:
                 focus.call("doc:step", mark, 1-backward, 1)
-                l = focus.call("text-search", mark, "^([_a-zA-Z0-9].*\(|\()",
+                l = focus.call("text-search", mark, "^([_a-zA-Z0-9].*\\(|\\()",
                                0, backward)
                 if not backward and l > 0:
                     while l > 1:
