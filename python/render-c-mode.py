@@ -288,14 +288,14 @@ class CModePane(edlib.Pane):
                 label_line = "indented-label"
             else:
                 try:
-                    l = p.call("text-match", st, '^[ \t]*[_\\A\\a\\d]+:')
+                    l = p.call("text-match", st, '^[_\\A\\a\\d]+:')
                     label_line = "margin-label"
                 except edlib.commandfailed:
                     label_line = "indented-label"
             msg += " " + label_line
             depth.insert(0, 0)
             if label_line == "margin-label":
-                ret = [0, depth[-2]]
+                ret = [0, 0]
             else:
                 ret = [depth[-2],depth[-2]]
 
