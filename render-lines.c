@@ -7,25 +7,26 @@
  * text in response to the "doc:render-line" command.
  * This takes a mark and moves it to the end of the rendered line
  * so that another call will produce another line.
- * "doc:render-line" must always return a full line including '\n' unless the result
- * would be bigger than the 'max' passed in ->num or, when ->num==-1, unless
- * the rendering would go beyond the location in ->mark2.  In these cases it
- * can stop before a '\n'.  In each case, the mark is moved to the end of the
- * region that was rendered;
+ * "doc:render-line" must always return a full line including '\n'
+ * unless the result would be bigger than the 'max' passed in ->num or,
+ * when ->num==-1, unless the rendering would go beyond the location in
+ * ->mark2.  In these cases it can stop before a '\n'.  In each case,
+ * the mark is moved to the end of the region that was rendered;
  * This allows a mark to be found for a given character position, or a display
  * position found for a given mark.
  * For the standard 'render the whole line' functionality, ->num should
  * be NO_NUMERIC
  *
  * The document or filter must also provide "doc:render-line-prev" which
- * moves mark to a start-of-line.  If num is 0, then don't skip over any newlines.
- * If it is '1', then skip one newline.
+ * moves mark to a start-of-line.  If num is 0, then don't skip over any
+ * newlines.  If it is '1', then skip one newline.
  *
- * The returned line can contain attribute markings as <attr,attr>.
- * </> is used to pop most recent attributes.  << is used to include a literal '<'.
- * Lines generally contains UTF-8.  Control character '\n' is end of line and
- * '\t' tabs 1-8 spaces.  '\f' marks end of page - nothing after this will be
- * displayed.
+ * The returned line can contain attribute markings as <attr,attr>.  </>
+ * is used to pop most recent attributes.  << is used to include a
+ * literal '<'.  Lines generally contains UTF-8.  Control character '\n'
+ * is end of line and '\t' tabs 1-8 spaces.  '\f' marks end of page -
+ * nothing after this will be displayed.
+ *
  * Other control characters should be rendered as
  * e.g. <fg:red>^X</> - in particular, nul must not appear in the line.
  *
@@ -33,43 +34,46 @@
  * the document.  The line returned for a given mark is attached to
  * extra space allocated for that mark.
  * When a change notification is received for a mark we discard that string.
- * So the string associated with a mark is certainly the string that would be rendered
- * after that mark (though it may be truncated).
- * The set of marks in a view should always identify exactly the set of lines
- * to be displayed.  Each mark should be at a start-of-line except possibly for the
- * first and last.  The first may be internal to a long line, but the line
- * rendering attached will always continue to the end-of-line.  We record the number
- * of display lines in that first line.
- * The last mark may also be mid-line, and it must never have an attached rendering.
- *
- * In the worst case of there being no newlines in the document, there will be precisely
- * two marks: one contains a partial line and one that marks the end of that line.
- * When point moves outside that range a new start will be chosen before point
- * using "doc:render-line-prev" and the old start is discarded.
+ * So the string associated with a mark is certainly the string that
+ * would be rendered after that mark (though it may be truncated).
+ * The set of marks in a view should always identify exactly the set of
+ * lines to be displayed.  Each mark should be at a start-of-line except
+ * possibly for the first and last.  The first may be internal to a long
+ * line, but the line rendering attached will always continue to the
+ * end-of-line.  We record the number of display lines in that first
+ * line.
+ * The last mark may also be mid-line, and it must never have an
+ * attached rendering.
+ * In the worst case of there being no newlines in the document, there
+ * will be precisely two marks: one contains a partial line and one that
+ * marks the end of that line.  When point moves outside that range a
+ * new start will be chosen before point using "doc:render-line-prev"
+ * and the old start is discarded.
  *
  * To render the pane we:
  * 1/ call 'render-line-prev' on a mark at the point and look for that mark
  *    in the view.
- * 2/ If the mark matches and has a string, we have a starting point, else we
- *    call "doc:render-line" and store the result, thus producing a starting point.
- *    We determine how many display lines are needed to display this text-line and
- *    set 'y' accordingly.
+ * 2/ If the mark matches and has a string, we have a starting point,
+ *    else we call "doc:render-line" and store the result, thus
+ *    producing a starting point.  We determine how many display lines
+ *    are needed to display this text-line and set 'y' accordingly.
  *    At this point we have two marks: start and end, with known text of known
  *    height between.
- * 3/ Then we move outwards, back from the first mark and forward from the last mark.
- *    If we find a mark already in the view in the desired direction with texted
- *    attached it is correct and we use that.  Otherwise we find start (when going
- *    backwards) and render a new line.  Any old mark that is in the range is discarded.
- * 4/ When we have a full set of marks and the full height of the pane, we discard
- *    marks outside the range and start rendering from the top.
- *    ARG how is cursor drawn.
+ * 3/ Then we move outwards, back from the first mark and forward from
+ *    the last mark.  If we find a mark already in the view in the
+ *    desired direction with texted attached it is correct and we use
+ *    that.  Otherwise we find start (when going backwards) and render a
+ *    new line.  Any old mark that is in the range is discarded.
+ * 4/ When we have a full set of marks and the full height of the pane,
+ *    we discard marks outside the range and start rendering from the
+ *    top.  ARG how is cursor drawn.
  *
  * If we already have correct marks on one side and not the other, we prefer
  * to advance on that one side.
  *
- * Sometimes we need to render without a point.  In this case we start at the first
- * mark in the view and move forward.  If we can we do this anyway, and only try
- * the slow way if the target point wasn't found.
+ * Sometimes we need to render without a point.  In this case we start
+ * at the first mark in the view and move forward.  If we can we do this
+ * anyway, and only try the slow way if the target point wasn't found.
  */
 
 #include <unistd.h>
@@ -118,11 +122,14 @@ struct render_list {
 #define WRAP 1
 #define CURS 2
 
-static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x safe,
+static int draw_some(struct pane *p safe, struct render_list **rlp safe,
+		     int *x safe,
 		     char *start safe, char **endp safe,
-		     char *attr safe, int margin, int cursorpos, int cursx, int scale)
+		     char *attr safe, int margin, int cursorpos, int cursx,
+		     int scale)
 {
-	/* Measure the text from 'start' for length 'len', expecting to draw to p[x,?].
+	/* Measure the text from 'start' for length 'len', expecting to
+	 * draw to p[x,?].
 	 * Update 'x' and 'startp' past what as drawn.
 	 * Everything will be drawn with the same attributes: attr.
 	 * If the text would get closer to right end than 'margin',
@@ -141,7 +148,8 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe, int *x 
 
 	if (len == 0 && cursorpos < 0)
 		return 0;
-	if ((*rlp == NULL || ((*rlp)->next == NULL && (*rlp)->text_orig == NULL)) &&
+	if ((*rlp == NULL ||
+	     ((*rlp)->next == NULL && (*rlp)->text_orig == NULL)) &&
 	    strstr(attr, "wrap,") && (cursorpos < 0|| cursorpos > len))
 		/* No wrap text at start of line, unless it
 		 * contains cursor.
@@ -294,7 +302,8 @@ static int flush_line(struct pane *p safe, int dodraw,
 
 	if (wrap_pos && last_rl &&
 	    (head = get_last_attr(last_rl->attr, "wrap-head"))) {
-		struct call_return cr = call_ret(all, "text-size", p, p->w, NULL, head,
+		struct call_return cr = call_ret(all, "text-size", p,
+						 p->w, NULL, head,
 						 scale, NULL, last_rl->attr);
 		rl = calloc(1, sizeof(*rl));
 		rl->text = head;
@@ -319,8 +328,9 @@ static int flush_line(struct pane *p safe, int dodraw,
 	return x;
 }
 
-static void update_line_height_attr(struct pane *p safe, int *h safe, int *a safe,
-				    int *w, char *attr safe, char *str safe, int scale)
+static void update_line_height_attr(struct pane *p safe, int *h safe,
+				    int *a safe,int *w, char *attr safe,
+				    char *str safe, int scale)
 {
 	struct call_return cr = call_ret(all, "text-size", p, -1, NULL, str,
 					 scale, NULL, attr);
@@ -332,8 +342,9 @@ static void update_line_height_attr(struct pane *p safe, int *h safe, int *a saf
 		*w += cr.x;
 }
 
-static void update_line_height(struct pane *p safe, int *h safe, int *a safe, int *w safe,
-			       int *center, char *line safe, int scale)
+static void update_line_height(struct pane *p safe, int *h safe, int *a safe,
+			       int *w safe, int *center, char *line safe,
+			       int scale)
 {
 	struct buf attr;
 	int attr_found = 0;
@@ -522,7 +533,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		return;
 	}
 
-	update_line_height(p, &line_height, &ascent, &twidth, &center, line, scale);
+	update_line_height(p, &line_height, &ascent, &twidth, &center,
+			   line, scale);
 
 	if (!wrap)
 		x -= rl->shift_left;
@@ -531,7 +543,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		char *s = prefix + strlen(prefix);
 		update_line_height_attr(p, &line_height, &ascent, NULL,
 					"bold", prefix, scale);
-		draw_some(focus, &rlst, &x, prefix, &s, "bold", 0, -1, -1, scale);
+		draw_some(focus, &rlst, &x, prefix, &s, "bold",
+			  0, -1, -1, scale);
 	}
 	rl->prefix_len = x + rl->shift_left;
 	if (center == 1)
@@ -574,7 +587,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		if (mwidth <= 0) {
 			struct call_return cr = call_ret(all, "text-size", p,
 							 -1, NULL, "M",
-							 0, NULL, buf_final(&attr));
+							 0, NULL,
+							 buf_final(&attr));
 			mwidth = cr.x;
 			if (mwidth <= 0)
 				mwidth = 1;
@@ -619,8 +633,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		    (line[0] != '<' || line[1] == '<')) {
 			/* No room for more text */
 			if (wrap && *line && *line != '\n') {
-				int len = flush_line(focus, dodraw, &rlst, y+ascent,
-						     scale,
+				int len = flush_line(focus, dodraw, &rlst,
+						     y+ascent, scale,
 						     p->w - mwidth,
 						     &curspos, &cursattr);
 				wrap_offset += len;
@@ -646,8 +660,9 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 					}
 				}
 			} else {
-				/* Skip over normal text, but make sure to handle
-				 * newline and attributes correctly.
+				/* Skip over normal text, but make sure
+				 * to handle newline and attributes
+				 * correctly.
 				 */
 				//while (*line && *line != '\n' && *line != '<')
 				//	line += 1;
@@ -661,8 +676,9 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		if (ch >= ' ' && ch != '<') {
 			line += 1;
 			/* Only flush out if string is getting a bit long.
-			 * i.e. if we have reached the offset we are measuring to,
-			 * or if we could have reached the right margin.
+			 * i.e.  if we have reached the offset we are
+			 * measuring to, or if we could have reached the
+			 * right margin.
 			 */
 			if ((*line & 0xc0) == 0x80)
 				/* In the middle of a UTF-8 */
@@ -674,7 +690,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 						&line,
 						buf_final(&attr),
 						wrap ? mwidth : 0,
-						offset - (start - line_start), CX, scale);
+						offset - (start - line_start),
+						CX, scale);
 				start = line;
 			}
 			continue;
@@ -682,7 +699,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		ret = draw_some(focus, &rlst, &x, start, &line,
 				buf_final(&attr),
 				wrap ? mwidth : 0,
-				in_tab ?:offset - (start - line_start), CX, scale);
+				in_tab ?:offset - (start - line_start),
+				CX, scale);
 		start = line;
 		if (ret || !ch)
 			continue;
@@ -710,7 +728,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 					tb = strstr(buf_final(&attr)+ln,
 						    "tab:");
 					if (tb)
-						x = margin + atoi(tb+4) * scale / 1000;
+						x = margin +
+						atoi(tb+4) * scale / 1000;
 				} else {
 					/* strip back to ",," */
 					if (attr.len > 0)
@@ -759,7 +778,9 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			ret = draw_some(focus, &rlst, &x, start, &line,
 					buf_final(&attr),
 					wrap ? mwidth*2: 0,
-					offset == (start - line_start) ? in_tab : -1, CX, scale);
+					offset == (start - line_start)
+					? in_tab : -1,
+					CX, scale);
 			if (w > 1) {
 				line -= 1;
 				in_tab = -1; // suppress extra cursors
@@ -776,7 +797,9 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			buf_concat(&attr, ",underline,fg:red");
 			ret = draw_some(focus, &rlst, &x, buf, &b,
 					buf_final(&attr),
-					wrap ? mwidth*2: 0, offset - (start - line_start), CX, scale);
+					wrap ? mwidth*2: 0,
+					offset - (start - line_start),
+					CX, scale);
 			attr.len = l;
 			start = line;
 		}
@@ -785,10 +808,12 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		/* Some more to draw */
 		draw_some(focus, &rlst, &x, start, &line,
 			  buf_final(&attr),
-			  wrap ? mwidth : 0, offset - (start - line_start), cx, scale);
+			  wrap ? mwidth : 0, offset - (start - line_start),
+			  cx, scale);
 	}
 
-	flush_line(focus, dodraw, &rlst, y+ascent, scale, 0, &curspos, &cursattr);
+	flush_line(focus, dodraw, &rlst, y+ascent, scale, 0,
+		   &curspos, &cursattr);
 
 	if (offsetp && curspos) {
 		*offsetp = curspos - line_start;
@@ -829,7 +854,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 }
 
 static struct mark *call_render_line_prev(struct pane *p safe,
-					  struct mark *m safe, int n, int *found)
+					  struct mark *m safe,
+					  int n, int *found)
 {
 	int ret;
 	struct mark *m2;
@@ -860,7 +886,8 @@ static struct mark *call_render_line_prev(struct pane *p safe,
 	return m2;
 }
 
-static struct mark *call_render_line(struct pane *p safe, struct mark *start safe)
+static struct mark *call_render_line(struct pane *p safe,
+				     struct mark *start safe)
 {
 	struct mark *m, *m2;
 	char *s;
@@ -953,7 +980,8 @@ static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
  *  - when we reach the given line count (vline).  A positive count restricts
  *    backward movement, a negative restricts forwards movement.
  */
-static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *focus safe,
+static void find_lines(struct mark *pm safe, struct pane *p safe,
+		       struct pane *focus safe,
 		       int vline)
 {
 	struct rl_data *rl = p->data;
@@ -1021,9 +1049,11 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 
 	while ((!found_start || !found_end) && y < p->h - rl->header_lines) {
 		if (vline != NO_NUMERIC) {
-			if (!found_start && vline > 0 && y_above >= (vline-1) * rl->line_height)
+			if (!found_start && vline > 0 &&
+			    y_above >= (vline-1) * rl->line_height)
 				found_start = 1;
-			if (!found_end && vline < 0 && y_below >= (-vline-1) * rl->line_height)
+			if (!found_end && vline < 0 &&
+			    y_below >= (-vline-1) * rl->line_height)
 				found_end = 1;
 		}
 		if (!found_start && lines_above == 0) {
@@ -1039,7 +1069,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 				if (!start->mdata)
 					call_render_line(focus, start);
 				if (start->mdata)
-					render_line(p, focus, start->mdata, &h, 0, scale.x,
+					render_line(p, focus, start->mdata, &h,
+						    0, scale.x,
 						    NULL, NULL, NULL, NULL, NULL,
 						    &found_end, NULL);
 				if (h)
@@ -1061,8 +1092,10 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 				lines_below = rl->line_height * 2;
 			} else {
 				short h = 0;
-				render_line(p, focus, end->mdata, &h, 0, scale.x,
-					    NULL, NULL, NULL, NULL, NULL, &found_end, NULL);
+				render_line(p, focus, end->mdata, &h, 0,
+					    scale.x,
+					    NULL, NULL, NULL, NULL, NULL,
+					    &found_end, NULL);
 				end = next;
 				if (h)
 					lines_below = h;
@@ -1075,7 +1108,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 				found_start = 1;
 		}
 		if (lines_above > 0 && lines_below > 0) {
-			int consume = (lines_above > lines_below ? lines_below : lines_above) * 2;
+			int consume = (lines_above > lines_below
+				       ? lines_below : lines_above) * 2;
 			int above, below;
 			if (consume > (p->h - rl->header_lines) - y)
 				consume = (p->h - rl->header_lines) - y;
@@ -1091,8 +1125,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe, struct pane *f
 			y_above += above;
 			lines_below -= below;
 			y_below += below;
-			/* We have just consumed all of one of lines_{above,below}
-			 * so they are no longer both > 0 */
+			/* We have just consumed all of one of
+			 * lines_{above,below} so they are no longer
+			 * both > 0 */
 		}
 		if (found_end && lines_above) {
 			int consume = p->h - rl->header_lines - y;
@@ -1205,28 +1240,34 @@ restart:
 							      m);
 			rl->cursor_line = y;
 			render_line(p, focus, m->mdata ?: "", &y, 1, scale.x,
-				    &p->cx, &p->cy, &cw, &len, NULL,  NULL, cols);
+				    &p->cx, &p->cy, &cw, &len,
+				    NULL,  NULL, cols);
 			if (p->cy < 0)
 				p->cx = -1;
-			if (!rl->do_wrap && p->cy >= 0 && p->cx < rl->prefix_len &&
+			if (!rl->do_wrap && p->cy >= 0 &&
+			    p->cx < rl->prefix_len &&
 			    shifted != 2) {
 				if (mwidth < 0) {
-					struct call_return cr = call_ret(all, "text-size", p,
-									 -1, NULL, "M",
-									 0,  NULL, "");
+					struct call_return cr =
+						call_ret(all, "text-size", p,
+							 -1, NULL, "M",
+							 0,  NULL, "");
 					mwidth = cr.x;
 					if (mwidth <= 0)
 						mwidth = 1;
 				}
 				if (p->cx + cw + 8 * mwidth < p->w) {
-					/* Need to shift to right, and there is room */
-					while (rl->shift_left > 0 && p->cx < rl->prefix_len) {
+					/* Need to shift to right, and there
+					 * is room */
+					while (rl->shift_left > 0 &&
+					       p->cx < rl->prefix_len) {
 						if (rl->shift_left < 8* mwidth) {
 							p->cx += rl->shift_left;
 							rl->shift_left = 0;
 						} else {
 							p->cx += 8 * mwidth;
-							rl->shift_left -= 8 * mwidth;
+							rl->shift_left -=
+								8 * mwidth;
 						}
 					}
 					shifted = 1;
@@ -1236,9 +1277,10 @@ restart:
 			if (p->cx + cw >= p->w && !rl->do_wrap &&
 			    shifted != 1) {
 				if (mwidth < 0) {
-					struct call_return cr = call_ret(all, "text-size", p,
-									 -1, NULL, "M",
-									 0, NULL, "");
+					struct call_return cr =
+						call_ret(all, "text-size", p,
+							 -1, NULL, "M",
+							 0, NULL, "");
 					mwidth = cr.x;
 					if (mwidth <= 0)
 						mwidth = 1;
@@ -1252,7 +1294,8 @@ restart:
 				goto restart;
 			}
 		} else
-			render_line(p, focus, m->mdata?:"", &y, 1, scale.x, NULL, NULL, NULL,
+			render_line(p, focus, m->mdata?:"", &y, 1, scale.x,
+				    NULL, NULL, NULL,
 				    NULL, NULL, &found_end, cols);
 		if (!m2)
 			break;
@@ -1286,7 +1329,8 @@ DEF_CMD(render_lines_refresh)
 
 	if (pm) {
 		if (rl->old_point && !mark_same(pm, rl->old_point)) {
-			call("Notify:change", focus, 0, rl->old_point, NULL, 0, pm);
+			call("Notify:change", focus, 0, rl->old_point,
+			     NULL, 0, pm);
 			mark_free(rl->old_point);
 			rl->old_point = NULL;
 			rl->ignore_point = 0;
@@ -1460,7 +1504,8 @@ DEF_CMD(render_lines_move)
 					rpt = 0;
 					break;
 				}
-				render_line(p, focus, m->mdata, &y, 0, scale.x, NULL, NULL, NULL,
+				render_line(p, focus, m->mdata, &y, 0, scale.x,
+					    NULL, NULL, NULL,
 					    NULL, NULL, NULL, NULL);
 				m = vmark_next(m);
 			}
@@ -1475,8 +1520,9 @@ DEF_CMD(render_lines_move)
 				call_render_line(focus, top);
 			if (top->mdata == NULL)
 				break;
-			render_line(p, focus, top->mdata, &y, 0, scale.x, NULL, NULL,
-				    NULL, NULL, NULL, &page_end, NULL);
+			render_line(p, focus, top->mdata, &y, 0, scale.x,
+				    NULL, NULL, NULL, NULL, NULL,
+				    &page_end, NULL);
 			if (page_end)
 				y = rpt % pagesize;
 			if (rl->skip_lines + rpt < y) {
@@ -1608,7 +1654,8 @@ DEF_CMD(render_lines_move_pos)
 	top = vmark_first(focus, rl->typenum, p);
 	bot = vmark_last(focus, rl->typenum, p);
 	if (top && rl->skip_lines)
-		/* top line not fully displayed, being in that line is no sufficient */
+		/* top line not fully displayed, being in that line is
+		 * not sufficient */
 		top = vmark_next(top);
 	if (bot)
 		/* last line might not be fully displayed, so don't assume */
@@ -1844,6 +1891,8 @@ REDEF_CMD(render_lines_attach)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, &render_lines_attach, 0, NULL, "attach-render-lines");
-	call_comm("global-set-command", ed, &render_lines_attach, 0, NULL, "attach-render-text");
+	call_comm("global-set-command", ed, &render_lines_attach, 0, NULL,
+		  "attach-render-lines");
+	call_comm("global-set-command", ed, &render_lines_attach, 0, NULL,
+		  "attach-render-text");
 }
