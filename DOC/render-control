@@ -117,6 +117,9 @@ Standard attributes are:
            the following line is prefixed with the value of the
            attribute.
 
+  active-tag=tag If a mouse-click happens on text with this attribute,
+           Mouse-Activate is called with the tag passed
+
 only on pygtk:
   NN      font size
   large   font=14

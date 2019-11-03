@@ -3,6 +3,7 @@
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * Rendering for any document which presents as a sequence of lines.
+ *
  * The underlying document, or an intervening filter, must return lines of
  * text in response to the "doc:render-line" command.
  * This takes a mark and moves it to the end of the rendered line
@@ -23,23 +24,23 @@
  *
  * The returned line can contain attribute markings as <attr,attr>.  </>
  * is used to pop most recent attributes.  << is used to include a
- * literal '<'.  Lines generally contains UTF-8.  Control character '\n'
+ * literal '<'.  Lines generally contain UTF-8.  Control character '\n'
  * is end of line and '\t' tabs 1-8 spaces.  '\f' marks end of page -
  * nothing after this will be displayed.
  *
  * Other control characters should be rendered as
  * e.g. <fg:red>^X</> - in particular, nul must not appear in the line.
  *
- * We store all the marks found while rendering a pane in a 'view' on
- * the document.  The line returned for a given mark is attached to
- * extra space allocated for that mark.
- * When a change notification is received for a mark we discard that string.
- * So the string associated with a mark is certainly the string that
- * would be rendered after that mark (though it may be truncated).
- * The set of marks in a view should always identify exactly the set of
- * lines to be displayed.  Each mark should be at a start-of-line except
- * possibly for the first and last.  The first may be internal to a long
- * line, but the line rendering attached will always continue to the
+ * We store all start-of-line the marks found while rendering a pane in
+ * a 'view' on the document.  The line returned for a given mark is
+ * attached to extra space allocated for that mark.  When a change
+ * notification is received for a mark we discard that string.  So the
+ * string associated with a mark is certainly the string that would be
+ * rendered after that mark (though it may be truncated).  The set of
+ * marks in a view should always identify exactly the set of lines to be
+ * displayed.  Each mark should be at a start-of-line except possibly
+ * for the first and last.  The first may be internal to a long line,
+ * but the line rendering attached will always continue to the
  * end-of-line.  We record the number of display lines in that first
  * line.
  * The last mark may also be mid-line, and it must never have an
@@ -61,7 +62,7 @@
  *    height between.
  * 3/ Then we move outwards, back from the first mark and forward from
  *    the last mark.  If we find a mark already in the view in the
- *    desired direction with texted attached it is correct and we use
+ *    desired direction with text attached it is correct and we use
  *    that.  Otherwise we find start (when going backwards) and render a
  *    new line.  Any old mark that is in the range is discarded.
  * 4/ When we have a full set of marks and the full height of the pane,
@@ -69,7 +70,8 @@
  *    top.  ARG how is cursor drawn.
  *
  * If we already have correct marks on one side and not the other, we prefer
- * to advance on that one side.
+ * to advance on that first side to maximize the amount of text that was common
+ * with the previous rendering of the page.
  *
  * Sometimes we need to render without a point.  In this case we start
  * at the first mark in the view and move forward.  If we can we do this
@@ -130,10 +132,10 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe,
 {
 	/* Measure the text from 'start' for length 'len', expecting to
 	 * draw to p[x,?].
-	 * Update 'x' and 'startp' past what as drawn.
+	 * Update 'x' and 'startp' past what was drawn.
 	 * Everything will be drawn with the same attributes: attr.
 	 * If the text would get closer to right end than 'margin',
-	 * when stop drawing before then.  If this happens, WRAP is returned.
+	 * we stop drawing before then.  If this happens, WRAP is returned.
 	 * If drawing would pass cursx, stop there and record pointer
 	 * into 'start'.
 	 * If cursorpos is between 0 and len inclusive, a cursor is drawn there.
@@ -902,8 +904,7 @@ static struct mark *call_render_line(struct pane *p safe,
 	s = call_ret(str, "doc:render-line", p, NO_NUMERIC, m);
 
 	if (s) {
-		if (start->mdata)
-			free(start->mdata);
+		free(start->mdata);
 		start->mdata = s;
 	}
 
@@ -1802,14 +1803,12 @@ DEF_CMD(render_lines_notify_replace)
 		return 1;
 
 	while (end && mark_ordered_or_same(start, end)) {
-		if (end->mdata) {
-			free(end->mdata);
-			end->mdata = NULL;
-		}
+		free(end->mdata);
+		end->mdata = NULL;
 		end = vmark_prev(end);
 	}
 	/* Must be sure to clear the line *before* the change */
-	if (end && end->mdata) {
+	if (end) {
 		free(end->mdata);
 		end->mdata = NULL;
 	}
