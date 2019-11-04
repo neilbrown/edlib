@@ -488,7 +488,7 @@ class EdDisplay(gtk.Window):
         c.grab_focus()
         x = int(event.x)
         y = int(event.y)
-        s = "Click-" + ("%d"%event.button)
+        s = "Press-" + ("%d"%event.button)
         if event.state & gtk.gdk.SHIFT_MASK:
             s = "S-" + s;
         if event.state & gtk.gdk.CONTROL_MASK:

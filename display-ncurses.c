@@ -721,6 +721,7 @@ static struct pane *ncurses_init(struct pane *ed, char *tty, char *term)
 	intrflush(stdscr, FALSE);
 	keypad(stdscr, TRUE);
 	mousemask(ALL_MOUSE_EVENTS, NULL);
+	mouseinterval(0);
 
 	ASSERT(can_change_color());
 
@@ -918,12 +919,6 @@ static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 			action = "Press-%d";
 		else if (BUTTON_RELEASE(s, b))
 			action = "Release-%d";
-		else if (BUTTON_CLICK(s, b))
-			action = "Click-%d";
-		else if (BUTTON_DOUBLE_CLICK(s, b))
-			action = "DClick-%d";
-		else if (BUTTON_TRIPLE_CLICK(s, b))
-			action = "TClick-%d";
 		else
 			continue;
 		sprintf(buf, action, b);

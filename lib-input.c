@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "core.h"
 
@@ -19,6 +20,12 @@ struct input_mode {
 	int		num, num2;
 	struct pane	*focus, *source;
 	struct mark	*point;
+	struct mouse_state {
+		struct timespec	last_up;
+		int		is_down;
+		int		click_count;
+		int		ignore_up;
+	} buttons[3];
 };
 
 DEF_CMD(set_mode)
@@ -123,6 +130,12 @@ DEF_CMD(keystroke)
 	return 0;
 }
 
+static int tspec_diff_ms(struct timespec *a safe, struct timespec *b safe)
+{
+	return ((a->tv_sec - b->tv_sec) * 1000 +
+		(a->tv_nsec - b->tv_nsec) / 1000000);
+}
+
 DEF_CMD(mouse_event)
 {
 	struct input_mode *im = ci->home->data;
@@ -130,13 +143,52 @@ DEF_CMD(mouse_event)
 	int num, ex;
 	struct pane *focus;
 	char *key;
+	struct timespec now;
+	unsigned int b;
+	int press;
+	char *mode;
+	struct mouse_state *ms = NULL;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
 
 	if (!ci->str)
 		return Enoarg;
 
 	pane_notify("Notify:Mouse-event", ci->home, 0, NULL, ci->str);
 
-	key = strconcat(ci->home, im->mode, ci->str);
+	if (strncmp(ci->str, "Press-", 6) == 0) {
+		press = 1;
+		b = ci->str[6]-'1';
+	} else if (strncmp(ci->str, "Release-", 8) == 0) {
+		press = 0;
+		b = ci->str[8]-'1';
+	} else {
+		press = 1;
+		b = 100;
+	}
+	if (b < 3) {
+		ms = &im->buttons[b];
+		if (press == ms->is_down) {
+			/* No change */
+			if (!press)
+				ms->last_up = now;
+			return 1;
+		}
+		ms->is_down = press;
+		if (press) {
+			if (tspec_diff_ms(&now, &ms->last_up) > 500)
+				ms->click_count = 1;
+			else if (ms->click_count < 3)
+				ms->click_count += 1;
+		} else {
+			ms->last_up = now;
+			if (ms->ignore_up) {
+				ms->ignore_up = 0;
+				return 1;
+			}
+		}
+	}
+
 	focus = ci->focus;
 	num = im->num;
 	ex = im->num2;
@@ -144,6 +196,7 @@ DEF_CMD(mouse_event)
 	/* FIXME is there any point in this? */
 	pane_map_xy(ci->focus, focus, &x, &y);
 
+	mode = im->mode;
 	im->mode = "";
 	im->num = NO_NUMERIC;
 	im->num2 = 0;
@@ -167,7 +220,52 @@ DEF_CMD(mouse_event)
 		focus = chld;
 	}
 
-	call(key, focus, num, NULL, NULL, ex, NULL, NULL, x, y);
+	if (!ms) {
+		key = strconcat(ci->home, im->mode, ci->str);
+		return call(key, focus, num, NULL, NULL, ex, NULL, NULL, x, y);
+	}
+	if (press) {
+		/* Try nPress nClick (n-1)Press (n-1)Click until something gets
+		 * a result. 'n' is T (triple) or D(double) or ""(Single).
+		 * If a Click got a result, suppress subsequent release
+		 */
+		int r;
+		for (r = ms->click_count; r >= 1 ; r--) {
+			int ret;
+			char *mult = "\0\0D\0T" + (r-1)*2;
+			key = strconcat(ci->home, mode, mult,
+					"Press-", ci->str+6);
+			ret = call(key, focus, num, NULL, NULL, ex,
+				   NULL, NULL, x, y);
+
+			if (ret)
+				return ret;
+
+			key = strconcat(ci->home, mode, mult,
+					"Click-", ci->str+6);
+			ret = call(key, focus, num, NULL, NULL, ex,
+				   NULL, NULL, x, y);
+
+			if (ret) {
+				ms->ignore_up = 1;
+				return ret;
+			}
+		}
+	} else {
+		/* Try nRelease (n-1)Release etc */
+		int r;
+		for (r = ms->click_count; r >= 1 ; r--) {
+			int ret;
+			char *mult = "\0\0D\0T" + (r-1)*2;
+			key = strconcat(ci->home, mode, mult,
+					"Release-", ci->str+8);
+			ret = call(key, focus, num, NULL, NULL, ex,
+				   NULL, NULL, x, y);
+
+			if (ret)
+				return ret;
+		}
+	}
 	return 0;
 }
 
