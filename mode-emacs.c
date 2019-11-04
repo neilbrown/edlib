@@ -1795,27 +1795,13 @@ DEF_CMD(emacs_make)
 	return 1;
 }
 
-DEF_CMD(emacs_click)
-{
-	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
-
-	if (mk) {
-		attr_set_int(&mk->attrs, "emacs:active", 0);
-		call("Notify:change", ci->focus, 0, NULL, NULL, 0, mk);
-	}
-	call("Move-CursorXY", ci->focus,
-	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
-	call("Move-to", ci->focus, 1);
-	pane_focus(ci->focus);
-	return 1;
-}
-
 DEF_CMD(emacs_press)
 {
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 
 	if (mk) {
 		attr_set_int(&mk->attrs, "emacs:active", 0);
+		attr_set_str(&mk->attrs, "emacs:selection-type", "char");
 		call("Notify:change", ci->focus, 0, NULL, NULL, 0, mk);
 	}
 	call("Move-CursorXY", ci->focus,
@@ -1829,10 +1815,22 @@ DEF_CMD(emacs_release)
 {
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
+	char *seltype = "";
 
 	call("Move-CursorXY", ci->focus,
 	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
 
+	if (mk)
+		seltype = attr_find(mk->attrs, "emacs:selection-type");
+	if (mk && p && seltype && strcmp(seltype, "word") == 0) {
+		if (mk->seq < p->seq) {
+			call("Move-Word", ci->focus, -1,  mk);
+			call("Move-Word", ci->focus, 1, p);
+		} else {
+			call("Move-Word", ci->focus, -1,  p);
+			call("Move-Word", ci->focus, 1, mk);
+		}
+	}
 	if (mk && p && !mark_same(mk, p)) {
 		char *str;
 
@@ -1844,6 +1842,16 @@ DEF_CMD(emacs_release)
 		if (str && *str)
 			call("copy:save", ci->focus, 0, NULL, str, 1);
 	}
+	return 1;
+}
+
+DEF_CMD(emacs_dpress)
+{
+	/* Switch to word-based selection */
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+
+	if (mk)
+		attr_set_str(&mk->attrs, "emacs:selection-type", "word");
 	return 1;
 }
 
@@ -2043,9 +2051,9 @@ static void emacs_init(void)
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);
 
-	key_add(m, "Click-1", &emacs_click);
 	key_add(m, "Press-1", &emacs_press);
 	key_add(m, "Release-1", &emacs_release);
+	key_add(m, "DPress-1", &emacs_dpress);
 	key_add(m, "Click-2", &emacs_paste);
 
 	emacs_map = m;
