@@ -126,7 +126,6 @@ DEF_CMD(keystroke)
 DEF_CMD(mouse_event)
 {
 	struct input_mode *im = ci->home->data;
-	int l;
 	short x,y;
 	int num, ex;
 	struct pane *focus;
@@ -137,9 +136,7 @@ DEF_CMD(mouse_event)
 
 	pane_notify("Notify:Mouse-event", ci->home, 0, NULL, ci->str);
 
-	l = strlen(im->mode) + strlen(ci->str) + 1;
-	key = malloc(l);
-	strcat(strcpy(key, im->mode), ci->str);
+	key = strconcat(ci->home, im->mode, ci->str);
 	focus = ci->focus;
 	num = im->num;
 	ex = im->num2;
