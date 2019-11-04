@@ -50,7 +50,7 @@ try:
                     if self.term:
                         d.call("doc:attach-view", self.term, 1,
                                ret='focus')
-                        p.take_focus()
+                        self.term.take_focus()
                         self.sock.send("OK")
                         return 1
                     self.call("Call:Notify:global-displays", self.display_callback)
