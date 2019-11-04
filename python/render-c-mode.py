@@ -448,8 +448,12 @@ class CModePane(edlib.Pane):
         (depths,prefix) = self.calc_indent(focus, m)
 
         # and replace all that white space with a newline and the indent
-        return focus.call("Replace", 1, m,
-                          "\n" + self.mkwhite(depths[-2]) + prefix)
+        try:
+            return focus.call("Replace", 1, m,
+                              "\n" + self.mkwhite(depths[-2]) + prefix)
+        except edlib.commandfailed:
+            # probably doc is read-only.  Fall through to default to get error
+            return 0
 
     def handle_tab(self, key, focus, mark, **a):
         "handle:Tab"
@@ -474,7 +478,11 @@ class CModePane(edlib.Pane):
                 len += 1
                 focus.call("doc:step", 0, 1, m)
             new = "\t" * (len / 8)
-            focus.call("Replace", 1, m, mark, new)
+            try:
+                focus.call("Replace", 1, m, mark, new)
+            except edlib.commandfailed:
+                # probably read-only
+                pass
             # fall through it insert a new tab
             return 0
 
@@ -491,13 +499,21 @@ class CModePane(edlib.Pane):
         current = focus.call("doc:get-str", m, mark, ret="str")
 
         if new != current:
-            return focus.call("doc:replace", 1, m, mark, new)
+            try:
+                return focus.call("doc:replace", 1, m, mark, new)
+            except edlib.commandfailed:
+                pass
+            return 0
         if depths[-1] == depths[-2]:
             # There is extra indent allowed, so stay where we are
             return 1
 
         new = self.mkwhite(depths[-1])
-        return focus.call("doc:replace", 1, m, mark, new)
+        try:
+            return focus.call("doc:replace", 1, m, mark, new)
+        except edlib.commandfailed:
+            pass
+        return 0
 
     def handle_bs(self, key, focus, mark, **a):
         "handle:Backspace"
@@ -523,17 +539,29 @@ class CModePane(edlib.Pane):
         current = focus.call("doc:get-str", m, mark, ret="str")
         # if current is more than expected, return to expected
         if current.startswith(new) and current != new:
-            return focus.call("Replace", 1, m, mark, new)
+            try:
+                return focus.call("Replace", 1, m, mark, new)
+            except edlib.commandfailed:
+                return 0
         # if current is a prefix of expectation, reduce expection until not
         if new.startswith(current):
             while len(depths) > 2:
                 depths.pop()
                 new = self.mkwhite(depths[-2])
                 if current.startswith(new) and current != new:
-                    return focus.call("Replace", 1, m, mark, new)
-            return focus.call("Replace", 1, m, mark)
+                    try:
+                        return focus.call("Replace", 1, m, mark, new)
+                    except edlib.commandfailed:
+                        return 0
+            try:
+                return focus.call("Replace", 1, m, mark)
+            except edlib.commandfailed:
+                return 0
         # No clear relationship - replace wih new
-        return focus.call("Replace", 1, m, mark, new)
+        try:
+            return focus.call("Replace", 1, m, mark, new)
+        except edlib.commandfailed:
+            return 0
 
     def handle_replace(self, key, focus, **a):
         "handle:Replace"
