@@ -362,7 +362,7 @@ def make_request(key, focus, num, str, mark, **a):
                 focus.call("doc:step", m2, 1, 1)
                 c = focus.call("doc:step", m2, 1, ret='char')
             str = focus.call("doc:get-str", m1, m2, ret='str')
-        if not ('\n' in str):
+        if str and not ('\n' in str):
             if not "'" in str:
                 str = "'" + str + "'"
             elif not '"' in str:

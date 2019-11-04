@@ -4,6 +4,11 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] Introduce command to move a mark before or after all other marks
+      at the same location. .make_first .make_last
+- [ ] Review call calls to Notify:change do Notify:doc:Replace and ensure the
+      marks sent make sense
+- [ ] review notify:change handlers
 - [ ] makes sure text:match and text:search do something sensible with the mark
 - [X] message line timed updates - no change for 7 seconds, always revert after 30 seconds
 - [X] copy-paste with mouse
