@@ -396,6 +396,10 @@ class CModePane(edlib.Pane):
 
     def handle_close(self, key, focus, mark, **a):
         "handle-list/Chr-}/Chr-)/Chr-]/Chr-{/"
+
+        if p.indent_type != 'C':
+            return 0
+
         # If at start of line - plus close/open, re-indent this line
         self.parent.call(key, focus, mark, **a)
         m = mark.dup()
@@ -410,6 +414,10 @@ class CModePane(edlib.Pane):
 
     def handle_colon(self, key, focus, mark, **a):
         "handle:Chr-:"
+
+        if p.indent_type != 'C':
+            return 0
+
         # If this looks like a lable line, re-indent
         self.parent.call(key, focus, mark, **a)
         m = mark.dup()
