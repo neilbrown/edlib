@@ -437,6 +437,9 @@ class EdDisplay(gtk.Window):
         self.text.connect("button-release-event", self.release)
         self.text.connect("scroll-event", self.scroll)
         self.text.connect("key-press-event", self.keystroke)
+        self.motion_handler = self.text.connect("motion-notify-event", self.motion)
+        self.text.handler_block(self.motion_handler)
+        self.motion_blocked = True
         self.im.connect("commit", self.keyinput)
         self.text.connect("configure-event", self.reconfigure)
         self.text.set_events(gtk.gdk.EXPOSURE_MASK|
@@ -444,8 +447,22 @@ class EdDisplay(gtk.Window):
                              gtk.gdk.BUTTON_PRESS_MASK|
                              gtk.gdk.BUTTON_RELEASE_MASK|
                              gtk.gdk.KEY_PRESS_MASK|
-                             gtk.gdk.KEY_RELEASE_MASK);
+                             gtk.gdk.KEY_RELEASE_MASK|
+                             gtk.gdk.POINTER_MOTION_MASK|
+                             gtk.gdk.POINTER_MOTION_HINT_MASK);
         self.text.set_property("can-focus", True)
+
+    def block_motion(self):
+        if self.motion_blocked:
+            return
+        self.text.handler_block(self.motion_handler)
+        self.motion_blocked = True
+
+    def unblock_motion(self):
+        if not self.motion_blocked:
+            return
+        self.text.handler_unblock(self.motion_handler)
+        self.motion_blocked = False
 
     def refresh(self, *a):
         edlib.time_start(edlib.TIME_WINDOW)
@@ -486,6 +503,7 @@ class EdDisplay(gtk.Window):
     def press(self, c, event):
         edlib.time_start(edlib.TIME_KEY)
         c.grab_focus()
+        self.unblock_motion()
         x = int(event.x)
         y = int(event.y)
         s = "Press-" + ("%d"%event.button)
@@ -512,6 +530,14 @@ class EdDisplay(gtk.Window):
             s = "M-" + s;
         self.pane.call("Mouse-event", s, self.pane, (x,y))
         edlib.time_stop(edlib.TIME_KEY)
+
+    def motion(self, c, event):
+        edlib.time_start(edlib.TIME_KEY)
+        x = int(event.x)
+        y = int(event.y)
+        ret = self.pane.call("Mouse-event", "Motion", (x,y))
+        if not ret:
+            self.block_motion()
 
     def scroll(self, c, event):
         edlib.time_start(edlib.TIME_KEY)

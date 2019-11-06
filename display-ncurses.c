@@ -49,9 +49,11 @@ struct col_hash;
 struct display_data {
 	SCREEN			*scr;
 	FILE			*scr_file;
+	int			is_xterm;
 	struct xy		cursor;
 	char			*noclose;
 	struct col_hash		*col_hash;
+	int			report_position;
 	#ifdef RECORD_REPLAY
 	FILE			*log;
 	FILE			*input;
@@ -707,6 +709,7 @@ static struct pane *ncurses_init(struct pane *ed, char *tty, char *term)
 	dd->scr = scr;
 	dd->scr_file = f;
 	dd->cursor.x = dd->cursor.y = -1;
+	dd->is_xterm =  (term && strncmp(term, "xterm", 5) == 0);
 
 	p = pane_register(ed, 0, &ncurses_handle.c, dd);
 	set_screen(p);
@@ -720,7 +723,7 @@ static struct pane *ncurses_init(struct pane *ed, char *tty, char *term)
 	set_escdelay(100);
 	intrflush(stdscr, FALSE);
 	keypad(stdscr, TRUE);
-	mousemask(ALL_MOUSE_EVENTS, NULL);
+	mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
 	mouseinterval(0);
 
 	ASSERT(can_change_color());
@@ -900,12 +903,29 @@ static void send_key(int keytype, wint_t c, struct pane *p safe)
 
 static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe)
 {
+	int ret;
+	struct display_data *dd = p->data;
+
 	record_mouse(p, cmd, x, y);
-	call("Mouse-event", p, 0, NULL, cmd, 0, NULL, NULL, x, y);
+	ret = call("Mouse-event", p, 0, NULL, cmd, 0, NULL, NULL, x, y);
+	if (strncmp(cmd, "Press", 5) == 0 && !dd->report_position) {
+		if (dd->is_xterm) {
+			fprintf(dd->scr_file, "\033[?1002h;");
+			fflush(dd->scr_file);
+		}
+		dd->report_position = 1;
+	} else if (strncmp(cmd, "Motion", 6) == 0 && !ret) {
+		if (dd->is_xterm) {
+			fprintf(dd->scr_file, "\033[?1002l;");
+			fflush(dd->scr_file);
+		}
+		dd->report_position = 0;
+	}
 }
 
 static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 {
+	struct display_data *dd = p->data;
 	int x = mev->x;
 	int y = mev->y;
 	int b;
@@ -924,8 +944,9 @@ static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 		sprintf(buf, action, b);
 		do_send_mouse(p, x, y, buf);
 	}
-	if (mev->bstate & REPORT_MOUSE_POSITION)
-		do_send_mouse(p, x, y, "MouseMove");
+	if ((mev->bstate & REPORT_MOUSE_POSITION) &&
+	    dd->report_position)
+		do_send_mouse(p, x, y, "Motion");
 }
 
 REDEF_CMD(input_handle)
