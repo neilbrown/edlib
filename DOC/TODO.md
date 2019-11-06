@@ -4,6 +4,9 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] history for find-file - incase I get it wrong and want to try again
+- [X] arg to C-x-` should restart from first match
+- [ ] revisiting the grep-output buffer should attach pane to handle Enter etc
 - [ ] Introduce command to move a mark before or after all other marks
       at the same location. .make_first .make_last
 - [ ] Review call calls to Notify:change do Notify:doc:Replace and ensure the

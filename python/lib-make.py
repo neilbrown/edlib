@@ -102,8 +102,16 @@ class MakePane(edlib.Pane):
         self.point = p
         return self.map[int(p['ref'])]
 
-    def make_next(self, key, focus, str, **a):
+    def make_next(self, key, focus, num, str, **a):
         "handle:make-next"
+        if num:
+            # clear marks so that we parse again
+            m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+            while m:
+                m.release()
+                m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+            self.point = None
+
         self.do_parse()
         n = self.find_next()
         if not n:
@@ -210,7 +218,7 @@ class MakeViewerPane(edlib.Pane):
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
         focus.call("doc:Notify:doc:make-revisit", mark)
-        focus.call("interactive-cmd-next-match", "OtherPane");
+        next_match("interactive-cmd-next-match", focus, None, "OtherPane")
         return 1
 
     def handle_replace(self, key, focus, mark, mark2, **a):
@@ -391,7 +399,7 @@ def make_request(key, focus, num, str, mark, **a):
     makeprompt(p)
     return 1
 
-def next_match(key, focus, str, **a):
+def next_match(key, focus, num, str, **a):
     docname = focus["make-target-doc"]
     if not docname:
         focus.call("Message", "No make output!")
@@ -404,7 +412,12 @@ def next_match(key, focus, str, **a):
         focus.call("Message", "Make document %s missing" % docname)
         return 1
     try:
-        doc.notify("make-next", focus, str)
+        if num is None:
+            # NONUMERIC
+            restart = 0
+        else:
+            restart = 1
+        doc.notify("make-next", focus, str, restart)
     except edlib.commandfailed:
         pass
     return 1
