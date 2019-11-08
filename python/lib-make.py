@@ -238,7 +238,8 @@ class MakeViewerPane(edlib.Pane):
         home.clone_children(p)
 
 def make_view_attach(key, focus, comm2, **a):
-    p = MakeViewerPane(focus)
+    p = focus.call("attach-viewer", ret='focus')
+    p = MakeViewerPane(p)
 
     if not p:
         return edlib.Efail
@@ -283,6 +284,7 @@ def run_make(key, focus, str, **a):
         return edlib.Efail
 
     doc['dirname'] = dir
+    doc['view-default'] = 'make-viewer'
     if cmd == "make":
         p = focus.call("OtherPane", ret='focus')
     else:
@@ -290,8 +292,7 @@ def run_make(key, focus, str, **a):
     if not p:
         return edlib.Efail
     focus.call("global-set-attr", "make-target-doc", docname)
-    p = doc.call("doc:attach-view", p, "viewer", 1, ret='focus')
-    p.call("attach-make-viewer", p);
+    p = doc.call("doc:attach-view", p, 1, ret='focus')
 
     p = doc.call("attach-makecmd", str, dir, ret='focus')
     return 1

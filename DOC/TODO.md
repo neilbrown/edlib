@@ -4,9 +4,10 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] c-mode, alt-tab always indentes, even if not start of line
 - [ ] history for find-file - incase I get it wrong and want to try again
 - [X] arg to C-x-` should restart from first match
-- [ ] revisiting the grep-output buffer should attach pane to handle Enter etc
+- [X] revisiting the grep-output buffer should attach pane to handle Enter etc
 - [ ] Introduce command to move a mark before or after all other marks
       at the same location. .make_first .make_last
 - [ ] Review call calls to Notify:change do Notify:doc:Replace and ensure the
@@ -315,7 +316,7 @@ Module features
 - [ ] make/grep fail-safe if target file doesn't exist
 - [ ] run make in a given parent
 - [ ] use notify chain to allow stack of 'greps'
-- [ ] detect and honour absolute file names in error messages
+- [X] detect and honour absolute file names in error messages
 - [ ] When choosing word from context to search for, if there is an
       active selection, use that.  And select the text in the
       input popup so that it is easy to replace.
