@@ -264,7 +264,7 @@ def run_make(key, focus, str, **a):
     # pop-up has completed
     c = key.index(':')
     dir = key[c+1:]
-    mode = key[:c-1]
+    mode = key[:c]
     if mode == "git":
         cmd = "git-grep"
         docname = "*Grep Output*"
