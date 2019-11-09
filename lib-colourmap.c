@@ -39,7 +39,7 @@ static struct colours {
 	{ "green",       0, 1000,    0 },
 	{ "blue",        0,    0, 1000 },
 	{ "yellow",   1000, 1000,    0 },
-	{ "megenta",  1000,    0, 1000 },
+	{ "magenta",  1000,    0, 1000 },
 	{ "cyan",        0, 1000, 1000 },
 	{ "darkblue",    0,    0,  550 },
 	{ "purple",    500,    0,  500 },
