@@ -1631,9 +1631,10 @@ static Mark *mark_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
 static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 {
 	Pane *doc = NULL;
+	Pane *owner = NULL;
 	int view = MARK_UNGROUPED;
 	Mark *orig = NULL;
-	static char *keywords[] = {"pane","view","orig", NULL};
+	static char *keywords[] = {"pane","view","orig", "owner", NULL};
 	int ret;
 
 	if (!PyTuple_Check(args) ||
@@ -1641,23 +1642,29 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 		/* Internal Mark_Frommark call */
 		return 1;
 
-	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|O!iO!", keywords,
+	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|O!iO!O!", keywords,
 					  &PaneType, &doc,
 					  &view,
-					  &MarkType, &orig);
+					  &MarkType, &orig,
+					  &PaneType, &owner);
 	if (ret <= 0)
 		return -1;
 	if (doc && orig) {
-		PyErr_SetString(PyExc_TypeError, "Only one of 'pane' and 'orig' may be set");
+		PyErr_SetString(PyExc_TypeError,
+				"Only one of 'pane' and 'orig' may be set");
 		return -1;
 	}
 	if (!doc && !orig) {
-		PyErr_SetString(PyExc_TypeError, "At least one of 'pane' and 'orig' must be set");
+		PyErr_SetString(PyExc_TypeError,
+				"At least one of 'pane' and 'orig' must be set");
 		return -1;
 	}
 	if (doc && doc->pane) {
 		struct pane *p = doc->pane;
-		self->mark = vmark_new(p, view, p/*FIXME*/);
+		struct pane *op = owner ? owner->pane : NULL;
+		if (!op)
+			op = p;
+		self->mark = vmark_new(p, view, op);
 	} else if (orig && orig->mark) {
 		self->mark = mark_dup_view(orig->mark);
 	}
