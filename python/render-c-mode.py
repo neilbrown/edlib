@@ -407,7 +407,7 @@ class CModePane(edlib.Pane):
         try:
             n = focus.call("text-match", m.dup(), "^[\\s]*[])}{]")
             if n > 0:
-                self.handle_tab(key, focus, m)
+                self.handle_tab(key, focus, m, 1)
         except edlib.commandfailed:
             pass
         return 1
@@ -426,7 +426,7 @@ class CModePane(edlib.Pane):
             n = focus.call("text-match", m.dup(),
                            '^[ \t]*(case\\s[^:\\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):')
             if n > 0:
-                self.handle_tab(key, focus, m)
+                self.handle_tab(key, focus, m, 1)
         except edlib.commandfailed:
             pass
         return 1
@@ -463,14 +463,27 @@ class CModePane(edlib.Pane):
             # probably doc is read-only.  Fall through to default to get error
             return 0
 
-    def handle_tab(self, key, focus, mark, **a):
+    def handle_tab(self, key, focus, mark, num, **a):
         "handle:Tab"
         # if there is only white-space before cursor (up to newline) then:
         # move to end of white-space
         # - choose an indent as for Return
         # - If we don't have exactly that, replace with that
         # - if we do have that, use the 'extra' indent level
+        # if num is <0 go to indent and 'backspace'
+        # if num is 0, go to start of line and 'tab'
         m = mark.dup()
+        if num <= 0:
+            focus.call("Move-EOL", -1, m)
+            c = focus.call("doc:step", 1, 0, m, ret='char')
+            while c and c in ' \t':
+                focus.call("doc:step", 1, 1, m)
+                c = focus.call("doc:step", 1, 0, m, ret='char')
+            if num is False or num < 0:
+                self.handle_bs(key, focus, m)
+            else:
+                self.handle_tab(key, focus, m, 1)
+            return 1
         c = focus.call("doc:step", 0, 0, m, ret="char")
         prevc = c
         while c and c in " \t":
@@ -523,6 +536,15 @@ class CModePane(edlib.Pane):
             pass
         return 0
 
+    def handle_meta_tab(self, key, focus, mark, **a):
+        "handle:M-Tab"
+        # like tab-at-start-of-line, anywhere in line
+        # Probably need to type esc-tab, as Alt-Tab normally
+        # goes to next window in window system
+        m = mark.dup()
+        focus.call("Move-EOL", -1, m)
+        self.handle_tab(key, focus, m, 1)
+
     def handle_bs(self, key, focus, mark, **a):
         "handle:Backspace"
         # If in the indent, remove one level of indent
@@ -548,7 +570,7 @@ class CModePane(edlib.Pane):
         # if current is more than expected, return to expected
         if current.startswith(new) and current != new:
             try:
-                return focus.call("Replace", 1, m, mark, new)
+                return focus.call("doc:replace", 1, m, mark, new)
             except edlib.commandfailed:
                 return 0
         # if current is a prefix of expectation, reduce expection until not
@@ -558,16 +580,16 @@ class CModePane(edlib.Pane):
                 new = self.mkwhite(depths[-2])
                 if current.startswith(new) and current != new:
                     try:
-                        return focus.call("Replace", 1, m, mark, new)
+                        return focus.call("doc:replace", 1, m, mark, new)
                     except edlib.commandfailed:
                         return 0
             try:
-                return focus.call("Replace", 1, m, mark)
+                return focus.call("doc:replace", 1, m, mark)
             except edlib.commandfailed:
                 return 0
         # No clear relationship - replace wih new
         try:
-            return focus.call("Replace", 1, m, mark, new)
+            return focus.call("doc:replace", 1, m, mark, new)
         except edlib.commandfailed:
             return 0
 

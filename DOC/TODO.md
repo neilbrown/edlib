@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] c-mode, alt-tab always indents, even if not start of line
+- [X] c-mode, alt-tab always indents, even if not start of line
 - [ ] history for find-file - incase I get it wrong and want to try again
 - [X] arg to C-x-` should restart from first match
 - [X] revisiting the grep-output buffer should attach pane to handle Enter etc
@@ -322,7 +322,7 @@ Module features
 
 ### message-line
 
-- [ ] timeout message-line messages and revert to time/date
+- [X] timeout message-line messages and revert to time/date
 - [ ] have *Messages* buffer to log recent messages.
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
 - [ ] register a global-message function which sends global notifications
