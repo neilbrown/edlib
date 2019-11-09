@@ -68,11 +68,25 @@ class MakePane(edlib.Pane):
             m = edlib.Mark(self)
 
         while True:
+            # Look for one of:
+            # filename:linenum:.....
+            # filename:linenum ....
+            # ...FILE: filename:linenum:....
+            # ...FILE: filename:linenum ....
+            # FILE: is for checkpatch.
             try:
-                self.call("text-search", "^[^: \t]+:[0-9]+[: ]", m)
+                self.call("text-search", "^(.*FILE: )?[^: \t]+:[0-9]+[: ]", m)
+                self.call("doc:step", m, 0, 1)
             except edlib.commandfailed:
                 break
-            self.call("doc:step", m, 0, 1)
+            # Want to be careful of 'note: ' from gcc
+            try:
+                self.call("text-match", ":[0-9]+: note:", m.dup())
+                is_note = True
+            except edlib.commandfailed:
+                is_note = False
+
+            # Now at end of line number.
             e = m.dup()
             while self.call("doc:step", m, 0, 1, ret='char') in "0123456789":
                 pass
@@ -80,13 +94,16 @@ class MakePane(edlib.Pane):
             self.call("doc:step", s, 1, 1)
             lineno = self.call("doc:get-str", s, e, ret="str")
             e = m.dup()
-            while self.call("doc:step", m, 0, 1, ret='char') not in ['\n', None]:
+            while self.call("doc:step", m, 0, 1, ret='char') not in [' ', '\n', None]:
                 pass
             self.call("doc:step", m, 1, 1)
             fname = self.call("doc:get-str", m, e, ret="str")
             d = edlib.Mark(self, self.viewnum)
             d.to_mark(m)
             d["ref"] = "%d" % len(self.map)
+            prev = d.prev()
+            if is_note and prev:
+                prev['has_note'] = 'yes'
             self.map.append((fname, lineno))
 
             m.to_mark(e)
@@ -95,13 +112,30 @@ class MakePane(edlib.Pane):
         p = self.point
         if p:
             p["render:make-line"] = "no"
-            p = p.next()
-        else:
-            p = self.call("doc:vmark-get", self.viewnum, ret='mark')
-        if not p:
-            return None
+            self.call("doc:Notify:doc:Replace", p, p)
+            t = p.prev()
+            while t and t['has_note'] == 'yes':
+                t['render:first_err'] = None
+                self.call("doc:Notify:doc:Replace", t, t)
+                t = t.prev()
+        while True:
+            if p:
+                p = p.next()
+            else:
+                p = self.call("doc:vmark-get", self.viewnum, ret='mark')
+            if not p:
+                return None
+            if p['has_note'] != 'yes' or self.note_ok:
+                break
         self.point = p
         p["render:make-line"] = "yes"
+        self.call("doc:Notify:doc:Replace", p, p)
+        t = p.prev()
+        while t and t['has_note'] == 'yes':
+            t['render:first_err'] = 'yes'
+            self.call("doc:Notify:doc:Replace", t, t)
+            t = t.prev()
+        self.note_ok = False
         return self.map[int(p['ref'])]
 
     def make_next(self, key, focus, num, str, **a):
@@ -113,6 +147,7 @@ class MakePane(edlib.Pane):
                 m.release()
                 m = self.call("doc:vmark-get", self.viewnum, ret='mark')
             self.point = None
+            self.note_ok = False
 
         self.do_parse()
         n = self.find_next()
@@ -175,8 +210,15 @@ class MakePane(edlib.Pane):
         p = self.call("doc:vmark-get", self.viewnum, mark, 3, ret='mark2')
         if self.point:
             self.point["render:make-line"] = "no"
+            self.call("doc:Notify:doc:Replace", self.point, self.point)
+            t = p.prev()
+            while t and t['has_note'] == 'yes':
+                t['render:first_err'] = None
+                self.call("doc:Notify:doc:Replace", t, t)
+                t = t.prev()
         if p:
             self.point = p.prev()
+            self.note_ok = True
         return 1
 
     def handle_close(self, key, **a):
@@ -254,6 +296,9 @@ class MakeViewerPane(edlib.Pane):
             return
         if str == "render:make-line" and str2 == "yes":
             comm2("attr:callback", focus, mark, "bg:cyan+80", 10000, 2)
+            return 1
+        if str == "render:first_err" and str2 == "yes":
+            comm2("attr:callback", focus, mark, "bg:magenta+80", 10000, 2)
             return 1
 
 def make_view_attach(key, focus, comm2, **a):

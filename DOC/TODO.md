@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] c-mode, alt-tab always indentes, even if not start of line
+- [ ] c-mode, alt-tab always indents, even if not start of line
 - [ ] history for find-file - incase I get it wrong and want to try again
 - [X] arg to C-x-` should restart from first match
 - [X] revisiting the grep-output buffer should attach pane to handle Enter etc
@@ -64,7 +64,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] in python code, protect Replace/doc:replace - file could be read-only
+- [X] in python code, protect Replace/doc:replace - file could be read-only
 - [X] c-mode indent should let me delete one level when it was due to bracketing,
       so I can insert the close bracket.
 - [ ] comma sep list in enum doesn't get indented properly.  Need to recognize enum
@@ -300,8 +300,8 @@ Module features
 
 ### grep/make
 
-- [Z] Keep 'make' and 'grep' output separate.
-- [ ] If there is an error followed by some 'note:'s, goto the last note(?)
+- [X] Keep 'make' and 'grep' output separate.
+- [X] If there is an error followed by some 'note:'s, goto the last note(?)
 - [ ] leave marks at every match as soon as possible
 - [ ] if two results are at the same location, ignore the second.
 - [ ] clarify and document the role of numeric args to git-grep
