@@ -28,6 +28,7 @@ class MakePane(edlib.Pane):
         self.point = None
         self.map = []
         self.files = {}
+        self.timer_set = False
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
@@ -63,9 +64,13 @@ class MakePane(edlib.Pane):
             self.notify("doc:status-changed")
             return edlib.Efalse
         self.call("doc:replace", r);
+        self.do_parse()
         return 1
 
     def do_parse(self):
+        if self.timer_set:
+            # wait for the timer
+            return
         last = self.call("doc:vmark-get", self.viewnum, ret='mark2')
         if last:
             m = last.dup()
@@ -73,7 +78,8 @@ class MakePane(edlib.Pane):
         else:
             m = edlib.Mark(self)
 
-        while True:
+        done = 0
+        while done < 10:
             # Look for one of:
             # filename:linenum:.....
             # filename:linenum ....
@@ -84,7 +90,8 @@ class MakePane(edlib.Pane):
                 self.call("text-search", "^(.*FILE: )?[^: \t]+:[0-9]+[: ]", m)
                 self.call("doc:step", m, 0, 1)
             except edlib.commandfailed:
-                break
+                # No more matches - stop
+                return
             # Want to be careful of 'note: ' from gcc
             try:
                 self.call("text-match", ":[0-9]+: note:", m.dup())
@@ -104,9 +111,23 @@ class MakePane(edlib.Pane):
                 pass
             self.call("doc:step", m, 1, 1)
             fname = self.call("doc:get-str", m, e, ret="str")
-            self.record_line(fname, lineno, m, is_note)
+            if self.record_line(fname, lineno, m, is_note):
+                # new file - stop here
+                break
 
             m.to_mark(e)
+            done += 1
+        # there are more matches - we aborted early.
+        # set a timer
+        if not self.timer_set:
+            self.call("event:timer", 100, self.tick)
+            self.timer_set = True
+        return
+
+    def tick(self, key, **a):
+        self.timer_set = False
+        self.do_parse()
+        return edlib.Efalse
 
     def record_line(self, fname, lineno, m, is_note):
         d = edlib.Mark(self, self.viewnum)
@@ -117,6 +138,7 @@ class MakePane(edlib.Pane):
             prev['has_note'] = 'yes'
         self.map.append((fname, lineno))
 
+        newfile = False
         if fname not in self.files:
             try:
                 if fname[0] != '/':
@@ -129,10 +151,11 @@ class MakePane(edlib.Pane):
             except edlib.commandfailed:
                 d = None
             if not d:
-                return
+                return 0
             v = d.call("doc:add-view", self) - 1
             self.add_notify(d, "Notify:Close")
             self.files[fname] = (d, v)
+            newfile = True
         (d,v) = self.files[fname]
         lm = edlib.Mark(d)
         ln = int(lineno)
@@ -155,6 +178,7 @@ class MakePane(edlib.Pane):
                 mk = edlib.Mark(d, v, owner=self)
                 mk.to_mark(lm)
                 mk['line'] = lineno
+        return newfile
 
     def handle_notify_close(self, key, focus, **a):
         "handle:Notify:Close"
