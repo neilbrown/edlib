@@ -15,6 +15,11 @@ class MakePane(edlib.Pane):
     # A set 'view' of marks is used to track the start of each line
     # found.  Each mark has a 'ref' which indexes into a local 'map'
     # which records the filename and line number.
+    #
+    # In each target file we place a mark at the line - so that edits
+    # don't upset finding the next mark.
+    # These are stored in a 'files' map which stored pane and mark 'view'.
+
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.add_notify(focus, "make-next")
@@ -22,6 +27,7 @@ class MakePane(edlib.Pane):
         self.viewnum = focus.call("doc:add-view", self) - 1
         self.point = None
         self.map = []
+        self.files = {}
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
@@ -98,15 +104,71 @@ class MakePane(edlib.Pane):
                 pass
             self.call("doc:step", m, 1, 1)
             fname = self.call("doc:get-str", m, e, ret="str")
-            d = edlib.Mark(self, self.viewnum)
-            d.to_mark(m)
-            d["ref"] = "%d" % len(self.map)
-            prev = d.prev()
-            if is_note and prev:
-                prev['has_note'] = 'yes'
-            self.map.append((fname, lineno))
+            self.record_line(fname, lineno, m, is_note)
 
             m.to_mark(e)
+
+    def record_line(self, fname, lineno, m, is_note):
+        d = edlib.Mark(self, self.viewnum)
+        d.to_mark(m)
+        d["ref"] = "%d" % len(self.map)
+        prev = d.prev()
+        if is_note and prev:
+            prev['has_note'] = 'yes'
+        self.map.append((fname, lineno))
+
+        if fname not in self.files:
+            try:
+                if fname[0] != '/':
+                    dir = self['dirname']
+                    if not dir:
+                        dir = ""
+                else:
+                    dir = ""
+                d = self.call("doc:open", -1, dir+fname, ret='focus')
+            except edlib.commandfailed:
+                d = None
+            if not d:
+                return
+            v = d.call("doc:add-view", self) - 1
+            self.add_notify(d, "Notify:Close")
+            self.files[fname] = (d, v)
+        (d,v) = self.files[fname]
+        lm = edlib.Mark(d)
+        ln = int(lineno)
+        last = d.call("doc:vmark-get", v, self, ret='mark2')
+        while last and int(last['line']) > ln:
+            last = last.prev()
+        if last:
+            ln -= int(last['line']) - 1
+            lm.to_mark(last)
+
+        while lm and ln > 1:
+            ch = d.call("doc:step", 1, 1, lm, ret='char')
+            if ch == None:
+                ln = 0
+            elif ch == '\n':
+                ln -= 1
+        if ln == 1:
+            mk = d.call("doc:vmark-get", self, v, lm, 3)
+            if not mk or mk['line'] != lineno:
+                mk = edlib.Mark(d, v, owner=self)
+                mk.to_mark(lm)
+                mk['line'] = lineno
+
+    def handle_notify_close(self, key, focus, **a):
+        "handle:Notify:Close"
+        for fn in self.files:
+            (d,v) = self.files[fn]
+            if d != focus:
+                continue
+            m = d.call("doc:vmark-get", self, v, ret='mark')
+            while m:
+                m.release()
+                m = d.call("doc:vmark-get", self, v, ret='mark')
+            d.call("doc:del-view", v, self)
+            del self.files[fn]
+            break
 
     def find_next(self):
         p = self.point
@@ -160,6 +222,17 @@ class MakePane(edlib.Pane):
 
     def goto_mark(self, focus, n, where):
         (fname, lineno) = n
+        if fname in self.files:
+            (d,v) = self.files[fname]
+            mk = d.call("doc:vmark-get", self, v, ret='mark')
+            while mk and int(mk['line']) < int(lineno):
+                mk = mk.next()
+            if mk and int(mk['line']) == int(lineno):
+                self.visit(focus, d, mk, lineno, where)
+                return
+            self.visit(focus, d, None, lineno, where)
+            return
+        # try the old way
         try:
             if fname[0] != '/':
                 dir = self['dirname']
@@ -176,6 +249,9 @@ class MakePane(edlib.Pane):
             else:
                 focus.call("Message", "File %s not found." % fname)
             return edlib.Efail
+        self.visit(focus, d, None, lineno, where)
+
+    def visit(self, focus, d, mk, lineno, where):
         par = focus.call("DocPane", d, ret='focus')
         if par:
             while par.focus:
@@ -188,8 +264,11 @@ class MakePane(edlib.Pane):
                 return edlib.Efail
             par = d.call("doc:attach-view", par, 1, ret='focus')
         par.take_focus()
-        par.call("Move-File", -1)
-        par.call("Move-Line", int(lineno)-1)
+        if mk:
+            par.call("Move-to", mk)
+        else:
+            par.call("Move-File", -1)
+            par.call("Move-Line", int(lineno)-1)
 
         docpane = par.call("DocPane", self, ret='focus')
         if not docpane:
@@ -236,6 +315,16 @@ class MakePane(edlib.Pane):
             m.release()
             m = self.call("doc:vmark-get", self.viewnum, ret='mark')
         self.call("doc:del-view", self.viewnum)
+
+        for fn in self.files:
+            (d,v) = self.files[fn]
+            m = d.call("doc:vmark-get", self, v, ret='mark')
+            while m:
+                m.release()
+                m = d.call("doc:vmark-get", self, v, ret='mark')
+            d.call("doc:del-view", v, self)
+        del self.files
+
         return 1
 
     def handle_abort(self, key, **a):
@@ -249,6 +338,7 @@ class MakePane(edlib.Pane):
 
 def make_attach(key, focus, comm2, str, str2, **a):
     m = edlib.Mark(focus)
+    # delete current content
     focus.call("doc:replace", m)
     p = MakePane(focus)
     if not p:
