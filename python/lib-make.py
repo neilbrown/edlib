@@ -154,11 +154,17 @@ class MakePane(edlib.Pane):
         par.call("Move-File", -1)
         par.call("Move-Line", int(lineno)-1)
 
-        par = par.call("DocPane", self, ret='focus')
-        if par:
-            while par.focus:
-                par = par.focus
-            par.call("Move-to", self.point)
+        docpane = par.call("DocPane", self, ret='focus')
+        if not docpane:
+            docpane = par.call("OtherPane", ret='focus')
+            if docpane:
+                self.call("doc:attach-view", docpane)
+            # Make sure that docpane really is for this document.
+            docpane = par.call("DocPane", self, ret='focus')
+        if docpane:
+            while docpane.focus:
+                docpane = docpane.focus
+            docpane.call("Move-to", self.point)
         return 1
 
     def handle_revisit(self, key, focus, mark, **a):
