@@ -960,24 +960,25 @@ struct mark *do_vmark_at_or_before(struct doc *d safe,
 		struct point_links *lnk = safe_cast vm->mdata;
 		struct tlist_head *tl = &lnk->lists[view];
 		vm = __vmark_next(tl);
-		if (vm && mark_same(vm, m)) {
+		if (!vm)
+			vm = __vmark_prev(tl);
+		else if (mark_same(vm, m)) {
 			/* maybe there are even more */
 			struct mark *vm2;
 			while ((vm2 = vmark_next(vm)) != NULL &&
 			       mark_same(vm, vm2))
 				vm = vm2;
-		} else
-			vm = __vmark_prev(tl);
+		}
 	} else if (vm->viewnum == view) {
 		/* Just use this, or nearby */
 		struct mark *vm2;
 		while ((vm2 = vmark_next(vm)) != NULL &&
 		       mark_same(vm, m))
 			vm = vm2;
-		while (vm && vm->seq > m->seq && !mark_same(vm, m))
-			vm = vmark_prev(vm);
-
 	}
+	while (vm && vm->seq > m->seq && !mark_same(vm, m))
+		vm = vmark_prev(vm);
+
 	return vm;
 }
 
