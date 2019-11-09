@@ -94,12 +94,14 @@ class MakePane(edlib.Pane):
     def find_next(self):
         p = self.point
         if p:
+            p["render:make-line"] = "no"
             p = p.next()
         else:
             p = self.call("doc:vmark-get", self.viewnum, ret='mark')
         if not p:
             return None
         self.point = p
+        p["render:make-line"] = "yes"
         return self.map[int(p['ref'])]
 
     def make_next(self, key, focus, num, str, **a):
@@ -171,6 +173,8 @@ class MakePane(edlib.Pane):
         "handle:Notify:doc:make-revisit"
         self.do_parse()
         p = self.call("doc:vmark-get", self.viewnum, mark, 3, ret='mark2')
+        if self.point:
+            self.point["render:make-line"] = "no"
         if p:
             self.point = p.prev()
         return 1
@@ -220,6 +224,7 @@ class MakeViewerPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.call("doc:Request:Notify:doc:Replace");
+        p = self.call("doc:point", ret='mark')
 
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
@@ -242,6 +247,14 @@ class MakeViewerPane(edlib.Pane):
         "handle:Clone"
         p = MakeViewerPane(focus)
         home.clone_children(p)
+
+    def handle_highlight(self, key, focus, str, str2, mark, comm2, **a):
+        "handle:map-attr"
+        if not comm2:
+            return
+        if str == "render:make-line" and str2 == "yes":
+            comm2("attr:callback", focus, mark, "bg:cyan+80", 10000, 2)
+            return 1
 
 def make_view_attach(key, focus, comm2, **a):
     p = focus.call("attach-viewer", ret='focus')

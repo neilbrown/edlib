@@ -300,7 +300,7 @@ Module features
 
 ### grep/make
 
-- [ ] Keep 'make' and 'grep' output separate.
+- [Z] Keep 'make' and 'grep' output separate.
 - [ ] If there is an error followed by some 'note:'s, goto the last note(?)
 - [ ] leave marks at every match as soon as possible
 - [ ] if two results are at the same location, ignore the second.
@@ -312,7 +312,7 @@ Module features
 - [ ] when restart compile/grep, kill only one.
 - [ ] allow make even if not all files are saved - 'q' from save-all?
 - [ ] numeric-prefix to make will auto-save everything.
-- [ ] make/grep: highlight current match.
+- [X] make/grep: highlight current match.
 - [ ] make/grep fail-safe if target file doesn't exist
 - [ ] run make in a given parent
 - [ ] use notify chain to allow stack of 'greps'
