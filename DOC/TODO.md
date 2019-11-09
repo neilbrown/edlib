@@ -302,24 +302,23 @@ Module features
 
 - [X] Keep 'make' and 'grep' output separate.
 - [X] If there is an error followed by some 'note:'s, goto the last note(?)
-- [ ] leave marks at every match as soon as possible
+- [X] leave marks at every match as soon as possible
 - [ ] if two results are at the same location, ignore the second.
 - [ ] clarify and document the role of numeric args to git-grep
 - [X] make/grep - when insert at end-of-file, a pointer that was at EOF should
       stay there.
 - [X] sometime the pane doesn't go to the right line.
-- [ ] move point of display pane to first match asap
 - [ ] when restart compile/grep, kill only one.
 - [ ] allow make even if not all files are saved - 'q' from save-all?
 - [ ] numeric-prefix to make will auto-save everything.
 - [X] make/grep: highlight current match.
-- [ ] make/grep fail-safe if target file doesn't exist
+- [X] make/grep fail-safe if target file doesn't exist
 - [ ] run make in a given parent
 - [ ] use notify chain to allow stack of 'greps'
 - [X] detect and honour absolute file names in error messages
-- [ ] When choosing word from context to search for, if there is an
-      active selection, use that.  And select the text in the
-      input popup so that it is easy to replace.
+- [X] When choosing word from context to search for, if there is an
+      active selection, use that.
+- [X] And select the text in the input popup so that it is easy to replace.
 
 ### message-line
 

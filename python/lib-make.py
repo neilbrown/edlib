@@ -477,6 +477,7 @@ def run_make(key, focus, str, **a):
 
 def make_request(key, focus, num, str, mark, **a):
     history = None
+    dflt_arg = ''
     if key[-8:] == "git-grep":
         dflt = "grep -rnH "
         cmd = "git-grep"
@@ -551,10 +552,11 @@ def make_request(key, focus, num, str, mark, **a):
             str = focus.call("doc:get-str", m1, m2, ret='str')
         if str and not ('\n' in str):
             if not "'" in str:
-                str = "'" + str + "'"
+                dflt_arg = "'" + str + "'"
             elif not '"' in str:
-                str = '"' + str + '"'
-            dflt = dflt + str
+                dflt_arg = '"' + str + '"'
+            else:
+                dflt_arg = str
 
     if cmd == "make" and num:
         # re-use previous command
@@ -567,6 +569,9 @@ def make_request(key, focus, num, str, mark, **a):
     p = focus.call("PopupTile", "D2", dflt, ret="focus")
     if not p:
         return 0
+    if dflt_arg:
+        p.call("mode-set-mark")
+        p.call("Replace", dflt_arg)
     p.call("popup:set-callback", run_make)
     p["prompt"] = "%s Command" % cmd
     p["done-key"] = "%s:%s" % (mode, dir)

@@ -2026,6 +2026,7 @@ static void emacs_init(void)
 	key_add(m, "M-Chr--", &emacs_neg);
 	key_add(m, "C-Chr--", &emacs_neg);
 	key_add(m, "C-Chr- ", &emacs_mark);
+	key_add(m, "mode-set-mark", &emacs_mark);
 	key_add(m, "emCX-C-Chr-X", &emacs_swap_mark);
 	key_add(m, "Abort", &emacs_abort);
 	key_add(m, "C-Chr-W", &emacs_wipe);
