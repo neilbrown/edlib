@@ -657,17 +657,16 @@ class events(edlib.Pane):
     def doread(self, evfd, condition, comm2, focus, fd, ev):
         if ev not in self.events:
             return False
+        edlib.time_start(edlib.TIME_READ)
         try:
-            edlib.time_start(edlib.TIME_READ)
             rv = comm2("callback", focus, fd)
-            edlib.time_stop(edlib.TIME_READ)
-            if rv is not None and rv < 0:
-                del self.events[ev]
-                return False
-            return True
+            ret = rv is None or rv >= 0
         except edlib.commandfailed:
+            ret = False
+        edlib.time_stop(edlib.TIME_READ)
+        if not ret:
             del self.events[ev]
-            return False
+        return ret
 
     def signal(self, key, focus, comm2, num, **a):
         ev = self.add_ev(focus, comm2, 'event:signal', num)
@@ -683,15 +682,17 @@ class events(edlib.Pane):
     def dosig(self, comm, focus, sig, ev):
         if ev not in self.events:
             return False
+        edlib.time_start(edlib.TIME_SIG)
         try:
-            edlib.time_start(edlib.TIME_SIG)
-            comm("callback", focus, sig)
-            edlib.time_stop(edlib.TIME_SIG)
-            return False
+            rv = comm("callback", focus, sig)
+            ret = rv is None or rv >= 0
         except edlib.commandfailed:
+            ret = False
+        edlib.time_stop(edlib.TIME_SIG)
+        if not ret:
             del self.events[ev]
             signal.signal(sig, signal.SIG_DFL)
-            return False
+        return False
 
     def timer(self, key, focus, comm2, num, **a):
         self.active = True
@@ -703,14 +704,16 @@ class events(edlib.Pane):
     def dotimeout(self, comm2, focus, ev):
         if ev not in self.events:
             return False
+        edlib.time_start(edlib.TIME_TIMER)
         try:
-            edlib.time_start(edlib.TIME_TIMER)
-            comm2("callback", focus);
-            edlib.time_stop(edlib.TIME_TIMER)
-            return True
+            rv = comm2("callback", focus)
+            ret = rv is None or rv >= 0
         except edlib.commandfailed:
+            ret = False
+        edlib.time_stop(edlib.TIME_TIMER)
+        if not ret:
             del self.events[ev]
-            return False
+        return ret
 
     def run(self, key, **a):
         if self.active:
