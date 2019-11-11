@@ -258,7 +258,7 @@ class CModePane(edlib.Pane):
 
         msg = "start_stat %r bracket <%s> oc=%d depth %d" % \
             (start_stat, brackets, open_col, len(depth))
-        if not start_stat and brackets and brackets[-1] in '{ ':
+        if not start_stat and brackets and brackets[-1] in '^{ ':
             depth.append(depth[-1]+tab)
 
         # assume exactly this depth unless an '{' or '}' would make
