@@ -72,7 +72,7 @@ Bugs to be fixed
 - [X] case 0: indent seems to be broken... in "if ()\n switch(){ case 0:"
 - [X] If you wrap a list of global variables, it doesn't indent.
 - [X] <40> in a line of text (immediately after wrap) can make big text.
-- [ ] accessing a different frame shouldn't make a transient-popup
+- [X] accessing a different frame shouldn't make a transient-popup
       disappear
 - [ ] server transient popups should use the most recently accessed frame
 - [ ] capturing 'Enter' in c-mode for indent interrupts a sequence

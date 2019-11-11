@@ -571,7 +571,10 @@ void pane_focus(struct pane *focus)
 		return;
 	pane_damaged(p, DAMAGED_CURSOR);
 	/* refocus up to the display, but not to the root */
-	while (p->parent && p->parent->parent) {
+	/* We have root->input->display. FIXME I need a better way
+	 * to detect the 'display' level.
+	 */
+	while (p->parent && p->parent->parent && p->parent->parent->parent) {
 		if (p->parent->focus &&
 		    p->parent->focus != p) {
 			struct pane *old = p->parent->focus;
