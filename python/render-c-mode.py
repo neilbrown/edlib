@@ -108,6 +108,8 @@ class CModePane(edlib.Pane):
         comment_col = 0
         in_if = False
         have_prefix = False
+        saw_eq = False
+        enum_pos = 0
 
         tab = self.spaces
         if not tab:
@@ -157,6 +159,8 @@ class CModePane(edlib.Pane):
                 comment = None
                 continue
 
+            prev_saw_eq = saw_eq
+            prev_enum_pos = enum_pos
             # must be in code
             if c not in ' \t\n/':
                 if start_stat:
@@ -167,6 +171,20 @@ class CModePane(edlib.Pane):
                 if open_col:
                     depth.append(open_col)
                     open_col = 0
+                saw_eq = c == '='
+                if c.isalpha and enum_pos >= 0:
+                    if enum_pos == 5:
+                        pass
+                    elif enum_pos < 4 and "enum"[enum_pos] == c:
+                        enum_pos += 1
+                    else:
+                        enum_pos = -1
+                else:
+                    enum_pos = -1
+            elif enum_pos >= 4:
+                enum_pos = 5
+            else:
+                enum_pos = 0
             if c == '\n':
                 # end of line
                 # if we haven't seen code since a group opened, then
@@ -188,6 +206,9 @@ class CModePane(edlib.Pane):
                         depth.pop()
                     have_prefix = False
                     start_stat = True
+                    # If enum or =, make ',' act as end-of-command for indenting
+                    if prev_saw_eq or prev_enum_pos == 5:
+                        c = ','
                 if c == '(' and in_if:
                     brackets += 'p'
                 else:
@@ -213,6 +234,10 @@ class CModePane(edlib.Pane):
                 while brackets and brackets[-1] == ' ':
                     brackets = brackets[:-1]
                     depth.pop()
+            elif c == ',' and brackets and brackets[-1] == ',':
+                # This is enum or struct-literal, where , ends a statement
+                start_stat = True
+                have_prefix = False
             elif c == ':':
                 # If this is a label, then starts-statement
                 if maybe_label:
@@ -264,7 +289,7 @@ class CModePane(edlib.Pane):
         # assume exactly this depth unless an '{' or '}' would make
         # sense, then allow one level to be deleted.
         depth.insert(0,0)
-        if brackets and brackets[-1] in '{ ':
+        if brackets and brackets[-1] in '{ ,':
             ret = [ depth[-2], depth[-1], depth[-1] ]
         else:
             ret = [ depth[-1], depth[-1] ]
