@@ -53,6 +53,8 @@ try:
                         self.term.take_focus()
                         self.sock.send("OK")
                         return 1
+                    self.display_time = 0
+                    self.destpane = None
                     self.call("Call:Notify:global-displays", self.display_callback)
                     if self.destpane:
                         p = self.destpane
@@ -131,7 +133,9 @@ try:
             return 1
 
         def display_callback(self, key, focus, num, **a):
-            self.destpane = focus
+            if self.display_time == 0 or num > self.display_time:
+                self.destpane = focus
+                self.display_time = num
             return 0
 
         def handle_close(self, key, **a):

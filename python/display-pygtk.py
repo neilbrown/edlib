@@ -15,6 +15,7 @@ import pango
 import thread
 import gobject
 import glib
+import time
 
 class EdDisplay(gtk.Window):
     def __init__(self, focus):
@@ -38,6 +39,7 @@ class EdDisplay(gtk.Window):
         self.targets = [ (gtk.gdk.SELECTION_TYPE_STRING, 0, 0) ]
         self.have_primary = False
         self.have_clipboard = False
+        self.last_event = 0
         self.show()
 
     def claim_primary(self):
@@ -104,7 +106,7 @@ class EdDisplay(gtk.Window):
 
     def handle_notify_displays(self, key, focus, comm2, **a):
         "handle:Notify:global-displays"
-        comm2("callback:display", self.pane)
+        comm2("callback:display", self.pane, self.last_event)
         return 0
 
     def handle_postorder(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
@@ -513,6 +515,7 @@ class EdDisplay(gtk.Window):
             s = "C-" + s;
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
+        self.last_event = int(time.time())
         self.pane.call("Mouse-event", s, self.pane, (x,y))
         edlib.time_stop(edlib.TIME_KEY)
 
@@ -528,6 +531,7 @@ class EdDisplay(gtk.Window):
             s = "C-" + s;
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
+        self.last_event = int(time.time())
         self.pane.call("Mouse-event", s, self.pane, (x,y))
         edlib.time_stop(edlib.TIME_KEY)
 
@@ -577,6 +581,7 @@ class EdDisplay(gtk.Window):
 
     def keyinput(self, c, strng):
         edlib.time_start(edlib.TIME_KEY)
+        self.last_event = int(time.time())
         self.pane.call("Keystroke", "Chr-" + strng)
         edlib.time_stop(edlib.TIME_KEY)
 
@@ -605,6 +610,7 @@ class EdDisplay(gtk.Window):
                     s = "C-" + s;
         if event.state & gtk.gdk.MOD1_MASK:
             s = "M-" + s;
+        self.last_event = int(time.time())
         self.pane.call("Keystroke", self.pane, s)
         edlib.time_stop(edlib.TIME_KEY)
 

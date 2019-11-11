@@ -74,7 +74,7 @@ Bugs to be fixed
 - [X] <40> in a line of text (immediately after wrap) can make big text.
 - [X] accessing a different frame shouldn't make a transient-popup
       disappear
-- [ ] server transient popups should use the most recently accessed frame
+- [X] server transient popups should use the most recently accessed frame
 - [ ] capturing 'Enter' in c-mode for indent interrupts a sequence
       of N2_undo_insert.  Do I want that?
 - [X] message line needs to keep some messages permanently - 

@@ -23,6 +23,7 @@
 #endif
 
 #include <stdlib.h>
+#include <time.h>
 #include <curses.h>
 #include <string.h>
 #include <locale.h>
@@ -54,6 +55,7 @@ struct display_data {
 	char			*noclose;
 	struct col_hash		*col_hash;
 	int			report_position;
+	long			last_event;
 	#ifdef RECORD_REPLAY
 	FILE			*log;
 	FILE			*input;
@@ -572,7 +574,8 @@ static int make_cursor(int attr)
 
 DEF_CMD(nc_notify_display)
 {
-	comm_call(ci->comm2, "callback:display", ci->home);
+	struct display_data *dd = ci->home->data;
+	comm_call(ci->comm2, "callback:display", ci->home, dd->last_event);
 	return 0;
 }
 
@@ -876,6 +879,7 @@ static char *find_name (struct namelist *l safe, wint_t c)
 
 static void send_key(int keytype, wint_t c, struct pane *p safe)
 {
+	struct display_data *dd = p->data;
 	char *n;
 	char buf[100];/* FIXME */
 
@@ -897,6 +901,7 @@ static void send_key(int keytype, wint_t c, struct pane *p safe)
 			sprintf(buf, "Chr-%lc", c);
 	}
 
+	dd->last_event = time(NULL);
 	record_key(p, buf);
 	call("Keystroke", p, 0, NULL, buf);
 }
@@ -942,16 +947,19 @@ static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 		else
 			continue;
 		sprintf(buf, action, b);
+		dd->last_event = time(NULL);
 		do_send_mouse(p, x, y, buf);
 	}
 	if ((mev->bstate & REPORT_MOUSE_POSITION) &&
 	    dd->report_position)
+		/* Motion doesn't update last_event */
 		do_send_mouse(p, x, y, "Motion");
 }
 
 REDEF_CMD(input_handle)
 {
 	struct pane *p = ci->home;
+
 	wint_t c;
 	int is_keycode;
 
