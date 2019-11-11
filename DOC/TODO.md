@@ -67,10 +67,10 @@ Bugs to be fixed
 - [X] in python code, protect Replace/doc:replace - file could be read-only
 - [X] c-mode indent should let me delete one level when it was due to bracketing,
       so I can insert the close bracket.
-- [ ] comma sep list in enum doesn't get indented properly.  Need to recognize enum
+- [X] comma sep list in enum doesn't get indented properly.  Need to recognize enum
       and treat ',' as end-of-statement .
 - [X] case 0: indent seems to be broken... in "if ()\n switch(){ case 0:"
-- [ ] If you wrap a list of global variables, it doesn't indent.
+- [X] If you wrap a list of global variables, it doesn't indent.
 - [ ] <40> in a line of text (immediately after wrap) can make big text.
 - [ ] accessing a different frame shouldn't make a transient-popup
       disappear

@@ -162,7 +162,9 @@ class CModePane(edlib.Pane):
             prev_saw_eq = saw_eq
             prev_enum_pos = enum_pos
             # must be in code
-            if c not in ' \t\n/':
+            # We treat '/' like space, as it might start a comment,
+            # and '\\', as it is probably a line continuation for a macro
+            if c not in ' \t\n/\\':
                 if start_stat:
                     start_stat = False
                     maybe_label = True
