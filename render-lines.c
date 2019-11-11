@@ -711,8 +711,15 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			if (*line == '<') {
 				if (offset >= 0 && offset == start - line_start)
 					offset += 1;
-				start = line;
-				line += 1;
+				ret = draw_some(focus, &rlst, &x, start, &line,
+						buf_final(&attr),
+						wrap ? mwidth : 0,
+						in_tab ?:offset - (start - line_start),
+						CX, scale);
+				if (ret)
+					continue;
+				start += 2;
+				line = start;
 			} else {
 				char *a = line;
 
