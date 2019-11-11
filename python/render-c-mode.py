@@ -473,7 +473,7 @@ class CModePane(edlib.Pane):
         # if num is <0 go to indent and 'backspace'
         # if num is 0, go to start of line and 'tab'
         m = mark.dup()
-        if num <= 0:
+        if num is not None and num <= 0:
             focus.call("Move-EOL", -1, m)
             c = focus.call("doc:step", 1, 0, m, ret='char')
             while c and c in ' \t':
