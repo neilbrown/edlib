@@ -168,7 +168,7 @@ class CModePane(edlib.Pane):
                 if start_stat:
                     start_stat = False
                     maybe_label = True
-                    if c.isalpha():
+                    if c.isalnum() or c == '_':
                         in_if = True
                 if open_col:
                     depth.append(open_col)
@@ -259,7 +259,7 @@ class CModePane(edlib.Pane):
                     comment_col = column
                     p.call("doc:step", 1, 1, m)
                     nextcol += 1
-            if in_if and not c.isalpha() and not c.isspace():
+            if in_if and not c.isalnum() and c != '_' and not c.isspace():
                 in_if = False
 
         if have_prefix:
