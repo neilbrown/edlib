@@ -355,6 +355,7 @@ struct commcache {
 
 #define	NO_NUMERIC	(INT_MAX/2)
 #define	RPT_NUM(ci)	((ci)->num == NO_NUMERIC ? 1 :		\
+			 (ci)->num == NO_NUMERIC + 1 ? 4 :	\
 			 (ci)->num == -NO_NUMERIC ? -1 : (ci)->num)
 
 struct map *safe key_alloc(void);

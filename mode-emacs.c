@@ -1210,6 +1210,16 @@ DEF_CMD(emacs_neg)
 	return 1;
 }
 
+DEF_CMD(emacs_prefix)
+{
+	/* as a generic arg (ctrl-U) which is positive and
+	 * as as a repeat-count of 4, but is different to 4.
+	 * I should probably allow digits to alter the number.
+	 */
+	call("Mode:set-num", ci->focus, 4);
+	return 1;
+}
+
 DEF_CMD(emacs_kill_doc)
 {
 	return call("doc:destroy", ci->focus);
@@ -2049,6 +2059,8 @@ static void emacs_init(void)
 	key_add(m, "render:reposition", &emacs_reposition);
 
 	key_add(m, "emCX-C-Chr-C", &emacs_exit);
+
+	key_add(m, "C-Chr-U", &emacs_prefix);
 
 	key_add(m, "M-Chr-!", &emacs_shell);
 	key_add(m, "Shell Command", &emacs_shell);
