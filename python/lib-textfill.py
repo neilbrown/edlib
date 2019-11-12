@@ -70,7 +70,7 @@ class FillMode(edlib.Pane):
                 focus.call("Move-Char", leng, mark)
             except edlib.commandfailed:
                 if focus.call("doc:step", 0, m, ret='char') != None:
-                    return Efail
+                    return edlib.Efail
                 mark.to_mark(m)
             # mark is at start of para - not indented yet.
             mark2 = m
@@ -83,7 +83,7 @@ class FillMode(edlib.Pane):
                 focus.call("Move-Char", -leng, mark2)
             except edlib.commandfailed:
                 if focus.call("doc:step", 1, m, ret='char') != None:
-                    return Efail
+                    return edlib.Efail
                 mark2.to_mark(m)
 
             # Now choose a prefix, which is non-alphanum or quotes.
