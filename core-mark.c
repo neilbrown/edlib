@@ -120,7 +120,11 @@ static void point_free(struct mark *p safe)
 void mark_free(struct mark *m)
 {
 	struct doc *owner;
-	if (!m)
+
+	/* mark might have already been freed by the
+	 * pane getting closed.
+	 */
+	if (!m || m->attrs == (void*)(unsigned long)-1)
 		return;
 	if (m->viewnum == MARK_POINT)
 		point_free(m);
