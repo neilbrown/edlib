@@ -1357,18 +1357,18 @@ class notmuch_query_view(edlib.Pane):
         self.thread_matched = None
         self.call("doc:Request:Notify:doc:Replace")
 
-    def handle_clone(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+    def handle_clone(self, key, focus, **a):
         "handle:Clone"
         p = notmuch_query_view(focus)
         self.clone_children(focus.focus)
         return 1
 
-    def handle_notify_replace(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+    def handle_notify_replace(self, key, **a):
         "handle:Notify:doc:Replace"
         self.damaged(edlib.DAMAGED_CONTENT)
         return 1
 
-    def handle_set_ref(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+    def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
         start = num
         if start:
@@ -1382,7 +1382,7 @@ class notmuch_query_view(edlib.Pane):
         # otherwise fall-through to real start or end
         return 0
 
-    def handle_step(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+    def handle_step(self, key, focus, mark, num, num2, **a):
         "handle:doc:step"
         forward = num
         move = num2
@@ -1435,7 +1435,7 @@ class notmuch_query_view(edlib.Pane):
                         self.parent.call("doc:step-thread", focus, mark, forward, move)
                 return ret
 
-    def handle_get_attr(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+    def handle_get_attr(self, key, focus, mark, num, num2, str, comm2, **a):
         "handle:doc:get-attr"
         if mark is None:
             mark = self.call("doc:point", ret='mark')
@@ -1447,7 +1447,7 @@ class notmuch_query_view(edlib.Pane):
                 return self.parent.call("doc:get-attr", focus, num, num2, mark, "T-" + str[3:], comm2)
         return 0
 
-    def handle_Z(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+    def handle_Z(self, key, focus, **a):
         "handle:Chr-Z"
         if not self.thread_start:
             return 1
@@ -1473,7 +1473,7 @@ class notmuch_query_view(edlib.Pane):
         focus.call("Notify:change")
         return 1
 
-    def handle_select(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+    def handle_select(self, key, focus, mark, num, num2, str, **a):
         "handle:notmuch:select"
         s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
         if s != self.selected:
@@ -1504,7 +1504,7 @@ class notmuch_query_view(edlib.Pane):
             focus.call("notmuch:select-message", s2, s, num)
         return 1
 
-    def handle_reposition(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+    def handle_reposition(self, key, focus, mark, mark2, str, **a):
         "handle:render:reposition"
         # some messages have been displayed, from mark to mark2
         # collect threadids and message ids
@@ -1525,7 +1525,7 @@ class notmuch_query_view(edlib.Pane):
             if edlib.WEOF == focus.call("doc:step", 1, 1, m):
                 break
 
-    def handle_mark_seen(self, key, focus, mark, mark2, num, num2, str, comm2, **a):
+    def handle_mark_seen(self, key, focus, mark, mark2, str, **a):
         "handle:doc:notmuch:mark-seen"
         for i in self.seen_threads:
             self.maindoc.call("doc:notmuch:remember-seen-thread", i)
@@ -1615,7 +1615,7 @@ class notmuch_message_view(edlib.Pane):
         focus.call("doc:email:select", mark);
         return 1
 
-    def handle_map_attr(self, key, focus, mark, num, str, str2, comm2, **a):
+    def handle_map_attr(self, key, focus, mark, str, str2, comm2, **a):
         if str == "render:rfc822header":
             comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed", 21)
             comm2("attr:callback", focus, 10000, mark, "wrap-tail: ,wrap-head:    ", 19)
@@ -1641,14 +1641,14 @@ def notmuch_doc(key, home, focus, comm2, **a):
         comm2("callback", focus, nm)
     return 1
 
-def render_query_attach(key, home, focus, comm2, **a):
+def render_query_attach(key, focus, comm2, **a):
     p = focus.call("attach-render-format", ret='focus')
     p = notmuch_query_view(p)
     if comm2:
         comm2("callback", p)
     return 1
 
-def render_message_attach(key, home, focus, comm2, **a):
+def render_message_attach(key, focus, comm2, **a):
     p = focus.call("attach-email-view", ret='focus')
     p = notmuch_message_view(p)
     if comm2:

@@ -429,7 +429,7 @@ class PresenterPane(edlib.Pane):
             return f
         return os.path.dirname(path)+'/'+f
 
-    def handle_present_bg(self, key, focus, mark, mark2, num, comm2, **a):
+    def handle_present_bg(self, key, focus, mark, **a):
         "handle-prefix:Present-BG:"
         cmds = key[11:].split(',')
         ret = 0
@@ -456,13 +456,13 @@ class PresenterPane(edlib.Pane):
                 ret |= rv
         return ret
 
-    def handle_clip(self, key, focus, mark, mark2, num, comm2, **a):
+    def handle_clip(self, key, mark, mark2, **a):
         "handle:Notify:clip"
         self.clip(self.attrview, mark, mark2);
         self.clip(self.pageview, mark, mark2);
         return 0
 
-    def handle_render_prev(self, key, focus, mark, mark2, num, comm2, **a):
+    def handle_render_prev(self, key, mark, num, **a):
         "handle:doc:render-line-prev"
         # Go to start of page
         if num == 0:
@@ -480,7 +480,7 @@ class PresenterPane(edlib.Pane):
         mark.to_mark(start)
         return 1
 
-    def handle_render_line(self, key, focus, mark, mark2, num, comm2, **a):
+    def handle_render_line(self, key, focus, mark, comm2, **a):
         "handle:doc:render-line"
         page = self.find_pages(mark)
         if not page:
@@ -581,7 +581,7 @@ class PresenterPane(edlib.Pane):
             comm2("callback", self, line)
         return 1
 
-    def handle_notify_replace(self, key, focus, mark, mark2, num, comm2, **a):
+    def handle_notify_replace(self, key, mark, **a):
         "handle:Notify:doc:Replace"
         # A change has happened at 'mark'.  The following page might not
         # be valid, and the previous may not be valid or have next-valid.
@@ -616,7 +616,7 @@ class PresenterPane(edlib.Pane):
                 l['type'] = 'unknown'
         return 1
 
-    def handle_recentre(self, key, focus, mark, mark2, num, comm2, **a):
+    def handle_recentre(self, key, focus, mark, num, comm2, **a):
         "handle:Notify:doc:Recentre"
         m2 = edlib.Mark(self)
         m2.to_mark(mark)
@@ -640,7 +640,7 @@ class PresenterPane(edlib.Pane):
         self.damaged(edlib.DAMAGED_VIEW)
         return 1
 
-    def handle_refresh_view(self, key, focus, mark, mark2, num, comm2, **a):
+    def handle_refresh_view(self, key, focus, **a):
         "handle:Refresh:view"
         m = self.target_mark
         self.target_mark = None
@@ -649,12 +649,12 @@ class PresenterPane(edlib.Pane):
         focus.call("Move-View-Pos", m)
         return 0
 
-    def handle_clone(self, key, focus, mark, mark2, num, comm2, **a):
+    def handle_clone(self, key, **a):
         "handle:Clone"
         # Need to create a new PresenterPane I guess, then recurse on children
         return 0
 
-    def handle_M_f(self, key, focus, mark, mark2, num, comm2, **a):
+    def handle_M_f(self, key, **a):
         "handle:M-Chr-f"
         if self.borderless:
             self.call("Window:border", 1)
@@ -668,7 +668,7 @@ class PresenterPane(edlib.Pane):
             self.borderless = True
         return 1
 
-    def handle_mvl(self, key, focus, mark, mark2, num, comm2, **a):
+    def handle_mvl(self, key, focus, mark, num, **a):
         "handle:Move-View-Large"
         # If mark isn't set, the movement might come
         # from scroll-bar or similar, ignore that.
@@ -684,7 +684,7 @@ class PresenterPane(edlib.Pane):
                 return 1
         return 2
 
-    def handle_close(self, key, focus, mark, mark2, num, comm2, **a):
+    def handle_close(self, key, **a):
         "handle:Close"
         m = self.first_page()
         while m:
@@ -703,7 +703,7 @@ class MarkdownPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
 
-    def handle_refresh(self, key, focus, mark, num, **a):
+    def handle_refresh(self, key, focus, mark, **a):
         "handle:Display:refresh"
         # Refresh causes presentation page to recenter
         # page-down just moves down to start of next page.

@@ -308,7 +308,7 @@ class MakePane(edlib.Pane):
             docpane.call("Move-to", self.point)
         return 1
 
-    def handle_revisit(self, key, focus, mark, **a):
+    def handle_revisit(self, key, mark, **a):
         "handle:Notify:doc:make-revisit"
         self.do_parse()
         p = self.call("doc:vmark-get", self.viewnum, mark, 3, ret='mark2')
@@ -389,7 +389,7 @@ class MakeViewerPane(edlib.Pane):
         next_match("interactive-cmd-next-match", focus, None, "OtherPane")
         return 1
 
-    def handle_replace(self, key, focus, mark, mark2, **a):
+    def handle_replace(self, key, mark, mark2, **a):
         "handle:Notify:doc:Replace"
         if not mark or not mark2:
             return 1

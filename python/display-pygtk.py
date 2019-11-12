@@ -71,7 +71,7 @@ class EdDisplay(gtk.Window):
         if data == "CLIPBOARD":
             self.have_clipboard = False
 
-    def copy_save(self, key, focus, num2, **a):
+    def copy_save(self, key, num2, **a):
         "handle:copy:save"
         if num2:
             # mouse-only
@@ -104,17 +104,17 @@ class EdDisplay(gtk.Window):
                     num -= 1
         return self.pane.parent.call(key, focus, num, comm2)
 
-    def handle_notify_displays(self, key, focus, comm2, **a):
+    def handle_notify_displays(self, key, comm2, **a):
         "handle:Notify:global-displays"
         comm2("callback:display", self.pane, self.last_event)
         return 0
 
-    def handle_postorder(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+    def handle_postorder(self, key, **a):
         "handle:Refresh:postorder"
         self.text.queue_draw()
         return 1
 
-    def handle_close_window(self, key, home, focus, **a):
+    def handle_close_window(self, key, focus, **a):
         "handle:Display:close"
         if self.noclose:
             focus.call("Message", self.noclose)
@@ -132,7 +132,7 @@ class EdDisplay(gtk.Window):
         self.noclose = str
         return 1
 
-    def handle_fullscreen(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+    def handle_fullscreen(self, key, num, **a):
         "handle:Display:fullscreen"
         if num > 0:
             self.fullscreen()
@@ -140,18 +140,18 @@ class EdDisplay(gtk.Window):
             self.unfullscreen()
         return 1
 
-    def handle_new(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+    def handle_new(self, key, home, **a):
         "handle:Display:new"
         newdisp = EdDisplay(home.parent)
         home.clone_children(newdisp.pane);
         return 1
 
-    def handle_close(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+    def handle_close(self, key, **a):
         "handle:Close"
         self.destroy()
         return True
 
-    def handle_clear(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+    def handle_clear(self, key, focus, str, str2, **a):
         "handle:pane-clear"
         attr = str2
         if attr is None:
@@ -165,7 +165,7 @@ class EdDisplay(gtk.Window):
         self.pane.damaged(edlib.DAMAGED_POSTORDER)
         return True
 
-    def handle_text_size(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+    def handle_text_size(self, key, num, num2, focus, str, str2, comm2, **a):
         "handle:text-size"
         attr=""
         if str2 is not None:
@@ -192,7 +192,7 @@ class EdDisplay(gtk.Window):
             max_bytes = 0
         return comm2("callback:size", focus, max_bytes, ascent, (width, height))
 
-    def handle_draw_text(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+    def handle_draw_text(self, key, num, num2, focus, str, str2, xy, **a):
         "handle:Draw:text"
         self.pane.damaged(edlib.DAMAGED_POSTORDER)
         if not self.gc or not self.bg:
@@ -257,7 +257,7 @@ class EdDisplay(gtk.Window):
 
         return True
 
-    def handle_image(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+    def handle_image(self, key, num, num2, focus, str, str2, **a):
         "handle:Draw:image"
         self.pane.damaged(edlib.DAMAGED_POSTORDER)
         # 'str' is the file name of an image
@@ -307,7 +307,7 @@ class EdDisplay(gtk.Window):
         pm.draw_pixbuf(self.gc, scale, 0, 0, x, y)
         return True
 
-    def handle_notify_close(self, key, num, num2, home, focus, str, str2, comm2, xy, **a):
+    def handle_notify_close(self, key, focus, **a):
         "handle:Notify:Close"
         if focus and focus in self.panes:
             del self.panes[focus]
