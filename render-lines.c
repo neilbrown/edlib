@@ -1303,7 +1303,7 @@ restart:
 			render_line(p, focus, m->mdata?:"", &y, 1, scale.x,
 				    NULL, NULL, NULL,
 				    NULL, NULL, &found_end, cols);
-		if (!m2)
+		if (!m2 || mark_same(m, m2))
 			break;
 		m = m2;
 	}
