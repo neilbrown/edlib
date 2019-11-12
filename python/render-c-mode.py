@@ -174,7 +174,7 @@ class CModePane(edlib.Pane):
                     depth.append(open_col)
                     open_col = 0
                 saw_eq = c == '='
-                if c.isalpha and enum_pos >= 0:
+                if c.isalpha() and enum_pos >= 0:
                     if enum_pos == 5:
                         pass
                     elif enum_pos < 4 and "enum"[enum_pos] == c:
