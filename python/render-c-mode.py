@@ -459,7 +459,7 @@ class CModePane(edlib.Pane):
         return 1
 
 
-    def handle_enter(self, key, focus, mark, **a):
+    def handle_enter(self, key, focus, mark, num2, **a):
         "handle:Enter"
         # If there is white space before or after the cursor,
         # remove it.  Then work out how indented this line
@@ -484,7 +484,7 @@ class CModePane(edlib.Pane):
 
         # and replace all that white space with a newline and the indent
         try:
-            return focus.call("Replace", 1, m,
+            return focus.call("Interactive:insert", 1, num2, m,
                               "\n" + self.mkwhite(depths[-2]) + prefix)
         except edlib.commandfailed:
             # probably doc is read-only.  Fall through to default to get error

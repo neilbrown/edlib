@@ -75,7 +75,7 @@ Bugs to be fixed
 - [X] accessing a different frame shouldn't make a transient-popup
       disappear
 - [X] server transient popups should use the most recently accessed frame
-- [ ] capturing 'Enter' in c-mode for indent interrupts a sequence
+- [X] capturing 'Enter' in c-mode for indent interrupts a sequence
       of N2_undo_insert.  Do I want that?
 - [X] message line needs to keep some messages permanently - 
       'type ` to search again' - and needs to clear it immediately.

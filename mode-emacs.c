@@ -643,6 +643,38 @@ DEF_CMD(emacs_insert_other)
 	return ret;
 }
 
+DEF_CMD(emacs_interactive_insert)
+{
+	/* If some pane want to insert text just like it was typed,
+	 * it calls this, and we set up for proper undo
+	 */
+	int ret;
+
+	if (!ci->str)
+		return Enoarg;
+	ret = call("Replace", ci->focus, 1, ci->mark, ci->str,
+		   N2(ci) == N2_undo_insert);
+	call("Mode:set-num2", ci->focus,
+	     strchr(ci->str, '\n') ? 0 : N2_undo_insert);
+	return ret;
+}
+
+DEF_CMD(emacs_interactive_delete)
+{
+	/* If some pane want to delete text just like backspace was typed,
+	 * it calls this, and we set up for proper undo
+	 */
+	int ret;
+
+	if (!ci->str)
+		return Enoarg;
+	ret = call("Replace", ci->focus, 1, ci->mark, "",
+		   N2(ci) == N2_undo_insert, ci->mark2);
+	call("Mode:set-num2", ci->focus,
+	     strchr(ci->str, '\n') ? 0 : N2_undo_delete);
+	return ret;
+}
+
 DEF_CMD(emacs_undo)
 {
 	int ret;
@@ -1983,6 +2015,8 @@ static void emacs_init(void)
 	key_add(m, "LF", &emacs_insert_other);
 	key_add(m, "Enter", &emacs_insert_other);
 	key_add(m, "C-Chr-O", &emacs_insert_other);
+	key_add(m, "Interactive:insert", &emacs_interactive_insert);
+	key_add(m, "Interactive:delete", &emacs_interactive_delete);
 
 	key_add(m, "C-Chr-_", &emacs_undo);
 	key_add(m, "emCX-Chr-u", &emacs_undo);
