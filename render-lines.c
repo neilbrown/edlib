@@ -709,8 +709,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		if (ch == '<') {
 			line += 1;
 			if (*line == '<') {
-				if (offset >= 0 && offset == start - line_start)
-					offset += 1;
 				ret = draw_some(focus, &rlst, &x, start, &line,
 						buf_final(&attr),
 						wrap ? mwidth : 0,
