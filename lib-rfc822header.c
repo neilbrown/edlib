@@ -257,9 +257,8 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 
 	m = mark_dup(start);
 	hstart = mark_dup(point);
-	if (hstart->seq > point->seq)
-		/* put hstart before point, so it stays here */
-		mark_to_mark(hstart, point);
+	/* put hstart before point, so it stays here */
+	mark_make_first(hstart);
 	/* FIXME decode RFC2047 words */
 	while ((ch = mark_next_pane(doc, m)) != WEOF &&
 	       m->seq < end->seq) {

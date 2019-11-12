@@ -627,9 +627,8 @@ DEF_CMD(emacs_insert_other)
 	if (!*ins) {
 		ins++;
 		m = mark_dup(ci->mark);
-		if (m->seq > ci->mark->seq)
-			/* Move m before ci->mark, so it doesn't move when we insert */
-			mark_to_mark(m, ci->mark);
+		/* Move m before ci->mark, so it doesn't move when we insert */
+		mark_make_first(m);
 	}
 
 	ret = call("Replace", ci->focus, 1, ci->mark, ins,
@@ -1710,8 +1709,7 @@ DEF_CMD(emacs_yank_pop)
 	if (!str)
 		return Efail;
 	m = mark_dup(mk);
-	if (m->seq > mk->seq)
-		mark_to_mark(m, mk);
+	mark_make_first(m);
 	call("Replace", ci->focus, 1, mk, str);
 	call("Move-to", ci->focus, 1, m);
 	mark_free(m);

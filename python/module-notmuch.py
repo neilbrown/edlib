@@ -1041,10 +1041,7 @@ class notmuch_list(edlib.Doc):
             if not move:
                 return '\n'
             (tid,mid) = mark.pos
-            m2 = mark.next_any()
-            while m2 and m2.pos == mark.pos:
-                mark.to_mark(m2)
-                m2 = mark.next_any()
+            mark.make_last()
             i = self.threadids.index(tid)
             if mid:
                 j = self.messageids[tid].index(mid) + 1
@@ -1058,10 +1055,7 @@ class notmuch_list(edlib.Doc):
                     mark.pos = (tid, None)
             else:
                 mark.pos = None
-            m2 = mark.next_any()
-            while m2 and m2.pos == mark.pos:
-                mark.to_mark(m2)
-                m2 = mark.next_any()
+            mark.make_last()
             return '\n'
         else:
             j = 0
@@ -1076,10 +1070,7 @@ class notmuch_list(edlib.Doc):
                 return edlib.WEOF
             if not move:
                 return '\n'
-            m2 = mark.prev_any()
-            while m2 and m2.pos == mark.pos:
-                mark.to_mark(m2)
-                m2 = mark.prev_any()
+            mark.make_first()
 
             if j == 0:
                 i -= 1
@@ -1094,10 +1085,7 @@ class notmuch_list(edlib.Doc):
             else:
                 mark.pos = (tid, None)
 
-            m2 = mark.prev_any()
-            while m2 and m2.pos == mark.pos:
-                mark.to_mark(m2)
-                m2 = mark.prev_any()
+            mark.make_first()
             return '\n'
 
     def handle_notify_tag(self, key, str, str2, **a):
