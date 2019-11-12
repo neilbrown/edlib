@@ -93,7 +93,7 @@ class FillMode(edlib.Pane):
                 focus.call("doc:step", 1, 1, mark)
                 l -= 1
 
-        if num and num > 8:
+        if num != edlib.NO_NUMERIC and num > 8:
             width = num
         else:
             width = 72

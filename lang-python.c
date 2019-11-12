@@ -300,17 +300,10 @@ REDEF_CMD(python_call)
 	rv = rv && dict_add(kwds, "comm2",
 			    ci->comm2 ? Comm_Fromcomm(ci->comm2):
 			    (Py_INCREF(Py_None), Py_None));
-	if (ci->num == NO_NUMERIC)
-		rv = rv && dict_add(kwds, "num",
-				    (Py_INCREF(Py_None), Py_None));
-	else if (ci->num == -NO_NUMERIC) {
-		/* This indirect sinces a type-punned warning */
-		PyObject *false = Py_False;
-		rv = rv && dict_add(kwds, "num",
-				    (Py_INCREF(false), false));
-	} else
-		rv = rv && dict_add(kwds, "num",
-				    Py_BuildValue("i", ci->num));
+	rv = rv && dict_add(kwds, "num",
+			    Py_BuildValue("i", ci->num));
+	rv = rv && dict_add(kwds, "rpt_num",
+			    Py_BuildValue("i", RPT_NUM(ci)));
 	rv = rv && dict_add(kwds, "num2",
 			    Py_BuildValue("i", ci->num2));
 	rv = rv && dict_add(kwds, "xy",
@@ -2356,6 +2349,7 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, Efail);
 	PyModule_AddIntMacro(m, Enosup);
 	PyModule_AddIntMacro(m, Efail);
+	PyModule_AddIntMacro(m, NO_NUMERIC);
 
 	PyModule_AddIntMacro(m, TIME_KEY);
 	PyModule_AddIntMacro(m, TIME_WINDOW);

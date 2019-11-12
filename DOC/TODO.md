@@ -79,7 +79,7 @@ Bugs to be fixed
       of N2_undo_insert.  Do I want that?
 - [X] message line needs to keep some messages permanently - 
       'type ` to search again' - and needs to clear it immediately.
-- [ ] allow rpt-num to be accessed from python
+- [X] allow rpt-num to be accessed from python
 - [X] move-expr needs to understand sloshed quotes.
 - [X] regexp ^[^a-zA-Z0-9]*$ doesn't match properly.
 - [ ] doc:replace with 2 marks should leave them at either end of insertion.

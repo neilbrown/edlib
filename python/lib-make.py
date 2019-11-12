@@ -386,7 +386,8 @@ class MakeViewerPane(edlib.Pane):
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
         focus.call("doc:Notify:doc:make-revisit", mark)
-        next_match("interactive-cmd-next-match", focus, None, "OtherPane")
+        next_match("interactive-cmd-next-match", focus,
+                   edlib.NO_NUMERIC, "OtherPane")
         return 1
 
     def handle_replace(self, key, mark, mark2, **a):
@@ -532,7 +533,7 @@ def make_request(key, focus, num, str, mark, **a):
             else:
                 d = os.path.dirname(d)
 
-        if num and num > 0 and mode != "grep":
+        if num > 0 and mode != "grep":
             if d and d[-1] != '/':
                 d = d + '/'
             dir = d
@@ -597,8 +598,7 @@ def next_match(key, focus, num, str, **a):
         focus.call("Message", "Make document %s missing" % docname)
         return 1
     try:
-        if num is None:
-            # NONUMERIC
+        if num == edlib.NO_NUMERIC:
             restart = 0
         else:
             restart = 1
