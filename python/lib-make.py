@@ -29,6 +29,7 @@ class MakePane(edlib.Pane):
         self.map = []
         self.files = {}
         self.timer_set = False
+        self.note_ok = False
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
