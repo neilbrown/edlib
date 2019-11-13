@@ -300,12 +300,7 @@ class MakePane(edlib.Pane):
             docpane = par.call("OtherPane", ret='focus')
             if docpane:
                 self.call("doc:attach-view", docpane)
-            # Make sure that docpane really is for this document.
-            docpane = par.call("DocPane", self, ret='focus')
-        if docpane:
-            while docpane.focus:
-                docpane = docpane.focus
-            docpane.call("Move-to", self.point)
+        self.call("doc:Notify:make-set-match", self.point)
         return 1
 
     def handle_revisit(self, key, mark, **a):
@@ -380,8 +375,13 @@ class MakeViewerPane(edlib.Pane):
     # jump to a given match, and similar
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
-        self.call("doc:Request:Notify:doc:Replace");
-        p = self.call("doc:point", ret='mark')
+        self.call("doc:Request:Notify:doc:Replace")
+        self.call("doc:Request:Notify:make-set-match")
+
+    def handle_set_match(self, key, mark, **a):
+        "handle:Notify:make-set-match"
+        self.call("Move-to", mark)
+        return 1
 
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
