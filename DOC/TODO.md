@@ -85,7 +85,7 @@ Bugs to be fixed
 - [X] doc:replace with 2 marks should leave them at either end of insertion.
 - [X] C-space, M-> doesn't highlight the selection
 - [X] C-n causes 'target' column to be no more than EOL.
-- [ ] need a way to show that eol is highlighted - both for selection and search
+- [X] need a way to show that eol is highlighted - both for selection and search
 - [ ] C-x-o to change panes - if point is nor visible in other pane, the visible cursor
       doesn't move (ncurses), which is confusing.
 - [X] An indent can still get more than 8 spaces.  Maybe a higher-level check is needed.

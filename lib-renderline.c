@@ -249,6 +249,13 @@ static void call_map_mark(struct pane *f safe, struct mark *m safe,
 		call_comm("map-attr", f, &ar->rtn, 0, m, key, 0, NULL, val);
 }
 
+static int want_vis_newline(struct attr_stack *as)
+{
+	while (as && strstr(as->attr, "vis-nl") == NULL)
+		as = as->next;
+	return as != NULL;
+}
+
 DEF_CMD(render_line)
 {
 	/* Render the line from 'mark' to the first '\n' or until
@@ -358,6 +365,8 @@ DEF_CMD(render_line)
 			buf_append(&b, ch);
 		chars++;
 	}
+	if (add_newline && want_vis_newline(ar.ast))
+		buf_concat(&b, "↩");
 	while (ar.ast)
 		as_pop(&ar, 100);
 	ar.chars = INT_MAX;

@@ -1720,7 +1720,7 @@ DEF_CMD(emacs_yank_pop)
 DEF_CMD(emacs_attrs)
 {
 	struct call_return cr;
-	static char selection[] = "bg:red+80"; // pink
+	static char selection[] = "bg:red+80,vis-nl"; // pink
 
 	if (!ci->str)
 		return 0;
@@ -1771,7 +1771,7 @@ DEF_CMD(emacs_hl_attrs)
 		if (hi->view >= 0 && ci->mark && ci->mark->viewnum == hi->view) {
 			int  len = atoi(ci->str2);
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-					 ci->mark, "fg:red,inverse,focus", 20);
+					 ci->mark, "fg:red,inverse,focus,vis-nl", 20);
 		}
 	}
 	if (strcmp(ci->str, "render:search2") == 0) {
@@ -1779,27 +1779,27 @@ DEF_CMD(emacs_hl_attrs)
 		if (hi->view >= 0 && ci->mark && ci->mark->viewnum == hi->view) {
 			int len = atoi(ci->str2);
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-					 ci->mark, "fg:blue,inverse", 20);
+					 ci->mark, "fg:blue,inverse,vis-nl", 20);
 		}
 	}
 	if (strcmp(ci->str, "start-of-line") == 0 && ci->mark && hi->view >= 0) {
 		struct mark *m = vmark_at_or_before(ci->focus, ci->mark, hi->view, ci->home);
 		if (m && attr_find_int(m->attrs, "render:search") > 0)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
-					 ci->mark, "fg:red,inverse", 20);
+					 ci->mark, "fg:red,inverse,vis-nl", 20);
 		if (m && attr_find_int(m->attrs, "render:search2") > 0)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
-					 ci->mark, "fg:blue,inverse", 20);
+					 ci->mark, "fg:blue,inverse,vis-nl", 20);
 	}
 	if (strcmp(ci->str, "render:search-end") ==0) {
 		/* Here endeth the match */
 		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-				 ci->mark, "fg:red,inverse", 20);
+				 ci->mark, "fg:red,inverse,vis-nl", 20);
 	}
 	if (strcmp(ci->str, "render:search2-end") ==0) {
 		/* Here endeth the match */
 		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-				 ci->mark, "fg:blue,inverse", 20);
+				 ci->mark, "fg:blue,inverse,vis-nl", 20);
 	}
 	return 0;
 }
