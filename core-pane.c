@@ -334,26 +334,41 @@ int do_pane_notify(struct pane *home, char *notification safe,
 	 * return 0
 	 */
 	int ret = 0;
-	struct notifier *n;
+	struct notifier *n, *n2;
 
 	if (!home)
 		home = p;
 	/* FIXME why no error below */
-	list_for_each_entry(n, &home->notifiees, notifier_link)
-		if (strcmp(n->notification, notification) == 0)
+	list_for_each_entry_reverse(n, &home->notifiees, notifier_link)
+		if (strcmp(n->notification, notification) == 0) {
+			if (n->noted == 2)
+				/* Nested notification - fail */
+				return Efail;
 			n->noted = 0;
+		}
 restart:
 	list_for_each_entry(n, &home->notifiees, notifier_link) {
 		if (n->noted)
 			continue;
 		if (strcmp(n->notification, notification) == 0) {
 			int r;
-			n->noted = 1;
+			n->noted = 2;
 			r = pane_call(n->notifiee, notification, p,
 				      num, m, str,
 				      num2, m2, str2, 0,0, comm2);
 			if (abs(r) > abs(ret))
 				ret = r;
+			/* Panes might have been closed or notifications removed
+			 * so nothing can be trusted... except this home pane
+			 * had better still exist.
+			 */
+			list_for_each_entry(n2, &home->notifiees, notifier_link)
+				if (n2 == n && n->noted == 2) {
+					/* Still safe .. */
+					n->noted = 1;
+					continue;
+				}
+			/* 'n' has been removed, restart */
 			goto restart;
 		}
 	}

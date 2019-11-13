@@ -124,7 +124,7 @@ Bugs to be fixed
 Core features
 -------------
 
-- [ ] nested notification of the same key should be disallowed somehow
+- [X] nested notification of the same key should be disallowed somehow
 - [ ] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
 - [ ] undo often doesn't leave me where I expect to be left. - maybe it is the
       location of the previous undo?
