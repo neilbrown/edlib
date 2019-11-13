@@ -86,7 +86,7 @@ Bugs to be fixed
 - [X] C-space, M-> doesn't highlight the selection
 - [X] C-n causes 'target' column to be no more than EOL.
 - [X] need a way to show that eol is highlighted - both for selection and search
-- [ ] C-x-o to change panes - if point is nor visible in other pane, the visible cursor
+- [X] C-x-o to change panes - if point is not visible in other pane, the visible cursor
       doesn't move (ncurses), which is confusing.
 - [X] An indent can still get more than 8 spaces.  Maybe a higher-level check is needed.
 - [ ] fn-complete for a symlink-to-dir should add a '/'

@@ -1188,6 +1188,7 @@ static int render(struct mark *pm, struct pane *p safe,
 	struct xy scale = pane_scale(focus);
 	char *s;
 	int hide_cursor = 0;
+	int cursor_drawn = 0;
 	int found_end;
 	short mwidth = -1;
 
@@ -1299,6 +1300,7 @@ restart:
 				shifted = 2;
 				goto restart;
 			}
+			cursor_drawn = 1;
 		} else
 			render_line(p, focus, m->mdata?:"", &y, 1, scale.x,
 				    NULL, NULL, NULL,
@@ -1306,6 +1308,20 @@ restart:
 		if (!m2 || mark_same(m, m2))
 			break;
 		m = m2;
+	}
+	if (!cursor_drawn && !hide_cursor) {
+		/* Place cursor in bottom right */
+		if (mwidth < 0) {
+			struct call_return cr =
+				call_ret(all, "text-size", p,
+					 -1, NULL, "M",
+					 0,  NULL, "");
+			mwidth = cr.x;
+			if (mwidth <= 0)
+				mwidth = 1;
+		}
+		call("Draw:text", focus, 0, NULL, " ", scale.x, NULL, "",
+		     focus->w - mwidth, focus->h-1);
 	}
 	/* Any marks after 'm' must be discarded */
 	if (m) {
