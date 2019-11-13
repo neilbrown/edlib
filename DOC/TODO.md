@@ -309,6 +309,7 @@ Module features
 - [X] make/grep - when insert at end-of-file, a pointer that was at EOF should
       stay there.
 - [X] sometime the pane doesn't go to the right line.
+- [X] move point of display pane to first match asap
 - [ ] when restart compile/grep, kill only one.
 - [ ] allow make even if not all files are saved - 'q' from save-all?
 - [ ] numeric-prefix to make will auto-save everything.

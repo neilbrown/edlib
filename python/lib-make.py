@@ -30,6 +30,7 @@ class MakePane(edlib.Pane):
         self.files = {}
         self.timer_set = False
         self.note_ok = False
+        self.first_match = True
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
@@ -112,6 +113,9 @@ class MakePane(edlib.Pane):
                 pass
             self.call("doc:step", m, 1, 1)
             fname = self.call("doc:get-str", m, e, ret="str")
+            if self.first_match and self['make-follow'] == 'no':
+                self.call("doc:Notify:make-set-match", m)
+                self.first_match = False
             if self.record_line(fname, lineno, m, is_note):
                 # new file - stop here
                 break
@@ -394,6 +398,8 @@ class MakeViewerPane(edlib.Pane):
         "handle:Notify:doc:Replace"
         if not mark or not mark2:
             return 1
+        if self["make-follow"] == "no":
+            return 1
         p = self.call("doc:point", ret='mark')
         if p and p == mark2:
             # point is where we inserted text, so move it to
@@ -469,6 +475,7 @@ def run_make(key, focus, str, **a):
         p = focus.call("OtherPane", ret='focus')
     else:
         p = focus.call("PopupTile", "MD3t", ret='focus')
+        doc['make-follow'] = "no"
     if not p:
         return edlib.Efail
     focus.call("global-set-attr", "make-target-doc", docname)
