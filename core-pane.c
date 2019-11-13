@@ -340,16 +340,18 @@ int do_pane_notify(struct pane *home, char *notification safe,
 		home = p;
 	/* FIXME why no error below */
 	list_for_each_entry(n, &home->notifiees, notifier_link)
-		n->noted = 0;
+		if (strcmp(n->notification, notification) == 0)
+			n->noted = 0;
 restart:
 	list_for_each_entry(n, &home->notifiees, notifier_link) {
 		if (n->noted)
 			continue;
-		n->noted = 1;
 		if (strcmp(n->notification, notification) == 0) {
-			int r = pane_call(n->notifiee, notification, p,
-					  num, m, str,
-					  num2, m2, str2, 0,0, comm2);
+			int r;
+			n->noted = 1;
+			r = pane_call(n->notifiee, notification, p,
+				      num, m, str,
+				      num2, m2, str2, 0,0, comm2);
 			if (abs(r) > abs(ret))
 				ret = r;
 			goto restart;
