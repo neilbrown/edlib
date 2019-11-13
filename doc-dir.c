@@ -377,6 +377,7 @@ DEF_CMD(dir_set_ref)
 static void get_stat(struct directory *dr safe, struct dir_ent *de safe)
 {
 	int dfd;
+	struct stat st;
 	if (de->st.st_mode)
 		return;
 	dfd = open(dr->fname, O_RDONLY);
@@ -385,7 +386,10 @@ static void get_stat(struct directory *dr safe, struct dir_ent *de safe)
 	if (fstatat(dfd, de->name, &de->st, AT_SYMLINK_NOFOLLOW) != 0) {
 		de->st.st_mode = 0xffff;
 		de->ch = '?';
-	}
+	} else if ((de->st.st_mode & S_IFMT) == S_IFLNK &&
+		   fstatat(dfd, de->name, &st, 0) == 0 &&
+		   (st.st_mode & S_IFMT) == S_IFDIR)
+		de->ch = 'L';
 	close(dfd);
 }
 
@@ -501,10 +505,11 @@ static char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 		*c = 0;
 		return de->nbuf;
 	} else if (strcmp(attr, "suffix") == 0) {
-		if (strchr(".:d", de->ch))
+		if (de->ch == 'l')
+			get_stat(dr, de);
+		if (strchr(".:dL", de->ch))
 			return "/";
-		else
-			return "";
+		return "";
 	} else
 		return attr_find(de->attrs, attr);
 }
