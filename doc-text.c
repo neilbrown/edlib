@@ -1954,6 +1954,7 @@ DEF_CMD(text_replace)
 			mark_to_mark(pm, end);
 		} else
 			myend = mark_dup(end);
+		/* pm is at the start, myend is at the end */
 		l = count_bytes(t, pm, myend);
 		mark_free(myend);
 		text_del(t, &pm->ref, l, &first);
@@ -1972,9 +1973,18 @@ DEF_CMD(text_replace)
 			;
 		text_check_consistent(t);
 	}
-	early = doc_prev_mark_all(pm);
-	if (early && !text_ref_same(t, &early->ref, &pm->ref))
-		early = NULL;
+	if (end) {
+		/* leave "end" at the start of the insertion, and
+		 * pm moves to the end - that are both currently at
+		 * the same location in the doc.
+		 */
+		mark_make_first(end);
+		early = end;
+	} else {
+		early = doc_prev_mark_all(pm);
+		if (early && !text_ref_same(t, &early->ref, &pm->ref))
+			early = NULL;
+	}
 
 	if (str) {
 		struct doc_ref start;

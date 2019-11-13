@@ -82,7 +82,7 @@ Bugs to be fixed
 - [X] allow rpt-num to be accessed from python
 - [X] move-expr needs to understand sloshed quotes.
 - [X] regexp ^[^a-zA-Z0-9]*$ doesn't match properly.
-- [ ] doc:replace with 2 marks should leave them at either end of insertion.
+- [X] doc:replace with 2 marks should leave them at either end of insertion.
 - [X] C-space, M-> doesn't highlight the selection
 - [X] C-n causes 'target' column to be no more than EOL.
 - [ ] need a way to show that eol is highlighted - both for selection and search
