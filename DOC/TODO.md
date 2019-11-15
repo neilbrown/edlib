@@ -99,8 +99,8 @@ Bugs to be fixed
 - [X] when visit a non-existant file, it is CHANGED and read-only.
 - [X] Indent to always use tabs where possible (in C mode)
 - [X] C-q tab should insert a literal tab
-- [ ] If completion has happened in open-file, but file doesn't exist,
-      require an extra Enter (or something)
+- [X] If completion has happened in open-file, but file doesn't exist,
+      require an extra Enter (or something) - require M-Enter to create.
 - [X] ncurses - provide a suitable colour for  highlighting tabs. #f5f5dc
 - [X] change to document with name ending <2> fails
 - [X] 'click' no longer makes target window the focus

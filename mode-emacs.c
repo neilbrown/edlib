@@ -21,6 +21,8 @@
 #include "core.h"
 
 static struct map *emacs_map, *hl_map;
+static char * safe file_normalize(struct pane *p safe, char *path,
+				  char *initial_path);
 
 /* num2 is used to track if successive commands are related.
  * Only low 16 bits identify command, other bits are free.
@@ -708,10 +710,23 @@ DEF_CMD(find_done)
 	int ret;
 	char *type = ci->home->data;
 	char *str = call_ret(strsave, "doc:get-str", ci->focus);
+	struct stat stb;
 
-	if (strcmp(type, "doc") == 0 && str && str[0] &&
+	if (!str || !str[0])
+		/* close with no string */
+		ret = call("popup:close", ci->focus);
+	if (strcmp(type, "doc") == 0 &&
 	    call_ret(pane, "docs:byname", ci->focus, 0, NULL, str) == NULL) {
-		call("Message", ci->focus, 0, NULL, "Document not found");
+		call("Message:modal", ci->focus, 0, NULL, "Document not found");
+		return 1;
+	}
+	if (strcmp(type, "file") == 0 &&
+	    strcmp(ci->key, "Enter") == 0 &&
+	    stat(file_normalize(ci->focus, str, pane_attr_get(ci->focus,
+							      "initial_path")),
+		 &stb) != 0) {
+		call("Message:modal", ci->focus, 0, NULL,
+		     "File not found - use Alt-Enter to create");
 		return 1;
 	}
 	ret = call("popup:close", ci->focus, 0, NULL, str);
@@ -817,6 +832,7 @@ static void findmap_init(void)
 	fh_map = key_alloc();
 	key_add(fh_map, "Tab", &find_complete);
 	key_add(fh_map, "Enter", &find_done);
+	key_add(fh_map, "M-Enter", &find_done);
 	key_add(fh_map, "M-Chr-p", &find_prevnext);
 	key_add(fh_map, "M-Chr-n", &find_prevnext);
 }
