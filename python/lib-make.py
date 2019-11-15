@@ -294,9 +294,12 @@ class MakePane(edlib.Pane):
                 return edlib.Efail
             par = d.call("doc:attach-view", par, 1, ret='focus')
         par.take_focus()
-        if mk:
+        if mk and (int(lineno) == 1 or
+                   d.call("doc:step", mk, 0, ret='char') != None):
             par.call("Move-to", mk)
         else:
+            # either no mark, or the mark has moved to start of doc, probably
+            # due to a reload
             par.call("Move-File", -1)
             par.call("Move-Line", int(lineno)-1)
 
