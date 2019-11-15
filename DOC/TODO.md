@@ -10,7 +10,7 @@ Current priorities
       word-diff highlighting would be ideal
 - [ ] c-mode move-expr to not treat _ as word separator
 - [X] c-mode, alt-tab always indents, even if not start of line
-- [ ] history for find-file - incase I get it wrong and want to try again
+- [X] history for find-file - incase I get it wrong and want to try again
 - [X] arg to C-x-` should restart from first match
 - [X] revisiting the grep-output buffer should attach pane to handle Enter etc
 - [X] Introduce command to move a mark before or after all other marks
@@ -308,6 +308,7 @@ Module features
 
 - [ ] if file isn't already loaded, wait until it is wanted, or something
       else loads it.
+- [ ] if file is reloaded, re-place all the marks, don't just ignore them.
 - [X] Keep 'make' and 'grep' output separate.
 - [X] If there is an error followed by some 'note:'s, goto the last note(?)
 - [X] leave marks at every match as soon as possible
