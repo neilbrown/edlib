@@ -730,6 +730,10 @@ class CModePane(edlib.Pane):
         focus.call("Move-to", mark)
 
         return 1
+    def handle_expr(self, key, focus, mark, num, num2, **a):
+        "handle:Move-Expr"
+        # Add '_' to list for word chars
+        return self.parent.call(key, focus, mark, num, num2, "_")
 
 def c_mode_attach(key, focus, comm2, **a):
     p = CModePane(focus)

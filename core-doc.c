@@ -171,6 +171,7 @@ DEF_CMD(doc_expr)
 	 * If num2 is 1, then if we reach a true 'open' we continue
 	 * one more character to enter (going forward) or leave (backward)
 	 * the expression.
+	 * 'str' can be set to extra chars that should be included in words.
 	 */
 	struct pane *f = ci->focus;
 	struct doc_data *dd = ci->home->data;
@@ -180,6 +181,7 @@ DEF_CMD(doc_expr)
 	int dir;
 	char *open;
 	char *close;
+	char *wordchars = ci->str ?: "";
 	const char *special safe = "[](){}'\"";
 
 	if (!m)
@@ -198,7 +200,8 @@ DEF_CMD(doc_expr)
 
 		while ((wi = mark_step_pane(f, m, dir, 0)) != WEOF &&
 		       !iswspace(wi) && !iswalnum(wi) &&
-		       (wi > 255 || strchr(special, wi) == NULL))
+		       (wi > 255 || (strchr(special, wi) == NULL &&
+				     strchr(wordchars, wi) == NULL)))
 			mark_step_pane(f, m, dir, 1);
 
 		if (strchr(close, wi)) {
@@ -266,7 +269,9 @@ DEF_CMD(doc_expr)
 						break;
 				}
 			}
-		} else while (iswalnum(mark_step_pane(f, m, dir, 0)))
+		} else while (iswalnum((wi=mark_step_pane(f, m, dir, 0))) ||
+			      (wi > 0 && wi <= 255 &&
+			       strchr(wordchars, wi) != NULL))
 			mark_step_pane(f, m, dir, 1);
 
 		if (!enter_leave)

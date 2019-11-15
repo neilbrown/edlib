@@ -8,7 +8,7 @@ Current priorities
 - [X] When a file is reloaded, grep should notice and forget its mark.
 - [ ] diff output parser - with Enter to jump to the file, and some colorization
       word-diff highlighting would be ideal
-- [ ] c-mode move-expr to not treat _ as word separator
+- [X] c-mode move-expr to not treat _ as word separator
 - [X] c-mode, alt-tab always indents, even if not start of line
 - [X] history for find-file - incase I get it wrong and want to try again
 - [X] arg to C-x-` should restart from first match
