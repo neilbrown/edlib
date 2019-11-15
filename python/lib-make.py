@@ -269,7 +269,8 @@ class MakePane(edlib.Pane):
                     dir = ""
             else:
                 dir = ""
-            d = focus.call("doc:open", -1, dir+fname, ret='focus')
+            # 8 means reload
+            d = focus.call("doc:open", -1, 8, dir+fname, ret='focus')
         except edlib.commandfailed:
             d = None
         if not d:

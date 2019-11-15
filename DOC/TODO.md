@@ -4,6 +4,11 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [X] when grep visits a file, it should reload it first.
+- [ ] When a file is reloaded, grep should notice and forget its mark.
+- [ ] diff output parser - with Enter to jump to the file, and some colorization
+      word-diff highlighting would be ideal
+- [ ] c-mode move-expr to not treat _ as word separator
 - [X] c-mode, alt-tab always indents, even if not start of line
 - [ ] history for find-file - incase I get it wrong and want to try again
 - [X] arg to C-x-` should restart from first match
@@ -301,6 +306,8 @@ Module features
 
 ### grep/make
 
+- [ ] if file isn't already loaded, wait until it is wanted, or something
+      else loads it.
 - [X] Keep 'make' and 'grep' output separate.
 - [X] If there is an error followed by some 'note:'s, goto the last note(?)
 - [X] leave marks at every match as soon as possible
