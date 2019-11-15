@@ -17,6 +17,7 @@
  * in this list.
  */
 
+#define _GNU_SOURCE for strchrnul
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1161,6 +1162,44 @@ static struct pane *safe doc_attach(struct pane *parent)
 	return  pane_register(parent, 0, &doc_handle.c, dd);
 }
 
+static void simplify_path(char *path safe, char *buf safe)
+{
+	/* Like readpath, but doesn't process symlinks,
+	 * so only "..", "." and extra '/' are handled
+	 * Assumes that 'path' starts with a '/'.
+	 */
+	char *p;
+	char *end;
+	char *b = buf;
+	for (p = path; *p; p = end) {
+		int len;
+		end = strchrnul(p+1, '/');
+		len = end - p;
+
+		if (len == 1)
+			/* Extra '/' at end or in the middle, ignore */
+			continue;
+		if (len == 2 && strncmp(p, "/.", 2) == 0 )
+			/* Ignore the dot */
+			continue;
+		if (len == 3 && strncmp(p, "/..", 3) == 0) {
+			/* strip last component of buf */
+			while (b > buf && b[-1] != '/')
+				b -= 1;
+			if (b > buf)
+				b -= 1;
+			continue;
+		}
+		/* Append component to buf */
+		strncpy(b, p, len);
+		b += len;
+	}
+	if (b == buf)
+		/* This is the only case where we allow a trailing '/' */
+		*b++ = '/';
+	*b = 0;
+}
+
 DEF_CMD(doc_open)
 {
 	struct pane *ed = ci->home;
@@ -1188,12 +1227,14 @@ DEF_CMD(doc_open)
 			char nbuf[PATH_MAX];
 			strncpy(nbuf, name, sl-name);
 			nbuf[sl-name] = 0;
-			rp = realpath(nbuf, pathbuf);
+			simplify_path(nbuf, pathbuf);
+			rp = pathbuf;
 			sl += 1;
 		}
 
 		if (rp) {
-			strcat(rp, "/");
+			if (rp[1])
+				strcat(rp, "/");
 			strcat(rp, sl);
 			name = rp;
 		}

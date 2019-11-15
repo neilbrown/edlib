@@ -95,7 +95,7 @@ Bugs to be fixed
       doesn't move (ncurses), which is confusing.
 - [X] An indent can still get more than 8 spaces.  Maybe a higher-level check is needed.
 - [X] fn-complete for a symlink-to-dir should add a '/'
-- [ ] Use the requested name rather than canonical name for UI as much as possible.
+- [X] Use the requested name rather than canonical name for UI as much as possible.
 - [X] when visit a non-existant file, it is CHANGED and read-only.
 - [X] Indent to always use tabs where possible (in C mode)
 - [X] C-q tab should insert a literal tab

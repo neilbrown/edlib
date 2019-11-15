@@ -19,6 +19,7 @@ extern char *safe strncpy(char *a safe, char *b safe, int n);
 extern char *safe strcat(char *a safe, char *b safe);
 extern char *safe strncat(char *a safe, char *b safe, int n);
 extern char *strchr(const char *a safe, char b);
+extern char *safe strchrnul(const char *a safe, char b);
 extern char *strrchr(const char *a safe, char b);
 extern int strlen(const char *a safe);
 

@@ -611,7 +611,13 @@ DEF_CMD(text_same_file)
 		return Efallthrough;
 	if (ci->str && strcmp(ci->str, t->fname) == 0)
 		return 1;
-	if (fd < 0 || fstat(fd, &stb) != 0)
+	if (fd >= 0) {
+		if (fstat(fd, &stb) != 0)
+			return Efallthrough;
+	} else if (ci->str) {
+		if (stat(ci->str, &stb) != 0)
+			return Efallthrough;
+	} else
 		return Efallthrough;
 	if (t->stat.st_ino != stb.st_ino ||
 	    t->stat.st_dev != stb.st_dev)
@@ -621,7 +627,7 @@ DEF_CMD(text_same_file)
 		t->stat.st_ino = 0;
 	if (t->stat.st_ino == stb.st_ino &&
 	    t->stat.st_dev == stb.st_dev)
-		return 0;
+		return 1;
 	return Efallthrough;
 }
 
