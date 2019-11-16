@@ -15,7 +15,7 @@ Current priorities
 - [X] revisiting the grep-output buffer should attach pane to handle Enter etc
 - [X] Introduce command to move a mark before or after all other marks
       at the same location. .make_first .make_last
-- [ ] Review call calls to Notify:change do Notify:doc:Replace and ensure the
+- [ ] Review all calls to Notify:change do Notify:doc:Replace and ensure the
       marks sent make sense
 - [ ] review notify:change handlers
 - [ ] makes sure text:match and text:search do something sensible with the mark

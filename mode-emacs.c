@@ -1196,7 +1196,11 @@ DEF_CMD(emacs_shell)
 	 */
 	call_ret(pane, "attach-shellcmd", doc, 0, NULL, ci->str, 0, NULL, path);
 
-	home_call(doc, "doc:attach-view", par, 1, NULL, "viewer");
+	if (strstr(ci->str, "diff"))
+		attr_set_str(&doc->attrs, "view-default", "diff");
+	else
+		attr_set_str(&doc->attrs, "view-default", "viewer");
+	home_call(doc, "doc:attach-view", par, 1, NULL);
 
 	return 1;
 }
