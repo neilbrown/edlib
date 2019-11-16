@@ -105,7 +105,7 @@ Bugs to be fixed
 - [X] change to document with name ending <2> fails
 - [X] 'click' no longer makes target window the focus
 - [X] file-name completion in git-grep dialog works in current dir instead of target
-- [ ] M-0 M-.  does grep in current dir, but doesn't extract word from document.
+- [X] M-0 M-.  does grep in current dir, but doesn't extract word from document.
         But M-- M-. does the right thing... what do I want?
 - [X] directories used for name-completion should go to bottom of doc list.
 - [X] start with "-g", open a -t, close the -g, then the -t : get into a spin
