@@ -1211,6 +1211,7 @@ DEF_CMD(doc_open)
 	int create_ok = ci->num2 & 4;
 	int reload = ci->num2 & 8;
 	int force_reload = ci->num2 & 16;
+	int quiet = ci->num2 & 32;
 	char pathbuf[PATH_MAX], *rp = NULL;
 
 	if (!name)
@@ -1267,8 +1268,16 @@ DEF_CMD(doc_open)
 			call("doc:set:autoclose", p, 1);
 		call("doc:load-file", p, 0, NULL, name, fd);
 		call("global-multicall-doc:appeared-", p);
-	} else if (reload || force_reload) {
-		call("doc:load-file", p, force_reload?0:1, NULL, name, fd);
+	} else {
+		char *n;
+		n = pane_attr_get(p, "filename");
+		if (!quiet && n && rp && strcmp(n, rp) != 0)
+			call("Message", ci->focus, 0, NULL,
+			     strconcat(ci->focus, "File ", rp, " and ", n,
+				       " are the same"));
+		if (reload || force_reload)
+			call("doc:load-file", p, force_reload?0:1, NULL, name,
+			     fd);
 	}
 	if (fd != ci->num)
 		close(fd);

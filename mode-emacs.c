@@ -994,7 +994,8 @@ REDEF_CMD(emacs_file_complete)
 	if (fd < 0) {
 		return Efail;
 	}
-	docp = call_ret(pane, "doc:open", ci->focus, fd, NULL, d);
+	/* 32 means quiet */
+	docp = call_ret(pane, "doc:open", ci->focus, fd, NULL, d, 32);
 	close(fd);
 	if (!docp)
 		return Efail;

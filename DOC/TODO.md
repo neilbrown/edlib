@@ -117,7 +117,7 @@ Bugs to be fixed
 - [X] mouse-click before the end of an active selection picks the wrong place.
 - [X] mouse actions need to affect selection: set or clear.
 - [X] detect when file has changed since it was read.
-- [ ] alert when finding a name that is a link to another
+- [X] alert when finding a name that is a link to another
 - [X] dirname sometimes has 2 trailing '/'.
 - [X] make sure *Welcome* has a dirname (it didn't once..) ... seems to work now
 - [X] NO - nothing to be gained.
@@ -129,6 +129,7 @@ Bugs to be fixed
 Core features
 -------------
 
+- [ ] rexel thinks '\[ \]' is an incomplete (or illegal?) pattern.
 - [X] nested notification of the same key should be disallowed somehow
 - [ ] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
 - [ ] undo often doesn't leave me where I expect to be left. - maybe it is the
@@ -199,6 +200,7 @@ Module features
       even 'undo' don't (sometimes?)
 - [X] entering an unknown name to find-document should either create a doc, or
       give an error, or something less silent
+- [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
 - [ ] show status line in file-edit popup
 - [ ] filename completion should ignore uninteresting files like ".o"
 - [ ] invent a way to reserve 'extra' values for command sets
