@@ -6,7 +6,7 @@ Current priorities
 
 - [X] when grep visits a file, it should reload it first.
 - [X] When a file is reloaded, grep should notice and forget its mark.
-- [ ] diff output parser - with Enter to jump to the file, and some colorization
+- [X] diff output parser - with Enter to jump to the file, and some colorization
       word-diff highlighting would be ideal
 - [X] c-mode move-expr to not treat _ as word separator
 - [X] c-mode, alt-tab always indents, even if not start of line
