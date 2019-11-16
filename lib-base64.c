@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2016-2018 <neil@brown.name>
+ * Copyright Neil Brown ©2016-2019 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * Filter a view on a document to make base64 look like the

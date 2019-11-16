@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2015-2018 <neil@brown.name>
+ * Copyright Neil Brown ©2015-2019 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * trim a line off the bottom of a pane and capture messages
