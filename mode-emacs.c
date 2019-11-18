@@ -2007,6 +2007,12 @@ DEF_CMD(emacs_fill)
 	return 1;
 }
 
+DEF_CMD(emacs_abbrev)
+{
+	call("attach-abbrev", ci->focus);
+	return 1;
+}
+
 DEF_PFX_CMD(meta_cmd, "M-");
 DEF_PFX_CMD(cx_cmd, "emCX-");
 DEF_PFX_CMD(cx4_cmd, "emCX4-");
@@ -2115,6 +2121,7 @@ static void emacs_init(void)
 	key_add_prefix(m, "emQ-C-Chr-", &emacs_quote_insert);
 
 	key_add(m, "M-Chr-q", &emacs_fill);
+	key_add(m, "M-Chr-/", &emacs_abbrev);
 
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);

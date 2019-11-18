@@ -108,7 +108,7 @@ DEF_CMD(keystroke)
 		im->point = NULL;
 	}
 
-	if (!im->focus) {
+	if (!im->focus || im->focus->focus) {
 		p = ci->focus;
 		while (p->focus)
 			p = p->focus;

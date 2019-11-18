@@ -129,6 +129,9 @@ Bugs to be fixed
 Core features
 -------------
 
+- [ ] pane_close() can be called at awkward times.  We need to do some inital
+      processes so that it looks closed, but so that code can continue to
+      run, then schedule proper close for later.
 - [ ] rexel thinks '\[ \]' is an incomplete (or illegal?) pattern.
 - [X] nested notification of the same key should be disallowed somehow
 - [ ] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
@@ -194,6 +197,12 @@ Core features
 Module features
 ---------------
 
+### popup
+
+- [ ] if 'focus' is a temp pane, it might disappear (lib-abbrev) which 
+      closes the popup.  I need to some how indicate a more stable pane
+      for replies to go to
+
 ### emacs
 
 - [X] Movement should always damage cursor.  Move-para and move-expr and
@@ -222,6 +231,8 @@ Module features
 
 ### ncurses
 
+- [ ] ncurses should catch ESC and if something follows quickly, send it as "M-".
+      currently emacs does this, but that is too late if a layer catches ESC for escape.
 - [X] add general colour handling to display-ncurses
 - [ ] add full list of colour names (to lib-colourmap)
 - [ ] if we exhaust colours or pairs, reset and make use lower color depth.
@@ -300,6 +311,7 @@ Module features
 - [ ] review use of line-drawing chars for window boarders
 - [ ] improve scroll bars
 - [ ] scroll bar should show part of doc displayed, not location of point.
+- [ ] make (trailing) space/tab in doc name visible
 
 ### doc-rendering
 
@@ -473,6 +485,8 @@ Module features
 
 ### C-mode
 
+- [ ] python indent need to recognize comment, and not treat them
+      like code.
 - [X] TAB should *always* delete preceding spaces.
 - [ ]  auto-indent enhancements
       
@@ -528,7 +542,7 @@ Possibly some of these will end up being features in other modules.
       preferred column" ??  Maybe use for make output so I can see current
       match more easily.
 
-- [ ] dynamic completion Alt-/
+- [X] dynamic completion Alt-/
       My question here is how far to search for completions.  All of this doc?
       Which other docs?  Most recently visited I guess.
       I think I want options to appear in a drop-down menu so I can select one.
