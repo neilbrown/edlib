@@ -7,6 +7,19 @@
 # - colourizes + and - lines
 # - interprets 'Enter' to find the given line
 
+import os.path
+
+
+def djoin(dir, tail):
+    # 'tail' might not exist at 'dir', but might exist below some
+    # prefix for dir.  We want to find that prefix and add it.
+    orig = dir
+    while dir and not os.path.exists(os.path.join(dir,tail)):
+        dir = os.path.dirname(dir)
+    if not dir:
+        dir = orig
+    return os.path.join(dir, tail)
+
 class DiffPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
@@ -45,16 +58,29 @@ class DiffPane(edlib.Pane):
         ms = m.dup()
         focus.call("text-match", m, "[\d]+")
         s = focus.call("doc:get-str", ms, m, ret='str')
-        focus.call("Move-EOL", -2, m)
+        # need to find a line starting '+++' immediately before one starting '@@'
+        at_at = True
+        found_plus = False
+        while not found_plus:
+            focus.call("Move-EOL", -2, m)
+            try:
+                if at_at:
+                    focus.call("text-match", m, "\+\+\+ ")
+                    found_plus = True
+                else:
+                    focus.call("text-match", m, "@@ ")
+                    at_at = True
+            except edlib.commandfailed:
+                at_at = False
+        if not found_plus:
+            return edlib.Efail
         ms = m.dup()
         focus.call("Move-EOL", 1, m)
         fname = focus.call("doc:get-str", ms, m, ret='str')
-        if fname[:4] == "+++ ":
-            fname = fname[4:]
-            if fname[:2] == 'b/':
-                fname = fname[2:]
+        if fname.startswith('b/'):
+            fname = fname[2:]
         if fname[0] != '/':
-            fname = focus['dirname'] + fname
+            fname = djoin(focus['dirname'], fname)
         lines = int(s) + lines - 1
         try:
             d = focus.call("doc:open", -1, 8, fname, ret='focus')
