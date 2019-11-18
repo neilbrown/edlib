@@ -877,28 +877,31 @@ static char *find_name (struct namelist *l safe, wint_t c)
 	return NULL;
 }
 
-static void send_key(int keytype, wint_t c, struct pane *p safe)
+static void send_key(int keytype, wint_t c, int meta, struct pane *p safe)
 {
 	struct display_data *dd = p->data;
 	char *n;
 	char buf[100];/* FIXME */
+	char *m = meta ? "M-" : "";
 
 	if (keytype == KEY_CODE_YES) {
 		n = find_name(key_names, c);
 		if (!n)
-			sprintf(buf, "Ncurs-%o", c);
+			sprintf(buf, "%sNcurs-%o", m, c);
 		else
-			strcpy(buf, n);
+			strcat(strcpy(buf, m), n);
 	} else {
 		n = find_name(char_names, c);
 		if (n)
-			sprintf(buf, "%s\037C-Chr-%c\037C-Chr-%c",
-				n, c+64, c+96);
+			sprintf(buf, "%s%s\037%sC-Chr-%c\037%sC-Chr-%c",
+				m, n,
+				m, c+64,
+				m, c+96);
 		else if (c < ' ')
-			sprintf(buf, "C-Chr-%c\037C-Chr-%c",
-				c+64, c+96);
+			sprintf(buf, "%sC-Chr-%c\037%sC-Chr-%c",
+				m, c+64, m, c+96);
 		else
-			sprintf(buf, "Chr-%lc", c);
+			sprintf(buf, "%sChr-%lc", m, c);
 	}
 
 	dd->last_event = time(NULL);
@@ -962,6 +965,7 @@ REDEF_CMD(input_handle)
 
 	wint_t c;
 	int is_keycode;
+	int have_escape = 0;
 
 	if (!(void*)p->data)
 		/* already closed */
@@ -972,13 +976,20 @@ REDEF_CMD(input_handle)
 			MEVENT mev;
 			while (getmouse(&mev) != ERR)
 				send_mouse(&mev, p);
-		} else
-			send_key(is_keycode, c, p);
+		} else if (have_escape) {
+			send_key(is_keycode, c, 1, p);
+			have_escape = 0;
+		} else if (c == '\e')
+			have_escape = 1;
+		else
+			send_key(is_keycode, c, 0, p);
 		/* Don't know what other code might have done,
 		 * so re-set the screen
 		 */
 		set_screen(p);
 	}
+	if (have_escape)
+		send_key(is_keycode, '\e', 0, p);
 	return 1;
 }
 
