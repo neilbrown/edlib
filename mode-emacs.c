@@ -633,8 +633,8 @@ DEF_CMD(emacs_insert_other)
 		mark_make_first(m);
 	}
 
-	ret = call("Replace", ci->focus, 1, ci->mark, ins,
-		   N2(ci) == N2_undo_insert);
+	ret = call("Replace", ci->focus, 1, m, ins,
+		   N2(ci) == N2_undo_insert, ci->mark);
 	if (m) {
 		mark_to_mark(ci->mark, m);
 		mark_free(m);
