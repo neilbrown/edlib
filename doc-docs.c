@@ -767,19 +767,19 @@ DEF_CMD(docs_cmd)
 	case 'f':
 	case '\n':
 	case 'o':
-		return docs_open(ci->home, ci->focus, ci->mark, cmd);
+		return docs_open(ci->home, ci->focus, ci->mark2, cmd);
 	case 'q':
 		return docs_bury(ci->focus);
 	case 's':
-		return docs_save(ci->focus, ci->mark);
+		return docs_save(ci->focus, ci->mark2);
 	case 'k':
-		return docs_kill(ci->focus, ci->mark, ci->num);
+		return docs_kill(ci->focus, ci->mark2, ci->num);
 	case '%':
-		return docs_toggle(ci->focus, ci->mark);
+		return docs_toggle(ci->focus, ci->mark2);
 	default:
 		if (cmd >= 'A' && cmd <= 'Z')
 			return docs_open_alt(ci->home,
-					     ci->focus, ci->mark, cmd);
+					     ci->focus, ci->mark2, cmd);
 		return 1;
 	}
 }

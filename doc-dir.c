@@ -682,7 +682,7 @@ DEF_CMD(dir_cmd)
 	case 'f':
 	case '\n':
 	case 'o':
-		return dir_open(ci->home, ci->focus, ci->mark, cmd);
+		return dir_open(ci->home, ci->focus, ci->mark2, cmd);
 	case 'g':
 		return home_call(ci->home, "doc:load-file", ci->focus,
 				 0, NULL, NULL, -1);
@@ -690,7 +690,7 @@ DEF_CMD(dir_cmd)
 		return call("doc:destroy", ci->home);
 	default:
 		if (cmd >= 'A' && cmd <= 'Z')
-			return dir_open_alt(ci->home, ci->focus, ci->mark, cmd);
+			return dir_open_alt(ci->home, ci->focus, ci->mark2, cmd);
 		/* Doc has the final say on commands. */
 		return 1;
 	}
