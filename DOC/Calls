@@ -1,0 +1,17 @@
+
+This file list some the calls that are recognised by various panes.
+
+# Misc
+
+## view-changed
+
+This is sent to a focus pane when a change happens that will affect
+this particular view of a document.  This is often a change in highlights,
+such as a selection.
+
+If both mark and mark2 are given, the change reported is only between
+the marks.  If neither mark is given, the entire view is suspect.
+If only one mark is given, then the change is small and either starts
+at 'mark' or ends at 'mark2'.  'num' gives the length in characters,
+but if this length extends to another line, it may not be honoured.
+

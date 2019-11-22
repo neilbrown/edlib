@@ -1351,7 +1351,7 @@ DEF_CMD(render_lines_refresh)
 
 	if (pm) {
 		if (rl->old_point && !mark_same(pm, rl->old_point)) {
-			call("Notify:change", focus, 0, rl->old_point,
+			call("view:changed", focus, 0, rl->old_point,
 			     NULL, 0, pm);
 			mark_free(rl->old_point);
 			rl->old_point = NULL;
@@ -1804,20 +1804,38 @@ DEF_CMD(render_lines_notify_replace)
 {
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
-	struct mark *start = ci->mark2 ?: ci->mark;
-	struct mark *end;
+	struct mark *start = ci->mark;
+	struct mark *end = ci->mark2;
 
-	if (!ci->mark /* FIXME redundant*/ || !start) {
+	if (!start && !end) {
+		/* No marks given - assume everything changed */
 		pane_damaged(p, DAMAGED_VIEW);
 		pane_damaged(p, DAMAGED_CONTENT);
-		return 1;
+		return 0;
 	}
 
-	if (ci->mark->seq < start->seq && /* redundant */ ci->mark2) {
-		start = ci->mark;
-		end = vmark_at_or_before(ci->home, ci->mark2, rl->typenum, p);
-	} else
-		end = vmark_at_or_before(ci->home, ci->mark, rl->typenum, p);
+	if (start && end && start->seq > end->seq) {
+		start = ci->mark2;
+		end = ci->mark;
+	}
+
+	if (!start) {
+		start = vmark_at_or_before(ci->home, end, rl->typenum, p);
+		if (!start)
+			/* change is before visible region */
+			return 0;
+		/* FIXME check 'start' is at least 'num' before end */
+	}
+	if (!end) {
+		end = vmark_at_or_before(ci->home, start, rl->typenum, p);
+		if (!end)
+			return 0;
+		end = vmark_next(end);
+		if (!end)
+			return 0;
+		/* FIXME check that 'end' is at least 'num' after start */
+	}
+	end = vmark_at_or_before(ci->home, end, rl->typenum, p);
 
 	if (!end)
 		/* Change before visible region */
@@ -1883,9 +1901,9 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Notify:clip", &render_lines_clip);
 
 	key_add(rl_map, "Notify:doc:Replace", &render_lines_notify_replace);
-	/* Notify:change is sent to a tile when the display might need
+	/* view:changed is sent to a tile when the display might need
 	 * to change, even though the doc may not have*/
-	key_add(rl_map, "Notify:change", &render_lines_notify_replace);
+	key_add(rl_map, "view:changed", &render_lines_notify_replace);
 }
 
 REDEF_CMD(render_lines_attach)

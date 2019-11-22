@@ -623,12 +623,12 @@ class CModePane(edlib.Pane):
     def handle_replace(self, key, focus, **a):
         "handle:Replace"
         if self.pre_paren:
-            focus.call("doc:step", self.pre_paren[1], 1, 1)
-            focus.call("Notify:change", self.pre_paren[0], self.pre_paren[1])
+            focus.call("view:changed", 1, mark  = self.pre_paren[0])
+            focus.call("view:changed", 1, mark2 = self.pre_paren[1])
         self.pre_paren = None
         if self.post_paren:
-            focus.call("doc:step", self.post_paren[1], 1, 1)
-            focus.call("Notify:change", self.post_paren[0], self.post_paren[1])
+            focus.call("view:changed", 1, mark  = self.post_paren[0])
+            focus.call("view:changed", 1, mark2 = self.post_paren[1])
         self.post_paren = None
         return 0
 
@@ -643,8 +643,8 @@ class CModePane(edlib.Pane):
             if focus.call("doc:step", m, 0, 1, ret='char') and m == self.pre_paren[1]:
                 skip_pre = True
             else:
-                focus.call("doc:step", self.pre_paren[1], 1, 1)
-                focus.call("Notify:change", self.pre_paren[0], self.pre_paren[1])
+                focus.call("view:changed", 1, mark  = self.pre_paren[0])
+                focus.call("view:changed", 1, mark2 = self.pre_paren[1])
                 self.pre_paren = None
 
         if self.post_paren:
@@ -652,8 +652,8 @@ class CModePane(edlib.Pane):
             if point == self.post_paren[0]:
                 skip_post = True
             else:
-                focus.call("doc:step", self.post_paren[1], 1, 1)
-                focus.call("Notify:change", self.post_paren[0], self.post_paren[1])
+                focus.call("view:changed", 1, mark  = self.post_paren[0])
+                focus.call("view:changed", 1, mark2 = self.post_paren[1])
                 self.post_paren = None
 
         if not skip_pre:
@@ -671,7 +671,8 @@ class CModePane(edlib.Pane):
                     m1['render:paren-mismatch'] = "open"
                     m2['render:paren-mismatch'] = "close"
                 self.pre_paren = (m1,m2)
-                focus.call("Notify:change", m1, point)
+                focus.call("view:changed", 1, mark  = m1)
+                focus.call("view:changed", 1, mark2 = m2)
 
         if not skip_post:
             c = focus.call("doc:step", point, 1, 0, ret = 'char')
@@ -679,7 +680,6 @@ class CModePane(edlib.Pane):
                 m1 = point.dup()
                 m2 = point.dup()
                 focus.call("Move-Expr", m2, 1)
-                focus.call("Notify:change", point, m2)
                 focus.call("doc:step", m2, 0, 1)
                 c2 = focus.call("doc:step", m2, 1, 0, ret = 'char')
                 if c+c2 in "(){}[]":
@@ -689,6 +689,8 @@ class CModePane(edlib.Pane):
                     m1['render:paren-mismatch'] = "open"
                     m2['render:paren-mismatch'] = "close"
                 self.post_paren = (m1,m2)
+                focus.call("view:changed", 1, mark  = m1)
+                focus.call("view:changed", 1, mark2 = m2)
 
         return 0
 

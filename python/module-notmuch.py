@@ -1458,7 +1458,7 @@ class notmuch_query_view(edlib.Pane):
             focus.call("Notify:clip", self.thread_end, m)
         self.whole_thread = 1 - self.whole_thread
         # notify that everything is changed, don't worry about details.
-        focus.call("Notify:change")
+        focus.call("view:changed")
         return 1
 
     def handle_select(self, key, focus, mark, num, num2, str, **a):
@@ -1468,7 +1468,7 @@ class notmuch_query_view(edlib.Pane):
             if self.selected:
                 # old thread is disappearing.
                 focus.call("Notify:clip", self.thread_start, self.thread_end)
-                focus.call("Notify:change", self.thread_start, self.thread_end)
+                focus.call("view:changed", self.thread_start, self.thread_end)
                 self.selected = None
                 self.thread_start = None
                 self.thread_end = None
@@ -1486,7 +1486,7 @@ class notmuch_query_view(edlib.Pane):
                 self.thread_matched = self.thread_start.dup()
                 if self.parent.call("doc:get-attr", self.thread_matched, "matched", ret="str") != "True":
                     self.parent.call("doc:step-matched", 1, 1, self.thread_matched)
-                focus.call("Notify:change", self.thread_start, self.thread_end)
+                focus.call("view:changed", self.thread_start, self.thread_end)
         s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
         if s2 and num >= 0:
             focus.call("notmuch:select-message", s2, s, num)

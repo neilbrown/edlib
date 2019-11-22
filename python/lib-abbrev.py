@@ -131,7 +131,7 @@ class AbbrevPane(edlib.Pane):
             self.call("Replace", c, self.prefix_end)
             self.active = False
             self.complete_len = len(c)
-        self.call("Notify:change", self.prefix_start, self.prefix_end)
+        self.call("view:changed", self.prefix_start, self.prefix_end)
 
     def handle_highlight(self, key, focus, mark, str, str2, comm2, **a):
         "handle:map-attr"
@@ -196,7 +196,7 @@ class AbbrevPane(edlib.Pane):
     def handle_activity(self, key, focus, **a):
         "handle-list/Notify:doc:Replace/Notify:point:moved/pane:defocus"
         if not self.active:
-            self.call("Notify:change", self.prefix_start, self.prefix_end)
+            self.call("view:changed", self.prefix_start, self.prefix_end)
             self.call("editor-on-idle", self.delayed_close)
         return 0
 
