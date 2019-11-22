@@ -55,7 +55,7 @@ try:
                         return 1
                     self.display_time = 0
                     self.destpane = None
-                    self.call("Call:Notify:global-displays", self.display_callback)
+                    self.call("editor:notify:all-displays", self.display_callback)
                     if self.destpane:
                         p = self.destpane
                         self.destpane = None

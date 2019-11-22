@@ -400,7 +400,7 @@ DEF_CMD(nc_close_display)
 
 	cr.c = cnt_disp;
 	cr.i = 0;
-	call_comm("Call:Notify:global-displays", ci->focus, &cr.c);
+	call_comm("editor:notify:all-displays", ci->focus, &cr.c);
 	if (cr.i > 1)
 		pane_close(ci->home);
 	else
@@ -733,7 +733,7 @@ static struct pane *ncurses_init(struct pane *ed, char *tty, char *term)
 
 	getmaxyx(stdscr, p->h, p->w);
 
-	call("Request:Notify:global-displays", p);
+	call("editor:request:all-displays", p);
 	if (!prepare_recrep(p)) {
 		call_comm("event:read", p, &input_handle, fileno(f));
 		if (!tty)
@@ -1016,6 +1016,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(nc_map, "Draw:text", &nc_draw_text);
 	key_add(nc_map, "Refresh:size", &nc_refresh_size);
 	key_add(nc_map, "Refresh:postorder", &nc_refresh_post);
-	key_add(nc_map, "Notify:global-displays", &nc_notify_display);
+	key_add(nc_map, "all-displays", &nc_notify_display);
 	key_add(nc_map, "Sig:Winch", &handle_winch);
 }

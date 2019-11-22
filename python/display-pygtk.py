@@ -32,7 +32,7 @@ class EdDisplay(gtk.Window):
         self.pane["scale:M"] = "%dx%d" % (self.charwidth, self.lineheight)
         self.pane.w = self.charwidth * 80
         self.pane.h = self.lineheight * 24
-        self.pane.call("Request:Notify:global-displays")
+        self.pane.call("editor:request:all-displays")
         self.noclose = None
         self.primary_cb = gtk.Clipboard(selection="PRIMARY")
         self.clipboard_cb = gtk.Clipboard(selection="CLIPBOARD")
@@ -105,7 +105,7 @@ class EdDisplay(gtk.Window):
         return self.pane.parent.call(key, focus, num, comm2)
 
     def handle_notify_displays(self, key, comm2, **a):
-        "handle:Notify:global-displays"
+        "handle:all-displays"
         comm2("callback:display", self.pane, self.last_event)
         return 0
 
@@ -120,7 +120,7 @@ class EdDisplay(gtk.Window):
             focus.call("Message", self.noclose)
             return 1
         x = []
-        focus.call("Call:Notify:global-displays", lambda key,**a:x.append(1))
+        focus.call("editor:notify:all-displays", lambda key,**a:x.append(1))
         if len(x) > 1:
             self.close_win()
         else:

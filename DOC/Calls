@@ -26,3 +26,19 @@ to the provided focus.
 ## doc:notify:FOO
 
 Request that the document sends notification FOO.
+
+# Editor
+
+## editor:request:FOO
+
+Request to received notification for FOO send on the editor.
+
+## editor:notify:FOO
+
+Send notification "FOO" from the editor.
+
+Known notifications include:
+
+- all-displays.  This is sent to all displays.  The callback will
+  contain a timestamp for the most recent event in 'num'.  The number
+  of times the callback is called indicates how many displays there are.

@@ -197,15 +197,17 @@ DEF_CMD(editor_multicall)
 	return key_lookup_prefix(map, ci);
 }
 
-DEF_CMD(editor_global_request_notify)
+DEF_CMD(editor_request_notify)
 {
-	pane_add_notify(ci->focus, ci->home, ci->key + 8);
+	/* editor:request:.... */
+	pane_add_notify(ci->focus, ci->home, ci->key + 15);
 	return 1;
 }
 
-DEF_CMD(editor_global_notify)
+DEF_CMD(editor_send_notify)
 {
-	return pane_notify(ci->key + 5, ci->home, ci->num, ci->mark, ci->str,
+	/* editor:notify:... */
+	return pane_notify(ci->key + 14, ci->home, ci->num, ci->mark, ci->str,
 			   ci->num2, ci->mark2, ci->str2, ci->comm2);
 }
 
@@ -370,10 +372,10 @@ struct pane *editor_new(void)
 		key_add_prefix(ed_map, "attach-", &editor_auto_load);
 		key_add_prefix(ed_map, "event:", &editor_auto_event);
 		key_add_prefix(ed_map, "global-multicall-", &editor_multicall);
-		key_add_prefix(ed_map, "Request:Notify:global-",
-			       &editor_global_request_notify);
-		key_add_prefix(ed_map, "Call:Notify:global-",
-			       &editor_global_notify);
+		key_add_prefix(ed_map, "editor:request:",
+			       &editor_request_notify);
+		key_add_prefix(ed_map, "editor:notify:",
+			       &editor_send_notify);
 		key_add(ed_map, "Close", &editor_close);
 	}
 	ei->map = key_alloc();

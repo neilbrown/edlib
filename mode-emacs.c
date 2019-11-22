@@ -542,7 +542,7 @@ DEF_CMD(emacs_exit)
 		struct pane *p;
 
 		/* If this is not only display, then refuse to exit */
-		call_comm("Call:Notify:global-displays", ci->focus, &cr.c);
+		call_comm("editor:notify:all-displays", ci->focus, &cr.c);
 		if (cr.i > 1) {
 			call("Message", ci->focus, 0, NULL,
 			     "Cannot exit when there are multiple windows.");
