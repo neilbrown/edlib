@@ -68,7 +68,7 @@ DEF_CMD(keystroke)
 	if (!ci->str)
 		return Enoarg;
 
-	pane_notify("Notify:Keystroke", ci->home, 0, NULL, ci->str);
+	pane_notify("Keystroke-notify", ci->home, 0, NULL, ci->str);
 
 	if (im->mode[0]) {
 		int cnt = 1;
@@ -154,7 +154,7 @@ DEF_CMD(mouse_event)
 	if (!ci->str)
 		return Enoarg;
 
-	pane_notify("Notify:Mouse-event", ci->home, 0, NULL, ci->str);
+	pane_notify("Mouse-event-notify", ci->home, 0, NULL, ci->str);
 
 	if (strncmp(ci->str, "Press-", 6) == 0) {
 		press = 1;
@@ -271,15 +271,16 @@ DEF_CMD(mouse_event)
 
 DEF_CMD(request_notify)
 {
-	if (strcmp(ci->key, "Request:Notify:Keystroke") == 0) {
-		pane_add_notify(ci->focus, ci->home, "Notify:Keystroke");
-		return 1;
-	}
-	if (strcmp(ci->key, "Request:Notify:Mouse-event") == 0) {
-		pane_add_notify(ci->focus, ci->home, "Notify:Mouse-event");
-		return 1;
-	}
-	return 0;
+	/* window:request:... */
+	pane_add_notify(ci->focus, ci->home, ci->key + 15);
+	return 1;
+}
+
+DEF_CMD(send_notify)
+{
+	/* window:notify:... */
+	return pane_notify(ci->key + 14, ci->home, ci->num, ci->mark, ci->str,
+			   ci->num2, ci->mark2, ci->str2, ci->comm2);
 }
 
 DEF_CMD(refocus)
@@ -317,7 +318,8 @@ static void register_map(void)
 	key_add(im_map, "Mode:set-num2", &set_num2);
 	key_add(im_map, "pane:refocus", &refocus);
 	key_add(im_map, "Notify:Close", &close_focus);
-	key_add_prefix(im_map, "Request:Notify:", &request_notify);
+	key_add_prefix(im_map, "window:request:", &request_notify);
+	key_add_prefix(im_map, "window:notify:", &send_notify);
 }
 
 DEF_LOOKUP_CMD(input_handle, im_map);

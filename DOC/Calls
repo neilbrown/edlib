@@ -42,3 +42,19 @@ Known notifications include:
 - all-displays.  This is sent to all displays.  The callback will
   contain a timestamp for the most recent event in 'num'.  The number
   of times the callback is called indicates how many displays there are.
+
+
+# Window/input
+
+## window:request:FOO
+
+Ask to receive notification "FOO" send to current window.
+
+## window:notify:FOO
+
+Send notification "FOO" to current window.
+
+Known notifications include:
+
+- Keystroke-notify - string is the key name
+- Mouse-event-notifiy - string is the event name

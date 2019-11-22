@@ -124,37 +124,44 @@ int main(int argc, char *argv[])
 		close(fd);
 	}
 
-	p = call_ret(pane, "attach-input", ed);
-	if (p && !doc)
-		doc = call_ret(pane, "doc:from-text", p, 0, NULL,
+	if (!doc)
+		doc = call_ret(pane, "doc:from-text", ed, 0, NULL,
 			       "*Welcome*", 0, NULL, WelcomeText);
 
-	if (p) {
-		if (term) {
-			struct pane *disp;
-			disp = call_ret(pane, "attach-display-ncurses", p);
-			if (disp) {
-				make_stack(disp, doc);
-				call("Display:set-noclose", disp, 1, NULL,
-				     "Cannot close primary display");
-			}
+	if (term) {
+		struct pane *disp = NULL;
+		p = call_ret(pane, "attach-input", ed);
+		if (p)
+			disp = call_ret(pane, "attach-display-ncurses",
+					p);
+		if (disp) {
+			make_stack(disp, doc);
+			call("Display:set-noclose", disp, 1, NULL,
+			     "Cannot close primary display");
 		}
-		if (gtk)
-			make_stack(call_ret(pane, "attach-display-pygtk", p),
-				   doc);
+	}
+	if (gtk) {
+		struct pane *disp = NULL;
+		p = call_ret(pane, "attach-input", ed);
+		if (p)
+			disp = call_ret(pane, "attach-display-pygtk",
+					p);
+		if (disp)
+			make_stack(disp, doc);
+	}
 
+	time_start(TIME_REFRESH);
+	pane_refresh(ed);
+	time_stop(TIME_REFRESH);
+	while (call("event:run", ed) == 1) {
+		time_start(TIME_IDLE);
+		call("global-multicall-on_idle-", ed);
+		time_stop(TIME_IDLE);
 		time_start(TIME_REFRESH);
 		pane_refresh(ed);
 		time_stop(TIME_REFRESH);
-		while (call("event:run", ed) == 1) {
-			time_start(TIME_IDLE);
-			call("global-multicall-on_idle-", ed);
-			time_stop(TIME_IDLE);
-			time_start(TIME_REFRESH);
-			pane_refresh(ed);
-			time_stop(TIME_REFRESH);
-		}
 	}
+
 	pane_close(ed);
 	exit(0);
 }

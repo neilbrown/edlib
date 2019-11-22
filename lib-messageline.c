@@ -63,8 +63,8 @@ DEF_CMD(messageline_msg)
 	if (ci->str && (strcmp(ci->key, "Message:default") != 0 ||
 			mli->message == NULL)) {
 		if (!mli->message) {
-			call("Request:Notify:Keystroke", ci->home);
-			call("Request:Notify:Mouse-event", ci->home);
+			call("window:request:Keystroke-notify", ci->home);
+			call("window:request:Mouse-event-notify", ci->home);
 		}
 		free(mli->message);
 		mli->message = strdup(ci->str);
@@ -80,8 +80,8 @@ DEF_CMD(messageline_abort)
 	struct mlinfo *mli = ci->home->data;
 
 	if (!mli->message) {
-		call("Request:Notify:Keystroke", ci->home);
-		call("Request:Notify:Mouse-event", ci->home);
+		call("window:request:Keystroke-notify", ci->home);
+		call("window:request:Mouse-event-notify", ci->home);
 	}
 	free(mli->message);
 	mli->message = strdup("ABORTED");
@@ -137,8 +137,8 @@ DEF_CMD(messageline_notify)
 	    (mli->modal || time(NULL) >= mli->last_message + 7)) {
 		free(mli->message);
 		mli->message = NULL;
-		pane_drop_notifiers(ci->home, "Notify:Keystroke");
-		pane_drop_notifiers(ci->home, "Notify:Mouse-event");
+		pane_drop_notifiers(ci->home, "Keystroke-notify");
+		pane_drop_notifiers(ci->home, "Mouse-event-notify");
 		pane_damaged(mli->line, DAMAGED_CONTENT);
 	}
 	return 1;
@@ -153,8 +153,8 @@ DEF_CMD(messageline_line_refresh)
 	    time(NULL) >= mli->last_message + 30) {
 		free(mli->message);
 		mli->message = NULL;
-		pane_drop_notifiers(ci->home, "Notify:Keystroke");
-		pane_drop_notifiers(ci->home, "Notify:Mouse-event");
+		pane_drop_notifiers(ci->home, "Keystroke-notify");
+		pane_drop_notifiers(ci->home, "Mouse-event-notify");
 	}
 	if (mli->message)
 		pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
@@ -222,8 +222,8 @@ void edlib_init(struct pane *ed safe)
 	key_add(messageline_map, "Refresh:size", &messageline_refresh_size);
 	key_add(messageline_map, "ChildRegistered",
 		&messageline_child_registered);
-	key_add(messageline_map, "Notify:Keystroke", &messageline_notify);
-	key_add(messageline_map, "Notify:Mouse-event", &messageline_notify);
+	key_add(messageline_map, "Keystroke-notify", &messageline_notify);
+	key_add(messageline_map, "Mouse-event-notify", &messageline_notify);
 
 	messageline_line_map = key_alloc();
 	key_add(messageline_line_map, "Refresh", &messageline_line_refresh);

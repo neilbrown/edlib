@@ -142,7 +142,9 @@ class EdDisplay(gtk.Window):
 
     def handle_new(self, key, home, **a):
         "handle:Display:new"
-        newdisp = EdDisplay(home.parent)
+        global editor
+        p = editor.call("attach-input", ret='focus')
+        newdisp = EdDisplay(p)
         home.clone_children(newdisp.pane);
         return 1
 
