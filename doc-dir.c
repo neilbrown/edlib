@@ -151,10 +151,13 @@ DEF_CMD(dir_load_file)
 	struct directory *dr = container_of(d, struct directory, doc);
 	struct list_head new;
 	struct dir_ent *de1, *de2;
-	struct mark *m, *prev;
+	struct mark *prev, *m;
 	int doclose = 0;
-	int donotify = 1;
 
+	prev = NULL;
+	m = vmark_new(ci->home, MARK_UNGROUPED, NULL);
+	if (!m)
+		return Efail;
 	if (fd < 0) {
 		if (!dr->fname)
 			return Efail;
@@ -166,14 +169,9 @@ DEF_CMD(dir_load_file)
 
 	INIT_LIST_HEAD(&new);
 	load_dir(&new, fd);
-	de1 = list_first_entry_or_null(&dr->ents, struct dir_ent, lst);
 	de2 = list_first_entry_or_null(&new, struct dir_ent, lst);
-	if (!de1)
-		/* Nothing already in dir, so only notify at the end */
-		donotify = 1;
-	prev = m = doc_first_mark_all(&dr->doc);
-	/* 'm' is always at-or-after the earliest of de1 */
-	while (de1 || de2) {
+	while (m->ref.d || de2) {
+		de1 = m->ref.d;
 		if (de1 &&
 		    (de2 == NULL || strcmp(de1->name, de2->name) < 0)) {
 			/* de1 doesn't exist in new: need to delete it. */
@@ -191,12 +189,8 @@ DEF_CMD(dir_load_file)
 			free(de->name);
 			list_del(&de->lst);
 			free(de);
-			if (m && donotify) {
-				pane_notify("doc:replaced", ci->home,
-					    0, prev);
-				pane_notify("doc:replaced", ci->home,
-					    0, m);
-			}
+			if (!prev)
+				prev = mark_dup(m);
 		} else if (de2 &&
 			   (de1 == NULL || strcmp(de2->name, de1->name) < 0)) {
 			/* de2 doesn't already exist, so add it before de1 */
@@ -205,37 +199,35 @@ DEF_CMD(dir_load_file)
 				list_add_tail(&de2->lst, &de1->lst);
 			else
 				list_add_tail(&de2->lst, &dr->ents);
-			if (m && donotify) {
-				pane_notify("doc:replaced", ci->home,
-					    0, prev);
-				pane_notify("doc:replaced", ci->home,
-					    0, m);
+			if (!prev) {
+				prev = mark_dup(m);
+				mark_prev_pane(ci->home, prev);
 			}
-		} else if (de1 /*FIXME should be assumed */) {
+		} else if (de1 && de2) {
 			/* de1 and de2 are the same.  Just step over de1 and
 			 * delete de2
 			 */
-			if (de1 == list_last_entry(&dr->ents,
-						   struct dir_ent, lst))
-				de1 = NULL;
-			else
-				de1 = list_next_entry(de1, lst);
+			if (prev) {
+				pane_notify("doc:replaced", ci->home,
+					    0, prev, NULL,
+					    0, m);
+				mark_free(prev);
+				prev = NULL;
+			}
+			mark_next_pane(ci->home, m);
+			mark_make_first(m);
+
 			list_del(&de2->lst);
 			attr_free(&de2->attrs);
 			free(de2->name);
 			free(de2);
 		}
 		de2 = list_first_entry_or_null(&new, struct dir_ent, lst);
-		while (m && m->ref.d && de1 && strcmp(m->ref.d->name,
-						      de1->name) < 0) {
-			prev = m;
-			m = doc_next_mark_all(m);
-		}
 	}
-	if (!donotify) {
-		m = doc_first_mark_all(&dr->doc);
-		if (m)
-			pane_notify("doc:replaced", ci->home, 0, m);
+	if (prev) {
+		pane_notify("doc:replaced", ci->home, 0, prev, NULL,
+			    0, m);
+		mark_free(prev);
 	}
 
 	if (name) {
