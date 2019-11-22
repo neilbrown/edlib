@@ -62,13 +62,15 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 	/* This document is about to be moved in the list.
 	 * Any mark pointing at it is moved forward
 	 */
-	struct mark *m;
+	struct mark *m, *first = NULL;
 	struct pane *col = doc->collection;
 
 	for (m = doc_first_mark_all(&doc->doc);
 	     m;
 	     m = doc_next_mark_all(m))
 		if (m->ref.p == p) {
+			if (!first)
+				first = m;
 			if (p == list_last_entry(&col->children,
 						 struct pane, siblings))
 				m->ref.p = NULL;
@@ -79,8 +81,10 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 				m->ref.p = NULL;
 			else
 				m->ref.p = list_next_entry(p, siblings);
-			pane_notify("doc:replaced", doc->doc.home, 0, m);
-		}
+		} else if (first)
+			break;
+	if (first)
+		pane_notify("doc:replaced", doc->doc.home, 1, m);
 }
 
 static void docs_enmark(struct docs *doc safe, struct pane *p safe)
@@ -88,7 +92,7 @@ static void docs_enmark(struct docs *doc safe, struct pane *p safe)
 	/* This document has just been added to the list.
 	 * any mark pointing just past it is moved back.
 	 */
-	struct mark *m;
+	struct mark *m, *first = NULL;
 	struct pane *next;
 	struct pane *col = doc->collection;
 
@@ -101,9 +105,13 @@ static void docs_enmark(struct docs *doc safe, struct pane *p safe)
 	     m;
 	     m = doc_next_mark_all(m))
 		if (m->ref.p == next) {
+			if (!first)
+				first = m;
 			m->ref.p = p;
-			pane_notify("doc:replaced", doc->doc.home, 0, m);
-		}
+		} else if (first)
+			break;
+	if (first)
+		pane_notify("doc:replaced", doc->doc.home, 1, m);
 }
 
 static int doc_save(struct pane *p safe, struct pane *focus safe, int test)
@@ -450,7 +458,7 @@ DEF_CMD(doc_damage)
 		return Enoarg;
 	do {
 		if (m->ref.p == child) {
-			pane_notify("doc:replaced", d->home, 0, m);
+			pane_notify("doc:replaced", d->home, 1, m);
 			break;
 		}
 	} while (mark_next(d, m) != WEOF);

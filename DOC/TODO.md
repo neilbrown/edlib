@@ -69,6 +69,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] for ()\n if () {} else if () GET INDENT WRONG
 - [ ] dynamic-complete shouldn't treat '_' as work-border
 - [X] in python code, protect Replace/doc:replace - file could be read-only
 - [X] c-mode indent should let me delete one level when it was due to bracketing,
