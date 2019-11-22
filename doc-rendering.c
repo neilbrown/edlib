@@ -390,7 +390,7 @@ DEF_CMD(dr_notify_replace)
 		m->mdata = NULL;
 		m = vmark_next(m);
 	}
-	pane_notify("Notify:doc:Replace", ci->home);
+	pane_notify("doc:replaced", ci->home);
 	return 1;
 }
 
@@ -553,10 +553,10 @@ static void dr_init_map(void)
 	key_add(dr_map, "doc:set-ref", &dr_set_ref);
 	key_add(dr_map, "doc:step", &dr_step);
 	key_add(dr_map, "Close", &dr_close);
-	key_add(dr_map, "Notify:doc:viewers", &dr_notify_viewers);
-	key_add(dr_map, "Notify:doc:Replace", &dr_notify_replace);
+	key_add(dr_map, "doc:notify-viewers", &dr_notify_viewers);
+	key_add(dr_map, "doc:replaced", &dr_notify_replace);
 	key_add(dr_map, "Notify:Close", &dr_notify_close);
-	key_add(dr_map, "doc:Notify:doc:revisit", &dr_revisit);
+	key_add(dr_map, "doc:revisit", &dr_revisit);
 	key_add(dr_map, "doc:render-line", &dr_render_line);
 	key_add(dr_map, "doc:render-line-prev", &dr_render_prev);
 	key_add(dr_map, "doc:replace", &dr_replace);
@@ -578,10 +578,10 @@ DEF_CMD(attach_dr)
 	dri->doc.refcnt = dr_refcnt;
 	dri->base = ci->focus;
 
-	home_call(ci->focus, "doc:Request:Notify:doc:viewers", p);
-	home_call(ci->focus, "doc:Request:Notify:doc:Replace", p);
+	home_call(ci->focus, "doc:request:doc:notify-viewers", p);
+	home_call(ci->focus, "doc:request:doc:replaced", p);
 	pane_add_notify(p, ci->focus, "Notify:Close");
-	home_call(ci->focus, "doc:Request:Notify:Close", p);
+	home_call(ci->focus, "doc:request:Notify:Close", p);
 	//call("doc:set:autoclose", p, 1);
 	dri->vnum = home_call(ci->focus, "doc:add-view", p) - 1;
 

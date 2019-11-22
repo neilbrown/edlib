@@ -1006,7 +1006,7 @@ REDEF_CMD(emacs_file_complete)
 	p = home_call_ret(pane, docp, "doc:attach-view", pop, -1, NULL, "complete");
 	if (!p)
 		return Efail;
-	//call("doc:Notify:doc:revisit", p, -1);
+	//call("doc:notify:doc:revisit", p, -1);
 
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, b);
 	if (cr.s && (strlen(cr.s) <= strlen(b) && cr.ret-1 > 1)) {

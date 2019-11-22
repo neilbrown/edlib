@@ -1900,7 +1900,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Refresh:view", &render_lines_refresh_view);
 	key_add(rl_map, "Notify:clip", &render_lines_clip);
 
-	key_add(rl_map, "Notify:doc:Replace", &render_lines_notify_replace);
+	key_add(rl_map, "doc:replaced", &render_lines_notify_replace);
 	/* view:changed is sent to a tile when the display might need
 	 * to change, even though the doc may not have*/
 	key_add(rl_map, "view:changed", &render_lines_notify_replace);
@@ -1922,7 +1922,7 @@ REDEF_CMD(render_lines_attach)
 		p = call_ret(pane, "attach-renderline", p);
 	p = pane_register(p, 0, &render_lines_handle.c, rl);
 	rl->typenum = home_call(ci->focus, "doc:add-view", p) - 1;
-	call("doc:Request:Notify:doc:Replace", p);
+	call("doc:request:doc:replaced", p);
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }

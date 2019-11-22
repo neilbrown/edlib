@@ -192,9 +192,9 @@ DEF_CMD(dir_load_file)
 			list_del(&de->lst);
 			free(de);
 			if (m && donotify) {
-				pane_notify("Notify:doc:Replace", ci->home,
+				pane_notify("doc:replaced", ci->home,
 					    0, prev);
-				pane_notify("Notify:doc:Replace", ci->home,
+				pane_notify("doc:replaced", ci->home,
 					    0, m);
 			}
 		} else if (de2 &&
@@ -206,9 +206,9 @@ DEF_CMD(dir_load_file)
 			else
 				list_add_tail(&de2->lst, &dr->ents);
 			if (m && donotify) {
-				pane_notify("Notify:doc:Replace", ci->home,
+				pane_notify("doc:replaced", ci->home,
 					    0, prev);
-				pane_notify("Notify:doc:Replace", ci->home,
+				pane_notify("doc:replaced", ci->home,
 					    0, m);
 			}
 		} else if (de1 /*FIXME should be assumed */) {
@@ -235,7 +235,7 @@ DEF_CMD(dir_load_file)
 	if (!donotify) {
 		m = doc_first_mark_all(&dr->doc);
 		if (m)
-			pane_notify("Notify:doc:Replace", ci->home, 0, m);
+			pane_notify("doc:replaced", ci->home, 0, m);
 	}
 
 	if (name) {
@@ -768,7 +768,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:step", &dir_step);
 	key_add(doc_map, "doc:replace", &dir_cmd);
 	key_add(doc_map, "doc:attach-view", &dir_attach);
-	key_add(doc_map, "doc:Notify:doc:revisit", &dir_revisited);
+	key_add(doc_map, "doc:notify:doc:revisit", &dir_revisited);
 
 	key_add(doc_map, "get-attr", &dir_get_attr);
 	key_add(doc_map, "Notify:Close", &dir_notify_close);

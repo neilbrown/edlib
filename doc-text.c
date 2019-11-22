@@ -252,7 +252,7 @@ static bool check_file_changed(struct text *t safe)
 	    st.st_mtime != t->stat.st_mtime ||
 	    st.st_mtim.tv_nsec != t->stat.st_mtim.tv_nsec) {
 		t->file_changed = 1;
-		call("doc:Notify:doc:status-changed", t->doc.home);
+		call("doc:notify:doc:status-changed", t->doc.home);
 		return True;
 	}
 	return False;
@@ -351,8 +351,8 @@ DEF_CMD(text_load_file)
 	}
 	t->saved = t->undo;
 	t->file_changed = 0;
-	call("doc:Notify:doc:status-changed", ci->home);
-	pane_notify("Notify:doc:Replace", t->doc.home);
+	call("doc:notify:doc:status-changed", ci->home);
+	pane_notify("doc:replaced", t->doc.home);
 	if (fd != ci->num2)
 		close(fd);
 	return 1;
@@ -570,7 +570,7 @@ DEF_CMD(text_save_file)
 	call("Message", ci->focus, 0, NULL, msg);
 	free(msg);
 	if (change_status)
-		call("doc:Notify:doc:status-changed", d->home);
+		call("doc:notify:doc:status-changed", d->home);
 	text_check_autosave(t);
 	if (ret == 0)
 		return 1;
@@ -1134,7 +1134,7 @@ static bool check_readonly(const struct cmd_info *ci safe)
 	struct text *t = container_of(d, struct text, doc);
 
 	if (t->undo == t->saved && check_file_changed(t) && !d->readonly) {
-		call("doc:Notify:doc:status-changed", d->home);
+		call("doc:notify:doc:status-changed", d->home);
 		d->readonly = 1;
 	}
 	if (!d->readonly)
@@ -1277,7 +1277,7 @@ DEF_CMD(text_reundo)
 		if (early && !text_ref_same(t, &early->ref, &start))
 			early = NULL;
 
-		pane_notify("Notify:doc:Replace", t->doc.home,
+		pane_notify("doc:replaced", t->doc.home,
 			    0, ci->mark, NULL,
 			    0, early);
 
@@ -1288,7 +1288,7 @@ DEF_CMD(text_reundo)
 	text_check_consistent(t);
 
 	if (status != (t->undo == t->saved))
-		call("doc:Notify:doc:status-changed", t->doc.home);
+		call("doc:notify:doc:status-changed", t->doc.home);
 	text_check_autosave(t);
 
 	if (!ed)
@@ -2019,8 +2019,8 @@ DEF_CMD(text_replace)
 	}
 	text_check_autosave(t);
 	if (status_change)
-		call("doc:Notify:doc:status-changed", d->home);
-	pane_notify("Notify:doc:Replace", t->doc.home, 0, pm, NULL,
+		call("doc:notify:doc:status-changed", d->home);
+	pane_notify("doc:replaced", t->doc.home, 0, pm, NULL,
 		    0, early);
 	if (!ci->mark2)
 		mark_free(pm);
@@ -2135,7 +2135,7 @@ DEF_CMD(text_set_attr)
 		c = list_next_entry(c, lst);
 		o = c->start;
 	}
-	pane_notify("Notify:doc:Replace", ci->home, 0, ci->mark);
+	pane_notify("doc:replaced", ci->home, 0, ci->mark);
 	attr_set_str_key(&c->attrs, attr, val, o);
 	return Efallthrough;
 }
@@ -2155,7 +2155,7 @@ DEF_CMD(text_modified)
 	else
 		t->saved = t->undo;
 	text_check_autosave(t);
-	call("doc:Notify:doc:status-changed", d->home);
+	call("doc:notify:doc:status-changed", d->home);
 	return 1;
 }
 
@@ -2247,7 +2247,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:step-bytes", &text_step_bytes);
 	key_add(text_map, "doc:modified", &text_modified);
 	key_add(text_map, "doc:set:readonly", &text_readonly);
-	key_add(text_map, "doc:Notify:doc:revisit", &text_revisited);
+	key_add(text_map, "doc:revisit", &text_revisited);
 
 	key_add(text_map, "Close", &text_destroy);
 	key_add(text_map, "get-attr", &text_get_attr);

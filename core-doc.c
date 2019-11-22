@@ -477,7 +477,7 @@ DEF_CMD(doc_set)
 	}
 	if (strcmp(val, "readonly") == 0) {
 		d->readonly = ci->num;
-		call("doc:Notify:doc:status-changed", d->home);
+		call("doc:notify:doc:status-changed", d->home);
 		return 1;
 	}
 	if (ci->str)
@@ -534,20 +534,20 @@ DEF_CMD(doc_set_name)
 		return Enoarg;
 	free(d->name);
 	d->name = strdup(ci->str);
-	return call("doc:Notify:doc:revisit", d->home, ci->num);
+	return call("doc:notify:doc:revisit", d->home, ci->num);
 }
 
 DEF_CMD(doc_request_notify)
 {
-	/* Key starts "doc:Request:Notify:" */
-	pane_add_notify(ci->focus, ci->home, ci->key+12);
+	/* Key starts "doc:request:" */
+	pane_add_notify(ci->focus, ci->home, ci->key + 12);
 	return 1;
 }
 
 DEF_CMD(doc_notify)
 {
-	/* Key is "doc:Notify:..." */
-	int ret = home_pane_notify(ci->home, ci->key + 4, ci->home,
+	/* Key is "doc:notify:..." */
+	int ret = home_pane_notify(ci->home, ci->key + 11, ci->home,
 				   ci->num, ci->mark, ci->str,
 				   ci->num2, ci->mark2, ci->str2, ci->comm2);
 	return ret;
@@ -646,7 +646,7 @@ DEF_CMD(doc_delayed_close)
 	/* If there are any doc-displays open, then will return '1' and
 	 * we will know not to destroy document yet.
 	 */
-	ret = pane_notify("Notify:doc:viewers", p);
+	ret = pane_notify("doc:notify-viewers", p);
 	if (ret == 0)
 		call("doc:drop-cache", p);
 	return 1;
@@ -1040,7 +1040,7 @@ DEF_CMD(doc_attach_view)
 		return Efail;
 	do_doc_assign(p, doc);
 
-	call("doc:Notify:doc:revisit", p, ci->num);
+	call("doc:notify:doc:revisit", p, ci->num);
 	if (strcmp(type, "invisible") != 0) {
 		/* Attach renderer */
 		p2 = call_ret(pane, "attach-view", p);
@@ -1102,7 +1102,7 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd, "Move-View-Large", &doc_page);
 	key_add(doc_handle_cmd, "doc:point", &doc_get_point);
 
-	key_add(doc_handle_cmd, "Notify:doc:viewers", &doc_notify_viewers);
+	key_add(doc_handle_cmd, "doc:notify-viewers", &doc_notify_viewers);
 	key_add(doc_handle_cmd,	"Notify:Close", &doc_notify_close);
 	key_add(doc_handle_cmd,	"Notify:point:moved", &doc_notify_moved);
 	key_add(doc_handle_cmd,	"Refresh", &doc_refresh);
@@ -1129,9 +1129,9 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
 	key_add(doc_default_cmd, "doc:attach-view", &doc_attach_view);
 
-	key_add_prefix(doc_default_cmd, "doc:Request:Notify:",
+	key_add_prefix(doc_default_cmd, "doc:request:",
 		       &doc_request_notify);
-	key_add_prefix(doc_default_cmd, "doc:Notify:", &doc_notify);
+	key_add_prefix(doc_default_cmd, "doc:notify:", &doc_notify);
 	key_add_prefix(doc_default_cmd, "doc:set:", &doc_set);
 }
 
@@ -1144,15 +1144,15 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 	if (!m)
 		return;
 	if (call("doc:pop-point", doc, 0, m) <= 0)
-		pane_notify("Notify:doc:viewers", doc, 0, m);
+		pane_notify("doc:notify-viewers", doc, 0, m);
 	dd->doc = doc;
 	dd->point = m;
 	attr_set_str(&m->attrs, "render:interactive-point", "yes");
 
 	pane_add_notify(p, doc, "Notify:Close");
-	pane_add_notify(p, doc, "Notify:doc:viewers");
+	pane_add_notify(p, doc, "doc:notify-viewers");
 	pane_add_notify(p, doc, "Notify:point:moved");
-	call("doc:Notify:doc:revisit", doc, 0);
+	call("doc:notify:doc:revisit", doc, 0);
 }
 
 static struct pane *safe doc_attach(struct pane *parent)

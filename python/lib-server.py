@@ -69,13 +69,13 @@ try:
                     else:
                         self.sock.send("No Display!")
                     return 1
-                if msg[:28] == "doc:Request:Notify:doc:done:":
+                if msg[:28] == "doc:Request:doc:done:":
                     path = msg[28:]
                     d = editor.call("doc:open", -1, path, ret="focus")
                     if not d:
                         self.sock.send("FAIL")
                         return 1
-                    self.add_notify(d, "Notify:doc:done")
+                    self.add_notify(d, "doc:done")
                     if self.term:
                         self.term.call("Display:set-noclose",
                                        "Cannot close display until document done - use 'C-x #'")
@@ -125,7 +125,7 @@ try:
             return 0
 
         def handle_done(self, key, str, **a):
-            "handle:Notify:doc:done"
+            "handle:doc:done"
             if str != "test":
                 if self.term:
                     self.term.call("Window:set-noclose")
@@ -191,7 +191,7 @@ if is_client:
         if ret != "OK":
             print "Cannot open: ", ret
             sys.exit(1)
-        s.send("doc:Request:Notify:doc:done:"+file)
+        s.send("doc:request:doc:done:"+file)
     else:
         s.send("Request:Notify:Close")
     ret = s.recv(100)
@@ -214,7 +214,7 @@ else:
         ServerPane(new)
 
     def server_done(key, focus, **a):
-        ret = focus.call("doc:Notify:doc:done", "test")
+        ret = focus.call("doc:notify:doc:done", "test")
         if ret > 0:
             # maybe save, then notify properly
             fn = focus["filename"]
@@ -222,7 +222,7 @@ else:
             if fn and mod == "yes":
                 focus.call("Message", "Please save first!")
             else:
-                focus.call("doc:Notify:doc:done")
+                focus.call("doc:notify:doc:done")
                 # FIXME need something better than 'bury'
                 # If it was already visible, it should stay that way
                 focus.call("Window:bury")
@@ -231,7 +231,7 @@ else:
             choice = []
             def chose(choice, a):
                 focus = a['focus']
-                if focus.notify("Notify:doc:done", "test") > 0:
+                if focus.notify("doc:done", "test") > 0:
                     choice.append(focus)
                     return 1
                 return 0

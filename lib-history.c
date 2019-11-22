@@ -167,7 +167,7 @@ DEF_CMD(history_attach)
 	buf_init(&hi->search);
 	p = pane_register(ci->focus, 0, &hi->handle.c, hi);
 	pane_add_notify(p, hi->history, "Notify:Close");
-	call("doc:Request:Notify:doc:Replace", p);
+	call("doc:request:doc:replaced", p);
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 
@@ -204,7 +204,7 @@ void edlib_init(struct pane *ed safe)
 	history_map = key_alloc();
 	key_add(history_map, "Close", &history_close);
 	key_add(history_map, "Notify:Close", &history_notify_close);
-	key_add(history_map, "Notify:doc:Replace", &history_notify_replace);
+	key_add(history_map, "doc:replaced", &history_notify_replace);
 	key_add(history_map, "M-Chr-p", &history_move);
 	key_add(history_map, "M-Chr-n", &history_move);
 }

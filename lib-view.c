@@ -382,7 +382,7 @@ static struct pane *safe do_view_attach(struct pane *par, int border)
 	p = pane_register(par, 0, &view_handle.c, vd);
 	/* Capture status-changed notification so we can update 'changed' flag in
 	 * status line */
-	call("doc:Request:Notify:doc:status-changed", p);
+	call("doc:request:doc:status-changed", p);
 	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }
@@ -521,7 +521,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "ChildRegistered", &view_child_registered);
 	key_add(view_map, "Refresh:size", &view_refresh_size);
 	key_add(view_map, "Refresh", &view_refresh);
-	key_add(view_map, "Notify:doc:status-changed", &view_status_changed);
+	key_add(view_map, "doc:status-changed", &view_status_changed);
 	key_add(view_map, "render:reposition", &view_reposition);
 	key_add(view_map, "Notify:clip", &view_clip);
 

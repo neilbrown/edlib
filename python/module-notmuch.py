@@ -340,7 +340,7 @@ class notmuch_main(edlib.Doc):
             self.timer_set = True
             self.call("event:timer", 5*60*1000, self.tick)
         self.searches.load(False)
-        self.notify("Notify:doc:Replace")
+        self.notify("doc:replaced")
         self.updating = "counts"
         if not self.searches.update(self, self.updated):
             self.update_next()
@@ -513,7 +513,7 @@ class notmuch_main(edlib.Doc):
     def updated(self, key, **a):
         if not self.searches.updated():
             self.update_next()
-        self.notify("Notify:doc:Replace")
+        self.notify("doc:replaced")
         return edlib.Efalse
 
     def update_next(self):
@@ -817,7 +817,7 @@ class notmuch_main_view(edlib.Pane):
         self['background'] = 'color:#A0FFFF'
         self['line-format'] = '<%fmt>%count %+name</>'
         self.call("notmuch:set_list_pane")
-        self.call("doc:Request:Notify:doc:Replace")
+        self.call("doc:request:doc:replaced")
         self.selected = None
 
     def handle_clone(self, key, focus, **a):
@@ -827,7 +827,7 @@ class notmuch_main_view(edlib.Pane):
         return 1
 
     def handle_notify_replace(self, key, **a):
-        "handle:Notify:doc:Replace"
+        "handle:doc:replaced"
         self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
         return 0
 
@@ -933,7 +933,7 @@ class notmuch_list(edlib.Doc):
                     m.pos = (self.new[0], None)
                 m = m.next_any()
         self.threadids = self.new + self.old
-        self.notify("Notify:doc:Replace")
+        self.notify("doc:replaced")
         if found < 100 and self.age == None:
             # must have found them all
             self.call("doc:notmuch:query-updated")
@@ -1103,7 +1103,7 @@ class notmuch_list(edlib.Doc):
             t = self.threads[str]
             s = self.maindoc.call("doc:notmuch:bythread:tags", str, ret='str')
             t['tags'] = s.split(",")
-        self.notify("Notify:doc:Replace")
+        self.notify("doc:replaced")
         return 1
 
     def handle_notify_close(self, **a):
@@ -1325,7 +1325,7 @@ class notmuch_list(edlib.Doc):
             t = j["tags"]
             if "unread" in t:
                 t.remove("unread")
-        self.notify("Notify:doc:Replace")
+        self.notify("doc:replaced")
         # Pass this down to database document.
         self.maindoc.call(key, str, str2)
         return 0
@@ -1343,7 +1343,7 @@ class notmuch_query_view(edlib.Pane):
         self.thread_start = None
         self.thread_end = None
         self.thread_matched = None
-        self.call("doc:Request:Notify:doc:Replace")
+        self.call("doc:request:doc:replaced")
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
@@ -1352,7 +1352,7 @@ class notmuch_query_view(edlib.Pane):
         return 1
 
     def handle_notify_replace(self, key, **a):
-        "handle:Notify:doc:Replace"
+        "handle:doc:replaced"
         self.damaged(edlib.DAMAGED_CONTENT)
         return 1
 

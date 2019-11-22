@@ -10,9 +10,9 @@
  * providing a "line-format" to guide display of each line.
  * The auxiliary pane becomes the parent of all attached documents, so
  * that the list of children is exactly the content of the document.
- * This pane receives Notify:doc:revisit notification  from the
+ * This pane receives doc:revisit notification  from the
  * individual documents, and also requests notification of
- * Notify:doc:status-changed.
+ * doc:status-changed.
  *
  * Supported global operations include:
  * docs:byname - report pane with given (str)name
@@ -79,7 +79,7 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 				m->ref.p = NULL;
 			else
 				m->ref.p = list_next_entry(p, siblings);
-			pane_notify("Notify:doc:Replace", doc->doc.home, 0, m);
+			pane_notify("doc:replaced", doc->doc.home, 0, m);
 		}
 }
 
@@ -102,7 +102,7 @@ static void docs_enmark(struct docs *doc safe, struct pane *p safe)
 	     m = doc_next_mark_all(m))
 		if (m->ref.p == next) {
 			m->ref.p = p;
-			pane_notify("Notify:doc:Replace", doc->doc.home, 0, m);
+			pane_notify("doc:replaced", doc->doc.home, 0, m);
 		}
 }
 
@@ -429,8 +429,8 @@ DEF_CMD(docs_callback)
 			/* The docs doc is attached separately */
 			return Efallthrough;
 		pane_reparent(p, doc->collection);
-		home_call(p, "doc:Request:Notify:doc:revisit", doc->collection);
-		home_call(p, "doc:Request:Notify:doc:status-changed",
+		home_call(p, "doc:request:doc:revisit", doc->collection);
+		home_call(p, "doc:request:doc:status-changed",
 			  doc->collection);
 		if (p->parent)
 			doc_checkname(p, doc, ci->num ?: -1);
@@ -450,7 +450,7 @@ DEF_CMD(doc_damage)
 		return Enoarg;
 	do {
 		if (m->ref.p == child) {
-			pane_notify("Notify:doc:Replace", d->home, 0, m);
+			pane_notify("doc:replaced", d->home, 0, m);
 			break;
 		}
 	} while (mark_next(d, m) != WEOF);
@@ -686,7 +686,7 @@ static int docs_bury(struct pane *focus safe)
 	if (!tile)
 		return 1;
 	/* Discourage this doc from being chosen again */
-	call("doc:Notify:doc:revisit", focus, -1);
+	call("doc:notify:doc:revisit", focus, -1);
 	doc = call_ret(pane, "docs:choose", focus);
 	if (doc)
 		home_call(doc, "doc:attach-view", tile);
@@ -826,10 +826,9 @@ DEF_CMD(docs_attach)
 			//attr_set_str(&p->attrs, "done-key", "Replace");
 			p = pane_register(p, 0, &docs_modified_handle.c, docs);
 
-			call("doc:Request:Notify:doc:Replace", p);
-			/* And trigger Notify:doc:Replace
-			 * handling immediately...*/
-			pane_call(p, "Notify:doc:Replace", p);
+			call("doc:request:doc:replaced", p);
+			/* And trigger doc:replaced handling immediately...*/
+			pane_call(p, "doc:replaced", p);
 			/* Don't want to inherit position from some
 			 * earlier instance, always move to the start.
 			 */
@@ -891,12 +890,12 @@ static void docs_init_map(void)
 
 	key_add(docs_map, "get-attr", &docs_get_attr);
 
-	key_add(docs_aux_map, "Notify:doc:revisit", &doc_revisit);
-	key_add(docs_aux_map, "Notify:doc:status-changed", &doc_damage);
+	key_add(docs_aux_map, "doc:revisit", &doc_revisit);
+	key_add(docs_aux_map, "doc:status-changed", &doc_damage);
 	key_add(docs_aux_map, "ChildClosed", &docs_child_closed);
 
 	key_add(docs_modified_map, "doc:replace", &docs_modified_replace);
-	key_add(docs_modified_map, "Notify:doc:Replace",
+	key_add(docs_modified_map, "doc:replaced",
 		&docs_modified_notify_replace);
 	key_add(docs_modified_map, "doc:step", &docs_modified_step);
 	key_add(docs_modified_map, "doc:get-attr", &docs_modified_doc_get_attr);

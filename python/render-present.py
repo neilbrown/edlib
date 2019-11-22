@@ -582,7 +582,7 @@ class PresenterPane(edlib.Pane):
         return 1
 
     def handle_notify_replace(self, key, mark, **a):
-        "handle:Notify:doc:Replace"
+        "handle:doc:replaced"
         # A change has happened at 'mark'.  The following page might not
         # be valid, and the previous may not be valid or have next-valid.
         # If no previous, self.first_valid may not be.
@@ -617,7 +617,7 @@ class PresenterPane(edlib.Pane):
         return 1
 
     def handle_recentre(self, key, focus, mark, num, comm2, **a):
-        "handle:Notify:doc:Recentre"
+        "handle:doc:Recentre"
         m2 = edlib.Mark(self)
         m2.to_mark(mark)
         if num == 2:
@@ -707,19 +707,19 @@ class MarkdownPane(edlib.Pane):
         "handle:Display:refresh"
         # Refresh causes presentation page to recenter
         # page-down just moves down to start of next page.
-        focus.call("doc:Notify:doc:Recentre", mark)
+        focus.call("doc:notify:doc:Recentre", mark)
         return 0
 
     def handle_mvl(self, key, focus, mark, num, **a):
         "handle:Move-View-Large"
         if num >= 0 and mark:
             m2 = mark.dup()
-            if focus.call("doc:Notify:doc:Recentre", m2, 2,
+            if focus.call("doc:notify:doc:Recentre", m2, 2,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 return 1
         if num < 0 and mark:
             m2 = mark.dup()
-            if focus.call("doc:Notify:doc:Recentre", m2, 3,
+            if focus.call("doc:notify:doc:Recentre", m2, 3,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 return 1
         return 0
@@ -730,8 +730,8 @@ def present_attach(key, focus, comm2, **a):
     p['background'] = 'color:yellow'
     p['hide-cursor'] = 'yes'
 
-    p.call("doc:Request:Notify:doc:Replace")
-    p.call("doc:Request:Notify:doc:Recentre")
+    p.call("doc:request:doc:replaced")
+    p.call("doc:request:doc:Recentre")
     comm2("callback", p)
     return 1
 

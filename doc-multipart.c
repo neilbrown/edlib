@@ -488,7 +488,7 @@ DEF_CMD(mp_add)
 		change_part(mpi, ci->mark, n, 0);
 
 	pane_add_notify(ci->home, ci->focus, "Notify:Close");
-	home_call(ci->focus, "doc:Request:Notify:doc:viewers", ci->home);
+	home_call(ci->focus, "doc:request:doc:notify-viewers", ci->home);
 
 	return 1;
 }
@@ -551,7 +551,7 @@ static void mp_init_map(void)
 	key_add(mp_map, "doc:step-part", &mp_step_part);
 	key_add(mp_map, "Close", &mp_close);
 	key_add(mp_map, "Notify:Close", &mp_notify_close);
-	key_add(mp_map, "Notify:doc:viewers", &mp_notify_viewers);
+	key_add(mp_map, "doc:notify-viewers", &mp_notify_viewers);
 	key_add(mp_map, "multipart-add", &mp_add);
 	key_add_prefix(mp_map, "multipart-this:", &mp_forward);
 	key_add_prefix(mp_map, "multipart-next:", &mp_forward);

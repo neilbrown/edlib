@@ -23,7 +23,7 @@ class MakePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.add_notify(focus, "make-next")
-        self.add_notify(focus, "Notify:doc:make-revisit");
+        self.add_notify(focus, "doc:make-revisit");
         self.viewnum = focus.call("doc:add-view", self) - 1
         self.point = None
         self.map = []
@@ -44,7 +44,7 @@ class MakePane(edlib.Pane):
         if not self.pipe:
             return False
         self.call("doc:set:doc-status", "Running");
-        self.call("doc:Notify:doc:status-changed")
+        self.call("doc:notify:doc:status-changed")
         fd = self.pipe.stdout.fileno()
         fl = fcntl.fcntl(fd, fcntl.F_GETFL)
         fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
@@ -63,7 +63,7 @@ class MakePane(edlib.Pane):
             self.pipe = None
             self.call("doc:replace", "\nProcess Finished\n");
             self.call("doc:set:doc-status", "Complete")
-            self.call("doc:Notify:doc:status-changed")
+            self.call("doc:notify:doc:status-changed")
             return edlib.Efalse
         self.call("doc:replace", r);
         self.do_parse()
@@ -114,7 +114,7 @@ class MakePane(edlib.Pane):
             self.call("doc:step", m, 1, 1)
             fname = self.call("doc:get-str", m, e, ret="str")
             if self.first_match and self['make-follow'] == 'no':
-                self.call("doc:Notify:make-set-match", m)
+                self.call("doc:notify:make-set-match", m)
                 self.first_match = False
             if self.record_line(fname, lineno, m, is_note):
                 # new file - stop here
@@ -203,11 +203,11 @@ class MakePane(edlib.Pane):
         p = self.point
         if p:
             p["render:make-line"] = "no"
-            self.call("doc:Notify:doc:Replace", p, p)
+            self.call("doc:notify:doc:replaced", p, p)
             t = p.prev()
             while t and t['has_note'] == 'yes':
                 t['render:first_err'] = None
-                self.call("doc:Notify:doc:Replace", t, t)
+                self.call("doc:notify:doc:replaced", t, t)
                 t = t.prev()
         while True:
             if p:
@@ -220,11 +220,11 @@ class MakePane(edlib.Pane):
                 break
         self.point = p
         p["render:make-line"] = "yes"
-        self.call("doc:Notify:doc:Replace", p, p)
+        self.call("doc:notify:doc:replaced", p, p)
         t = p.prev()
         while t and t['has_note'] == 'yes':
             t['render:first_err'] = 'yes'
-            self.call("doc:Notify:doc:Replace", t, t)
+            self.call("doc:notify:doc:replaced", t, t)
             t = t.prev()
         self.note_ok = False
         return self.map[int(p['ref'])]
@@ -308,20 +308,20 @@ class MakePane(edlib.Pane):
             docpane = par.call("OtherPane", ret='focus')
             if docpane:
                 self.call("doc:attach-view", docpane)
-        self.call("doc:Notify:make-set-match", self.point)
+        self.call("doc:notify:make-set-match", self.point)
         return 1
 
     def handle_revisit(self, key, mark, **a):
-        "handle:Notify:doc:make-revisit"
+        "handle:doc:make-revisit"
         self.do_parse()
         p = self.call("doc:vmark-get", self.viewnum, mark, 3, ret='mark2')
         if self.point:
             self.point["render:make-line"] = "no"
-            self.call("doc:Notify:doc:Replace", self.point, self.point)
+            self.call("doc:notify:doc:replaced", self.point, self.point)
             t = p.prev()
             while t and t['has_note'] == 'yes':
                 t['render:first_err'] = None
-                self.call("doc:Notify:doc:Replace", t, t)
+                self.call("doc:notify:doc:replaced", t, t)
                 t = t.prev()
         if p:
             self.point = p.prev()
@@ -383,23 +383,23 @@ class MakeViewerPane(edlib.Pane):
     # jump to a given match, and similar
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
-        self.call("doc:Request:Notify:doc:Replace")
-        self.call("doc:Request:Notify:make-set-match")
+        self.call("doc:request:doc:replaced")
+        self.call("doc:request:make-set-match")
 
     def handle_set_match(self, key, mark, **a):
-        "handle:Notify:make-set-match"
+        "handle:make-set-match"
         self.call("Move-to", mark)
         return 1
 
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
-        focus.call("doc:Notify:doc:make-revisit", mark)
+        focus.call("doc:notify:doc:make-revisit", mark)
         next_match("interactive-cmd-next-match", focus,
                    edlib.NO_NUMERIC, "OtherPane")
         return 1
 
     def handle_replace(self, key, mark, mark2, **a):
-        "handle:Notify:doc:Replace"
+        "handle:doc:replaced"
         if not mark or not mark2:
             return 1
         if self["make-follow"] == "no":

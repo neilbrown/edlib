@@ -15,3 +15,14 @@ If only one mark is given, then the change is small and either starts
 at 'mark' or ends at 'mark2'.  'num' gives the length in characters,
 but if this length extends to another line, it may not be honoured.
 
+
+# Documents
+
+## doc:request:FOO
+
+Request that when the document sends notification "FOO", it gets sent
+to the provided focus.
+
+## doc:notify:FOO
+
+Request that the document sends notification FOO.

@@ -392,7 +392,7 @@ DEF_CMD(search_toggle_ci)
 	if (ci->mark && doc_following_pane(ci->focus, ci->mark) != WEOF)
 		return 0;
 	esi->case_sensitive = !esi->case_sensitive;
-	call("doc:Notify:doc:Replace", ci->focus);
+	call("doc:notify:doc:replaced", ci->focus);
 	attr_set_str(&ci->home->attrs, "status-line",
 		     esi->case_sensitive ? " Search: case sensitive " :
 		     " Search: case insensitive ");
@@ -409,7 +409,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "C-Chr-R", &search_forward);
 	key_add(es_map, "Close", &search_close);
 	key_add(es_map, "Enter", &search_done);
-	key_add(es_map, "Notify:doc:Replace", &search_again);
+	key_add(es_map, "doc:replaced", &search_again);
 	key_add(es_map, "Notify:clip", &search_clip);
 	key_add(es_map, "C-Chr-L", &search_recentre);
 	key_add_range(es_map, "Chr- ", "Chr-~", &search_insert_quoted);
@@ -447,7 +447,7 @@ DEF_CMD(emacs_search)
 
 	p = pane_register(ci->focus, 0, &search_handle.c, esi);
 	if (p) {
-		call("doc:Request:Notify:doc:Replace", p);
+		call("doc:request:doc:replaced", p);
 		attr_set_str(&p->attrs, "status-line", " Search: case insensitive ");
 		comm_call(ci->comm2, "callback:attach", p);
 	}
