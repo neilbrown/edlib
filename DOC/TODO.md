@@ -69,6 +69,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] dynamic-complete shouldn't treat '_' as work-border
 - [X] in python code, protect Replace/doc:replace - file could be read-only
 - [X] c-mode indent should let me delete one level when it was due to bracketing,
       so I can insert the close bracket.
@@ -132,7 +133,6 @@ Core features
 - [ ] pane_close() can be called at awkward times.  We need to do some inital
       processes so that it looks closed, but so that code can continue to
       run, then schedule proper close for later.
-- [ ] rexel thinks '\[ \]' is an incomplete (or illegal?) pattern.
 - [X] nested notification of the same key should be disallowed somehow
 - [ ] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
 - [ ] undo often doesn't leave me where I expect to be left. - maybe it is the
@@ -194,6 +194,16 @@ Core features
 - [ ] hide view-num inside pane so number cannot be misused.
      i.e. each view is owned by a pane and can only be used by that pane.
 
+rexel
+-----
+
+- [ ] rexel thinks '\[ \]' is an incomplete (or illegal?) pattern.
+- [ ] Allow ?...: at start of a group to affect how group is interpreted
+      e.g. 'Lnnn' mean there are nnn chars to be treated literally
+            I or S - case [in]sensitive.... maybe only at start
+            l - lax spaces,dash,quote
+	    ???
+
 Module features
 ---------------
 
@@ -202,6 +212,8 @@ Module features
 - [ ] if 'focus' is a temp pane, it might disappear (lib-abbrev) which 
       closes the popup.  I need to some how indicate a more stable pane
       for replies to go to
+      Maybe lib-abbrev should catch ChildRegistered and call pane_subsume
+      to get out of the way ... or similar.... 
 
 ### emacs
 
@@ -320,6 +332,7 @@ Module features
 
 ### grep/make
 
+- [ ] neg arg to next-match goes backwards, and ` keeps going backwards
 - [ ] if file isn't already loaded, wait until it is wanted, or something
       else loads it.
 - [ ] if file is reloaded, re-place all the marks, don't just ignore them.
@@ -327,6 +340,7 @@ Module features
 - [X] If there is an error followed by some 'note:'s, goto the last note(?)
 - [X] leave marks at every match as soon as possible
 - [ ] if two results are at the same location, ignore the second.
+- [ ] improve detection of the 'important' "note" line.
 - [ ] clarify and document the role of numeric args to git-grep
 - [X] make/grep - when insert at end-of-file, a pointer that was at EOF should
       stay there.
@@ -335,6 +349,7 @@ Module features
 - [ ] when restart compile/grep, kill only one.
 - [ ] allow make even if not all files are saved - 'q' from save-all?
 - [ ] numeric-prefix to make will auto-save everything.
+- [ ] grep should (optionally) save files in the directory tree
 - [X] make/grep: highlight current match.
 - [X] make/grep fail-safe if target file doesn't exist
 - [ ] run make in a given parent

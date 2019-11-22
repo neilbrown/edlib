@@ -348,10 +348,11 @@ static void do_map_init(Pane *self safe)
 	int i;
 	PyObject *refer = self->refer ?: (PyObject*)self;
 	PyObject *l = PyObject_Dir(refer);
-	int n = PyList_Size(l);
+	int n;
 
-	if (!self->map || !self->pane)
+	if (!self->map || !self->pane || !l)
 		return;
+	n = PyList_Size(l);
 	for (i = 0; i < n ; i++) {
 		PyObject *e = PyList_GetItem(l, i);
 		PyObject *m = PyObject_GetAttr(refer, e);
@@ -2275,7 +2276,94 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			return 0;
 		}
 	}
-	/* Handle keyword args - later */
+	if (kwds && PyDict_Check(kwds)) {
+		a = PyDict_GetItemString(kwds, "str");
+		if (a) {
+			if (*s1 || ci->str) {
+				PyErr_SetString(PyExc_TypeError,
+						"'str' given with other strings");
+				return 0;
+			}
+			if (!PyUnicode_Check(a) && !PyString_Check(a)) {
+				PyErr_SetString(PyExc_TypeError,
+						"'str' must be string or unicode");
+				return 0;
+			}
+			ci->str = python_as_string(a, s1);
+		}
+		a = PyDict_GetItemString(kwds, "str2");
+		if (a) {
+			if (*s2 || ci->str2) {
+				PyErr_SetString(PyExc_TypeError,
+						"'str2' given with 2 strings");
+				return 0;
+			}
+			if (!PyUnicode_Check(a) && !PyString_Check(a)) {
+				PyErr_SetString(PyExc_TypeError,
+						"'str2' must be string or unicode");
+				return 0;
+			}
+			ci->str2 = python_as_string(a, s2);
+		}
+		a = PyDict_GetItemString(kwds, "mark");
+		if (a) {
+			if (ci->mark) {
+				PyErr_SetString(PyExc_TypeError,
+						"'mark' given with other marks");
+				return 0;
+			}
+			if (!PyObject_TypeCheck(a, &MarkType)) {
+				PyErr_SetString(PyExc_TypeError,
+						"'mark' must be an edlib.Mark");
+				return 0;
+			}
+			ci->mark = ((Mark*)a)->mark;
+		}
+		a = PyDict_GetItemString(kwds, "mark2");
+		if (a) {
+			if (ci->mark2) {
+				PyErr_SetString(PyExc_TypeError,
+						"'mark2' given with 2 other marks");
+				return 0;
+			}
+			if (!PyObject_TypeCheck(a, &MarkType)) {
+				PyErr_SetString(PyExc_TypeError,
+						"'mark2' must be an edlib.Mark");
+				return 0;
+			}
+			ci->mark2 = ((Mark*)a)->mark;
+		}
+		a = PyDict_GetItemString(kwds, "num");
+		if (a) {
+			if (num_set) {
+				PyErr_SetString(PyExc_TypeError,
+						"'num' given with other numbers");
+				return 0;
+			}
+			if (!PyInt_Check(a)) {
+				PyErr_SetString(PyExc_TypeError,
+						"'num' must be an integer");
+				return 0;
+			}
+			ci->num = PyInt_AsLong(a);
+			num_set = 1;
+		}
+		a = PyDict_GetItemString(kwds, "num2");
+		if (a) {
+			if (num2_set) {
+				PyErr_SetString(PyExc_TypeError,
+						"'num2' given with 2 other numbers");
+				return 0;
+			}
+			if (!PyInt_Check(a)) {
+				PyErr_SetString(PyExc_TypeError,
+						"'num2' must be an integer");
+				return 0;
+			}
+			ci->num2 = PyInt_AsLong(a);
+			num2_set = 1;
+		}
+	}
 	if (!(void*)ci->key) {
 		PyErr_SetString(PyExc_TypeError, "No key specified");
 		return 0;
