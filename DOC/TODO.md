@@ -19,11 +19,11 @@ Current priorities
       marks sent make sense
       + doc-rendering
       - doc-text
-      - emacs-search
-      - lib-history
-      - lib-linecount
-      - lib-abbrev
-      - lib-make
+      + emacs-search
+      + lib-history
+      + lib-linecount
+      + lib-abbrev
+      + lib-make
       - module-notmuch
       - render-present
       - render-hex

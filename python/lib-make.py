@@ -203,11 +203,11 @@ class MakePane(edlib.Pane):
         p = self.point
         if p:
             p["render:make-line"] = "no"
-            self.call("doc:notify:doc:replaced", p, p)
+            self.call("doc:notify:doc:replaced", p, 100)
             t = p.prev()
             while t and t['has_note'] == 'yes':
                 t['render:first_err'] = None
-                self.call("doc:notify:doc:replaced", t, t)
+                self.call("doc:notify:doc:replaced", t, 100)
                 t = t.prev()
         while True:
             if p:
@@ -220,11 +220,11 @@ class MakePane(edlib.Pane):
                 break
         self.point = p
         p["render:make-line"] = "yes"
-        self.call("doc:notify:doc:replaced", p, p)
+        self.call("doc:notify:doc:replaced", p, 100)
         t = p.prev()
         while t and t['has_note'] == 'yes':
             t['render:first_err'] = 'yes'
-            self.call("doc:notify:doc:replaced", t, t)
+            self.call("doc:notify:doc:replaced", t, 100)
             t = t.prev()
         self.note_ok = False
         return self.map[int(p['ref'])]
@@ -317,11 +317,11 @@ class MakePane(edlib.Pane):
         p = self.call("doc:vmark-get", self.viewnum, mark, 3, ret='mark2')
         if self.point:
             self.point["render:make-line"] = "no"
-            self.call("doc:notify:doc:replaced", self.point, self.point)
+            self.call("doc:notify:doc:replaced", self.point, 100)
             t = p.prev()
             while t and t['has_note'] == 'yes':
                 t['render:first_err'] = None
-                self.call("doc:notify:doc:replaced", t, t)
+                self.call("doc:notify:doc:replaced", t, 100)
                 t = t.prev()
         if p:
             self.point = p.prev()
