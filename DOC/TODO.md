@@ -17,6 +17,17 @@ Current priorities
       at the same location. .make_first .make_last
 - [ ] Review all calls to Notify:change do Notify:doc:Replace and ensure the
       marks sent make sense
+      + doc-rendering
+      - doc-text
+      - emacs-search
+      - lib-history
+      - lib-linecount
+      - lib-abbrev
+      - lib-make
+      - module-notmuch
+      - render-present
+      - render-hex
+      - render-lines
 - [X] review notify:change handlers
 - [ ] makes sure text:match and text:search do something sensible with the mark
 - [X] message line timed updates - no change for 7 seconds, always revert after 30 seconds

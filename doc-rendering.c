@@ -380,17 +380,45 @@ DEF_CMD(dr_notify_replace)
 	struct doc *d = ci->home->data;
 	struct dr_info *dri = container_of(d, struct dr_info, doc);
 	struct pane *p = dri->base;
+	struct mark *first = ci->mark;
+	struct mark *last = ci->mark2;
+	struct mark *start = NULL, *end = NULL;
 	struct mark *m;
 
 	if (!p)
 		return Einval;
+	if (first && last && first->seq > last->seq) {
+		first = ci->mark2;
+		last = ci->mark;
+	}
+	if (!first)
+		first = last;
+	if (!last)
+		last = first;
 	m = vmark_first(p, dri->vnum, ci->home);
-	while (m) {
-		free(m->mdata);
-		m->mdata = NULL;
+	while (m && (!last || mark_ordered_or_same(m, last))) {
+		if (!first || mark_ordered_or_same(first,m)) {
+			if (!start) {
+				start = vmark_new(ci->home, MARK_UNGROUPED,
+						  NULL);
+				if (start)
+					set_ref_mark(ci->home, start, p, dri->vnum, m);
+			}
+			free(m->mdata);
+			m->mdata = NULL;
+		}
 		m = vmark_next(m);
 	}
-	pane_notify("doc:replaced", ci->home);
+	if (m) {
+		end =vmark_new(ci->home, MARK_UNGROUPED,
+			       NULL);
+		if (end)
+			set_ref_mark(ci->home, end, p, dri->vnum, m);
+	}
+	pane_notify("doc:replaced", ci->home, ci->num, start, NULL,
+		0, end);
+	mark_free(start);
+	mark_free(end);
 	return 1;
 }
 
