@@ -339,8 +339,8 @@ class notmuch_main(edlib.Doc):
         if not self.timer_set:
             self.timer_set = True
             self.call("event:timer", 5*60*1000, self.tick)
-        self.searches.load(False)
-        self.notify("doc:replaced")
+        if self.searches.load(False):
+            self.notify("doc:replaced")
         self.updating = "counts"
         if not self.searches.update(self, self.updated):
             self.update_next()

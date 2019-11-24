@@ -24,7 +24,7 @@ Current priorities
       + lib-linecount
       + lib-abbrev
       + lib-make
-      - module-notmuch
+      + module-notmuch
       - render-present
       - render-hex
       - render-lines
