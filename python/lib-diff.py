@@ -43,17 +43,13 @@ class DiffPane(edlib.Pane):
         focus.call("Move-EOL", -1, m)
         lines = 0
         while focus.call("doc:step", 0, m, ret='char') == '\n':
-            try:
-                focus.call("text-match", m,
-                           "@@ -[\d]+,[\d]+ \+[\d]+,[\d]+ @@")
-                break
-            except edlib.commandfailed:
-                pass
+            if focus.call("text-match", m.dup(),
+                          "@@ -[\d]+,[\d]+ \+[\d]+,[\d]+ @@") > 0:
+                break;
             c = focus.call("doc:step", m, 1, ret='char')
             if c in '+ ':
                 lines += 1
             focus.call("Move-EOL", -2, m)
-        focus.call("Move-EOL", -1, m)
         focus.call("text-match", m, "@@ -[\d]+,[\d]+ \+")
         ms = m.dup()
         focus.call("text-match", m, "[\d]+")
@@ -63,15 +59,13 @@ class DiffPane(edlib.Pane):
         found_plus = False
         while not found_plus:
             focus.call("Move-EOL", -2, m)
-            try:
-                if at_at:
-                    focus.call("text-match", m, "\+\+\+ ")
-                    found_plus = True
-                else:
-                    focus.call("text-match", m, "@@ ")
-                    at_at = True
-            except edlib.commandfailed:
+            if at_at:
                 at_at = False
+                if focus.call("text-match", m, "\+\+\+ ") > 0:
+                    found_plus = True
+            else:
+                if focus.call("text-match", m, "@@ ") > 0:
+                    at_at = True
         if not found_plus:
             return edlib.Efail
         ms = m.dup()

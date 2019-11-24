@@ -306,21 +306,17 @@ class CModePane(edlib.Pane):
         if c == '\n':
             p.call("doc:step", 1, 1, st)
 
-            try:
-                l = p.call("text-match", st.dup(),
-                           '^[ \t]*(case\\s[^:\\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):')
-            except edlib.commandfailed:
-                l = 0
+            l = p.call("text-match", st.dup(),
+                       '^[ \t]*(case\\s[^:\\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):')
         else:
             l = 0
         if l > 0:
             if p.call("doc:step", 1, st, ret='char') in ' \t':
                 label_line = "indented-label"
             else:
-                try:
-                    l = p.call("text-match", st, '^[_\\A\\a\\d]+:')
+                if p.call("text-match", st, '^[_\\A\\a\\d]+:') > 0:
                     label_line = "margin-label"
-                except edlib.commandfailed:
+                else:
                     label_line = "indented-label"
             msg += " " + label_line
             depth.insert(0, 0)
@@ -431,12 +427,8 @@ class CModePane(edlib.Pane):
         self.parent.call(key, focus, mark, **a)
         m = mark.dup()
         focus.call("Move-EOL", m, -1)
-        try:
-            n = focus.call("text-match", m.dup(), "^[\\s]*[])}{]")
-            if n > 0:
-                self.handle_tab(key, focus, m, 1)
-        except edlib.commandfailed:
-            pass
+        if focus.call("text-match", m.dup(), "^[\\s]*[])}{]") > 0:
+            self.handle_tab(key, focus, m, 1)
         return 1
 
     def handle_colon(self, key, focus, mark, **a):
@@ -449,13 +441,9 @@ class CModePane(edlib.Pane):
         self.parent.call(key, focus, mark, **a)
         m = mark.dup()
         focus.call("Move-EOL", m, -1)
-        try:
-            n = focus.call("text-match", m.dup(),
-                           '^[ \t]*(case\\s[^:\\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):')
-            if n > 0:
-                self.handle_tab(key, focus, m, 1)
-        except edlib.commandfailed:
-            pass
+        if focus.call("text-match", m.dup(),
+                      '^[ \t]*(case\\s[^:\\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):') > 0:
+            self.handle_tab(key, focus, m, 1)
         return 1
 
 

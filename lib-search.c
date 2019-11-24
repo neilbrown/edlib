@@ -4,9 +4,18 @@
  *
  * Searching.
  * "text-search" command searches from given mark until it
- * finds the given string or end of buffer.
- * Leave mark at end of match and set ->num2 to length of match.
+ * finds the given pattern or end of buffer.
+ * If the pattern is found, then 'm' is left at the extremity of
+ * the match in the direction of search: so the start if search backwards
+ * or the end if searching forwards.
+ * The returned value is the length of the match + 1, or an Efail
+ * In the case of an error, the location of ->mark is undefined.
  * If mark2 is given, don't go beyond there.
+ *
+ * "text-match" is similar to text-search forwards, but requires that
+ * the match starts at ->mark.  ->mark is moved to the end of the
+ * match is the text does, in fact, match.
+ * If the match fails, Efalse is returned (different to "text-search")
  */
 
 #include <stdlib.h>
@@ -166,8 +175,11 @@ DEF_CMD(text_search)
 		mark_to_mark(m, endmark);
 	mark_free(endmark);
 	free(rxl);
-	if (since_start < 0)
+	if (since_start < 0) {
+		if (strcmp(ci->key, "text-match") == 0)
+			return Efalse; /* non-fatal */
 		return Efail;
+	}
 	return since_start + 1;
 }
 

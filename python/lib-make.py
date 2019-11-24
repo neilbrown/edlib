@@ -95,11 +95,7 @@ class MakePane(edlib.Pane):
                 # No more matches - stop
                 return
             # Want to be careful of 'note: ' from gcc
-            try:
-                self.call("text-match", ":[0-9]+: note:", m.dup())
-                is_note = True
-            except edlib.commandfailed:
-                is_note = False
+            is_note = (self.call("text-match", ":[0-9]+: note:", m.dup()) > 0)
 
             # Now at end of line number.
             e = m.dup()

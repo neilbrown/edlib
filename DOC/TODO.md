@@ -29,7 +29,7 @@ Current priorities
       + render-hex
       + render-lines
 - [X] review notify:change handlers
-- [ ] makes sure text:match and text:search do something sensible with the mark
+- [X] makes sure text:match and text:search do something sensible with the mark
 - [X] message line timed updates - no change for 7 seconds, always revert after 30 seconds
 - [X] copy-paste with mouse
 - [X] select buffer to not accept a non-existant buffer
