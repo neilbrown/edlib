@@ -25,7 +25,7 @@ Current priorities
       + lib-abbrev
       + lib-make
       + module-notmuch
-      - render-present
+      + render-present
       - render-hex
       - render-lines
 - [X] review notify:change handlers

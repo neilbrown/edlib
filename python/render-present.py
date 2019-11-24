@@ -586,7 +586,10 @@ class PresenterPane(edlib.Pane):
         # A change has happened at 'mark'.  The following page might not
         # be valid, and the previous may not be valid or have next-valid.
         # If no previous, self.first_valid may not be.
-        page = self.prev_page(mark)
+        if mark:
+            page = self.prev_page(mark)
+        else:
+            page = None
         if not page:
             # mark is before first page
             page = self.first_page()
@@ -601,7 +604,10 @@ class PresenterPane(edlib.Pane):
             page = page.next()
             if page:
                 page['valid'] = 'no'
-        l = self.prev_line(mark)
+        if mark:
+            l = self.prev_line(mark)
+        else:
+            l = None
 
         if l:
             self.lines_damaged = True
