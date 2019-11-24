@@ -26,7 +26,7 @@ struct search_state {
 
 static int is_word(wint_t ch)
 {
-	return iswalnum(ch);
+	return ch == '_' || iswalnum(ch);
 }
 
 DEF_CMD(search_test)
