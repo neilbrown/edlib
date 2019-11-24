@@ -1234,10 +1234,13 @@ DEF_CMD(doc_open)
 		}
 
 		if (rp) {
+			char nbuf[PATH_MAX];
+			strcpy(nbuf, rp);
 			if (rp[1])
-				strcat(rp, "/");
-			strcat(rp, sl);
-			name = rp;
+				strcat(nbuf, "/");
+			strcat(nbuf, sl);
+			simplify_path(nbuf, pathbuf);
+			name = pathbuf;
 		}
 	}
 
