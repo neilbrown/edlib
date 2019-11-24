@@ -1273,13 +1273,21 @@ DEF_CMD(text_reundo)
 				break;
 
 		text_normalize(t, &m->ref);
-		early = doc_prev_mark_all(m);
-		if (early && !text_ref_same(t, &early->ref, &start))
-			early = NULL;
-
+		if (text_ref_same(t, &start, &end))
+			early = m;
+		else {
+			early = mark_dup(m);
+			mark_make_first(early);
+			/* There cannot be any mark between start and end,
+			 * so it is safe to assign 'ref' here.
+			 */
+			early->ref = start;
+		}
 		pane_notify("doc:replaced", t->doc.home,
-			    0, ci->mark, NULL,
-			    0, early);
+			    0, early, NULL,
+			    0, m);
+		if (early != m)
+			mark_free(early);
 
 		text_check_consistent(t);
 
@@ -1979,18 +1987,15 @@ DEF_CMD(text_replace)
 			;
 		text_check_consistent(t);
 	}
-	if (end) {
-		/* leave "end" at the start of the insertion, and
-		 * pm moves to the end - that are both currently at
-		 * the same location in the doc.
-		 */
-		mark_make_first(end);
+	if (end)
 		early = end;
-	} else {
-		early = doc_prev_mark_all(pm);
-		if (early && !text_ref_same(t, &early->ref, &pm->ref))
-			early = NULL;
-	}
+	else
+		early = mark_dup(pm);
+	/* leave "early" at the start of the insertion, and
+	 * pm moves to the end - they are both currently at
+	 * the same location in the doc.
+	 */
+	mark_make_first(early);
 
 	if (str) {
 		struct doc_ref start;
@@ -2020,12 +2025,15 @@ DEF_CMD(text_replace)
 	text_check_autosave(t);
 	if (status_change)
 		call("doc:notify:doc:status-changed", d->home);
-	pane_notify("doc:replaced", t->doc.home, 0, pm, NULL,
-		    0, early);
+	pane_notify("doc:replaced", t->doc.home, 0, early, NULL,
+		    0, pm);
+	if (early != end)
+		mark_free(early);
 	if (!ci->mark2)
 		mark_free(pm);
 	return first ? 1 : 2;
 }
+
 
 static struct attrset *text_attrset(struct doc *d safe, struct mark *m safe,
 				    int *op safe)
@@ -2135,7 +2143,7 @@ DEF_CMD(text_set_attr)
 		c = list_next_entry(c, lst);
 		o = c->start;
 	}
-	pane_notify("doc:replaced", ci->home, 0, ci->mark);
+	pane_notify("doc:replaced", ci->home, 1, ci->mark);
 	attr_set_str_key(&c->attrs, attr, val, o);
 	return Efallthrough;
 }

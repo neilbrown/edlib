@@ -15,10 +15,10 @@ Current priorities
 - [X] revisiting the grep-output buffer should attach pane to handle Enter etc
 - [X] Introduce command to move a mark before or after all other marks
       at the same location. .make_first .make_last
-- [ ] Review all calls to Notify:change do Notify:doc:Replace and ensure the
+- [X] Review all calls to Notify:change do Notify:doc:Replace and ensure the
       marks sent make sense
       + doc-rendering
-      - doc-text
+      + doc-text
       + emacs-search
       + lib-history
       + lib-linecount
@@ -26,8 +26,8 @@ Current priorities
       + lib-make
       + module-notmuch
       + render-present
-      - render-hex
-      - render-lines
+      + render-hex
+      + render-lines
 - [X] review notify:change handlers
 - [ ] makes sure text:match and text:search do something sensible with the mark
 - [X] message line timed updates - no change for 7 seconds, always revert after 30 seconds
@@ -390,6 +390,12 @@ Module features
 - [ ] save-all should accept 'y' and 'n' as well as 's' and '%'
       and I probably want to be told what to do.  And '%' is probably not a good idea.
 - [ ] docs_callback should (maybe) use a keymap
+
+
+### hex
+
+- [ ] improve doc:replaced handing, by tracking the visible region and
+      checking if a replacement changes the number of chars.
 
 ### shell mode
 
