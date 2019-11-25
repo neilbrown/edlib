@@ -38,15 +38,8 @@ Current priorities
 - [x] fix undo positioning of pointer and grouping of edits
 - [X] simplify/document rxl_advance interface, particularly 'restart'.
 - [X] \b for word-break - maybe provide a regexp set for 'is a word char'
-- [ ] \B for non-word-break.  This needs a change to how flags are handled.
 - [X] rexel/rxl_advance: "clear out next lists" take too long on long patterns. memset?
       or follow the existing chain?  Does 'leng' need to be cleared?
-- [ ] \1 substitutions
-      Maybe to extract a given submatch we have a third array pair where we record
-      the length since a particular point.
-      We then repeat the match process against the found string to get start
-      and end points.
-      Or write a back-tracking matcher that records all groups in the stack
 - [X] lax search - single space when case insensitve matches multiple spaces/tabs/newlines
 - [ ] search-replace.
       This might just be an extension of the current search.  I would have
@@ -215,6 +208,13 @@ rexel
             I or S - case [in]sensitive.... maybe only at start
             l - lax spaces,dash,quote
 	    ???
+- [ ] \B for non-word-break.  This needs a change to how flags are handled.
+- [ ] \1 substitutions
+      Maybe to extract a given submatch we have a third array pair where we record
+      the length since a particular point.
+      We then repeat the match process against the found string to get start
+      and end points.
+      Or write a back-tracking matcher that records all groups in the stack
 
 Module features
 ---------------

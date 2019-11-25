@@ -1197,7 +1197,7 @@ DEF_CMD(emacs_shell)
 	 */
 	call_ret(pane, "attach-shellcmd", doc, 0, NULL, ci->str, 0, NULL, path);
 
-	if (strstr(ci->str, "diff"))
+	if (strstr(ci->str, "diff") || strstr(ci->str, "git show"))
 		attr_set_str(&doc->attrs, "view-default", "diff");
 	else
 		attr_set_str(&doc->attrs, "view-default", "viewer");
