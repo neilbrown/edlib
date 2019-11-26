@@ -69,8 +69,8 @@ try:
                     else:
                         self.sock.send("No Display!")
                     return 1
-                if msg[:28] == "doc:Request:doc:done:":
-                    path = msg[28:]
+                if msg[:21] == "doc:request:doc:done:":
+                    path = msg[21:]
                     d = editor.call("doc:open", -1, path, ret="focus")
                     if not d:
                         self.sock.send("FAIL")
