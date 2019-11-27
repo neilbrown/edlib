@@ -1864,16 +1864,23 @@ DEF_CMD(emacs_make)
 DEF_CMD(emacs_press)
 {
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 
+	if (!m)
+		return Efail;
+	/* NOTE must find new location before tw report that the
+	 * view has changed.
+	 */
+	call("Move-CursorXY", ci->focus,
+	     0, m, NULL, 0, NULL, NULL, ci->x, ci->y);
 	if (mk) {
 		struct mark *p = call_ret(mark, "doc:point", ci->focus);
 		attr_set_int(&mk->attrs, "emacs:active", 0);
 		attr_set_str(&mk->attrs, "emacs:selection-type", "char");
 		call("view:changed", ci->focus, 0, p, NULL, 0, mk);
 	}
-	call("Move-CursorXY", ci->focus,
-	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
-	call("Move-to", ci->focus, 1);
+	call("Move-to", ci->focus, 0, m);
+	call("Move-to", ci->focus, 1, m);
 	pane_focus(ci->focus);
 	return 1;
 }

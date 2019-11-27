@@ -276,6 +276,8 @@ Module features
 
 ### render-lines
 
+- [ ] view:changed shouldn't destroy the view, else Move-CursorXY
+      gets confused.
 - [X] Rules for when ignore_point gets cleared need to be worked out.
       c-mode/Move-Paragraph shouldn't need to call Move-to just
       to ensure cursor becomes visible.  Maybe DAMAGED_CURSOR
