@@ -1865,6 +1865,7 @@ DEF_CMD(emacs_press)
 {
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+	char *type = strcmp(ci->key, "Press-1") == 0 ? "char" : "word";
 
 	if (!m)
 		return Efail;
@@ -1876,11 +1877,15 @@ DEF_CMD(emacs_press)
 	if (mk) {
 		struct mark *p = call_ret(mark, "doc:point", ci->focus);
 		attr_set_int(&mk->attrs, "emacs:active", 0);
-		attr_set_str(&mk->attrs, "emacs:selection-type", "char");
 		call("view:changed", ci->focus, 0, p, NULL, 0, mk);
+		if (!mark_same(p, m))
+			type = "char";
 	}
 	call("Move-to", ci->focus, 0, m);
 	call("Move-to", ci->focus, 1, m);
+	if (!mk)
+		mk = call_ret(mark2, "doc:point", ci->focus);
+	attr_set_str(&mk->attrs, "emacs:selection-type", type);
 	pane_focus(ci->focus);
 	return 1;
 }
@@ -1916,16 +1921,6 @@ DEF_CMD(emacs_release)
 		if (str && *str)
 			call("copy:save", ci->focus, 0, NULL, str, 1);
 	}
-	return 1;
-}
-
-DEF_CMD(emacs_dpress)
-{
-	/* Switch to word-based selection */
-	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
-
-	if (mk)
-		attr_set_str(&mk->attrs, "emacs:selection-type", "word");
 	return 1;
 }
 
@@ -2139,7 +2134,7 @@ static void emacs_init(void)
 
 	key_add(m, "Press-1", &emacs_press);
 	key_add(m, "Release-1", &emacs_release);
-	key_add(m, "DPress-1", &emacs_dpress);
+	key_add(m, "DPress-1", &emacs_press);
 	key_add(m, "Click-2", &emacs_paste);
 
 	emacs_map = m;
