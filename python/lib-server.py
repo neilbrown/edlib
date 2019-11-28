@@ -21,6 +21,7 @@ try:
             self.sock = sock
             self.term = None
             self.disp = None
+            self.doc = None
             self.want_close = False
             editor.call("event:read", sock.fileno(),
                         self.read)
@@ -76,6 +77,8 @@ try:
                         self.sock.send("FAIL")
                         return 1
                     self.add_notify(d, "doc:done")
+                    self.add_notify(d, "Notify:Close")
+                    self.doc = d
                     if self.term:
                         self.term.call("Display:set-noclose",
                                        "Cannot close display until document done - use 'C-x #'")
@@ -119,9 +122,15 @@ try:
             if focus == self.disp:
                 self.disp = None
                 self.term = None
-            if self.want_close:
-                self.sock.send("Close")
-                self.want_close = False
+                if self.want_close:
+                    self.sock.send("Close")
+                    self.want_close = False
+            if focus == self.doc:
+                # same as doc:done
+                self.doc = None
+                if self.term:
+                    self.term.call("Window:set-noclose")
+                self.sock.send("Done")
             return 0
 
         def handle_done(self, key, str, **a):
