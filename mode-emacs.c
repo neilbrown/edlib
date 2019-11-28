@@ -936,8 +936,9 @@ DEF_CMD(emacs_findfile)
 		return Efail;
 	}
 	if (strcmp(ci->key, "File Found Other Window") == 0) {
+		struct pane *this = call_ret(pane, "ThisPane", ci->focus);
 		par = home_call_ret(pane, ci->focus, "DocPane", p);
-		if (!par)
+		if (!par || par == this)
 			par = call_ret(pane, "OtherPane", ci->focus);
 	} else
 		par = call_ret(pane, "ThisPane", ci->focus);
@@ -1074,8 +1075,9 @@ DEF_CMD(emacs_finddoc)
 		return Efail;
 
 	if (strcmp(ci->key, "Doc Found Other Window") == 0) {
+		struct pane *this = call_ret(pane, "ThisPane", ci->focus);
 		par = home_call_ret(pane, ci->focus, "DocPane", p);
-		if (!par)
+		if (!par || par == this)
 			par = call_ret(pane, "OtherPane", ci->focus);
 	} else
 		par = call_ret(pane, "ThisPane", ci->focus);

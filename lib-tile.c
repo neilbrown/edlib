@@ -942,7 +942,9 @@ DEF_CMD(tile_this)
 
 DEF_CMD(tile_doc)
 {
-	/* Find the pane displaying given document */
+	/* Find the pane displaying given document, preferrably not
+	 * this pane
+	 */
 	struct tileinfo *ti = ci->home->data;
 	struct tileinfo *t;
 	char *name;
@@ -961,14 +963,16 @@ DEF_CMD(tile_doc)
 	t = ti;
 	do {
 		char *n;
-		struct pane *f = t->p;
+		struct pane *f;
+		t = list_next_entry(t, tiles);
+		f = t->p;
 		while (f->focus)
 			f = f->focus;
 		n = pane_attr_get(f, "doc-name");
 		if (name && n && strcmp(n, name) == 0)
 			return comm_call(ci->comm2, "callback:pane", t->p,
 					 0, NULL, t->name);
-	} while ((t = list_next_entry(t, tiles)) != ti);
+	} while (t != ti);
 
 	return Efallthrough;
 }
