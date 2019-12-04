@@ -148,7 +148,7 @@ class MakePane(edlib.Pane):
                         dir = ""
                 else:
                     dir = ""
-                d = self.call("doc:open", -1, dir+fname, ret='focus')
+                d = self.call("doc:open", -1, 8, dir+fname, ret='focus')
             except edlib.commandfailed:
                 d = None
             if not d:
