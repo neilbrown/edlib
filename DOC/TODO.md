@@ -74,6 +74,9 @@ Bugs to be fixed
 ----------------
 
 - [ ] for ()\n if () {} else if () GET INDENT WRONG
+       I need a different marker for 'if' than for other prefixes, and
+       I need to recognise else *after* point and only revert to the 'if' when 
+       else is present, but revert all 'space' when not present.
 - [ ] dynamic-complete shouldn't treat '_' as work-border
 - [X] in python code, protect Replace/doc:replace - file could be read-only
 - [X] c-mode indent should let me delete one level when it was due to bracketing,

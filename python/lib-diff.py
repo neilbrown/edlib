@@ -58,6 +58,9 @@ class DiffPane(edlib.Pane):
         at_at = True
         found_plus = False
         while not found_plus:
+            if focus.call("doc:step", 0, m, ret='char') is None:
+                # hit start of file without finding anything
+                break
             focus.call("Move-EOL", -2, m)
             if at_at:
                 at_at = False
