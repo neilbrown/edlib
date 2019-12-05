@@ -476,7 +476,7 @@ def run_make(key, focus, str, **a):
     if cmd == "make":
         p = focus.call("OtherPane", ret='focus')
     else:
-        p = focus.call("PopupTile", "MD3t", ret='focus')
+        p = focus.call("PopupTile", "MD3ta", ret='focus')
     if not p:
         return edlib.Efail
     focus.call("global-set-attr", "make-target-doc", docname)
