@@ -918,13 +918,13 @@ static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe)
 	ret = call("Mouse-event", p, 0, NULL, cmd, 0, NULL, NULL, x, y);
 	if (strncmp(cmd, "Press", 5) == 0 && !dd->report_position) {
 		if (dd->is_xterm) {
-			fprintf(dd->scr_file, "\033[?1002h;");
+			fprintf(dd->scr_file, "\033[?1002h");
 			fflush(dd->scr_file);
 		}
 		dd->report_position = 1;
 	} else if (strncmp(cmd, "Motion", 6) == 0 && !ret) {
 		if (dd->is_xterm) {
-			fprintf(dd->scr_file, "\033[?1002l;");
+			fprintf(dd->scr_file, "\033[?1002l");
 			fflush(dd->scr_file);
 		}
 		dd->report_position = 0;
