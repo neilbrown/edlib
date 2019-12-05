@@ -462,6 +462,11 @@ def run_make(key, focus, str, **a):
     else:
         cmd = "make"
         docname = "*Compile Output*"
+    # Destroying the document might destroy my focus, so
+    # grab a reference to the tile
+    tile = focus.call("ThisPane", ret='focus')
+    if tile:
+        focus = tile
     try:
         doc = focus.call("docs:byname", docname, ret='focus')
         doc.call("doc:destroy")
