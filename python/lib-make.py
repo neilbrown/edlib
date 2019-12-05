@@ -403,10 +403,10 @@ class MakeViewerPane(edlib.Pane):
         if not mark or not mark2:
             return 1
         p = self.call("doc:point", ret='mark')
-        if p and p == mark2:
+        if p and p == mark:
             # point is where we inserted text, so move it to
             # after the insertion point
-            p.to_mark(mark)
+            p.to_mark(mark2)
         return 1
 
     def handle_clone(self, key, focus, home, **a):
