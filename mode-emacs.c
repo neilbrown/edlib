@@ -1880,14 +1880,15 @@ DEF_CMD(emacs_press)
 		struct mark *p = call_ret(mark, "doc:point", ci->focus);
 		attr_set_int(&mk->attrs, "emacs:active", 0);
 		call("view:changed", ci->focus, 0, p, NULL, 0, mk);
-		if (!mark_same(p, m))
+		if (p && !mark_same(p, m))
 			type = "char";
 	}
 	call("Move-to", ci->focus, 0, m);
 	call("Move-to", ci->focus, 1, m);
 	if (!mk)
 		mk = call_ret(mark2, "doc:point", ci->focus);
-	attr_set_str(&mk->attrs, "emacs:selection-type", type);
+	if (mk)
+		attr_set_str(&mk->attrs, "emacs:selection-type", type);
 	pane_focus(ci->focus);
 	return 1;
 }
