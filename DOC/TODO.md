@@ -4,43 +4,6 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [X] when grep visits a file, it should reload it first.
-- [X] When a file is reloaded, grep should notice and forget its mark.
-- [X] diff output parser - with Enter to jump to the file, and some colorization
-      word-diff highlighting would be ideal
-- [X] c-mode move-expr to not treat _ as word separator
-- [X] c-mode, alt-tab always indents, even if not start of line
-- [X] history for find-file - incase I get it wrong and want to try again
-- [X] arg to C-x-` should restart from first match
-- [X] revisiting the grep-output buffer should attach pane to handle Enter etc
-- [X] Introduce command to move a mark before or after all other marks
-      at the same location. .make_first .make_last
-- [X] Review all calls to Notify:change do Notify:doc:Replace and ensure the
-      marks sent make sense
-      + doc-rendering
-      + doc-text
-      + emacs-search
-      + lib-history
-      + lib-linecount
-      + lib-abbrev
-      + lib-make
-      + module-notmuch
-      + render-present
-      + render-hex
-      + render-lines
-- [X] review notify:change handlers
-- [X] makes sure text:match and text:search do something sensible with the mark
-- [X] message line timed updates - no change for 7 seconds, always revert after 30 seconds
-- [X] copy-paste with mouse
-- [X] select buffer to not accept a non-existant buffer
-- [X] Fix c/python indenting
-- [X] search and status if file-edit popup
-- [x] fix undo positioning of pointer and grouping of edits
-- [X] simplify/document rxl_advance interface, particularly 'restart'.
-- [X] \b for word-break - maybe provide a regexp set for 'is a word char'
-- [X] rexel/rxl_advance: "clear out next lists" take too long on long patterns. memset?
-      or follow the existing chain?  Does 'leng' need to be cleared?
-- [X] lax search - single space when case insensitve matches multiple spaces/tabs/newlines
 - [ ] search-replace.
       This might just be an extension of the current search.  I would have
       two input boxes, maybe left and right, or one above the other.
@@ -49,12 +12,6 @@ Current priorities
       replace without moving forward.
       Also want an easy "undo" of the last changed.
       Changing the replace string during the process should be allowed too.
-- [X] fill command
-    - highlight any chars beyond the fill-column
-    - need to choose a prefix of first line, and of subsequent lines.
-    - possibly determine a suffix too - useful in comments.
-    - alt-Q - reformat para
-    - if there is a selection, that defines the para, else some sort of search.
 
 - [ ] fill-mode
       - some way to select it (configuration?) and to set width
@@ -64,11 +21,7 @@ Current priorities
 
 - [ ] rename lib-renderline to lib-markup and create 'renderline' for a single
       line of render-lines.
-- [X] Add 16bit semi-unique number to doc panes, which is inherited
-      by any view pane and by every mark.  Check the numbers are
-      consistent and fail with a warning when not.
 - [ ] change notmuch-query-view to use doc-rendering
-- [X] Discard rpos handling
 
 Bugs to be fixed
 ----------------
@@ -77,63 +30,6 @@ Bugs to be fixed
        I need a different marker for 'if' than for other prefixes, and
        I need to recognise else *after* point and only revert to the 'if' when 
        else is present, but revert all 'space' when not present.
-- [ ] dynamic-complete shouldn't treat '_' as work-border
-- [X] in python code, protect Replace/doc:replace - file could be read-only
-- [X] c-mode indent should let me delete one level when it was due to bracketing,
-      so I can insert the close bracket.
-- [X] comma sep list in enum doesn't get indented properly.  Need to recognize enum
-      and treat ',' as end-of-statement .
-- [X] case 0: indent seems to be broken... in "if ()\n switch(){ case 0:"
-- [X] If you wrap a list of global variables, it doesn't indent.
-- [X] <40> in a line of text (immediately after wrap) can make big text.
-- [X] accessing a different frame shouldn't make a transient-popup
-      disappear
-- [X] server transient popups should use the most recently accessed frame
-- [X] capturing 'Enter' in c-mode for indent interrupts a sequence
-      of N2_undo_insert.  Do I want that?
-- [X] message line needs to keep some messages permanently - 
-      'type ` to search again' - and needs to clear it immediately.
-- [X] allow rpt-num to be accessed from python
-- [X] move-expr needs to understand sloshed quotes.
-- [X] regexp ^[^a-zA-Z0-9]*$ doesn't match properly.
-- [X] doc:replace with 2 marks should leave them at either end of insertion.
-- [X] C-space, M-> doesn't highlight the selection
-- [X] C-n causes 'target' column to be no more than EOL.
-- [X] need a way to show that eol is highlighted - both for selection and search
-- [X] C-x-o to change panes - if point is not visible in other pane, the visible cursor
-      doesn't move (ncurses), which is confusing.
-- [X] An indent can still get more than 8 spaces.  Maybe a higher-level check is needed.
-- [X] fn-complete for a symlink-to-dir should add a '/'
-- [X] Use the requested name rather than canonical name for UI as much as possible.
-- [X] when visit a non-existant file, it is CHANGED and read-only.
-- [X] Indent to always use tabs where possible (in C mode)
-- [X] C-q tab should insert a literal tab
-- [X] If completion has happened in open-file, but file doesn't exist,
-      require an extra Enter (or something) - require M-Enter to create.
-- [X] ncurses - provide a suitable colour for  highlighting tabs. #f5f5dc
-- [X] change to document with name ending <2> fails
-- [X] 'click' no longer makes target window the focus
-- [X] file-name completion in git-grep dialog works in current dir instead of target
-- [X] M-0 M-.  does grep in current dir, but doesn't extract word from document.
-        But M-- M-. does the right thing... what do I want?
-- [X] directories used for name-completion should go to bottom of doc list.
-- [X] start with "-g", open a -t, close the -g, then the -t : get into a spin
-- [X] undo sometimes gathers too much into a single change.  Cursor movement
-        should break the change. -- yank was the problem
-- [X] when move down causes a scroll, we temp lose target column
-- [X] Commands should *never* fall-through as marks get completely messed up.
-      there are still places that try to protect against this.
-- [X] mouse-click before the end of an active selection picks the wrong place.
-- [X] mouse actions need to affect selection: set or clear.
-- [X] detect when file has changed since it was read.
-- [X] alert when finding a name that is a link to another
-- [X] dirname sometimes has 2 trailing '/'.
-- [X] make sure *Welcome* has a dirname (it didn't once..) ... seems to work now
-- [X] NO - nothing to be gained.
-      temp docs, such as pop-up input, can be inline with the pop-up
-      rather than separate.  However then the support provided by
-      core-doc is hard to provide.  Maybe there is a simpler way to
-      arrange for that support.
 
 Core features
 -------------
@@ -141,30 +37,20 @@ Core features
 - [ ] pane_close() can be called at awkward times.  We need to do some inital
       processes so that it looks closed, but so that code can continue to
       run, then schedule proper close for later.
-- [X] nested notification of the same key should be disallowed somehow
 - [ ] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
 - [ ] undo often doesn't leave me where I expect to be left. - maybe it is the
       location of the previous undo?
-- [X] already have!!  a way to protect *Documents* from being killed manually.
 - [ ] account all mem allocation types separate, and (optionally) report
       stats regularly
 - [ ] malloc anti-fail policy.  Small allocations don't fail but use pre-allocated.
       large allocations use different API and can fail.
-- [X] add '~' support for pathname lookup
-- [ ] ... and $SUBST??
+- [ ] support $SUBST in file-open path names ??
 - [ ] graceful failure when closing doc that still has views.
       Then call doc_free() internally so the module doesn't need to.
-- [ ] clarify and document the use of Notify:doc:Replace.  What are the two
-      marks exactly.
-- [X] possibly merge mark->refcnt, mark->owner, and Mark->local
-- [X] Make x,y,z,h,w short ?? or unsigned short with an "undefined" instead of -1.
-- [X] unify doc_next_mark_view and vmark_next.  Any others?
-- [X] some way to find column of point, or at least: width of line
-- [X] Change tlist to use one bit from each pointer
+- [ ] document the use of doc:replaced.  What are the two
+      marks exactly? start and end of range.
 - [ ] Need a debug mode where every mark usage is checked for validity.
       also check the setref sets up all linkages.
-- [X] clarify difference between Efail and Esys, or remove one of them.
-- [X] replace key_add(..key_register_prefix) with a macro that defines a static modmap.
 - [ ] Make key names shorter and easier.
       There are two name spaces - characters and names
       characters are preceded by '-', names by ':'.
@@ -174,7 +60,6 @@ Core features
       K:M:C:Up  is Meta-Control-Up
       K:M:C-U   is Meta-Control-U
       K:Cx-f    is Control-X f -- assuming K:C-x causes Cx to be set as prefix.
-- [X] add key_add_prefix()
 - [ ]  ?? restrict prefix key lookup to punctuation.
 
       Current ranges are:
@@ -232,18 +117,11 @@ Module features
 
 ### emacs
 
-- [X] Movement should always damage cursor.  Move-para and move-expr and
-      even 'undo' don't (sometimes?)
-- [X] entering an unknown name to find-document should either create a doc, or
-      give an error, or something less silent
 - [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
-- [ ] show status line in file-edit popup
 - [ ] filename completion should ignore uninteresting files like ".o"
 - [ ] invent a way to reserve 'extra' values for command sets
       do I need this across panes ?? probably
-- [X] search highlights don't cross EOL.
 - [ ] search highlight doesn't report empty match (eol)...
-- [X] reverse search "fails" for patterns starting '^' or ending '$'
 - [ ] emacs highlight should get close notification from popup,
       instead of catching abort.
 - [ ] ask before killing modified buffer.
@@ -252,15 +130,12 @@ Module features
       to the file I loaded from.
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 - [ ] compare two panes somehow
-- [X] copy/paste with mouse
 - [ ] pipe doc or selection to a command, optionally capture to replace with output.
 - [ ] if typing when selection active, replace selection with new text
+- [ ] history for each entry.
 
 ### ncurses
 
-- [ ] ncurses should catch ESC and if something follows quickly, send it as "M-".
-      currently emacs does this, but that is too late if a layer catches ESC for escape.
-- [X] add general colour handling to display-ncurses
 - [ ] add full list of colour names (to lib-colourmap)
 - [ ] if we exhaust colours or pairs, reset and make use lower color depth.
 - [ ] handle !can_change_colors better.
@@ -275,16 +150,11 @@ Module features
 ### pygtk
 
 - [ ] convert to pygobject
-- [ ] support tracking of mouse movement - for dynamic selection
 
 ### render-lines
 
 - [ ] view:changed shouldn't destroy the view, else Move-CursorXY
       gets confused.
-- [X] Rules for when ignore_point gets cleared need to be worked out.
-      c-mode/Move-Paragraph shouldn't need to call Move-to just
-      to ensure cursor becomes visible.  Maybe DAMAGED_CURSOR
-      should be enough?
 - [ ] can render-lines ensure that lines appearing immediately
       before first line displayed, appear.  This is particularly
       important when first line displayed is(was) first line of file.
@@ -302,15 +172,9 @@ Module features
 
 - [ ] how to change sort order of a directory listing
 - [ ] chown/chmod/unlink/rename etc
-- [X] times older than 1 year need to report the year.
 
 ### doc-text
 
-- [X] add 'read-only' mode - warn when change attempted.
-- [X] add 'file-changed' mode and check before switching to "modified"
-      If changed, abort change and switch to read-only instead.
-- [X] On visit, reload if file changed and doc not modified.
-- [X] When writing to a changed file, make a backup first.
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
 - [ ] don't use mb* funcs, use bespoke utf8 coding
@@ -349,36 +213,23 @@ Module features
 
 ### grep/make
 
+- [ ] don't destroy the output doc.  Erase content (Avoiding undo) and reuse.
 - [ ] neg arg to next-match goes backwards, and ` keeps going backwards
 - [ ] if file isn't already loaded, wait until it is wanted, or something
       else loads it.
 - [ ] if file is reloaded, re-place all the marks, don't just ignore them.
-- [X] Keep 'make' and 'grep' output separate.
-- [X] If there is an error followed by some 'note:'s, goto the last note(?)
-- [X] leave marks at every match as soon as possible
 - [ ] if two results are at the same location, ignore the second.
 - [ ] improve detection of the 'important' "note" line.
 - [ ] clarify and document the role of numeric args to git-grep
-- [X] make/grep - when insert at end-of-file, a pointer that was at EOF should
-      stay there.
-- [X] sometime the pane doesn't go to the right line.
-- [X] move point of display pane to first match asap
 - [ ] when restart compile/grep, kill only one.
 - [ ] allow make even if not all files are saved - 'q' from save-all?
 - [ ] numeric-prefix to make will auto-save everything.
 - [ ] grep should (optionally) save files in the directory tree
-- [X] make/grep: highlight current match.
-- [X] make/grep fail-safe if target file doesn't exist
 - [ ] run make in a given parent
 - [ ] use notify chain to allow stack of 'greps'
-- [X] detect and honour absolute file names in error messages
-- [X] When choosing word from context to search for, if there is an
-      active selection, use that.
-- [X] And select the text in the input popup so that it is easy to replace.
 
 ### message-line
 
-- [X] timeout message-line messages and revert to time/date
 - [ ] have *Messages* buffer to log recent messages.
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
 - [ ] register a global-message function which sends global notifications
@@ -476,7 +327,6 @@ Module features
 
 ###  multipart-email
 
-- [X] I need more general support for rpos.  Does it only apply to point?  When rendered.
 - [ ] I need a more structured/extensible way to decide which button was pressed
 - [ ] I need key-click to work reliably somehow. Click on selected button?
 - [ ] Auto-hide depending on type - with extensible table
@@ -525,33 +375,17 @@ Module features
 
 - [ ] python indent need to recognize comment, and not treat them
       like code.
-- [X] TAB should *always* delete preceding spaces.
 - [ ]  auto-indent enhancements
       
      -   py: after "return" de-indent
-     X   type : in C, not in quote, re-indent
-     X   Indent of line starting '}' should match start of EXPR
-     X   when type '}', decrease indent. in C
      -??  '*' should check for comment, and add a space
-     X   Enter in comment should add a ' * ' for the indent.
-     X   Backspace in the indent after a comment deletes too much
-     X   Don't assume 'indent' is only tabs in python mode - round down to x4
-     X   Be careful of brackets in comments and quotes.
-     X   Try harder to find start of statement to align with
-     X   handle comments
-     X   detect end of statement in C (; } ) :
      -   A line after one ending ; or } or : or unindented is assumed to be
          correctly indented.
-     X   We search back - skipping bracketed bit, until we find one, and
-         base everything on that.
+
 - [ ] configuration: use tabs or spaces for indent
 - [ ] configuration: use only spaces for bracket-alignment indents - or tabs as well.
 - [ ] python-mode: when changing indent, make same change to the whole block.
       Not sure how to handle 'else:' which looks like the next block.
-- [X] show-paren should use different colour if bracket doesn't match.
-- [X] show-paren should work when next char is an 'open'
-- [X] start of function should not get confused by comments, and should
-      go to the real start.
 - [ ] re-indent statement - once auto-indent is reliable.
 
 ### lang-python
@@ -562,7 +396,6 @@ Module features
 
 ### white-space
 
-- [X] support highlight of long lines
 - [ ] support highlight of spaces-for-indent
 - [ ] support highlight of tabs-for-indent
 - [ ] make set of highlights, and colors, configurable
@@ -594,8 +427,6 @@ Possibly some of these will end up being features in other modules.
 - [ ] tags handling - and easy tag-search without tags. e.g. git-search.
       alt-S looks for TAGS or .git and either does a tags-search or a grep-l and
       check every match.  So maybe this is part of the 'make' module
-- [X] white-space: Highlight trailing spaces - and space before TAB - and any TAB
-      This might work best as a post-processor for the render-line output.
 - [ ] simple calculator in floating pane.
       Must display result in hex and dec (and others?)
       Must allow hex/dec etc entry
