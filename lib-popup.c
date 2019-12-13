@@ -24,6 +24,23 @@
  * The event sent when the popup is closed can be set by setting
  * attribute "done-key"
  * otherwise "PopupDone" is used.
+ *
+ * The "Style" of a popup is a string of characters:
+ * D - parent is whole display (window) rather than single pane
+ * P - position w.r.t another popup - Currently always 'under'
+ * M - multiple lines of text - default is one line
+ * 1 - 1/4 width of parent
+ * 2 - 1/2 width of parent (default)
+ * 3 - 3/4 width of parent
+ * 4 - full with
+ * T - at top of parent (default is centred)
+ * B - at bottom of parent
+ * L - at left of parent (default is centred)
+ * R - at right of parent
+ * s - border at bottom to show document status
+ * a - allow recursive popups
+ * r - permit this popup even inside non-recursive popups
+ * t - temporary - auto-close when focus leaves
  */
 #define _GNU_SOURCE /*  for asprintf */
 #include <unistd.h>
@@ -38,6 +55,7 @@ DEF_LOOKUP_CMD(popup_handle, popup_map);
 
 struct popup_info {
 	struct pane	*target safe, *handle safe;
+	struct pane	*parent_popup;
 	char		*style safe;
 	struct command	*done;
 };
@@ -52,6 +70,7 @@ static int line_height(struct pane *p safe)
 
 static void popup_resize(struct pane *p safe, char *style safe)
 {
+	struct popup_info *ppi = p->data;
 	int x,y,w,h;
 	int lh;
 
@@ -67,17 +86,24 @@ static void popup_resize(struct pane *p safe, char *style safe)
 		h = lh * 3;
 		attr_set_str(&p->attrs, "render-one-line", "yes");
 	}
-	w = p->parent->w/2;
-	if (strchr(style, '1')) w = (p->parent->w-2)/4 + 1;
-	if (strchr(style, '3')) w = 3 * (p->parent->w-2)/4;
-	if (strchr(style, '4')) w = p->parent->w-2;
-	/* Now position */
-	x = p->parent->w/2 - w/2 - 1;
-	y = p->parent->h/2 - h/2 - 1;
-	if (strchr(style, 'T')) { y = 0; h -= lh; }
-	if (strchr(style, 'B')) { h -= lh; y = p->parent->h - h; }
-	if (strchr(style, 'L')) x = 0;
-	if (strchr(style, 'R')) x = p->parent->w - w;
+	if (ppi->parent_popup) {
+		w = ppi->parent_popup->w;
+		h = ppi->parent_popup->h;
+		x = ppi->parent_popup->x;
+		y = ppi->parent_popup->y + ppi->parent_popup->h;
+	} else {
+		w = p->parent->w/2;
+		if (strchr(style, '1')) w = (p->parent->w-2)/4 + 1;
+		if (strchr(style, '3')) w = 3 * (p->parent->w-2)/4;
+		if (strchr(style, '4')) w = p->parent->w-2;
+		/* Now position */
+		x = p->parent->w/2 - w/2 - 1;
+		y = p->parent->h/2 - h/2 - 1;
+		if (strchr(style, 'T')) { y = 0; h -= lh; }
+		if (strchr(style, 'B')) { h -= lh; y = p->parent->h - h; }
+		if (strchr(style, 'L')) x = 0;
+		if (strchr(style, 'R')) x = p->parent->w - w;
+	}
 	pane_resize(p, x, y, w, h);
 }
 
@@ -128,23 +154,30 @@ DEF_CMD(popup_child_closed)
 static void popup_set_style(struct pane *p safe)
 {
 	struct popup_info *ppi = p->data;
-	char border[6];
-	int i, j;
 
-	for (i = 0, j = 0; i < 4; i++) {
-		if (strchr(ppi->style, "TLBR"[i]) == NULL)
-			border[j++] = "TLBR"[i];
+	if (ppi->parent_popup) {
+		char *border = pane_attr_get(ppi->parent_popup, "borders");
+		attr_set_str(&p->attrs, "borders", border);
+	} else {
+		char border[6];
+		int i, j;
+
+		for (i = 0, j = 0; i < 4; i++) {
+			if (strchr(ppi->style, "TLBR"[i]) == NULL)
+				border[j++] = "TLBR"[i];
+		}
+		if (strchr(ppi->style, 's'))
+			/* Force a status line */
+			border[j++] = 's';
+		border[j] = 0;
+		attr_set_str(&p->attrs, "borders", border);
 	}
-	if (strchr(ppi->style, 's'))
-		/* Force a status line */
-		border[j++] = 's';
-	border[j] = 0;
+
 	if (strchr(ppi->style, 'a'))
 		/* allow recursion */
 		attr_set_str(&p->attrs, "Popup", "ignore");
 	else
 		attr_set_str(&p->attrs, "Popup", "true");
-	attr_set_str(&p->attrs, "borders", border);
 }
 
 DEF_CMD(popup_style)
@@ -181,6 +214,7 @@ DEF_CMD(popup_refresh_size)
 		free(t);
 	}
 
+	popup_set_style(ci->home);
 	popup_resize(ci->home, ppi->style);
 	return 0;
 }
@@ -239,7 +273,8 @@ DEF_CMD(popup_this)
 {
 	struct popup_info *ppi = ci->home->data;
 
-	if (strchr(ppi->style, 'a') == NULL)
+	if (strchr(ppi->style, 'a') == NULL &&
+	    strcmp(ci->key, "ThisPopup") != 0)
 		return 0;
 	return comm_call(ci->comm2, "callback:pane", ci->home,
 			 0, NULL, "Popup");
@@ -294,7 +329,7 @@ DEF_CMD(popup_attach)
 	if (!style)
 		style = "D3";
 
-	if (!strchr(style, 'r') &&
+	if (!strchr(style, 'r') && !strchr(style, 'P') &&
 	    (in_popup = pane_attr_get(ci->focus, "Popup")) != NULL &&
 	    strcmp(in_popup, "ignore") != 0)
 		/* No recusive popups without permission */
@@ -302,6 +337,8 @@ DEF_CMD(popup_attach)
 
 	if (strchr(style, 'D'))
 		root = call_ret(pane, "RootPane", ci->focus);
+	else if (strchr(style, 'P'))
+		root = call_ret(pane, "ThisPopup", ci->focus);
 	else
 		root = call_ret(pane, "ThisPane", ci->focus);
 
@@ -316,6 +353,13 @@ DEF_CMD(popup_attach)
 	if (z < 0)
 		z = 1;
 
+	ppi->parent_popup = NULL;
+	if (strchr(style, 'P')) {
+		ppi->parent_popup = root;
+		if (root->parent)
+			root = root->parent;
+	}
+
 	p = pane_register(root, z + 1, &popup_handle.c, ppi);
 	ppi->style = strdup(style);
 	popup_set_style(p);
@@ -323,6 +367,9 @@ DEF_CMD(popup_attach)
 	attr_set_str(&p->attrs, "render-wrap", "no");
 
 	pane_add_notify(p, ppi->target, "Notify:Close");
+	if (ppi->parent_popup)
+		pane_add_notify(p, ppi->parent_popup, "Notify:resize");
+
 	pane_focus(p);
 
 	if (ci->str2) {
@@ -355,11 +402,13 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "Abort", &popup_abort);
 	key_add(popup_map, "popup:style", &popup_style);
 	key_add(popup_map, "Refresh:size", &popup_refresh_size);
+	key_add(popup_map, "Notify:resize", &popup_refresh_size);
 	key_add(popup_map, "popup:get-target", &popup_get_target);
 	key_add(popup_map, "popup:close", &popup_do_close);
 	key_add(popup_map, "popup:set-callback", &popup_set_callback);
 	key_add(popup_map, "ChildClosed", &popup_child_closed);
 	key_add(popup_map, "ThisPane", &popup_this);
+	key_add(popup_map, "ThisPopup", &popup_this);
 
 	key_add(popup_map, "Window:bury", &popup_child_closed);
 	key_add(popup_map, "Window:close", &popup_abort);

@@ -96,6 +96,8 @@ void pane_damaged(struct pane *p, int type)
 		return;
 	}
 	p->damaged |= type;
+	if (type == DAMAGED_SIZE)
+		pane_notify("Notify:resize", p);
 
 	z = p->z;
 	if (z < 0)
