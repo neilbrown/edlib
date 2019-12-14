@@ -57,23 +57,35 @@ DEF_CMD(history_notify_close)
 	return 1;
 }
 
-DEF_CMD(history_done)
+DEF_CMD(history_save)
 {
 	struct history_info *hi = ci->home->data;
 	char *eol;
 	char *line = ci->str;
+	char *prev;
 
 	if (!hi->history || !ci->str)
 		/* history document was destroyed */
-		return 0;
+		return 1;
 	/* Must never include a newline in a history entry! */
 	eol = strchr(ci->str, '\n');
 	if (eol)
 		line = strnsave(ci->home, ci->str, eol - ci->str);
+
+	prev = call_ret(strsave, "history:get-last", ci->focus);
+	if (prev && line && strcmp(prev, line) == 0)
+		return 0;
+
 	call("Move-File", hi->history, 1);
 	call("Replace", hi->history, 1, NULL, line);
 	call("Replace", hi->history, 1, NULL, "\n", 1);
-	return 0;
+	return 1;
+}
+
+DEF_CMD(history_done)
+{
+	history_save_func(ci);
+	return Efallthrough;
 }
 
 
@@ -171,11 +183,38 @@ DEF_CMD(history_attach)
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 
+DEF_CMD(history_hlast)
+{
+	struct history_info *hi = ci->home->data;
+	struct pane *doc = hi->history;
+	struct mark *m, *m2;
+	int rv;
+
+	if (!doc)
+		return Einval;
+
+	m = vmark_new(doc, MARK_UNGROUPED, NULL);
+	if (!m)
+		return 1;
+	call("doc:set-ref", doc, 0, m);
+	call("doc:set", doc, 0, m, NULL, 1);
+	mark_step_pane(doc, m, 0, 1);
+	m2 = mark_dup(m);
+	while (doc_prior_pane(doc, m) != '\n')
+		if (mark_step_pane(doc, m, 0, 1) == WEOF)
+			break;
+	rv = call_comm("doc:get-str", doc, ci->comm2, 0, m, NULL, 0, m2);
+	mark_free(m);
+	mark_free(m2);
+	return rv;
+}
+
 DEF_CMD(history_last)
 {
 	/* Get last line from the given history document */
 	struct pane *doc;
 	struct mark *m, *m2;
+	int rv;
 
 	doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!doc)
@@ -190,7 +229,10 @@ DEF_CMD(history_last)
 	while (doc_prior_pane(doc, m) != '\n')
 		if (mark_step_pane(doc, m, 0, 1) == WEOF)
 			break;
-	return call_comm("doc:get-str", doc, ci->comm2, 0, m, NULL, 0, m2);
+	rv = call_comm("doc:get-str", doc, ci->comm2, 0, m, NULL, 0, m2);
+	mark_free(m);
+	mark_free(m2);
+	return rv;
 }
 
 void edlib_init(struct pane *ed safe)
@@ -207,4 +249,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(history_map, "doc:replaced", &history_notify_replace);
 	key_add(history_map, "M-Chr-p", &history_move);
 	key_add(history_map, "M-Chr-n", &history_move);
+	key_add(history_map, "history:save", &history_save);
+	key_add(history_map, "history:get-last", &history_hlast);
 }
