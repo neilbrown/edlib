@@ -36,13 +36,16 @@ struct es_info {
 	struct mark *start safe; /* where searching starts */
 	struct mark *end safe; /* where last success ended */
 	struct pane *target safe;
+	struct pane *replace_pane;
 	short matched;
 	short wrapped;
 	short backwards;
 	short case_sensitive;
 };
 
-static struct map *es_map;
+static struct map *es_map, *er_map;
+DEF_LOOKUP_CMD(search_handle, es_map);
+DEF_LOOKUP_CMD(replace_handle, er_map);
 static const char must_quote[] = ".|*+?{}()?^$\\[]";
 static const char may_quote[] = "<>dDsSwWpPaA";
 
@@ -52,10 +55,11 @@ DEF_CMD(search_forward)
 	struct es_info *esi = ci->home->data;
 	struct stk *s;
 	char *str;
-	int backward = ci->key[6] == 'R';
 	struct mark *newstart;
 
-	esi->backwards = backward;
+	if (strncmp(ci->key, "C-Chr-", 6) == 0)
+		esi->backwards = ci->key[6] == 'R';
+
 	if (esi->s && mark_same(esi->s->m, esi->end)) {
 		if (esi->s->case_sensitive == esi->case_sensitive)
 			/* already pushed and didn't find anything new */
@@ -89,7 +93,8 @@ DEF_CMD(search_forward)
 		newstart = mark_dup(esi->end);
 		if (esi->matched == 1)
 			/* zero length match */
-			if (mark_step_pane(esi->target, newstart, !backward, 1) == WEOF) {
+			if (mark_step_pane(esi->target, newstart,
+					   !esi->backwards, 1) == WEOF) {
 				mark_free(newstart);
 				newstart = NULL;
 			}
@@ -97,11 +102,15 @@ DEF_CMD(search_forward)
 	if (!newstart) {
 		newstart = mark_dup(s->m);
 		esi->wrapped = 1;
-		call("Move-File", esi->target, backward ? 1 : -1, newstart);
+		call("Move-File", esi->target, esi->backwards ? 1 : -1,
+		     newstart);
 	}
 	esi->start = newstart;
 	/* Trigger notification so isearch watcher searches again */
 	call("Replace", ci->home, 1, NULL, "");
+
+	if (!esi->matched && strcmp(ci->key, "search:again") == 0)
+		return Efail;
 	return 1;
 }
 
@@ -348,9 +357,15 @@ DEF_CMD(search_done)
 	 * mark at point
 	 */
 	struct es_info *esi = ci->home->data;
-	char *str = call_ret(str, "doc:get-str", ci->focus);
+	char *str;
 	struct mark *mk;
 
+	if (esi->replace_pane && strcmp(ci->key, "Enter") == 0) {
+		/* if there is a replace pane, switch to it instead of closing */
+		pane_focus(esi->replace_pane);
+		return 1;
+	}
+	str = call_ret(str, "doc:get-str", ci->focus);
 	/* More to last location, found */
 	call("Move-to", esi->target, 1);
 	mk = call_ret(mark2, "doc:point", esi->target);
@@ -399,25 +414,174 @@ DEF_CMD(search_toggle_ci)
 	return 1;
 }
 
+DEF_CMD(search_replace)
+{
+	struct pane *p;
+	struct es_info *esi = ci->home->data;
+
+	if (esi->replace_pane) {
+		pane_focus(esi->replace_pane);
+		return 1;
+	}
+
+	p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "P", 0, NULL,
+		     "");
+	if (!p)
+		return Efail;
+	attr_set_str(&p->attrs, "prompt", "Replacement");
+	attr_set_str(&p->attrs, "status-line", " Replacement ");
+	call("doc:set-name", p, 0, NULL, "Replacement");
+
+	p = pane_register(p, 0, &replace_handle.c, ci->focus);
+	if (!p)
+		return Efail;
+	p = call_ret(pane, "attach-history", p, 0, NULL, "*Replace History*",
+		     0, NULL, "popup:close");
+	esi->replace_pane = p;
+	if (ci->key[6] == '%')
+		pane_focus(ci->focus);
+	else
+		pane_focus(p);
+	return 1;
+}
+
+DEF_CMD(do_replace)
+{
+	struct es_info *esi = ci->home->data;
+	char *new = ci->str;
+	struct mark *m;
+	int len = esi->matched - 1;
+
+	if (!new)
+		return Enoarg;
+	if (esi->matched <= 0)
+		return Efail;
+	m = mark_dup(esi->end);
+	if (esi->backwards) {
+		while (len > 0 && mark_next_pane(esi->target, m) != WEOF)
+			len -= 1;
+		mark_make_first(m);
+		if (call("doc:replace", esi->target, 0, esi->end, new, 0, m) > 0) {
+			call("search:highlight-replace", esi->target,
+			     strlen(new), esi->end, NULL, 0, m);
+			return 1;
+		}
+	} else {
+		while (len > 0 && mark_prev_pane(esi->target, m) != WEOF)
+			len -= 1;
+		mark_make_last(m);
+		if (call("doc:replace", esi->target, 0, m, new, 0, esi->end) > 0) {
+			call("search:highlight-replace", esi->target,
+			     strlen(new), m, NULL, 0, esi->end);
+			return 1;
+		}
+	}
+	return Efail;
+}
+
+DEF_CMD(replace_request_next)
+{
+	struct pane *sp = ci->home->data;
+	char *new;
+
+	new = call_ret(str, "doc:get-str", ci->focus);
+	if (call("search:replace", sp, 0, NULL, new) > 0) {
+		call("history:save", ci->focus, 0, NULL, new);
+		call("search:again", sp);
+	} else {
+		call("search:done", sp);
+	}
+	return 1;
+}
+
+DEF_CMD(replace_request)
+{
+	struct pane *sp = ci->home->data;
+	char *new;
+
+	new = call_ret(str, "doc:get-str", ci->focus);
+	if (call("search:replace", sp, 0, NULL, new) > 0)
+		call("history:save", ci->focus, 0, NULL, new);
+	free(new);
+	return 1;
+}
+
+DEF_CMD(replace_all)
+{
+	struct pane *sp = ci->home->data;
+	char *new;
+	int replaced = 0;
+
+	new = call_ret(str, "doc:get-str", ci->focus);
+	while (call("search:replace", sp, 0, NULL, new) > 0 &&
+	       call("search:again", sp) > 0)
+		replaced = 1;
+	if (replaced)
+		call("history:save", ci->focus, 0, NULL, new);
+	free(new);
+
+	return 1;
+}
+
+DEF_CMD(replace_to_search)
+{
+	struct pane *sp = ci->home->data;
+
+	pane_focus(sp);
+	return 1;
+}
+
+DEF_CMD(replace_forward)
+{
+	struct pane *sp = ci->home->data;
+
+	call(ci->key, sp);
+
+	return 1;
+}
+
+DEF_CMD(replace_undo)
+{
+	return 0;
+}
+
 static void emacs_search_init_map(void)
 {
+	/* Keys for the 'search' pane */
 	es_map = key_alloc();
 	key_add(es_map, "C-Chr-S", &search_forward);
+	key_add(es_map, "search:again", &search_forward);
 	key_add(es_map, "Backspace", &search_retreat);
 	key_add(es_map, "C-Chr-W", &search_add);
 	key_add(es_map, "C-Chr-C", &search_add);
 	key_add(es_map, "C-Chr-R", &search_forward);
 	key_add(es_map, "Close", &search_close);
 	key_add(es_map, "Enter", &search_done);
+	key_add(es_map, "search:done", &search_done);
 	key_add(es_map, "doc:replaced", &search_again);
 	key_add(es_map, "Notify:clip", &search_clip);
 	key_add(es_map, "C-Chr-L", &search_recentre);
 	key_add_range(es_map, "Chr- ", "Chr-~", &search_insert_quoted);
 	key_add_range(es_map, "M-Chr- ", "M-Chr-~", &search_insert_meta);
 	key_add(es_map, "M-Chr-c", &search_toggle_ci);
-}
+	key_add(es_map, "M-Chr-r", &search_replace);
+	key_add(es_map, "Tab", &search_replace);
+	key_add(es_map, "M-Chr-%", &search_replace);
 
-DEF_LOOKUP_CMD(search_handle, es_map);
+	key_add(es_map, "search:replace", &do_replace);
+
+	/* keys for the 'replace' pane */
+	er_map = key_alloc();
+	key_add(er_map, "Enter", &replace_request_next);
+	key_add(er_map, "M-Enter", &replace_request);
+	key_add(er_map, "Tab", &replace_to_search);
+	key_add(er_map, "S-Tab", &replace_to_search);
+	key_add(er_map, "M-Chr-!", &replace_all);
+	key_add(er_map, "C-Chr-S", &replace_forward);
+	key_add(er_map, "C-Chr-R", &replace_forward);
+	key_add(er_map, "C-Chr-L", &replace_forward);
+	key_add(er_map, "doc:reundo", &replace_undo);
+}
 
 DEF_CMD(emacs_search)
 {
@@ -443,13 +607,16 @@ DEF_CMD(emacs_search)
 	esi->s = NULL;
 	esi->matched = 1;
 	esi->wrapped = 0;
-	esi->backwards = ci->num;
+	esi->backwards = ci->num & 1;
 
 	p = pane_register(ci->focus, 0, &search_handle.c, esi);
 	if (p) {
 		call("doc:request:doc:replaced", p);
 		attr_set_str(&p->attrs, "status-line", " Search: case insensitive ");
 		comm_call(ci->comm2, "callback:attach", p);
+
+		if (ci->num & 2)
+			call("M-Chr-%", p);
 	}
 	return 1;
 }

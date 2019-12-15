@@ -4,15 +4,6 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] search-replace.
-      This might just be an extension of the current search.  I would have
-      two input boxes, maybe left and right, or one above the other.
-      I like to be able to see the result after the change, particularly
-      if the change as '\1' style references, so maybe some key-stroke to
-      replace without moving forward.
-      Also want an easy "undo" of the last changed.
-      Changing the replace string during the process should be allowed too.
-
 - [ ] fill-mode
       - some way to select it (configuration?) and to set width
       - on space or enter, fill just current line, but use same mech as fill command
@@ -117,6 +108,8 @@ Module features
 
 ### emacs
 
+- [ ] search/replace should support undo somehow
+- [ ] search/replace should make it easy to revisit previous changes.
 - [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
 - [ ] filename completion should ignore uninteresting files like ".o"
 - [ ] invent a way to reserve 'extra' values for command sets

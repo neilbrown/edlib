@@ -1310,7 +1310,7 @@ static void do_searches(struct pane *p safe,
 }
 
 struct highlight_info {
-	int view;
+	int view, replace_view;
 	char *patn;
 	int ci;
 	struct mark *start, *end;
@@ -1353,6 +1353,42 @@ DEF_CMD(emacs_search_highlight)
 			mark_to_mark(m, ci->mark2);
 			attr_set_int(&m->attrs, "render:search-end", 0);
 		}
+	}
+	call("view:changed", ci->focus);
+	return 1;
+}
+
+DEF_CMD(emacs_replace_highlight)
+{
+	/* from 'mark' for 'num' chars to 'mark2' there is a recent
+	 * replacement in a search/replace.
+	 * The existing render:search{-end} marks which are near mark2
+	 * need to be discarded, and new "render:replacement" need to
+	 * be added.
+	 */
+	struct mark *m;
+	struct highlight_info *hi = ci->home->data;
+
+	if (hi->replace_view < 0)
+		return 0;
+
+	if (!ci->mark || !ci->mark2)
+		return Enoarg;
+
+	while ((m = vmark_at_or_before(ci->focus, ci->mark2,
+				       hi->view, ci->home)) != NULL &&
+	       (attr_find_int(m->attrs, "render:search") >= 0 ||
+		attr_find_int(m->attrs, "render:search-end") >= 0))
+		mark_free(m);
+	m = vmark_new(ci->focus, hi->replace_view, ci->home);
+	if (m) {
+		mark_to_mark(m, ci->mark);
+		attr_set_int(&m->attrs, "render:replacement", ci->num);
+	}
+	m = vmark_new(ci->focus, hi->replace_view, ci->home);
+	if (m) {
+		mark_to_mark(m, ci->mark2);
+		attr_set_int(&m->attrs, "render:replacement-end", 0);
 	}
 	call("view:changed", ci->focus);
 	return 1;
@@ -1502,9 +1538,11 @@ DEF_CMD(emacs_start_search)
 {
 	struct pane *p, *hp;
 	struct highlight_info *hi = calloc(1, sizeof(*hi));
+	int mode = 0;
 
 	hp = pane_register(ci->focus, 0, &highlight_handle.c, hi);
 	hi->view = home_call(ci->focus, "doc:add-view", hp) - 1;
+	hi->replace_view = home_call(ci->focus, "doc:add-view", hp) - 1;
 
 	p = call_ret(pane, "PopupTile", hp, 0, NULL, "TR2", 0, NULL, "");
 
@@ -1515,7 +1553,11 @@ DEF_CMD(emacs_start_search)
 	attr_set_str(&p->attrs, "prompt", "Search");
 	attr_set_str(&p->attrs, "done-key", "Search String");
 	call("doc:set-name", p, 0, NULL, "Search", -1);
-	call_ret(pane, "attach-emacs-search", p, ci->key[6] == 'R');
+	if (ci->key[6] == 'R')
+		mode |= 1;
+	if (ci->key[6] == '%')
+		mode |= 2;
+	call_ret(pane, "attach-emacs-search", p, mode);
 
 	return 1;
 }
@@ -1532,6 +1574,14 @@ DEF_CMD(emacs_highlight_close)
 		while ((m = vmark_first(ci->focus, hi->view, ci->home)) != NULL)
 			mark_free(m);
 		call("doc:del-view", ci->home, hi->view);
+	}
+	if (hi->replace_view >= 0) {
+		struct mark *m;
+
+		while ((m = vmark_first(ci->focus, hi->replace_view,
+					ci->home)) != NULL)
+			mark_free(m);
+		call("doc:del-view", ci->home, hi->replace_view);
 	}
 	mark_free(hi->start);
 	mark_free(hi->end);
@@ -1560,6 +1610,7 @@ DEF_CMD(emacs_highlight_clip)
 	struct highlight_info *hi = ci->home->data;
 
 	marks_clip(ci->home, ci->mark, ci->mark2, hi->view, ci->home);
+	marks_clip(ci->home, ci->mark, ci->mark2, hi->replace_view, ci->home);
 	return 0;
 }
 
@@ -1810,6 +1861,15 @@ DEF_CMD(emacs_hl_attrs)
 					 ci->mark, "fg:blue,inverse,vis-nl", 20);
 		}
 	}
+	if (strcmp(ci->str, "render:replacement") == 0) {
+		/* Replacement -  "20" is a priority */
+		if (hi->replace_view >= 0 && ci->mark &&
+		    ci->mark->viewnum == hi->replace_view) {
+			int  len = atoi(ci->str2);
+			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
+					 ci->mark, "fg:green-40,inverse,focus,vis-nl", 20);
+		}
+	}
 	if (strcmp(ci->str, "start-of-line") == 0 && ci->mark && hi->view >= 0) {
 		struct mark *m = vmark_at_or_before(ci->focus, ci->mark, hi->view, ci->home);
 		if (m && attr_find_int(m->attrs, "render:search") > 0)
@@ -1828,6 +1888,11 @@ DEF_CMD(emacs_hl_attrs)
 		/* Here endeth the match */
 		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
 				 ci->mark, "fg:blue,inverse,vis-nl", 20);
+	}
+	if (strcmp(ci->str, "render:replacement-end") ==0) {
+		/* Here endeth the replacement */
+		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
+				 ci->mark, "fg:green-40,inverse,vis-nl", 20);
 	}
 	return 0;
 }
@@ -2092,6 +2157,7 @@ static void emacs_init(void)
 
 	key_add(m, "C-Chr-S", &emacs_start_search);
 	key_add(m, "C-Chr-R", &emacs_start_search);
+	key_add(m, "M-Chr-%", &emacs_start_search);
 	key_add(m, "render:reposition", &emacs_reposition);
 
 	key_add(m, "emCX-C-Chr-C", &emacs_exit);
@@ -2146,6 +2212,7 @@ static void emacs_init(void)
 	key_add(m, "Search String", &emacs_search_done);
 	key_add(m, "render:reposition", &emacs_search_reposition);
 	key_add(m, "search:highlight", &emacs_search_highlight);
+	key_add(m, "search:highlight-replace", &emacs_replace_highlight);
 	key_add(m, "map-attr", &emacs_hl_attrs);
 	key_add(m, "Draw:text", &highlight_draw);
 	key_add(m, "Close", &emacs_highlight_close);
