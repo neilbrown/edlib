@@ -20,7 +20,7 @@
 
 #include "core.h"
 
-static struct map *emacs_map, *hl_map;
+static struct map *emacs_map;
 static char * safe file_normalize(struct pane *p safe, char *path,
 				  char *initial_path);
 
@@ -1271,155 +1271,6 @@ DEF_CMD(emacs_save_all)
 	return call("docs:save-all", ci->focus);
 }
 
-static void do_searches(struct pane *p safe,
-			struct pane *owner, int view, char *patn,
-			int ci,
-			struct mark *m, struct mark *end)
-{
-	int ret;
-	if (!m)
-		return;
-	m = mark_dup(m);
-	while ((ret = call("text-search", p, ci, m, patn, 0, end)) >= 1) {
-		struct mark *m2, *m3;
-		int len = ret - 1;
-		m2 = vmark_new(p, view, owner);
-		if (!m2)
-			break;
-		mark_to_mark(m2, m);
-		while (ret > 1 && mark_prev_pane(p, m2) != WEOF)
-			ret -= 1;
-		m3 = vmark_matching(m2);
-		if (m3) {
-			mark_free(m2);
-			m2 = m3;
-		}
-		if (attr_find(m2->attrs, "render:search") == NULL) {
-			attr_set_int(&m2->attrs, "render:search2", len);
-			m2 = vmark_new(p, view, owner);
-			if (m2) {
-				mark_to_mark(m2, m);
-				attr_set_int(&m2->attrs, "render:search2-end", 0);
-			}
-		}
-		if (len == 0)
-			/* Need to move forward, or we'll just match here again*/
-			mark_next_pane(p, m);
-	}
-	mark_free(m);
-}
-
-struct highlight_info {
-	int view, replace_view;
-	char *patn;
-	int ci;
-	struct mark *start, *end;
-	struct pane *popup safe;
-};
-
-DEF_CMD(emacs_search_highlight)
-{
-	/* from 'mark' for 'num' chars to 'mark2' there is a match for 'str',
-	 * or else there are no matches (num==0).
-	 * Here we remove any existing highlighting and highlight
-	 * just the match.  A subsequent call to emacs_search_reposition
-	 * will highlight other near-by matches.
-	 */
-	struct mark *m, *start;
-	struct highlight_info *hi = ci->home->data;
-
-	if (hi->view < 0)
-		return 0;
-
-	while ((start = vmark_first(ci->focus, hi->view, ci->home)) != NULL)
-		mark_free(start);
-
-	free(hi->patn);
-	if (ci->str)
-		hi->patn = strdup(ci->str);
-	else
-		hi->patn = NULL;
-	hi->ci = ci->num2;
-
-	if (ci->mark && ci->num >= 0 && ci->str) {
-		m = vmark_new(ci->focus, hi->view, ci->home);
-		if (!m)
-			return Efail;
-		mark_to_mark(m, ci->mark);
-		attr_set_int(&m->attrs, "render:search", ci->num);
-		call("Move-View-Pos", ci->focus, 0, m);
-		if (ci->mark2 &&
-		    (m = vmark_new(ci->focus, hi->view, ci->home)) != NULL) {
-			mark_to_mark(m, ci->mark2);
-			attr_set_int(&m->attrs, "render:search-end", 0);
-		}
-	}
-	call("view:changed", ci->focus);
-	return 1;
-}
-
-DEF_CMD(emacs_replace_highlight)
-{
-	/* from 'mark' for 'num' chars to 'mark2' there is a recent
-	 * replacement in a search/replace.
-	 * The existing render:search{-end} marks which are near mark2
-	 * need to be discarded, and new "render:replacement" need to
-	 * be added.
-	 */
-	struct mark *m;
-	struct highlight_info *hi = ci->home->data;
-
-	if (hi->replace_view < 0)
-		return 0;
-
-	if (!ci->mark || !ci->mark2)
-		return Enoarg;
-
-	while ((m = vmark_at_or_before(ci->focus, ci->mark2,
-				       hi->view, ci->home)) != NULL &&
-	       (attr_find_int(m->attrs, "render:search") >= 0 ||
-		attr_find_int(m->attrs, "render:search-end") >= 0))
-		mark_free(m);
-	m = vmark_new(ci->focus, hi->replace_view, ci->home);
-	if (m) {
-		mark_to_mark(m, ci->mark);
-		attr_set_int(&m->attrs, "render:replacement", ci->num);
-	}
-	m = vmark_new(ci->focus, hi->replace_view, ci->home);
-	if (m) {
-		mark_to_mark(m, ci->mark2);
-		attr_set_int(&m->attrs, "render:replacement-end", 0);
-	}
-	call("view:changed", ci->focus);
-	return 1;
-}
-
-DEF_CMD(highlight_draw)
-{
-	struct highlight_info *hi = ci->home->data;
-	struct pane *pp = hi->popup;
-
-	if (!ci->str2 || !strstr(ci->str2, ",focus"))
-		return 0;
-
-	/* here is where the user will be looking, make sure
-	 * the popup doesn't obscure it.
-	 */
-
-	while (pp->parent && pp->z == 0)
-		pp = pp->parent;
-	if (pp->x == 0) {
-		/* currently TL, should we move it back */
-		if (ci->y > pp->h || ci->x < pp->w)
-			call("popup:style", hi->popup, 0, NULL, "TR2");
-	} else {
-		/* currently TR, should we move it out of way */
-		if (ci->y <= pp->h && ci->x >= pp->x)
-			call("popup:style", hi->popup, 0, NULL, "TL2");
-	}
-	return 0;
-}
-
 DEF_CMD(emacs_reposition)
 {
 	struct mark *m;
@@ -1452,103 +1303,20 @@ DEF_CMD(emacs_reposition)
 	return 0;
 }
 
-DEF_CMD(emacs_search_reposition_delayed)
-{
-	struct highlight_info *hi = ci->home->data;
-	struct mark *start = hi->start;
-	struct mark *end = hi->end;
-	struct mark *vstart, *vend;
-	char *patn = hi->patn;
-	int damage = 0;
-
-	if (!start || !end)
-		return Efalse;
-
-	vstart = vmark_first(ci->focus, hi->view, ci->home);
-	vend = vmark_last(ci->focus, hi->view, ci->home);
-	if (vstart == NULL || start->seq < vstart->seq) {
-		/* search from 'start' to first match or 'end' */
-		do_searches(ci->focus, ci->home, hi->view, patn, hi->ci, start, vstart ?: end);
-		if (vend)
-			do_searches(ci->focus, ci->home, hi->view, patn, hi->ci,
-				    vend, end);
-	} else if (vend && end->seq > vend->seq) {
-		/* search from last match to end */
-		do_searches(ci->focus, ci->home, hi->view, patn, hi->ci, vend, end);
-	}
-	if (vstart != vmark_first(ci->focus, hi->view, ci->home) ||
-	    vend != vmark_last(ci->focus, hi->view, ci->home))
-		damage = 1;
-	if (damage) {
-		pane_damaged(ci->focus, DAMAGED_CONTENT);
-		pane_damaged(ci->focus, DAMAGED_VIEW);
-	}
-	mark_free(hi->start);
-	mark_free(hi->end);
-	hi->start = hi->end = NULL;
-	return 0;
-}
-
-DEF_CMD(emacs_search_reposition)
-{
-	/* If new range and old range don't over-lap, discard
-	 * old range and re-fill new range.
-	 * Otherwise delete anything in range that is no longer visible.
-	 * If they overlap before, search from start to first match.
-	 * If they overlap after, search from last match to end.
-	 */
-	/* delete every match before new start and after end */
-	struct highlight_info *hi = ci->home->data;
-	struct mark *start = ci->mark;
-	struct mark *end = ci->mark2;
-	char *patn = hi->patn;
-	int damage = 0;
-	struct mark *m;
-
-	if (hi->view < 0 || patn == NULL || !start || !end)
-		return 0;
-
-	while ((m = vmark_first(ci->focus, hi->view, ci->home)) != NULL &&
-	       mark_ordered_not_same(m, start)) {
-		mark_free(m);
-		damage = 1;
-	}
-	while ((m = vmark_last(ci->focus, hi->view, ci->home)) != NULL &&
-	       mark_ordered_not_same(end, m)) {
-		mark_free(m);
-		damage = 1;
-	}
-	mark_free(hi->start);
-	mark_free(hi->end);
-	hi->start = mark_dup(start);
-	hi->end = mark_dup(end);
-
-	if (damage) {
-		pane_damaged(ci->focus, DAMAGED_CONTENT);
-		pane_damaged(ci->focus, DAMAGED_VIEW);
-	}
-	call_comm("event:timer", ci->focus, &emacs_search_reposition_delayed,
-		  500);
-	return 1;
-}
-
-DEF_LOOKUP_CMD(highlight_handle, hl_map);
-
 DEF_CMD(emacs_start_search)
 {
-	struct pane *p, *hp;
-	struct highlight_info *hi = calloc(1, sizeof(*hi));
+	struct pane *p = NULL, *hp;
 	int mode = 0;
 
-	hp = pane_register(ci->focus, 0, &highlight_handle.c, hi);
-	hi->view = home_call(ci->focus, "doc:add-view", hp) - 1;
-	hi->replace_view = home_call(ci->focus, "doc:add-view", hp) - 1;
+	hp = call_ret(pane, "attach-emacs-search-highlight", ci->focus);
 
-	p = call_ret(pane, "PopupTile", hp, 0, NULL, "TR2", 0, NULL, "");
+	if (hp)
+		p = call_ret(pane, "PopupTile", hp, 0, NULL, "TR2",
+			     0, NULL, "");
 
 	if (!p)
 		return 0;
-	hi->popup = p;
+	home_call(hp, "highlight:set-popup", p);
 
 	attr_set_str(&p->attrs, "prompt", "Search");
 	attr_set_str(&p->attrs, "done-key", "Search String");
@@ -1562,57 +1330,7 @@ DEF_CMD(emacs_start_search)
 	return 1;
 }
 
-DEF_CMD(emacs_highlight_close)
-{
-	/* ci->focus is being closed */
-	struct highlight_info *hi = ci->home->data;
 
-	free(hi->patn);
-	if (hi->view >= 0) {
-		struct mark *m;
-
-		while ((m = vmark_first(ci->focus, hi->view, ci->home)) != NULL)
-			mark_free(m);
-		call("doc:del-view", ci->home, hi->view);
-	}
-	if (hi->replace_view >= 0) {
-		struct mark *m;
-
-		while ((m = vmark_first(ci->focus, hi->replace_view,
-					ci->home)) != NULL)
-			mark_free(m);
-		call("doc:del-view", ci->home, hi->replace_view);
-	}
-	mark_free(hi->start);
-	mark_free(hi->end);
-	free(hi);
-	return 0;
-}
-
-DEF_CMD(emacs_search_done)
-{
-	if (ci->str && ci->str[0]) {
-		call("global-set-attr", ci->focus, 0, NULL, "Search String",
-		     0, NULL, ci->str);
-	}
-	pane_close(ci->home);
-	return 1;
-}
-
-DEF_CMD(emacs_highlight_abort)
-{
-	pane_close(ci->home);
-	return 0;
-}
-
-DEF_CMD(emacs_highlight_clip)
-{
-	struct highlight_info *hi = ci->home->data;
-
-	marks_clip(ci->home, ci->mark, ci->mark2, hi->view, ci->home);
-	marks_clip(ci->home, ci->mark, ci->mark2, hi->replace_view, ci->home);
-	return 0;
-}
 
 DEF_CMD(emacs_command)
 {
@@ -1834,65 +1552,6 @@ DEF_CMD(emacs_attrs)
 		     !mark_same(ci->mark, cr.m)))
 			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
 					ci->mark, selection, 2);
-	}
-	return 0;
-}
-
-DEF_CMD(emacs_hl_attrs)
-{
-	struct highlight_info *hi = ci->home->data;
-
-	if (!ci->str)
-		return 0;
-
-	if (strcmp(ci->str, "render:search") == 0) {
-		/* Current search match -  "20" is a priority */
-		if (hi->view >= 0 && ci->mark && ci->mark->viewnum == hi->view) {
-			int  len = atoi(ci->str2);
-			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-					 ci->mark, "fg:red,inverse,focus,vis-nl", 20);
-		}
-	}
-	if (strcmp(ci->str, "render:search2") == 0) {
-		/* alternate matches in current view */
-		if (hi->view >= 0 && ci->mark && ci->mark->viewnum == hi->view) {
-			int len = atoi(ci->str2);
-			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-					 ci->mark, "fg:blue,inverse,vis-nl", 20);
-		}
-	}
-	if (strcmp(ci->str, "render:replacement") == 0) {
-		/* Replacement -  "20" is a priority */
-		if (hi->replace_view >= 0 && ci->mark &&
-		    ci->mark->viewnum == hi->replace_view) {
-			int  len = atoi(ci->str2);
-			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-					 ci->mark, "fg:green-40,inverse,focus,vis-nl", 20);
-		}
-	}
-	if (strcmp(ci->str, "start-of-line") == 0 && ci->mark && hi->view >= 0) {
-		struct mark *m = vmark_at_or_before(ci->focus, ci->mark, hi->view, ci->home);
-		if (m && attr_find_int(m->attrs, "render:search") > 0)
-			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
-					 ci->mark, "fg:red,inverse,vis-nl", 20);
-		if (m && attr_find_int(m->attrs, "render:search2") > 0)
-			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
-					 ci->mark, "fg:blue,inverse,vis-nl", 20);
-	}
-	if (strcmp(ci->str, "render:search-end") ==0) {
-		/* Here endeth the match */
-		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-				 ci->mark, "fg:red,inverse,vis-nl", 20);
-	}
-	if (strcmp(ci->str, "render:search2-end") ==0) {
-		/* Here endeth the match */
-		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-				 ci->mark, "fg:blue,inverse,vis-nl", 20);
-	}
-	if (strcmp(ci->str, "render:replacement-end") ==0) {
-		/* Here endeth the replacement */
-		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-				 ci->mark, "fg:green-40,inverse,vis-nl", 20);
 	}
 	return 0;
 }
@@ -2207,18 +1866,6 @@ static void emacs_init(void)
 	key_add(m, "Click-2", &emacs_paste);
 
 	emacs_map = m;
-
-	m = key_alloc();
-	key_add(m, "Search String", &emacs_search_done);
-	key_add(m, "render:reposition", &emacs_search_reposition);
-	key_add(m, "search:highlight", &emacs_search_highlight);
-	key_add(m, "search:highlight-replace", &emacs_replace_highlight);
-	key_add(m, "map-attr", &emacs_hl_attrs);
-	key_add(m, "Draw:text", &highlight_draw);
-	key_add(m, "Close", &emacs_highlight_close);
-	key_add(m, "Abort", &emacs_highlight_abort);
-	key_add(m, "Notify:clip", &emacs_highlight_clip);
-	hl_map = m;
 }
 
 DEF_LOOKUP_CMD(mode_emacs, emacs_map);
