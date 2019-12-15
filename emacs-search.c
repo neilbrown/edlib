@@ -438,6 +438,8 @@ DEF_CMD(search_replace)
 	p = call_ret(pane, "attach-history", p, 0, NULL, "*Replace History*",
 		     0, NULL, "popup:close");
 	esi->replace_pane = p;
+	if (p)
+		home_call(esi->target, "highlight:set-popup", p, 1);
 	if (ci->key[6] == '%')
 		pane_focus(ci->focus);
 	else
@@ -664,7 +666,7 @@ struct highlight_info {
 	char *patn;
 	int ci;
 	struct mark *start, *end;
-	struct pane *popup;
+	struct pane *popup, *replace_popup;
 };
 
 DEF_CMD(emacs_search_highlight)
@@ -774,7 +776,7 @@ DEF_CMD(emacs_hl_attrs)
 		    ci->mark->viewnum == hi->replace_view) {
 			int  len = atoi(ci->str2);
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-					 ci->mark, "fg:green-40,inverse,focus,vis-nl", 20);
+					 ci->mark, "fg:green-40,inverse,vis-nl", 20);
 		}
 	}
 	if (strcmp(ci->str, "start-of-line") == 0 && ci->mark && hi->view >= 0) {
@@ -808,6 +810,7 @@ DEF_CMD(highlight_draw)
 {
 	struct highlight_info *hi = ci->home->data;
 	struct pane *pp = hi->popup;
+	struct pane *pp2 = hi->replace_popup;
 
 	if (!ci->str2 || !strstr(ci->str2, ",focus") || !pp)
 		return 0;
@@ -818,13 +821,19 @@ DEF_CMD(highlight_draw)
 
 	while (pp->parent && pp->z == 0)
 		pp = pp->parent;
+	while (pp2 && pp2->parent && pp2->z == 0)
+		pp2 = pp2->parent;
 	if (pp->x == 0) {
 		/* currently TL, should we move it back */
-		if (ci->y > pp->h || ci->x < pp->w)
+		if (ci->x < pp->w ||
+		    (ci->y > pp->h &&
+		     (!pp2 || ci->y > pp2->y + pp2->h)))
 			call("popup:style", hi->popup, 0, NULL, "TR2");
 	} else {
 		/* currently TR, should we move it out of way */
-		if (ci->y <= pp->h && ci->x >= pp->x)
+		if (ci->x >= pp->x &&
+		    (ci->y <= pp->h ||
+		     (pp2 && ci->y <= pp2->y + pp2->h)))
 			call("popup:style", hi->popup, 0, NULL, "TL2");
 	}
 	return 0;
@@ -966,7 +975,10 @@ DEF_CMD(emacs_highlight_set_popup)
 {
 	struct highlight_info *hi = ci->home->data;
 
-	hi->popup = ci->focus;
+	if (ci->num)
+		hi->replace_popup = ci->focus;
+	else
+		hi->popup = ci->focus;
 	return 1;
 }
 
