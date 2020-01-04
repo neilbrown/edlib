@@ -35,11 +35,13 @@
 
 static void pane_init(struct pane *p safe, struct pane *par)
 {
-	p->parent = par;
-	if (par)
+	if (par) {
+		p->parent = par;
 		list_add(&p->siblings, &par->children);
-	else
+	} else {
+		p->parent = p;
 		INIT_LIST_HEAD(&p->siblings);
+	}
 	INIT_LIST_HEAD(&p->children);
 	INIT_LIST_HEAD(&p->notifiers);
 	INIT_LIST_HEAD(&p->notifiees);
@@ -113,7 +115,7 @@ void pane_damaged(struct pane *p, int type)
 	else
 		return;
 
-	while (p && (p->damaged | type) != p->damaged) {
+	while ((p->damaged | type) != p->damaged) {
 		if (z > 0 && (type & DAMAGED_SIZE_CHILD))
 			/* overlay changed size, so we must refresh */
 			p->damaged |= DAMAGED_CONTENT;
@@ -163,13 +165,13 @@ static void pane_do_resize(struct pane *p safe, int damage)
 		p->abs_zhi = abs_z;
 		return;
 	}
-	if (p->parent && (damage & DAMAGED_SIZE) && p->z == 0)
+	if ((damage & DAMAGED_SIZE) && p->z == 0)
 		/* Parent was resized and didn't propagate, so we need to */
 		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
 
 	damage |= p->damaged & (DAMAGED_SIZE | DAMAGED_SIZE_CHILD);
 	if (!damage &&
-	    (p->parent == NULL || p->abs_z == p->parent->abs_z + abs(p->z)))
+	    p->abs_z == p->parent->abs_z + abs(p->z))
 		return;
 
 	if (p->focus == NULL)
@@ -261,7 +263,7 @@ static void pane_do_review(struct pane *p safe, int damage)
 void pane_refresh(struct pane *p safe)
 {
 	int cnt = 5;
-	if (p->parent == NULL)
+	if (p->parent == p)
 		p->abs_z = 0;
 
 	while (cnt-- && (p->damaged & ~DAMAGED_CLOSED)) {
@@ -272,7 +274,7 @@ void pane_refresh(struct pane *p safe)
 	if (p->damaged)
 		fprintf(stderr,
 			"WARNING %sroot pane damaged after refresh: %d\n",
-			p->parent ? "":"non-", p->damaged);
+			p->parent != p ? "":"non-", p->damaged);
 }
 
 void pane_add_notify(struct pane *target safe, struct pane *source safe,
@@ -391,8 +393,7 @@ static void pane_close2(struct pane *p safe, struct pane *other safe)
 
 	pane_drop_notifiers(p, NULL);
 
-	if (p->parent && (void*)p->parent->handle &&
-	    !(p->parent->damaged & DAMAGED_CLOSED))
+	if (!(p->parent->damaged & DAMAGED_CLOSED))
 		pane_call(p->parent, "ChildClosed", p);
 
 	list_del_init(&p->siblings);
@@ -405,7 +406,7 @@ restart:
 		goto restart;
 	}
 
-	if (p->parent && p->parent->focus == p) {
+	if (p->parent->focus == p) {
 		pane_damaged(p->parent, DAMAGED_CURSOR);
 		p->parent->focus = NULL;
 	}
@@ -417,10 +418,10 @@ restart:
 	/* If a child has not yet had "Close" called, we need to leave
 	 * ->parent in place so a full range of commands are available.
 	 */
-	// p->parent = NULL;
+	// p->parent = p;
 	command_put(p->handle);
 	p->handle = NULL;
-	if (p->parent || other != p)
+	if (ed != p)
 		editor_delayed_free(ed, p);
 	else {
 		attr_free(&p->attrs);
@@ -463,14 +464,13 @@ void pane_reparent(struct pane *p safe, struct pane *newparent safe)
 {
 	/* detach p from its parent and attach beneath its sibling newparent */
 	int replaced = 0;
-	// FIXME this should be a failure, possibly with warning, but an
+	// FIXME this should be a failure, possibly with warning, not an
 	// assert.  I'm not sure just now how best to do warnings.
-	ASSERT(p->parent && (newparent->parent == NULL ||
-			     newparent->parent == p->parent));
+	ASSERT(newparent->parent == p->parent);
 	list_del(&p->siblings);
 	if (p->parent->focus == p)
 		p->parent->focus = newparent;
-	if (!newparent->parent) {
+	if (newparent->parent == newparent) {
 		newparent->parent = p->parent;
 		list_add(&newparent->siblings, &p->parent->children);
 		pane_resize(newparent, 0, 0, p->parent->w, p->parent->h);
@@ -489,7 +489,7 @@ void pane_reparent(struct pane *p safe, struct pane *newparent safe)
 void pane_move_after(struct pane *p safe, struct pane *after)
 {
 	/* Move 'p' after 'after', or if !after, move to start */
-	if (!p->parent || p == after)
+	if (p == p->parent || p == after)
 		return;
 	if (after) {
 		if (p->parent != after->parent)
@@ -512,11 +512,11 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 	struct pane *c;
 
 	list_del_init(&p->siblings);
-	if (p->parent && p->parent->focus == p) {
+	if (p->parent->focus == p) {
 		pane_damaged(p->parent, DAMAGED_CURSOR);
 		p->parent->focus = NULL;
 	}
-	p->parent = NULL;
+	p->parent = p;
 	while (!list_empty(&p->children)) {
 		c = list_first_entry(&p->children, struct pane, siblings);
 		list_move(&c->siblings, &parent->children);
@@ -593,7 +593,7 @@ void pane_focus(struct pane *focus)
 	/* We have root->input->display. FIXME I need a better way
 	 * to detect the 'display' level.
 	 */
-	while (p->parent && p->parent->parent && p->parent->parent->parent) {
+	while (p->parent->parent->parent != p->parent->parent) {
 		if (p->parent->focus &&
 		    p->parent->focus != p) {
 			struct pane *old = p->parent->focus;
@@ -618,6 +618,8 @@ char *pane_attr_get(struct pane *p, char *key safe)
 		a = CALL(strsave, pane, p, "get-attr", p, 0, NULL, key);
 		if (a)
 			return a;
+		if (p == p->parent)
+			return NULL;
 		p = p->parent;
 	}
 	return NULL;
@@ -648,8 +650,11 @@ void pane_clone_children(struct pane *from, struct pane *to)
 
 struct pane *pane_my_child(struct pane *p, struct pane *c)
 {
-	while (c && c->parent != p)
+	while (c && c->parent != p) {
+		if (c->parent == c)
+			return NULL;
 		c = c->parent;
+	}
 	return c;
 }
 
@@ -814,6 +819,8 @@ void pane_absxy(struct pane *p, short *x safe, short *y safe,
 			*h = p->h - *y;
 		*x += p->x;
 		*y += p->y;
+		if (p->parent == p)
+			break;
 		p = p->parent;
 	}
 }
@@ -824,6 +831,8 @@ void pane_relxy(struct pane *p, short *x safe, short *y safe)
 	while (p) {
 		*x -= p->x;
 		*y -= p->y;
+		if (p->parent == p)
+			break;
 		p = p->parent;
 	}
 }

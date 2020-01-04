@@ -189,7 +189,7 @@ DEF_CMD(hex_step)
 {
 	struct he_data *he = ci->home->data;
 
-	if (!he->bytes || !ci->home->parent)
+	if (!he->bytes)
 		return 0;
 	return home_call(ci->home->parent, "doc:step-bytes", ci->focus,
 			 ci->num, ci->mark, ci->str,

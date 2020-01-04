@@ -625,7 +625,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe,
 	char *fname = NULL;
 	char buf[100];
 
-	if (!m || !par)
+	if (!m)
 		return Enoarg;
 	de = m->ref.d;
 	/* close this pane, open the given file. */

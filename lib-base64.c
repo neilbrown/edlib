@@ -139,7 +139,7 @@ DEF_CMD(base64_step)
 	wint_t c1, c2, b;
 	struct b64info *bi = ci->home->data;
 
-	if (!ci->mark || !p)
+	if (!ci->mark)
 		return 0;
 	pos = locate_mark(p, ci->home, bi->view, ci->mark);
 

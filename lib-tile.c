@@ -251,7 +251,7 @@ static int tile_destroy(struct pane *p safe)
 		return 1;
 	}
 
-	if (p->parent == NULL) {
+	if (p->parent == p) {
 		/* subsumed husk being destroyed */
 		free(ti->name);
 		free(ti);
@@ -336,7 +336,7 @@ static int tile_destroy(struct pane *p safe)
 	list_del(&ti->tiles);
 	free(ti->name);
 	free(ti);
-	if (remaining == 1 && remain->parent) {
+	if (remaining == 1 && remain->parent != remain) {
 		struct tileinfo *ti2;
 		enum dir tmp;
 		/* Only one child left, must move it into parent.
@@ -526,9 +526,6 @@ static int tile_grow(struct pane *p safe, int horiz, int size)
 	struct tileinfo *tip;
 	int avail;
 
-	if (!p->parent)
-		return 0;
-
 	if (ti->direction == Neither)
 		/* Cannot grow/shrink the root */
 		return 0;
@@ -638,7 +635,7 @@ static int tile_is_first(struct tileinfo *ti safe)
 
 static struct pane *tile_root_popup(struct tileinfo *ti safe)
 {
-	while (ti->direction != Neither && ti->p->parent)
+	while (ti->direction != Neither)
 		ti = ti->p->parent->data;
 	return next_child(ti->p, NULL, 1);
 }

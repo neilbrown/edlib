@@ -167,7 +167,7 @@ DEF_CMD(email_get_attr)
 	char ret[12];
 	if (!ci->str || strcmp(ci->str, "renderline:fields") != 0)
 		return Efallthrough;
-	if (!ci->mark || !ci->home->parent)
+	if (!ci->mark)
 		return Efallthrough;
 
 	a = pane_mark_attr(ci->home->parent, ci->mark,
@@ -659,7 +659,7 @@ DEF_CMD(email_step)
 	int ret;
 	int n;
 
-	if (!p->parent || !ci->mark)
+	if (!ci->mark)
 		return Enoarg;
 	if (ci->num) {
 		ret = home_call(p->parent, ci->key, ci->focus,
@@ -709,7 +709,7 @@ DEF_CMD(email_set_ref)
 	struct email_view *evi = p->data;
 	int n;
 
-	if (!p->parent || !ci->mark)
+	if (!ci->mark)
 		return Enoarg;
 	home_call(p->parent, ci->key, ci->focus, ci->num);
 	if (ci->num) {
@@ -729,7 +729,7 @@ DEF_CMD(email_view_get_attr)
 	int p, v;
 	struct email_view *evi = ci->home->data;
 
-	if (!ci->str || !ci->mark || !ci->home->parent)
+	if (!ci->str || !ci->mark)
 		return Enoarg;
 	if (strcmp(ci->str, "email:visible") == 0) {
 		p = get_part(ci->home->parent, ci->mark);
@@ -748,7 +748,7 @@ DEF_CMD(email_view_set_attr)
 	int p, v;
 	struct email_view *evi = ci->home->data;
 
-	if (!ci->str || !ci->mark || !ci->home->parent)
+	if (!ci->str || !ci->mark)
 		return Enoarg;
 	if (strcmp(ci->str, "email:visible") == 0) {
 		p = get_part(ci->home->parent, ci->mark);

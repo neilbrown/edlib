@@ -60,7 +60,7 @@ struct generic_doc_ref {
  * pane tree.
  */
 struct pane {
-	struct pane		*parent;
+	struct pane		*parent safe;
 	struct list_head	siblings;
 	struct list_head	children;
 	struct pane		*focus;
@@ -403,7 +403,7 @@ struct pane *safe doc_register(struct pane *parent, short z,
 			       struct doc *doc safe);
 static inline struct pane * safe pane_root(struct pane *p safe)
 {
-	while (p->parent)
+	while (p->parent != p)
 		p = p->parent;
 	return p;
 }

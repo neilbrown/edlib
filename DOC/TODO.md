@@ -17,6 +17,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] 'fill para' should leave point where it is, not move to end of para.
+
 - [ ] for ()\n if () {} else if () GET INDENT WRONG
        I need a different marker for 'if' than for other prefixes, and
        I need to recognise else *after* point and only revert to the 'if' when 
@@ -28,7 +30,7 @@ Core features
 - [ ] pane_close() can be called at awkward times.  We need to do some inital
       processes so that it looks closed, but so that code can continue to
       run, then schedule proper close for later.
-- [ ] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
+- [X] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
 - [ ] undo often doesn't leave me where I expect to be left. - maybe it is the
       location of the previous undo?
 - [ ] account all mem allocation types separate, and (optionally) report

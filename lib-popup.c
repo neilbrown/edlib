@@ -74,9 +74,6 @@ static void popup_resize(struct pane *p safe, char *style safe)
 	int x,y,w,h;
 	int lh;
 
-	if (!p->parent)
-		/*FIXME impossible */
-		return;
 	/* First find the size */
 	lh = line_height(p);
 	if (strchr(style, 'M')) {
@@ -254,10 +251,10 @@ DEF_CMD(popup_defocus)
 	struct popup_info *ppi = ci->home->data;
 	struct pane *p;
 
-	for (p = ci->home; p->parent; p = p->parent)
+	for (p = ci->home; p->parent != p; p = p->parent)
 		if (p->parent->focus != p)
 			break;
-	if (!p->parent || !p->parent->parent)
+	if (p->parent != p->parent->parent)
 		/* We are still on the focal-path from display
 		 * Maybe we focussed in to a sub-popup
 		 */
@@ -356,8 +353,7 @@ DEF_CMD(popup_attach)
 	ppi->parent_popup = NULL;
 	if (strchr(style, 'P')) {
 		ppi->parent_popup = root;
-		if (root->parent)
-			root = root->parent;
+		root = root->parent;
 	}
 
 	p = pane_register(root, z + 1, &popup_handle.c, ppi);

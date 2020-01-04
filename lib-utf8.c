@@ -45,7 +45,7 @@ DEF_CMD(utf8_step)
 	int i;
 	wint_t ret;
 
-	if (!m || !p)
+	if (!m)
 		return 0;
 
 	ch = mark_step_pane(p, m, forward, move);

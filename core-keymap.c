@@ -493,7 +493,10 @@ int key_handle(const struct cmd_info *ci safe)
 			/* 'p' might have been destroyed */
 			return ret;
 		}
-		p = p->parent;
+		if (p == p->parent)
+			p = NULL;
+		else
+			p = p->parent;
 	}
 	time_stop_key(ci->key);
 	return 0;

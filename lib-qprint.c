@@ -44,7 +44,7 @@ DEF_CMD(qp_step)
 	wint_t ch, c2, c3;
 	struct mark *m = ci->mark;
 
-	if (!m || !p)
+	if (!m)
 		return 0;
 
 	retry:

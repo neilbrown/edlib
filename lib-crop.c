@@ -69,9 +69,6 @@ DEF_CMD(crop_write)
 	struct pane *p = ci->home->parent;
 	struct crop_data *cd = ci->home->data;
 
-	if (!p)
-		return 0;
-
 	return home_call(p, ci->key, ci->focus, ci->num,
 			 ci->mark ?: cd->start,
 			 ci->str, ci->num2,
@@ -84,9 +81,6 @@ DEF_CMD(crop_step)
 	struct pane *p = ci->home->parent;
 	struct crop_data *cd = ci->home->data;
 	int ret;
-
-	if (!p)
-		return 0;
 
 	if (!ci->mark && !ci->mark2)
 		return 0;
@@ -126,9 +120,6 @@ DEF_CMD(crop_generic)
 	struct pane *p = ci->home->parent;
 	struct crop_data *cd = ci->home->data;
 	int ret;
-
-	if (!p)
-		return 0;
 
 	if (!ci->mark && !ci->mark2)
 		/* No mark, do give it straight to parent */

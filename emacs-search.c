@@ -338,7 +338,7 @@ DEF_CMD(search_again)
 			pfx = esi->backwards ? "Wrapped Reverse Search: ":"Wrapped Search: ";
 	}
 	/* HACK */
-	for (p = ci->home; p; p = p->parent) {
+	for (p = ci->home; p != p->parent; p = p->parent) {
 		a = attr_find(p->attrs, "prefix");
 		if (!a)
 			continue;
@@ -819,9 +819,9 @@ DEF_CMD(highlight_draw)
 	 * the popup doesn't obscure it.
 	 */
 
-	while (pp->parent && pp->z == 0)
+	while (pp->parent != pp && pp->z == 0)
 		pp = pp->parent;
-	while (pp2 && pp2->parent && pp2->z == 0)
+	while (pp2 && pp2->parent != pp2 && pp2->z == 0)
 		pp2 = pp2->parent;
 	if (pp->x == 0) {
 		/* currently TL, should we move it back */

@@ -241,7 +241,7 @@ class EdDisplay(gtk.Window):
             pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
                               cw-1, ch-1);
             in_focus = self.in_focus
-            while in_focus and focus.parent and focus.parent.parent and focus.parent != self.pane:
+            while in_focus and focus.parent.parent != focus and focus.parent != self.pane:
                 if focus.parent.focus != focus:
                     in_focus = False
                 focus = focus.parent
@@ -301,7 +301,7 @@ class EdDisplay(gtk.Window):
         # a pixmap has already been allocated.  This allows
         # a temp pane to be created to draw an image, then it can
         # be discarded and the image remains
-        if focus.z < 0 and focus.parent:
+        if focus.z < 0 and focus.parent != focus:
             x += focus.x
             y += focus.y
             focus = focus.parent
@@ -394,8 +394,8 @@ class EdDisplay(gtk.Window):
     def get_pixmap(self, p):
         # find pixmap attached to root-most pane with
         # same size as this, with no x,y,z offset
-        while p.parent and p.w == p.parent.w and p.h == p.parent.h and \
-              p.x == 0 and p.y == 0 and p.z == 0:
+        while (p.parent != p and p.w == p.parent.w and p.h == p.parent.h and
+               p.x == 0 and p.y == 0 and p.z == 0):
             if p in self.panes:
                 del self.panes[p]
             p = p.parent

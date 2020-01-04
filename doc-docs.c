@@ -74,7 +74,7 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 			if (p == list_last_entry(&col->children,
 						 struct pane, siblings))
 				m->ref.p = NULL;
-			else if (!p->parent || list_empty(&p->siblings))
+			else if (list_empty(&p->siblings))
 				/* document is gone.  This shouldn't happen,
 				 * but for safety, set doc to NULL.
 				 */
@@ -233,8 +233,6 @@ DEF_CMD(docs_modified_notify_replace)
 	int all_gone;
 	struct mark *m;
 
-	if (!ci->home->parent)
-		return Efail;
 	m = vmark_new(ci->home->parent, MARK_UNGROUPED, NULL);
 	if (!m)
 		return Efail;
@@ -297,7 +295,7 @@ DEF_CMD(docs_modified_step)
 	 * has a file name
 	 */
 	wint_t ch, ret;
-	if (!ci->home->parent || !ci->mark)
+	if (!ci->mark)
 		return Enoarg;
 
 	if (ci->num) {
@@ -326,7 +324,7 @@ DEF_CMD(docs_modified_doc_get_attr)
 	char *attr;
 	struct mark *m;
 
-	if (!ci->str || !ci->mark || !ci->home->parent)
+	if (!ci->str || !ci->mark)
 		return Enoarg;
 	m = mark_dup(ci->mark);
 	attr = pane_mark_attr(ci->home->parent, m, ci->str);
@@ -428,7 +426,7 @@ DEF_CMD(docs_callback)
 		p = ci->focus;
 		if (!p)
 			return Efallthrough;
-		if (p->parent && p->parent->parent)
+		if (p->parent != p->parent->parent)
 			/* This has a parent which is not the root,
 			 * so we shouldn't interfere.
 			 */
@@ -440,8 +438,7 @@ DEF_CMD(docs_callback)
 		home_call(p, "doc:request:doc:revisit", doc->collection);
 		home_call(p, "doc:request:doc:status-changed",
 			  doc->collection);
-		if (p->parent)
-			doc_checkname(p, doc, ci->num ?: -1);
+		doc_checkname(p, doc, ci->num ?: -1);
 		return Efallthrough;
 	}
 	return Efallthrough;

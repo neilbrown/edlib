@@ -97,7 +97,7 @@ DEF_CMD(render_complete_line)
 	int ret;
 	struct mark *m;
 
-	if (!ci->mark || !ci->home->parent)
+	if (!ci->mark)
 		return Enoarg;
 
 	m = mark_dup(ci->mark);
@@ -231,7 +231,7 @@ DEF_CMD(render_complete_prev)
 	 * it matches the prefix.
 	 */
 	struct complete_data *cd = ci->home->data;
-	if (!ci->mark || !ci->home->parent)
+	if (!ci->mark)
 		return Enoarg;
 	return do_render_complete_prev(cd, ci->mark, ci->home->parent, ci->num, NULL);
 }
@@ -279,9 +279,8 @@ DEF_CMD(complete_escape)
 	/* This pane might be closed before the reply string is used,
 	 * so we need to save it.
 	 */
-	if (ci->home->parent)
-		call("popup:close", ci->home->parent, NO_NUMERIC, NULL,
-		     strsave(ci->home, cd->prefix));
+	call("popup:close", ci->home->parent, NO_NUMERIC, NULL,
+	     strsave(ci->home, cd->prefix));
 	return 1;
 }
 
@@ -331,7 +330,7 @@ DEF_CMD(complete_eol)
 {
 	int rpt = RPT_NUM(ci);
 
-	if (!ci->mark || !ci->focus->parent)
+	if (!ci->mark)
 		return Enoarg;
 	if (rpt >= -1 && rpt <= 1)
 		/* movement within the line */
@@ -404,7 +403,7 @@ DEF_CMD(complete_set_prefix)
 	cd->prefix_only = !ci->num;
 
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
-	if (!m || !p->parent)
+	if (!m)
 		return Efail;
 	/* Move to end-of-document */
 	call("Move-File", ci->focus, 1, m);
@@ -486,7 +485,7 @@ DEF_CMD(complete_return)
 	int l;
 	char *c1, *c2;
 
-	if (!ci->mark || !ci->home->parent)
+	if (!ci->mark)
 		return Enoarg;
 
 	cr.c = save_str;
