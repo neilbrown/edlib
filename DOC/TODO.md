@@ -83,7 +83,7 @@ Core features
 rexel
 -----
 
-- [ ] rexel thinks '\[ \]' is an incomplete (or illegal?) pattern.
+- [X] rexel thinks '\[ \]' is an incomplete (or illegal?) pattern.
 - [ ] Allow ?...: at start of a group to affect how group is interpreted
       e.g. 'Lnnn' mean there are nnn chars to be treated literally
             I or S - case [in]sensitive.... maybe only at start

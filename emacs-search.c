@@ -46,7 +46,7 @@ struct es_info {
 static struct map *es_map, *er_map;
 DEF_LOOKUP_CMD(search_handle, es_map);
 DEF_LOOKUP_CMD(replace_handle, er_map);
-static const char must_quote[] = ".|*+?{}()?^$\\[]";
+static const char must_quote[] = ".|*+?{()?^$\\[";
 static const char may_quote[] = "<>dDsSwWpPaA";
 
 

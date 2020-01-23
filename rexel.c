@@ -1058,6 +1058,7 @@ static int parse_atom(struct parse_state *st safe)
 		case '^':
 		case '.':
 		case '[':
+		case ']':
 		case '$':
 		case '(':
 		case ')':
