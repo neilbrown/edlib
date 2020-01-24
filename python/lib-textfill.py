@@ -47,8 +47,9 @@ def textwidth(line):
 
 
 class FillMode(edlib.Pane):
-    def __init__(self, focus):
+    def __init__(self, focus, cols=None):
         edlib.Pane.__init__(self, focus)
+        self.cols = cols
 
     def do_fill(self, key, focus, num, mark, mark2, **a):
         "handle:fill-paragraph"
@@ -95,8 +96,12 @@ class FillMode(edlib.Pane):
 
         if num != edlib.NO_NUMERIC and num > 8:
             width = num
+            if self.cols:
+                self.cols = num
         else:
             width = 72
+            if self.cols:
+                width = self.cols
 
         if mark2 < mark:
             mark, mark2 = mark2, mark
@@ -162,9 +167,61 @@ class FillMode(edlib.Pane):
         if newpara != para:
             try:
                 focus.call("doc:replace", 1, mark, newpara, mark2)
-            except edlib.commandfail:
+            except edlib.commandfailed:
                 pass
         return 1
+
+    def enable_fill(self, key, focus, num, **a):
+        "handle:interactive-cmd-fill-mode"
+        self.cols = 72
+        return 1
+
+    def handle_space(self, key, focus, mark, **a):
+        "handle-list/Chr- /Tab/Enter"
+        if not self.cols:
+            # auto-fill not enabled
+            return 0
+        next = focus.call("doc:step", mark, 1, 0, ret='char')
+        if not next or next != '\n':
+            # not at end-of-line, don't auto-fill
+            return 0
+        m = mark.dup()
+        focus.call("Move-EOL", -1, m)
+        line = focus.call("doc:get-str", m, mark, ret='str')
+        if textwidth(line) < self.cols:
+            return 0
+        # need to start a new line, so need a prefix.
+        # Use same as current line
+        prefix = span(line, " \t!@#$%^&*()_-+=}{][|:;.,></?")
+        prefix1 = ''
+        for c in prefix:
+            if c == '\t':
+                prefix1 += c
+            else:
+                prefix1 += ' '
+
+        if textwidth(line) == self.cols:
+            # just insert a line break
+            try:
+                focus.call("doc:replace", 1, mark, mark, "\n"+prefix1)
+                return 1
+            except edlib.commandfailed:
+                return 0
+        # need to find last space, and replace with line break
+        m2 = mark.dup()
+        leng = focus.call("text-search", "[ \t]", m2, m, 0, 1)
+        if not leng:
+            # no space, do nothing
+            return 0
+        m.to_mark(m2)
+        focus.call("doc:step", m, 1, 1)
+        try:
+            focus.call("doc:replace", 1, m, m2, "\n"+prefix1)
+            if key == "Enter":
+                return 1
+            return 0
+        except edlib.commandfailed:
+            return 0
 
 def fill_mode_attach(key, focus, comm2, **a):
     p = FillMode(focus)
@@ -172,4 +229,10 @@ def fill_mode_attach(key, focus, comm2, **a):
         comm2("callback", p)
     return 1
 
+def fill_mode_activate(key, focus, comm2, **a):
+    FillMode(focus, 72)
+    return 1
+
 editor.call("global-set-command", "attach-textfill", fill_mode_attach)
+editor.call("global-set-command", "interactive-cmd-fill-mode",
+            fill_mode_activate)
