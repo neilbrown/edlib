@@ -9,8 +9,6 @@
 # - it support a fill-paragraph function to reformat a paragraph to
 #   fit a given width.
 #
-# This version only has fill-paragragh.
-#
 # If two marks are provided and the text between them is re-filled.  Any
 # text between the first mark and the start of that line is used to supply
 # characters for a prefix.  Any characters in that prefix, and any white
@@ -44,6 +42,46 @@ def textwidth(line):
             w = w | 7
         w += 1
     return w
+
+
+def do_replace(focus, start, end, new, strip):
+    # text between 'start' and 'end' matches 'new' except for
+    # space/tab/newline and chars in 'strip'
+    # Edit between 'start' and 'end' to make it match 'new'.
+    # We do edits rather than wholesale replace so that marks
+    # can remain unmoved.
+    # If we get confused, just do a wholesale replacement of the
+    # remainder.
+
+    second = 0
+    while start < end and new:
+        c = focus.call("doc:step", start, 1, 0, ret='char')
+        if c == new[0]:
+            # a match, just skip it
+            new = new[1:]
+            focus.call("doc:step", start, 1, 1)
+            continue
+        if c in ' \t\n' or c in strip:
+            # maybe this got removed
+            s = start.dup()
+            focus.call("doc:step", start, 1, 1)
+            focus.call("doc:replace", 0, second, s, start, "")
+            second=1
+            continue
+        repl = ''
+        while new and (new[0] in ' \t\n' or new[0] in strip):
+            # probably this was inserted
+            repl += new[0]
+            new = new[1:]
+        if repl:
+            s = start.dup()
+            focus.call("doc:replace", 0, second, s, start, repl)
+            second = 1
+            continue
+        # Nothing obvious to do, just bale out
+        break
+    if start < end or new:
+        focus.call("doc:replace", 0, second, start, new, end)
 
 
 class FillMode(edlib.Pane):
@@ -166,7 +204,7 @@ class FillMode(edlib.Pane):
             newpara += '\n'
         if newpara != para:
             try:
-                focus.call("doc:replace", 1, mark, newpara, mark2)
+                do_replace(focus, mark, mark2, newpara, tostrip)
             except edlib.commandfailed:
                 pass
         return 1

@@ -17,7 +17,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] 'fill para' should leave point where it is, not move to end of para.
+- [X] 'fill para' should leave point where it is, not move to end of para.
 
 - [ ] for ()\n if () {} else if () GET INDENT WRONG
        I need a different marker for 'if' than for other prefixes, and
