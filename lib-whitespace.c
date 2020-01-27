@@ -24,6 +24,7 @@
 struct ws_info {
 	struct mark *mymark;
 	int mycol;
+	int warn_width;
 };
 
 static void choose_next(struct pane *focus safe, struct mark *pm safe,
@@ -50,7 +51,7 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 		wint_t ch = doc_following_pane(focus, m);
 		if (ch == WEOF || is_eol(ch))
 			break;
-		if (ws->mycol >= 80) {
+		if (ws->mycol >= ws->warn_width) {
 			attr_set_str(&m->attrs, "render:whitespace",
 				     "bg:red-80+50");
 			return;
@@ -164,9 +165,11 @@ DEF_LOOKUP_CMD(whitespace_handle, ws_map);
 
 DEF_CMD(ws_clone)
 {
+	struct ws_info *oldws = ci->home->data;
 	struct ws_info *ws = calloc(1, sizeof(*ws));
 	struct pane *p;
 
+	ws->warn_width = oldws->warn_width;
 	p = pane_register(ci->focus, 0, &whitespace_handle.c, ws);
 	pane_clone_children(ci->home, p);
 	return 0;
@@ -175,6 +178,13 @@ DEF_CMD(ws_clone)
 DEF_CMD(whitespace_attach)
 {
 	struct ws_info *ws = calloc(1, sizeof(*ws));
+	char *w;
+
+	w = pane_attr_get(ci->focus, "whitespace-width");
+	if (w)
+		ws->warn_width = atoi(w);
+	if (ws->warn_width < 8)
+		ws->warn_width = 80;
 
 	return comm_call(ci->comm2, "callback:attach",
 			 pane_register(ci->focus, 0, &whitespace_handle.c, ws));
