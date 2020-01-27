@@ -1067,6 +1067,16 @@ DEF_CMD(doc_attach_view)
 		if (!s)
 			s = pane_attr_get(doc, "view-default");
 		if (s) {
+			char *s2;
+			while ((s2 = strchr(s, ',')) != NULL) {
+				char *s3 = strndup(s, s2-s);
+				p2 = call_ret(pane, strconcat(p, "attach-", s3)
+					      , p);
+				free(s3);
+				if (p2)
+					p = p2;
+				s = s2+1;
+			}
 			s = strconcat(p, "attach-", s);
 			p2 = call_ret(pane, s, p);
 			if (p2)
