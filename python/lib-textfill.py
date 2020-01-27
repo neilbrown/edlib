@@ -83,6 +83,49 @@ def do_replace(focus, start, end, new, strip):
     if start < end or new:
         focus.call("doc:replace", 0, second, start, new, end)
 
+def reformat(lines, lln,  width, tostrip, prefix):
+    # 'lines' is an array of lines
+    # 'lln' is the lenth of the first line which *isn't* included
+    #   in the lines array.  It is a prefix not to be touched.
+    # 'tostrip' is characters that can be removed from start of lines
+    #    including space and tab
+    # 'prefix' is to be added to the start of each line but the first
+    # 'width' is the max final width of each line
+    #
+
+    plen = textwidth(prefix)
+
+    words = []
+    for l in lines:
+        p = span(l, tostrip)
+        l = l[len(p):]
+        words.extend(re.split(r'\s+', l.strip()))
+
+    # we have the words, time to assemble the lines
+    # first line never gets prefix
+    newpara = ""
+    ln = ""
+
+    pfx = ''
+    for w in words:
+        spaces = 1
+        if ln and ln[-1] == '.':
+            # 2 spaces after a sentence
+            spaces = 2
+        if ln and lln + spaces + len(w) > width:
+            # time for a line break
+            newpara += pfx + ln + '\n'
+            ln = ""
+            lln = plen
+            pfx = prefix
+        if ln:
+            ln += ' ' * spaces
+            lln += spaces
+        ln += w
+        lln += len(w)
+
+    return newpara + pfx + ln
+
 
 class FillMode(edlib.Pane):
     def __init__(self, focus, cols=None):
@@ -164,42 +207,8 @@ class FillMode(edlib.Pane):
         else:
             prefix = span(lines[1], tostrip)
 
-        plen = textwidth(prefix)
-        plen0 = textwidth(prefix0)
+        newpara = reformat(lines, textwidth(prefix0), width, tostrip, prefix)
 
-        words = []
-        for l in lines:
-            p = span(l, tostrip)
-            l = l[len(p):]
-            words.extend(re.split(r'\s+', l.strip()))
-
-        if len(words) < 2:
-            return
-
-        # we have the words, time to assemble the lines
-        # first line never gets prefix
-        newpara = ""
-        ln = ""
-        lln = plen0
-
-        pfx = ''
-        for w in words:
-            spaces = 1
-            if ln and ln[-1] == '.':
-                # 2 spaces after a sentence
-                spaces = 2
-            if ln and lln + spaces + len(w) > width:
-                # time for a line break
-                newpara += pfx + ln + '\n'
-                ln = ""
-                lln = plen
-                pfx = prefix
-            if ln:
-                ln += ' ' * spaces
-                lln += spaces
-            ln += w
-            lln += len(w)
-        newpara += pfx + ln
         if para[-1] == '\n':
             newpara += '\n'
         if newpara != para:
