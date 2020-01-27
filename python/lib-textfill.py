@@ -126,6 +126,64 @@ def reformat(lines, lln,  width, tostrip, prefix):
 
     return newpara + pfx + ln
 
+def find_start(focus, mark):
+    mark = mark.dup()
+    m = mark.dup()
+    focus.call("Move-EOL", -100, m)
+    try:
+        leng = focus.call("text-search", "^[^a-zA-Z0-9\n]*$",
+                          mark, m, 1, 1)
+        # leng is length + 1, we want +1 to kill '\n'
+        focus.call("Move-Char", leng, mark)
+    except edlib.commandfailed:
+        if focus.call("doc:step", 0, m, ret='char') != None:
+            return edlib.Efail
+        mark.to_mark(m)
+    # mark is at start of para - not indented yet.
+
+    # Now choose a prefix, which is non-alphanum or quotes.
+    # Possibly open brackets should be included too?
+    l = focus.call("text-match", "^[^a-zA-Z0-9'\"\n]*", mark.dup())
+    while l > 1:
+        focus.call("doc:step", 1, 1, mark)
+        l -= 1
+    return mark
+
+def find_end(focus, mark):
+    m = mark.dup()
+    focus.call("Move-EOL", 100, m)
+    try:
+        leng = focus.call("text-search", "^[^a-zA-Z0-9\n]*$",
+                          mark, m, 1)
+        focus.call("Move-Char", -leng, mark)
+    except edlib.commandfailed:
+        if focus.call("doc:step", 1, m, ret='char') != None:
+            return edlib.Efail
+        mark.to_mark(m)
+    return mark
+
+def get_prefixes(focus, mark, lines):
+    # Get the text on the line before 'mark' - the prefix of the line
+    # Then based on that, get a prefix of the second line, to be used
+    # on other lines.
+    # If there is no second line, use first prefix, but with non-space
+    # converted to space.
+
+    m = mark.dup()
+    focus.call("Move-EOL", -1, m)
+    p0 = focus.call("doc:get-str", m, mark, ret='str')
+
+    if len(lines) == 1:
+        # only one line, so prefix is all spaces but based on first line
+        prefix = ""
+        for c in p0:
+            if c == '\t':
+                prefix += c
+            else:
+                prefix += ' '
+    else:
+        prefix = span(lines[1], p0 + ' \t')
+    return (p0, prefix)
 
 class FillMode(edlib.Pane):
     def __init__(self, focus, cols=None):
@@ -142,38 +200,8 @@ class FillMode(edlib.Pane):
                 mark = focus.call("doc:point", ret='mark')
             if not mark:
                 return edlib.Enoarg
-            mark = mark.dup()
-            m = mark.dup()
-            focus.call("Move-EOL", -100, m)
-            try:
-                leng = focus.call("text-search", "^[^a-zA-Z0-9\n]*$",
-                                  mark, m, 1, 1)
-                # leng is length + 1, we want +1 to kill '\n'
-                focus.call("Move-Char", leng, mark)
-            except edlib.commandfailed:
-                if focus.call("doc:step", 0, m, ret='char') != None:
-                    return edlib.Efail
-                mark.to_mark(m)
-            # mark is at start of para - not indented yet.
-            mark2 = m
-            mark2.to_mark(mark)
-            m = mark2.dup()
-            focus.call("Move-EOL", 100, m)
-            try:
-                leng = focus.call("text-search", "^[^a-zA-Z0-9\n]*$",
-                                  mark2, m, 1)
-                focus.call("Move-Char", -leng, mark2)
-            except edlib.commandfailed:
-                if focus.call("doc:step", 1, m, ret='char') != None:
-                    return edlib.Efail
-                mark2.to_mark(m)
-
-            # Now choose a prefix, which is non-alphanum or quotes.
-            # Possibly open brackets should be included too?
-            l = focus.call("text-match", "^[^a-zA-Z0-9'\"\n]*", mark.dup())
-            while l > 1:
-                focus.call("doc:step", 1, 1, mark)
-                l -= 1
+            mark = find_start(focus, mark)
+            mark2 = find_end(focus, mark.dup())
 
         if num != edlib.NO_NUMERIC and num > 8:
             width = num
@@ -187,25 +215,13 @@ class FillMode(edlib.Pane):
         if mark2 < mark:
             mark, mark2 = mark2, mark
 
-        m = mark.dup()
-        focus.call("Move-EOL", -1, m)
-        prefix0 = focus.call("doc:get-str", m, mark, ret='str')
         para = focus.call("doc:get-str", mark, mark2, ret='str')
         lines = para.splitlines()
         if len(lines) == 0:
             return 1
 
+        (prefix0, prefix) = get_prefixes(focus, mark, lines)
         tostrip = prefix0 + ' \t'
-        if len(lines) == 1:
-            # only one line, so prefix is all spaces but based on first line
-            prefix = ""
-            for c in prefix0:
-                if c == '\t':
-                    prefix += c
-                else:
-                    prefix += ' '
-        else:
-            prefix = span(lines[1], tostrip)
 
         newpara = reformat(lines, textwidth(prefix0), width, tostrip, prefix)
 
