@@ -6,7 +6,7 @@ Current priorities
 
 - [ ] fill-mode
       - some way to select it (configuration?) and to set width
-      - on space or enter, fill just current line, but use same mech as fill command
+      X on space or enter, fill just current line, but use same mech as fill command
         to determine prefix
       - highlight text beyond width, which will wrap when space/enter is pressed.
 

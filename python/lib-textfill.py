@@ -244,6 +244,8 @@ class FillMode(edlib.Pane):
         if not self.cols:
             # auto-fill not enabled
             return 0
+        if not mark:
+            return 0
         next = focus.call("doc:step", mark, 1, 0, ret='char')
         if not next or next != '\n':
             # not at end-of-line, don't auto-fill
@@ -253,15 +255,15 @@ class FillMode(edlib.Pane):
         line = focus.call("doc:get-str", m, mark, ret='str')
         if textwidth(line) < self.cols:
             return 0
+
         # need to start a new line, so need a prefix.
-        # Use same as current line
-        prefix = span(line, " \t!@#$%^&*()_-+=}{][|:;.,></?")
-        prefix1 = ''
-        for c in prefix:
-            if c == '\t':
-                prefix1 += c
-            else:
-                prefix1 += ' '
+        st = find_start(focus, m)
+        para = focus.call("doc:get-str", st, mark, ret='str')
+        lines = para.splitlines()
+        if len(lines) == 0:
+            return 0
+
+        (prefix0, prefix1) = get_prefixes(focus, st, lines)
 
         if textwidth(line) == self.cols:
             # just insert a line break
@@ -270,21 +272,23 @@ class FillMode(edlib.Pane):
                 return 1
             except edlib.commandfailed:
                 return 0
-        # need to find last space, and replace with line break
-        m2 = mark.dup()
-        leng = focus.call("text-search", "[ \t]", m2, m, 0, 1)
-        if not leng:
-            # no space, do nothing
-            return 0
-        m.to_mark(m2)
-        focus.call("doc:step", m, 1, 1)
-        try:
-            focus.call("doc:replace", 1, m, m2, "\n"+prefix1)
-            if key == "Enter":
+
+        # Need to reformat the current line.  Skip over prefix chars at
+        # start of line.
+        p = ""
+        while focus.call("doc:step", 1, 0, m, ret='char') in prefix0 + ' \t':
+            p += focus.call("doc:step", 1, 1, m, ret='char')
+        lines = [ focus.call("doc:get-str", m, mark, ret='str') ]
+        newpara = reformat(lines, textwidth(p), self.cols, prefix0+' \t',
+                           prefix1)
+        if newpara != lines[0]:
+            try:
+                do_replace(focus, m, mark, newpara, prefix0+' \t')
+            except edlib.commandfailed:
+                pass
+            if key == 'Enter':
                 return 1
-            return 0
-        except edlib.commandfailed:
-            return 0
+        return 0
 
 def fill_mode_attach(key, focus, comm2, **a):
     p = FillMode(focus)
