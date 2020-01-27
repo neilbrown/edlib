@@ -4,9 +4,9 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] fill-mode
+- [X] fill-mode
       - some way to select it (configuration?) and to set width
-      X on space or enter, fill just current line, but use same mech as fill command
+      - on space or enter, fill just current line, but use same mech as fill command
         to determine prefix
       - highlight text beyond width, which will wrap when space/enter is pressed.
 
