@@ -188,6 +188,10 @@ def get_prefixes(focus, mark, lines):
 class FillMode(edlib.Pane):
     def __init__(self, focus, cols=None):
         edlib.Pane.__init__(self, focus)
+        if not cols:
+            cols = focus['fill-width']
+            if cols:
+                cols = int(cols)
         self.cols = cols
 
     def do_fill(self, key, focus, num, mark, mark2, **a):
