@@ -202,7 +202,7 @@ class CModePane(edlib.Pane):
                 maybe_label = False
             elif c in '{([':
                 if c == '{':
-                    if not have_prefix and brackets[-1] == ' ':
+                    if not have_prefix and brackets and brackets[-1] == ' ':
                         # '{' at start of line subsumes ' '
                         brackets = brackets[:-1]
                         depth.pop()
