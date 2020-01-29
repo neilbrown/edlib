@@ -254,7 +254,7 @@ DEF_CMD(popup_defocus)
 	for (p = ci->home; p->parent != p; p = p->parent)
 		if (p->parent->focus != p)
 			break;
-	if (p->parent != p->parent->parent)
+	if (p->parent->parent == p->parent->parent->parent)
 		/* We are still on the focal-path from display
 		 * Maybe we focussed in to a sub-popup
 		 */
