@@ -19,10 +19,12 @@ Bugs to be fixed
 
 - [X] 'fill para' should leave point where it is, not move to end of para.
 
-- [ ] for ()\n if () {} else if () GET INDENT WRONG
+- [X] for ()\n if () {} else if () GET INDENT WRONG
        I need a different marker for 'if' than for other prefixes, and
        I need to recognise else *after* point and only revert to the 'if' when 
        else is present, but revert all 'space' when not present.
+       But the 'if' is marked by 'p' (prefix), the 'space', then (possibly) '{'
+       I need to mark all of these... Maybe a new stack to record depth of 'if'
 
 Core features
 -------------

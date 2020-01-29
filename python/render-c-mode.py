@@ -99,6 +99,7 @@ class CModePane(edlib.Pane):
 
         depth = [0]
         brackets = "^"
+        if_depth = []
         start_stat = True
         comment = None
         quote = None
@@ -170,6 +171,7 @@ class CModePane(edlib.Pane):
                     maybe_label = True
                     if c.isalnum() or c == '_':
                         in_if = True
+                        is_if = c == 'i' and p.call("text-match", m.dup(), "f\\b") > 0
                 if open_col:
                     depth.append(open_col)
                     open_col = 0
@@ -213,6 +215,7 @@ class CModePane(edlib.Pane):
                         c = ','
                 if c == '(' and in_if:
                     brackets += 'p'
+                    if_depth.append(len(brackets))
                 else:
                     brackets += c
                 open_col = column+1
@@ -223,9 +226,15 @@ class CModePane(edlib.Pane):
                     depth.pop()
                     if c == '}':
                         start_stat = True
-                        while brackets and brackets[-1] == ' ':
+                        see_else = p.call("text-match", m.dup(),
+                                          " else\\b", 1) > 0
+                        while (brackets and brackets[-1] == ' ' and
+                               (not see_else or not if_depth or
+                                if_depth[-1] < len(brackets))):
                             brackets = brackets[:-1]
                             depth.pop()
+                            while if_depth and if_depth[-1] > len(brackets):
+                                if_depth.pop()
                     if b == 'p':
                         # if/while/switch statement
                         have_prefix = True
@@ -233,9 +242,15 @@ class CModePane(edlib.Pane):
             elif c == ';':
                 start_stat = True
                 have_prefix = False
-                while brackets and brackets[-1] == ' ':
+                see_else = p.call("text-match", m.dup(),
+                                  " else\\b", 1) > 0
+                while (brackets and brackets[-1] == ' ' and
+                       (not see_else or not if_depth or
+                        if_depth[-1] < len(brackets))):
                     brackets = brackets[:-1]
                     depth.pop()
+                    while if_depth and if_depth[-1] > len(brackets):
+                        if_depth.pop()
             elif c == ',' and brackets and brackets[-1] == ',':
                 # This is enum or struct-literal, where , ends a statement
                 start_stat = True
