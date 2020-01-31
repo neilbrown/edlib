@@ -379,7 +379,7 @@ restart:
 	return ret;
 }
 
-static void pane_close2(struct pane *p safe, struct pane *other safe)
+void pane_close(struct pane *p safe)
 {
 	struct pane *c;
 	struct pane *ed;
@@ -389,7 +389,7 @@ static void pane_close2(struct pane *p safe, struct pane *other safe)
 	p->damaged |= DAMAGED_CLOSED;
 	pane_check(p);
 
-	ed = pane_root(other);
+	ed = pane_root(p);
 
 	pane_drop_notifiers(p, NULL);
 
@@ -427,11 +427,6 @@ restart:
 		attr_free(&p->attrs);
 		free(p);
 	}
-}
-
-void pane_close(struct pane *p safe)
-{
-	pane_close2(p, p);
 }
 
 void pane_resize(struct pane *p safe, int x, int y, int w, int h)
@@ -516,7 +511,7 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 		pane_damaged(p->parent, DAMAGED_CURSOR);
 		p->parent->focus = NULL;
 	}
-	p->parent = p;
+	p->parent = pane_root(parent);
 	while (!list_empty(&p->children)) {
 		c = list_first_entry(&p->children, struct pane, siblings);
 		list_move(&c->siblings, &parent->children);
@@ -535,7 +530,7 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 
 	parent->damaged |= p->damaged;
 
-	pane_close2(p, parent);
+	pane_close(p);
 }
 
 int pane_masked(struct pane *p safe, short x, short y, short abs_z,

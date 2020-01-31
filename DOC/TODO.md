@@ -29,12 +29,16 @@ Bugs to be fixed
 Core features
 -------------
 
-- [ ] pane_close() can be called at awkward times.  We need to do some inital
-      processes so that it looks closed, but so that code can continue to
+- [ ] pane_close() can be called at awkward times.  We need to do some initial
+      processing so that it looks closed, but so that code can continue to
       run, then schedule proper close for later.
+      ..Hmm... I already do this, since before I added this item to the todo list.
+      Certainly the 'free' is delayed.  Maybe the problem is ->data being freed.
+      Yes... a pane can be closed while a handler is running, which can confuse the
+      handler.  So maybe pane_close() sets a flag and queues for closure in editor_idle.
 - [X] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
-- [ ] undo often doesn't leave me where I expect to be left. - maybe it is the
-      location of the previous undo?
+- [X] undo often doesn't leave me where I expect to be left. - maybe it is the
+      location of the previous undo?(I think this is fixed now - haven't notice for a while)
 - [ ] account all mem allocation types separate, and (optionally) report
       stats regularly
 - [ ] malloc anti-fail policy.  Small allocations don't fail but use pre-allocated.
