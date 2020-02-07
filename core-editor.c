@@ -225,6 +225,8 @@ DEF_CMD(editor_clean_up)
 	while (ei->freelist) {
 		struct pane *p = ei->freelist;
 		ei->freelist = p->focus;
+		command_put(p->handle);
+		p->handle = NULL;
 		attr_free(&p->attrs);
 		free(p);
 	}
@@ -333,6 +335,8 @@ void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 {
 	struct ed_info *ei = ed->data;
 	if (!ei) {
+		command_put(p->handle);
+		p->handle = NULL;
 		attr_free(&p->attrs);
 		free(p);
 		return;

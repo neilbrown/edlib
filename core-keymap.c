@@ -483,7 +483,7 @@ int key_handle(const struct cmd_info *ci safe)
 
 	while (p) {
 		int ret = 0;
-		if (p->handle) {
+		if (p->handle && !(p->damaged & DAMAGED_DEAD)) {
 			vci->home = p;
 			vci->comm = p->handle;
 			ret = p->handle->func(ci);

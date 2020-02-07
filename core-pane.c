@@ -419,11 +419,12 @@ restart:
 	 * ->parent in place so a full range of commands are available.
 	 */
 	// p->parent = p;
-	command_put(p->handle);
-	p->handle = NULL;
+	p->damaged |= DAMAGED_DEAD;
 	if (ed != p)
 		editor_delayed_free(ed, p);
 	else {
+		command_put(p->handle);
+		p->handle = NULL;
 		attr_free(&p->attrs);
 		free(p);
 	}

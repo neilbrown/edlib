@@ -15,7 +15,6 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <stdlib.h>
-
 #include "safe.h"
 
 #include "list.h"
@@ -392,6 +391,7 @@ enum {
 
 	DAMAGED_POSTORDER= 512,
 	DAMAGED_CLOSED	= 1024,
+	DAMAGED_DEAD	= 2048, /* Fully closed, but not freed yet */
 };
 #define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT | DAMAGED_CURSOR)
 
@@ -671,7 +671,7 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 		ret = key_handle(&ci);
 		break;
 	case TYPE_pane:
-		if (!home->handle)
+		if (!home->handle || (home->damaged & DAMAGED_DEAD))
 			return Efail;
 		ci.comm = home->handle;
 		ret = ci.comm->func(&ci);
