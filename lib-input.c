@@ -320,6 +320,7 @@ static void register_map(void)
 	key_add(im_map, "Notify:Close", &close_focus);
 	key_add_prefix(im_map, "window:request:", &request_notify);
 	key_add_prefix(im_map, "window:notify:", &send_notify);
+	key_add(im_map, "Free", &edlib_do_free);
 }
 
 DEF_LOOKUP_CMD(input_handle, im_map);

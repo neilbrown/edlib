@@ -290,4 +290,5 @@ void edlib_init(struct pane *ed safe)
 		return;
 	libevent_map = key_alloc();
 	key_add(libevent_map, "Notify:Close", &libevent_notify);
+	key_add(libevent_map, "Free", &edlib_do_free);
 }

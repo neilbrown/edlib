@@ -60,6 +60,15 @@ DEF_CMD(tile_close)
 	return 0;
 }
 
+DEF_CMD(tile_free)
+{
+	struct tileinfo *ti = ci->home->data;
+
+	free(ti->name);
+	free(ti);
+	return 1;
+}
+
 DEF_CMD(tile_refresh_size)
 {
 	struct pane *p = ci->home;
@@ -245,16 +254,12 @@ static int tile_destroy(struct pane *p safe)
 
 	if (ti->direction == Neither) {
 		/* Children have already been destroyed, just clean up */
-		free(ti->group);
 		free(ti->name);
-		free(ti);
 		return 1;
 	}
 
 	if (p->parent == p) {
 		/* subsumed husk being destroyed */
-		free(ti->name);
-		free(ti);
 		return 1;
 	}
 
@@ -334,8 +339,6 @@ static int tile_destroy(struct pane *p safe)
 		tile_adjust(prev);
 	}
 	list_del(&ti->tiles);
-	free(ti->name);
-	free(ti);
 	if (remaining == 1 && remain->parent != remain) {
 		struct tileinfo *ti2;
 		enum dir tmp;
@@ -1065,6 +1068,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(tile_map, "ChildRegistered", &tile_child_registered);
 	key_add(tile_map, "ChildReplaced", &tile_child_replaced);
 	key_add(tile_map, "Close", &tile_close);
+	key_add(tile_map, "Free", &tile_free);
 	key_add(tile_map, "Refresh:size", &tile_refresh_size);
 
 	call_comm("global-set-command", ed, &tile_attach, 0, NULL, "attach-tile");

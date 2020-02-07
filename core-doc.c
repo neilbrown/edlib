@@ -895,8 +895,6 @@ DEF_CMD(doc_close)
 	mark_free(dd->point);
 	mark_free(dd->mark);
 	call("doc:closed", dd->doc);
-	free(dd);
-	ci->home->data = safe_cast NULL;
 	return 1;
 }
 
@@ -1118,6 +1116,7 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd,	"Refresh", &doc_refresh);
 	key_add(doc_handle_cmd,	"Clone", &doc_clone);
 	key_add(doc_handle_cmd,	"Close", &doc_close);
+	key_add(doc_handle_cmd,	"Free", &edlib_do_free);
 	key_add(doc_handle_cmd, "doc:dup-point", &doc_dup_point);
 	key_add(doc_handle_cmd, "Replace", &doc_replace);
 	key_add(doc_handle_cmd, "get-attr", &doc_handle_get_attr);

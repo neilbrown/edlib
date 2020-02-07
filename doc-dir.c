@@ -568,7 +568,6 @@ DEF_CMD(dir_destroy)
 	if (dr->rendering)
 		pane_close(dr->rendering);
 	doc_free(d);
-	free(dr);
 	return 1;
 }
 
@@ -765,4 +764,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "get-attr", &dir_get_attr);
 	key_add(doc_map, "Notify:Close", &dir_notify_close);
 	key_add(doc_map, "Close", &dir_destroy);
+	key_add(doc_map, "Free", &edlib_do_free);
 }

@@ -43,7 +43,6 @@ DEF_CMD(email_close)
 	struct email_info *ei = ci->home->data;
 	// ??? ;
 	call("doc:closed", ei->spacer);
-	free(ei);
 	return 1;
 }
 
@@ -634,7 +633,7 @@ struct email_view {
 	char	*invis safe;
 };
 
-DEF_CMD(email_view_close)
+DEF_CMD(email_view_free)
 {
 	struct email_view *evi = ci->home->data;
 
@@ -814,12 +813,13 @@ static void email_init_map(void)
 {
 	email_map = key_alloc();
 	key_add(email_map, "Close", &email_close);
+	key_add(email_map, "Free", &edlib_do_free);
 	key_add(email_map, "doc:email:render-spacer", &email_spacer);
 	key_add(email_map, "doc:email:select", &email_select);
 	key_add(email_map, "doc:get-attr", &email_get_attr);
 
 	email_view_map = key_alloc();
-	key_add(email_view_map, "Close", &email_view_close);
+	key_add(email_view_map, "Free", &email_view_free);
 	key_add(email_view_map, "doc:step", &email_step);
 	key_add(email_view_map, "doc:set-ref", &email_set_ref);
 	key_add(email_view_map, "doc:set-attr", &email_view_set_attr);

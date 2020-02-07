@@ -894,6 +894,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "Notify:Close", &docs_notify_close);
 
 	key_add(docs_map, "get-attr", &docs_get_attr);
+	key_add(docs_map, "Free", &edlib_do_free);
 
 	key_add(docs_aux_map, "doc:revisit", &doc_revisit);
 	key_add(docs_aux_map, "doc:status-changed", &doc_damage);

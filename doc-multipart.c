@@ -214,6 +214,13 @@ DEF_CMD(mp_close)
 	for (i = 0; i < mpi->nparts; i++)
 		call("doc:closed", mpi->parts[i].pane);
 	doc_free(&mpi->doc);
+	return 1;
+}
+
+DEF_CMD(mp_free)
+{
+	struct mp_info *mpi = ci->home->data;
+
 	free(mpi->parts);
 	free(mpi);
 	return 1;
@@ -550,6 +557,7 @@ static void mp_init_map(void)
 	key_add(mp_map, "doc:set-attr", &mp_set_attr);
 	key_add(mp_map, "doc:step-part", &mp_step_part);
 	key_add(mp_map, "Close", &mp_close);
+	key_add(mp_map, "Free", &mp_free);
 	key_add(mp_map, "Notify:Close", &mp_notify_close);
 	key_add(mp_map, "doc:notify-viewers", &mp_notify_viewers);
 	key_add(mp_map, "multipart-add", &mp_add);

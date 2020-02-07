@@ -54,7 +54,11 @@ DEF_CMD(keymap_handle)
 				command_put(kd->cmds[i]);
 			free(kd->cmds);
 		}
+		return 1;
+	}
+	if (strcmp(ci->key, "Free") == 0) {
 		free(kd);
+		ci->home->data = safe_cast NULL;
 		return 1;
 	}
 	if (strcmp(ci->key, "Clone") == 0) {

@@ -40,10 +40,19 @@ DEF_CMD(history_close)
 
 	if (hi->history)
 		pane_close(hi->history);
+	return 1;
+}
+
+DEF_CMD(history_free)
+{
+	struct history_info *hi = ci->home->data;
+
 	free(hi->search.b);
 	free(hi->saved);
 	free(hi);
 	ci->home->data = safe_cast NULL;
+	/* handle was in 'hi' */
+	ci->home->handle = NULL;
 	return 1;
 }
 
@@ -245,6 +254,7 @@ void edlib_init(struct pane *ed safe)
 
 	history_map = key_alloc();
 	key_add(history_map, "Close", &history_close);
+	key_add(history_map, "Free", &history_free);
 	key_add(history_map, "Notify:Close", &history_notify_close);
 	key_add(history_map, "doc:replaced", &history_notify_replace);
 	key_add(history_map, "M-Chr-p", &history_move);

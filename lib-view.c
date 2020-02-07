@@ -259,7 +259,6 @@ DEF_CMD(view_close)
 
 	if (vd->viewpoint)
 		mark_free(vd->viewpoint);
-	free(vd);
 	return 1;
 }
 
@@ -517,6 +516,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "Window:border", &view_border);
 	key_add(view_map, "Refresh:view", &view_refresh_view);
 	key_add(view_map, "Close", &view_close);
+	key_add(view_map, "Free", &edlib_do_free);
 	key_add(view_map, "Clone", &view_clone);
 	key_add(view_map, "ChildRegistered", &view_child_registered);
 	key_add(view_map, "Refresh:size", &view_refresh_size);

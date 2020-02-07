@@ -225,6 +225,10 @@ DEF_CMD(editor_clean_up)
 	while (ei->freelist) {
 		struct pane *p = ei->freelist;
 		ei->freelist = p->focus;
+		p->focus = NULL;
+
+		p->damaged &= ~DAMAGED_DEAD;
+		pane_call(p, "Free", p);
 		command_put(p->handle);
 		p->handle = NULL;
 		attr_free(&p->attrs);
@@ -241,6 +245,13 @@ DEF_CMD(editor_clean_up)
 		free(s);
 	}
 	return 0;
+}
+
+DEF_EXTERN_CMD(edlib_do_free)
+{
+	free(ci->home->data);
+	ci->home->data= safe_cast NULL;
+	return 1;
 }
 
 DEF_CMD(editor_on_idle)
@@ -262,9 +273,16 @@ DEF_CMD(editor_on_idle)
 
 DEF_CMD(editor_close)
 {
-
 	stat_free();
 	return 0;
+}
+
+DEF_CMD(editor_free)
+{
+	/* Freeing the ed_info here mustn't happen.  It must be
+	 * done much later
+	 */
+	return 1;
 }
 
 void * safe memsave(struct pane *p safe, char *buf, int len)
@@ -335,6 +353,8 @@ void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 {
 	struct ed_info *ei = ed->data;
 	if (!ei) {
+		p->damaged &= ~DAMAGED_DEAD;
+		pane_call(p, "Free", p);
 		command_put(p->handle);
 		p->handle = NULL;
 		attr_free(&p->attrs);
@@ -381,6 +401,7 @@ struct pane *editor_new(void)
 		key_add_prefix(ed_map, "editor:notify:",
 			       &editor_send_notify);
 		key_add(ed_map, "Close", &editor_close);
+		key_add(ed_map, "Free", &editor_free);
 	}
 	ei->map = key_alloc();
 	key_add(ei->map, "on_idle-clean_up", &editor_clean_up);

@@ -29,7 +29,7 @@ Bugs to be fixed
 Core features
 -------------
 
-- [ ] pane_close() can be called at awkward times.  We need to do some initial
+- [X] pane_close() can be called at awkward times.  We need to do some initial
       processing so that it looks closed, but so that code can continue to
       run, then schedule proper close for later.
       ..Hmm... I already do this, since before I added this item to the todo list.

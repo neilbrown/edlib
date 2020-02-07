@@ -46,7 +46,7 @@ static void free_txt(struct txt **tp safe)
 	free(t);
 }
 
-DEF_CMD(copy_close)
+DEF_CMD(copy_free)
 {
 	struct copy_info *cyi = ci->home->data;
 
@@ -116,7 +116,7 @@ void edlib_init(struct pane *ed safe)
 
 	if (!copy_map) {
 		copy_map = key_alloc();
-		key_add(copy_map, "Close", &copy_close);
+		key_add(copy_map, "Free", &copy_free);
 	}
 
 	cyi->pane = pane_register(ed, 0, &copy_handle.c, cyi);

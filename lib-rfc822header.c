@@ -45,8 +45,6 @@ DEF_CMD(header_close)
 	while ((m = vmark_first(p, hi->vnum, p)) != NULL)
 		mark_free(m);
 	call("doc:del-view", p, hi->vnum);
-	p->data = safe_cast NULL;
-	free(hi);
 	return 1;
 }
 
@@ -409,6 +407,7 @@ static void header_init_map(void)
 {
 	header_map = key_alloc();
 	key_add(header_map, "Close", &header_close);
+	key_add(header_map, "Free", &edlib_do_free);
 	key_add(header_map, "get-header", &header_get);
 	key_add(header_map, "Notify:clip", &header_clip);
 }

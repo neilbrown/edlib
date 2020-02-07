@@ -35,9 +35,6 @@ DEF_CMD(render_hex_close)
 	struct he_data *he = p->data;
 
 	he->pane = NULL;
-	p->data = safe_cast NULL;
-	p->handle = NULL;
-	free(he);
 	return 1;
 }
 
@@ -207,6 +204,7 @@ static void render_hex_register_map(void)
 	key_add(he_map, "doc:render-line", &render_line);
 
 	key_add(he_map, "Close", &render_hex_close);
+	key_add(he_map, "Free", &edlib_do_free);
 	key_add(he_map, "Clone", &render_hex_clone);
 	key_add(he_map, "doc:replaced", &render_hex_notify_replace);
 }

@@ -107,7 +107,16 @@ static void popup_resize(struct pane *p safe, char *style safe)
 DEF_CMD(popup_close)
 {
 	struct popup_info *ppi = ci->home->data;
+
 	command_put(ppi->done);
+	ppi->done = NULL;
+	return 1;
+}
+
+DEF_CMD(popup_free)
+{
+	struct popup_info *ppi = ci->home->data;
+
 	free(ppi->style);
 	free(ppi);
 	return 1;
@@ -394,6 +403,7 @@ void edlib_init(struct pane *ed safe)
 	popup_map = key_alloc();
 
 	key_add(popup_map, "Close", &popup_close);
+	key_add(popup_map, "Free", &popup_free);
 	key_add(popup_map, "Notify:Close", &popup_notify_close);
 	key_add(popup_map, "Abort", &popup_abort);
 	key_add(popup_map, "popup:style", &popup_style);

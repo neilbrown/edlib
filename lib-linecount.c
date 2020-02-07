@@ -222,8 +222,6 @@ DEF_CMD(linecount_close)
 	while ((m = vmark_first(d, cli->view_num, ci->home)) != NULL)
 		mark_free(m);
 	home_call(d, "doc:del-view", ci->home, cli->view_num);
-	free(cli);
-	ci->home->data = safe_cast NULL;
 	pane_close(ci->home);
 	return 1;
 }
@@ -341,4 +339,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(linecount_map, "doc:CountLines", &linecount_notify_count);
 	key_add(linecount_map, "doc:GotoLine", &linecount_notify_goto);
 	key_add(linecount_map, "Notify:clip", &linecount_clip);
+	key_add(linecount_map, "Free", &edlib_do_free);
 }

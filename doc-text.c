@@ -2225,8 +2225,16 @@ DEF_CMD(text_destroy)
 	struct text *t = container_of(d, struct text, doc);
 
 	text_cleanout(t);
-	free(t->fname);
 	doc_free(d);
+	return 1;
+}
+
+DEF_CMD(text_free)
+{
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+
+	free(t->fname);
 	free(t);
 	return 1;
 }
@@ -2258,5 +2266,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:revisit", &text_revisited);
 
 	key_add(text_map, "Close", &text_destroy);
+	key_add(text_map, "Free", &text_free);
 	key_add(text_map, "get-attr", &text_get_attr);
 }

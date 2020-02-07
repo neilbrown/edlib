@@ -303,10 +303,19 @@ struct lookup_cmd {
 	static int _name ## _func(const struct cmd_info *ci safe)
 #define REDEF_CMD(_name) \
 	static int _name ## _func(const struct cmd_info *ci safe)
+#define DEF_EXTERN_CMD(_name) \
+	static int _name ## _func(const struct cmd_info *ci safe); \
+	struct command _name = CMD(_name);		\
+	static int _name ## _func(const struct cmd_info *ci safe)
+#define DECL_EXTERN_CMD(_name) \
+	extern struct command _name;
+
 
 #define DEF_LOOKUP_CMD(_name, _map) \
 	static struct lookup_cmd _name = { { key_lookup_cmd_func, 0, NULL }, \
 					  &_map};
+
+DECL_EXTERN_CMD(edlib_do_free);
 
 int key_lookup_cmd_func(const struct cmd_info *ci safe);
 

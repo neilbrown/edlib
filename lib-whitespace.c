@@ -155,8 +155,6 @@ DEF_CMD(ws_close)
 
 	mark_free(ws->mymark);
 	ws->mymark = NULL;
-	free(ws);
-	ci->home->data = safe_cast NULL;
 	return 1;
 }
 
@@ -196,6 +194,7 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(ws_map, "map-attr", &ws_attrs);
 	key_add(ws_map, "Close", &ws_close);
+	key_add(ws_map, "Free", &edlib_do_free);
 	key_add(ws_map, "Clone", &ws_clone);
 	call_comm("global-set-command", ed, &whitespace_attach,
 		  0, NULL, "attach-whitespace");

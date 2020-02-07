@@ -363,8 +363,6 @@ DEF_CMD(dr_close)
 	if (p)
 		home_call(p, "doc:del-view", ci->home, dri->vnum);
 	doc_free(d);
-	free(dri);
-	ci->home->data = safe_cast NULL;
 	return 1;
 }
 
@@ -581,6 +579,7 @@ static void dr_init_map(void)
 	key_add(dr_map, "doc:set-ref", &dr_set_ref);
 	key_add(dr_map, "doc:step", &dr_step);
 	key_add(dr_map, "Close", &dr_close);
+	key_add(dr_map, "Free", &edlib_do_free);
 	key_add(dr_map, "doc:notify-viewers", &dr_notify_viewers);
 	key_add(dr_map, "doc:replaced", &dr_notify_replace);
 	key_add(dr_map, "Notify:Close", &dr_notify_close);

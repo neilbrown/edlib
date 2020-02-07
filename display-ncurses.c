@@ -585,8 +585,6 @@ DEF_CMD(nc_close)
 	struct display_data *dd = p->data;
 	ncurses_end(p);
 	hash_free(dd);
-	free(dd);
-	p->data = safe_cast NULL;
 	return 1;
 }
 
@@ -1011,6 +1009,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(nc_map, "Display:close", &nc_close_display);
 	key_add(nc_map, "Display:set-noclose", &nc_set_noclose);
 	key_add(nc_map, "Close", &nc_close);
+	key_add(nc_map, "Free", &edlib_do_free);
 	key_add(nc_map, "pane-clear", &nc_clear);
 	key_add(nc_map, "text-size", &nc_text_size);
 	key_add(nc_map, "Draw:text", &nc_draw_text);

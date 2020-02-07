@@ -1441,9 +1441,6 @@ DEF_CMD(render_lines_close)
 
 	call("doc:del-view", p, rl->typenum);
 	mark_free(rl->old_point);
-	p->data = safe_cast NULL;
-	p->handle = NULL;
-	free(rl);
 	return 0;
 }
 
@@ -1895,6 +1892,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Abort", &render_lines_abort);
 
 	key_add(rl_map, "Close", &render_lines_close);
+	key_add(rl_map, "Free", &edlib_do_free);
 	key_add(rl_map, "Clone", &render_lines_clone);
 	key_add(rl_map, "Refresh", &render_lines_refresh);
 	key_add(rl_map, "Refresh:view", &render_lines_refresh_view);

@@ -432,9 +432,6 @@ DEF_CMD(rl_close)
 	while ((m = vmark_first(p, rl->view, p)) != NULL)
 		mark_free(m);
 	call("doc:del-view", p, rl->view);
-	free(rl);
-	p->data = safe_cast NULL;
-	p->handle = NULL;
 	return 0;
 }
 
@@ -446,6 +443,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(rl_map, "doc:render-line-prev", &render_prev);
 	key_add(rl_map, "Clone", &rl_clone);
 	key_add(rl_map, "Close", &rl_close);
+	key_add(rl_map, "Free", &edlib_do_free);
 	key_add(rl_map, "Notify:clip", &rl_clip);
 
 	call_comm("global-set-command", ed, &renderline_attach, 0, NULL, "attach-renderline");

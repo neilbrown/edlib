@@ -236,7 +236,7 @@ DEF_CMD(render_complete_prev)
 	return do_render_complete_prev(cd, ci->mark, ci->home->parent, ci->num, NULL);
 }
 
-DEF_CMD(complete_close)
+DEF_CMD(complete_free)
 {
 	struct complete_data *cd = ci->home->data;
 
@@ -530,7 +530,7 @@ static void register_map(void)
 
 	key_add(rc_map, "doc:render-line", &render_complete_line);
 	key_add(rc_map, "doc:render-line-prev", &render_complete_prev);
-	key_add(rc_map, "Close", &complete_close);
+	key_add(rc_map, "Free", &complete_free);
 	key_add(rc_map, "Clone", &complete_clone);
 
 	key_add(rc_map, "Replace", &complete_ignore_replace);

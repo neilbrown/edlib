@@ -216,7 +216,6 @@ DEF_CMD(b64_close)
 	while ((m = vmark_first(ci->home, bi->view, ci->home)) != NULL)
 		mark_free(m);
 	call("doc:del-view", ci->home, bi->view);
-	free(bi);
 	return 1;
 }
 
@@ -250,6 +249,7 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(b64_map, "doc:step", &base64_step);
 	key_add(b64_map, "Close", &b64_close);
+	key_add(b64_map, "Free", &edlib_do_free);
 	key_add(b64_map, "Notify:clip", &b64_clip);
 
 	call_comm("global-set-command", ed, &b64_attach, 0, NULL, "attach-base64");

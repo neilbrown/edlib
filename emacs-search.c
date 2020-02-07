@@ -282,7 +282,6 @@ DEF_CMD(search_close)
 		mark_free(n->m);
 		free(n);
 	}
-	free(esi);
 	return 1;
 }
 
@@ -558,6 +557,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "C-Chr-C", &search_add);
 	key_add(es_map, "C-Chr-R", &search_forward);
 	key_add(es_map, "Close", &search_close);
+	key_add(es_map, "Free", &edlib_do_free);
 	key_add(es_map, "Enter", &search_done);
 	key_add(es_map, "search:done", &search_done);
 	key_add(es_map, "doc:replaced", &search_again);
@@ -943,7 +943,8 @@ DEF_CMD(emacs_highlight_close)
 	}
 	mark_free(hi->start);
 	mark_free(hi->end);
-	free(hi);
+	hi->start = NULL;
+	hi->end = NULL;
 	return 0;
 }
 DEF_CMD(emacs_search_done)
@@ -997,6 +998,7 @@ static void emacs_highlight_init_map(void)
 	key_add(m, "map-attr", &emacs_hl_attrs);
 	key_add(m, "Draw:text", &highlight_draw);
 	key_add(m, "Close", &emacs_highlight_close);
+	key_add(m, "Free", &edlib_do_free);
 	key_add(m, "Abort", &emacs_highlight_abort);
 	key_add(m, "Notify:clip", &emacs_highlight_clip);
 	key_add(m, "highlight:set-popup", &emacs_highlight_set_popup);

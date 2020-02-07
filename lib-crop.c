@@ -60,7 +60,6 @@ DEF_CMD(crop_close)
 
 	mark_free(cd->start);
 	mark_free(cd->end);
-	free(cd);
 	return 1;
 }
 
@@ -169,6 +168,7 @@ void edlib_init(struct pane *ed safe)
 	crop_map = key_alloc();
 	key_add_prefix(crop_map, "doc:", &crop_generic);
 	key_add(crop_map, "Close", &crop_close);
+	key_add(crop_map, "Free", &edlib_do_free);
 	key_add(crop_map, "doc:write_file", &crop_write);
 	key_add(crop_map, "doc:step", &crop_step);
 	key_add(crop_map, "Notify:clip", &crop_clip);

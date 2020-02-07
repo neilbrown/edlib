@@ -220,13 +220,6 @@ DEF_CMD(render_line_prev)
 	return 1;
 }
 
-DEF_CMD(format_close)
-{
-	struct rf_data *rl = ci->home->data;
-	free(rl);
-	return 1;
-}
-
 static struct pane *do_render_format_attach(struct pane *parent, int nolines);
 DEF_CMD(format_clone)
 {
@@ -258,10 +251,10 @@ static void render_format_register_map(void)
 
 	key_add(rf_map, "doc:render-line", &render_line);
 	key_add(rf_map, "doc:render-line-prev", &render_line_prev);
-	key_add(rf_map, "Close", &format_close);
 	key_add(rf_map, "Clone", &format_clone);
 	key_add(rf_map, "doc:get-attr", &format_get_attr);
 	key_add(rf_map, "doc:content", &format_content);
+	key_add(rf_map, "Free", &edlib_do_free);
 }
 
 DEF_LOOKUP_CMD(render_format_handle, rf_map);
