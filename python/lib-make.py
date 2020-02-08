@@ -23,6 +23,7 @@ class MakePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.add_notify(focus, "make-next")
+        self.add_notify(focus, "make-close")
         self.add_notify(focus, "doc:make-revisit");
         self.viewnum = focus.call("doc:add-view", self) - 1
         self.point = None
@@ -329,6 +330,12 @@ class MakePane(edlib.Pane):
         self.call("global-set-attr", "make-target-doc", self['doc-name'])
         return 1
 
+    def handle_make_close(self, key, **a):
+        "handle:make-close"
+        # make output doc is being reused, so we'ld better get out of the way
+        self.close()
+        return 1
+
     def handle_close(self, key, **a):
         "handle:Close"
         if self.pipe is not None:
@@ -473,17 +480,19 @@ def run_make(key, focus, str, num, **a):
         if num == 42:
             # use directory from previous run
             dir = doc['dirname']
-        doc.call("doc:destroy")
+        doc.call("doc:clear")
+        doc.notify("make-close")
     except edlib.commandfailed:
-        pass
-    doc = focus.call("doc:from-text", docname, "", ret='focus')
-    if not doc:
-        return edlib.Efail
+        doc = focus.call("doc:from-text", docname, "", ret='focus')
+        if not doc:
+            return edlib.Efail
 
     doc['dirname'] = dir
     doc['view-default'] = 'make-viewer'
     if cmd == "make":
-        p = focus.call("OtherPane", ret='focus')
+        p = focus.call("DocPane", doc, ret='focus')
+        if not p:
+            p = focus.call("OtherPane", doc, ret='focus')
     else:
         p = focus.call("PopupTile", "MD3ta", ret='focus')
     if not p:
