@@ -14,7 +14,7 @@ Current priorities
       line of render-lines.
 - [ ] change notmuch-query-view to use doc-rendering
 
-- [ ] recompile should use same directory
+- [X] recompile should use same directory
 - [ ] If I press 'enter' in an old grep/make doc, it should become the
       target again
 - [ ] we should keep several 'grep' (And make?) docs around and when one

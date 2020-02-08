@@ -448,7 +448,7 @@ class makeprompt(edlib.Pane):
 def isword(c):
     return c and c.isalnum() or c == '_'
 
-def run_make(key, focus, str, **a):
+def run_make(key, focus, str, num, **a):
     # pop-up has completed
     c = key.index(':')
     dir = key[c+1:]
@@ -469,6 +469,9 @@ def run_make(key, focus, str, **a):
         focus = tile
     try:
         doc = focus.call("docs:byname", docname, ret='focus')
+        if num == 42:
+            # use directory from previous run
+            dir = doc['dirname']
         doc.call("doc:destroy")
     except edlib.commandfailed:
         pass
@@ -578,7 +581,7 @@ def make_request(key, focus, num, str, mark, **a):
         # re-use previous command
         make_cmd = focus.call("history-get-last", history, ret='str')
         if make_cmd:
-            run_make("%s:%s"%(mode,dir), focus, make_cmd)
+            run_make("%s:%s"%(mode,dir), focus, make_cmd, 42)
             return 1
 
     # Create a popup to ask for make command
