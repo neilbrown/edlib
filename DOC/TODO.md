@@ -4,6 +4,10 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] convert to python3 and pygobject
+- [ ] C/python code "index" pane to quickly jump to function, and see context
+- [ ] beginnings of test suite
+
 - [X] fill-mode
       - some way to select it (configuration?) and to set width
       - on space or enter, fill just current line, but use same mech as fill command
@@ -223,7 +227,7 @@ Module features
 
 ### grep/make
 
-- [ ] don't destroy the output doc.  Erase content (Avoiding undo) and reuse.
+- [X] don't destroy the output doc.  Erase content (Avoiding undo) and reuse.
 - [ ] neg arg to next-match goes backwards, and ` keeps going backwards
 - [ ] if file isn't already loaded, wait until it is wanted, or something
       else loads it.
@@ -236,7 +240,7 @@ Module features
 - [ ] numeric-prefix to make will auto-save everything.
 - [ ] grep should (optionally) save files in the directory tree
 - [ ] run make in a given parent
-- [ ] use notify chain to allow stack of 'greps'
+- [X] use notify chain to allow stack of 'greps'
 
 ### message-line
 

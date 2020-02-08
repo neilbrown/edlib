@@ -7,22 +7,23 @@ import subprocess, os, fcntl
 
 class MakePane(edlib.Pane):
     # This pane over-sees the running of "make" or "grep" command,
-    # leaving output in a text document and handling make-next
+    # leaving output in a text document and handling make:match-docs
     # notifications sent to the document.
-    # Such notifications cause the "next" match to be found
-    # and the document containing it will be displayed
-    # in the 'focus' window, with point at the target location.
-    # A set 'view' of marks is used to track the start of each line
-    # found.  Each mark has a 'ref' which indexes into a local 'map'
-    # which records the filename and line number.
+    #
+    # Such notifications can cause the "next" match to be found and the
+    # document containing it will be displayed in the 'focus' window,
+    # with point at the target location.  A set 'view' of marks is used
+    # to track the start of each line found.  Each mark has a 'ref'
+    # which indexes into a local 'map' which records the filename and
+    # line number.
     #
     # In each target file we place a mark at the line - so that edits
     # don't upset finding the next mark.
-    # These are stored in a 'files' map which stored pane and mark 'view'.
+    # These are stored in a 'files' map which stores pane and mark 'view'.
 
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
-        self.add_notify(focus, "make-next")
+        self.add_notify(focus, "make:match-docs")
         self.add_notify(focus, "make-close")
         self.add_notify(focus, "doc:make-revisit");
         self.viewnum = focus.call("doc:add-view", self) - 1
@@ -32,6 +33,7 @@ class MakePane(edlib.Pane):
         self.timer_set = False
         self.note_ok = False
         self.first_match = True
+        self.call("editor:request:make:match-docs")
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
@@ -226,8 +228,15 @@ class MakePane(edlib.Pane):
         self.note_ok = False
         return self.map[int(p['ref'])]
 
-    def make_next(self, key, focus, num, str, **a):
-        "handle:make-next"
+    def make_next(self, key, focus, num, str, str2, xy, **a):
+        "handle:make:match-docs"
+        if str != "next-match":
+            return 0
+        prevret = xy[1]
+        if prevret > 0:
+            # some other pane has already responded
+            return 0
+
         if num:
             # clear marks so that we parse again
             m = self.call("doc:vmark-get", self.viewnum, ret='mark')
@@ -245,10 +254,15 @@ class MakePane(edlib.Pane):
             self.first_match = True
             self.call("doc:set-ref", self.point)
             self.call("doc:notify:make-set-match", self.point)
-            return 1
-        if not str:
-            str = "ThisPane"
-        return self.goto_mark(focus, n, str)
+            return 0
+        if not str2:
+            str2 = "ThisPane"
+        try:
+            self.goto_mark(focus, n, str2)
+        except edlib.commandfailed:
+            # error already reported
+            pass
+        return 1
 
     def goto_mark(self, focus, n, where):
         (fname, lineno) = n
@@ -259,9 +273,9 @@ class MakePane(edlib.Pane):
                 mk = mk.next()
             if mk and int(mk['line']) == int(lineno):
                 self.visit(focus, d, mk, lineno, where)
-                return
+                return 1
             self.visit(focus, d, None, lineno, where)
-            return
+            return 1
         # try the old way
         try:
             if fname[0] != '/':
@@ -281,6 +295,7 @@ class MakePane(edlib.Pane):
                 focus.call("Message", "File %s not found." % fname)
             return edlib.Efail
         self.visit(focus, d, None, lineno, where)
+        return 1
 
     def visit(self, focus, d, mk, lineno, where):
         par = focus.call("DocPane", d, ret='focus')
@@ -327,7 +342,9 @@ class MakePane(edlib.Pane):
         if p:
             self.point = p.prev()
             self.note_ok = True
-        self.call("global-set-attr", "make-target-doc", self['doc-name'])
+        # move to front of match-docs list
+        self.drop_notify("make:match-docs");
+        self.call("editor:request:make:match-docs")
         return 1
 
     def handle_make_close(self, key, **a):
@@ -497,7 +514,6 @@ def run_make(key, focus, str, num, **a):
         p = focus.call("PopupTile", "MD3ta", ret='focus')
     if not p:
         return edlib.Efail
-    focus.call("global-set-attr", "make-target-doc", docname)
     p = doc.call("doc:attach-view", p, 1, ret='focus')
 
     p = doc.call("attach-makecmd", str, dir, ret='focus')
@@ -613,25 +629,14 @@ def make_request(key, focus, num, str, mark, **a):
     return 1
 
 def next_match(key, focus, num, str, **a):
-    docname = focus["make-target-doc"]
-    if not docname:
-        focus.call("Message", "No make output!")
-        return 1
-    try:
-        doc = focus.call("docs:byname", docname, ret='focus')
-    except edlib.commandfailed:
-        doc = None
-    if not doc:
-        focus.call("Message", "Make document %s missing" % docname)
-        return 1
-    try:
-        if num == edlib.NO_NUMERIC:
-            restart = 0
-        else:
-            restart = 1
-        doc.notify("make-next", focus, str, restart)
-    except edlib.commandfailed:
-        pass
+    if num == edlib.NO_NUMERIC:
+        restart = 0
+    else:
+        restart = 1
+    if not focus.call("editor:notify:make:match-docs", "next-match",
+                      str, restart):
+        focus.call("Message", "No next-match found")
+
     return 1
 
 editor.call("global-set-command", "attach-makecmd", make_attach)
