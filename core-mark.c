@@ -200,6 +200,7 @@ struct mark *safe point_dup(struct mark *p safe)
 	ret->mdata = lnk;
 	lnk->size = old->size;
 	lnk->pt = ret;
+	lnk->moved = 0;
 	tlist_add(&ret->view, GRP_MARK, &p->view);
 	for (i = 0; lnk && i < lnk->size; i++)
 		if (tlist_empty(&old->lists[i]))
