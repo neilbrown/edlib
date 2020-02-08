@@ -326,6 +326,7 @@ class MakePane(edlib.Pane):
         if p:
             self.point = p.prev()
             self.note_ok = True
+        self.call("global-set-attr", "make-target-doc", self['doc-name'])
         return 1
 
     def handle_close(self, key, **a):
