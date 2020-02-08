@@ -207,8 +207,9 @@ DEF_CMD(editor_request_notify)
 DEF_CMD(editor_send_notify)
 {
 	/* editor:notify:... */
-	return pane_notify(ci->key + 14, ci->home, ci->num, ci->mark, ci->str,
-			   ci->num2, ci->mark2, ci->str2, ci->comm2);
+	return home_pane_notify(ci->home, ci->key + 14, ci->focus,
+				ci->num, ci->mark, ci->str,
+				ci->num2, ci->mark2, ci->str2, ci->comm2);
 }
 
 DEF_CMD(editor_clean_up)
