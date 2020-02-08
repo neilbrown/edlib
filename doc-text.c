@@ -2209,13 +2209,39 @@ static void text_cleanout(struct text *t safe)
 	t->alloc = safe_cast NULL;
 	while (t->undo) {
 		struct text_edit *te = t->undo;
-		t->undo = te->next;
-		free(te);
+
+		if (te->altnext == NULL) {
+			t->undo = te->next;
+			free(te);
+		} else if (te->next == NULL) {
+			t->undo = te->altnext;
+			free(te);
+		} else {
+			/* Make the ->altnext link shorted, until it
+			 * disappears
+			 */
+			t->undo = te->altnext;
+			te->altnext = t->undo->next;
+			t->undo->next = te;
+		}
 	}
 	while (t->redo) {
 		struct text_edit *te = t->redo;
-		t->redo = te->next;
-		free(te);
+
+		if (te->altnext == NULL) {
+			t->redo = te->next;
+			free(te);
+		} else if (te->next == NULL) {
+			t->redo = te->altnext;
+			free(te);
+		} else {
+			/* Make the ->altnext link shorted, until it
+			 * disappears
+			 */
+			t->redo = te->altnext;
+			te->altnext = t->redo->next;
+			t->redo->next = te;
+		}
 	}
 }
 
