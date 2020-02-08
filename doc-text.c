@@ -2255,6 +2255,26 @@ DEF_CMD(text_destroy)
 	return 1;
 }
 
+DEF_CMD(text_clear)
+{
+	/* Clear the document, including undo/redo records
+	 * i.e. free all text
+	 */
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+	struct mark *m;
+
+	text_cleanout(t);
+	text_new_alloc(t, 0);
+
+	hlist_for_each_entry(m, &t->doc.marks, all) {
+		m->ref.c = NULL;
+		m->ref.o = 0;
+	}
+
+	return 1;
+}
+
 DEF_CMD(text_free)
 {
 	struct doc *d = ci->home->data;
@@ -2290,6 +2310,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:modified", &text_modified);
 	key_add(text_map, "doc:set:readonly", &text_readonly);
 	key_add(text_map, "doc:revisit", &text_revisited);
+	key_add(text_map, "doc:clear", &text_clear);
 
 	key_add(text_map, "Close", &text_destroy);
 	key_add(text_map, "Free", &text_free);
