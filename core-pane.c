@@ -338,6 +338,7 @@ int do_pane_notify(struct pane *home, char *notification safe,
 	 * return 0
 	 */
 	int ret = 0;
+	int cnt = 0;
 	struct notifier *n, *n2;
 
 	if (!home)
@@ -359,9 +360,10 @@ restart:
 			n->noted = 2;
 			r = pane_call(n->notifiee, notification, p,
 				      num, m, str,
-				      num2, m2, str2, 0,0, comm2);
+				      num2, m2, str2, cnt,ret, comm2);
 			if (abs(r) > abs(ret))
 				ret = r;
+			cnt += 1;
 			/* Panes might have been closed or notifications removed
 			 * so nothing can be trusted... except this home pane
 			 * had better still exist.
