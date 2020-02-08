@@ -21,6 +21,7 @@ Current priorities
       finished, restart previous
 - [ ] recognize "Entering directory '...'" line in make output and adjust target dir.
 - [ ] 'diff' shell windows need to keep diff-mode when revisited.
+- [ ] do case-insensitive matching for doc/file completion
 
 Bugs to be fixed
 ----------------

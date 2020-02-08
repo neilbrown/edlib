@@ -938,6 +938,19 @@ static PyObject *Pane_add_notify(Pane *self safe, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Pane_drop_notify(Pane *self safe, PyObject *args)
+{
+	char *event = NULL;
+	int ret = PyArg_ParseTuple(args, "s", &event);
+	if (ret <= 0 || !event)
+		return NULL;
+	if (self->pane)
+		pane_drop_notifiers(self->pane, event);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyObject *Pane_rel(Pane *self safe, PyObject *args)
 {
 	short x,y;
@@ -1057,7 +1070,9 @@ static PyMethodDef pane_methods[] = {
 	{"rel", (PyCFunction)Pane_rel, METH_VARARGS,
 	 "Convert absolute co-orders to pane-relative"},
 	{"add_notify", (PyCFunction)Pane_add_notify, METH_VARARGS,
-	 "Add notified for an event on some other pane"},
+	 "Add notifier for an event on some other pane"},
+	{"drop_notify", (PyCFunction)Pane_drop_notify, METH_VARARGS,
+	 "Drop notification to this pane for an event"},
 	{"damaged", (PyCFunction)Pane_damaged, METH_VARARGS,
 	 "Mark pane as damaged"},
 	{"scale", (PyCFunction)Pane_get_scale, METH_NOARGS,
