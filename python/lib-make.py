@@ -448,6 +448,11 @@ class MakeViewerPane(edlib.Pane):
                    edlib.NO_NUMERIC, "OtherPane")
         return 1
 
+    def handle_kill(self, key, **a):
+        "handle:Chr-q"
+        self.call("doc:destroy")
+        return 1
+
     def handle_replace(self, key, mark, mark2, **a):
         "handle:doc:replaced"
         if not mark or not mark2:
