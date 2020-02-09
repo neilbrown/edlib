@@ -28,6 +28,7 @@ class MakePane(edlib.Pane):
         self.add_notify(focus, "doc:make-revisit");
         self.viewnum = focus.call("doc:add-view", self) - 1
         self.point = None
+        self.dir = self['dirname']
         self.map = []
         self.files = {}
         self.timer_set = False
@@ -91,12 +92,29 @@ class MakePane(edlib.Pane):
             # ...FILE: filename:linenum:....
             # ...FILE: filename:linenum ....
             # FILE: is for checkpatch.
+            # Entering directory '....'
             try:
-                self.call("text-search", "^(.*FILE: )?[^: \t]+:[0-9]+[: ]", m)
-                self.call("doc:step", m, 0, 1)
+                self.call("text-search",
+                          "(^(.*FILE: )?[^: \t]+:[0-9]+[: ]|Entering directory ')",
+                          m)
+                last = self.call("doc:step", m, 0, 1, ret='char')
             except edlib.commandfailed:
                 # No more matches - stop
                 return
+            if last == "'":
+                # last char of match is ', so must be dir name
+                self.call("doc:step", m, 1, 1)
+                start = m.dup()
+                rv = self.call("text-match", "[^'\n]*'", m)
+                if rv > 0:
+                    last = self.call("doc:step", m, 0, 1)
+                    d = self.call("doc:get-str", start, m, ret='str')
+                    if d:
+                        if d[-1] == '/':
+                            self.dir = d
+                        else:
+                            self.dir = d + '/'
+                continue
             # Want to be careful of 'note: ' from gcc
             is_note = (self.call("text-match", ":[0-9]+: note:", m.dup()) > 0)
 
@@ -146,7 +164,7 @@ class MakePane(edlib.Pane):
         if fname not in self.files:
             try:
                 if fname[0] != '/':
-                    dir = self['dirname']
+                    dir = self.dir
                     if not dir:
                         dir = ""
                 else:
@@ -268,6 +286,7 @@ class MakePane(edlib.Pane):
                 m.release()
                 m = self.call("doc:vmark-get", self.viewnum, ret='mark')
             self.point = None
+            self.dir = self['dirname']
             self.note_ok = False
 
         self.do_parse()
@@ -304,7 +323,7 @@ class MakePane(edlib.Pane):
         # try the old way
         try:
             if fname[0] != '/':
-                dir = self['dirname']
+                dir = self.dir
                 if not dir:
                     dir = ""
             else:
@@ -359,7 +378,10 @@ class MakePane(edlib.Pane):
         if self.point:
             self.point["render:make-line"] = "no"
             self.call("doc:notify:doc:replaced", self.point, 100)
-            t = p.prev()
+            if p:
+                t = p.prev()
+            else:
+                t = None
             while t and t['has_note'] == 'yes':
                 t['render:first_err'] = None
                 self.call("doc:notify:doc:replaced", t, 100)

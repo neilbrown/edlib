@@ -23,7 +23,7 @@ Current priorities
       target again
 - [X] we should keep several 'grep' (And make?) docs around and when one
       finished, restart previous
-- [ ] recognize "Entering directory '...'" line in make output and adjust target dir.
+- [X] recognize "Entering directory '...'" line in make output and adjust target dir.
 - [ ] 'diff' shell windows need to keep diff-mode when revisited.
 - [ ] do case-insensitive matching for doc/file completion
 
