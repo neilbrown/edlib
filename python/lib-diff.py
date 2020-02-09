@@ -36,6 +36,10 @@ class DiffPane(edlib.Pane):
                 comm2("attr:cb", focus, mark, "fg:red-40", 1000000, 1)
             return 0
 
+    def handle_clone(self, key, focus, home, **a):
+        "handle:Clone"
+        p = DiffPane(focus)
+        home.clone_children(p)
 
     def handle_enter(self, key, focus, mark, **a):
         "handle:Enter"
