@@ -21,7 +21,7 @@ Current priorities
 - [X] recompile should use same directory
 - [X] If I press 'enter' in an old grep/make doc, it should become the
       target again
-- [ ] we should keep several 'grep' (And make?) docs around and when one
+- [X] we should keep several 'grep' (And make?) docs around and when one
       finished, restart previous
 - [ ] recognize "Entering directory '...'" line in make output and adjust target dir.
 - [ ] 'diff' shell windows need to keep diff-mode when revisited.

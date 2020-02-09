@@ -84,7 +84,7 @@ class MakePane(edlib.Pane):
             m = edlib.Mark(self)
 
         done = 0
-        while done < 10:
+        while done < 30:
             # Look for one of:
             # filename:linenum:.....
             # filename:linenum ....
@@ -124,7 +124,7 @@ class MakePane(edlib.Pane):
         # there are more matches - we aborted early.
         # set a timer
         if not self.timer_set:
-            self.call("event:timer", 100, self.tick)
+            self.call("event:timer", 10, self.tick)
             self.timer_set = True
         return
 
@@ -228,8 +228,32 @@ class MakePane(edlib.Pane):
         self.note_ok = False
         return self.map[int(p['ref'])]
 
+    def close_idle(self):
+        if self['cmd'] == 'make':
+            # don't close 'make'
+            return
+        if self.pipe:
+            # command is still running
+            return
+        if self.timer_set:
+            # still busy
+            return
+        p = self.point
+        while p:
+            p = p.next()
+            if p and p['has_note'] != 'yes':
+                break
+        if p:
+            # Haven't visited the last match yet
+            return 0
+        if not self.parent.notify("doc:notify-viewers"):
+            self.parent.close()
+            return 0
+
     def make_next(self, key, focus, num, str, str2, xy, **a):
         "handle:make:match-docs"
+        if str == "close-idle":
+            return self.close_idle()
         if str != "next-match":
             return 0
         prevret = xy[1]
@@ -252,8 +276,9 @@ class MakePane(edlib.Pane):
             focus.call("Message", "No further matches")
             # send viewers to keep following end of file.
             self.first_match = True
-            self.call("doc:set-ref", self.point)
-            self.call("doc:notify:make-set-match", self.point)
+            if self.point:
+                self.call("doc:set-ref", self.point)
+                self.call("doc:notify:make-set-match", self.point)
             return 0
         if not str2:
             str2 = "ThisPane"
@@ -492,14 +517,25 @@ def run_make(key, focus, str, num, **a):
     tile = focus.call("ThisPane", ret='focus')
     if tile:
         focus = tile
-    try:
-        doc = focus.call("docs:byname", docname, ret='focus')
-        if num == 42:
-            # use directory from previous run
-            dir = doc['dirname']
-        doc.call("doc:clear")
-        doc.notify("make-close")
-    except edlib.commandfailed:
+    doc = None
+    if cmd == "make":
+        # try to reuse old document
+        try:
+            doc = focus.call("docs:byname", docname, ret='focus')
+            if num == 42:
+                # use directory from previous run
+                dir = doc['dirname']
+            doc.call("doc:clear")
+            doc.notify("make-close")
+        except edlib.commandfailed:
+            pass
+    else:
+        # Tell any extend grep documents that
+        # a/ are no longer running, b/ have point at the end, c/ are not
+        # visible; to close
+        focus.call("editor:notify:make:match-docs", "close-idle");
+    if not doc:
+        # If doing 'grep', or if there is no make output doc, create new one.
         doc = focus.call("doc:from-text", docname, "", ret='focus')
         if not doc:
             return edlib.Efail
@@ -517,6 +553,7 @@ def run_make(key, focus, str, num, **a):
     p = doc.call("doc:attach-view", p, 1, ret='focus')
 
     p = doc.call("attach-makecmd", str, dir, ret='focus')
+    p['cmd'] = cmd
     return 1
 
 def make_request(key, focus, num, str, mark, **a):
