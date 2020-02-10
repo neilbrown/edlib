@@ -641,6 +641,7 @@ class events(edlib.Pane):
         self.events = {}
         self.sigs = {}
         self.ev_num = 0
+        self.dont_block = False
 
     def handle_close(self, key, focus, **a):
         "handle:Notify:Close"
@@ -723,9 +724,15 @@ class events(edlib.Pane):
             del self.events[ev]
         return ret
 
+    def nonblock(self, key, **a):
+        self.dont_block = True
+
     def run(self, key, **a):
         if self.active:
-            gtk.main_iteration(True)
+            dont_block = self.dont_block
+            self.dont_block = False
+            if not dont_block:
+                gtk.main_iteration(True)
             while self.active and gtk.events_pending():
                 gtk.main_iteration(False)
         if self.active:
@@ -789,6 +796,7 @@ def events_activate(focus):
     focus.call("global-set-command", "event:deactivate-python", ev.deactivate)
     focus.call("global-set-command", "event:free-python", ev.free)
     focus.call("global-set-command", "event:refresh-python", ev.refresh)
+    focus.call("global-set-command", "event:noblock-python", ev.nonblock)
     focus.call("event:refresh");
 
     return 1

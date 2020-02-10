@@ -268,6 +268,9 @@ DEF_CMD(editor_on_idle)
 	ic = calloc(1, sizeof(*ic));
 	ic->focus = ci->focus;
 	ic->callback = command_get(ci->comm2);
+	if (!ei->idle_calls)
+		/* Make sure we don't block waiting for events */
+		call("event:noblock", ci->home);
 	ic->next = ei->idle_calls;
 	ei->idle_calls = ic;
 	return 1;

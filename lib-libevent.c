@@ -27,7 +27,9 @@ struct event_info {
 	struct event_base *base;
 	struct list_head event_list;
 	struct pane *home safe;
-	struct command read, signal, timer, run, deactivate, free, refresh;
+	int dont_block;
+	struct command read, signal, timer, run, deactivate,
+		free, refresh, noblock;
 };
 
 struct evt {
@@ -192,11 +194,13 @@ DEF_CMD(libevent_run)
 {
 	struct event_info *ei = container_of(ci->comm, struct event_info, run);
 	struct event_base *b = ei->base;
+	int dont_block = ei->dont_block;
 
 	if (!b)
 		return 0;
 
-	event_base_loop(b, EVLOOP_ONCE);
+	ei->dont_block = 0;
+	event_base_loop(b, dont_block ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
 	if (ei->base == b)
 		return 1;
 	while (!list_empty(&ei->event_list)) {
@@ -261,6 +265,15 @@ DEF_CMD(libevent_refresh)
 	return 0;
 }
 
+DEF_CMD(libevent_noblock)
+{
+	struct event_info *ei = container_of(ci->comm, struct event_info,
+					     noblock);
+
+	ei->dont_block = 1;
+	return 1;
+}
+
 DEF_CMD(libevent_notify)
 {
 	struct event_info *ei = ci->home->data;
@@ -281,16 +294,26 @@ DEF_CMD(libevent_activate)
 	ei->deactivate = libevent_deactivate;
 	ei->free = libevent_free;
 	ei->refresh = libevent_refresh;
+	ei->noblock = libevent_noblock;
 	ei->home = pane_register(ei->home, 0, &libevent_handle.c, ei);
 
 	/* These are defaults, so make them sort late */
-	call_comm("global-set-command", ci->focus, &ei->read, 0, NULL, "event:read-zz");
-	call_comm("global-set-command", ci->focus, &ei->signal, 0, NULL, "event:signal-zz");
-	call_comm("global-set-command", ci->focus, &ei->timer, 0, NULL, "event:timer-zz");
-	call_comm("global-set-command", ci->focus, &ei->run, 0, NULL, "event:run-zz");
-	call_comm("global-set-command", ci->focus, &ei->deactivate, 0, NULL, "event:deactivate-zz");
-	call_comm("global-set-command", ci->focus, &ei->free, 0, NULL, "event:free-zz");
-	call_comm("global-set-command", ci->focus, &ei->refresh, 0, NULL, "event:refresh-zz");
+	call_comm("global-set-command", ci->focus, &ei->read,
+		  0, NULL, "event:read-zz");
+	call_comm("global-set-command", ci->focus, &ei->signal,
+		  0, NULL, "event:signal-zz");
+	call_comm("global-set-command", ci->focus, &ei->timer,
+		  0, NULL, "event:timer-zz");
+	call_comm("global-set-command", ci->focus, &ei->run,
+		  0, NULL, "event:run-zz");
+	call_comm("global-set-command", ci->focus, &ei->deactivate,
+		  0, NULL, "event:deactivate-zz");
+	call_comm("global-set-command", ci->focus, &ei->free,
+		  0, NULL, "event:free-zz");
+	call_comm("global-set-command", ci->focus, &ei->refresh,
+		  0, NULL, "event:refresh-zz");
+	call_comm("global-set-command", ci->focus, &ei->noblock,
+		  0, NULL, "event:noblock-zz");
 	call("event:refresh", ci->focus);
 
 	return 1;
@@ -298,7 +321,8 @@ DEF_CMD(libevent_activate)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, &libevent_activate, 0, NULL, "attach-libevent");
+	call_comm("global-set-command", ed, &libevent_activate,
+		  0, NULL, "attach-libevent");
 
 	if (libevent_map)
 		return;
