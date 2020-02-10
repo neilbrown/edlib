@@ -171,17 +171,17 @@ if is_client:
         elif file is None:
             file = a
         else:
-            print "Usage: edlibclient [-t] filename"
+            print("Usage: edlibclient [-t] filename")
             sys.exit(1)
     if not term and not file:
-        print "edlibclient: must provide -t or filename (or both)"
+        print("edlibclient: must provide -t or filename (or both)")
         sys.exit(1)
 
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
         s.connect(sockpath)
     except OSError:
-        print "Cannot connect to ".sockpath
+        print("Cannot connect to ".sockpath)
         os.exit(1)
 
     if term:
@@ -190,7 +190,7 @@ if is_client:
             s.send("term:" + t)
             ret = s.recv(100)
             if ret != "OK":
-                print "Cannot open terminal on", t
+                print("Cannot open terminal on", t)
                 sys.exit(1)
 
     if file:
@@ -198,18 +198,18 @@ if is_client:
         s.send("open:" + file)
         ret = s.recv(100)
         if ret != "OK":
-            print "Cannot open: ", ret
+            print("Cannot open: ", ret)
             sys.exit(1)
         s.send("doc:request:doc:done:"+file)
     else:
         s.send("Request:Notify:Close")
     ret = s.recv(100)
     if ret != "OK":
-        print "Cannot request notification: ", ret
+        print("Cannot request notification: ", ret)
         sys.exit(1)
     ret = s.recv(100)
     if ret != "Done" and ret != "Close":
-        print "Received unexpected notification: ", ret
+        print("Received unexpected notification: ", ret)
         sys.exit(1)
     if ret != "Close":
         s.send("Close")
@@ -257,7 +257,7 @@ else:
         os.unlink(sockpath)
     except OSError:
         pass
-    mask = os.umask(077)
+    mask = os.umask(0o077)
     s.bind(sockpath)
     os.umask(mask)
     s.listen(5)

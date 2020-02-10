@@ -7,13 +7,9 @@
 # provides eventloop function using gtk.main.
 
 import sys
-# Python 2 only
-reload(sys)
-sys.setdefaultencoding("utf-8")
 import os
 import signal
 import gi
-import thread
 import glib
 import time
 import cairo
@@ -21,8 +17,7 @@ import cairo
 gi.require_version('Gtk', '3.0')
 gi.require_version('PangoCairo', '1.0')
 gi.require_foreign("cairo")
-from gi.repository import GObject, Gtk, Gdk, Pango, PangoCairo, GdkPixbuf
-
+from gi.repository import GLib, Gtk, Gdk, Pango, PangoCairo, GdkPixbuf
 
 class EdDisplay(Gtk.Window):
     def __init__(self, focus):
@@ -206,7 +201,7 @@ class EdDisplay(Gtk.Window):
                 max_bytes = len(str[:max_chars].encode("utf-8"))
         else:
             max_bytes = 0
-        return comm2("callback:size", focus, max_bytes, ascent,
+        return comm2("callback:size", focus, max_bytes, int(ascent),
                      (l.width, l.height))
 
     def handle_draw_text(self, key, num, num2, focus, str, str2, xy, **a):
@@ -449,7 +444,7 @@ class EdDisplay(Gtk.Window):
         self.add(text)
         text.show()
         self.fd = Pango.FontDescription("mono 10")
-        text.modify_font(self.fd)
+        #text.modify_font(self.fd)
         ctx = text.get_pango_context()
         metric = ctx.get_metrics(self.fd)
         self.lineheight = (metric.get_ascent() + metric.get_descent()) / Pango.SCALE
@@ -495,7 +490,7 @@ class EdDisplay(Gtk.Window):
 
     def refresh(self, da, ctx):
         edlib.time_start(edlib.TIME_WINDOW)
-        l = self.panes.keys()
+        l = list(self.panes)
         l.sort(key=lambda pane: pane.abs_z)
         for p in l:
             pm = self.panes[p]
@@ -683,8 +678,8 @@ class events(edlib.Pane):
     def read(self, key, focus, comm2, num, **a):
         self.active = True
         ev = self.add_ev(focus, comm2, 'event:read', num)
-        gev = GObject.io_add_watch(num, GObject.IO_IN | GObject.IO_HUP,
-                                  self.doread, comm2, focus, num, ev)
+        gev = GLib.io_add_watch(num, GLib.IO_IN | GLib.IO_HUP,
+                                self.doread, comm2, focus, num, ev)
         self.events[ev].append(gev)
         return 1
 
@@ -710,7 +705,7 @@ class events(edlib.Pane):
 
     def sighan(self, sig, frame):
         (focus, comm2, ev) = self.sigs[sig]
-        GObject.idle_add(self.dosig, comm2, focus, sig, ev)
+        GLib.idle_add(self.dosig, comm2, focus, sig, ev)
         return 1
 
     def dosig(self, comm, focus, sig, ev):
@@ -731,7 +726,7 @@ class events(edlib.Pane):
     def timer(self, key, focus, comm2, num, **a):
         self.active = True
         ev = self.add_ev(focus, comm2, 'event:timer', num)
-        gev = GObject.timeout_add(num, self.dotimeout, comm2, focus, ev)
+        gev = GLib.timeout_add(num, self.dotimeout, comm2, focus, ev)
         self.events[ev].append(gev)
         return 1
 
@@ -784,7 +779,7 @@ class events(edlib.Pane):
                 del self.events[source]
                 if len(e) == 5:
                     try:
-                        GObject.source_remove(e[4])
+                        GLib.source_remove(e[4])
                     except:
                         # must be already gone
                         pass
@@ -800,7 +795,7 @@ class events(edlib.Pane):
             (focus, comm, event, num) = self.events[e][:4]
             if event != "event:signal" and len(self.events[e]) == 5:
                 try:
-                    GObject.source_remove(self.events[4])
+                    GLib.source_remove(self.events[4])
                 except:
                     pass
             del self.events[e]

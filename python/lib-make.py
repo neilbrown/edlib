@@ -63,13 +63,14 @@ class MakePane(edlib.Pane):
         except IOError:
             return 1
         if r is None or len(r) == 0:
-            self.pipe.communicate()
+            (out, err) = self.pipe.communicate()
             self.pipe = None
+            self.call("doc:replace", out.decode("utf-8"))
             self.call("doc:replace", "\nProcess Finished\n");
             self.call("doc:set:doc-status", "Complete")
             self.call("doc:notify:doc:status-changed")
             return edlib.Efalse
-        self.call("doc:replace", r);
+        self.call("doc:replace", r.decode("utf-8"));
         self.do_parse()
         return 1
 

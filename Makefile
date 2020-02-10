@@ -85,8 +85,8 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/display-ncurses.o
 XOBJ = O/rexel.o O/emacs-search.o
 
-LIBS-lang-python = $(shell pkg-config --libs python-2.7)
-INC-lang-python = $(shell pkg-config --cflags python-2.7)
+LIBS-lang-python = $(shell pkg-config --libs python3)
+INC-lang-python = $(shell pkg-config --cflags python3)
 
 LIBS-display-ncurses = $(shell pkg-config --libs ncursesw)
 INC-display-ncurses = $(shell pkg-config --cflags ncursesw)

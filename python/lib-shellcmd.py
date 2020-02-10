@@ -36,10 +36,10 @@ class ShellPane(edlib.Pane):
         if r is None or len(r) == 0:
             (out,err) = self.pipe.communicate()
             self.pipe = None
-            self.call("doc:replace", out)
+            self.call("doc:replace", out.decode("utf-8"))
             self.call("doc:replace", "\nProcess Finished\n");
             return edlib.Efalse
-        self.call("doc:replace", r);
+        self.call("doc:replace", r.decode("utf-8"));
         return 1
 
     def handle_close(self, key, **a):

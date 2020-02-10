@@ -2,7 +2,7 @@
  * Copyright Neil Brown ©2015-2019 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
- * Python bindings for edlib.
+ * Python3 bindings for edlib.
  * And edlib command "python-load" will read and execute a python
  * script.
  * It can use "edlib.editor" to get the editor instance, and can
@@ -259,8 +259,15 @@ static char *python_as_string(PyObject *s, PyObject **tofree safe)
 		s = PyUnicode_AsUTF8String(s);
 		*tofree = s;
 	}
-	if (s && PyString_Check(s))
-		return PyString_AsString(s);
+	if (s && PyBytes_Check(s)) {
+		char *ret = PyBytes_AsString(s);
+		unsigned char *r = (unsigned char*)ret;
+		if (r[0] == 0xef && r[1] == 0xbb && r[2] == 0xbf)
+			/* UTF-8 Byte Order Mark */
+			return ret+3;
+		else
+			return ret;
+	}
 	return NULL;
 }
 
@@ -321,14 +328,12 @@ REDEF_CMD(python_call)
 	}
 	if (ret == Py_None)
 		rv = 0;
-	else if (PyInt_Check(ret))
-		rv = PyInt_AsLong(ret);
+	else if (PyLong_Check(ret))
+		rv = PyLong_AsLong(ret);
 	else if (PyBool_Check(ret))
 		rv = (ret == Py_True);
-	else if (PyString_Check(ret) && PyString_GET_SIZE(ret) >= 1)
-		rv = CHAR_RET(PyString_AsString(ret)[0]);
 	else if (PyUnicode_Check(ret) && PyUnicode_GET_SIZE(ret) >= 1)
-		rv = CHAR_RET(PyUnicode_AS_UNICODE(ret)[0]);
+		rv = CHAR_RET(PyUnicode_READ_CHAR(ret, 0));
 	else
 		rv = 1;
 	Py_DECREF(ret);
@@ -779,7 +784,7 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 		char *rets;
 		struct command *c;
 
-		if (!(PyUnicode_Check(ret) || PyString_Check(ret)) ||
+		if (!PyUnicode_Check(ret) ||
 		    (rets = python_as_string(ret, &s3)) == NULL) {
 			PyErr_SetString(PyExc_TypeError, "ret= must be given a string");
 			Py_XDECREF(s1); Py_XDECREF(s2);
@@ -809,6 +814,9 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 
 	rv = key_handle(&ci);
 
+	/* Just in case ... */
+	PyErr_Clear();
+
 	Py_XDECREF(s1); Py_XDECREF(s2);Py_XDECREF(s3);
 	command_put(ci.comm2);
 	if (ret && rv >= 0) {
@@ -824,11 +832,11 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 		return Py_None;
 	}
 	if (rv < Efalse) {
-		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
+		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
 		return NULL;
 	}
 	if (!return_char)
-		return PyInt_FromLong(rv);
+		return PyLong_FromLong(rv);
 	if (rv == CHAR_RET(WEOF)) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -865,10 +873,10 @@ static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject
 		return Py_None;
 	}
 	if (rv < 0) {
-		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
+		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
 		return NULL;
 	}
-	return PyInt_FromLong(rv);
+	return PyLong_FromLong(rv);
 }
 
 static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwds)
@@ -901,10 +909,10 @@ static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwd
 		return Py_None;
 	}
 	if (rv < 0) {
-		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
+		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
 		return NULL;
 	}
-	return PyInt_FromLong(rv);
+	return PyLong_FromLong(rv);
 }
 
 static PyObject *Pane_abs(Pane *self safe, PyObject *args)
@@ -1105,7 +1113,7 @@ static PyObject *pane_getnum(Pane *p safe, char *which safe)
 	case 'z': n = p->pane->z; break;
 	case 'Z': n = p->pane->abs_z; break;
 	}
-	return PyInt_FromLong(n);
+	return PyLong_FromLong(n);
 }
 
 static int pane_setnum(Pane *p safe, PyObject *v, char *which safe)
@@ -1124,7 +1132,7 @@ static int pane_setnum(Pane *p safe, PyObject *v, char *which safe)
 		PyErr_SetString(PyExc_TypeError, "abs_z cannot be set");
 		return -1;
 	}
-	val = PyInt_AsLong(v);
+	val = PyLong_AsLong(v);
 	if (val == -1 && PyErr_Occurred())
 		return -1;
 
@@ -1190,13 +1198,9 @@ static long pane_hash(Pane *p safe)
 	return (long)p->pane;
 }
 
-static int pane_cmp(Pane *p1 safe, Pane *p2 safe)
+static PyObject *pane_cmp(Pane *p1 safe, Pane *p2 safe, int op)
 {
-	if (p1->pane == p2->pane)
-		return 0;
-	if (p1->pane < p2->pane)
-		return -1;
-	return 1;
+	Py_RETURN_RICHCOMPARE(p1->pane, p2->pane, op);
 }
 
 static PyGetSetDef pane_getseters[] = {
@@ -1289,87 +1293,33 @@ static PyMappingMethods pane_mapping = {
 };
 
 static PyTypeObject PaneType = {
-    PyObject_HEAD_INIT(NULL)
-    0,				/*ob_size*/
-    "edlib.Pane",		/*tp_name*/
-    sizeof(Pane),		/*tp_basicsize*/
-    0,				/*tp_itemsize*/
-    (destructor)pane_dealloc,	/*tp_dealloc*/
-    NULL,			/*tp_print*/
-    NULL,			/*tp_getattr*/
-    NULL,			/*tp_setattr*/
-    (cmpfunc)pane_cmp,		/*tp_compare*/
-    (reprfunc)pane_repr,	/*tp_repr*/
-    NULL,			/*tp_as_number*/
-    NULL,			/*tp_as_sequence*/
-    &pane_mapping,		/*tp_as_mapping*/
-    (hashfunc)pane_hash,	/*tp_hash */
-    (ternaryfunc)pane_direct_call,/*tp_call*/
-    NULL,			/*tp_str*/
-    NULL,			/*tp_getattro*/
-    NULL,			/*tp_setattro*/
-    NULL,			/*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-    "edlib panes",		/* tp_doc */
-    NULL,			/* tp_traverse */
-    NULL,			/* tp_clear */
-    NULL,			/* tp_richcompare */
-    0,				/* tp_weaklistoffset */
-    NULL,			/* tp_iter */
-    NULL,			/* tp_iternext */
-    pane_methods,		/* tp_methods */
-    NULL,			/* tp_members */
-    pane_getseters,		/* tp_getset */
-    NULL,			/* tp_base */
-    NULL,			/* tp_dict */
-    NULL,			/* tp_descr_get */
-    NULL,			/* tp_descr_set */
-    0,				/* tp_dictoffset */
-    .tp_init = (initproc)Pane_init,/* tp_init */
-    NULL,			/* tp_alloc */
-    .tp_new = (newfunc)pane_new,/* tp_new */
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name	= "edlib.Pane",
+	.tp_basicsize	= sizeof(Pane),
+	.tp_dealloc	= (destructor)pane_dealloc,
+	.tp_richcompare	= (richcmpfunc)pane_cmp,
+	.tp_repr	= (reprfunc)pane_repr,
+	.tp_as_mapping	= &pane_mapping,
+	.tp_hash	= (hashfunc)pane_hash,
+	.tp_call	= (ternaryfunc)pane_direct_call,
+	.tp_flags	= Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_doc		= "edlib panes",
+	.tp_methods	= pane_methods,
+	.tp_getset	= pane_getseters,
+	.tp_init	= (initproc)Pane_init,
+	.tp_new		= (newfunc)pane_new,
 };
 
 static PyTypeObject PaneIterType = {
-    PyObject_HEAD_INIT(NULL)
-    0,				/*ob_size*/
-    "edlib.PaneIter",		/*tp_name*/
-    sizeof(PaneIter),		/*tp_basicsize*/
-    0,				/*tp_itemsize*/
-    (destructor)paneiter_dealloc,/*tp_dealloc*/
-    NULL,			/*tp_print*/
-    NULL,			/*tp_getattr*/
-    NULL,			/*tp_setattr*/
-    NULL,			/*tp_compare*/
-    NULL,			/*tp_repr*/
-    NULL,			/*tp_as_number*/
-    NULL,			/*tp_as_sequence*/
-    NULL,			/*tp_as_mapping*/
-    NULL,			/*tp_hash */
-    NULL,			/*tp_call*/
-    NULL,			/*tp_str*/
-    NULL,			/*tp_getattro*/
-    NULL,			/*tp_setattro*/
-    NULL,			/*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT,		/*tp_flags*/
-    "edlib pane iterator",	/* tp_doc */
-    NULL,			/* tp_traverse */
-    NULL,			/* tp_clear */
-    NULL,			/* tp_richcompare */
-    0,				/* tp_weaklistoffset */
-    (getiterfunc)pane_this_iter,/* tp_iter */
-    (iternextfunc)pane_iter_next,/* tp_iternext */
-    NULL,			/* tp_methods */
-    NULL,			/* tp_members */
-    NULL,			/* tp_getset */
-    NULL,			/* tp_base */
-    NULL,			/* tp_dict */
-    NULL,			/* tp_descr_get */
-    NULL,			/* tp_descr_set */
-    0,				/* tp_dictoffset */
-    .tp_init = NULL,		/* tp_init */
-    NULL,			/* tp_alloc */
-    .tp_new = (newfunc)pane_iter_new,/* tp_new */
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name	= "edlib.PaneIter",
+	.tp_basicsize	= sizeof(PaneIter),
+	.tp_dealloc	= (destructor)paneiter_dealloc,
+	.tp_flags	= Py_TPFLAGS_DEFAULT,
+	.tp_doc		= "edlib pane iterator",
+	.tp_iter	= (getiterfunc)pane_this_iter,
+	.tp_iternext	= (iternextfunc)pane_iter_next,
+	.tp_new		= (newfunc)pane_iter_new,
 };
 
 static PyObject *first_mark(Doc *self safe, PyObject *args)
@@ -1416,45 +1366,17 @@ static PyMethodDef doc_methods[] = {
 };
 
 static PyTypeObject DocType = {
-    PyObject_HEAD_INIT(NULL)
-    0,				/*ob_size*/
-    "edlib.Doc",		/*tp_name*/
-    sizeof(Doc),		/*tp_basicsize*/
-    0,				/*tp_itemsize*/
-    (destructor)pane_dealloc,	/*tp_dealloc*/
-    NULL,			/*tp_print*/
-    NULL,			/*tp_getattr*/
-    NULL,			/*tp_setattr*/
-    NULL,			/*tp_compare*/
-    (reprfunc)doc_repr,	/*tp_repr*/
-    NULL,			/*tp_as_number*/
-    NULL,			/*tp_as_sequence*/
-    NULL,			/*tp_as_mapping*/
-    NULL,			/*tp_hash */
-    NULL,			/*tp_call*/
-    NULL,			/*tp_str*/
-    NULL,			/*tp_getattro*/
-    NULL,			/*tp_setattro*/
-    NULL,			/*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-    "edlib document",		/* tp_doc */
-    NULL,			/* tp_traverse */
-    NULL,			/* tp_clear */
-    NULL,			/* tp_richcompare */
-    0,				/* tp_weaklistoffset */
-    NULL,			/* tp_iter */
-    NULL,			/* tp_iternext */
-    doc_methods,		/* tp_methods */
-    NULL,			/* tp_members */
-    NULL,			/* tp_getset */
-    &PaneType,			/* tp_base */
-    NULL,			/* tp_dict */
-    NULL,			/* tp_descr_get */
-    NULL,			/* tp_descr_set */
-    0,				/* tp_dictoffset */
-    .tp_init = (initproc)Doc_init,/* tp_init */
-    NULL,			/* tp_alloc */
-    .tp_new = (newfunc)Doc_new,/* tp_new */
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name	= "edlib.Doc",
+	.tp_basicsize	= sizeof(Doc),
+	.tp_dealloc	= (destructor)pane_dealloc,
+	.tp_repr	= (reprfunc)doc_repr,
+	.tp_flags	= Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_doc		= "edlib document",
+	.tp_methods	= doc_methods,
+	.tp_base	= &PaneType,
+	.tp_init	= (initproc)Doc_init,
+	.tp_new		= (newfunc)Doc_new,
 };
 
 static PyObject *mark_getoffset(Mark *m safe, void *x)
@@ -1464,8 +1386,8 @@ static PyObject *mark_getoffset(Mark *m safe, void *x)
 		return NULL;
 	}
 	if (m->mark->owner->refcnt == mark_refcnt)
-		return PyInt_FromLong(m->mark->ref.o);
-	return PyInt_FromLong(0);
+		return PyLong_FromLong(m->mark->ref.o);
+	return PyLong_FromLong(0);
 }
 
 static int mark_setoffset(Mark *m safe, PyObject *v safe, void *x)
@@ -1476,7 +1398,7 @@ static int mark_setoffset(Mark *m safe, PyObject *v safe, void *x)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return -1;
 	}
-	val = PyInt_AsLong(v);
+	val = PyLong_AsLong(v);
 	if (val == -1 && PyErr_Occurred())
 		return -1;
 	if (m->mark->owner->refcnt == mark_refcnt)
@@ -1494,7 +1416,7 @@ static PyObject *mark_getseq(Mark *m safe, void *x)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	return PyInt_FromLong(m->mark->seq);
+	return PyLong_FromLong(m->mark->seq);
 }
 
 static int mark_nosetseq(Mark *m, PyObject *v, void *which)
@@ -1568,7 +1490,7 @@ static PyObject *mark_getview(Mark *m safe, void *x)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	return PyInt_FromLong(m->mark->viewnum);
+	return PyLong_FromLong(m->mark->viewnum);
 }
 
 static int mark_nosetview(Mark *m, PyObject *v, void *which)
@@ -1579,13 +1501,10 @@ static int mark_nosetview(Mark *m, PyObject *v, void *which)
 
 static PyObject *mark_compare(Mark *a safe, Mark *b safe, int op)
 {
-	int ret = 0;
-	PyObject *rv;
-
 	if ((PyObject*)a == Py_None)
-		ret = (op == Py_LT || op == Py_LE || op == Py_NE);
+		Py_RETURN_RICHCOMPARE(0, 1, op);
 	else if ((PyObject*)b == Py_None)
-		ret = (op == Py_GT || op == Py_GE || op == Py_NE);
+		Py_RETURN_RICHCOMPARE(1, 0, op);
 	else if (PyObject_TypeCheck(a, &MarkType) == 0 ||
 		 PyObject_TypeCheck(b, &MarkType) == 0) {
 		PyErr_SetString(PyExc_TypeError, "Mark compared with non-Mark");
@@ -1596,18 +1515,8 @@ static PyObject *mark_compare(Mark *a safe, Mark *b safe, int op)
 		int cmp = a->mark->seq - b->mark->seq;
 		if (mark_same(a->mark, b->mark))
 			cmp = 0;
-		switch(op) {
-		case Py_LT: ret = cmp <  0; break;
-		case Py_LE: ret = cmp <= 0; break;
-		case Py_GT: ret = cmp >  0; break;
-		case Py_GE: ret = cmp >= 0; break;
-		case Py_EQ: ret = cmp == 0; break;
-		case Py_NE: ret = cmp != 0; break;
-		}
+		Py_RETURN_RICHCOMPARE(cmp, 0, op);
 	}
-	rv = ret ? Py_True : Py_False;
-	Py_INCREF(rv);
-	return rv;
 }
 
 static PyGetSetDef mark_getseters[] = {
@@ -2001,45 +1910,18 @@ static PyMappingMethods mark_mapping = {
 };
 
 static PyTypeObject MarkType = {
-    PyObject_HEAD_INIT(NULL)
-    0,				/*ob_size*/
-    "edlib.Mark",		/*tp_name*/
-    sizeof(Mark),		/*tp_basicsize*/
-    0,				/*tp_itemsize*/
-    (destructor)mark_dealloc,	/*tp_dealloc*/
-    NULL,			/*tp_print*/
-    NULL,			/*tp_getattr*/
-    NULL,			/*tp_setattr*/
-    NULL,			/*tp_compare*/
-    NULL,			/*tp_repr*/
-    NULL,			/*tp_as_number*/
-    NULL,			/*tp_as_sequence*/
-    &mark_mapping,		/*tp_as_mapping*/
-    NULL,			/*tp_hash */
-    NULL,			/*tp_call*/
-    NULL,			/*tp_str*/
-    NULL,			/*tp_getattro*/
-    NULL,			/*tp_setattro*/
-    NULL,			/*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-    "edlib marks",		/* tp_doc */
-    NULL,			/* tp_traverse */
-    NULL,			/* tp_clear */
-    (richcmpfunc)mark_compare,	/* tp_richcompare */
-    0,				/* tp_weaklistoffset */
-    NULL,			/* tp_iter */
-    NULL,			/* tp_iternext */
-    mark_methods,		/* tp_methods */
-    NULL,			/* tp_members */
-    mark_getseters,		/* tp_getset */
-    NULL,			/* tp_base */
-    NULL,			/* tp_dict */
-    NULL,			/* tp_descr_get */
-    NULL,			/* tp_descr_set */
-    0,				/* tp_dictoffset */
-    .tp_init = (initproc)Mark_init,/* tp_init */
-    NULL,			/* tp_alloc */
-    .tp_new = (newfunc)mark_new,/* tp_new */
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name	= "edlib.Mark",
+	.tp_basicsize	= sizeof(Mark),
+	.tp_dealloc	= (destructor)mark_dealloc,
+	.tp_as_mapping	= &mark_mapping,
+	.tp_flags	= Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_doc		= "edlib marks",
+	.tp_richcompare	= (richcmpfunc)mark_compare,
+	.tp_methods	= mark_methods,
+	.tp_getset	= mark_getseters,
+	.tp_init	= (initproc)Mark_init,
+	.tp_new		= (newfunc)mark_new,
 };
 
 static void comm_dealloc(Comm *self safe)
@@ -2088,10 +1970,10 @@ static PyObject *Comm_call(Comm *c safe, PyObject *args safe, PyObject *kwds)
 		return Py_None;
 	}
 	if (rv < 0) {
-		PyErr_SetObject(Edlib_CommandFailed, PyInt_FromLong(rv));
+		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
 		return NULL;
 	}
-	return PyInt_FromLong(rv);
+	return PyLong_FromLong(rv);
 }
 
 static Comm *comm_new(PyTypeObject *type safe, PyObject *args safe, PyObject *kwds)
@@ -2105,45 +1987,15 @@ static Comm *comm_new(PyTypeObject *type safe, PyObject *args safe, PyObject *kw
 }
 
 static PyTypeObject CommType = {
-    PyObject_HEAD_INIT(NULL)
-    0,				/*ob_size*/
-    "edlib.Comm",		/*tp_name*/
-    sizeof(Comm),		/*tp_basicsize*/
-    0,				/*tp_itemsize*/
-    (destructor)comm_dealloc,	/*tp_dealloc*/
-    NULL,			/*tp_print*/
-    NULL,			/*tp_getattr*/
-    NULL,			/*tp_setattr*/
-    NULL,			/*tp_compare*/
-    (reprfunc)comm_repr,	/*tp_repr*/
-    NULL,			/*tp_as_number*/
-    NULL,			/*tp_as_sequence*/
-    NULL,			/*tp_as_mapping*/
-    NULL,			/*tp_hash */
-    (ternaryfunc)Comm_call,	/*tp_call*/
-    NULL,			/*tp_str*/
-    NULL,			/*tp_getattro*/
-    NULL,			/*tp_setattro*/
-    NULL,			/*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-    "edlib command",		/* tp_doc */
-    NULL,			/* tp_traverse */
-    NULL,			/* tp_clear */
-    NULL,			/* tp_richcompare */
-    0,				/* tp_weaklistoffset */
-    NULL,			/* tp_iter */
-    NULL,			/* tp_iternext */
-    NULL,			/* tp_methods */
-    NULL,			/* tp_members */
-    NULL,			/* tp_getset */
-    NULL,			/* tp_base */
-    NULL,			/* tp_dict */
-    NULL,			/* tp_descr_get */
-    NULL,			/* tp_descr_set */
-    0,				/* tp_dictoffset */
-    NULL,			/* tp_init */
-    NULL,			/* tp_alloc */
-    .tp_new = (newfunc)comm_new,/* tp_new */
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name	= "edlib.Comm",
+	.tp_basicsize	= sizeof(Comm),
+	.tp_dealloc	= (destructor)comm_dealloc,
+	.tp_repr	= (reprfunc)comm_repr,
+	.tp_call	= (ternaryfunc)Comm_call,
+	.tp_flags	= Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_doc		= "edlib command",
+	.tp_new		= (newfunc)comm_new,
 };
 
 static void python_free_command(struct command *c safe)
@@ -2186,11 +2038,11 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 	if (argc >= 1) {
 		/* First positional arg must be the key */
 		a = PyTuple_GetItem(args, 0);
-		if (!PyString_Check(a)) {
+		if (!PyUnicode_Check(a)) {
 			PyErr_SetString(PyExc_TypeError, "First arg must be key");
 			return 0;
 		}
-		ci->key = safe_cast PyString_AsString(a);
+		ci->key = safe_cast PyUnicode_AsUTF8(a);
 	}
 	for (i = 1; i < argc; i++) {
 		a = PyTuple_GetItem(args, i);
@@ -2214,7 +2066,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 				PyErr_SetString(PyExc_TypeError, "Only 2 Mark args permitted");
 				return 0;
 			}
-		} else if (PyUnicode_Check(a) || PyString_Check(a)) {
+		} else if (PyUnicode_Check(a)) {
 			char *str;
 			PyObject *s = NULL;
 			if (ci->str && ci->str2) {
@@ -2232,12 +2084,12 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 				ci->str = str;
 			else
 				ci->str2 = str;
-		} else if (PyInt_Check(a)) {
+		} else if (PyLong_Check(a)) {
 			if (!num_set) {
-				ci->num = PyInt_AsLong(a);
+				ci->num = PyLong_AsLong(a);
 				num_set = 1;
 			} else if (!num2_set) {
-				ci->num2 = PyInt_AsLong(a);
+				ci->num2 = PyLong_AsLong(a);
 				num2_set = 1;
 			} else {
 				PyErr_SetString(PyExc_TypeError, "Only 2 Number args permitted");
@@ -2252,13 +2104,13 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			}
 			n1 = PyTuple_GetItem(a, 0);
 			n2 = PyTuple_GetItem(a, 1);
-			if (!PyInt_Check(n1) || !PyInt_Check(n2)) {
+			if (!PyLong_Check(n1) || !PyLong_Check(n2)) {
 				PyErr_SetString(PyExc_TypeError, "Only tuples of integers permitted");
 				return 0;
 			}
 			if (!xy_set) {
-				ci->x = PyInt_AsLong(n1);
-				ci->y = PyInt_AsLong(n2);
+				ci->x = PyLong_AsLong(n1);
+				ci->y = PyLong_AsLong(n2);
 				xy_set = 1;
 			} else {
 				PyErr_SetString(PyExc_TypeError, "Only one tuple permitted");
@@ -2287,7 +2139,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 				return 0;
 			}
 		} else {
-			PyErr_SetString(PyExc_TypeError, "Unsupported arg type");
+			PyErr_Format(PyExc_TypeError, "Unsupported arg type %d", i);
 			return 0;
 		}
 	}
@@ -2299,7 +2151,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 						"'str' given with other strings");
 				return 0;
 			}
-			if (!PyUnicode_Check(a) && !PyString_Check(a)) {
+			if (!PyUnicode_Check(a)) {
 				PyErr_SetString(PyExc_TypeError,
 						"'str' must be string or unicode");
 				return 0;
@@ -2313,7 +2165,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 						"'str2' given with 2 strings");
 				return 0;
 			}
-			if (!PyUnicode_Check(a) && !PyString_Check(a)) {
+			if (!PyUnicode_Check(a)) {
 				PyErr_SetString(PyExc_TypeError,
 						"'str2' must be string or unicode");
 				return 0;
@@ -2355,12 +2207,12 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 						"'num' given with other numbers");
 				return 0;
 			}
-			if (!PyInt_Check(a)) {
+			if (!PyLong_Check(a)) {
 				PyErr_SetString(PyExc_TypeError,
 						"'num' must be an integer");
 				return 0;
 			}
-			ci->num = PyInt_AsLong(a);
+			ci->num = PyLong_AsLong(a);
 			num_set = 1;
 		}
 		a = PyDict_GetItemString(kwds, "num2");
@@ -2370,12 +2222,12 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 						"'num2' given with 2 other numbers");
 				return 0;
 			}
-			if (!PyInt_Check(a)) {
+			if (!PyLong_Check(a)) {
 				PyErr_SetString(PyExc_TypeError,
 						"'num2' must be an integer");
 				return 0;
 			}
-			ci->num2 = PyInt_AsLong(a);
+			ci->num2 = PyLong_AsLong(a);
 			num2_set = 1;
 		}
 	}
@@ -2429,17 +2281,25 @@ static PyMethodDef edlib_methods[] = {
 
 extern char *edlib_module_path;
 char *edlib_module_path;
+
+static struct PyModuleDef edlib_mod = {
+	PyModuleDef_HEAD_INIT,
+	.m_name		= "edlib",
+	.m_doc		= "edlib - one more editor is never enough.",
+	.m_methods	= edlib_methods,
+};
+
 void edlib_init(struct pane *ed safe)
 {
 	PyObject *m;
-	char *argv[1]= { NULL };
+	wchar_t *argv[1]= { NULL };
 
 	if (edlib_module_path)
 		module_dir = strdup(edlib_module_path);
 	else
 		module_dir = ".";
 
-	Py_SetProgramName("edlib");
+	Py_SetProgramName(L"edlib");
 	Py_Initialize();
 	PySys_SetArgv(0, argv);
 
@@ -2455,8 +2315,7 @@ void edlib_init(struct pane *ed safe)
 	    PyType_Ready(&CommType) < 0)
 		return;
 
-	m = Py_InitModule3("edlib", edlib_methods,
-			   "edlib - one more editor is never enough.");
+	m = PyModule_Create(&edlib_mod);
 
 	if (!m)
 		return;
