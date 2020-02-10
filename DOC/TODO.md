@@ -417,6 +417,21 @@ Module features
 - [ ] support for blank lines near blanklines or start/end of file
 - [ ] support highlight for 8spaces after a tab
 
+
+### test suite
+
+- [ ] Remove uninteresting variability
+    - time in status line and dir listing
+    - full path in find-file
+    - changes in support tools (e.g. grep) ??
+        Maybe store output rather than regenerate
+- [ ] 'screen' fails because it cannot change color...
+- [ ] choose edlib git point for testing
+- [ ] allow headless testing as well as visible
+- [ ] allow single-step testing?
+- [ ] Allow testing gtk as well an ncurses
+- [ ] Allow testing of server/client accesses
+
 New Modules - simple
 --------------------
 
