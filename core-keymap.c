@@ -125,7 +125,7 @@ inline static int test_bit(unsigned long *set safe, int bit)
 }
 
 
-static int key_present(struct map *map safe, char *key, int klen,
+static int key_present(struct map *map safe, const char *key, int klen,
 		       unsigned int *hashp safe)
 {
 	int hash;
@@ -150,7 +150,7 @@ static int key_present(struct map *map safe, char *key, int klen,
 }
 
 /* Find first entry >= k */
-static int key_find_len(struct map *map safe, char *k safe, int len)
+static int key_find_len(struct map *map safe, const char *k safe, int len)
 {
 	int lo = 0;
 	int hi = map->size;
@@ -170,12 +170,12 @@ static int key_find_len(struct map *map safe, char *k safe, int len)
 	return hi;
 }
 
-static int key_find(struct map *map safe, char *k safe)
+static int key_find(struct map *map safe, const char *k safe)
 {
 	return key_find_len(map, k, strlen(k));
 }
 
-void key_add(struct map *map safe, char *k safe, struct command *comm)
+void key_add(struct map *map safe, const char *k safe, struct command *comm)
 {
 	int size;
 	int pos;
@@ -238,7 +238,8 @@ void key_add(struct map *map safe, char *k safe, struct command *comm)
 	map->changed = 1;
 }
 
-void key_add_range(struct map *map safe, char *first safe, char *last safe,
+void key_add_range(struct map *map safe,
+		   const char *first safe, const char *last safe,
 		   struct command *comm)
 {
 	int size, move_size;
@@ -331,15 +332,15 @@ int key_pfx_func(const struct cmd_info *ci safe)
 	return 1;
 }
 
-struct command *key_lookup_cmd(struct map *m safe, char *c safe,
-			       char **cret, int *lenret)
+struct command *key_lookup_cmd(struct map *m safe, const char *c safe,
+			       const char **cret, unsigned int *lenret)
 {
 	/* If 'k' contains an ASCII US (Unit Separator, 0o37 0x1f 31),
 	 * it represents multiple keys.
 	 * Call key_find() on each of them until success.
 	 */
 	while (*c) {
-		char *end = strchr(c, '\037');
+		const char *end = strchr(c, '\037');
 		int pos;
 
 		if (!end)
@@ -374,8 +375,9 @@ struct command *key_lookup_cmd(struct map *m safe, char *c safe,
 int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 {
 	struct command *comm;
-	char *key;
-	int len;
+	const char *key;
+	unsigned
+		int len;
 
 	if (ci->hash && !key_present(m, ci->key, strlen(ci->key), ci->hash)) {
 		stat_count("bloom-miss");
@@ -391,18 +393,24 @@ int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 		 * keys, we need to pass down the one that was matched.
 		 */
 		int ret;
-		char *oldkey = ci->key;
-		char tail = key[len];
+		const char *oldkey = ci->key;
+		char ktmp[40], *k2 = NULL;
 
 		stat_count("bloom-hit-good");
-		if (key[len])
-			key[len] = 0;
+		if (key[len] == 0) {
+			((struct cmd_info*)ci)->key = key;
+		} else if (len >= sizeof(ktmp)) {
+			k2 = strndup(key, len);
+			((struct cmd_info*)ci)->key = k2;
+		} else {
+			strncpy(ktmp, key, len);
+			ktmp[len] = 0;
+			((struct cmd_info*)ci)->key = ktmp;
+		}
 		((struct cmd_info*)ci)->comm = comm;
-		((struct cmd_info*)ci)->key = key;
 		ret = comm->func(ci);
 		((struct cmd_info*)ci)->key = oldkey;
-		if (tail)
-			key[len] = tail;
+		free(k2);
 		return ret;
 	}
 }
@@ -412,7 +420,7 @@ int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe)
 	int pos = key_find(m, ci->key);
 	struct command *comm, *prev = NULL;
 	int len = strlen(ci->key);
-	char *k = ci->key;
+	const char *k = ci->key;
 
 	while (pos < m->size && strncmp(m->keys[pos], k, len) == 0) {
 		comm = GETCOMM(m->comms[pos]);

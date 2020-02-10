@@ -559,7 +559,7 @@ DEF_CMD(docs_set_ref)
 }
 
 static char *__docs_get_attr(struct doc *doc safe, struct mark *m safe,
-			     char *attr safe)
+			     const char *attr safe)
 {
 	struct pane *p;
 
@@ -574,7 +574,7 @@ DEF_CMD(docs_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	char *attr = ci->str;
+	const char *attr = ci->str;
 	char *val;
 
 	if (!m || !attr)
@@ -590,7 +590,7 @@ DEF_CMD(docs_doc_get_attr)
 
 DEF_CMD(docs_get_attr)
 {
-	char *attr = ci->str;
+	const char *attr = ci->str;
 	char *val;
 	struct doc *d = ci->home->data;
 
@@ -793,7 +793,7 @@ DEF_CMD(docs_attach)
 {
 	struct doc *d = ci->home->data;
 	struct docs *docs = container_of(d, struct docs, doc);
-	char *type = ci->str ?: "default";
+	const char *type = ci->str ?: "default";
 	struct pane *p;
 
 	if (strcmp(type, "invisible") == 0 ||

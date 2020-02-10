@@ -36,7 +36,7 @@ struct key_data {
 
 static struct pane *safe do_keymap_attach(struct pane *p, int global);
 
-static struct command *get_command(struct pane *p safe, char *cmd)
+static struct command *get_command(struct pane *p safe, const char *cmd)
 {
 	return call_ret(comm, "global-get-command", p, 0, NULL, cmd);
 }

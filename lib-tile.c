@@ -152,7 +152,8 @@ DEF_CMD(tile_attach)
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 
-static struct pane *tile_split(struct pane **pp safe, int horiz, int after, char *name)
+static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
+			       const char *name)
 {
 	/* Create a new pane near the given one, reducing its size,
 	 * and possibly the size of other siblings.
@@ -643,7 +644,8 @@ static struct pane *tile_root_popup(struct tileinfo *ti safe)
 	return next_child(ti->p, NULL, 1);
 }
 
-static struct tileinfo *safe tile_next_named(struct tileinfo *ti safe, char *name)
+static struct tileinfo *safe tile_next_named(struct tileinfo *ti safe,
+					     const char *name)
 {
 	struct tileinfo *t = ti;
 	while ((t = list_next_entry(t, tiles)) != ti) {

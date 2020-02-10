@@ -184,7 +184,7 @@ static inline PyObject *safe Comm_Fromcomm(struct command *c safe)
 
 DEF_CMD(python_load)
 {
-	char *fname = ci->str;
+	const char *fname = ci->str;
 	FILE *fp;
 	PyObject *globals, *main_mod;
 	PyObject *Ed;
@@ -212,7 +212,7 @@ DEF_CMD(python_load)
 
 DEF_CMD(python_load_module)
 {
-	char *name = ci->str;
+	const char *name = ci->str;
 	FILE *fp;
 	PyObject *globals, *main_mod;
 	PyObject *Ed;
@@ -241,9 +241,9 @@ DEF_CMD(python_load_module)
 	return 1;
 }
 
-static PyObject *safe python_string(char *s safe)
+static PyObject *safe python_string(const char *s safe)
 {
-	char *c = s;
+	const char *c = s;
 	while (*c && !(*c & 0x80))
 		c++;
 	if (*c)

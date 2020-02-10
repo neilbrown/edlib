@@ -62,9 +62,9 @@ static struct attrset *safe newattr(struct attrset *old, int size)
 /* attr_cmp just deals with bytes and ASCII digits, so it is
  * not aware for wchars
  */
-static int getcmptok(char **ap safe)
+static int getcmptok(const char **ap safe)
 {
-	char *a safe;
+	const char *a safe;
 	char c;
 	int i;
 
@@ -89,7 +89,7 @@ static int getcmptok(char **ap safe)
 /* Compare 'a' and 'b' treating strings of digits as numbers.
  * If bnum >= 0, it is used as a leading number on 'b'.
  */
-static int attr_cmp(char *a safe, char *b safe, int bnum)
+static int attr_cmp(const char *a safe, const char *b safe, int bnum)
 {
 	while (*a && (*b || bnum >= 0)) {
 		int ai, bi;
@@ -116,7 +116,7 @@ static int attr_cmp(char *a safe, char *b safe, int bnum)
 #ifdef TEST_ATTR_CMP
 #include <stdlib.h>
 #include <stdio.h>
-struct {char *a, *b; int result;} test[] = {
+struct {const char *a, *b; int result;} test[] = {
 	{ "hello", "there", -1},
 	{ "6hello", "10world", -1},
 	{ "0005six", "5six", 0},
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 
 #endif
 
-static int __attr_find(struct attrset ***setpp safe, char *key safe,
+static int __attr_find(struct attrset ***setpp safe, const char *key safe,
 		       int *offsetp safe, int keynum)
 {
 	struct attrset **setp safe;
@@ -179,7 +179,7 @@ static int __attr_find(struct attrset ***setpp safe, char *key safe,
 	return 1;
 }
 
-int attr_del(struct attrset * *setp safe, char *key safe)
+int attr_del(struct attrset * *setp safe, const char *key safe)
 {
 	int offset = 0;
 	int cmp;
@@ -205,7 +205,7 @@ int attr_del(struct attrset * *setp safe, char *key safe)
 	return 1;
 }
 
-char *attr_get_str(struct attrset *set, char *key safe, int keynum)
+char *attr_get_str(struct attrset *set, const char *key safe, int keynum)
 {
 	struct attrset **setp = &set;
 	int offset = 0;
@@ -218,18 +218,18 @@ char *attr_get_str(struct attrset *set, char *key safe, int keynum)
 	return set->attrs + offset;
 }
 
-char *attr_find(struct attrset *set, char *key safe)
+char *attr_find(struct attrset *set, const char *key safe)
 {
 	return attr_get_str(set, key, -1);
 }
 
-char *attr_get_next_key(struct attrset *set, char *key safe, int keynum,
-			char **valp safe)
+const char *attr_get_next_key(struct attrset *set, const char *key safe,
+			      int keynum, const char **valp safe)
 {
 	struct attrset **setp = &set;
 	int offset = 0;
 	int cmp = __attr_find(&setp, key, &offset, keynum);
-	char *val;
+	const char *val;
 
 	if (cmp < 0)
 		return NULL;
@@ -258,7 +258,8 @@ char *attr_get_next_key(struct attrset *set, char *key safe, int keynum,
 	return key;
 }
 
-int attr_set_str_key(struct attrset **setp safe, char *key safe, char *val,
+int attr_set_str_key(struct attrset **setp safe,
+		     const char *key safe, const char *val,
 		     int keynum)
 {
 	int offset = 0;
@@ -332,7 +333,8 @@ int attr_set_str_key(struct attrset **setp safe, char *key safe, char *val,
 	return cmp;
 }
 
-int attr_set_str(struct attrset **setp safe, char *key safe, char *val)
+int attr_set_str(struct attrset **setp safe,
+		 const char *key safe, const char *val)
 {
 	return attr_set_str_key(setp, key, val, -1);
 }
@@ -415,9 +417,9 @@ int main(int argc, char *argv[])
 #endif
 
 /* Have versions that take and return numbers, '-1' for 'not found' */
-int attr_find_int(struct attrset *set, char *key safe)
+int attr_find_int(struct attrset *set, const char *key safe)
 {
-	char *val = attr_find(set, key);
+	const char *val = attr_find(set, key);
 	unsigned long rv;
 	char *end;
 
@@ -429,7 +431,7 @@ int attr_find_int(struct attrset *set, char *key safe)
 	return rv;
 }
 
-int attr_set_int(struct attrset **setp safe, char *key safe, int val)
+int attr_set_int(struct attrset **setp safe, const char *key safe, int val)
 {
 	/* 3 digits per bytes, +1 for sign and +1 for trailing nul */
 	char sval[sizeof(int)*3+2];

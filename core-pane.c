@@ -278,7 +278,7 @@ void pane_refresh(struct pane *p safe)
 }
 
 void pane_add_notify(struct pane *target safe, struct pane *source safe,
-		     char *msg safe)
+		     const char *msg safe)
 {
 	struct notifier *n;
 
@@ -328,10 +328,10 @@ static void pane_notify_close(struct pane *p safe)
 	}
 }
 
-int do_pane_notify(struct pane *home, char *notification safe,
+int do_pane_notify(struct pane *home, const char *notification safe,
 		   struct pane *p safe,
-		   int num, struct mark *m, char *str,
-		   int num2, struct mark *m2, char *str2,
+		   int num, struct mark *m, const char *str,
+		   int num2, struct mark *m2, const char *str2,
 		   struct command *comm2)
 {
 	/* Return the largest absolute return value. If no notifiees are found.
@@ -606,7 +606,7 @@ void pane_focus(struct pane *focus)
 	call("pane:refocus", focus);
 }
 
-char *pane_attr_get(struct pane *p, char *key safe)
+char *pane_attr_get(struct pane *p, const char *key safe)
 {
 	while (p) {
 		char *a = attr_find(p->attrs, key);
@@ -624,7 +624,7 @@ char *pane_attr_get(struct pane *p, char *key safe)
 }
 
 char *pane_mark_attr(struct pane *p safe, struct mark *m safe,
-		     char *key safe)
+		     const char *key safe)
 {
 	return call_ret(strsave, "doc:get-attr", p, 0, m, key);
 }
@@ -684,9 +684,9 @@ DEF_CMD(take_str)
 
 struct pane *do_call_pane(enum target_type type, struct pane *home,
 			  struct command *comm2a,
-			  char *key safe, struct pane *focus safe,
-			  int num,  struct mark *m,  char *str,
-			  int num2, struct mark *m2, char *str2,
+			  const char *key safe, struct pane *focus safe,
+			  int num,  struct mark *m,  const char *str,
+			  int num2, struct mark *m2, const char *str2,
 			  int x, int y, struct command *comm2b,
 			  struct commcache *ccache)
 {
@@ -702,9 +702,9 @@ struct pane *do_call_pane(enum target_type type, struct pane *home,
 
 struct mark *do_call_mark(enum target_type type, struct pane *home,
 			  struct command *comm2a,
-			  char *key safe, struct pane *focus safe,
-			  int num,  struct mark *m,  char *str,
-			  int num2, struct mark *m2, char *str2,
+			  const char *key safe, struct pane *focus safe,
+			  int num,  struct mark *m,  const char *str,
+			  int num2, struct mark *m2, const char *str2,
 			  int x, int y, struct command *comm2b,
 			  struct commcache *ccache)
 {
@@ -720,9 +720,9 @@ struct mark *do_call_mark(enum target_type type, struct pane *home,
 
 struct mark *do_call_mark2(enum target_type type, struct pane *home,
 			   struct command *comm2a,
-			   char *key safe, struct pane *focus safe,
-			   int num,  struct mark *m,  char *str,
-			   int num2, struct mark *m2, char *str2,
+			   const char *key safe, struct pane *focus safe,
+			   int num,  struct mark *m,  const char *str,
+			   int num2, struct mark *m2, const char *str2,
 			   int x, int y, struct command *comm2b,
 			   struct commcache *ccache)
 {
@@ -738,9 +738,9 @@ struct mark *do_call_mark2(enum target_type type, struct pane *home,
 
 struct command *do_call_comm(enum target_type type, struct pane *home,
 			     struct command *comm2a,
-			     char *key safe, struct pane *focus safe,
-			     int num,  struct mark *m,  char *str,
-			     int num2, struct mark *m2, char *str2,
+			     const char *key safe, struct pane *focus safe,
+			     int num,  struct mark *m,  const char *str,
+			     int num2, struct mark *m2, const char *str2,
 			     int x, int y, struct command *comm2b,
 			     struct commcache *ccache)
 {
@@ -756,9 +756,9 @@ struct command *do_call_comm(enum target_type type, struct pane *home,
 
 char *do_call_strsave(enum target_type type, struct pane *home,
 		      struct command *comm2a,
-		      char *key safe, struct pane *focus safe,
-		      int num,  struct mark *m,  char *str,
-		      int num2, struct mark *m2, char *str2,
+		      const char *key safe, struct pane *focus safe,
+		      int num,  struct mark *m,  const char *str,
+		      int num2, struct mark *m2, const char *str2,
 		      int x, int y, struct command *comm2b,
 		      struct commcache *ccache)
 {
@@ -772,9 +772,9 @@ char *do_call_strsave(enum target_type type, struct pane *home,
 
 struct call_return do_call_all(enum target_type type, struct pane *home,
 			       struct command *comm2a,
-			       char *key safe, struct pane *focus safe,
-			       int num,  struct mark *m,  char *str,
-			       int num2, struct mark *m2, char *str2,
+			       const char *key safe, struct pane *focus safe,
+			       int num,  struct mark *m,  const char *str,
+			       int num2, struct mark *m2, const char *str2,
 			       int x, int y, struct command *comm2b,
 			       struct commcache *ccache)
 {
@@ -788,9 +788,9 @@ struct call_return do_call_all(enum target_type type, struct pane *home,
 
 char *do_call_str(enum target_type type, struct pane *home,
 		  struct command *comm2a,
-		  char *key safe, struct pane *focus safe,
-		  int num,  struct mark *m,  char *str,
-		  int num2, struct mark *m2, char *str2,
+		  const char *key safe, struct pane *focus safe,
+		  int num,  struct mark *m,  const char *str,
+		  int num2, struct mark *m2, const char *str2,
 		  int x, int y, struct command *comm2b,
 		  struct commcache *ccache)
 {

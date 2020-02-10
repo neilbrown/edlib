@@ -85,7 +85,7 @@ DEF_CMD(editor_load_module)
 {
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
-	char *name = ci->str;
+	const char *name = ci->str;
 	char buf[PATH_MAX];
 #ifndef edlib_init
 	void *h;
@@ -135,7 +135,8 @@ DEF_CMD(editor_auto_load)
 	int ret;
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
-	char *mod = ci->key + 7;
+	const char *mod = ci->key + 7;
+	char *mod2 = NULL;
 
 	/* Check the key really doesn't exist, rather than
 	 * it fails
@@ -152,16 +153,16 @@ DEF_CMD(editor_auto_load)
 		char *m = strrchr(ci->key+6, '-');
 		if (m) {
 			m += 1;
-			mod = malloc(4+strlen(m)+1);
-			strcpy(mod, "lib-");
-			strcpy(mod+4, m);
+			mod2 = malloc(4+strlen(m)+1);
+			strcpy(mod2, "lib-");
+			strcpy(mod2+4, m);
+			mod = mod2;
 		}
 	}
 
 	ret = call("global-load-module", ci->home, 0, NULL,
 		    mod, 0);
-	if (mod != ci->key + 7)
-		free(mod);
+	free(mod2);
 
 	if (ret > 0)
 		/* auto-load succeeded */
@@ -286,7 +287,7 @@ DEF_CMD(editor_free)
 	return 1;
 }
 
-void * safe memsave(struct pane *p safe, char *buf, int len)
+void * safe memsave(struct pane *p safe, const char *buf, int len)
 {
 	struct ed_info *ei;
 
@@ -310,14 +311,14 @@ void * safe memsave(struct pane *p safe, char *buf, int len)
 		return ei->store->space+ei->store->size;
 }
 
-char *strsave(struct pane *p safe, char *buf)
+char *strsave(struct pane *p safe, const char *buf)
 {
 	if (!buf)
 		return NULL;
 	return memsave(p, buf, strlen(buf)+1);
 }
 
-char *strnsave(struct pane *p safe, char *buf, int len)
+char *strnsave(struct pane *p safe, const char *buf, int len)
 {
 	char *s;
 	if (!buf)
@@ -328,7 +329,7 @@ char *strnsave(struct pane *p safe, char *buf, int len)
 	return s;
 }
 
-char * safe __strconcat(struct pane *p safe, char *s1 safe, ...)
+char * safe __strconcat(struct pane *p safe, const char *s1 safe, ...)
 {
 	va_list ap;
 	char *s;

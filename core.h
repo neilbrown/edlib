@@ -116,21 +116,21 @@ struct notifier {
 	int			noted;
 };
 void pane_add_notify(struct pane *target safe, struct pane *source safe,
-		     char *msg safe);
-int do_pane_notify(struct pane *home, char *notification safe,
+		     const char *msg safe);
+int do_pane_notify(struct pane *home, const char *notification safe,
 		   struct pane *p safe,
-		   int num, struct mark *m, char *str,
-		   int num2, struct mark *m2, char *str2,
+		   int num, struct mark *m, const char *str,
+		   int num2, struct mark *m2, const char *str2,
 		   struct command *comm2);
 void pane_drop_notifiers(struct pane *p safe, char *notification);
 
 void editor_delayed_free(struct pane *ed safe, struct pane *p safe);
 void editor_delayed_mark_free(struct mark *m safe);
 struct pane *editor_new(void);
-void * safe memsave(struct pane *p safe, char *buf, int len);
-char *strsave(struct pane *p safe, char *buf);
-char *strnsave(struct pane *p safe, char *buf, int len);
-char * safe __strconcat(struct pane *p safe, char *s1 safe, ...);
+void * safe memsave(struct pane *p safe, const char *buf, int len);
+char *strsave(struct pane *p safe, const char *buf);
+char *strnsave(struct pane *p safe, const char *buf, int len);
+char * safe __strconcat(struct pane *p safe, const char *s1 safe, ...);
 #define strconcat(p, ...) __strconcat(p, __VA_ARGS__, NULL)
 
 /* This is declared here so sparse knows it is global */
@@ -275,16 +275,18 @@ static inline struct attrset **safe mark_attr(struct mark *m safe)
 }
 
 /* Attributes */
-char *attr_find(struct attrset *set, char *key safe);
-int attr_del(struct attrset **setp safe, char *key safe);
-int attr_set_str(struct attrset **setp safe, char *key safe, char *val);
-int attr_set_str_key(struct attrset **setp safe, char *key safe,
-		     char *val, int keynum);
-char *attr_get_str(struct attrset *setp, char *key safe, int keynum);
-char *attr_get_next_key(struct attrset *set, char *key safe, int keynum,
-			char **valp safe);
-int attr_find_int(struct attrset *set, char *key safe);
-int attr_set_int(struct attrset **setp safe, char *key safe, int val);
+char *attr_find(struct attrset *set, const char *key safe);
+int attr_del(struct attrset **setp safe, const char *key safe);
+int attr_set_str(struct attrset **setp safe,
+		 const char *key safe, const char *val);
+int attr_set_str_key(struct attrset **setp safe, const char *key safe,
+		     const char *val, int keynum);
+char *attr_get_str(struct attrset *setp, const char *key safe, int keynum);
+const char *attr_get_next_key(struct attrset *set, const char *key safe,
+			      int keynum,
+			      const char **valp safe);
+int attr_find_int(struct attrset *set, const char *key safe);
+int attr_set_int(struct attrset **setp safe, const char *key safe, int val);
 void attr_trim(struct attrset **setp safe, int nkey);
 struct attrset *attr_copy_tail(struct attrset *set, int nkey);
 struct attrset *attr_collect(struct attrset *set, unsigned int pos, int prefix);
@@ -341,11 +343,11 @@ int key_pfx_func(const struct cmd_info *ci safe);
  * 'mark' is moved by 'move' and 'replace' deletes between point and mark.
  */
 struct cmd_info {
-	char		*key safe;
+	const char	*key safe;
 	struct pane	*home safe, *focus safe;
 	int		num, num2;
 	int		x,y;		/* relative to focus */
-	char		*str, *str2;
+	const char	*str, *str2;
 	struct mark	*mark, *mark2;
 	struct command	*comm safe;
 	struct command	*comm2;
@@ -373,10 +375,11 @@ void key_free(struct map *m safe);
 int key_handle(const struct cmd_info *ci safe);
 int key_lookup(struct map *m safe, const struct cmd_info *ci safe);
 int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe);
-struct command *key_lookup_cmd(struct map *m safe, char *c safe,
-			       char **cret, int *lenret);
-void key_add(struct map *map safe, char *k safe, struct command *comm);
-void key_add_range(struct map *map safe, char *first safe, char *last safe,
+struct command *key_lookup_cmd(struct map *m safe, const char *c safe,
+			       const char **cret, unsigned int *lenret);
+void key_add(struct map *map safe, const char *k safe, struct command *comm);
+void key_add_range(struct map *map safe,
+		   const char *first safe, const char *last safe,
 		   struct command *comm);
 #define key_add_prefix(map, prefix, comm) \
 	key_add_range(map, prefix, prefix "\xFF\xFF\xFF\xFF", comm)
@@ -429,8 +432,9 @@ struct pane *pane_my_child(struct pane *p, struct pane *c);
 
 int pane_masked(struct pane *p safe, short x, short y, short abs_z,
 		short *w, short *h);
-char *pane_attr_get(struct pane *p, char *key safe);
-char *pane_mark_attr(struct pane *p safe, struct mark *m safe, char *key safe);
+char *pane_attr_get(struct pane *p, const char *key safe);
+char *pane_mark_attr(struct pane *p safe, struct mark *m safe,
+		     const char *key safe);
 void pane_absxy(struct pane *p, short *x safe, short *y safe,
 		short *w safe, short *h safe);
 void pane_relxy(struct pane *p, short *x safe, short *y safe);
@@ -439,7 +443,7 @@ void pane_map_xy(struct pane *orig, struct pane *target,
 
 struct xy pane_scale(struct pane *p safe);
 
-static inline int pane_attr_get_int(struct pane *p safe, char *key safe)
+static inline int pane_attr_get_int(struct pane *p safe, const char *key safe)
 {
 	char *c = pane_attr_get(p, key);
 	int rv;
@@ -513,51 +517,51 @@ enum target_type {
 
 struct pane *do_call_pane(enum target_type type, struct pane *home,
 			  struct command *comm2a,
-			  char *key safe, struct pane *focus safe,
-			  int num,  struct mark *m,  char *str,
-			  int num2, struct mark *m2, char *str2,
+			  const char *key safe, struct pane *focus safe,
+			  int num,  struct mark *m,  const char *str,
+			  int num2, struct mark *m2, const char *str2,
 			  int x, int y, struct command *comm2b,
 			  struct commcache *cache);
 struct mark *do_call_mark(enum target_type type, struct pane *home,
 			  struct command *comm2a,
-			  char *key safe, struct pane *focus safe,
-			  int num,  struct mark *m,  char *str,
-			  int num2, struct mark *m2, char *str2,
+			  const char *key safe, struct pane *focus safe,
+			  int num,  struct mark *m,  const char *str,
+			  int num2, struct mark *m2, const char *str2,
 			  int x, int y, struct command *comm2b,
 			  struct commcache *cache);
 struct mark *do_call_mark2(enum target_type type, struct pane *home,
 			   struct command *comm2a,
-			   char *key safe, struct pane *focus safe,
-			   int num,  struct mark *m,  char *str,
-			   int num2, struct mark *m2, char *str2,
+			   const char *key safe, struct pane *focus safe,
+			   int num,  struct mark *m,  const char *str,
+			   int num2, struct mark *m2, const char *str2,
 			   int x, int y, struct command *comm2b,
 			   struct commcache *cache);
 struct command *do_call_comm(enum target_type type, struct pane *home,
 			     struct command *comm2a,
-			     char *key safe, struct pane *focus safe,
-			     int num,  struct mark *m,  char *str,
-			     int num2, struct mark *m2, char *str2,
+			     const char *key safe, struct pane *focus safe,
+			     int num,  struct mark *m,  const char *str,
+			     int num2, struct mark *m2, const char *str2,
 			     int x, int y, struct command *comm2b,
 			     struct commcache *cache);
 struct call_return do_call_all(enum target_type type, struct pane *home,
 			       struct command *comm2a,
-			       char *key safe, struct pane *focus safe,
-			       int num,  struct mark *m,  char *str,
-			       int num2, struct mark *m2, char *str2,
+			       const char *key safe, struct pane *focus safe,
+			       int num,  struct mark *m,  const char *str,
+			       int num2, struct mark *m2, const char *str2,
 			       int x, int y, struct command *comm2b,
 			       struct commcache *cache);
 char *do_call_str(enum target_type type, struct pane *home,
 		  struct command *comm2a,
-		  char *key safe, struct pane *focus safe,
-		  int num,  struct mark *m,  char *str,
-		  int num2, struct mark *m2, char *str2,
+		  const char *key safe, struct pane *focus safe,
+		  int num,  struct mark *m,  const char *str,
+		  int num2, struct mark *m2, const char *str2,
 		  int x, int y, struct command *comm2b,
 		  struct commcache *cache);
 char *do_call_strsave(enum target_type type, struct pane *home,
 		      struct command *comm2a,
-		      char *key safe, struct pane *focus safe,
-		      int num,  struct mark *m,  char *str,
-		      int num2, struct mark *m2, char *str2,
+		      const char *key safe, struct pane *focus safe,
+		      int num,  struct mark *m,  const char *str,
+		      int num2, struct mark *m2, const char *str2,
 		      int x, int y, struct command *comm2b,
 		      struct commcache *cache);
 
@@ -648,9 +652,9 @@ char *do_call_strsave(enum target_type type, struct pane *home,
 
 static inline int do_call_val(enum target_type type, struct pane *home,
 			      struct command *comm2a,
-			      char *key safe, struct pane *focus safe,
-			      int num,  struct mark *m,  char *str,
-			      int num2, struct mark *m2, char *str2,
+			      const char *key safe, struct pane *focus safe,
+			      int num,  struct mark *m,  const char *str,
+			      int num2, struct mark *m2, const char *str2,
 			      int x, int y, struct command *comm2b,
 			      struct commcache *ccache)
 {

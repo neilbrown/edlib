@@ -21,8 +21,8 @@
 #include "core.h"
 
 static struct map *emacs_map;
-static char * safe file_normalize(struct pane *p safe, char *path,
-				  char *initial_path);
+static const char * safe file_normalize(struct pane *p safe, const char *path,
+					const char *initial_path);
 
 /* num2 is used to track if successive commands are related.
  * Only low 16 bits identify command, other bits are free.
@@ -563,7 +563,7 @@ DEF_CMD(emacs_exit)
 DEF_CMD(emacs_insert)
 {
 	int ret;
-	char *str;
+	const char *str;
 
 	if (!ci->mark)
 		return Enoarg;
@@ -581,7 +581,7 @@ DEF_CMD(emacs_quote_insert)
 {
 	int ret;
 	char buf[2] = ".";
-	char *str = buf;
+	const char *str = buf;
 
 	if (!ci->mark)
 		return Enoarg;
@@ -838,7 +838,9 @@ static void findmap_init(void)
 	key_add(fh_map, "M-Chr-n", &find_prevnext);
 }
 
-static char * safe file_normalize(struct pane *p safe, char *path, char *initial_path)
+static const char * safe file_normalize(struct pane *p safe,
+					const char *path,
+					const char *initial_path)
 {
 	int len = strlen(initial_path?:"");
 	char *dir;
@@ -874,7 +876,7 @@ DEF_CMD(emacs_findfile)
 {
 	int fd;
 	struct pane *p, *par;
-	char *path;
+	const char *path;
 	char buf[PATH_MAX];
 	char *e;
 
@@ -960,8 +962,8 @@ REDEF_CMD(emacs_file_complete)
 	 * Find a document for the directory and attach as a completing
 	 * popup menu
 	 */
-	char *str;
-	char *d, *b;
+	const char *str;
+	const char *d, *b;
 	int fd;
 	struct pane *pop, *docp, *p;
 	struct call_return cr;
@@ -1211,7 +1213,7 @@ DEF_CMD(emacs_shell)
 DEF_CMD(emacs_num)
 {
 	int rpt = ci->num;
-	char *last = ci->key + strlen(ci->key)-1;
+	const char *last = ci->key + strlen(ci->key)-1;
 	int neg = 0;
 
 	if (rpt < 0) {
@@ -1877,7 +1879,8 @@ DEF_CMD(attach_mode_emacs)
 
 DEF_CMD(attach_file_entry)
 {
-	pane_register(ci->focus, 0, &find_handle.c, ci->str ?: "shellcmd");
+	pane_register(ci->focus, 0, &find_handle.c,
+		      (void*) ci->str ?: "shellcmd");
 	return 1;
 }
 

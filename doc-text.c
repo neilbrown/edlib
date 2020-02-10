@@ -199,7 +199,7 @@ static struct map *text_map;
  * the last 4 bytes. (longest UTF-8 encoding of 21bit unicode is 4 bytes).
  * A start of codepoint starts with 0b0 or 0b11, not 0b10.
  */
-static int text_round_len(char *text safe, int len)
+static int text_round_len(const char *text safe, int len)
 {
 	/* The string at 'text' is *longer* than 'len', or
 	 * at least text[len] is defined - it can be nul.  If
@@ -273,7 +273,7 @@ DEF_CMD(text_load_file)
 {
 	struct doc *d = ci->home->data;
 	int fd = ci->num2;
-	char *name = ci->str;
+	const char *name = ci->str;
 	off_t size;
 	struct text_alloc *a;
 	struct text_chunk *c = NULL;
@@ -332,7 +332,7 @@ DEF_CMD(text_load_file)
 		}
 	}
 	if (name) {
-		char *dname;
+		const char *dname;
 
 		if (fstat(fd, &t->stat) < 0) {
 			t->newfile = 1;
@@ -393,14 +393,15 @@ static int do_text_output_file(struct text *t safe, struct doc_ref *start,
 
 static int do_text_write_file(struct text *t safe, struct doc_ref *start,
 			      struct doc_ref *end,
-			      char *fname safe)
+			      const char *fname safe)
 {
 	/* Don't worry about links for now
 	 * Create a temp file with #basename#~, write to that,
 	 * copy mode across, fsync and then rename
 	 */
 	char *tempname = malloc(strlen(fname) + 3 + 10);
-	char *base, *tbase;
+	const char *base;
+	char *tbase;
 	int cnt = 0;
 	int fd = -1;
 	struct stat stb;
@@ -673,7 +674,7 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 }
 
 static void text_add_str(struct text *t safe, struct doc_ref *pos safe,
-			 char *str safe,
+			 const char *str safe,
 			 struct doc_ref *start, bool *first_edit safe)
 {
 	/* Text is added to the end of the referenced chunk, or
@@ -1909,7 +1910,8 @@ static void text_check_consistent(struct text *t safe)
 	doc_check_consistent(d);
 }
 
-static void text_add_attrs(struct attrset **attrs safe, char *new safe, int o)
+static void text_add_attrs(struct attrset **attrs safe,
+			   const char *new safe, int o)
 {
 	char sep = *new++;
 	char *cpy = strdup(new);
@@ -1938,8 +1940,8 @@ DEF_CMD(text_replace)
 	struct text *t = container_of(d, struct text, doc);
 	struct mark *pm = ci->mark2;
 	struct mark *end = ci->mark;
-	char *str = ci->str;
-	char *newattrs = ci->str2;
+	const char *str = ci->str;
+	const char *newattrs = ci->str2;
 	bool first = !ci->num2;
 	struct mark *early = NULL;
 	int status_change = 0;
@@ -2064,8 +2066,8 @@ DEF_CMD(text_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	char *attr = ci->str;
-	char *val;
+	const char *attr = ci->str;
+	const char *val;
 	struct attrset *a;
 	int o = 0;
 
@@ -2075,7 +2077,7 @@ DEF_CMD(text_doc_get_attr)
 	val = attr_get_str(a, attr, o);
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
 	if (ci->num2 == 1) {
-		char *key = attr;
+		const char *key = attr;
 		int len = strlen(attr);
 		while ((key = attr_get_next_key(a, key, o, &val)) != NULL &&
 		       strncmp(key, attr, len) == 0)
@@ -2090,8 +2092,8 @@ DEF_CMD(text_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
-	char *attr = ci->str;
-	char *val;
+	const char *attr = ci->str;
+	const char *val;
 
 	if (!attr)
 		return Enoarg;
@@ -2119,8 +2121,8 @@ DEF_CMD(text_get_attr)
 
 DEF_CMD(text_set_attr)
 {
-	char *attr = ci->str;
-	char *val = ci->str2;
+	const char *attr = ci->str;
+	const char *val = ci->str2;
 	struct text_chunk *c;
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
