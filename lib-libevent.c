@@ -36,6 +36,7 @@ struct evt {
 	char *event safe;
 	struct command *comm safe;
 	struct list_head lst;
+	int active;	/* Don't delete or free this event, it is running */
 	int num;
 	int mseconds;
 	int fd;
@@ -53,8 +54,10 @@ static void call_event(int thing, short sev, void *evv)
 	else
 		type = TIME_READ;
 
+	ev->active = 1;
 	time_start(type);
-	if ((ret=comm_call(ev->comm, "callback:event", ev->home, thing)) < 0) {
+	if ((ret=comm_call(ev->comm, "callback:event", ev->home, thing)) < 0 ||
+	    ev->active == 2) {
 		if (oldfd == ev->fd)
 			/* No early removal */
 			event_del(ev->l);
@@ -62,7 +65,8 @@ static void call_event(int thing, short sev, void *evv)
 		list_del(&ev->lst);
 		command_put(ev->comm);
 		free(ev);
-	}
+	} else
+		ev->active = 0;
 	time_stop(type);
 }
 
@@ -70,8 +74,10 @@ static void call_timeout_event(int thing, short sev, void *evv)
 {
 	struct evt *ev safe = safe_cast evv;
 
+	ev->active = 1;
 	time_start(TIME_TIMER);
-	if (comm_call(ev->comm, "callback:event", ev->home, thing) < 0) {
+	if (comm_call(ev->comm, "callback:event", ev->home, thing) < 0 ||
+	    ev->active == 2) {
 		event_free(ev->l);
 		list_del(&ev->lst);
 		command_put(ev->comm);
@@ -80,6 +86,7 @@ static void call_timeout_event(int thing, short sev, void *evv)
 		struct timeval tv;
 		tv.tv_sec = ev->mseconds / 1000;
 		tv.tv_usec = (ev->mseconds % 1000) * 1000;
+		ev->active = 0;
 		event_add(ev->l, &tv);
 	}
 	time_stop(TIME_TIMER);
@@ -115,6 +122,7 @@ DEF_CMD(libevent_read)
 	ev->comm = command_get(ci->comm2);
 	ev->fd = ci->num;
 	ev->num = ci->num;
+	ev->active = 0;
 	ev->event = "event:read";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
@@ -141,6 +149,7 @@ DEF_CMD(libevent_signal)
 	ev->comm = command_get(ci->comm2);
 	ev->fd = -1;
 	ev->num = ci->num;
+	ev->active = 0;
 	ev->event = "event:signal";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
@@ -169,6 +178,7 @@ DEF_CMD(libevent_timer)
 	ev->mseconds = ci->num;
 	ev->fd = -1;
 	ev->num = ci->num;
+	ev->active = 0;
 	ev->event = "event:timer";
 	pane_add_notify(ei->home, ev->home, "Notify:Close");
 	list_add(&ev->lst, &ei->event_list);
@@ -220,10 +230,14 @@ DEF_CMD(libevent_free)
 	list_for_each_entry_safe(ev, tmp, &ei->event_list, lst)
 		if (ev->home == ci->focus &&
 		    (ci->comm2 == NULL || ev->comm == ci->comm2)) {
-			event_del(ev->l);
-			list_del(&ev->lst);
-			command_put(ev->comm);
-			free(ev);
+			list_del_init(&ev->lst);
+			if (ev->active)
+				ev->active = 2;
+			else {
+				event_del(ev->l);
+				command_put(ev->comm);
+				free(ev);
+			}
 		}
 	return 1;
 }
