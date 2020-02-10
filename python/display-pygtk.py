@@ -7,24 +7,31 @@
 # provides eventloop function using gtk.main.
 
 import sys
+# Python 2 only
+reload(sys)
+sys.setdefaultencoding("utf-8")
 import os
 import signal
-import pygtk
-import gtk
-import pango
+import gi
 import thread
-import gobject
 import glib
 import time
+import cairo
 
-class EdDisplay(gtk.Window):
+gi.require_version('Gtk', '3.0')
+gi.require_version('PangoCairo', '1.0')
+gi.require_foreign("cairo")
+from gi.repository import GObject, Gtk, Gdk, Pango, PangoCairo, GdkPixbuf
+
+
+class EdDisplay(Gtk.Window):
     def __init__(self, focus):
         events_activate(focus)
-        gtk.Window.__init__(self)
+        Gtk.Window.__init__(self)
         self.pane = edlib.Pane(focus, self)
-        # panes is a mapping from edlib.Pane objects to gtk.gdk.Pixmap objects.
-        # While a pane has the same size as its parent, only the parent can have
-        # a Pixmap
+        # panes[] is a mapping from edlib.Pane objects to cairo surface objects.
+        # Where a pane has the same size as its parent, only the parent can have
+        # a surface.
         self.panes = {}
         self.set_title("EDLIB")
         self.connect('destroy', self.close_win)
@@ -34,30 +41,30 @@ class EdDisplay(gtk.Window):
         self.pane.h = self.lineheight * 24
         self.pane.call("editor:request:all-displays")
         self.noclose = None
-        self.primary_cb = gtk.Clipboard(selection="PRIMARY")
-        self.clipboard_cb = gtk.Clipboard(selection="CLIPBOARD")
-        self.targets = [ (gtk.gdk.SELECTION_TYPE_STRING, 0, 0) ]
-        self.have_primary = False
-        self.have_clipboard = False
+        self.primary_cb = Gtk.Clipboard.get(Gdk.SELECTION_PRIMARY)
+        self.primary_cb.connect("owner-change", self.cb_new_owner, "PRIMARY")
+        self.clipboard_cb = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        self.clipboard_cb.connect("owner-change", self.cb_new_owner, "CLIPBOARD")
+        self.targets = [ (Gdk.SELECTION_TYPE_STRING, 0, 0) ]
+        self.have_primary = False; self.set_primary = False
+        self.have_clipboard = False; self.set_clipboard = False
         self.last_event = 0
         self.show()
 
-    def claim_primary(self):
+    def claim_primary(self, str):
         if self.have_primary:
             return
-        self.primary_cb.set_with_data(self.targets,
-                                     self.request_clip,
-                                     self.lost_clip, "PRIMARY")
+        self.primary_cb.set_text(str, len(str))
         self.have_primary = True
+        self.set_primary = True
 
-    def claim_both(self):
-        self.claim_primary()
+    def claim_both(self, str):
+        self.claim_primary(str)
         if self.have_clipboard:
             return
-        self.clipboard_cb.set_with_data(self.targets,
-                                        self.request_clip,
-                                        self.lost_clip, "CLIPBOARD")
+        self.clipboard_cb.set_text(str, len(str))
         self.have_clipboard = True
+        self.set_clipboard = True
 
     def request_clip(self, sel, seldata, info, data):
         s = self.pane.parent.call("copy:get", 0, ret='str')
@@ -65,19 +72,26 @@ class EdDisplay(gtk.Window):
             s = ""
         seldata.set_text(s)
 
-    def lost_clip(self, cb, data):
+    def cb_new_owner(self, cb, ev, data):
         if data == "PRIMARY":
-            self.have_primary = False
+            if self.set_primary:
+                # I must be the new owner
+                self.set_primary = False
+            else:
+                self.have_primary = False
         if data == "CLIPBOARD":
-            self.have_clipboard = False
+            if self.set_clipboard:
+                self.set_clipboard = False
+            else:
+                self.have_clipboard = False
 
-    def copy_save(self, key, num2, **a):
+    def copy_save(self, key, num2, str, **a):
         "handle:copy:save"
         if num2:
             # mouse-only
-            self.claim_primary()
+            self.claim_primary(str)
         else:
-            self.claim_both()
+            self.claim_both(str)
         return 0
 
     def copy_get(self, key, focus, num, comm2, **a):
@@ -181,31 +195,23 @@ class EdDisplay(gtk.Window):
         layout.set_font_description(fd)
         ctx = layout.get_context()
         metric = ctx.get_metrics(fd)
-        ink,(x,y,width,height) = layout.get_pixel_extents()
-        ascent = metric.get_ascent() / pango.SCALE
+        ink,l = layout.get_pixel_extents()
+        ascent = metric.get_ascent() / Pango.SCALE
         if num >= 0:
-            if width <= num:
+            if l.width <= num:
                 max_bytes = len(str.encode("utf-8"))
             else:
-                max_chars,extra = layout.xy_to_index(pango.SCALE*num,
+                inside, max_chars,extra = layout.xy_to_index(Pango.SCALE*num,
                                                      metric.get_ascent())
                 max_bytes = len(str[:max_chars].encode("utf-8"))
         else:
             max_bytes = 0
-        return comm2("callback:size", focus, max_bytes, ascent, (width, height))
+        return comm2("callback:size", focus, max_bytes, ascent,
+                     (l.width, l.height))
 
     def handle_draw_text(self, key, num, num2, focus, str, str2, xy, **a):
         "handle:Draw:text"
         self.pane.damaged(edlib.DAMAGED_POSTORDER)
-        if not self.gc or not self.bg:
-            fg, bg = self.get_colours("fg:blue,bg:white")
-            t = self.text
-            if not self.gc:
-                self.gc = t.window.new_gc()
-                self.gc.set_foreground(fg)
-            if not self.bg:
-                self.bg = t.window.new_gc()
-                self.bg.set_foreground(bg)
 
         (x,y) = xy
         attr=""
@@ -216,31 +222,49 @@ class EdDisplay(gtk.Window):
         else:
             scale = 1000
         fd = self.extract_font(attr, scale)
-        layout = self.text.create_pango_layout(str)
-        layout.set_font_description(fd)
-        ctx = layout.get_context()
+
         fg, bg = self.get_colours(attr)
+
         pm, xo, yo = self.find_pixmap(focus)
         x += xo; y += yo
-        metric = ctx.get_metrics(fd)
-        ascent = metric.get_ascent() / pango.SCALE
-        ink,(lx,ly,width,height) = layout.get_pixel_extents()
+        cr = cairo.Context(pm)
+        pl = PangoCairo.create_layout(cr)
+        pl.set_text(str)
+        pl.set_font_description(fd)
+
+        fontmap = PangoCairo.font_map_get_default()
+        font = fontmap.load_font(fontmap.create_context(), fd)
+        metric = font.get_metrics()
+        ascent = metric.get_ascent() / Pango.SCALE
+        ink, log = pl.get_pixel_extents()
+        lx = log.x; ly = log.y
+        width = log.width; height = log.height
+
         if bg:
-            self.bg.set_foreground(bg)
-            pm.draw_rectangle(self.bg, True, x+lx, y-ascent+ly, width, height)
-        pm.draw_layout(self.gc, x, y-ascent, layout, fg, bg)
+            cr.set_source_rgb(bg.red, bg.green, bg.blue)
+            cr.rectangle(x+lx, y-ascent+ly, width, height)
+            cr.fill()
+
+        cr.set_source_rgb(fg.red, fg.green, fg.blue)
+        cr.move_to(x, y-ascent)
+        PangoCairo.show_layout(cr, pl)
+        cr.stroke()
+
         if num >= 0:
             # draw a cursor - outline box if not in-focus,
             # inverse-video if it is.
-            cx,cy,cw,ch = layout.index_to_pos(num)
+            c = pl.index_to_pos(num)
+            cx = c.x; cy=c.y; cw=c.width; ch=c.height
             if cw <= 0:
                 cw = metric.get_approximate_char_width()
-            cx /= pango.SCALE
-            cy /= pango.SCALE
-            cw /= pango.SCALE
-            ch /= pango.SCALE
-            pm.draw_rectangle(self.gc, False, x+cx, y-ascent+cy,
-                              cw-1, ch-1);
+            cx /= Pango.SCALE
+            cy /= Pango.SCALE
+            cw /= Pango.SCALE
+            ch /= Pango.SCALE
+
+            cr.rectangle(x+cx, y-ascent+cy, cw-1, ch-1)
+            cr.stroke
+
             in_focus = self.in_focus
             while in_focus and focus.parent.parent != focus and focus.parent != self.pane:
                 if focus.parent.focus != focus and focus.z >= 0:
@@ -248,15 +272,17 @@ class EdDisplay(gtk.Window):
                 focus = focus.parent
             if in_focus:
                 if fg:
-                    self.gc.set_foreground(fg)
-                pm.draw_rectangle(self.gc, True, x+cx, y-ascent+cy,
-                                  cw, ch);
+                    cr.set_source_rgb(fg.red, fg.green, fg.blue)
+
+                cr.rectangle(x+cx, y-ascent+cy, cw, ch)
+                cr.fill()
                 if num < len(str):
-                    l2 = pango.Layout(ctx)
-                    l2.set_font_description(fd)
-                    l2.set_text(str[num])
-                    fg, bg = self.get_colours(attr+",inverse")
-                    pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, fg, bg)
+                    pass
+                    #l2 = Pango.Layout(ctx)
+                    #l2.set_font_description(fd)
+                    #l2.set_text(str[num])
+                    #fg, bg = self.get_colours(attr+",inverse")
+                    #pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, fg, bg)
 
         return True
 
@@ -274,10 +300,10 @@ class EdDisplay(gtk.Window):
         w, h = focus.w, focus.h
         x, y = 0, 0
         try:
-            pb = gtk.gdk.pixbuf_new_from_file(str)
+            pb = GdkPixbuf.Pixbuf.new_from_file(str)
         except:
             # create a red error image
-            pb = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, w, h)
+            pb = Gdk.Pixbuf(Gdk.COLORSPACE_RGB, False, 8, w, h)
             pb.fill(0xff000000)
         if not stretch:
             if pb.get_width() * h > pb.get_height() * w:
@@ -296,9 +322,11 @@ class EdDisplay(gtk.Window):
                 if pos & 3 == 2:
                     x = w - w2
                 w = w2
-        scale = pb.scale_simple(w, h, gtk.gdk.INTERP_HYPER)
+        scale = pb.scale_simple(w, h, GdkPixbuf.InterpType.HYPER)
         pm, xo, yo = self.find_pixmap(focus)
-        pm.draw_pixbuf(self.gc, scale, 0, 0, x + xo, y + yo)
+        cr = cairo.Context(pm)
+        Gdk.cairo_set_source_pixbuf(cr, scale, x + xo, y + yo)
+        cr.paint()
         return True
 
     def handle_notify_close(self, key, focus, **a):
@@ -311,7 +339,7 @@ class EdDisplay(gtk.Window):
     styles=["oblique","italic","bold","small-caps"]
 
     def extract_font(self, attrs, scale):
-        "Return a pango.FontDescription"
+        "Return a Pango.FontDescription"
         family="mono"
         style=""
         size=10
@@ -331,14 +359,15 @@ class EdDisplay(gtk.Window):
                 size = 9
             elif word[0:7] == "family:":
                 family = word[7:]
-        fd = pango.FontDescription(family+' '+style+' '+str(size))
+        fd = Pango.FontDescription(family+' '+style+' '+str(size))
         if scale != 1000:
             fd.set_size(fd.get_size() * scale / 1000)
         return fd
 
-    def color_parse(self, c):
+    def color_parse(self, rgb, c):
         col = self.pane.call("colour:map", c, ret='str')
-        return gtk.gdk.color_parse(col)
+        if not rgb.parse(col):
+            raise ValueError
 
     def get_colours(self, attrs):
         "Return a foreground and a background colour - background might be None"
@@ -352,7 +381,6 @@ class EdDisplay(gtk.Window):
                 bg = word[3:]
             if word == "inverse":
                 inv = True
-        cmap = self.text.get_colormap()
         if inv:
             fg,bg = bg,fg
             if fg is None:
@@ -364,20 +392,20 @@ class EdDisplay(gtk.Window):
                 fg = "black"
 
         if fg:
+            fgc = Gdk.RGBA()
             try:
-                c = self.color_parse(fg)
+                self.color_parse(fgc, fg)
             except:
-                c = gtk.gdk.color_parse("black")
-            fgc = cmap.alloc_color(c)
+                fgc.parse('black')
         else:
             fgc = None
 
         if bg:
+            bgc = Gdk.RGBA()
             try:
-                c = self.color_parse(bg)
+                self.color_parse(bgc, bg)
             except:
-                c = gtk.gdk.color_parse("white")
-            bgc = cmap.alloc_color(c)
+                bgc.parse('white')
         else:
             bgc = None
 
@@ -387,13 +415,14 @@ class EdDisplay(gtk.Window):
         # Find or create pixmap for drawing on this pane.
         if p in self.panes:
             pm = self.panes[p]
-            (w,h) = pm.get_size()
+            w = pm.get_width()
+            h = pm.get_height()
             if w == p.w and h == p.h:
                 return pm
             del self.panes[p]
         else:
             self.pane.add_notify(p, "Notify:Close")
-        self.panes[p] = gtk.gdk.Pixmap(self.window, p.w, p.h)
+        self.panes[p] = cairo.ImageSurface(cairo.Format.RGB24, p.w, p.h)
         return self.panes[p]
 
     def find_pixmap(self, p):
@@ -415,24 +444,22 @@ class EdDisplay(gtk.Window):
         self.pane = None
 
     def create_ui(self):
-        text = gtk.DrawingArea()
+        text = Gtk.DrawingArea()
         self.text = text
         self.add(text)
         text.show()
-        self.fd = pango.FontDescription("mono 10")
+        self.fd = Pango.FontDescription("mono 10")
         text.modify_font(self.fd)
         ctx = text.get_pango_context()
         metric = ctx.get_metrics(self.fd)
-        self.lineheight = (metric.get_ascent() + metric.get_descent()) / pango.SCALE
-        self.charwidth = metric.get_approximate_char_width() / pango.SCALE
+        self.lineheight = (metric.get_ascent() + metric.get_descent()) / Pango.SCALE
+        self.charwidth = metric.get_approximate_char_width() / Pango.SCALE
         self.set_default_size(self.charwidth * 80, self.lineheight * 24)
-        self.gc = None
-        self.bg = None
 
-        self.im = gtk.IMContextSimple()
+        self.im = Gtk.IMContextSimple()
         self.in_focus = True
-        self.im.set_client_window(self.window)
-        self.text.connect("expose-event", self.refresh)
+        dir(self)
+        self.text.connect("draw", self.refresh)
         self.text.connect("focus-in-event", self.focus_in)
         self.text.connect("focus-out-event", self.focus_out)
         self.text.connect("button-press-event", self.press)
@@ -444,14 +471,14 @@ class EdDisplay(gtk.Window):
         self.motion_blocked = True
         self.im.connect("commit", self.keyinput)
         self.text.connect("configure-event", self.reconfigure)
-        self.text.set_events(gtk.gdk.EXPOSURE_MASK|
-                             gtk.gdk.STRUCTURE_MASK|
-                             gtk.gdk.BUTTON_PRESS_MASK|
-                             gtk.gdk.BUTTON_RELEASE_MASK|
-                             gtk.gdk.KEY_PRESS_MASK|
-                             gtk.gdk.KEY_RELEASE_MASK|
-                             gtk.gdk.POINTER_MOTION_MASK|
-                             gtk.gdk.POINTER_MOTION_HINT_MASK);
+        self.text.set_events(Gdk.EventMask.EXPOSURE_MASK|
+                             Gdk.EventMask.STRUCTURE_MASK|
+                             Gdk.EventMask.BUTTON_PRESS_MASK|
+                             Gdk.EventMask.BUTTON_RELEASE_MASK|
+                             Gdk.EventMask.KEY_PRESS_MASK|
+                             Gdk.EventMask.KEY_RELEASE_MASK|
+                             Gdk.EventMask.POINTER_MOTION_MASK|
+                             Gdk.EventMask.POINTER_MOTION_HINT_MASK);
         self.text.set_property("can-focus", True)
 
     def block_motion(self):
@@ -466,16 +493,16 @@ class EdDisplay(gtk.Window):
         self.text.handler_unblock(self.motion_handler)
         self.motion_blocked = False
 
-    def refresh(self, *a):
+    def refresh(self, da, ctx):
         edlib.time_start(edlib.TIME_WINDOW)
         l = self.panes.keys()
         l.sort(key=lambda pane: pane.abs_z)
         for p in l:
             pm = self.panes[p]
             (rx,ry,rw,rh) = p.abs(0,0,p.w,p.h)
-            self.text.window.draw_drawable(self.bg, pm, 0, 0,
-                                           rx, ry,
-                                           rw, rh)
+            # FIXME draw on surface or GdkPixbuf
+            ctx.set_source_surface(pm, rx, ry)
+            ctx.paint()
         edlib.time_stop(edlib.TIME_WINDOW)
 
     def focus_in(self, *a):
@@ -509,11 +536,11 @@ class EdDisplay(gtk.Window):
         x = int(event.x)
         y = int(event.y)
         s = ":Press-" + ("%d"%event.button)
-        if event.state & gtk.gdk.SHIFT_MASK:
+        if event.state & Gdk.ModifierType.SHIFT_MASK:
             s = ":S" + s;
-        if event.state & gtk.gdk.CONTROL_MASK:
+        if event.state & Gdk.ModifierType.CONTROL_MASK:
             s = ":C" + s;
-        if event.state & gtk.gdk.MOD1_MASK:
+        if event.state & Gdk.ModifierType.MOD1_MASK:
             s = ":M" + s;
         self.last_event = int(time.time())
         self.pane.call("Mouse-event", s, self.pane, (x,y), event.button, 1)
@@ -525,11 +552,11 @@ class EdDisplay(gtk.Window):
         x = int(event.x)
         y = int(event.y)
         s = ":Release-" + ("%d"%event.button)
-        if event.state & gtk.gdk.SHIFT_MASK:
+        if event.state & Gdk.ModifierType.SHIFT_MASK:
             s = ":S" + s;
-        if event.state & gtk.gdk.CONTROL_MASK:
+        if event.state & Gdk.ModifierType.CONTROL_MASK:
             s = ":C" + s;
-        if event.state & gtk.gdk.MOD1_MASK:
+        if event.state & Gdk.ModifierType.MOD1_MASK:
             s = ":M" + s;
         self.last_event = int(time.time())
         self.pane.call("Mouse-event", s, self.pane, (x,y), event.button, 2)
@@ -548,17 +575,17 @@ class EdDisplay(gtk.Window):
         c.grab_focus()
         x = int(event.x)
         y = int(event.y)
-        if event.direction == gtk.gdk.SCROLL_UP:
+        if event.direction == Gdk.SCROLL_UP:
             s = ":Press-4"
             b = 4
         else:
             s = ":Press-5"
             b = 5
-        if event.state & gtk.gdk.SHIFT_MASK:
+        if event.state & Gdk.ModifierType.SHIFT_MASK:
             s = ":S" + s;
-        if event.state & gtk.gdk.CONTROL_MASK:
+        if event.state & Gdk.ModifierType.CONTROL_MASK:
             s = ":C" + s;
-        if event.state & gtk.gdk.MOD1_MASK:
+        if event.state & Gdk.ModifierType.MOD1_MASK:
             s = ":M" + s;
         self.pane.call("Mouse-event", s, self.pane, (x,y), b, 1)
         edlib.time_stop(edlib.TIME_KEY)
@@ -593,12 +620,12 @@ class EdDisplay(gtk.Window):
             edlib.time_stop(edlib.TIME_KEY)
             return
 
-        kv = gtk.gdk.keyval_name(event.keyval)
+        kv = Gdk.keyval_name(event.keyval)
         if kv in self.eventmap:
             s = self.eventmap[kv]
-            if event.state & gtk.gdk.SHIFT_MASK:
+            if event.state & Gdk.ModifierType.SHIFT_MASK:
                 s = ":S" + s;
-            if event.state & gtk.gdk.CONTROL_MASK:
+            if event.state & Gdk.ModifierType.CONTROL_MASK:
                 s = ":C" + s;
         else:
             s = event.string
@@ -608,28 +635,26 @@ class EdDisplay(gtk.Window):
                 s = ":C-" + chr(ord(s[0])+64) + "\037:C-" + chr(ord(s[0]) + 96)
             else:
                 s = "-" + s
-                if event.state & gtk.gdk.CONTROL_MASK:
+                if event.state & Gdk.ModifierType.CONTROL_MASK:
                     s = ":C" + s;
-        if event.state & gtk.gdk.MOD1_MASK:
+        if event.state & Gdk.ModifierType.MOD1_MASK:
             s = ":M" + s;
         self.last_event = int(time.time())
         self.pane.call("Keystroke", self.pane, s)
         edlib.time_stop(edlib.TIME_KEY)
 
     def do_clear(self, pm, colour):
-
-        t = self.text
-        if not self.bg:
-            self.bg = t.window.new_gc()
-        self.bg.set_foreground(colour)
-        (w,h) = pm.get_size()
-        pm.draw_rectangle(self.bg, True, 0, 0, w, h)
+        # FIXME surface
+        cr = cairo.Context(pm)
+        cr.set_source_rgb(colour.red, colour.green, colour.blue)
+        cr.rectangle(0,0,pm.get_width(), pm.get_height())
+        cr.fill()
 
 def new_display(key, focus, comm2, **a):
     if 'SCALE' in os.environ:
         sc = int(os.environ['SCALE'])
-        s = gtk.settings_get_default()
-        s.set_long_property("gtk-xft-dpi",sc*pango.SCALE, "code")
+        s = Gtk.settings_get_default()
+        s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
     disp = EdDisplay(focus)
     comm2('callback', disp.pane)
     return 1
@@ -658,7 +683,7 @@ class events(edlib.Pane):
     def read(self, key, focus, comm2, num, **a):
         self.active = True
         ev = self.add_ev(focus, comm2, 'event:read', num)
-        gev = gobject.io_add_watch(num, gobject.IO_IN | gobject.IO_HUP,
+        gev = GObject.io_add_watch(num, GObject.IO_IN | GObject.IO_HUP,
                                   self.doread, comm2, focus, num, ev)
         self.events[ev].append(gev)
         return 1
@@ -685,7 +710,7 @@ class events(edlib.Pane):
 
     def sighan(self, sig, frame):
         (focus, comm2, ev) = self.sigs[sig]
-        gobject.idle_add(self.dosig, comm2, focus, sig, ev)
+        GObject.idle_add(self.dosig, comm2, focus, sig, ev)
         return 1
 
     def dosig(self, comm, focus, sig, ev):
@@ -706,7 +731,7 @@ class events(edlib.Pane):
     def timer(self, key, focus, comm2, num, **a):
         self.active = True
         ev = self.add_ev(focus, comm2, 'event:timer', num)
-        gev = gobject.timeout_add(num, self.dotimeout, comm2, focus, ev)
+        gev = GObject.timeout_add(num, self.dotimeout, comm2, focus, ev)
         self.events[ev].append(gev)
         return 1
 
@@ -732,9 +757,9 @@ class events(edlib.Pane):
             dont_block = self.dont_block
             self.dont_block = False
             if not dont_block:
-                gtk.main_iteration(True)
-            while self.active and gtk.events_pending():
-                gtk.main_iteration(False)
+                Gtk.main_iteration_do(True)
+            while self.active and Gtk.events_pending():
+                Gtk.main_iteration_do(False)
         if self.active:
             return 1
         else:
@@ -759,7 +784,7 @@ class events(edlib.Pane):
                 del self.events[source]
                 if len(e) == 5:
                     try:
-                        gobject.source_remove(e[4])
+                        GObject.source_remove(e[4])
                     except:
                         # must be already gone
                         pass
@@ -775,7 +800,7 @@ class events(edlib.Pane):
             (focus, comm, event, num) = self.events[e][:4]
             if event != "event:signal" and len(self.events[e]) == 5:
                 try:
-                    gobject.source_remove(self.events[4])
+                    GObject.source_remove(self.events[4])
                 except:
                     pass
             del self.events[e]
