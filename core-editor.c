@@ -216,10 +216,15 @@ DEF_CMD(editor_send_notify)
 DEF_CMD(editor_clean_up)
 {
 	struct ed_info *ei = ci->home->data;
+	struct idle_call *pending = ei->idle_calls;
 
-	while (ei->idle_calls) {
-		struct idle_call *i = ei->idle_calls;
-		ei->idle_calls = i->next;
+	/* Note that if an idle-call registers and idle call,
+	 * the new one won't be handled until the next time around
+	 */
+	ei->idle_calls = NULL;
+	while (pending) {
+		struct idle_call *i = pending;
+		pending = i->next;
 		comm_call(i->callback, "idle-callback", i->focus);
 		command_put(i->callback);
 		free(i);
