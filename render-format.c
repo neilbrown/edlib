@@ -237,7 +237,7 @@ DEF_CMD(format_get_attr)
 
 	if (!ci->mark ||
 	    !ci->str ||
-	    strcmp(ci->str, "renderline:fields") != 0)
+	    strcmp(ci->str, "markup:fields") != 0)
 		return 0;
 	sprintf(attr, "%u:%u", rf->home_field, rf->fields);
 	return comm_call(ci->comm2, "attr", ci->focus, 0, ci->mark, attr);

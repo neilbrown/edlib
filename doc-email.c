@@ -133,7 +133,7 @@ DEF_CMD(email_select)
 
 	if (!m)
 		return Enoarg;
-	a = pane_mark_attr(ci->home, m, "renderline:func");
+	a = pane_mark_attr(ci->home, m, "markup:func");
 	if (!a || strcmp(a, "doc:email:render-spacer") != 0)
 		return Efallthrough;
 	a = pane_mark_attr(ci->home, m, "multipart-prev:email:actions");
@@ -158,13 +158,13 @@ DEF_CMD(email_select)
 
 DEF_CMD(email_get_attr)
 {
-	/* The "renderline:fields" attribute needs to be synthesized
+	/* The "markup:fields" attribute needs to be synthesized
 	 * from the per-part email:actions attribute
 	 */
 	char *a;
 	int fields;
 	char ret[12];
-	if (!ci->str || strcmp(ci->str, "renderline:fields") != 0)
+	if (!ci->str || strcmp(ci->str, "markup:fields") != 0)
 		return Efallthrough;
 	if (!ci->mark)
 		return Efallthrough;
@@ -568,7 +568,7 @@ DEF_CMD(open_email)
 	ei->spacer = p;
 	point = vmark_new(p, MARK_POINT, NULL);
 	call("doc:set-ref", p, 1, point);
-	call("doc:set-attr", p, 1, point, "renderline:func", 0,
+	call("doc:set-attr", p, 1, point, "markup:func", 0,
 	     NULL, "doc:email:render-spacer");
 	mark_free(point);
 

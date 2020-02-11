@@ -297,7 +297,7 @@ DEF_CMD(render_line)
 
 	ch = doc_following_pane(focus, m);
 	if (is_eol(ch) &&
-	    (attr = pane_mark_attr(focus, m, "renderline:func")) != NULL) {
+	    (attr = pane_mark_attr(focus, m, "markup:func")) != NULL) {
 		/* An alternate function handles this line */
 		ret = call_comm(attr, focus, ci->comm2, o, m, NULL, ci->num2, pm);
 		if (ret)
