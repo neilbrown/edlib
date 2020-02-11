@@ -28,6 +28,7 @@ struct event_info {
 	struct list_head event_list;
 	struct pane *home safe;
 	int dont_block;
+	int deactivated;
 	struct command read, signal, timer, run, deactivate,
 		free, refresh, noblock;
 };
@@ -196,10 +197,17 @@ DEF_CMD(libevent_run)
 	struct event_base *b = ei->base;
 	int dont_block = ei->dont_block;
 
-	if (!b)
-		return 0;
-
 	ei->dont_block = 0;
+
+	if (ei->deactivated)
+		return 0;
+	if (!b) {
+		/* No events to wait for.. */
+		if (dont_block)
+			return 1;
+		return 0;
+	}
+
 	event_base_loop(b, dont_block ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
 	if (ei->base == b)
 		return 1;
@@ -219,6 +227,7 @@ DEF_CMD(libevent_deactivate)
 {
 	struct event_info *ei = container_of(ci->comm, struct event_info, deactivate);
 	ei->base = NULL;
+	ei->deactivated = 1;
 	return 1;
 }
 
