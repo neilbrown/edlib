@@ -446,5 +446,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(rl_map, "Free", &edlib_do_free);
 	key_add(rl_map, "Notify:clip", &rl_clip);
 
-	call_comm("global-set-command", ed, &renderline_attach, 0, NULL, "attach-renderline");
+	call_comm("global-set-command", ed, &renderline_attach,
+		  0, NULL, "attach-markup");
 }

@@ -5,21 +5,21 @@
 Edlib provides
   render-lines
 and
-  lib-renderline
+  lib-markup
 
 to support rendering of documents.  It is possible to create a completely 
 separate rendering for a given document which doesn't make use of these,
 but often it will be easiest to use these with added enhancements rather 
 than writing a complete renderer.
 
-lib-renderline provides two methods which identify lines within a text buffer,
+lib-markup provides two methods which identify lines within a text buffer,
 and convert them to marked-up text.
 render-lines makes use of these interfaces to render lines from the relevant
 part of the buffer, and to display them in a pane.  It takes the marked-up lines
-provided by lib-renderline (or a replacement) and passes them to the display manager
+provided by lib-markup (or a replacement) and passes them to the display manager
 as text with attributes.
 
-lib-renderline
+lib-markup
 --------------
 
 The two interfaces are "doc:render-line" and "doc:render-line-prev"

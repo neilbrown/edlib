@@ -76,7 +76,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/render-format.o O/render-complete.o \
 	O/lib-view.o O/lib-tile.o O/lib-popup.o O/lib-linecount.o O/lib-keymap.o \
 	O/lib-search.o O/lib-messageline.o O/lib-input.o O/lib-libevent.o \
-	O/lib-history.o O/lib-crop.o O/lib-renderline.o O/lib-rfc822header.o \
+	O/lib-history.o O/lib-crop.o O/lib-markup.o O/lib-rfc822header.o \
 	O/lib-viewer.o O/lib-base64.o O/lib-qprint.o O/lib-utf8.o \
 	O/lib-copybuf.o O/lib-whitespace.o O/lib-colourmap.o \
 	O/lang-python.o \
