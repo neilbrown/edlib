@@ -163,7 +163,10 @@ DEF_CMD(messageline_line_refresh)
 		char buf[80];
 		time_t t;
 		struct tm *tm;
+		char *faketime = getenv("EDLIB_FAKE_TIME");
 		t = time(NULL);
+		if (faketime)
+			t = strtoul(faketime, NULL, 10);
 		tm = localtime(&t);
 		if (tm)
 			strftime(buf, sizeof(buf), "%H:%M %d-%b-%Y", tm);

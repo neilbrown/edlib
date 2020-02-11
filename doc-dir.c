@@ -402,7 +402,10 @@ static char *fmt_date(struct dir_ent *de safe, time_t t)
 {
 	struct tm tm;
 	time_t now = time(NULL);
+	char *faketime = getenv("EDLIB_FAKE_TIME");
 
+	if (faketime)
+		t = strtoul(faketime, NULL, 10);
 	localtime_r(&t, &tm);
 	if (t > now || t < now - 10*30*24*3600)
 		strftime(de->nbuf, sizeof(de->nbuf),
