@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# This script handles management of testing.
+# It supports the creation, verification, and updating
+# of tests.
+#
+# Tests are run in the context of an edlib git tree
+# with a given hash - currently the same hash for all tests.
+# Each test provides a list of keystrokes and mouse actions
+# together with occasions checksums of the current display.
+# We run a test and record the output at the same time, then
+# confirm that the recording matching the input test.
+
+# Usage:
+# ./tests new name
+#     Record a new test and store it with given name.  Then re-run and confirm.
+# ./tests run [name|failed]
+#     If a name is given, just that test is run.  If no name is given, all tests
+#     are run.  If any test fails, that failure is recorded.
+#     If the special name 'failed' is given, then only failed tests are run.
+# ./tests refresh
+#     Run all tests and replace the test with the new log - expecting it to be different.
+
+# ensure timestamps don't change
+export EDLIB_FAKE_TIME=1581382278
+
+export TEST_DIR=/tmp/edlib-tests
+
+cmd=$0
+
+new_test() {
+    if [ $# -ne 1 ]; then
+	echo >&2 "$0: please provide name for new test"
+	exit 1
+    fi
+    t=$1
+    tt=tests.d/$t
+    if [ -e "$tt" ]; then
+	echo >&2 "$0: $tt already exists, please choose another name"
+	exit 1
+    fi
+    if ! touch "$tt"; then
+	echo >&2 "$0: Cannot create $tt - strange"
+	exit 1
+    fi
+    EDLIB_RECORD=tests.d/.tmp xterm -geo 80x30 -e 'TERM=xterm-256color ./edlib'
+    EDLIB_REPLAY=tests.d/.tmp EDLIB_RECORD=$tt xterm -geo 80x30 -e 'TERM=xterm-256color ./edlib'
+    diff -u tests.d/.tmp $tt
+    rm tests.d/.tmp
+    exit 0
+}
+
+run_one_test() {
+    if [ ! -f "tests.d/$1" ]; then
+	echo "$cmd: test $1 doesn't exist"
+	exit_code=2
+	return
+    fi
+    EDLIB_REPLAY=tests.d/$1 EDLIB_RECORD=tests.d/.out xterm -geo 80x30 -e 'TERM=xterm-256color ./edlib'
+    if diff -u "tests.d/$1" tests.d/.out;
+    then : ; else exit_code=1 ; fi
+    rm -f tests.d/.out
+}
+
+run_tests() {
+    if [ $# -gt 1 ]; then
+	echo >&2 "$0: please provide at most one test to run"
+	exit 1
+    fi
+    exit_code=0
+    if [ $# -eq 0 ]; then
+	for f in tests.d/[A-Za-z0-9]*; do
+	    b=${f#tests.d/}
+	    run_one_test "$b"
+	done
+    else
+	run_one_test "$1"
+    fi
+    exit $exit_code
+}
+
+refresh_tests() {
+    if [ $# -ne 0 ]; then
+	echo >&2 "$0: please don't give extra args to refresh"
+	exit 1
+    fi
+    for f in tests.d/[A-Za-z0-9]*; do
+	b=${f#tests.d/}
+	EDLIB_REPLAY=tests.d/$b EDLIB_RECORD=tests.d/.out xterm -geo 80x30 -e 'TERM=xterm-256color ./edlib'
+	mv tests.d/.out $f
+    done
+}
+
+
+cmd=$1
+shift
+case $cmd in
+	new) new_test $*;;
+	run) run_tests $*;;
+	refresh) refresh_tests $*;;
+	* )
+		echo >&2 "Usage: $0 new test-name"
+		echo >&2 "       $0 run [test-name|failed]"
+		echo >&2 "       $0 refresh"
+		exit 1;
+esac
+exit 0
+
