@@ -332,6 +332,11 @@ REDEF_CMD(next_evt)
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
 	int button = 0, type = 0;
+	char *delay;
+
+	delay = getenv("EDLIB_REPLAY_DELAY");
+	if (delay && dd->next_event != DoCheck)
+		usleep(atoi(delay)*1000);
 
 	switch(dd->next_event) {
 	case DoKey:
