@@ -23,11 +23,11 @@
 #include "core.h"
 #include "misc.h"
 
-struct rl_info {
+struct mu_info {
 	int	view;
 };
 
-static struct map *rl_map safe;
+static struct map *mu_map safe;
 
 #define LARGE_LINE 1000
 
@@ -46,7 +46,7 @@ DEF_CMD(render_prev)
 	 */
 	struct mark *m = ci->mark;
 	struct pane *f = ci->focus;
-	struct rl_info *rl = ci->home->data;
+	struct mu_info *mu = ci->home->data;
 	struct mark *boundary = NULL;
 	int count = 0;
 	int rpt = RPT_NUM(ci);
@@ -61,13 +61,13 @@ DEF_CMD(render_prev)
 	       (!boundary || boundary->seq< m->seq)) {
 		rpt = 0;
 		if (!count)
-			boundary = vmark_at_or_before(f, m, rl->view, ci->home);
+			boundary = vmark_at_or_before(f, m, mu->view, ci->home);
 		count += 1;
 	}
 	if (ch != WEOF && !is_eol(ch)) {
 		/* need to ensure there is a stable boundary here */
 		if (!boundary || boundary->seq >= m->seq) {
-			boundary = vmark_new(f, rl->view, ci->home);
+			boundary = vmark_new(f, mu->view, ci->home);
 			if (boundary)
 				mark_to_mark(boundary, m);
 		}
@@ -265,7 +265,7 @@ DEF_CMD(render_line)
 	 */
 	struct buf b;
 	struct pane *focus = ci->focus;
-	struct rl_info *rl = ci->home->data;
+	struct mu_info *mu = ci->home->data;
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2; /* The location to render as cursor */
 	struct mark *boundary;
@@ -303,7 +303,7 @@ DEF_CMD(render_line)
 		if (ret)
 			return ret;
 	}
-	boundary = vmark_at_or_before(focus, m, rl->view, ci->home);
+	boundary = vmark_at_or_before(focus, m, mu->view, ci->home);
 	if (boundary)
 		boundary = vmark_next(boundary);
 	buf_init(&b);
@@ -385,67 +385,67 @@ DEF_CMD(render_line)
 	return ret;
 }
 
-DEF_LOOKUP_CMD(renderline_handle, rl_map);
+DEF_LOOKUP_CMD(markup_handle, mu_map);
 
-static struct pane *do_renderline_attach(struct pane *p safe)
+static struct pane *do_markup_attach(struct pane *p safe)
 {
 	struct pane *ret;
-	struct rl_info *rl = calloc(1, sizeof(*rl));
+	struct mu_info *mu = calloc(1, sizeof(*mu));
 
-	ret = pane_register(p, 0, &renderline_handle.c, rl);
-	rl->view = home_call(p, "doc:add-view", ret) - 1;
+	ret = pane_register(p, 0, &markup_handle.c, mu);
+	mu->view = home_call(p, "doc:add-view", ret) - 1;
 
 	return ret;
 }
 
-DEF_CMD(renderline_attach)
+DEF_CMD(markup_attach)
 {
 	struct pane *ret;
 
-	ret = do_renderline_attach(ci->focus);
+	ret = do_markup_attach(ci->focus);
 	if (!ret)
 		return Efail;
 	return comm_call(ci->comm2, "callback:attach", ret);
 }
 
-DEF_CMD(rl_clone)
+DEF_CMD(mu_clone)
 {
 	struct pane *parent = ci->focus;
-	struct pane *child = do_renderline_attach(parent);
+	struct pane *child = do_markup_attach(parent);
 	pane_clone_children(ci->home, child);
 	return 1;
 }
 
-DEF_CMD(rl_clip)
+DEF_CMD(mu_clip)
 {
-	struct rl_info *rl = ci->home->data;
+	struct mu_info *mu = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, rl->view, ci->home);
+	marks_clip(ci->home, ci->mark, ci->mark2, mu->view, ci->home);
 	return 0;
 }
 
-DEF_CMD(rl_close)
+DEF_CMD(mu_close)
 {
 	struct pane *p = ci->home;
-	struct rl_info *rl = p->data;
+	struct mu_info *mu = p->data;
 	struct mark *m;
-	while ((m = vmark_first(p, rl->view, p)) != NULL)
+	while ((m = vmark_first(p, mu->view, p)) != NULL)
 		mark_free(m);
-	call("doc:del-view", p, rl->view);
+	call("doc:del-view", p, mu->view);
 	return 0;
 }
 
 void edlib_init(struct pane *ed safe)
 {
-	rl_map = key_alloc();
+	mu_map = key_alloc();
 
-	key_add(rl_map, "doc:render-line", &render_line);
-	key_add(rl_map, "doc:render-line-prev", &render_prev);
-	key_add(rl_map, "Clone", &rl_clone);
-	key_add(rl_map, "Close", &rl_close);
-	key_add(rl_map, "Free", &edlib_do_free);
-	key_add(rl_map, "Notify:clip", &rl_clip);
+	key_add(mu_map, "doc:render-line", &render_line);
+	key_add(mu_map, "doc:render-line-prev", &render_prev);
+	key_add(mu_map, "Clone", &mu_clone);
+	key_add(mu_map, "Close", &mu_close);
+	key_add(mu_map, "Free", &edlib_do_free);
+	key_add(mu_map, "Notify:clip", &mu_clip);
 
-	call_comm("global-set-command", ed, &renderline_attach,
+	call_comm("global-set-command", ed, &markup_attach,
 		  0, NULL, "attach-markup");
 }
