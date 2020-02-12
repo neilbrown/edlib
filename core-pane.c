@@ -843,8 +843,10 @@ void pane_map_xy(struct pane *orig, struct pane *target,
 		 short *x safe, short *y safe)
 {
 	short w=0, h=0;
-	pane_absxy(orig, x, y, &w, &h);
-	pane_relxy(target, x, y);
+	if (orig != target) {
+		pane_absxy(orig, x, y, &w, &h);
+		pane_relxy(target, x, y);
+	}
 }
 
 struct xy pane_scale(struct pane *p safe)

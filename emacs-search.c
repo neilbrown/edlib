@@ -811,6 +811,8 @@ DEF_CMD(highlight_draw)
 	struct highlight_info *hi = ci->home->data;
 	struct pane *pp = hi->popup;
 	struct pane *pp2 = hi->replace_popup;
+	short ci_x = ci->x;
+	short ci_y = ci->y;
 
 	if (!ci->str2 || !strstr(ci->str2, ",focus") || !pp)
 		return 0;
@@ -819,21 +821,22 @@ DEF_CMD(highlight_draw)
 	 * the popup doesn't obscure it.
 	 */
 
+	pane_map_xy(ci->focus, ci->home, &ci_x, &ci_y);
 	while (pp->parent != pp && pp->z == 0)
 		pp = pp->parent;
 	while (pp2 && pp2->parent != pp2 && pp2->z == 0)
 		pp2 = pp2->parent;
 	if (pp->x == 0) {
 		/* currently TL, should we move it back */
-		if (ci->x < pp->w ||
-		    (ci->y > pp->h &&
-		     (!pp2 || ci->y > pp2->y + pp2->h)))
+		if (ci_x < pp->w ||
+		    (ci_y > pp->h &&
+		     (!pp2 || ci_y > pp2->y + pp2->h)))
 			call("popup:style", hi->popup, 0, NULL, "TR2");
 	} else {
 		/* currently TR, should we move it out of way */
-		if (ci->x >= pp->x &&
-		    (ci->y <= pp->h ||
-		     (pp2 && ci->y <= pp2->y + pp2->h)))
+		if (ci_x >= pp->x &&
+		    (ci_y <= pp->h ||
+		     (pp2 && ci_y <= pp2->y + pp2->h)))
 			call("popup:style", hi->popup, 0, NULL, "TL2");
 	}
 	return 0;
