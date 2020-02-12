@@ -216,6 +216,7 @@ static void pane_do_refresh(struct pane *p safe, int damage)
 {
 	struct pane *c;
 	struct list_head *tmp;
+	int sent = 0;
 
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
@@ -224,15 +225,16 @@ static void pane_do_refresh(struct pane *p safe, int damage)
 	p->damaged &= ~(DAMAGED_CHILD|DAMAGED_CONTENT|DAMAGED_CURSOR);
 	if (!damage)
 		return;
-	if (list_empty(&p->children)) {
-		if (damage & (DAMAGED_NEED_CALL)) {
-			if (damage & DAMAGED_CONTENT)
-				damage |= DAMAGED_CURSOR;
-			call("Refresh", p, 0, NULL, NULL, damage);
-		}
-	} else
-		list_for_each_entry_safe(c, tmp, &p->children, siblings)
+	list_for_each_entry_safe(c, tmp, &p->children, siblings)
+		if (c->z >= 0) {
+			sent = 1;
 			pane_do_refresh(c, damage);
+		}
+	if (!sent && damage & (DAMAGED_NEED_CALL)) {
+		if (damage & DAMAGED_CONTENT)
+			damage |= DAMAGED_CURSOR;
+		call("Refresh", p, 0, NULL, NULL, damage);
+	}
 
 	if (p->damaged & DAMAGED_POSTORDER) {
 		/* post-order call was triggered */
@@ -244,6 +246,7 @@ static void pane_do_refresh(struct pane *p safe, int damage)
 static void pane_do_review(struct pane *p safe, int damage)
 {
 	struct pane *c;
+	int sent = 0;
 
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
@@ -252,12 +255,13 @@ static void pane_do_review(struct pane *p safe, int damage)
 	p->damaged &= ~(DAMAGED_VIEW|DAMAGED_VIEW_CHILD);
 	if (!damage)
 		return;
-	if (list_empty(&p->children)) {
-		if (damage & (DAMAGED_VIEW))
-			call("Refresh:view", p, 0, NULL, NULL, damage);
-	} else
-		list_for_each_entry(c, &p->children, siblings)
+	list_for_each_entry(c, &p->children, siblings)
+		if (c->z >= 0) {
+			sent = 1;
 			pane_do_review(c, damage);
+		}
+	if (!sent && damage & (DAMAGED_VIEW))
+		call("Refresh:view", p, 0, NULL, NULL, damage);
 }
 
 void pane_refresh(struct pane *p safe)
