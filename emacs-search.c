@@ -56,9 +56,11 @@ DEF_CMD(search_forward)
 	struct stk *s;
 	char *str;
 	struct mark *newstart;
+	const char *suffix;
 
-	if (strncmp(ci->key, "C-Chr-", 6) == 0)
-		esi->backwards = ci->key[6] == 'R';
+	suffix = ksuffix(ci, "C-Chr-");
+	if (suffix[0])
+		esi->backwards = suffix[0] == 'R';
 
 	if (esi->s && mark_same(esi->s->m, esi->end)) {
 		if (esi->s->case_sensitive == esi->case_sensitive)

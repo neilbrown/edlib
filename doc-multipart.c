@@ -508,7 +508,7 @@ DEF_CMD(mp_forward)
 	 */
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m1, *m2;
-	const char *key = ci->key;
+	const char *key;
 	int d;
 
 	if (!ci->mark2)
@@ -522,19 +522,17 @@ DEF_CMD(mp_forward)
 		/* at the wrong end of a part */
 		d += 1;
 
-	if (strncmp(key, "multipart-next:", 15) == 0) {
+	if ((key = ksuffix(ci, "multipart-next:"))[0]) {
 		d += 1;
-		key += 15;
 		if (d >= mpi->nparts)
 			return 1;
-	} else if (strncmp(key, "multipart-prev:", 15) == 0) {
+	} else if ((key = ksuffix(ci, "multipart-prev:"))[0]) {
 		d -= 1;
-		key += 15;
 		if (d < 0)
 			return 1;
-	} else if (strncmp(key, "multipart-this:", 15) == 0)
-		key += 15;
-	else return Einval;
+	} else if ((key = ksuffix(ci, "multipart-this:"))[0]) {
+		;
+	} else return Einval;
 
 	if (d >= mpi->nparts || d < 0)
 		return 1;

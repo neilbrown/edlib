@@ -897,19 +897,21 @@ DEF_CMD(emacs_findfile)
 		*e++ = '\0';
 	}
 
-	if (strncmp(ci->key, "File Found", 10) != 0) {
-		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, path);
+	if (ksuffix(ci, "File Found")[0] == 0) {
+		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2",
+			     0, NULL, path);
 		if (!p)
 			return 0;
 
-		if (strncmp(ci->key, "emCX4-", 6) == 0) {
+		if (ksuffix(ci, "emCX4-")[0]) {
 			attr_set_str(&p->attrs, "prompt",
 				     "Find File Other Window");
 			attr_set_str(&p->attrs, "done-key",
 				     "File Found Other Window");
 		} else {
 			attr_set_str(&p->attrs, "prompt", "Find File");
-			attr_set_str(&p->attrs, "done-key", "File Found");
+			attr_set_str(&p->attrs, "done-key",
+				     "File Found This Window");
 		}
 		call("doc:set-name", p, 0, NULL, "Find File");
 
@@ -1045,7 +1047,7 @@ DEF_CMD(emacs_finddoc)
 {
 	struct pane *p, *par;
 
-	if (strncmp(ci->key, "Doc Found", 9) != 0) {
+	if (ksuffix(ci, "Doc Found")[0] == 0) {
 		struct pane *dflt;
 		char *defname = NULL;
 
@@ -1053,20 +1055,22 @@ DEF_CMD(emacs_finddoc)
 		if (dflt)
 			defname = pane_attr_get(dflt, "doc-name");
 
-		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
+		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2",
+			     0, NULL, "");
 		if (!p)
 			return 0;
 
 		if (defname)
 			attr_set_str(&p->attrs, "default", defname);
-		if (strncmp(ci->key, "emCX4-", 6) == 0) {
+		if (ksuffix(ci, "emCX4-")[0]) {
 			attr_set_str(&p->attrs, "prompt",
 				     "Find Document Other Window");
 			attr_set_str(&p->attrs, "done-key",
 				     "Doc Found Other Window");
 		} else {
 			attr_set_str(&p->attrs, "prompt", "Find Document");
-			attr_set_str(&p->attrs, "done-key", "Doc Found");
+			attr_set_str(&p->attrs, "done-key",
+				     "Doc Found This Window");
 		}
 		call("doc:set-name", p, 0, NULL, "Find Document", -1);
 
@@ -1801,12 +1805,12 @@ static void emacs_init(void)
 	key_add(m, "emCX-C-Chr-F", &emacs_findfile);
 	key_add(m, "emCX4-C-Chr-F", &emacs_findfile);
 	key_add(m, "emCX4-Chr-f", &emacs_findfile);
-	key_add(m, "File Found", &emacs_findfile);
+	key_add(m, "File Found This Window", &emacs_findfile);
 	key_add(m, "File Found Other Window", &emacs_findfile);
 
 	key_add(m, "emCX-Chr-b", &emacs_finddoc);
 	key_add(m, "emCX4-Chr-b", &emacs_finddoc);
-	key_add(m, "Doc Found", &emacs_finddoc);
+	key_add(m, "Doc Found This Window", &emacs_finddoc);
 	key_add(m, "Doc Found Other Window", &emacs_finddoc);
 	key_add(m, "emCX-C-Chr-B", &emacs_viewdocs);
 
