@@ -88,6 +88,21 @@
 #include "core.h"
 #include "misc.h"
 
+/*
+ * All functions involved in sending Draw and size requests
+ * to the display are given two panes: p and focus.
+ * 'p' is the pane where the drawing happens. 'focus' is the
+ * leaf on the current stack.
+ * These are different when the drawing is segmented into regions
+ * of the target pane, with light-weight panes being used to avoid
+ * having to refresh the whole target pane when the only change is
+ * in one region.
+ * The calls to the display are home_calls with 'focus' as the home
+ * pane, and 'p' as the focus.  The x,y co-ords are, as always,
+ * relative to the focus pane 'p'.
+ */
+
+
 struct rl_data {
 	int		top_sol; /* true when first mark is at a start-of-line */
 	int		ignore_point;
@@ -124,7 +139,8 @@ struct render_list {
 #define WRAP 1
 #define CURS 2
 
-static int draw_some(struct pane *p safe, struct render_list **rlp safe,
+static int draw_some(struct pane *p safe, struct pane *focus safe,
+		     struct render_list **rlp safe,
 		     int *x safe,
 		     char *start safe, char **endp safe,
 		     char *attr safe, int margin, int cursorpos, int cursx,
@@ -166,22 +182,24 @@ static int draw_some(struct pane *p safe, struct render_list **rlp safe,
 	}
 
 	rl = calloc(1, sizeof(*rl));
-	cr = call_ret(all, "text-size", p, rmargin - *x, NULL, str,
-		      scale, NULL, attr);
+	cr = home_call_ret(all, focus, "text-size", p, rmargin - *x, NULL, str,
+			   scale, NULL, attr);
 	max = cr.i;
 	if (max == 0 && ret == CURS) {
 		/* must already have CURS position. */
 		rl->curs = start;
 		ret = WRAP;
 		rmargin = p->w - margin;
-		cr = call_ret(all, "text-size", p, rmargin - *x, NULL, str,
-			      scale, NULL, attr);
+		cr = home_call_ret(all, focus, "text-size", p,
+				   rmargin - *x, NULL, str,
+				   scale, NULL, attr);
 		max = cr.i;
 	}
 	if (max < len) {
 		str[max] = 0;
-		cr = call_ret(all, "text-size", p, rmargin - *x, NULL, str,
-			      scale, NULL, attr);
+		cr = home_call_ret(all, focus, "text-size", p,
+				   rmargin - *x, NULL, str,
+				   scale, NULL, attr);
 	}
 
 	rl->text_orig = start;
@@ -231,7 +249,7 @@ static char *get_last_attr(char *attrs safe, char *attr safe)
 	return NULL;
 }
 
-static int flush_line(struct pane *p safe, int dodraw,
+static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 		      struct render_list **rlp safe,
 		      int y, int scale, int wrap_pos,
 		      char **curspos, char **cursattr)
@@ -270,9 +288,9 @@ static int flush_line(struct pane *p safe, int dodraw,
 			cp = -1;
 		x = rl->x;
 		if (dodraw)
-			call("Draw:text", p, cp, NULL, rl->text,
-			     scale, NULL, rl->attr,
-			     x, y);
+			home_call(focus, "Draw:text", p, cp, NULL, rl->text,
+				  scale, NULL, rl->attr,
+				  x, y);
 		x += rl->width;
 		if (curspos && rl->curs) {
 			*curspos = rl->curs;
@@ -286,16 +304,16 @@ static int flush_line(struct pane *p safe, int dodraw,
 			cp = -1;
 
 		if (cp >= 0 && dodraw)
-			call("Draw:text", p, cp, NULL, rl->text,
-			     scale, NULL, rl->attr,
-			     rl->x, y);
+			home_call(focus, "Draw:text", p, cp, NULL, rl->text,
+				  scale, NULL, rl->attr,
+				  rl->x, y);
 		x = rl->x + rl->width;
 	}
 	if (wrap_pos && last_rl && dodraw) {
 		char *e = get_last_attr(last_rl->attr, "wrap-tail");
-		call("Draw:text", p, -1, NULL, e ?: "\\",
-		     scale, NULL, "underline,fg:blue",
-		     wrap_pos, y);
+		home_call(focus, "Draw:text", p, -1, NULL, e ?: "\\",
+			  scale, NULL, "underline,fg:blue",
+			  wrap_pos, y);
 		free(e);
 	}
 
@@ -304,9 +322,10 @@ static int flush_line(struct pane *p safe, int dodraw,
 
 	if (wrap_pos && last_rl &&
 	    (head = get_last_attr(last_rl->attr, "wrap-head"))) {
-		struct call_return cr = call_ret(all, "text-size", p,
-						 p->w, NULL, head,
-						 scale, NULL, last_rl->attr);
+		struct call_return cr =
+			home_call_ret(all, focus, "text-size", p,
+				      p->w, NULL, head,
+				      scale, NULL, last_rl->attr);
 		rl = calloc(1, sizeof(*rl));
 		rl->text = head;
 		rl->attr = strdup(last_rl->attr); // FIXME underline,fg:blue ???
@@ -330,12 +349,15 @@ static int flush_line(struct pane *p safe, int dodraw,
 	return x;
 }
 
-static void update_line_height_attr(struct pane *p safe, int *h safe,
+static void update_line_height_attr(struct pane *p safe,
+				    struct pane *focus safe,
+				    int *h safe,
 				    int *a safe,int *w, char *attr safe,
 				    char *str safe, int scale)
 {
-	struct call_return cr = call_ret(all, "text-size", p, -1, NULL, str,
-					 scale, NULL, attr);
+	struct call_return cr = home_call_ret(all, focus, "text-size", p,
+					      -1, NULL, str,
+					      scale, NULL, attr);
 	if (cr.y > *h)
 		*h = cr.y;
 	if (cr.i2 > *a)
@@ -344,7 +366,8 @@ static void update_line_height_attr(struct pane *p safe, int *h safe,
 		*w += cr.x;
 }
 
-static void update_line_height(struct pane *p safe, int *h safe, int *a safe,
+static void update_line_height(struct pane *p safe, struct pane *focus safe,
+			       int *h safe, int *a safe,
 			       int *w safe, int *center, char *line safe,
 			       int scale)
 {
@@ -367,8 +390,8 @@ static void update_line_height(struct pane *p safe, int *h safe, int *a safe,
 
 		if (line - 1 > segstart) {
 			char *l = strndup(segstart, line - 1 - segstart);
-			update_line_height_attr(p, h, a, w, buf_final(&attr),
-						l, scale);
+			update_line_height_attr(p, focus, h, a, w,
+						buf_final(&attr), l, scale);
 			free(l);
 		}
 		while (*line && line[-1] != '>')
@@ -395,7 +418,8 @@ static void update_line_height(struct pane *p safe, int *h safe, int *a safe,
 			if ((c2=strstr(b, ",tab:")) != NULL)
 				*w = atoi(c2+5) * scale / 1000;
 			attr_found = 1;
-			update_line_height_attr(p, h, a, w, b, "", scale);
+			update_line_height_attr(p, focus, h, a, w, b, "",
+						scale);
 		} else {
 			/* strip back to ",," */
 			if (attr.len >= 2)
@@ -410,7 +434,8 @@ static void update_line_height(struct pane *p safe, int *h safe, int *a safe,
 		line -= 1;
 	if (line > segstart || !attr_found) {
 		char *l = strndup(segstart, line - segstart);
-		update_line_height_attr(p, h, a, w, buf_final(&attr), l, scale);
+		update_line_height_attr(p, focus, h, a, w,
+					buf_final(&attr), l, scale);
 		free(l);
 	}
 	*h += above + below;
@@ -423,7 +448,8 @@ DEF_CMD(null)
 	return 0;
 }
 
-static void render_image(struct pane *p safe, char *line safe, short *yp safe,
+static void render_image(struct pane *p safe, struct pane *focus safe,
+			 char *line safe, short *yp safe,
 			 int dodraw, int scale)
 {
 	char *fname = NULL;
@@ -452,14 +478,15 @@ static void render_image(struct pane *p safe, char *line safe, short *yp safe,
 		struct pane *tmp = pane_register(p, -1, &null, NULL);
 
 		pane_resize(tmp, (p->w - width)/2, *yp, width, height);
-		call("Draw:image", tmp, 0, NULL, fname, 5);
+		home_call(focus, "Draw:image", tmp, 0, NULL, fname, 5);
 		pane_close(tmp);
 	}
 	*yp += height;
 	free(fname);
 }
 
-static void find_cursor(struct render_list *rlst, struct pane *p safe, int cx,
+static void find_cursor(struct render_list *rlst,
+			struct pane *p safe, struct pane *focus safe, int cx,
 			int scale, char **curspos safe, char **cursattr safe)
 {
 	while (rlst &&
@@ -470,9 +497,10 @@ static void find_cursor(struct render_list *rlst, struct pane *p safe, int cx,
 	if (rlst->x > cx)
 		*curspos = rlst->text_orig;
 	else {
-		struct call_return cr = call_ret(all, "text-size", p,
-						 cx - rlst->x, NULL, rlst->text,
-						 scale, NULL, rlst->attr);
+		struct call_return cr = home_call_ret(
+			all, focus, "text-size", p,
+			cx - rlst->x, NULL, rlst->text,
+			scale, NULL, rlst->attr);
 		*curspos = rlst->text_orig + cr.i;
 	}
 	*cursattr = strdup(rlst->attr);
@@ -521,7 +549,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		 * something that makes sense.
 		 * The cursor is not on the image.
 		 */
-		render_image(p, line, yp, dodraw, scale);
+		render_image(p, focus, line, yp, dodraw, scale);
 		if (cxp)
 			*cxp = -1;
 		if (cyp)
@@ -535,7 +563,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		return;
 	}
 
-	update_line_height(p, &line_height, &ascent, &twidth, &center,
+	update_line_height(p, focus, &line_height, &ascent, &twidth, &center,
 			   line, scale);
 
 	if (!wrap)
@@ -543,9 +571,9 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 
 	if (prefix) {
 		char *s = prefix + strlen(prefix);
-		update_line_height_attr(p, &line_height, &ascent, NULL,
+		update_line_height_attr(p, focus, &line_height, &ascent, NULL,
 					"bold", prefix, scale);
-		draw_some(focus, &rlst, &x, prefix, &s, "bold",
+		draw_some(p, focus, &rlst, &x, prefix, &s, "bold",
 			  0, -1, -1, scale);
 	}
 	rl->prefix_len = x + rl->shift_left;
@@ -587,10 +615,11 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		int CX;
 
 		if (mwidth <= 0) {
-			struct call_return cr = call_ret(all, "text-size", p,
-							 -1, NULL, "M",
-							 0, NULL,
-							 buf_final(&attr));
+			struct call_return cr = home_call_ret(all, focus,
+							      "text-size", p,
+							      -1, NULL, "M",
+							      0, NULL,
+							      buf_final(&attr));
 			mwidth = cr.x;
 			if (mwidth <= 0)
 				mwidth = 1;
@@ -635,7 +664,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		    (line[0] != '<' || line[1] == '<')) {
 			/* No room for more text */
 			if (wrap && *line && *line != '\n') {
-				int len = flush_line(focus, dodraw, &rlst,
+				int len = flush_line(p, focus, dodraw, &rlst,
 						     y+ascent, scale,
 						     p->w - mwidth,
 						     &curspos, &cursattr);
@@ -648,7 +677,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 					if (y+line_height >= cy &&
 					    y <= cy && x > cx) {
 						/* cursor is in field move down */
-						find_cursor(rlst, p, cx, scale,
+						find_cursor(rlst, p, focus,
+							    cx, scale,
 							    &curspos, &cursattr);
 					}
 					if (curspos) {
@@ -688,7 +718,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			if (offset == (line - line_start) ||
 			    (line-start) * mwidth > p->w - x ||
 			    (CX>x && (line - start)*mwidth > CX - x)) {
-				ret = draw_some(focus, &rlst, &x, start,
+				ret = draw_some(p, focus, &rlst, &x, start,
 						&line,
 						buf_final(&attr),
 						wrap ? mwidth : 0,
@@ -698,7 +728,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			}
 			continue;
 		}
-		ret = draw_some(focus, &rlst, &x, start, &line,
+		ret = draw_some(p, focus, &rlst, &x, start, &line,
 				buf_final(&attr),
 				wrap ? mwidth : 0,
 				in_tab ?:offset - (start - line_start),
@@ -709,7 +739,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		if (ch == '<') {
 			line += 1;
 			if (*line == '<') {
-				ret = draw_some(focus, &rlst, &x, start, &line,
+				ret = draw_some(p, focus, &rlst, &x, start, &line,
 						buf_final(&attr),
 						wrap ? mwidth : 0,
 						in_tab ?:offset - (start - line_start),
@@ -759,7 +789,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		line += 1;
 		if (ch == '\n') {
 			curspos = line-1;
-			flush_line(focus, dodraw, &rlst, y+ascent, scale, 0,
+			flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
 				   &curspos, &cursattr);
 			y += line_height;
 			x = 0;
@@ -782,7 +812,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		} else if (ch == '\t') {
 			int xc = (wrap_offset + x) / mwidth;
 			int w = 8 - xc % 8;
-			ret = draw_some(focus, &rlst, &x, start, &line,
+			ret = draw_some(p, focus, &rlst, &x, start, &line,
 					buf_final(&attr),
 					wrap ? mwidth*2: 0,
 					offset == (start - line_start)
@@ -802,7 +832,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			buf[2] = 0;
 			b = buf+2;
 			buf_concat(&attr, ",underline,fg:red");
-			ret = draw_some(focus, &rlst, &x, buf, &b,
+			ret = draw_some(p, focus, &rlst, &x, buf, &b,
 					buf_final(&attr),
 					wrap ? mwidth*2: 0,
 					offset - (start - line_start),
@@ -813,13 +843,13 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	}
 	if (!*line && (line > start || offset == start - line_start)) {
 		/* Some more to draw */
-		draw_some(focus, &rlst, &x, start, &line,
+		draw_some(p, focus, &rlst, &x, start, &line,
 			  buf_final(&attr),
 			  wrap ? mwidth : 0, offset - (start - line_start),
 			  cx, scale);
 	}
 
-	flush_line(focus, dodraw, &rlst, y+ascent, scale, 0,
+	flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
 		   &curspos, &cursattr);
 
 	if (offsetp && curspos) {
@@ -1204,21 +1234,21 @@ restart:
 	found_end = 0;
 	m = vmark_first(focus, rl->typenum, p);
 	if (!s)
-		call("pane-clear", focus);
+		home_call(focus, "pane-clear", p);
 	else if (strncmp(s, "color:", 6) == 0) {
 		char *a = strdup(s);
 		strcpy(a, "bg:");
 		strcpy(a+3, s+6);
-		call("pane-clear", p, 0, NULL, a);
+		home_call(focus, "pane-clear", p, 0, NULL, a);
 		free(a);
 	} else if (strncmp(s, "image:", 6) == 0) {
-		call("pane-clear", focus);
-		call("Draw:image", focus, 1, NULL, s+6);
+		home_call(focus, "pane-clear", p);
+		home_call(focus, "Draw:image", p, 1, NULL, s+6);
 	} else if (strncmp(s, "call:", 5) == 0) {
-		call("pane-clear", p);
+		home_call(focus, "pane-clear", p);
 		home_call(focus, s+5, p, 0, m);
 	} else
-		call("pane-clear", focus);
+		home_call(focus, "pane-clear", p);
 
 	y = 0;
 	if (hdr) {
@@ -1256,9 +1286,10 @@ restart:
 			    shifted != 2) {
 				if (mwidth < 0) {
 					struct call_return cr =
-						call_ret(all, "text-size", p,
-							 -1, NULL, "M",
-							 0,  NULL, "");
+						home_call_ret(all, focus,
+							      "text-size", p,
+							      -1, NULL, "M",
+							      0,  NULL, "");
 					mwidth = cr.x;
 					if (mwidth <= 0)
 						mwidth = 1;
@@ -1285,9 +1316,10 @@ restart:
 			    shifted != 1) {
 				if (mwidth < 0) {
 					struct call_return cr =
-						call_ret(all, "text-size", p,
-							 -1, NULL, "M",
-							 0, NULL, "");
+						home_call_ret(all, focus,
+							      "text-size", p,
+							      -1, NULL, "M",
+							      0, NULL, "");
 					mwidth = cr.x;
 					if (mwidth <= 0)
 						mwidth = 1;
@@ -1313,15 +1345,16 @@ restart:
 		/* Place cursor in bottom right */
 		if (mwidth < 0) {
 			struct call_return cr =
-				call_ret(all, "text-size", p,
-					 -1, NULL, "M",
-					 0,  NULL, "");
+				home_call_ret(all, focus, "text-size", p,
+					      -1, NULL, "M",
+					      0,  NULL, "");
 			mwidth = cr.x;
 			if (mwidth <= 0)
 				mwidth = 1;
 		}
-		call("Draw:text", focus, 0, NULL, " ", scale.x, NULL, "",
-		     focus->w - mwidth, focus->h-1);
+		home_call(focus, "Draw:text", p, 0, NULL, " ",
+			  scale.x, NULL, "",
+			  focus->w - mwidth, focus->h-1);
 	}
 	/* Any marks after 'm' must be discarded */
 	if (m) {
