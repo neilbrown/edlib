@@ -568,8 +568,7 @@ DEF_CMD(emacs_insert)
 	if (!ci->mark)
 		return Enoarg;
 
-	/* Key is "Chr-X" - skip 4 bytes to get X */
-	str = ci->key + 4;
+	str = ksuffix(ci, "Chr-");
 	ret = call("Replace", ci->focus, 1, ci->mark, str,
 		   N2(ci) == N2_undo_insert);
 	call("Mode:set-num2", ci->focus, N2_undo_insert);
@@ -581,17 +580,20 @@ DEF_CMD(emacs_quote_insert)
 {
 	int ret;
 	char buf[2] = ".";
-	const char *str = buf;
+	const char *str;
 
 	if (!ci->mark)
 		return Enoarg;
 
-	if (strncmp(ci->key, "emQ-Chr-", 8) == 0)
-		str = ci->key + 8;
-	else if (strncmp(ci->key, "emQ-C-Chr-", 10) == 0)
-		buf[0] = ci->key[10] & 0x1f;
-	else
-		str = "??";
+	str = ksuffix(ci, "emQ-Chr-");
+	if (!str[0]) {
+		str = ksuffix(ci, "emQ-C-Chr-");
+		if (str[0]) {
+			buf[0] = str[0] & 0x1f;
+			str = buf;
+		} else
+			str = "??";
+	}
 	ret = call("Replace", ci->focus, 1, ci->mark, str,
 		   N2(ci) == N2_undo_insert);
 	call("Mode:set-num2", ci->focus, N2_undo_insert);
@@ -1213,7 +1215,7 @@ DEF_CMD(emacs_shell)
 DEF_CMD(emacs_num)
 {
 	int rpt = ci->num;
-	const char *last = ci->key + strlen(ci->key)-1;
+	const char *last = ksuffix(ci, "M-Chr-");
 	int neg = 0;
 
 	if (rpt < 0) {

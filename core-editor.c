@@ -135,7 +135,7 @@ DEF_CMD(editor_auto_load)
 	int ret;
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
-	const char *mod = ci->key + 7;
+	const char *mod = ksuffix(ci, "attach-");
 	char *mod2 = NULL;
 
 	/* Check the key really doesn't exist, rather than
@@ -150,7 +150,7 @@ DEF_CMD(editor_auto_load)
 	    strncmp(mod, "display-", 8) == 0)
 		;
 	else {
-		char *m = strrchr(ci->key+6, '-');
+		const char *m = strrchr(ci->key, '-');
 		if (m) {
 			m += 1;
 			mod2 = malloc(4+strlen(m)+1);
@@ -194,21 +194,21 @@ DEF_CMD(editor_multicall)
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
 
-	((struct cmd_info*)ci)->key += strlen("global-multicall-");
+	((struct cmd_info*)ci)->key = ksuffix(ci, "global-multicall-");
 	return key_lookup_prefix(map, ci);
 }
 
 DEF_CMD(editor_request_notify)
 {
-	/* editor:request:.... */
-	pane_add_notify(ci->focus, ci->home, ci->key + 15);
+	pane_add_notify(ci->focus, ci->home, ksuffix(ci, "editor:request:"));
 	return 1;
 }
 
 DEF_CMD(editor_send_notify)
 {
 	/* editor:notify:... */
-	return home_pane_notify(ci->home, ci->key + 14, ci->focus,
+	return home_pane_notify(ci->home, ksuffix(ci, "editor:notify:"),
+				ci->focus,
 				ci->num, ci->mark, ci->str,
 				ci->num2, ci->mark2, ci->str2, ci->comm2);
 }

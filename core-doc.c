@@ -469,7 +469,7 @@ DEF_CMD(doc_page)
 DEF_CMD(doc_set)
 {
 	struct doc *d = ci->home->data;
-	const char *val = ci->key + 8;
+	const char *val = ksuffix(ci, "doc:set:");
 
 	if (strcmp(val, "autoclose") == 0) {
 		d->autoclose = ci->num;
@@ -539,15 +539,15 @@ DEF_CMD(doc_set_name)
 
 DEF_CMD(doc_request_notify)
 {
-	/* Key starts "doc:request:" */
-	pane_add_notify(ci->focus, ci->home, ci->key + 12);
+	pane_add_notify(ci->focus, ci->home, ksuffix(ci, "doc:request:"));
 	return 1;
 }
 
 DEF_CMD(doc_notify)
 {
 	/* Key is "doc:notify:..." */
-	int ret = home_pane_notify(ci->home, ci->key + 11, ci->home,
+	int ret = home_pane_notify(ci->home, ksuffix(ci, "doc:notify:"),
+				   ci->home,
 				   ci->num, ci->mark, ci->str,
 				   ci->num2, ci->mark2, ci->str2, ci->comm2);
 	return ret;

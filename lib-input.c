@@ -272,15 +272,15 @@ DEF_CMD(mouse_event)
 
 DEF_CMD(request_notify)
 {
-	/* window:request:... */
-	pane_add_notify(ci->focus, ci->home, ci->key + 15);
+	pane_add_notify(ci->focus, ci->home, ksuffix(ci, "window:request:"));
 	return 1;
 }
 
 DEF_CMD(send_notify)
 {
 	/* window:notify:... */
-	return home_pane_notify(ci->home, ci->key + 14, ci->focus,
+	return home_pane_notify(ci->home, ksuffix(ci, "window:notify:"),
+				ci->focus,
 				ci->num, ci->mark, ci->str,
 				ci->num2, ci->mark2, ci->str2, ci->comm2);
 }

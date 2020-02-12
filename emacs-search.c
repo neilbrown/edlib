@@ -225,7 +225,7 @@ DEF_CMD(search_insert_quoted)
 	if (strchr(must_quote, ci->key[4]) == NULL)
 		return 0;
 	call("Replace", ci->focus, 1, NULL, "\\");
-	call("Replace", ci->focus, 1, NULL, ci->key + 4,
+	call("Replace", ci->focus, 1, NULL, ksuffix(ci, "Chr-"),
 	     1, NULL, ",auto=1");
 	return 1;
 }
@@ -239,9 +239,10 @@ DEF_CMD(search_insert_meta)
 	 */
 	char *bracket;
 	const char *brackets = "{}()[]";
+	const char *k = ksuffix(ci, "M-Chr-");
 	if (strchr(may_quote, ci->key[6])) {
 		call("Replace", ci->focus, 1, NULL, "\\");
-		call("Replace", ci->focus, 1, NULL, ci->key+6,
+		call("Replace", ci->focus, 1, NULL, k,
 		     1, NULL, ",auto=1");
 		return 1;
 	}
@@ -249,13 +250,13 @@ DEF_CMD(search_insert_meta)
 		return 0;
 	bracket = strchr(brackets, ci->key[6]);
 	if (!bracket) {
-		call("Replace", ci->focus, 1, NULL, ci->key + 6);
+		call("Replace", ci->focus, 1, NULL, k);
 	} else if ((bracket - brackets) % 2) {
 		/* Close bracket */
-		if (doc_following_pane(ci->focus, ci->mark) == (wint_t)ci->key[6])
+		if (doc_following_pane(ci->focus, ci->mark) == (wint_t)k[0])
 			call("Move-Char", ci->focus, 1);
 		else
-			call("Replace", ci->focus, 1, NULL, ci->key + 6);
+			call("Replace", ci->focus, 1, NULL, k);
 	} else {
 		/* Open bracket */
 		char b[3];

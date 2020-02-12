@@ -15,6 +15,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#include <string.h>
 #include "safe.h"
 
 #include "list.h"
@@ -385,6 +386,15 @@ void key_add_range(struct map *map safe,
 	key_add_range(map, prefix, prefix "\xFF\xFF\xFF\xFF", comm)
 void key_add_chain(struct map *map safe, struct map *chain);
 struct command *key_register_prefix(char *name safe);
+
+static inline const char *ksuffix(const struct cmd_info *ci,
+				  const char *prefix safe) safe
+{
+	int l = strlen(prefix);
+	if (strncmp(ci->key, prefix, l) == 0)
+		return ci->key + l;
+	return "";
+}
 
 /* DAMAGED_CURSOR, and DAMAGED_SIZE propagate down.
  * If any flag is set on children, DAMAGED_CHILD is set.
