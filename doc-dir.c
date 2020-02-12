@@ -637,7 +637,7 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe,
 		struct pane *new = call_ret(pane, "doc:open", home,
 					    fd, NULL, fname);
 		if (new) {
-			snprintf(buf, sizeof(buf), "Chr-%c", cmd);
+			snprintf(buf, sizeof(buf), "cmd-%c", cmd);
 			par = call_ret(pane, "ThisPane", focus);
 			if (!par)
 				return Efail;

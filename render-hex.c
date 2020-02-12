@@ -240,7 +240,7 @@ DEF_CMD(hex_appeared)
 {
 	char *t = pane_attr_get(ci->focus, "doc-type");
 	if (t && strcmp(t, "text") == 0)
-		attr_set_str(&ci->focus->attrs, "render-Chr-H", "hex");
+		attr_set_str(&ci->focus->attrs, "render-cmd-H", "hex");
 	return 0;
 }
 

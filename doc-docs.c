@@ -663,9 +663,9 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 	if (dp == NULL)
 		return 0;
 
-	snprintf(buf, sizeof(buf), "render-Chr-%c", cmd);
+	snprintf(buf, sizeof(buf), "render-cmd-%c", cmd);
 	renderer = pane_attr_get(dp, buf);
-	snprintf(buf, sizeof(buf), "view-Chr-%c", cmd);
+	snprintf(buf, sizeof(buf), "view-cmd-%c", cmd);
 	viewer = pane_attr_get(dp, buf);
 	if (!renderer && !viewer)
 		return Efail;

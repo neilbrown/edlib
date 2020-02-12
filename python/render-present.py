@@ -749,7 +749,7 @@ def markdown_attach(key, focus, comm2, **a):
 def markdown_appeared(key, focus, **a):
     n = focus["filename"]
     if n and n[-3:] == ".md":
-        focus["view-Chr-P"] = "present"
+        focus["view-cmd-P"] = "present"
         focus["view-default"] = "markdown"
     return 0
 
