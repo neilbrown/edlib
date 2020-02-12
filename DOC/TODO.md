@@ -7,6 +7,12 @@ Current priorities
 - [ ] convert to python3 and pygobject
 - [ ] C/python code "index" pane to quickly jump to function, and see context
 - [ ] beginnings of test suite
+- [ ] make key names shorter/easier
+- [ ] git mode:
+   - 'log' display that displays limited history, and asks for more as scrolling
+     happens
+   - easy view commit from log
+   - rebase to a given line - rearrange lines above.
 
 - [X] fill-mode
       - some way to select it (configuration?) and to set width
@@ -34,7 +40,7 @@ Bugs to be fixed
 
 - [X] for ()\n if () {} else if () GET INDENT WRONG
        I need a different marker for 'if' than for other prefixes, and
-       I need to recognise else *after* point and only revert to the 'if' when 
+       I need to recognise else *after* point and only revert to the 'if' when
        else is present, but revert all 'space' when not present.
        But the 'if' is marked by 'p' (prefix), the 'space', then (possibly) '{'
        I need to mark all of these... Maybe a new stack to record depth of 'if'
@@ -52,7 +58,7 @@ Core features
 - [X] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
 - [X] undo often doesn't leave me where I expect to be left. - maybe it is the
       location of the previous undo?(I think this is fixed now - haven't notice for a while)
-- [ ] account all mem allocation types separate, and (optionally) report
+- [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
 - [ ] malloc anti-fail policy.  Small allocations don't fail but use pre-allocated.
       large allocations use different API and can fail.
@@ -121,11 +127,11 @@ Module features
 
 ### popup
 
-- [ ] if 'focus' is a temp pane, it might disappear (lib-abbrev) which 
+- [ ] if 'focus' is a temp pane, it might disappear (lib-abbrev) which
       closes the popup.  I need to some how indicate a more stable pane
       for replies to go to
       Maybe lib-abbrev should catch ChildRegistered and call pane_subsume
-      to get out of the way ... or similar.... 
+      to get out of the way ... or similar....
 
 ### emacs
 
@@ -152,7 +158,8 @@ Module features
 
 - [ ] add full list of colour names (to lib-colourmap)
 - [ ] if we exhaust colours or pairs, reset and make use lower color depth.
-- [ ] handle !can_change_colors better.
+- [ ] handle !can_change_colors better.  Find out what colours exist, and choose
+      a near-by one.  Maybe add underline when insufficient contrast available.
 - [ ] Allow different colour-maps per pane so full redraw
       happens when changing colour-map.  This makes images
       practical.
@@ -181,6 +188,7 @@ Module features
 - [ ] keep log of keystrokes in a restricted document
 - [ ] support keyboard macros
 - [ ] if a prefix is unchange for a short while, display it in the message line
+- [ ] can we capture the substates of character composition, and give feed-back
 
 ### doc-dir
 
@@ -390,7 +398,7 @@ Module features
 - [ ] python indent need to recognize comment, and not treat them
       like code.
 - [ ]  auto-indent enhancements
-      
+
      -   py: after "return" de-indent
      -??  '*' should check for comment, and add a space
      -   A line after one ending ; or } or : or unindented is assumed to be
@@ -498,7 +506,7 @@ Some of the use-cases for threading that have occurred to me are:
   It would be nice if the main thread could just write out the file,
   then a separate thread could call fsync() and report when that was done.
 
-- remote editing::  It probably doesn't require threads, but they might 
+- remote editing::  It probably doesn't require threads, but they might
   be a suitable abstraction for allowing one editor instance to work
   with another over a socket - possibly between machines.  I imagine
   an editor running on my notebook communicating with the editor
@@ -611,7 +619,7 @@ Somethings that the editor can help with:
   part of this.
 
 A view on "git log" would only show the first page until you scroll down.  Then
-more would be requested and displayed.  So we don't generate thousands of commits 
+more would be requested and displayed.  So we don't generate thousands of commits
 unless that are actually wanted.
 
 ### wiggle/diff
