@@ -220,7 +220,8 @@ class EdDisplay(gtk.Window):
         layout.set_font_description(fd)
         ctx = layout.get_context()
         fg, bg = self.get_colours(attr)
-        pm = self.get_pixmap(focus)
+        pm, xo, yo = self.find_pixmap(focus)
+        x += xo; y += yo
         metric = ctx.get_metrics(fd)
         ascent = metric.get_ascent() / pango.SCALE
         ink,(lx,ly,width,height) = layout.get_pixel_extents()
@@ -296,17 +297,8 @@ class EdDisplay(gtk.Window):
                     x = w - w2
                 w = w2
         scale = pb.scale_simple(w, h, gtk.gdk.INTERP_HYPER)
-        # I'm not sure I'm completely happy with this, but when
-        # not stretching and when z == None, draw on a parent pane unless
-        # a pixmap has already been allocated.  This allows
-        # a temp pane to be created to draw an image, then it can
-        # be discarded and the image remains
-        if focus.z < 0 and focus.parent != focus:
-            x += focus.x
-            y += focus.y
-            focus = focus.parent
-        pm = self.get_pixmap(focus)
-        pm.draw_pixbuf(self.gc, scale, 0, 0, x, y)
+        pm, xo, yo = self.find_pixmap(focus)
+        pm.draw_pixbuf(self.gc, scale, 0, 0, x + xo, y + yo)
         return True
 
     def handle_notify_close(self, key, focus, **a):
@@ -392,14 +384,7 @@ class EdDisplay(gtk.Window):
         return fgc, bgc
 
     def get_pixmap(self, p):
-        # find pixmap attached to root-most pane with
-        # same size as this, with no x,y,z offset
-        while (p.parent != p and p.w == p.parent.w and p.h == p.parent.h and
-               p.x == 0 and p.y == 0 and p.z == 0):
-            if p in self.panes:
-                del self.panes[p]
-            p = p.parent
-
+        # Find or create pixmap for drawing on this pane.
         if p in self.panes:
             pm = self.panes[p]
             (w,h) = pm.get_size()
@@ -408,9 +393,22 @@ class EdDisplay(gtk.Window):
             del self.panes[p]
         else:
             self.pane.add_notify(p, "Notify:Close")
-
         self.panes[p] = gtk.gdk.Pixmap(self.window, p.w, p.h)
         return self.panes[p]
+
+    def find_pixmap(self, p):
+        # Find a pixmap already existing on this pane
+        # or an ancestor, and return the pixmap with x and y
+        # offset of this pane in the pixmap.
+
+        x = 0; y = 0
+        while p.parent != p and p not in self.panes:
+            x += p.x
+            y += p.y
+            p = p.parent
+        if p in self.panes:
+            return (self.panes[p], x, y)
+        # This must not happen. What should I do?
 
     def close_win(self, *a):
         self.pane.close()

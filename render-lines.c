@@ -1212,11 +1212,11 @@ restart:
 		call("pane-clear", p, 0, NULL, a);
 		free(a);
 	} else if (strncmp(s, "image:", 6) == 0) {
-		if (call("Draw:image", focus, 1, NULL, s+6) <= 0)
-			call("pane-clear", p);
+		call("pane-clear", focus);
+		call("Draw:image", focus, 1, NULL, s+6);
 	} else if (strncmp(s, "call:", 5) == 0) {
-		if (home_call(focus, s+5, p, 0, m) <= 0)
-			call("pane-clear", p);
+		call("pane-clear", p);
+		home_call(focus, s+5, p, 0, m);
 	} else
 		call("pane-clear", focus);
 

@@ -6,9 +6,8 @@
  * The pane is (typically) a tile in a display.
  * As well as content from the buffer, a 'view' provides
  * a scroll bar and a status line.
- * These server to visually separate different views from each other.
+ * These serve to visually separate different views from each other.
  *
- * For now, a cheap hack to just show the scroll bar and status line.
  */
 
 #include <unistd.h>
@@ -291,6 +290,7 @@ DEF_CMD(view_refresh_size)
 	int h = p->h;
 	int b;
 
+	call("pane-clear", p);
 	if (vd->border >= 0)
 		vd->border = calc_border(ci->focus);
 	b = vd->border < 0 ? 0 : vd->border;
