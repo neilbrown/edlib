@@ -449,28 +449,28 @@ static struct simple_command {
 	char		*type safe;
 	char		*k safe;
 } simple_commands[] = {
-	{CMD(emacs_simple), "Window:next", "KemCX-Chr-o"},
-	{CMD(emacs_simple), "Window:prev", "KemCX-Chr-O"},
-	{CMD(emacs_simple), "Window:x+", "KemCX-Chr-}"},
-	{CMD(emacs_simple), "Window:x-", "KemCX-Chr-{"},
-	{CMD(emacs_simple), "Window:y+", "KemCX-Chr-^"},
-	{CMD(emacs_simple), "Window:close-others", "KemCX-Chr-1"},
-	{CMD(emacs_simple), "Window:split-y", "KemCX-Chr-2"},
-	{CMD(emacs_simple), "Window:split-x", "KemCX-Chr-3"},
-	{CMD(emacs_simple), "Window:close", "KemCX-Chr-0"},
-	{CMD(emacs_simple), "Window:scale-relative", "KemCX-C-Chr-="},
-	{CMD(emacs_simple_neg), "Window:scale-relative", "KemCX-C-Chr--"},
+	{CMD(emacs_simple), "Window:next", "K:CXChr-o"},
+	{CMD(emacs_simple), "Window:prev", "K:CXChr-O"},
+	{CMD(emacs_simple), "Window:x+", "K:CXChr-}"},
+	{CMD(emacs_simple), "Window:x-", "K:CXChr-{"},
+	{CMD(emacs_simple), "Window:y+", "K:CXChr-^"},
+	{CMD(emacs_simple), "Window:close-others", "K:CXChr-1"},
+	{CMD(emacs_simple), "Window:split-y", "K:CXChr-2"},
+	{CMD(emacs_simple), "Window:split-x", "K:CXChr-3"},
+	{CMD(emacs_simple), "Window:close", "K:CXChr-0"},
+	{CMD(emacs_simple), "Window:scale-relative", "K:CXC-Chr-="},
+	{CMD(emacs_simple_neg), "Window:scale-relative", "K:CXC-Chr--"},
 	{CMD(emacs_simple), "Window:bury", "KM-Chr-B"},
-	{CMD(emacs_simple), "Display:new", "KemCX5-Chr-2"},
-	{CMD(emacs_simple), "Display:close", "KemCX5-Chr-0"},
-	{CMD(emacs_simple), "lib-server:done", "KemCX-Chr-#"},
+	{CMD(emacs_simple), "Display:new", "K:CX5Chr-2"},
+	{CMD(emacs_simple), "Display:close", "K:CX5Chr-0"},
+	{CMD(emacs_simple), "lib-server:done", "K:CXChr-#"},
 	{CMD(emacs_simple), "Abort", "KC-Chr-G"},
 	{CMD(emacs_simple), "NOP", "KM-Chr-G"},
-	{CMD(emacs_simple), "NOP", "KemCX-C-Chr-G"},
-	{CMD(emacs_simple), "NOP", "KemCX4-C-Chr-G"},
-	{CMD(emacs_simple), "doc:save-file", "KemCX-C-Chr-S"},
+	{CMD(emacs_simple), "NOP", "K:CXC-Chr-G"},
+	{CMD(emacs_simple), "NOP", "K:CX4C-Chr-G"},
+	{CMD(emacs_simple), "doc:save-file", "K:CXC-Chr-S"},
 	/* one day, this will be "find definition", now it is same as "find any" */
-	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "KemCX-M-Chr-."},
+	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "K:CXM-Chr-."},
 	{CMD(emacs_simple_str), "interactive-cmd-git-grep", "KM-Chr-."},
 };
 
@@ -585,9 +585,9 @@ DEF_CMD(emacs_quote_insert)
 	if (!ci->mark)
 		return Enoarg;
 
-	str = ksuffix(ci, "KemQ-Chr-");
+	str = ksuffix(ci, "K:CQChr-");
 	if (!str[0]) {
-		str = ksuffix(ci, "KemQ-C-Chr-");
+		str = ksuffix(ci, "K:CQC-Chr-");
 		if (str[0]) {
 			buf[0] = str[0] & 0x1f;
 			str = buf;
@@ -903,7 +903,7 @@ DEF_CMD(emacs_findfile)
 		if (!p)
 			return 0;
 
-		if (ksuffix(ci, "KemCX4-")[0]) {
+		if (ksuffix(ci, "K:CX4")[0]) {
 			attr_set_str(&p->attrs, "prompt",
 				     "Find File Other Window");
 			attr_set_str(&p->attrs, "done-key",
@@ -1062,7 +1062,7 @@ DEF_CMD(emacs_finddoc)
 
 		if (defname)
 			attr_set_str(&p->attrs, "default", defname);
-		if (ksuffix(ci, "KemCX4-")[0]) {
+		if (ksuffix(ci, "K:CX4")[0]) {
 			attr_set_str(&p->attrs, "prompt",
 				     "Find Document Other Window");
 			attr_set_str(&p->attrs, "done-key",
@@ -1591,7 +1591,7 @@ DEF_CMD(emacs_match_again)
 DEF_CMD(emacs_make)
 {
 	call("interactive-cmd-make", ci->focus,
-	     strcmp(ci->key, "KemCC-C-Chr-M") == 0, ci->mark);
+	     strcmp(ci->key, "K:CCC-Chr-M") == 0, ci->mark);
 	return 1;
 }
 
@@ -1755,11 +1755,11 @@ DEF_CMD(emacs_abbrev)
 }
 
 DEF_PFX_CMD(meta_cmd, "M-");
-DEF_PFX_CMD(cx_cmd, "emCX-");
-DEF_PFX_CMD(cx4_cmd, "emCX4-");
-DEF_PFX_CMD(cx5_cmd, "emCX5-");
-DEF_PFX_CMD(cc_cmd, "emCC-");
-DEF_PFX_CMD(quote_cmd, "emQ-");
+DEF_PFX_CMD(cx_cmd, ":CX");
+DEF_PFX_CMD(cx4_cmd, ":CX4");
+DEF_PFX_CMD(cx5_cmd, ":CX5");
+DEF_PFX_CMD(cc_cmd, ":CC");
+DEF_PFX_CMD(quote_cmd, ":CQ");
 
 static void emacs_init(void)
 {
@@ -1768,8 +1768,8 @@ static void emacs_init(void)
 
 	key_add(m, "KESC", &meta_cmd.c);
 	key_add(m, "KC-Chr-X", &cx_cmd.c);
-	key_add(m, "KemCX-Chr-4", &cx4_cmd.c);
-	key_add(m, "KemCX-Chr-5", &cx5_cmd.c);
+	key_add(m, "K:CXChr-4", &cx4_cmd.c);
+	key_add(m, "K:CXChr-5", &cx5_cmd.c);
 	key_add(m, "KC-Chr-C", &cc_cmd.c);
 	key_add(m, "KC-Chr-Q", &quote_cmd.c);
 
@@ -1797,44 +1797,44 @@ static void emacs_init(void)
 	key_add(m, "Interactive:delete", &emacs_interactive_delete);
 
 	key_add(m, "KC-Chr-_", &emacs_undo);
-	key_add(m, "KemCX-Chr-u", &emacs_undo);
+	key_add(m, "K:CXChr-u", &emacs_undo);
 	key_add(m, "KC-Chr-/", &emacs_undo);
 
 	key_add(m, "KC-Chr-L", &emacs_recenter);
 
-	key_add(m, "KemCX-C-Chr-F", &emacs_findfile);
-	key_add(m, "KemCX4-C-Chr-F", &emacs_findfile);
-	key_add(m, "KemCX4-Chr-f", &emacs_findfile);
+	key_add(m, "K:CXC-Chr-F", &emacs_findfile);
+	key_add(m, "K:CX4C-Chr-F", &emacs_findfile);
+	key_add(m, "K:CX4Chr-f", &emacs_findfile);
 	key_add(m, "File Found This Window", &emacs_findfile);
 	key_add(m, "File Found Other Window", &emacs_findfile);
 
-	key_add(m, "KemCX-Chr-b", &emacs_finddoc);
-	key_add(m, "KemCX4-Chr-b", &emacs_finddoc);
+	key_add(m, "K:CXChr-b", &emacs_finddoc);
+	key_add(m, "K:CX4Chr-b", &emacs_finddoc);
 	key_add(m, "Doc Found This Window", &emacs_finddoc);
 	key_add(m, "Doc Found Other Window", &emacs_finddoc);
-	key_add(m, "KemCX-C-Chr-B", &emacs_viewdocs);
+	key_add(m, "K:CXC-Chr-B", &emacs_viewdocs);
 
-	key_add(m, "KemCX-Chr-k", &emacs_kill_doc);
+	key_add(m, "K:CXChr-k", &emacs_kill_doc);
 
-	key_add(m, "KemCX-Chr-s", &emacs_save_all);
+	key_add(m, "K:CXChr-s", &emacs_save_all);
 
-	key_add(m, "KemCX-C-Chr-v", &emacs_revisit);
+	key_add(m, "K:CXC-Chr-v", &emacs_revisit);
 
-	key_add(m, "KemCX-Chr-=", &emacs_curs_pos);
+	key_add(m, "K:CXChr-=", &emacs_curs_pos);
 
 	key_add(m, "KC-Chr-S", &emacs_start_search);
 	key_add(m, "KC-Chr-R", &emacs_start_search);
 	key_add(m, "KM-Chr-%", &emacs_start_search);
 	key_add(m, "render:reposition", &emacs_reposition);
 
-	key_add(m, "KemCX-C-Chr-C", &emacs_exit);
+	key_add(m, "K:CXC-Chr-C", &emacs_exit);
 
 	key_add(m, "KC-Chr-U", &emacs_prefix);
 
 	key_add(m, "KM-Chr-!", &emacs_shell);
 	key_add(m, "Shell Command", &emacs_shell);
 
-	key_add(m, "KemCX-Chr-`", &emacs_next_match);
+	key_add(m, "K:CXChr-`", &emacs_next_match);
 	key_add(m, "KChr-`", &emacs_match_again);
 
 	key_add_range(m, "KM-Chr-0", "KM-Chr-9", &emacs_num);
@@ -1842,7 +1842,7 @@ static void emacs_init(void)
 	key_add(m, "KC-Chr--", &emacs_neg);
 	key_add(m, "KC-Chr- ", &emacs_mark);
 	key_add(m, "mode-set-mark", &emacs_mark);
-	key_add(m, "KemCX-C-Chr-X", &emacs_swap_mark);
+	key_add(m, "K:CXC-Chr-X", &emacs_swap_mark);
 	key_add(m, "Abort", &emacs_abort);
 	key_add(m, "KC-Chr-W", &emacs_wipe);
 	key_add(m, "KM-Chr-w", &emacs_copy);
@@ -1852,15 +1852,15 @@ static void emacs_init(void)
 
 	key_add(m, "KM-Chr-g", &emacs_goto_line);
 	key_add(m, "KM-Chr-x", &emacs_command);
-	key_add(m, "KemCC-Chr-m", &emacs_make);
-	key_add(m, "KemCC-C-Chr-M", &emacs_make);
+	key_add(m, "K:CCChr-m", &emacs_make);
+	key_add(m, "K:CCC-Chr-M", &emacs_make);
 
 	key_add(m, "KM-C-Chr-V", &emacs_move_view_other);
 
-	key_add(m, "KemCX-C-Chr-Q", &emacs_readonly);
+	key_add(m, "K:CXC-Chr-Q", &emacs_readonly);
 
-	key_add_prefix(m, "KemQ-Chr-", &emacs_quote_insert);
-	key_add_prefix(m, "KemQ-C-Chr-", &emacs_quote_insert);
+	key_add_prefix(m, "K:CQChr-", &emacs_quote_insert);
+	key_add_prefix(m, "K:CQC-Chr-", &emacs_quote_insert);
 
 	key_add(m, "KM-Chr-q", &emacs_fill);
 	key_add(m, "KM-Chr-/", &emacs_abbrev);
