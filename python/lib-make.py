@@ -246,7 +246,7 @@ class MakePane(edlib.Pane):
         self.note_ok = False
         return self.map[int(p['ref'])]
 
-    def close_idle(self):
+    def close_idle(self, cnt):
         if self['cmd'] == 'make':
             # don't close 'make'
             return
@@ -261,8 +261,9 @@ class MakePane(edlib.Pane):
             p = p.next()
             if p and p['has_note'] != 'yes':
                 break
-        if p:
-            # Haven't visited the last match yet
+        if p and cnt < 5:
+            # Haven't visited the last match yet, and this is
+            # a relatively recent 'grep' - might still be interesting.
             return 0
         if not self.parent.notify("doc:notify-viewers"):
             self.parent.close()
@@ -271,7 +272,7 @@ class MakePane(edlib.Pane):
     def make_next(self, key, focus, num, str, str2, xy, **a):
         "handle:make:match-docs"
         if str == "close-idle":
-            return self.close_idle()
+            return self.close_idle(xy[0])
         if str != "next-match":
             return 0
         prevret = xy[1]
@@ -396,7 +397,7 @@ class MakePane(edlib.Pane):
 
     def handle_make_close(self, key, **a):
         "handle:make-close"
-        # make output doc is being reused, so we'ld better get out of the way
+        # make output doc is being reused, so we'd better get out of the way
         self.close()
         return 1
 
