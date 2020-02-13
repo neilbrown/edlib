@@ -222,7 +222,7 @@ DEF_CMD(mouse_event)
 	}
 
 	if (!ms) {
-		key = strconcat(ci->home, im->mode, ci->str);
+		key = strconcat(ci->home, "M", im->mode, ci->str);
 		return call(key, focus, num, NULL, NULL, ex, NULL, NULL, x, y);
 	}
 	if (press) {
@@ -234,7 +234,7 @@ DEF_CMD(mouse_event)
 		for (r = ms->click_count; r >= 1 ; r--) {
 			int ret;
 			char *mult = "\0\0D\0T" + (r-1)*2;
-			key = strconcat(ci->home, mode, mult,
+			key = strconcat(ci->home, "M", mode, mult,
 					"Press-", ci->str+6);
 			ret = call(key, focus, num, NULL, NULL, ex,
 				   NULL, NULL, x, y);
@@ -242,7 +242,7 @@ DEF_CMD(mouse_event)
 			if (ret)
 				return ret;
 
-			key = strconcat(ci->home, mode, mult,
+			key = strconcat(ci->home, "M", mode, mult,
 					"Click-", ci->str+6);
 			ret = call(key, focus, num, NULL, NULL, ex,
 				   NULL, NULL, x, y);
@@ -258,7 +258,7 @@ DEF_CMD(mouse_event)
 		for (r = ms->click_count; r >= 1 ; r--) {
 			int ret;
 			char *mult = "\0\0D\0T" + (r-1)*2;
-			key = strconcat(ci->home, mode, mult,
+			key = strconcat(ci->home, "M", mode, mult,
 					"Release-", ci->str+8);
 			ret = call(key, focus, num, NULL, NULL, ex,
 				   NULL, NULL, x, y);
