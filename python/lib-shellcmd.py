@@ -66,7 +66,7 @@ class ShellPane(edlib.Pane):
 
 def shell_attach(key, focus, comm2, str, str2, **a):
     # Clear document - discarding undo history.
-    focus.call("doc:clear",)
+    focus.call("doc:clear")
     p = ShellPane(focus)
     if not p:
         return edlib.Efail;
