@@ -7,7 +7,7 @@ Current priorities
 - [ ] convert to python3 and pygobject
 - [ ] C/python code "index" pane to quickly jump to function, and see context
 - [ ] beginnings of test suite
-- [ ] make key names shorter/easier
+- [X] make key names shorter/easier
 - [ ] git mode:
    - 'log' display that displays limited history, and asks for more as scrolling
      happens
@@ -69,7 +69,7 @@ Core features
       marks exactly? start and end of range.
 - [ ] Need a debug mode where every mark usage is checked for validity.
       also check the setref sets up all linkages.
-- [ ] Make key names shorter and easier.
+- [X] Make key names shorter and easier.
       There are two name spaces - characters and names
       characters are preceded by '-', names by ':'.
       K-E is the key "Captial E"

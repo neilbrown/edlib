@@ -508,7 +508,7 @@ class EdDisplay(gtk.Window):
         self.unblock_motion()
         x = int(event.x)
         y = int(event.y)
-        s = "Press-" + ("%d"%event.button)
+        s = ":Press-" + ("%d"%event.button)
         if event.state & gtk.gdk.SHIFT_MASK:
             s = ":S" + s;
         if event.state & gtk.gdk.CONTROL_MASK:
@@ -524,7 +524,7 @@ class EdDisplay(gtk.Window):
         c.grab_focus()
         x = int(event.x)
         y = int(event.y)
-        s = "Release-" + ("%d"%event.button)
+        s = ":Release-" + ("%d"%event.button)
         if event.state & gtk.gdk.SHIFT_MASK:
             s = ":S" + s;
         if event.state & gtk.gdk.CONTROL_MASK:
@@ -539,7 +539,7 @@ class EdDisplay(gtk.Window):
         edlib.time_start(edlib.TIME_KEY)
         x = int(event.x)
         y = int(event.y)
-        ret = self.pane.call("Mouse-event", "Motion", (x,y), 0, 3)
+        ret = self.pane.call("Mouse-event", ":Motion", (x,y), 0, 3)
         if not ret:
             self.block_motion()
 
@@ -549,10 +549,10 @@ class EdDisplay(gtk.Window):
         x = int(event.x)
         y = int(event.y)
         if event.direction == gtk.gdk.SCROLL_UP:
-            s = "Press-4"
+            s = ":Press-4"
             b = 4
         else:
-            s = "Press-5"
+            s = ":Press-5"
             b = 5
         if event.state & gtk.gdk.SHIFT_MASK:
             s = ":S" + s;

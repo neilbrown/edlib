@@ -1599,7 +1599,7 @@ DEF_CMD(emacs_press)
 {
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
-	char *type = strcmp(ci->key, "MPress-1") == 0 ? "char" : "word";
+	char *type = strcmp(ci->key, "M:Press-1") == 0 ? "char" : "word";
 
 	if (!m)
 		return Efail;
@@ -1868,10 +1868,10 @@ static void emacs_init(void)
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);
 
-	key_add(m, "MPress-1", &emacs_press);
-	key_add(m, "MRelease-1", &emacs_release);
-	key_add(m, "MDPress-1", &emacs_press);
-	key_add(m, "MClick-2", &emacs_paste);
+	key_add(m, "M:Press-1", &emacs_press);
+	key_add(m, "M:Release-1", &emacs_release);
+	key_add(m, "M:DPress-1", &emacs_press);
+	key_add(m, "M:Click-2", &emacs_paste);
 
 	emacs_map = m;
 }

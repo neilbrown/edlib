@@ -451,7 +451,7 @@ DEF_CMD(view_scroll)
 {
 	struct view_data *vd = ci->home->data;
 
-	if (strcmp(ci->key, "MPress-4") == 0)
+	if (strcmp(ci->key, "M:Press-4") == 0)
 		vd->move_small -= 2;
 	else
 		vd->move_small += 2;
@@ -509,10 +509,10 @@ void edlib_init(struct pane *ed safe)
 {
 	view_map = key_alloc();
 
-	key_add(view_map, "MClick-1", &view_click);
-	key_add(view_map, "MPress-1", &view_click);
-	key_add(view_map, "MPress-4", &view_scroll);
-	key_add(view_map, "MPress-5", &view_scroll);
+	key_add(view_map, "M:Click-1", &view_click);
+	key_add(view_map, "M:Press-1", &view_click);
+	key_add(view_map, "M:Press-4", &view_scroll);
+	key_add(view_map, "M:Press-5", &view_scroll);
 	key_add(view_map, "Window:border", &view_border);
 	key_add(view_map, "Refresh:view", &view_refresh_view);
 	key_add(view_map, "Close", &view_close);

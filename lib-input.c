@@ -226,16 +226,19 @@ DEF_CMD(mouse_event)
 		return call(key, focus, num, NULL, NULL, ex, NULL, NULL, x, y);
 	}
 	if (press) {
-		/* Try nPress nClick (n-1)Press (n-1)Click until something gets
-		 * a result. 'n' is T (triple) or D(double) or ""(Single).
+		/* Try nPress :nClick :(n-1)Press :(n-1)Click until something
+		 * gets a result. 'n' is T (triple) or D(double) or ""(Single).
 		 * If a Click got a result, suppress subsequent release
 		 */
 		int r;
 		for (r = ms->click_count; r >= 1 ; r--) {
 			int ret;
 			char *mult = "\0\0D\0T" + (r-1)*2;
-			key = strconcat(ci->home, "M", mode, mult,
-					"Press-", ci->str+6);
+			char n[2];
+			n[0] = '1' + b;
+			n[1] = 0;
+			key = strconcat(ci->home, "M", mode, ":", mult,
+					"Press-", n);
 			ret = call(key, focus, num, NULL, NULL, ex,
 				   NULL, NULL, x, y);
 
@@ -243,7 +246,7 @@ DEF_CMD(mouse_event)
 				return ret;
 
 			key = strconcat(ci->home, "M", mode, mult,
-					"Click-", ci->str+6);
+					":Click-", n);
 			ret = call(key, focus, num, NULL, NULL, ex,
 				   NULL, NULL, x, y);
 
@@ -258,8 +261,12 @@ DEF_CMD(mouse_event)
 		for (r = ms->click_count; r >= 1 ; r--) {
 			int ret;
 			char *mult = "\0\0D\0T" + (r-1)*2;
-			key = strconcat(ci->home, "M", mode, mult,
-					"Release-", ci->str+8);
+			char n[2];
+			n[0] = '1' + b;
+			n[1] = 0;
+
+			key = strconcat(ci->home, "M", mode, ":", mult,
+					"Release-", n);
 			ret = call(key, focus, num, NULL, NULL, ex,
 				   NULL, NULL, x, y);
 

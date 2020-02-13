@@ -341,11 +341,11 @@ REDEF_CMD(next_evt)
 	case DoMouse:
 		record_mouse(p, dd->event_info, dd->event_pos.x,
 			     dd->event_pos.y);
-		if (strstr(dd->event_info, "Press"))
+		if (strstr(dd->event_info, ":Press"))
 			type = 1;
-		else if (strstr(dd->event_info, "Release"))
+		else if (strstr(dd->event_info, ":Release"))
 			type = 2;
-		else if (strstr(dd->event_info, "Motion"))
+		else if (strstr(dd->event_info, ":Motion"))
 			type = 3;
 		if (type == 1 || type == 2) {
 			char *e = dd->event_info + strlen(dd->event_info) - 1;
@@ -956,9 +956,9 @@ static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 		mmask_t s = mev->bstate;
 		char *action;
 		if (BUTTON_PRESS(s, b))
-			action = "Press-%d";
+			action = ":Press-%d";
 		else if (BUTTON_RELEASE(s, b))
-			action = "Release-%d";
+			action = ":Release-%d";
 		else
 			continue;
 		sprintf(buf, action, b);
@@ -968,7 +968,7 @@ static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 	if ((mev->bstate & REPORT_MOUSE_POSITION) &&
 	    dd->report_position)
 		/* Motion doesn't update last_event */
-		do_send_mouse(p, x, y, "Motion", 0, 3);
+		do_send_mouse(p, x, y, ":Motion", 0, 3);
 }
 
 REDEF_CMD(input_handle)
