@@ -150,7 +150,7 @@ class AbbrevPane(edlib.Pane):
         return 1
 
     def left_right(self, key, focus, mark, **a):
-        "handle-list/Left/Right"
+        "handle-list/KLeft/KRight"
         m = self.prefix_start.dup()
         try:
             if key == "Left":
@@ -172,7 +172,7 @@ class AbbrevPane(edlib.Pane):
         return 1
 
     def up_down(self, key, focus, mark, **a):
-        "handle-list/Up/Down"
+        "handle-list/KUp/KDown"
         if key == "Up":
             self.next_completion(-1)
         else:
@@ -180,7 +180,7 @@ class AbbrevPane(edlib.Pane):
         return 1
 
     def handle_escape(self, key, focus, mark, **a):
-        "handle:ESC"
+        "handle:KESC"
         # remove current completion, and abort
         self.active = True
         self.call("Replace", "", self.prefix_end)

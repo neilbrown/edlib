@@ -42,7 +42,7 @@ class DiffPane(edlib.Pane):
         home.clone_children(p)
 
     def handle_enter(self, key, focus, mark, **a):
-        "handle:Enter"
+        "handle:KEnter"
         m = mark.dup()
         focus.call("Move-EOL", -1, m)
         lines = 0

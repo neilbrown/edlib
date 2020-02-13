@@ -58,7 +58,7 @@ DEF_CMD(search_forward)
 	struct mark *newstart;
 	const char *suffix;
 
-	suffix = ksuffix(ci, "C-Chr-");
+	suffix = ksuffix(ci, "KC-Chr-");
 	if (suffix[0])
 		esi->backwards = suffix[0] == 'R';
 
@@ -186,7 +186,7 @@ DEF_CMD(search_add)
 		call("text-search", esi->target,
 		     !esi->case_sensitive, addpos, str);
 	m = mark_dup(addpos);
-	if (strcmp(ci->key, "C-Chr-W")==0)
+	if (strcmp(ci->key, "KC-Chr-W")==0)
 		call("Move-Word", esi->target, 1, m);
 	else
 		call("Move-Char", esi->target, 1, m);
@@ -224,11 +224,11 @@ DEF_CMD(search_add)
 
 DEF_CMD(search_insert_quoted)
 {
-	const char *suffix = ksuffix(ci, "Chr-");
+	const char *suffix = ksuffix(ci, "KChr-");
 	if (strchr(must_quote, suffix[0]) == NULL)
 		return 0;
 	call("Replace", ci->focus, 1, NULL, "\\");
-	call("Replace", ci->focus, 1, NULL, ksuffix(ci, "Chr-"),
+	call("Replace", ci->focus, 1, NULL, ksuffix(ci, "KChr-"),
 	     1, NULL, ",auto=1");
 	return 1;
 }
@@ -242,7 +242,7 @@ DEF_CMD(search_insert_meta)
 	 */
 	char *bracket;
 	const char *brackets = "{}()[]";
-	const char *k = ksuffix(ci, "M-Chr-");
+	const char *k = ksuffix(ci, "KM-Chr-");
 	if (strchr(may_quote, *k)) {
 		call("Replace", ci->focus, 1, NULL, "\\");
 		call("Replace", ci->focus, 1, NULL, k,
@@ -363,7 +363,7 @@ DEF_CMD(search_done)
 	char *str;
 	struct mark *mk;
 
-	if (esi->replace_pane && strcmp(ci->key, "Enter") == 0) {
+	if (esi->replace_pane && strcmp(ci->key, "KEnter") == 0) {
 		/* if there is a replace pane, switch to it instead of closing */
 		pane_focus(esi->replace_pane);
 		return 1;
@@ -443,7 +443,7 @@ DEF_CMD(search_replace)
 	esi->replace_pane = p;
 	if (p)
 		home_call(esi->target, "highlight:set-popup", p, 1);
-	if (strcmp(ci->key, "M-Chr-%") == 0)
+	if (strcmp(ci->key, "KM-Chr-%") == 0)
 		pane_focus(ci->focus);
 	else
 		pane_focus(p);
@@ -554,38 +554,38 @@ static void emacs_search_init_map(void)
 {
 	/* Keys for the 'search' pane */
 	es_map = key_alloc();
-	key_add(es_map, "C-Chr-S", &search_forward);
+	key_add(es_map, "KC-Chr-S", &search_forward);
 	key_add(es_map, "search:again", &search_forward);
-	key_add(es_map, "Backspace", &search_retreat);
-	key_add(es_map, "C-Chr-W", &search_add);
-	key_add(es_map, "C-Chr-C", &search_add);
-	key_add(es_map, "C-Chr-R", &search_forward);
+	key_add(es_map, "KBackspace", &search_retreat);
+	key_add(es_map, "KC-Chr-W", &search_add);
+	key_add(es_map, "KC-Chr-C", &search_add);
+	key_add(es_map, "KC-Chr-R", &search_forward);
 	key_add(es_map, "Close", &search_close);
 	key_add(es_map, "Free", &edlib_do_free);
-	key_add(es_map, "Enter", &search_done);
+	key_add(es_map, "KEnter", &search_done);
 	key_add(es_map, "search:done", &search_done);
 	key_add(es_map, "doc:replaced", &search_again);
 	key_add(es_map, "Notify:clip", &search_clip);
-	key_add(es_map, "C-Chr-L", &search_recentre);
-	key_add_range(es_map, "Chr- ", "Chr-~", &search_insert_quoted);
-	key_add_range(es_map, "M-Chr- ", "M-Chr-~", &search_insert_meta);
-	key_add(es_map, "M-Chr-c", &search_toggle_ci);
-	key_add(es_map, "M-Chr-r", &search_replace);
-	key_add(es_map, "Tab", &search_replace);
-	key_add(es_map, "M-Chr-%", &search_replace);
+	key_add(es_map, "KC-Chr-L", &search_recentre);
+	key_add_range(es_map, "KChr- ", "KChr-~", &search_insert_quoted);
+	key_add_range(es_map, "KM-Chr- ", "KM-Chr-~", &search_insert_meta);
+	key_add(es_map, "KM-Chr-c", &search_toggle_ci);
+	key_add(es_map, "KM-Chr-r", &search_replace);
+	key_add(es_map, "KTab", &search_replace);
+	key_add(es_map, "KM-Chr-%", &search_replace);
 
 	key_add(es_map, "search:replace", &do_replace);
 
 	/* keys for the 'replace' pane */
 	er_map = key_alloc();
-	key_add(er_map, "Enter", &replace_request_next);
-	key_add(er_map, "M-Enter", &replace_request);
-	key_add(er_map, "Tab", &replace_to_search);
-	key_add(er_map, "S-Tab", &replace_to_search);
-	key_add(er_map, "M-Chr-!", &replace_all);
-	key_add(er_map, "C-Chr-S", &replace_forward);
-	key_add(er_map, "C-Chr-R", &replace_forward);
-	key_add(er_map, "C-Chr-L", &replace_forward);
+	key_add(er_map, "KEnter", &replace_request_next);
+	key_add(er_map, "KM-Enter", &replace_request);
+	key_add(er_map, "KTab", &replace_to_search);
+	key_add(er_map, "KS-Tab", &replace_to_search);
+	key_add(er_map, "KM-Chr-!", &replace_all);
+	key_add(er_map, "KC-Chr-S", &replace_forward);
+	key_add(er_map, "KC-Chr-R", &replace_forward);
+	key_add(er_map, "KC-Chr-L", &replace_forward);
 	key_add(er_map, "doc:reundo", &replace_undo);
 }
 
@@ -622,7 +622,7 @@ DEF_CMD(emacs_search)
 		comm_call(ci->comm2, "callback:attach", p);
 
 		if (ci->num & 2)
-			call("M-Chr-%", p);
+			call("KM-Chr-%", p);
 	}
 	return 1;
 }

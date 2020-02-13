@@ -433,7 +433,7 @@ class CModePane(edlib.Pane):
         return (r, '')
 
     def handle_close(self, key, focus, mark, **a):
-        "handle-list/Chr-}/Chr-)/Chr-]/Chr-{/"
+        "handle-list/KChr-}/KChr-)/KChr-]/KChr-{/"
 
         if self.indent_type != 'C':
             return 0
@@ -447,7 +447,7 @@ class CModePane(edlib.Pane):
         return 1
 
     def handle_colon(self, key, focus, mark, **a):
-        "handle:Chr-:"
+        "handle:KChr-:"
 
         if self.indent_type != 'C':
             return 0
@@ -463,7 +463,7 @@ class CModePane(edlib.Pane):
 
 
     def handle_enter(self, key, focus, mark, num2, **a):
-        "handle:Enter"
+        "handle:KEnter"
         # If there is white space before or after the cursor,
         # remove it.  Then work out how indented this line
         # should be, and insert that much space, plus any
@@ -494,7 +494,7 @@ class CModePane(edlib.Pane):
             return 0
 
     def handle_tab(self, key, focus, mark, num, **a):
-        "handle:Tab"
+        "handle:KTab"
         # if there is only white-space before cursor (up to newline) then:
         # move to end of white-space
         # - choose an indent as for Return
@@ -567,7 +567,7 @@ class CModePane(edlib.Pane):
         return 0
 
     def handle_meta_tab(self, key, focus, mark, **a):
-        "handle:M-Tab"
+        "handle:KM-Tab"
         # like tab-at-start-of-line, anywhere in line
         # Probably need to type esc-tab, as Alt-Tab normally
         # goes to next window in window system
@@ -576,7 +576,7 @@ class CModePane(edlib.Pane):
         self.handle_tab(key, focus, m, 1)
 
     def handle_bs(self, key, focus, mark, **a):
-        "handle:Backspace"
+        "handle:KBackspace"
         # If in the indent, remove one level of indent
         m = mark.dup()
         c = focus.call("doc:step", 1, m, ret="char")

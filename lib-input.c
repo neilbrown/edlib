@@ -65,40 +65,39 @@ DEF_CMD(keystroke)
 	int num = im->num;
 	int num2 = im->num2;
 	struct mark *m;
+	int cnt = 1;
+	const char *k = ci->str;
+	char *end;
 
 	if (!ci->str)
 		return Enoarg;
 
 	pane_notify("Keystroke-notify", ci->home, 0, NULL, ci->str);
 
-	if (im->mode[0]) {
-		int cnt = 1;
-		const char *k = ci->str;
-		char *end;
-		while ((end = strchr(k, '\037')) != NULL) {
-			cnt += 1;
-			k = end + 1;
-			while (*k == '\037')
-				k++;
-		}
-		l = strlen(im->mode) * cnt + strlen(ci->str) + 1;
+	while ((end = strchr(k, '\037')) != NULL) {
+		cnt += 1;
+		k = end + 1;
+		while (*k == '\037')
+			k++;
+	}
+	l = (1 + strlen(im->mode)) * cnt + strlen(ci->str) + 1;
 
-		vkey = malloc(l);
-		memset(vkey, 0, l);
-		k = ci->str;
-		while ((end = strchr(k, '\037')) != NULL) {
-			end += 1;
-			strcat(vkey, im->mode);
-			strncat(vkey, k, end-k);
-			k = end;
-			while (*k == '\037')
-				k++;
-		}
+	vkey = malloc(l);
+	memset(vkey, 0, l);
+	k = ci->str;
+	while ((end = strchr(k, '\037')) != NULL) {
+		end += 1;
+		strcat(vkey, "K");
 		strcat(vkey, im->mode);
-		strcat(vkey, k);
-		key = vkey;
-	} else
-		key = ci->str;
+		strncat(vkey, k, end-k);
+		k = end;
+		while (*k == '\037')
+			k++;
+	}
+	strcat(vkey, "K");
+	strcat(vkey, im->mode);
+	strcat(vkey, k);
+	key = vkey;
 
 	im->mode = "";
 	im->num = NO_NUMERIC;

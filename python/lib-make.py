@@ -464,14 +464,14 @@ class MakeViewerPane(edlib.Pane):
         return 1
 
     def handle_enter(self, key, focus, mark, **a):
-        "handle:Enter"
+        "handle:KEnter"
         focus.call("doc:notify:doc:make-revisit", mark)
         next_match("interactive-cmd-next-match", focus,
                    edlib.NO_NUMERIC, "OtherPane")
         return 1
 
     def handle_kill(self, key, **a):
-        "handle:Chr-q"
+        "handle:KChr-q"
         self.call("doc:destroy")
         return 1
 
@@ -518,7 +518,7 @@ class makeprompt(edlib.Pane):
         self.call("attach-file-entry", "shellcmd")
 
     def enter(self, key, focus, **a):
-        "handle:Enter"
+        "handle:KEnter"
         str = focus.call("doc:get-str", ret="str")
         return focus.call("popup:close", str)
 

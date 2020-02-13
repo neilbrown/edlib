@@ -38,13 +38,13 @@ DEF_CMD(no_replace)
 
 DEF_CMD(viewer_page_down)
 {
-	call("Next", ci->focus, ci->num, ci->mark);
+	call("KNext", ci->focus, ci->num, ci->mark);
 	return 1;
 }
 
 DEF_CMD(viewer_page_up)
 {
-	call("Prior", ci->focus, ci->num, ci->mark);
+	call("KPrior", ci->focus, ci->num, ci->mark);
 	return 1;
 }
 
@@ -81,12 +81,12 @@ void edlib_init(struct pane *ed safe)
 	viewer_map = key_alloc();
 
 	key_add(viewer_map, "Replace", &no_replace);
-	key_add(viewer_map, "Chr- ", &viewer_page_down);
-	key_add(viewer_map, "C-Chr-H", &viewer_page_up);
-	key_add(viewer_map, "Backspace", &viewer_page_up);
-	key_add(viewer_map, "Del", &viewer_page_up);
-	key_add(viewer_map, "Chr-q", &viewer_bury);
-	key_add(viewer_map, "Chr-E", &viewer_close);
+	key_add(viewer_map, "KChr- ", &viewer_page_down);
+	key_add(viewer_map, "KC-Chr-H", &viewer_page_up);
+	key_add(viewer_map, "KBackspace", &viewer_page_up);
+	key_add(viewer_map, "KDel", &viewer_page_up);
+	key_add(viewer_map, "KChr-q", &viewer_bury);
+	key_add(viewer_map, "KChr-E", &viewer_close);
 	key_add(viewer_map, "Clone", &viewer_clone);
 
 	call_comm("global-set-command", ed, &viewer_attach, 0, NULL, "attach-viewer");
