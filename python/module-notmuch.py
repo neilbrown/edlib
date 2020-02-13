@@ -613,7 +613,7 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_dot(self, key, focus, mark, **a):
-        "handle:KChr-."
+        "handle:K-."
         # select thing under point, but don't move
         focus.call("notmuch:select", mark, 0)
         return 1
@@ -625,7 +625,7 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_space(self, key, **a):
-        "handle:KChr- "
+        "handle:K- "
         if self.message_pane:
             self.message_pane.call(key)
         elif self.query_pane:
@@ -635,7 +635,7 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_move(self, key, mark, **a):
-        "handle-list/K:MChr-n/K:MChr-p/KChr-n/KChr-p"
+        "handle-list/K:M-n/K:M-p/K-n/K-p"
         if key[0] == "M" or not self.query_pane:
             p = self.list_pane
             op = self.query_pane
@@ -655,7 +655,7 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_A(self, key, focus, mark, str, **a):
-        "handle:KChr-a"
+        "handle:K-a"
         in_message = False
         in_query = False
         in_main = False
@@ -674,7 +674,7 @@ class notmuch_master_view(edlib.Pane):
                                          mp.ctid, mp.cmid)
                 else:
                     self.list_pane.call("doc:notmuch:remove-tag-inbox", mp.ctid, mp.cmid)
-            self.call("KChr-n")
+            self.call("K-n")
             return 1
         if in_query:
             thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
@@ -696,15 +696,15 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_xq(self, key, **a):
-        "handle-list/KChr-x/KChr-q"
+        "handle-list/K-x/K-q"
         if self.message_pane:
-            if key != "Chr-x":
+            if key != "-x":
                 self.mark_read()
             p = self.message_pane
             self.message_pane = None
             p.call("Window:close", "notmuch")
         elif self.query_pane:
-            if key != "Chr-x":
+            if key != "-x":
                 self.query_pane.call("doc:notmuch:mark-seen")
             p = self.query_pane
             self.query_pane = None
@@ -721,7 +721,7 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_v(self, key, **a):
-        "handle:KChr-V"
+        "handle:K-V"
         if not self.message_pane:
             return 1
         p2 = self.call("doc:open", self.message_pane["filename"], -1,
@@ -736,19 +736,19 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_o(self, key, focus, **a):
-        "handle:KChr-o"
+        "handle:K-o"
         # focus to next window
         focus.call("Window:next", "notmuch")
         return 1
 
     def handle_O(self, key, focus, **a):
-        "handle:KChr-O"
+        "handle:K-O"
         # focus to prev window
         focus.call("Window:prev", "notmuch")
         return 1
 
     def handle_g(self, key, focus, **a):
-        "handle:KChr-g"
+        "handle:K-g"
         focus.call("doc:notmuch:update")
         self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
         return 1
@@ -1436,7 +1436,7 @@ class notmuch_query_view(edlib.Pane):
         return 0
 
     def handle_Z(self, key, focus, **a):
-        "handle:KChr-Z"
+        "handle:K-Z"
         if not self.thread_start:
             return 1
         if self.whole_thread:
@@ -1571,7 +1571,7 @@ class notmuch_message_view(edlib.Pane):
         return 1
 
     def handle_slash(self, key, focus, mark, **a):
-        "handle:KChr-/"
+        "handle:K-/"
         s = focus.call("doc:get-attr", mark, "email:visible", ret='str')
         if not s:
             return 1
@@ -1582,15 +1582,15 @@ class notmuch_message_view(edlib.Pane):
         return 1
 
     def handle_space(self, key, focus, mark, **a):
-        "handle:KChr- "
+        "handle:K- "
         if focus.call("K:Next", 1, mark) == 2:
-            focus.call("KChr-n", mark)
+            focus.call("K-n", mark)
         return 1
 
     def handle_backspace(self, key, focus, mark, **a):
         "handle:K:Backspace"
         if focus.call("K:Prior", 1, mark) == 2:
-            focus.call("KChr-p", mark)
+            focus.call("K-p", mark)
         return 1
 
     def handle_return(self, key, focus, mark, **a):

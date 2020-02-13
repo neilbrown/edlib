@@ -112,7 +112,7 @@ DEF_CMD(history_move)
 	struct history_info *hi = ci->home->data;
 	struct mark *m;
 	char *l, *e;
-	const char *suffix = ksuffix(ci, "K:MChr-");
+	const char *suffix = ksuffix(ci, "K:M-");
 
 	if (!hi->history || !ci->mark)
 		return 0;
@@ -258,8 +258,8 @@ void edlib_init(struct pane *ed safe)
 	key_add(history_map, "Free", &history_free);
 	key_add(history_map, "Notify:Close", &history_notify_close);
 	key_add(history_map, "doc:replaced", &history_notify_replace);
-	key_add(history_map, "K:MChr-p", &history_move);
-	key_add(history_map, "K:MChr-n", &history_move);
+	key_add(history_map, "K:M-p", &history_move);
+	key_add(history_map, "K:M-n", &history_move);
 	key_add(history_map, "history:save", &history_save);
 	key_add(history_map, "history:get-last", &history_hlast);
 }

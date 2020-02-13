@@ -471,7 +471,7 @@ class MakeViewerPane(edlib.Pane):
         return 1
 
     def handle_kill(self, key, **a):
-        "handle:KChr-q"
+        "handle:K-q"
         self.call("doc:destroy")
         return 1
 

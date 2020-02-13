@@ -831,12 +831,12 @@ static struct namelist {
 	{KEY_LEFT, ":Left"},
 	{KEY_RIGHT, ":Right"},
 	{KEY_HOME, ":Home"},
-	{KEY_BACKSPACE, ":Backspace\037:CChr-H"},
+	{KEY_BACKSPACE, ":Backspace\037:C-H\037:C-h"},
 	{KEY_DL, ":DelLine"},
 	{KEY_IL, ":InsLine"},
 	{KEY_DC, ":Del"},
 	{KEY_IC, ":Ins"},
-	{KEY_ENTER, ":Enter\037:CChr-M"},
+	{KEY_ENTER, ":Enter\037:C-M\037:C-m"},
 	{KEY_END, ":End"},
 
 	{KEY_NPAGE, ":Next"},
@@ -863,7 +863,7 @@ static struct namelist {
 	{'\r', ":Enter"},
 	{'\t', ":Tab"},
 	{'\177', ":Delete"},
-	{'\0', ":CChr- "},
+	{'\0', ":C- "},
 	{0, NULL}
 };
 
@@ -892,15 +892,15 @@ static void send_key(int keytype, wint_t c, int meta, struct pane *p safe)
 	} else {
 		n = find_name(char_names, c);
 		if (n)
-			sprintf(buf, "%s%s\037%s:CChr-%c\037%s:CChr-%c",
+			sprintf(buf, "%s%s\037%s:C-%c\037%s:C-%c",
 				m, n,
 				m, c+64,
 				m, c+96);
 		else if (c < ' ')
-			sprintf(buf, "%s:CChr-%c\037%s:CChr-%c",
+			sprintf(buf, "%s:C-%c\037%s:C-%c",
 				m, c+64, m, c+96);
 		else
-			sprintf(buf, "%sChr-%lc", m, c);
+			sprintf(buf, "%s-%lc", m, c);
 	}
 
 	dd->last_event = time(NULL);

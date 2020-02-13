@@ -81,12 +81,12 @@ void edlib_init(struct pane *ed safe)
 	viewer_map = key_alloc();
 
 	key_add(viewer_map, "Replace", &no_replace);
-	key_add(viewer_map, "KChr- ", &viewer_page_down);
-	key_add(viewer_map, "K:CChr-H", &viewer_page_up);
+	key_add(viewer_map, "K- ", &viewer_page_down);
+	key_add(viewer_map, "K:C-H", &viewer_page_up);
 	key_add(viewer_map, "K:Backspace", &viewer_page_up);
 	key_add(viewer_map, "K:Del", &viewer_page_up);
-	key_add(viewer_map, "KChr-q", &viewer_bury);
-	key_add(viewer_map, "KChr-E", &viewer_close);
+	key_add(viewer_map, "K-q", &viewer_bury);
+	key_add(viewer_map, "K-E", &viewer_close);
 	key_add(viewer_map, "Clone", &viewer_clone);
 
 	call_comm("global-set-command", ed, &viewer_attach, 0, NULL, "attach-viewer");

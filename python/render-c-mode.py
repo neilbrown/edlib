@@ -433,7 +433,7 @@ class CModePane(edlib.Pane):
         return (r, '')
 
     def handle_close(self, key, focus, mark, **a):
-        "handle-list/KChr-}/KChr-)/KChr-]/KChr-{/"
+        "handle-list/K-}/K-)/K-]/K-{/"
 
         if self.indent_type != 'C':
             return 0
@@ -447,7 +447,7 @@ class CModePane(edlib.Pane):
         return 1
 
     def handle_colon(self, key, focus, mark, **a):
-        "handle:KChr-:"
+        "handle:K-:"
 
         if self.indent_type != 'C':
             return 0

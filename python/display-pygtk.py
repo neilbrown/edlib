@@ -561,28 +561,28 @@ class EdDisplay(gtk.Window):
         self.pane.call("Mouse-event", s, self.pane, (x,y))
         edlib.time_stop(edlib.TIME_KEY)
 
-    eventmap = { "Return" : ":Enter\037:CChr-M",
-                 "Tab" : ":Tab\037:CChr-I",
-                 "Escape" : ":ESC\037:CChr-[",
-                 "Linefeed" : ":LF\037:CChr-J",
+    eventmap = { "Return" : ":Enter\037:C-M",
+                 "Tab" : ":Tab\037:C-I",
+                 "Escape" : ":ESC\037:C-[",
+                 "Linefeed" : ":LF\037:C-J",
                  "Down" : ":Down",
                  "Up" : ":Up",
                  "Left" : ":Left",
                  "Right" : ":Right",
                  "Home" : ":Home",
                  "End" : ":End",
-                 "BackSpace" : ":Backspace\037:CChr-H",
+                 "BackSpace" : ":Backspace\037:C-H",
                  "Delete" : ":Del",
                  "Insert" : ":Ins",
                  "Page_Up" : ":Prior",
                  "Page_Down" : ":Next",
-                 "space" : "Chr- ",
+                 "space" : "- ",
                  }
 
     def keyinput(self, c, strng):
         edlib.time_start(edlib.TIME_KEY)
         self.last_event = int(time.time())
-        self.pane.call("Keystroke", "Chr-" + strng)
+        self.pane.call("Keystroke", "-" + strng)
         edlib.time_stop(edlib.TIME_KEY)
 
     def keystroke(self, c, event):
@@ -603,9 +603,9 @@ class EdDisplay(gtk.Window):
             if len(s) == 0:
                 return
             if ord(s[0]) < 32:
-                s = ":CChr-" + chr(ord(s[0])+64) + "\037:CChr-" + chr(ord(s[0]) + 96)
+                s = ":C-" + chr(ord(s[0])+64) + "\037:C-" + chr(ord(s[0]) + 96)
             else:
-                s = "Chr-" + s
+                s = "-" + s
                 if event.state & gtk.gdk.CONTROL_MASK:
                     s = ":C" + s;
         if event.state & gtk.gdk.MOD1_MASK:

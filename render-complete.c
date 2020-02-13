@@ -293,7 +293,7 @@ DEF_CMD(complete_char)
 	char *np;
 	struct call_return cr;
 	int pl = strlen(cd->prefix);
-	const char *suffix = ksuffix(ci, "KChr-");
+	const char *suffix = ksuffix(ci, "K-");
 
 	np = malloc(pl + 2);
 	strcpy(np, cd->prefix);
@@ -539,7 +539,7 @@ static void register_map(void)
 
 	key_add(rc_map, "Replace", &complete_ignore_replace);
 	key_add(rc_map, "K:ESC", &complete_escape);
-	key_add_range(rc_map, "KChr- ", "KChr-~", &complete_char);
+	key_add_range(rc_map, "K- ", "K-~", &complete_char);
 	key_add(rc_map, "K:Backspace", &complete_bs);
 
 	key_add_prefix(rc_map, "Move-", &complete_nomove);
