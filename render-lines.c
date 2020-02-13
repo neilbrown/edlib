@@ -1123,13 +1123,11 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				if (!start->mdata)
 					call_render_line(focus, start);
 				if (start->mdata) {
-					rl->end_of_page = found_end;
 					render_line(p, focus, start->mdata, h,
 						    0, scale.x,
 						    NULL, NULL, NULL, NULL, NULL,
 						    NULL, &rl->c);
 					h = rl->y;
-					found_end = rl->end_of_page;
 				}
 				if (h)
 					lines_above = h;
@@ -1150,7 +1148,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				lines_below = rl->line_height * 2;
 			} else {
 				short h;
-				rl->end_of_page = found_end;
+				rl->end_of_page = 0;
 				render_line(p, focus, end->mdata, 0, 0,
 					    scale.x,
 					    NULL, NULL, NULL, NULL, NULL,
@@ -1244,7 +1242,6 @@ static int render(struct mark *pm, struct pane *p safe,
 	char *s;
 	int hide_cursor = 0;
 	int cursor_drawn = 0;
-	int found_end;
 	short mwidth = -1;
 
 	hdr = pane_attr_get(focus, "heading");
@@ -1256,7 +1253,7 @@ static int render(struct mark *pm, struct pane *p safe,
 	s = pane_attr_get(focus, "background");
 
 restart:
-	found_end = 0;
+	rl->end_of_page = 0;
 	m = vmark_first(focus, rl->typenum, p);
 	if (!s)
 		home_call(focus, "pane-clear", p);
@@ -1288,7 +1285,7 @@ restart:
 	p->cx = p->cy = -1;
 	rl->cursor_line = 0;
 
-	while (m && y < p->h && !found_end) {
+	while (m && y < p->h && !rl->end_of_page) {
 		if (m->mdata == NULL) {
 			/* This line has changed. */
 			call_render_line(focus, m);
@@ -1361,11 +1358,9 @@ restart:
 			}
 			cursor_drawn = 1;
 		} else {
-			rl->end_of_page = found_end;
 			render_line(p, focus, m->mdata?:"", y, 1, scale.x,
 				    NULL, NULL, NULL,
 				    NULL, NULL, cols, &rl->c);
-			found_end = rl->end_of_page;
 			y = rl->y;
 		}
 		if (!m2 || mark_same(m, m2))
