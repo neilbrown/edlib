@@ -112,10 +112,11 @@ DEF_CMD(history_move)
 	struct history_info *hi = ci->home->data;
 	struct mark *m;
 	char *l, *e;
+	const char *suffix = ksuffix(ci, "M-Chr-");
 
 	if (!hi->history || !ci->mark)
 		return 0;
-	if (ci->key[6] == 'p') {
+	if (*suffix == 'p') {
 		m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
 		call("Move-EOL", hi->history, -2);
 	} else {
@@ -129,7 +130,7 @@ DEF_CMD(history_move)
 	if (!l || !*l) {
 		/* No more history */
 		free(l);
-		if (ci->key[6] == 'p') {
+		if (*suffix == 'p') {
 			mark_free(m);
 			return 1;
 		} else

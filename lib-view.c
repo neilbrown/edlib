@@ -451,7 +451,7 @@ DEF_CMD(view_scroll)
 {
 	struct view_data *vd = ci->home->data;
 
-	if (ci->key[6] == '4')
+	if (strcmp(ci->key, "Press-4") == 0)
 		vd->move_small -= 2;
 	else
 		vd->move_small += 2;

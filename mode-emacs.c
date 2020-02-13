@@ -1329,9 +1329,9 @@ DEF_CMD(emacs_start_search)
 	attr_set_str(&p->attrs, "prompt", "Search");
 	attr_set_str(&p->attrs, "done-key", "Search String");
 	call("doc:set-name", p, 0, NULL, "Search", -1);
-	if (ci->key[6] == 'R')
+	if (strcmp(ci->key, "C-Chr-R") == 0)
 		mode |= 1;
-	if (ci->key[6] == '%')
+	if (strcmp(ci->key, "M-Chr-%") == 0)
 		mode |= 2;
 	call_ret(pane, "attach-emacs-search", p, mode);
 

@@ -224,7 +224,8 @@ DEF_CMD(search_add)
 
 DEF_CMD(search_insert_quoted)
 {
-	if (strchr(must_quote, ci->key[4]) == NULL)
+	const char *suffix = ksuffix(ci, "Chr-");
+	if (strchr(must_quote, suffix[0]) == NULL)
 		return 0;
 	call("Replace", ci->focus, 1, NULL, "\\");
 	call("Replace", ci->focus, 1, NULL, ksuffix(ci, "Chr-"),
@@ -242,15 +243,15 @@ DEF_CMD(search_insert_meta)
 	char *bracket;
 	const char *brackets = "{}()[]";
 	const char *k = ksuffix(ci, "M-Chr-");
-	if (strchr(may_quote, ci->key[6])) {
+	if (strchr(may_quote, *k)) {
 		call("Replace", ci->focus, 1, NULL, "\\");
 		call("Replace", ci->focus, 1, NULL, k,
 		     1, NULL, ",auto=1");
 		return 1;
 	}
-	if (strchr(must_quote, ci->key[6]) == NULL || !ci->mark)
+	if (strchr(must_quote, *k) == NULL || !ci->mark)
 		return 0;
-	bracket = strchr(brackets, ci->key[6]);
+	bracket = strchr(brackets, *k);
 	if (!bracket) {
 		call("Replace", ci->focus, 1, NULL, k);
 	} else if ((bracket - brackets) % 2) {
@@ -442,7 +443,7 @@ DEF_CMD(search_replace)
 	esi->replace_pane = p;
 	if (p)
 		home_call(esi->target, "highlight:set-popup", p, 1);
-	if (ci->key[6] == '%')
+	if (strcmp(ci->key, "M-Chr-%") == 0)
 		pane_focus(ci->focus);
 	else
 		pane_focus(p);

@@ -293,10 +293,11 @@ DEF_CMD(complete_char)
 	char *np;
 	struct call_return cr;
 	int pl = strlen(cd->prefix);
+	const char *suffix = ksuffix(ci, "Chr-");
 
 	np = malloc(pl + 2);
 	strcpy(np, cd->prefix);
-	np[pl] = ci->key[4];
+	np[pl] = *suffix;
 	np[pl+1] = 0;
 	cr = call_ret(all, "Complete:prefix", ci->focus, !cd->prefix_only, NULL, np);
 	if (cr.i == 0) {
