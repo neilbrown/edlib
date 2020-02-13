@@ -60,73 +60,73 @@ static struct move_command {
 	char		*k1 safe, *k2, *k3;
 } move_commands[] = {
 	{CMD(emacs_move), "Move-Char", 1, 0,
-	 "KC-Chr-F", "KRight", NULL},
+	 "K:CChr-F", "KRight", NULL},
 	{CMD(emacs_move), "Move-Char", -1, 0,
-	 "KC-Chr-B", "KLeft", NULL},
+	 "K:CChr-B", "KLeft", NULL},
 	{CMD(emacs_move), "Move-Word", 1, 0,
-	 "KM-Chr-f", "KM-Right", NULL},
+	 "K:MChr-f", "K:MRight", NULL},
 	{CMD(emacs_move), "Move-Word", -1, 0,
-	 "KM-Chr-b", "KM-Left", NULL},
+	 "K:MChr-b", "K:MLeft", NULL},
 	{CMD(emacs_move), "Move-Expr", 1, 0,
-	 "KM-C-Chr-F", NULL, NULL},
+	 "K:M:CChr-F", NULL, NULL},
 	{CMD(emacs_move), "Move-Expr", -1, 0,
-	 "KM-C-Chr-B", NULL, NULL},
+	 "K:M:CChr-B", NULL, NULL},
 	{CMD(emacs_move), "Move-Expr", -1, 1,
-	 "KM-C-Chr-U", NULL, NULL},
+	 "K:M:CChr-U", NULL, NULL},
 	{CMD(emacs_move), "Move-Expr", 1, 1,
-	 "KM-C-Chr-D", NULL, NULL},
+	 "K:M:CChr-D", NULL, NULL},
 	{CMD(emacs_move), "Move-WORD", 1, 0,
-	 "KM-Chr-F", NULL, NULL},
+	 "K:MChr-F", NULL, NULL},
 	{CMD(emacs_move), "Move-WORD", -1, 0,
-	 "KM-Chr-B", NULL, NULL},
+	 "K:MChr-B", NULL, NULL},
 	{CMD(emacs_move), "Move-EOL", 1, 0,
-	 "KC-Chr-E", "KEnd", NULL},
+	 "K:CChr-E", "KEnd", NULL},
 	{CMD(emacs_move), "Move-EOL", -1, 0,
-	 "KC-Chr-A", "KHome", NULL},
+	 "K:CChr-A", "KHome", NULL},
 	{CMD(emacs_move), "Move-Line", -1, 0,
-	 "KC-Chr-P", "KUp", NULL},
+	 "K:CChr-P", "KUp", NULL},
 	{CMD(emacs_move), "Move-Line", 1, 0,
-	 "KC-Chr-N", "KDown", NULL},
+	 "K:CChr-N", "KDown", NULL},
 	{CMD(emacs_move), "Move-File", 1, 0,
-	 "KM-Chr->", "KS-End", NULL},
+	 "K:MChr->", "K:SEnd", NULL},
 	{CMD(emacs_move), "Move-File", -1, 0,
-	 "KM-Chr-<", "KS-Home", NULL},
+	 "K:MChr-<", "K:SHome", NULL},
 	{CMD(emacs_move), "Move-View-Large", 1, 0,
-	 "KNext", "KC-Chr-V", "emacs-move-large-other"},
+	 "KNext", "K:CChr-V", "emacs-move-large-other"},
 	{CMD(emacs_move), "Move-View-Large", -1, 0,
-	 "KPrior", "KM-Chr-v", NULL},
+	 "KPrior", "K:MChr-v", NULL},
 
 	{CMD(emacs_move), "Move-Paragraph", -1, 0,
-	 "KM-C-Chr-A", NULL, NULL},
+	 "K:M:CChr-A", NULL, NULL},
 	{CMD(emacs_move), "Move-Paragraph", 1, 0,
-	 "KM-C-Chr-E", NULL, NULL},
+	 "K:M:CChr-E", NULL, NULL},
 
 	{CMD(emacs_delete), "Move-Char", 1, 0,
-	 "KC-Chr-D", "KDel", "del"},
+	 "K:CChr-D", "KDel", "del"},
 	{CMD(emacs_delete), "Move-Char", -1, 0,
-	 "KC-Chr-H", "KBackspace", "KDelete"},
+	 "K:CChr-H", "KBackspace", "KDelete"},
 	{CMD(emacs_delete), "Move-Word", 1, 0,
-	 "KM-Chr-d", NULL, NULL},
+	 "K:MChr-d", NULL, NULL},
 	{CMD(emacs_delete), "Move-Word", -1, 0,
-	 "KM-C-Chr-H", "KM-Backspace", NULL},
+	 "K:M:CChr-H", "K:MBackspace", NULL},
 	{CMD(emacs_kill), "Move-EOL", 1, 0,
-	 "KC-Chr-K", NULL, NULL},
+	 "K:CChr-K", NULL, NULL},
 	{CMD(emacs_kill), "Move-Expr", 1, 0,
-	 "KM-C-Chr-K", NULL, NULL},
+	 "K:M:CChr-K", NULL, NULL},
 
 	{CMD(emacs_case), "LMove-Word", 1, 0,
-	 "KM-Chr-l", NULL, NULL},
+	 "K:MChr-l", NULL, NULL},
 	{CMD(emacs_case), "UMove-Word", 1, 0,
-	 "KM-Chr-u", NULL, NULL},
+	 "K:MChr-u", NULL, NULL},
 	{CMD(emacs_case), "CMove-Word", 1, 0,
-	 "KM-Chr-c", NULL, NULL},
+	 "K:MChr-c", NULL, NULL},
 	{CMD(emacs_case), "TMove-Char", 1, 0,
-	 "KM-Chr-`", NULL, NULL},
+	 "K:MChr-`", NULL, NULL},
 
 	{CMD(emacs_swap), "Move-Char", 1, 0,
-	 "KC-Chr-T", NULL, NULL},
+	 "K:CChr-T", NULL, NULL},
 	{CMD(emacs_swap), "Move-Word", 1, 0,
-	 "KM-Chr-t", NULL, NULL},
+	 "K:MChr-t", NULL, NULL},
 };
 
 REDEF_CMD(emacs_move)
@@ -458,20 +458,20 @@ static struct simple_command {
 	{CMD(emacs_simple), "Window:split-y", "K:CXChr-2"},
 	{CMD(emacs_simple), "Window:split-x", "K:CXChr-3"},
 	{CMD(emacs_simple), "Window:close", "K:CXChr-0"},
-	{CMD(emacs_simple), "Window:scale-relative", "K:CXC-Chr-="},
-	{CMD(emacs_simple_neg), "Window:scale-relative", "K:CXC-Chr--"},
-	{CMD(emacs_simple), "Window:bury", "KM-Chr-B"},
+	{CMD(emacs_simple), "Window:scale-relative", "K:CX:CChr-="},
+	{CMD(emacs_simple_neg), "Window:scale-relative", "K:CX:CChr--"},
+	{CMD(emacs_simple), "Window:bury", "K:MChr-B"},
 	{CMD(emacs_simple), "Display:new", "K:CX5Chr-2"},
 	{CMD(emacs_simple), "Display:close", "K:CX5Chr-0"},
 	{CMD(emacs_simple), "lib-server:done", "K:CXChr-#"},
-	{CMD(emacs_simple), "Abort", "KC-Chr-G"},
-	{CMD(emacs_simple), "NOP", "KM-Chr-G"},
-	{CMD(emacs_simple), "NOP", "K:CXC-Chr-G"},
-	{CMD(emacs_simple), "NOP", "K:CX4C-Chr-G"},
-	{CMD(emacs_simple), "doc:save-file", "K:CXC-Chr-S"},
+	{CMD(emacs_simple), "Abort", "K:CChr-G"},
+	{CMD(emacs_simple), "NOP", "K:MChr-G"},
+	{CMD(emacs_simple), "NOP", "K:CX:CChr-G"},
+	{CMD(emacs_simple), "NOP", "K:CX4:CChr-G"},
+	{CMD(emacs_simple), "doc:save-file", "K:CX:CChr-S"},
 	/* one day, this will be "find definition", now it is same as "find any" */
-	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "K:CXM-Chr-."},
-	{CMD(emacs_simple_str), "interactive-cmd-git-grep", "KM-Chr-."},
+	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "K:CX:MChr-."},
+	{CMD(emacs_simple_str), "interactive-cmd-git-grep", "K:MChr-."},
 };
 
 REDEF_CMD(emacs_simple)
@@ -587,7 +587,7 @@ DEF_CMD(emacs_quote_insert)
 
 	str = ksuffix(ci, "K:CQChr-");
 	if (!str[0]) {
-		str = ksuffix(ci, "K:CQC-Chr-");
+		str = ksuffix(ci, "K:CQ:CChr-");
 		if (str[0]) {
 			buf[0] = str[0] & 0x1f;
 			str = buf;
@@ -608,7 +608,7 @@ static struct {
 	{"KTab", "\t"},
 	{"KLF", "\n"},
 	{"KEnter", "\n"},
-	{"KC-Chr-O", "\0\n"},
+	{"K:CChr-O", "\0\n"},
 	{NULL, NULL}
 };
 
@@ -808,7 +808,7 @@ DEF_CMD(find_prevnext)
 	h.name = attr_find(ci->home->attrs, "find-doc");
 	h.ret = NULL;
 	h.c = find_helper;
-	h.want_prev = strcmp(ci->key, "KM-Chr-n") == 0;
+	h.want_prev = strcmp(ci->key, "K:MChr-n") == 0;
 
 	call_comm("docs:byeach", ci->focus, &h.c);
 	if (h.ret) {
@@ -835,9 +835,9 @@ static void findmap_init(void)
 	fh_map = key_alloc();
 	key_add(fh_map, "KTab", &find_complete);
 	key_add(fh_map, "KEnter", &find_done);
-	key_add(fh_map, "KM-Enter", &find_done);
-	key_add(fh_map, "KM-Chr-p", &find_prevnext);
-	key_add(fh_map, "KM-Chr-n", &find_prevnext);
+	key_add(fh_map, "K:MEnter", &find_done);
+	key_add(fh_map, "K:MChr-p", &find_prevnext);
+	key_add(fh_map, "K:MChr-n", &find_prevnext);
 }
 
 static const char * safe file_normalize(struct pane *p safe,
@@ -1219,7 +1219,7 @@ DEF_CMD(emacs_shell)
 DEF_CMD(emacs_num)
 {
 	int rpt = ci->num;
-	const char *last = ksuffix(ci, "KM-Chr-");
+	const char *last = ksuffix(ci, "K:MChr-");
 	int neg = 0;
 
 	if (rpt < 0) {
@@ -1329,9 +1329,9 @@ DEF_CMD(emacs_start_search)
 	attr_set_str(&p->attrs, "prompt", "Search");
 	attr_set_str(&p->attrs, "done-key", "Search String");
 	call("doc:set-name", p, 0, NULL, "Search", -1);
-	if (strcmp(ci->key, "KC-Chr-R") == 0)
+	if (strcmp(ci->key, "K:CChr-R") == 0)
 		mode |= 1;
-	if (strcmp(ci->key, "KM-Chr-%") == 0)
+	if (strcmp(ci->key, "K:MChr-%") == 0)
 		mode |= 2;
 	call_ret(pane, "attach-emacs-search", p, mode);
 
@@ -1349,7 +1349,7 @@ DEF_CMD(emacs_command)
 		return 0;
 	attr_set_str(&p->attrs, "prompt", "Cmd");
 	attr_set_str(&p->attrs, "done-key", "emacs:command");
-	call("doc:set-name", p, 0, NULL, "KM-x command", -1);
+	call("doc:set-name", p, 0, NULL, "K:Mx command", -1);
 	p = call_ret(pane, "attach-history", p, 0, NULL, "*Command History*",
 		     0, NULL, "popup:close");
 	pane_register(p, 0, &find_handle.c, "cmd");
@@ -1591,7 +1591,7 @@ DEF_CMD(emacs_match_again)
 DEF_CMD(emacs_make)
 {
 	call("interactive-cmd-make", ci->focus,
-	     strcmp(ci->key, "K:CCC-Chr-M") == 0, ci->mark);
+	     strcmp(ci->key, "K:CC:CChr-M") == 0, ci->mark);
 	return 1;
 }
 
@@ -1754,7 +1754,7 @@ DEF_CMD(emacs_abbrev)
 	return 1;
 }
 
-DEF_PFX_CMD(meta_cmd, "M-");
+DEF_PFX_CMD(meta_cmd, ":M");
 DEF_PFX_CMD(cx_cmd, ":CX");
 DEF_PFX_CMD(cx4_cmd, ":CX4");
 DEF_PFX_CMD(cx5_cmd, ":CX5");
@@ -1767,11 +1767,11 @@ static void emacs_init(void)
 	struct map *m = key_alloc();
 
 	key_add(m, "KESC", &meta_cmd.c);
-	key_add(m, "KC-Chr-X", &cx_cmd.c);
+	key_add(m, "K:CChr-X", &cx_cmd.c);
 	key_add(m, "K:CXChr-4", &cx4_cmd.c);
 	key_add(m, "K:CXChr-5", &cx5_cmd.c);
-	key_add(m, "KC-Chr-C", &cc_cmd.c);
-	key_add(m, "KC-Chr-Q", &quote_cmd.c);
+	key_add(m, "K:CChr-C", &cc_cmd.c);
+	key_add(m, "K:CChr-Q", &quote_cmd.c);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
 		struct move_command *mc = &move_commands[i];
@@ -1792,18 +1792,18 @@ static void emacs_init(void)
 	key_add(m, "KTab", &emacs_insert_other);
 	key_add(m, "KLF", &emacs_insert_other);
 	key_add(m, "KEnter", &emacs_insert_other);
-	key_add(m, "KC-Chr-O", &emacs_insert_other);
+	key_add(m, "K:CChr-O", &emacs_insert_other);
 	key_add(m, "Interactive:insert", &emacs_interactive_insert);
 	key_add(m, "Interactive:delete", &emacs_interactive_delete);
 
-	key_add(m, "KC-Chr-_", &emacs_undo);
+	key_add(m, "K:CChr-_", &emacs_undo);
 	key_add(m, "K:CXChr-u", &emacs_undo);
-	key_add(m, "KC-Chr-/", &emacs_undo);
+	key_add(m, "K:CChr-/", &emacs_undo);
 
-	key_add(m, "KC-Chr-L", &emacs_recenter);
+	key_add(m, "K:CChr-L", &emacs_recenter);
 
-	key_add(m, "K:CXC-Chr-F", &emacs_findfile);
-	key_add(m, "K:CX4C-Chr-F", &emacs_findfile);
+	key_add(m, "K:CX:CChr-F", &emacs_findfile);
+	key_add(m, "K:CX4:CChr-F", &emacs_findfile);
 	key_add(m, "K:CX4Chr-f", &emacs_findfile);
 	key_add(m, "File Found This Window", &emacs_findfile);
 	key_add(m, "File Found Other Window", &emacs_findfile);
@@ -1812,58 +1812,58 @@ static void emacs_init(void)
 	key_add(m, "K:CX4Chr-b", &emacs_finddoc);
 	key_add(m, "Doc Found This Window", &emacs_finddoc);
 	key_add(m, "Doc Found Other Window", &emacs_finddoc);
-	key_add(m, "K:CXC-Chr-B", &emacs_viewdocs);
+	key_add(m, "K:CX:CChr-B", &emacs_viewdocs);
 
 	key_add(m, "K:CXChr-k", &emacs_kill_doc);
 
 	key_add(m, "K:CXChr-s", &emacs_save_all);
 
-	key_add(m, "K:CXC-Chr-v", &emacs_revisit);
+	key_add(m, "K:CX:CChr-v", &emacs_revisit);
 
 	key_add(m, "K:CXChr-=", &emacs_curs_pos);
 
-	key_add(m, "KC-Chr-S", &emacs_start_search);
-	key_add(m, "KC-Chr-R", &emacs_start_search);
-	key_add(m, "KM-Chr-%", &emacs_start_search);
+	key_add(m, "K:CChr-S", &emacs_start_search);
+	key_add(m, "K:CChr-R", &emacs_start_search);
+	key_add(m, "K:MChr-%", &emacs_start_search);
 	key_add(m, "render:reposition", &emacs_reposition);
 
-	key_add(m, "K:CXC-Chr-C", &emacs_exit);
+	key_add(m, "K:CX:CChr-C", &emacs_exit);
 
-	key_add(m, "KC-Chr-U", &emacs_prefix);
+	key_add(m, "K:CChr-U", &emacs_prefix);
 
-	key_add(m, "KM-Chr-!", &emacs_shell);
+	key_add(m, "K:MChr-!", &emacs_shell);
 	key_add(m, "Shell Command", &emacs_shell);
 
 	key_add(m, "K:CXChr-`", &emacs_next_match);
 	key_add(m, "KChr-`", &emacs_match_again);
 
-	key_add_range(m, "KM-Chr-0", "KM-Chr-9", &emacs_num);
-	key_add(m, "KM-Chr--", &emacs_neg);
-	key_add(m, "KC-Chr--", &emacs_neg);
-	key_add(m, "KC-Chr- ", &emacs_mark);
+	key_add_range(m, "K:MChr-0", "K:MChr-9", &emacs_num);
+	key_add(m, "K:MChr--", &emacs_neg);
+	key_add(m, "K:CChr--", &emacs_neg);
+	key_add(m, "K:CChr- ", &emacs_mark);
 	key_add(m, "mode-set-mark", &emacs_mark);
-	key_add(m, "K:CXC-Chr-X", &emacs_swap_mark);
+	key_add(m, "K:CX:CChr-X", &emacs_swap_mark);
 	key_add(m, "Abort", &emacs_abort);
-	key_add(m, "KC-Chr-W", &emacs_wipe);
-	key_add(m, "KM-Chr-w", &emacs_copy);
-	key_add(m, "KC-Chr-Y", &emacs_yank);
-	key_add(m, "KM-Chr-y", &emacs_yank_pop);
+	key_add(m, "K:CChr-W", &emacs_wipe);
+	key_add(m, "K:MChr-w", &emacs_copy);
+	key_add(m, "K:CChr-Y", &emacs_yank);
+	key_add(m, "K:MChr-y", &emacs_yank_pop);
 	key_add(m, "map-attr", &emacs_attrs);
 
-	key_add(m, "KM-Chr-g", &emacs_goto_line);
-	key_add(m, "KM-Chr-x", &emacs_command);
+	key_add(m, "K:MChr-g", &emacs_goto_line);
+	key_add(m, "K:MChr-x", &emacs_command);
 	key_add(m, "K:CCChr-m", &emacs_make);
-	key_add(m, "K:CCC-Chr-M", &emacs_make);
+	key_add(m, "K:CC:CChr-M", &emacs_make);
 
-	key_add(m, "KM-C-Chr-V", &emacs_move_view_other);
+	key_add(m, "K:M:CChr-V", &emacs_move_view_other);
 
-	key_add(m, "K:CXC-Chr-Q", &emacs_readonly);
+	key_add(m, "K:CX:CChr-Q", &emacs_readonly);
 
 	key_add_prefix(m, "K:CQChr-", &emacs_quote_insert);
-	key_add_prefix(m, "K:CQC-Chr-", &emacs_quote_insert);
+	key_add_prefix(m, "K:CQ:CChr-", &emacs_quote_insert);
 
-	key_add(m, "KM-Chr-q", &emacs_fill);
-	key_add(m, "KM-Chr-/", &emacs_abbrev);
+	key_add(m, "K:MChr-q", &emacs_fill);
+	key_add(m, "K:MChr-/", &emacs_abbrev);
 
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);

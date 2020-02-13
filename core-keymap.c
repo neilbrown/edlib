@@ -8,7 +8,7 @@
  * Keys are ordered for fast binary-search lookup.
  * A "key" is an arbitrary string which typically contains
  * some 'mode' prefix and some specific tail.
- * e.g emacs-M-C-Chr-x is Meta-Control-X in emacs mode.
+ * e.g emacs:M:C-x is Meta-Control-X in emacs mode.
  * As far as the map is concerned, it is just a lexically order string.
  *
  * A 'command' is a struct provided by any of various

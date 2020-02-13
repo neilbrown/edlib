@@ -567,7 +567,7 @@ class CModePane(edlib.Pane):
         return 0
 
     def handle_meta_tab(self, key, focus, mark, **a):
-        "handle:KM-Tab"
+        "handle:K:MTab"
         # like tab-at-start-of-line, anywhere in line
         # Probably need to type esc-tab, as Alt-Tab normally
         # goes to next window in window system

@@ -831,31 +831,31 @@ static struct namelist {
 	{KEY_LEFT, "Left"},
 	{KEY_RIGHT, "Right"},
 	{KEY_HOME, "Home"},
-	{KEY_BACKSPACE, "Backspace\037C-Chr-H"},
+	{KEY_BACKSPACE, "Backspace\037:CChr-H"},
 	{KEY_DL, "DelLine"},
 	{KEY_IL, "InsLine"},
 	{KEY_DC, "Del"},
 	{KEY_IC, "Ins"},
-	{KEY_ENTER, "Enter\037C-Chr-M"},
+	{KEY_ENTER, "Enter\037:CChr-M"},
 	{KEY_END, "End"},
 
 	{KEY_NPAGE, "Next"},
 	{KEY_PPAGE, "Prior"},
 
-	{KEY_SDC, "S-Del"},
-	{KEY_SDL, "S-DelLine"},
-	{KEY_SEND, "S-End"},
-	{KEY_SHOME, "S-Home"},
-	{KEY_SLEFT, "S-Left"},
-	{KEY_SRIGHT, "S-Right"},
-	{KEY_BTAB, "S-Tab"},
+	{KEY_SDC, ":SDel"},
+	{KEY_SDL, ":SDelLine"},
+	{KEY_SEND, ":SEnd"},
+	{KEY_SHOME, ":SHome"},
+	{KEY_SLEFT, ":SLeft"},
+	{KEY_SRIGHT, ":SRight"},
+	{KEY_BTAB, ":STab"},
 
-	{ 01057, "M-Prior"},
-	{ 01051, "M-Next"},
-	{ 01072, "M-Up"},
-	{ 01061, "M-Down"},
-	{ 01042, "M-Left"},
-	{ 01064, "M-Right"},
+	{ 01057, ":MPrior"},
+	{ 01051, ":MNext"},
+	{ 01072, ":MUp"},
+	{ 01061, ":MDown"},
+	{ 01042, ":MLeft"},
+	{ 01064, ":MRight"},
 	{0, NULL}
 }, char_names[] = {
 	{'\e', "ESC"},
@@ -863,7 +863,7 @@ static struct namelist {
 	{'\r', "Enter"},
 	{'\t', "Tab"},
 	{'\177', "Delete"},
-	{'\0', "C-Chr- "},
+	{'\0', ":CChr- "},
 	{0, NULL}
 };
 
@@ -881,7 +881,7 @@ static void send_key(int keytype, wint_t c, int meta, struct pane *p safe)
 	struct display_data *dd = p->data;
 	char *n;
 	char buf[100];/* FIXME */
-	char *m = meta ? "M-" : "";
+	char *m = meta ? ":M" : "";
 
 	if (keytype == KEY_CODE_YES) {
 		n = find_name(key_names, c);
@@ -892,12 +892,12 @@ static void send_key(int keytype, wint_t c, int meta, struct pane *p safe)
 	} else {
 		n = find_name(char_names, c);
 		if (n)
-			sprintf(buf, "%s%s\037%sC-Chr-%c\037%sC-Chr-%c",
+			sprintf(buf, "%s%s\037%s:CChr-%c\037%s:CChr-%c",
 				m, n,
 				m, c+64,
 				m, c+96);
 		else if (c < ' ')
-			sprintf(buf, "%sC-Chr-%c\037%sC-Chr-%c",
+			sprintf(buf, "%s:CChr-%c\037%s:CChr-%c",
 				m, c+64, m, c+96);
 		else
 			sprintf(buf, "%sChr-%lc", m, c);

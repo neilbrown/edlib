@@ -635,7 +635,7 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_move(self, key, mark, **a):
-        "handle-list/KM-Chr-n/KM-Chr-p/KChr-n/KChr-p"
+        "handle-list/K:MChr-n/K:MChr-p/KChr-n/KChr-p"
         if key[0] == "M" or not self.query_pane:
             p = self.list_pane
             op = self.query_pane

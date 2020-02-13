@@ -510,11 +510,11 @@ class EdDisplay(gtk.Window):
         y = int(event.y)
         s = "Press-" + ("%d"%event.button)
         if event.state & gtk.gdk.SHIFT_MASK:
-            s = "S-" + s;
+            s = ":S" + s;
         if event.state & gtk.gdk.CONTROL_MASK:
-            s = "C-" + s;
+            s = ":C" + s;
         if event.state & gtk.gdk.MOD1_MASK:
-            s = "M-" + s;
+            s = ":M" + s;
         self.last_event = int(time.time())
         self.pane.call("Mouse-event", s, self.pane, (x,y))
         edlib.time_stop(edlib.TIME_KEY)
@@ -526,11 +526,11 @@ class EdDisplay(gtk.Window):
         y = int(event.y)
         s = "Release-" + ("%d"%event.button)
         if event.state & gtk.gdk.SHIFT_MASK:
-            s = "S-" + s;
+            s = ":S" + s;
         if event.state & gtk.gdk.CONTROL_MASK:
-            s = "C-" + s;
+            s = ":C" + s;
         if event.state & gtk.gdk.MOD1_MASK:
-            s = "M-" + s;
+            s = ":M" + s;
         self.last_event = int(time.time())
         self.pane.call("Mouse-event", s, self.pane, (x,y))
         edlib.time_stop(edlib.TIME_KEY)
@@ -553,25 +553,25 @@ class EdDisplay(gtk.Window):
         else:
             s = "Press-5"
         if event.state & gtk.gdk.SHIFT_MASK:
-            s = "S-" + s;
+            s = ":S" + s;
         if event.state & gtk.gdk.CONTROL_MASK:
-            s = "C-" + s;
+            s = ":C" + s;
         if event.state & gtk.gdk.MOD1_MASK:
-            s = "M-" + s;
+            s = ":M" + s;
         self.pane.call("Mouse-event", s, self.pane, (x,y))
         edlib.time_stop(edlib.TIME_KEY)
 
-    eventmap = { "Return" : "Enter\037C-Chr-M",
-                 "Tab" : "Tab\037C-Chr-I",
-                 "Escape" : "ESC\037C-Chr-[",
-                 "Linefeed" : "LF\037C-Chr-J",
+    eventmap = { "Return" : "Enter\037:CChr-M",
+                 "Tab" : "Tab\037:CChr-I",
+                 "Escape" : "ESC\037:CChr-[",
+                 "Linefeed" : "LF\037:CChr-J",
                  "Down" : "Down",
                  "Up" : "Up",
                  "Left" : "Left",
                  "Right" : "Right",
                  "Home" : "Home",
                  "End" : "End",
-                 "BackSpace" : "Backspace\037C-Chr-H",
+                 "BackSpace" : "Backspace\037:CChr-H",
                  "Delete" : "Del",
                  "Insert" : "Ins",
                  "Page_Up" : "Prior",
@@ -595,21 +595,21 @@ class EdDisplay(gtk.Window):
         if kv in self.eventmap:
             s = self.eventmap[kv]
             if event.state & gtk.gdk.SHIFT_MASK:
-                s = "S-" + s;
+                s = ":S" + s;
             if event.state & gtk.gdk.CONTROL_MASK:
-                s = "C-" + s;
+                s = ":C" + s;
         else:
             s = event.string
             if len(s) == 0:
                 return
             if ord(s[0]) < 32:
-                s = "C-Chr-" + chr(ord(s[0])+64) + "\037C-Chr-" + chr(ord(s[0]) + 96)
+                s = ":CChr-" + chr(ord(s[0])+64) + "\037:CChr-" + chr(ord(s[0]) + 96)
             else:
                 s = "Chr-" + s
                 if event.state & gtk.gdk.CONTROL_MASK:
-                    s = "C-" + s;
+                    s = ":C" + s;
         if event.state & gtk.gdk.MOD1_MASK:
-            s = "M-" + s;
+            s = ":M" + s;
         self.last_event = int(time.time())
         self.pane.call("Keystroke", self.pane, s)
         edlib.time_stop(edlib.TIME_KEY)

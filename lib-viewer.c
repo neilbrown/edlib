@@ -82,7 +82,7 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(viewer_map, "Replace", &no_replace);
 	key_add(viewer_map, "KChr- ", &viewer_page_down);
-	key_add(viewer_map, "KC-Chr-H", &viewer_page_up);
+	key_add(viewer_map, "K:CChr-H", &viewer_page_up);
 	key_add(viewer_map, "KBackspace", &viewer_page_up);
 	key_add(viewer_map, "KDel", &viewer_page_up);
 	key_add(viewer_map, "KChr-q", &viewer_bury);
