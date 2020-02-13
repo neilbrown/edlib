@@ -331,6 +331,7 @@ REDEF_CMD(next_evt)
 {
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
+	int button = 0, type = 0;
 
 	switch(dd->next_event) {
 	case DoKey:
@@ -340,7 +341,18 @@ REDEF_CMD(next_evt)
 	case DoMouse:
 		record_mouse(p, dd->event_info, dd->event_pos.x,
 			     dd->event_pos.y);
-		call("Mouse-event", p, 0, NULL, dd->event_info, 0, NULL, NULL,
+		if (strstr(dd->event_info, "Press"))
+			type = 1;
+		else if (strstr(dd->event_info, "Release"))
+			type = 2;
+		else if (strstr(dd->event_info, "Motion"))
+			type = 3;
+		if (type == 1 || type == 2) {
+			char *e = dd->event_info + strlen(dd->event_info) - 1;
+			button = atoi(e);
+		}
+		call("Mouse-event", p, button, NULL, dd->event_info,
+		     type, NULL, NULL,
 		     dd->event_pos.x, dd->event_pos.y);
 		break;
 	case DoCheck:
@@ -908,20 +920,21 @@ static void send_key(int keytype, wint_t c, int meta, struct pane *p safe)
 	call("Keystroke", p, 0, NULL, buf);
 }
 
-static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe)
+static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe,
+			  int button, int type)
 {
 	int ret;
 	struct display_data *dd = p->data;
 
 	record_mouse(p, cmd, x, y);
-	ret = call("Mouse-event", p, 0, NULL, cmd, 0, NULL, NULL, x, y);
-	if (strncmp(cmd, "Press", 5) == 0 && !dd->report_position) {
+	ret = call("Mouse-event", p, button, NULL, cmd, type, NULL, NULL, x, y);
+	if (type == 1 && !dd->report_position) {
 		if (dd->is_xterm) {
 			fprintf(dd->scr_file, "\033[?1002h");
 			fflush(dd->scr_file);
 		}
 		dd->report_position = 1;
-	} else if (strncmp(cmd, "Motion", 6) == 0 && !ret) {
+	} else if (type == 3 && !ret) {
 		if (dd->is_xterm) {
 			fprintf(dd->scr_file, "\033[?1002l");
 			fflush(dd->scr_file);
@@ -950,12 +963,12 @@ static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 			continue;
 		sprintf(buf, action, b);
 		dd->last_event = time(NULL);
-		do_send_mouse(p, x, y, buf);
+		do_send_mouse(p, x, y, buf, b, BUTTON_PRESS(s,b) ? 1 : 2);
 	}
 	if ((mev->bstate & REPORT_MOUSE_POSITION) &&
 	    dd->report_position)
 		/* Motion doesn't update last_event */
-		do_send_mouse(p, x, y, "Motion");
+		do_send_mouse(p, x, y, "Motion", 0, 3);
 }
 
 REDEF_CMD(input_handle)

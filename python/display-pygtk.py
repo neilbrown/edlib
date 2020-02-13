@@ -516,7 +516,7 @@ class EdDisplay(gtk.Window):
         if event.state & gtk.gdk.MOD1_MASK:
             s = ":M" + s;
         self.last_event = int(time.time())
-        self.pane.call("Mouse-event", s, self.pane, (x,y))
+        self.pane.call("Mouse-event", s, self.pane, (x,y), event.button, 1)
         edlib.time_stop(edlib.TIME_KEY)
 
     def release(self, c, event):
@@ -532,14 +532,14 @@ class EdDisplay(gtk.Window):
         if event.state & gtk.gdk.MOD1_MASK:
             s = ":M" + s;
         self.last_event = int(time.time())
-        self.pane.call("Mouse-event", s, self.pane, (x,y))
+        self.pane.call("Mouse-event", s, self.pane, (x,y), event.button, 2)
         edlib.time_stop(edlib.TIME_KEY)
 
     def motion(self, c, event):
         edlib.time_start(edlib.TIME_KEY)
         x = int(event.x)
         y = int(event.y)
-        ret = self.pane.call("Mouse-event", "Motion", (x,y))
+        ret = self.pane.call("Mouse-event", "Motion", (x,y), 0, 3)
         if not ret:
             self.block_motion()
 
@@ -550,15 +550,17 @@ class EdDisplay(gtk.Window):
         y = int(event.y)
         if event.direction == gtk.gdk.SCROLL_UP:
             s = "Press-4"
+            b = 4
         else:
             s = "Press-5"
+            b = 5
         if event.state & gtk.gdk.SHIFT_MASK:
             s = ":S" + s;
         if event.state & gtk.gdk.CONTROL_MASK:
             s = ":C" + s;
         if event.state & gtk.gdk.MOD1_MASK:
             s = ":M" + s;
-        self.pane.call("Mouse-event", s, self.pane, (x,y))
+        self.pane.call("Mouse-event", s, self.pane, (x,y), b, 1)
         edlib.time_stop(edlib.TIME_KEY)
 
     eventmap = { "Return" : ":Enter\037:C-M",

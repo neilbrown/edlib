@@ -154,14 +154,15 @@ DEF_CMD(mouse_event)
 	if (!ci->str)
 		return Enoarg;
 
-	pane_notify("Mouse-event-notify", ci->home, 0, NULL, ci->str);
+	pane_notify("Mouse-event-notify", ci->home, ci->num, NULL, ci->str,
+		    ci->num2);
 
-	if (strncmp(ci->str, "Press-", 6) == 0) {
+	if (ci->num2 == 1) {
 		press = 1;
-		b = ci->str[6]-'1';
-	} else if (strncmp(ci->str, "Release-", 8) == 0) {
+		b = ci->num - 1;
+	} else if (ci->num2 == 2) {
 		press = 0;
-		b = ci->str[8]-'1';
+		b = ci->num - 1;
 	} else {
 		press = 1;
 		b = 100;
