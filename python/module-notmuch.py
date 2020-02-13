@@ -619,7 +619,7 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_return(self, key, focus, mark, **a):
-        "handle:KEnter"
+        "handle:K:Enter"
         # select thing under point, and enter it
         focus.call("notmuch:select", mark, 1)
         return 1
@@ -629,9 +629,9 @@ class notmuch_master_view(edlib.Pane):
         if self.message_pane:
             self.message_pane.call(key)
         elif self.query_pane:
-            self.query_pane.call("KEnter")
+            self.query_pane.call("K:Enter")
         else:
-            self.list_pane.call("KEnter")
+            self.list_pane.call("K:Enter")
         return 1
 
     def handle_move(self, key, mark, **a):
@@ -1583,18 +1583,18 @@ class notmuch_message_view(edlib.Pane):
 
     def handle_space(self, key, focus, mark, **a):
         "handle:KChr- "
-        if focus.call("KNext", 1, mark) == 2:
+        if focus.call("K:Next", 1, mark) == 2:
             focus.call("KChr-n", mark)
         return 1
 
     def handle_backspace(self, key, focus, mark, **a):
-        "handle:KBackspace"
-        if focus.call("KPrior", 1, mark) == 2:
+        "handle:K:Backspace"
+        if focus.call("K:Prior", 1, mark) == 2:
             focus.call("KChr-p", mark)
         return 1
 
     def handle_return(self, key, focus, mark, **a):
-        "handle:KEnter"
+        "handle:K:Enter"
         focus.call("doc:email:select", mark);
         return 1
 

@@ -451,7 +451,7 @@ def make_attach(key, focus, comm2, str, str2, **a):
     return 1
 
 class MakeViewerPane(edlib.Pane):
-    # This is a simple overlay to allow Enter to
+    # This is a simple overlay to allow :Enter to
     # jump to a given match, and similar
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
@@ -464,7 +464,7 @@ class MakeViewerPane(edlib.Pane):
         return 1
 
     def handle_enter(self, key, focus, mark, **a):
-        "handle:KEnter"
+        "handle:K:Enter"
         focus.call("doc:notify:doc:make-revisit", mark)
         next_match("interactive-cmd-next-match", focus,
                    edlib.NO_NUMERIC, "OtherPane")
@@ -518,7 +518,7 @@ class makeprompt(edlib.Pane):
         self.call("attach-file-entry", "shellcmd")
 
     def enter(self, key, focus, **a):
-        "handle:KEnter"
+        "handle:K:Enter"
         str = focus.call("doc:get-str", ret="str")
         return focus.call("popup:close", str)
 

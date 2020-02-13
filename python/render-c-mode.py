@@ -312,7 +312,7 @@ class CModePane(edlib.Pane):
             ret = [ depth[-1], depth[-1] ]
 
         #check for label.  Need to be a start of line, but
-        # may only step over white space.  When trying Enter, we
+        # may only step over white space.  When trying :Enter, we
         # mustn't thing we can see the label at the start of this line.
         st = m.dup()
         c = p.call("doc:step", 0, 1, st, ret='char')
@@ -463,7 +463,7 @@ class CModePane(edlib.Pane):
 
 
     def handle_enter(self, key, focus, mark, num2, **a):
-        "handle:KEnter"
+        "handle:K:Enter"
         # If there is white space before or after the cursor,
         # remove it.  Then work out how indented this line
         # should be, and insert that much space, plus any
@@ -494,7 +494,7 @@ class CModePane(edlib.Pane):
             return 0
 
     def handle_tab(self, key, focus, mark, num, **a):
-        "handle:KTab"
+        "handle:K:Tab"
         # if there is only white-space before cursor (up to newline) then:
         # move to end of white-space
         # - choose an indent as for Return
@@ -567,7 +567,7 @@ class CModePane(edlib.Pane):
         return 0
 
     def handle_meta_tab(self, key, focus, mark, **a):
-        "handle:K:MTab"
+        "handle:K:M:Tab"
         # like tab-at-start-of-line, anywhere in line
         # Probably need to type esc-tab, as Alt-Tab normally
         # goes to next window in window system
@@ -576,7 +576,7 @@ class CModePane(edlib.Pane):
         self.handle_tab(key, focus, m, 1)
 
     def handle_bs(self, key, focus, mark, **a):
-        "handle:KBackspace"
+        "handle:K:Backspace"
         # If in the indent, remove one level of indent
         m = mark.dup()
         c = focus.call("doc:step", 1, m, ret="char")

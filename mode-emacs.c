@@ -60,13 +60,13 @@ static struct move_command {
 	char		*k1 safe, *k2, *k3;
 } move_commands[] = {
 	{CMD(emacs_move), "Move-Char", 1, 0,
-	 "K:CChr-F", "KRight", NULL},
+	 "K:CChr-F", "K:Right", NULL},
 	{CMD(emacs_move), "Move-Char", -1, 0,
-	 "K:CChr-B", "KLeft", NULL},
+	 "K:CChr-B", "K:Left", NULL},
 	{CMD(emacs_move), "Move-Word", 1, 0,
-	 "K:MChr-f", "K:MRight", NULL},
+	 "K:MChr-f", "K:M:Right", NULL},
 	{CMD(emacs_move), "Move-Word", -1, 0,
-	 "K:MChr-b", "K:MLeft", NULL},
+	 "K:MChr-b", "K:M:Left", NULL},
 	{CMD(emacs_move), "Move-Expr", 1, 0,
 	 "K:M:CChr-F", NULL, NULL},
 	{CMD(emacs_move), "Move-Expr", -1, 0,
@@ -80,21 +80,21 @@ static struct move_command {
 	{CMD(emacs_move), "Move-WORD", -1, 0,
 	 "K:MChr-B", NULL, NULL},
 	{CMD(emacs_move), "Move-EOL", 1, 0,
-	 "K:CChr-E", "KEnd", NULL},
+	 "K:CChr-E", "K:End", NULL},
 	{CMD(emacs_move), "Move-EOL", -1, 0,
-	 "K:CChr-A", "KHome", NULL},
+	 "K:CChr-A", "K:Home", NULL},
 	{CMD(emacs_move), "Move-Line", -1, 0,
-	 "K:CChr-P", "KUp", NULL},
+	 "K:CChr-P", "K:Up", NULL},
 	{CMD(emacs_move), "Move-Line", 1, 0,
-	 "K:CChr-N", "KDown", NULL},
+	 "K:CChr-N", "K:Down", NULL},
 	{CMD(emacs_move), "Move-File", 1, 0,
-	 "K:MChr->", "K:SEnd", NULL},
+	 "K:MChr->", "K:S:End", NULL},
 	{CMD(emacs_move), "Move-File", -1, 0,
-	 "K:MChr-<", "K:SHome", NULL},
+	 "K:MChr-<", "K:S:Home", NULL},
 	{CMD(emacs_move), "Move-View-Large", 1, 0,
-	 "KNext", "K:CChr-V", "emacs-move-large-other"},
+	 "K:Next", "K:CChr-V", "emacs-move-large-other"},
 	{CMD(emacs_move), "Move-View-Large", -1, 0,
-	 "KPrior", "K:MChr-v", NULL},
+	 "K:Prior", "K:MChr-v", NULL},
 
 	{CMD(emacs_move), "Move-Paragraph", -1, 0,
 	 "K:M:CChr-A", NULL, NULL},
@@ -102,13 +102,13 @@ static struct move_command {
 	 "K:M:CChr-E", NULL, NULL},
 
 	{CMD(emacs_delete), "Move-Char", 1, 0,
-	 "K:CChr-D", "KDel", "del"},
+	 "K:CChr-D", "K:Del", "del"},
 	{CMD(emacs_delete), "Move-Char", -1, 0,
-	 "K:CChr-H", "KBackspace", "KDelete"},
+	 "K:CChr-H", "K:Backspace", "K:Delete"},
 	{CMD(emacs_delete), "Move-Word", 1, 0,
 	 "K:MChr-d", NULL, NULL},
 	{CMD(emacs_delete), "Move-Word", -1, 0,
-	 "K:M:CChr-H", "K:MBackspace", NULL},
+	 "K:M:CChr-H", "K:M:Backspace", NULL},
 	{CMD(emacs_kill), "Move-EOL", 1, 0,
 	 "K:CChr-K", NULL, NULL},
 	{CMD(emacs_kill), "Move-Expr", 1, 0,
@@ -392,7 +392,7 @@ REDEF_CMD(emacs_swap)
 
 DEF_CMD(emacs_move_view_other)
 {
-	/* If there is an 'other' pane', Send "KNext" there */
+	/* If there is an 'other' pane', Send "K:Next" there */
 	struct pane *p;
 
 	/* '512' means 'fail if no other pane' */
@@ -605,9 +605,9 @@ static struct {
 	char *key;
 	char *insert;
 } other_inserts[] = {
-	{"KTab", "\t"},
-	{"KLF", "\n"},
-	{"KEnter", "\n"},
+	{"K:Tab", "\t"},
+	{"K:LF", "\n"},
+	{"K:Enter", "\n"},
 	{"K:CChr-O", "\0\n"},
 	{NULL, NULL}
 };
@@ -724,7 +724,7 @@ DEF_CMD(find_done)
 		return 1;
 	}
 	if (strcmp(type, "file") == 0 &&
-	    strcmp(ci->key, "KEnter") == 0 &&
+	    strcmp(ci->key, "K:Enter") == 0 &&
 	    stat(file_normalize(ci->focus, str, pane_attr_get(ci->focus,
 							      "initial_path")),
 		 &stb) != 0) {
@@ -833,9 +833,9 @@ map *fh_map;
 static void findmap_init(void)
 {
 	fh_map = key_alloc();
-	key_add(fh_map, "KTab", &find_complete);
-	key_add(fh_map, "KEnter", &find_done);
-	key_add(fh_map, "K:MEnter", &find_done);
+	key_add(fh_map, "K:Tab", &find_complete);
+	key_add(fh_map, "K:Enter", &find_done);
+	key_add(fh_map, "K:M:Enter", &find_done);
 	key_add(fh_map, "K:MChr-p", &find_prevnext);
 	key_add(fh_map, "K:MChr-n", &find_prevnext);
 }
@@ -1766,7 +1766,7 @@ static void emacs_init(void)
 	unsigned i;
 	struct map *m = key_alloc();
 
-	key_add(m, "KESC", &meta_cmd.c);
+	key_add(m, "K:ESC", &meta_cmd.c);
 	key_add(m, "K:CChr-X", &cx_cmd.c);
 	key_add(m, "K:CXChr-4", &cx4_cmd.c);
 	key_add(m, "K:CXChr-5", &cx5_cmd.c);
@@ -1789,9 +1789,9 @@ static void emacs_init(void)
 
 	key_add_range(m, "KChr- ", "KChr-~", &emacs_insert);
 	key_add_range(m, "KChr-\200", "KChr-\377\377\377\377", &emacs_insert);
-	key_add(m, "KTab", &emacs_insert_other);
-	key_add(m, "KLF", &emacs_insert_other);
-	key_add(m, "KEnter", &emacs_insert_other);
+	key_add(m, "K:Tab", &emacs_insert_other);
+	key_add(m, "K:LF", &emacs_insert_other);
+	key_add(m, "K:Enter", &emacs_insert_other);
 	key_add(m, "K:CChr-O", &emacs_insert_other);
 	key_add(m, "Interactive:insert", &emacs_interactive_insert);
 	key_add(m, "Interactive:delete", &emacs_interactive_delete);

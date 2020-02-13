@@ -538,14 +538,14 @@ static void register_map(void)
 	key_add(rc_map, "Clone", &complete_clone);
 
 	key_add(rc_map, "Replace", &complete_ignore_replace);
-	key_add(rc_map, "KESC", &complete_escape);
+	key_add(rc_map, "K:ESC", &complete_escape);
 	key_add_range(rc_map, "KChr- ", "KChr-~", &complete_char);
-	key_add(rc_map, "KBackspace", &complete_bs);
+	key_add(rc_map, "K:Backspace", &complete_bs);
 
 	key_add_prefix(rc_map, "Move-", &complete_nomove);
 	key_add(rc_map, "Move-EOL", &complete_eol);
 
-	key_add(rc_map, "KEnter", &complete_return);
+	key_add(rc_map, "K:Enter", &complete_return);
 
 	key_add(rc_map, "Complete:prefix", &complete_set_prefix);
 }

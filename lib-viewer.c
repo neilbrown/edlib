@@ -38,13 +38,13 @@ DEF_CMD(no_replace)
 
 DEF_CMD(viewer_page_down)
 {
-	call("KNext", ci->focus, ci->num, ci->mark);
+	call("K:Next", ci->focus, ci->num, ci->mark);
 	return 1;
 }
 
 DEF_CMD(viewer_page_up)
 {
-	call("KPrior", ci->focus, ci->num, ci->mark);
+	call("K:Prior", ci->focus, ci->num, ci->mark);
 	return 1;
 }
 
@@ -83,8 +83,8 @@ void edlib_init(struct pane *ed safe)
 	key_add(viewer_map, "Replace", &no_replace);
 	key_add(viewer_map, "KChr- ", &viewer_page_down);
 	key_add(viewer_map, "K:CChr-H", &viewer_page_up);
-	key_add(viewer_map, "KBackspace", &viewer_page_up);
-	key_add(viewer_map, "KDel", &viewer_page_up);
+	key_add(viewer_map, "K:Backspace", &viewer_page_up);
+	key_add(viewer_map, "K:Del", &viewer_page_up);
 	key_add(viewer_map, "KChr-q", &viewer_bury);
 	key_add(viewer_map, "KChr-E", &viewer_close);
 	key_add(viewer_map, "Clone", &viewer_clone);

@@ -5,7 +5,7 @@
 
 # This pane overlays a pane showing unified diff output and:
 # - colourizes + and - lines
-# - interprets 'Enter' to find the given line
+# - interprets ':Enter' to find the given line
 
 import os.path
 
@@ -42,7 +42,7 @@ class DiffPane(edlib.Pane):
         home.clone_children(p)
 
     def handle_enter(self, key, focus, mark, **a):
-        "handle:KEnter"
+        "handle:K:Enter"
         m = mark.dup()
         focus.call("Move-EOL", -1, m)
         lines = 0

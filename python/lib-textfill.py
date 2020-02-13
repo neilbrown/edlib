@@ -244,7 +244,7 @@ class FillMode(edlib.Pane):
         return 1
 
     def handle_space(self, key, focus, mark, **a):
-        "handle-list/KChr- /KTab/KEnter"
+        "handle-list/KChr- /K:Tab/K:Enter"
         if not self.cols:
             # auto-fill not enabled
             return 0
@@ -290,7 +290,7 @@ class FillMode(edlib.Pane):
                 do_replace(focus, m, mark, newpara, prefix0+' \t')
             except edlib.commandfailed:
                 pass
-            if key == 'Enter':
+            if key == ':Enter':
                 return 1
         return 0
 
