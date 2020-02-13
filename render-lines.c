@@ -517,7 +517,7 @@ static void find_cursor(struct render_list *rlst,
  * The location that comes in as *cxp,*cyp goes out as *offsetp.
  */
 static void render_line(struct pane *p safe, struct pane *focus safe,
-			char *line safe, short y_start, int dodraw, int scale,
+			char *line safe, short y_start, int dodraw,
 			short *cxp, short *cyp, short *cwp, short *offsetp,
 			char **offset_attrs,
 			short *cols, struct command *comm2)
@@ -546,6 +546,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	char *curspos = NULL;
 	char *cursattr = NULL;
 	char *cstart = NULL;
+	struct xy xyscale = pane_scale(focus);
+	int scale = xyscale.x;
 
 	if (strncmp(line, "<image:",7) == 0) {
 		/* For now an <image> must be on a line by itself.
@@ -1046,7 +1048,6 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	short offset;
 	int found_start = 0, found_end = 0;
 	short lines_above = 0, lines_below = 0;
-	struct xy scale = pane_scale(focus);
 
 	top = vmark_first(focus, rl->typenum, p);
 	bot = vmark_last(focus, rl->typenum, p);
@@ -1083,7 +1084,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		goto abort; /* FIXME can I prove this? */
 
 	x = -1; lines_above = -1; rl->y = y = 0;
-	render_line(p, focus, start->mdata ?: "", y, 0, scale.x,
+	render_line(p, focus, start->mdata ?: "", y, 0,
 		    &x, &lines_above, NULL, &offset, NULL, NULL,
 		    &rl->c);
 	y = rl->y;
@@ -1123,8 +1124,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				if (!start->mdata)
 					call_render_line(focus, start);
 				if (start->mdata) {
-					render_line(p, focus, start->mdata, h,
-						    0, scale.x,
+					render_line(p, focus, start->mdata, h, 0,
 						    NULL, NULL, NULL, NULL, NULL,
 						    NULL, &rl->c);
 					h = rl->y;
@@ -1150,7 +1150,6 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				short h;
 				rl->end_of_page = 0;
 				render_line(p, focus, end->mdata, 0, 0,
-					    scale.x,
 					    NULL, NULL, NULL, NULL, NULL,
 					    NULL, &rl->c);
 				h = rl->y;
@@ -1275,7 +1274,7 @@ restart:
 	y = 0;
 	if (hdr) {
 		rl->header_lines = 0;
-		render_line(p, focus, hdr, 0, 1, scale.x,
+		render_line(p, focus, hdr, 0, 1,
 			    NULL, NULL, NULL, NULL, NULL, cols, &rl->c);
 		y = rl->y;
 		rl->header_lines = y;
@@ -1299,7 +1298,7 @@ restart:
 			short len = call_render_line_to_point(focus, pm,
 							      m);
 			rl->cursor_line = y;
-			render_line(p, focus, m->mdata ?: "", y, 1, scale.x,
+			render_line(p, focus, m->mdata ?: "", y, 1,
 				    &p->cx, &p->cy, &cw, &len,
 				    NULL,  cols, &rl->c);
 			y = rl->y;
@@ -1358,7 +1357,7 @@ restart:
 			}
 			cursor_drawn = 1;
 		} else {
-			render_line(p, focus, m->mdata?:"", y, 1, scale.x,
+			render_line(p, focus, m->mdata?:"", y, 1,
 				    NULL, NULL, NULL,
 				    NULL, NULL, cols, &rl->c);
 			y = rl->y;
@@ -1536,7 +1535,6 @@ DEF_CMD(render_lines_move)
 	struct rl_data *rl = p->data;
 	struct mark *top, *old_top;
 	int pagesize = rl->line_height;
-	struct xy scale = pane_scale(focus);
 
 	top = vmark_first(focus, rl->typenum, p);
 	if (!top)
@@ -1582,7 +1580,7 @@ DEF_CMD(render_lines_move)
 					rpt = 0;
 					break;
 				}
-				render_line(p, focus, m->mdata, y, 0, scale.x,
+				render_line(p, focus, m->mdata, y, 0,
 					    NULL, NULL, NULL,
 					    NULL, NULL, NULL, &rl->c);
 				y = rl->y;
@@ -1599,7 +1597,7 @@ DEF_CMD(render_lines_move)
 			if (top->mdata == NULL)
 				break;
 			rl->end_of_page = 0;
-			render_line(p, focus, top->mdata, 0, 0, scale.x,
+			render_line(p, focus, top->mdata, 0, 0,
 				    NULL, NULL, NULL, NULL, NULL,
 				    NULL, &rl->c);
 			if (rl->end_of_page)
@@ -1665,7 +1663,6 @@ DEF_CMD(render_lines_set_cursor)
 	short y = rl->header_lines - rl->skip_lines;
 	int found = 0;
 	short cihx = 0, cihy = 0;
-	struct xy scale = pane_scale(p);
 
 	m = vmark_first(p, rl->typenum, p);
 
@@ -1688,7 +1685,7 @@ DEF_CMD(render_lines_set_cursor)
 		short cx = cihx, cy = cihy, o = -1;
 		char *oattrs = NULL;
 		call_render_line(focus, m);
-		render_line(p, focus, m->mdata, y, 0, scale.x, &cx, &cy, NULL,
+		render_line(p, focus, m->mdata, y, 0, &cx, &cy, NULL,
 			    &o, &oattrs, NULL, &rl->c);
 		y = rl->y;
 		if (o >= 0) {
@@ -1794,7 +1791,6 @@ DEF_CMD(render_lines_move_line)
 	struct rl_data *rl = p->data;
 	short target_x, target_y;
 	short o = -1;
-	struct xy scale = pane_scale(focus);
 	int num;
 	struct mark *m = ci->mark;
 
@@ -1845,7 +1841,7 @@ DEF_CMD(render_lines_move_line)
 		 * if start->mdata is NULL
 		 */
 		call_render_line(focus, start);
-		render_line(p, focus, start->mdata?:"", y, 0, scale.x,
+		render_line(p, focus, start->mdata?:"", y, 0,
 			    &target_x, &target_y, NULL, &o, NULL, NULL, &rl->c);
 		y = rl->y;
 		/* 'o' is the distance from start-of-line to the target */
