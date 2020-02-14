@@ -137,17 +137,17 @@ struct render_list {
 	char	*text safe, *attr safe; // both are allocated
 	short	x, width;
 	short	cursorpos;
-	char	*curs;
+	char	*xypos;	/* location in text_orig where given x,y was found */
 };
 
 #define WRAP 1
-#define CURS 2
+#define XYPOS 2
 
 static int draw_some(struct pane *p safe, struct pane *focus safe,
 		     struct render_list **rlp safe,
 		     int *x safe,
 		     char *start safe, char **endp safe,
-		     char *attr safe, int margin, int cursorpos, int cursx,
+		     char *attr safe, int margin, int cursorpos, int xpos,
 		     int scale)
 {
 	/* Measure the text from 'start' for length 'len', expecting to
@@ -156,7 +156,7 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 	 * Everything will be drawn with the same attributes: attr.
 	 * If the text would get closer to right end than 'margin',
 	 * we stop drawing before then.  If this happens, WRAP is returned.
-	 * If drawing would pass cursx, stop there and record pointer
+	 * If drawing would pass xpos, stop there and record pointer
 	 * into 'start'.
 	 * If cursorpos is between 0 and len inclusive, a cursor is drawn there.
 	 */
@@ -180,18 +180,18 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 	str = strndup(start, len);
 	if (*str == '\t')
 		*str = ' ';
-	if (cursx >= 0 && cursx >= *x && cursx < rmargin) {
-		rmargin = cursx;
-		ret = CURS;
+	if (xpos >= 0 && xpos >= *x && xpos < rmargin) {
+		rmargin = xpos;
+		ret = XYPOS;
 	}
 
 	rl = calloc(1, sizeof(*rl));
 	cr = home_call_ret(all, focus, "text-size", p, rmargin - *x, NULL, str,
 			   scale, NULL, attr);
 	max = cr.i;
-	if (max == 0 && ret == CURS) {
-		/* must already have CURS position. */
-		rl->curs = start;
+	if (max == 0 && ret == XYPOS) {
+		/* must already have XY position. */
+		rl->xypos = start;
 		ret = WRAP;
 		rmargin = p->w - margin;
 		cr = home_call_ret(all, focus, "text-size", p,
@@ -211,8 +211,8 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 	rl->attr = strdup(attr);
 	rl->width = cr.x;
 	rl->x = *x;
-	if (ret == CURS)
-		rl->curs = start + strlen(rl->text);
+	if (ret == XYPOS)
+		rl->xypos = start + strlen(rl->text);
 
 	if (cursorpos >= 0 && cursorpos <= len && cursorpos <= max)
 		rl->cursorpos = cursorpos;
@@ -256,7 +256,7 @@ static char *get_last_attr(char *attrs safe, char *attr safe)
 static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 		      struct render_list **rlp safe,
 		      int y, int scale, int wrap_pos,
-		      char **curspos, char **cursattr)
+		      char **xypos, char **xyattr)
 {
 	struct render_list *last_wrap = NULL, *end_wrap = NULL, *last_rl = NULL;
 	int in_wrap = 0;
@@ -296,10 +296,10 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 				  scale, NULL, rl->attr,
 				  x, y);
 		x += rl->width;
-		if (curspos && rl->curs) {
-			*curspos = rl->curs;
-			if (cursattr)
-				*cursattr = strdup(rl->attr);
+		if (xypos && rl->xypos) {
+			*xypos = rl->xypos;
+			if (xyattr)
+				*xyattr = strdup(rl->attr);
 		}
 	}
 	for (; rl && rl != end_wrap; rl = rl->next) {
@@ -489,33 +489,35 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	return y + height;
 }
 
-static void find_cursor(struct render_list *rlst,
-			struct pane *p safe, struct pane *focus safe, int cx,
-			int scale, char **curspos safe, char **cursattr safe)
+static void find_xypos(struct render_list *rlst,
+		       struct pane *p safe, struct pane *focus safe, int posx,
+		       int scale, char **xypos safe, char **xyattr safe)
 {
 	while (rlst &&
-	       rlst->x + rlst->width < cx)
+	       rlst->x + rlst->width < posx)
 		rlst = rlst->next;
 	if (!rlst)
 		return;
-	if (rlst->x > cx)
-		*curspos = rlst->text_orig;
+	if (rlst->x > posx)
+		*xypos = rlst->text_orig;
 	else {
 		struct call_return cr = home_call_ret(
 			all, focus, "text-size", p,
-			cx - rlst->x, NULL, rlst->text,
+			posx - rlst->x, NULL, rlst->text,
 			scale, NULL, rlst->attr);
-		*curspos = rlst->text_orig + cr.i;
+		*xypos = rlst->text_orig + cr.i;
 	}
-	*cursattr = strdup(rlst->attr);
+	*xyattr = strdup(rlst->attr);
 }
 /* Render a line, with attributes and wrapping.
- * Report line offset where cursor point cx,cy is passed. -1 if never seen.
+ * Report line offset and attributes where point x,y (given in
+ * *cx,*cy) is passed. -1 if never seen.
  * Report cx,cy location where char at 'offsetp' was drawn, or -1.
  * Note offsetp, cxp, cyp are in-out parameters.
  * The location that comes in as *offsetp goes out as *cxp,*cyp
  * The location that comes in as *cxp,*cyp goes out as *offsetp.
  */
+
 static void render_line(struct pane *p safe, struct pane *focus safe,
 			char *line safe, short y_start, int dodraw,
 			short *cxp, short *cyp, short *cwp, short *offsetp,
@@ -528,7 +530,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	char *start = line;
 	struct buf attr;
 	unsigned char ch;
-	int cy = -1, cx = -1, offset = -1;
+	int posy = -1, posx = -1, offset = -1;
 	int wrap_offset = 0; /*number of columns displayed in earlier lines */
 	int in_tab = 0;
 	struct rl_data *rl = p->data;
@@ -543,8 +545,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	int margin;
 	int end_of_page = 0;
 	struct render_list *rlst = NULL;
-	char *curspos = NULL;
-	char *cursattr = NULL;
+	char *xypos = NULL;
+	char *xyattr = NULL;
 	char *cstart = NULL;
 	struct xy xyscale = pane_scale(focus);
 	int scale = xyscale.x;
@@ -599,27 +601,27 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	buf_init(&attr);
 	buf_append(&attr, ' '); attr.len = 0;
 	if (cxp && cyp && offsetp) {
-		/* If cx and cy are non-negative, set *offsetp to
+		/* If posx and posy are non-negative, set *offsetp to
 		 * the length when we reach that cursor pos.
-		 * if offset is non-negative, set cx and cy to cursor
+		 * if offset is non-negative, set posx and posy to cursor
 		 * pos when we reach that length
 		 */
-		cy = *cyp;
-		cx = *cxp;
+		posy = *cyp;
+		posx = *cxp;
 		offset = *offsetp;
 		*cxp = -1;
 		*cyp = -1;
 		if (cwp)
 			*cwp = 0;
 	}
-	if (cy >= 0 && cy < y) {
+	if (posy >= 0 && posy < y) {
 		/* cursor is not here */
 		*offsetp = -1;
-		cx = cy = -1;
+		posx = posy = -1;
 	}
 
 	while (*line && y < p->h && !end_of_page) {
-		int CX;
+		int XPOS;
 
 		if (mwidth <= 0) {
 			struct call_return cr = home_call_ret(all, focus,
@@ -635,24 +637,24 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				*cwp = mwidth;
 		}
 
-		if (ret == CURS) {
+		if (ret == XYPOS) {
 			/* Found the cursor, stop looking */
-			cy = -1; cx = -1;
+			posy = -1; posx = -1;
 		}
-		if (y+line_height >= cy &&
-		    y <= cy && x <= cx)
-			CX = cx;
+		if (y+line_height >= posy &&
+		    y <= posy && x <= posx)
+			XPOS = posx;
 		else
-			CX = -1;
+			XPOS = -1;
 
-		if (y > cy && offsetp && curspos) {
-			*offsetp = curspos - line_start;
+		if (y > posy && offsetp && xypos) {
+			*offsetp = xypos - line_start;
 			offsetp = NULL;
 			if (offset_attrs)
-				*offset_attrs = cursattr;
+				*offset_attrs = xyattr;
 			else
-				free(cursattr);
-			cursattr = NULL;
+				free(xyattr);
+			xyattr = NULL;
 		}
 
 		if (offset >= 0 && start - line_start <= offset) {
@@ -674,28 +676,28 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				int len = flush_line(p, focus, dodraw, &rlst,
 						     y+ascent, scale,
 						     p->w - mwidth,
-						     &curspos, &cursattr);
+						     &xypos, &xyattr);
 				wrap_offset += len;
 				x -= len;
 				if (x < 0)
 					x = 0;
 				y += line_height;
 				if (offsetp) {
-					if (y+line_height >= cy &&
-					    y <= cy && x > cx) {
+					if (y+line_height >= posy &&
+					    y <= posy && x > posx) {
 						/* cursor is in field move down */
-						find_cursor(rlst, p, focus,
-							    cx, scale,
-							    &curspos, &cursattr);
+						find_xypos(rlst, p, focus,
+							   posx, scale,
+							   &xypos, &xyattr);
 					}
-					if (curspos) {
-						*offsetp = curspos - line_start;
+					if (xypos) {
+						*offsetp = xypos - line_start;
 						offsetp = NULL;
 						if (offset_attrs)
-							*offset_attrs = cursattr;
+							*offset_attrs = xyattr;
 						else
-							free(cursattr);
-						cursattr = NULL;
+							free(xyattr);
+						xyattr = NULL;
 					}
 				}
 			} else {
@@ -724,13 +726,13 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				continue;
 			if (offset == (line - line_start) ||
 			    (line-start) * mwidth > p->w - x ||
-			    (CX>x && (line - start)*mwidth > CX - x)) {
+			    (XPOS>x && (line - start)*mwidth > XPOS - x)) {
 				ret = draw_some(p, focus, &rlst, &x, start,
 						&line,
 						buf_final(&attr),
 						wrap ? mwidth : 0,
 						offset - (start - line_start),
-						CX, scale);
+						XPOS, scale);
 				start = line;
 			}
 			continue;
@@ -739,7 +741,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				buf_final(&attr),
 				wrap ? mwidth : 0,
 				in_tab ?:offset - (start - line_start),
-				CX, scale);
+				XPOS, scale);
 		start = line;
 		if (ret || !ch)
 			continue;
@@ -750,7 +752,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 						buf_final(&attr),
 						wrap ? mwidth : 0,
 						in_tab ?:offset - (start - line_start),
-						CX, scale);
+						XPOS, scale);
 				if (ret)
 					continue;
 				start += 2;
@@ -795,21 +797,21 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 
 		line += 1;
 		if (ch == '\n') {
-			curspos = line-1;
+			xypos = line-1;
 			flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
-				   &curspos, &cursattr);
+				   &xypos, &xyattr);
 			y += line_height;
 			x = 0;
 			wrap_offset = 0;
 			start = line;
-			if (curspos && offsetp) {
-				*offsetp = curspos - line_start;
+			if (xypos && offsetp) {
+				*offsetp = xypos - line_start;
 				offsetp = NULL;
 				if (offset_attrs)
-					*offset_attrs = cursattr;
+					*offset_attrs = xyattr;
 				else
-					free(cursattr);
-				cursattr = NULL;
+					free(xyattr);
+				xyattr = NULL;
 			}
 		} else if (ch == '\f') {
 			x = 0;
@@ -824,7 +826,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 					wrap ? mwidth*2: 0,
 					offset == (start - line_start)
 					? in_tab : -1,
-					CX, scale);
+					XPOS, scale);
 			if (w > 1) {
 				line -= 1;
 				in_tab = -1; // suppress extra cursors
@@ -843,7 +845,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 					buf_final(&attr),
 					wrap ? mwidth*2: 0,
 					offset - (start - line_start),
-					CX, scale);
+					XPOS, scale);
 			attr.len = l;
 			start = line;
 		}
@@ -853,20 +855,20 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		draw_some(p, focus, &rlst, &x, start, &line,
 			  buf_final(&attr),
 			  wrap ? mwidth : 0, offset - (start - line_start),
-			  cx, scale);
+			  posx, scale);
 	}
 
 	flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
-		   &curspos, &cursattr);
+		   &xypos, &xyattr);
 
-	if (offsetp && curspos) {
-		*offsetp = curspos - line_start;
-		curspos = NULL;
+	if (offsetp && xypos) {
+		*offsetp = xypos - line_start;
+		xypos = NULL;
 		if (offset_attrs)
-			*offset_attrs = cursattr;
+			*offset_attrs = xyattr;
 		else
-			free(cursattr);
-		cursattr = NULL;
+			free(xyattr);
+		xyattr = NULL;
 	}
 
 	if (offset >= 0 && line - line_start <= offset
