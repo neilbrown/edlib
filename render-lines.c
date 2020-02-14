@@ -299,7 +299,7 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 		if (xypos && rl->xypos) {
 			*xypos = rl->xypos;
 			if (xyattr)
-				*xyattr = strdup(rl->attr);
+				*xyattr = strsave(p, rl->attr);
 		}
 	}
 	for (; rl && rl != end_wrap; rl = rl->next) {
@@ -507,7 +507,7 @@ static void find_xypos(struct render_list *rlst,
 			scale, NULL, rlst->attr);
 		*xypos = rlst->text_orig + cr.i;
 	}
-	*xyattr = strdup(rlst->attr);
+	*xyattr = strsave(p, rlst->attr);
 }
 /* Render a line, with attributes and wrapping.
  * Report line offset and attributes where point x,y (given in
@@ -652,9 +652,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			offsetp = NULL;
 			if (offset_attrs)
 				*offset_attrs = xyattr;
-			else
-				free(xyattr);
-			xyattr = NULL;
 		}
 
 		if (offset >= 0 && start - line_start <= offset) {
@@ -695,9 +692,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 						offsetp = NULL;
 						if (offset_attrs)
 							*offset_attrs = xyattr;
-						else
-							free(xyattr);
-						xyattr = NULL;
 					}
 				}
 			} else {
@@ -809,9 +803,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				offsetp = NULL;
 				if (offset_attrs)
 					*offset_attrs = xyattr;
-				else
-					free(xyattr);
-				xyattr = NULL;
 			}
 		} else if (ch == '\f') {
 			x = 0;
@@ -866,9 +857,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		xypos = NULL;
 		if (offset_attrs)
 			*offset_attrs = xyattr;
-		else
-			free(xyattr);
-		xyattr = NULL;
 	}
 
 	if (offset >= 0 && line - line_start <= offset
@@ -1710,7 +1698,6 @@ DEF_CMD(render_lines_set_cursor)
 				mark_free(m2);
 				found = 1;
 			}
-			free(oattrs);
 		} else if (found)
 			break;
 		m = vmark_next(m);
