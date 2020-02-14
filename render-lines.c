@@ -582,8 +582,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 					"bold", prefix, scale);
 		draw_some(p, focus, &rlst, &x, prefix, &s, "bold",
 			  0, -1, -1, scale);
+		comm_call(comm2, "prefix_len", p, x + rl->shift_left);
 	}
-	rl->prefix_len = x + rl->shift_left;
 	if (center == 1)
 		x += (p->w - x - twidth) / 2;
 	if (center > 1)
@@ -903,6 +903,10 @@ DEF_CMD(rl_cb)
 		rl->y = ci->num;
 		if (ci->num2)
 			rl->end_of_page = ci->num2;
+		return 1;
+	}
+	if (strcmp(ci->key, "prefix_len") == 0) {
+		rl->prefix_len = ci->num;
 		return 1;
 	}
 	return 0;
@@ -1298,6 +1302,7 @@ restart:
 			short len = call_render_line_to_point(focus, pm,
 							      m);
 			rl->cursor_line = y;
+			rl->prefix_len = 0;
 			render_line(p, focus, m->mdata ?: "", y, 1,
 				    &p->cx, &p->cy, &cw, &len,
 				    NULL,  cols, &rl->c);
