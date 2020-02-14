@@ -131,6 +131,8 @@ struct rl_data {
 	short		end_of_page;
 	short		xypos;	/* Where in line the x,y pos was found */
 	const char	*xyattrs;
+	short		cx,cy;
+	short		cwidth;
 };
 
 struct render_list {
@@ -522,7 +524,7 @@ static void find_xypos(struct render_list *rlst,
 
 static void render_line(struct pane *p safe, struct pane *focus safe,
 			char *line safe, short y_start, int dodraw,
-			short *cxp, short *cyp, short *cwp, short offset,
+			short posx, short posy, short offset,
 			short *cols, struct command *comm2)
 {
 	int x = 0;
@@ -531,7 +533,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	char *start = line;
 	struct buf attr;
 	unsigned char ch;
-	int posy = -1, posx = -1;
 	int wrap_offset = 0; /*number of columns displayed in earlier lines */
 	int in_tab = 0;
 	struct rl_data *rl = p->data;
@@ -552,6 +553,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	char *cstart = NULL;
 	struct xy xyscale = pane_scale(focus);
 	int scale = xyscale.x;
+	short cx = -1, cy = -1;
 
 	if (strncmp(line, "<image:",7) == 0) {
 		/* For now an <image> must be on a line by itself.
@@ -560,12 +562,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		 * The cursor is not on the image.
 		 */
 		y = render_image(p, focus, line, y, dodraw, scale);
-		if (cxp)
-			*cxp = -1;
-		if (cyp)
-			*cyp = -1;
-		if (cwp)
-			*cwp = 0;
 		if (cols && *cols < p->w)
 			*cols = p->w;
 		comm_call(comm2, "render-done", p, y);
@@ -600,19 +596,12 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 
 	buf_init(&attr);
 	buf_append(&attr, ' '); attr.len = 0;
-	if (cxp && cyp) {
-		/* If posx and posy are non-negative, set *offsetp to
-		 * the length when we reach that cursor pos.
-		 * if offset is non-negative, set posx and posy to cursor
-		 * pos when we reach that length
-		 */
-		posy = *cyp;
-		posx = *cxp;
-		*cxp = -1;
-		*cyp = -1;
-		if (cwp)
-			*cwp = 0;
-	}
+
+	/* If posx and posy are non-negative, set *offsetp to
+	 * the length when we reach that cursor pos.
+	 * if offset is non-negative, set posx and posy to cursor
+	 * pos when we reach that length
+	 */
 	if (posx >= 0 && posy >= 0)
 		want_xypos = 1;
 	if (posy >= 0 && posy < y) {
@@ -632,9 +621,6 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			mwidth = cr.x;
 			if (mwidth <= 0)
 				mwidth = 1;
-			/* Assume mwidth is the cursor width */
-			if (cwp)
-				*cwp = mwidth;
 		}
 
 		if (ret == XYPOS) {
@@ -656,12 +642,12 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		if (offset >= 0 && start - line_start <= offset) {
 			if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
 				if (cstart != start) {
-					*cyp = y;
-					*cxp = x;
+					cy = y;
+					cx = x;
 					cstart = start;
 				}
 			} else {
-				*cyp = *cxp = -1;
+				cy = cx = -1;
 			}
 		}
 
@@ -856,23 +842,24 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		want_xypos = 0;
 	}
 
-	if (offset >= 0 && line - line_start <= offset
-	    &&/* Must be true when offset >= 0 */ cyp && cxp) {
+	if (offset >= 0 && line - line_start <= offset) {
 		if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
 			if (cstart != start) {
-				*cyp = y;
-				*cxp = x;
+				cy = y;
+				cx = x;
 				cstart = start;
 			}
 		} else {
-			*cyp = *cxp = -1;
+			cy = cx = -1;
 		}
 	}
 	if (x > 0 || y == y_start)
 		/* No newline at the end .. but we must render as whole lines */
 		y += line_height;
 	free(buf_final(&attr));
-	comm_call(comm2, "render-done", p, y, NULL, NULL, end_of_page);
+	/* Assume cursor width is mwidth */
+	comm_call(comm2, "render-done", p, y, NULL, end_of_page ? "yes":NULL,
+		  mwidth, NULL, NULL, cx, cy);
 	while (rlst) {
 		struct render_list *r = rlst;
 		rlst = r->next;
@@ -888,8 +875,11 @@ DEF_CMD(rl_cb)
 
 	if (strcmp(ci->key, "render-done") == 0) {
 		rl->y = ci->num;
-		if (ci->num2)
-			rl->end_of_page = ci->num2;
+		if (ci->str)
+			rl->end_of_page = 1;
+		rl->cx = ci->x;
+		rl->cy = ci->y;
+		rl->cwidth = ci->num2;
 		return 1;
 	}
 	if (strcmp(ci->key, "prefix_len") == 0) {
@@ -1038,7 +1028,6 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	struct mark *top, *bot;
 	struct mark *m;
 	struct mark *start, *end;
-	short x;
 	short y = 0;
 	short y_above = 0, y_below = 0;
 	short offset;
@@ -1079,10 +1068,11 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (!end)
 		goto abort; /* FIXME can I prove this? */
 
-	x = -1; lines_above = -1; rl->y = y = 0;
+	rl->y = y = 0;
 	render_line(p, focus, start->mdata ?: "", y, 0,
-		    &x, &lines_above, NULL, offset, NULL,
+		    -1, -1, offset, NULL,
 		    &rl->c);
+	lines_above = rl->cy;
 	y = rl->y;
 	lines_above = lines_below = 0;
 
@@ -1121,7 +1111,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 					call_render_line(focus, start);
 				if (start->mdata) {
 					render_line(p, focus, start->mdata, h, 0,
-						    NULL, NULL, NULL, -1,
+						    -1, -1, -1,
 						    NULL, &rl->c);
 					h = rl->y;
 				}
@@ -1146,7 +1136,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				short h;
 				rl->end_of_page = 0;
 				render_line(p, focus, end->mdata, 0, 0,
-					    NULL, NULL, NULL, -1,
+					    -1, -1, -1,
 					    NULL, &rl->c);
 				h = rl->y;
 				found_end = rl->end_of_page;
@@ -1271,7 +1261,7 @@ restart:
 	if (hdr) {
 		rl->header_lines = 0;
 		render_line(p, focus, hdr, 0, 1,
-			    NULL, NULL, NULL, -1, cols, &rl->c);
+			    -1, -1, -1, cols, &rl->c);
 		y = rl->y;
 		rl->header_lines = y;
 	}
@@ -1290,16 +1280,16 @@ restart:
 		    mark_ordered_or_same(m, pm) &&
 		    (!(m2 && doc_following_pane(focus, m2) != WEOF) ||
 		     mark_ordered_not_same(pm, m2))) {
-			short cw = -1;
 			short len = call_render_line_to_point(focus, pm,
 							      m);
 			rl->cursor_line = y;
 			rl->prefix_len = 0;
 			rl->xypos = -1;
-			p->cx = p->cy = -1;
+			rl->cwidth = 1;
 			render_line(p, focus, m->mdata ?: "", y, 1,
-				    &p->cx, &p->cy, &cw, len,
+				    -1, -1, len,
 				    cols, &rl->c);
+			p->cx = rl->cx; p->cy = rl->cy;
 			y = rl->y;
 			if (p->cy < 0)
 				p->cx = -1;
@@ -1316,7 +1306,7 @@ restart:
 					if (mwidth <= 0)
 						mwidth = 1;
 				}
-				if (p->cx + cw + 8 * mwidth < p->w) {
+				if (p->cx + rl->cwidth + 8 * mwidth < p->w) {
 					/* Need to shift to right, and there
 					 * is room */
 					while (rl->shift_left > 0 &&
@@ -1334,7 +1324,7 @@ restart:
 					goto restart;
 				}
 			}
-			if (p->cx + cw >= p->w && !rl->do_wrap &&
+			if (p->cx + rl->cwidth >= p->w && !rl->do_wrap &&
 			    shifted != 1) {
 				if (mwidth < 0) {
 					struct call_return cr =
@@ -1347,7 +1337,7 @@ restart:
 						mwidth = 1;
 				}
 				/* Need to shift to the left */
-				while (p->cx + cw >= p->w) {
+				while (p->cx + rl->cwidth >= p->w) {
 					rl->shift_left += 8 * mwidth;
 					p->cx -= 8 * mwidth;
 				}
@@ -1357,7 +1347,7 @@ restart:
 			cursor_drawn = 1;
 		} else {
 			render_line(p, focus, m->mdata?:"", y, 1,
-				    NULL, NULL, NULL,
+				    -1, -1,
 				    -1, cols, &rl->c);
 			y = rl->y;
 		}
@@ -1580,7 +1570,7 @@ DEF_CMD(render_lines_move)
 					break;
 				}
 				render_line(p, focus, m->mdata, y, 0,
-					    NULL, NULL, NULL,
+					    -1, -1,
 					    -1, NULL, &rl->c);
 				y = rl->y;
 				m = vmark_next(m);
@@ -1597,7 +1587,7 @@ DEF_CMD(render_lines_move)
 				break;
 			rl->end_of_page = 0;
 			render_line(p, focus, top->mdata, 0, 0,
-				    NULL, NULL, NULL, -1,
+				    -1, -1, -1,
 				    NULL, &rl->c);
 			if (rl->end_of_page)
 				y = rpt % pagesize;
@@ -1681,11 +1671,10 @@ DEF_CMD(render_lines_set_cursor)
 		/* x,y is in header line - try lower */
 		cihy = y;
 	while (y <= cihy && m && m->mdata) {
-		short cx = cihx, cy = cihy;
 		call_render_line(focus, m);
 		rl->xypos = -1;
 		rl->xyattrs = NULL;
-		render_line(p, focus, m->mdata, y, 0, &cx, &cy, NULL,
+		render_line(p, focus, m->mdata, y, 0, cihx, cihy,
 			    -1, NULL, &rl->c);
 		y = rl->y;
 		if (rl->xypos >= 0) {
@@ -1842,7 +1831,7 @@ DEF_CMD(render_lines_move_line)
 		call_render_line(focus, start);
 		rl->xypos = -1;
 		render_line(p, focus, start->mdata?:"", y, 0,
-			    &target_x, &target_y, NULL, -1, NULL, &rl->c);
+			    target_x, target_y, -1, NULL, &rl->c);
 		y = rl->y;
 		/* rl->xypos is the distance from start-of-line to the target */
 		if (rl->xypos >= 0) {
