@@ -535,8 +535,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	unsigned char ch;
 	int wrap_offset = 0; /*number of columns displayed in earlier lines */
 	int in_tab = 0;
-	struct rl_data *rl = p->data;
-	int wrap = rl->do_wrap;
+	int shift_left = atoi(pane_attr_get(focus, "shift_left") ?:"0");
+	int wrap = shift_left < 0;
 	char *prefix = pane_attr_get(focus, "prefix");
 	int line_height = -1;
 	int ascent = -1;
@@ -571,7 +571,9 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 			   line, scale);
 
 	if (!wrap)
-		x -= rl->shift_left;
+		x -= shift_left;
+	else
+		shift_left = 0;
 
 	if (prefix) {
 		char *s = prefix + strlen(prefix);
@@ -579,7 +581,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 					"bold", prefix, scale);
 		draw_some(p, focus, &rlst, &x, prefix, &s, "bold",
 			  0, -1, -1, scale);
-		comm_call(comm2, "prefix_len", p, x + rl->shift_left);
+		comm_call(comm2, "prefix_len", p, x + shift_left);
 	}
 	if (center == 1)
 		x += (p->w - x - twidth) / 2;
@@ -1384,6 +1386,22 @@ restart:
 	return y;
 }
 
+DEF_CMD(render_lines_get_attr)
+{
+	struct rl_data *rl = ci->home->data;
+
+	if (strcmp(ci->str, "shift_left") == 0) {
+		char ret[10];
+		if (rl->do_wrap)
+			return comm_call(ci->comm2, "cb", ci->focus,
+					 0, NULL, "-1");
+		snprintf(ret, sizeof(ret), "%d", rl->shift_left);
+		return comm_call(ci->comm2, "cb", ci->focus, 0, NULL, ret);
+	}
+	return 0;
+}
+
+
 DEF_CMD(render_lines_refresh)
 {
 	struct pane *p = ci->home;
@@ -1945,6 +1963,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Refresh", &render_lines_refresh);
 	key_add(rl_map, "Refresh:view", &render_lines_refresh_view);
 	key_add(rl_map, "Notify:clip", &render_lines_clip);
+	key_add(rl_map, "get-attr", &render_lines_get_attr);
 
 	key_add(rl_map, "doc:replaced", &render_lines_notify_replace);
 	/* view:changed is sent to a tile when the display might need
