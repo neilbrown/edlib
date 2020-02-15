@@ -525,7 +525,7 @@ static void find_xypos(struct render_list *rlst,
 static void render_line(struct pane *p safe, struct pane *focus safe,
 			char *line safe, short y_start, int dodraw,
 			short posx, short posy, short offset,
-			short *cols, struct command *comm2)
+			struct command *comm2)
 {
 	int x = 0;
 	int y = y_start;
@@ -562,8 +562,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		 * The cursor is not on the image.
 		 */
 		y = render_image(p, focus, line, y, dodraw, scale);
-		if (cols && *cols < p->w)
-			*cols = p->w;
+		comm_call(comm2, "dimensions", p, p->w);
 		comm_call(comm2, "render-done", p, y);
 		return;
 	}
@@ -589,10 +588,9 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	if (center < 0)
 		x = p->w - x - twidth + center;
 	margin = x;
-	if (cols && *cols < x + twidth)
-		*cols = x + twidth;
 
-	rl->line_height = line_height;
+	comm_call(comm2, "dimensions", p,
+		  margin + twidth, NULL, NULL, line_height);
 
 	buf_init(&attr);
 	buf_append(&attr, ' '); attr.len = 0;
@@ -882,6 +880,12 @@ DEF_CMD(rl_cb)
 		rl->cwidth = ci->num2;
 		return 1;
 	}
+	if (strcmp(ci->key, "dimensions") == 0) {
+		if (ci->num > rl->cols)
+			rl->cols = ci->num;
+		rl->line_height = ci->num2;
+		return 1;
+	}
 	if (strcmp(ci->key, "prefix_len") == 0) {
 		rl->prefix_len = ci->num;
 		return 1;
@@ -1070,8 +1074,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 
 	rl->y = y = 0;
 	render_line(p, focus, start->mdata ?: "", y, 0,
-		    -1, -1, offset, NULL,
-		    &rl->c);
+		    -1, -1, offset, &rl->c);
 	lines_above = rl->cy;
 	y = rl->y;
 	lines_above = lines_below = 0;
@@ -1111,8 +1114,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 					call_render_line(focus, start);
 				if (start->mdata) {
 					render_line(p, focus, start->mdata, h, 0,
-						    -1, -1, -1,
-						    NULL, &rl->c);
+						    -1, -1, -1, &rl->c);
 					h = rl->y;
 				}
 				if (h)
@@ -1136,8 +1138,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				short h;
 				rl->end_of_page = 0;
 				render_line(p, focus, end->mdata, 0, 0,
-					    -1, -1, -1,
-					    NULL, &rl->c);
+					    -1, -1, -1, &rl->c);
 				h = rl->y;
 				found_end = rl->end_of_page;
 				end = next;
@@ -1216,7 +1217,7 @@ abort:
 }
 
 static int render(struct mark *pm, struct pane *p safe,
-		  struct pane *focus safe, short *cols safe)
+		  struct pane *focus safe)
 {
 	struct rl_data *rl = p->data;
 	short y;
@@ -1239,6 +1240,7 @@ static int render(struct mark *pm, struct pane *p safe,
 
 restart:
 	rl->end_of_page = 0;
+	rl->cols = 0;
 	m = vmark_first(focus, rl->typenum, p);
 	if (!s)
 		home_call(focus, "pane-clear", p);
@@ -1261,7 +1263,7 @@ restart:
 	if (hdr) {
 		rl->header_lines = 0;
 		render_line(p, focus, hdr, 0, 1,
-			    -1, -1, -1, cols, &rl->c);
+			    -1, -1, -1, &rl->c);
 		y = rl->y;
 		rl->header_lines = y;
 	}
@@ -1288,7 +1290,7 @@ restart:
 			rl->cwidth = 1;
 			render_line(p, focus, m->mdata ?: "", y, 1,
 				    -1, -1, len,
-				    cols, &rl->c);
+				    &rl->c);
 			p->cx = rl->cx; p->cy = rl->cy;
 			y = rl->y;
 			if (p->cy < 0)
@@ -1347,8 +1349,7 @@ restart:
 			cursor_drawn = 1;
 		} else {
 			render_line(p, focus, m->mdata?:"", y, 1,
-				    -1, -1,
-				    -1, cols, &rl->c);
+				    -1, -1, -1, &rl->c);
 			y = rl->y;
 		}
 		if (!m2 || mark_same(m, m2))
@@ -1418,7 +1419,7 @@ DEF_CMD(render_lines_refresh)
 					  &rl->top_sol);
 
 	if (m) {
-		rl->lines = render(pm, p, focus, &rl->cols);
+		rl->lines = render(pm, p, focus);
 		if (!pm || rl->ignore_point || (p->cx >= 0 && p->cy < p->h)) {
 			call("render:reposition", focus,
 			     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
@@ -1434,7 +1435,7 @@ DEF_CMD(render_lines_refresh)
 	if (!m)
 		return Efail;
 	find_lines(m, p, focus, NO_NUMERIC);
-	rl->lines = render(m, p, focus, &rl->cols);
+	rl->lines = render(m, p, focus);
 	rl->repositioned = 0;
 	call("render:reposition", focus,
 	     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
@@ -1461,7 +1462,7 @@ DEF_CMD(render_lines_refresh_view)
 
 	if (rl->repositioned) {
 		struct mark *pm = call_ret(mark, "doc:point", focus);
-		rl->lines = render(pm, p, focus, &rl->cols);
+		rl->lines = render(pm, p, focus);
 	}
 	rl->repositioned = 0;
 	if (p->damaged & (DAMAGED_CONTENT|DAMAGED_SIZE))
@@ -1570,8 +1571,7 @@ DEF_CMD(render_lines_move)
 					break;
 				}
 				render_line(p, focus, m->mdata, y, 0,
-					    -1, -1,
-					    -1, NULL, &rl->c);
+					    -1, -1, -1, &rl->c);
 				y = rl->y;
 				m = vmark_next(m);
 			}
@@ -1587,8 +1587,7 @@ DEF_CMD(render_lines_move)
 				break;
 			rl->end_of_page = 0;
 			render_line(p, focus, top->mdata, 0, 0,
-				    -1, -1, -1,
-				    NULL, &rl->c);
+				    -1, -1, -1, &rl->c);
 			if (rl->end_of_page)
 				y = rpt % pagesize;
 			else
@@ -1675,7 +1674,7 @@ DEF_CMD(render_lines_set_cursor)
 		rl->xypos = -1;
 		rl->xyattrs = NULL;
 		render_line(p, focus, m->mdata, y, 0, cihx, cihy,
-			    -1, NULL, &rl->c);
+			    -1, &rl->c);
 		y = rl->y;
 		if (rl->xypos >= 0) {
 			struct mark *m2 = call_render_line_offset(focus, m,
@@ -1831,7 +1830,7 @@ DEF_CMD(render_lines_move_line)
 		call_render_line(focus, start);
 		rl->xypos = -1;
 		render_line(p, focus, start->mdata?:"", y, 0,
-			    target_x, target_y, -1, NULL, &rl->c);
+			    target_x, target_y, -1, &rl->c);
 		y = rl->y;
 		/* rl->xypos is the distance from start-of-line to the target */
 		if (rl->xypos >= 0) {
