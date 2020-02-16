@@ -137,11 +137,11 @@ struct rl_data {
 
 struct render_list {
 	struct render_list *next;
-	char	*text_orig;
-	char	*text safe, *attr safe; // both are allocated
-	short	x, width;
-	short	cursorpos;
-	char	*xypos;	/* location in text_orig where given x,y was found */
+	const char	*text_orig;
+	const char	*text safe, *attr safe; // both are allocated
+	short		x, width;
+	short		cursorpos;
+	const char	*xypos;	/* location in text_orig where given x,y was found */
 };
 
 #define WRAP 1
@@ -150,8 +150,8 @@ struct render_list {
 static int draw_some(struct pane *p safe, struct pane *focus safe,
 		     struct render_list **rlp safe,
 		     int *x safe,
-		     char *start safe, char **endp safe,
-		     char *attr safe, int margin, int cursorpos, int xpos,
+		     const char *start safe, const char **endp safe,
+		     const char *attr safe, int margin, int cursorpos, int xpos,
 		     int scale)
 {
 	/* Measure the text from 'start' for length 'len', expecting to
@@ -235,10 +235,11 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 	return ret;
 }
 
-static char *get_last_attr(char *attrs safe, char *attr safe)
+static char *get_last_attr(const char *attrs safe, const char *attr safe)
 {
-	char *com = attrs + strlen(attrs);
+	const char *com = attrs + strlen(attrs);
 	int len = strlen(attr);
+
 	for (; com >= attrs ; com--) {
 		int i = 1;
 		if (*com != ',' && com > attrs)
@@ -260,7 +261,7 @@ static char *get_last_attr(char *attrs safe, char *attr safe)
 static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 		      struct render_list **rlp safe,
 		      int y, int scale, int wrap_pos,
-		      char **xypos, char **xyattr)
+		      const char **xypos, const char **xyattr)
 {
 	struct render_list *last_wrap = NULL, *end_wrap = NULL, *last_rl = NULL;
 	int in_wrap = 0;
@@ -347,8 +348,8 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 
 	for (rl = tofree; rl && rl != end_wrap; rl = tofree) {
 		tofree = rl->next;
-		free(rl->text);
-		free(rl->attr);
+		free((void*)rl->text);
+		free((void*)rl->attr);
 		free(rl);
 	}
 
@@ -376,19 +377,19 @@ static void update_line_height_attr(struct pane *p safe,
 
 static void update_line_height(struct pane *p safe, struct pane *focus safe,
 			       int *h safe, int *a safe,
-			       int *w safe, int *center, char *line safe,
+			       int *w safe, int *center, const char *line safe,
 			       int scale)
 {
 	struct buf attr;
 	int attr_found = 0;
-	char *segstart = line;
+	const char *segstart = line;
 	int above = 0, below = 0;
 
 	buf_init(&attr);
 	buf_append(&attr, ',');
 	while (*line) {
 		char c = *line++;
-		char *st = line;
+		const char *st = line;
 		if (c == '<' && *line == '<') {
 			line += 1;
 			continue;
@@ -457,7 +458,7 @@ DEF_CMD(null)
 }
 
 static int render_image(struct pane *p safe, struct pane *focus safe,
-			char *line safe, short y,
+			const char *line safe, short y,
 			int dodraw, int scale)
 {
 	char *fname = NULL;
@@ -470,7 +471,7 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 		int len = strcspn(line, ",>");
 
 		if (strncmp(line, "image:", 6) == 0) {
-			char *cp = line + 6;
+			const char *cp = line + 6;
 			fname = strndup(cp, len-6);
 		} else if (strncmp(line, "width:", 6) == 0) {
 			width = atoi(line + 6);
@@ -495,7 +496,8 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 
 static void find_xypos(struct render_list *rlst,
 		       struct pane *p safe, struct pane *focus safe, int posx,
-		       int scale, char **xypos safe, char **xyattr safe)
+		       int scale, const char **xypos safe,
+		       const char **xyattr safe)
 {
 	while (rlst &&
 	       rlst->x + rlst->width < posx)
@@ -523,14 +525,14 @@ static void find_xypos(struct render_list *rlst,
  */
 
 static void render_line(struct pane *p safe, struct pane *focus safe,
-			char *line safe, short y_start, int dodraw,
+			const char *line safe, short y_start, int dodraw,
 			short posx, short posy, short offset,
 			struct command *comm2)
 {
 	int x = 0;
 	int y = y_start;
-	char *line_start = line;
-	char *start = line;
+	const char *line_start = line;
+	const char *start = line;
 	struct buf attr;
 	unsigned char ch;
 	int wrap_offset = 0; /*number of columns displayed in earlier lines */
@@ -547,10 +549,10 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	int margin;
 	int end_of_page = 0;
 	struct render_list *rlst = NULL;
-	char *xypos = NULL;
-	char *xyattr = NULL;
+	const char *xypos = NULL;
+	const char *xyattr = NULL;
 	int want_xypos = 0;
-	char *cstart = NULL;
+	const char *cstart = NULL;
 	struct xy xyscale = pane_scale(focus);
 	int scale = xyscale.x;
 	short cx = -1, cy = -1;
@@ -576,7 +578,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		shift_left = 0;
 
 	if (prefix) {
-		char *s = prefix + strlen(prefix);
+		const char *s = prefix + strlen(prefix);
 		update_line_height_attr(p, focus, &line_height, &ascent, NULL,
 					"bold", prefix, scale);
 		draw_some(p, focus, &rlst, &x, prefix, &s, "bold",
@@ -737,7 +739,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				start += 2;
 				line = start;
 			} else {
-				char *a = line;
+				const char *a = line;
 
 				while (*line && line[-1] != '>')
 					line += 1;
@@ -809,7 +811,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 				in_tab = 0;
 			start = line;
 		} else {
-			char buf[4], *b;
+			char buf[4];
+			const char *b;
 			int l = attr.len;
 			buf[0] = '^';
 			buf[1] = ch + '@';
@@ -863,8 +866,8 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 	while (rlst) {
 		struct render_list *r = rlst;
 		rlst = r->next;
-		free(r->text);
-		free(r->attr);
+		free((void*)r->text);
+		free((void*)r->attr);
 		free(r);
 	}
 }
