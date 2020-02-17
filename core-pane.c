@@ -174,9 +174,13 @@ static void pane_do_resize(struct pane *p safe, int damage)
 	    p->abs_z == p->parent->abs_z + abs(p->z))
 		return;
 
-	if (p->focus == NULL)
-		p->focus = list_first_entry_or_null(
-			&p->children, struct pane, siblings);
+	if (p->focus == NULL) {
+		list_for_each_entry(c, &p->children, siblings)
+			if (c->z >= 0) {
+				p->focus = c;
+				break;
+			}
+	}
 
 	if (damage & (DAMAGED_SIZE))
 		if (pane_call(p, "Refresh:size", p, 0, NULL,
@@ -190,6 +194,10 @@ static void pane_do_resize(struct pane *p safe, int damage)
 		int abs_zhi = abs_z;
 		nextz = -1;
 		list_for_each_entry(c, &p->children, siblings) {
+			if (c->z < 0) {
+				c->abs_z = c->parent->abs_z;
+				continue;
+			}
 			if (c->z > z && (nextz == -1 || c->z < nextz))
 				nextz = c->z;
 			if (c->z == z) {
