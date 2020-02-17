@@ -524,11 +524,18 @@ static void find_xypos(struct render_list *rlst,
  * The location that comes in as *cxp,*cyp goes out as *offsetp.
  */
 
-static void render_line(struct pane *p safe, struct pane *focus safe,
-			const char *line safe, short y_start, int dodraw,
-			short posx, short posy, short offset,
-			struct command *comm2)
+DEF_CMD(render_1_line)
 {
+	struct pane *p = ci->home;
+	struct pane *focus = ci->focus;
+	const char *line = ci->str;
+	short y_start = ci->num;
+	int dodraw = strcmp(ci->key, "render-line:draw") == 0;
+	short posx = ci->x;
+	short posy = ci->y;
+	short offset = ci->num2;
+	struct command *comm2 = ci->comm2;
+
 	int x = 0;
 	int y = y_start;
 	const char *line_start = line;
@@ -566,7 +573,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		y = render_image(p, focus, line, y, dodraw, scale);
 		comm_call(comm2, "dimensions", p, p->w);
 		comm_call(comm2, "render-done", p, y);
-		return;
+		return 1;
 	}
 
 	update_line_height(p, focus, &line_height, &ascent, &twidth, &center,
@@ -870,6 +877,7 @@ static void render_line(struct pane *p safe, struct pane *focus safe,
 		free((void*)r->attr);
 		free(r);
 	}
+	return 1;
 }
 
 DEF_CMD(rl_cb)
@@ -901,6 +909,19 @@ DEF_CMD(rl_cb)
 		return 1;
 	}
 	return 0;
+}
+
+static void render_line(struct pane *p safe, struct pane *focus safe,
+			char *line safe, short y_start, int dodraw,
+			short posx, short posy, short offset,
+			struct command *comm2)
+{
+	do_call_val(TYPE_comm, p, &render_1_line,
+		    dodraw ? "render-line:draw" : "render-line:measure",
+		    focus,
+		    y_start, NULL, line,
+		    offset, NULL, NULL,
+		    posx, posy, comm2, NULL);
 }
 
 static struct mark *call_render_line_prev(struct pane *p safe,

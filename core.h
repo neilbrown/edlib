@@ -665,9 +665,7 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 			      int x, int y, struct command *comm2b,
 			      struct commcache *ccache)
 {
-	struct cmd_info ci = {.key = key, .focus = focus,
-			      .home =  (type == TYPE_home || type == TYPE_pane)
-				      ? safe_cast home : focus,
+	struct cmd_info ci = {.key = key, .focus = focus, .home = focus,
 			      .num = num, .mark = m, .str = str,
 			      .num2 = num2, .mark2 = m2, .str2 = str2,
 			      .comm2 = comm2a ?: comm2b, .x = x, .y = y,
@@ -678,12 +676,15 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 		return 0;
 	if (type == TYPE_comm && !comm2a)
 		return 0;
-	ASSERT(!comm2a || !comm2b || comm2a == comm2b);
+	ASSERT(!comm2a || !comm2b || comm2a == comm2b || type == TYPE_comm);
 
 	switch(type) {
 	default:
-	case TYPE_focus:
 	case TYPE_home:
+		if (home)
+			ci.home = home;
+		/* fall-through */
+	case TYPE_focus:
 		if (ccache) {
 			ci.home = ccache->home;
 			ci.comm = ccache->comm;
@@ -693,10 +694,14 @@ static inline int do_call_val(enum target_type type, struct pane *home,
 	case TYPE_pane:
 		if (!home->handle || (home->damaged & DAMAGED_DEAD))
 			return Efail;
+		if (home)
+			ci.home = home;
 		ci.comm = home->handle;
 		ret = ci.comm->func(&ci);
 		break;
 	case TYPE_comm:
+		if (home)
+			ci.home = home;
 		ci.comm = comm2a;
 		ci.comm2 = comm2b;
 		ret = ci.comm->func(&ci);
