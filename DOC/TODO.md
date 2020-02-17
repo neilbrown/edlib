@@ -20,7 +20,7 @@ Current priorities
         to determine prefix
       - highlight text beyond width, which will wrap when space/enter is pressed.
 
-- [ ] rename lib-renderline to lib-markup and create 'renderline' for a single
+- [X] rename lib-renderline to lib-markup and create 'renderline' for a single
       line of render-lines.
 - [ ] change notmuch-query-view to use doc-rendering
 
