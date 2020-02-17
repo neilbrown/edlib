@@ -243,7 +243,7 @@ class EdDisplay(gtk.Window):
                               cw-1, ch-1);
             in_focus = self.in_focus
             while in_focus and focus.parent.parent != focus and focus.parent != self.pane:
-                if focus.parent.focus != focus:
+                if focus.parent.focus != focus and focus.z >= 0:
                     in_focus = False
                 focus = focus.parent
             if in_focus:

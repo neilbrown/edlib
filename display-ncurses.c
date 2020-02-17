@@ -805,7 +805,7 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 		struct pane *p2 = p;
 		cursor = 2;
 		while (p2->parent != p2 && p2 != display) {
-			if (p2->parent->focus != p2)
+			if (p2->parent->focus != p2 && p2->z >= 0)
 				cursor = 1;
 			p2 = p2->parent;
 		}
