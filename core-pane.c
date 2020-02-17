@@ -110,7 +110,7 @@ void pane_damaged(struct pane *p, int type)
 		type = DAMAGED_SIZE_CHILD;
 	else if (type & DAMAGED_VIEW)
 		type = DAMAGED_VIEW_CHILD;
-	else if (type & (DAMAGED_NEED_CALL | DAMAGED_POSTORDER))
+	else if (type & DAMAGED_NEED_CALL)
 		type = DAMAGED_CHILD;
 	else
 		return;
