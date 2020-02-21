@@ -14,6 +14,7 @@
  * held by the rendered should be sufficient.
  */
 
+#define _GNU_SOURCE for strcasestr
 #include <stdlib.h>
 #include <string.h>
 #include "core.h"
@@ -66,7 +67,7 @@ DEF_CMD(save_highlighted)
 	if (!ci->str)
 		return 1;
 
-	start = strstr(ci->str, cb->prefix);
+	start = strcasestr(ci->str, cb->prefix);
 	if (!start)
 		start = ci->str;
 	cb->str = add_highlight_prefix(ci->str, start - ci->str, cb->plen, "<fg:red>");
@@ -79,9 +80,9 @@ DEF_CMD(rcl_cb)
 	if (ci->str == NULL)
 		cb->cmp = 0;
 	else if (cb->prefix_only)
-		cb->cmp = strncmp(ci->str, cb->prefix, cb->plen);
+		cb->cmp = strncasecmp(ci->str, cb->prefix, cb->plen);
 	else
-		cb->cmp = strstr(ci->str, cb->prefix) ? 0 : 1;
+		cb->cmp = strcasestr(ci->str, cb->prefix) ? 0 : 1;
 	return 1;
 }
 DEF_CMD(render_complete_line)
@@ -151,9 +152,9 @@ DEF_CMD(rlcb)
 	if (c == NULL)
 		cb->cmp = -1;
 	else if (cb->prefix_only)
-		cb->cmp = strncmp(c, cb->prefix, cb->plen);
+		cb->cmp = strncasecmp(c, cb->prefix, cb->plen);
 	else
-		cb->cmp = strstr(c, cb->prefix) ? 0 : 1;
+		cb->cmp = strcasestr(c, cb->prefix) ? 0 : 1;
 	if (cb->cmp == 0 && cb->keep && c)
 		cb->str = c;
 	else
@@ -393,8 +394,13 @@ DEF_CMD(complete_set_prefix)
 	char *c;
 	int cnt = 0;
 	char *common = NULL;
+	/* common_pre is the longest common prefix to 'common' that
+	 * appears in all matches in which 'common' appears.  It is
+	 * allocated with enough space to append 'common' after the
+	 * prefix.
+	 */
 	char *common_pre = NULL;
-	int at_start = 0;
+	int best_match = 0;
 
 	if (!ci->str)
 		return Enoarg;
@@ -410,33 +416,48 @@ DEF_CMD(complete_set_prefix)
 
 	while (do_render_complete_prev(cd, m, p->parent, 1, &c) > 0 && c) {
 		int l;
-		char *match = c;
-		int start_matches;
+		char *match;
+		int this_match = 0;
 
-		if (!cd->prefix_only)
-			match = strstr(match, cd->prefix);
+		if (cd->prefix_only) {
+			match = c;
+			if (strncmp(c, cd->prefix, strlen(cd->prefix)) == 0)
+				this_match += 1;
+		} else {
+			match = strcasestr(c, cd->prefix);
+			if (strncasecmp(c, cd->prefix, strlen(cd->prefix)) == 0) {
+				this_match += 1;
+				if (strncmp(c, cd->prefix, strlen(cd->prefix)) == 0)
+					this_match += 1;
+			} else if (strstr(c, cd->prefix))
+				this_match += 1;
+		}
 		if (!match)
+			/* should be impossible */
 			break;
 		l = strlen(match);
 		if (l && match[l-1] == '\n')
 			l -= 1;
-		start_matches = cd->prefix_only ||
-			strncmp(c, cd->prefix, strlen(cd->prefix)) == 0;
-		if (!cd->prefix_only && start_matches) {
+
+		if (this_match > best_match) {
+			/* Only use matches at least this good to calculate
+			 * 'common'
+			 */
+			best_match = this_match;
+			free(common);
+			common = NULL;
+			free(common_pre);
+			common_pre = NULL;
+		}
+
+		if (this_match == best_match) {
+			/* This match can be used for 'common' and
+			 * initial cursor
+			 */
 			if (m2)
 				mark_free(m2);
 			m2 = mark_dup(m);
-			if (!at_start) {
-				/* If there are matches at the start, the
-				 * common prefix calculation only noticed them
-				 */
-				at_start = 1;
-				free(common);
-				common = NULL;
-			}
-		}
 
-		if (!at_start || start_matches) {
 			if (common == NULL)
 				common = strndup(match, l);
 			else
@@ -455,7 +476,7 @@ DEF_CMD(complete_set_prefix)
 		}
 		cnt += 1;
 	}
-	if (common_pre && common_pre[0]) {
+	if (common_pre) {
 		strcat(common_pre, common);
 		comm_call(ci->comm2, "callback:prefix", ci->focus, cnt,
 			  NULL, common_pre);
