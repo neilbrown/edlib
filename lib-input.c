@@ -16,7 +16,7 @@
 #include "core.h"
 
 struct input_mode {
-	char		*mode safe;
+	const char	*mode safe;
 	int		num, num2;
 	struct pane	*focus, *source;
 	struct mark	*point;
@@ -56,7 +56,8 @@ DEF_CMD(set_num2)
 
 DEF_CMD(keystroke)
 {
-	char *key;
+	const char *key;
+	char *vkey = NULL;
 	struct input_mode *im = ci->home->data;
 	struct pane *p;
 	int l;
@@ -72,7 +73,7 @@ DEF_CMD(keystroke)
 
 	if (im->mode[0]) {
 		int cnt = 1;
-		char *k = ci->str;
+		const char *k = ci->str;
 		char *end;
 		while ((end = strchr(k, '\037')) != NULL) {
 			cnt += 1;
@@ -82,19 +83,20 @@ DEF_CMD(keystroke)
 		}
 		l = strlen(im->mode) * cnt + strlen(ci->str) + 1;
 
-		key = malloc(l);
-		memset(key, 0, l);
+		vkey = malloc(l);
+		memset(vkey, 0, l);
 		k = ci->str;
 		while ((end = strchr(k, '\037')) != NULL) {
 			end += 1;
-			strcat(key, im->mode);
-			strncat(key, k, end-k);
+			strcat(vkey, im->mode);
+			strncat(vkey, k, end-k);
 			k = end;
 			while (*k == '\037')
 				k++;
 		}
-		strcat(key, im->mode);
-		strcat(key, k);
+		strcat(vkey, im->mode);
+		strcat(vkey, k);
+		key = vkey;
 	} else
 		key = ci->str;
 
@@ -122,8 +124,7 @@ DEF_CMD(keystroke)
 	m = im->point;
 
 	ret = call(key, p, num, m, NULL, num2);
-	if (key != ci->str)
-		free(key);
+	free(vkey);
 	if (ret < 0)
 		call("Message:default", ci->focus, 0, NULL,
 		     "** Command Failed **");
@@ -146,7 +147,7 @@ DEF_CMD(mouse_event)
 	struct timespec now;
 	unsigned int b;
 	int press;
-	char *mode;
+	const char *mode;
 	struct mouse_state *ms = NULL;
 
 	clock_gettime(CLOCK_MONOTONIC, &now);

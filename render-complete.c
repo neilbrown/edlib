@@ -29,13 +29,14 @@ struct rlcb {
 	struct command c;
 	int keep, plen, cmp;
 	int prefix_only;
-	char *prefix safe, *str;
+	const char *prefix safe, *str;
 };
 
-static char *add_highlight_prefix(char *orig, int start, int plen, char *attr safe)
+static const char *add_highlight_prefix(const char *orig, int start, int plen,
+					const char *attr safe)
 {
 	struct buf ret;
-	char *c safe;
+	const char *c safe;
 
 	if (orig == NULL)
 		return orig;
@@ -62,7 +63,7 @@ static char *add_highlight_prefix(char *orig, int start, int plen, char *attr sa
 DEF_CMD(save_highlighted)
 {
 	struct rlcb *cb = container_of(ci->comm, struct rlcb, c);
-	char *start;
+	const char *start;
 
 	if (!ci->str)
 		return 1;
@@ -120,7 +121,7 @@ DEF_CMD(render_complete_line)
 		return 0;
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cb.str);
-	free(cb.str);
+	free((void*)cb.str);
 	if (ci->num != NO_NUMERIC)
 		/* Was rendering to find a cursor, don't need to skip */
 		return ret;
@@ -162,8 +163,10 @@ DEF_CMD(rlcb)
 	return 1;
 }
 
-static int do_render_complete_prev(struct complete_data *cd safe, struct mark *m safe,
-				   struct pane *focus safe, int n, char **savestr)
+static int do_render_complete_prev(struct complete_data *cd safe,
+				   struct mark *m safe,
+				   struct pane *focus safe, int n,
+				   const char **savestr)
 {
 	/* If 'n' is 0 we just need 'start of line' so use
 	 * underlying function.
@@ -354,7 +357,7 @@ DEF_CMD(complete_eol)
 	return 1;
 }
 
-static int common_len(char *a safe, char *b safe)
+static int common_len(const char *a safe, const char *b safe)
 {
 	int len = 0;
 	while (*a && *a == *b) {
@@ -365,7 +368,7 @@ static int common_len(char *a safe, char *b safe)
 	return len;
 }
 
-static void adjust_pre(char *common safe, char *new safe, int len)
+static void adjust_pre(char *common safe, const char *new safe, int len)
 {
 	int l = strlen(common);
 	int newlen = 0;
@@ -391,7 +394,7 @@ DEF_CMD(complete_set_prefix)
 	struct complete_data *cd = p->data;
 	struct mark *m;
 	struct mark *m2 = NULL;
-	char *c;
+	const char *c;
 	int cnt = 0;
 	char *common = NULL;
 	/* common_pre is the longest common prefix to 'common' that
@@ -416,7 +419,7 @@ DEF_CMD(complete_set_prefix)
 
 	while (do_render_complete_prev(cd, m, p->parent, 1, &c) > 0 && c) {
 		int l;
-		char *match;
+		const char *match;
 		int this_match = 0;
 
 		if (cd->prefix_only) {

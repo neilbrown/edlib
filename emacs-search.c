@@ -449,7 +449,7 @@ DEF_CMD(search_replace)
 DEF_CMD(do_replace)
 {
 	struct es_info *esi = ci->home->data;
-	char *new = ci->str;
+	const char *new = ci->str;
 	struct mark *m;
 	int len = esi->matched - 1;
 

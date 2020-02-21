@@ -183,7 +183,7 @@ static void as_repush(struct attr_return *ar safe, struct buf *b safe)
 }
 
 static void as_add(struct attr_return *ar safe,
-		   int end, int prio, char *attr safe)
+		   int end, int prio, const char *attr safe)
 {
 	struct attr_stack *new, **here;
 
@@ -204,7 +204,7 @@ static void as_add(struct attr_return *ar safe,
 }
 
 static void as_clear(struct attr_return *ar safe,
-		     int prio, char *attr safe)
+		     int prio, const char *attr safe)
 {
 	struct attr_stack *st;
 
@@ -241,8 +241,8 @@ DEF_CMD(text_attr_callback)
 static void call_map_mark(struct pane *f safe, struct mark *m safe,
 			  struct attr_return *ar safe)
 {
-	char *key = "render:";
-	char *val;
+	const char *key = "render:";
+	const char *val;
 
 	while ((key = attr_get_next_key(m->attrs, key, -1, &val)) != NULL &&
 	       strncmp(key, "render:", 7) == 0)

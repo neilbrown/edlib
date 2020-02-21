@@ -539,7 +539,7 @@ DEF_CMD(dr_replace)
 
 DEF_CMD(dr_get_attr)
 {
-	char *attr = ci->str;
+	const char *attr = ci->str;
 	char *val;
 	struct doc *d = ci->home->data;
 	struct dr_info *dri = container_of(d, struct dr_info, doc);

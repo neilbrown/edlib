@@ -517,13 +517,13 @@ static int to_pair(struct display_data *dd safe, int fg, int bg)
 }
 
 
-static int cvt_attrs(struct pane *home safe, char *attrs)
+static int cvt_attrs(struct pane *home safe, const char *attrs)
 {
 	struct display_data *dd = home->data;
 
 	int attr = 0;
 	char tmp[40];
-	char *a;
+	const char *a;
 	int fg = COLOR_BLACK;
 	int bg = COLOR_WHITE+8;
 
@@ -532,7 +532,7 @@ static int cvt_attrs(struct pane *home safe, char *attrs)
 	set_screen(home);
 	a = attrs;
 	while (a && *a) {
-		char *c;
+		const char *c;
 		if (*a == ',') {
 			a++;
 			continue;
@@ -605,7 +605,7 @@ DEF_CMD(nc_text_size)
 	int size = 0;
 	int offset = 0;
 	mbstate_t mbs = {};
-	char *str = ci->str;
+	const char *str = ci->str;
 	int len;
 
 	if (!str)
@@ -637,7 +637,7 @@ DEF_CMD(nc_draw_text)
 	short offset = 0;
 	short x = ci->x, y = ci->y;
 	mbstate_t mbs = {};
-	char *str = ci->str;
+	const char *str = ci->str;
 	int len;
 
 	if (!str)
@@ -688,7 +688,8 @@ DEF_CMD(nc_refresh_post)
 	return 1;
 }
 
-static struct pane *ncurses_init(struct pane *ed, char *tty, char *term)
+static struct pane *ncurses_init(struct pane *ed,
+				 const char *tty, const char *term)
 {
 	SCREEN *scr;
 	struct pane *p;

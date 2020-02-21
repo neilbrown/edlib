@@ -582,7 +582,7 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 }
 
 struct parse_state {
-	char	*patn safe;
+	const char	*patn safe;
 	unsigned short	*rxl;
 	int	next;
 	unsigned short	*sets;
@@ -799,7 +799,7 @@ static void add_class(struct parse_state *st safe, int plane, wctype_t cls)
 	return;
 }
 
-static int is_set_element(char *p safe)
+static int is_set_element(const char *p safe)
 {
 	int i;
 	if (*p != '[')
@@ -820,7 +820,7 @@ static int is_set_element(char *p safe)
 static int do_parse_set(struct parse_state *st safe, int plane)
 {
 	mbstate_t ps = {};
-	char *p safe = st->patn;
+	const char *p safe = st->patn;
 	wchar_t ch;
 	int newplane = 0xFFFFFF;
 	int planes = 0;
@@ -841,7 +841,8 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 				return -1;
 			case ':': /* character class */
 			{
-				char *e, *cls;
+				const char *e;
+				char *cls;
 				wctype_t wct;
 				p += 2;
 				e = strchr(p, ':');
@@ -915,7 +916,7 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 static int parse_set(struct parse_state *st safe)
 {
 	int plane;
-	char *patn;
+	const char *patn;
 	int set;
 
 	if (*st->patn++ != '[')
@@ -946,7 +947,7 @@ static int parse_set(struct parse_state *st safe)
 	return 1;
 }
 
-static int cvt_hex(char *s safe, int len)
+static int cvt_hex(const char *s safe, int len)
 {
 	long rv = 0;
 	while (len) {
@@ -1257,7 +1258,7 @@ static int parse_re(struct parse_state *st safe)
 	return 1;
 }
 
-unsigned short *rxl_parse(char *patn safe, int *lenp, int nocase)
+unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 {
 	struct parse_state st;
 	st.patn = patn;
@@ -1286,7 +1287,7 @@ unsigned short *rxl_parse(char *patn safe, int *lenp, int nocase)
 	return st.rxl;
 }
 
-unsigned short *safe rxl_parse_verbatim(char *patn safe, int nocase)
+unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase)
 {
 	struct parse_state st;
 	int i, l;

@@ -232,7 +232,8 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 	return last;
 }
 
-static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
+static void copy_header(struct pane *doc safe,
+			const char *hdr safe, const char *type,
 			struct mark *start safe, struct mark *end safe,
 			struct pane *p safe, struct mark *point safe)
 {
@@ -307,7 +308,8 @@ static void copy_header(struct pane *doc safe, char *hdr safe, char *type,
 	mark_free(m);
 }
 
-static void copy_headers(struct pane *p safe, char *hdr safe, char *type,
+static void copy_headers(struct pane *p safe, const char *hdr safe,
+			 const char *type,
 			 struct pane *doc safe, struct mark *pt safe)
 {
 	struct header_info *hi = p->data;
@@ -352,7 +354,7 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 	return buf_final(&buf);
 }
 
-static char *load_header(struct pane *home safe, char *hdr safe)
+static char *load_header(struct pane *home safe, const char *hdr safe)
 {
 	struct header_info *hi = home->data;
 	struct mark *m, *n;
@@ -368,8 +370,8 @@ static char *load_header(struct pane *home safe, char *hdr safe)
 
 DEF_CMD(header_get)
 {
-	char *hdr = ci->str;
-	char *type = ci->str2;
+	const char *hdr = ci->str;
+	const char *type = ci->str2;
 	char *attr = NULL;
 	char *c, *t;
 

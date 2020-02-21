@@ -69,9 +69,9 @@ DEF_CMD(history_notify_close)
 DEF_CMD(history_save)
 {
 	struct history_info *hi = ci->home->data;
-	char *eol;
-	char *line = ci->str;
-	char *prev;
+	const char *eol;
+	const char *line = ci->str;
+	const char *prev;
 
 	if (!hi->history || !ci->str)
 		/* history document was destroyed */

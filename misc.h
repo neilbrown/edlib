@@ -13,8 +13,8 @@ struct buf {
 };
 
 void buf_init(struct buf *b safe);
-void buf_concat(struct buf *b safe, char *s safe);
-void buf_concat_len(struct buf *b safe, char *s safe, int l);
+void buf_concat(struct buf *b safe, const char *s safe);
+void buf_concat_len(struct buf *b safe, const char *s safe, int l);
 void buf_append(struct buf *b safe, wchar_t wch);
 void buf_append_byte(struct buf *b safe, char c);
 static inline char *safe buf_final(struct buf *b safe)
@@ -40,8 +40,8 @@ enum timetype {
 };
 void time_start(enum timetype);
 void time_stop(enum timetype);
-void time_start_key(char *key safe);
-void time_stop_key(char *key safe);
+void time_start_key(const char *key safe);
+void time_stop_key(const char *key safe);
 
 void stat_count(char *name safe);
 

@@ -24,7 +24,7 @@ void buf_init(struct buf *b safe)
 	b->size = 0;
 }
 
-void buf_concat_len(struct buf *b safe, char *s safe, int l)
+void buf_concat_len(struct buf *b safe, const char *s safe, int l)
 {
 
 	if (b->len + l >= b->size) {
@@ -37,7 +37,7 @@ void buf_concat_len(struct buf *b safe, char *s safe, int l)
 	b->b[b->len] = 0;
 }
 
-void buf_concat(struct buf *b safe, char *s safe)
+void buf_concat(struct buf *b safe, const char *s safe)
 {
 	int l = strlen(s);
 	buf_concat_len(b, s, l);
@@ -159,7 +159,7 @@ inline static int qhash(char key, unsigned int start)
 	return (start ^ key) * 0x61C88647U;
 }
 
-static int hash_str(char *key safe, int len)
+static int hash_str(const char *key safe, int len)
 {
 	int i;
 	int h = 0;
@@ -181,11 +181,11 @@ static struct khash *khashtab[1024];
 
 static struct kstack {
 	long long tstart;
-	char *name;
+	const char *name;
 } kstack[20];
 static int ktos = 0;
 
-void time_start_key(char *key safe)
+void time_start_key(const char *key safe)
 {
 	struct timespec start;
 
@@ -199,7 +199,7 @@ void time_start_key(char *key safe)
 	kstack[ktos-1].name = key;
 }
 
-static struct khash *hash_find(struct khash **table, char *key safe)
+static struct khash *hash_find(struct khash **table, const char *key safe)
 {
 	struct khash *h, **hp;
 	int hash;
@@ -220,7 +220,7 @@ static struct khash *hash_find(struct khash **table, char *key safe)
 	return h;
 }
 
-void time_stop_key(char *key safe)
+void time_stop_key(const char *key safe)
 {
 	struct timespec stop;
 	struct khash *h;

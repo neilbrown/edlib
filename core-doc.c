@@ -182,7 +182,7 @@ DEF_CMD(doc_expr)
 	int dir;
 	char *open;
 	char *close;
-	char *wordchars = ci->str ?: "";
+	const char *wordchars = ci->str ?: "";
 	const char *special safe = "[](){}'\"";
 
 	if (!m)
@@ -469,7 +469,7 @@ DEF_CMD(doc_page)
 DEF_CMD(doc_set)
 {
 	struct doc *d = ci->home->data;
-	char *val = ci->key + 8;
+	const char *val = ci->key + 8;
 
 	if (strcmp(val, "autoclose") == 0) {
 		d->autoclose = ci->num;
@@ -1031,7 +1031,7 @@ DEF_CMD(doc_attach_view)
 	struct pane *doc = ci->home;
 	struct pane *p, *p2;
 	char *s;
-	char *type = ci->str ?: "default";
+	const char *type = ci->str ?: "default";
 
 	p = doc_attach(focus);
 	if (!p)
@@ -1213,7 +1213,7 @@ DEF_CMD(doc_open)
 {
 	struct pane *ed = ci->home;
 	int fd = ci->num;
-	char *name = ci->str;
+	const char *name = ci->str;
 	struct stat stb;
 	struct pane *p;
 	int autoclose = ci->num2 & 1;
@@ -1228,7 +1228,7 @@ DEF_CMD(doc_open)
 	stb.st_mode = 0;
 	if (fd >= -1) {
 		/* Try to canonicalize directory part of path */
-		char *sl;
+		const char *sl;
 		sl = strrchr(name, '/');
 		if (!sl) {
 			rp = realpath(".", pathbuf);
@@ -1298,8 +1298,8 @@ DEF_CMD(doc_open)
 
 DEF_CMD(doc_from_text)
 {
-	char *name = ci->str;
-	char *text = ci->str2;
+	const char *name = ci->str;
+	const char *text = ci->str2;
 	struct pane *p;
 
 	p = call_ret(pane, "attach-doc-text", ci->focus);

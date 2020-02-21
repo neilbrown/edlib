@@ -68,7 +68,7 @@ static int line_height(struct pane *p safe)
 	return cr.y;
 }
 
-static void popup_resize(struct pane *p safe, char *style safe)
+static void popup_resize(struct pane *p safe, const char *style safe)
 {
 	struct popup_info *ppi = p->data;
 	int x,y,w,h;
@@ -289,7 +289,7 @@ DEF_CMD(popup_this)
 DEF_CMD(popup_do_close)
 {
 	struct popup_info *ppi = ci->home->data;
-	char *key, *str;
+	const char *key, *str;
 	struct pane *target = ppi->target;
 	struct command *done;
 
@@ -328,7 +328,7 @@ DEF_CMD(popup_attach)
 	 */
 	struct pane *root, *p;
 	struct popup_info *ppi;
-	char *style = ci->str;
+	const char *style = ci->str;
 	char *in_popup;
 	int z;
 

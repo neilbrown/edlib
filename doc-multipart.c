@@ -353,7 +353,7 @@ DEF_CMD(mp_attr)
 	struct mark *m1 = NULL;
 	int ret;
 	int d;
-	char *attr = ci->str;
+	const char *attr = ci->str;
 
 	if (!ci->mark || !attr)
 		return Enoarg;
@@ -419,7 +419,7 @@ DEF_CMD(mp_set_attr)
 	struct mark *m = ci->mark;
 	struct mark *m1;
 	int dn;
-	char *attr = ci->str;
+	const char *attr = ci->str;
 
 	if (!attr)
 		return Enoarg;
@@ -508,7 +508,7 @@ DEF_CMD(mp_forward)
 	 */
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m1, *m2;
-	char *key;
+	const char *key = ci->key;
 	int d;
 
 	if (!ci->mark2)
@@ -522,7 +522,6 @@ DEF_CMD(mp_forward)
 		/* at the wrong end of a part */
 		d += 1;
 
-	key = ci->key;
 	if (strncmp(key, "multipart-next:", 15) == 0) {
 		d += 1;
 		key += 15;

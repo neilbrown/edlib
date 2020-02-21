@@ -147,7 +147,7 @@ DEF_CMD(dir_load_file)
 {
 	struct doc *d = ci->home->data;
 	int fd = ci->num2;
-	char *name = ci->str;
+	const char *name = ci->str;
 	struct directory *dr = container_of(d, struct directory, doc);
 	struct list_head new;
 	struct dir_ent *de1, *de2;
@@ -231,7 +231,7 @@ DEF_CMD(dir_load_file)
 	}
 
 	if (name) {
-		char *dname;
+		const char *dname;
 		int l = strlen(name);
 
 		fstat(fd, &dr->stat);
@@ -413,8 +413,8 @@ static char *fmt_date(struct dir_ent *de safe, time_t t)
 	return de->nbuf;
 }
 
-static char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
-			    char *attr safe)
+static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
+			    const char *attr safe)
 
 {
 	struct dir_ent *de;
@@ -510,8 +510,8 @@ DEF_CMD(dir_doc_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	char *attr = ci->str;
-	char *val;
+	const char *attr = ci->str;
+	const char *val;
 
 	if (!m || !attr)
 		return Enoarg;
@@ -527,8 +527,8 @@ DEF_CMD(dir_get_attr)
 {
 	struct doc *d = ci->home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
-	char *attr = ci->str;
-	char *val;
+	const char *attr = ci->str;
+	const char *val;
 
 	if (!attr)
 		return Enoarg;
@@ -691,7 +691,7 @@ DEF_CMD(dir_attach)
 {
 	struct doc *d = ci->home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
-	char *type = ci->str ?: "default";
+	const char *type = ci->str ?: "default";
 	struct pane *p;
 
 	if (strcmp(type, "invisible") == 0 ||

@@ -184,7 +184,7 @@ static inline PyObject *safe Comm_Fromcomm(struct command *c safe)
 
 DEF_CMD(python_load)
 {
-	char *fname = ci->str;
+	const char *fname = ci->str;
 	FILE *fp;
 	PyObject *globals, *main_mod;
 	PyObject *Ed;
@@ -212,7 +212,7 @@ DEF_CMD(python_load)
 
 DEF_CMD(python_load_module)
 {
-	char *name = ci->str;
+	const char *name = ci->str;
 	FILE *fp;
 	PyObject *globals, *main_mod;
 	PyObject *Ed;
@@ -241,9 +241,9 @@ DEF_CMD(python_load_module)
 	return 1;
 }
 
-static PyObject *safe python_string(char *s safe)
+static PyObject *safe python_string(const char *s safe)
 {
-	char *c = s;
+	const char *c = s;
 	while (*c && !(*c & 0x80))
 		c++;
 	if (*c)
@@ -2432,6 +2432,7 @@ char *edlib_module_path;
 void edlib_init(struct pane *ed safe)
 {
 	PyObject *m;
+	char *argv[1]= { NULL };
 
 	if (edlib_module_path)
 		module_dir = strdup(edlib_module_path);
@@ -2440,6 +2441,7 @@ void edlib_init(struct pane *ed safe)
 
 	Py_SetProgramName("edlib");
 	Py_Initialize();
+	PySys_SetArgv(0, argv);
 
 	PaneType.tp_new = PyType_GenericNew;
 	PaneIterType.tp_new = PyType_GenericNew;
