@@ -12,13 +12,17 @@ import os.path
 
 def djoin(dir, tail):
     # 'tail' might not exist at 'dir', but might exist below some
-    # prefix for dir.  We want to find that prefix and add it.
+    # prefix of dir.  We want to find that prefix and add it.
     orig = dir
-    while dir and not os.path.exists(os.path.join(dir,tail)):
-        dir = os.path.dirname(dir)
-    if not dir:
-        dir = orig
-    return os.path.join(dir, tail)
+    while dir:
+        p = os.path.join(dir, tail)
+        if os.path.exists(p):
+            return p
+        d = os.path.dirname(dir)
+        if not d or d == dir:
+            break
+        dir = d
+    return os.path.join(orig, tail)
 
 class DiffPane(edlib.Pane):
     def __init__(self, focus):
@@ -103,6 +107,12 @@ class DiffPane(edlib.Pane):
         ms = m.dup()
         focus.call("Move-EOL", 1, m)
         fname = focus.call("doc:get-str", ms, m, ret='str')
+        # quilt adds timestamp info after a tab
+        tb = fname.find('\t')
+        if tb > 0:
+            fname = fname[:tb]
+
+        # git and other use a/ and b/ rather than actual directory name
         if fname.startswith('b/'):
             fname = fname[2:]
         if fname[0] != '/':
