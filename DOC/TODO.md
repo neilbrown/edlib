@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] convert to python3 and pygobject
+- [X] convert to python3 and pygobject
 - [ ] C/python code "index" pane to quickly jump to function, and see context
 - [ ] beginnings of test suite
 - [X] make key names shorter/easier
@@ -170,7 +170,7 @@ Module features
 
 ### pygtk
 
-- [ ] convert to pygobject
+- [X] convert to pygobject
 
 ### render-lines
 
