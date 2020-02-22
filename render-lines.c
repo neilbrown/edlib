@@ -1223,7 +1223,6 @@ DEF_CMD(render_lines_resize)
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
 
-	pane_resize(p, 0, 0, p->parent->w, p->parent->h);
 	pane_resize(rl->helper, 0, 0, p->w, p->h);
 	/* Allow propagation to children */
 	return 0;
