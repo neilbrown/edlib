@@ -1848,7 +1848,8 @@ DEF_CMD(render_lines_notify_replace)
 		free(end->mdata);
 		end->mdata = NULL;
 	}
-	pane_damaged(p, DAMAGED_CONTENT);
+	if (ci->mark != rl->old_point)
+		pane_damaged(p, DAMAGED_CONTENT);
 
 	return 1;
 }
