@@ -45,20 +45,44 @@ class DiffPane(edlib.Pane):
         "handle:K:Enter"
         m = mark.dup()
         focus.call("Move-EOL", -1, m)
-        lines = 0
+        lines = [0,0,0,0]
         while focus.call("doc:step", 0, m, ret='char') == '\n':
-            if focus.call("text-match", m.dup(),
-                          "@@ -[\d]+,[\d]+ \+[\d]+,[\d]+ @@") > 0:
-                break;
+            m2 = m.dup()
+            if focus.call("text-match", m2,
+                          "@@+( -[\d]+,[\d]+)+ \+") > 0:
+                break
+            m2 = None
             c = focus.call("doc:step", m, 1, ret='char')
-            if c in '+ ':
-                lines += 1
+            f = 0
+            # we don't know how many base files are being diffed against
+            # until we see the '@@+' line, so allow for 1-4
+            while c in '+- ' and f < 4:
+                if c in '+ ':
+                    lines[f] += 1
+                f += 1
+                focus.call("doc:step", m, 1, 1)
+                c = focus.call("doc:step", m, 1, ret='char')
             focus.call("Move-EOL", -2, m)
-        focus.call("text-match", m, "@@ -[\d]+,[\d]+ \+")
-        ms = m.dup()
+        if not m2:
+            focus.call("Message", "Not on a diff hunk - no '@@' line")
+            return 1
+        f = -2
+        while f < 4 and focus.call("doc:step", m, 1, 1, ret='char') == '@':
+            f += 1
+        if f >= 0 and f < 4:
+            lines = lines[f]
+        else:
+            focus.call("Message", "Not on a diff hunk - '@@' line looks wrong")
+            return 1
+        # m2 is after the '+' that introduces the to-file-range
+        m.to_mark(m2)
         focus.call("text-match", m, "[\d]+")
-        s = focus.call("doc:get-str", ms, m, ret='str')
-        # need to find a line starting '+++' immediately before one starting '@@'
+        s = focus.call("doc:get-str", m2, m, ret='str')
+        if len(s) == 0:
+            focus.call("Message", "Not on a diff hunk! Line number is empty")
+            return 1
+        # need to find a line starting '+++' immediately before
+        # one starting '@@+'
         at_at = True
         found_plus = False
         while not found_plus:
@@ -71,10 +95,11 @@ class DiffPane(edlib.Pane):
                 if focus.call("text-match", m, "\+\+\+ ") > 0:
                     found_plus = True
             else:
-                if focus.call("text-match", m, "@@ ") > 0:
+                if focus.call("text-match", m, "@@+ ") > 0:
                     at_at = True
         if not found_plus:
-            return edlib.Efail
+            focus.call("Message", "Not on a diff hunk! No +++ line found")
+            return 1
         ms = m.dup()
         focus.call("Move-EOL", 1, m)
         fname = focus.call("doc:get-str", ms, m, ret='str')
