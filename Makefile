@@ -112,7 +112,7 @@ QUIET_LIB     = $(Q:@=@echo    '     LIB      '$@;)
 QUIET_SCRIPT  = $(Q:@=@echo    '     SCRIPT   '$@;)
 
 SO = $(patsubst O/%.o,lib/edlib-%.so,$(SHOBJ))
-H = list.h core.h misc.h
+H = list.h core.h misc.h safe.h
 edlib: $(OBJ) lib/libedlib.so
 	$(QUIET_LINK)$(CC) $(CPPFLAGS) $(CFLAGS) -rdynamic -Wl,--disable-new-dtags -o $@ $(OBJ) -Llib -Wl,-rpath=`pwd`/lib -ledlib $(LDLIBS)
 
