@@ -262,7 +262,7 @@ static char *python_as_string(PyObject *s, PyObject **tofree safe)
 	if (s && PyBytes_Check(s)) {
 		char *ret = PyBytes_AsString(s);
 		unsigned char *r = (unsigned char*)ret;
-		if (r[0] == 0xef && r[1] == 0xbb && r[2] == 0xbf)
+		if (r && r[0] == 0xef && r[1] == 0xbb && r[2] == 0xbf)
 			/* UTF-8 Byte Order Mark */
 			return ret+3;
 		else
@@ -2299,7 +2299,10 @@ void edlib_init(struct pane *ed safe)
 	else
 		module_dir = ".";
 
-	Py_SetProgramName(L"edlib");
+	/* This cast is for sparse, which doesn't seem to cope with L".."
+	 * FIXME
+	 */
+	Py_SetProgramName((wchar_t*)L"edlib");
 	Py_Initialize();
 	PySys_SetArgv(0, argv);
 

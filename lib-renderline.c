@@ -427,8 +427,8 @@ DEF_CMD(renderline)
 
 	int x = 0;
 	int y = y_start;
-	const char *line_start = line;
-	const char *start = line;
+	const char *line_start;
+	const char *start;
 	struct buf attr;
 	unsigned char ch;
 	int wrap_offset = 0; /*number of columns displayed in earlier lines */
@@ -452,6 +452,10 @@ DEF_CMD(renderline)
 	struct xy xyscale = pane_scale(focus);
 	int scale = xyscale.x;
 	short cx = -1, cy = -1;
+
+	if (!line)
+		return Enoarg;
+	start = line_start = line;
 
 	if (strncmp(line, "<image:",7) == 0) {
 		/* For now an <image> must be on a line by itself.

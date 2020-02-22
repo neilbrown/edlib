@@ -121,7 +121,7 @@ struct rl_data {
 	short		lines; /* lines drawn before we hit eof */
 	short		cols; /* columns used for longest line */
 
-	struct pane	*helper; /* pane where renderlines happens. */
+	struct pane	*helper safe; /* pane where renderlines happens. */
 	struct command	c;
 	/* following set by render_line() callback */
 	short		y;
@@ -668,7 +668,7 @@ DEF_CMD(render_lines_get_attr)
 {
 	struct rl_data *rl = ci->home->data;
 
-	if (strcmp(ci->str, "shift_left") == 0) {
+	if (ci->str && strcmp(ci->str, "shift_left") == 0) {
 		char ret[10];
 		if (rl->do_wrap)
 			return comm_call(ci->comm2, "cb", ci->focus,
@@ -1265,7 +1265,7 @@ static void render_lines_register_map(void)
 REDEF_CMD(render_lines_attach)
 {
 	struct rl_data *rl = calloc(1, sizeof(*rl));
-	struct pane *p;
+	struct pane *p, *h;
 
 	if (!rl_map)
 		render_lines_register_map();
@@ -1282,7 +1282,12 @@ REDEF_CMD(render_lines_attach)
 		free(rl);
 		return Efail;
 	}
-	rl->helper = call_ret(pane, "attach-renderline", p);
+	h = call_ret(pane, "attach-renderline", p);
+	if (!h) {
+		pane_close(p);
+		return Efail;
+	}
+	rl->helper = h;
 	rl->typenum = home_call(ci->focus, "doc:add-view", p) - 1;
 	call("doc:request:doc:replaced", p);
 

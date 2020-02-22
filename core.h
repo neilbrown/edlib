@@ -387,8 +387,8 @@ void key_add_range(struct map *map safe,
 void key_add_chain(struct map *map safe, struct map *chain);
 struct command *key_register_prefix(char *name safe);
 
-static inline const char *ksuffix(const struct cmd_info *ci,
-				  const char *prefix safe) safe
+static inline const char *safe ksuffix(const struct cmd_info *ci safe,
+				       const char *prefix safe)
 {
 	int l = strlen(prefix);
 	if (strncmp(ci->key, prefix, l) == 0)
