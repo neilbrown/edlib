@@ -92,8 +92,8 @@ class CModePane(edlib.Pane):
         p.call("Move-EOL", m, -1)
         p.call("doc:step", m, 0, 1)
         try:
-            n = p.call("text-search", 1, 1, m,
-                       "^([^\\s\\a\\A\\d#/}]|[\\A\\a\\d_]+[\\s]*[^:\\s\\A\\a\\d_]|[\\A\\a\\d_]+[\\s]+[^:\\s])")
+            p.call("text-search", 1, 1, m,
+                   "^([^\\s\\a\\A\\d#/}]|[\\A\\a\\d_]+[\\s]*[^:\\s\\A\\a\\d_]|[\\A\\a\\d_]+[\\s]+[^:\\s])")
         except edlib.commandfailed:
             p.call("Move-file", m, -1)
 

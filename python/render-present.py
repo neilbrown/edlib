@@ -452,8 +452,7 @@ class PresenterPane(edlib.Pane):
                 cm = self.get_local_attr(mark, "background", page)
                 if cm:
                     cmds.extend(cm.split(','))
-            if rv != None:
-                ret |= rv
+            ret |= rv
         return ret
 
     def handle_clip(self, key, mark, mark2, **a):

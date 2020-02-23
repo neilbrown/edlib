@@ -689,7 +689,7 @@ class events(edlib.Pane):
         edlib.time_start(edlib.TIME_READ)
         try:
             rv = comm2("callback", focus, fd)
-            ret = rv is None or rv >= 0
+            ret = rv >= 0
         except edlib.commandfailed:
             ret = False
         edlib.time_stop(edlib.TIME_READ)
@@ -714,7 +714,7 @@ class events(edlib.Pane):
         edlib.time_start(edlib.TIME_SIG)
         try:
             rv = comm("callback", focus, sig)
-            ret = rv is None or rv >= 0
+            ret = rv >= 0
         except edlib.commandfailed:
             ret = False
         edlib.time_stop(edlib.TIME_SIG)
@@ -736,7 +736,7 @@ class events(edlib.Pane):
         edlib.time_start(edlib.TIME_TIMER)
         try:
             rv = comm2("callback", focus)
-            ret = rv is None or rv >= 0
+            ret = rv >= 0
         except edlib.commandfailed:
             ret = False
         edlib.time_stop(edlib.TIME_TIMER)

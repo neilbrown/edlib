@@ -827,16 +827,16 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 	}
 	if (ret)
 		Py_XDECREF(pr.ret);
-	if (!rv) {
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
 	if (rv < Efalse) {
 		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
 		return NULL;
 	}
 	if (!return_char)
 		return PyLong_FromLong(rv);
+	if (!rv) {
+		Py_INCREF(Py_False);
+		return Py_False;
+	}
 	if (rv == CHAR_RET(WEOF)) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -868,11 +868,7 @@ static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject
 
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
-	if (rv == Efallthrough) {
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-	if (rv < 0) {
+	if (rv < Efalse) {
 		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
 		return NULL;
 	}
@@ -904,11 +900,7 @@ static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwd
 
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
-	if (!rv) {
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-	if (rv < 0) {
+	if (rv < Efalse) {
 		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
 		return NULL;
 	}
@@ -1965,11 +1957,7 @@ static PyObject *Comm_call(Comm *c safe, PyObject *args safe, PyObject *kwds)
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
 
-	if (rv == Efallthrough) {
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-	if (rv < 0) {
+	if (rv < Efalse) {
 		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
 		return NULL;
 	}

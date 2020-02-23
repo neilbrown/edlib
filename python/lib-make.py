@@ -108,7 +108,7 @@ class MakePane(edlib.Pane):
                 start = m.dup()
                 rv = self.call("text-match", "[^'\n]*'", m)
                 if rv > 0:
-                    last = self.call("doc:step", m, 0, 1)
+                    last = self.call("doc:step", m, 0, 1, ret='char')
                     d = self.call("doc:get-str", start, m, ret='str')
                     if d:
                         if d[-1] == '/':
@@ -196,7 +196,7 @@ class MakePane(edlib.Pane):
             elif ch == '\n':
                 ln -= 1
         if ln == 1:
-            mk = d.call("doc:vmark-get", self, v, lm, 3)
+            mk = d.call("doc:vmark-get", self, v, lm, 3, ret='mark')
             if not mk or mk['line'] != lineno:
                 mk = edlib.Mark(d, v, owner=self)
                 mk.to_mark(lm)
