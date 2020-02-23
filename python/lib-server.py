@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright Neil Brown ©2019 <neil@brown.name>
 # May be distributed under terms of GPLv2 - see file:COPYING
@@ -41,18 +41,18 @@ try:
                 self.close()
                 return edlib.Efalse
             else:
-                if msg[:5] == "open:":
-                    path = msg[5:]
+                if msg[:5] == b"open:":
+                    path = msg[5:].decode("utf-8")
                     # 8==reload
                     d = editor.call("doc:open", -1, 8, path, ret = "focus")
                     if not d:
-                        self.sock.send("FAIL")
+                        self.sock.send(b"FAIL")
                         return 1
                     if self.term:
                         d.call("doc:attach-view", self.term, 1,
                                ret='focus')
                         self.term.take_focus()
-                        self.sock.send("OK")
+                        self.sock.send(b"OK")
                         return 1
                     self.display_time = 0
                     self.destpane = None
@@ -66,15 +66,15 @@ try:
                         #p = p.call("ThisPane", ret='focus')
                         d.call("doc:attach-view", p, 1, ret='focus')
                         p.take_focus()
-                        self.sock.send("OK")
+                        self.sock.send(b"OK")
                     else:
-                        self.sock.send("No Display!")
+                        self.sock.send(b"No Display!")
                     return 1
-                if msg[:21] == "doc:request:doc:done:":
-                    path = msg[21:]
+                if msg[:21] == b"doc:request:doc:done:":
+                    path = msg[21:].decode("utf-8")
                     d = editor.call("doc:open", -1, path, ret="focus")
                     if not d:
-                        self.sock.send("FAIL")
+                        self.sock.send(b"FAIL")
                         return 1
                     self.add_notify(d, "doc:done")
                     self.add_notify(d, "Notify:Close")
@@ -82,17 +82,17 @@ try:
                     if self.term:
                         self.term.call("Display:set-noclose",
                                        "Cannot close display until document done - use 'C-x #'")
-                    self.sock.send("OK")
+                    self.sock.send(b"OK")
                     return 1
-                if msg == "Request:Notify:Close":
+                if msg == b"Request:Notify:Close":
                     if self.term:
                         # trigger finding a new document
                         self.term.call("Window:bury")
                     self.want_close = True
-                    self.sock.send("OK")
+                    self.sock.send(b"OK")
                     return 1
-                if msg[:5] == "term:":
-                    path = msg[5:]
+                if msg[:5] == b"term:":
+                    path = msg[5:].decode("utf-8")
                     p = editor.call("attach-input", ret='focus')
                     p = p.call("attach-display-ncurses", path,
                                "xterm-256color", ret="focus")
@@ -104,9 +104,9 @@ try:
                     p.take_focus()
                     self.term = p
                     self.add_notify(self.disp, "Notify:Close")
-                    self.sock.send("OK")
+                    self.sock.send(b"OK")
                     return 1
-                if msg == "Close":
+                if msg == b"Close":
                     if self.disp:
                         self.disp.close()
                         self.disp = None
@@ -114,7 +114,7 @@ try:
                     self.sock = None
                     self.close()
                     return edlib.Efalse
-                self.sock.send("Unknown")
+                self.sock.send(b"Unknown")
                 return 1
 
         def handle_term_close(self, key, focus, **a):
@@ -123,14 +123,14 @@ try:
                 self.disp = None
                 self.term = None
                 if self.want_close:
-                    self.sock.send("Close")
+                    self.sock.send(b"Close")
                     self.want_close = False
             if focus == self.doc:
                 # same as doc:done
                 self.doc = None
                 if self.term:
                     self.term.call("Window:set-noclose")
-                self.sock.send("Done")
+                self.sock.send(b"Done")
             return 0
 
         def handle_done(self, key, str, **a):
@@ -138,7 +138,7 @@ try:
             if str != "test":
                 if self.term:
                     self.term.call("Window:set-noclose")
-                self.sock.send("Done")
+                self.sock.send(b"Done")
             return 1
 
         def display_callback(self, key, focus, num, **a):
@@ -151,7 +151,7 @@ try:
             "handle:Close"
             if self.sock:
                 if self.want_close:
-                    self.sock.send("Close")
+                    self.sock.send(b"Close")
                 self.sock.close()
                 self.sock = None
             if self.disp:
@@ -187,32 +187,32 @@ if is_client:
     if term:
         t = os.ttyname(0)
         if t:
-            s.send("term:" + t)
+            s.send(b"term:" + t.encode("utf-8"))
             ret = s.recv(100)
-            if ret != "OK":
+            if ret != b"OK":
                 print("Cannot open terminal on", t)
                 sys.exit(1)
 
     if file:
         file = os.path.realpath(file)
-        s.send("open:" + file)
+        s.send(b"open:" + file.encode("utf-8"))
         ret = s.recv(100)
-        if ret != "OK":
-            print("Cannot open: ", ret)
+        if ret != b"OK":
+            print("Cannot open: ", ret.decode("utf-8"))
             sys.exit(1)
-        s.send("doc:request:doc:done:"+file)
+        s.send(b"doc:request:doc:done:"+file.encode("utf-8"))
     else:
-        s.send("Request:Notify:Close")
+        s.send(b"Request:Notify:Close")
     ret = s.recv(100)
-    if ret != "OK":
-        print("Cannot request notification: ", ret)
+    if ret != b"OK":
+        print("Cannot request notification: ", ret.encode('utf-8'))
         sys.exit(1)
     ret = s.recv(100)
-    if ret != "Done" and ret != "Close":
-        print("Received unexpected notification: ", ret)
+    if ret != b"Done" and ret != b"Close":
+        print("Received unexpected notification: ", ret.encode('utf-8'))
         sys.exit(1)
-    if ret != "Close":
-        s.send("Close")
+    if ret != b"Close":
+        s.send(b"Close")
         s.recv(100);
     s.close()
     sys.exit(0)
