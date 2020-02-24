@@ -528,7 +528,7 @@ class CModePane(edlib.Pane):
             while focus.call("doc:step", 0, 0, m, ret='char') == ' ':
                 len += 1
                 focus.call("doc:step", 0, 1, m)
-            new = "\t" * (len / 8)
+            new = "\t" * int(len / 8)
             try:
                 focus.call("Replace", 1, m, mark, new)
             except edlib.commandfailed:

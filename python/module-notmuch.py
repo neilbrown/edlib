@@ -571,7 +571,7 @@ class notmuch_master_view(edlib.Pane):
             else:
                 w = ch * 10 * max / 1000
             if tile.w != w:
-                tile.call("Window:x+", "notmuch", w - tile.w)
+                tile.call("Window:x+", "notmuch", int(w - tile.w))
         if self.query_pane and self.message_pane:
             # query_pane much be at least 4 lines, else 1/4 height
             # but never more than 1/2 the height
@@ -586,7 +586,7 @@ class notmuch_master_view(edlib.Pane):
                 if h > space / 2:
                     h = space / 2
             if tile.h != h:
-                tile.call("Window:y+", "notmuch", h - tile.h)
+                tile.call("Window:y+", "notmuch", int(h - tile.h))
 
 
     def handle_choose(self, key, **a):
