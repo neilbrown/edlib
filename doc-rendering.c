@@ -570,6 +570,25 @@ DEF_CMD(dr_revisit)
 	return 1;
 }
 
+DEF_CMD(dr_passon)
+{
+	struct doc *d = ci->home->data;
+	struct dr_info *dri = container_of(d, struct dr_info, doc);
+	struct mark *m = NULL, *m2 = NULL;
+
+	if (ci->mark)
+		m = ci->mark->ref.m;
+	if (ci->mark2)
+		m2 = ci->mark2->ref.m;
+
+	home_call(dri->base, ci->key, ci->focus,
+		  ci->num, m, ci->str,
+		  ci->num2, m2, ci->str2,
+		  ci->x, ci->y,
+		  ci->comm2);
+	return 0;
+}
+
 static void dr_init_map(void)
 {
 	if ((void*)dr_map)
@@ -588,6 +607,7 @@ static void dr_init_map(void)
 	key_add(dr_map, "doc:render-line-prev", &dr_render_prev);
 	key_add(dr_map, "doc:replace", &dr_replace);
 	key_add(dr_map, "get-attr", &dr_get_attr);
+	key_add_prefix(dr_map, "doc:notify:", &dr_passon);
 }
 
 DEF_CMD(attach_dr)

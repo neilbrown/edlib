@@ -205,11 +205,11 @@ if is_client:
         s.send(b"Request:Notify:Close")
     ret = s.recv(100)
     if ret != b"OK":
-        print("Cannot request notification: ", ret.encode('utf-8'))
+        print("Cannot request notification: ", ret.decode('utf-8'))
         sys.exit(1)
     ret = s.recv(100)
     if ret != b"Done" and ret != b"Close":
-        print("Received unexpected notification: ", ret.encode('utf-8'))
+        print("Received unexpected notification: ", ret.decode('utf-8'))
         sys.exit(1)
     if ret != b"Close":
         s.send(b"Close")

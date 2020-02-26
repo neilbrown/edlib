@@ -36,7 +36,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] doc-rendering needs to pass notifcations down to the underlying
+- [X] doc-rendering needs to pass notifcations down to the underlying
       doc - else Cx-# doesn't close a dir buffer.
 
 - [X] 'fill para' should leave point where it is, not move to end of para.
