@@ -311,9 +311,9 @@ class CModePane(edlib.Pane):
         else:
             ret = [ depth[-1], depth[-1] ]
 
-        #check for label.  Need to be a start of line, but
+        # Check for label.  Need to be at start of line, but
         # may only step over white space.  When trying :Enter, we
-        # mustn't thing we can see the label at the start of this line.
+        # mustn't think we can see the label at the start of this line.
         st = m.dup()
         c = p.call("doc:step", 0, 1, st, ret='char')
         while c and c in ' \t':
@@ -343,6 +343,8 @@ class CModePane(edlib.Pane):
         #p.call("Message", msg)
         if comment == "/*":
             prefix = "* "
+            if p.call("text-match", m.dup(), "[ \t]*\*") > 1:
+                prefix = ""
             ret = [comment_col+1,comment_col+1]
         else:
             prefix = ""
@@ -551,7 +553,7 @@ class CModePane(edlib.Pane):
 
         if new != current:
             try:
-                return focus.call("doc:replace", 1, m, mark, new)
+                return focus.call("doc:replace", 1, m, mark, new+prefix)
             except edlib.commandfailed:
                 pass
             return 0
