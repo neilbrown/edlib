@@ -151,6 +151,7 @@ class parse_state:
             return
 
         if c in '{([':
+            seen = self.seen
             if c == '{' and self.open == None and self.d > 0:
                 # '{' subsumes a 'prefix' nesting
                 pass
@@ -160,10 +161,8 @@ class parse_state:
             self.comma_ends = False
             if c == '{':
                 self.ss = True
-                if '=' in self.seen or 'enum' in self.seen:
+                if '=' in seen or 'enum' in seen:
                     self.comma_ends = True
-            #if c == '(' and 'if' in self.seen:
-            #    self.is_if = True
             self.d = self.column+1
             self.last_was_open = True
             return
