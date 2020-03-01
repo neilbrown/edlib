@@ -615,25 +615,27 @@ class EdDisplay(Gtk.Window):
             edlib.time_stop(edlib.TIME_KEY)
             return
 
+        p = ""
+        if event.state & Gdk.ModifierType.MOD1_MASK:
+            p = ":M"
         kv = Gdk.keyval_name(event.keyval)
         if kv in self.eventmap:
-            s = self.eventmap[kv]
-            if event.state & Gdk.ModifierType.SHIFT_MASK:
-                s = ":S" + s;
             if event.state & Gdk.ModifierType.CONTROL_MASK:
-                s = ":C" + s;
+                p += ":C"
+            if event.state & Gdk.ModifierType.SHIFT_MASK:
+                p += ":S"
+            s = p + self.eventmap[kv]
         else:
             s = event.string
             if len(s) == 0:
                 return
             if ord(s[0]) < 32:
-                s = ":C-" + chr(ord(s[0])+64) + "\037:C-" + chr(ord(s[0]) + 96)
+                s = p + ":C-" + chr(ord(s[0])+64) + "\037" + p + ":C-" + chr(ord(s[0]) + 96)
             else:
                 s = "-" + s
                 if event.state & Gdk.ModifierType.CONTROL_MASK:
                     s = ":C" + s;
-        if event.state & Gdk.ModifierType.MOD1_MASK:
-            s = ":M" + s;
+                s = p + s
         self.last_event = int(time.time())
         self.pane.call("Keystroke", self.pane, s)
         edlib.time_stop(edlib.TIME_KEY)
