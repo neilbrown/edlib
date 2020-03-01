@@ -596,6 +596,15 @@ class CModePane(edlib.Pane):
             focus.call("doc:step", 1, 1, mark)
             c = focus.call("doc:step", 1, 0, mark, ret="char")
 
+        if key == "Reindent" and c == '\n':
+            # Blank line, do nothing for reindent
+            if m < mark:
+                try:
+                    focus.call("Replace", 1, m, mark, "")
+                except edlib.commandfailed:
+                    pass
+            return 1
+
         (depths,prefix) = self.calc_indent(focus, m)
 
         new = self.mkwhite(depths[-2])
@@ -675,6 +684,30 @@ class CModePane(edlib.Pane):
             return focus.call("doc:replace", 1, m, mark, new)
         except edlib.commandfailed:
             return 0
+
+    def handle_indent_para(self, key, focus, mark, mark2, **a):
+        "handle:fill-paragraph"
+
+        if not mark:
+            return edlib.Enoarg
+        m2 = mark2
+        if m2:
+            if m2 < mark:
+                mark, m2 = m2, mark
+        else:
+            m2 = mark.dup()
+            e = mark.dup()
+            focus.call("Move-EOL", 1, e)
+            while m2 < e:
+                if focus.call("Move-Expr", 1, m2) <= 0:
+                    break
+        # now call handle_tab() on each line from mark to m2
+        while mark < m2:
+            self.handle_tab("Reindent", focus, mark, 0)
+            if focus.call("Move-EOL", 2, mark) <= 0:
+                break
+
+        return 1
 
     def handle_replace(self, key, focus, **a):
         "handle:Replace"

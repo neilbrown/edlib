@@ -411,7 +411,7 @@ Module features
 - [ ] configuration: use only spaces for bracket-alignment indents - or tabs as well.
 - [ ] python-mode: when changing indent, make same change to the whole block.
       Not sure how to handle 'else:' which looks like the next block.
-- [ ] re-indent statement - once auto-indent is reliable.
+- [X] re-indent statement - once auto-indent is reliable.
 
 ### lang-python
 
