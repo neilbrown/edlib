@@ -10,34 +10,195 @@ def textwidth(line):
         w += 1
     return w
 
+class parse_state:
+    to_open = { '}':'{', ']':'[', ')':'(' }
+    def __init__(self, tab):
+        self.column = 0
+        self.tab = tab
+
+        self.last_was_open = False # Last code we saw was an 'open'
+
+        self.s=[]		# stack
+
+        self.open=None		# open bracket char, or None
+        self.d = 0		# current depth
+        self.comma_ends = False # in enum{} or a={}, comma ends a 'statement'
+        self.seen = []		# interesting things we have seen
+        self.ss = True		# at the start of a statement
+        self.comment = None	# // or /* or None
+        self.comment_col = 0	# column of the comment start
+        self.quote = None	# ' or " or None
+        self.have_prefix = False# Have seen, or are seeing "word("
+
+    def push(self):
+        self.s.append((self.open, self.d, self.comma_ends,
+                       self.seen, self.ss, self.comment,
+                       self.comment_col, self.quote, self.have_prefix))
+        self.seen = []
+        self.have_prefix = False
+    def pop(self):
+        if not self.s:
+            return
+        (self.open, self.d, self.comma_ends,
+         self.seen, self.ss, self.comment,
+         self.comment_col, self.quote, self.have_prefix)= self.s.pop()
+
+    def parse(self, c, p, m):
+
+        if self.quote:
+            self.parse_quote(c, p, m)
+        elif self.comment:
+            self.parse_comment(c, p, m)
+        else:
+            if c == '/':
+                c2 = p.call("doc:step", 1, 0, m, ret='char')
+                if c2 in '/*':
+                    self.comment = '/' + c2
+                    self.comment_col = self.column
+                    p.call("doc:step", 1, 1, m)
+                    self.column += 1
+                else:
+                    self.parse_code(c, p, m)
+            else:
+                self.parse_code(c, p, m)
+
+        if c == '\n':
+            self.column = 0
+        elif c == '\t':
+            self.column = (self.column|7)+1
+        else:
+            self.column += 1
+
+    def parse_quote(self, c, p, m):
+        if c == self.quote:
+            self.quote = None
+        elif c == '\\':
+            c = p.call("doc:step", 1, 0, m, ret='char')
+            if c == self.quote or c == '\\':
+                # step over this second char as well. We could do this
+                # for any char except newline.
+                p.call("doc:step", 1, 1, m)
+                self.column += 1
+
+    def parse_comment(self, c, p, m):
+        if self.comment == '//':
+            # closed by end-of-line
+            if c == '\n':
+                self.comment = None
+                self.parse_newline()
+        elif self.comment == '/*':
+            # closed by */
+            if c == '*' and p.call("doc:step", 1, m, ret='char') == '/':
+                p.call("doc:step", 1, 1, m)
+                self.column += 1
+                self.comment = None
+
+    def parse_newline(self):
+        # we've just seen a newline in code (not a multi-line comment)
+        if self.last_was_open:
+            # The open bracket was at end of line, so indent depth
+            # should be previous plus one tab.
+            self.d = self.s[-1][1] + self.tab
+            self.last_was_open = False
+
+    def parse_code(self, c, p, m):
+        # treat '\' like white-space as probably at eol of macro
+        if c in ' \t\n\\':
+            # ignore white space
+            if c == '\n':
+                self.parse_newline()
+            return
+
+        # probably not at start of statement after this
+        ss = self.ss
+        self.ss = False
+
+        if c == '"' or c == "'":
+            self.quote = c
+            return
+
+        if c in '{([':
+            if c == '{' and self.open == None and self.d > 0:
+                # '{' subsumes a 'prefix' nesting
+                pass
+            else:
+                self.push()
+            self.open = c
+            self.comma_ends = False
+            if c == '{':
+                self.ss = True
+                if '=' in self.seen or 'enum' in self.seen:
+                    self.comma_ends = True
+            #if c == '(' and 'if' in self.seen:
+            #    self.is_if = True
+            self.d = self.column+1
+            self.last_was_open = True
+            return
+        self.last_was_open = False
+        if c in ')]}':
+            while self.s and self.open is None:
+                self.pop()
+            if self.to_open[c] != self.open:
+                return
+            self.pop()
+            if c == '}':
+                self.end_statement(p, m)
+            if c == ')' and self.have_prefix:
+                # starting a new statement
+                self.push()
+                self.open = None
+                self.ss = True
+                self.d += self.tab
+            return
+
+        if c == ';' or (c ==',' and self.comma_ends):
+            self.end_statement(p, m)
+        if c == '?':
+            # could be ?:, in any case, probably not a label
+            self.seen.append(c)
+        if c == ':' and '?' not in self.seen and not c in self.seen:
+            # probably a label - so now at start of statement
+            self.ss = True
+            self.seen.append[c]
+        if c == '=':
+            # if we see a '{' now, then it is a structured value
+            # and comma act line end-of-statement
+            self.seen.append(c)
+
+        if c.isalnum or c == '_' or c.isspace():
+            # In a word
+            if ss:
+                self.have_prefix = True
+        else:
+            self.have_prefix = False
+
+        if ss and c == 'i' and p.call("text-match", m.dup(), "f\\b") > 0:
+            self.seen.append("if")
+        if ss and c == 'e' and p.call("text-match", m.dup(), "num\\b") > 0:
+            self.seen.append("enum")
+
+
+    def end_statement(self, p, m):
+        self.have_prefix = False
+        self.seen = []
+        see_else = p.call("text-match", m.dup(), " else\\b", 1) > 0
+        while self.s and self.open == None and (not see_else or
+                                                not 'if' in self.seen):
+            self.pop()
+        self.ss = True
+
+    def preparse(self, c):
+        # This character is at (or near) start of line and so might affect
+        # the indent we want here.
+        if c in ')]}' and self.to_open[c] == self.open:
+            self.pop()
+            self.ss = True
+        if c == '{' and self.ss and self.open == None:
+            self.pop()
+            self.ss = True
+
+
 class CModePane(edlib.Pane):
-    def __init__(self, focus):
-        edlib.Pane.__init__(self, focus)
-        # for paren-highlight
-        self.pre_paren = None
-        self.post_paren = None
-
-        # for indent
-        self.spaces = None   # is set to a number, use spaces, else TABs
-        self.indent_type = None
-
-    def handle_clone(self, key, focus, **a):
-        "handle:Clone"
-        p = CModePane(focus)
-        p.spaces = self.spaces
-        p.indent_type = self.indent_type
-        self.clone_children(p)
-        return 1
-
-    def mkwhite(self, align):
-        rv = ''
-        if not self.spaces:
-            while align >= 8:
-                align -= 8
-                rv += '\t'
-        return rv + ' ' * align
-
-    def calc_indent_c(self, p, mark):
         # C indenting can be determined precisely, but it
         # requires a lot of work.
         # We need to go back to the start of the function
@@ -80,9 +241,36 @@ class CModePane(edlib.Pane):
         #  flag "start of statement"
         #  comment type none,line,block
         #  quote type none,single,double
-        #  flag (in_if) when possible in a prefix
+        #  flag (have_prefix) when possibly in a prefix
         #  column
         #
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus)
+        # for paren-highlight
+        self.pre_paren = None
+        self.post_paren = None
+
+        # for indent
+        self.spaces = None   # is set to a number, use spaces, else TABs
+        self.indent_type = None
+
+    def handle_clone(self, key, focus, **a):
+        "handle:Clone"
+        p = CModePane(focus)
+        p.spaces = self.spaces
+        p.indent_type = self.indent_type
+        self.clone_children(p)
+        return 1
+
+    def mkwhite(self, align):
+        rv = ''
+        if not self.spaces:
+            while align >= 8:
+                align -= 8
+                rv += '\t'
+        return rv + ' ' * align
+
+    def calc_indent_c(self, p, mark):
 
         # 'zero' point is a start of line that is not empty, not
         #  white space, not #, not /, not }, and not "alphanum:"
@@ -97,219 +285,45 @@ class CModePane(edlib.Pane):
         except edlib.commandfailed:
             p.call("Move-file", m, -1)
 
-        depth = [0]
-        brackets = "^"
-        if_depth = []
-        start_stat = True
-        comment = None
-        quote = None
-        column = 0
-        nextcol = 0
-        open_col = 0
-        comment_col = 0
-        in_if = False
-        have_prefix = False
-        saw_eq = False
-        enum_pos = 0
-
         tab = self.spaces
         if not tab:
             tab = 8
 
-        c = p.call("doc:step", 1, 0, m, ret='char')
+        ps = parse_state(tab)
         while m < mark:
-            column = nextcol
             c = p.call("doc:step", 1, 1, m, ret='char')
+            ps.parse(c, p, m)
             if c is None:
                 break
-            if c == '\n':
-                nextcol = 0
-            elif c == '\t':
-                nextcol = (column|7)+1
-            else:
-                nextcol = column+1
+        # we always want the indent at the start of a line
+        ps.parse('\n', p, m)
 
-            if quote:
-                # check for close
-                if c == quote:
-                    quote = None
-                elif c == '\\':
-                    c = p.call("doc:step", 1, 0, m, ret='char')
-                    if c == quote or c == '\\':
-                        # skip this
-                        c = p.call("doc:step", 1, 1, m, ret='char')
-                        nextcol += 1
-
-                continue
-            elif comment == '//':
-                # check for close
-                if c == '\n':
-                    comment = None
-                    # fallthrough to newline handling
-                else:
-                    continue
-            elif comment == '/*':
-                # check for close
-                if c != '*':
-                    continue
-                c = p.call("doc:step", 1, 0, m, ret='char')
-                if c != '/':
-                    continue
-                p.call("doc:step", 1, 1, m)
-                nextcol += 1
-                comment = None
-                continue
-
-            prev_saw_eq = saw_eq
-            prev_enum_pos = enum_pos
-            # must be in code
-            # We treat '/' like space, as it might start a comment,
-            # and '\\', as it is probably a line continuation for a macro
-            if c not in ' \t\n/\\':
-                if start_stat:
-                    start_stat = False
-                    maybe_label = True
-                    if c.isalnum() or c == '_':
-                        in_if = True
-                        is_if = c == 'i' and p.call("text-match", m.dup(), "f\\b") > 0
-                if open_col:
-                    depth.append(open_col)
-                    open_col = 0
-                saw_eq = c == '='
-                if c.isalpha() and enum_pos >= 0:
-                    if enum_pos == 5:
-                        pass
-                    elif enum_pos < 4 and "enum"[enum_pos] == c:
-                        enum_pos += 1
-                    else:
-                        enum_pos = -1
-                else:
-                    enum_pos = -1
-            elif enum_pos >= 4:
-                enum_pos = 5
-            else:
-                enum_pos = 0
-            if c == '\n':
-                # end of line
-                # if we haven't seen code since a group opened, then
-                # that group indents at an extra next level, else it indents
-                # at the opening column
-                if have_prefix:
-                    depth.append(depth[-1]+tab)
-                    brackets += ' '
-                    have_prefix = False
-                if open_col:
-                    depth.append(depth[-1]+tab)
-                    open_col = 0
-                maybe_label = False
-            elif c in '{([':
-                if c == '{':
-                    if not have_prefix and brackets and brackets[-1] == ' ':
-                        # '{' at start of line subsumes ' '
-                        brackets = brackets[:-1]
-                        depth.pop()
-                    have_prefix = False
-                    start_stat = True
-                    # If enum or =, make ',' act as end-of-command for indenting
-                    if prev_saw_eq or prev_enum_pos == 5:
-                        c = ','
-                if c == '(' and in_if:
-                    brackets += 'p'
-                    if_depth.append(len(brackets))
-                else:
-                    brackets += c
-                open_col = column+1
-            elif c in '})]':
-                if depth:
-                    b = brackets[-1]
-                    brackets = brackets[:-1]
-                    depth.pop()
-                    if c == '}':
-                        start_stat = True
-                        see_else = p.call("text-match", m.dup(),
-                                          " else\\b", 1) > 0
-                        while (brackets and brackets[-1] == ' ' and
-                               (not see_else or not if_depth or
-                                if_depth[-1] < len(brackets))):
-                            brackets = brackets[:-1]
-                            depth.pop()
-                            while if_depth and if_depth[-1] > len(brackets):
-                                if_depth.pop()
-                    if b == 'p':
-                        # if/while/switch statement
-                        have_prefix = True
-                        start_stat = True
-            elif c == ';':
-                start_stat = True
-                have_prefix = False
-                see_else = p.call("text-match", m.dup(),
-                                  " else\\b", 1) > 0
-                while (brackets and brackets[-1] == ' ' and
-                       (not see_else or not if_depth or
-                        if_depth[-1] < len(brackets))):
-                    brackets = brackets[:-1]
-                    depth.pop()
-                    while if_depth and if_depth[-1] > len(brackets):
-                        if_depth.pop()
-            elif c == ',' and brackets and brackets[-1] == ',':
-                # This is enum or struct-literal, where , ends a statement
-                start_stat = True
-                have_prefix = False
-            elif c == ':':
-                # If this is a label, then starts-statement
-                if maybe_label:
-                    start_stat = True
-                maybe_label = False
-            elif c == '?':
-                # could be ?: - probably not a label
-                maybe_label = False
-            elif c == '"' or c == "'":
-                quote = c
-            elif c == '/':
-                c = p.call("doc:step", 1, 0, m, ret='char')
-                if c == '/':
-                    comment = '//'
-                elif c == '*':
-                    comment = '/*'
-                    comment_col = column
-                    p.call("doc:step", 1, 1, m)
-                    nextcol += 1
-            if in_if and not c.isalnum() and c != '_' and not c.isspace():
-                in_if = False
-
-        if have_prefix:
-            depth.append(depth[-1]+tab)
-            brackets += ' '
-            have_prefix = False
-        if open_col:
-            depth.append(depth[-1]+tab)
-            open_col = 0
-
-        br = m.dup()
+        br = mark.dup()
         c = p.call("doc:step", 1, 1, br, ret='char')
-        while brackets and c and c in '\t }]){':
-            if c in '}])':
-                brackets = brackets[:-1]
-                depth.pop()
-                if c == '}':
-                    start_stat = True
-            if c == '{' and brackets[-1] == ' ':
-                brackets = brackets[:-1]
-                depth.pop()
+        while c and c in '\t }]){':
+            if c in '}]){':
+                ps.preparse(c)
             c = p.call("doc:step", 1, 1, br, ret='char')
 
-        msg = "start_stat %r bracket <%s> oc=%d depth %d" % \
-            (start_stat, brackets, open_col, len(depth))
-        if not start_stat and brackets and brackets[-1] in '^{ ':
-            depth.append(depth[-1]+tab)
-
-        # assume exactly this depth unless an '{' or '}' would make
-        # sense, then allow one level to be deleted.
-        depth.insert(0,0)
-        if brackets and brackets[-1] in '{ ,':
-            ret = [ depth[-2], depth[-1], depth[-1] ]
+        #FIXME I need to option for tabbing into a align an else
+        if not ps.ss and ps.open in [ '^', '{', None]:
+            # statement continuation
+            depth = [ps.d + ps.tab]
         else:
-            ret = [ depth[-1], depth[-1] ]
+            # assume exactly the current depth
+            depth = [ps.d]
+
+        if ps.ss:
+            # Allow reverting to start of line for label if at the
+            # start of a statement.
+            depth.insert(0, 0)
+            # if a '{' or '}' would make sense to reduce indent,
+            # allow that.
+            if ps.s and  ps.open in [ '{', None ]:
+                depth.insert(-1, ps.s[-1][1])
+
+        # Never allow extra indent
+        depth.append(depth[-1])
 
         # Check for label.  Need to be at start of line, but
         # may only step over white space.  When trying :Enter, we
@@ -334,21 +348,20 @@ class CModePane(edlib.Pane):
                 else:
                     label_line = "indented-label"
             msg += " " + label_line
-            depth.insert(0, 0)
             if label_line == "margin-label":
-                ret = [0, 0]
+                depth = [0, 0]
             else:
-                ret = [depth[-2],depth[-2]]
+                depth = [depth[-2],depth[-2]]
 
         #p.call("Message", msg)
-        if comment == "/*":
+        if ps.comment == "/*":
             prefix = "* "
             if p.call("text-match", m.dup(), "[ \t]*\*") > 1:
                 prefix = ""
-            ret = [comment_col+1,comment_col+1]
+            depth = [ps.comment_col+1,ps.comment_col+1]
         else:
             prefix = ""
-        return (ret, prefix)
+        return (depth, prefix)
 
     def calc_indent_python(self, p, m):
         # like calc-indent, but check for ':' and end of previous line
