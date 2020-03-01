@@ -17,6 +17,8 @@ class parse_state:
         self.tab = tab
 
         self.last_was_open = False # Last code we saw was an 'open'
+        self.else_indent = -1	# set when EOL parsed if we pop beyond a possible else indent
+
 
         self.s=[]		# stack
 
@@ -182,8 +184,11 @@ class parse_state:
         self.have_prefix = False
         self.seen = []
         see_else = p.call("text-match", m.dup(), " else\\b", 1) > 0
+        self.else_indent = -1
         while self.s and self.open == None and (not see_else or
                                                 not 'if' in self.seen):
+            if 'if' in self.seen and self.else_indent < 0:
+                self.else_indent = self.d
             self.pop()
         self.ss = True
 
@@ -305,7 +310,6 @@ class CModePane(edlib.Pane):
                 ps.preparse(c)
             c = p.call("doc:step", 1, 1, br, ret='char')
 
-        #FIXME I need to option for tabbing into a align an else
         if not ps.ss and ps.open in [ '^', '{', None]:
             # statement continuation
             depth = [ps.d + ps.tab]
@@ -322,8 +326,11 @@ class CModePane(edlib.Pane):
             if ps.s and  ps.open in [ '{', None ]:
                 depth.insert(-1, ps.s[-1][1])
 
-        # Never allow extra indent
-        depth.append(depth[-1])
+        # Only allow an extra indent only if there could be a hanging else
+        if ps.else_indent > depth[-1]:
+            depth.append(ps.else_indent)
+        else:
+            depth.append(depth[-1])
 
         # Check for label.  Need to be at start of line, but
         # may only step over white space.  When trying :Enter, we
