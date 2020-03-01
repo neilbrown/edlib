@@ -19,8 +19,12 @@ class parse_state:
         self.last_was_open = False # Last code we saw was an 'open'
         self.else_indent = -1	# set when EOL parsed if we pop beyond a possible else indent
 
+        self.sol = True		# at start-of-line, with possible white space
+        self.preproc = False	# in pre-processor directive: saw # at sol
+        self.preproc_continue=False# saw '\\' on preproc line
 
         self.s=[]		# stack
+        self.save_stack= None	# where to save stack while processesing preproc
 
         self.open=None		# open bracket char, or None
         self.d = 0		# current depth
@@ -104,6 +108,33 @@ class parse_state:
             self.last_was_open = False
 
     def parse_code(self, c, p, m):
+        if self.sol and c == '#':
+            # switch to handling preprocessor directives
+            self.push()
+            self.save_stack = self.s
+            self.s = []
+            self.ss = True
+            self.preproc = True
+            self.sol = False
+            self.d = 8
+            # Skip over 'define name(names,)' as it looks too much like a prefix
+            m2 = m.dup()
+            if p.call("text-match","[ \\t]*define [a-z_][a-z0-9_]*\\(([a-z0-9_]+| |,|\\.\\.\\.)*\\)",
+                      m2, 1) > 1:
+                m.to_mark(m2)
+            return
+        if self.preproc:
+            # we leave preproc mode at eol, unless there was a '\\'
+            if c == '\n' and not self.preproc_continue:
+                self.preproc = False
+                self.s = self.save_stack
+                self.pop()
+                self.save_stack = None
+            else:
+                self.preproc_continue = (
+                    c == '\\' and p.call("doc:step", 1, m, ret='char') == '\n')
+        self.sol = c == '\n'
+
         # treat '\' like white-space as probably at eol of macro
         if c in ' \t\n\\':
             # ignore white space
@@ -301,7 +332,8 @@ class CModePane(edlib.Pane):
             if c is None:
                 break
         # we always want the indent at the start of a line
-        ps.parse('\n', p, m)
+        if c != '\n':
+            ps.parse('\n', p, m)
 
         br = mark.dup()
         c = p.call("doc:step", 1, 1, br, ret='char')
