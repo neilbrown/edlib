@@ -326,9 +326,7 @@ int key_pfx_func(const struct cmd_info *ci safe)
 {
 	struct pfx_cmd *m = container_of(ci->comm, struct pfx_cmd, c);
 
-	call("Mode:set-mode", ci->focus, 0, NULL, m->pfx);
-	call("Mode:set-num", ci->focus, ci->num);
-	call("Mode:set-num2", ci->focus, ci->num2);
+	call("Mode:set-all", ci->focus, ci->num, NULL, m->pfx, ci->num2);
 	return 1;
 }
 

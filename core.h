@@ -385,7 +385,6 @@ void key_add_range(struct map *map safe,
 #define key_add_prefix(map, prefix, comm) \
 	key_add_range(map, prefix, prefix "\xFF\xFF\xFF\xFF", comm)
 void key_add_chain(struct map *map safe, struct map *chain);
-struct command *key_register_prefix(char *name safe);
 
 static inline const char *safe ksuffix(const struct cmd_info *ci safe,
 				       const char *prefix safe)

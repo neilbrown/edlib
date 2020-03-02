@@ -415,7 +415,7 @@ Module features
 
 ### lang-python
 
-- [ ] key_register_prefix functionality.
+- [X] key_register_prefix functionality.
 - [ ] remove the pane 'handler' functionality after converting
       display-pygtk to make EdDisplay an edlib.Pane.
 

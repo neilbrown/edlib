@@ -34,7 +34,8 @@ DEF_CMD(set_mode)
 
 	if (!ci->str)
 		return Enoarg;
-	im->mode = ci->str;
+	free((void*)im->mode);
+	im->mode = strdup(ci->str);
 	return 1;
 }
 
@@ -50,6 +51,19 @@ DEF_CMD(set_num2)
 {
 	struct input_mode *im = ci->home->data;
 
+	im->num2 = ci->num;
+	return 1;
+}
+
+DEF_CMD(set_all)
+{
+	struct input_mode *im = ci->home->data;
+
+	if (ci->str) {
+		free((void*)im->mode);
+		im->mode = strdup(ci->str);
+	}
+	im->num = ci->num;
 	im->num2 = ci->num;
 	return 1;
 }
@@ -99,7 +113,8 @@ DEF_CMD(keystroke)
 	strcat(vkey, k);
 	key = vkey;
 
-	im->mode = "";
+	free((void*)im->mode);
+	im->mode = strdup("");
 	im->num = NO_NUMERIC;
 	im->num2 = 0;
 
@@ -197,8 +212,9 @@ DEF_CMD(mouse_event)
 	/* FIXME is there any point in this? */
 	pane_map_xy(ci->focus, focus, &x, &y);
 
-	mode = im->mode;
-	im->mode = "";
+	mode = strsave(ci->home, im->mode);
+	free((void*)im->mode);
+	im->mode = strdup("");
 	im->num = NO_NUMERIC;
 	im->num2 = 0;
 
@@ -222,7 +238,7 @@ DEF_CMD(mouse_event)
 	}
 
 	if (!ms) {
-		key = strconcat(ci->home, "M", im->mode, ci->str);
+		key = strconcat(ci->home, "M", mode, ci->str);
 		return call(key, focus, num, NULL, NULL, ex, NULL, NULL, x, y);
 	}
 	if (press) {
@@ -325,6 +341,7 @@ static void register_map(void)
 	key_add(im_map, "Mode:set-mode", &set_mode);
 	key_add(im_map, "Mode:set-num", &set_num);
 	key_add(im_map, "Mode:set-num2", &set_num2);
+	key_add(im_map, "Mode:set-all", &set_all);
 	key_add(im_map, "pane:refocus", &refocus);
 	key_add(im_map, "Notify:Close", &close_focus);
 	key_add_prefix(im_map, "window:request:", &request_notify);
@@ -340,7 +357,7 @@ DEF_CMD(input_attach)
 
 	register_map();
 
-	im->mode = "";
+	im->mode = strdup("");
 	im->num = NO_NUMERIC;
 	im->num2 = 0;
 

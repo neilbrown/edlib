@@ -417,7 +417,7 @@ class CModePane(edlib.Pane):
         return (depth, prefix)
 
     def calc_indent_python(self, p, m):
-        # like calc-indent, but check for ':' and end of previous line
+        # like calc-indent, but check for ':' at end of previous line
         indent = self.calc_indent(p, m, 'default')
         m = m.dup()
         c = p.call("doc:step", 0, 1, m, ret='char')
