@@ -208,6 +208,13 @@ class parse_state:
             self.seen.append("if")
         if ss and c == 'e' and p.call("text-match", m.dup(), "num\\b") > 0:
             self.seen.append("enum")
+        if ss and ((c == 'd' and p.call("text-match", m, "o\\b") > 0) or
+                   (c == 'e' and p.call("text-match", m, "lse\\b") > 0)):
+            # do or else start a new statement, like if() does
+            self.push()
+            self.open = None
+            self.ss = True
+            self.d += self.tab
 
 
     def end_statement(self, p, m):
