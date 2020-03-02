@@ -101,7 +101,7 @@ class parse_state:
 
     def parse_newline(self):
         # we've just seen a newline in code (not a multi-line comment)
-        if self.last_was_open:
+        if self.last_was_open and self.s:
             # The open bracket was at end of line, so indent depth
             # should be previous plus one tab.
             self.d = self.s[-1][1] + self.tab
@@ -111,6 +111,7 @@ class parse_state:
         if self.sol and c == '#':
             # switch to handling preprocessor directives
             self.push()
+            self.open = '^'
             self.save_stack = self.s
             self.s = []
             self.ss = True
