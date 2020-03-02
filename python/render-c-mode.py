@@ -600,7 +600,9 @@ class CModePane(edlib.Pane):
 
         # m at start-of-line, move mark (point) to first non-white-space
         c = focus.call("doc:step", 1, 0, mark, ret="char")
+        moved = False
         while c and c in " \t":
+            moved = True
             focus.call("doc:step", 1, 1, mark)
             c = focus.call("doc:step", 1, 0, mark, ret="char")
 
@@ -625,8 +627,11 @@ class CModePane(edlib.Pane):
             except edlib.commandfailed:
                 pass
             return 0
-        if depths[-1] == depths[-2]:
-            # There is extra indent allowed, so stay where we are
+        if depths[-1] == depths[-2] or key == "Reindent" or moved:
+            # Either we weren't at start of text and have moved there,
+            # or there is no extra indent allowed, possibly because we are doing
+            # re-indent.  In any of these cases, current indent is good enough,
+            # stay where we are.
             return 1
 
         new = self.mkwhite(depths[-1])
