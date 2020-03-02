@@ -70,6 +70,9 @@
 
 #include "core.h"
 #include "internal.h"
+#include "misc.h"
+
+static MEMPOOL(mark);
 
 /* seq numbers added to the end are given a gap of 128.
  * seq numbers at other locations are placed at mean of before and after.
@@ -113,8 +116,13 @@ static void point_free(struct mark *p safe)
 	struct point_links *lnk = safe_cast p->mdata;
 	for (i = 0; i < lnk->size; i++)
 		tlist_del_init(&lnk->lists[i]);
-	free(lnk);
-	p->mdata = NULL;
+	unalloc_buf(p->mdata, sizeof(*lnk) + lnk->size * sizeof(lnk->lists[0]),
+		    mark);
+}
+
+void __mark_free(struct mark *m)
+{
+	unalloc(m, mark);
 }
 
 void mark_free(struct mark *m)
@@ -171,7 +179,7 @@ struct mark *do_mark_at_point(struct mark *pt safe, int view)
 		return NULL;
 	lnk = safe_cast pt->mdata;
 
-	ret = calloc(1, sizeof(*ret));
+	alloc(ret, mark);
 
 	dup_mark(pt, ret);
 	ret->viewnum = view;
@@ -191,9 +199,12 @@ struct mark *safe point_dup(struct mark *p safe)
 {
 	int i;
 	struct point_links *old = safe_cast p->mdata;
-	struct mark *ret = calloc(1, sizeof(*ret));
-	struct point_links *lnk = malloc(sizeof(*lnk) +
-					 old->size * sizeof(lnk->lists[0]));
+	struct mark *ret;
+	struct point_links *lnk;
+
+	alloc(ret, mark);
+	lnk = alloc_buf(sizeof(*lnk) + old->size * sizeof(lnk->lists[0]),
+			mark);
 
 	dup_mark(p, ret);
 	ret->viewnum = MARK_POINT;
@@ -216,9 +227,10 @@ void points_resize(struct doc *d safe)
 	tlist_for_each_entry(p, &d->points, view) {
 		int i;
 		struct point_links *old = safe_cast p->mdata;
-		struct point_links *new = malloc(sizeof(*new) +
-						 d->nviews *
-						 sizeof(new->lists[0]));
+		struct point_links *new = alloc_buf(sizeof(*new) +
+						    d->nviews *
+						    sizeof(new->lists[0]),
+						    mark);
 		new->pt = p;
 		new->size = d->nviews;
 		new->moved = old->moved;
@@ -247,7 +259,7 @@ struct mark *safe mark_dup(struct mark *m safe)
 {
 	struct mark *ret;
 
-	ret = calloc(1, sizeof(*ret));
+	alloc(ret, mark);
 	dup_mark(m, ret);
 	ret->viewnum = MARK_UNGROUPED;
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
@@ -261,7 +273,7 @@ struct mark *safe mark_dup_view(struct mark *m safe)
 	if (m->viewnum == MARK_POINT)
 		return point_dup(m);
 
-	ret = calloc(1, sizeof(*ret));
+	alloc(ret, mark);
 	dup_mark(m, ret);
 	if (m->viewnum == MARK_POINT) abort();
 	ret->viewnum = m->viewnum;
@@ -387,16 +399,17 @@ struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner)
 		/* Erroneous call, or race with document closing down */
 		return NULL;
 	}
-	ret = calloc(1, sizeof(*ret));
+	alloc(ret, mark);
 	INIT_HLIST_NODE(&ret->all);
 	INIT_TLIST_HEAD(&ret->view, GRP_MARK);
 	ret->viewnum = view;
 	hlist_add_head(&ret->all, &d->marks);
 
 	if (view == MARK_POINT) {
-		struct point_links *lnk = malloc(sizeof(*lnk) +
-						 d->nviews *
-						 sizeof(lnk->lists[0]));
+		struct point_links *lnk = alloc_buf(sizeof(*lnk) +
+						    d->nviews *
+						    sizeof(lnk->lists[0]),
+						    mark);
 		int i;
 
 		lnk->size = d->nviews;

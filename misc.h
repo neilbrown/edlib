@@ -46,3 +46,36 @@ void time_stop_key(const char *key safe);
 void stat_count(char *name safe);
 
 void stat_free(void);
+
+/*
+ * Memory allocation tracking
+ */
+
+struct mempool {
+	char *name;
+	long bytes;
+	long allocations;
+	long max_bytes;
+	struct list_head linkage;
+};
+
+#define MEMPOOL(__name)							\
+	struct mempool mem ## __name = {				\
+		.name = #__name,					\
+		.linkage = LIST_HEAD_INIT(mem ## __name.linkage),	\
+	}
+
+void *safe __alloc(struct mempool *pool safe, int size, int zero);
+void __unalloc(struct mempool *pool safe, void *obj, int size);
+
+#define alloc(var, pool)						\
+	do { var = __alloc(&mem##pool, sizeof((var)[0]), 1); } while (0)
+
+#define alloc_buf(size, pool) __alloc(&mem##pool, size, 0)
+
+#define unalloc(var, pool)						\
+	do { __unalloc(&mem##pool, var, sizeof((var)[0])); (var)=NULL; } while (0)
+
+#define unalloc_buf(var, size, pool)					\
+	do { __unalloc(&mem##pool, var, size); (var) = NULL; } while(0)
+

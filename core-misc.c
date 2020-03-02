@@ -14,7 +14,7 @@
 #include <unistd.h>
 
 #include "safe.h"
-
+#include "list.h"
 #include "misc.h"
 
 void buf_init(struct buf *b safe)
@@ -78,6 +78,7 @@ static FILE *dump_file;
 static void dump_key_hash(void);
 static void dump_count_hash(void);
 static void stat_dump(void);
+static void dump_mem(void);
 
 static char *tnames[] = {
 	[TIME_KEY]     = "KEY",
@@ -151,6 +152,7 @@ static void stat_dump(void)
 	dump_key_hash();
 	dump_count_hash();
 	fprintf(dump_file, "\n");
+	dump_mem();
 	fflush(dump_file);
 }
 
@@ -328,4 +330,41 @@ void stat_free(void)
 	hash_free(count_tab);
 	hash_free(khashtab);
 	stats_enabled = 0;
+}
+
+static LIST_HEAD(mem_pools);
+
+void *safe __alloc(struct mempool *pool safe, int size, int zero)
+{
+	void *ret = malloc(size);
+
+	if (zero)
+		memset(ret, 0, size);
+	pool->bytes += size;
+	pool->allocations += 1;
+	if (pool->bytes > pool->max_bytes)
+		pool->max_bytes = pool->bytes;
+	if (list_empty(&pool->linkage))
+		list_add(&pool->linkage, &mem_pools);
+	return ret;
+}
+
+void __unalloc(struct mempool *pool safe, void *obj, int size)
+{
+	if (obj) {
+		pool->bytes -= size;
+		pool->allocations -= 1;
+		free(obj);
+	}
+}
+
+static void dump_mem(void)
+{
+	struct mempool *p;
+
+	fprintf(dump_file, "mem:");
+	list_for_each_entry(p, &mem_pools, linkage)
+		fprintf(dump_file, " %s:%ld(%ld):%ld",
+			p->name, p->bytes, p->max_bytes, p->allocations);
+	fprintf(dump_file, "\n");
 }

@@ -12,6 +12,7 @@
 
 #include "core.h"
 #include "misc.h"
+#include "internal.h"
 
 static struct map *ed_map safe;
 struct ed_info {
@@ -244,7 +245,7 @@ DEF_CMD(editor_clean_up)
 	while (ei->mark_free_list) {
 		struct mark *m = ei->mark_free_list;
 		ei->mark_free_list = (struct mark*)m->all.next;
-		free(m);
+		__mark_free(m);
 	}
 	while (ei->store) {
 		struct store *s = ei->store;
@@ -382,7 +383,7 @@ void editor_delayed_mark_free(struct mark *m safe)
 	struct ed_info *ei = p ? p->data : NULL;
 
 	if (!ei) {
-		free(m);
+		__mark_free(m);
 		return;
 	}
 	ASSERT(ei->magic==0x4321765498765432UL);
