@@ -385,13 +385,11 @@ class CModePane(edlib.Pane):
                     label_line = "margin-label"
                 else:
                     label_line = "indented-label"
-            msg += " " + label_line
             if label_line == "margin-label":
                 depth = [0, 0]
             else:
                 depth = [depth[-2],depth[-2]]
 
-        #p.call("Message", msg)
         if ps.comment == "/*":
             prefix = "* "
             if p.call("text-match", m.dup(), "[ \t]*\*") > 1:
