@@ -336,12 +336,19 @@ class CModePane(edlib.Pane):
 
         br = mark.dup()
         c = p.call("doc:step", 1, 1, br, ret='char')
+        non_hash = False
         while c and c in '\t }]){':
             if c in '}]){':
+                non_hash = True
                 ps.preparse(c)
             c = p.call("doc:step", 1, 1, br, ret='char')
 
-        if not ps.ss and ps.open in [ '^', '{', None]:
+        preproc = False
+        if c == '#' and not non_hash:
+            # line starts '#', so want no indent
+            depth = [0]
+            preproc = True
+        elif not ps.ss and ps.open in [ '^', '{', None]:
             # statement continuation
             depth = [ps.d + ps.tab]
         else:
@@ -358,7 +365,10 @@ class CModePane(edlib.Pane):
                 depth.insert(-1, ps.s[-1][1])
 
         # Only allow an extra indent only if there could be a hanging else
-        if ps.else_indent > depth[-1]:
+        # or if a preproc line could optionally be indented
+        if preproc:
+            depth.append(ps.d)
+        elif ps.else_indent > depth[-1]:
             depth.append(ps.else_indent)
         else:
             depth.append(depth[-1])
