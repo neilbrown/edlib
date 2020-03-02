@@ -191,7 +191,7 @@ class parse_state:
         if c == ':' and '?' not in self.seen and not c in self.seen:
             # probably a label - so now at start of statement
             self.ss = True
-            self.seen.append[c]
+            self.seen.append(c)
         if c == '=':
             # if we see a '{' now, then it is a structured value
             # and comma act line end-of-statement
