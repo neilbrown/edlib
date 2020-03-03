@@ -189,6 +189,8 @@ static void text_check_consistent(struct text *t safe);
 static void text_normalize(struct text *t safe, struct doc_ref *r safe);
 static void text_cleanout(struct text *t safe);
 
+static MEMPOOL(text);
+static MEMPOOL(undo);
 static struct map *text_map;
 /*
  * A text will mostly hold utf-8 so we try to align chunk breaks with
@@ -225,7 +227,7 @@ text_new_alloc(struct text *t safe, int size)
 	struct text_alloc *new;
 	if (size == 0)
 		size = DEFAULT_SIZE;
-	new = malloc(size + sizeof(struct text_alloc));
+	new = alloc_buf(size + sizeof(struct text_alloc), text);
 	new->prev = t->alloc;
 	t->alloc = new;
 	new->size = size;
@@ -313,7 +315,7 @@ DEF_CMD(text_load_file)
 	if (size > 0) {
 		struct mark *m;
 		text_cleanout(t);
-		c = malloc(sizeof(*c));
+		alloc(c, text);
 		a = text_new_alloc(t, size);
 		if (!a)
 			goto err;
@@ -357,7 +359,7 @@ DEF_CMD(text_load_file)
 		close(fd);
 	return 1;
 err:
-	free(c);
+	unalloc(c, text);
 	if (fd != ci->num2)
 		close(fd);
 	return Efallthrough;
@@ -647,7 +649,7 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 		 * a nop edit (len == 0)
 		 */
 		if (t->undo == NULL || t->undo->altnext != NULL) {
-			e = malloc(sizeof(*e));
+			alloc(e, undo);
 			e->target = target; /* ignored */
 			e->first = 0;
 			e->at_start = 0;
@@ -661,7 +663,7 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 		t->redo = NULL;
 	}
 
-	e = malloc(sizeof(*e));
+	alloc(e, undo);
 	e->target = target;
 	e->first = *first;
 	e->at_start = at_start;
@@ -716,7 +718,8 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe,
 	/* Need a new chunk.  Might need to split the current chunk first.
 	 * Old chunk must be first to simplify updating of pointers */
 	if (pos->c == NULL || pos->o < pos->c->end) {
-		struct text_chunk *c = malloc(sizeof(*c));
+		struct text_chunk *c;
+		alloc(c, text);
 		if (pos->c == NULL || pos->o == pos->c->start) {
 			/* At the start of a chunk, so create a new one here */
 			c->txt = safe_cast NULL;
@@ -750,7 +753,8 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe,
 	while (len > 0) {
 		/* Make sure we have an empty chunk */
 		if (pos->c->end > pos->c->start) {
-			struct text_chunk *c = malloc(sizeof(*c));
+			struct text_chunk *c;
+			alloc(c, text);
 			c->start = c->end = 0;
 			c->attrs = NULL;
 			list_add(&c->lst, &pos->c->lst);
@@ -977,7 +981,8 @@ static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
 			/* must be deleting out of the middle of the chunk.
 			 * need to create new chunk for the 'after' bit.
 			 */
-			struct text_chunk *c2 = malloc(sizeof(*c2));
+			struct text_chunk *c2;
+			alloc(c2, text);
 			c2->txt = c->txt;
 			c2->start = pos->o + len;
 			c2->end = c->end;
@@ -2200,13 +2205,13 @@ static void text_cleanout(struct text *t safe)
 						  struct text_chunk, lst);
 		list_del(&c->lst);
 		attr_free(&c->attrs);
-		free(c);
+		unalloc(c, text);
 	}
 	ta = t->alloc;
 	while (ta) {
 		struct text_alloc *tmp = ta;
 		ta = tmp->prev;
-		free(tmp);
+		unalloc_buf(tmp, sizeof(*tmp) + tmp->size, text);
 	}
 	t->alloc = safe_cast NULL;
 	while (t->undo) {
@@ -2214,10 +2219,10 @@ static void text_cleanout(struct text *t safe)
 
 		if (te->altnext == NULL) {
 			t->undo = te->next;
-			free(te);
+			unalloc(te, undo);
 		} else if (te->next == NULL) {
 			t->undo = te->altnext;
-			free(te);
+			unalloc(te, undo);
 		} else {
 			/* Make the ->altnext link shorted, until it
 			 * disappears
@@ -2232,10 +2237,10 @@ static void text_cleanout(struct text *t safe)
 
 		if (te->altnext == NULL) {
 			t->redo = te->next;
-			free(te);
+			unalloc(te, undo);
 		} else if (te->next == NULL) {
 			t->redo = te->altnext;
-			free(te);
+			unalloc(te, undo);
 		} else {
 			/* Make the ->altnext link shorted, until it
 			 * disappears
