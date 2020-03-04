@@ -293,8 +293,9 @@ DEF_CMD(libevent_notify)
 
 DEF_CMD(libevent_activate)
 {
-	struct event_info *ei = calloc(1, sizeof(*ei));
+	struct event_info *ei;
 
+	alloc(ei, pane);
 	INIT_LIST_HEAD(&ei->event_list);
 	ei->read = libevent_read;
 	ei->signal = libevent_signal;

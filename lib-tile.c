@@ -65,7 +65,7 @@ DEF_CMD(tile_free)
 	struct tileinfo *ti = ci->home->data;
 
 	free(ti->name);
-	free(ti);
+	unalloc(ti, pane);
 	return 1;
 }
 
@@ -92,7 +92,7 @@ DEF_CMD(tile_clone)
 	 */
 	child = ci->home;
 	cti = child->data;
-	ti = calloc(1, sizeof(*ti));
+	alloc(ti, pane);
 	ti->leaf = 1;
 	ti->direction = Neither;
 	if (cti->group)
@@ -134,12 +134,14 @@ static int get_scale(struct pane *p)
 DEF_CMD(tile_attach)
 {
 	struct pane *display = ci->focus;
-	struct tileinfo *ti = calloc(1, sizeof(*ti));
-	struct pane *p = pane_register(display, 0, &tile_handle.c, ti);
+	struct tileinfo *ti;
+	struct pane *p;
 
 	/* Remove borders as our children will provide their own. */
 	call("Window:border", display);
 
+	alloc(ti, pane);
+	p = pane_register(display, 0, &tile_handle.c, ti);
 	ti->leaf = 1;
 	ti->p = p;
 	ti->direction = Neither;
@@ -185,7 +187,7 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 		struct pane *p2, *child;
 		struct list_head *t;
 		/* ti2 will be tileinfo for p, new pane gets ti */
-		ti2 = calloc(1, sizeof(*ti2));
+		alloc(ti2, pane);
 		ti2->leaf = 0;
 		ti2->direction = ti->direction;
 		ti2->group = ti->group;
@@ -201,7 +203,7 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 				pane_reparent(child, p2);
 		p = p2;
 	}
-	ti2 = calloc(1, sizeof(*ti2));
+	alloc(ti2, pane);
 	ti2->group = ti->group;
 	ti2->direction = ti->direction;
 	ti2->leaf = 1;

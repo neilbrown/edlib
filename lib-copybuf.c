@@ -51,7 +51,7 @@ DEF_CMD(copy_free)
 	struct copy_info *cyi = ci->home->data;
 
 	free_txt(&cyi->store);
-	free(cyi);
+	unalloc(cyi, pane);
 	return 1;
 }
 
@@ -111,14 +111,15 @@ DEF_CMD(copy_do)
 
 void edlib_init(struct pane *ed safe)
 {
-	struct copy_info *cyi = calloc(1, sizeof(*cyi));
-	cyi->cmd = copy_do;
+	struct copy_info *cyi;
 
 	if (!copy_map) {
 		copy_map = key_alloc();
 		key_add(copy_map, "Free", &copy_free);
 	}
 
+	alloc(cyi, pane);
+	cyi->cmd = copy_do;
 	cyi->pane = pane_register(ed, 0, &copy_handle.c, cyi);
 	call_comm("global-set-command", ed, &cyi->cmd, 0, NULL, "copy:save");
 	call_comm("global-set-command", ed, &cyi->cmd, 0, NULL, "copy:get");

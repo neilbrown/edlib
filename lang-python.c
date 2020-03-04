@@ -585,7 +585,7 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 
 	self->handle.c.func = python_doc_call_func;
 	self->pane = doc_register(parent ? parent->pane : NULL,
-				  z, &self->handle.c, &self->doc);
+				  z, &self->handle.c, self);
 	self->doc.refcnt = mark_refcnt;
 	return 0;
 }

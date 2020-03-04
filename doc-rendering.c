@@ -615,9 +615,9 @@ DEF_CMD(attach_dr)
 	struct dr_info *dri;
 	struct pane *p;
 
-	dri = calloc(1, sizeof(*dri));
+	alloc(dri, pane);
 
-	p = doc_register(ci->focus, 0, &dr_handle.c, &dri->doc);
+	p = doc_register(ci->focus, 0, &dr_handle.c, dri);
 	if (!p) {
 		free(dri);
 		return Efail;

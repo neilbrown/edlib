@@ -70,15 +70,18 @@ static void doc_init(struct doc *d safe)
 	d->refcnt = NULL;
 }
 
-struct pane *safe doc_register(struct pane *parent, short z,
-			       struct command *handle safe,
-			       struct doc *doc safe)
+struct pane *safe __doc_register(struct pane *parent, short z,
+				 struct command *handle safe,
+				 struct doc *doc safe,
+				 void *data safe,
+				 short data_size)
 {
+	ASSERT(data == (void*)doc);
 	/* Documents are always registered against the root */
 	if (parent)
 		parent = pane_root(parent);
 	doc_init(doc);
-	doc->home = pane_register(parent, z, handle, doc);
+	doc->home = __pane_register(parent, z, handle, doc, data_size);
 	return doc->home;
 }
 
@@ -588,7 +591,7 @@ DEF_CMD(doc_addview)
 	if (!d->views || ret == d->nviews) {
 		/* Resize the view list */
 		d->nviews += 4;
-		g = malloc(sizeof(*g) * d->nviews);
+		g = alloc_buf(sizeof(*g) * d->nviews, pane);
 		for (i = 0; d->views && i < ret; i++) {
 			tlist_add(&g[i].head, GRP_HEAD, &d->views[i].head);
 			tlist_del(&d->views[i].head);
@@ -598,7 +601,7 @@ DEF_CMD(doc_addview)
 			INIT_TLIST_HEAD(&g[i].head, GRP_HEAD);
 			g[i].owner = NULL;
 		}
-		free(d->views);
+		unalloc_buf(d->views, sizeof(*g)*(d->nviews - 4), pane);
 		d->views = g;
 		/* now resize all the points */
 		points_resize(d);
@@ -1166,9 +1169,10 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 
 static struct pane *safe doc_attach(struct pane *parent)
 {
-	struct doc_data *dd = calloc(1, sizeof(*dd));
+	struct doc_data *dd;
 
-	return  pane_register(parent, 0, &doc_handle.c, dd);
+	alloc(dd, pane);
+	return pane_register(parent, 0, &doc_handle.c, dd);
 }
 
 static void simplify_path(char *path safe, char *buf safe)
@@ -1323,7 +1327,7 @@ void doc_free(struct doc *d safe)
 	}
 	for (i = 0; i < (unsigned int)d->nviews; i++)
 		ASSERT(d->views && !d->views[i].owner);
-	free(d->views);
+	unalloc_buf(d->views, sizeof(d->views[0]) * d->nviews, pane);
 	free(d->name);
 	while (!hlist_empty(&d->marks)) {
 		struct mark *m = hlist_first_entry(&d->marks, struct mark, all);

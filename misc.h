@@ -5,6 +5,10 @@
  * Assorted utility functions used by edlib
  *
  */
+#ifndef EDLIB_MISC
+#define EDLIB_MISC
+
+#include "list.h"
 
 struct buf {
 	char *b safe;
@@ -64,6 +68,7 @@ struct mempool {
 		.name = #__name,					\
 		.linkage = LIST_HEAD_INIT(mem ## __name.linkage),	\
 	}
+#define MEMPOOL_DECL(__name) struct mempool mem ## __name;
 
 void *safe __alloc(struct mempool *pool safe, int size, int zero);
 void __unalloc(struct mempool *pool safe, void *obj, int size);
@@ -79,3 +84,10 @@ void __unalloc(struct mempool *pool safe, void *obj, int size);
 #define unalloc_buf(var, size, pool)					\
 	do { __unalloc(&mem##pool, var, size); (var) = NULL; } while(0)
 
+#define unalloc_safe(var, pool)						\
+	do { __unalloc(&mem##pool, var, sizeof((var)[0])); (var)=safe_cast NULL; } while (0)
+
+#define unalloc_buf_safe(var, size, pool)				\
+	do { __unalloc(&mem##pool, var, size); (var) = safe_cast NULL; } while(0)
+
+#endif /* EDLIB_MISC */

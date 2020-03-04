@@ -33,6 +33,8 @@
 
 #include "core.h"
 
+MEMPOOL(pane);
+
 static void pane_init(struct pane *p safe, struct pane *par)
 {
 	if (par) {
@@ -125,10 +127,13 @@ void pane_damaged(struct pane *p, int type)
 	}
 }
 
-struct pane *safe pane_register(struct pane *parent, short z,
-				struct command *handle safe, void *data)
+struct pane *safe __pane_register(struct pane *parent, short z,
+				  struct command *handle safe,
+				  void *data, short data_size)
 {
-	struct pane *p = malloc(sizeof(*p));
+	struct pane *p;
+
+	alloc(p, pane);
 	pane_init(p, parent);
 	p->z = z;
 	p->handle = command_get(handle);
@@ -139,6 +144,7 @@ struct pane *safe pane_register(struct pane *parent, short z,
 		p->data = handle;
 	else
 		p->data = data;
+	p->data_size = data_size;
 	if (z >= 0) {
 		if (parent && parent->focus == NULL)
 			parent->focus = p;
@@ -300,7 +306,7 @@ void pane_add_notify(struct pane *target safe, struct pane *source safe,
 			/* Already notifying */
 			return;
 
-	n = malloc(sizeof(*n));
+	alloc(n, pane);
 
 	n->notifiee = target;
 	n->notification = strdup(msg);

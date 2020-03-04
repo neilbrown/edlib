@@ -49,8 +49,7 @@ DEF_CMD(history_free)
 
 	free(hi->search.b);
 	free(hi->saved);
-	free(hi);
-	ci->home->data = safe_cast NULL;
+	unalloc(hi, pane);
 	/* handle was in 'hi' */
 	ci->home->handle = NULL;
 	return 1;
@@ -168,7 +167,7 @@ DEF_CMD(history_attach)
 	if (!ci->str || !ci->str2)
 		return Enoarg;
 
-	hi = calloc(1, sizeof(*hi));
+	alloc(hi, pane);
 	hi->done_map = key_alloc();
 	hi->handle = history_handle;
 	hi->handle.m = &hi->done_map;

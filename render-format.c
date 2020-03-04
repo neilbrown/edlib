@@ -261,12 +261,13 @@ DEF_LOOKUP_CMD(render_format_handle, rf_map);
 
 static struct pane *do_render_format_attach(struct pane *parent, int nolines)
 {
-	struct rf_data *rf = calloc(1, sizeof(*rf));
+	struct rf_data *rf;
 	struct pane *p;
 
 	if (!rf_map)
 		render_format_register_map();
 
+	alloc(rf, pane);
 	rf->home_field = -1;
 	p = pane_register(parent, 0, &render_format_handle.c, rf);
 	attr_set_str(&p->attrs, "render-wrap", "no");

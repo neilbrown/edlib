@@ -914,12 +914,13 @@ DEF_CMD(attach_docs)
 	/* Attach a docs handler.  We register some commands with the editor
 	 * so we can be found
 	 */
-	struct docs *doc = malloc(sizeof(*doc));
+	struct docs *doc;
 	struct pane *p;
 
+	alloc(doc, pane);
 	docs_init_map();
 
-	p = doc_register(ci->home, 0, &docs_handle.c, &doc->doc);
+	p = doc_register(ci->home, 0, &docs_handle.c, doc);
 	if (!p) {
 		free(doc->doc.name);
 		free(doc);

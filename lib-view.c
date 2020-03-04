@@ -373,7 +373,7 @@ static struct pane *safe do_view_attach(struct pane *par, int border)
 	struct view_data *vd;
 	struct pane *p;
 
-	vd = calloc(1, sizeof(*vd));
+	alloc(vd, pane);
 	vd->border = border;
 	vd->old_border = border;
 	vd->line_height = -1;

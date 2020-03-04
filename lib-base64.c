@@ -230,8 +230,9 @@ DEF_CMD(b64_clip)
 DEF_CMD(b64_attach)
 {
 	struct pane *p;
-	struct b64info *bi = calloc(1, sizeof(*bi));
+	struct b64info *bi;
 
+	alloc(bi, pane);
 	p = pane_register(ci->focus, 0, &b64_handle.c, bi);
 	if (!p) {
 		free(bi);

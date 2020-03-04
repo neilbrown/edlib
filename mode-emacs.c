@@ -1886,7 +1886,7 @@ DEF_CMD(attach_mode_emacs)
 DEF_CMD(attach_file_entry)
 {
 	pane_register(ci->focus, 0, &find_handle.c,
-		      (void*) ci->str ?: "shellcmd");
+		      (char*) ci->str ?: "shellcmd");
 	return 1;
 }
 

@@ -555,7 +555,7 @@ DEF_CMD(open_email)
 	end = mark_dup(start);
 	call("doc:set-ref", p, 0, end);
 
-	ei = calloc(1, sizeof(*ei));
+	alloc(ei, pane);
 	ei->email = p;
 	h2 = call_ret(pane, "attach-rfc822header", p, 0, start, NULL, 0, end);
 	if (!h2)
@@ -638,7 +638,7 @@ DEF_CMD(email_view_free)
 	struct email_view *evi = ci->home->data;
 
 	free(evi->invis);
-	free(evi);
+	unalloc(evi, pane);
 	return 1;
 }
 
@@ -798,7 +798,7 @@ DEF_CMD(attach_email_view)
 	if (n <= 0 || n > 1000 )
 		return Einval;
 
-	evi = calloc(1, sizeof(*evi));
+	alloc(evi, pane);
 	evi->parts = n;
 	evi->invis = calloc(n, sizeof(char));
 	p = pane_register(ci->focus, 0, &email_view_handle.c, evi);

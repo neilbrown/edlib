@@ -121,12 +121,13 @@ DEF_LOOKUP_CMD(doc_handle, doc_map);
 
 DEF_CMD(dir_new)
 {
-	struct directory *dr = malloc(sizeof(*dr));
+	struct directory *dr;
 	struct pane *p;
 
+	alloc(dr, pane);
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	doc_register(ci->home, 0, &doc_handle.c, &dr->doc);
+	doc_register(ci->home, 0, &doc_handle.c, dr);
 	p = call_ret(pane, "attach-render-format", dr->doc.home, 1);
 	if (p)
 		p = call_ret(pane, "attach-doc-rendering", p);
@@ -235,7 +236,6 @@ DEF_CMD(dir_load_file)
 		int l = strlen(name);
 
 		fstat(fd, &dr->stat);
-		free(dr->fname);
 		dr->fname = malloc(l+2);
 		strcpy(dr->fname, name);
 		if (l > 1 && dr->fname[l-1] == '/')

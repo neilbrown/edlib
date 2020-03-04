@@ -164,9 +164,10 @@ DEF_LOOKUP_CMD(whitespace_handle, ws_map);
 DEF_CMD(ws_clone)
 {
 	struct ws_info *oldws = ci->home->data;
-	struct ws_info *ws = calloc(1, sizeof(*ws));
+	struct ws_info *ws;
 	struct pane *p;
 
+	alloc(ws, pane);
 	ws->warn_width = oldws->warn_width;
 	p = pane_register(ci->focus, 0, &whitespace_handle.c, ws);
 	pane_clone_children(ci->home, p);
@@ -175,9 +176,10 @@ DEF_CMD(ws_clone)
 
 DEF_CMD(whitespace_attach)
 {
-	struct ws_info *ws = calloc(1, sizeof(*ws));
+	struct ws_info *ws;
 	char *w;
 
+	alloc(ws, pane);
 	w = pane_attr_get(ci->focus, "whitespace-width");
 	if (w)
 		ws->warn_width = atoi(w);

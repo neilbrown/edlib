@@ -303,7 +303,7 @@ DEF_CMD(count_lines)
 		struct count_info *cli;
 		struct pane *p;
 
-		cli = calloc(1, sizeof(*cli));
+		alloc(cli, pane);
 		p = pane_register(NULL, 0, &handle_count_lines.c, cli);
 		cli->view_num = home_call(ci->focus, "doc:add-view", p) - 1;
 		home_call(ci->focus, "doc:request:doc:replaced", p);

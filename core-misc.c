@@ -113,8 +113,13 @@ void time_stop(enum timetype type)
 	tcount[type] += 1;
 	tsum[type] += nsec;
 
-	if (stop.tv_sec < last_dump + 30 || tcount[TIME_REFRESH] < 100)
-		return;
+	if (getenv("EDLIB_STATS_FAST"))	{
+		if (stop.tv_sec < last_dump + 5 || tcount[TIME_REFRESH] < 10)
+			return;
+	} else {
+		if (stop.tv_sec < last_dump + 30 || tcount[TIME_REFRESH] < 100)
+			return;
+	}
 	if (last_dump == 0) {
 		last_dump = stop.tv_sec;
 		return;

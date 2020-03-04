@@ -1592,9 +1592,10 @@ DEF_LOOKUP_CMD(text_handle, text_map);
 
 DEF_CMD(text_new)
 {
-	struct text *t = malloc(sizeof(*t));
+	struct text *t;
 	struct pane *p;
 
+	alloc(t, pane);
 	t->alloc = safe_cast NULL;
 	INIT_LIST_HEAD(&t->text);
 	t->saved = t->undo = t->redo = NULL;
@@ -1606,7 +1607,7 @@ DEF_CMD(text_new)
 	t->as.timer_started = 0;
 	t->as.last_change = 0;
 	text_new_alloc(t, 0);
-	p = doc_register(ci->home, 0, &text_handle.c, &t->doc);
+	p = doc_register(ci->home, 0, &text_handle.c, t);
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p);
 	return Efail;
@@ -2288,7 +2289,7 @@ DEF_CMD(text_free)
 	struct text *t = container_of(d, struct text, doc);
 
 	free(t->fname);
-	free(t);
+	unalloc(t, pane);
 	return 1;
 }
 

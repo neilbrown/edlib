@@ -245,7 +245,7 @@ DEF_CMD(complete_free)
 	struct complete_data *cd = ci->home->data;
 
 	free(cd->prefix);
-	free(cd);
+	unalloc(cd, pane);
 	return 1;
 }
 
@@ -583,7 +583,7 @@ REDEF_CMD(complete_attach)
 	if (!rc_map)
 		register_map();
 
-	cd = calloc(1, sizeof(*cd));
+	alloc(cd, pane);
 	complete = pane_register(ci->focus, 0, &complete_handle.c, cd);
 	if (!complete) {
 		free(cd);

@@ -390,8 +390,9 @@ DEF_LOOKUP_CMD(markup_handle, mu_map);
 static struct pane *do_markup_attach(struct pane *p safe)
 {
 	struct pane *ret;
-	struct mu_info *mu = calloc(1, sizeof(*mu));
+	struct mu_info *mu;
 
+	alloc(mu, pane);
 	ret = pane_register(p, 0, &markup_handle.c, mu);
 	mu->view = home_call(p, "doc:add-view", ret) - 1;
 

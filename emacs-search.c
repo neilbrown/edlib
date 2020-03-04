@@ -1014,12 +1014,13 @@ static void emacs_highlight_init_map(void)
 
 DEF_CMD(emacs_search_attach_highlight)
 {
-	struct highlight_info *hi = calloc(1, sizeof(*hi));
+	struct highlight_info *hi;
 	struct pane *p;
 
 	if (!hl_map)
 		emacs_highlight_init_map();
 
+	alloc(hi, pane);
 	p = pane_register(ci->focus, 0, &highlight_handle.c, hi);
 	if (p) {
 		hi->view = home_call(ci->focus, "doc:add-view", p) - 1;

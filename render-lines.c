@@ -1263,12 +1263,13 @@ static void render_lines_register_map(void)
 
 REDEF_CMD(render_lines_attach)
 {
-	struct rl_data *rl = calloc(1, sizeof(*rl));
+	struct rl_data *rl;
 	struct pane *p, *h;
 
 	if (!rl_map)
 		render_lines_register_map();
 
+	alloc(rl, pane);
 	rl->target_x = -1;
 	rl->target_y = -1;
 	rl->do_wrap = 1;

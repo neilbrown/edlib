@@ -724,7 +724,7 @@ static struct pane *ncurses_init(struct pane *ed,
 	if (!scr)
 		return NULL;
 
-	dd = calloc(1, sizeof(*dd));
+	alloc(dd, pane);
 	dd->scr = scr;
 	dd->scr_file = f;
 	dd->cursor.x = dd->cursor.y = -1;

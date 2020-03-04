@@ -373,7 +373,7 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 		line += strspn(line, ",");
 	}
 	if (fname && dodraw) {
-		struct pane *tmp = pane_register(p, -1, &null, NULL);
+		struct pane *tmp = pane_register(p, -1, &null);
 
 		pane_resize(tmp, (p->w - width)/2, y, width, height);
 		home_call(focus, "Draw:image", tmp, 0, NULL, fname, 5);
@@ -786,7 +786,7 @@ DEF_CMD(renderline_attach)
 		key_add(rl_map, "render-line:measure", &renderline);
 	}
 
-	p = pane_register(ci->focus, -1, &renderline_handle.c, NULL);
+	p = pane_register(ci->focus, -1, &renderline_handle.c);
 	return comm_call(ci->comm2, "cb", p);
 }
 

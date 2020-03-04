@@ -118,7 +118,7 @@ DEF_CMD(popup_free)
 	struct popup_info *ppi = ci->home->data;
 
 	free(ppi->style);
-	free(ppi);
+	unalloc(ppi, pane);
 	return 1;
 }
 
@@ -351,7 +351,7 @@ DEF_CMD(popup_attach)
 	if (!root)
 		return 0;
 
-	ppi = malloc(sizeof(*ppi));
+	alloc(ppi, pane);
 	ppi->done = NULL;
 	ppi->target = ci->focus;
 	/* HACK this is because of +1 in pane_do_resize */

@@ -186,9 +186,10 @@ DEF_CMD(force_refresh)
 
 static struct pane *do_messageline_attach(struct pane *p)
 {
-	struct mlinfo *mli = calloc(1, sizeof(*mli));
+	struct mlinfo *mli;
 	struct pane *ret;
 
+	alloc(mli, pane);
 	ret = pane_register(p, 0, &messageline_handle.c, mli);
 	/* z=1 to avoid clone_children affecting it */
 	mli->line = pane_register(ret, 1, &messageline_line_handle.c, mli);

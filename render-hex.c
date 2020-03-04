@@ -211,13 +211,14 @@ static void render_hex_register_map(void)
 
 static struct pane *do_render_hex_attach(struct pane *parent safe)
 {
-	struct he_data *he = malloc(sizeof(*he));
+	struct he_data *he;
 	struct pane *p;
 	char *charset = pane_attr_get(parent, "doc:charset");
 
 	if (!he_map)
 		render_hex_register_map();
 
+	alloc(he, pane);
 	p = pane_register(parent, 0, &render_hex_handle.c, he);
 	call("doc:request:doc:replaced", p);
 	attr_set_str(&p->attrs, "render-wrap", "no");

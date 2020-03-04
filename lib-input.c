@@ -352,11 +352,12 @@ static void register_map(void)
 DEF_LOOKUP_CMD(input_handle, im_map);
 DEF_CMD(input_attach)
 {
-	struct input_mode *im = calloc(1,sizeof(*im));
+	struct input_mode *im;
 	struct pane *p;
 
 	register_map();
 
+	alloc(im, pane);
 	im->mode = strdup("");
 	im->num = NO_NUMERIC;
 	im->num2 = 0;

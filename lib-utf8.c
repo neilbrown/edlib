@@ -80,7 +80,7 @@ DEF_CMD(utf8_attach)
 {
 	struct pane *p;
 
-	p = pane_register(ci->focus, 0, &utf8_handle.c, NULL);
+	p = pane_register(ci->focus, 0, &utf8_handle.c);
 	if (!p)
 		return Efail;
 

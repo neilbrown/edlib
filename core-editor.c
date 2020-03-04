@@ -240,7 +240,7 @@ DEF_CMD(editor_clean_up)
 		command_put(p->handle);
 		p->handle = NULL;
 		attr_free(&p->attrs);
-		free(p);
+		unalloc(p, pane);
 	}
 	while (ei->mark_free_list) {
 		struct mark *m = ei->mark_free_list;
@@ -257,8 +257,7 @@ DEF_CMD(editor_clean_up)
 
 DEF_EXTERN_CMD(edlib_do_free)
 {
-	free(ci->home->data);
-	ci->home->data= safe_cast NULL;
+	unalloc_buf_safe(ci->home->data, ci->home->data_size, pane);
 	return 1;
 }
 
@@ -369,7 +368,7 @@ void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 		command_put(p->handle);
 		p->handle = NULL;
 		attr_free(&p->attrs);
-		free(p);
+		unalloc_safe(p, pane);
 		return;
 	}
 	ASSERT(ei->magic==0x4321765498765432UL);
@@ -394,8 +393,9 @@ void editor_delayed_mark_free(struct mark *m safe)
 struct pane *editor_new(void)
 {
 	struct pane *ed;
-	struct ed_info *ei = calloc(1, sizeof(*ei));
+	struct ed_info *ei;
 
+	alloc(ei, pane);
 	ei->magic = 0x4321765498765432UL;
 	if (! (void*) ed_map) {
 		ed_map = key_alloc();

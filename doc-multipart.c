@@ -222,7 +222,7 @@ DEF_CMD(mp_free)
 	struct mp_info *mpi = ci->home->data;
 
 	free(mpi->parts);
-	free(mpi);
+	unalloc(mpi, pane);
 	return 1;
 }
 
@@ -569,9 +569,9 @@ DEF_CMD(attach_mp)
 	struct mp_info *mpi;
 	struct pane *h;
 
-	mpi = calloc(1, sizeof(*mpi));
+	alloc(mpi, pane);
 
-	h = doc_register(ci->home, 0, &mp_handle.c, &mpi->doc);
+	h = doc_register(ci->home, 0, &mp_handle.c, mpi);
 	if (h) {
 		mpi->doc.refcnt = mp_mark_refcnt;
 		attr_set_str(&h->attrs, "render-default", "text");
