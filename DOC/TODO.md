@@ -36,6 +36,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] python indent confused by "if stuff (stuff \n stuff):\n..."
 - [ ] changed files don't always get reloaded, or reload-file doesn't
       always actually change the content.  Maybe check ctime??
 

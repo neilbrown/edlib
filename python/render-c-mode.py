@@ -220,7 +220,6 @@ class parse_state:
 
     def end_statement(self, p, m):
         self.have_prefix = False
-        self.seen = []
         see_else = p.call("text-match", m.dup(), " else\\b", 1) > 0
         self.else_indent = -1
         while self.s and self.open == None and (not see_else or
@@ -229,6 +228,7 @@ class parse_state:
                 self.else_indent = self.d
             self.pop()
         self.ss = True
+        self.seen = []
 
     def preparse(self, c):
         # This character is at (or near) start of line and so might affect
