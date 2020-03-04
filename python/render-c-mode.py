@@ -333,6 +333,7 @@ class CModePane(edlib.Pane):
             tab = 8
 
         ps = parse_state(tab)
+        c = None
         while m < mark:
             c = p.call("doc:step", 1, 1, m, ret='char')
             ps.parse(c, p, m)
