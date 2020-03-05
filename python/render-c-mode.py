@@ -212,9 +212,12 @@ class parse_state:
             self.seen.append("if")
         if ss and c == 'e' and p.call("text-match", m.dup(), "num\\b") > 0:
             self.seen.append("enum")
-        if ss and ((c == 'd' and p.call("text-match", m, "o\\b") > 0) or
-                   (c == 'e' and p.call("text-match", m, "lse\\b") > 0)):
+        if ss and ((c == 'd' and p.call("text-match", m.dup(), "o[ \t]*[/\n]") > 0) or
+                   (c == 'e' and p.call("text-match", m.dup(), "lse[ \t]*[/\n]") > 0)):
             # do or else start a new statement, like if() does
+            while p.call("doc:step", 1, m,ret='char') in 'elsedo':
+                p.call("doc:step", 1, 1, m)
+                self.column += 1
             self.push()
             self.open = None
             self.ss = True
