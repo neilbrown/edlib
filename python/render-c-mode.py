@@ -106,6 +106,9 @@ class parse_state:
             # should be previous plus one tab.
             self.d = self.s[-1][1] + self.tab
             self.last_was_open = False
+        if ':' in self.seen:
+            # multiple colons are only interesting on the one line
+            self.seen.remove(':')
 
     def parse_code(self, c, p, m):
         if self.sol and c == '#':
@@ -408,8 +411,10 @@ class CModePane(edlib.Pane):
 
             if label_line == "margin-label":
                 depth = [0, 0]
-            else:
+            elif len(depth) >= 3:
                 depth = [depth[-3],depth[-3]]
+            else:
+                depth = [depth[0],depth[0]]
 
         if ps.comment == "/*":
             prefix = "* "
