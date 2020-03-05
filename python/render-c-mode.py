@@ -400,14 +400,16 @@ class CModePane(edlib.Pane):
             if p.call("doc:step", 1, st, ret='char') in ' \t':
                 label_line = "indented-label"
             else:
-                if p.call("text-match", st, '^[_\\A\\a\\d]+:') > 0:
+                if (p.call("text-match", st.dup(), '^[_\\A\\a\\d]+:') > 0 and
+                    p.call("text-match", st.dup(), '^default:') <= 0):
                     label_line = "margin-label"
                 else:
                     label_line = "indented-label"
+
             if label_line == "margin-label":
                 depth = [0, 0]
             else:
-                depth = [depth[-2],depth[-2]]
+                depth = [depth[-3],depth[-3]]
 
         if ps.comment == "/*":
             prefix = "* "
