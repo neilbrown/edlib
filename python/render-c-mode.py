@@ -194,6 +194,10 @@ class parse_state:
             self.seen.append(c)
         if c == ':' and '?' not in self.seen and not c in self.seen:
             # probably a label - so now at start of statement
+            # We might have seen case (foo) which looked like a prefix
+            # If so, pop it.
+            if self.open is None:
+                self.pop()
             self.ss = True
             self.seen.append(c)
         if c == '=':
