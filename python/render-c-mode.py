@@ -156,8 +156,9 @@ class parse_state:
 
         if c in '{([':
             seen = self.seen
-            if c == '{' and self.open == None and self.d > 0:
-                # '{' subsumes a 'prefix' nesting
+            if (c == '{' and self.open == None and self.d > 0 and
+                not 'else' in self.seen):
+                # '{' subsumes a 'prefix' nesting except after 'else'
                 pass
             else:
                 self.push()
@@ -239,6 +240,8 @@ class parse_state:
             self.pop()
         self.ss = True
         self.seen = []
+        if see_else:
+            self.seen.append('else')
 
     def preparse(self, c):
         # This character is at (or near) start of line and so might affect
