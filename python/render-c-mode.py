@@ -393,7 +393,7 @@ class CModePane(edlib.Pane):
             p.call("doc:step", 1, 1, st)
 
             l = p.call("text-match", st.dup(),
-                       '^[ \t]*(case\\s[^:\\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):')
+                       '^[ \t]*(case\\s[^:\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):')
         else:
             l = 0
         if l > 0:
@@ -529,7 +529,7 @@ class CModePane(edlib.Pane):
         m = mark.dup()
         focus.call("Move-EOL", m, -1)
         if focus.call("text-match", m.dup(),
-                      '^[ \t]*(case\\s[^:\\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):') > 0:
+                      '^[ \t]*(case\\s[^:\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):') > 0:
             self.handle_tab(key, focus, m, 1)
         return 1
 
