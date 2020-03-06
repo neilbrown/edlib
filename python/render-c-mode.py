@@ -146,7 +146,8 @@ class parse_state:
             else:
                 self.preproc_continue = (
                     c == '\\' and p.call("doc:step", 1, m, ret='char') == '\n')
-        self.sol = c == '\n'
+        if c not in ' \t':
+            self.sol = c == '\n'
 
         # treat '\' like white-space as probably at eol of macro
         if c in ' \t\n\\':
@@ -385,6 +386,11 @@ class CModePane(edlib.Pane):
         preproc = False
         if c == '#' and not non_hash:
             # line starts '#', so want no indent
+            depth = [0]
+            preproc = True
+        elif (c == '/' and not non_hash and
+            p.call("doc:step", 1, br, ret='char') in '/*'):
+            # Comment at start of line is indented much like preproc
             depth = [0]
             preproc = True
         elif not ps.ss and ps.open in [ '^', '{', None]:
@@ -664,8 +670,17 @@ class CModePane(edlib.Pane):
         (depths,prefix) = self.calc_indent(focus, m)
 
         new = self.mkwhite(depths[-2])
+        new2 = self.mkwhite(depths[-1])
 
         current = focus.call("doc:get-str", m, mark, ret="str")
+
+        if (key == 'Reindent' and
+            focus.call("doc:step", 1, mark, ret='char') in '#/' and
+            (current == new or current == new2)):
+            # This is a preproc directive or comment.  They can equally
+            # go in one of two places - start of line or indented.
+            # If they are at either, leave them for re-indent
+            return 1
 
         if new != current:
             try:
