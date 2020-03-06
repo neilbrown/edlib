@@ -75,7 +75,7 @@ DEF_CMD(python_doc_call);
 static void python_free_command(struct command *c safe);
 
 typedef struct {
-	PyObject_HEAD
+	PyObject_HEAD;
 	struct pane	*pane;
 	struct python_command handle;
 	struct map	*map;
@@ -85,13 +85,13 @@ typedef struct {
 static PyTypeObject PaneType;
 
 typedef struct {
-	PyObject_HEAD
+	PyObject_HEAD;
 	struct pane	*pane;
 } PaneIter;
 static PyTypeObject PaneIterType;
 
 typedef struct {
-	PyObject_HEAD
+	PyObject_HEAD;
 	struct pane	*pane;
 	struct python_command handle;
 	struct map	*map;
@@ -102,14 +102,14 @@ typedef struct {
 static PyTypeObject DocType;
 
 typedef struct {
-	PyObject_HEAD
+	PyObject_HEAD;
 	struct mark	*mark;
 } Mark;
 static PyTypeObject MarkType;
 static void mark_refcnt(struct mark *m safe, int inc);
 
 typedef struct {
-	PyObject_HEAD
+	PyObject_HEAD;
 	struct command	*comm;
 } Comm;
 static PyTypeObject CommType;
