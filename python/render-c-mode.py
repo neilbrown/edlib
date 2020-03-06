@@ -33,13 +33,15 @@ class parse_state:
         self.ss = True		# at the start of a statement
         self.comment = None	# // or /* or None
         self.comment_col = 0	# column of the comment start
+        self.tab_col = 0	# column of tab after code
         self.quote = None	# ' or " or None
         self.have_prefix = False# Have seen, or are seeing "word("
 
     def push(self):
         self.s.append((self.open, self.d, self.comma_ends,
                        self.seen, self.ss, self.comment,
-                       self.comment_col, self.quote, self.have_prefix))
+                       self.comment_col, self.quote, self.have_prefix,
+                       self.tab_col))
         self.seen = []
         self.have_prefix = False
     def pop(self):
@@ -47,7 +49,8 @@ class parse_state:
             return
         (self.open, self.d, self.comma_ends,
          self.seen, self.ss, self.comment,
-         self.comment_col, self.quote, self.have_prefix)= self.s.pop()
+         self.comment_col, self.quote, self.have_prefix,
+         self.tab_col)= self.s.pop()
 
     def parse(self, c, p, m):
 
@@ -59,6 +62,9 @@ class parse_state:
             if c == '/':
                 c2 = p.call("doc:step", 1, 0, m, ret='char')
                 if c2 in '/*':
+                    if self.tab_col == self.column:
+                        # tabs for comments ignored
+                        self.tab_col = 0
                     self.comment = '/' + c2
                     self.comment_col = self.column
                     p.call("doc:step", 1, 1, m)
@@ -109,6 +115,9 @@ class parse_state:
         if ':' in self.seen:
             # multiple colons are only interesting on the one line
             self.seen.remove(':')
+        if self.tab_col == self.column:
+            # tab at end-of-line ignored
+            self.tab_col = 0
 
     def parse_code(self, c, p, m):
         if self.sol and c == '#':
@@ -144,6 +153,13 @@ class parse_state:
             # ignore white space
             if c == '\n':
                 self.parse_newline()
+            if not self.ss and c == '\t' and (self.tab_col == 0 or
+                                              self.tab_col == self.column):
+                self.tab_col = (self.column|7)+1
+            if not self.ss and c == ' ' and self.tab_col == self.column:
+                # spaces after a tab extend that tab.
+                self.tab_col += 1
+
             return
 
         # probably not at start of statement after this
@@ -239,6 +255,7 @@ class parse_state:
                 self.else_indent = self.d
             self.pop()
         self.ss = True
+        self.tab_col = 0
         self.seen = []
         if see_else:
             self.seen.append('else')
@@ -372,7 +389,10 @@ class CModePane(edlib.Pane):
             preproc = True
         elif not ps.ss and ps.open in [ '^', '{', None]:
             # statement continuation
-            depth = [ps.d + ps.tab]
+            if ps.tab_col and ps.tab_col > ps.d + ps.tab:
+                depth = [ps.tab_col]
+            else:
+                depth = [ps.d + ps.tab]
         else:
             # assume exactly the current depth
             depth = [ps.d]
