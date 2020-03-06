@@ -2,8 +2,7 @@
 # Copyright Neil Brown (c)2018-2019 <neil@brown.name>
 # May be distributed under terms of GPLv2 - see file:COPYING
 
-def textwidth(line):
-    w = 0
+def textwidth(line, w=0):
     for c in line:
         if c == '\t':
             w = w | 7
@@ -134,6 +133,8 @@ class parse_state:
             m2 = m.dup()
             if p.call("text-match","[ \\t]*define [a-z_][a-z0-9_]*\\(([a-z0-9_]+| |,|\\.\\.\\.)*\\)",
                       m2, 1) > 1:
+                l = p.call("doc:get-str", m, m2,ret='str')
+                self.column += textwidth(l, self.column+1)-1
                 m.to_mark(m2)
             return
         if self.preproc:
