@@ -774,7 +774,7 @@ DEF_CMD(renderline)
 }
 
 static struct map *rl_map;
-DEF_LOOKUP_CMD(renderline_handle, rl_map)
+DEF_LOOKUP_CMD(renderline_handle, rl_map);
 
 DEF_CMD(renderline_attach)
 {

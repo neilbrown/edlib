@@ -551,7 +551,7 @@ DEF_CMD(complete_return)
 
 static struct map *rc_map;
 
-DEF_LOOKUP_CMD(complete_handle, rc_map)
+DEF_LOOKUP_CMD(complete_handle, rc_map);
 
 static void register_map(void)
 {

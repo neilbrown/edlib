@@ -321,7 +321,7 @@ struct lookup_cmd {
 
 #define DEF_LOOKUP_CMD(_name, _map) \
 	static struct lookup_cmd _name = { { key_lookup_cmd_func, 0, NULL }, \
-					  &_map};
+					  &_map}
 
 DECL_EXTERN_CMD(edlib_do_free);
 

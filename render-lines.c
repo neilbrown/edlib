@@ -1230,7 +1230,7 @@ DEF_CMD(render_lines_resize)
 
 static struct map *rl_map;
 
-DEF_LOOKUP_CMD(render_lines_handle, rl_map)
+DEF_LOOKUP_CMD(render_lines_handle, rl_map);
 
 static void render_lines_register_map(void)
 {
