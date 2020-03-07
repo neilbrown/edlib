@@ -229,7 +229,7 @@ class parse_state:
 
         if c.isalnum or c == '_' or c.isspace():
             # In a word
-            if ss:
+            if ss and not self.comma_ends:
                 self.have_prefix = True
         else:
             self.have_prefix = False
@@ -380,23 +380,27 @@ class CModePane(edlib.Pane):
 
         br = mark.dup()
         c = p.call("doc:step", 1, 1, br, ret='char')
-        non_hash = False
+        non_space = False
         while c and c in '\t }]){':
             if c in '}]){':
-                non_hash = True
+                non_space = True
                 ps.preparse(c)
             c = p.call("doc:step", 1, 1, br, ret='char')
 
         preproc = False
-        if c == '#' and not non_hash:
+        if c == '#' and not non_space:
             # line starts '#', so want no indent
             depth = [0]
             preproc = True
-        elif (c == '/' and not non_hash and
+        elif (c == '/' and not non_space and
             p.call("doc:step", 1, br, ret='char') in '/*'):
             # Comment at start of line is indented much like preproc
             depth = [0]
             preproc = True
+        elif not ps.ss and c == '.' and not non_space and ps.comma_ends:
+            # inside a value specifier and can see a '.' and start of line,
+            # so probably is the start of a 'statement' despite ps.ss being false
+            depth = [ps.d]
         elif not ps.ss and ps.open in [ '^', '{', None]:
             # statement continuation
             if ps.tab_col and ps.tab_col > ps.d + ps.tab:
