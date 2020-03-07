@@ -238,8 +238,8 @@ class parse_state:
             self.seen.append("if")
         if ss and c == 'e' and p.call("text-match", m.dup(), "num\\b") > 0:
             self.seen.append("enum")
-        if ss and ((c == 'd' and p.call("text-match", m.dup(), "o[ \t]*[/\n]") > 0) or
-                   (c == 'e' and p.call("text-match", m.dup(), "lse[ \t]*[/\n]") > 0)):
+        if ss and ((c == 'd' and p.call("text-match", m.dup(), "o\\b") > 0) or
+                   (c == 'e' and p.call("text-match", m.dup(), "lse\\b") > 0)):
             # do or else start a new statement, like if() does
             while p.call("doc:step", 1, m,ret='char') in 'elsedo':
                 p.call("doc:step", 1, 1, m)
@@ -247,7 +247,12 @@ class parse_state:
             self.push()
             self.open = None
             self.ss = True
-            self.d += self.tab
+            if c == 'e' and p.call("text-match", m.dup(), " if\\b", 1) > 0:
+                # "else if" doesn't increase depth
+                pass
+            else:
+                # otherwise increase depth one tabstop
+                self.d += self.tab
 
 
     def end_statement(self, p, m):
