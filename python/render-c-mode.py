@@ -181,7 +181,6 @@ class parse_state:
             else:
                 self.push()
             self.open = c
-            self.comma_ends = False
             if c == '{':
                 self.ss = True
                 if '=' in seen or 'enum' in seen:
