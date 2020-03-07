@@ -129,13 +129,9 @@ class parse_state:
             self.preproc = True
             self.sol = False
             self.d = 8
-            # Skip over 'define name(names,)' as it looks too much like a prefix
-            m2 = m.dup()
-            if p.call("text-match","[ \\t]*define [a-z_][a-z0-9_]*\\(([a-z0-9_]+| |,|\\.\\.\\.)*\\)",
-                      m2, 1) > 1:
-                l = p.call("doc:get-str", m, m2,ret='str')
-                self.column += textwidth(l, self.column+1)-1
-                m.to_mark(m2)
+
+            if p.call("text-match","[ \\t]*define ", m.dup(), 1) > 1:
+                self.seen.append('define')
             return
         if self.preproc:
             # we leave preproc mode at eol, unless there was a '\\'
@@ -183,7 +179,8 @@ class parse_state:
             self.open = c
             if c == '{':
                 self.ss = True
-                if '=' in seen or 'enum' in seen:
+                if ('=' in seen or 'enum' in seen or
+                    'define' in seen or 'define-body' in seen):
                     self.comma_ends = True
             self.d = self.column+1
             self.last_was_open = True
@@ -199,10 +196,17 @@ class parse_state:
                 self.end_statement(p, m)
             if c == ')' and self.have_prefix:
                 # starting a new statement
+                is_define = 'define' in self.seen
+                if is_define:
+                    self.seen.remove('define')
                 self.push()
                 self.open = None
                 self.ss = True
-                self.d += self.tab
+                # define foo(bar) looks like a prefix, but doesn't indent like one.
+                if is_define:
+                    self.seen.append('define-body')
+                else:
+                    self.d += self.tab
             return
 
         if c == ';' or (c ==',' and self.comma_ends):
