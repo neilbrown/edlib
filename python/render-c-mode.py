@@ -227,10 +227,13 @@ class parse_state:
             # and comma act line end-of-statement
             self.seen.append(c)
 
-        if c.isalnum or c == '_' or c.isspace():
-            # In a word
-            if ss and not self.comma_ends:
-                self.have_prefix = True
+        if c.isalnum() or c == '_' or c.isspace():
+            # In a word - 'return' never indicates a prefix.
+            if ss:
+                self.have_prefix = False
+                if (not self.comma_ends and
+                    not (c == 'r' and p.call("text-match", m.dup(), "eturn\\b") > 0)):
+                        self.have_prefix = True
         else:
             self.have_prefix = False
 
@@ -256,7 +259,6 @@ class parse_state:
 
 
     def end_statement(self, p, m):
-        self.have_prefix = False
         see_else = p.call("text-match", m.dup(), " else\\b", 1) > 0
         self.else_indent = -1
         while self.s and self.open == None and (not see_else or
@@ -264,7 +266,7 @@ class parse_state:
             if 'if' in self.seen and self.else_indent < 0:
                 self.else_indent = self.d
             self.pop()
-        self.ss = True
+        self.ss = True; self.have_prefix = False
         self.tab_col = 0
         self.seen = []
         if see_else:
