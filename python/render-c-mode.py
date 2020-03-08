@@ -278,7 +278,7 @@ class parse_state:
         if c in ')]}' and self.to_open[c] == self.open:
             self.pop()
             self.ss = True
-        if c == '{' and self.ss and self.open == None:
+        if c == '{' and self.open == None:
             self.pop()
             self.ss = True
 
