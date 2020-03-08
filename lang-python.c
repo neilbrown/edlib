@@ -52,10 +52,10 @@ struct doc_ref {
 #include "misc.h"
 
 #define SAFE_CI {.key=safe_cast NULL,\
-			.home=safe_cast NULL,\
-			.focus=safe_cast NULL,\
-			.comm=safe_cast NULL,\
-			}
+		 .home=safe_cast NULL,\
+		 .focus=safe_cast NULL,\
+		 .comm=safe_cast NULL,\
+	}
 
 static PyObject *Edlib_CommandFailed;
 static PyObject *EdlibModule;
@@ -415,7 +415,7 @@ static void do_map_init(Pane *self safe)
 					Py_INCREF(m);
 					comm->callable = m;
 					key_add_range(self->map, a, b,
-							      &comm->c);
+						      &comm->c);
 					command_put(&comm->c);
 				}
 				if (docs &&
@@ -1196,40 +1196,40 @@ static PyObject *pane_cmp(Pane *p1 safe, Pane *p2 safe, int op)
 }
 
 static PyGetSetDef pane_getseters[] = {
-    {"x",
-     (getter)pane_getnum, (setter)pane_setnum,
-     "X offset in parent", "x" },
-    {"y",
-     (getter)pane_getnum, (setter)pane_setnum,
-     "Y offset in parent", "y" },
-    {"z",
-     (getter)pane_getnum, (setter)pane_setnum,
-     "Z offset in parent", "z" },
-    {"w",
-     (getter)pane_getnum, (setter)pane_setnum,
-     "width of pane", "w" },
-    {"h",
-     (getter)pane_getnum, (setter)pane_setnum,
-     "heigth of pane", "h" },
-    {"cx",
-     (getter)pane_getnum, (setter)pane_setnum,
-     "Cursor X offset in pane", "X" },
-    {"cy",
-     (getter)pane_getnum, (setter)pane_setnum,
-     "Cursor Y offset in pane", "Y" },
-    {"abs_z",
-     (getter)pane_getnum, (setter)pane_setnum,
-     "global Z offset", "Z" },
-    {"parent",
-     (getter)pane_getpane, (setter)pane_nosetpane,
-     "Parent pane", "p"},
-    {"focus",
-     (getter)pane_getpane, (setter)pane_nosetpane,
-     "Focal child", "f"},
-    {"root",
-     (getter)pane_getpane, (setter)pane_nosetpane,
-     "Root pant", "r"},
-    {NULL}  /* Sentinel */
+	{"x",
+	 (getter)pane_getnum, (setter)pane_setnum,
+	 "X offset in parent", "x" },
+	{"y",
+	 (getter)pane_getnum, (setter)pane_setnum,
+	 "Y offset in parent", "y" },
+	{"z",
+	 (getter)pane_getnum, (setter)pane_setnum,
+	 "Z offset in parent", "z" },
+	{"w",
+	 (getter)pane_getnum, (setter)pane_setnum,
+	 "width of pane", "w" },
+	{"h",
+	 (getter)pane_getnum, (setter)pane_setnum,
+	 "heigth of pane", "h" },
+	{"cx",
+	 (getter)pane_getnum, (setter)pane_setnum,
+	 "Cursor X offset in pane", "X" },
+	{"cy",
+	 (getter)pane_getnum, (setter)pane_setnum,
+	 "Cursor Y offset in pane", "Y" },
+	{"abs_z",
+	 (getter)pane_getnum, (setter)pane_setnum,
+	 "global Z offset", "Z" },
+	{"parent",
+	 (getter)pane_getpane, (setter)pane_nosetpane,
+	 "Parent pane", "p"},
+	{"focus",
+	 (getter)pane_getpane, (setter)pane_nosetpane,
+	 "Focal child", "f"},
+	{"root",
+	 (getter)pane_getpane, (setter)pane_nosetpane,
+	 "Root pant", "r"},
+	{NULL}  /* Sentinel */
 };
 
 static PyObject *Pane_get_item(Pane *self safe, PyObject *key safe)
@@ -1464,12 +1464,12 @@ static int mark_setpos(Mark *m safe, PyObject *v, void *x)
 	m2 = doc_next_mark_all(m->mark);
 	if (m2 && m2->owner->refcnt == mark_refcnt && m2->ref.c != NULL &&
 	    PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
-			m->mark->ref.c = m2->ref.c;
+		m->mark->ref.c = m2->ref.c;
 	else if ((m2 = doc_prev_mark_all(m->mark)) != NULL &&
 		 m2->owner->refcnt == mark_refcnt &&
 		 m2->ref.c != NULL &&
 		 PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
-			m->mark->ref.c = m2->ref.c;
+		m->mark->ref.c = m2->ref.c;
 	else
 		m->mark->ref.c = v;
 	m->mark->owner->refcnt(m->mark, 1);
@@ -1512,19 +1512,19 @@ static PyObject *mark_compare(Mark *a safe, Mark *b safe, int op)
 }
 
 static PyGetSetDef mark_getseters[] = {
-    {"pos",
-     (getter)mark_getpos, (setter)mark_setpos,
-     "Position ref", NULL},
-    {"offset",
-     (getter)mark_getoffset, (setter)mark_setoffset,
-     "Position offset", NULL},
-    {"viewnum",
-     (getter)mark_getview, (setter)mark_nosetview,
-     "Index for view list", NULL},
-    {"seq",
-     (getter)mark_getseq, (setter)mark_nosetseq,
-     "Sequence number of mark", NULL},
-    {NULL}  /* Sentinel */
+	{"pos",
+	 (getter)mark_getpos, (setter)mark_setpos,
+	 "Position ref", NULL},
+	{"offset",
+	 (getter)mark_getoffset, (setter)mark_setoffset,
+	 "Position offset", NULL},
+	{"viewnum",
+	 (getter)mark_getview, (setter)mark_nosetview,
+	 "Index for view list", NULL},
+	{"seq",
+	 (getter)mark_getseq, (setter)mark_nosetseq,
+	 "Sequence number of mark", NULL},
+	{NULL}  /* Sentinel */
 };
 
 static Mark *mark_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
@@ -1842,9 +1842,9 @@ static PyMethodDef mark_methods[] = {
 	{"ack", (PyCFunction)Mark_ack, METH_NOARGS,
 	 "acknowledge movement of a point - allow further notifications"},
 	{"make_first", (PyCFunction)Mark_make_first, METH_NOARGS,
-		 "Make first of marks with same ref"},
+	 "Make first of marks with same ref"},
 	{"make_last", (PyCFunction)Mark_make_last, METH_NOARGS,
-		 "Make last of marks with same ref"},
+	 "Make last of marks with same ref"},
 	{NULL}
 };
 

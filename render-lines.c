@@ -243,9 +243,9 @@ static struct mark *call_render_line(struct pane *p safe,
 	 */
 	while ((m = vmark_next(start)) != NULL &&
 	       m->seq < m2->seq) {
-			free(m->mdata);
-			m->mdata = NULL;
-			mark_free(m);
+		free(m->mdata);
+		m->mdata = NULL;
+		mark_free(m);
 	}
 
 	return m2;

@@ -226,27 +226,27 @@ DEF_CMD(doc_expr)
 				rpt -= 1;
 			else while (depth > 0 &&
 				    (wi = mark_step_pane(f, m, dir, 1)) != WEOF) {
-				if (q) {
-					if (dir)
-						mark_step_pane(f, m, 0, 1);
-					if ((!check_slosh(f, m) && wi == q) ||
-					    is_eol(wi))
-						q = 0;
-					if (dir)
-						mark_step_pane(f, m, 1, 1);
-				} else if (strchr(open, wi))
-					depth += 1;
-				else if (strchr(close, wi))
-					depth -= 1;
-				else if (wi == '"' || wi == '\'') {
-					if (dir)
-						mark_step_pane(f, m, 0, 1);
-					if (!check_slosh(f, m))
-						q = wi;
-					if (dir)
-						mark_step_pane(f, m, 1, 1);
+					if (q) {
+						if (dir)
+							mark_step_pane(f, m, 0, 1);
+						if ((!check_slosh(f, m) && wi == q) ||
+						    is_eol(wi))
+							q = 0;
+						if (dir)
+							mark_step_pane(f, m, 1, 1);
+					} else if (strchr(open, wi))
+						depth += 1;
+					else if (strchr(close, wi))
+						depth -= 1;
+					else if (wi == '"' || wi == '\'') {
+						if (dir)
+							mark_step_pane(f, m, 0, 1);
+						if (!check_slosh(f, m))
+							q = wi;
+						if (dir)
+							mark_step_pane(f, m, 1, 1);
+					}
 				}
-			}
 		} else if (wi == '"' || wi == '\'') {
 			/* skip quoted or to EOL */
 			wint_t q = wi;
@@ -276,7 +276,7 @@ DEF_CMD(doc_expr)
 		} else while (iswalnum((wi=mark_step_pane(f, m, dir, 0))) ||
 			      (wi > 0 && wi <= 255 &&
 			       strchr(wordchars, wi) != NULL))
-			mark_step_pane(f, m, dir, 1);
+				mark_step_pane(f, m, dir, 1);
 
 		if (!enter_leave)
 			rpt -= dir * 2 - 1;
@@ -990,9 +990,9 @@ DEF_CMD(doc_pass_on)
 {
 	struct doc_data *dd = ci->home->data;
 	int ret = home_call(dd->doc, ci->key, ci->focus, ci->num,
-			 ci->mark ?: dd->point, ci->str,
-			 ci->num2, ci->mark2, ci->str2,
-			 ci->x, ci->y, ci->comm2);
+			    ci->mark ?: dd->point, ci->str,
+			    ci->num2, ci->mark2, ci->str2,
+			    ci->x, ci->y, ci->comm2);
 	return ret;
 }
 

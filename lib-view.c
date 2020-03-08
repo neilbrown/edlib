@@ -47,9 +47,9 @@ static struct pane *safe do_view_attach(struct pane *par, int border);
 static int calc_border(struct pane *p safe);
 
 static char default_status[] =
-"{!CountLines}M:{doc-modified?,*,-}{doc-readonly?,%%,  } D:{doc-file-changed?,CHANGED:,}{doc-name:-15} L{^line}/{lines} {doc-status}";
+	"{!CountLines}M:{doc-modified?,*,-}{doc-readonly?,%%,  } D:{doc-file-changed?,CHANGED:,}{doc-name:-15} L{^line}/{lines} {doc-status}";
 static char default_title[] =
-"{doc-name}";
+	"{doc-name}";
 
 static char *format_status(char *status safe,
 			   struct pane *focus safe,
@@ -205,14 +205,14 @@ DEF_CMD(view_refresh)
 			one_char(p, "#", "inverse", 0, mid + vd->ascent);
 			one_char(p, "v", NULL, 0, mid+vd->line_height + vd->ascent);
 			one_char(p, "+", "inverse", 0, p->h
-				  - vd->line_height + vd->ascent);
+				 - vd->line_height + vd->ascent);
 			vd->scroll_bar_y = mid;
 		}
 	}
 	if (vd->border & BORDER_RIGHT) {
 		for (i = 0; i < p->h; i += vd->line_height)
 			one_char(p, "┃", "inverse", p->w-vd->border_width,
-				  i + vd->ascent);
+				 i + vd->ascent);
 	}
 	if (vd->border & BORDER_TOP) {
 		int label;
@@ -227,7 +227,7 @@ DEF_CMD(view_refresh)
 	if (vd->border & BORDER_BOT) {
 		for (i = 0; i < p->w; i+= vd->border_width)
 			one_char(p, "═", "inverse", i,
-				  p->h-vd->border_height+vd->ascent);
+				 p->h-vd->border_height+vd->ascent);
 
 		if (!(vd->border & BORDER_TOP) ||
 		    (vd->border & BORDER_STATUS)) {

@@ -402,7 +402,7 @@ DEF_CMD(mp_attr)
 	if (d != ci->mark->ref.docnum) {
 		m1 = vmark_new(mpi->parts[d].pane, MARK_UNGROUPED, NULL);
 		call("doc:set-ref", mpi->parts[d].pane,
-		      (d > ci->mark->ref.docnum), m1);
+		     (d > ci->mark->ref.docnum), m1);
 	}
 
 	ret = home_call(mpi->parts[d].pane,
@@ -429,7 +429,7 @@ DEF_CMD(mp_set_attr)
 	m1 = m->ref.m;
 
 	if (dn < mpi->nparts && m1 &&
-	     mark_step_pane(mpi->parts[dn].pane, m1, ci->num, 0) == WEOF) {
+	    mark_step_pane(mpi->parts[dn].pane, m1, ci->num, 0) == WEOF) {
 		/* at the wrong end of a part */
 		if (ci->num)
 			dn += 1;
@@ -518,7 +518,7 @@ DEF_CMD(mp_forward)
 	d = ci->mark2->ref.docnum;
 
 	if (d < mpi->nparts && m2 &&
-	     mark_step_pane(mpi->parts[d].pane, m2, 1, 0) == WEOF)
+	    mark_step_pane(mpi->parts[d].pane, m2, 1, 0) == WEOF)
 		/* at the wrong end of a part */
 		d += 1;
 

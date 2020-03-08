@@ -1559,7 +1559,7 @@ DEF_CMD(emacs_attrs)
 		    (cr.m2->seq < ci->mark->seq && ci->mark->seq < cr.m->seq &&
 		     !mark_same(ci->mark, cr.m)))
 			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
-					ci->mark, selection, 2);
+					 ci->mark, selection, 2);
 	}
 	return 0;
 }

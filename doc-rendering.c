@@ -414,7 +414,7 @@ DEF_CMD(dr_notify_replace)
 			set_ref_mark(ci->home, end, p, dri->vnum, m);
 	}
 	pane_notify("doc:replaced", ci->home, ci->num, start, NULL,
-		0, end);
+		    0, end);
 	mark_free(start);
 	mark_free(end);
 	return 1;

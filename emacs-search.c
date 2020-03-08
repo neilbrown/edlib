@@ -144,7 +144,7 @@ DEF_CMD(search_retreat)
 	call("Replace", ci->home, 1, NULL, "");
 	return 1;
 
- just_delete:
+just_delete:
 	if (call("doc:step", ci->focus, 1) != CHAR_RET(WEOF))
 		/* Not at end-of-buffer, just delete one char */
 		return Efallthrough;

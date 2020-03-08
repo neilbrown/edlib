@@ -417,7 +417,7 @@ static char *fmt_date(struct dir_ent *de safe, time_t t)
 }
 
 static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
-			    const char *attr safe)
+				  const char *attr safe)
 
 {
 	struct dir_ent *de;

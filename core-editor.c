@@ -162,7 +162,7 @@ DEF_CMD(editor_auto_load)
 	}
 
 	ret = call("global-load-module", ci->home, 0, NULL,
-		    mod, 0);
+		   mod, 0);
 	free(mod2);
 
 	if (ret > 0)

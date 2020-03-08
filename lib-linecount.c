@@ -322,7 +322,7 @@ DEF_CMD(count_lines)
 	}
 	if (ci->mark2)
 		call("doc:notify:doc:CountLines", ci->focus, 0, NULL, NULL,
-		      0, ci->mark2);
+		     0, ci->mark2);
 	return 1;
 }
 

@@ -89,7 +89,7 @@ DEF_CMD(keymap_handle)
 		    strcmp(ci->key, "local-remove-keymap") == 0) {
 			/* Add a local keymap on 'focus' and re-send */
 			return call(ci->key, do_keymap_attach(ci->focus, 0),
-				     ci->num, ci->mark, ci->str,
+				    ci->num, ci->mark, ci->str,
 				    ci->num2, ci->mark2, ci->str2);
 		}
 	}

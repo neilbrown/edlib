@@ -656,7 +656,7 @@ DEF_CMD(renderline)
 						    "tab:");
 					if (tb)
 						x = margin +
-						atoi(tb+4) * scale / 1000;
+							atoi(tb+4) * scale / 1000;
 				} else {
 					/* strip back to ",," */
 					if (attr.len > 0)

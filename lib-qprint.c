@@ -47,7 +47,7 @@ DEF_CMD(qp_step)
 	if (!m)
 		return 0;
 
-	retry:
+retry:
 	if (forward) {
 		ch = mark_step_pane(p, m, 1, move);
 		if (ch != '=' && ch != ' ' && ch != '\t' && ch != '\r') {

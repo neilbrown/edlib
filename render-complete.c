@@ -544,7 +544,7 @@ DEF_CMD(complete_return)
 	*c1 = 0;
 
 	call("popup:close", ci->home->parent, NO_NUMERIC, NULL,
-	      cr.s, 0);
+	     cr.s, 0);
 	free(cr.s);
 	return 1;
 }

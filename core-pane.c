@@ -190,7 +190,7 @@ static void pane_do_resize(struct pane *p safe, int damage)
 
 	if (damage & (DAMAGED_SIZE))
 		if (pane_call(p, "Refresh:size", p, 0, NULL,
-				   NULL, damage) != 0)
+			      NULL, damage) != 0)
 			/* No need to propagate, just check on children */
 			damage = 0;
 

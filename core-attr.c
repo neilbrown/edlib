@@ -596,5 +596,5 @@ int main(int argc, char *argv[])
 #endif
 
 /*
-Iterator for set.
-*/
+ * Iterator for set.
+ */

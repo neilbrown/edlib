@@ -878,7 +878,7 @@ static int text_update_following_after_change(struct text *t safe,
 		else
 			*pos = *epos;
 	} else if (pos->c == epos->c &&
-	    pos->o < epos->o)
+		   pos->o < epos->o)
 		/* Text inserted, need to push forward. */
 		pos->o = epos->o;
 	else if (pos->o < pos->c->start)
@@ -1464,8 +1464,8 @@ DEF_CMD(text_step)
 		if (move)
 			for (m2 = doc_next_mark_all(m);
 			     m2 &&
-				     (text_ref_same(t, &m2->ref, &m->ref) ||
-				      text_ref_same(t, &m2->ref, &r));
+			     (text_ref_same(t, &m2->ref, &m->ref) ||
+			      text_ref_same(t, &m2->ref, &r));
 			     m2 = doc_next_mark_all(m2))
 				target = m2;
 	} else {
@@ -1473,8 +1473,8 @@ DEF_CMD(text_step)
 		if (move)
 			for (m2 = doc_prev_mark_all(m);
 			     m2 &&
-				     (text_ref_same(t, &m2->ref, &m->ref) ||
-				      text_ref_same(t, &m2->ref, &r));
+			     (text_ref_same(t, &m2->ref, &m->ref) ||
+			      text_ref_same(t, &m2->ref, &r));
 			     m2 = doc_prev_mark_all(m2))
 				target = m2;
 	}
@@ -1508,8 +1508,8 @@ DEF_CMD(text_step_bytes)
 		if (move)
 			for (m2 = doc_next_mark_all(m);
 			     m2 &&
-				     (text_ref_same(t, &m2->ref, &m->ref) ||
-				      text_ref_same(t, &m2->ref, &r));
+			     (text_ref_same(t, &m2->ref, &m->ref) ||
+			      text_ref_same(t, &m2->ref, &r));
 			     m2 = doc_next_mark_all(m2))
 				target = m2;
 	} else {
@@ -1517,8 +1517,8 @@ DEF_CMD(text_step_bytes)
 		if (move)
 			for (m2 = doc_prev_mark_all(m);
 			     m2 &&
-				     (text_ref_same(t, &m2->ref, &m->ref) ||
-				      text_ref_same(t, &m2->ref, &r));
+			     (text_ref_same(t, &m2->ref, &m->ref) ||
+			      text_ref_same(t, &m2->ref, &r));
 			     m2 = doc_prev_mark_all(m2))
 				target = m2;
 	}
@@ -2089,7 +2089,7 @@ DEF_CMD(text_doc_get_attr)
 		       strncmp(key, attr, len) == 0)
 			comm_call(ci->comm2, "callback:get_attr", ci->focus,
 				  0, NULL, val, 0,
-				   NULL, key);
+				  NULL, key);
 	}
 	return 1;
 }
