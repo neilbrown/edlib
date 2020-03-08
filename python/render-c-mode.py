@@ -25,7 +25,7 @@ class parse_state:
         self.s=[]		# stack
         self.save_stack= None	# where to save stack while processesing preproc
 
-        self.open=None		# open bracket char, or None
+        self.open='^'		# open bracket char, or None
         self.d = 0		# current depth
         self.comma_ends = False # in enum{} or a={}, comma ends a 'statement'
         self.seen = []		# interesting things we have seen
@@ -408,7 +408,8 @@ class CModePane(edlib.Pane):
             # inside a value specifier and can see a '.' and start of line,
             # so probably is the start of a 'statement' despite ps.ss being false
             depth = [ps.d]
-        elif not ps.ss and ps.open in [ '^', '{', None]:
+        elif not ps.ss and (ps.open in [ '{', None] or (ps.open == '^' and
+                                                        '=' in ps.seen)):
             # statement continuation
             if ps.tab_col and ps.tab_col > ps.d + ps.tab:
                 depth = [ps.tab_col]
