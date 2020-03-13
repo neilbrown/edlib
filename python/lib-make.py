@@ -39,8 +39,10 @@ class MakePane(edlib.Pane):
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
         self.call("doc:replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
+        env = os.environ.copy()
+        env['CWD'] = cwd
         self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
-                                     cwd=cwd,
+                                     cwd=cwd, env=env,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT,
                                      stdin = FNULL)
