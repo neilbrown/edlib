@@ -2317,7 +2317,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:step-bytes", &text_step_bytes);
 	key_add(text_map, "doc:modified", &text_modified);
 	key_add(text_map, "doc:set:readonly", &text_readonly);
-	key_add(text_map, "doc:revisit", &text_revisited);
+	key_add(text_map, "doc:notify:doc:revisit", &text_revisited);
 	key_add(text_map, "doc:clear", &text_clear);
 
 	key_add(text_map, "Close", &text_destroy);
