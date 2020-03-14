@@ -789,8 +789,13 @@ class CModePane(edlib.Pane):
             e = mark.dup()
             focus.call("Move-EOL", 1, e)
             while m2 < e:
-                if focus.call("Move-Expr", 1, m2) <= 0:
+                m3 = m2.dup()
+                if focus.call("Move-Expr", 1, m3) <= 0:
                     break
+                if m3 <= m2:
+                    # Move-Expr sometimes doesn't move at all
+                    break
+                m2 = m3
         # now call handle_tab() on each line from mark to m2
         while mark < m2:
             self.handle_tab("Reindent", focus, mark, 0)
