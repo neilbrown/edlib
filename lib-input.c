@@ -247,6 +247,8 @@ DEF_CMD(mouse_event)
 		 * If a Click got a result, suppress subsequent release
 		 */
 		int r;
+
+		ms->ignore_up = 1;
 		for (r = ms->click_count; r >= 1 ; r--) {
 			int ret;
 			char *mult = "\0\0D\0T" + (r-1)*2;
@@ -258,18 +260,21 @@ DEF_CMD(mouse_event)
 			ret = call(key, focus, num, NULL, NULL, ex,
 				   NULL, NULL, x, y);
 
-			if (ret)
+			if (ret) {
+				/* Only get a Release if you respond to a
+				 * Press
+				 */
+				ms->ignore_up = 0;
 				return ret;
+			}
 
 			key = strconcat(ci->home, "M", mode, mult,
 					":Click-", n);
 			ret = call(key, focus, num, NULL, NULL, ex,
 				   NULL, NULL, x, y);
 
-			if (ret) {
-				ms->ignore_up = 1;
+			if (ret)
 				return ret;
-			}
 		}
 	} else {
 		/* Try nRelease (n-1)Release etc */
