@@ -1872,6 +1872,7 @@ static void emacs_init(void)
 	key_add(m, "M:Release-1", &emacs_release);
 	key_add(m, "M:DPress-1", &emacs_press);
 	key_add(m, "M:Click-2", &emacs_paste);
+	key_add(m, "M:C:Click-1", &emacs_paste);
 
 	emacs_map = m;
 }

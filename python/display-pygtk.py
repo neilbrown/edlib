@@ -454,14 +454,16 @@ class EdDisplay(Gtk.Window):
         x = int(event.x)
         y = int(event.y)
         s = ":Press-" + ("%d"%event.button)
+        mod = ""
         if event.state & Gdk.ModifierType.SHIFT_MASK:
-            s = ":S" + s;
+            mod = ":S" + mod
         if event.state & Gdk.ModifierType.CONTROL_MASK:
-            s = ":C" + s;
+            mod = ":C" + mod
         if event.state & Gdk.ModifierType.MOD1_MASK:
-            s = ":M" + s;
+            mod = ":M" + mod
         self.last_event = int(time.time())
-        self.pane.call("Mouse-event", s, self.pane, (x,y), event.button, 1)
+        self.pane.call("Mouse-event", mod+s, mod, self.pane, (x,y),
+                       event.button, 1)
         edlib.time_stop(edlib.TIME_KEY)
 
     def release(self, c, event):
@@ -470,12 +472,7 @@ class EdDisplay(Gtk.Window):
         x = int(event.x)
         y = int(event.y)
         s = ":Release-" + ("%d"%event.button)
-        if event.state & Gdk.ModifierType.SHIFT_MASK:
-            s = ":S" + s;
-        if event.state & Gdk.ModifierType.CONTROL_MASK:
-            s = ":C" + s;
-        if event.state & Gdk.ModifierType.MOD1_MASK:
-            s = ":M" + s;
+        # ignore modifiers for Release
         self.last_event = int(time.time())
         self.pane.call("Mouse-event", s, self.pane, (x,y), event.button, 2)
         edlib.time_stop(edlib.TIME_KEY)

@@ -162,6 +162,7 @@ DEF_CMD(mouse_event)
 	unsigned int b;
 	int press;
 	const char *mode;
+	const char *mod = ci->str2; /* :M:C:S modifiers - optional */
 	struct mouse_state *ms = NULL;
 
 	clock_gettime(CLOCK_MONOTONIC, &now);
@@ -173,12 +174,15 @@ DEF_CMD(mouse_event)
 		    ci->num2);
 
 	if (ci->num2 == 1) {
+		/* Press */
 		press = 1;
 		b = ci->num - 1;
 	} else if (ci->num2 == 2) {
+		/* Release */
 		press = 0;
 		b = ci->num - 1;
 	} else {
+		/* 3 is Motion */
 		press = 1;
 		b = 100;
 	}
@@ -248,6 +252,14 @@ DEF_CMD(mouse_event)
 		 */
 		int r;
 
+		if (!mod) {
+			char *c = strrchr(ci->str, ':');
+			if (c)
+				mod = strnsave(ci->home, ci->str, c - ci->str);
+			else
+				mod = "";
+		}
+
 		ms->ignore_up = 1;
 		for (r = ms->click_count; r >= 1 ; r--) {
 			int ret;
@@ -255,7 +267,7 @@ DEF_CMD(mouse_event)
 			char n[2];
 			n[0] = '1' + b;
 			n[1] = 0;
-			key = strconcat(ci->home, "M", mode, ":", mult,
+			key = strconcat(ci->home, "M", mode, mod, ":", mult,
 					"Press-", n);
 			ret = call(key, focus, num, NULL, NULL, ex,
 				   NULL, NULL, x, y);
@@ -268,7 +280,7 @@ DEF_CMD(mouse_event)
 				return ret;
 			}
 
-			key = strconcat(ci->home, "M", mode, mult,
+			key = strconcat(ci->home, "M", mode, mod, mult,
 					":Click-", n);
 			ret = call(key, focus, num, NULL, NULL, ex,
 				   NULL, NULL, x, y);

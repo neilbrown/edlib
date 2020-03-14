@@ -926,13 +926,13 @@ static void send_key(int keytype, wint_t c, int meta, struct pane *p safe)
 }
 
 static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe,
-			  int button, int type)
+			  int button, char *mod, int type)
 {
 	int ret;
 	struct display_data *dd = p->data;
 
 	record_mouse(p, cmd, x, y);
-	ret = call("Mouse-event", p, button, NULL, cmd, type, NULL, NULL, x, y);
+	ret = call("Mouse-event", p, button, NULL, cmd, type, NULL, mod, x, y);
 	if (type == 1 && !dd->report_position) {
 		if (dd->is_xterm) {
 			fprintf(dd->scr_file, "\033[?1002h");
@@ -960,20 +960,38 @@ static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 	for (b = 1 ; b <= (NCURSES_MOUSE_VERSION <= 1 ? 3 : 5); b++) {
 		mmask_t s = mev->bstate;
 		char *action;
+		int modf = 0;
+		char *mod = "";
+
+		if (s & BUTTON_SHIFT) modf |= 1;
+		if (s & BUTTON_CTRL)  modf |= 2;
+		if (s & BUTTON_ALT)   modf |= 4;
+		switch (modf) {
+		case 0: mod = ""; break;
+		case 1: mod = ":S"; break;
+		case 2: mod = ":C"; break;
+		case 3: mod = ":C:S"; break;
+		case 4: mod = ":M"; break;
+		case 5: mod = ":M:S"; break;
+		case 6: mod = ":M:C"; break;
+		case 7: mod = ":M:C:S"; break;
+		}
 		if (BUTTON_PRESS(s, b))
-			action = ":Press-%d";
-		else if (BUTTON_RELEASE(s, b))
-			action = ":Release-%d";
-		else
+			action = "%s:Press-%d";
+		else if (BUTTON_RELEASE(s, b)) {
+			action = "%s:Release-%d";
+			/* Modifiers only reported on button Press */
+			mod = "";
+		} else
 			continue;
-		sprintf(buf, action, b);
+		snprintf(buf, sizeof(buf), action, mod, b);
 		dd->last_event = time(NULL);
-		do_send_mouse(p, x, y, buf, b, BUTTON_PRESS(s,b) ? 1 : 2);
+		do_send_mouse(p, x, y, buf, b, mod, BUTTON_PRESS(s,b) ? 1 : 2);
 	}
 	if ((mev->bstate & REPORT_MOUSE_POSITION) &&
 	    dd->report_position)
 		/* Motion doesn't update last_event */
-		do_send_mouse(p, x, y, ":Motion", 0, 3);
+		do_send_mouse(p, x, y, ":Motion", 0, "", 3);
 }
 
 REDEF_CMD(input_handle)
