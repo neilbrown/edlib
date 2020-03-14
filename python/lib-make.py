@@ -34,6 +34,7 @@ class MakePane(edlib.Pane):
         self.timer_set = False
         self.note_ok = False
         self.first_match = True
+        self.line = b''
         self.call("editor:request:make:match-docs")
 
     def run(self, cmd, cwd):
@@ -67,12 +68,20 @@ class MakePane(edlib.Pane):
         if r is None or len(r) == 0:
             (out, err) = self.pipe.communicate()
             self.pipe = None
-            self.call("doc:replace", out.decode("utf-8"))
+            l = self.line + out
+            self.line = b''
+            self.call("doc:replace", l.decode("utf-8"))
             self.call("doc:replace", "\nProcess Finished\n");
             self.call("doc:set:doc-status", "Complete")
             self.call("doc:notify:doc:status-changed")
+            self.do_parse()
             return edlib.Efalse
-        self.call("doc:replace", r.decode("utf-8"));
+        l = self.line + r
+        i = l.rfind(b'\n')
+        if i >= 0:
+            self.call("doc:replace", r[:i+1].decode("utf-8"));
+            l = l[i+1:]
+        self.line = l
         self.do_parse()
         return 1
 

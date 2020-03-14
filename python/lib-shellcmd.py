@@ -8,6 +8,7 @@ import subprocess, os, fcntl
 class ShellPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
+        self.line = b''
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
@@ -38,10 +39,17 @@ class ShellPane(edlib.Pane):
         if r is None or len(r) == 0:
             (out,err) = self.pipe.communicate()
             self.pipe = None
-            self.call("doc:replace", out.decode("utf-8"))
+            l = self.line + out
+            self.line = b''
+            self.call("doc:replace", l.decode("utf-8"))
             self.call("doc:replace", "\nProcess Finished\n");
             return edlib.Efalse
-        self.call("doc:replace", r.decode("utf-8"));
+        l = self.line + r
+        i = l.rfind(b'\n')
+        if i >= 0:
+            self.call("doc:replace", l[:i+1].decode("utf-8"));
+            l = l[i+1:]
+        self.line = l
         return 1
 
     def handle_close(self, key, **a):
