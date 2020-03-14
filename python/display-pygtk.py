@@ -6,22 +6,18 @@
 # receive mouse/keyboard events.
 # provides eventloop function using gtk.main.
 
-import sys
 import os
-import signal
 import gi
-import glib
 import time
 import cairo
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('PangoCairo', '1.0')
 gi.require_foreign("cairo")
-from gi.repository import GLib, Gtk, Gdk, Pango, PangoCairo, GdkPixbuf
+from gi.repository import Gtk, Gdk, Pango, PangoCairo, GdkPixbuf
 
 class EdDisplay(Gtk.Window):
     def __init__(self, focus):
-        events_activate(focus)
         Gtk.Window.__init__(self)
         self.pane = edlib.Pane(focus, self)
         # panes[] is a mapping from edlib.Pane objects to cairo surface objects.
@@ -36,82 +32,9 @@ class EdDisplay(Gtk.Window):
         self.pane.h = self.lineheight * 24
         self.pane.call("editor:request:all-displays")
         self.noclose = None
-        self.primary_cb = Gtk.Clipboard.get(Gdk.SELECTION_PRIMARY)
-        self.primary_cb.connect("owner-change", self.cb_new_owner, "PRIMARY")
-        self.clipboard_cb = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-        self.clipboard_cb.connect("owner-change", self.cb_new_owner, "CLIPBOARD")
-        self.targets = [ (Gdk.SELECTION_TYPE_STRING, 0, 0) ]
-        self.have_primary = False; self.set_primary = False
-        self.have_clipboard = False; self.set_clipboard = False
         self.last_event = 0
         self.show()
 
-    def claim_primary(self, str):
-        if self.have_primary:
-            return
-        self.primary_cb.set_text(str, len(str))
-        self.have_primary = True
-        self.set_primary = True
-
-    def claim_both(self, str):
-        self.claim_primary(str)
-        if self.have_clipboard:
-            return
-        self.clipboard_cb.set_text(str, len(str))
-        self.have_clipboard = True
-        self.set_clipboard = True
-
-    def request_clip(self, sel, seldata, info, data):
-        s = self.pane.parent.call("copy:get", 0, ret='str')
-        if not s:
-            s = ""
-        seldata.set_text(s)
-
-    def cb_new_owner(self, cb, ev, data):
-        if data == "PRIMARY":
-            if self.set_primary:
-                # I must be the new owner
-                self.set_primary = False
-            else:
-                self.have_primary = False
-        if data == "CLIPBOARD":
-            if self.set_clipboard:
-                self.set_clipboard = False
-            else:
-                self.have_clipboard = False
-
-    def copy_save(self, key, num2, str, **a):
-        "handle:copy:save"
-        if num2:
-            # mouse-only
-            self.claim_primary(str)
-        else:
-            self.claim_both(str)
-        return 0
-
-    def copy_get(self, key, focus, num, comm2, **a):
-        "handle:copy:get"
-        if not self.have_primary:
-            if num == 0:
-                s = self.primary_cb.wait_for_text()
-                if s is not None:
-                    if comm2:
-                        comm2("cb", focus, s)
-                    return 1
-            else:
-                if self.primary_cb.wait_is_text_available():
-                    num -= 1
-        if not self.have_clipboard:
-            if num == 0:
-                s = self.clipboard_cb.wait_for_text()
-                if s is not None:
-                    if comm2:
-                        comm2("cb", focus, s)
-                    return 1
-            else:
-                if self.clipboard_cb.wait_is_text_available():
-                    num -= 1
-        return self.pane.parent.call(key, focus, num, comm2)
 
     def handle_notify_displays(self, key, comm2, **a):
         "handle:all-displays"
@@ -648,179 +571,23 @@ class EdDisplay(Gtk.Window):
         cr.fill()
 
 def new_display(key, focus, comm2, **a):
+    if not 'DISPLAY' in os.environ:
+        return None
+    if not os.environ['DISPLAY']:
+        return None
+    focus.call("attach-glibevents")
+
     if 'SCALE' in os.environ:
         sc = int(os.environ['SCALE'])
         s = Gtk.settings_get_default()
         s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
+
     disp = EdDisplay(focus)
-    comm2('callback', disp.pane)
+    p = disp.pane.call("attach-x11selection", ret='focus')
+    if not p:
+        p = disp.pane
+    comm2('callback', p)
     return 1
 
-class events(edlib.Pane):
-    def __init__(self, focus):
-        edlib.Pane.__init__(self, focus)
-        self.active = True
-        self.events = {}
-        self.sigs = {}
-        self.ev_num = 0
-        self.dont_block = False
-
-    def handle_close(self, key, focus, **a):
-        "handle:Notify:Close"
-        self.free("free", focus, None)
-        return 1
-
-    def add_ev(self, focus, comm, event, num):
-        self.add_notify(focus, "Notify:Close")
-        ev = self.ev_num
-        self.events[ev] = [focus, comm, event, num]
-        self.ev_num += 1
-        return ev
-
-    def read(self, key, focus, comm2, num, **a):
-        self.active = True
-        ev = self.add_ev(focus, comm2, 'event:read', num)
-        gev = GLib.io_add_watch(num, GLib.IO_IN | GLib.IO_HUP,
-                                self.doread, comm2, focus, num, ev)
-        self.events[ev].append(gev)
-        return 1
-
-    def doread(self, evfd, condition, comm2, focus, fd, ev):
-        if ev not in self.events:
-            return False
-        edlib.time_start(edlib.TIME_READ)
-        try:
-            rv = comm2("callback", focus, fd)
-            ret = rv >= 0
-        except edlib.commandfailed:
-            ret = False
-        edlib.time_stop(edlib.TIME_READ)
-        if not ret:
-            del self.events[ev]
-        return ret
-
-    def signal(self, key, focus, comm2, num, **a):
-        ev = self.add_ev(focus, comm2, 'event:signal', num)
-        self.sigs[num] = (focus, comm2, ev)
-        signal.signal(num, self.sighan)
-        return 1
-
-    def sighan(self, sig, frame):
-        (focus, comm2, ev) = self.sigs[sig]
-        GLib.idle_add(self.dosig, comm2, focus, sig, ev)
-        return 1
-
-    def dosig(self, comm, focus, sig, ev):
-        if ev not in self.events:
-            return False
-        edlib.time_start(edlib.TIME_SIG)
-        try:
-            rv = comm("callback", focus, sig)
-            ret = rv >= 0
-        except edlib.commandfailed:
-            ret = False
-        edlib.time_stop(edlib.TIME_SIG)
-        if not ret:
-            del self.events[ev]
-            signal.signal(sig, signal.SIG_DFL)
-        return False
-
-    def timer(self, key, focus, comm2, num, **a):
-        self.active = True
-        ev = self.add_ev(focus, comm2, 'event:timer', num)
-        gev = GLib.timeout_add(num, self.dotimeout, comm2, focus, ev)
-        self.events[ev].append(gev)
-        return 1
-
-    def dotimeout(self, comm2, focus, ev):
-        if ev not in self.events:
-            return False
-        edlib.time_start(edlib.TIME_TIMER)
-        try:
-            rv = comm2("callback", focus)
-            ret = rv >= 0
-        except edlib.commandfailed:
-            ret = False
-        edlib.time_stop(edlib.TIME_TIMER)
-        if not ret:
-            del self.events[ev]
-        return ret
-
-    def nonblock(self, key, **a):
-        self.dont_block = True
-
-    def run(self, key, **a):
-        if self.active:
-            dont_block = self.dont_block
-            self.dont_block = False
-            if not dont_block:
-                Gtk.main_iteration_do(True)
-            while self.active and Gtk.events_pending():
-                Gtk.main_iteration_do(False)
-        if self.active:
-            return 1
-        else:
-            return edlib.Efalse
-
-    def deactivate(self, key, **a):
-        self.active = False
-        global ev
-        ev = None
-        return 1
-
-    def free(self, key, focus, comm2, **a):
-        try_again = True
-        while try_again:
-            try_again = False
-            for source in self.events:
-                e = self.events[source]
-                if e[0] != focus:
-                    continue
-                if comm2 and e[1] != comm2:
-                    continue
-                del self.events[source]
-                if len(e) == 5:
-                    try:
-                        GLib.source_remove(e[4])
-                    except:
-                        # must be already gone
-                        pass
-                try_again = True
-                break
-
-        return 1
-    def refresh(self, key, focus, **a):
-        # all active events are re-enabled.  This will presumably send them
-        # to the new primary event handler
-        k = self.events.keys()
-        for e in k:
-            (focus, comm, event, num) = self.events[e][:4]
-            if event != "event:signal" and len(self.events[e]) == 5:
-                try:
-                    GLib.source_remove(self.events[4])
-                except:
-                    pass
-            del self.events[e]
-            focus.call(event, num, comm)
-        # allow other event handlers to do likewise
-        return 0
-
-ev = None
-def events_activate(focus):
-    global ev
-    if ev:
-        return 1
-    ev = events(focus)
-    focus.call("global-set-command", "event:read-python", ev.read)
-    focus.call("global-set-command", "event:signal-python", ev.signal)
-    focus.call("global-set-command", "event:timer-python", ev.timer)
-    focus.call("global-set-command", "event:run-python", ev.run)
-    focus.call("global-set-command", "event:deactivate-python", ev.deactivate)
-    focus.call("global-set-command", "event:free-python", ev.free)
-    focus.call("global-set-command", "event:refresh-python", ev.refresh)
-    focus.call("global-set-command", "event:noblock-python", ev.nonblock)
-    focus.call("event:refresh");
-
-    return 1
 
 editor.call("global-set-command", "attach-display-pygtk", new_display);

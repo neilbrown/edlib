@@ -172,7 +172,7 @@ Module features
       practical.
 - [ ] automatically ensure the fg colour contrasts with bg, unless explicitly disabled.
       If bg is bright, reduce fg brightness.  If bg is dark, reduce saturation.
-- [ ] maybe borrow xsel code to get direct access to X selection
+- [X] maybe borrow xsel code to get direct access to X selection
 - [ ] merge 'catpic' code to draw low-res images.
 
 ### pygtk

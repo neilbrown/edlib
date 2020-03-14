@@ -1013,8 +1013,12 @@ REDEF_CMD(input_handle)
 DEF_CMD(display_ncurses)
 {
 	struct pane *p = ncurses_init(ci->focus, ci->str, ci->str2);
-	if (p)
+	if (p) {
+		struct pane *p2 = call_ret(pane, "attach-x11selection", p);
+		if (p2)
+			p = p2;
 		return comm_call(ci->comm2, "callback:display", p);
+	}
 	return Efail;
 }
 
