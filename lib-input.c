@@ -226,6 +226,8 @@ DEF_CMD(mouse_event)
 		struct pane *t, *chld = NULL;
 
 		list_for_each_entry(t, &focus->children, siblings) {
+			if (t->z < 0)
+				continue;
 			if (x < t->x || x >= t->x + t->w)
 				continue;
 			if (y < t->y || y >= t->y + t->h)
