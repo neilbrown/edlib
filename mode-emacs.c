@@ -1471,13 +1471,19 @@ DEF_CMD(emacs_copy)
 DEF_CMD(emacs_yank)
 {
 	int n = RPT_NUM(ci);
-	char *str = call_ret(strsave, "copy:get", ci->focus, n - 1);
-	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	char *str;
+	struct mark *mk;
 	struct mark *m = NULL;
 
+	/* If there is a selection elsewhere, we want to commit it */
+	call("selection:discard", ci->focus);
+	call("selection:commit", ci->focus);
+
+	str = call_ret(strsave, "copy:get", ci->focus, n - 1);
 	if (!str || !*str)
 		return 1;
 	/* If mark exists and is active, replace marked regions */
+	mk = call_ret(mark2, "doc:point", ci->focus);
 	if (mk && attr_find_int(mk->attrs, "emacs:active") > 0) {
 		char *str2 = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 		if (str2 && *str2)
@@ -1646,24 +1652,21 @@ DEF_CMD(emacs_release)
 		}
 	}
 	if (mk && p && !mark_same(mk, p)) {
-		char *str;
-
+		/* Must call 'claim' first as it might be claiming from us */
+		call("selection:claim", ci->focus);
 		attr_set_int(&mk->attrs, "emacs:active", 2);
 		call("view:changed", ci->focus, 0, p, NULL, 0, mk);
-		str = call_ret(strsave, "doc:get-str", ci->focus,
-			       0, p, NULL,
-			       0, mk);
-		if (str && *str)
-			call("copy:save", ci->focus, 0, NULL, str, 1);
 	}
 	return 1;
 }
 
 DEF_CMD(emacs_paste)
 {
-	char *str = call_ret(strsave, "copy:get", ci->focus);
+	char *str;
 
-	call("Message", ci->focus, 0, NULL, "str");
+	/* First commit the selection, then collect it */
+	call("selection:commit", ci->focus);
+	str = call_ret(strsave, "copy:get", ci->focus);
 
 	call("Move-CursorXY", ci->focus,
 	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
@@ -1674,6 +1677,37 @@ DEF_CMD(emacs_paste)
 	call("Replace", ci->focus, 0, NULL, str);
 
 	pane_focus(ci->focus);
+
+	return 1;
+}
+
+DEF_CMD(emacs_sel_claimed)
+{
+	/* Should possibly just change the color of our selection */
+	struct mark *p = call_ret(mark, "doc:point", ci->focus);
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+
+	if (mk) {
+		attr_set_int(&mk->attrs, "emacs:active", 0);
+		call("view:changed", ci->focus, 0, p, NULL, 0, mk);
+	}
+	return 1;
+}
+
+DEF_CMD(emacs_sel_commit)
+{
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	struct mark *p = call_ret(mark, "doc:point", ci->focus);
+
+	if (p && mk && !mark_same(p, mk)) {
+		char *str;
+
+		str = call_ret(strsave, "doc:get-str", ci->focus,
+			       0, p, NULL,
+			       0, mk);
+		if (str && *str)
+			call("copy:save", ci->focus, 0, NULL, str);
+	}
 
 	return 1;
 }
@@ -1873,6 +1907,9 @@ static void emacs_init(void)
 	key_add(m, "M:DPress-1", &emacs_press);
 	key_add(m, "M:Click-2", &emacs_paste);
 	key_add(m, "M:C:Click-1", &emacs_paste);
+
+	key_add(m, "Notify:selection:claimed", &emacs_sel_claimed);
+	key_add(m, "Notify:selection:commit", &emacs_sel_commit);
 
 	emacs_map = m;
 }
