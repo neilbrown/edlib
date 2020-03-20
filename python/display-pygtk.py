@@ -76,6 +76,7 @@ class EdDisplay(Gtk.Window):
         "handle:Display:new"
         global editor
         p = editor.call("attach-input", ret='focus')
+        p['DISPLAY'] = self['DISPLAY']
         newdisp = EdDisplay(p)
         home.clone_children(newdisp.pane);
         return 1
@@ -580,6 +581,7 @@ def new_display(key, focus, comm2, **a):
         s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
 
     disp = EdDisplay(focus)
+    disp.pane['DISPLAY'] = os.environ['DISPLAY']
     p = disp.pane.call("attach-x11selection", ret='focus')
     if not p:
         p = disp.pane

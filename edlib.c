@@ -134,9 +134,12 @@ int main(int argc, char *argv[])
 	if (term) {
 		struct pane *disp = NULL;
 		p = call_ret(pane, "attach-input", ed);
-		if (p)
+		if (p) {
+			attr_set_str(&p->attrs, "TERM", getenv("TERM"));
+			attr_set_str(&p->attrs, "DISPLAY", getenv("DISPLAY"));
 			disp = call_ret(pane, "attach-display-ncurses",
 					p);
+		}
 		if (disp) {
 			make_stack(disp, doc);
 			call("Display:set-noclose", disp, 1, NULL,
@@ -146,9 +149,11 @@ int main(int argc, char *argv[])
 	if (gtk) {
 		struct pane *disp = NULL;
 		p = call_ret(pane, "attach-input", ed);
-		if (p)
+		if (p) {
+			attr_set_str(&p->attrs, "DISPLAY", getenv("DISPLAY"));
 			disp = call_ret(pane, "attach-display-pygtk",
 					p);
+		}
 		if (disp)
 			make_stack(disp, doc);
 	}

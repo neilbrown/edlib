@@ -1030,7 +1030,16 @@ REDEF_CMD(input_handle)
 
 DEF_CMD(display_ncurses)
 {
-	struct pane *p = ncurses_init(ci->focus, ci->str, ci->str2);
+	struct pane *p;
+	char *term;
+
+	term = pane_attr_get(ci->focus, "TERM");
+	if (!term)
+		term = getenv("TERM");
+	if (!term)
+		term = "xterm-256color";
+
+	p = ncurses_init(ci->focus, ci->str, term);
 	if (p) {
 		struct pane *p2 = call_ret(pane, "attach-x11selection", p);
 		if (p2)

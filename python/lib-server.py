@@ -91,11 +91,17 @@ try:
                     self.want_close = True
                     self.sock.send(b"OK")
                     return 1
-                if msg[:5] == b"term:":
-                    path = msg[5:].decode("utf-8")
+                if msg.startswith(b"term "):
+                    w = msg.split(b' ')
+                    path = w[1].decode("utf-8")
                     p = editor.call("attach-input", ret='focus')
-                    p = p.call("attach-display-ncurses", path,
-                               "xterm-256color", ret="focus")
+
+                    for v in w[2:]:
+                        vw = v.split(b'=')
+                        if len(vw) == 2 and vw[0] in [b'TERM',b'DISPLAY']:
+                            p[vw[0].decode("utf-8")] = vw[1].decode("utf-8")
+
+                    p = p.call("attach-display-ncurses", path, ret="focus")
                     self.disp = p
                     p = p.call("attach-messageline", ret='focus')
                     p = p.call("attach-global-keymap", ret='focus')
@@ -187,7 +193,12 @@ if is_client:
     if term:
         t = os.ttyname(0)
         if t:
-            s.send(b"term:" + t.encode("utf-8"))
+            m = ["term", t]
+            for i in ['TERM','DISPLAY']:
+                if i in os.environ:
+                    m.append(i + "=" + os.environ[i])
+
+            s.send(' '.join(m).encode('utf-8'))
             ret = s.recv(100)
             if ret != b"OK":
                 print("Cannot open terminal on", t)

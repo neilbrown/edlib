@@ -33,6 +33,7 @@
 typedef void *gpointer;
 typedef unsigned int guint;
 typedef char gchar;
+typedef struct _GdkDisplay {} GdkDisplay;
 typedef struct _GtkTargetEntry {} GtkTargetEntry;
 typedef struct _GtkTargetList {} GtkTargetList;
 typedef struct _GtkClipboard {} GtkClipboard;
@@ -43,7 +44,8 @@ GdkAtom gdk_atom_intern(gchar *, int);
 #define TRUE (1)
 #define FALSE (0)
 
-GtkClipboard *gtk_clipboard_get(GdkAtom);
+GdkDisplay *gdk_display_open(gchar*);
+GtkClipboard *gtk_clipboard_get_for_display(GdkDisplay*, GdkAtom);
 void gtk_clipboard_set_with_data(GtkClipboard*, GtkTargetEntry*, guint,
 				 void (*get)(GtkClipboard *, GtkSelectionData *,
 					     guint, gpointer d safe),
@@ -240,20 +242,26 @@ DEF_LOOKUP_CMD(xs_handle, xs_map);
 
 DEF_CMD(xs_attach)
 {
-	char *d = getenv("DISPLAY");
+	char *d;
 	struct xs_info *xsi;
 	GdkAtom primary, clipboard;
 	GtkTargetList *list;
+	GdkDisplay *dis;
 
+	d = pane_attr_get(ci->focus, "DISPLAY");
 	if (!d || !*d)
 		return 1;
+	dis = gdk_display_open(d);
+	if (!dis)
+		return 1;
+
 	call("attach-glibevents", ci->focus);
 	alloc(xsi, pane);
 
 	primary = gdk_atom_intern("PRIMARY", TRUE);
 	clipboard = gdk_atom_intern("CLIPBOARD", TRUE);
-	xsi->primary.cb = gtk_clipboard_get(primary);
-	xsi->clipboard.cb = gtk_clipboard_get(clipboard);
+	xsi->primary.cb = gtk_clipboard_get_for_display(dis, primary);
+	xsi->clipboard.cb = gtk_clipboard_get_for_display(dis, clipboard);
 
 	list = gtk_target_list_new(NULL, 0);
 	gtk_target_list_add_text_targets(list, 0);
