@@ -187,7 +187,7 @@ if is_client:
     try:
         s.connect(sockpath)
     except OSError:
-        print("Cannot connect to ".sockpath)
+        print("Cannot connect to ",sockpath)
         os.exit(1)
 
     if term:
