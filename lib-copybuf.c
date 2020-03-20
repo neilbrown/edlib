@@ -61,6 +61,11 @@ DEF_CMD(copy_do)
 
 	if (strcmp(ci->key, "copy:save") == 0 && ci->str && ci->num == 0) {
 		struct txt *t;
+
+		if (cyi->store && strcmp(ci->str, cyi->store->txt) == 0)
+			/* Identical to last save, don't bother */
+			return 1;
+
 		if (cyi->count >= 10) {
 			struct txt **tp = &cyi->store;
 			int cnt = 0;
