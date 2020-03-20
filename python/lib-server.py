@@ -188,7 +188,7 @@ if is_client:
         s.connect(sockpath)
     except OSError:
         print("Cannot connect to ",sockpath)
-        os.exit(1)
+        sys.exit(1)
 
     if term:
         t = os.ttyname(0)
@@ -228,9 +228,11 @@ if is_client:
     s.close()
     sys.exit(0)
 else:
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    global server_sock
+    server_sock = None
     def server_accept(key, **a):
-        (new, addr) = s.accept()
+        global server_sock
+        (new, addr) = server_sock.accept()
         ServerPane(new)
 
     def server_done(key, focus, **a):
@@ -264,13 +266,29 @@ else:
 
         return 1
 
-    try:
-        os.unlink(sockpath)
-    except OSError:
-        pass
-    mask = os.umask(0o077)
-    s.bind(sockpath)
-    os.umask(mask)
-    s.listen(5)
+    def server_rebind(key, focus, **a):
+        global server_sock
+
+        if server_sock:
+            # stop reading this file
+            focus.call("event:free", server_accept)
+            server_sock.close()
+            server_sock = None
+        try:
+            os.unlink(sockpath)
+        except OSError:
+            pass
+        mask = os.umask(0o077)
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.bind(sockpath)
+        os.umask(mask)
+        s.listen(5)
+        focus.call("event:read", s.fileno(), server_accept)
+        server_sock = s
+        if key != "key":
+            focus.call("Message", "Server restarted")
+        return 1
+    server_rebind("key", editor)
     editor.call("global-set-command", "lib-server:done", server_done)
-    editor.call("event:read", s.fileno(), server_accept)
+    editor.call("global-set-command", "interactive-cmd-server-start",
+                server_rebind)

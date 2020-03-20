@@ -307,7 +307,7 @@ Module features
 - [ ] option to create a new frame
 - [ ] more work on server mode:
 - [ ] improve protocol
-- [ ] allow restart (re-open socket)
+- [X] allow restart (re-open socket)
 
 ### line count
 
