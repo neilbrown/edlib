@@ -51,6 +51,7 @@ void gtk_clipboard_set_with_data(GtkClipboard*, GtkTargetEntry*, guint,
 					     guint, gpointer d safe),
 				 void (*clear)(GtkClipboard *, gpointer safe),
 				 gpointer d safe);
+void gtk_clipboard_clear(GtkClipboard*);
 void gtk_selection_data_set_text(GtkSelectionData *, gchar *, guint);
 
 gchar *gtk_clipboard_wait_for_text(GtkClipboard*);
@@ -59,8 +60,9 @@ void g_free(gpointer);
 
 GtkTargetList *gtk_target_list_new(gpointer, guint);
 void gtk_target_list_add_text_targets(GtkTargetList *, guint);
-GtkTargetEntry *gtk_target_table_new_from_list(GtkTargetList *, int *);
 void gtk_target_list_unref(GtkTargetList *);
+GtkTargetEntry *gtk_target_table_new_from_list(GtkTargetList *, int *);
+void gtk_target_entry_free(GtkTargetEntry*);
 
 #endif
 
@@ -237,6 +239,22 @@ DEF_CMD(xs_sel_commit)
 	return 0;
 }
 
+DEF_CMD(xs_close)
+{
+	struct xs_info *xsi = ci->home->data;
+
+	if (xsi->primary.data)
+		gtk_clipboard_clear(xsi->primary.cb);
+	if (xsi->clipboard.data)
+		gtk_clipboard_clear(xsi->clipboard.cb);
+	free(xsi->primary.data);
+	free(xsi->clipboard.data);
+
+	gtk_target_entry_free(xsi->text_targets);
+	return 1;
+}
+
+
 static struct map *xs_map;
 DEF_LOOKUP_CMD(xs_handle, xs_map);
 
@@ -283,6 +301,8 @@ void edlib_init(struct pane *ed safe)
 		key_add(xs_map, "copy:get", &xs_copy_get);
 		key_add(xs_map, "Notify:selection:claimed", &xs_sel_claimed);
 		key_add(xs_map, "Notify:selection:commit", &xs_sel_commit);
+		key_add(xs_map, "Close", &xs_close);
+		key_add(xs_map, "Free", &edlib_do_free);
 	}
 
 	call_comm("global-set-command", ed, &xs_attach,
