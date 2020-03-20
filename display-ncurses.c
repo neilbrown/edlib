@@ -497,21 +497,70 @@ static void hash_free(struct display_data *dd safe)
 
 static int find_col(struct display_data *dd safe, int rgb[])
 {
-	struct col_hash *ch = hash_init(dd);
-	int k = COL_KEY(rgb[0], rgb[1], rgb[2]);
-	int h = hash_key(k);
-	struct chash *c;
+	if (0 /* dynamic colours */) {
+		struct col_hash *ch = hash_init(dd);
+		int k = COL_KEY(rgb[0], rgb[1], rgb[2]);
+		int h = hash_key(k);
+		struct chash *c;
 
-	for (c = ch->tbl[h]; c; c = c->next)
-		if (c->key == k)
-			return c->content;
-	c = malloc(sizeof(*c));
-	c->key = k;
-	c->content = ch->next_col++;
-	c->next = ch->tbl[h];
-	ch->tbl[h] = c;
-	init_color(c->content, rgb[0], rgb[1], rgb[2]);
-	return c->content;
+		for (c = ch->tbl[h]; c; c = c->next)
+			if (c->key == k)
+				return c->content;
+		c = malloc(sizeof(*c));
+		c->key = k;
+		c->content = ch->next_col++;
+		c->next = ch->tbl[h];
+		ch->tbl[h] = c;
+		init_color(c->content, rgb[0], rgb[1], rgb[2]);
+		return c->content;
+	} else {
+		/* If colour is grey, map to 1 of 26 for 0, 232 to 255, 15
+		 * The 24 grey shades have bit values from 8 to 238, so the
+		 * gap to white is a little bigger, but that probably doesn't
+		 * matter.
+		 * Otherwise map to 6x6x6 rgb cube from 16
+		 * Actual colours are biased bright, at 0,95,135,175,215,255
+		 * with a 95 gap at bottom and 40 elsewhere.
+		 * So we divide 5 and 2 half ranges, and merge bottom 2.
+		 */
+		int c = 0;
+		int h;
+
+		//printf("want %d,%d,%d\n", rgb[0], rgb[1], rgb[2]);
+		if (abs(rgb[0] - rgb[1]) < 10 &&
+		    abs(rgb[1] - rgb[2]) < 10) {
+			/* grey - within 1% */
+			int v = (rgb[0] + rgb[1] + rgb[2]) / 3;
+
+			/* We divide the space in 24 ranges surrounding
+			 * the grey values, and 2 half-ranges near black
+			 * and white.  So add half a range - 1000/50 -
+			 * then divide by 1000/25 to get a number from 0 to 25.
+			 */
+			v = (v + 1000/50) / (1000/25);
+			if (v == 0)
+				return 0; /* black */
+			if (v >= 25)
+				return 15; /* white */
+			//printf(" grey %d\n", v + 231);
+			/* grey shades are from 232 to 255 inclusive */
+			return v + 231;
+		}
+		for (h = 0; h < 3; h++) {
+			int v = rgb[h];
+
+			v = (v + 1000/12) / (1000/6);
+			/* v is from 0 to 6, we want up to 5
+			 * with 0 and 1 merged
+			 */
+			if (v)
+				v -= 1;
+
+			c = c * 6 + v;
+		}
+		//printf(" color %d\n", c + 16);
+		return c + 16;
+	}
 }
 
 static int to_pair(struct display_data *dd safe, int fg, int bg)
@@ -744,8 +793,6 @@ static struct pane *ncurses_init(struct pane *ed,
 	keypad(stdscr, TRUE);
 	mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
 	mouseinterval(0);
-
-	ASSERT(can_change_color());
 
 	getmaxyx(stdscr, p->h, p->w);
 

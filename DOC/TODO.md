@@ -36,6 +36,14 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] lib-renderline draw_some() was seen in a (seemingly) infinite loop
+ 	while (*rlp)
+ 		rlp = &(*rlp)->next;
+      the rl were much the same
+	 * text_orig = 0x55a24c886723 "\t\t\t\t ci->mark, \"fg:red,inverse,vis-nl\", 20);\n",
+	 * text = 0x55a24c91e150 " ", attr = 0x55a24c982570 "", x = -3181,
+       though x changed.
+
 - [ ] python indent confused by "if stuff (stuff \n stuff):\n..."
 - [X] changed files don't always get reloaded, or reload-file doesn't
       always actually change the content.  Maybe check ctime??
