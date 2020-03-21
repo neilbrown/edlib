@@ -45,6 +45,7 @@ GdkAtom gdk_atom_intern(gchar *, int);
 #define FALSE (0)
 
 GdkDisplay *gdk_display_open(gchar*);
+void gdk_display_close(GdkDisplay*);
 GtkClipboard *gtk_clipboard_get_for_display(GdkDisplay*, GdkAtom);
 void gtk_clipboard_set_with_data(GtkClipboard*, GtkTargetEntry*, guint,
 				 void (*get)(GtkClipboard *, GtkSelectionData *,
@@ -68,6 +69,7 @@ void gtk_target_entry_free(GtkTargetEntry*);
 
 struct xs_info {
 	struct pane		*self safe;
+	GdkDisplay		*display;
 	struct cb {
 		struct xs_info	**data;
 		int		saved;
@@ -249,6 +251,7 @@ DEF_CMD(xs_close)
 		gtk_clipboard_clear(xsi->clipboard.cb);
 	free(xsi->primary.data);
 	free(xsi->clipboard.data);
+	gdk_display_close(xsi->display);
 
 	gtk_target_entry_free(xsi->text_targets);
 	return 1;
@@ -276,6 +279,7 @@ DEF_CMD(xs_attach)
 	call("attach-glibevents", ci->focus);
 	alloc(xsi, pane);
 
+	xsi->display = dis;
 	primary = gdk_atom_intern("PRIMARY", TRUE);
 	clipboard = gdk_atom_intern("CLIPBOARD", TRUE);
 	xsi->primary.cb = gtk_clipboard_get_for_display(dis, primary);

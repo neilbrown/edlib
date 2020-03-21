@@ -651,6 +651,7 @@ DEF_CMD(nc_close)
 	struct display_data *dd = p->data;
 	ncurses_end(p);
 	hash_free(dd);
+	fclose(dd->scr_file);
 	return 1;
 }
 
