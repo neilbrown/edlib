@@ -484,7 +484,29 @@ class CModePane(edlib.Pane):
         return (depth, prefix)
 
     def calc_indent_python(self, p, m):
-        # like calc-indent, but check for ':' at end of previous line
+        # like calc-indent, but check for ':' at end of previous line,
+        # and # at the start.
+
+        # first look to see if previous line is a comment.
+        m1 = m.dup()
+        c = p.call("doc:step", 0, 1, m1, ret='char')
+        while c and c in ' \t\n':
+            c = p.call("doc:step", 0, 1, m1, ret='char')
+        p.call("Move-EOL", -1, m1)
+        sol = m1.dup()
+        c = p.call("doc:step", 1, 1, m1, ret='char')
+        while c in ' \t':
+            c = p.call("doc:step", 1, 1, m1, ret='char')
+        if c == '#':
+            # comment found, use same indent
+            pfx = p.call("doc:get-str", sol, m1, ret='str')
+            w = textwidth(pfx) - 1
+            r = ([w,w],'# ')
+            if p.call("text-match", m.dup(), "[ \t]*#") > 1:
+                # already have a # on this ine
+                r = ([w,w],'')
+            return r
+
         indent = self.calc_indent(p, m, 'default')
         m = m.dup()
         c = p.call("doc:step", 0, 1, m, ret='char')
