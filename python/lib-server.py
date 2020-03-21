@@ -4,7 +4,7 @@
 # May be distributed under terms of GPLv2 - see file:COPYING
 #
 
-import socket, os, sys
+import socket, os, sys, fcntl
 
 if 'EDLIB_SOCK' in os.environ:
     sockpath = os.environ['EDLIB_SOCK']
@@ -233,8 +233,11 @@ else:
     server_sock = None
     def server_accept(key, **a):
         global server_sock
-        (new, addr) = server_sock.accept()
-        ServerPane(new)
+        try:
+            (new, addr) = server_sock.accept()
+            ServerPane(new)
+        except:
+            pass
 
     def server_done(key, focus, **a):
         ret = focus.call("doc:notify:doc:done", "test")
@@ -284,6 +287,10 @@ else:
         s.bind(sockpath)
         os.umask(mask)
         s.listen(5)
+
+        fl = fcntl.fcntl(s.fileno(), fcntl.F_GETFL)
+        fcntl.fcntl(s.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
         focus.call("event:read", s.fileno(), server_accept)
         server_sock = s
         if key != "key":
