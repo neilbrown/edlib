@@ -423,7 +423,7 @@ Module features
       like code.
 - [ ]  auto-indent enhancements
 
-     -   py: after "return" de-indent
+     +   py: after "return" de-indent
      -??  '*' should check for comment, and add a space
      -   A line after one ending ; or } or : or unindented is assumed to be
          correctly indented.

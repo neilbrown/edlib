@@ -507,7 +507,8 @@ class CModePane(edlib.Pane):
                 r = ([w,w],'')
             return r
 
-        indent = self.calc_indent(p, m, 'default')
+        sol = m.dup()
+        indent = self.calc_indent(p, m, 'default', sol)
         m = m.dup()
         c = p.call("doc:step", 0, 1, m, ret='char')
         while c and c in ' \t\n':
@@ -516,9 +517,15 @@ class CModePane(edlib.Pane):
             i = indent[0][-1]
             # No other indents make sense here
             indent = ( [i,i], '')
+        else:
+            if p.call("text-match", sol,
+                      "[ \t]*(return|pass|break|continue)\\b") > 1:
+                # Probably last statement of a block, prefer no indent
+                if len(indent[0]) >= 2:
+                    indent[0].pop()
         return indent
 
-    def calc_indent(self, p, m, type=None):
+    def calc_indent(self, p, m, type=None, sol=None):
         # m is at the end of a line or start of next line (in leading
         # white-space) in p - Don't move it.
         # Find indent for the following text (this line or next line)
@@ -543,6 +550,8 @@ class CModePane(edlib.Pane):
         p.call("Move-EOL", -1, m1)
 
         line_start = m1.dup()
+        if sol:
+            sol.to_mark(line_start)
         c = p.call("doc:step", 1, m1, ret='char')
         while c and c in ' \t':
             p.call("doc:step", 1, 1, m1)
