@@ -621,13 +621,27 @@ class CModePane(edlib.Pane):
         if self.indent_type != 'C':
             return 0
 
-        # If this looks like a lable line, re-indent
+        # If this looks like a label line, re-indent
         self.parent.call(key, focus, mark, **a)
         m = mark.dup()
         focus.call("Move-EOL", m, -1)
         if focus.call("text-match", m.dup(),
                       '^[ \t]*(case\\s[^:\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):') > 0:
             self.handle_tab(key, focus, m, 1)
+        return 1
+
+    def handle_auto(self, key, focus, mark, **a):
+        "handle-list/K-;/K-}/K-,"
+        # re-indent when these chars are typed
+
+        if self.indent_type != 'C':
+            return 0
+
+        # insert first..
+        self.parent.call(key, focus, mark, **a)
+        m = mark.dup()
+        focus.call("Move-EOL", m, -1)
+        self.handle_tab(key, focus, m, 1)
         return 1
 
 
@@ -758,11 +772,9 @@ class CModePane(edlib.Pane):
             pass
         return 0
 
-    def handle_meta_tab(self, key, focus, mark, **a):
-        "handle:K:M:Tab"
+    def handle_shift_tab(self, key, focus, mark, **a):
+        "handle:K:S:Tab"
         # like tab-at-start-of-line, anywhere in line
-        # Probably need to type esc-tab, as Alt-Tab normally
-        # goes to next window in window system
         m = mark.dup()
         focus.call("Move-EOL", -1, m)
         self.handle_tab(key, focus, m, 1)
