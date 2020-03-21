@@ -171,17 +171,9 @@ static inline PyObject *safe Mark_Frommark(struct mark *m safe)
 
 static inline PyObject *safe Comm_Fromcomm(struct command *c safe)
 {
-	if (c->func == python_call_func && 0) {
-		struct python_command *pc = container_of(c, struct python_command, c);
-		if (!pc->callable)
-			return NULL;
-		Py_INCREF(pc->callable);
-		return pc->callable;
-	} else {
-		Comm *comm = (Comm*safe)PyObject_CallObject((PyObject*)&CommType, NULL);
-		comm->comm = command_get(c);
-		return (PyObject*)comm;
-	}
+	Comm *comm = (Comm*safe)PyObject_CallObject((PyObject*)&CommType, NULL);
+	comm->comm = command_get(c);
+	return (PyObject*)comm;
 }
 
 DEF_CMD(python_load)
@@ -1938,13 +1930,6 @@ static PyObject *Comm_call(Comm *c safe, PyObject *args safe, PyObject *kwds)
 
 	if (!c->comm)
 		return NULL;
-#if 0
-	if (c->comm->func == python_call.func) {
-		struct python_command *pc = container_of(c->comm, struct python_command,
-							 c);
-		return PyObject_Call(pc->callable, args, kwds);
-	}
-#endif
 	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
 	if (rv <= 0) {
 		Py_XDECREF(s1); Py_XDECREF(s2);
