@@ -78,7 +78,7 @@ DEF_CMD(python_pane_call);
 DEF_CMD(python_doc_call);
 static void python_free_command(struct command *c safe);
 
-static struct python_command *export_callable(PyObject *callable)
+static struct python_command *export_callable(PyObject *callable safe)
 {
 	struct python_command *c;
 

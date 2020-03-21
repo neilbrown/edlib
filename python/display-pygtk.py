@@ -28,8 +28,8 @@ class EdDisplay(Gtk.Window):
         self.connect('destroy', self.close_win)
         self.create_ui()
         self.pane["scale:M"] = "%dx%d" % (self.charwidth, self.lineheight)
-        self.pane.w = self.charwidth * 80
-        self.pane.h = self.lineheight * 24
+        self.pane.w = int(self.charwidth * 80.0)
+        self.pane.h = int(self.lineheight * 24.0)
         self.pane.call("editor:request:all-displays")
         self.noclose = None
         self.last_event = 0

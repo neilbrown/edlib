@@ -85,8 +85,10 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/display-ncurses.o
 XOBJ = O/rexel.o O/emacs-search.o
 
-LIBS-lang-python = $(shell pkg-config --libs python3)
-INC-lang-python = $(shell pkg-config --cflags python3)
+# From python 3.8 on we need python3-embed to get the right libraries
+pypkg=$(shell pkg-config --atleast-version=3.8 python3 && echo python3-embed || echo python3)
+LIBS-lang-python = $(shell pkg-config --libs $(pypkg))
+INC-lang-python = $(shell pkg-config --cflags $(pypkg))
 
 LIBS-display-ncurses = $(shell pkg-config --libs ncursesw)
 INC-display-ncurses = $(shell pkg-config --cflags ncursesw)
