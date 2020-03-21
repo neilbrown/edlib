@@ -11,11 +11,13 @@ def config_appeared(key, focus, **a):
 
     p = focus['filename']
 
-    if p and "/git/lustre-release/" in p and "COMMIT_EDITMSG" in p:
-        # looks like a lustre commit, need to limit line width
+    if p and ("COMMIT_EDITMSG" in p or "/.stgit" in p):
         focus.call("doc:set:view-default", "textfill,whitespace")
-        focus.call("doc:set:fill-width", "70")
-        focus.call("doc:set:whitespace-width", "60")
+        focus.call("doc:set:fill-width", "72")
+        if "/git/lustre-release/" in p:
+            # looks like a lustre commit, need to limit line width
+            focus.call("doc:set:fill-width", "70")
+            focus.call("doc:set:whitespace-width", "60")
     return 0
 
 
