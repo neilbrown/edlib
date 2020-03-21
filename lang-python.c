@@ -62,12 +62,14 @@ static PyObject *EdlibModule;
 
 static char *module_dir;
 
-/* When a python callable is passed to edlib_call() we combine it
- * with this "python_call" for edlib to call back that callable.
+/* Python commands visible to edlib are wrapped in
+ * the python_command.  There is only one per callback,
+ * so that edlib code can compare for equalty.
  */
 struct python_command {
 	struct command	c;
 	PyObject	*callable;
+	struct list_head lst;
 };
 static LIST_HEAD(exported_commands);
 
@@ -75,6 +77,27 @@ DEF_CMD(python_call);
 DEF_CMD(python_pane_call);
 DEF_CMD(python_doc_call);
 static void python_free_command(struct command *c safe);
+
+static struct python_command *export_callable(PyObject *callable)
+{
+	struct python_command *c;
+
+	list_for_each_entry(c, &exported_commands, lst)
+		if (c->callable == callable) {
+			command_get(&c->c);
+			return c;
+		}
+
+	c = malloc(sizeof(*c));
+	c->c = python_call;
+	c->c.free = python_free_command;
+	c->c.refcnt = 0;
+	command_get(&c->c);
+	Py_INCREF(callable);
+	c->callable = callable;
+	list_add(&c->lst, &exported_commands);
+	return c;
+}
 
 typedef struct {
 	PyObject_HEAD;
@@ -364,12 +387,7 @@ static void do_map_init(Pane *self safe)
 				if (docs &&
 				    strncmp(docs, "handle:", 7) == 0) {
 					struct python_command *comm =
-						malloc(sizeof(*comm));
-					comm->c = python_call;
-					comm->c.free = python_free_command;
-					command_get(&comm->c);
-					Py_INCREF(m);
-					comm->callable = m;
+						export_callable(m);
 					key_add(self->map, docs+7, &comm->c);
 					command_put(&comm->c);
 				}
@@ -384,12 +402,7 @@ static void do_map_init(Pane *self safe)
 						char *b = strndup(s1+1, s2-(s1+1));
 
 						struct python_command *comm =
-							malloc(sizeof(*comm));
-						comm->c = python_call;
-						comm->c.free = python_free_command;
-						command_get(&comm->c);
-						Py_INCREF(m);
-						comm->callable = m;
+							export_callable(m);
 						key_add_range(self->map, a, b,
 							      &comm->c);
 						free(a); free(b);
@@ -402,12 +415,7 @@ static void do_map_init(Pane *self safe)
 					char *b = strconcat(self->pane,
 							    a, "\xFF\xFF\xFF\xFF");
 					struct python_command *comm =
-						malloc(sizeof(*comm));
-					comm->c = python_call;
-					comm->c.free = python_free_command;
-					command_get(&comm->c);
-					Py_INCREF(m);
-					comm->callable = m;
+						export_callable(m);
 					key_add_range(self->map, a, b,
 						      &comm->c);
 					command_put(&comm->c);
@@ -419,7 +427,7 @@ static void do_map_init(Pane *self safe)
 					char *s1 = docs + 12;
 					while (s1 && *s1 && *s1 != sep) {
 						struct python_command *comm =
-							malloc(sizeof(*comm));
+							export_callable(m);
 						char *a;
 						char *s2 = strchr(s1, sep);
 						if (s2) {
@@ -429,11 +437,6 @@ static void do_map_init(Pane *self safe)
 							a = strdup(s1);
 							s1 = NULL;
 						}
-						comm->c = python_call;
-						comm->c.free = python_free_command;
-						command_get(&comm->c);
-						Py_INCREF(m);
-						comm->callable = m;
 						key_add(self->map, a, &comm->c);
 						free(a);
 						command_put(&comm->c);
@@ -1976,6 +1979,7 @@ static void python_free_command(struct command *c safe)
 
 	if (pc->callable)
 		Py_DECREF(pc->callable);
+	list_del(&pc->lst);
 	free(pc);
 }
 
@@ -2097,12 +2101,8 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 				return 0;
 			}
 		} else if (PyCallable_Check(a)) {
-			struct python_command *pc = malloc(sizeof(*pc));
-			Py_INCREF(a);
-			pc->callable = a;
-			pc->c = python_call;
-			pc->c.free = python_free_command;
-			command_get(&pc->c);
+			struct python_command *pc = export_callable(a);
+
 			if (ci->comm2 == NULL)
 				ci->comm2 = &pc->c;
 			else {
