@@ -114,7 +114,8 @@ try:
                     return 1
                 if msg == b"Close":
                     if self.disp:
-                        self.disp.close()
+                        self.disp.call("Display:set-noclose")
+                        self.disp.call("Display:close")
                         self.disp = None
                     self.sock.close()
                     self.sock = None

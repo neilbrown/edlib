@@ -4,6 +4,14 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] easy way to kill a make/shell job
+- [ ] when finding make buffer to copy from, insist it is same dir or ancestor
+- [ ] make sure :C-x ` stops at end of make output if it is still running.
+      Don't let '`' every continue to next buffer.
+- [ ] create a logging interface where messages can to get a file, stderr, or
+      an internal buffer which can be viewed in a pane.  EDLIB_LOGGIN controls
+      where it goes
+- [ ] send python errors to the logging interface
 - [X] convert to python3 and pygobject
 - [ ] C/python code "index" pane to quickly jump to function, and see context
 - [ ] beginnings of test suite
