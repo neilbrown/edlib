@@ -105,7 +105,6 @@ typedef struct {
 	struct command	cmd;
 	struct map	*map;
 	int		map_init;
-	PyObject	*refer;
 } Pane;
 static PyTypeObject PaneType;
 
@@ -121,7 +120,6 @@ typedef struct {
 	struct command	cmd;
 	struct map	*map;
 	int		map_init;
-	PyObject	*refer;
 	struct doc	doc;
 } Doc;
 static PyTypeObject DocType;
@@ -368,8 +366,7 @@ REDEF_CMD(python_doc_call)
 static void do_map_init(Pane *self safe)
 {
 	int i;
-	PyObject *refer = self->refer ?: (PyObject*)self;
-	PyObject *l = PyObject_Dir(refer);
+	PyObject *l = PyObject_Dir((PyObject*)self);
 	int n;
 
 	if (!self->map || !self->pane || !l)
@@ -377,7 +374,7 @@ static void do_map_init(Pane *self safe)
 	n = PyList_Size(l);
 	for (i = 0; i < n ; i++) {
 		PyObject *e = PyList_GetItem(l, i);
-		PyObject *m = PyObject_GetAttr(refer, e);
+		PyObject *m = PyObject_GetAttr((PyObject*)self, e);
 
 		if (m && PyMethod_Check(m)) {
 			PyObject *doc = PyObject_GetAttrString(m, "__doc__");
@@ -491,8 +488,6 @@ static void python_pane_free(struct command *c safe)
 	Pane *p = container_of(c, Pane, cmd);
 	/* pane has been closed */
 	p->pane = NULL;
-	Py_XDECREF(p->refer);
-	p->refer = NULL;
 	if (p->map)
 		key_free(p->map);
 	p->map = NULL;
@@ -508,9 +503,8 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 		       int *zp safe)
 {
 	Pane *parent = NULL;
-	PyObject *py_handler = NULL;
 	int ret;
-	static char *keywords[] = {"parent", "handler", "z", NULL};
+	static char *keywords[] = {"parent", "z", NULL};
 
 	if (self->pane) {
 		PyErr_SetString(PyExc_TypeError, "Pane already initialised");
@@ -523,9 +517,8 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 		 */
 		return 0;
 
-	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|OOi", keywords,
-					  &parent, &py_handler,
-					  zp);
+	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|Oi", keywords,
+					  &parent, zp);
 	if (ret <= 0)
 		return -1;
 
@@ -536,10 +529,6 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 		PyErr_SetString(PyExc_TypeError, "First arg must be edlib.Pane or None");
 		return -1;
 	}
-
-	if (py_handler)
-		Py_INCREF(py_handler);
-	self->refer = py_handler;
 
 	*parentp = parent;
 
