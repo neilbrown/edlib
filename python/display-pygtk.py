@@ -16,29 +16,29 @@ gi.require_version('PangoCairo', '1.0')
 gi.require_foreign("cairo")
 from gi.repository import Gtk, Gdk, Pango, PangoCairo, GdkPixbuf
 
-class EdDisplay(Gtk.Window):
+class EdDisplay(edlib.Pane):
     def __init__(self, focus):
-        Gtk.Window.__init__(self)
-        self.pane = edlib.Pane(focus, self)
+        edlib.Pane.__init__(self, focus)
+        self.win = Gtk.Window()
         # panes[] is a mapping from edlib.Pane objects to cairo surface objects.
         # Where a pane has the same size as its parent, only the parent can have
         # a surface.
         self.panes = {}
-        self.set_title("EDLIB")
-        self.connect('destroy', self.close_win)
+        self.win.set_title("EDLIB")
+        self.win.connect('destroy', self.close_win)
         self.create_ui()
-        self.pane["scale:M"] = "%dx%d" % (self.charwidth, self.lineheight)
-        self.pane.w = int(self.charwidth * 80.0)
-        self.pane.h = int(self.lineheight * 24.0)
-        self.pane.call("editor:request:all-displays")
+        self["scale:M"] = "%dx%d" % (self.charwidth, self.lineheight)
+        self.w = int(self.charwidth * 80.0)
+        self.h = int(self.lineheight * 24.0)
+        self.call("editor:request:all-displays")
         self.noclose = None
         self.last_event = 0
-        self.show()
+        self.win.show()
 
 
     def handle_notify_displays(self, key, comm2, **a):
         "handle:all-displays"
-        comm2("callback:display", self.pane, self.last_event)
+        comm2("callback:display", self, self.last_event)
         return 0
 
     def handle_postorder(self, key, **a):
@@ -67,9 +67,9 @@ class EdDisplay(Gtk.Window):
     def handle_fullscreen(self, key, num, **a):
         "handle:Display:fullscreen"
         if num > 0:
-            self.fullscreen()
+            self.win.fullscreen()
         else:
-            self.unfullscreen()
+            self.win.unfullscreen()
         return 1
 
     def handle_new(self, key, home, **a):
@@ -78,12 +78,12 @@ class EdDisplay(Gtk.Window):
         p = editor.call("attach-input", ret='focus')
         p['DISPLAY'] = self['DISPLAY']
         newdisp = EdDisplay(p)
-        home.clone_children(newdisp.pane);
+        home.clone_children(newdisp);
         return 1
 
     def handle_close(self, key, **a):
         "handle:Close"
-        self.destroy()
+        self.win.destroy()
         return True
 
     def handle_clear(self, key, focus, str, str2, **a):
@@ -97,7 +97,7 @@ class EdDisplay(Gtk.Window):
             fg, bg = self.get_colours("bg:white")
         pm = self.get_pixmap(focus)
         self.do_clear(pm, bg)
-        self.pane.damaged(edlib.DAMAGED_POSTORDER)
+        self.damaged(edlib.DAMAGED_POSTORDER)
         return True
 
     def handle_text_size(self, key, num, num2, focus, str, str2, comm2, **a):
@@ -130,7 +130,7 @@ class EdDisplay(Gtk.Window):
 
     def handle_draw_text(self, key, num, num2, focus, str, str2, xy, **a):
         "handle:Draw:text"
-        self.pane.damaged(edlib.DAMAGED_POSTORDER)
+        self.damaged(edlib.DAMAGED_POSTORDER)
 
         (x,y) = xy
         attr=""
@@ -185,7 +185,8 @@ class EdDisplay(Gtk.Window):
             cr.stroke
 
             in_focus = self.in_focus
-            while in_focus and focus.parent.parent != focus and focus.parent != self.pane:
+            while (in_focus and focus.parent.parent != focus and
+                   focus.parent != self):
                 if focus.parent.focus != focus and focus.z >= 0:
                     in_focus = False
                 focus = focus.parent
@@ -207,7 +208,7 @@ class EdDisplay(Gtk.Window):
 
     def handle_image(self, key, num, num2, focus, str, str2, **a):
         "handle:Draw:image"
-        self.pane.damaged(edlib.DAMAGED_POSTORDER)
+        self.damaged(edlib.DAMAGED_POSTORDER)
         # 'str' is the file name of an image
         # 'num' is '1' if image should be stretched to fill pane
         # if 'num is '0', then 'num2' is 'or' of
@@ -284,7 +285,7 @@ class EdDisplay(Gtk.Window):
         return fd
 
     def color_parse(self, rgb, c):
-        col = self.pane.call("colour:map", c, ret='str')
+        col = self.call("colour:map", c, ret='str')
         if not rgb.parse(col):
             raise ValueError
 
@@ -340,7 +341,7 @@ class EdDisplay(Gtk.Window):
                 return pm
             del self.panes[p]
         else:
-            self.pane.add_notify(p, "Notify:Close")
+            self.add_notify(p, "Notify:Close")
         self.panes[p] = cairo.ImageSurface(cairo.Format.RGB24, p.w, p.h)
         return self.panes[p]
 
@@ -359,13 +360,12 @@ class EdDisplay(Gtk.Window):
         # This must not happen. What should I do?
 
     def close_win(self, *a):
-        self.pane.close()
-        self.pane = None
+        self.close()
 
     def create_ui(self):
         text = Gtk.DrawingArea()
         self.text = text
-        self.add(text)
+        self.win.add(text)
         text.show()
         self.fd = Pango.FontDescription("mono 10")
         #text.modify_font(self.fd)
@@ -373,7 +373,7 @@ class EdDisplay(Gtk.Window):
         metric = ctx.get_metrics(self.fd)
         self.lineheight = (metric.get_ascent() + metric.get_descent()) / Pango.SCALE
         self.charwidth = metric.get_approximate_char_width() / Pango.SCALE
-        self.set_default_size(self.charwidth * 80, self.lineheight * 24)
+        self.win.set_default_size(self.charwidth * 80, self.lineheight * 24)
 
         self.im = Gtk.IMContextSimple()
         self.in_focus = True
@@ -428,24 +428,24 @@ class EdDisplay(Gtk.Window):
         edlib.time_start(edlib.TIME_WINDOW)
         self.im.focus_in()
         self.in_focus = True
-        self.pane.damaged(edlib.DAMAGED_CURSOR)
-        self.pane.call("pane:refocus")
+        self.damaged(edlib.DAMAGED_CURSOR)
+        self.call("pane:refocus")
         edlib.time_stop(edlib.TIME_WINDOW)
 
     def focus_out(self, *a):
         edlib.time_start(edlib.TIME_WINDOW)
         self.im.focus_out()
         self.in_focus = False
-        self.pane.damaged(edlib.DAMAGED_CURSOR)
+        self.damaged(edlib.DAMAGED_CURSOR)
         edlib.time_stop(edlib.TIME_WINDOW)
 
     def reconfigure(self, w, ev):
         edlib.time_start(edlib.TIME_WINDOW)
         alloc = w.get_allocation()
-        if self.pane.w == alloc.width and self.pane.h == alloc.height:
+        if self.w == alloc.width and self.h == alloc.height:
             return None
-        self.pane.w = alloc.width
-        self.pane.h = alloc.height
+        self.w = alloc.width
+        self.h = alloc.height
         edlib.time_stop(edlib.TIME_WINDOW)
 
     def press(self, c, event):
@@ -463,8 +463,8 @@ class EdDisplay(Gtk.Window):
         if event.state & Gdk.ModifierType.MOD1_MASK:
             mod = ":M" + mod
         self.last_event = int(time.time())
-        self.pane.call("Mouse-event", mod+s, mod, self.pane, (x,y),
-                       event.button, 1)
+        self.call("Mouse-event", mod+s, mod, (x,y),
+                  event.button, 1)
         edlib.time_stop(edlib.TIME_KEY)
 
     def release(self, c, event):
@@ -475,14 +475,14 @@ class EdDisplay(Gtk.Window):
         s = ":Release-" + ("%d"%event.button)
         # ignore modifiers for Release
         self.last_event = int(time.time())
-        self.pane.call("Mouse-event", s, self.pane, (x,y), event.button, 2)
+        self.call("Mouse-event", s, (x,y), event.button, 2)
         edlib.time_stop(edlib.TIME_KEY)
 
     def motion(self, c, event):
         edlib.time_start(edlib.TIME_KEY)
         x = int(event.x)
         y = int(event.y)
-        ret = self.pane.call("Mouse-event", ":Motion", (x,y), 0, 3)
+        ret = self.call("Mouse-event", ":Motion", (x,y), 0, 3)
         if not ret:
             self.block_motion()
 
@@ -503,7 +503,7 @@ class EdDisplay(Gtk.Window):
             s = ":C" + s;
         if event.state & Gdk.ModifierType.MOD1_MASK:
             s = ":M" + s;
-        self.pane.call("Mouse-event", s, self.pane, (x,y), b, 1)
+        self.call("Mouse-event", s, (x,y), b, 1)
         edlib.time_stop(edlib.TIME_KEY)
 
     eventmap = { "Return" : ":Enter\037:C-M",
@@ -527,7 +527,7 @@ class EdDisplay(Gtk.Window):
     def keyinput(self, c, strng):
         edlib.time_start(edlib.TIME_KEY)
         self.last_event = int(time.time())
-        self.pane.call("Keystroke", "-" + strng)
+        self.call("Keystroke", "-" + strng)
         edlib.time_stop(edlib.TIME_KEY)
 
     def keystroke(self, c, event):
@@ -558,7 +558,7 @@ class EdDisplay(Gtk.Window):
                     s = ":C" + s;
                 s = p + s
         self.last_event = int(time.time())
-        self.pane.call("Keystroke", self.pane, s)
+        self.call("Keystroke", s)
         edlib.time_stop(edlib.TIME_KEY)
 
     def do_clear(self, pm, colour):
@@ -581,10 +581,10 @@ def new_display(key, focus, comm2, **a):
         s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
 
     disp = EdDisplay(focus)
-    disp.pane['DISPLAY'] = os.environ['DISPLAY']
-    p = disp.pane.call("attach-x11selection", ret='focus')
+    disp['DISPLAY'] = os.environ['DISPLAY']
+    p = disp.call("attach-x11selection", ret='focus')
     if not p:
-        p = disp.pane
+        p = disp
     comm2('callback', p)
     return 1
 
