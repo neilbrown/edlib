@@ -69,6 +69,8 @@ struct python_command {
 	struct command	c;
 	PyObject	*callable;
 };
+static LIST_HEAD(exported_commands);
+
 DEF_CMD(python_call);
 DEF_CMD(python_pane_call);
 DEF_CMD(python_doc_call);
@@ -77,7 +79,7 @@ static void python_free_command(struct command *c safe);
 typedef struct {
 	PyObject_HEAD;
 	struct pane	*pane;
-	struct python_command handle;
+	struct command	cmd;
 	struct map	*map;
 	int		map_init;
 	PyObject	*refer;
@@ -93,7 +95,7 @@ static PyTypeObject PaneIterType;
 typedef struct {
 	PyObject_HEAD;
 	struct pane	*pane;
-	struct python_command handle;
+	struct command	cmd;
 	struct map	*map;
 	int		map_init;
 	PyObject	*refer;
@@ -457,7 +459,7 @@ static void do_map_init(Pane *self safe)
 
 REDEF_CMD(python_pane_call)
 {
-	Pane *home = container_of(ci->comm, Pane, handle.c);
+	Pane *home = container_of(ci->comm, Pane, cmd);
 
 	if (!home || !home->map)
 		return Efallthrough;
@@ -491,11 +493,9 @@ static Doc *Doc_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
 
 static void python_pane_free(struct command *c safe)
 {
-	Pane *p = container_of(c, Pane, handle.c);
+	Pane *p = container_of(c, Pane, cmd);
 	/* pane has been closed */
 	p->pane = NULL;
-	Py_XDECREF(p->handle.callable);
-	p->handle.callable = NULL;
 	Py_XDECREF(p->refer);
 	p->refer = NULL;
 	if (p->map)
@@ -549,9 +549,8 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 	*parentp = parent;
 
 	self->map = key_alloc();
-	self->handle.c = python_pane_call;
-	self->handle.c.free = python_pane_free;
-	self->handle.callable = NULL;
+	self->cmd = python_pane_call;
+	self->cmd.free = python_pane_free;
 
 	return 1;
 }
@@ -570,7 +569,7 @@ static int Pane_init(Pane *self safe, PyObject *args, PyObject *kwds)
 	 */
 	Py_INCREF(self);
 	self->pane = pane_register(parent ? parent->pane : NULL,
-				   z, &self->handle.c, self);
+				   z, &self->cmd, self);
 	return 0;
 }
 
@@ -583,9 +582,9 @@ static int Doc_init(Doc *self, PyObject *args, PyObject *kwds)
 	if (ret <= 0 || !self)
 		return ret;
 
-	self->handle.c.func = python_doc_call_func;
+	self->cmd.func = python_doc_call_func;
 	self->pane = doc_register(parent ? parent->pane : NULL,
-				  z, &self->handle.c, self);
+				  z, &self->cmd, self);
 	self->doc.refcnt = mark_refcnt;
 	return 0;
 }
