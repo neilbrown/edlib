@@ -44,6 +44,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] I cannot reformat C comments any more, because C-q re-indents
 - [ ] lib-renderline draw_some() was seen in a (seemingly) infinite loop
  	while (*rlp)
  		rlp = &(*rlp)->next;
@@ -52,7 +53,7 @@ Bugs to be fixed
 	 * text = 0x55a24c91e150 " ", attr = 0x55a24c982570 "", x = -3181,
        though x changed.
 
-- [ ] python indent confused by "if stuff (stuff \n stuff):\n..."
+- [X] python indent confused by "if stuff (stuff \n stuff):\n..."
 - [X] changed files don't always get reloaded, or reload-file doesn't
       always actually change the content.  Maybe check ctime??
 

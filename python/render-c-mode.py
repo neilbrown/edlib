@@ -282,6 +282,12 @@ class parse_state:
             self.pop()
             self.ss = True
 
+def at_sol(p, m):
+    c = p.call("doc:step", 0, 0, m, ret='char')
+    while c and c in ' \t':
+        p.call("doc:step", 0, 1, m)
+        c = p.call("doc:step", 0, 0, m, ret='char')
+    return c == None or c == '\n'
 
 class CModePane(edlib.Pane):
         # C indenting can be determined precisely, but it
@@ -482,18 +488,18 @@ class CModePane(edlib.Pane):
         indent = self.calc_indent(p, m, 'default')
         m = m.dup()
         c = p.call("doc:step", 0, 1, m, ret='char')
-        while c in ' \t\n':
+        while c and c in ' \t\n':
             c = p.call("doc:step", 0, 1, m, ret='char')
         if c == ':':
-            t=self.spaces
-            if not t:
-                t=8
-            indent[0].append(indent[0][-1]+t)
+            i = indent[0][-1]
+            # No other indents make sense here
+            indent = ( [i,i], '')
         return indent
 
     def calc_indent(self, p, m, type=None):
-        # m is at the end of a line or start of next line in p - Don't move it
-        # Find indent for 'next' line as a list of depths
+        # m is at the end of a line or start of next line (in leading
+        # white-space) in p - Don't move it.
+        # Find indent for the following text (this line or next line)
         # and an alignment...
 
         if not type:
@@ -502,29 +508,28 @@ class CModePane(edlib.Pane):
             if self.indent_type == 'python':
                 return self.calc_indent_python(p, m)
 
-        m = m.dup()
-        # Find previous line which is not empty and make up
-        # a depth list from the leading tabs/spaces.
-        while p.call("doc:step", 0, m, ret="char") in ' \t':
-            p.call("doc:step", 0, 1, m)
-        line_start = m.dup()
-        while p.call("doc:step", 0, m, ret="char") == '\n':
-            p.call("doc:step", 0, 1, m)
-        if p.call("doc:step", 0, m) == edlib.WEOF:
-            # No previous non-empty line.
-            return ([0], None)
-        # line before m is not empty
-        m2 = m.dup()
-        # walk to start of line, leaving m2 at leading non-space
-        c = p.call("doc:step", 0, m2, ret="char")
-        while c != None and c != '\n':
-            p.call("doc:step", 0, 1, m2)
-            if c not in " \t":
-                m.to_mark(m2)
-            c = p.call("doc:step", 0, m2, ret="char")
-        # m2 .. m is the prefix
-        pfx = p.call("doc:get-str", m2, m, ret = 'str')
+        m1 = m.dup()
+        # Find previous line which is not empty and does not start in
+        # parentheses w.r.t. here.  If we hit an unbalanced open, or a line
+        # break - that is the line we want.
+        # Make up a depth list from the leading tabs/spaces.
+        ret = p.call("Move-Expr", -1, m1)
+
+        while ret == 1 and not at_sol(p, m1):
+            ret = p.call("Move-Expr", -1, m1)
+        # This is the starting line.
+        p.call("Move-EOL", -1, m1)
+
+        line_start = m1.dup()
+        c = p.call("doc:step", 1, m1, ret='char')
+        while c and c in ' \t':
+            p.call("doc:step", 1, 1, m1)
+            c = p.call("doc:step", 1, m1, ret='char')
+
+        # line_start .. m1 is the prefix
+        pfx = p.call("doc:get-str", line_start, m1, ret = 'str')
         w = textwidth(pfx)
+
         if self.spaces:
             t = self.spaces
         else:
@@ -540,10 +545,14 @@ class CModePane(edlib.Pane):
         # i.e see if a () expression started since the indent.
         # If so, either line-up with open, or add a tab if open
         # is at end-of-line
-        indent_end = m
-        expr = line_start.dup()
-        p.call("Move-Expr", -1, 1, expr)
-        if expr >= indent_end:
+        indent_end = m1
+        if indent_end >= m:
+            # There is no previous line - Don't change indent
+            r.append(r[-1])
+            return r, ''
+        expr = m.dup()
+        ret = p.call("Move-Expr", -1, 1, expr)
+        if ret == 1 and expr >= indent_end:
             p.call("doc:step", expr, 1, 1)
             if p.call("doc:step", expr, 1, 0, ret="char") == '\n':
                 # open-bracket at end-of-line, so add a standard indent
