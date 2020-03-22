@@ -288,7 +288,7 @@ class MakePane(edlib.Pane):
             self.parent.close()
             return 0
 
-    def make_next(self, key, focus, num, str, str2, xy, **a):
+    def make_next(self, key, focus, num, num2, str, str2, xy, **a):
         "handle:make:match-docs"
         if str == "close-idle":
             return self.close_idle(xy[0])
@@ -318,7 +318,15 @@ class MakePane(edlib.Pane):
             if self.point:
                 self.call("doc:set-ref", self.point)
                 self.call("doc:notify:make-set-match", self.point)
+            if num2:
+                # stop here, don't try next doc
+                return 1
             return 0
+        if xy[0] > 0:
+            # This isn't the first pane to be notified, but we found a new match
+            # so move it to the top of the list.
+            self.drop_notify("make:match-docs")
+            self.call("editor:request:make:match-docs")
         if not str2:
             str2 = "ThisPane"
         try:
@@ -486,7 +494,7 @@ class MakeViewerPane(edlib.Pane):
         "handle:K:Enter"
         focus.call("doc:notify:doc:make-revisit", mark)
         next_match("interactive-cmd-next-match", focus,
-                   edlib.NO_NUMERIC, "OtherPane")
+                   edlib.NO_NUMERIC, "OtherPane", 0)
         return 1
 
     def handle_kill(self, key, **a):
@@ -717,13 +725,13 @@ def make_request(key, focus, num, str, mark, **a):
     makeprompt(p)
     return 1
 
-def next_match(key, focus, num, str, **a):
+def next_match(key, focus, num, str, num2, **a):
     if num == edlib.NO_NUMERIC:
         restart = 0
     else:
         restart = 1
     if not focus.call("editor:notify:make:match-docs", "next-match",
-                      str, restart):
+                      str, restart, num2):
         focus.call("Message", "No next-match found")
 
     return 1

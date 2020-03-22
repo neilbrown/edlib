@@ -1583,7 +1583,8 @@ DEF_CMD(emacs_next_match)
 {
 	call("Mode:set-num2", ci->focus, N2_match);
 	call("Message:modal", ci->focus, 0, NULL, "Type ` to search again");
-	return call("interactive-cmd-next-match", ci->focus, ci->num);
+	return call("interactive-cmd-next-match", ci->focus, ci->num, NULL, NULL,
+		    strcmp(ci->key, "K-`") == 0);
 }
 
 DEF_CMD(emacs_match_again)

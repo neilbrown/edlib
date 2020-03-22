@@ -6,7 +6,7 @@ Current priorities
 
 - [X] easy way to kill a make/shell job
 - [X] when finding make buffer to copy from, insist it is same dir or ancestor
-- [ ] make sure :C-x ` stops at end of make output if it is still running.
+- [X] make sure :C-x ` stops at end of make output if it is still running.
       Don't let '`' every continue to next buffer.
 - [ ] in grep/make/shell dialog, allow directory to be seen and changed,
         at least move to parent.
