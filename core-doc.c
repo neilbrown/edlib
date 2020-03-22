@@ -1089,6 +1089,14 @@ out:
 	return 1;
 }
 
+DEF_CMD(doc_abort)
+{
+	struct doc_data *dd = ci->home->data;
+
+	call("doc:notify:Abort", dd->doc);
+	return 0;
+}
+
 
 struct map *doc_default_cmd safe;
 static struct map *doc_handle_cmd safe;
@@ -1125,6 +1133,7 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd, "get-attr", &doc_handle_get_attr);
 	key_add(doc_handle_cmd, "Move-to", &doc_move_to);
 	key_add(doc_handle_cmd, "Notify:clip", &doc_clip);
+	key_add(doc_handle_cmd, "Abort", &doc_abort);
 
 	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
 	key_add(doc_default_cmd, "doc:del-view", &doc_delview);

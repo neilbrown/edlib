@@ -49,7 +49,7 @@ class events(edlib.Pane):
         except edlib.commandfailed:
             ret = False
         edlib.time_stop(edlib.TIME_READ)
-        if not ret:
+        if not ret and ev in self.events:
             del self.events[ev]
         return ret
 

@@ -3,7 +3,7 @@
 # May be distributed under terms of GPLv2 - see file:COPYING
 #
 
-import subprocess, os, fcntl
+import subprocess, os, fcntl, signal
 
 class MakePane(edlib.Pane):
     # This pane over-sees the running of "make" or "grep" command,
@@ -35,6 +35,7 @@ class MakePane(edlib.Pane):
         self.note_ok = False
         self.first_match = True
         self.line = b''
+        self.call("doc:request:Abort")
         self.call("editor:request:make:match-docs")
 
     def run(self, cmd, cwd):
@@ -43,7 +44,7 @@ class MakePane(edlib.Pane):
         env = os.environ.copy()
         env['CWD'] = cwd
         self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
-                                     cwd=cwd, env=env,
+                                     cwd=cwd, env=env, start_new_session=True,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT,
                                      stdin = FNULL)
@@ -67,11 +68,17 @@ class MakePane(edlib.Pane):
             return 1
         if r is None or len(r) == 0:
             (out, err) = self.pipe.communicate()
+            ret = self.pipe.poll()
             self.pipe = None
             l = self.line + out
             self.line = b''
             self.call("doc:replace", l.decode("utf-8"))
-            self.call("doc:replace", "\nProcess Finished\n");
+            if not ret:
+                self.call("doc:replace", "\nProcess Finished\n");
+            elif ret > 0:
+                self.call("doc:replace", "\nProcess Finished (%d)\n" % ret)
+            else:
+                self.call("doc:replace", "\nProcess Finished (signaled %d)\n" % -ret)
             self.call("doc:set:doc-status", "Complete")
             self.call("doc:notify:doc:status-changed")
             self.do_parse()
@@ -418,6 +425,7 @@ class MakePane(edlib.Pane):
         if self.pipe is not None:
             p = self.pipe
             self.pipe = None
+            os.killpg(p.pid, signal.SIGTERM)
             p.terminate()
             try:
                 p.communicate()
@@ -443,10 +451,8 @@ class MakePane(edlib.Pane):
     def handle_abort(self, key, **a):
         "handle:Abort"
         if self.pipe is not None:
-            self.pipe.terminate()
-            self.pipe.communicate()
-            self.pipe = None
-            self.call("doc:replace", "\nProcess Aborted\n");
+            os.killpg(self.pipe.pid, signal.SIGTERM)
+            self.call("doc:replace", "\nProcess signalled\n");
         return 1
 
 def make_attach(key, focus, comm2, str, str2, **a):

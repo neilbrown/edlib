@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] easy way to kill a make/shell job
+- [X] easy way to kill a make/shell job
 - [ ] when finding make buffer to copy from, insist it is same dir or ancestor
 - [ ] make sure :C-x ` stops at end of make output if it is still running.
       Don't let '`' every continue to next buffer.

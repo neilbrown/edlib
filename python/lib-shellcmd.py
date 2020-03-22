@@ -3,12 +3,13 @@
 # May be distributed under terms of GPLv2 - see file:COPYING
 #
 
-import subprocess, os, fcntl
+import subprocess, os, fcntl, signal
 
 class ShellPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.line = b''
+        self.call("doc:request:Abort")
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
@@ -16,7 +17,7 @@ class ShellPane(edlib.Pane):
         env = os.environ.copy()
         env['CWD'] = cwd
         self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
-                                     cwd=cwd, env=env,
+                                     cwd=cwd, env=env, start_new_session=True,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT,
                                      stdin = FNULL)
@@ -38,11 +39,18 @@ class ShellPane(edlib.Pane):
             return 1
         if r is None or len(r) == 0:
             (out,err) = self.pipe.communicate()
+            ret = self.pipe.poll()
             self.pipe = None
             l = self.line + out
             self.line = b''
             self.call("doc:replace", l.decode("utf-8"))
-            self.call("doc:replace", "\nProcess Finished\n");
+            if not ret:
+                self.call("doc:replace", "\nProcess Finished\n");
+            elif ret > 0:
+                self.call("doc:replace", "\nProcess Finished (%d)\n" % ret)
+            else:
+                self.call("doc:replace", "\nProcess Finished (signaled %d)\n" % -ret)
+            self.close()
             return edlib.Efalse
         l = self.line + r
         i = l.rfind(b'\n')
@@ -57,6 +65,7 @@ class ShellPane(edlib.Pane):
         if self.pipe is not None:
             p = self.pipe
             self.pipe = None
+            os.killpg(p.pid, signal.SIGTERM)
             p.terminate()
             try:
                 p.communicate()
@@ -66,12 +75,10 @@ class ShellPane(edlib.Pane):
 
     def handle_abort(self, key, **a):
         "handle:Abort"
-        # FIXME there is no way to send an Abort to this pane
+
         if self.pipe is not None:
-            self.pipe.terminate()
-            self.pipe.communicate()
-            self.pipe = None
-            self.call("doc:replace", "\nProcess Aborted\n");
+            os.killpg(self.pipe.pid, signal.SIGTERM)
+            self.call("doc:replace", "\nProcess signalled\n");
         return 1
 
 def shell_attach(key, focus, comm2, str, str2, **a):
