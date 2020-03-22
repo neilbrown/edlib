@@ -544,7 +544,7 @@ class makeprompt(edlib.Pane):
 def isword(c):
     return c and c.isalnum() or c == '_'
 
-def run_make(key, focus, str, num, **a):
+def run_make(key, focus, str, **a):
     # pop-up has completed
     c = key.index(':')
     dir = key[c+1:]
@@ -568,15 +568,12 @@ def run_make(key, focus, str, num, **a):
         # try to reuse old document
         try:
             doc = focus.call("docs:byname", docname, ret='focus')
-            if num == 42:
-                # use directory from previous run
-                dir = doc['dirname']
             doc.call("doc:clear")
             doc.notify("make-close")
         except edlib.commandfailed:
             pass
     else:
-        # Tell any extend grep documents that
+        # Tell any extant grep documents that
         # a/ are no longer running, b/ have point at the end, c/ are not
         # visible; to close
         focus.call("editor:notify:make:match-docs", "close-idle");
@@ -588,6 +585,7 @@ def run_make(key, focus, str, num, **a):
 
     doc['dirname'] = dir
     doc['view-default'] = 'make-viewer'
+    doc['make-command'] = str
     if cmd == "make":
         p = focus.call("DocPane", doc, ret='focus')
         if not p:
@@ -687,10 +685,18 @@ def make_request(key, focus, num, str, mark, **a):
                 dflt_arg = str
 
     if cmd == "make" and num:
-        # re-use previous command
-        make_cmd = focus.call("history-get-last", history, ret='str')
+        # re-use previous run if directory is compatible
+        make_cmd = None
+        try:
+            doc = focus.call("docs:byname", "*Compile Output*", ret='focus')
+            if doc and dir.startswith(doc['dirname']):
+                dir = doc['dirname']
+                make_cmd = doc['make-command']
+        except edlib.commandfailed:
+            pass
+
         if make_cmd:
-            run_make("%s:%s"%(mode,dir), focus, make_cmd, 42)
+            run_make("%s:%s"%(mode,dir), focus, make_cmd)
             return 1
 
     # Create a popup to ask for make command

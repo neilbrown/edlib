@@ -5,9 +5,11 @@ Current priorities
 ------------------
 
 - [X] easy way to kill a make/shell job
-- [ ] when finding make buffer to copy from, insist it is same dir or ancestor
+- [X] when finding make buffer to copy from, insist it is same dir or ancestor
 - [ ] make sure :C-x ` stops at end of make output if it is still running.
       Don't let '`' every continue to next buffer.
+- [ ] in grep/make/shell dialog, allow directory to be seen and changed,
+        at least move to parent.
 - [ ] create a logging interface where messages can to get a file, stderr, or
       an internal buffer which can be viewed in a pane.  EDLIB_LOGGIN controls
       where it goes
@@ -44,6 +46,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] don't tell me two dirs are the same if the only difference is trailing '/'
 - [ ] I cannot reformat C comments any more, because C-q re-indents
 - [ ] lib-renderline draw_some() was seen in a (seemingly) infinite loop
  	while (*rlp)
