@@ -222,7 +222,7 @@ DEF_CMD(view_refresh)
 		if (label < vd->border_width)
 			label = 1;
 		one_char(p, title, "inverse",
-			 label * vd->border_width, vd->ascent);
+			 label, vd->ascent);
 	}
 	if (vd->border & BORDER_BOT) {
 		for (i = 0; i < p->w; i+= vd->border_width)

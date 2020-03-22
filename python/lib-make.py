@@ -549,6 +549,37 @@ class makeprompt(edlib.Pane):
         str = focus.call("doc:get-str", ret="str")
         return focus.call("popup:close", str)
 
+    def up(self, key, focus, **a):
+        "handle:K:Up"
+        d = self['dirname']
+        if d[-1] == '/':
+            d = os.path.dirname(d)
+        d = os.path.dirname(d)
+        if d[-1] != '/':
+            d = d + '/'
+        self.damaged(edlib.DAMAGED_CONTENT)
+        self['dirname'] = d
+        self['pane-title'] = "%s in %s" % (self['cmd'],d)
+        self['done-key'] = "%s:%s" % (self['mode'], d)
+        return 1
+
+    def down(self, key, focus, **a):
+        "handle:K:Down"
+        d = self['dirname']
+        orig = self['orig-dirname']
+        if not orig.startswith(d):
+            return 1
+        n = orig.find('/', len(d))
+        if n > 0:
+            d = orig[:n+1]
+        else:
+            d = orig
+        self.damaged(edlib.DAMAGED_CONTENT)
+        self['dirname'] = d
+        self['pane-title'] = "%s in %s" % (self['cmd'],d)
+        self['done-key'] = "%s:%s" % (self['mode'], d)
+        return 1
+
 def isword(c):
     return c and c.isalnum() or c == '_'
 
@@ -718,10 +749,14 @@ def make_request(key, focus, num, str, mark, **a):
     p["prompt"] = "%s Command" % cmd
     p["done-key"] = "%s:%s" % (mode, dir)
     p.call("doc:set-name", "%s Command" % cmd)
+    p['pane-title'] = "%s in %s" %(cmd, dir)
+    p['cmd'] = cmd
+    p['mode'] = mode
     if history:
         p = p.call("attach-history", history, "popup:close", ret='focus')
     if dir:
         p["dirname"] = dir
+    p['orig-dirname'] = focus['dirname']
     makeprompt(p)
     return 1
 
