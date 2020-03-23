@@ -86,7 +86,7 @@ class MakePane(edlib.Pane):
         l = self.line + r
         i = l.rfind(b'\n')
         if i >= 0:
-            self.call("doc:replace", r[:i+1].decode("utf-8"));
+            self.call("doc:replace", l[:i+1].decode("utf-8"));
             l = l[i+1:]
         self.line = l
         self.do_parse()
