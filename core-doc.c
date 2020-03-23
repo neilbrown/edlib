@@ -1,5 +1,5 @@
 /*
- * Copyright Neil Brown ©2015-2019 <neil@brown.name>
+ * Copyright Neil Brown ©2015-2020 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * All content managed in edlib is stored in documents.

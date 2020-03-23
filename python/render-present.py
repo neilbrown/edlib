@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright Neil Brown ©2015-2019,2016 <neil@brown.name>
+# Copyright Neil Brown ©2015-2020,2016 <neil@brown.name>
 # May be distributed under terms of GPLv2 - see file:COPYING
 
 # edlib rendering module for slide presentation.

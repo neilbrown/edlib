@@ -14,6 +14,7 @@ Current priorities
       an internal buffer which can be viewed in a pane.  EDLIB_LOGGIN controls
       where it goes
 - [ ] send python errors to the logging interface
+- [ ] parsing of git multi-diff does produce correct result
 - [X] convert to python3 and pygobject
 - [ ] C/python code "index" pane to quickly jump to function, and see context
 - [ ] beginnings of test suite
@@ -75,6 +76,9 @@ Bugs to be fixed
 Core features
 -------------
 
+- [ ] Make it possible to unload C modules when refcount on all commands
+      reaches zero
+- [ ] Make it possible to unload Python modules
 - [X] pane_close() can be called at awkward times.  We need to do some initial
       processing so that it looks closed, but so that code can continue to
       run, then schedule proper close for later.
@@ -214,13 +218,14 @@ Module features
 ### lib-input
 - [ ] keep log of keystrokes in a restricted document
 - [ ] support keyboard macros
-- [ ] if a prefix is unchange for a short while, display it in the message line
-- [ ] can we capture the substates of character composition, and give feed-back
+- [ ] if a prefix is unchanged for a short while, display it in the message line
+- [ ] can we capture the substates of character composition, and give feed-back?
 
 ### doc-dir
 
 - [ ] how to change sort order of a directory listing
 - [ ] chown/chmod/unlink/rename etc
+- [ ] diff an auto-save file with base, and optionally replace.
 
 ### doc-text
 
@@ -263,6 +268,7 @@ Module features
 ### grep/make
 
 - [X] don't destroy the output doc.  Erase content (Avoiding undo) and reuse.
+- [ ] handle info: lines better - prefer a .c file over .h.
 - [ ] neg arg to next-match goes backwards, and ` keeps going backwards
 - [ ] if file isn't already loaded, wait until it is wanted, or something
       else loads it.
@@ -274,7 +280,7 @@ Module features
 - [ ] allow make even if not all files are saved - 'q' from save-all?
 - [ ] numeric-prefix to make will auto-save everything.
 - [ ] grep should (optionally) save files in the directory tree
-- [ ] run make in a given parent
+- [X] run make in a given parent
 - [X] use notify chain to allow stack of 'greps'
 
 ### message-line
@@ -287,7 +293,7 @@ Module features
 ### regexp
 
 - [ ] '\' shouldn't be auto-inserted inside [] set.
-- [ ] write an alternate back-tracking matcher which supports \n
+- [ ] write an alternate back-tracking matcher which supports \N
       in the pattern.
 
 ### docs
@@ -500,7 +506,7 @@ Possibly some of these will end up being features in other modules.
       This might support a menu-bar, or drop-downs for spelling or dynamic completion.
 - [ ] hex edit block device - mmap document type
 - [ ] spell check
-      This leave attributes where errors are found, and needs to be notified of
+      This leaves attributes where errors are found, and needs to be notified of
       all changes so it can queue some checks.
 
 New Modules - more complex
@@ -543,12 +549,11 @@ Some of the use-cases for threading that have occurred to me are:
   could be leveraged for remote threads to communicate.
 
 I probably don't want any shared data structures except the pipe that sends
-events back and forth, and these event need to be standard commands communicating
-between panes.  So it might be a variant for notifications.
+events back and forth, and these events need to be standard commands communicating
+between panes.  So it might be a variant of notifications.
 
 Keeping tracks of marks across the link will probably be the most complex
 part.  Possibly only marks owned by the pane will be mirrored across.
-
 
 ###  interactive shell / terminal emulator
 
@@ -708,6 +713,15 @@ I want:
 
 Non-module functionality
 ------------------------
+
+### Documentation
+
+ Both user-documentation and developer documentation, extracted from
+ literate programming comments, and viewable using markdown mode.  This
+ would include links to other files with more content.  Maybe
+ documentation from a given file could be parsed out and displated
+ interactively by a doc pane.
+
 
 ### IDE
 
