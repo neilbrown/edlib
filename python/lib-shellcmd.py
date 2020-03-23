@@ -15,7 +15,7 @@ class ShellPane(edlib.Pane):
         FNULL = open(os.devnull, 'r')
         self.call("doc:replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
         env = os.environ.copy()
-        env['CWD'] = cwd
+        env['PWD'] = cwd
         self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
                                      cwd=cwd, env=env, start_new_session=True,
                                      stdout=subprocess.PIPE,
