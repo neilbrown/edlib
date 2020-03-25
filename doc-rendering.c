@@ -617,7 +617,7 @@ DEF_CMD(attach_dr)
 
 	alloc(dri, pane);
 
-	p = doc_register(ci->focus, 0, &dr_handle.c, dri);
+	p = doc_register(ci->focus, &dr_handle.c, dri);
 	if (!p) {
 		free(dri);
 		return Efail;

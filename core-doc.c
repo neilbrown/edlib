@@ -70,7 +70,7 @@ static void doc_init(struct doc *d safe)
 	d->refcnt = NULL;
 }
 
-struct pane *safe __doc_register(struct pane *parent, short z,
+struct pane *safe __doc_register(struct pane *parent,
 				 struct command *handle safe,
 				 struct doc *doc safe,
 				 void *data safe,
@@ -81,7 +81,7 @@ struct pane *safe __doc_register(struct pane *parent, short z,
 	if (parent)
 		parent = pane_root(parent);
 	doc_init(doc);
-	doc->home = __pane_register(parent, z, handle, doc, data_size);
+	doc->home = __pane_register(parent, 0, handle, doc, data_size);
 	return doc->home;
 }
 

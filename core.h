@@ -430,12 +430,12 @@ struct pane *safe __pane_register(struct pane *parent, short z,
 #define pane_register4(p,z,h,d) __pane_register(p,z,h,d,sizeof((d)[0]))
 #define pane_register3(p,z,h) __pane_register(p,z,h,NULL, 0)
 
-struct pane *safe __doc_register(struct pane *parent, short z,
+struct pane *safe __doc_register(struct pane *parent,
 				 struct command *handle safe,
 				 struct doc *doc safe,
 				 void *data safe,
 				 short data_size);
-#define doc_register(p,z,h,d) __doc_register(p,z,h,&(d)->doc,d,sizeof((d)[0]))
+#define doc_register(p,h,d) __doc_register(p,h,&(d)->doc,d,sizeof((d)[0]))
 
 static inline struct pane * safe pane_root(struct pane *p safe)
 {

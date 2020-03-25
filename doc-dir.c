@@ -127,7 +127,7 @@ DEF_CMD(dir_new)
 	alloc(dr, pane);
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	doc_register(ci->home, 0, &doc_handle.c, dr);
+	doc_register(ci->home, &doc_handle.c, dr);
 	p = call_ret(pane, "attach-render-format", dr->doc.home, 1);
 	if (p)
 		p = call_ret(pane, "attach-doc-rendering", p);

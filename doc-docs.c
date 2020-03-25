@@ -910,7 +910,7 @@ DEF_CMD(attach_docs)
 	alloc(doc, pane);
 	docs_init_map();
 
-	p = doc_register(ci->home, 0, &docs_handle.c, doc);
+	p = doc_register(ci->home, &docs_handle.c, doc);
 	if (!p) {
 		free(doc->doc.name);
 		free(doc);
