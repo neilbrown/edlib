@@ -15,6 +15,7 @@ Current priorities
       where it goes
 - [ ] send python errors to the logging interface
 - [ ] parsing of git multi-diff does produce correct result
+- [ ] option to save-all to quit and visit a changed document
 - [X] convert to python3 and pygobject
 - [ ] C/python code "index" pane to quickly jump to function, and see context
 - [ ] beginnings of test suite
@@ -47,6 +48,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] dynamic expansion highlight doesn't disappear when I move the cursor.
+- [ ] doc-docs sometime shows the same doc twice at the top of the list.
 - [ ] don't tell me two dirs are the same if the only difference is trailing '/'
 - [ ] I cannot reformat C comments any more, because C-q re-indents
 - [ ] lib-renderline draw_some() was seen in a (seemingly) infinite loop
@@ -135,6 +138,11 @@ Core features
 - [ ] Replace asserts with warnings where possible.
 - [ ] hide view-num inside pane so number cannot be misused.
      i.e. each view is owned by a pane and can only be used by that pane.
+
+tile
+----
+
+Provide something like :C-x-1 which only affects one dimension.
 
 rexel
 -----

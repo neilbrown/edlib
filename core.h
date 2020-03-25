@@ -223,6 +223,7 @@ wint_t mark_step_pane(struct pane *p safe, struct mark *m safe,
 		      int forward, int move);
 void mark_make_first(struct mark *m safe);
 void mark_make_last(struct mark *m safe);
+void mark_step(struct mark *m safe, int forward);
 
 static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
 {

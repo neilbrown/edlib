@@ -298,7 +298,6 @@ DEF_CMD(dir_step)
 {
 	struct doc *doc = ci->home->data;
 	struct mark *m = ci->mark;
-	struct mark *m2, *target = m;
 	bool forward = ci->num;
 	bool move = ci->num2;
 	struct directory *dr = container_of(doc, struct directory, doc);
@@ -318,11 +317,6 @@ DEF_CMD(dir_step)
 			else
 				d = list_next_entry(d, lst);
 		}
-		if (move)
-			for (m2 = doc_next_mark_all(m);
-			     m2 && (m2->ref.d == d || m2->ref.d == m->ref.d);
-			     m2 = doc_next_mark_all(m2))
-				target = m2;
 	} else {
 		if (d == list_first_entry(&dr->ents, struct dir_ent, lst))
 			d = NULL;
@@ -334,15 +328,11 @@ DEF_CMD(dir_step)
 			ret = WEOF;
 			d = m->ref.d;
 		}
-		if (move)
-			for (m2 = doc_prev_mark_all(m);
-			     m2 && (m2->ref.d == d || m2->ref.d == m->ref.d);
-			     m2 = doc_prev_mark_all(m2))
-				target = m2;
 	}
 	if (move) {
-		mark_to_mark(m, target);
+		mark_step(m, forward);
 		m->ref.d = d;
+		mark_step(m, forward);
 	}
 	/* return value must be +ve, so use high bits to ensure this. */
 	return CHAR_RET(ret);

@@ -482,7 +482,6 @@ DEF_CMD(docs_step)
 {
 	struct doc *doc = ci->home->data;
 	struct mark *m = ci->mark;
-	struct mark *m2, *target = m;
 	bool forward = ci->num;
 	bool move = ci->num2;
 	int ret;
@@ -500,11 +499,6 @@ DEF_CMD(docs_step)
 			next = NULL;
 		else
 			next = list_next_entry(p, siblings);
-		if (move)
-			for (m2 = doc_next_mark_all(m);
-			     m2 && (m2->ref.p == next || m2->ref.p == m->ref.p);
-			     m2 = doc_next_mark_all(m2))
-				target = m2;
 	} else {
 		next = p;
 		if (list_empty(&d->collection->children))
@@ -519,15 +513,11 @@ DEF_CMD(docs_step)
 			p = NULL;
 		if (p)
 			next = p;
-		if (move)
-			for (m2 = doc_prev_mark_all(m);
-			     m2 && (m2->ref.p == next || m2->ref.p == m->ref.p);
-			     m2 = doc_prev_mark_all(m2))
-				target = m2;
 	}
 	if (move) {
-		mark_to_mark(m, target);
+		mark_step(m, forward);
 		m->ref.p = next;
+		mark_step(m, forward);
 	}
 
 	if (p == NULL)

@@ -440,8 +440,8 @@ struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner)
  *
  */
 
-static wint_t mark_step(struct doc *d safe, struct mark *m safe,
-			int forward, int move)
+wint_t mark_step2(struct doc *d safe, struct mark *m safe,
+		  int forward, int move)
 {
 	int ret;
 
@@ -469,12 +469,6 @@ wint_t mark_step_pane(struct pane *p safe, struct mark *m safe,
 		return WEOF;
 	else
 		return ret & 0xfffff;
-}
-
-wint_t mark_step2(struct doc *d safe, struct mark *m safe,
-		  int forward, int move)
-{
-	return mark_step(d, m, forward, move);
 }
 
 wint_t mark_next(struct doc *d safe, struct mark *m safe)
@@ -738,6 +732,27 @@ void mark_to_mark(struct mark *m safe, struct mark *target safe)
 {
 	mark_to_mark_noref(m, target);
 	mark_ref_copy(m, target);
+}
+
+void mark_step(struct mark *m safe, int forward)
+{
+	/* step mark forward, or backward, over all marks with same
+	 * ref.
+	 */
+	struct mark *m2, *target = m;
+
+	if (forward) {
+		for (m2 = doc_next_mark_all(m);
+		     m2 && mark_same(m, m2);
+		     m2 = doc_next_mark_all(m2))
+			target = m2;
+	} else {
+		for (m2 = doc_prev_mark_all(m);
+		     m2 && mark_same(m, m2);
+		     m2 = doc_prev_mark_all(m2))
+			target = m2;
+	}
+	mark_to_mark_noref(m, target);
 }
 
 /* Make a given mark the first, or last, among marks with

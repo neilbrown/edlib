@@ -1656,6 +1656,19 @@ static PyObject *Mark_clip(Mark *self safe, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Mark_step(Mark *self safe, PyObject *args)
+{
+	/* Convenience function to help implement doc:step */
+	int forward = 1;
+	int ret = PyArg_ParseTuple(args, "i", &forward);
+
+	if (ret > 0 && self->mark)
+		mark_step(self->mark, forward);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyObject *Mark_next(Mark *self safe, PyObject *args)
 {
 	struct mark *next;
@@ -1828,6 +1841,8 @@ static PyMethodDef mark_methods[] = {
 	 "Make first of marks with same ref"},
 	{"make_last", (PyCFunction)Mark_make_last, METH_NOARGS,
 	 "Make last of marks with same ref"},
+	{"step", (PyCFunction)Mark_step, METH_VARARGS,
+	 "Move mark over any adjacent marks with same reference"},
 	{NULL}
 };
 
