@@ -728,7 +728,7 @@ class CModePane(edlib.Pane):
             focus.call("doc:step", 1, 1, mark)
             c = focus.call("doc:step", 1, 0, mark, ret="char")
 
-        if key == "Reindent" and c == '\n':
+        if key != "K:Tab" and c == '\n':
             # Blank line, do nothing for reindent
             if m < mark:
                 try:
@@ -744,7 +744,7 @@ class CModePane(edlib.Pane):
 
         current = focus.call("doc:get-str", m, mark, ret="str")
 
-        if (key == 'Reindent' and
+        if (key != 'K:Tab' and
             focus.call("doc:step", 1, mark, ret='char') in '#/' and
             (current == new or current == new2)):
             # This is a preproc directive or comment.  They can equally
@@ -758,7 +758,7 @@ class CModePane(edlib.Pane):
             except edlib.commandfailed:
                 pass
             return 0
-        if depths[-1] == depths[-2] or key == "Reindent" or moved:
+        if depths[-1] == depths[-2] or key != "K:Tab" or moved:
             # Either we weren't at start of text and have moved there,
             # or there is no extra indent allowed, possibly because we are doing
             # re-indent.  In any of these cases, current indent is good enough,
