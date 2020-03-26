@@ -55,6 +55,7 @@ struct generic_doc_ref {
 	int	i;
 };
 
+void LOG(char *fmt, ...);
 
 /* The 'editor' contains (by reference) everything else.
  * This captures and documents the global states, and allows
@@ -161,6 +162,7 @@ struct doc {
 void doc_free(struct doc *d safe);
 extern struct map *doc_default_cmd safe;
 void doc_setup(struct pane *ed safe);
+void log_setup(struct pane *ed safe);
 
 #define CHAR_RET(_c) ((_c & 0xFFFFF) | 0x100000)
 

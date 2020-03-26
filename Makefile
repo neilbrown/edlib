@@ -69,7 +69,7 @@ all: edlib checksym lib shared
 
 OBJ = O/edlib.o
 LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
-	O/core-keymap.o O/core-pane.o O/core-misc.o
+	O/core-keymap.o O/core-pane.o O/core-misc.o O/core-log.o
 SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/doc-email.o O/doc-multipart.o O/doc-rendering.o \
 	O/render-hex.o O/render-lines.o \

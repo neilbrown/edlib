@@ -422,5 +422,6 @@ struct pane *editor_new(void)
 	ed = pane_register(NULL, 0, &ei->cmd.c, ei);
 
 	doc_setup(ed);
+	log_setup(ed);
 	return ed;
 }

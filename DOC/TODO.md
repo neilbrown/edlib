@@ -10,8 +10,8 @@ Current priorities
       Don't let '`' every continue to next buffer.
 - [X] in grep/make/shell dialog, allow directory to be seen and changed,
         at least move to parent.
-- [ ] create a logging interface where messages can to get a file, stderr, or
-      an internal buffer which can be viewed in a pane.  EDLIB_LOGGIN controls
+- [X] create a logging interface where messages can to get a file, stderr, or
+      an internal buffer which can be viewed in a pane.  EDLIB_LOG controls
       where it goes
 - [ ] send python errors to the logging interface
 - [ ] parsing of git multi-diff does produce correct result
@@ -48,6 +48,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] after 'else' in C code, we don't auto-indent right if next statement is 'if',
+      even when on different line
 - [ ] dynamic expansion highlight doesn't disappear when I move the cursor.
 - [ ] doc-docs sometime shows the same doc twice at the top of the list.
 - [ ] don't tell me two dirs are the same if the only difference is trailing '/'

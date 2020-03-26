@@ -2247,11 +2247,50 @@ static PyObject *py_time_stop(PyObject *self, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *py_LOG(PyObject *self, PyObject *args)
+{
+	int argc = PySequence_Length(args);
+	int i;
+	char buf[1024];
+	int l = 0;
+
+	for (i = 0; i < argc; i++) {
+		PyObject *o = PySequence_GetItem(args, i);
+		PyObject *s, *tofree = NULL;
+		char *str;
+		unsigned int slen;
+
+		if (!o)
+			continue;
+		s = PyObject_Str(o);
+		Py_DECREF(o);
+		if (!s)
+			continue;
+		str = python_as_string(s, &tofree);
+		slen = str ? strlen(str) : 0;
+		if (str && slen < sizeof(buf) - l - 2) {
+			if (l)
+				buf[l++] = ' ';
+			strcpy(buf+l, str);
+			l += slen;
+		}
+		Py_XDECREF(tofree);
+	}
+	buf[l] = 0;
+	if (l)
+		LOG(buf);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef edlib_methods[] = {
 	{"time_start", py_time_start, METH_VARARGS,
 	 "Record start time"},
 	{"time_stop", py_time_stop, METH_VARARGS,
 	 "Record stop time"},
+	{"LOG", py_LOG, METH_VARARGS,
+	 "Generate log message"},
 	{NULL, NULL, 0, NULL}
 };
 
