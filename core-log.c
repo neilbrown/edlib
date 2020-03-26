@@ -69,6 +69,8 @@ void LOG(char *fmt, ...)
 	if (!(void*)log_doc)
 		/* too early */
 		return;
+	if (!fmt)
+		return;
 
 	b = get_buf(log_doc);
 	va_start(ap, fmt);

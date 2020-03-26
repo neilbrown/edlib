@@ -13,7 +13,7 @@ Current priorities
 - [X] create a logging interface where messages can to get a file, stderr, or
       an internal buffer which can be viewed in a pane.  EDLIB_LOG controls
       where it goes
-- [ ] send python errors to the logging interface
+- [X] send python errors to the logging interface
 - [ ] parsing of git multi-diff does produce correct result
 - [ ] option to save-all to quit and visit a changed document
 - [X] convert to python3 and pygobject

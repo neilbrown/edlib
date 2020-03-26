@@ -3,7 +3,7 @@
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * Python3 bindings for edlib.
- * And edlib command "python-load" will read and execute a python
+ * An edlib command "python-load" will read and execute a python
  * script.
  * It can use "edlib.editor" to get the editor instance, and can
  * use "edlib.call()" to issue edlib commands.
@@ -61,6 +61,7 @@ static PyObject *Edlib_CommandFailed;
 static PyObject *EdlibModule;
 
 static char *module_dir;
+static char *python_as_string(PyObject *s, PyObject **tofree safe);
 
 /* Python commands visible to edlib are wrapped in
  * the python_command.  There is only one per callback,
@@ -172,7 +173,8 @@ static inline PyObject *safe Pane_Frompane(struct pane *p)
 		in_pane_frompane = 1;
 		pane = (Pane * safe)PyObject_CallObject((PyObject*)&PaneType, NULL);
 		in_pane_frompane = 0;
-		pane->pane = p;
+		if (pane)
+			pane->pane = p;
 	}
 	return (PyObject*)pane;
 }
@@ -197,6 +199,102 @@ static inline PyObject *safe Comm_Fromcomm(struct command *c safe)
 	return (PyObject*)comm;
 }
 
+static PyObject *py_LOG(PyObject *self, PyObject *args);
+static void PyErr_LOG(void)
+{
+	/* cribbed from https://groups.google.com/forum/#!topic/comp.lang.python/khLrxC6EOKc */
+	char *errorMsg = NULL;
+	PyObject *modIO = NULL;
+	PyObject *modTB = NULL;
+	PyObject *obFuncStringIO = NULL;
+	PyObject *obIO = NULL;
+	PyObject *obFuncTB = NULL;
+	PyObject *argsTB = NULL;
+	PyObject *obResult = NULL;
+	PyObject *tofree = NULL;
+	PyObject *exc_typ, *exc_val, *exc_tb;
+
+	if (!PyErr_Occurred())
+		return;
+
+	PyErr_Fetch(&exc_typ, &exc_val, &exc_tb);
+	PyErr_NormalizeException(&exc_typ, &exc_val, &exc_tb);
+
+	/* Import the modules we need - StringIO and traceback */
+	errorMsg = "Can't import io";
+	modIO = PyImport_ImportModule("io");
+	if (!modIO)
+		goto out;
+
+	errorMsg = "Can't import traceback";
+	modTB = PyImport_ImportModule("traceback");
+	if (!modTB)
+		goto out;
+
+	/* Construct a cStringIO object */
+	errorMsg = "Can't find io.StringIO";
+	obFuncStringIO = PyObject_GetAttrString(modIO, "StringIO");
+	if (!obFuncStringIO)
+		goto out;
+	errorMsg = "io.StringIO() failed";
+	obIO = PyObject_CallObject(obFuncStringIO, NULL);
+	if (!obIO)
+		goto out;
+
+	/* Get the traceback.print_exception function, and call it. */
+	errorMsg = "Can't find traceback.print_exception";
+	obFuncTB = PyObject_GetAttrString(modTB, "print_exception");
+	if (!obFuncTB)
+		goto out;
+	errorMsg = "can't make print_exception arguments";
+	argsTB = Py_BuildValue("OOOOO",
+			       exc_typ ? exc_typ : Py_None,
+			       exc_val ? exc_val : Py_None,
+			       exc_tb  ? exc_tb  : Py_None,
+			       Py_None,
+			       obIO);
+	if (!argsTB)
+		goto out;
+
+	errorMsg = "traceback.print_exception() failed";
+	obResult = PyObject_CallObject(obFuncTB, argsTB);
+	if (!obResult) {
+		PyErr_Print();
+		goto out;
+	}
+
+	/* Now call the getvalue() method in the StringIO instance */
+	Py_DECREF(obFuncStringIO);
+	errorMsg = "cant find getvalue function";
+	obFuncStringIO = PyObject_GetAttrString(obIO, "getvalue");
+	if (!obFuncStringIO)
+		goto out;
+	Py_XDECREF(obResult);
+	errorMsg = "getvalue() failed.";
+	obResult = PyObject_CallObject(obFuncStringIO, NULL);
+	if (!obResult)
+		goto out;
+
+	/* And it should be a string all ready to go - duplicate it. */
+	LOG("Python error:\n%s", python_as_string(obResult, &tofree));
+	Py_XDECREF(tofree);
+	errorMsg = NULL;
+out:
+	if (errorMsg)
+		LOG(errorMsg);
+	Py_XDECREF(modIO);
+	Py_XDECREF(modTB);
+	Py_XDECREF(obFuncStringIO);
+	Py_XDECREF(obIO);
+	Py_XDECREF(obFuncTB);
+	Py_XDECREF(argsTB);
+	Py_XDECREF(obResult);
+
+	Py_XDECREF(exc_typ);
+	Py_XDECREF(exc_val);
+	Py_XDECREF(exc_tb);
+}
+
 DEF_CMD(python_load)
 {
 	const char *fname = ci->str;
@@ -219,7 +317,7 @@ DEF_CMD(python_load)
 	PyDict_SetItemString(globals, "editor", Ed);
 	PyDict_SetItemString(globals, "edlib", EdlibModule);
 	PyRun_FileExFlags(fp, fname, Py_file_input, globals, globals, 0, NULL);
-	PyErr_Print();
+	PyErr_LOG();
 	Py_DECREF(Ed);
 	fclose(fp);
 	return 1;
@@ -250,7 +348,7 @@ DEF_CMD(python_load_module)
 	PyDict_SetItemString(globals, "pane", Pane_Frompane(ci->focus));
 	PyDict_SetItemString(globals, "edlib", EdlibModule);
 	PyRun_FileExFlags(fp, buf, Py_file_input, globals, globals, 0, NULL);
-	PyErr_Print();
+	PyErr_LOG();
 	Py_DECREF(Ed);
 	fclose(fp);
 	return 1;
@@ -337,7 +435,7 @@ REDEF_CMD(python_call)
 	Py_DECREF(args);
 	Py_DECREF(kwds);
 	if (!ret) {
-		PyErr_Print();
+		PyErr_LOG();
 		/* FIXME cancel error?? */
 		return Efail;
 	}
