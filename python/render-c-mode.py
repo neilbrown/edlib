@@ -250,7 +250,7 @@ class parse_state:
             self.push()
             self.open = None
             self.ss = True
-            if c == 'e' and p.call("text-match", m.dup(), " if\\b", 1) > 0:
+            if c == 'e' and p.call("text-match", m.dup(), "[ \t]+if\\b") > 0:
                 # "else if" doesn't increase depth
                 pass
             else:

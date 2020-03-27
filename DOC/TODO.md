@@ -48,7 +48,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] after 'else' in C code, we don't auto-indent right if next statement is 'if',
+- [ ] It should be possible to create a file with "edlib filename"
+- [X] after 'else' in C code, we don't auto-indent right if next statement is 'if',
       even when on different line
 - [ ] dynamic expansion highlight doesn't disappear when I move the cursor.
 - [ ] doc-docs sometime shows the same doc twice at the top of the list.
