@@ -60,7 +60,7 @@ class DiffPane(edlib.Pane):
             f = 0
             # we don't know how many base files are being diffed against
             # until we see the '@@+' line, so allow for 1-4
-            while c in '+- ' and f < 4:
+            while c and c in '+- ' and f < 4:
                 if c in '+ ':
                     lines[f] += 1
                 f += 1
