@@ -79,7 +79,7 @@ Core features
 tile
 ----
 
-Provide something like :C-x-1 which only affects one dimension.
+- [ ] Provide something like :C-x-1 which only affects one dimension.
 
 rexel
 -----
@@ -112,6 +112,7 @@ Module features
 
 - [ ] search/replace should support undo somehow
 - [ ] search/replace should make it easy to revisit previous changes.
+- [ ] it is hard to search for 'tab' because it you get moved to 'replace'
 - [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
 - [ ] filename completion should ignore uninteresting files like ".o"
 - [ ] invent a way to reserve 'extra' values for command sets
@@ -123,6 +124,7 @@ Module features
 - [ ] maybe meta-, does c-x` if that is the recent search?
 - [ ] Support write-file (providing a file name) - currently I only save
       to the file I loaded from.
+- [ ] Support include-file (C-x i) to load contents of a file at point.
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 - [ ] compare two panes somehow
 - [ ] pipe doc or selection to a command, optionally capture to replace with output.
@@ -158,6 +160,7 @@ Module features
       the location of “point” can affect the rendering.
 
 ### lib-input
+
 - [ ] keep log of keystrokes in a restricted document
 - [ ] support keyboard macros
 - [ ] if a prefix is unchanged for a short while, display it in the message line
@@ -191,7 +194,7 @@ Module features
 
 - [ ] mouse selection should work in completion pane
 - [ ] filename completion should work for earlier component of path.
-- [ ] case insensitive substring match for fn or doc completion?
+- [X] case insensitive substring match for fn or doc completion?
 - [ ] The “complete” popup should be positioned above/below the file name,
       not over the top of it.
 
@@ -365,7 +368,7 @@ Module features
 
 ### C-mode
 
-- [ ] python indent need to recognize comment, and not treat them
+- [X] python indent needs to recognize comment, and not treat them
       like code.
 - [ ]  auto-indent enhancements
 
