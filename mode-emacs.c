@@ -1384,6 +1384,25 @@ DEF_CMD(emacs_version)
 	return 1;
 }
 
+DEF_CMD(emacs_log)
+{
+	/* View the debug log */
+	struct pane *p, *doc;
+
+	doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL, "*Debug Log*");
+	if (!doc) {
+		call("interactive-cmd-view-log", ci->focus);
+		doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL,
+			     "*Debug Log*");
+	}
+	if (!doc)
+		return Efail;
+	p = call_ret(pane, "ThisPane", ci->focus);
+	if (p)
+		home_call(doc, "doc:attach-view", p, 1);
+	return 1;
+}
+
 DEF_CMD(emacs_mark)
 {
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
@@ -1902,6 +1921,7 @@ static void emacs_init(void)
 
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);
+	key_add(m, "interactive-cmd-log", &emacs_log);
 
 	key_add(m, "M:Press-1", &emacs_press);
 	key_add(m, "M:Release-1", &emacs_release);
