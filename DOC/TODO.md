@@ -4,53 +4,22 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [X] easy way to kill a make/shell job
-- [X] when finding make buffer to copy from, insist it is same dir or ancestor
-- [X] make sure :C-x ` stops at end of make output if it is still running.
-      Don't let '`' every continue to next buffer.
-- [X] in grep/make/shell dialog, allow directory to be seen and changed,
-        at least move to parent.
-- [X] create a logging interface where messages can to get a file, stderr, or
-      an internal buffer which can be viewed in a pane.  EDLIB_LOG controls
-      where it goes
-- [X] send python errors to the logging interface
-- [X] parsing of git multi-diff does produce correct result
+- [ ] filename completion is really slow on large directories. Probably quadratic.
 - [ ] option to save-all to quit and visit a changed document
-- [X] convert to python3 and pygobject
 - [ ] C/python code "index" pane to quickly jump to function, and see context
 - [ ] beginnings of test suite
-- [X] make key names shorter/easier
 - [ ] git mode:
    - 'log' display that displays limited history, and asks for more as scrolling
      happens
    - easy view commit from log
    - rebase to a given line - rearrange lines above.
 
-- [X] fill-mode
-      - some way to select it (configuration?) and to set width
-      - on space or enter, fill just current line, but use same mech as fill command
-        to determine prefix
-      - highlight text beyond width, which will wrap when space/enter is pressed.
-
-- [X] rename lib-renderline to lib-markup and create 'renderline' for a single
-      line of render-lines.
 - [ ] change notmuch-query-view to use doc-rendering
-
-- [X] recompile should use same directory
-- [X] If I press 'enter' in an old grep/make doc, it should become the
-      target again
-- [X] we should keep several 'grep' (And make?) docs around and when one
-      finished, restart previous
-- [X] recognize "Entering directory '...'" line in make output and adjust target dir.
-- [X] 'diff' shell windows need to keep diff-mode when revisited.
-- [X] do case-insensitive matching for doc/file completion
 
 Bugs to be fixed
 ----------------
 
 - [ ] It should be possible to create a file with "edlib filename"
-- [X] after 'else' in C code, we don't auto-indent right if next statement is 'if',
-      even when on different line
 - [ ] dynamic expansion highlight doesn't disappear when I move the cursor.
 - [ ] doc-docs sometime shows the same doc twice at the top of the list.
 - [ ] don't tell me two dirs are the same if the only difference is trailing '/'
@@ -63,38 +32,12 @@ Bugs to be fixed
 	 * text = 0x55a24c91e150 " ", attr = 0x55a24c982570 "", x = -3181,
        though x changed.
 
-- [X] python indent confused by "if stuff (stuff \n stuff):\n..."
-- [X] changed files don't always get reloaded, or reload-file doesn't
-      always actually change the content.  Maybe check ctime??
-
-- [X] doc-rendering needs to pass notifcations down to the underlying
-      doc - else Cx-# doesn't close a dir buffer.
-
-- [X] 'fill para' should leave point where it is, not move to end of para.
-
-- [X] for ()\n if () {} else if () GET INDENT WRONG
-       I need a different marker for 'if' than for other prefixes, and
-       I need to recognise else *after* point and only revert to the 'if' when
-       else is present, but revert all 'space' when not present.
-       But the 'if' is marked by 'p' (prefix), the 'space', then (possibly) '{'
-       I need to mark all of these... Maybe a new stack to record depth of 'if'
-
 Core features
 -------------
 
 - [ ] Make it possible to unload C modules when refcount on all commands
       reaches zero
 - [ ] Make it possible to unload Python modules
-- [X] pane_close() can be called at awkward times.  We need to do some initial
-      processing so that it looks closed, but so that code can continue to
-      run, then schedule proper close for later.
-      ..Hmm... I already do this, since before I added this item to the todo list.
-      Certainly the 'free' is delayed.  Maybe the problem is ->data being freed.
-      Yes... a pane can be closed while a handler is running, which can confuse the
-      handler.  So maybe pane_close() sets a flag and queues for closure in editor_idle.
-- [X] make ->parent 'safe', root points to itself, every pane *must* lead to root eventually.
-- [X] undo often doesn't leave me where I expect to be left. - maybe it is the
-      location of the previous undo?(I think this is fixed now - haven't notice for a while)
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
 - [ ] malloc anti-fail policy.  Small allocations don't fail but use pre-allocated.
@@ -106,15 +49,6 @@ Core features
       marks exactly? start and end of range.
 - [ ] Need a debug mode where every mark usage is checked for validity.
       also check the setref sets up all linkages.
-- [X] Make key names shorter and easier.
-      There are two name spaces - characters and names
-      characters are preceded by '-', names by ':'.
-      K-E is the key "Captial E"
-      K:Enter is the key "Enter"
-      K:M-n  is meta-n
-      K:M:C:Up  is Meta-Control-Up
-      K:M:C-U   is Meta-Control-U
-      K:Cx-f    is Control-X f -- assuming K:C-x causes Cx to be set as prefix.
 - [ ]  ?? restrict prefix key lookup to punctuation.
 
       Current ranges are:
@@ -150,7 +84,6 @@ Provide something like :C-x-1 which only affects one dimension.
 rexel
 -----
 
-- [X] rexel thinks '\[ \]' is an incomplete (or illegal?) pattern.
 - [ ] Allow ?...: at start of a group to affect how group is interpreted
       e.g. 'Lnnn' mean there are nnn chars to be treated literally
             I or S - case [in]sensitive.... maybe only at start
@@ -207,12 +140,10 @@ Module features
       practical.
 - [ ] automatically ensure the fg colour contrasts with bg, unless explicitly disabled.
       If bg is bright, reduce fg brightness.  If bg is dark, reduce saturation.
-- [X] maybe borrow xsel code to get direct access to X selection
 - [ ] merge 'catpic' code to draw low-res images.
 
 ### pygtk
 
-- [X] convert to pygobject
 
 ### render-lines
 
@@ -278,7 +209,6 @@ Module features
 
 ### grep/make
 
-- [X] don't destroy the output doc.  Erase content (Avoiding undo) and reuse.
 - [ ] handle info: lines better - prefer a .c file over .h.
 - [ ] neg arg to next-match goes backwards, and ` keeps going backwards
 - [ ] if file isn't already loaded, wait until it is wanted, or something
@@ -291,15 +221,11 @@ Module features
 - [ ] allow make even if not all files are saved - 'q' from save-all?
 - [ ] numeric-prefix to make will auto-save everything.
 - [ ] grep should (optionally) save files in the directory tree
-- [X] run make in a given parent
-- [X] use notify chain to allow stack of 'greps'
 
 ### message-line
 
 - [ ] have *Messages* buffer to log recent messages.
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
-- [X] register a global-message function which sends global notifications
-      to all message lines.
 
 ### regexp
 
@@ -321,6 +247,7 @@ Module features
 
 ### shell mode
 
+- [ ] two shells running concurrently write to samedocument!
 - [ ]  Use pattern-match on command to optionally choose an overlay
        which can highlight output and allow actions.
        e.g. (git )?grep   - highlight file names and jump to match
@@ -336,7 +263,6 @@ Module features
 - [ ] option to create a new frame
 - [ ] more work on server mode:
 - [ ] improve protocol
-- [X] allow restart (re-open socket)
 
 ### line count
 
@@ -452,13 +378,8 @@ Module features
 - [ ] configuration: use only spaces for bracket-alignment indents - or tabs as well.
 - [ ] python-mode: when changing indent, make same change to the whole block.
       Not sure how to handle 'else:' which looks like the next block.
-- [X] re-indent statement - once auto-indent is reliable.
 
 ### lang-python
-
-- [X] key_register_prefix functionality.
-- [X] remove the pane 'handler' functionality after converting
-      display-pygtk to make EdDisplay an edlib.Pane.
 
 ### white-space
 
@@ -484,6 +405,11 @@ Module features
 - [ ] Allow testing gtk as well an ncurses
 - [ ] Allow testing of server/client accesses
 
+### dynamic completion
+
+- [ ] search in other docs for a prefix
+- [ ] provide a drop-down menu with options
+
 New Modules - simple
 --------------------
 
@@ -494,10 +420,6 @@ Possibly some of these will end up being features in other modules.
       preferred column" ??  Maybe use for make output so I can see current
       match more easily.
 
-- [X] dynamic completion Alt-/
-      My question here is how far to search for completions.  All of this doc?
-      Which other docs?  Most recently visited I guess.
-      I think I want options to appear in a drop-down menu so I can select one.
 - [ ] create a pane-type that just renders a marked-up line and use
       several of these for render-lines, and one for messageline.
       side-scrolling will be interesting.
