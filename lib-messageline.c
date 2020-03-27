@@ -22,12 +22,13 @@ struct mlinfo {
 			 * remain exactly until a keystroke
 			 */
 	struct pane *line safe, *child;
+	struct pane *log;
 	int height; /* height of line */
 	int ascent; /* how far down to baseline */
 	int hidden;
 	time_t last_message; /* message should stay for at least 10 seconds */
 };
-static struct pane *do_messageline_attach(struct pane *p);
+static struct pane *do_messageline_attach(struct pane *p safe);
 static struct map *messageline_map, *messageline_line_map;
 DEF_LOOKUP_CMD(messageline_handle, messageline_map);
 DEF_LOOKUP_CMD(messageline_line_handle, messageline_line_map);
@@ -71,6 +72,11 @@ DEF_CMD(messageline_msg)
 		mli->modal = strcmp(ci->key, "Message:modal") == 0;
 		time(&mli->last_message);
 		pane_damaged(mli->line, DAMAGED_CONTENT);
+		/* x==0 check ensures we only append message once when
+		 * it comes in via a broadcast notification
+		 */
+		if (ci->x == 0 && mli->log)
+			call("doc:log:append", mli->log, 0, NULL, ci->str);
 	}
 	return 0; /* allow other handlers */
 }
@@ -184,7 +190,7 @@ DEF_CMD(force_refresh)
 	return 1;
 }
 
-static struct pane *do_messageline_attach(struct pane *p)
+static struct pane *do_messageline_attach(struct pane *p safe)
 {
 	struct mlinfo *mli;
 	struct pane *ret;
@@ -196,6 +202,11 @@ static struct pane *do_messageline_attach(struct pane *p)
 	mli->line = pane_register(ret, 1, &messageline_line_handle.c, mli);
 	pane_focus(ret);
 	call_comm("event:timer", mli->line, &force_refresh, 15000);
+
+	mli->log = call_ret(pane, "docs:byname", p, 0, NULL, "*Messages*");
+	if (!mli->log)
+		mli->log = call_ret(pane, "log:create", p, 0, NULL,
+				    "*Messages*");
 
 	return ret;
 }

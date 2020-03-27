@@ -100,6 +100,35 @@ void LOG(char *fmt, ...)
 		pane_notify("doc:replaced", log_pane, 1);
 }
 
+DEF_CMD(log_append)
+{
+	struct doc *d = ci->home->data;
+	struct log *l = container_of(d, struct log, doc);
+	struct logbuf *b;
+	unsigned int len;
+
+	if (!ci->str)
+		return Enoarg;
+	len = strlen(ci->str);
+
+	b = get_buf(l);
+
+	if (b->end != 0 && len >= LBSIZE - b->end - 1) {
+		/* Doesn't fit, allocate new buf */
+		b = get_new_buf(log_doc);
+		if (len >= LBSIZE-1)
+			len = LBSIZE-2;
+	}
+	strncpy(b->text + b->end, ci->str, len);
+
+	b->text[b->end + len++] = '\n';
+	b->text[b->end + len] = '\0';
+
+	b->end += len;
+	pane_notify("doc:replaced", ci->home, 1);
+	return 1;
+}
+
 DEF_CMD(log_get_str)
 {
 	struct doc *d = ci->home->data;
@@ -259,7 +288,27 @@ DEF_CMD(log_view)
 static struct map *log_map;
 DEF_LOOKUP_CMD(log_handle, log_map);
 
-static inline void log_init(struct pane *ed safe)
+DEF_CMD(log_new)
+{
+	struct log *l;
+	struct pane *p;
+
+	if (!ci->str)
+		return Enoarg;
+
+	alloc(l, pane);
+	INIT_LIST_HEAD(&l->log);
+	p = doc_register(ci->focus, &log_handle.c, l);
+	attr_set_str(&p->attrs, "render-default", "text");
+	attr_set_str(&p->attrs, "doc-type", "text");
+	attr_set_str(&p->attrs, "render-default", "text");
+	call("doc:set-name", p, 0, NULL, ci->str);
+	call("global-multicall-doc:appeared-", p);
+	comm_call(ci->comm2, "cb", p);
+	return 1;
+}
+
+static void log_init(struct pane *ed safe)
 {
 	char *fname;
 
@@ -289,9 +338,12 @@ void log_setup(struct pane *ed safe)
 	key_add(log_map, "doc:set-ref", &log_set_ref);
 	key_add(log_map, "doc:step", &log_step);
 	key_add(log_map, "doc:destroy", &log_destroy);
+	key_add(log_map, "doc:log:append", &log_append);
 
 	log_init(ed);
 	call_comm("global-set-command", ed, &log_view, 0, NULL,
 		  "interactive-cmd-view-log");
+	call_comm("global-set-command", ed, &log_new, 0, NULL,
+		  "log:create");
 	LOG("log: testing 1 %d 3", 2);
 }

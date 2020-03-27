@@ -227,7 +227,7 @@ Module features
 
 ### message-line
 
-- [ ] have *Messages* buffer to log recent messages.
+- [X] have *Messages* buffer to log recent messages.
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
 
 ### regexp
