@@ -257,6 +257,14 @@ DEF_CMD(xs_close)
 	return 1;
 }
 
+DEF_CMD(xs_clone)
+{
+	struct pane *p;
+
+	p = call_ret(pane, "attach-x11selection", ci->focus);
+	pane_clone_children(ci->home, p);
+	return 1;
+}
 
 static struct map *xs_map;
 DEF_LOOKUP_CMD(xs_handle, xs_map);
@@ -305,6 +313,7 @@ void edlib_init(struct pane *ed safe)
 		key_add(xs_map, "copy:get", &xs_copy_get);
 		key_add(xs_map, "Notify:selection:claimed", &xs_sel_claimed);
 		key_add(xs_map, "Notify:selection:commit", &xs_sel_commit);
+		key_add(xs_map, "Clone", &xs_clone);
 		key_add(xs_map, "Close", &xs_close);
 		key_add(xs_map, "Free", &edlib_do_free);
 	}
