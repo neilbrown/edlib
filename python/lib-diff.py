@@ -60,9 +60,11 @@ class DiffPane(edlib.Pane):
             f = 0
             # we don't know how many base files are being diffed against
             # until we see the '@@+' line, so allow for 1-4
-            while c and c in '+- ' and f < 4:
-                if c in '+ ':
-                    lines[f] += 1
+            # If there are any '-' on a line that we need to pay attention
+            # to, then we don't count that line.  We only know how many
+            # chars to pay attention when we see that '@@+' line.
+            while c and c in '+ ' and f < 4:
+                lines[f] += 1
                 f += 1
                 focus.call("doc:step", m, 1, 1)
                 c = focus.call("doc:step", m, 1, ret='char')

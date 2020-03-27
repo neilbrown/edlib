@@ -14,7 +14,7 @@ Current priorities
       an internal buffer which can be viewed in a pane.  EDLIB_LOG controls
       where it goes
 - [X] send python errors to the logging interface
-- [ ] parsing of git multi-diff does produce correct result
+- [X] parsing of git multi-diff does produce correct result
 - [ ] option to save-all to quit and visit a changed document
 - [X] convert to python3 and pygobject
 - [ ] C/python code "index" pane to quickly jump to function, and see context
