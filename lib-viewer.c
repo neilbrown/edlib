@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "core.h"
 
@@ -33,6 +34,32 @@ DEF_CMD(viewer_attach)
 DEF_CMD(no_replace)
 {
 	/* FIXME message? */
+	return 1;
+}
+
+DEF_CMD(viewer_cmd)
+{
+	/* Send command to the document */
+	char cmd[40];
+
+	if (ksuffix(ci, "K:") || ksuffix(ci, "K-")) {
+		int ret;
+		snprintf(cmd, sizeof(cmd), "doc:cmd%s", ci->key+1);
+		ret = call(cmd, ci->focus, ci->num, ci->mark);
+		switch(ret) {
+		case 0:
+			snprintf(cmd, sizeof(cmd),
+				 "Unknown command `%s'", ci->key+2);
+			call("Message:modal", ci->focus, 0, NULL, cmd);
+			break;
+		case 2: /* request to move to next line */
+			call("K:Down", ci->focus, ci->num, ci->mark);
+			break;
+		case 3: /* request to move to previous line */
+			call("K:Up", ci->focus, ci->num, ci->mark);
+			break;
+		}
+	}
 	return 1;
 }
 
@@ -81,6 +108,8 @@ void edlib_init(struct pane *ed safe)
 	viewer_map = key_alloc();
 
 	key_add(viewer_map, "Replace", &no_replace);
+	key_add_range(viewer_map, "K- ", "K-~", &viewer_cmd);
+	key_add(viewer_map, "K:Enter", &viewer_cmd);
 	key_add(viewer_map, "K- ", &viewer_page_down);
 	key_add(viewer_map, "K:C-H", &viewer_page_up);
 	key_add(viewer_map, "K:Backspace", &viewer_page_up);

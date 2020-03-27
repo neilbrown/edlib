@@ -219,10 +219,11 @@ static wchar_t prev_modified(struct pane *p safe, struct mark *m safe)
 }
 
 
-DEF_CMD(docs_modified_replace)
+DEF_CMD(docs_modified_cmd)
 {
-	if (ci->str &&
-	    strchr("sk%", ci->str[0]) != NULL)
+	const char *c = ksuffix(ci, "doc:cmd-");
+
+	if (c[0] && strchr("ynsk%", c[0]))
 		return Efallthrough;
 	/* Suppress all others */
 	return 1;
@@ -595,6 +596,8 @@ DEF_CMD(docs_get_attr)
 		val = " %doc-modified:3 %+doc-name:20 %.filename";
 	else if (strcmp(attr, "render-default") == 0)
 		val = "format";
+	else if (strcmp(attr, "view-default") == 0)
+		val = "viewer";
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "docs";
 	else
@@ -753,30 +756,35 @@ DEF_CMD(docs_child_closed)
 
 DEF_CMD(docs_cmd)
 {
-	char cmd;
+	const char *c = ksuffix(ci, "doc:cmd-");
 
-	if (!ci->str)
-		return Enoarg;
-	cmd = ci->str[0];
-	switch(cmd) {
+	switch(c[0]) {
 	case 'f':
 	case '\n':
 	case 'o':
-		return docs_open(ci->home, ci->focus, ci->mark2, cmd);
+		return docs_open(ci->home, ci->focus, ci->mark, c[0]);
 	case 'q':
 		return docs_bury(ci->focus);
-	case 's':
-		return docs_save(ci->focus, ci->mark2);
+	case 's': /* save */
+	case 'y': /* yes */
+		return docs_save(ci->focus, ci->mark);
 	case 'k':
-		return docs_kill(ci->focus, ci->mark2, ci->num);
+		return docs_kill(ci->focus, ci->mark, ci->num);
 	case '%':
-		return docs_toggle(ci->focus, ci->mark2);
+		return docs_toggle(ci->focus, ci->mark);
+	case 'n': /* no */
+		return 2; /* Move to next line */
 	default:
-		if (cmd >= 'A' && cmd <= 'Z')
+		if (c[0] >= 'A' && c[0] <= 'Z')
 			return docs_open_alt(ci->home,
-					     ci->focus, ci->mark2, cmd);
-		return 1;
+					     ci->focus, ci->mark, c[0]);
 	}
+
+	c = ksuffix(ci, "doc:cmd:");
+	if (strcmp(c, "Enter") == 0)
+		return docs_open(ci->home, ci->focus, ci->mark, '\n');
+
+	return 0;
 }
 
 DEF_CMD(docs_attach)
@@ -815,6 +823,8 @@ DEF_CMD(docs_attach)
 			p = call_ret(pane, "attach-view", p);
 		if (p)
 			p = call_ret(pane, "attach-render-format", p);
+		if (p)
+			p = call_ret(pane, "attach-viewer", p);
 		if (p) {
 			//attr_set_str(&p->attrs, "line-format", "%+doc-name");
 			//attr_set_str(&p->attrs, "heading", "");
@@ -879,7 +889,8 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:get-attr", &docs_doc_get_attr);
 	key_add(docs_map, "doc:step", &docs_step);
 	key_add(docs_map, "doc:destroy", &docs_destroy);
-	key_add(docs_map, "doc:replace", &docs_cmd);
+	key_add_prefix(docs_map, "doc:cmd-", &docs_cmd);
+	key_add_prefix(docs_map, "doc:cmd:", &docs_cmd);
 	key_add(docs_map, "doc:attach-view", &docs_attach);
 	key_add(docs_map, "Notify:Close", &docs_notify_close);
 
@@ -890,7 +901,8 @@ static void docs_init_map(void)
 	key_add(docs_aux_map, "doc:status-changed", &doc_damage);
 	key_add(docs_aux_map, "ChildClosed", &docs_child_closed);
 
-	key_add(docs_modified_map, "doc:replace", &docs_modified_replace);
+	key_add_prefix(docs_modified_map, "doc:cmd-", &docs_modified_cmd);
+	key_add_prefix(docs_modified_map, "doc:cmd:", &docs_modified_cmd);
 	key_add(docs_modified_map, "doc:replaced",
 		&docs_modified_notify_replace);
 	key_add(docs_modified_map, "doc:step", &docs_modified_step);

@@ -606,6 +606,8 @@ static void dr_init_map(void)
 	key_add(dr_map, "doc:render-line", &dr_render_line);
 	key_add(dr_map, "doc:render-line-prev", &dr_render_prev);
 	key_add(dr_map, "doc:replace", &dr_replace);
+	key_add_prefix(dr_map, "doc:cmd-", &dr_replace);
+	key_add_prefix(dr_map, "doc:cmd:", &dr_replace);
 	key_add(dr_map, "get-attr", &dr_get_attr);
 	key_add_prefix(dr_map, "doc:notify:", &dr_passon);
 }
