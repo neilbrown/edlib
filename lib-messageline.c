@@ -191,6 +191,7 @@ static struct pane *do_messageline_attach(struct pane *p)
 
 	alloc(mli, pane);
 	ret = pane_register(p, 0, &messageline_handle.c, mli);
+	call("editor:request:Message:broadcast", ret);
 	/* z=1 to avoid clone_children affecting it */
 	mli->line = pane_register(ret, 1, &messageline_line_handle.c, mli);
 	pane_focus(ret);
@@ -223,6 +224,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(messageline_map, "Message", &messageline_msg);
 	key_add(messageline_map, "Message:modal", &messageline_msg);
 	key_add(messageline_map, "Message:default", &messageline_msg);
+	key_add(messageline_map, "Message:broadcast", &messageline_msg);
 	key_add(messageline_map, "Abort", &messageline_abort);
 	key_add(messageline_map, "Refresh:size", &messageline_refresh_size);
 	key_add(messageline_map, "ChildRegistered",

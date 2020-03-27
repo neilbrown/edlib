@@ -297,7 +297,7 @@ Module features
 
 - [ ] have *Messages* buffer to log recent messages.
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
-- [ ] register a global-message function which sends global notifications
+- [X] register a global-message function which sends global notifications
       to all message lines.
 
 ### regexp

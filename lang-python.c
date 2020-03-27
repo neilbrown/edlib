@@ -60,6 +60,8 @@ struct doc_ref {
 static PyObject *Edlib_CommandFailed;
 static PyObject *EdlibModule;
 
+static struct pane *ed_pane;
+
 static char *module_dir;
 static char *python_as_string(PyObject *s, PyObject **tofree safe);
 
@@ -282,6 +284,9 @@ static void PyErr_LOG(void)
 out:
 	if (errorMsg)
 		LOG(errorMsg);
+	if (ed_pane)
+		call("editor:notify:Message:broadcast",ed_pane, 0, NULL,
+		     "Python Error - see log");
 	Py_XDECREF(modIO);
 	Py_XDECREF(modTB);
 	Py_XDECREF(obFuncStringIO);
@@ -2474,4 +2479,5 @@ void edlib_init(struct pane *ed safe)
 	Py_INCREF(Edlib_CommandFailed);
 	PyModule_AddObject(m, "commandfailed", Edlib_CommandFailed);
 	EdlibModule = m;
+	ed_pane = ed;
 }
