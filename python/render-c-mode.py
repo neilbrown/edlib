@@ -404,12 +404,12 @@ class CModePane(edlib.Pane):
         if c == '#' and not non_space:
             # line starts '#', so want no indent
             depth = [0]
-            preproc = True
+            preproc = c
         elif (c == '/' and not non_space and
             p.call("doc:step", 1, br, ret='char') in '/*'):
             # Comment at start of line is indented much like preproc
             depth = [0]
-            preproc = True
+            preproc = c
         elif not ps.ss and c == '.' and not non_space and ps.comma_ends:
             # inside a value specifier and can see a '.' and start of line,
             # so probably is the start of a 'statement' despite ps.ss being false
@@ -436,7 +436,12 @@ class CModePane(edlib.Pane):
 
         # Only allow an extra indent only if there could be a hanging else
         # or if a preproc line could optionally be indented
-        if preproc:
+        if preproc == '/':
+            # Really a comment - put the indent *before* the zero, so it is
+            # preferred if neither is present.
+            depth.insert(-1, ps.d)
+        elif preproc:
+            # allow an indent, but don't prefer it
             depth.append(ps.d)
         elif ps.else_indent > depth[-1]:
             depth.append(ps.else_indent)
