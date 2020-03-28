@@ -339,8 +339,11 @@ DEF_CMD(dir_revisited)
 	     st.st_dev != dr->stat.st_dev ||
 	     st.st_mtime != dr->stat.st_mtime ||
 	     st.st_mtim.tv_nsec != dr->stat.st_mtim.tv_nsec)) {
+		char *msg = NULL;
 		call("doc:load-file", ci->home, 2, NULL, NULL, -1);
-		call("Message", ci->focus, 0, NULL, "Directory Reloaded");
+		asprintf(&msg, "Directory %s reloaded", dr->fname);
+		call("Message", ci->focus, 0, NULL, msg);
+		free(msg);
 	}
 	return Efallthrough;
 }

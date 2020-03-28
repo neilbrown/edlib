@@ -1296,6 +1296,9 @@ DEF_CMD(doc_open)
 	} else {
 		char *n;
 		n = pane_attr_get(p, "filename");
+		if (n && strlen(n) > 1 && n[strlen(n)-1] == '/' && rp)
+			/* Make sure both end in '/' if either do */
+			strcat(rp, "/");
 		if (!quiet && n && rp && strcmp(n, rp) != 0)
 			call("Message", ci->focus, 0, NULL,
 			     strconcat(ci->focus, "File ", rp, " and ", n,
