@@ -1944,8 +1944,15 @@ DEF_CMD(attach_mode_emacs)
 
 DEF_CMD(attach_file_entry)
 {
-	pane_register(ci->focus, 0, &find_handle.c,
-		      (char*) ci->str ?: "shellcmd");
+	/* The 'type' passed must be static, not allocated */
+	char *type = "shellcmd";
+
+	if (ci->str && strcmp(ci->str, "file") == 0)
+		type = "file";
+	else if (ci->str && strcmp(ci->str, "doc") == 0)
+		type = "doc";
+	pane_register(ci->focus, 0, &find_handle.c, type);
+
 	return 1;
 }
 
