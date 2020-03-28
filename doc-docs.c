@@ -84,7 +84,7 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 		} else if (first)
 			break;
 	if (first)
-		pane_notify("doc:replaced", doc->doc.home, 1, m);
+		pane_notify("doc:replaced", doc->doc.home, 1, first);
 }
 
 static void docs_enmark(struct docs *doc safe, struct pane *p safe)
@@ -111,7 +111,7 @@ static void docs_enmark(struct docs *doc safe, struct pane *p safe)
 		} else if (first)
 			break;
 	if (first)
-		pane_notify("doc:replaced", doc->doc.home, 1, m);
+		pane_notify("doc:replaced", doc->doc.home, 1, first);
 }
 
 static int doc_save(struct pane *p safe, struct pane *focus safe, int test)

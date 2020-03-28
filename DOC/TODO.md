@@ -27,7 +27,7 @@ Bugs to be fixed
 - [X] cannot stop search/replace in the middle except by Abort.
 - [X] It should be possible to create a file with "edlib filename"
 - [X] dynamic expansion highlight doesn't disappear when I move the cursor.
-- [ ] doc-docs sometimes shows the same doc twice at the top of the list.
+- [X] doc-docs sometimes shows the same doc twice at the top of the list.
 - [ ] don't tell me two dirs are the same if the only difference is trailing '/'
 - [ ] I cannot reformat C comments any more, because C-q re-indents
 - [ ] lib-renderline draw_some() was seen in a (seemingly) infinite loop
