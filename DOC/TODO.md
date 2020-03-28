@@ -20,7 +20,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] if cursor is at top/start of pane and you search for string at start,
+- [X] if cursor is at top/start of pane and you search for string at start,
       do doc scrolls down one line.
 - [ ] cannot stop search/replace in the middle except by Abort.
 - [ ] It should be possible to create a file with "edlib filename"

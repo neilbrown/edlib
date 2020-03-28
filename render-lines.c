@@ -1024,8 +1024,8 @@ DEF_CMD(render_lines_move_pos)
 		/* last line might not be fully displayed, so don't assume */
 		bot = vmark_prev(bot);
 	if (top && bot &&
-	    top->seq < pm->seq &&
-	    pm->seq < bot->seq && !mark_same(pm, bot))
+	    (top->seq < pm->seq || mark_same(top, pm)) &&
+	    (pm->seq < bot->seq && !mark_same(pm, bot)))
 		/* pos already displayed */
 		return 1;
 	find_lines(pm, p, focus, NO_NUMERIC);
