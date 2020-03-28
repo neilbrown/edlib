@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] filename completion is really slow on large directories. Probably quadratic.
+- [X] filename completion is really slow on large directories. Probably quadratic.
 - [X] option to save-all to quit and visit a changed document
 - [ ] C/python code "index" pane to quickly jump to function, and see context
 - [ ] beginnings of test suite
@@ -25,7 +25,7 @@ Bugs to be fixed
 - [ ] cannot stop search/replace in the middle except by Abort.
 - [ ] It should be possible to create a file with "edlib filename"
 - [ ] dynamic expansion highlight doesn't disappear when I move the cursor.
-- [ ] doc-docs sometime shows the same doc twice at the top of the list.
+- [ ] doc-docs sometimes shows the same doc twice at the top of the list.
 - [ ] don't tell me two dirs are the same if the only difference is trailing '/'
 - [ ] I cannot reformat C comments any more, because C-q re-indents
 - [ ] lib-renderline draw_some() was seen in a (seemingly) infinite loop

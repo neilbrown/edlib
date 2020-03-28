@@ -476,6 +476,42 @@ static char *fmt_date(struct dir_ent *de safe, time_t t)
 	return de->nbuf;
 }
 
+static char *pwname(int uid)
+{
+	static int last_uid = -1;
+	static char *last_name = NULL;
+	struct passwd *pw;
+
+	if (uid != last_uid) {
+		free(last_name);
+		pw = getpwuid(uid);
+		if (pw && pw->pw_name)
+			last_name = strdup(pw->pw_name);
+		else
+			last_name = NULL;
+		last_uid = uid;
+	}
+	return last_name;
+}
+
+static char *grname(int gid)
+{
+	static int last_gid = -1;
+	static char *last_name = NULL;
+	struct group *gr;
+
+	if (gid != last_gid) {
+		free(last_name);
+		gr = getgrgid(gid);
+		if (gr && gr->gr_name)
+			last_name = strdup(gr->gr_name);
+		else
+			last_name = NULL;
+		last_gid = gid;
+	}
+	return last_name;
+}
+
 static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 				  const char *attr safe)
 
@@ -517,19 +553,19 @@ static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_gid);
 	} else if (strcmp(attr, "user") == 0) {
-		struct passwd *pw;
+		char *n;
 		get_stat(dr, de);
-		pw = getpwuid(de->st.st_uid);
-		if (pw && pw->pw_name)
-			return save_str(de, pw->pw_name);
+		n = pwname(de->st.st_uid);
+		if (n)
+			return save_str(de, n);
 		else
 			return fmt_num(de, de->st.st_uid);
 	} else if (strcmp(attr, "group") == 0) {
-		struct group *gr;
+		char *n;
 		get_stat(dr, de);
-		gr = getgrgid(de->st.st_gid);
-		if (gr && gr->gr_name)
-			return save_str(de, gr->gr_name);
+		n = grname(de->st.st_gid);
+		if (n)
+			return save_str(de, n);
 		else
 			return fmt_num(de, de->st.st_gid);
 	} else if (strcmp(attr, "mode") == 0) {
