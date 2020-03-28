@@ -218,6 +218,8 @@ static wchar_t prev_modified(struct pane *p safe, struct mark *m safe)
 	return doc_following_pane(p, m);
 }
 
+static int docs_open(struct pane *home safe, struct pane *focus safe,
+		     struct mark *m, char cmd);
 
 DEF_CMD(docs_modified_cmd)
 {
@@ -232,6 +234,11 @@ DEF_CMD(docs_modified_cmd)
 		return Efallthrough;
 	case 'q':
 		return call("popup:close", ci->home);
+	case 'o':
+		/* abort the current action, and open this in another window */
+		docs_open(ci->home, ci->focus, ci->mark, 'o');
+		call("Abort", ci->home);
+		return 1;
 	case 'n':
 		/* If this is the last, then quit */
 		if (!ci->mark)

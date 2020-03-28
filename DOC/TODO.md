@@ -5,7 +5,7 @@ Current priorities
 ------------------
 
 - [ ] filename completion is really slow on large directories. Probably quadratic.
-- [ ] option to save-all to quit and visit a changed document
+- [X] option to save-all to quit and visit a changed document
 - [ ] C/python code "index" pane to quickly jump to function, and see context
 - [ ] beginnings of test suite
 - [ ] git mode:
@@ -15,6 +15,7 @@ Current priorities
    - rebase to a given line - rearrange lines above.
 
 - [ ] change notmuch-query-view to use doc-rendering
+- [ ] support completion of interactive commands
 
 Bugs to be fixed
 ----------------
