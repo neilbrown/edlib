@@ -119,12 +119,12 @@ int main(int argc, char *argv[])
 		char *file = argv[optind++];
 		int fd = open(file, O_RDONLY);
 		if (fd < 0) {
-			perror("edlib: open");
-			fprintf(stderr, "edlib: Cannot open: %s\n", file);
-			exit(2);
+			/* '4' says 'allow create' */
+			doc = call_ret(pane, "doc:open", ed, -1, NULL, file, 4);
+		} else {
+			doc = call_ret(pane, "doc:open", ed, fd, NULL, file);
+			close(fd);
 		}
-		doc = call_ret(pane, "doc:open", ed, fd, NULL, file);
-		close(fd);
 	}
 
 	if (!doc)
