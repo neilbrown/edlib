@@ -381,6 +381,11 @@ DEF_CMD(search_done)
 	return 1;
 }
 
+DEF_CMD(search_escape)
+{
+	return call("search:done", ci->focus);
+}
+
 DEF_CMD(search_clip)
 {
 	struct es_info *esi = ci->home->data;
@@ -550,6 +555,13 @@ DEF_CMD(replace_undo)
 	return 0;
 }
 
+DEF_CMD(replace_escape)
+{
+	struct pane *sp = ci->home->data;
+
+	return call("search:done", sp);
+}
+
 static void emacs_search_init_map(void)
 {
 	/* Keys for the 'search' pane */
@@ -573,6 +585,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "K:M-r", &search_replace);
 	key_add(es_map, "K:Tab", &search_replace);
 	key_add(es_map, "K:M-%", &search_replace);
+	key_add(es_map, "K:ESC", &search_escape);
 
 	key_add(es_map, "search:replace", &do_replace);
 
@@ -586,6 +599,7 @@ static void emacs_search_init_map(void)
 	key_add(er_map, "K:C-S", &replace_forward);
 	key_add(er_map, "K:C-R", &replace_forward);
 	key_add(er_map, "K:C-L", &replace_forward);
+	key_add(er_map, "K:ESC", &replace_escape);
 	key_add(er_map, "doc:reundo", &replace_undo);
 }
 

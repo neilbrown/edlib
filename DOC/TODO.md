@@ -22,7 +22,7 @@ Bugs to be fixed
 
 - [X] if cursor is at top/start of pane and you search for string at start,
       do doc scrolls down one line.
-- [ ] cannot stop search/replace in the middle except by Abort.
+- [X] cannot stop search/replace in the middle except by Abort.
 - [ ] It should be possible to create a file with "edlib filename"
 - [ ] dynamic expansion highlight doesn't disappear when I move the cursor.
 - [ ] doc-docs sometimes shows the same doc twice at the top of the list.
