@@ -291,7 +291,7 @@ static void notify_point_moved(struct mark *m safe)
 	if (plnk->moved)
 		return;
 	plnk->moved = 1;
-	pane_notify("Notify:point:moved", m->owner->home, 0, m);
+	pane_notify("point:moved", m->owner->home, 0, m);
 }
 
 void mark_ack(struct mark *m)

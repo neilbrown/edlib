@@ -16,6 +16,8 @@ Current priorities
 
 - [ ] change notmuch-query-view to use doc-rendering
 - [ ] support completion of interactive commands
+- [ ] suppor mkdir somehow
+- [ ] make a doc read-only if dir doesn't exist or isn't writeable
 
 Bugs to be fixed
 ----------------
@@ -24,7 +26,7 @@ Bugs to be fixed
       do doc scrolls down one line.
 - [X] cannot stop search/replace in the middle except by Abort.
 - [X] It should be possible to create a file with "edlib filename"
-- [ ] dynamic expansion highlight doesn't disappear when I move the cursor.
+- [X] dynamic expansion highlight doesn't disappear when I move the cursor.
 - [ ] doc-docs sometimes shows the same doc twice at the top of the list.
 - [ ] don't tell me two dirs are the same if the only difference is trailing '/'
 - [ ] I cannot reformat C comments any more, because C-q re-indents

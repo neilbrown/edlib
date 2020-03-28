@@ -153,7 +153,7 @@ class AbbrevPane(edlib.Pane):
         "handle-list/K:Left/K:Right"
         m = self.prefix_start.dup()
         try:
-            if key == ":Left":
+            if key == "K:Left":
                 self.call("doc:step", 0, 1, m)
                 self.call("text-search", 0, -1, m, "\\<")
             else:
@@ -173,7 +173,7 @@ class AbbrevPane(edlib.Pane):
 
     def up_down(self, key, focus, mark, **a):
         "handle-list/K:Up/K:Down"
-        if key == ":Up":
+        if key == "K:Up":
             self.next_completion(-1)
         else:
             self.next_completion(1)
@@ -194,7 +194,7 @@ class AbbrevPane(edlib.Pane):
         return 1
 
     def handle_activity(self, key, focus, **a):
-        "handle-list/doc:replaced/Notify:point:moved/pane:defocus"
+        "handle-list/doc:replaced/point:moved/pane:defocus"
         if not self.active:
             self.call("view:changed", self.prefix_start, self.prefix_end)
             self.call("editor-on-idle", self.delayed_close)

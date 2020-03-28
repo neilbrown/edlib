@@ -1123,7 +1123,7 @@ static void init_doc_cmds(void)
 
 	key_add(doc_handle_cmd, "doc:notify-viewers", &doc_notify_viewers);
 	key_add(doc_handle_cmd,	"Notify:Close", &doc_notify_close);
-	key_add(doc_handle_cmd,	"Notify:point:moved", &doc_notify_moved);
+	key_add(doc_handle_cmd,	"point:moved", &doc_notify_moved);
 	key_add(doc_handle_cmd,	"Refresh", &doc_refresh);
 	key_add(doc_handle_cmd,	"Clone", &doc_clone);
 	key_add(doc_handle_cmd,	"Close", &doc_close);
@@ -1172,7 +1172,7 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 
 	pane_add_notify(p, doc, "Notify:Close");
 	pane_add_notify(p, doc, "doc:notify-viewers");
-	pane_add_notify(p, doc, "Notify:point:moved");
+	pane_add_notify(p, doc, "point:moved");
 	call("doc:notify:doc:revisit", doc, 0);
 }
 
