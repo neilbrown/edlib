@@ -77,7 +77,21 @@ DEF_CMD(viewer_page_up)
 
 DEF_CMD(viewer_bury)
 {
-	call("Window:bury", ci->focus);
+	/* First see if doc wants to handle 'q' */
+	int ret;
+
+	ret = call("doc:cmd-q", ci->focus, ci->num, ci->mark);
+	switch (ret) {
+	case 0:
+		call("Window:bury", ci->focus);
+		break;
+	case 2: /* request to move to next line */
+		call("K:Down", ci->focus, ci->num, ci->mark);
+		break;
+	case 3: /* request to move to previous line */
+		call("K:Up", ci->focus, ci->num, ci->mark);
+		break;
+	}
 	return 1;
 }
 

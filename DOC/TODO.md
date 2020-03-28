@@ -224,7 +224,7 @@ Module features
 - [ ] improve detection of the 'important' "note" line.
 - [ ] clarify and document the role of numeric args to git-grep
 - [ ] when restart compile/grep, kill only one.
-- [ ] allow make even if not all files are saved - 'q' from save-all?
+- [X] allow make even if not all files are saved - 'q' from save-all?
 - [ ] numeric-prefix to make will auto-save everything.
 - [ ] grep should (optionally) save files in the directory tree
 

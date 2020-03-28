@@ -222,11 +222,34 @@ static wchar_t prev_modified(struct pane *p safe, struct mark *m safe)
 DEF_CMD(docs_modified_cmd)
 {
 	const char *c = ksuffix(ci, "doc:cmd-");
+	struct mark *m;
 
-	if (c[0] && strchr("ynsk%", c[0]))
+	switch (c[0]) {
+	case 'y':
+	case 's':
+	case 'k':
+	case '%':
 		return Efallthrough;
-	/* Suppress all others */
-	return 1;
+	case 'q':
+		return call("popup:close", ci->home);
+	case 'n':
+		/* If this is the last, then quit */
+		if (!ci->mark)
+			return Enoarg;
+		m = mark_dup(ci->mark);
+		mark_next_pane(ci->home->parent, m);
+		mark_to_modified(ci->home->parent, m);
+		if (m->ref.p == NULL) {
+			mark_free(m);
+			return call("popup:close", ci->home);
+		}
+		mark_free(m);
+		/* Ask viewer to move forward */
+		return 2;
+	default:
+		/* Suppress all others */
+		return 1;
+	}
 }
 
 DEF_CMD(docs_modified_notify_replace)
