@@ -642,6 +642,28 @@ def run_make(key, focus, str, **a):
 def make_request(key, focus, num, str, mark, **a):
     history = None
     dflt_arg = ''
+
+    if num == 1 and not (str is None):
+        # We did a save-all, restore num and str
+        s = str.split(',',1)
+        str = None
+        if len(s) > 1:
+            str = s[1]
+        try:
+            num = int(s[0])
+        except:
+            num = 0
+    elif focus.call("docs:save-all", 0, 1) != 1:
+        p = focus.call("PopupTile", "DM", ret='focus');
+        p['done-key'] = key
+        # Make 'num' and 'str' available after save-all
+        if str:
+            p['default'] = "%d,%s" % (num, str)
+        else:
+            p['default'] = "%d" % (num)
+        p.call("docs:show-modified")
+        return 1
+
     if key[-8:] == "git-grep":
         dflt = "grep -rnH "
         cmd = "git-grep"
@@ -651,26 +673,6 @@ def make_request(key, focus, num, str, mark, **a):
         cmd = "grep"
         history = "*Grep History*"
     else:
-        if num == 1 and not (str is None):
-            # We did a save-all, restore num and str
-            s = str.split(',',1)
-            str = None
-            if len(s) > 1:
-                str = s[1]
-            try:
-                num = int(s[0])
-            except:
-                num = 0
-        elif focus.call("docs:save-all", 0, 1) != 1:
-            p = focus.call("PopupTile", "DM", ret='focus');
-            p['done-key'] = key
-            # Make 'num' and 'str' available after save-all
-            if str:
-                p['default'] = "%d,%s" % (num, str)
-            else:
-                p['default'] = "%d" % (num)
-            p.call("docs:show-modified")
-            return 1
         dflt = "make -k"
         cmd = "make"
         history = "*Make History*"
