@@ -643,7 +643,9 @@ def make_request(key, focus, num, str, mark, **a):
     history = None
     dflt_arg = ''
 
-    if num == 1 and not (str is None):
+    # interactive-cmd... always sets mark, popup-return never does.
+    # popup-return also sets num to 1 and provides a string.
+    if num == 1 and not mark and not (str is None):
         # We did a save-all, restore num and str
         s = str.split(',',1)
         str = None
@@ -703,7 +705,10 @@ def make_request(key, focus, num, str, mark, **a):
                 d = d + '/'
             dir = d
 
-    if cmd != "make" and mark and focus['doc-type'] == "text":
+    if cmd != "make" and focus['doc-type'] == "text":
+        if not mark:
+            mark = focus.call("doc:point", ret='mark')
+    if cmd != "make" and focus['doc-type'] == "text" and mark:
         # choose the word under the cursor
         if not str:
             m1 = mark.dup()

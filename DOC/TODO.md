@@ -23,7 +23,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] grep loses selected text due to save-all
+- [X] grep loses selected text due to save-all
 - [X] double-click doesn't select a word in ncurses, but does in gtk.
 - [X] if cursor is at top/start of pane and you search for string at start,
       do doc scrolls down one line.
@@ -382,7 +382,7 @@ Module features
 - [ ]  auto-indent enhancements
 
      +   py: after "return" de-indent
-     -??  '*' should check for comment, and add a space
+     -   Should '/' see if at start of comment line following '* ', and discard space?
      -   A line after one ending ; or } or : or unindented is assumed to be
          correctly indented.
 
