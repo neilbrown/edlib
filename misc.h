@@ -10,6 +10,9 @@
 
 #include "list.h"
 
+#define WERR (0xfffffffeu)
+wint_t get_utf8(const char **cpp safe, const char *end);
+
 struct buf {
 	char *b safe;
 	int len;

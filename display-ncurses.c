@@ -670,26 +670,21 @@ DEF_CMD(nc_text_size)
 	int max_space = ci->num;
 	int max_bytes = 0;
 	int size = 0;
-	int offset = 0;
-	mbstate_t mbs = {};
 	const char *str = ci->str;
-	int len;
 
 	if (!str)
 		return Enoarg;
-	len = strlen(str);
-	while (str[offset] != 0) {
-		wchar_t wc;
-		int skip = mbrtowc(&wc, str+offset, len-offset, &mbs);
-		if (skip < 0)
+	while (str[0] != 0) {
+		wint_t wc = get_utf8(&str, NULL);
+		int width;
+		if (wc == WEOF || wc == WERR)
 			break;
-		offset += skip;
-		skip = wcwidth(wc);
-		if (skip < 0)
+		width = wcwidth(wc);
+		if (width < 0)
 			break;
-		size += skip;
+		size += width;
 		if (size <= max_space)
-			max_bytes = offset;
+			max_bytes = str - ci->str;
 	}
 	return comm_call(ci->comm2, "callback:size", ci->focus,
 			 max_bytes, NULL, NULL,
@@ -701,34 +696,28 @@ DEF_CMD(nc_draw_text)
 	struct pane *p = ci->home;
 	int attr = cvt_attrs(p, ci->str2);
 	int cursor_offset = ci->num;
-	short offset = 0;
 	short x = ci->x, y = ci->y;
-	mbstate_t mbs = {};
 	const char *str = ci->str;
-	int len;
 
 	if (!str)
 		return Enoarg;
 	set_screen(p);
-	len = strlen(str);
-	while (str[offset] != 0) {
-		wchar_t wc;
-		int skip = mbrtowc(&wc, str+offset, len-offset, &mbs);
+	while (str[0] != 0) {
+		int precurs = str <= ci->str + cursor_offset;
+		wint_t wc = get_utf8(&str, NULL);
 		int width;
-		if (skip < 0)
+		if (wc == WEOF || wc == WERR)
 			break;
 		width = wcwidth(wc);
 		if (width < 0)
 			break;
-		if (cursor_offset >= offset &&
-		    cursor_offset < offset + skip)
+		if (precurs && str > ci->str + cursor_offset)
 			ncurses_text(ci->focus, p, wc, attr, x, y, 1);
 		else
 			ncurses_text(ci->focus, p, wc, attr, x, y, 0);
-		offset += skip;
 		x += width;
 	}
-	if (offset == cursor_offset)
+	if (str == ci->str + cursor_offset)
 		ncurses_text(ci->focus, p, ' ', 0, x, y, 1);
 	pane_damaged(p, DAMAGED_POSTORDER);
 	return 1;

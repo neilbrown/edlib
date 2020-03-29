@@ -373,3 +373,55 @@ static void dump_mem(void)
 			p->name, p->bytes, p->max_bytes, p->allocations);
 	fprintf(dump_file, "\n");
 }
+
+/* UTF-8 handling....
+ * - return wchar (wint_t) and advance pointer
+ * - append encoding to buf, advance pointer, decrease length
+ *
+ * UTF-8:
+ * - if it starts '0b0', it is a 7bit code point
+ * - if it starts '0b10' it is a non-initial byte and provides 6 bits.
+ * - if it starts '0b110' it is first of 2 and provides 5 of 11 bits
+ * - if it starts '0b1110' it is first of 3 and provides 4 of 16 bits
+ * - if it starts '0b11110' it is first of 4 and provides 3 of 27 bits.
+ */
+wint_t get_utf8(const char **cpp safe, const char *end)
+{
+	int tail = 0;
+	wint_t ret = 0;
+	const char *cp = *cpp;
+	unsigned char c;
+
+	if (!cp)
+		return WEOF;
+	if (end && end <= cp)
+		return WEOF;
+	c = (unsigned char)*cp++;
+	if (!c)
+		return WEOF;
+	if (c < 0x80)
+		ret = c;
+	else if (c < 0xc0)
+		return WERR;
+	else if (c < 0xe0) {
+		ret = c & 0x1f;
+		tail = 1;
+	} else if (c < 0xf0) {
+		ret = c & 0xf;
+		tail = 2;
+	} else if (c < 0xf8){
+		ret = c & 0x7;
+		tail = 3;
+	} else
+		return WERR;
+	if (end && end < cp + tail)
+		return WEOF;
+	while (tail--) {
+		c = *cp++;
+		if ((c & 0xc0) != 0x80)
+			return WERR;
+		ret = (ret << 6) | (c & 0x3f);
+	}
+	*cpp = cp;
+	return ret;
+}

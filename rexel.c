@@ -149,7 +149,7 @@ TODO:
 #endif
 
 #include "safe.h"
-
+#include "misc.h"
 #include "rexel.h"
 
 #ifdef DEBUG
@@ -802,13 +802,12 @@ static void add_class(struct parse_state *st safe, int plane, wctype_t cls)
 static int is_set_element(const char *p safe)
 {
 	int i;
-	if (*p != '[')
+
+	if (p[0] != '.' && p[0] != '=' && p[0] != ':')
 		return 0;
-	if (p[1] != '.' && p[1] != '=' && p[1] != ':')
-		return 0;
-	for (i = 2; p[i]; i++)
+	for (i = 1; p[i]; i++)
 		if (p[i] == ']') {
-			if (p[i-1] == p[1] && i > 2)
+			if (p[i-1] == p[1] && i > 1)
 				return 1;
 			else
 				return 0;
@@ -819,9 +818,8 @@ static int is_set_element(const char *p safe)
 /* FIXME UNICODE */
 static int do_parse_set(struct parse_state *st safe, int plane)
 {
-	mbstate_t ps = {};
 	const char *p safe = st->patn;
-	wchar_t ch;
+	wint_t ch;
 	int newplane = 0xFFFFFF;
 	int planes = 0;
 	/* first characters are special... */
@@ -832,19 +830,22 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 		p += 1;
 	}
 	do {
-		int l = mbrtowc(&ch, p, 5, &ps);
-		if (ch == '[' && is_set_element(p)) {
-			switch(p[1]) {
+		ch = get_utf8(&p, NULL);
+
+		if (ch >= WERR) {
+			return -1;
+		} else if (ch == '[' && is_set_element(p)) {
+			switch(p[0]) {
 			case '.': /* collating set */
 			case '=': /* collating element */
-				st->patn = p+1;
+				st->patn = p;
 				return -1;
 			case ':': /* character class */
 			{
 				const char *e;
 				char *cls;
 				wctype_t wct;
-				p += 2;
+				p += 1;
 				e = strchr(p, ':');
 				if (!e)
 					e = p + strlen(p);
@@ -861,18 +862,18 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 				break;
 			}
 			}
-		} else if (l && p[l] == '-' && p[l+1] != ']') {
+		} else if (p[0] == '-' && p[1] != ']') {
 			/* range */
-			wchar_t ch2;
-			l += mbrtowc(&ch2, p+l+1, 5, &ps);
-			if (add_range(st, ch, ch2,
+			wint_t ch2;
+			p += 1;
+			ch2 = get_utf8(&p, NULL);
+			if (ch2 >= WERR ||
+			    add_range(st, ch, ch2,
 				      plane, &planes, &newplane) < 0)
 				return -1;
-
-			p += l+1;
-		} else if (ch == '\\' && p[1] > 0 && p[1] < 0x7f && p[2] != '-'
-			   && strchr("daApsw", p[1]) != NULL) {
-			switch (p[1]) {
+		} else if (ch == '\\' && p[0] > 0 && p[0] < 0x7f && p[1] != '-'
+			   && strchr("daApsw", p[0]) != NULL) {
+			switch (p[0]) {
 			case 'd': add_class(st, plane, wctype("digit")); break;
 			case 'a': add_class(st, plane, wctype("lower")); break;
 			case 'A': add_class(st, plane, wctype("upper")); break;
@@ -880,14 +881,12 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 			case 's': add_class(st, plane, wctype("space")); break;
 			case 'w': add_class(st, plane, wctype("alpha")); break;
 			}
-			p += 2;
+			p += 1;
 		} else if (ch) {
 			if (add_range(st, ch, ch,
 				      plane, &planes, &newplane) < 0)
 				return -1;
-			p += l;
-		} else
-			return -1;
+		}
 	} while (*p != ']');
 	st->patn = p+1;
 	if (st->sets) {
@@ -947,12 +946,12 @@ static int parse_set(struct parse_state *st safe)
 	return 1;
 }
 
-static int cvt_hex(const char *s safe, int len)
+static wint_t cvt_hex(const char *s safe, int len)
 {
 	long rv = 0;
 	while (len) {
 		if (!*s || !isxdigit(*s))
-			return -1;
+			return WERR;
 		rv *= 16;
 		if (*s <= '9')
 			rv += *s - '0';
@@ -998,7 +997,7 @@ static int parse_atom(struct parse_state *st safe)
 	 * If there is a syntax error, return 0, else return 1;
 	 *
 	 */
-	wchar_t ch;
+	wint_t ch;
 	/* Only '.', (), and char for now */
 
 	if (*st->patn == '\0')
@@ -1043,11 +1042,10 @@ static int parse_atom(struct parse_state *st safe)
 		return 1;
 	}
 	if (*st->patn & 0x80) {
-		mbstate_t ps = {};
-		int len = mbrtowc(&ch, st->patn, 5, &ps);
-		if (len <= 0)
+		ch = get_utf8(&st->patn, NULL);
+		if (ch >= WERR)
 			return 0;
-		st->patn += len-1;
+		st->patn -= 1;
 	} else
 		ch = *st->patn;
 	if (ch == '\\') {
@@ -1085,17 +1083,17 @@ static int parse_atom(struct parse_state *st safe)
 			}
 			break;
 		case 'x': ch = cvt_hex(st->patn+1, 2);
-			if (ch < 0)
+			if (ch == WERR)
 				return 0;
 			st->patn += 2;
 			break;
 		case 'u': ch = cvt_hex(st->patn+1, 4);
-			if (ch < 0)
+			if (ch == WERR)
 				return 0;
 			st->patn += 4;
 			break;
 		case 'U': ch = cvt_hex(st->patn+1, 8);
-			if (ch < 0)
+			if (ch == WERR)
 				return 0;
 			st->patn += 8;
 			break;
@@ -1290,9 +1288,7 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase)
 {
 	struct parse_state st;
-	int i, l;
-	mbstate_t ps = {};
-	wchar_t ch;
+	wint_t ch;
 
 	st.next = 1 + strlen(patn) + 1;
 	st.rxl = malloc(st.next * sizeof(st.rxl[0]));
@@ -1300,7 +1296,7 @@ unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase)
 	if (nocase)
 		st.rxl[0] |= RXL_CASELESS;
 	st.next = 1;
-	for (i = 0; (l = mbrtowc(&ch, patn+i, 5, &ps)) != 0; i += l)
+	while ((ch = get_utf8(&patn, NULL)) < WERR)
 		add_cmd(&st, ch);
 	add_cmd(&st, REC_MATCH);
 	return st.rxl;
@@ -1472,8 +1468,6 @@ static void run_tests(int trace)
 		unsigned short *rxl;
 		int mstart, mlen;
 		int len, ccnt = 0;
-
-		mbstate_t ps = {};
 		struct match_state st = {};
 
 		if (f & F_VERB)
@@ -1501,12 +1495,10 @@ static void run_tests(int trace)
 			mlen = len;
 		}
 		while (mstart < 0 || len != -2) {
-			wchar_t wc;
-			int used = mbrtowc(&wc, target, 5, &ps);
-			if (used <= 0)
+			wint_t wc = get_utf8(&target, NULL);
+			if (wc >= WERR)
 				break;
 			len = rxl_advance(&st, wc, 0);
-			target += used;
 			ccnt += 1;
 			if (len >= 0 &&
 			    (mstart < 0  || ccnt-len < mstart ||
@@ -1536,7 +1528,6 @@ int main(int argc, char *argv[])
 	unsigned short *rxl;
 	struct match_state st;
 	int len;
-	int i;
 	int start;
 	int thelen;
 	int used;
@@ -1547,8 +1538,7 @@ int main(int argc, char *argv[])
 	int longest = 0;
 	int opt;
 	int trace = 0;
-	mbstate_t ps = {};
-	char *patn, *target;
+	const char *patn, *target, *t;
 
 	while ((opt = getopt(argc, argv, "itvlTf")) > 0)
 		switch (opt) {
@@ -1609,29 +1599,25 @@ int main(int argc, char *argv[])
 
 	setup_match(&st, rxl, 0);
 	st.trace = trace;
-	i = 0;
+	t = target;
 	len = rxl_advance(&st, WEOF, RXL_SOL);
 	while (len < 0) {
-		wchar_t wc;
-		used = mbrtowc(&wc, target+i, 5, &ps);
-		if (used <= 0) {
+		wint_t wc = get_utf8(&t, NULL);
+		if (wc >= WERR) {
 			len = rxl_advance(&st, WEOF, RXL_EOL);
 			break;
 		}
 		len = rxl_advance(&st, wc, 0);
-		i+= used;
 		ccnt+= 1;
 	}
 	/* We have a match, let's see if we can extend it */
 	start = ccnt-len; thelen = len;
 	if (len >= 0) {
 		while (len != -2 || longest) {
-			wchar_t wc;
-			used = mbrtowc(&wc, target+i, 5, &ps);
-			if (used <= 0)
+			wint_t wc = get_utf8(&t, NULL);
+			if (wc >= WERR)
 				break;
 			len = rxl_advance(&st, wc, 0);
-			i += used;
 			ccnt += 1;
 			if (longest) {
 				if (len > thelen) {
@@ -1646,14 +1632,14 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
-		if (target[i] == 0)
+		if (*t == 0)
 			len = rxl_advance(&st, WEOF, RXL_EOL);
 	}
 	if (thelen < 0)
 		printf("No match\n");
 	else {
 		int j;
-		wchar_t wc;
+		wint_t wc;
 		char *tstart, *tend;
 		tstart = target;
 		if (use_file) {
@@ -1667,19 +1653,17 @@ int main(int argc, char *argv[])
 			tend = tstart + strlen(tstart);
 		}
 		printf("%0.*s\n", tend-tstart, tstart);
-		memset(&ps, 0, sizeof(ps));
-		i = 0;
+		t = target;
 		ccnt = tstart-target;
-		while ((used = mbrtowc(&wc, target+i, 5, &ps)) > 0) {
+		while ((wc = get_utf8(&t, NULL)) < WERR) {
 			if (ccnt < start)
 				putchar(' ');
 			else if (ccnt == start)
 				putchar('^');
 			else if (ccnt < start + thelen)
 				putchar('.');
-			i+= used;
 			ccnt += 1;
-			if (tstart + i > tend)
+			if (t >= tend)
 				break;
 		}
 		putchar('\n');

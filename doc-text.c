@@ -1389,19 +1389,17 @@ static void text_denormalize(struct text *t safe, struct doc_ref *r safe)
 
 static wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
 {
-	wchar_t ret;
-	int err;
-	mbstate_t ps = {};
+	wint_t ret;
+	const char *c;
 
 	text_normalize(t, r);
 	if (r->c == NULL)
 		return WEOF;
 
-	err = bytes ? 0 : mbrtowc(&ret, r->c->txt + r->o,
-				  r->c->end - r->o, &ps);
-	if (err > 0) {
-		ASSERT(text_round_len(r->c->txt, r->o+err-1) == r->o);
-		r->o += err;
+	c = r->c->txt + r->o;
+	ret = get_utf8(&c, r->c->txt + r->c->end);
+	if (ret < WERR) {
+		r->o = c - r->c->txt;
 	} else
 		ret = (unsigned char)r->c->txt[r->o++];
 	text_normalize(t, r);
@@ -1410,9 +1408,8 @@ static wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
 
 static wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
 {
-	wchar_t ret;
-	int err;
-	mbstate_t ps = {};
+	wint_t ret;
+	const char *c;
 
 	if (r->c == NULL) {
 		if (list_empty(&t->text))
@@ -1433,8 +1430,9 @@ static wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
 		r->o = r->c->start +
 			text_round_len(r->c->txt+r->c->start,
 				       r->o - r->c->start - 1);
-		err = mbrtowc(&ret, r->c->txt + r->o, r->c->end - r->o, &ps);
-		if (err > 0)
+		c = r->c->txt + r->o;
+		ret = get_utf8(&c, r->c->txt + r->c->end);
+		if (ret < WERR)
 			return ret;
 	}
 

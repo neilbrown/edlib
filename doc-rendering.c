@@ -187,9 +187,8 @@ static int text_round_len(char *text safe, int len)
 static wint_t dr_next(char *line safe, int *op safe)
 {
 	int o = *op;
-	wchar_t ret;
-	mbstate_t ps = {};
-	int err;
+	wint_t ret;
+	const char *c;
 
 	while (line[o] == '<' && line[o+1] != '<') {
 		while (line[o] && line[o] != '>')
@@ -197,34 +196,33 @@ static wint_t dr_next(char *line safe, int *op safe)
 		if (line[o])
 			o += 1;
 	}
-	err = mbrtowc(&ret, line+o, 4, &ps);
-	if (err < 0) {
-		ret = line[o];
-		err = 1;
-	}
-	if (ret == '<' && line[o+1] == '<')
-		err += 1;
-	*op = o+err;
+	c = line + o;
+	ret = get_utf8(&c, NULL);
+	if (ret >= WERR)
+		ret = *c++;
+
+	if (ret == '<' && c[0] == '<')
+		c++;
+	*op = c - line;
 	return ret;
 }
 
 static wint_t dr_prev(char *line safe, int *op safe)
 {
+	const char *l;
 	int o = *op;
-	wchar_t ret;
-	mbstate_t ps = {};
-	int err;
+	wint_t ret;
 
 	if (o == 0)
 		return WEOF;
 	o = text_round_len(line, o-1);
-	err = mbrtowc(&ret, line + o, *op - o, &ps);
-	if (err < 0) {
+	l = line+o;
+	ret = get_utf8(&l, NULL);
+	if (ret == WERR) {
 		o = *op - 1;
-		err = 1;
 		ret = line[o];
 	}
-	if (o > 0 && line[o-1] == '>') {
+	if (l > line && l[-1] == '>') {
 		/* Need to search from start to find previous
 		 * char.
 		 */

@@ -151,26 +151,22 @@ DEF_CMD(format_content)
 		return Enoarg;
 
 	while (doc_following_pane(ci->focus, ci->mark) != WEOF) {
-		char *l;
-		mbstate_t ps = {};
-		wchar_t w;
-		int o = 0;
-		int len;
+		const char *l, *c;
+		wint_t w;
 
 		l = do_format(rf, ci->focus, ci->mark, NULL, -1, 0);
 		if (!l)
 			break;
-		len = strlen(l);
-		while (o < len) {
-			int err = mbrtowc(&w, l+o, len-o, &ps);
-			if (err <= 0 ||
+		c = l;
+		while (*c) {
+			w = get_utf8(&c, NULL);
+			if (w >= WERR ||
 			    comm_call(ci->comm2, "consume", ci->home, w, ci->mark) <= 0)
 				/* Finished */
 				break;
-			o += err;
 		}
-		free(l);
-		if (o < len)
+		free((void*)l);
+		if (*c)
 			break;
 		mark_next_pane(ci->focus, ci->mark);
 	}
