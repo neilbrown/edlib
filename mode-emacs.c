@@ -1794,10 +1794,22 @@ DEF_CMD(emacs_fill)
 	} else
 		mk = NULL;
 
-	if (call("fill-paragraph", ci->focus, ci->num, p, NULL, 0, mk) == 0) {
-		p2 = call_ret(pane, "attach-textfill", ci->focus);
-		if (p2)
-			call("fill-paragraph", p2, ci->num, p, NULL, 0, mk);
+	if (strcmp(ci->key, "K:M-q") == 0) {
+		if (call("fill-paragraph", ci->focus, ci->num, p, NULL,
+			 0, mk) == 0) {
+			p2 = call_ret(pane, "attach-textfill", ci->focus);
+			if (p2)
+				call("fill-paragraph", p2, ci->num, p, NULL,
+				     0, mk);
+		}
+	} else {
+		/* Don't try to load anything, the file-type should
+		 * have loaded something if relevant
+		 */
+		if (call("reindent-paragraph", ci->focus, ci->num, p, NULL,
+			 0, mk) == 0)
+			call("Message", ci->focus, 0, NULL,
+			     "Reindent not supported on the document.");
 	}
 	return 1;
 }
@@ -1917,6 +1929,7 @@ static void emacs_init(void)
 	key_add_prefix(m, "K:CQ:C-", &emacs_quote_insert);
 
 	key_add(m, "K:M-q", &emacs_fill);
+	key_add(m, "K:M:C-q", &emacs_fill);
 	key_add(m, "K:M-/", &emacs_abbrev);
 
 	key_add(m, "emacs:command", &emacs_do_command);

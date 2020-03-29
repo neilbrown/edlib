@@ -833,7 +833,7 @@ class CModePane(edlib.Pane):
             return 0
 
     def handle_indent_para(self, key, focus, mark, mark2, **a):
-        "handle:fill-paragraph"
+        "handle:reindent-paragraph"
 
         if not mark:
             return edlib.Enoarg
