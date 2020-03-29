@@ -46,15 +46,8 @@ void buf_concat(struct buf *b safe, const char *s safe)
 void buf_append(struct buf *b safe, wchar_t wch)
 {
 	char t[5];
-	mbstate_t ps = {};
-	size_t l;
 
-	if (wch <= 0x7f) {
-		t[0] = wch;
-		l = 1;
-	} else
-		l = wcrtomb(t, wch, &ps);
-	buf_concat_len(b, t, l);
+	buf_concat(b, put_utf8(t, wch));
 }
 
 void buf_append_byte(struct buf *b safe, char c)
@@ -383,7 +376,7 @@ static void dump_mem(void)
  * - if it starts '0b10' it is a non-initial byte and provides 6 bits.
  * - if it starts '0b110' it is first of 2 and provides 5 of 11 bits
  * - if it starts '0b1110' it is first of 3 and provides 4 of 16 bits
- * - if it starts '0b11110' it is first of 4 and provides 3 of 27 bits.
+ * - if it starts '0b11110' it is first of 4 and provides 3 of 21 bits.
  */
 wint_t get_utf8(const char **cpp safe, const char *end)
 {
@@ -424,4 +417,33 @@ wint_t get_utf8(const char **cpp safe, const char *end)
 	}
 	*cpp = cp;
 	return ret;
+}
+
+char *safe put_utf8(char *buf safe, wchar_t ch)
+{
+	char mask;
+	int l, i;
+
+	if (ch < 0x80) {
+		l = 1;
+		mask = 0x7f;
+	} else if (ch < 0x800) {
+		l = 2;
+		mask = 0x1f;
+	} else if (ch < 0x10000) {
+		l = 3;
+		mask = 0x0f;
+	} else if (ch < 0x200000) {
+		l = 4;
+		mask = 0x07;
+	} else
+		l = 0;
+
+	for (i = 0 ; i < l; i++) {
+		buf[i] = (ch >> ((l-1-i)*6)) & mask;
+		buf[i] |= ~(mask+mask+1);
+		mask = 0x3f;
+	}
+	buf[l] = 0;
+	return buf;
 }

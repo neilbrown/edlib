@@ -378,6 +378,7 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		 * length of a match to there - on the next line.
 		 * Allow 4 chars per column
 		 */
+		char t[5];
 		unsigned short cnt;
 		len = RXL_SETSTART(st->rxl) - st->rxl;
 
@@ -418,8 +419,8 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		if (flag)
 			printf("Flag: %x\n", flag);
 		else
-			printf("Match %lc(%x)\n",
-			       ch >= ' ' && ch < ' ' ? '?' : ch , ch);
+			printf("Match %c(%x)\n",
+			       ch < ' ' ? "?" : put_utf8(t, ch) , ch);
 
 		/* Now check the linkage is correct.  The chain should lead
 		 * to 0 without seeing any 'NO_LINK' or any ISFORK, and
@@ -1403,9 +1404,10 @@ void rxl_print(unsigned short *rxl safe)
 
 	for (i = rxl+1 ; i < set; i++) {
 		unsigned short cmd = *i;
+		char t[5];
 		printf("%04u: ", i-rxl);
 		if (REC_ISCHAR(cmd))
-			printf("match %lc (#%x)\n", cmd, cmd);
+			printf("match %s (#%x)\n", put_utf8(t, cmd), cmd);
 		else if (REC_ISSPEC(cmd)) {
 			switch(cmd) {
 			case REC_ANY: printf("match ANY\n"); break;

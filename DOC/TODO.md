@@ -182,7 +182,7 @@ Module features
 
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
-- [ ] don't use mb* funcs, use bespoke utf8 coding
+- [X] don't use mb* funcs, use bespoke utf8 coding
 - [ ] merge adjacent undo records that can be merged.
 - [ ] Possibly move read-only handling to core-doc, once docs/dir
       respond to something other than 'replace' to open files.

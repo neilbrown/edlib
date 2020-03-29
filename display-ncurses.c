@@ -959,6 +959,7 @@ static void send_key(int keytype, wint_t c, int meta, struct pane *p safe)
 	struct display_data *dd = p->data;
 	char *n;
 	char buf[100];/* FIXME */
+	char t[5];
 	char *m = meta ? ":M" : "";
 
 	if (keytype == KEY_CODE_YES) {
@@ -978,7 +979,7 @@ static void send_key(int keytype, wint_t c, int meta, struct pane *p safe)
 			sprintf(buf, "%s:C-%c\037%s:C-%c",
 				m, c+64, m, c+96);
 		else
-			sprintf(buf, "%s-%lc", m, c);
+			sprintf(buf, "%s-%s", m, put_utf8(t, c));
 	}
 
 	dd->last_event = time(NULL);

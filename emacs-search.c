@@ -169,8 +169,6 @@ DEF_CMD(search_add)
 	struct es_info *esi = ci->home->data;
 	wint_t wch;
 	char b[5];
-	mbstate_t ps = {};
-	int l;
 	struct mark *m;
 	int limit = 1000;
 	char *attr = NULL;
@@ -199,15 +197,13 @@ DEF_CMD(search_add)
 		wch = mark_next_pane(esi->target, addpos);
 		if (wch == WEOF)
 			break;
-		l = wcrtomb(b, wch, &ps);
+		put_utf8(b, wch);
 		if (wch == '\n') {
 			slash = 1;
 			strcpy(b, "n");
-			l = 1;
 		} else if (strchr(must_quote, wch)) {
 			slash = 1;
 		}
-		b[l] = 0;
 		if (slash) {
 			call("Replace", ci->focus, 1, NULL, "\\",
 			     !first, NULL, attr);
