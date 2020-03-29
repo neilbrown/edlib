@@ -218,7 +218,11 @@ DEF_CMD(mouse_event)
 	}
 	if (b < 3) {
 		ms = &im->buttons[b];
-		if (press == ms->is_down) {
+		/* Ncurses seems to produce duplicate 'release' event sometimes,
+		 * but a double-press can follow a press without a release.
+		 * So we cannot filter out all repeats, only repeated 'release'.
+		 */
+		if (!press && !ms->is_down) {
 			/* No change */
 			if (!press)
 				ms->last_up = now;
@@ -230,6 +234,11 @@ DEF_CMD(mouse_event)
 				ms->click_count = 1;
 			else if (ms->click_count < 3)
 				ms->click_count += 1;
+			/* The release before a double-press might go missing
+			 * with ncurses, so we need to record last_up for
+			 * the press.
+			 */
+			ms->last_up = now;
 		} else {
 			ms->last_up = now;
 			if (ms->ignore_up) {
@@ -312,8 +321,8 @@ DEF_CMD(mouse_event)
 				return ret;
 			}
 
-			key = strconcat(ci->home, "M", mode, mod, mult,
-					":Click-", n);
+			key = strconcat(ci->home, "M", mode, mod, ":", mult,
+					"Click-", n);
 			ret = call(key, focus, num, NULL, NULL, ex,
 				   NULL, NULL, x, y);
 

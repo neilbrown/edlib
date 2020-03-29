@@ -1629,7 +1629,7 @@ DEF_CMD(emacs_press)
 
 	if (!m)
 		return Efail;
-	/* NOTE must find new location before tw report that the
+	/* NOTE must find new location before tw reports that the
 	 * view has changed.
 	 */
 	call("Move-CursorXY", ci->focus,

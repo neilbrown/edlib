@@ -961,7 +961,7 @@ DEF_CMD(doc_move_to)
 		m = ci->mark ?: dd->point;
 		mark_to_mark(dd->mark, m);
 		/* Make sure mark is *before* point so insertion
-		 * leave mark alone */
+		 * leaves mark alone */
 		mark_make_first(dd->mark);
 		break;
 	case 2:

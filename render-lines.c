@@ -965,8 +965,10 @@ DEF_CMD(render_lines_set_cursor)
 	if (y > cihy)
 		/* x,y is in header line - try lower */
 		cihy = y;
-	while (y <= cihy && m && m->mdata) {
+	while (y <= cihy && m) {
 		call_render_line(focus, m);
+		if (!m->mdata)
+			break;
 		rl->xypos = -1;
 		rl->xyattrs = NULL;
 		render_line(p, focus, m->mdata, y, 0, cihx, cihy,

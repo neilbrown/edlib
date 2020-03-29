@@ -4,6 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] track mouse movement during selection
 - [X] filename completion is really slow on large directories. Probably quadratic.
 - [X] option to save-all to quit and visit a changed document
 - [ ] C/python code "index" pane to quickly jump to function, and see context
@@ -22,6 +23,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] grep loses selected text due to save-all
+- [X] double-click doesn't select a word in ncurses, but does in gtk.
 - [X] if cursor is at top/start of pane and you search for string at start,
       do doc scrolls down one line.
 - [X] cannot stop search/replace in the middle except by Abort.
