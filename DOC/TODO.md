@@ -118,7 +118,7 @@ Module features
 
 - [ ] search/replace should support undo somehow
 - [ ] search/replace should make it easy to revisit previous changes.
-- [ ] it is hard to search for 'tab' because it you get moved to 'replace'
+- [X] it is hard to search for 'tab' because it you get moved to 'replace'
 - [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
 - [ ] filename completion should ignore uninteresting files like ".o"
 - [ ] invent a way to reserve 'extra' values for command sets

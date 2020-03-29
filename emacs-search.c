@@ -583,7 +583,7 @@ static void emacs_search_init_map(void)
 	key_add_range(es_map, "K:M- ", "K:M-~", &search_insert_meta);
 	key_add(es_map, "K:M-c", &search_toggle_ci);
 	key_add(es_map, "K:M-r", &search_replace);
-	key_add(es_map, "K:Tab", &search_replace);
+	key_add(es_map, "K:S:Tab", &search_replace);
 	key_add(es_map, "K:M-%", &search_replace);
 	key_add(es_map, "K:ESC", &search_escape);
 
@@ -593,7 +593,6 @@ static void emacs_search_init_map(void)
 	er_map = key_alloc();
 	key_add(er_map, "K:Enter", &replace_request_next);
 	key_add(er_map, "K:M:Enter", &replace_request);
-	key_add(er_map, "K:Tab", &replace_to_search);
 	key_add(er_map, "K:S:Tab", &replace_to_search);
 	key_add(er_map, "K:M-!", &replace_all);
 	key_add(er_map, "K:C-S", &replace_forward);
