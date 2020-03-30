@@ -1625,6 +1625,7 @@ DEF_CMD(emacs_press)
 {
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+	struct mark *p = call_ret(mark, "doc:point", ci->focus);
 	char *type = strcmp(ci->key, "M:Press-1") == 0 ? "char" : "word";
 
 	if (!m)
@@ -1634,11 +1635,18 @@ DEF_CMD(emacs_press)
 	 */
 	call("Move-CursorXY", ci->focus,
 	     0, m, NULL, 0, NULL, NULL, ci->x, ci->y);
-	if (mk) {
-		struct mark *p = call_ret(mark, "doc:point", ci->focus);
+	if (mk && p) {
+		char *rpos;
+		char ppos[20];
+
 		attr_set_int(&mk->attrs, "emacs:active", 0);
 		call("view:changed", ci->focus, 0, p, NULL, 0, mk);
-		if (p && !mark_same(p, m))
+		snprintf(ppos, sizeof(ppos), "%d,%d", ci->x, ci->y);
+		rpos = attr_find(p->attrs, "emacs:release-pos");
+		if (rpos && strcmp(ppos, rpos) != 0)
+			/* press and release pos are different, don't
+			 * treat a multi-click
+			 */
 			type = "char";
 	}
 	call("Move-to", ci->focus, 0, m);
@@ -1655,14 +1663,22 @@ DEF_CMD(emacs_release)
 {
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
+	char ppos[20];
 	char *seltype = "";
 
 	call("Move-CursorXY", ci->focus,
 	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
 
+	if (!p)
+		return 1;
+
+	snprintf(ppos, sizeof(ppos), "%d,%d", ci->x, ci->y);
+	attr_set_str(&p->attrs, "emacs:release-pos", ppos);
+
 	if (mk)
 		seltype = attr_find(mk->attrs, "emacs:selection-type");
-	if (mk && p && seltype && strcmp(seltype, "word") == 0) {
+
+	if (mk && seltype && strcmp(seltype, "word") == 0) {
 		if (mk->seq < p->seq) {
 			call("Move-Word", ci->focus, -1,  mk);
 			call("Move-Word", ci->focus, 1, p);
@@ -1671,7 +1687,7 @@ DEF_CMD(emacs_release)
 			call("Move-Word", ci->focus, 1, mk);
 		}
 	}
-	if (mk && p && !mark_same(mk, p)) {
+	if (mk && !mark_same(mk, p)) {
 		/* Must call 'claim' first as it might be claiming from us */
 		call("selection:claim", ci->focus);
 		attr_set_int(&mk->attrs, "emacs:active", 2);
