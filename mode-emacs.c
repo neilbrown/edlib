@@ -1625,7 +1625,12 @@ DEF_CMD(emacs_press)
 {
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
-	char *type = strcmp(ci->key, "M:Press-1") == 0 ? "char" : "word";
+	char *type = "char";
+
+	if (strcmp(ci->key, "M:DPress-1") == 0)
+		type = "word";
+	else if (strcmp(ci->key, "M:TPress-1") == 0)
+		type = "line";
 
 	if (!m)
 		return Efail;
@@ -1660,13 +1665,19 @@ DEF_CMD(emacs_release)
 
 	if (mk)
 		seltype = attr_find(mk->attrs, "emacs:selection-type");
-	if (mk && p && seltype && strcmp(seltype, "word") == 0) {
-		if (mk->seq < p->seq) {
-			call("Move-Word", ci->focus, -1,  mk);
-			call("Move-Word", ci->focus, 1, p);
+	if (mk && p && seltype && strcmp(seltype, "char") != 0) {
+		struct mark *m1 = mk, *m2 = p;
+
+		if (m1->seq > m2->seq) {
+			m1 = p;
+			m2 = mk;
+		}
+		if (strcmp(seltype, "word") == 0) {
+			call("Move-Word", ci->focus, -1,  m1);
+			call("Move-Word", ci->focus, 1, m2);
 		} else {
-			call("Move-Word", ci->focus, -1,  p);
-			call("Move-Word", ci->focus, 1, mk);
+			call("Move-EOL", ci->focus, -1,  m1);
+			call("Move-EOL", ci->focus, 1, m2);
 		}
 	}
 	if (mk && p && !mark_same(mk, p)) {
@@ -1937,6 +1948,7 @@ static void emacs_init(void)
 	key_add(m, "M:Press-1", &emacs_press);
 	key_add(m, "M:Release-1", &emacs_release);
 	key_add(m, "M:DPress-1", &emacs_press);
+	key_add(m, "M:TPress-1", &emacs_press);
 	key_add(m, "M:Click-2", &emacs_paste);
 	key_add(m, "M:C:Click-1", &emacs_paste);
 

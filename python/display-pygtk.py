@@ -449,6 +449,9 @@ class EdDisplay(edlib.Pane):
         edlib.time_stop(edlib.TIME_WINDOW)
 
     def press(self, c, event):
+        if event.type != Gdk.EventType.BUTTON_PRESS:
+            #maybe GDK_2BUTTON_PRESS - don't want that.
+            return
         edlib.time_start(edlib.TIME_KEY)
         c.grab_focus()
         self.unblock_motion()
