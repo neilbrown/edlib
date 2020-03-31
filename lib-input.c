@@ -49,6 +49,7 @@ struct input_mode {
 	struct mark	*point;
 	struct mouse_state {
 		struct timespec	last_up;
+		int		last_x, last_y;
 		int		is_down;
 		int		click_count;
 		int		ignore_up;
@@ -217,30 +218,40 @@ DEF_CMD(mouse_event)
 		b = 100;
 	}
 	if (b < 3) {
+		bool repeat = False;
+
 		ms = &im->buttons[b];
+
+		/* FIXME the max movement for a double-click should be
+		 * about a char width - maybe something based on scale
+		 */
+		if (tspec_diff_ms(&now, &ms->last_up) <= 500 &&
+		    (abs(ci->x - ms->last_x) +
+		     abs(ci->y - ms->last_y)) <= 2)
+			repeat = True;
+
+		/* This might not be an 'up', but the 'up' before
+		 * a double-press might go missing with ncurses, so
+		 * we just track every event.
+		 */
+		ms->last_up = now;
+		ms->last_x = ci->x; ms->last_y = ci->y;
+
 		/* Ncurses seems to produce duplicate 'release' event sometimes,
 		 * but a double-press can follow a press without a release.
 		 * So we cannot filter out all repeats, only repeated 'release'.
 		 */
 		if (!press && !ms->is_down) {
 			/* No change */
-			if (!press)
-				ms->last_up = now;
 			return 1;
 		}
 		ms->is_down = press;
 		if (press) {
-			if (tspec_diff_ms(&now, &ms->last_up) > 500)
+			if (!repeat)
 				ms->click_count = 1;
 			else if (ms->click_count < 3)
 				ms->click_count += 1;
-			/* The release before a double-press might go missing
-			 * with ncurses, so we need to record last_up for
-			 * the press.
-			 */
-			ms->last_up = now;
 		} else {
-			ms->last_up = now;
 			if (ms->ignore_up) {
 				ms->ignore_up = 0;
 				return 1;
