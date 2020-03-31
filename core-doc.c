@@ -53,7 +53,7 @@ static inline wint_t doc_prior(struct doc *d safe, struct mark *m safe)
 struct doc_data {
 	struct pane		*doc safe;
 	struct mark		*point safe;
-	struct mark		*mark;
+	struct mark		*marks[4];
 };
 
 static void doc_init(struct doc *d safe)
@@ -678,9 +678,13 @@ DEF_CMD(doc_do_destroy)
 DEF_CMD(doc_get_point)
 {
 	struct doc_data *dd = ci->home->data;
+	int mnum = 0;
+
+	if (ci->num >= 1 && ci->num <= 4)
+		mnum = ci->num - 1;
 
 	comm_call(ci->comm2, "callback", ci->focus, 0, dd->point, NULL,
-		  0, dd->mark);
+		  0, dd->marks[mnum]);
 	return 1;
 }
 
@@ -894,9 +898,11 @@ DEF_CMD(doc_clone)
 DEF_CMD(doc_close)
 {
 	struct doc_data *dd = ci->home->data;
+	int i;
 	call("doc:push-point", dd->doc, 0, dd->point);
 	mark_free(dd->point);
-	mark_free(dd->mark);
+	for (i = 0; i < 4; i++)
+		mark_free(dd->marks[i]);
 	call("doc:closed", dd->doc);
 	return 1;
 }
@@ -949,40 +955,44 @@ DEF_CMD(doc_move_to)
 	struct doc_data *dd = ci->home->data;
 	struct mark *m;
 
-	switch(ci->num) {
-	case 1:
-		if (!dd->mark) {
-			dd->mark = mark_dup(dd->point);
-			if (!dd->mark)
-				return Efail;
-			attr_set_str(&dd->mark->attrs,
-				     "render:interactive-mark", "yes");
-		}
-		m = ci->mark ?: dd->point;
-		mark_to_mark(dd->mark, m);
-		/* Make sure mark is *before* point so insertion
-		 * leaves mark alone */
-		mark_make_first(dd->mark);
-		break;
-	case 2:
-		mark_free(dd->mark);
-		dd->mark = NULL;
-		break;
-	case 0:
+	if (ci->num == 0) {
 		if (ci->mark)
 			mark_to_mark(dd->point, ci->mark);
-		break;
-	}
+	} else if (ci->num > 0 && ci->num <= 4) {
+		int mnum = ci->num - 1;
+
+		if (!dd->marks[mnum]) {
+			dd->marks[mnum] = mark_dup(dd->point);
+			if (!dd->marks[mnum])
+				return Efail;
+			if (mnum == 0)
+				attr_set_str(&dd->marks[mnum]->attrs,
+					     "render:interactive-mark", "yes");
+		}
+		m = ci->mark ?: dd->point;
+		mark_to_mark(dd->marks[mnum], m);
+		/* Make sure mark is *before* point so insertion
+		 * leaves mark alone */
+		mark_make_first(dd->marks[mnum]);
+	} else if (ci->num < 0 && ci->num >= -4) {
+		int mnum = -1 - ci->num;
+
+		mark_free(dd->marks[mnum]);
+		dd->marks[mnum] = NULL;
+	} else
+		return Efail;
 	return 1;
 }
 
 DEF_CMD(doc_clip)
 {
 	struct doc_data *dd = ci->home->data;
+	int mnum;
 
 	mark_clip(dd->point, ci->mark, ci->mark2);
-	if (dd->mark)
-		mark_clip(dd->mark, ci->mark, ci->mark2);
+	for (mnum = 0; mnum < 4; mnum++)
+		if (dd->marks[mnum])
+			mark_clip(dd->marks[mnum], ci->mark, ci->mark2);
 	return 1;
 }
 
