@@ -35,7 +35,7 @@ Bugs to be fixed
 - [X] doc-docs sometimes shows the same doc twice at the top of the list.
 - [X] don't tell me two dirs are the same if the only difference is trailing '/'
 - [X] I cannot reformat C comments any more, because C-q re-indents
-- [ ] lib-renderline draw_some() was seen in a (seemingly) infinite loop
+- [X] lib-renderline draw_some() was seen in a (seemingly) infinite loop
  	while (*rlp)
  		rlp = &(*rlp)->next;
       the rl were much the same

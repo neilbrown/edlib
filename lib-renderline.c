@@ -697,7 +697,8 @@ DEF_CMD(renderline)
 			end_of_page = 1;
 		} else if (ch == '\t') {
 			int xc = (wrap_offset + x) / mwidth;
-			int w = 8 - xc % 8;
+			/* Note xc might be negative, so "xc % 8" won't work here */
+			int w = 8 - (xc & 7);
 			ret = draw_some(p, focus, &rlst, &x, start, &line,
 					buf_final(&attr),
 					wrap ? mwidth*2: 0,
