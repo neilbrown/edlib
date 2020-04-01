@@ -1621,71 +1621,128 @@ DEF_CMD(emacs_make)
 	return 1;
 }
 
+static void update_sel(struct pane *p safe,
+		       struct mark *pt safe, struct mark *m2 safe,
+		       const char *type)
+{
+	struct mark *mfirst, *mlast;
+	struct mark *mk;
+
+	call("Move-to", p, 1, m2);
+	mk = call_ret(mark2, "doc:point", p);
+	if (!mk)
+		return;
+	if (!type)
+		type = attr_find(m2->attrs, "emacs:selection-type");
+	else
+		attr_set_str(&m2->attrs, "emacs:selection-type", type);
+
+	if (type && strcmp(type, "char") != 0) {
+
+		if (pt->seq < mk->seq) {
+			mfirst = pt;
+			mlast = mk;
+		} else {
+			mfirst = mk;
+			mlast = pt;
+		}
+		if (strcmp(type, "word") == 0) {
+			call("Move-Word", p, -1,  mfirst);
+			call("Move-Word", p, 1, mlast);
+		} else {
+			call("Move-EOL", p, -1,  mfirst);
+			call("Move-EOL", p, 1, mlast);
+			/* Include trailing newlinew */
+			call("Move-Char", p, 1, mlast);
+		}
+	}
+
+	/* Must call 'claim' first as it might be claiming from us */
+	call("selection:claim", p);
+	attr_set_int(&mk->attrs, "emacs:active", 2);
+	call("view:changed", p, 0, pt, NULL, 0, mk);
+}
+
 DEF_CMD(emacs_press)
 {
+	struct mark *pt = call_ret(mark, "doc:point", ci->focus);
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
 	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
-	char *type = "char";
+	char *type;
 
-	if (strcmp(ci->key, "M:DPress-1") == 0)
-		type = "word";
-	else if (strcmp(ci->key, "M:TPress-1") == 0)
-		type = "line";
-
-	if (!m)
+	if (!m || !pt)
 		return Efail;
 	/* NOTE must find new location before tw reports that the
 	 * view has changed.
 	 */
 	call("Move-CursorXY", ci->focus,
 	     0, m, NULL, 0, NULL, NULL, ci->x, ci->y);
+
 	if (mk) {
-		struct mark *p = call_ret(mark, "doc:point", ci->focus);
+		/* Clear any current highlight */
 		attr_set_int(&mk->attrs, "emacs:active", 0);
-		call("view:changed", ci->focus, 0, p, NULL, 0, mk);
+		call("view:changed", ci->focus, 0, pt, NULL, 0, mk);
 	}
 	call("Move-to", ci->focus, 0, m);
-	call("Move-to", ci->focus, 1, m);
-	if (!mk)
-		mk = call_ret(mark2, "doc:point", ci->focus);
-	if (mk)
-		attr_set_str(&mk->attrs, "emacs:selection-type", type);
 	pane_focus(ci->focus);
+
+	if (m2 && strcmp(ci->key, "M:DPress-1") == 0) {
+		type = attr_find(m2->attrs, "emacs:selection-type");
+		if (!type)
+			type = "char";
+		else if (strcmp(type, "char") == 0)
+			type = "word";
+		else if (strcmp(type, "word") == 0)
+			type = "line";
+		else
+			type = "char";
+	} else {
+		type = "char";
+		/* Record start of selection */
+		call("Move-to", ci->focus, 2, m);
+		m2 = call_ret(mark2, "doc:point", ci->focus, 2);
+		if (m2)
+			attr_set_str(&m2->attrs, "emacs:selection-type", type);
+	}
+	if (m2)
+		attr_set_int(&m2->attrs, "emacs:track-selection", 1);
+
 	return 1;
 }
 
 DEF_CMD(emacs_release)
 {
-	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
-	char *seltype = "";
+	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
 
 	call("Move-CursorXY", ci->focus,
 	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
 
-	if (mk)
-		seltype = attr_find(mk->attrs, "emacs:selection-type");
-	if (mk && p && seltype && strcmp(seltype, "char") != 0) {
-		struct mark *m1 = mk, *m2 = p;
+	if (!p || !m2)
+		return Enoarg;
 
-		if (m1->seq > m2->seq) {
-			m1 = p;
-			m2 = mk;
-		}
-		if (strcmp(seltype, "word") == 0) {
-			call("Move-Word", ci->focus, -1,  m1);
-			call("Move-Word", ci->focus, 1, m2);
-		} else {
-			call("Move-EOL", ci->focus, -1,  m1);
-			call("Move-EOL", ci->focus, 1, m2);
-		}
-	}
-	if (mk && p && !mark_same(mk, p)) {
-		/* Must call 'claim' first as it might be claiming from us */
-		call("selection:claim", ci->focus);
-		attr_set_int(&mk->attrs, "emacs:active", 2);
-		call("view:changed", ci->focus, 0, p, NULL, 0, mk);
-	}
+	attr_set_int(&m2->attrs, "emacs:track-selection", 0);
+	update_sel(ci->focus, p, m2, NULL);
+
+	return 1;
+}
+
+DEF_CMD(emacs_motion)
+{
+	struct mark *p = call_ret(mark, "doc:point", ci->focus);
+	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
+
+	if (!p || !m2)
+		return 0;
+
+	if (attr_find_int(m2->attrs, "emacs:track-selection") != 1)
+		return 0;
+
+	call("Move-CursorXY", ci->focus,
+	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
+
+	update_sel(ci->focus, p, m2, NULL);
 	return 1;
 }
 
@@ -1948,9 +2005,9 @@ static void emacs_init(void)
 	key_add(m, "M:Press-1", &emacs_press);
 	key_add(m, "M:Release-1", &emacs_release);
 	key_add(m, "M:DPress-1", &emacs_press);
-	key_add(m, "M:TPress-1", &emacs_press);
 	key_add(m, "M:Click-2", &emacs_paste);
 	key_add(m, "M:C:Click-1", &emacs_paste);
+	key_add(m, "M:Motion", &emacs_motion);
 
 	key_add(m, "Notify:selection:claimed", &emacs_sel_claimed);
 	key_add(m, "Notify:selection:commit", &emacs_sel_commit);
