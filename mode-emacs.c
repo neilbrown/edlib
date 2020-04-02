@@ -1705,8 +1705,10 @@ DEF_CMD(emacs_press)
 		if (m2)
 			attr_set_str(&m2->attrs, "emacs:selection-type", type);
 	}
-	if (m2)
+	if (m2) {
 		attr_set_int(&m2->attrs, "emacs:track-selection", 1);
+		update_sel(ci->focus, pt, m2, type);
+	}
 
 	return 1;
 }

@@ -25,6 +25,10 @@ Bugs to be fixed
 
 - [ ] ncurses doesn't report mouse events properly when there are multi-clicks.
       The press and release seem to get re-ordered.  Setting mouseinterval might help.
+- [ ] If I can see doc listing and I do filename completion in a file-file
+      dialog, I see multiple copies of the directory in the doc listing.
+- [ ] resizing a elc window doesn't trigger refresh.
+- [ ] save-all must be after the prompt for grep/make, and only affect subdirs.
 - [X] grep loses selected text due to save-all
 - [X] double-click doesn't select a word in ncurses, but does in gtk.
 - [X] if cursor is at top/start of pane and you search for string at start,
@@ -42,6 +46,7 @@ Bugs to be fixed
 	 * text_orig = 0x55a24c886723 "\t\t\t\t ci->mark, \"fg:red,inverse,vis-nl\", 20);\n",
 	 * text = 0x55a24c91e150 " ", attr = 0x55a24c982570 "", x = -3181,
        though x changed.
+    problem is tab %8 calculation when x is negative
 
 Core features
 -------------
