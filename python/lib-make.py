@@ -584,7 +584,18 @@ def isword(c):
     return c and c.isalnum() or c == '_'
 
 def run_make(key, focus, str, **a):
-    # pop-up has completed
+    # pop-up has completed, check if we need to save-all
+    # If we already have, key will start 'Y:', else 'N:'
+    if key.startswith('N:'):
+        if focus.call("docs:save-all", 0, 1) != 1:
+            p = focus.call("PopupTile", "DM", ret='focus');
+            p['done-key'] = 'Y:' + key[2:]
+            p['default'] = str
+            p.call("popup:set-callback", run_make)
+            p.call("docs:show-modified")
+            return 1
+
+    key = key[2:]
     c = key.index(':')
     dir = key[c+1:]
     mode = key[:c]
@@ -642,29 +653,6 @@ def run_make(key, focus, str, **a):
 def make_request(key, focus, num, str, mark, **a):
     history = None
     dflt_arg = ''
-
-    # interactive-cmd... always sets mark, popup-return never does.
-    # popup-return also sets num to 1 and provides a string.
-    if num == 1 and not mark and not (str is None):
-        # We did a save-all, restore num and str
-        s = str.split(',',1)
-        str = None
-        if len(s) > 1:
-            str = s[1]
-        try:
-            num = int(s[0])
-        except:
-            num = 0
-    elif focus.call("docs:save-all", 0, 1) != 1:
-        p = focus.call("PopupTile", "DM", ret='focus');
-        p['done-key'] = key
-        # Make 'num' and 'str' available after save-all
-        if str:
-            p['default'] = "%d,%s" % (num, str)
-        else:
-            p['default'] = "%d" % (num)
-        p.call("docs:show-modified")
-        return 1
 
     if key[-8:] == "git-grep":
         dflt = "grep -rnH "
@@ -742,7 +730,7 @@ def make_request(key, focus, num, str, mark, **a):
             pass
 
         if make_cmd:
-            run_make("%s:%s"%(mode,dir), focus, make_cmd)
+            run_make("N:%s:%s"%(mode,dir), focus, make_cmd)
             return 1
 
     # Create a popup to ask for make command
@@ -754,7 +742,7 @@ def make_request(key, focus, num, str, mark, **a):
         p.call("Replace", dflt_arg)
     p.call("popup:set-callback", run_make)
     p["prompt"] = "%s Command" % cmd
-    p["done-key"] = "%s:%s" % (mode, dir)
+    p["done-key"] = "N:%s:%s" % (mode, dir)
     p.call("doc:set-name", "%s Command" % cmd)
     p['pane-title'] = "%s in %s" %(cmd, dir)
     p['cmd'] = cmd
