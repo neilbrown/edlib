@@ -781,8 +781,14 @@ static struct pane *ncurses_init(struct pane *ed,
 	set_escdelay(100);
 	intrflush(stdscr, FALSE);
 	keypad(stdscr, TRUE);
-	mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
-	mouseinterval(0);
+	mousemask(BUTTON1_PRESSED | BUTTON1_RELEASED |
+		  BUTTON2_PRESSED | BUTTON2_RELEASED |
+		  BUTTON3_PRESSED | BUTTON3_RELEASED |
+		  BUTTON4_PRESSED | BUTTON4_RELEASED |
+		  BUTTON5_PRESSED | BUTTON5_RELEASED |
+		  BUTTON_CTRL | BUTTON_SHIFT | BUTTON_ALT |
+		  REPORT_MOUSE_POSITION, NULL);
+	mouseinterval(10);
 
 	getmaxyx(stdscr, p->h, p->w);
 

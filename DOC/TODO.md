@@ -23,7 +23,9 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] ncurses doesn't report mouse events properly when there are multi-clicks.
+- [ ] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
+- [ ] cursor often doesn't stay in column when moving up/down
+- [X] ncurses doesn't report mouse events properly when there are multi-clicks.
       The press and release seem to get re-ordered.  Setting mouseinterval might help.
 - [ ] If I can see doc listing and I do filename completion in a file-file
       dialog, I see multiple copies of the directory in the doc listing.

@@ -50,7 +50,6 @@ struct input_mode {
 	struct mouse_state {
 		struct timespec	last_up;
 		int		last_x, last_y;
-		int		is_down;
 		int		click_count;
 		int		ignore_up;
 	} buttons[3];
@@ -230,28 +229,15 @@ DEF_CMD(mouse_event)
 		     abs(ci->y - ms->last_y)) <= 2)
 			repeat = True;
 
-		/* This might not be an 'up', but the 'up' before
-		 * a double-press might go missing with ncurses, so
-		 * we just track every event.
-		 */
-		ms->last_up = now;
-		ms->last_x = ci->x; ms->last_y = ci->y;
-
-		/* Ncurses seems to produce duplicate 'release' event sometimes,
-		 * but a double-press can follow a press without a release.
-		 * So we cannot filter out all repeats, only repeated 'release'.
-		 */
-		if (!press && !ms->is_down) {
-			/* No change */
-			return 1;
-		}
-		ms->is_down = press;
 		if (press) {
 			if (!repeat)
 				ms->click_count = 1;
 			else if (ms->click_count < 3)
 				ms->click_count += 1;
 		} else {
+			ms->last_up = now;
+			ms->last_x = ci->x; ms->last_y = ci->y;
+
 			if (ms->ignore_up) {
 				ms->ignore_up = 0;
 				return 1;
