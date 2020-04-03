@@ -234,6 +234,11 @@ DEF_CMD(mp_set_ref)
 	if (!ci->mark)
 		return Enoarg;
 
+	/* Need to trigger a point:moved notification.  FIXME I wonder
+	 * if this can be simpler
+	 */
+	mark_step(ci->mark, 0);
+
 	if (!ci->mark->ref.m && !ci->mark->ref.docnum) {
 		/* First time set-ref was called */
 		pre_move(ci->mark);
@@ -273,8 +278,10 @@ DEF_CMD(mp_step)
 
 	mp_check_consistent(mpi);
 
-	if (ci->num2)
+	if (ci->num2) {
+		mark_step(m, ci->num);
 		pre_move(m);
+	}
 
 	m1 = m->ref.m;
 

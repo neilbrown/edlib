@@ -199,12 +199,12 @@ DEF_CMD(log_set_ref)
 
 	if (!m)
 		return Enoarg;
+	mark_to_end(d, m, ci->num != 1);
 	m->ref.o = 0;
 	if (ci->num == 1)
 		m->ref.b = list_first_entry_or_null(&log->log, struct logbuf, h);
 	else
 		m->ref.b = NULL;
-	mark_to_end(d, m, ci->num != 1);
 	return 1;
 }
 

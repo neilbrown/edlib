@@ -284,14 +284,19 @@ struct mark *safe mark_dup_view(struct mark *m safe)
 	return ret;
 }
 
-static void notify_point_moved(struct mark *m safe)
+static void notify_point_moving(struct mark *m safe)
 {
-	struct point_links *plnk = safe_cast m->mdata;
+	struct point_links *plnk;
+
+	if (m->viewnum != MARK_POINT)
+		return;
+
+	plnk = safe_cast m->mdata;
 
 	if (plnk->moved)
 		return;
 	plnk->moved = 1;
-	pane_notify("point:moved", m->owner->home, 0, m);
+	pane_notify("point:moving", m->owner->home, 0, m);
 }
 
 void mark_ack(struct mark *m)
@@ -310,6 +315,7 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 	struct point_links *lnk;
 
 	ASSERT(m->owner == d);
+	notify_point_moving(m);
 
 	hlist_del(&m->all);
 	if (end) {
@@ -357,7 +363,7 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 				tlist_add(&lnk->lists[i],
 					  GRP_LIST, &d->views[i].head);
 		}
-	notify_point_moved(m);
+	notify_point_moving(m);
 }
 
 void mark_reset(struct doc *d safe, struct mark *m safe, int end)
@@ -413,7 +419,7 @@ struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner)
 		int i;
 
 		lnk->size = d->nviews;
-		lnk->moved = 0;
+		lnk->moved = 1;
 		lnk->pt = ret;
 		for (i = 0; i < d->nviews; i++)
 			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
@@ -622,13 +628,13 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 	ASSERT(a == target);
 	/* END DEBUG */
 
+	notify_point_moving(m);
 	if (m->viewnum == MARK_POINT) {
 		/* Lots of linkage to fix up */
 		if (m->seq < target->seq)
 			point_forward_to_mark(m, target);
 		else if (m->seq > target->seq)
 			point_backward_to_mark(m, target);
-		notify_point_moved(m);
 		return;
 	}
 	if (m->seq == target->seq)
@@ -741,6 +747,8 @@ void mark_step(struct mark *m safe, int forward)
 	 */
 	struct mark *m2, *target = m;
 
+	notify_point_moving(m);
+
 	if (forward) {
 		for (m2 = doc_next_mark_all(m);
 		     m2 && mark_same(m, m2);
@@ -763,6 +771,8 @@ void mark_make_first(struct mark *m safe)
 	struct mark *m2 = m;
 	struct mark *tmp;
 
+	notify_point_moving(m);
+
 	while ((tmp = doc_prev_mark_all(m2)) != NULL &&
 	       mark_same(tmp, m))
 		m2 = tmp;
@@ -773,6 +783,8 @@ void mark_make_last(struct mark *m safe)
 {
 	struct mark *m2 = m;
 	struct mark *tmp;
+
+	notify_point_moving(m);
 
 	while ((tmp = doc_next_mark_all(m2)) != NULL &&
 	       mark_same(tmp, m))

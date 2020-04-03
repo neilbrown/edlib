@@ -420,12 +420,12 @@ DEF_CMD(dir_set_ref)
 	if (!m)
 		return Enoarg;
 
+	mark_to_end(d, m, ci->num != 1);
 	if (list_empty(&dr->ents) || ci->num != 1)
 		m->ref.d = NULL;
 	else
 		m->ref.d = list_first_entry(&dr->ents, struct dir_ent, lst);
 	m->ref.ignore = 0;
-	mark_to_end(d, m, ci->num != 1);
 	return 1;
 }
 

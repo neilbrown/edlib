@@ -256,11 +256,11 @@ class notmuch_main(edlib.Doc):
 
     def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
+        self.to_end(mark, num == 0);
         if num == 1:
             mark.offset = 0
         else:
             mark.offset = len(self.searches.current)
-        self.to_end(mark, num == 0);
         return 1
 
     def handle_step(self, key, mark, num, num2, **a):
@@ -1114,6 +1114,7 @@ class notmuch_list(edlib.Doc):
 
     def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
+        self.to_end(mark, num == 0)
         mark.pos = None
         if num == 1 and len(self.threadids) > 0:
             tid = self.threadids[0]
@@ -1122,7 +1123,6 @@ class notmuch_list(edlib.Doc):
             else:
                 mark.pos = (self.threadids[0],None)
         mark.offset = 0
-        self.to_end(mark, num == 0)
         return 1
 
     def handle_step(self, key, mark, num, num2, **a):

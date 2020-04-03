@@ -710,7 +710,7 @@ DEF_CMD(email_set_ref)
 
 	if (!ci->mark)
 		return Enoarg;
-	home_call(p->parent, ci->key, ci->focus, ci->num);
+	home_call(p->parent, ci->key, ci->focus, ci->num, ci->mark);
 	if (ci->num) {
 		/* set to start, need to normalize */
 		while ((n = get_part(p->parent, ci->mark)) >= 0 &&

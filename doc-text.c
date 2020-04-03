@@ -1474,7 +1474,6 @@ DEF_CMD(text_step_bytes)
 {
 	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
-	struct mark *m2, *target = m;
 	bool forward = ci->num;
 	bool move = ci->num2;
 	struct text *t = container_of(d, struct text, doc);
@@ -1487,28 +1486,15 @@ DEF_CMD(text_step_bytes)
 	ASSERT(m->owner == d);
 
 	r = m->ref;
-	if (forward) {
+	if (forward)
 		ret = text_next(t, &r, 1);
-		if (move)
-			for (m2 = doc_next_mark_all(m);
-			     m2 &&
-			     (text_ref_same(t, &m2->ref, &m->ref) ||
-			      text_ref_same(t, &m2->ref, &r));
-			     m2 = doc_next_mark_all(m2))
-				target = m2;
-	} else {
+	else
 		ret = text_prev(t, &r, 1);
-		if (move)
-			for (m2 = doc_prev_mark_all(m);
-			     m2 &&
-			     (text_ref_same(t, &m2->ref, &m->ref) ||
-			      text_ref_same(t, &m2->ref, &r));
-			     m2 = doc_prev_mark_all(m2))
-				target = m2;
-	}
+
 	if (move) {
-		mark_to_mark(m, target);
+		mark_step(m, forward);
 		m->ref = r;
+		mark_step(m, forward);
 	}
 	/* return value must be +ve, so use high bits to ensure this. */
 	return CHAR_RET(ret);
@@ -1707,6 +1693,7 @@ DEF_CMD(text_set_ref)
 
 	if (!m)
 		return Enoarg;
+	mark_to_end(d, m, ci->num != 1);
 	if (list_empty(&t->text) || ci->num != 1) {
 		m->ref.c = NULL;
 		m->ref.o = 0;
@@ -1714,7 +1701,6 @@ DEF_CMD(text_set_ref)
 		m->ref.c = list_first_entry(&t->text, struct text_chunk, lst);
 		m->ref.o = m->ref.c->start;
 	}
-	mark_to_end(d, m, ci->num != 1);
 	return 1;
 }
 

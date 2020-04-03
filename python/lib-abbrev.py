@@ -19,7 +19,7 @@ class AbbrevPane(edlib.Pane):
         edlib.Pane.__init__(self, focus)
 
         self.call("doc:request:doc:replaced")
-        self.call("doc:request:point:moved")
+        self.call("doc:request:point:moving")
         self.active = False
         p = focus.call("doc:point", ret='mark')
         self.prefix_end = p.dup()
@@ -194,7 +194,7 @@ class AbbrevPane(edlib.Pane):
         return 1
 
     def handle_activity(self, key, focus, **a):
-        "handle-list/doc:replaced/point:moved/pane:defocus"
+        "handle-list/doc:replaced/point:moving/pane:defocus"
         if not self.active:
             self.call("view:changed", self.prefix_start, self.prefix_end)
             self.call("editor-on-idle", self.delayed_close)

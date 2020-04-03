@@ -140,6 +140,9 @@ DEF_CMD(dr_set_ref)
 
 	if (!m || !p)
 		return Enoarg;
+
+	mark_to_end(d, m, ci->num != 1);
+
 	drop_ref_mark(m);
 
 	m2 = vmark_new(p, MARK_UNGROUPED, NULL);
@@ -148,7 +151,6 @@ DEF_CMD(dr_set_ref)
 	call("doc:set-ref", p, ci->num, m2);
 
 	m->ref.offset = 0;
-	mark_to_end(d, m, ci->num != 1);
 
 	set_ref_mark(ci->home, m, p, dri->vnum, m2);
 	mark_free(m2);
@@ -290,6 +292,7 @@ DEF_CMD(dr_step)
 		ret = dr_next(line, &o);
 		if (!do_move)
 			return CHAR_RET(ret);
+		mark_step(m, forward);
 		m->ref.offset = o;
 		reposition_mark(m);
 		if (o < len)
@@ -314,6 +317,7 @@ DEF_CMD(dr_step)
 				mark_free(loc);
 				return CHAR_RET(ret);
 			}
+			mark_step(m, forward);
 			set_ref_mark(ci->home, m, p, dri->vnum, loc);
 			m->ref.offset = -1;
 			reposition_mark(m);

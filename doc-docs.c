@@ -308,6 +308,7 @@ DEF_CMD(docs_modified_set_ref)
 	if (!m)
 		return Enoarg;
 
+	mark_to_end(dc, m, ci->num != 1);
 	if (ci->num == 1 && !list_empty(&d->collection->children)) {
 		m->ref.p = list_first_entry(&d->collection->children,
 					    struct pane, siblings);
@@ -316,7 +317,6 @@ DEF_CMD(docs_modified_set_ref)
 		m->ref.p = NULL;
 
 	m->ref.ignore = 0;
-	mark_to_end(dc, m, ci->num != 1);
 	return 1;
 }
 
@@ -568,6 +568,7 @@ DEF_CMD(docs_set_ref)
 	if (!m)
 		return Enoarg;
 
+	mark_to_end(dc, m, ci->num != 1);
 	if (ci->num == 1 && !list_empty(&d->collection->children))
 		m->ref.p = list_first_entry(&d->collection->children,
 					    struct pane, siblings);
@@ -575,7 +576,6 @@ DEF_CMD(docs_set_ref)
 		m->ref.p = NULL;
 
 	m->ref.ignore = 0;
-	mark_to_end(dc, m, ci->num != 1);
 	return 1;
 }
 
