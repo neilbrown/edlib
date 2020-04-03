@@ -29,7 +29,7 @@ Bugs to be fixed
       The press and release seem to get re-ordered.  Setting mouseinterval might help.
 - [ ] If I can see doc listing and I do filename completion in a file-file
       dialog, I see multiple copies of the directory in the doc listing.
-- [ ] resizing a elc window doesn't trigger refresh.
+- [X] resizing a elc window doesn't trigger refresh.
 - [ ] save-all must be after the prompt for grep/make, and only affect subdirs.
 - [X] grep loses selected text due to save-all
 - [X] double-click doesn't select a word in ncurses, but does in gtk.

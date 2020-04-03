@@ -4,7 +4,7 @@
 # May be distributed under terms of GPLv2 - see file:COPYING
 #
 
-import socket, os, sys, fcntl
+import socket, os, sys, fcntl, signal
 
 if 'EDLIB_SOCK' in os.environ:
     sockpath = os.environ['EDLIB_SOCK']
@@ -112,6 +112,13 @@ try:
                     self.add_notify(self.disp, "Notify:Close")
                     self.sock.send(b"OK")
                     return 1
+                if msg == b"Sig:Winch":
+                    if self.term:
+                        self.term.call("Sig:Winch")
+                        self.sock.send(b"OK")
+                    else:
+                        self.sock.send(b"Unknown")
+                    return 1
                 if msg == b"Close":
                     if self.disp:
                         self.disp.call("Display:set-noclose")
@@ -191,6 +198,8 @@ if is_client:
         print("Cannot connect to ",sockpath)
         sys.exit(1)
 
+    winch_ok = False
+
     if term:
         t = os.ttyname(0)
         if t:
@@ -204,6 +213,11 @@ if is_client:
             if ret != b"OK":
                 print("Cannot open terminal on", t)
                 sys.exit(1)
+            def handle_winch(sig, frame):
+                if winch_ok:
+                    s.send(b"Sig:Winch")
+                return 1
+            signal.signal(signal.SIGWINCH, handle_winch)
 
     if file:
         file = os.path.realpath(file)
@@ -219,7 +233,13 @@ if is_client:
     if ret != b"OK":
         print("Cannot request notification: ", ret.decode('utf-8'))
         sys.exit(1)
-    ret = s.recv(100)
+    winch_ok = True
+    while True:
+        ret = s.recv(100)
+        if ret != b"OK":
+            break
+        # probably a reply to Sig:Winch
+    winch_ok = False
     if ret != b"Done" and ret != b"Close":
         print("Received unexpected notification: ", ret.decode('utf-8'))
         sys.exit(1)
