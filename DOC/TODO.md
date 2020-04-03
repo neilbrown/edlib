@@ -4,6 +4,16 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] fix bugs
+- [ ] Replace <attr> text </> in markup with SOH attr STX text ETX
+- [ ] create alternative to doc-rendering which *knows* that the int of mark.ref
+      is unused and puts a line-offset in there.  Then mark is safe for use in doc.
+      Content is extracted (e.g. with lib-format) and doc:step and doc:content are
+      implemented in an overlay which detects markup and presents it as attributes:
+      render:markup gives the attr string and len:markup gives the length to ETX
+      Rather than formatting to a string with markup, we could format to a list
+      of attr/text pairs.  lib-format returns these via a callback and we use some
+      bits to index the list and some to index a char.
 - [X] track mouse movement during selection
 - [X] filename completion is really slow on large directories. Probably quadratic.
 - [X] option to save-all to quit and visit a changed document
@@ -17,17 +27,19 @@ Current priorities
 
 - [ ] change notmuch-query-view to use doc-rendering
 - [ ] support completion of interactive commands
-- [ ] suppor mkdir somehow
+      Add a list-commands command that searches down the path from focus
+      and digs into keymaps and calls-back for everything with the given prefix.
+- [ ] support mkdir somehow
 - [ ] make a doc read-only if dir doesn't exist or isn't writeable
 
 Bugs to be fixed
 ----------------
 
 - [ ] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
-- [ ] cursor often doesn't stay in column when moving up/down
+- [X] cursor often doesn't stay in column when moving up/down
 - [X] ncurses doesn't report mouse events properly when there are multi-clicks.
       The press and release seem to get re-ordered.  Setting mouseinterval might help.
-- [ ] If I can see doc listing and I do filename completion in a file-file
+- [ ] If I can see doc listing and I do filename completion in a find-file
       dialog, I see multiple copies of the directory in the doc listing.
 - [X] resizing a elc window doesn't trigger refresh.
 - [X] save-all must be after the prompt for grep/make, and only affect subdirs.

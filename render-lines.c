@@ -101,7 +101,7 @@
 struct rl_data {
 	int		top_sol; /* true when first mark is at a start-of-line */
 	int		ignore_point;
-	struct mark	*old_point; /* where was 'point' last time we rendered */
+	struct mark	*old_point; /* where was 'point' before it moved */
 	int		skip_lines; /* Skip display-lines for first "line" */
 	int		cursor_line; /* line that contains the cursor starts
 				      * on this line */
@@ -679,6 +679,23 @@ DEF_CMD(render_lines_get_attr)
 	return 0;
 }
 
+DEF_CMD(render_lines_point_moving)
+{
+	struct pane *p = ci->home;
+	struct rl_data *rl = p->data;
+	struct mark *pt = call_ret(mark, "doc:point", ci->home);
+
+	if (ci->mark != pt)
+		return 1;
+	if (pt && !rl->old_point)
+		rl->old_point = mark_dup(pt);
+	/* Igoring point, because it is probably relevant now */
+	rl->ignore_point = 0;
+	if (!rl->i_moved)
+		/* Someone else moved the point, so reset target column */
+		rl->target_x = -1;
+	return 1;
+}
 
 DEF_CMD(render_lines_refresh)
 {
@@ -693,20 +710,15 @@ DEF_CMD(render_lines_refresh)
 
 	pm = call_ret(mark, "doc:point", focus);
 
-	if (pm) {
-		if (rl->old_point && !mark_same(pm, rl->old_point)) {
-			call("view:changed", focus, 0, rl->old_point,
-			     NULL, 0, pm);
-			mark_free(rl->old_point);
-			rl->old_point = NULL;
-			rl->ignore_point = 0;
-			if (!rl->i_moved)
-				rl->target_x = -1;
-			else
-				rl->i_moved = 0;
-		}
-		if (!rl->old_point)
-			rl->old_point = mark_dup(pm);
+	if (pm && rl->old_point) {
+		/* Make sure we redraw selected region.  This is a HACK,
+		 * the functionality should be somewhere else.
+		 */
+		call("view:changed", focus, 0, rl->old_point,
+		     NULL, 0, pm);
+		mark_free(rl->old_point);
+		rl->old_point = NULL;
+		mark_ack(pm);
 	}
 
 	m = vmark_first(focus, rl->typenum, p);
@@ -1075,71 +1087,72 @@ DEF_CMD(render_lines_move_line)
 	struct pane *p = ci->home;
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
-	short target_x, target_y;
 	int num;
+	short y;
 	struct mark *m = ci->mark;
+	struct mark *start;
 
 	if (!m)
 		m = call_ret(mark, "doc:point", focus);
 	if (!m)
 		return Efail;
 
-	/* save target as it might get changed */
-	target_x = rl->target_x;
-	target_y = rl->target_y;
-	if (target_x < 0) {
-		target_x = p->cx;
-		target_y = p->cy - rl->cursor_line;
+	if (rl->target_x < 0) {
+		rl->target_x = p->cx;
+		rl->target_y = p->cy - rl->cursor_line;
 	}
+	if (rl->target_x < 0)
+		/* cx broken?? */
+		return 1;
 
+	rl->i_moved = 1;
 	num = RPT_NUM(ci);
 	if (num < 0)
 		num -= 1;
 	else
 		num += 1;
-	if (!call("Move-EOL", ci->focus, num, m))
+	if (!call("Move-EOL", ci->focus, num, m)) {
+		rl->i_moved = 0;
 		return Efail;
+	}
 	if (RPT_NUM(ci) > 0) {
 		/* at end of target line, move to start */
-		if (!call("Move-EOL", ci->focus, -1, m))
+		if (!call("Move-EOL", ci->focus, -1, m)) {
+			rl->i_moved = 0;
 			return Efail;
-	}
-
-	/* restore target: Move-EOL might have changed it */
-	rl->target_x = target_x;
-	rl->target_y = target_y;
-
-	if (target_x >= 0 || target_y >= 0) {
-		short y = 0;
-		struct mark *start = vmark_new(focus, rl->typenum, p);
-
-		if (start) {
-			mark_to_mark(start, m);
-			start = call_render_line_prev(focus, start, 0, NULL);
-		}
-
-		if (!start) {
-			pane_damaged(p, DAMAGED_CONTENT);
-			return 1;
-		}
-		/* FIXME only do this if point is active/volatile, or
-		 * if start->mdata is NULL
-		 */
-		call_render_line(focus, start);
-		rl->xypos = -1;
-		render_line(p, focus, start->mdata?:"", y, 0,
-			    target_x, target_y, -1, &rl->c);
-		y = rl->y;
-		/* rl->xypos is the distance from start-of-line to the target */
-		if (rl->xypos >= 0) {
-			struct mark *m2 = call_render_line_offset(
-				focus, start, rl->xypos);
-			if (m2)
-				mark_to_mark(m, m2);
-			mark_free(m2);
 		}
 	}
-	rl->i_moved = 1;
+
+	y = 0;
+	start = vmark_new(focus, rl->typenum, p);
+
+	if (start) {
+		mark_to_mark(start, m);
+		start = call_render_line_prev(focus, start, 0, NULL);
+	}
+
+	if (!start) {
+		pane_damaged(p, DAMAGED_CONTENT);
+		rl->i_moved = 0;
+		return 1;
+	}
+	/* FIXME only do this if point is active/volatile, or
+	 * if start->mdata is NULL
+	 */
+	call_render_line(focus, start);
+	rl->xypos = -1;
+	render_line(p, focus, start->mdata?:"", y, 0,
+		    rl->target_x, rl->target_y, -1, &rl->c);
+	y = rl->y;
+	/* rl->xypos is the distance from start-of-line to the target */
+	if (rl->xypos >= 0) {
+		struct mark *m2 = call_render_line_offset(
+			focus, start, rl->xypos);
+		if (m2)
+			mark_to_mark(m, m2);
+		mark_free(m2);
+	}
+	rl->i_moved = 0;
 	return 1;
 }
 
@@ -1149,6 +1162,13 @@ DEF_CMD(render_lines_notify_replace)
 	struct rl_data *rl = p->data;
 	struct mark *start = ci->mark;
 	struct mark *end = ci->mark2;
+
+	if (strcmp(ci->key, "doc:replaced") == 0)
+		/* If anyone changes the doc, reset the target.  This might
+		 * be too harsh, but I mainly want target tracking for
+		 * close-in-time movement, so it probably doesn't matter.
+		 */
+		rl->target_x = -1;
 
 	if (!start && !end) {
 		/* No marks given - assume everything changed */
@@ -1256,6 +1276,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Refresh:size", &render_lines_resize);
 	key_add(rl_map, "Notify:clip", &render_lines_clip);
 	key_add(rl_map, "get-attr", &render_lines_get_attr);
+	key_add(rl_map, "point:moving", &render_lines_point_moving);
 
 	key_add(rl_map, "doc:replaced", &render_lines_notify_replace);
 	/* view:changed is sent to a tile when the display might need
@@ -1292,6 +1313,7 @@ REDEF_CMD(render_lines_attach)
 	rl->helper = h;
 	rl->typenum = home_call(ci->focus, "doc:add-view", p) - 1;
 	call("doc:request:doc:replaced", p);
+	call("doc:request:point:moving", p);
 
 	return comm_call(ci->comm2, "callback:attach", p);
 }
