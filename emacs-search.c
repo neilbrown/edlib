@@ -145,7 +145,7 @@ DEF_CMD(search_retreat)
 	return 1;
 
 just_delete:
-	if (call("doc:step", ci->focus, 1) != CHAR_RET(WEOF))
+	if (doc_following(ci->focus, NULL) != WEOF)
 		/* Not at end-of-buffer, just delete one char */
 		return Efallthrough;
 
@@ -154,7 +154,7 @@ just_delete:
 		return Efallthrough;
 	mk = mark_dup(mk);
 	do {
-		if (call("doc:step", ci->focus, 0, mk, NULL, 1) == CHAR_RET(WEOF))
+		if (doc_prev(ci->focus, mk) == WEOF)
 			break;
 		attr = call_ret(strsave, "doc:get-attr", ci->focus, 0, mk, "auto");
 	} while (attr && strcmp(attr, "1") == 0);
