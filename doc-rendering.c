@@ -43,7 +43,6 @@ static void drop_ref_mark(struct mark *m)
 		return;
 	refm = m->ref.m;
 	m->ref.m = NULL;
-	m->ref.offset = 0;
 	if (!refm)
 		return;
 	if (--refm->refs > 0)
@@ -119,15 +118,8 @@ static void dr_refcnt(struct mark *m safe, int inc)
 		return;
 	if (inc > 0)
 		m->ref.m->refs += 1;
-	if (inc < 0) {
-		m->ref.m->refs -= 1;
-		if (m->ref.m->refs == 0) {
-			free(m->ref.m->mdata);
-			m->ref.m->mdata = NULL;
-			mark_free(m->ref.m);
-		}
-		m->ref.m = NULL;
-	}
+	if (inc < 0)
+		drop_ref_mark(m);
 }
 
 DEF_CMD(dr_set_ref)
@@ -383,6 +375,7 @@ DEF_CMD(dr_notify_replace)
 	struct mark *first = ci->mark;
 	struct mark *last = ci->mark2;
 	struct mark *start = NULL, *end = NULL;
+	struct mark *next;
 	struct mark *m;
 
 	if (!p)
@@ -396,6 +389,7 @@ DEF_CMD(dr_notify_replace)
 	if (!last)
 		last = first;
 	m = vmark_first(p, dri->vnum, ci->home);
+	end = m;
 	while (m && (!last || mark_ordered_or_same(m, last))) {
 		if (!first || mark_ordered_or_same(first,m)) {
 			if (!start) {
@@ -407,13 +401,29 @@ DEF_CMD(dr_notify_replace)
 			free(m->mdata);
 			m->mdata = NULL;
 		}
+		end = m;
 		m = vmark_next(m);
 	}
-	if (m) {
-		end =vmark_new(ci->home, MARK_UNGROUPED,
-			       NULL);
+	if (end) {
+		m = end;
+		end = vmark_new(ci->home, MARK_UNGROUPED,
+				NULL);
 		if (end)
 			set_ref_mark(ci->home, end, p, dri->vnum, m);
+	}
+	/* It is possible that two (or more) of our vmarks now are at the same
+	 * location, which is not permitted as marks we present must have
+	 * normalized ref.  So check them all.
+	 */
+	next = mark_first(d);
+	while ((first = next) != NULL && (next = mark_next(first)) != NULL) {
+		if (first->ref.m && next->ref.m &&
+		    mark_same(first->ref.m, next->ref.m)) {
+			dr_refcnt(first, -1);
+			first->ref.m = next->ref.m;
+			dr_refcnt(first, 1);
+		}
+		first = next;
 	}
 	pane_notify("doc:replaced", ci->home, ci->num, start, NULL,
 		    0, end);

@@ -35,11 +35,13 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] press 'enter' in diff output for file that needs to be loaded, and we don't
+      go to the line, we end up at top.
 - [ ] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
 - [X] cursor often doesn't stay in column when moving up/down
 - [X] ncurses doesn't report mouse events properly when there are multi-clicks.
       The press and release seem to get re-ordered.  Setting mouseinterval might help.
-- [ ] If I can see doc listing and I do filename completion in a find-file
+- [X] If I can see doc listing and I do filename completion in a find-file
       dialog, I see multiple copies of the directory in the doc listing.
 - [X] resizing a elc window doesn't trigger refresh.
 - [X] save-all must be after the prompt for grep/make, and only affect subdirs.
