@@ -39,15 +39,6 @@ struct doc_ref {
 static void do_doc_assign(struct pane *p safe, struct pane *doc safe);
 static struct pane *safe doc_attach(struct pane *parent);
 
-static inline wint_t doc_following(struct doc *d safe, struct mark *m safe)
-{
-	return mark_step2(d, m, 1, 0);
-}
-static inline wint_t doc_prior(struct doc *d safe, struct mark *m safe)
-{
-	return mark_step2(d, m, 0, 0);
-}
-
 /* this is ->data for a document reference pane.
  */
 struct doc_data {

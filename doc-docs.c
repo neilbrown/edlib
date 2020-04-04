@@ -489,7 +489,7 @@ DEF_CMD(doc_damage)
 			pane_notify("doc:replaced", d->home, 1, m);
 			break;
 		}
-	} while (mark_next(d, m) != WEOF);
+	} while (mark_next_pane(d->home, m) != WEOF);
 	mark_free(m);
 	return 1;
 }

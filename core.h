@@ -242,8 +242,6 @@ static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
 	return r1->p == r2->p && r1->i == r2->i;
 }
 
-wint_t mark_next(struct doc *d safe, struct mark *m safe);
-wint_t mark_prev(struct doc *d safe, struct mark *m safe);
 wint_t mark_next_pane(struct pane *p safe, struct mark *m safe);
 wint_t mark_prev_pane(struct pane *p safe, struct mark *m safe);
 struct mark *mark_at_point(struct pane *p safe, struct mark *pm, int view);

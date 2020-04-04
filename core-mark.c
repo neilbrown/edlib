@@ -446,22 +446,6 @@ struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner)
  *
  */
 
-wint_t mark_step2(struct doc *d safe, struct mark *m safe,
-		  int forward, int move)
-{
-	int ret;
-
-	ASSERT(m->owner == d);
-	ret = pane_call(d->home, "doc:step", d->home, forward, m, NULL, move);
-
-	if (ret <= 0)
-		return WEOF;
-	if (ret >= 0x1fffff)
-		return WEOF;
-	else
-		return ret & 0xfffff;
-}
-
 wint_t mark_step_pane(struct pane *p safe, struct mark *m safe,
 		      int forward, int move)
 {
@@ -477,19 +461,9 @@ wint_t mark_step_pane(struct pane *p safe, struct mark *m safe,
 		return ret & 0xfffff;
 }
 
-wint_t mark_next(struct doc *d safe, struct mark *m safe)
-{
-	return mark_step2(d, m, 1, 1);
-}
-
 wint_t mark_next_pane(struct pane *p safe, struct mark *m safe)
 {
 	return mark_step_pane(p, m, 1, 1);
-}
-
-wint_t mark_prev(struct doc *d safe, struct mark *m safe)
-{
-	return mark_step2(d, m, 0, 1);
 }
 
 wint_t mark_prev_pane(struct pane *p safe, struct mark *m safe)
