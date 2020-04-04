@@ -63,7 +63,14 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 	 * Any mark pointing at it is moved forward
 	 */
 	struct mark *m, *first = NULL;
+	struct pane *next;
 	struct pane *col = doc->collection;
+
+	if (list_empty(&p->siblings) ||
+	    p == list_last_entry(&col->children, struct pane, siblings))
+		next = NULL;
+	else
+		next = list_next_entry(p, siblings);
 
 	for (m = mark_first(&doc->doc);
 	     m;
@@ -71,16 +78,7 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 		if (m->ref.p == p) {
 			if (!first)
 				first = m;
-			if (p == list_last_entry(&col->children,
-						 struct pane, siblings))
-				m->ref.p = NULL;
-			else if (list_empty(&p->siblings))
-				/* document is gone.  This shouldn't happen,
-				 * but for safety, set doc to NULL.
-				 */
-				m->ref.p = NULL;
-			else
-				m->ref.p = list_next_entry(p, siblings);
+			m->ref.p = next;
 		} else if (first)
 			break;
 	if (first)
