@@ -35,7 +35,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] press 'enter' in diff output for file that needs to be loaded, and we don't
+- [X] press 'enter' in diff output for file that needs to be loaded, and we don't
       go to the line, we end up at top.
 - [ ] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
 - [X] cursor often doesn't stay in column when moving up/down

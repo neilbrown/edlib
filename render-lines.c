@@ -1102,8 +1102,8 @@ DEF_CMD(render_lines_move_line)
 		rl->target_y = p->cy - rl->cursor_line;
 	}
 	if (rl->target_x < 0)
-		/* cx broken?? */
-		return 1;
+		/* maybe not displayed yet */
+		rl->target_x = rl->target_y = 0;
 
 	rl->i_moved = 1;
 	num = RPT_NUM(ci);
