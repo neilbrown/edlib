@@ -1182,15 +1182,25 @@ DEF_CMD(render_lines_notify_replace)
 		end = ci->mark;
 	}
 
-	if (!start) {
+	if (start) {
+		start = vmark_at_or_before(ci->home, start, rl->typenum, p);
+		if (!start)
+			start = vmark_first(ci->home, rl->typenum, p);
+	} else {
 		start = vmark_at_or_before(ci->home, end, rl->typenum, p);
 		if (!start)
 			/* change is before visible region */
 			return 0;
 		/* FIXME check 'start' is at least 'num' before end */
 	}
-	if (!end) {
+	if (end) {
+		end = vmark_at_or_before(ci->home, end, rl->typenum, p);
+		if (!end)
+			end = vmark_last(ci->home, rl->typenum, p);
+	} else if (start) { /* smatch needs to know start in not NULL */
 		end = vmark_at_or_before(ci->home, start, rl->typenum, p);
+		if (!end)
+			end = vmark_first(ci->home, rl->typenum, p);
 		if (!end)
 			return 0;
 		end = vmark_next(end);
@@ -1198,10 +1208,9 @@ DEF_CMD(render_lines_notify_replace)
 			return 0;
 		/* FIXME check that 'end' is at least 'num' after start */
 	}
-	end = vmark_at_or_before(ci->home, end, rl->typenum, p);
 
-	if (!end)
-		/* Change before visible region */
+	if (!end || !start)
+		/* Change outside visible region */
 		return 1;
 
 	while (end && mark_ordered_or_same(start, end)) {
