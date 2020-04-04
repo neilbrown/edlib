@@ -88,12 +88,12 @@ DEF_CMD(doc_char)
 		m = dd->point;
 
 	while (rpt > 0) {
-		if (mark_step_pane(f, m, 1, 1) == WEOF)
+		if (doc_next(f,m) == WEOF)
 			break;
 		rpt -= 1;
 	}
 	while (rpt < 0) {
-		if (mark_step_pane(f, m, 0, 1) == WEOF)
+		if (doc_prev(f,m) == WEOF)
 			break;
 		rpt += 1;
 	}
@@ -148,9 +148,9 @@ static int check_slosh(struct pane *p safe, struct mark *m safe)
 	/* Check is preceded by exactly 1 '\' */
 	if (doc_prior(p, m) != '\\')
 		return 0;
-	mark_step_pane(p, m, 0, 1);
+	doc_prev(p,m);
 	ch = doc_prior(p, m);
-	mark_step_pane(p, m, 1, 1);
+	doc_next(p,m);
 	return ch != '\\';
 }
 
@@ -219,23 +219,23 @@ DEF_CMD(doc_expr)
 				    (wi = mark_step_pane(f, m, dir, 1)) != WEOF) {
 					if (q) {
 						if (dir)
-							mark_step_pane(f, m, 0, 1);
+							doc_prev(f,m);
 						if ((!check_slosh(f, m) && wi == q) ||
 						    is_eol(wi))
 							q = 0;
 						if (dir)
-							mark_step_pane(f, m, 1, 1);
+							doc_next(f,m);
 					} else if (strchr(open, wi))
 						depth += 1;
 					else if (strchr(close, wi))
 						depth -= 1;
 					else if (wi == '"' || wi == '\'') {
 						if (dir)
-							mark_step_pane(f, m, 0, 1);
+							doc_prev(f,m);
 						if (!check_slosh(f, m))
 							q = wi;
 						if (dir)
-							mark_step_pane(f, m, 1, 1);
+							doc_next(f,m);
 					}
 				}
 		} else if (wi == '"' || wi == '\'') {
@@ -292,21 +292,21 @@ DEF_CMD(doc_WORD)
 		wint_t wi;
 
 		while (iswspace(doc_following(f, m)))
-			mark_step_pane(f, m, 1, 1);
+			doc_next(f,m);
 
 		while ((wi=doc_following(f, m)) != WEOF &&
 		       !iswspace(wi))
-			mark_step_pane(f, m, 1, 1);
+			doc_next(f,m);
 		rpt -= 1;
 	}
 	while (rpt < 0) {
 		wint_t wi;
 
 		while (iswspace(doc_prior(f, m)))
-			mark_step_pane(f, m, 0, 1);
+			doc_prev(f,m);
 		while ((wi=doc_prior(f, m)) != WEOF &&
 		       !iswspace(wi))
-			mark_step_pane(f, m, 0, 1);
+			doc_prev(f,m);
 		rpt += 1;
 	}
 

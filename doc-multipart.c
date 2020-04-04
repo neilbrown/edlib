@@ -369,7 +369,7 @@ DEF_CMD(mp_attr)
 	d = ci->mark->ref.docnum;
 
 	if (d < mpi->nparts && m1 &&
-	    mark_step_pane(mpi->parts[d].pane, m1, 1, 0) == WEOF)
+	    doc_following(mpi->parts[d].pane, m1) == WEOF)
 		/* at the wrong end of a part */
 		d += 1;
 
@@ -525,7 +525,7 @@ DEF_CMD(mp_forward)
 	d = ci->mark2->ref.docnum;
 
 	if (d < mpi->nparts && m2 &&
-	    mark_step_pane(mpi->parts[d].pane, m2, 1, 0) == WEOF)
+	    doc_following(mpi->parts[d].pane, m2) == WEOF)
 		/* at the wrong end of a part */
 		d += 1;
 

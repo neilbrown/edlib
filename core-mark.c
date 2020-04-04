@@ -461,16 +461,6 @@ wint_t mark_step_pane(struct pane *p safe, struct mark *m safe,
 		return ret & 0xfffff;
 }
 
-wint_t doc_next(struct pane *p safe, struct mark *m safe)
-{
-	return mark_step_pane(p, m, 1, 1);
-}
-
-wint_t doc_prev(struct pane *p safe, struct mark *m safe)
-{
-	return mark_step_pane(p, m, 0, 1);
-}
-
 /* Move the point so it is at the same location as the mark, both in the
  * text.
  * Firstly find the point closest to the mark, though that will often

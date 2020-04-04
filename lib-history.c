@@ -207,10 +207,10 @@ DEF_CMD(history_hlast)
 		return 1;
 	call("doc:set-ref", doc, 0, m);
 	call("doc:set", doc, 0, m, NULL, 1);
-	mark_step_pane(doc, m, 0, 1);
+	doc_prev(doc,m);
 	m2 = mark_dup(m);
 	while (doc_prior(doc, m) != '\n')
-		if (mark_step_pane(doc, m, 0, 1) == WEOF)
+		if (doc_prev(doc,m) == WEOF)
 			break;
 	rv = call_comm("doc:get-str", doc, ci->comm2, 0, m, NULL, 0, m2);
 	mark_free(m);
@@ -233,10 +233,10 @@ DEF_CMD(history_last)
 		return 1;
 	call("doc:set-ref", doc, 0, m);
 	call("doc:set", doc, 0, m, NULL, 1);
-	mark_step_pane(doc, m, 0, 1);
+	doc_prev(doc,m);
 	m2 = mark_dup(m);
 	while (doc_prior(doc, m) != '\n')
-		if (mark_step_pane(doc, m, 0, 1) == WEOF)
+		if (doc_prev(doc,m) == WEOF)
 			break;
 	rv = call_comm("doc:get-str", doc, ci->comm2, 0, m, NULL, 0, m2);
 	mark_free(m);

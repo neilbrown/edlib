@@ -242,8 +242,6 @@ static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
 	return r1->p == r2->p && r1->i == r2->i;
 }
 
-wint_t doc_next(struct pane *p safe, struct mark *m safe);
-wint_t doc_prev(struct pane *p safe, struct mark *m safe);
 struct mark *mark_at_point(struct pane *p safe, struct mark *pm, int view);
 struct mark *do_mark_at_point(struct mark *pt safe, int view);
 struct mark *vmark_next(struct mark *m safe);
@@ -482,11 +480,21 @@ static inline int pane_attr_get_int(struct pane *p safe, const char *key safe)
 
 /* Inlines */
 
-static inline wint_t doc_following(struct pane *p safe,
-					struct mark *m safe)
+static inline wint_t doc_next(struct pane *p safe, struct mark *m safe)
+{
+	return mark_step_pane(p, m, 1, 1);
+}
+
+static inline wint_t doc_prev(struct pane *p safe, struct mark *m safe)
+{
+	return mark_step_pane(p, m, 0, 1);
+}
+
+static inline wint_t doc_following(struct pane *p safe, struct mark *m safe)
 {
 	return mark_step_pane(p, m, 1, 0);
 }
+
 static inline wint_t doc_prior(struct pane *p safe, struct mark *m safe)
 {
 	return mark_step_pane(p, m, 0, 0);
