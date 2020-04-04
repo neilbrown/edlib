@@ -61,7 +61,7 @@ retry:
 		if (ch == '\r') {
 			/* assume CR-LF */
 			if (move)
-				mark_next_pane(p, m);
+				doc_next(p, m);
 			if (m != ci->mark) {
 				if (move)
 					mark_to_mark(ci->mark, m);
@@ -73,13 +73,13 @@ retry:
 		if (m == ci->mark)
 			m = mark_dup(m);
 		if (!move)
-			mark_next_pane(p, m);
+			doc_next(p, m);
 		if (ch == '=') {
 			/* CRLF or HexHex expected. */
-			c2 = mark_next_pane(p, m);
+			c2 = doc_next(p, m);
 			if (c2 == '\n')
 				goto retry;
-			c3 = mark_next_pane(p, m);
+			c3 = doc_next(p, m);
 			if (c2 == '\r' && c3 == '\n')
 				goto retry;
 			if (hex(c2) >= 0 && hex(c3) >= 0) {
@@ -93,14 +93,14 @@ retry:
 		/* Whitespace, ignore if at eol */
 		if (move)
 			mark_to_mark(ci->mark, m);
-		while ((c2 = mark_next_pane(p, m)) == ' ' || c2 == '\t')
+		while ((c2 = doc_next(p, m)) == ' ' || c2 == '\t')
 			;
 		if (c2 == '\r')
 			/* Found the white-space, retry from here and see the '\n' */
 			goto retry;
 		if (c2 == '\n') {
 			/* No \r, just \n.  Step back to see it */
-			mark_prev_pane(p, m);
+			doc_prev(p, m);
 			goto retry;
 		}
 		/* Just normal white space */
@@ -111,11 +111,11 @@ retry:
 	normalize_more:
 		m = ci->mark;
 		/* If next is "=\n" we need to skip over it. */
-		if (doc_following_pane(p, m) != '=')
+		if (doc_following(p, m) != '=')
 			return CHAR_RET(ch);
 		m = mark_dup(ci->mark);
-		mark_next_pane(p, m);
-		while ((c2 = mark_next_pane(p, m)) == ' ' ||
+		doc_next(p, m);
+		while ((c2 = doc_next(p, m)) == ' ' ||
 		       c2 == '\t' || c2 == '\r')
 			;
 		if (c2 != '\n') {
@@ -132,13 +132,13 @@ retry:
 			if (m == ci->mark)
 				m = mark_dup(m);
 			if (!move)
-				mark_prev_pane(p, m);
+				doc_prev(p, m);
 			/* '\n', skip '\r' and white space */
-			while ((ch = doc_prior_pane(p, m)) == '\r' ||
+			while ((ch = doc_prior(p, m)) == '\r' ||
 			       ch == ' ' || ch == '\t')
-				mark_prev_pane(p, m);
+				doc_prev(p, m);
 			if (ch == '=') {
-				mark_prev_pane(p, m);
+				doc_prev(p, m);
 				goto retry;
 			}
 			if (move)
@@ -159,13 +159,13 @@ retry:
 		else if (move)
 			mark_to_mark(ci->mark, m);
 		if (!move)
-			mark_prev_pane(p, m);
+			doc_prev(p, m);
 
 		/* Maybe =HH */
 		c3 = ch;
-		c2 = mark_prev_pane(p, m);
+		c2 = doc_prev(p, m);
 		if (hex(c2) >= 0) {
-			wint_t ceq = mark_prev_pane(p, m);
+			wint_t ceq = doc_prev(p, m);
 			if (ceq == '=') {
 				/* =HH */
 				ch = hex(c2)*16 + hex(c3);

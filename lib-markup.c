@@ -55,7 +55,7 @@ DEF_CMD(render_prev)
 	if (!m)
 		return Enoarg;
 
-	while ((ch = mark_prev_pane(f, m)) != WEOF &&
+	while ((ch = doc_prev(f, m)) != WEOF &&
 	       (!is_eol(ch) || rpt > 0) &&
 	       count < LARGE_LINE &&
 	       (!boundary || boundary->seq< m->seq)) {
@@ -76,9 +76,9 @@ DEF_CMD(render_prev)
 	if (ch == WEOF && rpt)
 		return Efail;
 	if (ch == '\n' || (ch == '\v' &&
-			   ((ch = doc_prior_pane(f, m)) == WEOF || !is_eol(ch))))
+			   ((ch = doc_prior(f, m)) == WEOF || !is_eol(ch))))
 		/* Found a '\n', so step forward over it for start-of-line. */
-		mark_next_pane(f, m);
+		doc_next(f, m);
 	return 1;
 }
 
@@ -295,7 +295,7 @@ DEF_CMD(render_line)
 	if (oneline && strcmp(oneline, "yes") != 0)
 		oneline = NULL;
 
-	ch = doc_following_pane(focus, m);
+	ch = doc_following(focus, m);
 	if (is_eol(ch) &&
 	    (attr = pane_mark_attr(focus, m, "markup:func")) != NULL) {
 		/* An alternate function handles this line */
@@ -337,20 +337,20 @@ DEF_CMD(render_line)
 		if (o >= 0 && b.len >= o)
 			break;
 
-		ch = mark_next_pane(focus, m);
+		ch = doc_next(focus, m);
 		if (ch == WEOF)
 			break;
 		if (!oneline && is_eol(ch)) {
 			add_newline = 1;
 			if (ch == '\v' && b.len > 0)
-				mark_prev_pane(focus, m);
+				doc_prev(focus, m);
 			break;
 		}
 		if (boundary && boundary->seq <= m->seq)
 			break;
 		if (ch == '<') {
 			if (o >= 0 && b.len+1 >= o) {
-				mark_prev_pane(focus, m);
+				doc_prev(focus, m);
 				break;
 			}
 			buf_append(&b, '<');
@@ -374,7 +374,7 @@ DEF_CMD(render_line)
 	if (add_newline) {
 		if (o >= 0 && b.len >= o)
 			/* skip the newline */
-			mark_prev_pane(focus, m);
+			doc_prev(focus, m);
 		else
 			buf_append(&b, '\n');
 	}

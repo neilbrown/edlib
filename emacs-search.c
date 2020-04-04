@@ -194,7 +194,7 @@ DEF_CMD(search_add)
 		int slash = 0;
 		if (limit-- <= 0)
 			break;
-		wch = mark_next_pane(esi->target, addpos);
+		wch = doc_next(esi->target, addpos);
 		if (wch == WEOF)
 			break;
 		put_utf8(b, wch);
@@ -252,7 +252,7 @@ DEF_CMD(search_insert_meta)
 		call("Replace", ci->focus, 1, NULL, k);
 	} else if ((bracket - brackets) % 2) {
 		/* Close bracket */
-		if (doc_following_pane(ci->focus, ci->mark) == (wint_t)k[0])
+		if (doc_following(ci->focus, ci->mark) == (wint_t)k[0])
 			call("Move-Char", ci->focus, 1);
 		else
 			call("Replace", ci->focus, 1, NULL, k);
@@ -302,7 +302,7 @@ DEF_CMD(search_again)
 	if (str == NULL || strlen(str) == 0)
 		/* empty string always matches */
 		ret = 1;
-	else if (esi->backwards && mark_prev_pane(esi->target, m) == WEOF)
+	else if (esi->backwards && doc_prev(esi->target, m) == WEOF)
 		ret = -2;
 	else {
 		ret = call("text-search", esi->target,
@@ -321,12 +321,12 @@ DEF_CMD(search_again)
 		int len = --ret;
 		mark_to_mark(esi->end, m);
 		if (esi->backwards) {
-			while (ret > 0 && mark_next_pane(esi->target, m) != WEOF)
+			while (ret > 0 && doc_next(esi->target, m) != WEOF)
 				ret -= 1;
 			call("search:highlight", esi->target, len, esi->end, str,
 			     !esi->case_sensitive, m);
 		} else {
-			while (ret > 0 && mark_prev_pane(esi->target, m) != WEOF)
+			while (ret > 0 && doc_prev(esi->target, m) != WEOF)
 				ret -= 1;
 			call("search:highlight", esi->target, len, m, str,
 			     !esi->case_sensitive, esi->end);
@@ -408,7 +408,7 @@ DEF_CMD(search_toggle_ci)
 	struct es_info *esi = ci->home->data;
 
 	/* If not at end of doc, fall through */
-	if (ci->mark && doc_following_pane(ci->focus, ci->mark) != WEOF)
+	if (ci->mark && doc_following(ci->focus, ci->mark) != WEOF)
 		return 0;
 	esi->case_sensitive = !esi->case_sensitive;
 	call("doc:notify:doc:replaced", ci->focus);
@@ -464,7 +464,7 @@ DEF_CMD(do_replace)
 		return Efail;
 	m = mark_dup(esi->end);
 	if (esi->backwards) {
-		while (len > 0 && mark_next_pane(esi->target, m) != WEOF)
+		while (len > 0 && doc_next(esi->target, m) != WEOF)
 			len -= 1;
 		mark_make_first(m);
 		if (call("doc:replace", esi->target, 0, esi->end, new, 0, m) > 0) {
@@ -473,7 +473,7 @@ DEF_CMD(do_replace)
 			return 1;
 		}
 	} else {
-		while (len > 0 && mark_prev_pane(esi->target, m) != WEOF)
+		while (len > 0 && doc_prev(esi->target, m) != WEOF)
 			len -= 1;
 		mark_make_last(m);
 		if (call("doc:replace", esi->target, 0, m, new, 0, esi->end) > 0) {
@@ -652,7 +652,7 @@ static void do_searches(struct pane *p safe,
 		if (!m2)
 			break;
 		mark_to_mark(m2, m);
-		while (ret > 1 && mark_prev_pane(p, m2) != WEOF)
+		while (ret > 1 && doc_prev(p, m2) != WEOF)
 			ret -= 1;
 		m3 = vmark_matching(m2);
 		if (m3) {
@@ -669,7 +669,7 @@ static void do_searches(struct pane *p safe,
 		}
 		if (len == 0)
 			/* Need to move forward, or we'll just match here again*/
-			mark_next_pane(p, m);
+			doc_next(p, m);
 	}
 	mark_free(m);
 }

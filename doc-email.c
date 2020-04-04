@@ -114,7 +114,7 @@ DEF_CMD(email_spacer)
 	if (ok) {
 		if ((o < 0 || o == NO_NUMERIC)) {
 			buf_concat(&b, "</>\n");
-			mark_next_pane(ci->focus, m);
+			doc_next(ci->focus, m);
 		}
 	}
 
@@ -390,7 +390,7 @@ static int find_boundary(struct pane *p safe,
 	int dashcnt = 0;
 
 	while (start->seq < end->seq) {
-		wint_t ch = mark_next_pane(p, start);
+		wint_t ch = doc_next(p, start);
 
 		if (ch == WEOF)
 			break;
@@ -401,7 +401,7 @@ static int find_boundary(struct pane *p safe,
 				continue;
 			bpos = NULL;
 			dashcnt = 0;
-			while ( (ch = mark_next_pane(p, start)) != '\n') {
+			while ( (ch = doc_next(p, start)) != '\n') {
 				if (ch == '\r')
 					continue;
 				if (ch == '-') {
@@ -763,7 +763,7 @@ DEF_CMD(email_view_set_attr)
 			home_call(ci->home->parent, "doc:step-part", ci->focus,
 				  0, m1);
 			if (get_part(ci->home->parent, m1) != p) {
-				mark_prev_pane(ci->home->parent, m1);
+				doc_prev(ci->home->parent, m1);
 				home_call(ci->home->parent, "doc:step-part",
 					  ci->focus, 0, m1);
 			}

@@ -56,17 +56,17 @@ DEF_CMD(utf8_step)
 	if (forward) {
 		i = 0;
 		buf[i++] = ch;
-		while ((ch = doc_following_pane(p, m)) != WEOF &&
+		while ((ch = doc_following(p, m)) != WEOF &&
 		       (ch & 0xc0) == 0x80 && i < 10) {
 			buf[i++] = ch;
-			mark_next_pane(p, m);
+			doc_next(p, m);
 		}
 		ret = decode_utf8(buf, i);
 	} else {
 		i = 10;
 		buf[--i] = ch;
 		while (ch != WEOF && (ch & 0xc0) != 0xc0 && i > 0) {
-			ch = mark_prev_pane(p, m);
+			ch = doc_prev(p, m);
 			buf[--i] = ch;
 		}
 		ret = decode_utf8(buf+i, 10-i);

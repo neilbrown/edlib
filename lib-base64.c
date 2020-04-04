@@ -58,9 +58,9 @@ static int get_b64_x(struct pane *p safe, struct mark *m safe)
 {
 	wint_t c;
 
-	while ((c = doc_following_pane(p, m)) != WEOF &&
+	while ((c = doc_following(p, m)) != WEOF &&
 	       !is_b64(c))
-		mark_next_pane(p, m);
+		doc_next(p, m);
 
 	if (c == WEOF)
 		return WEOF;
@@ -72,7 +72,7 @@ static int get_b64(struct pane *p safe, struct mark *m safe)
 	wint_t c;
 
 	do {
-		c = mark_next_pane(p, m);
+		c = doc_next(p, m);
 	} while (c != WEOF && !is_b64(c));
 	if (c == WEOF)
 		return WEOF;
@@ -84,7 +84,7 @@ static int get_b64_rev(struct pane *p safe, struct mark *m safe)
 	wint_t c;
 
 	do {
-		c = mark_prev_pane(p, m);
+		c = doc_prev(p, m);
 	} while (c != WEOF && !is_b64(c));
 	if (c == WEOF)
 		return WEOF;
@@ -123,7 +123,7 @@ static int locate_mark(struct pane *p safe, struct pane *owner,
 			}
 			pos = 0;
 		}
-		mark_next_pane(p, tmp); pos++;
+		doc_next(p, tmp); pos++;
 	}
 	mark_free(tmp);
 	return pos%4;
@@ -199,7 +199,7 @@ retry:
 	if (forward) {
 		pos = (pos + 1) % 3;
 		if (pos)
-			mark_prev_pane(p, m);
+			doc_prev(p, m);
 	}
 	if (move)
 		mark_to_mark(ci->mark, m);

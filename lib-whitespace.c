@@ -40,7 +40,7 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 		wint_t ch;
 		m = ws->mymark;
 		mark_to_mark(m, pm);
-		ch = mark_next_pane(focus, m);
+		ch = doc_next(focus, m);
 		if (ch == '\t')
 			ws->mycol = (ws->mycol | 7) + 1;
 		else
@@ -48,7 +48,7 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 	}
 
 	while(1) {
-		wint_t ch = doc_following_pane(focus, m);
+		wint_t ch = doc_following(focus, m);
 		if (ch == WEOF || is_eol(ch))
 			break;
 		if (ws->mycol >= ws->warn_width) {
@@ -64,7 +64,7 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 			int rewind = 1000;
 			int rewindcol = 0;
 			int col = ws->mycol;
-			while ((ch = mark_next_pane(focus, m)) == ' ' ||
+			while ((ch = doc_next(focus, m)) == ' ' ||
 			       ch == '\t') {
 				if (ch == '\t' && cnt < rewind) {
 					rewind = cnt;
@@ -77,7 +77,7 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 				cnt += 1;
 			}
 			if (ch != WEOF)
-				mark_prev_pane(focus, m);
+				doc_prev(focus, m);
 			/*
 			 * 'm' is just after last spc/tab.  - ch is next
 			 * char.  'cnt' is the number of chars, including first,
@@ -92,7 +92,7 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 			}
 			if (ch == WEOF || is_eol(ch)) {
 				while (cnt--)
-					mark_prev_pane(focus, m);
+					doc_prev(focus, m);
 				/* Set the first space/tab to red */
 				attr_set_str(&m->attrs, "render:whitespace",
 					     "bg:red");
@@ -105,13 +105,13 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 			}
 
 			while (cnt-- > rewind) {
-				mark_prev_pane(focus, m);
+				doc_prev(focus, m);
 			}
 			ws->mycol = rewindcol;
 
 			/* handle tab */
 			/* If previous is space, then RED, else YELLOW */
-			if (doc_prior_pane(focus, m) == ' ')
+			if (doc_prior(focus, m) == ' ')
 				attr_set_str(&m->attrs, "render:whitespace",
 					     "bg:red-80");
 			else
@@ -119,7 +119,7 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 					     "bg:yellow-80+80");
 			return;
 		}
-		mark_next_pane(focus, m);
+		doc_next(focus, m);
 		ws->mycol++;
 	}
 	attr_set_str(&m->attrs, "render:whitespace", NULL);

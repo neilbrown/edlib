@@ -73,7 +73,7 @@ DEF_CMD(search_test)
 			if (ss->endmark) {
 				mark_to_mark(ss->endmark, ci->mark);
 				if (i >= 0)
-					mark_next_pane(ci->home, ss->endmark);
+					doc_next(ci->home, ss->endmark);
 			}
 		}
 		if (ss->end &&  ci->mark->seq >= ss->end->seq)
@@ -106,7 +106,7 @@ static int search_forward(struct pane *p safe,
 	ss.end = m2;
 	ss.endmark = endmark;
 	ss.c = search_test;
-	ss.prev_ch = doc_prior_pane(p, m);
+	ss.prev_ch = doc_prior(p, m);
 	call_comm("doc:content", p, &ss.c, 0, m);
 	rxl_free_state(ss.st);
 	return ss.since_start;
@@ -131,7 +131,7 @@ static int search_backward(struct pane *p safe,
 
 	do {
 		ss.st = rxl_prepare(rxl, 1, &ss.since_start);
-		ss.prev_ch = doc_prior_pane(p, m);
+		ss.prev_ch = doc_prior(p, m);
 
 		mark_to_mark(endmark, m);
 		call_comm("doc:content", p, &ss.c, 0, endmark);
@@ -140,7 +140,7 @@ static int search_backward(struct pane *p safe,
 			/* found a match */
 			break;
 	} while((!m2 || m2->seq < m->seq) &&
-		(mark_prev_pane(p, m) != WEOF));
+		(doc_prev(p, m) != WEOF));
 	mark_to_mark(endmark, m);
 	return ss.since_start;
 }

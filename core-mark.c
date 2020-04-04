@@ -461,12 +461,12 @@ wint_t mark_step_pane(struct pane *p safe, struct mark *m safe,
 		return ret & 0xfffff;
 }
 
-wint_t mark_next_pane(struct pane *p safe, struct mark *m safe)
+wint_t doc_next(struct pane *p safe, struct mark *m safe)
 {
 	return mark_step_pane(p, m, 1, 1);
 }
 
-wint_t mark_prev_pane(struct pane *p safe, struct mark *m safe)
+wint_t doc_prev(struct pane *p safe, struct mark *m safe)
 {
 	return mark_step_pane(p, m, 0, 1);
 }

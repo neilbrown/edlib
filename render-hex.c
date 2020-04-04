@@ -73,21 +73,21 @@ DEF_CMD(render_hex_eol)
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 	while (rpt > 0 && ch != WEOF) {
 		while ((pos & 15) != 15 &&
-		       (ch = mark_next_pane(ci->focus, ci->mark)) != WEOF)
+		       (ch = doc_next(ci->focus, ci->mark)) != WEOF)
 			pos += 1;
 		rpt -= 1;
 		if (rpt) {
-			ch = mark_next_pane(ci->focus, ci->mark);
+			ch = doc_next(ci->focus, ci->mark);
 			pos += 1;
 		}
 	}
 	while (rpt < 0 && ch != WEOF) {
 		while ((pos & 15) != 0 &&
-		       (ch = mark_prev_pane(ci->focus, ci->mark)) != WEOF)
+		       (ch = doc_prev(ci->focus, ci->mark)) != WEOF)
 			pos -= 1;
 		rpt += 1;
 		if (rpt) {
-			ch = mark_prev_pane(ci->focus, ci->mark);
+			ch = doc_prev(ci->focus, ci->mark);
 			pos -= 1;
 		}
 	}
@@ -111,7 +111,7 @@ DEF_CMD(render_line)
 	pos = attr_find_int(*mark_attr(ci->mark), "chars");
 
 	buf_init(&ret);
-	if (doc_following_pane(ci->focus, ci->mark) == WEOF)
+	if (doc_following(ci->focus, ci->mark) == WEOF)
 		goto done;
 	snprintf(buf, sizeof(buf), "<bold>%08x:</> ", pos);
 	buf_concat(&ret, buf);
@@ -126,7 +126,7 @@ DEF_CMD(render_line)
 		    ci->num <= ret.len)
 			goto done;
 
-		ch = mark_next_pane(ci->focus, m2);
+		ch = doc_next(ci->focus, m2);
 		if (ch == WEOF)
 			strcpy(buf, "   ");
 		else
@@ -140,7 +140,7 @@ DEF_CMD(render_line)
 	for (i = 0; i < 16; i++) {
 		wint_t ch;
 
-		ch = mark_next_pane(ci->focus, m);
+		ch = doc_next(ci->focus, m);
 		if (ch == WEOF)
 			ch = ' ';
 		if (ch < ' ')
@@ -176,7 +176,7 @@ DEF_CMD(render_line_prev)
 	if (ci->num && to >= 16)
 		to -= 16;
 	while (to < from) {
-		mark_prev_pane(ci->focus, ci->mark);
+		doc_prev(ci->focus, ci->mark);
 		from -= 1;
 	}
 	return 1;

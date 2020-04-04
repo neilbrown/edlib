@@ -54,7 +54,7 @@ static char *get_hname(struct pane *p safe, struct mark *m safe)
 	int len = 0;
 	wint_t ch;
 
-	while ((ch = mark_next_pane(p, m)) != ':' &&
+	while ((ch = doc_next(p, m)) != ':' &&
 	       (ch > ' ' && ch <= '~')) {
 		hdr[len++] = ch;
 		if (len > 77)
@@ -83,18 +83,18 @@ static void find_headers(struct pane *p safe, struct mark *start safe,
 	       (hname = get_hname(p, m)) != NULL) {
 		attr_set_str(&hm->attrs, "header", hname);
 		free(hname);
-		while ((ch = mark_next_pane(p, m)) != WEOF &&
+		while ((ch = doc_next(p, m)) != WEOF &&
 		       m->seq < end->seq &&
 		       (ch != '\n' ||
-			(ch = doc_following_pane(p, m)) == ' ' || ch == '\t'))
+			(ch = doc_following(p, m)) == ' ' || ch == '\t'))
 			;
 		hm = mark_dup_view(m);
 	}
 	/* Skip over trailing blank line */
-	if (doc_following_pane(p, m) == '\r')
-		mark_next_pane(p, m);
-	if (doc_following_pane(p, m) == '\n')
-		mark_next_pane(p, m);
+	if (doc_following(p, m) == '\r')
+		doc_next(p, m);
+	if (doc_following(p, m) == '\n')
+		doc_next(p, m);
 	mark_to_mark(start, m);
 	mark_free(m);
 }
@@ -156,7 +156,7 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 	last = NULL;
 
 	buf_init(&buf);
-	while ((ch = mark_next_pane(doc, m)) != WEOF &&
+	while ((ch = doc_next(doc, m)) != WEOF &&
 	       ch > ' ' && ch < 0x7f && qmarks < 4) {
 		if (ch == '?') {
 			qmarks++;
@@ -221,11 +221,11 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 	m2 = mark_dup(m);
 	if (!m2)
 		return last;
-	while ((ch = mark_next_pane(doc, m2)) == ' ' ||
+	while ((ch = doc_next(doc, m2)) == ' ' ||
 	       ch == '\t' || ch == '\r' || ch == '\n')
 		;
-	if (ch == '=' && doc_following_pane(doc, m2) == '?') {
-		mark_prev_pane(doc, m2);
+	if (ch == '=' && doc_following(doc, m2) == '?') {
+		doc_prev(doc, m2);
 		mark_to_mark(m, m2);
 	}
 	mark_free(m2);
@@ -259,7 +259,7 @@ static void copy_header(struct pane *doc safe,
 	/* put hstart before point, so it stays here */
 	mark_make_first(hstart);
 	/* FIXME decode RFC2047 words */
-	while ((ch = mark_next_pane(doc, m)) != WEOF &&
+	while ((ch = doc_next(doc, m)) != WEOF &&
 	       m->seq < end->seq) {
 		char *b;
 
@@ -276,7 +276,7 @@ static void copy_header(struct pane *doc safe,
 		}
 		buf[0] = ch;
 		buf[1] = 0;
-		if (ch == '=' && doc_following_pane(doc, m) == '?')
+		if (ch == '=' && doc_following(doc, m) == '?')
 			b = charset_word(doc, m);
 		else
 			b = buf;
@@ -285,10 +285,10 @@ static void copy_header(struct pane *doc safe,
 		if (ch == ',' && is_list) {
 			struct mark *p2 = mark_dup(point);
 			int cnt = 1;
-			mark_prev_pane(p, p2);
-			while ((ch = doc_following_pane(doc, m)) == ' ') {
+			doc_prev(p, p2);
+			while ((ch = doc_following(doc, m)) == ' ') {
 				call("doc:replace", p, 1, NULL, " ", 0, point);
-				mark_next_pane(doc, m);
+				doc_next(doc, m);
 				cnt += 1;
 			}
 			if (ch == '\n' || ch == '\r')
@@ -337,7 +337,7 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 
 	buf_init(&buf);
 	m = mark_dup(start);
-	while ((ch = mark_next_pane(p, m)) != WEOF &&
+	while ((ch = doc_next(p, m)) != WEOF &&
 	       m->seq < end->seq) {
 		if (!found && ch == ':') {
 			found = 1;
@@ -345,7 +345,7 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 		}
 		if (!found)
 			continue;
-		if (ch == '=' && doc_following_pane(p, m) == '?') {
+		if (ch == '=' && doc_following(p, m) == '?') {
 			char *b = charset_word(p, m);
 			buf_concat(&buf, b);
 		} else

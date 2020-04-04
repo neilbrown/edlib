@@ -209,7 +209,7 @@ DEF_CMD(history_hlast)
 	call("doc:set", doc, 0, m, NULL, 1);
 	mark_step_pane(doc, m, 0, 1);
 	m2 = mark_dup(m);
-	while (doc_prior_pane(doc, m) != '\n')
+	while (doc_prior(doc, m) != '\n')
 		if (mark_step_pane(doc, m, 0, 1) == WEOF)
 			break;
 	rv = call_comm("doc:get-str", doc, ci->comm2, 0, m, NULL, 0, m2);
@@ -235,7 +235,7 @@ DEF_CMD(history_last)
 	call("doc:set", doc, 0, m, NULL, 1);
 	mark_step_pane(doc, m, 0, 1);
 	m2 = mark_dup(m);
-	while (doc_prior_pane(doc, m) != '\n')
+	while (doc_prior(doc, m) != '\n')
 		if (mark_step_pane(doc, m, 0, 1) == WEOF)
 			break;
 	rv = call_comm("doc:get-str", doc, ci->comm2, 0, m, NULL, 0, m2);

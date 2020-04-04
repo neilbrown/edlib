@@ -146,10 +146,10 @@ static int check_slosh(struct pane *p safe, struct mark *m safe)
 {
 	wint_t ch;
 	/* Check is preceded by exactly 1 '\' */
-	if (doc_prior_pane(p, m) != '\\')
+	if (doc_prior(p, m) != '\\')
 		return 0;
 	mark_step_pane(p, m, 0, 1);
-	ch = doc_prior_pane(p, m);
+	ch = doc_prior(p, m);
 	mark_step_pane(p, m, 1, 1);
 	return ch != '\\';
 }
@@ -291,10 +291,10 @@ DEF_CMD(doc_WORD)
 	while (rpt > 0) {
 		wint_t wi;
 
-		while (iswspace(doc_following_pane(f, m)))
+		while (iswspace(doc_following(f, m)))
 			mark_step_pane(f, m, 1, 1);
 
-		while ((wi=doc_following_pane(f, m)) != WEOF &&
+		while ((wi=doc_following(f, m)) != WEOF &&
 		       !iswspace(wi))
 			mark_step_pane(f, m, 1, 1);
 		rpt -= 1;
@@ -302,9 +302,9 @@ DEF_CMD(doc_WORD)
 	while (rpt < 0) {
 		wint_t wi;
 
-		while (iswspace(doc_prior_pane(f, m)))
+		while (iswspace(doc_prior(f, m)))
 			mark_step_pane(f, m, 0, 1);
-		while ((wi=doc_prior_pane(f, m)) != WEOF &&
+		while ((wi=doc_prior(f, m)) != WEOF &&
 		       !iswspace(wi))
 			mark_step_pane(f, m, 0, 1);
 		rpt += 1;
@@ -325,22 +325,22 @@ DEF_CMD(doc_eol)
 		m = dd->point;
 
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next_pane(f, m)) != WEOF &&
+		while ((ch = doc_next(f, m)) != WEOF &&
 		       !is_eol(ch))
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev_pane(f, m)) != WEOF &&
+		while ((ch = doc_prev(f, m)) != WEOF &&
 		       !is_eol(ch))
 			;
 		rpt += 1;
 	}
 	if (is_eol(ch)) {
 		if (RPT_NUM(ci) > 0)
-			mark_prev_pane(f, m);
+			doc_prev(f, m);
 		else if (RPT_NUM(ci) < 0)
-			mark_next_pane(f, m);
+			doc_next(f, m);
 	}
 	return 1;
 }
@@ -371,13 +371,13 @@ DEF_CMD(doc_line)
 		m = dd->point;
 
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next_pane(p, m)) != WEOF &&
+		while ((ch = doc_next(p, m)) != WEOF &&
 		       !is_eol(ch))
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev_pane(p, m)) != WEOF &&
+		while ((ch = doc_prev(p, m)) != WEOF &&
 		       !is_eol(ch))
 			;
 		rpt += 1;
@@ -403,8 +403,8 @@ DEF_CMD(doc_para)
 	if (!m)
 		m = dd->point;
 
-	while (!forwards && is_eol(doc_prior_pane(p, m)))
-		mark_prev_pane(p, m);
+	while (!forwards && is_eol(doc_prior(p, m)))
+		doc_prev(p, m);
 
 	while (rpt && ch != WEOF) {
 		nlcnt = 0;
@@ -423,7 +423,7 @@ DEF_CMD(doc_para)
 	}
 
 	while (!forwards && nlcnt-- > 0)
-		mark_next_pane(p, m);
+		doc_next(p, m);
 	return 1;
 }
 
@@ -441,13 +441,13 @@ DEF_CMD(doc_page)
 
 	rpt *= p->h-2;
 	while (rpt > 0 && ch != WEOF) {
-		while ((ch = mark_next_pane(p, m)) != WEOF &&
+		while ((ch = doc_next(p, m)) != WEOF &&
 		       !is_eol(ch))
 			;
 		rpt -= 1;
 	}
 	while (rpt < 0 && ch != WEOF) {
-		while ((ch = mark_prev_pane(p, m)) != WEOF &&
+		while ((ch = doc_prev(p, m)) != WEOF &&
 		       !is_eol(ch))
 			;
 		rpt += 1;
@@ -802,7 +802,7 @@ DEF_CMD(doc_write_file)
 		m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 
 	while(m) {
-		ch = mark_next_pane(ci->focus, m);
+		ch = doc_next(ci->focus, m);
 		if (ch == WEOF)
 			break;
 		if (ci->mark2 && mark_ordered_not_same(ci->mark2, m))

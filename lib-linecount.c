@@ -61,7 +61,7 @@ static void do_count(struct pane *p safe, struct mark *start safe, struct mark *
 	*wordp = 0;
 	*charp = 0;
 	while ((end == NULL || (mark_ordered_not_same(m, end))) &&
-	       (ch = mark_next_pane(p, m)) != WEOF) {
+	       (ch = doc_next(p, m)) != WEOF) {
 		chars += 1;
 		if (is_eol(ch))
 			lines += 1;
@@ -107,7 +107,7 @@ static int need_recalc(struct pane *p safe, struct mark *m)
 		next = vmark_next(m);
 		if (!next)
 			break;
-		if (is_eol(doc_prior_pane(p, next)) &&
+		if (is_eol(doc_prior(p, next)) &&
 		    attr_find_int(*mark_attr(next), "lines") > 10)
 			break;
 		/* discard next - we'll find or create another */
@@ -132,7 +132,7 @@ static void count_calculate(struct pane *p safe,
 			return;
 		do_count(p, m, NULL, &l, &w, &c, 1);
 	}
-	if (doc_prior_pane(p, m) != WEOF) {
+	if (doc_prior(p, m) != WEOF) {
 		/* no mark at start of file */
 		m2 = vmark_new(p, type, owner);
 		if (!m2)
@@ -280,7 +280,7 @@ DEF_CMD(linecount_notify_goto)
 		lineno += l;
 	}
 	mark_to_mark(ci->mark, m);
-	while (lineno < ci->num && (ch = mark_next_pane(d, ci->mark)) != WEOF) {
+	while (lineno < ci->num && (ch = doc_next(d, ci->mark)) != WEOF) {
 		if (is_eol(ch))
 			lineno += 1;
 	}

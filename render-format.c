@@ -150,7 +150,7 @@ DEF_CMD(format_content)
 	if (!ci->mark || !ci->comm2)
 		return Enoarg;
 
-	while (doc_following_pane(ci->focus, ci->mark) != WEOF) {
+	while (doc_following(ci->focus, ci->mark) != WEOF) {
 		const char *l, *c;
 		wint_t w;
 
@@ -168,7 +168,7 @@ DEF_CMD(format_content)
 		free((void*)l);
 		if (*c)
 			break;
-		mark_next_pane(ci->focus, ci->mark);
+		doc_next(ci->focus, ci->mark);
 	}
 	return 1;
 }
@@ -184,7 +184,7 @@ DEF_CMD(render_line)
 
 	if (!ci->mark)
 		return Enoarg;
-	if (doc_following_pane(ci->focus, ci->mark) == WEOF)
+	if (doc_following(ci->focus, ci->mark) == WEOF)
 		return 1;
 
 	if (pm && !mark_same(pm, m))
@@ -195,7 +195,7 @@ DEF_CMD(render_line)
 		len = ci->num;
 	ret = do_format(rf, ci->focus, ci->mark, pm, len, 1);
 	if (!pm && len < 0)
-		mark_next_pane(ci->focus, m);
+		doc_next(ci->focus, m);
 	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, ret);
 	free(ret);
 	return rv;
@@ -210,7 +210,7 @@ DEF_CMD(render_line_prev)
 	if (RPT_NUM(ci) == 0)
 		/* always at start-of-line */
 		return 1;
-	if (mark_prev_pane(ci->focus, m) == WEOF)
+	if (doc_prev(ci->focus, m) == WEOF)
 		/* Hit start-of-file */
 		return Efail;
 	return 1;

@@ -560,7 +560,7 @@ restart:
 		m2 = vmark_next(m);
 		if (!hide_cursor && p->cx <= 0 && pm &&
 		    mark_ordered_or_same(m, pm) &&
-		    (!(m2 && doc_following_pane(focus, m2) != WEOF) ||
+		    (!(m2 && doc_following(focus, m2) != WEOF) ||
 		     mark_ordered_not_same(pm, m2))) {
 			short len = call_render_line_to_point(focus, pm,
 							      m);
@@ -860,10 +860,10 @@ DEF_CMD(render_lines_move)
 			m = mark_dup_view(top);
 			top = call_render_line_prev(focus, m,
 						    1, &rl->top_sol);
-			if (!top && doc_prior_pane(focus, prevtop) != WEOF) {
+			if (!top && doc_prior(focus, prevtop) != WEOF) {
 				/* Double check - maybe a soft top-of-file */
 				m = mark_dup(prevtop);
-				mark_prev_pane(focus, m);
+				doc_prev(focus, m);
 				top = call_render_line_prev(focus, m,
 							    1, &rl->top_sol);
 			}

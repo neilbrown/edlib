@@ -203,19 +203,19 @@ static void mark_to_modified(struct pane *p safe, struct mark *m safe)
 {
 	/* If 'm' isn't just before a savable document, move it forward */
 	while (!mark_is_modified(p, m))
-		if (mark_next_pane(p, m) == WEOF)
+		if (doc_next(p, m) == WEOF)
 			break;
 }
 
 static wchar_t prev_modified(struct pane *p safe, struct mark *m safe)
 {
-	if (mark_prev_pane(p, m) == WEOF)
+	if (doc_prev(p, m) == WEOF)
 		return WEOF;
 	while (!mark_is_modified(p, m))
-		if (mark_prev_pane(p, m) == WEOF)
+		if (doc_prev(p, m) == WEOF)
 			return WEOF;
 
-	return doc_following_pane(p, m);
+	return doc_following(p, m);
 }
 
 static int docs_open(struct pane *home safe, struct pane *focus safe,
@@ -244,7 +244,7 @@ DEF_CMD(docs_modified_cmd)
 		if (!ci->mark)
 			return Enoarg;
 		m = mark_dup(ci->mark);
-		mark_next_pane(ci->home->parent, m);
+		doc_next(ci->home->parent, m);
 		mark_to_modified(ci->home->parent, m);
 		if (m->ref.p == NULL) {
 			mark_free(m);
@@ -285,7 +285,7 @@ DEF_CMD(docs_modified_notify_replace)
 				call("Notify:clip", ci->home
 				     , 0, m2, NULL, 0, m);
 			mark_to_mark(m2, m);
-			if (mark_next_pane(ci->home->parent, m) == WEOF)
+			if (doc_next(ci->home->parent, m) == WEOF)
 				break;
 			mark_to_modified(ci->home->parent, m);
 		}
@@ -330,9 +330,9 @@ DEF_CMD(docs_modified_step)
 		return Enoarg;
 
 	if (ci->num) {
-		ret = doc_following_pane(ci->home->parent, ci->mark);
+		ret = doc_following(ci->home->parent, ci->mark);
 		if (ci->num2 && ret != WEOF) {
-			mark_next_pane(ci->home->parent, ci->mark);
+			doc_next(ci->home->parent, ci->mark);
 			mark_to_modified(ci->home->parent, ci->mark);
 		}
 	} else {
@@ -343,7 +343,7 @@ DEF_CMD(docs_modified_step)
 		else {
 			if (ci->num2)
 				mark_to_mark(ci->mark, m);
-			ret = mark_next_pane(ci->home->parent, m);
+			ret = doc_next(ci->home->parent, m);
 		}
 		mark_free(m);
 	}
@@ -489,7 +489,7 @@ DEF_CMD(doc_damage)
 			pane_notify("doc:replaced", d->home, 1, m);
 			break;
 		}
-	} while (mark_next_pane(d->home, m) != WEOF);
+	} while (doc_next(d->home, m) != WEOF);
 	mark_free(m);
 	return 1;
 }

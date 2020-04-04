@@ -191,7 +191,7 @@ static void mp_normalize(struct mp_info *mpi safe, struct mark *m safe)
 	 * of the next instead.
 	 */
 	while (m->ref.m &&
-	       doc_following_pane(mpi->parts[m->ref.docnum].pane,
+	       doc_following(mpi->parts[m->ref.docnum].pane,
 				  m->ref.m) == WEOF) {
 		change_part(mpi, m, m->ref.docnum + 1, 0);
 	}

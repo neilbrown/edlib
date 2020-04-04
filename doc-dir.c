@@ -272,7 +272,7 @@ DEF_CMD(dir_load_file)
 				list_add_tail(&de2->lst, &dr->ents);
 			if (!prev) {
 				prev = mark_dup(m);
-				mark_prev_pane(ci->home, prev);
+				doc_prev(ci->home, prev);
 			}
 		} else if (de1 && de2) {
 			/* de1 and de2 are the same.  Just step over de1 and
@@ -285,7 +285,7 @@ DEF_CMD(dir_load_file)
 				mark_free(prev);
 				prev = NULL;
 			}
-			mark_next_pane(ci->home, m);
+			doc_next(ci->home, m);
 			mark_make_first(m);
 
 			list_del(&de2->lst);

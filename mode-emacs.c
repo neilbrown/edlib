@@ -213,7 +213,7 @@ REDEF_CMD(emacs_kill)
 
 	if (strcmp(mv->type, "Move-EOL") == 0 &&
 	    mv->direction == 1 && RPT_NUM(ci) == 1 &&
-	    is_eol(doc_following_pane(ci->focus, m)))
+	    is_eol(doc_following(ci->focus, m)))
 		ret = call("Move-Char", ci->focus, mv->direction * RPT_NUM(ci), m);
 	else
 		ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);
@@ -1824,12 +1824,12 @@ DEF_CMD(emacs_curs_pos)
 	if (!ci->mark)
 		return Enoarg;
 	c = mark_dup(ci->mark);
-	nxt = doc_following_pane(ci->focus, c);
+	nxt = doc_following(ci->focus, c);
 
-	while ((ch = mark_prev_pane(ci->focus, c)) != WEOF && !is_eol(ch))
+	while ((ch = doc_prev(ci->focus, c)) != WEOF && !is_eol(ch))
 		;
 	while (mark_ordered_not_same(c, ci->mark)) {
-		ch = mark_next_pane(ci->focus, c);
+		ch = doc_next(ci->focus, c);
 		if (is_eol(ch)) {
 			col = 0;
 			chars = 0;
