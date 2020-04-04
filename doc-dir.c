@@ -254,7 +254,7 @@ DEF_CMD(dir_load_file)
 			else
 				de1 = list_next_entry(de1, lst);
 			for (m2 = m; m2 && m2->ref.d == de;
-			     m2 = doc_next_mark_all(m2))
+			     m2 = mark_next(m2))
 				m2->ref.d = de1;
 			attr_free(&de->attrs);
 			free(de->name);

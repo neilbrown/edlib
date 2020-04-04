@@ -1407,7 +1407,7 @@ static PyObject *first_mark(Doc *self safe, PyObject *args)
 	if (!doc_valid(self))
 		return NULL;
 
-	m = doc_first_mark_all(&self->doc);
+	m = mark_first(&self->doc);
 	if (!m) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -1547,11 +1547,11 @@ static int mark_setpos(Mark *m safe, PyObject *v, void *x)
 	/* If an adjacent mark has a ref.c with a matching value
 	 * use that instead, so that mark_same() works.
 	 */
-	m2 = doc_next_mark_all(m->mark);
+	m2 = mark_next(m->mark);
 	if (m2 && m2->owner->refcnt == mark_refcnt && m2->ref.c != NULL &&
 	    PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
 		m->mark->ref.c = m2->ref.c;
-	else if ((m2 = doc_prev_mark_all(m->mark)) != NULL &&
+	else if ((m2 = mark_prev(m->mark)) != NULL &&
 		 m2->owner->refcnt == mark_refcnt &&
 		 m2->ref.c != NULL &&
 		 PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
@@ -1813,7 +1813,7 @@ static PyObject *Mark_next_any(Mark *self safe, PyObject *args)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	next = doc_next_mark_all(self->mark);
+	next = mark_next(self->mark);
 	if (next)
 		return Mark_Frommark(next);
 	Py_INCREF(Py_None);
@@ -1827,7 +1827,7 @@ static PyObject *Mark_prev_any(Mark *self safe, PyObject *args)
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	prev = doc_prev_mark_all(self->mark);
+	prev = mark_prev(self->mark);
 	if (prev)
 		return Mark_Frommark(prev);
 	Py_INCREF(Py_None);

@@ -1241,7 +1241,7 @@ DEF_CMD(text_reundo)
 				i = text_advance_towards(t, &tmp, &end);
 				if (i == 0)
 					break;
-				while ((m2 = doc_next_mark_all(m)) != NULL &&
+				while ((m2 = mark_next(m)) != NULL &&
 				       m2->ref.c == tmp.c &&
 				       m2->ref.o <= tmp.o)
 					mark_to_mark_noref(m, m2);
@@ -1253,7 +1253,7 @@ DEF_CMD(text_reundo)
 				i = text_retreat_towards(t, &tmp, &end);
 				if (i == 0)
 					break;
-				while ((m2 = doc_prev_mark_all(m)) != NULL &&
+				while ((m2 = mark_prev(m)) != NULL &&
 				       m2->ref.c == tmp.c &&
 				       m2->ref.o >= tmp.o)
 					mark_to_mark_noref(m, m2);
@@ -1865,11 +1865,11 @@ static void text_check_consistent(struct text *t safe)
 		}
 	}
 
-	for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(m))
+	for (m = mark_first(d); m; m = mark_next(m))
 		text_ref_consistent(t, &m->ref);
 
 	prev = NULL;
-	for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(m)) {
+	for (m = mark_first(d); m; m = mark_next(m)) {
 		if (prev) {
 			struct doc_ref r = prev->ref;/* SMATCH Bug things prev
 						      * has no state*/
@@ -1952,16 +1952,16 @@ DEF_CMD(text_replace)
 		text_del(t, &pm->ref, l, &first);
 		text_normalize(t, &pm->ref);
 
-		for (m = doc_prev_mark_all(pm);
+		for (m = mark_prev(pm);
 		     m && text_update_prior_after_change(t, &m->ref,
 							 &pm->ref, &pm->ref);
-		     m = doc_prev_mark_all(m))
+		     m = mark_prev(m))
 			;
-		for (m = doc_next_mark_all(pm);
+		for (m = mark_next(pm);
 		     m && text_update_following_after_change(t, &m->ref,
 							     &pm->ref,
 							     &pm->ref);
-		     m = doc_next_mark_all(m))
+		     m = mark_next(m))
 			;
 		text_check_consistent(t);
 	}
@@ -1985,15 +1985,15 @@ DEF_CMD(text_replace)
 		text_denormalize(t, &pm->ref);
 		text_add_str(t, &pm->ref, str, &start, &first);
 		text_normalize(t, &pm->ref);
-		for (m = doc_prev_mark_all(pm);
+		for (m = mark_prev(pm);
 		     m && text_update_prior_after_change(t, &m->ref,
 							 &start, &pm->ref);
-		     m = doc_prev_mark_all(m))
+		     m = mark_prev(m))
 			;
-		for (m = doc_next_mark_all(pm);
+		for (m = mark_next(pm);
 		     m && text_update_following_after_change(t, &m->ref,
 							     &start, &pm->ref);
-		     m = doc_next_mark_all(m))
+		     m = mark_next(m))
 			;
 		if (newattrs && start.c)
 			text_add_attrs(&start.c->attrs, newattrs, start.o);

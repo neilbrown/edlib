@@ -72,7 +72,7 @@ static void post_move(struct mark *m)
 	if (!m || hlist_unhashed(&m->all))
 		return;
 	ASSERT(m->ref.m == NULL || m->ref.m->refs == 1);
-	while ((m2 = doc_next_mark_all(m)) != NULL &&
+	while ((m2 = mark_next(m)) != NULL &&
 	       (m2->ref.docnum < m->ref.docnum ||
 		(m2->ref.docnum == m->ref.docnum &&
 		 m2->ref.m && m->ref.m &&
@@ -81,7 +81,7 @@ static void post_move(struct mark *m)
 		mark_to_mark_noref(m, m2);
 	}
 
-	while ((m2 = doc_prev_mark_all(m)) != NULL &&
+	while ((m2 = mark_prev(m)) != NULL &&
 	       (m2->ref.docnum > m->ref.docnum||
 		(m2->ref.docnum == m->ref.docnum &&
 		 m2->ref.m && m->ref.m &&
@@ -93,7 +93,7 @@ static void post_move(struct mark *m)
 		return;
 	ASSERT(m->ref.m->refs == 1);
 	/* Check if it should be shared */
-	m2 = doc_next_mark_all(m);
+	m2 = mark_next(m);
 	if (m2 && m2->ref.docnum == m->ref.docnum && m2->ref.m) {
 		if (m->ref.m != m2->ref.m &&
 		    mark_same(m->ref.m, m2->ref.m)) {
@@ -104,7 +104,7 @@ static void post_move(struct mark *m)
 			return;
 		}
 	}
-	m2 = doc_prev_mark_all(m);
+	m2 = mark_prev(m);
 	if (m2 && m2->ref.docnum == m->ref.docnum && m2->ref.m) {
 		if (m->ref.m != m2->ref.m &&
 		    mark_same(m->ref.m, m2->ref.m)) {
@@ -143,10 +143,10 @@ static void mp_check_consistent(struct mp_info *mpi safe)
 
 	doc_check_consistent(d);
 #if 0
-	for (m = doc_first_mark_all(d); m; m = doc_next_mark_all(m)) {
+	for (m = mark_first(d); m; m = mark_next(m)) {
 		if (!m->ref.m || m->ref.m->seq <= s) {
-			for (m = doc_first_mark_all(d); m;
-			     m = doc_next_mark_all(m))
+			for (m = mark_first(d); m;
+			     m = mark_next(m))
 				if (m && m->ref.m)
 					printf("%p %d %d\n", m, m->seq,
 					       m->ref.m->seq);
@@ -203,7 +203,7 @@ DEF_CMD(mp_close)
 	int i;
 	struct mark *m;
 
-	for (m = doc_first_mark_all(&mpi->doc); m ; m = doc_next_mark_all(m))
+	for (m = mark_first(&mpi->doc); m ; m = mark_next(m))
 		if (m->ref.m) {
 			struct mark *m2 = m->ref.m;
 			m->ref.m = NULL;

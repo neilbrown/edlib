@@ -65,9 +65,9 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 	struct mark *m, *first = NULL;
 	struct pane *col = doc->collection;
 
-	for (m = doc_first_mark_all(&doc->doc);
+	for (m = mark_first(&doc->doc);
 	     m;
-	     m = doc_next_mark_all(m))
+	     m = mark_next(m))
 		if (m->ref.p == p) {
 			if (!first)
 				first = m;
@@ -101,9 +101,9 @@ static void docs_enmark(struct docs *doc safe, struct pane *p safe)
 	else
 		next = list_next_entry(p, siblings);
 
-	for (m = doc_first_mark_all(&doc->doc);
+	for (m = mark_first(&doc->doc);
 	     m;
-	     m = doc_next_mark_all(m))
+	     m = mark_next(m))
 		if (m->ref.p == next) {
 			if (!first)
 				first = m;

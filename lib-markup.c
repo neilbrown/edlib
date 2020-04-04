@@ -325,11 +325,11 @@ DEF_CMD(render_line)
 		call_comm("doc:get-attr", focus, &ar.fwd, 0, m, "render:", 1);
 
 		/* find all marks "here" - they might be fore or aft */
-		for (m2 = doc_prev_mark_all(m); m2 && mark_same(m, m2);
-		     m2 = doc_prev_mark_all(m2))
+		for (m2 = mark_prev(m); m2 && mark_same(m, m2);
+		     m2 = mark_prev(m2))
 			call_map_mark(focus, m2, &ar);
-		for (m2 = doc_next_mark_all(m); m2 && mark_same(m, m2);
-		     m2 = doc_next_mark_all(m2))
+		for (m2 = mark_next(m); m2 && mark_same(m, m2);
+		     m2 = mark_next(m2))
 			call_map_mark(focus, m2, &ar);
 
 		as_repush(&ar, &b);

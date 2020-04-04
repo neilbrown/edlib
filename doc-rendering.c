@@ -59,7 +59,7 @@ static void reposition_mark(struct mark *m safe)
 
 	if (!m->ref.m)
 		return;
-	m2 = doc_next_mark_all(m);
+	m2 = mark_next(m);
 	while (m2) {
 		if (m2->ref.m == NULL)
 			break;
@@ -70,10 +70,10 @@ static void reposition_mark(struct mark *m safe)
 			break;
 		/* m needs to be after m2 */
 		mark_to_mark_noref(m, m2);
-		m2 = doc_next_mark_all(m);
+		m2 = mark_next(m);
 	}
 
-	m2 = doc_prev_mark_all(m);
+	m2 = mark_prev(m);
 	while (m2) {
 		if (m2->ref.m == NULL)
 			break;
@@ -84,7 +84,7 @@ static void reposition_mark(struct mark *m safe)
 			break;
 		/* m needs to be before  m2 */
 		mark_to_mark_noref(m, m2);
-		m2 = doc_prev_mark_all(m);
+		m2 = mark_prev(m);
 	}
 }
 
@@ -344,13 +344,13 @@ DEF_CMD(dr_close)
 	if (!p)
 		return Einval;
 
-	m = doc_first_mark_all(&dri->doc);
+	m = mark_first(&dri->doc);
 	while (m) {
 		if (m->ref.m) {
 			m->ref.m->refs --;
 			m->ref.m = NULL;
 		}
-		m = doc_next_mark_all(m);
+		m = mark_next(m);
 	}
 
 	m = vmark_first(p, dri->vnum, ci->home);

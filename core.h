@@ -213,9 +213,9 @@ struct mark *safe mark_dup_view(struct mark *m safe);
 void mark_free(struct mark *m);
 void mark_ack(struct mark *m);
 
-struct mark *doc_first_mark_all(struct doc *d safe);
-struct mark *doc_next_mark_all(struct mark *m safe);
-struct mark *doc_prev_mark_all(struct mark *m safe);
+struct mark *mark_first(struct doc *d safe);
+struct mark *mark_next(struct mark *m safe);
+struct mark *mark_prev(struct mark *m safe);
 void mark_reset(struct doc *d safe, struct mark *m safe, int end);
 void mark_to_end(struct doc *d safe, struct mark *m safe, int end);
 void doc_check_consistent(struct doc *d safe);

@@ -373,21 +373,21 @@ void mark_reset(struct doc *d safe, struct mark *m safe, int end)
 	pane_call(d->home, "doc:set-ref", d->home, !end, m);
 }
 
-struct mark *doc_first_mark_all(struct doc *d safe)
+struct mark *mark_first(struct doc *d safe)
 {
 	if (!hlist_empty(&d->marks))
 		return hlist_first_entry(&d->marks, struct mark, all);
 	return NULL;
 }
 
-struct mark *doc_next_mark_all(struct mark *m safe)
+struct mark *mark_next(struct mark *m safe)
 {
 	if (m->all.next)
 		return hlist_next_entry(m, all);
 	return NULL;
 }
 
-struct mark *doc_prev_mark_all(struct mark *m safe)
+struct mark *mark_prev(struct mark *m safe)
 {
 	if (!HLIST_IS_HEAD(m->all.pprev))
 		return hlist_prev_entry(m, all);
@@ -588,7 +588,7 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 	else
 		a = target;
 	while (a && a != target)
-		a = doc_next_mark_all(a);
+		a = mark_next(a);
 	ASSERT(a == target);
 	/* END DEBUG */
 
@@ -714,14 +714,14 @@ void mark_step(struct mark *m safe, int forward)
 	notify_point_moving(m);
 
 	if (forward) {
-		for (m2 = doc_next_mark_all(m);
+		for (m2 = mark_next(m);
 		     m2 && mark_same(m, m2);
-		     m2 = doc_next_mark_all(m2))
+		     m2 = mark_next(m2))
 			target = m2;
 	} else {
-		for (m2 = doc_prev_mark_all(m);
+		for (m2 = mark_prev(m);
 		     m2 && mark_same(m, m2);
-		     m2 = doc_prev_mark_all(m2))
+		     m2 = mark_prev(m2))
 			target = m2;
 	}
 	mark_to_mark_noref(m, target);
@@ -737,7 +737,7 @@ void mark_make_first(struct mark *m safe)
 
 	notify_point_moving(m);
 
-	while ((tmp = doc_prev_mark_all(m2)) != NULL &&
+	while ((tmp = mark_prev(m2)) != NULL &&
 	       mark_same(tmp, m))
 		m2 = tmp;
 	mark_to_mark_noref(m, m2);
@@ -750,7 +750,7 @@ void mark_make_last(struct mark *m safe)
 
 	notify_point_moving(m);
 
-	while ((tmp = doc_next_mark_all(m2)) != NULL &&
+	while ((tmp = mark_next(m2)) != NULL &&
 	       mark_same(tmp, m))
 		m2 = tmp;
 	mark_to_mark_noref(m, m2);
@@ -978,11 +978,11 @@ struct mark *do_vmark_at_or_before(struct doc *d safe,
 
 	/* might need to hunt along 'all' list for something suitable */
 	while (vm && vm->viewnum != MARK_POINT && vm->viewnum != view)
-		vm = doc_next_mark_all(vm);
+		vm = mark_next(vm);
 	if (!vm) {
 		vm = m;
 		while (vm && vm->viewnum != MARK_POINT && vm->viewnum != view)
-			vm = doc_prev_mark_all(vm);
+			vm = mark_prev(vm);
 	}
 	if (!vm)
 		/* No 'view' marks at all! */
