@@ -74,6 +74,9 @@
 
 static MEMPOOL(mark);
 
+static struct mark *vmark_or_point_next(struct mark *m safe, int view);
+static struct mark *vmark_or_point_prev(struct mark *m safe, int view);
+
 /* seq numbers added to the end are given a gap of 128.
  * seq numbers at other locations are placed at mean of before and after.
  * If there is no room, seq add 256 to the 'next' seq, 255 to the one
@@ -780,7 +783,7 @@ struct mark *vmark_next(struct mark *m safe)
 	return __vmark_next(tl);
 }
 
-struct mark *vmark_or_point_next(struct mark *m safe, int view)
+static struct mark *vmark_or_point_next(struct mark *m safe, int view)
 {
 	struct tlist_head *tl;
 	struct point_links *lnk;
@@ -824,7 +827,7 @@ struct mark *vmark_prev(struct mark *m safe)
 	return __vmark_prev(tl);
 }
 
-struct mark *vmark_or_point_prev(struct mark *m safe, int view)
+static struct mark *vmark_or_point_prev(struct mark *m safe, int view)
 {
 	struct tlist_head *tl;
 	struct point_links *lnk;

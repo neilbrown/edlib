@@ -243,11 +243,8 @@ static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
 }
 
 struct mark *mark_at_point(struct pane *p safe, struct mark *pm, int view);
-struct mark *do_mark_at_point(struct mark *pt safe, int view);
 struct mark *vmark_next(struct mark *m safe);
 struct mark *vmark_prev(struct mark *m safe);
-struct mark *vmark_or_point_next(struct mark *m safe, int view);
-struct mark *vmark_or_point_prev(struct mark *m safe, int view);
 struct mark *vmark_matching(struct mark *m safe);
 struct mark *vmark_first(struct pane *p safe, int view,
 			 struct pane *owner safe);
