@@ -257,7 +257,7 @@ static void copy_header(struct pane *doc safe,
 	m = mark_dup(start);
 	hstart = mark_dup(point);
 	/* put hstart before point, so it stays here */
-	mark_make_first(hstart);
+	mark_step(hstart, 0);
 	/* FIXME decode RFC2047 words */
 	while ((ch = doc_next(doc, m)) != WEOF &&
 	       m->seq < end->seq) {

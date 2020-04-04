@@ -36,7 +36,7 @@ class AbbrevPane(edlib.Pane):
 
         self.prefix_start['render:abbrev'] = 'prefix'
         self.prefix_end['render:abbrev'] = 'completion'
-        self.prefix_end.make_first()
+        self.prefix_end.step(0)
         self.completions = []
         self.current = -1
         self.next_completion(1)

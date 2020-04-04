@@ -286,7 +286,7 @@ DEF_CMD(dir_load_file)
 				prev = NULL;
 			}
 			doc_next(ci->home, m);
-			mark_make_first(m);
+			mark_step(m,0);
 
 			list_del(&de2->lst);
 			attr_free(&de2->attrs);

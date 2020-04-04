@@ -1283,7 +1283,7 @@ DEF_CMD(text_reundo)
 			early = m;
 		else {
 			early = mark_dup(m);
-			mark_make_first(early);
+			mark_step(early, 0);
 			/* There cannot be any mark between start and end,
 			 * so it is safe to assign 'ref' here.
 			 */
@@ -1973,7 +1973,7 @@ DEF_CMD(text_replace)
 	 * pm moves to the end - they are both currently at
 	 * the same location in the doc.
 	 */
-	mark_make_first(early);
+	mark_step(early, 0);
 
 	if (str) {
 		struct doc_ref start;

@@ -466,7 +466,7 @@ DEF_CMD(do_replace)
 	if (esi->backwards) {
 		while (len > 0 && doc_next(esi->target, m) != WEOF)
 			len -= 1;
-		mark_make_first(m);
+		mark_step(m, 0);
 		if (call("doc:replace", esi->target, 0, esi->end, new, 0, m) > 0) {
 			call("search:highlight-replace", esi->target,
 			     strlen(new), esi->end, NULL, 0, m);
@@ -475,7 +475,7 @@ DEF_CMD(do_replace)
 	} else {
 		while (len > 0 && doc_prev(esi->target, m) != WEOF)
 			len -= 1;
-		mark_make_last(m);
+		mark_step(m, 1);
 		if (call("doc:replace", esi->target, 0, m, new, 0, esi->end) > 0) {
 			call("search:highlight-replace", esi->target,
 			     strlen(new), m, NULL, 0, esi->end);

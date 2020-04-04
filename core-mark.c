@@ -730,35 +730,6 @@ void mark_step(struct mark *m safe, int forward)
 	mark_to_mark_noref(m, target);
 }
 
-/* Make a given mark the first, or last, among marks with
- * the same location.
- */
-void mark_make_first(struct mark *m safe)
-{
-	struct mark *m2 = m;
-	struct mark *tmp;
-
-	notify_point_moving(m);
-
-	while ((tmp = mark_prev(m2)) != NULL &&
-	       mark_same(tmp, m))
-		m2 = tmp;
-	mark_to_mark_noref(m, m2);
-}
-
-void mark_make_last(struct mark *m safe)
-{
-	struct mark *m2 = m;
-	struct mark *tmp;
-
-	notify_point_moving(m);
-
-	while ((tmp = mark_next(m2)) != NULL &&
-	       mark_same(tmp, m))
-		m2 = tmp;
-	mark_to_mark_noref(m, m2);
-}
-
 /* A 'vmark' is a mark in a particular view.  We can walk around those
  * silently skipping over the points.
  */

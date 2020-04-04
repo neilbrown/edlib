@@ -767,7 +767,7 @@ DEF_CMD(email_view_set_attr)
 				home_call(ci->home->parent, "doc:step-part",
 					  ci->focus, 0, m1);
 			}
-			mark_make_first(m1);
+			mark_step(m1, 0);
 			m2 = mark_dup(m1);
 			home_call(ci->home->parent, "doc:step-part", ci->focus,
 				  1, m2);

@@ -1834,28 +1834,6 @@ static PyObject *Mark_prev_any(Mark *self safe, PyObject *args)
 	return Py_None;
 }
 
-static PyObject *Mark_make_first(Mark *self safe, PyObject *args)
-{
-	if (!self->mark) {
-		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
-		return NULL;
-	}
-	mark_make_first(self->mark);
-	Py_INCREF(Py_None);
-	return Py_None;
-}
-
-static PyObject *Mark_make_last(Mark *self safe, PyObject *args)
-{
-	if (!self->mark) {
-		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
-		return NULL;
-	}
-	mark_make_last(self->mark);
-	Py_INCREF(Py_None);
-	return Py_None;
-}
-
 static PyObject *Mark_dup(Mark *self safe, PyObject *args)
 {
 	struct mark *new;
@@ -1940,10 +1918,6 @@ static PyMethodDef mark_methods[] = {
 	 "release a vmark so it can disappear"},
 	{"ack", (PyCFunction)Mark_ack, METH_NOARGS,
 	 "acknowledge movement of a point - allow further notifications"},
-	{"make_first", (PyCFunction)Mark_make_first, METH_NOARGS,
-	 "Make first of marks with same ref"},
-	{"make_last", (PyCFunction)Mark_make_last, METH_NOARGS,
-	 "Make last of marks with same ref"},
 	{"step", (PyCFunction)Mark_step, METH_VARARGS,
 	 "Move mark over any adjacent marks with same reference"},
 	{NULL}

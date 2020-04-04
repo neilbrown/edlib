@@ -1070,7 +1070,7 @@ class notmuch_list(edlib.Doc):
                 return edlib.WEOF
             if not move:
                 return '\n'
-            mark.make_first()
+            mark.step(0)
 
             if j == 0:
                 i -= 1
@@ -1085,7 +1085,7 @@ class notmuch_list(edlib.Doc):
             else:
                 mark.pos = (tid, None)
 
-            mark.make_first()
+            mark.step(0)
             return '\n'
 
     def handle_notify_tag(self, key, str, str2, **a):

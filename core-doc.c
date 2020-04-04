@@ -964,7 +964,7 @@ DEF_CMD(doc_move_to)
 		mark_to_mark(dd->marks[mnum], m);
 		/* Make sure mark is *before* point so insertion
 		 * leaves mark alone */
-		mark_make_first(dd->marks[mnum]);
+		mark_step(dd->marks[mnum], 0);
 	} else if (ci->num < 0 && ci->num >= -4) {
 		int mnum = -1 - ci->num;
 
