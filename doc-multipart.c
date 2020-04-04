@@ -436,7 +436,7 @@ DEF_CMD(mp_set_attr)
 	m1 = m->ref.m;
 
 	if (dn < mpi->nparts && m1 &&
-	    mark_step_pane(mpi->parts[dn].pane, m1, ci->num, 0) == WEOF) {
+	    doc_step(mpi->parts[dn].pane, m1, ci->num, 0) == WEOF) {
 		/* at the wrong end of a part */
 		if (ci->num)
 			dn += 1;

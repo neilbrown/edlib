@@ -49,7 +49,7 @@ DEF_CMD(qp_step)
 
 retry:
 	if (forward) {
-		ch = mark_step_pane(p, m, 1, move);
+		ch = doc_step(p, m, 1, move);
 		if (ch != '=' && ch != ' ' && ch != '\t' && ch != '\r') {
 			if (m != ci->mark) {
 				if (move)
@@ -127,7 +127,7 @@ retry:
 		mark_free(m);
 		goto normalize_more;
 	} else {
-		ch = mark_step_pane(p, m, 0, move);
+		ch = doc_step(p, m, 0, move);
 		if (ch == '\n') {
 			if (m == ci->mark)
 				m = mark_dup(m);

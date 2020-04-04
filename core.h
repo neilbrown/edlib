@@ -221,7 +221,7 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end);
 void doc_check_consistent(struct doc *d safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe);
-wint_t mark_step_pane(struct pane *p safe, struct mark *m safe,
+wint_t doc_step(struct pane *p safe, struct mark *m safe,
 		      int forward, int move);
 void mark_make_first(struct mark *m safe);
 void mark_make_last(struct mark *m safe);
@@ -482,22 +482,22 @@ static inline int pane_attr_get_int(struct pane *p safe, const char *key safe)
 
 static inline wint_t doc_next(struct pane *p safe, struct mark *m safe)
 {
-	return mark_step_pane(p, m, 1, 1);
+	return doc_step(p, m, 1, 1);
 }
 
 static inline wint_t doc_prev(struct pane *p safe, struct mark *m safe)
 {
-	return mark_step_pane(p, m, 0, 1);
+	return doc_step(p, m, 0, 1);
 }
 
 static inline wint_t doc_following(struct pane *p safe, struct mark *m safe)
 {
-	return mark_step_pane(p, m, 1, 0);
+	return doc_step(p, m, 1, 0);
 }
 
 static inline wint_t doc_prior(struct pane *p safe, struct mark *m safe)
 {
-	return mark_step_pane(p, m, 0, 0);
+	return doc_step(p, m, 0, 0);
 }
 
 struct call_return {

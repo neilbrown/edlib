@@ -446,7 +446,7 @@ struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner)
  *
  */
 
-wint_t mark_step_pane(struct pane *p safe, struct mark *m safe,
+wint_t doc_step(struct pane *p safe, struct mark *m safe,
 		      int forward, int move)
 {
 	int ret;

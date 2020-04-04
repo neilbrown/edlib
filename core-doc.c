@@ -124,16 +124,16 @@ DEF_CMD(doc_word)
 	while (rpt != 0) {
 		wint_t wi;
 
-		while (iswspace(mark_step_pane(f, m, dir, 0)))
-			mark_step_pane(f, m, dir, 1);
+		while (iswspace(doc_step(f, m, dir, 0)))
+			doc_step(f, m, dir, 1);
 
-		while ((wi=mark_step_pane(f, m, dir, 0)) != WEOF &&
+		while ((wi=doc_step(f, m, dir, 0)) != WEOF &&
 		       !iswspace(wi) && !iswalnum(wi))
-			mark_step_pane(f, m, dir, 1);
+			doc_step(f, m, dir, 1);
 
-		if (iswalnum(mark_step_pane(f, m, dir, 0))) {
-			while (iswalnum(mark_step_pane(f, m, dir, 0)))
-				mark_step_pane(f, m, dir, 1);
+		if (iswalnum(doc_step(f, m, dir, 0))) {
+			while (iswalnum(doc_step(f, m, dir, 0)))
+				doc_step(f, m, dir, 1);
 		}
 
 		rpt -= dir * 2 - 1;
@@ -190,18 +190,18 @@ DEF_CMD(doc_expr)
 	while (rpt != 0) {
 		wint_t wi = ' ';
 
-		while (iswspace(mark_step_pane(f, m, dir, 0)))
-			mark_step_pane(f, m, dir, 1);
+		while (iswspace(doc_step(f, m, dir, 0)))
+			doc_step(f, m, dir, 1);
 
-		while ((wi = mark_step_pane(f, m, dir, 0)) != WEOF &&
+		while ((wi = doc_step(f, m, dir, 0)) != WEOF &&
 		       !iswspace(wi) && !iswalnum(wi) &&
 		       (wi > 255 || (strchr(special, wi) == NULL &&
 				     strchr(wordchars, wi) == NULL)))
-			mark_step_pane(f, m, dir, 1);
+			doc_step(f, m, dir, 1);
 
 		if (strchr(close, wi)) {
 			if (!dir && enter_leave) {
-				mark_step_pane(f, m, dir, 1);
+				doc_step(f, m, dir, 1);
 				rpt += 1;
 			} else
 				/* hit a close */
@@ -211,12 +211,12 @@ DEF_CMD(doc_expr)
 			int depth = 1;
 			wint_t q = 0;
 
-			mark_step_pane(f, m, dir, 1);
+			doc_step(f, m, dir, 1);
 			if (enter_leave && dir)
 				/* Just entered the expression */
 				rpt -= 1;
 			else while (depth > 0 &&
-				    (wi = mark_step_pane(f, m, dir, 1)) != WEOF) {
+				    (wi = doc_step(f, m, dir, 1)) != WEOF) {
 					if (q) {
 						if (dir)
 							doc_prev(f,m);
@@ -244,30 +244,30 @@ DEF_CMD(doc_expr)
 			int slosh = 0;
 			if (dir) {
 				slosh = check_slosh(f, m);
-				mark_step_pane(f, m, dir, 1);
+				doc_step(f, m, dir, 1);
 			} else {
-				mark_step_pane(f, m, dir, 1);
+				doc_step(f, m, dir, 1);
 				slosh = check_slosh(f, m);
 			}
 			if (!slosh) {
-				while (((wi = mark_step_pane(f, m, dir, 0))
+				while (((wi = doc_step(f, m, dir, 0))
 					!= WEOF) &&
 				       !is_eol(wi)) {
 					if (dir) {
 						slosh = check_slosh(f, m);
-						mark_step_pane(f, m, dir, 1);
+						doc_step(f, m, dir, 1);
 					} else {
-						mark_step_pane(f, m, dir, 1);
+						doc_step(f, m, dir, 1);
 						slosh = check_slosh(f, m);
 					}
 					if (wi == q && !slosh)
 						break;
 				}
 			}
-		} else while (iswalnum((wi=mark_step_pane(f, m, dir, 0))) ||
+		} else while (iswalnum((wi=doc_step(f, m, dir, 0))) ||
 			      (wi > 0 && wi <= 255 &&
 			       strchr(wordchars, wi) != NULL))
-				mark_step_pane(f, m, dir, 1);
+				doc_step(f, m, dir, 1);
 
 		if (!enter_leave)
 			rpt -= dir * 2 - 1;
@@ -409,13 +409,13 @@ DEF_CMD(doc_para)
 	while (rpt && ch != WEOF) {
 		nlcnt = 0;
 		while (ch != WEOF) {
-			ch = mark_step_pane(p, m, forwards, 1);
+			ch = doc_step(p, m, forwards, 1);
 			if (is_eol(ch))
 				nlcnt += 1;
 			else if (nlcnt < 2)
 				nlcnt = 0;
 			else {
-				mark_step_pane(p, m, !forwards, 1);
+				doc_step(p, m, !forwards, 1);
 				break;
 			}
 		}
