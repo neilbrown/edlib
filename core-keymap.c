@@ -79,22 +79,21 @@ static inline struct command *SET_RANGE(struct command *c)
 
 DEF_CMD(keymap_list)
 {
-	struct lookup_cmd *luc;
 	struct map *m;
 	int len = ci->str ? strlen(ci->str) : 0;
 	int i;
 
-	if (!ci->home->handle ||
-	    ci->home->handle->func != key_lookup_cmd_func)
+	if (ci->comm == &keymap_list)
+		/* should be impossible */
 		return 0;
-	luc = container_of(ci->home->handle, struct lookup_cmd, c);
-	for (m = luc->m[0]; m ; m = m->chain)
+	/* ci->comm MUST be the keymap */
+	m = (struct map* safe)ci->comm;
 
-		for (i = 0; i < m->size; i++)
-			if (!len || strncmp(ci->str, m->keys[i], len) == 0)
-				if (comm_call(ci->comm2, "cb", ci->focus,
-					      IS_RANGE(m->comms[i]), NULL, m->keys[i]) <= 0)
-					return Efallthrough;
+	for (i = 0; i < m->size; i++)
+		if (!len || strncmp(ci->str, m->keys[i], len) == 0)
+			if (comm_call(ci->comm2, "cb", ci->focus,
+				      IS_RANGE(m->comms[i]), NULL, m->keys[i]) <= 0)
+				break;
 	return Efallthrough;
 }
 
@@ -428,6 +427,8 @@ int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 			((struct cmd_info*)ci)->key = ktmp;
 		}
 		((struct cmd_info*)ci)->comm = comm;
+		if (comm->func == keymap_list_func)
+			((struct cmd_info*)ci)->comm = (struct command *safe)m;
 		ret = comm->func(ci);
 		((struct cmd_info*)ci)->key = oldkey;
 		free(k2);
