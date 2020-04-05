@@ -35,6 +35,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] open log, command git-grep search for 'log', quit - and end up in a phantom pane.
 - [X] press 'enter' in diff output for file that needs to be loaded, and we don't
       go to the line, we end up at top.
 - [ ] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.

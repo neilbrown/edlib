@@ -77,6 +77,27 @@ static inline struct command *SET_RANGE(struct command *c)
 	return (struct command *)(((unsigned long)c) | 1UL);
 }
 
+DEF_CMD(keymap_list)
+{
+	struct lookup_cmd *luc;
+	struct map *m;
+	int len = ci->str ? strlen(ci->str) : 0;
+	int i;
+
+	if (!ci->home->handle ||
+	    ci->home->handle->func != key_lookup_cmd_func)
+		return 0;
+	luc = container_of(ci->home->handle, struct lookup_cmd, c);
+	for (m = luc->m[0]; m ; m = m->chain)
+
+		for (i = 0; i < m->size; i++)
+			if (!len || strncmp(ci->str, m->keys[i], len) == 0)
+				if (comm_call(ci->comm2, "cb", ci->focus,
+					      IS_RANGE(m->comms[i]), NULL, m->keys[i]) <= 0)
+					return Efallthrough;
+	return Efallthrough;
+}
+
 static int size2alloc(int size)
 {
 	/* Alway multiple of 8. */
@@ -88,6 +109,7 @@ struct map *safe key_alloc(void)
 	struct map *m = calloc(1, sizeof(*m));
 
 	m->prefix_len = -1;
+	key_add(m, "keymap:list", &keymap_list);
 	return m;
 }
 

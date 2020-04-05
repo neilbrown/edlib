@@ -694,6 +694,7 @@ DEF_CMD(emacs_undo)
 
 REDEF_CMD(emacs_file_complete);
 REDEF_CMD(emacs_doc_complete);
+REDEF_CMD(emacs_cmd_complete);
 
 DEF_CMD(find_complete)
 {
@@ -705,6 +706,8 @@ DEF_CMD(find_complete)
 		return emacs_file_complete_func(ci);
 	if (strcmp(type, "doc") == 0)
 		return emacs_doc_complete_func(ci);
+	if (strcmp(type, "cmd") == 0)
+		return emacs_cmd_complete_func(ci);
 	return 0;
 }
 
@@ -1338,8 +1341,6 @@ DEF_CMD(emacs_start_search)
 	return 1;
 }
 
-
-
 DEF_CMD(emacs_command)
 {
 	struct pane *p;
@@ -1369,6 +1370,46 @@ DEF_CMD(emacs_do_command)
 	} else if (ret < 0) {
 		snprintf(cmd, sizeof(cmd), "Command %s Failed", ci->str);
 		call("Message", ci->focus, 0, NULL, cmd);
+	}
+	return 1;
+}
+
+DEF_CMD(take_cmd)
+{
+	const char *cmd;
+	const char *longest = attr_find(ci->focus->attrs, "cmd_prefix");
+
+	if (!ci->str)
+		return 0;
+	cmd = ci->str + 16;
+	if (!longest)
+		longest = cmd;
+	else {
+		int l = 0;
+		while (cmd[l] == longest[l])
+			l++;
+		longest = strnsave(ci->focus, cmd, l);
+	}
+	attr_set_str(&ci->focus->attrs, "cmd_prefix", longest);
+	return 1;
+}
+
+REDEF_CMD(emacs_cmd_complete)
+{
+	char *s, *l, *c;
+
+	if (!ci->mark)
+		return Enoarg;
+	s = call_ret(strsave, "doc:get-str", ci->focus);
+	c = strconcat(ci->home, "interactive-cmd-", s);
+	attr_set_str(&ci->focus->attrs, "cmd_prefix", NULL);
+	call_comm("keymap:list", ci->focus, &take_cmd, 0, NULL, c);
+	l = attr_find(ci->focus->attrs, "cmd_prefix");
+	if (l && s && strlen(l) > strlen(s)) {
+		struct mark *start = mark_dup(ci->mark);
+		call("Move-Char", ci->focus, -strlen(s), start);
+		call("Replace", ci->focus, 1, start, l);
+		mark_free(start);
 	}
 	return 1;
 }
