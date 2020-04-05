@@ -1136,6 +1136,14 @@ DEF_CMD(render_lines_move_line)
 		rl->i_moved = 0;
 		return 1;
 	}
+	if (rl->target_x == 0 && rl->target_y == 0) {
+		/* No need to move to target column - already there.
+		 * This simplifies life for render-complete which is
+		 * always at col 0, and messes with markup a bit.
+		 */
+		rl->i_moved = 0;
+		return 1;
+	}
 	/* FIXME only do this if point is active/volatile, or
 	 * if start->mdata is NULL
 	 */

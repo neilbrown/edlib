@@ -26,7 +26,7 @@ Current priorities
    - rebase to a given line - rearrange lines above.
 
 - [ ] change notmuch-query-view to use doc-rendering
-- [ ] support completion of interactive commands
+- [X] support completion of interactive commands
       Add a list-commands command that searches down the path from focus
       and digs into keymaps and calls-back for everything with the given prefix.
 - [ ] support mkdir somehow
@@ -145,6 +145,7 @@ Module features
 
 ### emacs
 
+- [ ] sort the command names for command-completion?
 - [ ] search/replace should support undo somehow
 - [ ] search/replace should make it easy to revisit previous changes.
 - [X] it is hard to search for 'tab' because it you get moved to 'replace'

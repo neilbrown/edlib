@@ -1376,42 +1376,76 @@ DEF_CMD(emacs_do_command)
 
 DEF_CMD(take_cmd)
 {
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 	const char *cmd;
-	const char *longest = attr_find(ci->focus->attrs, "cmd_prefix");
 
 	if (!ci->str)
 		return 0;
 	cmd = ci->str + 16;
-	if (!longest)
-		longest = cmd;
-	else {
-		int l = 0;
-		while (cmd[l] == longest[l])
-			l++;
-		longest = strnsave(ci->focus, cmd, l);
+	if (cr->p) {
+		call("doc:replace", cr->p, 1, NULL, cmd);
+		call("doc:replace", cr->p, 1, NULL, "\n");
 	}
-	attr_set_str(&ci->focus->attrs, "cmd_prefix", longest);
 	return 1;
 }
 
 REDEF_CMD(emacs_cmd_complete)
 {
-	char *s, *l, *c;
+	char *s;
+	struct pane *doc = NULL, *pop = NULL, *p;
+	struct call_return cr;
 
 	if (!ci->mark)
 		return Enoarg;
 	s = call_ret(strsave, "doc:get-str", ci->focus);
-	c = strconcat(ci->home, "interactive-cmd-", s);
-	attr_set_str(&ci->focus->attrs, "cmd_prefix", NULL);
-	call_comm("keymap:list", ci->focus, &take_cmd, 0, NULL, c);
-	l = attr_find(ci->focus->attrs, "cmd_prefix");
-	if (l && s && strlen(l) > strlen(s)) {
+	if (!s)
+		s = "";
+	doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, "*Command List*");
+	if (!doc)
+		return Efail;
+	call("doc:set:autoclose", doc, 1);
+	cr.c = take_cmd;
+	cr.p = doc;
+	call_comm("keymap:list", ci->focus, &cr.c,
+		  0, NULL, "interactive-cmd-");
+	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
+	if (!pop)
+		goto fail;
+	p = home_call_ret(pane, cr.p, "doc:attach-view", pop, -1);
+	if (!p)
+		goto fail_pop;
+	attr_set_str(&p->attrs, "done-key", "Replace");
+	p = call_ret(pane, "attach-render-complete", p);
+	if (!p)
+		goto fail_pop;
+	cr = call_ret(all, "Complete:prefix", p, 1, NULL, s);
+	if (cr.s && strlen(cr.s) <= strlen(s) && cr.ret-1 > 1) {
+		/* We need the dropdown - delete prefix and drop-down will
+		 * insert result.
+		 */
 		struct mark *start = mark_dup(ci->mark);
 		call("Move-Char", ci->focus, -strlen(s), start);
-		call("Replace", ci->focus, 1, start, l);
+		call("Replace", ci->focus, 1, start);
+		mark_free(start);
+		return 1;
+	}
+	if (cr.s) {
+		/* Replace 's' with the result */
+		struct mark *start = mark_dup(ci->mark);
+		call("Move-Char", ci->focus, -strlen(s), start);
+		call("Replace", ci->focus, 1, start, cr.s);
 		mark_free(start);
 	}
+	/* Now need to close the popup */
+	pane_close(pop);
+	pane_close(doc);
 	return 1;
+
+fail_pop:
+	pane_close(pop);
+fail:
+	pane_close(doc);
+	return Efail;
 }
 
 DEF_CMD(emacs_version)
