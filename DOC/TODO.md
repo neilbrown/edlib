@@ -14,9 +14,6 @@ Current priorities
       Rather than formatting to a string with markup, we could format to a list
       of attr/text pairs.  lib-format returns these via a callback and we use some
       bits to index the list and some to index a char.
-- [X] track mouse movement during selection
-- [X] filename completion is really slow on large directories. Probably quadratic.
-- [X] option to save-all to quit and visit a changed document
 - [ ] C/python code "index" pane to quickly jump to function, and see context
 - [ ] beginnings of test suite
 - [ ] git mode:
@@ -26,9 +23,6 @@ Current priorities
    - rebase to a given line - rearrange lines above.
 
 - [ ] change notmuch-query-view to use doc-rendering
-- [X] support completion of interactive commands
-      Add a list-commands command that searches down the path from focus
-      and digs into keymaps and calls-back for everything with the given prefix.
 - [ ] support mkdir somehow
 - [ ] make a doc read-only if dir doesn't exist or isn't writeable
 
@@ -37,35 +31,7 @@ Bugs to be fixed
 
 - [ ] do something sensible if make is run while a make is already running.
 - [ ] ditto for shell.
-- [X] open log, command git-grep search for 'log', quit - and end up in a phantom pane.
-- [X] press 'enter' in diff output for file that needs to be loaded, and we don't
-      go to the line, we end up at top.
 - [ ] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
-- [X] cursor often doesn't stay in column when moving up/down
-- [X] ncurses doesn't report mouse events properly when there are multi-clicks.
-      The press and release seem to get re-ordered.  Setting mouseinterval might help.
-- [X] If I can see doc listing and I do filename completion in a find-file
-      dialog, I see multiple copies of the directory in the doc listing.
-- [X] resizing a elc window doesn't trigger refresh.
-- [X] save-all must be after the prompt for grep/make, and only affect subdirs.
-- [X] grep loses selected text due to save-all
-- [X] double-click doesn't select a word in ncurses, but does in gtk.
-- [X] if cursor is at top/start of pane and you search for string at start,
-      do doc scrolls down one line.
-- [X] cannot stop search/replace in the middle except by Abort.
-- [X] It should be possible to create a file with "edlib filename"
-- [X] dynamic expansion highlight doesn't disappear when I move the cursor.
-- [X] doc-docs sometimes shows the same doc twice at the top of the list.
-- [X] don't tell me two dirs are the same if the only difference is trailing '/'
-- [X] I cannot reformat C comments any more, because C-q re-indents
-- [X] lib-renderline draw_some() was seen in a (seemingly) infinite loop
- 	while (*rlp)
- 		rlp = &(*rlp)->next;
-      the rl were much the same
-	 * text_orig = 0x55a24c886723 "\t\t\t\t ci->mark, \"fg:red,inverse,vis-nl\", 20);\n",
-	 * text = 0x55a24c91e150 " ", attr = 0x55a24c982570 "", x = -3181,
-       though x changed.
-    problem is tab %8 calculation when x is negative
 
 Core features
 -------------
@@ -148,7 +114,6 @@ Module features
 - [ ] sort the command names for command-completion?
 - [ ] search/replace should support undo somehow
 - [ ] search/replace should make it easy to revisit previous changes.
-- [X] it is hard to search for 'tab' because it you get moved to 'replace'
 - [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
 - [ ] filename completion should ignore uninteresting files like ".o"
 - [ ] invent a way to reserve 'extra' values for command sets
@@ -212,7 +177,6 @@ Module features
 
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
-- [X] don't use mb* funcs, use bespoke utf8 coding
 - [ ] merge adjacent undo records that can be merged.
 - [ ] Possibly move read-only handling to core-doc, once docs/dir
       respond to something other than 'replace' to open files.
@@ -230,7 +194,6 @@ Module features
 
 - [ ] mouse selection should work in completion pane
 - [ ] filename completion should work for earlier component of path.
-- [X] case insensitive substring match for fn or doc completion?
 - [ ] The “complete” popup should be positioned above/below the file name,
       not over the top of it.
 
@@ -257,13 +220,11 @@ Module features
 - [ ] improve detection of the 'important' "note" line.
 - [ ] clarify and document the role of numeric args to git-grep
 - [ ] when restart compile/grep, kill only one.
-- [X] allow make even if not all files are saved - 'q' from save-all?
 - [ ] numeric-prefix to make will auto-save everything.
 - [ ] grep should (optionally) save files in the directory tree
 
 ### message-line
 
-- [X] have *Messages* buffer to log recent messages.
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
 
 ### regexp
@@ -404,8 +365,6 @@ Module features
 
 ### C-mode
 
-- [X] python indent needs to recognize comment, and not treat them
-      like code.
 - [ ]  auto-indent enhancements
 
      +   py: after "return" de-indent
