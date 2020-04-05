@@ -5,51 +5,35 @@ Current priorities
 ------------------
 
 - [ ] fix bugs
-- [ ] Replace <attr> text </> in markup with SOH attr STX text ETX
-- [ ] create alternative to doc-rendering which *knows* that the int of mark.ref
-      is unused and puts a line-offset in there.  Then mark is safe for use in doc.
-      Content is extracted (e.g. with lib-format) and doc:step and doc:content are
-      implemented in an overlay which detects markup and presents it as attributes:
-      render:markup gives the attr string and len:markup gives the length to ETX
-      Rather than formatting to a string with markup, we could format to a list
-      of attr/text pairs.  lib-format returns these via a callback and we use some
-      bits to index the list and some to index a char.
-- [ ] C/python code "index" pane to quickly jump to function, and see context
-- [ ] beginnings of test suite
-- [ ] git mode:
-   - 'log' display that displays limited history, and asks for more as scrolling
-     happens
-   - easy view commit from log
-   - rebase to a given line - rearrange lines above.
-
-- [ ] change notmuch-query-view to use doc-rendering
-- [ ] support mkdir somehow
-- [ ] make a doc read-only if dir doesn't exist or isn't writeable
+- [ ] core: track autosave files
+- [ ] tile: Window:close-1-dimension
+- [ ] emacs: typing in selection replaces selected text
+- [ ] render-lines: text appearing before top-of-page should appear - at least one line
+      and if top-of-page was top-of-file, then all of it.
+- [ ] lib-input: feed-back for number/mode prefixes.
+- [ ] doc-text: merge undo-records where possible
+- [ ] make: handle "info:" lines better
+- [ ] test-suite: add one test case.
+- [ ] dynamic completion: look in other docs - top 5 text??
 
 Bugs to be fixed
 ----------------
 
-- [ ] do something sensible if make is run while a make is already running.
-- [ ] ditto for shell.
 - [ ] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
 
 Core features
 -------------
 
-- [ ] Make it possible to unload C modules when refcount on all commands
-      reaches zero
-- [ ] Make it possible to unload Python modules
+- [ ] LOG() loading of modules, with version info.
+- [ ] Record where auto-save files are, and recover them.
+        A directory of symlinks
+- [ ] make a doc read-only if dir doesn't exist or isn't writeable
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
-- [ ] malloc anti-fail policy.  Small allocations don't fail but use pre-allocated.
-      large allocations use different API and can fail.
-- [ ] support $SUBST in file-open path names ??
 - [ ] graceful failure when closing doc that still has views.
       Then call doc_free() internally so the module doesn't need to.
 - [ ] document the use of doc:replaced.  What are the two
       marks exactly? start and end of range.
-- [ ] Need a debug mode where every mark usage is checked for validity.
-      also check the setref sets up all linkages.
 - [ ]  ?? restrict prefix key lookup to punctuation.
 
       Current ranges are:
@@ -70,20 +54,32 @@ Core features
 
 - [ ] revise and document behaviour of doc:open etc, particularly for
        reloading and filenames etc.
-- [ ] Record where auto-save files are, and recover them.
-        A directory of symlinks
+
+### Longer term
+
+- [ ] Make it possible to unload C modules when refcount on all commands
+      reaches zero
+- [ ] Make it possible to unload Python modules
+- [ ] malloc anti-fail policy.  Small allocations don't fail but use pre-allocated.
+      large allocations use different API and can fail.
+- [ ] support $SUBST in file-open path names ??
+- [ ] Need a debug mode where every mark usage is checked for validity.
+      also check the setref sets up all linkages.
 - [ ] remove all FIXMEs (there are 55) ... and any HACKs (5).
 - [ ] Replace asserts with warnings where possible.
 - [ ] hide view-num inside pane so number cannot be misused.
      i.e. each view is owned by a pane and can only be used by that pane.
 
-tile
-----
+
+Module features
+---------------
+
+### tile
 
 - [ ] Provide something like :C-x-1 which only affects one dimension.
+      Maybe :C-x-1 will doo that, and :C-x-1-1 will do both.
 
-rexel
------
+### rexel
 
 - [ ] Allow ?...: at start of a group to affect how group is interpreted
       e.g. 'Lnnn' mean there are nnn chars to be treated literally
@@ -97,9 +93,9 @@ rexel
       We then repeat the match process against the found string to get start
       and end points.
       Or write a back-tracking matcher that records all groups in the stack
+- [ ] write an alternate back-tracking matcher which supports \N
+      in the pattern, and provide it for substitution.
 
-Module features
----------------
 
 ### popup
 
@@ -111,17 +107,13 @@ Module features
 
 ### emacs
 
+- [ ] make-directory command
 - [ ] sort the command names for command-completion?
-- [ ] search/replace should support undo somehow
-- [ ] search/replace should make it easy to revisit previous changes.
-- [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
 - [ ] filename completion should ignore uninteresting files like ".o"
-- [ ] invent a way to reserve 'extra' values for command sets
-      do I need this across panes ?? probably
 - [ ] search highlight doesn't report empty match (eol)...
 - [ ] emacs highlight should get close notification from popup,
       instead of catching abort.
-- [ ] ask before killing modified buffer.
+- [ ] ask before killing modified buffer - or refuse without numeric prefix
 - [ ] maybe meta-, does c-x` if that is the recent search?
 - [ ] Support write-file (providing a file name) - currently I only save
       to the file I loaded from.
@@ -132,24 +124,40 @@ Module features
 - [ ] if typing when selection active, replace selection with new text
 - [ ] history for each entry.
 
+#### emac-search
+
+- [ ] '\' shouldn't be auto-inserted inside [] set.
+
+##### needs design work
+
+- [ ] invent a way to reserve 'extra' values for command sets
+      do I need this across panes ?? probably
+- [ ] search/replace should support undo somehow
+- [ ] search/replace should make it easy to revisit previous changes.
+- [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
+
 ### ncurses
 
 - [ ] add full list of colour names (to lib-colourmap)
-- [ ] if we exhaust colours or pairs, reset and make use lower color depth.
-- [ ] handle !can_change_colors better.  Find out what colours exist, and choose
-      a near-by one.  Maybe add underline when insufficient contrast available.
-- [ ] Allow different colour-maps per pane so full redraw
-      happens when changing colour-map.  This makes images
-      practical.
+- [ ] allow a pane to require 'true-color' and discover number of colours available
+      Colour map gets changed when it becomes the focus.
+- [ ] merge 'catpic' code to draw low-res images.
+- [ ] When only 16 colors, maybe add underline when insufficient contrast available.
 - [ ] automatically ensure the fg colour contrasts with bg, unless explicitly disabled.
       If bg is bright, reduce fg brightness.  If bg is dark, reduce saturation.
-- [ ] merge 'catpic' code to draw low-res images.
 
 ### pygtk
 
+- [ ] make sure pixmap handling in optimal - I want the per-pane images to be server-side
+      See cairo_xcb_surface_create.
+- [ ] allow 'pane-clear' to use content from lower-level image.
 
 ### render-lines
 
+- [ ] Replace <attr> text </> in markup with SOH attr STX text ETX
+      This also affects lib-markup and others.
+- [ ] I regularly hit problems because ->mdata is not up to date and we render
+      to find a cursor and compare with ->mdata and get confusion.  How can I avoid this?
 - [ ] view:changed shouldn't destroy the view, else Move-CursorXY
       gets confused.
 - [ ] can render-lines ensure that lines appearing immediately
@@ -206,11 +214,22 @@ Module features
 
 ### doc-rendering
 
+- [ ] create alternative to doc-rendering which *knows* that the int of mark.ref
+      is unused and puts a line-offset in there.  Then mark is safe for use in doc.
+      Content is extracted (e.g. with lib-format) and doc:step and doc:content are
+      implemented in an overlay which detects markup and presents it as attributes:
+      render:markup gives the attr string and len:markup gives the length to ETX
+      Rather than formatting to a string with markup, we could format to a list
+      of attr/text pairs.  lib-format returns these via a callback and we use some
+      bits to index the list and some to index a char.
+
 - [ ] doesn't support highlights from marks
 - [ ] maybe should highlight whole line that has cursor.
 
 ### grep/make
 
+- [ ] what should happen if we run 'make' while make is running?
+      If same dir - kill??? If different, create new doc?
 - [ ] handle info: lines better - prefer a .c file over .h.
 - [ ] neg arg to next-match goes backwards, and ` keeps going backwards
 - [ ] if file isn't already loaded, wait until it is wanted, or something
@@ -227,16 +246,9 @@ Module features
 
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
 
-### regexp
-
-- [ ] '\' shouldn't be auto-inserted inside [] set.
-- [ ] write an alternate back-tracking matcher which supports \N
-      in the pattern.
-
 ### docs
 
-- [ ] save-all should accept 'y' and 'n' as well as 's' and '%'
-      and I probably want to be told what to do.  And '%' is probably not a good idea.
+- [ ] save-all should indiciate option (y,n,s,o,..).  '%' is strange...
 - [ ] docs_callback should (maybe) use a keymap
 
 
@@ -379,6 +391,9 @@ Module features
 
 ### lang-python
 
+- [ ] create a library of support functions like doc_next, doc_prev etc.
+- [ ] Log loading of modules - Can I provide version info?
+
 ### white-space
 
 - [ ] support highlight of spaces-for-indent
@@ -396,7 +411,8 @@ Module features
     - full path in find-file
     - changes in support tools (e.g. grep) ??
         Maybe store output rather than regenerate
-- [ ] 'screen' fails because it cannot change color...
+- [ ] switch to 'screen' rather than xterm - if it works
+- [ ] Add one test case, and arrange for auto-testing on commit. 
 - [ ] choose edlib git point for testing
 - [ ] allow headless testing as well as visible
 - [ ] allow single-step testing?
@@ -412,6 +428,9 @@ New Modules - simple
 --------------------
 
 Possibly some of these will end up being features in other modules.
+
+- [ ] C/python code "index" pane to quickly jump to function, and see context
+      This part of the IDE project below.
 
 - [ ] create view-pane that either puts a cursor on whole line, or moves
       the cursor to the "right" place.  Maybe a markup to say "here is the
@@ -570,7 +589,10 @@ Somethings that the editor can help with:
 - creating a commit, including writing the comment message and selection
   which files, or which lines in which files, should be added to the commit.
 - browsing history - a bit like gitk.  So from a 'git log --oneline', open
-  a view on a patch, or on a file at the time of the commit.
+  a view on a patch, or on a file at the time of the commit.  This might
+  only fetch 100 lines - or only since origin/master, and fetch more
+  only when it is accessed.  Including rebase functionality here would
+  be cool.
 - editing history - using "git rebase --interactive" or similar.
   The editor could open either a file or a diff at the time of a commit
   and allow them to be editing.  For smaller changes, editing the diff
