@@ -608,11 +608,6 @@ def run_make(key, focus, str, **a):
     else:
         cmd = "make"
         docname = "*Compile Output*"
-    # Destroying the document might destroy my focus, so
-    # grab a reference to the tile
-    tile = focus.call("ThisPane", ret='focus')
-    if tile:
-        focus = tile
     doc = None
     if cmd == "make":
         # try to reuse old document
