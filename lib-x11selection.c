@@ -63,7 +63,7 @@ GtkTargetList *gtk_target_list_new(gpointer, guint);
 void gtk_target_list_add_text_targets(GtkTargetList *, guint);
 void gtk_target_list_unref(GtkTargetList *);
 GtkTargetEntry *gtk_target_table_new_from_list(GtkTargetList *, int *);
-void gtk_target_entry_free(GtkTargetEntry*);
+void gtk_target_table_free(GtkTargetEntry*, int);
 
 #endif
 
@@ -251,9 +251,9 @@ DEF_CMD(xs_close)
 		gtk_clipboard_clear(xsi->clipboard.cb);
 	free(xsi->primary.data);
 	free(xsi->clipboard.data);
+	gtk_target_table_free(xsi->text_targets, xsi->n_text_targets);
 	gdk_display_close(xsi->display);
 
-	gtk_target_entry_free(xsi->text_targets);
 	return 1;
 }
 

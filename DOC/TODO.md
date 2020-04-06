@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] fix bugs
+- [X] fix bugs
 - [ ] core: track autosave files
 - [ ] tile: Window:close-1-dimension
 - [ ] emacs: typing in selection replaces selected text
@@ -19,7 +19,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
+- [X] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
+      This might be gtk_target_entry_free() in xs_close.
 
 Core features
 -------------
@@ -205,8 +206,9 @@ Module features
 - [ ] The “complete” popup should be positioned above/below the file name,
       not over the top of it.
 
-### view
+### lib-view
 
+- [ ] easy way for minor-modes to report existance in status bar
 - [ ] review use of line-drawing chars for window boarders
 - [ ] improve scroll bars
 - [ ] scroll bar should show part of doc displayed, not location of point.
@@ -228,6 +230,8 @@ Module features
 
 ### grep/make
 
+- [ ] 'next-match' should *never* go beyond the end of a make/grep that
+      is still running.
 - [ ] what should happen if we run 'make' while make is running?
       If same dir - kill??? If different, create new doc?
 - [ ] handle info: lines better - prefer a .c file over .h.
