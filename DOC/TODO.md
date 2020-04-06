@@ -6,7 +6,7 @@ Current priorities
 
 - [X] fix bugs
 - [ ] core: track autosave files
-- [ ] tile: Window:close-1-dimension
+- [X] tile: Window:close-others in one dimension only
 - [ ] emacs: typing in selection replaces selected text
 - [ ] render-lines: text appearing before top-of-page should appear - at least one line
       and if top-of-page was top-of-file, then all of it.
@@ -77,7 +77,7 @@ Module features
 
 ### tile
 
-- [ ] Provide something like :C-x-1 which only affects one dimension.
+- [X] Provide something like :C-x-1 which only affects one dimension.
       Maybe :C-x-1 will doo that, and :C-x-1-1 will do both.
 
 ### rexel

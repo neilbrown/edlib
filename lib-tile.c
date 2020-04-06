@@ -829,16 +829,25 @@ DEF_CMD(tile_window_bury)
 DEF_CMD(tile_window_close_others)
 {
 	struct pane *p = ci->home;
+	struct pane *parent = p->parent;
 	struct tileinfo *ti = p->data;
+	bool found =  True;
 
 	if (wrong_pane(ci))
 		return 0;
-	/* close all other panes in the 'tiles' list. */
-	while (!list_empty(&ti->tiles)) {
-		struct tileinfo *ti2 = list_next_entry(ti, tiles);
-		pane_close(ti2->p);
+	/* close sibling panes until ->parent changes, or there aren't any */
+	while (found && p->parent == parent) {
+		struct pane *s;
+
+		found = False;
+		list_for_each_entry(s, &parent->children, siblings)
+			if (s != p) {
+				found = True;
+				pane_close(s);
+				break;
+			}
 	}
-	return 1;
+	return ti->direction != Neither ? 1 : Efalse;
 }
 
 DEF_CMD(tile_window_scale_relative)

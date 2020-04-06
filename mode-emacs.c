@@ -36,6 +36,7 @@ enum {
 	N2_yank,	/* repeated yank-pop takes different result */
 	N2_match,	/* repeated ` after Cx` repeats the search */
 	N2_undo,	/* Last command was 'undo' too */
+	N2_close_others,/* Last command was close-other, just a 1 can repeat */
 };
 static inline int N2(const struct cmd_info *ci safe)
 {
@@ -454,7 +455,6 @@ static struct simple_command {
 	{CMD(emacs_simple), "Window:x+", "K:CX-}"},
 	{CMD(emacs_simple), "Window:x-", "K:CX-{"},
 	{CMD(emacs_simple), "Window:y+", "K:CX-^"},
-	{CMD(emacs_simple), "Window:close-others", "K:CX-1"},
 	{CMD(emacs_simple), "Window:split-y", "K:CX-2"},
 	{CMD(emacs_simple), "Window:split-x", "K:CX-3"},
 	{CMD(emacs_simple), "Window:close", "K:CX-0"},
@@ -522,6 +522,20 @@ REDEF_CMD(emacs_simple_str)
 	}
 
 	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, str, ci->num2);
+}
+
+REDEF_CMD(emacs_insert);
+
+DEF_CMD(emacs_close_others)
+{
+	if (strcmp(ci->key, "K-1") == 0 && N2(ci) != N2_close_others)
+		return emacs_insert_func(ci);
+
+	if (call("Window:close-others", ci->focus) <= 0)
+		return Efalse;
+	call("Mode:set-num2", ci->focus, N2_close_others);
+	call("Message:modal", ci->focus, 0, NULL, "Type 1 to close more");
+	return 1;
 }
 
 DEF_CMD(cnt_disp)
@@ -2045,6 +2059,9 @@ static void emacs_init(void)
 
 	key_add(m, "K:CX-`", &emacs_next_match);
 	key_add(m, "K-`", &emacs_match_again);
+
+	key_add(m, "K:CX-1", &emacs_close_others);
+	key_add(m, "K-1", &emacs_close_others);
 
 	key_add_range(m, "K:M-0", "K:M-9", &emacs_num);
 	key_add(m, "K:M--", &emacs_neg);
