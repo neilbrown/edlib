@@ -179,10 +179,17 @@ REDEF_CMD(emacs_delete)
 {
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 	int ret = 0;
-	struct mark *m;
+	struct mark *m, *mk;
 
 	if (!ci->mark)
 		return Enoarg;
+
+	mk = call_ret(mark2, "doc:point", ci->focus);
+	if (mk && attr_find_int(mk->attrs, "emacs:active") != 0 &&
+	    attr_find_int(mk->attrs, "emacs:replacable") == 1) {
+		attr_set_int(&mk->attrs, "emacs:active", 0);
+	} else
+		mk = NULL;
 
 	m = mark_dup(ci->mark);
 
@@ -192,6 +199,9 @@ REDEF_CMD(emacs_delete)
 		mark_free(m);
 		return 0;
 	}
+	if (mk)
+		call("Replace", ci->focus, 1, mk, NULL, 0, mk);
+
 	ret = call("Replace", ci->focus, 1, m, NULL, N2(ci) == N2_undo_delete);
 	mark_free(m);
 	call("Mode:set-num2", ci->focus, N2_undo_delete);
@@ -578,12 +588,19 @@ DEF_CMD(emacs_insert)
 {
 	int ret;
 	const char *str;
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 
 	if (!ci->mark)
 		return Enoarg;
 
+	if (mk && attr_find_int(mk->attrs, "emacs:active") != 0 &&
+	    attr_find_int(mk->attrs, "emacs:replacable") == 1)
+		attr_set_int(&mk->attrs, "emacs:active", 0);
+	else
+		mk = NULL;
+
 	str = ksuffix(ci, "K-");
-	ret = call("Replace", ci->focus, 1, ci->mark, str,
+	ret = call("Replace", ci->focus, 1, mk, str,
 		   N2(ci) == N2_undo_insert);
 	call("Mode:set-num2", ci->focus, N2_undo_insert);
 
@@ -631,6 +648,7 @@ DEF_CMD(emacs_insert_other)
 	int ret;
 	int i;
 	struct mark *m = NULL;
+	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	char *ins;
 
 	if (!ci->mark)
@@ -642,6 +660,12 @@ DEF_CMD(emacs_insert_other)
 	ins = other_inserts[i].insert;
 	if (ins == NULL)
 		return 0;
+
+	if (mk && attr_find_int(mk->attrs, "emacs:active") != 0 &&
+	    attr_find_int(mk->attrs, "emacs:replacable") == 1) {
+		attr_set_int(&mk->attrs, "emacs:active", 0);
+		call("Replace", ci->focus, 1, mk);
+	}
 
 	if (!*ins) {
 		ins++;
@@ -1502,8 +1526,10 @@ DEF_CMD(emacs_mark)
 		call("view:changed", ci->focus, 0, p, NULL, 0, m);
 	call("Move-to", ci->focus, 1);
 	m = call_ret(mark2, "doc:point", ci->focus);
-	if (m)
+	if (m) {
 		attr_set_int(&m->attrs, "emacs:active", 1);
+		attr_set_int(&m->attrs, "emacs:replacable", ci->num == 1 ? 1 : 0);
+	}
 	return 1;
 }
 
@@ -1532,6 +1558,7 @@ DEF_CMD(emacs_swap_mark)
 	call("Move-to", ci->focus, 1); /* Move mark to point */
 	call("Move-to", ci->focus, 0, m); /* Move point to old mark */
 	attr_set_int(&mk->attrs, "emacs:active", 1);
+	attr_set_int(&mk->attrs, "emacs:replacable", ci->num == 1);
 	mark_free(m);
 	return 1;
 }
@@ -1639,7 +1666,7 @@ DEF_CMD(emacs_yank_pop)
 DEF_CMD(emacs_attrs)
 {
 	struct call_return cr;
-	static char selection[] = "bg:red+80,vis-nl"; // pink
+	char *selection = "bg:while+60,vis-nl"; // grey
 
 	if (!ci->str)
 		return 0;
@@ -1649,6 +1676,8 @@ DEF_CMD(emacs_attrs)
 		return 1;
 	if (attr_find_int(cr.m2->attrs, "emacs:active") <= 0)
 		return 1;
+	if (attr_find_int(cr.m2->attrs, "emacs:replacable") == 1)
+		selection = "bg:red+80,vis-nl"; // pink
 	if (mark_same(cr.m, cr.m2))
 		return 1;
 	if (strcmp(ci->str, "render:interactive-mark") == 0) {
@@ -1749,6 +1778,7 @@ static void update_sel(struct pane *p safe,
 	/* Must call 'claim' first as it might be claiming from us */
 	call("selection:claim", p);
 	attr_set_int(&mk->attrs, "emacs:active", 2);
+	attr_set_int(&mk->attrs, "emacs:replacable", 0);
 	call("view:changed", p, 0, pt, NULL, 0, mk);
 }
 

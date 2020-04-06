@@ -7,7 +7,7 @@ Current priorities
 - [X] fix bugs
 - [ ] core: track autosave files
 - [X] tile: Window:close-others in one dimension only
-- [ ] emacs: typing in selection replaces selected text
+- [X] emacs: typing in selection replaces selected text
 - [ ] render-lines: text appearing before top-of-page should appear - at least one line
       and if top-of-page was top-of-file, then all of it.
 - [ ] lib-input: feed-back for number/mode prefixes.
@@ -122,7 +122,7 @@ Module features
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 - [ ] compare two panes somehow
 - [ ] pipe doc or selection to a command, optionally capture to replace with output.
-- [ ] if typing when selection active, replace selection with new text
+- [X] if typing when selection active, replace selection with new text
 - [ ] history for each entry.
 
 #### emac-search

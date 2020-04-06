@@ -733,7 +733,8 @@ def make_request(key, focus, num, str, mark, **a):
     if not p:
         return 0
     if dflt_arg:
-        p.call("mode-set-mark")
+        # The '1' says to make this mark selection replaceable
+        p.call("mode-set-mark", 1)
         p.call("Replace", dflt_arg)
     p.call("popup:set-callback", run_make)
     p["prompt"] = "%s Command" % cmd
