@@ -6,6 +6,9 @@ Current priorities
 
 - [X] fix bugs
 - [ ] core: track autosave files
+- [ ] emacs: pop-up diff when visiting an auto-saved file - readonly until an answer
+- [X] doc-dir: use lib-viewer
+- [ ] doc-dir: mode to usefully view and act on the list of autosaves.
 - [X] tile: Window:close-others in one dimension only
 - [X] emacs: typing in selection replaces selected text
 - [ ] render-lines: text appearing before top-of-page should appear - at least one line
@@ -108,6 +111,7 @@ Module features
 
 ### emacs
 
+- [ ] pop-up diff when visiting an auto-saved file - readonly until an answer
 - [ ] make-directory command
 - [ ] sort the command names for command-completion?
 - [ ] filename completion should ignore uninteresting files like ".o"
@@ -178,6 +182,8 @@ Module features
 
 ### doc-dir
 
+- [X] use lib-viewer
+- [ ] mode to usefully view and act on the list of autosaves.
 - [ ] how to change sort order of a directory listing
 - [ ] chown/chmod/unlink/rename etc
 - [ ] diff an auto-save file with base, and optionally replace.

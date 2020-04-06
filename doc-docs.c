@@ -812,7 +812,7 @@ DEF_CMD(docs_cmd)
 	if (strcmp(c, "Enter") == 0)
 		return docs_open(ci->home, ci->focus, ci->mark, '\n');
 
-	return 0;
+	return 1;
 }
 
 DEF_CMD(docs_attach)

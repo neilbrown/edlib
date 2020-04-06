@@ -641,6 +641,8 @@ DEF_CMD(dir_get_attr)
 		val = "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      File Name</>";
 	else if (strcmp(attr, "render-default") == 0)
 		val = "format";
+	else if (strcmp(attr, "view-default") == 0)
+		val = "viewer";
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "dir";
 	else if (strcmp(attr, "line-format") == 0)
@@ -692,7 +694,6 @@ static int dir_open(struct pane *home safe, struct pane *focus safe,
 
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	fd = open(fname, O_RDONLY);
-
 	if (fd >= 0) {
 		p = call_ret(pane, "doc:open", focus, fd, NULL, fname);
 		close(fd);
@@ -766,27 +767,27 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe,
 
 DEF_CMD(dir_cmd)
 {
-	char cmd;
+	const char *c = ksuffix(ci, "doc:cmd-");
 
-	if (!ci->str)
-		return Enoarg;
-	cmd = ci->str[0];
-	switch(cmd) {
+	switch(c[0]) {
 	case 'f':
 	case '\n':
 	case 'o':
-		return dir_open(ci->home, ci->focus, ci->mark2, cmd);
+		return dir_open(ci->home, ci->focus, ci->mark, c[0]);
 	case 'g':
 		return home_call(ci->home, "doc:load-file", ci->focus,
 				 0, NULL, NULL, -1);
 	case 'q':
 		return call("doc:destroy", ci->home);
 	default:
-		if (cmd >= 'A' && cmd <= 'Z')
-			return dir_open_alt(ci->home, ci->focus, ci->mark2, cmd);
-		/* Doc has the final say on commands. */
-		return 1;
+		if (c[0] >= 'A' && c[0] <= 'Z')
+			return dir_open_alt(ci->home, ci->focus, ci->mark, c[0]);
 	}
+	c = ksuffix(ci, "doc:cmd:");
+	if (strcmp(c, "Enter") == 0)
+		return dir_open(ci->home, ci->focus, ci->mark, '\n');
+
+	return 1;
 }
 
 DEF_CMD(dir_attach)
@@ -808,6 +809,8 @@ DEF_CMD(dir_attach)
 			p = call_ret(pane, "attach-view", p);
 		if (p)
 			p = call_ret(pane, "attach-render-format", p);
+		if (p)
+			p = call_ret(pane, "attach-viewer", p);
 		if (p) {
 			attr_set_str(&p->attrs, "line-format", "%+name%suffix");
 			attr_set_str(&p->attrs, "heading", "");
@@ -859,7 +862,8 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
 	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
 	key_add(doc_map, "doc:step", &dir_step);
-	key_add(doc_map, "doc:replace", &dir_cmd);
+	key_add_prefix(doc_map, "doc:cmd-", &dir_cmd);
+	key_add_prefix(doc_map, "doc:cmd:", &dir_cmd);
 	key_add(doc_map, "doc:attach-view", &dir_attach);
 	key_add(doc_map, "doc:notify:doc:revisit", &dir_revisited);
 
