@@ -394,6 +394,7 @@ class EdDisplay(edlib.Pane):
                              Gdk.EventMask.STRUCTURE_MASK|
                              Gdk.EventMask.BUTTON_PRESS_MASK|
                              Gdk.EventMask.BUTTON_RELEASE_MASK|
+                             Gdk.EventMask.SCROLL_MASK|
                              Gdk.EventMask.KEY_PRESS_MASK|
                              Gdk.EventMask.KEY_RELEASE_MASK|
                              Gdk.EventMask.POINTER_MOTION_MASK|
@@ -494,12 +495,15 @@ class EdDisplay(edlib.Pane):
         c.grab_focus()
         x = int(event.x)
         y = int(event.y)
-        if event.direction == Gdk.SCROLL_UP:
+        if event.direction == Gdk.ScrollDirection.UP:
             s = ":Press-4"
             b = 4
-        else:
+        elif event.direction == Gdk.ScrollDirection.DOWN:
             s = ":Press-5"
             b = 5
+        else:
+            edlib.time_stop(edlib.TIME_KEY)
+            return 0
         if event.state & Gdk.ModifierType.SHIFT_MASK:
             s = ":S" + s;
         if event.state & Gdk.ModifierType.CONTROL_MASK:

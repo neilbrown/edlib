@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [X] fix bugs
+- [ ] fix bugs
 - [ ] core: track autosave files
 - [ ] emacs: pop-up diff when visiting an auto-saved file - readonly until an answer
 - [X] doc-dir: use lib-viewer
@@ -22,6 +22,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] use mouse to copy from else where and paste in here.  Then do again.
+- [X] Scroll wheel not working in gtk
 - [X] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
       This might be gtk_target_entry_free() in xs_close.
 
@@ -403,6 +405,7 @@ Module features
 
 - [ ] create a library of support functions like doc_next, doc_prev etc.
 - [ ] Log loading of modules - Can I provide version info?
+- [ ] we aren't catching errors from functions called from .connect()
 
 ### white-space
 
