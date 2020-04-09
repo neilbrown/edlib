@@ -60,11 +60,11 @@ struct popup_info {
 	struct command	*done;
 };
 
-static int line_height(struct pane *p safe)
+static int line_height(struct pane *p safe, int scale)
 {
 	struct call_return cr =
 		call_ret(all, "text-size", p, -1, NULL, "x",
-			 0, NULL, "");
+			 scale, NULL, "");
 	return cr.y;
 }
 
@@ -72,15 +72,17 @@ static void popup_resize(struct pane *p safe, const char *style safe)
 {
 	struct popup_info *ppi = p->data;
 	int x,y,w,h;
-	int lh;
+	int lh, bh;
+	struct xy xyscale = pane_scale(p);
 
 	/* First find the size */
-	lh = line_height(p);
+	lh = line_height(p, xyscale.x);
+	bh = line_height(p, 0); /* border height */
 	if (strchr(style, 'M')) {
 		h = p->parent->h/2 + 1;
 		attr_set_str(&p->attrs, "render-one-line", "no");
 	} else {
-		h = lh * 3;
+		h = bh + lh + bh;
 		attr_set_str(&p->attrs, "render-one-line", "yes");
 	}
 	if (ppi->parent_popup) {

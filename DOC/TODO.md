@@ -22,7 +22,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] find-file dialog isn't affected by scale, but content is.
+- [X] find-file dialog isn't affected by scale, but content is.
 - [X] use server to open non-existant file - get err at editor.call("doc:open").
 - [X] in pygtk, second tab in c-mode code displays as single space.
 - [ ] use mouse to copy from else where and paste in here.  Then do again.
