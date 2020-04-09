@@ -43,8 +43,11 @@ try:
             else:
                 if msg[:5] == b"open:":
                     path = msg[5:].decode("utf-8")
-                    # 8==reload
-                    d = editor.call("doc:open", -1, 8, path, ret = "focus")
+                    try:
+                        # 8==reload
+                        d = editor.call("doc:open", -1, 8, path, ret = "focus")
+                    except edlib.commandfailed:
+                        d = None
                     if not d:
                         self.sock.send(b"FAIL")
                         return 1
@@ -212,6 +215,8 @@ if is_client:
             ret = s.recv(100)
             if ret != b"OK":
                 print("Cannot open terminal on", t)
+                s.send(b"Close")
+                s.recv(100);
                 sys.exit(1)
             def handle_winch(sig, frame):
                 if winch_ok:
@@ -224,6 +229,8 @@ if is_client:
         s.send(b"open:" + file.encode("utf-8"))
         ret = s.recv(100)
         if ret != b"OK":
+            s.send(b"Close")
+            s.recv(100);
             print("Cannot open: ", ret.decode("utf-8"))
             sys.exit(1)
         s.send(b"doc:request:doc:done:"+file.encode("utf-8"))
@@ -232,6 +239,8 @@ if is_client:
     ret = s.recv(100)
     if ret != b"OK":
         print("Cannot request notification: ", ret.decode('utf-8'))
+        s.send(b"Close")
+        s.recv(100);
         sys.exit(1)
     winch_ok = True
     while True:
@@ -242,6 +251,8 @@ if is_client:
     winch_ok = False
     if ret != b"Done" and ret != b"Close":
         print("Received unexpected notification: ", ret.decode('utf-8'))
+        s.send(b"Close")
+        s.recv(100);
         sys.exit(1)
     if ret != b"Close":
         s.send(b"Close")
