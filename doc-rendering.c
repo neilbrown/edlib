@@ -593,12 +593,11 @@ DEF_CMD(dr_passon)
 	if (ci->mark2)
 		m2 = ci->mark2->ref.m;
 
-	home_call(dri->base, ci->key, ci->focus,
-		  ci->num, m, ci->str,
-		  ci->num2, m2, ci->str2,
-		  ci->x, ci->y,
-		  ci->comm2);
-	return 0;
+	return home_call(dri->base, ci->key, ci->focus,
+			 ci->num, m, ci->str,
+			 ci->num2, m2, ci->str2,
+			 ci->x, ci->y,
+			 ci->comm2);
 }
 
 static void dr_init_map(void)
