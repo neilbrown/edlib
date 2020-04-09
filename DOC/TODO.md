@@ -25,7 +25,8 @@ Bugs to be fixed
 - [X] find-file dialog isn't affected by scale, but content is.
 - [X] use server to open non-existant file - get err at editor.call("doc:open").
 - [X] in pygtk, second tab in c-mode code displays as single space.
-- [ ] use mouse to copy from else where and paste in here.  Then do again.
+- [X] use mouse to copy from else where and paste in here.  Then do again.
+      .. Seems to work now.
 - [X] Scroll wheel not working in gtk
 - [ ] Python errors should go to stderr until a display reports that it is ready.
 - [ ] If I visit a directory and delete a few contiguous filename, refresh

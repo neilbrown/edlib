@@ -67,17 +67,18 @@ int main(int argc, char *argv[])
 {
 	struct pane *ed = editor_new();
 	struct pane *p, *doc = NULL;
-	int gtk = 0, term = 0;
+	bool gtk = False, term = False;
 	int opt;
+	bool have_display = False;
 
 	if (!ed)
 		exit(1);
 
 	while ((opt = getopt(argc, argv, shortopt)) != EOF) {
 		switch (opt) {
-		case 'g': gtk = 1;
+		case 'g': gtk = True;
 			break;
-		case 't': term = 1;
+		case 't': term = True;
 			break;
 		default:
 			fprintf(stderr, "Usage: edlib [-g] [-t] [file ...]\n");
@@ -141,7 +142,8 @@ int main(int argc, char *argv[])
 					p);
 		}
 		if (disp) {
-			make_stack(disp, doc);
+			if (make_stack(disp, doc) != NULL)
+				have_display = True;
 			call("Display:set-noclose", disp, 1, NULL,
 			     "Cannot close primary display");
 		}
@@ -155,21 +157,23 @@ int main(int argc, char *argv[])
 					p);
 		}
 		if (disp)
-			make_stack(disp, doc);
+			if (make_stack(disp, doc) != NULL)
+				have_display = True;
 	}
 
-	time_start(TIME_REFRESH);
-	pane_refresh(ed);
-	time_stop(TIME_REFRESH);
-	while (call("event:run", ed) == 1) {
-		time_start(TIME_IDLE);
-		call("global-multicall-on_idle-", ed);
-		time_stop(TIME_IDLE);
+	if (have_display) {
 		time_start(TIME_REFRESH);
 		pane_refresh(ed);
 		time_stop(TIME_REFRESH);
+		while (call("event:run", ed) == 1) {
+			time_start(TIME_IDLE);
+			call("global-multicall-on_idle-", ed);
+			time_stop(TIME_IDLE);
+			time_start(TIME_REFRESH);
+			pane_refresh(ed);
+			time_stop(TIME_REFRESH);
+		}
 	}
-
 	pane_close(ed);
 	exit(0);
 }
