@@ -518,7 +518,7 @@ DEF_CMD(renderline)
 			struct call_return cr = home_call_ret(all, focus,
 							      "text-size", p,
 							      -1, NULL, "M",
-							      0, NULL,
+							      scale, NULL,
 							      buf_final(&attr));
 			mwidth = cr.x;
 			if (mwidth <= 0)
