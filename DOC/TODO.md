@@ -42,7 +42,7 @@ Core features
       running.  For a call handler it does.  This inconsistency is awkward for
       messageline_msg which wants to allow fallthrough, but needs to acknowledge.
       How can I resolve this?
-- [ ] LOG() loading of modules, with version info.
+- [X] LOG() loading of modules, with version info.
 - [ ] Record where auto-save files are, and recover them.
         A directory of symlinks
 - [ ] make a doc read-only if dir doesn't exist or isn't writeable
@@ -418,6 +418,8 @@ Module features
 - [ ] create a library of support functions like doc_next, doc_prev etc.
 - [ ] Log loading of modules - Can I provide version info?
 - [ ] we aren't catching errors from functions called from .connect()
+       Maybe use sys.excepthook(typ,val,tb)
+- [ ] Add version info to python modules
 
 ### white-space
 

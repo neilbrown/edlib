@@ -346,6 +346,7 @@ DEF_CMD(python_load_module)
 	if (!fp)
 		return Efail;
 
+	LOG("Loading python module %s from %s", name, buf);
 	main_mod = PyImport_AddModule("__main__");
 	if (main_mod == NULL)
 		return Einval;
@@ -2374,6 +2375,10 @@ static PyMethodDef edlib_methods[] = {
 	{NULL, NULL, 0, NULL}
 };
 
+/* This must be visible when the module is loaded so it
+ * cannot be static.  spares doesn't like variables that are
+ * neither extern nor static.  So mark it extern
+ */
 extern char *edlib_module_path;
 char *edlib_module_path;
 

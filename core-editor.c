@@ -109,6 +109,8 @@ DEF_CMD(editor_load_module)
 		}
 		s = dlsym(h, "edlib_init");
 		if (s) {
+			char *v = dlsym(h, "edlib_version");
+			LOG("Loading %s - version %s", name, v ?: "not provided");
 			s(ci->home);
 			if (path)
 				*path = NULL;

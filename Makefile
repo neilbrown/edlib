@@ -171,7 +171,7 @@ shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o O/rexel.o
 lib/edlib-mode-emacs.so : O/mode-emacs.o O/emacs-search.o
 
-$(SO) : lib/edlib-%.so : O/%.o lib/.exists
+$(SO) : lib/edlib-%.so : O/%.o O/core-version.o lib/.exists
 	@mkdir -p lib
 	$(QUIET_LIB)$(CC) -shared -Wl,-soname,edlib-$*.so -o $@ $(filter %.o,$^) $(LIBS-$*)
 
