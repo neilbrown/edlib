@@ -29,7 +29,7 @@ Bugs to be fixed
       .. Seems to work now.
 - [X] Scroll wheel not working in gtk
 - [X] Python errors should go to stderr until a display reports that it is ready.
-- [ ] If I visit a directory and delete a few contiguous filename, refresh
+- [X] If I visit a directory and delete a few contiguous filename, refresh
       doesn't make them all disappear - probably non-unique marks
 - [X] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
       This might be gtk_target_entry_free() in xs_close.

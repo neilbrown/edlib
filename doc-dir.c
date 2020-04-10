@@ -260,8 +260,10 @@ DEF_CMD(dir_load_file)
 			free(de->name);
 			list_del(&de->lst);
 			free(de);
-			if (!prev)
+			if (!prev) {
 				prev = mark_dup(m);
+				doc_prev(ci->home, prev);
+			}
 		} else if (de2 &&
 			   (de1 == NULL || strcmp(de2->name, de1->name) < 0)) {
 			/* de2 doesn't already exist, so add it before de1 */
