@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] fix bugs
+- [X] fix bugs
 - [ ] core: track autosave files
 - [ ] emacs: pop-up diff when visiting an auto-saved file - readonly until an answer
 - [X] doc-dir: use lib-viewer
@@ -33,7 +33,7 @@ Bugs to be fixed
       doesn't make them all disappear - probably non-unique marks
 - [X] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
       This might be gtk_target_entry_free() in xs_close.
-- [ ] python comment inserting '#' should only happen for K:Enter
+- [X] python comment inserting '#' should only happen for K:Enter
 
 Core features
 -------------

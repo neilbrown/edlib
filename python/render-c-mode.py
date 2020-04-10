@@ -495,7 +495,10 @@ class CModePane(edlib.Pane):
         # first look to see if previous line is a comment.
         m1 = m.dup()
         c = p.call("doc:step", 0, 1, m1, ret='char')
+        saw_nl = False
         while c and c in ' \t\n':
+            if c == '\n':
+                saw_nl = True
             c = p.call("doc:step", 0, 1, m1, ret='char')
         p.call("Move-EOL", -1, m1)
         sol = m1.dup()
@@ -506,10 +509,10 @@ class CModePane(edlib.Pane):
             # comment found, use same indent
             pfx = p.call("doc:get-str", sol, m1, ret='str')
             w = textwidth(pfx) - 1
-            r = ([w,w],'# ')
-            if p.call("text-match", m.dup(), "[ \t]*#") > 1:
-                # already have a # on this ine
-                r = ([w,w],'')
+            r = ([w,w],'')
+            if not saw_nl:
+                # Are handling Enter, so continue the comment
+                r = ([w,w],'# ')
             return r
 
         sol = m.dup()
