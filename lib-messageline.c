@@ -78,7 +78,10 @@ DEF_CMD(messageline_msg)
 		if (ci->x == 0 && mli->log)
 			call("doc:log:append", mli->log, 0, NULL, ci->str);
 	}
-	return 0; /* allow other handlers */
+	if (strcmp(ci->key, "Message:broadcast") == 0)
+		return 1; /* Acknowledge message */
+	else
+		return 0; /* allow other handlers */
 }
 
 DEF_CMD(messageline_abort)

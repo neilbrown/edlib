@@ -28,7 +28,7 @@ Bugs to be fixed
 - [X] use mouse to copy from else where and paste in here.  Then do again.
       .. Seems to work now.
 - [X] Scroll wheel not working in gtk
-- [ ] Python errors should go to stderr until a display reports that it is ready.
+- [X] Python errors should go to stderr until a display reports that it is ready.
 - [ ] If I visit a directory and delete a few contiguous filename, refresh
       doesn't make them all disappear - probably non-unique marks
 - [X] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
@@ -38,6 +38,10 @@ Bugs to be fixed
 Core features
 -------------
 
+- [ ] For a notify handler, returning non-zero doesn't stop other handlers
+      running.  For a call handler it does.  This inconsistency is awkward for
+      messageline_msg which wants to allow fallthrough, but needs to acknowledge.
+      How can I resolve this?
 - [ ] LOG() loading of modules, with version info.
 - [ ] Record where auto-save files are, and recover them.
         A directory of symlinks

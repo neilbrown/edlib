@@ -277,16 +277,19 @@ static void PyErr_LOG(void)
 	if (!obResult)
 		goto out;
 
-	/* And it should be a string all ready to go - duplicate it. */
-	LOG("Python error:\n%s", python_as_string(obResult, &tofree));
+	/* And it should be a string all ready to go - report it. */
+	errorMsg = python_as_string(obResult, &tofree);;
+	LOG("Python error:\n%s", errorMsg);
+	if (!ed_pane ||
+	    call("editor:notify:Message:broadcast",ed_pane, 0, NULL,
+		 "Python Error - see log") <= 0)
+		/* Failed to alert anyone - write to stderr */
+		fwrite(errorMsg, 1, strlen(errorMsg), stderr);
 	Py_XDECREF(tofree);
 	errorMsg = NULL;
 out:
 	if (errorMsg)
 		LOG(errorMsg);
-	if (ed_pane)
-		call("editor:notify:Message:broadcast",ed_pane, 0, NULL,
-		     "Python Error - see log");
 	Py_XDECREF(modIO);
 	Py_XDECREF(modTB);
 	Py_XDECREF(obFuncStringIO);
