@@ -328,7 +328,7 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 				attr.len -= 1;
 		}
 	}
-	if (line[-1] == '\n')
+	if (line > segstart && line[-1] == '\n')
 		line -= 1;
 	if (line > segstart || !attr_found) {
 		char *l = strndup(segstart, line - segstart);
