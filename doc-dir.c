@@ -606,6 +606,27 @@ static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 		if (strchr(".:dL", de->ch))
 			return "/";
 		return "";
+	} else if (strcmp(attr, "arrow") == 0) {
+		if (strchr("lL", de->ch))
+			return " -> ";
+		else
+			return "";
+	} else if (strcmp(attr, "target") == 0) {
+		int dfd;
+		char buf[PATH_MAX];
+		int len;
+
+		if (strchr("lL", de->ch) == NULL)
+			return "";
+		dfd = open(dr->fname, O_RDONLY);
+		if (dfd < 0)
+			return "";
+		len = readlinkat(dfd, de->name, buf, sizeof(buf));
+		close(dfd);
+		if (len <= 0 || len >= (int)sizeof(buf))
+			return "";
+		buf[len] = 0;
+		return strsave(d->home, buf);
 	} else
 		return attr_find(de->attrs, attr);
 }
@@ -648,7 +669,7 @@ DEF_CMD(dir_get_attr)
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "dir";
 	else if (strcmp(attr, "line-format") == 0)
-		val = " <fg:red>%.perms</> %.mdate:13 %.user:10 %.group:10 <fg:blue>%+name%.suffix</>";
+		val = " <fg:red>%.perms</> %.mdate:13 %.user:10 %.group:10 <fg:blue>%+name%.suffix</>%arrow<fg:green-30>%target</>";
 	else if (strcmp(attr, "filename") == 0)
 		val = dr->fname;
 	else
