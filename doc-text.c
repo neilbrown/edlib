@@ -63,6 +63,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <dirent.h>
 
 /* A doc_ref is treated as a pointer to a chunk, and an offset
  * from the start of 'txt'.  So 'o' must be between c->start and
@@ -467,8 +468,68 @@ error:
 
 }
 
+static void autosaves_record(struct pane *p safe, char *path safe, bool create)
+{
+	DIR *d;
+	char *home = getenv("HOME");
+	char *dirname = getenv("EDLIB_AUTOSAVE");
+	int num;
+
+	if (!home)
+		home = "/tmp";
+	if (!dirname)
+		dirname = strconcat(p, home, "/.edlib_autosave");
+	d = opendir(dirname);
+	if (!d) {
+		if (!create)
+			return;
+		if (mkdir(dirname, 0770) < 0)
+			return;
+		d = opendir(dirname);
+		if (!d)
+			return;
+		num = 1;
+	} else {
+		struct dirent *de;
+
+		num = 1;
+		while ((de = readdir(d)) != NULL) {
+			char *ep = NULL;
+			long n;
+			int len;
+			char current[PATH_MAX];
+
+			if (de->d_name[0] == '.')
+				continue;
+			n = strtoul(de->d_name, &ep, 10);
+			if (!ep || ep == de->d_name || *ep != '\0')
+				continue;
+			if (n >= num)
+				num = n + 1;
+			len = readlinkat(dirfd(d), de->d_name,
+					 current, sizeof(current));
+			if (len <= 0 || len >= (int)sizeof(current))
+				continue;
+			current[len] = 0;
+			if (strcmp(current, path) == 0) {
+				if (!create)
+					unlinkat(dirfd(d), de->d_name, 0);
+				closedir(d);
+				return;
+			}
+		}
+	}
+	if (create) {
+		char nbuf[20];
+		snprintf(nbuf, sizeof(nbuf), "%d", num);
+		symlinkat(path, dirfd(d), nbuf);
+	}
+	closedir(d);
+}
+
 static void do_text_autosave(struct text *t safe)
 {
+	struct pane *p = t->doc.home;
 	char *tempname;
 	char *base, *tbase;
 	int fd = -1;
@@ -488,6 +549,7 @@ static void do_text_autosave(struct text *t safe)
 	sprintf(tbase, "#%s#", base);
 	if (t->as.changes == 0) {
 		unlink(tempname);
+		autosaves_record(p, tempname, False);
 		free(tempname);
 		return;
 	}
@@ -505,6 +567,7 @@ static void do_text_autosave(struct text *t safe)
 	}
 	t->as.changes = 0;
 	close(fd);
+	autosaves_record(p, tempname, True);
 	free(tempname);
 }
 

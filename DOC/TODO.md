@@ -5,7 +5,7 @@ Current priorities
 ------------------
 
 - [X] fix bugs
-- [ ] core: track autosave files
+- [X] text: track autosave files
 - [ ] emacs: pop-up diff when visiting an auto-saved file - readonly until an answer
 - [X] doc-dir: use lib-viewer
 - [ ] doc-dir: mode to usefully view and act on the list of autosaves.
