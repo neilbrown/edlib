@@ -212,7 +212,8 @@ static struct mark *call_render_line_prev(struct pane *p safe,
 }
 
 static struct mark *call_render_line(struct pane *p safe,
-				     struct mark *start safe)
+				     struct mark *start safe,
+				     struct mark **end)
 {
 	struct mark *m, *m2;
 	char *s;
@@ -243,6 +244,8 @@ static struct mark *call_render_line(struct pane *p safe,
 	 */
 	while ((m = vmark_next(start)) != NULL &&
 	       m->seq < m2->seq) {
+		if (end && m == *end)
+			*end = m2;
 		free(m->mdata);
 		m->mdata = NULL;
 		mark_free(m);
@@ -344,7 +347,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	start = m;
 	offset = call_render_line_to_point(focus, pm, start);
 	if (start->mdata == NULL)
-		m = call_render_line(focus, start);
+		m = call_render_line(focus, start, NULL);
 	else
 		m = vmark_next(start);
 
@@ -391,7 +394,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				short h = 0;
 				start = m;
 				if (!start->mdata)
-					call_render_line(focus, start);
+					call_render_line(focus, start, &end);
 				if (start->mdata) {
 					render_line(p, focus, start->mdata, h, 0,
 						    -1, -1, -1, &rl->c);
@@ -409,7 +412,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			/* step forwards */
 			struct mark *next;
 			if (!end->mdata)
-				call_render_line(focus, end);
+				call_render_line(focus, end, &start);
 			next = vmark_next(end);
 			if (!end->mdata || !next) {
 				found_end = 1;
@@ -555,7 +558,7 @@ restart:
 	while (m && y < p->h && !rl->end_of_page) {
 		if (m->mdata == NULL) {
 			/* This line has changed. */
-			call_render_line(focus, m);
+			call_render_line(focus, m, NULL);
 		}
 		m2 = vmark_next(m);
 		if (!hide_cursor && p->cx <= 0 && pm &&
@@ -873,7 +876,7 @@ DEF_CMD(render_lines_move)
 			while (m && m->seq < prevtop->seq &&
 			       !mark_same(m, prevtop)) {
 				if (m->mdata == NULL)
-					call_render_line(focus, m);
+					call_render_line(focus, m, NULL);
 				if (m->mdata == NULL) {
 					rpt = 0;
 					break;
@@ -890,7 +893,7 @@ DEF_CMD(render_lines_move)
 			short y = 0;
 
 			if (top->mdata == NULL)
-				call_render_line(focus, top);
+				call_render_line(focus, top, NULL);
 			if (top->mdata == NULL)
 				break;
 			rl->end_of_page = 0;
@@ -906,7 +909,7 @@ DEF_CMD(render_lines_move)
 			}
 			top = vmark_next(top);
 			if (top && top->mdata == NULL)
-				call_render_line(focus, top);
+				call_render_line(focus, top, NULL);
 			rpt -= y - rl->skip_lines;
 			rl->skip_lines = 0;
 		}
@@ -978,7 +981,7 @@ DEF_CMD(render_lines_set_cursor)
 		/* x,y is in header line - try lower */
 		cihy = y;
 	while (y <= cihy && m) {
-		call_render_line(focus, m);
+		call_render_line(focus, m, NULL);
 		if (!m->mdata)
 			break;
 		rl->xypos = -1;
@@ -1147,7 +1150,7 @@ DEF_CMD(render_lines_move_line)
 	/* FIXME only do this if point is active/volatile, or
 	 * if start->mdata is NULL
 	 */
-	call_render_line(focus, start);
+	call_render_line(focus, start, NULL);
 	rl->xypos = -1;
 	render_line(p, focus, start->mdata?:"", y, 0,
 		    rl->target_x, rl->target_y, -1, &rl->c);

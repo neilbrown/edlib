@@ -22,6 +22,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [X] run edlib, open dir, open same dir from lib-server - crash
 - [X] find-file dialog isn't affected by scale, but content is.
 - [X] use server to open non-existant file - get err at editor.call("doc:open").
 - [X] in pygtk, second tab in c-mode code displays as single space.
