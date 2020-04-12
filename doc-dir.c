@@ -481,6 +481,32 @@ static char *fmt_date(struct dir_ent *de safe, time_t t)
 	return de->nbuf;
 }
 
+static char *fmt_size(struct dir_ent *de safe, loff_t size)
+{
+	if (size < 1024)
+		snprintf(de->nbuf, sizeof(de->nbuf),
+			"%ld", size);
+	else if (size < 1024*10)
+		snprintf(de->nbuf, sizeof(de->nbuf),
+			"%ld.%02ldK", size/1024, (size%1023)*100 / 1024);
+	else if (size < 1024*1024)
+		snprintf(de->nbuf, sizeof(de->nbuf),
+			"%ldK", size/1024);
+	else if (size < 1024L*1024*10)
+		snprintf(de->nbuf, sizeof(de->nbuf),
+			"%ld.%02ldM", size/1024/1024, ((size/1024)%1023)*100 / 1024);
+	else if (size < 1024L*1024*1024)
+		snprintf(de->nbuf, sizeof(de->nbuf),
+			"%ldM", size/1024/1024);
+	else if (size < 1024L*1024*1024*10)
+		snprintf(de->nbuf, sizeof(de->nbuf),
+			"%ld.%02ldG", size/1024/1024/1024, ((size/1024/1024)%1023)*100 / 1024);
+	else
+		snprintf(de->nbuf, sizeof(de->nbuf),
+			"%ldG", size/1024/1024/1024);
+	return de->nbuf;
+}
+
 static char *pwname(int uid)
 {
 	static int last_uid = -1;
@@ -533,6 +559,12 @@ static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 		de->nbuf[0] = de->ch;
 		de->nbuf[1] = 0;
 		return de->nbuf;
+	} else if (strcmp(attr, "size") == 0) {
+		get_stat(dr, de);
+		return fmt_num(de, de->st.st_size);
+	} else if (strcmp(attr, "hsize") == 0) {
+		get_stat(dr, de);
+		return fmt_size(de, de->st.st_size);
 	} else if (strcmp(attr, "mtime") == 0) {
 		get_stat(dr, de);
 		return fmt_num(de, de->st.st_mtime);
@@ -661,7 +693,7 @@ DEF_CMD(dir_get_attr)
 	if ((val = attr_find(d->home->attrs, attr)) != NULL)
 		;
 	else if (strcmp(attr, "heading") == 0)
-		val = "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      File Name</>";
+		val = "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      Size   File Name</>";
 	else if (strcmp(attr, "render-default") == 0)
 		val = "format";
 	else if (strcmp(attr, "view-default") == 0)
@@ -669,7 +701,7 @@ DEF_CMD(dir_get_attr)
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "dir";
 	else if (strcmp(attr, "line-format") == 0)
-		val = " <fg:red>%.perms</> %.mdate:13 %.user:10 %.group:10 <fg:blue>%+name%.suffix</>%arrow<fg:green-30>%target</>";
+		val = " <fg:red>%.perms</> %.mdate:13 %.user:10 %.group:10%.hsize:-6  <fg:blue>%+name%.suffix</>%arrow<fg:green-30>%target</>";
 	else if (strcmp(attr, "filename") == 0)
 		val = dr->fname;
 	else
