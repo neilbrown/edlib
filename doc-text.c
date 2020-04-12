@@ -1236,6 +1236,7 @@ DEF_CMD(text_reundo)
 		}
 
 		if (where == 1) {
+			mark_step(m, 1);
 			do {
 				struct doc_ref tmp = m->ref;
 				i = text_advance_towards(t, &tmp, &end);
@@ -1248,6 +1249,7 @@ DEF_CMD(text_reundo)
 				m->ref = tmp;
 			} while (i == 2);
 		} else {
+			mark_step(m, 0);
 			do {
 				struct doc_ref tmp = m->ref;
 				i = text_retreat_towards(t, &tmp, &end);
