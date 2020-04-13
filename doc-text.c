@@ -166,8 +166,10 @@ struct text {
 					       * we are editing anyway
 					       */
 	char			newfile; /* file doesn't exist yet */
+	bool			autosave_exists;
 	struct stat		stat;
-	char			*fname;
+	const char		*fname;
+	const char		*autosave_name;
 	struct text_edit	*saved;
 	struct auto_save {
 		int		changes;
@@ -272,6 +274,23 @@ DEF_CMD(text_readonly)
 	return 0;
 }
 
+static const char *safe autosave_name(const char *name safe)
+{
+	char *tempname = malloc(strlen(name) + 3 + 10);
+	const char *base;
+	char *tbase;
+
+	strcpy(tempname, name);
+	base = strrchr(name, '/');
+	if (base)
+		base += 1;
+	else
+		base = name;
+	tbase = tempname + (base - name);
+	sprintf(tbase, "#%s#", base);
+	return tempname;
+}
+
 DEF_CMD(text_load_file)
 {
 	struct doc *d = ci->home->data;
@@ -335,14 +354,15 @@ DEF_CMD(text_load_file)
 		}
 	}
 	if (name) {
-		const char *dname;
+		struct stat stb;
 
 		if (fstat(fd, &t->stat) < 0) {
 			t->newfile = 1;
 			memset(&t->stat, 0, sizeof(t->stat));
 		}
 		if (name != t->fname) {
-			free(t->fname);
+			const char *dname;
+			free((void*)t->fname);
 			t->fname = strdup(name);
 			dname = strrchr(name, '/');
 			if (dname)
@@ -351,6 +371,11 @@ DEF_CMD(text_load_file)
 				dname = name;
 			call("doc:set-name", ci->home, 0, NULL, dname);
 		}
+		if (!t->autosave_name)
+			t->autosave_name = autosave_name(name);
+		if (stat(t->autosave_name, &stb) == 0 &&
+		    stb.st_mtime > t->stat.st_mtime)
+			t->autosave_exists = True;
 	}
 	t->saved = t->undo;
 	t->file_changed = 0;
@@ -468,7 +493,8 @@ error:
 
 }
 
-static void autosaves_record(struct pane *p safe, char *path safe, bool create)
+static void autosaves_record(struct pane *p safe, const char *path safe,
+			     bool create)
 {
 	DIR *d;
 	char *home = getenv("HOME");
@@ -530,45 +556,32 @@ static void autosaves_record(struct pane *p safe, char *path safe, bool create)
 static void do_text_autosave(struct text *t safe)
 {
 	struct pane *p = t->doc.home;
-	char *tempname;
-	char *base, *tbase;
 	int fd = -1;
 
 	if (!t->fname)
 		return;
 	check_file_changed(t);
 
-	tempname = malloc(strlen(t->fname) + 3 + 10);
-	strcpy(tempname, t->fname);
-	base = strrchr(t->fname, '/');
-	if (base)
-		base += 1;
-	else
-		base = t->fname;
-	tbase = tempname + (base - t->fname);
-	sprintf(tbase, "#%s#", base);
+	if (!t->autosave_name)
+		t->autosave_name = autosave_name(t->fname);
 	if (t->as.changes == 0) {
-		unlink(tempname);
-		autosaves_record(p, tempname, False);
-		free(tempname);
+		unlink(t->autosave_name);
+		t->autosave_exists = False;
+		autosaves_record(p, t->autosave_name, False);
 		return;
 	}
-	fd = open(tempname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
-	if (fd < 0) {
-		free(tempname);
+	fd = open(t->autosave_name, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+	if (fd < 0)
 		return;
-	}
 
 	if (do_text_output_file(t, NULL, NULL, fd) < 0) {
 		close(fd);
-		unlink(tempname);
-		free(tempname);
+		unlink(t->autosave_name);
 		return;
 	}
 	t->as.changes = 0;
 	close(fd);
-	autosaves_record(p, tempname, True);
-	free(tempname);
+	autosaves_record(p, t->autosave_name, True);
 }
 
 DEF_CMD(text_autosave_tick)
@@ -2153,7 +2166,13 @@ DEF_CMD(text_get_attr)
 		val = t->file_changed ? "yes" : "no";
 	else if (strcmp(attr, "doc-modified") == 0)
 		val = (t->saved != t->undo) ? "yes" : "no";
-	else
+	else if (strcmp(attr, "autosave-exists") == 0)
+		val = t->autosave_exists ? "yes" : "no";
+	else if (strcmp(attr, "autosave-name") == 0) {
+		if (!t->autosave_name && t->fname)
+			t->autosave_name = autosave_name(t->fname);
+		val = t->autosave_name;
+	} else
 		return Efallthrough;
 
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
@@ -2323,7 +2342,8 @@ DEF_CMD(text_free)
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
 
-	free(t->fname);
+	free((void*)t->fname);
+	free((void*)t->autosave_name);
 	unalloc(t, pane);
 	return 1;
 }
