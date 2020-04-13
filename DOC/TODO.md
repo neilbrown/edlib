@@ -14,7 +14,7 @@ Current priorities
 - [X] render-lines: text appearing before top-of-page should appear - at least one line
       and if top-of-page was top-of-file, then all of it.
 - [X] lib-input: feed-back for number/mode prefixes.
-- [ ] doc-text: merge undo-records where possible
+- [X] doc-text: merge undo-records where possible
 - [ ] make: handle "info:" lines better
 - [ ] test-suite: add one test case.
 - [ ] dynamic completion: look in other docs - top 5 text??
@@ -208,7 +208,7 @@ Module features
 
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
-- [ ] merge adjacent undo records that can be merged.
+- [X] merge adjacent undo records that can be merged.
 - [ ] Possibly move read-only handling to core-doc, once docs/dir
       respond to something other than 'replace' to open files.
 - [ ] how to prune old undo history?

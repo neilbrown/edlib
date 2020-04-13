@@ -117,7 +117,7 @@ struct text_chunk {
 /* An 'edit' consists of one or more text_edit structs linked together.
  * The 'first' text_edit in a group has 'first' set.  So when popping
  * off the 'undo' list, we pop until we find the 'first' one.  When
- * popping of the 'redo' list, we pop a first, then any following
+ * popping off the 'redo' list, we pop a first, then any following
  * non-first entries.
  * Each entry identifies a chunk. If 'at_start' is set, the 'len' is
  * added to the 'start' pointer (subtracted for undo).  Otherwise
@@ -745,16 +745,22 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 		t->redo = NULL;
 	}
 
-	alloc(e, undo);
-	e->target = target;
-	e->first = *first;
-	e->at_start = at_start;
-	e->len = len;
-	*first = 0;
-	e->next = t->undo;
-	e->altnext = NULL;
-	e->alt_is_second = 0;
-	t->undo = e;
+	if (t->undo && !*first &&
+	    t->undo->target == target && t->undo->at_start == at_start) {
+		/* This new edit can be merged with the previous one */
+		t->undo->len += len;
+	} else {
+		alloc(e, undo);
+		e->target = target;
+		e->first = *first;
+		e->at_start = at_start;
+		e->len = len;
+		*first = 0;
+		e->next = t->undo;
+		e->altnext = NULL;
+		e->alt_is_second = 0;
+		t->undo = e;
+	}
 }
 
 static void text_add_str(struct text *t safe, struct doc_ref *pos safe,
