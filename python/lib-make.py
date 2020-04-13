@@ -341,8 +341,10 @@ class MakePane(edlib.Pane):
             if self.point:
                 self.call("doc:set-ref", self.point)
                 self.call("doc:notify:make-set-match", self.point)
-            if num2:
-                # stop here, don't try next doc
+            if num2 or self.pipe:
+                # 'num2' means we are using a simple repeat-last-command
+                # 'self.pipe' means this make/grep is still running.
+                # In either case stop here, don't try next make/grep doc
                 return 1
             return 0
         self.last = n

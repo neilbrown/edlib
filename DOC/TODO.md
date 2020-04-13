@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [X] fix bugs
+- [ ] fix bugs
 - [X] text: track autosave files
 - [X] emacs: pop-up diff when visiting an auto-saved file - readonly until an answer
 - [X] doc-dir: use lib-viewer
@@ -22,6 +22,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] I have lib-make.py, other libs and Makefile as documents with lib-make.py
+      first and I try to find doc "mak" and complete - it shows me all the 'lib-' docs!!!
 - [X] edit C file, insert spc spc x x ; spc undo - crash
 - [X] run edlib, open dir, open same dir from lib-server - crash
 - [X] find-file dialog isn't affected by scale, but content is.
@@ -252,7 +254,7 @@ Module features
 
 ### grep/make
 
-- [ ] 'next-match' should *never* go beyond the end of a make/grep that
+- [X] 'next-match' should *never* go beyond the end of a make/grep that
       is still running.
 - [ ] what should happen if we run 'make' while make is running?
       If same dir - kill??? If different, create new doc?
