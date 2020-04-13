@@ -300,13 +300,19 @@ DEF_CMD(text_load_file)
 	struct text_alloc *a;
 	struct text_chunk *c = NULL;
 	int len;
+	bool set_changed = False;
 	struct text *t = container_of(d, struct text, doc);
 
 	if (t->saved != t->undo)
 		return Einval;
-	if (fd < 0 && (ci->num & 2) && t->fname) {
+	if (fd < 0 && (ci->num & 6) && t->fname) {
 		/* re-open existing file name */
-		fd = open(t->fname, O_RDONLY);
+		if (ci->num & 4) {
+			fd = open(t->autosave_name, O_RDONLY);
+			if (fd >= 0)
+				set_changed = True;
+		} else
+			fd = open(t->fname, O_RDONLY);
 		name = t->fname;
 	}
 	if (fd < 0) {
@@ -378,7 +384,7 @@ DEF_CMD(text_load_file)
 			t->autosave_exists = True;
 	}
 	t->saved = t->undo;
-	t->file_changed = 0;
+	t->file_changed = set_changed ? 2 : 0;
 	call("doc:notify:doc:status-changed", ci->home);
 	pane_notify("doc:replaced", t->doc.home);
 	if (fd != ci->num2)

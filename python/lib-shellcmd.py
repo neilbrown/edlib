@@ -11,9 +11,14 @@ class ShellPane(edlib.Pane):
         self.line = b''
         self.call("doc:request:Abort")
 
-    def run(self, cmd, cwd):
+    def run(self, cmd, cwd, header=True):
         FNULL = open(os.devnull, 'r')
-        self.call("doc:replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
+        if not cwd:
+            cwd=self['dirname']
+        if not cwd:
+            cwd = '/'
+        if header:
+            self.call("doc:replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
         env = os.environ.copy()
         env['PWD'] = cwd
         self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
@@ -81,13 +86,14 @@ class ShellPane(edlib.Pane):
             self.call("doc:replace", "\nProcess signalled\n");
         return 1
 
-def shell_attach(key, focus, comm2, str, str2, **a):
+def shell_attach(key, focus, comm2, num, str, str2, **a):
     # Clear document - discarding undo history.
-    focus.call("doc:clear")
+    if num == 0:
+        focus.call("doc:clear")
     p = ShellPane(focus)
     if not p:
         return edlib.Efail;
-    if not p.run(str, str2):
+    if not p.run(str, str2, False):
         p.close()
         return edlib.Efail;
     if comm2:
