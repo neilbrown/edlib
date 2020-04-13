@@ -11,7 +11,7 @@ Current priorities
 - [ ] doc-dir: mode to usefully view and act on the list of autosaves.
 - [X] tile: Window:close-others in one dimension only
 - [X] emacs: typing in selection replaces selected text
-- [ ] render-lines: text appearing before top-of-page should appear - at least one line
+- [X] render-lines: text appearing before top-of-page should appear - at least one line
       and if top-of-page was top-of-file, then all of it.
 - [ ] lib-input: feed-back for number/mode prefixes.
 - [ ] doc-text: merge undo-records where possible
@@ -181,7 +181,7 @@ Module features
       to find a cursor and compare with ->mdata and get confusion.  How can I avoid this?
 - [ ] view:changed shouldn't destroy the view, else Move-CursorXY
       gets confused.
-- [ ] can render-lines ensure that lines appearing immediately
+- [X] can render-lines ensure that lines appearing immediately
       before first line displayed, appear.  This is particularly
       important when first line displayed is(was) first line of file.
 - [ ] make renderlines "refresh everything when point moves" optional.

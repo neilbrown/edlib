@@ -1173,6 +1173,7 @@ DEF_CMD(render_lines_notify_replace)
 	struct rl_data *rl = p->data;
 	struct mark *start = ci->mark;
 	struct mark *end = ci->mark2;
+	struct mark *first;
 
 	if (strcmp(ci->key, "doc:replaced") == 0)
 		/* If anyone changes the doc, reset the target.  This might
@@ -1191,6 +1192,13 @@ DEF_CMD(render_lines_notify_replace)
 	if (start && end && start->seq > end->seq) {
 		start = ci->mark2;
 		end = ci->mark;
+	}
+
+	if (strcmp(ci->key, "doc:replaced") == 0) {
+		first = vmark_first(ci->home, rl->typenum, p);
+		if (first && start &&  end && mark_same(first, end))
+			/* Insert just before visible region */
+			mark_to_mark(first, start);
 	}
 
 	if (start) {
