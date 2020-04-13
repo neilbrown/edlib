@@ -13,7 +13,7 @@ Current priorities
 - [X] emacs: typing in selection replaces selected text
 - [X] render-lines: text appearing before top-of-page should appear - at least one line
       and if top-of-page was top-of-file, then all of it.
-- [ ] lib-input: feed-back for number/mode prefixes.
+- [X] lib-input: feed-back for number/mode prefixes.
 - [ ] doc-text: merge undo-records where possible
 - [ ] make: handle "info:" lines better
 - [ ] test-suite: add one test case.
@@ -193,7 +193,7 @@ Module features
 
 - [ ] keep log of keystrokes in a restricted document
 - [ ] support keyboard macros
-- [ ] if a prefix is unchanged for a short while, display it in the message line
+- [X] if a prefix is unchanged for a short while, display it in the message line
 - [ ] can we capture the substates of character composition, and give feed-back?
 
 ### doc-dir

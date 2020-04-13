@@ -35,10 +35,12 @@
  * "Notify:selection:commit" is sent.
  */
 
+#define _GNU_SOURCE /*  for asprintf */
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdio.h>
 
 #include "core.h"
 
@@ -58,6 +60,22 @@ struct input_mode {
 	int		sel_committed;
 };
 
+static void report_status(struct pane *focus safe, struct input_mode *im safe)
+{
+	char *st = NULL;
+
+	if (im->num == NO_NUMERIC && im->mode[0] == 0)
+		return;
+
+	if (im->num == NO_NUMERIC)
+		asprintf(&st, " %s", im->mode);
+	else if (im->num == -NO_NUMERIC)
+		asprintf(&st, " - %s", im->mode);
+	else
+		asprintf(&st, " %d %s", im->num, im->mode);
+	call("Message:modal", focus, 0, NULL, st);
+}
+
 DEF_CMD(set_mode)
 {
 	struct input_mode *im = ci->home->data;
@@ -66,6 +84,7 @@ DEF_CMD(set_mode)
 		return Enoarg;
 	free((void*)im->mode);
 	im->mode = strdup(ci->str);
+	report_status(ci->focus, im);
 	return 1;
 }
 
@@ -74,6 +93,7 @@ DEF_CMD(set_num)
 	struct input_mode *im = ci->home->data;
 
 	im->num = ci->num;
+	report_status(ci->focus, im);
 	return 1;
 }
 
@@ -95,6 +115,7 @@ DEF_CMD(set_all)
 	}
 	im->num = ci->num;
 	im->num2 = ci->num;
+	report_status(ci->focus, im);
 	return 1;
 }
 
