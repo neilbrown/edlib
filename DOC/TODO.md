@@ -15,7 +15,7 @@ Current priorities
       and if top-of-page was top-of-file, then all of it.
 - [X] lib-input: feed-back for number/mode prefixes.
 - [X] doc-text: merge undo-records where possible
-- [ ] make: handle "info:" lines better
+- [X] make: handle "note:" lines better
 - [ ] test-suite: add one test case.
 - [ ] dynamic completion: look in other docs - top 5 text??
 
@@ -256,13 +256,13 @@ Module features
       is still running.
 - [ ] what should happen if we run 'make' while make is running?
       If same dir - kill??? If different, create new doc?
-- [ ] handle info: lines better - prefer a .c file over .h.
+- [X] handle note: lines better - prefer a .c file over .h.
 - [ ] neg arg to next-match goes backwards, and ` keeps going backwards
 - [ ] if file isn't already loaded, wait until it is wanted, or something
       else loads it.
 - [ ] if file is reloaded, re-place all the marks, don't just ignore them.
 - [ ] if two results are at the same location, ignore the second.
-- [ ] improve detection of the 'important' "note" line.
+- [X] improve detection of the 'important' "note" line.
 - [ ] clarify and document the role of numeric args to git-grep
 - [ ] when restart compile/grep, kill only one.
 - [ ] numeric-prefix to make will auto-save everything.

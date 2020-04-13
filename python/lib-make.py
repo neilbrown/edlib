@@ -237,33 +237,52 @@ class MakePane(edlib.Pane):
 
     def find_next(self):
         p = self.point
-        if p:
-            p["render:make-line"] = "no"
+        if p and self.note_ok and p['has_note'] and p.next():
+            # We are stepping though a list of notes
+            p['render:make-line'] = 'other'
             self.call("doc:notify:doc:replaced", p, 100)
-            t = p.prev()
-            while t and t['has_note'] == 'yes':
-                t['render:first_err'] = None
-                self.call("doc:notify:doc:replaced", t, 100)
-                t = t.prev()
-        while True:
-            if p:
-                p = p.next()
-            else:
-                p = self.call("doc:vmark-get", self.viewnum, ret='mark')
-            if not p:
-                return None
-            if p['has_note'] != 'yes' or self.note_ok:
-                break
-        self.point = p
-        p["render:make-line"] = "yes"
-        self.call("doc:notify:doc:replaced", p, 100)
-        t = p.prev()
-        while t and t['has_note'] == 'yes':
-            t['render:first_err'] = 'yes'
-            self.call("doc:notify:doc:replaced", t, 100)
-            t = t.prev()
+            p = p.next()
+            self.point = p
+            p['render:make-line'] = 'selected'
+            self.call("doc:notify:doc:replaced", p, 100)
+            return self.map[int(p['ref'])]
         self.note_ok = False
-        return self.map[int(p['ref'])]
+        # clear out render: markings for current set.
+        while p and p.prev() and p.prev()['has_note']:
+            p = p.prev()
+        # now at the start of this match
+        while p and p['has_note'] == 'yes':
+            p['render:make-line'] = None
+            self.call("doc:notify:doc:replaced", p, 100)
+            p = p.next()
+        if p:
+            # no has_note, so last in list
+            p['render:make-line'] = None
+            self.call("doc:notify:doc:replaced", p, 100)
+            p = p.next()
+        else:
+            p = self.call("doc:vmark-get", self.viewnum, ret='mark')
+        if not p:
+            return None
+        self.point = None
+        while p and p['has_note']:
+            p['render:make-line'] = 'other'
+            if not self.point:
+                (fname, lineno) = self.map[int(p['ref'])]
+                if fname[-2:] == '.c':
+                    self.point = p
+            self.call("doc:notify:doc:replaced", p, 100)
+            p = p.next()
+        if not p:
+            # Not possible as previous had a note
+            return None
+        p['render:make-line'] = 'other'
+        self.call("doc:notify:doc:replaced", p, 100)
+        if not self.point:
+            self.point = p
+        self.point['render:make-line'] = 'best'
+        self.call("doc:notify:doc:replaced", self.point, 100)
+        return self.map[int(self.point['ref'])]
 
     def close_idle(self, cnt):
         if self['cmd'] == 'make':
@@ -404,14 +423,14 @@ class MakePane(edlib.Pane):
         self.do_parse()
         p = self.call("doc:vmark-get", self.viewnum, mark, 3, ret='mark2')
         if self.point:
-            self.point["render:make-line"] = "no"
+            self.point["render:make-line"] = None
             self.call("doc:notify:doc:replaced", self.point, 100)
             if p:
                 t = p.prev()
             else:
                 t = None
             while t and t['has_note'] == 'yes':
-                t['render:first_err'] = None
+                t['render:make-line'] = None
                 self.call("doc:notify:doc:replaced", t, 100)
                 t = t.prev()
         if p:
@@ -522,10 +541,10 @@ class MakeViewerPane(edlib.Pane):
         "handle:map-attr"
         if not comm2:
             return
-        if str == "render:make-line" and str2 == "yes":
+        if str == "render:make-line" and str2 == "other":
             comm2("attr:callback", focus, mark, "bg:cyan+80", 10000, 2)
             return 1
-        if str == "render:first_err" and str2 == "yes":
+        if str == "render:make-line" and str2 == "best":
             comm2("attr:callback", focus, mark, "bg:magenta+80", 10000, 2)
             return 1
 
