@@ -261,7 +261,7 @@ Module features
 - [ ] if file isn't already loaded, wait until it is wanted, or something
       else loads it.
 - [ ] if file is reloaded, re-place all the marks, don't just ignore them.
-- [ ] if two results are at the same location, ignore the second.
+- [X] if two results are at the same location, ignore the second.
 - [X] improve detection of the 'important' "note" line.
 - [ ] clarify and document the role of numeric args to git-grep
 - [ ] when restart compile/grep, kill only one.

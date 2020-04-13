@@ -37,6 +37,7 @@ class MakePane(edlib.Pane):
         self.line = b''
         self.call("doc:request:Abort")
         self.call("editor:request:make:match-docs")
+        self.last = None
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
@@ -330,6 +331,9 @@ class MakePane(edlib.Pane):
 
         self.do_parse()
         n = self.find_next()
+        while n and self.last and n == self.last:
+            # Don't want to see the same line again
+            n = self.find_next()
         if not n:
             focus.call("Message", "No further matches")
             # send viewers to keep following end of file.
@@ -341,6 +345,7 @@ class MakePane(edlib.Pane):
                 # stop here, don't try next doc
                 return 1
             return 0
+        self.last = n
         if xy[0] > 0:
             # This isn't the first pane to be notified, but we found a new match
             # so move it to the top of the list.
