@@ -56,7 +56,7 @@ struct dir_ent {
 	struct list_head	lst;
 	struct attrset		*attrs;
 	struct stat		st;
-	char			nbuf[20];
+	char			nbuf[30];
 };
 
 struct directory {
