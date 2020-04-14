@@ -476,10 +476,16 @@ DEF_CMD(complete_set_prefix)
 				mark_free(m2);
 			m2 = mark_dup(m);
 
-			if (common == NULL)
+			if (common == NULL) {
 				common = strndup(match, l);
-			else
+			} else {
 				common[common_len(match, common)] = 0;
+				/* If 'match' and 'common' disagree on case of
+				 * 'prefix', use that of 'prefix'
+				 */
+				if (memcmp(common, match, plen) != 0)
+					memcpy(common, pfx, plen);
+			}
 			if (match != c) {
 				if (!common_pre) {
 					common_pre = strndup(c, l + match-c);
