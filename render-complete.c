@@ -17,6 +17,7 @@
 #define _GNU_SOURCE for strcasestr
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "core.h"
 #include "misc.h"
 
@@ -358,10 +359,19 @@ DEF_CMD(complete_eol)
 	return 1;
 }
 
+static int csame(char a, char b)
+{
+	if (isupper(a))
+		a = tolower(a);
+	if (isupper(b))
+		b = tolower(b);
+	return a == b;
+}
+
 static int common_len(const char *a safe, const char *b safe)
 {
 	int len = 0;
-	while (*a && *a == *b) {
+	while (*a && csame(*a, *b)) {
 		a += 1;
 		b += 1;
 		len += 1;
@@ -374,7 +384,7 @@ static void adjust_pre(char *common safe, const char *new safe, int len)
 	int l = strlen(common);
 	int newlen = 0;
 
-	while (l && len && common[l-1] == new[len-1]) {
+	while (l && len && csame(common[l-1], new[len-1])) {
 		l -= 1;
 		len -= 1;
 		newlen += 1;

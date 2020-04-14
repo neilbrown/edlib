@@ -147,7 +147,7 @@ Module features
 - [X] if typing when selection active, replace selection with new text
 - [ ] history for each entry.
 
-#### emac-search
+#### emacs-search
 
 - [ ] '\' shouldn't be auto-inserted inside [] set.
 
@@ -225,6 +225,9 @@ Module features
 
 ### completion
 
+- [ ] backspace should remove multiple chars if needed until the number of matches
+      increases.  Should it remove chars that were auto-added at the start?
+      Should they be highlighted by not requred?
 - [ ] mouse selection should work in completion pane
 - [ ] filename completion should work for earlier component of path.
 - [ ] The “complete” popup should be positioned above/below the file name,
