@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] fix bugs
+- [X] fix bugs
 - [X] text: track autosave files
 - [X] emacs: pop-up diff when visiting an auto-saved file - readonly until an answer
 - [X] doc-dir: use lib-viewer
@@ -22,7 +22,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] I have lib-make.py, other libs and Makefile as documents with lib-make.py
+- [X] I have lib-make.py, other libs and Makefile as documents with lib-make.py
       first and I try to find doc "mak" and complete - it shows me all the 'lib-' docs!!!
 - [X] edit C file, insert spc spc x x ; spc undo - crash
 - [X] run edlib, open dir, open same dir from lib-server - crash

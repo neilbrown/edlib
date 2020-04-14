@@ -486,17 +486,12 @@ DEF_CMD(complete_set_prefix)
 				if (memcmp(common, match, plen) != 0)
 					memcpy(common, pfx, plen);
 			}
-			if (match != c) {
-				if (!common_pre) {
-					common_pre = strndup(c, l + match-c);
-					strncpy(common_pre, c, match-c);
-					common_pre[match-c] = 0;
-				} else
-					adjust_pre(common_pre, c, match-c);
-			} else {
-				free(common_pre);
-				common_pre = NULL;
-			}
+			if (!common_pre) {
+				common_pre = strndup(c, l + match-c);
+				strncpy(common_pre, c, match-c);
+				common_pre[match-c] = 0;
+			} else
+				adjust_pre(common_pre, c, match-c);
 		}
 		cnt += 1;
 	}
