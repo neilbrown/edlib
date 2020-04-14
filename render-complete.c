@@ -407,6 +407,8 @@ DEF_CMD(complete_set_prefix)
 	struct mark *m2 = NULL;
 	const char *c;
 	int cnt = 0;
+	char *pfx;
+	int plen;
 	char *common = NULL;
 	/* common_pre is the longest common prefix to 'common' that
 	 * appears in all matches in which 'common' appears.  It is
@@ -421,6 +423,8 @@ DEF_CMD(complete_set_prefix)
 	free(cd->prefix);
 	cd->prefix = strdup(ci->str);
 	cd->prefix_only = !ci->num;
+	pfx = cd->prefix;
+	plen = strlen(pfx);
 
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 	if (!m)
@@ -435,15 +439,15 @@ DEF_CMD(complete_set_prefix)
 
 		if (cd->prefix_only) {
 			match = c;
-			if (strncmp(c, cd->prefix, strlen(cd->prefix)) == 0)
+			if (strncmp(c, pfx, plen) == 0)
 				this_match += 1;
 		} else {
-			match = strcasestr(c, cd->prefix);
-			if (strncasecmp(c, cd->prefix, strlen(cd->prefix)) == 0) {
+			match = strcasestr(c, pfx);
+			if (strncasecmp(c, pfx, plen) == 0) {
 				this_match += 1;
-				if (strncmp(c, cd->prefix, strlen(cd->prefix)) == 0)
+				if (strncmp(c, pfx, plen) == 0)
 					this_match += 1;
-			} else if (strstr(c, cd->prefix))
+			} else if (strstr(c, pfx))
 				this_match += 1;
 		}
 		if (!match)
