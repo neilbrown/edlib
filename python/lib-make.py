@@ -337,13 +337,15 @@ class MakePane(edlib.Pane):
         if not n:
             focus.call("Message", "No further matches")
             # send viewers to keep following end of file.
+            first_match = self.first_match
             self.first_match = True
             if self.point:
                 self.call("doc:set-ref", self.point)
                 self.call("doc:notify:make-set-match", self.point)
-            if num2 or self.pipe:
+            if num2 or self.pipe or not first_match:
                 # 'num2' means we are using a simple repeat-last-command
                 # 'self.pipe' means this make/grep is still running.
+                # not first_match means we aren't at end-of-file, so stop there
                 # In either case stop here, don't try next make/grep doc
                 return 1
             return 0

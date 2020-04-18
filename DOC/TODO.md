@@ -257,9 +257,9 @@ Module features
 
 ### grep/make
 
-- [ ] it should be possible to 'find' a match in 'this' window, or 'popup' window
+- [X] it should be possible to 'find' a match in 'this' window, or 'popup' window
       as well as 'other'
-- [ ] 'next-match' should always stop once at the end-of-file even if there is
+- [X] 'next-match' should always stop once at the end-of-file even if there is
       no error there
 - [ ] we should track all Entering/Leaving directory message so we always know
       what 'make' thinks is the current dir.  At present we ignore 'leaving'.
