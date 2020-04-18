@@ -354,7 +354,7 @@ class MakePane(edlib.Pane):
             self.drop_notify("make:match-docs")
             self.call("editor:request:make:match-docs")
         if not str2:
-            str2 = "ThisPane"
+            str2 = "AnyPane"
         try:
             self.goto_mark(focus, n, str2)
         except edlib.commandfailed:
@@ -396,17 +396,37 @@ class MakePane(edlib.Pane):
         return 1
 
     def visit(self, focus, d, mk, lineno, where):
-        par = focus.call("DocPane", d, ret='focus')
-        if par:
-            while par.focus:
-                par = par.focus
+        # 'where' can be one of 'ThisPane' 'OtherPane' 'AnyPane' or 'PopupPane'
+        # If 'AnyPane' we ensure match view is visible
+        par = None; pane = None
+        if where in ['OtherPane', 'AnyPane']:
+            par = focus.call("DocPane", d, ret='focus')
+            if par:
+                while par.focus:
+                    par = par.focus
+            elif where == 'OtherPane':
+                pane = focus.call(where, ret='focus')
+            else:
+                pane = focus.call('ThisPane', ret='focus')
+        elif where == 'ThisPane':
+            pane = focus.call(where, ret='focus')
+        elif where == 'PopupPane':
+            pane = focus.call('ThisPopup', ret='focus')
+            if not pane:
+                pane = focus.call("PopupTile", "MD3ta", ret='focus')
         else:
-            par = focus.call(where, d, ret='focus')
-            if not par:
-                d.close()
-                focus.call("Message", "Failed to open pane");
-                return edlib.Efail
-            par = d.call("doc:attach-view", par, 1, ret='focus')
+            return edlib.Enoarg
+
+        if not par and not pane:
+            d.close()
+            focus.call("Message", "Failed to open pane");
+            return edlib.Efail
+        if not par:
+            par = d.call("doc:attach-view", pane, 1, ret='focus')
+        if not par:
+            d.close()
+            focus.call("Message", "Failed to open pane");
+            return edlib.Efail
         par.take_focus()
         if mk and (int(lineno) == 1 or
                    d.call("doc:step", mk, 0, ret='char') != None):
@@ -417,11 +437,12 @@ class MakePane(edlib.Pane):
             par.call("Move-File", -1)
             par.call("Move-Line", int(lineno)-1)
 
-        docpane = par.call("DocPane", self, ret='focus')
-        if not docpane:
-            docpane = par.call("OtherPane", ret='focus')
-            if docpane:
-                self.call("doc:attach-view", docpane)
+        if where in ['AnyPane']:
+            docpane = par.call("DocPane", self, ret='focus')
+            if not docpane:
+                docpane = par.call("OtherPane", ret='focus')
+                if docpane:
+                    self.call("doc:attach-view", docpane)
         self.call("doc:notify:make-set-match", self.point)
         return 1
 
@@ -517,10 +538,24 @@ class MakeViewerPane(edlib.Pane):
         return 1
 
     def handle_enter(self, key, focus, mark, **a):
-        "handle:K:Enter"
+        "handle-list/K:Enter/K-o"
         focus.call("doc:notify:doc:make-revisit", mark)
         next_match("interactive-cmd-next-match", focus,
                    edlib.NO_NUMERIC, "OtherPane", 0)
+        return 1
+
+    def handle_find(self, key, focus, mark, **a):
+        "handle:K-f"
+        focus.call("doc:notify:doc:make-revisit", mark)
+        next_match("interactive-cmd-next-match", focus,
+                   edlib.NO_NUMERIC, "ThisPane", 0)
+        return 1
+
+    def handle_popup(self, key, focus, mark, **a):
+        "handle:K-p"
+        focus.call("doc:notify:doc:make-revisit", mark)
+        next_match("interactive-cmd-next-match", focus,
+                   edlib.NO_NUMERIC, "PopupPane", 0)
         return 1
 
     def handle_kill(self, key, **a):
