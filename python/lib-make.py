@@ -341,6 +341,8 @@ class MakePane(edlib.Pane):
             while m:
                 m.release()
                 m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+            self.map = []
+            self.last = None
             self.pos = None
             self.point = None
             self.dir = self['dirname']
