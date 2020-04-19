@@ -29,6 +29,7 @@ class MakePane(edlib.Pane):
         self.viewnum = focus.call("doc:add-view", self) - 1
         self.point = None
         self.dir = self['dirname']
+        self.dirstack = []
         self.map = []
         self.files = {}
         self.timer_set = False
@@ -116,7 +117,7 @@ class MakePane(edlib.Pane):
             # Entering directory '....'
             try:
                 self.call("text-search",
-                          "(^(.*FILE: )?[^: \t]+:[0-9]+[: ]|Entering directory ')",
+                          "(^(.*FILE: )?[^: \t]+:[0-9]+[: ]|(Entering|Leaving) directory ')",
                           m)
                 last = self.call("doc:step", m, 0, 1, ret='char')
             except edlib.commandfailed:
@@ -126,15 +127,27 @@ class MakePane(edlib.Pane):
                 # last char of match is ', so must be dir name
                 self.call("doc:step", m, 1, 1)
                 start = m.dup()
+                while self.call("doc:step", m, 0, 1, ret='char') not in 'EL':
+                    pass
+                # get "Entering directory" or "Leaving Directory"
+                el = self.call("doc:get-str", m ,start, ret='str')
+                m.to_mark(start)
                 rv = self.call("text-match", "[^'\n]*'", m)
                 if rv > 0:
                     last = self.call("doc:step", m, 0, 1, ret='char')
                     d = self.call("doc:get-str", start, m, ret='str')
                     if d:
                         if d[-1] == '/':
-                            self.dir = d
+                            dir = d
                         else:
-                            self.dir = d + '/'
+                            dir = d + '/'
+                        if el.startswith('Entering'):
+                            self.dirstack.append(self.dir)
+                            self.dir = dir
+                        else:
+                            # must be Leaving
+                            if self.dirstack:
+                                self.dir = self.dirstack.pop()
                 self.pos = m.dup()
                 continue
             # Want to be careful of 'note: ' from gcc

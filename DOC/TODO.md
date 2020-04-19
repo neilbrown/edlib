@@ -261,7 +261,7 @@ Module features
       as well as 'other'
 - [X] 'next-match' should always stop once at the end-of-file even if there is
       no error there
-- [ ] we should track all Entering/Leaving directory message so we always know
+- [X] we should track all Entering/Leaving directory message so we always know
       what 'make' thinks is the current dir.  At present we ignore 'leaving'.
 - [ ] If we cannot find the named file, we much still advance 'point' for the
       matches doc.
