@@ -366,6 +366,7 @@ class MakePane(edlib.Pane):
                 # In either case stop here, don't try next make/grep doc
                 return 1
             return 0
+        self.call("doc:notify:make-set-match", self.point)
         self.last = n
         if xy[0] > 0:
             # This isn't the first pane to be notified, but we found a new match
@@ -462,7 +463,6 @@ class MakePane(edlib.Pane):
                 docpane = par.call("OtherPane", ret='focus')
                 if docpane:
                     self.call("doc:attach-view", docpane)
-        self.call("doc:notify:make-set-match", self.point)
         return 1
 
     def handle_revisit(self, key, mark, **a):

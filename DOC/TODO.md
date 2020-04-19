@@ -263,7 +263,7 @@ Module features
       no error there
 - [X] we should track all Entering/Leaving directory message so we always know
       what 'make' thinks is the current dir.  At present we ignore 'leaving'.
-- [ ] If we cannot find the named file, we much still advance 'point' for the
+- [X] If we cannot find the named file, we much still advance 'point' for the
       matches doc.
 - [ ] pressing 'enter' goes to the *next* match instead of *this* one.
 - [ ] We destore make output to eagerly, so we don't remember last make command.
