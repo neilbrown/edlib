@@ -37,7 +37,8 @@ class MakePane(edlib.Pane):
         self.line = b''
         self.call("doc:request:Abort")
         self.call("editor:request:make:match-docs")
-        self.last = None
+        self.last = None # last (file,line) seen
+        self.pos = None # mark where we have parsed up to
 
     def run(self, cmd, cwd):
         FNULL = open(os.devnull, 'r')
@@ -97,7 +98,7 @@ class MakePane(edlib.Pane):
         if self.timer_set:
             # wait for the timer
             return
-        last = self.call("doc:vmark-get", self.viewnum, ret='mark2')
+        last = self.pos
         if last:
             m = last.dup()
             self.call("doc:step", m, 1, 1)
@@ -134,6 +135,7 @@ class MakePane(edlib.Pane):
                             self.dir = d
                         else:
                             self.dir = d + '/'
+                self.pos = m.dup()
                 continue
             # Want to be careful of 'note: ' from gcc
             is_note = (self.call("text-match", ":[0-9]+: note:", m.dup()) > 0)
@@ -150,6 +152,7 @@ class MakePane(edlib.Pane):
                 pass
             self.call("doc:step", m, 1, 1)
             fname = self.call("doc:get-str", m, e, ret="str")
+            self.pos = e.dup()
             if self.first_match:
                 self.call("doc:notify:make-set-match", m)
                 self.first_match = False
@@ -325,6 +328,7 @@ class MakePane(edlib.Pane):
             while m:
                 m.release()
                 m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+            self.pos = None
             self.point = None
             self.dir = self['dirname']
             self.note_ok = False
