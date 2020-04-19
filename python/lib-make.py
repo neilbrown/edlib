@@ -356,9 +356,9 @@ class MakePane(edlib.Pane):
             # send viewers to keep following end of file.
             first_match = self.first_match
             self.first_match = True
-            if self.point:
-                self.call("doc:set-ref", self.point)
-                self.call("doc:notify:make-set-match", self.point)
+            p = edlib.Mark(self)
+            self.call("doc:set-ref", p)
+            self.call("doc:notify:make-set-match", p)
             if num2 or self.pipe or not first_match:
                 # 'num2' means we are using a simple repeat-last-command
                 # 'self.pipe' means this make/grep is still running.
