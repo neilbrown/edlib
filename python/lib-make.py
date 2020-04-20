@@ -383,7 +383,6 @@ class MakePane(edlib.Pane):
                 # In either case stop here, don't try next make/grep doc
                 return 1
             return 0
-        self.call("doc:notify:make-set-match", self.point)
         self.last = n
         if xy[0] > 0:
             # This isn't the first pane to be notified, but we found a new match
@@ -397,6 +396,7 @@ class MakePane(edlib.Pane):
         except edlib.commandfailed:
             # error already reported
             pass
+        self.call("doc:notify:make-set-match", self.point)
         return 1
 
     def goto_mark(self, focus, n, where):
