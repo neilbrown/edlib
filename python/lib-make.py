@@ -28,8 +28,7 @@ class MakePane(edlib.Pane):
         self.add_notify(focus, "doc:make-revisit");
         self.viewnum = focus.call("doc:add-view", self) - 1
         self.point = None
-        self.dir = self['dirname']
-        self.dirstack = []
+        self.dirs = {self['dirname']: 100}
         self.map = []
         self.files = {}
         self.timer_set = False
@@ -142,12 +141,18 @@ class MakePane(edlib.Pane):
                         else:
                             dir = d + '/'
                         if el.startswith('Entering'):
-                            self.dirstack.append(self.dir)
-                            self.dir = dir
+                            try:
+                                self.dirs[dir] += 1
+                            except KeyError:
+                                self.dirs[dir] = 1
                         else:
                             # must be Leaving
-                            if self.dirstack:
-                                self.dir = self.dirstack.pop()
+                            try:
+                                self.dirs[dir] -= 1
+                                if self.dirs[dir] <= 0:
+                                    del self.dirs[dir]
+                            except KeyError:
+                                pass
                 self.pos = m.dup()
                 continue
             # Want to be careful of 'note: ' from gcc
@@ -198,13 +203,13 @@ class MakePane(edlib.Pane):
 
         newfile = False
         if fname not in self.files:
+            dir = ""
+            if fname[0] != '/':
+                for d in self.dirs:
+                    if os.path.isfile(os.path.join(d, fname)):
+                        dir = d
+                        break
             try:
-                if fname[0] != '/':
-                    dir = self.dir
-                    if not dir:
-                        dir = ""
-                else:
-                    dir = ""
                 d = self.call("doc:open", -1, 8, dir+fname, ret='focus')
             except edlib.commandfailed:
                 d = None
@@ -354,7 +359,7 @@ class MakePane(edlib.Pane):
             self.last = None
             self.pos = None
             self.point = None
-            self.dir = self['dirname']
+            self.dirs = {self['dirname']:100}
             self.note_ok = False
 
         self.do_parse()
@@ -406,13 +411,13 @@ class MakePane(edlib.Pane):
             self.visit(focus, d, None, lineno, where)
             return 1
         # try the old way
+        dir = ""
+        if fname[0] != '/':
+            for d in self.dirs:
+                if os.path.isfile(os.path.join(d, fname)):
+                    dir = d
+                    break
         try:
-            if fname[0] != '/':
-                dir = self.dir
-                if not dir:
-                    dir = ""
-            else:
-                dir = ""
             # 8 means reload
             d = focus.call("doc:open", -1, 8, dir+fname, ret='focus')
         except edlib.commandfailed:
