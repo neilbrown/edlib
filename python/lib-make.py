@@ -264,8 +264,9 @@ class MakePane(edlib.Pane):
                 p = self.point
                 p['render:make-line'] = None
                 self.call("doc:notify:doc:replaced", p, 100)
-                if p['has_note']:
+                if p['has_note'] or self.note_ok == "First":
                     p = p.next()
+                    self.note_ok = True
                 else:
                     p = None
             else:
@@ -501,7 +502,7 @@ class MakePane(edlib.Pane):
                 self.call("doc:notify:doc:replaced", p, 100)
 
         self.point = None
-        self.note_ok = True
+        self.note_ok = "First"
         p = self.call("doc:vmark-get", self.viewnum, mark, 3, ret='mark2')
         if p:
             self.point = p.prev()
