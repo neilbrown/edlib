@@ -979,7 +979,7 @@ DEF_CMD(tile_doc)
 		struct pane *f;
 		t = list_next_entry(t, tiles);
 		f = t->p;
-		while (f->focus)
+		while (f->focus && f->focus->z == 0)
 			f = f->focus;
 		n = pane_attr_get(f, "doc-name");
 		if (name && n && strcmp(n, name) == 0)
