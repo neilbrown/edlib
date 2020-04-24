@@ -257,6 +257,25 @@ class MakePane(edlib.Pane):
             del self.files[fn]
             break
 
+    def clear_render(self):
+        if not self.point:
+            return
+        p = self.point
+        # clear out render: markings for current set.
+        while p.prev() and p.prev()['has_note']:
+            p = p.prev()
+        # now at the start of this match
+        while p and p['has_note']:
+            p['render:make-line'] = None
+            self.call("doc:notify:doc:replaced", p, 100)
+            p = p.next()
+        if p:
+            # no has_note, so last in list
+            p['render:make-line'] = None
+            self.call("doc:notify:doc:replaced", p, 100)
+            p = p.next()
+        return p
+
     def find_next(self):
         if self.note_ok:
             # stepping through notes rather than full matches
@@ -278,20 +297,8 @@ class MakePane(edlib.Pane):
                 self.call("doc:notify:doc:replaced", p, 100)
                 return self.map[int(p['ref'])]
         self.note_ok = False
-        p = self.point
-        # clear out render: markings for current set.
-        while p and p.prev() and p.prev()['has_note']:
-            p = p.prev()
-        # now at the start of this match
-        while p and p['has_note']:
-            p['render:make-line'] = None
-            self.call("doc:notify:doc:replaced", p, 100)
-            p = p.next()
-        if p:
-            # no has_note, so last in list
-            p['render:make-line'] = None
-            self.call("doc:notify:doc:replaced", p, 100)
-            p = p.next()
+        if self.point:
+            p = self.clear_render()
         else:
             p = self.call("doc:vmark-get", self.viewnum, ret='mark')
         if not p:
@@ -485,21 +492,9 @@ class MakePane(edlib.Pane):
     def handle_revisit(self, key, mark, **a):
         "handle:doc:make-revisit"
         self.do_parse()
-        if self.point:
-            # clear out highlight
-            p = self.point
-            # clear out render: markings for current set.
-            while p and p.prev() and p.prev()['has_note']:
-                p = p.prev()
-            # now at the start of this match
-            while p and p['has_note']:
-                p['render:make-line'] = None
-                self.call("doc:notify:doc:replaced", p, 100)
-                p = p.next()
-            if p:
-                # no has_note, so last in list
-                p['render:make-line'] = None
-                self.call("doc:notify:doc:replaced", p, 100)
+
+        # clear out highlight
+        self.clear_render()
 
         self.point = None
         self.note_ok = "First"
