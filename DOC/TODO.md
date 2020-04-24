@@ -273,7 +273,7 @@ Module features
       matches doc.
 - [X] pressing 'enter' goes to the *next* match instead of *this* one.
 - [X] We destroy make output too eagerly, so we don't remember last make command.
-- [ ] When checking if a make output is in the right directory, we should check
+- [X] When checking if a make output is in the right directory, we should check
       both apparent and canonical name for both directories.
 - [X] 'next-match' should *never* go beyond the end of a make/grep that
       is still running.

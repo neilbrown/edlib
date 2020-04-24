@@ -356,7 +356,8 @@ class MakePane(edlib.Pane):
                 return 0
             if prevret > 0:
                 return 0
-            if str2.startswith(self['dirname']):
+            if (str2.startswith(self['dirname']) or
+                str2.startswith(self['realdir'])):
                 # This is a suitable make document for the given directory
                 if comm2:
                     comm2("cb", self.parent)
@@ -836,6 +837,13 @@ def make_request(key, focus, num, str, mark, **a):
         make_cmd = None
         doc = focus.call("editor:notify:make:match-docs", "choose-make", dir,
                          ret='focus')
+        if not doc:
+            rdir = os.path.realpath(dir)
+            if len(rdir) > 1:
+                rdir += "/"
+            if rdir != dir:
+                doc = focus.call("editor:notify:make:match-docs",
+                                 "choose-make", rdir, ret='focus')
         if doc:
             dir = doc['dirname']
             make_cmd = doc['make-command']

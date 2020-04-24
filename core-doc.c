@@ -483,6 +483,7 @@ DEF_CMD(doc_set)
 DEF_CMD(doc_get_attr)
 {
 	struct doc *d = ci->home->data;
+	char pathbuf[PATH_MAX];
 	char *a;
 
 	if (!ci->str)
@@ -498,7 +499,6 @@ DEF_CMD(doc_get_attr)
 		a = d->readonly ? "yes":"no";
 	} else if (strcmp(ci->str, "dirname") == 0) {
 		char *sl;
-		char pathbuf[PATH_MAX];
 		a = pane_attr_get(d->home, "filename");
 		if (!a) {
 			a = realpath(".", pathbuf);
@@ -513,6 +513,19 @@ DEF_CMD(doc_get_attr)
 				sl = a = "/";
 			a = strnsave(ci->focus, a, (sl-a)+1);
 		}
+		attr_set_str(&d->home->attrs, "dirname", a);
+	} else if (strcmp(ci->str, "realdir") == 0) {
+		a = pane_attr_get(d->home, "dirname");
+		if (a) {
+			strcpy(pathbuf,"/");
+			a = realpath(a, pathbuf);
+			if (a && a != pathbuf)
+				strcpy(pathbuf, a);
+			if (pathbuf[1])
+				strcat(pathbuf, "/");
+			a = pathbuf;
+		}
+		attr_set_str(&d->home->attrs, "realdir", a);
 	}
 	if (a)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
