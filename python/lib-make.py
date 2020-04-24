@@ -441,7 +441,7 @@ class MakePane(edlib.Pane):
 
     def visit(self, focus, d, mk, lineno, where):
         # 'where' can be one of 'ThisPane' 'OtherPane' 'AnyPane' or 'PopupPane'
-        # If 'AnyPane' we ensure match view is visible
+        # If 'AnyPane' or 'OtherPane' we ensure match view is visible
         par = None; pane = None
         if where in ['OtherPane', 'AnyPane']:
             par = focus.call("DocPane", d, ret='focus')
@@ -481,7 +481,7 @@ class MakePane(edlib.Pane):
             par.call("Move-File", -1)
             par.call("Move-Line", int(lineno)-1)
 
-        if where in ['AnyPane']:
+        if where in ['AnyPane', 'OtherPane']:
             docpane = par.call("DocPane", self, ret='focus')
             if not docpane:
                 docpane = par.call("OtherPane", ret='focus')
