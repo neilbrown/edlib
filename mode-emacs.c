@@ -170,6 +170,7 @@ REDEF_CMD(emacs_move)
 		/* Transient highlight - discard it */
 		struct mark *p = call_ret(mark, "doc:point", ci->focus);
 		attr_set_int(&mk->attrs, "emacs:active", 0);
+		attr_set_int(&mk->attrs, "emacs:replacable", 0);
 		call("view:changed", ci->focus, 0, p, NULL, 0, mk);
 	}
 
@@ -1531,7 +1532,7 @@ DEF_CMD(emacs_mark)
 	call("Move-to", ci->focus, 1);
 	m = call_ret(mark2, "doc:point", ci->focus);
 	if (m) {
-		attr_set_int(&m->attrs, "emacs:active", 1);
+		attr_set_int(&m->attrs, "emacs:active", ci->num == 1 ? 2 : 1);
 		attr_set_int(&m->attrs, "emacs:replacable", ci->num == 1 ? 1 : 0);
 	}
 	return 1;
@@ -1561,8 +1562,8 @@ DEF_CMD(emacs_swap_mark)
 	m = mark_dup(mk);
 	call("Move-to", ci->focus, 1); /* Move mark to point */
 	call("Move-to", ci->focus, 0, m); /* Move point to old mark */
-	attr_set_int(&mk->attrs, "emacs:active", 1);
-	attr_set_int(&mk->attrs, "emacs:replacable", ci->num == 1);
+	attr_set_int(&mk->attrs, "emacs:active", ci->num == 1 ? 2 : 1);
+	attr_set_int(&mk->attrs, "emacs:replacable", ci->num == 1 ? 1 : 0);
 	mark_free(m);
 	return 1;
 }

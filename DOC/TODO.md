@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] emacs: replacable selections aren't working for me.  There needs to be an 
+- [X] emacs: replacable selections aren't working for me.  There needs to be an 
       easier way to cancel them. C-x C-x works as does C-wC-y, but neither are obvious.
       Maybe any cursor movement should
 - [X] fix bugs
@@ -132,7 +132,7 @@ Module features
 
 ### emacs
 
-- [ ] replacable selections aren't working for me.  There needs to be an 
+- [X] replacable selections aren't working for me.  There needs to be an 
       easier way to cancel them. C-x C-x works as does C-wC-y, but neither are obvious.
       Maybe any cursor movement should
 - [X] pop-up diff when visiting an auto-saved file - readonly until an answer
