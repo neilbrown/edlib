@@ -1670,7 +1670,7 @@ DEF_CMD(emacs_yank_pop)
 DEF_CMD(emacs_attrs)
 {
 	struct call_return cr;
-	char *selection = "bg:while+60,vis-nl"; // grey
+	char *selection = "bg:white-80,vis-nl"; // grey
 
 	if (!ci->str)
 		return 0;
