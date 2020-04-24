@@ -283,7 +283,7 @@ class MakePane(edlib.Pane):
         while p and p.prev() and p.prev()['has_note']:
             p = p.prev()
         # now at the start of this match
-        while p and p['has_note'] == 'yes':
+        while p and p['has_note']:
             p['render:make-line'] = None
             self.call("doc:notify:doc:replaced", p, 100)
             p = p.next()
@@ -329,7 +329,7 @@ class MakePane(edlib.Pane):
         p = self.point
         while p:
             p = p.next()
-            if p and p['has_note'] != 'yes':
+            if p and not p['has_note']:
                 break
         if p and cnt < 5:
             # Haven't visited the last match yet, and this is
@@ -492,7 +492,7 @@ class MakePane(edlib.Pane):
             while p and p.prev() and p.prev()['has_note']:
                 p = p.prev()
             # now at the start of this match
-            while p and p['has_note'] == 'yes':
+            while p and p['has_note']:
                 p['render:make-line'] = None
                 self.call("doc:notify:doc:replaced", p, 100)
                 p = p.next()
