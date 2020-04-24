@@ -272,12 +272,12 @@ Module features
 - [X] If we cannot find the named file, we much still advance 'point' for the
       matches doc.
 - [X] pressing 'enter' goes to the *next* match instead of *this* one.
-- [ ] We destroy make output too eagerly, so we don't remember last make command.
+- [X] We destroy make output too eagerly, so we don't remember last make command.
 - [ ] When checking if a make output is in the right directory, we should check
       both apparent and canonical name for both directories.
 - [X] 'next-match' should *never* go beyond the end of a make/grep that
       is still running.
-- [ ] what should happen if we run 'make' while make is running?
+- [X] what should happen if we run 'make' while make is running?
       If same dir - kill??? If different, create new doc?
 - [X] handle note: lines better - prefer a .c file over .h.
 - [ ] neg arg to next-match goes backwards, and ` keeps going backwards
@@ -287,7 +287,7 @@ Module features
 - [X] if two results are at the same location, ignore the second.
 - [X] improve detection of the 'important' "note" line.
 - [ ] clarify and document the role of numeric args to git-grep
-- [ ] when restart compile/grep, kill only one.
+- [X] when restart compile/grep, kill only one.
 - [ ] numeric-prefix to make will auto-save everything.
 - [ ] grep should (optionally) save files in the directory tree
 

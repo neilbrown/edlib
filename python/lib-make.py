@@ -346,13 +346,24 @@ class MakePane(edlib.Pane):
             self.parent.close()
             return 0
 
-    def make_next(self, key, focus, num, num2, str, str2, xy, **a):
+    def make_next(self, key, focus, num, num2, str, str2, xy, comm2, **a):
         "handle:make:match-docs"
+        prevret = xy[1]
         if str == "close-idle":
             return self.close_idle(xy[0])
+        if str == "choose-make":
+            if self['cmd'] != 'make':
+                return 0
+            if prevret > 0:
+                return 0
+            if str2.startswith(self['dirname']):
+                # This is a suitable make document for the given directory
+                if comm2:
+                    comm2("cb", self.parent)
+                return 1
+            return 0
         if str != "next-match":
             return 0
-        prevret = xy[1]
         if prevret > 0:
             # some other pane has already responded
             return 0
@@ -510,7 +521,10 @@ class MakePane(edlib.Pane):
 
     def handle_make_close(self, key, **a):
         "handle:make-close"
-        # make output doc is being reused, so we'd better get out of the way
+        # make output doc is being reused, so we'd better get out of the way,
+        # unless still running
+        if self.pipe:
+            return 2
         self.close()
         return 1
 
@@ -709,14 +723,17 @@ def run_make(key, focus, str, **a):
         cmd = "make"
         docname = "*Compile Output*"
     doc = None
+    still_running = False
     if cmd == "make":
         # try to reuse old document
-        try:
-            doc = focus.call("docs:byname", docname, ret='focus')
-            doc.call("doc:clear")
-            doc.notify("make-close")
-        except edlib.commandfailed:
-            pass
+        doc = focus.call("editor:notify:make:match-docs", "choose-make", dir,
+                         ret='focus')
+        if doc:
+            if doc.notify("make-close") > 1:
+                # make is still running
+                still_running = True
+            else:
+                doc.call("doc:clear")
     else:
         # Tell any extant grep documents that
         # a/ are no longer running, b/ have point at the end, c/ are not
@@ -741,7 +758,8 @@ def run_make(key, focus, str, **a):
         return edlib.Efail
     p = doc.call("doc:attach-view", p, 1, ret='focus')
 
-    p = doc.call("attach-makecmd", str, dir, ret='focus')
+    if not still_running:
+        p = doc.call("attach-makecmd", str, dir, ret='focus')
     p['cmd'] = cmd
     return 1
 
@@ -816,15 +834,11 @@ def make_request(key, focus, num, str, mark, **a):
     if cmd == "make" and num:
         # re-use previous run if directory is compatible
         make_cmd = None
-        try:
-            doc = focus.call("docs:byname", "*Compile Output*", ret='focus')
-            if doc and dir.startswith(doc['dirname']):
-                dir = doc['dirname']
-                make_cmd = doc['make-command']
-        except edlib.commandfailed:
-            pass
-
-        if make_cmd:
+        doc = focus.call("editor:notify:make:match-docs", "choose-make", dir,
+                         ret='focus')
+        if doc:
+            dir = doc['dirname']
+            make_cmd = doc['make-command']
             run_make("N:%s:%s"%(mode,dir), focus, make_cmd)
             return 1
 
