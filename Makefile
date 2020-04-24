@@ -69,7 +69,8 @@ all: edlib checksym lib shared
 
 OBJ = O/edlib.o
 LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
-	O/core-keymap.o O/core-pane.o O/core-misc.o O/core-log.o
+	O/core-keymap.o O/core-pane.o O/core-misc.o O/core-log.o \
+	O/core-version.o
 SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/doc-email.o O/doc-multipart.o O/doc-rendering.o \
 	O/render-hex.o O/render-lines.o \
@@ -162,10 +163,9 @@ lib/.exists:
 
 .PHONY: lib
 lib: lib/libedlib.so lib/.exists
-lib/libedlib.so: $(LIBOBJ) core-version.c
-	@$(CC) $(CFLAGS) -c -o O/core-version.o core-version.c
+lib/libedlib.so: $(LIBOBJ)
 	@mkdir -p lib
-	$(QUIET_CC)$(CC) -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ) O/core-version.o
+	$(QUIET_CC)$(CC) -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ)
 
 shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o O/rexel.o
