@@ -289,7 +289,7 @@ Module features
 - [ ] clarify and document the role of numeric args to git-grep
 - [X] when restart compile/grep, kill only one.
 - [ ] numeric-prefix to make will auto-save everything.
-- [ ] grep should (optionally) save files in the directory tree
+- [X] grep should (optionally) save files in the directory tree
 
 ### message-line
 

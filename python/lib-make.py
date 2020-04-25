@@ -724,21 +724,22 @@ def isword(c):
     return c and c.isalnum() or c == '_'
 
 def run_make(key, focus, str, **a):
+    k = key[2:]
+    c = k.index(':')
+    dir = k[c+1:]
+    mode = k[:c]
     # pop-up has completed, check if we need to save-all
     # If we already have, key will start 'Y:', else 'N:'
     if key.startswith('N:'):
-        if focus.call("docs:save-all", 0, 1) != 1:
+        if focus.call("docs:save-all", 0, 1, dir) != 1:
             p = focus.call("PopupTile", "DM", ret='focus');
             p['done-key'] = 'Y:' + key[2:]
             p['default'] = str
+            p['only-here'] = dir
             p.call("popup:set-callback", run_make)
             p.call("docs:show-modified")
             return 1
 
-    key = key[2:]
-    c = key.index(':')
-    dir = key[c+1:]
-    mode = key[:c]
     if mode == "git":
         cmd = "git-grep"
         docname = "*Grep Output*"

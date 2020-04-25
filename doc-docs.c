@@ -189,12 +189,18 @@ static void doc_checkname(struct pane *p safe, struct docs *ds safe, int n)
 static int mark_is_modified(struct pane *p safe, struct mark *m safe)
 {
 	char *fn, *mod;
+	char *dir;
 
 	mod = pane_mark_attr(p, m, "doc-modified");
 	if (!mod || strcmp(mod, "yes") != 0)
 		return 0;
 	fn = pane_mark_attr(p, m, "filename");
-	return fn && *fn;
+	if (!fn || !*fn)
+		return 0;
+	dir = pane_attr_get(p, "only-here");
+	if (!dir)
+		return 1;
+	return strncmp(dir, fn, strlen(dir)) == 0;
 }
 
 static void mark_to_modified(struct pane *p safe, struct mark *m safe)
@@ -434,10 +440,17 @@ DEF_CMD(docs_callback)
 	}
 
 	if (strcmp(ci->key, "docs:save-all") == 0) {
-		list_for_each_entry(p, &doc->collection->children, siblings)
+		int dirlen = ci->str ? (int)strlen(ci->str) : -1;
+		list_for_each_entry(p, &doc->collection->children, siblings) {
+			if (dirlen > 0) {
+				char *fn = pane_attr_get(p, "dirname");
+				if (!fn || strncmp(ci->str, fn, dirlen) != 0)
+					continue;
+			}
 			if (doc_save(p, p, ci->num2) > 0)
 				/* Something needs to be saved */
 				return 2;
+		}
 		return 1;
 	}
 
