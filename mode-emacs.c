@@ -493,7 +493,7 @@ REDEF_CMD(emacs_simple)
 	if (!ci->mark)
 		return Enoarg;
 
-	return call(sc->type, ci->focus, ci->num, ci->mark, NULL, ci->num2);
+	return call(sc->type, ci->focus, ci->num, ci->mark);
 }
 
 REDEF_CMD(emacs_simple_neg)
@@ -503,7 +503,7 @@ REDEF_CMD(emacs_simple_neg)
 	if (!ci->mark)
 		return Enoarg;
 
-	return call(sc->type, ci->focus, -RPT_NUM(ci), ci->mark, NULL, ci->num2);
+	return call(sc->type, ci->focus, -RPT_NUM(ci), ci->mark);
 }
 
 REDEF_CMD(emacs_simple_num)
@@ -513,7 +513,7 @@ REDEF_CMD(emacs_simple_num)
 	if (!ci->mark)
 		return Enoarg;
 
-	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, NULL, ci->num2);
+	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark);
 }
 
 REDEF_CMD(emacs_simple_str)
@@ -533,7 +533,7 @@ REDEF_CMD(emacs_simple_str)
 		call("view:changed", ci->focus, 0, p, NULL, 0, mk);
 	}
 
-	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, str, ci->num2);
+	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, str);
 }
 
 REDEF_CMD(emacs_insert);
@@ -1740,7 +1740,8 @@ DEF_CMD(emacs_match_again)
 DEF_CMD(emacs_make)
 {
 	call("interactive-cmd-make", ci->focus,
-	     strcmp(ci->key, "K:CC:C-M") == 0, ci->mark);
+	     ci->num, ci->mark, NULL,
+	     strcmp(ci->key, "K:CC:C-M") == 0);
 	return 1;
 }
 
