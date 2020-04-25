@@ -22,7 +22,11 @@
 #include "misc.h"
 
 struct complete_data {
-	char *prefix safe;
+	char *orig;
+	struct stk {
+		struct stk *prev;
+		const char *substr safe;
+	} *stk safe;
 	int prefix_only;
 };
 
@@ -95,7 +99,7 @@ DEF_CMD(render_complete_line)
 	 * Then skip over any other non-matches.
 	 */
 	struct complete_data *cd = ci->home->data;
-	int plen = strlen(cd->prefix);
+	int plen = strlen(cd->stk->substr);
 	struct rlcb cb;
 	int ret;
 	struct mark *m;
@@ -106,7 +110,7 @@ DEF_CMD(render_complete_line)
 	m = mark_dup(ci->mark);
 	cb.plen = plen;
 	cb.prefix_only = cd->prefix_only;
-	cb.prefix = cd->prefix;
+	cb.prefix = cd->stk->substr;
 	cb.str = NULL;
 	cb.cmp = 0;
 	cb.c = rcl_cb;
@@ -186,7 +190,7 @@ static int do_render_complete_prev(struct complete_data *cd safe,
 
 	cb.c = rlcb;
 	cb.str = NULL;
-	cb.prefix = cd->prefix;
+	cb.prefix = cd->stk->substr;
 	cb.prefix_only = cd->prefix_only;
 	cb.plen = strlen(cb.prefix);
 	cb.cmp = 0;
@@ -244,8 +248,15 @@ DEF_CMD(render_complete_prev)
 DEF_CMD(complete_free)
 {
 	struct complete_data *cd = ci->home->data;
+	struct stk *stk = cd->stk;
 
-	free(cd->prefix);
+	while (stk) {
+		struct stk *t = stk;
+		stk = stk->prev;
+		free((void*)t->substr);
+		free(t);
+	}
+
 	unalloc(cd, pane);
 	return 1;
 }
@@ -285,7 +296,7 @@ DEF_CMD(complete_escape)
 	 * so we need to save it.
 	 */
 	call("popup:close", ci->home->parent, NO_NUMERIC, NULL,
-	     strsave(ci->home, cd->prefix));
+	     strsave(ci->home, cd->orig));
 	return 1;
 }
 
@@ -293,36 +304,28 @@ DEF_CMD(complete_char)
 {
 	struct complete_data *cd = ci->home->data;
 	char *np;
-	struct call_return cr;
-	int pl = strlen(cd->prefix);
+	int pl = strlen(cd->stk->substr);
 	const char *suffix = ksuffix(ci, "K-");
 
-	np = malloc(pl + 2);
-	strcpy(np, cd->prefix);
-	np[pl] = *suffix;
-	np[pl+1] = 0;
-	cr = call_ret(all, "Complete:prefix", ci->focus, !cd->prefix_only, NULL, np);
-	if (cr.i == 0) {
-		/* No matches, revert */
-		np[pl] = 0;
-		call("Complete:prefix", ci->focus, !cd->prefix_only, NULL, np);
-	} else if (cr.s && strlen(cr.s) > strlen(np))
-		call("Complete:prefix", ci->focus, !cd->prefix_only, NULL, cr.s);
-	free(np);
+	np = malloc(pl + strlen(suffix) + 1);
+	strcpy(np, cd->stk->substr);
+	strcpy(np+pl, suffix);
+	call("Complete:prefix", ci->focus, !cd->prefix_only, NULL, np);
 	return 1;
 }
 
 DEF_CMD(complete_bs)
 {
 	struct complete_data *cd = ci->home->data;
-	char *np;
-	int pl = strlen(cd->prefix);
+	struct stk *stk = cd->stk;
 
-	np = malloc(pl + 1);
-	strcpy(np, cd->prefix);
-	np[pl-1] = 0;
-	call("Complete:prefix", ci->focus, !cd->prefix_only, NULL, np);
-	free(np);
+	if (!stk->prev)
+		return 1;
+	cd->stk = stk->prev;
+	free((void*)stk->substr);
+	free(stk);
+	pane_damaged(ci->focus, DAMAGED_VIEW);
+	call("view:changed", ci->focus);
 	return 1;
 }
 
@@ -403,11 +406,12 @@ DEF_CMD(complete_set_prefix)
 	 */
 	struct pane *p = ci->home;
 	struct complete_data *cd = p->data;
+	struct stk *stk;
 	struct mark *m;
 	struct mark *m2 = NULL;
 	const char *c;
 	int cnt = 0;
-	char *pfx;
+	const char *pfx;
 	int plen;
 	char *common = NULL;
 	/* common_pre is the longest common prefix to 'common' that
@@ -420,15 +424,19 @@ DEF_CMD(complete_set_prefix)
 
 	if (!ci->str)
 		return Enoarg;
-	free(cd->prefix);
-	cd->prefix = strdup(ci->str);
-	cd->prefix_only = !ci->num;
-	pfx = cd->prefix;
+	pfx = ci->str;
 	plen = strlen(pfx);
+	cd->prefix_only = !ci->num;
 
 	m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 	if (!m)
 		return Efail;
+
+	stk = malloc(sizeof(*stk));
+	stk->prev = cd->stk;
+	stk->substr = pfx;
+	cd->stk = stk;
+
 	/* Move to end-of-document */
 	call("Move-File", ci->focus, 1, m);
 
@@ -472,11 +480,10 @@ DEF_CMD(complete_set_prefix)
 			/* This match can be used for 'common' and
 			 * initial cursor
 			 */
-			if (m2)
-				mark_free(m2);
+			mark_free(m2);
 			m2 = mark_dup(m);
 
-			if (common == NULL) {
+			if (!common) {
 				common = strndup(match, l);
 			} else {
 				common[common_len(match, common)] = 0;
@@ -495,14 +502,18 @@ DEF_CMD(complete_set_prefix)
 		}
 		cnt += 1;
 	}
-	if (common_pre) {
+	if (common_pre && common && cnt) {
 		strcat(common_pre, common);
 		comm_call(ci->comm2, "callback:prefix", ci->focus, cnt,
 			  NULL, common_pre);
-		free(common_pre);
-	} else
-		comm_call(ci->comm2, "callback:prefix", ci->focus, cnt,
-			  NULL, common);
+		stk->substr = common_pre;
+		if (!cd->orig)
+			cd->orig = strdup(stk->substr);
+	} else {
+		cd->stk = stk->prev;
+		free(stk);
+		comm_call(ci->comm2, "callback:prefix", ci->focus, 0);
+	}
 	free(common);
 	if (m2) {
 		call("Move-to", ci->focus, 0, m2);
@@ -604,7 +615,9 @@ REDEF_CMD(complete_attach)
 		free(cd);
 		return Efail;
 	}
-	cd->prefix = strdup("");
+	cd->stk = malloc(sizeof(cd->stk));
+	cd->stk->prev = NULL;
+	cd->stk->substr = strdup("");
 	cd->prefix_only = 1;
 
 	return comm_call(ci->comm2, "callback:attach", complete);
@@ -612,5 +625,6 @@ REDEF_CMD(complete_attach)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, &complete_attach, 0, NULL, "attach-render-complete");
+	call_comm("global-set-command", ed, &complete_attach,
+		  0, NULL, "attach-render-complete");
 }

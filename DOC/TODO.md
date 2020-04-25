@@ -231,7 +231,7 @@ Module features
 
 ### completion
 
-- [ ] backspace should remove multiple chars if needed until the number of matches
+- [X] backspace should remove multiple chars if needed until the number of matches
       increases.  Should it remove chars that were auto-added at the start?
       Should they be highlighted by not requred?
 - [ ] mouse selection should work in completion pane
