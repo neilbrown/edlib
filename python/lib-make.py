@@ -35,6 +35,7 @@ class MakePane(edlib.Pane):
         self.note_ok = False
         self.first_match = True
         self.line = b''
+        self.backwards = False
         self.call("doc:request:Abort")
         self.call("editor:request:make:match-docs")
         self.last = None # last (file,line) seen
@@ -323,6 +324,18 @@ class MakePane(edlib.Pane):
         self.call("doc:notify:doc:replaced", self.point, 100)
         return self.map[int(self.point['ref'])]
 
+    def find_prev(self):
+        if not self.point:
+            return None
+        p = self.point.prev()
+        self.clear_render()
+        if not p:
+            return None
+        p['render:make-line'] = 'best'
+        self.call("doc:notify:doc:replaced", p, 100)
+        self.point = p
+        return self.map[int(self.point['ref'])]
+
     def close_idle(self, cnt):
         if self['cmd'] == 'make':
             # don't close 'make'
@@ -369,7 +382,11 @@ class MakePane(edlib.Pane):
             # some other pane has already responded
             return 0
 
-        if num:
+        if num < 0:
+            self.backwards = True
+        elif num > 0 and self.backwards:
+            self.backwards = False
+        elif num > 0:
             # clear marks so that we parse again
             m = self.call("doc:vmark-get", self.viewnum, ret='mark')
             while m:
@@ -383,25 +400,33 @@ class MakePane(edlib.Pane):
             self.note_ok = False
 
         self.do_parse()
-        n = self.find_next()
-        while n and self.last and n == self.last:
-            # Don't want to see the same line again
-            n = self.find_next()
-        if not n:
-            focus.call("Message", "No further matches")
-            # send viewers to keep following end of file.
-            first_match = self.first_match
-            self.first_match = True
-            p = edlib.Mark(self)
-            self.call("doc:set-ref", p)
-            self.call("doc:notify:make-set-match", p)
-            if num2 or self.pipe or not first_match:
-                # 'num2' means we are using a simple repeat-last-command
-                # 'self.pipe' means this make/grep is still running.
-                # not first_match means we aren't at end-of-file, so stop there
-                # In either case stop here, don't try next make/grep doc
+
+        if self.backwards:
+            n = self.find_prev()
+            if not n:
+                focus.call("Message", "No previous matches")
+                self.backwards = False
                 return 1
-            return 0
+        else:
+            n = self.find_next()
+            while n and self.last and n == self.last:
+                # Don't want to see the same line again
+                n = self.find_next()
+            if not n:
+                focus.call("Message", "No further matches")
+                # send viewers to keep following end of file.
+                first_match = self.first_match
+                self.first_match = True
+                p = edlib.Mark(self)
+                self.call("doc:set-ref", p)
+                self.call("doc:notify:make-set-match", p)
+                if num2 or self.pipe or not first_match:
+                    # 'num2' means we are using a simple repeat-last-command
+                    # 'self.pipe' means this make/grep is still running.
+                    # not first_match means we aren't at end-of-file, so stop there
+                    # In either case stop here, don't try next make/grep doc
+                    return 1
+                return 0
         self.last = n
         if xy[0] > 0:
             # This isn't the first pane to be notified, but we found a new match
@@ -876,6 +901,8 @@ def make_request(key, focus, num, str, mark, **a):
 def next_match(key, focus, num, str, num2, **a):
     if num == edlib.NO_NUMERIC:
         restart = 0
+    elif num < 0:
+        restart = -1 # means step backwards
     else:
         restart = 1
     if not focus.call("editor:notify:make:match-docs", "next-match",

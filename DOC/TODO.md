@@ -280,7 +280,7 @@ Module features
 - [X] what should happen if we run 'make' while make is running?
       If same dir - kill??? If different, create new doc?
 - [X] handle note: lines better - prefer a .c file over .h.
-- [ ] neg arg to next-match goes backwards, and ` keeps going backwards
+- [X] neg arg to next-match goes backwards, and ` keeps going backwards
 - [ ] if file isn't already loaded, wait until it is wanted, or something
       else loads it.
 - [ ] if file is reloaded, re-place all the marks, don't just ignore them.
