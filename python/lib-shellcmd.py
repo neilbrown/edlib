@@ -10,6 +10,16 @@ class ShellPane(edlib.Pane):
         edlib.Pane.__init__(self, focus)
         self.line = b''
         self.call("doc:request:Abort")
+        self.call("editor:request:shell-reuse")
+
+    def check_reuse(self, key, comm2, **a):
+        "handle:shell-reuse"
+        if self.pipe:
+            return 0
+        if comm2:
+            comm2("cb", self["doc-name"])
+        self.call("doc:destroy")
+        return 1
 
     def run(self, cmd, cwd, header=True):
         FNULL = open(os.devnull, 'r')
@@ -55,7 +65,6 @@ class ShellPane(edlib.Pane):
                 self.call("doc:replace", "\nProcess Finished (%d)\n" % ret)
             else:
                 self.call("doc:replace", "\nProcess Finished (signaled %d)\n" % -ret)
-            self.close()
             return edlib.Efalse
         l = self.line + r
         i = l.rfind(b'\n')

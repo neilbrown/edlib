@@ -1234,10 +1234,9 @@ DEF_CMD(emacs_shell)
 		return 1;
 	}
 	path = pane_attr_get(ci->focus, "dirname");
-	/* Find or create "*Shell Command Output*" */
-	doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL, name);
-	if (!doc)
-		doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
+	/* Close old shell docs and create a new one */
+	call("editor:notify:shell-reuse", ci->focus);
+	doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
 	if (!doc)
 		return Efail;
 	attr_set_str(&doc->attrs, "dirname", path);

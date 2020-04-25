@@ -309,7 +309,7 @@ Module features
 
 ### shell mode
 
-- [ ] two shells running concurrently write to samedocument!
+- [X] two shells running concurrently write to samedocument!
 - [ ]  Use pattern-match on command to optionally choose an overlay
        which can highlight output and allow actions.
        e.g. (git )?grep   - highlight file names and jump to match
@@ -319,6 +319,8 @@ Module features
 - [ ]  Detect ^M in output and handle it... delete from start of line?
 - [ ] when insert at end-of-file, a pointer that was at EOF should
       stay there.
+- [ ] extend enough that make/grep can use shell mode for running the
+      the command, and they just do ui and highlighting
 
 ###  edlibclient
 - [ ] run edlib directly if no socket
