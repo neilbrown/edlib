@@ -288,7 +288,7 @@ Module features
 - [X] improve detection of the 'important' "note" line.
 - [ ] clarify and document the role of numeric args to git-grep
 - [X] when restart compile/grep, kill only one.
-- [ ] numeric-prefix to make will auto-save everything.
+- [X] numeric-prefix to make will auto-save everything.
 - [X] grep should (optionally) save files in the directory tree
 
 ### message-line

@@ -724,14 +724,20 @@ def isword(c):
     return c and c.isalnum() or c == '_'
 
 def run_make(key, focus, str, **a):
-    k = key[2:]
+    # key is X:a:mode:dir
+    # Where 'X' is 'Y' if save-all has been attepted, else 'N'
+    #  'a' is 1 if save-all should be unconditional (auto), else 0
+    #  mode is git or grep or make
+    #  dir is directory to run in.
+    k = key[4:]
     c = k.index(':')
     dir = k[c+1:]
     mode = k[:c]
     # pop-up has completed, check if we need to save-all
     # If we already have, key will start 'Y:', else 'N:'
     if key.startswith('N:'):
-        if focus.call("docs:save-all", 0, 1, dir) != 1:
+        testonly = 1 if key[2] == '0' else 0
+        if focus.call("docs:save-all", 0, testonly, dir) != 1:
             p = focus.call("PopupTile", "DM", ret='focus');
             p['done-key'] = 'Y:' + key[2:]
             p['default'] = str
@@ -790,7 +796,7 @@ def run_make(key, focus, str, **a):
     p['cmd'] = cmd
     return 1
 
-def make_request(key, focus, num, str, mark, **a):
+def make_request(key, focus, num, num2, str, mark, **a):
     history = None
     dflt_arg = ''
 
@@ -827,7 +833,7 @@ def make_request(key, focus, num, str, mark, **a):
             else:
                 d = os.path.dirname(d)
 
-        if num > 0 and mode != "grep":
+        if num >= 0 and mode != "grep":
             # if we found a project-root, run command from there.
             if d and d[-1] != '/':
                 d = d + '/'
@@ -858,7 +864,8 @@ def make_request(key, focus, num, str, mark, **a):
             else:
                 dflt_arg = str
 
-    if cmd == "make" and num:
+    autosave = 1 if num > 0 and num != edlib.NO_NUMERIC else 0
+    if cmd == "make" and num2:
         # re-use previous run if directory is compatible
         make_cmd = None
         doc = focus.call("editor:notify:make:match-docs", "choose-make", dir,
@@ -873,7 +880,7 @@ def make_request(key, focus, num, str, mark, **a):
         if doc:
             dir = doc['dirname']
             make_cmd = doc['make-command']
-            run_make("N:%s:%s"%(mode,dir), focus, make_cmd)
+            run_make("N:%d:%s:%s"%(autosave,mode,dir), focus, make_cmd)
             return 1
 
     # Create a popup to ask for make command
@@ -886,7 +893,7 @@ def make_request(key, focus, num, str, mark, **a):
         p.call("Replace", dflt_arg)
     p.call("popup:set-callback", run_make)
     p["prompt"] = "%s Command" % cmd
-    p["done-key"] = "N:%s:%s" % (mode, dir)
+    p["done-key"] = "N:%d:%s:%s" % (autosave, mode, dir)
     p.call("doc:set-name", "%s Command" % cmd)
     p['pane-title'] = "%s in %s" %(cmd, dir)
     p['cmd'] = cmd
