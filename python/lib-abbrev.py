@@ -80,27 +80,44 @@ class AbbrevPane(edlib.Pane):
 
         # now try search forward FIXME should this be async?
         m.to_mark(start)
+        self.patn = patn
+        self.gather_completions(self, m)
+        self.docs_scanned = 0
+        self.call("docs:byeach", self.each_doc)
+        if not self.completions:
+            self.call("Message", "No completions found")
+        elif len(self.completions) == 1:
+            self.call("Message", "1 completion found")
+        else:
+            self.call("Message", "%d completions found" % len(self.completions))
+
+    def gather_completions(self, p, m):
+        if not m:
+            m = edlib.Mark(p)
+
         again = True
         while again:
-            if self.call("doc:step", 1, 1, m, ret='char') is None:
+            if p.call("doc:step", 1, 1, m, ret='char') is None:
                 break
             try:
-                l = self.call("text-search", patn, 1, 0, m)
+                l = p.call("text-search", self.patn, 1, 0, m)
                 again = True
                 l -= 1
             except edlib.commandfailed:
                 again = False
             if again:
                 e = m.dup()
-                self.call("Move-Char", m, -l)
+                while l > 0:
+                    p.call("doc:step", m, 0, 1)
+                    l -= 1
                 try:
-                    self.call("text-search", "\\>", e)
+                    p.call("text-search", "\\>", e)
                 except edlib.commandfailed:
                     pass
                 if e <= m:
-                    self.call("doc:step", 1, 1, m)
+                    p.call("doc:step", 1, 1, m)
                     continue
-                s = self.call("doc:get-str", m, e, ret='str')
+                s = p.call("doc:get-str", m, e, ret='str')
                 if (s.lower().startswith(self.prefix.lower()) and
                     s.lower() != self.prefix.lower()):
                     com = s[self.prefix_len:]
@@ -108,12 +125,19 @@ class AbbrevPane(edlib.Pane):
                         self.completions.append(com)
                 m.to_mark(e)
 
-        if not self.completions:
-            self.call("Message", "No completions found")
-        elif len(self.completions) == 1:
-            self.call("Message", "1 completion found")
-        else:
-            self.call("Message", "%d completions found" % len(self.completions))
+    def each_doc(self, key, focus, **a):
+        if self.docs_scanned > 5:
+            # already handle 5 docs - stop now
+            return 1
+        if focus['doc-name'] == self['doc-name']:
+            return 0
+        if "text" not in focus["doc-type"]:
+            return 0
+        self.docs_scanned += 1
+        self.gather_completions(focus, None)
+        return 0
+
+
 
     def next_completion(self, dir):
         if self.current < 0:

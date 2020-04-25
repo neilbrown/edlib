@@ -20,7 +20,7 @@ Current priorities
 - [X] doc-text: merge undo-records where possible
 - [X] make: handle "note:" lines better
 - [ ] test-suite: add one test case.
-- [ ] dynamic completion: look in other docs - top 5 text??
+- [X] dynamic completion: look in other docs - top 5 text??
 
 Bugs to be fixed
 ----------------
@@ -476,7 +476,7 @@ Module features
 
 ### dynamic completion
 
-- [ ] search in other docs for a prefix
+- [X] search in other docs for a prefix
 - [ ] provide a drop-down menu with options
 
 New Modules - simple
