@@ -25,8 +25,31 @@
 export EDLIB_FAKE_TIME=1581382278
 
 export TEST_DIR=/tmp/edlib-tests
+export TEST_COMMIT=5875a3514f4e753fa183a2e19000e803384fae77
+
+runtest()
+{
+	case $# in
+	1 ) EDLIB_RECORD=$1 \
+		screen -m sh -c 'stty rows 30 cols 80; ./edlib $TEST_DIR'
+	;;
+	2 ) EDLIB_RECORD=$1 EDLIB_REPLAY=$2 \
+		screen -D -m sh -c 'stty rows 30 cols 80; ./edlib $TEST_DIR'
+	;;
+	esac
+}
 
 cmd=$0
+
+setup_test_dir() {
+    if [ -d $TEST_DIR -a -d $TEST_DIR/.git ]; then
+	(cd $TEST_DIR ; git reset > /dev/null --hard $TEST_COMMIT ; git clean -fxd)
+    else
+	rm -rf $TEST_DIR
+	git clone . $TEST_DIR
+	(cd $TEST_DIR ; git reset --hard $TEST_COMMIT)
+    fi
+}
 
 new_test() {
     if [ $# -ne 1 ]; then
@@ -43,8 +66,8 @@ new_test() {
 	echo >&2 "$0: Cannot create $tt - strange"
 	exit 1
     fi
-    EDLIB_RECORD=tests.d/.tmp xterm -geo 80x30 -e 'TERM=xterm-256color ./edlib'
-    EDLIB_REPLAY=tests.d/.tmp EDLIB_RECORD=$tt xterm -geo 80x30 -e 'TERM=xterm-256color ./edlib'
+    runtest tests.d/.tmp
+    runtest $tt tests.d/.tmp
     diff -u tests.d/.tmp $tt
     rm tests.d/.tmp
     exit 0
@@ -56,9 +79,13 @@ run_one_test() {
 	exit_code=2
 	return
     fi
-    EDLIB_REPLAY=tests.d/$1 EDLIB_RECORD=tests.d/.out xterm -geo 80x30 -e 'TERM=xterm-256color ./edlib'
+    echo -n "run $1 ..."
+    runtest tests.d/.out tests.d/$1
     if diff -u "tests.d/$1" tests.d/.out;
-    then : ; else exit_code=1 ; fi
+    then echo "succeeded."
+    else echo "FAILED."
+         exit_code=1
+    fi
     rm -f tests.d/.out
 }
 
@@ -86,7 +113,7 @@ refresh_tests() {
     fi
     for f in tests.d/[A-Za-z0-9]*; do
 	b=${f#tests.d/}
-	EDLIB_REPLAY=tests.d/$b EDLIB_RECORD=tests.d/.out xterm -geo 80x30 -e 'TERM=xterm-256color ./edlib'
+	runtest tests.d/.out tests.d/$b
 	mv tests.d/.out $f
     done
 }
@@ -95,9 +122,9 @@ refresh_tests() {
 cmd=$1
 shift
 case $cmd in
-	new) new_test $*;;
-	run) run_tests $*;;
-	refresh) refresh_tests $*;;
+	new) setup_test_dir; new_test $*;;
+	run) setup_test_dir; run_tests $*;;
+	refresh) setup_test_dir; refresh_tests $*;;
 	* )
 		echo >&2 "Usage: $0 new test-name"
 		echo >&2 "       $0 run [test-name|failed]"

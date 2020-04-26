@@ -19,7 +19,7 @@ Current priorities
 - [X] lib-input: feed-back for number/mode prefixes.
 - [X] doc-text: merge undo-records where possible
 - [X] make: handle "note:" lines better
-- [ ] test-suite: add one test case.
+- [X] test-suite: add one test case.
 - [X] dynamic completion: look in other docs - top 5 text??
 
 Bugs to be fixed
