@@ -276,12 +276,31 @@ DEF_CMD(editor_on_idle)
 
 	ic = calloc(1, sizeof(*ic));
 	ic->focus = ci->focus;
+	pane_add_notify(ci->home, ci->focus, "Notify:Close");
 	ic->callback = command_get(ci->comm2);
 	if (!ei->idle_calls)
 		/* Make sure we don't block waiting for events */
 		call("event:noblock", ci->home);
 	ic->next = ei->idle_calls;
 	ei->idle_calls = ic;
+	return 1;
+}
+
+DEF_CMD(editor_notify_close)
+{
+	struct ed_info *ei = ci->home->data;
+	struct idle_call **icp, *ic;
+
+	icp = &ei->idle_calls;
+	while ((ic = *icp) != NULL) {
+		if (ic->focus != ci->focus) {
+			icp = &ic->next;
+			continue;
+		}
+		command_put(ic->callback);
+		*icp = ic->next;
+		free(ic);
+	}
 	return 1;
 }
 
@@ -417,6 +436,7 @@ struct pane *editor_new(void)
 			       &editor_send_notify);
 		key_add(ed_map, "Close", &editor_close);
 		key_add(ed_map, "Free", &editor_free);
+		key_add(ed_map, "Notify:Close", &editor_notify_close);
 	}
 	ei->map = key_alloc();
 	key_add(ei->map, "on_idle-clean_up", &editor_clean_up);
