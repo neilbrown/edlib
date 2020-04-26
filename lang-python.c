@@ -2036,6 +2036,11 @@ static PyObject *Comm_call(Comm *c safe, PyObject *args safe, PyObject *kwds)
 	return PyLong_FromLong(rv);
 }
 
+static PyObject *comm_cmp(Comm *c1 safe, Comm *c2 safe, int op)
+{
+	Py_RETURN_RICHCOMPARE(c1->comm, c2->comm, op);
+}
+
 static Comm *comm_new(PyTypeObject *type safe, PyObject *args safe, PyObject *kwds)
 {
 	Comm *self;
@@ -2051,6 +2056,7 @@ static PyTypeObject CommType = {
 	.tp_name	= "edlib.Comm",
 	.tp_basicsize	= sizeof(Comm),
 	.tp_dealloc	= (destructor)comm_dealloc,
+	.tp_richcompare	= (richcmpfunc)comm_cmp,
 	.tp_repr	= (reprfunc)comm_repr,
 	.tp_call	= (ternaryfunc)Comm_call,
 	.tp_flags	= Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,

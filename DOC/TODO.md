@@ -301,7 +301,6 @@ Module features
 - [ ] save-all should indiciate option (y,n,s,o,..).  '%' is strange...
 - [ ] docs_callback should (maybe) use a keymap
 
-
 ### hex
 
 - [ ] improve doc:replaced handing, by tracking the visible region and
