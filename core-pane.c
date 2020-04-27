@@ -616,17 +616,17 @@ void pane_focus(struct pane *focus)
 	/* We have root->input->display. FIXME I need a better way
 	 * to detect the 'display' level.
 	 */
-	while (p->parent->parent->parent != p->parent->parent) {
-		if (p->parent->focus &&
-		    p->parent->focus != p) {
-			struct pane *old = p->parent->focus;
+	for (; p->parent->parent->parent != p->parent->parent; p = p->parent) {
+		struct pane *old = p->parent->focus;
+		if (old == p)
+			continue;
+		p->parent->focus = p;
+		if (old) {
 			pane_damaged(old, DAMAGED_CURSOR);
-			p->parent->focus = p;
 			while (old->focus)
 				old = old->focus;
 			call("pane:defocus", old);
 		}
-		p = p->parent;
 	}
 	call("pane:refocus", focus);
 }
