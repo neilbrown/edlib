@@ -1033,7 +1033,10 @@ DEF_CMD(tile_child_registered)
 	struct tileinfo *ti = p->data;
 	struct pane *c = ci->focus;
 
+	if (c->z != 0)
+		return 0;
 	if (ti->leaf && c->z == 0) {
+		p->focus = c;
 		if (ti->content) {
 			ti->leaf = 2;
 			pane_close(ti->content);
