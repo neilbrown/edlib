@@ -45,6 +45,9 @@ Bugs to be fixed
 Core features
 -------------
 
+- [ ] Change emacs to resubmit text entry commands as doc:char... commands
+      and have core-doc translate these to replace.  Then lib-viewer translated
+      them to doc:cmd... which allows emacs to capture keys before lib-viewer.
 - [ ] For a notify handler, returning non-zero doesn't stop other handlers
       running.  For a call handler it does.  This inconsistency is awkward for
       messageline_msg which wants to allow fallthrough, but needs to acknowledge.
@@ -95,7 +98,6 @@ Core features
 - [ ] hide view-num inside pane so number cannot be misused.
      i.e. each view is owned by a pane and can only be used by that pane.
 
-
 Module features
 ---------------
 
@@ -121,7 +123,6 @@ Module features
 - [ ] write an alternate back-tracking matcher which supports \N
       in the pattern, and provide it for substitution.
 
-
 ### popup
 
 - [ ] if 'focus' is a temp pane, it might disappear (lib-abbrev) which
@@ -129,6 +130,17 @@ Module features
       for replies to go to
       Maybe lib-abbrev should catch ChildRegistered and call pane_subsume
       to get out of the way ... or similar....
+      Or maybe lib-abbrev just stays there ignoring commands until it has
+      no children, then it disappears.
+
+### lib-diff
+
+- [ ] add command to add it to any pane
+- [ ] highlight word differences, rather than just lines
+- [ ] detect <<< ||| === >>> and highlight relevant differences,
+      and change colour of <<< etc when no differences, or only white-space differences.
+- [ ] command to apply a hunk to a given document - or to reverse it.
+- [ ] command to find best 'wiggle' match, and another to apply it if no conflicts.
 
 ### emacs
 
@@ -177,6 +189,7 @@ Module features
 
 ### pygtk
 
+- [ ] interactive command to open pygtk window even from ncurses.  displayname can be given
 - [ ] make sure pixmap handling in optimal - I want the per-pane images to be server-side
       See cairo_xcb_surface_create.
 - [ ] allow 'pane-clear' to use content from lower-level image.
@@ -411,6 +424,9 @@ Module features
 
 ### Presenter
 
+- [ ] command to immediately change current pane in to presenter view
+- [ ] add viewer pane so cannot accidentally edit - and space pages down.
+- [ ] translucent bg colour for paragraphs
 - [ ] partial-view-points. Only render beyond here if mark here or beyond.
     page-down goes to next such point
 - [ ] temp attribute.  :bold: etc only apply to para, :: is appended to para format
@@ -457,21 +473,24 @@ Module features
 - [ ] support for blank lines near blanklines or start/end of file
 - [ ] support highlight for 8spaces after a tab
 
-
 ### test suite
 
-- [ ] Remove uninteresting variability
-    - time in status line and dir listing
-    - full path in find-file
-    - changes in support tools (e.g. grep) ??
-        Maybe store output rather than regenerate
-- [ ] switch to 'screen' rather than xterm - if it works
+# tests
+
+- [ ] avoid duplicate Display lines with same content
+- [ ] understand why there are differences on creation
+- [ ] Make it easy to replay up to the difference.
+      Have error report a 'first line' and then reply to that line.
+- [ ] Add way to abstract out the path to /tmp/edlib-tests
+- [ ] Add mechanism to easily run a command with pre-canned output.
+- [X] switch to 'screen' rather than xterm - if it works
 - [ ] Add one test case, and arrange for auto-testing on commit. 
-- [ ] choose edlib git point for testing
+- [X] choose edlib git point for testing
 - [ ] allow headless testing as well as visible
 - [ ] allow single-step testing?
 - [ ] Allow testing gtk as well an ncurses
 - [ ] Allow testing of server/client accesses
+- [ ] add more tests
 
 ### dynamic completion
 
@@ -619,7 +638,6 @@ variables as possible.  If I am in an “if” statement in a “for” look,
 then the loop header and the if condition would be displayed if at all
 possible.
 
-
 ### email composition
 
 There a several parts to composing an email message:
@@ -661,27 +679,27 @@ A view on "git log" would only show the first page until you scroll down.  Then
 more would be requested and displayed.  So we don't generate thousands of commits
 unless that are actually wanted.
 
-### wiggle/diff
-
-The purpose of 'wiggle' is to apply a patch that doesn't fit perfectly.
-So the editor would show were the best fit was, and what the problems are.
-It would allow the problems to be corrected in various ways.
-
-wiggle already has a built-in editor (--browse) which supports some of
-this, but I find it hard to use.  Embedding wiggle into edlib should allow
-me to re-think the problem and find out what works.
-
-One thing to do would be to show the conflicts (why the patch doesn't apply)
-and the needed changes.  If editing causes either of those to become empty,
-it should be easy to apply or abort the hunk.  Note if, in either case,
-the differences are just white-space.
-
 ### vi mode
 
 I currently support emacs-like editing, but that is mostly kept local to one module.
 I'd like to add a comparable vi module, partly because some people like vi
 and partly because it would encourage me to keep the key-bindings cleanly
 separate from the functionality.
+
+### office mode
+
+- C-c for copy, C-x for cut, C-v for paste, 
+- Shift-arrows to select C-arrows for word-movement
+- C-bs C-del delete word
+- C-a select all
+- C-f find/replace C-S-f - search again
+- home/end - start/end of line
+- Shift-home/end - start/end of file
+- C-up/down start/end para
+- C-z undo C-y redo
+
+Commands that are 'C-x' or 'C-c' in emacs would be 'alt-f' (For file) etc
+and could pop-down menus from a menu bar.
 
 ### a “reflection” document so I can view the internal data structures.
 
@@ -699,7 +717,6 @@ But dates are cool, and this is a highly structured concept and I like structure
 At the very least I want a calendar pop-up.
 
 ### A suite of tools making use of some sort of "mark-down" like language
-
 
 Restructured text? Markdown?  Commonmark?  Markright?
 
@@ -728,7 +745,6 @@ Non-module functionality
  would include links to other files with more content.  Maybe
  documentation from a given file could be parsed out and displated
  interactively by a doc pane.
-
 
 ### IDE
 
@@ -759,28 +775,6 @@ Interaction with gdb would be nice too - things like
 - set break points and watch points from the code
 - step up and down stack and jump around code at same time.
 - view values of variables directly from the code.
-
-
-### TEST SUITE.  really really.
-
-- record/replay input event sequence
-- global setting to hide irrelevant detail like timestamps?
-- command/key-stroke to scrape display to save.
-      use mvin_wchstr
-- This could be entirely inside ncurses.  It records events and content,
-      and/or replay a previous recording.
-- This has parts, so:
-    - [ ] set of files to work with
-    - [ ] identify source of uninterestin variability and allow them
-          to be blocked
-          - time in status line
-          - full path name in find-file and docs listing
-          - possible changes in support programs (grep?). Maybe make
-            all "program output" be generated from saved files.
-    - [ ] Make it easy to reply a test up to the point of failure, and watch
-          the output.
-    - [ ] harness for running tests
-    - [ ] collection of tests
 
 ### gpg / compress / ssh file access
 
