@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
 	call("global-load-module", ed, 0, NULL, "lib-copybuf");
 	call("global-load-module", ed, 0, NULL, "lib-colourmap");
 	call("global-load-module", ed, 0, NULL, "lib-textfill");
+	call("global-load-module", ed, 0, NULL, "lib-autosave");
 
 	call("global-load-module", ed, 0, NULL, "render-c-mode");
 	call("global-load-module", ed, 0, NULL, "lib-make");

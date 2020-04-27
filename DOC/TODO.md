@@ -11,7 +11,7 @@ Current priorities
 - [X] text: track autosave files
 - [X] emacs: pop-up diff when visiting an auto-saved file - readonly until an answer
 - [X] doc-dir: use lib-viewer
-- [ ] doc-dir: mode to usefully view and act on the list of autosaves.
+- [ ] autosave: all
 - [X] tile: Window:close-others in one dimension only
 - [X] emacs: typing in selection replaces selected text
 - [X] render-lines: text appearing before top-of-page should appear - at least one line
@@ -100,6 +100,18 @@ Core features
 
 Module features
 ---------------
+
+### autosave
+
+- [ ] if multiple files are opened quickly (e.g. by grep), we might get cascading
+      autosave prompts.  Introduce a mechanism to queue them and only have one per
+      display
+- [ ] Add 'delete' option as well as 'restore' and 'ignore'
+- [ ] Make sure doc is 'dirty' after a restore
+- [ ] Handle opening of backup files too
+- [ ] Handle opening of autosave files
+- [ ] add dir overlay which shows symlink content and disappears when none left
+- [ ] auto-load $HOME/.edlib-autosave on startup
 
 ### tile
 
@@ -220,10 +232,9 @@ Module features
 ### doc-dir
 
 - [X] use lib-viewer
-- [ ] mode to usefully view and act on the list of autosaves.
+- [ ] allow setting a pattern, as alternate to substr, for 'complete' viewer.
 - [ ] how to change sort order of a directory listing
 - [ ] chown/chmod/unlink/rename etc
-- [ ] diff an auto-save file with base, and optionally replace.
 
 ### doc-text
 

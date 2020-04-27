@@ -23,7 +23,6 @@
 static struct map *emacs_map;
 static const char * safe file_normalize(struct pane *p safe, const char *path,
 					const char *initial_path);
-static void check_autosave(struct pane *p safe);
 
 /* num2 is used to track if successive commands are related.
  * Only low 16 bits identify command, other bits are free.
@@ -999,10 +998,9 @@ DEF_CMD(emacs_findfile)
 	}
 
 	p = home_call_ret(pane, p, "doc:attach-view", par, 1);
-	if (p) {
+	if (p)
 		pane_focus(p);
-		check_autosave(p);
-	}
+
 	return p ? 1 : Efail;
 }
 
@@ -2012,93 +2010,6 @@ DEF_CMD(emacs_abbrev)
 	return 1;
 }
 
-
-/*
- * Autosave restore:
- * When an old autosave file is detected, we pop up a window showing a diff
- * from the saved file to the autosave file and as 'Should this be restored?'
- * If 'y' or 's' is given, the autosave file is renamed over the saved file,
- * which is then reloaded.
- * 'n' or 'q' discard the diff.
- */
-
-DEF_CMD(autosave_keep)
-{
-	char *orig = pane_attr_get(ci->focus, "orig_name");
-	char *as = pane_attr_get(ci->focus, "autosave_name");
-	struct pane *d;
-
-	if (!orig || !as)
-		return 1;
-
-	d = call_ret(pane, "doc:open", ci->focus, -1, NULL, orig);
-	if (d)
-		call("doc:load-file", d, 4, NULL, NULL, -1);
-	call("popup:close", ci->focus);
-	return 1;
-}
-
-DEF_CMD(autosave_discard)
-{
-	call("popup:close", ci->focus);
-	return 1;
-}
-
-static struct map *as_map;
-DEF_LOOKUP_CMD(autosave_handle, as_map);
-static void autosave_init(void)
-{
-	if (as_map)
-		return;
-	as_map = key_alloc();
-	key_add(as_map, "doc:cmd-s", &autosave_keep);
-	key_add(as_map, "doc:cmd-y", &autosave_keep);
-	key_add(as_map, "doc:cmd-n", &autosave_discard);
-	key_add(as_map, "doc:cmd-q", &autosave_discard);
-	key_add(as_map, "doc:replaced", &autosave_discard);
-}
-
-static void check_autosave(struct pane *p safe)
-{
-	char *s;
-	struct pane *p2;
-
-	s = pane_attr_get(p, "autosave-exists");
-	if (!s || strcmp(s, "yes") != 0)
-		return;
-	p2 = call_ret(pane, "PopupTile", p, 0, NULL, "DM3sta");
-	if (p2) {
-		char *f, *a, *diffcmd;
-		struct pane *doc;
-
-		f = pane_attr_get(p, "filename");
-		a = pane_attr_get(p, "autosave-name");
-
-		doc = call_ret(pane, "doc:from-text", p,
-			       0, NULL, "*Autosave-Diff*",
-			       0, NULL, "\nAutosave file has these differences, type 'y' to restore, 'n' to discard.\n\n");
-		if (doc) {
-			call("doc:replace", doc, 0, NULL, "Original file: ");
-			call("doc:replace", doc, 0, NULL, f);
-			call("doc:replace", doc, 0, NULL, "\nAutosave file: ");
-			call("doc:replace", doc, 0, NULL, a);
-			call("doc:replace", doc, 0, NULL, "\n\n");
-			call("doc:set:autoclose", doc, 1);
-			diffcmd = strconcat(p, "diff -u ",f," ",a);
-			call("attach-shellcmd", doc, 1, NULL, diffcmd);
-			attr_set_str(&doc->attrs, "view-default", "diff");
-			p2 = home_call_ret(pane, doc, "doc:attach-view", p2, 1);
-		}
-		if (p2) {
-			p2 = pane_register(p2, 0, &autosave_handle.c);
-			attr_set_str(&p2->attrs, "orig_name", f);
-			attr_set_str(&p2->attrs, "autosave_name", a);
-			if (doc)
-				pane_add_notify(p2, doc, "doc:replaced");
-		}
-	}
-}
-
 DEF_PFX_CMD(meta_cmd, ":M");
 DEF_PFX_CMD(cx_cmd, ":CX");
 DEF_PFX_CMD(cx4_cmd, ":CX4");
@@ -2260,7 +2171,6 @@ void edlib_init(struct pane *ed safe)
 {
 	emacs_init();
 	findmap_init();
-	autosave_init();
 	call_comm("global-set-command", ed, &attach_mode_emacs, 0, NULL, "attach-mode-emacs");
 	call_comm("global-set-command", ed, &attach_file_entry, 0, NULL, "attach-file-entry");
 	emacs_search_init(ed);
