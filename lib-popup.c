@@ -110,6 +110,7 @@ DEF_CMD(popup_close)
 {
 	struct popup_info *ppi = ci->home->data;
 
+	pane_focus(ppi->target);
 	command_put(ppi->done);
 	ppi->done = NULL;
 	return 1;
@@ -139,9 +140,10 @@ DEF_CMD(popup_notify_close)
 DEF_CMD(popup_abort)
 {
 	struct popup_info *ppi = ci->home->data;
+	struct pane *target = ppi->target;
 
-	pane_focus(ppi->target);
-	call("Abort", ppi->target);
+	pane_focus(target);
+	call("Abort", target);
 	pane_close(ci->home);
 	return 1;
 }
@@ -149,12 +151,9 @@ DEF_CMD(popup_abort)
 DEF_CMD(popup_child_closed)
 {
 	/* When the child is closed, we have to disappear too */
-	struct popup_info *ppi = ci->home->data;
-
 	if (ci->focus->z != 0)
 		/* Pop-up children don't count */
 		return 1;
-	pane_focus(ppi->target);
 	pane_close(ci->home);
 	return 1;
 }
