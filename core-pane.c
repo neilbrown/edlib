@@ -180,14 +180,6 @@ static void pane_do_resize(struct pane *p safe, int damage)
 	    p->abs_z == p->parent->abs_z + abs(p->z))
 		return;
 
-	if (p->focus == NULL) {
-		list_for_each_entry(c, &p->children, siblings)
-			if (c->z >= 0) {
-				p->focus = c;
-				break;
-			}
-	}
-
 	if (damage & (DAMAGED_SIZE))
 		if (pane_call(p, "Refresh:size", p, 0, NULL,
 			      NULL, damage) != 0)
@@ -399,6 +391,23 @@ restart:
 	return ret;
 }
 
+static void pane_refocus(struct pane *p safe)
+{
+	struct pane *c;
+
+	pane_damaged(p, DAMAGED_CURSOR);
+	p->focus = NULL;
+	/* choose the worst credible focus - the oldest.
+	 * Really some else should be updating the focus, this is
+	 * jus a fall-back
+	 */
+	list_for_each_entry_reverse(c, &p->children, siblings)
+		if (c->z >= 0) {
+			p->focus = c;
+			break;
+		}
+}
+
 void pane_close(struct pane *p safe)
 {
 	struct pane *c;
@@ -426,10 +435,9 @@ restart:
 		goto restart;
 	}
 
-	if (p->parent->focus == p) {
-		pane_damaged(p->parent, DAMAGED_CURSOR);
-		p->parent->focus = NULL;
-	}
+	if (p->parent->focus == p)
+		pane_refocus(p->parent);
+
 	pane_notify_close(p);
 	pane_call(p, "Close", p);
 
@@ -528,10 +536,9 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 	struct pane *c;
 
 	list_del_init(&p->siblings);
-	if (p->parent->focus == p) {
-		pane_damaged(p->parent, DAMAGED_CURSOR);
-		p->parent->focus = NULL;
-	}
+	if (p->parent->focus == p)
+		pane_refocus(p->parent);
+
 	p->parent = pane_root(parent);
 	while (!list_empty(&p->children)) {
 		c = list_first_entry(&p->children, struct pane, siblings);
