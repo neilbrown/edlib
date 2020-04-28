@@ -106,7 +106,7 @@ Module features
 - [ ] if multiple files are opened quickly (e.g. by grep), we might get cascading
       autosave prompts.  Introduce a mechanism to queue them and only have one per
       display
-- [ ] Add 'delete' option as well as 'restore' and 'ignore'
+- [X] Add 'delete' option as well as 'restore' and 'ignore'
 - [ ] Make sure doc is 'dirty' after a restore
 - [ ] Handle opening of backup files too
 - [ ] Handle opening of autosave files

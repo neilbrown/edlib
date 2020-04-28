@@ -10,6 +10,7 @@
  *   If so, we display a diff and ask if it should be restored.
  */
 
+#include <unistd.h>
 #include "core.h"
 
 /*
@@ -22,7 +23,10 @@
  */
 
 static char mesg[] =
-	"\nAutosave file has these differences, type 'y' to restore, 'n' to discard.\n\n";
+	"\nAutosave file has these differences, type:\n"
+	"'y' to restore,\n"
+	"'n' to ignore,\n"
+	"'d' to delete autosaved file.\n\n";
 
 DEF_CMD(autosave_keep)
 {
@@ -40,8 +44,21 @@ DEF_CMD(autosave_keep)
 	return 1;
 }
 
-DEF_CMD(autosave_discard)
+DEF_CMD(autosave_ignore)
 {
+	call("popup:close", ci->focus);
+	return 1;
+}
+
+DEF_CMD(autosave_del)
+{
+	char *as = pane_attr_get(ci->focus, "autosave_name");
+
+	if (!as)
+		return 1;
+	unlink(as);
+	call("Message", ci->focus, 0, NULL,
+	     strconcat(ci->focus, as, " deleted."));
 	call("popup:close", ci->focus);
 	return 1;
 }
@@ -55,9 +72,10 @@ static void autosave_init(void)
 	as_map = key_alloc();
 	key_add(as_map, "doc:cmd-s", &autosave_keep);
 	key_add(as_map, "doc:cmd-y", &autosave_keep);
-	key_add(as_map, "doc:cmd-n", &autosave_discard);
-	key_add(as_map, "doc:cmd-q", &autosave_discard);
-	key_add(as_map, "doc:replaced", &autosave_discard);
+	key_add(as_map, "doc:cmd-d", &autosave_del);
+	key_add(as_map, "doc:cmd-n", &autosave_ignore);
+	key_add(as_map, "doc:cmd-q", &autosave_ignore);
+	key_add(as_map, "doc:replaced", &autosave_ignore);
 }
 
 DEF_CMD(choose_new)
