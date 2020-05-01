@@ -108,8 +108,8 @@ Module features
       display
 - [X] Add 'delete' option as well as 'restore' and 'ignore'
 - [ ] Make sure doc is 'dirty' after a restore
-- [ ] Handle opening of backup files too
-- [ ] Handle opening of autosave files
+- [X] Handle opening of backup files too
+- [X] Handle opening of autosave files
 - [ ] add dir overlay which shows symlink content and disappears when none left
 - [ ] auto-load $HOME/.edlib-autosave on startup
 
@@ -238,6 +238,8 @@ Module features
 
 ### doc-text
 
+- [ ] use larger buffers for adding text - especialy when filling from pipe.
+      e.g. new buffer doubles each time??
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
 - [X] merge adjacent undo records that can be merged.
@@ -543,6 +545,12 @@ Possibly some of these will end up being features in other modules.
       This leaves attributes where errors are found, and needs to be notified of
       all changes so it can queue some checks.
 
+- [ ] Separate out filesystem access from doc-text and doc-dir and elsewhere
+      into a filesystem access module.
+- [ ] Create compress-access module that layers compression over fs access
+- [ ] Create gpg-access module that layers encryption and decryption over fs access
+- [ ] Create ssh-access module that uses ssh/scp to access files
+
 New Modules - more complex
 -------------------------
 
@@ -786,10 +794,6 @@ Interaction with gdb would be nice too - things like
 - set break points and watch points from the code
 - step up and down stack and jump around code at same time.
 - view values of variables directly from the code.
-
-### gpg / compress / ssh file access
-
-I don't know where this will fit in yet.
 
 ### config
 

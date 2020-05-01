@@ -2184,6 +2184,45 @@ DEF_CMD(text_get_attr)
 		if (!t->autosave_name && t->fname)
 			t->autosave_name = autosave_name(t->fname);
 		val = t->autosave_name;
+	} else if (strcmp(attr, "is_backup") == 0) {
+		const char *f = t->fname ?: "";
+		const char *base = strrchr(f, '/');
+		int l;
+
+		if (base)
+			base += 1;
+		else
+			base = f;
+		l = strlen(base);
+		if (base[0] == '#' && base[l-1] == '#')
+			val = "yes";
+		else if (base[l-1] == '~' && strchr(base, '~') - base < l-1)
+			val = "yes";
+		else
+			val = "no";
+	} else if (strcmp(attr, "base-name") == 0) {
+		char *f = strsave(ci->focus, t->fname ?: "");
+		char *base;
+		int l;
+
+		if (!f)
+			return Efail;
+		base = strrchr(f, '/');
+		if (base)
+			base += 1;
+		else
+			base = f;
+		l = strlen(base);
+		val = f;
+		if (base[0] == '#' && base[l-1] == '#') {
+			base[l-1] = '\0';
+			strcpy(base, base+1);
+		} else if (base[l-1] == '~' && strchr(base, '~') - base < l-1) {
+			while (l > 1 && base[l-2] != '~')
+				l -= 1;
+			base[l-2] = '\0';
+		} else
+			val = NULL;
 	} else
 		return Efallthrough;
 

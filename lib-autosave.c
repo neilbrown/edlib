@@ -94,6 +94,9 @@ DEF_CMD(ask_autosave)
 	struct pane *p = ci->focus;
 	struct pane *p2;
 	struct call_return cr;
+	char *f = NULL, *a = NULL, *diffcmd;
+	char *s;
+	struct pane *doc;
 
 	/* Need to choose best display */
 	cr.i = 0; cr.p = NULL;
@@ -106,38 +109,48 @@ DEF_CMD(ask_autosave)
 		cr.p = cr.p->focus;
 
 	p2 = call_ret(pane, "PopupTile", cr.p, 0, NULL, "DM3sta");
-	if (p2) {
-		char *f, *a, *diffcmd;
-		struct pane *doc;
+	if (!p2)
+		return Efail;
 
+	if ((s = pane_attr_get(p, "autosave-exists")) != NULL &&
+	    strcmp(s, "yes") == 0) {
 		f = pane_attr_get(p, "filename");
 		a = pane_attr_get(p, "autosave-name");
-
-		doc = call_ret(pane, "doc:from-text", p,
-			       0, NULL, "*Autosave-Diff*",
-			       0, NULL, mesg);
-		if (doc) {
-			call("doc:replace", doc, 0, NULL, "Original file: ");
-			call("doc:replace", doc, 0, NULL, f);
-			call("doc:replace", doc, 0, NULL, "\nAutosave file: ");
-			call("doc:replace", doc, 0, NULL, a);
-			call("doc:replace", doc, 0, NULL, "\n\n");
-			call("doc:set:autoclose", doc, 1);
-			diffcmd = strconcat(p, "diff -Nu ",f," ",a);
-			call("attach-shellcmd", doc, 1, NULL, diffcmd);
-			attr_set_str(&doc->attrs, "view-default", "diff");
-			p2 = home_call_ret(pane, doc, "doc:attach-view", p2, 1);
-		} else
-			p2 = NULL;
-		if (p2) {
-			p2 = pane_register(p2, 0, &autosave_handle.c);
-			attr_set_str(&p2->attrs, "orig_name", f);
-			attr_set_str(&p2->attrs, "autosave_name", a);
-			if (doc)
-				pane_add_notify(p2, doc, "doc:replaced");
-		}
+	} else if ((s = pane_attr_get(p, "is_backup")) != NULL &&
+		   strcmp(s, "yes") == 0) {
+		f = pane_attr_get(p, "base-name");
+		a = pane_attr_get(p, "filename");
 	}
-	return Efail;
+
+	if (!a || !f) {
+		pane_close(cr.p);
+		return Efail;
+	}
+	doc = call_ret(pane, "doc:from-text", p,
+		       0, NULL, "*Autosave-Diff*",
+		       0, NULL, mesg);
+	if (doc) {
+		call("doc:replace", doc, 0, NULL, "Original file: ");
+		call("doc:replace", doc, 0, NULL, f);
+		call("doc:replace", doc, 0, NULL, "\nAutosave file: ");
+		call("doc:replace", doc, 0, NULL, a);
+		call("doc:replace", doc, 0, NULL, "\n\n");
+		call("doc:set:autoclose", doc, 1);
+		diffcmd = strconcat(p, "diff -Nu ",f," ",a);
+		call("attach-shellcmd", doc, 1, NULL, diffcmd);
+		attr_set_str(&doc->attrs, "view-default", "diff");
+		p2 = home_call_ret(pane, doc, "doc:attach-view", p2, 1);
+	} else
+		p2 = NULL;
+	if (p2) {
+		p2 = pane_register(p2, 0, &autosave_handle.c);
+		attr_set_str(&p2->attrs, "orig_name", f);
+		attr_set_str(&p2->attrs, "autosave_name", a);
+		if (doc)
+			pane_add_notify(p2, doc, "doc:replaced");
+	}
+
+	return 1;
 }
 
 DEF_CMD(check_autosave)
@@ -146,9 +159,11 @@ DEF_CMD(check_autosave)
 	struct pane *p = ci->focus;
 
 	s = pane_attr_get(p, "autosave-exists");
+	if (!s || strcmp(s, "yes") != 0)
+		s = pane_attr_get(p, "is_backup");
 	if (s && strcmp(s, "yes") == 0)
 		call_comm("editor-on-idle", p, &ask_autosave);
-		//call_comm("event:timer", p, &ask_autosave, 100);
+
 	return Efallthrough;
 }
 
