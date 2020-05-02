@@ -62,7 +62,6 @@ struct dir_ent {
 struct directory {
 	struct doc		doc;
 	struct list_head	ents;
-	struct pane		*rendering;
 
 	struct stat		stat;
 	char			*fname;
@@ -197,14 +196,10 @@ DEF_CMD(dir_new)
 	alloc(dr, pane);
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	doc_register(ci->home, &doc_handle.c, dr);
-	p = call_ret(pane, "attach-render-format", dr->doc.home, 1);
+	p = doc_register(ci->home, &doc_handle.c, dr);
 	if (p)
-		p = call_ret(pane, "attach-doc-rendering", p);
-	if (p)
-		pane_add_notify(dr->doc.home, p, "Notify:Close");
-	dr->rendering = p;
-	return comm_call(ci->comm2, "callback:doc", dr->doc.home);
+		return comm_call(ci->comm2, "callback:doc", p);
+	return Efail;
 }
 
 DEF_CMD(dir_new2)
@@ -723,8 +718,6 @@ DEF_CMD(dir_destroy)
 		list_del(&de->lst);
 		free(de);
 	}
-	if (dr->rendering)
-		pane_close(dr->rendering);
 	doc_free(d);
 	return 1;
 }
@@ -844,65 +837,6 @@ DEF_CMD(dir_cmd)
 	return 1;
 }
 
-DEF_CMD(dir_attach)
-{
-	struct doc *d = ci->home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
-	const char *type = ci->str ?: "default";
-	struct pane *p;
-
-	if (strcmp(type, "invisible") == 0 ||
-	    ci->num2 == (int)(unsigned long)dir_attach_func)
-		/* use default core-doc implementation */
-		return Efallthrough;
-	if (strcmp(type, "complete") == 0) {
-
-		p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
-				  ci->num, NULL, "invisible");
-		if (p)
-			p = call_ret(pane, "attach-view", p);
-		if (p)
-			p = call_ret(pane, "attach-render-format", p);
-		if (p)
-			p = call_ret(pane, "attach-viewer", p);
-		if (p) {
-			attr_set_str(&p->attrs, "line-format", "%name%suffix");
-			attr_set_str(&p->attrs, "heading", "");
-			attr_set_str(&p->attrs, "done-key", "Replace");
-			p = call_ret(pane, "attach-render-complete", p);
-		}
-		if (p)
-			return comm_call(ci->comm2, "callback:doc", p);
-		return Efail;
-	}
-	/* any other type gets the default handling for the rendering */
-	p = dr->rendering;
-	if (!p || p->damaged & DAMAGED_CLOSED)
-		p = ci->home;
-	return home_call(p, ci->key, ci->focus,
-			 ci->num,
-			 NULL, ci->str,
-			 p == ci->home ? (int)(unsigned long)dir_attach_func : 0,
-			 NULL, NULL,
-			 0, 0, ci->comm2);
-}
-
-DEF_CMD(dir_notify_close)
-{
-	struct doc *d = ci->home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
-
-	if (ci->focus == dr->rendering) {
-		dr->rendering = NULL;
-		/* one out - all out ! - but it isn't safe
-		 * to close yet, because that pane might have
-		 * active views FIXME.
-		 */
-		//pane_close(ci->home);
-	}
-	return 1;
-}
-
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &dir_new, 0, NULL, "attach-doc-dir");
@@ -918,11 +852,9 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:step", &dir_step);
 	key_add_prefix(doc_map, "doc:cmd-", &dir_cmd);
 	key_add_prefix(doc_map, "doc:cmd:", &dir_cmd);
-	key_add(doc_map, "doc:attach-view", &dir_attach);
 	key_add(doc_map, "doc:notify:doc:revisit", &dir_revisited);
 
 	key_add(doc_map, "get-attr", &dir_get_attr);
-	key_add(doc_map, "Notify:Close", &dir_notify_close);
 	key_add(doc_map, "Close", &dir_destroy);
 	key_add(doc_map, "Free", &edlib_do_free);
 }
