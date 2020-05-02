@@ -72,7 +72,7 @@ LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
 	O/core-keymap.o O/core-pane.o O/core-misc.o O/core-log.o \
 	O/core-version.o
 SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
-	O/doc-email.o O/doc-multipart.o O/doc-rendering.o \
+	O/doc-email.o O/doc-multipart.o \
 	O/render-hex.o O/render-lines.o \
 	O/render-format.o O/render-complete.o \
 	O/lib-view.o O/lib-tile.o O/lib-popup.o O/lib-linecount.o O/lib-keymap.o \
