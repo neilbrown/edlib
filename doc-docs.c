@@ -633,7 +633,7 @@ DEF_CMD(docs_get_attr)
 	else if (strcmp(attr, "heading") == 0)
 		val = "<bold,underline> Mod Document             File</>";
 	else if (strcmp(attr, "line-format") == 0)
-		val = " %doc-modified:3 %+doc-name:20 %.filename";
+		val = " %doc-modified:3 %doc-name:20 %filename";
 	else if (strcmp(attr, "render-default") == 0)
 		val = "format";
 	else if (strcmp(attr, "view-default") == 0)
@@ -847,7 +847,7 @@ DEF_CMD(docs_attach)
 		if (p)
 			p = call_ret(pane, "attach-render-format", p);
 		if (p) {
-			attr_set_str(&p->attrs, "line-format", "%+doc-name");
+			attr_set_str(&p->attrs, "line-format", "%doc-name");
 			attr_set_str(&p->attrs, "heading", "");
 			attr_set_str(&p->attrs, "done-key", "Replace");
 			p = call_ret(pane, "attach-render-complete", p);
@@ -866,9 +866,6 @@ DEF_CMD(docs_attach)
 		if (p)
 			p = call_ret(pane, "attach-viewer", p);
 		if (p) {
-			//attr_set_str(&p->attrs, "line-format", "%+doc-name");
-			//attr_set_str(&p->attrs, "heading", "");
-			//attr_set_str(&p->attrs, "done-key", "Replace");
 			p = pane_register(p, 0, &docs_modified_handle.c, docs);
 
 			call("doc:request:doc:replaced", p);

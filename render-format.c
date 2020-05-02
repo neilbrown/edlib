@@ -16,27 +16,21 @@
 #include "core.h"
 #include "misc.h"
 
-struct rf_data {
-	int home_field;
-	int fields;
-};
 
-static char *do_format(struct rf_data *rf safe, struct pane *focus safe,
+static char *do_format(struct pane *focus safe,
 		       struct mark *m safe, struct mark *pm,
 		       int len, int attrs)
 {
 	char *body = pane_attr_get(focus, "line-format");
 	struct buf ret;
 	char *n;
-	int home = 0;
-	int field = 0;
 
 	if (pm && !mark_same(pm, m))
 		pm = NULL;
 	buf_init(&ret);
 
 	if (!body)
-		body = "%+name";
+		body = "%name";
 	n = body;
 	if (pm)
 		goto endwhile;
@@ -63,22 +57,12 @@ static char *do_format(struct rf_data *rf safe, struct pane *focus safe,
 			n += 1;
 			continue;
 		}
-		if (n[1] == '+' || n[1] == '.')
-			field += 1;
 
 		if (len >= 0 && ret.len >= len)
 			break;
 		if (pm)
 			break;
 		n += 1;
-		if (*n == '+') {
-			/* Home field */
-			n += 1;
-			home = field;
-			if (rf->home_field < 0)
-				rf->home_field = home;
-		} else if (*n == '.')
-			n += 1;
 		b = buf;
 		while (*n == '-' || *n == '_' || isalnum(*n)) {
 			if (b < buf + sizeof(buf) - 2)
@@ -133,11 +117,7 @@ static char *do_format(struct rf_data *rf safe, struct pane *focus safe,
 	}
 endwhile:
 	if (!*n) {
-		rf->fields = field+1;
-		rf->home_field = home;
-		if (len >= 0)
-			;
-		else
+		if (len < 0)
 			buf_append(&ret, '\n');
 	}
 	return buf_final(&ret);
@@ -145,8 +125,6 @@ endwhile:
 
 DEF_CMD(format_content)
 {
-	struct rf_data *rf = ci->home->data;
-
 	if (!ci->mark || !ci->comm2)
 		return Enoarg;
 
@@ -154,7 +132,7 @@ DEF_CMD(format_content)
 		const char *l, *c;
 		wint_t w;
 
-		l = do_format(rf, ci->focus, ci->mark, NULL, -1, 0);
+		l = do_format(ci->focus, ci->mark, NULL, -1, 0);
 		if (!l)
 			break;
 		c = l;
@@ -175,7 +153,6 @@ DEF_CMD(format_content)
 
 DEF_CMD(render_line)
 {
-	struct rf_data *rf = ci->home->data;
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2;
 	char *ret;
@@ -193,7 +170,7 @@ DEF_CMD(render_line)
 		len = -1;
 	else
 		len = ci->num;
-	ret = do_format(rf, ci->focus, ci->mark, pm, len, 1);
+	ret = do_format(ci->focus, ci->mark, pm, len, 1);
 	if (!pm && len < 0)
 		doc_next(ci->focus, m);
 	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, ret);
@@ -226,19 +203,6 @@ DEF_CMD(format_clone)
 	return 1;
 }
 
-DEF_CMD(format_get_attr)
-{
-	char attr[20];
-	struct rf_data *rf = ci->home->data;
-
-	if (!ci->mark ||
-	    !ci->str ||
-	    strcmp(ci->str, "markup:fields") != 0)
-		return 0;
-	sprintf(attr, "%u:%u", rf->home_field, rf->fields);
-	return comm_call(ci->comm2, "attr", ci->focus, 0, ci->mark, attr);
-}
-
 static struct map *rf_map;
 
 static void render_format_register_map(void)
@@ -248,24 +212,19 @@ static void render_format_register_map(void)
 	key_add(rf_map, "doc:render-line", &render_line);
 	key_add(rf_map, "doc:render-line-prev", &render_line_prev);
 	key_add(rf_map, "Clone", &format_clone);
-	key_add(rf_map, "doc:get-attr", &format_get_attr);
 	key_add(rf_map, "doc:content", &format_content);
-	key_add(rf_map, "Free", &edlib_do_free);
 }
 
 DEF_LOOKUP_CMD(render_format_handle, rf_map);
 
 static struct pane *do_render_format_attach(struct pane *parent, int nolines)
 {
-	struct rf_data *rf;
 	struct pane *p;
 
 	if (!rf_map)
 		render_format_register_map();
 
-	alloc(rf, pane);
-	rf->home_field = -1;
-	p = pane_register(parent, 0, &render_format_handle.c, rf);
+	p = pane_register(parent, 0, &render_format_handle.c);
 	attr_set_str(&p->attrs, "render-wrap", "no");
 	if (nolines)
 		return p;

@@ -156,33 +156,6 @@ DEF_CMD(email_select)
 	return 1;
 }
 
-DEF_CMD(email_get_attr)
-{
-	/* The "markup:fields" attribute needs to be synthesized
-	 * from the per-part email:actions attribute
-	 */
-	char *a;
-	int fields;
-	char ret[12];
-	if (!ci->str || strcmp(ci->str, "markup:fields") != 0)
-		return Efallthrough;
-	if (!ci->mark)
-		return Efallthrough;
-
-	a = pane_mark_attr(ci->home->parent, ci->mark,
-			   "multipart-prev:email:actions");
-	if (!a)
-		return 1;
-	fields = 0;
-	while (a && *a) {
-		a = strchr(a, ':');
-		if (a)
-			a += 1;
-		fields += 1;
-	}
-	snprintf(ret, sizeof(ret), "%d", fields);
-	return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark, ret);
-}
 static struct map *email_map safe;
 static struct map *email_view_map safe;
 
@@ -816,7 +789,6 @@ static void email_init_map(void)
 	key_add(email_map, "Free", &edlib_do_free);
 	key_add(email_map, "doc:email:render-spacer", &email_spacer);
 	key_add(email_map, "doc:email:select", &email_select);
-	key_add(email_map, "doc:get-attr", &email_get_attr);
 
 	email_view_map = key_alloc();
 	key_add(email_view_map, "Free", &email_view_free);

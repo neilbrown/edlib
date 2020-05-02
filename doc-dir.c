@@ -700,7 +700,7 @@ DEF_CMD(dir_get_attr)
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "dir";
 	else if (strcmp(attr, "line-format") == 0)
-		val = " <fg:red>%.perms</> %.mdate:13 %.user:10 %.group:10%.hsize:-6  <fg:blue>%+name%.suffix</>%arrow<fg:green-30>%target</>";
+		val = " <fg:red>%perms</> %mdate:13 %user:10 %group:10%hsize:-6  <fg:blue>%name%suffix</>%arrow<fg:green-30>%target</>";
 	else if (strcmp(attr, "filename") == 0)
 		val = dr->fname;
 	else
@@ -866,7 +866,7 @@ DEF_CMD(dir_attach)
 		if (p)
 			p = call_ret(pane, "attach-viewer", p);
 		if (p) {
-			attr_set_str(&p->attrs, "line-format", "%+name%suffix");
+			attr_set_str(&p->attrs, "line-format", "%name%suffix");
 			attr_set_str(&p->attrs, "heading", "");
 			attr_set_str(&p->attrs, "done-key", "Replace");
 			p = call_ret(pane, "attach-render-complete", p);

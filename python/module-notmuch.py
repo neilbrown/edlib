@@ -815,7 +815,7 @@ class notmuch_main_view(edlib.Pane):
         edlib.Pane.__init__(self, focus)
         self['render-wrap'] = 'no'
         self['background'] = 'color:#A0FFFF'
-        self['line-format'] = '<%fmt>%count %+name</>'
+        self['line-format'] = '<%fmt>%count %name</>'
         self.call("notmuch:set_list_pane")
         self.call("doc:request:doc:replaced")
         self.selected = None
@@ -871,7 +871,7 @@ class notmuch_list(edlib.Doc):
         self.messageids = {}
         self.threadinfo = {}
         self["render-default"] = "notmuch:threads"
-        self["line-format"] = "<%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%+TM-authors</><tab:350>%.TM-threadinfo<tab:450><%TM-hilite>%.TM-subject</>                      "
+        self["line-format"] = "<%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<tab:450><%TM-hilite>%TM-subject</>                      "
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")
         self.load_full()
