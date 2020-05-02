@@ -559,7 +559,6 @@ DEF_CMD(docs_step)
 	if (move) {
 		mark_step(m, forward);
 		m->ref.p = next;
-		mark_step(m, forward);
 	}
 
 	if (p == NULL)

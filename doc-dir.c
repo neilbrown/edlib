@@ -407,7 +407,6 @@ DEF_CMD(dir_step)
 	if (move) {
 		mark_step(m, forward);
 		m->ref.d = d;
-		mark_step(m, forward);
 	}
 	/* return value must be +ve, so use high bits to ensure this. */
 	return CHAR_RET(ret);

@@ -4,10 +4,10 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] fix bugs
 - [X] emacs: replacable selections aren't working for me.  There needs to be an 
       easier way to cancel them. C-x C-x works as does C-wC-y, but neither are obvious.
       Maybe any cursor movement should
-- [X] fix bugs
 - [X] text: track autosave files
 - [X] emacs: pop-up diff when visiting an auto-saved file - readonly until an answer
 - [X] doc-dir: use lib-viewer
@@ -25,6 +25,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] isearch - C-w and C-c should add text to end of buffer, not at cursor.
 - [X] I have lib-make.py, other libs and Makefile as documents with lib-make.py
       first and I try to find doc "mak" and complete - it shows me all the 'lib-' docs!!!
 - [X] edit C file, insert spc spc x x ; spc undo - crash

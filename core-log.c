@@ -258,7 +258,6 @@ DEF_CMD(log_step)
 	if (move) {
 		mark_step(m, forward);
 		m->ref = ref;
-		mark_step(m, forward);
 	}
 	return CHAR_RET(ret);
 }

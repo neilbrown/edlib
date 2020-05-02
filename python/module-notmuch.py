@@ -1085,7 +1085,6 @@ class notmuch_list(edlib.Doc):
             else:
                 mark.pos = (tid, None)
 
-            mark.step(0)
             return '\n'
 
     def handle_notify_tag(self, key, str, str2, **a):

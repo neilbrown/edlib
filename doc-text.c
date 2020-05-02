@@ -1554,7 +1554,6 @@ DEF_CMD(text_step)
 	if (move) {
 		mark_step(m, forward);
 		m->ref = r;
-		mark_step(m, forward);
 	}
 	/* return value must be +ve, so use high bits to ensure this. */
 	return CHAR_RET(ret);
@@ -1584,7 +1583,6 @@ DEF_CMD(text_step_bytes)
 	if (move) {
 		mark_step(m, forward);
 		m->ref = r;
-		mark_step(m, forward);
 	}
 	/* return value must be +ve, so use high bits to ensure this. */
 	return CHAR_RET(ret);
