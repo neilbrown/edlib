@@ -1165,10 +1165,7 @@ REDEF_CMD(emacs_doc_complete)
 	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		return Efail;
-	p = call_ret(pane, "docs:byname", ci->focus);
-	if (p)
-		p = home_call_ret(pane, p, "doc:attach-view", pop,
-				  0, NULL, "complete");
+	p = call_ret(pane, "docs:complete", pop);
 	if (!p)
 		return Efail;
 	cr = call_ret(all, "Complete:prefix", p, 1, NULL, str);
@@ -1203,7 +1200,7 @@ DEF_CMD(emacs_viewdocs)
 	struct pane *p, *par;
 	struct pane *docs;
 
-	docs = call_ret(pane, "docs:byname", ci->focus);
+	docs = call_ret(pane, "docs:byname", ci->focus, 0, NULL, "*Documents*");
 	if (!docs)
 		return Efail;
 	par = call_ret(pane, "ThisPane", ci->focus);

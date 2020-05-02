@@ -54,7 +54,6 @@ struct docs {
 	struct doc		doc;
 	struct command		callback;
 	struct pane		*collection safe;
-	struct pane		*rendering;
 };
 
 static void docs_demark(struct docs *doc safe, struct pane *p safe)
@@ -382,11 +381,22 @@ DEF_CMD(docs_callback)
 	struct docs *doc = container_of(ci->comm, struct docs, callback);
 	struct pane *p;
 
+	if (strcmp(ci->key, "docs:complete") == 0) {
+		p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus);
+		if (p) {
+			attr_set_str(&p->attrs, "line-format", "%doc-name");
+			attr_set_str(&p->attrs, "heading", "");
+			attr_set_str(&p->attrs, "done-key", "Replace");
+			p = call_ret(pane, "attach-render-complete", p);
+		}
+		if (p)
+			return comm_call(ci->comm2, "callback:doc", p);
+		return Efail;
+	}
 	if (strcmp(ci->key, "docs:byname") == 0) {
 		if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0)
 			return comm_call(ci->comm2, "callback:doc",
 					 doc->doc.home);
-
 		list_for_each_entry(p, &doc->collection->children, siblings) {
 			struct doc *dc = p->data;
 			char *n = dc->name;
@@ -455,12 +465,16 @@ DEF_CMD(docs_callback)
 	}
 
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
-		p = home_call_ret(pane, doc->doc.home, "doc:attach-view",
-				  ci->focus,
-				  ci->num, NULL, "modified");
-		if (!p)
-			return Efail;
-		return comm_call(ci->comm2, "callback:doc", p);
+		p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus);
+		p = pane_register(p, 0, &docs_modified_handle.c, doc);
+		call("doc:Request:doc:replaced", p);
+		/* And trigger Notify:doc:Replace handling immediately...*/
+		pane_call(p, "doc:replaced", p);
+		/* Don't want to inherit position from some earlier instance,
+		 * always move to the start.
+		 */
+		call("Move-File", p, -1);
+		return 1;
 	}
 
 	if (strcmp(ci->key, "doc:appeared-docs-register") == 0) {
@@ -827,90 +841,6 @@ DEF_CMD(docs_cmd)
 	return 1;
 }
 
-DEF_CMD(docs_attach)
-{
-	struct doc *d = ci->home->data;
-	struct docs *docs = container_of(d, struct docs, doc);
-	const char *type = ci->str ?: "default";
-	struct pane *p;
-
-	if (strcmp(type, "invisible") == 0 ||
-	    ci->num == (int)(unsigned long)docs_attach_func)
-		/* use default core-doc implementation */
-		return Efallthrough;
-
-	if (strcmp(type, "complete") == 0) {
-		p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
-				  0, NULL, "invisible");
-		if (p)
-			p = call_ret(pane, "attach-view", p);
-		if (p)
-			p = call_ret(pane, "attach-render-format", p);
-		if (p) {
-			attr_set_str(&p->attrs, "line-format", "%doc-name");
-			attr_set_str(&p->attrs, "heading", "");
-			attr_set_str(&p->attrs, "done-key", "Replace");
-			p = call_ret(pane, "attach-render-complete", p);
-		}
-		if (p)
-			return comm_call(ci->comm2, "callback:doc", p);
-		return Efail;
-	}
-	if (strcmp(type, "modified") == 0) {
-		p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
-				  0, NULL, "invisible");
-		if (p)
-			p = call_ret(pane, "attach-view", p);
-		if (p)
-			p = call_ret(pane, "attach-render-format", p);
-		if (p)
-			p = call_ret(pane, "attach-viewer", p);
-		if (p) {
-			p = pane_register(p, 0, &docs_modified_handle.c, docs);
-
-			call("doc:request:doc:replaced", p);
-			/* And trigger doc:replaced handling immediately...*/
-			pane_call(p, "doc:replaced", p);
-			/* Don't want to inherit position from some
-			 * earlier instance, always move to the start.
-			 */
-			call("Move-File", p, -1);
-		}
-		if (p)
-			return comm_call(ci->comm2, "callback:doc", p);
-		return Efail;
-	}
-	/* any other type gets the default handling for the rendering */
-	p = docs->rendering;
-	if (!p) {
-		/* now is a good time to create the rendering doc */
-		p = call_ret(pane, "attach-render-format", docs->doc.home, 1);
-		if (p)
-			p = call_ret(pane, "attach-doc-rendering", p);
-		if (p)
-			pane_add_notify(docs->doc.home, p, "Notify:Close");
-		docs->rendering = p;
-	}
-
-	if (!p || p->damaged & DAMAGED_CLOSED)
-		p = ci->home;
-	return home_call(p, ci->key, ci->focus,
-			 (int)(unsigned long)docs_attach_func, NULL, ci->str,
-			 0, NULL, NULL,
-			 0, 0, ci->comm2);
-}
-
-DEF_CMD(docs_notify_close)
-{
-	struct doc *d = ci->home->data;
-	struct docs *docs = container_of(d, struct docs, doc);
-
-	if (ci->focus == docs->rendering)
-		docs->rendering = NULL;
-
-	return 1;
-}
-
 static void docs_init_map(void)
 {
 	if (docs_map)
@@ -928,8 +858,6 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:destroy", &docs_destroy);
 	key_add_prefix(docs_map, "doc:cmd-", &docs_cmd);
 	key_add_prefix(docs_map, "doc:cmd:", &docs_cmd);
-	key_add(docs_map, "doc:attach-view", &docs_attach);
-	key_add(docs_map, "Notify:Close", &docs_notify_close);
 
 	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "Free", &edlib_do_free);
@@ -965,7 +893,6 @@ DEF_CMD(attach_docs)
 		free(doc);
 		return Efail;
 	}
-	doc->rendering = NULL;
 	doc->doc.name = strdup("*Documents*");
 	p = pane_register(ci->home, 0, &docs_aux.c, doc);
 	if (!p) {
@@ -981,12 +908,9 @@ DEF_CMD(attach_docs)
 	call_comm("global-set-command", ci->home, &doc->callback,
 		  0, NULL, "doc:appeared-docs-register");
 
+	pane_reparent(doc->doc.home, doc->collection);
 
-	/* Now reparent and return the primary doc */
-	p = doc->doc.home;
-	pane_reparent(p, doc->collection);
-
-	return comm_call(ci->comm2, "callback:doc", p);
+	return comm_call(ci->comm2, "callback:doc", doc->doc.home);
 }
 
 void edlib_init(struct pane *ed safe)
