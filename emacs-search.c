@@ -169,7 +169,7 @@ DEF_CMD(search_add)
 	struct es_info *esi = ci->home->data;
 	wint_t wch;
 	char b[5];
-	struct mark *m;
+	struct mark *m, *ins;
 	int limit = 1000;
 	char *attr = NULL;
 	struct mark *addpos = mark_dup(esi->end);
@@ -189,6 +189,8 @@ DEF_CMD(search_add)
 	else
 		call("Move-Char", esi->target, 1, m);
 
+	ins = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+
 	while (esi->matched
 	       && addpos->seq < m->seq && !mark_same(addpos, m)) {
 		int slash = 0;
@@ -205,16 +207,19 @@ DEF_CMD(search_add)
 			slash = 1;
 		}
 		if (slash) {
-			call("Replace", ci->focus, 1, NULL, "\\",
+			call("doc:set-ref", ci->focus, 0, ins);
+			call("doc:replace", ci->focus, 1, ins, "\\",
 			     !first, NULL, attr);
 			attr = ",auto=1";
 			first = 0;
 		}
-		call("Replace", ci->focus, 1, NULL, b,
+		call("doc:set-ref", ci->focus, 0, ins);
+		call("doc:replace", ci->focus, 1, ins, b,
 		     !first, NULL, attr);
 		first = 0;
 		attr = ",auto=1";
 	}
+	mark_free(ins);
 	return 1;
 }
 

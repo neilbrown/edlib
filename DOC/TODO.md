@@ -40,7 +40,7 @@ Bugs to be fixed
       doc-text consistency checking to go cubic or worse and grind
       to a halt.  consistency-check needs to be more gentle, and make probably
       need to delay some parsing, and delete some marks
-- [ ] isearch - C-w and C-c should add text to end of buffer, not at cursor.
+- [X] isearch - C-w and C-c should add text to end of buffer, not at cursor.
 - [X] I have lib-make.py, other libs and Makefile as documents with lib-make.py
       first and I try to find doc "mak" and complete - it shows me all the 'lib-' docs!!!
 - [X] edit C file, insert spc spc x x ; spc undo - crash
