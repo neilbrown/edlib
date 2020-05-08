@@ -30,7 +30,7 @@ Bugs to be fixed
       Particularly an ssh connection to an ncurses display.
       The problem is the x11selection X connection. When it is closed, the
       whole app dies!
-- [ ] FILENAME COMPLETE with lustre-todo and lustre-to-fix
+- [X] FILENAME COMPLETE with lustre-todo and lustre-to-fix
       when I type the "to", the cursor goes to the end of the list.
       I think 't' include 'o', then 'o' doesn't match and should be ignored,
       but instead sends to end of doc.

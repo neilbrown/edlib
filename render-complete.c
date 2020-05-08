@@ -502,6 +502,8 @@ DEF_CMD(complete_set_prefix)
 		}
 		cnt += 1;
 	}
+	mark_free(m);
+
 	if (common_pre && common && cnt) {
 		strcat(common_pre, common);
 		comm_call(ci->comm2, "callback:prefix", ci->focus, cnt,
@@ -518,9 +520,7 @@ DEF_CMD(complete_set_prefix)
 	if (m2) {
 		call("Move-to", ci->focus, 0, m2);
 		mark_free(m2);
-	} else
-		call("Move-to", ci->focus, 0, m);
-	mark_free(m);
+	}
 
 	pane_damaged(ci->focus, DAMAGED_VIEW);
 	return cnt + 1;
