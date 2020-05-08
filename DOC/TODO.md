@@ -36,7 +36,7 @@ Bugs to be fixed
       but instead sends to end of doc.
 - [X] in 'make', in run_make(), 'k', might not contain a colon.
       This happened when I forgot to "M--", so I used 'Down' a few time.
-- [ ] Make parsing can leave lots of marks in the make doc and this causes
+- [X] Make parsing can leave lots of marks in the make doc and this causes
       doc-text consistency checking to go cubic or worse and grind
       to a halt.  consistency-check needs to be more gentle, and make probably
       need to delay some parsing, and delete some marks
