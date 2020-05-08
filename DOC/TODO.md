@@ -25,7 +25,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] at some scale levels, find-file dialog gets messed up.
+- [X] at some scale levels, find-file dialog gets messed up.
 - [ ] If a net connection to a display goes away, we can block on IO to that display.
       Particularly an ssh connection to an ncurses display.
 - [ ] FILENAME COMPLETE with lustre-todo and lustre-to-fix
@@ -287,6 +287,9 @@ Module features
 - [ ] improve scroll bars
 - [ ] scroll bar should show part of doc displayed, not location of point.
 - [ ] make (trailing) space/tab in doc name visible
+- [ ] review decision about that to do when high < 3*border-height.
+      Current (disabled) code makes a mess when differing scales causes
+      borders to be shorter than content.
 
 ### doc-rendering
 

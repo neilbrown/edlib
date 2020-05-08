@@ -306,7 +306,7 @@ DEF_CMD(view_refresh_size)
 		vd->border_height = cr.y;
 		vd->border_width = cr.x;
 		vd->ascent = cr.i2;
-
+#if 0
 		if (h < vd->border_height * 3 &&
 		    (b & (BORDER_TOP|BORDER_BOT)) ==
 		    (BORDER_TOP|BORDER_BOT)) {
@@ -319,7 +319,7 @@ DEF_CMD(view_refresh_size)
 			b &= ~BORDER_LEFT;
 			b &= ~BORDER_RIGHT;
 		}
-
+#endif
 	}
 
 	if (b & BORDER_LEFT) {
