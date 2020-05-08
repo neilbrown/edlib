@@ -25,6 +25,19 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] at some scale levels, find-file dialog gets messed up.
+- [ ] If a net connection to a display goes away, we can block on IO to that display.
+      Particularly an ssh connection to an ncurses display.
+- [ ] FILENAME COMPLETE with lustre-todo and lustre-to-fix
+      when I type the "to", the cursor goes to the end of the list.
+      I think 't' include 'o', then 'o' doesn't match and should be ignored,
+      but instead sends to end of doc.
+- [ ] in 'make', in run_make(), 'k', might not contain a colon.
+      This happened when I forgot to "M--", so I used 'Down' a few time.
+- [ ] Make parsing can leave lots of marks in the make doc and this causes
+      doc-text consistency checking to go cubic or worse and grind
+      to a halt.  consistency-check needs to be more gentle, and make probably
+      need to delay some parsing, and delete some marks
 - [ ] isearch - C-w and C-c should add text to end of buffer, not at cursor.
 - [X] I have lib-make.py, other libs and Makefile as documents with lib-make.py
       first and I try to find doc "mak" and complete - it shows me all the 'lib-' docs!!!
@@ -104,6 +117,7 @@ Module features
 
 ### autosave
 
+- [ ] change autosave dir to link to base file, not auto-saved version
 - [ ] if multiple files are opened quickly (e.g. by grep), we might get cascading
       autosave prompts.  Introduce a mechanism to queue them and only have one per
       display
@@ -438,6 +452,7 @@ Module features
 
 ### Presenter
 
+- [ ] split into lower pane which parse markdown and upper which handles presentation.
 - [ ] command to immediately change current pane in to presenter view
 - [ ] add viewer pane so cannot accidentally edit - and space pages down.
 - [ ] translucent bg colour for paragraphs
@@ -461,6 +476,7 @@ Module features
 - [ ]  auto-indent enhancements
 
      +   py: after "return" de-indent
+     -  if statement is assignment, align to '='
      -   Should '/' see if at start of comment line following '* ', and discard space?
      -   A line after one ending ; or } or : or unindented is assumed to be
          correctly indented.
@@ -545,6 +561,11 @@ Possibly some of these will end up being features in other modules.
 - [ ] spell check
       This leaves attributes where errors are found, and needs to be notified of
       all changes so it can queue some checks.
+
+- [ ] image-display pane - e.g. can be given a png/jpeg etc file and display
+      it scaled, plus allow scaling and movement
+- [ ] pdf-display pane - like image-display but with multiple pages.
+      Would use libpoppler.
 
 - [ ] Separate out filesystem access from doc-text and doc-dir and elsewhere
       into a filesystem access module.
@@ -747,7 +768,7 @@ world always needs another markup language.
 
 I want:
 
-- easy render to PDF
+- easy render to PDF - e.g. use PyFPDF
 - ASCII-Math or similar
 - anchors for links, structure tags (author, title), foot notes,
   figure captures, tables, index, content.
