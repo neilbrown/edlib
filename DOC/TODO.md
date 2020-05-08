@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] fix bugs
+- [X] fix bugs
 - [X] emacs: replacable selections aren't working for me.  There needs to be an 
       easier way to cancel them. C-x C-x works as does C-wC-y, but neither are obvious.
       Maybe any cursor movement should
@@ -26,10 +26,6 @@ Bugs to be fixed
 ----------------
 
 - [X] at some scale levels, find-file dialog gets messed up.
-- [ ] If a net connection to a display goes away, we can block on IO to that display.
-      Particularly an ssh connection to an ncurses display.
-      The problem is the x11selection X connection. When it is closed, the
-      whole app dies!
 - [X] FILENAME COMPLETE with lustre-todo and lustre-to-fix
       when I type the "to", the cursor goes to the end of the list.
       I think 't' include 'o', then 'o' doesn't match and should be ignored,
@@ -78,6 +74,9 @@ Core features
       Then call doc_free() internally so the module doesn't need to.
       Also if there are still ungrouped marks with ->mdata.  There shouldn't be, but
       coding errors can cause that.
+- [ ] marks should not be auto-freed on close as there could still be a pointer
+      somewhere from the owner.  Rather they should be disconnected and tracked
+      so that a 'free' can work, but nothing else does anything useful.
 - [ ] document the use of doc:replaced.  What are the two
       marks exactly? start and end of range.
 - [ ]  ?? restrict prefix key lookup to punctuation.
@@ -153,6 +152,9 @@ Module features
       Or write a back-tracking matcher that records all groups in the stack
 - [ ] write an alternate back-tracking matcher which supports \N
       in the pattern, and provide it for substitution.
+- [ ] Make it possible to search/match against a string, not just a pane
+- [ ] make it possible to get a command which embeded a compiled pattern so
+      that it can be called on a string or pane to find a match.
 
 ### popup
 
@@ -224,6 +226,14 @@ Module features
 - [ ] make sure pixmap handling in optimal - I want the per-pane images to be server-side
       See cairo_xcb_surface_create.
 - [ ] allow 'pane-clear' to use content from lower-level image.
+- [ ] If a net connection to a display goes away, we can block on IO to that display.
+      Particularly an ssh connection to an ncurses display.
+      The problem is the x11selection X connection. When it is closed, the
+      whole app dies!
+      ARRG.  This is a gtk bug that emacs wants fixed too.  I guess maybe
+      I need something other than gtk... I wonder if I can tollerate tk??
+      or PyFLTK or WxWidgets .... or XCB??
+      Or maybe run any gtk code in a separate process...
 
 ### render-lines
 
@@ -278,7 +288,8 @@ Module features
 
 - [X] backspace should remove multiple chars if needed until the number of matches
       increases.  Should it remove chars that were auto-added at the start?
-      Should they be highlighted by not requred?
+      Should they be highlighted but not requred?
+- [ ] separate out filtered into a separate pane, which can work on attrs or content.
 - [ ] mouse selection should work in completion pane
 - [ ] filename completion should work for earlier component of path.
 - [ ] The “complete” popup should be positioned above/below the file name,
