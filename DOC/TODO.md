@@ -28,11 +28,13 @@ Bugs to be fixed
 - [X] at some scale levels, find-file dialog gets messed up.
 - [ ] If a net connection to a display goes away, we can block on IO to that display.
       Particularly an ssh connection to an ncurses display.
+      The problem is the x11selection X connection. When it is closed, the
+      whole app dies!
 - [ ] FILENAME COMPLETE with lustre-todo and lustre-to-fix
       when I type the "to", the cursor goes to the end of the list.
       I think 't' include 'o', then 'o' doesn't match and should be ignored,
       but instead sends to end of doc.
-- [ ] in 'make', in run_make(), 'k', might not contain a colon.
+- [X] in 'make', in run_make(), 'k', might not contain a colon.
       This happened when I forgot to "M--", so I used 'Down' a few time.
 - [ ] Make parsing can leave lots of marks in the make doc and this causes
       doc-text consistency checking to go cubic or worse and grind
@@ -307,6 +309,7 @@ Module features
 
 ### grep/make
 
+- [ ] Need keystroke to step through different grep/make windows
 - [X] it should be possible to 'find' a match in 'this' window, or 'popup' window
       as well as 'other'
 - [X] 'next-match' should always stop once at the end-of-file even if there is

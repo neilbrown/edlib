@@ -700,7 +700,7 @@ class makeprompt(edlib.Pane):
         self.damaged(edlib.DAMAGED_CONTENT)
         self['dirname'] = d
         self['pane-title'] = "%s in %s" % (self['cmd'],d)
-        self['done-key'] = "%s:%s" % (self['mode'], d)
+        self['done-key'] = "N:%s:%s:%s" % (self['autosave'], self['mode'], d)
         return 1
 
     def down(self, key, focus, **a):
@@ -717,7 +717,7 @@ class makeprompt(edlib.Pane):
         self.damaged(edlib.DAMAGED_CONTENT)
         self['dirname'] = d
         self['pane-title'] = "%s in %s" % (self['cmd'],d)
-        self['done-key'] = "%s:%s" % (self['mode'], d)
+        self['done-key'] = "N:%s:%s:%s" % (self['autosave'], self['mode'], d)
         return 1
 
 def isword(c):
@@ -894,6 +894,7 @@ def make_request(key, focus, num, num2, str, mark, **a):
     p.call("popup:set-callback", run_make)
     p["prompt"] = "%s Command" % cmd
     p["done-key"] = "N:%d:%s:%s" % (autosave, mode, dir)
+    p["autosave"] = "%d" % autosave
     p.call("doc:set-name", "%s Command" % cmd)
     p['pane-title'] = "%s in %s" %(cmd, dir)
     p['cmd'] = cmd
