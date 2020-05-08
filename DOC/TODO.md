@@ -76,6 +76,8 @@ Core features
       stats regularly
 - [ ] graceful failure when closing doc that still has views.
       Then call doc_free() internally so the module doesn't need to.
+      Also if there are still ungrouped marks with ->mdata.  There shouldn't be, but
+      coding errors can cause that.
 - [ ] document the use of doc:replaced.  What are the two
       marks exactly? start and end of range.
 - [ ]  ?? restrict prefix key lookup to punctuation.

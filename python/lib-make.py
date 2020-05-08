@@ -570,6 +570,8 @@ class MakePane(edlib.Pane):
             m.release()
             m = self.call("doc:vmark-get", self.viewnum, ret='mark')
         self.call("doc:del-view", self.viewnum)
+        self.point = None
+        self.pos = None
 
         for fn in self.files:
             (d,v) = self.files[fn]
