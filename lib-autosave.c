@@ -63,6 +63,9 @@ DEF_CMD(autosave_del)
 	return 1;
 }
 
+static struct map *asd_map;
+DEF_LOOKUP_CMD(autosavedir_handle, asd_map);
+
 static struct map *as_map;
 DEF_LOOKUP_CMD(autosave_handle, as_map);
 static void autosave_init(void)
@@ -76,6 +79,8 @@ static void autosave_init(void)
 	key_add(as_map, "doc:cmd-n", &autosave_ignore);
 	key_add(as_map, "doc:cmd-q", &autosave_ignore);
 	key_add(as_map, "doc:replaced", &autosave_ignore);
+
+	asd_map = key_alloc();
 }
 
 DEF_CMD(choose_new)
@@ -158,6 +163,12 @@ DEF_CMD(check_autosave)
 	char *s;
 	struct pane *p = ci->focus;
 
+	s = pane_attr_get(p, "filename");
+	if (s && strlen(s) > 17 &&
+	    strcmp(s + strlen(s) - 17, "/.edlib_autosave/") == 0) {
+		attr_set_str(&p->attrs, "view-default", "autosave-dir-view");
+	}
+
 	s = pane_attr_get(p, "autosave-exists");
 	if (!s || strcmp(s, "yes") != 0)
 		s = pane_attr_get(p, "is_backup");
@@ -167,9 +178,32 @@ DEF_CMD(check_autosave)
 	return Efallthrough;
 }
 
+DEF_CMD(attach_asview)
+{
+	struct pane *p;
+
+	p = call_ret(pane, "attach-render-format", ci->focus);
+	if (!p)
+		return Efail;
+	p = pane_register(p, 0, &autosavedir_handle.c);
+	attr_set_str(&p->attrs, "line-format", " %target");
+	attr_set_str(&p->attrs, "heading",
+		     "Autosave files: [v]iew, [d]elete, [i]gnore");
+	p = call_ret(pane, "attach-linefilter", p);
+	if (p) {
+		attr_set_str(&p->attrs, "filter:attr", "arrow");
+		attr_set_str(&p->attrs, "filter:match", " -> ");
+		comm_call(ci->comm2, "cb", p);
+	}
+	return 1;
+}
+
+
 void edlib_init(struct pane *ed safe)
 {
 	autosave_init();
 	call_comm("global-set-command", ed, &check_autosave,
 		  0, NULL, "doc:appeared-check-autosave");
+	call_comm("global-set-command", ed, &attach_asview,
+		  0, NULL, "attach-autosave-dir-view");
 }
