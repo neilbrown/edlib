@@ -121,9 +121,10 @@ DEF_CMD(render_complete_line)
 	} while (cb.cmp && !mark_same(ci->mark, m));
 	mark_free(m);
 	cb.c = save_highlighted;
-	if (call_comm(ci->key, ci->home->parent, &cb.c, ci->num, ci->mark,
-		      NULL, 0, ci->mark2) == 0)
-		return 0;
+	ret = call_comm(ci->key, ci->home->parent, &cb.c, ci->num, ci->mark,
+			NULL, 0, ci->mark2);
+	if (ret < 0 || !cb.str)
+		return ret;
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cb.str);
 	free((void*)cb.str);

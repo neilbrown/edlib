@@ -157,7 +157,7 @@ done:
 	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
 		       buf_final(&ret));
 	free(ret.b);
-	return rv;
+	return rv ?: 1;
 }
 
 DEF_CMD(render_line_prev)

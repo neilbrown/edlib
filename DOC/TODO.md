@@ -25,6 +25,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] in hex mode cursor movement in wonky - fix and write a test case.
 - [X] at some scale levels, find-file dialog gets messed up.
 - [X] FILENAME COMPLETE with lustre-todo and lustre-to-fix
       when I type the "to", the cursor goes to the end of the list.

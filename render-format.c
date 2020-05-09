@@ -175,7 +175,7 @@ DEF_CMD(render_line)
 		doc_next(ci->focus, m);
 	rv = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, ret);
 	free(ret);
-	return rv;
+	return rv ?: 1;
 }
 
 DEF_CMD(render_line_prev)

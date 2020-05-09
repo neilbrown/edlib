@@ -382,7 +382,7 @@ DEF_CMD(render_line)
 	ret = comm_call(ci->comm2, "callback:render", focus, 0, NULL,
 			buf_final(&b));
 	free(b.b);
-	return ret;
+	return ret ?: 1;
 }
 
 DEF_LOOKUP_CMD(markup_handle, mu_map);
