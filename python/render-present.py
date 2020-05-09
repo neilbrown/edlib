@@ -476,7 +476,7 @@ class PresenterPane(edlib.Pane):
             start = mark
 
         if start == mark:
-            return edlib.Efalse
+            return edlib.Efail
         mark.to_mark(start)
         return 1
 

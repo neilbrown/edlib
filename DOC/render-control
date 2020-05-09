@@ -31,6 +31,8 @@ the given location.
   mark: current location
   num: if 0, move mark to start of current line.  If 1, move mark back
       beyond start of current line, then to the start of the previous line.
+      If 0, call should not normally fail - should return 1.
+      If 1, call can fail if it hits start of document - return Efail in that case.
 
 "doc:render-line"  args are:
   mark: start of the line to be rendered.  Line continues until first '\n'

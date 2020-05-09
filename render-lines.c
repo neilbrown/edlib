@@ -189,14 +189,14 @@ static struct mark *call_render_line_prev(struct pane *p safe,
 		return NULL;
 	ret = call("doc:render-line-prev", p, n, m);
 	if (ret <= 0) {
+		/* if n>0 we can fail because start-of-file was found before
+		 * any newline.  In that case ret == Efail, and we return NULL.
+		 */
+		if (found)
+			*found = (ret == Efail);
 		mark_free(m);
 		return NULL;
 	}
-	/* if n>0 we can fail because start-of-file was found before
-	 * any newline.  In that case ret == -2, and we return NULL.
-	 */
-	if (found)
-		*found = (ret != -1);
 	if (ret < 0) {
 		/* current line is start-of-file */
 		mark_free(m);

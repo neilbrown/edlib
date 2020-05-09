@@ -173,8 +173,12 @@ DEF_CMD(render_line_prev)
 
 	from = attr_find_int(*mark_attr(ci->mark), "chars");
 	to = from & ~0xF;
-	if (ci->num && to >= 16)
-		to -= 16;
+	if (ci->num) {
+		if (to >= 16)
+			to -= 16;
+		else
+			return Efail;
+	}
 	while (to < from) {
 		doc_prev(ci->focus, ci->mark);
 		from -= 1;
