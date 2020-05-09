@@ -81,6 +81,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/lib-viewer.o O/lib-base64.o O/lib-qprint.o O/lib-utf8.o \
 	O/lib-copybuf.o O/lib-whitespace.o O/lib-colourmap.o \
 	O/lib-renderline.o O/lib-x11selection.o O/lib-autosave.o \
+	O/lib-linefilter.o \
 	O/lang-python.o \
 	O/mode-emacs.o \
 	O/display-ncurses.o

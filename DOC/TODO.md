@@ -58,6 +58,9 @@ Bugs to be fixed
 Core features
 -------------
 
+- [ ] If I give a dirname to edlib and then find-file, I don't get full path.
+- [ ] LOG buffer doesn't always update - eg log messages caused by completion pane
+- [ ] should pane_clone_children() copy attrs too?
 - [ ] Change emacs to resubmit text entry commands as doc:char... commands
       and have core-doc translate these to replace.  Then lib-viewer translated
       them to doc:cmd... which allows emacs to capture keys before lib-viewer.
@@ -290,7 +293,7 @@ Module features
 - [X] backspace should remove multiple chars if needed until the number of matches
       increases.  Should it remove chars that were auto-added at the start?
       Should they be highlighted but not requred?
-- [ ] separate out filtered into a separate pane, which can work on attrs or content.
+- [X] separate out filtered into a separate pane, which can work on attrs or content.
 - [ ] mouse selection should work in completion pane
 - [ ] filename completion should work for earlier component of path.
 - [ ] The “complete” popup should be positioned above/below the file name,
