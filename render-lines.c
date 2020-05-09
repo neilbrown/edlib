@@ -725,9 +725,14 @@ DEF_CMD(render_lines_refresh)
 	}
 
 	m = vmark_first(focus, rl->typenum, p);
-	if (rl->top_sol && m)
-		m = call_render_line_prev(focus, mark_dup_view(m), 0,
-					  &rl->top_sol);
+	if (rl->top_sol && m) {
+		/* Check if any characters have appeared at the start
+		 * of the first line, before our mark.
+		 */
+		call_render_line_prev(focus, mark_dup_view(m), 0,
+				      &rl->top_sol);
+		m = vmark_first(focus, rl->typenum, p);
+	}
 
 	if (m) {
 		rl->lines = render(pm, p, focus);
