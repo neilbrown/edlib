@@ -185,42 +185,6 @@ static void doc_checkname(struct pane *p safe, struct docs *ds safe, int n)
  * sent back to the pane that requested the popup.
  */
 
-static int mark_is_modified(struct pane *p safe, struct mark *m safe)
-{
-	char *fn, *mod;
-	char *dir;
-
-	mod = pane_mark_attr(p, m, "doc-modified");
-	if (!mod || strcmp(mod, "yes") != 0)
-		return 0;
-	fn = pane_mark_attr(p, m, "filename");
-	if (!fn || !*fn)
-		return 0;
-	dir = pane_attr_get(p, "only-here");
-	if (!dir)
-		return 1;
-	return strncmp(dir, fn, strlen(dir)) == 0;
-}
-
-static void mark_to_modified(struct pane *p safe, struct mark *m safe)
-{
-	/* If 'm' isn't just before a savable document, move it forward */
-	while (!mark_is_modified(p, m))
-		if (doc_next(p, m) == WEOF)
-			break;
-}
-
-static wchar_t prev_modified(struct pane *p safe, struct mark *m safe)
-{
-	if (doc_prev(p, m) == WEOF)
-		return WEOF;
-	while (!mark_is_modified(p, m))
-		if (doc_prev(p, m) == WEOF)
-			return WEOF;
-
-	return doc_following(p, m);
-}
-
 static int docs_open(struct pane *home safe, struct pane *focus safe,
 		     struct mark *m, char cmd);
 
@@ -248,10 +212,10 @@ DEF_CMD(docs_modified_cmd)
 			return Enoarg;
 		m = mark_dup(ci->mark);
 		doc_next(ci->home->parent, m);
-		mark_to_modified(ci->home->parent, m);
-		if (m->ref.p == NULL) {
+		if (call("doc:render-line", ci->focus, 0, m) < 0||
+		    m->ref.p == NULL) {
 			mark_free(m);
-			return call("popup:close", ci->home);
+			return call("popup:close", ci->focus);
 		}
 		mark_free(m);
 		/* Ask viewer to move forward */
@@ -262,118 +226,10 @@ DEF_CMD(docs_modified_cmd)
 	}
 }
 
-DEF_CMD(docs_modified_notify_replace)
+DEF_CMD(docs_modified_empty)
 {
-	int all_gone;
-	struct mark *m;
-
-	m = vmark_new(ci->home->parent, MARK_UNGROUPED, NULL);
-	if (!m)
-		return Efail;
-	mark_to_modified(ci->home->parent, m);
-	all_gone = (m->ref.p == NULL);
-	if (!all_gone && ci->mark) {
-		/* Need to send Notify:clip to ensure mark is
-		 * no longer visible */
-		struct mark *m2;
-		m2 = vmark_new(ci->home->parent, MARK_UNGROUPED, NULL);
-		while (m2 && m2->ref.p != NULL) {
-			if (mark_ordered_or_same(m2, ci->mark) &&
-			    mark_ordered_or_same(ci->mark, m))
-				/* FIXME I really should wait for Refresh:view
-				 * and then send Notify:clip to the focus,
-				 * but that seems clumsy, and this works...
-				 * for now.
-				 */
-				call("Notify:clip", ci->home
-				     , 0, m2, NULL, 0, m);
-			mark_to_mark(m2, m);
-			if (doc_next(ci->home->parent, m) == WEOF)
-				break;
-			mark_to_modified(ci->home->parent, m);
-		}
-		mark_free(m2);
-	}
-	mark_free(m);
-	if (ci->mark)
-		pane_damaged(ci->home, DAMAGED_VIEW);
-	if (all_gone)
-		call("popup:close", ci->home);
+	call("popup:close", ci->focus);
 	return 1;
-}
-
-DEF_CMD(docs_modified_set_ref)
-{
-	struct doc *dc = ci->home->data;
-	struct docs *d = container_of(dc, struct docs, doc);
-	struct mark *m = ci->mark;
-
-	if (!m)
-		return Enoarg;
-
-	mark_to_end(dc, m, ci->num != 1);
-	if (ci->num == 1 && !list_empty(&d->collection->children)) {
-		m->ref.p = list_first_entry(&d->collection->children,
-					    struct pane, siblings);
-		mark_to_modified(ci->home, m);
-	} else
-		m->ref.p = NULL;
-
-	m->ref.ignore = 0;
-	return 1;
-}
-
-DEF_CMD(docs_modified_step)
-{
-	/* Only permit stepping to a document that is modified and
-	 * has a file name
-	 */
-	wint_t ch, ret;
-	if (!ci->mark)
-		return Enoarg;
-
-	if (ci->num) {
-		ret = doc_following(ci->home->parent, ci->mark);
-		if (ci->num2 && ret != WEOF) {
-			doc_next(ci->home->parent, ci->mark);
-			mark_to_modified(ci->home->parent, ci->mark);
-		}
-	} else {
-		struct mark *m = mark_dup(ci->mark);
-		ch = prev_modified(ci->home->parent, m);
-		if (ch == WEOF)
-			ret = ch;
-		else {
-			if (ci->num2)
-				mark_to_mark(ci->mark, m);
-			ret = doc_next(ci->home->parent, m);
-		}
-		mark_free(m);
-	}
-	return ret;
-}
-
-DEF_CMD(docs_modified_doc_get_attr)
-{
-	char *attr;
-	struct mark *m;
-
-	if (!ci->str || !ci->mark)
-		return Enoarg;
-	m = mark_dup(ci->mark);
-	attr = pane_mark_attr(ci->home->parent, m, ci->str);
-	mark_free(m);
-	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, attr);
-	return 1;
-}
-
-DEF_CMD(docs_modified_get_attr)
-{
-	if (ci->str &&  strcmp(ci->str, "doc-name") == 0)
-		return comm_call(ci->comm2, "callback:get_attr", ci->focus,
-				 0, NULL, "*Modified Documents*");
-
-	return Efallthrough;
 }
 
 DEF_CMD(docs_callback)
@@ -466,6 +322,14 @@ DEF_CMD(docs_callback)
 
 	if (strcmp(ci->key, "docs:show-modified") == 0) {
 		p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus);
+		if (!p)
+			return Efail;
+		p = call_ret(pane, "attach-linefilter", p);
+		if (!p)
+			return Efail;
+		attr_set_str(&p->attrs, "filter:attr", "doc-can-save");
+		attr_set_str(&p->attrs, "filter:match", "yes");
+		attr_set_str(&p->attrs, "doc-name", "*Modified Documents*");
 		p = pane_register(p, 0, &docs_modified_handle.c, doc);
 		call("doc:Request:doc:replaced", p);
 		/* And trigger Notify:doc:Replace handling immediately...*/
@@ -603,21 +467,8 @@ DEF_CMD(docs_set_ref)
 	return 1;
 }
 
-static char *__docs_get_attr(struct doc *doc safe, struct mark *m safe,
-			     const char *attr safe)
-{
-	struct pane *p;
-
-	p = m->ref.p;
-	if (!p)
-		return NULL;
-
-	return pane_attr_get(p, attr);
-}
-
 DEF_CMD(docs_doc_get_attr)
 {
-	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	const char *attr = ci->str;
 	char *val;
@@ -625,7 +476,23 @@ DEF_CMD(docs_doc_get_attr)
 	if (!m || !attr)
 		return Enoarg;
 
-	val = __docs_get_attr(d, m, attr);
+	if (!m->ref.p)
+		return Efallthrough;
+
+	val = pane_attr_get(m->ref.p, attr);
+	while (!val && strcmp(attr, "doc-can-save") == 0) {
+		char *mod, *fl, *dir;
+		val = "no";
+		mod = pane_attr_get(m->ref.p, "doc-modified");
+		if (!mod || strcmp(mod, "yes") != 0)
+			break;
+		fl = pane_attr_get(m->ref.p, "filename");
+		if (!fl || !*fl)
+			break;
+		dir = pane_attr_get(m->ref.p, "only-here");
+		if (!dir || strncmp(dir, fl, strlen(dir)) == 0)
+			val = "yes";
+	}
 
 	if (!val)
 		return Efallthrough;
@@ -808,10 +675,24 @@ DEF_CMD(docs_child_closed)
 	return 1;
 }
 
+static void mark_to_modified(struct pane *p safe, struct mark *m safe)
+{
+	/* If 'm' isn't just before a savable document, move it forward */
+	while (m->ref.p &&
+	       strcmp(pane_mark_attr(p, m, "doc-can-save")?:"", "no") == 0)
+		if (doc_next(p, m) == WEOF)
+			break;
+}
+
 DEF_CMD(docs_cmd)
 {
 	const char *c = ksuffix(ci, "doc:cmd-");
 
+	if (!ci->mark)
+		return Enoarg;
+
+	/* Make sure we are looking at a visible entry */
+	mark_to_modified(ci->focus, ci->mark);
 	switch(c[0]) {
 	case 'f':
 	case '\n':
@@ -868,12 +749,7 @@ static void docs_init_map(void)
 
 	key_add_prefix(docs_modified_map, "doc:cmd-", &docs_modified_cmd);
 	key_add_prefix(docs_modified_map, "doc:cmd:", &docs_modified_cmd);
-	key_add(docs_modified_map, "doc:replaced",
-		&docs_modified_notify_replace);
-	key_add(docs_modified_map, "doc:step", &docs_modified_step);
-	key_add(docs_modified_map, "doc:get-attr", &docs_modified_doc_get_attr);
-	key_add(docs_modified_map, "doc:set-ref", &docs_modified_set_ref);
-	key_add(docs_modified_map, "get-attr", &docs_modified_get_attr);
+	key_add(docs_modified_map, "Notify:filter:empty", &docs_modified_empty);
 }
 
 DEF_CMD(attach_docs)
