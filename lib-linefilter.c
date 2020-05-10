@@ -115,10 +115,10 @@ DEF_CMD(render_filter_line)
 		/* ci->mark has moved pass m2, so cursor display will be
 		 * wrong unless we present ci->mark as m2
 		 */
-		m2 = ci->mark;
+		mark_to_mark(m2, ci->mark);
 	if (call_comm(ci->key, ci->home->parent, &cb.c, ci->num, ci->mark,
-		      NULL, 0, m2) == 0)
-		return 0;
+		      NULL, 0, m2) < 0)
+		return Efail;
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cb.str);
 	free((void*)cb.str);
@@ -241,6 +241,7 @@ DEF_CMD(filter_changed)
 	struct filter_data *fd = p->data;
 	struct mark *start, *end, *m;
 	struct command *comm = NULL;
+	bool found_one = False;
 
 	if (strcmp(ci->key, "Filter:set") == 0) {
 		if (!ci->str)
@@ -317,9 +318,11 @@ DEF_CMD(filter_changed)
 		mark_to_mark(end, m);
 	}
 
-	call("doc:render-line", p, NO_NUMERIC, end);
+	if (call("doc:render-line", p, NO_NUMERIC, end) > 0)
+		found_one = True;
+
 	m = mark_dup(end);
-	while (m->seq > start->seq) {
+	while (m->seq > start->seq || !found_one) {
 		int ret;
 		const char *str = NULL;
 		struct mark *m2 = mark_dup(m);
@@ -328,6 +331,7 @@ DEF_CMD(filter_changed)
 				     comm ? &str : NULL);
 		if (ret > 0) {
 			/* m is a good line, m2 is like end */
+			found_one = True;
 			if (!mark_same(m2, end))
 				call("Notify:clip", ci->focus, 0, m2, NULL, 0, end);
 			mark_to_mark(end, m);
@@ -339,6 +343,9 @@ DEF_CMD(filter_changed)
 		if (ret < 0)
 			break;
 	}
+	if (!found_one)
+		/* filtered document is now empty - maybe someone cares */
+		home_call(ci->focus, "Notify:filter:empty", ci->home);
 	if (strcmp(ci->key, "view:changed") == 0 ||
 	    strcmp(ci->key, "Refresh:view") == 0)
 		return 0;
