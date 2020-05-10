@@ -281,9 +281,10 @@ static void PyErr_LOG(void)
 	/* And it should be a string all ready to go - report it. */
 	errorMsg = python_as_string(obResult, &tofree);;
 	LOG("Python error:\n%s", errorMsg);
-	if (!ed_pane ||
-	    call("editor:notify:Message:broadcast",ed_pane, 0, NULL,
-		 "Python Error - see log") <= 0)
+	if (errorMsg &&
+	    (!ed_pane ||
+	     call("editor:notify:Message:broadcast",ed_pane, 0, NULL,
+		  "Python Error - see log") <= 0))
 		/* Failed to alert anyone - write to stderr */
 		fwrite(errorMsg, 1, strlen(errorMsg), stderr);
 	Py_XDECREF(tofree);
