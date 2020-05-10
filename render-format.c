@@ -162,7 +162,7 @@ DEF_CMD(render_line)
 	if (!ci->mark)
 		return Enoarg;
 	if (doc_following(ci->focus, ci->mark) == WEOF)
-		return 1;
+		return Efalse;
 
 	if (pm && !mark_same(pm, m))
 		pm = NULL;

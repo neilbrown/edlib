@@ -485,8 +485,7 @@ class PresenterPane(edlib.Pane):
         page = self.find_pages(mark)
         if not page:
             # No pages at all
-            comm2("callback", self)
-            return 1
+            return edlib.Efail
 
         if mark.seq < page.seq:
             mark.to_mark(page)
@@ -518,7 +517,7 @@ class PresenterPane(edlib.Pane):
             break
 
         if line is None:
-            comm2("callback", self)
+            return edlib.Efail
         else:
             mode = linemark['mode']
             line = linemark['value']

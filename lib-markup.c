@@ -296,6 +296,8 @@ DEF_CMD(render_line)
 		oneline = NULL;
 
 	ch = doc_following(focus, m);
+	if (ch == WEOF)
+		return Efail;
 	if (is_eol(ch) &&
 	    (attr = pane_mark_attr(focus, m, "markup:func")) != NULL) {
 		/* An alternate function handles this line */

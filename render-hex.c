@@ -112,7 +112,7 @@ DEF_CMD(render_line)
 
 	buf_init(&ret);
 	if (doc_following(ci->focus, ci->mark) == WEOF)
-		goto done;
+		return Efail;
 	snprintf(buf, sizeof(buf), "<bold>%08x:</> ", pos);
 	buf_concat(&ret, buf);
 	m = mark_dup_view(ci->mark);
