@@ -26,6 +26,7 @@
 
 #define _GNU_SOURCE /*  for asprintf */
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 #include <wchar.h>
 #include <ctype.h>
@@ -191,7 +192,15 @@ static void pane_do_resize(struct pane *p safe, int damage)
 		int z = nextz;
 		int abs_zhi = abs_z;
 		nextz = -1;
+		list_for_each_entry(c, &p->children, siblings)
+			c->damaged |= DAMAGED_NOT_HANDLED;
+	restart:
 		list_for_each_entry(c, &p->children, siblings) {
+			if (c->damaged & DAMAGED_NOT_HANDLED)
+				c->damaged &= ~DAMAGED_NOT_HANDLED;
+			else
+				/* Only handle each pane once */
+				continue;
 			if (c->z < 0) {
 				c->abs_z = c->parent->abs_z;
 				continue;
@@ -204,6 +213,8 @@ static void pane_do_resize(struct pane *p safe, int damage)
 				pane_do_resize(c, damage & DAMAGED_SIZE);
 				if (c->abs_zhi > abs_zhi)
 					abs_zhi = c->abs_zhi;
+				/* Pane could have been disconnected, must restart */
+				goto restart;
 			}
 		}
 		p->abs_zhi = abs_zhi;
@@ -221,7 +232,6 @@ static void pane_do_resize(struct pane *p safe, int damage)
 static void pane_do_refresh(struct pane *p safe, int damage)
 {
 	struct pane *c;
-	struct list_head *tmp;
 	int sent = 0;
 
 	if (p->damaged & DAMAGED_CLOSED)
@@ -231,11 +241,21 @@ static void pane_do_refresh(struct pane *p safe, int damage)
 	p->damaged &= ~(DAMAGED_CHILD|DAMAGED_CONTENT|DAMAGED_CURSOR);
 	if (!damage)
 		return;
-	list_for_each_entry_safe(c, tmp, &p->children, siblings)
+	list_for_each_entry(c, &p->children, siblings)
+		c->damaged |= DAMAGED_NOT_HANDLED;
+restart:
+	list_for_each_entry(c, &p->children, siblings) {
+		if (c->damaged & DAMAGED_NOT_HANDLED)
+			c->damaged &= ~DAMAGED_NOT_HANDLED;
+		else
+			/* Only handle each pane once */
+			continue;
 		if (c->z >= 0) {
 			sent = 1;
 			pane_do_refresh(c, damage);
+			goto restart;
 		}
+	}
 	if (!sent && damage & (DAMAGED_NEED_CALL)) {
 		if (damage & DAMAGED_CONTENT)
 			damage |= DAMAGED_CURSOR;
@@ -262,10 +282,20 @@ static void pane_do_review(struct pane *p safe, int damage)
 	if (!damage)
 		return;
 	list_for_each_entry(c, &p->children, siblings)
+		c->damaged |= DAMAGED_NOT_HANDLED;
+restart:
+	list_for_each_entry(c, &p->children, siblings) {
+		if (c->damaged & DAMAGED_NOT_HANDLED)
+			c->damaged &= ~DAMAGED_NOT_HANDLED;
+		else
+			/* Only handle each pane once */
+			continue;
 		if (c->z >= 0) {
 			sent = 1;
 			pane_do_review(c, damage);
+			goto restart;
 		}
+	}
 	if (!sent && damage & (DAMAGED_VIEW))
 		call("Refresh:view", p, 0, NULL, NULL, damage);
 }
@@ -281,10 +311,18 @@ void pane_refresh(struct pane *p safe)
 		pane_do_review(p, 0);
 		pane_do_refresh(p, 0);
 	}
-	if (p->damaged)
-		fprintf(stderr,
-			"WARNING %sroot pane damaged after refresh: %d\n",
-			p->parent != p ? "":"non-", p->damaged);
+	if (p->damaged) {
+		static time_t last_warn;
+		static int rpt;
+		if (last_warn + 5 < time(NULL))
+			rpt = 0;
+		if (rpt++ < 5)
+			LOG("WARNING %sroot pane damaged after refresh: %d\n",
+			    p->parent != p ? "":"non-", p->damaged);
+		last_warn = time(NULL);
+		call("editor:notify:Message:broadcast",p, 0, NULL,
+		     "Refresh looping - see log");
+	}
 }
 
 void pane_add_notify(struct pane *target safe, struct pane *source safe,
@@ -664,10 +702,19 @@ void pane_clone_children(struct pane *from, struct pane *to)
 
 	if (!from || !to)
 		return;
+	list_for_each_entry(c, &from->children, siblings)
+		c->damaged |= DAMAGED_NOT_HANDLED;
+restart:
 	list_for_each_entry(c, &from->children, siblings) {
+		if (c->damaged & DAMAGED_NOT_HANDLED)
+			c->damaged &= ~DAMAGED_NOT_HANDLED;
+		else
+			/* Only handle each pane once */
+			continue;
 		if (c->z > 0)
 			continue;
 		pane_call(c, "Clone", to);
+		goto restart;
 	}
 }
 

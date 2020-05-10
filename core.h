@@ -412,6 +412,9 @@ enum {
 	DAMAGED_POSTORDER= 512,
 	DAMAGED_CLOSED	= 1024,
 	DAMAGED_DEAD	= 2048, /* Fully closed, but not freed yet */
+	DAMAGED_NOT_HANDLED = 32768, /* A for loop is processing children, and
+				      * this one hasn't been handled yet.
+				      */
 };
 #define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT | DAMAGED_CURSOR)
 
