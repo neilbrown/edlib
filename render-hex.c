@@ -224,6 +224,8 @@ static struct pane *do_render_hex_attach(struct pane *parent safe)
 
 	alloc(he, pane);
 	p = pane_register(parent, 0, &render_hex_handle.c, he);
+	if (!p)
+		return NULL;
 	call("doc:request:doc:replaced", p);
 	attr_set_str(&p->attrs, "render-wrap", "no");
 	attr_set_str(&p->attrs, "heading", "<bold>          00 11 22 33 44 55 66 77  88 99 aa bb cc dd ee ff   0 1 2 3 4 5 6 7  8 9 a b c d e f</>");

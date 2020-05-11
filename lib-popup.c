@@ -367,6 +367,8 @@ DEF_CMD(popup_attach)
 	}
 
 	p = pane_register(root, z + 1, &popup_handle.c, ppi);
+	if (!p)
+		return Efail;
 	ppi->style = strdup(style);
 	popup_set_style(p);
 	popup_resize(p, style);

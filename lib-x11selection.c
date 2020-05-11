@@ -273,6 +273,7 @@ DEF_CMD(xs_attach)
 {
 	char *d;
 	struct xs_info *xsi;
+	struct pane *p;
 	GdkAtom primary, clipboard;
 	GtkTargetList *list;
 	GdkDisplay *dis;
@@ -301,7 +302,10 @@ DEF_CMD(xs_attach)
 
 	claim_both(xsi);
 
-	xsi->self = pane_register(ci->focus, 0, &xs_handle.c, xsi);
+	p = pane_register(ci->focus, 0, &xs_handle.c, xsi);
+	if (!p)
+		return Efail;
+	xsi->self = p;
 	return comm_call(ci->comm2, "cb:attach", xsi->self);
 }
 

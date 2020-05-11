@@ -147,8 +147,9 @@ DEF_CMD(ask_autosave)
 		p2 = home_call_ret(pane, doc, "doc:attach-view", p2, 1);
 	} else
 		p2 = NULL;
-	if (p2) {
+	if (p2)
 		p2 = pane_register(p2, 0, &autosave_handle.c);
+	if (p2) {
 		attr_set_str(&p2->attrs, "orig_name", f);
 		attr_set_str(&p2->attrs, "autosave_name", a);
 		if (doc)
@@ -186,6 +187,8 @@ DEF_CMD(attach_asview)
 	if (!p)
 		return Efail;
 	p = pane_register(p, 0, &autosavedir_handle.c);
+	if (!p)
+		return Efail;
 	attr_set_str(&p->attrs, "line-format", " %target");
 	attr_set_str(&p->attrs, "heading",
 		     "Autosave files: [v]iew, [d]elete, [i]gnore");

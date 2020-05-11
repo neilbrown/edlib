@@ -187,6 +187,8 @@ DEF_CMD(history_attach)
 	call("Move-File", hi->history, 1);
 	buf_init(&hi->search);
 	p = pane_register(ci->focus, 0, &hi->handle.c, hi);
+	if (!p)
+		return Efail;
 	pane_add_notify(p, hi->history, "Notify:Close");
 	call("doc:request:doc:replaced", p);
 	return comm_call(ci->comm2, "callback:attach", p);

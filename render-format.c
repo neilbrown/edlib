@@ -225,6 +225,8 @@ static struct pane *do_render_format_attach(struct pane *parent, int nolines)
 		render_format_register_map();
 
 	p = pane_register(parent, 0, &render_format_handle.c);
+	if (!p)
+		return NULL;
 	attr_set_str(&p->attrs, "render-wrap", "no");
 	if (nolines)
 		return p;

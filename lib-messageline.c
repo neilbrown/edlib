@@ -196,13 +196,20 @@ DEF_CMD(force_refresh)
 static struct pane *do_messageline_attach(struct pane *p safe)
 {
 	struct mlinfo *mli;
-	struct pane *ret;
+	struct pane *ret, *mlp;
 
 	alloc(mli, pane);
 	ret = pane_register(p, 0, &messageline_handle.c, mli);
+	if (!ret)
+		return NULL;
 	call("editor:request:Message:broadcast", ret);
 	/* z=1 to avoid clone_children affecting it */
-	mli->line = pane_register(ret, 1, &messageline_line_handle.c, mli);
+	mlp = pane_register(ret, 1, &messageline_line_handle.c, mli);
+	if (!mlp) {
+		pane_close(ret);
+		return NULL;
+	}
+	mli->line = mlp;
 	pane_focus(ret);
 	call_comm("event:timer", mli->line, &force_refresh, 15000);
 

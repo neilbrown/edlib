@@ -445,7 +445,9 @@ struct pane *editor_new(void)
 	ei->cmd.m = &ei->map;
 	ed = pane_register(NULL, 0, &ei->cmd.c, ei);
 
-	doc_setup(ed);
-	log_setup(ed);
+	if (ed) {
+		doc_setup(ed);
+		log_setup(ed);
+	}
 	return ed;
 }

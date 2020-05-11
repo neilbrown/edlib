@@ -305,6 +305,8 @@ DEF_CMD(count_lines)
 
 		alloc(cli, pane);
 		p = pane_register(NULL, 0, &handle_count_lines.c, cli);
+		if (!p)
+			return Efail;
 		cli->view_num = home_call(ci->focus, "doc:add-view", p) - 1;
 		home_call(ci->focus, "doc:request:doc:replaced", p);
 		home_call(ci->focus, "doc:request:doc:CountLines", p);

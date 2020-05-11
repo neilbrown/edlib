@@ -177,6 +177,7 @@ DEF_CMD(ws_clone)
 DEF_CMD(whitespace_attach)
 {
 	struct ws_info *ws;
+	struct pane *p;
 	char *w;
 
 	alloc(ws, pane);
@@ -186,8 +187,11 @@ DEF_CMD(whitespace_attach)
 	if (ws->warn_width < 8)
 		ws->warn_width = 80;
 
-	return comm_call(ci->comm2, "callback:attach",
-			 pane_register(ci->focus, 0, &whitespace_handle.c, ws));
+	p = pane_register(ci->focus, 0, &whitespace_handle.c, ws);
+	if (!p)
+		return Efail;
+	return comm_call(ci->comm2, "callback:attach", p);
+
 }
 
 void edlib_init(struct pane *ed safe)

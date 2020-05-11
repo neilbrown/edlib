@@ -298,6 +298,8 @@ DEF_CMD(log_new)
 	alloc(l, pane);
 	INIT_LIST_HEAD(&l->log);
 	p = doc_register(ci->focus, &log_handle.c, l);
+	if (!p)
+		return Efail;
 	attr_set_str(&p->attrs, "render-default", "text");
 	attr_set_str(&p->attrs, "doc-type", "text");
 	attr_set_str(&p->attrs, "render-default", "text");

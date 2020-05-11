@@ -396,6 +396,8 @@ static struct pane *do_markup_attach(struct pane *p safe)
 
 	alloc(mu, pane);
 	ret = pane_register(p, 0, &markup_handle.c, mu);
+	if (!ret)
+		return NULL;
 	mu->view = home_call(p, "doc:add-view", ret) - 1;
 
 	return ret;

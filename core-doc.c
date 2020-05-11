@@ -37,7 +37,7 @@ struct doc_ref {
 #include "internal.h"
 
 static void do_doc_assign(struct pane *p safe, struct pane *doc safe);
-static struct pane *safe doc_attach(struct pane *parent);
+static struct pane *doc_attach(struct pane *parent);
 
 /* this is ->data for a document reference pane.
  */
@@ -61,19 +61,23 @@ static void doc_init(struct doc *d safe)
 	d->refcnt = NULL;
 }
 
-struct pane *safe __doc_register(struct pane *parent,
+struct pane *__doc_register(struct pane *parent,
 				 struct command *handle safe,
 				 struct doc *doc safe,
 				 void *data safe,
 				 short data_size)
 {
+	struct pane *p;
+
 	ASSERT(data == (void*)doc);
 	/* Documents are always registered against the root */
 	if (parent)
 		parent = pane_root(parent);
 	doc_init(doc);
-	doc->home = __pane_register(parent, 0, handle, doc, data_size);
-	return doc->home;
+	p = __pane_register(parent, 0, handle, doc, data_size);
+	if (p)
+		doc->home = p;
+	return p;
 }
 
 /* For these 'default commands', home->data is struct doc */
@@ -893,6 +897,8 @@ DEF_CMD(doc_clone)
 	struct doc_data *dd = ci->home->data;
 	struct pane *p = doc_attach(ci->focus);
 
+	if (!p)
+		return Efail;
 	do_doc_assign(p, dd->doc);
 	call("Move-to", p, 0, dd->point);
 	pane_clone_children(ci->home, p);
@@ -1190,7 +1196,7 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 	call("doc:notify:doc:revisit", doc, 0);
 }
 
-static struct pane *safe doc_attach(struct pane *parent)
+static struct pane *doc_attach(struct pane *parent)
 {
 	struct doc_data *dd;
 

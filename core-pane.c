@@ -128,9 +128,9 @@ void pane_damaged(struct pane *p, int type)
 	}
 }
 
-struct pane *safe __pane_register(struct pane *parent, short z,
-				  struct command *handle safe,
-				  void *data, short data_size)
+struct pane *__pane_register(struct pane *parent, short z,
+			     struct command *handle safe,
+			     void *data, short data_size)
 {
 	struct pane *p;
 
@@ -150,6 +150,9 @@ struct pane *safe __pane_register(struct pane *parent, short z,
 		if (parent && parent->focus == NULL)
 			parent->focus = p;
 		pane_call(parent, "ChildRegistered", p);
+		if (p->damaged & DAMAGED_CLOSED)
+			/* ChildRegistered objected */
+			p = NULL;
 	}
 	return p;
 }

@@ -98,7 +98,10 @@ DEF_CMD(tile_clone)
 	if (cti->group)
 		ti->group = strdup(cti->group);
 	INIT_LIST_HEAD(&ti->tiles);
-	ti->p = p2 = pane_register(parent, 0, &tile_handle.c, ti);
+	p2 = pane_register(parent, 0, &tile_handle.c, ti);
+	if (!p2)
+		return Efail;
+	ti->p = p2;
 	/* Remove borders as our children will provide their own. */
 	call("Window:border", p2);
 	attr_set_str(&p2->attrs, "borders", "BL");
@@ -142,6 +145,8 @@ DEF_CMD(tile_attach)
 
 	alloc(ti, pane);
 	p = pane_register(display, 0, &tile_handle.c, ti);
+	if (!p)
+		return Efail;
 	ti->leaf = 1;
 	ti->p = p;
 	ti->direction = Neither;
@@ -195,6 +200,8 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 		p->data = ti2;
 		ti2->p = p;
 		p2 = pane_register(p, 0, &tile_handle.c, ti);
+		if (!p2)
+			return NULL;
 		ti->p = p2;
 		ti->direction = horiz ? Horiz : Vert;
 		/* All children of p must be moved to p2, except p2 */
@@ -215,6 +222,8 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 	else
 		list_add_tail(&ti2->tiles, &ti->tiles);
 	ret = pane_register(p->parent, 0, &tile_handle.c, ti2);
+	if (!ret)
+		return NULL;
 	ti2->p = ret;
 	if (after)
 		pane_move_after(ret, p);

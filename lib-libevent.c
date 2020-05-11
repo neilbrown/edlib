@@ -294,6 +294,7 @@ DEF_CMD(libevent_notify)
 DEF_CMD(libevent_activate)
 {
 	struct event_info *ei;
+	struct pane *p;
 
 	alloc(ei, pane);
 	INIT_LIST_HEAD(&ei->event_list);
@@ -305,7 +306,10 @@ DEF_CMD(libevent_activate)
 	ei->free = libevent_free;
 	ei->refresh = libevent_refresh;
 	ei->noblock = libevent_noblock;
-	ei->home = pane_register(ei->home, 0, &libevent_handle.c, ei);
+	p = pane_register(ei->home, 0, &libevent_handle.c, ei);
+	if (!p)
+		return Efail;
+	ei->home = p;
 
 	/* These are defaults, so make them sort late */
 	call_comm("global-set-command", ci->focus, &ei->read,

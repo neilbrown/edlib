@@ -969,6 +969,8 @@ DEF_CMD(emacs_findfile)
 		call("doc:set-name", p, 0, NULL, "Find File");
 
 		p = pane_register(p, 0, &find_handle.c, "file");
+		if (!p)
+			return Efail;
 		attr_set_str(&p->attrs, "initial_path", path);
 		call("attach-history", p, 0, NULL, "*File History*",
 		     0, NULL, "popup:close");

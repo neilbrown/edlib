@@ -345,6 +345,8 @@ DEF_CMD(docs_callback)
 		attr_set_str(&p->attrs, "filter:match", "yes");
 		attr_set_str(&p->attrs, "doc-name", "*Modified Documents*");
 		p = pane_register(p, 0, &docs_modified_handle.c, doc);
+		if (!p)
+			return Efail;
 		call("doc:Request:doc:replaced", p);
 		/* And trigger Notify:doc:Replace handling immediately...*/
 		pane_call(p, "doc:replaced", p);

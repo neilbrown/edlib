@@ -43,7 +43,7 @@ enum {
 
 static struct map *view_map safe;
 DEF_LOOKUP_CMD(view_handle, view_map);
-static struct pane *safe do_view_attach(struct pane *par, int border);
+static struct pane *do_view_attach(struct pane *par, int border);
 static int calc_border(struct pane *p safe);
 
 static char default_status[] =
@@ -268,7 +268,8 @@ DEF_CMD(view_clone)
 	struct pane *p2;
 
 	p2 = do_view_attach(parent, vd->old_border);
-	pane_clone_children(ci->home, p2);
+	if (p2)
+		pane_clone_children(ci->home, p2);
 	return 1;
 }
 
@@ -368,7 +369,7 @@ DEF_CMD(view_reposition)
 	return 0;
 }
 
-static struct pane *safe do_view_attach(struct pane *par, int border)
+static struct pane *do_view_attach(struct pane *par, int border)
 {
 	struct view_data *vd;
 	struct pane *p;
@@ -379,6 +380,8 @@ static struct pane *safe do_view_attach(struct pane *par, int border)
 	vd->line_height = -1;
 	vd->border_width = vd->border_height = -1;
 	p = pane_register(par, 0, &view_handle.c, vd);
+	if (!p)
+		return p;
 	/* Capture status-changed notification so we can update 'changed' flag in
 	 * status line */
 	call("doc:request:doc:status-changed", p);
@@ -403,9 +406,11 @@ static int calc_border(struct pane *p safe)
 DEF_CMD(view_attach)
 {
 	int borders = calc_border(ci->focus);
+	struct pane *p = do_view_attach(ci->focus, borders);
 
-	return comm_call(ci->comm2, "callback:attach",
-			 do_view_attach(ci->focus, borders));
+	if (!p)
+		return Efail;
+	return comm_call(ci->comm2, "callback:attach", p);
 }
 
 DEF_CMD(view_click)

@@ -375,9 +375,11 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 	if (fname && dodraw) {
 		struct pane *tmp = pane_register(p, -1, &null);
 
-		pane_resize(tmp, (p->w - width)/2, y, width, height);
-		home_call(focus, "Draw:image", tmp, 0, NULL, fname, 5);
-		pane_close(tmp);
+		if (tmp) {
+			pane_resize(tmp, (p->w - width)/2, y, width, height);
+			home_call(focus, "Draw:image", tmp, 0, NULL, fname, 5);
+			pane_close(tmp);
+		}
 	}
 	free(fname);
 	return y + height;
@@ -788,6 +790,8 @@ DEF_CMD(renderline_attach)
 	}
 
 	p = pane_register(ci->focus, -1, &renderline_handle.c);
+	if (!p)
+		return Efail;
 	return comm_call(ci->comm2, "cb", p);
 }
 
