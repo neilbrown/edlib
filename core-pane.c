@@ -446,7 +446,7 @@ static void pane_refocus(struct pane *p safe)
 	p->focus = NULL;
 	/* choose the worst credible focus - the oldest.
 	 * Really some else should be updating the focus, this is
-	 * jus a fall-back
+	 * just a fall-back
 	 */
 	list_for_each_entry_reverse(c, &p->children, siblings)
 		if (c->z >= 0) {
@@ -468,11 +468,10 @@ void pane_close(struct pane *p safe)
 	ed = pane_root(p);
 
 	pane_drop_notifiers(p, NULL);
+	list_del_init(&p->siblings);
 
 	if (!(p->parent->damaged & DAMAGED_CLOSED))
 		pane_call(p->parent, "ChildClosed", p);
-
-	list_del_init(&p->siblings);
 
 restart:
 	list_for_each_entry(c, &p->children, siblings) {
