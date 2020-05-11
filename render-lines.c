@@ -987,8 +987,12 @@ DEF_CMD(render_lines_set_cursor)
 		cihy = y;
 	while (y <= cihy && m) {
 		call_render_line(focus, m, NULL);
-		if (!m->mdata)
+		if (!m->mdata) {
+			/* Presumably end-of-file.  Move here. */
+			if (newpoint)
+				mark_to_mark(newpoint, m);
 			break;
+		}
 		rl->xypos = -1;
 		rl->xyattrs = NULL;
 		render_line(p, focus, m->mdata, y, 0, cihx, cihy,

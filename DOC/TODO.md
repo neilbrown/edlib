@@ -29,7 +29,7 @@ Bugs to be fixed
 - [X] If I scroll-wheel while search, cursor disappears for a time - maybe until status update
 - [X] selection is visible more often than I think it should be. Maybe mouse click
      is leaving an artifact.
-- [ ] mouse click beyond EOF places curor at end of last line - before final newline
+- [X] mouse click beyond EOF places curor at end of last line - before final newline
 - [ ] in hex mode cursor movement in wonky - fix and write a test case.
 - [ ] when I git-grep and then 'f' to view the result in the popup, the grep output
       is still there in some ghostly way and appears occasionally.
