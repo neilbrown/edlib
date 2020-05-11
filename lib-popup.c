@@ -150,10 +150,15 @@ DEF_CMD(popup_abort)
 
 DEF_CMD(popup_child_closed)
 {
-	/* When the child is closed, we have to disappear too */
-	if (ci->focus->z != 0)
-		/* Pop-up children don't count */
-		return 1;
+	/* When the child is closed, we have to disappear too, but
+	 * not if there are remaining children.
+	 */
+	struct pane *c;
+
+	list_for_each_entry(c, &ci->home->children, siblings)
+		if (!(c->damaged & DAMAGED_CLOSED) && c->z == 0)
+			/* Still have a child */
+			return 1;
 	pane_close(ci->home);
 	return 1;
 }
@@ -287,6 +292,26 @@ DEF_CMD(popup_this)
 			 0, NULL, "Popup");
 }
 
+DEF_CMD(popup_child_registered)
+{
+	/* Anything that reponds to ThisPane needs to discard
+	 * only children when new are registered.
+	 */
+	struct pane *p = ci->home;
+	struct pane *c = ci->focus;
+	struct pane *old;
+
+	if (c->z != 0)
+		return 0;
+restart:
+	list_for_each_entry(old, &p->children, siblings)
+		if (c->z == 0 && old != c) {
+			pane_close(old);
+			goto restart;
+		}
+	return 1;
+}
+
 DEF_CMD(popup_do_close)
 {
 	struct popup_info *ppi = ci->home->data;
@@ -418,6 +443,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "ChildClosed", &popup_child_closed);
 	key_add(popup_map, "ThisPane", &popup_this);
 	key_add(popup_map, "ThisPopup", &popup_this);
+	key_add(popup_map, "ChildRegistered", &popup_child_registered);
 
 	key_add(popup_map, "Window:bury", &popup_child_closed);
 	key_add(popup_map, "Window:close", &popup_abort);

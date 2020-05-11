@@ -31,7 +31,7 @@ Bugs to be fixed
      is leaving an artifact.
 - [X] mouse click beyond EOF places curor at end of last line - before final newline
 - [ ] in hex mode cursor movement in wonky - fix and write a test case.
-- [ ] when I git-grep and then 'f' to view the result in the popup, the grep output
+- [X] when I git-grep and then 'f' to view the result in the popup, the grep output
       is still there in some ghostly way and appears occasionally.
 - [X] at some scale levels, find-file dialog gets messed up.
 - [X] FILENAME COMPLETE with lustre-todo and lustre-to-fix
