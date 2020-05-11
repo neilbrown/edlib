@@ -188,11 +188,25 @@ static void doc_checkname(struct pane *p safe, struct docs *ds safe, int n)
 static int docs_open(struct pane *home safe, struct pane *focus safe,
 		     struct mark *m, char cmd);
 
+static void mark_to_modified(struct pane *p safe, struct mark *m safe)
+{
+	/* If 'm' isn't just before a savable document, move it forward */
+	while (m->ref.p &&
+	       strcmp(pane_mark_attr(p, m, "doc-can-save")?:"", "no") == 0)
+		if (doc_next(p, m) == WEOF)
+			break;
+}
+
 DEF_CMD(docs_modified_cmd)
 {
 	const char *c = ksuffix(ci, "doc:cmd-");
 	struct mark *m;
 
+	if (!ci->mark)
+		return Enoarg;
+
+	/* Make sure we are looking at a visible entry */
+	mark_to_modified(ci->focus, ci->mark);
 	switch (c[0]) {
 	case 'y':
 	case 's':
@@ -675,24 +689,10 @@ DEF_CMD(docs_child_closed)
 	return 1;
 }
 
-static void mark_to_modified(struct pane *p safe, struct mark *m safe)
-{
-	/* If 'm' isn't just before a savable document, move it forward */
-	while (m->ref.p &&
-	       strcmp(pane_mark_attr(p, m, "doc-can-save")?:"", "no") == 0)
-		if (doc_next(p, m) == WEOF)
-			break;
-}
-
 DEF_CMD(docs_cmd)
 {
 	const char *c = ksuffix(ci, "doc:cmd-");
 
-	if (!ci->mark)
-		return Enoarg;
-
-	/* Make sure we are looking at a visible entry */
-	mark_to_modified(ci->focus, ci->mark);
 	switch(c[0]) {
 	case 'f':
 	case '\n':
