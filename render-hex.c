@@ -70,7 +70,7 @@ DEF_CMD(render_hex_eol)
 		return Enoarg;
 	call("CountLines", ci->home, 0, ci->mark);
 
-	pos = attr_find_int(*mark_attr(ci->mark), "chars");
+	pos = attr_find_int(*mark_attr(ci->mark), "char");
 	while (rpt > 0 && ch != WEOF) {
 		while ((pos & 15) != 15 &&
 		       (ch = doc_next(ci->focus, ci->mark)) != WEOF)
@@ -108,7 +108,7 @@ DEF_CMD(render_line)
 		return Enoarg;
 
 	call("CountLines", ci->home, 0, ci->mark);
-	pos = attr_find_int(*mark_attr(ci->mark), "chars");
+	pos = attr_find_int(*mark_attr(ci->mark), "char");
 
 	buf_init(&ret);
 	if (doc_following(ci->focus, ci->mark) == WEOF)
@@ -171,7 +171,7 @@ DEF_CMD(render_line_prev)
 		return Enoarg;
 	call("CountLines", ci->home, 0, ci->mark);
 
-	from = attr_find_int(*mark_attr(ci->mark), "chars");
+	from = attr_find_int(*mark_attr(ci->mark), "char");
 	to = from & ~0xF;
 	if (ci->num) {
 		if (to >= 16)
