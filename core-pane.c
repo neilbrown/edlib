@@ -265,7 +265,7 @@ restart:
 	if (p->damaged & DAMAGED_POSTORDER) {
 		/* post-order call was triggered */
 		p->damaged &= ~DAMAGED_POSTORDER;
-		pane_call(p, "Refresh:postorder", p, 0, NULL, NULL, damage);
+		pane_call(p, "Refresh:postorder", p);
 	}
 }
 
@@ -298,6 +298,12 @@ restart:
 	}
 	if (!sent && damage & (DAMAGED_VIEW))
 		call("Refresh:view", p, 0, NULL, NULL, damage);
+
+	if (p->damaged & DAMAGED_POSTORDER) {
+		/* post-order call was triggered */
+		p->damaged &= ~DAMAGED_POSTORDER;
+		pane_call(p, "Refresh:postorder", p);
+	}
 }
 
 void pane_refresh(struct pane *p safe)
