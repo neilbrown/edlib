@@ -25,7 +25,14 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [X] When I type C-w in search, chars are inserted AFTER cursor. Cursor should move.
+- [ ] If I scroll-wheel while search, cursor disappears for a time - maybe until status update
+- [ ] selection is visible more often than I think it should be. Maybe mouse click
+     is leaving an artifact.
+- [ ] mouse click beyond EOF places curor at end of last line - before final newline
 - [ ] in hex mode cursor movement in wonky - fix and write a test case.
+- [ ] when I git-grep and then 'f' to view the result in the popup, the grep output
+      is still there in some ghostly way and appears occasionally.
 - [X] at some scale levels, find-file dialog gets messed up.
 - [X] FILENAME COMPLETE with lustre-todo and lustre-to-fix
       when I type the "to", the cursor goes to the end of the list.
