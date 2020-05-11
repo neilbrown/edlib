@@ -590,15 +590,25 @@ DEF_CMD(emacs_insert)
 	int ret;
 	const char *str;
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	int active = 0;
 
 	if (!ci->mark)
 		return Enoarg;
 
-	if (mk && attr_find_int(mk->attrs, "emacs:active") != 0 &&
-	    attr_find_int(mk->attrs, "emacs:replacable") == 1)
+	if (mk && (active = attr_find_int(mk->attrs, "emacs:active")) != 0 &&
+	    attr_find_int(mk->attrs, "emacs:replacable") == 1) {
 		attr_set_int(&mk->attrs, "emacs:active", 0);
-	else
+		attr_set_int(&mk->attrs, "emacs:replacable", 0);
+	} else {
+		if (mk && active == 2) {
+			/* Transient mark - clear it */
+			struct mark *p = call_ret(mark, "doc:point", ci->focus);
+			attr_set_int(&mk->attrs, "emacs:active", 0);
+			attr_set_int(&mk->attrs, "emacs:replacable", 0);
+			call("view:changed", ci->focus, 0, p, NULL, 0, mk);
+		}
 		mk = NULL;
+	}
 
 	str = ksuffix(ci, "K-");
 	ret = call("Replace", ci->focus, 1, mk, str,

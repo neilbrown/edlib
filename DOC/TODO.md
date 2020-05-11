@@ -27,7 +27,7 @@ Bugs to be fixed
 
 - [X] When I type C-w in search, chars are inserted AFTER cursor. Cursor should move.
 - [X] If I scroll-wheel while search, cursor disappears for a time - maybe until status update
-- [ ] selection is visible more often than I think it should be. Maybe mouse click
+- [X] selection is visible more often than I think it should be. Maybe mouse click
      is leaving an artifact.
 - [ ] mouse click beyond EOF places curor at end of last line - before final newline
 - [ ] in hex mode cursor movement in wonky - fix and write a test case.
