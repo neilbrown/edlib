@@ -30,7 +30,7 @@ Bugs to be fixed
 - [X] selection is visible more often than I think it should be. Maybe mouse click
      is leaving an artifact.
 - [X] mouse click beyond EOF places curor at end of last line - before final newline
-- [ ] in hex mode cursor movement in wonky - fix and write a test case.
+- [X] in hex mode cursor movement in wonky
 - [X] when I git-grep and then 'f' to view the result in the popup, the grep output
       is still there in some ghostly way and appears occasionally.
 - [X] at some scale levels, find-file dialog gets messed up.
@@ -537,7 +537,9 @@ Module features
 
 # tests
 
+- [ ] create reliable test for hex mode
 - [ ] avoid duplicate Display lines with same content
+- [ ] Remove differences in directory size - and possible user/group name
 - [ ] understand why there are differences on creation
 - [ ] Make it easy to replay up to the difference.
       Have error report a 'first line' and then reply to that line.
