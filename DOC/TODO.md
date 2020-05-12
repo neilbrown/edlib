@@ -133,11 +133,12 @@ Module features
 
 ### autosave
 
-- [ ] change autosave dir to link to base file, not auto-saved version
+- [X] change autosave dir to link to base file, not auto-saved version
 - [ ] if multiple files are opened quickly (e.g. by grep), we might get cascading
       autosave prompts.  Introduce a mechanism to queue them and only have one per
       display
 - [X] Add 'delete' option as well as 'restore' and 'ignore'
+- [ ] delete option should remove from autosave directory.
 - [ ] Make sure doc is 'dirty' after a restore
 - [X] Handle opening of backup files too
 - [X] Handle opening of autosave files

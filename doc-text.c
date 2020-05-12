@@ -573,7 +573,7 @@ static void do_text_autosave(struct text *t safe)
 	if (t->as.changes == 0) {
 		unlink(t->autosave_name);
 		t->autosave_exists = False;
-		autosaves_record(p, t->autosave_name, False);
+		autosaves_record(p, t->fname, False);
 		return;
 	}
 	fd = open(t->autosave_name, O_WRONLY|O_CREAT|O_TRUNC, 0666);
@@ -587,7 +587,7 @@ static void do_text_autosave(struct text *t safe)
 	}
 	t->as.changes = 0;
 	close(fd);
-	autosaves_record(p, t->autosave_name, True);
+	autosaves_record(p, t->fname, True);
 }
 
 DEF_CMD(text_autosave_tick)
