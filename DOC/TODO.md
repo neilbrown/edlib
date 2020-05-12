@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] fix bugs
+- [X] fix bugs
 - [X] emacs: replacable selections aren't working for me.  There needs to be an 
       easier way to cancel them. C-x C-x works as does C-wC-y, but neither are obvious.
       Maybe any cursor movement should
@@ -26,7 +26,7 @@ Bugs to be fixed
 ----------------
 
 - [X] C-x-# in a pop-up file doesn't close the popup any more.
-- [ ] With *Documents* open M-x version.  doc list gets confused.
+- [X] With *Documents* open M-x version.  doc list gets confused.
 - [X] When I type C-w in search, chars are inserted AFTER cursor. Cursor should move.
 - [X] If I scroll-wheel while search, cursor disappears for a time - maybe until status update
 - [X] selection is visible more often than I think it should be. Maybe mouse click

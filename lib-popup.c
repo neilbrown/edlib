@@ -156,7 +156,8 @@ DEF_CMD(popup_child_closed)
 	struct pane *c;
 
 	list_for_each_entry(c, &ci->home->children, siblings)
-		if (!(c->damaged & DAMAGED_CLOSED) && c->z == 0)
+		if (!(c->damaged & DAMAGED_CLOSED) && c->z == 0 &&
+		    c != ci->focus)
 			/* Still have a child */
 			return 1;
 	pane_close(ci->home);

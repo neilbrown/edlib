@@ -468,10 +468,10 @@ void pane_close(struct pane *p safe)
 	ed = pane_root(p);
 
 	pane_drop_notifiers(p, NULL);
-	list_del_init(&p->siblings);
 
 	if (!(p->parent->damaged & DAMAGED_CLOSED))
 		pane_call(p->parent, "ChildClosed", p);
+	list_del_init(&p->siblings);
 
 restart:
 	list_for_each_entry(c, &p->children, siblings) {
