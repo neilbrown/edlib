@@ -52,13 +52,30 @@ DEF_CMD(autosave_ignore)
 
 DEF_CMD(autosave_del)
 {
+	char *fn = pane_attr_get(ci->focus, "orig_name");
 	char *as = pane_attr_get(ci->focus, "autosave_name");
+	char *ast = pane_attr_get(ci->focus, "autosave_type");
+	struct pane *d;
 
-	if (!as)
-		return 1;
-	unlink(as);
-	call("Message", ci->focus, 0, NULL,
-	     strconcat(ci->focus, as, " deleted."));
+	if (!fn || !as || !ast)
+		return Efail;
+
+	/* 4 is autocreate */
+	d = call_ret(pane, "doc:open", ci->focus, -1, NULL, fn, 4);
+	if (!d) {
+		call("Message", ci->focus, 0, NULL,
+		     strconcat(ci->focus, "Cannot open ", fn));
+		return Efail;
+	}
+	if (strcmp(ast, "autosave") == 0) {
+		if (call("doc:autosave-delete", d, 0, NULL, as) == 1)
+			call("Message", ci->focus, 0, NULL,
+			     strconcat(ci->focus, as, " deleted."));
+	} else {
+		if (unlink(as) == 0)
+			call("Message", ci->focus, 0, NULL,
+			     strconcat(ci->focus, as, " deleted."));
+	}
 	call("popup:close", ci->focus);
 	return 1;
 }
@@ -160,6 +177,7 @@ DEF_CMD(ask_autosave)
 	char *f = NULL, *a = NULL, *diffcmd;
 	char *s;
 	struct pane *doc;
+	char *autosave_type = "";
 
 	/* Need to choose best display */
 	cr.i = 0; cr.p = NULL;
@@ -179,10 +197,12 @@ DEF_CMD(ask_autosave)
 	    strcmp(s, "yes") == 0) {
 		f = pane_attr_get(p, "filename");
 		a = pane_attr_get(p, "autosave-name");
+		autosave_type = "autosave";
 	} else if ((s = pane_attr_get(p, "is_backup")) != NULL &&
 		   strcmp(s, "yes") == 0) {
 		f = pane_attr_get(p, "base-name");
 		a = pane_attr_get(p, "filename");
+		autosave_type = "backup";
 	}
 
 	if (!a || !f) {
@@ -210,6 +230,7 @@ DEF_CMD(ask_autosave)
 	if (p2) {
 		attr_set_str(&p2->attrs, "orig_name", f);
 		attr_set_str(&p2->attrs, "autosave_name", a);
+		attr_set_str(&p2->attrs, "autosave_type", autosave_type);
 		if (doc)
 			pane_add_notify(p2, doc, "doc:replaced");
 	}

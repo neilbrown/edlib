@@ -590,6 +590,28 @@ static void do_text_autosave(struct text *t safe)
 	autosaves_record(p, t->fname, True);
 }
 
+DEF_CMD(text_autosave_delete)
+{
+	struct pane *home = ci->home;
+	struct text *t = home->data;
+	const char *name = ci->str;
+	int ret = 1;
+
+	if (!t->fname || !name)
+		return Enoarg;
+
+	if (!t->autosave_name)
+		t->autosave_name = autosave_name(t->fname);
+
+	if (strcmp(name, t->autosave_name) != 0 ||
+	    unlink(t->autosave_name) < 0)
+		ret = Efail;
+	t->autosave_exists = False;
+	autosaves_record(home, t->fname, False);
+
+	return ret;
+}
+
 DEF_CMD(text_autosave_tick)
 {
 	struct pane *home = ci->home;
@@ -2431,6 +2453,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:set:readonly", &text_readonly);
 	key_add(text_map, "doc:notify:doc:revisit", &text_revisited);
 	key_add(text_map, "doc:clear", &text_clear);
+	key_add(text_map, "doc:autosave-delete", &text_autosave_delete);
 
 	key_add(text_map, "Close", &text_destroy);
 	key_add(text_map, "Free", &text_free);

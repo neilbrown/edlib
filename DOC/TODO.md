@@ -138,7 +138,7 @@ Module features
       autosave prompts.  Introduce a mechanism to queue them and only have one per
       display
 - [X] Add 'delete' option as well as 'restore' and 'ignore'
-- [ ] delete option should remove from autosave directory.
+- [X] delete option should remove from autosave directory.
 - [ ] Make sure doc is 'dirty' after a restore
 - [X] Handle opening of backup files too
 - [X] Handle opening of autosave files
