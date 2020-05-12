@@ -326,7 +326,7 @@ void pane_refresh(struct pane *p safe)
 		if (last_warn + 5 < time(NULL))
 			rpt = 0;
 		if (rpt++ < 5)
-			LOG("WARNING %sroot pane damaged after refresh: %d\n",
+			LOG("WARNING %sroot pane damaged after refresh: %d",
 			    p->parent != p ? "":"non-", p->damaged);
 		last_warn = time(NULL);
 		call("editor:notify:Message:broadcast",p, 0, NULL,

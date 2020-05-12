@@ -63,6 +63,59 @@ DEF_CMD(autosave_del)
 	return 1;
 }
 
+DEF_CMD(autosave_dir_view)
+{
+	struct mark *m = ci->mark;
+	struct pane *d;
+	char *fn;
+
+	if (!m)
+		return Enoarg;
+	fn = pane_mark_attr(ci->focus, m, "target");
+	if (!fn || *fn != '/') {
+		call("Message", ci->focus, 0, NULL,
+		     "No autosafe file here - strange");
+		return Efail;
+	}
+	d = call_ret(pane, "doc:open", ci->focus, -1, NULL, fn);
+	if (d) {
+		struct pane *p = call_ret(pane, "OtherPane", ci->focus);
+		if (p)
+			home_call(d, "doc:attach-view", p);
+	}
+	return 1;
+}
+
+DEF_CMD(autosave_dir_ignore)
+{
+	/* Ignore this one, move to next line */
+	return 2;
+}
+
+DEF_CMD(autosave_dir_delete)
+{
+	struct mark *m = ci->mark;
+	char *dir;
+	char *base;
+	char *fn;
+
+	if (!m)
+		return Enoarg;
+	fn = pane_mark_attr(ci->focus, m, "target");
+	if (!fn || *fn != '/')
+		return 1;
+
+	LOG("Forgetting autosave for %s", fn);
+	dir = pane_attr_get(ci->focus, "dirname");
+	base = pane_mark_attr(ci->focus, m, "name");
+	if (dir && base) {
+		fn = strconcat(ci->focus, dir, base);
+		unlink(fn);
+	}
+
+	return 1;
+}
+
 static struct map *asd_map;
 DEF_LOOKUP_CMD(autosavedir_handle, asd_map);
 
@@ -81,6 +134,11 @@ static void autosave_init(void)
 	key_add(as_map, "doc:replaced", &autosave_ignore);
 
 	asd_map = key_alloc();
+	key_add(asd_map, "doc:cmd-v", &autosave_dir_view);
+	key_add(asd_map, "doc:cmd-y", &autosave_dir_view);
+	key_add(asd_map, "doc:cmd-d", &autosave_dir_delete);
+	key_add(asd_map, "doc:cmd-i", &autosave_dir_ignore);
+	key_add(asd_map, "doc:cmd-n", &autosave_dir_ignore);
 }
 
 DEF_CMD(choose_new)
@@ -196,7 +254,9 @@ DEF_CMD(attach_asview)
 	if (p) {
 		attr_set_str(&p->attrs, "filter:attr", "arrow");
 		attr_set_str(&p->attrs, "filter:match", " -> ");
-		comm_call(ci->comm2, "cb", p);
+		p = call_ret(pane, "attach-viewer", p);
+		if (p)
+			comm_call(ci->comm2, "cb", p);
 	}
 	return 1;
 }

@@ -144,6 +144,7 @@ Module features
 - [X] Handle opening of autosave files
 - [ ] add dir overlay which shows symlink content and disappears when none left
 - [ ] auto-load $HOME/.edlib-autosave on startup
+- [ ] dir view doesn't update properly on deletes.
 
 ### tile
 
