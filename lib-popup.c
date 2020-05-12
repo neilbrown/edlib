@@ -445,7 +445,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "ThisPopup", &popup_this);
 	key_add(popup_map, "ChildRegistered", &popup_child_registered);
 
-	key_add(popup_map, "Window:bury", &popup_child_closed);
+	key_add(popup_map, "Window:bury", &popup_do_close);
 	key_add(popup_map, "Window:close", &popup_abort);
 	key_add(popup_map, "Window:split-x", &popup_ignore);
 	key_add(popup_map, "Window:split-y", &popup_ignore);
