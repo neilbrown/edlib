@@ -141,7 +141,8 @@ Module features
       display
 - [X] Add 'delete' option as well as 'restore' and 'ignore'
 - [X] delete option should remove from autosave directory.
-- [ ] restore option should remove from autosave directory.
+- [X] restore option should remove from autosave directory. - no, that only happens
+      when the restored file is saved.
 - [X] Make sure doc is 'dirty' after a restore
 - [X] Handle opening of backup files too
 - [X] Handle opening of autosave files

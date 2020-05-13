@@ -93,7 +93,7 @@ DEF_CMD(autosave_dir_view)
 	if (!fn || *fn != '/') {
 		call("Message", ci->focus, 0, NULL,
 		     "No autosafe file here - strange");
-		return Efail;
+		return 2;
 	}
 	d = call_ret(pane, "doc:open", ci->focus, -1, NULL, fn);
 	if (d) {
@@ -101,7 +101,7 @@ DEF_CMD(autosave_dir_view)
 		if (p)
 			home_call(d, "doc:attach-view", p);
 	}
-	return 1;
+	return 2;
 }
 
 DEF_CMD(autosave_dir_ignore)
@@ -113,7 +113,7 @@ DEF_CMD(autosave_dir_ignore)
 		return Enoarg;
 	m = mark_dup(ci->mark);
 	doc_next(ci->home->parent, m);
-	if (call("doc:render-line", ci->focus, 0, m) < 0||
+	if (call("doc:render-line", ci->focus, 0, m) < 0 ||
 	    m->ref.p == NULL)
 		call("Window:bury", ci->focus);
 	mark_free(m);
@@ -132,7 +132,7 @@ DEF_CMD(autosave_dir_delete)
 		return Enoarg;
 	fn = pane_mark_attr(ci->focus, m, "target");
 	if (!fn || *fn != '/')
-		return 1;
+		return 2;
 
 	LOG("Forgetting autosave for %s", fn);
 	dir = pane_attr_get(ci->focus, "dirname");
@@ -140,9 +140,12 @@ DEF_CMD(autosave_dir_delete)
 	if (dir && base) {
 		fn = strconcat(ci->focus, dir, base);
 		unlink(fn);
-	}
-
-	return 1;
+		/* trigger a directory reread */
+		call("doc:notify:doc:revisit", ci->focus, 1);
+		return 1;
+	} else
+		/* Move to next */
+		return 2;
 }
 
 DEF_CMD(autosave_dir_empty)
