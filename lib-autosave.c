@@ -105,7 +105,18 @@ DEF_CMD(autosave_dir_view)
 
 DEF_CMD(autosave_dir_ignore)
 {
-	/* Ignore this one, move to next line */
+	struct mark *m;
+
+	/* If this is the last, then bury the doc */
+	if (!ci->mark)
+		return Enoarg;
+	m = mark_dup(ci->mark);
+	doc_next(ci->home->parent, m);
+	if (call("doc:render-line", ci->focus, 0, m) < 0||
+	    m->ref.p == NULL)
+		call("Window:bury", ci->focus);
+	mark_free(m);
+	/* Ask viewer to move forward */
 	return 2;
 }
 
@@ -133,6 +144,12 @@ DEF_CMD(autosave_dir_delete)
 	return 1;
 }
 
+DEF_CMD(autosave_dir_empty)
+{
+	call("Window:bury", ci->focus);
+	return 1;
+}
+
 static struct map *asd_map;
 DEF_LOOKUP_CMD(autosavedir_handle, asd_map);
 
@@ -156,6 +173,8 @@ static void autosave_init(void)
 	key_add(asd_map, "doc:cmd-d", &autosave_dir_delete);
 	key_add(asd_map, "doc:cmd-i", &autosave_dir_ignore);
 	key_add(asd_map, "doc:cmd-n", &autosave_dir_ignore);
+	key_add(asd_map, "Notify:filter:empty", &autosave_dir_empty);
+
 }
 
 DEF_CMD(choose_new)
@@ -282,6 +301,30 @@ DEF_CMD(attach_asview)
 	return 1;
 }
 
+DEF_CMD(show_autosave)
+{
+	struct pane *p, *d;
+	char *home = getenv("HOME");
+
+	if (!home) {
+		call("Message", ci->focus, 0, NULL,
+		     "Cannot determine HOME directory");
+		return 1;
+	}
+	p = call_ret(pane, "ThisPane", ci->focus);
+	if (!p)
+		return Efail;
+	d = call_ret(pane, "doc:open", p, -1, NULL,
+		     strconcat(p, home, "/.edlib_autosave"));
+	if (d)
+		home_call_ret(pane, d, "doc:attach-view", p);
+	else {
+		call("Message", ci->focus, 0, NULL,
+		     "Cannot open $HOME/.edlib_autosave");
+		pane_close(p);
+	}
+	return 1;
+}
 
 void edlib_init(struct pane *ed safe)
 {
@@ -290,4 +333,7 @@ void edlib_init(struct pane *ed safe)
 		  0, NULL, "doc:appeared-check-autosave");
 	call_comm("global-set-command", ed, &attach_asview,
 		  0, NULL, "attach-autosave-dir-view");
+	call_comm("global-set-command", ed, &show_autosave,
+		  0, NULL, "interactive-cmd-recover");
+
 }

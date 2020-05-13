@@ -142,7 +142,7 @@ Module features
 - [ ] Make sure doc is 'dirty' after a restore
 - [X] Handle opening of backup files too
 - [X] Handle opening of autosave files
-- [ ] add dir overlay which shows symlink content and disappears when none left
+- [X] add dir overlay which shows symlink content and disappears when none left
 - [ ] auto-load $HOME/.edlib-autosave on startup
 - [ ] dir view doesn't update properly on deletes.
 
@@ -173,6 +173,7 @@ Module features
 
 ### popup
 
+- [ ] I need a way to move the pop-up window to an existing pane.
 - [ ] if 'focus' is a temp pane, it might disappear (lib-abbrev) which
       closes the popup.  I need to some how indicate a more stable pane
       for replies to go to
@@ -337,6 +338,8 @@ Module features
 
 ### grep/make
 
+- [ ] When I visit from grep in a popup, I think I want a 'view' at first.
+      so 'q' works.
 - [ ] Need keystroke to step through different grep/make windows
 - [X] it should be possible to 'find' a match in 'this' window, or 'popup' window
       as well as 'other'
@@ -383,6 +386,8 @@ Module features
 
 ### shell mode
 
+- [ ] 'shell-command' should try to use same pane even though it
+      kills the old document and creates a new one
 - [X] two shells running concurrently write to samedocument!
 - [ ]  Use pattern-match on command to optionally choose an overlay
        which can highlight output and allow actions.
