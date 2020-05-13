@@ -5,6 +5,7 @@ Current priorities
 ------------------
 
 - [X] fix bugs
+- [ ] Change various things that use cmd-* and a switch, to use multiple cmds.
 - [X] emacs: replacable selections aren't working for me.  There needs to be an 
       easier way to cancel them. C-x C-x works as does C-wC-y, but neither are obvious.
       Maybe any cursor movement should
@@ -145,6 +146,8 @@ Module features
 - [X] add dir overlay which shows symlink content and disappears when none left
 - [X] auto-load $HOME/.edlib-autosave on startup
 - [ ] dir view doesn't update properly on deletes.
+- [ ] get dir to support reading symlink and loading that name, then
+      use that from autosave-dir - and handle 'o' and 'f' etc as expected
 
 ### tile
 

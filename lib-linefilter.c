@@ -77,14 +77,10 @@ DEF_CMD(render_filter_line)
 	struct rlcb cb;
 	int ret;
 	struct mark *m;
-	int mark2_before_mark;
 	struct mark *m2;
 
 	if (!ci->mark)
 		return Enoarg;
-
-	mark2_before_mark = (ci->mark2 && !mark_same(ci->mark, ci->mark2) &&
-				 ci->mark2->seq < ci->mark->seq);
 
 	m = mark_dup(ci->mark);
 	cb.c = rlcb;
@@ -111,11 +107,6 @@ DEF_CMD(render_filter_line)
 	cb.str = NULL;
 	cb.fd = NULL;
 	m2 = ci->mark2;
-	if (m2 && !mark2_before_mark && m2->seq < ci->mark->seq)
-		/* ci->mark has moved pass m2, so cursor display will be
-		 * wrong unless we present ci->mark as m2
-		 */
-		mark_to_mark(m2, ci->mark);
 	if (call_comm(ci->key, ci->home->parent, &cb.c, ci->num, ci->mark,
 		      NULL, 0, m2) < 0)
 		return Efail;
@@ -333,7 +324,8 @@ DEF_CMD(filter_changed)
 			/* m is a good line, m2 is like end */
 			found_one = True;
 			if (!mark_same(m2, end))
-				call("Notify:clip", ci->focus, 0, m2, NULL, 0, end);
+				call("Notify:clip", ci->focus, 0, m2, NULL,
+				     0, end);
 			mark_to_mark(end, m);
 			if (comm && str)
 				comm_call(comm, "", ci->focus, 0, m, str);
@@ -343,6 +335,12 @@ DEF_CMD(filter_changed)
 		if (ret < 0)
 			break;
 	}
+	/* No matching lines found between m and end, so clip them */
+	if (!mark_same(m, end))
+		call("Notify:clip", ci->focus, 0, m, NULL, 0, end);
+	mark_free(m);
+	mark_free(start);
+	mark_free(end);
 	if (!found_one)
 		/* filtered document is now empty - maybe someone cares */
 		home_call(ci->focus, "Notify:filter:empty", ci->home);
@@ -450,7 +448,7 @@ REDEF_CMD(filter_attach)
 		return Efail;
 	}
 	pane_damaged(filter, DAMAGED_VIEW);
-	call("doc:Request:doc:replaced", filter);
+	call("doc:request:doc:replaced", filter);
 
 	return comm_call(ci->comm2, "", filter);
 }
