@@ -366,7 +366,6 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 				tlist_add(&lnk->lists[i],
 					  GRP_LIST, &d->views[i].head);
 		}
-	notify_point_moving(m);
 }
 
 void mark_reset(struct doc *d safe, struct mark *m safe, int end)
@@ -595,7 +594,8 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 	ASSERT(a == target);
 	/* END DEBUG */
 
-	notify_point_moving(m);
+	if (!mark_same(m, target))
+		notify_point_moving(m);
 	if (m->viewnum == MARK_POINT) {
 		/* Lots of linkage to fix up */
 		if (m->seq < target->seq)
@@ -714,6 +714,9 @@ void mark_step(struct mark *m safe, int forward)
 	 */
 	struct mark *m2, *target = m;
 
+	/* This is called after .ref has been updated, so we can
+	 * assume the point really is moving.
+	 */
 	notify_point_moving(m);
 
 	if (forward) {

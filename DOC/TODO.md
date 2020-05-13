@@ -26,6 +26,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] in 'docs', 'k' on last doc doesn't make it disappear - then 'k' gives silly error
 - [X] C-x-# in a pop-up file doesn't close the popup any more.
 - [X] With *Documents* open M-x version.  doc list gets confused.
 - [X] When I type C-w in search, chars are inserted AFTER cursor. Cursor should move.
@@ -140,12 +141,13 @@ Module features
       display
 - [X] Add 'delete' option as well as 'restore' and 'ignore'
 - [X] delete option should remove from autosave directory.
+- [ ] restore option should remove from autosave directory.
 - [X] Make sure doc is 'dirty' after a restore
 - [X] Handle opening of backup files too
 - [X] Handle opening of autosave files
 - [X] add dir overlay which shows symlink content and disappears when none left
 - [X] auto-load $HOME/.edlib-autosave on startup
-- [ ] dir view doesn't update properly on deletes.
+- [ ] dir view doesn't update properly on deletes.- need to reload
 - [ ] get dir to support reading symlink and loading that name, then
       use that from autosave-dir - and handle 'o' and 'f' etc as expected
 
