@@ -139,7 +139,7 @@ Module features
       display
 - [X] Add 'delete' option as well as 'restore' and 'ignore'
 - [X] delete option should remove from autosave directory.
-- [ ] Make sure doc is 'dirty' after a restore
+- [X] Make sure doc is 'dirty' after a restore
 - [X] Handle opening of backup files too
 - [X] Handle opening of autosave files
 - [X] add dir overlay which shows symlink content and disappears when none left
