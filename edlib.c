@@ -66,10 +66,10 @@ static struct pane *make_stack(struct pane *p, struct pane *doc)
 int main(int argc, char *argv[])
 {
 	struct pane *ed = editor_new();
+	struct pane *first_window = NULL;
 	struct pane *p, *doc = NULL;
 	bool gtk = False, term = False;
 	int opt;
-	bool have_display = False;
 
 	if (!ed)
 		exit(1);
@@ -143,8 +143,9 @@ int main(int argc, char *argv[])
 					p);
 		}
 		if (disp) {
-			if (make_stack(disp, doc) != NULL)
-				have_display = True;
+			p = make_stack(disp, doc);
+			if (p && !first_window)
+				first_window = p;
 			call("Display:set-noclose", disp, 1, NULL,
 			     "Cannot close primary display");
 		}
@@ -157,12 +158,15 @@ int main(int argc, char *argv[])
 			disp = call_ret(pane, "attach-display-pygtk",
 					p);
 		}
-		if (disp)
-			if (make_stack(disp, doc) != NULL)
-				have_display = True;
+		if (disp) {
+			p = make_stack(disp, doc);
+			if (p && !first_window)
+				first_window = p;
+		}
 	}
 
-	if (have_display) {
+	if (first_window) {
+		call("global-multicall-startup-", first_window);
 		time_start(TIME_REFRESH);
 		pane_refresh(ed);
 		time_stop(TIME_REFRESH);

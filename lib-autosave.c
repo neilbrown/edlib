@@ -11,6 +11,7 @@
  */
 
 #include <unistd.h>
+#include <dirent.h>
 #include "core.h"
 
 /*
@@ -326,6 +327,33 @@ DEF_CMD(show_autosave)
 	return 1;
 }
 
+DEF_CMD(check_autosave_dir)
+{
+	/* Should I open the direct doc and use filter to do the search?? */
+	DIR *dir;
+	struct dirent *de;
+	char *home = getenv("HOME");
+
+	dir = opendir(strconcat(ci->focus, home ?: "", "/.edlib_autosave"));
+	if (!dir)
+		return 1;
+	while ((de = readdir(dir)) != NULL) {
+		if (de->d_name[0] == '.')
+			continue;
+		if (de->d_type == DT_LNK)
+			break;
+		if (de->d_type != DT_UNKNOWN)
+			continue;
+		/* FIXME I should probably lstat the name */
+		continue;
+	}
+	closedir(dir);
+	if (de)
+		call("editor:notify:Message:broadcast", ci->focus, 0, NULL,
+		     "Autosave files exist - use \"recover\" command to view them.");
+	return 1;
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	autosave_init();
@@ -335,5 +363,7 @@ void edlib_init(struct pane *ed safe)
 		  0, NULL, "attach-autosave-dir-view");
 	call_comm("global-set-command", ed, &show_autosave,
 		  0, NULL, "interactive-cmd-recover");
+	call_comm("global-set-command", ed, &check_autosave_dir,
+		  0, NULL, "startup-autosave");
 
 }
