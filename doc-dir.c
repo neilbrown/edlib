@@ -723,7 +723,7 @@ DEF_CMD(dir_destroy)
 }
 
 static int dir_open(struct pane *home safe, struct pane *focus safe,
-		    struct mark *m, char cmd)
+		    struct mark *m, bool other)
 {
 	struct doc *d = home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
@@ -750,7 +750,7 @@ static int dir_open(struct pane *home safe, struct pane *focus safe,
 	free(fname);
 	if (!p)
 		return Efail;
-	if (cmd == 'o') {
+	if (other) {
 		par = home_call_ret(pane, focus, "DocPane", p);
 		if (!par)
 			par = call_ret(pane, "OtherPane", focus);
@@ -812,29 +812,32 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe,
 	return 1;
 }
 
-DEF_CMD(dir_cmd)
+DEF_CMD(dir_do_open)
+{
+	return dir_open(ci->home, ci->focus, ci->mark, False);
+}
+
+DEF_CMD(dir_do_open_other)
+{
+	return dir_open(ci->home, ci->focus, ci->mark, True);
+}
+
+DEF_CMD(dir_do_reload)
+{
+	return home_call(ci->home, "doc:load-file", ci->focus,
+			 0, NULL, NULL, -1);
+}
+
+DEF_CMD(dir_do_quit)
+{
+	return call("doc:destroy", ci->home);
+}
+
+DEF_CMD(dir_do_special)
 {
 	const char *c = ksuffix(ci, "doc:cmd-");
 
-	switch(c[0]) {
-	case 'f':
-	case '\n':
-	case 'o':
-		return dir_open(ci->home, ci->focus, ci->mark, c[0]);
-	case 'g':
-		return home_call(ci->home, "doc:load-file", ci->focus,
-				 0, NULL, NULL, -1);
-	case 'q':
-		return call("doc:destroy", ci->home);
-	default:
-		if (c[0] >= 'A' && c[0] <= 'Z')
-			return dir_open_alt(ci->home, ci->focus, ci->mark, c[0]);
-	}
-	c = ksuffix(ci, "doc:cmd:");
-	if (strcmp(c, "Enter") == 0)
-		return dir_open(ci->home, ci->focus, ci->mark, '\n');
-
-	return 1;
+	return dir_open_alt(ci->home, ci->focus, ci->mark, c[0]);
 }
 
 void edlib_init(struct pane *ed safe)
@@ -850,8 +853,13 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
 	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
 	key_add(doc_map, "doc:step", &dir_step);
-	key_add_prefix(doc_map, "doc:cmd-", &dir_cmd);
-	key_add_prefix(doc_map, "doc:cmd:", &dir_cmd);
+	key_add(doc_map, "doc:cmd-f", &dir_do_open);
+	key_add(doc_map, "doc:cmd-o", &dir_do_open_other);
+	key_add(doc_map, "doc:cmd-\n", &dir_do_open);
+	key_add(doc_map, "doc:cmd:Enter", &dir_do_open);
+	key_add(doc_map, "doc:cmd-g", &dir_do_reload);
+	key_add(doc_map, "doc:cmd-q", &dir_do_quit);
+	key_add_range(doc_map, "doc:cmd-A", "doc:cmd-Z", &dir_do_special);
 	key_add(doc_map, "doc:notify:doc:revisit", &dir_revisited);
 
 	key_add(doc_map, "get-attr", &dir_get_attr);
