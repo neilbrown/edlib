@@ -723,7 +723,7 @@ DEF_CMD(dir_destroy)
 }
 
 static int dir_open(struct pane *home safe, struct pane *focus safe,
-		    struct mark *m, bool other)
+		    struct mark *m, bool other, bool follow)
 {
 	struct doc *d = home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
@@ -740,6 +740,27 @@ static int dir_open(struct pane *home safe, struct pane *focus safe,
 		return 0;
 
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
+	if (!fname)
+		return Efail;
+
+	if (follow && (de->ch == 'l' || de->ch == 'L')) {
+		/* Fname is a symlink.  Read it and open
+		 * that directly.  Only follow this step once.
+		 */
+		char path[PATH_MAX];
+		int ret;
+
+		ret = readlink(fname, path, sizeof(path));
+		if (ret > 0 && ret < (int)sizeof(path)) {
+			path[ret] = 0;
+			if (fname[0] == '/')
+				asprintf(&fname, "%s", path);
+			else
+				asprintf(&fname, "%s/%s", dr->fname, path);
+			if (!fname)
+				return Efail;
+		}
+	}
 	fd = open(fname, O_RDONLY);
 	if (fd >= 0) {
 		p = call_ret(pane, "doc:open", focus, fd, NULL, fname);
@@ -814,12 +835,12 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe,
 
 DEF_CMD(dir_do_open)
 {
-	return dir_open(ci->home, ci->focus, ci->mark, False);
+	return dir_open(ci->home, ci->focus, ci->mark, False, ci->num == 1);
 }
 
 DEF_CMD(dir_do_open_other)
 {
-	return dir_open(ci->home, ci->focus, ci->mark, True);
+	return dir_open(ci->home, ci->focus, ci->mark, True, ci->num == 1);
 }
 
 DEF_CMD(dir_do_reload)

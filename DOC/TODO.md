@@ -149,7 +149,7 @@ Module features
 - [X] add dir overlay which shows symlink content and disappears when none left
 - [X] auto-load $HOME/.edlib-autosave on startup
 - [X] dir view doesn't update properly on deletes.- need to reload
-- [ ] get dir to support reading symlink and loading that name, then
+- [X] get dir to support reading symlink and loading that name, then
       use that from autosave-dir - and handle 'o' and 'f' etc as expected
 
 ### tile

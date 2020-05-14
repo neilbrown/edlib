@@ -83,24 +83,8 @@ DEF_CMD(autosave_del)
 
 DEF_CMD(autosave_dir_view)
 {
-	struct mark *m = ci->mark;
-	struct pane *d;
-	char *fn;
-
-	if (!m)
-		return Enoarg;
-	fn = pane_mark_attr(ci->focus, m, "target");
-	if (!fn || *fn != '/') {
-		call("Message", ci->focus, 0, NULL,
-		     "No autosafe file here - strange");
-		return 2;
-	}
-	d = call_ret(pane, "doc:open", ci->focus, -1, NULL, fn);
-	if (d) {
-		struct pane *p = call_ret(pane, "OtherPane", ci->focus);
-		if (p)
-			home_call(d, "doc:attach-view", p);
-	}
+	/* Open in other pane, and follow symlink */
+	home_call(ci->home->parent, "doc:cmd-o", ci->focus, 1);
 	return 2;
 }
 
@@ -174,6 +158,11 @@ static void autosave_init(void)
 	asd_map = key_alloc();
 	key_add(asd_map, "doc:cmd-v", &autosave_dir_view);
 	key_add(asd_map, "doc:cmd-y", &autosave_dir_view);
+	key_add(asd_map, "doc:cmd-f", &autosave_dir_view);
+	key_add(asd_map, "doc:cmd-o", &autosave_dir_view);
+	key_add(asd_map, "doc:cmd-\n", &autosave_dir_view);
+	key_add(asd_map, "doc:cmd:Enter", &autosave_dir_view);
+
 	key_add(asd_map, "doc:cmd-d", &autosave_dir_delete);
 	key_add(asd_map, "doc:cmd-i", &autosave_dir_ignore);
 	key_add(asd_map, "doc:cmd-n", &autosave_dir_ignore);
