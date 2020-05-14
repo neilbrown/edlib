@@ -34,7 +34,7 @@ Requirements for a v1.0 release
 Bugs to be fixed
 ----------------
 
-- [ ] If I give a dirname to edlib and then find-file, I don't get full path.
+- [X] If I give a dirname to edlib and then find-file, I don't get full path.
 - [ ] LOG buffer doesn't always update - eg log messages caused by completion pane
 
 Core features

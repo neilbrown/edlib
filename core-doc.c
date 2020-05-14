@@ -1204,15 +1204,16 @@ static struct pane *doc_attach(struct pane *parent)
 	return pane_register(parent, 0, &doc_handle.c, dd);
 }
 
-static void simplify_path(char *path safe, char *buf safe)
+static void simplify_path(const char *path safe, char *buf safe)
 {
 	/* Like readpath, but doesn't process symlinks,
 	 * so only "..", "." and extra '/' are handled
 	 * Assumes that 'path' starts with a '/'.
 	 */
-	char *p;
-	char *end;
+	const char *p;
+	const char *end;
 	char *b = buf;
+
 	for (p = path; *p; p = end) {
 		int len;
 		end = strchrnul(p+1, '/');
@@ -1246,7 +1247,8 @@ DEF_CMD(doc_open)
 {
 	struct pane *ed = ci->home;
 	int fd = ci->num;
-	const char *name = ci->str;
+	char *name;
+	char *realname = NULL;
 	struct stat stb;
 	struct pane *p;
 	int autoclose = ci->num2 & 1;
@@ -1254,37 +1256,59 @@ DEF_CMD(doc_open)
 	int reload = ci->num2 & 8;
 	int force_reload = ci->num2 & 16;
 	int quiet = ci->num2 & 32;
-	char pathbuf[PATH_MAX], *rp = NULL;
+	char pathbuf[PATH_MAX];
 
-	if (!name)
+	if (!ci->str)
 		return Enoarg;
-	stb.st_mode = 0;
-	if (fd >= -1) {
-		/* Try to canonicalize directory part of path */
-		const char *sl;
-		sl = strrchr(name, '/');
-		if (!sl) {
-			rp = realpath(".", pathbuf);
-			sl = name;
-		} else if (sl-name < PATH_MAX-4) {
-			char nbuf[PATH_MAX];
-			strncpy(nbuf, name, sl-name);
-			nbuf[sl-name] = 0;
-			simplify_path(nbuf, pathbuf);
-			rp = pathbuf;
-			sl += 1;
-		}
 
-		if (rp) {
-			char nbuf[PATH_MAX];
-			strcpy(nbuf, rp);
-			if (rp[1])
-				strcat(nbuf, "/");
-			strcat(nbuf, sl);
-			simplify_path(nbuf, pathbuf);
-			name = pathbuf;
+	stb.st_mode = 0;
+	/* fd < -1 mean a non-filesystem name */
+	if (fd >= -1) {
+		char *sl = NULL, *rp, *restore = NULL;
+		char *dir;
+		/* First, make sure we have an absolute path, and
+		 * simplify it.
+		 */
+		if (ci->str[0] != '/') {
+			char *c = getcwd(pathbuf, sizeof(pathbuf));
+			if (c) {
+				name = strconcat(ed, c, "/", ci->str);
+				simplify_path(name, pathbuf);
+				name = strsave(ed, pathbuf);
+			} else
+				name = strsave(ed, ci->str);
+		} else {
+			simplify_path(ci->str, pathbuf);
+			name = strsave(ed, pathbuf);
 		}
-	}
+		if (!name)
+			return Efail;
+		/* Now try to canonicalize directory part of name as realname */
+		dir = name;
+		if (dir)
+			sl = strrchr(dir, '/');
+		if (sl && sl[1] && strcmp(sl, "/.") != 0 && strcmp(sl, "/..") != 0) {
+			/* Found a real basename */
+			restore = sl;
+			*sl++ = '\0';
+		} else if (sl) {
+			/* Cannot preserve basename in relative path */
+			sl = "";
+		} else {
+			sl = name;
+			dir = ".";
+		}
+		rp = realpath(dir, pathbuf);
+		if (rp && sl)
+			realname = strconcat(ed, rp, "/", sl);
+		else if (rp)
+			realname = rp;
+		else
+			realname = NULL;
+		if (restore)
+			*restore = '/';
+	} else
+		name = (char*)ci->str;
 
 	if (fd == -1)
 		/* No open yet */
@@ -1297,7 +1321,7 @@ DEF_CMD(doc_open)
 	else
 		stb.st_mode = 0;
 
-	p = call_ret(pane, "docs:byfd", ed, 0, NULL, rp, fd);
+	p = call_ret(pane, "docs:byfd", ed, 0, NULL, name, fd);
 
 	if (!p) {
 		p = call_ret(pane, "global-multicall-open-doc-", ed,
@@ -1316,13 +1340,21 @@ DEF_CMD(doc_open)
 	} else {
 		char *n;
 		n = pane_attr_get(p, "filename");
-		if (n && strlen(n) > 1 && n[strlen(n)-1] == '/' && rp)
+		if (n && strlen(n) > 1 && n[strlen(n)-1] == '/') {
 			/* Make sure both end in '/' if either do */
-			strcat(rp, "/");
-		if (!quiet && n && rp && strcmp(n, rp) != 0)
+			if (realname)
+				realname = strconcat(ed, realname, "/");
+			name = strconcat(ed, name, "/");
+		}
+		if (!quiet && n && realname && strcmp(n, realname) != 0)
 			call("Message", ci->focus, 0, NULL,
-			     strconcat(ci->focus, "File ", rp, " and ", n,
+			     strconcat(ci->focus, "File ", realname, " and ", n,
 				       " are the same"));
+		else if (!quiet && n && strcmp(n, name) != 0)
+			call("Message", ci->focus, 0, NULL,
+			     strconcat(ci->focus, "File ", name, " and ", n,
+				       " are the same"));
+
 		if (reload || force_reload)
 			call("doc:load-file", p, force_reload?0:1, NULL, name,
 			     fd);
