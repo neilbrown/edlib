@@ -75,8 +75,11 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 	     m;
 	     m = mark_next(m))
 		if (m->ref.p == p) {
-			if (!first)
-				first = m;
+			if (!first) {
+				first = mark_prev(m);
+				if (!first)
+					first = m;
+			}
 			m->ref.p = next;
 		} else if (first)
 			break;
