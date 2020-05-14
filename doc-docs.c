@@ -189,52 +189,49 @@ static void doc_checkname(struct pane *p safe, struct docs *ds safe, int n)
  */
 
 static int docs_open(struct pane *home safe, struct pane *focus safe,
-		     struct mark *m, char cmd);
+		     struct mark *m, bool other);
 
-DEF_CMD(docs_modified_cmd)
+DEF_CMD(docs_mod_next)
 {
-	const char *c = ksuffix(ci, "doc:cmd-");
 	struct mark *m;
 
+	/* If this is the last, then quit */
 	if (!ci->mark)
 		return Enoarg;
-
-	switch (c[0]) {
-	case 'y':
-	case 's':
-	case 'k':
-	case '%':
-		return Efallthrough;
-	case 'q':
-		return call("popup:close", ci->home);
-	case 'o':
-		/* abort the current action, and open this in another window */
-		docs_open(ci->home, ci->focus, ci->mark, 'o');
-		call("Abort", ci->home);
-		return 1;
-	case 'n':
-		/* If this is the last, then quit */
-		if (!ci->mark)
-			return Enoarg;
-		m = mark_dup(ci->mark);
-		doc_next(ci->home->parent, m);
-		if (call("doc:render-line", ci->focus, 0, m) < 0||
-		    m->ref.p == NULL) {
-			mark_free(m);
-			return call("popup:close", ci->focus);
-		}
+	m = mark_dup(ci->mark);
+	doc_next(ci->home->parent, m);
+	if (call("doc:render-line", ci->focus, 0, m) < 0||
+	    m->ref.p == NULL) {
 		mark_free(m);
-		/* Ask viewer to move forward */
-		return 2;
-	default:
-		/* Suppress all others */
-		return 1;
+		return call("popup:close", ci->focus);
 	}
+	mark_free(m);
+	/* Ask viewer to move forward */
+	return 2;
 }
 
-DEF_CMD(docs_modified_empty)
+DEF_CMD(docs_mod_quit)
+{
+	return call("popup:close", ci->home);
+}
+
+DEF_CMD(docs_mod_other)
+{
+	/* abort the current action, and open this in another window */
+	docs_open(ci->home, ci->focus, ci->mark, True);
+	call("Abort", ci->home);
+	return 1;
+}
+
+DEF_CMD(docs_mod_empty)
 {
 	call("popup:close", ci->focus);
+	return 1;
+}
+
+DEF_CMD(docs_mod_noop)
+{
+	/* Don't want anything else to fall through to default */
 	return 1;
 }
 
@@ -538,7 +535,7 @@ DEF_CMD(docs_get_attr)
 }
 
 static int docs_open(struct pane *home safe, struct pane *focus safe,
-		     struct mark *m, char cmd)
+		     struct mark *m, bool other)
 {
 	struct pane *p;
 	struct pane *dp;
@@ -551,7 +548,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 	if (dp == NULL)
 		return 0;
 
-	if (cmd == 'o') {
+	if (other) {
 		par = home_call_ret(pane, focus, "DocPane", dp);
 		if (!par)
 			par = call_ret(pane, "OtherPane", focus);
@@ -654,17 +651,6 @@ static int docs_kill(struct pane *focus safe, struct mark *m, int num)
 	return 1;
 }
 
-static int docs_toggle(struct pane *focus safe, struct mark *m)
-{
-	struct pane *dp;
-	if (!m)
-		return Enoarg;
-	dp = m->ref.p;
-	if (dp)
-		return call("doc:modified", dp);
-	return 0;
-}
-
 DEF_CMD(docs_destroy)
 {
 	/* Not allowed to destroy this document
@@ -683,37 +669,37 @@ DEF_CMD(docs_child_closed)
 	return 1;
 }
 
-DEF_CMD(docs_cmd)
+DEF_CMD(docs_do_open)
+{
+	return docs_open(ci->home, ci->focus, ci->mark, False);
+}
+
+DEF_CMD(docs_do_open_other)
+{
+	return docs_open(ci->home, ci->focus, ci->mark, True);
+}
+
+DEF_CMD(docs_do_open_alt)
 {
 	const char *c = ksuffix(ci, "doc:cmd-");
 
-	switch(c[0]) {
-	case 'f':
-	case '\n':
-	case 'o':
-		return docs_open(ci->home, ci->focus, ci->mark, c[0]);
-	case 'q':
-		return docs_bury(ci->focus);
-	case 's': /* save */
-	case 'y': /* yes */
-		return docs_save(ci->focus, ci->mark);
-	case 'k':
-		return docs_kill(ci->focus, ci->mark, ci->num);
-	case '%':
-		return docs_toggle(ci->focus, ci->mark);
-	case 'n': /* no */
-		return 2; /* Move to next line */
-	default:
-		if (c[0] >= 'A' && c[0] <= 'Z')
-			return docs_open_alt(ci->home,
-					     ci->focus, ci->mark, c[0]);
-	}
+	return docs_open_alt(ci->home,
+			     ci->focus, ci->mark, c[0]);
+}
 
-	c = ksuffix(ci, "doc:cmd:");
-	if (strcmp(c, "Enter") == 0)
-		return docs_open(ci->home, ci->focus, ci->mark, '\n');
+DEF_CMD(docs_do_quit)
+{
+	return docs_bury(ci->focus);
+}
 
-	return 1;
+DEF_CMD(docs_do_save)
+{
+	return docs_save(ci->focus, ci->mark);
+}
+
+DEF_CMD(docs_do_kill)
+{
+	return docs_kill(ci->focus, ci->mark, ci->num);
 }
 
 static void docs_init_map(void)
@@ -731,8 +717,14 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:get-attr", &docs_doc_get_attr);
 	key_add(docs_map, "doc:step", &docs_step);
 	key_add(docs_map, "doc:destroy", &docs_destroy);
-	key_add_prefix(docs_map, "doc:cmd-", &docs_cmd);
-	key_add_prefix(docs_map, "doc:cmd:", &docs_cmd);
+	key_add(docs_map, "doc:cmd-f", &docs_do_open);
+	key_add(docs_map, "doc:cmd-\n", &docs_do_open);
+	key_add(docs_map, "doc:cmd:Enter", &docs_do_open);
+	key_add(docs_map, "doc:cmd-o", &docs_do_open_other);
+	key_add(docs_map, "doc:cmd-q", &docs_do_quit);
+	key_add(docs_map, "doc:cmd-s", &docs_do_save);
+	key_add(docs_map, "doc:cmd-k", &docs_do_kill);
+	key_add_range(docs_map, "doc:cmd-A", "doc:cmd-Z", &docs_do_open_alt);
 
 	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "Free", &edlib_do_free);
@@ -741,9 +733,15 @@ static void docs_init_map(void)
 	key_add(docs_aux_map, "doc:status-changed", &doc_damage);
 	key_add(docs_aux_map, "ChildClosed", &docs_child_closed);
 
-	key_add_prefix(docs_modified_map, "doc:cmd-", &docs_modified_cmd);
-	key_add_prefix(docs_modified_map, "doc:cmd:", &docs_modified_cmd);
-	key_add(docs_modified_map, "Notify:filter:empty", &docs_modified_empty);
+	key_add_prefix(docs_modified_map, "doc:cmd-", &docs_mod_noop);
+	key_add_prefix(docs_modified_map, "doc:cmd:", &docs_mod_noop);
+	key_add(docs_modified_map, "doc:cmd-s", &docs_do_save);
+	key_add(docs_modified_map, "doc:cmd-y", &docs_do_save);
+	key_add(docs_modified_map, "doc:cmd-n", &docs_mod_next);
+	key_add(docs_modified_map, "doc:cmd-q", &docs_mod_quit);
+	key_add(docs_modified_map, "doc:cmd-o", &docs_mod_other);
+
+	key_add(docs_modified_map, "Notify:filter:empty", &docs_mod_empty);
 }
 
 DEF_CMD(attach_docs)

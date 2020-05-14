@@ -6,7 +6,7 @@ Current priorities
 
 - [X] fix bugs
 - [X] diff: add command to add it to any pane
-- [ ] Change various things that use cmd-* and a switch, to use multiple cmds.
+- [X] Change various things that use cmd-* and a switch, to use multiple cmds.
 - [ ] doc:char intermediate commands
 - [ ] overlay for lib-format to allow char access.
 - [ ] test suite
@@ -297,7 +297,7 @@ Module features
 
 ### docs
 
-- [ ] save-all should indiciate option (y,n,s,o,..).  '%' is strange...
+- [ ] save-all should indiciate option (y,n,s,o,..).
 - [ ] docs_callback should (maybe) use a keymap
 
 ### hex
