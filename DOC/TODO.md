@@ -4,8 +4,8 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] fix bugs
-- [ ] diff: add command to add it to any pane
+- [X] fix bugs
+- [X] diff: add command to add it to any pane
 - [ ] Change various things that use cmd-* and a switch, to use multiple cmds.
 - [ ] doc:char intermediate commands
 - [ ] overlay for lib-format to allow char access.
@@ -35,7 +35,8 @@ Bugs to be fixed
 ----------------
 
 - [X] If I give a dirname to edlib and then find-file, I don't get full path.
-- [ ] LOG buffer doesn't always update - eg log messages caused by completion pane
+- [X] LOG buffer doesn't always update - eg log messages caused by completion pane
+      (cannot reproduce this now)
 
 Core features
 -------------

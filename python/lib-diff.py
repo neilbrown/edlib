@@ -153,4 +153,12 @@ def diff_view_attach(key, focus, comm2, **a):
         comm2("callback", p)
     return 1
 
+def add_diff(key, focus, **a):
+    p = DiffPane(focus)
+    if p:
+        p.call("view:changed")
+    return 1
+
+
 editor.call("global-set-command", "attach-diff", diff_view_attach)
+editor.call("global-set-command", "interactive-cmd-diff-mode", add_diff)

@@ -3,7 +3,7 @@
 
 # Misc
 
-## view-changed
+## view:changed
 
 This is sent to a focus pane when a change happens that will affect
 this particular view of a document.  This is often a change in highlights,
