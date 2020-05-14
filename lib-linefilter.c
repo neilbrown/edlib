@@ -93,13 +93,15 @@ DEF_CMD(render_filter_line)
 		mark_to_mark(ci->mark, m);
 		cb.cmp = 0;
 		if (fd->attr) {
-			comm_call(&cb.c, "", ci->home->parent,
+			comm_call(&cb.c, "", ci->focus,
 				  NO_NUMERIC, NULL,
 				  pane_mark_attr(ci->focus, m, fd->attr),
 				  -1);
-			call(ci->key, ci->home->parent, NO_NUMERIC, m);
+			home_call(ci->home->parent, ci->key, ci->focus,
+				  NO_NUMERIC, m);
 		} else
-			call_comm(ci->key, ci->home->parent, &cb.c, NO_NUMERIC, m);
+			home_call_comm(ci->home->parent, ci->key, ci->focus,
+				       &cb.c, NO_NUMERIC, m);
 	} while (cb.cmp && !mark_same(ci->mark, m));
 
 	mark_free(m);
@@ -107,8 +109,8 @@ DEF_CMD(render_filter_line)
 	cb.str = NULL;
 	cb.fd = NULL;
 	m2 = ci->mark2;
-	if (call_comm(ci->key, ci->home->parent, &cb.c, ci->num, ci->mark,
-		      NULL, 0, m2) < 0)
+	if (home_call_comm(ci->home->parent, ci->key, ci->focus, &cb.c,
+			   ci->num, ci->mark, NULL, 0, m2) < 0)
 		return Efail;
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL, cb.str);
@@ -125,13 +127,15 @@ DEF_CMD(render_filter_line)
 		mark_to_mark(ci->mark, m);
 		cb.cmp = 0;
 		if (fd->attr) {
-			comm_call(&cb.c, "", ci->home->parent,
+			comm_call(&cb.c, "", ci->focus,
 				  NO_NUMERIC, NULL,
 				  pane_mark_attr(ci->focus, m, fd->attr),
 				  -1);
-			call(ci->key, ci->home->parent, NO_NUMERIC, m);
+			home_call(ci->home->parent, ci->key, ci->focus,
+				  NO_NUMERIC, m);
 		} else
-			call_comm(ci->key, ci->home->parent, &cb.c, NO_NUMERIC, m);
+			home_call_comm(ci->home->parent, ci->key, ci->focus,
+				       &cb.c, NO_NUMERIC, m);
 	} while (cb.cmp && !mark_same(ci->mark, m));
 
 	mark_free(m);
@@ -140,6 +144,7 @@ DEF_CMD(render_filter_line)
 
 static int do_filter_line_prev(struct filter_data *fd safe,
 			       struct mark *m safe,
+			       struct pane *home safe,
 			       struct pane *focus safe, int n,
 			       const char **savestr)
 {
@@ -159,7 +164,7 @@ static int do_filter_line_prev(struct filter_data *fd safe,
 	cb.fd = fd;
 	cb.cmp = 0;
 
-	ret = call("doc:render-line-prev", focus, n, m);
+	ret = home_call(home, "doc:render-line-prev", focus, n, m);
 	if (ret < 0)
 		/* Probably hit start-of-file */
 		return ret;
@@ -174,7 +179,8 @@ static int do_filter_line_prev(struct filter_data *fd safe,
 	} else {
 		struct mark *m2 = mark_dup(m);
 
-		ret = call_comm("doc:render-line", focus, &cb.c, NO_NUMERIC, m2);
+		ret = home_call_comm(home, "doc:render-line", focus, &cb.c,
+				     NO_NUMERIC, m2);
 		mark_free(m2);
 		if (ret <= 0)
 			return Efail;
@@ -197,19 +203,21 @@ DEF_CMD(render_filter_prev)
 		return Efallthrough;
 
 	/* First, make sure we are at a start-of-line */
-	ret = do_filter_line_prev(fd, m, ci->home->parent, 0, NULL);
+	ret = do_filter_line_prev(fd, m, ci->home->parent, ci->focus, 0, NULL);
 	if (ret < 0)
 		return ret;
 	while (ret == 0) {
 		/* That wasn't a matching line, try again */
-		ret = do_filter_line_prev(fd, m, ci->home->parent, 1, NULL);
+		ret = do_filter_line_prev(fd, m, ci->home->parent, ci->focus,
+					  1, NULL);
 	}
 	if (!ci->num)
 		/* Only wanted start of line - found */
 		return 1;
 	ret = 0;
 	while (ret == 0) {
-		ret = do_filter_line_prev(fd, m, ci->home->parent, 1, NULL);
+		ret = do_filter_line_prev(fd, m, ci->home->parent, ci->focus,
+					  1, NULL);
 		if (ret < 0)
 			/* Error */
 			return ret;
@@ -318,7 +326,7 @@ DEF_CMD(filter_changed)
 		const char *str = NULL;
 		struct mark *m2 = mark_dup(m);
 
-		ret = do_filter_line_prev(fd, m, ci->home->parent, 1,
+		ret = do_filter_line_prev(fd, m, ci->home->parent, ci->focus, 1,
 				     comm ? &str : NULL);
 		if (ret > 0) {
 			/* m is a good line, m2 is like end */
@@ -379,7 +387,7 @@ DEF_CMD(filter_eol)
 	while (rpt < -1) {
 		int ret;
 		ret = do_filter_line_prev(ci->home->data, ci->mark,
-					  ci->home->parent, 1, NULL);
+					  ci->home->parent, ci->focus, 1, NULL);
 		if (ret < 0)
 			rpt = -1;
 		if (ret > 0)

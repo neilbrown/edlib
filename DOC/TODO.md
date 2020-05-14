@@ -26,6 +26,7 @@ Requirements for a v1.0 release
 - [ ] markdown editor with PDF output
 - [ ] non-line-based render, such as a tabular render for spreadsheet.
 - [ ] documentation reader
+- [ ] block-dev (mmap) doc type, and some hex-mode support
 - [ ] user documentation
 - [ ] developer documentation
 - [ ] notmuch
