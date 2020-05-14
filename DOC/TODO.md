@@ -298,7 +298,7 @@ Module features
 
 ### docs
 
-- [ ] save-all should indiciate option (y,n,s,o,..).
+- [X] save-all should indiciate option (y,n,s,o,..).
 - [ ] docs_callback should (maybe) use a keymap
 
 ### hex

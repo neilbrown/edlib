@@ -332,10 +332,14 @@ DEF_CMD(docs_callback)
 			return Efail;
 		attr_set_str(&p->attrs, "filter:attr", "doc-can-save");
 		attr_set_str(&p->attrs, "filter:match", "yes");
-		attr_set_str(&p->attrs, "doc-name", "*Modified Documents*");
 		p = pane_register(p, 0, &docs_modified_handle.c, doc);
 		if (!p)
 			return Efail;
+		attr_set_str(&p->attrs, "doc-name", "*Modified Documents*");
+		attr_set_str(&p->attrs, "line-format", "%doc-name:20 %filename");
+		attr_set_str(&p->attrs, "heading",
+			     "<bold>Document             File</>\n"
+			     "<bold,underline>[s]ave [y]es [n]o [q]uit</>");
 		call("doc:request:doc:replaced", p);
 		/* And trigger Notify:doc:Replace handling immediately...*/
 		pane_call(p, "doc:replaced", p);
