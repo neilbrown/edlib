@@ -510,6 +510,7 @@ static void autosaves_record(struct pane *p safe, const char *path safe,
 	char *home = getenv("HOME");
 	char *dirname = getenv("EDLIB_AUTOSAVE");
 	int num;
+	bool changed = False;
 
 	if (!home)
 		home = "/tmp";
@@ -548,10 +549,12 @@ static void autosaves_record(struct pane *p safe, const char *path safe,
 				continue;
 			current[len] = 0;
 			if (strcmp(current, path) == 0) {
-				if (!create)
+				if (!create) {
 					unlinkat(dirfd(d), de->d_name, 0);
-				closedir(d);
-				return;
+					changed = True;
+				}
+				create = False;
+				break;
 			}
 		}
 	}
@@ -559,6 +562,12 @@ static void autosaves_record(struct pane *p safe, const char *path safe,
 		char nbuf[20];
 		snprintf(nbuf, sizeof(nbuf), "%d", num);
 		symlinkat(path, dirfd(d), nbuf);
+	}
+	if (changed) {
+		struct pane *doc;
+		doc = call_ret(pane, "doc:open", p, -1, NULL, dirname);
+		if (doc)
+			pane_call(doc, "doc:notify:doc:revisit", p);
 	}
 	closedir(d);
 }
