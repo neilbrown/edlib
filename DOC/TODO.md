@@ -4,73 +4,42 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [X] fix bugs
+- [ ] fix bugs
+- [ ] diff: add command to add it to any pane
 - [ ] Change various things that use cmd-* and a switch, to use multiple cmds.
-- [X] emacs: replacable selections aren't working for me.  There needs to be an 
-      easier way to cancel them. C-x C-x works as does C-wC-y, but neither are obvious.
-      Maybe any cursor movement should
-- [X] text: track autosave files
-- [X] emacs: pop-up diff when visiting an auto-saved file - readonly until an answer
-- [X] doc-dir: use lib-viewer
-- [ ] autosave: all
-- [X] tile: Window:close-others in one dimension only
-- [X] emacs: typing in selection replaces selected text
-- [X] render-lines: text appearing before top-of-page should appear - at least one line
-      and if top-of-page was top-of-file, then all of it.
-- [X] lib-input: feed-back for number/mode prefixes.
-- [X] doc-text: merge undo-records where possible
-- [X] make: handle "note:" lines better
-- [X] test-suite: add one test case.
-- [X] dynamic completion: look in other docs - top 5 text??
+- [ ] doc:char intermediate commands
+- [ ] overlay for lib-format to allow char access.
+- [ ] test suite
+- [ ] use a single hash in key lookup - two at most.
+- [ ] rexel/search improvements
+- [ ] unify backend for make/grep and shell modes
+- [ ] input: keyboard macros
+
+Requirements for a v1.0 release
+
+- [ ] efficient refresh using separate lib-renderline for each line
+- [ ] efficient X11 drawing using server-side surfaces
+- [ ] configuration
+- [ ] vi mode
+- [ ] office mode
+- [ ] introspection
+- [ ] markdown editor with PDF output
+- [ ] non-line-based render, such as a tabular render for spreadsheet.
+- [ ] documentation reader
+- [ ] user documentation
+- [ ] developer documentation
+- [ ] notmuch
+- [ ] some git support
 
 Bugs to be fixed
 ----------------
 
-- [ ] in 'docs', 'k' on last doc doesn't make it disappear - then 'k' gives silly error
-- [X] C-x-# in a pop-up file doesn't close the popup any more.
-- [X] With *Documents* open M-x version.  doc list gets confused.
-- [X] When I type C-w in search, chars are inserted AFTER cursor. Cursor should move.
-- [X] If I scroll-wheel while search, cursor disappears for a time - maybe until status update
-- [X] selection is visible more often than I think it should be. Maybe mouse click
-     is leaving an artifact.
-- [X] mouse click beyond EOF places curor at end of last line - before final newline
-- [X] in hex mode cursor movement in wonky
-- [X] when I git-grep and then 'f' to view the result in the popup, the grep output
-      is still there in some ghostly way and appears occasionally.
-- [X] at some scale levels, find-file dialog gets messed up.
-- [X] FILENAME COMPLETE with lustre-todo and lustre-to-fix
-      when I type the "to", the cursor goes to the end of the list.
-      I think 't' include 'o', then 'o' doesn't match and should be ignored,
-      but instead sends to end of doc.
-- [X] in 'make', in run_make(), 'k', might not contain a colon.
-      This happened when I forgot to "M--", so I used 'Down' a few time.
-- [X] Make parsing can leave lots of marks in the make doc and this causes
-      doc-text consistency checking to go cubic or worse and grind
-      to a halt.  consistency-check needs to be more gentle, and make probably
-      need to delay some parsing, and delete some marks
-- [X] isearch - C-w and C-c should add text to end of buffer, not at cursor.
-- [X] I have lib-make.py, other libs and Makefile as documents with lib-make.py
-      first and I try to find doc "mak" and complete - it shows me all the 'lib-' docs!!!
-- [X] edit C file, insert spc spc x x ; spc undo - crash
-- [X] run edlib, open dir, open same dir from lib-server - crash
-- [X] find-file dialog isn't affected by scale, but content is.
-- [X] use server to open non-existant file - get err at editor.call("doc:open").
-- [X] in pygtk, second tab in c-mode code displays as single space.
-- [X] use mouse to copy from else where and paste in here.  Then do again.
-      .. Seems to work now.
-- [X] Scroll wheel not working in gtk
-- [X] Python errors should go to stderr until a display reports that it is ready.
-- [X] If I visit a directory and delete a few contiguous filename, refresh
-      doesn't make them all disappear - probably non-unique marks
-- [X] there seems to be a python memalloc bug somewhere - I get occasionaly crashes.
-      This might be gtk_target_entry_free() in xs_close.
-- [X] python comment inserting '#' should only happen for K:Enter
+- [ ] If I give a dirname to edlib and then find-file, I don't get full path.
+- [ ] LOG buffer doesn't always update - eg log messages caused by completion pane
 
 Core features
 -------------
 
-- [ ] If I give a dirname to edlib and then find-file, I don't get full path.
-- [ ] LOG buffer doesn't always update - eg log messages caused by completion pane
 - [ ] should pane_clone_children() copy attrs too?
 - [ ] Change emacs to resubmit text entry commands as doc:char... commands
       and have core-doc translate these to replace.  Then lib-viewer translated
@@ -79,9 +48,6 @@ Core features
       running.  For a call handler it does.  This inconsistency is awkward for
       messageline_msg which wants to allow fallthrough, but needs to acknowledge.
       How can I resolve this?
-- [X] LOG() loading of modules, with version info.
-- [ ] Record where auto-save files are, and recover them.
-        A directory of symlinks
 - [ ] make a doc read-only if dir doesn't exist or isn't writeable
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
@@ -93,7 +59,7 @@ Core features
       somewhere from the owner.  Rather they should be disconnected and tracked
       so that a 'free' can work, but nothing else does anything useful.
 - [ ] document the use of doc:replaced.  What are the two
-      marks exactly? start and end of range.
+      marks exactly? start and end of range.  Verify all clients and providers
 - [ ]  ?? restrict prefix key lookup to punctuation.
 
       Current ranges are:
@@ -135,27 +101,12 @@ Module features
 
 ### autosave
 
-- [X] change autosave dir to link to base file, not auto-saved version
 - [ ] if multiple files are opened quickly (e.g. by grep), we might get cascading
       autosave prompts.  Introduce a mechanism to queue them and only have one per
       display
-- [X] Add 'delete' option as well as 'restore' and 'ignore'
-- [X] delete option should remove from autosave directory.
-- [X] restore option should remove from autosave directory. - no, that only happens
-      when the restored file is saved.
-- [X] Make sure doc is 'dirty' after a restore
-- [X] Handle opening of backup files too
-- [X] Handle opening of autosave files
-- [X] add dir overlay which shows symlink content and disappears when none left
-- [X] auto-load $HOME/.edlib-autosave on startup
-- [X] dir view doesn't update properly on deletes.- need to reload
-- [X] get dir to support reading symlink and loading that name, then
-      use that from autosave-dir - and handle 'o' and 'f' etc as expected
 
 ### tile
 
-- [X] Provide something like :C-x-1 which only affects one dimension.
-      Maybe :C-x-1 will doo that, and :C-x-1-1 will do both.
 
 ### rexel
 
@@ -199,10 +150,6 @@ Module features
 
 ### emacs
 
-- [X] replacable selections aren't working for me.  There needs to be an 
-      easier way to cancel them. C-x C-x works as does C-wC-y, but neither are obvious.
-      Maybe any cursor movement should
-- [X] pop-up diff when visiting an auto-saved file - readonly until an answer
 - [ ] make-directory command
 - [ ] sort the command names for command-completion?
 - [ ] filename completion should ignore uninteresting files like ".o"
@@ -217,7 +164,6 @@ Module features
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 - [ ] compare two panes somehow
 - [ ] pipe doc or selection to a command, optionally capture to replace with output.
-- [X] if typing when selection active, replace selection with new text
 - [ ] history for each entry.
 
 #### emacs-search
@@ -265,9 +211,6 @@ Module features
       to find a cursor and compare with ->mdata and get confusion.  How can I avoid this?
 - [ ] view:changed shouldn't destroy the view, else Move-CursorXY
       gets confused.
-- [X] can render-lines ensure that lines appearing immediately
-      before first line displayed, appear.  This is particularly
-      important when first line displayed is(was) first line of file.
 - [ ] make renderlines "refresh everything when point moves" optional.
 - [ ] if flush_line from render_line() keeps returning zero, abort
 - [ ] render-lines should always re-render the line containing point, so
@@ -277,14 +220,13 @@ Module features
 
 - [ ] keep log of keystrokes in a restricted document
 - [ ] support keyboard macros
-- [X] if a prefix is unchanged for a short while, display it in the message line
 - [ ] can we capture the substates of character composition, and give feed-back?
 
 ### doc-dir
 
-- [X] use lib-viewer
 - [ ] allow setting a pattern, as alternate to substr, for 'complete' viewer.
-- [ ] how to change sort order of a directory listing
+- [ ] how to change sort order of a directory listing.  I think this requires
+      a separate dir document, which borrows state from the main one.
 - [ ] chown/chmod/unlink/rename etc
 
 ### doc-text
@@ -293,7 +235,6 @@ Module features
       e.g. new buffer doubles each time??
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
-- [X] merge adjacent undo records that can be merged.
 - [ ] Possibly move read-only handling to core-doc, once docs/dir
       respond to something other than 'replace' to open files.
 - [ ] how to prune old undo history?
@@ -308,10 +249,6 @@ Module features
 
 ### completion
 
-- [X] backspace should remove multiple chars if needed until the number of matches
-      increases.  Should it remove chars that were auto-added at the start?
-      Should they be highlighted but not requred?
-- [X] separate out filtered into a separate pane, which can work on attrs or content.
 - [ ] mouse selection should work in completion pane
 - [ ] filename completion should work for earlier component of path.
 - [ ] The “complete” popup should be positioned above/below the file name,
@@ -347,33 +284,10 @@ Module features
 - [ ] When I visit from grep in a popup, I think I want a 'view' at first.
       so 'q' works.
 - [ ] Need keystroke to step through different grep/make windows
-- [X] it should be possible to 'find' a match in 'this' window, or 'popup' window
-      as well as 'other'
-- [X] 'next-match' should always stop once at the end-of-file even if there is
-      no error there
-- [X] we should track all Entering/Leaving directory message so we always know
-      what 'make' thinks is the current dir.  At present we ignore 'leaving'.
-- [X] If we cannot find the named file, we much still advance 'point' for the
-      matches doc.
-- [X] pressing 'enter' goes to the *next* match instead of *this* one.
-- [X] We destroy make output too eagerly, so we don't remember last make command.
-- [X] When checking if a make output is in the right directory, we should check
-      both apparent and canonical name for both directories.
-- [X] 'next-match' should *never* go beyond the end of a make/grep that
-      is still running.
-- [X] what should happen if we run 'make' while make is running?
-      If same dir - kill??? If different, create new doc?
-- [X] handle note: lines better - prefer a .c file over .h.
-- [X] neg arg to next-match goes backwards, and ` keeps going backwards
 - [ ] if file isn't already loaded, wait until it is wanted, or something
       else loads it.
 - [ ] if file is reloaded, re-place all the marks, don't just ignore them.
-- [X] if two results are at the same location, ignore the second.
-- [X] improve detection of the 'important' "note" line.
 - [ ] clarify and document the role of numeric args to git-grep
-- [X] when restart compile/grep, kill only one.
-- [X] numeric-prefix to make will auto-save everything.
-- [X] grep should (optionally) save files in the directory tree
 
 ### message-line
 
@@ -394,7 +308,6 @@ Module features
 
 - [ ] 'shell-command' should try to use same pane even though it
       kills the old document and creates a new one
-- [X] two shells running concurrently write to samedocument!
 - [ ]  Use pattern-match on command to optionally choose an overlay
        which can highlight output and allow actions.
        e.g. (git )?grep   - highlight file names and jump to match
@@ -550,8 +463,6 @@ Module features
 
 ### test suite
 
-# tests
-
 - [ ] create reliable test for hex mode
 - [ ] avoid duplicate Display lines with same content
 - [ ] Remove differences in directory size - and possible user/group name
@@ -560,9 +471,7 @@ Module features
       Have error report a 'first line' and then reply to that line.
 - [ ] Add way to abstract out the path to /tmp/edlib-tests
 - [ ] Add mechanism to easily run a command with pre-canned output.
-- [X] switch to 'screen' rather than xterm - if it works
 - [ ] Add one test case, and arrange for auto-testing on commit. 
-- [X] choose edlib git point for testing
 - [ ] allow headless testing as well as visible
 - [ ] allow single-step testing?
 - [ ] Allow testing gtk as well an ncurses
@@ -571,7 +480,6 @@ Module features
 
 ### dynamic completion
 
-- [X] search in other docs for a prefix
 - [ ] provide a drop-down menu with options
 
 New Modules - simple
@@ -842,6 +750,7 @@ together.
 
 Functionality includes:
 
+- LSP (Language Server Protocol) integration.
 - build:: I can already run "make" easily, though there is room for improvement.
 - error location:: Going to an error line is easy.  It might be nice to have
    the error message appear in-line with the code, rather than needing to have
