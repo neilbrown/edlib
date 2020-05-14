@@ -45,10 +45,12 @@ struct doc_ref {
 };
 #include "core.h"
 
-static struct map *docs_map, *docs_aux_map, *docs_modified_map;
+static struct map *docs_map, *docs_aux_map, *docs_modified_map,
+	*docs_callback_map;
 DEF_LOOKUP_CMD(docs_handle, docs_map);
 DEF_LOOKUP_CMD(docs_aux, docs_aux_map);
 DEF_LOOKUP_CMD(docs_modified_handle, docs_modified_map);
+DEF_LOOKUP_CMD(docs_callback_handle, docs_callback_map);
 
 struct docs {
 	struct doc		doc;
@@ -235,141 +237,173 @@ DEF_CMD(docs_mod_noop)
 	return 1;
 }
 
-DEF_CMD(docs_callback)
+DEF_CMD(docs_callback_complete)
 {
-	struct docs *doc = container_of(ci->comm, struct docs, callback);
+	struct docs *doc = ci->home->data;
 	struct pane *p;
 
-	if (strcmp(ci->key, "docs:complete") == 0) {
-		p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus);
-		if (p) {
-			attr_set_str(&p->attrs, "line-format", "%doc-name");
-			attr_set_str(&p->attrs, "heading", "");
-			attr_set_str(&p->attrs, "done-key", "Replace");
-			p = call_ret(pane, "attach-render-complete", p);
-		}
-		if (p)
+	p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus);
+	if (p) {
+		attr_set_str(&p->attrs, "line-format", "%doc-name");
+		attr_set_str(&p->attrs, "heading", "");
+		attr_set_str(&p->attrs, "done-key", "Replace");
+		p = call_ret(pane, "attach-render-complete", p);
+	}
+	if (p)
+		return comm_call(ci->comm2, "callback:doc", p);
+	return Efail;
+}
+
+DEF_CMD(docs_callback_byname)
+{
+	struct docs *doc = ci->home->data;
+	struct pane *p;
+
+	if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0)
+		return comm_call(ci->comm2, "callback:doc",
+				 doc->doc.home);
+	list_for_each_entry(p, &doc->collection->children, siblings) {
+		struct doc *dc = p->data;
+		char *n = dc->name;
+		if (n && strcmp(ci->str, n) == 0)
 			return comm_call(ci->comm2, "callback:doc", p);
-		return Efail;
 	}
-	if (strcmp(ci->key, "docs:byname") == 0) {
-		if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0)
-			return comm_call(ci->comm2, "callback:doc",
-					 doc->doc.home);
-		list_for_each_entry(p, &doc->collection->children, siblings) {
-			struct doc *dc = p->data;
-			char *n = dc->name;
-			if (n && strcmp(ci->str, n) == 0)
-				return comm_call(ci->comm2, "callback:doc", p);
-		}
-		return Efail;
-	}
-	if (strcmp(ci->key, "docs:byfd") == 0) {
-		list_for_each_entry(p, &doc->collection->children, siblings) {
-			if (call("doc:same-file", p, 0, NULL, ci->str,
-				 ci->num2) > 0)
-				return comm_call(ci->comm2, "callback:doc", p);
-		}
-		return Efail;
-	}
-	if (strcmp(ci->key, "docs:byeach") == 0) {
-		list_for_each_entry(p, &doc->collection->children, siblings) {
-			int r;
-			r = comm_call(ci->comm2, "callback:doc", p);
-			if (r)
-				return r;
-		}
-		return 1;
-	}
+	return Efail;
+}
 
-	if (strcmp(ci->key, "docs:choose") == 0) {
-		/* Choose a documents with no notifiees or no pointer,
-		 * but ignore 'deleting' */
-		struct pane *choice = NULL, *last = NULL;
+DEF_CMD(docs_callback_byfd)
+{
+	struct docs *doc = ci->home->data;
+	struct pane *p;
 
-		list_for_each_entry(p, &doc->collection->children, siblings) {
-			struct doc *d = p->data;
-			if (p->damaged & DAMAGED_CLOSED)
+	list_for_each_entry(p, &doc->collection->children, siblings) {
+		if (call("doc:same-file", p, 0, NULL, ci->str,
+			 ci->num2) > 0)
+			return comm_call(ci->comm2, "callback:doc", p);
+	}
+	return Efail;
+}
+
+DEF_CMD(docs_callback_byeach)
+{
+	struct docs *doc = ci->home->data;
+	struct pane *p;
+
+	list_for_each_entry(p, &doc->collection->children, siblings) {
+		int r;
+		r = comm_call(ci->comm2, "callback:doc", p);
+		if (r)
+			return r;
+	}
+	return 1;
+}
+
+DEF_CMD(docs_callback_choose)
+{
+	struct docs *doc = ci->home->data;
+	struct pane *choice = NULL, *last = NULL;
+	struct pane *p;
+
+	/* Choose a documents with no notifiees or no pointer,
+	 * but ignore 'deleting' */
+
+	list_for_each_entry(p, &doc->collection->children, siblings) {
+		struct doc *d = p->data;
+
+		if (p->damaged & DAMAGED_CLOSED)
+			continue;
+		last = p;
+		if (list_empty(&p->notifiees)) {
+			choice = p;
+			break;
+		}
+		if (tlist_empty(&d->points)) {
+			choice = p;
+			break;
+		}
+	}
+	if (!choice)
+		choice = last;
+	if (!choice)
+		choice = doc->doc.home;
+	return comm_call(ci->comm2, "callback:doc", choice);
+}
+
+DEF_CMD(docs_callback_saveall)
+{
+
+	struct docs *doc = ci->home->data;
+	struct pane *p;
+	int dirlen = ci->str ? (int)strlen(ci->str) : -1;
+
+	list_for_each_entry(p, &doc->collection->children, siblings) {
+		if (dirlen > 0) {
+			char *fn = pane_attr_get(p, "dirname");
+			if (!fn || strncmp(ci->str, fn, dirlen) != 0)
 				continue;
-			last = p;
-			if (list_empty(&p->notifiees)) {
-				choice = p;
-				break;
-			}
-			if (tlist_empty(&d->points)) {
-				choice = p;
-				break;
-			}
 		}
-		if (!choice)
-			choice = last;
-		if (!choice)
-			choice = doc->doc.home;
-		return comm_call(ci->comm2, "callback:doc", choice);
+		if (doc_save(p, p, ci->num2) > 0)
+			/* Something needs to be saved */
+			return 2;
 	}
+	return 1;
+}
 
-	if (strcmp(ci->key, "docs:save-all") == 0) {
-		int dirlen = ci->str ? (int)strlen(ci->str) : -1;
-		list_for_each_entry(p, &doc->collection->children, siblings) {
-			if (dirlen > 0) {
-				char *fn = pane_attr_get(p, "dirname");
-				if (!fn || strncmp(ci->str, fn, dirlen) != 0)
-					continue;
-			}
-			if (doc_save(p, p, ci->num2) > 0)
-				/* Something needs to be saved */
-				return 2;
-		}
-		return 1;
-	}
+DEF_CMD(docs_callback_modified)
+{
+	struct docs *doc = ci->home->data;
+	struct pane *p;
 
-	if (strcmp(ci->key, "docs:show-modified") == 0) {
-		p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus);
-		if (!p)
-			return Efail;
-		p = call_ret(pane, "attach-linefilter", p);
-		if (!p)
-			return Efail;
-		attr_set_str(&p->attrs, "filter:attr", "doc-can-save");
-		attr_set_str(&p->attrs, "filter:match", "yes");
-		p = pane_register(p, 0, &docs_modified_handle.c, doc);
-		if (!p)
-			return Efail;
-		attr_set_str(&p->attrs, "doc-name", "*Modified Documents*");
-		attr_set_str(&p->attrs, "line-format", "%doc-name:20 %filename");
-		attr_set_str(&p->attrs, "heading",
-			     "<bold>Document             File</>\n"
-			     "<bold,underline>[s]ave [y]es [n]o [q]uit</>");
-		call("doc:request:doc:replaced", p);
-		/* And trigger Notify:doc:Replace handling immediately...*/
-		pane_call(p, "doc:replaced", p);
-		/* Don't want to inherit position from some earlier instance,
-		 * always move to the start.
-		 */
-		call("Move-File", p, -1);
-		return 1;
-	}
+	p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus);
+	if (!p)
+		return Efail;
+	p = call_ret(pane, "attach-linefilter", p);
+	if (!p)
+		return Efail;
+	attr_set_str(&p->attrs, "filter:attr", "doc-can-save");
+	attr_set_str(&p->attrs, "filter:match", "yes");
+	p = pane_register(p, 0, &docs_modified_handle.c, doc);
+	if (!p)
+		return Efail;
+	attr_set_str(&p->attrs, "doc-name", "*Modified Documents*");
+	attr_set_str(&p->attrs, "line-format", "%doc-name:20 %filename");
+	attr_set_str(&p->attrs, "heading",
+		     "<bold>Document             File</>\n"
+		     "<bold,underline>[s]ave [y]es [n]o [q]uit</>");
+	call("doc:request:doc:replaced", p);
+	/* And trigger Notify:doc:Replace handling immediately...*/
+	pane_call(p, "doc:replaced", p);
+	/* Don't want to inherit position from some earlier instance,
+	 * always move to the start.
+	 */
+	call("Move-File", p, -1);
+	return 1;
+}
 
-	if (strcmp(ci->key, "doc:appeared-docs-register") == 0) {
-		/* Always return Efallthrough so other handlers get a chance */
-		p = ci->focus;
-		if (!p)
-			return Efallthrough;
-		if (p->parent != p->parent->parent)
-			/* This has a parent which is not the root,
-			 * so we shouldn't interfere.
-			 */
-			return Efallthrough;
-		if (p == doc->doc.home)
-			/* The docs doc is attached separately */
-			return Efallthrough;
-		pane_reparent(p, doc->collection);
-		home_call(p, "doc:request:doc:revisit", doc->collection);
-		home_call(p, "doc:request:doc:status-changed",
-			  doc->collection);
-		doc_checkname(p, doc, ci->num ?: -1);
+
+DEF_CMD(docs_callback_appeared)
+{
+	struct docs *doc = ci->home->data;
+	struct pane *p;
+
+	/* Always return Efallthrough so other handlers get a chance */
+	p = ci->focus;
+	if (!p)
 		return Efallthrough;
-	}
+	if (p->parent != p->parent->parent)
+		/* This has a parent which is not the root,
+		 * so we shouldn't interfere.
+		 */
+		return Efallthrough;
+	if (p == doc->doc.home)
+		/* The docs doc is attached separately */
+		return Efallthrough;
+	pane_reparent(p, doc->collection);
+	home_call(p, "doc:request:doc:revisit", doc->collection);
+	home_call(p, "doc:request:doc:status-changed",
+		  doc->collection);
+	doc_checkname(p, doc, ci->num ?: -1);
+
 	return Efallthrough;
 }
 
@@ -713,6 +747,7 @@ static void docs_init_map(void)
 	docs_map = key_alloc();
 	docs_aux_map = key_alloc();
 	docs_modified_map = key_alloc();
+	docs_callback_map = key_alloc();
 	/* A "docs" document provides services to children and also behaves as
 	 * a document which lists those children
 	 */
@@ -746,6 +781,28 @@ static void docs_init_map(void)
 	key_add(docs_modified_map, "doc:cmd-o", &docs_mod_other);
 
 	key_add(docs_modified_map, "Notify:filter:empty", &docs_mod_empty);
+
+	key_add(docs_callback_map, "docs:complete", &docs_callback_complete);
+	key_add(docs_callback_map, "docs:byname", &docs_callback_byname);
+	key_add(docs_callback_map, "docs:byfd", &docs_callback_byfd);
+	key_add(docs_callback_map, "docs:byeach", &docs_callback_byeach);
+	key_add(docs_callback_map, "docs:choose", &docs_callback_choose);
+	key_add(docs_callback_map, "docs:save-all", &docs_callback_saveall);
+	key_add(docs_callback_map, "docs:show-modified",
+		&docs_callback_modified);
+	key_add(docs_callback_map, "doc:appeared-docs-register",
+		&docs_callback_appeared);
+}
+
+DEF_CMD(docs_callback_lookup)
+{
+	struct docs *docs = container_of(ci->comm, struct docs, callback);
+
+	return do_call_val(TYPE_comm, docs->doc.home, &docs_callback_handle.c,
+			   ci->key, ci->focus,
+			   ci->num, ci->mark, ci->str,
+			   ci->num2, ci->mark2, ci->str2,
+			   ci->x, ci->y, ci->comm2, NULL);
 }
 
 DEF_CMD(attach_docs)
@@ -773,7 +830,7 @@ DEF_CMD(attach_docs)
 	}
 	doc->collection = p;
 
-	doc->callback = docs_callback;
+	doc->callback = docs_callback_lookup;
 	call_comm("global-set-command", ci->home, &doc->callback,
 		  0, NULL, "docs:",
 		  0, NULL, "docs;");

@@ -299,7 +299,7 @@ Module features
 ### docs
 
 - [X] save-all should indiciate option (y,n,s,o,..).
-- [ ] docs_callback should (maybe) use a keymap
+- [X] docs_callback should (maybe) use a keymap
 
 ### hex
 
