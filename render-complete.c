@@ -175,7 +175,7 @@ DEF_CMD(complete_char)
 	struct complete_data *cd = ci->home->data;
 	char *np;
 	int pl = strlen(cd->stk->substr);
-	const char *suffix = ksuffix(ci, "K-");
+	const char *suffix = ksuffix(ci, "doc:char-");
 
 	np = malloc(pl + strlen(suffix) + 1);
 	strcpy(np, cd->stk->substr);
@@ -447,7 +447,7 @@ static void register_map(void)
 
 	key_add(rc_map, "Replace", &complete_ignore_replace);
 	key_add(rc_map, "K:ESC", &complete_escape);
-	key_add_range(rc_map, "K- ", "K-~", &complete_char);
+	key_add_range(rc_map, "doc:char- ", "doc:char-~", &complete_char);
 	key_add(rc_map, "K:Backspace", &complete_bs);
 
 	key_add(rc_map, "K:Enter", &complete_return);

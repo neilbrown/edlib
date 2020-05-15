@@ -222,11 +222,11 @@ DEF_CMD(search_add)
 
 DEF_CMD(search_insert_quoted)
 {
-	const char *suffix = ksuffix(ci, "K-");
+	const char *suffix = ksuffix(ci, "doc:char-");
 	if (strchr(must_quote, suffix[0]) == NULL)
 		return 0;
 	call("Replace", ci->focus, 1, NULL, "\\");
-	call("Replace", ci->focus, 1, NULL, ksuffix(ci, "K-"),
+	call("Replace", ci->focus, 1, NULL, suffix,
 	     1, NULL, ",auto=1");
 	return 1;
 }
@@ -577,7 +577,7 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "doc:replaced", &search_again);
 	key_add(es_map, "Notify:clip", &search_clip);
 	key_add(es_map, "K:C-L", &search_recentre);
-	key_add_range(es_map, "K- ", "K-~", &search_insert_quoted);
+	key_add_range(es_map, "doc:char- ", "doc:char-~", &search_insert_quoted);
 	key_add_range(es_map, "K:M- ", "K:M-~", &search_insert_meta);
 	key_add(es_map, "K:M-c", &search_toggle_ci);
 	key_add(es_map, "K:M-r", &search_replace);

@@ -727,6 +727,14 @@ DEF_CMD(doc_default_content)
 	return 1;
 }
 
+DEF_CMD(doc_insert_char)
+{
+	const char *str = ksuffix(ci, "doc:char-");
+
+	return home_call(ci->home, "doc:replace", ci->focus, 1, NULL, str,
+			 ci->num2, ci->mark);
+}
+
 struct getstr {
 	struct buf b;
 	struct mark *end;
@@ -1170,6 +1178,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
 	key_add(doc_default_cmd, "doc:attach-view", &doc_attach_view);
 
+	key_add_prefix(doc_default_cmd, "doc:char-", &doc_insert_char);
 	key_add_prefix(doc_default_cmd, "doc:request:",
 		       &doc_request_notify);
 	key_add_prefix(doc_default_cmd, "doc:notify:", &doc_notify);

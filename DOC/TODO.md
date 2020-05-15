@@ -7,30 +7,13 @@ Current priorities
 - [X] fix bugs
 - [X] diff: add command to add it to any pane
 - [X] Change various things that use cmd-* and a switch, to use multiple cmds.
-- [ ] doc:char intermediate commands
+- [X] doc:char intermediate commands
 - [ ] overlay for lib-format to allow char access.
 - [ ] test suite
 - [ ] use a single hash in key lookup - two at most.
 - [ ] rexel/search improvements
 - [ ] unify backend for make/grep and shell modes
 - [ ] input: keyboard macros
-
-Requirements for a v1.0 release
-
-- [ ] efficient refresh using separate lib-renderline for each line
-- [ ] efficient X11 drawing using server-side surfaces
-- [ ] configuration
-- [ ] vi mode
-- [ ] office mode
-- [ ] introspection
-- [ ] markdown editor with PDF output
-- [ ] non-line-based render, such as a tabular render for spreadsheet.
-- [ ] documentation reader
-- [ ] block-dev (mmap) doc type, and some hex-mode support
-- [ ] user documentation
-- [ ] developer documentation
-- [ ] notmuch
-- [ ] some git support
 
 Bugs to be fixed
 ----------------
@@ -39,13 +22,34 @@ Bugs to be fixed
 - [X] LOG buffer doesn't always update - eg log messages caused by completion pane
       (cannot reproduce this now)
 
+Requirements for a v1.0 release
+-------------------------------
+
+- [ ] efficient refresh using separate lib-renderline for each line
+- [ ] efficient X11 drawing using server-side surfaces
+- [ ] configuration
+- [ ] vi mode
+- [ ] office mode
+- [ ] introspection
+- [ ] markdown editor with PDF output
+- [ ] spell checking
+- [ ] non-line-based render, such as a tabular render for spreadsheet.
+- [ ] documentation reader
+- [ ] block-dev (mmap) doc type, and some hex-mode support
+- [ ] user documentation
+- [ ] developer documentation
+- [ ] notmuch
+- [ ] some git support
+
 Core features
 -------------
 
 - [ ] should pane_clone_children() copy attrs too?
-- [ ] Change emacs to resubmit text entry commands as doc:char... commands
+- [ ] support text-replace as easy as text-insert (doc:char...)
+- [X] Change emacs to resubmit text entry commands as doc:char... commands
       and have core-doc translate these to replace.  Then lib-viewer translated
       them to doc:cmd... which allows emacs to capture keys before lib-viewer.
+- [ ] What about :Enter and BS TAB ESC ???
 - [ ] For a notify handler, returning non-zero doesn't stop other handlers
       running.  For a call handler it does.  This inconsistency is awkward for
       messageline_msg which wants to allow fallthrough, but needs to acknowledge.
@@ -171,6 +175,7 @@ Module features
 #### emacs-search
 
 - [ ] '\' shouldn't be auto-inserted inside [] set.
+- [ ] search should keep a larger history - currently just 1 item.
 
 ##### needs design work
 

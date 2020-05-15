@@ -590,7 +590,9 @@ DEF_CMD(emacs_insert)
 	int ret;
 	const char *str;
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
+	char dc[20];
 	int active = 0;
+	bool first = N2(ci) != N2_undo_insert;
 
 	if (!ci->mark)
 		return Enoarg;
@@ -609,10 +611,19 @@ DEF_CMD(emacs_insert)
 		}
 		mk = NULL;
 	}
+	if (mk) {
+		call("Replace", ci->focus, 1, mk, NULL, !first);
+		first = False;
+	}
 
 	str = ksuffix(ci, "K-");
-	ret = call("Replace", ci->focus, 1, mk, str,
-		   N2(ci) == N2_undo_insert);
+	/* Resubmit as doc:char-$str.  By default this will be inserted
+	 * but panes like lib-viewer might have other plans.
+	 * lib-viewer could catch the original "K-", but sometimes
+	 * the major mode might not want that.
+	 */
+	strcat(strcpy(dc, "doc:char-"), str);
+	ret = call(dc, ci->focus, ci->num, ci->mark, NULL, !first);
 	call("Mode:set-num2", ci->focus, N2_undo_insert);
 
 	return ret;

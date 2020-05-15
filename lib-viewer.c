@@ -41,15 +41,17 @@ DEF_CMD(viewer_cmd)
 {
 	/* Send command to the document */
 	char cmd[40];
+	const char *s;
 
-	if (ksuffix(ci, "K:") || ksuffix(ci, "K-")) {
+	if ((s=ksuffix(ci, "K:"))[0] ||
+	    (s=ksuffix(ci, "doc:char-"))[0]) {
 		int ret;
-		snprintf(cmd, sizeof(cmd), "doc:cmd%s", ci->key+1);
+		snprintf(cmd, sizeof(cmd), "doc:cmd%s", s-1);
 		ret = call(cmd, ci->focus, ci->num, ci->mark);
 		switch(ret) {
 		case 0:
 			snprintf(cmd, sizeof(cmd),
-				 "Unknown command `%s'", ci->key+2);
+				 "Unknown command `%s'", s);
 			call("Message:modal", ci->focus, 0, NULL, cmd);
 			break;
 		case 2: /* request to move to next line */
@@ -122,14 +124,14 @@ void edlib_init(struct pane *ed safe)
 	viewer_map = key_alloc();
 
 	key_add(viewer_map, "Replace", &no_replace);
-	key_add_range(viewer_map, "K- ", "K-~", &viewer_cmd);
+	key_add_range(viewer_map, "doc:char- ", "doc:char-~", &viewer_cmd);
 	key_add(viewer_map, "K:Enter", &viewer_cmd);
-	key_add(viewer_map, "K- ", &viewer_page_down);
+	key_add(viewer_map, "doc:char- ", &viewer_page_down);
 	key_add(viewer_map, "K:C-H", &viewer_page_up);
 	key_add(viewer_map, "K:Backspace", &viewer_page_up);
 	key_add(viewer_map, "K:Del", &viewer_page_up);
-	key_add(viewer_map, "K-q", &viewer_bury);
-	key_add(viewer_map, "K-E", &viewer_close);
+	key_add(viewer_map, "doc:char-q", &viewer_bury);
+	key_add(viewer_map, "doc:char-E", &viewer_close);
 	key_add(viewer_map, "Clone", &viewer_clone);
 
 	call_comm("global-set-command", ed, &viewer_attach, 0, NULL, "attach-viewer");
