@@ -335,6 +335,12 @@ DEF_CMD(complete_set_prefix)
 	struct complete_data *cd = p->data;
 	struct setcb cb;
 	struct stk *stk;
+	struct mark *m;
+
+	/* Save a copy of the point so we can restore it if needed */
+	m = call_ret(mark, "doc:point", ci->focus);
+	if (m)
+		m = mark_dup(m);
 
 	cb.c = set_cb;
 	cb.cd = cd;
@@ -357,7 +363,10 @@ DEF_CMD(complete_set_prefix)
 		/* Revert */
 		call("Filter:set", ci->focus,
 		     cd->prefix_only ? 3 : 2, NULL, cd->stk->substr);
+		if (m)
+			call("Move-to", ci->focus, 0, m);
 	}
+	mark_free(m);
 
 	if (cb.common_pre && cb.common && cb.cnt && ci->str) {
 		strcat(cb.common_pre, cb.common);
