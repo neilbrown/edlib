@@ -560,7 +560,7 @@ DEF_CMD(docs_get_attr)
 	else if (strcmp(attr, "line-format") == 0)
 		val = " %doc-modified:3 %doc-name:20 %filename";
 	else if (strcmp(attr, "render-default") == 0)
-		val = "format";
+		val = "format2";
 	else if (strcmp(attr, "view-default") == 0)
 		val = "viewer";
 	else if (strcmp(attr, "doc-type") == 0)
@@ -741,6 +741,11 @@ DEF_CMD(docs_do_kill)
 	return docs_kill(ci->focus, ci->mark, ci->num);
 }
 
+DEF_CMD(docs_shares_ref)
+{
+	return 1;
+}
+
 static void docs_init_map(void)
 {
 	if (docs_map)
@@ -765,6 +770,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:cmd-s", &docs_do_save);
 	key_add(docs_map, "doc:cmd-k", &docs_do_kill);
 	key_add_range(docs_map, "doc:cmd-A", "doc:cmd-Z", &docs_do_open_alt);
+	key_add(docs_map, "doc:shares-ref", &docs_shares_ref);
 
 	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "Free", &edlib_do_free);

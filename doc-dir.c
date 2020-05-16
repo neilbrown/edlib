@@ -690,7 +690,7 @@ DEF_CMD(dir_get_attr)
 	else if (strcmp(attr, "heading") == 0)
 		val = "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      Size   File Name</>";
 	else if (strcmp(attr, "render-default") == 0)
-		val = "format";
+		val = "format2";
 	else if (strcmp(attr, "view-default") == 0)
 		val = "viewer";
 	else if (strcmp(attr, "doc-type") == 0)
@@ -862,6 +862,11 @@ DEF_CMD(dir_do_special)
 	return dir_open_alt(ci->home, ci->focus, ci->mark, c[0]);
 }
 
+DEF_CMD(dir_shares_ref)
+{
+	return 1;
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &dir_new, 0, NULL, "attach-doc-dir");
@@ -883,6 +888,8 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:cmd-q", &dir_do_quit);
 	key_add_range(doc_map, "doc:cmd-A", "doc:cmd-Z", &dir_do_special);
 	key_add(doc_map, "doc:notify:doc:revisit", &dir_revisited);
+
+	key_add(doc_map, "doc:shares-ref", &dir_shares_ref);
 
 	key_add(doc_map, "get-attr", &dir_get_attr);
 	key_add(doc_map, "Close", &dir_destroy);

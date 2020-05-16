@@ -8,7 +8,7 @@ Current priorities
 - [X] diff: add command to add it to any pane
 - [X] Change various things that use cmd-* and a switch, to use multiple cmds.
 - [X] doc:char intermediate commands
-- [ ] overlay for lib-format to allow char access.
+- [X] overlay for lib-format to allow char access.
 - [ ] test suite
 - [ ] use a single hash in key lookup - two at most.
 - [ ] rexel/search improvements
@@ -44,6 +44,9 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] maybe generalize search and select somehow, so a line-based filter can
+      detect and highlight the selection, rather than major-mode being fully
+      in control  Similarly search might be handled by a render pane.
 - [ ] should pane_clone_children() copy attrs too?
 - [ ] support text-replace as easy as text-insert (doc:char...)
 - [X] Change emacs to resubmit text entry commands as doc:char... commands
