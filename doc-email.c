@@ -710,7 +710,7 @@ DEF_CMD(email_view_get_attr)
 		v = (p >= 0 && p < evi->parts) ? !evi->invis[p] : 0;
 
 		return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark,
-				 v ? "1":"0");
+				 v ? "1":"0", 0, NULL, ci->str);
 	}
 	return Efallthrough;
 }

@@ -322,7 +322,7 @@ class notmuch_main(edlib.Doc):
                 else:
                     val = "%5d" % c
         if val:
-            comm2("callback", focus, val)
+            comm2("callback", focus, val, mark, str)
             return 1
         return 0
 
@@ -1269,7 +1269,7 @@ class notmuch_list(edlib.Doc):
             val = self.cvt_depth(depth)
 
         if not val is None:
-            comm2("callback", focus, val)
+            comm2("callback", focus, val, mark, attr)
         return 1
 
     def handle_get_attr(self, key, focus, str, comm2, **a):

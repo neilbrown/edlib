@@ -2182,14 +2182,15 @@ DEF_CMD(text_doc_get_attr)
 		return Enoarg;
 	a = text_attrset(d, m, &o);
 	val = attr_get_str(a, attr, o);
-	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
+	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, m, val,
+		  0, NULL, attr);
 	if (ci->num2 == 1) {
 		const char *key = attr;
 		int len = strlen(attr);
 		while ((key = attr_get_next_key(a, key, o, &val)) != NULL &&
 		       strncmp(key, attr, len) == 0)
 			comm_call(ci->comm2, "callback:get_attr", ci->focus,
-				  0, NULL, val, 0,
+				  0, m, val, 0,
 				  NULL, key);
 	}
 	return 1;

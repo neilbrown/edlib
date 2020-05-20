@@ -390,7 +390,7 @@ DEF_CMD(mp_attr)
 		char n[11];
 		snprintf(n, sizeof(n), "%d", d);
 		comm_call(ci->comm2, "callback:get_attr", ci->focus,
-			  0, NULL, n);
+			  0, ci->mark, n, 0, NULL, attr);
 		return 1;
 	}
 
@@ -402,7 +402,7 @@ DEF_CMD(mp_attr)
 		char *s = pane_attr_get(mpi->parts[d].pane, attr);
 		if (s)
 			return comm_call(ci->comm2, "callback", ci->focus,
-					 0, NULL, s);
+					 0, ci->mark, s, 0, NULL, ci->str);
 		return 1;
 	}
 

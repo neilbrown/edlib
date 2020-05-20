@@ -670,7 +670,8 @@ DEF_CMD(dir_doc_get_attr)
 
 	if (!val)
 		return 0;
-	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
+	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, m, val,
+		  0, NULL, attr);
 	return 1;
 }
 
