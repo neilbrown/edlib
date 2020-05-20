@@ -397,24 +397,30 @@ static inline const char *safe ksuffix(const struct cmd_info *ci safe,
 /* DAMAGED_CURSOR, and DAMAGED_SIZE propagate down.
  * If any flag is set on children, DAMAGED_CHILD is set.
  */
+#define BIT(n) (1 << (n))
 enum {
-	DAMAGED_CHILD	= 1,
-	DAMAGED_VIEW	= 128,
-	DAMAGED_SIZE	= 2, /* these three each impose the next. */
-	DAMAGED_CONTENT	= 4,
-	DAMAGED_CURSOR	= 8, /* Either point has moved, or focus has
-			      * entered or left
-			      */
+	DAMAGED_SIZE		= BIT(0), /* Size has changed */
+	DAMAGED_SIZE_CHILD	= BIT(1), /* a child has changed size */
+	DAMAGED_VIEW		= BIT(2), /* content has moved */
+	DAMAGED_VIEW_CHILD	= BIT(3), /* a child needs to adjust the view */
 
-	DAMAGED_SIZE_CHILD = 16, /* a child has changed size */
-	DAMAGED_VIEW_CHILD = 32, /* a child needs to adjust the view */
+	DAMAGED_CONTENT		= BIT(4), /* Content has changed */
+	DAMAGED_CURSOR		= BIT(5), /* Either point has moved, or focus has
+					   * entered or left.  Appearance of
+					   * cursor has probably changed, as
+					   * might have surroundings.
+					   */
+	DAMAGED_CHILD		= BIT(6), /* CONTENT or CURSOR in child */
 
-	DAMAGED_POSTORDER= 512,
-	DAMAGED_CLOSED	= 1024,
-	DAMAGED_DEAD	= 2048, /* Fully closed, but not freed yet */
-	DAMAGED_NOT_HANDLED = 32768, /* A for loop is processing children, and
-				      * this one hasn't been handled yet.
-				      */
+	DAMAGED_POSTORDER	= BIT(7), /* Pane wants to be called again */
+
+
+	DAMAGED_CLOSED		= BIT(15),
+	DAMAGED_DEAD		= BIT(14), /* Fully closed, but not freed yet */
+	DAMAGED_NOT_HANDLED	= BIT(13), /* A for() loop is processing
+					    * children, and this one
+					    * hasn't been handled yet.
+					    */
 };
 #define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT | DAMAGED_CURSOR)
 
