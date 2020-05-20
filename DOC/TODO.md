@@ -475,7 +475,7 @@ Module features
 
 - [ ] create reliable test for hex mode
 - [ ] avoid duplicate Display lines with same content
-- [ ] Remove differences in directory size - and possible user/group name
+- [X] Remove differences in directory size - and possibly user/group name
 - [ ] understand why there are differences on creation
 - [ ] Make it easy to replay up to the difference.
       Have error report a 'first line' and then reply to that line.

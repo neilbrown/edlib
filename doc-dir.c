@@ -558,6 +558,10 @@ static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 		return fmt_num(de, de->st.st_size);
 	} else if (strcmp(attr, "hsize") == 0) {
 		get_stat(dr, de);
+		if (strchr(".:d", de->ch) &&
+		    getenv("EDLIB_FAKE_TIME"))
+			/* Size might not be reliable for testing */
+			return "DIR";
 		return fmt_size(de, de->st.st_size);
 	} else if (strcmp(attr, "mtime") == 0) {
 		get_stat(dr, de);
@@ -586,6 +590,8 @@ static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 	} else if (strcmp(attr, "user") == 0) {
 		char *n;
 		get_stat(dr, de);
+		if (getenv("EDLIB_FAKE_TIME"))
+			return "User";
 		n = pwname(de->st.st_uid);
 		if (n)
 			return save_str(de, n);
@@ -594,6 +600,8 @@ static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 	} else if (strcmp(attr, "group") == 0) {
 		char *n;
 		get_stat(dr, de);
+		if (getenv("EDLIB_FAKE_TIME"))
+			return "Group";
 		n = grname(de->st.st_gid);
 		if (n)
 			return save_str(de, n);
