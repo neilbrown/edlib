@@ -109,12 +109,14 @@ void pane_damaged(struct pane *p, int type)
 		/* light-weight pane - never propagate damage */
 		return;
 	p = p->parent;
-	if (type & DAMAGED_SIZE)
+	if (type == DAMAGED_SIZE)
 		type = DAMAGED_SIZE_CHILD;
-	else if (type & DAMAGED_VIEW)
+	else if (type == DAMAGED_VIEW)
 		type = DAMAGED_VIEW_CHILD;
 	else if (type & DAMAGED_NEED_CALL)
 		type = DAMAGED_CHILD;
+	else if (type == DAMAGED_POSTORDER)
+		type = DAMAGED_POSTORDER_CHILD;
 	else
 		return;
 
@@ -264,12 +266,6 @@ restart:
 			damage |= DAMAGED_CURSOR;
 		call("Refresh", p, 0, NULL, NULL, damage);
 	}
-
-	if (p->damaged & DAMAGED_POSTORDER) {
-		/* post-order call was triggered */
-		p->damaged &= ~DAMAGED_POSTORDER;
-		pane_call(p, "Refresh:postorder", p);
-	}
 }
 
 static void pane_do_review(struct pane *p safe, int damage)
@@ -301,12 +297,35 @@ restart:
 	}
 	if (!sent && damage & (DAMAGED_VIEW))
 		call("Refresh:view", p, 0, NULL, NULL, damage);
+}
 
-	if (p->damaged & DAMAGED_POSTORDER) {
-		/* post-order call was triggered */
-		p->damaged &= ~DAMAGED_POSTORDER;
-		pane_call(p, "Refresh:postorder", p);
+static void pane_do_postorder(struct pane *p safe)
+{
+	struct pane *c;
+	int damage;
+
+	if (p->damaged & DAMAGED_CLOSED)
+		return;
+
+	damage = p->damaged & (DAMAGED_POSTORDER|DAMAGED_POSTORDER_CHILD);
+	p->damaged &= ~(DAMAGED_POSTORDER|DAMAGED_POSTORDER_CHILD);
+	if (!damage)
+		return;
+
+	list_for_each_entry(c, &p->children, siblings)
+		c->damaged |= DAMAGED_NOT_HANDLED;
+restart:
+	list_for_each_entry(c, &p->children, siblings) {
+		if (c->damaged & DAMAGED_NOT_HANDLED)
+			c->damaged &= ~DAMAGED_NOT_HANDLED;
+		else
+			/* Only handle each pane once */
+			continue;
+		pane_do_postorder(c);
+		goto restart;
 	}
+	if (damage & DAMAGED_POSTORDER)
+		call("Refresh:postorder", p);
 }
 
 void pane_refresh(struct pane *p safe)
@@ -319,6 +338,7 @@ void pane_refresh(struct pane *p safe)
 		pane_do_resize(p, 0);
 		pane_do_review(p, 0);
 		pane_do_refresh(p, 0);
+		pane_do_postorder(p);
 	}
 	if (p->damaged) {
 		static time_t last_warn;

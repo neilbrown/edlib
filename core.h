@@ -413,6 +413,7 @@ enum {
 	DAMAGED_CHILD		= BIT(6), /* CONTENT or CURSOR in child */
 
 	DAMAGED_POSTORDER	= BIT(7), /* Pane wants to be called again */
+	DAMAGED_POSTORDER_CHILD	= BIT(8), /* Child pane wants to be called again */
 
 
 	DAMAGED_CLOSED		= BIT(15),
