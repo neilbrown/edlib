@@ -295,8 +295,11 @@ restart:
 			goto restart;
 		}
 	}
-	if (!sent && damage & (DAMAGED_VIEW))
+	if (!sent && damage & (DAMAGED_VIEW)) {
+		while (p->focus)
+			p = p->focus;
 		call("Refresh:view", p, 0, NULL, NULL, damage);
+	}
 }
 
 static void pane_do_postorder(struct pane *p safe)

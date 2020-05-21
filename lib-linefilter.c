@@ -236,8 +236,7 @@ DEF_CMD(filter_changed)
 	 * otherwise find first visible line after all marks, and last before,
 	 * and walk that range
 	 */
-	struct pane *p = ci->home;
-	struct filter_data *fd = p->data;
+	struct filter_data *fd = ci->home->data;
 	struct mark *start, *end, *m;
 	struct command *comm = NULL;
 	bool found_one = False;
@@ -245,7 +244,7 @@ DEF_CMD(filter_changed)
 	if (strcmp(ci->key, "Filter:set") == 0) {
 		if (!ci->str)
 			return Enoarg;
-		pane_damaged(p, DAMAGED_CONTENT);
+		pane_damaged(ci->home, DAMAGED_CONTENT);
 		comm = ci->comm2;
 		fd->explicit_set = True;
 		free(fd->match);
@@ -277,7 +276,7 @@ DEF_CMD(filter_changed)
 	if (!fd->match)
 		return 0;
 
-	start = vmark_new(p, MARK_UNGROUPED, NULL);
+	start = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	if (!start)
 		return Efail;
 	if (ci->mark && (!ci->mark2 || ci->mark2->seq > ci->mark->seq))
@@ -287,7 +286,7 @@ DEF_CMD(filter_changed)
 		/* mark2 is first */
 		mark_to_mark(start, ci->mark2);
 	else if (strcmp(ci->key, "Filter:set") == 0)
-		call("Move-File", p, 0, start);
+		call("Move-File", ci->focus, 0, start);
 	else {
 		struct mark *m2;
 		m = start;
@@ -296,7 +295,7 @@ DEF_CMD(filter_changed)
 		mark_to_mark(start, m);
 	}
 
-	end = vmark_new(p, MARK_UNGROUPED, NULL);
+	end = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	if (!end) {
 		mark_free(start);
 		return Efail;
@@ -308,7 +307,7 @@ DEF_CMD(filter_changed)
 		/* mark2 is last */
 		mark_to_mark(end, ci->mark2);
 	else if (strcmp(ci->key, "Filter:set") == 0)
-		call("Move-File", p, 1, end);
+		call("Move-File", ci->focus, 1, end);
 	else {
 		struct mark *m2;
 		m = end;
@@ -317,7 +316,7 @@ DEF_CMD(filter_changed)
 		mark_to_mark(end, m);
 	}
 
-	if (call("doc:render-line", p, NO_NUMERIC, end) > 0)
+	if (call("doc:render-line", ci->focus, NO_NUMERIC, end) > 0)
 		found_one = True;
 
 	m = mark_dup(end);
