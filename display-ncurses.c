@@ -739,6 +739,7 @@ static struct pane *ncurses_init(struct pane *ed,
 	SCREEN *scr;
 	struct pane *p;
 	struct display_data *dd;
+	int rows, cols;
 	FILE *f;
 
 	set_screen(NULL);
@@ -756,9 +757,13 @@ static struct pane *ncurses_init(struct pane *ed,
 	dd->scr = scr;
 	dd->scr_file = f;
 	dd->cursor.x = dd->cursor.y = -1;
-	dd->is_xterm =  (term && strncmp(term, "xterm", 5) == 0);
+	dd->is_xterm = (term && strncmp(term, "xterm", 5) == 0);
 
 	p = pane_register(ed, 0, &ncurses_handle.c, dd);
+	if (!p) {
+		unalloc(dd, pane);
+		return NULL;
+	}
 	set_screen(p);
 
 	start_color();
@@ -779,7 +784,8 @@ static struct pane *ncurses_init(struct pane *ed,
 		  REPORT_MOUSE_POSITION, NULL);
 	mouseinterval(10);
 
-	getmaxyx(stdscr, p->h, p->w);
+	getmaxyx(stdscr, rows, cols);
+	pane_resize(p, 0, 0, cols, rows);
 
 	call("editor:request:all-displays", p);
 	if (!prepare_recrep(p)) {
@@ -787,7 +793,6 @@ static struct pane *ncurses_init(struct pane *ed,
 		if (!tty)
 			call_comm("event:signal", p, &handle_winch, SIGWINCH);
 	}
-	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }
 
@@ -801,7 +806,7 @@ REDEF_CMD(handle_winch)
 	resize_term(size.ws_row, size.ws_col);
 
 	clear();
-	pane_damaged(p, DAMAGED_SIZE);
+	pane_resize(p, 0, 0, size.ws_row, size.ws_col);
 	return 1;
 }
 

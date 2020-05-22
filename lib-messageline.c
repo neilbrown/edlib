@@ -53,6 +53,7 @@ DEF_CMD(messageline_border)
 		mli->hidden = 0;
 	else
 		mli->hidden = 1;
+	/* trigger a resize of children */
 	pane_damaged(ci->home, DAMAGED_SIZE);
 	return 0; /* Allow other panes to remove other borders */
 }
@@ -132,7 +133,6 @@ DEF_CMD(messageline_child_registered)
 {
 	struct mlinfo *mli = ci->home->data;
 	mli->child = ci->focus;
-	pane_damaged(ci->home, DAMAGED_SIZE);
 	pane_focus(ci->focus);
 	return 1;
 }

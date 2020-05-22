@@ -207,6 +207,12 @@ DEF_CMD(popup_style)
 	return 1;
 }
 
+DEF_CMD(popup_notify_refresh_size)
+{
+	pane_damaged(ci->home, DAMAGED_SIZE);
+	return 1;
+}
+
 DEF_CMD(popup_refresh_size)
 {
 	struct popup_info *ppi = ci->home->data;
@@ -437,7 +443,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "Abort", &popup_abort);
 	key_add(popup_map, "popup:style", &popup_style);
 	key_add(popup_map, "Refresh:size", &popup_refresh_size);
-	key_add(popup_map, "Notify:resize", &popup_refresh_size);
+	key_add(popup_map, "Notify:resize", &popup_notify_refresh_size);
 	key_add(popup_map, "popup:get-target", &popup_get_target);
 	key_add(popup_map, "popup:close", &popup_do_close);
 	key_add(popup_map, "popup:set-callback", &popup_set_callback);

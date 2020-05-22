@@ -62,8 +62,6 @@ static void pane_init(struct pane *p safe, struct pane *par)
 	p->data = safe_cast NULL;
 	p->damaged = 0;
 	p->attrs = NULL;
-	if (par)
-		pane_damaged(p, DAMAGED_SIZE);
 }
 
 static void __pane_check(struct pane *p safe)
@@ -101,8 +99,6 @@ void pane_damaged(struct pane *p, int type)
 		return;
 	}
 	p->damaged |= type;
-	if (type == DAMAGED_SIZE)
-		pane_notify("Notify:resize", p);
 
 	z = p->z;
 	if (z < 0)
@@ -123,6 +119,7 @@ void pane_damaged(struct pane *p, int type)
 	while ((p->damaged | type) != p->damaged) {
 		if (z > 0 && (type & DAMAGED_SIZE_CHILD))
 			/* overlay changed size, so we must refresh */
+			/* FIXME should this be a notification? */
 			p->damaged |= DAMAGED_CONTENT;
 		p->damaged |= type;
 		z = p->z;
@@ -155,6 +152,9 @@ struct pane *__pane_register(struct pane *parent, short z,
 		if (p->damaged & DAMAGED_CLOSED)
 			/* ChildRegistered objected */
 			p = NULL;
+		else
+			/* Need to set size of child */
+			pane_damaged(parent, DAMAGED_SIZE);
 	}
 	return p;
 }
@@ -177,7 +177,8 @@ static void pane_do_resize(struct pane *p safe, int damage)
 		p->abs_zhi = abs_z;
 		return;
 	}
-	if ((damage & DAMAGED_SIZE) && p->z == 0)
+	if ((damage & DAMAGED_SIZE) && p->z == 0 &&
+	    (p->parent->w || p->parent->h))
 		/* Parent was resized and didn't propagate, so we need to */
 		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
 
@@ -533,7 +534,7 @@ void pane_resize(struct pane *p safe, int x, int y, int w, int h)
 
 	if (x >= 0 &&
 	    (p->x != x || p->y != y)) {
-		damage |= DAMAGED_CONTENT | DAMAGED_SIZE;
+		damage |= DAMAGED_SIZE;
 		p->x = x;
 		p->y = y;
 	}
@@ -550,7 +551,10 @@ void pane_resize(struct pane *p safe, int x, int y, int w, int h)
 		p->w = 1;
 	if (p->h <= 0)
 		p->h = 1;
+	/* tell the pane to resize its children later */
 	pane_damaged(p, damage);
+	if (damage)
+		pane_notify("Notify:resize", p);
 }
 
 void pane_reparent(struct pane *p safe, struct pane *newparent safe)
@@ -626,6 +630,7 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 	p->data = data;
 
 	parent->damaged |= p->damaged;
+	pane_damaged(p, DAMAGED_SIZE);
 
 	pane_close(p);
 }

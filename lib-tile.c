@@ -367,7 +367,6 @@ static int tile_destroy(struct pane *p safe)
 		ti->direction = tmp;
 		ti2->p = remain;
 		pane_subsume(remain, p);
-		pane_damaged(p, DAMAGED_SIZE);
 	}
 	return 1;
 }
@@ -439,17 +438,14 @@ static void tile_adjust(struct pane *p safe)
 			continue;
 		ti = t->data;
 		if (ti->direction == Horiz) {
-			t->y = 0;
-			t->h = p->h;
+			pane_resize(t, t->x, 0, t->w, p->h);
 			used += t->w;
 			size = p->w;
 		} else {
-			t->x = 0;
-			t->w = p->w;
+			pane_resize(t, 0, t->y, p->w, t->h);
 			used += t->h;
 			size = p->h;
 		}
-		pane_damaged(t, DAMAGED_SIZE);
 		if (ti->avail_inline)
 			avail_cnt++;
 		cnt++;
@@ -495,16 +491,13 @@ static void tile_adjust(struct pane *p safe)
 			remain -= mysize;
 			if (diff)
 				change = 1;
-			if (ti2->direction == Horiz) {
-				t->w += diff;
-				used += diff;
-				cnt--;
-			} else {
-				t->h += diff;
-				used += diff;
-				cnt--;
-			}
-			pane_damaged(t, DAMAGED_SIZE);
+			if (ti2->direction == Horiz)
+				pane_resize(t, t->x, t->y, t->w + diff, t->h);
+			 else
+				pane_resize(t, t->x, t->y, t->w, t->h + diff);
+
+			used += diff;
+			cnt--;
 		}
 		if (!change)
 			break;
@@ -515,13 +508,12 @@ static void tile_adjust(struct pane *p safe)
 		if (t->z)
 			continue;
 		if (ti2->direction == Horiz) {
-			t->x = pos;
+			pane_resize(t, pos, t->y, t->w, t->h);
 			pos += t->w;
 		} else {
-			t->y = pos;
+			pane_resize(t, t->x, pos, t->w, t->h);
 			pos += t->h;
 		}
-		pane_damaged(t, DAMAGED_SIZE);
 		tile_adjust(t);
 	}
 }
@@ -579,14 +571,14 @@ static int tile_grow(struct pane *p safe, int horiz, int size)
 			/* Strange - there should have been two elements in list */
 			return 1;
 		if (ti->direction == Horiz) {
-			p->w += size;
-			other->w -= size;
-		} else{
-			p->h += size;
-			other->h -= size;
+			pane_resize(p, p->x, p->y, p->w + size, p->h);
+			pane_resize(other, other->x, other->y,
+				    other->w - size, other->h);
+		} else {
+			pane_resize(p, p->x, p->y, p->w, p->h + size);
+			pane_resize(other, other->x, other->y,
+				    other->w, other->h - size);
 		}
-		pane_damaged(p, DAMAGED_SIZE);
-		pane_damaged(other, DAMAGED_SIZE);
 		tile_adjust(p->parent);
 		return 1;
 	}
@@ -601,10 +593,10 @@ static int tile_grow(struct pane *p safe, int horiz, int size)
 	if (avail < size)
 		return 0;
 	if (ti->direction == Horiz)
-		p->w += size;
+		pane_resize(p, p->x, p->y, p->w + size, p->h);
 	else
-		p->h += size;
-	pane_damaged(p, DAMAGED_SIZE);
+		pane_resize(p, p->x, p->y, p->w, p->h + size);
+
 	ti->avail_inline = 0; /* make sure this one doesn't suffer */
 	tile_adjust(p->parent);
 	return 1;
@@ -747,7 +739,6 @@ DEF_CMD(tile_window_xplus)
 	if (wrong_pane(ci))
 		return 0;
 	tile_grow(p, 1, RPT_NUM(ci));
-	pane_damaged(p, DAMAGED_SIZE);
 	return 1;
 }
 
@@ -758,7 +749,6 @@ DEF_CMD(tile_window_xminus)
 	if (wrong_pane(ci))
 		return 0;
 	tile_grow(p, 1, -RPT_NUM(ci));
-	pane_damaged(p, DAMAGED_SIZE);
 	return 1;
 }
 DEF_CMD(tile_window_yplus)
@@ -768,7 +758,6 @@ DEF_CMD(tile_window_yplus)
 	if (wrong_pane(ci))
 		return 0;
 	tile_grow(p, 0, RPT_NUM(ci));
-	pane_damaged(p, DAMAGED_SIZE);
 	return 1;
 }
 DEF_CMD(tile_window_yminus)
@@ -778,7 +767,6 @@ DEF_CMD(tile_window_yminus)
 	if (wrong_pane(ci))
 		return 0;
 	tile_grow(p, 0, -RPT_NUM(ci));
-	pane_damaged(p, DAMAGED_SIZE);
 	return 1;
 }
 
@@ -880,7 +868,7 @@ DEF_CMD(tile_window_scale_relative)
 	}
 
 	attr_set_int(&p->attrs, "scale", scale);
-	pane_damaged(p, DAMAGED_SIZE);
+	call("view:changed", ci->focus);
 	return 1;
 }
 

@@ -278,7 +278,6 @@ DEF_CMD(view_child_registered)
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
 	vd->child = ci->focus;
-	pane_damaged(p, DAMAGED_SIZE|DAMAGED_CONTENT);
 	return 1;
 }
 
@@ -296,6 +295,7 @@ DEF_CMD(view_refresh_size)
 		vd->border = calc_border(ci->focus);
 	b = vd->border < 0 ? 0 : vd->border;
 	if (vd->line_height < 0) {
+		/* FIXME should use scale */
 		struct call_return cr = call_ret(all, "text-size", ci->home,
 						 -1, NULL, "M",
 						 0, NULL, "bold");
@@ -385,7 +385,6 @@ static struct pane *do_view_attach(struct pane *par, int border)
 	/* Capture status-changed notification so we can update 'changed' flag in
 	 * status line */
 	call("doc:request:doc:status-changed", p);
-	pane_damaged(p, DAMAGED_SIZE);
 	return p;
 }
 
