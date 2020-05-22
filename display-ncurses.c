@@ -385,17 +385,6 @@ static inline void record_screen(struct pane *p safe) {}
 static inline void close_recrep(struct pane *p safe) {}
 #endif
 
-DEF_CMD(nc_refresh)
-{
-	struct pane *p = ci->home;
-
-	call("Sig:Winch", p);
-	set_screen(p);
-	clear();
-	pane_damaged(p,  DAMAGED_SIZE);
-	return 1;
-}
-
 DEF_CMD(cnt_disp)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
@@ -1123,7 +1112,7 @@ void edlib_init(struct pane *ed safe)
 		  "attach-display-ncurses");
 
 	nc_map = key_alloc();
-	key_add(nc_map, "Display:refresh", &nc_refresh);
+	key_add(nc_map, "Display:refresh", &handle_winch);
 	key_add(nc_map, "Display:close", &nc_close_display);
 	key_add(nc_map, "Display:set-noclose", &nc_set_noclose);
 	key_add(nc_map, "Close", &nc_close);
