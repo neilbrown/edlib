@@ -98,8 +98,8 @@ static void popup_resize(struct pane *p safe, const char *style safe)
 		/* Now position */
 		x = p->parent->w/2 - w/2 - 1;
 		y = p->parent->h/2 - h/2 - 1;
-		if (strchr(style, 'T')) { y = 0; h -= lh; }
-		if (strchr(style, 'B')) { h -= lh; y = p->parent->h - h; }
+		if (strchr(style, 'T')) { y = 0; h -= bh; }
+		if (strchr(style, 'B')) { h -= bh; y = p->parent->h - h; }
 		if (strchr(style, 'L')) x = 0;
 		if (strchr(style, 'R')) x = p->parent->w - w;
 	}
