@@ -1819,7 +1819,8 @@ DEF_CMD(emacs_press)
 	char *type;
 
 	if (!m || !pt)
-		return Efail;
+		/* Not in document, not my problem */
+		return Efallthrough;
 	/* NOTE must find new location before tw reports that the
 	 * view has changed.
 	 */
@@ -1865,11 +1866,12 @@ DEF_CMD(emacs_release)
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
 	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
 
+	if (!p || !m2)
+		/* Not in a document - not my problem */
+		return Efallthrough;
+
 	call("Move-CursorXY", ci->focus,
 	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
-
-	if (!p || !m2)
-		return Enoarg;
 
 	attr_set_int(&m2->attrs, "emacs:track-selection", 0);
 	update_sel(ci->focus, p, m2, NULL);
