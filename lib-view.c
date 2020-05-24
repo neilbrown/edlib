@@ -29,8 +29,6 @@ struct view_data {
 	int		scroll_bar_y;
 	struct mark	*viewpoint;
 	struct pane	*child;
-
-	int		move_small, move_large;
 };
 /* 0 to 4 borders are possible */
 enum {
@@ -418,7 +416,7 @@ DEF_CMD(view_click)
 	struct view_data *vd = p->data;
 	int mid = vd->scroll_bar_y;
 	int lh = vd->line_height;
-	int *size;
+	char *key;
 	int num;
 	short cihx, cihy;
 
@@ -430,13 +428,13 @@ DEF_CMD(view_click)
 	if (p->h <= 4)
 		return 0;
 
-	size = &vd->move_small;
+	key = "Move-View-Small";
 	num = RPT_NUM(ci);
 
 	if (cihy < mid - lh) {
 		/* big scroll up */
 		num = -num;
-		size = &vd->move_large;
+		key = "Move-View-Large";
 	} else if (cihy <= mid) {
 		/* scroll up */
 		num = -num;
@@ -444,22 +442,18 @@ DEF_CMD(view_click)
 		/* scroll down */
 	} else {
 		/* big scroll down */
-		size = &vd->move_large;
+		key = "Move-View-Large";
 	}
-	*size += num;
-	pane_damaged(p, DAMAGED_VIEW);
+	call(key, pane_leaf(ci->focus), num);
 	return 1;
 }
 
 DEF_CMD(view_scroll)
 {
-	struct view_data *vd = ci->home->data;
-
 	if (strcmp(ci->key, "M:Press-4") == 0)
-		vd->move_small -= 2;
+		call("Move-View-Small", pane_leaf(ci->focus), -2);
 	else
-		vd->move_small += 2;
-	pane_damaged(ci->home, DAMAGED_VIEW);
+		call("Move-View-Small", pane_leaf(ci->focus), 2);
 	return 1;
 }
 
@@ -468,15 +462,6 @@ DEF_CMD(view_refresh_view)
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
 	int border;
-
-	if (vd->move_large) {
-		call("Move-View-Large", ci->focus, vd->move_large);
-		vd->move_large = 0;
-	}
-	if (vd->move_small) {
-		call("Move-View-Small", ci->focus, vd->move_small);
-		vd->move_small = 0;
-	}
 
 	border = calc_border(ci->focus);
 	if (vd->border >= 0 && border != vd->border) {
