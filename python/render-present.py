@@ -63,7 +63,6 @@ class PresenterPane(edlib.Pane):
         self.pageview = focus.call("doc:add-view", self) - 1
         self.attrview = focus.call("doc:add-view", self) - 1
         self.borderless = False
-        self.target_mark = None
         self.first_valid = False
         self.lines_damaged = True
 
@@ -641,18 +640,8 @@ class PresenterPane(edlib.Pane):
                 m2.to_mark(m)
                 if comm2 is not None:
                     comm2("callback", focus, m)
-        self.target_mark = m2;
-        self.damaged(edlib.DAMAGED_VIEW)
+        self.leaf.call("Move-View-Pos", m2)
         return 1
-
-    def handle_refresh_view(self, key, focus, **a):
-        "handle:Refresh:view"
-        m = self.target_mark
-        self.target_mark = None
-        if not m:
-            return 0
-        focus.call("Move-View-Pos", m)
-        return 0
 
     def handle_clone(self, key, **a):
         "handle:Clone"
