@@ -130,8 +130,7 @@ class DiffPane(edlib.Pane):
 
         par = focus.call("DocPane", d, ret='focus')
         if par:
-            while par.focus:
-                par = par.focus
+            par = par.leaf
         else:
             par = focus.call("OtherPane", d, ret='focus')
             if not par:

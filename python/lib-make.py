@@ -483,8 +483,7 @@ class MakePane(edlib.Pane):
         if where in ['OtherPane', 'AnyPane']:
             par = focus.call("DocPane", d, ret='focus')
             if par:
-                while par.focus:
-                    par = par.focus
+                par = par.leaf
             elif where == 'OtherPane':
                 pane = focus.call(where, ret='focus')
             else:

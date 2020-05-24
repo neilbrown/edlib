@@ -61,10 +61,8 @@ try:
                     self.destpane = None
                     self.call("editor:notify:all-displays", self.display_callback)
                     if self.destpane:
-                        p = self.destpane
+                        p = self.destpane.leaf
                         self.destpane = None
-                        while p.focus:
-                            p = p.focus
                         p = p.call("PopupTile", "MD3tsa", ret='focus')
                         #p = p.call("ThisPane", ret='focus')
                         d.call("doc:attach-view", p, 1, ret='focus')

@@ -198,10 +198,8 @@ DEF_CMD(ask_autosave)
 	if (!cr.p)
 		/* No display!!! */
 		return Efail;
-	while (cr.p->focus)
-		cr.p = cr.p->focus;
 
-	p2 = call_ret(pane, "PopupTile", cr.p, 0, NULL, "DM3sta");
+	p2 = call_ret(pane, "PopupTile", pane_leaf(cr.p), 0, NULL, "DM3sta");
 	if (!p2)
 		return Efail;
 
@@ -218,7 +216,7 @@ DEF_CMD(ask_autosave)
 	}
 
 	if (!a || !f) {
-		pane_close(cr.p);
+		call("popup:close", p2);
 		return Efail;
 	}
 	doc = call_ret(pane, "doc:from-text", p,

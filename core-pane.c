@@ -296,11 +296,8 @@ restart:
 			goto restart;
 		}
 	}
-	if (!sent && damage & (DAMAGED_VIEW)) {
-		while (p->focus)
-			p = p->focus;
-		call("Refresh:view", p, 0, NULL, NULL, damage);
-	}
+	if (!sent && damage & (DAMAGED_VIEW))
+		call("Refresh:view", pane_leaf(p), 0, NULL, NULL, damage);
 }
 
 static void pane_do_postorder(struct pane *p safe)
@@ -697,9 +694,7 @@ void pane_focus(struct pane *focus)
 		p->parent->focus = p;
 		if (old) {
 			pane_damaged(old, DAMAGED_CURSOR);
-			while (old->focus)
-				old = old->focus;
-			call("pane:defocus", old);
+			call("pane:defocus", pane_leaf(old));
 		}
 	}
 	call("pane:refocus", focus);

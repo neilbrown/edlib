@@ -176,9 +176,7 @@ DEF_CMD(keystroke)
 	}
 
 	if (!im->focus || im->focus->focus) {
-		p = ci->focus;
-		while (p->focus)
-			p = p->focus;
+		p = pane_leaf(ci->focus);
 		im->focus = p;
 		pane_add_notify(ci->home, p, "Notify:Close");
 	}
@@ -441,15 +439,11 @@ DEF_CMD(selection_discard)
 
 	if (!im->sel_owner)
 		return Efalse;
-	op = im->sel_owner;
 	/* Don't require exactly same pane, but ensure they
 	 * have the same focus
 	 */
-	while (op->focus)
-		op = op->focus;
-	fp = ci->focus;
-	while (fp->focus)
-		fp = fp->focus;
+	op = pane_leaf(im->sel_owner);
+	fp = pane_leaf(ci->focus);
 	if (fp != op)
 		return Efalse;
 

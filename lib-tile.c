@@ -975,13 +975,13 @@ DEF_CMD(tile_doc)
 		char *n;
 		struct pane *f;
 		t = list_next_entry(t, tiles);
-		f = t->p;
-		while (f->focus && f->focus->z == 0)
-			f = f->focus;
-		n = pane_attr_get(f, "doc-name");
-		if (name && n && strcmp(n, name) == 0)
-			return comm_call(ci->comm2, "callback:pane", t->p,
-					 0, NULL, t->name);
+		f = t->content;
+		if (f) {
+			n = pane_attr_get(pane_leaf(f), "doc-name");
+			if (name && n && strcmp(n, name) == 0)
+				return comm_call(ci->comm2, "callback:pane", t->p,
+						 0, NULL, t->name);
+		}
 	} while (t != ti);
 
 	return Efallthrough;

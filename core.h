@@ -446,6 +446,16 @@ static inline struct pane * safe pane_root(struct pane *p safe)
 		p = p->parent;
 	return p;
 }
+
+static inline struct pane *safe pane_leaf(struct pane *p safe)
+{
+	struct pane *f;
+
+	while ((f = p->focus) != NULL)
+		p = f;
+	return p;
+}
+
 void pane_reparent(struct pane *p safe, struct pane *newparent safe);
 void pane_move_after(struct pane *p safe, struct pane *after);
 void pane_subsume(struct pane *p safe, struct pane *parent safe);
