@@ -1077,7 +1077,8 @@ REDEF_CMD(emacs_file_complete)
 	pop = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM1r");
 	if (!pop)
 		return Efail;
-	par = home_call_ret(pane, docp, "doc:attach-view", pop);
+	par = home_call_ret(pane, docp, "doc:attach-view", pop,
+			    0, NULL, "simple");
 	if (!par)
 		return Efail;
 

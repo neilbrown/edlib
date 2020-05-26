@@ -308,7 +308,8 @@ DEF_CMD(show_autosave)
 	d = call_ret(pane, "doc:open", p, -1, NULL,
 		     strconcat(p, home, "/.edlib_autosave"));
 	if (d)
-		home_call_ret(pane, d, "doc:attach-view", p);
+		home_call_ret(pane, d, "doc:attach-view", p,
+			      0, NULL, "simple");
 	else {
 		call("Message", ci->focus, 0, NULL,
 		     "Cannot open $HOME/.edlib_autosave");

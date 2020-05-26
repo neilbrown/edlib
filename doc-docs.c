@@ -242,7 +242,8 @@ DEF_CMD(docs_callback_complete)
 	struct docs *doc = ci->home->data;
 	struct pane *p;
 
-	p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus);
+	p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus,
+			  0, NULL, "simple");
 	if (p) {
 		attr_set_str(&p->attrs, "line-format", "%doc-name");
 		attr_set_str(&p->attrs, "heading", "");
@@ -354,7 +355,8 @@ DEF_CMD(docs_callback_modified)
 	struct docs *doc = ci->home->data;
 	struct pane *p;
 
-	p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus);
+	p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus,
+			  0, NULL, "simple");
 	if (!p)
 		return Efail;
 	p = call_ret(pane, "attach-linefilter", p);
@@ -561,6 +563,8 @@ DEF_CMD(docs_get_attr)
 		val = " %doc-modified:3 %doc-name:20 %filename";
 	else if (strcmp(attr, "render-default") == 0)
 		val = "format2";
+	else if (strcmp(attr, "render-simple") == 0)
+		val = "format";
 	else if (strcmp(attr, "view-default") == 0)
 		val = "viewer";
 	else if (strcmp(attr, "doc-type") == 0)

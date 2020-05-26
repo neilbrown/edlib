@@ -699,6 +699,8 @@ DEF_CMD(dir_get_attr)
 		val = "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      Size   File Name</>";
 	else if (strcmp(attr, "render-default") == 0)
 		val = "format2";
+	else if (strcmp(attr, "render-simple") == 0)
+		val = "format";
 	else if (strcmp(attr, "view-default") == 0)
 		val = "viewer";
 	else if (strcmp(attr, "doc-type") == 0)
