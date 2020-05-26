@@ -59,9 +59,12 @@ DEF_CMD(rlcb)
 	else
 		cb->cmp = strstr(c, cb->fd->match) ? 0 : 1;
 
-	if (cb->cmp == 0 && cb->keep && c && !cb->str)
+	if (cb->cmp == 0 && cb->keep && !cb->str && c && ci->str) {
+		if (cb->keep > 1)
+			/* Want the original with markup */
+			strcpy(c, ci->str);
 		cb->str = c;
-	else
+	} else
 		free(c);
 	return 1;
 }
@@ -105,7 +108,7 @@ DEF_CMD(render_filter_line)
 	} while (cb.cmp && !mark_same(ci->mark, m));
 
 	mark_free(m);
-	cb.keep = 1;
+	cb.keep = 2;
 	cb.str = NULL;
 	cb.fd = NULL;
 	m2 = ci->mark2;
