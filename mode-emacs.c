@@ -1274,7 +1274,9 @@ DEF_CMD(emacs_shell)
 	 * We don't need a doc attachment as no point is needed - we
 	 * always insert at the end.
 	 */
-	call_ret(pane, "attach-shellcmd", doc, 0, NULL, ci->str, 0, NULL, path);
+	if (call("attach-shellcmd", doc, 0, NULL, ci->str, 0, NULL, path) < 0)
+		call("doc:replace", doc, 0, NULL,
+		     "Failed to run command - sorry\n");
 
 	if (strstr(ci->str, "diff") || strstr(ci->str, "git show"))
 		attr_set_str(&doc->attrs, "view-default", "diff");

@@ -46,11 +46,15 @@ class MakePane(edlib.Pane):
         self.call("doc:replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
         env = os.environ.copy()
         env['PWD'] = cwd
-        self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
-                                     cwd=cwd, env=env, start_new_session=True,
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT,
-                                     stdin = FNULL)
+        try:
+            self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
+                                         cwd=cwd, env=env,
+                                         start_new_session=True,
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT,
+                                         stdin = FNULL)
+        except:
+            self.pipe = None
         FNULL.close()
         if not self.pipe:
             return False
