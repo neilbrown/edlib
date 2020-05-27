@@ -805,8 +805,30 @@ REDEF_CMD(handle_winch)
 	set_screen(p);
 	resize_term(size.ws_row, size.ws_col);
 
-	clear();
 	pane_resize(p, 0, 0, size.ws_row, size.ws_col);
+	return 1;
+}
+
+DEF_CMD(force_redraw)
+{
+	struct pane *p = ci->home;
+	struct display_data *dd = p->data;
+
+	set_screen(p);
+	if (dd->cursor.y == 0) {
+
+		/* There seems to be an ncurses bug where redrawwin()
+		 * doesn't refresh the first line when cursor is on that
+		 * line, so move it down temporarily.
+		 */
+		move(1, 1);
+		refresh();
+	}
+	redrawwin(curscr);
+	if (dd->cursor.y == 0 && dd->cursor.x >= 0)
+		/* Move cursor back */
+		move(dd->cursor.y, dd->cursor.x);
+	refresh();
 	return 1;
 }
 
@@ -1117,7 +1139,7 @@ void edlib_init(struct pane *ed safe)
 		  "attach-display-ncurses");
 
 	nc_map = key_alloc();
-	key_add(nc_map, "Display:refresh", &handle_winch);
+	key_add(nc_map, "Display:refresh", &force_redraw);
 	key_add(nc_map, "Display:close", &nc_close_display);
 	key_add(nc_map, "Display:set-noclose", &nc_set_noclose);
 	key_add(nc_map, "Close", &nc_close);

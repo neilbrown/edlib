@@ -267,6 +267,8 @@ Module features
 
 ### completion
 
+- [ ] When 'delete' and there is only the original
+      entry of the prefix stack, just delete one character.
 - [ ] mouse selection should work in completion pane
 - [ ] filename completion should work for earlier component of path.
 - [ ] The “complete” popup should be positioned above/below the file name,
@@ -337,6 +339,7 @@ Module features
       stay there.
 - [ ] extend enough that make/grep can use shell mode for running the
       the command, and they just do ui and highlighting
+- [ ] always track time for a run and report it - or at least make it available
 
 ###  edlibclient
 - [ ] run edlib directly if no socket
