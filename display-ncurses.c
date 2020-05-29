@@ -812,23 +812,9 @@ REDEF_CMD(handle_winch)
 DEF_CMD(force_redraw)
 {
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
 
 	set_screen(p);
-	if (dd->cursor.y == 0) {
-
-		/* There seems to be an ncurses bug where redrawwin()
-		 * doesn't refresh the first line when cursor is on that
-		 * line, so move it down temporarily.
-		 */
-		move(1, 1);
-		refresh();
-	}
-	redrawwin(curscr);
-	if (dd->cursor.y == 0 && dd->cursor.x >= 0)
-		/* Move cursor back */
-		move(dd->cursor.y, dd->cursor.x);
-	refresh();
+	clearok(curscr, 1);
 	return 1;
 }
 
