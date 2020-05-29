@@ -40,7 +40,6 @@
 #define __LP64__
 #endif
 #include <Python.h>
-#include <structmember.h>
 #define MARK_DATA_PTR PyObject
 #define PRIVATE_DOC_REF
 
