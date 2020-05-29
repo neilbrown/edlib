@@ -927,7 +927,7 @@ void pane_absxy(struct pane *p, short *x safe, short *y safe,
 }
 
 /* Convert absolute c-ords to relative */
-void pane_relxy(struct pane *p, short *x safe, short *y safe)
+static void pane_relxy(struct pane *p, short *x safe, short *y safe)
 {
 	while (p) {
 		*x -= p->x;
@@ -938,14 +938,19 @@ void pane_relxy(struct pane *p, short *x safe, short *y safe)
 	}
 }
 
-void pane_map_xy(struct pane *orig, struct pane *target,
-		 short *x safe, short *y safe)
+struct xy pane_mapxy(struct pane *orig safe, struct pane *target safe,
+		   short x, short y)
 {
+	struct xy xy;
 	short w=0, h=0;
+
 	if (orig != target) {
-		pane_absxy(orig, x, y, &w, &h);
-		pane_relxy(target, x, y);
+		pane_absxy(orig, &x, &y, &w, &h);
+		pane_relxy(target, &x, &y);
 	}
+	xy.x = x;
+	xy.y = y;
+	return xy;
 }
 
 struct xy pane_scale(struct pane *p safe)

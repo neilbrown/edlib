@@ -203,7 +203,7 @@ static int tspec_diff_ms(struct timespec *a safe, struct timespec *b safe)
 DEF_CMD(mouse_event)
 {
 	struct input_mode *im = ci->home->data;
-	short x,y;
+	struct xy xy;
 	int num, ex;
 	struct pane *focus;
 	char *key;
@@ -267,9 +267,8 @@ DEF_CMD(mouse_event)
 	focus = ci->focus;
 	num = im->num;
 	ex = im->num2;
-	x = ci->x; y = ci->y;
 	/* FIXME is there any point in this? */
-	pane_map_xy(ci->focus, focus, &x, &y);
+	xy = pane_mapxy(ci->focus, focus, ci->x, ci->y);
 
 	mode = strsave(ci->home, im->mode);
 	free((void*)im->mode);
@@ -283,9 +282,9 @@ DEF_CMD(mouse_event)
 		list_for_each_entry(t, &focus->children, siblings) {
 			if (t->z < 0)
 				continue;
-			if (x < t->x || x >= t->x + t->w)
+			if (xy.x < t->x || xy.x >= t->x + t->w)
 				continue;
-			if (y < t->y || y >= t->y + t->h)
+			if (xy.y < t->y || xy.y >= t->y + t->h)
 				continue;
 			if (chld == NULL || t->z > chld->z)
 				chld = t;
@@ -293,14 +292,15 @@ DEF_CMD(mouse_event)
 		/* descend into chld */
 		if (!chld)
 			break;
-		x -= chld->x;
-		y -= chld->y;
+		xy.x -= chld->x;
+		xy.y -= chld->y;
 		focus = chld;
 	}
 
 	if (!ms) {
 		key = strconcat(ci->home, "M", mode, ci->str);
-		return call(key, focus, num, NULL, NULL, ex, NULL, NULL, x, y);
+		return call(key, focus, num, NULL, NULL, ex, NULL, NULL,
+			    xy.x, xy.y);
 	}
 	if (press) {
 		/* Try nPress :nClick :(n-1)Press :(n-1)Click until something
@@ -327,7 +327,7 @@ DEF_CMD(mouse_event)
 			key = strconcat(ci->home, "M", mode, mod, ":", mult,
 					"Press-", n);
 			ret = call(key, focus, num, NULL, NULL, ex,
-				   NULL, NULL, x, y);
+				   NULL, NULL, xy.x, xy.y);
 
 			if (ret) {
 				/* Only get a Release if you respond to a
@@ -340,7 +340,7 @@ DEF_CMD(mouse_event)
 			key = strconcat(ci->home, "M", mode, mod, ":", mult,
 					"Click-", n);
 			ret = call(key, focus, num, NULL, NULL, ex,
-				   NULL, NULL, x, y);
+				   NULL, NULL, xy.x, xy.y);
 
 			if (ret)
 				return ret;
@@ -358,7 +358,7 @@ DEF_CMD(mouse_event)
 			key = strconcat(ci->home, "M", mode, ":", mult,
 					"Release-", n);
 			ret = call(key, focus, num, NULL, NULL, ex,
-				   NULL, NULL, x, y);
+				   NULL, NULL, xy.x, xy.y);
 
 			if (ret)
 				return ret;

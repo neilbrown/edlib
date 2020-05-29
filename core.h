@@ -474,9 +474,8 @@ char *pane_mark_attr(struct pane *p safe, struct mark *m safe,
 		     const char *key safe);
 void pane_absxy(struct pane *p, short *x safe, short *y safe,
 		short *w safe, short *h safe);
-void pane_relxy(struct pane *p, short *x safe, short *y safe);
-void pane_map_xy(struct pane *orig, struct pane *target,
-		 short *x safe, short *y safe);
+struct xy pane_mapxy(struct pane *orig safe, struct pane *target safe,
+		     short x, short y);
 
 struct xy pane_scale(struct pane *p safe);
 

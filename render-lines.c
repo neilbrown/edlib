@@ -966,26 +966,18 @@ DEF_CMD(render_lines_set_cursor)
 	struct mark *newpoint = NULL;
 	short y = rl->header_lines - rl->skip_lines;
 	int found = 0;
-	short cihx = 0, cihy = 0;
+	struct xy cih;
 
 	m = vmark_first(p, rl->typenum, p);
 
-	if (ci->x >= 0)
-		cihx = ci->x;
-	else if (p->cx >= 0)
-		cihx = p->cx;
+	cih = pane_mapxy(ci->focus, ci->home,
+			 ci->x >= 0 ? ci->x : p->cx >= 0 ? p->cx : 0,
+			 ci->y >= 0 ? ci->y : p->cy >= 0 ? p->cx : 0);
 
-	if (ci->y >= 0)
-		cihy = ci->y;
-	else if (p->cy >= 0)
-		cihy = p->cy;
-
-	pane_map_xy(ci->focus, ci->home, &cihx, &cihy);
-
-	if (y > cihy)
+	if (y > cih.y)
 		/* x,y is in header line - try lower */
-		cihy = y;
-	while (y <= cihy && m) {
+		cih.y = y;
+	while (y <= cih.y && m) {
 		call_render_line(focus, m, NULL);
 		if (!m->mdata) {
 			/* Presumably end-of-file.  Move here. */
@@ -995,7 +987,7 @@ DEF_CMD(render_lines_set_cursor)
 		}
 		rl->xypos = -1;
 		rl->xyattrs = NULL;
-		render_line(p, focus, m->mdata, y, 0, cihx, cihy,
+		render_line(p, focus, m->mdata, y, 0, cih.x, cih.y,
 			    -1, &rl->c);
 		y = rl->y;
 		if (rl->xypos >= 0) {

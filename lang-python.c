@@ -1006,21 +1006,18 @@ static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwd
 	return PyLong_FromLong(rv);
 }
 
-static PyObject *Pane_abs(Pane *self safe, PyObject *args)
+static PyObject *Pane_mapxy(Pane *self safe, PyObject *args)
 {
 	short x,y;
-	short w= -1, h= -1;
-	int have_height = 0;
-	int ret = PyArg_ParseTuple(args, "hh|hh", &x, &y, &w, &h);
-	if (ret <= 0)
+	struct xy xy;
+	Pane *other = NULL;
+
+	int ret = PyArg_ParseTuple(args, "O!hh", &PaneType, &other, &x, &y);
+	if (ret <= 0 || !self->pane || !other || !other->pane)
 		return NULL;
-	if (h >= 0)
-		have_height = 1;
-	pane_absxy(self->pane, &x, &y, &w, &h);
-	if (have_height)
-		return Py_BuildValue("hhhh", x, y, w, h);
-	else
-		return Py_BuildValue("hh", x, y);
+
+	xy = pane_mapxy(other->pane, self->pane, x, y);
+	return Py_BuildValue("ii", xy.x, xy.y);
 }
 
 static PyObject *Pane_add_notify(Pane *self safe, PyObject *args)
@@ -1048,16 +1045,6 @@ static PyObject *Pane_drop_notify(Pane *self safe, PyObject *args)
 
 	Py_INCREF(Py_None);
 	return Py_None;
-}
-
-static PyObject *Pane_rel(Pane *self safe, PyObject *args)
-{
-	short x,y;
-	int ret = PyArg_ParseTuple(args, "hh", &x, &y);
-	if (ret <= 0)
-		return NULL;
-	pane_relxy(self->pane, &x, &y);
-	return Py_BuildValue("ii", x, y);
 }
 
 static PyObject *Pane_damaged(Pane *self safe, PyObject *args)
@@ -1164,10 +1151,8 @@ static PyMethodDef pane_methods[] = {
 	 "Call a command from a pane"},
 	{"notify", (void*)(PyCFunctionWithKeywords)Pane_notify, METH_VARARGS|METH_KEYWORDS,
 	 "Send a notification from a pane"},
-	{"abs", (PyCFunction)Pane_abs, METH_VARARGS,
-	 "Convert pane-relative co-ords to absolute co-ords"},
-	{"rel", (PyCFunction)Pane_rel, METH_VARARGS,
-	 "Convert absolute co-orders to pane-relative"},
+	{"mapxy", (PyCFunction)Pane_mapxy, METH_VARARGS,
+	 "Convert pane-relative co-ords between panes"},
 	{"add_notify", (PyCFunction)Pane_add_notify, METH_VARARGS,
 	 "Add notifier for an event on some other pane"},
 	{"drop_notify", (PyCFunction)Pane_drop_notify, METH_VARARGS,

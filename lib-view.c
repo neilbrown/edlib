@@ -418,12 +418,11 @@ DEF_CMD(view_click)
 	int lh = vd->line_height;
 	char *key;
 	int num;
-	short cihx, cihy;
+	struct xy cih;
 
-	cihx = ci->x; cihy = ci->y;
-	pane_map_xy(ci->focus, ci->home, &cihx, &cihy);
+	cih = pane_mapxy(ci->focus, ci->home, ci->x, ci->y);
 
-	if (cihx >= vd->border_width)
+	if (cih.x >= vd->border_width)
 		return 0;
 	if (p->h <= 4)
 		return 0;
@@ -431,14 +430,14 @@ DEF_CMD(view_click)
 	key = "Move-View-Small";
 	num = RPT_NUM(ci);
 
-	if (cihy < mid - lh) {
+	if (cih.y < mid - lh) {
 		/* big scroll up */
 		num = -num;
 		key = "Move-View-Large";
-	} else if (cihy <= mid) {
+	} else if (cih.y <= mid) {
 		/* scroll up */
 		num = -num;
-	} else if (cihy <= mid + lh) {
+	} else if (cih.y <= mid + lh) {
 		/* scroll down */
 	} else {
 		/* big scroll down */

@@ -419,7 +419,7 @@ class EdDisplay(edlib.Pane):
         l.sort(key=lambda pane: pane.abs_z)
         for p in l:
             pm = self.panes[p]
-            (rx,ry,rw,rh) = p.abs(0,0,p.w,p.h)
+            rx,ry = self.mapxy(p, 0, 0)
             # FIXME draw on surface or GdkPixbuf
             ctx.set_source_surface(pm, rx, ry)
             ctx.paint()
