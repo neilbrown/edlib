@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <curses.h>
+#include <panel.h>
 #include <string.h>
 #include <locale.h>
 #include <ctype.h>
@@ -68,8 +69,6 @@ struct display_data {
 };
 
 static SCREEN *current_screen;
-static void ncurses_clear(struct pane *p safe, struct pane *display safe,
-			  int attr, short x, short y, short w, short h);
 static void ncurses_text(struct pane *p safe, struct pane *display safe,
 			 wchar_t ch, int attr, short x, short y, short cursor);
 DEF_CMD(input_handle);
@@ -101,6 +100,7 @@ static void set_screen(struct pane *p)
 		for (i=0; i<100; i++)
 			if (_nc_globals[i] < (void*)stdscr &&
 			    _nc_globals[i]+4*(sizeof(void*)) >= (void*)stdscr) {
+				/* This is _nc_windowlist */
 				index = i;
 				offset = ((void*)stdscr) - _nc_globals[i];
 			}
@@ -202,8 +202,21 @@ static void record_screen(struct pane *p safe)
 			attr_t a;
 			short color;
 			int l;
+			int x,y,w,h;
+			PANEL *pan = NULL;
 
-			mvin_wch(r,c,&cc);
+			while ((pan = panel_below(pan)) != NULL) {
+				getbegyx(panel_window(pan), y, x);
+				getmaxyx(panel_window(pan), h, w);
+				if (r < y || r >= y + h)
+					continue;
+				if (c < x || c >= x + w)
+					continue;
+				break;
+			}
+			if (!pan)
+				continue;
+			mvwin_wch(panel_window(pan), r-y, c-x, &cc);
 			getcchar(&cc, wc, &a, &color, NULL);
 			buf[0] = htole16(color);
 			for (l = 0; l < CCHARW_MAX && wc[l]; l++)
@@ -643,12 +656,64 @@ DEF_CMD(nc_close)
 	return 1;
 }
 
+DEF_CMD(nc_pane_close)
+{
+	PANEL *pan = NULL;
+
+	set_screen(ci->home);
+	while ((pan = panel_above(pan)) != NULL)
+		if (panel_userptr(pan) == ci->focus)
+			break;
+	if (pan) {
+		WINDOW *win = panel_window(pan);
+		del_panel(pan);
+		delwin(win);
+	}
+	return 1;
+}
+
+static PANEL * safe pane_panel(struct pane *p safe, struct pane *home)
+{
+	PANEL *pan = NULL;
+	struct xy xy;
+
+	while ((pan = panel_above(pan)) != NULL)
+		if (panel_userptr(pan) == p)
+			return pan;
+
+	if (!home)
+		return pan;
+
+	xy = pane_mapxy(p, home, 0, 0);
+
+	pan = new_panel(newwin(p->h, p->w, xy.y, xy.x));
+	set_panel_userptr(pan, p);
+	pane_add_notify(home, p, "Notify:Close");
+
+	return pan;
+}
+
 DEF_CMD(nc_clear)
 {
 	struct pane *p = ci->home;
 	int attr = cvt_attrs(p, ci->str2?:ci->str);
+	PANEL *panel;
+	WINDOW *win;
+	int w, h;
 
-	ncurses_clear(ci->focus, p, attr, 0, 0, 0, 0);
+	set_screen(p);
+	panel = pane_panel(ci->focus, p);
+	if (!panel)
+		return Efail;
+	win = panel_window(panel);
+	getmaxyx(win, h, w);
+	if (h != ci->focus->h || w != ci->focus->w) {
+		wresize(win, ci->focus->h, ci->focus->w);
+		replace_panel(panel, win);
+	}
+	wbkgdset(win, attr);
+	werase(win);
+
 	pane_damaged(p, DAMAGED_POSTORDER);
 	return 1;
 }
@@ -717,18 +782,71 @@ DEF_CMD(nc_refresh_size)
 
 	set_screen(p);
 	getmaxyx(stdscr, p->h, p->w);
+	clearok(curscr, 1);
 	return 0;
 }
 
 DEF_CMD(nc_refresh_post)
 {
 	struct pane *p = ci->home;
+	struct pane *p1;
+	PANEL *pan, *pan2;
+	struct xy xy;
+	int ox, oy;
 
 	set_screen(p);
-	if (p->cx >= 0)
-		move(p->cy, p->cx);
-	refresh();
-	record_screen(p);
+
+	/* Need to ensure stacking order and panel y,x position
+	 * is correct.  FIXME it would be good if we could skip this
+	 * almost always.
+	 */
+	pan = panel_above(NULL);
+	if (!pan)
+		return 1;
+	p1 = (struct pane*) panel_userptr(pan);
+	if (p1) {
+		xy = pane_mapxy(p1, p, 0 ,0);
+		getbegyx(panel_window(pan), oy, ox);
+		if (ox != xy.x || oy != xy.y)
+			move_panel(pan, xy.y, xy.x);
+	}
+	for (;(pan2 = panel_above(pan)) != NULL; pan = pan2) {
+		struct pane *p2 = (struct pane*)panel_userptr(pan2);
+		p1 = (struct pane*)panel_userptr(pan);
+		if (!p1 || !p2)
+			continue;
+
+		xy = pane_mapxy(p2, p, 0 ,0);
+		getbegyx(panel_window(pan2), oy, ox);
+		if (ox != xy.x || oy != xy.y)
+			move_panel(pan2, xy.y, xy.x);
+
+		if (p1->abs_z <= p2->abs_z)
+			continue;
+		/* pan needs to be above pan2.  All we can do is move it to
+		 * the top. Anything that needs to be above it will eventually
+		 * be pushed up too.
+		 */
+		top_panel(pan);
+		/* Now the panel below pan might need to be over pan2 too... */
+		pan = panel_below(pan2);
+		if (pan)
+			pan2 = pan;
+	}
+
+	update_panels();
+	/* place the cursor */
+	p1 = pane_leaf(p);
+	pan = NULL;
+	while (p1 != p && (pan = pane_panel(p1, NULL)) == NULL)
+		p1 = p1->parent;
+	if (pan) {
+		xy = pane_mapxy(p, p1, p->cx, p->cy);
+		wmove(panel_window(pan), xy.y, xy.x);
+		wnoutrefresh(panel_window(pan));
+	}
+	doupdate();
+	record_screen(ci->home);
 	return 1;
 }
 
@@ -816,35 +934,11 @@ DEF_CMD(force_redraw)
 	return 1;
 }
 
-static void ncurses_clear(struct pane *p safe, struct pane *display safe,
-			  int attr, short x, short y, short w, short h)
-{
-	short r, c;
-	short w0, h0;
-
-	if (w == 0)
-		w = p->w - x;
-	if (h == 0)
-		h = p->h - y;
-	pane_absxy(p, &x, &y, &w, &h);
-	w0 = w; h0 = h;
-	if (pane_masked(display, x, y, p->abs_z, &w0, &h0))
-		w0 = h0 = 0;
-
-	set_screen(display);
-	attrset(attr);
-	for (r = y; r < y+h; r++)
-		for (c = x; c < x+w; c++)
-			if ((r < y+h0 && c < x+w0) ||
-			    !pane_masked(display, c, r, p->abs_z, NULL, NULL))
-				mvaddch(r, c, ' ');
-}
-
 static void ncurses_text(struct pane *p safe, struct pane *display safe,
 			 wchar_t ch, int attr, short x, short y, short cursor)
 {
+	PANEL *pan;
 	cchar_t cc = {};
-	short w=1, h=1;
 
 	if (x < 0 || y < 0)
 		return;
@@ -858,18 +952,12 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 		}
 	}
 
-	pane_absxy(p, &x, &y, &w, &h);
-	if (w < 1 || h < 1)
-		return;
-
-	if (pane_masked(display, x, y, p->abs_z, NULL, NULL))
-		return;
-
 	set_screen(display);
 	if (cursor == 2) {
 		/* Cursor is in-focus */
-		display->cx = x;
-		display->cy = y;
+		struct xy curs = pane_mapxy(p, display, x, y);
+		display->cx = curs.x;
+		display->cy = curs.y;
 	}
 	if (cursor == 1)
 		/* Cursor here, but not focus */
@@ -877,7 +965,13 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 	cc.attr = attr;
 	cc.chars[0] = ch;
 
-	mvadd_wch(y, x, &cc);
+	pan = pane_panel(p, NULL);
+	while (!pan && p->parent != p) {
+		p = p->parent;
+		pan = pane_panel(p, NULL);
+	}
+	if (pan)
+		mvwadd_wch(panel_window(pan), y, x, &cc);
 }
 
 static struct namelist {
@@ -1133,4 +1227,5 @@ void edlib_init(struct pane *ed safe)
 	key_add(nc_map, "Refresh:postorder", &nc_refresh_post);
 	key_add(nc_map, "all-displays", &nc_notify_display);
 	key_add(nc_map, "Sig:Winch", &handle_winch);
+	key_add(nc_map, "Notify:Close", &nc_pane_close);
 }

@@ -92,8 +92,8 @@ pypkg=$(shell pkg-config --atleast-version=3.8 python3 && echo python3-embed || 
 LIBS-lang-python = $(shell pkg-config --libs $(pypkg))
 INC-lang-python = $(shell pkg-config --cflags $(pypkg))
 
-LIBS-display-ncurses = $(shell pkg-config --libs ncursesw)
-INC-display-ncurses = $(shell pkg-config --cflags ncursesw)
+LIBS-display-ncurses = $(shell pkg-config --libs panelw ncursesw)
+INC-display-ncurses = $(shell pkg-config --cflags panelw ncursesw)
 O/display-ncurses.o : md5.h
 
 LIBS-lib-libevent = $(shell pkg-config --libs libevent)
