@@ -467,13 +467,9 @@ void pane_damaged(struct pane *p, int type);
 void pane_clone_children(struct pane *from, struct pane *to);
 struct pane *pane_my_child(struct pane *p, struct pane *c);
 
-int pane_masked(struct pane *p safe, short x, short y, short abs_z,
-		short *w, short *h);
 char *pane_attr_get(struct pane *p, const char *key safe);
 char *pane_mark_attr(struct pane *p safe, struct mark *m safe,
 		     const char *key safe);
-void pane_absxy(struct pane *p, short *x safe, short *y safe,
-		short *w safe, short *h safe);
 struct xy pane_mapxy(struct pane *orig safe, struct pane *target safe,
 		     short x, short y);
 
