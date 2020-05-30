@@ -51,7 +51,6 @@ struct display_data {
 	SCREEN			*scr;
 	FILE			*scr_file;
 	int			is_xterm;
-	struct xy		cursor;
 	char			*noclose;
 	struct col_hash		*col_hash;
 	int			report_position;
@@ -216,8 +215,8 @@ static void record_screen(struct pane *p safe)
 	if (dd->log) {
 		fprintf(dd->log, "Display %d,%d %s", p->w, p->h, out);
 		strcpy(dd->last_screen, out);
-		if (dd->cursor.x >= 0)
-			fprintf(dd->log, " %d,%d", dd->cursor.x, dd->cursor.y);
+		if (p->cx >= 0)
+			fprintf(dd->log, " %d,%d", p->cx, p->cy);
 		fprintf(dd->log, "\n");
 	}
 	if (dd->input && dd->next_event == DoCheck) {
@@ -724,10 +723,10 @@ DEF_CMD(nc_refresh_size)
 DEF_CMD(nc_refresh_post)
 {
 	struct pane *p = ci->home;
-	struct display_data *dd = p->data;
+
 	set_screen(p);
-	if (dd->cursor.x >= 0)
-		move(dd->cursor.y, dd->cursor.x);
+	if (p->cx >= 0)
+		move(p->cy, p->cx);
 	refresh();
 	record_screen(p);
 	return 1;
@@ -756,7 +755,6 @@ static struct pane *ncurses_init(struct pane *ed,
 	alloc(dd, pane);
 	dd->scr = scr;
 	dd->scr_file = f;
-	dd->cursor.x = dd->cursor.y = -1;
 	dd->is_xterm = (term && strncmp(term, "xterm", 5) == 0);
 
 	p = pane_register(ed, 0, &ncurses_handle.c, dd);
@@ -845,7 +843,6 @@ static void ncurses_clear(struct pane *p safe, struct pane *display safe,
 static void ncurses_text(struct pane *p safe, struct pane *display safe,
 			 wchar_t ch, int attr, short x, short y, short cursor)
 {
-	struct display_data *dd;
 	cchar_t cc = {};
 	short w=1, h=1;
 
@@ -868,12 +865,11 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 	if (pane_masked(display, x, y, p->abs_z, NULL, NULL))
 		return;
 
-	dd = display->data;
 	set_screen(display);
 	if (cursor == 2) {
 		/* Cursor is in-focus */
-		dd->cursor.x = x;
-		dd->cursor.y = y;
+		display->cx = x;
+		display->cy = y;
 	}
 	if (cursor == 1)
 		/* Cursor here, but not focus */
