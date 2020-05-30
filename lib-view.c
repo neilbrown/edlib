@@ -166,6 +166,7 @@ DEF_CMD(view_refresh)
 	if (vd->line_height <= 0)
 		return 0;
 
+	call("pane-clear", p);
 	pm = call_ret(mark, "doc:point", ci->focus);
 	status = pane_attr_get(ci->focus, "status-line");
 	if (!status)
@@ -288,7 +289,6 @@ DEF_CMD(view_refresh_size)
 	int h = p->h;
 	int b;
 
-	call("pane-clear", p);
 	if (vd->border >= 0)
 		vd->border = calc_border(ci->focus);
 	b = vd->border < 0 ? 0 : vd->border;
