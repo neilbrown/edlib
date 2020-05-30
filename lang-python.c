@@ -38,8 +38,16 @@
 #define __linux__
 #define __x86_64__
 #define __LP64__
-#endif
 #include <Python.h>
+#undef Py_INCREF
+#define Py_INCREF(op) (0)
+#undef Py_DECREF
+#define Py_DECREF(op) (0)
+#undef Py_XDECREF
+#define Py_XDECREF(op) (0)
+#else
+#include <Python.h>
+#endif
 #define MARK_DATA_PTR PyObject
 #define PRIVATE_DOC_REF
 
