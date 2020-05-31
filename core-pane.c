@@ -56,7 +56,7 @@ static void pane_init(struct pane *p safe, struct pane *par)
 		p->w = par->w;
 		p->h = par->h;
 	}
-	p->abs_z = p->abs_zhi = 0;
+	p->abs_z = 0;
 	p->focus = NULL;
 	p->handle = NULL;
 	p->data = safe_cast NULL;
@@ -159,10 +159,49 @@ struct pane *__pane_register(struct pane *parent, short z,
 	return p;
 }
 
-/* 'abs_z' is a global z-depth number.
- * 'abs_z' of root is 0, and abs_z of every other pane is 1 more than abs_zhi
- * of siblings with lower 'z', or same as parent if no such siblings.
- *
+/* 'abs_z' is a global z-depth number (->z is relative to parent)
+ * 'abs_z' of root is 0, and abs_z of every other pane with z<=0 is 1 more than
+ * abs_z or parent, and abs_z of pane with z>0 is 1 more than max abs_z
+ * of all children of siblings with lower z.
+ */
+
+static int pane_do_absz(struct pane *p safe, int absz)
+{
+	int nextz = 0;
+	struct pane *c;
+
+	p->abs_z = absz;
+	absz += 1;
+	while (nextz >= 0) {
+		int z = nextz;
+		int next_absz = absz + 1;
+
+		nextz = -1;
+		list_for_each_entry(c, &p->children, siblings) {
+			int t;
+
+			if (c->z < 0 && z == 0) {
+				c->abs_z = p->abs_z + 1;
+				continue;
+			}
+			if (c->z < z)
+				continue;
+			if (c->z > z) {
+				if (nextz < 0 || c->z < nextz)
+					nextz = c->z;
+				continue;
+			}
+
+			t = pane_do_absz(c, absz);
+			if (t > next_absz)
+				next_absz = t;
+		}
+		absz = next_absz;
+	}
+	return absz + 1;
+}
+
+/*
  * If DAMAGED_SIZE is set on a pane, we call "Refresh:size".
  * If it or DAMAGED_SIZE_CHILD was set, we recurse onto all children.
  * If abs_z is not one more than parent, we also recurse.
@@ -170,62 +209,40 @@ struct pane *__pane_register(struct pane *parent, short z,
 static void pane_do_resize(struct pane *p safe, int damage)
 {
 	struct pane *c;
-	int nextz;
-	int abs_z = p->abs_z + 1;
 
-	if (p->damaged & DAMAGED_CLOSED) {
-		p->abs_zhi = abs_z;
+	if (p->damaged & DAMAGED_CLOSED)
 		return;
-	}
+
 	if ((damage & DAMAGED_SIZE) && p->z == 0 &&
 	    (p->parent->w || p->parent->h))
 		/* Parent was resized and didn't propagate, so we need to */
 		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
 
 	damage |= p->damaged & (DAMAGED_SIZE | DAMAGED_SIZE_CHILD);
-	if (!damage &&
-	    p->abs_z == p->parent->abs_z + abs(p->z))
+	if (!damage)
 		return;
 
-	if (damage & (DAMAGED_SIZE))
+	if (damage & DAMAGED_SIZE)
 		if (pane_call(p, "Refresh:size", p, 0, NULL,
 			      NULL, damage) != 0)
 			/* No need to propagate, just check on children */
 			damage = 0;
 
-	nextz = 0;
-	while (nextz >= 0) {
-		int z = nextz;
-		int abs_zhi = abs_z;
-		nextz = -1;
-		list_for_each_entry(c, &p->children, siblings)
-			c->damaged |= DAMAGED_NOT_HANDLED;
-	restart:
-		list_for_each_entry(c, &p->children, siblings) {
-			if (c->damaged & DAMAGED_NOT_HANDLED)
-				c->damaged &= ~DAMAGED_NOT_HANDLED;
-			else
-				/* Only handle each pane once */
-				continue;
-			if (c->z < 0) {
-				c->abs_z = c->parent->abs_z;
-				continue;
-			}
-			if (c->z > z && (nextz == -1 || c->z < nextz))
-				nextz = c->z;
-			if (c->z == z) {
-				if (c->abs_z != abs_z)
-					c->abs_z = abs_z;
-				pane_do_resize(c, damage & DAMAGED_SIZE);
-				if (c->abs_zhi > abs_zhi)
-					abs_zhi = c->abs_zhi;
-				/* Pane could have been disconnected, must restart */
-				goto restart;
-			}
-		}
-		p->abs_zhi = abs_zhi;
-		abs_z = abs_zhi + 1;
+	list_for_each_entry(c, &p->children, siblings)
+		c->damaged |= DAMAGED_NOT_HANDLED;
+restart:
+	list_for_each_entry(c, &p->children, siblings) {
+		if (c->damaged & DAMAGED_NOT_HANDLED)
+			c->damaged &= ~DAMAGED_NOT_HANDLED;
+		else
+			/* Only handle each pane once */
+			continue;
+		if (c->z < 0)
+			continue;
+		pane_do_resize(c, damage & DAMAGED_SIZE);
+		goto restart;
 	}
+
 	if (p->damaged & DAMAGED_SIZE) {
 		p->damaged &= ~(DAMAGED_SIZE | DAMAGED_SIZE_CHILD);
 		p->damaged |= DAMAGED_CONTENT | DAMAGED_CHILD;
@@ -336,7 +353,10 @@ void pane_refresh(struct pane *p safe)
 		p->abs_z = 0;
 
 	while (cnt-- && (p->damaged & ~DAMAGED_CLOSED)) {
+		bool need_abs_z = !!(p->damaged & DAMAGED_SIZE_CHILD);
 		pane_do_resize(p, 0);
+		if (need_abs_z)
+			pane_do_absz(p, 0);
 		pane_do_review(p, 0);
 		pane_do_refresh(p, 0);
 		pane_do_postorder(p);

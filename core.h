@@ -72,8 +72,7 @@ struct pane {
 	short			x,y,z;
 	short			h,w;
 	short			cx, cy;	/* cursor position */
-	short			abs_z, abs_zhi; /* 'hi' is the max of all
-						 * children */
+	short			abs_z;
 
 	short			damaged;
 	short			data_size;	/* only needed by edlib_do_free */
