@@ -363,7 +363,7 @@ DEF_CMD(popup_attach)
 	struct popup_info *ppi;
 	const char *style = ci->str;
 	char *in_popup;
-	int z;
+	int z = 1;
 
 	if (!style)
 		style = "D3";
@@ -387,10 +387,11 @@ DEF_CMD(popup_attach)
 	alloc(ppi, pane);
 	ppi->done = NULL;
 	ppi->target = ci->focus;
-	/* HACK this is because of +1 in pane_do_resize */
-	z = ci->focus->abs_z - root->abs_z;
-	if (z < 0)
-		z = 1;
+
+	/* If focus is already a popup, make this popup higher */
+	p = pane_my_child(root, ci->focus);
+	if (p && p->z > 0)
+		z = p->z + 1;
 
 	ppi->parent_popup = NULL;
 	if (strchr(style, 'P')) {
