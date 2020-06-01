@@ -364,12 +364,14 @@ void pane_refresh(struct pane *p safe)
 {
 	int cnt = 5;
 
-	while (cnt-- && (p->damaged & ~DAMAGED_CLOSED)) {
+	while (cnt-- &&
+	       (p->damaged &
+		~(DAMAGED_CLOSED|DAMAGED_POSTORDER|DAMAGED_POSTORDER_CHILD))) {
 		pane_do_resize(p, 0);
 		pane_do_review(p, 0);
 		pane_do_refresh(p, 0);
-		pane_do_postorder(p);
 	}
+	pane_do_postorder(p);
 	if (p->damaged) {
 		static time_t last_warn;
 		static int rpt;
