@@ -263,6 +263,7 @@ static void pane_do_resize(struct pane *p safe, int damage)
 				parent->damaged &= ~DAMAGED_SIZE_CHILD;
 		}
 	}
+	pane_do_absz(p, 0);
 }
 
 static void pane_do_refresh(struct pane *p safe, int damage)
@@ -362,14 +363,9 @@ restart:
 void pane_refresh(struct pane *p safe)
 {
 	int cnt = 5;
-	if (p->parent == p)
-		p->abs_z = 0;
 
 	while (cnt-- && (p->damaged & ~DAMAGED_CLOSED)) {
-		bool need_abs_z = !!(p->damaged & DAMAGED_SIZE_CHILD);
 		pane_do_resize(p, 0);
-		if (need_abs_z)
-			pane_do_absz(p, 0);
 		pane_do_review(p, 0);
 		pane_do_refresh(p, 0);
 		pane_do_postorder(p);
