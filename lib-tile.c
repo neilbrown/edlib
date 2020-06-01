@@ -450,9 +450,9 @@ static void tile_adjust(struct pane *p safe)
 			avail_cnt++;
 		cnt++;
 	}
-	while (used != size && avail_cnt) {
+	while (used < size || (used > size && avail_cnt)) {
 		int change = 0;
-		int remain = used; /* size of panes still to be resize */
+		int remain = used; /* size of panes still to be resized */
 
 		if (used > size)
 			cnt = avail_cnt;
