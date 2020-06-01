@@ -18,7 +18,7 @@ from gi.repository import Gtk, Gdk, Pango, PangoCairo, GdkPixbuf
 
 class EdDisplay(edlib.Pane):
     def __init__(self, focus):
-        edlib.Pane.__init__(self, focus)
+        edlib.Pane.__init__(self, focus, z=1)
         self.win = Gtk.Window()
         # panes[] is a mapping from edlib.Pane objects to cairo surface objects.
         # Where a pane has the same size as its parent, only the parent can have

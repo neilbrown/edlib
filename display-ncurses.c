@@ -875,7 +875,7 @@ static struct pane *ncurses_init(struct pane *ed,
 	dd->scr_file = f;
 	dd->is_xterm = (term && strncmp(term, "xterm", 5) == 0);
 
-	p = pane_register(ed, 0, &ncurses_handle.c, dd);
+	p = pane_register(ed, 1, &ncurses_handle.c, dd);
 	if (!p) {
 		unalloc(dd, pane);
 		return NULL;

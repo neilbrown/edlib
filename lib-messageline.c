@@ -126,6 +126,8 @@ DEF_CMD(messageline_refresh_size)
 				    ci->home->w,
 				    ci->home->h - mli->height);
 	}
+	pane_damaged(ci->home, DAMAGED_CONTENT);
+	pane_damaged(mli->line, DAMAGED_CONTENT);
 	return 1;
 }
 

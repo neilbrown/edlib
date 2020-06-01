@@ -50,6 +50,8 @@ DEF_CMD(rlcb)
 		cb->cmp = 0; /* Don't compare, just save */
 	else if (c == NULL)
 		cb->cmp = -1;
+	else if (cb->fd->match == NULL)
+		cb->cmp = 0;
 	else if (cb->fd->at_start && cb->fd->ignore_case)
 		cb->cmp = strncasecmp(c, cb->fd->match, cb->fd->match_len);
 	else if (cb->fd->at_start)

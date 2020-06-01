@@ -104,7 +104,6 @@ void pane_damaged(struct pane *p, int type)
 	if (z < 0)
 		/* light-weight pane - never propagate damage */
 		return;
-	p = p->parent;
 	if (type == DAMAGED_SIZE)
 		type = DAMAGED_SIZE_CHILD;
 	else if (type == DAMAGED_VIEW)
@@ -116,6 +115,8 @@ void pane_damaged(struct pane *p, int type)
 	else
 		return;
 
+	p->damaged |= type;
+	p = p->parent;
 	while ((p->damaged | type) != p->damaged) {
 		if (z > 0 && (type & DAMAGED_SIZE_CHILD))
 			/* overlay changed size, so we must refresh */
@@ -208,47 +209,59 @@ static int pane_do_absz(struct pane *p safe, int absz)
  */
 static void pane_do_resize(struct pane *p safe, int damage)
 {
-	struct pane *c;
-
+	int loops = 0;
+	if (!(p->damaged & DAMAGED_SIZE_CHILD))
+		return;
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
 
-	if ((damage & DAMAGED_SIZE) && p->z == 0 &&
-	    (p->parent->w || p->parent->h))
-		/* Parent was resized and didn't propagate, so we need to */
-		pane_resize(p, 0, 0, p->parent->w, p->parent->h);
+	while (p->damaged & DAMAGED_SIZE_CHILD) {
+		struct pane *parent, *c, *t;
 
-	damage |= p->damaged & (DAMAGED_SIZE | DAMAGED_SIZE_CHILD);
-	if (!damage)
-		return;
+		/* Find a child with DAMGED_SIZE_CHILD.
+		 * If it is DAMAGE_SIZE, handle that, else check
+		 * its children.  If no DAMAGED_SIZE_CHILD
+		 * children are found, clear DAMAGED_SIZE_CHILD.
+		 */
+		c = p;
+		while (c && !(c->damaged & DAMAGED_CLOSED)) {
+			parent = c;
+			c = NULL;
+			if (parent->damaged & DAMAGED_SIZE) {
+				parent->damaged &= ~DAMAGED_SIZE;
+				loops += 1;
+				if (loops == 1000) {
+					LOG("pane resize looped 1000 times - some pane must keep damaging itself.");
+					call("editor:notify:Message:broadcast",
+					     p, 0, NULL,
+					     "WARNING pane resize loop - see log");
+				}
+				if (loops >= 1000)
+					break;
 
-	if (damage & DAMAGED_SIZE)
-		if (pane_call(p, "Refresh:size", p, 0, NULL,
-			      NULL, damage) != 0)
-			/* No need to propagate, just check on children */
-			damage = 0;
-
-	list_for_each_entry(c, &p->children, siblings)
-		c->damaged |= DAMAGED_NOT_HANDLED;
-restart:
-	list_for_each_entry(c, &p->children, siblings) {
-		if (c->damaged & DAMAGED_NOT_HANDLED)
-			c->damaged &= ~DAMAGED_NOT_HANDLED;
-		else
-			/* Only handle each pane once */
-			continue;
-		if (c->z < 0)
-			continue;
-		pane_do_resize(c, damage & DAMAGED_SIZE);
-		goto restart;
-	}
-
-	if (p->damaged & DAMAGED_SIZE) {
-		p->damaged &= ~(DAMAGED_SIZE | DAMAGED_SIZE_CHILD);
-		p->damaged |= DAMAGED_CONTENT | DAMAGED_CHILD;
-	} else {
-		p->damaged &= ~DAMAGED_SIZE_CHILD;
-		p->damaged |= DAMAGED_CHILD;
+				if (pane_call(parent, "Refresh:size",
+					      parent) == 0) {
+					/* Need to resize children ourselves */
+					list_for_each_entry(c, &parent->children,
+							    siblings)
+						if (c->z == 0)
+							pane_resize(c, 0, 0,
+								    parent->w,
+								    parent->h);
+						else if (c->z > 0)
+							pane_damaged(c, DAMAGED_SIZE);
+				}
+				/* Need to restart from root */
+				break;
+			}
+			list_for_each_entry(t, &parent->children, siblings)
+				if (t->damaged & DAMAGED_SIZE_CHILD) {
+					c = t;
+					break;
+				}
+			if (!c)
+				parent->damaged &= ~DAMAGED_SIZE_CHILD;
+		}
 	}
 }
 

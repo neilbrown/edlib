@@ -1274,7 +1274,9 @@ DEF_CMD(render_lines_resize)
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
 
+	pane_damaged(p, DAMAGED_CONTENT);
 	pane_resize(rl->helper, 0, 0, p->w, p->h);
+	pane_damaged(rl->helper, DAMAGED_CONTENT);
 	/* Allow propagation to children */
 	return 0;
 }

@@ -455,6 +455,11 @@ class PresenterPane(edlib.Pane):
                 ret |= rv
         return ret
 
+    def handle_resized(self, key):
+        "handle:Refresh:size"
+        self.damaged(edlib.DAMAGED_CONTENT);
+        return 0
+
     def handle_clip(self, key, mark, mark2, **a):
         "handle:Notify:clip"
         self.clip(self.attrview, mark, mark2);

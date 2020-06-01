@@ -337,6 +337,7 @@ DEF_CMD(view_refresh_size)
 		w = 1;
 	if (h <= 0)
 		h = 1;
+	pane_damaged(p, DAMAGED_CONTENT);
 	if (vd->child)
 		pane_resize(vd->child, x, y, w, h);
 
