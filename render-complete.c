@@ -392,7 +392,6 @@ DEF_CMD(complete_set_prefix)
 	}
 
 	call("view:changed", ci->focus);
-	pane_damaged(ci->home, DAMAGED_VIEW);
 
 	return cb.cnt + 1;
 }
