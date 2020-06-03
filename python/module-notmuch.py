@@ -750,7 +750,6 @@ class notmuch_master_view(edlib.Pane):
     def handle_g(self, key, focus, **a):
         "handle:doc:char-g"
         focus.call("doc:notmuch:update")
-        self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
         return 1
 
     def handle_select_query(self, key, num, str, **a):
@@ -828,7 +827,7 @@ class notmuch_main_view(edlib.Pane):
 
     def handle_notify_replace(self, key, **a):
         "handle:doc:replaced"
-        self.damaged(edlib.DAMAGED_CONTENT|edlib.DAMAGED_VIEW)
+        # do I need to do anything here?
         return 0
 
     def handle_select(self, key, focus, mark, num, **a):
