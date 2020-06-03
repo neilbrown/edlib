@@ -97,7 +97,7 @@ class PresenterPane(edlib.Pane):
         return l[0:-1]
 
     def find_page(self, start, sof = False):
-        # Assumming 'm' is either start-of-file (if 'sof') or the start of
+        # Assuming 'm' is either start-of-file (if 'sof') or the start of
         # a page, find the start of the next page.  Return an untyped mark
         # or None if there is no next page.
         # A page starts with some ":attr:" lines and then a "# " line.
@@ -133,7 +133,7 @@ class PresenterPane(edlib.Pane):
                             self['background'] = 'call:Present-BG:'+globals['background']
                         if 'scale' in globals:
                             self['scale'] = globals['scale']
-                        self.damaged(edlib.DAMAGED_VIEW)
+                        self.leaf.call("view:changed")
                     return maybe
             else:
                 # not part of start-of-page block
@@ -370,7 +370,7 @@ class PresenterPane(edlib.Pane):
             first.release()
         if extra_change:
             # force full refresh
-            self.damaged(edlib.DAMAGED_VIEW)
+            self.leaf.call("view:changed");
 
     def get_local_attr(self, m, attr, page):
         t = 'attr:' + attr
@@ -454,11 +454,6 @@ class PresenterPane(edlib.Pane):
             if rv:
                 ret |= rv
         return ret
-
-    def handle_resized(self, key):
-        "handle:Refresh:size"
-        self.damaged(edlib.DAMAGED_CONTENT);
-        return 0
 
     def handle_clip(self, key, mark, mark2, **a):
         "handle:Notify:clip"
@@ -600,7 +595,7 @@ class PresenterPane(edlib.Pane):
                 self.first_valid = False
                 page['valid'] = 'no'
             # attributes probably changed so...
-            self.damaged(edlib.DAMAGED_VIEW)
+            self.leaf.call("view:changed")
         else:
             page['valid'] = 'no'
             page['next-valid'] = 'no'
@@ -618,7 +613,7 @@ class PresenterPane(edlib.Pane):
                 l['type'] = 'unknown'
                 l = l.prev()
             if l['type'] and l['type'][0:5] == "attr:":
-                self.damaged(edlib.DAMAGED_VIEW)
+                self.leaf.call("view:changed")
             l['type'] = 'unknown'
             l = l.next()
             if l:
