@@ -356,8 +356,7 @@ DEF_CMD(filter_changed)
 	if (!found_one)
 		/* filtered document is now empty - maybe someone cares */
 		home_call(ci->focus, "Notify:filter:empty", ci->home);
-	if (strcmp(ci->key, "view:changed") == 0 ||
-	    strcmp(ci->key, "Refresh:view") == 0)
+	if (strcmp(ci->key, "Refresh:view") == 0)
 		return 0;
 	return 1;
 }
@@ -412,7 +411,7 @@ DEF_CMD(filter_eol)
 DEF_CMD(filter_damaged)
 {
 	pane_damaged(ci->home, DAMAGED_VIEW);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(filter_attach);
@@ -441,9 +440,9 @@ static void filter_register_map(void)
 	key_add_prefix(filter_map, "Move-", &filter_nomove);
 	key_add(filter_map, "Move-EOL", &filter_eol);
 	key_add(filter_map, "Filter:set", &filter_changed);
-	key_add(filter_map, "view:changed", &filter_changed);
-	key_add(filter_map, "Refresh:view", &filter_changed);
+	key_add(filter_map, "view:changed", &filter_damaged);
 	key_add(filter_map, "doc:replaced", &filter_damaged);
+	key_add(filter_map, "Refresh:view", &filter_changed);
 }
 
 REDEF_CMD(filter_attach)
