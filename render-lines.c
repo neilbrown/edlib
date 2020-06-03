@@ -762,35 +762,6 @@ DEF_CMD(render_lines_refresh)
 	return 0;
 }
 
-DEF_CMD(render_lines_refresh_view)
-{
-	struct pane *p = ci->home;
-	struct pane *focus = ci->focus;
-	struct rl_data *rl = p->data;
-	struct mark *m;
-
-	for (m = vmark_first(p, rl->typenum, p);
-	     m;
-	     m = vmark_next(m)) {
-		free(m->mdata);
-		m->mdata = NULL;
-	}
-
-	if (rl->repositioned) {
-		struct mark *pm = call_ret(mark, "doc:point", focus);
-		rl->lines = render(pm, p, focus);
-	}
-	rl->repositioned = 0;
-	if (p->damaged & (DAMAGED_CONTENT|DAMAGED_SIZE))
-		; /* wait for a proper redraw */
-	else
-		call("render:reposition", focus,
-		     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
-		     rl->cols, vmark_last(focus, rl->typenum, p), NULL,
-		     p->cx, p->cy);
-	return 0;
-}
-
 DEF_CMD(render_lines_close)
 {
 	struct pane *p = ci->home;
@@ -832,7 +803,7 @@ DEF_CMD(render_lines_move)
 	 * When moving forwards we render and then step forward
 	 * At each point we count the number of display lines that result.
 	 * When we choose a new start, we delete all earlier marks.
-	 * We all delete marks before current top when moving forward
+	 * We also delete marks before current top when moving forward
 	 * where there are more than a page full.
 	 */
 	struct pane *p = ci->home;
@@ -932,7 +903,7 @@ DEF_CMD(render_lines_move)
 		}
 	}
 	rl->repositioned = 1;
-	pane_damaged(ci->home, DAMAGED_VIEW);
+	pane_damaged(ci->home, DAMAGED_CONTENT);
 	top = vmark_first(focus, rl->typenum, p);
 	if (top && mark_same(top, old_top)) {
 		mark_free(old_top);
@@ -1047,7 +1018,7 @@ DEF_CMD(render_lines_move_pos)
 		/* pos already displayed */
 		return 1;
 	find_lines(pm, p, focus, NO_NUMERIC);
-	pane_damaged(p, DAMAGED_VIEW);
+	pane_damaged(p, DAMAGED_CONTENT);
 	rl->repositioned = 1;
 	return 1;
 }
@@ -1073,7 +1044,7 @@ DEF_CMD(render_lines_view_line)
 	}
 	rl->ignore_point = 1;
 	find_lines(pm, p, focus, line);
-	pane_damaged(p, DAMAGED_VIEW);
+	pane_damaged(p, DAMAGED_CONTENT);
 	rl->repositioned = 1;
 	return 1;
 }
@@ -1185,7 +1156,13 @@ DEF_CMD(render_lines_notify_replace)
 
 	if (!start && !end) {
 		/* No marks given - assume everything changed */
-		pane_damaged(p, DAMAGED_VIEW);
+		struct mark *m;
+		for (m = vmark_first(p, rl->typenum, p);
+		     m;
+		     m = vmark_next(m)) {
+			free(m->mdata);
+			m->mdata = NULL;
+		}
 		pane_damaged(p, DAMAGED_CONTENT);
 		return 0;
 	}
@@ -1303,7 +1280,6 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Free", &edlib_do_free);
 	key_add(rl_map, "Clone", &render_lines_clone);
 	key_add(rl_map, "Refresh", &render_lines_refresh);
-	key_add(rl_map, "Refresh:view", &render_lines_refresh_view);
 	key_add(rl_map, "Refresh:size", &render_lines_resize);
 	key_add(rl_map, "Notify:clip", &render_lines_clip);
 	key_add(rl_map, "get-attr", &render_lines_get_attr);
