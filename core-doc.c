@@ -44,6 +44,7 @@ static struct pane *doc_attach(struct pane *parent);
 struct doc_data {
 	struct pane		*doc safe;
 	struct mark		*point safe;
+	struct mark		*old_point; /* location at last refresh */
 	struct mark		*marks[4];
 };
 
@@ -877,14 +878,27 @@ DEF_CMD(doc_notify_moving)
 	struct doc_data *dd = ci->home->data;
 
 	if (ci->mark == dd->point)
-		pane_damaged(ci->home, DAMAGED_CURSOR);
+		pane_damaged(ci->home, DAMAGED_VIEW);
 	return 0;
 }
 
-DEF_CMD(doc_refresh)
+DEF_CMD(doc_refresh_view)
 {
 	struct doc_data *dd = ci->home->data;
+	int active = attr_find_int(dd->point->attrs, "selection:active");
 
+	if (active > 0) {
+		call("view:changed", ci->focus, 0, dd->point, NULL,
+		     0, dd->old_point);
+	} else {
+		call("view:changed", ci->focus, 0, dd->point);
+		if (dd->old_point)
+			call("view:changed", ci->focus, 0, dd->old_point);
+	}
+	if (!dd->old_point)
+		dd->old_point = mark_dup(dd->point);
+	else
+		mark_to_mark(dd->old_point, dd->point);
 	mark_ack(dd->point);
 	return 1;
 }
@@ -919,6 +933,7 @@ DEF_CMD(doc_close)
 	int i;
 	call("doc:push-point", dd->doc, 0, dd->point);
 	mark_free(dd->point);
+	mark_free(dd->old_point);
 	for (i = 0; i < 4; i++)
 		mark_free(dd->marks[i]);
 	call("doc:closed", dd->doc);
@@ -1008,6 +1023,8 @@ DEF_CMD(doc_clip)
 	int mnum;
 
 	mark_clip(dd->point, ci->mark, ci->mark2);
+	if (dd->old_point)
+		mark_clip(dd->old_point, ci->mark, ci->mark2);
 	for (mnum = 0; mnum < 4; mnum++)
 		if (dd->marks[mnum])
 			mark_clip(dd->marks[mnum], ci->mark, ci->mark2);
@@ -1152,7 +1169,7 @@ static void init_doc_cmds(void)
 	key_add(doc_handle_cmd, "doc:notify-viewers", &doc_notify_viewers);
 	key_add(doc_handle_cmd,	"Notify:Close", &doc_notify_close);
 	key_add(doc_handle_cmd,	"point:moving", &doc_notify_moving);
-	key_add(doc_handle_cmd,	"Refresh", &doc_refresh);
+	key_add(doc_handle_cmd,	"Refresh:view", &doc_refresh_view);
 	key_add(doc_handle_cmd,	"Clone", &doc_clone);
 	key_add(doc_handle_cmd,	"Close", &doc_close);
 	key_add(doc_handle_cmd,	"Free", &edlib_do_free);
@@ -1203,6 +1220,7 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 	pane_add_notify(p, doc, "doc:notify-viewers");
 	pane_add_notify(p, doc, "point:moving");
 	call("doc:notify:doc:revisit", doc, 0);
+	mark_ack(m);
 }
 
 static struct pane *doc_attach(struct pane *parent)

@@ -101,7 +101,6 @@
 struct rl_data {
 	int		top_sol; /* true when first mark is at a start-of-line */
 	int		ignore_point;
-	struct mark	*old_point; /* where was 'point' before it moved */
 	int		skip_lines; /* Skip display-lines for first "line" */
 	int		cursor_line; /* line that contains the cursor starts
 				      * on this line */
@@ -690,9 +689,7 @@ DEF_CMD(render_lines_point_moving)
 
 	if (ci->mark != pt)
 		return 1;
-	if (pt && !rl->old_point)
-		rl->old_point = mark_dup(pt);
-	/* Igoring point, because it is probably relevant now */
+	/* Stop igoring point, because it is probably relevant now */
 	rl->ignore_point = 0;
 	if (!rl->i_moved)
 		/* Someone else moved the point, so reset target column */
@@ -712,17 +709,6 @@ DEF_CMD(render_lines_refresh)
 	rl->do_wrap = (!a || strcmp(a, "yes") == 0);
 
 	pm = call_ret(mark, "doc:point", focus);
-
-	if (pm && rl->old_point) {
-		/* Make sure we redraw selected region.  This is a HACK,
-		 * the functionality should be somewhere else.
-		 */
-		call("view:changed", focus, 0, rl->old_point,
-		     NULL, 0, pm);
-		mark_free(rl->old_point);
-		rl->old_point = NULL;
-		mark_ack(pm);
-	}
 
 	m = vmark_first(focus, rl->typenum, p);
 	if (rl->top_sol && m) {
@@ -775,7 +761,6 @@ DEF_CMD(render_lines_close)
 	}
 
 	call("doc:del-view", p, rl->typenum);
-	mark_free(rl->old_point);
 	return 0;
 }
 
@@ -1220,8 +1205,8 @@ DEF_CMD(render_lines_notify_replace)
 		free(end->mdata);
 		end->mdata = NULL;
 	}
-	if (ci->mark != rl->old_point)
-		pane_damaged(p, DAMAGED_CONTENT);
+
+	pane_damaged(p, DAMAGED_CONTENT);
 
 	return 0;
 }
@@ -1231,8 +1216,6 @@ DEF_CMD(render_lines_clip)
 	struct rl_data *rl = ci->home->data;
 
 	marks_clip(ci->home, ci->mark, ci->mark2, rl->typenum, ci->home);
-	if (rl->old_point)
-		mark_clip(rl->old_point, ci->mark, ci->mark2);
 	return 0;
 }
 
