@@ -54,7 +54,38 @@ REDEF_CMD(emacs_kill);
 REDEF_CMD(emacs_case);
 REDEF_CMD(emacs_swap);
 
-static bool clear_selection(struct pane *p safe, struct mark *pt, struct mark *mk)
+/* emacs:active encodes 4 different states for the selection
+ * 0 - inactive.  The other-end might exist but it is passive, not displayed
+ *                and not used unless explicitly asked for (Cx Cx)
+ * 1 - active.    Selection is active and will remain active if cursor
+ *                moves or text is changed.  Is used in various ways.
+ * 2 - transient. Is active, but will be canceled on movement or change.
+ *                Will be used for copy/cut, but little else
+ * 3 - replacable Transient plus text entry will delete selected content.
+ */
+
+static void set_selection(struct pane *p safe, struct mark *pt,
+			  struct mark *mk, int type)
+{
+	int active;
+	if (!type || !mk)
+		return;
+	active = attr_find_int(mk->attrs, "emacs:active");
+	if (active == type)
+		return;
+	attr_set_int(&mk->attrs, "emacs:active", type);
+	if (!pt)
+		pt = call_ret(mark, "doc:point", p);
+	if (!pt)
+		return;
+	if (active <= 0)
+		attr_set_int(&pt->attrs, "selection:active", 1);
+	if (!mark_same(pt, mk))
+		call("view:changed", p, 0, pt, NULL, 0, mk);
+}
+
+static bool clear_selection(struct pane *p safe, struct mark *pt,
+			    struct mark *mk, int type)
 {
 	int active;
 	if (!mk)
@@ -62,8 +93,9 @@ static bool clear_selection(struct pane *p safe, struct mark *pt, struct mark *m
 	active = attr_find_int(mk->attrs, "emacs:active");
 	if (active <= 0)
 		return False;
+	if (type && active < type)
+		return False;
 	attr_set_int(&mk->attrs, "emacs:active", 0);
-	attr_set_int(&mk->attrs, "emacs:replacable", 0);
 	if (!pt)
 		pt = call_ret(mark, "doc:point", p);
 	if (!pt)
@@ -182,9 +214,8 @@ REDEF_CMD(emacs_move)
 			     mv->direction*2);
 
 	mk = call_ret(mark2, "doc:point", ci->focus);
-	if (mk && attr_find_int(mk->attrs, "emacs:active") == 2)
-		/* Transient highlight - discard it */
-		clear_selection(ci->focus, NULL, mk);
+	/* Discard a transient selection */
+	clear_selection(ci->focus, NULL, mk, 2);
 
 	return ret;
 }
@@ -199,10 +230,8 @@ REDEF_CMD(emacs_delete)
 		return Enoarg;
 
 	mk = call_ret(mark2, "doc:point", ci->focus);
-	if (mk && attr_find_int(mk->attrs, "emacs:active") != 0 &&
-	    attr_find_int(mk->attrs, "emacs:replacable") == 1)
-		clear_selection(ci->focus, NULL, mk);
-	else
+	/* If selection is replacable, clear it and use mk */
+	if (!clear_selection(ci->focus, NULL, mk, 3))
 		mk = NULL;
 
 	m = mark_dup(ci->mark);
@@ -536,7 +565,7 @@ REDEF_CMD(emacs_simple_str)
 
 	if (!ci->mark)
 		return Enoarg;
-	if (clear_selection(ci->focus, NULL, mk))
+	if (clear_selection(ci->focus, NULL, mk, 0))
 		str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 
 	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, str);
@@ -598,21 +627,16 @@ DEF_CMD(emacs_insert)
 	const char *str;
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	char dc[20];
-	int active = 0;
 	bool first = N2(ci) != N2_undo_insert;
 
 	if (!ci->mark)
 		return Enoarg;
 
-	if (mk && (active = attr_find_int(mk->attrs, "emacs:active")) != 0 &&
-	    attr_find_int(mk->attrs, "emacs:replacable") == 1) {
-		clear_selection(ci->focus, NULL, mk);
+	if (clear_selection(ci->focus, NULL, mk, 3)) {
 		call("Replace", ci->focus, 1, mk, NULL, !first);
 		first = False;
-	} else if (mk && active == 2) {
-		/* Transient mark - clear it */
-		clear_selection(ci->focus, NULL, mk);
-	}
+	} else
+		clear_selection(ci->focus, NULL, mk, 2);
 
 	str = ksuffix(ci, "K-");
 	/* Resubmit as doc:char-$str.  By default this will be inserted
@@ -681,11 +705,8 @@ DEF_CMD(emacs_insert_other)
 	if (ins == NULL)
 		return 0;
 
-	if (mk && attr_find_int(mk->attrs, "emacs:active") != 0 &&
-	    attr_find_int(mk->attrs, "emacs:replacable") == 1) {
-		clear_selection(ci->focus, NULL, mk);
+	if (clear_selection(ci->focus, NULL, mk, 3))
 		call("Replace", ci->focus, 1, mk);
-	}
 
 	if (!*ins) {
 		ins++;
@@ -1548,14 +1569,13 @@ DEF_CMD(emacs_mark)
 {
 	struct mark *m = call_ret(mark2, "doc:point", ci->focus);
 
-	clear_selection(ci->focus, NULL, m);
+	clear_selection(ci->focus, NULL, m, 0);
 
 	call("Move-to", ci->focus, 1);
 	m = call_ret(mark2, "doc:point", ci->focus);
-	if (m) {
-		attr_set_int(&m->attrs, "emacs:active", ci->num == 1 ? 2 : 1);
-		attr_set_int(&m->attrs, "emacs:replacable", ci->num == 1 ? 1 : 0);
-	}
+	if (m)
+		/* ci->num == 1 means replacable */
+		set_selection(ci->focus, NULL, m, ci->num == 1 ? 3 : 1);
 	return 1;
 }
 
@@ -1564,7 +1584,7 @@ DEF_CMD(emacs_abort)
 	/* On abort, forget mark */
 	struct mark *m = call_ret(mark2, "doc:point", ci->focus);
 
-	clear_selection(ci->focus, NULL, m);
+	clear_selection(ci->focus, NULL, m, 0);
 	return 0;
 }
 
@@ -1578,8 +1598,7 @@ DEF_CMD(emacs_swap_mark)
 	m = mark_dup(mk);
 	call("Move-to", ci->focus, 1); /* Move mark to point */
 	call("Move-to", ci->focus, 0, m); /* Move point to old mark */
-	attr_set_int(&mk->attrs, "emacs:active", ci->num == 1 ? 2 : 1);
-	attr_set_int(&mk->attrs, "emacs:replacable", ci->num == 1 ? 1 : 0);
+	set_selection(ci->focus, NULL, mk, ci->num == 1 ? 3 : 1);
 	mark_free(m);
 	return 1;
 }
@@ -1598,7 +1617,7 @@ DEF_CMD(emacs_wipe)
 		call("copy:save", ci->focus, 0, NULL, str);
 	ret = call("Replace", ci->focus, 1, mk);
 	/* Clear mark */
-	clear_selection(ci->focus, NULL, mk);
+	clear_selection(ci->focus, NULL, mk, 0);
 
 	return ret;
 }
@@ -1615,7 +1634,7 @@ DEF_CMD(emacs_copy)
 	if (str && *str)
 		call("copy:save", ci->focus, 0, NULL, str);
 	/* Clear current highlight */
-	clear_selection(ci->focus, NULL, mk);
+	clear_selection(ci->focus, NULL, mk, 0);
 	return 1;
 }
 
@@ -1635,7 +1654,7 @@ DEF_CMD(emacs_yank)
 		return 1;
 	/* If mark exists and is active, replace marked regions */
 	mk = call_ret(mark2, "doc:point", ci->focus);
-	if (mk && clear_selection(ci->focus, NULL, mk)) {
+	if (mk && clear_selection(ci->focus, NULL, mk, 0)) {
 		char *str2 = call_ret(strsave, "doc:get-str", ci->focus,
 				      0, NULL, NULL, 0, mk);
 		if (str2 && *str2)
@@ -1682,6 +1701,7 @@ DEF_CMD(emacs_yank_pop)
 DEF_CMD(emacs_attrs)
 {
 	struct call_return cr;
+	int active;
 	char *selection = "bg:white-80,vis-nl"; // grey
 
 	if (!ci->str)
@@ -1690,9 +1710,10 @@ DEF_CMD(emacs_attrs)
 	cr = call_ret(all, "doc:point", ci->focus);
 	if (cr.ret <= 0 || !cr.m || !cr.m2 || !ci->mark)
 		return 1;
-	if (attr_find_int(cr.m2->attrs, "emacs:active") <= 0)
+	active = attr_find_int(cr.m2->attrs, "emacs:active");
+	if (active <= 0)
 		return 1;
-	if (attr_find_int(cr.m2->attrs, "emacs:replacable") == 1)
+	if (active >= 3) /* replacable */
 		selection = "bg:red+80,vis-nl"; // pink
 	if (mark_same(cr.m, cr.m2))
 		return 1;
@@ -1794,9 +1815,7 @@ static void update_sel(struct pane *p safe,
 
 	/* Must call 'claim' first as it might be claiming from us */
 	call("selection:claim", p);
-	attr_set_int(&mk->attrs, "emacs:active", 2);
-	attr_set_int(&mk->attrs, "emacs:replacable", 0);
-	call("view:changed", p, 0, pt, NULL, 0, mk);
+	set_selection(p, pt, mk, 2);
 }
 
 DEF_CMD(emacs_press)
@@ -1816,7 +1835,7 @@ DEF_CMD(emacs_press)
 	call("Move-CursorXY", ci->focus,
 	     0, m, NULL, 0, NULL, NULL, ci->x, ci->y);
 
-	clear_selection(ci->focus, pt, mk);
+	clear_selection(ci->focus, pt, mk, 0);
 	call("Move-to", ci->focus, 0, m);
 	pane_focus(ci->focus);
 
@@ -1908,7 +1927,7 @@ DEF_CMD(emacs_sel_claimed)
 	/* Should possibly just change the color of our selection */
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 
-	clear_selection(ci->focus, NULL, mk);
+	clear_selection(ci->focus, NULL, mk, 0);
 	return 1;
 }
 
@@ -1985,7 +2004,7 @@ DEF_CMD(emacs_fill)
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
 	struct pane *p2;
 
-	if (!clear_selection(ci->focus, p, mk))
+	if (!clear_selection(ci->focus, p, mk, 0))
 		mk = NULL;
 
 	if (strcmp(ci->key, "K:M-q") == 0) {
