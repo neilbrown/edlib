@@ -393,7 +393,7 @@ static inline const char *safe ksuffix(const struct cmd_info *ci safe,
 	return "";
 }
 
-/* DAMAGED_CURSOR, and DAMAGED_SIZE propagate down.
+/* DAMAGED_SIZE propagates down.
  * If any flag is set on children, DAMAGED_CHILD is set.
  */
 #define BIT(n) (1 << (n))
@@ -404,12 +404,7 @@ enum {
 	DAMAGED_VIEW_CHILD	= BIT(3), /* a child needs to adjust the view */
 
 	DAMAGED_CONTENT		= BIT(4), /* Content has changed */
-	DAMAGED_CURSOR		= BIT(5), /* Either point has moved, or focus has
-					   * entered or left.  Appearance of
-					   * cursor has probably changed, as
-					   * might have surroundings.
-					   */
-	DAMAGED_CHILD		= BIT(6), /* CONTENT or CURSOR in child */
+	DAMAGED_CHILD		= BIT(6), /* CONTENT in child */
 
 	DAMAGED_POSTORDER	= BIT(7), /* Pane wants to be called again */
 	DAMAGED_POSTORDER_CHILD	= BIT(8), /* Child pane wants to be called again */
@@ -422,7 +417,7 @@ enum {
 					    * hasn't been handled yet.
 					    */
 };
-#define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT | DAMAGED_CURSOR)
+#define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT)
 
 struct xy {short x,y;};
 struct pane * __pane_register(struct pane *parent, short z,

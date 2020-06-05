@@ -274,8 +274,8 @@ static void pane_do_refresh(struct pane *p safe, int damage)
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
 
-	damage |= p->damaged & (DAMAGED_CHILD|DAMAGED_CONTENT|DAMAGED_CURSOR);
-	p->damaged &= ~(DAMAGED_CHILD|DAMAGED_CONTENT|DAMAGED_CURSOR);
+	damage |= p->damaged & (DAMAGED_CHILD|DAMAGED_CONTENT);
+	p->damaged &= ~(DAMAGED_CHILD|DAMAGED_CONTENT);
 	if (!damage)
 		return;
 	list_for_each_entry(c, &p->children, siblings)
@@ -293,11 +293,8 @@ restart:
 			goto restart;
 		}
 	}
-	if (!sent && damage & (DAMAGED_NEED_CALL)) {
-		if (damage & DAMAGED_CONTENT)
-			damage |= DAMAGED_CURSOR;
+	if (!sent && damage & (DAMAGED_NEED_CALL))
 		call("Refresh", p, 0, NULL, NULL, damage);
-	}
 }
 
 static void pane_do_review(struct pane *p safe)

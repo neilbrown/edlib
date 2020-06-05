@@ -2410,7 +2410,6 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, DAMAGED_SIZE);
 	PyModule_AddIntMacro(m, DAMAGED_VIEW);
 	PyModule_AddIntMacro(m, DAMAGED_CONTENT);
-	PyModule_AddIntMacro(m, DAMAGED_CURSOR);
 	PyModule_AddIntMacro(m, DAMAGED_POSTORDER);
 	PyModule_AddIntMacro(m, DAMAGED_CLOSED);
 	PyModule_AddIntMacro(m, Efallthrough);
