@@ -773,7 +773,6 @@ DEF_CMD(render_lines_abort)
 	rl->target_x = -1;
 
 	pane_damaged(p, DAMAGED_CONTENT);
-	pane_damaged(p, DAMAGED_CURSOR);
 
 	/* Allow other handlers to complete the Abort */
 	return 0;
@@ -1185,9 +1184,8 @@ DEF_CMD(render_lines_notify_replace)
 			end = vmark_first(ci->home, rl->typenum, p);
 		if (!end)
 			return 0;
-		end = vmark_next(end);
-		if (!end)
-			return 0;
+		if (vmark_next(end))
+			end = vmark_next(end);
 		/* FIXME check that 'end' is at least 'num' after start */
 	}
 

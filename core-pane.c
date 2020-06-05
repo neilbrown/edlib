@@ -494,11 +494,11 @@ restart:
 static void pane_refocus(struct pane *p safe)
 {
 	struct pane *c;
+	struct mark *pt;
 
-	pane_damaged(p, DAMAGED_CURSOR);
 	p->focus = NULL;
 	/* choose the worst credible focus - the oldest.
-	 * Really some else should be updating the focus, this is
+	 * Really some one else should be updating the focus, this is
 	 * just a fall-back
 	 */
 	list_for_each_entry_reverse(c, &p->children, siblings)
@@ -506,6 +506,10 @@ static void pane_refocus(struct pane *p safe)
 			p->focus = c;
 			break;
 		}
+	/* Tell the new focus to update - probably just a cursor update */
+	p = pane_leaf(p);
+	pt = call_ret(mark, "doc:point", p);
+	call("view:changed", p, 0, pt);
 }
 
 void pane_close(struct pane *p safe)
@@ -667,9 +671,9 @@ void pane_subsume(struct pane *p safe, struct pane *parent safe)
 void pane_focus(struct pane *focus)
 {
 	struct pane *p = focus;
+	struct mark *pt;
 	if (!p)
 		return;
-	pane_damaged(p, DAMAGED_CURSOR);
 	/* refocus up to the display, but not to the root */
 	/* We have root->input->display. FIXME I need a better way
 	 * to detect the 'display' level.
@@ -680,10 +684,14 @@ void pane_focus(struct pane *focus)
 			continue;
 		p->parent->focus = p;
 		if (old) {
-			pane_damaged(old, DAMAGED_CURSOR);
-			call("pane:defocus", pane_leaf(old));
+			old = pane_leaf(old);
+			pt = call_ret(mark, "doc:point", old);
+			call("view:changed", old, 0, pt);
+			call("pane:defocus", old);
 		}
 	}
+	pt = call_ret(mark, "doc:point", pane_leaf(focus));
+	call("view:changed", pane_leaf(focus), 0, pt);
 	call("pane:refocus", focus);
 }
 

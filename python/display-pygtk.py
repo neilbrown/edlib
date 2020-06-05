@@ -429,7 +429,9 @@ class EdDisplay(edlib.Pane):
         edlib.time_start(edlib.TIME_WINDOW)
         self.im.focus_in()
         self.in_focus = True
-        self.damaged(edlib.DAMAGED_CURSOR)
+        f = self.leaf
+        pt = f.call("doc:point", ret='mark')
+        f.call("view:changed", pt)
         self.call("pane:refocus")
         edlib.time_stop(edlib.TIME_WINDOW)
 
@@ -437,7 +439,9 @@ class EdDisplay(edlib.Pane):
         edlib.time_start(edlib.TIME_WINDOW)
         self.im.focus_out()
         self.in_focus = False
-        self.damaged(edlib.DAMAGED_CURSOR)
+        f = self.leaf
+        pt = f.call("doc:point", ret='mark')
+        f.call("view:changed", pt)
         edlib.time_stop(edlib.TIME_WINDOW)
 
     def reconfigure(self, w, ev):
