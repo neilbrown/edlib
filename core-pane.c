@@ -541,8 +541,6 @@ restart:
 	pane_notify_close(p);
 	pane_call(p, "Close", p);
 
-	if (p->z >= 0)
-		pane_damaged(p->parent, DAMAGED_CONTENT);
 	/* If a child has not yet had "Close" called, we need to leave
 	 * ->parent in place so a full range of commands are available.
 	 */

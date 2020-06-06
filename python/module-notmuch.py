@@ -1351,7 +1351,7 @@ class notmuch_query_view(edlib.Pane):
 
     def handle_notify_replace(self, key, **a):
         "handle:doc:replaced"
-        self.damaged(edlib.DAMAGED_CONTENT)
+        self.leaf.call("view:changed")
         return 1
 
     def handle_set_ref(self, key, mark, num, **a):

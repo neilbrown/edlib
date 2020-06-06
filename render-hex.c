@@ -54,9 +54,9 @@ DEF_CMD(render_hex_notify_replace)
 	 * need damage.
 	 * If before, we might need to update addresses.
 	 * However we cannot currently access the view port, so
-	 * always signal damage.
+	 * always signal damage. FIXME.
 	 */
-	pane_damaged(ci->home, DAMAGED_CONTENT);
+	call("view:changed", pane_leaf(ci->home));
 	return 1;
 }
 

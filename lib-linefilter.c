@@ -249,7 +249,7 @@ DEF_CMD(filter_changed)
 	if (strcmp(ci->key, "Filter:set") == 0) {
 		if (!ci->str)
 			return Enoarg;
-		pane_damaged(ci->home, DAMAGED_CONTENT);
+		call("view:changed", pane_leaf(ci->home));
 		comm = ci->comm2;
 		fd->explicit_set = True;
 		free(fd->match);
