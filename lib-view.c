@@ -177,6 +177,8 @@ DEF_CMD(view_refresh)
 		title = default_title;
 	title = format_status(title, ci->focus, pm);
 
+	mark_ack(pm);
+
 	if (vd->border & BORDER_LEFT) {
 		/* Left border is (currently) always a scroll bar */
 		for (i = 0; i < p->h; i += vd->line_height)
@@ -346,6 +348,11 @@ DEF_CMD(view_refresh_size)
 
 DEF_CMD(view_status_changed)
 {
+	if (strcmp(ci->key, "point:moving") == 0) {
+		struct mark *pt = call_ret(mark, "doc:point", ci->home);
+		if (pt != ci->mark)
+			return 1;
+	}
 	pane_damaged(ci->home, DAMAGED_CONTENT);
 	return 1;
 }
@@ -384,6 +391,8 @@ static struct pane *do_view_attach(struct pane *par, int border)
 	/* Capture status-changed notification so we can update 'changed' flag in
 	 * status line */
 	call("doc:request:doc:status-changed", p);
+	call("doc:request:doc:replaced", p);
+	call("doc:request:point:moving", p);
 	return p;
 }
 
@@ -511,6 +520,8 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "Refresh:size", &view_refresh_size);
 	key_add(view_map, "Refresh", &view_refresh);
 	key_add(view_map, "doc:status-changed", &view_status_changed);
+	key_add(view_map, "doc:replaced", &view_status_changed);
+	key_add(view_map, "point:moving", &view_status_changed);
 	key_add(view_map, "render:reposition", &view_reposition);
 	key_add(view_map, "Notify:clip", &view_clip);
 
