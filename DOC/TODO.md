@@ -18,7 +18,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] ->cx/cy used by render-lines isn't the same as where the cursor
+- [X] ->cx/cy used by render-lines isn't the same as where the cursor
       is drawn. For a wrapped line it is the '\' wrap character.
       Changing it when the cursor is drawn breaks something.
 - [ ] If point is already at the target line but offscreen when I hit Enter

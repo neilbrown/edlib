@@ -841,8 +841,7 @@ DEF_CMD(nc_refresh_post)
 	while (p1 != p && (pan = pane_panel(p1, NULL)) == NULL)
 		p1 = p1->parent;
 	if (pan) {
-		xy = pane_mapxy(p, p1, p->cx, p->cy);
-		wmove(panel_window(pan), xy.y, xy.x);
+		wmove(panel_window(pan), p1->cy, p1->cx);
 		wnoutrefresh(panel_window(pan));
 	}
 	doupdate();

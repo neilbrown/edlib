@@ -545,7 +545,15 @@ DEF_CMD(renderline)
 
 		if (offset >= 0 && start - line_start <= offset) {
 			if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
-				if (cstart != start) {
+				/* Some chars result in multiple chars
+				 * being drawn.  If they are on the same
+				 * line, like spaces in a TAB, we leave
+				 * cursor at the start.  If on different
+				 * lines like "\" are e-o-l and char on
+				 * next line, then leave cursor at first
+				 * char on next line.
+				 */
+				if (cstart != start || y != cy) {
 					cy = y;
 					cx = x;
 					cstart = start;
@@ -750,7 +758,7 @@ DEF_CMD(renderline)
 
 	if (offset >= 0 && line - line_start <= offset) {
 		if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
-			if (cstart != start) {
+			if (cstart != start || cy != y) {
 				cy = y;
 				cx = x;
 				cstart = start;
