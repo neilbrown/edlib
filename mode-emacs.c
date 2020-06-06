@@ -192,7 +192,7 @@ REDEF_CMD(emacs_move)
 	if (!ci->mark)
 		return 0;
 
-	/* if Move-file, leave inactive mark behind */
+	/* if Move-File, leave inactive mark behind */
 	if (strcmp(mv->type, "Move-File") == 0) {
 		mk = call_ret(mark2, "doc:point", ci->focus);
 		if (mk)
@@ -900,8 +900,8 @@ DEF_CMD(find_prevnext)
 		attr_set_str(&ci->home->attrs, "find-doc", name);
 		m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 		m2 = m ? mark_dup(m) : NULL;
-		call("Move-file", ci->focus, -1, m);
-		call("Move-file", ci->focus, 1, m2);
+		call("Move-File", ci->focus, -1, m);
+		call("Move-File", ci->focus, 1, m2);
 		call("Replace", ci->focus, 1, m, name, 0, m2);
 		mark_free(m);
 		mark_free(m2);
