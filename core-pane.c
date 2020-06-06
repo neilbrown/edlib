@@ -266,18 +266,21 @@ static void pane_do_resize(struct pane *p safe, int damage)
 	pane_do_absz(p, 0);
 }
 
-static void pane_do_refresh(struct pane *p safe, int damage)
+static void pane_do_refresh(struct pane *p safe)
 {
 	struct pane *c;
-	int sent = 0;
+	int damage;
 
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
 
-	damage |= p->damaged & (DAMAGED_CHILD|DAMAGED_CONTENT);
-	p->damaged &= ~(DAMAGED_CHILD|DAMAGED_CONTENT);
+	damage = p->damaged & (DAMAGED_CHILD|DAMAGED_CONTENT);
 	if (!damage)
 		return;
+	p->damaged &= ~damage;
+	if (damage & DAMAGED_CONTENT)
+		pane_call(p, "Refresh", pane_leaf(p));
+
 	list_for_each_entry(c, &p->children, siblings)
 		c->damaged |= DAMAGED_NOT_HANDLED;
 restart:
@@ -288,13 +291,10 @@ restart:
 			/* Only handle each pane once */
 			continue;
 		if (c->z >= 0) {
-			sent = 1;
-			pane_do_refresh(c, damage);
+			pane_do_refresh(c);
 			goto restart;
 		}
 	}
-	if (!sent && damage & (DAMAGED_NEED_CALL))
-		call("Refresh", p, 0, NULL, NULL, damage);
 }
 
 static void pane_do_review(struct pane *p safe)
@@ -367,7 +367,7 @@ void pane_refresh(struct pane *p safe)
 		~(DAMAGED_CLOSED|DAMAGED_POSTORDER|DAMAGED_POSTORDER_CHILD))) {
 		pane_do_resize(p, 0);
 		pane_do_review(p);
-		pane_do_refresh(p, 0);
+		pane_do_refresh(p);
 	}
 	pane_do_postorder(p);
 	if (p->damaged) {

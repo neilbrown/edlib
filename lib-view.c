@@ -162,9 +162,9 @@ DEF_CMD(view_refresh)
 	char *title;
 
 	if (vd->border <= 0)
-		return 0;
+		return 1;
 	if (vd->line_height <= 0)
-		return 0;
+		return 1;
 
 	call("pane-clear", p);
 	pm = call_ret(mark, "doc:point", ci->focus);
@@ -250,7 +250,7 @@ DEF_CMD(view_refresh)
 	free(status);
 	free(title);
 
-	return 0;
+	return 1;
 }
 
 DEF_CMD(view_close)

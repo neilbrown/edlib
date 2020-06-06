@@ -728,7 +728,7 @@ DEF_CMD(render_lines_refresh)
 			     rl->cols, vmark_last(focus, rl->typenum, p), NULL,
 			     p->cx, p->cy);
 
-			return 0;
+			return 1;
 		}
 	}
 	m = pm;
@@ -745,7 +745,7 @@ DEF_CMD(render_lines_refresh)
 	     p->cx, p->cy);
 	if (!pm)
 		mark_free(m);
-	return 0;
+	return 1;
 }
 
 DEF_CMD(render_lines_close)

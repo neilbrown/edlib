@@ -186,7 +186,7 @@ DEF_CMD(messageline_line_refresh)
 		pane_str(mli->line, buf, "bold,fg:blue",
 			 0, 0 + mli->ascent);
 	}
-	return 0;
+	return 1;
 }
 
 DEF_CMD(force_refresh)
