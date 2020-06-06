@@ -584,14 +584,23 @@ static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 {
 	/* DEBUG: Make sure they are on same list */
-	struct mark *a = m;
-	if (m->seq < target->seq)
-		a = m;
-	else
-		a = target;
-	while (a && a != target)
-		a = mark_next(a);
-	ASSERT(a == target);
+	struct mark *a = m, *b = target;
+	if (a->owner != b->owner)
+		LOG("mark_to_mark: marks have different owners");
+	else {
+		if (m->seq > target->seq) {
+			a = target; b = m;
+		}
+		while (a && a != b)
+			a = mark_next(a);
+		if (a != b)
+			LOG("mark_to_mark with marks on different list - same owner");
+	}
+	if (a != b) {
+		call("editor:notify:Message:broadcast",
+		     m->owner->home, 0, NULL,
+		     "WARNING marks inconsistent - see log");
+	}
 	/* END DEBUG */
 
 	if (!mark_same(m, target))
