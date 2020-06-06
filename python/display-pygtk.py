@@ -182,7 +182,8 @@ class EdDisplay(edlib.Pane):
             ch /= Pango.SCALE
 
             cr.rectangle(x+cx, y-ascent+cy, cw-1, ch-1)
-            cr.stroke
+            cr.set_line_width(1)
+            cr.stroke()
 
             in_focus = self.in_focus
             while (in_focus and focus.parent.parent != focus and
@@ -197,12 +198,15 @@ class EdDisplay(edlib.Pane):
                 cr.rectangle(x+cx, y-ascent+cy, cw, ch)
                 cr.fill()
                 if num < len(str):
-                    pass
-                    #l2 = Pango.Layout(ctx)
-                    #l2.set_font_description(fd)
-                    #l2.set_text(str[num])
-                    #fg, bg = self.get_colours(attr+",inverse")
-                    #pm.draw_layout(self.gc, x+cx, y-ascent+cy, l2, fg, bg)
+                    pl2 = PangoCairo.create_layout(cr)
+                    pl2.set_font_description(fd)
+                    pl2.set_text(str[num])
+                    fg, bg = self.get_colours(attr+",inverse")
+                    if fg:
+                        cr.set_source_rgb(fg.red, fg.green, fg.blue)
+                    cr.move_to(x+cx, y-ascent+cy)
+                    PangoCairo.show_layout(cr, pl2)
+                    cr.stroke()
 
         return True
 
