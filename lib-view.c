@@ -339,7 +339,7 @@ DEF_CMD(view_refresh_size)
 		w = 1;
 	if (h <= 0)
 		h = 1;
-	pane_damaged(p, DAMAGED_CONTENT);
+	pane_damaged(p, DAMAGED_REFRESH);
 	if (vd->child)
 		pane_resize(vd->child, x, y, w, h);
 
@@ -353,7 +353,7 @@ DEF_CMD(view_status_changed)
 		if (pt != ci->mark)
 			return 1;
 	}
-	pane_damaged(ci->home, DAMAGED_CONTENT);
+	pane_damaged(ci->home, DAMAGED_REFRESH);
 	if (strcmp(ci->key, "view:changed") == 0)
 		return 0;
 	return 1;
@@ -366,7 +366,7 @@ DEF_CMD(view_reposition)
 	if (vd->viewpoint != ci->mark) {
 		if (!vd->viewpoint || !ci->mark ||
 		    !mark_same(vd->viewpoint, ci->mark))
-			pane_damaged(ci->home, DAMAGED_CONTENT);
+			pane_damaged(ci->home, DAMAGED_REFRESH);
 		if (vd->viewpoint)
 			mark_free(vd->viewpoint);
 		if (ci->mark)

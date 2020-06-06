@@ -72,7 +72,7 @@ DEF_CMD(messageline_msg)
 		mli->message = strdup(ci->str);
 		mli->modal = strcmp(ci->key, "Message:modal") == 0;
 		time(&mli->last_message);
-		pane_damaged(mli->line, DAMAGED_CONTENT);
+		pane_damaged(mli->line, DAMAGED_REFRESH);
 		/* x==0 check ensures we only append message once when
 		 * it comes in via a broadcast notification
 		 */
@@ -97,7 +97,7 @@ DEF_CMD(messageline_abort)
 	mli->message = strdup("ABORTED");
 	mli->modal = 0;
 	time(&mli->last_message);
-	pane_damaged(mli->line, DAMAGED_CONTENT);
+	pane_damaged(mli->line, DAMAGED_REFRESH);
 	return 0;
 }
 
@@ -126,8 +126,8 @@ DEF_CMD(messageline_refresh_size)
 				    ci->home->w,
 				    ci->home->h - mli->height);
 	}
-	pane_damaged(ci->home, DAMAGED_CONTENT);
-	pane_damaged(mli->line, DAMAGED_CONTENT);
+	pane_damaged(ci->home, DAMAGED_REFRESH);
+	pane_damaged(mli->line, DAMAGED_REFRESH);
 	return 1;
 }
 
@@ -150,7 +150,7 @@ DEF_CMD(messageline_notify)
 		mli->message = NULL;
 		pane_drop_notifiers(ci->home, "Keystroke-notify");
 		pane_drop_notifiers(ci->home, "Mouse-event-notify");
-		pane_damaged(mli->line, DAMAGED_CONTENT);
+		pane_damaged(mli->line, DAMAGED_REFRESH);
 	}
 	return 1;
 }
@@ -191,7 +191,7 @@ DEF_CMD(messageline_line_refresh)
 
 DEF_CMD(force_refresh)
 {
-	pane_damaged(ci->home, DAMAGED_CONTENT);
+	pane_damaged(ci->home, DAMAGED_REFRESH);
 	return 1;
 }
 

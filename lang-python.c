@@ -1049,7 +1049,7 @@ static PyObject *Pane_drop_notify(Pane *self safe, PyObject *args)
 
 static PyObject *Pane_damaged(Pane *self safe, PyObject *args)
 {
-	int damage = DAMAGED_CONTENT;
+	int damage = DAMAGED_REFRESH;
 	int ret = PyArg_ParseTuple(args, "|i", &damage);
 	if (ret <= 0)
 		return NULL;
@@ -2409,7 +2409,7 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, DAMAGED_CHILD);
 	PyModule_AddIntMacro(m, DAMAGED_SIZE);
 	PyModule_AddIntMacro(m, DAMAGED_VIEW);
-	PyModule_AddIntMacro(m, DAMAGED_CONTENT);
+	PyModule_AddIntMacro(m, DAMAGED_REFRESH);
 	PyModule_AddIntMacro(m, DAMAGED_POSTORDER);
 	PyModule_AddIntMacro(m, DAMAGED_CLOSED);
 	PyModule_AddIntMacro(m, Efallthrough);

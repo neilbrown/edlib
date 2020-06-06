@@ -403,7 +403,7 @@ enum {
 	DAMAGED_VIEW		= BIT(2), /* content has moved */
 	DAMAGED_VIEW_CHILD	= BIT(3), /* a child needs to adjust the view */
 
-	DAMAGED_CONTENT		= BIT(4), /* Content has changed */
+	DAMAGED_REFRESH		= BIT(4), /* Content has changed */
 	DAMAGED_CHILD		= BIT(6), /* CONTENT in child */
 
 	DAMAGED_POSTORDER	= BIT(7), /* Pane wants to be called again */
@@ -417,7 +417,7 @@ enum {
 					    * hasn't been handled yet.
 					    */
 };
-#define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_CONTENT)
+#define DAMAGED_NEED_CALL (DAMAGED_SIZE | DAMAGED_REFRESH)
 
 struct xy {short x,y;};
 struct pane * __pane_register(struct pane *parent, short z,

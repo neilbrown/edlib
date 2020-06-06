@@ -121,7 +121,7 @@ void pane_damaged(struct pane *p, int type)
 		if (z > 0 && (type & DAMAGED_SIZE_CHILD))
 			/* overlay changed size, so we must refresh */
 			/* FIXME should this be a notification? */
-			p->damaged |= DAMAGED_CONTENT;
+			p->damaged |= DAMAGED_REFRESH;
 		p->damaged |= type;
 		z = p->z;
 		p = p->parent;
@@ -274,11 +274,11 @@ static void pane_do_refresh(struct pane *p safe)
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
 
-	damage = p->damaged & (DAMAGED_CHILD|DAMAGED_CONTENT);
+	damage = p->damaged & (DAMAGED_CHILD|DAMAGED_REFRESH);
 	if (!damage)
 		return;
 	p->damaged &= ~damage;
-	if (damage & DAMAGED_CONTENT)
+	if (damage & DAMAGED_REFRESH)
 		pane_call(p, "Refresh", pane_leaf(p));
 
 	list_for_each_entry(c, &p->children, siblings)

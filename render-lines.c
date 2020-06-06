@@ -772,7 +772,7 @@ DEF_CMD(render_lines_abort)
 	rl->ignore_point = 0;
 	rl->target_x = -1;
 
-	pane_damaged(p, DAMAGED_CONTENT);
+	pane_damaged(p, DAMAGED_REFRESH);
 
 	/* Allow other handlers to complete the Abort */
 	return 0;
@@ -887,7 +887,7 @@ DEF_CMD(render_lines_move)
 		}
 	}
 	rl->repositioned = 1;
-	pane_damaged(ci->home, DAMAGED_CONTENT);
+	pane_damaged(ci->home, DAMAGED_REFRESH);
 	top = vmark_first(focus, rl->typenum, p);
 	if (top && mark_same(top, old_top)) {
 		mark_free(old_top);
@@ -1002,7 +1002,7 @@ DEF_CMD(render_lines_move_pos)
 		/* pos already displayed */
 		return 1;
 	find_lines(pm, p, focus, NO_NUMERIC);
-	pane_damaged(p, DAMAGED_CONTENT);
+	pane_damaged(p, DAMAGED_REFRESH);
 	rl->repositioned = 1;
 	return 1;
 }
@@ -1028,7 +1028,7 @@ DEF_CMD(render_lines_view_line)
 	}
 	rl->ignore_point = 1;
 	find_lines(pm, p, focus, line);
-	pane_damaged(p, DAMAGED_CONTENT);
+	pane_damaged(p, DAMAGED_REFRESH);
 	rl->repositioned = 1;
 	return 1;
 }
@@ -1091,7 +1091,7 @@ DEF_CMD(render_lines_move_line)
 	}
 
 	if (!start) {
-		pane_damaged(p, DAMAGED_CONTENT);
+		pane_damaged(p, DAMAGED_REFRESH);
 		rl->i_moved = 0;
 		return 1;
 	}
@@ -1147,7 +1147,7 @@ DEF_CMD(render_lines_notify_replace)
 			free(m->mdata);
 			m->mdata = NULL;
 		}
-		pane_damaged(p, DAMAGED_CONTENT);
+		pane_damaged(p, DAMAGED_REFRESH);
 		return 0;
 	}
 
@@ -1204,7 +1204,7 @@ DEF_CMD(render_lines_notify_replace)
 		end->mdata = NULL;
 	}
 
-	pane_damaged(p, DAMAGED_CONTENT);
+	pane_damaged(p, DAMAGED_REFRESH);
 
 	return 0;
 }
@@ -1232,9 +1232,9 @@ DEF_CMD(render_lines_resize)
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
 
-	pane_damaged(p, DAMAGED_CONTENT);
+	pane_damaged(p, DAMAGED_REFRESH);
 	pane_resize(rl->helper, 0, 0, p->w, p->h);
-	pane_damaged(rl->helper, DAMAGED_CONTENT);
+	pane_damaged(rl->helper, DAMAGED_REFRESH);
 	/* Allow propagation to children */
 	return 0;
 }
