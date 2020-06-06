@@ -1208,7 +1208,7 @@ DEF_CMD(render_lines_notify_replace)
 
 	if (!end || !start)
 		/* Change outside visible region */
-		return 1;
+		return 0;
 
 	while (end && mark_ordered_or_same(start, end)) {
 		free(end->mdata);
@@ -1223,7 +1223,7 @@ DEF_CMD(render_lines_notify_replace)
 	if (ci->mark != rl->old_point)
 		pane_damaged(p, DAMAGED_CONTENT);
 
-	return 1;
+	return 0;
 }
 
 DEF_CMD(render_lines_clip)

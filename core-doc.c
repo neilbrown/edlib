@@ -886,7 +886,7 @@ DEF_CMD(doc_refresh)
 	struct doc_data *dd = ci->home->data;
 
 	mark_ack(dd->point);
-	return 0;
+	return 1;
 }
 
 DEF_CMD(doc_notify_close)

@@ -279,7 +279,7 @@ DEF_CMD(filter_changed)
 		fd->ignore_case = s && *s && strchr("Yy1Tt", *s) != NULL;
 	}
 	if (!fd->match)
-		return 0;
+		return 1;
 
 	start = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	if (!start)
@@ -356,8 +356,6 @@ DEF_CMD(filter_changed)
 	if (!found_one)
 		/* filtered document is now empty - maybe someone cares */
 		home_call(ci->focus, "Notify:filter:empty", ci->home);
-	if (strcmp(ci->key, "Refresh:view") == 0)
-		return 0;
 	return 1;
 }
 

@@ -468,7 +468,7 @@ DEF_CMD(view_refresh_view)
 		vd->border = border;
 		pane_damaged(p, DAMAGED_SIZE);
 	}
-	return 0;
+	return 1;
 }
 
 DEF_CMD(view_clip)

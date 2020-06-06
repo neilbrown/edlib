@@ -300,18 +300,22 @@ restart:
 	}
 }
 
-static void pane_do_review(struct pane *p safe, int damage)
+static void pane_do_review(struct pane *p safe)
 {
 	struct pane *c;
-	int sent = 0;
+	int damage;
 
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
 
-	damage |= p->damaged & (DAMAGED_VIEW|DAMAGED_VIEW_CHILD);
-	p->damaged &= ~(DAMAGED_VIEW|DAMAGED_VIEW_CHILD);
+	damage = p->damaged & (DAMAGED_VIEW|DAMAGED_VIEW_CHILD);
+	p->damaged &= ~damage;
 	if (!damage)
 		return;
+
+	if (damage & DAMAGED_VIEW)
+		pane_call(p, "Refresh:view", pane_leaf(p));
+
 	list_for_each_entry(c, &p->children, siblings)
 		c->damaged |= DAMAGED_NOT_HANDLED;
 restart:
@@ -322,13 +326,10 @@ restart:
 			/* Only handle each pane once */
 			continue;
 		if (c->z >= 0) {
-			sent = 1;
-			pane_do_review(c, damage);
+			pane_do_review(c);
 			goto restart;
 		}
 	}
-	if (!sent && damage & (DAMAGED_VIEW))
-		call("Refresh:view", pane_leaf(p), 0, NULL, NULL, damage);
 }
 
 static void pane_do_postorder(struct pane *p safe)
@@ -368,7 +369,7 @@ void pane_refresh(struct pane *p safe)
 	       (p->damaged &
 		~(DAMAGED_CLOSED|DAMAGED_POSTORDER|DAMAGED_POSTORDER_CHILD))) {
 		pane_do_resize(p, 0);
-		pane_do_review(p, 0);
+		pane_do_review(p);
 		pane_do_refresh(p, 0);
 	}
 	pane_do_postorder(p);
