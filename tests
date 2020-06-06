@@ -23,6 +23,8 @@
 
 # ensure timestamps don't change
 export EDLIB_FAKE_TIME=1581382278
+# Don't check for autosaves
+export EDLIB_AUTOSAVE=/no/autosave/dir
 
 export TEST_DIR=/tmp/edlib-tests
 export TEST_COMMIT=5875a3514f4e753fa183a2e19000e803384fae77
