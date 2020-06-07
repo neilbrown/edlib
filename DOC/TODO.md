@@ -23,7 +23,7 @@ Bugs to be fixed
       Changing it when the cursor is drawn breaks something.
 - [X] If point is already at the target line but offscreen when I hit Enter
       in a grep window to go to that line - the display doesn't move.
-- [ ] is search doesn't find a match, it doesn't highlight earlier matches
+- [X] if search doesn't find a match, it doesn't highlight earlier matches
 - [ ] if rereading a directory find different symlink target, display isn't refreshed
       until some other requirement causes it
 - [ ] view doesn't use scale for border size - popup needs to know what view is doing.

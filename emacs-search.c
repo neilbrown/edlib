@@ -313,7 +313,8 @@ DEF_CMD(search_again)
 	if (ret == 0)
 		pfx = "Search (unavailable): ";
 	else if (ret == Efail) {
-		call("search:highlight", esi->target);
+		call("search:highlight", esi->target, 0,NULL, str,
+		     !esi->case_sensitive);
 		pfx = "Failed Search: ";
 	} else if (ret == Einval) {
 		pfx = "Search (incomplete): ";
