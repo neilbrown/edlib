@@ -307,6 +307,8 @@ DEF_CMD(view_refresh_size)
 		vd->border_height = cr.y;
 		vd->border_width = cr.x;
 		vd->ascent = cr.i2;
+		attr_set_int(&p->attrs, "border-width", cr.x);
+		attr_set_int(&p->attrs, "border-height", cr.y);
 #if 0
 		if (h < vd->border_height * 3 &&
 		    (b & (BORDER_TOP|BORDER_BOT)) ==

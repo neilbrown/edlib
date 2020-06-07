@@ -54,7 +54,7 @@ static struct map *popup_map;
 DEF_LOOKUP_CMD(popup_handle, popup_map);
 
 struct popup_info {
-	struct pane	*target safe, *handle safe;
+	struct pane	*target safe, *handle;
 	struct pane	*parent_popup;
 	char		*style safe;
 	struct command	*done;
@@ -72,12 +72,17 @@ static void popup_resize(struct pane *p safe, const char *style safe)
 {
 	struct popup_info *ppi = p->data;
 	int x,y,w,h;
-	int lh, bh;
+	int lh, bh = 0;
+	char *bhs;
 	struct xy xyscale = pane_scale(p);
 
 	/* First find the size */
 	lh = line_height(p, xyscale.x);
-	bh = line_height(p, 0); /* border height */
+	bhs = pane_attr_get(pane_leaf(p), "border-height");
+	if (bhs)
+		bh = atoi(bhs);
+	if (bh <= 0)
+		bh = line_height(p, 0); /* border height */
 	if (strchr(style, 'M')) {
 		h = p->parent->h/2 + 1;
 		attr_set_str(&p->attrs, "render-one-line", "no");
@@ -218,6 +223,8 @@ DEF_CMD(popup_refresh_size)
 	struct popup_info *ppi = ci->home->data;
 	char *prompt, *dflt, *prefix;
 
+	if (!ppi->handle)
+		return 0;
 	prefix = attr_find(ppi->handle->attrs, "prefix");
 	prompt = attr_find(ppi->handle->attrs, "prompt");
 	if (!prefix && prompt) {
@@ -444,6 +451,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "Abort", &popup_abort);
 	key_add(popup_map, "popup:style", &popup_style);
 	key_add(popup_map, "Refresh:size", &popup_refresh_size);
+	key_add(popup_map, "view:changed", &popup_refresh_size);
 	key_add(popup_map, "Notify:resize", &popup_notify_refresh_size);
 	key_add(popup_map, "popup:get-target", &popup_get_target);
 	key_add(popup_map, "popup:close", &popup_do_close);
