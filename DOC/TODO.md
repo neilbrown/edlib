@@ -24,7 +24,7 @@ Bugs to be fixed
 - [X] If point is already at the target line but offscreen when I hit Enter
       in a grep window to go to that line - the display doesn't move.
 - [X] if search doesn't find a match, it doesn't highlight earlier matches
-- [ ] if rereading a directory find different symlink target, display isn't refreshed
+- [X] if rereading a directory find different symlink target, display isn't refreshed
       until some other requirement causes it
 - [ ] view doesn't use scale for border size - popup needs to know what view is doing.
 - [ ] non-leaf tiles shouldn't have scale, and scale should be copied when a leaf

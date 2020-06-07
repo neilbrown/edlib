@@ -68,6 +68,7 @@ struct directory {
 };
 
 static struct map *doc_map;
+static void get_stat(struct directory *dr safe, struct dir_ent *de safe);
 
 #define nm(le) (list_entry(le, struct dir_ent, lst)->name)
 
@@ -275,7 +276,22 @@ DEF_CMD(dir_load_file)
 			/* de1 and de2 are the same.  Just step over de1 and
 			 * delete de2
 			 */
-			if (prev) {
+			bool changed = False;
+			if (de1->st.st_mode) {
+				/* Need to check if stat info has changed */
+				get_stat(dr, de1);
+				if (de1->st.st_mode != de2->st.st_mode ||
+				    de1->st.st_size != de2->st.st_size ||
+				    de1->st.st_mtime != de2->st.st_mtime ||
+				    de1->st.st_ctime != de2->st.st_ctime) {
+					changed = True;
+					de1->st = de2->st;
+				}
+			}
+			if (changed) {
+				if (!prev)
+					prev = mark_dup(m);
+			} else if (prev) {
 				pane_notify("doc:replaced", ci->home,
 					    0, prev, NULL,
 					    0, m);
