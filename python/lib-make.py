@@ -514,7 +514,7 @@ class MakePane(edlib.Pane):
         par.take_focus()
         if mk and (int(lineno) == 1 or
                    d.call("doc:step", mk, 0, ret='char') != None):
-            par.call("Move-to", mk)
+            par.call("Move-to", mk, 0, 1)
         else:
             # either no mark, or the mark has moved to start of doc, probably
             # due to a reload
@@ -618,7 +618,7 @@ class MakeViewerPane(edlib.Pane):
 
     def handle_set_match(self, key, mark, **a):
         "handle:make-set-match"
-        self.call("Move-to", mark)
+        self.call("Move-to", mark, 0, 1)
         return 1
 
     def handle_enter(self, key, focus, mark, **a):

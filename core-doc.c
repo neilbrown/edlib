@@ -989,8 +989,11 @@ DEF_CMD(doc_move_to)
 	struct mark *m;
 
 	if (ci->num == 0) {
-		if (ci->mark)
+		if (ci->mark) {
+			if (ci->num2 && mark_same(dd->point, ci->mark))
+				notify_point_moving(dd->point);
 			mark_to_mark(dd->point, ci->mark);
+		}
 	} else if (ci->num > 0 && ci->num <= 4) {
 		int mnum = ci->num - 1;
 

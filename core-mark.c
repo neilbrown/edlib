@@ -287,7 +287,7 @@ struct mark *safe mark_dup_view(struct mark *m safe)
 	return ret;
 }
 
-static void notify_point_moving(struct mark *m safe)
+void notify_point_moving(struct mark *m safe)
 {
 	struct point_links *plnk;
 
