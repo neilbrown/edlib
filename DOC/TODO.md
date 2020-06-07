@@ -26,9 +26,10 @@ Bugs to be fixed
 - [X] if search doesn't find a match, it doesn't highlight earlier matches
 - [X] if rereading a directory find different symlink target, display isn't refreshed
       until some other requirement causes it
-- [ ] view doesn't use scale for border size - popup needs to know what view is doing.
-- [ ] non-leaf tiles shouldn't have scale, and scale should be copied when a leaf
+- [X] view doesn't use scale for border size - popup needs to know what view is doing.
+- [X] non-leaf tiles shouldn't have scale, and scale should be copied when a leaf
       is subsumed.
+- [ ] size-relative in a popup shouldn't affect the underlying pane
 - [X] If I give a dirname to edlib and then find-file, I don't get full path.
 - [X] LOG buffer doesn't always update - eg log messages caused by completion pane
       (cannot reproduce this now)

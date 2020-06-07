@@ -208,6 +208,9 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 		list_for_each_entry_safe(child, t, &p->children, siblings)
 			if (child != p2)
 				pane_reparent(child, p2);
+		/* Move attrs "scale" attr to the new pane */
+		attr_set_str(&p2->attrs, "scale", attr_find(p->attrs, "scale"));
+		attr_set_str(&p->attrs, "scale", NULL);
 		p = p2;
 	}
 	alloc(ti2, pane);
@@ -224,6 +227,8 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 	ret = pane_register(p->parent, 0, &tile_handle.c, ti2);
 	if (!ret)
 		return NULL;
+
+	attr_set_str(&ret->attrs, "scale", attr_find(p->attrs, "scale"));
 	ti2->p = ret;
 	if (after)
 		pane_move_after(ret, p);
@@ -366,6 +371,10 @@ static int tile_destroy(struct pane *p safe)
 		ti->p = p;
 		ti->direction = tmp;
 		ti2->p = remain;
+
+		attr_set_str(&p->attrs, "scale",
+			     attr_find(remain->attrs, "scale"));
+		attr_set_str(&remain->attrs, "scale", NULL);
 		pane_subsume(remain, p);
 	}
 	return 1;
