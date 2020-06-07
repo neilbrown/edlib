@@ -326,6 +326,42 @@ restart:
 	return 1;
 }
 
+static int get_scale(struct pane *p)
+{
+	char *sc = pane_attr_get(p, "scale");
+	int scale;
+
+	if (!sc)
+		return 1000;
+
+	scale = atoi(sc);
+	if (scale > 3)
+		return scale;
+	return 1000;
+}
+
+DEF_CMD(popup_scale_relative)
+{
+	struct pane *p = ci->home;
+	int scale = get_scale(p);
+	int rpt = RPT_NUM(ci);
+
+	if (rpt > 10) rpt = 10;
+	if (rpt < -10) rpt = -10;
+	while (rpt > 0) {
+		scale = scale * 11/10;
+		rpt -= 1;
+	}
+	while (rpt < 0) {
+		scale = scale * 9 / 10;
+		rpt += 1;
+	}
+
+	attr_set_int(&p->attrs, "scale", scale);
+	call("view:changed", ci->focus);
+	return 1;
+}
+
 DEF_CMD(popup_do_close)
 {
 	struct popup_info *ppi = ci->home->data;
@@ -470,5 +506,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "Window:y+", &popup_ignore);
 	key_add(popup_map, "Window:y-", &popup_ignore);
 	key_add(popup_map, "Window:close-others", &popup_ignore);
+	key_add(popup_map, "Window:scale-relative", &popup_scale_relative);
 	key_add(popup_map, "pane:defocus", &popup_defocus);
 }
