@@ -341,6 +341,8 @@ class CModePane(edlib.Pane):
         self.pre_paren = None
         self.post_paren = None
 
+        self.call("doc:request:point:moving")
+        self.call("doc:request:doc:replaced")
         # for indent
         self.spaces = None   # is set to a number, use spaces, else TABs
         self.indent_type = None
@@ -872,16 +874,25 @@ class CModePane(edlib.Pane):
         focus.call("view:changed", 1, mark2 = pair[1])
 
     def handle_replace(self, key, focus, **a):
-        "handle:Replace"
-        self.update(focus, self.pre_paren)
+        "handle:doc:replaced"
+        self.update(self.leaf, self.pre_paren)
         self.pre_paren = None
-        self.update(focus, self.post_paren)
+        self.update(self.leaf, self.post_paren)
         self.post_paren = None
+        self.damaged(edlib.DAMAGED_VIEW)
         return 0
 
+    def handle_moving(self, key, focus, mark, **a):
+        "handle:point:moving"
+        point = self.call("doc:point", ret = 'mark')
+        if mark == point:
+            self.damaged(edlib.DAMAGED_VIEW)
+        return 1
+
     def handle_refresh(self, key, focus, **a):
-        "handle:Refresh"
+        "handle:Refresh:view"
         point = focus.call("doc:point", ret = 'mark')
+        point.ack()
         skip_pre = False
         skip_post = False
         if self.pre_paren:
