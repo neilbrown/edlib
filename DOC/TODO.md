@@ -495,7 +495,8 @@ Module features
 - [X] understand why there are differences on creation
 - [X] Make it easy to replay up to the difference.
       Have error report a 'first line' and then reply to that line.
-- [ ] Add way to abstract out the path to /tmp/edlib-tests
+- [X] Add way to abstract out the path to /tmp/edlib-tests
+       Not needed as it doesn't appear - but perms of '..' do.
 - [ ] Add mechanism to easily run a command with pre-canned output.
 - [ ] Add one test case, and arrange for auto-testing on commit. 
 - [X] allow headless testing as well as visible

@@ -642,6 +642,9 @@ static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 		case S_IFLNK: *c ++ = 'l'; break;
 		default:      *c ++ = '?'; break;
 		}
+		if (getenv("EDLIB_TESTING") && de->ch == ':')
+			/* ".." might not be under control of the test */
+			mode = 0777;
 		for (i = 0; i < 3; i++) {
 			*c ++ = (mode & 0400) ? 'r':'-';
 			*c ++ = (mode & 0200) ? 'w':'-';
