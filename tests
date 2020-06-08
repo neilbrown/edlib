@@ -22,7 +22,7 @@
 #     Run all tests and replace the test with the new log - expecting it to be different.
 
 # ensure timestamps don't change
-export EDLIB_FAKE_TIME=1581382278
+export EDLIB_TESTING=1
 # Don't check for autosaves
 export EDLIB_AUTOSAVE=/no/autosave/dir
 

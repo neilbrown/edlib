@@ -488,10 +488,11 @@ Module features
 
 ### test suite
 
-- [ ] create reliable test for hex mode
-- [ ] avoid duplicate Display lines with same content
+- [X] create reliable test for hex mode
+- [X] avoid duplicate Display lines with same content
+      Sometimes this is needed, but I've removed most of them.
 - [X] Remove differences in directory size - and possibly user/group name
-- [ ] understand why there are differences on creation
+- [X] understand why there are differences on creation
 - [ ] Make it easy to replay up to the difference.
       Have error report a 'first line' and then reply to that line.
 - [ ] Add way to abstract out the path to /tmp/edlib-tests

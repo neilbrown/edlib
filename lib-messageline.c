@@ -174,10 +174,10 @@ DEF_CMD(messageline_line_refresh)
 		char buf[80];
 		time_t t;
 		struct tm *tm;
-		char *faketime = getenv("EDLIB_FAKE_TIME");
+		char *testing = getenv("EDLIB_TESTING");
 		t = time(NULL);
-		if (faketime)
-			t = strtoul(faketime, NULL, 10);
+		if (testing && *testing)
+			t = 1581382278;
 		tm = localtime(&t);
 		if (tm)
 			strftime(buf, sizeof(buf), "%H:%M %d-%b-%Y", tm);
@@ -213,7 +213,9 @@ static struct pane *do_messageline_attach(struct pane *p safe)
 	}
 	mli->line = mlp;
 	pane_focus(ret);
-	call_comm("event:timer", mli->line, &force_refresh, 15000);
+	if (getenv("EDLIB_TESTING") == NULL)
+		/* This can introduce unwanted variablitiy in tests */
+		call_comm("event:timer", mli->line, &force_refresh, 15000);
 
 	mli->log = call_ret(pane, "docs:byname", p, 0, NULL, "*Messages*");
 	if (!mli->log)

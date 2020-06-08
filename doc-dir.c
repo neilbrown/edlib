@@ -477,10 +477,10 @@ static char *fmt_date(struct dir_ent *de safe, time_t t)
 {
 	struct tm tm;
 	time_t now = time(NULL);
-	char *faketime = getenv("EDLIB_FAKE_TIME");
+	char *testing = getenv("EDLIB_TESTING");
 
-	if (faketime)
-		t = strtoul(faketime, NULL, 10);
+	if (testing && *testing)
+		t = 1581382278;
 	localtime_r(&t, &tm);
 	if (t > now || t < now - 10*30*24*3600)
 		strftime(de->nbuf, sizeof(de->nbuf),
@@ -575,7 +575,7 @@ static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 	} else if (strcmp(attr, "hsize") == 0) {
 		get_stat(dr, de);
 		if (strchr(".:d", de->ch) &&
-		    getenv("EDLIB_FAKE_TIME"))
+		    getenv("EDLIB_TESTING"))
 			/* Size might not be reliable for testing */
 			return "DIR";
 		return fmt_size(de, de->st.st_size);
@@ -606,7 +606,7 @@ static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 	} else if (strcmp(attr, "user") == 0) {
 		char *n;
 		get_stat(dr, de);
-		if (getenv("EDLIB_FAKE_TIME"))
+		if (getenv("EDLIB_TESTING"))
 			return "User";
 		n = pwname(de->st.st_uid);
 		if (n)
@@ -616,7 +616,7 @@ static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 	} else if (strcmp(attr, "group") == 0) {
 		char *n;
 		get_stat(dr, de);
-		if (getenv("EDLIB_FAKE_TIME"))
+		if (getenv("EDLIB_TESTING"))
 			return "Group";
 		n = grname(de->st.st_gid);
 		if (n)
