@@ -354,6 +354,8 @@ DEF_CMD(view_status_changed)
 			return 1;
 	}
 	pane_damaged(ci->home, DAMAGED_CONTENT);
+	if (strcmp(ci->key, "view:changed") == 0)
+		return 0;
 	return 1;
 }
 
@@ -522,6 +524,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(view_map, "doc:status-changed", &view_status_changed);
 	key_add(view_map, "doc:replaced", &view_status_changed);
 	key_add(view_map, "point:moving", &view_status_changed);
+	key_add(view_map, "view:changed", &view_status_changed);
 	key_add(view_map, "render:reposition", &view_reposition);
 	key_add(view_map, "Notify:clip", &view_clip);
 
