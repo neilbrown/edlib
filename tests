@@ -108,16 +108,34 @@ run_tests() {
     exit $exit_code
 }
 
+refresh_one() {
+    b=$1
+    f=tests.d/$b
+    if [ ! -f "$f" ]; then
+	echo >&2 "Cannot find test $f"
+	return
+    fi
+    # ensure we see delayed updates
+    export EDLIB_REPLAY_DELAY=100
+    #grep -v '^Display' $f > tests.d/.in
+    cat $f > tests.d/.in
+    runtest tests.d/.out tests.d/.in
+    mv tests.d/.out $f
+    rm -f tests.d/.in
+}
+
 refresh_tests() {
-    if [ $# -ne 0 ]; then
-	echo >&2 "$0: please don't give extra args to refresh"
+    if [ $# -gt 1 ]; then
+	echo >&2 "$0: please provide at most one test to refresh"
 	exit 1
     fi
-    for f in tests.d/[A-Za-z0-9]*; do
-	b=${f#tests.d/}
-	runtest tests.d/.out tests.d/$b
-	mv tests.d/.out $f
-    done
+    if [ $# -eq 0 ]; then
+	for f in tests.d/[A-Za-z0-9]*; do
+	    refresh_one ${f#tests.d/}
+	done
+    else
+	refresh_one "$1"
+    fi
 }
 
 

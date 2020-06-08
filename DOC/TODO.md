@@ -503,6 +503,7 @@ Module features
 - [ ] Allow testing gtk as well an ncurses
 - [ ] Allow testing of server/client accesses
 - [ ] add more tests
+      c-mode python diff git-grep
 
 ### dynamic completion
 

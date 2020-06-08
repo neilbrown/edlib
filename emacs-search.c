@@ -920,7 +920,7 @@ DEF_CMD(emacs_search_reposition)
 	hi->end = mark_dup(end);
 
 	call_comm("event:timer", ci->focus, &emacs_search_reposition_delayed,
-		  500);
+		  getenv("EDLIB_TESTING") ? 50 : 500);
 	return 1;
 }
 
