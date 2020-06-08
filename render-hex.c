@@ -146,6 +146,9 @@ DEF_CMD(render_line)
 		if (ch < ' ')
 			ch = '?';
 		buf_append(&ret, ch);
+		if (ch == '<')
+			/* '<<' to quote the '<' */
+			buf_append(&ret, ch);
 		buf_append(&ret, ' ');
 		if (i == 7)
 			buf_append(&ret, ' ');
