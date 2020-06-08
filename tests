@@ -31,12 +31,15 @@ export TEST_COMMIT=5875a3514f4e753fa183a2e19000e803384fae77
 
 runtest()
 {
-	case $# in
-	1 ) EDLIB_RECORD=$1 \
+	case $1 in
+	new ) EDLIB_RECORD=$2 \
 		screen -m sh -c 'stty rows 30 cols 80; ./edlib $TEST_DIR'
 	;;
-	2 ) EDLIB_RECORD=$1 EDLIB_REPLAY=$2 \
+	run ) EDLIB_RECORD=$2 EDLIB_REPLAY=$3 \
 		screen -D -m sh -c 'stty rows 30 cols 80; ./edlib $TEST_DIR'
+	;;
+	view ) EDLIB_REPLAY=$2 \
+		screen -m sh -c 'stty rows 30 cols 80; ./edlib $TEST_DIR'
 	;;
 	esac
 }
@@ -68,8 +71,8 @@ new_test() {
 	echo >&2 "$0: Cannot create $tt - strange"
 	exit 1
     fi
-    runtest tests.d/.tmp
-    runtest $tt tests.d/.tmp
+    runtest new tests.d/.tmp
+    runtest run $tt tests.d/.tmp
     diff -u tests.d/.tmp $tt
     rm tests.d/.tmp
     exit 0
@@ -82,11 +85,13 @@ run_one_test() {
 	return
     fi
     echo -n "run $1 ..."
-    runtest tests.d/.out tests.d/$1
+    runtest run tests.d/.out tests.d/$1
     if diff -u "tests.d/$1" tests.d/.out;
     then echo "succeeded."
     else echo "FAILED."
-         exit_code=1
+	exit_code=1
+	line=`diff tests.d/$1 tests.d/.out | sed -n '1s/^\([0-9]*\).*/\1/p'`
+	echo "Use: ./tests view $1 $line"
     fi
     rm -f tests.d/.out
 }
@@ -119,7 +124,7 @@ refresh_one() {
     export EDLIB_REPLAY_DELAY=100
     #grep -v '^Display' $f > tests.d/.in
     cat $f > tests.d/.in
-    runtest tests.d/.out tests.d/.in
+    runtest run tests.d/.out tests.d/.in
     mv tests.d/.out $f
     rm -f tests.d/.in
 }
@@ -138,17 +143,43 @@ refresh_tests() {
     fi
 }
 
+view_test() {
+    if [ $# -lt 1 ]; then
+	echo >&2 "$0: please provide precisely a test name to view"
+	exit 1
+    fi
+    t=$1
+    if [ ! -f tests.d/$1 ]; then
+	echo >&2 "Test $1 doesn't exist."
+	exit 1
+    fi
+    if [ $# -ge 2 ]; then
+	head -n $2 tests.d/$t > tests.d/.in
+    else
+	cat tests.d/$t > tests.d/.in
+    fi
+    delay=20
+    if [ $# -ge 3 ]; then
+	delay=$3
+    fi
+    export EDLIB_REPLAY_DELAY=$delay
+    runtest view tests.d/.in
+    rm -f tests.d/.in
+}
+
 
 cmd=$1
 shift
 case $cmd in
-	new) setup_test_dir; new_test $*;;
-	run) setup_test_dir; run_tests $*;;
-	refresh) setup_test_dir; refresh_tests $*;;
+	new) setup_test_dir; new_test ${1+"$@"};;
+	run) setup_test_dir; run_tests ${1+"$@"};;
+	refresh) setup_test_dir; refresh_tests ${1+"$@"};;
+	view ) setup_test_dir; view_test ${1+"$@"};;
 	* )
 		echo >&2 "Usage: $0 new test-name"
 		echo >&2 "       $0 run [test-name|failed]"
-		echo >&2 "       $0 refresh"
+		echo >&2 "       $0 refresh [test-name]"
+		echo >&2 "       $0 view test-name"
 		exit 1;
 esac
 exit 0

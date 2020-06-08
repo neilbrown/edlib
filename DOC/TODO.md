@@ -493,12 +493,12 @@ Module features
       Sometimes this is needed, but I've removed most of them.
 - [X] Remove differences in directory size - and possibly user/group name
 - [X] understand why there are differences on creation
-- [ ] Make it easy to replay up to the difference.
+- [X] Make it easy to replay up to the difference.
       Have error report a 'first line' and then reply to that line.
 - [ ] Add way to abstract out the path to /tmp/edlib-tests
 - [ ] Add mechanism to easily run a command with pre-canned output.
 - [ ] Add one test case, and arrange for auto-testing on commit. 
-- [ ] allow headless testing as well as visible
+- [X] allow headless testing as well as visible
 - [ ] allow single-step testing?
 - [ ] Allow testing gtk as well an ncurses
 - [ ] Allow testing of server/client accesses
