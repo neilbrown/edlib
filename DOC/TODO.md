@@ -9,7 +9,7 @@ Current priorities
 - [X] Change various things that use cmd-* and a switch, to use multiple cmds.
 - [X] doc:char intermediate commands
 - [X] overlay for lib-format to allow char access.
-- [ ] test suite
+- [X] test suite
 - [ ] use a single hash in key lookup - two at most.
 - [ ] rexel/search improvements
 - [ ] unify backend for make/grep and shell modes
@@ -505,7 +505,7 @@ Module features
 - [ ] allow single-step testing?
 - [ ] Allow testing gtk as well an ncurses
 - [ ] Allow testing of server/client accesses
-- [ ] add more tests
+- [X] add more tests
       c-mode python diff git-grep
 
 ### dynamic completion
