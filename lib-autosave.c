@@ -296,17 +296,20 @@ DEF_CMD(show_autosave)
 {
 	struct pane *p, *d;
 	char *home = getenv("HOME");
+	char *dirname = getenv("EDLIB_AUTOSAVE");
 
-	if (!home) {
-		call("Message", ci->focus, 0, NULL,
-		     "Cannot determine HOME directory");
-		return 1;
+	if (!dirname) {
+		if (!home) {
+			call("Message", ci->focus, 0, NULL,
+			     "Cannot determine HOME directory");
+			return 1;
+		}
+		dirname = strconcat(ci->focus, home, "/.edlib_autosave");
 	}
 	p = call_ret(pane, "ThisPane", ci->focus);
 	if (!p)
 		return Efail;
-	d = call_ret(pane, "doc:open", p, -1, NULL,
-		     strconcat(p, home, "/.edlib_autosave"));
+	d = call_ret(pane, "doc:open", p, -1, NULL, dirname);
 	if (d)
 		home_call_ret(pane, d, "doc:attach-view", p,
 			      0, NULL, "simple");
@@ -324,8 +327,11 @@ DEF_CMD(check_autosave_dir)
 	DIR *dir;
 	struct dirent *de;
 	char *home = getenv("HOME");
+	char *dirname = getenv("EDLIB_AUTOSAVE");
 
-	dir = opendir(strconcat(ci->focus, home ?: "", "/.edlib_autosave"));
+	if (!dirname)
+		dirname = strconcat(ci->focus, home ?: "", "/.edlib_autosave");
+	dir = opendir(dirname);
 	if (!dir)
 		return 1;
 	while ((de = readdir(dir)) != NULL) {
