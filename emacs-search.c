@@ -885,7 +885,7 @@ DEF_CMD(emacs_search_reposition_delayed)
 	mark_free(hi->start);
 	mark_free(hi->end);
 	hi->start = hi->end = NULL;
-	return 0;
+	return Efalse;
 }
 
 DEF_CMD(emacs_search_reposition)
