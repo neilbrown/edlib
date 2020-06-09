@@ -10,7 +10,7 @@ Current priorities
 - [X] doc:char intermediate commands
 - [X] overlay for lib-format to allow char access.
 - [X] test suite
-- [ ] use a single hash in key lookup - two at most.
+- [X] use a single hash in key lookup - two at most.
 - [ ] rexel/search improvements
 - [ ] unify backend for make/grep and shell modes
 - [ ] input: keyboard macros
@@ -83,7 +83,7 @@ Core features
       the same doc, so pointless.  Can I optimise that somehow?
 - [ ] document the use of doc:replaced.  What are the two
       marks exactly? start and end of range.  Verify all clients and providers
-- [ ]  ?? restrict prefix key lookup to punctuation.
+- [X]  ?? restrict prefix key lookup to punctuation.
 
       Current ranges are:
 

@@ -53,13 +53,12 @@ inline static int qhash(char key, unsigned int start)
 }
 
 struct map {
-	unsigned long bloom[256 / (sizeof(long)*8) ];
-	short	changed;
-	short	prefix_len;
-	int	size;
-	struct map *chain;
-	char	* safe *keys safe;
-	struct command * safe *comms safe;
+	unsigned long	bloom[256 / (sizeof(unsigned long)*8) ];
+	short		changed;
+	short		size;
+	struct map	*chain;
+	char		* safe *keys safe;
+	struct command	* safe *comms safe;
 };
 
 static inline struct command * safe GETCOMM(struct command *c safe)
@@ -107,7 +106,6 @@ struct map *safe key_alloc(void)
 {
 	struct map *m = calloc(1, sizeof(*m));
 
-	m->prefix_len = -1;
 	key_add(m, "keymap:list", &keymap_list);
 	return m;
 }
@@ -124,13 +122,20 @@ void key_free(struct map *m safe)
 	free(m);
 }
 
-static int hash_str(char *key safe, int len)
+static void hash_str(const char *key safe, int len, unsigned int *hashes safe)
 {
 	int i;
 	int h = 0;
-	for (i = 0; (len < 0 || i < len) && key[i]; i++)
+
+	for (i = 0; (len < 0 || i < len) && key[i]; i++) {
 		h = qhash(key[i], h);
-	return h;
+		if (key[i] == '-' || key[i] == ':')
+			break;
+	}
+	hashes[1] = h;
+	for (; (len < 0 || i < len) && key[i]; i++)
+		h = qhash(key[i], h);
+	hashes[0] = h;
 }
 
 inline static void set_bit(unsigned long *set safe, int bit)
@@ -146,28 +151,35 @@ inline static int test_bit(unsigned long *set safe, int bit)
 }
 
 
-static int key_present(struct map *map safe, const char *key, int klen,
-		       unsigned int *hashp safe)
+static int key_present(struct map *map safe, unsigned int *hashes safe)
 {
-	int hash;
-
 	if (map->changed) {
 		int i;
 		for (i = 0; i < map->size; i++) {
-			hash = hash_str(map->keys[i], map->prefix_len);
-			set_bit(map->bloom, hash&0xff);
-			set_bit(map->bloom, (hash>>8)&0xff);
-			set_bit(map->bloom, (hash>>16)&0xff);
+			unsigned int h[2];
+			hash_str(map->keys[i], -1, h);
+			if (IS_RANGE(map->comms[i])) {
+				set_bit(map->bloom, h[1]&0xff);
+				set_bit(map->bloom, (h[1]>>8)&0xff);
+				set_bit(map->bloom, (h[1]>>16)&0xff);
+			} else {
+				set_bit(map->bloom, h[0]&0xff);
+				set_bit(map->bloom, (h[0]>>8)&0xff);
+				set_bit(map->bloom, (h[0]>>16)&0xff);
+			}
 		}
 		map->changed = 0;
 	}
-	if (map->prefix_len < 0 || klen <= map->prefix_len)
-		hash = hashp[0];
-	else
-		hash = hashp[map->prefix_len];
-	return (test_bit(map->bloom, hash&0xff) &&
-		test_bit(map->bloom, (hash>>8)&0xff) &&
-		test_bit(map->bloom, (hash>>16)&0xff));
+
+	if (test_bit(map->bloom, hashes[0]&0xff) &&
+	    test_bit(map->bloom, (hashes[0]>>8)&0xff) &&
+	    test_bit(map->bloom, (hashes[0]>>16)&0xff))
+		return 1;
+	if (test_bit(map->bloom, hashes[1]&0xff) &&
+	    test_bit(map->bloom, (hashes[1]>>8)&0xff) &&
+	    test_bit(map->bloom, (hashes[1]>>16)&0xff))
+		return 1;
+	return 0;
 }
 
 /* Find first entry >= k */
@@ -265,7 +277,6 @@ void key_add_range(struct map *map safe,
 {
 	int size, move_size;
 	int pos, pos2;
-	int prefix;
 	int i;
 
 	if (!comm || strcmp(first, last) >= 0)
@@ -309,12 +320,6 @@ void key_add_range(struct map *map safe,
 	map->comms[pos+1] = command_get(comm);
 	map->size += move_size;
 	map->changed = 1;
-	for (prefix = 0;
-	     first[prefix] && first[prefix+1] == last[prefix+1];
-	     prefix += 1)
-		;
-	if (map->prefix_len < 0 || map->prefix_len > prefix)
-		map->prefix_len = prefix;
 }
 
 void key_add_chain(struct map *map safe, struct map *chain)
@@ -395,10 +400,9 @@ int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 {
 	struct command *comm;
 	const char *key;
-	unsigned
-		int len;
+	unsigned int len;
 
-	if (ci->hash && !key_present(m, ci->key, strlen(ci->key), ci->hash)) {
+	if (ci->hash && !key_present(m, ci->hash)) {
 		stat_count("bloom-miss");
 		return Efallthrough;
 	}
@@ -480,9 +484,7 @@ int key_handle(const struct cmd_info *ci safe)
 {
 	struct cmd_info *vci = (struct cmd_info*)ci;
 	struct pane *p;
-	unsigned int hash[30];
-	int h= 0;
-	int i;
+	unsigned int hash[2];
 
 	time_start_key(ci->key);
 	if ((void*) ci->comm) {
@@ -491,17 +493,11 @@ int key_handle(const struct cmd_info *ci safe)
 		return ret;
 	}
 
-	for (i = 0; i < 30 && ci->key[i]; i++) {
-		h = qhash(ci->key[i], h);
-		if (i+1 < 30)
-			hash[i+1] = h;
-		if (ci->key[i] == '\037')
-			// Disable hash for multi-keys
-			i = 30;
-	}
-	hash[0] = h;
-	if (i < 30)
+	/* FIXME multi-keys */
+	if (strchr(ci->key, '\037') == NULL) {
+		hash_str(ci->key, -1, hash);
 		vci->hash = hash;
+	}
 
 	/* If 'home' is set, search from there, else search
 	 * from focus

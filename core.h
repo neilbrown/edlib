@@ -351,11 +351,10 @@ struct cmd_info {
 	struct command	*comm safe;
 	struct command	*comm2;
 
-	/* Hopefully this is a temporary hack.
-	 * The array should have on entry for each byte in the length
-	 * of 'key' with a hash of that prefix
+	/* An array of 2 hashes, one for the prefix of the key - all
+	 * chars to first '-' or ':'.  One for the whole key.
 	 */
-	unsigned int	*hash;
+	unsigned int *hash;
 };
 
 struct commcache {
