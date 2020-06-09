@@ -87,6 +87,7 @@ run_one_test() {
 	exit_code=2
 	return
     fi
+    setup_test_dir
     echo -n "run $1 ..."
     runtest run tests.d/.out tests.d/$1
     if diff -u "tests.d/$1" tests.d/.out;
@@ -123,6 +124,7 @@ refresh_one() {
 	echo >&2 "Cannot find test $f"
 	return
     fi
+    setup_test_dir
     # ensure we see delayed updates
     export EDLIB_REPLAY_DELAY=100
     #grep -v '^Display' $f > tests.d/.in
