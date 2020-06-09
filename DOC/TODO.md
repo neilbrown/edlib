@@ -79,6 +79,8 @@ Core features
 - [ ] marks should not be auto-freed on close as there could still be a pointer
       somewhere from the owner.  Rather they should be disconnected and tracked
       so that a 'free' can work, but nothing else does anything useful.
+- [ ] When I cal DocPane I normally doc:attach-view a doc there. But it is
+      the same doc, so pointless.  Can I optimise that somehow?
 - [ ] document the use of doc:replaced.  What are the two
       marks exactly? start and end of range.  Verify all clients and providers
 - [ ]  ?? restrict prefix key lookup to punctuation.

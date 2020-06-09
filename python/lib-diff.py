@@ -129,14 +129,12 @@ class DiffPane(edlib.Pane):
             return edlib.Efail
 
         par = focus.call("DocPane", d, ret='focus')
-        if par:
-            par = par.leaf
-        else:
+        if not par:
             par = focus.call("OtherPane", d, ret='focus')
-            if not par:
-                focus.call("Message", "Failed to open pane")
-                return edlib.Efail
-            par = d.call("doc:attach-view", par, 1, ret='focus')
+        if not par:
+            focus.call("Message", "Failed to open pane")
+            return edlib.Efail
+        par = d.call("doc:attach-view", par, 1, ret='focus')
         par.take_focus()
         par.call("Move-File", -1)
         par.call("Move-Line",lines - 1)

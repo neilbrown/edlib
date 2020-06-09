@@ -485,9 +485,9 @@ class MakePane(edlib.Pane):
         # If 'AnyPane' or 'OtherPane' we ensure match view is visible
         par = None; pane = None
         if where in ['OtherPane', 'AnyPane']:
-            par = focus.call("DocPane", d, ret='focus')
-            if par:
-                par = par.leaf
+            pane = focus.call("DocPane", d, ret='focus')
+            if pane:
+                pass
             elif where == 'OtherPane':
                 pane = focus.call(where, ret='focus')
             else:
