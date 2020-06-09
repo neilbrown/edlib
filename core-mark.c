@@ -152,7 +152,10 @@ void mark_free(struct mark *m)
 
 static void mark_ref_copy(struct mark *to safe, struct mark *from safe)
 {
-	ASSERT((void*)to->owner == NULL || to->owner == from->owner);
+	if ((void*)to->owner && to->owner != from->owner) {
+		LOG("mark_ref_copy given marks with different owners");
+		return;
+	}
 	to->owner = from->owner;
 	if (to->ref.p == from->ref.p &&
 	    to->ref.i == from->ref.i)
@@ -600,6 +603,7 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 		call("editor:notify:Message:broadcast",
 		     m->owner->home, 0, NULL,
 		     "WARNING marks inconsistent - see log");
+		return;
 	}
 	/* END DEBUG */
 
@@ -928,7 +932,10 @@ struct mark *do_vmark_at_point(struct doc *d safe,
 	struct mark *m;
 	struct point_links *lnk = safe_cast pt->mdata;
 
-	ASSERT(pt->owner == d);
+	if (pt->owner != d) {
+		LOG("vmark_to_point called with incorrect owner");
+		return NULL;
+	}
 
 	if (view < 0 || view >= d->nviews || d->views == NULL)
 		return NULL;
@@ -956,7 +963,10 @@ struct mark *do_vmark_at_or_before(struct doc *d safe,
 	 */
 	struct mark *vm = m;
 
-	ASSERT(m->owner == d);
+	if (m->owner != d) {
+		LOG("vmark_at_or_before called with incorrect mark");
+		return NULL;
+	}
 
 	if ((view < 0 && view != MARK_POINT) || view >= d->nviews ||
 	    d->views == NULL || d->views[view].owner != owner)
