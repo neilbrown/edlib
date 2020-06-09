@@ -79,6 +79,10 @@ new_test() {
     setup_test_dir
     rm -f tests.d/.tmp
     runtest new tests.d/.tmp
+    if ! grep -s '^Close' tests.d/.tmp > /dev/null ; then
+	echo >&2 "$0: test file not Closed - probably crash"
+	exit 1
+    fi
     setup_test_dir
     runtest run $tt tests.d/.tmp
     diff -u tests.d/.tmp $tt
