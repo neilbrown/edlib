@@ -71,10 +71,13 @@ new_test() {
 	echo >&2 "$0: Cannot create $tt - strange"
 	exit 1
     fi
+    setup_test_dir
+    rm -f tests.d/.tmp
     runtest new tests.d/.tmp
+    setup_test_dir
     runtest run $tt tests.d/.tmp
     diff -u tests.d/.tmp $tt
-    rm tests.d/.tmp
+    #rm tests.d/.tmp
     exit 0
 }
 
@@ -171,7 +174,7 @@ view_test() {
 cmd=$1
 shift
 case $cmd in
-	new) setup_test_dir; new_test ${1+"$@"};;
+	new) new_test ${1+"$@"};;
 	run) setup_test_dir; run_tests ${1+"$@"};;
 	refresh) setup_test_dir; refresh_tests ${1+"$@"};;
 	view ) setup_test_dir; view_test ${1+"$@"};;
