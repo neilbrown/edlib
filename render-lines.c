@@ -163,18 +163,17 @@ DEF_CMD(rl_cb)
 }
 
 static void render_line(struct pane *p safe, struct pane *focus safe,
-			char *line safe, short y_start, int dodraw,
-			short posx, short posy, short offset,
-			struct command *comm2)
+			struct mark *mk safe, short y_start, int dodraw,
+			short posx, short posy, short offset)
 {
 	struct rl_data *rl = p->data;
 
-	home_call(rl->helper,
+	pane_call(rl->helper,
 		  dodraw ? "render-line:draw" : "render-line:measure",
 		  focus,
-		  y_start, NULL, line,
+		  y_start, NULL, mk->mdata ?: "",
 		  offset, NULL, NULL,
-		  posx, posy, comm2);
+		  posx, posy, &rl->c);
 }
 
 static struct mark *call_render_line_prev(struct pane *p safe,
@@ -355,8 +354,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		goto abort; /* FIXME can I prove this? */
 
 	rl->y = y = 0;
-	render_line(p, focus, start->mdata ?: "", y, 0,
-		    -1, -1, offset, &rl->c);
+	render_line(p, focus, start, y, 0, -1, -1, offset);
 	lines_above = rl->cy;
 	y = rl->y;
 	lines_above = lines_below = 0;
@@ -394,11 +392,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				start = m;
 				if (!start->mdata)
 					call_render_line(focus, start, &end);
-				if (start->mdata) {
-					render_line(p, focus, start->mdata, h, 0,
-						    -1, -1, -1, &rl->c);
-					h = rl->y;
-				}
+				rl->y = 0;
+				render_line(p, focus, start, h, 0, -1, -1, -1);
+				h = rl->y;
 				if (h)
 					lines_above = h;
 				else
@@ -419,8 +415,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			} else {
 				short h;
 				rl->end_of_page = 0;
-				render_line(p, focus, end->mdata, 0, 0,
-					    -1, -1, -1, &rl->c);
+				render_line(p, focus, end, 0, 0, -1, -1, -1);
 				h = rl->y;
 				found_end = rl->end_of_page;
 				end = next;
@@ -544,9 +539,14 @@ restart:
 	y = 0;
 	if (hdr) {
 		rl->header_lines = 0;
-		render_line(p, focus, hdr, 0, 1,
-			    -1, -1, -1, &rl->c);
-		y = rl->y;
+		m2 = vmark_new(focus, MARK_UNGROUPED, NULL);
+		if (m2) {
+			m2->mdata = hdr;
+			render_line(p, focus, m2, 0, 1, -1, -1, -1);
+			m2->mdata = NULL;
+			mark_free(m2);
+			y = rl->y;
+		}
 		rl->header_lines = y;
 	}
 	y -= rl->skip_lines;
@@ -570,9 +570,7 @@ restart:
 			rl->prefix_len = 0;
 			rl->xypos = -1;
 			rl->cwidth = 1;
-			render_line(p, focus, m->mdata ?: "", y, 1,
-				    -1, -1, len,
-				    &rl->c);
+			render_line(p, focus, m, y, 1, -1, -1, len);
 			p->cx = rl->cx; p->cy = rl->cy;
 			y = rl->y;
 			if (p->cy < 0)
@@ -630,8 +628,7 @@ restart:
 			}
 			cursor_drawn = 1;
 		} else {
-			render_line(p, focus, m->mdata?:"", y, 1,
-				    -1, -1, -1, &rl->c);
+			render_line(p, focus, m, y, 1, -1, -1, -1);
 			y = rl->y;
 		}
 		if (!m2 || mark_same(m, m2))
@@ -841,8 +838,7 @@ DEF_CMD(render_lines_move)
 					rpt = 0;
 					break;
 				}
-				render_line(p, focus, m->mdata, y, 0,
-					    -1, -1, -1, &rl->c);
+				render_line(p, focus, m, y, 0, -1, -1, -1);
 				y = rl->y;
 				m = vmark_next(m);
 			}
@@ -857,8 +853,7 @@ DEF_CMD(render_lines_move)
 			if (top->mdata == NULL)
 				break;
 			rl->end_of_page = 0;
-			render_line(p, focus, top->mdata, 0, 0,
-				    -1, -1, -1, &rl->c);
+			render_line(p, focus, top, 0, 0, -1, -1, -1);
 			if (rl->end_of_page)
 				y = rpt % pagesize;
 			else
@@ -942,8 +937,7 @@ DEF_CMD(render_lines_set_cursor)
 		}
 		rl->xypos = -1;
 		rl->xyattrs = NULL;
-		render_line(p, focus, m->mdata, y, 0, cih.x, cih.y,
-			    -1, &rl->c);
+		render_line(p, focus, m, y, 0, cih.x, cih.y, -1);
 		y = rl->y;
 		if (rl->xypos >= 0) {
 			struct mark *m2 = call_render_line_offset(focus, m,
@@ -1108,8 +1102,7 @@ DEF_CMD(render_lines_move_line)
 	 */
 	call_render_line(focus, start, NULL);
 	rl->xypos = -1;
-	render_line(p, focus, start->mdata?:"", y, 0,
-		    rl->target_x, rl->target_y, -1, &rl->c);
+	render_line(p, focus, start, y, 0, rl->target_x, rl->target_y, -1);
 	y = rl->y;
 	/* rl->xypos is the distance from start-of-line to the target */
 	if (rl->xypos >= 0) {
