@@ -125,17 +125,12 @@ struct rl_data {
 	/* following set by measure/draw_line() callback */
 	short		xypos;	/* Where in line the x,y pos was found */
 	const char	*xyattrs;
-	short		cwidth;
 };
 
 DEF_CMD(rl_cb)
 {
 	struct rl_data *rl = container_of(ci->comm, struct rl_data, c);
 
-	if (strcmp(ci->key, "render-done") == 0) {
-		rl->cwidth = ci->num2;
-		return 1;
-	}
 	if (strcmp(ci->key, "dimensions") == 0) {
 		if (ci->num > rl->cols)
 			rl->cols = ci->num;
@@ -586,10 +581,19 @@ restart:
 		     mark_ordered_not_same(pm, m2))) {
 			short len = call_render_line_to_point(focus, pm,
 							      m);
+			if (mwidth < 0) {
+				struct call_return cr =
+					home_call_ret(all, focus,
+						      "text-size", p,
+						      -1, NULL, "M",
+						      0, NULL, "");
+				mwidth = cr.x;
+				if (mwidth <= 0)
+					mwidth = 1;
+			}
 			rl->cursor_line = y;
 			rl->prefix_len = 0;
 			rl->xypos = -1;
-			rl->cwidth = 1;
 			found_end = draw_line(p, focus, m, y, len);
 			y += rl->helper->h;
 			if (p->cy < 0)
@@ -597,17 +601,10 @@ restart:
 			if (!rl->do_wrap && p->cy >= 0 &&
 			    p->cx < rl->prefix_len &&
 			    shifted != 2) {
-				if (mwidth < 0) {
-					struct call_return cr =
-						home_call_ret(all, focus,
-							      "text-size", p,
-							      -1, NULL, "M",
-							      0,  NULL, "");
-					mwidth = cr.x;
-					if (mwidth <= 0)
-						mwidth = 1;
-				}
-				if (p->cx + rl->cwidth + 8 * mwidth < p->w) {
+				/* First mwidth is for cursor, second is to
+				 * calc min shift size: a tab
+				 */
+				if (p->cx + mwidth + 8 * mwidth < p->w) {
 					/* Need to shift to right, and there
 					 * is room */
 					while (rl->shift_left > 0 &&
@@ -625,20 +622,10 @@ restart:
 					goto restart;
 				}
 			}
-			if (p->cx + rl->cwidth >= p->w && !rl->do_wrap &&
+			if (p->cx + mwidth >= p->w && !rl->do_wrap &&
 			    shifted != 1) {
-				if (mwidth < 0) {
-					struct call_return cr =
-						home_call_ret(all, focus,
-							      "text-size", p,
-							      -1, NULL, "M",
-							      0, NULL, "");
-					mwidth = cr.x;
-					if (mwidth <= 0)
-						mwidth = 1;
-				}
 				/* Need to shift to the left */
-				while (p->cx + rl->cwidth >= p->w) {
+				while (p->cx + mwidth >= p->w) {
 					rl->shift_left += 8 * mwidth;
 					p->cx -= 8 * mwidth;
 				}

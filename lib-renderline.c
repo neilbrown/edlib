@@ -466,7 +466,6 @@ DEF_CMD(renderline)
 		 */
 		y = render_image(p, focus, line, y, dodraw, scale);
 		comm_call(comm2, "dimensions", p, p->w);
-		comm_call(comm2, "render-done", p, y);
 		p->cx = p->cy = -1;
 		return 1;
 	}
@@ -771,13 +770,10 @@ DEF_CMD(renderline)
 		/* No newline at the end .. but we must render as whole lines */
 		y += line_height;
 	free(buf_final(&attr));
-	/* Assume cursor width is mwidth */
 	if (offset >= 0) {
 		p->cx = cx;
 		p->cy = cy;
 	}
-	comm_call(comm2, "render-done", p, 0, NULL, NULL,
-		  mwidth);
 	pane_resize(p, p->x, p->y, p->w, y);
 	while (rlst) {
 		struct render_list *r = rlst;
