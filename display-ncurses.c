@@ -937,12 +937,13 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 			 wchar_t ch, int attr, short x, short y, short cursor)
 {
 	PANEL *pan;
+	struct pane *p2;
 	cchar_t cc = {};
 
 	if (x < 0 || y < 0)
 		return;
 	if (cursor) {
-		struct pane *p2 = p;
+		p2 = p;
 		cursor = 2;
 		while (p2->parent != p2 && p2 != display) {
 			if (p2->parent->focus != p2 && p2->z >= 0)
@@ -964,13 +965,16 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 	cc.attr = attr;
 	cc.chars[0] = ch;
 
-	pan = pane_panel(p, NULL);
-	while (!pan && p->parent != p) {
-		p = p->parent;
-		pan = pane_panel(p, NULL);
+	p2 = p;
+	pan = pane_panel(p2, NULL);
+	while (!pan && p2->parent != p2) {
+		p2 = p2->parent;
+		pan = pane_panel(p2, NULL);
 	}
-	if (pan)
-		mvwadd_wch(panel_window(pan), y, x, &cc);
+	if (pan) {
+		struct xy xy = pane_mapxy(p, p2, x, y);
+		mvwadd_wch(panel_window(pan), xy.y, xy.x, &cc);
+	}
 }
 
 static struct namelist {
