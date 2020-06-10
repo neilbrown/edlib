@@ -127,7 +127,6 @@ struct rl_data {
 	short		end_of_page;
 	short		xypos;	/* Where in line the x,y pos was found */
 	const char	*xyattrs;
-	short		cx,cy;
 	short		cwidth;
 };
 
@@ -139,8 +138,6 @@ DEF_CMD(rl_cb)
 		rl->y = ci->num;
 		if (ci->str)
 			rl->end_of_page = 1;
-		rl->cx = ci->x;
-		rl->cy = ci->y;
 		rl->cwidth = ci->num2;
 		return 1;
 	}
@@ -187,6 +184,17 @@ static void draw_line(struct pane *p safe, struct pane *focus safe,
 		  y_start, NULL, mk->mdata ?: "",
 		  offset, NULL, NULL,
 		  -1, -1, &rl->c);
+	if (offset >= 0) {
+		struct xy curs = pane_mapxy(rl->helper, p,
+					    rl->helper->cx, rl->helper->cy);
+		if (rl->helper->cx < 0) {
+			p->cx = -1;
+			p->cy = -1;
+		} else {
+			p->cx = curs.x;
+			p->cy = curs.y;
+		}
+	}
 }
 
 static struct mark *call_render_line_prev(struct pane *p safe,
@@ -368,7 +376,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 
 	rl->y = y = 0;
 	measure_line(p, focus, start, y, -1, -1, offset);
-	lines_above = rl->cy;
+	//lines_above = rl->cy;
 	y = rl->y;
 	lines_above = lines_below = 0;
 
@@ -584,7 +592,6 @@ restart:
 			rl->xypos = -1;
 			rl->cwidth = 1;
 			draw_line(p, focus, m, y, len);
-			p->cx = rl->cx; p->cy = rl->cy;
 			y = rl->y;
 			if (p->cy < 0)
 				p->cx = -1;
