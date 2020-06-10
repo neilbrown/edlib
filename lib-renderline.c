@@ -776,7 +776,7 @@ DEF_CMD(renderline)
 		p->cx = cx;
 		p->cy = cy;
 	}
-	comm_call(comm2, "render-done", p, 0, NULL, end_of_page ? "yes":NULL,
+	comm_call(comm2, "render-done", p, 0, NULL, NULL,
 		  mwidth);
 	pane_resize(p, p->x, p->y, p->w, y);
 	while (rlst) {
@@ -786,7 +786,7 @@ DEF_CMD(renderline)
 		free((void*)r->attr);
 		free(r);
 	}
-	return 1;
+	return end_of_page ? 2 : 1;
 }
 
 static struct map *rl_map;
