@@ -123,7 +123,6 @@ struct rl_data {
 	struct pane	*helper safe; /* pane where renderlines happens. */
 	struct command	c;
 	/* following set by measure/draw_line() callback */
-	short		y;
 	short		end_of_page;
 	short		xypos;	/* Where in line the x,y pos was found */
 	const char	*xyattrs;
@@ -135,7 +134,6 @@ DEF_CMD(rl_cb)
 	struct rl_data *rl = container_of(ci->comm, struct rl_data, c);
 
 	if (strcmp(ci->key, "render-done") == 0) {
-		rl->y = ci->num;
 		if (ci->str)
 			rl->end_of_page = 1;
 		rl->cwidth = ci->num2;
@@ -165,12 +163,13 @@ static void measure_line(struct pane *p safe, struct pane *focus safe,
 {
 	struct rl_data *rl = p->data;
 
+	pane_resize(rl->helper, 0, y_start, p->w, p->h - y_start);
 	pane_call(rl->helper,
 		  "render-line:measure",
 		  focus,
-		  y_start, NULL, mk->mdata ?: "",
+		  0, NULL, mk->mdata ?: "",
 		  offset, NULL, NULL,
-		  posx, posy, &rl->c);
+		  posx, posy < 0 ? posy : posy-y_start, &rl->c);
 }
 
 static void draw_line(struct pane *p safe, struct pane *focus safe,
@@ -178,10 +177,11 @@ static void draw_line(struct pane *p safe, struct pane *focus safe,
 {
 	struct rl_data *rl = p->data;
 
+	pane_resize(rl->helper, 0, y_start, p->w, p->h - y_start);
 	pane_call(rl->helper,
 		  "render-line:draw",
 		  focus,
-		  y_start, NULL, mk->mdata ?: "",
+		  0, NULL, mk->mdata ?: "",
 		  offset, NULL, NULL,
 		  -1, -1, &rl->c);
 	if (offset >= 0) {
@@ -374,10 +374,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (!end)
 		goto abort; /* FIXME can I prove this? */
 
-	rl->y = y = 0;
-	measure_line(p, focus, start, y, -1, -1, offset);
+	measure_line(p, focus, start, 0, -1, -1, offset);
 	//lines_above = rl->cy;
-	y = rl->y;
+	y = rl->helper->h;
 	lines_above = lines_below = 0;
 
 	/* We have start/end of the focus line, and its height.
@@ -413,9 +412,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				start = m;
 				if (!start->mdata)
 					call_render_line(focus, start, &end);
-				rl->y = 0;
-				measure_line(p, focus, start, h, -1, -1, -1);
-				h = rl->y;
+				measure_line(p, focus, start, 0, -1, -1, -1);
+				h = rl->helper->h;
 				if (h)
 					lines_above = h;
 				else
@@ -437,7 +435,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				short h;
 				rl->end_of_page = 0;
 				measure_line(p, focus, end, 0, -1, -1, -1);
-				h = rl->y;
+				h = rl->helper->h;
 				found_end = rl->end_of_page;
 				end = next;
 				if (h)
@@ -566,7 +564,7 @@ restart:
 			draw_line(p, focus, m2, 0, -1);
 			m2->mdata = NULL;
 			mark_free(m2);
-			y = rl->y;
+			y = rl->helper->h;
 		}
 		rl->header_lines = y;
 	}
@@ -592,7 +590,7 @@ restart:
 			rl->xypos = -1;
 			rl->cwidth = 1;
 			draw_line(p, focus, m, y, len);
-			y = rl->y;
+			y += rl->helper->h;
 			if (p->cy < 0)
 				p->cx = -1;
 			if (!rl->do_wrap && p->cy >= 0 &&
@@ -649,7 +647,7 @@ restart:
 			cursor_drawn = 1;
 		} else {
 			draw_line(p, focus, m, y, -1);
-			y = rl->y;
+			y += rl->helper->h;
 		}
 		if (!m2 || mark_same(m, m2))
 			break;
@@ -859,7 +857,7 @@ DEF_CMD(render_lines_move)
 					break;
 				}
 				measure_line(p, focus, m, y, -1, -1, -1);
-				y = rl->y;
+				y += rl->helper->h;
 				m = vmark_next(m);
 			}
 			rl->skip_lines = y;
@@ -877,7 +875,7 @@ DEF_CMD(render_lines_move)
 			if (rl->end_of_page)
 				y = rpt % pagesize;
 			else
-				y = rl->y;
+				y = rl->helper->h;
 			if (rl->skip_lines + rpt < y) {
 				rl->skip_lines += rpt;
 				break;
@@ -958,7 +956,7 @@ DEF_CMD(render_lines_set_cursor)
 		rl->xypos = -1;
 		rl->xyattrs = NULL;
 		measure_line(p, focus, m, y, cih.x, cih.y, -1);
-		y = rl->y;
+		y += rl->helper->h;
 		if (rl->xypos >= 0) {
 			struct mark *m2 = call_render_line_offset(focus, m,
 								  rl->xypos);
@@ -1123,7 +1121,7 @@ DEF_CMD(render_lines_move_line)
 	call_render_line(focus, start, NULL);
 	rl->xypos = -1;
 	measure_line(p, focus, start, y, rl->target_x, rl->target_y, -1);
-	y = rl->y;
+	y += rl->helper->h;
 	/* rl->xypos is the distance from start-of-line to the target */
 	if (rl->xypos >= 0) {
 		struct mark *m2 = call_render_line_offset(

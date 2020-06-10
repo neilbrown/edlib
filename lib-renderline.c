@@ -420,7 +420,6 @@ DEF_CMD(renderline)
 	struct pane *p = ci->home;
 	struct pane *focus = ci->focus;
 	const char *line = ci->str;
-	short y_start = ci->num;
 	int dodraw = strcmp(ci->key, "render-line:draw") == 0;
 	short posx = ci->x;
 	short posy = ci->y;
@@ -428,7 +427,7 @@ DEF_CMD(renderline)
 	struct command *comm2 = ci->comm2;
 
 	int x = 0;
-	int y = y_start;
+	int y = 0;
 	const char *line_start;
 	const char *start;
 	struct buf attr;
@@ -768,7 +767,7 @@ DEF_CMD(renderline)
 			cy = cx = -1;
 		}
 	}
-	if (x > 0 || y == y_start)
+	if (x > 0 || y == 0)
 		/* No newline at the end .. but we must render as whole lines */
 		y += line_height;
 	free(buf_final(&attr));
@@ -777,8 +776,9 @@ DEF_CMD(renderline)
 		p->cx = cx;
 		p->cy = cy;
 	}
-	comm_call(comm2, "render-done", p, y, NULL, end_of_page ? "yes":NULL,
+	comm_call(comm2, "render-done", p, 0, NULL, end_of_page ? "yes":NULL,
 		  mwidth);
+	pane_resize(p, p->x, p->y, p->w, y);
 	while (rlst) {
 		struct render_list *r = rlst;
 		rlst = r->next;

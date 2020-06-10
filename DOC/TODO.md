@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [X] fix bugs
+- [ ] fix bugs
 - [X] diff: add command to add it to any pane
 - [X] Change various things that use cmd-* and a switch, to use multiple cmds.
 - [X] doc:char intermediate commands
@@ -18,6 +18,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] The height of a blank line is slightly less than that of a line
+      with a space - so adding a space pushed later lines down a pixel.
 - [X] ->cx/cy used by render-lines isn't the same as where the cursor
       is drawn. For a wrapped line it is the '\' wrap character.
       Changing it when the cursor is drawn breaks something.
