@@ -439,11 +439,9 @@ class PresenterPane(edlib.Pane):
             if c[:14] == "image-stretch:":
                 rv = focus.call('Draw:image', 1, self.pathto(c[14:]))
             if c[:6] == "image:":
-                rv = focus.call('Draw:image', 0, 5, self.pathto(c[6:]))
+                rv = focus.call('Draw:image', 0, 4+1, self.pathto(c[6:])) # centre
             if c[:8] == "overlay:":
-                rv = focus.call('Draw:image', 0, 2, self.pathto(c[8:]))
-            if c[:9] == "overlayC:":
-                rv = focus.call('Draw:image', self.w/6, self.h*3/4, self.pathto(c[9:]), (self.w*5/12, self.h/8))
+                rv = focus.call('Draw:image', 0, 0+2, self.pathto(c[8:])) # top right
             if c == "page-local":
                 page = self.find_pages(mark)
                 self.clean_lines(page)
