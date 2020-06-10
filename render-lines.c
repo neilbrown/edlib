@@ -122,7 +122,7 @@ struct rl_data {
 
 	struct pane	*helper safe; /* pane where renderlines happens. */
 	struct command	c;
-	/* following set by render_line() callback */
+	/* following set by measure/draw_line() callback */
 	short		y;
 	short		end_of_page;
 	short		xypos;	/* Where in line the x,y pos was found */
@@ -162,18 +162,31 @@ DEF_CMD(rl_cb)
 	return 0;
 }
 
-static void render_line(struct pane *p safe, struct pane *focus safe,
-			struct mark *mk safe, short y_start, int dodraw,
-			short posx, short posy, short offset)
+static void measure_line(struct pane *p safe, struct pane *focus safe,
+			 struct mark *mk safe, short y_start,
+			 short posx, short posy, short offset)
 {
 	struct rl_data *rl = p->data;
 
 	pane_call(rl->helper,
-		  dodraw ? "render-line:draw" : "render-line:measure",
+		  "render-line:measure",
 		  focus,
 		  y_start, NULL, mk->mdata ?: "",
 		  offset, NULL, NULL,
 		  posx, posy, &rl->c);
+}
+
+static void draw_line(struct pane *p safe, struct pane *focus safe,
+		      struct mark *mk safe, short y_start, short offset)
+{
+	struct rl_data *rl = p->data;
+
+	pane_call(rl->helper,
+		  "render-line:draw",
+		  focus,
+		  y_start, NULL, mk->mdata ?: "",
+		  offset, NULL, NULL,
+		  -1, -1, &rl->c);
 }
 
 static struct mark *call_render_line_prev(struct pane *p safe,
@@ -354,7 +367,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		goto abort; /* FIXME can I prove this? */
 
 	rl->y = y = 0;
-	render_line(p, focus, start, y, 0, -1, -1, offset);
+	measure_line(p, focus, start, y, -1, -1, offset);
 	lines_above = rl->cy;
 	y = rl->y;
 	lines_above = lines_below = 0;
@@ -393,7 +406,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				if (!start->mdata)
 					call_render_line(focus, start, &end);
 				rl->y = 0;
-				render_line(p, focus, start, h, 0, -1, -1, -1);
+				measure_line(p, focus, start, h, -1, -1, -1);
 				h = rl->y;
 				if (h)
 					lines_above = h;
@@ -415,7 +428,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			} else {
 				short h;
 				rl->end_of_page = 0;
-				render_line(p, focus, end, 0, 0, -1, -1, -1);
+				measure_line(p, focus, end, 0, -1, -1, -1);
 				h = rl->y;
 				found_end = rl->end_of_page;
 				end = next;
@@ -542,7 +555,7 @@ restart:
 		m2 = vmark_new(focus, MARK_UNGROUPED, NULL);
 		if (m2) {
 			m2->mdata = hdr;
-			render_line(p, focus, m2, 0, 1, -1, -1, -1);
+			draw_line(p, focus, m2, 0, -1);
 			m2->mdata = NULL;
 			mark_free(m2);
 			y = rl->y;
@@ -570,7 +583,7 @@ restart:
 			rl->prefix_len = 0;
 			rl->xypos = -1;
 			rl->cwidth = 1;
-			render_line(p, focus, m, y, 1, -1, -1, len);
+			draw_line(p, focus, m, y, len);
 			p->cx = rl->cx; p->cy = rl->cy;
 			y = rl->y;
 			if (p->cy < 0)
@@ -628,7 +641,7 @@ restart:
 			}
 			cursor_drawn = 1;
 		} else {
-			render_line(p, focus, m, y, 1, -1, -1, -1);
+			draw_line(p, focus, m, y, -1);
 			y = rl->y;
 		}
 		if (!m2 || mark_same(m, m2))
@@ -838,7 +851,7 @@ DEF_CMD(render_lines_move)
 					rpt = 0;
 					break;
 				}
-				render_line(p, focus, m, y, 0, -1, -1, -1);
+				measure_line(p, focus, m, y, -1, -1, -1);
 				y = rl->y;
 				m = vmark_next(m);
 			}
@@ -853,7 +866,7 @@ DEF_CMD(render_lines_move)
 			if (top->mdata == NULL)
 				break;
 			rl->end_of_page = 0;
-			render_line(p, focus, top, 0, 0, -1, -1, -1);
+			measure_line(p, focus, top, 0, -1, -1, -1);
 			if (rl->end_of_page)
 				y = rpt % pagesize;
 			else
@@ -937,7 +950,7 @@ DEF_CMD(render_lines_set_cursor)
 		}
 		rl->xypos = -1;
 		rl->xyattrs = NULL;
-		render_line(p, focus, m, y, 0, cih.x, cih.y, -1);
+		measure_line(p, focus, m, y, cih.x, cih.y, -1);
 		y = rl->y;
 		if (rl->xypos >= 0) {
 			struct mark *m2 = call_render_line_offset(focus, m,
@@ -1102,7 +1115,7 @@ DEF_CMD(render_lines_move_line)
 	 */
 	call_render_line(focus, start, NULL);
 	rl->xypos = -1;
-	render_line(p, focus, start, y, 0, rl->target_x, rl->target_y, -1);
+	measure_line(p, focus, start, y, rl->target_x, rl->target_y, -1);
 	y = rl->y;
 	/* rl->xypos is the distance from start-of-line to the target */
 	if (rl->xypos >= 0) {
