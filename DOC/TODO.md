@@ -509,6 +509,10 @@ Module features
 - [ ] Allow testing of server/client accesses
 - [X] add more tests
       c-mode python diff git-grep
+- [ ] render-present tests
+- [ ] create a pane which exercises lots of code and measure coverage.
+      particularly cover all the doc-text undo/redo code.
+- [ ] Track 'coverage' of all commands in keymaps.
 
 ### dynamic completion
 

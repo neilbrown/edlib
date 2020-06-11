@@ -132,8 +132,6 @@ DEF_CMD(rl_cb)
 	struct rl_data *rl = container_of(ci->comm, struct rl_data, c);
 
 	if (strcmp(ci->key, "dimensions") == 0) {
-		if (ci->num > rl->cols)
-			rl->cols = ci->num;
 		rl->line_height = ci->num2;
 		return 1;
 	}
@@ -191,6 +189,8 @@ static bool draw_line(struct pane *p safe, struct pane *focus safe,
 			p->cy = curs.y;
 		}
 	}
+	if (rl->helper->x + rl->helper->w > rl->cols)
+		rl->cols = rl->helper->x + rl->helper->w;
 	return ret == 2;
 }
 

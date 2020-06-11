@@ -495,7 +495,7 @@ DEF_CMD(renderline)
 	margin = x;
 
 	comm_call(comm2, "dimensions", p,
-		  margin + twidth, NULL, NULL, line_height);
+		  0, NULL, NULL, line_height);
 
 	buf_init(&attr);
 	buf_append(&attr, ' '); attr.len = 0;
@@ -774,7 +774,7 @@ DEF_CMD(renderline)
 		p->cx = cx;
 		p->cy = cy;
 	}
-	pane_resize(p, p->x, p->y, p->w, y);
+	pane_resize(p, p->x, p->y, margin + twidth, y);
 	while (rlst) {
 		struct render_list *r = rlst;
 		rlst = r->next;
