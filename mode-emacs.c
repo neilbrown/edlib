@@ -361,7 +361,8 @@ REDEF_CMD(emacs_case)
 					call(mv->type+1, ci->focus, dir, ci->mark);
 			}
 			free(str);
-			call("Mode:set-num2", ci->focus, N2_undo_change);
+			if (changed || N2(ci) == N2_undo_change)
+				call("Mode:set-num2", ci->focus, N2_undo_change);
 		}
 		mark_free(m);
 		cnt -= 1;
