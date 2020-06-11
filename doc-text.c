@@ -125,7 +125,7 @@ struct text_chunk {
  * chunk is removed from the list.
  *
  * Each edit can have an altnext.
- * For the undo list, the is an alternate redo to reflect a branching
+ * For the undo list, this is an alternate redo to reflect a branching
  * change history.
  * For the redo list, this is a second change that happened from the
  * same starting point.  If there is a third change, we insert a no-op
@@ -772,18 +772,18 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 			e->at_start = 0;
 			e->len = 0; /* This is a no-op */
 			e->next = t->undo;
-			e->altnext = NULL;
 			t->undo = e;
 		}
 		t->undo->altnext = t->redo;
 		t->undo->alt_is_second = 0;
 		t->redo = NULL;
 	}
-
-	if (t->undo && !*first &&
-	    t->undo->target == target && t->undo->at_start == at_start) {
+	/* factoring out t->undo here avoids a bug in smatch. */
+	e = t->undo;
+	if (e && e->len != 0 && e->len + len != 0 && !*first &&
+	    e->target == target && e->at_start == at_start) {
 		/* This new edit can be merged with the previous one */
-		t->undo->len += len;
+		e->len += len;
 	} else {
 		alloc(e, undo);
 		e->target = target;
@@ -1180,7 +1180,8 @@ static void text_undo(struct text *t safe, struct text_edit *e safe,
 
 		__list_del(e->target->lst.prev, e->target->lst.next);
 		/* If this was created for a split, we need to extend the
-		 * other half */
+		 * other half
+		 */
 		if (e->target != list_first_entry(&t->text,
 						  struct text_chunk, lst)) {
 			struct text_chunk *c = list_prev_entry(e->target, lst);
