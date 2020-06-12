@@ -33,6 +33,10 @@ struct render_list {
 	const char	*xypos;	/* location in text_orig where given x,y was found */
 };
 
+struct rline_data {
+	short		prefix_len;
+};
+
 #define WRAP 1
 #define XYPOS 2
 
@@ -418,6 +422,7 @@ static void find_xypos(struct render_list *rlst,
 DEF_CMD(renderline)
 {
 	struct pane *p = ci->home;
+	struct rline_data *rd = p->data;
 	struct pane *focus = ci->focus;
 	const char *line = ci->str;
 	int dodraw = strcmp(ci->key, "render-line:draw") == 0;
@@ -484,8 +489,10 @@ DEF_CMD(renderline)
 					"bold", prefix, scale);
 		draw_some(p, focus, &rlst, &x, prefix, &s, "bold",
 			  0, -1, -1, scale);
-		comm_call(comm2, "prefix_len", p, x + shift_left);
-	}
+		rd->prefix_len = x + shift_left;
+	} else
+		rd->prefix_len = 0;
+
 	if (center == 1)
 		x += (p->w - x - twidth) / 2;
 	if (center > 1)
@@ -785,22 +792,39 @@ DEF_CMD(renderline)
 	return end_of_page ? 2 : 1;
 }
 
+DEF_CMD(renderline_get)
+{
+	struct rline_data *rd = ci->home->data;
+
+	if (!ci->str)
+		return 1;
+	if (strcmp(ci->str, "prefix_len") == 0)
+		return rd->prefix_len + 1;
+	return 1;
+}
+
 static struct map *rl_map;
 DEF_LOOKUP_CMD(renderline_handle, rl_map);
 
 DEF_CMD(renderline_attach)
 {
+	struct rline_data *rd;
 	struct pane *p;
 
 	if (!rl_map) {
 		rl_map = key_alloc();
 		key_add(rl_map, "render-line:draw", &renderline);
 		key_add(rl_map, "render-line:measure", &renderline);
+		key_add(rl_map, "render-line:get", &renderline_get);
+		key_add(rl_map, "Free", &edlib_do_free);
 	}
 
-	p = pane_register(ci->focus, -1, &renderline_handle.c);
-	if (!p)
+	alloc(rd, pane);
+	p = pane_register(ci->focus, -1, &renderline_handle.c, rd);
+	if (!p) {
+		unalloc(rd, pane);
 		return Efail;
+	}
 	return comm_call(ci->comm2, "cb", p);
 }
 

@@ -110,7 +110,6 @@ struct rl_data {
 					 */
 	int		do_wrap;
 	short		shift_left;
-	short		prefix_len;
 	short		header_lines;
 	int		typenum;
 	short		line_height;
@@ -133,10 +132,6 @@ DEF_CMD(rl_cb)
 
 	if (strcmp(ci->key, "dimensions") == 0) {
 		rl->line_height = ci->num2;
-		return 1;
-	}
-	if (strcmp(ci->key, "prefix_len") == 0) {
-		rl->prefix_len = ci->num;
 		return 1;
 	}
 	if (strcmp(ci->key, "xypos") == 0) {
@@ -592,23 +587,30 @@ restart:
 					mwidth = 1;
 			}
 			rl->cursor_line = y;
-			rl->prefix_len = 0;
 			rl->xypos = -1;
 			found_end = draw_line(p, focus, m, y, len);
 			y += rl->helper->h;
 			if (p->cy < 0)
 				p->cx = -1;
 			if (!rl->do_wrap && p->cy >= 0 &&
-			    p->cx < rl->prefix_len &&
 			    shifted != 2) {
+				int prefix_len = pane_call(rl->helper,
+							   "render-line:get",
+							   rl->helper,
+							   0, NULL, "prefix_len");
+				if (prefix_len > 0)
+					prefix_len -= 1;
+				else
+					prefix_len = 0;
 				/* First mwidth is for cursor, second is to
 				 * calc min shift size: a tab
 				 */
-				if (p->cx + mwidth + 8 * mwidth < p->w) {
+				if (p->cx < prefix_len &&
+				    p->cx + mwidth + 8 * mwidth < p->w) {
 					/* Need to shift to right, and there
 					 * is room */
 					while (rl->shift_left > 0 &&
-					       p->cx < rl->prefix_len) {
+					       p->cx < prefix_len) {
 						if (rl->shift_left < 8* mwidth) {
 							p->cx += rl->shift_left;
 							rl->shift_left = 0;
