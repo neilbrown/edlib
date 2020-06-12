@@ -419,7 +419,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			next = vmark_next(end);
 			if (!end->mdata || !next) {
 				found_end = 1;
-				lines_below = rl->line_height * 2;
+				lines_below = p->h / 10;
 			} else {
 				short h;
 				found_end = measure_line(p, focus, end, 0,
@@ -430,7 +430,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 					lines_below = h;
 				else {
 					found_end = 1;
-					lines_below = rl->line_height * 2;
+					lines_below = p->h / 10;
 				}
 			}
 			if (top && top->seq < end->seq)
