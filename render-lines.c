@@ -121,9 +121,6 @@ struct rl_data {
 
 	struct pane	*helper safe; /* pane where renderlines happens. */
 	struct command	c;
-	/* following set by measure/draw_line() callback */
-	short		xypos;	/* Where in line the x,y pos was found */
-	const char	*xyattrs;
 };
 
 DEF_CMD(rl_cb)
@@ -134,18 +131,13 @@ DEF_CMD(rl_cb)
 		rl->line_height = ci->num2;
 		return 1;
 	}
-	if (strcmp(ci->key, "xypos") == 0) {
-		rl->xypos = ci->num;
-		rl->xyattrs = ci->str;
-		return 1;
-	}
 	return 0;
 }
 
 /* Returns 'true' and end-of-page */
-static bool measure_line(struct pane *p safe, struct pane *focus safe,
-			 struct mark *mk safe, short y_start,
-			 short posx, short posy, short offset)
+static int measure_line(struct pane *p safe, struct pane *focus safe,
+			struct mark *mk safe, short y_start,
+			short posx, short posy, short offset)
 {
 	struct rl_data *rl = p->data;
 	int ret;
@@ -157,7 +149,12 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe,
 			0, NULL, mk->mdata ?: "",
 			offset, NULL, NULL,
 			posx, posy < 0 ? posy : posy-y_start, &rl->c);
-	return ret == 2;
+	if (posx < 0)
+		/* end-of-page flag */
+		return ret == 2;
+	else
+		/* xypos */
+		return ret > 0 ? (ret - 1) : -1;
 }
 
 static bool draw_line(struct pane *p safe, struct pane *focus safe,
@@ -587,7 +584,6 @@ restart:
 					mwidth = 1;
 			}
 			rl->cursor_line = y;
-			rl->xypos = -1;
 			found_end = draw_line(p, focus, m, y, len);
 			y += rl->helper->h;
 			if (p->cy < 0)
@@ -932,6 +928,7 @@ DEF_CMD(render_lines_set_cursor)
 		/* x,y is in header line - try lower */
 		cih.y = y;
 	while (y <= cih.y && m) {
+		int xypos;
 		call_render_line(focus, m, NULL);
 		if (!m->mdata) {
 			/* Presumably end-of-file.  Move here. */
@@ -939,18 +936,21 @@ DEF_CMD(render_lines_set_cursor)
 				mark_to_mark(newpoint, m);
 			break;
 		}
-		rl->xypos = -1;
-		rl->xyattrs = NULL;
-		measure_line(p, focus, m, y, cih.x, cih.y, -1);
+		xypos = measure_line(p, focus, m, y, cih.x, cih.y, -1);
 		y += rl->helper->h;
-		if (rl->xypos >= 0) {
+		if (xypos >= 0) {
 			struct mark *m2 = call_render_line_offset(focus, m,
-								  rl->xypos);
+								  xypos);
 			if (m2) {
-				char *tag = get_active_tag(rl->xyattrs);
+				char *tag, *xyattr;
+
+				xyattr = pane_call_ret(str, rl->helper,
+						       "render-line:get",
+						       focus, 0, NULL, "xyattr");
+				tag = get_active_tag(xyattr);
 				if (tag)
 					call("Mouse-Activate", focus, 0, m2, tag,
-					     0, ci->mark, rl->xyattrs);
+					     0, ci->mark, xyattr);
 				free(tag);
 				if (!newpoint)
 					newpoint = mark_dup(m2);
@@ -1045,6 +1045,7 @@ DEF_CMD(render_lines_move_line)
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
 	int num;
+	int xypos;
 	short y;
 	struct mark *m = ci->mark;
 	struct mark *start;
@@ -1105,13 +1106,12 @@ DEF_CMD(render_lines_move_line)
 	 * if start->mdata is NULL
 	 */
 	call_render_line(focus, start, NULL);
-	rl->xypos = -1;
-	measure_line(p, focus, start, y, rl->target_x, rl->target_y, -1);
+	xypos = measure_line(p, focus, start, y, rl->target_x, rl->target_y, -1);
 	y += rl->helper->h;
-	/* rl->xypos is the distance from start-of-line to the target */
-	if (rl->xypos >= 0) {
+	/* xypos is the distance from start-of-line to the target */
+	if (xypos >= 0) {
 		struct mark *m2 = call_render_line_offset(
-			focus, start, rl->xypos);
+			focus, start, xypos);
 		if (m2)
 			mark_to_mark(m, m2);
 		mark_free(m2);

@@ -648,6 +648,7 @@ char *do_call_strsave(enum target_type type, struct pane *home,
  * or the pane being closed.
  */
 #define pane_call(_pane, key, ...) CALL(val, pane, _pane, key, ##__VA_ARGS__)
+#define pane_call_ret(_ret, _pane, key, ...) CALL(_ret, pane, _pane, key, ##__VA_ARGS__)
 #define home_call(_home, key, ...) CALL(val, home, _home, key, ##__VA_ARGS__)
 #define home_call_comm(_home, key, _focus, comm, ...) _CALL(val, home, _home, key, comm, _focus, ##__VA_ARGS__)
 #define home_call_ret(_ret, _home, key, ...) CALL(_ret, home, _home, key, ##__VA_ARGS__)

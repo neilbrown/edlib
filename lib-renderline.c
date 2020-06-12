@@ -35,6 +35,7 @@ struct render_list {
 
 struct rline_data {
 	short		prefix_len;
+	const char	*xyattr;
 };
 
 #define WRAP 1
@@ -452,6 +453,7 @@ DEF_CMD(renderline)
 	int end_of_page = 0;
 	struct render_list *rlst = NULL;
 	const char *xypos = NULL;
+	const char *ret_xypos = NULL;
 	const char *xyattr = NULL;
 	int want_xypos = 0;
 	const char *cstart = NULL;
@@ -512,8 +514,11 @@ DEF_CMD(renderline)
 	 * if offset is non-negative, set posx and posy to cursor
 	 * pos when we reach that length
 	 */
-	if (posx >= 0 && posy >= 0)
+	if (posx >= 0 && posy >= 0) {
 		want_xypos = 1;
+		free((void*)rd->xyattr);
+		rd->xyattr = NULL;
+	}
 	if (posy >= 0 && posy < y) {
 		/* cursor is not here */
 		posx = posy = -1;
@@ -543,10 +548,10 @@ DEF_CMD(renderline)
 		else
 			XPOS = -1;
 
-		if (y > posy && want_xypos && xypos) {
-			comm_call(comm2, "xypos", p,
-				  xypos - line_start, NULL, xyattr);
-			want_xypos = 0;
+		if (y > posy && want_xypos == 1 && xypos) {
+			rd->xyattr = xyattr ? strdup(xyattr) : NULL;
+			ret_xypos = xypos;
+			want_xypos = 2;
 		}
 
 		if (offset >= 0 && start - line_start <= offset) {
@@ -582,7 +587,7 @@ DEF_CMD(renderline)
 				if (x < 0)
 					x = 0;
 				y += line_height;
-				if (want_xypos) {
+				if (want_xypos == 1) {
 					if (y+line_height >= posy &&
 					    y <= posy && x > posx) {
 						/* cursor is in field move down */
@@ -591,10 +596,10 @@ DEF_CMD(renderline)
 							   &xypos, &xyattr);
 					}
 					if (xypos) {
-						comm_call(comm2, "xypos", p,
-							  xypos - line_start,
-							  NULL, xyattr);
-						want_xypos = 0;
+						rd->xyattr = xyattr ?
+							strdup(xyattr) : NULL;
+						ret_xypos = xypos;
+						want_xypos = 2;
 					}
 				}
 			} else {
@@ -701,10 +706,10 @@ DEF_CMD(renderline)
 			x = 0;
 			wrap_offset = 0;
 			start = line;
-			if (xypos && want_xypos) {
-				comm_call(comm2, "xypos", p, xypos - line_start,
-					  NULL, xyattr);
-				want_xypos = 0;
+			if (xypos && want_xypos == 1) {
+				rd->xyattr = xyattr ? strdup(xyattr) : NULL;
+				ret_xypos = xypos;
+				want_xypos = 2;
 			}
 		} else if (ch == '\f') {
 			x = 0;
@@ -756,10 +761,10 @@ DEF_CMD(renderline)
 	flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
 		   &xypos, &xyattr);
 
-	if (want_xypos && xypos) {
-		comm_call(comm2, "xypos", p,
-			  xypos - line_start, NULL, xyattr);
-		want_xypos = 0;
+	if (want_xypos == 1 && xypos) {
+		rd->xyattr = xyattr ? strdup(xyattr) : NULL;
+		ret_xypos = xypos;
+		want_xypos = 2;
 	}
 
 	if (offset >= 0 && line - line_start <= offset) {
@@ -789,7 +794,13 @@ DEF_CMD(renderline)
 		free((void*)r->attr);
 		free(r);
 	}
-	return end_of_page ? 2 : 1;
+	if (want_xypos) {
+		if (ret_xypos)
+			return ret_xypos - line_start + 1;
+		else
+			return Efalse;
+	} else
+		return end_of_page ? 2 : 1;
 }
 
 DEF_CMD(renderline_get)
@@ -800,6 +811,18 @@ DEF_CMD(renderline_get)
 		return 1;
 	if (strcmp(ci->str, "prefix_len") == 0)
 		return rd->prefix_len + 1;
+	if (strcmp(ci->str, "xyattr") == 0)
+		comm_call(ci->comm2, "xyattr", ci->focus, 0, NULL,
+			  rd->xyattr);
+	return 1;
+}
+
+DEF_CMD(renderline_close)
+{
+	struct rline_data *rd = ci->home->data;
+
+	free((void*)rd->xyattr);
+	rd->xyattr = NULL;
 	return 1;
 }
 
@@ -816,6 +839,7 @@ DEF_CMD(renderline_attach)
 		key_add(rl_map, "render-line:draw", &renderline);
 		key_add(rl_map, "render-line:measure", &renderline);
 		key_add(rl_map, "render-line:get", &renderline_get);
+		key_add(rl_map, "Close", &renderline_close);
 		key_add(rl_map, "Free", &edlib_do_free);
 	}
 
