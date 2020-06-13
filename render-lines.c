@@ -101,7 +101,7 @@
 struct rl_data {
 	int		top_sol; /* true when first mark is at a start-of-line */
 	int		ignore_point;
-	int		skip_lines; /* Skip display-lines for first "line" */
+	int		skip_height; /* Skip display-lines for first "line" */
 	int		cursor_line; /* line that contains the cursor starts
 				      * on this line */
 	short		target_x, target_y;
@@ -475,7 +475,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			y_below += consume;
 		}
 	}
-	rl->skip_lines = lines_above;
+	rl->skip_height = lines_above;
 	/* Now discard any marks outside start-end */
 	if (end->seq < start->seq)
 		/* something confused, make sure we don't try to use 'end' after
@@ -556,7 +556,7 @@ restart:
 		}
 		rl->header_height = y;
 	}
-	y -= rl->skip_lines;
+	y -= rl->skip_height;
 
 	p->cx = p->cy = -1;
 	rl->cursor_line = 0;
@@ -815,9 +815,13 @@ DEF_CMD(render_lines_move)
 			struct mark *m;
 			struct mark *prevtop = top;
 
-			if (rl->skip_lines) {
-				rl->skip_lines -= 1;
-				rpt += 1;
+			if (rl->skip_height) {
+				rl->skip_height -= rl->line_height;
+				if (rl->skip_height < rl->line_height/2)
+					rl->skip_height = 0;
+				rpt += rl->line_height;
+				if (rpt > 0)
+					rpt = 0;
 				continue;
 			}
 
@@ -846,7 +850,7 @@ DEF_CMD(render_lines_move)
 				y += rl->helper->h;
 				m = vmark_next(m);
 			}
-			rl->skip_lines = y;
+			rl->skip_height = y;
 		}
 	} else {
 		while (top && rpt > 0) {
@@ -858,15 +862,15 @@ DEF_CMD(render_lines_move)
 				break;
 			measure_line(p, focus, top, 0, -1, -1, -1);
 			y = rl->helper->h;
-			if (rl->skip_lines + rpt < y) {
-				rl->skip_lines += rpt;
+			if (rl->skip_height + rpt < y) {
+				rl->skip_height += rpt;
 				break;
 			}
 			top = vmark_next(top);
 			if (top && top->mdata == NULL)
 				call_render_line(focus, top, NULL);
-			rpt -= y - rl->skip_lines;
-			rl->skip_lines = 0;
+			rpt -= y - rl->skip_height;
+			rl->skip_height = 0;
 		}
 		if (top && top->mdata) {
 			/* We didn't fall off the end, so it is OK to remove
@@ -914,7 +918,7 @@ DEF_CMD(render_lines_set_cursor)
 	struct rl_data *rl = p->data;
 	struct mark *m;
 	struct mark *newpoint = NULL;
-	short y = rl->header_height - rl->skip_lines;
+	short y = rl->header_height - rl->skip_height;
 	int found = 0;
 	struct xy cih;
 
@@ -987,7 +991,7 @@ DEF_CMD(render_lines_move_pos)
 	rl->ignore_point = 1;
 	top = vmark_first(focus, rl->typenum, p);
 	bot = vmark_last(focus, rl->typenum, p);
-	if (top && rl->skip_lines)
+	if (top && rl->skip_height)
 		/* top line not fully displayed, being in that line is
 		 * not sufficient */
 		top = vmark_next(top);
