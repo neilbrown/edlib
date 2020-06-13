@@ -110,7 +110,7 @@ struct rl_data {
 					 */
 	int		do_wrap;
 	short		shift_left;
-	short		header_lines;
+	short		header_height;
 	int		typenum;
 	short		line_height;
 	int		repositioned; /* send "render:reposition" when we know
@@ -332,7 +332,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	top = vmark_first(focus, rl->typenum, p);
 	bot = vmark_last(focus, rl->typenum, p);
 	if (!top && vline == 0 && rl->line_height)
-		vline = (p->h - rl->header_lines) / rl->line_height / 2;
+		vline = (p->h - rl->header_height) / rl->line_height / 2;
 	/* Don't consider the top or bottom lines as currently being
 	 * displayed - they might not be.
 	 */
@@ -380,7 +380,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (top && !mark_ordered_or_same(end, top))
 		top = NULL;
 
-	while ((!found_start || !found_end) && y < p->h - rl->header_lines) {
+	while ((!found_start || !found_end) && y < p->h - rl->header_height) {
 		if (vline != NO_NUMERIC) {
 			if (!found_start && vline > 0 &&
 			    y_above >= (vline-1) * rl->line_height)
@@ -440,8 +440,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			int consume = (lines_above > lines_below
 				       ? lines_below : lines_above) * 2;
 			int above, below;
-			if (consume > (p->h - rl->header_lines) - y)
-				consume = (p->h - rl->header_lines) - y;
+			if (consume > (p->h - rl->header_height) - y)
+				consume = (p->h - rl->header_height) - y;
 			if (lines_above > lines_below) {
 				above = consume - (consume/2);
 				below = consume/2;
@@ -459,7 +459,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			 * both > 0 */
 		}
 		if (found_end && lines_above) {
-			int consume = p->h - rl->header_lines - y;
+			int consume = p->h - rl->header_height - y;
 			if (consume > lines_above)
 				consume = lines_above;
 			lines_above -= consume;
@@ -467,7 +467,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			y_above += consume;
 		}
 		if (found_start && lines_below) {
-			int consume = p->h - rl->header_lines - y;
+			int consume = p->h - rl->header_height - y;
 			if (consume > lines_below)
 				consume = lines_below;
 			lines_below -= consume;
@@ -545,7 +545,7 @@ restart:
 
 	y = 0;
 	if (hdr) {
-		rl->header_lines = 0;
+		rl->header_height = 0;
 		m2 = vmark_new(focus, MARK_UNGROUPED, NULL);
 		if (m2) {
 			m2->mdata = hdr;
@@ -554,7 +554,7 @@ restart:
 			mark_free(m2);
 			y = rl->helper->h;
 		}
-		rl->header_lines = y;
+		rl->header_height = y;
 	}
 	y -= rl->skip_lines;
 
@@ -914,7 +914,7 @@ DEF_CMD(render_lines_set_cursor)
 	struct rl_data *rl = p->data;
 	struct mark *m;
 	struct mark *newpoint = NULL;
-	short y = rl->header_lines - rl->skip_lines;
+	short y = rl->header_height - rl->skip_lines;
 	int found = 0;
 	struct xy cih;
 
