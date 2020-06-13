@@ -331,8 +331,6 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 
 	top = vmark_first(focus, rl->typenum, p);
 	bot = vmark_last(focus, rl->typenum, p);
-	if (!top && vline == 0 && rl->line_height)
-		vline = (p->h - rl->header_height) / rl->line_height / 2;
 	/* Don't consider the top or bottom lines as currently being
 	 * displayed - they might not be.
 	 */
@@ -379,6 +377,11 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		bot = NULL;
 	if (top && !mark_ordered_or_same(end, top))
 		top = NULL;
+	if (vline != NO_NUMERIC) {
+		/* ignore current position - top/bot irrelevant */
+		top = NULL;
+		bot = NULL;
+	}
 
 	while ((!found_start || !found_end) && y < p->h - rl->header_height) {
 		if (vline != NO_NUMERIC) {
