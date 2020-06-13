@@ -796,7 +796,7 @@ DEF_CMD(render_lines_move)
 	int rpt = RPT_NUM(ci);
 	struct rl_data *rl = p->data;
 	struct mark *top, *old_top;
-	int pagesize = rl->line_height;
+	int pagesize = p->h / 10;
 
 	top = vmark_first(focus, rl->typenum, p);
 	if (!top)
@@ -804,8 +804,8 @@ DEF_CMD(render_lines_move)
 
 	old_top = mark_dup(top);
 	if (strcmp(ci->key, "Move-View-Large") == 0)
-		pagesize = p->h - 2 * rl->line_height;
-	rpt *= pagesize;
+		pagesize = p->h * 9 / 10;
+	rpt *= pagesize ?: 1;
 
 	rl->ignore_point = 1;
 
