@@ -430,7 +430,6 @@ DEF_CMD(renderline)
 	short posx = ci->x;
 	short posy = ci->y;
 	short offset = ci->num2;
-	struct command *comm2 = ci->comm2;
 
 	int x = 0;
 	int y = 0;
@@ -472,7 +471,7 @@ DEF_CMD(renderline)
 		 * The cursor is not on the image.
 		 */
 		y = render_image(p, focus, line, y, dodraw, scale);
-		comm_call(comm2, "dimensions", p, p->w);
+		attr_set_int(&p->attrs, "line-height", p->h);
 		p->cx = p->cy = -1;
 		return 1;
 	}
@@ -502,9 +501,6 @@ DEF_CMD(renderline)
 	if (center < 0)
 		x = p->w - x - twidth + center;
 	margin = x;
-
-	comm_call(comm2, "dimensions", p,
-		  0, NULL, NULL, line_height);
 
 	buf_init(&attr);
 	buf_append(&attr, ' '); attr.len = 0;
@@ -787,6 +783,7 @@ DEF_CMD(renderline)
 		p->cy = cy;
 	}
 	pane_resize(p, p->x, p->y, margin + twidth, y);
+	attr_set_int(&p->attrs, "line-height", line_height);
 	while (rlst) {
 		struct render_list *r = rlst;
 		rlst = r->next;

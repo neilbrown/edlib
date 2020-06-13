@@ -102,6 +102,7 @@ struct rl_data {
 	int		top_sol; /* true when first mark is at a start-of-line */
 	int		ignore_point;
 	int		skip_height; /* Skip display-lines for first "line" */
+	int		skip_line_height; /* height of lines in skip_height */
 	int		cursor_line; /* line that contains the cursor starts
 				      * on this line */
 	short		target_x, target_y;
@@ -112,7 +113,6 @@ struct rl_data {
 	short		shift_left;
 	short		header_height;
 	int		typenum;
-	short		line_height;
 	int		repositioned; /* send "render:reposition" when we know
 				       * full position again.
 				       */
@@ -120,19 +120,7 @@ struct rl_data {
 	short		cols; /* columns used for longest line */
 
 	struct pane	*helper safe; /* pane where renderlines happens. */
-	struct command	c;
 };
-
-DEF_CMD(rl_cb)
-{
-	struct rl_data *rl = container_of(ci->comm, struct rl_data, c);
-
-	if (strcmp(ci->key, "dimensions") == 0) {
-		rl->line_height = ci->num2;
-		return 1;
-	}
-	return 0;
-}
 
 /* Returns 'true' and end-of-page */
 static int measure_line(struct pane *p safe, struct pane *focus safe,
@@ -148,7 +136,7 @@ static int measure_line(struct pane *p safe, struct pane *focus safe,
 			focus,
 			0, NULL, mk->mdata ?: "",
 			offset, NULL, NULL,
-			posx, posy < 0 ? posy : posy-y_start, &rl->c);
+			posx, posy < 0 ? posy : posy-y_start);
 	if (posx < 0)
 		/* end-of-page flag */
 		return ret == 2;
@@ -169,7 +157,7 @@ static bool draw_line(struct pane *p safe, struct pane *focus safe,
 			focus,
 			0, NULL, mk->mdata ?: "",
 			offset, NULL, NULL,
-			-1, -1, &rl->c);
+			-1, -1);
 	if (offset >= 0) {
 		struct xy curs = pane_mapxy(rl->helper, p,
 					    rl->helper->cx, rl->helper->cy);
@@ -328,6 +316,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	short offset;
 	int found_start = 0, found_end = 0;
 	short y_pre = 0, y_post = 0;
+	short line_height_pre = 1, line_height_post = 1;
 
 	top = vmark_first(focus, rl->typenum, p);
 	bot = vmark_last(focus, rl->typenum, p);
@@ -363,7 +352,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 
 	found_end = measure_line(p, focus, start, 0, -1, -1, offset);
 	/* ->cy is top of cursor, we want to measure from bottom */
-	y_pre = rl->helper->cy + rl->line_height;
+	line_height_pre = attr_find_int(rl->helper->attrs, "line-height");
+	y_pre = rl->helper->cy + line_height_pre;
 	y_post = rl->helper->h - y_pre;
 	y = 0;
 
@@ -407,9 +397,12 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 					call_render_line(focus, start, &end);
 				measure_line(p, focus, start, 0, -1, -1, -1);
 				h = rl->helper->h;
-				if (h)
+				if (h) {
 					y_pre = h;
-				else
+					line_height_pre =
+						attr_find_int(rl->helper->attrs,
+							      "line-height");
+				} else
 					found_start = 1;
 			}
 			if (bot && start->seq < bot->seq)
@@ -430,9 +423,12 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 							 -1, -1, -1);
 				h = rl->helper->h;
 				end = next;
-				if (h)
+				if (h) {
 					y_post = h;
-				else {
+					line_height_post =
+						attr_find_int(rl->helper->attrs,
+							      "line-height");
+				} else {
 					found_end = 1;
 					y_post = p->h / 10;
 				}
@@ -455,9 +451,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			}
 			y += above + below;
 			y_pre -= above;
-			lines_above += above / rl->line_height;
+			lines_above += above / (line_height_pre?:1);
 			y_post -= below;
-			lines_below += below / rl->line_height;
+			lines_below += below / (line_height_post?:1);
 			/* We have just consumed all of one of
 			 * lines_{above,below} so they are no longer
 			 * both > 0 */
@@ -468,7 +464,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				consume = y_pre;
 			y_pre -= consume;
 			y += consume;
-			lines_above += consume / rl->line_height;
+			lines_above += consume / (line_height_pre?:1);
 		}
 		if (found_start && y_post) {
 			int consume = p->h - rl->header_height - y;
@@ -476,10 +472,11 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				consume = y_post;
 			y_post -= consume;
 			y += consume;
-			lines_below += consume / rl->line_height;
+			lines_below += consume / (line_height_post?:1);
 		}
 	}
 	rl->skip_height = y_pre;
+	rl->skip_line_height = line_height_pre;
 	/* Now discard any marks outside start-end */
 	if (end->seq < start->seq)
 		/* something confused, make sure we don't try to use 'end' after
@@ -820,10 +817,10 @@ DEF_CMD(render_lines_move)
 			struct mark *prevtop = top;
 
 			if (rl->skip_height) {
-				rl->skip_height -= rl->line_height;
-				if (rl->skip_height < rl->line_height/2)
+				rl->skip_height -= rl->skip_line_height;
+				if (rl->skip_height < rl->skip_line_height/2)
 					rl->skip_height = 0;
-				rpt += rl->line_height;
+				rpt += rl->skip_line_height;
 				if (rpt > 0)
 					rpt = 0;
 				continue;
@@ -1289,7 +1286,6 @@ REDEF_CMD(render_lines_attach)
 	rl->target_x = -1;
 	rl->target_y = -1;
 	rl->do_wrap = 1;
-	rl->c = rl_cb;
 	p = ci->focus;
 	if (strcmp(ci->key, "attach-render-text") == 0)
 		p = call_ret(pane, "attach-markup", p);
