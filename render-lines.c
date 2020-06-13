@@ -324,7 +324,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	struct mark *m;
 	struct mark *start, *end;
 	short y = 0;
-	short y_above = 0, y_below = 0;
+	short lines_above = 0, lines_below = 0;
 	short offset;
 	int found_start = 0, found_end = 0;
 	short y_pre = 0, y_post = 0;
@@ -387,10 +387,10 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	while ((!found_start || !found_end) && y < p->h - rl->header_height) {
 		if (vline != NO_NUMERIC) {
 			if (!found_start && vline > 0 &&
-			    y_above >= (vline-1) * rl->line_height)
+			    lines_above >= vline-1)
 				found_start = 1;
 			if (!found_end && vline < 0 &&
-			    y_below >= (-vline-1) * rl->line_height)
+			    lines_below >= -vline-1)
 				found_end = 1;
 		}
 		if (!found_start && y_pre == 0) {
@@ -455,9 +455,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			}
 			y += above + below;
 			y_pre -= above;
-			y_above += above;
+			lines_above += above / rl->line_height;
 			y_post -= below;
-			y_below += below;
+			lines_below += below / rl->line_height;
 			/* We have just consumed all of one of
 			 * lines_{above,below} so they are no longer
 			 * both > 0 */
@@ -468,7 +468,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				consume = y_pre;
 			y_pre -= consume;
 			y += consume;
-			y_above += consume;
+			lines_above += consume / rl->line_height;
 		}
 		if (found_start && y_post) {
 			int consume = p->h - rl->header_height - y;
@@ -476,7 +476,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				consume = y_post;
 			y_post -= consume;
 			y += consume;
-			y_below += consume;
+			lines_below += consume / rl->line_height;
 		}
 	}
 	rl->skip_height = y_pre;
