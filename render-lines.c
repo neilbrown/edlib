@@ -327,7 +327,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	short y_above = 0, y_below = 0;
 	short offset;
 	int found_start = 0, found_end = 0;
-	short lines_above = 0, lines_below = 0;
+	short y_pre = 0, y_post = 0;
 
 	top = vmark_first(focus, rl->typenum, p);
 	bot = vmark_last(focus, rl->typenum, p);
@@ -362,14 +362,15 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		goto abort; /* FIXME can I prove this? */
 
 	found_end = measure_line(p, focus, start, 0, -1, -1, offset);
-	//lines_above = rl->cy;
-	y = rl->helper->h;
-	lines_above = lines_below = 0;
+	/* ->cy is top of cursor, we want to measure from bottom */
+	y_pre = rl->helper->cy + rl->line_height;
+	y_post = rl->helper->h - y_pre;
+	y = 0;
 
-	/* We have start/end of the focus line, and its height.
-	 * Rendering just that "line" uses a height of 'y', of which
-	 * 'lines_above' is above the cursor, and 'lines_below' is below.
+	/* We have start/end of the focus line.  When rendered this would use
+	 * y_pre + y + y_post vertial space.
 	 */
+
 	if (bot && !mark_ordered_or_same(bot, start))
 		/* already before 'bot', so will never "cross over" bot, so
 		 * ignore 'bot'
@@ -392,7 +393,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			    y_below >= (-vline-1) * rl->line_height)
 				found_end = 1;
 		}
-		if (!found_start && lines_above == 0) {
+		if (!found_start && y_pre == 0) {
 			/* step backwards moving start */
 			m = call_render_line_prev(focus, mark_dup_view(start),
 						  1, &rl->top_sol);
@@ -407,14 +408,14 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				measure_line(p, focus, start, 0, -1, -1, -1);
 				h = rl->helper->h;
 				if (h)
-					lines_above = h;
+					y_pre = h;
 				else
 					found_start = 1;
 			}
 			if (bot && start->seq < bot->seq)
 				found_end = 1;
 		}
-		if (!found_end && lines_below == 0) {
+		if (!found_end && y_post == 0) {
 			/* step forwards */
 			struct mark *next;
 			if (!end->mdata)
@@ -422,7 +423,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			next = vmark_next(end);
 			if (!end->mdata || !next) {
 				found_end = 1;
-				lines_below = p->h / 10;
+				y_post = p->h / 10;
 			} else {
 				short h;
 				found_end = measure_line(p, focus, end, 0,
@@ -430,22 +431,22 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				h = rl->helper->h;
 				end = next;
 				if (h)
-					lines_below = h;
+					y_post = h;
 				else {
 					found_end = 1;
-					lines_below = p->h / 10;
+					y_post = p->h / 10;
 				}
 			}
 			if (top && top->seq < end->seq)
 				found_start = 1;
 		}
-		if (lines_above > 0 && lines_below > 0) {
-			int consume = (lines_above > lines_below
-				       ? lines_below : lines_above) * 2;
+		if (y_pre > 0 && y_post > 0) {
+			int consume = (y_post < y_pre
+				       ? y_post : y_pre) * 2;
 			int above, below;
 			if (consume > (p->h - rl->header_height) - y)
 				consume = (p->h - rl->header_height) - y;
-			if (lines_above > lines_below) {
+			if (y_pre > y_post) {
 				above = consume - (consume/2);
 				below = consume/2;
 			} else {
@@ -453,32 +454,32 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				above = consume/2;
 			}
 			y += above + below;
-			lines_above -= above;
+			y_pre -= above;
 			y_above += above;
-			lines_below -= below;
+			y_post -= below;
 			y_below += below;
 			/* We have just consumed all of one of
 			 * lines_{above,below} so they are no longer
 			 * both > 0 */
 		}
-		if (found_end && lines_above) {
+		if (found_end && y_pre) {
 			int consume = p->h - rl->header_height - y;
-			if (consume > lines_above)
-				consume = lines_above;
-			lines_above -= consume;
+			if (consume > y_pre)
+				consume = y_pre;
+			y_pre -= consume;
 			y += consume;
 			y_above += consume;
 		}
-		if (found_start && lines_below) {
+		if (found_start && y_post) {
 			int consume = p->h - rl->header_height - y;
-			if (consume > lines_below)
-				consume = lines_below;
-			lines_below -= consume;
+			if (consume > y_post)
+				consume = y_post;
+			y_post -= consume;
 			y += consume;
 			y_below += consume;
 		}
 	}
-	rl->skip_height = lines_above;
+	rl->skip_height = y_pre;
 	/* Now discard any marks outside start-end */
 	if (end->seq < start->seq)
 		/* something confused, make sure we don't try to use 'end' after

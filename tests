@@ -135,7 +135,7 @@ refresh_one() {
     fi
     setup_test_dir
     # ensure we see delayed updates
-    export EDLIB_REPLAY_DELAY=100
+    #export EDLIB_REPLAY_DELAY=100
     #grep -v '^Display' $f > tests.d/.in
     cat $f > tests.d/.in
     runtest run tests.d/.out tests.d/.in
