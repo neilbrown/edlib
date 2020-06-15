@@ -216,11 +216,6 @@ static struct mark *call_render_line(struct pane *p safe,
 
 	m = mark_dup_view(start);
 
-	/* Allow for filling the rest of the pane, given that
-	 * some has been used.
-	 * 'used' can be negative if the mark is before the start
-	 * of the pane
-	 */
 	s = call_ret(str, "doc:render-line", p, NO_NUMERIC, m);
 
 	if (s) {
