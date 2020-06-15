@@ -134,7 +134,7 @@ static int measure_line(struct pane *p safe, struct pane *focus safe,
 	ret = pane_call(rl->helper,
 			"render-line:measure",
 			focus,
-			0, NULL, mk->mdata ?: "",
+			0, NULL, mk->mdata,
 			offset, NULL, NULL,
 			posx, posy < 0 ? posy : posy-y_start);
 	if (posx < 0)
@@ -155,7 +155,7 @@ static bool draw_line(struct pane *p safe, struct pane *focus safe,
 	ret = pane_call(rl->helper,
 			"render-line:draw",
 			focus,
-			0, NULL, mk->mdata ?: "",
+			0, NULL, mk->mdata,
 			offset, NULL, NULL,
 			-1, -1);
 	if (offset >= 0) {
@@ -216,12 +216,13 @@ static struct mark *call_render_line(struct pane *p safe,
 
 	m = mark_dup_view(start);
 
-	s = call_ret(str, "doc:render-line", p, NO_NUMERIC, m);
+	if (doc_following(p, m) == WEOF)
+		s = strdup("");
+	else
+		s = call_ret(str, "doc:render-line", p, NO_NUMERIC, m);
 
-	if (s) {
-		free(start->mdata);
-		start->mdata = s;
-	}
+	free(start->mdata);
+	start->mdata = s;
 
 	m2 = vmark_matching(m);
 	if (m2)
