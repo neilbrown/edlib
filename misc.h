@@ -27,8 +27,7 @@ void buf_append(struct buf *b safe, wchar_t wch);
 void buf_append_byte(struct buf *b safe, char c);
 static inline char *safe buf_final(struct buf *b safe)
 {
-	if ((void*)b->b)
-		b->b[b->len] = 0;
+	b->b[b->len] = 0;
 	return b->b;
 }
 

@@ -19,9 +19,9 @@
 
 void buf_init(struct buf *b safe)
 {
-	b->b = safe_cast NULL;
+	b->size = 32;
+	b->b = malloc(b->size);
 	b->len = 0;
-	b->size = 0;
 }
 
 void buf_concat_len(struct buf *b safe, const char *s safe, int l)
