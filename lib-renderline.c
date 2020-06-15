@@ -36,6 +36,7 @@ struct render_list {
 struct rline_data {
 	short		prefix_len;
 	const char	*xyattr;
+	const char	*line;
 };
 
 #define WRAP 1
@@ -461,6 +462,8 @@ DEF_CMD(renderline)
 	short cx = -1, cy = -1;
 
 	if (!line)
+		line = rd->line;
+	if (!line)
 		return Enoarg;
 	start = line_start = line;
 
@@ -814,11 +817,24 @@ DEF_CMD(renderline_get)
 	return 1;
 }
 
+DEF_CMD(renderline_set)
+{
+	struct rline_data *rd = ci->home->data;
+
+	free((void*)rd->line);
+	if (ci->str)
+		rd->line = strdup(ci->str);
+	else
+		rd->line = NULL;
+	return 1;
+}
+
 DEF_CMD(renderline_close)
 {
 	struct rline_data *rd = ci->home->data;
 
 	free((void*)rd->xyattr);
+	free((void*)rd->line);
 	rd->xyattr = NULL;
 	return 1;
 }
@@ -836,6 +852,7 @@ DEF_CMD(renderline_attach)
 		key_add(rl_map, "render-line:draw", &renderline);
 		key_add(rl_map, "render-line:measure", &renderline);
 		key_add(rl_map, "render-line:get", &renderline_get);
+		key_add(rl_map, "render-line:set", &renderline_set);
 		key_add(rl_map, "Close", &renderline_close);
 		key_add(rl_map, "Free", &edlib_do_free);
 	}
