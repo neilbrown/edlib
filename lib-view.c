@@ -257,8 +257,8 @@ DEF_CMD(view_close)
 {
 	struct view_data *vd = ci->home->data;
 
-	if (vd->viewpoint)
-		mark_free(vd->viewpoint);
+	mark_free(vd->viewpoint);
+	vd->viewpoint = NULL;
 	return 1;
 }
 
@@ -365,10 +365,11 @@ DEF_CMD(view_reposition)
 {
 	struct view_data *vd = ci->home->data;
 
-	if (vd->viewpoint != ci->mark) {
-		if (!vd->viewpoint || !ci->mark ||
-		    !mark_same(vd->viewpoint, ci->mark))
-			pane_damaged(ci->home, DAMAGED_REFRESH);
+	if (!ci->mark)
+		return Enoarg;
+
+	if (!vd->viewpoint || !mark_same(vd->viewpoint, ci->mark)) {
+		pane_damaged(ci->home, DAMAGED_REFRESH);
 		if (vd->viewpoint)
 			mark_free(vd->viewpoint);
 		if (ci->mark)
