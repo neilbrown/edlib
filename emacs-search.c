@@ -874,13 +874,15 @@ DEF_CMD(emacs_search_reposition_delayed)
 	vend = vmark_last(ci->focus, hi->view, ci->home);
 	if (vstart == NULL || start->seq < vstart->seq) {
 		/* search from 'start' to first match or 'end' */
-		do_searches(ci->focus, ci->home, hi->view, patn, hi->ci, start, vstart ?: end);
+		do_searches(ci->focus, ci->home, hi->view, patn, hi->ci,
+			    start, vstart ?: end);
 		if (vend)
 			do_searches(ci->focus, ci->home, hi->view, patn, hi->ci,
 				    vend, end);
 	} else if (vend && end->seq > vend->seq) {
 		/* search from last match to end */
-		do_searches(ci->focus, ci->home, hi->view, patn, hi->ci, vend, end);
+		do_searches(ci->focus, ci->home, hi->view, patn, hi->ci,
+			    vend, end);
 	}
 	mark_free(hi->start);
 	mark_free(hi->end);
@@ -890,20 +892,20 @@ DEF_CMD(emacs_search_reposition_delayed)
 
 DEF_CMD(emacs_search_reposition)
 {
-	/* If new range and old range don't over-lap, discard
-	 * old range and re-fill new range.
-	 * Otherwise delete anything in range that is no longer visible.
-	 * If they overlap before, search from start to first match.
-	 * If they overlap after, search from last match to end.
+	/*
+	 * Delete any matches that are no longer visible.
+	 * Then record new end-points and schedule an update shortly
+	 * to find any matches in the new range.  If there are multiple
+	 * calls to this in quick successes (e.g. when scrolling), the
+	 * delayed update won't happen until a suitable time after the last
+	 * reposition.
 	 */
-	/* delete every match before new start and after end */
 	struct highlight_info *hi = ci->home->data;
 	struct mark *start = ci->mark;
 	struct mark *end = ci->mark2;
-	char *patn = hi->patn;
 	struct mark *m;
 
-	if (hi->view < 0 || patn == NULL || !start || !end)
+	if (hi->view < 0 || hi->patn == NULL || !start || !end)
 		return 0;
 
 	while ((m = vmark_first(ci->focus, hi->view, ci->home)) != NULL &&
@@ -919,6 +921,7 @@ DEF_CMD(emacs_search_reposition)
 	hi->start = mark_dup(start);
 	hi->end = mark_dup(end);
 
+	call_comm("event:free", ci->focus, &emacs_search_reposition_delayed);
 	call_comm("event:timer", ci->focus, &emacs_search_reposition_delayed,
 		  getenv("EDLIB_TESTING") ? 50 : 500);
 	return 1;
