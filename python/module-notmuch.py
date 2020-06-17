@@ -1490,7 +1490,7 @@ class notmuch_query_view(edlib.Pane):
             focus.call("notmuch:select-message", s2, s, num)
         return 1
 
-    def handle_reposition(self, key, focus, mark, mark2, str, **a):
+    def handle_reposition(self, key, focus, mark, mark2, **a):
         "handle:render:reposition"
         # some messages have been displayed, from mark to mark2
         # collect threadids and message ids
