@@ -287,7 +287,7 @@ Module features
 - [ ] easy way for minor-modes to report existance in status bar
 - [ ] review use of line-drawing chars for window boarders
 - [ ] improve scroll bars
-- [ ] scroll bar should show part of doc displayed, not location of point.
+- [X] scroll bar should show part of doc displayed, not location of point.
 - [ ] make (trailing) space/tab in doc name visible
 - [ ] review decision about that to do when high < 3*border-height.
       Current (disabled) code makes a mess when differing scales causes

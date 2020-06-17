@@ -924,7 +924,7 @@ DEF_CMD(emacs_search_reposition)
 	call_comm("event:free", ci->focus, &emacs_search_reposition_delayed);
 	call_comm("event:timer", ci->focus, &emacs_search_reposition_delayed,
 		  getenv("EDLIB_TESTING") ? 50 : 500);
-	return 1;
+	return 0;
 }
 
 DEF_CMD(emacs_highlight_close)
