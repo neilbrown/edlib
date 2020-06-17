@@ -739,31 +739,26 @@ DEF_CMD(render_lines_refresh)
 		m = vmark_first(focus, rl->typenum, p);
 	}
 
-	if (m) {
+	if (m)
 		rl->lines = render(pm, p, focus);
-		if (!pm || rl->ignore_point || (p->cx >= 0 && p->cy < p->h)) {
-			call("render:reposition", focus,
-			     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
-			     rl->cols, vmark_last(focus, rl->typenum, p), NULL,
-			     p->cx, p->cy);
-
-			return 1;
+	if (!m || (pm && !rl->ignore_point && (p->cx < 0 || p->cy < 0))) {
+		/* Either we haven't drawn anything, or what we drew didn't
+		 * show the cursor which is needed.
+		 * Try harder.
+		 */
+		m = pm ?: vmark_new(focus, MARK_UNGROUPED, NULL);
+		if (m) {
+			find_lines(m, p, focus, NO_NUMERIC);
+			rl->lines = render(m, p, focus);
+			if (m != pm)
+				mark_free(m);
 		}
 	}
-	m = pm;
-	if (!m)
-		m = vmark_new(focus, MARK_UNGROUPED, NULL);
-	if (!m)
-		return Efail;
-	find_lines(m, p, focus, NO_NUMERIC);
-	rl->lines = render(m, p, focus);
 	rl->repositioned = 0;
 	call("render:reposition", focus,
 	     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
 	     rl->cols, vmark_last(focus, rl->typenum, p), NULL,
 	     p->cx, p->cy);
-	if (!pm)
-		mark_free(m);
 	return 1;
 }
 
