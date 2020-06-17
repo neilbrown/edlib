@@ -750,15 +750,18 @@ DEF_CMD(render_lines_refresh)
 		if (m) {
 			find_lines(m, p, focus, NO_NUMERIC);
 			rl->lines = render(m, p, focus);
+			rl->repositioned = 1;
 			if (m != pm)
 				mark_free(m);
 		}
 	}
-	rl->repositioned = 0;
-	call("render:reposition", focus,
-	     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
-	     rl->cols, vmark_last(focus, rl->typenum, p), NULL,
-	     p->cx, p->cy);
+	if (rl->repositioned) {
+		rl->repositioned = 0;
+		call("render:reposition", focus,
+		     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
+		     rl->cols, vmark_last(focus, rl->typenum, p), NULL,
+		     p->cx, p->cy);
+	}
 	return 1;
 }
 
@@ -1005,12 +1008,11 @@ DEF_CMD(render_lines_move_pos)
 	if (bot)
 		/* last line might not be fully displayed, so don't assume */
 		bot = vmark_prev(bot);
-	if (top && bot &&
-	    (top->seq < pm->seq || mark_same(top, pm)) &&
-	    (pm->seq < bot->seq && !mark_same(pm, bot)))
-		/* pos already displayed */
-		return 1;
-	find_lines(pm, p, focus, NO_NUMERIC);
+	if (!top || !bot ||
+	    (top->seq >= pm->seq && !mark_same(top, pm)) ||
+	    (pm->seq >= bot->seq || mark_same(pm, bot)))
+		/* pos not displayed displayed */
+		find_lines(pm, p, focus, NO_NUMERIC);
 	pane_damaged(p, DAMAGED_REFRESH);
 	rl->repositioned = 1;
 	return 1;
