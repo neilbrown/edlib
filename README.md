@@ -647,5 +647,3 @@ Next steps
 ----------
 
 The [TO-DO list](DOC/TODO.md) is now a separate document.
-
-
