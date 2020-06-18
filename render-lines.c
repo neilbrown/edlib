@@ -927,64 +927,56 @@ DEF_CMD(render_lines_set_cursor)
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
 	struct mark *m;
-	struct mark *newpoint = NULL;
-	short y = rl->header_height - rl->skip_height;
-	int found = 0;
+	struct mark *m2 = NULL;
 	struct xy cih;
-
-	m = vmark_first(p, rl->typenum, p);
+	int xypos;
 
 	cih = pane_mapxy(ci->focus, ci->home,
 			 ci->x >= 0 ? ci->x : p->cx >= 0 ? p->cx : 0,
 			 ci->y >= 0 ? ci->y : p->cy >= 0 ? p->cx : 0);
 
-	if (y > cih.y)
-		/* x,y is in header line - try lower */
-		cih.y = y;
-	while (y <= cih.y && m) {
-		int xypos;
-		call_render_line(p, focus, m, NULL);
-		if (!m->mdata) {
-			/* Presumably end-of-file.  Move here. */
-			if (newpoint)
-				mark_to_mark(newpoint, m);
-			break;
-		}
-		xypos = measure_line(p, focus, m, y, cih.x, cih.y, -1);
-		y += m->mdata->h;
-		if (xypos >= 0) {
-			struct mark *m2 = call_render_line_offset(focus, m,
-								  xypos);
-			if (m2) {
-				char *tag, *xyattr;
+	m = vmark_first(p, rl->typenum, p);
 
-				xyattr = pane_call_ret(str, m->mdata,
-						       "render-line:get",
-						       focus, 0, NULL, "xyattr");
-				tag = get_active_tag(xyattr);
-				if (tag)
-					call("Mouse-Activate", focus, 0, m2, tag,
-					     0, ci->mark, xyattr);
-				free(tag);
-				if (!newpoint)
-					newpoint = mark_dup(m2);
-				else
-					mark_to_mark(newpoint, m2);
-				mark_free(m2);
-				found = 1;
-			}
-		} else if (found)
-			break;
+	while (m && m->mdata && m->mdata->y + m->mdata->h <= cih.y)
 		m = vmark_next(m);
+
+	if (!m)
+		/* There is nothing rendered? */
+		return 1;
+	if (!m->mdata) {
+		/* chi is after the last visible content, and m is the end
+		 * of that content (possible EOF) so move there
+		 */
+	} else {
+		if (cih.y < m->mdata->y)
+			cih.y = m->mdata->y;
+		xypos = measure_line(p, focus, m, m->mdata->y,
+				     cih.x, cih.y, -1);
+		if (xypos >= 0)
+			m2 = call_render_line_offset(focus, m, xypos);
+	}
+	if (m2) {
+		char *tag, *xyattr;
+
+		xyattr = pane_call_ret(str, m->mdata,
+				       "render-line:get",
+				       focus, 0, NULL, "xyattr");
+		tag = get_active_tag(xyattr);
+		if (tag)
+			call("Mouse-Activate", focus, 0, m2, tag,
+			     0, ci->mark, xyattr);
+		free(tag);
+		m = m2;
+	} else {
+		/* m is the closest we'll get */
 	}
 
-	if (newpoint) {
-		if (ci->mark)
-			mark_to_mark(ci->mark, newpoint);
-		else
-			call("Move-to", focus, 0, newpoint);
-		mark_free(newpoint);
-	}
+	if (ci->mark)
+		mark_to_mark(ci->mark, m);
+	else
+		call("Move-to", focus, 0, m);
+	mark_free(m2);
+
 	return 1;
 }
 

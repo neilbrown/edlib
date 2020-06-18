@@ -231,6 +231,7 @@ Module features
 
 ### render-lines
 
+- [ ] click in a wrapped line always goes to first line.
 - [ ] Replace <attr> text </> in markup with SOH attr STX text ETX
       This also affects lib-markup and others.
 - [ ] I regularly hit problems because ->mdata is not up to date and we render
