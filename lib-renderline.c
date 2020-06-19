@@ -347,13 +347,8 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 	free(buf_final(&attr));
 }
 
-DEF_CMD(null)
-{
-	return 0;
-}
-
-static int render_image(struct pane *p safe, struct pane *focus safe,
-			const char *line safe, short y,
+static void render_image(struct pane *p safe, struct pane *focus safe,
+			const char *line safe,
 			int dodraw, int scale)
 {
 	char *fname = NULL;
@@ -378,17 +373,11 @@ static int render_image(struct pane *p safe, struct pane *focus safe,
 		line += len;
 		line += strspn(line, ",");
 	}
-	if (fname && dodraw) {
-		struct pane *tmp = pane_register(p, -1, &null);
+	pane_resize(p, (p->w - width)/2, p->y, width, height);
+	if (fname && dodraw)
+		home_call(focus, "Draw:image", p, 0, NULL, fname, 5);
 
-		if (tmp) {
-			pane_resize(tmp, (p->w - width)/2, y, width, height);
-			home_call(focus, "Draw:image", tmp, 0, NULL, fname, 5);
-			pane_close(tmp);
-		}
-	}
 	free(fname);
-	return y + height;
 }
 
 static void find_xypos(struct render_list *rlst,
@@ -473,7 +462,7 @@ DEF_CMD(renderline)
 		 * something that makes sense.
 		 * The cursor is not on the image.
 		 */
-		y = render_image(p, focus, line, y, dodraw, scale);
+		render_image(p, focus, line, dodraw, scale);
 		attr_set_int(&p->attrs, "line-height", p->h);
 		p->cx = p->cy = -1;
 		return 1;

@@ -236,7 +236,7 @@ Module features
 ### render-lines
 
 - [X] use a stable mark/pane for the header
-- [ ] use a stable pane for an image line
+- [X] use a stable pane for an image line
 - [ ] separate out Refresh:view which validates and maybe calls find_lines
       from Refresh which calls refresh on all sub-panes.
 - [ ] Give lib-renderline a Refresh:view which calls something in the render-line
