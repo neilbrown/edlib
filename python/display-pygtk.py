@@ -110,14 +110,15 @@ class EdDisplay(edlib.Pane):
         else:
             scale = 1000
         fd = self.extract_font(attr, scale)
-        layout = self.text.create_pango_layout(str)
+        # If we use an empty string, line height is wrong
+        layout = self.text.create_pango_layout(str if str else "M")
         layout.set_font_description(fd)
         ctx = layout.get_context()
         metric = ctx.get_metrics(fd)
         ink,l = layout.get_pixel_extents()
         ascent = metric.get_ascent() / Pango.SCALE
         if num >= 0:
-            if l.width <= num:
+            if not str or l.width <= num:
                 max_bytes = len(str.encode("utf-8"))
             else:
                 inside, max_chars,extra = layout.xy_to_index(Pango.SCALE*num,
@@ -126,7 +127,7 @@ class EdDisplay(edlib.Pane):
         else:
             max_bytes = 0
         return comm2("callback:size", focus, max_bytes, int(ascent),
-                     (l.width, l.height))
+                     (l.width if str else 0, l.height))
 
     def handle_draw_text(self, key, num, num2, focus, str, str2, xy, **a):
         "handle:Draw:text"

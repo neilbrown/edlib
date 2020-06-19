@@ -443,7 +443,7 @@ DEF_CMD(renderline)
 	int shift_left = atoi(pane_attr_get(focus, "shift_left") ?:"0");
 	int wrap = shift_left < 0;
 	char *prefix = pane_attr_get(focus, "prefix");
-	int line_height = -1;
+	int line_height = 0;
 	int ascent = -1;
 	int mwidth = -1;
 	int ret = 0;

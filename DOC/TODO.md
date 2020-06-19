@@ -4,13 +4,14 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] fix bugs
+- [X] fix bugs
 - [X] diff: add command to add it to any pane
 - [X] Change various things that use cmd-* and a switch, to use multiple cmds.
 - [X] doc:char intermediate commands
 - [X] overlay for lib-format to allow char access.
 - [X] test suite
 - [X] use a single hash in key lookup - two at most.
+- [ ] Finish render-lines rewrite
 - [ ] rexel/search improvements
 - [ ] unify backend for make/grep and shell modes
 - [ ] input: keyboard macros
@@ -18,7 +19,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] The height of a blank line is slightly less than that of a line
+- [X] The height of a blank line is slightly less than that of a line
       with a space - so adding a space pushed later lines down a pixel.
 - [X] ->cx/cy used by render-lines isn't the same as where the cursor
       is drawn. For a wrapped line it is the '\' wrap character.
@@ -166,7 +167,9 @@ Module features
 
 ### lib-diff
 
-- [ ] add command to add it to any pane
+- [ ] add command to add it to any pane/doc
+- [ ] allow inversion so 'enter' looks for the '-' not the '+'
+- [ ] status-line entry to indicate if inverted or not.
 - [ ] highlight word differences, rather than just lines
 - [ ] detect <<< ||| === >>> and highlight relevant differences,
       and change colour of <<< etc when no differences, or only white-space differences.
@@ -178,6 +181,7 @@ Module features
 - [ ] make-directory command
 - [ ] sort the command names for command-completion?
 - [ ] filename completion should ignore uninteresting files like ".o"
+      Maybe use .gitignore, or have config module understand that.
 - [ ] search highlight doesn't report empty match (eol)...
 - [ ] emacs highlight should get close notification from popup,
       instead of catching abort.
@@ -231,6 +235,16 @@ Module features
 
 ### render-lines
 
+- [ ] use a stable mark/pane for the header
+- [ ] use a stable pane for an image line
+- [ ] separate out Refresh:view which validates and maybe calls find_lines
+      from Refresh which calls refresh on all sub-panes.
+- [ ] Give lib-renderline a Refresh:view which calls something in the render-line
+      pane which does call_render_line().  Use pane_damaged() to mark panes as invalid
+      and pane_refresh() to update them.
+- [ ] revise render_lines_move
+- [ ] revise render_lines_move_line
+- [ ] revise render_lines_view_line
 - [ ] click in a wrapped line always goes to first line.
 - [ ] Replace <attr> text </> in markup with SOH attr STX text ETX
       This also affects lib-markup and others.
@@ -310,6 +324,8 @@ Module features
 
 ### grep/make
 
+- [ ] If target pane is visible, it still gets refreshed, and often
+      point end up at top-of-pane, which is painful.
 - [ ] When I visit from grep in a popup, I think I want a 'view' at first.
       so 'q' works.
 - [ ] Need keystroke to step through different grep/make windows
