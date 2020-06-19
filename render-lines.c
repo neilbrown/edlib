@@ -111,7 +111,7 @@ struct rl_data {
 					 */
 	int		do_wrap;
 	short		shift_left;
-	short		header_height;
+	struct mark	*header;
 	int		typenum;
 	int		repositioned; /* send "render:reposition" when we know
 				       * full position again.
@@ -382,6 +382,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		y_post = 0;
 	}
 	y = 0;
+	if (rl->header && rl->header->mdata)
+		y = rl->header->mdata->h;
 
 	/* We have start/end of the focus line.  When rendered this would use
 	 * y_pre + y + y_post vertial space.
@@ -400,7 +402,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		bot = NULL;
 	}
 
-	while ((!found_start || !found_end) && y < p->h - rl->header_height) {
+	while ((!found_start || !found_end) && y < p->h) {
 		if (vline != NO_NUMERIC) {
 			if (!found_start && vline > 0 &&
 			    lines_above >= vline-1)
@@ -466,8 +468,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			int consume = (y_post < y_pre
 				       ? y_post : y_pre) * 2;
 			int above, below;
-			if (consume > (p->h - rl->header_height) - y)
-				consume = (p->h - rl->header_height) - y;
+			if (consume > p->h - y)
+				consume = p->h - y;
 			if (y_pre > y_post) {
 				above = consume - (consume/2);
 				below = consume/2;
@@ -485,7 +487,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			 * both > 0 */
 		}
 		if (found_end && y_pre) {
-			int consume = p->h - rl->header_height - y;
+			int consume = p->h - y;
 			if (consume > y_pre)
 				consume = y_pre;
 			y_pre -= consume;
@@ -493,7 +495,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			lines_above += consume / (line_height_pre?:1);
 		}
 		if (found_start && y_post) {
-			int consume = p->h - rl->header_height - y;
+			int consume = p->h - y;
 			if (consume > y_post)
 				consume = y_post;
 			y_post -= consume;
@@ -565,19 +567,22 @@ restart:
 	} else
 		home_call(focus, "pane-clear", p);
 
-	y = 0;
 	if (hdr) {
-		rl->header_height = 0;
-		m2 = vmark_new(focus, MARK_UNGROUPED, NULL);
-		if (m2) {
-			vmark_set(p, m2, hdr);
-			draw_line(p, focus, m2, 0, -1);
-			if (m2->mdata)
-				y = m2->mdata->h;
-			vmark_free(m2);
+		if (!rl->header)
+			rl->header = vmark_new(focus, MARK_UNGROUPED, NULL);
+		if (rl->header) {
+			vmark_set(p, rl->header, hdr);
+			draw_line(p, focus, rl->header, 0, -1);
 		}
-		rl->header_height = y;
+	} else if (rl->header) {
+		vmark_free(rl->header);
+		rl->header = NULL;
 	}
+	if (rl->header && rl->header->mdata)
+		y = rl->header->mdata->h;
+	else
+		y = 0;
+
 	y -= rl->skip_height;
 
 	p->cx = p->cy = -1;
@@ -773,6 +778,9 @@ DEF_CMD(render_lines_close)
 
 	while ((m = vmark_first(p, rl->typenum, p)) != NULL)
 		vmark_free(m);
+	if (rl->header)
+		vmark_free(rl->header);
+	rl->header = NULL;
 
 	call("doc:del-view", p, rl->typenum);
 	return 0;
@@ -1210,6 +1218,8 @@ DEF_CMD(render_lines_clip)
 	struct rl_data *rl = ci->home->data;
 
 	marks_clip(ci->home, ci->mark, ci->mark2, rl->typenum, ci->home);
+	if (rl->header)
+		mark_clip(rl->header, ci->mark, ci->mark2);
 	return 0;
 }
 
