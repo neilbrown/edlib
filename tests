@@ -119,6 +119,14 @@ run_tests() {
 	for f in tests.d/[A-Za-z0-9]*; do
 	    b=${f#tests.d/}
 	    run_one_test "$b"
+	    if [ $exit_code -gt 0 ]; then
+	    	break
+	    fi
+	done
+    elif [ " $1" = " -a" ]; then
+	for f in tests.d/[A-Za-z0-9]*; do
+	    b=${f#tests.d/}
+	    run_one_test "$b"
 	done
     else
 	run_one_test "$1"
@@ -159,7 +167,7 @@ refresh_tests() {
 
 view_test() {
     if [ $# -lt 1 ]; then
-	echo >&2 "$0: please provide precisely a test name to view"
+	echo >&2 "$0: please provide a test name to view"
 	exit 1
     fi
     t=$1
@@ -167,7 +175,7 @@ view_test() {
 	echo >&2 "Test $1 doesn't exist."
 	exit 1
     fi
-    if [ $# -ge 2 ]; then
+    if [ $# -ge 2 -a " $2" != " -" ]; then
 	head -n $2 tests.d/$t > tests.d/.in
     else
 	cat tests.d/$t > tests.d/.in
@@ -191,9 +199,9 @@ case $cmd in
 	view ) setup_test_dir; view_test ${1+"$@"};;
 	* )
 		echo >&2 "Usage: $0 new test-name"
-		echo >&2 "       $0 run [test-name|failed]"
+		echo >&2 "       $0 run [test-name|-a]"
 		echo >&2 "       $0 refresh [test-name]"
-		echo >&2 "       $0 view test-name"
+		echo >&2 "       $0 view test-name [lines [delay-ms]]"
 		exit 1;
 esac
 exit 0
