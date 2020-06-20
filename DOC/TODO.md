@@ -167,6 +167,7 @@ Module features
 
 ### lib-diff
 
+- [ ] The found line sometimes appears at top-of-pane, 
 - [ ] add command to add it to any pane/doc
 - [ ] allow inversion so 'enter' looks for the '-' not the '+'
 - [ ] status-line entry to indicate if inverted or not.
@@ -235,6 +236,8 @@ Module features
 
 ### render-lines
 
+- [ ] adding 10% height at e-o-f doesn't make sense with a one-line display
+      and certainly must not push the cursor line of the screen as it currently does.
 - [X] use a stable mark/pane for the header
 - [X] use a stable pane for an image line
 - [ ] separate out Refresh:view which validates and maybe calls find_lines
@@ -324,8 +327,7 @@ Module features
 
 ### grep/make
 
-- [ ] If target pane is visible, it still gets refreshed, and often
-      point end up at top-of-pane, which is painful.
+- [ ] If target pane is visible, it still gets refreshed, which is painful.
 - [ ] When I visit from grep in a popup, I think I want a 'view' at first.
       so 'q' works.
 - [ ] Need keystroke to step through different grep/make windows

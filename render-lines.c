@@ -531,7 +531,6 @@ static int render(struct mark *pm, struct pane *p safe,
 	short y;
 	struct mark *m, *m2;
 	int shifted = 0;
-	char *hdr;
 	struct xy scale = pane_scale(focus);
 	char *s;
 	bool found_end = False;
@@ -539,9 +538,6 @@ static int render(struct mark *pm, struct pane *p safe,
 	int cursor_drawn = 0;
 	short mwidth = -1;
 
-	hdr = pane_attr_get(focus, "heading");
-	if (hdr && !*hdr)
-		hdr = NULL;
 	s = pane_attr_get(focus, "hide-cursor");
 	if (s && strcmp(s, "yes") == 0)
 		hide_cursor = 1;
@@ -567,20 +563,10 @@ restart:
 	} else
 		home_call(focus, "pane-clear", p);
 
-	if (hdr) {
-		if (!rl->header)
-			rl->header = vmark_new(focus, MARK_UNGROUPED, NULL);
-		if (rl->header) {
-			vmark_set(p, rl->header, hdr);
-			draw_line(p, focus, rl->header, 0, -1);
-		}
-	} else if (rl->header) {
-		vmark_free(rl->header);
-		rl->header = NULL;
-	}
-	if (rl->header && rl->header->mdata)
+	if (rl->header && rl->header->mdata) {
+		draw_line(p, focus, rl->header, 0, -1);
 		y = rl->header->mdata->h;
-	else
+	} else
 		y = 0;
 
 	y -= rl->skip_height;
@@ -726,9 +712,26 @@ DEF_CMD(render_lines_refresh)
 	struct rl_data *rl = p->data;
 	struct mark *m, *pm;
 	char *a;
+	char *hdr;
 
 	a = pane_attr_get(focus, "render-wrap");
 	rl->do_wrap = (!a || strcmp(a, "yes") == 0);
+
+	hdr = pane_attr_get(focus, "heading");
+	if (hdr && !*hdr)
+		hdr = NULL;
+
+	if (hdr) {
+		if (!rl->header)
+			rl->header = vmark_new(focus, MARK_UNGROUPED, NULL);
+		if (rl->header) {
+			vmark_set(p, rl->header, hdr);
+			measure_line(p, focus, rl->header, 0, -1, -1, -1);
+		}
+	} else if (rl->header) {
+		vmark_free(rl->header);
+		rl->header = NULL;
+	}
 
 	pm = call_ret(mark, "doc:point", focus);
 
