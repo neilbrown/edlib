@@ -727,7 +727,7 @@ DEF_CMD(format_clone2)
 {
 	struct pane *p;
 
-	p = do_render_format2_attach(ci->focus, 0);
+	p = do_render_format2_attach(ci->focus, 1);
 	pane_clone_children(ci->home, p);
 	return 1;
 }
