@@ -613,9 +613,7 @@ restart:
 			rl->cursor_line = y;
 			found_end = draw_line(p, focus, m, y, len);
 			y += m->mdata ? m->mdata->h : 0;
-			if (p->cy < 0)
-				p->cx = -1;
-			if (!rl->do_wrap && p->cy >= 0 && m->mdata &&
+			if (!rl->do_wrap && m->mdata &&
 			    shifted != 2) {
 				int prefix_len = pane_call(m->mdata,
 							   "render-line:get",
