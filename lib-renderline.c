@@ -749,9 +749,9 @@ DEF_CMD(renderline)
 	flush_line(p, focus, dodraw, &rlst, y+ascent, scale, 0,
 		   &xypos, &xyattr);
 
-	if (want_xypos == 1 && xypos) {
+	if (want_xypos == 1) {
 		rd->xyattr = xyattr ? strdup(xyattr) : NULL;
-		ret_xypos = xypos;
+		ret_xypos = xypos ?: line;
 		want_xypos = 2;
 	}
 
@@ -787,7 +787,7 @@ DEF_CMD(renderline)
 		if (ret_xypos)
 			return ret_xypos - line_start + 1;
 		else
-			return Efalse;
+			return 1;
 	} else
 		return end_of_page ? 2 : 1;
 }
