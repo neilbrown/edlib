@@ -509,6 +509,7 @@ Module features
 
 ### test suite
 
+- [ ] tests for double-click and drag.
 - [X] create reliable test for hex mode
 - [X] avoid duplicate Display lines with same content
       Sometimes this is needed, but I've removed most of them.
