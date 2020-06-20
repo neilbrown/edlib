@@ -80,7 +80,10 @@ class PresenterPane(edlib.Pane):
 
     def get_line_at(self, m):
         # call render-line at m
-        s = self.parent.call("doc:render-line", m, -1, ret = 'str')
+        try:
+            s = self.parent.call("doc:render-line", m, -1, ret = 'str')
+        except:
+            s = ''
         return s if s else ''
 
     def get_line_before(self, m):
