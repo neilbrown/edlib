@@ -142,33 +142,42 @@ static void vmark_set(struct pane *p safe, struct mark *m safe, char *line)
 		pane_call(m->mdata, "render-line:set", p, 0, NULL, line);
 }
 
-/* Returns 'true' at end-of-page, or offset of posx,posy */
-static int measure_line(struct pane *p safe, struct pane *focus safe,
-			struct mark *mk safe,
-			short posx, short posy, short offset)
+/* Returns 'true' at end-of-page */
+static bool measure_line(struct pane *p safe, struct pane *focus safe,
+			 struct mark *mk safe, short cursor_offset)
 {
 	struct pane *hp = mk->mdata;
 	int ret = 0;
 
 	if (hp) {
-		if (posx < 0)
-			/* Don't resize/reposition if we are just doing
-			 * an x,y mapping.
-			 */
-			pane_resize(hp, 0, 0, p->w, p->h);
+		pane_resize(hp, 0, 0, p->w, p->h);
 		ret = pane_call(hp,
 				"render-line:measure",
 				focus,
 				0, NULL, NULL,
-				offset, NULL, NULL,
-				posx, posy < 0 ? posy : posy - hp->y);
+				cursor_offset);
 	}
-	if (posx < 0)
-		/* end-of-page flag */
-		return ret == 2;
-	else
-		/* xypos */
-		return ret > 0 ? (ret - 1) : -1;
+	/* end-of-page flag */
+	return ret == 2;
+}
+
+/* Returns offset of posx,posy */
+static int find_xy_line(struct pane *p safe, struct pane *focus safe,
+			struct mark *mk safe, short posx, short posy)
+{
+	struct pane *hp = mk->mdata;
+	int ret = 0;
+
+	if (hp) {
+		ret = pane_call(hp,
+				"render-line:findxy",
+				focus,
+				0, NULL, NULL,
+				-1, NULL, NULL,
+				posx - hp->x, posy - hp->y);
+	}
+	/* xypos */
+	return ret > 0 ? (ret - 1) : -1;
 }
 
 static bool draw_line(struct pane *p safe, struct pane *focus safe,
@@ -372,7 +381,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (!end)
 		goto abort; /* FIXME can I prove this? */
 
-	found_end = measure_line(p, focus, start, -1, -1, offset);
+	found_end = measure_line(p, focus, start, offset);
 	/* ->cy is top of cursor, we want to measure from bottom */
 	if (start->mdata) {
 		line_height_pre = attr_find_int(start->mdata->attrs, "line-height");
@@ -427,7 +436,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				start = m;
 				if (!start->mdata)
 					call_render_line(p, focus, start, &end);
-				measure_line(p, focus, start, -1, -1, -1);
+				measure_line(p, focus, start, -1);
 				h = start->mdata ? start->mdata->h : 0;
 				if (h) {
 					y_pre = h;
@@ -451,8 +460,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				y_post = p->h / 10;
 			} else {
 				short h;
-				found_end = measure_line(p, focus, end,
-							 -1, -1, -1);
+				found_end = measure_line(p, focus, end, -1);
 				h = end->mdata->h;
 				if (h) {
 					y_post = h;
@@ -730,7 +738,7 @@ DEF_CMD(render_lines_refresh)
 			rl->header = vmark_new(focus, MARK_UNGROUPED, NULL);
 		if (rl->header) {
 			vmark_set(p, rl->header, hdr);
-			measure_line(p, focus, rl->header, -1, -1, -1);
+			measure_line(p, focus, rl->header, -1);
 		}
 	} else if (rl->header) {
 		vmark_free(rl->header);
@@ -872,7 +880,7 @@ DEF_CMD(render_lines_move)
 					rpt = 0;
 					break;
 				}
-				measure_line(p, focus, m, -1, -1, -1);
+				measure_line(p, focus, m, -1);
 				y += m->mdata->h;
 				m = vmark_next(m);
 			}
@@ -886,7 +894,7 @@ DEF_CMD(render_lines_move)
 				call_render_line(p, focus, top, NULL);
 			if (top->mdata == NULL)
 				break;
-			measure_line(p, focus, top, -1, -1, -1);
+			measure_line(p, focus, top, -1);
 			y = top->mdata->h;
 			if (rl->skip_height + rpt < y) {
 				rl->skip_height += rpt;
@@ -963,8 +971,7 @@ DEF_CMD(render_lines_set_cursor)
 	} else {
 		if (cih.y < m->mdata->y)
 			cih.y = m->mdata->y;
-		xypos = measure_line(p, focus, m,
-				     cih.x, cih.y, -1);
+		xypos = find_xy_line(p, focus, m, cih.x, cih.y);
 		if (xypos >= 0)
 			m2 = call_render_line_offset(focus, m, xypos);
 	}
@@ -1121,8 +1128,8 @@ DEF_CMD(render_lines_move_line)
 	 */
 	call_render_line(p, focus, start, NULL);
 	if (start->mdata)
-		xypos = measure_line(p, focus, start, rl->target_x,
-				     rl->target_y + start->mdata->y, -1);
+		xypos = find_xy_line(p, focus, start, rl->target_x,
+				     rl->target_y + start->mdata->y);
 
 	/* xypos is the distance from start-of-line to the target */
 	if (xypos >= 0) {

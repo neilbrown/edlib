@@ -444,7 +444,7 @@ DEF_CMD(renderline)
 	const char *xypos = NULL;
 	const char *ret_xypos = NULL;
 	const char *xyattr = NULL;
-	int want_xypos = 0;
+	int want_xypos = strcmp(ci->key, "render-line:findxy") == 0;
 	const char *cstart = NULL;
 	struct xy xyscale = pane_scale(focus);
 	int scale = xyscale.x;
@@ -502,13 +502,10 @@ DEF_CMD(renderline)
 	 * if offset is non-negative, set posx and posy to cursor
 	 * pos when we reach that length
 	 */
-	if (posx >= 0 && posy >= 0) {
-		want_xypos = 1;
+	if (want_xypos) {
 		free((void*)rd->xyattr);
 		rd->xyattr = NULL;
-	}
-	if (posy >= 0 && posy < y) {
-		/* cursor is not here */
+	} else {
 		posx = posy = -1;
 	}
 
@@ -840,6 +837,7 @@ DEF_CMD(renderline_attach)
 		rl_map = key_alloc();
 		key_add(rl_map, "render-line:draw", &renderline);
 		key_add(rl_map, "render-line:measure", &renderline);
+		key_add(rl_map, "render-line:findxy", &renderline);
 		key_add(rl_map, "render-line:get", &renderline_get);
 		key_add(rl_map, "render-line:set", &renderline_set);
 		key_add(rl_map, "Close", &renderline_close);
