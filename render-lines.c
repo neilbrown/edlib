@@ -599,12 +599,10 @@ restart:
 			short len = call_render_line_to_point(focus, pm,
 							      m);
 			if (mwidth < 0) {
-				struct call_return cr =
-					home_call_ret(all, focus,
-						      "text-size", p,
-						      -1, NULL, "M",
-						      0, NULL, "");
-				mwidth = cr.x;
+				if (m->mdata)
+					mwidth = pane_attr_get_int(m->mdata,
+								   "curs_width",
+								   1);
 				if (mwidth <= 0)
 					mwidth = 1;
 			}
@@ -659,15 +657,19 @@ restart:
 	}
 	if (!cursor_drawn && !hide_cursor) {
 		/* Place cursor in bottom right */
-		if (mwidth < 0) {
-			struct call_return cr =
-				home_call_ret(all, focus, "text-size", p,
-					      -1, NULL, "M",
-					      0,  NULL, "");
-			mwidth = cr.x;
-			if (mwidth <= 0)
-				mwidth = 1;
+		if (m)
+			m2 = vmark_prev(m);
+		else
+			m2 = vmark_last(focus, rl->typenum, p);
+
+		while (m2 && mwidth < 0) {
+			if (m2->mdata)
+				mwidth = pane_attr_get_int(
+					m2->mdata, "curs_width", -1);
+			m2 = vmark_prev(m2);
 		}
+		if (mwidth <= 0)
+			mwidth = 1;
 		home_call(focus, "Draw:text", p, 0, NULL, " ",
 			  scale.x, NULL, "",
 			  focus->w - mwidth, focus->h-1);

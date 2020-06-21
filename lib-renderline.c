@@ -37,6 +37,7 @@ struct render_list {
 struct rline_data {
 	short		prefix_len;
 	const char	*xyattr;
+	short		curs_width;
 	const char	*line;
 };
 
@@ -498,6 +499,8 @@ DEF_CMD(renderline)
 	buf_init(&attr);
 	buf_append(&attr, ' '); attr.len = 0;
 
+	rd->curs_width = 0;
+
 	/* If posx and posy are non-negative, set *offsetp to
 	 * the length when we reach that cursor pos.
 	 * if offset is non-negative, set posx and posy to cursor
@@ -522,6 +525,8 @@ DEF_CMD(renderline)
 			mwidth = cr.x;
 			if (mwidth <= 0)
 				mwidth = 1;
+			if (!rd->curs_width)
+				rd->curs_width = mwidth;
 		}
 
 		if (ret == XYPOS) {
@@ -602,6 +607,8 @@ DEF_CMD(renderline)
 
 		ret = 0;
 		ch = *line;
+		if (line == line_start + offset)
+			rd->curs_width = mwidth;
 		if (ch >= ' ' && ch != '<') {
 			line += 1;
 			/* Only flush out if string is getting a bit long.
@@ -800,6 +807,8 @@ DEF_CMD(renderline_get)
 		return 0;
 	if (strcmp(ci->str, "prefix_len") == 0)
 		snprintf(buf, sizeof(buf), "%d", rd->prefix_len);
+	if (strcmp(ci->str, "curs_width") == 0)
+		snprintf(buf, sizeof(buf), "%d", rd->curs_width);
 	else if (strcmp(ci->str, "xyattr") == 0)
 		val = rd->xyattr;
 
