@@ -613,14 +613,9 @@ restart:
 			y += m->mdata ? m->mdata->h : 0;
 			if (!rl->do_wrap && m->mdata &&
 			    shifted != 2) {
-				int prefix_len = pane_call(m->mdata,
-							   "render-line:get",
-							   m->mdata,
-							   0, NULL, "prefix_len");
-				if (prefix_len > 0)
-					prefix_len -= 1;
-				else
-					prefix_len = 0;
+				int prefix_len = pane_attr_get_int(
+					m->mdata, "prefix_len", -1);
+
 				/* First mwidth is for cursor, second is to
 				 * calc min shift size: a tab
 				 */
@@ -978,14 +973,11 @@ DEF_CMD(render_lines_set_cursor)
 	if (m2) {
 		char *tag, *xyattr;
 
-		xyattr = pane_call_ret(str, m->mdata,
-				       "render-line:get",
-				       focus, 0, NULL, "xyattr");
+		xyattr = pane_attr_get(m->mdata, "xyattr");
 		tag = get_active_tag(xyattr);
 		if (tag)
 			call("Mouse-Activate", focus, 0, m2, tag,
 			     0, ci->mark, xyattr);
-		free(tag);
 		m = m2;
 	} else {
 		/* m is the closest we'll get */

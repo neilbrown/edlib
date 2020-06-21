@@ -468,16 +468,17 @@ struct xy pane_mapxy(struct pane *orig safe, struct pane *target safe,
 
 struct xy pane_scale(struct pane *p safe);
 
-static inline int pane_attr_get_int(struct pane *p safe, const char *key safe)
+static inline int pane_attr_get_int(struct pane *p safe, const char *key safe,
+				    int dflt)
 {
 	char *c = pane_attr_get(p, key);
 	int rv;
 	char *end;
 	if (!c)
-		return -1;
+		return dflt;
 	rv = strtol(c, &end, 10);
 	if (end == c || !end || *end)
-		return -1;
+		return dflt;
 	return rv;
 }
 

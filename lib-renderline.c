@@ -21,6 +21,7 @@
  *
  */
 
+#include <stdio.h>
 #include "core.h"
 #include "misc.h"
 
@@ -792,14 +793,17 @@ DEF_CMD(renderline)
 DEF_CMD(renderline_get)
 {
 	struct rline_data *rd = ci->home->data;
+	char buf[20];
+	const char *val = buf;
 
 	if (!ci->str)
-		return 1;
+		return 0;
 	if (strcmp(ci->str, "prefix_len") == 0)
-		return rd->prefix_len + 1;
-	if (strcmp(ci->str, "xyattr") == 0)
-		comm_call(ci->comm2, "xyattr", ci->focus, 0, NULL,
-			  rd->xyattr);
+		snprintf(buf, sizeof(buf), "%d", rd->prefix_len);
+	else if (strcmp(ci->str, "xyattr") == 0)
+		val = rd->xyattr;
+
+	comm_call(ci->comm2, "attr", ci->focus, 0, NULL, val);
 	return 1;
 }
 
@@ -838,7 +842,7 @@ DEF_CMD(renderline_attach)
 		key_add(rl_map, "render-line:draw", &renderline);
 		key_add(rl_map, "render-line:measure", &renderline);
 		key_add(rl_map, "render-line:findxy", &renderline);
-		key_add(rl_map, "render-line:get", &renderline_get);
+		key_add(rl_map, "get-attr", &renderline_get);
 		key_add(rl_map, "render-line:set", &renderline_set);
 		key_add(rl_map, "Close", &renderline_close);
 		key_add(rl_map, "Free", &edlib_do_free);
