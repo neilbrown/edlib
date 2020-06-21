@@ -774,7 +774,7 @@ DEF_CMD(renderline)
 		p->cx = cx;
 		p->cy = cy;
 	}
-	pane_resize(p, p->x, p->y, margin + twidth, y);
+	pane_resize(p, p->x, p->y, p->w, y);
 	attr_set_int(&p->attrs, "line-height", line_height);
 	while (rlst) {
 		struct render_list *r = rlst;

@@ -236,6 +236,8 @@ Module features
 
 ### render-lines
 
+- [ ] update_line_height should handle TAB (and any control) - cannot expect
+      text-size to handle it.
 - [ ] adding 10% height at e-o-f doesn't make sense with a one-line display
       and certainly must not push the cursor line of the screen as it currently does.
 - [X] use a stable mark/pane for the header
