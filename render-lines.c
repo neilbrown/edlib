@@ -448,31 +448,28 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		}
 		if (!found_end && y_post == 0) {
 			/* step forwards */
-			struct mark *next;
 			if (!end->mdata)
 				call_render_line(p, focus, end, &start);
-			next = vmark_next(end);
-			if (!end->mdata || !next) {
-				found_end = 1;
-				y_post = p->h / 10;
-			} else {
-				short h;
+			if (end->mdata) {
 				found_end = measure_line(p, focus, end, -1);
-				h = end->mdata->h;
-				if (h) {
-					y_post = h;
+				y_post = end->mdata->h;
+				if (y_post)
 					line_height_post =
 						attr_find_int(end->mdata->attrs,
 							      "line-height");
-				} else {
-					found_end = 1;
-					y_post = p->h / 10;
-				}
 			}
-			end = next;
-			if (top && top->seq < end->seq)
+			if (!end->mdata || !end->mdata->h)
+				end = NULL;
+			else
+				end = vmark_next(end);
+			if (!end) {
+				found_end = 1;
+				y_post = p->h / 10;
+			}
+			if (top && (!end || top->seq < end->seq))
 				found_start = 1;
 		}
+
 		if (y_pre > 0 && y_post > 0) {
 			int consume = (y_post < y_pre
 				       ? y_post : y_pre) * 2;
