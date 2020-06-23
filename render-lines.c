@@ -252,9 +252,18 @@ static void call_render_line(struct pane *home safe, struct pane *p safe,
 	char *s;
 
 	m = mark_dup_view(start);
-	if (doc_following(p, m) == WEOF)
+	if (doc_following(p, m) == WEOF) {
+		/* We only create a subpane for EOF when  it is at start
+		 * of line, else it is included in the preceding line.
+		 */
+		call("doc:render-line-prev", p, 0, m);
+		if (!mark_same(m, start)) {
+			mark_free(m);
+			vmark_clear(start);
+			return;
+		}
 		s = "";
-	else
+	} else
 		s = call_ret(strsave, "doc:render-line", p, NO_NUMERIC, m);
 
 	vmark_set(home, start, s);
