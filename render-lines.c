@@ -245,10 +245,8 @@ static struct mark *call_render_line_prev(struct pane *p safe,
 	return m2;
 }
 
-static struct mark *call_render_line(struct pane *home safe,
-				     struct pane *p safe,
-				     struct mark *start safe,
-				     struct mark **end)
+static void call_render_line(struct pane *home safe, struct pane *p safe,
+			     struct mark *start safe, struct mark **end)
 {
 	struct mark *m, *m2;
 	char *s;
@@ -277,8 +275,6 @@ static struct mark *call_render_line(struct pane *home safe,
 			*end = m2;
 		vmark_free(m);
 	}
-
-	return m2;
 }
 
 DEF_CMD(no_save)
@@ -373,9 +369,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	start = m;
 	offset = call_render_line_to_point(focus, pm, start);
 	if (start->mdata == NULL)
-		m = call_render_line(p, focus, start, NULL);
-	else
-		m = vmark_next(start);
+		call_render_line(p, focus, start, NULL);
+	m = vmark_next(start) ?: start;
 
 	end = m;
 	if (!end)
