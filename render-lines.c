@@ -371,10 +371,10 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (start->mdata == NULL)
 		call_render_line(p, focus, start, NULL);
 	end = vmark_next(start);
-	if (!end)
-		end = start;
+	/* Note: 'end' might be NULL is 'start' is end-of-file */
 
 	found_end = measure_line(p, focus, start, offset);
+
 	/* ->cy is top of cursor, we want to measure from bottom */
 	if (start->mdata) {
 		line_height_pre = attr_find_int(start->mdata->attrs, "line-height");
@@ -386,6 +386,10 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		/* Should never happen */
 		y_pre = 0;
 		y_post = 0;
+	}
+	if (!end) {
+		found_end = 1;
+		y_post += p->h / 10;
 	}
 	y = 0;
 	if (rl->header && rl->header->mdata)
@@ -400,7 +404,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		 * ignore 'bot'
 		 */
 		bot = NULL;
-	if (top && !mark_ordered_or_same(end, top))
+	if (top && (!end || !mark_ordered_or_same(end, top)))
 		top = NULL;
 	if (vline != NO_NUMERIC) {
 		/* ignore current position - top/bot irrelevant */
@@ -464,8 +468,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 					found_end = 1;
 					y_post = p->h / 10;
 				}
-				end = next;
 			}
+			end = next;
 			if (top && top->seq < end->seq)
 				found_start = 1;
 		}
@@ -511,7 +515,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	rl->skip_height = y_pre;
 	rl->skip_line_height = line_height_pre;
 	/* Now discard any marks outside start-end */
-	if (end->seq < start->seq)
+	if (end && end->seq < start->seq)
 		/* something confused, make sure we don't try to use 'end' after
 		 * freeing it.
 		 */
@@ -519,10 +523,12 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	while ((m = vmark_prev(start)) != NULL)
 		vmark_free(m);
 
-	while ((m = vmark_next(end)) != NULL)
-		vmark_free(m);
+	if (end) {
+		while ((m = vmark_next(end)) != NULL)
+			vmark_free(m);
 
-	vmark_clear(end);
+		vmark_clear(end);
+	}
 
 abort:
 	mark_free(top);
