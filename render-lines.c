@@ -359,22 +359,20 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		top = mark_dup(top);
 	if (bot)
 		bot = mark_dup(bot);
-	m = vmark_new(focus, rl->typenum, p);
-	if (!m)
+
+	start = vmark_new(focus, rl->typenum, p);
+	if (!start)
 		goto abort;
-	mark_to_mark(m, pm);
-	m = call_render_line_prev(focus, m, 0, &rl->top_sol);
-	if (!m)
+	mark_to_mark(start, pm);
+	start = call_render_line_prev(focus, start, 0, &rl->top_sol);
+	if (!start)
 		goto abort;
-	start = m;
 	offset = call_render_line_to_point(focus, pm, start);
 	if (start->mdata == NULL)
 		call_render_line(p, focus, start, NULL);
-	m = vmark_next(start) ?: start;
-
-	end = m;
+	end = vmark_next(start);
 	if (!end)
-		goto abort; /* FIXME can I prove this? */
+		end = start;
 
 	found_end = measure_line(p, focus, start, offset);
 	/* ->cy is top of cursor, we want to measure from bottom */
