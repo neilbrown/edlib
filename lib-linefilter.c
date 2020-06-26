@@ -26,6 +26,7 @@ struct filter_data {
 	bool at_start;
 	bool ignore_case;
 	bool explicit_set;
+	bool implicit_set;
 };
 
 struct rlcb {
@@ -71,6 +72,47 @@ DEF_CMD(rlcb)
 	return 1;
 }
 
+static bool check_settings(struct pane *focus safe,
+			   struct filter_data *fd safe)
+{
+	char *s;
+	bool changed = False;
+	bool v;
+
+	if (fd->explicit_set || fd->implicit_set)
+		return False;
+
+	s = pane_attr_get(focus, "filter:match");
+	if (s && (!fd->match || strcmp(s, fd->match) != 0)) {
+		free(fd->match);
+		fd->match = strdup(s);
+		fd->match_len = strlen(s);
+		changed = True;
+	}
+	s = pane_attr_get(focus, "filter:attr");
+	if (!s || !fd->attr || strcmp(s, fd->attr) != 0) {
+		free(fd->attr);
+		fd->attr = s ? strdup(s) : NULL;
+		changed = True;
+	}
+	s = pane_attr_get(focus, "filter:at_start");
+	v = s && *s && strchr("Yy1Tt", *s) != NULL;
+	if (v != fd->at_start) {
+		changed = True;
+		fd->at_start = v;
+	}
+
+	s = pane_attr_get(focus, "filter:ignore_case");
+	v = s && *s && strchr("Yy1Tt", *s) != NULL;
+	if (v != fd->ignore_case) {
+		changed = True;
+		fd->ignore_case = v;
+	}
+	fd->implicit_set = True;
+
+	return changed;
+}
+
 DEF_CMD(render_filter_line)
 {
 	/* Skip any line that doesn't match, and
@@ -86,6 +128,8 @@ DEF_CMD(render_filter_line)
 
 	if (!ci->mark)
 		return Enoarg;
+
+	check_settings(ci->focus, fd);
 
 	m = mark_dup(ci->mark);
 	cb.c = rlcb;
@@ -204,6 +248,9 @@ DEF_CMD(render_filter_prev)
 
 	if (!m)
 		return Enoarg;
+
+	check_settings(ci->focus, fd);
+
 	if (!fd->match)
 		return Efallthrough;
 
@@ -261,36 +308,9 @@ DEF_CMD(filter_changed)
 		fd->ignore_case = !!(ci->num & 2);
 	}
 	if (!fd->explicit_set) {
-		char *s;
-		bool changed = False;
-		bool v;
-		s = pane_attr_get(ci->focus, "filter:match");
-		if (s && (!fd->match || strcmp(s, fd->match) != 0)) {
-			free(fd->match);
-			fd->match = strdup(s);
-			fd->match_len = strlen(s);
-			changed = True;
-		}
-		s = pane_attr_get(ci->focus, "filter:attr");
-		if (!s || !fd->attr || strcmp(s, fd->attr) != 0) {
-			free(fd->attr);
-			fd->attr = s ? strdup(s) : NULL;
-			changed = True;
-		}
-		s = pane_attr_get(ci->focus, "filter:at_start");
-		v = s && *s && strchr("Yy1Tt", *s) != NULL;
-		if (v != fd->at_start) {
-			changed = True;
-			fd->at_start = v;
-		}
-
-		s = pane_attr_get(ci->focus, "filter:ignore_case");
-		v = s && *s && strchr("Yy1Tt", *s) != NULL;
-		if (v != fd->ignore_case) {
-			changed = True;
-			fd->ignore_case = v;
-		}
-		if (changed)
+		fd->implicit_set = False;
+		if (check_settings(ci->focus, fd))
+			/* Something changed */
 			call("view:changed", pane_leaf(ci->home));
 	}
 	if (!fd->match)
@@ -393,7 +413,10 @@ DEF_CMD(eol_cb)
 
 DEF_CMD(filter_eol)
 {
+	struct filter_data *fd = ci->home->data;
 	int rpt = RPT_NUM(ci);
+
+	check_settings(ci->focus, fd);
 
 	if (!ci->mark)
 		return Enoarg;
@@ -402,7 +425,7 @@ DEF_CMD(filter_eol)
 		return 1;
 	while (rpt < -1) {
 		int ret;
-		ret = do_filter_line_prev(ci->home->data, ci->mark,
+		ret = do_filter_line_prev(fd, ci->mark,
 					  ci->home->parent, ci->focus, 1, NULL);
 		if (ret < 0)
 			rpt = -1;
