@@ -262,21 +262,36 @@ DEF_CMD(filter_changed)
 	}
 	if (!fd->explicit_set) {
 		char *s;
+		bool changed = False;
+		bool v;
 		s = pane_attr_get(ci->focus, "filter:match");
 		if (s && (!fd->match || strcmp(s, fd->match) != 0)) {
 			free(fd->match);
 			fd->match = strdup(s);
 			fd->match_len = strlen(s);
+			changed = True;
 		}
 		s = pane_attr_get(ci->focus, "filter:attr");
 		if (!s || !fd->attr || strcmp(s, fd->attr) != 0) {
 			free(fd->attr);
 			fd->attr = s ? strdup(s) : NULL;
+			changed = True;
 		}
 		s = pane_attr_get(ci->focus, "filter:at_start");
-		fd->at_start = s && *s && strchr("Yy1Tt", *s) != NULL;
+		v = s && *s && strchr("Yy1Tt", *s) != NULL;
+		if (v != fd->at_start) {
+			changed = True;
+			fd->at_start = v;
+		}
+
 		s = pane_attr_get(ci->focus, "filter:ignore_case");
-		fd->ignore_case = s && *s && strchr("Yy1Tt", *s) != NULL;
+		v = s && *s && strchr("Yy1Tt", *s) != NULL;
+		if (v != fd->ignore_case) {
+			changed = True;
+			fd->ignore_case = v;
+		}
+		if (changed)
+			call("view:changed", pane_leaf(ci->home));
 	}
 	if (!fd->match)
 		return 1;
