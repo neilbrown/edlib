@@ -142,6 +142,19 @@ static void vmark_set(struct pane *p safe, struct mark *m safe, char *line)
 		pane_call(m->mdata, "render-line:set", p, 0, NULL, line);
 }
 
+static void vmark_invalidate(struct mark *m safe)
+{
+	if (m->mdata)
+		pane_call(m->mdata, "render-line:invalidate", m->mdata);
+}
+
+static bool vmark_is_valid(struct mark *m safe)
+{
+	if (!m->mdata)
+		return False;
+	return pane_attr_get_int(m->mdata, "render-line:valid", 0) == 1;
+}
+
 /* Returns 'true' at end-of-page */
 static bool measure_line(struct pane *p safe, struct pane *focus safe,
 			 struct mark *mk safe, short cursor_offset)
@@ -377,7 +390,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (!start)
 		goto abort;
 	offset = call_render_line_to_point(focus, pm, start);
-	if (start->mdata == NULL)
+	if (!vmark_is_valid(start))
 		call_render_line(p, focus, start, NULL);
 	end = vmark_next(start);
 	/* Note: 'end' might be NULL is 'start' is end-of-file */
@@ -440,7 +453,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			} else {
 				short h = 0;
 				start = m;
-				if (!start->mdata)
+				if (!vmark_is_valid(start))
 					call_render_line(p, focus, start, &end);
 				measure_line(p, focus, start, -1);
 				h = start->mdata ? start->mdata->h : 0;
@@ -457,16 +470,15 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		}
 		if (!found_end && y_post == 0) {
 			/* step forwards */
-			if (!end->mdata)
+			if (!vmark_is_valid(end))
 				call_render_line(p, focus, end, &start);
-			if (end->mdata) {
-				found_end = measure_line(p, focus, end, -1);
+			found_end = measure_line(p, focus, end, -1);
+			if (end->mdata)
 				y_post = end->mdata->h;
-				if (y_post)
-					line_height_post =
-						attr_find_int(end->mdata->attrs,
-							      "line-height");
-			}
+			if (y_post)
+				line_height_post =
+					attr_find_int(end->mdata->attrs,
+						      "line-height");
 			if (!end->mdata || !end->mdata->h)
 				end = NULL;
 			else
@@ -580,7 +592,7 @@ restart:
 	} else
 		home_call(focus, "pane-clear", p);
 
-	if (rl->header && rl->header->mdata) {
+	if (rl->header && vmark_is_valid(rl->header)) {
 		draw_line(p, focus, rl->header, 0, -1);
 		y = rl->header->mdata->h;
 	} else
@@ -592,7 +604,7 @@ restart:
 	rl->cursor_line = 0;
 
 	while (m && y < p->h && !found_end) {
-		if (m->mdata == NULL)
+		if (!vmark_is_valid(m))
 			/* This line has changed. */
 			call_render_line(p, focus, m, NULL);
 
@@ -876,7 +888,7 @@ DEF_CMD(render_lines_move)
 			m = top;
 			while (m && m->seq < prevtop->seq &&
 			       !mark_same(m, prevtop)) {
-				if (m->mdata == NULL)
+				if (!vmark_is_valid(m))
 					call_render_line(p, focus, m, NULL);
 				if (m->mdata == NULL) {
 					rpt = 0;
@@ -892,7 +904,7 @@ DEF_CMD(render_lines_move)
 		while (top && rpt > 0) {
 			short y = 0;
 
-			if (top->mdata == NULL)
+			if (!vmark_is_valid(top))
 				call_render_line(p, focus, top, NULL);
 			if (top->mdata == NULL)
 				break;
@@ -903,7 +915,7 @@ DEF_CMD(render_lines_move)
 				break;
 			}
 			top = vmark_next(top);
-			if (top && top->mdata == NULL)
+			if (top && !vmark_is_valid(top))
 				call_render_line(p, focus, top, NULL);
 			rpt -= y - rl->skip_height;
 			rl->skip_height = 0;
@@ -1163,7 +1175,7 @@ DEF_CMD(render_lines_notify_replace)
 		for (m = vmark_first(p, rl->typenum, p);
 		     m;
 		     m = vmark_next(m))
-			vmark_clear(m);
+			vmark_invalidate(m);
 
 		pane_damaged(p, DAMAGED_REFRESH);
 		return 0;
@@ -1212,12 +1224,12 @@ DEF_CMD(render_lines_notify_replace)
 		return 0;
 
 	while (end && mark_ordered_or_same(start, end)) {
-		vmark_clear(end);
+		vmark_invalidate(end);
 		end = vmark_prev(end);
 	}
-	/* Must be sure to clear the line *before* the change */
+	/* Must be sure to invalidate the line *before* the change */
 	if (end)
-		vmark_clear(end);
+		vmark_invalidate(end);
 
 	pane_damaged(p, DAMAGED_REFRESH);
 

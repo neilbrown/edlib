@@ -39,6 +39,7 @@ struct rline_data {
 	const char	*xyattr;
 	short		curs_width;
 	const char	*line;
+	bool		is_valid;
 };
 
 #define WRAP 1
@@ -807,10 +808,14 @@ DEF_CMD(renderline_get)
 		return 0;
 	if (strcmp(ci->str, "prefix_len") == 0)
 		snprintf(buf, sizeof(buf), "%d", rd->prefix_len);
-	if (strcmp(ci->str, "curs_width") == 0)
+	else if (strcmp(ci->str, "curs_width") == 0)
 		snprintf(buf, sizeof(buf), "%d", rd->curs_width);
 	else if (strcmp(ci->str, "xyattr") == 0)
 		val = rd->xyattr;
+	else if (strcmp(ci->str, "render-line:valid") == 0)
+		snprintf(buf, sizeof(buf), "%d",rd->is_valid);
+	else
+		return 0;
 
 	comm_call(ci->comm2, "attr", ci->focus, 0, NULL, val);
 	return 1;
@@ -825,6 +830,15 @@ DEF_CMD(renderline_set)
 		rd->line = strdup(ci->str);
 	else
 		rd->line = NULL;
+	rd->is_valid = !!ci->str;
+	return 1;
+}
+
+DEF_CMD(renderline_invalidate)
+{
+	struct rline_data *rd = ci->home->data;
+
+	rd->is_valid = 0;
 	return 1;
 }
 
@@ -851,6 +865,7 @@ DEF_CMD(renderline_attach)
 		key_add(rl_map, "render-line:draw", &renderline);
 		key_add(rl_map, "render-line:measure", &renderline);
 		key_add(rl_map, "render-line:findxy", &renderline);
+		key_add(rl_map, "render-line:invalidate", &renderline_invalidate);
 		key_add(rl_map, "get-attr", &renderline_get);
 		key_add(rl_map, "render-line:set", &renderline_set);
 		key_add(rl_map, "Close", &renderline_close);
