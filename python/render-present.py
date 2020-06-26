@@ -546,7 +546,7 @@ class PresenterPane(edlib.Pane):
                         c = -1
                     line = line[c+1:]
 
-                comm2("callback", self, "<image:"+self.pathto(line)+",width:%d,height:%d>"%(width,height))
+                comm2("callback", self, "<image:"+self.pathto(line)+",width:%d,height:%d>\n"%(width,height))
                 return 1
 
             vb = self.get_attr(mark, 'mono', page)
