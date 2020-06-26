@@ -355,7 +355,7 @@ static void render_image(struct pane *p safe, struct pane *focus safe,
 			int dodraw, int scale)
 {
 	char *fname = NULL;
-	short width = p->w/2, height = p->h/2;
+	short width = p->parent->w/2, height = p->parent->h/2;
 
 	while (*line == '<')
 		line += 1;
@@ -376,7 +376,7 @@ static void render_image(struct pane *p safe, struct pane *focus safe,
 		line += len;
 		line += strspn(line, ",");
 	}
-	pane_resize(p, (p->w - width)/2, p->y, width, height);
+	pane_resize(p, (p->parent->w - width)/2, p->y, width, height);
 	if (fname && dodraw)
 		home_call(focus, "Draw:image", p, 0, NULL, fname, 5);
 
