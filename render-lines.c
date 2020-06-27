@@ -194,14 +194,13 @@ static int find_xy_line(struct pane *p safe, struct pane *focus safe,
 }
 
 static bool draw_line(struct pane *p safe, struct pane *focus safe,
-		      struct mark *mk safe, short y_start, short offset)
+		      struct mark *mk safe, short offset)
 {
 	struct rl_data *rl = p->data;
 	struct pane *hp = mk->mdata;
 	int ret = 0;
 
 	if (hp) {
-		pane_resize(hp, 0, y_start, p->w, p->h - y_start);
 		ret = pane_call(hp,
 				"render-line:draw",
 				focus,
@@ -395,10 +394,23 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	end = vmark_next(start);
 	/* Note: 'end' might be NULL is 'start' is end-of-file */
 
-	found_end = measure_line(p, focus, start, offset);
+	rl->shift_left = 0;
 
 	/* ->cy is top of cursor, we want to measure from bottom */
 	if (start->mdata) {
+		struct pane *hp = start->mdata;
+		int curs_width;
+		found_end = measure_line(p, focus, start, offset);
+
+		curs_width = pane_attr_get_int(
+			start->mdata, "curs_width", 1);
+		while (hp->cx + curs_width >= p->w) {
+			int shift = 8 * curs_width;
+			if (shift > hp->cx)
+				shift = hp->cx;
+			rl->shift_left += shift;
+			measure_line(p, focus, start, offset);
+		}
 		line_height_pre = attr_find_int(start->mdata->attrs, "line-height");
 		if (line_height_pre < 1)
 			line_height_pre = 1;
@@ -548,6 +560,18 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		vmark_clear(end);
 	}
 
+	y = 0;
+	if (rl->header && rl->header->mdata)
+		y = rl->header->mdata->h;
+	y -= rl->skip_height;
+	for (m = vmark_first(focus, rl->typenum, p);
+	     m && m->mdata ; m = vmark_next(m)) {
+		struct pane *hp = m->mdata;
+		pane_resize(hp, hp->x, y, hp->w, hp->h);
+		y += hp->h;
+	}
+	pane_damaged(p, DAMAGED_REFRESH);
+
 abort:
 	mark_free(top);
 	mark_free(bot);
@@ -557,12 +581,10 @@ static int render(struct mark *pm, struct pane *p safe,
 		  struct pane *focus safe)
 {
 	struct rl_data *rl = p->data;
-	short y;
+	short y = 0;
 	struct mark *m, *m2;
-	int shifted = 0;
 	struct xy scale = pane_scale(focus);
 	char *s;
-	bool found_end = False;
 	int hide_cursor = 0;
 	int cursor_drawn = 0;
 	short mwidth = -1;
@@ -572,7 +594,6 @@ static int render(struct mark *pm, struct pane *p safe,
 		hide_cursor = 1;
 	s = pane_attr_get(focus, "background");
 
-restart:
 	rl->cols = 0;
 	m = vmark_first(focus, rl->typenum, p);
 	if (!s)
@@ -592,22 +613,13 @@ restart:
 	} else
 		home_call(focus, "pane-clear", p);
 
-	if (rl->header && vmark_is_valid(rl->header)) {
-		draw_line(p, focus, rl->header, 0, -1);
-		y = rl->header->mdata->h;
-	} else
-		y = 0;
-
-	y -= rl->skip_height;
+	if (rl->header && vmark_is_valid(rl->header))
+		draw_line(p, focus, rl->header, -1);
 
 	p->cx = p->cy = -1;
 	rl->cursor_line = 0;
 
-	while (m && y < p->h && !found_end) {
-		if (!vmark_is_valid(m))
-			/* This line has changed. */
-			call_render_line(p, focus, m, NULL);
-
+	while (m && m->mdata) {
 		m2 = vmark_next(m);
 		if (!hide_cursor && p->cx <= 0 && pm &&
 		    mark_ordered_or_same(m, pm) &&
@@ -615,61 +627,15 @@ restart:
 		     mark_ordered_not_same(pm, m2))) {
 			short len = call_render_line_to_point(focus, pm,
 							      m);
-			if (mwidth < 0) {
-				if (m->mdata)
-					mwidth = pane_attr_get_int(m->mdata,
-								   "curs_width",
-								   1);
-				if (mwidth <= 0)
-					mwidth = 1;
-			}
 			rl->cursor_line = y;
-			found_end = draw_line(p, focus, m, y, len);
-			y += m->mdata ? m->mdata->h : 0;
-			if (!rl->do_wrap && m->mdata &&
-			    shifted != 2) {
-				int prefix_len = pane_attr_get_int(
-					m->mdata, "prefix_len", -1);
+			draw_line(p, focus, m, len);
 
-				/* First mwidth is for cursor, second is to
-				 * calc min shift size: a tab
-				 */
-				if (p->cx < prefix_len &&
-				    p->cx + mwidth + 8 * mwidth < p->w) {
-					/* Need to shift to right, and there
-					 * is room */
-					while (rl->shift_left > 0 &&
-					       p->cx < prefix_len) {
-						if (rl->shift_left < 8* mwidth) {
-							p->cx += rl->shift_left;
-							rl->shift_left = 0;
-						} else {
-							p->cx += 8 * mwidth;
-							rl->shift_left -=
-								8 * mwidth;
-						}
-					}
-					shifted = 1;
-					goto restart;
-				}
-			}
-			if (p->cx + mwidth >= p->w && !rl->do_wrap &&
-			    shifted != 1) {
-				/* Need to shift to the left */
-				while (p->cx + mwidth >= p->w) {
-					rl->shift_left += 8 * mwidth;
-					p->cx -= 8 * mwidth;
-				}
-				shifted = 2;
-				goto restart;
-			}
 			cursor_drawn = 1;
 		} else {
-			found_end = draw_line(p, focus, m, y, -1);
-			y += m->mdata ? m->mdata->h : 0;
+			draw_line(p, focus, m, -1);
 		}
-		if (!m2 || mark_same(m, m2))
-			break;
+		if (m->mdata)
+			y = m->mdata->y + m->mdata->h;
 		m = m2;
 	}
 	if (!cursor_drawn && !hide_cursor) {
@@ -690,12 +656,6 @@ restart:
 		home_call(focus, "Draw:text", p, 0, NULL, " ",
 			  scale.x, NULL, "",
 			  focus->w - mwidth, focus->h-1);
-	}
-	/* Any marks after 'm' must be discarded */
-	if (m) {
-		vmark_clear(m);
-		while ((m2 = vmark_next(m)) != NULL)
-			vmark_free(m2);
 	}
 	return y;
 }
@@ -731,18 +691,25 @@ DEF_CMD(render_lines_point_moving)
 	return 1;
 }
 
-DEF_CMD(render_lines_refresh)
+DEF_CMD(render_lines_revise)
 {
 	struct pane *p = ci->home;
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
-	struct mark *m, *pm;
-	char *a;
+	struct mark *m, *pm = NULL;
+	struct mark *m1, *m2;
+	bool refresh_all = False;
+	bool found_end = False;
+	int y;
 	char *hdr;
+	char *a;
 
 	a = pane_attr_get(focus, "render-wrap");
-	rl->do_wrap = (!a || strcmp(a, "yes") == 0);
 
+	if (rl->do_wrap != (!a || strcmp(a, "yes") ==0)) {
+		rl->do_wrap = (!a || strcmp(a, "yes") ==0);
+		refresh_all = True;
+	}
 	hdr = pane_attr_get(focus, "heading");
 	if (hdr && !*hdr)
 		hdr = NULL;
@@ -759,41 +726,170 @@ DEF_CMD(render_lines_refresh)
 		rl->header = NULL;
 	}
 
+	if (!rl->ignore_point)
+		pm = call_ret(mark, "doc:point", focus);
+	m1 = vmark_first(focus, rl->typenum, p);
+	m2 = vmark_last(focus, rl->typenum, p);
+
+	if (m1 && !vmark_is_valid(m1))
+		/* newline before might have been deleted, better check */
+		call("doc:render-line-prev", focus, 0, m1);
+	// FIXME double check that we invalidate line before any change...
+
+	if (m1 && m2 &&
+	    (!pm || (mark_ordered_or_same(m1,pm) &&
+		     mark_ordered_or_same(pm,m2)))) {
+		/* We maybe be able to keep m1 as start, if things work out.
+		 * So check all sub-panes are still valid and properly
+		 * positioned
+		 */
+		if (pm && !rl->do_wrap) {
+			int prefix_len;
+			int curs_width;
+			/* Need to check if side-shift is needed on cursor line */
+			m2 = mark_dup(pm);
+			call("doc:render-line-prev", focus, 0, m2);
+
+			m = vmark_at_or_before(focus, m2, rl->typenum, p);
+			mark_free(m2);
+
+			if (m && m->mdata &&
+			    (!vmark_is_valid(m) || refresh_all)) {
+				pane_damaged(p, DAMAGED_REFRESH);
+				call("doc:render-line-prev", focus, 0, m);
+				call_render_line(p, focus, m, &m1);
+			}
+			if (m && m->mdata) {
+				struct pane *hp = m->mdata;
+				int offset = call_render_line_to_point(focus,
+								       pm, m);
+				measure_line(p, focus, m, offset);
+				prefix_len = pane_attr_get_int(
+					m->mdata, "prefix_len", -1);
+				curs_width = pane_attr_get_int(
+					m->mdata, "curs_width", 1);
+
+				while (hp->cx + curs_width >= p->w) {
+					int shift = 8 * curs_width;
+					if (shift > hp->cx)
+						shift = hp->cx;
+					rl->shift_left += shift;
+					measure_line(p, focus, m, offset);
+					refresh_all = 1;
+				}
+				while (hp->cx < prefix_len &&
+				       rl->shift_left > 0 &&
+				       hp->cx + curs_width * 8*curs_width < p->w) {
+					int shift = 8 * curs_width;
+					if (shift > rl->shift_left)
+						shift = rl->shift_left;
+					rl->shift_left -= shift;
+					measure_line(p, focus, m, offset);
+					refresh_all = 1;
+				}
+			}
+		}
+		y = 0;
+		if (rl->header) {
+			struct pane *hp = rl->header->mdata;
+			if (refresh_all) {
+				measure_line(p, focus, rl->header, -1);
+				if (hp)
+					pane_resize(hp, hp->x, y, hp->w, hp->h);
+			}
+			if (hp)
+				y = hp->h;
+		}
+		for (m = m1; m && !found_end && y < p->h; m = vmark_next(m)) {
+			struct pane *hp;
+			if (refresh_all || !vmark_is_valid(m)) {
+				pane_damaged(p, DAMAGED_REFRESH);
+				call_render_line(p, focus, m, NULL);
+			}
+			found_end = measure_line(p, focus, m, -1);
+			hp = m->mdata;
+			if (!hp)
+				break;
+
+			if (y != hp->y) {
+				pane_damaged(p, DAMAGED_REFRESH);
+				pane_resize(hp, hp->x, y, hp->w, hp->h);
+			}
+			y += hp->h;
+			if (pm && y > p->h && m->seq < pm->seq) {
+				/* point might be in this line, but off
+				 * the screen
+				 */
+				int offset = call_render_line_to_point(focus,
+								       pm, m);
+				if (offset > 0) {
+					measure_line(p, focus, m, offset);
+					if (y - hp->h + hp->cy > p->h)
+						/* Cursor is off screen,
+						 * stop here
+						 */
+						break;
+				}
+			}
+		}
+		if (m) {
+			vmark_clear(m);
+			while ((m2 = vmark_next(m)) != NULL)
+				vmark_free(m2);
+		}
+		if (pm) {
+			m1 = vmark_first(focus, rl->typenum, p);
+			m2 = vmark_last(focus, rl->typenum, p);
+			if (m1 && m2 && mark_ordered_or_same(m1, pm) &&
+			    mark_ordered_not_same(pm, m2))
+				/* pm does't cause change to be required. */
+				pm = NULL;
+		}
+		if (!pm) {
+			if (rl->repositioned) {
+				rl->repositioned = 0;
+				call("render:reposition", focus,
+				     rl->lines, vmark_first(focus, rl->typenum,
+							    p), NULL,
+				     rl->cols, vmark_last(focus, rl->typenum,
+							  p), NULL,
+				     p->cx, p->cy);
+			}
+			return 1;
+		}
+	}
+	/* Need to find a new top-of-display */
+	if (!pm)
+		pm = call_ret(mark, "doc:point", focus);
+	if (!pm)
+		/* Don't know what to do here... */
+		return 1;
+	find_lines(pm, p, focus, NO_NUMERIC);
+	rl->repositioned = 0;
+	call("render:reposition", focus,
+	     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
+	     rl->cols, vmark_last(focus, rl->typenum, p), NULL,
+	     p->cx, p->cy);
+	return 1;
+}
+
+DEF_CMD(render_lines_refresh)
+{
+	struct pane *p = ci->home;
+	struct pane *focus = ci->focus;
+	struct rl_data *rl = p->data;
+	struct mark *m, *pm = NULL;
+
+
 	pm = call_ret(mark, "doc:point", focus);
 
 	m = vmark_first(focus, rl->typenum, p);
-	if (rl->top_sol && m) {
-		/* Check if any characters have appeared at the start
-		 * of the first line, before our mark.
-		 */
-		call_render_line_prev(focus, mark_dup_view(m), 0,
-				      &rl->top_sol);
-		m = vmark_first(focus, rl->typenum, p);
-	}
 
-	if (m)
-		rl->lines = render(pm, p, focus);
-	if (!m || (pm && !rl->ignore_point && (p->cx < 0 || p->cy < 0))) {
-		/* Either we haven't drawn anything, or what we drew didn't
-		 * show the cursor which is needed.
-		 * Try harder.
-		 */
-		m = pm ?: vmark_new(focus, MARK_UNGROUPED, NULL);
-		if (m) {
-			find_lines(m, p, focus, NO_NUMERIC);
-			rl->lines = render(m, p, focus);
-			rl->repositioned = 1;
-			if (m != pm)
-				mark_free(m);
-		}
-	}
-	if (rl->repositioned) {
-		rl->repositioned = 0;
-		call("render:reposition", focus,
-		     rl->lines, vmark_first(focus, rl->typenum, p), NULL,
-		     rl->cols, vmark_last(focus, rl->typenum, p), NULL,
-		     p->cx, p->cy);
-	}
+	if (!m)
+		return 1;
+
+	rl->lines = render(pm, p, focus);
+
 	return 1;
 }
 
@@ -821,7 +917,7 @@ DEF_CMD(render_lines_abort)
 	rl->ignore_point = 0;
 	rl->target_x = -1;
 
-	pane_damaged(p, DAMAGED_REFRESH);
+	pane_damaged(p, DAMAGED_VIEW);
 
 	/* Allow other handlers to complete the Abort */
 	return 0;
@@ -857,7 +953,13 @@ DEF_CMD(render_lines_move)
 
 	rl->ignore_point = 1;
 
+	if (rl->skip_line_height <= 0)
+		rl->skip_line_height = 1;
+
 	if (rpt < 0) {
+		/* Need to add new lines at the top and remove
+		 * at the bottom.
+		 */
 		while (rpt < 0) {
 			short y = 0;
 			struct mark *m;
@@ -898,27 +1000,30 @@ DEF_CMD(render_lines_move)
 				y += m->mdata->h;
 				m = vmark_next(m);
 			}
+			/* FIXME remove extra lines, maybe add */
 			rl->skip_height = y;
 		}
 	} else {
-		while (top && rpt > 0) {
+		/* Need to remove lines from top */
+		if (!vmark_is_valid(top))
+			call_render_line(p, focus, top, NULL);
+		measure_line(p, focus, top, -1);
+		while (top && top->mdata && rpt > 0) {
 			short y = 0;
 
-			if (!vmark_is_valid(top))
-				call_render_line(p, focus, top, NULL);
-			if (top->mdata == NULL)
-				break;
-			measure_line(p, focus, top, -1);
 			y = top->mdata->h;
-			if (rl->skip_height + rpt < y) {
+			if (rpt < y - rl->skip_height) {
 				rl->skip_height += rpt;
 				break;
 			}
-			top = vmark_next(top);
-			if (top && !vmark_is_valid(top))
-				call_render_line(p, focus, top, NULL);
 			rpt -= y - rl->skip_height;
 			rl->skip_height = 0;
+			top = vmark_next(top);
+			if (!top)
+				break;
+			if (!vmark_is_valid(top))
+				call_render_line(p, focus, top, NULL);
+			measure_line(p, focus, top, -1);
 		}
 		if (top && top->mdata) {
 			/* We didn't fall off the end, so it is OK to remove
@@ -931,7 +1036,7 @@ DEF_CMD(render_lines_move)
 		}
 	}
 	rl->repositioned = 1;
-	pane_damaged(ci->home, DAMAGED_REFRESH);
+	pane_damaged(ci->home, DAMAGED_VIEW);
 	top = vmark_first(focus, rl->typenum, p);
 	if (top && mark_same(top, old_top)) {
 		mark_free(old_top);
@@ -1122,7 +1227,7 @@ DEF_CMD(render_lines_move_line)
 	}
 
 	if (!start) {
-		pane_damaged(p, DAMAGED_REFRESH);
+		pane_damaged(p, DAMAGED_VIEW);
 		rl->i_moved = 0;
 		return 1;
 	}
@@ -1177,7 +1282,7 @@ DEF_CMD(render_lines_notify_replace)
 		     m = vmark_next(m))
 			vmark_invalidate(m);
 
-		pane_damaged(p, DAMAGED_REFRESH);
+		pane_damaged(p, DAMAGED_VIEW);
 		return 0;
 	}
 
@@ -1231,7 +1336,7 @@ DEF_CMD(render_lines_notify_replace)
 	if (end)
 		vmark_invalidate(end);
 
-	pane_damaged(p, DAMAGED_REFRESH);
+	pane_damaged(p, DAMAGED_VIEW);
 
 	return 0;
 }
@@ -1259,8 +1364,15 @@ DEF_CMD(render_lines_clone)
 DEF_CMD(render_lines_resize)
 {
 	struct pane *p = ci->home;
+	struct rl_data *rl = p->data;
+	struct mark *m;
 
-	pane_damaged(p, DAMAGED_REFRESH);
+	for (m = vmark_first(p, rl->typenum, p);
+	     m;
+	     m = vmark_next(m))
+		vmark_invalidate(m);
+	pane_damaged(p, DAMAGED_VIEW);
+
 	/* Allow propagation to children */
 	return 0;
 }
@@ -1287,6 +1399,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Free", &edlib_do_free);
 	key_add(rl_map, "Clone", &render_lines_clone);
 	key_add(rl_map, "Refresh", &render_lines_refresh);
+	key_add(rl_map, "Refresh:view", &render_lines_revise);
 	key_add(rl_map, "Refresh:size", &render_lines_resize);
 	key_add(rl_map, "Notify:clip", &render_lines_clip);
 	key_add(rl_map, "get-attr", &render_lines_get_attr);

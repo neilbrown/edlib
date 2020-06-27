@@ -242,7 +242,7 @@ Module features
       and certainly must not push the cursor line of the screen as it currently does.
 - [X] use a stable mark/pane for the header
 - [X] use a stable pane for an image line
-- [ ] separate out Refresh:view which validates and maybe calls find_lines
+- [X] separate out Refresh:view which validates and maybe calls find_lines
       from Refresh which calls refresh on all sub-panes.
 - [ ] Give lib-renderline a Refresh:view which calls something in the render-line
       pane which does call_render_line().  Use pane_damaged() to mark panes as invalid
