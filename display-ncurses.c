@@ -71,6 +71,7 @@ struct display_data {
 static SCREEN *current_screen;
 static void ncurses_text(struct pane *p safe, struct pane *display safe,
 			 wchar_t ch, int attr, short x, short y, short cursor);
+static PANEL * safe pane_panel(struct pane *p safe, struct pane *home);
 DEF_CMD(input_handle);
 DEF_CMD(handle_winch);
 static struct map *nc_map;
@@ -584,19 +585,32 @@ static int to_pair(struct display_data *dd safe, int fg, int bg)
 }
 
 
-static int cvt_attrs(struct pane *home safe, const char *attrs)
+static int cvt_attrs(struct pane *p safe, struct pane *home safe,
+		     const char *attrs)
 {
 	struct display_data *dd = home->data;
-
 	int attr = 0;
 	char tmp[40];
 	const char *a;
+	PANEL *pan = NULL;
 	int fg = COLOR_BLACK;
 	int bg = COLOR_WHITE+8;
 
-	if (!attrs)
-		return 0;
 	set_screen(home);
+	do {
+		p = p->parent;
+	} while (p->parent != p &&(pan = pane_panel(p, NULL)) == NULL);
+	if (pan) {
+		/* Get 'default colours for this pane - set at clear */
+		int at = getbkgd(panel_window(pan));
+		int pair = PAIR_NUMBER(at);
+		short dfg, dbg;
+		pair_content(pair, &dfg, &dbg);
+		if (dfg >= 0)
+			fg = dfg;
+		if (dbg >= 0)
+			bg = dbg;
+	}
 	a = attrs;
 	while (a && *a) {
 		const char *c;
@@ -627,10 +641,8 @@ static int cvt_attrs(struct pane *home safe, const char *attrs)
 		}
 		a = c;
 	}
-	if (fg != COLOR_BLACK || bg != COLOR_WHITE+8) {
-		int p = to_pair(dd, fg, bg);
-		attr |= COLOR_PAIR(p);
-	}
+	if (fg != COLOR_BLACK || bg != COLOR_WHITE+8)
+		attr |= COLOR_PAIR(to_pair(dd, fg, bg));
 	return attr;
 }
 
@@ -696,7 +708,7 @@ static PANEL * safe pane_panel(struct pane *p safe, struct pane *home)
 DEF_CMD(nc_clear)
 {
 	struct pane *p = ci->home;
-	int attr = cvt_attrs(p, ci->str2?:ci->str);
+	int attr = cvt_attrs(ci->focus, p, ci->str2?:ci->str);
 	PANEL *panel;
 	WINDOW *win;
 	int w, h;
@@ -747,7 +759,7 @@ DEF_CMD(nc_text_size)
 DEF_CMD(nc_draw_text)
 {
 	struct pane *p = ci->home;
-	int attr = cvt_attrs(p, ci->str2);
+	int attr = cvt_attrs(ci->focus, p, ci->str2);
 	int cursor_offset = ci->num;
 	short x = ci->x, y = ci->y;
 	const char *str = ci->str;
