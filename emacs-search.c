@@ -837,7 +837,7 @@ DEF_CMD(highlight_draw)
 	 * the popup doesn't obscure it.
 	 */
 
-	xy = pane_mapxy(ci->focus, ci->home, ci->x, ci->y);
+	xy = pane_mapxy(ci->focus, ci->home, ci->x, ci->y, False);
 	while (pp->parent != pp && pp->z == 0)
 		pp = pp->parent;
 	while (pp2 && pp2->parent != pp2 && pp2->z == 0)

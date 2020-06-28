@@ -464,7 +464,7 @@ char *pane_attr_get(struct pane *p, const char *key safe);
 char *pane_mark_attr(struct pane *p safe, struct mark *m safe,
 		     const char *key safe);
 struct xy pane_mapxy(struct pane *orig safe, struct pane *target safe,
-		     short x, short y);
+		     short x, short y, bool clip);
 
 struct xy pane_scale(struct pane *p safe);
 

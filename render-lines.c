@@ -209,7 +209,7 @@ static bool draw_line(struct pane *p safe, struct pane *focus safe,
 				-1, -1);
 		if (offset >= 0) {
 			struct xy curs = pane_mapxy(hp, p,
-						    hp->cx, hp->cy);
+						    hp->cx, hp->cy, False);
 			if (hp->cx < 0) {
 				p->cx = -1;
 				p->cy = -1;
@@ -1073,7 +1073,8 @@ DEF_CMD(render_lines_set_cursor)
 
 	cih = pane_mapxy(ci->focus, ci->home,
 			 ci->x >= 0 ? ci->x : p->cx >= 0 ? p->cx : 0,
-			 ci->y >= 0 ? ci->y : p->cy >= 0 ? p->cx : 0);
+			 ci->y >= 0 ? ci->y : p->cy >= 0 ? p->cx : 0,
+			 False);
 
 	m = vmark_first(p, rl->typenum, p);
 

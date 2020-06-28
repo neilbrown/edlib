@@ -696,7 +696,7 @@ static PANEL * safe pane_panel(struct pane *p safe, struct pane *home)
 	if (!home)
 		return pan;
 
-	xy = pane_mapxy(p, home, 0, 0);
+	xy = pane_mapxy(p, home, 0, 0, False);
 
 	pan = new_panel(newwin(p->h, p->w, xy.y, xy.x));
 	set_panel_userptr(pan, p);
@@ -817,7 +817,7 @@ DEF_CMD(nc_refresh_post)
 		return 1;
 	p1 = (struct pane*) panel_userptr(pan);
 	if (p1) {
-		xy = pane_mapxy(p1, p, 0 ,0);
+		xy = pane_mapxy(p1, p, 0, 0, False);
 		getbegyx(panel_window(pan), oy, ox);
 		if (ox != xy.x || oy != xy.y)
 			move_panel(pan, xy.y, xy.x);
@@ -828,7 +828,7 @@ DEF_CMD(nc_refresh_post)
 		if (!p1 || !p2)
 			continue;
 
-		xy = pane_mapxy(p2, p, 0 ,0);
+		xy = pane_mapxy(p2, p, 0, 0, False);
 		getbegyx(panel_window(pan2), oy, ox);
 		if (ox != xy.x || oy != xy.y)
 			move_panel(pan2, xy.y, xy.x);
@@ -967,7 +967,7 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 	set_screen(display);
 	if (cursor == 2) {
 		/* Cursor is in-focus */
-		struct xy curs = pane_mapxy(p, display, x, y);
+		struct xy curs = pane_mapxy(p, display, x, y, False);
 		display->cx = curs.x;
 		display->cy = curs.y;
 	}
@@ -984,7 +984,7 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 		pan = pane_panel(p2, NULL);
 	}
 	if (pan) {
-		struct xy xy = pane_mapxy(p, p2, x, y);
+		struct xy xy = pane_mapxy(p, p2, x, y, False);
 		mvwadd_wch(panel_window(pan), xy.y, xy.x, &cc);
 	}
 }

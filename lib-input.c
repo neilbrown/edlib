@@ -268,7 +268,7 @@ DEF_CMD(mouse_event)
 	num = im->num;
 	ex = im->num2;
 	/* FIXME is there any point in this? */
-	xy = pane_mapxy(ci->focus, focus, ci->x, ci->y);
+	xy = pane_mapxy(ci->focus, focus, ci->x, ci->y, False);
 
 	mode = strsave(ci->home, im->mode);
 	free((void*)im->mode);

@@ -1016,7 +1016,21 @@ static PyObject *Pane_mapxy(Pane *self safe, PyObject *args)
 	if (ret <= 0 || !self->pane || !other || !other->pane)
 		return NULL;
 
-	xy = pane_mapxy(other->pane, self->pane, x, y);
+	xy = pane_mapxy(other->pane, self->pane, x, y, False);
+	return Py_BuildValue("ii", xy.x, xy.y);
+}
+
+static PyObject *Pane_clipxy(Pane *self safe, PyObject *args)
+{
+	short x,y;
+	struct xy xy;
+	Pane *other = NULL;
+
+	int ret = PyArg_ParseTuple(args, "O!hh", &PaneType, &other, &x, &y);
+	if (ret <= 0 || !self->pane || !other || !other->pane)
+		return NULL;
+
+	xy = pane_mapxy(other->pane, self->pane, x, y, True);
 	return Py_BuildValue("ii", xy.x, xy.y);
 }
 
@@ -1153,6 +1167,8 @@ static PyMethodDef pane_methods[] = {
 	 "Send a notification from a pane"},
 	{"mapxy", (PyCFunction)Pane_mapxy, METH_VARARGS,
 	 "Convert pane-relative co-ords between panes"},
+	{"clipxy", (PyCFunction)Pane_clipxy, METH_VARARGS,
+	 "Convert pane-relative co-ords between panes, clipping to all panes"},
 	{"add_notify", (PyCFunction)Pane_add_notify, METH_VARARGS,
 	 "Add notifier for an event on some other pane"},
 	{"drop_notify", (PyCFunction)Pane_drop_notify, METH_VARARGS,

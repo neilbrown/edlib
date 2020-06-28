@@ -898,38 +898,27 @@ char *do_call_str(enum target_type type, struct pane *home,
 	return cr.s;
 }
 
-/* convert pane-relative co-ords to absolute */
-static void pane_absxy(struct pane *p, short *x safe, short *y safe)
-{
-	while (p) {
-		*x += p->x;
-		*y += p->y;
-		if (p->parent == p)
-			break;
-		p = p->parent;
-	}
-}
-
-/* Convert absolute c-ords to relative */
-static void pane_relxy(struct pane *p, short *x safe, short *y safe)
-{
-	while (p) {
-		*x -= p->x;
-		*y -= p->y;
-		if (p->parent == p)
-			break;
-		p = p->parent;
-	}
-}
-
-struct xy pane_mapxy(struct pane *orig safe, struct pane *target safe,
-		   short x, short y)
+struct xy pane_mapxy(struct pane *p safe, struct pane *target safe,
+		     short x, short y, bool clip)
 {
 	struct xy xy;
 
-	if (orig != target) {
-		pane_absxy(orig, &x, &y);
-		pane_relxy(target, &x, &y);
+	while (p != target && p != p->parent) {
+		if (clip && p->w > 0) {
+			if (x < 0)
+				x = 0;
+			if (x > p->w)
+				x = p->w;
+		}
+		if (clip && p->h > 0) {
+			if (y < 0)
+				y = 0;
+			if (y > p->h)
+				y = p->h;
+		}
+		x += p->x;
+		y += p->y;
+		p = p->parent;
 	}
 	xy.x = x;
 	xy.y = y;

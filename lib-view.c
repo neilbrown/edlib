@@ -435,7 +435,7 @@ DEF_CMD(view_click)
 	int num;
 	struct xy cih;
 
-	cih = pane_mapxy(ci->focus, ci->home, ci->x, ci->y);
+	cih = pane_mapxy(ci->focus, ci->home, ci->x, ci->y, False);
 
 	if (cih.x >= vd->border_width)
 		return 0;
