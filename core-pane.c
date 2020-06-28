@@ -137,6 +137,8 @@ struct pane *__pane_register(struct pane *parent, short z,
 	alloc(p, pane);
 	pane_init(p, parent);
 	p->z = z;
+	if (parent)
+		p->abs_z = parent->abs_z + 1;
 	p->handle = command_get(handle);
 	if (!data)
 		/* type of 'data' should correlate with type of handle,

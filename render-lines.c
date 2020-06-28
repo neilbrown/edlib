@@ -118,6 +118,7 @@ struct rl_data {
 				       */
 	short		lines; /* lines drawn before we hit eof */
 	short		cols; /* columns used for longest line */
+	bool		background_drawn;
 };
 
 static void vmark_clear(struct mark *m safe)
@@ -592,11 +593,16 @@ static int render(struct mark *pm, struct pane *p safe,
 	s = pane_attr_get(focus, "hide-cursor");
 	if (s && strcmp(s, "yes") == 0)
 		hide_cursor = 1;
-	s = pane_attr_get(focus, "background");
 
 	rl->cols = 0;
 	m = vmark_first(focus, rl->typenum, p);
-	if (!s)
+	s = pane_attr_get(focus, "background");
+	if (s && strncmp(s, "call:", 5) == 0) {
+		home_call(focus, "pane-clear", p);
+		home_call(focus, s+5, p, 0, m);
+	} else if (rl->background_drawn)
+		;
+	else if (!s)
 		home_call(focus, "pane-clear", p);
 	else if (strncmp(s, "color:", 6) == 0) {
 		char *a = strdup(s);
@@ -607,11 +613,9 @@ static int render(struct mark *pm, struct pane *p safe,
 	} else if (strncmp(s, "image:", 6) == 0) {
 		home_call(focus, "pane-clear", p);
 		home_call(focus, "Draw:image", p, 1, NULL, s+6);
-	} else if (strncmp(s, "call:", 5) == 0) {
-		home_call(focus, "pane-clear", p);
-		home_call(focus, s+5, p, 0, m);
 	} else
 		home_call(focus, "pane-clear", p);
+	rl->background_drawn = True;
 
 	if (rl->header && vmark_is_valid(rl->header))
 		draw_line(p, focus, rl->header, -1);
@@ -627,7 +631,7 @@ static int render(struct mark *pm, struct pane *p safe,
 		     mark_ordered_not_same(pm, m2))) {
 			short len = call_render_line_to_point(focus, pm,
 							      m);
-			rl->cursor_line = y;
+			rl->cursor_line = m->mdata->y + m->mdata->cy;
 			draw_line(p, focus, m, len);
 
 			cursor_drawn = 1;
@@ -1372,6 +1376,7 @@ DEF_CMD(render_lines_resize)
 	     m;
 	     m = vmark_next(m))
 		vmark_invalidate(m);
+	rl->background_drawn = False;
 	pane_damaged(p, DAMAGED_VIEW);
 
 	/* Allow propagation to children */

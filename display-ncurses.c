@@ -212,6 +212,7 @@ static void record_screen(struct pane *p safe)
 			for (l = 0; l < CCHARW_MAX && wc[l]; l++)
 				buf[l+3] = htole16(wc[l]);
 			buf[2] = htole16(l);
+			//LOG("%d,%d %d:%d:%d:%d", c,r,fg,bg,l,wc[0]);
 			md5_update(&ctx, (uint8_t*)buf,
 				   (l+3) * sizeof(uint16_t));
 		}

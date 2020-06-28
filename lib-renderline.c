@@ -459,6 +459,9 @@ DEF_CMD(renderline)
 		return Enoarg;
 	start = line_start = line;
 
+	if (dodraw)
+		home_call(focus, "pane-clear", p);
+
 	if (strncmp(line, "<image:",7) == 0) {
 		/* For now an <image> must be on a line by itself.
 		 * Maybe this can be changed later if I decide on
