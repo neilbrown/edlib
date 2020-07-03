@@ -455,7 +455,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			    lines_below >= -vline-1)
 				found_end = 1;
 		}
-		if (!found_start && y_pre == 0) {
+		if (!found_start && y_pre <= 0) {
 			/* step backwards moving start */
 			m = call_render_line_prev(focus, mark_dup_view(start),
 						  1, &rl->top_sol);
@@ -480,14 +480,14 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			if (bot && start->seq < bot->seq)
 				found_end = 1;
 		}
-		if (!found_end && y_post == 0) {
+		if (!found_end && y_post <= 0) {
 			/* step forwards */
 			if (!vmark_is_valid(end))
 				call_render_line(p, focus, end, &start);
 			found_end = measure_line(p, focus, end, -1);
 			if (end->mdata)
 				y_post = end->mdata->h;
-			if (y_post)
+			if (y_post > 0)
 				line_height_post =
 					attr_find_int(end->mdata->attrs,
 						      "line-height");
