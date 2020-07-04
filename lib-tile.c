@@ -988,9 +988,12 @@ DEF_CMD(tile_doc)
 		t = list_next_entry(t, tiles);
 		f = t->content;
 		if (f) {
-			n = pane_attr_get(pane_leaf(f), "doc-name");
+			f = pane_leaf(f);
+			n = pane_attr_get(f, "doc-name");
 			if (name && n && strcmp(n, name) == 0)
-				return comm_call(ci->comm2, "callback:pane", t->p,
+				return comm_call(ci->comm2, "callback:pane",
+						 strcmp(ci->key, "DocLeaf") == 0
+						 ? f : t->p,
 						 0, NULL, t->name);
 		}
 	} while (t != ti);
@@ -1086,6 +1089,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(tile_map, "OtherPane", &tile_other);
 	key_add(tile_map, "ThisPane", &tile_this);
 	key_add(tile_map, "DocPane", &tile_doc);
+	key_add(tile_map, "DocLeaf", &tile_doc);
 	key_add(tile_map, "RootPane", &tile_root);
 	key_add(tile_map, "Clone", &tile_clone);
 	key_add(tile_map, "ChildClosed", &tile_child_closed);

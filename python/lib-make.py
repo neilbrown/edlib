@@ -485,8 +485,8 @@ class MakePane(edlib.Pane):
         # If 'AnyPane' or 'OtherPane' we ensure match view is visible
         par = None; pane = None
         if where in ['OtherPane', 'AnyPane']:
-            pane = focus.call("DocPane", d, ret='focus')
-            if pane:
+            par = focus.call("DocLeaf", d, ret='focus')
+            if par:
                 pass
             elif where == 'OtherPane':
                 pane = focus.call(where, ret='focus')
@@ -791,15 +791,17 @@ def run_make(key, focus, str, **a):
     doc['dirname'] = dir
     doc['view-default'] = 'make-viewer'
     doc['make-command'] = str
+    pd = None; p = None
     if cmd == "make":
-        p = focus.call("DocPane", doc, ret='focus')
-        if not p:
+        pd = focus.call("DocPane", doc, ret='focus')
+        if not pd:
             p = focus.call("OtherPane", doc, ret='focus')
     else:
         p = focus.call("PopupTile", "MD3ta", ret='focus')
-    if not p:
+    if not p and not pd:
         return edlib.Efail
-    p = doc.call("doc:attach-view", p, 1, ret='focus')
+    if not pd:
+        doc.call("doc:attach-view", p, 1, ret='focus')
 
     if not still_running:
         p = doc.call("attach-makecmd", str, dir, ret='focus')

@@ -59,6 +59,10 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
+      pointer separate to 'focus'?  Maybe panes could have optional
+      'child' method which returns main child - pane_leaf() calls that.
+      Maybe pane_leaf() find a pane with z=0 and matching w,h ??
 - [ ] maybe generalize search and select somehow, so a line-based filter can
       detect and highlight the selection, rather than major-mode being fully
       in control  Similarly search might be handled by a render pane.
@@ -167,7 +171,7 @@ Module features
 
 ### lib-diff
 
-- [ ] The found line sometimes appears at top-of-pane, 
+- [X] The found line sometimes appears at top-of-pane, 
 - [ ] add command to add it to any pane/doc
 - [ ] allow inversion so 'enter' looks for the '-' not the '+'
 - [ ] status-line entry to indicate if inverted or not.
@@ -329,7 +333,7 @@ Module features
 
 ### grep/make
 
-- [ ] If target pane is visible, it still gets refreshed, which is painful.
+- [X] If target pane is visible, it still gets refreshed, which is painful.
 - [ ] When I visit from grep in a popup, I think I want a 'view' at first.
       so 'q' works.
 - [ ] Need keystroke to step through different grep/make windows
