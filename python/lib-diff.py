@@ -137,7 +137,9 @@ class DiffPane(edlib.Pane):
         par = d.call("doc:attach-view", par, 1, ret='focus')
         par.take_focus()
         par.call("Move-File", -1)
-        par.call("Move-Line",lines - 1)
+        if lines > 1:
+            par.call("Move-EOL",lines - 1)
+            par.call("Move-Char", 1);
 
         return 1
 
