@@ -436,9 +436,19 @@ class EdDisplay(edlib.Pane):
         for p in l:
             pm = self.panes[p]
             rx,ry = self.mapxy(p, 0, 0)
+            lox,loy = self.clipxy(p, 0, 0)
+            hix,hiy = self.clipxy(p, p.w, p.h)
             # FIXME draw on surface or GdkPixbuf
+            ctx.save()
+            ctx.move_to(lox,loy)
+            ctx.line_to(hix,loy)
+            ctx.line_to(hix,hiy)
+            ctx.line_to(lox,hiy)
+            ctx.close_path()
+            ctx.clip()
             ctx.set_source_surface(pm, rx, ry)
             ctx.paint()
+            ctx.restore()
         edlib.time_stop(edlib.TIME_WINDOW)
 
     def focus_in(self, *a):
