@@ -94,9 +94,20 @@ class EdDisplay(edlib.Pane):
         if attr is not None:
             fg, bg = self.get_colours(attr)
         else:
-            fg, bg = self.get_colours("bg:white")
+            bg = None
+        src = None
+        if not bg:
+            src = self.find_pixmap(focus.parent)
+            if not src:
+                fg, bg = self.get_colours("bg:white")
         pm = self.get_pixmap(focus)
-        self.do_clear(pm, bg)
+        if src:
+            (pm2, x, y) = src
+            cr = cairo.Context(pm)
+            cr.set_source_surface(pm2, -x-focus.x, -y-focus.y)
+            cr.paint()
+        else:
+            self.do_clear(pm, bg)
         self.damaged(edlib.DAMAGED_POSTORDER)
         return True
 
