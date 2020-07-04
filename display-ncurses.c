@@ -188,7 +188,7 @@ static void record_screen(struct pane *p safe)
 {
 	struct display_data *dd = p->data;
 	struct md5_state ctx;
-	uint16_t buf[CCHARW_MAX+4];
+	uint16_t buf[CCHARW_MAX+5];
 	char out[MD5_DIGEST_SIZE*2+1];
 	int r,c;
 
@@ -201,7 +201,7 @@ static void record_screen(struct pane *p safe)
 			cchar_t cc;
 			wchar_t wc[CCHARW_MAX+2];
 			attr_t a;
-			short color;
+			short color, fg, bg;
 			int l;
 			int x,y,w,h;
 			PANEL *pan = NULL;
@@ -219,11 +219,14 @@ static void record_screen(struct pane *p safe)
 				continue;
 			mvwin_wch(panel_window(pan), r-y, c-x, &cc);
 			getcchar(&cc, wc, &a, &color, NULL);
-			buf[0] = htole16(color);
+			pair_content(color, &fg, &bg);
+			buf[0] = htole16(fg);
+			buf[1] = htole16(bg);
 			for (l = 0; l < CCHARW_MAX && wc[l]; l++)
-				buf[l+2] = htole16(wc[l]);
-			buf[1] = htole16(l);
-			md5_update(&ctx, (uint8_t*)buf, (l+2) * 2);
+				buf[l+3] = htole16(wc[l]);
+			buf[2] = htole16(l);
+			md5_update(&ctx, (uint8_t*)buf,
+				   (l+3) * sizeof(uint16_t));
 		}
 	md5_final_txt(&ctx, out);
 	if (dd->log) {
