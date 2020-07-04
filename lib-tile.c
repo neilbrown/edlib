@@ -248,11 +248,11 @@ static struct pane *tile_split(struct pane **pp safe, int horiz, int after,
 		break;
 	case 2: /* vert after */
 		pane_resize(ret, p->x, p->y + space, p->w, new_space);
-		pane_resize(p, -1, -1, p->w, space);
+		pane_resize(p, p->x, p->y, p->w, space);
 		break;
 	case 3: /* horiz after */
 		pane_resize(ret, p->x + space, p->y, new_space, p->h);
-		pane_resize(p, -1, -1, space, p->h);
+		pane_resize(p, p->x, p->y, space, p->h);
 		break;
 	}
 	tile_adjust(ret);
@@ -316,9 +316,11 @@ static int tile_destroy(struct pane *p safe)
 	} else if (next == NULL /* FIXME redundant */ && prev) {
 		/* prev gets the space and focus */
 		if (ti->direction == Horiz)
-			pane_resize(prev, -1, -1, prev->w + p->w, prev->h);
+			pane_resize(prev, prev->x, prev->y,
+				    prev->w + p->w, prev->h);
 		else
-			pane_resize(prev, -1, -1, prev->w, prev->h + p->h);
+			pane_resize(prev, prev->x, prev->y,
+				    prev->w, prev->h + p->h);
 		tile_adjust(prev);
 		p->parent->focus = prev;
 	} else if (/*FIXME*/ next && prev) {
@@ -334,7 +336,7 @@ static int tile_destroy(struct pane *p safe)
 				w = 0;
 				p->parent->focus = next;
 			}
-			pane_resize(prev, -1, -1, prev->w + w, prev->h);
+			pane_resize(prev, prev->x, prev->y, prev->w + w, prev->h);
 			w = p->w - w;
 			pane_resize(next, prev->x + prev->w, next->y,
 				    next->w + w, next->h);
@@ -347,7 +349,7 @@ static int tile_destroy(struct pane *p safe)
 				h = 0;
 				p->parent->focus = next;
 			}
-			pane_resize(prev, -1, -1, prev->w, prev->h + h);
+			pane_resize(prev, prev->x, prev->y, prev->w, prev->h + h);
 			h = p->h - h;
 			pane_resize(next, next->x, prev->y + prev->h,
 				    next->w , next->h + h);

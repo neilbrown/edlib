@@ -560,8 +560,7 @@ void pane_resize(struct pane *p safe, int x, int y, int w, int h)
 {
 	int damage = 0;
 
-	if (x >= 0 &&
-	    (p->x != x || p->y != y)) {
+	if (p->x != x || p->y != y) {
 		damage |= DAMAGED_SIZE;
 		p->x = x;
 		p->y = y;
