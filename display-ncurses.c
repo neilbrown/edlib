@@ -203,21 +203,8 @@ static void record_screen(struct pane *p safe)
 			attr_t a;
 			short color, fg, bg;
 			int l;
-			int x,y,w,h;
-			PANEL *pan = NULL;
 
-			while ((pan = panel_below(pan)) != NULL) {
-				getbegyx(panel_window(pan), y, x);
-				getmaxyx(panel_window(pan), h, w);
-				if (r < y || r >= y + h)
-					continue;
-				if (c < x || c >= x + w)
-					continue;
-				break;
-			}
-			if (!pan)
-				continue;
-			mvwin_wch(panel_window(pan), r-y, c-x, &cc);
+			mvwin_wch(stdscr, r, c, &cc);
 			getcchar(&cc, wc, &a, &color, NULL);
 			pair_content(color, &fg, &bg);
 			buf[0] = htole16(fg);
@@ -806,8 +793,6 @@ DEF_CMD(nc_refresh_post)
 	struct pane *p = ci->home;
 	struct pane *p1;
 	PANEL *pan, *pan2;
-	struct xy xy;
-	int ox, oy;
 
 	set_screen(p);
 
@@ -819,22 +804,11 @@ DEF_CMD(nc_refresh_post)
 	if (!pan)
 		return 1;
 	p1 = (struct pane*) panel_userptr(pan);
-	if (p1) {
-		xy = pane_mapxy(p1, p, 0, 0, False);
-		getbegyx(panel_window(pan), oy, ox);
-		if (ox != xy.x || oy != xy.y)
-			move_panel(pan, xy.y, xy.x);
-	}
 	for (;(pan2 = panel_above(pan)) != NULL; pan = pan2) {
 		struct pane *p2 = (struct pane*)panel_userptr(pan2);
 		p1 = (struct pane*)panel_userptr(pan);
 		if (!p1 || !p2)
 			continue;
-
-		xy = pane_mapxy(p2, p, 0, 0, False);
-		getbegyx(panel_window(pan2), oy, ox);
-		if (ox != xy.x || oy != xy.y)
-			move_panel(pan2, xy.y, xy.x);
 
 		if (p1->abs_z <= p2->abs_z)
 			continue;
@@ -849,17 +823,36 @@ DEF_CMD(nc_refresh_post)
 			pan2 = pan;
 	}
 
-	update_panels();
+	/* As we need to crop pane against their parents, we cannot simply
+	 * use update_panels().  Instead we copy each to stdscr and refresh
+	 * that.
+	 */
+	for (pan = NULL; (pan = panel_above(pan)) != NULL; ) {
+		WINDOW *win;
+		struct xy src, dest, area;
+
+		p1 = (void*)panel_userptr(pan);
+		if (!p1)
+			continue;
+		dest = pane_mapxy(p1, p, 0, 0, True);
+		area = pane_mapxy(p1, p, p->w, p->h, True);
+		src = pane_mapxy(p1, p, 0, 0, False);
+		src.x = dest.x - src.x;
+		src.y = dest.y - src.y;
+		win = panel_window(pan);
+		copywin(win, stdscr, src.y, src.x,
+			dest.y, dest.x, area.y-1, area.x-1, 0);
+	}
 	/* place the cursor */
 	p1 = pane_leaf(p);
 	pan = NULL;
 	while (p1 != p && (pan = pane_panel(p1, NULL)) == NULL)
 		p1 = p1->parent;
 	if (pan) {
-		wmove(panel_window(pan), p1->cy, p1->cx);
-		wnoutrefresh(panel_window(pan));
+		struct xy curs = pane_mapxy(p1, p, p1->cx, p1->cy, False);
+		wmove(stdscr, curs.y, curs.x);
 	}
-	doupdate();
+	refresh();
 	record_screen(ci->home);
 	return 1;
 }
