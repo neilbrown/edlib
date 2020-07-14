@@ -805,7 +805,8 @@ def run_make(key, focus, str, **a):
 
     if not still_running:
         p = doc.call("attach-makecmd", str, dir, ret='focus')
-    p['cmd'] = cmd
+        if p:
+            p['cmd'] = cmd
     return 1
 
 def make_request(key, focus, num, num2, str, mark, **a):
