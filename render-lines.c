@@ -164,7 +164,7 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe,
 	int ret = 0;
 
 	if (hp) {
-		pane_resize(hp, 0, 0, p->w, p->h);
+		pane_resize(hp, hp->x, hp->y, p->w, p->h);
 		ret = pane_call(hp,
 				"render-line:measure",
 				focus,
