@@ -66,6 +66,8 @@ CFLAGS= -g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG) $(VCFL
 #Doesn't work :-( -fsanitize=address
 
 all: edlib checksym lib shared
+test: edlib lib shared
+	./tests run
 
 OBJ = O/edlib.o
 LIBOBJ = O/core-mark.o O/core-doc.o O/core-editor.o O/core-attr.o \
@@ -183,7 +185,7 @@ O/mod-list-decl.h : Makefile
 
 CSRC= attr.c
 
-test:
+test2:
 	@for f in $(CSRC); do sed -n -e 's/^#ifdef TEST_\(.*\)$$/\1/p' $$f | \
 		while read test; do cc -g -o test_$$test -DTEST_$$test $(CSRC) && \
 			./test_$$test || exit 2; \
