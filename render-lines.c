@@ -352,6 +352,74 @@ static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
  *  - when we reach the given line count (vline).  A positive count restricts
  *    backward movement, a negative restricts forwards movement.
  */
+
+static int step_back(struct pane *p safe, struct pane *focus safe,
+		     struct mark **startp safe, struct mark **endp,
+		     short *y_pre safe, short *line_height_pre safe)
+{
+	/* step backwards moving start */
+	struct rl_data *rl = p->data;
+	struct mark *m;
+	int found_start = 0;
+	struct mark *start = *startp;
+
+	if (!start)
+		return 1;
+	m = call_render_line_prev(focus, mark_dup_view(start),
+				  1, &rl->top_sol);
+	if (!m) {
+		/* no text before 'start' */
+		found_start = 1;
+	} else {
+		short h = 0;
+		start = m;
+		if (!vmark_is_valid(start))
+			call_render_line(p, focus, start, endp);
+		measure_line(p, focus, start, -1);
+		h = start->mdata ? start->mdata->h : 0;
+		if (h) {
+			*y_pre = h;
+			*line_height_pre =
+				attr_find_int(start->mdata->attrs,
+					      "line-height");
+		} else
+			found_start = 1;
+	}
+	*startp = start;
+	return found_start;
+}
+
+static int step_fore(struct pane *p safe, struct pane *focus safe,
+		     struct mark **startp safe, struct mark **endp safe,
+		     short *y_post safe, short *line_height_post safe)
+{
+	struct mark *end = *endp;
+	int found_end = 0;
+
+	if (!end)
+		return 1;
+	if (!vmark_is_valid(end))
+		call_render_line(p, focus, end, startp);
+	found_end = measure_line(p, focus, end, -1);
+	if (end->mdata)
+		*y_post = end->mdata->h;
+	if (*y_post > 0 && end->mdata)
+		*line_height_post =
+			attr_find_int(end->mdata->attrs,
+				      "line-height");
+	if (!end->mdata || !end->mdata->h)
+		end = NULL;
+	else
+		end = vmark_next(end);
+	if (!end) {
+		found_end = 1;
+		*y_post = p->h / 10;
+	}
+
+	*endp = end;
+	return found_end;
+}
+
 static void find_lines(struct mark *pm safe, struct pane *p safe,
 		       struct pane *focus safe,
 		       int vline)
@@ -457,49 +525,16 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				found_end = 1;
 		}
 		if (!found_start && y_pre <= 0) {
-			/* step backwards moving start */
-			m = call_render_line_prev(focus, mark_dup_view(start),
-						  1, &rl->top_sol);
-			if (!m) {
-				/* no text before 'start' */
-				found_start = 1;
-			} else {
-				short h = 0;
-				start = m;
-				if (!vmark_is_valid(start))
-					call_render_line(p, focus, start, &end);
-				measure_line(p, focus, start, -1);
-				h = start->mdata ? start->mdata->h : 0;
-				if (h) {
-					y_pre = h;
-					line_height_pre =
-						attr_find_int(start->mdata->attrs,
-							      "line-height");
-				} else
-					found_start = 1;
-			}
+			found_start = step_back(p, focus, &start, &end,
+						&y_pre, &line_height_pre);
 			if (bot && start->seq < bot->seq)
 				found_end = 1;
 		}
+
 		if (!found_end && y_post <= 0) {
 			/* step forwards */
-			if (!vmark_is_valid(end))
-				call_render_line(p, focus, end, &start);
-			found_end = measure_line(p, focus, end, -1);
-			if (end->mdata)
-				y_post = end->mdata->h;
-			if (y_post > 0)
-				line_height_post =
-					attr_find_int(end->mdata->attrs,
-						      "line-height");
-			if (!end->mdata || !end->mdata->h)
-				end = NULL;
-			else
-				end = vmark_next(end);
-			if (!end) {
-				found_end = 1;
-				y_post = p->h / 10;
-			}
+			found_end = step_fore(p, focus, &start, &end,
+					      &y_post, &line_height_post);
 			if (top && (!end || top->seq < end->seq))
 				found_start = 1;
 		}
