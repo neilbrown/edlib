@@ -578,6 +578,16 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			lines_below += consume / (line_height_post?:1);
 		}
 	}
+
+	if (start->mdata && start->mdata->h <= y_pre) {
+		y_pre = 0;
+		m = vmark_next(start);
+		vmark_free(start);
+		start = m;
+	}
+	if (!start)
+		goto abort;
+
 	rl->skip_height = y_pre;
 	rl->skip_line_height = line_height_pre;
 	/* Now discard any marks outside start-end */
@@ -858,10 +868,25 @@ DEF_CMD(render_lines_revise)
 				pane_damaged(p, DAMAGED_REFRESH);
 				pane_resize(hp, hp->x, y, hp->w, hp->h);
 			}
+			if (pm && m == m1 && rl->skip_height > 0 &&
+			    (m2 = vmark_next(m)) != NULL &&
+			    mark_ordered_not_same(pm, m2)) {
+				/* Point might be in this line, but off top
+				 * of the screen
+				 */
+				int offset = call_render_line_to_point(focus,
+								       pm, m);
+				if (offset >= 0) {
+					measure_line(p, focus, m, offset);
+					if (hp->cy < rl->skip_height)
+						/* Cursor is off top of screen */
+						break;
+				}
+			}
 			y += hp->h;
 			if (pm && y > p->h && m->seq < pm->seq) {
-				/* point might be in this line, but off
-				 * the screen
+				/* point might be in this line, but off end
+				 * of the screen
 				 */
 				int offset = call_render_line_to_point(focus,
 								       pm, m);
