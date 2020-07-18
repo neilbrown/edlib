@@ -266,7 +266,7 @@ static void call_render_line(struct pane *home safe, struct pane *p safe,
 
 	m = mark_dup_view(start);
 	if (doc_following(p, m) == WEOF) {
-		/* We only create a subpane for EOF when  it is at start
+		/* We only create a subpane for EOF when it is at start
 		 * of line, else it is included in the preceding line.
 		 */
 		call("doc:render-line-prev", p, 0, m);
@@ -293,6 +293,13 @@ static void call_render_line(struct pane *home safe, struct pane *p safe,
 	 */
 	while ((m = vmark_next(start)) != NULL &&
 	       m->seq < m2->seq) {
+		if (end && m == *end)
+			*end = m2;
+		vmark_free(m);
+	}
+	/* Any mark at same location as m2 must go too. */
+	while ((m = vmark_next(m2)) != NULL &&
+	       mark_same(m, m2)) {
 		if (end && m == *end)
 			*end = m2;
 		vmark_free(m);
