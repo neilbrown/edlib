@@ -617,8 +617,11 @@ static int render(struct mark *pm, struct pane *p safe,
 		home_call(focus, "pane-clear", p);
 	rl->background_drawn = True;
 
-	if (rl->header && vmark_is_valid(rl->header))
+	if (rl->header && vmark_is_valid(rl->header)) {
 		draw_line(p, focus, rl->header, -1);
+		y = rl->header->mdata->h;
+	}
+	y -= rl->skip_height;
 
 	p->cx = p->cy = -1;
 	rl->cursor_line = 0;
@@ -804,6 +807,7 @@ DEF_CMD(render_lines_revise)
 			if (hp)
 				y = hp->h;
 		}
+		y -= rl->skip_height;
 		for (m = m1; m && !found_end && y < p->h; m = vmark_next(m)) {
 			struct pane *hp;
 			if (refresh_all || !vmark_is_valid(m)) {
