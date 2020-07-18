@@ -795,6 +795,8 @@ DEF_CMD(render_lines_revise)
 		 * So check all sub-panes are still valid and properly
 		 * positioned
 		 */
+		bool off_screen = False;
+
 		if (pm && !rl->do_wrap) {
 			int prefix_len;
 			int curs_width;
@@ -878,9 +880,11 @@ DEF_CMD(render_lines_revise)
 								       pm, m);
 				if (offset >= 0) {
 					measure_line(p, focus, m, offset);
-					if (hp->cy < rl->skip_height)
+					if (hp->cy < rl->skip_height) {
 						/* Cursor is off top of screen */
+						off_screen = True;
 						break;
+					}
 				}
 			}
 			y += hp->h;
@@ -897,38 +901,44 @@ DEF_CMD(render_lines_revise)
 							   "line-height");
 					if (lh <= 0)
 						lh = 1;
-					if (y - hp->h + hp->cy > p->h - lh)
+					if (y - hp->h + hp->cy > p->h - lh) {
 						/* Cursor is off screen,
 						 * stop here
 						 */
+						off_screen = True;
 						break;
+					}
 				}
 			}
 		}
-		if (m) {
-			vmark_clear(m);
-			while ((m2 = vmark_next(m)) != NULL)
-				vmark_free(m2);
-		}
-		if (pm) {
-			m1 = vmark_first(focus, rl->typenum, p);
-			m2 = vmark_last(focus, rl->typenum, p);
-			if (m1 && m2 && mark_ordered_or_same(m1, pm) &&
-			    mark_ordered_not_same(pm, m2))
-				/* pm does't cause change to be required. */
-				pm = NULL;
-		}
-		if (!pm) {
-			if (rl->repositioned) {
-				rl->repositioned = 0;
-				call("render:reposition", focus,
-				     rl->lines, vmark_first(focus, rl->typenum,
-							    p), NULL,
-				     rl->cols, vmark_last(focus, rl->typenum,
-							  p), NULL,
-				     p->cx, p->cy);
+		if (!off_screen) {
+			if (m) {
+				vmark_clear(m);
+				while ((m2 = vmark_next(m)) != NULL)
+					vmark_free(m2);
 			}
-			return 1;
+			if (pm) {
+				m1 = vmark_first(focus, rl->typenum, p);
+				m2 = vmark_last(focus, rl->typenum, p);
+				if (m1 && m2 && mark_ordered_or_same(m1, pm) &&
+				    mark_ordered_not_same(pm, m2))
+					/* pm does't cause change to be required. */
+					pm = NULL;
+			}
+			if (!pm) {
+				if (rl->repositioned) {
+					rl->repositioned = 0;
+					call("render:reposition", focus,
+					     rl->lines, vmark_first(focus,
+								    rl->typenum,
+								    p), NULL,
+					     rl->cols, vmark_last(focus,
+								  rl->typenum,
+								  p), NULL,
+					     p->cx, p->cy);
+				}
+				return 1;
+			}
 		}
 	}
 	/* Need to find a new top-of-display */
