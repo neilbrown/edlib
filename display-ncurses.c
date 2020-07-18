@@ -678,7 +678,6 @@ DEF_CMD(nc_pane_close)
 static PANEL * safe pane_panel(struct pane *p safe, struct pane *home)
 {
 	PANEL *pan = NULL;
-	struct xy xy;
 
 	while ((pan = panel_above(pan)) != NULL)
 		if (panel_userptr(pan) == p)
@@ -687,9 +686,7 @@ static PANEL * safe pane_panel(struct pane *p safe, struct pane *home)
 	if (!home)
 		return pan;
 
-	xy = pane_mapxy(p, home, 0, 0, False);
-
-	pan = new_panel(newwin(p->h, p->w, xy.y, xy.x));
+	pan = new_panel(newwin(p->h, p->w, 0, 0));
 	set_panel_userptr(pan, p);
 	pane_add_notify(home, p, "Notify:Close");
 
@@ -836,7 +833,7 @@ DEF_CMD(nc_refresh_post)
 		if (!p1)
 			continue;
 		dest = pane_mapxy(p1, p, 0, 0, True);
-		area = pane_mapxy(p1, p, p->w, p->h, True);
+		area = pane_mapxy(p1, p, p1->w, p1->h, True);
 		src = pane_mapxy(p1, p, 0, 0, False);
 		src.x = dest.x - src.x;
 		src.y = dest.y - src.y;
