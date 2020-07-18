@@ -827,8 +827,13 @@ DEF_CMD(render_lines_revise)
 				int offset = call_render_line_to_point(focus,
 								       pm, m);
 				if (offset > 0) {
+					int lh;
 					measure_line(p, focus, m, offset);
-					if (y - hp->h + hp->cy > p->h)
+					lh = attr_find_int(hp->attrs,
+							   "line-height");
+					if (lh <= 0)
+						lh = 1;
+					if (y - hp->h + hp->cy > p->h - lh)
 						/* Cursor is off screen,
 						 * stop here
 						 */
