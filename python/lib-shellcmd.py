@@ -43,6 +43,8 @@ class ShellPane(edlib.Pane):
         FNULL.close()
         if not self.pipe:
             return False
+        self.call("doc:set:doc-status", "Running");
+        self.call("doc:notify:doc:status-changed")
         fd = self.pipe.stdout.fileno()
         fl = fcntl.fcntl(fd, fcntl.F_GETFL)
         fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
@@ -69,6 +71,8 @@ class ShellPane(edlib.Pane):
                 self.call("doc:replace", "\nProcess Finished (%d)\n" % ret)
             else:
                 self.call("doc:replace", "\nProcess Finished (signaled %d)\n" % -ret)
+            self.call("doc:set:doc-status", "Complete")
+            self.call("doc:notify:doc:status-changed")
             return edlib.Efalse
         l = self.line + r
         i = l.rfind(b'\n')
