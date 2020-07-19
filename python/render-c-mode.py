@@ -618,7 +618,11 @@ class CModePane(edlib.Pane):
             return 0
 
         # If at start of line - plus close/open, re-indent this line
-        self.parent.call(key, focus, mark, **a)
+        try:
+            self.parent.call(key, focus, mark, **a)
+        except edlib.commandfailed:
+            # probably readonly
+            return 0
         m = mark.dup()
         focus.call("Move-EOL", m, -1)
         if focus.call("text-match", m.dup(), "^[\\s]*[])}{]") > 0:
@@ -632,7 +636,11 @@ class CModePane(edlib.Pane):
             return 0
 
         # If this looks like a label line, re-indent
-        self.parent.call(key, focus, mark, **a)
+        try:
+            self.parent.call(key, focus, mark, **a)
+        except edlib.commandfailed:
+            # probably readonly
+            return 0
         m = mark.dup()
         focus.call("Move-EOL", m, -1)
         if focus.call("text-match", m.dup(),
@@ -648,7 +656,11 @@ class CModePane(edlib.Pane):
             return 0
 
         # insert first..
-        self.parent.call(key, focus, mark, **a)
+        try:
+            self.parent.call(key, focus, mark, **a)
+        except edlib.commandfailed:
+            # probably read-only
+            return 0
         m = mark.dup()
         focus.call("Move-EOL", m, -1)
         self.handle_tab(key, focus, m, 1)
