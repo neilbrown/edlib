@@ -103,6 +103,7 @@ struct rl_data {
 	int		ignore_point;
 	int		skip_height; /* Skip display-lines for first "line" */
 	int		skip_line_height; /* height of lines in skip_height */
+	int		tail_height; /* display lines at eop not display */
 	int		cursor_line; /* line that contains the cursor starts
 				      * on this line */
 	short		target_x, target_y;
@@ -444,13 +445,6 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 
 	top = vmark_first(focus, rl->typenum, p);
 	bot = vmark_last(focus, rl->typenum, p);
-	/* Don't consider the top or bottom lines as currently being
-	 * displayed - they might not be.
-	 */
-	if (top)
-		top = vmark_next(top);
-	if (bot)
-		bot = vmark_prev(bot);
 	/* Protect top/bot from being freed by call_render_line */
 	if (top)
 		top = mark_dup(top);
@@ -531,20 +525,23 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			    lines_below >= -vline-1)
 				found_end = 1;
 		}
-		if (!found_start && y_pre <= 0) {
+		if (!found_start && y_pre <= 0)
 			found_start = step_back(p, focus, &start, &end,
 						&y_pre, &line_height_pre);
-			if (bot && start->seq < bot->seq)
-				found_end = 1;
-		}
+		if (!found_end && bot &&
+		    mark_ordered_or_same(start, bot) &&
+		    (!mark_same(start, bot) || y_pre - rl->skip_height >= y_post))
+			/* FIXME: this needs some explanation */
+			found_end = 1;
 
-		if (!found_end && y_post <= 0) {
+		if (!found_end && y_post <= 0)
 			/* step forwards */
 			found_end = step_fore(p, focus, &start, &end,
 					      &y_post, &line_height_post);
-			if (top && (!end || top->seq < end->seq))
+		if (!found_start && top && end &&
+		    mark_ordered_or_same(top, end) &&
+		    (!mark_same(top, end) || y_post - rl->tail_height >= y_pre))
 				found_start = 1;
-		}
 
 		if (y_pre > 0 && y_post > 0) {
 			int consume = (y_post < y_pre
@@ -597,6 +594,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 
 	rl->skip_height = y_pre;
 	rl->skip_line_height = line_height_pre;
+	rl->tail_height = y_post;
 	/* Now discard any marks outside start-end */
 	if (end && end->seq < start->seq)
 		/* something confused, make sure we don't try to use 'end' after
@@ -914,6 +912,10 @@ DEF_CMD(render_lines_revise)
 				   mark_ordered_or_same(pm, m2))
 				on_screen = True;
 		}
+		if (y >= p->h)
+			rl->tail_height = p->h - y;
+		else
+			rl->tail_height = 0;
 		if (m) {
 			vmark_clear(m);
 			while ((m2 = vmark_next(m)) != NULL)
