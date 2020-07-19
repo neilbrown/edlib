@@ -528,6 +528,13 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		if (!found_start && y_pre <= 0)
 			found_start = step_back(p, focus, &start, &end,
 						&y_pre, &line_height_pre);
+
+		if (found_end && y_post && bot && mark_ordered_or_same(start, bot))
+			/* Extra vertical space gets inserted after EOF when
+			 * there is a long jump to get there, but if we it 'bot'
+			 * soon when searching back, we discard any unused space.
+			 */
+			y_post = 0;
 		if (!found_end && bot &&
 		    mark_ordered_or_same(start, bot) &&
 		    (!mark_same(start, bot) || y_pre - rl->skip_height >= y_post))
