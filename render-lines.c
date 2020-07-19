@@ -802,7 +802,7 @@ DEF_CMD(render_lines_revise)
 		 * So check all sub-panes are still valid and properly
 		 * positioned
 		 */
-		bool off_screen = False;
+		bool on_screen = False;
 
 		if (pm && !rl->do_wrap) {
 			int prefix_len;
@@ -877,8 +877,9 @@ DEF_CMD(render_lines_revise)
 				pane_damaged(p, DAMAGED_REFRESH);
 				pane_resize(hp, hp->x, y, hp->w, hp->h);
 			}
-			if (pm && m == m1 && rl->skip_height > 0 &&
-			    (m2 = vmark_next(m)) != NULL &&
+			y += hp->h;
+			m2 = vmark_next(m);
+			if (pm && m == m1 && rl->skip_height > 0 && m2 &&
 			    mark_ordered_not_same(pm, m2)) {
 				/* Point might be in this line, but off top
 				 * of the screen
@@ -887,15 +888,11 @@ DEF_CMD(render_lines_revise)
 								       pm, m);
 				if (offset >= 0) {
 					measure_line(p, focus, m, offset);
-					if (hp->cy < rl->skip_height) {
-						/* Cursor is off top of screen */
-						off_screen = True;
-						break;
-					}
+					if (hp->cy >= rl->skip_height)
+						/* Cursor is visible on this line */
+						on_screen = True;
 				}
-			}
-			y += hp->h;
-			if (pm && y > p->h && m->seq < pm->seq) {
+			} else if (pm && y >= p->h && m->seq < pm->seq) {
 				/* point might be in this line, but off end
 				 * of the screen
 				 */
@@ -908,44 +905,33 @@ DEF_CMD(render_lines_revise)
 							   "line-height");
 					if (lh <= 0)
 						lh = 1;
-					if (y - hp->h + hp->cy > p->h - lh) {
-						/* Cursor is off screen,
-						 * stop here
-						 */
-						off_screen = True;
-						break;
+					if (y - hp->h + hp->cy <= p->h - lh) {
+						/* Cursor is on screen */
+						on_screen = True;
 					}
 				}
-			}
+			} else if (pm && mark_ordered_or_same(m, pm) && m2 &&
+				   mark_ordered_or_same(pm, m2))
+				on_screen = True;
 		}
-		if (!off_screen) {
-			if (m) {
-				vmark_clear(m);
-				while ((m2 = vmark_next(m)) != NULL)
-					vmark_free(m2);
+		if (m) {
+			vmark_clear(m);
+			while ((m2 = vmark_next(m)) != NULL)
+				vmark_free(m2);
+		}
+		if (!pm || on_screen) {
+			if (rl->repositioned) {
+				rl->repositioned = 0;
+				call("render:reposition", focus,
+				     rl->lines, vmark_first(focus,
+							    rl->typenum,
+							    p), NULL,
+				     rl->cols, vmark_last(focus,
+							  rl->typenum,
+							  p), NULL,
+				     p->cx, p->cy);
 			}
-			if (pm) {
-				m1 = vmark_first(focus, rl->typenum, p);
-				m2 = vmark_last(focus, rl->typenum, p);
-				if (m1 && m2 && mark_ordered_or_same(m1, pm) &&
-				    mark_ordered_not_same(pm, m2))
-					/* pm does't cause change to be required. */
-					pm = NULL;
-			}
-			if (!pm) {
-				if (rl->repositioned) {
-					rl->repositioned = 0;
-					call("render:reposition", focus,
-					     rl->lines, vmark_first(focus,
-								    rl->typenum,
-								    p), NULL,
-					     rl->cols, vmark_last(focus,
-								  rl->typenum,
-								  p), NULL,
-					     p->cx, p->cy);
-				}
-				return 1;
-			}
+			return 1;
 		}
 	}
 	/* Need to find a new top-of-display */
