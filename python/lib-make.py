@@ -598,9 +598,7 @@ class MakePane(edlib.Pane):
         return 1
 
 def make_attach(key, focus, comm2, str, str2, **a):
-    m = edlib.Mark(focus)
-    # delete current content
-    focus.call("doc:replace", m)
+    focus.call("doc:clear")
     p = MakePane(focus)
     if not p:
         return edlib.Efail
