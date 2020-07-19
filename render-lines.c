@@ -428,6 +428,59 @@ static int step_fore(struct pane *p safe, struct pane *focus safe,
 	return found_end;
 }
 
+static int consume_space(struct pane *p safe, int y,
+			 short *y_prep safe, short *y_postp safe,
+			 short *lines_above safe, short *lines_below safe,
+			 int found_start, int found_end,
+			 int line_height_pre, int line_height_post)
+{
+	int y_pre = *y_prep;
+	int y_post = *y_postp;
+
+	if (y_pre > 0 && y_post > 0) {
+		int consume = (y_post < y_pre
+			       ? y_post : y_pre) * 2;
+		int above, below;
+		if (consume > p->h - y)
+			consume = p->h - y;
+		if (y_pre > y_post) {
+			above = consume - (consume/2);
+			below = consume/2;
+		} else {
+			below = consume - (consume/2);
+			above = consume/2;
+		}
+		y += above + below;
+		y_pre -= above;
+		*lines_above += above / (line_height_pre?:1);
+		y_post -= below;
+		*lines_below += below / (line_height_post?:1);
+		/* We have just consumed all of one of
+		 * lines_{above,below} so they are no longer
+		 * both > 0
+		 */
+	}
+	if (found_end && y_pre) {
+		int consume = p->h - y;
+		if (consume > y_pre)
+			consume = y_pre;
+		y_pre -= consume;
+		y += consume;
+		*lines_above += consume / (line_height_pre?:1);
+	}
+	if (found_start && y_post) {
+		int consume = p->h - y;
+		if (consume > y_post)
+			consume = y_post;
+		y_post -= consume;
+		y += consume;
+		*lines_below += consume / (line_height_post?:1);
+	}
+	*y_prep = y_pre;
+	*y_postp = y_post;
+	return y;
+}
+
 static void find_lines(struct mark *pm safe, struct pane *p safe,
 		       struct pane *focus safe,
 		       int vline)
@@ -550,44 +603,10 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		    (!mark_same(top, end) || y_post - rl->tail_height >= y_pre))
 				found_start = 1;
 
-		if (y_pre > 0 && y_post > 0) {
-			int consume = (y_post < y_pre
-				       ? y_post : y_pre) * 2;
-			int above, below;
-			if (consume > p->h - y)
-				consume = p->h - y;
-			if (y_pre > y_post) {
-				above = consume - (consume/2);
-				below = consume/2;
-			} else {
-				below = consume - (consume/2);
-				above = consume/2;
-			}
-			y += above + below;
-			y_pre -= above;
-			lines_above += above / (line_height_pre?:1);
-			y_post -= below;
-			lines_below += below / (line_height_post?:1);
-			/* We have just consumed all of one of
-			 * lines_{above,below} so they are no longer
-			 * both > 0 */
-		}
-		if (found_end && y_pre) {
-			int consume = p->h - y;
-			if (consume > y_pre)
-				consume = y_pre;
-			y_pre -= consume;
-			y += consume;
-			lines_above += consume / (line_height_pre?:1);
-		}
-		if (found_start && y_post) {
-			int consume = p->h - y;
-			if (consume > y_post)
-				consume = y_post;
-			y_post -= consume;
-			y += consume;
-			lines_below += consume / (line_height_post?:1);
-		}
+		y = consume_space(p, y, &y_pre, &y_post,
+				  &lines_above, &lines_below,
+				  found_start, found_end,
+				  line_height_pre, line_height_post);
 	}
 
 	if (start->mdata && start->mdata->h <= y_pre) {
