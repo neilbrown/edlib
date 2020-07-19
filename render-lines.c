@@ -1358,12 +1358,21 @@ DEF_CMD(render_lines_notify_replace)
 	struct mark *end = ci->mark2;
 	struct mark *first;
 
-	if (strcmp(ci->key, "doc:replaced") == 0)
+	if (strcmp(ci->key, "doc:replaced") == 0) {
+		struct mark *pt = call_ret(mark, "doc:point", ci->home);
+
 		/* If anyone changes the doc, reset the target.  This might
 		 * be too harsh, but I mainly want target tracking for
 		 * close-in-time movement, so it probably doesn't matter.
 		 */
 		rl->target_x = -1;
+
+		/* If the replacement happened at 'point', then stop
+		 * ignoring it.
+		 */
+		if (ci->mark2 == pt)
+			rl->ignore_point = 0;
+	}
 
 	if (!start && !end) {
 		/* No marks given - assume everything changed */
