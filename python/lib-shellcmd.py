@@ -9,6 +9,7 @@ class ShellPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.line = b''
+        self.pipe = None
         self.call("doc:request:Abort")
         self.call("editor:request:shell-reuse")
 
@@ -21,7 +22,11 @@ class ShellPane(edlib.Pane):
         self.call("doc:destroy")
         return 1
 
-    def run(self, cmd, cwd, header=True):
+    def run(self, key, num, str, str2, **a):
+        "handle:shell-run"
+        cmd = str
+        cwd = str2
+        header = num != 0
         FNULL = open(os.devnull, 'r')
         if not cwd:
             cwd=self['dirname']
@@ -135,7 +140,9 @@ def shell_attach(key, focus, comm2, num, str, str2, **a):
     if not p:
         return edlib.Efail;
     focus['view-default'] = 'shell-viewer'
-    if not p.run(str, str2, False):
+    try:
+        p.call("shell-run", str, str2)
+    except edlib.commandfailed:
         p.close()
         return edlib.Efail;
     if comm2:
