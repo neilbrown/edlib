@@ -683,7 +683,7 @@ def make_view_attach(key, focus, comm2, **a):
         return edlib.Efail
     if comm2:
         comm2("callback", p)
-    return 0
+    return 1
 
 class makeprompt(edlib.Pane):
     def __init__(self, focus):

@@ -103,6 +103,30 @@ class ShellPane(edlib.Pane):
             self.call("doc:replace", "\nProcess signalled\n");
         return 1
 
+class ShellViewer(edlib.Pane):
+    # This is a simple overlay to follow EOF
+    # when point is at EOF.
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus)
+        self.call("doc:request:doc:replaced")
+
+    def handle_replace(self, key, mark, mark2, **a):
+        "handle:doc:replaced"
+        if not mark or not mark2:
+            return 1
+        p = self.call("doc:point", ret='mark')
+        if p and p == mark:
+            # point is where we inserted text, so move it to
+            # after the insertion point
+            p.to_mark(mark2)
+        return 1
+
+    def handle_clone(self, key, focus, home, **a):
+        "handle:Clone"
+        p = ShellViewer(focus)
+        home.clone_children(p)
+        return 1
+
 def shell_attach(key, focus, comm2, num, str, str2, **a):
     # Clear document - discarding undo history.
     if num == 0:
@@ -110,6 +134,7 @@ def shell_attach(key, focus, comm2, num, str, str2, **a):
     p = ShellPane(focus)
     if not p:
         return edlib.Efail;
+    focus['view-default'] = 'shell-viewer'
     if not p.run(str, str2, False):
         p.close()
         return edlib.Efail;
@@ -117,4 +142,15 @@ def shell_attach(key, focus, comm2, num, str, str2, **a):
         comm2("callback", p)
     return 1
 
+def shell_view_attach(key, focus, comm2, **a):
+    p = focus.call("attach-viewer", ret='focus')
+    p = ShellViewer(p)
+
+    if not p:
+        return edlib.Efail
+    if comm2:
+        comm2("callback", p)
+    return 1
+
 editor.call("global-set-command", "attach-shellcmd", shell_attach)
+editor.call("global-set-command", "attach-shell-viewer", shell_view_attach)

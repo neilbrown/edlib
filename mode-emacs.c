@@ -1300,8 +1300,7 @@ DEF_CMD(emacs_shell)
 
 	if (strstr(ci->str, "diff") || strstr(ci->str, "git show"))
 		attr_set_str(&doc->attrs, "view-default", "diff");
-	else
-		attr_set_str(&doc->attrs, "view-default", "viewer");
+
 	home_call(doc, "doc:attach-view", par, 1);
 
 	return 1;
