@@ -724,7 +724,7 @@ DEF_CMD(text_same_file)
 {
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
-	struct stat stb;
+	struct stat stb, stb2;
 	int fd = ci->num2;
 
 	if (t->fname == NULL)
@@ -743,10 +743,10 @@ DEF_CMD(text_same_file)
 	    t->stat.st_dev != stb.st_dev)
 		return Efallthrough;
 	/* Must check file hasn't changed beneath us */
-	if (stat(t->fname, &t->stat) != 0)
-		t->stat.st_ino = 0;
-	if (t->stat.st_ino == stb.st_ino &&
-	    t->stat.st_dev == stb.st_dev)
+	if (stat(t->fname, &stb2) != 0)
+		stb2.st_ino = 0;
+	if (stb2.st_ino == stb.st_ino &&
+	    stb2.st_dev == stb.st_dev)
 		return 1;
 	return Efallthrough;
 }
