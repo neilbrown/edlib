@@ -202,7 +202,7 @@ Module features
 
 #### emacs-search
 
-- [ ] '\' shouldn't be auto-inserted inside [] set.
+- [X] '\' shouldn't be auto-inserted inside [] set.
 - [ ] search should keep a larger history - currently just 1 item.
 
 ##### needs design work

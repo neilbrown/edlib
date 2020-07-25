@@ -223,8 +223,20 @@ DEF_CMD(search_add)
 DEF_CMD(search_insert_quoted)
 {
 	const char *suffix = ksuffix(ci, "doc:char-");
+	char *patn;
 	if (strchr(must_quote, suffix[0]) == NULL)
 		return 0;
+	patn = call_ret(strsave, "doc:get-str", ci->focus);
+	if (patn) {
+		char *open = strrchr(patn, '[');
+		if (open &&
+		    (open == patn || open[-1] != '\\') &&
+		     (open[1] == 0 || strchr(open+2, ']') == NULL))
+			/* There is an '[' that hasn't been closed, so don't
+			 * quote anything.
+			 */
+			return 0;
+	}
 	call("Replace", ci->focus, 1, NULL, "\\");
 	call("Replace", ci->focus, 1, NULL, suffix,
 	     1, NULL, ",auto=1");
