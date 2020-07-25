@@ -13,7 +13,7 @@ Current priorities
 - [X] use a single hash in key lookup - two at most.
 - [ ] Finish render-lines rewrite
 - [ ] rexel/search improvements
-- [ ] unify backend for make/grep and shell modes
+- [X] unify backend for make/grep and shell modes
 - [ ] input: keyboard macros
 
 Bugs to be fixed
@@ -368,9 +368,9 @@ Module features
             diff -u  - some diffmode handling
 - [ ]  If no output, don't create a pane??  Or just one online.
 - [ ]  Detect ^M in output and handle it... delete from start of line?
-- [ ] when insert at end-of-file, a pointer that was at EOF should
+- [X] when insert at end-of-file, a pointer that was at EOF should
       stay there.
-- [ ] extend enough that make/grep can use shell mode for running the
+- [X] extend enough that make/grep can use shell mode for running the
       the command, and they just do ui and highlighting
 - [ ] always track time for a run and report it - or at least make it available
 

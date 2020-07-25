@@ -23,9 +23,11 @@ class MakePane(edlib.Pane):
 
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
-        self.add_notify(focus, "make:match-docs")
-        self.add_notify(focus, "make-close")
-        self.add_notify(focus, "doc:make-revisit");
+        self.doc = focus.parent
+        self.call("doc:request:make:match-docs")
+        self.call("doc:request:make-close")
+        self.call("doc:request:doc:make-revisit");
+        self.call("doc:request:doc:replaced");
         self.viewnum = focus.call("doc:add-view", self) - 1
         self.point = None
         self.dirs = {self['dirname']: 100}
@@ -34,68 +36,13 @@ class MakePane(edlib.Pane):
         self.timer_set = False
         self.note_ok = False
         self.first_match = True
-        self.line = b''
         self.backwards = False
-        self.call("doc:request:Abort")
         self.call("editor:request:make:match-docs")
         self.last = None # last (file,line) seen
         self.pos = None # mark where we have parsed up to
 
-    def run(self, cmd, cwd):
-        FNULL = open(os.devnull, 'r')
-        self.call("doc:replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
-        env = os.environ.copy()
-        env['PWD'] = cwd
-        try:
-            self.pipe = subprocess.Popen(cmd, shell=True, close_fds=True,
-                                         cwd=cwd, env=env,
-                                         start_new_session=True,
-                                         stdout=subprocess.PIPE,
-                                         stderr=subprocess.STDOUT,
-                                         stdin = FNULL)
-        except:
-            self.pipe = None
-        FNULL.close()
-        if not self.pipe:
-            return False
-        self.call("doc:set:doc-status", "Running");
-        self.call("doc:notify:doc:status-changed")
-        fd = self.pipe.stdout.fileno()
-        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-        self.call("event:read", fd, self.read)
-        return True
-
-    def read(self, key, **a):
-        if not self.pipe:
-            return edlib.Efalse
-        try:
-            r = os.read(self.pipe.stdout.fileno(), 1024)
-        except IOError:
-            return 1
-        if r is None or len(r) == 0:
-            (out, err) = self.pipe.communicate()
-            ret = self.pipe.poll()
-            self.pipe = None
-            l = self.line + out
-            self.line = b''
-            self.call("doc:replace", l.decode("utf-8"))
-            if not ret:
-                self.call("doc:replace", "\nProcess Finished\n");
-            elif ret > 0:
-                self.call("doc:replace", "\nProcess Finished (%d)\n" % ret)
-            else:
-                self.call("doc:replace", "\nProcess Finished (signaled %d)\n" % -ret)
-            self.call("doc:set:doc-status", "Complete")
-            self.call("doc:notify:doc:status-changed")
-            self.do_parse()
-            return edlib.Efalse
-        l = self.line + r
-        i = l.rfind(b'\n')
-        if i >= 0:
-            self.call("doc:replace", l[:i+1].decode("utf-8"));
-            l = l[i+1:]
-        self.line = l
+    def replaced(self, key, **a):
+        "handle:doc:replaced"
         self.do_parse()
         return 1
 
@@ -177,7 +124,7 @@ class MakePane(edlib.Pane):
             fname = self.call("doc:get-str", m, e, ret="str")
             self.pos = e.dup()
             if self.first_match:
-                self.call("doc:notify:make-set-match", m)
+                self.call("doc:notify:make-set-match", m, 1)
                 self.first_match = False
             if self.record_line(fname, lineno, m, is_note):
                 # new file - stop here
@@ -344,7 +291,7 @@ class MakePane(edlib.Pane):
         if self['cmd'] == 'make':
             # don't close 'make'
             return
-        if self.pipe:
+        if self['doc-status'] == 'Running':
             # command is still running
             return
         if self.timer_set:
@@ -359,8 +306,8 @@ class MakePane(edlib.Pane):
             # Haven't visited the last match yet, and this is
             # a relatively recent 'grep' - might still be interesting.
             return 0
-        if not self.parent.notify("doc:notify-viewers"):
-            self.parent.close()
+        if not self.doc.notify("doc:notify-viewers"):
+            self.doc.close()
             return 0
 
     def make_next(self, key, focus, num, num2, str, str2, xy, comm2, **a):
@@ -377,7 +324,7 @@ class MakePane(edlib.Pane):
                 str2.startswith(self['realdir'])):
                 # This is a suitable make document for the given directory
                 if comm2:
-                    comm2("cb", self.parent)
+                    comm2("cb", self.doc)
                 return 1
             return 0
         if str != "next-match":
@@ -424,9 +371,9 @@ class MakePane(edlib.Pane):
                 p = edlib.Mark(self)
                 self.call("doc:set-ref", p)
                 self.call("doc:notify:make-set-match", p)
-                if num2 or self.pipe or not first_match:
+                if num2 or self['doc-status'] == 'Running' or not first_match:
                     # 'num2' means we are using a simple repeat-last-command
-                    # 'self.pipe' means this make/grep is still running.
+                    # 'doc-status' means this make/grep is still running.
                     # not first_match means we aren't at end-of-file, so stop there
                     # In either case stop here, don't try next make/grep doc
                     return 1
@@ -555,22 +502,14 @@ class MakePane(edlib.Pane):
         "handle:make-close"
         # make output doc is being reused, so we'd better get out of the way,
         # unless still running
-        if self.pipe:
+        if self['doc-status'] == 'Running':
             return 2
-        self.close()
+        # close the shellcmd handler, and that will close us
+        self.parent.close()
         return 1
 
     def handle_close(self, key, **a):
         "handle:Close"
-        if self.pipe is not None:
-            p = self.pipe
-            self.pipe = None
-            os.killpg(p.pid, signal.SIGTERM)
-            p.terminate()
-            try:
-                p.communicate()
-            except IOError:
-                pass
         m = self.call("doc:vmark-get", self.viewnum, ret='mark')
         while m:
             m.release()
@@ -590,20 +529,13 @@ class MakePane(edlib.Pane):
 
         return 1
 
-    def handle_abort(self, key, **a):
-        "handle:Abort"
-        if self.pipe is not None:
-            os.killpg(self.pipe.pid, signal.SIGTERM)
-            self.call("doc:replace", "\nProcess signalled\n");
-        return 1
-
 def make_attach(key, focus, comm2, str, str2, **a):
-    focus.call("doc:clear")
-    p = MakePane(focus)
+    p = focus.call("attach-shellcmd", 1, str, str2, ret='focus')
     if not p:
         return edlib.Efail
-    if not p.run(str, str2):
-        p.close()
+    focus['view-default'] = 'make-viewer'
+    p = MakePane(p)
+    if not p:
         return edlib.Efail
     if comm2:
         comm2("callback", p)
@@ -616,10 +548,12 @@ class MakeViewerPane(edlib.Pane):
         edlib.Pane.__init__(self, focus)
         self.call("doc:request:doc:replaced")
         self.call("doc:request:make-set-match")
+        self.may_follow = True
 
-    def handle_set_match(self, key, mark, **a):
+    def handle_set_match(self, key, num, mark, **a):
         "handle:make-set-match"
         self.call("Move-to", mark, 0, 1)
+        self.may_follow = num == 0
         return 1
 
     def handle_enter(self, key, focus, mark, **a):
@@ -650,7 +584,7 @@ class MakeViewerPane(edlib.Pane):
 
     def handle_replace(self, key, mark, mark2, **a):
         "handle:doc:replaced"
-        if not mark or not mark2:
+        if not mark or not mark2 or not self.may_follow:
             return 1
         p = self.call("doc:point", ret='mark')
         if p and p == mark:
