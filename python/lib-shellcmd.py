@@ -6,12 +6,13 @@
 import subprocess, os, fcntl, signal
 
 class ShellPane(edlib.Pane):
-    def __init__(self, focus):
+    def __init__(self, focus, reusable):
         edlib.Pane.__init__(self, focus)
         self.line = b''
         self.pipe = None
         self.call("doc:request:Abort")
-        self.call("editor:request:shell-reuse")
+        if reusable:
+            self.call("editor:request:shell-reuse")
 
     def check_reuse(self, key, comm2, **a):
         "handle:shell-reuse"
@@ -133,15 +134,18 @@ class ShellViewer(edlib.Pane):
         return 1
 
 def shell_attach(key, focus, comm2, num, str, str2, **a):
+    # num: 1 - place Cmd/Cwd at top of doc
+    #      2 - reuse doc, don't clear it first
+    #      4 - register to be cleaned up by shell-reuse
     # Clear document - discarding undo history.
-    if num == 0:
+    if (num & 2) == 0:
         focus.call("doc:clear")
-    p = ShellPane(focus)
+    p = ShellPane(focus, num & 4)
     if not p:
         return edlib.Efail;
     focus['view-default'] = 'shell-viewer'
     try:
-        p.call("shell-run", str, str2)
+        p.call("shell-run", num&1, str, str2)
     except edlib.commandfailed:
         p.close()
         return edlib.Efail;
