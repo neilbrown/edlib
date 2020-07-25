@@ -49,7 +49,7 @@ class ShellPane(edlib.Pane):
         FNULL.close()
         if not self.pipe:
             return False
-        self.call("doc:set:doc-status", "Running");
+        self.call("doc:set:doc-status", "Running")
         self.call("doc:notify:doc:status-changed")
         fd = self.pipe.stdout.fileno()
         fl = fcntl.fcntl(fd, fcntl.F_GETFL)
@@ -72,7 +72,7 @@ class ShellPane(edlib.Pane):
             self.line = b''
             self.call("doc:replace", l.decode("utf-8"))
             if not ret:
-                self.call("doc:replace", "\nProcess Finished\n");
+                self.call("doc:replace", "\nProcess Finished\n")
             elif ret > 0:
                 self.call("doc:replace", "\nProcess Finished (%d)\n" % ret)
             else:
@@ -83,7 +83,7 @@ class ShellPane(edlib.Pane):
         l = self.line + r
         i = l.rfind(b'\n')
         if i >= 0:
-            self.call("doc:replace", l[:i+1].decode("utf-8"));
+            self.call("doc:replace", l[:i+1].decode("utf-8"))
             l = l[i+1:]
         self.line = l
         return 1
@@ -106,7 +106,7 @@ class ShellPane(edlib.Pane):
 
         if self.pipe is not None:
             os.killpg(self.pipe.pid, signal.SIGTERM)
-            self.call("doc:replace", "\nProcess signalled\n");
+            self.call("doc:replace", "\nProcess signalled\n")
         return 1
 
 class ShellViewer(edlib.Pane):
@@ -142,13 +142,13 @@ def shell_attach(key, focus, comm2, num, str, str2, **a):
         focus.call("doc:clear")
     p = ShellPane(focus, num & 4)
     if not p:
-        return edlib.Efail;
+        return edlib.Efail
     focus['view-default'] = 'shell-viewer'
     try:
         p.call("shell-run", num&1, str, str2)
     except edlib.commandfailed:
         p.close()
-        return edlib.Efail;
+        return edlib.Efail
     if comm2:
         comm2("callback", p)
     return 1

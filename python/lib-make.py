@@ -26,8 +26,8 @@ class MakePane(edlib.Pane):
         self.doc = focus.parent
         self.call("doc:request:make:match-docs")
         self.call("doc:request:make-close")
-        self.call("doc:request:doc:make-revisit");
-        self.call("doc:request:doc:replaced");
+        self.call("doc:request:doc:make-revisit")
+        self.call("doc:request:doc:replaced")
         self.viewnum = focus.call("doc:add-view", self) - 1
         self.point = None
         self.dirs = {self['dirname']: 100}
@@ -450,13 +450,13 @@ class MakePane(edlib.Pane):
 
         if not par and not pane:
             d.close()
-            focus.call("Message", "Failed to open pane");
+            focus.call("Message", "Failed to open pane")
             return edlib.Efail
         if not par:
             par = d.call("doc:attach-view", pane, 1, ret='focus')
         if not par:
             d.close()
-            focus.call("Message", "Failed to open pane");
+            focus.call("Message", "Failed to open pane")
             return edlib.Efail
         par.take_focus()
         if mk and (int(lineno) == 1 or
@@ -494,7 +494,7 @@ class MakePane(edlib.Pane):
 
         self.last = None
         # move to front of match-docs list
-        self.drop_notify("make:match-docs");
+        self.drop_notify("make:match-docs")
         self.call("editor:request:make:match-docs")
         return 1
 
@@ -680,7 +680,7 @@ def run_make(key, focus, str, **a):
     if key.startswith('N:'):
         testonly = 1 if key[2] == '0' else 0
         if focus.call("docs:save-all", 0, testonly, dir) != 1:
-            p = focus.call("PopupTile", "DM", ret='focus');
+            p = focus.call("PopupTile", "DM", ret='focus')
             p['done-key'] = 'Y:' + key[2:]
             p['default'] = str
             p['only-here'] = dir
@@ -713,7 +713,7 @@ def run_make(key, focus, str, **a):
         # Tell any extant grep documents that
         # a/ are no longer running, b/ have point at the end, c/ are not
         # visible; to close
-        focus.call("editor:notify:make:match-docs", "close-idle");
+        focus.call("editor:notify:make:match-docs", "close-idle")
     if not doc:
         # If doing 'grep', or if there is no make output doc, create new one.
         doc = focus.call("doc:from-text", docname, "", ret='focus')

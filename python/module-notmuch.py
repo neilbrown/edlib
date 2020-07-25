@@ -56,10 +56,10 @@ class notmuch_db():
         self.fd = open(self.lock_path)
         self.nest = 1
         if self.want_write:
-            fcntl.flock(self.fd.fileno(), fcntl.LOCK_EX);
+            fcntl.flock(self.fd.fileno(), fcntl.LOCK_EX)
             self.db = notmuch.Database(mode = notmuch.Database.MODE.READ_WRITE)
         else:
-            fcntl.flock(self.fd.fileno(), fcntl.LOCK_SH);
+            fcntl.flock(self.fd.fileno(), fcntl.LOCK_SH)
             self.db = notmuch.Database()
         return self.db
 
@@ -256,7 +256,7 @@ class notmuch_main(edlib.Doc):
 
     def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
-        self.to_end(mark, num == 0);
+        self.to_end(mark, num == 0)
         if num == 1:
             mark.offset = 0
         else:
@@ -1199,7 +1199,7 @@ class notmuch_list(edlib.Doc):
             return 1
         (tid,mid) = mark.pos
         i = self.threadids.index(tid)
-        j = 0;
+        j = 0
         if mid:
             j = self.messageids[tid].index(mid)
 
@@ -1364,7 +1364,7 @@ class notmuch_query_view(edlib.Pane):
             if self.thread_matched and self.parent.call("doc:step", 0, mark) == edlib.WEOF:
                 # first thread is open
                 mark.to_mark(self.thread_matched)
-                return 1;
+                return 1
         # otherwise fall-through to real start or end
         return 0
 
@@ -1593,12 +1593,12 @@ class notmuch_message_view(edlib.Pane):
 
     def handle_return(self, key, focus, mark, **a):
         "handle:K:Enter"
-        focus.call("doc:email:select", mark);
+        focus.call("doc:email:select", mark)
         return 1
 
     def handle_activate(self, key, focus, mark, **a):
         "handle:Mouse-Activate"
-        focus.call("doc:email:select", mark);
+        focus.call("doc:email:select", mark)
         return 1
 
     def handle_map_attr(self, key, focus, mark, str, str2, comm2, **a):
@@ -1669,7 +1669,7 @@ def notmuch_mode(key, home, focus, **a):
         p1 = home.call("attach-doc-notmuch", ret='focus')
     if not p1:
         return edlib.Efail
-    p1.call("doc:attach-view", p0);
+    p1.call("doc:attach-view", p0)
     return 1
 
 if "editor" in globals():

@@ -373,7 +373,7 @@ class PresenterPane(edlib.Pane):
             first.release()
         if extra_change:
             # force full refresh
-            self.leaf.call("view:changed");
+            self.leaf.call("view:changed")
 
     def get_local_attr(self, m, attr, page):
         t = 'attr:' + attr
@@ -458,8 +458,8 @@ class PresenterPane(edlib.Pane):
 
     def handle_clip(self, key, mark, mark2, **a):
         "handle:Notify:clip"
-        self.clip(self.attrview, mark, mark2);
-        self.clip(self.pageview, mark, mark2);
+        self.clip(self.attrview, mark, mark2)
+        self.clip(self.pageview, mark, mark2)
         return 0
 
     def handle_render_prev(self, key, mark, num, **a):

@@ -78,7 +78,7 @@ class EdDisplay(edlib.Pane):
         p = editor.call("attach-input", ret='focus')
         p['DISPLAY'] = self['DISPLAY']
         newdisp = EdDisplay(p)
-        home.clone_children(newdisp);
+        home.clone_children(newdisp)
         return 1
 
     def handle_close(self, key, **a):
@@ -414,7 +414,7 @@ class EdDisplay(edlib.Pane):
                              Gdk.EventMask.KEY_PRESS_MASK|
                              Gdk.EventMask.KEY_RELEASE_MASK|
                              Gdk.EventMask.POINTER_MOTION_MASK|
-                             Gdk.EventMask.POINTER_MOTION_HINT_MASK);
+                             Gdk.EventMask.POINTER_MOTION_HINT_MASK)
         self.text.set_property("can-focus", True)
 
     def block_motion(self):
@@ -535,11 +535,11 @@ class EdDisplay(edlib.Pane):
             edlib.time_stop(edlib.TIME_KEY)
             return 0
         if event.state & Gdk.ModifierType.SHIFT_MASK:
-            s = ":S" + s;
+            s = ":S" + s
         if event.state & Gdk.ModifierType.CONTROL_MASK:
-            s = ":C" + s;
+            s = ":C" + s
         if event.state & Gdk.ModifierType.MOD1_MASK:
-            s = ":M" + s;
+            s = ":M" + s
         self.call("Mouse-event", s, (x,y), b, 1)
         edlib.time_stop(edlib.TIME_KEY)
 
@@ -605,7 +605,7 @@ class EdDisplay(edlib.Pane):
             else:
                 s = "-" + s
                 if event.state & Gdk.ModifierType.CONTROL_MASK:
-                    s = ":C" + s;
+                    s = ":C" + s
                 s = p + s
         self.last_event = int(time.time())
         self.call("Keystroke", s)
@@ -639,4 +639,4 @@ def new_display(key, focus, comm2, **a):
     return 1
 
 
-editor.call("global-set-command", "attach-display-pygtk", new_display);
+editor.call("global-set-command", "attach-display-pygtk", new_display)

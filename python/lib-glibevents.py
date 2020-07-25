@@ -189,4 +189,4 @@ def register_events(key, focus, comm2, **a):
     events_activate(focus)
     return 1
 
-editor.call("global-set-command", "attach-glibevents", register_events);
+editor.call("global-set-command", "attach-glibevents", register_events)
