@@ -582,7 +582,7 @@ class MakeViewerPane(edlib.Pane):
         self.call("doc:destroy")
         return 1
 
-    def handle_replace(self, key, mark, mark2, **a):
+    def handle_replace(self, key, focus, mark, mark2, **a):
         "handle:doc:replaced"
         if not mark or not mark2 or not self.may_follow:
             return 1

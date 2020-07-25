@@ -1273,18 +1273,30 @@ static int pane_nosetpane(Pane *p, PyObject *v, void *which)
 	return -1;
 }
 
-static PyObject *pane_repr(Pane *p safe)
+static PyObject *pane_repr(Pane *self safe)
 {
-	char buf[50];
-	sprintf(buf, "<pane-0x%p>", p->pane);
-	return Py_BuildValue("s", buf);
+	char *s = NULL;
+	PyObject *ret;
+	if (!pane_valid(self))
+		asprintf(&s, "<edlib.Pane FREED!!! %p>", self);
+	else
+		asprintf(&s, "<edlib.Pane %p>", self->pane);
+	ret = Py_BuildValue("s", s);
+	free(s);
+	return ret;
 }
 
-static PyObject *doc_repr(Pane *p safe)
+static PyObject *doc_repr(Doc *self safe)
 {
-	char buf[50];
-	sprintf(buf, "<pane-0x%p>", p->pane);
-	return Py_BuildValue("s", buf);
+	char *s = NULL;
+	PyObject *ret;
+	if (!doc_valid(self))
+		asprintf(&s, "<edlib.Doc FREED!!! %p>", self);
+	else
+		asprintf(&s, "<edlib.Doc %p>", self->pane);
+	ret = Py_BuildValue("s", s);
+	free(s);
+	return ret;
 }
 
 static long pane_hash(Pane *p safe)
@@ -1962,6 +1974,21 @@ static int mark_set_item(Mark *self safe, PyObject *key safe, PyObject *val safe
 	return 0;
 }
 
+static PyObject *mark_repr(Mark *self safe)
+{
+	char *s = NULL;
+	PyObject *ret;
+
+	if (self->mark)
+		asprintf(&s, "<edlib.Mark seq=%d i=%d %p>",
+			 self->mark->seq, self->mark->ref.o, self->mark);
+	else
+		asprintf(&s, "<edlib.Mark NULL %p>", self);
+	ret = Py_BuildValue("s", s);
+	free(s);
+	return ret;
+}
+
 static PyMappingMethods mark_mapping = {
 	.mp_length = NULL,
 	.mp_subscript = (binaryfunc)mark_get_item,
@@ -1981,6 +2008,7 @@ static PyTypeObject MarkType = {
 	.tp_getset	= mark_getseters,
 	.tp_init	= (initproc)Mark_init,
 	.tp_new		= (newfunc)mark_new,
+	.tp_repr	= (reprfunc)mark_repr
 };
 
 static void comm_dealloc(Comm *self safe)
@@ -1989,13 +2017,19 @@ static void comm_dealloc(Comm *self safe)
 	do_free((PyObject*safe)self);
 }
 
-static PyObject *comm_repr(Comm *p safe)
+static PyObject *comm_repr(Comm *self safe)
 {
-	char buf[50];
-	if (!p->comm)
-		return NULL;
-	sprintf(buf, "<comm-0x%p/0x%p>", p->comm, p->comm->func);
-	return Py_BuildValue("s", buf);
+	char *s = NULL;
+	PyObject *ret;
+
+	if (self->comm)
+		asprintf(&s, "<edlib.Comm refcnt=%d %p>",
+			 self->comm->refcnt, self->comm);
+	else
+		asprintf(&s, "<edlib.Comm NULL %p>", self);
+	ret = Py_BuildValue("s", s);
+	free(s);
+	return ret;
 }
 
 static PyObject *Comm_call(Comm *c safe, PyObject *args safe, PyObject *kwds)
