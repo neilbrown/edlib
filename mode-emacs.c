@@ -1418,6 +1418,12 @@ DEF_CMD(emacs_start_search)
 
 	attr_set_str(&p->attrs, "prompt", "Search");
 	attr_set_str(&p->attrs, "done-key", "Search String");
+
+	hp = call_ret(pane, "attach-history", p, 0, NULL, "*Search History*",
+		      0, NULL, "popup:close");
+	if (hp)
+		p = hp;
+
 	call("doc:set-name", p, 0, NULL, "Search", -1);
 	if (strcmp(ci->key, "K:C-R") == 0)
 		mode |= 1;

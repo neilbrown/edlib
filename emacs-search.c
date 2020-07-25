@@ -47,8 +47,10 @@ static struct map *es_map, *er_map;
 DEF_LOOKUP_CMD(search_handle, es_map);
 DEF_LOOKUP_CMD(replace_handle, er_map);
 static const char must_quote[] = ".|*+?{()?^$\\[";
-static const char may_quote[] = "<>dDsSwWpPaA";
-
+/* ideally 'pP' should be in this list as \p selects
+ * punctuation characters.  But that stops M-p working for history :-(
+ */
+static const char may_quote[] = "<>dDsSwWaA";
 
 DEF_CMD(search_forward)
 {
@@ -70,11 +72,8 @@ DEF_CMD(search_forward)
 	}
 	str = call_ret(str, "doc:get-str", ci->focus);
 	if (!str || !*str) {
-		/* re-use old string; Is there any point to this indirection? */
 		char *ss;
-		ss = pane_attr_get(ci->focus, "done-key");
-		if (ss)
-			ss = pane_attr_get(ci->focus, ss);
+		ss = call_ret(strsave, "history:get-last", ci->focus);
 		if (ss) {
 			call("Replace", ci->home, 1, NULL, ss);
 			return 1;
@@ -968,10 +967,9 @@ DEF_CMD(emacs_highlight_close)
 }
 DEF_CMD(emacs_search_done)
 {
-	if (ci->str && ci->str[0]) {
-		call("global-set-attr", ci->focus, 0, NULL, "Search String",
-		     0, NULL, ci->str);
-	}
+	if (ci->str && ci->str[0])
+		call("history:save", ci->focus, 0, NULL, ci->str);
+
 	pane_close(ci->home);
 	return 1;
 }
