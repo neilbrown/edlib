@@ -17,8 +17,7 @@
  * section.
  * The first entry in the regex section is the size of that section (including
  * the length).  Adding this size to the start gives the start of the
- * "set" section.  The top bit of the size has a special meaning:
- * 0x8000 means that the match ignores case
+ * "set" section.
  *
  * The "set" section contains some "sets" each of which contains 1 or
  * more subsections followed by a "zero".  Each subsection starts with
@@ -140,6 +139,7 @@ struct match_state {
 	unsigned short	*rxl safe;
 	unsigned short	* safe link[2];
 	unsigned short	* safe leng[2];
+	unsigned long	* safe ignorecase;
 	unsigned short	active;
 	unsigned short	anchored;
 	int		match;
@@ -147,6 +147,28 @@ struct match_state {
 	int		trace;
 	#endif
 };
+
+/* ignorecase is a bit set */
+#define BITS_PER_LONG (sizeof(unsigned long) * 8)
+static inline int BITSET_SIZE(int bits)
+{
+	return (bits + BITS_PER_LONG - 1) / BITS_PER_LONG;
+}
+static inline bool test_bit(int bit, const unsigned long *set safe)
+{
+	return !!(set[bit / BITS_PER_LONG] & (1 << (bit % BITS_PER_LONG)));
+}
+
+static inline void set_bit(int bit, unsigned long *set safe)
+{
+	set[bit / BITS_PER_LONG] |= (1 << (bit % BITS_PER_LONG));
+}
+
+static inline void clear_bit(int bit, unsigned long *set safe)
+{
+	set[bit / BITS_PER_LONG] &= ~(1 << (bit % BITS_PER_LONG));
+}
+
 #define	NO_LINK		0xFFFF
 #define	LOOP_CHECK	0xFFFE
 
@@ -164,6 +186,8 @@ struct match_state {
 #define	REC_NOWBRK	0xFFF9
 #define	REC_LAXSPC	0xFFFa
 #define	REC_LAXDASH	0xFFFb
+#define	REC_IGNCASE	0xFFFc
+#define	REC_USECASE	0xFFFd
 
 #define	REC_FORK	0x8000
 #define	REC_SET		0xc000
@@ -174,15 +198,14 @@ struct match_state {
 #define	REC_ADDR(x)	((x) & 0x3fff)
 
 /* First entry contains start of maps, and flags */
-#define	RXL_CASELESS		0x8000
-#define	RXL_SETSTART(rxl)	((rxl) + ((rxl)[0] & 0x3fff))
-#define	RXL_IS_CASELESS(rxl)	((rxl)[0] & RXL_CASELESS)
+#define	RXL_PATNLEN(rxl)	((rxl)[0] & 0x3fff)
+#define	RXL_SETSTART(rxl)	((rxl) + RXL_PATNLEN(rxl))
 
 static int classcnt = 0;
 static wctype_t *classmap safe = NULL;
 
 /*
- * the match_state contains several partial matches that lead to "here".
+ * The match_state contains several partial matches that lead to "here".
  * rxl_advance() examines each of these to determine if they will still match
  * after consuming either a character or a position-type flag (SOL, EOL, etc).
  * It calls do_link for each case that is still a possible match.
@@ -198,6 +221,10 @@ static int do_link(struct match_state *st safe, int pos, int dest, int len)
 {
 	unsigned short cmd = st->rxl[pos];
 
+	while (cmd == REC_IGNCASE || cmd == REC_USECASE) {
+		pos += 1;
+		cmd = st->rxl[pos];
+	}
 	if (cmd == REC_MATCH) {
 		if (st->match < len)
 			st->match = len;
@@ -222,12 +249,11 @@ static int do_link(struct match_state *st safe, int pos, int dest, int len)
 }
 
 static int set_match(struct match_state *st safe, unsigned short addr,
-		     wchar_t ch)
+		     wchar_t ch, bool ic)
 {
 	unsigned short *set safe = RXL_SETSTART(st->rxl) + addr;
 	wchar_t uch = ch, lch = ch;
 	unsigned short len;
-	int ic = RXL_IS_CASELESS(st->rxl);
 
 	if (ic) {
 		/* As Unicode has 3 cases, can we be sure that everything
@@ -325,15 +351,10 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 	int active = st->active;
 	int next = 1-active;
 	int eol;
-	int len;
 	unsigned short i;
 	int advance = 0;
-	wint_t uch = ch;
-
-	if (RXL_IS_CASELESS(st->rxl)) {
-		uch = towupper(ch);
-		ch = towlower(ch);
-	}
+	wint_t uch = toupper(ch);
+	wint_t lch = tolower(ch);
 
 	if (flag && ch != WEOF)
 		/* This is an illegal combination */
@@ -361,7 +382,7 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		 */
 		char t[5];
 		unsigned short cnt;
-		len = RXL_SETSTART(st->rxl) - st->rxl;
+		int len = RXL_PATNLEN(st->rxl);
 
 		for (i = 1; i < len; i++)
 			if (!REC_ISFORK(st->rxl[i])) {
@@ -386,6 +407,8 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 					case REC_MATCH:printf("!!! "); break;
 					case REC_LAXSPC: printf("x20!"); break;
 					case REC_LAXDASH: printf("-!  "); break;
+					case REC_IGNCASE: printf("?i:"); break;
+					case REC_USECASE: printf("?c:"); break;
 					default: printf("!%04x", cmd);
 					}
 			}
@@ -426,16 +449,16 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 	}
 #endif /* DEBUG */
 	/* Firstly, clear out next lists */
-	len = RXL_SETSTART(st->rxl) - st->rxl;
 	/* This works before NO_LINK is 0xffff */
-	memset(st->link[next], 0xff, len*2);
-	memset(st->leng[next], 0, len*2);
+	memset(st->link[next], 0xff, RXL_PATNLEN(st->rxl) * 2);
+	memset(st->leng[next], 0, RXL_PATNLEN(st->rxl) * 2);
 	st->link[next][0] = 0;
 
 	/* Now advance each current match */
 	for (i = st->link[active][0]; i; i = st->link[active][i]) {
 		unsigned int cmd = st->rxl[i];
-		len = st->leng[active][i];
+		int len = st->leng[active][i];
+		bool ic = test_bit(i, st->ignorecase);
 
 		if (!flag)
 			/* If we get a match, then len will have increased */
@@ -527,12 +550,13 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 			/* expecting a char, so ignore position info */
 			advance = 0;
 		} else if (REC_ISCHAR(cmd)) {
-			if (cmd == ch || cmd == uch)
+			if (cmd == ch ||
+			    (ic && (cmd == uch || cmd == lch)))
 				advance = 1;
 			else
 				advance = -1;
 		} else if (REC_ISSET(cmd)) {
-			if (set_match(st, REC_ADDR(cmd), ch))
+			if (set_match(st, REC_ADDR(cmd), ch, ic))
 				advance = 1;
 			else
 				advance = -1;
@@ -949,8 +973,8 @@ static wint_t cvt_hex(const char *s safe, int len)
 	return rv;
 }
 
-static unsigned short  add_class_set(struct parse_state *st safe,
-				     char *cls safe, int in)
+static unsigned short add_class_set(struct parse_state *st safe,
+				    char *cls safe, int in)
 {
 	if (!st->rxl /* FIXME redundant, rxl and sets are set at same time */
 	    || !st->sets) {
@@ -1247,6 +1271,8 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	st.next = 1;
 	st.sets = NULL;
 	st.set = 0;
+	if (nocase)
+		add_cmd(&st, REC_IGNCASE);
 	if (parse_re(&st) == 0) {
 		if (lenp)
 			*lenp = st.patn - patn;
@@ -1255,12 +1281,12 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	add_cmd(&st, REC_MATCH);
 	st.rxl = malloc((st.next + st.set) * sizeof(st.rxl[0]));
 	st.rxl[0] = st.next;
-	if (nocase)
-		st.rxl[0] |= RXL_CASELESS;
 	st.sets = st.rxl + st.next;
 	st.patn = patn;
 	st.next = 1;
 	st.set = 0;
+	if (nocase)
+		add_cmd(&st, REC_IGNCASE);
 	if (parse_re(&st) == 0)
 		abort();
 	add_cmd(&st, REC_MATCH);
@@ -1272,12 +1298,12 @@ unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase)
 	struct parse_state st;
 	wint_t ch;
 
-	st.next = 1 + strlen(patn) + 1;
+	st.next = 1 + !!nocase + strlen(patn) + 1;
 	st.rxl = malloc(st.next * sizeof(st.rxl[0]));
 	st.rxl[0] = st.next;
-	if (nocase)
-		st.rxl[0] |= RXL_CASELESS;
 	st.next = 1;
+	if (nocase)
+		add_cmd(&st, REC_IGNCASE);
 	while ((ch = get_utf8(&patn, NULL)) < WERR)
 		add_cmd(&st, ch);
 	add_cmd(&st, REC_MATCH);
@@ -1287,8 +1313,9 @@ unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase)
 static int setup_match(struct match_state *st safe, unsigned short *rxl safe,
 		       int anchored)
 {
-	int len = RXL_SETSTART(rxl) - rxl;
+	int len = RXL_PATNLEN(rxl);
 	int i;
+	bool ic = False;
 
 	memset(st, 0, sizeof(*st));
 	st->rxl = rxl;
@@ -1296,12 +1323,19 @@ static int setup_match(struct match_state *st safe, unsigned short *rxl safe,
 	st->link[1] = st->link[0] + len;
 	st->leng[0] = st->link[1] + len;
 	st->leng[1] = st->leng[0] + len;
+	st->ignorecase = calloc(BITSET_SIZE(len), sizeof(*st->ignorecase));
 	st->active = 0;
 	st->anchored = anchored;
 	st->match = -1;
 	for (i = 0; i < len; i++) {
 		st->link[0][i] = NO_LINK;
 		st->link[1][i] = NO_LINK;
+		if (rxl[i] == REC_IGNCASE)
+			ic = True;
+		if (rxl[i] == REC_USECASE)
+			ic = False;
+		if (ic)
+			set_bit(i, st->ignorecase);
 	}
 	/* The list of states is empty */
 	st->link[1-st->active][0] = 0;
@@ -1332,6 +1366,7 @@ struct match_state *safe rxl_prepare(unsigned short *rxl safe,
 void rxl_free_state(struct match_state *s safe)
 {
 	free(s->link[0]);
+	free(s->ignorecase);
 	free(s);
 }
 
@@ -1402,6 +1437,8 @@ void rxl_print(unsigned short *rxl safe)
 			case REC_NOWBRK: printf("match non-wordbreak\n"); break;
 			case REC_LAXSPC: printf("match lax-space\n"); break;
 			case REC_LAXDASH: printf("match lax-dash\n"); break;
+			case REC_IGNCASE: printf("switch ignore-case\n"); break;
+			case REC_USECASE: printf("switch use-case\n"); break;
 			default: printf("ERROR %x\n", cmd); break;
 			}
 		} else if (REC_ISFORK(cmd))
@@ -1425,8 +1462,10 @@ static struct test {
 	int flags, start, len;
 } tests[] = {
 	{ "abc", "the abc", 0, 4, 3},
+	{ "abc", "the ABC", F_ICASE, 4, 3},
 	{ "a*", " aaaaac", 0, 0,  0},
 	{ "a*", "aaaaac", 0, 0,  5},
+	{ "a*", "AaAaac", F_ICASE, 0,  5},
 	{ "a+", " aaaaac", 0, 1,  5},
 	// Inverting set of multiple classes
 	{ "[^\\A\\a]", "a", 0, -1, -1},
@@ -1447,7 +1486,7 @@ static void run_tests(int trace)
 	for (i = 0; i < cnt; i++) {
 		int f = tests[i].flags;
 		char *patn = tests[i].patn;
-		char *target = tests[i].target;
+		const char *target = tests[i].target;
 		unsigned short *rxl;
 		int mstart, mlen;
 		int len, ccnt = 0;
@@ -1623,7 +1662,7 @@ int main(int argc, char *argv[])
 	else {
 		int j;
 		wint_t wc;
-		char *tstart, *tend;
+		const char *tstart, *tend;
 		tstart = target;
 		if (use_file) {
 			tstart = target + start;

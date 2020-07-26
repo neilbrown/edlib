@@ -10,6 +10,11 @@
 
 #include "list.h"
 
+#undef bool
+typedef _Bool bool;
+#define True ((bool)1)
+#define False ((bool)0)
+
 #define WERR (0xfffffffeu)
 wint_t get_utf8(const char **cpp safe, const char *end);
 char *safe put_utf8(char *buf safe, wchar_t ch);

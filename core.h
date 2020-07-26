@@ -30,11 +30,6 @@ extern char edlib_version[];
 #define VERS_DATE "unreleased"
 #endif
 
-#undef bool
-typedef _Bool bool;
-#define True ((bool)1)
-#define False ((bool)0)
-
 struct doc;
 struct mark;
 struct attrset;

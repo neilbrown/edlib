@@ -193,7 +193,7 @@ test2:
 	done; echo SUCCESS
 
 rexel: rexel.c rexel.h
-	$(CC) -DDEBUG -g -o rexel rexel.c
+	$(CC) -DDEBUG -g -o rexel rexel.c core-misc.c
 	./rexel -T
 
 checksym: edlib
