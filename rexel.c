@@ -2,25 +2,6 @@
  * Copyright Neil Brown ©2015-2020 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
-TODO:
-
-=later
-
- - word breaks etc \b...
- - record where () are when parsing.  A particular ( can be at several places
- - count number of decision points when matching,
- - record maximum number of concurrent paths
- - If have decision points, match should record them in allocated space
- - Follow a decision path to extract substrings for particular () pair.
- - \ lower upper alpha space nonSpace digit wordBoundary...
- - *? lazy: is that possible?  This is only meaningful when collecting the
-    match.  Maybe we can compare bit-sequences and prefer forward rather
-    than backward.
- - (?| like in perl
- - back references:  need to know what references to expect, and collect them
-   (start,len) as we go.
- - \` start of buffer \' end of buffer \= point
-
  * rexel - A Regular EXpression Evaluation Library
  *    because everyone needs their own regex library
  *
@@ -58,14 +39,14 @@ TODO:
  * like the largest value less than it which does have a slot.  So iff a
  * search for "largest entry nor larger than" finds an even slot, the
  * the targe is in the set.
-
+ *
  * The rexels in the "regexp" section come in 4 groups.
  *   0x: 15 bit unicode number.  Other unicode numbers cannot be matched
  *           this way, and must be matched with a "set".
  *   10: address of a "regex" subarray.   The match forks at this point,
  *       both the next entry and the addressed entry are considered.
  *       This limits total size to 4096 entries.
-
+ *
  *   11: address of a char set, up to 0xFFF0  This address is an offset from
  *       the start of the "set" section.
  *

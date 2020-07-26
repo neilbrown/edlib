@@ -157,6 +157,20 @@ Module features
 - [ ] Make it possible to search/match against a string, not just a pane
 - [ ] make it possible to get a command which embeded a compiled pattern so
       that it can be called on a string or pane to find a match.
+- [ ] word breaks etc \b...
+- [ ] record where () are when parsing.  A particular ( can be at several places
+- [ ] count number of decision points when matching,
+- [ ] record maximum number of concurrent paths
+- [ ] If have decision points, match should record them in allocated space
+- [ ] Follow a decision path to extract substrings for particular () pair.
+- [ ] \ lower upper alpha space nonSpace digit wordBoundary...
+- [ ] *? lazy: is that possible?  This is only meaningful when collecting the
+    match.  Maybe we can compare bit-sequences and prefer forward rather
+    than backward.
+- [ ] (?| like in perl
+- [ ] back references:  need to know what references to expect, and collect them
+   (start,len) as we go.
+- [ ] \` start of buffer \' end of buffer \= point
 
 ### popup
 
