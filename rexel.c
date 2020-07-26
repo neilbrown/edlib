@@ -587,17 +587,22 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 	return st->match;
 }
 
+enum modifier {
+	IgnoreCase	= 1,
+	LaxMatch	= 2,
+};
+
 struct parse_state {
 	const char	*patn safe;
 	unsigned short	*rxl;
-	int	next;
+	int		next;
 	unsigned short	*sets;
-	int	set;	/* Next offset to store a set */
-	short	nocase;
+	int		set;	/* Next offset to store a set */
+	enum modifier mod;	/* Multiple 'or'ed together */
 
 	/* Details of set currently being parsed */
-	int	invert;
-	int	len;
+	int		invert;
+	int		len;
 };
 
 static void add_cmd(struct parse_state *st safe, unsigned short cmd)
@@ -762,7 +767,7 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 static int add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 		     int plane, int *planes safe, int *newplane safe)
 {
-	if (!st->nocase ||
+	if (!(st->mod & IgnoreCase) ||
 	    !iswalpha(start) || !iswalpha(end))
 		return __add_range(st, start, end, plane, planes, newplane);
 	if (__add_range(st, towlower(start), towlower(end),
@@ -1034,14 +1039,14 @@ static int parse_atom(struct parse_state *st safe)
 	}
 	if (*st->patn == '[')
 		return parse_set(st);
-	if (st->nocase &&
+	if ((st->mod & LaxMatch) &&
 	    st->patn[0] == ' ' && st->patn[1] != ' ' && st->patn[1] != '\t' &&
 	    (st->next == 1 || (st->patn[-1] != ' ' && st->patn[-1] != '\t'))) {
 		add_cmd(st, REC_LAXSPC);
 		st->patn++;
 		return 1;
 	}
-	if (st->nocase &&
+	if ((st->mod & LaxMatch) &&
 	    (st->patn[0] == '-' || st->patn[0] == '_')) {
 		add_cmd(st, REC_LAXDASH);
 		st->patn++;
@@ -1266,7 +1271,7 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 {
 	struct parse_state st;
 	st.patn = patn;
-	st.nocase = nocase;
+	st.mod = nocase ? IgnoreCase | LaxMatch : 0;
 	st.rxl = NULL;
 	st.next = 1;
 	st.sets = NULL;
