@@ -1278,7 +1278,7 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	st.set = 0;
 	if (nocase)
 		add_cmd(&st, REC_IGNCASE);
-	if (parse_re(&st) == 0) {
+	if (parse_re(&st) == 0 || *st.patn != '\0') {
 		if (lenp)
 			*lenp = st.patn - patn;
 		return NULL;
@@ -1482,6 +1482,8 @@ static struct test {
 	{ "^[^a-z]*", "abc", 0, 0, 0},
 	// repeated long string - should match longest
 	{ "(hello |there )+", "I said hello there hello to you", 0, 7, 18},
+	// pattern not complete
+	{ "extra close paren)", "anyting", F_PERR, -2, -2},
 };
 static void run_tests(int trace)
 {
@@ -1501,10 +1503,13 @@ static void run_tests(int trace)
 			rxl = rxl_parse_verbatim(patn, f & F_ICASE);
 		else
 			rxl = rxl_parse(patn, &len, f & F_ICASE);
-		if (!rxl && !(f & F_PERR)) {
+		if (!rxl) {
+			if (f & F_PERR)
+				continue;
 			printf("test %d: Parse error at %d\n", i, len);
 			exit(1);
-		} else if (f & F_PERR) {
+		}
+		if (f & F_PERR) {
 			printf("test %d: No parse error found\n", i);
 			exit (1);
 		}
