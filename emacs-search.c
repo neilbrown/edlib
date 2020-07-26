@@ -47,10 +47,6 @@ static struct map *es_map, *er_map;
 DEF_LOOKUP_CMD(search_handle, es_map);
 DEF_LOOKUP_CMD(replace_handle, er_map);
 static const char must_quote[] = ".|*+?{()?^$\\[";
-/* ideally 'pP' should be in this list as \p selects
- * punctuation characters.  But that stops M-p working for history :-(
- */
-static const char may_quote[] = "<>dDsSwWaA";
 
 DEF_CMD(search_forward)
 {
@@ -252,12 +248,7 @@ DEF_CMD(search_insert_meta)
 	char *bracket;
 	const char *brackets = "{}()[]";
 	const char *k = ksuffix(ci, "K:M-");
-	if (strchr(may_quote, *k)) {
-		call("Replace", ci->focus, 1, NULL, "\\");
-		call("Replace", ci->focus, 1, NULL, k,
-		     1, NULL, ",auto=1");
-		return 1;
-	}
+
 	if (strchr(must_quote, *k) == NULL || !ci->mark)
 		return 0;
 	bracket = strchr(brackets, *k);
