@@ -236,6 +236,8 @@ static int do_link(struct match_state *st safe, int pos, int dest, int len)
 	if (cmd == REC_MATCH) {
 		if (st->match < len)
 			st->match = len;
+		/* Don't accept another start point */
+		st->anchored = 1;
 	}
 	if (!REC_ISFORK(cmd)) {
 		/* not a FORK, so just link it in. */
@@ -594,9 +596,6 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		#endif
 		return -2;
 	}
-	if (st->match >= 0)
-		/* Don't accept another start point */
-		st->anchored = 1;
 	#ifdef DEBUG
 	if (st->trace)
 		printf(" ... -> %d\n", st->match);
@@ -1431,8 +1430,6 @@ static int setup_match(struct match_state *st safe, unsigned short *rxl safe,
 	 * at the start state.
 	 */
 	do_link(st, 1, 0, 0);
-	if (st->match >= 0)
-		st->anchored = 1;
 	return st->match;
 }
 
