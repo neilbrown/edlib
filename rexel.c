@@ -429,9 +429,9 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 					printf("%2d  ", st->leng[active][i]);
 			}
 		if (flag)
-			printf("Flag: %x\n", flag);
+			printf("Flag: %x", flag);
 		else
-			printf("Match %c(%x)\n",
+			printf("Match %s(%x)",
 			       ch < ' ' ? "?" : put_utf8(t, ch) , ch);
 
 		/* Now check the linkage is correct.  The chain should lead
@@ -586,12 +586,21 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		eol = do_link(st, i+1, eol, len);
 	}
 	st->link[next][eol] = 0;
-	if (eol == 0 && st->match < 0 && st->anchored)
+	if (eol == 0 && st->match < 0 && st->anchored) {
 		/* No chance of finding (another) match now */
+		#ifdef DEBUG
+		if (st->trace)
+			printf(" ... -> NOMATCH\n");
+		#endif
 		return -2;
+	}
 	if (st->match >= 0)
 		/* Don't accept another start point */
 		st->anchored = 1;
+	#ifdef DEBUG
+	if (st->trace)
+		printf(" ... -> %d\n", st->match);
+	#endif
 	return st->match;
 }
 
@@ -1558,6 +1567,12 @@ static struct test {
 	{ "(hello |there )+", "I said hello there hello to you", 0, 7, 18},
 	// pattern not complete
 	{ "extra close paren)", "anyting", F_PERR, -2, -2},
+	// word boundaries
+	{ "\\bab", "xyabc acab abc a", 0, 11, 2},
+	{ "\\<ab", "xyabc acab abc a", 0, 11, 2},
+	{ "ab\\>", "ababa abaca ab a", 0, 12, 2},
+	{ "ab\\b", "ababa abaca ab", 0, 12, 2},
+
 };
 static void run_tests(int trace)
 {
@@ -1571,15 +1586,21 @@ static void run_tests(int trace)
 		unsigned short *rxl;
 		int mstart, mlen;
 		int len, ccnt = 0;
+		wint_t prev;
 		struct match_state st = {};
 
+		if (trace)
+			printf("Match %s against %s\n", patn, target);
 		if (f & F_VERB)
 			rxl = rxl_parse_verbatim(patn, f & F_ICASE);
 		else
 			rxl = rxl_parse(patn, &len, f & F_ICASE);
 		if (!rxl) {
-			if (f & F_PERR)
+			if (f & F_PERR) {
+				if (trace)
+					printf("Parse error as expected\n\n");
 				continue;
+			}
 			printf("test %d: Parse error at %d\n", i, len);
 			exit(1);
 		}
@@ -1600,10 +1621,24 @@ static void run_tests(int trace)
 			mstart = 0;
 			mlen = len;
 		}
+		prev = L' ';
 		while (mstart < 0 || len != -2) {
 			wint_t wc = get_utf8(&target, NULL);
 			if (wc >= WERR)
 				break;
+			if (iswalnum(prev) && !iswalnum(wc))
+				len = rxl_advance(&st, WEOF, RXL_EOW);
+			if (!iswalnum(prev) && iswalnum(wc))
+				len = rxl_advance(&st, WEOF, RXL_SOW);
+			if (len >= 0 &&
+			    (mstart < 0  || ccnt-len < mstart ||
+			     (ccnt-len) == mstart && len > mlen)) {
+				mstart = ccnt - len;
+				mlen = len;
+				if (mstart >= 0 && len == -2)
+					break;
+			}
+			prev =  wc;
 			len = rxl_advance(&st, wc, 0);
 			ccnt += 1;
 			if (len >= 0 &&
@@ -1614,12 +1649,16 @@ static void run_tests(int trace)
 			}
 		}
 		if (*target == 0) {
+			if (iswalnum(prev))
+				rxl_advance(&st, WEOF, RXL_EOW);
 			len = rxl_advance(&st, WEOF, RXL_EOL);
 			if (mstart < 0 && len >= 0) {
 				mstart = ccnt - len;
 				mlen = len;
 			}
 		}
+		if (trace)
+			printf("\n");
 		if (tests[i].start != mstart ||
 		    tests[i].len != mlen) {
 			printf("test %d: found %d/%d instead of %d/%d\n", i,
