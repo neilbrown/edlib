@@ -1248,23 +1248,28 @@ static int parse_branch(struct parse_state *st safe)
 
 static int parse_re(struct parse_state *st safe)
 {
-	int start = st->next;
-	if (!parse_branch(st))
-		return 0;
-	if (*st->patn != '|')
-		return 1;
-	st->patn += 1;
-	relocate(st, start, 1);
-	if (st->rxl)
-		st->rxl[start] = REC_FORK | (st->next + 2);
-	start = st->next;
-	add_cmd(st, REC_NONE); /* will become 'jump to end' */
-	add_cmd(st, REC_NONE);
-	if (parse_re(st) == 0)
-		return 0;
-	if (st->rxl)
-		st->rxl[start] = REC_FORK | st->next;
-	return 1;
+	int re_start = st->next;
+	int start = re_start;
+	int ret;
+
+	while ((ret = parse_branch(st)) != 0 && *st->patn == '|') {
+		st->patn += 1;
+		relocate(st, start, 1);
+		if (st->rxl)
+			st->rxl[start] = REC_FORK | (st->next + 2);
+		add_cmd(st, REC_FORK | start); /* will become 'jump to end' */
+		add_cmd(st, REC_NONE);
+		start = st->next;
+	}
+	if (ret && st->rxl) {
+		/* Need to patch all the "jump to end" links */
+		while (start > re_start) {
+			unsigned short cmd = st->rxl[start - 2];
+			st->rxl[start - 2] = REC_FORK | st->next;
+			start = REC_ADDR(cmd);
+		}
+	}
+	return ret;
 }
 
 unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
