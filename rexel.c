@@ -113,6 +113,14 @@
  * - equivalence classes and collating elements are not implemented.
  * - No particular limit on the length of an RE is imposed (yet)
  *
+ *
+ * Other extensions:
+ * (?:    - a group that will never be saved
+ * (?nnn:- a group of precisely nnn literal match chars
+ * (?isl:  - a group with matches case [i]nsensitive, case [s]ensitive
+ *           and/or [l]ax.  multi lower-case flags are supported, is two
+ *           conflict, last one wins.  's' clears 'l'.
+ *
  */
 
 #include <stdlib.h>
@@ -1246,12 +1254,70 @@ static int parse_branch(struct parse_state *st safe)
 	return 1;
 }
 
+static int parse_prefix(struct parse_state *st safe)
+{
+	const char *s, *e;
+	int verblen = 0;
+	char *ve;
+
+	if (*st->patn != '?')
+		return 1;
+	s = st->patn+1;
+	e = strchr(s, ':');
+	if (!e)
+		return 0;
+	for (; s < e; s++)
+		switch (*s) {
+		case 'i':
+			st->mod |= IgnoreCase;
+			break;
+		case 's':
+			st->mod &= ~(IgnoreCase|LaxMatch);
+			break;
+		case 'l':
+			st->mod |= LaxMatch;
+			break;
+		case '1' ... '9':
+			verblen = strtoul(s, &ve, 10);
+			if (ve != e)
+				return 0;
+			s = ve - 1;
+			break;
+		default:
+			return 0;
+		}
+	s = e+1;
+	st->patn = s;
+	if (verblen == 0)
+		return 1;
+	while (verblen && *s) {
+		wint_t ch;
+		if (*s & 0x80) {
+			ch = get_utf8(&s, NULL);
+			if (ch >= WERR)
+				return 0;
+		} else
+			ch = *s++;
+		add_cmd(st, ch);
+		verblen -= 1;
+	}
+	st->patn = s;
+	return 2;
+}
+
 static int parse_re(struct parse_state *st safe)
 {
 	int re_start = st->next;
 	int start = re_start;
+	int save_mod = st->mod;
 	int ret;
 
+	ret = parse_prefix(st);
+	if (!ret)
+		return ret;
+	if (ret == 2)
+		/* Fully parsed this re - no more is permitted */
+		return 1;
 	while ((ret = parse_branch(st)) != 0 && *st->patn == '|') {
 		st->patn += 1;
 		relocate(st, start, 1);
@@ -1269,6 +1335,7 @@ static int parse_re(struct parse_state *st safe)
 			start = REC_ADDR(cmd);
 		}
 	}
+	st->mod = save_mod;
 	return ret;
 }
 
@@ -1477,6 +1544,8 @@ static struct test {
 	{ "a*", "aaaaac", 0, 0,  5},
 	{ "a*", "AaAaac", F_ICASE, 0,  5},
 	{ "a+", " aaaaac", 0, 1,  5},
+	{ "?4:()+*", " (()+***", 0, 2, 4},
+	{ "?l:1 2", "hello 1 \t\n 2", 0, 6, 6},
 	// Inverting set of multiple classes
 	{ "[^\\A\\a]", "a", 0, -1, -1},
 	// Search for start of a C function: non-label at start of line

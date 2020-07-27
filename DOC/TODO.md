@@ -140,9 +140,9 @@ Module features
 
 ### rexel
 
-- [ ] Allow ?...: at start of a group to affect how group is interpreted
-      e.g. 'Lnnn' mean there are nnn chars to be treated literally
-            I or S - case [in]sensitive.... maybe only at start
+- [X] Allow ?...: at start of a group to affect how group is interpreted
+      e.g. 'nnn' means there are nnn chars to be treated literally
+            i or s - case [in]sensitive.... maybe only at start
             l - lax spaces,dash,quote
 	    ???
 - [ ] \B for non-word-break.  This needs a change to how flags are handled.
