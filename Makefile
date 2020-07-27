@@ -66,7 +66,7 @@ CFLAGS= -g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG) $(VCFL
 #Doesn't work :-( -fsanitize=address
 
 all: edlib checksym lib shared
-test: edlib lib shared
+test: edlib lib shared test-rexel
 	./tests run
 
 OBJ = O/edlib.o
@@ -192,8 +192,10 @@ test2:
 	        done || exit 2; \
 	done; echo SUCCESS
 
-rexel: rexel.c rexel.h
+rexel: rexel.c rexel.h core-misc.c
 	$(CC) -DDEBUG -g -o rexel rexel.c core-misc.c
+
+test-rexel: rexel
 	./rexel -T
 
 checksym: edlib
