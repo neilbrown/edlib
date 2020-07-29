@@ -239,10 +239,26 @@ static int do_link(struct match_state *st safe, int pos, int dest, int len)
 		/* Don't accept another start point */
 		st->anchored = 1;
 	}
-	if (!REC_ISFORK(cmd)) {
+	if (cmd == REC_NOWBRK) {
+		/* NOWBRK is special because it matches a character
+		 * without consuming it.  We link them at the start
+		 * of the list so they can be found quickly.
+		 */
+		if (st->link[st->active][pos] == NO_LINK) {
+			st->leng[st->active][pos] = len;
+
+			if (st->link[st->active][0] == 0)
+				dest = pos;
+			st->link[st->active][pos] =
+				st->link[st->active][0];
+			st->link[st->active][0] = pos;
+		} else if (st->leng[st->active][pos] < len)
+			st->leng[st->active][pos] = len;
+	} else if (!REC_ISFORK(cmd)) {
 		/* not a FORK, so just link it in. */
 		if (st->link[st->active][pos] == NO_LINK) {
 			st->leng[st->active][pos] = len;
+
 			st->link[st->active][dest] = pos;
 			st->link[st->active][pos] = 0;
 			dest = pos;
@@ -369,8 +385,13 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 	if (flag && ch != WEOF)
 		/* This is an illegal combination */
 		return -2;
-	if (flag == RXL_NOWBRK)
-		/* This flag is currently a no-op */
+
+	if (flag == RXL_NOWBRK &&
+	    (st->link[active][0] == NO_LINK ||
+	     st->rxl[st->link[active][0]] != REC_NOWBRK))
+		/* Reporting not-a-word-boundary, but no-one cares,
+		 * so just return.
+		 */
 		return st->match;
 
 	if (!st->anchored) {
@@ -474,9 +495,6 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		int len = st->leng[active][i];
 		bool ic = test_bit(i, st->ignorecase);
 
-		if (!flag)
-			/* If we get a match, then len will have increased */
-			len += 1;
 		if (REC_ISSPEC(cmd)) {
 			switch(cmd) {
 			case REC_ANY:
@@ -520,7 +538,7 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 			case REC_SOW:
 				if (flag & RXL_SOW)
 					advance = 1;
-				else if (!flag)
+				else if (flag & RXL_NOWBRK || !flag)
 					advance = -1;
 				else
 					advance = 0;
@@ -528,7 +546,7 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 			case REC_EOW:
 				if (flag & RXL_EOW)
 					advance = 1;
-				else if (!flag)
+				else if (flag & RXL_NOWBRK || !flag)
 					advance = -1;
 				else
 					advance = 0;
@@ -536,15 +554,23 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 			case REC_WBRK:
 				if (flag & (RXL_SOW | RXL_EOW))
 					advance = 1;
-				else if (!flag)
+				else if (flag & RXL_NOWBRK || !flag)
 					advance = -1;
+				else
+					advance = 0;
+				break;
+			case REC_NOWBRK:
+				if (flag & (RXL_SOW | RXL_EOW))
+					advance = -1;
+				else if (flag & RXL_NOWBRK)
+					advance = 1;
 				else
 					advance = 0;
 				break;
 			case REC_LAXSPC:
 				if (strchr(" \t\r\n\f", ch) != NULL) {
 					/* link both retry-here, and try-next */
-					eol = do_link(st, i, eol, len);
+					eol = do_link(st, i, eol, len+1);
 					advance = 1;
 				} else
 					advance = -1;
@@ -589,7 +615,7 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		 * However if there is a fork, we might need to link multiple
 		 * addresses in.  Best use recursion.
 		 */
-		eol = do_link(st, i+1, eol, len);
+		eol = do_link(st, i+1, eol, len + (ch != WEOF));
 	}
 	st->link[next][eol] = 0;
 	if (eol == 0 && st->match < 0 && st->anchored) {
@@ -1514,6 +1540,7 @@ void rxl_print(unsigned short *rxl safe)
 		else if (REC_ISSPEC(cmd)) {
 			switch(cmd) {
 			case REC_ANY: printf("match ANY\n"); break;
+			case REC_ANY_NONL: printf("match ANY-non-NL\n"); break;
 			case REC_NONE: printf("DEAD END\n"); break;
 			case REC_SOL: printf("match start-of-line\n"); break;
 			case REC_EOL: printf("match end-of-line\n"); break;
@@ -1573,6 +1600,8 @@ static struct test {
 	{ "\\<ab", "xyabc acab abc a", 0, 11, 2},
 	{ "ab\\>", "ababa abaca ab a", 0, 12, 2},
 	{ "ab\\b", "ababa abaca ab", 0, 12, 2},
+	{ "\\Bab", "ababa abaca ab", 0, 2, 2},
+	{ "[0-9].\\Bab", "012+ab 45abc", 0, 7, 4},
 
 };
 static void run_tests(int trace)

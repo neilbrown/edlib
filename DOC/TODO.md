@@ -145,7 +145,20 @@ Module features
             i or s - case [in]sensitive.... maybe only at start
             l - lax spaces,dash,quote
 	    ???
-- [ ] \B for non-word-break.  This needs a change to how flags are handled.
+- [X] \B for non-word-break.  This needs a change to how flags are handled.
+      Maybe... If a word-break flag sees a non-word-break command, the match fails.
+      If any other flag, we allow it.  If a char, we allow without consuming the char.
+      The problem comes when one path matches a char against a \B and another
+      against something which consumes it.  To keep all paths same length, we
+      need to re-match the char against all the paths that follow the \B.
+      The alternate is to detect if any path has a REC_NOWBRK.  If it does, and
+      we aren't at a word-break, we no-op all the other paths.
+      So: do_link always links REC_NOBRK to start of list, not end.
+      If (while) first think on list is REC_NOBRK and we have a char advance
+      the REC_NOBRK and stay still for all others.
+- [ ] ?XX: option to match REC_ANY, not REC_ANY_NONL.
+- [ ] Simpler rxl_advance() interface which takes all flags and updates 'start'
+      pointer.
 - [ ] \1 substitutions
       Maybe to extract a given submatch we have a third array pair where we record
       the length since a particular point.
@@ -157,7 +170,7 @@ Module features
 - [ ] Make it possible to search/match against a string, not just a pane
 - [ ] make it possible to get a command which embeded a compiled pattern so
       that it can be called on a string or pane to find a match.
-- [ ] word breaks etc \b...
+- [X] word breaks etc \b...
 - [ ] record where () are when parsing.  A particular ( can be at several places
 - [ ] count number of decision points when matching,
 - [ ] record maximum number of concurrent paths
