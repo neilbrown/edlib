@@ -369,6 +369,10 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 	if (flag && ch != WEOF)
 		/* This is an illegal combination */
 		return -2;
+	if (flag == RXL_NOWBRK)
+		/* This flag is currently a no-op */
+		return st->match;
+
 	if (!st->anchored) {
 		/* We haven't found a match yet and search is not anchored,
 		 * so possibly start a search here.
@@ -1625,8 +1629,10 @@ static void run_tests(int trace)
 				break;
 			if (iswalnum(prev) && !iswalnum(wc))
 				len = rxl_advance(&st, WEOF, RXL_EOW);
-			if (!iswalnum(prev) && iswalnum(wc))
+			else if (!iswalnum(prev) && iswalnum(wc))
 				len = rxl_advance(&st, WEOF, RXL_SOW);
+			else
+				len = rxl_advance(&st, WEOF, RXL_NOWBRK);
 			if (len >= 0 &&
 			    (mstart < 0  || ccnt-len < mstart ||
 			     (ccnt-len) == mstart && len > mlen)) {

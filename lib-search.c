@@ -55,10 +55,18 @@ DEF_CMD(search_test)
 			len = -3;
 			if (is_eol(ss->prev_ch) || ss->prev_ch == WEOF)
 				len = rxl_advance(ss->st, WEOF, RXL_SOL);
-			if (!is_word(ss->prev_ch) && is_word(wch))
+			switch (is_word(ss->prev_ch) * 2 + is_word(wch)) {
+			case 0: /* in space */
+			case 3: /* within word */
+				len = rxl_advance(ss->st, WEOF, RXL_NOWBRK);
+				break;
+			case 1: /* start of word */
 				len = rxl_advance(ss->st, WEOF, RXL_SOW);
-			if (is_word(ss->prev_ch) && !is_word(wch))
+				break;
+			case 2: /* end of word */
 				len = rxl_advance(ss->st, WEOF, RXL_EOW);
+				break;
+			}
 			if (is_eol(wch))
 				len = rxl_advance(ss->st, WEOF, RXL_EOL);
 			if (len == -3)

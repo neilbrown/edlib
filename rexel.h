@@ -11,6 +11,7 @@ void rxl_free_state(struct match_state *s safe);
 int rxl_advance(struct match_state *st safe, wint_t ch, int flag);
 
 #define	RXL_SOL	1
-#define RXL_EOL	2
+#define	RXL_EOL	2
 #define	RXL_SOW	4
 #define	RXL_EOW	8
+#define	RXL_NOWBRK 16 /* Not at a word boundary */
