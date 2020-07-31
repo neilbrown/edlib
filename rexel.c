@@ -395,13 +395,144 @@ static int set_match(struct match_state *st safe, unsigned short addr,
  * the call might keep calling to see if a longer match is possible.  Until -2
  * is seen, a longer match is still possible.
  */
+
+static void advance_one(struct match_state *st safe, unsigned int cmd, int i,
+			wint_t ch, wint_t lch, wint_t uch, int flag,
+			int len, bool ic, int *eolp safe)
+{
+	int advance = 0;
+
+	if (REC_ISSPEC(cmd)) {
+		switch(cmd) {
+		case REC_ANY:
+			advance = 1;
+			if (flag)
+				advance = 0;
+			break;
+		case REC_ANY_NONL:
+			advance = 1;
+			if (ch == '\n' || ch == '\r' || ch == '\f')
+				advance = -1;
+			if (flag)
+				advance = 0;
+			break;
+		case REC_MATCH:
+			/* cannot match more chars here */
+			if (flag)
+				advance = 0;
+			else
+				advance = -1;
+			break;
+		case REC_NONE:
+			advance = -1;
+			break;
+		case REC_SOL:
+			if (flag & RXL_SOL)
+				advance = 1;
+			else if (!flag)
+				advance = -1;
+			else
+				advance = 0;
+			break;
+		case REC_EOL:
+			if (flag & RXL_EOL)
+				advance = 1;
+			else if (!flag)
+				advance = -1;
+			else
+				advance = 0;
+			break;
+		case REC_SOW:
+			if (flag & RXL_SOW)
+				advance = 1;
+			else if (flag & RXL_NOWBRK || !flag)
+				advance = -1;
+			else
+				advance = 0;
+			break;
+		case REC_EOW:
+			if (flag & RXL_EOW)
+				advance = 1;
+			else if (flag & RXL_NOWBRK || !flag)
+				advance = -1;
+			else
+				advance = 0;
+			break;
+		case REC_WBRK:
+			if (flag & (RXL_SOW | RXL_EOW))
+				advance = 1;
+			else if (flag & RXL_NOWBRK || !flag)
+				advance = -1;
+			else
+				advance = 0;
+			break;
+		case REC_NOWBRK:
+			if (flag & (RXL_SOW | RXL_EOW))
+				advance = -1;
+			else if (flag & RXL_NOWBRK)
+				advance = 1;
+			else
+				advance = 0;
+			break;
+		case REC_LAXSPC:
+			if (strchr(" \t\r\n\f", ch) != NULL) {
+				/* link both retry-here, and try-next */
+				*eolp = do_link(st, i, *eolp, len+1);
+				advance = 1;
+			} else
+				advance = -1;
+			if (flag)
+				advance = 0;
+			break;
+		case REC_LAXDASH:
+			if (strchr("-_.", ch) != NULL)
+				advance = 1;
+			else
+				advance = -1;
+			if (flag)
+				advance = 0;
+			break;
+		}
+	} else if (flag) {
+		/* expecting a char, so ignore position info */
+		advance = 0;
+	} else if (REC_ISCHAR(cmd)) {
+		if (cmd == ch ||
+		    (ic && (cmd == uch || cmd == lch)))
+			advance = 1;
+		else
+			advance = -1;
+	} else if (REC_ISSET(cmd)) {
+		if (set_match(st, REC_ADDR(cmd), ch, ic))
+			advance = 1;
+		else
+			advance = -1;
+	} else if (REC_ISBACKREF(cmd)) {
+		/* Backref not supported */
+		advance = -1;
+	} else
+		/* Nothing else is possible here */
+		abort();
+	if (advance < 0)
+		/* no match on this path */
+		;
+	else if (advance == 0)
+		/* Nothing conclusive here */
+		*eolp = do_link(st, i, *eolp, len);
+	else
+		/* Need to advance and link the new address in.  However
+		 * if there is a fork, we might need to link multiple
+		 * addresses in.  Best use recursion.
+		 */
+		*eolp = do_link(st, i+1, *eolp, len + (ch != WEOF));
+}
+
 int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 {
 	int active = st->active;
 	int next = 1-active;
 	int eol;
 	unsigned short i;
-	int advance = 0;
 	wint_t uch = toupper(ch);
 	wint_t lch = tolower(ch);
 
@@ -525,130 +656,7 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		int len = st->leng[active][i];
 		bool ic = test_bit(i, st->ignorecase);
 
-		if (REC_ISSPEC(cmd)) {
-			switch(cmd) {
-			case REC_ANY:
-				advance = 1;
-				if (flag)
-					advance = 0;
-				break;
-			case REC_ANY_NONL:
-				advance = 1;
-				if (ch == '\n' || ch == '\r' || ch == '\f')
-					advance = -1;
-				if (flag)
-					advance = 0;
-				break;
-			case REC_MATCH:
-				/* cannot match more chars here */
-				if (flag)
-					advance = 0;
-				else
-					advance = -1;
-				break;
-			case REC_NONE:
-				advance = -1;
-				break;
-			case REC_SOL:
-				if (flag & RXL_SOL)
-					advance = 1;
-				else if (!flag)
-					advance = -1;
-				else
-					advance = 0;
-				break;
-			case REC_EOL:
-				if (flag & RXL_EOL)
-					advance = 1;
-				else if (!flag)
-					advance = -1;
-				else
-					advance = 0;
-				break;
-			case REC_SOW:
-				if (flag & RXL_SOW)
-					advance = 1;
-				else if (flag & RXL_NOWBRK || !flag)
-					advance = -1;
-				else
-					advance = 0;
-				break;
-			case REC_EOW:
-				if (flag & RXL_EOW)
-					advance = 1;
-				else if (flag & RXL_NOWBRK || !flag)
-					advance = -1;
-				else
-					advance = 0;
-				break;
-			case REC_WBRK:
-				if (flag & (RXL_SOW | RXL_EOW))
-					advance = 1;
-				else if (flag & RXL_NOWBRK || !flag)
-					advance = -1;
-				else
-					advance = 0;
-				break;
-			case REC_NOWBRK:
-				if (flag & (RXL_SOW | RXL_EOW))
-					advance = -1;
-				else if (flag & RXL_NOWBRK)
-					advance = 1;
-				else
-					advance = 0;
-				break;
-			case REC_LAXSPC:
-				if (strchr(" \t\r\n\f", ch) != NULL) {
-					/* link both retry-here, and try-next */
-					eol = do_link(st, i, eol, len+1);
-					advance = 1;
-				} else
-					advance = -1;
-				if (flag)
-					advance = 0;
-				break;
-			case REC_LAXDASH:
-				if (strchr("-_.", ch) != NULL)
-					advance = 1;
-				else
-					advance = -1;
-				if (flag)
-					advance = 0;
-				break;
-			}
-		} else if (flag) {
-			/* expecting a char, so ignore position info */
-			advance = 0;
-		} else if (REC_ISCHAR(cmd)) {
-			if (cmd == ch ||
-			    (ic && (cmd == uch || cmd == lch)))
-				advance = 1;
-			else
-				advance = -1;
-		} else if (REC_ISSET(cmd)) {
-			if (set_match(st, REC_ADDR(cmd), ch, ic))
-				advance = 1;
-			else
-				advance = -1;
-		} else if (REC_ISBACKREF(cmd)) {
-			/* Backref not supported */
-			advance = -1;
-		} else
-			/* Nothing else is possible here */
-			abort();
-		if (advance < 0)
-			/* no match on this path */
-			continue;
-		if (advance == 0) {
-			/* Nothing conclusive here */
-			eol = do_link(st, i, eol, len);
-			continue;
-		}
-		/* Need to advance and link the new address in.
-		 * However if there is a fork, we might need to link multiple
-		 * addresses in.  Best use recursion.
-		 */
-		eol = do_link(st, i+1, eol, len + (ch != WEOF));
+		advance_one(st, cmd, i, ch, lch, uch, flag, len, ic, &eol);
 	}
 	st->link[next][eol] = 0;
 	if (eol == 0 && st->match < 0 && st->anchored) {
