@@ -30,24 +30,30 @@
  * If a set should *not* match, then the small number is added with the
  * msb set.
  *
- * Subsequent subsection contain a general character-set each for a
- * single unicode plane.  The top six bits of the first entry is the
- * plane number, the remaining bits are the size.  After this are "size"
- * 16bit chars in sorted order.  The values in even slots are in the
- * set, values in odd slots are not.  Value not in any slot are treated
- * like the largest value less than it which does have a slot.  So iff a
- * search for "largest entry nor larger than" finds an even slot, the
- * the targe is in the set.
+ * Subsequent subsections contain a general character-set, each
+ * subsection for a single unicode plane.  The top six bits of the first
+ * entry is the plane number, the remaining bits are the size.  After
+ * this are "size" 16bit chars in sorted order.  The values in even
+ * slots are in the set, values in odd slots are not.  Value not in any
+ * slot are treated like the largest value less than it which does have
+ * a slot.  So iff a search for "largest entry nor larger than" finds an
+ * even slot, then the target is in the set.
  *
  * The rexels in the "regexp" section come in 4 groups.
  *   0x: 15 bit unicode number.  Other unicode numbers cannot be matched
  *           this way, and must be matched with a "set".
- *   10: address of a "regex" subarray.   The match forks at this point,
- *       both the next entry and the addressed entry are considered.
- *       This limits total size to 4096 entries.
+ *   100: address of a "regex" subarray.   The match forks at this point,
+ *        both the next entry and the addressed entry are considered.
+ *        This limits total size to 8192 entries.
  *
- *   11: address of a char set, up to 0xFFF0  This address is an offset from
- *       the start of the "set" section.
+ *   101: address of a char set.  This 13 bit address is an offset from the
+ *        start of the "set" section.
+ *
+ *   110: start/end of a capture group.  High bit is 0 for start, 1 for end.
+ *
+ *   1110: must match the most recent instance of the capture group.
+ *
+ *   1111: reserve for various special purposes.
  *
  *   The last 16 value have special meanings.
  *     0xfff0 - match any char
@@ -62,6 +68,8 @@
  *     0xfff9 - match any point that isn't a word break.
  *     0xfffa - match 1 or more spaces/tabs/newlines - lax searching.
  *     0xfffb - match - or _ - lax searching
+ *     0xfffc - Subsequent chars (0x..) are matched ignoring case
+ *     0xfffd - Subsequent chars are match case-correct.
  *
  * When matching, two pairs of extra arrays are allocated and used.
  * One pair is 'before', one pair is 'after'.  They swap on each char.
@@ -198,13 +206,28 @@ static inline void clear_bit(int bit, unsigned long *set safe)
 #define	REC_USECASE	0xFFFd
 
 #define	REC_FORK	0x8000
-#define	REC_SET		0xc000
+#define	REC_SET		0xa000
+#define	REC_CAPTURE	0xc000
+#define	REC_CAPTURED	0xc800
+#define	REC_BACKREF	0xe000
 #define	REC_ISCHAR(x)	(!((x) & 0x8000))
 #define	REC_ISSPEC(x)	((x) >= REC_ANY)
-#define	REC_ISFORK(x)	(((x) & 0xc000) == REC_FORK)
-#define	REC_ISSET(x)	(!REC_ISSPEC(x) && ((x) & 0xc000) == REC_SET)
-#define	REC_ADDR(x)	((x) & 0x3fff)
+#define	REC_ISFORK(x)	(((x) & 0xe000) == REC_FORK)
+#define	REC_ISSET(x)	(((x) & 0xe000) == REC_SET)
+#define	REC_ISCAPTURE(x) (((x) & 0xe000) == REC_CAPTURE)
+#define	REC_ISBACKREF(x) (((x) & 0xf000) == REC_BACKREF)
+#define	REC_ADDR(x)	((x) & 0x1fff)
+#define	REC_CAPNUM(x)	((x) & 0x07ff)
+#define	REC_CAPEND(x)	((x) & 0x0800)
 
+static inline bool rec_noop(unsigned short cmd)
+{
+	/* These commands don't affect matching directly, they
+	 * are extracted and used outside the core matcher.
+	 */
+	return cmd == REC_IGNCASE || cmd == REC_USECASE ||
+		REC_ISCAPTURE(cmd);
+}
 /* First entry contains start of maps, and flags */
 #define	RXL_PATNLEN(rxl)	((rxl)[0] & 0x3fff)
 #define	RXL_SETSTART(rxl)	((rxl) + RXL_PATNLEN(rxl))
@@ -229,7 +252,7 @@ static int do_link(struct match_state *st safe, int pos, int dest, int len)
 {
 	unsigned short cmd = st->rxl[pos];
 
-	while (cmd == REC_IGNCASE || cmd == REC_USECASE) {
+	while (rec_noop(cmd)) {
 		pos += 1;
 		cmd = st->rxl[pos];
 	}
@@ -429,6 +452,13 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 						printf("x%3x", cmd);
 				} else if (REC_ISSET(cmd)) {
 					printf("S%-3d", REC_ADDR(cmd));
+				} else if (REC_ISBACKREF(cmd)) {
+					printf("B%-3d", REC_CAPNUM(cmd));
+				} else if (REC_ISCAPTURE(cmd)) {
+					if (REC_CAPEND(cmd))
+						printf("%3d)", REC_CAPNUM(cmd));
+					else
+						printf("(%-3d", REC_CAPNUM(cmd));
 				} else switch(cmd) {
 					case REC_ANY: printf(" .  "); break;
 					case REC_ANY_NONL: printf(" .? "); break;
@@ -600,6 +630,9 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 				advance = 1;
 			else
 				advance = -1;
+		} else if (REC_ISBACKREF(cmd)) {
+			/* Backref not supported */
+			advance = -1;
 		} else
 			/* Nothing else is possible here */
 			abort();
@@ -645,6 +678,7 @@ struct parse_state {
 	unsigned short	*sets;
 	int		set;	/* Next offset to store a set */
 	enum modifier mod;	/* Multiple 'or'ed together */
+	int		capture;
 
 	/* Details of set currently being parsed */
 	int		invert;
@@ -1065,11 +1099,19 @@ static int parse_atom(struct parse_state *st safe)
 		return 1;
 	}
 	if (*st->patn == '(') {
+		int capture = 0;
 		st->patn++;
+		if (st->patn[0] != '?') {
+			st->capture++;
+			capture = st->capture;
+			add_cmd(st, REC_CAPTURE | capture);
+		}
 		if (!parse_re(st))
 			return 0;
 		if (*st->patn != ')')
 			return 0;
+		if (capture > 0)
+			add_cmd(st, REC_CAPTURED | capture);
 		st->patn++;
 		return 1;
 	}
@@ -1136,7 +1178,7 @@ static int parse_atom(struct parse_state *st safe)
 		case '0': ch = 0;
 			while (st->patn[1] >= '0' && st->patn[1] <= '7') {
 				ch = ch*8 + st->patn[1] - '0';
-				st->patn+= 1;
+				st->patn += 1;
 			}
 			break;
 		case 'x': ch = cvt_hex(st->patn+1, 2);
@@ -1154,9 +1196,13 @@ static int parse_atom(struct parse_state *st safe)
 				return 0;
 			st->patn += 8;
 			break;
-			/* Anything else is an error (e.g. \0) or
-			 * reserved for future use.
-			 */
+		case '1'...'9': ch = st->patn[0] - '0';
+			while (st->patn[1] >= '0' && st->patn[1] <= '9') {
+				ch = ch * 10 + st->patn[1] - '0';
+				st->patn += 1;
+			}
+			ch |= REC_BACKREF;
+			break;
 		case 'd': ch = add_class_set(st, "digit", 1); break;
 		case 'D': ch = add_class_set(st, "digit", 0); break;
 		case 's': ch = add_class_set(st, "space", 1); break;
@@ -1169,6 +1215,9 @@ static int parse_atom(struct parse_state *st safe)
 		case 'a': ch = add_class_set(st, "lower", 1); break;
 		case 'A': ch = add_class_set(st, "upper", 0); break;
 
+			/* Anything else is an error (e.g. \0) or
+			 * reserved for future use.
+			 */
 		default: return 0;
 		}
 	}
@@ -1386,6 +1435,7 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	st.next = 1;
 	st.sets = NULL;
 	st.set = 0;
+	st.capture = 0;
 	if (nocase)
 		add_cmd(&st, REC_IGNCASE);
 	if (parse_re(&st) == 0 || *st.patn != '\0') {
@@ -1400,6 +1450,7 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	st.patn = patn;
 	st.next = 1;
 	st.set = 0;
+	st.capture = 0;
 	if (nocase)
 		add_cmd(&st, REC_IGNCASE);
 	if (parse_re(&st) == 0)
@@ -1561,6 +1612,12 @@ void rxl_print(unsigned short *rxl safe)
 			printf("Match from set %d: ", REC_ADDR(cmd));
 			print_set(set + REC_ADDR(cmd));
 			printf("\n");
+		} else if (REC_ISBACKREF(cmd)) {
+			printf("Backref to capture %d\n", REC_CAPNUM(cmd));
+		} else if (REC_ISCAPTURE(cmd) && !REC_CAPEND(cmd)) {
+			printf("Start Capture %d\n", REC_CAPNUM(cmd));
+		} else if (REC_ISCAPTURE(cmd)) {
+			printf("End   Capture %d\n", REC_CAPNUM(cmd));
 		} else
 			printf("ERROR %x\n", cmd);
 	}
@@ -1602,6 +1659,10 @@ static struct test {
 	{ "ab\\b", "ababa abaca ab", 0, 12, 2},
 	{ "\\Bab", "ababa abaca ab", 0, 2, 2},
 	{ "[0-9].\\Bab", "012+ab 45abc", 0, 7, 4},
+	// octal chars
+	{ "\\011", "a\tb", 0, 1, 1},
+	// backref fails
+	{ "(.(.).)\\1", "123123", 0, -1, -1},
 
 };
 static void run_tests(int trace)

@@ -171,7 +171,7 @@ Module features
 - [ ] make it possible to get a command which embeded a compiled pattern so
       that it can be called on a string or pane to find a match.
 - [X] word breaks etc \b...
-- [ ] record where () are when parsing.  A particular ( can be at several places
+- [X] record where () are when parsing.  A particular ( can be at several places
 - [ ] count number of decision points when matching,
 - [ ] record maximum number of concurrent paths
 - [ ] If have decision points, match should record them in allocated space
