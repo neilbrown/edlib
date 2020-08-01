@@ -159,6 +159,7 @@ struct match_state {
 	unsigned short	active;
 	bool		anchored;
 	int		match;
+	int		len;
 	#ifdef DEBUG
 	bool		trace;
 	#endif
@@ -669,7 +670,14 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 	if (st->trace)
 		printf(" ... -> %d\n", st->match);
 	#endif
+	if (st->match > st->len)
+		st->len = st->match;
 	return st->match;
+}
+
+void rxl_info(struct match_state *st safe, int *lenp safe)
+{
+	*lenp = st->len;
 }
 
 enum modifier {
@@ -1484,8 +1492,8 @@ unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase)
 	return st.rxl;
 }
 
-static int setup_match(struct match_state *st safe, unsigned short *rxl safe,
-		       bool anchored)
+static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
+			bool anchored)
 {
 	int len = RXL_PATNLEN(rxl);
 	int i;
@@ -1519,19 +1527,15 @@ static int setup_match(struct match_state *st safe, unsigned short *rxl safe,
 	 * at the start state.
 	 */
 	do_link(st, 1, 0, 0);
-	return st->match;
+	st->len = st->match;
 }
 
-struct match_state *safe rxl_prepare(unsigned short *rxl safe,
-				     bool anchored, int *lenp)
+struct match_state *safe rxl_prepare(unsigned short *rxl safe, bool anchored)
 {
 	struct match_state *ret;
-	int len;
 
 	ret = malloc(sizeof(*ret));
-	len = setup_match(ret, rxl, anchored);
-	if (lenp)
-		*lenp = len;
+	setup_match(ret, rxl, anchored);
 	return ret;
 }
 
@@ -1860,7 +1864,7 @@ int main(int argc, char *argv[])
 		ccnt+= 1;
 	}
 	/* We have a match, let's see if we can extend it */
-	start = ccnt-len; thelen = len;
+	start = ccnt-len;
 	if (len >= 0) {
 		while (len != -2 || longest) {
 			wint_t wc = get_utf8(&t, NULL);
@@ -1868,22 +1872,20 @@ int main(int argc, char *argv[])
 				break;
 			len = rxl_advance(&st, wc, 0);
 			ccnt += 1;
+			rxl_info(&st, &thelen);
 			if (longest) {
-				if (len > thelen) {
+				if (len == thelen)
 					start = ccnt - len;
-					thelen = len;
-				}
 			} else {
 				if (ccnt-len < start ||
-				    (ccnt-len) == start && len > thelen) {
+				    (ccnt-len) == start && len > thelen)
 					start = ccnt-len;
-					thelen = len;
-				}
 			}
 		}
 		if (*t == 0)
 			len = rxl_advance(&st, WEOF, RXL_EOL);
 	}
+	rxl_info(&st, &thelen);
 	if (thelen < 0)
 		printf("No match\n");
 	else {

@@ -28,7 +28,6 @@ struct search_state {
 	struct match_state *st safe;
 	struct mark *end;
 	struct mark *endmark;
-	int since_start;
 	wint_t prev_ch;
 	struct command c;
 };
@@ -41,7 +40,6 @@ static int is_word(wint_t ch)
 DEF_CMD(search_test)
 {
 	wint_t wch = ci->num & 0xFFFFF;
-	int len;
 	int i;
 	struct search_state *ss = container_of(ci->comm,
 					       struct search_state, c);
@@ -50,6 +48,7 @@ DEF_CMD(search_test)
 		return Enoarg;
 
 	for (i = -1; i <= 0; i++) {
+		int len, maxlen;
 		switch(i) {
 		case -1:
 			len = -3;
@@ -76,17 +75,15 @@ DEF_CMD(search_test)
 			len = rxl_advance(ss->st, wch, 0);
 			break;
 		}
-		if (len >= 0 && len > ss->since_start) {
-			ss->since_start = len;
-			if (ss->endmark) {
-				mark_to_mark(ss->endmark, ci->mark);
-				if (i >= 0)
-					doc_next(ci->home, ss->endmark);
-			}
+		rxl_info(ss->st, &maxlen);
+		if (len >= 0 && len == maxlen && ss->endmark) {
+			mark_to_mark(ss->endmark, ci->mark);
+			if (i >= 0)
+				doc_next(ci->home, ss->endmark);
 		}
 		if (ss->end &&  ci->mark->seq >= ss->end->seq)
 			return 0;
-		if (len < 0 && ss->since_start >= 0)
+		if (len < 0 && maxlen >= 0)
 			/* Found longest match at this location */
 			return 0;
 		if (len == -2)
@@ -107,17 +104,19 @@ static int search_forward(struct pane *p safe,
 	 * length of the match, or -1.
 	 */
 	struct search_state ss;
+	int maxlen;
 
 	if (m2 && m->seq >= m2->seq)
 		return -1;
-	ss.st = rxl_prepare(rxl, anchored, &ss.since_start);
+	ss.st = rxl_prepare(rxl, anchored);
 	ss.end = m2;
 	ss.endmark = endmark;
 	ss.c = search_test;
 	ss.prev_ch = doc_prior(p, m);
 	call_comm("doc:content", p, &ss.c, 0, m);
+	rxl_info(ss.st, &maxlen);
 	rxl_free_state(ss.st);
-	return ss.since_start;
+	return maxlen;
 }
 
 static int search_backward(struct pane *p safe,
@@ -132,25 +131,29 @@ static int search_backward(struct pane *p safe,
 	 * or negative.
 	 */
 	struct search_state ss;
+	int maxlen;
 
 	ss.end = NULL;
 	ss.endmark = NULL;
 	ss.c = search_test;
 
 	do {
-		ss.st = rxl_prepare(rxl, True, &ss.since_start);
+
+		ss.st = rxl_prepare(rxl, True);
 		ss.prev_ch = doc_prior(p, m);
 
 		mark_to_mark(endmark, m);
 		call_comm("doc:content", p, &ss.c, 0, endmark);
+		rxl_info(ss.st, &maxlen);
 		rxl_free_state(ss.st);
-		if (ss.since_start >= 0)
+
+		if (maxlen >= 0)
 			/* found a match */
 			break;
 	} while((!m2 || m2->seq < m->seq) &&
 		(doc_prev(p, m) != WEOF));
 	mark_to_mark(endmark, m);
-	return ss.since_start;
+	return maxlen;
 }
 
 DEF_CMD(text_search)
