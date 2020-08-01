@@ -619,9 +619,14 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 				else
 					printf("%2d  ", st->leng[active][i]);
 			}
-		if (flag)
-			printf("Flag: %x", flag);
-		else
+		if (flag) {
+			printf("Flag:");
+			if (flag & RXL_SOL) printf(" SOL");
+			if (flag & RXL_EOL) printf(" EOL");
+			if (flag & RXL_SOW) printf(" SOW");
+			if (flag & RXL_EOW) printf(" EOW");
+			if (flag & RXL_NOWBRK) printf(" NOWBRK");
+		} else
 			printf("Match %s(%x)",
 			       ch < ' ' ? "?" : put_utf8(t, ch) , ch);
 
