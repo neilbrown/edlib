@@ -100,7 +100,7 @@ DEF_CMD(search_test)
 static int search_forward(struct pane *p safe,
 			  struct mark *m safe, struct mark *m2,
 			  unsigned short *rxl safe,
-			  struct mark *endmark, int anchored)
+			  struct mark *endmark, bool anchored)
 {
 	/* Search forward from @m in @p for @rxl looking as far as @m2,
 	 * and leaving @endmark at the end point, and returning the
@@ -138,7 +138,7 @@ static int search_backward(struct pane *p safe,
 	ss.c = search_test;
 
 	do {
-		ss.st = rxl_prepare(rxl, 1, &ss.since_start);
+		ss.st = rxl_prepare(rxl, True, &ss.since_start);
 		ss.prev_ch = doc_prior(p, m);
 
 		mark_to_mark(endmark, m);
@@ -171,13 +171,13 @@ DEF_CMD(text_search)
 		return Efail;
 	if (strcmp(ci->key, "text-match") == 0)
 		since_start = search_forward(ci->focus, m, ci->mark2,
-					     rxl, endmark, 1);
+					     rxl, endmark, True);
 	else if (ci->num2)
 		since_start = search_backward(ci->focus, m, ci->mark2,
 					      rxl, endmark);
 	else
 		since_start = search_forward(ci->focus, m, ci->mark2,
-					     rxl, endmark, 0);
+					     rxl, endmark, False);
 
 	if (since_start >= 0)
 		mark_to_mark(m, endmark);

@@ -157,10 +157,10 @@ struct match_state {
 	unsigned short	* safe leng[2];
 	unsigned long	* safe ignorecase;
 	unsigned short	active;
-	unsigned short	anchored;
+	bool		anchored;
 	int		match;
 	#ifdef DEBUG
-	int		trace;
+	bool		trace;
 	#endif
 };
 
@@ -260,7 +260,7 @@ static int do_link(struct match_state *st safe, int pos, int dest, int len)
 		if (st->match < len)
 			st->match = len;
 		/* Don't accept another start point */
-		st->anchored = 1;
+		st->anchored = True;
 	}
 	if (cmd == REC_NOWBRK) {
 		/* NOWBRK is special because it matches a character
@@ -1485,7 +1485,7 @@ unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase)
 }
 
 static int setup_match(struct match_state *st safe, unsigned short *rxl safe,
-		       int anchored)
+		       bool anchored)
 {
 	int len = RXL_PATNLEN(rxl);
 	int i;
@@ -1523,7 +1523,7 @@ static int setup_match(struct match_state *st safe, unsigned short *rxl safe,
 }
 
 struct match_state *safe rxl_prepare(unsigned short *rxl safe,
-				     int anchored, int *lenp)
+				     bool anchored, int *lenp)
 {
 	struct match_state *ret;
 	int len;
@@ -1675,7 +1675,8 @@ static struct test {
 	{ "hello there-all", "Hello\t  There_ALL-youse", F_ICASE, 0, 17},
 	{ "hello there-all", "Hello\t  There_ALL-youse", 0, -1, -1},
 };
-static void run_tests(int trace)
+
+static void run_tests(bool trace)
 {
 	int cnt = sizeof(tests) / sizeof(tests[0]);
 	int i;
@@ -1712,7 +1713,7 @@ static void run_tests(int trace)
 
 		if (trace)
 			rxl_print(rxl);
-		setup_match(&st, rxl, 0);
+		setup_match(&st, rxl, False);
 		st.trace = trace;
 
 		mstart = -1;
@@ -1785,7 +1786,7 @@ int main(int argc, char *argv[])
 	int verbatim = 0;
 	int longest = 0;
 	int opt;
-	int trace = 0;
+	int trace = False;
 	const char *patn, *target, *t;
 
 	while ((opt = getopt(argc, argv, "itvlTf")) > 0)
@@ -1799,7 +1800,7 @@ int main(int argc, char *argv[])
 		case 'l':
 			longest = 1; break;
 		case 't':
-			trace = 1; break;
+			trace = True; break;
 		case 'T':
 			run_tests(trace);
 			printf("All tests passed successfully\n");
@@ -1845,7 +1846,7 @@ int main(int argc, char *argv[])
 	}
 	rxl_print(rxl);
 
-	setup_match(&st, rxl, 0);
+	setup_match(&st, rxl, False);
 	st.trace = trace;
 	t = target;
 	len = rxl_advance(&st, WEOF, RXL_SOL);
