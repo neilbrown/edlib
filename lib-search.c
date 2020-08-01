@@ -48,7 +48,7 @@ DEF_CMD(search_test)
 		return Enoarg;
 
 	for (i = -1; i <= 0; i++) {
-		int len, maxlen;
+		int len, maxlen, since_start;
 		switch(i) {
 		case -1:
 			len = -3;
@@ -75,10 +75,10 @@ DEF_CMD(search_test)
 			len = rxl_advance(ss->st, wch, 0);
 			break;
 		}
-		rxl_info(ss->st, &maxlen);
-		if (len >= 0 && len == maxlen && ss->endmark) {
+		rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
+		if (len >= 0 && ss->endmark && since_start - len < 1) {
 			mark_to_mark(ss->endmark, ci->mark);
-			if (i >= 0)
+			if (since_start - len == i)
 				doc_next(ci->home, ss->endmark);
 		}
 		if (ss->end &&  ci->mark->seq >= ss->end->seq)
@@ -114,7 +114,7 @@ static int search_forward(struct pane *p safe,
 	ss.c = search_test;
 	ss.prev_ch = doc_prior(p, m);
 	call_comm("doc:content", p, &ss.c, 0, m);
-	rxl_info(ss.st, &maxlen);
+	rxl_info(ss.st, &maxlen, NULL, NULL, NULL);
 	rxl_free_state(ss.st);
 	return maxlen;
 }
@@ -144,7 +144,7 @@ static int search_backward(struct pane *p safe,
 
 		mark_to_mark(endmark, m);
 		call_comm("doc:content", p, &ss.c, 0, endmark);
-		rxl_info(ss.st, &maxlen);
+		rxl_info(ss.st, &maxlen, NULL, NULL, NULL);
 		rxl_free_state(ss.st);
 
 		if (maxlen >= 0)

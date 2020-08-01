@@ -160,6 +160,7 @@ struct match_state {
 	bool		anchored;
 	int		match;
 	int		len;
+	int		start, total;
 	#ifdef DEBUG
 	bool		trace;
 	#endif
@@ -547,6 +548,9 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		 */
 		return st->match;
 
+	if (!flag)
+		st->total += 1;
+
 	if (!st->anchored) {
 		/* We haven't found a match yet and search is not anchored,
 		 * so possibly start a search here.
@@ -670,14 +674,31 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 	if (st->trace)
 		printf(" ... -> %d\n", st->match);
 	#endif
-	if (st->match > st->len)
+	if (st->match > st->len) {
 		st->len = st->match;
+		st->start = st->total - st->len;
+	}
 	return st->match;
 }
 
-void rxl_info(struct match_state *st safe, int *lenp safe)
+void rxl_info(struct match_state *st safe, int *lenp safe, int *totalp,
+	      int *startp, int *since_startp)
 {
 	*lenp = st->len;
+	if (totalp)
+		*totalp = st->total;
+	if (startp) {
+		if (st->len < 0)
+			*startp = -1;
+		else
+			*startp = st->start;
+	}
+	if (since_startp) {
+		if (st->len < 0)
+			*since_startp = -1;
+		else
+			*since_startp = st->total - st->start;
+	}
 }
 
 enum modifier {
@@ -1720,15 +1741,9 @@ static void run_tests(bool trace)
 		setup_match(&st, rxl, False);
 		st.trace = trace;
 
-		mstart = -1;
-		mlen = -1;
 		len = rxl_advance(&st, WEOF, RXL_SOL);
-		if (len >= 0) {
-			mstart = 0;
-			mlen = len;
-		}
 		prev = L' ';
-		while (mstart < 0 || len != -2) {
+		while (len != -2) {
 			wint_t wc = get_utf8(&target, NULL);
 			if (wc >= WERR)
 				break;
@@ -1738,35 +1753,20 @@ static void run_tests(bool trace)
 				len = rxl_advance(&st, WEOF, RXL_SOW);
 			else
 				len = rxl_advance(&st, WEOF, RXL_NOWBRK);
-			if (len >= 0 &&
-			    (mstart < 0  || ccnt-len < mstart ||
-			     (ccnt-len) == mstart && len > mlen)) {
-				mstart = ccnt - len;
-				mlen = len;
-				if (mstart >= 0 && len == -2)
-					break;
-			}
+			if (len == -2)
+				break;
 			prev =  wc;
 			len = rxl_advance(&st, wc, 0);
 			ccnt += 1;
-			if (len >= 0 &&
-			    (mstart < 0  || ccnt-len < mstart ||
-			     (ccnt-len) == mstart && len > mlen)) {
-				mstart = ccnt - len;
-				mlen = len;
-			}
 		}
 		if (*target == 0) {
 			if (iswalnum(prev))
 				rxl_advance(&st, WEOF, RXL_EOW);
 			len = rxl_advance(&st, WEOF, RXL_EOL);
-			if (mstart < 0 && len >= 0) {
-				mstart = ccnt - len;
-				mlen = len;
-			}
 		}
 		if (trace)
 			printf("\n");
+		rxl_info(&st, &mlen, NULL, &mstart, NULL);
 		if (tests[i].start != mstart ||
 		    tests[i].len != mlen) {
 			printf("test %d: found %d/%d instead of %d/%d\n", i,
@@ -1861,7 +1861,6 @@ int main(int argc, char *argv[])
 		ccnt+= 1;
 	}
 	/* We have a match, let's see if we can extend it */
-	start = ccnt-len;
 	if (len >= 0) {
 		while (len != -2) {
 			wint_t wc = get_utf8(&t, NULL);
@@ -1869,15 +1868,11 @@ int main(int argc, char *argv[])
 				break;
 			len = rxl_advance(&st, wc, 0);
 			ccnt += 1;
-			rxl_info(&st, &thelen);
-			if (ccnt-len < start ||
-			    (ccnt-len) == start && len > thelen)
-				start = ccnt-len;
 		}
 		if (*t == 0)
 			len = rxl_advance(&st, WEOF, RXL_EOL);
 	}
-	rxl_info(&st, &thelen);
+	rxl_info(&st, &thelen, NULL, &start, NULL);
 	if (thelen < 0)
 		printf("No match\n");
 	else {

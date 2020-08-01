@@ -172,6 +172,7 @@ lib/libedlib.so: $(LIBOBJ)
 
 shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o O/rexel.o
+O/lib-search.o : rexel.h
 lib/edlib-mode-emacs.so : O/mode-emacs.o O/emacs-search.o
 
 $(SO) : lib/edlib-%.so : O/%.o O/core-version.o lib/.exists
