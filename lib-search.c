@@ -40,56 +40,49 @@ static int is_word(wint_t ch)
 DEF_CMD(search_test)
 {
 	wint_t wch = ci->num & 0xFFFFF;
-	int i;
+	wint_t flags = 0;
+	int len, maxlen, since_start;
 	struct search_state *ss = container_of(ci->comm,
 					       struct search_state, c);
 
 	if (!ci->mark)
 		return Enoarg;
 
-	for (i = -1; i <= 0; i++) {
-		int len, maxlen, since_start;
-		switch(i) {
-		case -1:
-			len = -3;
-			if (is_eol(ss->prev_ch) || ss->prev_ch == WEOF)
-				len = rxl_advance(ss->st, WEOF, RXL_SOL);
-			switch (is_word(ss->prev_ch) * 2 + is_word(wch)) {
-			case 0: /* in space */
-			case 3: /* within word */
-				len = rxl_advance(ss->st, WEOF, RXL_NOWBRK);
-				break;
-			case 1: /* start of word */
-				len = rxl_advance(ss->st, WEOF, RXL_SOW);
-				break;
-			case 2: /* end of word */
-				len = rxl_advance(ss->st, WEOF, RXL_EOW);
-				break;
-			}
-			if (is_eol(wch))
-				len = rxl_advance(ss->st, WEOF, RXL_EOL);
-			if (len == -3)
-				continue;
-			break;
-		case 0:
-			len = rxl_advance(ss->st, wch, 0);
-			break;
-		}
-		rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
-		if (len >= 0 && ss->endmark && since_start - len < 1) {
-			mark_to_mark(ss->endmark, ci->mark);
-			if (since_start - len == i)
-				doc_next(ci->home, ss->endmark);
-		}
-		if (ss->end &&  ci->mark->seq >= ss->end->seq)
-			return 0;
-		if (len < 0 && maxlen >= 0)
-			/* Found longest match at this location */
-			return 0;
-		if (len == -2)
-			/* No match here */
-			return 0;
+	if (wch == WEOF)
+		wch = 0;
+	if (is_eol(ss->prev_ch) || ss->prev_ch == WEOF || ss->prev_ch == 0)
+		flags |= RXL_SOL;
+	switch (is_word(ss->prev_ch) * 2 + is_word(wch)) {
+	case 0: /* in space */
+	case 3: /* within word */
+		flags |= RXL_NOWBRK;
+		break;
+	case 1: /* start of word */
+		flags |= RXL_SOW;
+		break;
+	case 2: /* end of word */
+		flags |= RXL_EOW;
+		break;
 	}
+	if (is_eol(wch))
+		flags |= RXL_EOL;
+
+	len = rxl_advance(ss->st, wch | flags);
+	rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
+
+	if (len >= 0 && ss->endmark && since_start - len <= 1) {
+		mark_to_mark(ss->endmark, ci->mark);
+		if (since_start == len)
+			doc_next(ci->home, ss->endmark);
+	}
+	if (ss->end &&  ci->mark->seq >= ss->end->seq)
+		return 0;
+	if (len < 0 && maxlen >= 0)
+		/* Found longest match at this location */
+		return 0;
+	if (len == -2)
+		/* No match here */
+		return 0;
 	ss->prev_ch = wch;
 	return 1;
 }

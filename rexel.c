@@ -524,21 +524,39 @@ static void advance_one(struct match_state *st safe, unsigned int cmd, int i,
 		 * if there is a fork, we might need to link multiple
 		 * addresses in.  Best use recursion.
 		 */
-		*eolp = do_link(st, i+1, *eolp, len + (ch != WEOF));
+		*eolp = do_link(st, i+1, *eolp, len + (ch != 0));
 }
 
-int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
+int rxl_advance(struct match_state *st safe, wint_t ch)
 {
-	int active = st->active;
-	int next = 1-active;
+	int active;
+	int next;
 	int eol;
 	unsigned short i;
-	wint_t uch = toupper(ch);
-	wint_t lch = tolower(ch);
+	wint_t flag = ch & ~(0x1fffff);
+	wint_t uch, lch;
+	int ret = -1;
 
-	if (flag && ch != WEOF)
-		/* This is an illegal combination */
-		return -2;
+	ch &= 0x1fffff;
+	uch = toupper(ch);
+	lch = tolower(ch);
+
+	if (flag && ((flag & (flag-1)) || ch)) {
+		int f, r;
+		/* Need to handle flags separately */
+		for (f = RXL_SOL ; f <= RXL_EOL; f <<= 1) {
+			if (!(flag & f))
+				continue;
+			r = rxl_advance(st, f);
+			if (r > ret)
+				ret = r;
+		}
+		flag = 0;
+		if (!ch)
+			return ret;
+	}
+	active = st->active;
+	next = 1-active;
 
 	if (flag == RXL_NOWBRK &&
 	    (st->link[active][0] == NO_LINK ||
@@ -673,6 +691,8 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		if (st->trace)
 			printf(" ... -> NOMATCH\n");
 		#endif
+		if (ret >= 0)
+			return ret;
 		return -2;
 	}
 	#ifdef DEBUG
@@ -683,6 +703,8 @@ int rxl_advance(struct match_state *st safe, wint_t ch, int flag)
 		st->len = st->match;
 		st->start = st->total - st->len;
 	}
+	if (ret > st->match)
+		return ret;
 	return st->match;
 }
 
@@ -1704,6 +1726,8 @@ static struct test {
 	// lax matching
 	{ "hello there-all", "Hello\t  There_ALL-youse", F_ICASE, 0, 17},
 	{ "hello there-all", "Hello\t  There_ALL-youse", 0, -1, -1},
+	{ "^[^a-zA-Z0-9\n]*$", "=======", 0, 0, 7},
+	{ "^$", "", 0, 0, 0},
 };
 
 static void run_tests(bool trace)
@@ -1712,6 +1736,7 @@ static void run_tests(bool trace)
 	int i;
 
 	for (i = 0; i < cnt; i++) {
+		int flags;
 		int f = tests[i].flags;
 		char *patn = tests[i].patn;
 		const char *target = tests[i].target;
@@ -1746,28 +1771,29 @@ static void run_tests(bool trace)
 		setup_match(&st, rxl, False);
 		st.trace = trace;
 
-		len = rxl_advance(&st, WEOF, RXL_SOL);
+		flags = RXL_SOL;
 		prev = L' ';
+		len = -1;
 		while (len != -2) {
 			wint_t wc = get_utf8(&target, NULL);
 			if (wc >= WERR)
 				break;
 			if (iswalnum(prev) && !iswalnum(wc))
-				len = rxl_advance(&st, WEOF, RXL_EOW);
+				flags |= RXL_EOW;
 			else if (!iswalnum(prev) && iswalnum(wc))
-				len = rxl_advance(&st, WEOF, RXL_SOW);
+				flags |= RXL_SOW;
 			else
-				len = rxl_advance(&st, WEOF, RXL_NOWBRK);
-			if (len == -2)
-				break;
+				flags |= RXL_NOWBRK;
 			prev =  wc;
-			len = rxl_advance(&st, wc, 0);
+			len = rxl_advance(&st, wc | flags);
+			flags = 0;
 			ccnt += 1;
 		}
 		if (*target == 0) {
+			flags |= RXL_EOL;
 			if (iswalnum(prev))
-				rxl_advance(&st, WEOF, RXL_EOW);
-			len = rxl_advance(&st, WEOF, RXL_EOL);
+				flags |= RXL_EOW;
+			rxl_advance(&st, flags);
 		}
 		if (trace)
 			printf("\n");
@@ -1785,6 +1811,7 @@ int main(int argc, char *argv[])
 {
 	unsigned short *rxl;
 	struct match_state st;
+	int flags;
 	int len;
 	int start;
 	int thelen;
@@ -1855,14 +1882,15 @@ int main(int argc, char *argv[])
 	setup_match(&st, rxl, False);
 	st.trace = trace;
 	t = target;
-	len = rxl_advance(&st, WEOF, RXL_SOL);
+	flags = RXL_SOL;
 	while (len < 0) {
 		wint_t wc = get_utf8(&t, NULL);
 		if (wc >= WERR) {
-			len = rxl_advance(&st, WEOF, RXL_EOL);
+			len = rxl_advance(&st, RXL_EOL);
 			break;
 		}
-		len = rxl_advance(&st, wc, 0);
+		len = rxl_advance(&st, wc | flags);
+		flags = 0;
 		ccnt+= 1;
 	}
 	/* We have a match, let's see if we can extend it */
@@ -1871,11 +1899,12 @@ int main(int argc, char *argv[])
 			wint_t wc = get_utf8(&t, NULL);
 			if (wc >= WERR)
 				break;
-			len = rxl_advance(&st, wc, 0);
+			len = rxl_advance(&st, wc | flags);
+			flags = 0;
 			ccnt += 1;
 		}
 		if (*t == 0)
-			len = rxl_advance(&st, WEOF, RXL_EOL);
+			len = rxl_advance(&st, RXL_EOL | flags);
 	}
 	rxl_info(&st, &thelen, NULL, &start, NULL);
 	if (thelen < 0)

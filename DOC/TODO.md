@@ -157,7 +157,7 @@ Module features
       If (while) first think on list is REC_NOBRK and we have a char advance
       the REC_NOBRK and stay still for all others.
 - [ ] ?XX: option to match REC_ANY, not REC_ANY_NONL.
-- [ ] Simpler rxl_advance() interface which takes all flags and updates 'start'
+- [X] Simpler rxl_advance() interface which takes all flags and updates 'start'
       pointer.
 - [ ] \1 substitutions
       Maybe to extract a given submatch we have a third array pair where we record
