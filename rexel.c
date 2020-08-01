@@ -475,11 +475,9 @@ static void advance_one(struct match_state *st safe, unsigned int cmd, int i,
 				advance = 0;
 			break;
 		case REC_LAXSPC:
-			if (strchr(" \t\r\n\f", ch) != NULL) {
-				/* link both retry-here, and try-next */
-				*eolp = do_link(st, i, *eolp, len+1);
+			if (strchr(" \t\r\n\f", ch) != NULL)
 				advance = 1;
-			} else
+			else
 				advance = -1;
 			if (flag)
 				advance = 0;
@@ -1139,6 +1137,8 @@ static int parse_atom(struct parse_state *st safe)
 	    st->patn[0] == ' ' && st->patn[1] != ' ' && st->patn[1] != '\t' &&
 	    (st->next == 1 || (st->patn[-1] != ' ' && st->patn[-1] != '\t'))) {
 		add_cmd(st, REC_LAXSPC);
+		/* LAXSPC be repeated */
+		add_cmd(st, REC_FORK | (st->next - 1));
 		st->patn++;
 		return 1;
 	}
@@ -1671,7 +1671,9 @@ static struct test {
 	{ "\\011", "a\tb", 0, 1, 1},
 	// backref fails
 	{ "(.(.).)\\1", "123123", 0, -1, -1},
-
+	// lax matching
+	{ "hello there-all", "Hello\t  There_ALL-youse", F_ICASE, 0, 17},
+	{ "hello there-all", "Hello\t  There_ALL-youse", 0, -1, -1},
 };
 static void run_tests(int trace)
 {
