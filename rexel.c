@@ -1788,7 +1788,6 @@ int main(int argc, char *argv[])
 	int ccnt = 0;
 	int ignore_case = 0;
 	int verbatim = 0;
-	int longest = 0;
 	int opt;
 	int trace = False;
 	const char *patn, *target, *t;
@@ -1801,8 +1800,6 @@ int main(int argc, char *argv[])
 			ignore_case = 1; break;
 		case 'v':
 			verbatim = 1; break;
-		case 'l':
-			longest = 1; break;
 		case 't':
 			trace = True; break;
 		case 'T':
@@ -1866,21 +1863,16 @@ int main(int argc, char *argv[])
 	/* We have a match, let's see if we can extend it */
 	start = ccnt-len;
 	if (len >= 0) {
-		while (len != -2 || longest) {
+		while (len != -2) {
 			wint_t wc = get_utf8(&t, NULL);
 			if (wc >= WERR)
 				break;
 			len = rxl_advance(&st, wc, 0);
 			ccnt += 1;
 			rxl_info(&st, &thelen);
-			if (longest) {
-				if (len == thelen)
-					start = ccnt - len;
-			} else {
-				if (ccnt-len < start ||
-				    (ccnt-len) == start && len > thelen)
-					start = ccnt-len;
-			}
+			if (ccnt-len < start ||
+			    (ccnt-len) == start && len > thelen)
+				start = ccnt-len;
 		}
 		if (*t == 0)
 			len = rxl_advance(&st, WEOF, RXL_EOL);
