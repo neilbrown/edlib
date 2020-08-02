@@ -77,9 +77,6 @@ DEF_CMD(search_test)
 	}
 	if (ss->end &&  ci->mark->seq >= ss->end->seq)
 		return 0;
-	if (len < 0 && maxlen >= 0)
-		/* Found longest match at this location */
-		return 0;
 	if (len == -2)
 		/* No match here */
 		return 0;
