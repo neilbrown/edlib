@@ -70,9 +70,9 @@ DEF_CMD(search_test)
 	len = rxl_advance(ss->st, wch | flags);
 	rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
 
-	if (len >= 0 && ss->endmark && since_start - len <= 1) {
+	if (len >= 0 && ss->endmark && since_start - maxlen <= 1) {
 		mark_to_mark(ss->endmark, ci->mark);
-		if (since_start == len)
+		if (since_start == maxlen)
 			doc_next(ci->home, ss->endmark);
 	}
 	if (ss->end &&  ci->mark->seq >= ss->end->seq)
