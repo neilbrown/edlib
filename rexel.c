@@ -161,6 +161,36 @@ struct match_state {
 	int		match;
 	int		len;
 	int		start, total;
+
+	/* Backtracking state */
+	bool		backtrack;
+	/* 'buf' is an allocated buffer of 'buf_size'.
+	 * There is text up to buf_count which we have been asked
+	 * to match against.  We are currently considering the
+	 * wchar at buf_pos to see if it matches.  If buf_pos == buf_count,
+	 * rxl_advance_bt() will return so that another char can be provided.
+	 */
+	wint_t		* safe buf;
+	unsigned short	buf_size;
+	unsigned short	buf_pos, buf_count;
+	/* pos in an index in 'rxl' that buf[buf_pos] must be matched against. */
+	unsigned short	pos;
+	/* 'record' is an allocated buffer of record_size of
+	 * which record_count entries record details of the current match
+	 * of buf..buf_pos from above.
+	 * We only record fork points that were taken on the path through the
+	 * pattern which achieved the current match.  During matching, we may
+	 * need to rewind to these, and follow forward from that fork.
+	 * During capture extraction, we need to follow those to find
+	 * how the match applied.
+	 */
+	struct record {
+		unsigned short pos;
+		unsigned short len;
+	}		* safe record;
+	unsigned short	record_count;
+	unsigned short	record_size;
+
 	#ifdef DEBUG
 	bool		trace;
 	#endif
@@ -237,6 +267,9 @@ static inline bool rec_noop(unsigned short cmd)
 static int classcnt = 0;
 static wctype_t *classmap safe = NULL;
 
+static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch);
+static void bt_link(struct match_state *st safe, int pos, int len);
+
 /*
  * The match_state contains several partial matches that lead to "here".
  * rxl_advance() examines each of these to determine if they will still match
@@ -263,6 +296,11 @@ static void do_link(struct match_state *st safe, int pos, int *destp, int len)
 			st->match = len;
 		/* Don't accept another start point */
 		st->anchored = True;
+	}
+
+	if (st->backtrack) {
+		bt_link(st, pos, len);
+		return;
 	}
 
 	if (!destp)
@@ -400,9 +438,9 @@ static int set_match(struct match_state *st safe, unsigned short addr,
  * is seen, a longer match is still possible.
  */
 
-static void advance_one(struct match_state *st safe, int i,
-			wint_t ch, int flag,
-			int len, int *eolp safe)
+static int advance_one(struct match_state *st safe, int i,
+		       wint_t ch, int flag,
+		       int len, int *eolp)
 {
 	unsigned int cmd = st->rxl[i];
 	wint_t lch = ch, uch = ch;
@@ -535,6 +573,7 @@ static void advance_one(struct match_state *st safe, int i,
 		 * addresses in.  Best use recursion.
 		 */
 		do_link(st, i+1, eolp, len + (ch != 0));
+	return advance;
 }
 
 enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
@@ -545,6 +584,9 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 	unsigned short i;
 	wint_t flag = ch & ~(0x1fffff);
 	enum rxl_found ret = RXL_NOMATCH;
+
+	if (st->backtrack)
+		return rxl_advance_bt(st, ch);
 
 	ch &= 0x1fffff;
 
@@ -735,6 +777,153 @@ void rxl_info(struct match_state *st safe, int *lenp safe, int *totalp,
 		else
 			*since_startp = st->total - st->start;
 	}
+}
+
+#define RESIZE(buf)							\
+	do {								\
+		if ((buf##_size) <= (buf##_count+1)) {			\
+			if ((buf##_size) < 8)				\
+				(buf##_size) = 8;			\
+			(buf##_size) *= 2;				\
+			(buf) = realloc(buf, (buf##_size) * sizeof((buf)[0]));\
+		}							\
+	} while(0);
+
+static void bt_link(struct match_state *st safe, int pos, int len)
+{
+	unsigned short cmd = st->rxl[pos];
+
+	while (rec_noop(cmd)) {
+		pos += 1;
+		cmd = st->rxl[pos];
+	}
+	if (cmd == REC_MATCH) {
+		if (st->match < len)
+			st->match = len;
+		/* Don't accept another anchor point */
+		st->anchored = True;
+	}
+	if (!REC_ISFORK(cmd)) {
+		st->pos = pos;
+		return;
+	}
+
+	RESIZE(st->record);
+	st->record[st->record_count].pos = pos;
+	st->record[st->record_count].len = len;
+	st->record_count += 1;
+	bt_link(st, REC_ADDR(cmd), len);
+}
+
+static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
+{
+	/* This is a back-tracking version of rxl_advance().  If the new
+	 * ch/flag matches, we store it and return.  If it doesn't, we
+	 * backtrack and retry another path until we run out of all
+	 * paths, or find a path where more input is needed.
+	 */
+
+	if (st->buf_pos < st->buf_count)
+		/* We didn't ask for more, so fail */
+		return RXL_DONE;
+
+	if (st->anchored && st->record_count == 0 && st->pos == 0)
+		return RXL_DONE;
+
+	RESIZE(st->buf);
+	st->buf[st->buf_count++] = ch;
+	st->total += 1;
+
+	st->match = -1;
+	do {
+		wint_t flags;
+		int f;
+		ch = st->buf[st->buf_pos++];
+		flags = ch & ~0x1FFFFF;
+		ch &= 0x1FFFFF;
+
+		for (f = RXL_SOL ; f <= RXL_EOL*2; f <<= 1) {
+			int i = st->pos;
+			int r;
+
+			#ifdef DEBUG
+			if (!st->trace)
+				;
+			else if (f == RXL_EOL*2) {
+				char t[5];
+				printf("%d: Match %s(%x)", i,
+				       ch < ' ' ? "?" : put_utf8(t, ch) , ch);
+			} else if (f & flags){
+				printf("%d: Flag:", i);
+				if (f & RXL_SOL) printf(" SOL");
+				if (f & RXL_EOL) printf(" EOL");
+				if (f & RXL_SOW) printf(" SOW");
+				if (f & RXL_EOW) printf(" EOW");
+				if (f & RXL_NOWBRK) printf(" NOWBRK");
+			}
+			#endif
+
+			if (f == RXL_EOL*2 && ch)
+				r = advance_one(st, i, ch, 0,
+						st->buf_pos - 1, NULL);
+			else if (f == RXL_EOL*2)
+				r = -1;
+			else if (f & flags)
+				r = advance_one(st, i, 0, f,
+						st->buf_pos - 1, NULL);
+			else
+				continue;
+			if (r >= 0) {
+				/* st->pos has been advanced if needed */
+				if (st->match > st->len) {
+					st->len = st->match;
+					st->start = st->total - st->buf_count;
+				}
+				#ifdef DEBUG
+				if (st->trace)
+					printf(" -- OK(%d %d %d/%d)\n", r,
+					       st->buf_pos,
+					       st->start, st->len);
+				#endif
+				continue;
+			}
+
+			/* match failed - backtrack */
+			if (st->record_count > 0) {
+				st->record_count -= 1;
+				st->pos = st->record[st->record_count].pos;
+				st->buf_pos = st->record[st->record_count].len;
+				#ifdef DEBUG
+				if (st->trace)
+					printf(" -- NAK backtrack to %d/%d\n",
+					       st->pos, st->buf_pos);
+				#endif
+				bt_link(st, st->pos+1, st->buf_pos);
+			} else {
+				/* cannot backtrack, so skip first char unless anchored */
+				#ifdef DEBUG
+				if (st->trace)
+					printf(" -- NAK - %s\n",
+					       st->anchored?"abort":"fail");
+				#endif
+				if (st->anchored) {
+					st->pos = 0;
+					return RXL_DONE;
+				}
+				st->buf_count -= 1;
+				memmove(st->buf, st->buf+1,
+					sizeof(st->buf[0]) * st->buf_count);
+				st->buf_pos = 0;
+				bt_link(st, 1, st->buf_pos);
+			}
+			break;
+		}
+	} while (st->buf_pos < st->buf_count);
+
+	if (st->len < 0)
+		return RXL_NOMATCH;
+	else
+		return RXL_CONTINUE;
 }
 
 enum modifier {
@@ -1559,27 +1748,29 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
 
 	memset(st, 0, sizeof(*st));
 	st->rxl = rxl;
-	st->link[0] = malloc(len * sizeof(unsigned short) * 4);
-	st->link[1] = st->link[0] + len;
-	st->leng[0] = st->link[1] + len;
-	st->leng[1] = st->leng[0] + len;
+	st->anchored = flags & RXL_ANCHORED;
+	st->backtrack = flags & RXL_BACKTRACK;
+	if (!st->backtrack) {
+		st->link[0] = malloc(len * sizeof(unsigned short) * 4);
+		st->link[1] = st->link[0] + len;
+		st->leng[0] = st->link[1] + len;
+		st->leng[1] = st->leng[0] + len;
+	}
 	st->ignorecase = calloc(BITSET_SIZE(len), sizeof(*st->ignorecase));
 	st->active = 0;
-	st->anchored = flags & RXL_ANCHORED;
 	st->match = -1;
 	for (i = 0; i < len; i++) {
-		st->link[0][i] = NO_LINK;
-		st->link[1][i] = NO_LINK;
 		if (rxl[i] == REC_IGNCASE)
 			ic = True;
 		if (rxl[i] == REC_USECASE)
 			ic = False;
 		if (ic)
 			set_bit(i, st->ignorecase);
+		if (!st->backtrack) {
+			st->link[0][i] = i ? NO_LINK : 0;
+			st->link[1][i] = i ? NO_LINK : 0;
+		}
 	}
-	/* The list of states is empty */
-	st->link[1-st->active][0] = 0;
-	st->link[st->active][0] = 0;
 
 	/* Set linkage to say we have a zero-length match
 	 * at the start state.
@@ -1602,6 +1793,8 @@ void rxl_free_state(struct match_state *s safe)
 {
 	free(s->link[0]);
 	free(s->ignorecase);
+	free(s->buf);
+	free(s->record);
 	free(s);
 }
 
@@ -1745,7 +1938,9 @@ static void run_tests(bool trace)
 {
 	int cnt = sizeof(tests) / sizeof(tests[0]);
 	int i;
+	int alg;
 
+	for (alg = 0; alg <= 1; alg++)
 	for (i = 0; i < cnt; i++) {
 		int flags;
 		int f = tests[i].flags;
@@ -1780,7 +1975,7 @@ static void run_tests(bool trace)
 
 		if (trace)
 			rxl_print(rxl);
-		setup_match(&st, rxl, 0);
+		setup_match(&st, rxl, alg ? RXL_BACKTRACK : 0);
 		st.trace = trace;
 
 		flags = RXL_SOL;
@@ -1811,7 +2006,8 @@ static void run_tests(bool trace)
 		rxl_info(&st, &mlen, NULL, &mstart, NULL);
 		if (tests[i].start != mstart ||
 		    tests[i].len != mlen) {
-			printf("test %d: found %d/%d instead of %d/%d\n", i,
+			printf("test %d %s: found %d/%d instead of %d/%d\n", i,
+			       alg ? "backtracking" : "parallel",
 			       mstart, mlen, tests[i].start, tests[i].len);
 			exit(1);
 		}
