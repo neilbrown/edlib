@@ -99,7 +99,7 @@ static int search_forward(struct pane *p safe,
 
 	if (m2 && m->seq >= m2->seq)
 		return -1;
-	ss.st = rxl_prepare(rxl, anchored);
+	ss.st = rxl_prepare(rxl, anchored ? RXL_ANCHORED : 0);
 	ss.end = m2;
 	ss.endmark = endmark;
 	ss.c = search_test;
@@ -130,7 +130,7 @@ static int search_backward(struct pane *p safe,
 
 	do {
 
-		ss.st = rxl_prepare(rxl, True);
+		ss.st = rxl_prepare(rxl, RXL_ANCHORED);
 		ss.prev_ch = doc_prior(p, m);
 
 		mark_to_mark(endmark, m);

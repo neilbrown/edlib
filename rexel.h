@@ -16,7 +16,10 @@ enum rxl_found {
 };
 unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase);
 unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase);
-struct match_state *safe rxl_prepare(unsigned short *rxl safe, bool anchored);
+
+struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags);
+#define	RXL_ANCHORED	1
+
 enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch);
 void rxl_info(struct match_state *st safe, int *lenp safe, int *totalp,
 	      int *startp, int *since_startp);

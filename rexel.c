@@ -1550,7 +1550,7 @@ unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase)
 }
 
 static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
-			bool anchored)
+			int flags)
 {
 	int len = RXL_PATNLEN(rxl);
 	int i;
@@ -1565,7 +1565,7 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
 	st->leng[1] = st->leng[0] + len;
 	st->ignorecase = calloc(BITSET_SIZE(len), sizeof(*st->ignorecase));
 	st->active = 0;
-	st->anchored = anchored;
+	st->anchored = flags & RXL_ANCHORED;
 	st->match = -1;
 	for (i = 0; i < len; i++) {
 		st->link[0][i] = NO_LINK;
@@ -1589,12 +1589,12 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
 	st->len = st->match;
 }
 
-struct match_state *safe rxl_prepare(unsigned short *rxl safe, bool anchored)
+struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags)
 {
 	struct match_state *ret;
 
 	ret = malloc(sizeof(*ret));
-	setup_match(ret, rxl, anchored);
+	setup_match(ret, rxl, flags);
 	return ret;
 }
 
@@ -1780,7 +1780,7 @@ static void run_tests(bool trace)
 
 		if (trace)
 			rxl_print(rxl);
-		setup_match(&st, rxl, False);
+		setup_match(&st, rxl, 0);
 		st.trace = trace;
 
 		flags = RXL_SOL;
@@ -1891,7 +1891,7 @@ int main(int argc, char *argv[])
 	}
 	rxl_print(rxl);
 
-	setup_match(&st, rxl, False);
+	setup_match(&st, rxl, 0);
 	st.trace = trace;
 	t = target;
 	flags = RXL_SOL;
