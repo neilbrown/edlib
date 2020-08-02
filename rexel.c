@@ -250,7 +250,7 @@ static wctype_t *classmap safe = NULL;
  * the length and don't relink anything.
  *
  */
-static int do_link(struct match_state *st safe, int pos, int dest, int len)
+static void do_link(struct match_state *st safe, int pos, int *destp, int len)
 {
 	unsigned short cmd = st->rxl[pos];
 
@@ -264,6 +264,9 @@ static int do_link(struct match_state *st safe, int pos, int dest, int len)
 		/* Don't accept another start point */
 		st->anchored = True;
 	}
+
+	if (!destp)
+		return;
 	if (cmd == REC_NOWBRK) {
 		/* NOWBRK is special because it matches a character
 		 * without consuming it.  We link them at the start
@@ -273,7 +276,7 @@ static int do_link(struct match_state *st safe, int pos, int dest, int len)
 			st->leng[st->active][pos] = len;
 
 			if (st->link[st->active][0] == 0)
-				dest = pos;
+				*destp = pos;
 			st->link[st->active][pos] =
 				st->link[st->active][0];
 			st->link[st->active][0] = pos;
@@ -284,19 +287,18 @@ static int do_link(struct match_state *st safe, int pos, int dest, int len)
 		if (st->link[st->active][pos] == NO_LINK) {
 			st->leng[st->active][pos] = len;
 
-			st->link[st->active][dest] = pos;
+			st->link[st->active][*destp] = pos;
 			st->link[st->active][pos] = 0;
-			dest = pos;
+			*destp = pos;
 		} else if (st->leng[st->active][pos] < len)
 			st->leng[st->active][pos] = len;
 	} else if (st->link[st->active][pos] == NO_LINK ||
 		   st->leng[st->active][pos] < len) {
 		st->link[st->active][pos] = LOOP_CHECK;
 		st->leng[st->active][pos] = len;
-		dest = do_link(st, REC_ADDR(cmd), dest, len);
-		dest = do_link(st, pos+1, dest, len);
+		do_link(st, REC_ADDR(cmd), destp, len);
+		do_link(st, pos+1, destp, len);
 	}
-	return dest;
 }
 
 static int set_match(struct match_state *st safe, unsigned short addr,
@@ -518,13 +520,13 @@ static void advance_one(struct match_state *st safe, unsigned int cmd, int i,
 		;
 	else if (advance == 0)
 		/* Nothing conclusive here */
-		*eolp = do_link(st, i, *eolp, len);
+		do_link(st, i, eolp, len);
 	else
 		/* Need to advance and link the new address in.  However
 		 * if there is a fork, we might need to link multiple
 		 * addresses in.  Best use recursion.
 		 */
-		*eolp = do_link(st, i+1, *eolp, len + (ch != 0));
+		do_link(st, i+1, eolp, len + (ch != 0));
 }
 
 enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
@@ -579,7 +581,7 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 		while (st->link[active][eol])
 			eol = st->link[active][eol];
 		/* Found the end of the list. */
-		do_link(st, 1, eol, 0);
+		do_link(st, 1, &eol, 0);
 	}
 	st->match = -1;
 	eol = 0;
@@ -1550,6 +1552,7 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
 	int len = RXL_PATNLEN(rxl);
 	int i;
 	bool ic = False;
+	int eol;
 
 	memset(st, 0, sizeof(*st));
 	st->rxl = rxl;
@@ -1578,7 +1581,8 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
 	/* Set linkage to say we have a zero-length match
 	 * at the start state.
 	 */
-	do_link(st, 1, 0, 0);
+	eol = 0;
+	do_link(st, 1, &eol, 0);
 	st->len = st->match;
 }
 
