@@ -400,11 +400,19 @@ static int set_match(struct match_state *st safe, unsigned short addr,
  * is seen, a longer match is still possible.
  */
 
-static void advance_one(struct match_state *st safe, unsigned int cmd, int i,
-			wint_t ch, wint_t lch, wint_t uch, int flag,
-			int len, bool ic, int *eolp safe)
+static void advance_one(struct match_state *st safe, int i,
+			wint_t ch, int flag,
+			int len, int *eolp safe)
 {
+	unsigned int cmd = st->rxl[i];
+	wint_t lch = ch, uch = ch;
+	bool ic = test_bit(i, st->ignorecase);
 	int advance = 0;
+
+	if (ic) {
+		uch = toupper(ch);
+		lch = tolower(ch);
+	}
 
 	if (REC_ISSPEC(cmd)) {
 		switch(cmd) {
@@ -536,12 +544,9 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 	int eol;
 	unsigned short i;
 	wint_t flag = ch & ~(0x1fffff);
-	wint_t uch, lch;
 	enum rxl_found ret = RXL_NOMATCH;
 
 	ch &= 0x1fffff;
-	uch = toupper(ch);
-	lch = tolower(ch);
 
 	if (flag && ((flag & (flag-1)) || ch)) {
 		int f;
@@ -682,11 +687,9 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 
 	/* Now advance each current match */
 	for (i = st->link[active][0]; i; i = st->link[active][i]) {
-		unsigned int cmd = st->rxl[i];
 		int len = st->leng[active][i];
-		bool ic = test_bit(i, st->ignorecase);
 
-		advance_one(st, cmd, i, ch, lch, uch, flag, len, ic, &eol);
+		advance_one(st, i, ch, flag, len, &eol);
 	}
 	st->link[next][eol] = 0;
 	if (st->match > st->len) {
