@@ -41,7 +41,8 @@ DEF_CMD(search_test)
 {
 	wint_t wch = ci->num & 0xFFFFF;
 	wint_t flags = 0;
-	int len, maxlen, since_start;
+	int maxlen, since_start;
+	enum rxl_found found;
 	struct search_state *ss = container_of(ci->comm,
 					       struct search_state, c);
 
@@ -67,17 +68,17 @@ DEF_CMD(search_test)
 	if (is_eol(wch))
 		flags |= RXL_EOL;
 
-	len = rxl_advance(ss->st, wch | flags);
+	found = rxl_advance(ss->st, wch | flags);
 	rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
 
-	if (len >= 0 && ss->endmark && since_start - maxlen <= 1) {
+	if (found >= RXL_MATCH && ss->endmark && since_start - maxlen <= 1) {
 		mark_to_mark(ss->endmark, ci->mark);
-		if (since_start == maxlen)
+		if (found == RXL_MATCH)
 			doc_next(ci->home, ss->endmark);
 	}
 	if (ss->end &&  ci->mark->seq >= ss->end->seq)
 		return 0;
-	if (len == -2)
+	if (found == RXL_DONE)
 		/* No match here */
 		return 0;
 	ss->prev_ch = wch;

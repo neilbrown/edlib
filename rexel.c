@@ -527,7 +527,7 @@ static void advance_one(struct match_state *st safe, unsigned int cmd, int i,
 		*eolp = do_link(st, i+1, *eolp, len + (ch != 0));
 }
 
-int rxl_advance(struct match_state *st safe, wint_t ch)
+enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 {
 	int active;
 	int next;
@@ -535,14 +535,15 @@ int rxl_advance(struct match_state *st safe, wint_t ch)
 	unsigned short i;
 	wint_t flag = ch & ~(0x1fffff);
 	wint_t uch, lch;
-	int ret = -1;
+	enum rxl_found ret = RXL_NOMATCH;
 
 	ch &= 0x1fffff;
 	uch = toupper(ch);
 	lch = tolower(ch);
 
 	if (flag && ((flag & (flag-1)) || ch)) {
-		int f, r;
+		int f;
+		enum rxl_found r;
 		/* Need to handle flags separately */
 		for (f = RXL_SOL ; f <= RXL_EOL; f <<= 1) {
 			if (!(flag & f))
@@ -564,7 +565,8 @@ int rxl_advance(struct match_state *st safe, wint_t ch)
 		/* Reporting not-a-word-boundary, but no-one cares,
 		 * so just return.
 		 */
-		return st->match;
+		return st->match >= 0 ? RXL_MATCH_FLAG :
+			st->len >= 0 ? RXL_CONTINUE : RXL_NOMATCH;
 
 	if (!flag)
 		st->total += 1;
@@ -685,27 +687,29 @@ int rxl_advance(struct match_state *st safe, wint_t ch)
 		advance_one(st, cmd, i, ch, lch, uch, flag, len, ic, &eol);
 	}
 	st->link[next][eol] = 0;
-	if (eol == 0 && st->match < 0 && st->anchored) {
-		/* No chance of finding (another) match now */
-		#ifdef DEBUG
-		if (st->trace)
-			printf(" ... -> NOMATCH\n");
-		#endif
-		if (ret >= 0)
-			return ret;
-		return -2;
-	}
-	#ifdef DEBUG
-	if (st->trace)
-		printf(" ... -> %d\n", st->match);
-	#endif
 	if (st->match > st->len) {
 		st->len = st->match;
 		st->start = st->total - st->len;
 	}
-	if (ret > st->match)
-		return ret;
-	return st->match;
+	#ifdef DEBUG
+	if (st->trace) {
+		if (st->match >= 0 || eol != 0)
+			printf(" ... -> %d\n", st->match);
+		else
+			printf(" ... -> NOMATCH\n");
+	}
+	#endif
+	if (ret >= RXL_MATCH_FLAG || (st->match >= 0 && flag))
+		return RXL_MATCH_FLAG;
+	if (ret >= RXL_MATCH || st->match >= 0)
+		return RXL_MATCH;
+	if (eol == 0 && st->match < 0 && st->anchored) {
+		/* No chance of finding (another) match now */
+		return RXL_DONE;
+	}
+	if (st->len >= 0)
+		return RXL_CONTINUE;
+	return RXL_NOMATCH;
 }
 
 void rxl_info(struct match_state *st safe, int *lenp safe, int *totalp,
@@ -1743,6 +1747,7 @@ static void run_tests(bool trace)
 		unsigned short *rxl;
 		int mstart, mlen;
 		int len, ccnt = 0;
+		enum rxl_found r;
 		wint_t prev;
 		struct match_state st = {};
 
@@ -1773,8 +1778,7 @@ static void run_tests(bool trace)
 
 		flags = RXL_SOL;
 		prev = L' ';
-		len = -1;
-		while (len != -2) {
+		do {
 			wint_t wc = get_utf8(&target, NULL);
 			if (wc >= WERR)
 				break;
@@ -1785,10 +1789,10 @@ static void run_tests(bool trace)
 			else
 				flags |= RXL_NOWBRK;
 			prev =  wc;
-			len = rxl_advance(&st, wc | flags);
+			r = rxl_advance(&st, wc | flags);
 			flags = 0;
 			ccnt += 1;
-		}
+		} while (r != RXL_DONE);
 		if (*target == 0) {
 			flags |= RXL_EOL;
 			if (iswalnum(prev))
@@ -1812,6 +1816,7 @@ int main(int argc, char *argv[])
 	unsigned short *rxl;
 	struct match_state st;
 	int flags;
+	enum rxl_found r;
 	int len;
 	int start;
 	int thelen;
@@ -1883,29 +1888,16 @@ int main(int argc, char *argv[])
 	st.trace = trace;
 	t = target;
 	flags = RXL_SOL;
-	while (len < 0) {
+	do {
 		wint_t wc = get_utf8(&t, NULL);
 		if (wc >= WERR) {
-			len = rxl_advance(&st, RXL_EOL);
+			rxl_advance(&st, RXL_EOL);
 			break;
 		}
-		len = rxl_advance(&st, wc | flags);
+		r = rxl_advance(&st, wc | flags);
 		flags = 0;
 		ccnt+= 1;
-	}
-	/* We have a match, let's see if we can extend it */
-	if (len >= 0) {
-		while (len != -2) {
-			wint_t wc = get_utf8(&t, NULL);
-			if (wc >= WERR)
-				break;
-			len = rxl_advance(&st, wc | flags);
-			flags = 0;
-			ccnt += 1;
-		}
-		if (*t == 0)
-			len = rxl_advance(&st, RXL_EOL | flags);
-	}
+	} while (r != RXL_DONE);
 	rxl_info(&st, &thelen, NULL, &start, NULL);
 	if (thelen < 0)
 		printf("No match\n");
