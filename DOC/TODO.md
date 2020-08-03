@@ -175,8 +175,8 @@ Module features
 - [X] count number of decision points when matching,
 - [X] record maximum number of concurrent paths
 - [X] If have decision points, match should record them in allocated space
-- [ ] Follow a decision path to extract substrings for particular () pair.
-- [ ] \ lower upper alpha space nonSpace digit wordBoundary...
+- [X] Follow a decision path to extract substrings for particular () pair.
+- [X] \ lower upper alpha space nonSpace digit wordBoundary...
 - [ ] *? lazy: is that possible?  This is only meaningful when collecting the
     match.  Maybe we can compare bit-sequences and prefer forward rather
     than backward.

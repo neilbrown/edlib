@@ -260,6 +260,13 @@ static inline bool rec_noop(unsigned short cmd)
 	return cmd == REC_IGNCASE || cmd == REC_USECASE ||
 		REC_ISCAPTURE(cmd);
 }
+
+static inline bool rec_zerowidth(unsigned short cmd)
+{
+	return ((cmd >= REC_SOL && cmd <= REC_NOWBRK) ||
+		rec_noop(cmd));
+}
+
 /* First entry contains start of maps, and flags */
 #define	RXL_PATNLEN(rxl)	((rxl)[0] & 0x3fff)
 #define	RXL_SETSTART(rxl)	((rxl) + RXL_PATNLEN(rxl))
@@ -1810,6 +1817,105 @@ void rxl_free_state(struct match_state *s)
 	}
 }
 
+static int get_capture(struct match_state *s safe, int n, char *buf)
+{
+	int bufp = 0; /* Index in s->buf */
+	int rxlp = 1; /* Index in s->rxl */
+	int recp = 0; /* Index in s->rec */
+	int rxll = RXL_PATNLEN(s->rxl);
+	int start = 0;
+	int len = 0;
+
+	while (rxlp < rxll && recp <= s->record_count) {
+		unsigned short cmd = s->rxl[rxlp];
+
+		if (REC_ISFORK(cmd)) {
+			bool recorded = False;
+			if (recp < s->record_count &&
+			    s->record[recp].pos == rxlp) {
+				recorded = True;
+				recp += 1;
+			}
+			if (recorded
+			    ==
+			    (REC_ADDR(cmd) < rxlp))
+				/* This fork was taken */
+				rxlp = REC_ADDR(cmd);
+			else
+				/* Fork not taken */
+				rxlp += 1;
+			continue;
+		}
+		if (REC_ISCAPTURE(cmd) &&
+		    REC_CAPNUM(cmd) == n) {
+			if (REC_CAPEND(cmd))
+				len = bufp - start;
+			else {
+				start = bufp;
+				len = 0;
+			}
+		}
+		if (rec_zerowidth(cmd)) {
+			rxlp += 1;
+			continue;
+		}
+		bufp += 1;
+		rxlp += 1;
+	}
+	if (len && buf) {
+		int i;
+		for (i = 0; i < len; i++)
+			buf[i] = s->buf[start+i] & 0xff;
+		buf[i] = 0;
+	}
+	return len;
+}
+
+static int interp(struct match_state *s safe, char *form safe, char *buf)
+{
+	int len = 0;
+
+	while (*form) {
+		int n;
+
+		if (form[0] != '\\') {
+			if (buf)
+				buf[len] = *form;
+			len += 1;
+			form += 1;
+			continue;
+		}
+		if (form[1] == '\\') {
+			if (buf)
+				buf[len] = '\\';
+			len += 1;
+			form += 2;
+			continue;
+		}
+		if (!isdigit(form[1]))
+			return -1;
+		n = strtoul(form+1, &form, 10);
+		n = get_capture(s, n, buf ? buf+len : buf);
+		len += n;
+	}
+	return len;
+}
+
+char *rxl_interp(struct match_state *s safe, char *form safe)
+{
+	int size;
+	char *ret;
+
+	if (!s->backtrack)
+		return NULL;
+	size = interp(s, form, NULL);
+	if (size < 0)
+		return NULL;
+	ret = malloc(size+1);
+	interp(s, form, ret);
+	return ret;
+}
+
 #ifdef DEBUG
 #include <locale.h>
 static void printc(unsigned short c)
@@ -1907,6 +2013,7 @@ enum {
 static struct test {
 	char *patn, *target;
 	int flags, start, len;
+	char *form, *replacement;
 } tests[] = {
 	{ "abc", "the abc", 0, 4, 3},
 	{ "abc", "the ABC", F_ICASE, 4, 3},
@@ -1947,6 +2054,8 @@ static struct test {
 	{ "a\\S+b", " a b axyb ", 0, 5, 4},
 	{ "a[^\\s]+b", " a b axyb ", 0, 5, 4},
 	{ "a[^\\s123]+b", " a b a12b axyb ", 0, 10, 4},
+	{ "([\\w\\d]+)\\s*=\\s*(.*[^\\s])", " name = some value ", 0, 1, 17,
+	 "\\1,\\2", "name,some value"},
 };
 
 static void run_tests(bool trace)
@@ -2025,6 +2134,15 @@ static void run_tests(bool trace)
 			       alg ? "backtracking" : "parallel",
 			       mstart, mlen, tests[i].start, tests[i].len);
 			exit(1);
+		}
+		if (alg && tests[i].form && tests[i].replacement) {
+			char *new = rxl_interp(st, tests[i].form);
+			if (!new || strcmp(new, tests[i].replacement) != 0) {
+				printf("test %d replace is <%s>, not <%s>\n", i,
+				       new, tests[i].replacement);
+				exit(1);
+			}
+			free(new);
 		}
 		rxl_free_state(st);
 	}
