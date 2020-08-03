@@ -1754,14 +1754,15 @@ unsigned short *safe rxl_parse_verbatim(const char *patn safe, int nocase)
 	return st.rxl;
 }
 
-static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
-			int flags)
+struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags)
 {
+	struct match_state *st;
 	int len = RXL_PATNLEN(rxl);
 	int i;
 	bool ic = False;
 	int eol;
 
+	st = malloc(sizeof(*st));
 	memset(st, 0, sizeof(*st));
 	st->rxl = rxl;
 	st->anchored = flags & RXL_ANCHORED;
@@ -1794,24 +1795,19 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
 	eol = 0;
 	st->len = -1;
 	do_link(st, 1, &eol, 0);
+
+	return st;
 }
 
-struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags)
+void rxl_free_state(struct match_state *s)
 {
-	struct match_state *ret;
-
-	ret = malloc(sizeof(*ret));
-	setup_match(ret, rxl, flags);
-	return ret;
-}
-
-void rxl_free_state(struct match_state *s safe)
-{
-	free(s->link[0]);
-	free(s->ignorecase);
-	free(s->buf);
-	free(s->record);
-	free(s);
+	if (s) {
+		free(s->link[0]);
+		free(s->ignorecase);
+		free(s->buf);
+		free(s->record);
+		free(s);
+	}
 }
 
 #ifdef DEBUG
@@ -1970,7 +1966,7 @@ static void run_tests(bool trace)
 		int len, ccnt = 0;
 		enum rxl_found r;
 		wint_t prev;
-		struct match_state st = {};
+		struct match_state *st;
 
 		if (trace)
 			printf("Match %s against %s\n", patn, target);
@@ -1994,8 +1990,8 @@ static void run_tests(bool trace)
 
 		if (trace)
 			rxl_print(rxl);
-		setup_match(&st, rxl, alg ? RXL_BACKTRACK : 0);
-		st.trace = trace;
+		st = rxl_prepare(rxl, alg ? RXL_BACKTRACK : 0);
+		st->trace = trace;
 
 		flags = RXL_SOL;
 		prev = L' ';
@@ -2010,7 +2006,7 @@ static void run_tests(bool trace)
 			else
 				flags |= RXL_NOWBRK;
 			prev =  wc;
-			r = rxl_advance(&st, wc | flags);
+			r = rxl_advance(st, wc | flags);
 			flags = 0;
 			ccnt += 1;
 		} while (r != RXL_DONE);
@@ -2018,11 +2014,11 @@ static void run_tests(bool trace)
 			flags |= RXL_EOL;
 			if (iswalnum(prev))
 				flags |= RXL_EOW;
-			rxl_advance(&st, flags);
+			rxl_advance(st, flags);
 		}
 		if (trace)
 			printf("\n");
-		rxl_info(&st, &mlen, NULL, &mstart, NULL);
+		rxl_info(st, &mlen, NULL, &mstart, NULL);
 		if (tests[i].start != mstart ||
 		    tests[i].len != mlen) {
 			printf("test %d %s: found %d/%d instead of %d/%d\n", i,
@@ -2030,13 +2026,14 @@ static void run_tests(bool trace)
 			       mstart, mlen, tests[i].start, tests[i].len);
 			exit(1);
 		}
+		rxl_free_state(st);
 	}
 }
 
 int main(int argc, char *argv[])
 {
 	unsigned short *rxl;
-	struct match_state st;
+	struct match_state *st;
 	int flags;
 	enum rxl_found r;
 	int len;
@@ -2081,13 +2078,13 @@ int main(int argc, char *argv[])
 	patn = argv[optind];
 	if (use_file) {
 		int fd = open(argv[optind+1], O_RDONLY);
-		struct stat st;
+		struct stat stb;
 		if (fd < 0) {
 			perror(target);
 			exit(1);
 		}
-		fstat(fd, &st);
-		target = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+		fstat(fd, &stb);
+		target = mmap(NULL, stb.st_size, PROT_READ, MAP_SHARED, fd, 0);
 		close(fd);
 	} else
 		target = argv[optind+1];
@@ -2106,21 +2103,21 @@ int main(int argc, char *argv[])
 	}
 	rxl_print(rxl);
 
-	setup_match(&st, rxl, 0);
-	st.trace = trace;
+	st = rxl_prepare(rxl, 0);
+	st->trace = trace;
 	t = target;
 	flags = RXL_SOL;
 	do {
 		wint_t wc = get_utf8(&t, NULL);
 		if (wc >= WERR) {
-			rxl_advance(&st, RXL_EOL);
+			rxl_advance(st, RXL_EOL);
 			break;
 		}
-		r = rxl_advance(&st, wc | flags);
+		r = rxl_advance(st, wc | flags);
 		flags = 0;
 		ccnt+= 1;
 	} while (r != RXL_DONE);
-	rxl_info(&st, &thelen, NULL, &start, NULL);
+	rxl_info(st, &thelen, NULL, &start, NULL);
 	if (thelen < 0)
 		printf("No match\n");
 	else {
@@ -2154,6 +2151,7 @@ int main(int argc, char *argv[])
 		}
 		putchar('\n');
 	}
+	rxl_free_state(st);
 	exit(0);
 }
 #endif
