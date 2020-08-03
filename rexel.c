@@ -812,7 +812,12 @@ static void bt_link(struct match_state *st safe, int pos, int len)
 	st->record[st->record_count].pos = pos;
 	st->record[st->record_count].len = len;
 	st->record_count += 1;
-	bt_link(st, REC_ADDR(cmd), len);
+	if (REC_ADDR(cmd) < pos)
+		/* backward fork - follow the fork */
+		bt_link(st, REC_ADDR(cmd), len);
+	else
+		/* Forward fork, just continue for now */
+		bt_link(st, pos + 1, len);
 }
 
 static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
@@ -828,6 +833,9 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 		return RXL_DONE;
 
 	if (st->anchored && st->record_count == 0 && st->pos == 0)
+		return RXL_DONE;
+
+	if (st->len >= 0)
 		return RXL_DONE;
 
 	RESIZE(st->buf);
@@ -885,6 +893,8 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 					       st->buf_pos,
 					       st->start, st->len);
 				#endif
+				if (st->len >= 0)
+					return RXL_MATCH;
 				continue;
 			}
 
@@ -898,7 +908,13 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 					printf(" -- NAK backtrack to %d/%d\n",
 					       st->pos, st->buf_pos);
 				#endif
-				bt_link(st, st->pos+1, st->buf_pos);
+				if (REC_ADDR(st->rxl[st->pos]) < st->pos)
+					/* Backward jump, just step forward now */
+					bt_link(st, st->pos+1, st->buf_pos);
+				else
+					/* Forward jump, take it now */
+					bt_link(st, REC_ADDR(st->rxl[st->pos]),
+						st->buf_pos);
 			} else {
 				/* cannot backtrack, so skip first char unless anchored */
 				#ifdef DEBUG
@@ -1776,8 +1792,8 @@ static void setup_match(struct match_state *st safe, unsigned short *rxl safe,
 	 * at the start state.
 	 */
 	eol = 0;
+	st->len = -1;
 	do_link(st, 1, &eol, 0);
-	st->len = st->match;
 }
 
 struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags)
