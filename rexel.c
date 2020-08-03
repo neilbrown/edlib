@@ -345,6 +345,8 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 	unsigned short *set safe = RXL_SETSTART(st->rxl) + addr;
 	wchar_t uch = ch, lch = ch;
 	unsigned short len;
+	bool set_found = False;
+	bool invert = False;
 
 	if (ic) {
 		/* As Unicode has 3 cases, can we be sure that everything
@@ -357,7 +359,7 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 	/* First there might be some char classes */
 	len = *set++;
 	if (len) {
-		int invert = len & 0x8000;
+		invert = !!(len & 0x8000);
 		len &= 0x7fff;
 		for ( ; len--; set++)
 			if (iswctype(uch, classmap[*set]) ||
@@ -376,6 +378,10 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 		unsigned short target;
 		int lo, hi;
 
+		if (set[0] == 0)
+			/* This is almost certainly an inverted set */
+			invert = True;
+
 		len &= 0x7ff;
 		if ((uch & 0x1f0000) == high)
 			target = uch & 0xffff;
@@ -385,6 +391,7 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 			set += len;
 			continue;
 		}
+		set_found = True;
 		/* Binary search to find first entry that is greater
 		 * than target.
 		 */
@@ -418,8 +425,11 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 			return 1;
 		set += len;
 	}
-	/* Didn't find a match anywhere.. */
-	return 0;
+	if (set_found)
+		/* Found a set for this plane, but no match */
+		return 0;
+	/* No set for this plan, hope "invert" is correct */
+	return invert;
 }
 
 /*
@@ -1948,6 +1958,9 @@ static struct test {
 	{ "hello there-all", "Hello\t  There_ALL-youse", 0, -1, -1},
 	{ "^[^a-zA-Z0-9\n]*$", "=======", 0, 0, 7},
 	{ "^$", "", 0, 0, 0},
+	{ "a\\S+b", " a b axyb ", 0, 5, 4},
+	{ "a[^\\s]+b", " a b axyb ", 0, 5, 4},
+	{ "a[^\\s123]+b", " a b a12b axyb ", 0, 10, 4},
 };
 
 static void run_tests(bool trace)

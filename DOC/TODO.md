@@ -184,6 +184,9 @@ Module features
 - [ ] back references:  need to know what references to expect, and collect them
    (start,len) as we go.
 - [ ] \` start of buffer \' end of buffer \= point
+- [ ] A non-inverted pattern which matches the first char in a plane will
+      incorrectly be treated as inverted and any char in none of the given
+      plane will be seen as a match.
 
 ### popup
 
