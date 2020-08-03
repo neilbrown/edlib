@@ -803,16 +803,6 @@ static void bt_link(struct match_state *st safe, int pos, int len)
 {
 	unsigned short cmd = st->rxl[pos];
 
-	while (rec_noop(cmd)) {
-		pos += 1;
-		cmd = st->rxl[pos];
-	}
-	if (cmd == REC_MATCH) {
-		if (st->match < len)
-			st->match = len;
-		/* Don't accept another anchor point */
-		st->anchored = True;
-	}
 	if (!REC_ISFORK(cmd)) {
 		st->pos = pos;
 		return;
@@ -824,10 +814,10 @@ static void bt_link(struct match_state *st safe, int pos, int len)
 	st->record_count += 1;
 	if (REC_ADDR(cmd) < pos)
 		/* backward fork - follow the fork */
-		bt_link(st, REC_ADDR(cmd), len);
+		do_link(st, REC_ADDR(cmd), NULL, len);
 	else
 		/* Forward fork, just continue for now */
-		bt_link(st, pos + 1, len);
+		do_link(st, pos + 1, NULL, len);
 }
 
 static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
