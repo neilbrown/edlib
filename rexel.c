@@ -276,6 +276,8 @@ static wctype_t *classmap safe = NULL;
 
 static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch);
 static void bt_link(struct match_state *st safe, int pos, int len);
+static int get_capture(struct match_state *s safe, int n,
+		       char *buf, int *startp);
 
 /*
  * The match_state contains several partial matches that lead to "here".
@@ -574,7 +576,7 @@ static int advance_one(struct match_state *st safe, int i,
 			advance = -1;
 	} else if (REC_ISBACKREF(cmd)) {
 		/* Backref not supported */
-		advance = -1;
+		advance = -2;
 	} else
 		/* Nothing else is possible here */
 		abort();
@@ -835,10 +837,6 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 	 * paths, or find a path where more input is needed.
 	 */
 
-	if (st->buf_pos < st->buf_count)
-		/* We didn't ask for more, so fail */
-		return RXL_DONE;
-
 	if (st->anchored && st->record_count == 0 && st->pos == 0)
 		return RXL_DONE;
 
@@ -888,6 +886,40 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 						st->buf_pos - 1, NULL);
 			else
 				continue;
+
+			if (r == -2) {
+				/* REC_BACKREF cannot be handled generically
+				 * by advance_one.  We need to find the
+				 * referenced string and match - or ask for more.
+				 */
+				int prevpos;
+				int start;
+				int len = get_capture(st, REC_CAPNUM(st->rxl[i]),
+						      NULL, &start);
+				st->buf_pos -= 1;
+				prevpos = st->buf_pos;
+				while (len > 0 && st->buf_pos < st->buf_count) {
+					ch = st->buf[st->buf_pos++] & 0x1FFFFF;
+					if ((st->buf[start] & 0x1FFFFF) == ch) {
+						start += 1;
+						len -= 1;
+					} else {
+						/* Failure to match */
+						len = -1;
+					}
+				}
+				if (len > 0) {
+					/* Need more input */
+					st->buf_pos = prevpos;
+					return RXL_CONTINUE;
+				}
+				if (len == 0) {
+					/* Successful match */
+					do_link(st, i+1, NULL, st->buf_pos);
+					r = 1;
+				}
+			}
+
 			if (r >= 0) {
 				/* st->pos has been advanced if needed */
 				if (st->match > st->len) {
@@ -1817,14 +1849,14 @@ void rxl_free_state(struct match_state *s)
 	}
 }
 
-static int get_capture(struct match_state *s safe, int n, char *buf)
+static int get_capture(struct match_state *s safe, int n, char *buf, int *startp)
 {
 	int bufp = 0; /* Index in s->buf */
 	int rxlp = 1; /* Index in s->rxl */
 	int recp = 0; /* Index in s->rec */
 	int rxll = RXL_PATNLEN(s->rxl);
 	int start = 0;
-	int len = 0;
+	int len = -1;
 
 	while (rxlp < rxll && recp <= s->record_count) {
 		unsigned short cmd = s->rxl[rxlp];
@@ -1852,7 +1884,7 @@ static int get_capture(struct match_state *s safe, int n, char *buf)
 				len = bufp - start;
 			else {
 				start = bufp;
-				len = 0;
+				len = -1;
 			}
 		}
 		if (rec_zerowidth(cmd)) {
@@ -1862,7 +1894,9 @@ static int get_capture(struct match_state *s safe, int n, char *buf)
 		bufp += 1;
 		rxlp += 1;
 	}
-	if (len && buf) {
+	if (startp)
+		*startp = start;
+	if (len > 0 && buf) {
 		int i;
 		for (i = 0; i < len; i++)
 			buf[i] = s->buf[start+i] & 0xff;
@@ -1895,7 +1929,7 @@ static int interp(struct match_state *s safe, char *form safe, char *buf)
 		if (!isdigit(form[1]))
 			return -1;
 		n = strtoul(form+1, &form, 10);
-		n = get_capture(s, n, buf ? buf+len : buf);
+		n = get_capture(s, n, buf ? buf+len : buf, NULL);
 		len += n;
 	}
 	return len;
@@ -2009,6 +2043,7 @@ enum {
 	F_VERB = 1,
 	F_ICASE = 2,
 	F_PERR = 4,
+	F_BACKTRACK = 8,
 };
 static struct test {
 	char *patn, *target;
@@ -2044,8 +2079,10 @@ static struct test {
 	{ "[0-9].\\Bab", "012+ab 45abc", 0, 7, 4},
 	// octal chars
 	{ "\\011", "a\tb", 0, 1, 1},
-	// backref fails
-	{ "(.(.).)\\1", "123123", 0, -1, -1},
+	// backref for backtracking only
+	{ "(.(.).)\\1", "123123", F_BACKTRACK, 0, 6},
+	// backre must skip partial match
+	{ "a(bcdef)\\1", "abcdefbc abcdefbcdefg", F_BACKTRACK, 9, 11},
 	// lax matching
 	{ "hello there-all", "Hello\t  There_ALL-youse", F_ICASE, 0, 17},
 	{ "hello there-all", "Hello\t  There_ALL-youse", 0, -1, -1},
@@ -2128,7 +2165,14 @@ static void run_tests(bool trace)
 		if (trace)
 			printf("\n");
 		rxl_info(st, &mlen, NULL, &mstart, NULL);
-		if (tests[i].start != mstart ||
+		if ((f & F_BACKTRACK) && !alg) {
+			/* This is only expected to work for backtracking */
+			if (mstart != -1 || mlen != -1) {
+				printf("test %d %s: succeeded unexpectedly %d/%d\n",
+				       i, "parallel",
+				       mstart, mlen);
+			}
+		} else if (tests[i].start != mstart ||
 		    tests[i].len != mlen) {
 			printf("test %d %s: found %d/%d instead of %d/%d\n", i,
 			       alg ? "backtracking" : "parallel",

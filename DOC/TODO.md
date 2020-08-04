@@ -166,7 +166,7 @@ Module features
       and end points.
       Or write a back-tracking matcher that records all groups in the stack
 - [X] write an alternate back-tracking matcher 
-- [ ] supports \N in the pattern for back-tracking matcher
+- [x] supports \N in the pattern for back-tracking matcher
 - [ ] Make it possible to search/match against a string, not just a pane
 - [ ] make it possible to get a command which embeded a compiled pattern so
       that it can be called on a string or pane to find a match.
@@ -181,7 +181,7 @@ Module features
     match.  Maybe we can compare bit-sequences and prefer forward rather
     than backward.
 - [ ] (?| like in perl - capture counter resets on each '|'.
-- [ ] back references:  need to know what references to expect, and collect them
+- [X] back references:  need to know what references to expect, and collect them
    (start,len) as we go.
 - [ ] \` start of buffer \' end of buffer \= point
 - [ ] A non-inverted pattern which matches the first char in a plane will
