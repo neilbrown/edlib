@@ -2101,8 +2101,9 @@ static void run_tests(bool trace)
 	int i;
 	int alg;
 
-	for (alg = 0; alg <= 1; alg++)
-	for (i = 0; i < cnt; i++) {
+	for (i = 0, alg = 0;
+	     alg <= 1;
+	     i < cnt-1 ? i++ : (i = 0, alg++)) {
 		int flags;
 		int f = tests[i].flags;
 		char *patn = tests[i].patn;
@@ -2115,7 +2116,8 @@ static void run_tests(bool trace)
 		struct match_state *st;
 
 		if (trace)
-			printf("Match %s against %s\n", patn, target);
+			printf("Match %s against %s using %s\n", patn, target,
+			       alg ? "backtrack" : "parallel");
 		if (f & F_VERB)
 			rxl = rxl_parse_verbatim(patn, f & F_ICASE);
 		else
@@ -2173,7 +2175,7 @@ static void run_tests(bool trace)
 				       mstart, mlen);
 			}
 		} else if (tests[i].start != mstart ||
-		    tests[i].len != mlen) {
+			   tests[i].len != mlen) {
 			printf("test %d %s: found %d/%d instead of %d/%d\n", i,
 			       alg ? "backtracking" : "parallel",
 			       mstart, mlen, tests[i].start, tests[i].len);
