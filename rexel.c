@@ -1697,6 +1697,7 @@ static int parse_prefix(struct parse_state *st safe)
 	const char *s, *e;
 	int verblen = 0;
 	char *ve;
+	int ret = 1;
 
 	if (*st->patn != '?')
 		return 1;
@@ -1721,13 +1722,17 @@ static int parse_prefix(struct parse_state *st safe)
 				return 0;
 			s = ve - 1;
 			break;
+		case '|':
+			/* Restart capture index for each branch */
+			ret = 3;
+			break;
 		default:
 			return 0;
 		}
 	s = e+1;
 	st->patn = s;
 	if (verblen == 0)
-		return 1;
+		return ret;
 	while (verblen && *s) {
 		wint_t ch;
 		if (*s & 0x80) {
@@ -1748,12 +1753,14 @@ static int parse_re(struct parse_state *st safe)
 	int re_start = st->next;
 	int start = re_start;
 	int save_mod = st->mod;
-	int ret;
+	int pret, ret;
+	int capture_index = st->capture;
+	int capture_max = st->capture;
 
-	ret = parse_prefix(st);
-	if (!ret)
-		return ret;
-	if (ret == 2)
+	pret = parse_prefix(st);
+	if (!pret)
+		return pret;
+	if (pret == 2)
 		/* Fully parsed this re - no more is permitted */
 		return 1;
 	while ((ret = parse_branch(st)) != 0 && *st->patn == '|') {
@@ -1764,6 +1771,12 @@ static int parse_re(struct parse_state *st safe)
 		add_cmd(st, REC_FORK | start); /* will become 'jump to end' */
 		add_cmd(st, REC_NONE);
 		start = st->next;
+		if (pret == 3) {
+			/* Restart capture index each time */
+			if (st->capture > capture_max)
+				capture_max = st->capture;
+			st->capture = capture_index;
+		}
 	}
 	if (ret && st->rxl) {
 		/* Need to patch all the "jump to end" links */
@@ -1773,6 +1786,8 @@ static int parse_re(struct parse_state *st safe)
 			start = REC_ADDR(cmd);
 		}
 	}
+	if (pret == 3 && st->capture < capture_max)
+		st->capture = capture_max;
 	st->mod = save_mod;
 	return ret;
 }
@@ -2128,6 +2143,8 @@ static struct test {
 	{ "a[^\\s123]+b", " a b a12b axyb ", 0, 10, 4},
 	{ "([\\w\\d]+)\\s*=\\s*(.*[^\\s])", " name = some value ", 0, 1, 17,
 	 "\\1,\\2", "name,some value"},
+	{ "?|:foo(bar)|(bat)foo", "foobar", 0, 0, 6, "\\1", "bar"},
+	{ "?|:foo(bar)|(bat)foo", "batfoo", 0, 0, 6, "\\1", "bat"},
 };
 
 static void run_tests(bool trace)

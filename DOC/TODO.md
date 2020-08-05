@@ -180,7 +180,7 @@ Module features
 - [ ] *? lazy: is that possible?  This is only meaningful when collecting the
     match.  Maybe we can compare bit-sequences and prefer forward rather
     than backward.
-- [ ] (?| like in perl - capture counter resets on each '|'.
+- [X] (?| like in perl - capture counter resets on each '|'.
 - [X] back references:  need to know what references to expect, and collect them
    (start,len) as we go.
 - [ ] \` start of buffer \' end of buffer \= point
