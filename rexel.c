@@ -1462,6 +1462,17 @@ static int parse_atom(struct parse_state *st safe)
 		return 1;
 	}
 	if (*st->patn == '$') {
+		if (isdigit(st->patn[1])) {
+			/* $n and $nn is a backref */
+			ch = st->patn[1] - '0';
+			st->patn += 2;
+			if (isdigit(st->patn[0])) {
+				ch = ch * 10 + st->patn[0] - '0';
+				st->patn += 1;
+			}
+			add_cmd(st, REC_BACKREF | ch);
+			return 1;
+		}
 		add_cmd(st, REC_EOL);
 		st->patn++;
 		return 1;
@@ -2106,7 +2117,7 @@ static struct test {
 	// backref for backtracking only
 	{ "(.(.).)\\1", "123123", F_BACKTRACK, 0, 6},
 	// backre must skip partial match
-	{ "a(bcdef)\\1", "abcdefbc abcdefbcdefg", F_BACKTRACK, 9, 11},
+	{ "a(bcdef)$1", "abcdefbc abcdefbcdefg", F_BACKTRACK, 9, 11},
 	// lax matching
 	{ "hello there-all", "Hello\t  There_ALL-youse", F_ICASE, 0, 17},
 	{ "hello there-all", "Hello\t  There_ALL-youse", 0, -1, -1},
