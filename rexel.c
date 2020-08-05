@@ -1024,6 +1024,43 @@ static void relocate(struct parse_state *st safe, unsigned short start, int len)
 	st->next += len;
 }
 
+static wint_t cvt_hex(const char *s safe, int len)
+{
+	long rv = 0;
+	while (len) {
+		if (!*s || !isxdigit(*s))
+			return WERR;
+		rv *= 16;
+		if (*s <= '9')
+			rv += *s - '0';
+		else if (*s <= 'F')
+			rv += *s - 'A' + 10;
+		else if (*s <= 'f')
+			rv += *s - 'a' + 10;
+		else
+			abort();
+		s++;
+		len--;
+	}
+	return rv;
+}
+
+static wint_t cvt_oct(const char **sp safe, int maxlen)
+{
+	const char *s = *sp;
+	long rv = 0;
+	while (maxlen) {
+		if (!s || !*s || !isdigit(*s) || *s == '8' || *s == '9')
+			break;
+		rv *= 8;
+		rv += *s - '0';
+		s++;
+		maxlen--;
+	}
+	*sp = s;
+	return rv;
+}
+
 static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 		       int plane, int *planes safe, int *newplane safe)
 {
@@ -1221,7 +1258,6 @@ static int is_set_element(const char *p safe)
 	return 0;
 }
 
-/* FIXME UNICODE */
 static int do_parse_set(struct parse_state *st safe, int plane)
 {
 	const char *p safe = st->patn;
@@ -1237,6 +1273,16 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 	}
 	do {
 		ch = get_utf8(&p, NULL);
+		if (ch == '\\' && p[0] && strchr("0xXU", p[0]) != NULL) {
+			switch (p[0]) {
+			case '0': ch = cvt_oct(&p, 4); p-=1; break;
+			case 'x': ch = cvt_hex(p+1, 2); p += 2; break;
+			case 'X': ch = cvt_hex(p+1, 4); p += 4; break;
+			case 'U': ch = cvt_hex(p+1, 8); p += 8; break;
+			}
+			if (ch == WEOF)
+				return -1;
+		}
 
 		if (ch >= WERR) {
 			return -1;
@@ -1244,6 +1290,7 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 			switch(p[0]) {
 			case '.': /* collating set */
 			case '=': /* collating element */
+				/* FIXME */
 				st->patn = p;
 				return -1;
 			case ':': /* character class */
@@ -1350,27 +1397,6 @@ static int parse_set(struct parse_state *st safe)
 	st->set++;
 	add_cmd(st, REC_SET | set);
 	return 1;
-}
-
-static wint_t cvt_hex(const char *s safe, int len)
-{
-	long rv = 0;
-	while (len) {
-		if (!*s || !isxdigit(*s))
-			return WERR;
-		rv *= 16;
-		if (*s <= '9')
-			rv += *s - '0';
-		else if (*s <= 'F')
-			rv += *s - 'A' + 10;
-		else if (*s <= 'f')
-			rv += *s - 'a' + 10;
-		else
-			abort();
-		s++;
-		len--;
-	}
-	return rv;
 }
 
 static unsigned short add_class_set(struct parse_state *st safe,
@@ -1492,11 +1518,8 @@ static int parse_atom(struct parse_state *st safe)
 		case 'B': ch = REC_NOWBRK; break;
 		case 't': ch = '\t'; break;
 		case 'n': ch = '\n'; break;
-		case '0': ch = 0;
-			while (st->patn[1] >= '0' && st->patn[1] <= '7') {
-				ch = ch*8 + st->patn[1] - '0';
-				st->patn += 1;
-			}
+		case '0': ch = cvt_oct(&st->patn, 4);
+			st->patn -= 1;
 			break;
 		case 'x': ch = cvt_hex(st->patn+1, 2);
 			if (ch == WERR)
@@ -2077,6 +2100,7 @@ static struct test {
 	{ "ab\\b", "ababa abaca ab", 0, 12, 2},
 	{ "\\Bab", "ababa abaca ab", 0, 2, 2},
 	{ "[0-9].\\Bab", "012+ab 45abc", 0, 7, 4},
+	{ "[\\060-\\x09].\\Bab", "012+ab 45abc", 0, 7, 4},
 	// octal chars
 	{ "\\011", "a\tb", 0, 1, 1},
 	// backref for backtracking only
