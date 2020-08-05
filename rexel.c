@@ -354,7 +354,6 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 	unsigned short *set safe = RXL_SETSTART(st->rxl) + addr;
 	wchar_t uch = ch, lch = ch;
 	unsigned short len;
-	bool set_found = False;
 	bool invert = False;
 
 	if (ic) {
@@ -365,10 +364,10 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 		uch = towupper(ch);
 		lch = towlower(ch);
 	}
-	/* First there might be some char classes */
+	/* First there is an 'invert' flag and possibly some char classes */
 	len = *set++;
+	invert = !!(len & 0x8000);
 	if (len) {
-		invert = !!(len & 0x8000);
 		len &= 0x7fff;
 		for ( ; len--; set++)
 			if (iswctype(uch, classmap[*set]) ||
@@ -387,10 +386,6 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 		unsigned short target;
 		int lo, hi;
 
-		if (set[0] == 0)
-			/* This is almost certainly an inverted set */
-			invert = True;
-
 		len &= 0x7ff;
 		if ((uch & 0x1f0000) == high)
 			target = uch & 0xffff;
@@ -400,7 +395,6 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 			set += len;
 			continue;
 		}
-		set_found = True;
 		/* Binary search to find first entry that is greater
 		 * than target.
 		 */
@@ -431,13 +425,9 @@ static int set_match(struct match_state *st safe, unsigned short addr,
 		 * there was.
 		 */
 		if (lo & 1)
-			return 1;
+			return !invert;
 		set += len;
 	}
-	if (set_found)
-		/* Found a set for this plane, but no match */
-		return 0;
-	/* No set for this plan, hope "invert" is correct */
 	return invert;
 }
 
@@ -996,7 +986,6 @@ struct parse_state {
 	int		capture;
 
 	/* Details of set currently being parsed */
-	int		invert;
 	int		len;
 };
 
@@ -1081,8 +1070,6 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 			if (!((*planes) & (1 << p))) {
 				*planes |= 1 << p;
 				st->len += 1;
-				if (st->invert)
-					st->len += 1;
 			}
 			st->len += 2;
 		}
@@ -1131,8 +1118,6 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 
 	len = st->len;
 	set = st->sets + st->set + 1;
-	if (st->invert)
-		set += 1;
 	/* Binary search to find first entry that is greater
 	 * than target.
 	 */
@@ -1264,11 +1249,12 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 	wint_t ch;
 	int newplane = 0xFFFFFF;
 	int planes = 0;
+	int invert;
 	/* first characters are special... */
-	st->invert = 0;
+	invert = 0;
 	st->len = 0;
 	if (*p == '^') {
-		st->invert = 1;
+		invert = 1;
 		p += 1;
 	}
 	do {
@@ -1346,19 +1332,12 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 		if (plane < 0) {
 			/* We have a (possibly empty) class list. Record size */
 			unsigned short l = st->len;
-			if (l && st->invert)
+			if (invert)
 				l |= 0x8000;
 			st->sets[st->set] = l;
 		} else {
-			/* We have a set, not empty.  Store size and
-			 * leading zero if inverted */
-			unsigned short l = st->len;
-			if (st->invert) {
-				st->len += 1;
-				l += 1;
-				st->sets[st->set + 1] = 0;
-			}
-			st->sets[st->set] = l;
+			/* We have a set, not empty.  Store size */
+			st->sets[st->set] = st->len;
 		}
 	}
 	st->set += st->len+1;
