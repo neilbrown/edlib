@@ -242,6 +242,8 @@ static inline void clear_bit(int bit, unsigned long *set safe)
 #define	REC_USECASE	0xFFFf
 
 #define	REC_FORK	0x8000
+#define	REC_FORKLAST	0x8000
+#define	REC_FORKFIRST	0x9000
 #define	REC_SET		0xa000
 #define	REC_CAPTURE	0xc000
 #define	REC_CAPTURED	0xc800
@@ -252,7 +254,8 @@ static inline void clear_bit(int bit, unsigned long *set safe)
 #define	REC_ISSET(x)	(((x) & 0xe000) == REC_SET)
 #define	REC_ISCAPTURE(x) (((x) & 0xe000) == REC_CAPTURE)
 #define	REC_ISBACKREF(x) (((x) & 0xf000) == REC_BACKREF)
-#define	REC_ADDR(x)	((x) & 0x1fff)
+#define	REC_ADDR(x)	((x) & 0x0fff)
+#define	REC_ISFIRST(x)	(!!((x) & (REC_FORKFIRST ^ REC_FORKLAST)))
 #define	REC_CAPNUM(x)	((x) & 0x07ff)
 #define	REC_CAPEND(x)	((x) & 0x0800)
 
@@ -845,11 +848,11 @@ static void bt_link(struct match_state *st safe, int pos, int len)
 	st->record[st->record_count].pos = pos;
 	st->record[st->record_count].len = len;
 	st->record_count += 1;
-	if (REC_ADDR(cmd) < pos)
-		/* backward fork - follow the fork */
+	if (REC_ISFIRST(cmd))
+		/* priority fork - follow the fork */
 		do_link(st, REC_ADDR(cmd), NULL, len);
 	else
-		/* Forward fork, just continue for now */
+		/* just continue for now, fork later */
 		do_link(st, pos + 1, NULL, len);
 }
 
@@ -974,11 +977,11 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 					printf(" -- NAK backtrack to %d/%d\n",
 					       st->pos, st->buf_pos);
 				#endif
-				if (REC_ADDR(st->rxl[st->pos]) < st->pos)
-					/* Backward jump, just step forward now */
+				if (REC_ISFIRST(st->rxl[st->pos]))
+					/* priority jump, just step forward now */
 					bt_link(st, st->pos+1, st->buf_pos);
 				else
-					/* Forward jump, take it now */
+					/* delayed jump, take it now */
 					bt_link(st, REC_ADDR(st->rxl[st->pos]),
 						st->buf_pos);
 			} else {
@@ -1499,8 +1502,8 @@ static int parse_atom(struct parse_state *st safe)
 	    st->patn[0] == ' ' && st->patn[1] != ' ' && st->patn[1] != '\t' &&
 	    (st->next == 1 || (st->patn[-1] != ' ' && st->patn[-1] != '\t'))) {
 		add_cmd(st, REC_LAXSPC);
-		/* LAXSPC be repeated */
-		add_cmd(st, REC_FORK | (st->next - 1));
+		/* LAXSPC can be repeated */
+		add_cmd(st, REC_FORKFIRST | (st->next - 1));
 		st->patn++;
 		return 1;
 	}
@@ -1617,19 +1620,19 @@ static int parse_piece(struct parse_state *st safe)
 		/* make spare for 'jump forward' */
 		relocate(st, start, 1);
 		/* 'jump_backward */
-		add_cmd(st, REC_FORK | (start+1));
+		add_cmd(st, REC_FORKFIRST | (start+1));
 		if (st->rxl)
-			st->rxl[start] = REC_FORK | st->next;
+			st->rxl[start] = REC_FORKLAST | st->next;
 		return 1;
 	case '+':
 		/* just (optional) jump back */
-		add_cmd(st, REC_FORK | start);
+		add_cmd(st, REC_FORKFIRST | start);
 		return 1;
 	case '?':
 		/* Just a jump-forward */
 		relocate(st, start, 1);
 		if (st->rxl)
-			st->rxl[start] = REC_FORK | st->next;
+			st->rxl[start] = REC_FORKLAST | st->next;
 		return 1;
 	case '{':/* Need a number, maybe a comma, if not maybe a number,
 		  * then } */
@@ -1664,23 +1667,23 @@ static int parse_piece(struct parse_state *st safe)
 			/* Need to allow the atom to be skipped */
 			relocate(st, start, 1);
 			if (st->rxl) {
-				st->rxl[start] = REC_FORK | st->next;
+				st->rxl[start] = REC_FORKLAST | st->next;
 				skip = start;
 			}
 			start += 1;
 		}
 		if (max < 0) {
-			add_cmd(st, REC_FORK | start);
+			add_cmd(st, REC_FORKFIRST | start);
 		} else if (max > 1) {
 			/* need to duplicate atom but make each one optional */
 			int len = st->next - start;
 			int last = st->next + (len + 1) * (max-1);
 			if (skip && st->rxl) {
-				st->rxl[skip] = REC_FORK | last;
+				st->rxl[skip] = REC_FORKLAST | last;
 			}
 			while (max > 1) {
 				int newstart;
-				add_cmd(st, REC_FORK | last);
+				add_cmd(st, REC_FORKLAST | last);
 				newstart = st->next;
 				relocate(st, start, len+1);
 				st->next -= 1;
@@ -1786,8 +1789,8 @@ static int parse_re(struct parse_state *st safe)
 		st->patn += 1;
 		relocate(st, start, 1);
 		if (st->rxl)
-			st->rxl[start] = REC_FORK | (st->next + 2);
-		add_cmd(st, REC_FORK | start); /* will become 'jump to end' */
+			st->rxl[start] = REC_FORKLAST | (st->next + 2);
+		add_cmd(st, REC_FORKLAST | start); /* will become 'jump to end' */
 		add_cmd(st, REC_NONE);
 		start = st->next;
 		if (pret == 3) {
@@ -1801,7 +1804,7 @@ static int parse_re(struct parse_state *st safe)
 		/* Need to patch all the "jump to end" links */
 		while (start > re_start) {
 			unsigned short cmd = st->rxl[start - 2];
-			st->rxl[start - 2] = REC_FORK | st->next;
+			st->rxl[start - 2] = REC_FORKLAST | st->next;
 			start = REC_ADDR(cmd);
 		}
 	}
@@ -1932,13 +1935,14 @@ static int get_capture(struct match_state *s safe, int n, char *buf, int *startp
 		if (REC_ISFORK(cmd)) {
 			bool recorded = False;
 			if (recp < s->record_count &&
-			    s->record[recp].pos == rxlp) {
+			    s->record[recp].pos == rxlp &&
+			    s->record[recp].len == bufp) {
 				recorded = True;
 				recp += 1;
 			}
 			if (recorded
 			    ==
-			    (REC_ADDR(cmd) < rxlp))
+			    REC_ISFIRST(cmd))
 				/* This fork was taken */
 				rxlp = REC_ADDR(cmd);
 			else
@@ -2094,7 +2098,8 @@ void rxl_print(unsigned short *rxl safe)
 			default: printf("ERROR %x\n", cmd); break;
 			}
 		} else if (REC_ISFORK(cmd))
-			printf("branch to %d\n", REC_ADDR(cmd));
+			printf("branch to %d %s\n", REC_ADDR(cmd),
+			       REC_ISFIRST(cmd) ? "first" : "later");
 		else if (REC_ISSET(cmd)) {
 			printf("Match from set %d: ", REC_ADDR(cmd));
 			print_set(set + REC_ADDR(cmd));
