@@ -221,21 +221,25 @@ static inline void clear_bit(int bit, unsigned long *set safe)
 #define	LOOP_CHECK	0xFFFE
 
 /* RExel Commands */
-#define	REC_ANY		0xFFF0
-#define	REC_ANY_NONL	0xFFF1
-#define	REC_NONE	0xFFF2
-#define	REC_MATCH	0xFFF3
+#define	REC_ANY		0xFFE0
+#define	REC_ANY_NONL	0xFFE1
+#define	REC_NONE	0xFFE2
+#define	REC_MATCH	0xFFE3
 
-#define	REC_SOL		0xFFF4
-#define	REC_EOL		0xFFF5
-#define	REC_SOW		0xFFF6
-#define	REC_EOW		0xFFF7
-#define	REC_WBRK	0xFFF8
-#define	REC_NOWBRK	0xFFF9
-#define	REC_LAXSPC	0xFFFa
-#define	REC_LAXDASH	0xFFFb
-#define	REC_IGNCASE	0xFFFc
-#define	REC_USECASE	0xFFFd
+#define	REC_SOL		0xFFE4
+#define	REC_EOL		0xFFE5
+#define	REC_SOW		0xFFE6
+#define	REC_EOW		0xFFE7
+#define	REC_WBRK	0xFFE8
+#define	REC_NOWBRK	0xFFE9
+#define	REC_SOD		0xFFEa	/* Start of Document */
+#define	REC_EOD		0xFFEb	/* End of Document */
+#define	REC_POINT	0xFFEc
+
+#define	REC_LAXSPC	0xFFFc
+#define	REC_LAXDASH	0xFFFd
+#define	REC_IGNCASE	0xFFFe
+#define	REC_USECASE	0xFFFf
 
 #define	REC_FORK	0x8000
 #define	REC_SET		0xa000
@@ -501,6 +505,30 @@ static int advance_one(struct match_state *st safe, int i,
 			else
 				advance = 0;
 			break;
+		case REC_SOD:
+			if (flag & RXL_SOD)
+				advance = 1;
+			else if (!flag)
+				advance = -1;
+			else
+				advance = 0;
+			break;
+		case REC_EOD:
+			if (flag & RXL_EOD)
+				advance = 1;
+			else if (!flag)
+				advance = -1;
+			else
+				advance = 0;
+			break;
+		case REC_POINT:
+			if (flag & RXL_POINT)
+				advance = 1;
+			else if (!flag)
+				advance = -1;
+			else
+				advance = 0;
+			break;
 		case REC_SOW:
 			if (flag & RXL_SOW)
 				advance = 1;
@@ -603,7 +631,7 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 		int f;
 		enum rxl_found r;
 		/* Need to handle flags separately */
-		for (f = RXL_SOL ; f <= RXL_EOL; f <<= 1) {
+		for (f = RXL_SOD ; f <= RXL_EOD; f <<= 1) {
 			if (!(flag & f))
 				continue;
 			r = rxl_advance(st, f);
@@ -679,6 +707,9 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 					case REC_EOL: printf(" $  "); break;
 					case REC_SOW: printf("\\<  "); break;
 					case REC_EOW: printf("\\>  "); break;
+					case REC_SOD: printf("\\`  "); break;
+					case REC_EOD: printf("\\'  "); break;
+					case REC_POINT: printf("\\=  "); break;
 					case REC_WBRK: printf("\\b  "); break;
 					case REC_NOWBRK: printf("\\B "); break;
 					case REC_MATCH:printf("!!! "); break;
@@ -699,11 +730,14 @@ enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch)
 			}
 		if (flag) {
 			printf("Flag:");
+			if (flag & RXL_SOD) printf(" SOD");
 			if (flag & RXL_SOL) printf(" SOL");
 			if (flag & RXL_EOL) printf(" EOL");
+			if (flag & RXL_EOD) printf(" EOD");
 			if (flag & RXL_SOW) printf(" SOW");
 			if (flag & RXL_EOW) printf(" EOW");
 			if (flag & RXL_NOWBRK) printf(" NOWBRK");
+			if (flag & RXL_POINT) printf(" POINT");
 		} else
 			printf("Match %s(%x)",
 			       ch < ' ' ? "?" : put_utf8(t, ch) , ch);
@@ -840,36 +874,39 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 	st->match = -1;
 	do {
 		wint_t flags;
-		int f;
+		int f = 1;;
 		ch = st->buf[st->buf_pos++];
 		flags = ch & ~0x1FFFFF;
 		ch &= 0x1FFFFF;
 
-		for (f = RXL_SOL ; f <= RXL_EOL*2; f <<= 1) {
+		for (f = RXL_SOD ; f && f <= RXL_EOD*2; f <<= 1) {
 			int i = st->pos;
 			int r;
 
 			#ifdef DEBUG
 			if (!st->trace)
 				;
-			else if (f == RXL_EOL*2) {
+			else if (f == RXL_EOD*2) {
 				char t[5];
 				printf("%d: Match %s(%x)", i,
 				       ch < ' ' ? "?" : put_utf8(t, ch) , ch);
 			} else if (f & flags){
 				printf("%d: Flag:", i);
+				if (f & RXL_SOD) printf(" SOD");
+				if (f & RXL_EOD) printf(" EOD");
 				if (f & RXL_SOL) printf(" SOL");
 				if (f & RXL_EOL) printf(" EOL");
 				if (f & RXL_SOW) printf(" SOW");
 				if (f & RXL_EOW) printf(" EOW");
 				if (f & RXL_NOWBRK) printf(" NOWBRK");
+				if (f & RXL_POINT) printf(" POINT");
 			}
 			#endif
 
-			if (f == RXL_EOL*2 && ch)
+			if (f == RXL_EOD*2 && ch)
 				r = advance_one(st, i, ch, 0,
 						st->buf_pos - 1, NULL);
-			else if (f == RXL_EOL*2)
+			else if (f == RXL_EOD*2)
 				r = -1;
 			else if (f & flags)
 				r = advance_one(st, i, 0, f,
@@ -1502,6 +1539,9 @@ static int parse_atom(struct parse_state *st safe)
 		case '\\':
 			break;
 			/* These are simple translations */
+		case '`': ch = REC_SOD; break;
+		case '\'':ch = REC_EOD; break;
+		case '=': ch = REC_POINT; break;
 		case '<': ch = REC_SOW; break;
 		case '>': ch = REC_EOW; break;
 		case 'b': ch = REC_WBRK; break;
@@ -2041,6 +2081,9 @@ void rxl_print(unsigned short *rxl safe)
 			case REC_EOL: printf("match end-of-line\n"); break;
 			case REC_SOW: printf("match start-of-word\n"); break;
 			case REC_EOW: printf("match end-of-word\n"); break;
+			case REC_SOD: printf("match start-of-doc\n"); break;
+			case REC_EOD: printf("match end-of-doc\n"); break;
+			case REC_POINT: printf("match focus-point\n"); break;
 			case REC_MATCH: printf("MATCHING COMPLETE\n"); break;
 			case REC_WBRK: printf("match word-break\n"); break;
 			case REC_NOWBRK: printf("match non-wordbreak\n"); break;
@@ -2079,6 +2122,9 @@ static struct test {
 	char *form, *replacement;
 } tests[] = {
 	{ "abc", "the abc", 0, 4, 3},
+	{ "abc\\'", "the abc", 0, 4, 3},
+	{ "\\`abc", "the abc", 0, -1, -1},
+	{ "abc\\=", "abcabcPointabc", 0, 3, 3},
 	{ "abc", "the ABC", F_ICASE, 4, 3},
 	{ "a*", " aaaaac", 0, 0,  0},
 	{ "a*", "aaaaac", 0, 0,  5},
@@ -2172,7 +2218,7 @@ static void run_tests(bool trace)
 		st = rxl_prepare(rxl, alg ? RXL_BACKTRACK : 0);
 		st->trace = trace;
 
-		flags = RXL_SOL;
+		flags = RXL_SOL|RXL_SOD;
 		prev = L' ';
 		do {
 			wint_t wc = get_utf8(&target, NULL);
@@ -2184,13 +2230,15 @@ static void run_tests(bool trace)
 				flags |= RXL_SOW;
 			else
 				flags |= RXL_NOWBRK;
+			if (wc == 'P' && strncmp(target, "oint", 4) == 0)
+				flags |= RXL_POINT;
 			prev =  wc;
 			r = rxl_advance(st, wc | flags);
 			flags = 0;
 			ccnt += 1;
 		} while (r != RXL_DONE);
 		if (*target == 0) {
-			flags |= RXL_EOL;
+			flags |= RXL_EOL|RXL_EOD;
 			if (iswalnum(prev))
 				flags |= RXL_EOW;
 			rxl_advance(st, flags);
@@ -2301,11 +2349,11 @@ int main(int argc, char *argv[])
 	st = rxl_prepare(rxl, 0);
 	st->trace = trace;
 	t = target;
-	flags = RXL_SOL;
+	flags = RXL_SOL|RXL_SOD;
 	do {
 		wint_t wc = get_utf8(&t, NULL);
 		if (wc >= WERR) {
-			rxl_advance(st, RXL_EOL);
+			rxl_advance(st, RXL_EOL|RXL_EOD);
 			break;
 		}
 		r = rxl_advance(st, wc | flags);

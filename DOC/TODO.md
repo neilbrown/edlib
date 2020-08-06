@@ -183,7 +183,7 @@ Module features
 - [X] (?| like in perl - capture counter resets on each '|'.
 - [X] back references:  need to know what references to expect, and collect them
    (start,len) as we go.
-- [ ] \` start of buffer \' end of buffer \= point
+- [X] \` start of buffer \' end of buffer \= point
 - [X] A non-inverted pattern which matches the first char in a plane will
       incorrectly be treated as inverted and any char in none of the given
       plane will be seen as a match.
@@ -234,6 +234,7 @@ Module features
 
 - [X] '\' shouldn't be auto-inserted inside [] set.
 - [X] search should keep a larger history - currently just 1 item.
+- [ ] RXL_POINT needs to be set when at the point.
 
 ##### needs design work
 

@@ -49,8 +49,12 @@ DEF_CMD(search_test)
 	if (!ci->mark)
 		return Enoarg;
 
-	if (wch == WEOF)
+	if ((unsigned int)(ci->num & 0xffffffff) == WEOF) {
 		wch = 0;
+		flags |= RXL_EOD;
+	}
+	if (ss->prev_ch == WEOF)
+		flags |= RXL_SOD;
 	if (is_eol(ss->prev_ch) || ss->prev_ch == WEOF || ss->prev_ch == 0)
 		flags |= RXL_SOL;
 	switch (is_word(ss->prev_ch) * 2 + is_word(wch)) {
