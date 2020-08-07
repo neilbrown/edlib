@@ -1606,6 +1606,7 @@ static int parse_piece(struct parse_state *st safe)
 	int min, max;
 	char *ep;
 	int skip = 0;
+	int nongreedy = 0;
 
 	if (!parse_atom(st))
 		return 0;
@@ -1614,28 +1615,47 @@ static int parse_piece(struct parse_state *st safe)
 	    !(c=='{' && isdigit(st->patn[1])))
 		return 1;
 
-	st->patn++;
+	st->patn += 1;
 	switch(c) {
 	case '*':
 		/* make spare for 'jump forward' */
 		relocate(st, start, 1);
-		/* 'jump_backward */
-		add_cmd(st, REC_FORKFIRST | (start+1));
-		if (st->rxl)
-			st->rxl[start] = REC_FORKLAST | st->next;
+		if (st->patn[0] == '?') {
+			st->patn += 1;
+			/* non-greedy match */
+			add_cmd(st, REC_FORKLAST | (start+1));
+			if (st->rxl)
+				st->rxl[start] = REC_FORKFIRST | st->next;
+		} else {
+			add_cmd(st, REC_FORKFIRST | (start+1));
+			if (st->rxl)
+				st->rxl[start] = REC_FORKLAST | st->next;
+		}
 		return 1;
 	case '+':
 		/* just (optional) jump back */
-		add_cmd(st, REC_FORKFIRST | start);
+		if (st->patn[0] == '?') {
+			st->patn += 1;
+			/* non-greedy */
+			add_cmd(st, REC_FORKLAST | start);
+		} else
+			add_cmd(st, REC_FORKFIRST | start);
 		return 1;
 	case '?':
 		/* Just a jump-forward */
 		relocate(st, start, 1);
-		if (st->rxl)
-			st->rxl[start] = REC_FORKLAST | st->next;
+		if (st->patn[0] == '?') {
+			st->patn += 1;
+			if (st->rxl)
+				st->rxl[start] = REC_FORKFIRST | st->next;
+		} else {
+			if (st->rxl)
+				st->rxl[start] = REC_FORKLAST | st->next;
+		}
 		return 1;
 	case '{':/* Need a number, maybe a comma, if not maybe a number,
-		  * then } */
+		  * then }, and optionally a '?' after that.
+		  */
 		min = strtoul(st->patn, &ep, 10);
 		if (min > 256 || !ep)
 			return 0;
@@ -1651,6 +1671,10 @@ static int parse_piece(struct parse_state *st safe)
 		}
 		if (*ep != '}')
 			return 0;
+		if (ep[1] == '?') {
+			nongreedy = (REC_FORKLAST ^ REC_FORKFIRST);
+			ep += 1;
+		}
 		st->patn = ep+1;
 		/* Atom need to be repeated min times, and maybe as many
 		 * as 'max', or indefinitely if max < 0
@@ -1667,23 +1691,23 @@ static int parse_piece(struct parse_state *st safe)
 			/* Need to allow the atom to be skipped */
 			relocate(st, start, 1);
 			if (st->rxl) {
-				st->rxl[start] = REC_FORKLAST | st->next;
+				st->rxl[start] = (REC_FORKLAST^nongreedy) | st->next;
 				skip = start;
 			}
 			start += 1;
 		}
 		if (max < 0) {
-			add_cmd(st, REC_FORKFIRST | start);
+			add_cmd(st, (REC_FORKFIRST^nongreedy) | start);
 		} else if (max > 1) {
 			/* need to duplicate atom but make each one optional */
 			int len = st->next - start;
 			int last = st->next + (len + 1) * (max-1);
 			if (skip && st->rxl) {
-				st->rxl[skip] = REC_FORKLAST | last;
+				st->rxl[skip] = (REC_FORKLAST^nongreedy) | last;
 			}
 			while (max > 1) {
 				int newstart;
-				add_cmd(st, REC_FORKLAST | last);
+				add_cmd(st, (REC_FORKLAST^nongreedy) | last);
 				newstart = st->next;
 				relocate(st, start, len+1);
 				st->next -= 1;
@@ -2175,6 +2199,15 @@ static struct test {
 	 "\\1,\\2", "name,some value"},
 	{ "?|:foo(bar)|(bat)foo", "foobar", 0, 0, 6, "\\1", "bar"},
 	{ "?|:foo(bar)|(bat)foo", "batfoo", 0, 0, 6, "\\1", "bat"},
+	// compare greedy and non-greedy
+	{ "(.*)=(.*)", "assign=var=val", 0, 0, 14, "\\1..\\2", "assign=var..val"},
+	{ "(.*?)=(.*)", "assign=var=val", 0, 0, 14, "\\1..\\2", "assign..var=val"},
+	{ "(.+)=(.*)", "assign=var=val", 0, 0, 14, "\\1..\\2", "assign=var..val"},
+	{ "(.+?)=(.*)", "assign=var=val", 0, 0, 14, "\\1..\\2", "assign..var=val"},
+	{ "(.{5,15})=(.*)", "assign=var=val", 0, 0, 14, "\\1..\\2", "assign=var..val"},
+	{ "(.{5,15}?)=(.*)", "assign=var=val", 0, 0, 14, "\\1..\\2", "assign..var=val"},
+	{ "(.?)[a-e]*f", "abcdef", 0, 0, 6, "\\1", "a"},
+	{ "(.?""?)[a-e]*f", "abcdef", 0, 0, 6, "\\1", ""},
 };
 
 static void run_tests(bool trace)
