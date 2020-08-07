@@ -167,7 +167,7 @@ Module features
       Or write a back-tracking matcher that records all groups in the stack
 - [X] write an alternate back-tracking matcher 
 - [X] supports \N in the pattern for back-tracking matcher
-- [ ] Make it possible to search/match against a string, not just a pane
+- [X] Make it possible to search/match against a string, not just a pane
 - [ ] make it possible to get a command which embeded a compiled pattern so
       that it can be called on a string or pane to find a match.
 - [X] word breaks etc \b...

@@ -1298,7 +1298,8 @@ DEF_CMD(emacs_shell)
 		call("doc:replace", doc, 0, NULL,
 		     "Failed to run command - sorry\n");
 
-	if (strstr(ci->str, "diff") || strstr(ci->str, "git show"))
+	if (call("text-search", doc, 0, NULL, "diff|(stg|git).*show",
+		 0, NULL, ci->str) > 0)
 		attr_set_str(&doc->attrs, "view-default", "diff");
 
 	home_call(doc, "doc:attach-view", par, 1);

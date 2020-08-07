@@ -156,37 +156,83 @@ DEF_CMD(text_search)
 	struct mark *m, *endmark = NULL;
 	unsigned short *rxl;
 	int since_start;
+	int ret;
 
-	if (!ci->str|| !ci->mark)
+	if (!ci->str)
 		return Enoarg;
 
-	m = ci->mark;
 	rxl = rxl_parse(ci->str, NULL, ci->num);
 	if (!rxl)
 		return Einval;
-	endmark = mark_dup(m);
-	if (!endmark)
-		return Efail;
-	if (strcmp(ci->key, "text-match") == 0)
-		since_start = search_forward(ci->focus, m, ci->mark2,
-					     rxl, endmark, True);
-	else if (ci->num2)
-		since_start = search_backward(ci->focus, m, ci->mark2,
-					      rxl, endmark);
-	else
-		since_start = search_forward(ci->focus, m, ci->mark2,
-					     rxl, endmark, False);
 
-	if (since_start >= 0)
-		mark_to_mark(m, endmark);
-	mark_free(endmark);
-	free(rxl);
-	if (since_start < 0) {
+	if (ci->mark) {
+		m = ci->mark;
+		endmark = mark_dup(m);
+		if (!endmark)
+			return Efail;
 		if (strcmp(ci->key, "text-match") == 0)
-			return Efalse; /* non-fatal */
-		return Efail;
+			since_start = search_forward(ci->focus, m, ci->mark2,
+						     rxl, endmark, True);
+		else if (ci->num2)
+			since_start = search_backward(ci->focus, m, ci->mark2,
+						      rxl, endmark);
+		else
+			since_start = search_forward(ci->focus, m, ci->mark2,
+						     rxl, endmark, False);
+
+		if (since_start >= 0)
+			mark_to_mark(m, endmark);
+		mark_free(endmark);
+		if (since_start < 0) {
+			if (strcmp(ci->key, "text-match") == 0)
+				ret = Efalse; /* non-fatal */
+			else
+				ret = Efail;
+		} else
+			ret = since_start + 1;
+	} else if (ci->str2) {
+		struct match_state *st = rxl_prepare(
+			rxl, strcmp(ci->key, "text-match") == 0 ? RXL_ANCHORED : 0);
+		int flags = RXL_SOL|RXL_SOD;
+		const char *t = ci->str2;
+		int thelen, start;
+		enum rxl_found r;
+		wint_t prev_ch = WEOF;
+
+		do {
+			wint_t wc = get_utf8(&t, NULL);
+			if (wc >= WERR) {
+				rxl_advance(st, RXL_EOL|RXL_EOD);
+				break;
+			}
+			switch (is_word(prev_ch) * 2 + is_word(wc)) {
+			case 0: /* in space */
+			case 3: /* within word */
+				flags |= RXL_NOWBRK;
+				break;
+			case 1: /* start of word */
+				flags |= RXL_SOW;
+				break;
+			case 2: /* end of word */
+				flags |= RXL_EOW;
+				break;
+			}
+			r = rxl_advance(st, wc | flags);
+			flags = 0;
+		} while (r != RXL_DONE);
+		rxl_info(st, &thelen, NULL, &start, NULL);
+		rxl_free_state(st);
+		if (thelen < 0)
+			ret = Efalse;
+		else if (strcmp(ci->key, "text-match") == 0)
+			ret = thelen + 1;
+		else
+			ret = start + 1;
+	} else {
+		ret = Einval;
 	}
-	return since_start + 1;
+	free(rxl);
+	return ret;
 }
 
 void edlib_init(struct pane *ed safe)

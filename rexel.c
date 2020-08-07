@@ -2208,6 +2208,7 @@ static struct test {
 	{ "(.{5,15}?)=(.*)", "assign=var=val", 0, 0, 14, "\\1..\\2", "assign..var=val"},
 	{ "(.?)[a-e]*f", "abcdef", 0, 0, 6, "\\1", "a"},
 	{ "(.?""?)[a-e]*f", "abcdef", 0, 0, 6, "\\1", ""},
+	{ "diff|(stg|git).*show", "git diff", 0, 4, 4},
 };
 
 static void run_tests(bool trace)
