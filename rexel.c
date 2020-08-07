@@ -2266,7 +2266,16 @@ static void run_tests(bool trace)
 			exit(1);
 		}
 		if (alg && tests[i].form && tests[i].replacement) {
-			char *new = rxl_interp(st, tests[i].form);
+			char *new;
+			if (trace) {
+				int j;
+				printf("Backtrack:");
+				for (j=0; j<st->record_count; j++)
+					printf(" (%d,%d)", st->record[j].pos,
+					       st->record[j].len);
+				printf("\n");
+			}
+			new = rxl_interp(st, tests[i].form);
 			if (!new || strcmp(new, tests[i].replacement) != 0) {
 				printf("test %d replace is <%s>, not <%s>\n", i,
 				       new, tests[i].replacement);
