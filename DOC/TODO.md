@@ -19,6 +19,9 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [X] If I 'get-grep' from some window, then follow a link, it should appear
+      in that window.  Maybe results shouldn't appear
+- [ ] sometimes the pane that gets the grep match doesn't get focus.
 - [X] The height of a blank line is slightly less than that of a line
       with a space - so adding a space pushed later lines down a pixel.
 - [X] ->cx/cy used by render-lines isn't the same as where the cursor
@@ -45,6 +48,7 @@ Requirements for a v1.0 release
 - [ ] configuration
 - [ ] vi mode
 - [ ] office mode
+- [ ] nano mode(?)
 - [ ] introspection
 - [ ] markdown editor with PDF output
 - [ ] spell checking

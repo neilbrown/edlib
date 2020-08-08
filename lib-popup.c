@@ -306,6 +306,20 @@ DEF_CMD(popup_this)
 			 0, NULL, "Popup");
 }
 
+DEF_CMD(popup_other)
+{
+	/* If a popup is asked for 'Other', return the 'This'
+	 * of the target
+	 */
+	struct popup_info *ppi = ci->home->data;
+
+	return home_call(ppi->target, "ThisPane", ci->focus,
+			 ci->num, ci->mark, ci->str,
+			 ci->num2, ci->mark2, ci->str2,
+			 ci->x, ci->y,
+			 ci->comm2);
+}
+
 DEF_CMD(popup_child_registered)
 {
 	/* Anything that reponds to ThisPane needs to discard
@@ -494,6 +508,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "popup:set-callback", &popup_set_callback);
 	key_add(popup_map, "ChildClosed", &popup_child_closed);
 	key_add(popup_map, "ThisPane", &popup_this);
+	key_add(popup_map, "OtherPane", &popup_other);
 	key_add(popup_map, "ThisPopup", &popup_this);
 	key_add(popup_map, "ChildRegistered", &popup_child_registered);
 
