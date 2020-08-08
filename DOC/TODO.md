@@ -156,7 +156,7 @@ Module features
       So: do_link always links REC_NOBRK to start of list, not end.
       If (while) first think on list is REC_NOBRK and we have a char advance
       the REC_NOBRK and stay still for all others.
-- [ ] ?XX: option to match REC_ANY, not REC_ANY_NONL.
+- [X] ?XX: option to match REC_ANY, not REC_ANY_NONL.
 - [X] Simpler rxl_advance() interface which takes all flags and updates 'start'
       pointer.
 - [X] \1 substitutions

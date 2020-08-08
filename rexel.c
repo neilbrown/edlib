@@ -1014,7 +1014,9 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 enum modifier {
 	IgnoreCase	= 1,
 	LaxMatch	= 2,
-	DoCapture	= 4,
+	SingleLine	= 4,
+	DoCapture	= 8,
+	CapturePerBranch=16,
 };
 
 struct parse_state {
@@ -1454,7 +1456,10 @@ static int parse_atom(struct parse_state *st safe)
 	if (*st->patn == '\0')
 		return 0;
 	if (*st->patn == '.') {
-		add_cmd(st, REC_ANY_NONL);
+		if (st->mod & SingleLine)
+			add_cmd(st, REC_ANY);
+		else
+			add_cmd(st, REC_ANY_NONL);
 		st->patn++;
 		return 1;
 	}
@@ -1732,45 +1737,100 @@ static int parse_branch(struct parse_state *st safe)
 
 static int parse_prefix(struct parse_state *st safe)
 {
-	const char *s, *e;
+	/* A prefix to an re starts with '?' and 1 or more
+	 * chars depending on what the next char is.
+	 * Generally a () group that starts '?' isn't captured. Some
+	 * flags can change this.
+	 * ?:  don't capture this group
+	 * ?|  don't capture, and each branch uses same capture numbering
+	 * ?0  All chars to end of pattern are literal matches.  This cannot
+	 *     be used inside ()
+	 * ?N..: where N is a digit 1-9, it and all digits upto ':' give the
+	 *       number of chars for literal pattern.  This must be the whole re,
+	 *       so either ) follows, or end-of-pattern.
+	 * ?ilsn-ilsn:
+	 *     Each letter represents a flag which is set if it appears before
+	 *     '-' and cleared if it appears after.  The '-' is optional, but
+	 *     the ':' isn't.
+	 *   i  ignore case
+	 *   L  lax matching for space and hyphen
+	 *   s  single-line.  '.' matches newline
+	 *   n  no capture. This is default: negate to enable.
+	 *
+	 * Return:
+	 * 0  bad prefix
+	 * 1  good prefix or no prefix, st->mod updated if needed.
+	 * 2  literal parsed, don't parse further for this re.
+	 */
+	const char *s;
 	int verblen = 0;
 	char *ve;
-	int ret = 1;
+	bool neg = False;
 
 	if (*st->patn != '?')
 		return 1;
-	s = st->patn+1;
-	e = strchr(s, ':');
-	if (!e)
+	s = st->patn + 1;
+	switch (*s) {
+	default:
 		return 0;
-	for (; s < e; s++)
-		switch (*s) {
-		case 'i':
-			st->mod |= IgnoreCase;
-			break;
-		case 's':
-			st->mod &= ~(IgnoreCase|LaxMatch);
-			break;
-		case 'l':
-			st->mod |= LaxMatch;
-			break;
-		case '1' ... '9':
-			verblen = strtoul(s, &ve, 10);
-			if (ve != e)
+	case ':':
+		st->mod &= ~DoCapture;
+		break;
+	case '|':
+		st->mod |= CapturePerBranch;
+		break;
+	case '0':
+		verblen = -1;
+		break;
+	case '-':
+	case 'i':
+	case 'L':
+	case 's':
+	case 'n':
+		for (; *s && *s != ':'; s++)
+			switch (*s) {
+			case '-':
+				neg = True;
+				break;
+			case 'i':
+				st->mod |= IgnoreCase;
+				if (neg)
+					st->mod &= ~IgnoreCase;
+				break;
+			case 'L':
+				st->mod |= LaxMatch;
+				if (neg)
+					st->mod &= ~LaxMatch;
+				break;
+			case 's':
+				st->mod |= SingleLine;
+				if (neg)
+					st->mod &= ~SingleLine;
+				break;
+			case 'n':
+				st->mod &= DoCapture;
+				if (neg)
+					st->mod |= DoCapture;
+				break;
+			case ':':
+				break;
+			default:
 				return 0;
-			s = ve - 1;
-			break;
-		case '|':
-			/* Restart capture index for each branch */
-			ret = 3;
-			break;
-		default:
+			}
+		if (*s != ':')
 			return 0;
-		}
-	s = e+1;
+		break;
+	case '1' ... '9':
+		verblen = strtoul(s, &ve, 10);
+		if (!ve || *ve != ':')
+			return 0;
+		s = ve;
+		break;
+	}
+	s += 1;
 	st->patn = s;
 	if (verblen == 0)
-		return ret;
+		return 1;
 	while (verblen && *s) {
 		wint_t ch;
 		if (*s & 0x80) {
@@ -1791,16 +1851,17 @@ static int parse_re(struct parse_state *st safe)
 	int re_start = st->next;
 	int start = re_start;
 	int save_mod = st->mod;
-	int pret, ret;
+	int ret;
 	int capture = st->capture;
 	int capture_start, capture_max;
 
-	pret = parse_prefix(st);
-	if (!pret)
-		return pret;
-	if (pret == 2)
-		/* Fully parsed this re - no more is permitted */
+	switch (parse_prefix(st)) {
+	case 0: /* error */
+		return 0;
+	case 2:
+		/* Fully parsed - no more is permitted */
 		return 1;
+	}
 	if (st->mod & DoCapture) {
 		add_cmd(st, REC_CAPTURE | capture);
 		st->capture += 1;
@@ -1814,7 +1875,7 @@ static int parse_re(struct parse_state *st safe)
 		add_cmd(st, REC_FORKLAST | start); /* will become 'jump to end' */
 		add_cmd(st, REC_NONE);
 		start = st->next;
-		if (pret == 3) {
+		if (st->mod & CapturePerBranch) {
 			/* Restart capture index each time */
 			if (st->capture > capture_max)
 				capture_max = st->capture;
@@ -1829,7 +1890,7 @@ static int parse_re(struct parse_state *st safe)
 			start = REC_ADDR(cmd);
 		}
 	}
-	if (pret == 3 && st->capture < capture_max)
+	if (st->mod & CapturePerBranch && st->capture < capture_max)
 		st->capture = capture_max;
 	if (st->mod & DoCapture)
 		add_cmd(st, REC_CAPTURED | capture);
@@ -2181,8 +2242,11 @@ static struct test {
 	{ "a*", "aaaaac", 0, 0,  5},
 	{ "a*", "AaAaac", F_ICASE, 0,  5},
 	{ "a+", " aaaaac", 0, 1,  5},
-	{ "?4:()+*", " (()+***", 0, 2, 4},
-	{ "?l:1 2", "hello 1 \t\n 2", 0, 6, 6},
+	{ "?0()+*", " (()+***", 0, 2, 4},
+	{ ".(?2:..).", "abcdefg..hijk", 0, 6, 4},
+	{ "?L:1 2", "hello 1 \t\n 2", 0, 6, 6},
+	{ "?s:a.c", "a\nc abc", 0, 0, 3},
+	{ "?-s:a.c", "a\nc abc", 0, 4, 3},
 	// Inverting set of multiple classes
 	{ "[^\\A\\a]", "a", 0, -1, -1},
 	// Search for start of a C function: non-label at start of line
@@ -2219,8 +2283,8 @@ static struct test {
 	{ "a[^\\s123]+b", " a b a12b axyb ", 0, 10, 4},
 	{ "([\\w\\d]+)\\s*=\\s*(.*[^\\s])", " name = some value ", 0, 1, 17,
 	 "\\1,\\2", "name,some value"},
-	{ "?|:foo(bar)|(bat)foo", "foobar", 0, 0, 6, "\\1", "bar"},
-	{ "?|:foo(bar)|(bat)foo", "batfoo", 0, 0, 6, "\\1", "bat"},
+	{ "?|foo(bar)|(bat)foo", "foobar", 0, 0, 6, "\\1", "bar"},
+	{ "?|foo(bar)|(bat)foo", "batfoo", 0, 0, 6, "\\1", "bat"},
 	// compare greedy and non-greedy
 	{ "(.*)=(.*)", "assign=var=val", 0, 0, 14, "\\1..\\2", "assign=var..val"},
 	{ "(.*?)=(.*)", "assign=var=val", 0, 0, 14, "\\1..\\2", "assign..var=val"},
