@@ -12,7 +12,7 @@ Current priorities
 - [X] test suite
 - [X] use a single hash in key lookup - two at most.
 - [ ] Finish render-lines rewrite
-- [ ] rexel/search improvements
+- [X] rexel/search improvements
 - [X] unify backend for make/grep and shell modes
 - [ ] input: keyboard macros
 
@@ -234,7 +234,7 @@ Module features
 
 - [X] '\' shouldn't be auto-inserted inside [] set.
 - [X] search should keep a larger history - currently just 1 item.
-- [ ] RXL_POINT needs to be set when at the point.
+- [X] RXL_POINT needs to be set when at the point.
 
 ##### needs design work
 

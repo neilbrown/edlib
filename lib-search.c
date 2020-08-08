@@ -28,6 +28,7 @@ struct search_state {
 	struct match_state *st safe;
 	struct mark *end;
 	struct mark *endmark;
+	struct mark *point;
 	wint_t prev_ch;
 	struct command c;
 
@@ -42,6 +43,7 @@ static void state_free(struct command *c safe)
 	rxl_free_state(ss->st);
 	mark_free(ss->end);
 	mark_free(ss->endmark);
+	mark_free(ss->point);
 	free(ss);
 }
 
@@ -97,6 +99,8 @@ DEF_CMD(search_test)
 		}
 		if (is_eol(wch))
 			flags |= RXL_EOL;
+		if (ss->point && ci->mark && mark_same(ss->point, ci->mark))
+			flags |= RXL_POINT;
 
 		found = rxl_advance(ss->st, wch | flags);
 		rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
@@ -129,6 +133,11 @@ DEF_CMD(search_test)
 			ss->endmark = mark_dup(ci->mark2);
 		else
 			ss->endmark = NULL;
+		return 1;
+	}
+	if (strcmp(ci->key, "setpoint") == 0 && ci->mark) {
+		mark_free(ss->point);
+		ss->point = mark_dup(ci->mark);
 		return 1;
 	}
 	if (strcmp(ci->key, "getinfo") == 0 && ci->str) {
@@ -166,6 +175,7 @@ DEF_CMD(search_test)
 
 static int search_forward(struct pane *p safe,
 			  struct mark *m safe, struct mark *m2,
+			  struct mark *point,
 			  unsigned short *rxl safe,
 			  struct mark *endmark, bool anchored)
 {
@@ -181,6 +191,7 @@ static int search_forward(struct pane *p safe,
 	ss.st = rxl_prepare(rxl, anchored ? RXL_ANCHORED : 0);
 	ss.end = m2;
 	ss.endmark = endmark;
+	ss.point = point;
 	ss.c = search_test;
 	ss.prev_ch = doc_prior(p, m);
 	call_comm("doc:content", p, &ss.c, 0, m);
@@ -191,6 +202,7 @@ static int search_forward(struct pane *p safe,
 
 static int search_backward(struct pane *p safe,
 			   struct mark *m safe, struct mark *m2,
+			   struct mark *point,
 			   unsigned short *rxl safe,
 			   struct mark *endmark safe)
 {
@@ -205,6 +217,7 @@ static int search_backward(struct pane *p safe,
 
 	ss.end = NULL;
 	ss.endmark = NULL;
+	ss.point = point;
 	ss.c = search_test;
 
 	do {
@@ -241,19 +254,22 @@ DEF_CMD(text_search)
 		return Einval;
 
 	if (ci->mark) {
+		struct mark *point;
+
 		m = ci->mark;
 		endmark = mark_dup(m);
+		point = call_ret(mark, "doc:point", ci->focus);
 		if (!endmark)
 			return Efail;
 		if (strcmp(ci->key, "text-match") == 0)
 			since_start = search_forward(ci->focus, m, ci->mark2,
-						     rxl, endmark, True);
+						     point, rxl, endmark, True);
 		else if (ci->num2)
 			since_start = search_backward(ci->focus, m, ci->mark2,
-						      rxl, endmark);
+						      point, rxl, endmark);
 		else
 			since_start = search_forward(ci->focus, m, ci->mark2,
-						     rxl, endmark, False);
+						     point, rxl, endmark, False);
 
 		if (since_start >= 0)
 			mark_to_mark(m, endmark);
