@@ -671,6 +671,7 @@ DEF_CMD(nc_pane_close)
 		WINDOW *win = panel_window(pan);
 		del_panel(pan);
 		delwin(win);
+		pane_damaged(ci->home, DAMAGED_POSTORDER);
 	}
 	return 1;
 }

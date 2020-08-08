@@ -269,6 +269,7 @@ class EdDisplay(edlib.Pane):
         "handle:Notify:Close"
         if focus and focus in self.panes:
             del self.panes[focus]
+            self.damaged(edlib.DAMAGED_POSTORDER)
         return True
 
 
