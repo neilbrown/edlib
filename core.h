@@ -638,6 +638,7 @@ char *do_call_strsave(enum target_type type, struct pane *home,
 #define ccall(ccache, key, _focus, ...) CCALL(ccache, val, focus, _focus, key, _focus, ##__VA_ARGS__)
 /* comm_call() is only for callbacks, is it doesn't allow a separate 'home' */
 #define comm_call(_comm, key, ...) CALL(val, comm, _comm, key, ##__VA_ARGS__)
+#define comm_call_ret(_ret, _comm, key, ...) CALL(_ret, comm, _comm, key, ##__VA_ARGS__)
 /* pane_call() is used when a very specific pane must be informed, rather than
  * the first responder in a chain of panes.  This mostly used for notifications,
  * both generic notification, and special things like a child appearing or disappearing

@@ -774,6 +774,13 @@ DEF_CMD(take_str)
 	return 1;
 }
 
+DEF_CMD(take_comm)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+	if (ci->comm2)
+		cr->comm = command_get(ci->comm2);
+	return 1;
+}
 
 struct pane *do_call_pane(enum target_type type, struct pane *home,
 			  struct command *comm2a,
@@ -839,7 +846,7 @@ struct command *do_call_comm(enum target_type type, struct pane *home,
 {
 	struct call_return cr = {};
 
-	cr.c = take_simple;
+	cr.c = take_comm;
 	cr.ret = do_call_val(type, home, comm2a, key, focus, num, m, str,
 			     num2, m2, str2, x, y, &cr.c, ccache);
 	if (cr.ret < 0)
