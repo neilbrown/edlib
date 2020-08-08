@@ -115,7 +115,9 @@ DEF_CMD(popup_close)
 {
 	struct popup_info *ppi = ci->home->data;
 
-	pane_focus(ppi->target);
+	if (ci->num)
+		/* Pane had focus, so give to target */
+		pane_focus(ppi->target);
 	command_put(ppi->done);
 	ppi->done = NULL;
 	return 1;

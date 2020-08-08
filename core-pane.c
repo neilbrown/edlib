@@ -515,6 +515,7 @@ void pane_close(struct pane *p safe)
 {
 	struct pane *c;
 	struct pane *ed;
+	bool infocus;
 
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
@@ -537,11 +538,12 @@ restart:
 		goto restart;
 	}
 
+	infocus = pane_has_focus(p);
 	if (p->parent->focus == p)
 		pane_refocus(p->parent);
 
 	pane_notify_close(p);
-	pane_call(p, "Close", p);
+	pane_call(p, "Close", p, infocus);
 
 	/* If a child has not yet had "Close" called, we need to leave
 	 * ->parent in place so a full range of commands are available.
