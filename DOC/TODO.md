@@ -159,7 +159,7 @@ Module features
 - [ ] ?XX: option to match REC_ANY, not REC_ANY_NONL.
 - [X] Simpler rxl_advance() interface which takes all flags and updates 'start'
       pointer.
-- [ ] \1 substitutions
+- [X] \1 substitutions
       Maybe to extract a given submatch we have a third array pair where we record
       the length since a particular point.
       We then repeat the match process against the found string to get start
@@ -168,7 +168,7 @@ Module features
 - [X] write an alternate back-tracking matcher 
 - [X] supports \N in the pattern for back-tracking matcher
 - [X] Make it possible to search/match against a string, not just a pane
-- [ ] make it possible to get a command which embeded a compiled pattern so
+- [X] make it possible to get a command which embeded a compiled pattern so
       that it can be called on a string or pane to find a match.
 - [X] word breaks etc \b...
 - [X] record where () are when parsing.  A particular ( can be at several places

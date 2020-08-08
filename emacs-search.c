@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "core.h"
+#include "rexel.h"
 
 struct es_info {
 	struct stk {
@@ -481,6 +482,24 @@ DEF_CMD(do_replace)
 		while (len > 0 && doc_prev(esi->target, m) != WEOF)
 			len -= 1;
 		mark_step(m, 1);
+		if (strchr(new, '\\')) {
+			char *Pattern = call_ret(strsave, "doc:get-str", ci->home);
+			struct command *ptn = call_ret(comm, "make-search",
+						       ci->home,
+						       RXL_ANCHORED | RXL_BACKTRACK,
+						       NULL, Pattern);
+			if (ptn) {
+				char *new2;
+				struct mark *tmp = mark_dup(m);
+				call_comm("doc:content", esi->target, ptn, 0, tmp);
+				mark_free(tmp);
+				new2 = comm_call_ret(strsave, ptn, "interp",
+						     esi->target, 0, NULL, new);
+				if (new2)
+					new = new2;
+				command_put(ptn);
+			}
+		}
 		if (call("doc:replace", esi->target, 0, m, new, 0, esi->end) > 0) {
 			call("search:highlight-replace", esi->target,
 			     strlen(new), m, NULL, 0, esi->end);

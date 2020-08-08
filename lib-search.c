@@ -30,63 +30,138 @@ struct search_state {
 	struct mark *endmark;
 	wint_t prev_ch;
 	struct command c;
+
+	unsigned short *rxl safe;
 };
+
+static void state_free(struct command *c safe)
+{
+	struct search_state *ss = container_of(c, struct search_state, c);
+
+	free(ss->rxl);
+	rxl_free_state(ss->st);
+	mark_free(ss->end);
+	mark_free(ss->endmark);
+	free(ss);
+}
 
 static int is_word(wint_t ch)
 {
 	return ch == '_' || iswalnum(ch);
 }
 
+/*
+ * 'search_test' together with 'stuct search_state' encapsulates
+ * a parsed regexp and some matching state.  If called as 'consume'
+ * (or anything starting 'c') it processes on char into the match
+ * and returns 1 if it is worth providing more characters.
+ * Other options for ci->key are:
+ * - reinit - state is re-initialised with flags from ->num, end and
+ *            endmark from ->mark and ->mark2
+ * - getinfo - extract total, start, len, since-start from match
+ * - getcapture - get "start" or "len" for a capture in ->num
+ * - interp - interpolate \N captures in ->str
+ */
 DEF_CMD(search_test)
 {
-	wint_t wch = ci->num & 0xFFFFF;
-	wint_t flags = 0;
-	int maxlen, since_start;
-	enum rxl_found found;
 	struct search_state *ss = container_of(ci->comm,
 					       struct search_state, c);
 
-	if (!ci->mark)
-		return Enoarg;
+	if (ci->key[0] == 'c') {
+		/* consume */
+		wint_t wch = ci->num & 0xFFFFF;
+		wint_t flags = 0;
+		int maxlen, since_start;
+		enum rxl_found found;
 
-	if ((unsigned int)(ci->num & 0xffffffff) == WEOF) {
-		wch = 0;
-		flags |= RXL_EOD;
-	}
-	if (ss->prev_ch == WEOF)
-		flags |= RXL_SOD;
-	if (is_eol(ss->prev_ch) || ss->prev_ch == WEOF || ss->prev_ch == 0)
-		flags |= RXL_SOL;
-	switch (is_word(ss->prev_ch) * 2 + is_word(wch)) {
-	case 0: /* in space */
-	case 3: /* within word */
-		flags |= RXL_NOWBRK;
-		break;
-	case 1: /* start of word */
-		flags |= RXL_SOW;
-		break;
-	case 2: /* end of word */
-		flags |= RXL_EOW;
-		break;
-	}
-	if (is_eol(wch))
-		flags |= RXL_EOL;
+		if ((unsigned int)(ci->num & 0xffffffff) == WEOF) {
+			wch = 0;
+			flags |= RXL_EOD;
+		}
+		if (ss->prev_ch == WEOF)
+			flags |= RXL_SOD;
+		if (is_eol(ss->prev_ch) || ss->prev_ch == WEOF ||
+		    ss->prev_ch == 0)
+			flags |= RXL_SOL;
+		switch (is_word(ss->prev_ch) * 2 + is_word(wch)) {
+		case 0: /* in space */
+		case 3: /* within word */
+			flags |= RXL_NOWBRK;
+			break;
+		case 1: /* start of word */
+			flags |= RXL_SOW;
+			break;
+		case 2: /* end of word */
+			flags |= RXL_EOW;
+			break;
+		}
+		if (is_eol(wch))
+			flags |= RXL_EOL;
 
-	found = rxl_advance(ss->st, wch | flags);
-	rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
+		found = rxl_advance(ss->st, wch | flags);
+		rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
 
-	if (found >= RXL_MATCH && ss->endmark && since_start - maxlen <= 1) {
-		mark_to_mark(ss->endmark, ci->mark);
-		if (found == RXL_MATCH)
-			doc_next(ci->home, ss->endmark);
+		if (found >= RXL_MATCH && ss->endmark && ci->mark &&
+		    since_start - maxlen <= 1) {
+			mark_to_mark(ss->endmark, ci->mark);
+			if (found == RXL_MATCH)
+				doc_next(ci->home, ss->endmark);
+		}
+		if (ss->end && ci->mark &&  ci->mark->seq >= ss->end->seq)
+			return 0;
+		if (found == RXL_DONE)
+			/* No match here */
+			return 0;
+		ss->prev_ch = wch;
+		return 1;
 	}
-	if (ss->end &&  ci->mark->seq >= ss->end->seq)
+	if (strcmp(ci->key, "reinit") == 0) {
+		rxl_free_state(ss->st);
+		ss->st = rxl_prepare(ss->rxl, ci->num);
+		ss->prev_ch = (unsigned int)ci->num2 ?: WEOF;
+		mark_free(ss->end);
+		mark_free(ss->endmark);
+		if (ci->mark)
+			ss->end = mark_dup(ci->mark);
+		else
+			ss->end = NULL;
+		if (ci->mark2)
+			ss->endmark = mark_dup(ci->mark2);
+		else
+			ss->endmark = NULL;
+		return 1;
+	}
+	if (strcmp(ci->key, "getinfo") == 0 && ci->str) {
+		int len, total, start, since_start;
+		rxl_info(ss->st, &len, &total, &start, &since_start);
+		if (strcmp(ci->str, "len") == 0)
+			return len < 0 ? Efalse : len+1;
+		if (strcmp(ci->str, "total") == 0)
+			return total+1;
+		if (strcmp(ci->str, "start") == 0)
+			return start < 0 ? Efalse : start + 1;
+		if (strcmp(ci->str, "since-start") == 0)
+			return since_start < 0 ? Efalse : since_start + 1;
 		return 0;
-	if (found == RXL_DONE)
-		/* No match here */
-		return 0;
-	ss->prev_ch = wch;
-	return 1;
+	}
+	if (strcmp(ci->key, "getcapture") == 0 && ci->str) {
+		int start, len;
+		if (rxl_capture(ss->st, ci->num, ci->num2, &start, &len)) {
+			if (strcmp(ci->str, "start") == 0)
+				return start + 1;
+			if (strcmp(ci->str, "len") == 0)
+				return len + 1;
+			return Einval;
+		}
+		return Efalse;
+	}
+	if (strcmp(ci->key, "interp") == 0 && ci->str) {
+		char *ret;
+		ret = rxl_interp(ss->st, ci->str);
+		comm_call(ci->comm2, "cb", ci->focus, 0, NULL, ret);
+		return 1;
+	}
+	return 0;
 }
 
 static int search_forward(struct pane *p safe,
@@ -235,10 +310,37 @@ DEF_CMD(text_search)
 	return ret;
 }
 
+DEF_CMD(make_search)
+{
+	struct search_state *ss;
+	unsigned short *rxl;
+
+	if (!ci->str)
+		return Enoarg;
+
+	rxl = rxl_parse(ci->str, NULL, ci->num2);
+	if (!rxl)
+		return Einval;
+	ss = calloc(1, sizeof(*ss));
+	ss->rxl = rxl;
+	ss->c = search_test;
+	ss->c.free = state_free;
+	command_get(&ss->c);
+	comm_call(&ss->c, "reinit", ci->focus,
+		  ci->num, ci->mark, NULL, 0, ci->mark2);
+	comm_call(ci->comm2, "cb", ci->focus,
+		  0, NULL, NULL,
+		  0, NULL, NULL, 0,0, &ss->c);
+	command_put(&ss->c);
+	return 1;
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &text_search, 0, NULL,
 		  "text-search");
 	call_comm("global-set-command", ed, &text_search, 0, NULL,
 		  "text-match");
+	call_comm("global-set-command", ed, &make_search, 0, NULL,
+		  "make-search");
 }
