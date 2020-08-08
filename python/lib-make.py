@@ -430,7 +430,13 @@ class MakePane(edlib.Pane):
     def visit(self, focus, d, mk, lineno, where):
         # 'where' can be one of 'ThisPane' 'OtherPane' 'AnyPane' or 'PopupPane'
         # If 'AnyPane' or 'OtherPane' we ensure match view is visible
+        # unless we were in a popup
         par = None; pane = None
+
+        if focus.call("ThisPopup", ret='focus') == None:
+            in_popup = False
+        else:
+            in_popup = True
         if where in ['OtherPane', 'AnyPane']:
             par = focus.call("DocLeaf", d, ret='focus')
             if par:
@@ -471,7 +477,7 @@ class MakePane(edlib.Pane):
                 par.call("Move-EOL", lineno-1)
                 par.call("Move-Char", 1)
 
-        if where in ['AnyPane', 'OtherPane']:
+        if not in_popup and where in ['AnyPane', 'OtherPane']:
             docpane = par.call("DocPane", self, ret='focus')
             if not docpane:
                 docpane = par.call("OtherPane", ret='focus')
