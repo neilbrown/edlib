@@ -283,7 +283,7 @@ static wctype_t *classmap safe = NULL;
 
 static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch);
 static void bt_link(struct match_state *st safe, int pos, int len);
-static int get_capture(struct match_state *s safe, int n,
+static int get_capture(struct match_state *s safe, int n, int which,
 		       char *buf, int *startp);
 
 /*
@@ -924,7 +924,7 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 				 */
 				int prevpos;
 				int start;
-				int len = get_capture(st, REC_CAPNUM(st->rxl[i]),
+				int len = get_capture(st, REC_CAPNUM(st->rxl[i]), 0,
 						      NULL, &start);
 				st->buf_pos -= 1;
 				prevpos = st->buf_pos;
@@ -1944,7 +1944,8 @@ void rxl_free_state(struct match_state *s)
 	}
 }
 
-static int get_capture(struct match_state *s safe, int n, char *buf, int *startp)
+static int get_capture(struct match_state *s safe, int n, int which,
+		       char *buf, int *startp)
 {
 	int bufp = 0; /* Index in s->buf */
 	int rxlp = 1; /* Index in s->rxl */
@@ -1976,9 +1977,11 @@ static int get_capture(struct match_state *s safe, int n, char *buf, int *startp
 		}
 		if (REC_ISCAPTURE(cmd) &&
 		    REC_CAPNUM(cmd) == n) {
-			if (REC_CAPEND(cmd))
+			if (REC_CAPEND(cmd)) {
 				len = bufp - start;
-			else {
+				if (--which == 0)
+					break;
+			} else {
 				start = bufp;
 				len = -1;
 			}
@@ -1990,6 +1993,8 @@ static int get_capture(struct match_state *s safe, int n, char *buf, int *startp
 		bufp += 1;
 		rxlp += 1;
 	}
+	if (which > 0)
+		return -1;
 	if (startp)
 		*startp = start;
 	if (len > 0 && buf) {
@@ -2001,12 +2006,22 @@ static int get_capture(struct match_state *s safe, int n, char *buf, int *startp
 	return len;
 }
 
-static int interp(struct match_state *s safe, char *form safe, char *buf)
+int rxl_capture(struct match_state *st safe, int cap, int which,
+		int *startp safe, int *lenp safe)
+{
+	int len = get_capture(st, cap, which, NULL, startp);
+
+	*lenp = len;
+	return len >= 0;
+}
+
+static int interp(struct match_state *s safe, const char *form safe, char *buf)
 {
 	int len = 0;
 
 	while (*form) {
 		int n;
+		char *e;
 
 		if (form[0] != '\\') {
 			if (buf)
@@ -2024,14 +2039,19 @@ static int interp(struct match_state *s safe, char *form safe, char *buf)
 		}
 		if (!isdigit(form[1]))
 			return -1;
-		n = strtoul(form+1, &form, 10);
-		n = get_capture(s, n, buf ? buf+len : buf, NULL);
+		n = strtoul(form+1, &e, 10);
+		n = get_capture(s, n, 0, buf ? buf+len : buf, NULL);
 		len += n;
+		if (!e)
+			break;
+		form = e;
 	}
+	if (buf)
+		buf[len] = 0;
 	return len;
 }
 
-char *rxl_interp(struct match_state *s safe, char *form safe)
+char *rxl_interp(struct match_state *s safe, const char *form safe)
 {
 	int size;
 	char *ret;

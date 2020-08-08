@@ -24,7 +24,9 @@ struct match_state *safe rxl_prepare(unsigned short *rxl safe, int flags);
 enum rxl_found rxl_advance(struct match_state *st safe, wint_t ch);
 void rxl_info(struct match_state *st safe, int *lenp safe, int *totalp,
 	      int *startp, int *since_startp);
-char *rxl_interp(struct match_state *s safe, char *form safe);
+int rxl_capture(struct match_state *st safe, int cap, int which,
+		int *startp safe, int *lenp safe);
+char *rxl_interp(struct match_state *s safe, const char *form safe);
 void rxl_free_state(struct match_state *s);
 
 /* These are 'or'ed in with the ch and reflect state *before*
