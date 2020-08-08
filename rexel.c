@@ -979,11 +979,11 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 				#endif
 				if (REC_ISFIRST(st->rxl[st->pos]))
 					/* priority jump, just step forward now */
-					bt_link(st, st->pos+1, st->buf_pos);
+					do_link(st, st->pos+1, NULL, st->buf_pos);
 				else
 					/* delayed jump, take it now */
-					bt_link(st, REC_ADDR(st->rxl[st->pos]),
-						st->buf_pos);
+					do_link(st, REC_ADDR(st->rxl[st->pos]),
+						NULL, st->buf_pos);
 			} else {
 				/* cannot backtrack, so skip first char unless anchored */
 				#ifdef DEBUG
@@ -999,7 +999,7 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 				memmove(st->buf, st->buf+1,
 					sizeof(st->buf[0]) * st->buf_count);
 				st->buf_pos = 0;
-				bt_link(st, 1, st->buf_pos);
+				do_link(st, 1, NULL, st->buf_pos);
 			}
 			break;
 		}
@@ -1014,6 +1014,7 @@ static enum rxl_found rxl_advance_bt(struct match_state *st safe, wint_t ch)
 enum modifier {
 	IgnoreCase	= 1,
 	LaxMatch	= 2,
+	DoCapture	= 4,
 };
 
 struct parse_state {
@@ -1449,7 +1450,6 @@ static int parse_atom(struct parse_state *st safe)
 	 *
 	 */
 	wint_t ch;
-	/* Only '.', (), and char for now */
 
 	if (*st->patn == '\0')
 		return 0;
@@ -1459,19 +1459,11 @@ static int parse_atom(struct parse_state *st safe)
 		return 1;
 	}
 	if (*st->patn == '(') {
-		int capture = 0;
 		st->patn++;
-		if (st->patn[0] != '?') {
-			st->capture++;
-			capture = st->capture;
-			add_cmd(st, REC_CAPTURE | capture);
-		}
 		if (!parse_re(st))
 			return 0;
 		if (*st->patn != ')')
 			return 0;
-		if (capture > 0)
-			add_cmd(st, REC_CAPTURED | capture);
 		st->patn++;
 		return 1;
 	}
@@ -1800,8 +1792,8 @@ static int parse_re(struct parse_state *st safe)
 	int start = re_start;
 	int save_mod = st->mod;
 	int pret, ret;
-	int capture_index = st->capture;
-	int capture_max = st->capture;
+	int capture = st->capture;
+	int capture_start, capture_max;
 
 	pret = parse_prefix(st);
 	if (!pret)
@@ -1809,6 +1801,11 @@ static int parse_re(struct parse_state *st safe)
 	if (pret == 2)
 		/* Fully parsed this re - no more is permitted */
 		return 1;
+	if (st->mod & DoCapture) {
+		add_cmd(st, REC_CAPTURE | capture);
+		st->capture += 1;
+	}
+	capture_start = capture_max = st->capture;
 	while ((ret = parse_branch(st)) != 0 && *st->patn == '|') {
 		st->patn += 1;
 		relocate(st, start, 1);
@@ -1821,7 +1818,7 @@ static int parse_re(struct parse_state *st safe)
 			/* Restart capture index each time */
 			if (st->capture > capture_max)
 				capture_max = st->capture;
-			st->capture = capture_index;
+			st->capture = capture_start;
 		}
 	}
 	if (ret && st->rxl) {
@@ -1834,6 +1831,8 @@ static int parse_re(struct parse_state *st safe)
 	}
 	if (pret == 3 && st->capture < capture_max)
 		st->capture = capture_max;
+	if (st->mod & DoCapture)
+		add_cmd(st, REC_CAPTURED | capture);
 	st->mod = save_mod;
 	return ret;
 }
@@ -1843,6 +1842,7 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	struct parse_state st;
 	st.patn = patn;
 	st.mod = nocase ? IgnoreCase | LaxMatch : 0;
+	st.mod |= DoCapture;
 	st.rxl = NULL;
 	st.next = 1;
 	st.sets = NULL;
@@ -1860,6 +1860,8 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	st.rxl[0] = st.next;
 	st.sets = st.rxl + st.next;
 	st.patn = patn;
+	st.mod = nocase ? IgnoreCase | LaxMatch : 0;
+	st.mod |= DoCapture;
 	st.next = 1;
 	st.set = 0;
 	st.capture = 0;
