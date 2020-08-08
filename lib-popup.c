@@ -278,20 +278,16 @@ DEF_CMD(popup_delayed_close)
 DEF_CMD(popup_defocus)
 {
 	struct popup_info *ppi = ci->home->data;
-	struct pane *p;
 
-	for (p = ci->home; p->parent != p; p = p->parent)
-		if (p->parent->focus != p)
-			break;
-	if (p->parent->parent == p->parent->parent->parent)
+	if (pane_has_focus(ci->home))
 		/* We are still on the focal-path from display
 		 * Maybe we focussed in to a sub-popup
 		 */
 		return 1;
 
-	if (strchr(ppi->style, 't')) {
+	if (strchr(ppi->style, 't'))
 		call_comm("editor-on-idle", ci->home, &popup_delayed_close);
-	}
+
 	return 0;
 }
 

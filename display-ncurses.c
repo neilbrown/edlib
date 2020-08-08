@@ -949,26 +949,18 @@ static void ncurses_text(struct pane *p safe, struct pane *display safe,
 
 	if (x < 0 || y < 0)
 		return;
-	if (cursor) {
-		p2 = p;
-		cursor = 2;
-		while (p2->parent != p2 && p2 != display) {
-			if (p2->parent->focus != p2 && p2->z >= 0)
-				cursor = 1;
-			p2 = p2->parent;
-		}
-	}
 
 	set_screen(display);
-	if (cursor == 2) {
-		/* Cursor is in-focus */
-		struct xy curs = pane_mapxy(p, display, x, y, False);
-		display->cx = curs.x;
-		display->cy = curs.y;
+	if (cursor) {
+		if (pane_has_focus(p->z < 0 ? p->parent : p)) {
+			/* Cursor is in-focus */
+			struct xy curs = pane_mapxy(p, display, x, y, False);
+			display->cx = curs.x;
+			display->cy = curs.y;
+		} else
+			/* Cursor here, but not focus */
+			attr = make_cursor(attr);
 	}
-	if (cursor == 1)
-		/* Cursor here, but not focus */
-		attr = make_cursor(attr);
 	cc.attr = attr;
 	cc.chars[0] = ch;
 

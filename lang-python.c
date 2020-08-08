@@ -759,6 +759,20 @@ static PyObject *Pane_focus(Pane *self safe, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Pane_has_focus(Pane *self safe, PyObject *args)
+{
+	if (!pane_valid(self))
+		return NULL;
+
+	if (pane_has_focus(self->pane)) {
+		Py_INCREF(Py_True);
+		return Py_True;
+	} else {
+		Py_INCREF(Py_False);
+		return Py_False;
+	}
+}
+
 static PyObject *Pane_refresh(Pane *self safe, PyObject *args)
 {
 	if (!pane_valid(self))
@@ -1159,6 +1173,8 @@ static PyMethodDef pane_methods[] = {
 	 "Clone all children onto the target"},
 	{"take_focus", (PyCFunction)Pane_focus, METH_NOARGS,
 	 "Claim the focus for this pane"},
+	{"has_focus", (PyCFunction)Pane_has_focus, METH_NOARGS,
+	 "Check if pane is focus of display"},
 	{"refresh", (PyCFunction)Pane_refresh, METH_NOARGS,
 	 "Trigger refresh on this pane"},
 	{"call", (void*)(PyCFunctionWithKeywords)Pane_call, METH_VARARGS|METH_KEYWORDS,

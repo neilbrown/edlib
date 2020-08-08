@@ -690,6 +690,19 @@ void pane_focus(struct pane *focus)
 	call("pane:refocus", focus);
 }
 
+bool pane_has_focus(struct pane *focus)
+{
+	/* Would pane_focus change anything */
+	struct pane *p = focus;
+
+	if (!p)
+		return False;
+	for (; p->parent->parent->parent != p->parent->parent; p = p->parent)
+		if (p->parent->focus != p)
+			return False;
+	return True;
+}
+
 char *pane_attr_get(struct pane *p, const char *key safe)
 {
 	while (p) {
