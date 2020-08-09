@@ -183,7 +183,7 @@ static int key_present(struct map *map safe, unsigned int *hashes safe)
 }
 
 /* Find first entry >= k */
-static int key_find_len(struct map *map safe, const char *k safe, int len)
+static int key_find(struct map *map safe, const char *k safe)
 {
 	int lo = 0;
 	int hi = map->size;
@@ -194,18 +194,12 @@ static int key_find_len(struct map *map safe, const char *k safe, int len)
 	 */
 	while (hi > lo) {
 		int mid = (hi + lo)/ 2;
-		int cmp = strncmp(map->keys[mid], k, len);
-		if (cmp < 0)
+		if (strcmp(map->keys[mid], k) < 0)
 			lo = mid+1;
 		else
 			hi = mid;
 	}
 	return hi;
-}
-
-static int key_find(struct map *map safe, const char *k safe)
-{
-	return key_find_len(map, k, strlen(k));
 }
 
 void key_add(struct map *map safe, const char *k safe, struct command *comm)
@@ -356,87 +350,43 @@ int key_pfx_func(const struct cmd_info *ci safe)
 	return 1;
 }
 
-struct command *key_lookup_cmd(struct map *m safe, const char *c safe,
-			       const char **cret, unsigned int *lenret)
+struct command *key_lookup_cmd(struct map *m safe, const char *c safe)
 {
-	/* If 'k' contains an ASCII US (Unit Separator, 0o37 0x1f 31),
-	 * it represents multiple keys.
-	 * Call key_find() on each of them until success.
-	 */
-	while (*c) {
-		const char *end = strchr(c, '\037');
-		int pos;
+	int pos = key_find(m, c);
 
-		if (!end)
-			end = c + strlen(c);
-		pos = key_find_len(m, c, end - c);
+	if (pos >= m->size)
+		;
+	else if (strcmp(m->keys[pos], c) == 0)
+		/* Exact match - use this entry */
+		return GETCOMM(m->comms[pos]);
+	else if (pos > 0 && IS_RANGE(m->comms[pos-1]))
+		/* In a range, use previous */
+		return GETCOMM(m->comms[pos-1]);
 
-		if (pos >= m->size)
-			;
-		else if (strncmp(m->keys[pos], c, end - c) == 0 &&
-			 m->keys[pos][end - c] == '\0') {
-			/* Exact match - use this entry */
-			if (cret)
-				*cret = c;
-			if (lenret)
-				*lenret = end - c;
-			return GETCOMM(m->comms[pos]);
-		} else if (pos > 0 && IS_RANGE(m->comms[pos-1])) {
-			/* In a range, use previous */
-			if (cret)
-				*cret = c;
-			if (lenret)
-				*lenret = end - c;
-			return GETCOMM(m->comms[pos-1]);
-		}
-		c = end;
-		while (*c == '\037')
-			c++;
-	}
 	return NULL;
 }
 
 int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 {
 	struct command *comm;
-	const char *key;
-	unsigned int len;
 
 	if (ci->hash && !key_present(m, ci->hash)) {
 		stat_count("bloom-miss");
 		return Efallthrough;
 	}
 
-	comm = key_lookup_cmd(m, ci->key, &key, &len);
-	if (comm == NULL || key == NULL) {
+	comm = key_lookup_cmd(m, ci->key);
+	if (comm == NULL) {
 		stat_count("bloom-hit-bad");
 		return Efallthrough;
 	} else {
-		/* This is message, but when there are multiple
-		 * keys, we need to pass down the one that was matched.
-		 */
-		int ret;
-		const char *oldkey = ci->key;
-		char ktmp[40], *k2 = NULL;
-
 		stat_count("bloom-hit-good");
-		if (key[len] == 0) {
-			((struct cmd_info*)ci)->key = key;
-		} else if (len >= sizeof(ktmp)) {
-			k2 = strndup(key, len);
-			((struct cmd_info*)ci)->key = k2;
-		} else {
-			strncpy(ktmp, key, len);
-			ktmp[len] = 0;
-			((struct cmd_info*)ci)->key = ktmp;
-		}
 		((struct cmd_info*)ci)->comm = comm;
+
 		if (comm->func == keymap_list_func)
 			((struct cmd_info*)ci)->comm = (struct command *safe)m;
-		ret = comm->func(ci);
-		((struct cmd_info*)ci)->key = oldkey;
-		free(k2);
-		return ret;
+
+		return comm->func(ci);
 	}
 }
 
@@ -446,23 +396,22 @@ int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe)
 	struct command *comm, *prev = NULL;
 	int len = strlen(ci->key);
 	const char *k = ci->key;
+	int ret = 0;
 
-	while (pos < m->size && strncmp(m->keys[pos], k, len) == 0) {
+	while (ret == 0 && pos < m->size &&
+	       strncmp(m->keys[pos], k, len) == 0) {
 		comm = GETCOMM(m->comms[pos]);
 		if (comm && comm != prev) {
-			int ret;
 			((struct cmd_info*)ci)->comm = comm;
 			((struct cmd_info*)ci)->key = m->keys[pos];
 			ret = comm->func(ci);
 			ASSERT(ret >= 0 || ret < Eunused);
-			if (ret)
-				return ret;
 			prev = comm;
 		}
 		pos += 1;
 	}
 	((struct cmd_info*)ci)->key = k;
-	return 0;
+	return ret;
 }
 
 int key_lookup_cmd_func(const struct cmd_info *ci safe)
@@ -493,11 +442,8 @@ int key_handle(const struct cmd_info *ci safe)
 		return ret;
 	}
 
-	/* FIXME multi-keys */
-	if (strchr(ci->key, '\037') == NULL) {
-		hash_str(ci->key, -1, hash);
-		vci->hash = hash;
-	}
+	hash_str(ci->key, -1, hash);
+	vci->hash = hash;
 
 	/* If 'home' is set, search from there, else search
 	 * from focus

@@ -67,7 +67,7 @@ DEF_CMD(global_get_command)
 	struct command *cm;
 
 	if (!ci->str ||
-	    !(cm = key_lookup_cmd(map, ci->str, NULL, NULL)))
+	    !(cm = key_lookup_cmd(map, ci->str)))
 		return Efail;
 	return comm_call(ci->comm2, "callback:comm", ci->focus,
 			 0, NULL, ci->str,
@@ -146,7 +146,7 @@ DEF_CMD(editor_auto_load)
 	/* Check the key really doesn't exist, rather than
 	 * it fails
 	 */
-	if (key_lookup_cmd(map, ci->key, NULL, NULL))
+	if (key_lookup_cmd(map, ci->key))
 		return 0;
 
 	if (strncmp(mod, "doc-", 4) == 0 ||
@@ -198,9 +198,13 @@ DEF_CMD(editor_multicall)
 {
 	struct ed_info *ei = ci->home->data;
 	struct map *map = ei->map;
+	int ret;
+	const char *key = ci->key;
 
 	((struct cmd_info*)ci)->key = ksuffix(ci, "global-multicall-");
-	return key_lookup_prefix(map, ci);
+	ret = key_lookup_prefix(map, ci);
+	((struct cmd_info*)ci)->key = key;
+	return ret;
 }
 
 DEF_CMD(editor_request_notify)
