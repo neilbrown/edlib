@@ -44,6 +44,7 @@
 
 #include "core.h"
 
+#define LOGSIZE 128
 struct input_mode {
 	const char	*mode safe;
 	int		num, num2;
@@ -56,9 +57,53 @@ struct input_mode {
 		int		ignore_up;
 	} buttons[3];
 
+	char		*log[LOGSIZE];
+	int		head;
+
 	struct pane	*sel_owner;
 	int		sel_committed;
 };
+
+/* 'head' is 1 more than the last key added. */
+static void log_add(struct input_mode *im safe,
+		    const char *type safe, const char *key safe)
+{
+	free(im->log[im->head]);
+	im->log[im->head] = strconcat(NULL, type, key);
+	im->head = (im->head + 1) % LOGSIZE;
+}
+
+static void log_dump(struct pane *p safe)
+{
+	struct input_mode *im = p->data;
+	int i;
+	int cnt = 0;
+	char *line = NULL;
+
+	i = im->head;
+	do {
+		if (!im->log[i])
+			continue;
+		if (line)
+			line = strconcat(p, line, ", ", im->log[i]);
+		else
+			line = strconcat(p, im->log[i]);
+		cnt += 1;
+		if (cnt % 10 == 0) {
+			LOG("Input %d: %s", cnt/10, line);
+			line = NULL;
+		}
+	} while ((i = (i+1) % LOGSIZE) != im->head);
+
+	if (line)
+		LOG("Input: %s", line);
+}
+
+DEF_CMD(log_input)
+{
+	log_dump(ci->home);
+	return 1;
+}
 
 static void report_status(struct pane *focus safe, struct input_mode *im safe)
 {
@@ -161,6 +206,7 @@ DEF_CMD(keystroke)
 		return Enoarg;
 
 	pane_notify("Keystroke-notify", ci->home, 0, NULL, ci->str);
+	log_add(im, "K", ci->str);
 
 	im->mode = strdup("");
 	im->num = NO_NUMERIC;
@@ -222,6 +268,7 @@ DEF_CMD(mouse_event)
 
 	pane_notify("Mouse-event-notify", ci->home, ci->num, NULL, ci->str,
 		    ci->num2);
+	log_add(im, "M", ci->str);
 
 	if (ci->num2 == 1) {
 		/* Press */
@@ -469,6 +516,7 @@ static void register_map(void)
 	key_add(im_map, "Mode:set-all", &set_all);
 	key_add(im_map, "pane:refocus", &refocus);
 	key_add(im_map, "Notify:Close", &close_focus);
+	key_add(im_map, "input:log", &log_input);
 	key_add_prefix(im_map, "window:request:", &request_notify);
 	key_add_prefix(im_map, "window:notify:", &send_notify);
 	key_add(im_map, "Free", &edlib_do_free);

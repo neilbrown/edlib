@@ -2040,12 +2040,40 @@ DEF_CMD(emacs_abbrev)
 	return 1;
 }
 
+DEF_CMD(emacs_showinput)
+{
+	struct pane *p, *doc;
+
+	if (call("input:log", ci->focus) <= 0) {
+		call("Message", ci->focus, 0, NULL,
+		     "Cannot get log of recent input.");
+		return Efail;
+	}
+
+	doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL, "*Debug Log*");
+	if (!doc) {
+		call("interactive-cmd-view-log", ci->focus);
+		doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL,
+			     "*Debug Log*");
+	}
+	if (!doc)
+		return Efail;
+	p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM");
+	if (p) {
+		p = home_call_ret(pane, doc, "doc:attach-view", p, 1);
+		if (p)
+			call("Move-File", p, 1);
+	}
+	return 1;
+}
+
 DEF_PFX_CMD(meta_cmd, ":M");
 DEF_PFX_CMD(cx_cmd, ":CX");
 DEF_PFX_CMD(cx4_cmd, ":CX4");
 DEF_PFX_CMD(cx5_cmd, ":CX5");
 DEF_PFX_CMD(cc_cmd, ":CC");
 DEF_PFX_CMD(quote_cmd, ":CQ");
+DEF_PFX_CMD(help_cmd, ":Help");
 
 static void emacs_init(void)
 {
@@ -2061,6 +2089,7 @@ static void emacs_init(void)
 	key_add(m, "K:CX-5", &cx5_cmd.c);
 	key_add(m, "K:C-C", &cc_cmd.c);
 	key_add(m, "K:C-Q", &quote_cmd.c);
+	key_add(m, "K:F1", &help_cmd.c);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
 		struct move_command *mc = &move_commands[i];
@@ -2157,6 +2186,8 @@ static void emacs_init(void)
 	key_add(m, "K:M-q", &emacs_fill);
 	key_add(m, "K:M:C-Q", &emacs_fill);
 	key_add(m, "K:M-/", &emacs_abbrev);
+
+	key_add(m, "K:Help-l", &emacs_showinput);
 
 	key_add(m, "emacs:command", &emacs_do_command);
 	key_add(m, "interactive-cmd-version", &emacs_version);
