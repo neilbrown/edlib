@@ -985,12 +985,12 @@ static struct namelist {
 	{KEY_LEFT, ":Left"},
 	{KEY_RIGHT, ":Right"},
 	{KEY_HOME, ":Home"},
-	{KEY_BACKSPACE, ":Backspace\037:C-H"},
+	{KEY_BACKSPACE, ":Backspace"},
 	{KEY_DL, ":DelLine"},
 	{KEY_IL, ":InsLine"},
 	{KEY_DC, ":Del"},
 	{KEY_IC, ":Ins"},
-	{KEY_ENTER, ":Enter\037:C-M"},
+	{KEY_ENTER, ":Enter"},
 	{KEY_END, ":End"},
 
 	{KEY_NPAGE, ":Next"},
@@ -1071,11 +1071,10 @@ static void send_key(int keytype, wint_t c, int meta, struct pane *p safe)
 	} else {
 		n = find_name(char_names, c);
 		if (n)
-			sprintf(buf, "%s%s\037%s:C-%c",
-				m, n, m, c+64);
-		else if (c < ' ')
+			sprintf(buf, "%s%s", m, n);
+		else if (c < ' ' || c == 0x7f)
 			sprintf(buf, "%s:C-%c",
-				m, c+64);
+				m, c ^ 64);
 		else
 			sprintf(buf, "%s-%s", m, put_utf8(t, c));
 	}

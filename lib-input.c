@@ -119,52 +119,49 @@ DEF_CMD(set_all)
 	return 1;
 }
 
+static const char *safe ctrl_map[][2] = {
+	{ ":Backspace",	":C-H" },
+	{ ":Enter",	":C-M" },
+	{ ":ESC",	":C-[" },
+	{ ":LF",	":C-J" },
+	{ ":TAB",	":C-I" },
+	{ ":DELETE",	":C-?" },
+	{ ":M:Backspace",":M:C-H" },
+	{ ":M:Enter",	":M:C-M" },
+	{ ":M:ESC",	":M:C-[" },
+	{ ":M:LF",	":M:C-J" },
+	{ ":M:TAB",	":M:C-I" },
+	{ ":M:DELETE",	":M:C-?" },
+};
+
+static const char *map_key(const char *key safe)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(ctrl_map) ; i++) {
+		if (strcmp(key, ctrl_map[i][0]) == 0)
+			return ctrl_map[i][1];
+	}
+	return NULL;
+}
+
 DEF_CMD(keystroke)
 {
 	const char *key;
-	char *vkey = NULL;
 	struct input_mode *im = ci->home->data;
 	struct pane *p;
-	int l;
 	int ret;
 	int num = im->num;
 	int num2 = im->num2;
+	const char *mode = im->mode;
+	const char *alt;
 	struct mark *m;
-	int cnt = 1;
-	const char *k = ci->str;
-	char *end;
 
 	if (!ci->str)
 		return Enoarg;
 
 	pane_notify("Keystroke-notify", ci->home, 0, NULL, ci->str);
 
-	while ((end = strchr(k, '\037')) != NULL) {
-		cnt += 1;
-		k = end + 1;
-		while (*k == '\037')
-			k++;
-	}
-	l = (1 + strlen(im->mode)) * cnt + strlen(ci->str) + 1;
-
-	vkey = malloc(l);
-	memset(vkey, 0, l);
-	k = ci->str;
-	while ((end = strchr(k, '\037')) != NULL) {
-		end += 1;
-		strcat(vkey, "K");
-		strcat(vkey, im->mode);
-		strncat(vkey, k, end-k);
-		k = end;
-		while (*k == '\037')
-			k++;
-	}
-	strcat(vkey, "K");
-	strcat(vkey, im->mode);
-	strcat(vkey, k);
-	key = vkey;
-
-	free((void*)im->mode);
 	im->mode = strdup("");
 	im->num = NO_NUMERIC;
 	im->num2 = 0;
@@ -186,8 +183,12 @@ DEF_CMD(keystroke)
 		im->point = call_ret(mark, "doc:point", p);
 	m = im->point;
 
+	key = strconcat(ci->home, "K", mode, ci->str);
 	ret = call(key, p, num, m, NULL, num2);
-	free(vkey);
+	if (ret == 0 && (alt = map_key(ci->str)) != NULL) {
+		key = strconcat(ci->home, "K", mode, alt);
+		ret = call(key, p, num, m, NULL, num2);
+	}
 	if (ret < 0)
 		call("Message:default", ci->focus, 0, NULL,
 		     "** Command Failed **");

@@ -2079,7 +2079,7 @@ static void emacs_init(void)
 	key_add_range(m, "K- ", "K-~", &emacs_insert);
 	key_add_range(m, "K-\200", "K-\377\377\377\377", &emacs_insert);
 	key_add(m, "K:Tab", &emacs_insert_other);
-	key_add(m, "K:LF", &emacs_insert_other);
+	//key_add(m, "K:LF", &emacs_insert_other);
 	key_add(m, "K:Enter", &emacs_insert_other);
 	key_add(m, "K:C-O", &emacs_insert_other);
 	key_add(m, "Interactive:insert", &emacs_interactive_insert);

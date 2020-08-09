@@ -544,18 +544,18 @@ class EdDisplay(edlib.Pane):
         self.call("Mouse-event", s, (x,y), b, 1)
         edlib.time_stop(edlib.TIME_KEY)
 
-    eventmap = { "Return"	: ":Enter\037:C-M",
-                 "Tab"		: ":Tab\037:C-I",
+    eventmap = { "Return"	: ":Enter",
+                 "Tab"		: ":Tab",
                  "ISO_Left_Tab"	: ":Tab", # :S is added below
-                 "Escape"	: ":ESC\037:C-[",
-                 "Linefeed"	: ":LF\037:C-J",
+                 "Escape"	: ":ESC",
+                 "Linefeed"	: ":LF",
                  "Down"		: ":Down",
                  "Up"		: ":Up",
                  "Left"		: ":Left",
                  "Right"	: ":Right",
                  "Home"		: ":Home",
                  "End"		: ":End",
-                 "BackSpace"	: ":Backspace\037:C-H",
+                 "BackSpace"	: ":Backspace",
                  "Delete"	: ":Del",
                  "Insert"	: ":Ins",
                  "Page_Up"	: ":Prior",
