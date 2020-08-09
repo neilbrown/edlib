@@ -278,7 +278,7 @@ DEF_CMD(log_view)
 	/* Not sure what I want here yet */
 	attr_set_str(&log_pane->attrs, "render-default", "text");
 	attr_set_str(&log_pane->attrs, "doc-type", "text");
-	attr_set_str(&log_pane->attrs, "render-default", "text");
+	attr_set_str(&log_pane->attrs, "view-default", "viewer");
 	call("doc:set-name", log_pane, 0, NULL, "*Debug Log*");
 	call("global-multicall-doc:appeared-", log_pane);
 	return 1;
