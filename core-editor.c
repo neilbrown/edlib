@@ -364,7 +364,7 @@ char *strnsave(struct pane *p safe, const char *buf, int len)
 	return s;
 }
 
-char * safe __strconcat(struct pane *p safe, const char *s1 safe, ...)
+char * safe __strconcat(struct pane *p, const char *s1 safe, ...)
 {
 	va_list ap;
 	char *s;
@@ -377,7 +377,10 @@ char * safe __strconcat(struct pane *p safe, const char *s1 safe, ...)
 		len += strlen(s);
 	va_end(ap);
 
-	ret = memsave(p, NULL, len+1);
+	if (p)
+		ret = memsave(p, NULL, len+1);
+	else
+		ret = malloc(len+1);
 	strcpy(ret, s1);
 	va_start(ap, s1);
 	while ((s = va_arg(ap, char*)) != NULL)

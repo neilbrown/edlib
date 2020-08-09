@@ -131,7 +131,7 @@ struct pane *editor_new(void);
 void * safe memsave(struct pane *p safe, const char *buf, int len);
 char *strsave(struct pane *p safe, const char *buf);
 char *strnsave(struct pane *p safe, const char *buf, int len);
-char * safe __strconcat(struct pane *p safe, const char *s1 safe, ...);
+char * safe __strconcat(struct pane *p, const char *s1 safe, ...);
 #define strconcat(p, ...) __strconcat(p, __VA_ARGS__, NULL)
 
 /* This is declared here so sparse knows it is global */
