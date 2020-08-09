@@ -602,7 +602,7 @@ class EdDisplay(edlib.Pane):
             if len(s) == 0:
                 return
             if ord(s[0]) < 32:
-                s = p + ":C-" + chr(ord(s[0])+64) + "\037" + p + ":C-" + chr(ord(s[0]) + 96)
+                s = p + ":C-" + chr(ord(s[0])+64)
             else:
                 s = "-" + s
                 if event.state & Gdk.ModifierType.CONTROL_MASK:

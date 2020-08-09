@@ -2107,7 +2107,7 @@ static void emacs_init(void)
 
 	key_add(m, "K:CX-s", &emacs_save_all);
 
-	key_add(m, "K:CX:C-v", &emacs_revisit);
+	key_add(m, "K:CX:C-V", &emacs_revisit);
 
 	key_add(m, "K:CX-=", &emacs_curs_pos);
 
@@ -2155,7 +2155,7 @@ static void emacs_init(void)
 	key_add_prefix(m, "K:CQ:C-", &emacs_quote_insert);
 
 	key_add(m, "K:M-q", &emacs_fill);
-	key_add(m, "K:M:C-q", &emacs_fill);
+	key_add(m, "K:M:C-Q", &emacs_fill);
 	key_add(m, "K:M-/", &emacs_abbrev);
 
 	key_add(m, "emacs:command", &emacs_do_command);

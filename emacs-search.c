@@ -10,13 +10,13 @@
  * We capture "Replace" to repeat search.
  * We send "Move-View-Pos" to target to get it to refresh to a new location.
  * We capture:
- *   :C-s - if we have a match, save end of match as new start
+ *   :C-S - if we have a match, save end of match as new start
  *   :Backspace - is search string is same as saved start, pop
  *         otherwise remove whatever was last entered, which
  *         must be multiple chars if :Cw was used.
- *   :C-w - collect word from target and add to search string
- *   :C-c - collect char from target and add to search string.
- *   :C-r - search backwards.. tricky.
+ *   :C-W - collect word from target and add to search string
+ *   :C-C - collect char from target and add to search string.
+ *   :C-R - search backwards.. tricky.
  *   :M-c - toggle case sensitivity (currently invisible)
  *
  */
