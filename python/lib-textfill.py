@@ -251,8 +251,8 @@ class FillMode(edlib.Pane):
         if not mark:
             return 0
         next = focus.call("doc:step", mark, 1, 0, ret='char')
-        if not next or next != '\n':
-            # not at end-of-line, don't auto-fill
+        if next and  next != '\n':
+            # not at end-of-line or end-of-file, don't auto-fill
             return 0
         m = mark.dup()
         focus.call("Move-EOL", -1, m)

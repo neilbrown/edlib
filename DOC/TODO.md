@@ -23,7 +23,7 @@ Bugs to be fixed
 ----------------
 
 - [X] Alt-T at end-of-file is weird
-- [ ] fill-mode and end-of-file doesn't wrap
+- [X] fill-mode and end-of-file doesn't wrap
 - [X] a renderline can grow on wrap without resizing the ncurses panel
 - [ ] search box sometimes moves to HIDE the match, rather than expose it
 - [ ] If during search, I scroll away and back, the current match
