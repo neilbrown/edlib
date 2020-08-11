@@ -624,7 +624,7 @@ DEF_CMD(renderline)
 				/* In the middle of a UTF-8 */
 				continue;
 			if (offset == (line - line_start) ||
-			    (line-start) * mwidth > p->w - x ||
+			    (line-start) * mwidth >= p->w - x ||
 			    (XPOS>x && (line - start)*mwidth > XPOS - x)) {
 				ret = draw_some(p, focus, &rlst, &x, start,
 						&line,

@@ -24,13 +24,13 @@ Bugs to be fixed
 
 - [ ] Alt-T at end-of-file is weird
 - [ ] fill-mode and end-of-file doesn't wrap
-- [ ] a renderline can grow on wrap without resizing the ncurses panel
+- [X] a renderline can grow on wrap without resizing the ncurses panel
 - [ ] search box sometimes moves to HIDE the match, rather than expose it
 - [ ] If during search, I scroll away and back, the current match
       loses highlight.
 - [X] If I 'get-grep' from some window, then follow a link, it should appear
       in that window.  Maybe results shouldn't appear
-- [ ] sometimes the pane that gets the grep match doesn't get focus.
+- [X] sometimes the pane that gets the grep match doesn't get focus.
 - [X] The height of a blank line is slightly less than that of a line
       with a space - so adding a space pushed later lines down a pixel.
 - [X] ->cx/cy used by render-lines isn't the same as where the cursor
