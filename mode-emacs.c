@@ -378,7 +378,9 @@ REDEF_CMD(emacs_case)
 REDEF_CMD(emacs_swap)
 {
 	/* collect the object behind point and insert it after the object
-	 * after point
+	 * after point.  With a +ve repeat count, insert after n objects.
+	 * With -ve repeast, collect object after and insert behind n
+	 * previous objects.  Object is determined by mv->type.
 	 */
 	struct move_command *mv = container_of(ci->comm, struct move_command, cmd);
 	int ret = 0;
@@ -403,20 +405,29 @@ REDEF_CMD(emacs_swap)
 		struct mark *as, *ae, *bs, *be;
 		char *astr, *bstr;
 
-		ret = call(mv->type, ci->focus, -dir, ci->mark);
-		if (ret <= 0)
-			break;
+		call(mv->type, ci->focus, -dir, ci->mark);
 		as = mark_dup(ci->mark);
-		ret = call(mv->type, ci->focus, dir, ci->mark);
-		if (ret <= 0 || mark_same(ci->mark, as)) {
-			mark_free(as);
-			break;
-		}
+		call(mv->type, ci->focus, dir, ci->mark);
 		ae = mark_dup(ci->mark);
+		/* as to ae is the object to be moved. */
+
 		call(mv->type, ci->focus, dir, ci->mark);
 		be = mark_dup(ci->mark);
 		call(mv->type, ci->focus, -dir, ci->mark);
 		bs = mark_dup(ci->mark);
+		/* bs to be is the object to be swapped with.
+		 * bs must be after ae in the direction
+		 */
+		if (mark_same(as, ae) ||
+		    mark_same(bs, be) ||
+		    bs->seq - ae->seq * dir < 0) {
+			mark_to_mark(ci->mark, ae);
+			mark_free(as);
+			mark_free(ae);
+			mark_free(bs);
+			mark_free(be);
+			break;
+		}
 		astr = call_ret(str, "doc:get-str", ci->focus,
 				0, as, NULL,
 				0, ae);
