@@ -26,7 +26,8 @@ Bugs to be fixed
 - [X] fill-mode and end-of-file doesn't wrap
 - [X] a renderline can grow on wrap without resizing the ncurses panel
 - [ ] search box sometimes moves to HIDE the match, rather than expose it
-- [ ] If during search, I scroll away and back, the current match
+      Cannot reproduce this.
+- [X] If during search, I scroll away and back, the current match
       loses highlight.
 - [X] If I 'get-grep' from some window, then follow a link, it should appear
       in that window.  Maybe results shouldn't appear

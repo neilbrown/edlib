@@ -660,12 +660,22 @@ DEF_CMD(emacs_search)
 	return 1;
 }
 
+struct highlight_info {
+	int view, replace_view;
+	char *patn;
+	int ci;
+	struct mark *start, *end, *match;
+	struct pane *popup, *replace_popup;
+};
+
 static void do_searches(struct pane *p safe,
-			struct pane *owner, int view, char *patn,
+			struct pane *owner safe, int view, char *patn,
 			int ci,
 			struct mark *m, struct mark *end)
 {
 	int ret;
+	struct highlight_info *hi = owner->data;
+
 	if (!m)
 		return;
 	m = mark_dup(m);
@@ -684,12 +694,18 @@ static void do_searches(struct pane *p safe,
 			m2 = m3;
 		}
 		if (attr_find(m2->attrs, "render:search") == NULL) {
-			attr_set_int(&m2->attrs, "render:search2", len);
+			bool match = hi->match && mark_same(hi->match, m2);
+			attr_set_int(&m2->attrs,
+				     match ? "render:search" : "render:search2",
+				     len);
 			call("view:changed", p, 0, m2, NULL, 0, m);
 			m2 = vmark_new(p, view, owner);
 			if (m2) {
 				mark_to_mark(m2, m);
-				attr_set_int(&m2->attrs, "render:search2-end", 0);
+				attr_set_int(&m2->attrs,
+					     match ? "render:search-end"
+					     : "render:search2-end",
+					     0);
 			}
 		}
 		if (len == 0)
@@ -698,14 +714,6 @@ static void do_searches(struct pane *p safe,
 	}
 	mark_free(m);
 }
-
-struct highlight_info {
-	int view, replace_view;
-	char *patn;
-	int ci;
-	struct mark *start, *end;
-	struct pane *popup, *replace_popup;
-};
 
 DEF_CMD(emacs_search_highlight)
 {
@@ -730,6 +738,8 @@ DEF_CMD(emacs_search_highlight)
 	else
 		hi->patn = NULL;
 	hi->ci = ci->num2;
+	mark_free(hi->match);
+	hi->match = NULL;
 
 	if (ci->mark && ci->num >= 0 && ci->str) {
 		m = vmark_new(ci->focus, hi->view, ci->home);
@@ -738,6 +748,7 @@ DEF_CMD(emacs_search_highlight)
 		mark_to_mark(m, ci->mark);
 		attr_set_int(&m->attrs, "render:search", ci->num);
 		call("Move-View-Pos", ci->focus, 0, m);
+		hi->match = mark_dup(ci->mark);
 		if (ci->mark2 &&
 		    (m = vmark_new(ci->focus, hi->view, ci->home)) != NULL) {
 			mark_to_mark(m, ci->mark2);
@@ -971,8 +982,10 @@ DEF_CMD(emacs_highlight_close)
 	}
 	mark_free(hi->start);
 	mark_free(hi->end);
+	mark_free(hi->match);
 	hi->start = NULL;
 	hi->end = NULL;
+	hi->match = NULL;
 	return 0;
 }
 DEF_CMD(emacs_search_done)
