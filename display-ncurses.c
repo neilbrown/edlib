@@ -828,19 +828,26 @@ DEF_CMD(nc_refresh_post)
 	 */
 	for (pan = NULL; (pan = panel_above(pan)) != NULL; ) {
 		WINDOW *win;
-		struct xy src, dest, area;
+		struct xy src, dest, destend;
+		int w, h;
 
 		p1 = (void*)panel_userptr(pan);
 		if (!p1)
 			continue;
 		dest = pane_mapxy(p1, p, 0, 0, True);
-		area = pane_mapxy(p1, p, p1->w, p1->h, True);
+		destend = pane_mapxy(p1, p, p1->w, p1->h, True);
 		src = pane_mapxy(p1, p, 0, 0, False);
 		src.x = dest.x - src.x;
 		src.y = dest.y - src.y;
 		win = panel_window(pan);
+		getmaxyx(win, h, w);
+		/* guard again accessing beyond boundary of win */
+		if (destend.x > dest.x + (w - src.x))
+			destend.x = dest.x + (w - src.x);
+		if (destend.y > dest.y + (h - src.y))
+			destend.y = dest.y - (h - src.y);
 		copywin(win, stdscr, src.y, src.x,
-			dest.y, dest.x, area.y-1, area.x-1, 0);
+			dest.y, dest.x, destend.y-1, destend.x-1, 0);
 	}
 	/* place the cursor */
 	p1 = pane_leaf(p);

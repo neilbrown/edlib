@@ -4,21 +4,30 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [X] fix bugs
-- [X] diff: add command to add it to any pane
+- [ ] fix bugs
+- [ ] diff: add command to add it to any document
+- [ ] word-count for doc or selection: how to view? M-=
 - [X] Change various things that use cmd-* and a switch, to use multiple cmds.
 - [X] doc:char intermediate commands
 - [X] overlay for lib-format to allow char access.
 - [X] test suite
 - [X] use a single hash in key lookup - two at most.
-- [ ] Finish render-lines rewrite
 - [X] rexel/search improvements
 - [X] unify backend for make/grep and shell modes
 - [ ] input: keyboard macros
+- [ ] lib-diff improvements
+- [ ] spell check single word.  Pipe through ispell -a
+- [ ] Finish render-lines rewrite
 
 Bugs to be fixed
 ----------------
 
+- [ ] Alt-T at end-of-file is weird
+- [ ] fill-mode and end-of-file doesn't wrap
+- [ ] a renderline can grow on wrap without resizing the ncurses panel
+- [ ] search box sometimes moves to HIDE the match, rather than expose it
+- [ ] If during search, I scroll away and back, the current match
+      loses highlight.
 - [X] If I 'get-grep' from some window, then follow a link, it should appear
       in that window.  Maybe results shouldn't appear
 - [ ] sometimes the pane that gets the grep match doesn't get focus.
