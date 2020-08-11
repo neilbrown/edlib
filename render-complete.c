@@ -134,7 +134,7 @@ static struct pane *complete_pane(struct pane *focus)
 		unalloc(cd, pane);
 		return NULL;
 	}
-	cd->stk = malloc(sizeof(cd->stk));
+	cd->stk = malloc(sizeof(cd->stk[0]));
 	cd->stk->prev = NULL;
 	cd->stk->substr = strdup("");
 	cd->prefix_only = 1;
