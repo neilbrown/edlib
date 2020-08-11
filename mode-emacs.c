@@ -2018,6 +2018,35 @@ DEF_CMD(emacs_curs_pos)
 	return 1;
 }
 
+DEF_CMD(emacs_word_count)
+{
+	struct mark *mk;
+	struct pane *p = ci->focus;
+	char *msg = NULL;
+	int wp;
+
+	if (!ci->mark)
+		return Enoarg;
+
+	mk = call_ret(mark2, "doc:point", p);
+	if (mk && attr_find_int(mk->attrs, "emacs:active") <= 0)
+		mk = NULL;
+	call("CountLines", p, 0, ci->mark);
+	wp = attr_find_int(ci->mark->attrs, "word");
+	if (mk) {
+		int wm;
+		call("CountLines", p, 0, mk);
+		wm = attr_find_int(mk->attrs, "word");
+		asprintf(&msg, "%d words in region", abs(wp-wm));
+	} else {
+		int wd = pane_attr_get_int(p, "words", 0);
+		asprintf(&msg, "After word%s %d of %d", wp==2?"":"s", wp-1, wd);
+	}
+	call("Message", p, 0, NULL, msg);
+	free(msg);
+	return 1;
+}
+
 DEF_CMD(emacs_fill)
 {
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
@@ -2152,6 +2181,7 @@ static void emacs_init(void)
 	key_add(m, "K:CX:C-V", &emacs_revisit);
 
 	key_add(m, "K:CX-=", &emacs_curs_pos);
+	key_add(m, "K:M-=", &emacs_word_count);
 
 	key_add(m, "K:C-S", &emacs_start_search);
 	key_add(m, "K:C-R", &emacs_start_search);

@@ -6,7 +6,7 @@ Current priorities
 
 - [ ] fix bugs
 - [ ] diff: add command to add it to any document
-- [ ] word-count for doc or selection: how to view? M-=
+- [X] word-count for doc or selection: how to view? Alt-=
 - [X] Change various things that use cmd-* and a switch, to use multiple cmds.
 - [X] doc:char intermediate commands
 - [X] overlay for lib-format to allow char access.
@@ -73,6 +73,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] Change naming from "Meta" to "Alt"
 - [ ] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
       pointer separate to 'focus'?  Maybe panes could have optional
       'child' method which returns main child - pane_leaf() calls that.
