@@ -180,6 +180,8 @@ static struct move_command {
 	 "K:C-T", NULL, NULL},
 	{CMD(emacs_swap), "Move-Word", 1, 0,
 	 "K:M-t", NULL, NULL},
+	{CMD(emacs_swap), "Move-WORD", 1, 0,
+	 "K:M-T", NULL, NULL},
 };
 
 REDEF_CMD(emacs_move)
