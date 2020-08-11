@@ -156,6 +156,7 @@ def add_diff(key, focus, **a):
     p = DiffPane(focus)
     if p:
         p.call("view:changed")
+    focus.call("doc:set:view-default", "diff")
     return 1
 
 

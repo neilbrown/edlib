@@ -5,7 +5,7 @@ Current priorities
 ------------------
 
 - [ ] fix bugs
-- [ ] diff: add command to add it to any document
+- [X] diff: add command to add it to any document
 - [X] word-count for doc or selection: how to view? Alt-=
 - [X] Change various things that use cmd-* and a switch, to use multiple cmds.
 - [X] doc:char intermediate commands
@@ -217,7 +217,7 @@ Module features
 ### lib-diff
 
 - [X] The found line sometimes appears at top-of-pane, 
-- [ ] add command to add it to any pane/doc
+- [X] add command to add it to any pane/doc
 - [ ] allow inversion so 'enter' looks for the '-' not the '+'
 - [ ] status-line entry to indicate if inverted or not.
 - [ ] highlight word differences, rather than just lines
