@@ -175,8 +175,8 @@ DEF_CMD(history_attach)
 	key_add(hi->done_map, ci->str2, &history_done);
 	p = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)
-		p = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, ci->str,
-			     0, NULL, "");
+		p = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, ci->str);
+
 	if (!p) {
 		free(hi);
 		return 0;
@@ -220,11 +220,27 @@ DEF_CMD(history_hlast)
 	return rv;
 }
 
+static bool has_name(struct pane *doc safe, struct mark *m safe,
+		     const char *name safe)
+{
+	char *a;
+
+	a = call_ret(strsave, "doc:get-attr", doc, 0, m, "history:name");
+	return a && strcmp(a, name) == 0;
+}
+
 DEF_CMD(history_last)
 {
-	/* Get last line from the given history document */
+	/* Get last line from the given history document
+	 * If ci->num > 1 get nth last line
+	 * else if ci->str, get the line with given name
+	 * If both set, assign str to the nth last line
+	 * Names are assign with attribute "history:name"
+	 */
 	struct pane *doc;
 	struct mark *m, *m2;
+	int num = ci->num;
+	const char *name = ci->str2;
 	int rv;
 
 	doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
@@ -235,21 +251,55 @@ DEF_CMD(history_last)
 		return 1;
 	call("doc:set-ref", doc, 0, m);
 	call("doc:set", doc, 0, m, NULL, 1);
-	doc_prev(doc,m);
-	m2 = mark_dup(m);
-	while (doc_prior(doc, m) != '\n')
-		if (doc_prev(doc,m) == WEOF)
-			break;
-	rv = call_comm("doc:get-str", doc, ci->comm2, 0, m, NULL, 0, m2);
+	do {
+		doc_prev(doc,m);
+		m2 = mark_dup(m);
+		while (doc_prior(doc, m) != '\n')
+			if (doc_prev(doc,m) == WEOF)
+				break;
+	} while (!mark_same(m, m2) && num > 1 &&
+		 (name == NULL || has_name(doc, m, name)));
+	if (mark_same(m, m2) || num > 1)
+		rv = Efail;
+	else {
+		if (num == 1 && name)
+			call("doc:set-attr", doc, 0, m, "history:name",
+			     0, NULL, name);
+		rv = call_comm("doc:get-str", doc, ci->comm2,
+			       0, m, NULL, 0, m2);
+	}
 	mark_free(m);
 	mark_free(m2);
 	return rv;
 }
 
+DEF_CMD(history_add)
+{
+	const char *docname = ci->str;
+	const char *line = ci->str2;
+	struct pane *doc;
+
+	if (!docname || !line || strchr(line, '\n'))
+		return Einval;
+	doc = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
+	if (!doc) {
+		doc = call_ret(pane, "doc:from-text", ci->focus,
+			       0, NULL, ci->str);
+		if (doc)
+			call("global-multicall-doc:appeared-", doc);
+	}
+	if (!doc)
+		return Efail;
+	call("doc:replace", doc, 1, NULL, line, 1);
+	call("doc:replace", doc, 1, NULL, "\n", 1);
+	return 1;
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &history_attach, 0, NULL, "attach-history");
-	call_comm("global-set-command", ed, &history_last, 0, NULL, "history-get-last");
+	call_comm("global-set-command", ed, &history_last, 0, NULL, "history:get-last");
+	call_comm("global-set-command", ed, &history_add, 0, NULL, "history:add");
 
 	if (history_map)
 		return;
