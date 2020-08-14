@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] fix bugs
+- [X] fix bugs
 - [X] diff: add command to add it to any document
 - [X] word-count for doc or selection: how to view? Alt-=
 - [X] Change various things that use cmd-* and a switch, to use multiple cmds.
@@ -25,8 +25,7 @@ Bugs to be fixed
 - [X] Alt-T at end-of-file is weird
 - [X] fill-mode and end-of-file doesn't wrap
 - [X] a renderline can grow on wrap without resizing the ncurses panel
-- [ ] search box sometimes moves to HIDE the match, rather than expose it
-      Cannot reproduce this.
+- [X] search box sometimes moves to HIDE the match, rather than expose it
 - [X] If during search, I scroll away and back, the current match
       loses highlight.
 - [X] If I 'get-grep' from some window, then follow a link, it should appear

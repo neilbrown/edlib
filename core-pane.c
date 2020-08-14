@@ -926,6 +926,19 @@ struct xy pane_mapxy(struct pane *p safe, struct pane *target safe,
 {
 	struct xy xy;
 
+	/* This is a bit of a hack, but is needed to map lib-renderline
+	 * co-ordes to a pane which is parallel with the render-line
+	 * pane, but might be further fromt the root.
+	 * We move 'target' towards the root to a pane of exactly the
+	 * same size and position.  This will not change a correct
+	 * result, and can make a correct result more likely.
+	 */
+	while (target->parent != target &&
+	       target->x == 0 && target->y == 0 &&
+	       target->parent->w == target->w &&
+	       target->parent->h == target->h)
+		target = target->parent;
+
 	while (p != target && p != p->parent) {
 		if (clip && p->w > 0) {
 			if (x < 0)
