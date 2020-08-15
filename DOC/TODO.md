@@ -14,9 +14,10 @@ Current priorities
 - [X] use a single hash in key lookup - two at most.
 - [X] rexel/search improvements
 - [X] unify backend for make/grep and shell modes
-- [ ] input: keyboard macros
+- [X] input: keyboard macros
 - [ ] lib-diff improvements
 - [ ] spell check single word.  Pipe through ispell -a
+- [ ] calculating pane
 - [ ] Finish render-lines rewrite
 
 Bugs to be fixed
@@ -227,6 +228,7 @@ Module features
 
 ### emacs
 
+- [ ] find-file/buffer in popup.  Cx-9??
 - [ ] make-directory command
 - [ ] sort the command names for command-completion?
 - [ ] filename completion should ignore uninteresting files like ".o"
@@ -313,9 +315,16 @@ Module features
 
 ### lib-input
 
-- [ ] keep log of keystrokes in a restricted document
-- [ ] support keyboard macros
+- [X] keep log of keystrokes in a restricted document
+- [X] support keyboard macros
 - [ ] can we capture the substates of character composition, and give feed-back?
+
+### lib-macro
+
+- [ ] detect errors includng Abort and search failure etc. Abort capture or
+      replay on error
+- [ ] 'capturing' state should be visible in status line.
+- [ ] Possibly wait for a shell-command etc to complete before continuing.
 
 ### doc-dir
 

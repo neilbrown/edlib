@@ -37,6 +37,7 @@ enum {
 	N2_match,	/* repeated ` after Cx` repeats the search */
 	N2_undo,	/* Last command was 'undo' too */
 	N2_close_others,/* Last command was close-other, just a 1 can repeat */
+	N2_runmacro,	/* Last command was CX-e, just an 'e' can repeat */
 };
 static inline int N2(const struct cmd_info *ci safe)
 {
@@ -2109,6 +2110,55 @@ DEF_CMD(emacs_showinput)
 	return 1;
 }
 
+DEF_CMD(emacs_macro_start)
+{
+	int ret;
+
+	ret = call("macro:capture", ci->focus);
+	if (ret == Efalse)
+		call("Message", ci->focus, 0, NULL,
+		     "Macro capture already happening");
+	else if (ret <= 0)
+		call("Message", ci->focus, 0, NULL,
+		     "Macro facility not available");
+	return ret;
+}
+
+DEF_CMD(emacs_macro_stop)
+{
+	int ret;
+
+	ret = call("macro:finished", ci->focus, 2);
+	if (ret > 0)
+		call("Message", ci->focus, 0, NULL,
+		     "Macro successfully created.");
+	else if (ret == Efalse)
+		call("Message", ci->focus, 0, NULL,
+		     "No macro being created.");
+	else
+		call("Message", ci->focus, 0, NULL,
+		     "Failure creating macro.");
+	return ret;
+}
+
+DEF_CMD(emacs_macro_run)
+{
+	int cnt = RPT_NUM(ci);
+
+	if (strcmp(ci->key, "K-e") == 0 && N2(ci) != N2_runmacro)
+		return emacs_insert_func(ci);
+
+	if (cnt < 1)
+		cnt = 1;
+	while (cnt >= 1 &&
+	       call("macro:replay", ci->focus, 1) > 0)
+		cnt -= 1;
+
+	call("Mode:set-num2", ci->focus, N2_runmacro);
+	call("Message:modal", ci->focus, 0, NULL, "Type 'e' to repeat macro");
+	return cnt < 1 ? 1 : Efail;
+}
+
 DEF_PFX_CMD(meta_cmd, ":M");
 DEF_PFX_CMD(cx_cmd, ":CX");
 DEF_PFX_CMD(cx4_cmd, ":CX4");
@@ -2246,6 +2296,11 @@ static void emacs_init(void)
 	key_add(m, "Notify:selection:claimed", &emacs_sel_claimed);
 	key_add(m, "Notify:selection:commit", &emacs_sel_commit);
 
+	key_add(m, "K:CX-(", &emacs_macro_start);
+	key_add(m, "K:CX-)", &emacs_macro_stop);
+	key_add(m, "K:CX-e", &emacs_macro_run);
+	key_add(m, "K-e", &emacs_macro_run);
+
 	emacs_map = m;
 }
 
@@ -2278,4 +2333,5 @@ void edlib_init(struct pane *ed safe)
 	call_comm("global-set-command", ed, &attach_file_entry, 0, NULL, "attach-file-entry");
 
 	call("global-load-module", ed, 0, NULL, "emacs-search");
+	call("global-load-module", ed, 0, NULL, "lib-macro");
 }
