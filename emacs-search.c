@@ -1064,9 +1064,7 @@ DEF_CMD(emacs_search_attach_highlight)
 }
 
 
-/* Pre-declare to silence sparse - for now */
-void emacs_search_init(struct pane *ed safe);
-void emacs_search_init(struct pane *ed safe)
+void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &emacs_search,
 		  0, NULL, "attach-emacs-search");

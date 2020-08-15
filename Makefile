@@ -85,9 +85,9 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/lib-renderline.o O/lib-x11selection.o O/lib-autosave.o \
 	O/lib-linefilter.o \
 	O/lang-python.o \
-	O/mode-emacs.o \
+	O/mode-emacs.o O/emacs-search.o \
 	O/display-ncurses.o
-XOBJ = O/rexel.o O/emacs-search.o
+XOBJ = O/rexel.o
 
 # From python 3.8 on we need python3-embed to get the right libraries
 pypkg=$(shell pkg-config --atleast-version=3.8 python3 && echo python3-embed || echo python3)
@@ -173,7 +173,6 @@ lib/libedlib.so: $(LIBOBJ)
 shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o O/rexel.o
 O/lib-search.o : rexel.h
-lib/edlib-mode-emacs.so : O/mode-emacs.o O/emacs-search.o
 
 $(SO) : lib/edlib-%.so : O/%.o O/core-version.o lib/.exists
 	@mkdir -p lib
