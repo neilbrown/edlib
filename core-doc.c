@@ -534,7 +534,7 @@ DEF_CMD(doc_get_attr)
 	}
 	if (a)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
-				 NULL, a);
+				 NULL, a) ?: 1;
 	return 1;
 }
 
@@ -546,7 +546,7 @@ DEF_CMD(doc_set_name)
 		return Enoarg;
 	free(d->name);
 	d->name = strdup(ci->str);
-	return call("doc:notify:doc:revisit", d->home, ci->num);
+	return call("doc:notify:doc:revisit", d->home, ci->num) ?: 1;
 }
 
 DEF_CMD(doc_request_notify)
@@ -637,7 +637,7 @@ DEF_CMD(doc_vmarkget)
 		m2 = do_vmark_at_or_before(ci->home->data, ci->mark,
 					   ci->num, ci->focus);
 	return comm_call(ci->comm2, "callback:vmark", ci->focus,
-			 0, m, NULL, 0, m2);
+			 0, m, NULL, 0, m2) ?: 1;
 }
 
 DEF_CMD(doc_drop_cache)
@@ -980,7 +980,7 @@ DEF_CMD(doc_handle_get_attr)
 	a = pane_attr_get(dd->doc, ci->str);
 	if (!a)
 		return Efallthrough;
-	return comm_call(ci->comm2, "callback", ci->focus, 0, NULL, a);
+	return comm_call(ci->comm2, "callback", ci->focus, 0, NULL, a) ?: 1;
 }
 
 DEF_CMD(doc_move_to)
@@ -1391,7 +1391,7 @@ DEF_CMD(doc_open)
 	}
 	if (fd != ci->num)
 		close(fd);
-	return comm_call(ci->comm2, "callback", p);
+	return comm_call(ci->comm2, "callback", p) ?: 1;
 }
 
 DEF_CMD(doc_from_text)
@@ -1408,7 +1408,7 @@ DEF_CMD(doc_from_text)
 		call("global-multicall-doc:appeared-", p);
 	}
 	call("doc:replace", p, 1, NULL, text);
-	return comm_call(ci->comm2, "callback", p);
+	return comm_call(ci->comm2, "callback", p) ?: 1;
 }
 
 void doc_free(struct doc *d safe)
