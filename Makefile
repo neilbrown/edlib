@@ -83,11 +83,12 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/lib-viewer.o O/lib-base64.o O/lib-qprint.o O/lib-utf8.o \
 	O/lib-copybuf.o O/lib-whitespace.o O/lib-colourmap.o \
 	O/lib-renderline.o O/lib-x11selection.o O/lib-autosave.o \
-	O/lib-linefilter.o \
+	O/lib-linefilter.o O/lib-worddiff.o \
 	O/lang-python.o \
 	O/mode-emacs.o O/emacs-search.o \
 	O/display-ncurses.o
 XOBJ = O/rexel.o
+WOBJ = O/diff.o O/split.o
 
 # From python 3.8 on we need python3-embed to get the right libraries
 pypkg=$(shell pkg-config --atleast-version=3.8 python3 && echo python3-embed || echo python3)
@@ -141,6 +142,15 @@ $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
 	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
 	$(QUIET_SMATCH) $(CPPFLAGS) $(INC-$*) $<
 
+$(WOBJ) : O/%.o : wiggle/%.c
+	$(QUIET_CC)$(CC) -fPIC -Iwiggle $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
+
+$(patsubst O/%.o,wiggle/%.c,$(WOBJ)) wiggle/wiggle.h wiggle/ccan/hash/hash.c:
+	@[ -f wiggle/diff.c ] || { git submodule init && git submodule update; }
+
+O/hash.o : wiggle/ccan/hash/hash.c
+	$(QUIET_CC)$(CC) -fPIC -Iwiggle $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
+
 $(STATICOBJ) : O/%-static.o : %.c
 	$(QUIET_CCSTATIC)$(CC) -Dedlib_init=$(subst -,_,$*)_edlib_init $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
@@ -171,7 +181,8 @@ lib/libedlib.so: $(LIBOBJ)
 	$(QUIET_CC)$(CC) -shared -Wl,-soname,libedlib.so -o $@ $(LIBOBJ)
 
 shared: $(SO)
-lib/edlib-lib-search.so : O/lib-search.o O/rexel.o
+lib/edlib-lib-search.so : O/lib-search.o $(XOBJ)
+lib/edlib-lib-worddiff.so : O/lib-worddiff.o $(WOBJ) O/hash.o wiggle/wiggle.h
 O/lib-search.o : rexel.h
 
 $(SO) : lib/edlib-%.so : O/%.o O/core-version.o lib/.exists

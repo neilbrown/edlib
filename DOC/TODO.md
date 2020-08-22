@@ -23,6 +23,9 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] cursor isn't moved to bottom-right when off-screen
+- [ ] When select line from grep/make results should replace any current results pane
+- [ ] A-- cx-` should only continue backwards while bare-`
 - [X] Alt-T at end-of-file is weird
 - [X] fill-mode and end-of-file doesn't wrap
 - [X] a renderline can grow on wrap without resizing the ncurses panel

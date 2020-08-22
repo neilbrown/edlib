@@ -24,6 +24,15 @@ def djoin(dir, tail):
         dir = d
     return os.path.join(orig, tail)
 
+def measure(p, start, end):
+    start = start.dup()
+    len = 0
+    while start < end:
+        if p.call("Move-Char", start, 1) <= 0:
+            break
+        len += 1
+    return len
+
 class DiffPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
@@ -35,10 +44,60 @@ class DiffPane(edlib.Pane):
         if str == "start-of-line":
             c = focus.call("doc:step", 1, mark, ret='char')
             if c == '+':
-                comm2("attr:cb", focus, mark, "fg:green-40", 1000000, 1)
+                comm2("attr:cb", focus, mark, "fg:green-40", 1000000, 2)
             if c == '-':
-                comm2("attr:cb", focus, mark, "fg:red-40", 1000000, 1)
+                comm2("attr:cb", focus, mark, "fg:red-40", 1000000, 2)
             return 0
+        if str == "render:diff-same":
+            comm2("attr:cb", focus, mark, "inverse", int(str2), 1)
+            return 0
+
+    def handle_wordwise(self, key, focus, mark, **a):
+        "handle:doc:cmd-w"
+        if not mark:
+            return
+        mark = mark.dup()
+        found=False
+
+        focus.call("Move-EOL", mark, -1)
+        ch = focus.call("doc:step", 1, mark, ret='char')
+        m = mark.dup()
+        while ch in '-+':
+            mark.to_mark(m)
+            if focus.call("Move-EOL", m, -2) <= 0:
+                break
+            ch = focus.call("doc:step", 1, m, ret='char')
+        starta = mark.dup()
+        ch = focus.call("doc:step", 1, mark, ret='char')
+        while ch and ch == '-':
+            if (focus.call("Move-EOL", mark, 1) <= 0 or
+                focus.call("Move-Char", mark, 1) <= 0):
+                break
+            ch = focus.call("doc:step", 1, mark, ret='char')
+        startb = mark.dup()
+        ch = focus.call("doc:step", 1, mark, ret='char')
+        while ch and ch == '+':
+            if (focus.call("Move-EOL", mark, 1) <= 0 or
+                focus.call("Move-Char", mark, 1) <= 0):
+                break
+            ch = focus.call("doc:step", 1, mark, ret='char')
+
+        alen = measure(focus, starta, startb)
+        blen = measure(focus, startb, mark)
+        if alen == 0 or blen == 0:
+            focus.call("Message", "Nothing to compare here!")
+            return 1;
+        ret = focus.call("WordDiff", starta, alen, startb, blen,
+                         "render:diff-same", 'skip')
+        if ret == 1:
+            focus.call("Message", "No difference found")
+        elif ret == 2:
+            focus.call("Message", "Only white-space differences found")
+        elif ret == 3:
+            focus.call("Message", "Common text has been highlighted")
+        else:
+            focus.call("Message", "WordDiff failed")
+        return 1
 
     def handle_clone(self, key, focus, home, **a):
         "handle:Clone"
@@ -162,3 +221,4 @@ def add_diff(key, focus, **a):
 
 editor.call("global-set-command", "attach-diff", diff_view_attach)
 editor.call("global-set-command", "interactive-cmd-diff-mode", add_diff)
+editor.call("global-load-module", "lib-worddiff")

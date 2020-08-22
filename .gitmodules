@@ -1,0 +1,3 @@
+[submodule "wiggle"]
+	path = wiggle
+	url = https://github.com/neilbrown/wiggle.git
