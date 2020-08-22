@@ -118,6 +118,10 @@ DEF_CMD(editor_load_module)
 				*path = NULL;
 			return 1;
 		}
+	} else {
+		char *err = dlerror();
+		if (strstr(err, "No such file or directory") == NULL)
+			LOG("dlopen %s failed %s", buf, err);
 	}
 #else
 	unsigned int i;
@@ -132,7 +136,10 @@ DEF_CMD(editor_load_module)
 			return 1;
 		}
 #endif
-	return key_lookup_prefix(map, ci);
+	if (key_lookup_prefix(map, ci) > 0)
+		return 1;
+	LOG("Failed to load module: %s", name);
+	return Efail;
 }
 
 DEF_CMD(editor_auto_load)
