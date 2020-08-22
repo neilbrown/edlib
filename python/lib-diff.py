@@ -49,7 +49,7 @@ class DiffPane(edlib.Pane):
                 comm2("attr:cb", focus, mark, "fg:red-40", 1000000, 2)
             return 0
         if str == "render:diff-same":
-            comm2("attr:cb", focus, mark, "inverse", int(str2), 1)
+            comm2("attr:cb", focus, mark, "bg:yellow+50,underline", int(str2), 1)
             return 0
 
     def handle_wordwise(self, key, focus, mark, **a):
