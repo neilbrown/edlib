@@ -223,7 +223,7 @@ Module features
 - [X] add command to add it to any pane/doc
 - [ ] allow inversion so 'enter' looks for the '-' not the '+'
 - [ ] status-line entry to indicate if inverted or not.
-- [ ] highlight word differences, rather than just lines
+- [X] highlight word differences, rather than just lines
 - [ ] detect <<< ||| === >>> and highlight relevant differences,
       and change colour of <<< etc when no differences, or only white-space differences.
 - [ ] command to apply a hunk to a given document - or to reverse it.
@@ -557,6 +557,7 @@ Module features
 
 ### lang-python
 
+- [ ] report error if release mark which isn't ours.
 - [ ] create a library of support functions like doc_next, doc_prev etc.
 - [ ] Log loading of modules - Can I provide version info?
 - [ ] we aren't catching errors from functions called from .connect()
