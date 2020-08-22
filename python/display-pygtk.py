@@ -175,8 +175,9 @@ class EdDisplay(edlib.Pane):
             cr.set_source_rgb(bg.red, bg.green, bg.blue)
             cr.rectangle(x+lx, y-ascent+ly, width, height)
             cr.fill()
-
         cr.set_source_rgb(fg.red, fg.green, fg.blue)
+        if 'underline' in attr:
+            cr.rectangle(x+lx, y+ly+2, width, 1); cr.fill()
         cr.move_to(x, y-ascent)
         PangoCairo.show_layout(cr, pl)
         cr.stroke()
