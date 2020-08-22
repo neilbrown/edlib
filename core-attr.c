@@ -326,9 +326,13 @@ int attr_set_str_key(struct attrset **setp safe,
 	}
 	memmove(set->attrs + offset + len, set->attrs + offset,
 		set->len - offset);
+#pragma GCC diagnostic push
+// GCC really doesn't like the games I"m playing here.
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
 	strcpy(set->attrs + offset, nkey);
 	strcpy(set->attrs + offset + nkeylen, key);
 	strcpy(set->attrs + offset + nkeylen + strlen(key) + 1, val);
+#pragma GCC diagnostic pop
 	set->len += len;
 	return cmp;
 }
