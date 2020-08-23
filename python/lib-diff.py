@@ -52,25 +52,43 @@ class DiffPane(edlib.Pane):
             return
         if str == "start-of-line":
             c = focus.call("doc:step", 1, mark, ret='char')
-            if c == '+':
-                comm2("attr:cb", focus, mark, "fg:green-40", 1000000, 2)
-            elif c == '-':
-                comm2("attr:cb", focus, mark, "fg:red-40", 1000000, 2)
-            else:
+            if c not in '-+':
                 return 0
+
             # check if we have highlighted the words
             m = focus.call("doc:vmark-get", self, self.viewnum, 3, mark, ret='mark2')
-            if m and m['start'] == '1':
-                       return 0
-            self.handle_wordwise('auto', focus, mark)
+            if m:
+                st = int(m['start'])
+            else:
+                st = 0
+            # st = 0 or -1 if 'same's aren't marked, '1' if they are
+            if st <= 0:
+                if c == '+':
+                    comm2("attr:cb", focus, mark, "fg:green-40", 100000, 5)
+                else:
+                    comm2("attr:cb", focus, mark, "fg:red-40", 100000, 5)
+                if st == 0:
+                    self.handle_wordwise('auto', focus, mark)
+                return 0
+
+            # Set attr for leading '+' with length 1 and high prio
+            # Set attr for differing text with length LARGE and lower prio
+            if c == '+':
+                comm2("attr:cb", focus, mark, "fg:green-60,bg:white,nobold", 1, 5)
+                comm2("attr:cb", focus, mark, "fg:green-60,bg:cyan+90,bold", 10000, 2)
+            elif c == '-':
+                comm2("attr:cb", focus, mark, "fg:red-60,bg:white,nobold", 1, 5)
+                comm2("attr:cb", focus, mark, "fg:red-60,bg:magenta+90,bold", 10000, 2)
+
+            return 0
         if str == "render:diff-same":
             w = str2.split()
             len = int(w[0])
             if w[1] == '1':
                 # This is the '+' section
-                comm2("attr:cb", focus, mark, "fg:green-60,underline", len, 3)
+                comm2("attr:cb", focus, mark, "fg:green-40,bg:white,nobold", len, 3)
             else:
-                comm2("attr:cb", focus, mark, "fg:red-60,underline", len, 3)
+                comm2("attr:cb", focus, mark, "fg:red-40,bg:white,nobold", len, 3)
             return 0
 
     def handle_wordwise(self, key, focus, mark, **a):
@@ -106,14 +124,6 @@ class DiffPane(edlib.Pane):
                 break
             ch = focus.call("doc:step", 1, mark, ret='char')
 
-        if key == 'auto':
-            m1 = edlib.Mark(self, self.viewnum)
-            m1['start'] = '1'
-            m2 = edlib.Mark(self, self.viewnum)
-            m2['start'] = '0'
-            m1.to_mark(starta)
-            m2.to_mark(mark)
-
         alen = measure(focus, starta, startb)
         blen = measure(focus, startb, mark)
         if alen == 0 or blen == 0 or not is_hunk:
@@ -122,7 +132,18 @@ class DiffPane(edlib.Pane):
         else:
             ret = focus.call("WordDiff", starta, alen, startb, blen,
                              "render:diff-same", 'skip')
+            focus.call("view:changed", starta, mark)
         if key == 'auto':
+            m1 = edlib.Mark(self, self.viewnum)
+            if ret in [2, 3]:
+                m1['start'] = '1'
+            else:
+                m1['start'] = '-1'
+            m2 = edlib.Mark(self, self.viewnum)
+            m2['start'] = '0'
+            m1.to_mark(starta)
+            m2.to_mark(mark)
+
             return 1
 
         if ret == 4:
