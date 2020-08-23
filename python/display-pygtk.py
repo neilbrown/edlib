@@ -92,14 +92,14 @@ class EdDisplay(edlib.Pane):
         if attr is None:
             attr = str
         if attr is not None:
-            fg, bg = self.get_colours(attr)
+            fg, bg, ul = self.get_colours(attr)
         else:
             bg = None
         src = None
         if not bg:
             src = self.find_pixmap(focus.parent)
             if not src:
-                fg, bg = self.get_colours("bg:white")
+                fg, bg, ul = self.get_colours("bg:white")
         pm = self.get_pixmap(focus)
         if src:
             (pm2, x, y) = src
@@ -154,7 +154,7 @@ class EdDisplay(edlib.Pane):
             scale = 1000
         fd = self.extract_font(attr, scale)
 
-        fg, bg = self.get_colours(attr)
+        fg, bg, ul = self.get_colours(attr)
 
         pm, xo, yo = self.find_pixmap(focus)
         x += xo; y += yo
@@ -176,7 +176,7 @@ class EdDisplay(edlib.Pane):
             cr.rectangle(x+lx, y-ascent+ly, width, height)
             cr.fill()
         cr.set_source_rgb(fg.red, fg.green, fg.blue)
-        if 'underline' in attr:
+        if ul:
             cr.rectangle(x+lx, y+ly+2, width, 1); cr.fill()
         cr.move_to(x, y-ascent)
         PangoCairo.show_layout(cr, pl)
@@ -214,7 +214,7 @@ class EdDisplay(edlib.Pane):
                     pl2 = PangoCairo.create_layout(cr)
                     pl2.set_font_description(fd)
                     pl2.set_text(str[num])
-                    fg, bg = self.get_colours(attr+",inverse")
+                    fg, bg, ul = self.get_colours(attr+",inverse")
                     if fg:
                         cr.set_source_rgb(fg.red, fg.green, fg.blue)
                     cr.move_to(x+cx, y-ascent+cy)
@@ -283,9 +283,12 @@ class EdDisplay(edlib.Pane):
         size=10
         if scale <= 10:
             scale = 1000
+        style = []
         for word in attrs.split(','):
-            if word in self.styles:
-                style += " " + word
+            if word in self.styles and word not in style:
+                style.append(word)
+            elif word[:2] == 'no' and word[2:] in self.styles and word[2:] in style:
+                style.remove(word[2:])
             elif len(word) and word[0].isdigit():
                 try:
                     size = float(word)
@@ -297,7 +300,7 @@ class EdDisplay(edlib.Pane):
                 size = 9
             elif word[0:7] == "family:":
                 family = word[7:]
-        fd = Pango.FontDescription(family+' '+style+' '+str(size))
+        fd = Pango.FontDescription(family+' '+(' '.join(style))+' '+str(size))
         if scale != 1000:
             fd.set_size(fd.get_size() * scale / 1000)
         return fd
@@ -312,6 +315,7 @@ class EdDisplay(edlib.Pane):
         fg = None
         bg = None
         inv = False
+        underline = False
         for word in attrs.split(','):
             if word[0:3] == "fg:":
                 fg = word[3:]
@@ -319,6 +323,12 @@ class EdDisplay(edlib.Pane):
                 bg = word[3:]
             if word == "inverse":
                 inv = True
+            if word == "noinverse":
+                inv = False
+            if word == "underline":
+                underline = True
+            if word == "nounderline":
+                underline = False
         if inv:
             fg,bg = bg,fg
             if fg is None:
@@ -347,7 +357,7 @@ class EdDisplay(edlib.Pane):
         else:
             bgc = None
 
-        return fgc, bgc
+        return fgc, bgc, underline
 
     def get_pixmap(self, p):
         # Find or create pixmap for drawing on this pane.

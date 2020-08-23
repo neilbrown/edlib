@@ -615,8 +615,11 @@ static int cvt_attrs(struct pane *p safe, struct pane *home safe,
 		strncpy(tmp, a, c-a);
 		tmp[c-a] = 0;
 		if (strcmp(tmp, "inverse")==0) attr |= A_STANDOUT;
+		else if (strcmp(tmp, "noinverse")==0) attr &= ~A_STANDOUT;
 		else if (strcmp(tmp, "bold")==0) attr |= A_BOLD;
+		else if (strcmp(tmp, "nobold")==0) attr &= ~A_BOLD;
 		else if (strcmp(tmp, "underline")==0) attr |= A_UNDERLINE;
+		else if (strcmp(tmp, "nounderline")==0) attr &= ~A_UNDERLINE;
 		else if (strncmp(tmp, "fg:", 3) == 0) {
 			struct call_return cr =
 				call_ret(all, "colour:map", home,
