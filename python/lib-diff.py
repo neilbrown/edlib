@@ -64,7 +64,13 @@ class DiffPane(edlib.Pane):
                        return 0
             self.handle_wordwise('auto', focus, mark)
         if str == "render:diff-same":
-            comm2("attr:cb", focus, mark, "bg:yellow+50,underline", int(str2), 1)
+            w = str2.split()
+            len = int(w[0])
+            if w[1] == '1':
+                # This is the '+' section
+                comm2("attr:cb", focus, mark, "fg:green-60,underline", len, 3)
+            else:
+                comm2("attr:cb", focus, mark, "fg:red-60,underline", len, 3)
             return 0
 
     def handle_wordwise(self, key, focus, mark, **a):

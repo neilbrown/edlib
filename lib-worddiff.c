@@ -86,14 +86,14 @@ static void add_markup(struct pane *p safe, struct mark *start safe,
 			len += 1;
 		}
 		pos = startp;
-		sprintf(buf, "%d", len);
+		sprintf(buf, "%d %d", len, which);
 		call("doc:set-attr", p, 0, m, attr, 0, NULL, buf);
 		while (pos < endp) {
 			get_utf8(&pos, NULL);
 			len -= 1;
 			do {
 				if (sol)
-					sprintf(buf, "%d", len);
+					sprintf(buf, "%d %d", len, which);
 				if (sol && !skipfirst)
 					call("doc:set-attr", p, 0, m, attr,
 					     0, NULL, buf);
