@@ -88,6 +88,9 @@ class DiffPane(edlib.Pane):
             if focus.call("Move-EOL", m, -2) <= 0:
                 break
             ch = focus.call("doc:step", 1, m, ret='char')
+
+        is_hunk = ch == ' ' or ch == '@'
+
         starta = mark.dup()
         ch = focus.call("doc:step", 1, mark, ret='char')
         while ch and ch == '-':
@@ -113,7 +116,7 @@ class DiffPane(edlib.Pane):
 
         alen = measure(focus, starta, startb)
         blen = measure(focus, startb, mark)
-        if alen == 0 or blen == 0:
+        if alen == 0 or blen == 0 or not is_hunk:
                 msg = "Nothing to compare here!"
                 ret = 4
         else:
