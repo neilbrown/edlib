@@ -88,7 +88,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/mode-emacs.o O/emacs-search.o \
 	O/display-ncurses.o
 XOBJ = O/rexel.o
-WOBJ = O/diff.o O/split.o
+WOBJ = O/libwiggle.a
 
 # From python 3.8 on we need python3-embed to get the right libraries
 pypkg=$(shell pkg-config --atleast-version=3.8 python3 && echo python3-embed || echo python3)
@@ -142,14 +142,13 @@ $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
 	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
 	$(QUIET_SMATCH) $(CPPFLAGS) $(INC-$*) $<
 
-$(WOBJ) : O/%.o : wiggle/%.c
-	$(QUIET_CC)$(CC) -fPIC -Iwiggle $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
 
-$(patsubst O/%.o,wiggle/%.c,$(WOBJ)) wiggle/wiggle.h wiggle/ccan/hash/hash.c:
-	@[ -f wiggle/diff.c ] || { git submodule init && git submodule update; }
+O/libwiggle.a wiggle/wiggle.h : wiggle-dir
 
-O/hash.o : wiggle/ccan/hash/hash.c
-	$(QUIET_CC)$(CC) -fPIC -Iwiggle $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
+.PHONY: wiggle-dir
+wiggle-dir:
+	@[ -f wiggle/wiggle.h ] || { git submodule init && git submodule update; }
+	$(MAKE) -C wiggle O=`pwd`/O OptDbg="-O3 -fPIC" lib
 
 $(STATICOBJ) : O/%-static.o : %.c
 	$(QUIET_CCSTATIC)$(CC) -Dedlib_init=$(subst -,_,$*)_edlib_init $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
@@ -182,12 +181,14 @@ lib/libedlib.so: $(LIBOBJ)
 
 shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o $(XOBJ)
-lib/edlib-lib-worddiff.so : O/lib-worddiff.o $(WOBJ) O/hash.o wiggle/wiggle.h
+lib/edlib-lib-worddiff.so : O/lib-worddiff.o $(WOBJ)
+
 O/lib-search.o : rexel.h
+O/lib-worddiff.o : wiggle/wiggle.h
 
 $(SO) : lib/edlib-%.so : O/%.o O/core-version.o lib/.exists
 	@mkdir -p lib
-	$(QUIET_LIB)$(CC) -shared -Wl,-soname,edlib-$*.so -o $@ $(filter %.o,$^) $(LIBS-$*)
+	$(QUIET_LIB)$(CC) -shared -Wl,-soname,edlib-$*.so -o $@ $(filter %.o,$^) $(filter %.a,$^) $(LIBS-$*)
 
 O/mod-list.h : Makefile
 	$(QUIET_SCRIPT)for file in $(patsubst O/%.o,%,$(subst -,_,$(SHOBJ))); do echo "{ \"$$file\", $${file}_edlib_init}," ; done | sort > $@
