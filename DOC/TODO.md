@@ -16,8 +16,8 @@ Current priorities
 - [X] unify backend for make/grep and shell modes
 - [X] input: keyboard macros
 - [ ] lib-diff improvements
-- [ ] spell check single word.  Pipe through ispell -a
-- [ ] calculating pane
+- [ ] spell check single word.  Use aspell library.
+- [ ] calculating pane with libgmp
 - [ ] Finish render-lines rewrite
 
 Bugs to be fixed
@@ -356,6 +356,8 @@ Module features
 
 ### completion
 
+- [ ] Make it possible to search through completions. Maybe Alt-P only shows
+      lines containing current content.
 - [ ] When 'delete' and there is only the original
       entry of the prefix stack, just delete one character.
 - [ ] mouse selection should work in completion pane
@@ -831,6 +833,11 @@ This probably needs to be recored, then played back for me.
 I don't keep a diary or use a planner much, so this seems like an odd thing to include.
 But dates are cool, and this is a highly structured concept and I like structure.
 At the very least I want a calendar pop-up.
+
+### info browser
+
+Info is widely used... rendering it like markdown and allowing
+browsing would be nice.
 
 ### A suite of tools making use of some sort of "mark-down" like language
 
