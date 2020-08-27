@@ -23,3 +23,5 @@ def config_appeared(key, focus, **a):
 
 editor.call("global-set-command", "doc:appeared-config", config_appeared)
 
+# Some modules I want auto-loaded.
+editor.call("global-load-module", "lib-mergeview")
