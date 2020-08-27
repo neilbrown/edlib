@@ -2277,10 +2277,10 @@ DEF_CMD(text_set_attr)
 {
 	const char *attr = ci->str;
 	const char *val = ci->str2;
-	struct text_chunk *c;
+	struct text_chunk *c, *c2;
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
-	int o;
+	int o, o2;
 
 	if (!attr)
 		return Enoarg;
@@ -2299,8 +2299,22 @@ DEF_CMD(text_set_attr)
 		c = list_next_entry(c, lst);
 		o = c->start;
 	}
-	pane_notify("doc:replaced", ci->home, 1, ci->mark);
+	pane_notify("doc:replaced", ci->home, 1, ci->mark, NULL,
+		    0, ci->mark2);
 	attr_set_str_key(&c->attrs, attr, val, o);
+	if (!ci->mark2 || ci->mark2->seq <= ci->mark->seq)
+		return Efallthrough;
+	/* Delete all subsequent instances of attr */
+	o += 1;
+	o2 = ci->mark2->ref.o;
+	c2 = ci->mark2->ref.c;
+	while (c != c2) {
+		attr_del_all(&c->attrs, attr, o, c->end);
+		c = list_next_entry(c, lst);
+		o = c ? c->start : 0;
+	}
+	if (c && o < o2)
+		attr_del_all(&c->attrs, attr, o, o2);
 	return Efallthrough;
 }
 

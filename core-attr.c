@@ -179,18 +179,11 @@ static int __attr_find(struct attrset ***setpp safe, const char *key safe,
 	return 1;
 }
 
-int attr_del(struct attrset * *setp safe, const char *key safe)
+static void do_del(struct attrset * *setp safe, int offset)
 {
-	int offset = 0;
-	int cmp;
 	int len;
 	struct attrset *set;
 
-	cmp = __attr_find(&setp, key, &offset, -1);
-
-	if (cmp)
-		/* Not found */
-		return 0;
 	set = safe_cast *setp;
 	len = strlen(set->attrs + offset) + 1;
 	len += strlen(set->attrs + offset + len) + 1;
@@ -202,7 +195,51 @@ int attr_del(struct attrset * *setp safe, const char *key safe)
 		*setp = set->next;
 		free(set);
 	}
+}
+
+int attr_del(struct attrset * *setp safe, const char *key safe)
+{
+	int offset = 0;
+	int cmp;
+
+	cmp = __attr_find(&setp, key, &offset, -1);
+
+	if (cmp)
+		/* Not found */
+		return 0;
+	do_del(setp, offset);
 	return 1;
+}
+
+void attr_del_all(struct attrset * *setp safe, const char *key safe,
+		  int low, int high)
+{
+	int offset = 0;
+	/* Delete all attrs 'key' with keynum from 'low' to 'high' */
+	while (low <= high) {
+		struct attrset *set;
+		int n;
+		int cmp = __attr_find(&setp, key, &offset, low);
+
+		if (cmp < 0)
+			/* Nothing more to find */
+			return;
+		low += 1;
+		if (cmp == 0) {
+			/* Found, better delete */
+			do_del(setp, offset);
+			continue;
+		}
+		/* found something higher, possibly update 'low'
+		 * to skip over gaps.
+		 */
+		set = *setp;
+		if (!set || offset >= set->len)
+			continue;
+		n = atoi(set->attrs + offset);
+		if (n > low)
+			low = n;
+	}
 }
 
 char *attr_get_str(struct attrset *set, const char *key safe, int keynum)
@@ -271,18 +308,13 @@ int attr_set_str_key(struct attrset **setp safe,
 
 	cmp = __attr_find(&setp, key, &offset, keynum);
 
-	if (cmp == 0) {
+	if (cmp == 0)
 		/* Remove old value */
-		set = safe_cast *setp;
-		len = strlen(set->attrs + offset) + 1;
-		len += strlen(set->attrs + offset + len) + 1;
-		memmove(set->attrs + offset,
-			set->attrs + offset + len,
-			set->len - (offset + len));
-		set->len -= len;
-	}
+		do_del(setp, offset);
+
 	if (!val)
 		return cmp;
+
 	set = *setp;
 	if (keynum >= 0) {
 		snprintf(nkey, sizeof(nkey), "%d ", keynum);
