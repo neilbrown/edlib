@@ -20,6 +20,17 @@ Current priorities
 - [ ] calculating pane with libgmp
 - [ ] Finish render-lines rewrite
 
+- [ ] Add 3-way wiggle support to lib-worddiff
+- [ ] flag to doc:replaced to say that it was only attributes
+- [X] wiggle: quiet mode for Makefile
+- [ ] switch-buffer in pop-up window
+- [ ] file in pop-up window in 'view' mode by default
+- [ ] diff-mode keystrokes for 'next diff', prev, etc
+- [ ] merge-mode to highlight markers with "space-only" or "no-diff" state
+- [ ] merge-mode command to select one of the three "this only".
+- [ ] merge-mode automatic detect, enable, goto-first
+- [ ] Cx-7 (??) to open doc/file in pop-up.
+
 Bugs to be fixed
 ----------------
 
@@ -32,7 +43,7 @@ Bugs to be fixed
 - [X] search box sometimes moves to HIDE the match, rather than expose it
 - [X] If during search, I scroll away and back, the current match
       loses highlight.
-- [X] If I 'get-grep' from some window, then follow a link, it should appear
+- [X] If I 'git-grep' from some window, then follow a link, it should appear
       in that window.  Maybe results shouldn't appear
 - [X] sometimes the pane that gets the grep match doesn't get focus.
 - [X] The height of a blank line is slightly less than that of a line
@@ -632,6 +643,9 @@ Possibly some of these will end up being features in other modules.
       Must allow hex/dec etc entry
       Allow chained expressions, with ability to edit earlier ones to change final result.
       Maybe each line is $N and typing '$' gets the most recent N, but Alt-P changes.
+      or ... every blank link gets a "varname = " prompt, which as 3 or more letters,
+      but skip i o (?).  These vars can be used in other lines.
+      When a line is changed
 - [ ] menus
       This might support a menu-bar, or drop-downs for spelling or dynamic completion.
 - [ ] hex edit block device - mmap document type
