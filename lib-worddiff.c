@@ -74,10 +74,9 @@ static void add_markup(struct pane *p safe, struct mark *start safe,
 		}
 		while (pos < startp) {
 			get_utf8(&pos, NULL);
-			do {
-				ch = doc_next(p, m);
-				sol = is_eol(ch);
-			} while (ch != WEOF && skipfirst && sol);
+			ch = doc_next(p, m);
+			if (skipfirst && is_eol(ch))
+				doc_next(p, m);
 		}
 		/* Convert csl->len in bytes to len in codepoints. */
 		len = 0;
@@ -88,21 +87,19 @@ static void add_markup(struct pane *p safe, struct mark *start safe,
 		pos = startp;
 		sprintf(buf, "%d %d", len, which);
 		call("doc:set-attr", p, 0, m, attr, 0, NULL, buf);
+		sol = False;
 		while (pos < endp) {
 			get_utf8(&pos, NULL);
+			if (sol) {
+				sprintf(buf, "%d %d", len, which);
+				if (skipfirst)
+					ch = doc_next(p, m);
+				call("doc:set-attr", p, 0, m, attr,
+				     0, NULL, buf);
+			}
 			len -= 1;
-			do {
-				if (sol)
-					sprintf(buf, "%d %d", len, which);
-				if (sol && !skipfirst)
-					call("doc:set-attr", p, 0, m, attr,
-					     0, NULL, buf);
-				ch = doc_next(p, m);
-				if (sol && skipfirst)
-					call("doc:set-attr", p, 0, m, attr,
-					     0, NULL, buf);
-				sol = is_eol(ch);
-			} while (ch != WEOF && skipfirst && sol);
+			ch = doc_next(p, m);
+			sol = is_eol(ch);
 		}
 		csl += 1;
 	}
