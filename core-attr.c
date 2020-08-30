@@ -535,7 +535,7 @@ void attr_trim(struct attrset **setp safe, int nkey)
 }
 
 /* make a copy of 'set', keeping only attributes from 'nkey'
- * onwards.  'nkey' will be the new starting offset.
+ * onwards.
  */
 struct attrset *attr_copy_tail(struct attrset *set, int nkey)
 {
@@ -558,7 +558,7 @@ struct attrset *attr_copy_tail(struct attrset *set, int nkey)
 			if (*k == ' ')
 				k++;
 
-			attr_set_str_key(&newset, k, v, n-nkey);
+			attr_set_str_key(&newset, k, v, n);
 		}
 	}
 
