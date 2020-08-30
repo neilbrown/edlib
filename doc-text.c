@@ -2299,8 +2299,9 @@ DEF_CMD(text_set_attr)
 		c = list_next_entry(c, lst);
 		o = c->start;
 	}
+	/* ->num2 == 1 means only attrs are changed */
 	pane_notify("doc:replaced", ci->home, 1, ci->mark, NULL,
-		    0, ci->mark2);
+		    1, ci->mark2);
 	attr_set_str_key(&c->attrs, attr, val, o);
 	if (!ci->mark2 || ci->mark2->seq <= ci->mark->seq)
 		return Efallthrough;

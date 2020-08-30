@@ -21,7 +21,7 @@ Current priorities
 - [ ] Finish render-lines rewrite
 
 - [ ] Add 3-way wiggle support to lib-worddiff
-- [ ] flag to doc:replaced to say that it was only attributes
+- [X] flag to doc:replaced to say that it was only attributes
 - [X] wiggle: quiet mode for Makefile
 - [ ] switch-buffer in pop-up window
 - [ ] file in pop-up window in 'view' mode by default

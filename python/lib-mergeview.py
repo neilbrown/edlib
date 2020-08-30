@@ -25,6 +25,8 @@ class MergePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.marks = None
+        self.difftype = 0
+        self.call("doc:request:doc:replaced")
 
     def fore(self, m, ptn):
         if not m:
@@ -44,18 +46,27 @@ class MergePane(edlib.Pane):
             return m
         return None
 
-    def mark(self, m1s, m1e, m2s, m2e):
+    def mark(self, m1s, m1e, m2s, m2e, move=True):
         if not m1s or not m1e or not m2s or not m2e:
             self.call("Message:modal", "failed to find merge markers")
             return 1
-        self.call("Move-EOL", 1, m1s); self.call("Move-Char", 1, m1s)
-        self.call("Move-EOL", 1, m2s); self.call("Move-Char", 1, m2s)
+        if move:
+            self.call("Move-EOL", 1, m1s); self.call("Move-Char", 1, m1s)
+            self.call("Move-EOL", 1, m2s); self.call("Move-Char", 1, m2s)
+        else:
+            self.call("doc:set-attr", "render:merge-same", m1s, m1e)
+            self.call("doc:set-attr", "render:merge-same", m2s, m2e)
+
         a = measure(self, m1s, m1e)
         b = measure(self, m2s, m2e)
 
         if a > 0 and b > 0:
             ret = self.call("WordDiff", m1s, a, m2s, b, "render:merge-same")
+        else:
+            # everything different
+            ret = 4
         self.marks = [m1s,m1e, m2s,m2e]
+        self.difftype = ret
         self.call("view:changed", m1s, m1e)
         self.call("view:changed", m2s, m2e)
         return 1
@@ -99,6 +110,22 @@ class MergePane(edlib.Pane):
             self.call("Message:modal", "Cannot find a merge mark")
         return 1
 
+    def handle_update(self, key, focus, mark, mark2, num, num2, **a):
+        "handle:doc:replaced"
+        if num2:
+            # only attrs updated
+            return 0
+        if not self.marks:
+            return 0
+        # only update if an endpoint is in the range.
+        if ((mark and mark >= self.marks[0] and mark <= self.marks[1]) or
+            (mark and mark >= self.marks[2] and mark <= self.marks[3]) or
+            (mark2 and mark2 >= self.marks[0] and mark2 <= self.marks[1]) or
+            (mark2 and mark2 >= self.marks[2] and mark2 <= self.marks[3])):
+            # Update the highlight
+            self.mark(*self.marks, move=False)
+            return 0
+
     def handle_highlight(self, key, focus, str, str2, mark, comm2, **a):
         "handle:map-attr"
         if not comm2 or not mark:
@@ -108,12 +135,21 @@ class MergePane(edlib.Pane):
             if not self.marks:
                 return
             s1,e1,s2,e2 = self.marks
-            if mark >= s1 and mark < e1:
-                comm2("attr:cb", focus, mark, "fg:green-60,bg:cyan+90,bold",
-                      10000, 2)
-            if mark >= s2 and mark < e2:
-                comm2("attr:cb", focus, mark, "fg:red-60,bg:magenta+90,bold",
-                      10000, 2)
+            if self.difftype == 1:
+                # No difference, no 'merge-same' attrs,
+                if mark >= s1 and mark < e1:
+                    comm2("attr:cb", focus, mark, "fg:red-40,nobold",
+                          10000, 2)
+                if mark >= s2 and mark < e2:
+                    comm2("attr:cb", focus, mark, "fg:green-40,nobold",
+                          10000, 2)
+            else:
+                if mark >= s1 and mark < e1:
+                    comm2("attr:cb", focus, mark, "fg:red-60,bg:magenta+90,bold",
+                          10000, 2)
+                if mark >= s2 and mark < e2:
+                    comm2("attr:cb", focus, mark, "fg:green-60,bg:cyan+90,bold",
+                          10000, 2)
             return
         if str == "render:merge-same":
             w = str2.split()
