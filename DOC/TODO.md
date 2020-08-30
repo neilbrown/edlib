@@ -34,6 +34,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] search for something only before cursor, and it doesn't highlight.
+      This is because nothing triggers the render:reposition that is
+      needed.  We probably need to cache the position, but also provide
+      rules on when it is sent.
 - [ ] cursor isn't moved to bottom-right when off-screen
 - [ ] When select line from grep/make results should replace any current results pane
 - [ ] A-- cx-` should only continue backwards while bare-`

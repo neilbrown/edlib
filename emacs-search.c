@@ -830,6 +830,8 @@ DEF_CMD(emacs_hl_attrs)
 	}
 	if (strcmp(ci->str, "start-of-line") == 0 && ci->mark && hi->view >= 0) {
 		struct mark *m = vmark_at_or_before(ci->focus, ci->mark, hi->view, ci->home);
+		if (m && mark_same(m, ci->mark))
+			m = NULL;
 		if (m && attr_find_int(m->attrs, "render:search") > 0)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
 					 ci->mark, "fg:red,inverse,vis-nl", 20);
