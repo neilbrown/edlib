@@ -40,7 +40,12 @@ Bugs to be fixed
       This is because nothing triggers the render:reposition that is
       needed.  We probably need to cache the position, but also provide
       rules on when it is sent.
-- [ ] cursor isn't moved to bottom-right when off-screen
+- [X] cursor isn't moved to bottom-right when off-screen
+- [ ] When cursor is off-screen pygtk cursor gets drawn on background and
+      stays there.  I think pygtk needs to know about an off-screen cursor
+      and draw that explicitly in 'refresh()'.  For that to work, render-lines
+      need to explicitly tell it that this is offscreen, so that it can be ignored
+      when not in-focus, or drawn if it is.
 - [ ] When select line from grep/make results should replace any current results pane
 - [ ] A-- cx-` should only continue backwards while bare-`
 - [X] Alt-T at end-of-file is weird
