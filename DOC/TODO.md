@@ -36,7 +36,7 @@ Bugs to be fixed
 
 - [ ] in text-fill.py find_start() can return an int (Error) or a mark,
       and callers don't cope.
-- [ ] search for something only before cursor, and it doesn't highlight.
+- [X] search for something only before cursor, and it doesn't highlight.
       This is because nothing triggers the render:reposition that is
       needed.  We probably need to cache the position, but also provide
       rules on when it is sent.

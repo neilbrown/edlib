@@ -715,6 +715,8 @@ static void do_searches(struct pane *p safe,
 	mark_free(m);
 }
 
+static void queue_highlight_refresh(struct pane *p safe);
+
 DEF_CMD(emacs_search_highlight)
 {
 	/* from 'mark' for 'num' chars to 'mark2' there is a match for 'str',
@@ -754,6 +756,11 @@ DEF_CMD(emacs_search_highlight)
 			mark_to_mark(m, ci->mark2);
 			attr_set_int(&m->attrs, "render:search-end", 0);
 		}
+	} else if (ci->str) {
+		/* No destination to move to, so just refresh whatever
+		 * is visible
+		 */
+		queue_highlight_refresh(ci->focus);
 	}
 	call("view:changed", ci->focus);
 	return 1;
@@ -918,10 +925,14 @@ DEF_CMD(emacs_search_reposition_delayed)
 		do_searches(ci->focus, ci->home, hi->view, patn, hi->ci,
 			    vend, end);
 	}
-	mark_free(hi->start);
-	mark_free(hi->end);
-	hi->start = hi->end = NULL;
 	return Efalse;
+}
+
+static void queue_highlight_refresh(struct pane *p safe)
+{
+	call_comm("event:free", p, &emacs_search_reposition_delayed);
+	call_comm("event:timer", p, &emacs_search_reposition_delayed,
+		  getenv("EDLIB_TESTING") ? 50 : 500);
 }
 
 DEF_CMD(emacs_search_reposition)
@@ -955,9 +966,7 @@ DEF_CMD(emacs_search_reposition)
 	hi->start = mark_dup(start);
 	hi->end = mark_dup(end);
 
-	call_comm("event:free", ci->focus, &emacs_search_reposition_delayed);
-	call_comm("event:timer", ci->focus, &emacs_search_reposition_delayed,
-		  getenv("EDLIB_TESTING") ? 50 : 500);
+	queue_highlight_refresh(ci->focus);
 	return 0;
 }
 
