@@ -34,8 +34,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] in text-fill.py find_start() can return an int (Error) or a mark,
+- [X] in textfill.py find_start() can return an int (Error) or a mark,
       and callers don't cope.
+- [ ] search box doesn't flip left border to right when it move to left side
+      if parent.
 - [X] search for something only before cursor, and it doesn't highlight.
       This is because nothing triggers the render:reposition that is
       needed.  We probably need to cache the position, but also provide

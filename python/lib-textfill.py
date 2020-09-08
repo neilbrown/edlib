@@ -137,7 +137,8 @@ def find_start(focus, mark):
         focus.call("Move-Char", leng, mark)
     except edlib.commandfailed:
         if focus.call("doc:step", 0, m, ret='char') != None:
-            return edlib.Efail
+            # Went back 100 lines and found no suitable para-separator line
+            return None
         mark.to_mark(m)
     # mark is at start of para - not indented yet.
 
@@ -205,6 +206,9 @@ class FillMode(edlib.Pane):
             if not mark:
                 return edlib.Enoarg
             mark = find_start(focus, mark)
+            if not mark:
+                focus.call("Message", "Cannot find start of paragraph to fill")
+                return edlib.Efalse
             mark2 = find_end(focus, mark.dup())
 
         if num != edlib.NO_NUMERIC and num > 8:
@@ -262,6 +266,9 @@ class FillMode(edlib.Pane):
 
         # need to start a new line, so need a prefix.
         st = find_start(focus, m)
+        if not st:
+            # Cannot find para start, so just consider this line
+            st = m
         para = focus.call("doc:get-str", st, mark, ret='str')
         lines = para.splitlines()
         if len(lines) == 0:
