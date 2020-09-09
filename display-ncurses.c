@@ -853,7 +853,14 @@ DEF_CMD(nc_refresh_post)
 			dest.y, dest.x, destend.y-1, destend.x-1, 0);
 	}
 	/* place the cursor */
-	if (p->cx >= 0)
+	p1 = pane_leaf(p);
+	pan = NULL;
+	while (p1 != p && (pan = pane_panel(p1, NULL)) == NULL)
+		p1 = p1->parent;
+	if (pan && p1->cx >= 0) {
+		struct xy curs = pane_mapxy(p1, p, p1->cx, p1->cy, False);
+		wmove(stdscr, curs.y, curs.x);
+	} else if (p->cx >= 0)
 		wmove(stdscr, p->cy, p->cx);
 	refresh();
 	record_screen(ci->home);
