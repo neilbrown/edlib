@@ -2159,6 +2159,101 @@ DEF_CMD(emacs_macro_run)
 	return cnt < 1 ? 1 : Efail;
 }
 
+struct bb {
+	struct buf b;
+	struct command c;
+	bool first;
+};
+DEF_CMD(get_suggestion)
+{
+	struct bb *b = container_of(ci->comm, struct bb, c);
+
+	if (!ci->str)
+		return Enoarg;
+
+	if (b->first)
+		buf_concat(&b->b, " - possibly ");
+	else
+		buf_concat(&b->b, ", ");
+	b->first = False;
+	buf_concat(&b->b, ci->str);
+	return 1;
+}
+
+DEF_CMD(emacs_spell)
+{
+	struct mark *st, *ed;
+	char *word;
+	int ret;
+	wint_t ch;
+	int rpt = RPT_NUM(ci);
+
+	if (!ci->mark)
+		return Enoarg;
+
+	if (rpt < 0)
+		/* '-' means 'forever */
+		rpt = 1000000;
+
+	ch = doc_prior(ci->focus, ci->mark);
+again:
+	if (ch == WEOF || !isalnum(ch)) {
+		/* Previous char is not in a word, so move to next word */
+		call("Move-WORD", ci->focus, 1, ci->mark);
+		call("Move-Char", ci->focus, 1, ci->mark);
+	}
+	ch = WEOF;
+	st = mark_dup(ci->mark);
+	call("Move-WORD", ci->focus, -1, st);
+	ed = mark_dup(st);
+	call("Move-WORD", ci->focus, 1, ed);
+	word = call_ret(str, "doc:get-str", ci->focus, 0, st, NULL, 0, ed);
+	mark_free(st);
+	mark_free(ed);
+
+	if (!word || !*word) {
+		free(word);
+		call("Message", ci->focus, 0, NULL,
+		     "No word found for spell check");
+		return 1;
+	}
+	ret = call("SpellCheck", ci->focus, 0, NULL, word);
+	if (ret > 0) {
+		rpt -= 1;
+		if (rpt > 0)
+			goto again;
+		call("Message", ci->focus, 0, NULL,
+		     strconcat(ci->focus, "\"", word,
+			       "\" is a correct spelling."));
+	} else if (ret == Efalse) {
+		struct bb b;
+		buf_init(&b.b);
+		buf_concat(&b.b, "\"");
+		buf_concat(&b.b, word);
+		buf_concat(&b.b, "\" is NOT correct");
+		b.first = True;
+		b.c = get_suggestion;
+		call_comm("SpellSuggest", ci->focus, &b.c,
+			  0, NULL, word);
+		if (b.first)
+			buf_concat(&b.b, " ... no suggestions");
+		call("Message", ci->focus, 0, NULL, buf_final(&b.b));
+		free(buf_final(&b.b));
+	} else if (ret == Efail) {
+		rpt -= 1;
+		if (rpt > 0)
+			goto again;
+
+		call("Message", ci->focus, 0, NULL,
+		     strconcat(ci->focus, "\"", word,
+			       "\" is not a word."));
+	} else
+		call("Message", ci->focus, 0, NULL,
+		     strconcat(ci->focus, "Spell check failed for \"", word,
+			       "\""));
+	return 1;
+}
+
 DEF_PFX_CMD(meta_cmd, ":M");
 DEF_PFX_CMD(cx_cmd, ":CX");
 DEF_PFX_CMD(cx4_cmd, ":CX4");
@@ -2279,6 +2374,7 @@ static void emacs_init(void)
 	key_add(m, "K:M-q", &emacs_fill);
 	key_add(m, "K:M:C-Q", &emacs_fill);
 	key_add(m, "K:M-/", &emacs_abbrev);
+	key_add(m, "K:M-;", &emacs_spell);
 
 	key_add(m, "K:Help-l", &emacs_showinput);
 
@@ -2334,4 +2430,5 @@ void edlib_init(struct pane *ed safe)
 
 	call("global-load-module", ed, 0, NULL, "emacs-search");
 	call("global-load-module", ed, 0, NULL, "lib-macro");
+	call("global-load-module", ed, 0, NULL, "lib-aspell");
 }

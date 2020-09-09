@@ -16,7 +16,7 @@ Current priorities
 - [X] unify backend for make/grep and shell modes
 - [X] input: keyboard macros
 - [ ] lib-diff improvements
-- [ ] spell check single word.  Use aspell library.
+- [X] spell check single word.  Use aspell library.
 - [ ] calculating pane with libgmp
 - [ ] Finish render-lines rewrite
 
@@ -630,6 +630,21 @@ Module features
 
 - [ ] provide a drop-down menu with options
 
+
+### spell checker
+- [ ] extract words better. e.g. '-' and '/' separate words.
+      Maybe have a regexp which defaults [A-Za-z.']+ ??
+- [ ] mode-specific so latex can ignore \foo
+- [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
+- [ ] auto-spell checking on display
+- [ ] record what has been checked and what hasn't.  When content is changed, remove
+      'is checked' indication for whole line.
+- [ ] mark individual words that are mis-spelled.
+- [ ] command to cycle between options.- maybe similar to Alt-/
+- [ ] drop-down with options
+- [ ] command to add word to per-document list, or personal list
+
+
 New Modules - simple
 --------------------
 
@@ -664,9 +679,6 @@ Possibly some of these will end up being features in other modules.
 - [ ] menus
       This might support a menu-bar, or drop-downs for spelling or dynamic completion.
 - [ ] hex edit block device - mmap document type
-- [ ] spell check
-      This leaves attributes where errors are found, and needs to be notified of
-      all changes so it can queue some checks.
 
 - [ ] image-display pane - e.g. can be given a png/jpeg etc file and display
       it scaled, plus allow scaling and movement

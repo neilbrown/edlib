@@ -9,9 +9,9 @@ Edlib - a library for building a document editor
 ==============================================
 
 Edlib is an extensible document editor.  It is inspired in part by
-emacs, both by its strengths and its weaknesses.
+Emacs, both by its strengths and its weaknesses.
 
-emacs provides a programming language — E-lisp — for configuring and
+Emacs provides a programming language — E-lisp — for configuring and
 extending the editor.  Edlib doesn't.  It allows various pre-existing
 languages to be used to configure and extend the editor.  It does
 this by providing a library of core editing tools and providing
@@ -20,7 +20,7 @@ bindings to various languages.
 At least, that is the plan.  At time if writing, edlib only provides
 bindings for C and Python.  Other languages should be fairly easy.
 
-The particular value-add of edlib over emacs (apart from the obvious
+The particular value-add of edlib over Emacs (apart from the obvious
 “NIH” issues) is that both document storage and document rendering are
 fully extensible.  A document is not always a text buffer, it could
 also be a mem-mapped files, a directory, or an internal data
@@ -28,7 +28,7 @@ structure.
 Any document can have multiple views, and each view can
 show very different things: scriptable code is run whenever
 rendering is required.  This should make implementing documents with
-non-trivial structures a lot easier.
+nontrivial structures a lot easier.
 
 Edlib is designed to have well defined abstractions that can be
 exported to various languages for them to manipulate.  They include
@@ -49,14 +49,14 @@ result.  The arguments include two panes (“home” and “focus”),
 two marks (“mark” and “mark2”),
 three strings (“key”, “str”, “str2”),
 two numbers (“num” and “num2”),
-a co-ordinate pair (“x”, “y”) and two commands (“comm1” and “comm2”).
+a coordinate pair (“x”, “y”) and two commands (“comm1” and “comm2”).
 Extra result values can be effected by passing them to a call to
-the “comm2” argument - i.e the command can be used as a call-back.
+the “comm2” argument - i.e the command can be used as a callback.
 
 Each “pane” has a dedicate command which handles messages sent to
 the pane, as will be described later.  Commands can also be passed
 to other commands, which can either call them directly (like the
-call-back mentioned above) or store them for later use, or
+callback mentioned above) or store them for later use, or
 both.
 
 Three of the arguments provided to a command have very special
@@ -125,7 +125,7 @@ display pane which link to the document and display its content.
 As well as a dedicated command (the “handler”) and private data, each
 pane has:
 
-- x,y co-ordinates together with width and height.  The co-ordinates
+- x,y coordinates together with width and height.  The coordinates
   are relative to the parent, and by recursive addition can be made
   absolute.
 - a “z” value which indicates display priority with respect to
@@ -249,7 +249,7 @@ Keymaps
 -------
 
 A keymap is a mapping from command names to commands.  While a
-pane hander could use any mapping it likes, the keymap implemented in
+pane handler could use any mapping it likes, the keymap implemented in
 edlib has one small advantage in that a range of strings can be mapped to
 a command, then exceptions can be recorded.
 
@@ -608,7 +608,7 @@ Emacs Mode
 ----------
 
 This provides a set of named commands which can be given to “keymap”
-as a global key map.  In provides a number of emacs-like bindings.
+as a global key map.  In provides a number of Emacs-like bindings.
 
 
 C/Python mode
