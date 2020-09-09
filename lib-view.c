@@ -355,6 +355,7 @@ DEF_CMD(view_status_changed)
 		if (pt != ci->mark)
 			return 1;
 	}
+	pane_damaged(ci->home, DAMAGED_VIEW);
 	pane_damaged(ci->home, DAMAGED_REFRESH);
 	if (strcmp(ci->key, "view:changed") == 0)
 		return 0;

@@ -171,9 +171,11 @@ DEF_CMD(popup_child_closed)
 	return 1;
 }
 
-static void popup_set_style(struct pane *p safe)
+static bool popup_set_style(struct pane *p safe)
 {
 	struct popup_info *ppi = p->data;
+	char *orig_border = attr_find(p->attrs, "borders");
+	bool changed = False;
 
 	if (ppi->parent_popup) {
 		char *border = pane_attr_get(ppi->parent_popup, "borders");
@@ -190,7 +192,10 @@ static void popup_set_style(struct pane *p safe)
 			/* Force a status line */
 			border[j++] = 's';
 		border[j] = 0;
-		attr_set_str(&p->attrs, "borders", border);
+		if (!orig_border || strcmp(orig_border, border) != 0) {
+			attr_set_str(&p->attrs, "borders", border);
+			changed = True;
+		}
 	}
 
 	if (strchr(ppi->style, 'a'))
@@ -198,6 +203,7 @@ static void popup_set_style(struct pane *p safe)
 		attr_set_str(&p->attrs, "Popup", "ignore");
 	else
 		attr_set_str(&p->attrs, "Popup", "true");
+	return changed;
 }
 
 DEF_CMD(popup_style)
@@ -209,7 +215,8 @@ DEF_CMD(popup_style)
 
 	free(ppi->style);
 	ppi->style = strdup(ci->str);
-	popup_set_style(ci->home);
+	if (popup_set_style(ci->home))
+		call("view:changed", ci->focus);
 	popup_resize(ci->home, ppi->style);
 	return 1;
 }

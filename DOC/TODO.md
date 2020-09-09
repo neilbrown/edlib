@@ -36,7 +36,7 @@ Bugs to be fixed
 
 - [X] in textfill.py find_start() can return an int (Error) or a mark,
       and callers don't cope.
-- [ ] search box doesn't flip left border to right when it move to left side
+- [X] search box doesn't flip left border to right when it move to left side
       if parent.
 - [X] search for something only before cursor, and it doesn't highlight.
       This is because nothing triggers the render:reposition that is
@@ -100,6 +100,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] detect and limit recursion
 - [ ] Change naming from "Meta" to "Alt"
 - [ ] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
       pointer separate to 'focus'?  Maybe panes could have optional
@@ -602,6 +603,7 @@ Module features
 ### test suite
 
 - [ ] tests for double-click and drag.
+- [ ] test for recent search improvements
 - [X] create reliable test for hex mode
 - [X] avoid duplicate Display lines with same content
       Sometimes this is needed, but I've removed most of them.
