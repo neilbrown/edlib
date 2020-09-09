@@ -349,11 +349,22 @@ class MakePane(edlib.Pane):
             self.point = None
             self.dirs = {self['dirname']:100}
             self.note_ok = False
+        elif num == 0 and num2 != 1:
+            # No explicit request for direction, and this wasn't a
+            # simple 'repeat-last', so move forward
+            self.backwards = False
 
         self.do_parse()
 
         if self.backwards:
-            n = self.find_prev()
+            if num2 == 1:
+                n = self.find_prev()
+            elif self.point:
+                # First request to step backward, just repeat
+                # current match.
+                n = self.map[int(self.point['ref'])]
+            else:
+                n = None
             if not n:
                 focus.call("Message", "No previous matches")
                 self.backwards = False

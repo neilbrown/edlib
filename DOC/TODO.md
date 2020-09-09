@@ -49,7 +49,7 @@ Bugs to be fixed
       need to explicitly tell it that this is offscreen, so that it can be ignored
       when not in-focus, or drawn if it is.
 - [ ] When select line from grep/make results should replace any current results pane
-- [ ] A-- cx-` should only continue backwards while bare-`
+- [X] A-- cx-` should only continue backwards while bare-`
 - [X] Alt-T at end-of-file is weird
 - [X] fill-mode and end-of-file doesn't wrap
 - [X] a renderline can grow on wrap without resizing the ncurses panel
