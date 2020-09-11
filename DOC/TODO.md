@@ -20,7 +20,7 @@ Current priorities
 - [ ] calculating pane with libgmp
 - [ ] Finish render-lines rewrite
 
-- [ ] Add 3-way wiggle support to lib-worddiff
+- [X] Add 3-way wiggle support to lib-worddiff
 - [X] flag to doc:replaced to say that it was only attributes
 - [X] wiggle: quiet mode for Makefile
 - [ ] switch-buffer in pop-up window
@@ -100,6 +100,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] send warning message when recursive notification is prohibited.
 - [ ] detect and limit recursion
 - [ ] Change naming from "Meta" to "Alt"
 - [ ] is DocLeaf really a good idea?  Maybe panes should have 'leafward'

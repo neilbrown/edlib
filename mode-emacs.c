@@ -540,6 +540,7 @@ static struct simple_command {
 	/* one day, this will be "find definition", now it is same as "find any" */
 	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "K:CX:M-."},
 	{CMD(emacs_simple_str), "interactive-cmd-git-grep", "K:M-."},
+	{CMD(emacs_simple), "interactive-cmd-merge-mode", "K:M-m"},
 };
 
 REDEF_CMD(emacs_simple)

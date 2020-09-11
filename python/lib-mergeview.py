@@ -12,63 +12,66 @@
 # If cursor is not on any, it is moved forward to the next one.
 #
 
-def measure(p, start, end):
-    start = start.dup()
-    len = 0
-    while start < end:
-        if p.call("Move-Char", start, 1) <= 0:
-            break
-        len += 1
-    return len
-
 class MergePane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.marks = None
-        self.difftype = 0
+        self.conflicts = 0
         self.call("doc:request:doc:replaced")
 
-    def fore(self, m, ptn):
+    def fore(self, m, end, ptn):
         if not m:
             return None
         m = m.dup()
-        if self.call("text-search", m, "^(?4:"+ptn+")") > 1:
-            self.call("Move-EOL", -1, m)
-            return m
+        try:
+            if self.call("text-search", m, end, "^(?4:"+ptn+")") > 1:
+                self.call("Move-EOL", -1, m)
+                return m
+        except edlib.commandfailed:
+            pass
         return None
 
-    def back(self, m, ptn):
-        if not m:
-            return None
-        m = m.dup()
-        if self.call("text-search", 0, 1,  m, "^(?4:"+ptn+")") > 1:
-            self.call("Move-EOL", -1, m)
-            return m
-        return None
+    def add_pair(self, v, group, m1, m2):
+        vm = edlib.Mark(self, v)
+        vm.to_mark(m1);
+        self.call("Move-EOL", 1, vm);
+        self.call("Move-Char", 1, vm)
+        vm['wiggle'] = group + "-start"
+        vm1 = edlib.Mark(orig=vm)
+        vm1.to_mark(m2)
+        vm1['wiggle'] = group + "-end"
+        return vm
 
-    def mark(self, m1s, m1e, m2s, m2e, move=True):
-        if not m1s or not m1e or not m2s or not m2e:
-            self.call("Message:modal", "failed to find merge markers")
-            return 1
-        if move:
-            self.call("Move-EOL", 1, m1s); self.call("Move-Char", 1, m1s)
-            self.call("Move-EOL", 1, m2s); self.call("Move-Char", 1, m2s)
-        else:
-            self.call("doc:set-attr", "render:merge-same", m1s, m1e)
-            self.call("doc:set-attr", "render:merge-same", m2s, m2e)
+    def mark(self, start, end):
+        # There is probably a 3-way merge between start and end
 
-        a = measure(self, m1s, m1e)
-        b = measure(self, m2s, m2e)
+        if self.marks:
+            self.call("doc:set-attr", "render:merge-same",
+                      self.marks[0], self.marks[3])
+            self.marks = None
+        start = self.fore(start, end, "<<<<")
+        m1 = self.fore(start, end, "||||")
+        m2 = self.fore(m1, end, "====")
+        m3 = self.fore(m2, end, ">>>>")
+        if not m3:
+            # something wasn't found, give up
+            return
+        v = self.call("doc:add-view") - 1
+        vm = self.add_pair(v, "orig", start, m1)
+        self.add_pair(v, "before", m1, m2)
+        self.add_pair(v, "after", m2, m3)
 
-        if a > 0 and b > 0:
-            ret = self.call("WordDiff", m1s, a, m2s, b, "render:merge-same")
-        else:
-            # everything different
-            ret = 4
-        self.marks = [m1s,m1e, m2s,m2e]
-        self.difftype = ret
-        self.call("view:changed", m1s, m1e)
-        self.call("view:changed", m2s, m2e)
+        ret = self.call("WordWiggle", "render:merge-same", vm)
+
+        m = self.call("doc:vmark-get", v, ret='mark')
+        while m:
+            m.release()
+            m = self.call("doc:vmark-get", v, ret='mark')
+        self.call("doc:del-view", v)
+
+        self.marks = [start, m1, m2, m3]
+        self.conflicts = ret - 1
+        self.call("view:changed", start, m3)
         return 1
 
     def handle_alt_m(self, key, focus, mark, **a):
@@ -76,9 +79,7 @@ class MergePane(edlib.Pane):
 
         if self.marks:
             focus.call("doc:set-attr", "render:merge-same",
-                       self.marks[0], self.marks[1])
-            focus.call("doc:set-attr", "render:merge-same",
-                       self.marks[2], self.marks[3])
+                       self.marks[0], self.marks[3])
             self.marks = None
 
         if not mark:
@@ -86,29 +87,54 @@ class MergePane(edlib.Pane):
         m = mark.dup()
         focus.call("Move-EOL", -1, m)
         try:
-            focus.call("text-search", m, "^(<<<<|\\|{4}|====)")
+            focus.call("text-search", m, "^(<<<<|>>>>)")
             focus.call("Move-EOL", -1, m)
         except edlib.commandfailed:
-            pass
-        if focus.call("text-match", m.dup(), "<<<<") > 1:
-            m1 = self.fore(m, "||||")
-            m2 = self.fore(m1, "====")
-            self.mark(m,m1,m1.dup(),m2)
-            mark.to_mark(m1)
-        elif focus.call("text-match", m.dup(), "?4:||||") > 1:
-            m1 = self.fore(m, "====")
-            m2 = self.fore(m, ">>>>")
-            self.mark(m, m1, m1.dup(), m2)
-            mark.to_mark(m1)
-        elif focus.call("text-match", m.dup(), "====") > 1:
-            m1 = self.back(m, "||||")
-            m0 = self.back(m1, "<<<<")
-            m2 = self.fore(m, ">>>>")
-            self.mark(m0, m1, m, m2)
-            mark.to_mark(m2)
-        else:
             self.call("Message:modal", "Cannot find a merge mark")
+            return edlib.Efalse
+        if focus.call("text-match", m.dup(), ">>>>") > 1:
+            # was inside a merge, move to start
+            try:
+                # search backwards
+                focus.call("text-search", m, 0,1, "^<<<<")
+            except edlib.commandfailed:
+                # weird, no start,  I guess we give up
+                self.call("Message:modal", "Cannot find a merge mark")
+                return edlib.Efalse
+            focus.call("Move-EOL", -1, m)
+        # must be at the start.
+        try:
+            end = m.dup()
+            focus.call("Move-EOL", 1, end)
+            focus.call("text-search", end, "^(<<<<|>>>>)")
+            focus.call("Move-EOL", -1, end)
+        except edlib.commandfailed:
+            # There is no end
+            return edlib.Efalse
+        if focus.call("doc:step", 1, end, ret='char') != '>':
+            # didn't find a matching end.
+            mark.to_mark(end)
+            self.call("Message:modal", "Merge wasn't terminated, next is here")
+            return edlib.Efalse
+
+        m1 = self.fore(m, end, "||||")
+        m2 = self.fore(m1, end, "====")
+        m3 = end
+        if m3:
+            self.call("Move-EOL", 1, m3)
+            self.call("Move-Char", 1, m3)
+            self.mark(m, m3)
+            mark.to_mark(m3)
         return 1
+
+    def remark(self, key, **a):
+        if self.marks:
+            m = self.marks[3].dup()
+            self.call("Move-EOL", 1, m)
+            self.call("Move-Char", 1, m)
+            self.mark(self.marks[0], m)
+        return edlib.Efalse
+
 
     def handle_update(self, key, focus, mark, mark2, num, num2, **a):
         "handle:doc:replaced"
@@ -118,12 +144,10 @@ class MergePane(edlib.Pane):
         if not self.marks:
             return 0
         # only update if an endpoint is in the range.
-        if ((mark and mark >= self.marks[0] and mark <= self.marks[1]) or
-            (mark and mark >= self.marks[2] and mark <= self.marks[3]) or
-            (mark2 and mark2 >= self.marks[0] and mark2 <= self.marks[1]) or
-            (mark2 and mark2 >= self.marks[2] and mark2 <= self.marks[3])):
+        if ((mark and mark >= self.marks[0] and mark <= self.marks[3]) or
+            (mark2 and mark2 >= self.marks[0] and mark2 <= self.marks[3])):
             # Update the highlight
-            self.mark(*self.marks, move=False)
+            self.call("event:timer", 10, self.remark)
             return 0
 
     def handle_highlight(self, key, focus, str, str2, mark, comm2, **a):
@@ -131,36 +155,37 @@ class MergePane(edlib.Pane):
         if not comm2 or not mark:
             return
 
+        if not self.marks:
+            return
+        o,b,a,e = self.marks
+
         if str == "start-of-line":
-            if not self.marks:
-                return
-            s1,e1,s2,e2 = self.marks
-            if self.difftype == 1:
-                # No difference, no 'merge-same' attrs,
-                if mark >= s1 and mark < e1:
-                    comm2("attr:cb", focus, mark, "fg:red-40,nobold",
+            if mark == o or mark == b or mark == a or mark == e:
+                if self.conflicts:
+                    comm2("attr:cb", focus, mark, "fg:red-40",
                           10000, 2)
-                if mark >= s2 and mark < e2:
-                    comm2("attr:cb", focus, mark, "fg:green-40,nobold",
-                          10000, 2)
-            else:
-                if mark >= s1 and mark < e1:
-                    comm2("attr:cb", focus, mark, "fg:red-60,bg:magenta+90,bold",
-                          10000, 2)
-                if mark >= s2 and mark < e2:
-                    comm2("attr:cb", focus, mark, "fg:green-60,bg:cyan+90,bold",
+                else:
+                    comm2("attr:cb", focus, mark, "fg:green-40",
                           10000, 2)
             return
+
         if str == "render:merge-same":
             w = str2.split()
             len = int(w[0])
-            if w[1] == '1':
-                # This is the '+' section
-                comm2("attr:cb", focus, mark, "fg:green-40,bg:white,nobold",
-                      len, 3)
-            else:
-                comm2("attr:cb", focus, mark, "fg:red-40,bg:white,nobold",
-                      len, 3)
+            if w[1] == "Unmatched":
+                comm2("attr:cb", focus, mark, "fg:blue-40", len, 3)
+            if w[1] == "Extraneous":
+                comm2("attr:cb", focus, mark, "fg:cyan-40", len, 3)
+            if w[1] == "Changed":
+                if mark < a:
+                    comm2("attr:cb", focus, mark, "fg:red-40", len, 3)
+                else:
+                    comm2("attr:cb", focus, mark, "fg:green-40", len, 3)
+            if w[1] == "Conflict":
+                comm2("attr:cb", focus, mark, "fg:red-40,inverse", len, 3)
+            if w[1] == "AlreadyApplied":
+                comm2("attr:cb", focus, mark, "fg:cyan-40,inverse", len, 3)
+
             return 0
 
 
@@ -172,7 +197,7 @@ def merge_view_attach(key, focus, comm2, **a):
         comm2("callback", p)
     return 1
 
-def add_merge(key, focus, **a):
+def add_merge(key, focus, mark, **a):
     p = MergePane(focus)
     if p:
         p.call("view:changed")
@@ -183,6 +208,8 @@ def add_merge(key, focus, **a):
     else:
         v = 'merge'
     focus.call("doc:set:view-default", v)
+    if mark:
+        p.call("K:M-m", focus, mark)
     return 1
 
 editor.call("global-set-command", "attach-merge", merge_view_attach)
