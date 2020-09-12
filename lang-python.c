@@ -807,6 +807,7 @@ static PyObject *pane_iter_next(PaneIter *self safe)
 struct pyret {
 	struct command comm;
 	PyObject *ret;
+	bool return_char;
 };
 
 DEF_CMD(take_focus)
@@ -885,14 +886,79 @@ static struct command *map_ret(char *ret safe)
 	return NULL;
 }
 
+static bool handle_ret(PyObject *kwds, struct cmd_info *ci safe,
+		       struct pyret *pr safe)
+{
+	char *rets;
+	struct command *c;
+	PyObject *ret, *s3 = NULL;
+
+	memset(pr, 0, sizeof(*pr));
+
+	ret = kwds ? PyDict_GetItemString(kwds, "ret") : NULL;
+	if (!ret)
+		return True;
+
+	if (!PyUnicode_Check(ret) ||
+	    (rets = python_as_string(ret, &s3)) == NULL) {
+		PyErr_SetString(PyExc_TypeError, "ret= must be given a string");
+		return False;
+	}
+	if (strcmp(rets, "char") == 0) {
+		pr->return_char = 1;
+		ret = NULL;
+	} else {
+		if (ci->comm2) {
+			PyErr_SetString(PyExc_TypeError, "ret= not permitted with comm2");
+			Py_XDECREF(s3);
+			return False;
+		}
+		c = map_ret(rets);
+		if (!c) {
+			PyErr_SetString(PyExc_TypeError, "ret= type not valid");
+			Py_XDECREF(s3);
+			return False;
+		}
+		pr->comm = *c;
+		ci->comm2 = &pr->comm;
+	}
+	Py_XDECREF(s3);
+	return True;
+}
+
+static PyObject *choose_ret(int rv, struct pyret *pr safe)
+{
+	if (pr->comm.func && rv >= 0) {
+		if (pr->ret)
+			return pr->ret;
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	Py_XDECREF(pr->ret);
+	if (rv < Efalse) {
+		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
+		return NULL;
+	}
+	if (pr->return_char) {
+		if (rv == 0) {
+			Py_INCREF(Py_False);
+			return Py_False;
+		}
+		if (rv == CHAR_RET(WEOF)) {
+			Py_INCREF(Py_None);
+			return Py_None;
+		}
+		return PyUnicode_FromFormat("%c", rv & 0xFFFFF);
+	}
+	return PyLong_FromLong(rv);
+}
+
 static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 {
 	struct cmd_info ci = SAFE_CI;
 	int rv;
-	PyObject *s1, *s2, *s3 = NULL;
-	PyObject *ret;
+	PyObject *s1, *s2;
 	struct pyret pr;
-	int return_char = 0;
 
 	if (!pane_valid(self))
 		return NULL;
@@ -901,42 +967,10 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 
 	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
 
-	if (rv <= 0) {
+	if (rv <= 0 || !handle_ret(kwds, &ci, &pr)) {
 		Py_XDECREF(s1); Py_XDECREF(s2);
 		command_put(ci.comm2);
 		return NULL;
-	}
-	ret = kwds ? PyDict_GetItemString(kwds, "ret") : NULL ;
-	if (ret) {
-		char *rets;
-		struct command *c;
-
-		if (!PyUnicode_Check(ret) ||
-		    (rets = python_as_string(ret, &s3)) == NULL) {
-			PyErr_SetString(PyExc_TypeError, "ret= must be given a string");
-			Py_XDECREF(s1); Py_XDECREF(s2);
-			return NULL;
-		}
-		if (strcmp(rets, "char") == 0) {
-			return_char = 1;
-			ret = NULL;
-		} else {
-			if (ci.comm2) {
-				PyErr_SetString(PyExc_TypeError, "ret= not permitted with comm2");
-				Py_XDECREF(s1); Py_XDECREF(s2); Py_XDECREF(s3);
-				command_put(ci.comm2);
-				return NULL;
-			}
-			pr.ret = NULL;
-			c = map_ret(rets);
-			if (!c) {
-				PyErr_SetString(PyExc_TypeError, "ret= type not valid");
-				Py_XDECREF(s1); Py_XDECREF(s2); Py_XDECREF(s3);
-				return NULL;
-			}
-			pr.comm = *c;
-			ci.comm2 = &pr.comm;
-		}
 	}
 
 	rv = key_handle(&ci);
@@ -944,31 +978,10 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 	/* Just in case ... */
 	PyErr_Clear();
 
-	Py_XDECREF(s1); Py_XDECREF(s2);Py_XDECREF(s3);
+	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
-	if (ret && rv >= 0) {
-		if (pr.ret)
-			return pr.ret;
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-	if (ret)
-		Py_XDECREF(pr.ret);
-	if (rv < Efalse) {
-		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
-		return NULL;
-	}
-	if (!return_char)
-		return PyLong_FromLong(rv);
-	if (!rv) {
-		Py_INCREF(Py_False);
-		return Py_False;
-	}
-	if (rv == CHAR_RET(WEOF)) {
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-	return PyUnicode_FromFormat("%c", rv & 0xFFFFF);
+
+	return choose_ret(rv, &pr);
 }
 
 static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
@@ -976,6 +989,7 @@ static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject
 	struct cmd_info ci = SAFE_CI;
 	int rv;
 	PyObject *s1, *s2;
+	struct pyret pr;
 
 	if (!pane_valid(self))
 		return NULL;
@@ -984,7 +998,7 @@ static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject
 
 	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
 
-	if (rv <= 0) {
+	if (rv <= 0 || !handle_ret(kwds, &ci, &pr)) {
 		Py_XDECREF(s1); Py_XDECREF(s2);
 		command_put(ci.comm2);
 		return NULL;
@@ -995,11 +1009,7 @@ static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject
 
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
-	if (rv < Efalse) {
-		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
-		return NULL;
-	}
-	return PyLong_FromLong(rv);
+	return choose_ret(rv, &pr);
 }
 
 static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwds)
@@ -2067,11 +2077,12 @@ static PyObject *Comm_call(Comm *c safe, PyObject *args safe, PyObject *kwds)
 	struct cmd_info ci = SAFE_CI;
 	int rv;
 	PyObject *s1, *s2;
+	struct pyret pr;
 
 	if (!c->comm)
 		return NULL;
 	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
-	if (rv <= 0) {
+	if (rv <= 0 || !handle_ret(kwds, &ci, &pr)) {
 		Py_XDECREF(s1); Py_XDECREF(s2);
 		command_put(ci.comm2);
 		return NULL;
@@ -2081,11 +2092,7 @@ static PyObject *Comm_call(Comm *c safe, PyObject *args safe, PyObject *kwds)
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
 
-	if (rv < Efalse) {
-		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
-		return NULL;
-	}
-	return PyLong_FromLong(rv);
+	return choose_ret(rv, &pr);
 }
 
 static PyObject *comm_cmp(Comm *c1 safe, Comm *c2 safe, int op)
