@@ -858,6 +858,18 @@ DEF_CMD(take_str)
 	return 1;
 }
 
+DEF_CMD(take_comm)
+{
+	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
+
+	if (pr->ret)
+		return Einval;
+	if (!ci->comm2)
+		return Efallthrough;
+	pr->ret = Comm_Fromcomm(ci->comm2);
+	return 1;
+}
+
 static struct command *map_ret(char *ret safe)
 {
 	if (strcmp(ret, "focus") == 0)
@@ -868,6 +880,8 @@ static struct command *map_ret(char *ret safe)
 		return &take_mark2;
 	if (strcmp(ret, "str") == 0)
 		return &take_str;
+	if (strcmp(ret, "comm") == 0)
+		return &take_comm;
 	return NULL;
 }
 
