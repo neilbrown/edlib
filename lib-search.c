@@ -168,6 +168,7 @@ DEF_CMD(search_test)
 		char *ret;
 		ret = rxl_interp(ss->st, ci->str);
 		comm_call(ci->comm2, "cb", ci->focus, 0, NULL, ret);
+		free(ret);
 		return 1;
 	}
 	return 0;
