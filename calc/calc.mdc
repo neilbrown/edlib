@@ -1,0 +1,176 @@
+# Calculator for use in edlib #
+
+For a calculator in edlib I need to be able to evaluate expressions.
+This requires a parser, and I as I have one already from my ocean-lang
+project, I'll use that.
+
+The calculator will be fed a single line which may contain identifiers.
+If there is a parse error, the character offset is reported, otherwise
+the expression is evauluated.  Any identifier cause an call back to
+request the value to use.  On success the final value is returned.
+
+# calc: header
+
+	#include "parse_number.h"
+	struct number {
+		mpq_t	val;
+	};
+
+	struct parse_context {
+		struct token_config config;
+		int	error;
+		mpq_t	result;
+		int	(*getvar)(const char *name, int len, mpq_t val, void *data);
+		void	*data;
+		char	tail[3];
+	};
+	#define config2context(_conf) container_of(_conf, struct parse_context, \
+		config)
+
+# calc: reduce
+	struct parse_context *c = config2context(config);
+	mpf_t flt, flt2;
+
+# calc: code
+
+	#include <gmp.h>
+	#include <string.h>
+	#include "mdcode.h"
+	#include "scanner.h"
+	#include "parser.h"
+
+	#include "calc.h"
+
+	#include "../core.h"
+
+	static void free_number(struct number *n)
+	{
+		mpq_clear(n->val);
+		free(n);
+	}
+
+	int do_calc(char *expr, mpq_t result,
+		    int (*getvar)(const char *name, int len, mpq_t val, void *data),
+	            void *data)
+	{
+		struct parse_context ctx = {
+			.config = {
+				.ignored = (1 << TK_line_comment)
+				         | (1 << TK_block_comment)
+				         | (1 << TK_in)
+				         | (1 << TK_out),
+				.number_chars = ".,_+-",
+				.word_start = "",
+				.word_cont = "",
+			},
+			.getvar = getvar,
+			.data = data,
+			.error = -1,
+		};
+		struct code_node n = {};
+		n.code.txt = expr;
+		n.code.len = strlen(expr);
+
+		mpq_init(ctx.result);
+		parse_calc(&n, &ctx.config, NULL);
+		if (ctx.error == -1)
+			mpq_set(result, ctx.result);
+		mpq_clear(ctx.result);
+		return ctx.error + 1;
+	}
+
+	
+# calc: grammar
+
+	$LEFT + -
+	$LEFT * /
+	$LEFT << >>
+
+	Line -> Expression ${
+			mpq_set(c->result, $1.val);
+		}$
+		| ERROR ${
+			if (c->error < 0)
+				c->error = $1.col;
+		}$
+
+	$number
+	Expression -> Expression + Expression ${
+			mpq_init($0.val);
+			mpq_add($0.val, $1.val, $3.val);
+		}$
+		| Expression - Expression ${
+			mpq_init($0.val);
+			mpq_sub($0.val, $1.val, $3.val);
+		}$
+		| Expression * Expression ${
+			mpq_init($0.val);
+			mpq_mul($0.val, $1.val, $3.val);
+		}$
+		| Expression / Expression ${
+			mpq_init($0.val);
+			if (mpq_cmp_si($3.val, 0, 1) != 0)
+				mpq_div($0.val, $1.val, $3.val);
+			else if (c->error < 0)
+				c->error = $2.col;
+		}$
+		| - Expression ${
+			mpq_init($0.val);
+			mpq_neg($0.val, $2.val);
+		}$
+		| + Expression ${
+			mpq_init($0.val);
+			mpq_abs($0.val, $2.val);
+		}$
+		| Expression << Expression ${
+			mpq_init($0.val);
+			if (mpz_cmp_si(mpq_denref($3.val), 1) == 0) {
+				mp_bitcnt_t pow = mpz_get_ui(mpq_numref($3.val));
+				mpq_mul_2exp($0.val, $1.val, pow);
+			} else if (c->error < 0)
+				c->error = $2.col;
+		}$
+		| Expression >> Expression ${
+			mpq_init($0.val);
+			if (mpz_cmp_si(mpq_denref($3.val), 1) == 0) {
+				mp_bitcnt_t pow = mpz_get_ui(mpq_numref($3.val));
+				mpq_div_2exp($0.val, $1.val, pow);
+			} else if (c->error < 0)
+				c->error = $2.col;
+		}$
+		| NUMBER ${
+			if (number_parse($0.val, c->tail, $1.txt) == 0) {
+				mpq_init($0.val);
+				if (c->error < 0)
+					c->error = $1.col;
+			} else if (c->tail[0] && c->error < 0)
+				c->error = $1.col;
+		}$
+		| IDENTIFIER ${
+			if (!c->getvar)
+				c->error = $1.col;
+			else {
+				mpq_init($0.val);
+				if (!c->getvar($1.txt.txt, $1.txt.len,
+				               $0.val, c->data))
+					if (c->error < 0)
+						c->error = $1.col;
+			}
+		}$
+		| ( Expression ) ${
+			mpq_init($0.val);
+			mpq_set($0.val, $2.val);
+		}$
+		| sqrt ( Expression ) ${
+			mpf_init(flt);
+			mpf_init(flt2);
+					mpq_init($0.val);
+			mpf_set_q(flt, $3.val);
+			if (mpf_cmp_ui(flt, 0) >= 0) {
+				mpf_sqrt(flt2, flt);
+				mpq_set_f($0.val, flt2);
+			} else if (c->error < 0)
+				c->error = $1.col;
+			mpf_clear(flt);
+			mpf_clear(flt2);
+		}$

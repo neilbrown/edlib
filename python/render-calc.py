@@ -1,0 +1,140 @@
+# -*- coding: utf-8 -*-
+# Copyright Neil Brown ©2020 <neil@brown.name>
+# May be distributed under terms of GPLv2 - see file:COPYING
+#
+# perform calculations on lines starting '?', placing results in lines
+# starting '>'
+#
+
+class CalcView(edlib.Pane):
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus)
+        self.vars = {}
+        self.varcnt = 0
+        self.getvar = focus.call("make-search", "> ([a-z0-9]+) = ", 3, ret='comm')
+
+    def handle_enter(self, key, focus, mark, **a):
+        "handle:K:Enter"
+        if not mark:
+            return edlib.Enoarg
+        m = mark.dup()
+        focus.call("Move-EOL", -1, m)
+        c = focus.call("doc:step", 1, m, ret='char')
+        if c == '?':
+            return self.calc(focus, mark)
+        if c == '>':
+            return self.add_expr(focus, mark)
+        return 0
+
+    def nextvar(self):
+        # from 0 to 675 use 2 letters
+        # beyond that use 3.
+        nm = None
+        while not nm:
+            v = self.varcnt
+            self.varcnt += 1
+            nm = chr(97+v%26)
+            v = int(v/26)
+            nm = chr(97+v%26) + nm
+            v = int(v/26)
+            while v:
+                nm = chr(97+v%26) + nm
+                v = int(v/26)
+            if nm in self.vars:
+                # In use, try next one
+                nm = None
+        return nm
+
+    def calc(self, focus, mark):
+        m = mark.dup()
+        focus.call("Move-EOL", -1, m)
+        focus.call("Move-EOL", 1, mark)
+        s = focus.call("doc:get-str", m, mark, ret='str')
+        if s[0] == '?':
+            s = s[1:]
+        self.answer = None; self.hex = None
+        self.err = 0
+        try:
+            focus.call("CalcExpr", s, self.result)
+        except edlib.commandfailed:
+            pass
+        if self.answer:
+            a = self.answer
+            if self.hex:
+                a = a + " " + self.hex
+            m = mark.dup()
+            c = focus.call("doc:step", 1, 1, m, ret='char')
+            nm = None
+            if c and c == '\n':
+                c = focus.call("doc:step", 1, m, ret='char')
+                if c and c == '>':
+                    self.getvar("reinit", focus, 3)
+                    focus.call("doc:content", m.dup(), self.getvar)
+                    nm = self.getvar("interp", focus, "\\1", ret='str')
+                    edlib.LOG("nm = ", nm)
+                    # replace this line
+                    focus.call("Move-EOL", 1, m)
+                else:
+                    m = mark.dup()
+            else:
+                m = mark.dup()
+            if not nm:
+                nm = self.nextvar()
+                edlib.LOG("Choose nm = ", nm)
+            self.vars[nm] = self.answer
+            focus.call("doc:replace", "\n> %s = %s" %(nm, a), mark, m)
+            mark.to_mark(m)
+        else:
+            focus.call("Message:modal", "Calc failed for %s: %s" %(s,self.err))
+        return 1
+
+    def result(self, key, focus, num, str, comm2, **a):
+        if key == "get":
+            if str in self.vars and comm2:
+                comm2("cb", focus, self.vars[str])
+                return 1
+            return edlib.Efalse
+        if key == "result":
+            self.answer = str
+        if key == "hex-result":
+            self.hex = str
+        if key == "err":
+            self.err = num
+        return 1
+
+    def add_expr(self, focus, mark):
+        # add new expression line after this line
+        focus.call("Move-EOL", 1, mark)
+        c = focus.call("doc:step", 1, 1, mark)
+        if not c:
+            # No EOL char
+            focus.call("doc:replace", "\n? \n", mark.dup(), mark)
+        else:
+            focus.call("doc:replace", "? \n", mark.dup(), mark)
+        focus.call("doc:step", 0, 1, mark)
+        return 1
+
+def calc_view_attach(key, focus, comm2, **a):
+    p = CalcView(focus)
+    if not p:
+        return edlib.Efail
+    if comm2:
+        comm2("cb", p)
+    return 1
+
+def add_calc(key, focus, mark, **a):
+    p = CalcView(focus)
+    if p:
+        p.call("view:changed")
+
+    v = focus['view-default']
+    if v:
+        v = v + ',view-calc'
+    else:
+        v = 'view-calc'
+    focus.call("doc:set:view-default", v)
+    return 1
+
+editor.call("global-set-command", "attach-view-calc", calc_view_attach)
+editor.call("global-load-module", "lib-calc")
+editor.call("global-set-command", "interactive-cmd-calc", add_calc)

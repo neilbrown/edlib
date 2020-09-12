@@ -83,7 +83,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/lib-viewer.o O/lib-base64.o O/lib-qprint.o O/lib-utf8.o \
 	O/lib-copybuf.o O/lib-whitespace.o O/lib-colourmap.o \
 	O/lib-renderline.o O/lib-x11selection.o O/lib-autosave.o \
-	O/lib-linefilter.o O/lib-worddiff.o O/lib-aspell.o \
+	O/lib-linefilter.o O/lib-worddiff.o O/lib-aspell.o O/lib-calc.o \
 	O/lang-python.o \
 	O/mode-emacs.o O/emacs-search.o \
 	O/display-ncurses.o
@@ -105,6 +105,9 @@ LIBS-lib-libevent = $(shell pkg-config --libs libevent)
 
 LIBS-lib-x11selection = $(shell pkg-config --libs gtk+-3.0)
 INC-lib-x11selection = $(shell pkg-config --cflags gtk+-3.0)
+
+LIBS-lib-calc = -licuuc -lgmp
+O/libcalc.a : calc-dir
 
 O/core-editor-static.o : O/mod-list-decl.h O/mod-list.h
 
@@ -147,10 +150,20 @@ $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
 
 O/libwiggle.a wiggle/wiggle.h : wiggle-dir
 
-.PHONY: wiggle-dir
+.PHONY: wiggle-dir calc-dir
 wiggle-dir:
 	@[ -f wiggle/wiggle.h ] || { git submodule init && git submodule update; }
-	$(MAKE) -C wiggle O=`pwd`/O OptDbg="-O3 -fPIC" lib
+	@$(MAKE) -q -C wiggle O=`pwd`/O OptDbg="-O3 -fPIC" lib || \
+		{ echo '     MAKE     wiggle'; \
+		$(MAKE) -C wiggle O=`pwd`/O OptDbg="-O3 -fPIC" lib ; }
+
+calc-dir:
+	@mkdir -p O
+	@$(MAKE) -q -C calc O=`pwd`/O || \
+		{ echo '     MAKE     calc'; \
+		$(MAKE) -C calc O=`pwd`/O  ; }
+
+
 
 $(STATICOBJ) : O/%-static.o : %.c
 	$(QUIET_CCSTATIC)$(CC) -Dedlib_init=$(subst -,_,$*)_edlib_init $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
@@ -184,6 +197,7 @@ lib/libedlib.so: $(LIBOBJ)
 shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o $(XOBJ)
 lib/edlib-lib-worddiff.so : O/lib-worddiff.o $(WOBJ)
+lib/edlib-lib-calc.so : O/lib-calc.o O/libcalc.a
 
 O/lib-search.o : rexel.h
 O/lib-worddiff.o : wiggle/wiggle.h

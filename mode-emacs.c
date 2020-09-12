@@ -541,6 +541,7 @@ static struct simple_command {
 	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "K:CX:M-."},
 	{CMD(emacs_simple_str), "interactive-cmd-git-grep", "K:M-."},
 	{CMD(emacs_simple), "interactive-cmd-merge-mode", "K:M-m"},
+	{CMD(emacs_simple_str), "interactive-cmd-calc-replace", "K:M-#"},
 };
 
 REDEF_CMD(emacs_simple)
@@ -584,7 +585,7 @@ REDEF_CMD(emacs_simple_str)
 	if (clear_selection(ci->focus, NULL, mk, 0))
 		str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 
-	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, str);
+	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, str, 0, mk);
 }
 
 REDEF_CMD(emacs_insert);
@@ -2432,4 +2433,5 @@ void edlib_init(struct pane *ed safe)
 	call("global-load-module", ed, 0, NULL, "emacs-search");
 	call("global-load-module", ed, 0, NULL, "lib-macro");
 	call("global-load-module", ed, 0, NULL, "lib-aspell");
+	call("global-load-module", ed, 0, NULL, "lib-calc");
 }

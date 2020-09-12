@@ -25,3 +25,4 @@ editor.call("global-set-command", "doc:appeared-config", config_appeared)
 
 # Some modules I want auto-loaded.
 editor.call("global-load-module", "lib-mergeview")
+editor.call("global-load-module", "render-calc")

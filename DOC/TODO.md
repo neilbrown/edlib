@@ -17,7 +17,7 @@ Current priorities
 - [X] input: keyboard macros
 - [ ] lib-diff improvements
 - [X] spell check single word.  Use aspell library.
-- [ ] calculating pane with libgmp
+- [X] calculating pane with libgmp
 - [ ] Finish render-lines rewrite
 
 - [X] Add 3-way wiggle support to lib-worddiff
@@ -34,6 +34,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] sometimes when press 'enter' at end-of-file, page refreshes to move
+      cursor closer to end of pane .... but not always.
 - [X] in textfill.py find_start() can return an int (Error) or a mark,
       and callers don't cope.
 - [X] search box doesn't flip left border to right when it move to left side
@@ -259,6 +261,7 @@ Module features
 
 - [ ] find-file/buffer in popup.  Cx-9??
 - [ ] make-directory command
+- [ ] semi-auto make-dir on save to nonexistent
 - [ ] sort the command names for command-completion?
 - [ ] filename completion should ignore uninteresting files like ".o"
       Maybe use .gitignore, or have config module understand that.
@@ -444,6 +447,8 @@ Module features
 
 ### shell mode
 
+- [ ] If current directory doesn't exist, cope somehow
+- [ ] make sure CWD env var doesn't end '/'.
 - [ ] 'shell-command' should try to use same pane even though it
       kills the old document and creates a new one
 - [ ]  Use pattern-match on command to optionally choose an overlay
@@ -645,6 +650,12 @@ Module features
 - [ ] drop-down with options
 - [ ] command to add word to per-document list, or personal list
 
+### calculator
+- [ ] Easy access in floating pane
+- [ ] auto-enable based on file name or content.
+- [ ] enable display in octal?
+- [ ] auto propagate calculations - Alt-enter
+- [ ] regression test
 
 New Modules - simple
 --------------------
@@ -669,14 +680,6 @@ Possibly some of these will end up being features in other modules.
 - [ ] tags handling - and easy tag-search without tags. e.g. git-search.
       alt-S looks for TAGS or .git and either does a tags-search or a grep-l and
       check every match.  So maybe this is part of the 'make' module
-- [ ] simple calculator in floating pane.
-      Must display result in hex and dec (and others?)
-      Must allow hex/dec etc entry
-      Allow chained expressions, with ability to edit earlier ones to change final result.
-      Maybe each line is $N and typing '$' gets the most recent N, but Alt-P changes.
-      or ... every blank link gets a "varname = " prompt, which as 3 or more letters,
-      but skip i o (?).  These vars can be used in other lines.
-      When a line is changed
 - [ ] menus
       This might support a menu-bar, or drop-downs for spelling or dynamic completion.
 - [ ] hex edit block device - mmap document type
