@@ -85,6 +85,7 @@ request the value to use.  On success the final value is returned.
 	$LEFT + -
 	$LEFT * /
 	$LEFT << >>
+	$RIGHT **
 
 	Line -> Expression ${
 			mpq_set(c->result, $1.val);
@@ -135,6 +136,39 @@ request the value to use.  On success the final value is returned.
 			if (mpz_cmp_si(mpq_denref($3.val), 1) == 0) {
 				mp_bitcnt_t pow = mpz_get_ui(mpq_numref($3.val));
 				mpq_div_2exp($0.val, $1.val, pow);
+			} else if (c->error < 0)
+				c->error = $2.col;
+		}$
+		| Expression ** Expression ${
+			/* Integer exponentiation */
+			mpq_init($0.val);
+			if (mpz_cmp_si(mpq_denref($3.val), 1) == 0 &&
+			    mpz_cmp_si(mpq_numref($3.val), 0) >= 0 &&
+			    mpz_cmp_si(mpq_numref($3.val), 1024) <= 0) {
+				unsigned int exp = mpz_get_ui(mpq_numref($3.val));
+				if (!exp)
+					mpq_set_ui($0.val, 1, 1);
+				else {
+					int bit = 1024;
+					while (! (bit & exp))
+						bit /= 2;
+					bit /= 2;
+					mpq_set($0.val, $1.val);
+					while (bit) {
+						mpq_t q1;
+						mpq_init(q1);
+						mpq_mul(q1, $0.val, $0.val);
+						mpq_swap(q1, $0.val);
+						mpq_clear(q1);
+						if (bit & exp) {
+							mpq_init(q1);
+							mpq_mul(q1, $0.val, $1.val);
+							mpq_swap(q1, $0.val);
+							mpq_clear(q1);
+						}
+						bit /= 2;
+					}
+				}
 			} else if (c->error < 0)
 				c->error = $2.col;
 		}$

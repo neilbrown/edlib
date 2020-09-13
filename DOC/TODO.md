@@ -664,6 +664,8 @@ Module features
 - [ ] trunc(a,2) a^b  pi % // & | ~ &~
 - [ ] increase precision of sqrt)()
 - [X] store full precision, not just what is displayed
+- [ ] useful error messages.
+- [ ] alt-p to interpolate previous expression
 
 New Modules - simple
 --------------------
