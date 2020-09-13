@@ -38,9 +38,12 @@ DEF_CMD(calc)
 {
 	int ret;
 	mpq_t result;
+	const char *formats = "xf";
 
 	if (!ci->str || !ci->comm2)
 		return Enoarg;
+	if (ci->str2)
+		formats = ci->str2;
 	mpq_init(result);
 	ret = do_calc(ci->str, result, getvar, (void*)ci);
 	if (ret == 0) {
@@ -50,24 +53,40 @@ DEF_CMD(calc)
 						mpq_numref(result));
 			comm_call(ci->comm2, "result", ci->focus, 0, NULL, buf);
 			free(buf);
-			buf = mpz_get_str(NULL, 16, mpq_numref(result));
-			comm_call(ci->comm2, "hex-result", ci->focus, 0, NULL,
-				  strconcat(ci->focus, "0x",buf));
-			free(buf);
+			if (strchr(formats, 'x')) {
+				buf = mpz_get_str(NULL, 16, mpq_numref(result));
+				comm_call(ci->comm2, "hex-result", ci->focus, 0,
+					  NULL, strconcat(ci->focus, "0x",buf));
+				free(buf);
+			}
+			if (strchr(formats, 'X')) {
+				buf = mpz_get_str(NULL, -16, mpq_numref(result));
+				comm_call(ci->comm2, "hex-result", ci->focus, 0,
+					  NULL, strconcat(ci->focus, "0X",buf));
+				free(buf);
+			}
+			if (strchr(formats, 'o')) {
+				buf = mpz_get_str(NULL, 8, mpq_numref(result));
+				comm_call(ci->comm2, "oct-result", ci->focus, 0,
+					  NULL, strconcat(ci->focus, "0o",buf));
+				free(buf);
+			}
 		} else {
 			char *buf = NULL;
 			mpf_t fl;
-			mpf_init2(fl, 20);
-			mpf_set_q(fl, result);
-			gmp_asprintf(&buf, "%.10Fg", fl);
-			mpf_clear(fl);
-			comm_call(ci->comm2, "float-result", ci->focus, 0, NULL,
-				  buf);
-			free(buf);
 			buf = mpq_get_str(NULL, 10, result);
 			comm_call(ci->comm2, "frac-result", ci->focus, 0, NULL,
 				  buf);
 			free(buf);
+			if (strchr(formats, 'f')) {
+				mpf_init2(fl, 20);
+				mpf_set_q(fl, result);
+				gmp_asprintf(&buf, "%.10Fg", fl);
+				mpf_clear(fl);
+				comm_call(ci->comm2, "float-result", ci->focus,
+					  0, NULL, buf);
+				free(buf);
+			}
 		}
 	} else {
 		comm_call(ci->comm2, "err", ci->focus, ret-1);
@@ -82,7 +101,7 @@ DEF_CMD(calc_replace)
 	mpq_t result;
 	const char *expr = ci->str;
 	struct mark *m2 = ci->mark2;
-	bool hex = False;
+	bool hex = False, oct = False;
 
 	if (!expr) {
 		if (!ci->mark)
@@ -100,6 +119,9 @@ DEF_CMD(calc_replace)
 	if (expr[0] == '#') {
 		hex = True;
 		expr += 1;
+	} else if (expr[0] == '@') {
+		oct = True;
+		expr += 1;
 	}
 	ret = do_calc(expr, result, NULL, NULL);
 	if (ret == 0) {
@@ -109,7 +131,7 @@ DEF_CMD(calc_replace)
 
 		if (mpz_cmp_si(mpq_denref(result), 1) == 0) {
 			gmp_snprintf(buf, sizeof(buf),
-				     hex ? "%#Zx" : "%Zd",
+				     hex ? "%#Zx" : oct ? "0o%Zo" : "%Zd",
 				     mpq_numref(result));
 		} else {
 			mpf_init(fl);

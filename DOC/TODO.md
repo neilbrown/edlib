@@ -655,7 +655,7 @@ Module features
 - [ ] Easy access in floating pane
 - [ ] auto-enable based on file name or content.
 - [X] :Enter always moves to next expression
-- [ ] enable display in octal?
+- [X] enable display in octal
 - [ ] auto propagate calculations - Alt-enter
 - [ ] regression test
 - [ ] calc-replace should leave result in selection.

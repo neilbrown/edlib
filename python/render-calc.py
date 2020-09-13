@@ -54,8 +54,12 @@ class CalcView(edlib.Pane):
             s = s[1:]
         self.result = ""; self.hex = None; self.float = None
         self.err = 0
+        formats = 'xf'
+        if s and s[-1] == '@':
+            formats = 'of'
+            s = s[:-1]
         try:
-            focus.call("CalcExpr", s, self.take_result)
+            focus.call("CalcExpr", s, formats, self.take_result)
         except edlib.commandfailed:
             pass
         if self.result:
@@ -109,7 +113,7 @@ class CalcView(edlib.Pane):
         edlib.LOG(key, str)
         if key == "result":
             self.result = str
-        if key == "hex-result":
+        if key == "hex-result" or key == "oct-result":
             self.hex = str
         if key == "frac-result":
             self.result = str
