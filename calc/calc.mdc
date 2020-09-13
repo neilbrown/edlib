@@ -195,6 +195,13 @@ request the value to use.  On success the final value is returned.
 			mpq_init($0.val);
 			mpq_set($0.val, $2.val);
 		}$
+		| pi ${
+			mpf_init2(flt, 100);
+			mpf_set_str(flt, "3.1415926535897932384626433832795028841971",
+				    10);
+			mpq_set_f($0.val, flt);
+			mpf_clear(flt);
+		}$
 		| sqrt ( Expression ) ${
 			mpf_init(flt);
 			mpf_init(flt2);
