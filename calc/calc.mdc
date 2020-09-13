@@ -30,6 +30,7 @@ request the value to use.  On success the final value is returned.
 # calc: reduce
 	struct parse_context *c = config2context(config);
 	mpf_t flt, flt2;
+	mpz_t z1;
 
 # calc: code
 
@@ -214,4 +215,12 @@ request the value to use.  On success the final value is returned.
 				c->error = $1.col;
 			mpf_clear(flt);
 			mpf_clear(flt2);
+		}$
+		| trunc ( Expression ) ${
+			mpq_init($0.val);
+			mpz_init(z1);
+			if (mpz_cmp_ui(mpq_denref($3.val), 0) != 0)
+				mpz_tdiv_q(z1, mpq_numref($3.val), mpq_denref($3.val));
+			mpq_set_z($0.val, z1);
+			mpz_clear(z1);
 		}$
