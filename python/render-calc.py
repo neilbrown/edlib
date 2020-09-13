@@ -166,6 +166,16 @@ def add_calc(key, focus, mark, **a):
     focus.call("doc:set:view-default", v)
     return 1
 
+def calc_appeared(key, focus, **a):
+    n = focus["filename"]
+    if not n or n[-5:] != ".calc":
+        return 0
+    m = edlib.Mark(focus)
+    if m and focus.call("text-match", "\\? |.*calc-mode", m) > 0:
+        focus["view-default"] = "view-calc"
+    return 0
+
 editor.call("global-set-command", "attach-view-calc", calc_view_attach)
 editor.call("global-load-module", "lib-calc")
 editor.call("global-set-command", "interactive-cmd-calc", add_calc)
+editor.call("global-set-command", "doc:appeared-calc", calc_appeared)

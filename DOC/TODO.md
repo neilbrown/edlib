@@ -653,7 +653,7 @@ Module features
 ### calculator
 - [X] remove size limits on formatting (100 chars!)
 - [ ] Easy access in floating pane
-- [ ] auto-enable based on file name or content.
+- [X] auto-enable based on file name or content.
 - [X] :Enter always moves to next expression
 - [X] enable display in octal
 - [X] auto propagate calculations - Alt-enter
