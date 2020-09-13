@@ -30,7 +30,7 @@ request the value to use.  On success the final value is returned.
 # calc: reduce
 	struct parse_context *c = config2context(config);
 	mpf_t flt, flt2;
-	mpz_t z1;
+	mpz_t z0, z1, z2;;
 
 # calc: code
 
@@ -84,7 +84,7 @@ request the value to use.  On success the final value is returned.
 # calc: grammar
 
 	$LEFT + -
-	$LEFT * /
+	$LEFT * / /.
 	$LEFT << >>
 	$RIGHT **
 
@@ -115,6 +115,23 @@ request the value to use.  On success the final value is returned.
 				mpq_div($0.val, $1.val, $3.val);
 			else if (c->error < 0)
 				c->error = $2.col;
+		}$
+		| Expression /. Expression ${
+			/* Integer division.  Trunc two values, then divide */
+			mpq_init($0.val);
+			mpz_init(z1);
+			if (mpz_cmp_ui(mpq_denref($1.val), 0) != 0)
+				mpz_tdiv_q(z1, mpq_numref($1.val), mpq_denref($1.val));
+			mpz_init(z2);
+			if (mpz_cmp_ui(mpq_denref($3.val), 0) != 0)
+				mpz_tdiv_q(z2, mpq_numref($3.val), mpq_denref($3.val));
+			mpz_init(z0);
+			if (mpz_cmp_ui(z2, 0) != 0)
+				mpz_tdiv_q(z0, z1, z2);
+			mpq_set_z($0.val, z0);
+			mpz_clear(z0);
+			mpz_clear(z1);
+			mpz_clear(z2);
 		}$
 		| - Expression ${
 			mpq_init($0.val);
