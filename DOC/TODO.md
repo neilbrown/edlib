@@ -656,7 +656,7 @@ Module features
 - [ ] auto-enable based on file name or content.
 - [X] :Enter always moves to next expression
 - [X] enable display in octal
-- [ ] auto propagate calculations - Alt-enter
+- [X] auto propagate calculations - Alt-enter
 - [ ] regression test
 - [ ] calc-replace should leave result in selection.
 - [ ] calc-replace could cycle through bases.

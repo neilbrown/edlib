@@ -14,14 +14,19 @@ class CalcView(edlib.Pane):
         self.getvar = focus.call("make-search", "> ([a-z0-9]+) = ", 3, ret='comm')
 
     def handle_enter(self, key, focus, mark, **a):
-        "handle:K:Enter"
+        "handle-list/K:Enter/K:M:Enter"
         if not mark:
             return edlib.Enoarg
         m = mark.dup()
         focus.call("Move-EOL", -1, m)
         c = focus.call("doc:step", 1, m, ret='char')
         if c == '?':
-            return self.calc(focus, mark)
+            if key == "K:M:Enter":
+                while self.calc(focus,mark):
+                    pass
+            else:
+                self.calc(focus, mark)
+            return 1
         if c == '>':
             return self.add_expr(focus, mark)
         return 0
@@ -58,6 +63,9 @@ class CalcView(edlib.Pane):
         if s and s[-1] == '@':
             formats = 'of'
             s = s[:-1]
+        if not s.strip():
+            # Empty expression, son't bother
+            return False
         try:
             focus.call("CalcExpr", s, formats, self.take_result)
         except edlib.commandfailed:
@@ -97,12 +105,14 @@ class CalcView(edlib.Pane):
                 c = focus.call("doc:step", 1, mark, ret='char')
                 if c and c == '?':
                     focus.call("Move-EOL", 1, mark)
+                    # keep going
+                    return True
                 else:
                     focus.call("doc:replace", "? \n", mark, mark)
                     focus.call("Move-Char", -1, mark)
         else:
             focus.call("Message:modal", "Calc failed for %s: %s" %(s,self.err))
-        return 1
+        return False
 
     def take_result(self, key, focus, num, str, comm2, **a):
         if key == "get":
