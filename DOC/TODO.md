@@ -654,7 +654,7 @@ Module features
 - [X] remove size limits on formatting (100 chars!)
 - [ ] Easy access in floating pane
 - [ ] auto-enable based on file name or content.
-- [ ] :Enter always moves to next expression
+- [X] :Enter always moves to next expression
 - [ ] enable display in octal?
 - [ ] auto propagate calculations - Alt-enter
 - [ ] regression test
@@ -662,6 +662,7 @@ Module features
 - [ ] calc-replace could cycle through bases.
 - [ ] highlight error location in red
 - [ ] trunc(a,2) a^b  pi % // & | ~ &~
+- [ ] increase precision of sqrt)()
 - [ ] store full precision, not just what is displayed
 
 New Modules - simple

@@ -71,7 +71,6 @@ class CalcView(edlib.Pane):
                     self.getvar("reinit", focus, 3)
                     focus.call("doc:content", m.dup(), self.getvar)
                     nm = self.getvar("interp", focus, "\\1", ret='str')
-                    edlib.LOG("nm = ", nm)
                     # replace this line
                     focus.call("Move-EOL", 1, m)
                 else:
@@ -80,10 +79,19 @@ class CalcView(edlib.Pane):
                 m = mark.dup()
             if not nm:
                 nm = self.nextvar()
-                edlib.LOG("Choose nm = ", nm)
             self.vars[nm] = self.answer
             focus.call("doc:replace", "\n> %s = %s" %(nm, a), mark, m)
             mark.to_mark(m)
+            c = focus.call("doc:step", 1, 1, mark, ret='char')
+            if not c:
+                focus.call("doc:replace", "\n? ", mark, mark)
+            else:
+                c = focus.call("doc:step", 1, mark, ret='char')
+                if c and c == '?':
+                    focus.call("Move-EOL", 1, mark)
+                else:
+                    focus.call("doc:replace", "? \n", mark, mark)
+                    focus.call("Move-Char", -1, mark)
         else:
             focus.call("Message:modal", "Calc failed for %s: %s" %(s,self.err))
         return 1
@@ -105,7 +113,7 @@ class CalcView(edlib.Pane):
     def add_expr(self, focus, mark):
         # add new expression line after this line
         focus.call("Move-EOL", 1, mark)
-        c = focus.call("doc:step", 1, 1, mark)
+        c = focus.call("doc:step", 1, 1, mark, ret='char')
         if not c:
             # No EOL char
             focus.call("doc:replace", "\n? \n", mark.dup(), mark)
