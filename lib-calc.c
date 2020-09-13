@@ -61,7 +61,8 @@ DEF_CMD(calc)
 			mpf_set_q(fl, result);
 			gmp_asprintf(&buf, "%.10Fg", fl);
 			mpf_clear(fl);
-			comm_call(ci->comm2, "result", ci->focus, 0, NULL, buf);
+			comm_call(ci->comm2, "float-result", ci->focus, 0, NULL,
+				  buf);
 			free(buf);
 			buf = mpq_get_str(NULL, 10, result);
 			comm_call(ci->comm2, "frac-result", ci->focus, 0, NULL,

@@ -52,16 +52,20 @@ class CalcView(edlib.Pane):
         s = focus.call("doc:get-str", m, mark, ret='str')
         if s[0] == '?':
             s = s[1:]
-        self.answer = None; self.hex = None
+        self.result = ""; self.hex = None; self.float = None
         self.err = 0
         try:
-            focus.call("CalcExpr", s, self.result)
+            focus.call("CalcExpr", s, self.take_result)
         except edlib.commandfailed:
             pass
-        if self.answer:
-            a = self.answer
+        if self.result:
             if self.hex:
-                a = a + " " + self.hex
+                a = self.result + " " + self.hex
+            elif self.float:
+                a = self.float + " " + self.result
+            else:
+                a = self.result
+
             m = mark.dup()
             c = focus.call("doc:step", 1, 1, m, ret='char')
             nm = None
@@ -79,7 +83,7 @@ class CalcView(edlib.Pane):
                 m = mark.dup()
             if not nm:
                 nm = self.nextvar()
-            self.vars[nm] = self.answer
+            self.vars[nm] = self.result
             focus.call("doc:replace", "\n> %s = %s" %(nm, a), mark, m)
             mark.to_mark(m)
             c = focus.call("doc:step", 1, 1, mark, ret='char')
@@ -96,16 +100,21 @@ class CalcView(edlib.Pane):
             focus.call("Message:modal", "Calc failed for %s: %s" %(s,self.err))
         return 1
 
-    def result(self, key, focus, num, str, comm2, **a):
+    def take_result(self, key, focus, num, str, comm2, **a):
         if key == "get":
             if str in self.vars and comm2:
                 comm2("cb", focus, self.vars[str])
                 return 1
             return edlib.Efalse
+        edlib.LOG(key, str)
         if key == "result":
-            self.answer = str
+            self.result = str
         if key == "hex-result":
             self.hex = str
+        if key == "frac-result":
+            self.result = str
+        if key == "float-result":
+            self.float = str
         if key == "err":
             self.err = num
         return 1

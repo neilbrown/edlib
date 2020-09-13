@@ -663,7 +663,7 @@ Module features
 - [ ] highlight error location in red
 - [ ] trunc(a,2) a^b  pi % // & | ~ &~
 - [ ] increase precision of sqrt)()
-- [ ] store full precision, not just what is displayed
+- [X] store full precision, not just what is displayed
 
 New Modules - simple
 --------------------
