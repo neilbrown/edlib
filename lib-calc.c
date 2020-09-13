@@ -45,23 +45,28 @@ DEF_CMD(calc)
 	ret = do_calc(ci->str, result, getvar, (void*)ci);
 	if (ret == 0) {
 		/* success */
-		char buf[100];
 		if (mpz_cmp_si(mpq_denref(result), 1) == 0) {
-			gmp_snprintf(buf, sizeof(buf), "%#Zd",
-				     mpq_numref(result));
+			char *buf = mpz_get_str(NULL, 10,
+						mpq_numref(result));
 			comm_call(ci->comm2, "result", ci->focus, 0, NULL, buf);
-			gmp_snprintf(buf, sizeof(buf), "%#Zx",
-				     mpq_numref(result));
-			comm_call(ci->comm2, "hex-result", ci->focus, 0, NULL, buf);
+			free(buf);
+			buf = mpz_get_str(NULL, 16, mpq_numref(result));
+			comm_call(ci->comm2, "hex-result", ci->focus, 0, NULL,
+				  strconcat(ci->focus, "0x",buf));
+			free(buf);
 		} else {
+			char *buf = NULL;
 			mpf_t fl;
 			mpf_init2(fl, 20);
 			mpf_set_q(fl, result);
-			gmp_snprintf(buf, sizeof(buf), "%.10Fg", fl);
+			gmp_asprintf(&buf, "%.10Fg", fl);
 			mpf_clear(fl);
 			comm_call(ci->comm2, "result", ci->focus, 0, NULL, buf);
-			gmp_snprintf(buf, sizeof(buf), "%Qd", result);
-			comm_call(ci->comm2, "frac-result", ci->focus, 0, NULL, buf);
+			free(buf);
+			buf = mpq_get_str(NULL, 10, result);
+			comm_call(ci->comm2, "frac-result", ci->focus, 0, NULL,
+				  buf);
+			free(buf);
 		}
 	} else {
 		comm_call(ci->comm2, "err", ci->focus, ret-1);

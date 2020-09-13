@@ -651,11 +651,18 @@ Module features
 - [ ] command to add word to per-document list, or personal list
 
 ### calculator
+- [X] remove size limits on formatting (100 chars!)
 - [ ] Easy access in floating pane
 - [ ] auto-enable based on file name or content.
+- [ ] :Enter always moves to next expression
 - [ ] enable display in octal?
 - [ ] auto propagate calculations - Alt-enter
 - [ ] regression test
+- [ ] calc-replace should leave result in selection.
+- [ ] calc-replace could cycle through bases.
+- [ ] highlight error location in red
+- [ ] trunc(a,2) a^b  pi % // & | ~ &~
+- [ ] store full precision, not just what is displayed
 
 New Modules - simple
 --------------------
