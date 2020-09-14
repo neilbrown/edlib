@@ -13,7 +13,7 @@ Current priorities
 - [ ] merge-mode to highlight markers with "space-only" or "no-diff" state
 - [ ] merge-mode command to select one of the three "this only".
 - [ ] merge-mode automatic detect, enable, goto-first
-- [ ] Cx-7 (??) to open doc/file in pop-up.
+- [X] Cx-44 to open doc/file in pop-up.
 
 Bugs to be fixed
 ----------------
@@ -50,6 +50,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] key_add_prefix() doesn't work if there is no punctuation.
 - [ ] send warning message when recursive notification is prohibited.
 - [ ] detect and limit recursion
 - [ ] Change naming from "Meta" to "Alt"
@@ -136,7 +137,7 @@ Module features
 
 ### emacs
 
-- [ ] find-file/buffer in popup.  Cx-9??
+- [X] find-file/buffer in popup.  Cx-44??
 - [ ] make-directory command
 - [ ] semi-auto make-dir on save to nonexistent
 - [ ] sort the command names for command-completion?
