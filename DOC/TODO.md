@@ -4,28 +4,12 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [X] fix bugs
-- [X] diff: add command to add it to any document
-- [X] word-count for doc or selection: how to view? Alt-=
-- [X] Change various things that use cmd-* and a switch, to use multiple cmds.
-- [X] doc:char intermediate commands
-- [X] overlay for lib-format to allow char access.
-- [X] test suite
-- [X] use a single hash in key lookup - two at most.
-- [X] rexel/search improvements
-- [X] unify backend for make/grep and shell modes
-- [X] input: keyboard macros
+- [ ] fix bugs
 - [ ] lib-diff improvements
-- [X] spell check single word.  Use aspell library.
-- [X] calculating pane with libgmp
 - [ ] Finish render-lines rewrite
 
-- [X] Add 3-way wiggle support to lib-worddiff
-- [X] flag to doc:replaced to say that it was only attributes
-- [X] wiggle: quiet mode for Makefile
 - [ ] switch-buffer in pop-up window
 - [ ] file in pop-up window in 'view' mode by default
-- [ ] diff-mode keystrokes for 'next diff', prev, etc
 - [ ] merge-mode to highlight markers with "space-only" or "no-diff" state
 - [ ] merge-mode command to select one of the three "this only".
 - [ ] merge-mode automatic detect, enable, goto-first
@@ -36,48 +20,12 @@ Bugs to be fixed
 
 - [ ] sometimes when press 'enter' at end-of-file, page refreshes to move
       cursor closer to end of pane .... but not always.
-- [X] in textfill.py find_start() can return an int (Error) or a mark,
-      and callers don't cope.
-- [X] search box doesn't flip left border to right when it move to left side
-      if parent.
-- [X] search for something only before cursor, and it doesn't highlight.
-      This is because nothing triggers the render:reposition that is
-      needed.  We probably need to cache the position, but also provide
-      rules on when it is sent.
-- [X] cursor isn't moved to bottom-right when off-screen
 - [ ] When cursor is off-screen pygtk cursor gets drawn on background and
       stays there.  I think pygtk needs to know about an off-screen cursor
       and draw that explicitly in 'refresh()'.  For that to work, render-lines
       need to explicitly tell it that this is offscreen, so that it can be ignored
       when not in-focus, or drawn if it is.
 - [ ] When select line from grep/make results should replace any current results pane
-- [X] A-- cx-` should only continue backwards while bare-`
-- [X] Alt-T at end-of-file is weird
-- [X] fill-mode and end-of-file doesn't wrap
-- [X] a renderline can grow on wrap without resizing the ncurses panel
-- [X] search box sometimes moves to HIDE the match, rather than expose it
-- [X] If during search, I scroll away and back, the current match
-      loses highlight.
-- [X] If I 'git-grep' from some window, then follow a link, it should appear
-      in that window.  Maybe results shouldn't appear
-- [X] sometimes the pane that gets the grep match doesn't get focus.
-- [X] The height of a blank line is slightly less than that of a line
-      with a space - so adding a space pushed later lines down a pixel.
-- [X] ->cx/cy used by render-lines isn't the same as where the cursor
-      is drawn. For a wrapped line it is the '\' wrap character.
-      Changing it when the cursor is drawn breaks something.
-- [X] If point is already at the target line but offscreen when I hit Enter
-      in a grep window to go to that line - the display doesn't move.
-- [X] if search doesn't find a match, it doesn't highlight earlier matches
-- [X] if rereading a directory find different symlink target, display isn't refreshed
-      until some other requirement causes it
-- [X] view doesn't use scale for border size - popup needs to know what view is doing.
-- [X] non-leaf tiles shouldn't have scale, and scale should be copied when a leaf
-      is subsumed.
-- [X] size-relative in a popup shouldn't affect the underlying pane
-- [X] If I give a dirname to edlib and then find-file, I don't get full path.
-- [X] LOG buffer doesn't always update - eg log messages caused by completion pane
-      (cannot reproduce this now)
 
 Requirements for a v1.0 release
 -------------------------------
@@ -114,9 +62,6 @@ Core features
       in control  Similarly search might be handled by a render pane.
 - [ ] should pane_clone_children() copy attrs too?
 - [ ] support text-replace as easy as text-insert (doc:char...)
-- [X] Change emacs to resubmit text entry commands as doc:char... commands
-      and have core-doc translate these to replace.  Then lib-viewer translated
-      them to doc:cmd... which allows emacs to capture keys before lib-viewer.
 - [ ] What about :Enter and BS TAB ESC ???
 - [ ] For a notify handler, returning non-zero doesn't stop other handlers
       running.  For a call handler it does.  This inconsistency is awkward for
@@ -136,24 +81,6 @@ Core features
       the same doc, so pointless.  Can I optimise that somehow?
 - [ ] document the use of doc:replaced.  What are the two
       marks exactly? start and end of range.  Verify all clients and providers
-- [X]  ?? restrict prefix key lookup to punctuation.
-
-      Current ranges are:
-
-       -  doc:  Request:Notify:doc: Call:Notify:doc: doc:set:
-       -  attach- event: global-multicall- Request/call:Notify:global-
-       -  multipath-this: etc
-       -  Chr-space-~ \200...
-       -  M-Chr-0 .. M-Chr-0
-       -  Move-
-       -  doc:notmuch:remove-tag
-       -  Present-BG:
-
-      Require ranges to have 4-char common prefix
-      Add hash of 4-chars for ranges.  For a lookup. hash first-4
-      and full.
-      ... NO, I think 'hash up to - or :, both for key_add_range and for lookup
-
 - [ ] revise and document behaviour of doc:open etc, particularly for
        reloading and filenames etc.
 
@@ -186,53 +113,6 @@ Module features
 
 ### rexel
 
-- [X] Allow ?...: at start of a group to affect how group is interpreted
-      e.g. 'nnn' means there are nnn chars to be treated literally
-            i or s - case [in]sensitive.... maybe only at start
-            l - lax spaces,dash,quote
-	    ???
-- [X] \B for non-word-break.  This needs a change to how flags are handled.
-      Maybe... If a word-break flag sees a non-word-break command, the match fails.
-      If any other flag, we allow it.  If a char, we allow without consuming the char.
-      The problem comes when one path matches a char against a \B and another
-      against something which consumes it.  To keep all paths same length, we
-      need to re-match the char against all the paths that follow the \B.
-      The alternate is to detect if any path has a REC_NOWBRK.  If it does, and
-      we aren't at a word-break, we no-op all the other paths.
-      So: do_link always links REC_NOBRK to start of list, not end.
-      If (while) first think on list is REC_NOBRK and we have a char advance
-      the REC_NOBRK and stay still for all others.
-- [X] ?XX: option to match REC_ANY, not REC_ANY_NONL.
-- [X] Simpler rxl_advance() interface which takes all flags and updates 'start'
-      pointer.
-- [X] \1 substitutions
-      Maybe to extract a given submatch we have a third array pair where we record
-      the length since a particular point.
-      We then repeat the match process against the found string to get start
-      and end points.
-      Or write a back-tracking matcher that records all groups in the stack
-- [X] write an alternate back-tracking matcher 
-- [X] supports \N in the pattern for back-tracking matcher
-- [X] Make it possible to search/match against a string, not just a pane
-- [X] make it possible to get a command which embeded a compiled pattern so
-      that it can be called on a string or pane to find a match.
-- [X] word breaks etc \b...
-- [X] record where () are when parsing.  A particular ( can be at several places
-- [X] count number of decision points when matching,
-- [X] record maximum number of concurrent paths
-- [X] If have decision points, match should record them in allocated space
-- [X] Follow a decision path to extract substrings for particular () pair.
-- [X] \ lower upper alpha space nonSpace digit wordBoundary...
-- [X] *? lazy (non-greedy): is that possible?  This is only meaningful when 
-    collecting the match.  Maybe we can compare bit-sequences and prefer forward rather
-    than backward.
-- [X] (?| like in perl - capture counter resets on each '|'.
-- [X] back references:  need to know what references to expect, and collect them
-   (start,len) as we go.
-- [X] \` start of buffer \' end of buffer \= point
-- [X] A non-inverted pattern which matches the first char in a plane will
-      incorrectly be treated as inverted and any char in none of the given
-      plane will be seen as a match.
 
 ### popup
 
@@ -247,13 +127,10 @@ Module features
 
 ### lib-diff
 
-- [X] The found line sometimes appears at top-of-pane, 
-- [X] add command to add it to any pane/doc
+- [ ] diff-mode keystrokes for 'next diff', prev, etc
+- [ ] When only add or only delete, highlight in same way as when there are both.
 - [ ] allow inversion so 'enter' looks for the '-' not the '+'
 - [ ] status-line entry to indicate if inverted or not.
-- [X] highlight word differences, rather than just lines
-- [ ] detect <<< ||| === >>> and highlight relevant differences,
-      and change colour of <<< etc when no differences, or only white-space differences.
 - [ ] command to apply a hunk to a given document - or to reverse it.
 - [ ] command to find best 'wiggle' match, and another to apply it if no conflicts.
 
@@ -280,9 +157,6 @@ Module features
 
 #### emacs-search
 
-- [X] '\' shouldn't be auto-inserted inside [] set.
-- [X] search should keep a larger history - currently just 1 item.
-- [X] RXL_POINT needs to be set when at the point.
 
 ##### needs design work
 
@@ -323,10 +197,6 @@ Module features
       text-size to handle it.
 - [ ] adding 10% height at e-o-f doesn't make sense with a one-line display
       and certainly must not push the cursor line of the screen as it currently does.
-- [X] use a stable mark/pane for the header
-- [X] use a stable pane for an image line
-- [X] separate out Refresh:view which validates and maybe calls find_lines
-      from Refresh which calls refresh on all sub-panes.
 - [ ] Give lib-renderline a Refresh:view which calls something in the render-line
       pane which does call_render_line().  Use pane_damaged() to mark panes as invalid
       and pane_refresh() to update them.
@@ -347,8 +217,6 @@ Module features
 
 ### lib-input
 
-- [X] keep log of keystrokes in a restricted document
-- [X] support keyboard macros
 - [ ] can we capture the substates of character composition, and give feed-back?
 
 ### lib-macro
@@ -399,7 +267,6 @@ Module features
 - [ ] easy way for minor-modes to report existance in status bar
 - [ ] review use of line-drawing chars for window boarders
 - [ ] improve scroll bars
-- [X] scroll bar should show part of doc displayed, not location of point.
 - [ ] make (trailing) space/tab in doc name visible
 - [ ] review decision about that to do when high < 3*border-height.
       Current (disabled) code makes a mess when differing scales causes
@@ -421,7 +288,6 @@ Module features
 
 ### grep/make
 
-- [X] If target pane is visible, it still gets refreshed, which is painful.
 - [ ] When I visit from grep in a popup, I think I want a 'view' at first.
       so 'q' works.
 - [ ] Need keystroke to step through different grep/make windows
@@ -436,9 +302,6 @@ Module features
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
 
 ### docs
-
-- [X] save-all should indiciate option (y,n,s,o,..).
-- [X] docs_callback should (maybe) use a keymap
 
 ### hex
 
@@ -458,10 +321,6 @@ Module features
             diff -u  - some diffmode handling
 - [ ]  If no output, don't create a pane??  Or just one online.
 - [ ]  Detect ^M in output and handle it... delete from start of line?
-- [X] when insert at end-of-file, a pointer that was at EOF should
-      stay there.
-- [X] extend enough that make/grep can use shell mode for running the
-      the command, and they just do ui and highlighting
 - [ ] always track time for a run and report it - or at least make it available
 
 ###  edlibclient
@@ -610,24 +469,11 @@ Module features
 
 - [ ] tests for double-click and drag.
 - [ ] test for recent search improvements
-- [X] create reliable test for hex mode
-- [X] avoid duplicate Display lines with same content
-      Sometimes this is needed, but I've removed most of them.
-- [X] Remove differences in directory size - and possibly user/group name
-- [X] understand why there are differences on creation
-- [X] Make it easy to replay up to the difference.
-      Have error report a 'first line' and then reply to that line.
-- [X] Add way to abstract out the path to /tmp/edlib-tests
-       Not needed as it doesn't appear - but perms of '..' do.
 - [ ] Add mechanism to easily run a command with pre-canned output.
 - [ ] Add one test case, and arrange for auto-testing on commit. 
-- [X] allow headless testing as well as visible
 - [ ] allow single-step testing?
 - [ ] Allow testing gtk as well an ncurses
 - [ ] Allow testing of server/client accesses
-- [X] add more tests
-      c-mode python diff git-grep
-- [ ] render-present tests
 - [ ] create a pane which exercises lots of code and measure coverage.
       particularly cover all the doc-text undo/redo code.
 - [ ] Track 'coverage' of all commands in keymaps.
@@ -635,7 +481,6 @@ Module features
 ### dynamic completion
 
 - [ ] provide a drop-down menu with options
-
 
 ### spell checker
 - [ ] extract words better. e.g. '-' and '/' separate words.
@@ -651,12 +496,6 @@ Module features
 - [ ] command to add word to per-document list, or personal list
 
 ### calculator
-- [X] remove size limits on formatting (100 chars!)
-- [X] Easy access in floating pane
-- [X] auto-enable based on file name or content.
-- [X] :Enter always moves to next expression
-- [X] enable display in octal
-- [X] auto propagate calculations - Alt-enter
 - [ ] names values are stored in the view pane, not the doc.
       Should I just move them to the doc?  Should I then cache them in the pane?
       attr lookup on a doc isn't optimized...
@@ -666,7 +505,6 @@ Module features
 - [ ] highlight error location in red
 - [ ] trunc(a,2) a^b  pi % // & | ~ &~
 - [ ] increase precision of sqrt)()
-- [X] store full precision, not just what is displayed
 - [ ] useful error messages.
 - [ ] alt-p to interpolate previous expression
 - [ ] fix Make dependencies so changing calc.mdc only requires one 'make'.
