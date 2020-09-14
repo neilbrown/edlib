@@ -127,7 +127,7 @@ Module features
 
 ### lib-diff
 
-- [ ] diff-mode keystrokes for 'next diff', prev, etc
+- [X] diff-mode keystrokes for 'next diff', prev, etc
 - [X] When only add or only delete, highlight in same way as when there are both.
 - [ ] allow inversion so 'enter' looks for the '-' not the '+'
 - [ ] status-line entry to indicate if inverted or not.

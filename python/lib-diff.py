@@ -46,6 +46,28 @@ class DiffPane(edlib.Pane):
             m = self.call("doc:vmark-get", self.viewnum, ret='mark')
         self.call("doc:del-view", self.viewnum)
 
+    def handle_next(self, key, focus, mark, **a):
+        "handle-list/K:M-p/K:Prior"
+        # Find previous diff hunk
+        edlib.LOG("prev")
+        try:
+            focus.call("text-search", 0, 1, "^([^-+]|$)", mark)
+            focus.call("text-search", 0, 1, "^[-+]", mark)
+        except edlib.commandfailed:
+            edlib.LOG("failed")
+            pass
+        return 1
+
+    def handle_prev(self, key, focus, mark, **a):
+        "handle-list/K:M-n/K:Next"
+        # Find previous diff hunk
+        try:
+            focus.call("text-search", 0, 0, "^([^-+]|$)", mark)
+            focus.call("text-search", 0, 0, "^[-+]", mark)
+        except edlib.commandfailed:
+            pass
+        return 1
+
     def handle_highlight(self, key, focus, str, str2, mark, comm2, **a):
         "handle:map-attr"
         if not comm2:
