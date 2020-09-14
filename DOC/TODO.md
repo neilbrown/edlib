@@ -652,11 +652,14 @@ Module features
 
 ### calculator
 - [X] remove size limits on formatting (100 chars!)
-- [ ] Easy access in floating pane
+- [X] Easy access in floating pane
 - [X] auto-enable based on file name or content.
 - [X] :Enter always moves to next expression
 - [X] enable display in octal
 - [X] auto propagate calculations - Alt-enter
+- [ ] names values are stored in the view pane, not the doc.
+      Should I just move them to the doc?  Should I then cache them in the pane?
+      attr lookup on a doc isn't optimized...
 - [ ] regression test
 - [ ] calc-replace should leave result in selection.
 - [ ] calc-replace could cycle through bases.
@@ -666,6 +669,9 @@ Module features
 - [X] store full precision, not just what is displayed
 - [ ] useful error messages.
 - [ ] alt-p to interpolate previous expression
+- [ ] fix Make dependencies so changing calc.mdc only requires one 'make'.
+- [ ] Don't always show fraction - maybe request it like with '@' for octal
+- [ ] if calculation produces same result as it present, don't modify doc.
 
 New Modules - simple
 --------------------

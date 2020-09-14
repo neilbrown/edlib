@@ -585,7 +585,7 @@ REDEF_CMD(emacs_simple_str)
 	if (clear_selection(ci->focus, NULL, mk, 0))
 		str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, mk);
 
-	return call(sc->type, ci->focus, RPT_NUM(ci), ci->mark, str, 0, mk);
+	return call(sc->type, ci->focus, ci->num, ci->mark, str, 0, mk);
 }
 
 REDEF_CMD(emacs_insert);

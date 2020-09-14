@@ -103,6 +103,33 @@ DEF_CMD(calc_replace)
 	struct mark *m2 = ci->mark2;
 	bool hex = False, oct = False;
 
+	if (ci->num != NO_NUMERIC) {
+		/* e.g. from Alt-3 alt-#. Pop up a calc window */
+		struct pane *doc = call_ret(pane, "docs:byname", ci->focus,
+					    0, NULL, "*Calc*");
+		struct pane *p;
+
+		if (!doc)
+			doc = call_ret(pane, "doc:from-text", ci->focus,
+				       0, NULL, "*Calc*", 0, NULL, "? ");
+		if (!doc) {
+			call("Message", ci->focus, 0, NULL,
+			     "Cannot create *Calc* - sorry");
+			return Efail;
+		}
+		attr_set_str(&doc->attrs, "view-default", "view-calc");
+		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "MD3tsa");
+		if (!p) {
+			call("Message", ci->focus, 0, NULL,
+			     "Cannot popup *Calc* - sorry");
+			return Efail;
+		}
+		p = home_call_ret(pane, doc, "doc:attach-view", p, 1);
+		if (p)
+			call("Move-File", p, 1);
+		return 1;
+	}
+
 	if (!expr) {
 		if (!ci->mark)
 			return Enoarg;
