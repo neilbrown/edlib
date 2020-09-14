@@ -64,9 +64,15 @@ class DiffPane(edlib.Pane):
             # st = 0 or -1 if 'same's aren't marked, '1' if they are
             if st <= 0:
                 if c == '+':
-                    comm2("attr:cb", focus, mark, "fg:green-40", 100000, 5)
+                    comm2("attr:cb", focus, mark,
+                          "fg:green-60,bg:white,nobold", 1, 5)
+                    comm2("attr:cb", focus, mark,
+                          "fg:green-60,bg:cyan+90,bold", 10000, 2)
                 else:
-                    comm2("attr:cb", focus, mark, "fg:red-40", 100000, 5)
+                    comm2("attr:cb", focus, mark,
+                          "fg:red-60,bg:white,nobold", 1, 5)
+                    comm2("attr:cb", focus, mark,
+                          "fg:red-60,bg:magenta+90,bold", 10000, 2)
                 if st == 0:
                     self.handle_wordwise('auto', focus, mark)
                 return 0
@@ -86,9 +92,9 @@ class DiffPane(edlib.Pane):
             len = int(w[0])
             if w[1] == '1':
                 # This is the '+' section
-                comm2("attr:cb", focus, mark, "fg:green-40,bg:white,nobold", len, 3)
+                comm2("attr:cb", focus, mark, "fg:green-60,bg:white,nobold", len, 3)
             else:
-                comm2("attr:cb", focus, mark, "fg:red-40,bg:white,nobold", len, 3)
+                comm2("attr:cb", focus, mark, "fg:red-60,bg:white,nobold", len, 3)
             return 0
 
     def handle_wordwise(self, key, focus, mark, **a):
