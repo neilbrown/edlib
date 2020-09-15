@@ -173,18 +173,22 @@ class MergePane(edlib.Pane):
             w = str2.split()
             len = int(w[0])
             if w[1] == "Unmatched":
-                comm2("attr:cb", focus, mark, "fg:blue-40", len, 3)
+                comm2("attr:cb", focus, mark, "fg:blue-80,bg:cyan+20", len, 3)
             if w[1] == "Extraneous":
-                comm2("attr:cb", focus, mark, "fg:cyan-40", len, 3)
+                comm2("attr:cb", focus, mark, "fg:cyan-60,bg:yellow", len, 3)
             if w[1] == "Changed":
                 if mark < a:
-                    comm2("attr:cb", focus, mark, "fg:red-40", len, 3)
+                    comm2("attr:cb", focus, mark, "fg:red-60", len, 3)
                 else:
-                    comm2("attr:cb", focus, mark, "fg:green-40", len, 3)
+                    comm2("attr:cb", focus, mark, "fg:green-60", len, 3)
             if w[1] == "Conflict":
-                comm2("attr:cb", focus, mark, "fg:red-40,inverse", len, 3)
+                comm2("attr:cb", focus, mark, "fg:red-60,inverse", len, 3)
             if w[1] == "AlreadyApplied":
-                comm2("attr:cb", focus, mark, "fg:cyan-40,inverse", len, 3)
+                if mark > b and mark < a:
+                    # This part is 'before' - mosly irrelevant
+                    comm2("attr:cb", focus, mark, "fg:cyan-60", len, 3)
+                else:
+                    comm2("attr:cb", focus, mark, "fg:cyan-60,inverse", len, 3)
 
             return 0
 

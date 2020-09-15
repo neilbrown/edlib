@@ -339,7 +339,7 @@ DEF_CMD(word_wiggle)
 
 	csl1 = diff(of, bf);
 	csl2 = diff(bf, af);
-	info = make_merger(of, bf, af, csl1, csl2, 1, 0, 0);
+	info = make_merger(of, bf, af, csl1, csl2, 1, 1, 0);
 	if (info.merger) {
 		add_merge_markup(ci->focus, os, of, info.merger, ci->str, 0);
 		add_merge_markup(ci->focus, bs, bf, info.merger, ci->str, 1);

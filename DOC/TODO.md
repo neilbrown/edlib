@@ -6,13 +6,11 @@ Current priorities
 
 - [ ] fix bugs
 - [ ] lib-diff improvements
+- [ ] lib-mergeview improvements
 - [ ] Finish render-lines rewrite
 
 - [ ] switch-buffer in pop-up window
 - [ ] file in pop-up window in 'view' mode by default
-- [ ] merge-mode to highlight markers with "space-only" or "no-diff" state
-- [ ] merge-mode command to select one of the three "this only".
-- [ ] merge-mode automatic detect, enable, goto-first
 - [X] Cx-44 to open doc/file in pop-up.
 
 Bugs to be fixed
@@ -134,6 +132,14 @@ Module features
 - [ ] status-line entry to indicate if inverted or not.
 - [ ] command to apply a hunk to a given document - or to reverse it.
 - [ ] command to find best 'wiggle' match, and another to apply it if no conflicts.
+- [ ] command to move to matching place in other branch
+
+### lib-mergeview
+
+- [ ] merge-mode to highlight markers with "space-only" or "no-diff" state
+- [ ] merge-mode command to select one of the three "this only".
+- [ ] merge-mode automatic detect, enable, goto-first
+- [ ] command to cycle through matching places in other 2 branches.
 
 ### emacs
 
@@ -156,9 +162,6 @@ Module features
 - [ ] pipe doc or selection to a command, optionally capture to replace with output.
 - [ ] history for each entry.
 
-#### emacs-search
-
-
 ##### needs design work
 
 - [ ] invent a way to reserve 'extra' values for command sets
@@ -166,6 +169,11 @@ Module features
 - [ ] search/replace should support undo somehow
 - [ ] search/replace should make it easy to revisit previous changes.
 - [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
+
+#### history
+
+- [ ] Make it possible to search through history. Maybe Alt-P only shows
+      lines containing current content.
 
 ### ncurses
 
@@ -254,8 +262,6 @@ Module features
 
 ### completion
 
-- [ ] Make it possible to search through completions. Maybe Alt-P only shows
-      lines containing current content.
 - [ ] When 'delete' and there is only the original
       entry of the prefix stack, just delete one character.
 - [ ] mouse selection should work in completion pane
@@ -482,6 +488,8 @@ Module features
 ### dynamic completion
 
 - [ ] provide a drop-down menu with options
+- [ ] the 'back' option doesn't work.  Need to discard current
+      expansion first.
 
 ### spell checker
 - [ ] extract words better. e.g. '-' and '/' separate words.
