@@ -805,7 +805,7 @@ static void docs_init_map(void)
 		&docs_callback_appeared);
 }
 
-DEF_CMD(docs_callback_lookup)
+DEF_CB(docs_callback_lookup)
 {
 	struct docs *docs = container_of(ci->comm, struct docs, callback);
 

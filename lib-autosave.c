@@ -170,7 +170,7 @@ static void autosave_init(void)
 
 }
 
-DEF_CMD(choose_new)
+DEF_CB(choose_new)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 

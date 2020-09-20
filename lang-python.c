@@ -411,7 +411,7 @@ static int dict_add(PyObject *kwds, char *name, PyObject *val)
 	return 1;
 }
 
-REDEF_CMD(python_call)
+REDEF_CB(python_call)
 {
 	struct python_command *pc = container_of(ci->comm, struct python_command, c);
 	PyObject *ret = NULL, *args, *kwds;
@@ -565,7 +565,7 @@ static void do_map_init(Pane *self safe)
 	self->map_init = 1;
 }
 
-REDEF_CMD(python_pane_call)
+REDEF_CB(python_pane_call)
 {
 	Pane *home = container_of(ci->comm, Pane, cmd);
 
@@ -810,7 +810,7 @@ struct pyret {
 	bool return_char;
 };
 
-DEF_CMD(take_focus)
+DEF_CB(take_focus)
 {
 	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
 	struct pane *p = ci->focus;
@@ -823,7 +823,7 @@ DEF_CMD(take_focus)
 	return 1;
 }
 
-DEF_CMD(take_mark)
+DEF_CB(take_mark)
 {
 	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
 
@@ -835,7 +835,7 @@ DEF_CMD(take_mark)
 	return 1;
 }
 
-DEF_CMD(take_mark2)
+DEF_CB(take_mark2)
 {
 	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
 
@@ -847,7 +847,7 @@ DEF_CMD(take_mark2)
 	return 1;
 }
 
-DEF_CMD(take_str)
+DEF_CB(take_str)
 {
 	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
 
@@ -859,7 +859,7 @@ DEF_CMD(take_str)
 	return 1;
 }
 
-DEF_CMD(take_comm)
+DEF_CB(take_comm)
 {
 	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
 

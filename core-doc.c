@@ -742,7 +742,7 @@ struct getstr {
 	struct command c;
 };
 
-DEF_CMD(get_str_callback)
+DEF_CB(get_str_callback)
 {
 	wint_t wch = ci->num & 0xFFFFF;
 	struct getstr *g = container_of(ci->comm, struct getstr, c);

@@ -36,7 +36,7 @@ struct rlcb {
 	const char *str;
 };
 
-DEF_CMD(rlcb)
+DEF_CB(rlcb)
 {
 	struct rlcb *cb = container_of(ci->comm, struct rlcb, c);
 	char *c = ci->str ? strdup(ci->str) : NULL;

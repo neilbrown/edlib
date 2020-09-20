@@ -389,7 +389,7 @@ static inline void record_screen(struct pane *p safe) {}
 static inline void close_recrep(struct pane *p safe) {}
 #endif
 
-DEF_CMD(cnt_disp)
+DEF_CB(cnt_disp)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 

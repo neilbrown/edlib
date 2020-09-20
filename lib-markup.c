@@ -216,7 +216,7 @@ static void as_clear(struct attr_return *ar safe,
 			st->end = ar->chars;
 }
 
-DEF_CMD(text_attr_forward)
+DEF_CB(text_attr_forward)
 {
 	struct attr_return *ar = container_of(ci->comm, struct attr_return, fwd);
 	if (!ci->str || !ci->str2)
@@ -225,7 +225,7 @@ DEF_CMD(text_attr_forward)
 			 0, NULL, ci->str);
 }
 
-DEF_CMD(text_attr_callback)
+DEF_CB(text_attr_callback)
 {
 	struct attr_return *ar = container_of(ci->comm, struct attr_return, rtn);
 	if (!ci->str)

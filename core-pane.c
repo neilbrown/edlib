@@ -764,7 +764,7 @@ struct pane *pane_my_child(struct pane *p, struct pane *c)
 	return c;
 }
 
-DEF_CMD(take_simple)
+DEF_CB(take_simple)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 	cr->p = ci->focus;
@@ -779,7 +779,7 @@ DEF_CMD(take_simple)
 	return 1;
 }
 
-DEF_CMD(take_str)
+DEF_CB(take_str)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 
@@ -789,7 +789,7 @@ DEF_CMD(take_str)
 	return 1;
 }
 
-DEF_CMD(take_comm)
+DEF_CB(take_comm)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 	if (ci->comm2)

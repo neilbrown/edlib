@@ -295,6 +295,7 @@ struct lookup_cmd {
 };
 
 #define CMD(_name) {_name ## _func , 0, NULL}
+#define CB(_name) {_name ## _func , 0, NULL}
 #define DEF_CMD(_name) \
 	static int _name ## _func(const struct cmd_info *ci safe); \
 	static struct command _name = CMD(_name);	\
@@ -307,6 +308,12 @@ struct lookup_cmd {
 	static int _name ## _func(const struct cmd_info *ci safe)
 #define DECL_EXTERN_CMD(_name) \
 	extern struct command _name;
+#define DEF_CB(_name) \
+	static int _name ## _func(const struct cmd_info *ci safe); \
+	static struct command _name = CB(_name);	\
+	static int _name ## _func(const struct cmd_info *ci safe)
+#define REDEF_CB(_name) \
+	static int _name ## _func(const struct cmd_info *ci safe)
 
 
 #define DEF_LOOKUP_CMD(_name, _map) \

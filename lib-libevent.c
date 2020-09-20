@@ -95,7 +95,7 @@ static void call_timeout_event(int thing, short sev, void *evv)
 	time_stop(TIME_TIMER);
 }
 
-DEF_CMD(libevent_read)
+DEF_CB(libevent_read)
 {
 	struct event_info *ei = container_of(ci->comm, struct event_info, read);
 	struct evt *ev;
@@ -133,7 +133,7 @@ DEF_CMD(libevent_read)
 	return 1;
 }
 
-DEF_CMD(libevent_signal)
+DEF_CB(libevent_signal)
 {
 	struct event_info *ei = container_of(ci->comm, struct event_info, signal);
 	struct evt *ev;
@@ -160,7 +160,7 @@ DEF_CMD(libevent_signal)
 	return 1;
 }
 
-DEF_CMD(libevent_timer)
+DEF_CB(libevent_timer)
 {
 	struct event_info *ei = container_of(ci->comm, struct event_info, timer);
 	struct evt *ev;
@@ -191,7 +191,7 @@ DEF_CMD(libevent_timer)
 	return 1;
 }
 
-DEF_CMD(libevent_run)
+DEF_CB(libevent_run)
 {
 	struct event_info *ei = container_of(ci->comm, struct event_info, run);
 	struct event_base *b = ei->base;
@@ -223,7 +223,7 @@ DEF_CMD(libevent_run)
 	return Efail;
 }
 
-DEF_CMD(libevent_deactivate)
+DEF_CB(libevent_deactivate)
 {
 	struct event_info *ei = container_of(ci->comm, struct event_info, deactivate);
 	ei->base = NULL;
@@ -231,7 +231,7 @@ DEF_CMD(libevent_deactivate)
 	return 1;
 }
 
-DEF_CMD(libevent_free)
+DEF_CB(libevent_free)
 {
 	/* destroy for ci->focus and, if comm2 given, which activate
 	 * comm2
@@ -255,7 +255,7 @@ DEF_CMD(libevent_free)
 	return 1;
 }
 
-DEF_CMD(libevent_refresh)
+DEF_CB(libevent_refresh)
 {
 	struct evt *ev;
 	struct list_head *tmp;
@@ -274,7 +274,7 @@ DEF_CMD(libevent_refresh)
 	return 0;
 }
 
-DEF_CMD(libevent_noblock)
+DEF_CB(libevent_noblock)
 {
 	struct event_info *ei = container_of(ci->comm, struct event_info,
 					     noblock);

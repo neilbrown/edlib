@@ -7,6 +7,8 @@ Current priorities
 - [ ] fix bugs
 - [ ] lib-diff improvements
 - [ ] lib-mergeview improvements
+- [ ] Add menu/menu-bar support
+- [ ] use common UI for dynamic abbrev and spell (and more?)
 - [ ] Finish render-lines rewrite
 
 - [ ] switch-buffer in pop-up window
@@ -52,6 +54,7 @@ Core features
 - [ ] send warning message when recursive notification is prohibited.
 - [ ] detect and limit recursion
 - [ ] Change naming from "Meta" to "Alt"
+- [ ] Make DEF_CB really different from DEF_CMD and ensure it is used properly.
 - [ ] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
       pointer separate to 'focus'?  Maybe panes could have optional
       'child' method which returns main child - pane_leaf() calls that.
@@ -130,7 +133,9 @@ Module features
 - [X] When only add or only delete, highlight in same way as when there are both.
 - [ ] allow inversion so 'enter' looks for the '-' not the '+'
 - [ ] status-line entry to indicate if inverted or not.
+- [ ] Add code to check alignment and search for nearby match.
 - [ ] command to apply a hunk to a given document - or to reverse it.
+- [ ] Link wiggle code to find best-match if direct match fails
 - [ ] command to find best 'wiggle' match, and another to apply it if no conflicts.
 - [ ] command to move to matching place in other branch
 
@@ -509,7 +514,7 @@ Module features
       Should I just move them to the doc?  Should I then cache them in the pane?
       attr lookup on a doc isn't optimized...
 - [ ] regression test
-- [ ] calc-replace should leave result in selection.
+- [ ] calc-replace should leave result in selection. - or only in the selection.
 - [ ] calc-replace could cycle through bases.
 - [ ] highlight error location in red
 - [ ] trunc(a,2) a^b  pi % // & | ~ &~

@@ -602,7 +602,7 @@ DEF_CMD(emacs_close_others)
 	return 1;
 }
 
-DEF_CMD(cnt_disp)
+DEF_CB(cnt_disp)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 
@@ -842,7 +842,7 @@ struct find_helper {
 	struct command c;
 };
 
-DEF_CMD(find_helper)
+DEF_CB(find_helper)
 {
 	struct find_helper *h = container_of(ci->comm, struct find_helper, c);
 	struct pane *p = ci->focus;
@@ -1509,7 +1509,7 @@ DEF_CMD(emacs_do_command)
 	return 1;
 }
 
-DEF_CMD(take_cmd)
+DEF_CB(take_cmd)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 	const char *cmd;
@@ -2191,7 +2191,7 @@ struct bb {
 	struct command c;
 	bool first;
 };
-DEF_CMD(get_suggestion)
+DEF_CB(get_suggestion)
 {
 	struct bb *b = container_of(ci->comm, struct bb, c);
 

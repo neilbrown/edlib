@@ -64,7 +64,7 @@ static int is_word(wint_t ch)
  * - getcapture - get "start" or "len" for a capture in ->num
  * - interp - interpolate \N captures in ->str
  */
-DEF_CMD(search_test)
+DEF_CB(search_test)
 {
 	struct search_state *ss = container_of(ci->comm,
 					       struct search_state, c);

@@ -68,7 +68,7 @@ static const char *add_highlight_prefix(const char *orig, int start, int plen,
 	return buf_final(&ret);
 }
 
-DEF_CMD(save_highlighted)
+DEF_CB(save_highlighted)
 {
 	struct rlcb *cb = container_of(ci->comm, struct rlcb, c);
 	const char *start;
@@ -248,7 +248,7 @@ struct setcb {
 	int cnt;
 };
 
-DEF_CMD(set_cb)
+DEF_CB(set_cb)
 {
 	struct setcb *cb = container_of(ci->comm, struct setcb, c);
 	struct complete_data *cd = cb->cd;
@@ -396,7 +396,7 @@ DEF_CMD(complete_set_prefix)
 	return cb.cnt + 1;
 }
 
-DEF_CMD(save_str)
+DEF_CB(save_str)
 {
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 	cr->s = ci->str ? strdup(ci->str) : NULL;

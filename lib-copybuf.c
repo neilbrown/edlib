@@ -55,7 +55,7 @@ DEF_CMD(copy_free)
 	return 1;
 }
 
-DEF_CMD(copy_do)
+DEF_CB(copy_do)
 {
 	struct copy_info *cyi = container_of(ci->comm, struct copy_info, cmd);
 
