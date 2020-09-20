@@ -322,7 +322,143 @@ DEF_CMD(wiggle_set_common)
 	return ret;
 }
 
-DEF_CMD(wiggle_set_wiggle) { return 0; }
+static char *typenames[] = {
+	[End] = "End",
+	[Unmatched] = "Unmatched",
+	[Unchanged] = "Unchanged",
+	[Extraneous] = "Extraneous",
+	[Changed] = "Changed",
+	[Conflict] = "Conflict",
+	[AlreadyApplied] = "AlreadyApplied",
+};
+
+static void add_merge_markup(struct pane *p safe,
+			     struct mark *st,
+			     int skip, int choose,
+			     struct file f, struct merge *merge safe,
+			     const char *attr safe, int which)
+{
+	struct merge *m;
+	int pos = 0;
+
+	if (!f.list || !st)
+		return;
+
+	doskip(p, st, NULL, skip, choose);
+	for (m = merge; m->type != End; m++) {
+		int len;
+		const char *cp, *endcp;
+		int chars;
+		char buf[30];
+
+		switch (which) {
+		case 0: /* orig - no Extraneous */
+			if (m->type == Extraneous)
+				continue;
+			if (pos != m->a) abort();
+			len = m->al;
+			break;
+		case 1: /* before - no Unmatched */
+			if (m->type == Unmatched)
+				continue;
+			if (pos != m->b) abort();
+			len = m->bl;
+			break;
+		case 2: /* after - no Unmatched */
+			if (m->type == Unmatched)
+				continue;
+			if (pos != m->c) abort();
+			len = m->cl;
+			break;
+		}
+		/* From here for 'len' element in f are 'm->type' */
+		if (!len)
+			continue;
+		cp = f.list[pos].start;
+		endcp = f.list[pos+len-1].start + f.list[pos+len-1].len;
+		pos += len;
+		chars = 0;
+		while (get_utf8(&cp, endcp) != WEOF)
+			chars += 1;
+
+		snprintf(buf, sizeof(buf), "%d %s", chars, typenames[m->type]);
+		call("doc:set-attr", p, 0, st, attr, 0, NULL, buf);
+		while (chars > 0) {
+			wint_t ch = doc_next(p, st);
+
+			if (ch == WEOF)
+				break;
+			if (is_eol(ch))
+				doskip(p, st, NULL, skip, choose);
+			chars -= 1;
+			if (is_eol(ch) && chars > 0) {
+				snprintf(buf, sizeof(buf), "%d %s", chars,
+					 typenames[m->type]);
+				call("doc:set-attr", p, 0, st, attr,
+				     0, NULL, buf);
+			}
+		}
+	}
+}
+
+DEF_CMD(wiggle_set_wiggle)
+{
+	struct wiggle_data *wd = ci->home->data;
+	struct stream ostr, astr, bstr;
+	struct file of, af, bf;
+	struct csl *csl1, *csl2;
+	struct ci info;
+	const char *attr = ci->str ?: "render:wiggle";
+
+	if (!collect(wd->texts[0].text, wd->texts[0].start, wd->texts[0].end,
+		     wd->texts[0].skip, wd->texts[0].choose, &ostr))
+		return Enoarg;
+	if (!collect(wd->texts[1].text, wd->texts[1].start, wd->texts[1].end,
+		     wd->texts[1].skip, wd->texts[1].choose, &bstr)) {
+		free(ostr.body);
+		return Enoarg;
+	}
+	if (!collect(wd->texts[2].text, wd->texts[2].start, wd->texts[2].end,
+		     wd->texts[2].skip, wd->texts[2].choose, &astr)) {
+		free(ostr.body);
+		free(bstr.body);
+		return Enoarg;
+	}
+
+	of = split_stream(ostr, ByWord);
+	bf = split_stream(bstr, ByWord);
+	af = split_stream(astr, ByWord);
+
+	csl1 = diff(of, bf);
+	csl2 = diff(bf, af);
+	info = make_merger(of, bf, af, csl1, csl2, 1, 1, 0);
+	if (info.merger) {
+		add_merge_markup(ci->focus,
+				 wd->texts[0].start,
+				 wd->texts[0].skip, wd->texts[0].choose,
+				 of, info.merger, attr, 0);
+		add_merge_markup(ci->focus,
+				 wd->texts[1].start,
+				 wd->texts[1].skip, wd->texts[1].choose,
+				 bf, info.merger, attr, 1);
+		add_merge_markup(ci->focus,
+				 wd->texts[2].start,
+				 wd->texts[2].skip, wd->texts[2].choose,
+				 af, info.merger, attr, 2);
+	}
+
+	free(csl1);
+	free(csl2);
+	free(of.list);
+	free(bf.list);
+	free(af.list);
+	free(ostr.body);
+	free(bstr.body);
+	free(astr.body);
+
+	return info.conflicts + 1;
+}
+
 DEF_CMD(wiggle_find) { return 0; }
 DEF_CMD(wiggle_find_best) { return 0; }
 DEF_CMD(wiggle_wiggle) { return 0; }
@@ -367,167 +503,8 @@ DEF_CMD(make_wiggle)
 	return 1;
 }
 
-static char *typenames[] = {
-	[End] = "End",
-	[Unmatched] = "Unmatched",
-	[Unchanged] = "Unchanged",
-	[Extraneous] = "Extraneous",
-	[Changed] = "Changed",
-	[Conflict] = "Conflict",
-	[AlreadyApplied] = "AlreadyApplied",
-};
-
-static void add_merge_markup(struct pane *p safe,
-			     struct mark *st safe,
-			     struct file f, struct merge *merge safe,
-			     const char *attr safe, int which)
-{
-	struct merge *m;
-	int pos = 0;
-
-	if (!f.list)
-		return;
-
-	for (m = merge; m->type != End; m++) {
-		int len;
-		const char *cp, *endcp;
-		int chars;
-		char buf[30];
-
-		switch (which) {
-		case 0: /* orig - no Extraneous */
-			if (m->type == Extraneous)
-				continue;
-			if (pos != m->a) abort();
-			len = m->al;
-			break;
-		case 1: /* before - no Unmatched */
-			if (m->type == Unmatched)
-				continue;
-			if (pos != m->b) abort();
-			len = m->bl;
-			break;
-		case 2: /* after - no Unmatched */
-			if (m->type == Unmatched)
-				continue;
-			if (pos != m->c) abort();
-			len = m->cl;
-			break;
-		}
-		/* From here for 'len' element in f are 'm->type' */
-		if (!len)
-			continue;
-		cp = f.list[pos].start;
-		endcp = f.list[pos+len-1].start + f.list[pos+len-1].len;
-		pos += len;
-		chars = 0;
-		while (get_utf8(&cp, endcp) != WEOF)
-			chars += 1;
-
-		snprintf(buf, sizeof(buf), "%d %s", chars, typenames[m->type]);
-		call("doc:set-attr", p, 0, st, attr, 0, NULL, buf);
-		while (chars > 0) {
-			wint_t ch = doc_next(p, st);
-
-			if (ch == WEOF)
-				break;
-			chars -= 1;
-			if (is_eol(ch) && chars > 0) {
-				snprintf(buf, sizeof(buf), "%d %s", chars,
-					 typenames[m->type]);
-				call("doc:set-attr", p, 0, st, attr,
-				     0, NULL, buf);
-			}
-		}
-	}
-}
-
-DEF_CMD(word_wiggle)
-{
-	/* 'mark' is one of 6 marks in 'focus' which identify 3
-	 * regions, 'orig', 'before' and 'after'.  The marks are
-	 * in the same view, so vmark_next() can find all the rest.
-	 * Each mark must have attr 'wiggle' with value from
-	 * {orig,before,after}-{start,end}
-	 * The given mark must be first.
-	 *
-	 * We extract the texts, run the wiggle algorithm, and then
-	 * mark sections of text which are Unmatch, Change, Extranious,
-	 * Conflict, AlreadyApplied.  Unchanged are NOT marked.
-	 * The attr used is ->str.  Value is "len section-type".
-	 */
-	struct mark *os = NULL, *oe = NULL;
-	struct mark *bs = NULL, *be = NULL;
-	struct mark *as = NULL, *ae = NULL;
-	struct mark *m;
-	struct stream ostr, astr, bstr;
-	struct file of, af, bf;
-	struct csl *csl1, *csl2;
-	struct ci info;
-
-	if (!ci->str)
-		return Enoarg;
-
-	for (m = ci->mark; m; m = vmark_next(m)) {
-		char *a = attr_find(m->attrs, "wiggle");
-		if (!a)
-			return Einval;
-		if (strcmp(a, "orig-start") == 0)
-			os=m;
-		if (strcmp(a, "orig-end") == 0)
-			oe=m;
-		if (strcmp(a, "before-start") == 0)
-			bs=m;
-		if (strcmp(a, "before-end") == 0)
-			be=m;
-		if (strcmp(a, "after-start") == 0)
-			as=m;
-		if (strcmp(a, "after-end") == 0)
-			ae=m;
-	}
-	if (!os || !oe || !bs || !be || !as || !ae)
-		return Einval;
-	if (oe->seq < os->seq ||
-	    be->seq < bs->seq ||
-	    ae->seq < as->seq)
-		return Einval;
-
-	ostr.body = call_ret(str, "doc:get-str", ci->focus, 0, os, NULL, 0, oe);
-	ostr.len = ostr.body ? strlen(ostr.body) : 0;
-	bstr.body = call_ret(str, "doc:get-str", ci->focus, 0, bs, NULL, 0, be);
-	bstr.len = bstr.body ? strlen(bstr.body) : 0;
-	astr.body = call_ret(str, "doc:get-str", ci->focus, 0, as, NULL, 0, ae);
-	astr.len = astr.body ? strlen(astr.body) : 0;
-
-	of = split_stream(ostr, ByWord);
-	bf = split_stream(bstr, ByWord);
-	af = split_stream(astr, ByWord);
-
-	csl1 = diff(of, bf);
-	csl2 = diff(bf, af);
-	info = make_merger(of, bf, af, csl1, csl2, 1, 1, 0);
-	if (info.merger) {
-		add_merge_markup(ci->focus, os, of, info.merger, ci->str, 0);
-		add_merge_markup(ci->focus, bs, bf, info.merger, ci->str, 1);
-		add_merge_markup(ci->focus, as, af, info.merger, ci->str, 2);
-	}
-
-	free(csl1);
-	free(csl2);
-	free(of.list);
-	free(bf.list);
-	free(af.list);
-	free(ostr.body);
-	free(bstr.body);
-	free(astr.body);
-
-	return info.conflicts + 1;
-}
-
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, &word_wiggle,
-		  0, NULL, "WordWiggle");
 	call_comm("global-set-command", ed, &make_wiggle,
 		  0, NULL, "MakeWiggle");
 }

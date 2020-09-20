@@ -31,17 +31,6 @@ class MergePane(edlib.Pane):
             pass
         return None
 
-    def add_pair(self, v, group, m1, m2):
-        vm = edlib.Mark(self, v)
-        vm.to_mark(m1);
-        self.call("Move-EOL", 1, vm);
-        self.call("Move-Char", 1, vm)
-        vm['wiggle'] = group + "-start"
-        vm1 = edlib.Mark(orig=vm)
-        vm1.to_mark(m2)
-        vm1['wiggle'] = group + "-end"
-        return vm
-
     def mark(self, start, end):
         # There is probably a 3-way merge between start and end
 
@@ -56,18 +45,22 @@ class MergePane(edlib.Pane):
         if not m3:
             # something wasn't found, give up
             return
-        v = self.call("doc:add-view") - 1
-        vm = self.add_pair(v, "orig", start, m1)
-        self.add_pair(v, "before", m1, m2)
-        self.add_pair(v, "after", m2, m3)
 
-        ret = self.call("WordWiggle", "render:merge-same", vm)
+        cmd = self.call("MakeWiggle", ret='comm')
+        t = start.dup()
+        self.call("Move-EOL", 1, t); self.call("Move-Char", 1, t)
+        cmd("orig", self, t, m1)
 
-        m = self.call("doc:vmark-get", v, ret='mark')
-        while m:
-            m.release()
-            m = self.call("doc:vmark-get", v, ret='mark')
-        self.call("doc:del-view", v)
+        t = m1.dup()
+        self.call("Move-EOL", 1, t); self.call("Move-Char", 1, t)
+        cmd("before", self, t, m2)
+
+        t = m2.dup()
+        self.call("Move-EOL", 1, t); self.call("Move-Char", 1, t)
+        cmd("after", self, t, m3)
+
+        ret = cmd("set-wiggle", self, "render:merge-same")
+        del cmd
 
         self.marks = [start, m1, m2, m3]
         self.conflicts = ret - 1
