@@ -158,8 +158,13 @@ class DiffPane(edlib.Pane):
                 msg = "Nothing to compare here!"
                 ret = 4
         else:
-            ret = focus.call("WordDiff", starta, alen, startb, blen,
-                             "render:diff-same", 'skip')
+            cmd = focus.call("MakeWiggle", ret='comm')
+            if not cmd:
+                return edlib.Efail
+            cmd("before", focus, starta, startb, 1)
+            cmd("after", focus, startb, mark, 1)
+            ret = cmd("set-common", focus, "render:diff-same")
+            del cmd
             focus.call("view:changed", starta, mark)
         if key == 'auto':
             m1 = edlib.Mark(self, self.viewnum)

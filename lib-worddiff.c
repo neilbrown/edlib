@@ -27,89 +27,6 @@ void printword(FILE *f, struct elmnt e)
 {
 }
 
-static void collect(struct pane *p safe, struct mark *start safe,
-		    int len, bool skipfirst, struct stream *s safe)
-{
-	bool sol = True;
-	struct mark *m = mark_dup(start);
-	wint_t wch;
-	struct buf b;
-
-	buf_init(&b);
-
-	while (len--) {
-		wch = doc_next(p, m);
-		if (wch == WEOF)
-			break;
-		if (!sol || !skipfirst || is_eol(wch))
-			buf_append(&b, wch);
-		sol = is_eol(wch);
-	}
-	s->body = buf_final(&b);
-	s->len = b.len;
-}
-
-static void add_markup(struct pane *p safe, struct mark *start safe,
-		       bool skipfirst, struct stream astream, struct file afile,
-		       struct csl *csl safe, const char *attr, int which)
-{
-	/* Each range of characters that is mentioned in csl gets an attribute
-	 * named 'attr' with value 'len' from csl.
-	 * If a range crosses a newline, the first (non-skipped) character
-	 * also gets the attribute with the remaining length.
-	 */
-	const char *pos = astream.body;
-	bool sol = True;
-	struct mark *m = mark_dup(start);
-	wint_t ch;
-
-	if (!afile.list)
-		return;
-	while (csl->len) {
-		int st = which ? csl->b : csl->a;
-		const char *startp = afile.list[st].start;
-		const char *endp =	afile.list[st + csl->len - 1].start +
-					afile.list[st + csl->len - 1].len;
-		char buf[20];
-		int len;
-
-		if (sol && skipfirst) {
-			doc_next(p ,m);
-			sol = False;
-		}
-		while (pos < startp) {
-			get_utf8(&pos, NULL);
-			ch = doc_next(p, m);
-			if (skipfirst && is_eol(ch))
-				doc_next(p, m);
-		}
-		/* Convert csl->len in bytes to len in codepoints. */
-		len = 0;
-		while (pos < endp) {
-			get_utf8(&pos, NULL);
-			len += 1;
-		}
-		pos = startp;
-		snprintf(buf, sizeof(buf), "%d %d", len, which);
-		call("doc:set-attr", p, 0, m, attr, 0, NULL, buf);
-		sol = False;
-		while (pos < endp) {
-			get_utf8(&pos, NULL);
-			if (sol) {
-				snprintf(buf, sizeof(buf), "%d %d", len, which);
-				if (skipfirst)
-					ch = doc_next(p, m);
-				call("doc:set-attr", p, 0, m, attr,
-				     0, NULL, buf);
-			}
-			len -= 1;
-			ch = doc_next(p, m);
-			sol = is_eol(ch);
-		}
-		csl += 1;
-	}
-}
-
 static bool has_nonspace(const char *s, int len)
 {
 	wint_t ch;
@@ -149,56 +66,305 @@ static bool only_spaces(struct file f, struct csl *csl safe, int which)
 	return True;
 }
 
-DEF_CMD(word_diff)
+static void doskip(struct pane *p safe,
+		   struct mark *m safe, struct mark *end,
+		   int skip, int choose)
 {
-	struct pane *p = ci->focus;
-	struct mark *astart = ci->mark;
-	struct mark *bstart = ci->mark2;
-	int alen = ci->num;
-	int blen = ci->num2;
+	int toskip = skip;
+	bool chosen = choose == 0;
+
+	while ((!end || mark_ordered_not_same(m, end)) &&
+	       (toskip || !chosen)) {
+		/* Don't want this char */
+		wint_t wch = doc_next(p, m);
+		if (wch == WEOF)
+			break;
+		if (is_eol(wch)) {
+			toskip = skip;
+			chosen = choose == 0;
+		} else if (toskip) {
+			if (toskip == choose && wch != ' ')
+				chosen = True;
+			toskip -= 1;
+		}
+	}
+}
+
+static bool collect(struct pane *p, struct mark *start, struct mark *end,
+		    int skip, int choose, struct stream *s safe)
+{
+	struct mark *m;
+	wint_t wch = '\n';
+	struct buf b;
+
+	if (!p || !start || !end)
+		return False;
+
+	buf_init(&b);
+	m = mark_dup(start);
+	while (mark_ordered_not_same(m, end)) {
+		if (is_eol(wch))
+			doskip(p, m, end, skip, choose);
+		wch = doc_next(p, m);
+		if (wch == WEOF)
+			break;
+		buf_append(&b, wch);
+	}
+	s->body = buf_final(&b);
+	s->len = b.len;
+	mark_free(m);
+
+	return True;
+}
+
+static void add_markup(struct pane *p, struct mark *start,
+		       int skip, int choose,
+		       struct stream astream, struct file afile,
+		       struct csl *csl safe, const char *attr safe, int which)
+{
+	/* Each range of characters that is mentioned in csl gets an attribute
+	 * named 'attr' with value 'len' from csl.
+	 * If a range crosses a newline, the first (non-skipped) character
+	 * also gets the attribute with the remaining length.
+	 */
+	const char *pos = astream.body;
+	struct mark *m;
+	wint_t ch = '\n';
+
+	if (!p || !start || !afile.list || !pos)
+		return;
+	m = mark_dup(start);
+	while (csl->len) {
+		int st = which ? csl->b : csl->a;
+		const char *startp = afile.list[st].start;
+		const char *endp =	afile.list[st + csl->len - 1].start +
+					afile.list[st + csl->len - 1].len;
+		char buf[20];
+		int len;
+
+		if (is_eol(ch))
+			doskip(p, m, NULL, skip, choose);
+		while (pos < startp) {
+			get_utf8(&pos, NULL);
+			ch = doc_next(p, m);
+			if (is_eol(ch))
+				doskip(p, m, NULL, skip, choose);
+		}
+		/* Convert csl->len in bytes to len in codepoints. */
+		len = 0;
+		while (pos < endp) {
+			get_utf8(&pos, NULL);
+			len += 1;
+		}
+		pos = startp;
+		snprintf(buf, sizeof(buf), "%d %d", len, which);
+		call("doc:set-attr", p, 0, m, attr, 0, NULL, buf);
+		ch = ' ';
+		while (pos < endp) {
+			get_utf8(&pos, NULL);
+			if (is_eol(ch)) {
+				doskip(p, m, NULL, skip, choose);
+				snprintf(buf, sizeof(buf), "%d %d", len, which);
+				call("doc:set-attr", p, 0, m, attr,
+				     0, NULL, buf);
+			}
+			len -= 1;
+			ch = doc_next(p, m);
+		}
+		csl += 1;
+	}
+	mark_free(m);
+}
+
+/* We provide a command that handles wiggling across multiple panes.  It
+ * is paired with a private pane which can get notifications when those
+ * panes are closed.
+ */
+struct wiggle_data {
+	struct pane *private safe;
+	struct {
+		struct pane *text;
+		struct mark *start, *end;
+		short skip;	/* prefix chars to skip */
+		short choose;	/* if !=0, only chose lines with non-space
+				 * in this position 1..skip
+				 */
+	} texts[3];
+	struct command c;
+};
+
+DEF_CMD(notify_close)
+{
+	/* Private pane received a "close" notification. */
+	struct wiggle_data *wd = ci->home->data;
+	int i;
+
+	for (i = 0; i < 3; i++)
+		if (ci->focus == wd->texts[i].text ||
+		    ci->focus == wd->private) {
+			mark_free(wd->texts[i].start);
+			wd->texts[i].start = NULL;
+			mark_free(wd->texts[i].end);
+			wd->texts[i].end = NULL;
+			wd->texts[i].text = NULL;
+		}
+	return 1;
+}
+
+DEF_CMD(wiggle_close)
+{
+	struct wiggle_data *wd = ci->home->data;
+	int i;
+
+	for (i = 0; i < 3 ; i++) {
+		mark_free(wd->texts[i].start);
+		wd->texts[i].start = NULL;
+		mark_free(wd->texts[i].end);
+		wd->texts[i].end = NULL;
+		wd->texts[i].text = NULL;
+	}
+	return 1;
+}
+
+static void wiggle_free(struct command *c safe)
+{
+	struct wiggle_data *wd = container_of(c, struct wiggle_data, c);
+
+	pane_close(wd->private);
+}
+
+DEF_CB(do_wiggle)
+{
+	struct wiggle_data *wd = container_of(ci->comm, struct wiggle_data, c);
+
+	return home_call(wd->private, ci->key, ci->focus,
+			 ci->num, ci->mark, ci->str,
+			 ci->num2, ci->mark2, ci->str2,
+			 ci->x, ci->y, ci->comm2);
+}
+
+DEF_CMD(wiggle_text)
+{
+	/* remember pane, mark1, mark2, num,  num2 */
+	struct wiggle_data *wd = ci->home->data;
+	char k0 = ci->key[0];
+	int which = k0 == 'b' ? 1 : k0 == 'a' ? 2 : 0;
+
+	/* Always clean out, even it not given enough args */
+	mark_free(wd->texts[which].start);
+	wd->texts[which].start = NULL;
+	mark_free(wd->texts[which].end);
+	wd->texts[which].end = NULL;
+	/* It isn't possible to drop individual notificartion links.
+	 * We will lose them all on close, and ignore any before that.
+	 */
+	wd->texts[which].text = NULL;
+
+	if (!ci->mark || !ci->mark2)
+		return Enoarg;
+	if (ci->num < 0 || ci->num2 < 0 || ci->num2 > ci->num)
+		return Einval;
+
+	wd->texts[which].text = ci->focus;
+	pane_add_notify(ci->home, ci->focus, "Notify:Close");
+	wd->texts[which].start = mark_dup(ci->mark);
+	wd->texts[which].end = mark_dup(ci->mark2);
+	wd->texts[which].skip = ci->num;
+	wd->texts[which].choose = ci->num2;
+
+	return 1;
+}
+
+DEF_CMD(wiggle_set_common)
+{
+	/* Set the attribute 'str' on all common ranges in
+	 * 'before' and 'after'
+	 */
+	struct wiggle_data *wd = ci->home->data;
 	const char *attr = ci->str ?: "render:common";
-	bool skipfirst = ci->str2 && ci->str2[0];
-	struct stream astream, bstream;
+	struct stream before, after;
+	struct file bfile, afile;
+	struct csl *csl;
 	int ret = Efail;
 
-	if (!astart || !bstart)
+	if (!collect(wd->texts[1].text, wd->texts[1].start, wd->texts[1].end,
+		     wd->texts[1].skip, wd->texts[1].choose, &before))
 		return Enoarg;
-	collect(p, astart, alen, skipfirst, &astream);
-	collect(p, bstart, blen, skipfirst, &bstream);
-
-	if (astream.len == bstream.len &&
-	    memcmp(astream.body, bstream.body, astream.len) == 0)
-		/* No difference */
-		ret = 1;
-	else {
-		struct file afile, bfile;
-		struct csl *csl;
-
-		afile = split_stream(astream, ByWord);
-		bfile = split_stream(bstream, ByWord);
-		csl = diff(afile, bfile);
-		if (!csl) {
-			free(afile.list);
-			free(bfile.list);
-			goto out;
-		}
-
-		add_markup(p, astart, skipfirst, astream, afile, csl, attr, 0);
-		add_markup(p, bstart, skipfirst, bstream, bfile, csl, attr, 1);
-
-		ret = 3; /* non-space differences */
-		if (only_spaces(afile, csl, 0) &&
-		    only_spaces(bfile, csl, 1))
-			ret = 2; /* only space differences */
-
-		free(afile.list);
-		free(bfile.list);
-		free(csl);
+	if (!collect(wd->texts[2].text, wd->texts[2].start, wd->texts[2].end,
+		     wd->texts[2].skip, wd->texts[2].choose, &after)) {
+		free(before.body);
+		return Enoarg;
 	}
-out:
-	free(astream.body);
-	free(bstream.body);
+
+	bfile = split_stream(before, ByWord);
+	afile = split_stream(after, ByWord);
+	csl = diff(bfile, afile);
+	if (csl) {
+		add_markup(wd->texts[1].text, wd->texts[1].start,
+			   wd->texts[1].skip, wd->texts[1].choose,
+			   before, bfile, csl, attr, 0);
+		add_markup(wd->texts[2].text, wd->texts[2].start,
+			   wd->texts[2].skip, wd->texts[2].choose,
+			   after, afile, csl, attr, 1);
+
+		ret = 3;
+		if (only_spaces(bfile, csl, 0) &&
+		    only_spaces(afile, csl, 1))
+			ret = 2; /* only space differences */
+	}
+
+	free(bfile.list);
+	free(afile.list);
+	free(csl);
+	free(before.body);
+	free(after.body);
+
 	return ret;
+}
+
+DEF_CMD(wiggle_set_wiggle) { return 0; }
+DEF_CMD(wiggle_find) { return 0; }
+DEF_CMD(wiggle_find_best) { return 0; }
+DEF_CMD(wiggle_wiggle) { return 0; }
+
+static struct map *wiggle_map;
+DEF_LOOKUP_CMD(wiggle_pane, wiggle_map);
+
+DEF_CMD(make_wiggle)
+{
+	struct wiggle_data *wd;
+	struct pane *p;
+
+	if (!wiggle_map) {
+		wiggle_map = key_alloc();
+		key_add(wiggle_map, "Notify:Close", &notify_close);
+		key_add(wiggle_map, "Close", &wiggle_close);
+		key_add(wiggle_map, "orig", &wiggle_text);
+		key_add(wiggle_map, "before", &wiggle_text);
+		key_add(wiggle_map, "after", &wiggle_text);
+		key_add(wiggle_map, "set-common", &wiggle_set_common);
+		key_add(wiggle_map, "set-wiggle", &wiggle_set_wiggle);
+		key_add(wiggle_map, "find", &wiggle_find);
+		key_add(wiggle_map, "find-best", &wiggle_find_best);
+		key_add(wiggle_map, "wiggle", &wiggle_wiggle);
+	}
+
+	alloc(wd, pane);
+	wd->c = do_wiggle;
+	wd->c.free = wiggle_free;
+	p = pane_register(pane_root(ci->focus), 0,
+			  &wiggle_pane.c, wd);
+	if (!p) {
+		unalloc(wd, pane);
+		return Efail;
+	}
+	command_get(&wd->c);
+	wd->private = p;
+	comm_call(ci->comm2, "cb", ci->focus,
+		  0, NULL, NULL,
+		  0, NULL, NULL, 0,0, &wd->c);
+	command_put(&wd->c);
+	return 1;
 }
 
 static char *typenames[] = {
@@ -360,8 +526,8 @@ DEF_CMD(word_wiggle)
 
 void edlib_init(struct pane *ed safe)
 {
-	call_comm("global-set-command", ed, &word_diff,
-		  0, NULL, "WordDiff");
 	call_comm("global-set-command", ed, &word_wiggle,
 		  0, NULL, "WordWiggle");
+	call_comm("global-set-command", ed, &make_wiggle,
+		  0, NULL, "MakeWiggle");
 }
