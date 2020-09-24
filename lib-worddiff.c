@@ -70,8 +70,15 @@ static void doskip(struct pane *p safe,
 		   struct mark *m safe, struct mark *end,
 		   int skip, int choose)
 {
+	/* If skip > 0, then the first 'skip' chars on each line
+	 * are skipped over.
+	 * If 'choose' is also > 0 then the whole line is skipped
+	 * unless:
+	 *  choose <= skip and the "choose"th char is not '+'
+	 *  choose > skip and none of the skip chars are '-'
+	 */
 	int toskip = skip;
-	bool chosen = choose == 0;
+	bool chosen = choose == 0 || choose > skip;
 
 	while ((!end || mark_ordered_not_same(m, end)) &&
 	       (toskip || !chosen)) {
@@ -81,11 +88,13 @@ static void doskip(struct pane *p safe,
 			break;
 		if (is_eol(wch)) {
 			toskip = skip;
-			chosen = choose == 0;
+			chosen = choose == 0 || choose > skip;
 		} else if (toskip) {
-			if (toskip == choose && wch != ' ')
-				chosen = True;
 			toskip -= 1;
+			if (choose > skip && wch == '-')
+				chosen = False;
+			if (skip - toskip == choose && wch != '+')
+				chosen = True;
 		}
 	}
 }
@@ -182,7 +191,7 @@ static void add_markup(struct pane *p, struct mark *start,
  */
 struct wiggle_data {
 	struct pane *private safe;
-	struct {
+	struct wtxt {
 		struct pane *text;
 		struct mark *start, *end;
 		short skip;	/* prefix chars to skip */
@@ -243,10 +252,22 @@ DEF_CB(do_wiggle)
 			 ci->x, ci->y, ci->comm2);
 }
 
+static void forward_lines(struct pane *p safe, struct mark *m safe,
+			  int skip, int choose, int lines)
+{
+	while (lines > 0) {
+		doskip(p, m, NULL, skip, choose);
+		call("Move-EOL", p, 1, m);
+		doc_next(p, m);
+		lines -= 1;
+	}
+}
+
 DEF_CMD(wiggle_text)
 {
 	/* remember pane, mark1, mark2, num,  num2 */
 	struct wiggle_data *wd = ci->home->data;
+	struct mark *m2;
 	char k0 = ci->key[0];
 	int which = k0 == 'b' ? 1 : k0 == 'a' ? 2 : 0;
 
@@ -260,15 +281,21 @@ DEF_CMD(wiggle_text)
 	 */
 	wd->texts[which].text = NULL;
 
-	if (!ci->mark || !ci->mark2)
+	if (!ci->mark || (!ci->mark2 && !ci->str))
 		return Enoarg;
-	if (ci->num < 0 || ci->num2 < 0 || ci->num2 > ci->num)
+	if (ci->num < 0 || ci->num2 < 0 || ci->num2 > ci->num+1)
 		return Einval;
+	if (!ci->mark2) {
+		int lines = atoi(ci->str ?: "1");
+		m2 = mark_dup(ci->mark);
+		forward_lines(ci->focus, m2, ci->num, ci->num2, lines);
+	} else
+		m2 = mark_dup(ci->mark2);
 
 	wd->texts[which].text = ci->focus;
 	pane_add_notify(ci->home, ci->focus, "Notify:Close");
 	wd->texts[which].start = mark_dup(ci->mark);
-	wd->texts[which].end = mark_dup(ci->mark2);
+	wd->texts[which].end = m2;
 	wd->texts[which].skip = ci->num;
 	wd->texts[which].choose = ci->num2;
 
@@ -459,7 +486,109 @@ DEF_CMD(wiggle_set_wiggle)
 	return info.conflicts + 1;
 }
 
-DEF_CMD(wiggle_find) { return 0; }
+DEF_CMD(wiggle_find)
+{
+	/* Find orig, before or after in 'focus' near 'mark'
+	 * str in "orig", "before" or "after"
+	 * num is max number of lines to stripe (fuzz)
+	 * num2 is max number of lines, defaults to searching whole file.
+	 * Returns number of fuzz lines, plus 1
+	 */
+	struct wiggle_data *wd = ci->home->data;
+	int lines = ci->num2;
+	struct pane *p = ci->focus;
+	struct stream str;
+	char *match, *end;
+	struct wtxt *wt;
+	int ret = Efail;
+	int fuzz = 0;
+
+	if (!ci->mark || !ci->str)
+		return Enoarg;
+	if (strcmp(ci->str, "orig") == 0)
+		wt = &wd->texts[0];
+	else if (strcmp(ci->str, "before") == 0)
+		wt = &wd->texts[1];
+	else if (strcmp(ci->str, "after") == 0)
+		wt = &wd->texts[2];
+	else
+		return Einval;
+	if (!collect(wt->text, wt->start, wt->end, wt->skip, wt->choose,
+		     &str))
+		return Enoarg;
+
+	match = str.body;
+	if (!match)
+		return Enoarg;
+	do {
+		struct mark *early, *late;
+
+		early = mark_dup(ci->mark);
+		call("Move-EOL", p, -1, early);
+		late = mark_dup(ci->mark);
+		call("Move-EOL", p, 1, late);
+		if (call("Move-Char", p, 1, late) < 0) {
+			mark_free(late);
+			late = NULL;
+		}
+
+		while (early || late) {
+			if (early) {
+				ret = call("text-equals", p, 0, early, match);
+				if (ret > 0) {
+					mark_to_mark(ci->mark, early);
+					break;
+				}
+				if (ret != Efalse || doc_prior(p, early) == WEOF) {
+					mark_free(early);
+					early = NULL;
+				} else
+					call("Move-EOL", p, -2, early);
+			}
+			if (late) {
+				ret = call("text-equals", p, 0, late, match);
+				if (ret > 0) {
+					mark_to_mark(ci->mark, late);
+					break;
+				}
+				if (ret != Efalse || doc_following(p, late) == WEOF) {
+					mark_free(late);
+					late = NULL;
+				} else {
+					call("Move-EOL", p, 1, late);
+					doc_next(p, late);
+				}
+			}
+			if (lines > 0) {
+				lines -= 1;
+				if (lines == 0)
+					break;
+			}
+		}
+		mark_free(early);
+		mark_free(late);
+
+		if (ret > 0)
+			break;
+		fuzz += 1;
+		match = strchr(match, '\n');
+		if (!match)
+			break;
+		match += 1;
+		end = strrchr(match, '\n');
+		if (end)
+			*end = 0;
+		end = strrchr(match, '\n');
+		if (end)
+			end[1] = 0;
+		else
+			break;
+	} while (fuzz < ci->num);
+
+	free(str.body);
+	return ret > 0 ? fuzz + 1 : Efail;
+}
+
 DEF_CMD(wiggle_find_best) { return 0; }
 DEF_CMD(wiggle_wiggle) { return 0; }
 

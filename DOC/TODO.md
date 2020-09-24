@@ -133,7 +133,7 @@ Module features
 - [X] When only add or only delete, highlight in same way as when there are both.
 - [ ] allow inversion so 'enter' looks for the '-' not the '+'
 - [ ] status-line entry to indicate if inverted or not.
-- [ ] Add code to check alignment and search for nearby match.
+- [X] Add code to check alignment and search for nearby match.
 - [ ] command to apply a hunk to a given document - or to reverse it.
 - [ ] Link wiggle code to find best-match if direct match fails
 - [ ] command to find best 'wiggle' match, and another to apply it if no conflicts.

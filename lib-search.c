@@ -352,6 +352,45 @@ DEF_CMD(make_search)
 	return 1;
 }
 
+struct texteql {
+	struct command c;
+	const char *text safe;
+	bool matched;
+};
+
+DEF_CB(equal_test)
+{
+	struct texteql *te = container_of(ci->comm, struct texteql, c);
+	wint_t have, want;
+
+	if (!te->text[0])
+		return 0;
+	have = ci->num & 0xFFFFF;
+	want = get_utf8(&te->text, NULL);
+	if (have != want)
+		return 0;
+	if (!te->text[0])
+		te->matched = True;
+	return 1;
+}
+
+DEF_CMD(text_equals)
+{
+	struct texteql te;
+	struct mark *m;
+
+	if (!ci->str || !ci->mark)
+		return Enoarg;
+
+	m = mark_dup(ci->mark);
+	te.c = equal_test;
+	te.text = ci->str;
+	te.matched = False;
+	call_comm("doc:content", ci->focus, &te.c, 0, m);
+	mark_free(m);
+	return te.matched ? 1 : Efalse;
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &text_search, 0, NULL,
@@ -360,4 +399,6 @@ void edlib_init(struct pane *ed safe)
 		  "text-match");
 	call_comm("global-set-command", ed, &make_search, 0, NULL,
 		  "make-search");
+	call_comm("global-set-command", ed, &text_equals, 0, NULL,
+		  "text-equals");
 }

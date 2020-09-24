@@ -239,6 +239,20 @@ class DiffPane(edlib.Pane):
         if len(s) == 0:
             focus.call("Message", "Not on a diff hunk! Line number is empty")
             return 1
+        lineno = int(s)
+        m2.to_mark(m)
+        focus.call("text-match", m, ",[\\d]+")
+        s = focus.call("doc:get-str", m2, m, ret='str')
+        if len(s) == 0:
+            focus.call("Message", "Not a diff hunk! line count is bad")
+            return 1
+        linecount = int(s[1:])
+        wcmd = focus.call("MakeWiggle", ret='comm')
+        if not wcmd:
+            return edlib.Efail
+        focus.call("Move-EOL", 1, m2); focus.call("Move-Char", 1, m2)
+        wcmd("after", focus, m2, "%d"%linecount, f+1, f+2)
+
         # need to find a line starting '+++' immediately before
         # one starting '@@+'
         at_at = True
@@ -271,7 +285,7 @@ class DiffPane(edlib.Pane):
             fname = fname[2:]
         if fname[0] != '/':
             fname = djoin(focus['dirname'], fname)
-        lines = int(s) + lines - 1
+        lineno = lineno + lines - 1
         try:
             d = focus.call("doc:open", -1, 8, fname, ret='focus')
         except edlib.commandfailed:
@@ -289,9 +303,22 @@ class DiffPane(edlib.Pane):
             par = d.call("doc:attach-view", par, 1, ret='focus')
         par.take_focus()
         par.call("Move-File", -1)
-        if lines > 1:
-            par.call("Move-EOL",lines - 1)
+        if lineno > 1:
+            par.call("Move-EOL", lineno - 1)
             par.call("Move-Char", 1)
+            m = par.call("doc:dup-point", 0, -2, ret='mark')
+            try:
+                fuzz = wcmd("find", "after", 5, 200, par, m)
+                lines -= (fuzz - 1)
+                par.call("Move-to", m)
+                if lines > 1:
+                    par.call("Move-EOL", lines-1)
+                    par.call("Move-Char", 1)
+                if fuzz > 1:
+                    focus.call("Message", "Match found with fuzz of %d" % (fuzz-1))
+            except edlib.commandfailed:
+                focus.call("Message", "Couldn't find exact match")
+                pass
 
         return 1
 
