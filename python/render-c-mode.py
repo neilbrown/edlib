@@ -483,7 +483,7 @@ class CModePane(edlib.Pane):
 
         if ps.comment == "/*":
             prefix = "* "
-            if p.call("text-match", m.dup(), "[ \t]*\*") > 1:
+            if p.call("text-match", m.dup(), "[ \\t]*\\*") > 1:
                 prefix = ""
             depth = [ps.comment_col+1,ps.comment_col+1]
         else:

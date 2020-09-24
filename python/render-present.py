@@ -557,12 +557,12 @@ class PresenterPane(edlib.Pane):
             vb = self.get_attr(mark, 'italic', page)
             if not vb:
                 vb = 'italic'
-            line = re.sub("\\b_(\B[^_<]*)_", "<"+vb+">\\1</>", line)
+            line = re.sub("\\b_(\\B[^_<]*)_", "<"+vb+">\\1</>", line)
 
             vb = self.get_attr(mark, 'bold', page)
             if not vb:
                 vb = 'bold'
-            line = re.sub("\*(\S[^*<]*)\*", "<"+vb+">\\1</>", line)
+            line = re.sub("\\*(\\S[^*<]*)\\*", "<"+vb+">\\1</>", line)
             b = re.match(".*,bullet:([^:,]*)", v)
             if b:
                 vb = self.get_attr(mark, 'bullet', page)

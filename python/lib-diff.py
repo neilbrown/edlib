@@ -205,7 +205,7 @@ class DiffPane(edlib.Pane):
         while focus.call("doc:step", 0, m, ret='char') == '\n':
             m2 = m.dup()
             if focus.call("text-match", m2,
-                          "@@+( -[\d]+,[\d]+)+ \+") > 0:
+                          "@@+( -[\\d]+,[\\d]+)+ \\+") > 0:
                 break
             m2 = None
             c = focus.call("doc:step", m, 1, ret='char')
@@ -234,7 +234,7 @@ class DiffPane(edlib.Pane):
             return 1
         # m2 is after the '+' that introduces the to-file-range
         m.to_mark(m2)
-        focus.call("text-match", m, "[\d]+")
+        focus.call("text-match", m, "[\\d]+")
         s = focus.call("doc:get-str", m2, m, ret='str')
         if len(s) == 0:
             focus.call("Message", "Not on a diff hunk! Line number is empty")
@@ -250,7 +250,7 @@ class DiffPane(edlib.Pane):
             focus.call("Move-EOL", -2, m)
             if at_at:
                 at_at = False
-                if focus.call("text-match", m, "\+\+\+ ") > 0:
+                if focus.call("text-match", m, "\\+\\+\\+ ") > 0:
                     found_plus = True
             else:
                 if focus.call("text-match", m, "@@+ ") > 0:
