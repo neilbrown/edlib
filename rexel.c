@@ -2083,7 +2083,7 @@ static int interp(struct match_state *s safe, const char *form safe, char *buf)
 	int len = 0;
 
 	while (*form) {
-		int n;
+		int which, n = 0;
 		char *e;
 
 		if (form[0] != '\\') {
@@ -2100,10 +2100,20 @@ static int interp(struct match_state *s safe, const char *form safe, char *buf)
 			form += 2;
 			continue;
 		}
-		if (!isdigit(form[1]))
+		/* must be \NN to get last of group NN or
+		 * \:NN:MM to get MMth of grop NN
+		 */
+		if (isdigit(form[1])) {
+			which = strtoul(form+1, &e, 10);
+		} else if (form[1] == ':' && isdigit(form[2])) {
+			which = strtoul(form+2, &e, 10);
+			if (!e || e[0] != ':' || !isdigit(e[1]))
+				return 1;
+			n = strtoul(e+2, &e, 10);
+		} else
 			return -1;
-		n = strtoul(form+1, &e, 10);
-		n = get_capture(s, n, 0, buf ? buf+len : buf, NULL);
+
+		n = get_capture(s, which, n, buf ? buf+len : buf, NULL);
 		len += n;
 		if (!e)
 			break;

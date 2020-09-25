@@ -171,7 +171,7 @@ DEF_CB(search_test)
 		free(ret);
 		return 1;
 	}
-	return 0;
+	return Efail;
 }
 
 static int search_forward(struct pane *p safe,

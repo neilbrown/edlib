@@ -201,91 +201,53 @@ class DiffPane(edlib.Pane):
         "handle:K:Enter"
         m = mark.dup()
         focus.call("Move-EOL", -1, m)
-        lines = [0,0,0,0]
-        while focus.call("doc:step", 0, m, ret='char') == '\n':
-            m2 = m.dup()
-            if focus.call("text-match", m2,
-                          "@@+( -[\\d]+,[\\d]+)+ \\+") > 0:
-                break
-            m2 = None
-            c = focus.call("doc:step", m, 1, ret='char')
-            f = 0
-            # we don't know how many base files are being diffed against
-            # until we see the '@@+' line, so allow for 1-4
-            # If there are any '-' on a line that we need to pay attention
-            # to, then we don't count that line.  We only know how many
-            # chars to pay attention when we see that '@@+' line.
-            while c and c in '+ ' and f < 4:
-                lines[f] += 1
-                f += 1
-                focus.call("doc:step", m, 1, 1)
-                c = focus.call("doc:step", m, 1, ret='char')
-            focus.call("Move-EOL", -2, m)
-        if not m2:
+
+        ptn = "^(@@+)( -([\\d]+),([\\d]+))+ \\+([\\d]+),([\\d]+)"
+        try:
+            focus.call("text-search", m, ptn, 0, 1)
+        except edlib.commandfailed:
             focus.call("Message", "Not on a diff hunk - no '@@' line")
             return 1
-        f = -2
-        while f < 4 and focus.call("doc:step", m, 1, 1, ret='char') == '@':
-            f += 1
-        if f >= 0 and f < 4:
-            lines = lines[f]
-        else:
-            focus.call("Message", "Not on a diff hunk - '@@' line looks wrong")
-            return 1
-        # m2 is after the '+' that introduces the to-file-range
-        m.to_mark(m2)
-        focus.call("text-match", m, "[\\d]+")
-        s = focus.call("doc:get-str", m2, m, ret='str')
-        if len(s) == 0:
-            focus.call("Message", "Not on a diff hunk! Line number is empty")
-            return 1
-        lineno = int(s)
-        m2.to_mark(m)
-        focus.call("text-match", m, ",[\\d]+")
-        s = focus.call("doc:get-str", m2, m, ret='str')
-        if len(s) == 0:
-            focus.call("Message", "Not a diff hunk! line count is bad")
-            return 1
-        linecount = int(s[1:])
+        cmd = focus.call("make-search", ptn, 3, ret='comm')
+        m2 = m.dup()
+        focus.call("doc:content", m2, cmd)
+        f = cmd("getcapture", "len", focus, 1)-1
+        lineno = cmd("interp", focus, "\\5", ret='str')
+        lines = cmd("interp", focus, "\\6", ret='str')
+
         wcmd = focus.call("MakeWiggle", ret='comm')
         if not wcmd:
             return edlib.Efail
         focus.call("Move-EOL", 1, m2); focus.call("Move-Char", 1, m2)
-        wcmd("after", focus, m2, "%d"%linecount, f+1, f+2)
+        wcmd("after", focus, m2, mark, f-1, f)
+        prefix = wcmd("extract", focus, "after", ret='str')
+        wcmd("after", focus, m2, lines, f-1, f)
+
+        from_start = len(prefix.splitlines())
 
         # need to find a line starting '+++' immediately before
         # one starting '@@+'
-        at_at = True
-        found_plus = False
-        while not found_plus:
-            if focus.call("doc:step", 0, m, ret='char') is None:
-                # hit start of file without finding anything
-                break
-            focus.call("Move-EOL", -2, m)
-            if at_at:
-                at_at = False
-                if focus.call("text-match", m, "\\+\\+\\+ ") > 0:
-                    found_plus = True
-            else:
-                if focus.call("text-match", m, "@@+ ") > 0:
-                    at_at = True
-        if not found_plus:
+        try:
+            focus.call("text-search", "^\\+\\+\\+.*\\n@@", m, 0, 1)
+        except edlib.commandfailed:
             focus.call("Message", "Not on a diff hunk! No +++ line found")
             return 1
         ms = m.dup()
         focus.call("Move-EOL", 1, m)
         fname = focus.call("doc:get-str", ms, m, ret='str')
+        fname = fname.lstrip('+ ')
+
         # quilt adds timestamp info after a tab
         tb = fname.find('\t')
         if tb > 0:
             fname = fname[:tb]
 
         # git and other use a/ and b/ rather than actual directory name
-        if fname.startswith('b/'):
+        if fname.startswith('b/') or fname.startswith('a/'):
             fname = fname[2:]
         if fname[0] != '/':
             fname = djoin(focus['dirname'], fname)
-        lineno = lineno + lines - 1
+        lineno = int(lineno) + from_start
         try:
             d = focus.call("doc:open", -1, 8, fname, ret='focus')
         except edlib.commandfailed:
@@ -309,10 +271,10 @@ class DiffPane(edlib.Pane):
             m = par.call("doc:dup-point", 0, -2, ret='mark')
             try:
                 fuzz = wcmd("find", "after", 5, 200, par, m)
-                lines -= (fuzz - 1)
+                from_start -= (fuzz - 1)
                 par.call("Move-to", m)
-                if lines > 1:
-                    par.call("Move-EOL", lines-1)
+                if from_start > 0:
+                    par.call("Move-EOL", from_start)
                     par.call("Move-Char", 1)
                 if fuzz > 1:
                     focus.call("Message", "Match found with fuzz of %d" % (fuzz-1))

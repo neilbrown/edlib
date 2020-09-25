@@ -112,8 +112,11 @@ static bool collect(struct pane *p, struct mark *start, struct mark *end,
 	buf_init(&b);
 	m = mark_dup(start);
 	while (mark_ordered_not_same(m, end)) {
-		if (is_eol(wch))
+		if (is_eol(wch)) {
 			doskip(p, m, end, skip, choose);
+			if (!mark_ordered_not_same(m, end))
+				break;
+		}
 		wch = doc_next(p, m);
 		if (wch == WEOF)
 			break;
@@ -299,6 +302,31 @@ DEF_CMD(wiggle_text)
 	wd->texts[which].skip = ci->num;
 	wd->texts[which].choose = ci->num2;
 
+	return 1;
+}
+
+DEF_CMD(wiggle_extract)
+{
+	struct wiggle_data *wd = ci->home->data;
+	struct wtxt *wt;
+	struct stream str;
+
+	if (!ci->str || !ci->comm2)
+		return Enoarg;
+	if (strcmp(ci->str, "orig") == 0)
+		wt = &wd->texts[0];
+	else if (strcmp(ci->str, "before") == 0)
+		wt = &wd->texts[1];
+	else if (strcmp(ci->str, "after") == 0)
+		wt = &wd->texts[2];
+	else
+		return Einval;
+	if (!collect(wt->text, wt->start, wt->end, wt->skip, wt->choose,
+		     &str))
+		return Enoarg;
+
+	comm_call(ci->comm2, "cb", ci->focus, 0, NULL, str.body);
+	free(str.body);
 	return 1;
 }
 
@@ -607,6 +635,7 @@ DEF_CMD(make_wiggle)
 		key_add(wiggle_map, "orig", &wiggle_text);
 		key_add(wiggle_map, "before", &wiggle_text);
 		key_add(wiggle_map, "after", &wiggle_text);
+		key_add(wiggle_map, "extract", &wiggle_extract);
 		key_add(wiggle_map, "set-common", &wiggle_set_common);
 		key_add(wiggle_map, "set-wiggle", &wiggle_set_wiggle);
 		key_add(wiggle_map, "find", &wiggle_find);

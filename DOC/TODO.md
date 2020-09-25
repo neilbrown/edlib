@@ -50,6 +50,8 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] Change Efallthough to -1 so I can return '0' meaningfully.
+- [ ] Make it easier for Move-EOL to move to start of next line
 - [ ] key_add_prefix() doesn't work if there is no punctuation.
 - [ ] send warning message when recursive notification is prohibited.
 - [ ] detect and limit recursion
@@ -103,6 +105,10 @@ Core features
 
 Module features
 ---------------
+
+### lib-search
+
+- [ ] make it easy for a make-search command to search backwards
 
 ### autosave
 
@@ -461,6 +467,10 @@ Module features
 
 ### lang-python
 
+- [ ] should Efallthrough be an exception?
+- [ ] Print error name when there is a python error
+- [ ] edlib.log can crash if there are '%' if the buffer.
+- [ ] expose rexel constant
 - [ ] report error if release mark which isn't ours.
 - [ ] create a library of support functions like doc_next, doc_prev etc.
 - [ ] Log loading of modules - Can I provide version info?
