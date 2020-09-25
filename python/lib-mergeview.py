@@ -48,15 +48,15 @@ class MergePane(edlib.Pane):
 
         cmd = self.call("MakeWiggle", ret='comm')
         t = start.dup()
-        self.call("Move-EOL", 1, t); self.call("Move-Char", 1, t)
+        self.call("Move-EOL", 1, t, 1)
         cmd("orig", self, t, m1)
 
         t = m1.dup()
-        self.call("Move-EOL", 1, t); self.call("Move-Char", 1, t)
+        self.call("Move-EOL", 1, t, 1)
         cmd("before", self, t, m2)
 
         t = m2.dup()
-        self.call("Move-EOL", 1, t); self.call("Move-Char", 1, t)
+        self.call("Move-EOL", 1, t, 1)
         cmd("after", self, t, m3)
 
         ret = cmd("set-wiggle", self, "render:merge-same")
@@ -114,8 +114,7 @@ class MergePane(edlib.Pane):
         m2 = self.fore(m1, end, "====")
         m3 = end
         if m3:
-            self.call("Move-EOL", 1, m3)
-            self.call("Move-Char", 1, m3)
+            self.call("Move-EOL", 1, m3, 1)
             self.mark(m, m3)
             mark.to_mark(m3)
         return 1
@@ -123,8 +122,7 @@ class MergePane(edlib.Pane):
     def remark(self, key, **a):
         if self.marks:
             m = self.marks[3].dup()
-            self.call("Move-EOL", 1, m)
-            self.call("Move-Char", 1, m)
+            self.call("Move-EOL", 1, m, 1)
             self.mark(self.marks[0], m)
         return edlib.Efalse
 

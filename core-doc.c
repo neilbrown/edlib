@@ -325,6 +325,7 @@ DEF_CMD(doc_eol)
 	struct mark *m = ci->mark;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
+	bool one_more = ci->num2 > 0;
 
 	if (!m)
 		m = dd->point;
@@ -341,7 +342,7 @@ DEF_CMD(doc_eol)
 			;
 		rpt += 1;
 	}
-	if (is_eol(ch)) {
+	if (!one_more && is_eol(ch)) {
 		if (RPT_NUM(ci) > 0)
 			doc_prev(f, m);
 		else if (RPT_NUM(ci) < 0)

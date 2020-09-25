@@ -152,15 +152,13 @@ class DiffPane(edlib.Pane):
         starta = mark.dup()
         ch = focus.call("doc:step", 1, mark, ret='char')
         while ch and ch == '-':
-            if (focus.call("Move-EOL", mark, 1) <= 0 or
-                focus.call("Move-Char", mark, 1) <= 0):
+            if focus.call("Move-EOL", mark, 1, 1) <= 0:
                 break
             ch = focus.call("doc:step", 1, mark, ret='char')
         startb = mark.dup()
         ch = focus.call("doc:step", 1, mark, ret='char')
         while ch and ch == '+':
-            if (focus.call("Move-EOL", mark, 1) <= 0 or
-                focus.call("Move-Char", mark, 1) <= 0):
+            if focus.call("Move-EOL", mark, 1, 1) <= 0:
                 break
             ch = focus.call("doc:step", 1, mark, ret='char')
 
@@ -244,7 +242,7 @@ class DiffPane(edlib.Pane):
         wcmd = focus.call("MakeWiggle", ret='comm')
         if not wcmd:
             return edlib.Efail
-        focus.call("Move-EOL", 1, m2); focus.call("Move-Char", 1, m2)
+        focus.call("Move-EOL", 1, m2, 1)
         if self.which == 0 or self.which >= f:
             wcmd("after", focus, m2, mark, f-1, f)
         else:
@@ -298,16 +296,14 @@ class DiffPane(edlib.Pane):
         par.take_focus()
         par.call("Move-File", -1)
         if lineno > 1:
-            par.call("Move-EOL", lineno - 1)
-            par.call("Move-Char", 1)
+            par.call("Move-EOL", lineno - 1, 1)
             m = par.call("doc:dup-point", 0, -2, ret='mark')
             try:
                 fuzz = wcmd("find", "after", 5, 200, par, m)
                 from_start -= (fuzz - 1)
                 par.call("Move-to", m)
                 if from_start > 0:
-                    par.call("Move-EOL", from_start)
-                    par.call("Move-Char", 1)
+                    par.call("Move-EOL", from_start, 1)
                 if fuzz > 1:
                     focus.call("Message", "Match found with fuzz of %d" % (fuzz-1))
             except edlib.commandfailed:

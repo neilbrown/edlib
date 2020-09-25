@@ -119,11 +119,9 @@ DEF_CMD(history_move)
 		m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
 		call("Move-EOL", hi->history, -2);
 	} else {
-		call("Move-EOL", hi->history, 1);
-		call("Move-Char", hi->history, 1);
+		call("Move-EOL", hi->history, 1, NULL, NULL, 1);
 		m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
-		call("Move-EOL", hi->history, 1, m);
-		call("Move-Char", hi->history, 1, m);
+		call("Move-EOL", hi->history, 1, m, NULL, 1);
 	}
 	l = call_ret(str, "doc:get-str", hi->history, 0, NULL, NULL, 0, m);
 	if (!l || !*l) {

@@ -370,8 +370,7 @@ class CModePane(edlib.Pane):
         #  But don't accept a match on this line
         m = mark.dup()
 
-        p.call("Move-EOL", m, -1)
-        p.call("doc:step", m, 0, 1)
+        p.call("Move-EOL", m, -1, 1)
         try:
             p.call("text-search", 1, 1, m,
                    "^([^\\s\\a\\A\\d#/}]|[\\A\\a\\d_]+[\\s]*[^:\\s\\A\\a\\d_]|[\\A\\a\\d_]+[\\s]+[^:\\s])")
@@ -873,8 +872,7 @@ class CModePane(edlib.Pane):
         # now call handle_tab() on each line from mark to m2
         while mark < m2:
             self.handle_tab("Reindent", focus, mark, 0)
-            if (focus.call("Move-EOL", 1, mark) <= 0 or
-                focus.call("Move-Char", 1, mark) <= 0):
+            if focus.call("Move-EOL", 1, mark, 1) <= 0:
                 break
 
         return 1

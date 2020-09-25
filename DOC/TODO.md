@@ -51,7 +51,7 @@ Core features
 -------------
 
 - [ ] Change Efallthough to -1 so I can return '0' meaningfully.
-- [ ] Make it easier for Move-EOL to move to start of next line
+- [X] Make it easier for Move-EOL to move to start of next line
 - [ ] key_add_prefix() doesn't work if there is no punctuation.
 - [ ] send warning message when recursive notification is prohibited.
 - [ ] detect and limit recursion

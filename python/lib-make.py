@@ -485,8 +485,7 @@ class MakePane(edlib.Pane):
             par.call("Move-File", -1)
             lineno = int(lineno)
             if lineno > 1:
-                par.call("Move-EOL", lineno-1)
-                par.call("Move-Char", 1)
+                par.call("Move-EOL", lineno-1, 1)
 
         if not in_popup and where in ['AnyPane', 'OtherPane']:
             docpane = par.call("DocPane", self, ret='focus')

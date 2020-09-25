@@ -1855,9 +1855,8 @@ static void update_sel(struct pane *p safe,
 			call("Move-Word", p, 1, mlast);
 		} else {
 			call("Move-EOL", p, -1,  mfirst);
-			call("Move-EOL", p, 1, mlast);
-			/* Include trailing newlinew */
-			call("Move-Char", p, 1, mlast);
+			/* Include trailing newline */
+			call("Move-EOL", p, 1, mlast, NULL, 1);
 		}
 	}
 

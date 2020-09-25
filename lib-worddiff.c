@@ -260,8 +260,7 @@ static void forward_lines(struct pane *p safe, struct mark *m safe,
 {
 	while (lines > 0) {
 		doskip(p, m, NULL, skip, choose);
-		call("Move-EOL", p, 1, m);
-		doc_next(p, m);
+		call("Move-EOL", p, 1, m, NULL, 1);
 		lines -= 1;
 	}
 }
@@ -554,8 +553,8 @@ DEF_CMD(wiggle_find)
 		early = mark_dup(ci->mark);
 		call("Move-EOL", p, -1, early);
 		late = mark_dup(ci->mark);
-		call("Move-EOL", p, 1, late);
-		if (call("Move-Char", p, 1, late) < 0) {
+		call("Move-EOL", p, 1, late, NULL, 1);
+		if (doc_following(p, late) == WEOF) {
 			mark_free(late);
 			late = NULL;
 		}
@@ -583,8 +582,7 @@ DEF_CMD(wiggle_find)
 					mark_free(late);
 					late = NULL;
 				} else {
-					call("Move-EOL", p, 1, late);
-					doc_next(p, late);
+					call("Move-EOL", p, 1, late, NULL, 1);
 				}
 			}
 			if (lines > 0) {
