@@ -34,9 +34,21 @@ def measure(p, start, end):
     return len
 
 class DiffPane(edlib.Pane):
-    def __init__(self, focus):
+    def __init__(self, focus, which = 0):
         edlib.Pane.__init__(self, focus)
+        self.setwhich(which)
         self.viewnum = focus.call("doc:add-view", self) - 1
+
+    def setwhich(self, which):
+        self.which = which
+        if which == 0:
+            st = "(post)"
+        elif which == 1:
+            st = "(pre)"
+        else:
+            st = "(pre-%d)" % which
+        self['doc-status'] = st
+        self.call("view:changed")
 
     def handle_close(self, key, focus, **a):
         "handle:Close"
@@ -197,6 +209,14 @@ class DiffPane(edlib.Pane):
         p = DiffPane(focus)
         home.clone_children(p)
 
+    def handle_toggle(self, key, focus, **a):
+        "handle:doc:cmd-~"
+        if self.which == 0:
+            self.setwhich(1)
+        else:
+            self.setwhich(0)
+        return 1
+
     def handle_enter(self, key, focus, mark, **a):
         "handle:K:Enter"
         m = mark.dup()
@@ -212,16 +232,28 @@ class DiffPane(edlib.Pane):
         m2 = m.dup()
         focus.call("doc:content", m2, cmd)
         f = cmd("getcapture", "len", focus, 1)-1
-        lineno = cmd("interp", focus, "\\5", ret='str')
-        lines = cmd("interp", focus, "\\6", ret='str')
+        if self.which == 0 or self.which > f:
+            # get the "after" section
+            lineno = cmd("interp", focus, "\\5", ret='str')
+            lines = cmd("interp", focus, "\\6", ret='str')
+        else:
+            # choose a "before" section
+            lineno = cmd("interp", focus, "\\:3:%d" % self.which, ret='str')
+            lines = cmd("interp", focus, "\\:4:%d" % self.which, ret='str')
 
         wcmd = focus.call("MakeWiggle", ret='comm')
         if not wcmd:
             return edlib.Efail
         focus.call("Move-EOL", 1, m2); focus.call("Move-Char", 1, m2)
-        wcmd("after", focus, m2, mark, f-1, f)
+        if self.which == 0 or self.which >= f:
+            wcmd("after", focus, m2, mark, f-1, f)
+        else:
+            wcmd("after", focus, m2, mark, f-1, self.which)
         prefix = wcmd("extract", focus, "after", ret='str')
-        wcmd("after", focus, m2, lines, f-1, f)
+        if self.which == 0 or self.which >= f:
+            wcmd("after", focus, m2, lines, f-1, f)
+        else:
+            wcmd("after", focus, m2, lines, f-1, self.which)
 
         from_start = len(prefix.splitlines())
 

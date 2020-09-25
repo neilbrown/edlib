@@ -137,8 +137,8 @@ Module features
 
 - [X] diff-mode keystrokes for 'next diff', prev, etc
 - [X] When only add or only delete, highlight in same way as when there are both.
-- [ ] allow inversion so 'enter' looks for the '-' not the '+'
-- [ ] status-line entry to indicate if inverted or not.
+- [X] allow inversion so 'enter' looks for the '-' not the '+'
+- [X] status-line entry to indicate if inverted or not.
 - [X] Add code to check alignment and search for nearby match.
 - [ ] command to apply a hunk to a given document - or to reverse it.
 - [ ] Link wiggle code to find best-match if direct match fails
