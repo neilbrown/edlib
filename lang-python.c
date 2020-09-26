@@ -2474,7 +2474,7 @@ static PyObject *py_LOG(PyObject *self, PyObject *args)
 	}
 	buf[l] = 0;
 	if (l)
-		LOG(buf);
+		LOG("%s", buf);
 
 	Py_INCREF(Py_None);
 	return Py_None;
