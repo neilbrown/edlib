@@ -33,10 +33,10 @@ struct email_info {
 	struct pane	*spacer safe;
 };
 
-static int handle_content(struct pane *p safe, char *type, char *xfer,
-			  struct mark *start safe, struct mark *end safe,
-			  struct pane *mp safe, struct pane *spacer safe,
-			  char *path safe);
+static bool handle_content(struct pane *p safe, char *type, char *xfer,
+			   struct mark *start safe, struct mark *end safe,
+			   struct pane *mp safe, struct pane *spacer safe,
+			   char *path safe);
 
 DEF_CMD(email_close)
 {
@@ -46,32 +46,32 @@ DEF_CMD(email_close)
 	return 1;
 }
 
-static int cond_append(struct buf *b safe, char *txt safe, char *tag safe,
-		       int offset, struct mark *pm, struct mark *m safe)
+static bool cond_append(struct buf *b safe, char *txt safe, char *tag safe,
+			int offset, struct mark *pm, struct mark *m safe)
 {
 	char *tagf = "active-tag:email-";
 	int prelen = 1 + strlen(tagf) + strlen(tag) + 1 + 1;
 	int postlen = 1 + 3;
 	int len = prelen + strlen(txt) + postlen;
 	if (offset != NO_NUMERIC && offset >= 0 && offset <= b->len + len)
-		return 0;
+		return False;
 	buf_concat(b, "<");
 	buf_concat(b, tagf);
 	buf_concat(b, tag);
 	buf_concat(b, ">[");
 	buf_concat(b, txt);
 	buf_concat(b, "]</>");
-	return 1;
+	return True;
 }
 
-static int is_attr(char *a safe, char *attrs safe)
+static bool is_attr(char *a safe, char *attrs safe)
 {
 	int l = strlen(a);
 	if (strncmp(a, attrs, l) != 0)
-		return 0;
+		return False;
 	if (attrs[l] == ':' || attrs[l] == '\0')
-		return 1;
-	return 0;
+		return True;
+	return False;
 }
 
 DEF_CMD(email_spacer)
@@ -83,7 +83,7 @@ DEF_CMD(email_spacer)
 	int o = ci->num;
 	char *attr;
 	int ret;
-	int ok = 1;
+	bool ok = True;
 
 	if (!m)
 		return Enoarg;
@@ -266,19 +266,19 @@ static char *get_822_word(char *hdr safe)
 	return last;
 }
 
-static int tok_matches(char *tok, int len, char *match safe)
+static bool tok_matches(char *tok, int len, char *match safe)
 {
 	if (!tok)
-		return 0;
+		return False;
 	if (len != (int)strlen(match))
-		return 0;
+		return False;
 	return strncasecmp(tok, match, len) == 0;
 }
 
-static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
-			     struct mark *start safe, struct mark *end safe,
-			     struct pane *mp safe, struct pane *spacer safe,
-			     char *path)
+static bool handle_text_plain(struct pane *p safe, char *type, char *xfer,
+			      struct mark *start safe, struct mark *end safe,
+			      struct pane *mp safe, struct pane *spacer safe,
+			      char *path)
 {
 	struct pane *h;
 	int need_charset = 0;
@@ -289,7 +289,7 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 
 	h = call_ret(pane, "attach-crop", p, 0, start, NULL, 0, end);
 	if (!h)
-		return 0;
+		return False;
 
 	if (xfer) {
 		int xlen;
@@ -348,7 +348,7 @@ static int handle_text_plain(struct pane *p safe, char *type, char *xfer,
 
 	home_call(mp, "multipart-add", h);
 	home_call(mp, "multipart-add", spacer);
-	return 1;
+	return True;
 }
 
 /* Found a multipart boundary between start and end, moving
@@ -411,10 +411,10 @@ static int find_boundary(struct pane *p safe,
 	return -1;
 }
 
-static int handle_multipart(struct pane *p safe, char *type safe,
-			    struct mark *start safe, struct mark *end safe,
-			    struct pane *mp safe, struct pane *spacer safe,
-			    char *path safe)
+static bool handle_multipart(struct pane *p safe, char *type safe,
+			     struct mark *start safe, struct mark *end safe,
+			     struct pane *mp safe, struct pane *spacer safe,
+			     char *path safe)
 {
 	char *boundary = get_822_attr(type, "boundary");
 	int found_end = 0;
@@ -426,11 +426,11 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 
 	if (!boundary)
 		/* FIXME need a way to say "just display the text" */
-		return 1;
+		return True;
 
 	found_end = find_boundary(p, start, end, NULL, boundary);
 	if (found_end != 0)
-		return 1;
+		return True;
 	tok = get_822_token(&type, &len);
 	if (tok) {
 		tok = get_822_token(&type, &len);
@@ -474,13 +474,13 @@ static int handle_multipart(struct pane *p safe, char *type safe,
 	mark_free(pos);
 	mark_free(part_end);
 	free(boundary);
-	return 1;
+	return True;
 }
 
-static int handle_content(struct pane *p safe, char *type, char *xfer,
-			  struct mark *start safe, struct mark *end safe,
-			  struct pane *mp safe, struct pane *spacer safe,
-			  char *path safe)
+static bool handle_content(struct pane *p safe, char *type, char *xfer,
+			   struct mark *start safe, struct mark *end safe,
+			   struct pane *mp safe, struct pane *spacer safe,
+			   char *path safe)
 {
 	char *hdr = type;
 	char *major, *minor = NULL;
@@ -580,8 +580,8 @@ DEF_CMD(open_email)
 	home_call(p, "multipart-add", ei->spacer);
 	call("doc:set:autoclose", doc, 1);
 
-	if (handle_content(ei->email, type, xfer, start, end,
-			   p, ei->spacer, "") == 0)
+	if (!handle_content(ei->email, type, xfer, start, end,
+			    p, ei->spacer, ""))
 		goto out;
 
 	h = pane_register(p, 0, &email_handle.c, ei);

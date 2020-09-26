@@ -166,7 +166,7 @@ class MakePane(edlib.Pane):
             except edlib.commandfailed:
                 d = None
             if not d:
-                return 0
+                return False
             v = d.call("doc:add-view", self) - 1
             self.add_notify(d, "Notify:Close")
             self.files[fname] = (d, v)

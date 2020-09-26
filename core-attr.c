@@ -197,7 +197,7 @@ static void do_del(struct attrset * *setp safe, int offset)
 	}
 }
 
-int attr_del(struct attrset * *setp safe, const char *key safe)
+bool attr_del(struct attrset * *setp safe, const char *key safe)
 {
 	int offset = 0;
 	int cmp;
@@ -206,9 +206,9 @@ int attr_del(struct attrset * *setp safe, const char *key safe)
 
 	if (cmp)
 		/* Not found */
-		return 0;
+		return False;
 	do_del(setp, offset);
-	return 1;
+	return True;
 }
 
 void attr_del_all(struct attrset * *setp safe, const char *key safe,
@@ -428,7 +428,7 @@ int main(int argc, char *argv[])
 		case Add:
 			attr_set_str(&set, a->key, a->val); continue;
 		case Remove:
-			if (attr_del(&set, a->key) == 0) {
+			if (!attr_del(&set, a->key)) {
 				printf("Action %d: Remove %s: failed\n",
 				       i, a->key);
 				rv = 1;

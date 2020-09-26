@@ -50,7 +50,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
-- [ ] all function that return 0 or 1 should probably be bool
+- [X] all function that return 0 or 1 should probably be bool
 - [ ] Change Efallthough to -1 so I can return '0' meaningfully.
 - [X] Make it easier for Move-EOL to move to start of next line
 - [ ] key_add_prefix() doesn't work if there is no punctuation.

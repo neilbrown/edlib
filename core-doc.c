@@ -147,12 +147,12 @@ DEF_CMD(doc_word)
 	return 1;
 }
 
-static int check_slosh(struct pane *p safe, struct mark *m safe)
+static bool check_slosh(struct pane *p safe, struct mark *m safe)
 {
 	wint_t ch;
 	/* Check is preceded by exactly 1 '\' */
 	if (doc_prior(p, m) != '\\')
-		return 0;
+		return False;
 	doc_prev(p,m);
 	ch = doc_prior(p, m);
 	doc_next(p,m);
@@ -246,7 +246,7 @@ DEF_CMD(doc_expr)
 		} else if (wi == '"' || wi == '\'') {
 			/* skip quoted or to EOL */
 			wint_t q = wi;
-			int slosh = 0;
+			bool slosh = False;
 			if (dir) {
 				slosh = check_slosh(f, m);
 				doc_step(f, m, dir, 1);

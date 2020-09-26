@@ -1093,15 +1093,15 @@ static wint_t cvt_oct(const char **sp safe, int maxlen)
 	return rv;
 }
 
-static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
-		       int plane, int *planes safe, int *newplane safe)
+static bool __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
+			int plane, int *planes safe, int *newplane safe)
 {
 	int p;
 	int lo, hi;
 	int len;
 	unsigned short *set;
 	if (end < start)
-		return -1;
+		return False;
 	if (!st->sets) {
 		/* guess 2 entries for each plane, plus 1
 		 * if we add a plane.  Each plane needs an extra slot
@@ -1120,18 +1120,18 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 		 * the last.
 		 */
 		*newplane = 0x11 << 16;
-		return 0;
+		return True;
 	}
 	/* OK, for real this time, need to build up set 'plane' */
 	if (start >= ((plane+1) << 16)) {
 		/* Nothing to do for this plane, move to 'start' */
 		*newplane = start >> 16;
-		return 0;
+		return True;
 	}
 	if (end < (plane << 16)) {
 		/* nothing more to do */
 		*newplane = 0x11 << 16;
-		return 0;
+		return True;
 	}
 	/* Contract range to this plane */
 	if (start < (plane << 16))
@@ -1221,18 +1221,18 @@ static int __add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
 		len -= 2;
 	}
 	st->len = len;
-	return 0;
+	return True;
 }
 
-static int add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
-		     int plane, int *planes safe, int *newplane safe)
+static bool add_range(struct parse_state *st safe, wchar_t start, wchar_t end,
+		      int plane, int *planes safe, int *newplane safe)
 {
 	if (!(st->mod & IgnoreCase) ||
 	    !iswalpha(start) || !iswalpha(end))
 		return __add_range(st, start, end, plane, planes, newplane);
-	if (__add_range(st, towlower(start), towlower(end),
-			plane, planes, newplane) < 0)
-		return -1;
+	if (!__add_range(st, towlower(start), towlower(end),
+			plane, planes, newplane))
+		return False;
 	return __add_range(st, towupper(start), towupper(end),
 			   plane, planes, newplane);
 }
@@ -1270,20 +1270,20 @@ static void add_class(struct parse_state *st safe, int plane, wctype_t cls)
 	return;
 }
 
-static int is_set_element(const char *p safe)
+static bool is_set_element(const char *p safe)
 {
 	int i;
 
 	if (p[0] != '.' && p[0] != '=' && p[0] != ':')
-		return 0;
+		return False;
 	for (i = 1; p[i]; i++)
 		if (p[i] == ']') {
 			if (p[i-1] == p[1] && i > 1)
-				return 1;
+				return True;
 			else
-				return 0;
+				return False;
 		}
-	return 0;
+	return False;
 }
 
 static int do_parse_set(struct parse_state *st safe, int plane)
@@ -1350,8 +1350,8 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 			p += 1;
 			ch2 = get_utf8(&p, NULL);
 			if (ch2 >= WERR ||
-			    add_range(st, ch, ch2,
-				      plane, &planes, &newplane) < 0)
+			    !add_range(st, ch, ch2,
+				       plane, &planes, &newplane))
 				return -1;
 		} else if (ch == '\\' && p[0] > 0 && p[0] < 0x7f && p[1] != '-'
 			   && strchr("daApsw", p[0]) != NULL) {
@@ -1365,8 +1365,8 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 			}
 			p += 1;
 		} else if (ch) {
-			if (add_range(st, ch, ch,
-				      plane, &planes, &newplane) < 0)
+			if (!add_range(st, ch, ch,
+				       plane, &planes, &newplane))
 				return -1;
 		}
 	} while (*p != ']');
@@ -1387,14 +1387,14 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 	return newplane;
 }
 
-static int parse_set(struct parse_state *st safe)
+static bool parse_set(struct parse_state *st safe)
 {
 	int plane;
 	const char *patn;
 	int set;
 
 	if (*st->patn++ != '[')
-		return 0;
+		return False;
 	/* parse the set description multiple times if necessary
 	 * building up each sub table one at a time.
 	 * First time through we do classes, and report which set
@@ -1413,12 +1413,12 @@ static int parse_set(struct parse_state *st safe)
 		plane = do_parse_set(st, plane);
 	} while (plane >= 0 && plane <= 0x100000);
 	if (plane < 0)
-		return 0;
+		return False;
 	if (st->sets)
 		st->sets[st->set] = 0;
 	st->set++;
 	add_cmd(st, REC_SET | set);
-	return 1;
+	return True;
 }
 
 static unsigned short add_class_set(struct parse_state *st safe,
@@ -1436,8 +1436,8 @@ static unsigned short add_class_set(struct parse_state *st safe,
 	st->set += 3;
 	return REC_SET | (st->set - 3);
 }
-static int parse_re(struct parse_state *st safe);
-static int parse_atom(struct parse_state *st safe)
+static bool parse_re(struct parse_state *st safe);
+static bool parse_atom(struct parse_state *st safe)
 {
 	/* parse out an atom: one of:
 	 * (re)
@@ -1448,34 +1448,34 @@ static int parse_atom(struct parse_state *st safe)
 	 * $
 	 * char - including UTF8
 	 *
-	 * If there is a syntax error, return 0, else return 1;
+	 * If there is a syntax error, return False, else return True;
 	 *
 	 */
 	wint_t ch;
 
 	if (*st->patn == '\0')
-		return 0;
+		return False;
 	if (*st->patn == '.') {
 		if (st->mod & SingleLine)
 			add_cmd(st, REC_ANY);
 		else
 			add_cmd(st, REC_ANY_NONL);
 		st->patn++;
-		return 1;
+		return True;
 	}
 	if (*st->patn == '(') {
 		st->patn++;
 		if (!parse_re(st))
-			return 0;
+			return False;
 		if (*st->patn != ')')
-			return 0;
+			return False;
 		st->patn++;
-		return 1;
+		return True;
 	}
 	if (*st->patn == '^') {
 		add_cmd(st, REC_SOL);
 		st->patn++;
-		return 1;
+		return True;
 	}
 	if (*st->patn == '$') {
 		if (isdigit(st->patn[1])) {
@@ -1487,11 +1487,11 @@ static int parse_atom(struct parse_state *st safe)
 				st->patn += 1;
 			}
 			add_cmd(st, REC_BACKREF | ch);
-			return 1;
+			return True;
 		}
 		add_cmd(st, REC_EOL);
 		st->patn++;
-		return 1;
+		return True;
 	}
 	if (*st->patn == '[')
 		return parse_set(st);
@@ -1502,18 +1502,18 @@ static int parse_atom(struct parse_state *st safe)
 		/* LAXSPC can be repeated */
 		add_cmd(st, REC_FORKFIRST | (st->next - 1));
 		st->patn++;
-		return 1;
+		return True;
 	}
 	if ((st->mod & LaxMatch) &&
 	    (st->patn[0] == '-' || st->patn[0] == '_')) {
 		add_cmd(st, REC_LAXDASH);
 		st->patn++;
-		return 1;
+		return True;
 	}
 	if (*st->patn & 0x80) {
 		ch = get_utf8(&st->patn, NULL);
 		if (ch >= WERR)
-			return 0;
+			return False;
 		st->patn -= 1;
 	} else
 		ch = *st->patn;
@@ -1553,17 +1553,17 @@ static int parse_atom(struct parse_state *st safe)
 			break;
 		case 'x': ch = cvt_hex(st->patn+1, 2);
 			if (ch == WERR)
-				return 0;
+				return False;
 			st->patn += 2;
 			break;
 		case 'u': ch = cvt_hex(st->patn+1, 4);
 			if (ch == WERR)
-				return 0;
+				return False;
 			st->patn += 4;
 			break;
 		case 'U': ch = cvt_hex(st->patn+1, 8);
 			if (ch == WERR)
-				return 0;
+				return False;
 			st->patn += 8;
 			break;
 		case '1'...'9': ch = st->patn[0] - '0';
@@ -1588,15 +1588,15 @@ static int parse_atom(struct parse_state *st safe)
 			/* Anything else is an error (e.g. \0) or
 			 * reserved for future use.
 			 */
-		default: return 0;
+		default: return False;
 		}
 	}
 	add_cmd(st, ch);
 	st->patn++;
-	return 1;
+	return True;
 }
 
-static int parse_piece(struct parse_state *st safe)
+static bool parse_piece(struct parse_state *st safe)
 {
 	int start = st->next;
 	char c;
@@ -1606,11 +1606,11 @@ static int parse_piece(struct parse_state *st safe)
 	int nongreedy = 0;
 
 	if (!parse_atom(st))
-		return 0;
+		return False;
 	c = *st->patn;
 	if (c != '*' && c != '+' && c != '?' &&
 	    !(c=='{' && isdigit(st->patn[1])))
-		return 1;
+		return True;
 
 	st->patn += 1;
 	switch(c) {
@@ -1628,7 +1628,7 @@ static int parse_piece(struct parse_state *st safe)
 			if (st->rxl)
 				st->rxl[start] = REC_FORKLAST | st->next;
 		}
-		return 1;
+		return True;
 	case '+':
 		/* just (optional) jump back */
 		if (st->patn[0] == '?') {
@@ -1637,7 +1637,7 @@ static int parse_piece(struct parse_state *st safe)
 			add_cmd(st, REC_FORKLAST | start);
 		} else
 			add_cmd(st, REC_FORKFIRST | start);
-		return 1;
+		return True;
 	case '?':
 		/* Just a jump-forward */
 		relocate(st, start, 1);
@@ -1649,13 +1649,13 @@ static int parse_piece(struct parse_state *st safe)
 			if (st->rxl)
 				st->rxl[start] = REC_FORKLAST | st->next;
 		}
-		return 1;
+		return True;
 	case '{':/* Need a number, maybe a comma, if not maybe a number,
 		  * then }, and optionally a '?' after that.
 		  */
 		min = strtoul(st->patn, &ep, 10);
 		if (min > 256 || !ep)
-			return 0;
+			return False;
 		max = min;
 		if (*ep == ',') {
 			max = -1;
@@ -1663,11 +1663,11 @@ static int parse_piece(struct parse_state *st safe)
 			if (isdigit(*ep)) {
 				max = strtoul(ep, &ep, 10);
 				if (max > 256 || max < min || !ep)
-					return 0;
+					return False;
 			}
 		}
 		if (*ep != '}')
-			return 0;
+			return False;
 		if (ep[1] == '?') {
 			nongreedy = (REC_FORKLAST ^ REC_FORKFIRST);
 			ep += 1;
@@ -1714,25 +1714,25 @@ static int parse_piece(struct parse_state *st safe)
 			if (last != st->next)
 				abort();
 		}
-		return 1;
+		return True;
 	}
-	return 0;
+	return False;
 }
 
-static int parse_branch(struct parse_state *st safe)
+static bool parse_branch(struct parse_state *st safe)
 {
 	do {
 		if (!parse_piece(st))
-			return 0;
+			return False;
 		switch (*st->patn) {
 		case '*':
 		case '+':
 		case '?':
 			/* repeated modifier - illegal */
-			return 0;
+			return False;
 		}
 	} while (*st->patn && *st->patn != '|' && *st->patn != ')');
-	return 1;
+	return True;
 }
 
 static int parse_prefix(struct parse_state *st safe)
@@ -1830,7 +1830,7 @@ static int parse_prefix(struct parse_state *st safe)
 	s += 1;
 	st->patn = s;
 	if (verblen == 0)
-		return 1;
+		return True;
 	while (verblen && *s) {
 		wint_t ch;
 		if (*s & 0x80) {
@@ -1846,7 +1846,7 @@ static int parse_prefix(struct parse_state *st safe)
 	return 2;
 }
 
-static int parse_re(struct parse_state *st safe)
+static bool parse_re(struct parse_state *st safe)
 {
 	int re_start = st->next;
 	int start = re_start;
@@ -1857,10 +1857,10 @@ static int parse_re(struct parse_state *st safe)
 
 	switch (parse_prefix(st)) {
 	case 0: /* error */
-		return 0;
+		return False;
 	case 2:
 		/* Fully parsed - no more is permitted */
-		return 1;
+		return True;
 	}
 	if (st->mod & DoCapture) {
 		add_cmd(st, REC_CAPTURE | capture);
@@ -1911,7 +1911,7 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	st.capture = 0;
 	if (nocase)
 		add_cmd(&st, REC_IGNCASE);
-	if (parse_re(&st) == 0 || *st.patn != '\0') {
+	if (!parse_re(&st) || *st.patn != '\0') {
 		if (lenp)
 			*lenp = st.patn - patn;
 		return NULL;
@@ -1928,7 +1928,7 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	st.capture = 0;
 	if (nocase)
 		add_cmd(&st, REC_IGNCASE);
-	if (parse_re(&st) == 0)
+	if (!parse_re(&st))
 		abort();
 	add_cmd(&st, REC_MATCH);
 	return st.rxl;
@@ -2108,7 +2108,7 @@ static int interp(struct match_state *s safe, const char *form safe, char *buf)
 		} else if (form[1] == ':' && isdigit(form[2])) {
 			which = strtoul(form+2, &e, 10);
 			if (!e || e[0] != ':' || !isdigit(e[1]))
-				return 1;
+				return True;
 			n = strtoul(e+2, &e, 10);
 		} else
 			return -1;

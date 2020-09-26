@@ -16,11 +16,12 @@ request the value to use.  On success the final value is returned.
 		mpq_t	val;
 	};
 
+	typedef _Bool bool;
 	struct parse_context {
 		struct token_config config;
 		int	error;
 		mpq_t	result;
-		int	(*getvar)(const char *name, int len, mpq_t val, void *data);
+		bool	(*getvar)(const char *name, int len, mpq_t val, void *data);
 		void	*data;
 		char	tail[3];
 	};
@@ -51,7 +52,7 @@ request the value to use.  On success the final value is returned.
 	}
 
 	int do_calc(char *expr, mpq_t result,
-		    int (*getvar)(const char *name, int len, mpq_t val, void *data),
+		    bool (*getvar)(const char *name, int len, mpq_t val, void *data),
 	            void *data)
 	{
 		struct parse_context ctx = {

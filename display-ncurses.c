@@ -118,8 +118,8 @@ static void set_screen(struct pane *p)
 DEF_CMD(next_evt);
 DEF_CMD(abort_replay);
 
-static int parse_event(struct pane *p safe);
-static int prepare_recrep(struct pane *p safe)
+static bool parse_event(struct pane *p safe);
+static bool prepare_recrep(struct pane *p safe)
 {
 	struct display_data *dd = p->data;
 	char *name;
@@ -134,9 +134,9 @@ static int prepare_recrep(struct pane *p safe)
 		sleep(atoi(getenv("EDLIB_PAUSE")));
 	if (dd->input) {
 		parse_event(p);
-		return 1;
+		return True;
 	}
-	return 0;
+	return False;
 }
 
 static void close_recrep(struct pane *p safe)
@@ -292,7 +292,7 @@ REDEF_CMD(abort_replay)
 	return next_evt_func(ci);
 }
 
-static int parse_event(struct pane *p safe)
+static bool parse_event(struct pane *p safe)
 {
 	struct display_data *dd = p->data;
 	char line[80];
@@ -304,20 +304,20 @@ static int parse_event(struct pane *p safe)
 		;
 	else if (match(line, "Key ")) {
 		if (!copy_quote(line+4, dd->event_info))
-			return 0;
+			return False;
 		dd->next_event = DoKey;
 	} else if (match(line, "Mouse ")) {
 		char *f = copy_quote(line+6, dd->event_info);
 		if (!f)
-			return 0;
+			return False;
 		f = get_coord(f, &dd->event_pos);
 		if (!f)
-			return 0;
+			return False;
 		dd->next_event = DoMouse;
 	} else if (match(line, "Display ")) {
 		char *f = get_coord(line+8, &dd->event_pos);
 		if (!f)
-			return 0;
+			return False;
 		f = get_hash(f, dd->next_screen);
 		dd->next_event = DoCheck;
 	} else if (match(line, "Close")) {
@@ -328,7 +328,7 @@ static int parse_event(struct pane *p safe)
 		call_comm("editor-on-idle", p, &next_evt);
 	else
 		call_comm("event:timer", p, &abort_replay, 10*1000);
-	return 1;
+	return True;
 }
 
 REDEF_CMD(next_evt)
@@ -381,7 +381,7 @@ REDEF_CMD(next_evt)
 	return 1;
 }
 #else
-static inline int  prepare_recrep(struct pane *p safe) {return 0;}
+static inline bool  prepare_recrep(struct pane *p safe) {return False;}
 static inline void record_key(struct pane *p safe, char *key) {}
 static inline void record_mouse(struct pane *p safe, char *key safe,
 				int x, int y) {}

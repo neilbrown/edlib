@@ -182,10 +182,10 @@ static int text_advance_towards(struct text *t safe, struct doc_ref *ref safe,
 				struct doc_ref *target safe);
 static int text_retreat_towards(struct text *t safe, struct doc_ref *ref safe,
 				struct doc_ref *target safe);
-static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
-			 struct doc_ref *r2 safe);
-static int _text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
+static bool text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
 			  struct doc_ref *r2 safe);
+static bool _text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
+			   struct doc_ref *r2 safe);
 static int text_locate(struct text *t safe, struct doc_ref *r safe,
 		       struct doc_ref *dest safe);
 static void text_check_consistent(struct text *t safe);
@@ -401,8 +401,8 @@ err:
 	return Efallthrough;
 }
 
-static int do_text_output_file(struct text *t safe, struct doc_ref *start,
-			       struct doc_ref *end, int fd)
+static bool do_text_output_file(struct text *t safe, struct doc_ref *start,
+				struct doc_ref *end, int fd)
 {
 	struct text_chunk *c;
 	int offset = 0;
@@ -419,19 +419,19 @@ static int do_text_output_file(struct text *t safe, struct doc_ref *start,
 		if (end && end->c == c)
 			ln = end->o;
 		if (write(fd, s + offset, ln - offset) != ln - offset)
-			return -1;
+			return False;
 		offset = 0;
 		if (end && end->c == c)
 			break;
 	}
 	if (fsync(fd) != 0)
-		return Efail;
-	return 0;
+		return False;
+	return True;
 }
 
-static int do_text_write_file(struct text *t safe, struct doc_ref *start,
-			      struct doc_ref *end,
-			      const char *fname safe)
+static bool do_text_write_file(struct text *t safe, struct doc_ref *start,
+			       struct doc_ref *end,
+			       const char *fname safe)
 {
 	/* Don't worry about links for now
 	 * Create a temp file with #basename#~, write to that,
@@ -462,9 +462,9 @@ static int do_text_write_file(struct text *t safe, struct doc_ref *start,
 		cnt += 1;
 	}
 	if (fd < 0)
-		return Efail;
+		return False;
 
-	if (do_text_output_file(t, start, end, fd) < 0)
+	if (!do_text_output_file(t, start, end, fd))
 		goto error;
 	if (stat(fname, &stb) == 0 &&
 	    S_ISREG(stb.st_mode))
@@ -494,12 +494,12 @@ static int do_text_write_file(struct text *t safe, struct doc_ref *start,
 	fstat(fd, &t->stat);
 	close(fd);
 	free(tempname);
-	return 0;
+	return True;
 error:
 	close(fd);
 	unlink(tempname);
 	free(tempname);
-	return Efail;
+	return False;
 
 }
 
@@ -593,7 +593,7 @@ static void do_text_autosave(struct text *t safe)
 	if (fd < 0)
 		return;
 
-	if (do_text_output_file(t, NULL, NULL, fd) < 0) {
+	if (!do_text_output_file(t, NULL, NULL, fd)) {
 		close(fd);
 		unlink(t->autosave_name);
 		return;
@@ -678,7 +678,7 @@ DEF_CMD(text_save_file)
 		ret = Efail;
 	} else {
 		ret = do_text_write_file(t, NULL, NULL, t->fname);
-		if (ret == 0) {
+		if (ret) {
 			asprintf(&msg, "Successfully wrote %s", t->fname);
 			t->saved = t->undo;
 			change_status = 1;
@@ -708,14 +708,14 @@ DEF_CMD(text_write_file)
 					 ci->mark ? &ci->mark->ref: NULL,
 					 ci->mark2 ? &ci->mark2->ref: NULL,
 					 ci->str);
-		return ret == 0 ? 1 : Efail;
+		return ret ? 1 : Efail;
 	}
 	if (ci->num >= 0 && ci->num != NO_NUMERIC) {
 		ret = do_text_output_file(t,
 					  ci->mark ? &ci->mark->ref: NULL,
 					  ci->mark2 ? &ci->mark2->ref: NULL,
 					  ci->num);
-		return ret = 0 ? 1 : Efail;
+		return ret ? 1 : Efail;
 	}
 	return Enoarg;
 }
@@ -1624,60 +1624,42 @@ DEF_CMD(text_step_bytes)
 	return CHAR_RET(ret);
 }
 
-static int _text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
-			  struct doc_ref *r2 safe)
+static bool _text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
+			   struct doc_ref *r2 safe)
 {
 	if (r1->c == r2->c) {
-#if 1
 		return r1->o == r2->o;
-#else
-		if (r1->o == r2->o)
-			return 1;
-		if (r1->c == NULL)
-			return 0;
-		/* FIXME this must fail as r1->c == rc->c, and r1->c != NULL) */
-		if (r2->c == NULL)
-			return 0;
-		/* if references are in the middle of a UTF-8 encoded
-		 * char, accept as same if it is same char
-		 */
-		if (r1->o == r1->c->end ||
-		    r2->o == r2->c->end)
-			return 0;
-		return text_round_len(r1->c->txt, r1->o) ==
-			text_round_len(r1->c->txt, r2->o);
-#endif
 	}
 	if (r1->c == NULL /*FIXME redundant*/ && r2->c != NULL) {
 		if (list_empty(&t->text))
-			return 1;
+			return True;
 		return (r2->o == r2->c->end &&
 			r2->c->lst.next == &t->text);
 	}
 	if (r2->c == NULL /* FIXME redundant*/ && r1->c != NULL) {
 		if (list_empty(&t->text))
-			return 1;
+			return True;
 		return (r1->o == r1->c->end &&
 			r1->c->lst.next == &t->text);
 	}
 	/* FIXME impossible */
-	if (r1->c == NULL || r2->c == NULL) return 0;
+	if (r1->c == NULL || r2->c == NULL) return False;
 
 	if (r1->o == r1->c->end &&
 	    r2->o == r2->c->start &&
 	    list_next_entry(r1->c, lst) == r2->c)
-		return 1;
+		return True;
 	if (r1->o == r1->c->start &&
 	    r2->o == r2->c->end &&
 	    list_prev_entry(r1->c, lst) == r2->c)
-		return 1;
-	return 0;
+		return True;
+	return False;
 }
 
-static int text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
+static bool text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
 			 struct doc_ref *r2 safe)
 {
-	int ret = _text_ref_same(t, r1, r2);
+	bool ret = _text_ref_same(t, r1, r2);
 	ASSERT(ret == (r1->c == r2->c && r1->o == r2->o));
 	return ret;
 }

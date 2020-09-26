@@ -143,12 +143,12 @@ static void sort_list(struct list_head *lst safe)
 	lst->prev = l;
 }
 
-static int add_ent(struct list_head *lst safe, struct dirent *de safe)
+static bool add_ent(struct list_head *lst safe, struct dirent *de safe)
 {
 	struct dir_ent *dre;
 
 	if (de->d_ino == 0)
-		return 0;
+		return False;
 
 	dre = malloc(sizeof(*dre));
 	dre->name = strdup(de->d_name);
@@ -170,7 +170,7 @@ static int add_ent(struct list_head *lst safe, struct dirent *de safe)
 		case DT_UNKNOWN:dre->ch = '?'; break;
 		}
 	list_add(&dre->lst, lst);
-	return 1;
+	return True;
 }
 
 static void load_dir(struct list_head *lst safe, int fd)

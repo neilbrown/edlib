@@ -148,24 +148,24 @@ typedef struct {
 } Comm;
 static PyTypeObject CommType;
 
-static inline int pane_valid(Pane *p safe)
+static inline bool pane_valid(Pane *p safe)
 {
 	if (p->pane && p->pane->handle)
-		return 1;
+		return True;
 	PyErr_SetString(PyExc_TypeError, "Pane has been freed");
-	return 0;
+	return False;
 }
 
-static inline int doc_valid(Doc *p safe)
+static inline bool doc_valid(Doc *p safe)
 {
 	if (p->pane && p->pane->handle)
-		return 1;
+		return True;
 	PyErr_SetString(PyExc_TypeError, "Doc pane has been freed");
-	return 0;
+	return False;
 }
 
-static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject *kwds,
-			PyObject **s1 safe, PyObject **s2 safe);
+static bool get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject *kwds,
+			 PyObject **s1 safe, PyObject **s2 safe);
 
 static int in_pane_frompane = 0;
 static inline PyObject *safe Pane_Frompane(struct pane *p)
@@ -991,9 +991,8 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 
 	ci.home = self->pane;
 
-	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
-
-	if (rv <= 0 || !handle_ret(kwds, &ci, &pr)) {
+	if (!get_cmd_info(&ci, args, kwds, &s1, &s2) ||
+	    !handle_ret(kwds, &ci, &pr)) {
 		Py_XDECREF(s1); Py_XDECREF(s2);
 		command_put(ci.comm2);
 		return NULL;
@@ -1022,9 +1021,8 @@ static PyObject *pane_direct_call(Pane *self safe, PyObject *args safe, PyObject
 
 	ci.home = self->pane;
 
-	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
-
-	if (rv <= 0 || !handle_ret(kwds, &ci, &pr)) {
+	if (!get_cmd_info(&ci, args, kwds, &s1, &s2) ||
+	    !handle_ret(kwds, &ci, &pr)) {
 		Py_XDECREF(s1); Py_XDECREF(s2);
 		command_put(ci.comm2);
 		return NULL;
@@ -1049,9 +1047,7 @@ static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwd
 
 	ci.home = self->pane;
 
-	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
-
-	if (rv <= 0) {
+	if (!get_cmd_info(&ci, args, kwds, &s1, &s2)) {
 		Py_XDECREF(s1); Py_XDECREF(s2);
 		command_put(ci.comm2);
 		return NULL;
@@ -2156,8 +2152,8 @@ static PyObject *Comm_call(Comm *c safe, PyObject *args safe, PyObject *kwds)
 
 	if (!c->comm)
 		return NULL;
-	rv = get_cmd_info(&ci, args, kwds, &s1, &s2);
-	if (rv <= 0 || !handle_ret(kwds, &ci, &pr)) {
+	if (!get_cmd_info(&ci, args, kwds, &s1, &s2) ||
+	    !handle_ret(kwds, &ci, &pr)) {
 		Py_XDECREF(s1); Py_XDECREF(s2);
 		command_put(ci.comm2);
 		return NULL;
@@ -2222,8 +2218,8 @@ static void python_free_command(struct command *c safe)
  * key, home, focus, xy, hxy, str, str2, mark, mark2, comm2.
  * A 'None' arg is ignored - probably a mark or string or something. Just use NULL
  */
-static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject *kwds,
-			PyObject **s1 safe, PyObject **s2 safe)
+static bool get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject *kwds,
+			 PyObject **s1 safe, PyObject **s2 safe)
 {
 	int argc;
 	PyObject *a;
@@ -2234,14 +2230,14 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 	*s1 = *s2 = NULL;
 
 	if (!PyTuple_Check(args))
-		return 0;
+		return False;
 	argc = PyTuple_GET_SIZE(args);
 	if (argc >= 1) {
 		/* First positional arg must be the key */
 		a = PyTuple_GetItem(args, 0);
 		if (!PyUnicode_Check(a)) {
 			PyErr_SetString(PyExc_TypeError, "First arg must be key");
-			return 0;
+			return False;
 		}
 		ci->key = safe_cast PyUnicode_AsUTF8(a);
 	}
@@ -2256,7 +2252,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 				ci->focus = safe_cast ((Pane*)a)->pane;
 			else {
 				PyErr_SetString(PyExc_TypeError, "Only 2 Pane args permitted");
-				return 0;
+				return False;
 			}
 		} else if (PyObject_TypeCheck(a, &MarkType)) {
 			if (ci->mark == NULL)
@@ -2265,18 +2261,18 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 				ci->mark2 = ((Mark*)a)->mark;
 			else {
 				PyErr_SetString(PyExc_TypeError, "Only 2 Mark args permitted");
-				return 0;
+				return False;
 			}
 		} else if (PyUnicode_Check(a)) {
 			char *str;
 			PyObject *s = NULL;
 			if (ci->str && ci->str2) {
 				PyErr_SetString(PyExc_TypeError, "Only 3 String args permitted");
-				return 0;
+				return False;
 			}
 			str = python_as_string(a, &s);
 			if (!str)
-				return 0;
+				return False;
 			if (s) {
 				*s2 = *s1;
 				*s1 = s;
@@ -2294,20 +2290,20 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 				num2_set = 1;
 			} else {
 				PyErr_SetString(PyExc_TypeError, "Only 2 Number args permitted");
-				return 0;
+				return False;
 			}
 		} else if (PyTuple_Check(a)) {
 			int n = PyTuple_GET_SIZE(a);
 			PyObject *n1, *n2;
 			if (n != 2) {
 				PyErr_SetString(PyExc_TypeError, "Only 2-element tuples permitted");
-				return 0;
+				return False;
 			}
 			n1 = PyTuple_GetItem(a, 0);
 			n2 = PyTuple_GetItem(a, 1);
 			if (!PyLong_Check(n1) || !PyLong_Check(n2)) {
 				PyErr_SetString(PyExc_TypeError, "Only tuples of integers permitted");
-				return 0;
+				return False;
 			}
 			if (!xy_set) {
 				ci->x = PyLong_AsLong(n1);
@@ -2315,7 +2311,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 				xy_set = 1;
 			} else {
 				PyErr_SetString(PyExc_TypeError, "Only one tuple permitted");
-				return 0;
+				return False;
 			}
 		} else if (PyObject_TypeCheck(a, &CommType)) {
 			Comm *c = (Comm*)a;
@@ -2323,7 +2319,7 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 				ci->comm2 = command_get(c->comm);
 			} else {
 				PyErr_SetString(PyExc_TypeError, "Only one callable permitted");
-				return 0;
+				return False;
 			}
 		} else if (PyCallable_Check(a)) {
 			struct python_command *pc = export_callable(a);
@@ -2333,11 +2329,11 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			else {
 				command_put(&pc->c);
 				PyErr_SetString(PyExc_TypeError, "Only one callable permitted");
-				return 0;
+				return False;
 			}
 		} else {
 			PyErr_Format(PyExc_TypeError, "Unsupported arg type %d", i);
-			return 0;
+			return False;
 		}
 	}
 	if (kwds && PyDict_Check(kwds)) {
@@ -2346,12 +2342,12 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			if (*s1 || ci->str) {
 				PyErr_SetString(PyExc_TypeError,
 						"'str' given with other strings");
-				return 0;
+				return False;
 			}
 			if (!PyUnicode_Check(a)) {
 				PyErr_SetString(PyExc_TypeError,
 						"'str' must be string or unicode");
-				return 0;
+				return False;
 			}
 			ci->str = python_as_string(a, s1);
 		}
@@ -2360,12 +2356,12 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			if (*s2 || ci->str2) {
 				PyErr_SetString(PyExc_TypeError,
 						"'str2' given with 2 strings");
-				return 0;
+				return False;
 			}
 			if (!PyUnicode_Check(a)) {
 				PyErr_SetString(PyExc_TypeError,
 						"'str2' must be string or unicode");
-				return 0;
+				return False;
 			}
 			ci->str2 = python_as_string(a, s2);
 		}
@@ -2374,12 +2370,12 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			if (ci->mark) {
 				PyErr_SetString(PyExc_TypeError,
 						"'mark' given with other marks");
-				return 0;
+				return False;
 			}
 			if (!PyObject_TypeCheck(a, &MarkType)) {
 				PyErr_SetString(PyExc_TypeError,
 						"'mark' must be an edlib.Mark");
-				return 0;
+				return False;
 			}
 			ci->mark = ((Mark*)a)->mark;
 		}
@@ -2388,12 +2384,12 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			if (ci->mark2) {
 				PyErr_SetString(PyExc_TypeError,
 						"'mark2' given with 2 other marks");
-				return 0;
+				return False;
 			}
 			if (!PyObject_TypeCheck(a, &MarkType)) {
 				PyErr_SetString(PyExc_TypeError,
 						"'mark2' must be an edlib.Mark");
-				return 0;
+				return False;
 			}
 			ci->mark2 = ((Mark*)a)->mark;
 		}
@@ -2402,12 +2398,12 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			if (num_set) {
 				PyErr_SetString(PyExc_TypeError,
 						"'num' given with other numbers");
-				return 0;
+				return False;
 			}
 			if (!PyLong_Check(a)) {
 				PyErr_SetString(PyExc_TypeError,
 						"'num' must be an integer");
-				return 0;
+				return False;
 			}
 			ci->num = PyLong_AsLong(a);
 			num_set = 1;
@@ -2417,12 +2413,12 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 			if (num2_set) {
 				PyErr_SetString(PyExc_TypeError,
 						"'num2' given with 2 other numbers");
-				return 0;
+				return False;
 			}
 			if (!PyLong_Check(a)) {
 				PyErr_SetString(PyExc_TypeError,
 						"'num2' must be an integer");
-				return 0;
+				return False;
 			}
 			ci->num2 = PyLong_AsLong(a);
 			num2_set = 1;
@@ -2430,16 +2426,16 @@ static int get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject 
 	}
 	if (!(void*)ci->key) {
 		PyErr_SetString(PyExc_TypeError, "No key specified");
-		return 0;
+		return False;
 	}
 	if (!(void*)ci->home) {
 		PyErr_SetString(PyExc_TypeError, "No pane specified");
-		return 0;
+		return False;
 	}
 	if (!(void*)ci->focus)
 		ci->focus = ci->home;
 
-	return xy_set ? 2 : 1;
+	return True;
 }
 
 static PyObject *py_time_start(PyObject *self, PyObject *args)

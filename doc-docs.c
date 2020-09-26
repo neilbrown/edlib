@@ -116,7 +116,7 @@ static void docs_enmark(struct docs *doc safe, struct pane *p safe)
 		pane_notify("doc:replaced", doc->doc.home, 1, first);
 }
 
-static int doc_save(struct pane *p safe, struct pane *focus safe, int test)
+static bool doc_save(struct pane *p safe, struct pane *focus safe, int test)
 {
 	char *fn = pane_attr_get(p, "filename");
 	char *mod = pane_attr_get(p, "doc-modified");
@@ -127,10 +127,10 @@ static int doc_save(struct pane *p safe, struct pane *focus safe, int test)
 		call("Message", focus, 0, NULL,
 		     "File not modified - no need to save.");
 	else if (test)
-		return 1;
+		return True;
 	else
 		home_call(p, "doc:save-file", focus);
-	return 0;
+	return False;
 }
 
 static void check_name(struct docs *docs safe, struct pane *pane safe)
@@ -343,7 +343,7 @@ DEF_CMD(docs_callback_saveall)
 			if (!fn || strncmp(ci->str, fn, dirlen) != 0)
 				continue;
 		}
-		if (doc_save(p, p, ci->num2) > 0)
+		if (doc_save(p, p, ci->num2))
 			/* Something needs to be saved */
 			return 2;
 	}

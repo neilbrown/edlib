@@ -150,8 +150,7 @@ inline static int test_bit(unsigned long *set safe, int bit)
 		   (1UL << (bit % (sizeof(unsigned long)*8))));
 }
 
-
-static int key_present(struct map *map safe, unsigned int *hashes safe)
+static bool key_present(struct map *map safe, unsigned int *hashes safe)
 {
 	if (map->changed) {
 		int i;
@@ -174,12 +173,12 @@ static int key_present(struct map *map safe, unsigned int *hashes safe)
 	if (test_bit(map->bloom, hashes[0]&0xff) &&
 	    test_bit(map->bloom, (hashes[0]>>8)&0xff) &&
 	    test_bit(map->bloom, (hashes[0]>>16)&0xff))
-		return 1;
+		return True;
 	if (test_bit(map->bloom, hashes[1]&0xff) &&
 	    test_bit(map->bloom, (hashes[1]>>8)&0xff) &&
 	    test_bit(map->bloom, (hashes[1]>>16)&0xff))
-		return 1;
-	return 0;
+		return True;
+	return False;
 }
 
 /* Find first entry >= k */

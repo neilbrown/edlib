@@ -14,24 +14,24 @@
 #include "core.h"
 
 int do_calc(const char *expr, mpq_t result,
-	    int (*getvar)(const char *name, int len, mpq_t val, void *data),
+	    bool (*getvar)(const char *name, int len, mpq_t val, void *data),
 	    void *data);
 
-static int getvar(const char *name, int len, mpq_t val, void *data)
+static bool getvar(const char *name, int len, mpq_t val, void *data)
 {
 	struct cmd_info *ci = data;
 	char *vnm;
 	char *vval;
 
 	if (!ci)
-		return 0;
+		return False;
 	vnm = strnsave(ci->focus, name, len);
 	vval = comm_call_ret(strsave, ci->comm2, "get", ci->focus, 0, NULL, vnm);
 	if (!vval)
-		return 0;
+		return False;
 	if (do_calc(vval, val, NULL, NULL) != 0)
-		return 0;
-	return 1;
+		return False;
+	return True;
 }
 
 DEF_CMD(calc)

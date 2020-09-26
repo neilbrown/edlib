@@ -270,7 +270,7 @@ static inline struct attrset **safe mark_attr(struct mark *m safe)
 
 /* Attributes */
 char *attr_find(struct attrset *set, const char *key safe);
-int attr_del(struct attrset **setp safe, const char *key safe);
+bool attr_del(struct attrset **setp safe, const char *key safe);
 void attr_del_all(struct attrset **setp safe, const char *key safe,
 		  int low, int high);
 int attr_set_str(struct attrset **setp safe,

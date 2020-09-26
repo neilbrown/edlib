@@ -42,8 +42,11 @@ struct rline_data {
 	bool		is_valid;
 };
 
-#define WRAP 1
-#define XYPOS 2
+enum {
+	OK = 0,
+	WRAP,
+	XYPOS,
+};
 
 static int draw_some(struct pane *p safe, struct pane *focus safe,
 		     struct render_list **rlp safe,
@@ -71,14 +74,14 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 	struct render_list *rl;
 
 	if (len == 0 && cursorpos < 0)
-		return 0;
+		return OK;
 	if ((*rlp == NULL ||
 	     ((*rlp)->next == NULL && (*rlp)->text_orig == NULL)) &&
 	    strstr(attr, "wrap,") && (cursorpos < 0|| cursorpos > len))
 		/* No wrap text at start of line, unless it
 		 * contains cursor.
 		 */
-		return 0;
+		return OK;
 	str = strndup(start, len);
 	if (*str == '\t')
 		*str = ' ';
@@ -127,7 +130,7 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 	free(str);
 	*x += cr.x;
 	if (max >= len)
-		return 0;
+		return OK;
 	/* Didn't draw everything. */
 	*endp = start + max;
 	return ret;
@@ -438,7 +441,7 @@ DEF_CMD(renderline)
 	int line_height = 0;
 	int ascent = -1;
 	int mwidth = -1;
-	int ret = 0;
+	int ret = OK;
 	int twidth = 0;
 	int center = 0;
 	int margin;
@@ -609,7 +612,7 @@ DEF_CMD(renderline)
 			}
 		}
 
-		ret = 0;
+		ret = OK;
 		ch = *line;
 		if (line == line_start + offset)
 			rd->curs_width = mwidth;
@@ -642,7 +645,7 @@ DEF_CMD(renderline)
 				in_tab ?:offset - (start - line_start),
 				XPOS, scale);
 		start = line;
-		if (ret || !ch)
+		if (ret != OK || !ch)
 			continue;
 		if (ch == '<') {
 			line += 1;
@@ -652,7 +655,7 @@ DEF_CMD(renderline)
 						wrap ? mwidth : 0,
 						in_tab ?:offset - (start - line_start),
 						XPOS, scale);
-				if (ret)
+				if (ret != OK)
 					continue;
 				start += 2;
 				line = start;

@@ -62,7 +62,7 @@ static void gethex(char *col safe, int rgb[])
 	}
 }
 
-static int find_colour(char *col, int rgb[])
+static bool find_colour(char *col, int rgb[])
 {
 	unsigned int i;
 
@@ -71,10 +71,10 @@ static int find_colour(char *col, int rgb[])
 			rgb[0] = colours[i].r;
 			rgb[1] = colours[i].g;
 			rgb[2] = colours[i].b;
-			return 1;
+			return True;
 		}
 	}
-	return 0;
+	return False;
 }
 
 static void add_value(char *n, int rgb[])

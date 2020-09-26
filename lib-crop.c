@@ -18,40 +18,40 @@ struct crop_data {
 	struct mark *end safe;
 };
 
-static int in_range(struct mark *m, struct crop_data *cd safe)
+static bool in_range(struct mark *m, struct crop_data *cd safe)
 {
 	if (!m)
 		/* NULL is always in range */
-		return 1;
+		return True;
 	if (m->seq >= cd->start->seq && m->seq <= cd->end->seq)
-		return 1;
+		return True;
 	/* I think I want strict ordering at the point, so don't test mark_same */
-	return 0;
+	return False;
 }
 
-static int crop(struct mark *m, struct crop_data *cd safe)
+static bool crop(struct mark *m, struct crop_data *cd safe)
 {
 	/* If mark is outside of range, move it back, and report if more was
 	 * required than just updating the ->seq
 	 */
 	if (!m || in_range(m, cd))
-		return 0;
+		return False;
 
 	if (m->seq < cd->start->seq) {
 		if (mark_same(m, cd->start)) {
 			mark_to_mark(m, cd->start);
-			return 0;
+			return False;
 		}
 		mark_to_mark(m, cd->start);
 	}
 	if (m->seq > cd->end->seq) {
 		if (mark_same(m, cd->end)) {
 			mark_to_mark(m, cd->end);
-			return 0;
+			return False;
 		}
 		mark_to_mark(m, cd->end);
 	}
-	return 1;
+	return True;
 }
 
 DEF_CMD(crop_close)

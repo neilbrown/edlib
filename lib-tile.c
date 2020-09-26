@@ -529,7 +529,7 @@ static void tile_adjust(struct pane *p safe)
 	}
 }
 
-static int tile_grow(struct pane *p safe, int horiz, int size)
+static bool tile_grow(struct pane *p safe, int horiz, int size)
 {
 	/* Try to grow the pane in given direction, or shrink if
 	 * size < 0.
@@ -546,7 +546,7 @@ static int tile_grow(struct pane *p safe, int horiz, int size)
 
 	if (ti->direction == Neither)
 		/* Cannot grow/shrink the root */
-		return 0;
+		return False;
 	if (size < 0) {
 		/* Does this pane have room to shrink */
 		tile_avail(p, NULL);
@@ -555,7 +555,7 @@ static int tile_grow(struct pane *p safe, int horiz, int size)
 		else
 			avail = ti->avail_perp;
 		if (avail < -size)
-			return 0;
+			return False;
 	}
 	if (ti->direction != (horiz ? Horiz : Vert)) {
 		/* need to ask parent to do this */
@@ -580,7 +580,7 @@ static int tile_grow(struct pane *p safe, int horiz, int size)
 
 		if (other == NULL)
 			/* Strange - there should have been two elements in list */
-			return 1;
+			return True;
 		if (ti->direction == Horiz) {
 			pane_resize(p, p->x, p->y, p->w + size, p->h);
 			pane_resize(other, other->x, other->y,
@@ -591,7 +591,7 @@ static int tile_grow(struct pane *p safe, int horiz, int size)
 				    other->w, other->h - size);
 		}
 		tile_adjust(p->parent);
-		return 1;
+		return True;
 	}
 
 	/* Hoping to grow if there is room for others to shrink */
@@ -602,7 +602,7 @@ static int tile_grow(struct pane *p safe, int horiz, int size)
 	else
 		avail = tip->avail_perp;
 	if (avail < size)
-		return 0;
+		return False;
 	if (ti->direction == Horiz)
 		pane_resize(p, p->x, p->y, p->w + size, p->h);
 	else
@@ -610,7 +610,7 @@ static int tile_grow(struct pane *p safe, int horiz, int size)
 
 	ti->avail_inline = 0; /* make sure this one doesn't suffer */
 	tile_adjust(p->parent);
-	return 1;
+	return True;
 }
 
 static struct pane *next_child(struct pane *parent, struct pane *prev, bool popup)
@@ -641,14 +641,14 @@ static struct tileinfo *tile_first(struct tileinfo *ti safe)
 	return ti;
 }
 
-static int tile_is_first(struct tileinfo *ti safe)
+static bool tile_is_first(struct tileinfo *ti safe)
 {
 	while (ti->direction != Neither) {
 		if (ti->p != next_child(ti->p->parent, NULL, 0))
-			return 0;
+			return False;
 		ti = ti->p->parent->data;
 	}
-	return 1;
+	return True;
 }
 
 static struct pane *tile_root_popup(struct tileinfo *ti safe)
@@ -672,18 +672,18 @@ static struct tileinfo *safe tile_next_named(struct tileinfo *ti safe,
 	return t;
 }
 
-static int wrong_pane(struct cmd_info const *ci safe)
+static bool wrong_pane(struct cmd_info const *ci safe)
 {
 	struct tileinfo *ti = ci->home->data;
 
 	if (ci->str || ti->group) {
 		if (!ci->str || !ti->group)
-			return 1;
+			return True;
 		if (strcmp(ci->str, ti->group) != 0)
-			return 1;
+			return True;
 		/* same group - continue */
 	}
-	return 0;
+	return False;
 }
 
 DEF_CMD(tile_window_next)
