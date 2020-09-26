@@ -6,6 +6,7 @@
 
 import signal
 import gi
+import os
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gtk
@@ -18,6 +19,9 @@ class events(edlib.Pane):
         self.sigs = {}
         self.ev_num = 0
         self.dont_block = False
+        self.maxloops = 10
+        if 'EDLIB_TESTING' in os.environ:
+            self.maxloops = -1
 
     def handle_close(self, key, focus, **a):
         "handle:Notify:Close"
@@ -109,8 +113,10 @@ class events(edlib.Pane):
             self.dont_block = False
             if not dont_block:
                 Gtk.main_iteration_do(True)
-            while self.active and Gtk.events_pending():
+            events = 0
+            while self.active and events != self.maxloops and Gtk.events_pending():
                 Gtk.main_iteration_do(False)
+                events += 1
         if self.active:
             return 1
         else:
