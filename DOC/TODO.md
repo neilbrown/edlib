@@ -468,7 +468,7 @@ Module features
 ### lang-python
 
 - [ ] should Efallthrough be an exception?
-- [ ] Print error name when there is a python error
+- [X] Print error name when there is a python error
 - [X] edlib.LOG can crash if there are '%' if the buffer.
 - [X] expose rexel constants
 - [ ] report error if release mark which isn't ours.

@@ -927,6 +927,31 @@ static bool handle_ret(PyObject *kwds, struct cmd_info *ci safe,
 	return True;
 }
 
+static void set_err(int rv)
+{
+	switch(rv) {
+	case Enoarg:
+		PyErr_SetObject(Edlib_CommandFailed,
+				PyUnicode_FromFormat("Enoarg"));
+		break;
+	case Einval:
+		PyErr_SetObject(Edlib_CommandFailed,
+				PyUnicode_FromFormat("Einval"));
+		break;
+	case Enosup:
+		PyErr_SetObject(Edlib_CommandFailed,
+				PyUnicode_FromFormat("Enosup"));
+		break;
+	case Efail:
+		PyErr_SetObject(Edlib_CommandFailed,
+				PyUnicode_FromFormat("Efail"));
+		break;
+	default:
+		PyErr_SetObject(Edlib_CommandFailed,
+				PyUnicode_FromFormat("%d", rv));
+	}
+}
+
 static PyObject *choose_ret(int rv, struct pyret *pr safe)
 {
 	if (pr->comm.func && rv >= 0) {
@@ -937,7 +962,7 @@ static PyObject *choose_ret(int rv, struct pyret *pr safe)
 	}
 	Py_XDECREF(pr->ret);
 	if (rv < Efalse) {
-		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
+		set_err(rv);
 		return NULL;
 	}
 	if (pr->return_char) {
@@ -1039,7 +1064,7 @@ static PyObject *Pane_notify(Pane *self safe, PyObject *args safe, PyObject *kwd
 	Py_XDECREF(s1); Py_XDECREF(s2);
 	command_put(ci.comm2);
 	if (rv < Efalse) {
-		PyErr_SetObject(Edlib_CommandFailed, PyLong_FromLong(rv));
+		set_err(rv);
 		return NULL;
 	}
 	return PyLong_FromLong(rv);
