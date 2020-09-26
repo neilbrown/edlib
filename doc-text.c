@@ -1354,7 +1354,7 @@ DEF_CMD(text_reundo)
 			where = text_locate(t, &m->ref, &end);
 		if (!where) {
 			/* Not nearby, look from the start */
-			mark_reset(d, m, 0);
+			mark_reset(ci->home, m, 0);
 			where = 1;
 			first = 0;
 		}
@@ -2044,7 +2044,7 @@ DEF_CMD(text_replace)
 		pm = vmark_new(ci->home, MARK_POINT, NULL);
 		if (!pm)
 			return Efail;
-		mark_reset(d, pm, 1);
+		mark_reset(ci->home, pm, 1);
 	}
 
 	/* First delete, then insert */

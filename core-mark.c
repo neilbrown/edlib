@@ -371,11 +371,11 @@ void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
 		}
 }
 
-void mark_reset(struct doc *d safe, struct mark *m safe, int end)
+void mark_reset(struct pane *p safe, struct mark *m safe, int end)
 {
-	ASSERT((void*)m->owner == NULL || m->owner == d);
-	m->owner = d;
-	pane_call(d->home, "doc:set-ref", d->home, !end, m);
+	ASSERT((void*)m->owner == NULL || m->owner == p->data);
+	m->owner = p->data;
+	pane_call(p, "doc:set-ref", p, !end, m);
 }
 
 struct mark *mark_first(struct doc *d safe)
@@ -431,7 +431,7 @@ struct mark *doc_new_mark(struct pane *p safe, int view, struct pane *owner)
 			INIT_TLIST_HEAD(&lnk->lists[i], GRP_LIST);
 		ret->mdata = lnk;
 	}
-	mark_reset(d, ret, 0);
+	mark_reset(p, ret, 0);
 	if (hlist_unhashed(&ret->all)) {
 		/* Document misbehaved, fail gracefully */
 		mark_free(ret);
