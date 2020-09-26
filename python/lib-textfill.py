@@ -55,16 +55,16 @@ def do_replace(focus, start, end, new, strip):
 
     second = 0
     while start < end and new:
-        c = focus.call("doc:step", start, 1, 0, ret='char')
+        c = focus.following(start)
         if c == new[0]:
             # a match, just skip it
             new = new[1:]
-            focus.call("doc:step", start, 1, 1)
+            focus.next(start)
             continue
         if c in ' \t\n' or c in strip:
             # maybe this got removed
             s = start.dup()
-            focus.call("doc:step", start, 1, 1)
+            focus.next(start)
             focus.call("doc:replace", 0, second, s, start, "")
             second=1
             continue
@@ -136,7 +136,7 @@ def find_start(focus, mark):
         # leng is length + 1, we want +1 to kill '\n'
         focus.call("Move-Char", leng, mark)
     except edlib.commandfailed:
-        if focus.call("doc:step", 0, m, ret='char') != None:
+        if focus.prior(m) != None:
             # Went back 100 lines and found no suitable para-separator line
             return None
         mark.to_mark(m)
@@ -146,7 +146,7 @@ def find_start(focus, mark):
     # Possibly open brackets should be included too?
     l = focus.call("text-match", "^[^a-zA-Z0-9'\"\n]*", mark.dup())
     while l > 1:
-        focus.call("doc:step", 1, 1, mark)
+        focus.next(mark)
         l -= 1
     return mark
 
@@ -158,7 +158,7 @@ def find_end(focus, mark):
                           mark, m, 1)
         focus.call("Move-Char", -leng, mark)
     except edlib.commandfailed:
-        if focus.call("doc:step", 1, m, ret='char') != None:
+        if focus.following(m) != None:
             return edlib.Efail
         mark.to_mark(m)
     return mark
@@ -254,7 +254,7 @@ class FillMode(edlib.Pane):
             return 0
         if not mark:
             return 0
-        next = focus.call("doc:step", mark, 1, 0, ret='char')
+        next = focus.following(mark)
         if next and  next != '\n':
             # not at end-of-line or end-of-file, don't auto-fill
             return 0
@@ -287,8 +287,8 @@ class FillMode(edlib.Pane):
         # Need to reformat the current line.  Skip over prefix chars at
         # start of line.
         p = ""
-        while focus.call("doc:step", 1, 0, m, ret='char') in prefix0 + ' \t':
-            p += focus.call("doc:step", 1, 1, m, ret='char')
+        while focus.following(m) in prefix0 + ' \t':
+            p += focus.next(m)
         lines = [ focus.call("doc:get-str", m, mark, ret='str') ]
         newpara = reformat(lines, textwidth(p), self.cols, prefix0+' \t',
                            prefix1)

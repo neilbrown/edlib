@@ -498,7 +498,7 @@ class PresenterPane(edlib.Pane):
         line = None
         linemark = None
         while end is None or mark < end:
-            if not end and focus.call("doc:step", mark) == edlib.WEOF:
+            if not end and focus.prior(mark) is None:
                 break
             linemark = self.prev_line(mark)
             if not linemark:

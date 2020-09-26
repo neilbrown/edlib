@@ -53,7 +53,7 @@ class MakePane(edlib.Pane):
         last = self.pos
         if last:
             m = last.dup()
-            self.call("doc:step", m, 1, 1)
+            self.next(m)
         else:
             m = edlib.Mark(self)
 
@@ -70,22 +70,22 @@ class MakePane(edlib.Pane):
                 self.call("text-search",
                           "(^(.*FILE: )?[^: \t]+:[0-9]+[: ]|(Entering|Leaving) directory ')",
                           m)
-                last = self.call("doc:step", m, 0, 1, ret='char')
+                last = self.prev(m)
             except edlib.commandfailed:
                 # No more matches - stop
                 return
             if last == "'":
                 # last char of match is ', so must be dir name
-                self.call("doc:step", m, 1, 1)
+                self.next(m)
                 start = m.dup()
-                while self.call("doc:step", m, 0, 1, ret='char') not in 'EL':
+                while self.prev(m) not in 'EL':
                     pass
                 # get "Entering directory" or "Leaving Directory"
                 el = self.call("doc:get-str", m ,start, ret='str')
                 m.to_mark(start)
                 rv = self.call("text-match", "[^'\n]*'", m)
                 if rv > 0:
-                    last = self.call("doc:step", m, 0, 1, ret='char')
+                    last = self.prev(m)
                     d = self.call("doc:get-str", start, m, ret='str')
                     if d:
                         if d[-1] == '/':
@@ -112,15 +112,15 @@ class MakePane(edlib.Pane):
 
             # Now at end of line number.
             e = m.dup()
-            while self.call("doc:step", m, 0, 1, ret='char') in "0123456789":
+            while self.prev(m) in "0123456789":
                 pass
             s = m.dup()
-            self.call("doc:step", s, 1, 1)
+            self.next(s)
             lineno = self.call("doc:get-str", s, e, ret="str")
             e = m.dup()
-            while self.call("doc:step", m, 0, 1, ret='char') not in [' ', '\n', None]:
+            while self.prev(m) not in [' ', '\n', None]:
                 pass
-            self.call("doc:step", m, 1, 1)
+            self.next(m)
             fname = self.call("doc:get-str", m, e, ret="str")
             self.pos = e.dup()
             if self.first_match:
@@ -182,7 +182,7 @@ class MakePane(edlib.Pane):
             lm.to_mark(last)
 
         while lm and ln > 1:
-            ch = d.call("doc:step", 1, 1, lm, ret='char')
+            ch = d.next(lm)
             if ch == None:
                 ln = 0
             elif ch == '\n':
@@ -476,8 +476,7 @@ class MakePane(edlib.Pane):
             focus.call("Message", "Failed to open pane")
             return edlib.Efail
         par.take_focus()
-        if mk and (int(lineno) == 1 or
-                   d.call("doc:step", mk, 0, ret='char') != None):
+        if mk and (int(lineno) == 1 or d.prior(mk) != None):
             par.call("Move-to", mk, 0, 1)
         else:
             # either no mark, or the mark has moved to start of doc, probably
@@ -807,15 +806,15 @@ def make_request(key, focus, num, num2, str, mark, **a):
         # choose the word under the cursor
         if not str:
             m1 = mark.dup()
-            c = focus.call("doc:step", m1, ret='char')
+            c = focus.prior(m1)
             while isword(c):
-                focus.call("doc:step", m1, 0, 1)
-                c = focus.call("doc:step", m1, ret='char')
+                focus.prev(m1)
+                c = focus.prior(m1)
             m2 = mark.dup()
-            c = focus.call("doc:step", m2, 1, ret='char')
+            c = focus.following(m2)
             while isword(c):
-                focus.call("doc:step", m2, 1, 1)
-                c = focus.call("doc:step", m2, 1, ret='char')
+                focus.next(m2)
+                c = focus.following(m2)
             str = focus.call("doc:get-str", m1, m2, ret='str')
         if str and not ('\n' in str):
             if not "'" in str:

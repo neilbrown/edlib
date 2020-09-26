@@ -85,7 +85,7 @@ class DiffPane(edlib.Pane):
         if not comm2:
             return
         if str == "start-of-line":
-            c = focus.call("doc:step", 1, mark, ret='char')
+            c = focus.following(mark)
             if c not in '-+':
                 return 0
 
@@ -139,28 +139,28 @@ class DiffPane(edlib.Pane):
         found = False
 
         focus.call("Move-EOL", mark, -1)
-        ch = focus.call("doc:step", 1, mark, ret='char')
+        ch = focus.following(mark)
         m = mark.dup()
         while ch in '-+':
             mark.to_mark(m)
             if focus.call("Move-EOL", m, -2) <= 0:
                 break
-            ch = focus.call("doc:step", 1, m, ret='char')
+            ch = focus.following(m)
 
         is_hunk = ch == ' ' or ch == '@'
 
         starta = mark.dup()
-        ch = focus.call("doc:step", 1, mark, ret='char')
+        ch = focus.following(mark)
         while ch and ch == '-':
             if focus.call("Move-EOL", mark, 1, 1) <= 0:
                 break
-            ch = focus.call("doc:step", 1, mark, ret='char')
+            ch = focus.following(mark)
         startb = mark.dup()
-        ch = focus.call("doc:step", 1, mark, ret='char')
+        ch = focus.following(mark)
         while ch and ch == '+':
             if focus.call("Move-EOL", mark, 1, 1) <= 0:
                 break
-            ch = focus.call("doc:step", 1, mark, ret='char')
+            ch = focus.following(mark)
 
         alen = measure(focus, starta, startb)
         blen = measure(focus, startb, mark)

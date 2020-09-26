@@ -104,7 +104,7 @@ class MergePane(edlib.Pane):
         except edlib.commandfailed:
             # There is no end
             return edlib.Efalse
-        if focus.call("doc:step", 1, end, ret='char') != '>':
+        if focus.following(end) != '>':
             # didn't find a matching end.
             mark.to_mark(end)
             self.call("Message:modal", "Merge wasn't terminated, next is here")

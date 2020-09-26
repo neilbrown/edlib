@@ -59,14 +59,14 @@ class parse_state:
             self.parse_comment(c, p, m)
         else:
             if c == '/':
-                c2 = p.call("doc:step", 1, 0, m, ret='char')
+                c2 = p.following(m)
                 if c2 in '/*':
                     if self.tab_col == self.column:
                         # tabs for comments ignored
                         self.tab_col = 0
                     self.comment = '/' + c2
                     self.comment_col = self.column
-                    p.call("doc:step", 1, 1, m)
+                    p.next(m)
                     self.column += 1
                 else:
                     self.parse_code(c, p, m)
@@ -84,11 +84,11 @@ class parse_state:
         if c == self.quote:
             self.quote = None
         elif c == '\\':
-            c = p.call("doc:step", 1, 0, m, ret='char')
+            c = p.following(m)
             if c == self.quote or c == '\\':
                 # step over this second char as well. We could do this
                 # for any char except newline.
-                p.call("doc:step", 1, 1, m)
+                p.next(m)
                 self.column += 1
 
     def parse_comment(self, c, p, m):
@@ -99,8 +99,8 @@ class parse_state:
                 self.parse_newline()
         elif self.comment == '/*':
             # closed by */
-            if c == '*' and p.call("doc:step", 1, m, ret='char') == '/':
-                p.call("doc:step", 1, 1, m)
+            if c == '*' and p.following(m) == '/':
+                p.next(m)
                 self.column += 1
                 self.comment = None
 
@@ -142,7 +142,7 @@ class parse_state:
                 self.save_stack = None
             else:
                 self.preproc_continue = (
-                    c == '\\' and p.call("doc:step", 1, m, ret='char') == '\n')
+                    c == '\\' and p.following(m) == '\n')
         if c not in ' \t':
             self.sol = c == '\n'
 
@@ -244,8 +244,8 @@ class parse_state:
         if ss and ((c == 'd' and p.call("text-match", m.dup(), "o\\b") > 0) or
                    (c == 'e' and p.call("text-match", m.dup(), "lse\\b") > 0)):
             # do or else start a new statement, like if() does
-            while p.call("doc:step", 1, m,ret='char') in 'elsedo':
-                p.call("doc:step", 1, 1, m)
+            while p.following(m) in 'elsedo':
+                p.next(m)
                 self.column += 1
             self.push()
             self.open = None
@@ -283,10 +283,10 @@ class parse_state:
             self.ss = True
 
 def at_sol(p, m):
-    c = p.call("doc:step", 0, 0, m, ret='char')
+    c = p.prior(m)
     while c and c in ' \t':
-        p.call("doc:step", 0, 1, m)
-        c = p.call("doc:step", 0, 0, m, ret='char')
+        p.prev(m)
+        c = p.prior(m)
     return c == None or c == '\n'
 
 class CModePane(edlib.Pane):
@@ -384,7 +384,7 @@ class CModePane(edlib.Pane):
         ps = parse_state(tab)
         c = None
         while m < mark:
-            c = p.call("doc:step", 1, 1, m, ret='char')
+            c = p.next(m)
             ps.parse(c, p, m)
             if c is None:
                 break
@@ -393,13 +393,13 @@ class CModePane(edlib.Pane):
             ps.parse('\n', p, m)
 
         br = mark.dup()
-        c = p.call("doc:step", 1, 1, br, ret='char')
+        c = p.next(br)
         non_space = False
         while c and c in '\t }]){':
             if c in '}]){':
                 non_space = True
                 ps.preparse(c)
-            c = p.call("doc:step", 1, 1, br, ret='char')
+            c = p.next(br)
 
         preproc = False
         if c == '#' and not non_space:
@@ -407,7 +407,7 @@ class CModePane(edlib.Pane):
             depth = [0]
             preproc = c
         elif (c == '/' and not non_space and
-            p.call("doc:step", 1, br, ret='char') in '/*'):
+            p.following(br) in '/*'):
             # Comment at start of line is indented much like preproc
             depth = [0]
             preproc = c
@@ -453,18 +453,18 @@ class CModePane(edlib.Pane):
         # may only step over white space.  When trying :Enter, we
         # mustn't think we can see the label at the start of this line.
         st = m.dup()
-        c = p.call("doc:step", 0, 1, st, ret='char')
+        c = p.prev(st)
         while c and c in ' \t':
-            c = p.call("doc:step", 0, 1, st, ret='char')
+            c = p.prev(st)
         if c == '\n':
-            p.call("doc:step", 1, 1, st)
+            p.next(st)
 
             l = p.call("text-match", st.dup(),
                        '^[ \t]*(case\\s[^:\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):')
         else:
             l = 0
         if l > 0:
-            if p.call("doc:step", 1, st, ret='char') in ' \t':
+            if p.following(st) in ' \t':
                 label_line = "indented-label"
             else:
                 if (p.call("text-match", st.dup(), '^[_\\A\\a\\d]+:') > 0 and
@@ -495,17 +495,17 @@ class CModePane(edlib.Pane):
 
         # first look to see if previous line is a comment.
         m1 = m.dup()
-        c = p.call("doc:step", 0, 1, m1, ret='char')
+        c = p.prev(m1)
         saw_nl = False
         while c and c in ' \t\n':
             if c == '\n':
                 saw_nl = True
-            c = p.call("doc:step", 0, 1, m1, ret='char')
+            c = p.prev(m1)
         p.call("Move-EOL", -1, m1)
         sol = m1.dup()
-        c = p.call("doc:step", 1, 1, m1, ret='char')
+        c = p.next(m1)
         while c in ' \t':
-            c = p.call("doc:step", 1, 1, m1, ret='char')
+            c = p.next(m1)
         if c == '#':
             # comment found, use same indent
             pfx = p.call("doc:get-str", sol, m1, ret='str')
@@ -519,9 +519,9 @@ class CModePane(edlib.Pane):
         sol = m.dup()
         indent = self.calc_indent(p, m, 'default', sol)
         m = m.dup()
-        c = p.call("doc:step", 0, 1, m, ret='char')
+        c = p.prev(m)
         while c and c in ' \t\n':
-            c = p.call("doc:step", 0, 1, m, ret='char')
+            c = p.prev(m)
         if c == ':':
             i = indent[0][-1]
             # No other indents make sense here
@@ -561,10 +561,10 @@ class CModePane(edlib.Pane):
         line_start = m1.dup()
         if sol:
             sol.to_mark(line_start)
-        c = p.call("doc:step", 1, m1, ret='char')
+        c = p.following(m1)
         while c and c in ' \t':
-            p.call("doc:step", 1, 1, m1)
-            c = p.call("doc:step", 1, m1, ret='char')
+            p.next(m1)
+            c = p.following(m1)
 
         # line_start .. m1 is the prefix
         pfx = p.call("doc:get-str", line_start, m1, ret = 'str')
@@ -593,8 +593,8 @@ class CModePane(edlib.Pane):
         expr = m.dup()
         ret = p.call("Move-Expr", -1, 1, expr)
         if ret == 1 and expr >= indent_end:
-            p.call("doc:step", expr, 1, 1)
-            if p.call("doc:step", expr, 1, 0, ret="char") == '\n':
+            p.next(expr)
+            if p.following(expr) == '\n':
                 # open-bracket at end-of-line, so add a standard indent
                 extra = t
             else:
@@ -674,18 +674,18 @@ class CModePane(edlib.Pane):
         # requested prefix
         m = mark.dup()
         # First, move point forward over any white space
-        c = focus.call("doc:step", 1, 0, m, ret="char")
+        c = focus.following(m)
         while c and c in " \t":
-            focus.call("doc:step", 1, 1, m)
-            c = focus.call("doc:step", 1, 0, m, ret="char")
+            focus.next(m)
+            c = focus.following(m)
         focus.call("Move-to", m)
         # Second, move m back over any white space.
-        c = focus.call("doc:step", 0, 1, m, ret="char")
+        c = focus.prev(m)
         while c != None:
             if c not in " \t":
-                focus.call("doc:step", 1, 1, m)
+                focus.next(m)
                 break
-            c = focus.call("doc:step", 0, 1, m, ret="char")
+            c = focus.prev(m)
         # Now calculate the indent
         (depths,prefix) = self.calc_indent(focus, m)
 
@@ -709,29 +709,29 @@ class CModePane(edlib.Pane):
         m = mark.dup()
         if num <= 0:
             focus.call("Move-EOL", -1, m)
-            c = focus.call("doc:step", 1, 0, m, ret='char')
+            c = focus.following(m)
             while c and c in ' \t':
-                focus.call("doc:step", 1, 1, m)
-                c = focus.call("doc:step", 1, 0, m, ret='char')
+                focus.next(m)
+                c = focus.following(m)
             if num < 0:
                 self.handle_bs(key, focus, m)
             else:
                 self.handle_tab(key, focus, m, 1)
             return 1
-        c = focus.call("doc:step", 0, 0, m, ret="char")
+        c = focus.prior(m)
         prevc = c
         while c and c in " \t":
-            focus.call("doc:step", 0, 1, m)
-            c = focus.call("doc:step", 0, 0, m, ret="char")
+            focus.prev(m)
+            c = focus.prior(m)
         if not (c is None or c == "\n"):
             # not at start of line, maybe convert preceding spaces to tabs
             if prevc != ' ':
                 return 0
             m = mark.dup()
             len = 0
-            while focus.call("doc:step", 0, 0, m, ret='char') == ' ':
+            while focus.prior(m) == ' ':
                 len += 1
-                focus.call("doc:step", 0, 1, m)
+                focus.prev(m)
             new = "\t" * int(len / 8)
             try:
                 focus.call("Replace", 1, m, mark, new)
@@ -742,12 +742,12 @@ class CModePane(edlib.Pane):
             return 0
 
         # m at start-of-line, move mark (point) to first non-white-space
-        c = focus.call("doc:step", 1, 0, mark, ret="char")
+        c = focus.following(mark)
         moved = False
         while c and c in " \t":
             moved = True
-            focus.call("doc:step", 1, 1, mark)
-            c = focus.call("doc:step", 1, 0, mark, ret="char")
+            focus.next(mark)
+            c = focus.following(mark)
 
         if key != "K:Tab" and c == '\n':
             # Blank line, do nothing for reindent
@@ -766,7 +766,7 @@ class CModePane(edlib.Pane):
         current = focus.call("doc:get-str", m, mark, ret="str")
 
         if (key != 'K:Tab' and
-            focus.call("doc:step", 1, mark, ret='char') in '#/' and
+            focus.following(mark) in '#/' and
             (current == new or current == new2)):
             # This is a preproc directive or comment.  They can equally
             # go in one of two places - start of line or indented.
@@ -804,14 +804,14 @@ class CModePane(edlib.Pane):
         "handle:K:Backspace"
         # If in the indent, remove one level of indent
         m = mark.dup()
-        c = focus.call("doc:step", 1, m, ret="char")
+        c = focus.following(m)
         if c and c in " \t":
             # Not at end of indent, fall through
             return 0
-        c = focus.call("doc:step", 0, 0, m, ret="char")
+        c = focus.prior(m)
         while c and c in " \t":
-            focus.call("doc:step", 0, 1, m)
-            c = focus.call("doc:step", 0, 0, m, ret="char")
+            focus.prev(m)
+            c = focus.prior(m)
         if not (c is None or c == "\n"):
             # not at start of line, just fall through
             return 0
@@ -908,7 +908,7 @@ class CModePane(edlib.Pane):
         if self.pre_paren:
             # maybe marks are still OK
             m = point.dup()
-            if focus.call("doc:step", m, 0, 1, ret='char') and m == self.pre_paren[1]:
+            if focus.prev(m) and m == self.pre_paren[1]:
                 skip_pre = True
             else:
                 self.update(focus, self.pre_paren)
@@ -923,13 +923,13 @@ class CModePane(edlib.Pane):
                 self.post_paren = None
 
         if not skip_pre:
-            c = focus.call("doc:step", point, 0, 0, ret = 'char')
+            c = focus.prior(point)
             if c and c in ')}]':
                 m2 = point.dup()
-                focus.call("doc:step", m2, 0, 1)
+                focus.prev(m2)
                 m1 = point.dup()
                 focus.call("Move-Expr", m1, -1)
-                c2 = focus.call("doc:step", m1, 1, 0, ret = 'char')
+                c2 = focus.following(m1)
                 if c2+c in "(){}[]":
                     m1['render:paren'] = "open"
                     m2['render:paren'] = "close"
@@ -940,13 +940,13 @@ class CModePane(edlib.Pane):
                 self.update(focus, self.pre_paren)
 
         if not skip_post:
-            c = focus.call("doc:step", point, 1, 0, ret = 'char')
+            c = focus.following(point)
             if c and c in '({[':
                 m1 = point.dup()
                 m2 = point.dup()
                 focus.call("Move-Expr", m2, 1)
-                focus.call("doc:step", m2, 0, 1)
-                c2 = focus.call("doc:step", m2, 1, 0, ret = 'char')
+                focus.prev(m2)
+                c2 = focus.following(m2)
                 if c+c2 in "(){}[]":
                     m1['render:paren'] = "open"
                     m2['render:paren'] = "close"
@@ -979,12 +979,12 @@ class CModePane(edlib.Pane):
 
         while num:
             try:
-                focus.call("doc:step", mark, 1-backward, 1)
+                focus.prev(mark) if backward else focus.next(mark)
                 l = focus.call("text-search", mark, "^([_a-zA-Z0-9].*\\(|\\()",
                                0, backward)
                 if not backward and l > 0:
                     while l > 1:
-                        focus.call("doc:step", mark, 0, 1)
+                        focus.prev(mark)
                         l -= 1
             except:
                 break

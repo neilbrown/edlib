@@ -24,7 +24,7 @@ class AbbrevPane(edlib.Pane):
         p = focus.call("doc:point", ret='mark')
         self.prefix_end = p.dup()
         m = p.dup()
-        focus.call("doc:step", m, 0, 1)
+        focus.prev(m)
         try:
             focus.call("text-search", 0, 1, "\\<", m)
         except edlib.commandfailed:
@@ -43,7 +43,7 @@ class AbbrevPane(edlib.Pane):
 
     def get_completions(self):
         m = self.prefix_start.dup()
-        self.call("doc:step", 1, 1, m)
+        self.next(m)
         again = True
         patn = "\\<"
         for c in self.prefix:
@@ -54,7 +54,7 @@ class AbbrevPane(edlib.Pane):
         self.call("Move-Char", m, 100)
         start = m.dup()
         while again:
-            if self.call("doc:step", 0, 1, m, ret='char') is None:
+            if self.prev(m) is None:
                 break
             try:
                 l = self.call("text-search", patn, 1, -1, m)
@@ -65,7 +65,7 @@ class AbbrevPane(edlib.Pane):
             if again and m != self.prefix_start:
                 e = m.dup()
                 while l > 0:
-                    self.call("doc:step", 1, 1, e)
+                    self.next(e)
                     l -= 1
                 try:
                     self.call("text-search", "\\>", e)
@@ -97,7 +97,7 @@ class AbbrevPane(edlib.Pane):
 
         again = True
         while again:
-            if p.call("doc:step", 1, 1, m, ret='char') is None:
+            if p.next(m) is None:
                 break
             try:
                 l = p.call("text-search", self.patn, 1, 0, m)
@@ -108,14 +108,14 @@ class AbbrevPane(edlib.Pane):
             if again:
                 e = m.dup()
                 while l > 0:
-                    p.call("doc:step", m, 0, 1)
+                    p.prev(m)
                     l -= 1
                 try:
                     p.call("text-search", "\\>", e)
                 except edlib.commandfailed:
                     pass
                 if e <= m:
-                    p.call("doc:step", 1, 1, m)
+                    p.next(m)
                     continue
                 s = p.call("doc:get-str", m, e, ret='str')
                 if (s.lower().startswith(self.prefix.lower()) and
@@ -178,13 +178,13 @@ class AbbrevPane(edlib.Pane):
         m = self.prefix_start.dup()
         try:
             if key == "K:Left":
-                self.call("doc:step", 0, 1, m)
+                self.prev(m)
                 self.call("text-search", 0, -1, m, "\\<")
             else:
-                self.call("doc:step", 1, 1, m)
+                self.next(m)
                 self.call("text-search", m, "\\<", self.prefix_end)
                 if m >= self.prefix_end:
-                    self.call("doc:step", 0, 1, m)
+                    self.prev(m)
         except edlib.commandfailed:
             return 1
         self.prefix_start.to_mark(m)

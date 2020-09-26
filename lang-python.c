@@ -1188,6 +1188,47 @@ static PyObject *Pane_move_after(Pane *self safe, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Pane_step(Pane *self safe, PyObject *args, int dir, int move)
+{
+	Mark *m = NULL;
+	int ret = PyArg_ParseTuple(args, "O!", &MarkType, &m);
+	wint_t wch;
+
+	if (!pane_valid(self))
+		return NULL;
+	if (ret <= 0 || !m) {
+		PyErr_SetString(PyExc_TypeError, "Arg must be a mark");
+		return NULL;
+	}
+
+	wch = doc_step(self->pane, m->mark, dir, move);
+	if (wch == WEOF) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	return PyUnicode_FromFormat("%c", wch);
+}
+
+static PyObject *Pane_step_next(Pane *self safe, PyObject *args)
+{
+	return Pane_step(self, args, 1, 1);
+}
+
+static PyObject *Pane_step_prev(Pane *self safe, PyObject *args)
+{
+	return Pane_step(self, args, 0, 1);
+}
+
+static PyObject *Pane_step_following(Pane *self safe, PyObject *args)
+{
+	return Pane_step(self, args, 1, 0);
+}
+
+static PyObject *Pane_step_prior(Pane *self safe, PyObject *args)
+{
+	return Pane_step(self, args, 0, 0);
+}
+
 static PyMethodDef pane_methods[] = {
 	{"close", (PyCFunction)Pane_close, METH_NOARGS,
 	 "close the pane"},
@@ -1225,6 +1266,14 @@ static PyMethodDef pane_methods[] = {
 	 "Give a pane a new parent"},
 	{"move_after", (PyCFunction)Pane_move_after, METH_VARARGS,
 	 "Move a pane after another in order of children"},
+	{"next", (PyCFunction)Pane_step_next, METH_VARARGS,
+	 "Move mark forward returning the character"},
+	{"prev", (PyCFunction)Pane_step_prev, METH_VARARGS,
+	 "Move mark back returning the character"},
+	{"following", (PyCFunction)Pane_step_following, METH_VARARGS,
+	 "returning the character after mark"},
+	{"prior", (PyCFunction)Pane_step_prior, METH_VARARGS,
+	 "returning the character before mark"},
 	{NULL}
 };
 

@@ -19,7 +19,7 @@ class CalcView(edlib.Pane):
             return edlib.Enoarg
         m = mark.dup()
         focus.call("Move-EOL", -1, m)
-        c = focus.call("doc:step", 1, m, ret='char')
+        c = focus.following(m)
         if c == '?':
             if key == "K:M:Enter":
                 while self.calc(focus,mark):
@@ -79,10 +79,10 @@ class CalcView(edlib.Pane):
                 a = self.result
 
             m = mark.dup()
-            c = focus.call("doc:step", 1, 1, m, ret='char')
+            c = focus.next(m)
             nm = None
             if c and c == '\n':
-                c = focus.call("doc:step", 1, m, ret='char')
+                c = focus.following(m)
                 if c and c == '>':
                     self.getvar("reinit", focus, 3)
                     focus.call("doc:content", m.dup(), self.getvar)
@@ -98,11 +98,11 @@ class CalcView(edlib.Pane):
             self.vars[nm] = self.result
             focus.call("doc:replace", "\n> %s = %s" %(nm, a), mark, m)
             mark.to_mark(m)
-            c = focus.call("doc:step", 1, 1, mark, ret='char')
+            c = focus.next(mark)
             if not c:
                 focus.call("doc:replace", "\n? ", mark, mark)
             else:
-                c = focus.call("doc:step", 1, mark, ret='char')
+                c = focus.following(mark)
                 if c and c == '?':
                     focus.call("Move-EOL", 1, mark)
                     # keep going
@@ -136,13 +136,13 @@ class CalcView(edlib.Pane):
     def add_expr(self, focus, mark):
         # add new expression line after this line
         focus.call("Move-EOL", 1, mark)
-        c = focus.call("doc:step", 1, 1, mark, ret='char')
+        c = focus.next(mark)
         if not c:
             # No EOL char
             focus.call("doc:replace", "\n? \n", mark.dup(), mark)
         else:
             focus.call("doc:replace", "? \n", mark.dup(), mark)
-        focus.call("doc:step", 0, 1, mark)
+        focus.prev(mark)
         return 1
 
 def calc_view_attach(key, focus, comm2, **a):

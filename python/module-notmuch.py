@@ -1361,7 +1361,7 @@ class notmuch_query_view(edlib.Pane):
             if self.whole_thread:
                 mark.to_mark(self.thread_start)
                 return 1
-            if self.thread_matched and self.parent.call("doc:step", 0, mark) == edlib.WEOF:
+            if self.thread_matched and self.parent.prior(mark) is None:
                 # first thread is open
                 mark.to_mark(self.thread_matched)
                 return 1
@@ -1447,7 +1447,7 @@ class notmuch_query_view(edlib.Pane):
                     focus.call("Notify:clip", mk, mt)
                 mk.to_mark(mt)
                 self.parent.call("doc:step-matched", mt, 1, 1)
-                self.parent.call("doc:step", mk, 1, 1)
+                self.parent.next(mk)
         else:
             # everything before the read, and after the thread disappears
             m = edlib.Mark(self)
@@ -1508,7 +1508,7 @@ class notmuch_query_view(edlib.Pane):
                     del self.seen_threads[i1]
                 if  i2 not in self.seen_msgs:
                     self.seen_msgs[i2] = True
-            if edlib.WEOF == focus.call("doc:step", 1, 1, m):
+            if edlib.WEOF == focus.next(m):
                 break
 
     def handle_mark_seen(self, key, focus, mark, mark2, str, **a):
