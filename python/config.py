@@ -18,7 +18,7 @@ def config_appeared(key, focus, **a):
             # looks like a lustre commit, need to limit line width
             focus.call("doc:set:fill-width", "70")
             focus.call("doc:set:whitespace-width", "60")
-    return 0
+    return edlib.Efallthrough
 
 
 editor.call("global-set-command", "doc:appeared-config", config_appeared)

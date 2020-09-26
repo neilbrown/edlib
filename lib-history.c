@@ -82,7 +82,7 @@ DEF_CMD(history_save)
 
 	prev = call_ret(strsave, "history:get-last", ci->focus);
 	if (prev && line && strcmp(prev, line) == 0)
-		return 0;
+		return 1;
 
 	call("Move-File", hi->history, 1);
 	call("Replace", hi->history, 1, NULL, line);
@@ -114,7 +114,7 @@ DEF_CMD(history_move)
 	const char *suffix = ksuffix(ci, "K:A-");
 
 	if (!hi->history || !ci->mark)
-		return 0;
+		return Enoarg;
 	if (*suffix == 'p') {
 		m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
 		call("Move-EOL", hi->history, -2);
@@ -177,11 +177,11 @@ DEF_CMD(history_attach)
 
 	if (!p) {
 		free(hi);
-		return 0;
+		return Efail;
 	}
 	hi->history = call_ret(pane, "doc:attach-view", p, -1, NULL, "invisible");
 	if (!hi->history)
-		return 0;
+		return Efail;
 	call("Move-File", hi->history, 1);
 	buf_init(&hi->search);
 	p = pane_register(ci->focus, 0, &hi->handle.c, hi);

@@ -220,7 +220,7 @@ DEF_CB(text_attr_forward)
 {
 	struct attr_return *ar = container_of(ci->comm, struct attr_return, fwd);
 	if (!ci->str || !ci->str2)
-		return 0;
+		return Enoarg;
 	return call_comm("map-attr", ci->focus, &ar->rtn, 0, ci->mark, ci->str2,
 			 0, NULL, ci->str);
 }
@@ -426,7 +426,7 @@ DEF_CMD(mu_clip)
 	struct mu_info *mu = ci->home->data;
 
 	marks_clip(ci->home, ci->mark, ci->mark2, mu->view, ci->home);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(mu_close)
@@ -437,7 +437,7 @@ DEF_CMD(mu_close)
 	while ((m = vmark_first(p, mu->view, p)) != NULL)
 		mark_free(m);
 	call("doc:del-view", p, mu->view);
-	return 0;
+	return 1;
 }
 
 void edlib_init(struct pane *ed safe)

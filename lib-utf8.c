@@ -46,7 +46,7 @@ DEF_CMD(utf8_step)
 	wint_t ret;
 
 	if (!m)
-		return 0;
+		return Enoarg;
 
 	ch = doc_step(p, m, forward, move);
 	if (ch == WEOF || (ch & 0x7f) == ch)

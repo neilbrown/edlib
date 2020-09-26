@@ -238,7 +238,7 @@ DEF_CMD(keystroke)
 	if (ret < 0)
 		call("Message:default", ci->focus, 0, NULL,
 		     "** Command Failed **");
-	return 0;
+	return Efallthrough;
 }
 
 static int tspec_diff_ms(struct timespec *a safe, struct timespec *b safe)
@@ -412,7 +412,7 @@ DEF_CMD(mouse_event)
 				return ret;
 		}
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(request_notify)
@@ -437,7 +437,7 @@ DEF_CMD(refocus)
 	im->focus = NULL;
 	im->point = NULL;
 	im->source = NULL;
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(close_focus)

@@ -151,7 +151,7 @@ DEF_CB(search_test)
 			return start < 0 ? Efalse : start + 1;
 		if (strcmp(ci->str, "since-start") == 0)
 			return since_start < 0 ? Efalse : since_start + 1;
-		return 0;
+		return Einval;
 	}
 	if (strcmp(ci->key, "getcapture") == 0 && ci->str) {
 		int start, len;

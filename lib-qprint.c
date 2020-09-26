@@ -45,7 +45,7 @@ DEF_CMD(qp_step)
 	struct mark *m = ci->mark;
 
 	if (!m)
-		return 0;
+		return Enoarg;
 
 retry:
 	if (forward) {

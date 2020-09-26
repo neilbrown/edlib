@@ -178,7 +178,7 @@ DEF_CB(choose_new)
 		cr->p = ci->focus;
 		cr->i = ci->num;
 	}
-	return 0;
+	return 1;
 }
 
 DEF_CMD(ask_autosave)

@@ -163,10 +163,10 @@ class AbbrevPane(edlib.Pane):
             return
         if str == "render:abbrev" and str2 == 'prefix' and mark == self.prefix_start:
             comm2("cb", focus, mark, "bg:yellow", self.prefix_len)
-            return 0
+            return 1
         if str == "render:abbrev" and str2 == 'completion' and mark == self.prefix_end:
             comm2("cb", focus, mark, "bg:cyan", self.complete_len)
-            return
+            return 1
 
     def repeat(self, key, focus, **a):
         "handle:attach-abbrev"
@@ -222,7 +222,7 @@ class AbbrevPane(edlib.Pane):
         if not self.active:
             self.call("view:changed", self.prefix_start, self.prefix_end)
             self.call("editor-on-idle", self.delayed_close)
-        return 0
+        return edlib.Efallthrough
 
 
 def abbrev_attach(key, focus, comm2, **a):

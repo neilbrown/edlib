@@ -271,7 +271,7 @@ DEF_CMD(text_readonly)
 	if (t->file_changed && !d->readonly && ci->num)
 		t->file_changed = 2;
 	/* Use default handling */
-	return 0;
+	return Efallthrough;
 }
 
 static const char *safe autosave_name(const char *name safe)

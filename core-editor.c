@@ -154,7 +154,7 @@ DEF_CMD(editor_auto_load)
 	 * it fails
 	 */
 	if (key_lookup_cmd(map, ci->key))
-		return 0;
+		return Efallthrough;
 
 	if (strncmp(mod, "doc-", 4) == 0 ||
 	    strncmp(mod, "render-", 7) == 0 ||
@@ -179,7 +179,7 @@ DEF_CMD(editor_auto_load)
 	if (ret > 0)
 		/* auto-load succeeded */
 		return key_lookup(map, ci);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(editor_auto_event)
@@ -196,7 +196,7 @@ DEF_CMD(editor_auto_event)
 		return ret;
 	if (strcmp(ci->key, "event:refresh") == 0)
 		/* pointless to autoload for refresh */
-		return 0;
+		return Efallthrough;
 	call("attach-libevent", ci->home);
 	return key_lookup_prefix(map, ci);
 }
@@ -267,7 +267,7 @@ DEF_CMD(editor_clean_up)
 		ei->store = s->next;
 		free(s);
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_EXTERN_CMD(edlib_do_free)
@@ -318,7 +318,7 @@ DEF_CMD(editor_notify_close)
 DEF_CMD(editor_close)
 {
 	stat_free();
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(editor_free)

@@ -82,7 +82,7 @@ DEF_CMD(crop_step)
 	int ret;
 
 	if (!ci->mark && !ci->mark2)
-		return 0;
+		return Enoarg;
 
 	/* Always force marks to be in range */
 	crop(ci->mark, cd);
@@ -111,7 +111,7 @@ DEF_CMD(crop_clip)
 
 	mark_clip(cd->start, ci->mark, ci->mark2);
 	mark_clip(cd->end, ci->mark, ci->mark2);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(crop_generic)

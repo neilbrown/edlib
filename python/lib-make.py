@@ -846,7 +846,7 @@ def make_request(key, focus, num, num2, str, mark, **a):
     # Create a popup to ask for make command
     p = focus.call("PopupTile", "D2", dflt, ret="focus")
     if not p:
-        return 0
+        return edlib.Efail
     if dflt_arg:
         # The '1' says to make this mark selection replaceable
         p.call("mode-set-mark", 1)

@@ -55,7 +55,7 @@ DEF_CMD(messageline_border)
 		mli->hidden = 1;
 	/* trigger a resize of children */
 	pane_damaged(ci->home, DAMAGED_SIZE);
-	return 0; /* Allow other panes to remove other borders */
+	return Efallthrough; /* Allow other panes to remove other borders */
 }
 
 DEF_CMD(messageline_msg)
@@ -82,7 +82,7 @@ DEF_CMD(messageline_msg)
 	if (strcmp(ci->key, "Message:broadcast") == 0)
 		return 1; /* Acknowledge message */
 	else
-		return 0; /* allow other handlers */
+		return Efallthrough; /* allow other handlers */
 }
 
 DEF_CMD(messageline_abort)
@@ -98,7 +98,7 @@ DEF_CMD(messageline_abort)
 	mli->modal = 0;
 	time(&mli->last_message);
 	pane_damaged(mli->line, DAMAGED_REFRESH);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(messageline_refresh_size)

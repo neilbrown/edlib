@@ -812,7 +812,7 @@ DEF_CMD(renderline_get)
 	const char *val = buf;
 
 	if (!ci->str)
-		return 0;
+		return Enoarg;
 	if (strcmp(ci->str, "prefix_len") == 0)
 		snprintf(buf, sizeof(buf), "%d", rd->prefix_len);
 	else if (strcmp(ci->str, "curs_width") == 0)
@@ -822,7 +822,7 @@ DEF_CMD(renderline_get)
 	else if (strcmp(ci->str, "render-line:valid") == 0)
 		snprintf(buf, sizeof(buf), "%d",rd->is_valid);
 	else
-		return 0;
+		return Einval;
 
 	comm_call(ci->comm2, "attr", ci->focus, 0, NULL, val);
 	return 1;

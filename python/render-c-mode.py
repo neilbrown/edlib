@@ -614,14 +614,14 @@ class CModePane(edlib.Pane):
         "handle-list/K-}/K-)/K-]/K-{/"
 
         if self.indent_type != 'C':
-            return 0
+            return edlib.Efallthrough
 
         # If at start of line - plus close/open, re-indent this line
         try:
             self.parent.call(key, focus, mark, **a)
         except edlib.commandfailed:
             # probably readonly
-            return 0
+            return edlib.Efallthrough
         m = mark.dup()
         focus.call("Move-EOL", m, -1)
         if focus.call("text-match", m.dup(), "^[\\s]*[])}{]") > 0:
@@ -632,14 +632,14 @@ class CModePane(edlib.Pane):
         "handle:K-:"
 
         if self.indent_type != 'C':
-            return 0
+            return edlib.Efallthrough
 
         # If this looks like a label line, re-indent
         try:
             self.parent.call(key, focus, mark, **a)
         except edlib.commandfailed:
             # probably readonly
-            return 0
+            return edlib.Efallthrough
         m = mark.dup()
         focus.call("Move-EOL", m, -1)
         if focus.call("text-match", m.dup(),
@@ -652,14 +652,14 @@ class CModePane(edlib.Pane):
         # re-indent when these chars are typed
 
         if self.indent_type != 'C':
-            return 0
+            return edlib.Efallthrough
 
         # insert first..
         try:
             self.parent.call(key, focus, mark, **a)
         except edlib.commandfailed:
             # probably read-only
-            return 0
+            return edlib.Efallthrough
         m = mark.dup()
         focus.call("Move-EOL", m, -1)
         self.handle_tab(key, focus, m, 1)
@@ -695,7 +695,7 @@ class CModePane(edlib.Pane):
                               "\n" + self.mkwhite(depths[-2]) + prefix)
         except edlib.commandfailed:
             # probably doc is read-only.  Fall through to default to get error
-            return 0
+            return edlib.Efallthrough
 
     def handle_tab(self, key, focus, mark, num, **a):
         "handle:K:Tab"
@@ -726,7 +726,7 @@ class CModePane(edlib.Pane):
         if not (c is None or c == "\n"):
             # not at start of line, maybe convert preceding spaces to tabs
             if prevc != ' ':
-                return 0
+                return edlib.Efallthrough
             m = mark.dup()
             len = 0
             while focus.prior(m) == ' ':
@@ -739,7 +739,7 @@ class CModePane(edlib.Pane):
                 # probably read-only
                 pass
             # fall through it insert a new tab
-            return 0
+            return edlib.Efallthrough
 
         # m at start-of-line, move mark (point) to first non-white-space
         c = focus.following(mark)
@@ -778,7 +778,7 @@ class CModePane(edlib.Pane):
                 return focus.call("doc:replace", 1, m, mark, new+prefix)
             except edlib.commandfailed:
                 pass
-            return 0
+            return edlib.Efallthrough
         if depths[-1] == depths[-2] or key != "K:Tab" or moved:
             # Either we weren't at start of text and have moved there,
             # or there is no extra indent allowed, possibly because we are doing
@@ -791,7 +791,7 @@ class CModePane(edlib.Pane):
             return focus.call("doc:replace", 1, m, mark, new)
         except edlib.commandfailed:
             pass
-        return 0
+        return edlib.Efallthrough
 
     def handle_shift_tab(self, key, focus, mark, **a):
         "handle:K:S:Tab"
@@ -807,17 +807,17 @@ class CModePane(edlib.Pane):
         c = focus.following(m)
         if c and c in " \t":
             # Not at end of indent, fall through
-            return 0
+            return edlib.Efallthrough
         c = focus.prior(m)
         while c and c in " \t":
             focus.prev(m)
             c = focus.prior(m)
         if not (c is None or c == "\n"):
             # not at start of line, just fall through
-            return 0
+            return edlib.Efallthrough
         if m == mark:
             # at start-of-line, fall-through
-            return 0
+            return edlib.Efallthrough
 
         (depths,prefix) = self.calc_indent(focus, m)
         new = self.mkwhite(depths[-2])
@@ -827,7 +827,7 @@ class CModePane(edlib.Pane):
             try:
                 return focus.call("doc:replace", 1, m, mark, new)
             except edlib.commandfailed:
-                return 0
+                return edlib.Efallthrough
         # if current is a prefix of expectation, reduce expection until not
         if new.startswith(current):
             while len(depths) > 2:
@@ -837,16 +837,16 @@ class CModePane(edlib.Pane):
                     try:
                         return focus.call("doc:replace", 1, m, mark, new)
                     except edlib.commandfailed:
-                        return 0
+                        return edlib.Efallthrough
             try:
                 return focus.call("doc:replace", 1, m, mark)
             except edlib.commandfailed:
-                return 0
+                return edlib.Efallthrough
         # No clear relationship - replace wih new
         try:
             return focus.call("doc:replace", 1, m, mark, new)
         except edlib.commandfailed:
-            return 0
+            return edlib.Efallthrough
 
     def handle_indent_para(self, key, focus, mark, mark2, **a):
         "handle:reindent-paragraph"
@@ -890,7 +890,7 @@ class CModePane(edlib.Pane):
         self.update(self.leaf, self.post_paren)
         self.post_paren = None
         self.damaged(edlib.DAMAGED_VIEW)
-        return 0
+        return 1
 
     def handle_moving(self, key, focus, mark, **a):
         "handle:point:moving"
@@ -956,7 +956,7 @@ class CModePane(edlib.Pane):
                 self.post_paren = (m1,m2)
                 self.update(focus, self.post_paren)
 
-        return 0
+        return 1
 
     def handle_map_attr(self, key, focus, mark, str, comm2, **a):
         "handle:map-attr"
@@ -1024,13 +1024,13 @@ def c_mode_appeared(key, focus, **a):
     n = focus["filename"]
     if n and n[-2:] in [".c", ".h"]:
         focus["view-default"] = "c-mode"
-    return 0
+    return edlib.Efallthrough
 
 def py_mode_appeared(key, focus, **a):
     n = focus["filename"]
     if n and n[-3:] in [".py"]:
         focus["view-default"] = "py-mode"
-    return 0
+    return edlib.Efallthrough
 
 def attach_indent(key, focus, **a):
     CModePane(focus)

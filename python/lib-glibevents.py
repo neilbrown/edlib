@@ -168,7 +168,7 @@ class events(edlib.Pane):
             del self.events[e]
             focus.call(event, num, comm)
         # allow other event handlers to do likewise
-        return 0
+        return edlib.Efallthrough
 
 ev = None
 def events_activate(focus):

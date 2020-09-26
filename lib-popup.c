@@ -211,7 +211,7 @@ DEF_CMD(popup_style)
 	struct popup_info *ppi = ci->home->data;
 
 	if (!ci->str)
-		return 0;
+		return Enoarg;
 
 	free(ppi->style);
 	ppi->style = strdup(ci->str);
@@ -297,7 +297,7 @@ DEF_CMD(popup_defocus)
 	if (strchr(ppi->style, 't'))
 		call_comm("editor-on-idle", ci->home, &popup_delayed_close);
 
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(popup_this)
@@ -306,7 +306,7 @@ DEF_CMD(popup_this)
 
 	if (strchr(ppi->style, 'a') == NULL &&
 	    strcmp(ci->key, "ThisPopup") != 0)
-		return 0;
+		return Efallthrough;
 	return comm_call(ci->comm2, "callback:pane", ci->home,
 			 0, NULL, "Popup");
 }
@@ -434,7 +434,7 @@ DEF_CMD(popup_attach)
 	    (in_popup = pane_attr_get(ci->focus, "Popup")) != NULL &&
 	    strcmp(in_popup, "ignore") != 0)
 		/* No recusive popups without permission */
-		return 0;
+		return Efallthrough;
 
 	if (strchr(style, 'D'))
 		root = call_ret(pane, "RootPane", ci->focus);
@@ -444,7 +444,7 @@ DEF_CMD(popup_attach)
 		root = call_ret(pane, "ThisPane", ci->focus);
 
 	if (!root)
-		return 0;
+		return Efallthrough;
 
 	alloc(ppi, pane);
 	ppi->done = NULL;

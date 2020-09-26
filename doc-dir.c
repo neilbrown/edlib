@@ -206,7 +206,7 @@ DEF_CMD(dir_new)
 DEF_CMD(dir_new2)
 {
 	if (ci->num2 != S_IFDIR)
-		return 0;
+		return Efallthrough;
 	return dir_new_func(ci);
 }
 
@@ -696,7 +696,7 @@ DEF_CMD(dir_doc_get_attr)
 	val = __dir_get_attr(d, m, attr);
 
 	if (!val)
-		return 0;
+		return Efallthrough;
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, m, val,
 		  0, NULL, attr);
 	return 1;
@@ -729,7 +729,7 @@ DEF_CMD(dir_get_attr)
 	else if (strcmp(attr, "filename") == 0)
 		val = dr->fname;
 	else
-		return 0;
+		return Efallthrough;
 	comm_call(ci->comm2, "callback:get_attr", ci->focus, 0, NULL, val);
 	return 1;
 }
@@ -767,7 +767,7 @@ static int dir_open(struct pane *home safe, struct pane *focus safe,
 	de = m->ref.d;
 	/* close this pane, open the given file. */
 	if (de == NULL)
-		return 0;
+		return Efail;
 
 	asprintf(&fname, "%s/%s", dr->fname, de->name);
 	if (!fname)

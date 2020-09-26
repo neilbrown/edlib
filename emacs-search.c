@@ -221,7 +221,7 @@ DEF_CMD(search_insert_quoted)
 	const char *suffix = ksuffix(ci, "doc:char-");
 	char *patn;
 	if (strchr(must_quote, suffix[0]) == NULL)
-		return 0;
+		return Efallthrough;
 	patn = call_ret(strsave, "doc:get-str", ci->focus);
 	if (patn) {
 		char *open = strrchr(patn, '[');
@@ -231,7 +231,7 @@ DEF_CMD(search_insert_quoted)
 			/* There is an '[' that hasn't been closed, so don't
 			 * quote anything.
 			 */
-			return 0;
+			return Efallthrough;
 	}
 	call("Replace", ci->focus, 1, NULL, "\\");
 	call("Replace", ci->focus, 1, NULL, suffix,
@@ -251,7 +251,7 @@ DEF_CMD(search_insert_meta)
 	const char *k = ksuffix(ci, "K:A-");
 
 	if (strchr(must_quote, *k) == NULL || !ci->mark)
-		return 0;
+		return Efallthrough;
 	bracket = strchr(brackets, *k);
 	if (!bracket) {
 		call("Replace", ci->focus, 1, NULL, k);
@@ -415,7 +415,7 @@ DEF_CMD(search_toggle_ci)
 
 	/* If not at end of doc, fall through */
 	if (ci->mark && doc_following(ci->focus, ci->mark) != WEOF)
-		return 0;
+		return Efallthrough;
 	esi->case_sensitive = !esi->case_sensitive;
 	call("doc:notify:doc:replaced", ci->focus);
 	attr_set_str(&ci->home->attrs, "status-line",
@@ -572,7 +572,7 @@ DEF_CMD(replace_forward)
 
 DEF_CMD(replace_undo)
 {
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(replace_escape)
@@ -729,7 +729,7 @@ DEF_CMD(emacs_search_highlight)
 	struct highlight_info *hi = ci->home->data;
 
 	if (hi->view < 0)
-		return 0;
+		return Efail;
 
 	while ((start = vmark_first(ci->focus, hi->view, ci->home)) != NULL)
 		mark_free(start);
@@ -778,7 +778,7 @@ DEF_CMD(emacs_replace_highlight)
 	struct highlight_info *hi = ci->home->data;
 
 	if (hi->replace_view < 0)
-		return 0;
+		return Efail;
 
 	if (!ci->mark || !ci->mark2)
 		return Enoarg;
@@ -808,7 +808,7 @@ DEF_CMD(emacs_hl_attrs)
 	struct highlight_info *hi = ci->home->data;
 
 	if (!ci->str)
-		return 0;
+		return Efallthrough;
 
 	if (strcmp(ci->str, "render:search") == 0) {
 		/* Current search match -  "20" is a priority */
@@ -861,7 +861,7 @@ DEF_CMD(emacs_hl_attrs)
 		return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
 				 ci->mark, "fg:green-40,inverse,vis-nl", 20);
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(highlight_draw)
@@ -872,7 +872,7 @@ DEF_CMD(highlight_draw)
 	struct xy xy;
 
 	if (!ci->str2 || !strstr(ci->str2, ",focus") || !pp)
-		return 0;
+		return Efallthrough;
 
 	/* here is where the user will be looking, make sure
 	 * the popup doesn't obscure it.
@@ -896,7 +896,7 @@ DEF_CMD(highlight_draw)
 		     (pp2 && xy.y <= pp2->y + pp2->h)))
 			call("popup:style", hi->popup, 0, NULL, "TL2");
 	}
-	return 0;
+	return Efallthrough;
 }
 
 
@@ -951,7 +951,7 @@ DEF_CMD(emacs_search_reposition)
 	struct mark *m;
 
 	if (hi->view < 0 || hi->patn == NULL || !start || !end)
-		return 0;
+		return Efallthrough;
 
 	while ((m = vmark_first(ci->focus, hi->view, ci->home)) != NULL &&
 	       mark_ordered_not_same(m, start))
@@ -967,7 +967,7 @@ DEF_CMD(emacs_search_reposition)
 	hi->end = mark_dup(end);
 
 	queue_highlight_refresh(ci->focus);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(emacs_highlight_close)
@@ -997,8 +997,9 @@ DEF_CMD(emacs_highlight_close)
 	hi->start = NULL;
 	hi->end = NULL;
 	hi->match = NULL;
-	return 0;
+	return 1;
 }
+
 DEF_CMD(emacs_search_done)
 {
 	if (ci->str && ci->str[0])
@@ -1011,7 +1012,7 @@ DEF_CMD(emacs_search_done)
 DEF_CMD(emacs_highlight_abort)
 {
 	pane_close(ci->home);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(emacs_highlight_clip)
@@ -1020,7 +1021,7 @@ DEF_CMD(emacs_highlight_clip)
 
 	marks_clip(ci->home, ci->mark, ci->mark2, hi->view, ci->home);
 	marks_clip(ci->home, ci->mark, ci->mark2, hi->replace_view, ci->home);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(emacs_highlight_set_popup)

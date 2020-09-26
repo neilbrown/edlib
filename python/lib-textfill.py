@@ -251,18 +251,18 @@ class FillMode(edlib.Pane):
         "handle-list/K- /K:Tab/K:Enter"
         if not self.cols:
             # auto-fill not enabled
-            return 0
+            return edlib.Efallthrough
         if not mark:
-            return 0
+            return edlib.Efallthrough
         next = focus.following(mark)
         if next and  next != '\n':
             # not at end-of-line or end-of-file, don't auto-fill
-            return 0
+            return edlib.Efallthrough
         m = mark.dup()
         focus.call("Move-EOL", -1, m)
         line = focus.call("doc:get-str", m, mark, ret='str')
         if textwidth(line) < self.cols:
-            return 0
+            return edlib.Efallthrough
 
         # need to start a new line, so need a prefix.
         st = find_start(focus, m)
@@ -272,7 +272,7 @@ class FillMode(edlib.Pane):
         para = focus.call("doc:get-str", st, mark, ret='str')
         lines = para.splitlines()
         if len(lines) == 0:
-            return 0
+            return edlib.Efallthrough
 
         (prefix0, prefix1) = get_prefixes(focus, st, lines)
 
@@ -282,7 +282,7 @@ class FillMode(edlib.Pane):
                 focus.call("doc:replace", 1, mark, mark, "\n"+prefix1)
                 return 1
             except edlib.commandfailed:
-                return 0
+                return edlib.Efallthrough
 
         # Need to reformat the current line.  Skip over prefix chars at
         # start of line.
@@ -299,7 +299,7 @@ class FillMode(edlib.Pane):
                 pass
             if key == ':Enter':
                 return 1
-        return 0
+        return edlib.Efallthrough
 
 def fill_mode_attach(key, focus, comm2, **a):
     p = FillMode(focus)

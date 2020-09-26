@@ -154,8 +154,7 @@ DEF_CMD(xs_copy_save)
 
 	claim_both(xsi);
 	call("selection:discard", ci->home);
-	/* fall-through */
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(xs_copy_get)
@@ -194,7 +193,7 @@ DEF_CMD(xs_sel_claimed)
 
 	if (ci->focus != ci->home)
 		/* not for me */
-		return 0;
+		return Efallthrough;
 	/* Some other pane holds the selection, so better tell
 	 * other X11 clients
 	 */
@@ -212,7 +211,7 @@ DEF_CMD(xs_sel_commit)
 
 	if (ci->focus != ci->home)
 		/* not for me */
-		return 0;
+		return Efallthrough;
 
 	if (xsi->primary.data || xsi->primary.saved)
 		/* We own the primary, so nothing to do */
@@ -238,7 +237,7 @@ DEF_CMD(xs_sel_commit)
 	}
 	g_free(s);
 
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(xs_close)

@@ -649,7 +649,7 @@ DEF_CMD(nc_notify_display)
 {
 	struct display_data *dd = ci->home->data;
 	comm_call(ci->comm2, "callback:display", ci->home, dd->last_event);
-	return 0;
+	return 1;
 }
 
 DEF_CMD(nc_close)

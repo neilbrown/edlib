@@ -84,7 +84,7 @@ DEF_CMD(keymap_list)
 
 	if (ci->comm == &keymap_list)
 		/* should be impossible */
-		return 0;
+		return Efallthrough;
 	/* ci->comm MUST be the keymap */
 	m = (struct map* safe)ci->comm;
 
@@ -453,13 +453,13 @@ int key_handle(const struct cmd_info *ci safe)
 		p = ci->focus;
 
 	while (p) {
-		int ret = 0;
+		int ret = Efallthrough;
 		if (p->handle && !(p->damaged & DAMAGED_DEAD)) {
 			vci->home = p;
 			vci->comm = p->handle;
 			ret = p->handle->func(ci);
 		}
-		if (ret) {
+		if (ret != Efallthrough) {
 			time_stop_key(ci->key);
 			/* 'p' might have been destroyed */
 			return ret;
@@ -470,5 +470,5 @@ int key_handle(const struct cmd_info *ci safe)
 			p = p->parent;
 	}
 	time_stop_key(ci->key);
-	return 0;
+	return Efallthrough;
 }

@@ -57,7 +57,7 @@ DEF_LOOKUP_CMD(tile_handle, tile_map);
 DEF_CMD(tile_close)
 {
 	tile_destroy(ci->home);
-	return 0;
+	return 1;
 }
 
 DEF_CMD(tile_free)
@@ -699,7 +699,7 @@ DEF_CMD(tile_window_next)
 	struct tileinfo *t2;
 
 	if (wrong_pane(ci))
-		return 0;
+		return Efallthrough;
 	if (p->focus && p->focus->z) {
 		p2 = next_child(p, p->focus, 1);
 		if (p2) {
@@ -737,7 +737,7 @@ DEF_CMD(tile_window_prev)
 	struct tileinfo *t2;
 
 	if (wrong_pane(ci))
-		return 0;
+		return Efallthrough;
 	t2 = list_prev_entry(ti, tiles);
 	pane_focus(t2->p);
 	return 1;
@@ -748,7 +748,7 @@ DEF_CMD(tile_window_xplus)
 	struct pane *p = ci->home;
 
 	if (wrong_pane(ci))
-		return 0;
+		return Efallthrough;
 	tile_grow(p, 1, RPT_NUM(ci));
 	return 1;
 }
@@ -758,7 +758,7 @@ DEF_CMD(tile_window_xminus)
 	struct pane *p = ci->home;
 
 	if (wrong_pane(ci))
-		return 0;
+		return Efallthrough;
 	tile_grow(p, 1, -RPT_NUM(ci));
 	return 1;
 }
@@ -767,7 +767,7 @@ DEF_CMD(tile_window_yplus)
 	struct pane *p = ci->home;
 
 	if (wrong_pane(ci))
-		return 0;
+		return Efallthrough;
 	tile_grow(p, 0, RPT_NUM(ci));
 	return 1;
 }
@@ -776,7 +776,7 @@ DEF_CMD(tile_window_yminus)
 	struct pane *p = ci->home;
 
 	if (wrong_pane(ci))
-		return 0;
+		return Efallthrough;
 	tile_grow(p, 0, -RPT_NUM(ci));
 	return 1;
 }
@@ -787,7 +787,7 @@ DEF_CMD(tile_window_splitx)
 	struct pane *p2;
 
 	if (wrong_pane(ci))
-		return 0;
+		return Efallthrough;
 	p2 = tile_split(&p, 1, 1, ci->str2);
 	pane_clone_children(p, p2);
 	return 1;
@@ -799,7 +799,7 @@ DEF_CMD(tile_window_splity)
 	struct pane *p2;
 
 	if (wrong_pane(ci))
-		return 0;
+		return Efallthrough;
 	p2 = tile_split(&p, 0, 1, ci->str2);
 	pane_clone_children(p, p2);
 	return 1;
@@ -811,7 +811,7 @@ DEF_CMD(tile_window_close)
 	struct tileinfo *ti = p->data;
 
 	if (wrong_pane(ci))
-		return 0;
+		return Efallthrough;
 	if (ti->direction != Neither)
 		pane_close(p);
 	return 1;
@@ -842,7 +842,7 @@ DEF_CMD(tile_window_close_others)
 	bool found =  True;
 
 	if (wrong_pane(ci))
-		return 0;
+		return Efallthrough;
 	/* close sibling panes until ->parent changes, or there aren't any */
 	while (found && p->parent == parent) {
 		struct pane *s;
@@ -865,7 +865,7 @@ DEF_CMD(tile_window_scale_relative)
 	int rpt = RPT_NUM(ci);
 
 	if (wrong_pane(ci))
-		return 0;
+		return Efallthrough;
 
 	if (rpt > 10) rpt = 10;
 	if (rpt < -10) rpt = -10;
@@ -911,9 +911,9 @@ DEF_CMD(tile_other)
 	}
 	if (ci->str || ti->group) {
 		if (!ci->str || !ti->group)
-			return 0;
+			return Efallthrough;
 		if (strcmp(ci->str, ti->group) != 0)
-			return 0;
+			return Efallthrough;
 		/* same group - continue */
 	}
 	if (ci->str2 && ti->name && strcmp(ci->str2, ti->name) == 0)
@@ -949,12 +949,12 @@ DEF_CMD(tile_this)
 {
 	struct tileinfo *ti = ci->home->data;
 	if (!ti->leaf)
-		return 0;
+		return Efallthrough;
 	if (ci->str || ti->group) {
 		if (!ci->str || !ti->group)
-			return 0;
+			return Efallthrough;
 		if (strcmp(ci->str, ti->group) != 0)
-			return 0;
+			return Efallthrough;
 		/* same group - continue */
 	}
 	return comm_call(ci->comm2, "callback:pane", ci->home, 0,
@@ -1007,12 +1007,12 @@ DEF_CMD(tile_root)
 	struct tileinfo *ti = p->data;
 
 	if (ti->direction != Neither)
-		return 0;
+		return Efallthrough;
 	if (ci->str || ti->group) {
 		if (!ci->str || !ti->group)
-			return 0;
+			return Efallthrough;
 		if (strcmp(ci->str, ti->group) != 0)
-			return 0;
+			return Efallthrough;
 		/* same group - continue */
 	}
 

@@ -39,7 +39,7 @@ class EdDisplay(edlib.Pane):
     def handle_notify_displays(self, key, comm2, **a):
         "handle:all-displays"
         comm2("callback:display", self, self.last_event)
-        return 0
+        return 1
 
     def handle_postorder(self, key, **a):
         "handle:Refresh:postorder"

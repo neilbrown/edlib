@@ -140,7 +140,7 @@ DEF_CMD(base64_step)
 	struct b64info *bi = ci->home->data;
 
 	if (!ci->mark)
-		return 0;
+		return Enoarg;
 	pos = locate_mark(p, ci->home, bi->view, ci->mark);
 
 	m = mark_dup(ci->mark);
@@ -224,7 +224,7 @@ DEF_CMD(b64_clip)
 	struct b64info *bi = ci->home->data;
 
 	marks_clip(ci->home, ci->mark, ci->mark2, bi->view, ci->home);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(b64_attach)

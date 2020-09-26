@@ -200,7 +200,7 @@ DEF_CB(libevent_run)
 	ei->dont_block = 0;
 
 	if (ei->deactivated)
-		return 0;
+		return Efallthrough;
 	if (!b) {
 		/* No events to wait for.. */
 		if (dont_block)
@@ -271,7 +271,7 @@ DEF_CB(libevent_refresh)
 		command_put(ev->comm);
 		free(ev);
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CB(libevent_noblock)

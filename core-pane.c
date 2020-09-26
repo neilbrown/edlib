@@ -784,7 +784,7 @@ DEF_CB(take_str)
 	struct call_return *cr = container_of(ci->comm, struct call_return, c);
 
 	if (!ci->str)
-		return 0;
+		return Enoarg;
 	cr->s = strdup(ci->str);
 	return 1;
 }

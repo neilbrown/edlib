@@ -111,7 +111,7 @@ DEF_CB(copy_do)
 			comm_call(ci->comm2, "callback", ci->focus, 0, NULL, t->txt);
 		return 1;
 	}
-	return 0;
+	return Efallthrough;
 }
 
 void edlib_init(struct pane *ed safe)

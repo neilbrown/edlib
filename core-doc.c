@@ -880,7 +880,7 @@ DEF_CMD(doc_notify_moving)
 
 	if (ci->mark == dd->point)
 		pane_damaged(ci->home, DAMAGED_VIEW);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(doc_refresh_view)
@@ -1143,7 +1143,7 @@ DEF_CMD(doc_abort)
 	struct doc_data *dd = ci->home->data;
 
 	call("doc:notify:Abort", dd->doc);
-	return 0;
+	return Efallthrough;
 }
 
 

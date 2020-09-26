@@ -324,7 +324,7 @@ class notmuch_main(edlib.Doc):
         if val:
             comm2("callback", focus, val, mark, str)
             return 1
-        return 0
+        return edlib.Efallthrough
 
     def handle_get_attr(self, key, focus, str, comm2, **a):
         "handle:get-attr"
@@ -332,7 +332,7 @@ class notmuch_main(edlib.Doc):
             if str == "doc-type":
                 comm2("callback", focus, "notmuch")
                 return 1
-        return 0
+        return edlib.Efallthrough
 
     def handle_notmuch_update(self, key, **a):
         "handle:doc:notmuch:update"
@@ -1272,11 +1272,11 @@ class notmuch_list(edlib.Doc):
         return 1
 
     def handle_get_attr(self, key, focus, str, comm2, **a):
-        "handle:get-attr" and comm2
-        if str == "doc-type":
+        "handle:get-attr"
+        if str == "doc-type" and comm2:
             comm2("callback", focus, "notmuch-list")
             return 1
-        return 0
+        return edlib.Efallthrough
 
     def handle_load_thread(self, key, mark, **a):
         "handle:doc:notmuch:load-thread"
@@ -1326,7 +1326,7 @@ class notmuch_list(edlib.Doc):
         self.notify("doc:replaced")
         # Pass this down to database document.
         self.maindoc.call(key, str, str2)
-        return 0
+        return 1
 
 class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
@@ -1366,7 +1366,7 @@ class notmuch_query_view(edlib.Pane):
                 mark.to_mark(self.thread_matched)
                 return 1
         # otherwise fall-through to real start or end
-        return 0
+        return edlib.Efallthrough
 
     def handle_step(self, key, focus, mark, num, num2, **a):
         "handle:doc:step"
@@ -1431,7 +1431,7 @@ class notmuch_query_view(edlib.Pane):
                 return self.parent.call("doc:get-attr", focus, num, num2, mark, "M-" + str[3:], comm2)
             else:
                 return self.parent.call("doc:get-attr", focus, num, num2, mark, "T-" + str[3:], comm2)
-        return 0
+        return edlib.Efalthrough
 
     def handle_Z(self, key, focus, **a):
         "handle:doc:char-Z"
@@ -1495,7 +1495,7 @@ class notmuch_query_view(edlib.Pane):
         # some messages have been displayed, from mark to mark2
         # collect threadids and message ids
         if not mark or not mark2:
-            return 0
+            return edlib.Efallthrough
         m = mark.dup()
 
         while m.seq < mark2.seq:

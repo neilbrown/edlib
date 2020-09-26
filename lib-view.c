@@ -358,7 +358,7 @@ DEF_CMD(view_status_changed)
 	pane_damaged(ci->home, DAMAGED_VIEW);
 	pane_damaged(ci->home, DAMAGED_REFRESH);
 	if (strcmp(ci->key, "view:changed") == 0)
-		return 0;
+		return Efallthrough;
 	return 1;
 }
 
@@ -378,7 +378,7 @@ DEF_CMD(view_reposition)
 		else
 			vd->viewpoint = NULL;
 	}
-	return 0;
+	return Efallthrough;
 }
 
 static struct pane *do_view_attach(struct pane *par, int border)
@@ -439,9 +439,9 @@ DEF_CMD(view_click)
 	cih = pane_mapxy(ci->focus, ci->home, ci->x, ci->y, False);
 
 	if (cih.x >= vd->border_width)
-		return 0;
+		return Efallthrough;
 	if (p->h <= 4)
-		return 0;
+		return Efallthrough;
 
 	key = "Move-View-Small";
 	num = RPT_NUM(ci);
@@ -492,7 +492,7 @@ DEF_CMD(view_clip)
 
 	if (vd->viewpoint)
 		mark_clip(vd->viewpoint, ci->mark, ci->mark2);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(view_border)
@@ -506,7 +506,7 @@ DEF_CMD(view_border)
 		vd->border = vd->old_border;
 
 	pane_damaged(p, DAMAGED_SIZE);
-	return 0; /* allow other handlers to change borders */
+	return Efallthrough; /* allow other handlers to change borders */
 }
 
 void edlib_init(struct pane *ed safe)

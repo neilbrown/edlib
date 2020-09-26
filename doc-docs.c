@@ -202,7 +202,7 @@ DEF_CMD(docs_mod_next)
 		return Enoarg;
 	m = mark_dup(ci->mark);
 	doc_next(ci->home->parent, m);
-	if (call("doc:render-line", ci->focus, 0, m) < 0||
+	if (call("doc:render-line", ci->focus, 0, m) < 0 ||
 	    m->ref.p == NULL) {
 		mark_free(m);
 		return call("popup:close", ci->focus);
@@ -589,7 +589,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 	dp = m->ref.p;
 	/* close this pane, open the given document. */
 	if (dp == NULL)
-		return 0;
+		return Efail;
 
 	if (other) {
 		par = home_call_ret(pane, focus, "DocPane", dp);
@@ -604,7 +604,7 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 		pane_focus(p);
 		return 1;
 	} else {
-		return 0;
+		return Efail;
 	}
 }
 
@@ -623,7 +623,7 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 	dp = m->ref.p;
 	/* close this pane, open the given document. */
 	if (dp == NULL)
-		return 0;
+		return Efail;
 
 	snprintf(buf, sizeof(buf), "render-cmd-%c", cmd);
 	renderer = pane_attr_get(dp, buf);
@@ -640,7 +640,7 @@ static int docs_open_alt(struct pane *home safe, struct pane *focus safe,
 		pane_focus(p);
 		return 1;
 	} else {
-		return 0;
+		return Efail;
 	}
 }
 
@@ -668,7 +668,7 @@ static int docs_save(struct pane *focus safe, struct mark *m)
 		return Enoarg;
 	dp = m->ref.p;
 	if (!dp)
-		return 0;
+		return Efail;
 	doc_save(dp, focus, 0);
 	return 1;
 }
@@ -682,7 +682,7 @@ static int docs_kill(struct pane *focus safe, struct mark *m, int num)
 		return Enoarg;
 	dp = m->ref.p;
 	if (!dp)
-		return 0;
+		return Efail;
 	mod = pane_attr_get(dp, "doc-modified");
 	if (mod && strcmp(mod, "yes") == 0 &&
 	    num == NO_NUMERIC) {

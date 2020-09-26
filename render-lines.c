@@ -755,7 +755,7 @@ DEF_CMD(render_lines_get_attr)
 		snprintf(ret, sizeof(ret), "%d", rl->shift_left);
 		return comm_call(ci->comm2, "cb", ci->focus, 0, NULL, ret);
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(render_lines_point_moving)
@@ -1014,7 +1014,7 @@ DEF_CMD(render_lines_close)
 	rl->header = NULL;
 
 	call("doc:del-view", p, rl->typenum);
-	return 0;
+	return 1;
 }
 
 DEF_CMD(render_lines_abort)
@@ -1028,7 +1028,7 @@ DEF_CMD(render_lines_abort)
 	pane_damaged(p, DAMAGED_VIEW);
 
 	/* Allow other handlers to complete the Abort */
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(render_lines_move)
@@ -1052,7 +1052,7 @@ DEF_CMD(render_lines_move)
 
 	top = vmark_first(focus, rl->typenum, p);
 	if (!top)
-		return 0;
+		return Efallthrough;
 
 	old_top = mark_dup(top);
 	if (strcmp(ci->key, "Move-View-Large") == 0)
@@ -1401,7 +1401,7 @@ DEF_CMD(render_lines_notify_replace)
 			vmark_invalidate(m);
 
 		pane_damaged(p, DAMAGED_VIEW);
-		return 0;
+		return Efallthrough;
 	}
 
 	if (start && end && start->seq > end->seq) {
@@ -1424,7 +1424,7 @@ DEF_CMD(render_lines_notify_replace)
 		start = vmark_at_or_before(ci->home, end, rl->typenum, p);
 		if (!start)
 			/* change is before visible region */
-			return 0;
+			return Efallthrough;
 		/* FIXME check 'start' is at least 'num' before end */
 	}
 	if (end) {
@@ -1436,7 +1436,7 @@ DEF_CMD(render_lines_notify_replace)
 		if (!end)
 			end = vmark_first(ci->home, rl->typenum, p);
 		if (!end)
-			return 0;
+			return Efallthrough;
 		if (vmark_next(end))
 			end = vmark_next(end);
 		/* FIXME check that 'end' is at least 'num' after start */
@@ -1444,7 +1444,7 @@ DEF_CMD(render_lines_notify_replace)
 
 	if (!end || !start)
 		/* Change outside visible region */
-		return 0;
+		return Efallthrough;
 
 	while (end && mark_ordered_or_same(start, end)) {
 		vmark_invalidate(end);
@@ -1456,7 +1456,7 @@ DEF_CMD(render_lines_notify_replace)
 
 	pane_damaged(p, DAMAGED_VIEW);
 
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(render_lines_clip)
@@ -1466,7 +1466,7 @@ DEF_CMD(render_lines_clip)
 	marks_clip(ci->home, ci->mark, ci->mark2, rl->typenum, ci->home);
 	if (rl->header)
 		mark_clip(rl->header, ci->mark, ci->mark2);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(render_lines_attach);

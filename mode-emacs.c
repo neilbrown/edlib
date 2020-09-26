@@ -193,7 +193,7 @@ REDEF_CMD(emacs_move)
 	struct mark *mk;
 
 	if (!ci->mark)
-		return 0;
+		return Enoarg;
 
 	/* if Move-File, leave inactive mark behind */
 	if (strcmp(mv->type, "Move-File") == 0) {
@@ -209,8 +209,8 @@ REDEF_CMD(emacs_move)
 
 	ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), ci->mark,
 		   NULL, mv->extra);
-	if (!ret)
-		return 0;
+	if (ret <= 0)
+		return ret;
 
 	if (strcmp(mv->type, "Move-View-Large") == 0)
 		attr_set_int(&cursor_pane->attrs, "emacs-repoint",
@@ -241,9 +241,9 @@ REDEF_CMD(emacs_delete)
 
 	ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);
 
-	if (!ret) {
+	if (ret <= 0) {
 		mark_free(m);
-		return 0;
+		return ret;
 	}
 	if (mk)
 		call("Replace", ci->focus, 1, mk, NULL, 0, mk);
@@ -275,9 +275,9 @@ REDEF_CMD(emacs_kill)
 	else
 		ret = call(mv->type, ci->focus, mv->direction * RPT_NUM(ci), m);
 
-	if (!ret) {
+	if (ret <= 0) {
 		mark_free(m);
-		return 0;
+		return ret;
 	}
 	str = call_ret(strsave, "doc:get-str", ci->focus, 0, NULL, NULL, 0, m);
 	if (str && *str)
@@ -630,7 +630,7 @@ DEF_CMD(emacs_exit)
 		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "DM");
 		// FIXME if called from a popup, this fails.
 		if (!p)
-			return 0;
+			return Efail;
 		attr_set_str(&p->attrs, "done-key", "event:deactivate");
 		return call("docs:show-modified", p);
 	} else
@@ -720,7 +720,7 @@ DEF_CMD(emacs_insert_other)
 			break;
 	ins = other_inserts[i].insert;
 	if (ins == NULL)
-		return 0;
+		return Efallthrough;
 
 	if (clear_selection(ci->focus, NULL, mk, 3))
 		call("Replace", ci->focus, 1, mk);
@@ -804,7 +804,7 @@ DEF_CMD(find_complete)
 		return emacs_doc_complete_func(ci);
 	if (strcmp(type, "cmd") == 0)
 		return emacs_cmd_complete_func(ci);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(find_done)
@@ -903,7 +903,7 @@ DEF_CMD(find_prevnext)
 	struct find_helper h;
 
 	if (strcmp(type, "doc") != 0)
-		return 0;
+		return Efallthrough;
 	h.name = attr_find(ci->home->attrs, "find-doc");
 	h.ret = NULL;
 	h.c = find_helper;
@@ -1001,7 +1001,7 @@ DEF_CMD(emacs_findfile)
 		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2",
 			     0, NULL, path);
 		if (!p)
-			return 0;
+			return Efail;
 
 		if (ksuffix(ci, "K:CX44")[0]) {
 			attr_set_str(&p->attrs, "prompt",
@@ -1174,7 +1174,7 @@ DEF_CMD(emacs_finddoc)
 		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2",
 			     0, NULL, "");
 		if (!p)
-			return 0;
+			return Efail;
 
 		if (defname)
 			attr_set_str(&p->attrs, "default", defname);
@@ -1307,7 +1307,7 @@ DEF_CMD(emacs_shell)
 
 		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
 		if (!p)
-			return 0;
+			return Efail;
 		dirname = call_ret(strsave, "get-attr", ci->focus, 0, NULL, "dirname");
 		attr_set_str(&p->attrs, "dirname", dirname ?: ".");
 		attr_set_str(&p->attrs, "prompt", "Shell command");
@@ -1440,7 +1440,7 @@ DEF_CMD(emacs_reposition)
 		}
 		attr_set_str(&ci->focus->attrs, "emacs-repoint", NULL);
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(emacs_start_search)
@@ -1455,7 +1455,7 @@ DEF_CMD(emacs_start_search)
 			     0, NULL, "");
 
 	if (!p)
-		return 0;
+		return Efail;
 	home_call(hp, "highlight:set-popup", p);
 
 	attr_set_str(&p->attrs, "prompt", "Search");
@@ -1482,7 +1482,7 @@ DEF_CMD(emacs_command)
 
 	p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
 	if (!p)
-		return 0;
+		return Efail;
 	attr_set_str(&p->attrs, "prompt", "Cmd");
 	attr_set_str(&p->attrs, "done-key", "emacs:command");
 	call("doc:set-name", p, 0, NULL, "K:Ax command", -1);
@@ -1515,7 +1515,7 @@ DEF_CB(take_cmd)
 	const char *cmd;
 
 	if (!ci->str)
-		return 0;
+		return Enoarg;
 	cmd = ci->str + 16;
 	if (cr->p) {
 		call("doc:replace", cr->p, 1, NULL, cmd);
@@ -1633,7 +1633,7 @@ DEF_CMD(emacs_abort)
 	struct mark *m = call_ret(mark2, "doc:point", ci->focus);
 
 	clear_selection(ci->focus, NULL, m, 0);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(emacs_swap_mark)
@@ -1753,7 +1753,7 @@ DEF_CMD(emacs_attrs)
 	char *selection = "bg:white-80,vis-nl"; // grey
 
 	if (!ci->str)
-		return 0;
+		return Enoarg;
 
 	cr = call_ret(all, "doc:point", ci->focus);
 	if (cr.ret <= 0 || !cr.m || !cr.m2 || !ci->mark)
@@ -1789,7 +1789,7 @@ DEF_CMD(emacs_attrs)
 			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
 					 ci->mark, selection, 2);
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(emacs_goto_line)
@@ -1936,10 +1936,10 @@ DEF_CMD(emacs_motion)
 	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
 
 	if (!p || !m2)
-		return 0;
+		return Enoarg;
 
 	if (attr_find_int(m2->attrs, "emacs:track-selection") != 1)
-		return 0;
+		return Efallthrough;
 
 	call("Move-CursorXY", ci->focus,
 	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);

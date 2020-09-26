@@ -158,7 +158,7 @@ class MergePane(edlib.Pane):
                 else:
                     comm2("attr:cb", focus, mark, "fg:green-40",
                           10000, 2)
-            return
+            return edlib.Efallthrough
 
         if str == "render:merge-same":
             w = str2.split()
@@ -181,7 +181,7 @@ class MergePane(edlib.Pane):
                 else:
                     comm2("attr:cb", focus, mark, "fg:cyan-60,inverse", len, 3)
 
-            return 0
+            return edlib.Efallthrough
 
 
 def merge_view_attach(key, focus, comm2, **a):

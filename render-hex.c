@@ -194,7 +194,7 @@ DEF_CMD(hex_step)
 	struct he_data *he = ci->home->data;
 
 	if (!he->bytes)
-		return 0;
+		return Efallthrough;
 	return home_call(ci->home->parent, "doc:step-bytes", ci->focus,
 			 ci->num, ci->mark, ci->str,
 			 ci->num2, ci->mark2, ci->str2);
@@ -251,7 +251,7 @@ DEF_CMD(hex_appeared)
 	char *t = pane_attr_get(ci->focus, "doc-type");
 	if (t && strcmp(t, "text") == 0)
 		attr_set_str(&ci->focus->attrs, "render-cmd-H", "hex");
-	return 0;
+	return Efallthrough;
 }
 
 void edlib_init(struct pane *ed safe)

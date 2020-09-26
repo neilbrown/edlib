@@ -146,7 +146,7 @@ try:
                 if self.term:
                     self.term.call("Window:set-noclose")
                 self.sock.send(b"Done")
-            return 0
+            return 1
 
         def handle_done(self, key, str, **a):
             "handle:doc:done"
@@ -160,7 +160,7 @@ try:
             if self.display_time == 0 or num > self.display_time:
                 self.destpane = focus
                 self.display_time = num
-            return 0
+            return 1
 
         def handle_close(self, key, **a):
             "handle:Close"

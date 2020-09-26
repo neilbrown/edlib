@@ -459,7 +459,7 @@ REDEF_CB(python_call)
 		return Efail;
 	}
 	if (ret == Py_None)
-		rv = 0;
+		rv = Efallthrough;
 	else if (PyLong_Check(ret))
 		rv = PyLong_AsLong(ret);
 	else if (PyBool_Check(ret))

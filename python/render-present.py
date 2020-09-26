@@ -460,7 +460,7 @@ class PresenterPane(edlib.Pane):
         "handle:Notify:clip"
         self.clip(self.attrview, mark, mark2)
         self.clip(self.pageview, mark, mark2)
-        return 0
+        return edlib.Efallthrough
 
     def handle_render_prev(self, key, mark, num, **a):
         "handle:doc:render-line-prev"
@@ -647,7 +647,7 @@ class PresenterPane(edlib.Pane):
     def handle_clone(self, key, **a):
         "handle:Clone"
         # Need to create a new PresenterPane I guess, then recurse on children
-        return 0
+        return 1
 
     def handle_M_f(self, key, **a):
         "handle:K:A-f"
@@ -703,7 +703,7 @@ class MarkdownPane(edlib.Pane):
         # Refresh causes presentation page to recenter
         # page-down just moves down to start of next page.
         focus.call("doc:notify:doc:Recentre", mark)
-        return 0
+        return edlib.Efallthrough
 
     def handle_mvl(self, key, focus, mark, num, **a):
         "handle:Move-View-Large"
@@ -717,7 +717,7 @@ class MarkdownPane(edlib.Pane):
             if focus.call("doc:notify:doc:Recentre", m2, 3,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 return 1
-        return 0
+        return edlib.Efallthrough
 
 def present_attach(key, focus, comm2, **a):
     p = PresenterPane(focus)
@@ -740,7 +740,7 @@ def markdown_appeared(key, focus, **a):
     if n and n[-3:] == ".md":
         focus["view-cmd-P"] = "present"
         focus["view-default"] = "markdown"
-    return 0
+    return edlib.Efallthrough
 
 editor.call("global-set-command", "attach-markdown", markdown_attach)
 editor.call("global-set-command", "attach-present", present_attach)

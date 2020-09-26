@@ -130,14 +130,14 @@ DEF_CMD(ws_attrs)
 	struct ws_info *ws = ci->home->data;
 
 	if (!ci->str || !ci->mark)
-		return 0;
+		return Enoarg;
 	if (strcmp(ci->str, "start-of-line") == 0) {
 		if (ws->mymark)
 			mark_free(ws->mymark);
 		ws->mymark = NULL;
 		ws->mycol = 0;
 		choose_next(ci->focus, ci->mark, ws);
-		return 0;
+		return Efallthrough;
 	}
 	if (ci->mark == ws->mymark &&
 	    strcmp(ci->str, "render:whitespace") == 0) {
@@ -146,7 +146,7 @@ DEF_CMD(ws_attrs)
 		return comm_call(ci->comm2, "attr:callback", ci->focus, 1,
 				 ci->mark, s, 10);
 	}
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(ws_close)
@@ -171,7 +171,7 @@ DEF_CMD(ws_clone)
 	ws->warn_width = oldws->warn_width;
 	p = pane_register(ci->focus, 0, &whitespace_handle.c, ws);
 	pane_clone_children(ci->home, p);
-	return 0;
+	return 1;
 }
 
 DEF_CMD(whitespace_attach)

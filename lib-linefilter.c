@@ -397,11 +397,11 @@ DEF_CMD(filter_changed)
 DEF_CMD(filter_nomove)
 {
 	if (strcmp(ci->key, "Move-File") == 0)
-		return 0;
+		return Efallthrough;
 	if (strcmp(ci->key, "Move-to") == 0)
-		return 0;
+		return Efallthrough;
 	if (strcmp(ci->key, "Move-Line") == 0)
-		return 0;
+		return Efallthrough;
 	return 1;
 }
 
@@ -447,7 +447,7 @@ DEF_CMD(filter_eol)
 DEF_CMD(filter_damaged)
 {
 	pane_damaged(ci->home, DAMAGED_VIEW);
-	return 0;
+	return Efallthrough;
 }
 
 DEF_CMD(filter_attach);

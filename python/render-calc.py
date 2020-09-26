@@ -30,7 +30,7 @@ class CalcView(edlib.Pane):
             return 1
         if c == '>':
             return self.add_expr(focus, mark)
-        return 0
+        return edlib.Efallthrough
 
     def nextvar(self):
         # from 0 to 675 use 2 letters
@@ -172,11 +172,11 @@ def add_calc(key, focus, mark, **a):
 def calc_appeared(key, focus, **a):
     n = focus["filename"]
     if not n or n[-5:] != ".calc":
-        return 0
+        return edlib.Efallthrough
     m = edlib.Mark(focus)
     if m and focus.call("text-match", "\\? |.*calc-mode", m) > 0:
         focus["view-default"] = "view-calc"
-    return 0
+    return edlib.Efallthrough
 
 editor.call("global-set-command", "attach-view-calc", calc_view_attach)
 editor.call("global-load-module", "lib-calc")

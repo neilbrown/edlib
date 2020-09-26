@@ -87,7 +87,7 @@ class DiffPane(edlib.Pane):
         if str == "start-of-line":
             c = focus.following(mark)
             if c not in '-+':
-                return 0
+                return edlib.Efallthrough
 
             # check if we have highlighted the words
             m = focus.call("doc:vmark-get", self, self.viewnum, 3, mark, ret='mark2')
@@ -109,7 +109,7 @@ class DiffPane(edlib.Pane):
                           "fg:red-60,bg:magenta+90,bold", 10000, 2)
                 if st == 0:
                     self.handle_wordwise('auto', focus, mark)
-                return 0
+                return edlib.Efallthrough
 
             # Set attr for leading '+' with length 1 and high prio
             # Set attr for differing text with length LARGE and lower prio
@@ -120,7 +120,7 @@ class DiffPane(edlib.Pane):
                 comm2("attr:cb", focus, mark, "fg:red-60,bg:white,nobold", 1, 5)
                 comm2("attr:cb", focus, mark, "fg:red-60,bg:magenta+90,bold", 10000, 2)
 
-            return 0
+            return edlib.Efallthrough
         if str == "render:diff-same":
             w = str2.split()
             len = int(w[0])
@@ -129,7 +129,7 @@ class DiffPane(edlib.Pane):
                 comm2("attr:cb", focus, mark, "fg:green-60,bg:white,nobold", len, 3)
             else:
                 comm2("attr:cb", focus, mark, "fg:red-60,bg:white,nobold", len, 3)
-            return 0
+            return 1
 
     def handle_wordwise(self, key, focus, mark, **a):
         "handle:doc:cmd-w"
