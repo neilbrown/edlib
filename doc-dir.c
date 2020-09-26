@@ -553,12 +553,13 @@ static char *grname(int gid)
 	return last_name;
 }
 
-static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
+static const char *__dir_get_attr(struct pane *home safe, struct mark *m safe,
 				  const char *attr safe)
 
 {
-	struct dir_ent *de;
+	struct doc *d = home->data;
 	struct directory *dr = container_of(d, struct directory, doc);
+	struct dir_ent *de;
 
 	de = m->ref.d;
 	if (!de)
@@ -679,21 +680,20 @@ static const char *__dir_get_attr(struct doc *d safe, struct mark *m safe,
 		if (len <= 0 || len >= (int)sizeof(buf))
 			return "";
 		buf[len] = 0;
-		return strsave(d->home, buf);
+		return strsave(home, buf);
 	} else
 		return attr_find(de->attrs, attr);
 }
 
 DEF_CMD(dir_doc_get_attr)
 {
-	struct doc *d = ci->home->data;
 	struct mark *m = ci->mark;
 	const char *attr = ci->str;
 	const char *val;
 
 	if (!m || !attr)
 		return Enoarg;
-	val = __dir_get_attr(d, m, attr);
+	val = __dir_get_attr(ci->home, m, attr);
 
 	if (!val)
 		return Efallthrough;
@@ -712,7 +712,7 @@ DEF_CMD(dir_get_attr)
 	if (!attr)
 		return Enoarg;
 
-	if ((val = attr_find(d->home->attrs, attr)) != NULL)
+	if ((val = attr_find(ci->home->attrs, attr)) != NULL)
 		;
 	else if (strcmp(attr, "heading") == 0)
 		val = "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      Size   File Name</>";
