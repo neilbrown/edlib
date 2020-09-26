@@ -55,7 +55,7 @@ Core features
 - [ ] key_add_prefix() doesn't work if there is no punctuation.
 - [ ] send warning message when recursive notification is prohibited.
 - [ ] detect and limit recursion
-- [ ] Change naming from "Meta" to "Alt"
+- [X] Change naming from "Meta" to "Alt"
 - [ ] Make DEF_CB really different from DEF_CMD and ensure it is used properly.
 - [ ] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
       pointer separate to 'focus'?  Maybe panes could have optional
@@ -164,7 +164,7 @@ Module features
 - [ ] emacs highlight should get close notification from popup,
       instead of catching abort.
 - [ ] ask before killing modified buffer - or refuse without numeric prefix
-- [ ] maybe meta-, does c-x` if that is the recent search?
+- [ ] maybe alt-, does c-x` if that is the recent search?
 - [ ] Support write-file (providing a file name) - currently I only save
       to the file I loaded from.
 - [ ] Support include-file (C-x i) to load contents of a file at point.

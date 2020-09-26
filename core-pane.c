@@ -970,7 +970,7 @@ struct xy pane_scale(struct pane *p safe)
 	 * correctly sized text
 	 *
 	 */
-	char *scM = pane_attr_get(p, "scale:M");
+	char *scM = pane_attr_get(p, "scale:A");
 	char *sc;
 	struct xy xy;
 	int w,h;

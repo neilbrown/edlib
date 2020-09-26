@@ -8,10 +8,10 @@
  * document.  The underlying document is assumed to be one line
  * and this line can be replaced by various lines from the history document.
  * When a line is replaced, if it had been modified, it is saved first.
- * :M-p - replace current line with previous line from history, if there is one
- * :M-n - replace current line with next line from history.  If none, restore
+ * :A-p - replace current line with previous line from history, if there is one
+ * :A-n - replace current line with next line from history.  If none, restore
  *        saved line
- * :M-r - incremental search - later
+ * :A-r - incremental search - later
  * When a selection is committed, it is added to end of history.
  */
 
@@ -111,7 +111,7 @@ DEF_CMD(history_move)
 	struct history_info *hi = ci->home->data;
 	struct mark *m;
 	char *l, *e;
-	const char *suffix = ksuffix(ci, "K:M-");
+	const char *suffix = ksuffix(ci, "K:A-");
 
 	if (!hi->history || !ci->mark)
 		return 0;
@@ -307,8 +307,8 @@ void edlib_init(struct pane *ed safe)
 	key_add(history_map, "Free", &history_free);
 	key_add(history_map, "Notify:Close", &history_notify_close);
 	key_add(history_map, "doc:replaced", &history_notify_replace);
-	key_add(history_map, "K:M-p", &history_move);
-	key_add(history_map, "K:M-n", &history_move);
+	key_add(history_map, "K:A-p", &history_move);
+	key_add(history_map, "K:A-n", &history_move);
 	key_add(history_map, "history:save", &history_save);
 	key_add(history_map, "history:get-last", &history_hlast);
 }

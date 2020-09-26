@@ -1015,12 +1015,12 @@ static struct namelist {
 	{KEY_SRIGHT, ":S:Right"},
 	{KEY_BTAB, ":S:Tab"},
 
-	{ 01057, ":M:Prior"},
-	{ 01051, ":M:Next"},
-	{ 01072, ":M:Up"},
-	{ 01061, ":M:Down"},
-	{ 01042, ":M:Left"},
-	{ 01064, ":M:Right"},
+	{ 01057, ":A:Prior"},
+	{ 01051, ":A:Next"},
+	{ 01072, ":A:Up"},
+	{ 01061, ":A:Down"},
+	{ 01042, ":A:Left"},
+	{ 01064, ":A:Right"},
 	{ 00411, ":F1"},
 	{ 00412, ":F2"},
 	{ 00413, ":F3"},
@@ -1065,29 +1065,29 @@ static char *find_name (struct namelist *l safe, wint_t c)
 	return NULL;
 }
 
-static void send_key(int keytype, wint_t c, int meta, struct pane *p safe)
+static void send_key(int keytype, wint_t c, int alt, struct pane *p safe)
 {
 	struct display_data *dd = p->data;
 	char *n;
 	char buf[100];/* FIXME */
 	char t[5];
-	char *m = meta ? ":M" : "";
+	char *a = alt ? ":A" : "";
 
 	if (keytype == KEY_CODE_YES) {
 		n = find_name(key_names, c);
 		if (!n)
-			sprintf(buf, "%sNcurs-%o", m, c);
+			sprintf(buf, "%sNcurs-%o", a, c);
 		else
-			strcat(strcpy(buf, m), n);
+			strcat(strcpy(buf, a), n);
 	} else {
 		n = find_name(char_names, c);
 		if (n)
-			sprintf(buf, "%s%s", m, n);
+			sprintf(buf, "%s%s", a, n);
 		else if (c < ' ' || c == 0x7f)
 			sprintf(buf, "%s:C-%c",
-				m, c ^ 64);
+				a, c ^ 64);
 		else
-			sprintf(buf, "%s-%s", m, put_utf8(t, c));
+			sprintf(buf, "%s-%s", a, put_utf8(t, c));
 	}
 
 	dd->last_event = time(NULL);
@@ -1141,10 +1141,10 @@ static void send_mouse(MEVENT *mev safe, struct pane *p safe)
 		case 1: mod = ":S"; break;
 		case 2: mod = ":C"; break;
 		case 3: mod = ":C:S"; break;
-		case 4: mod = ":M"; break;
-		case 5: mod = ":M:S"; break;
-		case 6: mod = ":M:C"; break;
-		case 7: mod = ":M:C:S"; break;
+		case 4: mod = ":A"; break;
+		case 5: mod = ":A:S"; break;
+		case 6: mod = ":A:C"; break;
+		case 7: mod = ":A:C:S"; break;
 		}
 		if (BUTTON_PRESS(s, b))
 			action = "%s:Press-%d";

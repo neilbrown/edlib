@@ -650,7 +650,7 @@ class PresenterPane(edlib.Pane):
         return 0
 
     def handle_M_f(self, key, **a):
-        "handle:K:M-f"
+        "handle:K:A-f"
         if self.borderless:
             self.call("Window:border", 1)
             self.call("Display:border", 1)

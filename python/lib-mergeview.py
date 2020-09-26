@@ -68,7 +68,7 @@ class MergePane(edlib.Pane):
         return 1
 
     def handle_alt_m(self, key, focus, mark, **a):
-        "handle:K:M-m"
+        "handle:K:A-m"
 
         if self.marks:
             focus.call("doc:set-attr", "render:merge-same",
@@ -204,7 +204,7 @@ def add_merge(key, focus, mark, **a):
         v = 'merge'
     focus.call("doc:set:view-default", v)
     if mark:
-        p.call("K:M-m", focus, mark)
+        p.call("K:A-m", focus, mark)
     return 1
 
 editor.call("global-set-command", "attach-merge", merge_view_attach)

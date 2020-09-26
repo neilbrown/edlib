@@ -171,12 +171,12 @@ static const char *safe ctrl_map[][2] = {
 	{ ":LF",	":C-J" },
 	{ ":TAB",	":C-I" },
 	{ ":DELETE",	":C-?" },
-	{ ":M:Backspace",":M:C-H" },
-	{ ":M:Enter",	":M:C-M" },
-	{ ":M:ESC",	":M:C-[" },
-	{ ":M:LF",	":M:C-J" },
-	{ ":M:TAB",	":M:C-I" },
-	{ ":M:DELETE",	":M:C-?" },
+	{ ":A:Backspace",":A:C-H" },
+	{ ":A:Enter",	":A:C-M" },
+	{ ":A:ESC",	":A:C-[" },
+	{ ":A:LF",	":A:C-J" },
+	{ ":A:TAB",	":A:C-I" },
+	{ ":A:DELETE",	":A:C-?" },
 };
 
 static const char *map_key(const char *key safe)
@@ -258,7 +258,7 @@ DEF_CMD(mouse_event)
 	unsigned int b;
 	int press;
 	const char *mode;
-	const char *mod = ci->str2; /* :M:C:S modifiers - optional */
+	const char *mod = ci->str2; /* :A:C:S modifiers - optional */
 	struct mouse_state *ms = NULL;
 
 	clock_gettime(CLOCK_MONOTONIC, &now);

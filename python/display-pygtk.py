@@ -27,7 +27,7 @@ class EdDisplay(edlib.Pane):
         self.win.set_title("EDLIB")
         self.win.connect('destroy', self.close_win)
         self.create_ui()
-        self["scale:M"] = "%dx%d" % (self.charwidth, self.lineheight)
+        self["scale:A"] = "%dx%d" % (self.charwidth, self.lineheight)
         self.w = int(self.charwidth * 80.0)
         self.h = int(self.lineheight * 24.0)
         self.call("editor:request:all-displays")
@@ -507,7 +507,7 @@ class EdDisplay(edlib.Pane):
         if event.state & Gdk.ModifierType.CONTROL_MASK:
             mod = ":C" + mod
         if event.state & Gdk.ModifierType.MOD1_MASK:
-            mod = ":M" + mod
+            mod = ":A" + mod
         self.last_event = int(time.time())
         self.call("Mouse-event", mod+s, mod, (x,y),
                   event.button, 1)
@@ -551,7 +551,7 @@ class EdDisplay(edlib.Pane):
         if event.state & Gdk.ModifierType.CONTROL_MASK:
             s = ":C" + s
         if event.state & Gdk.ModifierType.MOD1_MASK:
-            s = ":M" + s
+            s = ":A" + s
         self.call("Mouse-event", s, (x,y), b, 1)
         edlib.time_stop(edlib.TIME_KEY)
 
@@ -600,7 +600,7 @@ class EdDisplay(edlib.Pane):
 
         p = ""
         if event.state & Gdk.ModifierType.MOD1_MASK:
-            p = ":M"
+            p = ":A"
         kv = Gdk.keyval_name(event.keyval)
         if kv in self.eventmap:
             if event.state & Gdk.ModifierType.CONTROL_MASK:

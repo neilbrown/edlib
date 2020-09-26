@@ -17,7 +17,7 @@
  *   :C-W - collect word from target and add to search string
  *   :C-C - collect char from target and add to search string.
  *   :C-R - search backwards.. tricky.
- *   :M-c - toggle case sensitivity (currently invisible)
+ *   :A-c - toggle case sensitivity (currently invisible)
  *
  */
 
@@ -248,7 +248,7 @@ DEF_CMD(search_insert_meta)
 	 */
 	char *bracket;
 	const char *brackets = "{}()[]";
-	const char *k = ksuffix(ci, "K:M-");
+	const char *k = ksuffix(ci, "K:A-");
 
 	if (strchr(must_quote, *k) == NULL || !ci->mark)
 		return 0;
@@ -450,7 +450,7 @@ DEF_CMD(search_replace)
 	esi->replace_pane = p;
 	if (p)
 		home_call(esi->target, "highlight:set-popup", p, 1);
-	if (strcmp(ci->key, "K:M-%") == 0)
+	if (strcmp(ci->key, "K:A-%") == 0)
 		pane_focus(ci->focus);
 	else
 		pane_focus(p);
@@ -600,11 +600,11 @@ static void emacs_search_init_map(void)
 	key_add(es_map, "Notify:clip", &search_clip);
 	key_add(es_map, "K:C-L", &search_recentre);
 	key_add_range(es_map, "doc:char- ", "doc:char-~", &search_insert_quoted);
-	key_add_range(es_map, "K:M- ", "K:M-~", &search_insert_meta);
-	key_add(es_map, "K:M-c", &search_toggle_ci);
-	key_add(es_map, "K:M-r", &search_replace);
+	key_add_range(es_map, "K:A- ", "K:A-~", &search_insert_meta);
+	key_add(es_map, "K:A-c", &search_toggle_ci);
+	key_add(es_map, "K:A-r", &search_replace);
 	key_add(es_map, "K:S:Tab", &search_replace);
-	key_add(es_map, "K:M-%", &search_replace);
+	key_add(es_map, "K:A-%", &search_replace);
 	key_add(es_map, "K:ESC", &search_escape);
 
 	key_add(es_map, "search:replace", &do_replace);
@@ -612,9 +612,9 @@ static void emacs_search_init_map(void)
 	/* keys for the 'replace' pane */
 	er_map = key_alloc();
 	key_add(er_map, "K:Enter", &replace_request_next);
-	key_add(er_map, "K:M:Enter", &replace_request);
+	key_add(er_map, "K:A:Enter", &replace_request);
 	key_add(er_map, "K:S:Tab", &replace_to_search);
-	key_add(er_map, "K:M-!", &replace_all);
+	key_add(er_map, "K:A-!", &replace_all);
 	key_add(er_map, "K:C-S", &replace_forward);
 	key_add(er_map, "K:C-R", &replace_forward);
 	key_add(er_map, "K:C-L", &replace_forward);
@@ -655,7 +655,7 @@ DEF_CMD(emacs_search)
 		comm_call(ci->comm2, "callback:attach", p);
 
 		if (ci->num & 2)
-			call("K:M-%", p);
+			call("K:A-%", p);
 	}
 	return 1;
 }

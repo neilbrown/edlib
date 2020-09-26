@@ -59,7 +59,7 @@ class DiffPane(edlib.Pane):
         self.call("doc:del-view", self.viewnum)
 
     def handle_next(self, key, focus, mark, **a):
-        "handle-list/K:M-p/K:Prior"
+        "handle-list/K:A-p/K:Prior"
         # Find previous diff hunk
         edlib.LOG("prev")
         try:
@@ -71,7 +71,7 @@ class DiffPane(edlib.Pane):
         return 1
 
     def handle_prev(self, key, focus, mark, **a):
-        "handle-list/K:M-n/K:Next"
+        "handle-list/K:A-n/K:Next"
         # Find previous diff hunk
         try:
             focus.call("text-search", 0, 0, "^([^-+]|$)", mark)

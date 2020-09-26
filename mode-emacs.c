@@ -118,21 +118,21 @@ static struct move_command {
 	{CMD(emacs_move), "Move-Char", -1, 0,
 	 "K:C-B", "K:Left", NULL},
 	{CMD(emacs_move), "Move-Word", 1, 0,
-	 "K:M-f", "K:M:Right", NULL},
+	 "K:A-f", "K:A:Right", NULL},
 	{CMD(emacs_move), "Move-Word", -1, 0,
-	 "K:M-b", "K:M:Left", NULL},
+	 "K:A-b", "K:A:Left", NULL},
 	{CMD(emacs_move), "Move-Expr", 1, 0,
-	 "K:M:C-F", NULL, NULL},
+	 "K:A:C-F", NULL, NULL},
 	{CMD(emacs_move), "Move-Expr", -1, 0,
-	 "K:M:C-B", NULL, NULL},
+	 "K:A:C-B", NULL, NULL},
 	{CMD(emacs_move), "Move-Expr", -1, 1,
-	 "K:M:C-U", NULL, NULL},
+	 "K:A:C-U", NULL, NULL},
 	{CMD(emacs_move), "Move-Expr", 1, 1,
-	 "K:M:C-D", NULL, NULL},
+	 "K:A:C-D", NULL, NULL},
 	{CMD(emacs_move), "Move-WORD", 1, 0,
-	 "K:M-F", NULL, NULL},
+	 "K:A-F", NULL, NULL},
 	{CMD(emacs_move), "Move-WORD", -1, 0,
-	 "K:M-B", NULL, NULL},
+	 "K:A-B", NULL, NULL},
 	{CMD(emacs_move), "Move-EOL", 1, 0,
 	 "K:C-E", "K:End", NULL},
 	{CMD(emacs_move), "Move-EOL", -1, 0,
@@ -142,47 +142,47 @@ static struct move_command {
 	{CMD(emacs_move), "Move-Line", 1, 0,
 	 "K:C-N", "K:Down", NULL},
 	{CMD(emacs_move), "Move-File", 1, 0,
-	 "K:M->", "K:S:End", NULL},
+	 "K:A->", "K:S:End", NULL},
 	{CMD(emacs_move), "Move-File", -1, 0,
-	 "K:M-<", "K:S:Home", NULL},
+	 "K:A-<", "K:S:Home", NULL},
 	{CMD(emacs_move), "Move-View-Large", 1, 0,
 	 "K:Next", "K:C-V", "emacs-move-large-other"},
 	{CMD(emacs_move), "Move-View-Large", -1, 0,
-	 "K:Prior", "K:M-v", NULL},
+	 "K:Prior", "K:A-v", NULL},
 
 	{CMD(emacs_move), "Move-Paragraph", -1, 0,
-	 "K:M:C-A", NULL, NULL},
+	 "K:A:C-A", NULL, NULL},
 	{CMD(emacs_move), "Move-Paragraph", 1, 0,
-	 "K:M:C-E", NULL, NULL},
+	 "K:A:C-E", NULL, NULL},
 
 	{CMD(emacs_delete), "Move-Char", 1, 0,
 	 "K:C-D", "K:Del", "del"},
 	{CMD(emacs_delete), "Move-Char", -1, 0,
 	 "K:C-H", "K:Backspace", "K:Delete"},
 	{CMD(emacs_delete), "Move-Word", 1, 0,
-	 "K:M-d", NULL, NULL},
+	 "K:A-d", NULL, NULL},
 	{CMD(emacs_delete), "Move-Word", -1, 0,
-	 "K:M:C-H", "K:M:Backspace", NULL},
+	 "K:A:C-H", "K:A:Backspace", NULL},
 	{CMD(emacs_kill), "Move-EOL", 1, 0,
 	 "K:C-K", NULL, NULL},
 	{CMD(emacs_kill), "Move-Expr", 1, 0,
-	 "K:M:C-K", NULL, NULL},
+	 "K:A:C-K", NULL, NULL},
 
 	{CMD(emacs_case), "LMove-Word", 1, 0,
-	 "K:M-l", NULL, NULL},
+	 "K:A-l", NULL, NULL},
 	{CMD(emacs_case), "UMove-Word", 1, 0,
-	 "K:M-u", NULL, NULL},
+	 "K:A-u", NULL, NULL},
 	{CMD(emacs_case), "CMove-Word", 1, 0,
-	 "K:M-c", NULL, NULL},
+	 "K:A-c", NULL, NULL},
 	{CMD(emacs_case), "TMove-Char", 1, 0,
-	 "K:M-`", NULL, NULL},
+	 "K:A-`", NULL, NULL},
 
 	{CMD(emacs_swap), "Move-Char", 1, 0,
 	 "K:C-T", NULL, NULL},
 	{CMD(emacs_swap), "Move-Word", 1, 0,
-	 "K:M-t", NULL, NULL},
+	 "K:A-t", NULL, NULL},
 	{CMD(emacs_swap), "Move-WORD", 1, 0,
-	 "K:M-T", NULL, NULL},
+	 "K:A-T", NULL, NULL},
 };
 
 REDEF_CMD(emacs_move)
@@ -528,20 +528,20 @@ static struct simple_command {
 	{CMD(emacs_simple), "Window:close", "K:CX-0"},
 	{CMD(emacs_simple), "Window:scale-relative", "K:CX:C-="},
 	{CMD(emacs_simple_neg), "Window:scale-relative", "K:CX:C--"},
-	{CMD(emacs_simple), "Window:bury", "K:M-B"},
+	{CMD(emacs_simple), "Window:bury", "K:A-B"},
 	{CMD(emacs_simple), "Display:new", "K:CX5-2"},
 	{CMD(emacs_simple), "Display:close", "K:CX5-0"},
 	{CMD(emacs_simple), "lib-server:done", "K:CX-#"},
 	{CMD(emacs_simple), "Abort", "K:C-G"},
-	{CMD(emacs_simple), "NOP", "K:M-G"},
+	{CMD(emacs_simple), "NOP", "K:A-G"},
 	{CMD(emacs_simple), "NOP", "K:CX:C-G"},
 	{CMD(emacs_simple), "NOP", "K:CX4:C-G"},
 	{CMD(emacs_simple), "doc:save-file", "K:CX:C-S"},
 	/* one day, this will be "find definition", now it is same as "find any" */
-	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "K:CX:M-."},
-	{CMD(emacs_simple_str), "interactive-cmd-git-grep", "K:M-."},
-	{CMD(emacs_simple), "interactive-cmd-merge-mode", "K:M-m"},
-	{CMD(emacs_simple_str), "interactive-cmd-calc-replace", "K:M-#"},
+	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "K:CX:A-."},
+	{CMD(emacs_simple_str), "interactive-cmd-git-grep", "K:A-."},
+	{CMD(emacs_simple), "interactive-cmd-merge-mode", "K:A-m"},
+	{CMD(emacs_simple_str), "interactive-cmd-calc-replace", "K:A-#"},
 };
 
 REDEF_CMD(emacs_simple)
@@ -907,7 +907,7 @@ DEF_CMD(find_prevnext)
 	h.name = attr_find(ci->home->attrs, "find-doc");
 	h.ret = NULL;
 	h.c = find_helper;
-	h.want_prev = strcmp(ci->key, "K:M-n") == 0;
+	h.want_prev = strcmp(ci->key, "K:A-n") == 0;
 
 	call_comm("docs:byeach", ci->focus, &h.c);
 	if (h.ret) {
@@ -937,9 +937,9 @@ static void findmap_init(void)
 	fh_map = key_alloc();
 	key_add(fh_map, "K:Tab", &find_complete);
 	key_add(fh_map, "K:Enter", &find_done);
-	key_add(fh_map, "K:M:Enter", &find_done);
-	key_add(fh_map, "K:M-p", &find_prevnext);
-	key_add(fh_map, "K:M-n", &find_prevnext);
+	key_add(fh_map, "K:A:Enter", &find_done);
+	key_add(fh_map, "K:A-p", &find_prevnext);
+	key_add(fh_map, "K:A-n", &find_prevnext);
 }
 
 static const char * safe file_normalize(struct pane *p safe,
@@ -1351,7 +1351,7 @@ DEF_CMD(emacs_shell)
 DEF_CMD(emacs_num)
 {
 	int rpt = ci->num;
-	const char *last = ksuffix(ci, "K:M-");
+	const char *last = ksuffix(ci, "K:A-");
 	int neg = 0;
 
 	if (rpt < 0) {
@@ -1469,7 +1469,7 @@ DEF_CMD(emacs_start_search)
 	call("doc:set-name", p, 0, NULL, "Search", -1);
 	if (strcmp(ci->key, "K:C-R") == 0)
 		mode |= 1;
-	if (strcmp(ci->key, "K:M-%") == 0)
+	if (strcmp(ci->key, "K:A-%") == 0)
 		mode |= 2;
 	call_ret(pane, "attach-emacs-search", p, mode);
 
@@ -1485,7 +1485,7 @@ DEF_CMD(emacs_command)
 		return 0;
 	attr_set_str(&p->attrs, "prompt", "Cmd");
 	attr_set_str(&p->attrs, "done-key", "emacs:command");
-	call("doc:set-name", p, 0, NULL, "K:Mx command", -1);
+	call("doc:set-name", p, 0, NULL, "K:Ax command", -1);
 	p = call_ret(pane, "attach-history", p, 0, NULL, "*Command History*",
 		     0, NULL, "popup:close");
 	pane_register(p, 0, &find_handle.c, "cmd");
@@ -2083,7 +2083,7 @@ DEF_CMD(emacs_fill)
 	if (!clear_selection(ci->focus, p, mk, 0))
 		mk = NULL;
 
-	if (strcmp(ci->key, "K:M-q") == 0) {
+	if (strcmp(ci->key, "K:A-q") == 0) {
 		if (call("fill-paragraph", ci->focus, ci->num, p, NULL,
 			 0, mk) == 0) {
 			p2 = call_ret(pane, "attach-textfill", ci->focus);
@@ -2280,7 +2280,7 @@ again:
 	return 1;
 }
 
-DEF_PFX_CMD(meta_cmd, ":M");
+DEF_PFX_CMD(alt_cmd, ":A");
 DEF_PFX_CMD(cx_cmd, ":CX");
 DEF_PFX_CMD(cx4_cmd, ":CX4");
 DEF_PFX_CMD(cx5_cmd, ":CX5");
@@ -2297,7 +2297,7 @@ static void emacs_init(void)
 	if (emacs_map)
 		return;
 	m = key_alloc();
-	key_add(m, "K:ESC", &meta_cmd.c);
+	key_add(m, "K:ESC", &alt_cmd.c);
 	key_add(m, "K:C-X", &cx_cmd.c);
 	key_add(m, "K:CX-4", &cx4_cmd.c);
 	/* C-\ is generated by C-4.  Weird... */
@@ -2360,18 +2360,18 @@ static void emacs_init(void)
 	key_add(m, "K:CX:C-V", &emacs_revisit);
 
 	key_add(m, "K:CX-=", &emacs_curs_pos);
-	key_add(m, "K:M-=", &emacs_word_count);
+	key_add(m, "K:A-=", &emacs_word_count);
 
 	key_add(m, "K:C-S", &emacs_start_search);
 	key_add(m, "K:C-R", &emacs_start_search);
-	key_add(m, "K:M-%", &emacs_start_search);
+	key_add(m, "K:A-%", &emacs_start_search);
 	key_add(m, "render:reposition", &emacs_reposition);
 
 	key_add(m, "K:CX:C-C", &emacs_exit);
 
 	key_add(m, "K:C-U", &emacs_prefix);
 
-	key_add(m, "K:M-!", &emacs_shell);
+	key_add(m, "K:A-!", &emacs_shell);
 	key_add(m, "Shell Command", &emacs_shell);
 
 	key_add(m, "K:CX-`", &emacs_next_match);
@@ -2380,35 +2380,35 @@ static void emacs_init(void)
 	key_add(m, "K:CX-1", &emacs_close_others);
 	key_add(m, "K-1", &emacs_close_others);
 
-	key_add_range(m, "K:M-0", "K:M-9", &emacs_num);
-	key_add(m, "K:M--", &emacs_neg);
+	key_add_range(m, "K:A-0", "K:A-9", &emacs_num);
+	key_add(m, "K:A--", &emacs_neg);
 	key_add(m, "K:C--", &emacs_neg);
 	key_add(m, "K:C- ", &emacs_mark);
 	key_add(m, "mode-set-mark", &emacs_mark);
 	key_add(m, "K:CX:C-X", &emacs_swap_mark);
 	key_add(m, "Abort", &emacs_abort);
 	key_add(m, "K:C-W", &emacs_wipe);
-	key_add(m, "K:M-w", &emacs_copy);
+	key_add(m, "K:A-w", &emacs_copy);
 	key_add(m, "K:C-Y", &emacs_yank);
-	key_add(m, "K:M-y", &emacs_yank_pop);
+	key_add(m, "K:A-y", &emacs_yank_pop);
 	key_add(m, "map-attr", &emacs_attrs);
 
-	key_add(m, "K:M-g", &emacs_goto_line);
-	key_add(m, "K:M-x", &emacs_command);
+	key_add(m, "K:A-g", &emacs_goto_line);
+	key_add(m, "K:A-x", &emacs_command);
 	key_add(m, "K:CC-m", &emacs_make);
 	key_add(m, "K:CC:C-M", &emacs_make);
 
-	key_add(m, "K:M:C-V", &emacs_move_view_other);
+	key_add(m, "K:A:C-V", &emacs_move_view_other);
 
 	key_add(m, "K:CX:C-Q", &emacs_readonly);
 
 	key_add_prefix(m, "K:CQ-", &emacs_quote_insert);
 	key_add_prefix(m, "K:CQ:C-", &emacs_quote_insert);
 
-	key_add(m, "K:M-q", &emacs_fill);
-	key_add(m, "K:M:C-Q", &emacs_fill);
-	key_add(m, "K:M-/", &emacs_abbrev);
-	key_add(m, "K:M-;", &emacs_spell);
+	key_add(m, "K:A-q", &emacs_fill);
+	key_add(m, "K:A:C-Q", &emacs_fill);
+	key_add(m, "K:A-/", &emacs_abbrev);
+	key_add(m, "K:A-;", &emacs_spell);
 
 	key_add(m, "K:Help-l", &emacs_showinput);
 

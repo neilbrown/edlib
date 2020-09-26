@@ -15,14 +15,14 @@ class CalcView(edlib.Pane):
                                  ret='comm')
 
     def handle_enter(self, key, focus, mark, **a):
-        "handle-list/K:Enter/K:M:Enter"
+        "handle-list/K:Enter/K:A:Enter"
         if not mark:
             return edlib.Enoarg
         m = mark.dup()
         focus.call("Move-EOL", -1, m)
         c = focus.following(m)
         if c == '?':
-            if key == "K:M:Enter":
+            if key == "K:A:Enter":
                 while self.calc(focus,mark):
                     pass
             else:

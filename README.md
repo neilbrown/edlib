@@ -556,7 +556,7 @@ and this is sent as a command to the focus.  The command includes the
 repeat count, which gets cleared.
 
 Commands are provided to set a new prefix or repeat count.  So for
-example “Meta-1” might multiply the repeat count in the command by 10,
+example “Alt-1” might multiply the repeat count in the command by 10,
 add 1, and then ask “input” to set that as the new repeat count for
 the next keystroke.
 
