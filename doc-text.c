@@ -1799,7 +1799,7 @@ DEF_CMD(text_set_ref)
 
 	if (!m)
 		return Enoarg;
-	mark_to_end(d, m, ci->num != 1);
+	mark_to_end(ci->home, m, ci->num != 1);
 	if (list_empty(&t->text) || ci->num != 1) {
 		m->ref.c = NULL;
 		m->ref.o = 0;

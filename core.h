@@ -211,7 +211,7 @@ struct mark *mark_first(struct doc *d safe);
 struct mark *mark_next(struct mark *m safe);
 struct mark *mark_prev(struct mark *m safe);
 void mark_reset(struct pane *p safe, struct mark *m safe, int end);
-void mark_to_end(struct doc *d safe, struct mark *m safe, int end);
+void mark_to_end(struct pane *p safe, struct mark *m safe, int end);
 void doc_check_consistent(struct doc *d safe);
 void mark_to_mark(struct mark *m safe, struct mark *target safe);
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe);

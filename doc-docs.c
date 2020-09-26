@@ -501,7 +501,7 @@ DEF_CMD(docs_set_ref)
 	if (!m)
 		return Enoarg;
 
-	mark_to_end(dc, m, ci->num != 1);
+	mark_to_end(ci->home, m, ci->num != 1);
 	if (ci->num == 1 && !list_empty(&d->collection->children))
 		m->ref.p = list_first_entry(&d->collection->children,
 					    struct pane, siblings);

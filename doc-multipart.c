@@ -243,7 +243,7 @@ DEF_CMD(mp_set_ref)
 		/* First time set-ref was called */
 		pre_move(ci->mark);
 		change_part(mpi, ci->mark, 0, 0);
-		mark_to_end(&mpi->doc, ci->mark, 0);
+		mark_to_end(ci->home, ci->mark, 0);
 		post_move(ci->mark);
 	}
 	pre_move(ci->mark);

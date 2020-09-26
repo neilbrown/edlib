@@ -432,7 +432,7 @@ DEF_CMD(dir_set_ref)
 	if (!m)
 		return Enoarg;
 
-	mark_to_end(d, m, ci->num != 1);
+	mark_to_end(ci->home, m, ci->num != 1);
 	if (list_empty(&dr->ents) || ci->num != 1)
 		m->ref.d = NULL;
 	else

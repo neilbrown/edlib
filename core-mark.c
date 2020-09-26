@@ -313,9 +313,9 @@ void mark_ack(struct mark *m)
 	}
 }
 
-
-void mark_to_end(struct doc *d safe, struct mark *m safe, int end)
+void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
 {
+	struct doc *d = p->data;
 	int i;
 	int seq = 0;
 	struct point_links *lnk;

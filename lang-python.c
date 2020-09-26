@@ -1572,7 +1572,7 @@ static PyObject *to_end(Doc *self safe, PyObject *args)
 		return NULL;
 	}
 
-	mark_to_end(&self->doc, mark->mark, end);
+	mark_to_end(self->pane, mark->mark, end);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
