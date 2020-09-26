@@ -191,7 +191,7 @@ struct mark {
 	MARK_DATA_PTR		*mdata;
 	void			*mtype;	/* can be used to validate
 					 * type of mdata */
-	struct doc		*owner safe;
+	struct pane		*owner safe;
 };
 
 /* A point uses this for the mdata */

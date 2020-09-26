@@ -1601,17 +1601,20 @@ static PyTypeObject DocType = {
 
 static PyObject *mark_getoffset(Mark *m safe, void *x)
 {
+	struct doc *d;
 	if (m->mark == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	if (m->mark->owner->refcnt == mark_refcnt)
+	d = m->mark->owner->data;
+	if (d->refcnt == mark_refcnt)
 		return PyLong_FromLong(m->mark->ref.o);
 	return PyLong_FromLong(0);
 }
 
 static int mark_setoffset(Mark *m safe, PyObject *v safe, void *x)
 {
+	struct doc *d;
 	long val;
 
 	if (m->mark == NULL) {
@@ -1621,7 +1624,8 @@ static int mark_setoffset(Mark *m safe, PyObject *v safe, void *x)
 	val = PyLong_AsLong(v);
 	if (val == -1 && PyErr_Occurred())
 		return -1;
-	if (m->mark->owner->refcnt == mark_refcnt)
+	d = m->mark->owner->data;
+	if (d->refcnt == mark_refcnt)
 		m->mark->ref.o = val;
 	else {
 		PyErr_SetString(PyExc_TypeError, "Setting offset on non-local mark");
@@ -1661,11 +1665,13 @@ static void mark_refcnt(struct mark *m safe, int inc)
 
 static PyObject *mark_getpos(Mark *m safe, void *x)
 {
+	struct doc *d;
 	if (m->mark == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
-	if (m->mark->owner->refcnt == mark_refcnt && m->mark->ref.c) {
+	d = m->mark->owner->data;
+	if (d->refcnt == mark_refcnt && m->mark->ref.c) {
 		Py_INCREF(m->mark->ref.c);
 		return m->mark->ref.c;
 	} else {
@@ -1677,30 +1683,34 @@ static PyObject *mark_getpos(Mark *m safe, void *x)
 static int mark_setpos(Mark *m safe, PyObject *v, void *x)
 {
 	struct mark *m2;
+	struct doc *d;
+
 	if (m->mark == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return -1;
 	}
-	if (m->mark->owner->refcnt != mark_refcnt) {
-		PyErr_SetString(PyExc_TypeError, "Not set ref for non-local mark");
+	d = m->mark->owner->data;
+	if (d->refcnt != mark_refcnt) {
+		PyErr_SetString(PyExc_TypeError, "Cannot set ref for non-local mark");
 		return -1;
 	}
-	m->mark->owner->refcnt(m->mark, -1);
+	d->refcnt(m->mark, -1);
 	/* If an adjacent mark has a ref.c with a matching value
 	 * use that instead, so that mark_same() works.
 	 */
-	m2 = mark_next(m->mark);
-	if (m2 && m2->owner->refcnt == mark_refcnt && m2->ref.c != NULL &&
+	if ((m2 = mark_next(m->mark)) != NULL &&
+	    ((struct doc *safe)m2->owner->data)->refcnt == mark_refcnt &&
+	    m2->ref.c != NULL &&
 	    PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
 		m->mark->ref.c = m2->ref.c;
 	else if ((m2 = mark_prev(m->mark)) != NULL &&
-		 m2->owner->refcnt == mark_refcnt &&
+		 ((struct doc *safe)m2->owner->data)->refcnt == mark_refcnt &&
 		 m2->ref.c != NULL &&
 		 PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
 		m->mark->ref.c = m2->ref.c;
 	else
 		m->mark->ref.c = v;
-	m->mark->owner->refcnt(m->mark, 1);
+	d->refcnt(m->mark, 1);
 	return 0;
 }
 

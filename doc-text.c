@@ -1579,7 +1579,7 @@ DEF_CMD(text_step)
 	if (!m)
 		return Enoarg;
 
-	ASSERT(m->owner == d);
+	ASSERT(m->owner == ci->home);
 
 	r = m->ref;
 	if (forward)
@@ -1608,7 +1608,7 @@ DEF_CMD(text_step_bytes)
 	if (!m)
 		return Enoarg;
 
-	ASSERT(m->owner == d);
+	ASSERT(m->owner == ci->home);
 
 	r = m->ref;
 	if (forward)

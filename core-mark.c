@@ -128,9 +128,17 @@ void __mark_free(struct mark *m)
 	unalloc(m, mark);
 }
 
+static void mark_refcnt(struct mark *m safe, int inc)
+{
+	struct doc *d = m->owner->data;
+
+	if (d->refcnt)
+		d->refcnt(m, inc);
+}
+
 void mark_free(struct mark *m)
 {
-	struct doc *owner;
+	struct pane *owner;
 
 	/* mark might have already been freed by the
 	 * pane getting closed.
@@ -141,8 +149,7 @@ void mark_free(struct mark *m)
 		point_free(m);
 	ASSERT(m->mdata == NULL);
 	mark_delete(m);
-	if (m->owner->refcnt)
-		m->owner->refcnt(m, -1);
+	mark_refcnt(m, -1);
 	owner = m->owner;
 	memset(m, 0xff, sizeof(*m));
 	m->owner = owner;
@@ -160,11 +167,9 @@ static void mark_ref_copy(struct mark *to safe, struct mark *from safe)
 	if (to->ref.p == from->ref.p &&
 	    to->ref.i == from->ref.i)
 		return;
-	if (to->owner->refcnt)
-		to->owner->refcnt(to, -1);
+	mark_refcnt(to, -1);
 	to->ref = from->ref;
-	if (to->owner->refcnt)
-		to->owner->refcnt(to, 1);
+	mark_refcnt(to, 1);
 }
 
 static void dup_mark(struct mark *orig safe, struct mark *new safe)
@@ -302,7 +307,7 @@ void notify_point_moving(struct mark *m safe)
 	if (plnk->moved)
 		return;
 	plnk->moved = 1;
-	pane_notify("point:moving", m->owner->home, 0, m);
+	pane_notify("point:moving", m->owner, 0, m);
 }
 
 void mark_ack(struct mark *m)
@@ -320,7 +325,7 @@ void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
 	int seq = 0;
 	struct point_links *lnk;
 
-	ASSERT(m->owner == d);
+	ASSERT(m->owner == p);
 	notify_point_moving(m);
 
 	hlist_del(&m->all);
@@ -373,8 +378,8 @@ void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
 
 void mark_reset(struct pane *p safe, struct mark *m safe, int end)
 {
-	ASSERT((void*)m->owner == NULL || m->owner == p->data);
-	m->owner = p->data;
+	ASSERT((void*)m->owner == NULL || m->owner == p);
+	m->owner = p;
 	pane_call(p, "doc:set-ref", p, !end, m);
 }
 
@@ -602,7 +607,7 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 	}
 	if (a != b) {
 		call("editor:notify:Message:broadcast",
-		     m->owner->home, 0, NULL,
+		     m->owner, 0, NULL,
 		     "WARNING marks inconsistent - see log");
 		return;
 	}
@@ -933,7 +938,7 @@ struct mark *do_vmark_at_point(struct doc *d safe,
 	struct mark *m;
 	struct point_links *lnk = safe_cast pt->mdata;
 
-	if (pt->owner != d) {
+	if (pt->owner->data != d) {
 		LOG("vmark_to_point called with incorrect owner");
 		return NULL;
 	}
@@ -964,7 +969,7 @@ struct mark *do_vmark_at_or_before(struct doc *d safe,
 	 */
 	struct mark *vm = m;
 
-	if (m->owner != d) {
+	if (m->owner->data != d) {
 		LOG("vmark_at_or_before called with incorrect mark");
 		return NULL;
 	}
@@ -1054,7 +1059,7 @@ void doc_check_consistent(struct doc *d safe)
 
 	hlist_for_each_entry(m, &d->marks, all) {
 		ASSERT(m->seq >= seq);
-		ASSERT(m->owner == d);
+		ASSERT(m->owner->data == d);
 		seq = m->seq + 1;
 	}
 	for (i = 0; d->views && i < d->nviews; i++)

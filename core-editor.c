@@ -415,7 +415,7 @@ void editor_delayed_free(struct pane *ed safe, struct pane *p safe)
 
 void editor_delayed_mark_free(struct mark *m safe)
 {
-	struct pane *p = pane_root(m->owner->home);
+	struct pane *p = pane_root(m->owner);
 	struct ed_info *ei = p ? p->data : NULL;
 
 	if (!ei) {
