@@ -6,7 +6,7 @@
  * modules.
  */
 
-struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner);
+struct mark *doc_new_mark(struct pane *p safe, int view, struct pane *owner);
 struct mark *safe point_dup(struct mark *p safe);
 void points_resize(struct doc *d safe);
 void points_attach(struct doc *d safe, int view);

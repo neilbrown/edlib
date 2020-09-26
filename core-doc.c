@@ -633,7 +633,7 @@ DEF_CMD(doc_vmarkget)
 		m2 = do_vmark_at_point(ci->home->data, ci->mark,
 				       ci->num, ci->focus);
 	if (ci->num2 == 2)
-		m2 = doc_new_mark(ci->home->data, ci->num, ci->focus);
+		m2 = doc_new_mark(ci->home, ci->num, ci->focus);
 	if (ci->num2 == 3 && ci->mark)
 		m2 = do_vmark_at_or_before(ci->home->data, ci->mark,
 					   ci->num, ci->focus);

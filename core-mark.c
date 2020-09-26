@@ -399,10 +399,11 @@ struct mark *mark_prev(struct mark *m safe)
 	return NULL;
 }
 
-struct mark *doc_new_mark(struct doc *d safe, int view, struct pane *owner)
+struct mark *doc_new_mark(struct pane *p safe, int view, struct pane *owner)
 {
 	/* FIXME view is >= -1 */
 	struct mark *ret;
+	struct doc *d = p->data;
 
 	if (view >= d->nviews ||
 	    view < MARK_UNGROUPED ||
