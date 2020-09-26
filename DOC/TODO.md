@@ -520,7 +520,7 @@ Module features
 - [ ] command to add word to per-document list, or personal list
 
 ### calculator
-- [ ] names values are stored in the view pane, not the doc.
+- [X] names values are stored in the view pane, not the doc.
       Should I just move them to the doc?  Should I then cache them in the pane?
       attr lookup on a doc isn't optimized...
 - [ ] regression test

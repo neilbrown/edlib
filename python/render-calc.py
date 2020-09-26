@@ -9,7 +9,6 @@
 class CalcView(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
-        self.vars = {}
         self.varcnt = 0
         self.getvar = focus.call("make-search", "> ([a-z0-9]+) = ",
                                  edlib.RXL_ANCHORED|edlib.RXL_BACKTRACK,
@@ -47,7 +46,7 @@ class CalcView(edlib.Pane):
             while v:
                 nm = chr(97+v%26) + nm
                 v = int(v/26)
-            if nm in self.vars:
+            if self["V"+nm]:
                 # In use, try next one
                 nm = None
         return nm
@@ -98,7 +97,7 @@ class CalcView(edlib.Pane):
                 m = mark.dup()
             if not nm:
                 nm = self.nextvar()
-            self.vars[nm] = self.result
+            focus.call("doc:set:V"+nm, self.result)
             focus.call("doc:replace", "\n> %s = %s" %(nm, a), mark, m)
             mark.to_mark(m)
             c = focus.next(mark)
@@ -119,8 +118,9 @@ class CalcView(edlib.Pane):
 
     def take_result(self, key, focus, num, str, comm2, **a):
         if key == "get":
-            if str in self.vars and comm2:
-                comm2("cb", focus, self.vars[str])
+            val = self['V'+str]
+            if val and comm2:
+                comm2("cb", focus, val)
                 return 1
             return edlib.Efalse
         edlib.LOG(key, str)
