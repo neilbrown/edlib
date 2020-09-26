@@ -11,7 +11,9 @@ class CalcView(edlib.Pane):
         edlib.Pane.__init__(self, focus)
         self.vars = {}
         self.varcnt = 0
-        self.getvar = focus.call("make-search", "> ([a-z0-9]+) = ", 3, ret='comm')
+        self.getvar = focus.call("make-search", "> ([a-z0-9]+) = ",
+                                 edlib.RXL_ANCHORED|edlib.RXL_BACKTRACK,
+                                 ret='comm')
 
     def handle_enter(self, key, focus, mark, **a):
         "handle-list/K:Enter/K:M:Enter"
@@ -84,7 +86,8 @@ class CalcView(edlib.Pane):
             if c and c == '\n':
                 c = focus.following(m)
                 if c and c == '>':
-                    self.getvar("reinit", focus, 3)
+                    self.getvar("reinit", focus,
+                                edlib.RXL_ANCHORED | edlib.RXL_BACKTRACK)
                     focus.call("doc:content", m.dup(), self.getvar)
                     nm = self.getvar("interp", focus, "\\1", ret='str')
                     # replace this line

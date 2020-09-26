@@ -470,7 +470,7 @@ Module features
 - [ ] should Efallthrough be an exception?
 - [ ] Print error name when there is a python error
 - [ ] edlib.log can crash if there are '%' if the buffer.
-- [ ] expose rexel constants
+- [X] expose rexel constants
 - [ ] report error if release mark which isn't ours.
 - [X] create a library of support functions like doc_next, doc_prev etc.
 - [ ] Log loading of modules - Can I provide version info?

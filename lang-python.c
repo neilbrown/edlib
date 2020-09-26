@@ -57,6 +57,7 @@ struct doc_ref {
 };
 #include "core.h"
 #include "misc.h"
+#include "rexel.h"
 
 #define SAFE_CI {.key=safe_cast NULL,\
 		 .home=safe_cast NULL,\
@@ -2564,6 +2565,10 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, TIME_TIMER);
 	PyModule_AddIntMacro(m, TIME_IDLE);
 	PyModule_AddIntMacro(m, TIME_REFRESH);
+
+	PyModule_AddIntMacro(m, RXL_ANCHORED);
+	PyModule_AddIntMacro(m, RXL_BACKTRACK);
+
 
 	PyModule_AddIntConstant(m, "WEOF", 0x1FFFFF);
 	call_comm("global-set-command", ed, &python_load, 0, NULL, "python-load");
