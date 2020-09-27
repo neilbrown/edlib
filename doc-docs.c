@@ -810,8 +810,9 @@ static void docs_init_map(void)
 DEF_CB(docs_callback_lookup)
 {
 	struct docs *docs = container_of(ci->comm, struct docs, callback);
+	struct pane *home = docs->collection->data;
 
-	return do_call_val(TYPE_comm, docs->doc.home, &docs_callback_handle.c,
+	return do_call_val(TYPE_comm, home, &docs_callback_handle.c,
 			   ci->key, ci->focus,
 			   ci->num, ci->mark, ci->str,
 			   ci->num2, ci->mark2, ci->str2,
