@@ -146,7 +146,6 @@ struct doc {
 	} /* safe iff nviews > 0 */ *views;
 	int			nviews;
 	struct mark		*recent_points[8];
-	struct pane		*home safe; /* pane which owns this doc*/
 	void			(*refcnt)(struct mark *m safe, int cnt);
 	char			*name;
 	bool			autoclose;

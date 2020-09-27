@@ -58,7 +58,6 @@ static void doc_init(struct doc *d safe)
 	memset(d->recent_points, 0, sizeof(d->recent_points));
 	d->autoclose = 0;
 	d->readonly = 0;
-	d->home = safe_cast NULL;
 	d->refcnt = NULL;
 }
 
@@ -76,8 +75,6 @@ struct pane *__doc_register(struct pane *parent,
 		parent = pane_root(parent);
 	doc_init(doc);
 	p = __pane_register(parent, 0, handle, doc, data_size);
-	if (p)
-		doc->home = p;
 	return p;
 }
 
@@ -477,11 +474,11 @@ DEF_CMD(doc_set)
 	}
 	if (strcmp(val, "readonly") == 0) {
 		d->readonly = ci->num;
-		call("doc:notify:doc:status-changed", d->home);
+		call("doc:notify:doc:status-changed", ci->home);
 		return 1;
 	}
 	if (ci->str)
-		attr_set_str(&d->home->attrs, val, ci->str);
+		attr_set_str(&ci->home->attrs, val, ci->str);
 
 	return 1;
 }
@@ -495,7 +492,7 @@ DEF_CMD(doc_get_attr)
 	if (!ci->str)
 		return Enoarg;
 
-	if ((a = attr_find(d->home->attrs, ci->str)) != NULL)
+	if ((a = attr_find(ci->home->attrs, ci->str)) != NULL)
 		;
 	else if (strcmp(ci->str, "doc-name") == 0)
 		a = d->name;
@@ -505,7 +502,7 @@ DEF_CMD(doc_get_attr)
 		a = d->readonly ? "yes":"no";
 	} else if (strcmp(ci->str, "dirname") == 0) {
 		char *sl;
-		a = pane_attr_get(d->home, "filename");
+		a = pane_attr_get(ci->home, "filename");
 		if (!a) {
 			a = realpath(".", pathbuf);
 			if (a != pathbuf && a)
@@ -519,9 +516,9 @@ DEF_CMD(doc_get_attr)
 				sl = a = "/";
 			a = strnsave(ci->focus, a, (sl-a)+1);
 		}
-		attr_set_str(&d->home->attrs, "dirname", a);
+		attr_set_str(&ci->home->attrs, "dirname", a);
 	} else if (strcmp(ci->str, "realdir") == 0) {
-		a = pane_attr_get(d->home, "dirname");
+		a = pane_attr_get(ci->home, "dirname");
 		if (a) {
 			strcpy(pathbuf,"/");
 			a = realpath(a, pathbuf);
@@ -531,7 +528,7 @@ DEF_CMD(doc_get_attr)
 				strcat(pathbuf, "/");
 			a = pathbuf;
 		}
-		attr_set_str(&d->home->attrs, "realdir", a);
+		attr_set_str(&ci->home->attrs, "realdir", a);
 	}
 	if (a)
 		return comm_call(ci->comm2, "callback:get_attr", ci->focus, 0,
@@ -547,7 +544,7 @@ DEF_CMD(doc_set_name)
 		return Enoarg;
 	free(d->name);
 	d->name = strdup(ci->str);
-	return call("doc:notify:doc:revisit", d->home, ci->num) ?: 1;
+	return call("doc:notify:doc:revisit", ci->home, ci->num) ?: 1;
 }
 
 DEF_CMD(doc_request_notify)
