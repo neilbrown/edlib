@@ -58,11 +58,12 @@ struct docs {
 	struct pane		*collection safe;
 };
 
-static void docs_demark(struct docs *doc safe, struct pane *p safe)
+static void docs_demark(struct pane *d safe, struct pane *p safe)
 {
 	/* This document is about to be moved in the list.
 	 * Any mark pointing at it is moved forward
 	 */
+	struct docs *doc = container_of(d->data, struct docs, doc);
 	struct mark *m, *first = NULL;
 	struct pane *next;
 	struct pane *col = doc->collection;
@@ -86,14 +87,15 @@ static void docs_demark(struct docs *doc safe, struct pane *p safe)
 		} else if (first)
 			break;
 	if (first)
-		pane_notify("doc:replaced", doc->doc.home, 1, first);
+		pane_notify("doc:replaced", d, 1, first);
 }
 
-static void docs_enmark(struct docs *doc safe, struct pane *p safe)
+static void docs_enmark(struct pane *d safe, struct pane *p safe)
 {
 	/* This document has just been added to the list.
 	 * any mark pointing just past it is moved back.
 	 */
+	struct docs *doc = container_of(d->data, struct docs, doc);
 	struct mark *m, *first = NULL;
 	struct pane *next;
 	struct pane *col = doc->collection;
@@ -113,7 +115,7 @@ static void docs_enmark(struct docs *doc safe, struct pane *p safe)
 		} else if (first)
 			break;
 	if (first)
-		pane_notify("doc:replaced", doc->doc.home, 1, first);
+		pane_notify("doc:replaced", d, 1, first);
 }
 
 static bool doc_save(struct pane *p safe, struct pane *focus safe, int test)
@@ -168,18 +170,20 @@ static void check_name(struct docs *docs safe, struct pane *pane safe)
 		free(nname);
 }
 
-static void doc_checkname(struct pane *p safe, struct docs *ds safe, int n)
+static void doc_checkname(struct pane *p safe, struct pane *d safe, int n)
 {
+	struct docs *ds = container_of(d->data, struct docs, doc);
+
 	ASSERT(p->parent->handle == &docs_aux.c);
-	ASSERT(((struct pane *)(p->parent->data))->data == ds);
+	ASSERT(p->parent->data == d);
 	check_name(ds, p);
 	if (n) {
-		docs_demark(ds, p);
+		docs_demark(d, p);
 		if (n > 0)
 			list_move(&p->siblings, &ds->collection->children);
 		else
 			list_move_tail(&p->siblings, &ds->collection->children);
-		docs_enmark(ds, p);
+		docs_enmark(d, p);
 	}
 }
 
@@ -405,7 +409,7 @@ DEF_CMD(docs_callback_appeared)
 	home_call(p, "doc:request:doc:revisit", doc->collection);
 	home_call(p, "doc:request:doc:status-changed",
 		  doc->collection);
-	doc_checkname(p, doc, ci->num ?: -1);
+	doc_checkname(p, ci->home, ci->num ?: -1);
 
 	return Efallthrough;
 }
@@ -440,7 +444,7 @@ DEF_CMD(doc_revisit)
 		return Efallthrough;
 	if (p == ci->home)
 		return 1;
-	doc_checkname(p, docs, ci->num);
+	doc_checkname(p, dp, ci->num);
 	return 1;
 }
 
@@ -707,9 +711,8 @@ DEF_CMD(docs_destroy)
 DEF_CMD(docs_child_closed)
 {
 	struct pane *pd = ci->home->data;
-	struct docs *docs = container_of(pd->data, struct docs, doc);
 
-	docs_demark(docs, ci->focus);
+	docs_demark(pd, ci->focus);
 	return 1;
 }
 
