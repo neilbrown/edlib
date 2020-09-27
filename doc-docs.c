@@ -170,7 +170,8 @@ static void check_name(struct docs *docs safe, struct pane *pane safe)
 
 static void doc_checkname(struct pane *p safe, struct docs *ds safe, int n)
 {
-	ASSERT(p->parent->data == ds);
+	ASSERT(p->parent->handle == &docs_aux.c);
+	ASSERT(((struct pane *)(p->parent->data))->data == ds);
 	check_name(ds, p);
 	if (n) {
 		docs_demark(ds, p);
@@ -411,19 +412,18 @@ DEF_CMD(docs_callback_appeared)
 
 DEF_CMD(doc_damage)
 {
-	struct pane *p = ci->home;
-	struct doc *d = p->data;
-	struct mark *m = vmark_new(d->home, MARK_UNGROUPED, NULL);
+	struct pane *dp = ci->home->data;
+	struct mark *m = vmark_new(dp, MARK_UNGROUPED, NULL);
 	struct pane *child = ci->focus;
 
 	if (!child || !m)
 		return Enoarg;
 	do {
 		if (m->ref.p == child) {
-			pane_notify("doc:replaced", d->home, 1, m);
+			pane_notify("doc:replaced", dp, 1, m);
 			break;
 		}
-	} while (doc_next(d->home, m) != WEOF);
+	} while (doc_next(dp, m) != WEOF);
 	mark_free(m);
 	return 1;
 }
@@ -431,7 +431,8 @@ DEF_CMD(doc_damage)
 DEF_CMD(doc_revisit)
 {
 	struct pane *p = ci->focus;
-	struct docs *docs = container_of(ci->home->data, struct docs, doc);
+	struct pane *dp = ci->home->data;
+	struct docs *docs = container_of(dp->data, struct docs, doc);
 
 	if (!p)
 		return Einval;
@@ -705,8 +706,8 @@ DEF_CMD(docs_destroy)
 
 DEF_CMD(docs_child_closed)
 {
-	struct doc *d = ci->home->data;
-	struct docs *docs = container_of(d, struct docs, doc);
+	struct pane *pd = ci->home->data;
+	struct docs *docs = container_of(pd->data, struct docs, doc);
 
 	docs_demark(docs, ci->focus);
 	return 1;
@@ -822,24 +823,24 @@ DEF_CMD(attach_docs)
 	 * so we can be found
 	 */
 	struct docs *doc;
-	struct pane *p;
+	struct pane *pd, *paux;
 
 	alloc(doc, pane);
 	docs_init_map();
 
-	p = doc_register(ci->home, &docs_handle.c, doc);
-	if (!p) {
+	pd = doc_register(ci->home, &docs_handle.c, doc);
+	if (!pd) {
 		free(doc->doc.name);
 		free(doc);
 		return Efail;
 	}
 	doc->doc.name = strdup("*Documents*");
-	p = pane_register(ci->home, 0, &docs_aux.c, doc);
-	if (!p) {
-		pane_close(doc->doc.home);
+	paux = pane_register(ci->home, 0, &docs_aux.c, pd);
+	if (!paux) {
+		pane_close(pd);
 		return Efail;
 	}
-	doc->collection = p;
+	doc->collection = paux;
 
 	doc->callback = docs_callback_lookup;
 	call_comm("global-set-command", ci->home, &doc->callback,
@@ -848,9 +849,9 @@ DEF_CMD(attach_docs)
 	call_comm("global-set-command", ci->home, &doc->callback,
 		  0, NULL, "doc:appeared-docs-register");
 
-	pane_reparent(doc->doc.home, doc->collection);
+	pane_reparent(pd, doc->collection);
 
-	return comm_call(ci->comm2, "callback:doc", doc->doc.home);
+	return comm_call(ci->comm2, "callback:doc", pd);
 }
 
 void edlib_init(struct pane *ed safe)
