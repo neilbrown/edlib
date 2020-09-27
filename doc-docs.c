@@ -244,10 +244,9 @@ DEF_CMD(docs_mod_noop)
 
 DEF_CMD(docs_callback_complete)
 {
-	struct docs *doc = ci->home->data;
 	struct pane *p;
 
-	p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus,
+	p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
 			  0, NULL, "simple");
 	if (p) {
 		attr_set_str(&p->attrs, "line-format", "%doc-name");
@@ -267,7 +266,7 @@ DEF_CMD(docs_callback_byname)
 
 	if (ci->str == NULL || strcmp(ci->str, "*Documents*") == 0)
 		return comm_call(ci->comm2, "callback:doc",
-				 doc->doc.home);
+				 ci->home);
 	list_for_each_entry(p, &doc->collection->children, siblings) {
 		struct doc *dc = p->data;
 		char *n = dc->name;
@@ -331,7 +330,7 @@ DEF_CMD(docs_callback_choose)
 	if (!choice)
 		choice = last;
 	if (!choice)
-		choice = doc->doc.home;
+		choice = ci->home;
 	return comm_call(ci->comm2, "callback:doc", choice);
 }
 
@@ -360,7 +359,7 @@ DEF_CMD(docs_callback_modified)
 	struct docs *doc = ci->home->data;
 	struct pane *p;
 
-	p = home_call_ret(pane, doc->doc.home, "doc:attach-view", ci->focus,
+	p = home_call_ret(pane, ci->home, "doc:attach-view", ci->focus,
 			  0, NULL, "simple");
 	if (!p)
 		return Efail;
@@ -402,7 +401,7 @@ DEF_CMD(docs_callback_appeared)
 		 * so we shouldn't interfere.
 		 */
 		return Efallthrough;
-	if (p == doc->doc.home)
+	if (p == ci->home)
 		/* The docs doc is attached separately */
 		return Efallthrough;
 	pane_reparent(p, doc->collection);
@@ -555,12 +554,11 @@ DEF_CMD(docs_get_attr)
 {
 	const char *attr = ci->str;
 	char *val;
-	struct doc *d = ci->home->data;
 
 	if (!attr)
 		return Enoarg;
 
-	if ((val = attr_find(d->home->attrs, attr)) != NULL)
+	if ((val = attr_find(ci->home->attrs, attr)) != NULL)
 		;
 	else if (strcmp(attr, "heading") == 0)
 		val = "<bold,underline> Mod Document             File</>";
