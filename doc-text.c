@@ -238,8 +238,10 @@ text_new_alloc(struct text *t safe, int size)
 	return new;
 }
 
-static bool check_file_changed(struct text *t safe)
+static bool check_file_changed(struct pane *p safe)
 {
+	struct doc *d = p->data;
+	struct text *t = container_of(d, struct text, doc);
 	struct stat st;
 
 	if (t->file_changed)
@@ -257,7 +259,7 @@ static bool check_file_changed(struct text *t safe)
 	    st.st_mtime != t->stat.st_mtime ||
 	    st.st_mtim.tv_nsec != t->stat.st_mtim.tv_nsec) {
 		t->file_changed = 1;
-		call("doc:notify:doc:status-changed", t->doc.home);
+		call("doc:notify:doc:status-changed", p);
 		return True;
 	}
 	return False;
@@ -390,7 +392,7 @@ DEF_CMD(text_load_file)
 		t->file_changed = 0;
 	}
 	call("doc:notify:doc:status-changed", ci->home);
-	pane_notify("doc:replaced", t->doc.home);
+	pane_notify("doc:replaced", ci->home);
 	if (fd != ci->num2)
 		close(fd);
 	return 1;
@@ -401,9 +403,11 @@ err:
 	return Efallthrough;
 }
 
-static bool do_text_output_file(struct text *t safe, struct doc_ref *start,
+static bool do_text_output_file(struct pane *p safe, struct doc_ref *start,
 				struct doc_ref *end, int fd)
 {
+	struct doc *d = p->data;
+	struct text *t = container_of(d, struct text, doc);
 	struct text_chunk *c;
 	int offset = 0;
 
@@ -429,7 +433,7 @@ static bool do_text_output_file(struct text *t safe, struct doc_ref *start,
 	return True;
 }
 
-static bool do_text_write_file(struct text *t safe, struct doc_ref *start,
+static bool do_text_write_file(struct pane *p safe, struct doc_ref *start,
 			       struct doc_ref *end,
 			       const char *fname safe)
 {
@@ -437,6 +441,8 @@ static bool do_text_write_file(struct text *t safe, struct doc_ref *start,
 	 * Create a temp file with #basename#~, write to that,
 	 * copy mode across, fsync and then rename
 	 */
+	struct doc *d = p->data;
+	struct text *t = container_of(d, struct text, doc);
 	char *tempname = malloc(strlen(fname) + 3 + 10);
 	const char *base;
 	char *tbase;
@@ -464,13 +470,13 @@ static bool do_text_write_file(struct text *t safe, struct doc_ref *start,
 	if (fd < 0)
 		return False;
 
-	if (!do_text_output_file(t, start, end, fd))
+	if (!do_text_output_file(p, start, end, fd))
 		goto error;
 	if (stat(fname, &stb) == 0 &&
 	    S_ISREG(stb.st_mode))
 		/* Preserve modes, but not setuid */
 		fchmod(fd, stb.st_mode & 0777);
-	if (fname == t->fname && check_file_changed(t)) {
+	if (fname == t->fname && check_file_changed(p)) {
 		/* We are saving to a file which changed since we read it,
 		 * so let's move that changed file to a backup
 		 */
@@ -572,14 +578,15 @@ static void autosaves_record(struct pane *p safe, const char *path safe,
 	closedir(d);
 }
 
-static void do_text_autosave(struct text *t safe)
+static void do_text_autosave(struct pane *p safe)
 {
-	struct pane *p = t->doc.home;
+	struct doc *d = p->data;
+	struct text *t = container_of(d, struct text, doc);
 	int fd = -1;
 
 	if (!t->fname)
 		return;
-	check_file_changed(t);
+	check_file_changed(p);
 
 	if (!t->autosave_name)
 		t->autosave_name = autosave_name(t->fname);
@@ -593,7 +600,7 @@ static void do_text_autosave(struct text *t safe)
 	if (fd < 0)
 		return;
 
-	if (!do_text_output_file(t, NULL, NULL, fd)) {
+	if (!do_text_output_file(p, NULL, NULL, fd)) {
 		close(fd);
 		unlink(t->autosave_name);
 		return;
@@ -635,19 +642,22 @@ DEF_CMD(text_autosave_tick)
 		return Efalse;
 	if (t->as.changes == 0)
 		/* This will delete the file */
-		do_text_autosave(t);
+		do_text_autosave(home);
 	if (time(NULL) - t->as.last_change >= 30)
-		do_text_autosave(t);
+		do_text_autosave(home);
 	else {
 		t->as.timer_started = 1;
-		call_comm("event:timer", t->doc.home, &text_autosave_tick,
+		call_comm("event:timer", home, &text_autosave_tick,
 			  (t->as.last_change + 30 - time(NULL)) * 1000);
 	}
 	return Efalse;
 }
 
-static void text_check_autosave(struct text *t safe)
+static void text_check_autosave(struct pane *p safe)
 {
+	struct doc *d = p->data;
+	struct text *t = container_of(d, struct text, doc);
+
 	if (t->undo == t->saved)
 		t->as.changes = 0;
 	else
@@ -656,14 +666,13 @@ static void text_check_autosave(struct text *t safe)
 	if (!t->fname)
 		return;
 	if (t->as.changes > 300 || t->as.changes == 0)
-		do_text_autosave(t);
+		do_text_autosave(p);
 	else if (!t->as.timer_started) {
 		t->as.timer_started = 1;
-		call_comm("event:timer", t->doc.home, &text_autosave_tick,
+		call_comm("event:timer", p, &text_autosave_tick,
 			  30 * 1000);
 	}
 }
-
 
 DEF_CMD(text_save_file)
 {
@@ -677,7 +686,7 @@ DEF_CMD(text_save_file)
 		asprintf(&msg, "** No file name known for %s ***", d->name);
 		ret = Efail;
 	} else {
-		ret = do_text_write_file(t, NULL, NULL, t->fname);
+		ret = do_text_write_file(ci->home, NULL, NULL, t->fname);
 		if (ret) {
 			asprintf(&msg, "Successfully wrote %s", t->fname);
 			t->saved = t->undo;
@@ -690,8 +699,8 @@ DEF_CMD(text_save_file)
 	call("Message", ci->focus, 0, NULL, msg);
 	free(msg);
 	if (change_status)
-		call("doc:notify:doc:status-changed", d->home);
-	text_check_autosave(t);
+		call("doc:notify:doc:status-changed", ci->home);
+	text_check_autosave(ci->home);
 	if (ret == 0)
 		return 1;
 	return Efail;
@@ -699,19 +708,17 @@ DEF_CMD(text_save_file)
 
 DEF_CMD(text_write_file)
 {
-	struct doc *d = ci->home->data;
-	struct text *t = container_of(d, struct text, doc);
 	int ret;
 
 	if (ci->str) {
-		ret = do_text_write_file(t,
+		ret = do_text_write_file(ci->home,
 					 ci->mark ? &ci->mark->ref: NULL,
 					 ci->mark2 ? &ci->mark2->ref: NULL,
 					 ci->str);
 		return ret ? 1 : Efail;
 	}
 	if (ci->num >= 0 && ci->num != NO_NUMERIC) {
-		ret = do_text_output_file(t,
+		ret = do_text_output_file(ci->home,
 					  ci->mark ? &ci->mark->ref: NULL,
 					  ci->mark2 ? &ci->mark2->ref: NULL,
 					  ci->num);
@@ -1263,8 +1270,10 @@ static bool check_readonly(const struct cmd_info *ci safe)
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
 
-	if (t->undo == t->saved && check_file_changed(t) && !d->readonly) {
-		call("doc:notify:doc:status-changed", d->home);
+	if (t->undo == t->saved &&
+	    check_file_changed(ci->home) &&
+	    !d->readonly) {
+		call("doc:notify:doc:status-changed", ci->home);
 		d->readonly = 1;
 	}
 	if (!d->readonly)
@@ -1415,7 +1424,7 @@ DEF_CMD(text_reundo)
 			 */
 			early->ref = start;
 		}
-		pane_notify("doc:replaced", t->doc.home,
+		pane_notify("doc:replaced", ci->home,
 			    0, early, NULL,
 			    0, m);
 		if (early != m)
@@ -1428,8 +1437,8 @@ DEF_CMD(text_reundo)
 	text_check_consistent(t);
 
 	if (status != (t->undo == t->saved))
-		call("doc:notify:doc:status-changed", t->doc.home);
-	text_check_autosave(t);
+		call("doc:notify:doc:status-changed", ci->home);
+	text_check_autosave(ci->home);
 
 	if (!ed)
 		t->prev_edit = Redo;
@@ -2114,10 +2123,10 @@ DEF_CMD(text_replace)
 		text_check_consistent(t);
 
 	}
-	text_check_autosave(t);
+	text_check_autosave(ci->home);
 	if (status_change)
-		call("doc:notify:doc:status-changed", d->home);
-	pane_notify("doc:replaced", t->doc.home, 0, early, NULL,
+		call("doc:notify:doc:status-changed", ci->home);
+	pane_notify("doc:replaced", ci->home, 0, early, NULL,
 		    0, pm);
 	if (early != end)
 		mark_free(early);
@@ -2189,7 +2198,7 @@ DEF_CMD(text_get_attr)
 	if (!attr)
 		return Enoarg;
 
-	if ((val = attr_find(d->home->attrs, attr)) != NULL)
+	if ((val = attr_find(ci->home->attrs, attr)) != NULL)
 		;
 	else if (strcmp(attr, "render-default") == 0)
 		val = "text";
@@ -2315,8 +2324,8 @@ DEF_CMD(text_modified)
 		t->saved = NULL;
 	else
 		t->saved = t->undo;
-	text_check_autosave(t);
-	call("doc:notify:doc:status-changed", d->home);
+	text_check_autosave(ci->home);
+	call("doc:notify:doc:status-changed", ci->home);
 	return 1;
 }
 
@@ -2329,7 +2338,7 @@ DEF_CMD(text_revisited)
 		/* Being buried, not visited */
 		return Efallthrough;
 
-	if (check_file_changed(t) && t->saved == t->undo) {
+	if (check_file_changed(ci->home) && t->saved == t->undo) {
 		call("doc:load-file", ci->home, 2, NULL, NULL, -1);
 		call("Message", ci->focus, 0, NULL, "File Reloaded");
 	}
