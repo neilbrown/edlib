@@ -11,8 +11,9 @@ Current priorities
 - [ ] use common UI for dynamic abbrev and spell (and more?)
 - [ ] Finish render-lines rewrite
 
-- [ ] switch-buffer in pop-up window
+- [ ] switch-buffer in pop-up window - shouldn't kill the popup
 - [ ] file in pop-up window in 'view' mode by default
+      From 'grep' this is probably OK.  For Cx-44, it isn't.
 - [X] Cx-44 to open doc/file in pop-up.
 
 Bugs to be fixed
@@ -50,12 +51,19 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] reconsider all 'return comm_call()' calls.  Do we every really
+      care if the callback succeeded?
 - [X] all function that return 0 or 1 should probably be bool
 - [ ] Change Efallthough to -1 so I can return '0' meaningfully.
+      Efalse probably becomes 0.
 - [X] Make it easier for Move-EOL to move to start of next line
 - [ ] key_add_prefix() doesn't work if there is no punctuation.
 - [ ] send warning message when recursive notification is prohibited.
-- [ ] detect and limit recursion
+       editor:notify:Message:broadcast
+- [ ] detect and limit recursion.
+      Each call creates a frame, and each pane has a link to recent frame
+      If a call happens on a frame with a link, we check that the same
+      'key' isn't already active.
 - [X] Change naming from "Meta" to "Alt"
 - [ ] Make DEF_CB really different from DEF_CMD and ensure it is used properly.
 - [ ] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
@@ -67,11 +75,11 @@ Core features
       in control  Similarly search might be handled by a render pane.
 - [ ] should pane_clone_children() copy attrs too?
 - [ ] support text-replace as easy as text-insert (doc:char...)
-- [ ] What about :Enter and BS TAB ESC ???
+- [ ] for doc:cmd transformation,  what about :Enter and BS TAB ESC ???
 - [ ] For a notify handler, returning non-zero doesn't stop other handlers
       running.  For a call handler it does.  This inconsistency is awkward for
       messageline_msg which wants to allow fallthrough, but needs to acknowledge.
-      How can I resolve this?
+      How can I resolve this? Use Efallthrough as -1.
 - [ ] make a doc read-only if dir doesn't exist or isn't writeable
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
@@ -82,7 +90,7 @@ Core features
 - [ ] marks should not be auto-freed on close as there could still be a pointer
       somewhere from the owner.  Rather they should be disconnected and tracked
       so that a 'free' can work, but nothing else does anything useful.
-- [ ] When I cal DocPane I normally doc:attach-view a doc there. But it is
+- [ ] When I call DocPane I normally doc:attach-view a doc there. But it is
       the same doc, so pointless.  Can I optimise that somehow?
 - [ ] document the use of doc:replaced.  What are the two
       marks exactly? start and end of range.  Verify all clients and providers
@@ -126,6 +134,8 @@ Module features
 ### popup
 
 - [ ] I need a way to move the pop-up window to an existing pane.
+       Maybe just flag it so C-x-# chooses it first.
+       Maybe C-x-4-0 ??
 - [ ] if 'focus' is a temp pane, it might disappear (lib-abbrev) which
       closes the popup.  I need to some how indicate a more stable pane
       for replies to go to
@@ -133,6 +143,8 @@ Module features
       to get out of the way ... or similar....
       Or maybe lib-abbrev just stays there ignoring commands until it has
       no children, then it disappears.
+      Same problem with 'viewer' disappearing on K-E.
+      I think they should disable themselves and capture re-enablement.
 
 ### lib-diff
 
@@ -142,49 +154,74 @@ Module features
 - [X] status-line entry to indicate if inverted or not.
 - [X] Add code to check alignment and search for nearby match.
 - [ ] command to apply a hunk to a given document - or to reverse it.
+      How much of a hunk?  Selection?  How to record which hunks are done?
 - [ ] Link wiggle code to find best-match if direct match fails
 - [ ] command to find best 'wiggle' match, and another to apply it if no conflicts.
-- [ ] command to move to matching place in other branch
+- [ ] command to move to matching place in other branch Cx-Cx if mark not active??
 
 ### lib-mergeview
 
 - [ ] merge-mode to highlight markers with "space-only" or "no-diff" state
+      Also have green for "no conflicts", but it doesn't stand out.
+      It would be nice if space-only differences didn't stand out so much.
+      That would require different mark-up, or moving a mark around while
+      handling map-attr.
+      But I want to know about blank conflicts for border highlight.
+      So I think I want more markup.
+      So: no-conflict: brighter green
+          space-conflicts: bold blue
+          conflicts: red
+          in text, space conflicts get underline, no inverse
 - [ ] merge-mode command to select one of the three "this only".
+       "discard" keeps first, or "apply" doest wiggle
+       A-- A-m  to discard, A-1 A-m to apply
 - [ ] merge-mode automatic detect, enable, goto-first
+       I'm not sure I want this, but probably try it and see
 - [ ] command to cycle through matching places in other 2 branches.
+       Capture Cx-Cx ??
 
 ### emacs
 
 - [X] find-file/buffer in popup.  Cx-44??
 - [ ] make-directory command
+      pop-up like find-file, offering current dir.
 - [ ] semi-auto make-dir on save to nonexistent
+       alt-Enter is required.
 - [ ] sort the command names for command-completion?
+       Currently lines are inserted into buffer.  I need to store in
+       an array first, then qsort()
 - [ ] filename completion should ignore uninteresting files like ".o"
       Maybe use .gitignore, or have config module understand that.
 - [ ] search highlight doesn't report empty match (eol)...
+      I need to place a cursor - maybe blue?
 - [ ] emacs highlight should get close notification from popup,
-      instead of catching abort.
+      instead of catching abort.???
 - [ ] ask before killing modified buffer - or refuse without numeric prefix
+       Complain and refuse!
 - [ ] maybe alt-, does c-x` if that is the recent search?
 - [ ] Support write-file (providing a file name) - currently I only save
       to the file I loaded from.
 - [ ] Support include-file (C-x i) to load contents of a file at point.
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
-- [ ] compare two panes somehow
+- [ ] compare two panes somehow - new lib-compare function??
 - [ ] pipe doc or selection to a command, optionally capture to replace with output.
-- [ ] history for each entry.
+- [X] history for each entry. find find, doc, cmd, shellcmd, grep, make, search, replace
+       I think this is done
 
 ##### needs design work
 
-- [ ] invent a way to reserve 'extra' values for command sets
-      do I need this across panes ?? probably
+- [X] invent a way to reserve 'extra' values for command sets
+      do I need this across panes ?? probably. I think I have enough of this.
 - [ ] search/replace should support undo somehow
+      I can already step out, undo, step back.  What more?  Maybe Alt-U (uppercase)?
 - [ ] search/replace should make it easy to revisit previous changes.
+       Backspace cannot work.  Alt-P might
 - [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
+       Surely everything.  Prefix if present, string if active, point always.
 
 #### history
 
-- [ ] Make it possible to search through history. Maybe Alt-P only shows
+- [ ] Make it possible to search through history. Maybe Alt-p only shows
       lines containing current content.
 
 ### ncurses
@@ -202,7 +239,7 @@ Module features
 - [ ] interactive command to open pygtk window even from ncurses.  displayname can be given
 - [ ] make sure pixmap handling in optimal - I want the per-pane images to be server-side
       See cairo_xcb_surface_create.
-- [ ] allow 'pane-clear' to use content from lower-level image.
+- [X] allow 'pane-clear' to use content from lower-level image.
 - [ ] If a net connection to a display goes away, we can block on IO to that display.
       Particularly an ssh connection to an ncurses display.
       The problem is the x11selection X connection. When it is closed, the
@@ -210,7 +247,7 @@ Module features
       ARRG.  This is a gtk bug that emacs wants fixed too.  I guess maybe
       I need something other than gtk... I wonder if I can tollerate tk??
       or PyFLTK or WxWidgets .... or XCB??
-      Or maybe run any gtk code in a separate process...
+      Or maybe run any gtk code in a separate process... or task?
 
 ### render-lines
 
