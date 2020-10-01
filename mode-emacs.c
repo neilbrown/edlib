@@ -169,11 +169,11 @@ static struct move_command {
 	 "K:A:C-K", NULL, NULL},
 
 	{CMD(emacs_case), "LMove-Word", 1, 0,
-	 "K:A-l", NULL, NULL},
+	 "K:A-l", "K:A-L", NULL},
 	{CMD(emacs_case), "UMove-Word", 1, 0,
-	 "K:A-u", NULL, NULL},
+	 "K:A-u", "K:A-U", NULL},
 	{CMD(emacs_case), "CMove-Word", 1, 0,
-	 "K:A-c", NULL, NULL},
+	 "K:A-c", "K:A-C", NULL},
 	{CMD(emacs_case), "TMove-Char", 1, 0,
 	 "K:A-`", NULL, NULL},
 
@@ -2335,6 +2335,7 @@ static void emacs_init(void)
 	key_add(m, "K:C-_", &emacs_undo);
 	key_add(m, "K:CX-u", &emacs_undo);
 	key_add(m, "K:C-/", &emacs_undo);
+	key_add(m, "K:C-Z", &emacs_undo);
 
 	key_add(m, "K:C-L", &emacs_recenter);
 
@@ -2395,6 +2396,7 @@ static void emacs_init(void)
 
 	key_add(m, "K:A-g", &emacs_goto_line);
 	key_add(m, "K:A-x", &emacs_command);
+	key_add(m, "K:A-X", &emacs_command);
 	key_add(m, "K:CC-m", &emacs_make);
 	key_add(m, "K:CC:C-M", &emacs_make);
 
