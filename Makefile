@@ -83,7 +83,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/lib-viewer.o O/lib-base64.o O/lib-qprint.o O/lib-utf8.o \
 	O/lib-copybuf.o O/lib-whitespace.o O/lib-colourmap.o \
 	O/lib-renderline.o O/lib-x11selection.o O/lib-autosave.o \
-	O/lib-linefilter.o O/lib-worddiff.o O/lib-aspell.o O/lib-calc.o \
+	O/lib-linefilter.o O/lib-wiggle.o O/lib-aspell.o O/lib-calc.o \
 	O/lang-python.o \
 	O/mode-emacs.o O/emacs-search.o \
 	O/display-ncurses.o
@@ -196,11 +196,11 @@ lib/libedlib.so: $(LIBOBJ)
 
 shared: $(SO)
 lib/edlib-lib-search.so : O/lib-search.o $(XOBJ)
-lib/edlib-lib-worddiff.so : O/lib-worddiff.o $(WOBJ)
+lib/edlib-lib-wiggle.so : O/lib-wiggle.o $(WOBJ)
 lib/edlib-lib-calc.so : O/lib-calc.o O/libcalc.a
 
 O/lib-search.o : rexel.h
-O/lib-worddiff.o : wiggle/wiggle.h
+O/lib-wiggle.o : wiggle/wiggle.h
 
 $(SO) : lib/edlib-%.so : O/%.o O/core-version.o lib/.exists
 	@mkdir -p lib

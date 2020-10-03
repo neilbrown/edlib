@@ -209,4 +209,4 @@ def add_merge(key, focus, mark, **a):
 
 editor.call("global-set-command", "attach-merge", merge_view_attach)
 editor.call("global-set-command", "interactive-cmd-merge-mode", add_merge)
-editor.call("global-load-module", "lib-worddiff")
+editor.call("global-load-module", "lib-wiggle")

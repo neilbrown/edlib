@@ -332,4 +332,4 @@ def add_diff(key, focus, **a):
 
 editor.call("global-set-command", "attach-diff", diff_view_attach)
 editor.call("global-set-command", "interactive-cmd-diff-mode", add_diff)
-editor.call("global-load-module", "lib-worddiff")
+editor.call("global-load-module", "lib-wiggle")

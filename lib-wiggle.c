@@ -2,7 +2,7 @@
  * Copyright Neil Brown ©2020 <neil@brown.name>
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
- * worddiff - mark word-wise differences in two ranges.
+ * wiggle - mark word-wise differences and merges
  *
  * ranges currently have to be in same file.
  * We use code from wiggle which requires that a 'stream'
@@ -16,16 +16,6 @@
 #include "core.h"
 #include "misc.h"
 #include "wiggle/wiggle.h"
-
-/* lib-wiggle currently needs these */
-void *xmalloc(int size)
-{
-	return malloc(size);
-}
-int do_trace = 0;
-void printword(FILE *f, struct elmnt e)
-{
-}
 
 static bool has_nonspace(const char *s, int len)
 {
@@ -350,9 +340,9 @@ DEF_CMD(wiggle_set_common)
 		return Enoarg;
 	}
 
-	bfile = split_stream(before, ByWord);
-	afile = split_stream(after, ByWord);
-	csl = diff(bfile, afile);
+	bfile = wiggle_split_stream(before, ByWord);
+	afile = wiggle_split_stream(after, ByWord);
+	csl = wiggle_diff(bfile, afile, 1);
 	if (csl) {
 		add_markup(wd->texts[1].text, wd->texts[1].start,
 			   wd->texts[1].skip, wd->texts[1].choose,
@@ -479,13 +469,13 @@ DEF_CMD(wiggle_set_wiggle)
 		return Enoarg;
 	}
 
-	of = split_stream(ostr, ByWord);
-	bf = split_stream(bstr, ByWord);
-	af = split_stream(astr, ByWord);
+	of = wiggle_split_stream(ostr, ByWord);
+	bf = wiggle_split_stream(bstr, ByWord);
+	af = wiggle_split_stream(astr, ByWord);
 
-	csl1 = diff(of, bf);
-	csl2 = diff(bf, af);
-	info = make_merger(of, bf, af, csl1, csl2, 1, 1, 0);
+	csl1 = wiggle_diff(of, bf, 1);
+	csl2 = wiggle_diff(bf, af, 1);
+	info = wiggle_make_merger(of, bf, af, csl1, csl2, 1, 1, 0);
 	if (info.merger) {
 		add_merge_markup(ci->focus,
 				 wd->texts[0].start,
