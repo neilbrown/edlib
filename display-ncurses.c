@@ -301,7 +301,7 @@ static bool parse_event(struct pane *p safe)
 	dd->next_event = DoNil;
 	if (!dd->input ||
 	    fgets(line, sizeof(line)-1, dd->input) == NULL)
-		;
+		line[0]=0;
 	else if (match(line, "Key ")) {
 		if (!copy_quote(line+4, dd->event_info))
 			return False;
@@ -323,6 +323,7 @@ static bool parse_event(struct pane *p safe)
 	} else if (match(line, "Close")) {
 		dd->next_event = DoClose;
 	}
+	LOG("parse %s", line);
 
 	if (dd->next_event != DoCheck)
 		call_comm("editor-on-idle", p, &next_evt);
