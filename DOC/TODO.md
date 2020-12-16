@@ -19,6 +19,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] When viewing diff or merge can get into infinite loop.  Possibly due
+      to edit at end-of-file
 - [ ] sometimes when press 'enter' at end-of-file, page refreshes to move
       cursor closer to end of pane .... but not always.
 - [ ] When cursor is off-screen pygtk cursor gets drawn on background and

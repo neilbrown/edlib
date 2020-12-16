@@ -479,8 +479,10 @@ static char *fmt_date(struct dir_ent *de safe, time_t t)
 	time_t now = time(NULL);
 	char *testing = getenv("EDLIB_TESTING");
 
-	if (testing && *testing)
+	if (testing && *testing) {
 		t = 1581382278;
+		now = t;
+	}
 	localtime_r(&t, &tm);
 	if (t > now || t < now - 10*30*24*3600)
 		strftime(de->nbuf, sizeof(de->nbuf),
