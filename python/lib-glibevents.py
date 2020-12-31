@@ -112,9 +112,12 @@ class events(edlib.Pane):
             dont_block = self.dont_block
             self.dont_block = False
             if not dont_block:
+                # Disable any alarm set by python (or other interpreter)
+                signal.alarm(0)
                 Gtk.main_iteration_do(True)
             events = 0
             while self.active and events != self.maxloops and Gtk.events_pending():
+                signal.alarm(0)
                 Gtk.main_iteration_do(False)
                 events += 1
         if self.active:

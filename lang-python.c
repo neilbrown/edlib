@@ -63,6 +63,8 @@ struct doc_ref {
 	PyObject *c;
 	int o;
 };
+
+#include <signal.h>
 #include "core.h"
 #include "misc.h"
 #include "rexel.h"
@@ -420,6 +422,14 @@ static int dict_add(PyObject *kwds, char *name, PyObject *val)
 	return 1;
 }
 
+static void python_interrupt(int sig)
+{
+	/* Python code has been running for too long,
+	 * interrupt it.
+	 */
+	kill(getpid(), 2);
+}
+
 REDEF_CB(python_call)
 {
 	struct python_command *pc = container_of(ci->comm, struct python_command, c);
@@ -456,8 +466,13 @@ REDEF_CB(python_call)
 	rv = rv && dict_add(kwds, "xy",
 			    Py_BuildValue("ii", ci->x, ci->y));
 
-	if (rv && pc->callable)
+	if (rv && pc->callable) {
+		signal(SIGALRM, python_interrupt);
+		alarm(10);
 		ret = PyObject_Call(pc->callable, args, kwds);
+		alarm(0);
+		signal(SIGALRM, SIG_DFL);
+	}
 
 	Py_DECREF(args);
 	Py_DECREF(kwds);
@@ -993,6 +1008,7 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 	int rv;
 	PyObject *s1, *s2;
 	struct pyret pr;
+	int remain;
 
 	if (!pane_valid(self))
 		return NULL;
@@ -1006,7 +1022,9 @@ static PyObject *Pane_call(Pane *self safe, PyObject *args safe, PyObject *kwds)
 		return NULL;
 	}
 
+	remain = alarm(0);
 	rv = key_handle(&ci);
+	alarm(remain);
 
 	/* Just in case ... */
 	PyErr_Clear();

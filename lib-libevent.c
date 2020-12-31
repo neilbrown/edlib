@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <event.h>
 #include <string.h>
 #include "core.h"
@@ -208,6 +209,8 @@ DEF_CB(libevent_run)
 		return 0;
 	}
 
+	/* Disable any alarm set by python (or other interpreter) */
+	alarm(0);
 	event_base_loop(b, dont_block ? EVLOOP_NONBLOCK : EVLOOP_ONCE);
 	if (ei->base == b)
 		return 1;
