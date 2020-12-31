@@ -38,13 +38,21 @@
 #define __linux__
 #define __x86_64__
 #define __LP64__
+
+
+#define PyType_HasFeature __PyType_HasFeature
 #include <Python.h>
+#undef PyType_HasFeature __PyType_HasFeature
+int PyType_HasFeature(PyTypeObject *type, unsigned long feature);
+
 #undef Py_INCREF
 #define Py_INCREF(op) (0)
 #undef Py_DECREF
 #define Py_DECREF(op) (0)
 #undef Py_XDECREF
 #define Py_XDECREF(op) (0)
+#undef Py_IS_TYPE
+#define Py_IS_TYPE(ob, type) (ob == (void*)type)
 #else
 #include <Python.h>
 #endif
@@ -464,7 +472,7 @@ REDEF_CB(python_call)
 		rv = PyLong_AsLong(ret);
 	else if (PyBool_Check(ret))
 		rv = (ret == Py_True);
-	else if (PyUnicode_Check(ret) && PyUnicode_GET_SIZE(ret) >= 1)
+	else if (PyUnicode_Check(ret) && PyUnicode_GET_LENGTH(ret) >= 1)
 		rv = CHAR_RET(PyUnicode_READ_CHAR(ret, 0));
 	else
 		rv = 1;
