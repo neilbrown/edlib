@@ -120,6 +120,11 @@ struct rl_data {
 	short		lines; /* lines drawn before we hit eof */
 	short		cols; /* columns used for longest line */
 	bool		background_drawn;
+
+	/* If cursor not visible, we add this pane in bottom-right and place
+	 * cursor there.
+	 */
+	struct pane	*cursor_pane;
 };
 
 static void vmark_clear(struct mark *m safe)
@@ -654,6 +659,11 @@ abort:
 	mark_free(bot);
 }
 
+DEF_CMD(cursor_handle)
+{
+	return 0;
+}
+
 static int render(struct mark *pm, struct pane *p safe,
 		  struct pane *focus safe)
 {
@@ -664,7 +674,6 @@ static int render(struct mark *pm, struct pane *p safe,
 	char *s;
 	int hide_cursor = 0;
 	int cursor_drawn = 0;
-	short mwidth = -1;
 
 	s = pane_attr_get(focus, "hide-cursor");
 	if (s && strcmp(s, "yes") == 0)
@@ -723,22 +732,47 @@ static int render(struct mark *pm, struct pane *p safe,
 	}
 	if (!cursor_drawn && !hide_cursor) {
 		/* Place cursor in bottom right */
+		struct pane *cp = rl->cursor_pane;
+		short mwidth = -1;
+		short lineheight;
+
+		if (!cp) {
+			cp = pane_register(p, -1, &cursor_handle);
+			rl->cursor_pane = cp;
+		}
 		if (m)
 			m2 = vmark_prev(m);
 		else
 			m2 = vmark_last(focus, rl->typenum, p);
 
-		while (m2 && mwidth < 0) {
-			if (m2->mdata)
+		while (m2 && mwidth <= 0) {
+			if (m2->mdata) {
 				mwidth = pane_attr_get_int(
 					m2->mdata, "curs_width", -1);
+				lineheight = pane_attr_get_int(
+					m2->mdata, "line-height", -1);
+			}
 			m2 = vmark_prev(m2);
 		}
-		if (mwidth <= 0)
+
+		if (mwidth <= 0) {
 			mwidth = 1;
-		home_call(focus, "Draw:text", p, 0, NULL, " ",
-			  scale.x, NULL, "",
-			  focus->w - mwidth, focus->h-1);
+			lineheight = 1;
+		}
+		if (cp) {
+			pane_resize(cp,
+				    p->w - mwidth,
+				    p->h - lineheight,
+				    mwidth, lineheight);
+
+			home_call(focus, "pane-clear", cp);
+			home_call(focus, "Draw:text", cp, 0, NULL, " ",
+				  scale.x, NULL, "",
+				  0, lineheight-1);
+		}
+	} else if (rl->cursor_pane) {
+		pane_close(rl->cursor_pane);
+		rl->cursor_pane = NULL;
 	}
 	return y;
 }

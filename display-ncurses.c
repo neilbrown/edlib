@@ -813,7 +813,10 @@ DEF_CMD(nc_refresh_post)
 		if (!p1 || !p2)
 			continue;
 
-		if (p1->abs_z <= p2->abs_z)
+		if (p1->abs_z < p2->abs_z)
+			continue;
+		if (p1->abs_z == p2->abs_z &&
+		    p1->z <= p2->z)
 			continue;
 		/* pan needs to be above pan2.  All we can do is move it to
 		 * the top. Anything that needs to be above it will eventually

@@ -23,11 +23,13 @@ Bugs to be fixed
       to edit at end-of-file
 - [X] sometimes when press 'enter' at end-of-file, page refreshes to move
       cursor closer to end of pane .... but not always.
-- [ ] When cursor is off-screen pygtk cursor gets drawn on background and
+- [X] When cursor is off-screen pygtk cursor gets drawn on background and
       stays there.  I think pygtk needs to know about an off-screen cursor
       and draw that explicitly in 'refresh()'.  For that to work, render-lines
       need to explicitly tell it that this is offscreen, so that it can be ignored
       when not in-focus, or drawn if it is.
+      Similar thing happens with ncurses.  scroll-wheel in non-focus pane and _ appears
+      at bottom-right, and doesn't go away when cursor re-appears
 - [ ] When select line from grep/make results should replace any current results pane
 
 Requirements for a v1.0 release

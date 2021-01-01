@@ -444,7 +444,7 @@ class EdDisplay(edlib.Pane):
     def refresh(self, da, ctx):
         edlib.time_start(edlib.TIME_WINDOW)
         l = list(self.panes)
-        l.sort(key=lambda pane: pane.abs_z)
+        l.sort(key=lambda pane: pane.abs_z * 1000 + pane.z)
         for p in l:
             pm = self.panes[p]
             rx,ry = self.mapxy(p, 0, 0)
