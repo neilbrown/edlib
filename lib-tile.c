@@ -970,8 +970,6 @@ DEF_CMD(tile_doc)
 	struct tileinfo *t;
 	char *name;
 
-	if (!ti->leaf)
-		return Efallthrough;
 	if (ci->str || ti->group) {
 		if (!ci->str || !ti->group)
 			return Efallthrough;
@@ -981,6 +979,8 @@ DEF_CMD(tile_doc)
 	}
 	/* Find where 'focus' is open */
 	name = pane_attr_get(ci->focus, "doc-name");
+	if (!ti->leaf)
+		ti = tile_first(ti);
 	t = ti;
 	do {
 		char *n;
