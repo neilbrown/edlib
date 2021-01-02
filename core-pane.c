@@ -455,9 +455,12 @@ int do_pane_notify(struct pane *home, const char *notification safe,
 	/* FIXME why no error below */
 	list_for_each_entry_reverse(n, &home->notifiees, notifier_link)
 		if (strcmp(n->notification, notification) == 0) {
-			if (n->noted == 2)
+			if (n->noted == 2) {
 				/* Nested notification - fail */
+				LOG("Nest notification of %s - not permitted",
+				    notification);
 				return Efail;
+			}
 			n->noted = 0;
 		}
 restart:
