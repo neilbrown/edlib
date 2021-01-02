@@ -30,7 +30,9 @@ Bugs to be fixed
       when not in-focus, or drawn if it is.
       Similar thing happens with ncurses.  scroll-wheel in non-focus pane and _ appears
       at bottom-right, and doesn't go away when cursor re-appears
-- [ ] When select line from grep/make results should replace any current results pane
+- [X] When select line from grep/make results should replace any current results pane
+      i.e. when in pop-up, press 'enter' and if there is another make result present
+      after the popup disappears, that would be confusing.
 
 Requirements for a v1.0 release
 -------------------------------

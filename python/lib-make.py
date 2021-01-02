@@ -327,10 +327,22 @@ class MakePane(edlib.Pane):
                     comm2("cb", self.doc)
                 return 1
             return 0
-        if str != "next-match":
-            return 0
+
         if prevret > 0:
             # some other pane has already responded
+            return 0
+
+        if str == "find-visible":
+            # If this doc is visible from 'focus', return the pane
+            # it is visible in.
+            docpane = focus.call("DocPane", self.doc, ret='focus')
+            if not docpane:
+                return 0
+            if comm2:
+                comm2("cb", docpane)
+            return 1
+
+        if str != "next-match":
             return 0
 
         if num < 0:
@@ -573,9 +585,22 @@ class MakeViewerPane(edlib.Pane):
 
     def handle_enter(self, key, focus, mark, **a):
         "handle-list/K:Enter/K-o"
+        dname = focus["doc-name"]
+        doc = focus.call("docs:byname", dname, ret='focus')
+        root = focus.call("RootPane", ret='focus')
+
         focus.call("doc:notify:doc:make-revisit", mark)
         next_match("interactive-cmd-next-match", focus,
                    edlib.NO_NUMERIC, "OtherPane", 0)
+        # If this doc no longer visible but some other match doc
+        # is, replace that doc with this one, to avoid confusion
+        if doc and root:
+            other = root.call("DocPane", doc, ret='focus')
+            if not other:
+                other = root.call("editor:notify:make:match-docs",
+                                  "find-visible", ret='focus')
+                if other:
+                    doc.call("doc:attach-view", other)
         return 1
 
     def handle_find(self, key, focus, mark, **a):
