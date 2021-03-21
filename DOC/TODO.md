@@ -19,8 +19,14 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] end of file jumps around last few lines of display
+- [ ] 'make' sometimes chooses an info over an error line - both in C file
+- [ ] make sometimes doesn't follow end-of-file
+- [ ] make uses too much CPU on large output
 - [ ] When viewing diff or merge can get into infinite loop.  Possibly due
       to edit at end-of-file
+- [ ] When viewing a diff which pages of "+" (at the end), refresh is quite slow
+- [ ] repeated alarm(10)/alarm(0) calls slow things down
 - [X] sometimes when press 'enter' at end-of-file, page refreshes to move
       cursor closer to end of pane .... but not always.
 - [X] When cursor is off-screen pygtk cursor gets drawn on background and
@@ -161,6 +167,10 @@ Module features
 - [X] Add code to check alignment and search for nearby match.
 - [ ] command to apply a hunk to a given document - or to reverse it.
       How much of a hunk?  Selection?  How to record which hunks are done?
+      How to identify document?  Maybe I want a generic "Other" document where
+       patches are applied, diffs are calculated, etc
+       If only two panes, then "other" is clear, else it must be marked with C-x-7??
+      'a' to apply current hunk
 - [ ] Link wiggle code to find best-match if direct match fails
 - [ ] command to find best 'wiggle' match, and another to apply it if no conflicts.
 - [ ] command to move to matching place in other branch Cx-Cx if mark not active??
