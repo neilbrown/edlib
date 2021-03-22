@@ -596,7 +596,7 @@ void pane_reparent(struct pane *p safe, struct pane *newparent safe)
 	int replaced = 0;
 	// FIXME this should be a failure, possibly with warning, not an
 	// assert.  I'm not sure just now how best to do warnings.
-	ASSERT(newparent->parent == p->parent);
+	ASSERT(newparent->parent == p->parent || newparent->parent == newparent);
 	list_del(&p->siblings);
 	if (p->parent->focus == p)
 		p->parent->focus = newparent;
