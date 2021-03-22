@@ -272,7 +272,8 @@ DEF_CMD(editor_clean_up)
 
 DEF_EXTERN_CMD(edlib_do_free)
 {
-	unalloc_buf_safe(ci->home->data, ci->home->data_size, pane);
+	if (ci->home->data_size)
+		unalloc_buf_safe(ci->home->data, ci->home->data_size, pane);
 	return 1;
 }
 
