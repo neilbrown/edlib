@@ -40,7 +40,7 @@
 #define __LP64__
 
 
-#define PyType_HasFeature __PyType_HasFeature
+//#define PyType_HasFeature __PyType_HasFeature
 #include <Python.h>
 #undef PyType_HasFeature __PyType_HasFeature
 int PyType_HasFeature(PyTypeObject *type, unsigned long feature);
@@ -512,6 +512,7 @@ static void do_map_init(Pane *self safe)
 	if (!self->map || !self->pane || !l)
 		return;
 	n = PyList_Size(l);
+	/* First add the ranges, so individuals can over-ride them */
 	for (i = 0; i < n ; i++) {
 		PyObject *e = PyList_GetItem(l, i);
 		PyObject *m = PyObject_GetAttr((PyObject*)self, e);
@@ -521,13 +522,6 @@ static void do_map_init(Pane *self safe)
 			if (doc && doc != Py_None) {
 				PyObject *tofree = NULL;
 				char *docs = python_as_string(doc, &tofree);
-				if (docs &&
-				    strncmp(docs, "handle:", 7) == 0) {
-					struct python_command *comm =
-						export_callable(m);
-					key_add(self->map, docs+7, &comm->c);
-					command_put(&comm->c);
-				}
 				if (docs &&
 				    strncmp(docs, "handle-range", 12) == 0 &&
 				    docs[12]) {
@@ -555,6 +549,29 @@ static void do_map_init(Pane *self safe)
 						export_callable(m);
 					key_add_range(self->map, a, b,
 						      &comm->c);
+					command_put(&comm->c);
+				}
+				Py_XDECREF(tofree);
+			}
+			Py_XDECREF(doc);
+		}
+		Py_XDECREF(m);
+	}
+	/* Now add the non-ranges */
+	for (i = 0; i < n ; i++) {
+		PyObject *e = PyList_GetItem(l, i);
+		PyObject *m = PyObject_GetAttr((PyObject*)self, e);
+
+		if (m && PyMethod_Check(m)) {
+			PyObject *doc = PyObject_GetAttrString(m, "__doc__");
+			if (doc && doc != Py_None) {
+				PyObject *tofree = NULL;
+				char *docs = python_as_string(doc, &tofree);
+				if (docs &&
+				    strncmp(docs, "handle:", 7) == 0) {
+					struct python_command *comm =
+						export_callable(m);
+					key_add(self->map, docs+7, &comm->c);
 					command_put(&comm->c);
 				}
 				if (docs &&
