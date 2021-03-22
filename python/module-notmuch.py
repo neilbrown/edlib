@@ -9,11 +9,12 @@
 #   and 'new' messages
 # - message list: provided by notmuch-search, though probably with enhanced threads
 #
-# Messages and composition is handled by a separte 'email' module.  This module
-# will send messages to that module and provide services for composing and delivery.
+# Messages and composition is handled by a separte 'email' module.  This
+# module will send messages to that module and provide services for composing
+# and delivery.
 #
-# These can be all in with one pane, with sub-panes, or can sometimes have a pane to
-# themselves.
+# These can be all in with one pane, with sub-panes, or can sometimes
+# have a pane to themselves.
 #
 # saved search are stored in config file as "saved.foo". Some are special.
 # "saved.current" selects messages that have not been archived, and are not spam
@@ -34,7 +35,7 @@ import fcntl
 
 class notmuch_db():
     # This class is designed to be used with "with ... as" and provides
-    # locking within the body o the clause.
+    # locking within the body of the clause.
 
     def __init__(self):
         self.lock_path = os.environ["HOME"]+"/.notmuch-config"
@@ -171,12 +172,12 @@ class searches:
             return False
         n = self.todo.pop(0)
         self.todoing = n
-        # HACK WARNING .bin and /dev/null
-        self.p = Popen("/usr/bin/notmuch.bin count --batch", shell=True, stdin=PIPE,
+        # HACK WARNING /dev/null
+        self.p = Popen("/usr/bin/notmuch count --batch", shell=True, stdin=PIPE,
                        stdout = PIPE, stderr = open("/dev/null", 'w'))
-        self.p.stdin.write(self.make_search(n, False) + "\n")
-        self.p.stdin.write(self.make_search(n, 'unread') + "\n")
-        self.p.stdin.write(self.make_search(n, 'new') + "\n")
+        self.p.stdin.write((self.make_search(n) + "\n").encode("utf-8"))
+        self.p.stdin.write((self.make_search(n, 'unread') + "\n").encode("utf-8"))
+        self.p.stdin.write((self.make_search(n, 'new') + "\n").encode("utf-8"))
         self.p.stdin.close()
         self.pane.call("event:read", self.p.stdout.fileno(), self.cb)
         return True
@@ -215,7 +216,7 @@ class searches:
             m = re.search(self.patn, query)
         return query
 
-    def make_search(self, name, extra):
+    def make_search(self, name, extra = None):
         s = "saved:" + name
         if name not in self.misc:
             s = s + " saved:current"
@@ -236,8 +237,19 @@ class notmuch_main(edlib.Doc):
     # It contains the searches as items which have attributes
     # providing name, count, unread-count
     # Once activated it auto-updates every 5 minutes
+    # Updating first handled "counts" where the 3 counters for each
+    # saved search are checked, then "queries" which each current
+    # thread-list document is refreshed.
     #
-    # We create a container pane to collect all thread-list documents
+    # We create a container pane to collect all these thread-list documents
+    # to hide them from the general *Documents* list.
+    #
+    # Only the 'offset' of doc-references is used.  It is an index
+    # into the list of saved searches.
+    #
+    # FIXME we track "seen_threads" in each thread-list so that we can
+    # later mark them as no-longer "new".  Why is this here rather than
+    # in the thread-list document?
 
     def __init__(self, focus):
         edlib.Doc.__init__(self, focus)
@@ -272,27 +284,19 @@ class notmuch_main(edlib.Doc):
         if forward and mark.offset < len(self.searches.current):
             ret = '\n'
             if move:
-                o = mark.offset + 1
-                m2 = mark.next_any()
-                while m2 and m2.offset <= o:
-                    target = m2
-                    m2 = m2.next_any()
-                mark.to_mark(target)
-                mark.offset = o
+                mark.step(forward)
+                mark.offset = mark.offset + 1
         if not forward and mark.offset > 0:
             ret = '\n'
             if move:
-                o = mark.offset - 1
-                m2 = mark.prev_any()
-                while m2 and m2.offset >= o:
-                    target = m2
-                    m2 = m2.prev_any()
-                mark.to_mark(target)
-                mark.offset = o
+                mark.step(forward)
+                mark.offset = mark.offset - 1
         return ret
 
     def handle_doc_get_attr(self, key, focus, mark, str, comm2, **a):
         "handle:doc:get-attr"
+        # This must support the line-format used in notmuch_main_view
+
         attr = str
         o = mark.offset
         val = None
@@ -340,6 +344,7 @@ class notmuch_main(edlib.Doc):
             self.timer_set = True
             self.call("event:timer", 5*60*1000, self.tick)
         if self.searches.load(False):
+            # there are new (possibly) new search, trigger a refresh
             self.notify("doc:replaced")
         self.updating = "counts"
         if not self.searches.update(self, self.updated):
@@ -356,7 +361,7 @@ class notmuch_main(edlib.Doc):
         # Find or create a search-result document as a
         # child of the collection document - it remains private
         # and doesn't get registered in the global list
-        q = self.searches.make_search(str, None)
+        q = self.searches.make_search(str)
         nm = None
         it = self.container.children()
         for child in it:
@@ -365,6 +370,9 @@ class notmuch_main(edlib.Doc):
                 break
         if not nm:
             nm = notmuch_list(self, str, q)
+            # FIXME This is a a bit ugly.  I should pass self.container
+            # as the parent, but notmuch_list needs to stash maindoc
+            # Also I should use an edlib call to get notmuch_list
             nm.reparent(self.container)
             nm.call("doc:set-name", str)
         if comm2:
@@ -408,6 +416,7 @@ class notmuch_main(edlib.Doc):
 
     def handle_notmuch_search_max(self, key, **a):
         "handle:doc:notmuch:search-maxlen"
+        # maxlen is used when resizing the display, to ensure all searches fit.
         return self.searches.maxlen + 1
 
     def handle_notmuch_query_updated(self, key, **a):
@@ -447,6 +456,8 @@ class notmuch_main(edlib.Doc):
                         self.notify("Notify:Tag", str, str2)
             else:
                 # remove from whole thread
+                # FIXME This should be the thread a last seen, not as
+                # is now in the database - which might be different.
                 q = db.create_query("thread:%s" % str)
                 changed = False
                 for t in q.search_threads():
@@ -487,14 +498,12 @@ class notmuch_main(edlib.Doc):
             todel = []
             for id in self.seen_threads:
                 if self.seen_threads[id] == focus:
-                    changed = False
                     q = db.create_query("thread:%s" % id)
                     for t in q.search_threads():
                         ml = t.get_messages()
                         for m in ml:
                             if "new" in m.get_tags():
                                 m.remove_tag("new")
-                                changed = True
                         break
                     todel.append(id)
                 self.notify("Notify:Tag", id)
@@ -573,7 +582,7 @@ class notmuch_master_view(edlib.Pane):
             if tile.w != w:
                 tile.call("Window:x+", "notmuch", int(w - tile.w))
         if self.query_pane and self.message_pane:
-            # query_pane much be at least 4 lines, else 1/4 height
+            # query_pane must be at least 4 lines, else 1/4 height
             # but never more than 1/2 the height
             tile = self.query_pane.call("ThisPane", "notmuch", ret='focus')
             ch,ln = tile.scale()
@@ -591,7 +600,7 @@ class notmuch_master_view(edlib.Pane):
 
     def handle_choose(self, key, **a):
         "handle:docs:choose"
-        # don't choose anything
+        # don't choose anything  FIXME when is this helpful?
         return 1
 
     def handle_clone(self, key, focus, **a):
@@ -636,7 +645,7 @@ class notmuch_master_view(edlib.Pane):
 
     def handle_move(self, key, mark, **a):
         "handle-list/K:A-n/K:A-p/doc:char-n/doc:char-p"
-        if key[0] == "M" or not self.query_pane:
+        if key.startswith("K:A-") or not self.query_pane:
             p = self.list_pane
             op = self.query_pane
         else:
@@ -656,6 +665,7 @@ class notmuch_master_view(edlib.Pane):
 
     def handle_A(self, key, focus, mark, str, **a):
         "handle:doc:char-a"
+        # Remove "inbox" tag from this message, or this thread
         in_message = False
         in_query = False
         in_main = False
@@ -698,13 +708,13 @@ class notmuch_master_view(edlib.Pane):
     def handle_xq(self, key, **a):
         "handle-list/doc:char-x/doc:char-q"
         if self.message_pane:
-            if key != "-x":
+            if key != "doc:char-x":
                 self.mark_read()
             p = self.message_pane
             self.message_pane = None
             p.call("Window:close", "notmuch")
         elif self.query_pane:
-            if key != "-x":
+            if key != "doc:char-x":
                 self.query_pane.call("doc:notmuch:mark-seen")
             p = self.query_pane
             self.query_pane = None
@@ -722,6 +732,7 @@ class notmuch_master_view(edlib.Pane):
 
     def handle_v(self, key, **a):
         "handle:doc:char-V"
+        # View the current message as a raw file
         if not self.message_pane:
             return 1
         p2 = self.call("doc:open", self.message_pane["filename"], -1,
@@ -763,6 +774,7 @@ class notmuch_master_view(edlib.Pane):
         if self.query_pane:
             self.query_pane.call("doc:notmuch:mark-seen")
         if self.query_pane:
+            # update summaries for the query pane we are replacing.
             s = self.query_pane.call("get-attr", "qname", 1, ret='str')
             if s:
                 self.list_pane.call("doc:notmuch:update-one", s)
@@ -827,7 +839,7 @@ class notmuch_main_view(edlib.Pane):
 
     def handle_notify_replace(self, key, **a):
         "handle:doc:replaced"
-        # do I need to do anything here?
+        # FIXME do I need to do anything here? - of not, why not
         return 0
 
     def handle_select(self, key, focus, mark, num, **a):
@@ -856,6 +868,9 @@ class notmuch_main_view(edlib.Pane):
 # If whole_thread is set, then only the selected thread is visible,
 # and all messages, matched or not, of that thread are visisble.
 #
+# a mark.pos is a list of thread-id and message-id.  The hash
+# self.unique_pos is use to ensure marks with the same pos have literally
+# identical " is " values
 
 class notmuch_list(edlib.Doc):
     def __init__(self, focus, qname, query):
@@ -869,6 +884,7 @@ class notmuch_list(edlib.Doc):
         self.threads = {}
         self.messageids = {}
         self.threadinfo = {}
+        self.unique_pos = {}
         self["render-default"] = "notmuch:threads"
         self["line-format"] = "<%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<tab:450><%TM-hilite>%TM-subject</>                      "
         self.add_notify(self.maindoc, "Notify:Tag")
@@ -901,6 +917,25 @@ class notmuch_list(edlib.Doc):
         self.p = Popen(cmd, shell=False, stdout=PIPE)
         self.call("event:read", self.p.stdout.fileno(), self.get_threads)
 
+    def makepos(self, thread, msg = None):
+        p = [thread, msg]
+        if msg:
+            k = thread + msg
+        else:
+            k = thread
+        if k in self.unique_pos:
+            p = self.unique_pos[k]
+        else:
+            self.unique_pos[k] = p
+        return p
+
+    def setpos(self, mark, thread, msgnum = -1):
+        if msgnum >= 0 and thread in self.messageids:
+            msg = self.messageids[thread][msgnum]
+        else:
+            msg = None
+        mark.pos = self.makepos(thread, msg)
+
     def get_threads(self, key, **a):
         found = 0
         try:
@@ -929,7 +964,7 @@ class notmuch_list(edlib.Doc):
             m = self.first_mark()
             while m:
                 if m.pos is None:
-                    m.pos = (self.new[0], None)
+                    self.setpos(m, self.new[0])
                 m = m.next_any()
         self.threadids = self.new + self.old
         self.notify("doc:replaced")
@@ -986,7 +1021,7 @@ class notmuch_list(edlib.Doc):
         if mid is None:
             # need to update all marks at this location to old mid
             m = mark
-            pos = (tid, midlist[0])
+            pos = self.makepos(tid, midlist[0])
             while m and m.pos and m.pos[0] == tid:
                 m.pos = pos
                 m = m.prev_any()
@@ -1040,21 +1075,18 @@ class notmuch_list(edlib.Doc):
             if not move:
                 return '\n'
             (tid,mid) = mark.pos
-            mark.make_last()
+            mark.step(1)
             i = self.threadids.index(tid)
             if mid:
                 j = self.messageids[tid].index(mid) + 1
             if mid and j < len(self.messageids[tid]):
-                mark.pos = (tid, self.messageids[tid][j])
+                self.setpos(mark, tid, j)
             elif i+1 < len(self.threadids):
                 tid = self.threadids[i+1]
-                if tid in self.messageids:
-                    mark.pos = (tid, self.messageids[tid][0])
-                else:
-                    mark.pos = (tid, None)
+                self.setpos(mark, tid, 0)
             else:
                 mark.pos = None
-            mark.make_last()
+            mark.step(1)
             return '\n'
         else:
             j = 0
@@ -1079,10 +1111,7 @@ class notmuch_list(edlib.Doc):
                 else:
                     j = 1
             j -= 1
-            if tid in self.messageids:
-                mark.pos = (tid, self.messageids[tid][j])
-            else:
-                mark.pos = (tid, None)
+            self.setpos(mark, tid, j)
 
             return '\n'
 
@@ -1116,10 +1145,7 @@ class notmuch_list(edlib.Doc):
         mark.pos = None
         if num == 1 and len(self.threadids) > 0:
             tid = self.threadids[0]
-            if tid in self.messageids:
-                mark.pos = (self.threadids[0],self.messageids[tid][0])
-            else:
-                mark.pos = (self.threadids[0],None)
+            self.setpos(mark, self.threadids[0], 0)
         mark.offset = 0
         return 1
 
@@ -1148,10 +1174,7 @@ class notmuch_list(edlib.Doc):
             i = self.threadids.index(tid) + 1
             if i < len(self.threadids):
                 tid = self.threadids[i]
-                if tid in self.messageids:
-                    mark.pos = (tid, self.messageids[tid][0])
-                else:
-                    mark.pos = (tid, None)
+                self.setpos(mark, tid, 0)
             else:
                 mark.pos = None
             return '\n'
@@ -1166,10 +1189,7 @@ class notmuch_list(edlib.Doc):
             while m2 and (m2.pos == None or m2.pos[0] == tid):
                 mark.to_mark(m2)
                 m2 = mark.prev_any()
-            if tid in self.messageids:
-                mark.pos = (tid, self.messageids[tid][0])
-            else:
-                mark.pos = (tid, None)
+            self.setpos(mark, tid, 0)
             return '\n'
 
     def handle_step_matched(self, key, mark, num, num2, **a):
@@ -1236,7 +1256,7 @@ class notmuch_list(edlib.Doc):
             if type(val) == int:
                 val = "%d" % val
             else:
-                val = unicode(t[attr[2:]])
+                val = t[attr[2:]]
             if attr == "T-authors":
                 val = val[:20]
 
@@ -1278,9 +1298,15 @@ class notmuch_list(edlib.Doc):
             return 1
         return edlib.Efallthrough
 
+    def handle_maindoc(self, key, **a):
+        "handle-prefix:doc:notmuch:"
+        # any doc:notmuch calls that we don't handle directly
+        # are handed to the maindoc
+        return self.maindoc.call(key, **a)
+
     def handle_load_thread(self, key, mark, **a):
         "handle:doc:notmuch:load-thread"
-        if mark.pos is None:
+        if mark.pos == None:
             return edlib.Efail
         (tid,mid) = mark.pos
         if tid not in self.threadinfo:
@@ -1431,7 +1457,7 @@ class notmuch_query_view(edlib.Pane):
                 return self.parent.call("doc:get-attr", focus, num, num2, mark, "M-" + str[3:], comm2)
             else:
                 return self.parent.call("doc:get-attr", focus, num, num2, mark, "T-" + str[3:], comm2)
-        return edlib.Efalthrough
+        return edlib.Efallthrough
 
     def handle_Z(self, key, focus, **a):
         "handle:doc:char-Z"
@@ -1472,7 +1498,7 @@ class notmuch_query_view(edlib.Pane):
                 self.thread_end = None
                 self.thread_matched = None
 
-            if self.maindoc.call("doc:notmuch:load-thread", mark) == 1:
+            if self.call("doc:notmuch:load-thread", mark) == 1:
                 self.selected = s
                 if mark:
                     self.thread_start = mark.dup()
@@ -1514,10 +1540,10 @@ class notmuch_query_view(edlib.Pane):
     def handle_mark_seen(self, key, focus, mark, mark2, str, **a):
         "handle:doc:notmuch:mark-seen"
         for i in self.seen_threads:
-            self.maindoc.call("doc:notmuch:remember-seen-thread", i)
+            self.call("doc:notmuch:remember-seen-thread", i)
         for i in self.seen_msgs:
-            self.maindoc.call("doc:notmuch:remember-seen-msg", i)
-        self.maindoc.call("doc:notmuch:mark-seen")
+            self.call("doc:notmuch:remember-seen-msg", i)
+        self.parent.call("doc:notmuch:mark-seen")
         return 1
 
 class notmuch_message_view(edlib.Pane):
@@ -1665,7 +1691,7 @@ def notmuch_mode(key, home, focus, **a):
     p0 = focus.call("ThisPane", ret = 'focus')
     try:
         p1 = home.call("docs:byname", "*Notmuch*", ret='focus')
-    except:
+    except edlib.commandfailed:
         p1 = home.call("attach-doc-notmuch", ret='focus')
     if not p1:
         return edlib.Efail
