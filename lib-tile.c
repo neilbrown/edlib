@@ -271,7 +271,7 @@ static int tile_destroy(struct pane *p safe)
 
 	if (ti->direction == Neither) {
 		/* Children have already been destroyed, just clean up */
-		free(ti->name);
+		free(ti->name); ti->name = NULL;
 		return 1;
 	}
 
