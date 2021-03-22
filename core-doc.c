@@ -69,7 +69,7 @@ struct pane *__doc_register(struct pane *parent,
 {
 	struct pane *p;
 
-	ASSERT(data == (void*)doc);
+	ASSERT(data_size == 0 || data == (void*)doc);
 	/* Documents are always registered against the root */
 	if (parent)
 		parent = pane_root(parent);
