@@ -191,7 +191,7 @@ static inline PyObject *safe Pane_Frompane(struct pane *p)
 		Py_INCREF(pane);
 	} else {
 		in_pane_frompane = 1;
-		pane = (Pane * safe)PyObject_CallObject((PyObject*)&PaneType, NULL);
+		pane = (Pane *)PyObject_CallObject((PyObject*)&PaneType, NULL);
 		in_pane_frompane = 0;
 		if (pane)
 			pane->pane = p;
@@ -208,15 +208,17 @@ static inline PyObject *safe Mark_Frommark(struct mark *m safe)
 		Py_INCREF(m->mdata);
 		return m->mdata;
 	}
-	mark = (Mark * safe)PyObject_CallObject((PyObject*)&MarkType, NULL);
-	mark->mark = m;
+	mark = (Mark *)PyObject_CallObject((PyObject*)&MarkType, NULL);
+	if (mark)
+		mark->mark = m;
 	return (PyObject*)mark;
 }
 
 static inline PyObject *safe Comm_Fromcomm(struct command *c safe)
 {
-	Comm *comm = (Comm*safe)PyObject_CallObject((PyObject*)&CommType, NULL);
-	comm->comm = command_get(c);
+	Comm *comm = (Comm *)PyObject_CallObject((PyObject*)&CommType, NULL);
+	if (comm)
+		comm->comm = command_get(c);
 	return (PyObject*)comm;
 }
 
