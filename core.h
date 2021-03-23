@@ -72,6 +72,8 @@ struct pane {
 	short			damaged;
 	short			data_size;	/* only needed by edlib_do_free */
 
+	int marks;
+
 	struct command		*handle;
 	void			*data safe;
 	struct attrset		*attrs;

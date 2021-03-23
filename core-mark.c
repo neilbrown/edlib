@@ -153,6 +153,7 @@ void mark_free(struct mark *m)
 	owner = m->owner;
 	memset(m, 0xff, sizeof(*m));
 	m->owner = owner;
+	owner->marks -= 1;
 	m->viewnum = MARK_UNGROUPED;
 	editor_delayed_mark_free(m);
 }
@@ -162,6 +163,10 @@ static void mark_ref_copy(struct mark *to safe, struct mark *from safe)
 	if ((void*)to->owner && to->owner != from->owner) {
 		LOG("mark_ref_copy given marks with different owners");
 		return;
+	}
+	if (!(void*)to->owner) {
+		from->owner->marks += 1;
+		ASSERT(from->owner->marks < 2000);
 	}
 	to->owner = from->owner;
 	if (to->ref.p == from->ref.p &&
@@ -379,6 +384,11 @@ void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
 void mark_reset(struct pane *p safe, struct mark *m safe, int end)
 {
 	ASSERT((void*)m->owner == NULL || m->owner == p);
+
+	if (!(void*)m->owner) {
+		p->marks += 1;
+		ASSERT(p->marks < 2000);
+	}
 	m->owner = p;
 	pane_call(p, "doc:set-ref", p, !end, m);
 }
