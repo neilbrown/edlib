@@ -1438,7 +1438,7 @@ class notmuch_query_view(edlib.Pane):
                 ret = self.parent.call("doc:step-matched", focus, mark, forward, move)
                 # If moving forward, we might be in the next thread,
                 # make sure we didn't go further than thread_end
-                if forward and move and mark.seq > self.thread_end.seq:
+                if forward and move and mark > self.thread_end:
                     mark.to_mark(self.thread_end)
                 return ret
             else:
@@ -1474,8 +1474,8 @@ class notmuch_query_view(edlib.Pane):
             # disappear, we need to clip them.
             mk = self.thread_start.dup()
             mt = self.thread_matched.dup()
-            while mk.seq < self.thread_end.seq:
-                if mk.seq < mt.seq:
+            while mk < self.thread_end:
+                if mk < mt:
                     focus.call("Notify:clip", mk, mt)
                 mk.to_mark(mt)
                 self.parent.call("doc:step-matched", mt, 1, 1)
@@ -1530,7 +1530,7 @@ class notmuch_query_view(edlib.Pane):
             return edlib.Efallthrough
         m = mark.dup()
 
-        while m.seq < mark2.seq:
+        while m < mark2:
             i1 = focus.call("doc:get-attr", "thread-id", m, ret='str')
             i2 = focus.call("doc:get-attr", "message-id", m, ret='str')
             if i1 and not i2 and i1 not in self.seen_threads:
