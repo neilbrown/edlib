@@ -116,8 +116,14 @@ static int locate_mark(struct pane *p safe, struct pane *owner,
 		if ((pos %4) == 0 && pos/4 >= MAX_QUAD) {
 			struct mark *m2 = vmark_new(p, view, owner);
 			if (m2) {
-				if (prev)
+				if (prev) {
 					mark_to_mark(m2, prev);
+					/* FIXME this is wrong, but without it
+					 * b64 is v.slow.  Maybe make
+					 * MAX_QUAD bigger
+					 */
+					mark_free(prev);
+				}
 				mark_to_mark(m2, tmp);
 				prev = m2;
 			}
