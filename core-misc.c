@@ -230,6 +230,8 @@ void time_stop_key(const char *key safe)
 	if (ktos <= 0)
 		abort();
 	ktos -= 1;
+	if (ktos >= 20)
+		return;
 	if (key != kstack[ktos].name)
 		abort();
 	clock_gettime(CLOCK_MONOTONIC, &stop);
