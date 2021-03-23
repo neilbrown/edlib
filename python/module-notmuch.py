@@ -112,6 +112,7 @@ class searches:
             return False
         self.slist = {}
         for line in p.stdout:
+            line = line.decode("utf-8")
             if line[:6] != "saved.":
                 continue
             w = line[6:].strip().split("=", 1)
