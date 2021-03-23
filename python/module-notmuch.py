@@ -22,7 +22,7 @@
 # "saved.new" selects new messages. Normally "tag:new not tag:unread"
 # "saved.current-list" should be a conjunction of "saved:" searches.  They are listed
 #  in the "search list" together with a count of 'current' and 'current/new' messages.
-# "saved.misc-list" is a subsect of current-list for which saved:current should not
+# "saved.misc-list" is a subset of current-list for which saved:current should not
 # be assumed.
 
 from subprocess import Popen, PIPE
@@ -124,10 +124,12 @@ class searches:
             pass
         if "current-list" not in self.slist:
             self.slist["current-list"] = "saved:inbox saved:unread"
+            if "current" not in self.slist:
+                self.slist["misc-list"] = "saved:inbox saved:unread"
             if "inbox" not in self.slist:
                 self.slist["inbox"] = "tag:inbox"
             if "saved:unread" not in self.slist:
-                self.slist["unread"] = "tag:unread"
+                self.slist["unread"] = "tag:inbox AND tag:unread"
 
         if "misc-list" not in self.slist:
             self.slist["misc-list"] = ""
@@ -221,7 +223,7 @@ class searches:
         if name not in self.misc:
             s = s + " saved:current"
         if extra:
-            s = s + " saved:" + extra
+            s = s + " AND saved:" + extra
         return self.map_search(s)
 
     def searches_from(self, n):
