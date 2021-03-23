@@ -1330,6 +1330,9 @@ class notmuch_list(edlib.Doc):
 
     def handle_mark_read(self, key, str, str2, **a):
         "handle:doc:notmuch:mark-read"
+        if str not in self.threadinfo:
+            edlib.LOG("notmuch:mark-read cannot find %s" % str)
+            return edlib.Efail
         ti = self.threadinfo[str]
         m = ti[str2]
         tags = m[6]
