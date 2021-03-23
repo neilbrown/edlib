@@ -482,9 +482,13 @@ static bool handle_content(struct pane *p safe, char *type, char *xfer,
 			   struct pane *mp safe, struct pane *spacer safe,
 			   char *path safe)
 {
-	char *hdr = type;
+	char *hdr;
 	char *major, *minor = NULL;
 	int mjlen, mnlen;
+
+	if (!type)
+		type = "text/plain";
+	hdr = type;
 
 	major = get_822_token(&hdr, &mjlen);
 	if (major) {
