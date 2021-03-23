@@ -19,6 +19,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] 'fill' setting doesn't stick to document
+- [ ] white-space and others cannot be set manually.
+- [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
+     g_main_loop_run->poll
 - [ ] end of file jumps around last few lines of display
 - [ ] 'make' sometimes chooses an info over an error line - both in C file
 - [ ] make sometimes doesn't follow end-of-file
@@ -407,33 +411,66 @@ Module features
 
 ### notmuch
 
+- [ ] 'Z' should work in email-view window, not just summary window
+- [ ] background colour for current message/thread and current search
+- [ ] highlight current summary line
+- [ ] When there are 'new' items, selecting a search should go to the first NEW,
+      and opening a thread should go to the first NEW.
+- [ ] currently opening a thread goes to first in thread, even if it didn't
+     match search term.
+- [ ] doc:notmuch:search-maxlen should be attribute, not command.
+- [ ] re-arrange notmuch code so doc are first, then viewers, then commands
+- [ ] '+' or '-' to change flags, S marks newspam N notspam ! unread,inbox
+- [ ] highlight current message in summary list - background colour?
+- [ ] encourage current message to be visible when list is auto updated
+- [ ] point in summary list should stay close to middle
+- [ ] better feedback to 'g' - e.g flag that update is happening
+- [ ] I don't think summary updates correctly
+     when count notices a difference, it should trigger a refresh
+- [ ] Chr-a should affect thing under cursor, not current thing
+- [ ] improve update of message list... sometimes disappears
+- [ ] linecount is spinning somewhere.
+      Doc is multipart, chars are garbage. underlying is b64
+      Email has large attachments
+      This might have been because b64 was slow, but I don't really want
+      linecount of these things.
+- [ ] If a thread has messages that are unread, and others that are new, then
+      it shows as red even though none are both.  This is confusing.
+      Maybe it won't be a problem once I use edlib primariy.
+- [ ] when there is a "new, not unread" message, it stays red and I cannot clear
+      the 'red', even if I change the tag.
+- [ ] when I 'read' a message at top of summary and move to next, summary 
+      refreshes with 'next' at the top, so  I don't see the old message change colour.
+- [ ] archived messages never disappear from the list
+- [ ] search documents don't disappear when unused
+     They, at least, should refresh and clean when visited.
+- [ ] Chr-g in search/message window should remove non-matching entries from
+     search.  Chr-G discards and starts again.
+- [ ] show a summary line at end of search result which says how far back has been searched.
+
 - [ ] when I unhide an email part which is a single v.long line,
     redraw gets confused and point goes off-screen, which seems
     to leave it confused.
 - [ ] make min top/bottom margin configurable, set for message list
 - [ ] error check Popen of notmuch - don't want EPIPE when we write.
 - [ ] render-lines calls render:reposition with m2 beyond the end of displayed region.
-- [ ] search in thread list - and within a thread
+- [ ] search in thread list - and within a thread - this generates >2000 marks!
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
    then 'q' and crash.
-- [ ]  A multipart still had an active view.
+- [ ] A multipart still had an active view.
 - [ ] display counts of current thread somewhere, so I know where I'm up to.
 - [ ] allow refresh of current search, especially when re-visit
-- [ ] background colour for current message/thread
 - [ ] how do work with multiple thread?
 - [ ] in text/plain, wrap long lines on 'space'.
 - [ ] need to resolve how charsets are handled.  Maybe an attribute to
    query to see if there is a need for a utf-8 layer on email
-- [ ] in quoted-printable, line ends "=\n" does always join as it should.
+- [ ] in quoted-printable, line ends "=\n" doesn't always join as it should.
    See email about Mobile number
 - [ ] When click on first char in tagged range, I don't see the tag and
    don't get a Mouse-Activate event.
-- [ ] search documents don't disappear when unused
-     They, at least, should refresh and clean when visited.
 - [ ] line wrap in header should not appear as space??
 - [ ] how to make unselected messages disappear from list
 - [ ] refresh thread list
-- [ ] highlight current summary line
 - [ ] if a subject line in wrapped in the email, the summary line look weird
 - [ ] Add Close handler for doc-docs.c
 - [ ] handle all Unicode newline chars.
@@ -442,12 +479,8 @@ Module features
 - [ ] Handle \r\n e-o-l and display sensibly
 - [ ] command to skip over whole thread
 - [ ] use NOTMUCH_CONFIG consistently - not used for locking.
-- [ ] look into stored-query!!
+- [ ] look into stored-query!! query: is slow and (I think) buggy
 - [ ] 'class searches' should be given callback on creation??
-- [ ] doc:notmuch:search-maxlen should be attribute, not command.
-- [ ] re-arrange notmuch code so doc are first, then viewers, then commands
-- [ ] Chr-g in search/message window should remove non-matching entries from
-     search.  Chr-G discards and starts again.
 - [ ] We *must* not change order or messages when reloading, without fixing all marks
    that refer to anything that moved in order.
 - [ ] rel_date could report how long until display would change, and
@@ -464,16 +497,7 @@ Module features
 - [ ] save function - doc:save-file given file name or fd
 - [ ] brief summary of part type in button line
 - [ ] open function
-- [ ] '+' or '-' to change flags, S marks newspam N notspam ! unread,inbox
 - [ ] make URLs clickable
-- [ ] highlight current message in summary list - background colour?
-- [ ] encourage current message to be visible when list is auto updated
-- [ ] point in summary list should stay close to middle
-- [ ] 'Z' should work in email-view window, not just summary window
-- [ ] better feedback to 'g' - e.g flag that update is happening
-- [ ] I don't think summary updates correctly
-     when count notices a difference, it should trigger a refresh
-- [ ] Chr-a should affect thing under cursor, not current thing
 - [ ] detect and hide cited text
 - [ ] detect and highlight links
 - [ ] Make long to/cc headers truncate unless selected.
@@ -481,7 +505,6 @@ Module features
 - [ ] buttons for non-displayable
 - [ ] display image on gtk,
 - [ ] display image on ncurses.
-- [ ] improve update of message list... sometimes disappears
 
 ### Presenter
 
