@@ -945,6 +945,16 @@ class notmuch_list(edlib.Doc):
         self.p = Popen(cmd, shell=False, stdout=PIPE)
         self.call("event:read", self.p.stdout.fileno(), self.get_threads)
 
+    def move_marks(self, tid, new):
+        # Thread 'tid' is being removed, or relocated.
+        # Move all marks that point to it to the next thread, which
+        # might be None
+        m = self.first_mark()
+        while m and m.pos:
+            if m.pos[0] == tid:
+                self.setpos(m, new, 0)
+            m = m.next_any()
+
     def get_threads(self, key, **a):
         found = 0
         try:
@@ -956,9 +966,12 @@ class notmuch_list(edlib.Doc):
             found += 1
             try:
                 i = self.old.index(tid)
-                #if i > 0:
-                #    self.move_marks_from(tid)
                 del self.old[i]
+                if i > 0:
+                    if i == len(self.old)-1:
+                        self.move_marks(tid,None)
+                    else:
+                        self.move_marks(tid, self.old[i])
             except ValueError:
                 pass
             if tid not in self.new:
@@ -1042,7 +1055,7 @@ class notmuch_list(edlib.Doc):
             self.messageids[tid] = midlist
             self.threadinfo[tid] = minfo
         if mid is None:
-            # need to update all marks at this location to old mid
+            # need to update all marks at this location to hold mid
             m = mark
             pos = self.makepos(tid, midlist[0])
             while m and m.pos and m.pos[0] == tid:
@@ -1051,6 +1064,26 @@ class notmuch_list(edlib.Doc):
             m = mark.next_any()
             while m and m.pos and m.pos[0] == tid:
                 m.pos = pos
+                m = m.next_any()
+        else:
+            # Need to make sure all marks on this thread are properly
+            # ordered.  If we find two marks out of order, the pos of
+            # the second is changed to match the first.
+            m = mark
+            prev = m.prev_any()
+            while prev and prev.pos and prev.pos[0] == tid:
+                m = prev
+            ind = 0
+            midlist = self.messageids[tid]
+            while m and m.pos and m.pos[0] == tid:
+                if m.pos[1] not in midlist:
+                    self.setpos(m, tid, ind)
+                else:
+                    mi = midlist.index(m.pos[1])
+                    if mi < ind:
+                        self.setpos(m, tid, ind)
+                    else:
+                        ind = mi
                 m = m.next_any()
 
     def rel_date(self, sec):

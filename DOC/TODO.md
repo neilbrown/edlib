@@ -481,7 +481,7 @@ Module features
 - [ ] use NOTMUCH_CONFIG consistently - not used for locking.
 - [ ] look into stored-query!! query: is slow and (I think) buggy
 - [ ] 'class searches' should be given callback on creation??
-- [ ] We *must* not change order or messages when reloading, without fixing all marks
+- [X] We *must* not change order or messages when reloading, without fixing all marks
    that refer to anything that moved in order.
 - [ ] rel_date could report how long until display would change, and
    we could set a timer for the minimum.
