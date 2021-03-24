@@ -895,7 +895,7 @@ class notmuch_list(edlib.Doc):
         self.threadinfo = {}
         self.unique_pos = {}
         self["render-default"] = "notmuch:threads"
-        self["line-format"] = "<%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<tab:450><%TM-hilite>%TM-subject</>                      "
+        self["line-format"] = "<%BG><%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<tab:450><%TM-hilite>%TM-subject</></>                      "
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")
         self.load_full()
@@ -1407,6 +1407,7 @@ class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.selected = None
+        self.selmsg = None
         self.whole_thread = False
         self.seen_threads = {}
         self.seen_msgs = {}
@@ -1508,7 +1509,17 @@ class notmuch_query_view(edlib.Pane):
         "handle:doc:get-attr"
         if mark is None:
             mark = focus.call("doc:point", ret='mark')
+        if not mark.pos:
+            return edlib.Efallthrough
         attr = str
+        if attr == "BG":
+            (tid,mid) = mark.pos
+            if tid == self.selected and comm2:
+                if mid == self.selmsg:
+                    comm2("cb", focus, "bg:magenta+60", mark, attr)
+                else:
+                    comm2("cb", focus, "bg:yellow+60", mark, attr)
+            return 1
         if attr[:3] == "TM-":
             if self.thread_start and mark < self.thread_end and mark >= self.thread_start:
                 return self.parent.call("doc:get-attr", focus, num, num2, mark, "M-" + str[3:], comm2)
@@ -1577,6 +1588,7 @@ class notmuch_query_view(edlib.Pane):
         s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
         if s2 and num >= 0:
             focus.call("notmuch:select-message", s2, s, num)
+            self.selmsg = s2
         return 1
 
     def handle_reposition(self, key, focus, mark, mark2, **a):

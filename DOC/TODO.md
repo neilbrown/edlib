@@ -413,8 +413,8 @@ Module features
 
 - [ ] when entering a thread from below, go to last message, not first
 - [X] 'Z' should work in email-view window, not just summary window
-- [ ] background colour for current message/thread and current search
-- [ ] highlight current summary line
+- [X] background colour for current message/thread
+- [ ] background colour for current search
 - [ ] When there are 'new' items, selecting a search should go to the first NEW,
       and opening a thread should go to the first NEW.
 - [X] currently opening a thread goes to first in thread, even if it didn't
@@ -423,7 +423,6 @@ Module features
 - [ ] re-arrange notmuch code so doc are first, then viewers, then commands
 - [ ] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
 - [ ] '+' or '-' to change flags, S marks newspam N notspam ! unread,inbox
-- [ ] highlight current message in summary list - background colour?
 - [ ] encourage current message to be visible when list is auto updated
 - [ ] point in summary list should stay close to middle
 - [ ] better feedback to 'g' - e.g flag that update is happening
