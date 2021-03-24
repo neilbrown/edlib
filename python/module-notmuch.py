@@ -1218,14 +1218,14 @@ class notmuch_master_view(edlib.Pane):
         if not p:
             return 1
         m = mark
+        direction = 1 if key[-1] in "na" else -1
         if op:
             # secondary window exists so move, otherwise just select
             # Need to get point as 'mark' might be in the wrong pane
-            direction = 1 if key[-1] in "na" else -1
             p.call("Move-Char", direction)
             m = p.call("doc:dup-point", 0, -2, ret='mark')
 
-        p.call("notmuch:select", m, 1)
+        p.call("notmuch:select", m, direction)
         return 1
 
     def handle_A(self, key, focus, mark, str, **a):
@@ -1621,10 +1621,18 @@ class notmuch_query_view(edlib.Pane):
                 focus.call("Notify:clip", self.thread_start, self.thread_matched)
                 if mark:
                     mark.clip(self.thread_start, self.thread_matched)
-        s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
-        if s2 and num >= 0:
-            focus.call("notmuch:select-message", s2, s, num)
-            self.selmsg = s2
+                if num < 0:
+                    # we moved backward to land here, so go to last message
+                    m = self.thread_end.dup()
+                    focus.call("doc:step-matched", 0, 1, m)
+                    if mark:
+                        mark.to_mark(m)
+                    focus.call("Move-to", m)
+        if num != 0:
+            s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
+            if s2:
+                focus.call("notmuch:select-message", s2, s, num)
+                self.selmsg = s2
         return 1
 
     def handle_reposition(self, key, focus, mark, mark2, **a):
