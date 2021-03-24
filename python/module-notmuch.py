@@ -1483,10 +1483,12 @@ class notmuch_query_view(edlib.Pane):
                 # move one matched message
                 ret = self.parent.call("doc:step-matched", focus, mark, forward,
                                        move, ret='char')
-                # If moving forward, we might be in the next thread,
-                # make sure we didn't go further than thread_end
+                # We might be in the next thread, make sure we are at the
+                # start
                 if forward and move and mark > self.thread_end:
                     mark.to_mark(self.thread_end)
+                if not forward and move and mark < self.thread_start:
+                    focus.call("doc:step-thread", mark, forward, move)
                 return ret
             else:
                 # move one thread
@@ -1567,9 +1569,11 @@ class notmuch_query_view(edlib.Pane):
                 if matched != "True":
                     focus.call("doc:step-matched", 1, 1, self.thread_matched)
                 focus.call("view:changed", self.thread_start, self.thread_end)
+                # all marks on this thread must be moved to thread_matched
+                self.thread_start.step(0)
+                focus.call("Notify:clip", self.thread_start, self.thread_matched)
                 if mark:
-                    mark.to_mark(self.thread_matched)
-                focus.call("Move-to", self.thread_matched)
+                    mark.clip(self.thread_start, self.thread_matched)
         s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
         if s2 and num >= 0:
             focus.call("notmuch:select-message", s2, s, num)

@@ -2083,7 +2083,7 @@ static PyMethodDef mark_methods[] = {
 	{"dup", (PyCFunction)Mark_dup, METH_NOARGS,
 	 "duplicate a mark, as ungrouped"},
 	{"clip", (PyCFunction)Mark_clip, METH_VARARGS,
-	 "If this mark is in range, move to start"},
+	 "If this mark is in range, move to end"},
 	{"release", (PyCFunction)Mark_release, METH_NOARGS,
 	 "release a vmark so it can disappear"},
 	{"ack", (PyCFunction)Mark_ack, METH_NOARGS,
