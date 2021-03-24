@@ -1465,9 +1465,9 @@ class notmuch_query_view(edlib.Pane):
                 in_thread = False
             elif forward and mark >= self.thread_end:
                 in_thread = False
-            elif not forward and mark <= self.thread_matched:
+            elif not forward and mark <= self.thread_start:
                 in_thread = False
-            elif forward and mark < self.thread_matched:
+            elif forward and mark < self.thread_start:
                 in_thread = False
             elif not forward and mark > self.thread_end:
                 in_thread = False
