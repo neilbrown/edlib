@@ -420,7 +420,7 @@ Module features
 - [X] currently opening a thread goes to first in thread, even if it didn't
        match search term.
 - [ ] doc:notmuch:search-maxlen should be attribute, not command.
-- [ ] re-arrange notmuch code so doc are first, then viewers, then commands
+- [X] re-arrange notmuch code so doc are first, then viewers, then commands
 - [ ] '+' or '-' to change flags, S marks newspam N notspam ! unread,inbox
 - [ ] encourage current message to be visible when list is auto updated
 - [ ] point in summary list should stay close to middle

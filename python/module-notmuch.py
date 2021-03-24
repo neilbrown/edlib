@@ -235,6 +235,12 @@ class searches:
                     ret.append(s[6:])
         return ret
 
+# There are two document types.
+#   notmuch_main presents all the saved searches, and also represents the database
+#      of all messages.  There is only one of these.
+#   notmuch_query presents a single query as a number of threads, each with a number
+#      of messages.
+
 class notmuch_main(edlib.Doc):
     # This is the document interface for the saved-search list.
     # It contains the searches as items which have attributes
@@ -298,7 +304,7 @@ class notmuch_main(edlib.Doc):
 
     def handle_doc_get_attr(self, key, focus, mark, str, comm2, **a):
         "handle:doc:get-attr"
-        # This must support the line-format used in notmuch_main_view
+        # This must support the line-format used in notmuch_list_view
 
         attr = str
         o = mark.offset
@@ -372,10 +378,10 @@ class notmuch_main(edlib.Doc):
                 nm = child
                 break
         if not nm:
-            nm = notmuch_list(self, str, q)
+            nm = notmuch_query(self, str, q)
             # FIXME This is a a bit ugly.  I should pass self.container
-            # as the parent, but notmuch_list needs to stash maindoc
-            # Also I should use an edlib call to get notmuch_list
+            # as the parent, but notmuch_query needs to stash maindoc
+            # Also I should use an edlib call to get notmuch_query
             nm.reparent(self.container)
             nm.call("doc:set-name", str)
         if comm2:
@@ -545,343 +551,12 @@ class notmuch_main(edlib.Doc):
                         c("doc:notmuch:query-refresh")
                         return
 
-class notmuch_master_view(edlib.Pane):
-    # This pane controls one visible instance of the notmuch application.
-    # It manages the size and position of the 3 panes and provides common
-    # handling for some keystrokes.
-    # 'focus' is normally None and we are created parentless.  The creator
-    # then attaches us and a tiler beneath the main notmuch document.
-    #
-    def __init__(self, focus = None):
-        edlib.Pane.__init__(self, focus)
-        self.maxlen = 0 # length of longest query name in list_pane
-        self.list_pane = None
-        self.query_pane = None
-        self.message_pane = None
-
-    def handle_set_main_view(self, key, focus, **a):
-        "handle:notmuch:set_list_pane"
-        self.list_pane = focus
-        return 1
-
-    def resize(self):
-        if self.list_pane and (self.query_pane or self.message_pane):
-            # list_pane must be no more than 25% total width, and no more than
-            # 5+1+maxlen+1
-            if self.maxlen <= 0:
-                m = self.list_pane.call("doc:notmuch:search-maxlen")
-                if m and m > 1:
-                    self.maxlen = m - 1
-                else:
-                    self.maxlen = 20
-            tile = self.list_pane.call("ThisPane", "notmuch", ret='focus')
-            space = self.w
-            ch,ln = tile.scale()
-            max = 5 + 1 + self.maxlen + 1
-            if space * 100 / ch < max * 4:
-                w = space / 4
-            else:
-                w = ch * 10 * max / 1000
-            if tile.w != w:
-                tile.call("Window:x+", "notmuch", int(w - tile.w))
-        if self.query_pane and self.message_pane:
-            # query_pane must be at least 4 lines, else 1/4 height
-            # but never more than 1/2 the height
-            tile = self.query_pane.call("ThisPane", "notmuch", ret='focus')
-            ch,ln = tile.scale()
-            space = self.h
-            min = 4
-            if space * 100 / ln > min * 4:
-                h = space / 4
-            else:
-                h = ln * 10 * min / 1000
-                if h > space / 2:
-                    h = space / 2
-            if tile.h != h:
-                tile.call("Window:y+", "notmuch", int(h - tile.h))
-
-
-    def handle_choose(self, key, **a):
-        "handle:docs:choose"
-        # don't choose anything  FIXME when is this helpful?
-        return 1
-
-    def handle_clone(self, key, focus, **a):
-        "handle:Clone"
-        main = notmuch_master_view(focus)
-        p = main.call("attach-tile", "notmuch", "main", ret='focus')
-        frm = self.list_pane.call("ThisPane", "notmuch", ret='focus')
-        frm.clone_children(p)
-        return 1
-
-    def handle_size(self, key, **a):
-        "handle:Refresh:size"
-        # First, make sure the tiler has adjusted to the new size
-        self.focus.w = self.w
-        self.focus.h = self.h
-        self.focus("Refresh:size")
-        # then make sure children are OK
-        self.resize()
-        return 1
-
-    def handle_dot(self, key, focus, mark, **a):
-        "handle:doc:char-."
-        # select thing under point, but don't move
-        focus.call("notmuch:select", mark, 0)
-        return 1
-
-    def handle_return(self, key, focus, mark, **a):
-        "handle:K:Enter"
-        # select thing under point, and enter it
-        focus.call("notmuch:select", mark, 1)
-        return 1
-
-    def handle_space(self, key, **a):
-        "handle:doc:char- "
-        if self.message_pane:
-            self.message_pane.call(key)
-        elif self.query_pane:
-            self.query_pane.call("K:Enter")
-        else:
-            self.list_pane.call("K:Enter")
-        return 1
-
-    def handle_move(self, key, mark, **a):
-        "handle-list/K:A-n/K:A-p/doc:char-n/doc:char-p"
-        if key.startswith("K:A-") or not self.query_pane:
-            p = self.list_pane
-            op = self.query_pane
-        else:
-            p = self.query_pane
-            op = self.message_pane
-        if not p:
-            return 1
-        m = mark
-        if op:
-            # secondary window exists so move, otherwise just select
-            # Need to get point as 'mark' might be in the wrong pane
-            direction = 1 if key[-1] in "na" else -1
-            p.call("Move-Char", direction)
-            m = p.call("doc:dup-point", 0, -2, ret='mark')
-
-        p.call("notmuch:select", m, 1)
-        return 1
-
-    def handle_A(self, key, focus, mark, str, **a):
-        "handle:doc:char-a"
-        # Remove "inbox" tag from this message, or this thread
-        in_message = False
-        in_query = False
-        in_main = False
-        if self.message_pane and self.mychild(focus) == self.mychild(self.message_pane):
-            in_message = True
-        elif self.query_pane and self.mychild(focus) == self.mychild(self.query_pane):
-            in_query = True
-        else:
-            in_main = True
-
-        if in_message:
-            mp = self.message_pane
-            if mp.cmid and mp.ctid:
-                if self.query_pane:
-                    self.query_pane.call("doc:notmuch:remove-tag-inbox",
-                                         mp.ctid, mp.cmid)
-                else:
-                    self.list_pane.call("doc:notmuch:remove-tag-inbox", mp.ctid, mp.cmid)
-            self.call("doc:char-n")
-            return 1
-        if in_query:
-            thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
-            msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
-            self.query_pane.call("doc:notmuch:remove-tag-inbox", thid, msid)
-            # Move to next message.
-            m = focus.call("doc:dup-point", 0, -2, ret='mark')
-            if focus.call("Move-Line", 1, m) == 1:
-                focus.call("Move-to", m)
-            if self.message_pane:
-                # Message was displayed, so display this one
-                focus.call("notmuch:select", m, 0)
-            return 1
-        return 1
-
-    def handle_close_message(self, key, **a):
-        "handle:notmuch-close-message"
-        self.message_pane = None
-        return 1
-
-    def handle_xq(self, key, **a):
-        "handle-list/doc:char-x/doc:char-q"
-        if self.message_pane:
-            if key != "doc:char-x":
-                self.mark_read()
-            p = self.message_pane
-            self.message_pane = None
-            p.call("Window:close", "notmuch")
-        elif self.query_pane:
-            if key != "doc:char-x":
-                self.query_pane.call("doc:notmuch:mark-seen")
-            p = self.query_pane
-            self.query_pane = None
-
-            s = p.call("get-attr", "qname", 1, ret='str')
-            if s:
-                p.call("doc:notmuch:update-one", s)
-
-            p.call("Window:close", "notmuch")
-        else:
-            p = self.call("ThisPane", ret='focus')
-            if p and p.focus:
-                p.focus.close()
-        return 1
-
-    def handle_v(self, key, **a):
-        "handle:doc:char-V"
-        # View the current message as a raw file
-        if not self.message_pane:
-            return 1
-        p2 = self.call("doc:open", self.message_pane["filename"], -1,
-                       ret = 'focus')
-        p2.call("doc:set:autoclose", 1)
-        p0 = self.call("DocPane", p2, ret='focus')
-        if not p0:
-            p0 = self.call("OtherPane", ret = 'focus')
-        if not p0:
-            return 1
-        p2.call("doc:attach-view", p0, 1, "viewer")
-        return 1
-
-    def handle_o(self, key, focus, **a):
-        "handle:doc:char-o"
-        # focus to next window
-        focus.call("Window:next", "notmuch")
-        return 1
-
-    def handle_O(self, key, focus, **a):
-        "handle:doc:char-O"
-        # focus to prev window
-        focus.call("Window:prev", "notmuch")
-        return 1
-
-    def handle_g(self, key, focus, **a):
-        "handle:doc:char-g"
-        focus.call("doc:notmuch:update")
-        return 1
-
-    def handle_Z(self, key, **a):
-        "handle:doc:char-Z"
-        if self.query_pane:
-            return self.query_pane.call(key)
-
-    def handle_select_query(self, key, num, str, **a):
-        "handle:notmuch:select-query"
-        # A query was selected, identifed by 'str'.  Close the
-        # message window and open a threads window.
-        if self.message_pane:
-            p = self.message_pane
-            self.message_pane = None
-            p.call("Window:close", "notmuch")
-        if self.query_pane:
-            self.query_pane.call("doc:notmuch:mark-seen")
-        if self.query_pane:
-            # update summaries for the query pane we are replacing.
-            s = self.query_pane.call("get-attr", "qname", 1, ret='str')
-            if s:
-                self.list_pane.call("doc:notmuch:update-one", s)
-
-        p0 = self.list_pane.call("doc:notmuch:query", str, ret='focus')
-        p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 15,
-                                 ret = 'focus')
-        self.query_pane = p0.call("doc:attach-view", p1, ret='focus')
-        if num:
-            self.query_pane.take_focus()
-        self.resize()
-        return 1
-
-    def handle_select_message(self, key, num, str, str2, **a):
-        "handle:notmuch:select-message"
-        # a thread or message was selected. id in 'str'. threadid in str2
-        # Find the file and display it in a 'message' pane
-        self.mark_read()
-
-        p0 = self.list_pane.call("doc:notmuch:byid", str, ret='focus')
-        p1 = self.query_pane.call("OtherPane", "notmuch", "message", 13,
-                                  ret='focus')
-        p3 = p0.call("doc:attach-view", p1, ret='focus')
-        p3 = p3.call("attach-render-notmuch:message", ret='focus')
-
-        # FIXME This still doesn't work: there are races: attaching a doc to
-        # the pane causes the current doc to be closed.  But the new doc
-        # hasn't been anchored yet so if they are the same, we lose.
-        # Need a better way to anchor a document.
-        #p0.call("doc:set:autoclose", 1)
-        p = self.message_pane = p3
-        p.ctid = str2
-        p.cmid = str
-        if num:
-            self.message_pane.take_focus()
-        self.resize()
-        return 1
-
-    def mark_read(self):
-        p = self.message_pane
-        if not p:
-            return
-        if self.query_pane:
-            self.query_pane.call("doc:notmuch:mark-read", p.ctid, p.cmid)
-
-class notmuch_main_view(edlib.Pane):
-    # This pane provides view on the search-list document.
-    def __init__(self, focus):
-        edlib.Pane.__init__(self, focus)
-        self['render-wrap'] = 'no'
-        self['background'] = 'color:#A0FFFF'
-        self['line-format'] = '<%fmt>%count %name</>'
-        self.call("notmuch:set_list_pane")
-        self.call("doc:request:doc:replaced")
-        self.selected = None
-
-    def handle_clone(self, key, focus, **a):
-        "handle:Clone"
-        p = notmuch_main_view(focus)
-        self.clone_children(focus.focus)
-        return 1
-
-    def handle_notify_replace(self, key, **a):
-        "handle:doc:replaced"
-        # FIXME do I need to do anything here? - of not, why not
-        return 0
-
-    def handle_select(self, key, focus, mark, num, **a):
-        "handle:notmuch:select"
-        s = focus.call("doc:get-attr", "query", mark, ret='str')
-        if s:
-            focus.call("notmuch:select-query", s, num)
-        return 1
-
-##################
-# list-view shows a list of threads/messages that match a given
-# search query.
-# We generate the thread-ids using "notmuch search --output=summary"
-# For a full-scan we collect at most 100 and at most 1 month at a time, until
-# we reach an empty month, then get all the rest together
-# For an update, we just check the last day and add anything missing.
-# We keep an array of thread-ids
-#
-# Three different views are presented of this document by notmuch_query_view
-# depending on whether 'selected' and possibly 'whole_thread' are set.
-#
-# By default when neither is set, only the threads are displayed.
-# If a threadid is 'selected' but not 'whole_thread', then other threads
-# appear as a single line, but the selected thread displays as all
-# matching messages.
-# If whole_thread is set, then only the selected thread is visible,
-# and all messages, matched or not, of that thread are visisble.
-#
+# notmuch_query document
 # a mark.pos is a list of thread-id and message-id.  The hash
 # self.unique_pos is use to ensure marks with the same pos have literally
 # identical " is " values
 
-class notmuch_list(edlib.Doc):
+class notmuch_query(edlib.Doc):
     def __init__(self, focus, qname, query):
         edlib.Doc.__init__(self, focus)
         self.db = notmuch_db()
@@ -1339,7 +1014,7 @@ class notmuch_list(edlib.Doc):
     def handle_get_attr(self, key, focus, str, comm2, **a):
         "handle:get-attr"
         if str == "doc-type" and comm2:
-            comm2("callback", focus, "notmuch-list")
+            comm2("callback", focus, "notmuch-query")
             return 1
         return edlib.Efallthrough
 
@@ -1402,6 +1077,355 @@ class notmuch_list(edlib.Doc):
         # database document for permanent change
         self.maindoc.call(key, str, str2)
         return 1
+
+#
+# There are 4 viewer
+#  notmuch_master_view  manages multiple notmuch tiles.  When the notmuch_main
+#       is displayed, this gets gets attached *under* (closer to root) the
+#       doc-view pane together with a tiling window.  One tile is used to
+#       display the query list from the main doc, other tiles are used to
+#       display other components.
+#  notmuch_list_view  displays the list of saved-searched registered with
+#       notmuch_main.  It display list-name and a count of the most interesting
+#       sorts of message.
+#  notmuch_query_view displays the list of threads and messages for a single
+#       query - a notmuch_query document
+#  notmuch_message_view displays a single message, a doc-email document
+#       which is implemented separately.  notmuch_message_view primarily
+#       provides interactions consistent with the rest of edlib-notmuch
+
+class notmuch_master_view(edlib.Pane):
+    # This pane controls one visible instance of the notmuch application.
+    # It manages the size and position of the 3 panes and provides common
+    # handling for some keystrokes.
+    # 'focus' is normally None and we are created parentless.  The creator
+    # then attaches us and a tiler beneath the main notmuch document.
+    #
+    def __init__(self, focus = None):
+        edlib.Pane.__init__(self, focus)
+        self.maxlen = 0 # length of longest query name in list_pane
+        self.list_pane = None
+        self.query_pane = None
+        self.message_pane = None
+
+    def handle_set_main_view(self, key, focus, **a):
+        "handle:notmuch:set_list_pane"
+        self.list_pane = focus
+        return 1
+
+    def resize(self):
+        if self.list_pane and (self.query_pane or self.message_pane):
+            # list_pane must be no more than 25% total width, and no more than
+            # 5+1+maxlen+1
+            if self.maxlen <= 0:
+                m = self.list_pane.call("doc:notmuch:search-maxlen")
+                if m and m > 1:
+                    self.maxlen = m - 1
+                else:
+                    self.maxlen = 20
+            tile = self.list_pane.call("ThisPane", "notmuch", ret='focus')
+            space = self.w
+            ch,ln = tile.scale()
+            max = 5 + 1 + self.maxlen + 1
+            if space * 100 / ch < max * 4:
+                w = space / 4
+            else:
+                w = ch * 10 * max / 1000
+            if tile.w != w:
+                tile.call("Window:x+", "notmuch", int(w - tile.w))
+        if self.query_pane and self.message_pane:
+            # query_pane must be at least 4 lines, else 1/4 height
+            # but never more than 1/2 the height
+            tile = self.query_pane.call("ThisPane", "notmuch", ret='focus')
+            ch,ln = tile.scale()
+            space = self.h
+            min = 4
+            if space * 100 / ln > min * 4:
+                h = space / 4
+            else:
+                h = ln * 10 * min / 1000
+                if h > space / 2:
+                    h = space / 2
+            if tile.h != h:
+                tile.call("Window:y+", "notmuch", int(h - tile.h))
+
+
+    def handle_choose(self, key, **a):
+        "handle:docs:choose"
+        # don't choose anything  FIXME when is this helpful?
+        return 1
+
+    def handle_clone(self, key, focus, **a):
+        "handle:Clone"
+        main = notmuch_master_view(focus)
+        p = main.call("attach-tile", "notmuch", "main", ret='focus')
+        frm = self.list_pane.call("ThisPane", "notmuch", ret='focus')
+        frm.clone_children(p)
+        return 1
+
+    def handle_size(self, key, **a):
+        "handle:Refresh:size"
+        # First, make sure the tiler has adjusted to the new size
+        self.focus.w = self.w
+        self.focus.h = self.h
+        self.focus("Refresh:size")
+        # then make sure children are OK
+        self.resize()
+        return 1
+
+    def handle_dot(self, key, focus, mark, **a):
+        "handle:doc:char-."
+        # select thing under point, but don't move
+        focus.call("notmuch:select", mark, 0)
+        return 1
+
+    def handle_return(self, key, focus, mark, **a):
+        "handle:K:Enter"
+        # select thing under point, and enter it
+        focus.call("notmuch:select", mark, 1)
+        return 1
+
+    def handle_space(self, key, **a):
+        "handle:doc:char- "
+        if self.message_pane:
+            self.message_pane.call(key)
+        elif self.query_pane:
+            self.query_pane.call("K:Enter")
+        else:
+            self.list_pane.call("K:Enter")
+        return 1
+
+    def handle_move(self, key, mark, **a):
+        "handle-list/K:A-n/K:A-p/doc:char-n/doc:char-p"
+        if key.startswith("K:A-") or not self.query_pane:
+            p = self.list_pane
+            op = self.query_pane
+        else:
+            p = self.query_pane
+            op = self.message_pane
+        if not p:
+            return 1
+        m = mark
+        if op:
+            # secondary window exists so move, otherwise just select
+            # Need to get point as 'mark' might be in the wrong pane
+            direction = 1 if key[-1] in "na" else -1
+            p.call("Move-Char", direction)
+            m = p.call("doc:dup-point", 0, -2, ret='mark')
+
+        p.call("notmuch:select", m, 1)
+        return 1
+
+    def handle_A(self, key, focus, mark, str, **a):
+        "handle:doc:char-a"
+        # Remove "inbox" tag from this message, or this thread
+        in_message = False
+        in_query = False
+        in_main = False
+        if self.message_pane and self.mychild(focus) == self.mychild(self.message_pane):
+            in_message = True
+        elif self.query_pane and self.mychild(focus) == self.mychild(self.query_pane):
+            in_query = True
+        else:
+            in_main = True
+
+        if in_message:
+            mp = self.message_pane
+            if mp.cmid and mp.ctid:
+                if self.query_pane:
+                    self.query_pane.call("doc:notmuch:remove-tag-inbox",
+                                         mp.ctid, mp.cmid)
+                else:
+                    self.list_pane.call("doc:notmuch:remove-tag-inbox", mp.ctid, mp.cmid)
+            self.call("doc:char-n")
+            return 1
+        if in_query:
+            thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
+            msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
+            self.query_pane.call("doc:notmuch:remove-tag-inbox", thid, msid)
+            # Move to next message.
+            m = focus.call("doc:dup-point", 0, -2, ret='mark')
+            if focus.call("Move-Line", 1, m) == 1:
+                focus.call("Move-to", m)
+            if self.message_pane:
+                # Message was displayed, so display this one
+                focus.call("notmuch:select", m, 0)
+            return 1
+        return 1
+
+    def handle_close_message(self, key, **a):
+        "handle:notmuch-close-message"
+        self.message_pane = None
+        return 1
+
+    def handle_xq(self, key, **a):
+        "handle-list/doc:char-x/doc:char-q"
+        if self.message_pane:
+            if key != "doc:char-x":
+                self.mark_read()
+            p = self.message_pane
+            self.message_pane = None
+            p.call("Window:close", "notmuch")
+        elif self.query_pane:
+            if key != "doc:char-x":
+                self.query_pane.call("doc:notmuch:mark-seen")
+            p = self.query_pane
+            self.query_pane = None
+
+            s = p.call("get-attr", "qname", 1, ret='str')
+            if s:
+                p.call("doc:notmuch:update-one", s)
+
+            p.call("Window:close", "notmuch")
+        else:
+            p = self.call("ThisPane", ret='focus')
+            if p and p.focus:
+                p.focus.close()
+        return 1
+
+    def handle_v(self, key, **a):
+        "handle:doc:char-V"
+        # View the current message as a raw file
+        if not self.message_pane:
+            return 1
+        p2 = self.call("doc:open", self.message_pane["filename"], -1,
+                       ret = 'focus')
+        p2.call("doc:set:autoclose", 1)
+        p0 = self.call("DocPane", p2, ret='focus')
+        if not p0:
+            p0 = self.call("OtherPane", ret = 'focus')
+        if not p0:
+            return 1
+        p2.call("doc:attach-view", p0, 1, "viewer")
+        return 1
+
+    def handle_o(self, key, focus, **a):
+        "handle:doc:char-o"
+        # focus to next window
+        focus.call("Window:next", "notmuch")
+        return 1
+
+    def handle_O(self, key, focus, **a):
+        "handle:doc:char-O"
+        # focus to prev window
+        focus.call("Window:prev", "notmuch")
+        return 1
+
+    def handle_g(self, key, focus, **a):
+        "handle:doc:char-g"
+        focus.call("doc:notmuch:update")
+        return 1
+
+    def handle_Z(self, key, **a):
+        "handle:doc:char-Z"
+        if self.query_pane:
+            return self.query_pane.call(key)
+
+    def handle_select_query(self, key, num, str, **a):
+        "handle:notmuch:select-query"
+        # A query was selected, identifed by 'str'.  Close the
+        # message window and open a threads window.
+        if self.message_pane:
+            p = self.message_pane
+            self.message_pane = None
+            p.call("Window:close", "notmuch")
+        if self.query_pane:
+            self.query_pane.call("doc:notmuch:mark-seen")
+        if self.query_pane:
+            # update summaries for the query pane we are replacing.
+            s = self.query_pane.call("get-attr", "qname", 1, ret='str')
+            if s:
+                self.list_pane.call("doc:notmuch:update-one", s)
+
+        p0 = self.list_pane.call("doc:notmuch:query", str, ret='focus')
+        p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 15,
+                                 ret = 'focus')
+        self.query_pane = p0.call("doc:attach-view", p1, ret='focus')
+        if num:
+            self.query_pane.take_focus()
+        self.resize()
+        return 1
+
+    def handle_select_message(self, key, num, str, str2, **a):
+        "handle:notmuch:select-message"
+        # a thread or message was selected. id in 'str'. threadid in str2
+        # Find the file and display it in a 'message' pane
+        self.mark_read()
+
+        p0 = self.list_pane.call("doc:notmuch:byid", str, ret='focus')
+        p1 = self.query_pane.call("OtherPane", "notmuch", "message", 13,
+                                  ret='focus')
+        p3 = p0.call("doc:attach-view", p1, ret='focus')
+        p3 = p3.call("attach-render-notmuch:message", ret='focus')
+
+        # FIXME This still doesn't work: there are races: attaching a doc to
+        # the pane causes the current doc to be closed.  But the new doc
+        # hasn't been anchored yet so if they are the same, we lose.
+        # Need a better way to anchor a document.
+        #p0.call("doc:set:autoclose", 1)
+        p = self.message_pane = p3
+        p.ctid = str2
+        p.cmid = str
+        if num:
+            self.message_pane.take_focus()
+        self.resize()
+        return 1
+
+    def mark_read(self):
+        p = self.message_pane
+        if not p:
+            return
+        if self.query_pane:
+            self.query_pane.call("doc:notmuch:mark-read", p.ctid, p.cmid)
+
+class notmuch_list_view(edlib.Pane):
+    # This pane provides view on the search-list document.
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus)
+        self['render-wrap'] = 'no'
+        self['background'] = 'color:#A0FFFF'
+        self['line-format'] = '<%fmt>%count %name</>'
+        self.call("notmuch:set_list_pane")
+        self.call("doc:request:doc:replaced")
+        self.selected = None
+
+    def handle_clone(self, key, focus, **a):
+        "handle:Clone"
+        p = notmuch_list_view(focus)
+        self.clone_children(focus.focus)
+        return 1
+
+    def handle_notify_replace(self, key, **a):
+        "handle:doc:replaced"
+        # FIXME do I need to do anything here? - of not, why not
+        return 0
+
+    def handle_select(self, key, focus, mark, num, **a):
+        "handle:notmuch:select"
+        s = focus.call("doc:get-attr", "query", mark, ret='str')
+        if s:
+            focus.call("notmuch:select-query", s, num)
+        return 1
+
+##################
+# query_view shows a list of threads/messages that match a given
+# search query.
+# We generate the thread-ids using "notmuch search --output=summary"
+# For a full-scan we collect at most 100 and at most 1 month at a time, until
+# we reach an empty month, then get all the rest together
+# For an update, we just check the last day and add anything missing.
+# We keep an array of thread-ids
+#
+# Three different views are presented of this document depending on
+# whether 'selected' and possibly 'whole_thread' are set.
+#
+# By default when neither is set, only the threads are displayed.
+# If a threadid is 'selected' but not 'whole_thread', then other threads
+# appear as a single line, but the selected thread displays as all
+# matching messages.
+# If whole_thread is set, then only the selected thread is visible,
+# and all messages, matched or not, of that thread are visisble.
+#
 
 class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
@@ -1755,7 +1779,7 @@ def render_master_view_attach(key, focus, comm2, **a):
     p = main.call("attach-tile", "notmuch", "main", ret='focus')
     doc.reparent(p)
     p = focus.call("attach-render-format", ret='focus')
-    p = notmuch_main_view(p)
+    p = notmuch_list_view(p)
     main.list_pane = p
     p.take_focus()
     comm2("callback", p)
