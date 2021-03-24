@@ -409,7 +409,7 @@ Module features
 
 - [ ] count-lines seems to go very slowly in base64/utf-8 email
 
-### notmuch
+### Notmuch - overview
 
 - [ ] when entering a thread from below, go to last message, not first
 - [X] 'Z' should work in email-view window, not just summary window
@@ -421,7 +421,6 @@ Module features
        match search term.
 - [ ] doc:notmuch:search-maxlen should be attribute, not command.
 - [ ] re-arrange notmuch code so doc are first, then viewers, then commands
-- [ ] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
 - [ ] '+' or '-' to change flags, S marks newspam N notspam ! unread,inbox
 - [ ] encourage current message to be visible when list is auto updated
 - [ ] point in summary list should stay close to middle
@@ -430,11 +429,6 @@ Module features
      when count notices a difference, it should trigger a refresh
 - [ ] Chr-a should affect thing under cursor, not current thing
 - [ ] improve update of message list... sometimes disappears
-- [ ] linecount is spinning somewhere.
-      Doc is multipart, chars are garbage. underlying is b64
-      Email has large attachments
-      This might have been because b64 was slow, but I don't really want
-      linecount of these things.
 - [ ] If a thread has messages that are unread, and others that are new, then
       it shows as red even though none are both.  This is confusing.
       Maybe it won't be a problem once I use edlib primariy.
@@ -442,16 +436,12 @@ Module features
       the 'red', even if I change the tag.
 - [ ] when I 'read' a message at top of summary and move to next, summary 
       refreshes with 'next' at the top, so  I don't see the old message change colour.
+- [ ] Chr-g in search/message window should remove non-matching entries from
+     search.  Chr-G discards and starts again.
 - [ ] archived messages never disappear from the list
 - [ ] search documents don't disappear when unused
      They, at least, should refresh and clean when visited.
-- [ ] Chr-g in search/message window should remove non-matching entries from
-     search.  Chr-G discards and starts again.
 - [ ] show a summary line at end of search result which says how far back has been searched.
-
-- [ ] when I unhide an email part which is a single v.long line,
-    redraw gets confused and point goes off-screen, which seems
-    to leave it confused.
 - [ ] make min top/bottom margin configurable, set for message list
 - [ ] error check Popen of notmuch - don't want EPIPE when we write.
 - [ ] render-lines calls render:reposition with m2 beyond the end of displayed region.
@@ -462,22 +452,9 @@ Module features
 - [ ] display counts of current thread somewhere, so I know where I'm up to.
 - [ ] allow refresh of current search, especially when re-visit
 - [ ] how do work with multiple thread?
-- [ ] in text/plain, wrap long lines on 'space'.
-- [ ] need to resolve how charsets are handled.  Maybe an attribute to
-   query to see if there is a need for a utf-8 layer on email
-- [ ] in quoted-printable, line ends "=\n" doesn't always join as it should.
-   See email about Mobile number
-- [ ] When click on first char in tagged range, I don't see the tag and
-   don't get a Mouse-Activate event.
-- [ ] line wrap in header should not appear as space??
-- [ ] how to make unselected messages disappear from list
 - [ ] refresh thread list
-- [ ] if a subject line in wrapped in the email, the summary line look weird
 - [ ] Add Close handler for doc-docs.c
-- [ ] handle all Unicode newline chars.
-- [ ] should multipart/visible be per-view somehow?
 - [ ] dynamic search/filter pattern
-- [ ] Handle \r\n e-o-l and display sensibly
 - [ ] command to skip over whole thread
 - [ ] use NOTMUCH_CONFIG consistently - not used for locking.
 - [ ] look into stored-query!! query: is slow and (I think) buggy
@@ -486,10 +463,34 @@ Module features
    that refer to anything that moved in order.
 - [ ] rel_date could report how long until display would change, and
    we could set a timer for the minimum.
-- [ ] simplify thread,mesg ordering by using maxint instead of -1 ??
+- [X] simplify thread,mesg ordering by using maxint instead of -1 ??
 
-###  multipart-email
+###  Notmuch message display
 
+- [ ] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
+- [ ] make base64 much more efficient
+- [ ] use python html2text to create markdown view
+      import html2text ; content=html2text.html2text("html")
+- [ ] linecount is spinning somewhere.
+      Doc is multipart, chars are garbage. underlying is b64
+      Email has large attachments
+      This might have been because b64 was slow, but I don't really want
+      linecount of these things.
+- [ ] when I unhide an email part which is a single v.long line,
+    redraw gets confused and point goes off-screen, which seems
+    to leave it confused.
+- [ ] in text/plain, wrap long lines on 'space'.
+- [ ] need to resolve how charsets are handled.  Maybe an attribute to
+   query to see if there is a need for a utf-8 layer on email
+- [ ] in quoted-printable, line ends "=\n" doesn't always join as it should.
+   See email about Mobile number
+- [ ] When click on first char in tagged range, I don't see the tag and
+   don't get a Mouse-Activate event.
+- [ ] line wrap in header should not appear as space??
+- [ ] if a subject line in wrapped in the email, the summary line look weird
+- [ ] handle all Unicode newline chars.
+- [ ] should multipart/visible be per-view somehow?
+- [ ] Handle \r\n e-o-l and display sensibly
 - [ ] I need a more structured/extensible way to decide which button was pressed
 - [ ] I need key-click to work reliably somehow. Click on selected button?
 - [ ] Auto-hide depending on type - with extensible table
@@ -506,6 +507,11 @@ Module features
 - [ ] buttons for non-displayable
 - [ ] display image on gtk,
 - [ ] display image on ncurses.
+
+### Notmuch composition
+
+- [ ] design backend for posting
+- [ ] Support compose/reply/follow-up/forward
 
 ### Presenter
 
