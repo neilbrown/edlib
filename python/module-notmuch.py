@@ -322,6 +322,8 @@ class notmuch_main(edlib.Doc):
                     val = "fg:black"
                 else:
                     val = "fg:grey"
+                if focus['qname'] == s:
+                    val = "bg:pink,"+val
             elif attr == 'name':
                 val = s
             elif attr == 'count':
@@ -1149,6 +1151,16 @@ class notmuch_master_view(edlib.Pane):
             if tile.h != h:
                 tile.call("Window:y+", "notmuch", int(h - tile.h))
 
+    def handle_getattr(self, key, focus, str, comm2, **a):
+        "handle:get-attr"
+        if comm2:
+            val = None
+            if str in ["qname","query"] and self.query_pane:
+                val = self.query_pane[str]
+            if val:
+                comm2("callback", focus, val, str)
+                return 1
+        return edlib.Efallthrough
 
     def handle_choose(self, key, **a):
         "handle:docs:choose"

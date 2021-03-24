@@ -414,7 +414,7 @@ Module features
 - [ ] when entering a thread from below, go to last message, not first
 - [X] 'Z' should work in email-view window, not just summary window
 - [X] background colour for current message/thread
-- [ ] background colour for current search
+- [X] background colour for current search
 - [ ] When there are 'new' items, selecting a search should go to the first NEW,
       and opening a thread should go to the first NEW.
 - [X] currently opening a thread goes to first in thread, even if it didn't
