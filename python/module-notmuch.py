@@ -1552,9 +1552,13 @@ class notmuch_query_view(edlib.Pane):
                 self.thread_end = self.thread_start.dup()
                 focus.call("doc:step-thread", 1, 1, self.thread_end)
                 self.thread_matched = self.thread_start.dup()
-                if focus.call("doc:get-attr", self.thread_matched, "matched", ret="str") != "True":
+                matched = focus.call("doc:get-attr", self.thread_matched, "matched", ret="str")
+                if matched != "True":
                     focus.call("doc:step-matched", 1, 1, self.thread_matched)
                 focus.call("view:changed", self.thread_start, self.thread_end)
+                if mark:
+                    mark.to_mark(self.thread_matched)
+                focus.call("Move-to", self.thread_matched)
         s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
         if s2 and num >= 0:
             focus.call("notmuch:select-message", s2, s, num)
