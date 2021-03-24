@@ -894,6 +894,28 @@ class notmuch_list(edlib.Doc):
         self.add_notify(self.maindoc, "Notify:Close")
         self.load_full()
 
+    def makepos(self, thread, msg = None):
+        p = [thread, msg]
+        if msg:
+            k = thread + msg
+        else:
+            k = thread
+        if k in self.unique_pos:
+            p = self.unique_pos[k]
+        else:
+            self.unique_pos[k] = p
+        return p
+
+    def setpos(self, mark, thread, msgnum = 0):
+        if thread is None:
+            mark.pos = None
+            return
+        if thread in self.messageids:
+            msg = self.messageids[thread][msgnum]
+        else:
+            msg = None
+        mark.pos = self.makepos(thread, msg)
+
     def load_full(self):
         self.old = self.threadids[:]
         self.new = []
@@ -919,28 +941,6 @@ class notmuch_list(edlib.Doc):
         cmd += [ "( %s )" % self.query ]
         self.p = Popen(cmd, shell=False, stdout=PIPE)
         self.call("event:read", self.p.stdout.fileno(), self.get_threads)
-
-    def makepos(self, thread, msg = None):
-        p = [thread, msg]
-        if msg:
-            k = thread + msg
-        else:
-            k = thread
-        if k in self.unique_pos:
-            p = self.unique_pos[k]
-        else:
-            self.unique_pos[k] = p
-        return p
-
-    def setpos(self, mark, thread, msgnum = 0):
-        if thread is None:
-            mark.pos = None
-            return
-        if thread in self.messageids:
-            msg = self.messageids[thread][msgnum]
-        else:
-            msg = None
-        mark.pos = self.makepos(thread, msg)
 
     def get_threads(self, key, **a):
         found = 0
@@ -989,6 +989,21 @@ class notmuch_list(edlib.Doc):
             self.age += 1
         self.start_load()
         return edlib.Efalse
+
+    def cvt_depth(self, depth):
+        # depth is an array of int
+        # 2 is top-level in the thread, normally only one of these
+        # 1 at the end of the array means there are children
+        # 1 before the end means there are more children at this depth
+        # 0 means no more children at this depth
+        ret = ""
+
+        for level in depth[:-2]:
+            ret += u" │ "[level]
+        ret += u"╰├─"[depth[-2]]
+        ret += u"─┬"[depth[-1]]
+
+        return ret + "> "
 
     def add_message(self, m, lst, info, depth):
         mid = m.get_message_id()
@@ -1062,16 +1077,6 @@ class notmuch_list(edlib.Doc):
         val = "              " + val
         val = val[-13:]
         return val
-
-    def cvt_depth(self, depth):
-        ret = ""
-
-        for level in depth[:-2]:
-            ret += u" │ "[level]
-        ret += u"╰├─"[depth[-2]]
-        ret += u"─┬"[depth[-1]]
-
-        return ret + "> "
 
     def step(self, mark, forward, move):
         ret = edlib.WEOF
