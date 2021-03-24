@@ -411,6 +411,7 @@ Module features
 
 ### notmuch
 
+- [ ] when entering a thread from below, go to last message, not first
 - [ ] 'Z' should work in email-view window, not just summary window
 - [ ] background colour for current message/thread and current search
 - [ ] highlight current summary line

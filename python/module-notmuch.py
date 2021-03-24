@@ -656,13 +656,14 @@ class notmuch_master_view(edlib.Pane):
             op = self.message_pane
         if not p:
             return 1
-        direction = 1 if key[-1] in "na" else -1
         m = mark
         if op:
-            # secondary window exists, so move
+            # secondary window exists so move, otherwise just select
+            # Need to get point as 'mark' might be in the wrong pane
+            direction = 1 if key[-1] in "na" else -1
+            p.call("Move-Char", direction)
             m = p.call("doc:dup-point", 0, -2, ret='mark')
-            if p.call("Move-Line", direction, m) == 1:
-                p.call("Move-to", m)
+
         p.call("notmuch:select", m, 1)
         return 1
 
