@@ -855,7 +855,7 @@ class notmuch_main_view(edlib.Pane):
 ##################
 # list-view shows a list of threads/messages that match a given
 # search query.
-# We generate the thread-ids using "notmuch search --output=threads"
+# We generate the thread-ids using "notmuch search --output=summary"
 # For a full-scan we collect at most 100 and at most 1 month at a time, until
 # we reach an empty month, then get all the rest together
 # For an update, we just check the last day and add anything missing.
@@ -904,6 +904,7 @@ class notmuch_list(edlib.Doc):
             p = self.unique_pos[k]
         else:
             self.unique_pos[k] = p
+        # FIXME unique_pos never shinks.
         return p
 
     def setpos(self, mark, thread, msgnum = 0):
@@ -917,16 +918,18 @@ class notmuch_list(edlib.Doc):
         mark.pos = self.makepos(thread, msg)
 
     def load_full(self):
+        self.partial = False
+        self.age = 1
+
         self.old = self.threadids[:]
         self.new = []
         self.offset = 0
-        self.age = 1
-        self.partial = False
         self.start_load()
 
     def load_update(self):
         self.partial = True
         self.age = None
+
         self.old = self.threadids[:]
         self.new = []
         self.offset = 0
@@ -1009,12 +1012,11 @@ class notmuch_list(edlib.Doc):
         mid = m.get_message_id()
         lst.append(mid)
         l = list(m.get_replies())
-        depth += [ 1 if l else 0 ]
+        depth.append( 1 if l else 0 )
         info[mid] = (m.get_filename(), m.get_date(),
                      m.get_flag(notmuch.Message.FLAG.MATCH),
                      depth, m.get_header("From"), m.get_header("Subject"), list(m.get_tags()))
-        depth = depth[:-1]
-        if l:
+        if depth.pop():
             l.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
             for m in l[:-1]:
                 self.add_message(m, lst, info, depth + [1])
@@ -1079,10 +1081,9 @@ class notmuch_list(edlib.Doc):
         return val
 
     def step(self, mark, forward, move):
-        ret = edlib.WEOF
         if forward:
             if mark.pos is None:
-                return ret
+                return edlib.WEOF
             if not move:
                 return '\n'
             (tid,mid) = mark.pos
@@ -1129,7 +1130,7 @@ class notmuch_list(edlib.Doc):
     def handle_notify_tag(self, key, str, str2, **a):
         "handle:Notify:Tag"
         if str2:
-        # re-evaluate tags of a single message
+            # re-evaluate tags of a single message
             if str in self.threadinfo:
                 t = self.threadinfo[str]
                 if str2 in t:
@@ -1203,7 +1204,8 @@ class notmuch_list(edlib.Doc):
 
     def handle_step_matched(self, key, mark, num, num2, **a):
         "handle:doc:step-matched"
-        # Move to the next/prev message which is matched.
+        # Move to the next/prev message which is matched
+        # or to an unopened thread
         forward = num
         move = num2
         m = mark
@@ -1238,10 +1240,9 @@ class notmuch_list(edlib.Doc):
         t = self.threads[tid]
         if mid:
             m = self.threadinfo[tid][mid]
-            (fn, dt, matched, depth, author, subj, tags) = m
         else:
-            (fn, dt, matched, depth, author, subj, tags) = (
-                "", 0, False, [0,0], "" ,"", [])
+            m = ("", 0, False, [0,0], "" ,"", [])
+        (fn, dt, matched, depth, author, subj, tags) = m
         if attr == "message-id":
             val = mid
         elif attr == "thread-id":
@@ -1269,10 +1270,6 @@ class notmuch_list(edlib.Doc):
             if attr == "T-authors":
                 val = val[:20]
 
-        elif attr == "message-id":
-            val = mid
-        elif attr == "thread-id":
-            val = tid
         elif attr == "matched":
             val = "True" if matched else "False"
         elif attr == "M-hilite":
@@ -1362,7 +1359,8 @@ class notmuch_list(edlib.Doc):
             if "unread" in t:
                 t.remove("unread")
         self.notify("doc:replaced")
-        # Pass this down to database document.
+        # Cached info is updates, pass down to
+        # database document for permanent change
         self.maindoc.call(key, str, str2)
         return 1
 
