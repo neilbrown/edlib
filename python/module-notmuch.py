@@ -1401,12 +1401,13 @@ class notmuch_query_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.selected = None
-        self.whole_thread = 0
+        self.whole_thread = False
         self.seen_threads = {}
         self.seen_msgs = {}
         # thread_start and thread_end are marks which deliniate
-        # the 'current' thread. thread_matched is the first matched
-        # message in the thread.
+        # the 'current' thread. thread_end is the start of the next
+        # thread (if there is one).
+        # thread_matched is the first matched message in the thread.
         self.thread_start = None
         self.thread_end = None
         self.thread_matched = None
@@ -1444,10 +1445,10 @@ class notmuch_query_view(edlib.Pane):
         if self.whole_thread:
             # move one message, but stop at thread_start/thread_end
             if forward:
-                ret = self.parent.call("doc:step", focus, forward, move, mark)
-                if move and mark >= self.thread_end:
-                    # If at end of thread, move to end of document
-                    self.parent.call("doc:set-ref", focus, mark, 0)
+                if mark >= self.thread_end:
+                    ret = edlib.WEOF
+                else:
+                    ret = self.parent.call("doc:step", focus, forward, move, mark)
             else:
                 if mark <= self.thread_start:
                     # at start already
@@ -1481,19 +1482,19 @@ class notmuch_query_view(edlib.Pane):
             else:
                 # move one thread
                 if forward:
-                    ret = self.parent.call("doc:step-thread", focus, mark, forward, move)
+                    ret = focus.call("doc:step-thread", focus, mark, forward, move)
                     if self.thread_start and mark == self.thread_start:
                         mark.to_mark(self.thread_matched)
                 else:
                     ret = self.parent.call("doc:step", focus, mark, forward, move)
                     if move and ret != edlib.WEOF:
-                        self.parent.call("doc:step-thread", focus, mark, forward, move)
+                        focus.call("doc:step-thread", focus, mark, forward, move)
                 return ret
 
     def handle_get_attr(self, key, focus, mark, num, num2, str, comm2, **a):
         "handle:doc:get-attr"
         if mark is None:
-            mark = self.call("doc:point", ret='mark')
+            mark = focus.call("doc:point", ret='mark')
         attr = str
         if attr[:3] == "TM-":
             if self.thread_start and mark < self.thread_end and mark >= self.thread_start:
@@ -1518,12 +1519,12 @@ class notmuch_query_view(edlib.Pane):
                 self.parent.call("doc:step-matched", mt, 1, 1)
                 self.parent.next(mk)
         else:
-            # everything before the read, and after the thread disappears
+            # everything before the thread, and after the thread disappears
             m = edlib.Mark(self)
             focus.call("Notify:clip", m, self.thread_start)
-            self.call("doc:set-ref", m, 0)
+            focus.call("doc:set-ref", m, 0)
             focus.call("Notify:clip", self.thread_end, m)
-        self.whole_thread = 1 - self.whole_thread
+        self.whole_thread = not self.whole_thread
         # notify that everything is changed, don't worry about details.
         focus.call("view:changed")
         return 1
@@ -1541,18 +1542,18 @@ class notmuch_query_view(edlib.Pane):
                 self.thread_end = None
                 self.thread_matched = None
 
-            if self.call("doc:notmuch:load-thread", mark) == 1:
+            if focus.call("doc:notmuch:load-thread", mark) == 1:
                 self.selected = s
                 if mark:
                     self.thread_start = mark.dup()
                 else:
                     self.thread_start = focus.call("doc:dup-point", 0, -2, ret='mark')
-                self.parent.call("doc:step-thread", 0, 1, self.thread_start)
+                focus.call("doc:step-thread", 0, 1, self.thread_start)
                 self.thread_end = self.thread_start.dup()
-                self.parent.call("doc:step-thread", 1, 1, self.thread_end)
+                focus.call("doc:step-thread", 1, 1, self.thread_end)
                 self.thread_matched = self.thread_start.dup()
-                if self.parent.call("doc:get-attr", self.thread_matched, "matched", ret="str") != "True":
-                    self.parent.call("doc:step-matched", 1, 1, self.thread_matched)
+                if focus.call("doc:get-attr", self.thread_matched, "matched", ret="str") != "True":
+                    focus.call("doc:step-matched", 1, 1, self.thread_matched)
                 focus.call("view:changed", self.thread_start, self.thread_end)
         s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
         if s2 and num >= 0:
@@ -1575,7 +1576,7 @@ class notmuch_query_view(edlib.Pane):
             if i1 and i2:
                 if i1 in self.seen_threads:
                     del self.seen_threads[i1]
-                if  i2 not in self.seen_msgs:
+                if i2 not in self.seen_msgs:
                     self.seen_msgs[i2] = True
             if edlib.WEOF == focus.next(m):
                 break
@@ -1583,11 +1584,10 @@ class notmuch_query_view(edlib.Pane):
     def handle_mark_seen(self, key, focus, mark, mark2, str, **a):
         "handle:doc:notmuch:mark-seen"
         for i in self.seen_threads:
-            self.call("doc:notmuch:remember-seen-thread", i)
+            focus.call("doc:notmuch:remember-seen-thread", i)
         for i in self.seen_msgs:
-            self.call("doc:notmuch:remember-seen-msg", i)
-        self.parent.call("doc:notmuch:mark-seen")
-        return 1
+            focus.call("doc:notmuch:remember-seen-msg", i)
+        return edlib.Efallthrough
 
 class notmuch_message_view(edlib.Pane):
     def __init__(self, focus):
