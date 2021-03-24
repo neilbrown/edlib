@@ -767,6 +767,11 @@ class notmuch_master_view(edlib.Pane):
         focus.call("doc:notmuch:update")
         return 1
 
+    def handle_Z(self, key, **a):
+        "handle:doc:char-Z"
+        if self.query_pane:
+            return self.query_pane.call(key)
+
     def handle_select_query(self, key, num, str, **a):
         "handle:notmuch:select-query"
         # A query was selected, identifed by 'str'.  Close the
