@@ -1025,11 +1025,11 @@ class notmuch_list(edlib.Doc):
         mid = m.get_message_id()
         lst.append(mid)
         l = list(m.get_replies())
-        depth.append( 1 if l else 0 )
         info[mid] = (m.get_filename(), m.get_date(),
                      m.get_flag(notmuch.Message.FLAG.MATCH),
-                     depth, m.get_header("From"), m.get_header("Subject"), list(m.get_tags()))
-        if depth.pop():
+                     depth + [1 if l else 0],
+                     m.get_header("From"), m.get_header("Subject"), list(m.get_tags()))
+        if l:
             l.sort(key=lambda m:(m.get_date(), m.get_header("subject")))
             for m in l[:-1]:
                 self.add_message(m, lst, info, depth + [1])
