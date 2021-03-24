@@ -932,8 +932,11 @@ class notmuch_list(edlib.Doc):
             self.unique_pos[k] = p
         return p
 
-    def setpos(self, mark, thread, msgnum = -1):
-        if msgnum >= 0 and thread in self.messageids:
+    def setpos(self, mark, thread, msgnum = 0):
+        if thread is None:
+            mark.pos = None
+            return
+        if thread in self.messageids:
             msg = self.messageids[thread][msgnum]
         else:
             msg = None
@@ -1088,7 +1091,7 @@ class notmuch_list(edlib.Doc):
                 tid = self.threadids[i+1]
                 self.setpos(mark, tid, 0)
             else:
-                mark.pos = None
+                self.setpos(mark, None)
             mark.step(1)
             return '\n'
         else:
@@ -1147,7 +1150,6 @@ class notmuch_list(edlib.Doc):
         self.to_end(mark, num == 0)
         mark.pos = None
         if num == 1 and len(self.threadids) > 0:
-            tid = self.threadids[0]
             self.setpos(mark, self.threadids[0], 0)
         mark.offset = 0
         return 1
@@ -1176,10 +1178,9 @@ class notmuch_list(edlib.Doc):
                 m2 = mark.next_any()
             i = self.threadids.index(tid) + 1
             if i < len(self.threadids):
-                tid = self.threadids[i]
-                self.setpos(mark, tid, 0)
+                self.setpos(mark, self.threadids[i], 0)
             else:
-                mark.pos = None
+                self.setpos(mark, None)
             return '\n'
         else:
             if mark.pos == None:
