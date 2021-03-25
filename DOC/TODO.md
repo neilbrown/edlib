@@ -427,7 +427,7 @@ Module features
 - [X] S marks newspam N notspam ! unread,inbox
 - [ ] encourage current message to be visible when list is auto updated
 - [ ] point in summary list should stay close to middle
-- [ ] better feedback to 'g' - e.g flag that update is happening
+- [X] better feedback to 'g' - e.g flag that update is happening
 - [ ] I don't think summary updates correctly
      when count notices a difference, it should trigger a refresh
 - [ ] Chr-a should affect thing under cursor, not current thing

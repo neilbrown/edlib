@@ -336,6 +336,13 @@ class notmuch_main(edlib.Doc):
                     val = "%5s" % "?"
                 else:
                     val = "%5d" % c
+            elif attr == 'space':
+                if self.searches.todoing and s == self.searches.todoing:
+                    val = '*'
+                elif s in self.searches.todo:
+                    val = '?'
+                else:
+                    val = ' '
         if val:
             comm2("callback", focus, val, mark, str)
             return 1
@@ -1445,7 +1452,7 @@ class notmuch_list_view(edlib.Pane):
         edlib.Pane.__init__(self, focus)
         self['render-wrap'] = 'no'
         self['background'] = 'color:#A0FFFF'
-        self['line-format'] = '<%fmt>%count %name</>'
+        self['line-format'] = '<%fmt>%count%space%name</>'
         self.call("notmuch:set_list_pane")
         self.call("doc:request:doc:replaced")
         self.selected = None
