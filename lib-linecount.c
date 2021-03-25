@@ -297,6 +297,10 @@ DEF_CMD(linecount_clip)
 
 DEF_CMD(count_lines)
 {
+	char *type = pane_attr_get(ci->focus, "doc-type");
+	/* FIXME this type-check is a HACK */
+	if (type && strcmp(type, "email") == 0)
+		return 1;
 	/* FIXME optimise this away most of the time */
 	if (call("doc:notify:doc:CountLines", ci->focus) == 0) {
 		/* No counter in place, add one */

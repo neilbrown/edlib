@@ -57,4 +57,4 @@ Send notification "FOO" to current window.
 Known notifications include:
 
 - Keystroke-notify - string is the key name
-- Mouse-event-notifiy - string is the event name
+- Mouse-event-notify - string is the event name
