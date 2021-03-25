@@ -479,6 +479,34 @@ class notmuch_main(edlib.Doc):
                     self.notify("Notify:Tag", str)
         return 1
 
+    def handle_notmuch_add_tag(self, key, str, str2, **a):
+        "handle-prefix:doc:notmuch:add-tag-"
+        tag = key[20:]
+        with self.db.get_write() as db:
+            if str2:
+                # add just to 1 message
+                m = db.find_message(str2)
+                if m:
+                    t = list(m.get_tags())
+                    if tag not in t:
+                        m.add_tag(tag)
+                        self.notify("Notify:Tag", str, str2)
+            else:
+                # add to whole thread
+                # FIXME This should be the thread a last seen, not as
+                # is now in the database - which might be different.
+                q = db.create_query("thread:%s" % str)
+                changed = False
+                for t in q.search_threads():
+                    ml = t.get_messages()
+                    for m in ml:
+                        if tag not in m.get_tags():
+                            m.add_tag(tag)
+                            changed = True
+                if changed:
+                    self.notify("Notify:Tag", str)
+        return 1
+
     def handle_notmuch_remember_seen_thread(self, key, focus, str, **a):
         "handle:doc:notmuch:remember-seen-thread"
         if str:
@@ -1021,7 +1049,7 @@ class notmuch_query(edlib.Doc):
     def handle_maindoc(self, key, **a):
         "handle-prefix:doc:notmuch:"
         # any doc:notmuch calls that we don't handle directly
-        # are handed to the maindoc
+        # are handled to the maindoc
         return self.maindoc.call(key, **a)
 
     def handle_load_thread(self, key, mark, **a):
@@ -1227,8 +1255,12 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_A(self, key, focus, mark, str, **a):
-        "handle:doc:char-a"
-        # Remove "inbox" tag from this message, or this thread
+        "handle-list/doc:char-a/doc:char-S/doc:char-N/doc:char-!/"
+        # adjust flags for this message or thread, and move to next
+        # a - remove inbox
+        # S - add newspam
+        # N - remove newspam or add notspam
+        # ! - add unread,inbox remove newspam,notspam
         in_message = False
         in_query = False
         in_main = False
@@ -1239,20 +1271,31 @@ class notmuch_master_view(edlib.Pane):
         else:
             in_main = True
 
+        adds = []; removes = []
+        if key[-1] == 'a':
+            removes = ['inbox']
+        if key[-1] == 'S':
+            adds = ['newspam']
+        if key[-1] == 'N':
+            adds = ['notspam']
+            removes = ['newspam']
+        if key[-1] == '!':
+            adds = ['unread','inbox']
+            removes = ['newspam','notspam']
+
         if in_message:
             mp = self.message_pane
             if mp.cmid and mp.ctid:
                 if self.query_pane:
-                    self.query_pane.call("doc:notmuch:remove-tag-inbox",
-                                         mp.ctid, mp.cmid)
+                    self.do_update(self.query_pane, mp.ctid, mp.cmid, adds, removes)
                 else:
-                    self.list_pane.call("doc:notmuch:remove-tag-inbox", mp.ctid, mp.cmid)
+                    self.do_update(self.list_pane, mp.ctid, mp.cmid, adds, removes)
             self.call("doc:char-n")
             return 1
         if in_query:
             thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
             msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
-            self.query_pane.call("doc:notmuch:remove-tag-inbox", thid, msid)
+            self.do_update(self.query_pane, thid, msid, adds, removes)
             # Move to next message.
             m = focus.call("doc:dup-point", 0, -2, ret='mark')
             if focus.call("Move-Line", 1, m) == 1:
@@ -1262,6 +1305,11 @@ class notmuch_master_view(edlib.Pane):
                 focus.call("notmuch:select", m, 0)
             return 1
         return 1
+    def do_update(self, target, tid, mid, adds, removes):
+        for t in adds:
+            target.call("doc:notmuch:add-tag-%s" % t, tid, mid)
+        for t in removes:
+            target.call("doc:notmuch:remove-tag-%s" % t, tid, mid)
 
     def handle_close_message(self, key, **a):
         "handle:notmuch-close-message"

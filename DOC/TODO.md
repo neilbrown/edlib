@@ -423,7 +423,8 @@ Module features
        match search term.
 - [X] doc:notmuch:search-maxlen should be attribute, not command.
 - [X] re-arrange notmuch code so doc are first, then viewers, then commands
-- [ ] '+' or '-' to change flags, S marks newspam N notspam ! unread,inbox
+- [ ] '+' or '-' to change flags,
+- [X] S marks newspam N notspam ! unread,inbox
 - [ ] encourage current message to be visible when list is auto updated
 - [ ] point in summary list should stay close to middle
 - [ ] better feedback to 'g' - e.g flag that update is happening
