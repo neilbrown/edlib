@@ -119,6 +119,7 @@ struct rl_data {
 				       */
 	short		lines; /* lines drawn before we hit eof */
 	short		cols; /* columns used for longest line */
+	short		margin; /* distance from top/bottom required for cursor */
 	bool		background_drawn;
 
 	/* If cursor not visible, we add this pane in bottom-right and place
@@ -606,7 +607,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		if (!found_start && top && end &&
 		    mark_ordered_or_same(top, end) &&
 		    (!mark_same(top, end) || y_post - rl->tail_height >= y_pre))
-				found_start = 1;
+			found_start = 1;
 
 		y = consume_space(p, y, &y_pre, &y_post,
 				  &lines_above, &lines_below,
@@ -822,11 +823,15 @@ DEF_CMD(render_lines_revise)
 	char *a;
 
 	a = pane_attr_get(focus, "render-wrap");
-
 	if (rl->do_wrap != (!a || strcmp(a, "yes") ==0)) {
 		rl->do_wrap = (!a || strcmp(a, "yes") ==0);
 		refresh_all = True;
 	}
+
+	rl->margin = pane_attr_get_int(focus, "render-vmargin", 0);
+	if (rl->margin >= p->h/2)
+		rl->margin= p->h/2;
+
 	hdr = pane_attr_get(focus, "heading");
 	if (hdr && !*hdr)
 		hdr = NULL;
@@ -950,7 +955,7 @@ DEF_CMD(render_lines_revise)
 								       pm, m);
 				if (offset >= 0) {
 					measure_line(p, focus, m, offset);
-					if (hp->cy >= rl->skip_height)
+					if (hp->cy >= rl->skip_height + rl->margin)
 						/* Cursor is visible on this line */
 						on_screen = True;
 				}
@@ -967,14 +972,31 @@ DEF_CMD(render_lines_revise)
 							   "line-height");
 					if (lh <= 0)
 						lh = 1;
-					if (y - hp->h + hp->cy <= p->h - lh) {
+					if (y - hp->h + hp->cy <= p->h - lh - rl->margin) {
 						/* Cursor is on screen */
 						on_screen = True;
 					}
 				}
 			} else if (pm && mark_ordered_or_same(m, pm) && m2 &&
-				   mark_ordered_or_same(pm, m2))
-				on_screen = True;
+				   mark_ordered_or_same(pm, m2)) {
+				if (rl->margin == 0)
+					on_screen = True;
+				else {
+					int offset = call_render_line_to_point(
+						focus, pm, m);
+					if (offset > 0) {
+						int lh;
+						int cy;
+						measure_line(p, focus, m, offset);
+						lh = attr_find_int(hp->attrs,
+								   "line-height");
+						cy = y - hp->h + hp->cy;
+						if (cy >= rl->margin && cy <= p->h - rl->margin - lh)
+							/* Cursor at least margin from edge */
+							on_screen = True;
+					}
+				}
+			}
 		}
 		if (y >= p->h)
 			rl->tail_height = p->h - y;
@@ -1282,7 +1304,7 @@ DEF_CMD(render_lines_move_pos)
 	if (!top || !bot ||
 	    (top->seq >= pm->seq && !mark_same(top, pm)) ||
 	    (pm->seq >= bot->seq || mark_same(pm, bot)))
-		/* pos not displayed displayed */
+		/* pos not displayed */
 		find_lines(pm, p, focus, NO_NUMERIC);
 	pane_damaged(p, DAMAGED_REFRESH);
 	rl->repositioned = 1;

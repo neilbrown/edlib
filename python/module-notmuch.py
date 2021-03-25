@@ -1510,6 +1510,16 @@ class notmuch_query_view(edlib.Pane):
         self.thread_start = None
         self.thread_end = None
         self.thread_matched = None
+        (xs,ys) = self.scale()
+        ret = []
+        self.call("text-size", "M", -1, ys,
+                  lambda key, **a: ret.append(a))
+        if ret:
+            lh = ret[0]['xy'][1]
+        else:
+            lh = 1
+        # fixme adjust for pane size
+        self['render-vmargin'] = "%d" % (4 * lh)
         self.call("doc:request:doc:replaced")
 
     def handle_clone(self, key, focus, **a):

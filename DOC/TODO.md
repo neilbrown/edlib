@@ -271,6 +271,8 @@ Module features
 
 ### render-lines
 
+- [ ] improve 'margin' to permit cursor in margin at start of file
+- [ ] improve 'margin' to honor previous view of doc
 - [ ] update_line_height should handle TAB (and any control) - cannot expect
       text-size to handle it.
 - [ ] adding 10% height at e-o-f doesn't make sense with a one-line display
@@ -426,18 +428,18 @@ Module features
 - [ ] '+' or '-' to change flags,
 - [X] S marks newspam N notspam ! unread,inbox
 - [ ] encourage current message to be visible when list is auto updated
-- [ ] point in summary list should stay close to middle
+- [X] point in summary list should stay close to middle
 - [X] better feedback to 'g' - e.g flag that update is happening
 - [ ] I don't think summary updates correctly
      when count notices a difference, it should trigger a refresh
 - [ ] Chr-a should affect thing under cursor, not current thing
-- [ ] improve update of message list... sometimes disappears
+- [X] improve update of message list... sometimes disappears
 - [ ] If a thread has messages that are unread, and others that are new, then
       it shows as red even though none are both.  This is confusing.
       Maybe it won't be a problem once I use edlib primariy.
 - [ ] when there is a "new, not unread" message, it stays red and I cannot clear
       the 'red', even if I change the tag.
-- [ ] when I 'read' a message at top of summary and move to next, summary 
+- [X] when I 'read' a message at top of summary and move to next, summary 
       refreshes with 'next' at the top, so  I don't see the old message change colour.
 - [ ] Chr-g in search/message window should remove non-matching entries from
      search.  Chr-G discards and starts again.
