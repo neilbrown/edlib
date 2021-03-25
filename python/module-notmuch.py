@@ -347,6 +347,9 @@ class notmuch_main(edlib.Doc):
             if str == "doc-type":
                 comm2("callback", focus, "notmuch")
                 return 1
+            if str == "notmuch:max-search-len":
+                comm2("callback", focus, "%d" % self.searches.maxlen)
+                return 1
         return edlib.Efallthrough
 
     def handle_notmuch_update(self, key, **a):
@@ -424,11 +427,6 @@ class notmuch_main(edlib.Doc):
         tags = ",".join(set(tg))
         comm2("callback", focus, tags)
         return 1
-
-    def handle_notmuch_search_max(self, key, **a):
-        "handle:doc:notmuch:search-maxlen"
-        # maxlen is used when resizing the display, to ensure all searches fit.
-        return self.searches.maxlen + 1
 
     def handle_notmuch_query_updated(self, key, **a):
         "handle:doc:notmuch:query-updated"
@@ -1120,9 +1118,9 @@ class notmuch_master_view(edlib.Pane):
             # list_pane must be no more than 25% total width, and no more than
             # 5+1+maxlen+1
             if self.maxlen <= 0:
-                m = self.list_pane.call("doc:notmuch:search-maxlen")
-                if m and m > 1:
-                    self.maxlen = m - 1
+                m = self.list_pane["notmuch:max-search-len"]
+                if m and m.isnumeric():
+                    self.maxlen = int(m)
                 else:
                     self.maxlen = 20
             tile = self.list_pane.call("ThisPane", "notmuch", ret='focus')

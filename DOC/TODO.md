@@ -417,9 +417,11 @@ Module features
 - [X] background colour for current search
 - [ ] When there are 'new' items, selecting a search should go to the first NEW,
       and opening a thread should go to the first NEW.
+      MAYBE NOT.  The 'new' should be first, or last in thread.
+      Wait and see if I want this again.
 - [X] currently opening a thread goes to first in thread, even if it didn't
        match search term.
-- [ ] doc:notmuch:search-maxlen should be attribute, not command.
+- [X] doc:notmuch:search-maxlen should be attribute, not command.
 - [X] re-arrange notmuch code so doc are first, then viewers, then commands
 - [ ] '+' or '-' to change flags, S marks newspam N notspam ! unread,inbox
 - [ ] encourage current message to be visible when list is auto updated
