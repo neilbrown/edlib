@@ -1411,9 +1411,12 @@ class notmuch_master_view(edlib.Pane):
         self.mark_read()
 
         p0 = self.list_pane.call("doc:notmuch:byid", str, ret='focus')
+        tags = self.list_pane.call("doc:notmuch:byid:tags", str, ret='str')
+
         p1 = self.query_pane.call("OtherPane", "notmuch", "message", 13,
                                   ret='focus')
         p3 = p0.call("doc:attach-view", p1, ret='focus')
+        p3['notmuch-tags'] = tags
         p3 = p3.call("attach-render-notmuch:message", ret='focus')
 
         # FIXME This still doesn't work: there are races: attaching a doc to
@@ -1720,6 +1723,9 @@ class notmuch_message_view(edlib.Pane):
         # invisible.
         p = 0
         m = edlib.Mark(focus)
+        tg = self['notmuch-tags']
+        if tg:
+            self['doc-status'] = "Tags:" + tg
         while True:
             newp = self.call("doc:step-part", m, 1)
             # retval is offset by 1 to avoid zero
