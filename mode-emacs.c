@@ -1424,7 +1424,7 @@ DEF_CMD(emacs_reposition)
 		m = mark_at_point(ci->focus, NULL, MARK_UNGROUPED);
 		if (m) {
 			struct mark *m2 = mark_dup(m);
-			call("Move-CursorXY", ci->focus, 1, m, NULL,
+			call("Move-CursorXY", ci->focus, 0, m, NULL,
 			     0, NULL, NULL,
 			     -1, repoint < 0 ? ci->focus->h-1 : 0);
 			if (repoint < 0)
@@ -1880,7 +1880,7 @@ DEF_CMD(emacs_press)
 	 * view has changed.
 	 */
 	call("Move-CursorXY", ci->focus,
-	     0, m, NULL, 0, NULL, NULL, ci->x, ci->y);
+	     1, m, NULL, 0, NULL, NULL, ci->x, ci->y);
 
 	clear_selection(ci->focus, pt, mk, 0);
 	call("Move-to", ci->focus, 0, m);
@@ -1922,7 +1922,7 @@ DEF_CMD(emacs_release)
 		return Efallthrough;
 
 	call("Move-CursorXY", ci->focus,
-	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
+	     2, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
 
 	attr_set_int(&m2->attrs, "emacs:track-selection", 0);
 	update_sel(ci->focus, p, m2, NULL);
@@ -1942,7 +1942,7 @@ DEF_CMD(emacs_motion)
 		return Efallthrough;
 
 	call("Move-CursorXY", ci->focus,
-	     0, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
+	     3, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
 
 	update_sel(ci->focus, p, m2, NULL);
 	return 1;

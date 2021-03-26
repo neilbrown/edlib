@@ -1227,6 +1227,12 @@ static char *get_active_tag(const char *a)
 
 DEF_CMD(render_lines_set_cursor)
 {
+	/* ->num is
+	 * 1 if this resulted from a click
+	 * 2 if from a release
+	 * 3 if from motion
+	 * 0 any other reason.
+	 */
 	struct pane *p = ci->home;
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
@@ -1262,11 +1268,13 @@ DEF_CMD(render_lines_set_cursor)
 	if (m2) {
 		char *tag, *xyattr;
 
-		xyattr = pane_attr_get(m->mdata, "xyattr");
-		tag = get_active_tag(xyattr);
-		if (tag)
-			call("Mouse-Activate", focus, 0, m2, tag,
-			     0, ci->mark, xyattr);
+		if (ci->num == 1) { /* Mouse click */
+			xyattr = pane_attr_get(m->mdata, "xyattr");
+			tag = get_active_tag(xyattr);
+			if (tag)
+				call("Mouse-Activate", focus, 0, m2, tag,
+				     0, ci->mark, xyattr);
+		}
 		m = m2;
 	} else {
 		/* m is the closest we'll get */
