@@ -739,11 +739,10 @@ DEF_CMD(email_view_set_attr)
 			m1 = mark_dup(ci->mark);
 			home_call(ci->home->parent, "doc:step-part", ci->focus,
 				  0, m1);
-			if (get_part(ci->home->parent, m1) != p) {
-				doc_prev(ci->home->parent, m1);
+			if (get_part(ci->home->parent, m1) != p)
 				home_call(ci->home->parent, "doc:step-part",
-					  ci->focus, 0, m1);
-			}
+					  ci->focus, -1, m1);
+
 			mark_step(m1, 0);
 			m2 = mark_dup(m1);
 			home_call(ci->home->parent, "doc:step-part", ci->focus,

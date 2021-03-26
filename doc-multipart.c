@@ -334,6 +334,7 @@ DEF_CMD(mp_step_part)
 	 * Stepping forward takes us to start of next part.
 	 * Stepping backward takes us to start of this
 	 * part - we might not move.
+	 * if ->num is -1, step to start of previous part
 	 * Return part number plus 1.
 	 */
 	struct mp_info *mpi = ci->home->data;
@@ -345,9 +346,12 @@ DEF_CMD(mp_step_part)
 	if (ci->num > 0)
 		/* Forward - next part */
 		change_part(mpi, m, m->ref.docnum + 1, 0);
-	else
+	else if (ci->num || m->ref.docnum == 0)
 		/* Backward - this part */
 		change_part(mpi, m, m->ref.docnum, 0);
+	else
+		/* Backward - this part */
+		change_part(mpi, m, m->ref.docnum - 1, 0);
 
 	mp_normalize(mpi, m);
 	post_move(m);
