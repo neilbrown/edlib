@@ -38,14 +38,6 @@ static bool handle_content(struct pane *p safe, char *type, char *xfer,
 			   struct pane *mp safe, struct pane *spacer safe,
 			   char *path safe);
 
-DEF_CMD(email_close)
-{
-	struct email_info *ei = ci->home->data;
-	// ??? ;
-	call("doc:closed", ei->spacer);
-	return 1;
-}
-
 static bool cond_append(struct buf *b safe, char *txt safe, char *tag safe,
 			int offset, struct mark *pm, struct mark *m safe)
 {
@@ -133,10 +125,10 @@ DEF_CMD(email_select)
 
 	if (!m)
 		return Enoarg;
-	a = pane_mark_attr(ci->home, m, "markup:func");
+	a = pane_mark_attr(ci->focus, m, "markup:func");
 	if (!a || strcmp(a, "doc:email:render-spacer") != 0)
 		return Efallthrough;
-	a = pane_mark_attr(ci->home, m, "multipart-prev:email:actions");
+	a = pane_mark_attr(ci->focus, m, "multipart-prev:email:actions");
 	if (!a)
 		a = "hide";
 	while (r > 0 && a) {
@@ -156,10 +148,8 @@ DEF_CMD(email_select)
 	return 1;
 }
 
-static struct map *email_map safe;
 static struct map *email_view_map safe;
 
-DEF_LOOKUP_CMD(email_handle, email_map);
 DEF_LOOKUP_CMD(email_view_handle, email_view_map);
 
 static char tspecials[] = "()<>@,;:\\\"/[]?=";
@@ -513,7 +503,7 @@ DEF_CMD(open_email)
 	int fd;
 	struct email_info *ei;
 	struct mark *start, *end;
-	struct pane *p, *h, *h2;
+	struct pane *p, *h2;
 	char *mime;
 	char *xfer = NULL, *type = NULL;
 	struct pane *doc;
@@ -588,15 +578,13 @@ DEF_CMD(open_email)
 			    p, ei->spacer, ""))
 		goto out;
 
-	h = pane_register(p, 0, &email_handle.c, ei);
-	if (h) {
-		mark_free(start);
-		mark_free(end);
-		attr_set_str(&h->attrs, "render-default", "text");
-		attr_set_str(&p->attrs, "filename", ci->str+6);
-		attr_set_str(&p->attrs, "doc-type", "email");
-		return comm_call(ci->comm2, "callback:attach", h);
-	}
+	mark_free(start);
+	mark_free(end);
+	attr_set_str(&p->attrs, "render-default", "text");
+	attr_set_str(&p->attrs, "filename", ci->str+6);
+	attr_set_str(&p->attrs, "doc-type", "email");
+	return comm_call(ci->comm2, "callback:attach", p);
+
 out:
 	mark_free(start);
 	mark_free(end);
@@ -787,18 +775,14 @@ DEF_CMD(attach_email_view)
 
 static void email_init_map(void)
 {
-	email_map = key_alloc();
-	key_add(email_map, "Close", &email_close);
-	key_add(email_map, "Free", &edlib_do_free);
-	key_add(email_map, "doc:email:render-spacer", &email_spacer);
-	key_add(email_map, "doc:email:select", &email_select);
-
 	email_view_map = key_alloc();
 	key_add(email_view_map, "Free", &email_view_free);
 	key_add(email_view_map, "doc:step", &email_step);
 	key_add(email_view_map, "doc:set-ref", &email_set_ref);
 	key_add(email_view_map, "doc:set-attr", &email_view_set_attr);
 	key_add(email_view_map, "doc:get-attr", &email_view_get_attr);
+	key_add(email_view_map, "doc:email:render-spacer", &email_spacer);
+	key_add(email_view_map, "doc:email:select", &email_select);
 }
 
 void edlib_init(struct pane *ed safe)
