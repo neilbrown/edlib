@@ -166,7 +166,7 @@ static void mark_ref_copy(struct mark *to safe, struct mark *from safe)
 	}
 	if (!(void*)to->owner) {
 		from->owner->marks += 1;
-		ASSERT(from->owner->marks < 2000);
+		ASSERT(from->owner->marks < 20000000);
 	}
 	to->owner = from->owner;
 	if (to->ref.p == from->ref.p &&
@@ -387,7 +387,7 @@ void mark_reset(struct pane *p safe, struct mark *m safe, int end)
 
 	if (!(void*)m->owner) {
 		p->marks += 1;
-		ASSERT(p->marks < 2000);
+		ASSERT(p->marks < 20000000);
 	}
 	m->owner = p;
 	pane_call(p, "doc:set-ref", p, !end, m);
