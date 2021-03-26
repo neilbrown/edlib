@@ -5,17 +5,14 @@
  * doc-email: Present an email message as its intended content, with
  * part recognition and decoding etc.
  *
- * Version 0.1: Use lib-crop to display just the headers, and a separate
- *              instance to display the body.
- *
- * Not so easy.  Need to be careful about redirecting doc commands.
- * A document needs:
- *  doc:set-ref
- *  doc:step
- *  doc:get-attr doc:set-attr?
- * and might capture doc:revisit to hide??
- * others are doc:load-file,same-file,save-file
- *  doc:replace doc:reundo doc:get-str doc:modified
+ * A multipart document is created where every other part is a "spacer"
+ * where buttons can be placed to control visibility of the previous part,
+ * or to act on it in some other way.
+ * The first part is the headers which are copied to a temp text document.
+ * Subsequent non-spacer parts are cropped sections of the email, possibly
+ * with filters overlayed to handle the transfer encoding.
+ * Alternately, they might be temp documents simplar to the headers
+ * storing e.g. transformed HTML or an image.
  */
 
 #define _GNU_SOURCE /* for asprintf */
@@ -265,10 +262,10 @@ static bool tok_matches(char *tok, int len, char *match safe)
 	return strncasecmp(tok, match, len) == 0;
 }
 
-static bool handle_text_plain(struct pane *p safe, char *type, char *xfer,
-			      struct mark *start safe, struct mark *end safe,
-			      struct pane *mp safe, struct pane *spacer safe,
-			      char *path)
+static bool handle_text(struct pane *p safe, char *type, char *xfer,
+			struct mark *start safe, struct mark *end safe,
+			struct pane *mp safe, struct pane *spacer safe,
+			char *path)
 {
 	struct pane *h;
 	int need_charset = 0;
@@ -326,6 +323,14 @@ static bool handle_text_plain(struct pane *p safe, char *type, char *xfer,
 		asprintf(&ctype, "%1.*s/%1.*s", majlen, major, minlen, minor);
 	else
 		asprintf(&ctype, "%1.*s", majlen, major);
+	if (ctype && strcmp(ctype, "text/html") == 0) {
+		struct pane *html;
+		html = call_ret(pane, "html-to-text", h);
+		if (html) {
+			pane_close(h);
+			h = html;
+		}
+	}
 	if (ctype) {
 		int i;
 		for (i = 0; ctype[i]; i++)
@@ -488,14 +493,14 @@ static bool handle_content(struct pane *p safe, char *type, char *xfer,
 	}
 	if (major == NULL ||
 	    tok_matches(major, mjlen, "text"))
-		return handle_text_plain(p, type, xfer, start, end,
-					 mp, spacer, path);
+		return handle_text(p, type, xfer, start, end,
+				   mp, spacer, path);
 
 	if (tok_matches(major, mjlen, "multipart"))
 		return handle_multipart(p, type, start, end, mp, spacer, path);
 
 	/* default to plain text until we get a better default */
-	return handle_text_plain(p, type, xfer, start, end, mp, spacer, path);
+	return handle_text(p, type, xfer, start, end, mp, spacer, path);
 }
 
 DEF_CMD(open_email)
@@ -506,7 +511,7 @@ DEF_CMD(open_email)
 	struct pane *p, *h2;
 	char *mime;
 	char *xfer = NULL, *type = NULL;
-	struct pane *doc;
+	struct pane *hdrdoc;
 	struct mark *point;
 
 	if (ci->str == NULL ||
@@ -539,19 +544,22 @@ DEF_CMD(open_email)
 	     NULL, "doc:email:render-spacer");
 	mark_free(point);
 
-	doc = call_ret(pane, "attach-doc-text", ci->focus);
-	if (!doc)
+	hdrdoc = call_ret(pane, "attach-doc-text", ci->focus);
+	if (!hdrdoc)
 		goto out;
-	call("doc:set:autoclose", doc, 1);
-	point = vmark_new(doc, MARK_POINT, NULL);
+	call("doc:set:autoclose", hdrdoc, 1);
+	point = vmark_new(hdrdoc, MARK_POINT, NULL);
 	if (!point)
 		goto out;
-	home_call(h2, "get-header", doc, 0, point, "From");
-	home_call(h2, "get-header", doc, 0, point, "Date");
-	home_call(h2, "get-header", doc, 0, point, "Subject", 0, NULL, "text");
-	home_call(h2, "get-header", doc, 0, point, "To", 0, NULL, "list");
-	home_call(h2, "get-header", doc, 0, point, "Cc", 0, NULL, "list");
 
+	/* copy some headers to the header temp document */
+	home_call(h2, "get-header", hdrdoc, 0, point, "From");
+	home_call(h2, "get-header", hdrdoc, 0, point, "Date");
+	home_call(h2, "get-header", hdrdoc, 0, point, "Subject", 0, NULL, "text");
+	home_call(h2, "get-header", hdrdoc, 0, point, "To", 0, NULL, "list");
+	home_call(h2, "get-header", hdrdoc, 0, point, "Cc", 0, NULL, "list");
+
+	/* copy some headers into attributes for later analysis */
 	call("get-header", h2, 0, NULL, "MIME-Version", 0, NULL, "cmd");
 	call("get-header", h2, 0, NULL, "content-type", 0, NULL, "cmd");
 	call("get-header", h2, 0, NULL, "content-transfer-encoding",
@@ -569,10 +577,10 @@ DEF_CMD(open_email)
 	if (!p)
 		goto out;
 	call("doc:set:autoclose", p, 1);
-	attr_set_str(&doc->attrs, "email:actions", "hide");
-	home_call(p, "multipart-add", doc);
+	attr_set_str(&hdrdoc->attrs, "email:actions", "hide");
+	home_call(p, "multipart-add", hdrdoc);
 	home_call(p, "multipart-add", ei->spacer);
-	call("doc:set:autoclose", doc, 1);
+	call("doc:set:autoclose", hdrdoc, 1);
 
 	if (!handle_content(ei->email, type, xfer, start, end,
 			    p, ei->spacer, ""))
@@ -792,4 +800,6 @@ void edlib_init(struct pane *ed safe)
 		  "open-doc-email");
 	call_comm("global-set-command", ed, &attach_email_view, 0, NULL,
 		  "attach-email-view");
+
+	call("global-load-module", ed, 0, NULL, "lib-html-to-text");
 }

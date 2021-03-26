@@ -123,7 +123,8 @@ DEF_CMD(crop_generic)
 	if (!ci->mark && !ci->mark2)
 		/* No mark, do give it straight to parent */
 		return home_call(p, ci->key, ci->focus, ci->num,
-				 NULL, ci->str, ci->num2, NULL, NULL, 0,0, ci->comm2);
+				 NULL, ci->str, ci->num2, NULL, ci->str2,
+				 0,0, ci->comm2);
 
 	/* Always force marks to be in range */
 	crop(ci->mark, cd);

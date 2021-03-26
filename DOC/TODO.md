@@ -473,9 +473,13 @@ Module features
 - [ ] rel_date could report how long until display would change, and
    we could set a timer for the minimum.
 - [X] simplify thread,mesg ordering by using maxint instead of -1 ??
+- [ ] allow re-ordering of saved-search list
+- [ ] allow editting of saved searches, including deletion
 
 ###  Notmuch message display
 
+- [ ] allow cursor on spacer buttons, so 'enter' can select them
+- [ ] why does stepping from htmlpart to hidden pdf part go v.slowly
 - [ ] When 'show'ing a part, ensure start of part is visible
 - [ ] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
 - [ ] make base64 much more efficient
@@ -490,6 +494,10 @@ Module features
     redraw gets confused and point goes off-screen, which seems
     to leave it confused.
 - [ ] in text/plain, wrap long lines on 'space'.
+- [ ] allow view of all headers, and of "more" than default
+- [ ] hide some of quoted chunks - and highlight them in colour
+- [ ] highlight urls and activate
+- [ ] maybe hide signature, unless small
 - [ ] need to resolve how charsets are handled.  Maybe an attribute to
    query to see if there is a need for a utf-8 layer on email
 - [ ] in quoted-printable, line ends "=\n" doesn't always join as it should.
