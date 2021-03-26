@@ -1684,16 +1684,14 @@ class notmuch_query_view(edlib.Pane):
                 focus.call("view:changed", self.thread_start, self.thread_end)
                 # all marks on this thread must be moved to thread_matched
                 self.thread_start.step(0)
-                focus.call("Notify:clip", self.thread_start, self.thread_matched)
-                if mark:
-                    mark.clip(self.thread_start, self.thread_matched)
+                m = self.thread_matched
                 if num < 0:
                     # we moved backward to land here, so go to last message
                     m = self.thread_end.dup()
                     focus.call("doc:step-matched", 0, 1, m)
-                    if mark:
-                        mark.to_mark(m)
-                    focus.call("Move-to", m)
+                focus.call("Notify:clip", self.thread_start, m)
+                if mark:
+                    mark.clip(self.thread_start, m)
         if num != 0:
             s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
             if s2:
