@@ -19,6 +19,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [X] if display changes between 'press' and 'release' we think there is a movement
+      and do a selection.  x,y location need to be stored too??
+- [ ] mouse selection cannot select wrapped section of a line
+- [ ] save-all dialogue sometimes puts cursor at bottom and cannot move up.
 - [ ] 'fill' setting doesn't stick to document
 - [ ] white-space and others cannot be set manually.
 - [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
@@ -472,6 +476,7 @@ Module features
 
 ###  Notmuch message display
 
+- [ ] When 'show'ing a part, ensure start of part is visible
 - [ ] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
 - [ ] make base64 much more efficient
 - [ ] use python html2text to create markdown view

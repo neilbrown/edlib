@@ -1905,7 +1905,8 @@ DEF_CMD(emacs_press)
 			attr_set_str(&m2->attrs, "emacs:selection-type", type);
 	}
 	if (m2) {
-		attr_set_int(&m2->attrs, "emacs:track-selection", 1);
+		attr_set_int(&m2->attrs, "emacs:track-selection",
+			     1 + ci->x * 10000 + ci->y);
 		update_sel(ci->focus, pt, m2, type);
 	}
 
@@ -1916,15 +1917,27 @@ DEF_CMD(emacs_release)
 {
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
 	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
+	int prev_pos;
+	int moved;
 
 	if (!p || !m2)
 		/* Not in a document - not my problem */
 		return Efallthrough;
 
-	call("Move-CursorXY", ci->focus,
-	     2, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
-
+	prev_pos = attr_find_int(m2->attrs, "emacs:track-selection");
+	moved = prev_pos != (1 + ci->x * 10000 + ci->y);
 	attr_set_int(&m2->attrs, "emacs:track-selection", 0);
+
+	if (moved)
+		call("Move-CursorXY", ci->focus,
+		     2, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
+
+	if (!moved || mark_same(p, m2)) {
+		/* No movement, so no selection */
+		call("Move-to", ci->focus, -1);
+		return 1;
+	}
+
 	update_sel(ci->focus, p, m2, NULL);
 
 	return 1;
@@ -1938,7 +1951,7 @@ DEF_CMD(emacs_motion)
 	if (!p || !m2)
 		return Enoarg;
 
-	if (attr_find_int(m2->attrs, "emacs:track-selection") != 1)
+	if (attr_find_int(m2->attrs, "emacs:track-selection") <= 0)
 		return Efallthrough;
 
 	call("Move-CursorXY", ci->focus,
