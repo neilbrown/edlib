@@ -19,6 +19,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] backward search sometimes doesn't work.
 - [X] if display changes between 'press' and 'release' we think there is a movement
       and do a selection.  x,y location need to be stored too??
 - [ ] mouse selection cannot select wrapped section of a line
@@ -547,7 +548,7 @@ Module features
 - [ ] word-wrap.  Interesting task for centring
 - [ ] force x:scale to be maximum width of any line - to avoid surprises
 - [ ] proportional vertical space ??
-- [ ] right:0 and right:1 don't do what I expect
+- [X] right:0 and right:1 don't do what I expect
 - [ ] thumbnails for easy select?
 - [ ] \_  etc to escape special chars
 - [ ] boiler-plate, like page numbers

@@ -111,7 +111,7 @@ Standard attributes are:
            the line contains any text with the "wrap" attribute,
            then the last such text is used as the wrap point, and
            the text isn't displayed.  If there is no "wrap" point,
-           the the wrap happens at the last character that fits.
+           then the wrap happens at the last character that fits.
   wrap-tail: when text is wrapped, a blue "\" is placed at the end of
            the line to mark this.  If the wrap-tail attribute is in
            effect, the content of the attribute is used instead

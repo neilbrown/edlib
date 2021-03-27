@@ -281,6 +281,11 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 			       int *w safe, int *center, const char *line safe,
 			       int scale)
 {
+	/* Extract general geometry information from the line.
+	 * Maximum height and ascent are extracted together with total
+	 * with and h-alignment info:
+	 * 0 - left, 1 = centered, >=2 = space-on-left, <=-2 = space from right
+	 */
 	struct buf attr;
 	int attr_found = 0;
 	const char *segstart = line;
@@ -318,9 +323,9 @@ static void update_line_height(struct pane *p safe, struct pane *focus safe,
 			if (center && strstr(b, ",center,"))
 				*center = 1;
 			if (center && (c2=strstr(b, ",left:")) != NULL)
-				*center = atoi(c2+6) * scale / 1000;
+				*center = 2 + atoi(c2+6) * scale / 1000;
 			if (center && (c2=strstr(b, ",right:")) != NULL)
-				*center = - atoi(c2+7) * scale / 1000;
+				*center = -2 - atoi(c2+7) * scale / 1000;
 			if ((c2=strstr(b, ",space-above:")) != NULL)
 				above = atoi(c2+13) * scale / 1000;
 			if ((c2=strstr(b, ",space-below:")) != NULL)
@@ -497,10 +502,11 @@ DEF_CMD(renderline)
 
 	if (center == 1)
 		x += (p->w - x - twidth) / 2;
-	if (center > 1)
-		x += center;
-	if (center < 0)
-		x = p->w - x - twidth + center;
+	if (center >= 2)
+		x += center - 2;
+	if (center <= -2)
+		x = p->w - x - twidth + (center + 2);
+	/* tabs are measured against this margin */
 	margin = x;
 
 	buf_init(&attr);
