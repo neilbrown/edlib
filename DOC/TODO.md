@@ -71,6 +71,8 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] use the time-keeping stack to allow an edlib stack-trace to be reported
+- [ ] give a name to every pane for easier reporting.
 - [ ] reconsider all 'return comm_call()' calls.  Do we every really
       care if the callback succeeded?
 - [X] all function that return 0 or 1 should probably be bool
@@ -417,6 +419,7 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] change Move-Char  in notmuch_master_View back to Move-Line
 - [X] when entering a thread from below, go to last message, not first
 - [X] 'Z' should work in email-view window, not just summary window
 - [X] background colour for current message/thread
