@@ -172,11 +172,8 @@ static bool measure_line(struct pane *p safe, struct pane *focus safe,
 
 	if (hp) {
 		pane_resize(hp, hp->x, hp->y, p->w, p->h);
-		ret = pane_call(hp,
-				"render-line:measure",
-				focus,
-				0, NULL, NULL,
-				cursor_offset);
+		ret = pane_call(hp, "render-line:measure",
+				focus, cursor_offset);
 	}
 	/* end-of-page flag */
 	return ret == 2;
@@ -193,8 +190,8 @@ static int find_xy_line(struct pane *p safe, struct pane *focus safe,
 		ret = pane_call(hp,
 				"render-line:findxy",
 				focus,
-				0, NULL, NULL,
 				-1, NULL, NULL,
+				0, NULL, NULL,
 				posx - hp->x, posy - hp->y);
 	}
 	/* xypos */
@@ -209,12 +206,7 @@ static bool draw_line(struct pane *p safe, struct pane *focus safe,
 	int ret = 0;
 
 	if (hp) {
-		ret = pane_call(hp,
-				"render-line:draw",
-				focus,
-				0, NULL, NULL,
-				offset, NULL, NULL,
-				-1, -1);
+		ret = pane_call(hp, "render-line:draw", focus, offset);
 		if (offset >= 0) {
 			struct xy curs = pane_mapxy(hp, p,
 						    hp->cx, hp->cy, False);

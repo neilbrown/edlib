@@ -450,7 +450,7 @@ static void find_xypos(struct render_list *rlst,
 /* Render a line, with attributes and wrapping.
  * The marked-up text to be processed has already been provided with
  *   render-line:set.  It is in rd->line;
- * ->num2 is <0, or an index into ->str where the cursor is,
+ * ->num is <0, or an index into ->str where the cursor is,
  *   and the x,y co-ords will be stored in p->cx,p->cy
  * If key is "render-line:draw", then send drawing commands, otherwise
  * just perform measurements.
@@ -467,7 +467,7 @@ DEF_CMD(renderline)
 	int dodraw = strcmp(ci->key, "render-line:draw") == 0;
 	short posx = ci->x;
 	short posy = ci->y;
-	short offset = ci->num2;
+	short offset = ci->num;
 
 	int x = 0;
 	int y = 0;
