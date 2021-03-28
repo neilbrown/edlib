@@ -1813,6 +1813,7 @@ class notmuch_message_view(edlib.Pane):
         return 1
 
     def handle_map_attr(self, key, focus, mark, str, str2, comm2, **a):
+        "handle:map-attr"
         if str == "render:rfc822header":
             comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed", 21)
             comm2("attr:callback", focus, 10000, mark, "wrap-tail: ,wrap-head:    ", 19)
