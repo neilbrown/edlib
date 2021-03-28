@@ -493,7 +493,6 @@ DEF_CMD(renderline)
 	const char *ret_xypos = NULL;
 	const char *xyattr = NULL;
 	int want_xypos = strcmp(ci->key, "render-line:findxy") == 0;
-	const char *cstart = NULL;
 	struct xy xyscale = pane_scale(focus);
 	int scale = xyscale.x;
 	short cx = -1, cy = -1;
@@ -602,18 +601,12 @@ DEF_CMD(renderline)
 
 		if (offset >= 0 && start - line_start <= offset) {
 			if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
-				/* Some chars result in multiple chars
-				 * being drawn.  If they are on the same
-				 * line, like spaces in a TAB, we leave
-				 * cursor at the start.  If on different
-				 * lines like "\" are e-o-l and char on
-				 * next line, then leave cursor at first
-				 * char on next line.
+				/* Don't update cursor pos while in a TAB
+				 * as we want to leave cursor at the start.
 				 */
-				if (cstart != start || y != cy) {
+				if (!in_tab) {
 					cy = y;
 					cx = x;
-					cstart = start;
 				}
 			} else {
 				cy = cx = -1;
@@ -814,11 +807,8 @@ DEF_CMD(renderline)
 
 	if (offset >= 0 && line - line_start <= offset) {
 		if (y >= 0 && (y == 0 || y + line_height <= p->h)) {
-			if (cstart != start || cy != y) {
-				cy = y;
-				cx = x;
-				cstart = start;
-			}
+			cy = y;
+			cx = x;
 		} else {
 			cy = cx = -1;
 		}
