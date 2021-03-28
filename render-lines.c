@@ -712,8 +712,8 @@ static int render(struct mark *pm, struct pane *p safe,
 		     mark_ordered_not_same(pm, m2))) {
 			short len = call_render_line_to_point(focus, pm,
 							      m);
-			rl->cursor_line = m->mdata->y + m->mdata->cy;
 			draw_line(p, focus, m, len);
+			rl->cursor_line = m->mdata->y + m->mdata->cy;
 
 			cursor_drawn = 1;
 		} else {
