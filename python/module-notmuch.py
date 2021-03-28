@@ -632,6 +632,7 @@ class notmuch_query(edlib.Doc):
         else:
             msg = None
         mark.pos = self.makepos(thread, msg)
+        mark.offset = 0
 
     def load_full(self):
         self.partial = False
@@ -1720,7 +1721,7 @@ class notmuch_query_view(edlib.Pane):
                     del self.seen_threads[i1]
                 if i2 not in self.seen_msgs:
                     self.seen_msgs[i2] = True
-            if edlib.WEOF == focus.next(m):
+            if focus.next(m) is None:
                 break
 
     def handle_mark_seen(self, key, focus, mark, mark2, str, **a):
