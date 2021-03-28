@@ -420,7 +420,7 @@ Module features
 
 ### Notmuch - overview
 
-- [ ] change Move-Char  in notmuch_master_View back to Move-Line
+- [X] change Move-Char  in notmuch_master_View back to Move-Line
 - [X] when entering a thread from below, go to last message, not first
 - [X] 'Z' should work in email-view window, not just summary window
 - [X] background colour for current message/thread

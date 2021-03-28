@@ -1255,7 +1255,7 @@ class notmuch_master_view(edlib.Pane):
         if op:
             # secondary window exists so move, otherwise just select
             # Need to get point as 'mark' might be in the wrong pane
-            p.call("Move-Char", direction)
+            p.call("Move-Line", direction)
             m = p.call("doc:dup-point", 0, -2, ret='mark')
 
         p.call("notmuch:select", m, direction)
