@@ -426,27 +426,29 @@ static void render_image(struct pane *p safe, struct pane *focus safe,
 	free(fname);
 }
 
-static void find_xypos(struct render_list *rlst,
-		       struct pane *p safe, struct pane *focus safe, int posx,
-		       int scale, const char **xypos safe,
-		       const char **xyattr safe)
+static void set_xypos(struct render_list *rlst,
+		      struct pane *p safe, struct pane *focus safe, int posx,
+		      int scale)
 {
-	while (rlst &&
-	       rlst->x + rlst->width < posx)
-		rlst = rlst->next;
-	if (!rlst)
-		return;
-	if (rlst->x > posx)
-		*xypos = rlst->text_orig;
-	else {
-		struct call_return cr = home_call_ret(
-			all, focus, "text-size", p,
-			posx - rlst->x, NULL, rlst->text,
-			scale, NULL, rlst->attr);
-		*xypos = rlst->text_orig + cr.i;
+	/* Find the text postition in the rlst which corresponds to
+	 * the screen position posx, and report attribtes there too.
+	 */
+	for (; rlst && rlst->x <= posx; rlst = rlst->next) {
+		if (rlst->x + rlst->width < posx)
+			continue;
+
+		if (rlst->x == posx)
+			rlst->xypos = rlst->text_orig;
+		else {
+			struct call_return cr =
+				home_call_ret(all, focus, "text-size", p,
+					      posx - rlst->x, NULL, rlst->text,
+					      scale, NULL, rlst->attr);
+			rlst->xypos = rlst->text_orig + cr.i;
+		}
 	}
-	*xyattr = strsave(p, rlst->attr);
 }
+
 /* Render a line, with attributes and wrapping.
  * The marked-up text to be processed has already been provided with
  *   render-line:set.  It is in rd->line;
@@ -492,6 +494,7 @@ DEF_CMD(renderline)
 	const char *xypos = NULL;
 	const char *ret_xypos = NULL;
 	const char *xyattr = NULL;
+	/* want_xypos becomes 2 when the pos is found */
 	int want_xypos = strcmp(ci->key, "render-line:findxy") == 0;
 	struct xy xyscale = pane_scale(focus);
 	int scale = xyscale.x;
@@ -627,18 +630,13 @@ DEF_CMD(renderline)
 					x = 0;
 				y += line_height;
 				if (want_xypos == 1) {
-					if (y+line_height >= posy &&
+					if (y >= posy - line_height &&
 					    y <= posy && x > posx) {
-						/* cursor is in field move down */
-						find_xypos(rlst, p, focus,
-							   posx, scale,
-							   &xypos, &xyattr);
-					}
-					if (xypos) {
-						rd->xyattr = xyattr ?
-							strdup(xyattr) : NULL;
-						ret_xypos = xypos;
-						want_xypos = 2;
+						/* cursor is in the tail of rlist that
+						 * was relocated - reassess xypos
+						 */
+						set_xypos(rlst, p, focus,
+							  posx, scale);
 					}
 				}
 			} else {
@@ -744,11 +742,6 @@ DEF_CMD(renderline)
 			x = 0;
 			wrap_offset = 0;
 			start = line;
-			if (xypos && want_xypos == 1) {
-				rd->xyattr = xyattr ? strdup(xyattr) : NULL;
-				ret_xypos = xypos;
-				want_xypos = 2;
-			}
 		} else if (ch == '\f') {
 			x = 0;
 			start = line;
