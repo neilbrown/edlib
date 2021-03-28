@@ -22,7 +22,7 @@ Bugs to be fixed
 - [ ] backward search sometimes doesn't work.
 - [X] if display changes between 'press' and 'release' we think there is a movement
       and do a selection.  x,y location need to be stored too??
-- [ ] mouse selection cannot select wrapped section of a line
+- [X] mouse selection cannot select wrapped section of a line
 - [ ] save-all dialogue sometimes puts cursor at bottom and cannot move up.
 - [ ] 'fill' setting doesn't stick to document
 - [ ] white-space and others cannot be set manually.
@@ -290,7 +290,7 @@ Module features
 - [ ] revise render_lines_move
 - [ ] revise render_lines_move_line
 - [ ] revise render_lines_view_line
-- [ ] click in a wrapped line always goes to first line.
+- [X] click in a wrapped line always goes to first line.
 - [ ] Replace <attr> text </> in markup with SOH attr STX text ETX
       This also affects lib-markup and others.
 - [ ] I regularly hit problems because ->mdata is not up to date and we render

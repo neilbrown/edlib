@@ -467,10 +467,8 @@ DEF_CMD(renderline)
 	struct pane *focus = ci->focus;
 	const char *line = rd->line;
 	int dodraw = strcmp(ci->key, "render-line:draw") == 0;
-	short posx = ci->x;
-	short posy = ci->y;
+	short posx;
 	short offset = ci->num;
-
 	int x = 0;
 	int y = 0;
 	const char *line_start;
@@ -555,7 +553,7 @@ DEF_CMD(renderline)
 
 	rd->curs_width = 0;
 
-	/* If findxy was requested, posx and posy tells us
+	/* If findxy was requested, ci->x and ci->y tells us
 	 * what to look for, and we return index into line where this
 	 * co-ordinate was reached.
 	 * want_xypos will be set to 2 when we pass the co-ordinate
@@ -565,13 +563,9 @@ DEF_CMD(renderline)
 	if (want_xypos) {
 		free((void*)rd->xyattr);
 		rd->xyattr = NULL;
-	} else {
-		posx = posy = -1;
 	}
 
 	while (*line && y < p->h && !end_of_page) {
-		int XPOS;
-
 		if (mwidth <= 0) {
 			/* mwidth is recalculated whenever attrs change */
 			struct call_return cr = home_call_ret(all, focus,
@@ -586,17 +580,14 @@ DEF_CMD(renderline)
 				rd->curs_width = mwidth;
 		}
 
-		if (ret == XYPOS) {
-			/* Found the cursor, stop looking */
-			posy = -1; posx = -1;
-		}
-		if (y+line_height >= posy &&
-		    y <= posy && x <= posx)
-			XPOS = posx;
+		if (want_xypos == 1 &&
+		    y > ci->y - line_height &&
+		    y <= ci->y)
+			posx = ci->x;
 		else
-			XPOS = -1;
+			posx = -1;
 
-		if (y > posy && want_xypos == 1 && xypos) {
+		if (want_xypos == 1 && xypos) {
 			rd->xyattr = xyattr ? strdup(xyattr) : NULL;
 			ret_xypos = xypos;
 			want_xypos = 2;
@@ -629,16 +620,13 @@ DEF_CMD(renderline)
 				if (x < 0)
 					x = 0;
 				y += line_height;
-				if (want_xypos == 1) {
-					if (y >= posy - line_height &&
-					    y <= posy && x > posx) {
-						/* cursor is in the tail of rlist that
-						 * was relocated - reassess xypos
-						 */
-						set_xypos(rlst, p, focus,
-							  posx, scale);
-					}
-				}
+				if (want_xypos == 1 &&
+				    y >= ci->y - line_height &&
+				    y <= ci->y)
+					/* cursor is in the tail of rlst that
+					 * was relocated - reassess xypos
+					 */
+					set_xypos(rlst, p, focus, ci->x, scale);
 			} else {
 				/* truncate: skip over normal text, but
 				 * stop at newline.
@@ -664,13 +652,13 @@ DEF_CMD(renderline)
 				continue;
 			if (offset == (line - line_start) ||
 			    (line-start) * mwidth >= p->w - x ||
-			    (XPOS > x && (line - start)*mwidth > XPOS - x)) {
+			    (posx > x && (line - start)*mwidth > posx - x)) {
 				ret = draw_some(p, focus, &rlst, &x, start,
 						&line,
 						buf_final(&attr),
 						wrap ? mwidth : 0,
 						offset - (start - line_start),
-						XPOS, scale);
+						posx, scale);
 				start = line;
 			}
 			continue;
@@ -679,7 +667,7 @@ DEF_CMD(renderline)
 				buf_final(&attr),
 				wrap ? mwidth : 0,
 				in_tab ?:offset - (start - line_start),
-				XPOS, scale);
+				posx, scale);
 		start = line;
 		if (ret != OK || !ch)
 			continue;
@@ -690,7 +678,7 @@ DEF_CMD(renderline)
 						buf_final(&attr),
 						wrap ? mwidth : 0,
 						in_tab ?:offset - (start - line_start),
-						XPOS, scale);
+						posx, scale);
 				if (ret != OK)
 					continue;
 				start += 2;
@@ -756,7 +744,7 @@ DEF_CMD(renderline)
 					wrap ? mwidth*2: 0,
 					offset == (start - line_start)
 					? in_tab : -1,
-					XPOS, scale);
+					posx, scale);
 			if (w > 1) {
 				line -= 1;
 				in_tab = -1; // suppress extra cursors
@@ -776,13 +764,20 @@ DEF_CMD(renderline)
 					buf_final(&attr),
 					wrap ? mwidth*2: 0,
 					offset - (start - line_start),
-					XPOS, scale);
+					posx, scale);
 			attr.len = l;
 			start = line;
 		}
 	}
 	if (!*line && (line > start || offset == start - line_start)) {
 		/* Some more to draw */
+		if (want_xypos == 1 &&
+		    y > ci->y - line_height &&
+		    y <= ci->y)
+			posx = ci->x;
+		else
+			posx = -1;
+
 		draw_some(p, focus, &rlst, &x, start, &line,
 			  buf_final(&attr),
 			  wrap ? mwidth : 0, offset - (start - line_start),
