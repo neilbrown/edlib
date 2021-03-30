@@ -1612,6 +1612,9 @@ class notmuch_query_view(edlib.Pane):
             mark = focus.call("doc:point", ret='mark')
         if not mark.pos:
             return edlib.Efallthrough
+        if self.whole_thread and mark >= self.thread_end:
+            # no attributes after end
+            return 1
         attr = str
         if attr == "BG":
             (tid,mid) = mark.pos
@@ -1657,7 +1660,7 @@ class notmuch_query_view(edlib.Pane):
     def handle_select(self, key, focus, mark, num, num2, str, **a):
         "handle:notmuch:select"
         s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
-        if s != self.selected:
+        if s and s != self.selected:
             if self.selected:
                 # old thread is disappearing.
                 focus.call("Notify:clip", self.thread_start, self.thread_end)

@@ -420,6 +420,12 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] use db.get_all_tags() to add list of tags to end of list of queries.
+- [ ] if a message arrives for a thread while the thread is open, the thread gets
+       relocated and the start_thread/end_thread marks get broken.
+- [X] 'n' at end of 'whole-thread' moves to next thread
+- [ ] remember how long it takes to count a query, and if longer than
+      1 second, do future updates in a 'slow' thread
 - [X] change Move-Char  in notmuch_master_View back to Move-Line
 - [X] when entering a thread from below, go to last message, not first
 - [X] 'Z' should work in email-view window, not just summary window
