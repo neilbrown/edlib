@@ -1451,6 +1451,8 @@ class notmuch_master_view(edlib.Pane):
             self.message_pane = None
             p.call("Window:close", "notmuch")
         elif self.query_pane:
+            if self.query_pane.call("notmuch:close-thread") == 1:
+                return 1
             if key != "doc:char-x":
                 self.query_pane.call("doc:notmuch:mark-seen")
             p = self.query_pane
@@ -1780,6 +1782,14 @@ class notmuch_query_view(edlib.Pane):
         self.whole_thread = not self.whole_thread
         # notify that everything is changed, don't worry about details.
         focus.call("view:changed")
+        return 1
+
+    def handle_close_thread(self, key, focus, **a):
+        "handle:notmuch:close-thread"
+        # 'q' is requesting that we close thread if it is open
+        if not self.whole_thread:
+            return edlib.Efalse
+        self.handle_Z(key, focus)
         return 1
 
     def handle_select(self, key, focus, mark, num, num2, str, **a):

@@ -420,7 +420,7 @@ Module features
 
 ### Notmuch - overview
 
-- [ ] 'q' while in whole-thread mode should return to all-threads
+- [X] 'q' while in whole-thread mode should return to all-threads
 - [ ] use db.get_all_tags() to add list of tags to end of list of queries.
 - [ ] if a message arrives for a thread while the thread is open, the thread gets
        relocated and the start_thread/end_thread marks get broken.
