@@ -1558,6 +1558,8 @@ class notmuch_query_view(edlib.Pane):
         if self.whole_thread:
             # move one message, but stop at thread_start/thread_end
             if forward:
+                if mark < self.thread_start:
+                    mark.to_mark(self.thread_start)
                 if mark >= self.thread_end:
                     ret = edlib.WEOF
                 else:
@@ -1567,6 +1569,8 @@ class notmuch_query_view(edlib.Pane):
                     # at start already
                     ret = edlib.WEOF
                 else:
+                    if mark > self.thread_end:
+                        mark.to_mark(self.thread_end)
                     ret = self.parent.call("doc:step", focus, forward, move, mark)
             return ret
         else:
