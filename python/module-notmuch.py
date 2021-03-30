@@ -1747,6 +1747,8 @@ class notmuch_message_view(edlib.Pane):
         tg = self['notmuch-tags']
         if tg:
             self['doc-status'] = "Tags:" + tg
+        else:
+            self['doc-status'] = "No Tags"
         while True:
             newp = self.call("doc:step-part", m, 1)
             # retval is offset by 1 to avoid zero
