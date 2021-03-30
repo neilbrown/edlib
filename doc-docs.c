@@ -376,9 +376,6 @@ DEF_CMD(docs_callback_modified)
 	attr_set_str(&p->attrs, "heading",
 		     "<bold>Document             File</>\n"
 		     "<bold,underline>[s]ave [y]es [n]o [q]uit</>");
-	call("doc:request:doc:replaced", p);
-	/* And trigger Notify:doc:Replace handling immediately...*/
-	pane_call(p, "doc:replaced", p);
 	/* Don't want to inherit position from some earlier instance,
 	 * always move to the start.
 	 */
