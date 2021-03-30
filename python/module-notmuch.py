@@ -1297,16 +1297,13 @@ class notmuch_master_view(edlib.Pane):
         if in_message:
             mp = self.message_pane
             if mp.cmid and mp.ctid:
-                if self.query_pane:
-                    self.do_update(self.query_pane, mp.ctid, mp.cmid, adds, removes)
-                else:
-                    self.do_update(self.list_pane, mp.ctid, mp.cmid, adds, removes)
+                self.do_update(mp.ctid, mp.cmid, adds, removes)
             self.call("doc:char-n")
             return 1
         if in_query:
             thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
             msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
-            self.do_update(self.query_pane, thid, msid, adds, removes)
+            self.do_update(thid, msid, adds, removes)
             # Move to next message.
             m = focus.call("doc:dup-point", 0, -2, ret='mark')
             if focus.call("Move-Line", 1, m) == 1:
@@ -1316,11 +1313,11 @@ class notmuch_master_view(edlib.Pane):
                 focus.call("notmuch:select", m, 0)
             return 1
         return 1
-    def do_update(self, target, tid, mid, adds, removes):
+    def do_update(self, tid, mid, adds, removes):
         for t in adds:
-            target.call("doc:notmuch:add-tag-%s" % t, tid, mid)
+            self.list_pane.call("doc:notmuch:add-tag-%s" % t, tid, mid)
         for t in removes:
-            target.call("doc:notmuch:remove-tag-%s" % t, tid, mid)
+            self.list_pane.call("doc:notmuch:remove-tag-%s" % t, tid, mid)
 
     def handle_close_message(self, key, **a):
         "handle:notmuch-close-message"
