@@ -326,7 +326,7 @@ DEF_CMD(filter_changed)
 		/* mark2 is first */
 		mark_to_mark(start, ci->mark2);
 	else if (strcmp(ci->key, "Filter:set") == 0)
-		call("Move-File", ci->focus, 0, start);
+		call("Move-File", ci->focus, -1, start);
 	else {
 		struct mark *m2;
 		m = start;
@@ -366,7 +366,7 @@ DEF_CMD(filter_changed)
 		struct mark *m2 = mark_dup(m);
 
 		ret = do_filter_line_prev(fd, m, ci->home->parent, ci->focus, 1,
-				     comm ? &str : NULL);
+					  comm ? &str : NULL);
 		if (ret > 0) {
 			/* m is a good line, m2 is like end */
 			found_one = True;
