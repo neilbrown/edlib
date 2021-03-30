@@ -2478,6 +2478,75 @@ static bool get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject
 			ci->num2 = PyLong_AsLong(a);
 			num2_set = 1;
 		}
+		a = PyDict_GetItemString(kwds, "focus");
+		if (a && a != Py_None) {
+			Pane *p;
+			if ((void*)ci->focus) {
+				PyErr_SetString(PyExc_TypeError,
+						"'focus' given with other pane");
+				return False;
+			}
+			if (!PyObject_TypeCheck(a, &PaneType)) {
+				PyErr_SetString(PyExc_TypeError,
+						"'focus' must be a pane");
+				return False;
+			}
+			p = (Pane*)a;
+			if (p->pane)
+				ci->focus = p->pane;
+			else {
+				PyErr_SetString(PyExc_TypeError, "focus value invalid");
+				return False;
+			}
+		}
+		a = PyDict_GetItemString(kwds, "xy");
+		if (a && a != Py_None) {
+			PyObject *n1, *n2;
+			if (xy_set) {
+				PyErr_SetString(PyExc_TypeError,
+						"'xy' given with other tuple");
+				return False;
+			}
+			if (!PyTuple_Check(a) || PyTuple_GET_SIZE(a) != 2) {
+				PyErr_SetString(PyExc_TypeError,
+						"'xy' must be a tuple of 2 integers");
+				return False;
+			}
+			n1 = PyTuple_GetItem(a, 0);
+			n2 = PyTuple_GetItem(a, 1);
+			if (!PyLong_Check(n1) || !PyLong_Check(n2)) {
+				PyErr_SetString(PyExc_TypeError, "Only tuples of integers permitted");
+				return False;
+			}
+			ci->x = PyLong_AsLong(n1);
+			ci->y = PyLong_AsLong(n2);
+			xy_set = 1;
+		}
+		a = PyDict_GetItemString(kwds, "comm2");
+		if (a && a != Py_None) {
+			if (ci->comm2) {
+				PyErr_SetString(PyExc_TypeError,
+						"'comm2' given with other command");
+				return False;
+			}
+			if (PyObject_TypeCheck(a, &CommType)) {
+				Comm *c = (Comm*)a;
+				if (c->comm)
+					ci->comm2 = command_get(c->comm);
+				else {
+					PyErr_SetString(PyExc_TypeError, "comm2 value invalid");
+					return False;
+				}
+			} else if (PyCallable_Check(a)) {
+				struct python_command *pc = export_callable(a);
+
+				ci->comm2 = &pc->c;
+			} else {
+				PyErr_SetString(PyExc_TypeError,
+						"'comm2' must be a callable");
+				return False;
+			}
+		}
 	}
 	if (!(void*)ci->key) {
 		PyErr_SetString(PyExc_TypeError, "No key specified");
