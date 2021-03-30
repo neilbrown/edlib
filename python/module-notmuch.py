@@ -359,6 +359,11 @@ class notmuch_main(edlib.Doc):
                 return 1
         return edlib.Efallthrough
 
+    def handle_request_notify(self, key, focus, **a):
+        "handle:doc:notmuch:request:Notify:Tag"
+        focus.add_notify(self, "Notify:Tag")
+        return 1
+
     def handle_notmuch_update(self, key, **a):
         "handle:doc:notmuch:update"
         if not self.timer_set:
@@ -409,6 +414,7 @@ class notmuch_main(edlib.Doc):
             fn = m.get_filename() + ""
         doc = focus.call("doc:open", "email:"+fn, -2, ret='focus')
         if doc:
+            doc['notmuch:id'] = str
             comm2("callback", doc)
         return 1
 
@@ -1209,6 +1215,18 @@ class notmuch_master_view(edlib.Pane):
         frm.clone_children(p)
         return 1
 
+    recursed = False
+    def handle_maindoc(self, key, **a):
+        "handle-prefix:doc:notmuch:"
+        # any doc:notmuch calls that haven't been handled
+        # are handled to the list_pane
+        if self.recursed:
+            return edlib.Efail
+        self.recursed = True
+        ret = self.list_pane.call(key, **a)
+        self.recursed = False
+        return ret
+
     def handle_size(self, key, **a):
         "handle:Refresh:size"
         # First, make sure the tiler has adjusted to the new size
@@ -1412,19 +1430,21 @@ class notmuch_master_view(edlib.Pane):
         self.resize()
         return 1
 
-    def handle_select_message(self, key, num, str, str2, **a):
+    def handle_select_message(self, key, focus, num, str, str2, **a):
         "handle:notmuch:select-message"
         # a thread or message was selected. id in 'str'. threadid in str2
         # Find the file and display it in a 'message' pane
         self.mark_read()
 
         p0 = self.list_pane.call("doc:notmuch:byid", str, ret='focus')
-        tags = self.list_pane.call("doc:notmuch:byid:tags", str, ret='str')
+        if not p0:
+            focus.call("Message", "Failed to find message")
+            return edlib.Efail
+        p0['notmuch:tid'] = str2
 
         p1 = self.query_pane.call("OtherPane", "notmuch", "message", 13,
                                   ret='focus')
         p3 = p0.call("doc:attach-view", p1, ret='focus')
-        p3['notmuch-tags'] = tags
         p3 = p3.call("attach-render-notmuch:message", ret='focus')
 
         # FIXME This still doesn't work: there are races: attaching a doc to
@@ -1745,11 +1765,8 @@ class notmuch_message_view(edlib.Pane):
         # invisible.
         p = 0
         m = edlib.Mark(focus)
-        tg = self['notmuch-tags']
-        if tg:
-            self['doc-status'] = "Tags:" + tg
-        else:
-            self['doc-status'] = "No Tags"
+        focus.call("doc:notmuch:request:Notify:Tag", self)
+        self.handle_notify_tag("Notify:Tag")
         while True:
             newp = self.call("doc:step-part", m, 1)
             # retval is offset by 1 to avoid zero
@@ -1772,6 +1789,16 @@ class notmuch_message_view(edlib.Pane):
                 vis = False
             if not vis:
                 focus.call("doc:set-attr", "email:visible", m, 0)
+
+    def handle_notify_tag(self, key, **a):
+        "handle:Notify:Tag"
+        # tags might have changed.
+        tg = self.call("doc:notmuch:byid:tags", self['notmuch:id'], ret='str')
+        if tg:
+            self['doc-status'] = "Tags:" + tg
+        else:
+            self['doc-status'] = "No Tags"
+        return 1
 
     def handle_close(self, key, **a):
         "handle:Close"
