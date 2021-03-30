@@ -478,7 +478,7 @@ class notmuch_main(edlib.Doc):
                         self.notify("Notify:Tag", str, str2)
             else:
                 # remove from whole thread
-                # FIXME This should be the thread a last seen, not as
+                # FIXME This should be the thread as last seen, not as
                 # is now in the database - which might be different.
                 q = db.create_query("thread:%s" % str)
                 changed = False
@@ -506,7 +506,7 @@ class notmuch_main(edlib.Doc):
                         self.notify("Notify:Tag", str, str2)
             else:
                 # add to whole thread
-                # FIXME This should be the thread a last seen, not as
+                # FIXME This should be the thread as last seen, not as
                 # is now in the database - which might be different.
                 q = db.create_query("thread:%s" % str)
                 changed = False
@@ -1120,6 +1120,16 @@ class notmuch_query(edlib.Doc):
         self.maindoc.call(key, str, str2)
         return 1
 
+class tag_popup(edlib.Pane):
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus)
+
+    def handle_enter(self, key, focus, **a):
+        "handle:K:Enter"
+        str = focus.call("doc:get-str", ret='str')
+        focus.call("popup:close", str)
+        return 1
+
 #
 # There are 4 viewer
 #  notmuch_master_view  manages multiple notmuch tiles.  When the notmuch_main
@@ -1331,11 +1341,101 @@ class notmuch_master_view(edlib.Pane):
                 focus.call("notmuch:select", m, 0)
             return 1
         return 1
+
+    def tag_ok(self, t):
+        for c in t:
+            if not (c.isupper() or c.islower() or c.isdigit()):
+                return False
+        return True
+
     def do_update(self, tid, mid, adds, removes):
+        skipped = []
         for t in adds:
-            self.list_pane.call("doc:notmuch:add-tag-%s" % t, tid, mid)
+            if self.tag_ok(t):
+                self.list_pane.call("doc:notmuch:add-tag-%s" % t, tid, mid)
+            else:
+                skipped.append(t)
         for t in removes:
-            self.list_pane.call("doc:notmuch:remove-tag-%s" % t, tid, mid)
+            if self.tag_ok(t):
+                self.list_pane.call("doc:notmuch:remove-tag-%s" % t, tid, mid)
+            else:
+                skipped.append(t)
+        if skipped:
+            self.list_pane.call("Message", "Skipped illegal tags:" + ','.join(skipped))
+
+    def handle_tags(self, key, focus, mark, **a):
+        "handle-list/doc:char--/doc:char-+"
+        # add or remove flags, prompting for names
+
+        if self.message_pane and self.mychild(focus) == self.mychild(self.message_pane):
+            curr = 'message'
+        elif self.query_pane and self.mychild(focus) == self.mychild(self.query_pane):
+            curr = 'query'
+        else:
+            curr = 'main'
+
+        if curr == 'main':
+            return 1
+        if curr == 'query':
+            thid = focus.call("doc:get-attr", "thread-id", mark, ret='str')
+            msid = focus.call("doc:get-attr", "message-id", mark, ret='str')
+        else:
+            thid = self.message_pane.ctid
+            msid = self.message_pane.cmid
+
+        pup = focus.call("PopupTile", "2", key[-1:], ret='focus')
+        if not pup:
+            return edlib.Fail
+        done = "notmuch-do-tags-%s" % thid
+        if msid:
+            done += " " + msid
+        pup['done-key'] = done
+        pup['prompt'] = "[+/-]Tags: "
+        pup.call("doc:set-name", "Tag changes")
+        tag_popup(pup)
+        return 1
+
+    def parse_tags(self, tags):
+        adds = []
+        removes = []
+        if not tags or tags[0] not in "+-":
+            return None
+        mode = ''
+        tl = []
+        for t in tags.split(','):
+            tl.extend(t.split(' '))
+        for t in tl:
+            tg = ""
+            for c in t:
+                if c in "+-":
+                    if tg != "" and mode == '+':
+                        adds.append(tg)
+                    if tg != "" and mode == '-':
+                        removes.append(tg)
+                    tg = ""
+                    mode = c
+                else:
+                    tg += c
+            if tg != "" and mode == '+':
+                adds.append(tg)
+            if tg != "" and mode == '-':
+                removes.append(tg)
+        return (adds, removes)
+
+    def do_tags(self, key, focus, str, **a):
+        "handle-prefix:notmuch-do-tags-"
+        suffix = key[16:]
+        ids = suffix.split(' ', 1)
+        thid = ids[0]
+        if len(ids) == 2:
+            msid = ids[1]
+        else:
+            msid = None
+        t = self.parse_tags(str)
+        if t is None:
+            focus.call("Message", "Tags list must start with + or -")
+        self.do_update(thid, msid, t[0], t[1])
+        return 1
 
     def handle_close_message(self, key, **a):
         "handle:notmuch-close-message"

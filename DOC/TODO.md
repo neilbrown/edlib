@@ -420,6 +420,7 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] 'q' while in whole-thread mode should return to all-threads
 - [ ] use db.get_all_tags() to add list of tags to end of list of queries.
 - [ ] if a message arrives for a thread while the thread is open, the thread gets
        relocated and the start_thread/end_thread marks get broken.
@@ -439,7 +440,7 @@ Module features
        match search term.
 - [X] doc:notmuch:search-maxlen should be attribute, not command.
 - [X] re-arrange notmuch code so doc are first, then viewers, then commands
-- [ ] '+' or '-' to change flags,
+- [X] '+' or '-' to change flags,
 - [X] S marks newspam N notspam ! unread,inbox
 - [ ] encourage current message to be visible when list is auto updated
 - [X] point in summary list should stay close to middle
