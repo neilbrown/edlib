@@ -1507,6 +1507,8 @@ class notmuch_query_view(edlib.Pane):
         self.whole_thread = False
         self.seen_threads = {}
         self.seen_msgs = {}
+
+        self['doc-status'] = "query: %s" % self['qname']
         # thread_start and thread_end are marks which deliniate
         # the 'current' thread. thread_end is the start of the next
         # thread (if there is one).
@@ -1650,12 +1652,14 @@ class notmuch_query_view(edlib.Pane):
                 mk.to_mark(mt)
                 self.parent.call("doc:step-matched", mt, 1, 1)
                 self.parent.next(mk)
+            self['doc-status'] = "Query: %s" % self['qname']
         else:
             # everything before the thread, and after the thread disappears
             m = edlib.Mark(self)
             focus.call("Notify:clip", m, self.thread_start)
             focus.call("doc:set-ref", m, 0)
             focus.call("Notify:clip", self.thread_end, m)
+            self['doc-status'] = "Query: %s - single-thread" % self['qname']
         self.whole_thread = not self.whole_thread
         # notify that everything is changed, don't worry about details.
         focus.call("view:changed")
