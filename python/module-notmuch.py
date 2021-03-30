@@ -1561,15 +1561,13 @@ class notmuch_query_view(edlib.Pane):
                 if mark >= self.thread_end:
                     ret = edlib.WEOF
                 else:
-                    ret = self.parent.call("doc:step", focus, forward, move,
-                                           mark, ret='char')
+                    ret = self.parent.call("doc:step", focus, forward, move, mark)
             else:
                 if mark <= self.thread_start:
                     # at start already
                     ret = edlib.WEOF
                 else:
-                    ret = self.parent.call("doc:step", focus, forward, move,
-                                           mark, ret='char')
+                    ret = self.parent.call("doc:step", focus, forward, move, mark)
             return ret
         else:
             # if between thread_start/thread_end, move one message,
@@ -1588,8 +1586,7 @@ class notmuch_query_view(edlib.Pane):
                 in_thread = True
             if in_thread:
                 # move one matched message
-                ret = self.parent.call("doc:step-matched", focus, mark, forward,
-                                       move, ret='char')
+                ret = self.parent.call("doc:step-matched", focus, mark, forward, move)
                 # We might be in the next thread, make sure we are at the
                 # start
                 if forward and move and mark > self.thread_end:
@@ -1600,13 +1597,11 @@ class notmuch_query_view(edlib.Pane):
             else:
                 # move one thread
                 if forward:
-                    ret = focus.call("doc:step-thread", focus, mark, forward,
-                                     move, ret='char')
+                    ret = focus.call("doc:step-thread", focus, mark, forward, move)
                     if self.thread_start and mark == self.thread_start:
                         mark.to_mark(self.thread_matched)
                 else:
-                    ret = self.parent.call("doc:step", focus, mark, forward,
-                                           move, ret='char')
+                    ret = self.parent.call("doc:step", focus, mark, forward, move)
                     if move and ret != edlib.WEOF:
                         focus.call("doc:step-thread", focus, mark, forward, move)
                 return ret
