@@ -652,18 +652,18 @@ class notmuch_query(edlib.Doc):
         # can be pruned.
         for id in self.threads:
             self.threads[id]['total'] = 0
-        self.old = self.threadids[:]
-        self.new = []
         self.offset = 0
+        self.tindex = 0
+        self.pos = edlib.Mark(self)
         self.start_load()
 
     def load_update(self):
         self.partial = True
         self.age = None
 
-        self.old = self.threadids[:]
-        self.new = []
         self.offset = 0
+        self.tindex = 0
+        self.pos = edlib.Mark(self)
         self.start_load()
 
     def start_load(self):
@@ -688,6 +688,7 @@ class notmuch_query(edlib.Doc):
 
     def get_threads(self, key, **a):
         found = 0
+        was_empty = not self.threadids
         try:
             tl = json.load(self.p.stdout)
         except:
@@ -695,34 +696,62 @@ class notmuch_query(edlib.Doc):
         for j in tl:
             tid = j['thread']
             found += 1
-            try:
-                i = self.old.index(tid)
-                del self.old[i]
-                if i > 0:
-                    if i == len(self.old):
-                        self.move_marks(tid,None)
-                    else:
-                        self.move_marks(tid, self.old[i])
-            except ValueError:
-                pass
-            if tid not in self.new:
-                self.new.append(tid)
+            while (self.tindex < len(self.threadids) and
+                   self.threads[self.threadids[self.tindex]]["timestamp"] > j["timestamp"]):
+                # Skip over this thread before inserting
+                tid2 = self.threadids[self.tindex]
+                self.tindex += 1
+                while self.pos.pos and self.pos.pos[0] == tid2:
+                    self.call("doc:step-thread", self.pos, 1, 1)
             self.threads[tid] = j
+            old = -1
+            if self.tindex >= len(self.threadids) or self.threadids[self.tindex] != tid:
+                # need to insert and possibly move the old marks
+                try:
+                    old = self.threadids.index(tid)
+                except ValueError:
+                    pass
+                self.threadids.insert(self.tindex, tid)
+                self.tindex += 1
+            if old >= 0:
+                # move mark to before self.pos
+                if old < self.tindex:
+                    m = self.first_mark()
+                    self.tindex -= 1
+                else:
+                    m = self.pos
+                    old += 1
+                self.threadids.pop(old)
+                while (m and m.pos and m.pos[0] != tid and
+                       self.threadids.index(m.pos[0]) < old):
+                    m = m.next_any()
+                self.pos.step(0)
+                while m and m.pos and m.pos[0] == tid:
+                    m2 = m.next_any()
+                    m.to_mark_noref(self.pos)
+                    if m.seq > self.pos.seq:
+                        # want m before pos
+                        m.to_mark_noref(self.pos)
+                    m = m2
+                self.notify("notmuch:thread-changed", tid, 1)
+
         tl = None
         if self.p:
             self.p.wait()
         self.p = None
-        if not self.threadids and len(self.new):
-            # first insertion, all marks must be at start
+        if was_empty:
+            # first insertion, all marks other than self.pos must be at start
             m = self.first_mark()
-            while m:
-                if m.pos is None:
-                    self.setpos(m, self.new[0])
-                m = m.next_any()
-        self.threadids = self.new + self.old
+            while m and m.pos is None:
+                m2 = m.next_any()
+                if m.seq != self.pos.seq:
+                    m.step(0)
+                    self.setpos(m, self.threadids[0])
+                m = m2
         self.notify("doc:replaced")
         if found < 100 and self.age == None:
             # must have found them all
+            self.pos = None
             if not self.partial:
                 self.prune()
             self.call("doc:notmuch:query-updated")
@@ -749,7 +778,7 @@ class notmuch_query(edlib.Doc):
             self.call("doc:step-thread", 1, 1, m2)
             if self.threads[tid]['total'] == 0:
                 # notify viewers to close threads
-                self.notify("notmuch:thread-gone", tid)
+                self.notify("notmuch:thread-changed", tid)
                 del self.threads[tid]
                 self.threadids.remove(tid)
                 m.step(0)
@@ -909,6 +938,7 @@ class notmuch_query(edlib.Doc):
                     j = 1
             j -= 1
             self.setpos(mark, tid, j)
+            mark.step(0)
 
             return '\n'
 
@@ -1537,7 +1567,7 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_Z(self, key, **a):
-        "handle:doc:char-Z"
+        "handle-list/doc:char-Z/doc:char-=/"
         if self.query_pane:
             return self.query_pane.call(key)
 
@@ -1680,7 +1710,7 @@ class notmuch_query_view(edlib.Pane):
         # fixme adjust for pane size
         self['render-vmargin'] = "%d" % (4 * lh)
         self.call("doc:request:doc:replaced")
-        self.call("doc:request:notmuch:thread-gone")
+        self.call("doc:request:notmuch:thread-changed")
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
@@ -1705,12 +1735,27 @@ class notmuch_query_view(edlib.Pane):
         self.thread_end = None
         self.thread_matched = None
         self.whole_thread = False
+        return 1
 
-    def handle_notify_thread(self, key, str, **a):
-        "handle:notmuch:thread-gone"
+    def move_thread(self):
+        if not self.selected:
+            return
+        # old thread is or moving
+        # thread is still here, thread_start must have moved, thread_end
+        # might be where thread used to be.
+        self.thread_end = self.thread_start.dup()
+        self.call("doc:step-thread", self.thread_end, 1, 1)
+        self.leaf.call("view:changed", self.thread_start, self.thread_end)
+        return 1
+
+    def handle_notify_thread(self, key, str, num, **a):
+        "handle:notmuch:thread-changed"
         if not str or self.selected != str:
             return 0
-        self.close_thread(True)
+        if num:
+            self.move_thread()
+        else:
+            self.close_thread(True)
         return 1
 
     def handle_set_ref(self, key, mark, num, **a):
@@ -1781,6 +1826,8 @@ class notmuch_query_view(edlib.Pane):
                     if self.thread_start and mark == self.thread_start:
                         mark.to_mark(self.thread_matched)
                 else:
+                    # make sure we are at the start of the thread
+                    self.parent.call("doc:step-thread", focus, mark, forward, 1)
                     ret = self.parent.call("doc:step", focus, mark, forward, move)
                     if move and ret != edlib.WEOF:
                         focus.call("doc:step-thread", focus, mark, forward, move)

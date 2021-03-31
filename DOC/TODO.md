@@ -422,7 +422,7 @@ Module features
 
 - [X] 'q' while in whole-thread mode should return to all-threads
 - [ ] use db.get_all_tags() to add list of tags to end of list of queries.
-- [ ] if a message arrives for a thread while the thread is open, the thread gets
+- [X] if a message arrives for a thread while the thread is open, the thread gets
        relocated and the start_thread/end_thread marks get broken.
 - [X] 'n' at end of 'whole-thread' moves to next thread
 - [ ] remember how long it takes to count a query, and if longer than
@@ -456,9 +456,9 @@ Module features
       the 'red', even if I change the tag.
 - [X] when I 'read' a message at top of summary and move to next, summary 
       refreshes with 'next' at the top, so  I don't see the old message change colour.
-- [ ] Chr-g in search/message window should remove non-matching entries from
-     search.  Chr-G discards and starts again.
-- [ ] archived messages never disappear from the list
+- [X] Chr-= in search/message window should remove non-matching entries from
+     search.
+- [X] archived messages never disappear from the list
 - [ ] search documents don't disappear when unused
 - [X]   They, at least, should refresh and clean when visited.
 - [ ] show a summary line at end of search result which says how far back has been searched.
@@ -468,11 +468,10 @@ Module features
 - [ ] search in thread list - and within a thread - this generates >2000 marks!
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
    then 'q' and crash.
-- [ ] A multipart still had an active view.
 - [ ] display counts of current thread somewhere, so I know where I'm up to.
 - [ ] allow refresh of current search, especially when re-visit
 - [ ] how do work with multiple thread?
-- [ ] refresh thread list
+- [X] refresh thread list
 - [ ] Add Close handler for doc-docs.c
 - [ ] dynamic search/filter pattern
 - [ ] command to skip over whole thread
@@ -489,6 +488,7 @@ Module features
 
 ###  Notmuch message display
 
+- [ ] A multipart still had an active view.
 - [ ] allow cursor on spacer buttons, so 'enter' can select them
 - [ ] why does stepping from htmlpart to hidden pdf part go v.slowly
 - [ ] When 'show'ing a part, ensure start of part is visible
