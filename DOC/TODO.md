@@ -485,6 +485,7 @@ Module features
 - [X] simplify thread,mesg ordering by using maxint instead of -1 ??
 - [ ] allow re-ordering of saved-search list
 - [ ] allow editting of saved searches, including deletion
+- [ ] prune old unused threads
 
 ###  Notmuch message display
 

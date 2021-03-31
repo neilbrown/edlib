@@ -703,6 +703,13 @@ class notmuch_query(edlib.Doc):
                 self.tindex += 1
                 while self.pos.pos and self.pos.pos[0] == tid2:
                     self.call("doc:step-thread", self.pos, 1, 1)
+            need_update = False
+            if tid in self.threads:
+                oj = self.threads[tid]
+                if  (oj['timestamp'] != j['timestamp'] or
+                     oj['total'] != j['total'] or
+                     oj['matched'] != j['matched']):
+                    need_update = True
             self.threads[tid] = j
             old = -1
             if self.tindex >= len(self.threadids) or self.threadids[self.tindex] != tid:
@@ -734,6 +741,16 @@ class notmuch_query(edlib.Doc):
                         m.to_mark_noref(self.pos)
                     m = m2
                 self.notify("notmuch:thread-changed", tid, 1)
+            if need_update:
+                if self.pos.pos and self.pos.pos[0] == tid:
+                    self.load_thread(self.pos)
+                else:
+                    # might previous thread thread
+                    m = self.pos.dup()
+                    self.prev(m)
+                    self.call("doc:step-thread", m, 0, 1)
+                    if m.pos and m.pos[0] == tid:
+                        self.load_thread(m)
 
         tl = None
         if self.p:
@@ -854,6 +871,7 @@ class notmuch_query(edlib.Doc):
             prev = m.prev_any()
             while prev and prev.pos and prev.pos[0] == tid:
                 m = prev
+                prev = m.prev_any()
             ind = 0
             midlist = self.messageids[tid]
             while m and m.pos and m.pos[0] == tid:
@@ -866,6 +884,7 @@ class notmuch_query(edlib.Doc):
                     else:
                         ind = mi
                 m = m.next_any()
+            self.notify("notmuch:thread-changed", tid, 2)
 
     def rel_date(self, sec):
         then = time.localtime(sec)
@@ -1135,8 +1154,7 @@ class notmuch_query(edlib.Doc):
         if mark.pos == None:
             return edlib.Efail
         (tid,mid) = mark.pos
-        if tid not in self.threadinfo:
-            self.load_thread(mark)
+        self.load_thread(mark)
         if tid in self.threadinfo:
             return 1
         return 2
@@ -1748,14 +1766,34 @@ class notmuch_query_view(edlib.Pane):
         self.leaf.call("view:changed", self.thread_start, self.thread_end)
         return 1
 
+    def trim_thread(self):
+        if self.whole_thread:
+            return
+        # clip any non-matching messages
+        self.thread_matched = None
+        m = self.thread_start.dup()
+        while m < self.thread_end:
+            mt = self.call("doc:get-attr", m, "matched", ret='str')
+            if mt != "True":
+                m2 = m.dup()
+                self.call("doc:step-matched", m2, 1, 1)
+                self.leaf.call("Notify:clip", m, m2)
+                m = m2
+            if not self.thread_matched:
+                self.thread_matched = m.dup()
+            self.parent.next(m)
+        self.leaf.call("view:changed", self.thread_start, self.thread_end)
+
     def handle_notify_thread(self, key, str, num, **a):
         "handle:notmuch:thread-changed"
         if not str or self.selected != str:
             return 0
-        if num:
-            self.move_thread()
-        else:
+        if num == 0:
             self.close_thread(True)
+        elif num == 1:
+            self.move_thread()
+        elif num == 2:
+            self.trim_thread()
         return 1
 
     def handle_set_ref(self, key, mark, num, **a):
@@ -1888,6 +1926,8 @@ class notmuch_query_view(edlib.Pane):
 
     def handle_update(self, key, focus, **a):
         "handle:doc:char-="
+        if self.selected:
+            focus.call("doc:notmuch:load-thread", self.thread_start)
         focus.call("doc:notmuch:query:reload")
         return 1
 
