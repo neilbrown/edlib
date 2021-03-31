@@ -394,6 +394,10 @@ class notmuch_main(edlib.Doc):
             if child("doc:notmuch:same-search", str, q) == 1:
                 nm = child
                 break
+        if nm and nm.notify("doc:notify-viewers") == 0:
+            # no-one is looking, just discard this one
+            nm.close()
+            nm = None
         if not nm:
             nm = notmuch_query(self, str, q)
             # FIXME This is a a bit ugly.  I should pass self.container

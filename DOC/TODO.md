@@ -460,7 +460,7 @@ Module features
      search.  Chr-G discards and starts again.
 - [ ] archived messages never disappear from the list
 - [ ] search documents don't disappear when unused
-     They, at least, should refresh and clean when visited.
+- [X]   They, at least, should refresh and clean when visited.
 - [ ] show a summary line at end of search result which says how far back has been searched.
 - [ ] make min top/bottom margin configurable, set for message list
 - [ ] error check Popen of notmuch - don't want EPIPE when we write.
