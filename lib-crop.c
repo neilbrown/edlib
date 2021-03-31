@@ -109,8 +109,8 @@ DEF_CMD(crop_clip)
 {
 	struct crop_data *cd = ci->home->data;
 
-	mark_clip(cd->start, ci->mark, ci->mark2);
-	mark_clip(cd->end, ci->mark, ci->mark2);
+	mark_clip(cd->start, ci->mark, ci->mark2, !!ci->num);
+	mark_clip(cd->end, ci->mark, ci->mark2, !!ci->num);
 	return Efallthrough;
 }
 

@@ -393,10 +393,10 @@ DEF_CMD(search_clip)
 	struct es_info *esi = ci->home->data;
 	struct stk *s;
 
-	mark_clip(esi->start, ci->mark, ci->mark2);
-	mark_clip(esi->end, ci->mark, ci->mark2);
+	mark_clip(esi->start, ci->mark, ci->mark2, !!ci->num);
+	mark_clip(esi->end, ci->mark, ci->mark2, !!ci->num);
 	for (s = esi->s; s; s = s->next)
-		mark_clip(s->m, ci->mark, ci->mark2);
+		mark_clip(s->m, ci->mark, ci->mark2, !!ci->num);
 	return Efallthrough;
 }
 
@@ -1019,8 +1019,10 @@ DEF_CMD(emacs_highlight_clip)
 {
 	struct highlight_info *hi = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, hi->view, ci->home);
-	marks_clip(ci->home, ci->mark, ci->mark2, hi->replace_view, ci->home);
+	marks_clip(ci->home, ci->mark, ci->mark2,
+		   hi->view, ci->home, !!ci->num);
+	marks_clip(ci->home, ci->mark, ci->mark2,
+		   hi->replace_view, ci->home, !!ci->num);
 	return Efallthrough;
 }
 

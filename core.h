@@ -247,10 +247,10 @@ struct mark *vmark_at_point(struct pane *p safe, int view,
 struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe,
 				int view, struct pane *owner);
 struct mark *vmark_new(struct pane *p safe, int view, struct pane *owner);
-void mark_clip(struct mark *m safe, struct mark *start, struct mark *end);
+void mark_clip(struct mark *m safe, struct mark *start, struct mark *end,
+	       bool tostart);
 void marks_clip(struct pane *p safe, struct mark *start, struct mark *end,
-		int view, struct pane *owner);
-
+		int view, struct pane *owner, bool tostart);
 
 static inline int mark_ordered_or_same(struct mark *m1 safe,
 				       struct mark *m2 safe)

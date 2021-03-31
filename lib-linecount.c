@@ -291,7 +291,8 @@ DEF_CMD(linecount_clip)
 {
 	struct count_info *cli = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, cli->view_num, ci->home);
+	marks_clip(ci->home, ci->mark, ci->mark2, cli->view_num, ci->home,
+		   !!ci->num);
 	return Efallthrough;
 }
 

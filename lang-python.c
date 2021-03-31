@@ -1219,12 +1219,14 @@ static PyObject *Pane_clip(Pane *self safe, PyObject *args)
 {
 	Mark *start = NULL, *end = NULL;
 	int view = -1;
-	int ret = PyArg_ParseTuple(args, "i|O!O!", &view, &MarkType, &start,
-				   &MarkType, &end);
+	int tostart = 0;
+	int ret = PyArg_ParseTuple(args, "iO!O!|i", &view, &MarkType, &start,
+				   &MarkType, &end, &tostart);
 
 	if (ret > 0 && start && end && self->pane &&
 	    start->mark && end->mark && view >= 0)
-		marks_clip(self->pane, start->mark, end->mark, view, self->pane);
+		marks_clip(self->pane, start->mark, end->mark, view, self->pane,
+			   !!tostart);
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -1921,11 +1923,13 @@ static PyObject *Mark_to_mark_noref(Mark *self safe, PyObject *args)
 static PyObject *Mark_clip(Mark *self safe, PyObject *args)
 {
 	Mark *start = NULL, *end = NULL;
-	int ret = PyArg_ParseTuple(args, "O!O!", &MarkType, &start, &MarkType, &end);
+	int tostart = 0;
+	int ret = PyArg_ParseTuple(args, "O!O!|i", &MarkType, &start,
+				   &MarkType, &end, &tostart);
 
 	if (ret > 0 && start && end && self->mark &&
 	    start->mark && end->mark)
-		mark_clip(self->mark, start->mark, end->mark);
+		mark_clip(self->mark, start->mark, end->mark, !!tostart);
 
 	Py_INCREF(Py_None);
 	return Py_None;

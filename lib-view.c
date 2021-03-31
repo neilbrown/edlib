@@ -491,7 +491,7 @@ DEF_CMD(view_clip)
 	struct view_data *vd = ci->home->data;
 
 	if (vd->viewpoint)
-		mark_clip(vd->viewpoint, ci->mark, ci->mark2);
+		mark_clip(vd->viewpoint, ci->mark, ci->mark2, !!ci->num);
 	return Efallthrough;
 }
 

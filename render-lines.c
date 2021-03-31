@@ -1519,9 +1519,10 @@ DEF_CMD(render_lines_clip)
 {
 	struct rl_data *rl = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, rl->typenum, ci->home);
+	marks_clip(ci->home, ci->mark, ci->mark2, rl->typenum, ci->home,
+		   !!ci->num);
 	if (rl->header)
-		mark_clip(rl->header, ci->mark, ci->mark2);
+		mark_clip(rl->header, ci->mark, ci->mark2, !!ci->num);
 	return Efallthrough;
 }
 

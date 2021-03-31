@@ -399,7 +399,7 @@ DEF_CMD(header_clip)
 {
 	struct header_info *hi = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, hi->vnum, ci->home);
+	marks_clip(ci->home, ci->mark, ci->mark2, hi->vnum, ci->home, !!ci->num);
 	return Efallthrough;
 }
 

@@ -425,7 +425,8 @@ DEF_CMD(mu_clip)
 {
 	struct mu_info *mu = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, mu->view, ci->home);
+	marks_clip(ci->home, ci->mark, ci->mark2,
+		   mu->view, ci->home, !!ci->num);
 	return Efallthrough;
 }
 

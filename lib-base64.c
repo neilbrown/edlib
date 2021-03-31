@@ -226,7 +226,7 @@ DEF_CMD(b64_clip)
 {
 	struct b64info *bi = ci->home->data;
 
-	marks_clip(ci->home, ci->mark, ci->mark2, bi->view, ci->home);
+	marks_clip(ci->home, ci->mark, ci->mark2, bi->view, ci->home, !!ci->num);
 	return Efallthrough;
 }
 

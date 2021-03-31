@@ -1023,12 +1023,12 @@ DEF_CMD(doc_clip)
 	struct doc_data *dd = ci->home->data;
 	int mnum;
 
-	mark_clip(dd->point, ci->mark, ci->mark2);
+	mark_clip(dd->point, ci->mark, ci->mark2, !!ci->num);
 	if (dd->old_point)
-		mark_clip(dd->old_point, ci->mark, ci->mark2);
+		mark_clip(dd->old_point, ci->mark, ci->mark2, !!ci->num);
 	for (mnum = 0; mnum < 4; mnum++)
 		if (dd->marks[mnum])
-			mark_clip(dd->marks[mnum], ci->mark, ci->mark2);
+			mark_clip(dd->marks[mnum], ci->mark, ci->mark2, !!ci->num);
 	return 1;
 }
 

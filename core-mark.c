@@ -1028,31 +1028,58 @@ struct mark *do_vmark_at_or_before(struct doc *d safe,
 	return vm;
 }
 
-void mark_clip(struct mark *m safe, struct mark *start, struct mark *end)
+void mark_clip(struct mark *m safe, struct mark *start, struct mark *end,
+	       bool tostart)
 {
+	/* Note: if this is called while looping over a list of marks,
+	 * the loop should move forward when tostart,
+	 * and backward when !tostart.
+	 */
 	if (!start || !end)
 		return;
-	if (m->seq > start->seq &&
-	    m->seq < end->seq)
+	if (m->seq < start->seq && !mark_same(m, start))
+		return;
+	if (m->seq > end->seq || mark_same(m, end))
+		return;
+
+	if (tostart)
+		mark_to_mark(m, start);
+	else
 		mark_to_mark(m, end);
 }
 
 void marks_clip(struct pane *p safe, struct mark *start, struct mark *end,
-		int view, struct pane *owner)
+		int view, struct pane *owner, bool tostart)
 {
-	struct mark *m;
+	struct mark *m, *m2;
 
 	if (!start || !end)
 		return;
 
-	m = vmark_at_or_before(p, end, view, owner);
-	while (m && m->seq >= end->seq)
-		m = vmark_prev(m);
+	if (tostart) {
+		m = vmark_at_or_before(p, start, view, owner);
+		while (m && (m2=vmark_prev(m)) && mark_same(start, m2))
+			m = m2;
+		while (m && m->seq <= start->seq && !mark_same(m, start))
+			m = vmark_next(m);
 
-	while (m && m->seq > start->seq) {
-		struct mark *m2 = vmark_prev(m);
-		mark_clip(m, start, end);
-		m = m2;
+		while (m && m->seq < end->seq && !mark_same(m, end)) {
+			m2 = vmark_next(m);
+			mark_clip(m, start, end, tostart);
+			m = m2;
+		}
+	} else {
+		m = vmark_at_or_before(p, end, view, owner);
+		while (m && (m2=vmark_next(m)) && mark_same(end,m2))
+			m = m2;
+		while (m && (m->seq >= end->seq || mark_same(m, end)))
+			m = vmark_prev(m);
+
+		while (m && (m->seq > start->seq || mark_same(m, start))) {
+			m2 = vmark_prev(m);
+			mark_clip(m, start, end, tostart);
+			m = m2;
+		}
 	}
 }
 

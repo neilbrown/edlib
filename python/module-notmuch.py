@@ -1693,22 +1693,24 @@ class notmuch_query_view(edlib.Pane):
         self.leaf.call("view:changed")
         return 1
 
-    def close_thread(self):
+    def close_thread(self, gone = False):
         if not self.selected:
             return
         # old thread is disappearing.
-        self.leaf.call("Notify:clip", self.thread_start, self.thread_end)
+        self.leaf.call("Notify:clip", self.thread_start, self.thread_end,
+                       0 if gone else 1)
         self.leaf.call("view:changed", self.thread_start, self.thread_end)
         self.selected = None
         self.thread_start = None
         self.thread_end = None
         self.thread_matched = None
+        self.whole_thread = False
 
     def handle_notify_thread(self, key, str, **a):
         "handle:notmuch:thread-gone"
         if not str or self.selected != str:
             return 0
-        self.close_thread()
+        self.close_thread(True)
         return 1
 
     def handle_set_ref(self, key, mark, num, **a):

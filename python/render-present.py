@@ -456,10 +456,10 @@ class PresenterPane(edlib.Pane):
                 ret |= rv
         return ret
 
-    def handle_clip(self, key, mark, mark2, **a):
+    def handle_clip(self, key, mark, mark2, num, **a):
         "handle:Notify:clip"
-        self.clip(self.attrview, mark, mark2)
-        self.clip(self.pageview, mark, mark2)
+        self.clip(self.attrview, mark, mark2, num)
+        self.clip(self.pageview, mark, mark2, num)
         return edlib.Efallthrough
 
     def handle_render_prev(self, key, mark, num, **a):
