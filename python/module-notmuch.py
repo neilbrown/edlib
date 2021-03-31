@@ -370,7 +370,7 @@ class notmuch_main(edlib.Doc):
             self.timer_set = True
             self.call("event:timer", 5*60*1000, self.tick)
         if self.searches.load(False):
-            # there are new (possibly) new search, trigger a refresh
+            # there are (possibly) new searches, trigger a refresh
             self.notify("doc:replaced")
         self.updating = "counts"
         if not self.searches.update(self, self.updated):
@@ -648,6 +648,10 @@ class notmuch_query(edlib.Doc):
         self.partial = False
         self.age = 1
 
+        # mark all threads inactive, so any that remain that way
+        # can be pruned.
+        for id in self.threads:
+            self.threads[id]['total'] = 0
         self.old = self.threadids[:]
         self.new = []
         self.offset = 0
@@ -695,7 +699,7 @@ class notmuch_query(edlib.Doc):
                 i = self.old.index(tid)
                 del self.old[i]
                 if i > 0:
-                    if i == len(self.old)-1:
+                    if i == len(self.old):
                         self.move_marks(tid,None)
                     else:
                         self.move_marks(tid, self.old[i])
@@ -719,6 +723,8 @@ class notmuch_query(edlib.Doc):
         self.notify("doc:replaced")
         if found < 100 and self.age == None:
             # must have found them all
+            if not self.partial:
+                self.prune()
             self.call("doc:notmuch:query-updated")
             return edlib.Efalse
         # request some more
@@ -732,6 +738,25 @@ class notmuch_query(edlib.Doc):
             self.age += 1
         self.start_load()
         return edlib.Efalse
+
+    def prune(self):
+        # remove any threads with a 'total' of zero.
+        # Any marks on them must be moved later
+        m = edlib.Mark(self)
+        while m.pos != None:
+            m2 = m.dup()
+            tid = m.pos[0]
+            self.call("doc:step-thread", 1, 1, m2)
+            if self.threads[tid]['total'] == 0:
+                # notify viewers to close threads
+                self.notify("notmuch:thread-gone", tid)
+                del self.threads[tid]
+                self.threadids.remove(tid)
+                m.step(0)
+                while m < m2:
+                    m.pos = m2.pos
+                    m = m.next_any()
+            m = m2
 
     def cvt_depth(self, depth):
         # depth is an array of int
@@ -1069,6 +1094,11 @@ class notmuch_query(edlib.Doc):
         # any doc:notmuch calls that we don't handle directly
         # are handled to the maindoc
         return self.maindoc.call(key, **a)
+
+    def handle_reload(self, key, **a):
+        "handle:doc:notmuch:query:reload"
+        self.load_full()
+        return 1
 
     def handle_load_thread(self, key, mark, **a):
         "handle:doc:notmuch:load-thread"
@@ -1650,6 +1680,7 @@ class notmuch_query_view(edlib.Pane):
         # fixme adjust for pane size
         self['render-vmargin'] = "%d" % (4 * lh)
         self.call("doc:request:doc:replaced")
+        self.call("doc:request:notmuch:thread-gone")
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
@@ -1660,6 +1691,24 @@ class notmuch_query_view(edlib.Pane):
     def handle_notify_replace(self, key, **a):
         "handle:doc:replaced"
         self.leaf.call("view:changed")
+        return 1
+
+    def close_thread(self):
+        if not self.selected:
+            return
+        # old thread is disappearing.
+        self.leaf.call("Notify:clip", self.thread_start, self.thread_end)
+        self.leaf.call("view:changed", self.thread_start, self.thread_end)
+        self.selected = None
+        self.thread_start = None
+        self.thread_end = None
+        self.thread_matched = None
+
+    def handle_notify_thread(self, key, str, **a):
+        "handle:notmuch:thread-gone"
+        if not str or self.selected != str:
+            return 0
+        self.close_thread()
         return 1
 
     def handle_set_ref(self, key, mark, num, **a):
@@ -1788,6 +1837,11 @@ class notmuch_query_view(edlib.Pane):
         focus.call("view:changed")
         return 1
 
+    def handle_update(self, key, focus, **a):
+        "handle:doc:char-="
+        focus.call("doc:notmuch:query:reload")
+        return 1
+
     def handle_close_thread(self, key, focus, **a):
         "handle:notmuch:close-thread"
         # 'q' is requesting that we close thread if it is open
@@ -1800,14 +1854,7 @@ class notmuch_query_view(edlib.Pane):
         "handle:notmuch:select"
         s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
         if s and s != self.selected:
-            if self.selected:
-                # old thread is disappearing.
-                focus.call("Notify:clip", self.thread_start, self.thread_end)
-                focus.call("view:changed", self.thread_start, self.thread_end)
-                self.selected = None
-                self.thread_start = None
-                self.thread_end = None
-                self.thread_matched = None
+            self.close_thread()
 
             if focus.call("doc:notmuch:load-thread", mark) == 1:
                 self.selected = s
