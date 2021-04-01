@@ -720,9 +720,13 @@ class notmuch_query(edlib.Doc):
                     pass
                 self.threadids.insert(self.tindex, tid)
                 self.tindex += 1
-            if old >= 0:
+            if old >= 0 and old == self.tindex - 2:
+                # same as immediate last - no need to move marks
+                self.tindex -= 1
+                self.threadids.pop(old)
+            elif old >= 0:
                 # move mark to before self.pos
-                if old < self.tindex:
+                if old < self.tindex - 1:
                     m = self.first_mark()
                     self.tindex -= 1
                 else:
@@ -756,7 +760,7 @@ class notmuch_query(edlib.Doc):
         if self.p:
             self.p.wait()
         self.p = None
-        if was_empty:
+        if was_empty and self.threadids:
             # first insertion, all marks other than self.pos must be at start
             m = self.first_mark()
             while m and m.pos is None:
