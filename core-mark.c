@@ -623,6 +623,8 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 	}
 	/* END DEBUG */
 
+	if (m == target)
+		return;
 	if (!mark_same(m, target))
 		notify_point_moving(m);
 	if (m->viewnum == MARK_POINT) {
@@ -633,8 +635,6 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 			point_backward_to_mark(m, target);
 		return;
 	}
-	if (m->seq == target->seq)
-		return;
 	if (m->viewnum == MARK_UNGROUPED) {
 		/* Only one linked list to worry about */
 		if (m->seq < target->seq) {
