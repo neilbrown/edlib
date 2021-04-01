@@ -87,6 +87,7 @@ class searches:
         self.unread = {}
         self.new = {}
         self.todo = []
+        self.tags = []
         self.p = None
 
         if 'NOTMUCH_CONFIG' in os.environ:
@@ -97,6 +98,9 @@ class searches:
             self.path = ".notmuch-config"
         self.mtime = 0
         self.maxlen = 0
+
+    def set_tags(self, tags):
+        self.tags = list(tags)
 
     def load(self, reload = False):
         try:
@@ -141,6 +145,14 @@ class searches:
 
         self.current = self.searches_from("current-list")
         self.misc = self.searches_from("misc-list")
+
+        for t in self.tags:
+            tt = "tag:" + t
+            if tt not in self.slist:
+                self.slist[tt] = tt
+                self.current.append(tt)
+                self.misc.append(tt)
+
         for i in self.current:
             if i not in self.count:
                 self.count[i] = None
@@ -204,7 +216,7 @@ class searches:
         p.wait()
         return more
 
-    patn = "\\bsaved:([-_A-Za-z0-9]*)\\b"
+    patn = "\\bsaved:([-_A-Za-z0-9:]*)\\b"
     def map_search(self, query):
         m = re.search(self.patn, query)
         while m:
@@ -369,6 +381,9 @@ class notmuch_main(edlib.Doc):
         if not self.timer_set:
             self.timer_set = True
             self.call("event:timer", 5*60*1000, self.tick)
+        with self.db as db:
+            tags = db.get_all_tags()
+            self.searches.set_tags(tags)
         if self.searches.load(False):
             # there are (possibly) new searches, trigger a refresh
             self.notify("doc:replaced")

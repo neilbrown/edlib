@@ -72,7 +72,14 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] guard against mark seq number over-flowing.
 - [ ] use the time-keeping stack to allow an edlib stack-trace to be reported
+      Or provide linkage from one call() to the next which can be walked and
+      ci reported.
+- [ ] have standard way for reporting marks, and slow testing of order
+- [ ] have a debug more where mark consistency is checked v.often
+- [ ] improve timeout.  Set timer once, then set a flag so that all commands fails
+      until some top-level clears the flag.
 - [ ] give a name to every pane for easier reporting.
 - [ ] reconsider all 'return comm_call()' calls.  Do we every really
       care if the callback succeeded?
@@ -421,7 +428,7 @@ Module features
 ### Notmuch - overview
 
 - [X] 'q' while in whole-thread mode should return to all-threads
-- [ ] use db.get_all_tags() to add list of tags to end of list of queries.
+- [X] use db.get_all_tags() to add list of tags to end of list of queries.
 - [X] if a message arrives for a thread while the thread is open, the thread gets
        relocated and the start_thread/end_thread marks get broken.
 - [X] 'n' at end of 'whole-thread' moves to next thread
