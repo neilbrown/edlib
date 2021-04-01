@@ -194,12 +194,14 @@ class searches:
         self.p.stdin.write((self.make_search(n, 'unread') + "\n").encode("utf-8"))
         self.p.stdin.write((self.make_search(n, 'new') + "\n").encode("utf-8"))
         self.p.stdin.close()
-        self.pane.call("event:read", self.p.stdout.fileno(), self.cb)
+        self.pane.call("event:read", self.p.stdout.fileno(), self.updated)
         return True
 
-    def updated(self, *a):
+    def updated(self, key, **a):
         if not self.todoing:
-            return False
+            self.cb(False)
+            # return False to tell event handler there is no more to read.
+            return edlib.Efalse
         n = self.todoing
         try:
             c = self.p.stdout.readline()
@@ -214,7 +216,8 @@ class searches:
         self.p = None
         more = self.update_next()
         p.wait()
-        return more
+        self.cb(True)
+        return edlib.Efalse
 
     patn = "\\bsaved:([-_A-Za-z0-9:]*)\\b"
     def map_search(self, query):
@@ -588,11 +591,10 @@ class notmuch_main(edlib.Doc):
                 self.update_next()
         return 1
 
-    def updated(self, key, **a):
-        if not self.searches.updated():
+    def updated(self, finished):
+        if finished:
             self.update_next()
         self.notify("doc:replaced")
-        return edlib.Efalse
 
     def update_next(self):
         if self.updating == "counts":
