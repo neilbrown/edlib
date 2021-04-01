@@ -2150,8 +2150,9 @@ static PyObject *mark_repr(Mark *self safe)
 	PyObject *ret;
 
 	if (self->mark)
-		asprintf(&s, "<edlib.Mark seq=%d i=%d %p>",
-			 self->mark->seq, self->mark->ref.o, self->mark);
+		asprintf(&s, "<edlib.Mark seq=%d v=%d i=%d %p>",
+			 self->mark->seq, self->mark->viewnum,
+			 self->mark->ref.o, self->mark);
 	else
 		asprintf(&s, "<edlib.Mark NULL %p>", self);
 	ret = Py_BuildValue("s", s);
