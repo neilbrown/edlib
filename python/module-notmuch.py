@@ -456,8 +456,10 @@ class notmuch_main(edlib.Doc):
             if child("doc:notmuch:same-search", str, q) == 1:
                 nm = child
                 break
-        if nm and nm.notify("doc:notify-viewers") == 0:
-            # no-one is looking, just discard this one
+        if (nm and nm.notify("doc:notify-viewers") == 0 and
+            int(nm['last-refresh']) + 8*60*60 < int(time.time())):
+            # no-one is looking and they haven't for a long time,
+            # so just discard this one.
             nm.close()
             nm = None
         if not nm:
@@ -467,6 +469,8 @@ class notmuch_main(edlib.Doc):
             # Also I should use an edlib call to get notmuch_query
             nm.reparent(self.container)
             nm.call("doc:set-name", str)
+        elif int(nm['last-refresh']) + 60 < int(time.time()):
+            nm.call("doc:notmuch:query-refresh")
         if comm2:
             comm2("callback", focus, nm)
         return 1
@@ -645,7 +649,13 @@ class notmuch_main(edlib.Doc):
             self.updating = "queries"
             qlist = []
             for c in self.container.children():
-                qlist.append(c['query'])
+                if c.notify("doc:notify-viewers") == 0:
+                    # no point refreshing this, might be time to close it
+                    lr = c['last-refresh']
+                    if int(lr) + 8*60*60 < int(time.time()):
+                        c.call("doc:closed")
+                else:
+                    qlist.append(c['query'])
             self.qlist = qlist
         while self.updating == "queries":
             if not self.qlist:
@@ -670,6 +680,7 @@ class notmuch_query(edlib.Doc):
         self.query = query
         self['qname'] = qname
         self['query'] = query
+        self['last-refresh'] = "%d" % int(time.time())
         self.threadids = []
         self.threads = {}
         self.messageids = {}
@@ -728,7 +739,9 @@ class notmuch_query(edlib.Doc):
         self.start_load()
 
     def start_load(self):
-        cmd = ["/usr/bin/notmuch", "search", "--output=summary", "--format=json", "--limit=100", "--offset=%d" % self.offset ]
+        self['last-refresh'] = "%d" % int(time.time())
+        cmd = ["/usr/bin/notmuch", "search", "--output=summary",
+               "--format=json", "--limit=100", "--offset=%d" % self.offset ]
         if self.partial:
             cmd += [ "date:-1day.. AND " ]
         elif self.age:

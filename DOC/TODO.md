@@ -466,7 +466,7 @@ Module features
 - [X] Chr-= in search/message window should remove non-matching entries from
      search.
 - [X] archived messages never disappear from the list
-- [ ] search documents don't disappear when unused
+- [X] search documents don't disappear when unused
 - [X]   They, at least, should refresh and clean when visited.
 - [ ] show a summary line at end of search result which says how far back has been searched.
 - [ ] make min top/bottom margin configurable, set for message list
@@ -476,7 +476,7 @@ Module features
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
    then 'q' and crash.
 - [ ] display counts of current thread somewhere, so I know where I'm up to.
-- [ ] allow refresh of current search, especially when re-visit
+- [X] allow refresh of current search, especially when re-visit
 - [ ] how do work with multiple thread?
 - [X] refresh thread list
 - [ ] Add Close handler for doc-docs.c
@@ -492,7 +492,7 @@ Module features
 - [X] simplify thread,mesg ordering by using maxint instead of -1 ??
 - [ ] allow re-ordering of saved-search list
 - [ ] allow editting of saved searches, including deletion
-- [ ] prune old unused threads
+- [X] prune old unused threads
 
 ###  Notmuch message display
 
@@ -601,6 +601,8 @@ Module features
 
 ### white-space
 
+- [ ] support highlight suitable for diff: a space is first character is allowed,
+      even if EOL or followed by space.
 - [ ] support highlight of spaces-for-indent
 - [ ] support highlight of tabs-for-indent
 - [ ] make set of highlights, and colors, configurable
