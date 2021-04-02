@@ -449,12 +449,12 @@ Module features
 - [X] re-arrange notmuch code so doc are first, then viewers, then commands
 - [X] '+' or '-' to change flags,
 - [X] S marks newspam N notspam ! unread,inbox
-- [ ] encourage current message to be visible when list is auto updated
+- [X] encourage current message to be visible when list is auto updated
 - [X] point in summary list should stay close to middle
 - [X] better feedback to 'g' - e.g flag that update is happening
-- [ ] I don't think summary updates correctly
+- [X] I don't think summary updates correctly
      when count notices a difference, it should trigger a refresh
-- [ ] Chr-a should affect thing under cursor, not current thing
+- [X] Chr-a should affect thing under cursor, not current thing
 - [X] improve update of message list... sometimes disappears
 - [ ] If a thread has messages that are unread, and others that are new, then
       it shows as red even though none are both.  This is confusing.
@@ -470,7 +470,7 @@ Module features
 - [X]   They, at least, should refresh and clean when visited.
 - [ ] show a summary line at end of search result which says how far back has been searched.
 - [ ] make min top/bottom margin configurable, set for message list
-- [ ] error check Popen of notmuch - don't want EPIPE when we write.
+- [X] error check Popen of notmuch - don't want EPIPE when we write.
 - [ ] render-lines calls render:reposition with m2 beyond the end of displayed region.
 - [ ] search in thread list - and within a thread - this generates >2000 marks!
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,

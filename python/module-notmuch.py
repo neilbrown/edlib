@@ -111,9 +111,12 @@ class counter:
         # /dev/null is to avoid warning when out-of-date data is reported.
         self.p = Popen("/usr/bin/notmuch count --batch", shell=True, stdin=PIPE,
                        stdout = PIPE, stderr = open("/dev/null", 'w'))
-        self.p.stdin.write((self.make_search(q) + "\n").encode("utf-8"))
-        self.p.stdin.write((self.make_search(q, 'unread') + "\n").encode("utf-8"))
-        self.p.stdin.write((self.make_search(q, 'new') + "\n").encode("utf-8"))
+        try:
+            self.p.stdin.write((self.make_search(q) + "\n").encode("utf-8"))
+            self.p.stdin.write((self.make_search(q, 'unread') + "\n").encode("utf-8"))
+            self.p.stdin.write((self.make_search(q, 'new') + "\n").encode("utf-8"))
+        except BrokenPipeError:
+            pass
         self.p.stdin.close()
         self.start = time.time()
         self.pane.call("event:read", self.p.stdout.fileno(), self.ready)
@@ -747,7 +750,7 @@ class notmuch_query(edlib.Doc):
         elif self.age:
             cmd += [ "date:-%dmonths.. AND " % self.age]
         cmd += [ "( %s )" % self.query ]
-        self.p = Popen(cmd, shell=False, stdout=PIPE)
+        self.p = Popen(cmd, shell=False, stdout=PIPE, stderr = open("/dev/null"))
         self.call("event:read", self.p.stdout.fileno(), self.get_threads)
 
     def move_marks(self, tid, new):
