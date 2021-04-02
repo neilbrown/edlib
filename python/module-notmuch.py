@@ -115,12 +115,14 @@ class counter:
         self.p.stdin.write((self.make_search(q, 'unread') + "\n").encode("utf-8"))
         self.p.stdin.write((self.make_search(q, 'new') + "\n").encode("utf-8"))
         self.p.stdin.close()
+        self.start = time.time()
         self.pane.call("event:read", self.p.stdout.fileno(), self.ready)
         return True
 
     def ready(self, key, **a):
         q = self.pending
         count = 0; unread = 0; new = 0
+        slow = time.time() - self.start > 5
         self.pending = None
         try:
             c = self.p.stdout.readline()
@@ -134,7 +136,7 @@ class counter:
         p = self.p
         self.p = None
         more = self.next()
-        self.cb(q, count, unread, new, more)
+        self.cb(q, count, unread, new, slow, more)
         p.wait()
         # return False to tell event handler there is no more to read.
         return edlib.Efalse
@@ -153,7 +155,9 @@ class searches:
         self.unread = {}
         self.new = {}
         self.tags = []
+        self.slow = {}
         self.worker = counter(self.make_search, pane, self.updated)
+        self.slow_worker = counter(self.make_search, pane, self.updated)
         self.cb = cb
 
         if 'NOTMUCH_CONFIG' in os.environ:
@@ -225,24 +229,36 @@ class searches:
                 self.unread[i] = None
                 self.new[i] = None
         self.mtime = mtime
+
         return True
 
     def is_pending(self, search):
-        return self.worker.is_pending(search)
+        return self.worker.is_pending(search) + self.slow_worker.is_pending(search)
 
     def update(self):
         for i in self.current:
-            self.worker.enqueue(i)
-        return self.worker.pending != None
+            if i in self.slow:
+                self.slow_worker.enqueue(i)
+            else:
+                self.worker.enqueue(i)
+        return self.worker.pending != None and self.slow_worker.pending != None
 
     def update_one(self, search):
-        self.worker.enqueue(search, True)
+        if search in self.slow:
+            self.slow_worker.enqueue(search, True)
+        else:
+            self.worker.enqueue(search, True)
 
-    def updated(self, q, count, unread, new, more):
+    def updated(self, q, count, unread, new, slow, more):
         self.count[q] = count
         self.unread[q] = unread
         self.new[q] = new
-        self.cb(more)
+        if slow:
+            self.slow[q] = slow
+        elif q in self.slow:
+            del self.slow[q]
+        self.cb(self.worker.pending != None and
+                self.slow_worker.pending != None)
 
     patn = "\\bsaved:([-_A-Za-z0-9:]*)\\b"
     def map_search(self, query):
@@ -382,6 +398,8 @@ class notmuch_main(edlib.Doc):
                     val = '*'
                 elif p > 1:
                     val = '?'
+                elif s in self.searches.slow:
+                    val = '!'
                 else:
                     val = ' '
         if val:
