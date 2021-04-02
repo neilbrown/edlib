@@ -484,7 +484,7 @@ Module features
 - [ ] command to skip over whole thread
 - [ ] use NOTMUCH_CONFIG consistently - not used for locking.
 - [ ] look into stored-query!! query: is slow and (I think) buggy
-- [ ] 'class searches' should be given callback on creation??
+- [X] 'class searches' should be given callback on creation??
 - [X] We *must* not change order or messages when reloading, without fixing all marks
    that refer to anything that moved in order.
 - [ ] rel_date could report how long until display would change, and

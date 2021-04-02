@@ -79,7 +79,7 @@ class searches:
     # update some stored counts.
     #
     # This is used to present the search-list document.
-    def __init__(self):
+    def __init__(self, pane, cb):
         self.slist = {}
         self.current = []
         self.misc = []
@@ -89,6 +89,8 @@ class searches:
         self.todo = []
         self.tags = []
         self.p = None
+        self.pane = pane
+        self.cb = cb
 
         if 'NOTMUCH_CONFIG' in os.environ:
             self.path = os.environ['NOTMUCH_CONFIG']
@@ -161,29 +163,23 @@ class searches:
         self.mtime = mtime
         return True
 
-    def update(self, pane, cb):
+    def update(self):
         for i in self.current:
             if i not in self.todo:
                 self.todo.append(i)
-        self.pane = pane
-        self.cb = cb
         if self.p is None:
             return self.update_next()
         return False
 
-    def update_one(self, search, pane, cb):
+    def update_one(self, search):
         if search in self.todo:
             self.todo.remove(search)
         self.todo.insert(0, search)
-        self.pane = pane
-        self.cb = cb
         if self.p is None:
             self.update_next()
 
     def update_next(self):
         if not self.todo:
-            self.pane = None
-            self.cb = None
             return False
         n = self.todo.pop(0)
         self.todoing = n
@@ -277,7 +273,7 @@ class notmuch_main(edlib.Doc):
 
     def __init__(self, focus):
         edlib.Doc.__init__(self, focus)
-        self.searches = searches()
+        self.searches = searches(self, self.updated)
         self.timer_set = False
         self.updating = None
         self.seen_threads = {}
@@ -391,13 +387,13 @@ class notmuch_main(edlib.Doc):
             # there are (possibly) new searches, trigger a refresh
             self.notify("doc:replaced")
         self.updating = "counts"
-        if not self.searches.update(self, self.updated):
+        if not self.searches.update():
             self.update_next()
         return 1
 
     def handle_notmuch_update_one(self, key, str, **a):
         "handle:doc:notmuch:update-one"
-        self.searches.update_one(str, self, self.updated)
+        self.searches.update_one(str)
         return 1
 
     def handle_notmuch_query(self, key, focus, str, comm2, **a):
@@ -587,7 +583,7 @@ class notmuch_main(edlib.Doc):
         if not self.updating:
             self.updating = "counts"
             self.searches.load(False)
-            if not self.searches.update(self, self.updated):
+            if not self.searches.update():
                 self.update_next()
         return 1
 
