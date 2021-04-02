@@ -73,6 +73,72 @@ class notmuch_db():
         self.db = None
         self.fd = None
 
+class counter:
+    # manage a queue of queries that need to be counted.
+    def __init__(self, make_search, pane, cb):
+        self.make_search = make_search
+        self.pane = pane
+        self.cb = cb
+        self.queue = []
+        self.pending = None
+        self.p = None
+
+    def enqueue(self, q, priority = False):
+        if priority:
+            if q in self.queue:
+                self.queue.remove(q)
+            self.queue.insert(0, q)
+        else:
+            if q in self.queue:
+                return
+            self.queue.append(q)
+        self.next()
+
+    def is_pending(self, q):
+        if self.pending == q:
+            return 1 # first
+        if q in self.queue:
+            return 2 # later
+        return 0
+
+    def next(self):
+        if self.p:
+            return True
+        if not self.queue:
+            return False
+        q = self.queue.pop(0)
+        self.pending = q
+        # /dev/null is to avoid warning when out-of-date data is reported.
+        self.p = Popen("/usr/bin/notmuch count --batch", shell=True, stdin=PIPE,
+                       stdout = PIPE, stderr = open("/dev/null", 'w'))
+        self.p.stdin.write((self.make_search(q) + "\n").encode("utf-8"))
+        self.p.stdin.write((self.make_search(q, 'unread') + "\n").encode("utf-8"))
+        self.p.stdin.write((self.make_search(q, 'new') + "\n").encode("utf-8"))
+        self.p.stdin.close()
+        self.pane.call("event:read", self.p.stdout.fileno(), self.ready)
+        return True
+
+    def ready(self, key, **a):
+        q = self.pending
+        count = 0; unread = 0; new = 0
+        self.pending = None
+        try:
+            c = self.p.stdout.readline()
+            count = int(c)
+            u = self.p.stdout.readline()
+            unread = int(u)
+            nw = self.p.stdout.readline()
+            new = int(nw)
+        except:
+            pass
+        p = self.p
+        self.p = None
+        more = self.next()
+        self.cb(q, count, unread, new, more)
+        p.wait()
+        # return False to tell event handler there is no more to read.
+        return edlib.Efalse
+
 class searches:
     # Manage the saved searches
     # We read all searches from the config file and periodically
@@ -86,10 +152,8 @@ class searches:
         self.count = {}
         self.unread = {}
         self.new = {}
-        self.todo = []
         self.tags = []
-        self.p = None
-        self.pane = pane
+        self.worker = counter(self.make_search, pane, self.updated)
         self.cb = cb
 
         if 'NOTMUCH_CONFIG' in os.environ:
@@ -163,57 +227,22 @@ class searches:
         self.mtime = mtime
         return True
 
+    def is_pending(self, search):
+        return self.worker.is_pending(search)
+
     def update(self):
         for i in self.current:
-            if i not in self.todo:
-                self.todo.append(i)
-        if self.p is None:
-            return self.update_next()
-        return False
+            self.worker.enqueue(i)
+        return self.worker.pending != None
 
     def update_one(self, search):
-        if search in self.todo:
-            self.todo.remove(search)
-        self.todo.insert(0, search)
-        if self.p is None:
-            self.update_next()
+        self.worker.enqueue(search, True)
 
-    def update_next(self):
-        if not self.todo:
-            return False
-        n = self.todo.pop(0)
-        self.todoing = n
-        # HACK WARNING /dev/null
-        self.p = Popen("/usr/bin/notmuch count --batch", shell=True, stdin=PIPE,
-                       stdout = PIPE, stderr = open("/dev/null", 'w'))
-        self.p.stdin.write((self.make_search(n) + "\n").encode("utf-8"))
-        self.p.stdin.write((self.make_search(n, 'unread') + "\n").encode("utf-8"))
-        self.p.stdin.write((self.make_search(n, 'new') + "\n").encode("utf-8"))
-        self.p.stdin.close()
-        self.pane.call("event:read", self.p.stdout.fileno(), self.updated)
-        return True
-
-    def updated(self, key, **a):
-        if not self.todoing:
-            self.cb(False)
-            # return False to tell event handler there is no more to read.
-            return edlib.Efalse
-        n = self.todoing
-        try:
-            c = self.p.stdout.readline()
-            self.count[n] = int(c)
-            u = self.p.stdout.readline()
-            self.unread[n] = int(u)
-            nw = self.p.stdout.readline()
-            self.new[n] = int(nw)
-        except:
-            pass
-        p = self.p
-        self.p = None
-        more = self.update_next()
-        p.wait()
-        self.cb(True)
-        return edlib.Efalse
+    def updated(self, q, count, unread, new, more):
+        self.count[q] = count
+        self.unread[q] = unread
+        self.new[q] = new
+        self.cb(more)
 
     patn = "\\bsaved:([-_A-Za-z0-9:]*)\\b"
     def map_search(self, query):
@@ -348,9 +377,10 @@ class notmuch_main(edlib.Doc):
                 else:
                     val = "%5d" % c
             elif attr == 'space':
-                if self.searches.todoing and s == self.searches.todoing:
+                p = self.searches.is_pending(s)
+                if p == 1:
                     val = '*'
-                elif s in self.searches.todo:
+                elif p > 1:
                     val = '?'
                 else:
                     val = ' '
