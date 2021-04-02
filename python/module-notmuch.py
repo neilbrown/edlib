@@ -393,8 +393,12 @@ class notmuch_main(edlib.Doc):
                     c = self.searches.count[s]
                 if c is None:
                     val = "%5s" % "?"
-                else:
+                elif c < 100000:
                     val = "%5d" % c
+                elif c < 10000000:
+                    val = "%4dK" % int(c/1000)
+                else:
+                    val = "%4dM" % int(c/1000000)
             elif attr == 'space':
                 p = self.searches.is_pending(s)
                 if p == 1:
