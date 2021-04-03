@@ -1109,11 +1109,12 @@ class notmuch_query(edlib.Doc):
             return '\n'
         else:
             if mark.pos == None:
-                if len(self.threadids) == 0:
-                    return edlib.WEOF
-                tid = self.threadids[-1]
-            else:
-                (tid,mid) = mark.pos
+                # EOF is not in a thread, so to move to the start
+                # we must stary where we are. Moving further would be in
+                # a different thread.
+                return self.prior(mark)
+
+            (tid,mid) = mark.pos
             m2 = mark.prev_any()
             while m2 and (m2.pos == None or m2.pos[0] == tid):
                 mark.to_mark(m2)

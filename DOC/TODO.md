@@ -430,7 +430,7 @@ Module features
 
 ### Notmuch - overview
 
-- [ ] cannot move down to last message in search
+- [X] cannot move down to last message in search
 - [ ] leave cursor in query (not message) by default.
 - [ ] When there are 'new' items in a thread, entering from top
       goes to first.  If only unread, go there.  Else start at top.
