@@ -19,6 +19,9 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] search matches aren't highlighted where there is other highlighting
+      like line-too-long or diff colouring
+- [ ] Add Close handler for doc-docs.c???
 - [ ] backward search sometimes doesn't work.
 - [X] if display changes between 'press' and 'release' we think there is a movement
       and do a selection.  x,y location need to be stored too??
@@ -427,6 +430,29 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] cannot move down to last message in search
+- [ ] leave cursor in query (not message) by default.
+- [ ] When there are 'new' items in a thread, entering from top
+      goes to first.  If only unread, go there.  Else start at top.
+- [ ] When changing any tag in a thread, or when opening the thread,
+      assess thread tags by looking at all matched messages.
+- [ ] show a summary line at end of search result which says how far back has been searched.
+- [ ] make min top/bottom margin configurable, set for message list
+- [ ] search in thread list - use 'format2' after fixing bug
+- [ ] display counts of current thread somewhere, so I know where I'm up to. - new/unread/matched in status line
+- [ ] dynamic search - 's' popups up dialog to create new query "tmp%d"
+- [ ] dynamic limit - 'l' popups up dialog which adds extra limit.
+      'q' removes it.  Pruned v.quickly
+- [ ] command to skip over whole thread N/P
+- [ ] use NOTMUCH_CONFIG consistently - drop locking
+- [ ] fix bugs in stored-query!! query: is slow and (I think) buggy
+- [ ] rel_date could report how long until display would change, and
+   we could set a timer for the minimum.
+- [ ] allow re-ordering of saved-search list click-drag? +/-?
+- [ ] allow editting of saved searches, including deletion
+      must support undo. % for replace?
+- [ ] make sure doc cleans up when closed. processes must be killed
+      and query docs must be closed
 - [X] 'q' while in whole-thread mode should return to all-threads
 - [X] use db.get_all_tags() to add list of tags to end of list of queries.
 - [X] if a message arrives for a thread while the thread is open, the thread gets
@@ -439,10 +465,6 @@ Module features
 - [X] 'Z' should work in email-view window, not just summary window
 - [X] background colour for current message/thread
 - [X] background colour for current search
-- [ ] When there are 'new' items, selecting a search should go to the first NEW,
-      and opening a thread should go to the first NEW.
-      MAYBE NOT.  The 'new' should be first, or last in thread.
-      Wait and see if I want this again.
 - [X] currently opening a thread goes to first in thread, even if it didn't
        match search term.
 - [X] doc:notmuch:search-maxlen should be attribute, not command.
@@ -456,11 +478,6 @@ Module features
      when count notices a difference, it should trigger a refresh
 - [X] Chr-a should affect thing under cursor, not current thing
 - [X] improve update of message list... sometimes disappears
-- [ ] If a thread has messages that are unread, and others that are new, then
-      it shows as red even though none are both.  This is confusing.
-      Maybe it won't be a problem once I use edlib primariy.
-- [ ] when there is a "new, not unread" message, it stays red and I cannot clear
-      the 'red', even if I change the tag.
 - [X] when I 'read' a message at top of summary and move to next, summary 
       refreshes with 'next' at the top, so  I don't see the old message change colour.
 - [X] Chr-= in search/message window should remove non-matching entries from
@@ -468,41 +485,27 @@ Module features
 - [X] archived messages never disappear from the list
 - [X] search documents don't disappear when unused
 - [X]   They, at least, should refresh and clean when visited.
-- [ ] show a summary line at end of search result which says how far back has been searched.
-- [ ] make min top/bottom margin configurable, set for message list
 - [X] error check Popen of notmuch - don't want EPIPE when we write.
-- [ ] render-lines calls render:reposition with m2 beyond the end of displayed region.
-- [ ] search in thread list - and within a thread - this generates >2000 marks!
-- [ ] in notmuch I searched in a message (mimepart), then enter to choose,
-   then 'q' and crash.
-- [ ] display counts of current thread somewhere, so I know where I'm up to.
 - [X] allow refresh of current search, especially when re-visit
-- [ ] how do work with multiple thread?
 - [X] refresh thread list
-- [ ] Add Close handler for doc-docs.c
-- [ ] dynamic search/filter pattern
-- [ ] command to skip over whole thread
-- [ ] use NOTMUCH_CONFIG consistently - not used for locking.
-- [ ] look into stored-query!! query: is slow and (I think) buggy
 - [X] 'class searches' should be given callback on creation??
 - [X] We *must* not change order or messages when reloading, without fixing all marks
    that refer to anything that moved in order.
-- [ ] rel_date could report how long until display would change, and
-   we could set a timer for the minimum.
 - [X] simplify thread,mesg ordering by using maxint instead of -1 ??
-- [ ] allow re-ordering of saved-search list
-- [ ] allow editting of saved searches, including deletion
 - [X] prune old unused threads
 
 ###  Notmuch message display
 
+- [ ] invisible pdfs still slow things down a bit.
+- [ ] in notmuch I searched in a message (mimepart), then enter to choose,
+   then 'q' and crash.
 - [ ] A multipart still had an active view.
 - [ ] allow cursor on spacer buttons, so 'enter' can select them
 - [ ] why does stepping from htmlpart to hidden pdf part go v.slowly
 - [ ] When 'show'ing a part, ensure start of part is visible
 - [ ] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
 - [ ] make base64 much more efficient
-- [ ] use python html2text to create markdown view
+- [X] use python html2text to create markdown view
       import html2text ; content=html2text.html2text("html")
 - [ ] linecount is spinning somewhere.
       Doc is multipart, chars are garbage. underlying is b64
@@ -514,12 +517,10 @@ Module features
     to leave it confused.
 - [ ] in text/plain, wrap long lines on 'space'.
 - [ ] allow view of all headers, and of "more" than default
-- [ ] hide some of quoted chunks - and highlight them in colour
-- [ ] highlight urls and activate
 - [ ] maybe hide signature, unless small
 - [ ] need to resolve how charsets are handled.  Maybe an attribute to
    query to see if there is a need for a utf-8 layer on email
-- [ ] in quoted-printable, line ends "=\n" doesn't always join as it should.
+- [X] in quoted-printable, line ends "=\n" doesn't always join as it should. (cannot reproduce)
    See email about Mobile number
 - [ ] When click on first char in tagged range, I don't see the tag and
    don't get a Mouse-Activate event.
@@ -544,6 +545,9 @@ Module features
 - [ ] buttons for non-displayable
 - [ ] display image on gtk,
 - [ ] display image on ncurses.
+- [ ] Make addresses active (menu?) to allow adding to a saved search
+      with options and/or/andnot.  Also "mail to" or "save"..
+- [ ] Allow any selection to be added to a saved search.
 
 ### Notmuch composition
 
