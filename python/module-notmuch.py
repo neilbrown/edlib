@@ -675,9 +675,7 @@ class notmuch_main(edlib.Doc):
                         return
 
 # notmuch_query document
-# a mark.pos is a list of thread-id and message-id.  The hash
-# self.unique_pos is use to ensure marks with the same pos have literally
-# identical " is " values
+# a mark.pos is a list of thread-id and message-id.
 
 class notmuch_query(edlib.Doc):
     def __init__(self, focus, qname, query):
@@ -692,25 +690,11 @@ class notmuch_query(edlib.Doc):
         self.threads = {}
         self.messageids = {}
         self.threadinfo = {}
-        self.unique_pos = {}
         self["render-default"] = "notmuch:threads"
         self["line-format"] = "<%BG><%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<tab:450><%TM-hilite>%TM-subject</></>                      "
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")
         self.load_full()
-
-    def makepos(self, thread, msg = None):
-        p = [thread, msg]
-        if msg:
-            k = thread + msg
-        else:
-            k = thread
-        if k in self.unique_pos:
-            p = self.unique_pos[k]
-        else:
-            self.unique_pos[k] = p
-        # FIXME unique_pos never shinks.
-        return p
 
     def setpos(self, mark, thread, msgnum = 0):
         if thread is None:
@@ -720,7 +704,7 @@ class notmuch_query(edlib.Doc):
             msg = self.messageids[thread][msgnum]
         else:
             msg = None
-        mark.pos = self.makepos(thread, msg)
+        mark.pos = (thread, msg)
         mark.offset = 0
 
     def load_full(self):
@@ -940,7 +924,7 @@ class notmuch_query(edlib.Doc):
         if mid is None:
             # need to update all marks at this location to hold mid
             m = mark
-            pos = self.makepos(tid, midlist[0])
+            pos = (tid, midlist[0])
             while m and m.pos and m.pos[0] == tid:
                 m.pos = pos
                 m = m.prev_any()
