@@ -1192,6 +1192,8 @@ class notmuch_query(edlib.Doc):
 
         elif attr == "matched":
             val = "True" if matched else "False"
+        elif attr == "tags":
+            val = ','.join(tags)
         elif attr == "M-hilite":
             # FIXME this inbox test is wrong once we allow generic searches
             if not matched or "inbox" not in tags:
@@ -2045,13 +2047,32 @@ class notmuch_query_view(edlib.Pane):
                 if matched != "True":
                     focus.call("doc:step-matched", 1, 1, self.thread_matched)
                 focus.call("view:changed", self.thread_start, self.thread_end)
-                # all marks on this thread must be moved to thread_matched
                 self.thread_start.step(0)
-                m = self.thread_matched
                 if num < 0:
                     # we moved backward to land here, so go to last message
                     m = self.thread_end.dup()
                     focus.call("doc:step-matched", 0, 1, m)
+                else:
+                    # choose first new, unread or thread_matched
+                    new = None; unread = None
+                    m = self.thread_matched.dup()
+                    while focus.call("doc:get-attr", m, "thread-id",
+                                     ret='str') == s:
+                        tg = focus.call("doc:get-attr", m, "tags", ret='str')
+                        tl = tg.split(',')
+                        if "unread" in tg:
+                            if not unread:
+                                unread = m.dup()
+                            if "new" in tg and not new:
+                                new = m.dup()
+                        focus.call("doc:step-matched", 1, 1, m)
+                    if new:
+                        m = new
+                    elif unread:
+                        m = unread
+                    else:
+                        m = self.thread_matched
+                # all marks on this thread get moved to chosen start
                 focus.call("Notify:clip", self.thread_start, m)
                 if mark:
                     mark.clip(self.thread_start, m)
