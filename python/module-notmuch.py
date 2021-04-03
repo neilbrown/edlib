@@ -1427,14 +1427,14 @@ class notmuch_master_view(edlib.Pane):
         focus.call("notmuch:select", mark, 1)
         return 1
 
-    def handle_space(self, key, **a):
+    def handle_space(self, key, mark, **a):
         "handle:doc:char- "
         if self.message_pane:
-            self.message_pane.call(key)
+            self.message_pane.call(key, mark)
         elif self.query_pane:
-            self.query_pane.call("K:Enter")
+            self.query_pane.call("K:Enter", mark)
         else:
-            self.list_pane.call("K:Enter")
+            self.list_pane.call("K:Enter", mark)
         return 1
 
     def handle_move(self, key, mark, **a):
@@ -2058,7 +2058,7 @@ class notmuch_query_view(edlib.Pane):
         if num != 0:
             s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
             if s2:
-                focus.call("notmuch:select-message", s2, s, num)
+                focus.call("notmuch:select-message", s2, s)
                 self.selmsg = s2
         return 1
 
