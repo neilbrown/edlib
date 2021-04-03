@@ -2061,8 +2061,11 @@ class notmuch_query_view(edlib.Pane):
                 if mark:
                     mark.clip(self.thread_start, m)
         if num != 0:
+            # thread-id shouldn't have changed, but it some corner-cases
+            # it can, so get both ids before loading the message.
+            s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
             s2 = focus.call("doc:get-attr", "message-id", mark, ret='str')
-            if s2:
+            if s and s2:
                 focus.call("notmuch:select-message", s2, s)
                 self.selmsg = s2
         return 1
