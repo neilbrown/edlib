@@ -1423,6 +1423,16 @@ class notmuch_master_view(edlib.Pane):
             self.list_pane.call("K:Enter", mark)
         return 1
 
+    def handle_bs(self, key, mark, **a):
+        "handle:K:Backspace"
+        if self.message_pane:
+            self.message_pane.call(key, mark)
+        elif self.query_pane:
+            self.query_pane.call("doc:char-p", mark)
+        else:
+            self.list_pane.call("K:A-p", mark)
+        return 1
+
     def handle_move(self, key, mark, **a):
         "handle-list/K:A-n/K:A-p/doc:char-n/doc:char-p"
         if key.startswith("K:A-") or not self.query_pane:
