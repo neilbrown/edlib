@@ -344,13 +344,13 @@ DEF_CMD(mp_step_part)
 		return Enoarg;
 	pre_move(m);
 	if (ci->num > 0)
-		/* Forward - next part */
+		/* Forward - start of next part */
 		change_part(mpi, m, m->ref.docnum + 1, 0);
-	else if (ci->num || m->ref.docnum == 0)
-		/* Backward - this part */
+	else if (ci->num == 0 || m->ref.docnum == 0)
+		/* Backward - start of this part */
 		change_part(mpi, m, m->ref.docnum, 0);
 	else
-		/* Backward - this part */
+		/* Backward - start of prev part */
 		change_part(mpi, m, m->ref.docnum - 1, 0);
 
 	mp_normalize(mpi, m);
