@@ -7,9 +7,6 @@
  * A line is normally text ending with a newline.  However if no newline
  * is found in a long distance, we drop a mark and use that as the start
  * of a line.
- * A vertial tab '\v' acts like a newline but forces it to be a blank line.
- * A "\v" immediately after "\m" or "\v" is exactly like a newline, while
- * "\v" after anything else terminates the line without consuming the newline.
  */
 
 #include <unistd.h>
@@ -75,9 +72,8 @@ DEF_CMD(render_prev)
 	}
 	if (ch == WEOF && rpt)
 		return Efail;
-	if (ch == '\n' || (ch == '\v' &&
-			   ((ch = doc_prior(f, m)) == WEOF || !is_eol(ch))))
-		/* Found a '\n', so step forward over it for start-of-line. */
+	/* Found a '\n', so step forward over it for start-of-line. */
+	if (is_eol(ch))
 		doc_next(f, m);
 	return 1;
 }
@@ -344,8 +340,6 @@ DEF_CMD(render_line)
 			break;
 		if (!oneline && is_eol(ch)) {
 			add_newline = 1;
-			if (ch == '\v' && b.len > 0)
-				doc_prev(focus, m);
 			break;
 		}
 		if (boundary && boundary->seq <= m->seq)

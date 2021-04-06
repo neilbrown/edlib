@@ -532,7 +532,7 @@ DEF_CMD(open_email)
 	h2 = call_ret(pane, "attach-rfc822header", p, 0, start, NULL, 0, end);
 	if (!h2)
 		goto out;
-	p = call_ret(pane, "doc:from-text", p, 0, NULL, NULL, 0, NULL, "\v");
+	p = call_ret(pane, "doc:from-text", p, 0, NULL, NULL, 0, NULL, "\n");
 	if (!p) {
 		pane_close(h2);
 		goto out;
@@ -646,8 +646,8 @@ DEF_CMD(email_step)
 	} else {
 		/* When moving backwards we need a tmp mark to see
 		 * if the result was from an invisible pane.
-		 * Note: we could optimize a bit using the knowledge that
-		 * every other pane contains only a '\v' and is visible
+		 * Note: we could optimize a bit using knowledge of the content
+		 * of spacers.
 		 */
 		struct mark *m = mark_dup(ci->mark);
 
