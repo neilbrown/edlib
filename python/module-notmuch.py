@@ -1885,7 +1885,8 @@ class notmuch_query_view(edlib.Pane):
             if self.whole_thread:
                 mark.to_mark(self.thread_start)
                 return 1
-            if self.thread_matched and self.parent.prior(mark) is None:
+            if (self.selected and self.thread_matched and
+                self.parent.prior(self.thread_start) is None):
                 # first thread is open
                 mark.to_mark(self.thread_matched)
                 return 1
@@ -1938,6 +1939,10 @@ class notmuch_query_view(edlib.Pane):
                     mark.to_mark(self.thread_end)
                 if not forward and move and mark < self.thread_start:
                     focus.call("doc:step-thread", mark, forward, move)
+                if not forward and move and mark == self.thread_start:
+                    # must be at the start of the first thread, which is open.
+                    if self.thread_matched:
+                        mark.to_mark(self.thread_matched)
                 return ret
             else:
                 # move one thread
