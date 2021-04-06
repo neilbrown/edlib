@@ -94,15 +94,21 @@ DEF_CMD(email_spacer)
 		mark_free(pm);
 	}
 
+	buf_init(&b);
+	buf_concat(&b, "<fg:red>");
+
+	attr = pane_mark_attr(ci->home, m, "multipart-prev:email:path");
+	if (attr) {
+		buf_concat(&b, attr);
+		buf_concat(&b, " ");
+	} 
+
 	attr = pane_mark_attr(ci->focus, m, "email:visible");
 	if (attr && *attr == '0')
 		visible = 0;
 	attr = pane_mark_attr(ci->home, m, "multipart-prev:email:actions");
 	if (!attr)
 		attr = "hide";
-
-	buf_init(&b);
-	buf_concat(&b, "<fg:red>");
 
 	while (ok && attr && *attr) {
 		if (is_attr("hide", attr))
@@ -123,14 +129,19 @@ DEF_CMD(email_spacer)
 	 * if cp > 0, we haven't reached cursor yet, so don't stop
 	 * if cp == 0, this is cursor pos, so stop.
 	 */
-	if (ok && cp != 0) {
-		if ((o < 0 || o == NO_NUMERIC)) {
-			wint_t wch;
-			buf_concat(&b, "</>\n");
-			while ((wch = doc_next(ci->focus, m)) &&
-			       wch != '\n' && wch != WEOF)
-				;
+	if (ok && cp != 0 && ((o < 0 || o == NO_NUMERIC))) {
+		wint_t wch;
+		buf_concat(&b, "</>");
+		attr = pane_mark_attr(ci->focus, m,
+				      "multipart-prev:email:content-type");
+		if (attr) {
+			buf_concat(&b, " ");
+			buf_concat(&b, attr);
 		}
+		buf_concat(&b, "\n");
+		while ((wch = doc_next(ci->focus, m)) &&
+		       wch != '\n' && wch != WEOF)
+			;
 	}
 
 	ret = comm_call(ci->comm2, "callback:render", ci->focus, 0, NULL,
@@ -609,8 +620,10 @@ DEF_CMD(open_email)
 	home_call(p, "multipart-add", ei->spacer);
 	call("doc:set:autoclose", hdrdoc, 1);
 
+	attr_set_str(&hdrdoc->attrs, "email:path", "headers");
+
 	if (!handle_content(ei->email, type, xfer, start, end,
-			    p, ei->spacer, ""))
+			    p, ei->spacer, "body"))
 		goto out;
 
 	mark_free(start);
