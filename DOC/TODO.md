@@ -19,7 +19,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] Text containg </> is a problem.  If cursor is just after, it is drawn
+- [X] Text containg </> is a problem.  If cursor is just after, it is drawn
       at start-of-line... oh, I think I know why.
 - [ ] search matches aren't highlighted where there is other highlighting
       like line-too-long or diff colouring

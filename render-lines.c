@@ -327,7 +327,8 @@ DEF_CMD(get_len)
 {
 	if (ci->str) {
 		int l = strlen(ci->str);
-		while (l >=3 && strncmp(ci->str+l-3, "</>", 3) == 0)
+		while (l >=4 && strncmp(ci->str+l-3, "</>", 3) == 0 &&
+		ci->str[l-4] != '<')
 			l -= 3;
 		return l + 1;
 	} else
