@@ -42,14 +42,14 @@ static int from_b64(char c)
 	/* This assumes that 'c' is_b64() */
 	if (c <= '+')
 		return 62;
+	else if (c == '/')
+		return 63;
 	else if (c <= '9')
 		return (c - '0') + 52;
 	else if (c == '=')
 		return 64;
 	else if (c <= 'Z')
 		return (c - 'A') + 0;
-	else if (c == '/')
-		return 63;
 	else
 		return (c - 'a') + 26;
 }
