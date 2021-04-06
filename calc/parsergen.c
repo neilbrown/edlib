@@ -280,9 +280,10 @@ static char *dollar_line(struct token_state *ts, struct grammar *g, int isref)
 		found += 1;
 		t = token_next(ts);
 	}
-	if (found == 0)
+	if (found == 0) {
 		err = "No symbols given on precedence line";
 		goto abort;
+	}
 	return NULL;
 abort:
 	while (t.num != TK_newline && t.num != TK_eof)
