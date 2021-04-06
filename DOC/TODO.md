@@ -502,7 +502,7 @@ Module features
 - [ ] A multipart still had an active view.
 - [X] allow cursor on spacer buttons, so 'enter' can select them
 - [ ] why does stepping from htmlpart to hidden pdf part go v.slowly
-- [ ] When 'show'ing a part, ensure start of part is visible
+- [X] When 'show'ing a part, ensure start of part is visible
 - [ ] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
 - [ ] make base64 much more efficient
 - [X] use python html2text to create markdown view
