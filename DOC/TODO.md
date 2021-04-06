@@ -500,7 +500,7 @@ Module features
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
    then 'q' and crash.
 - [ ] A multipart still had an active view.
-- [ ] allow cursor on spacer buttons, so 'enter' can select them
+- [X] allow cursor on spacer buttons, so 'enter' can select them
 - [ ] why does stepping from htmlpart to hidden pdf part go v.slowly
 - [ ] When 'show'ing a part, ensure start of part is visible
 - [ ] Let=92s in Quoted-printable Windows-1252 part causes weirdness.

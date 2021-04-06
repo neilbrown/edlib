@@ -36,7 +36,7 @@ static bool handle_content(struct pane *p safe, char *type, char *xfer,
 			   char *path safe);
 
 static bool cond_append(struct buf *b safe, char *txt safe, char *tag safe,
-			int offset, struct mark *pm, struct mark *m safe)
+			int offset, struct mark *m safe, int *cp safe)
 {
 	char *tagf = "active-tag:email-";
 	int prelen = 1 + strlen(tagf) + strlen(tag) + 1 + 1;
@@ -48,6 +48,10 @@ static bool cond_append(struct buf *b safe, char *txt safe, char *tag safe,
 	buf_concat(b, tagf);
 	buf_concat(b, tag);
 	buf_concat(b, ">[");
+	if (*cp == 0)
+		return False;
+	if (*cp > 0)
+		*cp -= 1;
 	buf_concat(b, txt);
 	buf_concat(b, "]</>");
 	return True;
@@ -70,12 +74,25 @@ DEF_CMD(email_spacer)
 	struct mark *m = ci->mark;
 	struct mark *pm = ci->mark2;
 	int o = ci->num;
+	int cp = -1;
 	char *attr;
 	int ret;
 	bool ok = True;
 
 	if (!m)
 		return Enoarg;
+	if (pm) {
+		/* Count the number of chars before the cursor.
+		 * This tells us which button to highlight.
+		 */
+		cp = 0;
+		pm = mark_dup(pm);
+		while (pm->seq > m->seq && !mark_same(pm, m)) {
+			doc_prev(ci->focus, pm);
+			cp += 1;
+		}
+		mark_free(pm);
+	}
 
 	attr = pane_mark_attr(ci->focus, m, "email:visible");
 	if (attr && *attr == '0')
@@ -90,20 +107,29 @@ DEF_CMD(email_spacer)
 	while (ok && attr && *attr) {
 		if (is_attr("hide", attr))
 			ok = cond_append(&b, visible ? "HIDE" : "SHOW", "1",
-					 o, pm, m);
+					 o, m, &cp);
 		else if (is_attr("save", attr))
-			ok = cond_append(&b, "Save", "2", o, pm, m);
+			ok = cond_append(&b, "Save", "2", o, m, &cp);
 		else if (is_attr("open", attr))
-			ok = cond_append(&b, "Open", "3", o, pm, m);
+			ok = cond_append(&b, "Open", "3", o, m, &cp);
 		attr = strchr(attr, ':');
 		if (attr)
 			attr += 1;
 	}
-	/* end of line */
-	if (ok) {
+	/* end of line, only display if we haven't reached
+	 * the cursor or offset
+	 *
+	 * if cp < 0, we aren't looking for a cursor, so don't stop.
+	 * if cp > 0, we haven't reached cursor yet, so don't stop
+	 * if cp == 0, this is cursor pos, so stop.
+	 */
+	if (ok && cp != 0) {
 		if ((o < 0 || o == NO_NUMERIC)) {
+			wint_t wch;
 			buf_concat(&b, "</>\n");
-			doc_next(ci->focus, m);
+			while ((wch = doc_next(ci->focus, m)) &&
+			       wch != '\n' && wch != WEOF)
+				;
 		}
 	}
 
@@ -532,7 +558,8 @@ DEF_CMD(open_email)
 	h2 = call_ret(pane, "attach-rfc822header", p, 0, start, NULL, 0, end);
 	if (!h2)
 		goto out;
-	p = call_ret(pane, "doc:from-text", p, 0, NULL, NULL, 0, NULL, "\n");
+	p = call_ret(pane, "doc:from-text", p, 0, NULL, NULL, 0, NULL,
+		     "0123456789\n");
 	if (!p) {
 		pane_close(h2);
 		goto out;
@@ -624,12 +651,27 @@ static int get_part(struct pane *p safe, struct mark *m safe)
 	return atoi(a);
 }
 
+static int count_buttons(struct pane *p safe, struct mark *m safe)
+{
+	int cnt = 0;
+	char *attr = pane_mark_attr(p, m, "multipart-prev:email:actions");
+	if (!attr)
+		attr = "hide";
+	while (attr) {
+		cnt += 1;
+		attr = strchr(attr, ':');
+		if (attr)
+			attr++;
+	}
+	return cnt;
+}
+
 DEF_CMD(email_step)
 {
 	struct pane *p = ci->home;
 	struct email_view *evi = p->data;
-	int ret;
-	int n;
+	wint_t ret;
+	int n = -1;
 
 	if (!ci->mark)
 		return Enoarg;
@@ -643,6 +685,17 @@ DEF_CMD(email_step)
 			       evi->invis[n])
 				home_call(p->parent, "doc:step-part", ci->focus,
 					  ci->num, ci->mark);
+		if (n > 0 && (n & 1)) {
+			/* Moving in a spacer, If after valid buttons,
+			 * move to end
+			 */
+			wint_t c;
+			unsigned int buttons;
+			buttons = count_buttons(p, ci->mark);
+			while (isdigit(c = doc_following(p->parent, ci->mark)) &&
+			       (c - '0') >= buttons)
+					doc_next(p->parent, ci->mark);
+		}
 	} else {
 		/* When moving backwards we need a tmp mark to see
 		 * if the result was from an invisible pane.
@@ -663,10 +716,22 @@ DEF_CMD(email_step)
 				mark_free(m);
 				return CHAR_RET(WEOF);
 			}
+			/* Go to beginning of this part, then step back  */
 			home_call(p->parent, "doc:step-part", ci->focus,
 				  ci->num, m);
 			ret = home_call(p->parent, ci->key, ci->focus, ci->num,
 					m, ci->str, 1);
+		}
+		if ((n & 1) && ci->num2 && isdigit(ret & 0xfffff)) {
+			/* Just stepped back over the 9 at the end of a spacer,
+			 * Maybe step further if there aren't 10 buttons.
+			 */
+			unsigned int buttons = count_buttons(p, m);
+			wint_t c = ret & 0xfffff;
+
+			while (isdigit(c) && c - '0' >= buttons)
+				c = doc_prev(p->parent, m);
+			ret = CHAR_RET(c);
 		}
 		if (ci->num2)
 			mark_to_mark(ci->mark, m);
