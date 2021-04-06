@@ -788,31 +788,31 @@ DEF_CMD(email_view_set_attr)
 	if (!ci->str || !ci->mark)
 		return Enoarg;
 	if (strcmp(ci->str, "email:visible") == 0) {
+		struct mark *m1, *m2;
+
 		p = get_part(ci->home->parent, ci->mark);
 		/* only parts can be invisible, not separators */
 		p &= ~1;
 		v = ci->str2 && atoi(ci->str2) >= 1;
 		if (p >= 0 && p < evi->parts)
 			evi->invis[p] = !v;
-		if (!v) {
-			/* Tell viewers that visibility has changed */
-			struct mark *m1, *m2;
-			m1 = mark_dup(ci->mark);
-			home_call(ci->home->parent, "doc:step-part", ci->focus,
-				  0, m1);
-			if (get_part(ci->home->parent, m1) != p)
-				home_call(ci->home->parent, "doc:step-part",
-					  ci->focus, -1, m1);
 
-			mark_step(m1, 0);
-			m2 = mark_dup(m1);
-			home_call(ci->home->parent, "doc:step-part", ci->focus,
-				  1, m2);
-			call("view:changed", ci->focus, 0, m1, NULL, 0, m2);
-			call("Notify:clip", ci->focus, 0, m1, NULL, 0, m2);
-			mark_free(m1);
-			mark_free(m2);
-		}
+		/* Tell viewers that visibility has changed */
+		m1 = mark_dup(ci->mark);
+		home_call(ci->home->parent, "doc:step-part", ci->focus,
+			  0, m1);
+		if (get_part(ci->home->parent, m1) != p)
+			home_call(ci->home->parent, "doc:step-part",
+				  ci->focus, -1, m1);
+
+		mark_step(m1, 0);
+		m2 = mark_dup(m1);
+		home_call(ci->home->parent, "doc:step-part", ci->focus,
+			  1, m2);
+		call("view:changed", ci->focus, 0, m1, NULL, 0, m2);
+		call("Notify:clip", ci->focus, 0, m1, NULL, 0, m2);
+		mark_free(m1);
+		mark_free(m2);
 
 		return 1;
 	}
