@@ -25,11 +25,15 @@ def html_to_text(key, home, focus, comm2, **a):
     h = html2text.HTML2Text()
     h.inline_links = False
     h.wrap_links = False
-    h.pad_tables = False # True fails sometimes
     h.ul_style_dash = True
     h.body_width = 72
     h.mark_code = True
-    content = h.handle(html)
+    try:
+        h.pad_tables = True
+        content = h.handle(html)
+    except IndexError:
+        h.pad_tables = False
+        content = h.handle(html)
 
     doc = focus.call("doc:from-text", "html-document", content, ret='focus')
     comm2("cb", doc)
