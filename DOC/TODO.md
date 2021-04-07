@@ -77,6 +77,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] doc_write_file should use doc:content
 - [ ] guard against mark seq number over-flowing.
 - [ ] use the time-keeping stack to allow an edlib stack-trace to be reported
       Or provide linkage from one call() to the next which can be walked and

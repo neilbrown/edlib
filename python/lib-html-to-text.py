@@ -8,19 +8,8 @@
 
 import html2text
 
-def get_str(p):
-    m = edlib.Mark(p)
-    ret = ""
-    c = p.next(m)
-    while c:
-        ret += c
-        c = p.next(m)
-    ret += '\n'
-    return ret
-
 def html_to_text(key, home, focus, comm2, **a):
-    #html = focus.call("doc:get-str", ret='str')
-    html = get_str(focus)
+    html = focus.call("doc:get-str", ret='str')
 
     h = html2text.HTML2Text()
     h.inline_links = False

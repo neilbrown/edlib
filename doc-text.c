@@ -1735,53 +1735,49 @@ static int count_bytes(struct text *t safe, struct mark *from, struct mark *to)
 	return l;
 }
 
-DEF_CMD(text_get_str)
+DEF_CMD(text_content)
 {
 	struct doc *d = ci->home->data;
-	struct mark *from = NULL, *to = NULL;
+	struct mark *from = ci->mark, *to = ci->mark2;
+	struct mark *m;
 	struct text *t = container_of(d, struct text, doc);
 	struct text_chunk *c, *first, *last;
-	char *ret;
+	int bytes = ci->num2;
 	int l = 0, head, tail;
+	int size = 0;
 
-	if (ci->mark && ci->mark2) {
-		if (ci->mark2->seq < ci->mark->seq) {
-			from = ci->mark2;
-			to = ci->mark;
-		} else {
-			from = ci->mark;
-			to = ci->mark2;
-		}
-	}
-
-	first = list_first_entry_or_null(&t->text, struct text_chunk, lst);
+	if (!from)
+		return Enoarg;
+	m = mark_dup(from);
 	head = 0;
-	if (from) {
-		first = from->ref.c;
-		if (first)
-			head = from->ref.o - first->start;
-	}
+	first = from->ref.c;
+	if (first)
+		head = from->ref.o - first->start;
 	last = NULL;
 	tail = 0;
-	if (to && to->ref.c) {
-		last = to->ref.c;
-		tail = last->end - to->ref.o;
-	}
-	c = first;
-	list_for_each_entry_from(c, &t->text, lst) {
-		l += c->end - c->start;
-		if (c == first)
-			l -= head;
-		if (c == last) {
-			l -= tail;
-			break;
+	if (to) {
+		/* Calculate size so comm2 can pre-allocate */
+		if (to->ref.c) {
+			last = to->ref.c;
+			tail = last->end - to->ref.o;
 		}
+		c = first;
+		list_for_each_entry_from(c, &t->text, lst) {
+			l += c->end - c->start;
+			if (c == first)
+				l -= head;
+			if (c == last) {
+				l -= tail;
+				break;
+			}
+		}
+		size = l;
 	}
-	ret = malloc(l+1);
 	l = 0;
 	c = first;
 	list_for_each_entry_from(c, &t->text, lst) {
-		char *s = c->txt + c->start;
+		struct mark *m2;
+		const char *s = c->txt + c->start;
 		int ln = c->end - c->start;
 		if (c == first) {
 			s += head;
@@ -1789,14 +1785,45 @@ DEF_CMD(text_get_str)
 		}
 		if (c == last)
 			ln -= tail;
-		memcpy(ret+l, s, ln);
-		l += ln;
+		if (m->ref.c != c) {
+			while ((m2 = mark_next(m)) &&
+			       m2->ref.c == m->ref.c)
+				mark_to_mark(m, m2);
+			m->ref.c = c;
+			m->ref.o = c->start;
+		}
+		while (ln) {
+			int rv;
+			const char *s2 = s;
+			wint_t wc;
+
+			if (bytes)
+				wc = *s2++;
+			else
+				wc = get_utf8(&s2, s2+ln);
+
+			while ((m2 = mark_next(m)) &&
+			       m2->ref.c == m->ref.c &&
+			       m2->ref.o <= s - c->txt)
+				mark_to_mark(m, m2);
+			m->ref.o = s - c->txt;
+
+			rv = comm_call(ci->comm2, "consume", ci->focus,
+				       wc, m, s, ln, NULL, NULL, size, 0);
+			size = 0;
+			if (rv == 1) {
+				ln -= (s2 - s);
+				s = s2;
+			} else if (rv > 0) {
+				s += rv;
+				ln -= rv;
+			} else
+				ln = 0;
+		}
 		if (c == last)
 			break;
 	}
-	ret[l] = 0;
-	comm_call(ci->comm2, "callback:get-str", ci->focus, 0, NULL, ret);
-	free(ret);
+	mark_free(m);
 	return 1;
 }
 
@@ -2460,7 +2487,7 @@ void edlib_init(struct pane *ed safe)
 	key_add_chain(text_map, doc_default_cmd);
 	key_add(text_map, "doc:load-file", &text_load_file);
 	key_add(text_map, "doc:same-file", &text_same_file);
-	key_add(text_map, "doc:get-str", &text_get_str);
+	key_add(text_map, "doc:content", &text_content);
 	key_add(text_map, "doc:set-ref", &text_set_ref);
 	key_add(text_map, "doc:save-file", &text_save_file);
 	key_add(text_map, "doc:write-file", &text_write_file);
