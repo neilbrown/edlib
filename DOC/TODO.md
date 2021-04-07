@@ -498,12 +498,12 @@ Module features
 
 ###  Notmuch message display
 
-- [ ] invisible pdfs still slow things down a bit.
+- [X] invisible pdfs still slow things down a bit.
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
    then 'q' and crash.
 - [ ] A multipart still had an active view.
 - [X] allow cursor on spacer buttons, so 'enter' can select them
-- [ ] why does stepping from htmlpart to hidden pdf part go v.slowly
+- [X] why does stepping from htmlpart to hidden pdf part go v.slowly
 - [X] When 'show'ing a part, ensure start of part is visible
 - [ ] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
 - [ ] make base64 much more efficient

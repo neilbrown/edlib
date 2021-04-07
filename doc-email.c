@@ -101,7 +101,7 @@ DEF_CMD(email_spacer)
 	if (attr) {
 		buf_concat(&b, attr);
 		buf_concat(&b, " ");
-	} 
+	}
 
 	attr = pane_mark_attr(ci->focus, m, "email:visible");
 	if (attr && *attr == '0')
@@ -690,15 +690,10 @@ DEF_CMD(email_step)
 		return Enoarg;
 	if (ci->num) {
 		ret = home_call(p->parent, ci->key, ci->focus,
-				ci->num, ci->mark, ci->str,
+				ci->num, ci->mark, evi->invis,
 				ci->num2);
-		if (ci->num2 && ret != CHAR_RET(WEOF))
-			while ((n = get_part(p->parent, ci->mark)) >= 0 &&
-			       n < evi->parts &&
-			       evi->invis[n] == 'i')
-				home_call(p->parent, "doc:step-part", ci->focus,
-					  ci->num, ci->mark);
-		if (n > 0 && (n & 1)) {
+		n = get_part(p->parent, ci->mark);
+		if (ci->num2 && n > 0 && (n & 1)) {
 			/* Moving in a spacer, If after valid buttons,
 			 * move to end
 			 */
@@ -710,45 +705,20 @@ DEF_CMD(email_step)
 					doc_next(p->parent, ci->mark);
 		}
 	} else {
-		/* When moving backwards we need a tmp mark to see
-		 * if the result was from an invisible pane.
-		 * Note: we could optimize a bit using knowledge of the content
-		 * of spacers.
-		 */
-		struct mark *m = mark_dup(ci->mark);
-
 		ret = home_call(p->parent, ci->key, ci->focus,
-				ci->num, m, ci->str, 1);
-		while (ret != CHAR_RET(WEOF) &&
-		       (n = get_part(p->parent, m)) >= 0 &&
-		       n < evi->parts &&
-		       evi->invis[n] == 'i') {
-			/* ret is from an invisible pane - sorry */
-			if (n == 0) {
-				/* No where to go, so go nowhere */
-				mark_free(m);
-				return CHAR_RET(WEOF);
-			}
-			/* Go to beginning of this part, then step back  */
-			home_call(p->parent, "doc:step-part", ci->focus,
-				  ci->num, m);
-			ret = home_call(p->parent, ci->key, ci->focus, ci->num,
-					m, ci->str, 1);
-		}
+				ci->num, ci->mark, evi->invis, 1);
+		n = get_part(p->parent, ci->mark);
 		if ((n & 1) && ci->num2 && isdigit(ret & 0xfffff)) {
 			/* Just stepped back over the 9 at the end of a spacer,
 			 * Maybe step further if there aren't 10 buttons.
 			 */
-			unsigned int buttons = count_buttons(p, m);
+			unsigned int buttons = count_buttons(p, ci->mark);
 			wint_t c = ret & 0xfffff;
 
 			while (isdigit(c) && c - '0' >= buttons)
-				c = doc_prev(p->parent, m);
+				c = doc_prev(p->parent, ci->mark);
 			ret = CHAR_RET(c);
 		}
-		if (ci->num2)
-			mark_to_mark(ci->mark, m);
-		mark_free(m);
 	}
 	return ret;
 }
@@ -761,16 +731,7 @@ DEF_CMD(email_set_ref)
 
 	if (!ci->mark)
 		return Enoarg;
-	home_call(p->parent, ci->key, ci->focus, ci->num, ci->mark);
-	if (ci->num) {
-		/* set to start, need to normalize */
-		while ((n = get_part(p->parent, ci->mark)) >= 0 &&
-		       n < evi->parts &&
-		       evi->invis[n] == 'i')
-			home_call(p->parent, "doc:step-part", ci->focus,
-				  1, ci->mark);
-	}
-	/* When move to the end, no need to normalize */
+	home_call(p->parent, ci->key, ci->focus, ci->num, ci->mark, evi->invis);
 	return 1;
 }
 
