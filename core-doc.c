@@ -802,8 +802,16 @@ DEF_CMD(doc_get_str)
 		m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	if (!m)
 		return Efail;
-	call_comm("doc:content", ci->focus, &g.c, bytes, m);
+	if (!to) {
+		to = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
+		if (to)
+			call("doc:set-ref", ci->focus, 0, to);
+	}
+	call_comm("doc:content", ci->focus, &g.c, bytes, m, NULL,
+		  0, to);
 	mark_free(m);
+	if (to != ci->mark && to != ci->mark2)
+		mark_free(to);
 	comm_call(ci->comm2, "callback:get-str", ci->focus, g.b.len, NULL,
 		  buf_final(&g.b));
 	free(g.b.b);

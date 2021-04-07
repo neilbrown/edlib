@@ -195,7 +195,7 @@ static int search_forward(struct pane *p safe,
 	ss.point = point;
 	ss.c = search_test;
 	ss.prev_ch = doc_prior(p, m);
-	call_comm("doc:content", p, &ss.c, 0, m);
+	call_comm("doc:content", p, &ss.c, 0, m, NULL, 0, m2);
 	rxl_info(ss.st, &maxlen, NULL, NULL, NULL);
 	rxl_free_state(ss.st);
 	return maxlen;
