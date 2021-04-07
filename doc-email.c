@@ -11,7 +11,7 @@
  * The first part is the headers which are copied to a temp text document.
  * Subsequent non-spacer parts are cropped sections of the email, possibly
  * with filters overlayed to handle the transfer encoding.
- * Alternately, they might be temp documents simplar to the headers
+ * Alternately, they might be temp documents similar to the headers
  * storing e.g. transformed HTML or an image.
  */
 
@@ -195,9 +195,9 @@ static int lws(char c) {
 static char *get_822_token(char **hdrp safe, int *len safe)
 {
 	/* A "token" is one of:
-	 * Quoted string ""
-	 * single char from tspecials
-	 * string on of LWS, and none tspecials
+	 * - Quoted string ""
+	 * - single char from tspecials (except '(' or '"')
+	 * - string of non-LWS, and non-tspecials
 	 *
 	 * (comments) are skipped.
 	 * Start is returned, hdrp is moved, len is reported.
@@ -247,7 +247,8 @@ static char *get_822_token(char **hdrp safe, int *len safe)
 static char *get_822_attr(char *shdr safe, char *attr safe)
 {
 	/* If 'hdr' contains "$attr=...", return "..."
-	 * with "quotes" stripped
+	 * with "quotes" stripped.  Return value can be used
+	 * until the next call, when it will be free.
 	 */
 	int len, alen;
 	char *hdr = shdr;
@@ -276,7 +277,9 @@ static char *get_822_attr(char *shdr safe, char *attr safe)
 
 static char *get_822_word(char *hdr safe)
 {
-	/* Get the first word from header, is static space */
+	/* Get the first word from header, in static
+	 * space (freed on next call)
+	 */
 	static char *last = NULL;
 	int len;
 	char *h;
