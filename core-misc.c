@@ -24,6 +24,15 @@ void buf_init(struct buf *b safe)
 	b->len = 0;
 }
 
+void buf_resize(struct buf *b safe, int size)
+{
+	size += 1; /* we will nul-terminate */
+	if (size > b->size) {
+		b->size = size;
+		b->b = realloc(b->b, b->size);
+	}
+}
+
 void buf_concat_len(struct buf *b safe, const char *s safe, int l)
 {
 
@@ -32,7 +41,7 @@ void buf_concat_len(struct buf *b safe, const char *s safe, int l)
 			b->size += 128;
 		b->b = realloc(b->b, b->size);
 	}
-	strncpy(b->b + b->len, s, l);
+	memcpy(b->b + b->len, s, l);
 	b->len += l;
 	b->b[b->len] = 0;
 }

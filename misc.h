@@ -30,6 +30,7 @@ void buf_concat(struct buf *b safe, const char *s safe);
 void buf_concat_len(struct buf *b safe, const char *s safe, int l);
 void buf_append(struct buf *b safe, wchar_t wch);
 void buf_append_byte(struct buf *b safe, char c);
+void buf_resize(struct buf *b safe, int size);
 static inline char *safe buf_final(struct buf *b safe)
 {
 	b->b[b->len] = 0;
