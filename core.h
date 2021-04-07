@@ -161,7 +161,7 @@ void log_setup(struct pane *ed safe);
 
 #define CHAR_RET(_c) ((_c & 0xFFFFF) | 0x100000)
 
-#define is_eol(c) ({int __c = c; __c == '\n' || c == '\v'; })
+#define is_eol(c) ({int __c = c; __c == '\n' || __c == '\v'; })
 
 /* Points and Marks */
 
