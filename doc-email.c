@@ -695,7 +695,7 @@ DEF_CMD(email_step)
 		if (ci->num2 && ret != CHAR_RET(WEOF))
 			while ((n = get_part(p->parent, ci->mark)) >= 0 &&
 			       n < evi->parts &&
-			       evi->invis[n])
+			       evi->invis[n] == 'i')
 				home_call(p->parent, "doc:step-part", ci->focus,
 					  ci->num, ci->mark);
 		if (n > 0 && (n & 1)) {
@@ -722,7 +722,7 @@ DEF_CMD(email_step)
 		while (ret != CHAR_RET(WEOF) &&
 		       (n = get_part(p->parent, m)) >= 0 &&
 		       n < evi->parts &&
-		       evi->invis[n]) {
+		       evi->invis[n] == 'i') {
 			/* ret is from an invisible pane - sorry */
 			if (n == 0) {
 				/* No where to go, so go nowhere */
@@ -766,7 +766,7 @@ DEF_CMD(email_set_ref)
 		/* set to start, need to normalize */
 		while ((n = get_part(p->parent, ci->mark)) >= 0 &&
 		       n < evi->parts &&
-		       evi->invis[n])
+		       evi->invis[n] == 'i')
 			home_call(p->parent, "doc:step-part", ci->focus,
 				  1, ci->mark);
 	}
@@ -785,7 +785,7 @@ DEF_CMD(email_view_get_attr)
 		p = get_part(ci->home->parent, ci->mark);
 		/* only parts can be invisible, not separators */
 		p &= ~1;
-		v = (p >= 0 && p < evi->parts) ? !evi->invis[p] : 0;
+		v = (p >= 0 && p < evi->parts) ? evi->invis[p] != 'i' : 0;
 
 		return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark,
 				 v ? "1":"0", 0, NULL, ci->str);
@@ -808,7 +808,7 @@ DEF_CMD(email_view_set_attr)
 		p &= ~1;
 		v = ci->str2 && atoi(ci->str2) >= 1;
 		if (p >= 0 && p < evi->parts)
-			evi->invis[p] = !v;
+			evi->invis[p] = v ? 'v' : 'i';
 
 		/* Tell viewers that visibility has changed */
 		m1 = mark_dup(ci->mark);
@@ -850,7 +850,8 @@ DEF_CMD(attach_email_view)
 
 	alloc(evi, pane);
 	evi->parts = n;
-	evi->invis = calloc(n, sizeof(char));
+	evi->invis = calloc(n+1, sizeof(char));
+	memset(evi->invis, 'v', n);
 	p = pane_register(ci->focus, 0, &email_view_handle.c, evi);
 	if (!p) {
 		free(evi);
