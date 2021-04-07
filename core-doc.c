@@ -712,18 +712,21 @@ DEF_CMD(doc_default_content)
 	struct mark *m = ci->mark;
 	struct commcache dstep = CCINIT;
 	int nxt;
+	char *cmd = "doc:step";
 
 	if (!m || !ci->comm2)
 		return Enoarg;
+	if (ci->num)
+		cmd = "doc:step-bytes";
 
-	nxt = ccall(&dstep, "doc:step", ci->home, 1, m);
-	while (nxt != CHAR_RET(WEOF) &&
+	nxt = ccall(&dstep, cmd, ci->home, 1, m);
+	while (nxt > 0 && nxt != CHAR_RET(WEOF) &&
 	       comm_call(ci->comm2, "consume", ci->home, nxt, m) > 0) {
-		ccall(&dstep, "doc:step", ci->home, 1, m, NULL, 1);
-		nxt = ccall(&dstep, "doc:step", ci->home, 1, m);
+		ccall(&dstep, cmd, ci->home, 1, m, NULL, 1);
+		nxt = ccall(&dstep, cmd, ci->home, 1, m);
 	}
 
-	return 1;
+	return nxt < 0 ? nxt : 1;
 }
 
 DEF_CMD(doc_insert_char)
@@ -738,6 +741,7 @@ struct getstr {
 	struct buf b;
 	struct mark *end;
 	struct command c;
+	int bytes;
 };
 
 DEF_CB(get_str_callback)
@@ -761,16 +765,20 @@ DEF_CB(get_str_callback)
 		buf_concat_len(&g->b, ci->str, ci->num2);
 		return ci->num2;
 	}
-	buf_append(&g->b, wch);
+	if (g->bytes)
+		buf_append_byte(&g->b, ci->num & 0xff);
+	else
+		buf_append(&g->b, wch);
 	return 1;
 }
 
 DEF_CMD(doc_get_str)
 {
-	/* Default doc_get_str
+	/* doc:get-str
 	 * uses doc:content to collect the content
 	 * into a buf.
 	 */
+	int bytes = strcmp(ci->key, "doc:get-bytes") == 0;
 	struct getstr g;
 	struct mark *from = NULL, *to = NULL, *m;
 
@@ -785,6 +793,7 @@ DEF_CMD(doc_get_str)
 	}
 
 	g.c = get_str_callback;
+	g.bytes = bytes;
 	buf_init(&g.b);
 	g.end = to;
 	if (from)
@@ -793,9 +802,9 @@ DEF_CMD(doc_get_str)
 		m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	if (!m)
 		return Efail;
-	call_comm("doc:content", ci->focus, &g.c, 0, m);
+	call_comm("doc:content", ci->focus, &g.c, bytes, m);
 	mark_free(m);
-	comm_call(ci->comm2, "callback:get-str", ci->focus, 0, NULL,
+	comm_call(ci->comm2, "callback:get-str", ci->focus, g.b.len, NULL,
 		  buf_final(&g.b));
 	free(g.b.b);
 	return 1;
@@ -1202,6 +1211,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:drop-cache", &doc_drop_cache);
 	key_add(doc_default_cmd, "doc:closed", &doc_do_closed);
 	key_add(doc_default_cmd, "doc:get-str", &doc_get_str);
+	key_add(doc_default_cmd, "doc:get-bytes", &doc_get_str);
 	key_add(doc_default_cmd, "doc:write-file", &doc_write_file);
 	key_add(doc_default_cmd, "doc:content", &doc_default_content);
 	key_add(doc_default_cmd, "doc:push-point", &doc_push_point);

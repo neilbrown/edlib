@@ -902,6 +902,18 @@ DEF_CB(take_str)
 	return 1;
 }
 
+DEF_CB(take_bytes)
+{
+	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
+
+	if (pr->ret)
+		return Einval;
+	if (!ci->str)
+		return Efallthrough;
+	pr->ret = safe_cast PyBytes_FromStringAndSize(ci->str, ci->num);
+	return 1;
+}
+
 DEF_CB(take_comm)
 {
 	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
@@ -924,6 +936,8 @@ static struct command *map_ret(char *ret safe)
 		return &take_mark2;
 	if (strcmp(ret, "str") == 0)
 		return &take_str;
+	if (strcmp(ret, "bytes") == 0)
+		return &take_bytes;
 	if (strcmp(ret, "comm") == 0)
 		return &take_comm;
 	return NULL;

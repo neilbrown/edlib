@@ -197,6 +197,7 @@ void edlib_init(struct pane *ed safe)
 	qp_map = key_alloc();
 
 	key_add(qp_map, "doc:step", &qp_step);
+	key_add(qp_map, "doc:step-bytes", &qp_step);
 
 	call_comm("global-set-command", ed, &qp_attach, 0, NULL, "attach-quoted_printable");
 	call_comm("global-set-command", ed, &qp_attach, 0, NULL, "attach-qprint");

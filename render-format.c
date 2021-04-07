@@ -151,6 +151,9 @@ DEF_CMD(format_content)
 {
 	if (!ci->mark || !ci->comm2)
 		return Enoarg;
+	if (ci->num)
+		/* Cannot handle bytes */
+		return Einval;
 
 	while (doc_following(ci->focus, ci->mark) != WEOF) {
 		const char *l, *c;
@@ -362,6 +365,9 @@ DEF_CMD(format_content2)
 
 	if (!m || !ci->comm2)
 		return Enoarg;
+	if (ci->num)
+		/* Cannot handle bytes */
+		return Einval;
 
 	nxt = ccall(&dstep, "doc:step", ci->home, 1, m);
 	while (nxt != CHAR_RET(WEOF) &&
