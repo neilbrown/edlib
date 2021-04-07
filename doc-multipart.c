@@ -185,7 +185,8 @@ static void change_part(struct mp_info *mpi safe, struct mark *m safe,
 	m->ref.docnum = part;
 }
 
-static void mp_normalize(struct mp_info *mpi safe, struct mark *m safe)
+static void mp_normalize(struct mp_info *mpi safe, struct mark *m safe,
+			 const char *vis)
 {
 	/* If points the end of a document, point to the start
 	 * of the next instead.
@@ -193,7 +194,10 @@ static void mp_normalize(struct mp_info *mpi safe, struct mark *m safe)
 	while (m->ref.m &&
 	       doc_following(mpi->parts[m->ref.docnum].pane,
 				  m->ref.m) == WEOF) {
-		change_part(mpi, m, m->ref.docnum + 1, 0);
+		int n = m->ref.docnum + 1;
+		while (n < mpi->nparts && vis && vis[n] == 'i')
+			n += 1;
+		change_part(mpi, m, n, 0);
 	}
 }
 
@@ -229,6 +233,8 @@ DEF_CMD(mp_free)
 DEF_CMD(mp_set_ref)
 {
 	struct mp_info *mpi = ci->home->data;
+	const char *vis = ci->str && (int)strlen(ci->str) >= mpi->nparts ?
+		ci->str : NULL;
 	int ret = 1;
 
 	if (!ci->mark)
@@ -250,8 +256,11 @@ DEF_CMD(mp_set_ref)
 
 	if (ci->num == 1) {
 		/* start */
-		change_part(mpi, ci->mark, 0, 0);
-		mp_normalize(mpi, ci->mark);
+		int n = 0;
+		while (n < mpi->nparts && vis && vis[n] == 'i')
+			n += 1;
+		change_part(mpi, ci->mark, n, 0);
+		mp_normalize(mpi, ci->mark, vis);
 	} else
 		change_part(mpi, ci->mark, mpi->nparts, 1);
 
@@ -265,6 +274,9 @@ DEF_CMD(mp_step)
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m1 = NULL;
 	struct mark *m = ci->mark;
+	const char *vis = ci->str && (int)strlen(ci->str) >= mpi->nparts ?
+		ci->str : NULL;
+	int n;
 	int ret;
 
 	/* Document access commands are handled by the 'cropper'.  First
@@ -300,11 +312,19 @@ DEF_CMD(mp_step)
 		if (ci->num) {
 			if (m->ref.docnum >= mpi->nparts)
 				break;
-			change_part(mpi, m, m->ref.docnum + 1, 0);
+			n = m->ref.docnum + 1;
+			while (n < mpi->nparts && vis && vis[n] == 'i')
+				n += 1;
+			change_part(mpi, m, n, 0);
 		} else {
 			if (m->ref.docnum == 0)
 				break;
-			change_part(mpi, m, m->ref.docnum - 1, 1);
+			n = m->ref.docnum - 1;
+			while (n >= 0 && vis && vis[n] == 'i')
+				n -= 1;
+			if (n < 0)
+				break;
+			change_part(mpi, m, n, 1);
 		}
 		m1 = m->ref.m;
 		if (m->ref.docnum == mpi->nparts)
@@ -317,7 +337,7 @@ DEF_CMD(mp_step)
 					0,0, ci->comm2);
 	}
 	if (ci->num2) {
-		mp_normalize(mpi, ci->mark);
+		mp_normalize(mpi, ci->mark, vis);
 		post_move(ci->mark);
 	}
 
@@ -336,24 +356,36 @@ DEF_CMD(mp_step_part)
 	 * part - we might not move.
 	 * if ->num is -1, step to start of previous part
 	 * Return part number plus 1.
+	 * If ->str is given, only consider visible parts.
 	 */
 	struct mp_info *mpi = ci->home->data;
 	struct mark *m = ci->mark;
+	const char *vis = ci->str && (int)strlen(ci->str) >= mpi->nparts ?
+		ci->str : NULL;
+	int n;
 
 	if (!m)
 		return Enoarg;
 	pre_move(m);
-	if (ci->num > 0)
+	n = m->ref.docnum;
+	if (ci->num > 0) {
 		/* Forward - start of next part */
-		change_part(mpi, m, m->ref.docnum + 1, 0);
-	else if (ci->num == 0 || m->ref.docnum == 0)
-		/* Backward - start of this part */
-		change_part(mpi, m, m->ref.docnum, 0);
-	else
+		n += 1;
+		while (n < mpi->nparts && vis && vis[n] == 'i')
+			n += 1;
+	} else if (ci->num < 0) {
 		/* Backward - start of prev part */
-		change_part(mpi, m, m->ref.docnum - 1, 0);
+		n -= 1;
+		while (n >= 0 && vis && vis[n] == 'i')
+			n -= 1;
+		if (n < 0)
+			n = m->ref.docnum;
+	}
+	/* otherwise start of this part */
+	change_part(mpi, m, n, 0);
 
-	mp_normalize(mpi, m);
+	/* If this part is empty, need to move to next visible part */
+	mp_normalize(mpi, m, vis);
 	post_move(m);
 	return m->ref.docnum + 1;
 }
