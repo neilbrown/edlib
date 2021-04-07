@@ -383,63 +383,48 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 	return True;
 }
 
-/* Found a multipart boundary between start and end, moving
+/* Find a multipart boundary between start and end, moving
  * 'start' to after the boundary, and 'pos' to just before it.
+ * Return 0 if a non-terminal boundary is found
+ * Return 1 if a terminal boundary is found (trailing --)
+ * Return -1 if nothing is found.
  */
+#define is_lws(c) ({int __c2 = c; __c2 == ' ' || __c2 == '\t' || is_eol(__c2); })
 static int find_boundary(struct pane *p safe,
 			 struct mark *start safe, struct mark *end safe,
 			 struct mark *pos,
 			 char *boundary safe)
 {
-	char *bpos = NULL;
-	int dashcnt = 0;
+	char *patn = NULL;
+	int ret;
+	int len = strlen(boundary);
 
-	while (start->seq < end->seq) {
-		wint_t ch = doc_next(p, start);
-
-		if (ch == WEOF)
-			break;
-
-		if (bpos && *bpos == (char)ch) {
-			bpos++;
-			if (*bpos)
-				continue;
-			bpos = NULL;
-			dashcnt = 0;
-			while ( (ch = doc_next(p, start)) != '\n') {
-				if (ch == '\r')
-					continue;
-				if (ch == '-') {
-					dashcnt++;
-					continue;
-				}
-				break;
-			}
-			if (ch != '\n')
-				continue;
-			if (dashcnt == 0)
-				return 0;
-			if (dashcnt == 2)
-				return 1;
-			dashcnt = -1;
-			continue;
-		}
-		bpos = NULL;
-		if (dashcnt >= 0 && ch == '-') {
-			dashcnt++;
-			if (dashcnt < 2)
-				continue;
-			dashcnt = -1;
-			bpos = boundary;
-			continue;
-		}
-		dashcnt = -1;
-		if (ch == '\n') {
-			if (pos)
-				mark_to_mark(pos, start);
-			dashcnt = 0;
-		}
+	asprintf(&patn, "^--(?%d:%s)(--)?[ \\t\\r]*$", len, boundary);
+	ret = call("text-search", p, 0, start, patn, 0, end);
+	if (ret <= 0)
+		return -1;
+	ret -= 1;
+	if (pos) {
+		int cnt = ret;
+		mark_to_mark(pos, start);
+		while (cnt > 0 && doc_prev(p, pos) != WEOF)
+			cnt -= 1;
+		/* Previous char is CRLF, and must be swallowed */
+		if (doc_prior(p, pos) == '\n')
+			doc_prev(p, pos);
+		if (doc_prior(p, pos) == '\r')
+			doc_prev(p, pos);
 	}
+	while (is_lws(doc_prior(p, start))) {
+		len -= 1;
+		doc_prev(p, start);
+	}
+	while (is_lws(doc_following(p, start)))
+		doc_next(p, start);
+	if (ret == 2 + len)
+		return 0;
+	if (ret == 2 + len + 2)
+		return 1;
 	return -1;
 }
 
@@ -460,7 +445,7 @@ static bool handle_multipart(struct pane *p safe, char *type safe,
 		/* FIXME need a way to say "just display the text" */
 		return True;
 
-	found_end = find_boundary(p, start, end, NULL, boundary);
+	found_end = find_boundary (p, start, end, NULL, boundary);
 	if (found_end != 0)
 		return True;
 	tok = get_822_token(&type, &len);
@@ -727,7 +712,6 @@ DEF_CMD(email_set_ref)
 {
 	struct pane *p = ci->home;
 	struct email_view *evi = p->data;
-	int n;
 
 	if (!ci->mark)
 		return Enoarg;
