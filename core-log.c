@@ -129,65 +129,89 @@ DEF_CMD(log_append)
 	return 1;
 }
 
-DEF_CMD(log_get_str)
+DEF_CMD(log_content)
 {
 	struct doc *d = ci->home->data;
 	struct log *log = container_of(d, struct log, doc);
-	struct mark *from = NULL, *to = NULL;
+	struct mark *from = ci->mark, *to = ci->mark2;
+	struct mark *m;
 	struct logbuf *b, *first, *last;
-	int l = 0, head, tail;
-	char *ret;
+	int head, tail;
+	int size = 0;
 
-	if (ci->mark && ci->mark2) {
-		if (ci->mark2->seq < ci->mark->seq) {
-			from = ci->mark2;
-			to = ci->mark;
-		} else {
-			from = ci->mark;
-			to = ci->mark2;
-		}
-	}
-
-	first = list_first_entry_or_null(&log->log, struct logbuf, h);
+	if (!from)
+		return Enoarg;
+	m = mark_dup(from);
 	head = 0;
-	if (from) {
-		first = from->ref.b;
-		if (first)
-			head = from->ref.o;
-	}
+	first = from->ref.b;
+	if (first)
+		head = from->ref.o;
 	last = NULL;
 	tail = 0;
-	if (to && to->ref.b) {
-		last = to->ref.b;
-		tail = to->ref.o;
+	if (to) {
+		if (to->ref.b) {
+			last = to->ref.b;
+			tail = to->ref.o;
+		}
+
+		b = first;
+		list_for_each_entry_from(b, &log->log, h) {
+			if (b == last)
+				break;
+			size += b->end;
+		}
+		size += tail - head;
 	}
 
 	b = first;
 	list_for_each_entry_from(b, &log->log, h) {
-		if (b == last)
-			break;
-		l += b->end;
-	}
-	l += tail - head;
+		struct mark *m2;
+		const char *s = b->text + head;
+		int ln = b->end - head;
 
-	ret = malloc(l+1);
-
-	l = 0;
-	b = first;
-	list_for_each_entry_from(b, &log->log, h) {
 		if (b == last)
-			break;
-		memcpy(ret+l, b->text + head, b->end - head);
-		l += b->end - head;
+			ln = tail - head;
+
+		if (m->ref.b != b) {
+			while ((m2 = mark_next(m)) &&
+			       m2->ref.b == m->ref.b)
+				mark_to_mark(m, m2);
+			m->ref.b = b;
+			m->ref.o = 0;
+		}
+		while (ln) {
+			int rv;
+			const char *s2 = s;
+			wint_t wc;
+
+			if (ci->num2)
+				wc = *s2++;
+			else
+				wc = get_utf8(&s2, s2+ln);
+
+			while ((m2 = mark_next(m)) &&
+			       m2->ref.b == m->ref.b &&
+			       m2->ref.o <= s - b->text)
+				mark_to_mark(m, m2);
+			m->ref.o = s - b->text;
+
+			rv = comm_call(ci->comm2, "consume", ci->focus,
+				       wc, m, s, ln, NULL, NULL, size, 0);
+			size = 0;
+			if (rv == 1) {
+				ln -= s2 - s;
+				s = s2;
+			} else if (rv > 0) {
+				s += rv;
+				ln -= rv;
+			} else
+				ln = 0;
+		}
 		head = 0;
+		if (b == last)
+			break;
 	}
-	if (last) {
-		memcpy(ret+l, last->text + head, tail-head);
-		l += tail - head;
-	}
-	ret[l] = 0;
-	comm_call(ci->comm2, "callback:get-str", ci->focus, 0, NULL, ret);
-	free(ret);
+	mark_free(m);
 	return 1;
 }
 
@@ -335,7 +359,7 @@ void log_setup(struct pane *ed safe)
 	log_map = key_alloc();
 
 	key_add_chain(log_map, doc_default_cmd);
-	key_add(log_map, "doc:get-str", &log_get_str);
+	key_add(log_map, "doc:content", &log_content);
 	key_add(log_map, "doc:set-ref", &log_set_ref);
 	key_add(log_map, "doc:step", &log_step);
 	key_add(log_map, "doc:destroy", &log_destroy);
