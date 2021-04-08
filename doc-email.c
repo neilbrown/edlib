@@ -371,6 +371,14 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 			h = html;
 		}
 	}
+	if (ctype && strcmp(ctype, "application/pdf") == 0) {
+		struct pane *pdf;
+		pdf = call_ret(pane, "pdf-to-text", h);
+		if (pdf) {
+			pane_close(h);
+			h = pdf;
+		}
+	}
 	if (ctype) {
 		int i;
 		for (i = 0; ctype[i]; i++)
@@ -829,4 +837,5 @@ void edlib_init(struct pane *ed safe)
 		  "attach-email-view");
 
 	call("global-load-module", ed, 0, NULL, "lib-html-to-text");
+	call("global-load-module", ed, 0, NULL, "lib-pdf-to-text");
 }
