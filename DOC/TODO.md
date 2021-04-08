@@ -19,6 +19,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] When visiting a file which is found to a link to a different name,
+      the file isn't reloaded if it has changed.
 - [X] Text containg </> is a problem.  If cursor is just after, it is drawn
       at start-of-line... oh, I think I know why.
 - [ ] search matches aren't highlighted where there is other highlighting
@@ -500,6 +502,8 @@ Module features
 
 ###  Notmuch message display
 
+- [ ] closing a large section pushed cursor to top of display, which
+      isn't really what I want.  I'd rather the cursor stayed still.
 - [X] invisible pdfs still slow things down a bit.
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
    then 'q' and crash.
@@ -508,7 +512,10 @@ Module features
 - [X] why does stepping from htmlpart to hidden pdf part go v.slowly
 - [X] When 'show'ing a part, ensure start of part is visible
 - [ ] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
-- [ ] make base64 much more efficient
+- [ ] make base64 much more efficient.  Stepping back from EOF can sync
+      by counting ='s.  There are always 4n chars. So last for are
+      xxxx or xxx= or xx==. RFC2045 guarantees the == with be there.
+      Also possibly increase MAX_QUAD a bit - 30?
 - [X] use python html2text to create markdown view
       import html2text ; content=html2text.html2text("html")
 - [ ] linecount is spinning somewhere.
