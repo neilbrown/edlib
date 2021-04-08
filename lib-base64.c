@@ -29,7 +29,7 @@ struct b64info {
 static struct map *b64_map safe;
 DEF_LOOKUP_CMD(b64_handle, b64_map);
 
-static int is_b64(char c)
+static int is_b64(wint_t c)
 {
 	return (c >= 'A' && c <= 'Z') ||
 		(c >= 'a' && c <= 'z') ||
@@ -211,6 +211,79 @@ retry:
 	return CHAR_RET(b);
 }
 
+struct b64c {
+	struct command c;
+	struct command *cb;
+	struct pane *p safe;
+	int pos;
+	int size;
+	char c1;
+};
+
+DEF_CMD(base64_content_cb)
+{
+	struct b64c *c = container_of(ci->comm, struct b64c, c);
+	wint_t wc = ci->num;
+	char c2;
+	wint_t b;
+
+	if (ci->x)
+		c->size = ci->x;
+
+	if (!is_b64(wc))
+		return 1;
+	c2 = from_b64(wc);
+	if (c->pos <= 0 || c->pos > 3) {
+		c->c1 = c2;
+		c->pos = 1;
+		return 1;
+	}
+	if (c->c1 == 64 || c2 == 64)
+		/* We've found a padding '=', that's all folks. */
+		return 0;
+
+	/* Have 2 b64 chars, can report one char */
+	switch(c->pos) {
+	case 1:
+		b = (c->c1 << 2) | (c2 >> 4);
+		break;
+	case 2:
+		b = ((c->c1 << 4) & 0xF0) | (c2 >> 2);
+		break;
+	case 3:
+		b = ((c->c1 << 6) & 0xC0) | c2;
+		break;
+	default:
+		b = 0;
+	}
+	c->pos += 1;
+	c->c1 = c2;
+	comm_call(c->cb, ci->key, c->p, b, ci->mark, NULL,
+		  0, NULL, NULL, c->size, 0);
+	c->size = 0;
+	return 1;
+}
+
+DEF_CMD(base64_content)
+{
+	struct b64c c;
+	struct b64info *bi = ci->home->data;
+
+	if (!ci->comm2 || !ci->mark)
+		return Enoarg;
+	/* No need to check ->num as providing bytes as chars
+	 * is close enough.
+	 */
+
+	c.c = base64_content_cb;
+	c.cb = ci->comm2;
+	c.p = ci->focus;
+	c.pos = locate_mark(ci->home->parent, ci->home, bi->view, ci->mark);
+	c.size = 0;
+	return home_call_comm(ci->home->parent, ci->key, ci->focus, &c.c,
+			      0, ci->mark, NULL, 0, ci->mark2);
+}
+
 DEF_CMD(b64_close)
 {
 	struct b64info *bi = ci->home->data;
@@ -253,6 +326,7 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(b64_map, "doc:step", &base64_step);
 	key_add(b64_map, "doc:step-bytes", &base64_step);
+	key_add(b64_map, "doc:content", &base64_content);
 	key_add(b64_map, "Close", &b64_close);
 	key_add(b64_map, "Free", &edlib_do_free);
 	key_add(b64_map, "Notify:clip", &b64_clip);
