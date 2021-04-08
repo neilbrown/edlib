@@ -14,26 +14,6 @@
 static struct map *utf8_map safe;
 DEF_LOOKUP_CMD(utf8_handle, utf8_map);
 
-static wint_t decode_utf8(char *b safe, int len)
-{
-	wint_t ret = 0;
-	int i;
-
-	for (i = 0; i < len ; i++) {
-		if (i)
-			ret = ret << 6 | (b[i] & 0x3f);
-		else if ((b[i] & 0xf8) == 0xf0)
-			ret = (b[i] & 0x07);
-		else if ((b[i] & 0xf0) == 0xe0)
-			ret = (b[i] & 0x0f);
-		else if ((b[i] & 0xe0) == 0xc0)
-			ret = (b[i] & 0x1f);
-		else
-			ret = 0;
-	}
-	return ret;
-}
-
 DEF_CMD(utf8_step)
 {
 	int forward = ci->num;
@@ -42,6 +22,7 @@ DEF_CMD(utf8_step)
 	wint_t ch;
 	struct mark *m = ci->mark;
 	char buf[10];
+	const char *b;
 	int i;
 	wint_t ret;
 
@@ -61,7 +42,8 @@ DEF_CMD(utf8_step)
 			buf[i++] = ch;
 			doc_next(p, m);
 		}
-		ret = decode_utf8(buf, i);
+		b = buf;
+		ret = get_utf8(&b, b+i);
 	} else {
 		i = 10;
 		buf[--i] = ch;
@@ -69,7 +51,8 @@ DEF_CMD(utf8_step)
 			ch = doc_prev(p, m);
 			buf[--i] = ch;
 		}
-		ret = decode_utf8(buf+i, 10-i);
+		b = buf + i;
+		ret = get_utf8(&b, buf+10);
 	}
 	if (!move)
 		mark_free(m);
