@@ -180,6 +180,111 @@ retry:
 	}
 }
 
+struct qpcb {
+	struct command c;
+	struct command *cb safe;
+	struct pane *p safe;
+	char state; /* \0 or '=' or hexit */
+	int size;
+	struct buf lws;
+};
+
+static void qpflush(struct qpcb *c safe, const struct cmd_info *ci, wint_t ch)
+{
+	char *lws = buf_final(&c->lws);
+
+	while (*lws) {
+		comm_call(c->cb, ci->key, c->p, *lws, ci->mark, NULL,
+			  0, NULL, NULL, c->size, 0);
+		c->size = 0;
+		lws += 1;
+	}
+	buf_reinit(&c->lws);
+	comm_call(c->cb, ci->key, c->p, ch, ci->mark, NULL,
+		  0, NULL, NULL, c->size, 0);
+	c->size = 0;
+}
+
+DEF_CMD(qp_content_cb)
+{
+	struct qpcb *c = container_of(ci->comm, struct qpcb, c);
+	wint_t wc = ci->num;
+
+	if (ci->x)
+		c->size = ci->x;
+
+	if (c->state && c->state != '=') {
+		/* Must see a hexit */
+		int h = hex(wc);
+		if (h >= 0) {
+			qpflush(c, ci,  (hex(c->state) << 4) | h);
+			c->state = 0;
+			return 1;
+		}
+		/* Pass first 2 literally */
+		qpflush(c, ci, '=');
+		qpflush(c, ci, c->state);
+		c->state = 0;
+	}
+
+	if (wc == '\r')
+		/* Always skip \r */
+		return 1;
+	if (!c->state) {
+		if (wc == '=') {
+			c->state = wc;
+			return 1;
+		}
+		if (wc == ' ' || wc == '\t') {
+			buf_append(&c->lws, wc);
+			return 1;
+		}
+		if (wc == '\n')
+			/* drop any trailing space */
+			buf_reinit(&c->lws);
+		qpflush(c, ci, wc);
+		return 1;
+	}
+	/* Previous was '='. */
+	if (hex(wc) >= 0) {
+		c->state = wc;
+		return 1;
+	}
+	if (wc == ' ' || wc == '\t')
+		/* Ignore space after =, incase at eol */
+		return 1;
+	c->state = 0;
+	if (wc == '\n')
+		/* The '=' was hiding the \n */
+		return 1;
+	qpflush(c, ci, '=');
+	qpflush(c, ci, wc);
+	return 1;
+}
+
+DEF_CMD(qp_content)
+{
+	struct qpcb c;
+	int ret;
+
+	if (!ci->comm2 || !ci->mark)
+		return Enoarg;
+	/* No need to check ->num as providing bytes as chars
+	 * is close enough.
+	 */
+
+	c.c = qp_content_cb;
+	c.cb = ci->comm2;
+	c.p = ci->focus;
+	c.size = 0;
+	c.state = 0;
+	buf_init(&c.lws);
+	ret = home_call_comm(ci->home->parent, ci->key, ci->focus,
+			     &c.c, 0, ci->mark, NULL, 0, ci->mark2);
+	free(c.lws.b);
+	return ret;
+}
+
 DEF_CMD(qp_attach)
 {
 	struct pane *p;
@@ -198,6 +303,7 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(qp_map, "doc:step", &qp_step);
 	key_add(qp_map, "doc:step-bytes", &qp_step);
+	key_add(qp_map, "doc:content", &qp_content);
 
 	call_comm("global-set-command", ed, &qp_attach, 0, NULL, "attach-quoted_printable");
 	call_comm("global-set-command", ed, &qp_attach, 0, NULL, "attach-qprint");

@@ -36,6 +36,10 @@ static inline char *safe buf_final(struct buf *b safe)
 	b->b[b->len] = 0;
 	return b->b;
 }
+static inline void buf_reinit(struct buf *b safe)
+{
+	b->len = 0;
+}
 
 
 /* Performance measurements.
