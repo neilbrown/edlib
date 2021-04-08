@@ -413,7 +413,7 @@ wint_t get_utf8(const char **cpp safe, const char *end)
 	} else if (c < 0xf0) {
 		ret = c & 0xf;
 		tail = 2;
-	} else if (c < 0xf8){
+	} else if (c < 0xf8) {
 		ret = c & 0x7;
 		tail = 3;
 	} else
