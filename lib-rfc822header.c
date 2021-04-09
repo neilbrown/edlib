@@ -285,9 +285,12 @@ static void copy_header(struct pane *doc safe,
 		for (i = 0; b[i]; i++)
 			if (b[i] > 0 && b[i] < ' ')
 				b[i] = ' ';
-		call("doc:replace", p, 1, NULL, b, 0, point,
-		     ch == ' ' && is_text ? ",render:rfc822header-wrap=1" : NULL);
+		call("doc:replace", p, 1, NULL, b, 0, point);
 		if (ch == ',' && is_list) {
+			/* This comma is no in a quoted word, so it really marks
+			 * part of a list, and together with following spaces
+			 * is a wrap-point.
+			 */
 			struct mark *p2 = mark_dup(point);
 			int cnt = 1;
 			doc_prev(p, p2);
@@ -301,6 +304,29 @@ static void copy_header(struct pane *doc safe,
 			snprintf(buf, sizeof(buf), "%d", cnt);
 			call("doc:set-attr", p, 1, p2, "render:rfc822header-wrap", 0, NULL, buf);
 			mark_free(p2);
+		}
+	}
+	if (is_text) {
+		/* flag all space as wrapping.  We didn't do this before
+		 * as they might have been hiding in quoted words.
+		 */
+		struct mark *m2 = mark_dup(hstart);
+		while (m2->seq < point->seq && !mark_same(m2, point)) {
+			struct mark *ms;
+			int cnt = 1;
+			int c = doc_next(p, m2);
+			if (c != ' ' && c != '\t')
+				continue;
+			ms = mark_dup(m2);
+			doc_prev(p, ms);
+			while ((c = doc_following(p, m2)) == ' ' ||
+			       c == '\t') {
+				cnt += 1;
+				doc_next(p, m2);
+			}
+			snprintf(buf, sizeof(buf), "%d", cnt);
+			call("doc:set-attr", p, 1, ms, "render:rfc822header-wrap",
+			     0, NULL, buf);
 		}
 	}
 	call("doc:replace", p, 1, NULL, "\n", 0, point);
