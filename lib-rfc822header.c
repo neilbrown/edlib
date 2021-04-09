@@ -244,6 +244,8 @@ static void copy_header(struct pane *doc safe,
 	 *  "text": add wrap points between words
 	 *  "list": convert commas to wrap points.
 	 * 'hdr' is the name of the header -  before the ':'.
+	 * '\n', '\r' are copied as a single space, and subsequent
+	 * spaces are skipped.
 	 */
 	struct mark *m;
 	struct mark *hstart;
@@ -258,10 +260,10 @@ static void copy_header(struct pane *doc safe,
 	hstart = mark_dup(point);
 	/* put hstart before point, so it stays here */
 	mark_step(hstart, 0);
-	/* FIXME decode RFC2047 words */
 	while ((ch = doc_next(doc, m)) != WEOF &&
 	       m->seq < end->seq) {
 		char *b;
+		int i;
 
 		if (ch < ' ' && ch != '\t') {
 			sol = 1;
@@ -280,6 +282,9 @@ static void copy_header(struct pane *doc safe,
 			b = charset_word(doc, m);
 		else
 			b = buf;
+		for (i = 0; b[i]; i++)
+			if (b[i] > 0 && b[i] < ' ')
+				b[i] = ' ';
 		call("doc:replace", p, 1, NULL, b, 0, point,
 		     ch == ' ' && is_text ? ",render:rfc822header-wrap=1" : NULL);
 		if (ch == ',' && is_list) {

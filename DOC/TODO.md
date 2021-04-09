@@ -536,7 +536,7 @@ Module features
 - [ ] When click on first char in tagged range, I don't see the tag and
    don't get a Mouse-Activate event.
 - [ ] line wrap in header should not appear as space??
-- [ ] if a subject line in wrapped in the email, the summary line look weird
+- [X] if a subject line in wrapped in the email, the summary line look weird
 - [ ] handle all Unicode newline chars.
 - [ ] should multipart/visible be per-view somehow?
 - [ ] Handle \r\n e-o-l and display sensibly

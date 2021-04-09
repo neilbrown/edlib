@@ -1170,7 +1170,8 @@ class notmuch_query(edlib.Doc):
             if type(val) == int:
                 val = "%d" % val
             else:
-                val = t[attr[2:]]
+                # Some mailers use ?Q to insert =0A (newline) in a subject!!
+                val = t[attr[2:]].replace('\n',' ')
             if attr == "T-authors":
                 val = val[:20]
 
@@ -1193,9 +1194,9 @@ class notmuch_query(edlib.Doc):
         elif attr == "M-date_relative":
             val = self.rel_date(dt)
         elif attr == "M-authors":
-            val = author[:20]
+            val = author[:20].replace('\n',' ')
         elif attr == "M-subject":
-            val = subj
+            val = subj.replace('\n',' ')
         elif attr == "M-threadinfo":
             val = self.cvt_depth(depth)
 
