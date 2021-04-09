@@ -502,6 +502,7 @@ Module features
 
 ###  Notmuch message display
 
+- [ ] Display suggested filename for attachments
 - [ ] closing a large section pushed cursor to top of display, which
       isn't really what I want.  I'd rather the cursor stayed still.
 - [X] invisible pdfs still slow things down a bit.
@@ -539,7 +540,7 @@ Module features
 - [X] if a subject line in wrapped in the email, the summary line look weird
 - [ ] handle all Unicode newline chars.
 - [ ] should multipart/visible be per-view somehow?
-- [ ] Handle \r\n e-o-l and display sensibly
+- [X] Handle \r\n e-o-l and display sensibly
 - [ ] I need a more structured/extensible way to decide which button was pressed
 - [ ] I need key-click to work reliably somehow. Click on selected button?
 - [ ] Auto-hide depending on type - with extensible table

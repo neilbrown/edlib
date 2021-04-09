@@ -813,6 +813,7 @@ DEF_CMD(attach_email_view)
 		free(evi);
 		return Efail;
 	}
+	attr_set_str(&p->attrs, "render-hide-CR", "yes");
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 

@@ -272,6 +272,7 @@ DEF_CMD(render_line)
 	struct attr_return ar;
 	int add_newline = 0;
 	char *oneline;
+	char *noret;
 	char *attr;
 
 	if (o == NO_NUMERIC)
@@ -290,6 +291,9 @@ DEF_CMD(render_line)
 	oneline = pane_attr_get(focus, "render-one-line");
 	if (oneline && strcmp(oneline, "yes") != 0)
 		oneline = NULL;
+	noret = pane_attr_get(focus, "render-hide-CR");
+	if (noret && strcmp(noret, "yes") != 0)
+		noret = NULL;
 
 	ch = doc_following(focus, m);
 	if (ch == WEOF)
@@ -350,7 +354,9 @@ DEF_CMD(render_line)
 			}
 			buf_append(&b, '<');
 		}
-		if (ch < ' ' && ch != '\t' && (oneline || !is_eol(ch))) {
+		if (ch == '\r' && noret) {
+			/* do nothing */
+		} else if (ch < ' ' && ch != '\t' && (oneline || !is_eol(ch))) {
 			buf_concat(&b, "<fg:red>^");
 			buf_append(&b, '@' + ch);
 			buf_concat(&b, "</>");
