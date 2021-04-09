@@ -1455,6 +1455,26 @@ class notmuch_master_view(edlib.Pane):
         p.call("notmuch:select", m, direction)
         return 1
 
+    def handle_move_thread(self, key, mark, **a):
+        "handle-list/doc:char-N/doc:char-P"
+        p = self.query_pane
+        op = self.message_pane
+        if not self.query_pane:
+            return 1
+
+        direction = 1 if key[-1] in "N" else -1
+        if self.message_pane:
+            # message window exists so move, otherwise just select
+            # Need to get point as 'mark' might be in the wrong pane
+            self.query_pane.call("notmuch:close-thread")
+            self.query_pane.call("Move-Line", direction)
+            m = p.call("doc:dup-point", 0, -2, ret='mark')
+        else:
+            m = mark
+
+        p.call("notmuch:select", m, direction)
+        return 1
+
     def handle_A(self, key, focus, mark, str, **a):
         "handle-list/doc:char-a/doc:char-S/doc:char-N/doc:char-*/doc:char-!/"
         # adjust flags for this message or thread, and move to next
@@ -1616,7 +1636,7 @@ class notmuch_master_view(edlib.Pane):
             self.message_pane = None
             p.call("Window:close", "notmuch")
         elif self.query_pane:
-            if self.query_pane.call("notmuch:close-thread") == 1:
+            if self.query_pane.call("notmuch:close-whole-thread") == 1:
                 return 1
             if key != "doc:char-x":
                 self.query_pane.call("doc:notmuch:mark-seen")
@@ -2019,12 +2039,17 @@ class notmuch_query_view(edlib.Pane):
         focus.call("doc:notmuch:query:reload")
         return 1
 
-    def handle_close_thread(self, key, focus, **a):
-        "handle:notmuch:close-thread"
+    def handle_close_whole_thread(self, key, focus, **a):
+        "handle:notmuch:close-whole-thread"
         # 'q' is requesting that we close thread if it is open
         if not self.whole_thread:
             return edlib.Efalse
         self.handle_Z(key, focus)
+        return 1
+
+    def handle_close_thread(self, key, focus, **a):
+        "handle:notmuch:close-thread"
+        self.close_thread()
         return 1
 
     def handle_select(self, key, focus, mark, num, num2, str, **a):

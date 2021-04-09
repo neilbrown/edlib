@@ -449,7 +449,7 @@ Module features
 - [ ] dynamic search - 's' popups up dialog to create new query "tmp%d"
 - [ ] dynamic limit - 'l' popups up dialog which adds extra limit.
       'q' removes it.  Pruned v.quickly
-- [ ] command to skip over whole thread N/P
+- [X] command to skip over whole thread N/P
 - [ ] use NOTMUCH_CONFIG consistently - drop locking
 - [ ] fix bugs in stored-query!! query: is slow and (I think) buggy
 - [ ] rel_date could report how long until display would change, and
