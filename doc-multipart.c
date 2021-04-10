@@ -543,6 +543,32 @@ DEF_CMD(mp_add)
 	return 1;
 }
 
+DEF_CMD(mp_forward_by_num)
+{
+	struct mp_info *mpi = ci->home->data;
+	struct mark *m1 = NULL, *m2 = NULL;
+	const char *key;
+	int d;
+
+	key = ksuffix(ci, "doc:multipart-");
+	d = atoi(key);
+	key = strchr(key, '-');
+	if (!key)
+		return Einval;
+	key += 1;
+
+	if (d >= mpi->nparts || d < 0)
+		return 1;
+
+	if (ci->mark && ci->mark->ref.docnum == d)
+		m1 = ci->mark;
+	if (ci->mark2 && ci->mark2->ref.docnum == d)
+		m2 = ci->mark2;
+
+	return call(key, mpi->parts[d].pane, ci->num, m1, ci->str,
+		    ci->num2, m2, ci->str2, ci->x, ci->y, ci->comm2);
+}
+
 DEF_CMD(mp_forward)
 {
 	/* forward this command to this/next/prev document based on
@@ -604,6 +630,7 @@ static void mp_init_map(void)
 	key_add_prefix(mp_map, "multipart-this:", &mp_forward);
 	key_add_prefix(mp_map, "multipart-next:", &mp_forward);
 	key_add_prefix(mp_map, "multipart-prev:", &mp_forward);
+	key_add_prefix(mp_map, "doc:multipart-", &mp_forward_by_num);
 }
 DEF_LOOKUP_CMD(mp_handle, mp_map);
 
