@@ -226,22 +226,28 @@ class EdDisplay(edlib.Pane):
     def handle_image(self, key, num, num2, focus, str, str2, **a):
         "handle:Draw:image"
         self.damaged(edlib.DAMAGED_POSTORDER)
-        # 'str' is the file name of an image
+        # 'str' identifies the image. Options are:
+        #     file:filename
         # 'num' is '1' if image should be stretched to fill pane
         # if 'num is '0', then 'num2' is 'or' of
         #   0,1,2 for left/middle/right in x direction
         #   0,4,8 for top/middle/bottom in y direction
         # only one of these can be used as image will fill pane in other direction.
+        if not str:
+            return edlib.Enoarg
         stretch = num
         pos = num2
         w, h = focus.w, focus.h
         x, y = 0, 0
-        try:
-            pb = GdkPixbuf.Pixbuf.new_from_file(str)
-        except:
-            # create a red error image
-            pb = Gdk.Pixbuf(Gdk.COLORSPACE_RGB, False, 8, w, h)
-            pb.fill(0xff000000)
+        if str.startswith("file:"):
+            try:
+                pb = GdkPixbuf.Pixbuf.new_from_file(str[5:])
+            except:
+                # create a red error image
+                pb = Gdk.Pixbuf(Gdk.COLORSPACE_RGB, False, 8, w, h)
+                pb.fill(0xff000000)
+        else:
+            return edlib.Einval
         if not stretch:
             if pb.get_width() * h > pb.get_height() * w:
                 # image is wider than space, reduce height

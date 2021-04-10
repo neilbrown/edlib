@@ -407,8 +407,7 @@ static void render_image(struct pane *p safe, struct pane *focus safe,
 		int len = strcspn(line, ",>");
 
 		if (strncmp(line, "image:", 6) == 0) {
-			const char *cp = line + 6;
-			fname = strndup(cp, len-6);
+			fname = strndup(line+6, len-6);
 		} else if (strncmp(line, "width:", 6) == 0) {
 			width = atoi(line + 6);
 			width = width * scale / 1000;

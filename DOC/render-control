@@ -153,7 +153,7 @@ The attributes can be a list of text attributes or:
 At the start of the line "<image:" indicates an image to be drawn - no text 
 should appeear on this line.
 The listed attributes can include:
-  image:filename - typically jpg or png
+  image:file:filename - typically jpg or png
   width:pixels
   heigth:pixels
        width and height are in virtual pixels.  The expected size of the pane
@@ -166,7 +166,7 @@ Several pane attributes can affect the pane as a whole:
  - "hide-cursor": if "yes", no cursor is displayed
  - "background": if not set, the background is simply cleared.  Otherwise it can be:
       "color:some-color" set a uniform background color for the pane
-      "image:file" image to be scaled (but not stretched) and displayed
+      "image:file:filename" image to be scaled (but not stretched) and displayed
       "call:function" a function to be called, which can draw on the pane before the document
           is drawn.
  - "scale:M" - this is set by the display manager and given the number of pixels for
