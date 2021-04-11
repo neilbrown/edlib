@@ -25,6 +25,23 @@
 #include "core.h"
 #include "misc.h"
 
+static inline bool is_orig(int p)
+{
+	return p >= 0 && p % 2 == 0;
+}
+
+static inline bool is_spacer(int p)
+{
+	return p >= 0 && p % 2 == 1;
+}
+
+static inline int to_orig(int p)
+{
+	if (p < 0)
+		return p;
+	return p - p % 2;
+}
+
 struct email_info {
 	struct pane	*email safe;
 	struct pane	*spacer safe;
@@ -104,7 +121,7 @@ DEF_CMD(email_spacer)
 	}
 
 	attr = pane_mark_attr(ci->focus, m, "email:visible");
-	if (attr && *attr == '0')
+	if (attr && strcmp(attr, "none") == 0)
 		visible = 0;
 	attr = pane_mark_attr(ci->home, m, "multipart-prev:email:actions");
 	if (!attr)
@@ -174,10 +191,10 @@ DEF_CMD(email_select)
 	if (a && is_attr("hide", a)) {
 		int vis = 1;
 		a = pane_mark_attr(ci->focus, m, "email:visible");
-		if (a && *a == '0')
+		if (a && strcmp(a, "none") == 0)
 			vis = 0;
 		call("doc:set-attr", ci->focus, 1, m, "email:visible", 0, NULL,
-		     vis ? "0" : "1");
+		     vis ? "none" : "orig");
 	}
 	return 1;
 }
@@ -386,8 +403,10 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 				ctype[i] = tolower(ctype[i]);
 		attr_set_str(&h->attrs, "email:content-type", ctype);
 		free(ctype);
-	}
+	} else
+		attr_set_str(&h->attrs, "email:content-type", "text/plain");
 	attr_set_str(&h->attrs, "email:path", path);
+	attr_set_str(&h->attrs, "email:which", "orig");
 
 	home_call(mp, "multipart-add", h);
 	home_call(mp, "multipart-add", spacer);
@@ -571,6 +590,7 @@ DEF_CMD(open_email)
 		pane_close(h2);
 		goto out;
 	}
+	attr_set_str(&p->attrs, "email:which", "spacer");
 	ei->spacer = p;
 	point = vmark_new(p, MARK_POINT, NULL);
 	call("doc:set-ref", p, 1, point);
@@ -612,6 +632,8 @@ DEF_CMD(open_email)
 		goto out;
 	call("doc:set:autoclose", p, 1);
 	attr_set_str(&hdrdoc->attrs, "email:actions", "hide");
+	attr_set_str(&hdrdoc->attrs, "email:which", "orig");
+	attr_set_str(&hdrdoc->attrs, "email:content-type", "text/rfc822-headers");
 	home_call(p, "multipart-add", hdrdoc);
 	home_call(p, "multipart-add", ei->spacer);
 	call("doc:set:autoclose", hdrdoc, 1);
@@ -689,7 +711,7 @@ DEF_CMD(email_step)
 				ci->num, ci->mark, evi->invis,
 				ci->num2);
 		n = get_part(p->parent, ci->mark);
-		if (ci->num2 && n > 0 && (n & 1)) {
+		if (ci->num2 && is_spacer(n)) {
 			/* Moving in a spacer, If after valid buttons,
 			 * move to end
 			 */
@@ -704,7 +726,7 @@ DEF_CMD(email_step)
 		ret = home_call(p->parent, ci->key, ci->focus,
 				ci->num, ci->mark, evi->invis, 1);
 		n = get_part(p->parent, ci->mark);
-		if ((n & 1) && ci->num2 && isdigit(ret & 0xfffff)) {
+		if (is_spacer(n) && ci->num2 && isdigit(ret & 0xfffff)) {
 			/* Just stepped back over the 9 at the end of a spacer,
 			 * Maybe step further if there aren't 10 buttons.
 			 */
@@ -740,11 +762,11 @@ DEF_CMD(email_view_get_attr)
 	if (strcmp(ci->str, "email:visible") == 0) {
 		p = get_part(ci->home->parent, ci->mark);
 		/* only parts can be invisible, not separators */
-		p &= ~1;
+		p = to_orig(p);
 		v = (p >= 0 && p < evi->parts) ? evi->invis[p] != 'i' : 0;
 
 		return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark,
-				 v ? "1":"0", 0, NULL, ci->str);
+				 v ? "orig":"none", 0, NULL, ci->str);
 	}
 	return Efallthrough;
 }
@@ -761,8 +783,8 @@ DEF_CMD(email_view_set_attr)
 
 		p = get_part(ci->home->parent, ci->mark);
 		/* only parts can be invisible, not separators */
-		p &= ~1;
-		v = ci->str2 && atoi(ci->str2) >= 1;
+		p = to_orig(p);
+		v = ci->str2 && strcmp(ci->str2, "none") != 0;
 		if (p >= 0 && p < evi->parts)
 			evi->invis[p] = v ? 'v' : 'i';
 

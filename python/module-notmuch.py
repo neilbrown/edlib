@@ -2154,27 +2154,25 @@ class notmuch_message_view(edlib.Pane):
         focus.call("doc:notmuch:request:Notify:Tag", self)
         self.handle_notify_tag("Notify:Tag")
         while True:
-            newp = self.call("doc:step-part", m, 1)
-            # retval is offset by 1 to avoid zero
-            newp -= 1
-            if newp <= p:
-                # reached the end
+            self.call("doc:step-part", m, 1)
+            which = focus.call("doc:get-attr", "multipart-this:email:which",
+                               m, ret='str')
+            if not which:
                 break
-            p = newp
-            if not (p & 1):
-                continue
-            if p < 2:
+            if which != "spacer":
                 continue
             path = focus.call("doc:get-attr", "multipart-prev:email:path", m, ret='str')
             type = focus.call("doc:get-attr", "multipart-prev:email:content-type", m, ret='str')
             vis = True
-            for  el in path.split('.'):
-                if el[:12] == "alternative:" and el != "alternative:0":
+            for  el in path.split(','):
+                if el.startswith("alternative:") and not el.startswith("alternative:0"):
                     vis = False
             if type[:4] != "text" and type != "":
                 vis = False
-            if not vis:
-                focus.call("doc:set-attr", "email:visible", m, 0)
+            if vis:
+                focus.call("doc:set-attr", "email:visible", m, "orig")
+            else:
+                focus.call("doc:set-attr", "email:visible", m, "none")
 
     def handle_notify_tag(self, key, **a):
         "handle:Notify:Tag"
@@ -2206,10 +2204,10 @@ class notmuch_message_view(edlib.Pane):
         s = focus.call("doc:get-attr", mark, "email:visible", ret='str')
         if not s:
             return 1
-        if s == "0":
-            focus.call("doc:set-attr", mark, "email:visible", "1")
+        if s == "none":
+            focus.call("doc:set-attr", mark, "email:visible", "orig")
         else:
-            focus.call("doc:set-attr", mark, "email:visible", "0")
+            focus.call("doc:set-attr", mark, "email:visible", "none")
         return 1
 
     def handle_space(self, key, focus, mark, **a):
@@ -2227,7 +2225,7 @@ class notmuch_message_view(edlib.Pane):
     def handle_return(self, key, focus, mark, **a):
         "handle-list/K:Enter/Mouse-Activate"
         focus.call("doc:email:select", mark)
-        if focus.call("doc:get-attr", mark, "email:visible", ret='str') == '1':
+        if focus.call("doc:get-attr", mark, "email:visible", ret='str') != "none":
             # when making visible, move point to start
             focus.call("doc:step-part", mark, -1)
         return 1
