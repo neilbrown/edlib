@@ -14,7 +14,7 @@ import cairo
 gi.require_version('Gtk', '3.0')
 gi.require_version('PangoCairo', '1.0')
 gi.require_foreign("cairo")
-from gi.repository import Gtk, Gdk, Pango, PangoCairo, GdkPixbuf
+from gi.repository import Gtk, Gdk, Pango, PangoCairo, GdkPixbuf, Gio
 
 class EdDisplay(edlib.Pane):
     def __init__(self, focus):
@@ -227,7 +227,8 @@ class EdDisplay(edlib.Pane):
         "handle:Draw:image"
         self.damaged(edlib.DAMAGED_POSTORDER)
         # 'str' identifies the image. Options are:
-        #     file:filename
+        #     file:filename  - load file from fs
+        #     comm:command   - run command collecting bytes
         # 'num' is '1' if image should be stretched to fill pane
         # if 'num is '0', then 'num2' is 'or' of
         #   0,1,2 for left/middle/right in x direction
@@ -239,15 +240,20 @@ class EdDisplay(edlib.Pane):
         pos = num2
         w, h = focus.w, focus.h
         x, y = 0, 0
-        if str.startswith("file:"):
-            try:
+        try:
+            if str.startswith("file:"):
                 pb = GdkPixbuf.Pixbuf.new_from_file(str[5:])
-            except:
-                # create a red error image
-                pb = Gdk.Pixbuf(Gdk.COLORSPACE_RGB, False, 8, w, h)
-                pb.fill(0xff000000)
-        else:
-            return edlib.Einval
+            elif str.startswith("comm:"):
+                img = focus.call(str[5:], str2, ret='bytes')
+                io = Gio.MemoryInputStream.new_from_data(img)
+                pb = GdkPixbuf.Pixbuf.new_from_stream(io)
+            else:
+                return edlib.Einval
+        except:
+            # create a red error image
+            pb = Gdk.Pixbuf(Gdk.COLORSPACE_RGB, False, 8, w, h)
+            pb.fill(0xff000000)
+
         if not stretch:
             if pb.get_width() * h > pb.get_height() * w:
                 # image is wider than space, reduce height
@@ -658,3 +664,4 @@ def new_display(key, focus, comm2, **a):
 
 
 editor.call("global-set-command", "attach-display-pygtk", new_display)
+
