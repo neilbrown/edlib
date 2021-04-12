@@ -317,8 +317,6 @@ DEF_CMD(mp_step)
 				n += 1;
 			change_part(mpi, m, n, 0);
 		} else {
-			if (m->ref.docnum == 0)
-				break;
 			n = m->ref.docnum - 1;
 			while (n >= 0 && vis && vis[n] == 'i')
 				n -= 1;
@@ -480,14 +478,15 @@ DEF_CMD(mp_set_attr)
 			dn -= 1;
 	}
 
-	if (strncmp(attr, "multipart-prev:", 15) == 0) {
-		dn -= 1;
-		attr += 15;
-	} else if (strncmp(attr, "multipart-next:", 15) == 0) {
-		dn += 1;
-		attr += 15;
-	}
-	return Efallthrough;
+	if (strncmp(attr, "multipart-prev:", 15) == 0)
+		attr_set_str(&mpi->parts[dn-1].pane->attrs, attr+15, ci->str2);
+	else if (strncmp(attr, "multipart-next:", 15) == 0)
+		attr_set_str(&mpi->parts[dn+1].pane->attrs, attr+15, ci->str2);
+	else if (strncmp(attr, "multipart-this:", 15) == 0)
+		attr_set_str(&mpi->parts[dn].pane->attrs, attr+15, ci->str2);
+	else
+		return Efallthrough;
+	return 1;
 }
 
 DEF_CMD(mp_notify_close)
