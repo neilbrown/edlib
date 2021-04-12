@@ -32,8 +32,10 @@ DEF_CMD(utf8_step)
 	ch = doc_step(p, m, forward, move);
 	if (ch == WEOF || (ch & 0x7f) == ch)
 		return CHAR_RET(ch);
-	if (!move)
+	if (!move) {
 		m = mark_dup(m);
+		doc_step(p, m, forward, 1);
+	}
 	if (forward) {
 		i = 0;
 		buf[i++] = ch;
