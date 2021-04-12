@@ -126,17 +126,16 @@ DEF_CMD(doc_word)
 	while (rpt != 0) {
 		wint_t wi;
 
-		while (iswspace(doc_step(f, m, dir, 0)))
+		while ((wi = doc_step(f, m, dir, 0)) != WEOF && iswspace(wi))
 			doc_step(f, m, dir, 1);
 
 		while ((wi=doc_step(f, m, dir, 0)) != WEOF &&
 		       !iswspace(wi) && !iswalnum(wi))
 			doc_step(f, m, dir, 1);
 
-		if (iswalnum(doc_step(f, m, dir, 0))) {
-			while (iswalnum(doc_step(f, m, dir, 0)))
-				doc_step(f, m, dir, 1);
-		}
+		while ((wi = doc_step(f, m, dir, 0)) != WEOF &&
+		       iswalnum(wi))
+			doc_step(f, m, dir, 1);
 
 		rpt -= dir * 2 - 1;
 	}
@@ -190,9 +189,10 @@ DEF_CMD(doc_expr)
 		open = ")]}"; close = "([{";
 	}
 	while (rpt != 0) {
-		wint_t wi = ' ';
+		wint_t wi;
 
-		while (iswspace(doc_step(f, m, dir, 0)))
+		while ((wi = doc_step(f, m, dir, 0)) != WEOF
+		       && iswspace(wi))
 			doc_step(f, m, dir, 1);
 
 		while ((wi = doc_step(f, m, dir, 0)) != WEOF &&
@@ -266,7 +266,7 @@ DEF_CMD(doc_expr)
 						break;
 				}
 			}
-		} else while (iswalnum((wi=doc_step(f, m, dir, 0))) ||
+		} else while (((wi=doc_step(f, m, dir, 0)) != WEOF && iswalnum(wi)) ||
 			      (wi > 0 && wi <= 255 &&
 			       strchr(wordchars, wi) != NULL))
 				doc_step(f, m, dir, 1);
@@ -293,7 +293,7 @@ DEF_CMD(doc_WORD)
 	while (rpt > 0) {
 		wint_t wi;
 
-		while (iswspace(doc_following(f, m)))
+		while ((wi = doc_following(f, m)) != WEOF && iswspace(wi))
 			doc_next(f,m);
 
 		while ((wi=doc_following(f, m)) != WEOF &&
@@ -304,9 +304,10 @@ DEF_CMD(doc_WORD)
 	while (rpt < 0) {
 		wint_t wi;
 
-		while (iswspace(doc_prior(f, m)))
+		while ((wi = doc_prior(f, m)) != WEOF &&
+		       iswspace(wi))
 			doc_prev(f,m);
-		while ((wi=doc_prior(f, m)) != WEOF &&
+		while ((wi = doc_prior(f, m)) != WEOF &&
 		       !iswspace(wi))
 			doc_prev(f,m);
 		rpt += 1;

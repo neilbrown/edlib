@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
+#include <wctype.h>
 #include <ctype.h>
 #include <stdio.h>
 #include "core.h"
@@ -718,22 +719,23 @@ DEF_CMD(email_step)
 			wint_t c;
 			unsigned int buttons;
 			buttons = count_buttons(p, ci->mark);
-			while (isdigit(c = doc_following(p->parent, ci->mark)) &&
-			       (c - '0') >= buttons)
+			while ((c = doc_following(p->parent, ci->mark)) != WEOF
+			       && iswdigit(c) && (c - '0') >= buttons)
 					doc_next(p->parent, ci->mark);
 		}
 	} else {
 		ret = home_call(p->parent, ci->key, ci->focus,
 				ci->num, ci->mark, evi->invis, 1);
 		n = get_part(p->parent, ci->mark);
-		if (is_spacer(n) && ci->num2 && isdigit(ret & 0xfffff)) {
+		if (is_spacer(n) && ci->num2 &&
+		    ret != CHAR_RET(WEOF) && iswdigit(ret & 0x1fffff)) {
 			/* Just stepped back over the 9 at the end of a spacer,
 			 * Maybe step further if there aren't 10 buttons.
 			 */
 			unsigned int buttons = count_buttons(p, ci->mark);
-			wint_t c = ret & 0xfffff;
+			wint_t c = ret & 0x1fffff;
 
-			while (isdigit(c) && c - '0' >= buttons)
+			while (c != WEOF && iswdigit(c) && c - '0' >= buttons)
 				c = doc_prev(p->parent, ci->mark);
 			ret = CHAR_RET(c);
 		}
