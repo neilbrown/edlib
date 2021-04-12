@@ -785,12 +785,8 @@ class notmuch_query(edlib.Doc):
                     pass
                 self.threadids.insert(self.tindex, tid)
                 self.tindex += 1
-            if old >= 0 and old == self.tindex - 2:
-                # same as immediate last - no need to move marks
-                self.tindex -= 1
-                self.threadids.pop(old)
-            elif old >= 0:
-                # move mark to before self.pos
+            if old >= 0:
+                # move marks on tid to before self.pos
                 if old < self.tindex - 1:
                     m = self.first_mark()
                     self.tindex -= 1
@@ -802,6 +798,11 @@ class notmuch_query(edlib.Doc):
                        self.threadids.index(m.pos[0]) < old):
                     m = m.next_any()
                 self.pos.step(0)
+                mp = self.pos.prev_any()
+                if mp and mp.pos and mp.pos[0] == tid:
+                    # All marks for tid are already immediately before self.pos
+                    # so nothing to be moved.
+                    m = None
                 while m and m.pos and m.pos[0] == tid:
                     m2 = m.next_any()
                     m.to_mark_noref(self.pos)
