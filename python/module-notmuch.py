@@ -2169,6 +2169,8 @@ class notmuch_message_view(edlib.Pane):
                     vis = False
             if type[:4] != "text" and type != "":
                 vis = False
+            if type.startswith("image/"):
+                vis = True
             self.set_vis(focus, m, vis)
 
     def set_vis(self, focus, m, vis):

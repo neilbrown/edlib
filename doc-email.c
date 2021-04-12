@@ -190,6 +190,32 @@ DEF_CMD(email_spacer)
 	return ret;
 }
 
+static int get_part(struct pane *p safe, struct mark *m safe)
+{
+	char *a = pane_mark_attr(p, m, "multipart:part-num");
+
+	if (!a)
+		return Efail;
+	return atoi(a);
+}
+
+DEF_CMD(email_image)
+{
+	char *c = NULL;
+	int p;
+	int ret;
+
+	if (!ci->mark)
+		return Enoarg;
+	p = get_part(ci->home, ci->mark);
+	doc_next(ci->focus, ci->mark);
+	asprintf(&c, "<image:comm:doc:multipart-%d-doc:get-bytes>\n", to_orig(p));
+	ret = comm_call(ci->comm2, "callback:render", ci->focus,
+			0, NULL, c);
+	free(c);
+	return ret;
+}
+
 DEF_CMD(email_select)
 {
 	/* If mark is on a button, press it... */
@@ -403,7 +429,18 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 		transformed = call_ret(pane, "html-to-text", h);
 	if (ctype && strcmp(ctype, "application/pdf") == 0)
 		transformed = call_ret(pane, "pdf-to-text", h);
-
+	if (ctype && strncmp(ctype, "image/", 6) == 0) {
+		struct mark *m;
+		transformed = call_ret(pane, "doc:from-text", h,
+				       0, NULL, NULL, 0, NULL, "\n");
+		if (transformed) {
+			m = vmark_new(transformed, MARK_UNGROUPED, NULL);
+			call("doc:set-ref", transformed, 1, m);
+			call("doc:set-attr", transformed, 1, m, "markup:func", 0,
+			     NULL, "doc:email:render-image");
+			mark_free(m);
+		}
+	}
 	if (transformed) {
 		attr_set_str(&transformed->attrs, "email:is_transformed", "yes");
 		attr_set_str(&transformed->attrs, "email:preferred", "transformed");
@@ -702,15 +739,6 @@ DEF_CMD(email_view_free)
 	return 1;
 }
 
-static int get_part(struct pane *p safe, struct mark *m safe)
-{
-	char *a = pane_mark_attr(p, m, "multipart:part-num");
-
-	if (!a)
-		return Efail;
-	return atoi(a);
-}
-
 static int count_buttons(struct pane *p safe, struct mark *m safe)
 {
 	int cnt = 0;
@@ -905,6 +933,7 @@ static void email_init_map(void)
 	key_add(email_view_map, "doc:set-attr", &email_view_set_attr);
 	key_add(email_view_map, "doc:get-attr", &email_view_get_attr);
 	key_add(email_view_map, "doc:email:render-spacer", &email_spacer);
+	key_add(email_view_map, "doc:email:render-image", &email_image);
 	key_add(email_view_map, "doc:email:select", &email_select);
 }
 
