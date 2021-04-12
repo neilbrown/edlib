@@ -2169,10 +2169,17 @@ class notmuch_message_view(edlib.Pane):
                     vis = False
             if type[:4] != "text" and type != "":
                 vis = False
-            if vis:
-                focus.call("doc:set-attr", "email:visible", m, "orig")
+            self.set_vis(focus, m, vis)
+
+    def set_vis(self, focus, m, vis):
+        if vis:
+            it = focus.call("doc:get-attr", "multipart-prev:email:is_transformed", m, ret='str')
+            if it and it == "yes":
+                focus.call("doc:set-attr", "email:visible", m, "transformed")
             else:
-                focus.call("doc:set-attr", "email:visible", m, "none")
+                focus.call("doc:set-attr", "email:visible", m, "orig")
+        else:
+            focus.call("doc:set-attr", "email:visible", m, "none")
 
     def handle_notify_tag(self, key, **a):
         "handle:Notify:Tag"
@@ -2204,10 +2211,7 @@ class notmuch_message_view(edlib.Pane):
         s = focus.call("doc:get-attr", mark, "email:visible", ret='str')
         if not s:
             return 1
-        if s == "none":
-            focus.call("doc:set-attr", mark, "email:visible", "orig")
-        else:
-            focus.call("doc:set-attr", mark, "email:visible", "none")
+        self.set_vis(focus, mark, s == "none")
         return 1
 
     def handle_space(self, key, focus, mark, **a):

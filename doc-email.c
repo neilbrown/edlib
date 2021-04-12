@@ -5,14 +5,31 @@
  * doc-email: Present an email message as its intended content, with
  * part recognition and decoding etc.
  *
- * A multipart document is created where every other part is a "spacer"
- * where buttons can be placed to control visibility of the previous part,
- * or to act on it in some other way.
- * The first part is the headers which are copied to a temp text document.
- * Subsequent non-spacer parts are cropped sections of the email, possibly
- * with filters overlayed to handle the transfer encoding.
- * Alternately, they might be temp documents similar to the headers
- * storing e.g. transformed HTML or an image.
+ * A multipart document is created from sets of three documents.
+ * In each set:
+ * - The first is the original email, overlayed with 'crop' to select
+ *   one section, then overlayed with handlers for the transfer-encoding
+ *   and (optionally) charset.  There will be one for the headers
+ *   and either one for the body, or one for each part of the body
+ *   is multipart.  All nested multiparts have their parts linearized.
+ * - The second is a scratch text document which can contain a transformed
+ *   copy of the content when the tranformation is too complex for an
+ *   overlay layer.  This includes HTML and PDF which can be converted
+ *   to text, but the conversion is complex, and the headers, which need to be
+ *   re-ordered as well as filtered and decoded.  For images, this document has
+ *   trivial content but specifier a rendering function that displays the image.
+ * - The final section is a 'spacer' which has fixed content and displays
+ *   as a summary line for the part (e.g. MIME-type, file name) and
+ *   provides active buttons for acting on the content (save, external viewer
+ *   etc).
+ *
+ * The middle part has attributes set on the document which can be
+ * accessed form the spacer using "multipart-prev:"
+ * - email:path identify the part in the nexted multipart struture
+ *   e.g. "header", "body", "body,multipart/mixed:0,mulitpart/alternate:1"
+ * - email:action a ':' separated list of buttons. "hide:save:view"
+ * - email:content-type the MIME type of the content. "image/png"
+ *
  */
 
 #define _GNU_SOURCE /* for asprintf */
@@ -28,19 +45,24 @@
 
 static inline bool is_orig(int p)
 {
-	return p >= 0 && p % 2 == 0;
+	return p >= 0 && p % 3 == 0;
+}
+
+static inline bool is_transformed(int p)
+{
+	return p >= 0 && p % 3 == 1;
 }
 
 static inline bool is_spacer(int p)
 {
-	return p >= 0 && p % 2 == 1;
+	return p >= 0 && p % 3 == 2;
 }
 
 static inline int to_orig(int p)
 {
 	if (p < 0)
 		return p;
-	return p - p % 2;
+	return p - p % 3;
 }
 
 struct email_info {
@@ -195,7 +217,7 @@ DEF_CMD(email_select)
 		if (a && strcmp(a, "none") == 0)
 			vis = 0;
 		call("doc:set-attr", ci->focus, 1, m, "email:visible", 0, NULL,
-		     vis ? "none" : "orig");
+		     vis ? "none" : "preferred");
 	}
 	return 1;
 }
@@ -325,7 +347,7 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 			struct pane *mp safe, struct pane *spacer safe,
 			char *path)
 {
-	struct pane *h;
+	struct pane *h, *transformed = NULL;
 	int need_charset = 0;
 	char *charset;
 	char *major, *minor = NULL;
@@ -366,10 +388,6 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 			h = hx;
 	}
 	major = get_822_token(&type, &majlen);
-	if (major && tok_matches(major, majlen, "text"))
-		attr_set_str(&h->attrs, "email:actions", "hide:save");
-	else
-		attr_set_str(&h->attrs, "email:actions", "hide:open");
 	if (major) {
 		minor = get_822_token(&type, &minlen);
 		if (minor && tok_matches(minor, minlen, "/"))
@@ -381,35 +399,45 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 		asprintf(&ctype, "%1.*s/%1.*s", majlen, major, minlen, minor);
 	else
 		asprintf(&ctype, "%1.*s", majlen, major);
-	if (ctype && strcmp(ctype, "text/html") == 0) {
-		struct pane *html;
-		html = call_ret(pane, "html-to-text", h);
-		if (html) {
-			pane_close(h);
-			h = html;
-		}
+	if (ctype && strcmp(ctype, "text/html") == 0)
+		transformed = call_ret(pane, "html-to-text", h);
+	if (ctype && strcmp(ctype, "application/pdf") == 0)
+		transformed = call_ret(pane, "pdf-to-text", h);
+
+	if (transformed) {
+		attr_set_str(&transformed->attrs, "email:is_transformed", "yes");
+		attr_set_str(&transformed->attrs, "email:preferred", "transformed");
+	} else {
+		transformed = call_ret(pane, "doc:from-text", h,
+				       0, NULL, NULL, 0, NULL, "\n");
+		if (transformed)
+			attr_set_str(&transformed->attrs, "email:preferred",
+				     "orig");
 	}
-	if (ctype && strcmp(ctype, "application/pdf") == 0) {
-		struct pane *pdf;
-		pdf = call_ret(pane, "pdf-to-text", h);
-		if (pdf) {
-			pane_close(h);
-			h = pdf;
-		}
+	if (!transformed) {
+		pane_close(h);
+		return False;
 	}
+	call("doc:set:autoclose", transformed, 1);
 	if (ctype) {
 		int i;
 		for (i = 0; ctype[i]; i++)
 			if (isupper(ctype[i]))
 				ctype[i] = tolower(ctype[i]);
-		attr_set_str(&h->attrs, "email:content-type", ctype);
+		attr_set_str(&transformed->attrs, "email:content-type", ctype);
 		free(ctype);
 	} else
 		attr_set_str(&h->attrs, "email:content-type", "text/plain");
-	attr_set_str(&h->attrs, "email:path", path);
+	if (major && tok_matches(major, majlen, "text"))
+		attr_set_str(&transformed->attrs, "email:actions", "hide:save");
+	else
+		attr_set_str(&transformed->attrs, "email:actions", "hide:open");
+	attr_set_str(&transformed->attrs, "email:path", path);
+	attr_set_str(&transformed->attrs, "email:which", "transformed");
 	attr_set_str(&h->attrs, "email:which", "orig");
 
 	home_call(mp, "multipart-add", h);
+	home_call(mp, "multipart-add", transformed);
 	home_call(mp, "multipart-add", spacer);
 	return True;
 }
@@ -585,6 +613,7 @@ DEF_CMD(open_email)
 	h2 = call_ret(pane, "attach-rfc822header", p, 0, start, NULL, 0, end);
 	if (!h2)
 		goto out;
+	attr_set_str(&h2->attrs, "email:which", "orig");
 	p = call_ret(pane, "doc:from-text", p, 0, NULL, NULL, 0, NULL,
 		     "0123456789\n");
 	if (!p) {
@@ -626,20 +655,19 @@ DEF_CMD(open_email)
 		type = attr_find(h2->attrs, "rfc822-content-type");
 		xfer = attr_find(h2->attrs, "rfc822-content-transfer-encoding");
 	}
-	pane_close(h2);
 
 	p = call_ret(pane, "attach-doc-multipart", ci->home);
 	if (!p)
 		goto out;
 	call("doc:set:autoclose", p, 1);
 	attr_set_str(&hdrdoc->attrs, "email:actions", "hide");
-	attr_set_str(&hdrdoc->attrs, "email:which", "orig");
+	attr_set_str(&hdrdoc->attrs, "email:which", "transformed");
 	attr_set_str(&hdrdoc->attrs, "email:content-type", "text/rfc822-headers");
+	attr_set_str(&hdrdoc->attrs, "email:path", "headers");
+	attr_set_str(&hdrdoc->attrs, "email:is_transformed", "yes");
+	home_call(p, "multipart-add", h2);
 	home_call(p, "multipart-add", hdrdoc);
 	home_call(p, "multipart-add", ei->spacer);
-	call("doc:set:autoclose", hdrdoc, 1);
-
-	attr_set_str(&hdrdoc->attrs, "email:path", "headers");
 
 	if (!handle_content(ei->email, type, xfer, start, end,
 			    p, ei->spacer, "body"))
@@ -756,7 +784,8 @@ DEF_CMD(email_set_ref)
 
 DEF_CMD(email_view_get_attr)
 {
-	int p, v;
+	int p;
+	char *v;
 	struct email_view *evi = ci->home->data;
 
 	if (!ci->str || !ci->mark)
@@ -765,41 +794,67 @@ DEF_CMD(email_view_get_attr)
 		p = get_part(ci->home->parent, ci->mark);
 		/* only parts can be invisible, not separators */
 		p = to_orig(p);
-		v = (p >= 0 && p < evi->parts) ? evi->invis[p] != 'i' : 0;
+		if (p < 0 || p >= evi->parts)
+			v = "none";
+		else if (evi->invis[p] != 'i')
+			v = "orig";
+		else if (evi->invis[p+1] != 'i')
+			v = "transformed";
+		else
+			v = "none";
 
 		return comm_call(ci->comm2, "callback", ci->focus, 0, ci->mark,
-				 v ? "orig":"none", 0, NULL, ci->str);
+				 v, 0, NULL, ci->str);
 	}
 	return Efallthrough;
 }
 
 DEF_CMD(email_view_set_attr)
 {
-	int p, v;
+	int p;
 	struct email_view *evi = ci->home->data;
 
 	if (!ci->str || !ci->mark)
 		return Enoarg;
 	if (strcmp(ci->str, "email:visible") == 0) {
 		struct mark *m1, *m2;
+		const char *w;
 
 		p = get_part(ci->home->parent, ci->mark);
 		/* only parts can be invisible, not separators */
 		p = to_orig(p);
-		v = ci->str2 && strcmp(ci->str2, "none") != 0;
-		if (p >= 0 && p < evi->parts)
-			evi->invis[p] = v ? 'v' : 'i';
+		if (p < 0 || p >= evi->parts)
+			return Efail;
+
+		m1 = mark_dup(ci->mark);
+		while (get_part(ci->home->parent, m1) > p &&
+		       home_call(ci->home->parent, "doc:step-part",
+				 ci->focus, -1, m1) > 0)
+			;
+
+		w = ci->str2;
+		if (w && strcmp(w, "preferred") == 0) {
+			w = pane_mark_attr(ci->focus, m1,
+					   "multipart-next:email:preferred");
+			if (!w)
+				w = "orig";
+		} else if (w && (strcmp(w, "orig") == 0 ||
+				 strcmp(w, "transformed") == 0)) {
+			call("doc:set-attr", ci->focus, 1, m1,
+			     "multipart-next:email:preferred", 0, NULL, w);
+		}
+		evi->invis[p] = 'i';
+		evi->invis[p+1] = 'i';
+		if (w && strcmp(w, "orig") == 0)
+			evi->invis[p] = 'v';
+		if (w && strcmp(w, "transformed") == 0)
+			evi->invis[p+1] = 'v';
 
 		/* Tell viewers that visibility has changed */
-		m1 = mark_dup(ci->mark);
-		home_call(ci->home->parent, "doc:step-part", ci->focus,
-			  0, m1);
-		if (get_part(ci->home->parent, m1) != p)
-			home_call(ci->home->parent, "doc:step-part",
-				  ci->focus, -1, m1);
-
 		mark_step(m1, 0);
 		m2 = mark_dup(m1);
+		home_call(ci->home->parent, "doc:step-part", ci->focus,
+			  1, m2);
 		home_call(ci->home->parent, "doc:step-part", ci->focus,
 			  1, m2);
 		call("view:changed", ci->focus, 0, m1, NULL, 0, m2);
