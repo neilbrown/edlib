@@ -512,7 +512,7 @@ Module features
 - [X] allow cursor on spacer buttons, so 'enter' can select them
 - [X] why does stepping from htmlpart to hidden pdf part go v.slowly
 - [X] When 'show'ing a part, ensure start of part is visible
-- [ ] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
+- [X] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
 - [ ] make base64 much more efficient.  Stepping back from EOF can sync
       by counting ='s.  There are always 4n chars. So last for are
       xxxx or xxx= or xx==. RFC2045 guarantees the == with be there.
@@ -530,7 +530,7 @@ Module features
 - [ ] in text/plain, wrap long lines on 'space'.
 - [ ] allow view of all headers, and of "more" than default
 - [ ] maybe hide signature, unless small
-- [ ] need to resolve how charsets are handled.  Maybe an attribute to
+- [X] need to resolve how charsets are handled.  Maybe an attribute to
    query to see if there is a need for a utf-8 layer on email
 - [X] in quoted-printable, line ends "=\n" doesn't always join as it should. (cannot reproduce)
    See email about Mobile number
@@ -676,6 +676,9 @@ Module features
 
 New Modules - simple
 --------------------
+
+- [ ] move charset support? Next in my popularity list from my email database
+     are: is0-8859-15  gb2312 iso-8859-2 iso-2022-jp gbk ansi_x3
 
 Possibly some of these will end up being features in other modules.
 

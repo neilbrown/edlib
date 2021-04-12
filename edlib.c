@@ -115,6 +115,8 @@ int main(int argc, char *argv[])
 	call("global-load-module", ed, 0, NULL, "render-c-mode");
 	call("global-load-module", ed, 0, NULL, "lib-make");
 	call("global-load-module", ed, 0, NULL, "lib-server");
+	call("global-load-module", ed, 0, NULL, "lib-utf8");
+	call("global-load-module", ed, 0, NULL, "lib-charset");
 
 	call("global-load-module", ed, 0, NULL, "config");
 

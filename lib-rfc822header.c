@@ -14,8 +14,9 @@
  *
  * RFC2047 allows headers to contains words:
  *  =?charset?encoding?text?=
- *  "charset" can be "iso-8859-1" "utf-8" "us-ascii" "Windows-1252"
- *    For now I'll assume utf-8 !!
+ *  "charset" can be an set, e.g. "iso-8859-1" "utf-8" "us-ascii" "Windows-1252"
+ *     Currently support utf-8 and us-ascii transparently, others if
+ *     a converter exists.
  *  "encoding" can be Q or B (or q or b)
  *     Q recognizes '=' and treat next 2 has HEX, and '_' implies SPACE
  *     B is base64.
@@ -137,8 +138,8 @@ static int from_b64(char c)
 
 static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 {
-	/* RFC2047  decoding.
-	 * Search for second '?' (assume utf-8), detect 'Q' or 'B',
+	/* RFC2047 decoding.
+	 * Search for second '?' and capture charset, detect 'Q' or 'B',
 	 * then decode based on that.
 	 * Finish on ?= or non-printable
 	 * =?charset?encoding?code?=
@@ -149,6 +150,7 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 	int bits = -1;
 	int tmp = 0;
 	static char *last = NULL;
+	char *charset = NULL;
 	wint_t ch;
 	struct mark *m2;
 
@@ -159,12 +161,23 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 	while ((ch = doc_next(doc, m)) != WEOF &&
 	       ch > ' ' && ch < 0x7f && qmarks < 4) {
 		if (ch == '?') {
+			if (qmarks == 2) {
+				charset = buf_final(&buf);
+				buf_init(&buf);
+			}
 			qmarks++;
 			continue;
 		}
-		if (qmarks == 2 && (ch == 'q' ||ch == 'Q'))
+		if (qmarks < 3 && isupper(ch))
+			ch = tolower(ch);
+		if (qmarks == 1) {
+			/* gathering charset */
+			buf_append(&buf, ch);
+			continue;
+		}
+		if (qmarks == 2 && ch == 'q')
 			code = 'q';
-		if (qmarks == 2 && (ch == 'b' || ch == 'B'))
+		if (qmarks == 2 && ch == 'b')
 			code = 'b';
 		if (qmarks != 3)
 			continue;
@@ -215,6 +228,18 @@ static char *safe charset_word(struct pane *doc safe, struct mark *m safe)
 		}
 	}
 	last = buf_final(&buf);
+	if (charset && last) {
+		char *cmd = NULL;
+		char *cvt = NULL;
+
+		asprintf(&cmd, "charset-to-utf8-%s", charset);
+		if (cmd)
+			cvt = call_ret(str, cmd, doc, 0, NULL, last);
+		if (cvt) {
+			free(last);
+			last = cvt;
+		}
+	}
 	/* If there is only LWS to the next quoted word,
 	 * skip that so words join up
 	 */

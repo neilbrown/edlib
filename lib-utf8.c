@@ -156,6 +156,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(utf8_map, "doc:step", &utf8_step);
 	key_add(utf8_map, "doc:content", &utf8_content);
 
-	call_comm("global-set-command", ed, &utf8_attach, 0, NULL, "attach-charset-utf_8");
+	call_comm("global-set-command", ed, &utf8_attach, 0, NULL, "attach-charset-utf-8");
 	call_comm("global-set-command", ed, &utf8_attach, 0, NULL, "attach-utf8");
 }

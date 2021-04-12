@@ -407,9 +407,16 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 		}
 	}
 	if (type && need_charset &&
-	    (charset = get_822_attr(type, "charset")) != NULL &&
-	    strcasecmp(charset, "utf-8") == 0) {
-		struct pane *hx = call_ret(pane, "attach-utf8", h);
+	    (charset = get_822_attr(type, "charset")) != NULL) {
+		char *c = NULL, *cp;
+		struct pane *hx = NULL;
+		asprintf(&c, "attach-charset-%s", charset);
+		for (cp = c; cp && *cp; cp++)
+			if (isupper(*cp))
+				*cp = tolower(*cp);
+		if (c)
+			hx = call_ret(pane, c, h);
+		free(c);
 		if (hx)
 			h = hx;
 	}
