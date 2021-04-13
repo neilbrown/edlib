@@ -19,6 +19,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] use iconv(3) for charset conversion
 - [ ] When visiting a file which is found to a link to a different name,
       the file isn't reloaded if it has changed.
 - [X] Text containg </> is a problem.  If cursor is just after, it is drawn
