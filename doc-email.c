@@ -178,6 +178,18 @@ DEF_CMD(email_spacer)
 			buf_concat(&b, " ");
 			buf_concat(&b, attr);
 		}
+		attr = pane_mark_attr(ci->focus, m,
+				      "multipart-prev:email:charset");
+		if (attr) {
+			buf_concat(&b, " ");
+			buf_concat(&b, attr);
+		}
+		attr = pane_mark_attr(ci->focus, m,
+				      "multipart-prev:email:filename");
+		if (attr) {
+			buf_concat(&b, " file=");
+			buf_concat(&b, attr);
+		}
 		buf_concat(&b, "\n");
 		while ((wch = doc_next(ci->focus, m)) &&
 		       wch != '\n' && wch != WEOF)
@@ -375,10 +387,11 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 {
 	struct pane *h, *transformed = NULL;
 	int need_charset = 0;
-	char *charset;
+	char *charset = NULL;
 	char *major, *minor = NULL;
 	int majlen, minlen;
 	char *ctype = NULL;
+	char *fname = NULL;
 
 	h = call_ret(pane, "attach-crop", p, 0, start, NULL, 0, end);
 	if (!h)
@@ -410,6 +423,7 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 	    (charset = get_822_attr(type, "charset")) != NULL) {
 		char *c = NULL, *cp;
 		struct pane *hx = NULL;
+		charset = strsave(h, charset);
 		asprintf(&c, "attach-charset-%s", charset);
 		for (cp = c; cp && *cp; cp++)
 			if (isupper(*cp))
@@ -420,6 +434,8 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 		if (hx)
 			h = hx;
 	}
+	if (type && (fname = get_822_attr(type, "name")))
+		fname = strsave(h, fname);
 	major = get_822_token(&type, &majlen);
 	if (major) {
 		minor = get_822_token(&type, &minlen);
@@ -478,6 +494,10 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 		attr_set_str(&transformed->attrs, "email:actions", "hide:open");
 	attr_set_str(&transformed->attrs, "email:path", path);
 	attr_set_str(&transformed->attrs, "email:which", "transformed");
+	if (charset)
+		attr_set_str(&transformed->attrs, "email:charset", charset);
+	if (fname)
+		attr_set_str(&transformed->attrs, "email:filename", fname);
 	attr_set_str(&h->attrs, "email:which", "orig");
 
 	home_call(mp, "multipart-add", h);
