@@ -479,24 +479,26 @@ DEF_CMD(mp_set_attr)
 	dn = m->ref.docnum;
 	m1 = m->ref.m;
 
-	if (dn < mpi->nparts && m1 &&
-	    doc_step(mpi->parts[dn].pane, m1, ci->num, 0) == WEOF) {
-		/* at the wrong end of a part */
-		if (ci->num)
-			dn += 1;
-		else if (dn > 0)
-			dn -= 1;
+	if (strncmp(attr, "multipart-", 10) == 0) {
+		/* Set an attribute on a part */
+		if (strncmp(attr, "multipart-prev:", 15) == 0 &&
+		    dn > 0)
+			attr_set_str(&mpi->parts[dn-1].pane->attrs,
+				     attr+15, ci->str2);
+		else if (strncmp(attr, "multipart-next:", 15) == 0 &&
+			 dn < mpi->nparts)
+			attr_set_str(&mpi->parts[dn+1].pane->attrs,
+				     attr+15, ci->str2);
+		else if (strncmp(attr, "multipart-this:", 15) == 0)
+			attr_set_str(&mpi->parts[dn].pane->attrs,
+				     attr+15, ci->str2);
+		else
+			return Efail;
+		return 1;
 	}
-
-	if (strncmp(attr, "multipart-prev:", 15) == 0)
-		attr_set_str(&mpi->parts[dn-1].pane->attrs, attr+15, ci->str2);
-	else if (strncmp(attr, "multipart-next:", 15) == 0)
-		attr_set_str(&mpi->parts[dn+1].pane->attrs, attr+15, ci->str2);
-	else if (strncmp(attr, "multipart-this:", 15) == 0)
-		attr_set_str(&mpi->parts[dn].pane->attrs, attr+15, ci->str2);
-	else
-		return Efallthrough;
-	return 1;
+	/* Send the request to a sub-document */
+	return call(ci->key, mpi->parts[dn].pane, ci->num, m1, ci->str,
+		    0, NULL, ci->str2);
 }
 
 DEF_CMD(mp_notify_close)
