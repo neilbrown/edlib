@@ -235,21 +235,27 @@ DEF_CMD(email_select)
 	/* If mark is on a button, press it... */
 	struct mark *m = ci->mark;
 	char *a;
-	int r = 0;
+	wint_t ch;
+	int p;
+	int b;
 
 	if (!m)
 		return Enoarg;
-	a = pane_mark_attr(ci->focus, m, "markup:func");
-	if (!a || strcmp(a, "doc:email:render-spacer") != 0)
+	p = get_part(ci->home, m);
+	if (!is_spacer(p))
 		return Efallthrough;
+	ch = doc_following(ci->home, m);
+	if (ch == WEOF || !isdigit(ch))
+		return 1;
+	b = ch - '0';
 	a = pane_mark_attr(ci->focus, m, "multipart-prev:email:actions");
 	if (!a)
 		a = "hide";
-	while (r > 0 && a) {
+	while (b > 0 && a) {
 		a = strchr(a, ':');
 		if (a)
 			a += 1;
-		r -= 1;
+		b -= 1;
 	}
 	if (a && is_attr("hide", a)) {
 		int vis = 1;
