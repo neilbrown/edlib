@@ -2257,7 +2257,20 @@ class notmuch_message_view(edlib.Pane):
 
     def handle_save(self, key, focus, mark, **a):
         "handle-list/Mouse-Activate:email-save/email:select:save"
-        edlib.LOG("save!")
+
+        file = focus.call("doc:get-attr", "multipart-prev:email:filename", mark, ret='str')
+        if not file:
+            file = "edlib-saved-file"
+        p = file.split('/')
+        b = p[-1]
+        part = focus.call("doc:get-attr", mark, "multipart:part-num", ret='str')
+        part = int(part)-2
+        fn = "/tmp/" + b
+        f = open(fn, "w")
+        content = focus.call("doc:multipart-%d-doc:get-bytes" % part, ret = 'bytes')
+        f.buffer.write(content)
+        f.close()
+        focus.call("Message", "Content saved as %s" % fn)
         return 1
 
     def handle_external(self, key, focus, mark, **a):

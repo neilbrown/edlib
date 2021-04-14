@@ -5,6 +5,9 @@ Current priorities
 ------------------
 
 - [ ] fix bugs
+- [ ] make notmuch useable
+- [ ] make spell-check useful
+- [ ] markdown viewer and editor
 - [ ] lib-diff improvements
 - [ ] lib-mergeview improvements
 - [ ] Add menu/menu-bar support
@@ -437,6 +440,11 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] 'a' on a thread only works if there is just one message
+- [ ] 'q' command to close thread if it is open
+- [ ] support selection messages and applying tags
+- [ ] command to mark whole thread as Archived - 'A' ?
+- [ ] highlight for 'flagged' - and 'spam'
 - [X] cannot move down to last message in search
 - [X] leave cursor in query (not message) by default.
 - [X] When there are 'new' items in a thread, entering from top
@@ -503,7 +511,31 @@ Module features
 
 ###  Notmuch message display
 
-- [ ] Display suggested filename for attachments
+- [ ] application/octet-stream with name "foo.pdf" is a PDF.
+      use mimetypes to intuit type from name?
+- [ ] support mailcap ???
+- [ ] make it practical for 'text' documents to contain non-utf8 so that
+      "Save" can copy to a buffer.
+- [ ] error check 'external viewer' code
+- [ ] add module for external-view which creates a unique temp file and
+      removes it when the viewer is done.
+- [ ] check for "Command Line Error: Incorrect password" from pdf, and
+      ask for password
+- [ ] delay conversion until unhide
+- [ ] detect Content-disposition, use for filename, and hide anything
+      that is an attachment
+- [ ] detect char-width and suppress images if 1 or 2
+- [ ] create general choose-file pane which can seek an existing, or
+      non-existing file.  Allow a default dir which can be remembered.
+      Use this for emacs, and for saving attachments
+- [ ] when unhiding for a alternate part, hide any others.
+- [ ] separate measuring and drawing images
+- [ ] allow images to be full width, and less thant half height
+- [ ] allow cursor movment in image: maybe 9x9 positions
+- [ ] ensure multipart ends each part with an eol.
+- [ ] next part/prev part button on spacer
+- [ ] handle calendar attachments.
+- [X] Display suggested filename for attachments
 - [ ] closing a large section pushed cursor to top of display, which
       isn't really what I want.  I'd rather the cursor stayed still.
 - [X] invisible pdfs still slow things down a bit.
@@ -528,7 +560,7 @@ Module features
 - [ ] when I unhide an email part which is a single v.long line,
     redraw gets confused and point goes off-screen, which seems
     to leave it confused.
-- [ ] in text/plain, wrap long lines on 'space'.
+- [ ] in text/plain, wrap long lines on 'space'. - make this a config in lib-markup
 - [ ] allow view of all headers, and of "more" than default
 - [ ] maybe hide signature, unless small
 - [X] need to resolve how charsets are handled.  Maybe an attribute to
@@ -540,32 +572,53 @@ Module features
 - [ ] line wrap in header should not appear as space??
 - [X] if a subject line in wrapped in the email, the summary line look weird
 - [ ] handle all Unicode newline chars.
-- [ ] should multipart/visible be per-view somehow?
+- [X] should multipart/visible be per-view somehow?
 - [X] Handle \r\n e-o-l and display sensibly
-- [ ] I need a more structured/extensible way to decide which button was pressed
-- [ ] I need key-click to work reliably somehow. Click on selected button?
+- [X] I need a more structured/extensible way to decide which button was pressed
+- [X] I need key-click to work reliably somehow. Click on selected button?
 - [ ] Auto-hide depending on type - with extensible table
 - [ ] Open-with always,  Open only if a handler is known
 - [ ] "save" to copy to buffer
 - [ ] save function - doc:save-file given file name or fd
-- [ ] brief summary of part type in button line
+- [X] brief summary of part type in button line
 - [ ] open function
 - [ ] make URLs clickable
 - [ ] detect and hide cited text
 - [ ] detect and highlight links
 - [ ] Make long to/cc headers truncate unless selected.
-- [ ] select parts from multipart
-- [ ] buttons for non-displayable
-- [ ] display image on gtk,
+- [X] select parts from multipart
+- [X] buttons for non-displayable
+- [X] display image on gtk,
 - [ ] display image on ncurses.
 - [ ] Make addresses active (menu?) to allow adding to a saved search
       with options and/or/andnot.  Also "mail to" or "save"..
 - [ ] Allow any selection to be added to a saved search.
+- [ ] verify signature if present
+- [ ] decrypt if needed
+- [ ] treat message/rfc822 much like multipart
 
 ### Notmuch composition
 
 - [ ] design backend for posting
 - [ ] Support compose/reply/follow-up/forward
+- [ ] "post" passes to "notmuch insert -new -unread +outbox --folder=sent"
+        add 'sent' to new.ignore??
+- [ ] "post" adds message-id, date
+- [ ] "post" checks for non-asci and uses quoted-printable if needed.
+- [ ] fill-mode, and highlight white-space?  Header line fill with a prefix
+- [ ] spell-checker
+- [ ] If attachments are requested, set mime-version etc
+- [ ] put marks around instructions for attachments and don't let them be editted
+- [ ] inline images get displayed
+- [ ] attach files - with type and disposition
+- [ ] attach email message: message/rfc
+- [ ] 'to' and 'cc' fields to support address completion
+- [ ] 'from' can cycle around options from config
+- [ ] 'reply' creates references and in-reply-to
+- [ ] 'reply' copies 'from' to 'to', and to/cc to cc
+- [ ] headers have suitable highlighting.
+- [ ] reply to copy text content with '> '
+- [ ] auto-insert signature... like an attachment?
 
 ### Presenter
 
