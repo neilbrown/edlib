@@ -158,6 +158,8 @@ DEF_CMD(email_spacer)
 			ok = cond_append(&b, "Save", "2", o, &cp);
 		else if (is_attr("open", attr))
 			ok = cond_append(&b, "Open", "3", o, &cp);
+		if (ok)
+			doc_next(ci->focus, m);
 		attr = strchr(attr, ':');
 		if (attr)
 			attr += 1;
