@@ -76,7 +76,7 @@ static bool handle_content(struct pane *p safe, char *type, char *xfer,
 			   char *path safe);
 
 static bool cond_append(struct buf *b safe, char *txt safe, char *tag safe,
-			int offset, struct mark *m safe, int *cp safe)
+			int offset, int *cp safe)
 {
 	char *tagf = "active-tag:email-";
 	int prelen = 1 + strlen(tagf) + strlen(tag) + 1 + 1;
@@ -153,11 +153,11 @@ DEF_CMD(email_spacer)
 	while (ok && attr && *attr) {
 		if (is_attr("hide", attr))
 			ok = cond_append(&b, visible ? "HIDE" : "SHOW", "1",
-					 o, m, &cp);
+					 o, &cp);
 		else if (is_attr("save", attr))
-			ok = cond_append(&b, "Save", "2", o, m, &cp);
+			ok = cond_append(&b, "Save", "2", o, &cp);
 		else if (is_attr("open", attr))
-			ok = cond_append(&b, "Open", "3", o, m, &cp);
+			ok = cond_append(&b, "Open", "3", o, &cp);
 		attr = strchr(attr, ':');
 		if (attr)
 			attr += 1;
