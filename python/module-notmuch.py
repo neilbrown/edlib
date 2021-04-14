@@ -2234,7 +2234,7 @@ class notmuch_message_view(edlib.Pane):
         return 1
 
     def handle_toggle_vis(self, key, focus, mark, **a):
-        "handle-list/Mouse-Activate:email-1/email:select:hide"
+        "handle-list/Mouse-Activate:email-hide/email:select:hide"
         v = focus.call("doc:get-attr", mark, "email:visible", ret='str')
         self.parent.call("email:select:hide", focus, mark)
         v2 = focus.call("doc:get-attr", mark, "email:visible", ret='str')
@@ -2244,7 +2244,7 @@ class notmuch_message_view(edlib.Pane):
         return 1
 
     def handle_save(self, key, focus, mark, **a):
-        "handle-list/Mouse-Activate:email-2/:email:select:save"
+        "handle-list/Mouse-Activate:email-save/email:select:save"
         edlib.LOG("save!")
         return 1
 

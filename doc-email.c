@@ -151,18 +151,19 @@ DEF_CMD(email_spacer)
 		attr = "hide";
 
 	while (ok && attr && *attr) {
+		char *a = strchr(attr, ':');
+		if (a)
+			*a = 0;
 		if (is_attr("hide", attr))
-			ok = cond_append(&b, visible ? "HIDE" : "SHOW", "1",
+			ok = cond_append(&b, visible ? "HIDE" : "SHOW", attr,
 					 o, &cp);
-		else if (is_attr("save", attr))
-			ok = cond_append(&b, "Save", "2", o, &cp);
-		else if (is_attr("open", attr))
-			ok = cond_append(&b, "Open", "3", o, &cp);
+		else
+			ok = cond_append(&b, attr, attr, o, &cp);
 		if (ok)
 			doc_next(ci->focus, m);
-		attr = strchr(attr, ':');
+		attr = a;
 		if (attr)
-			attr += 1;
+			*attr++ = ':';
 	}
 	/* end of line, only display if we haven't reached
 	 * the cursor or offset
