@@ -1477,11 +1477,11 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_A(self, key, focus, mark, str, **a):
-        "handle-list/doc:char-a/doc:char-S/doc:char-N/doc:char-*/doc:char-!/"
+        "handle-list/doc:char-a/doc:char-S/doc:char-H/doc:char-*/doc:char-!/"
         # adjust flags for this message or thread, and move to next
         # a - remove inbox
         # S - add newspam
-        # N - remove newspam and add notspam
+        # H - ham: remove newspam and add notspam
         # * - add flagged
         # ! - add unread,inbox remove newspam,notspam,flagged
         in_message = False
@@ -1499,7 +1499,7 @@ class notmuch_master_view(edlib.Pane):
             removes = ['inbox']
         if key[-1] == 'S':
             adds = ['newspam']
-        if key[-1] == 'N':
+        if key[-1] == 'H':
             adds = ['notspam']
             removes = ['newspam']
         if key[-1] == '*':
