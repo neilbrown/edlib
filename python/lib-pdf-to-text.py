@@ -11,7 +11,7 @@ import subprocess
 def pdf_to_text(key, home, focus, comm2, **a):
     pdf = focus.call("doc:get-bytes", ret='bytes')
 
-    p = subprocess.Popen(["/usr/bin/pdftotext", "-", "-"], close_fds=True,
+    p = subprocess.Popen(["/usr/bin/pdftotext", "-layout", "-", "-"], close_fds=True,
                          stdout=subprocess.PIPE, stderr = subprocess.PIPE,
                          stdin =subprocess.PIPE)
     out,err = p.communicate(pdf)
@@ -22,7 +22,8 @@ def pdf_to_text(key, home, focus, comm2, **a):
         doc = focus.call("doc:from-text", "pdf-document", out.decode("utf-8"),
                          ret='focus')
     else:
-        doc = focus.call("doc:from-text", "pdf-document", "PDF conversion failed\n",
+        doc = focus.call("doc:from-text", "pdf-document",
+                         "PDF conversion failed\n" + err.decode(),
                          ret='focus')
     comm2("cb", doc)
     return 1
