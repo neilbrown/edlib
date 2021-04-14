@@ -27,7 +27,7 @@
  * accessed form the spacer using "multipart-prev:"
  * - email:path identify the part in the nexted multipart struture
  *   e.g. "header", "body", "body,multipart/mixed:0,mulitpart/alternate:1"
- * - email:action a ':' separated list of buttons. "hide:save:view"
+ * - email:actions a ':' separated list of buttons. "hide:save:view"
  * - email:content-type the MIME type of the content. "image/png"
  *
  */
