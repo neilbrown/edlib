@@ -2231,17 +2231,21 @@ class notmuch_message_view(edlib.Pane):
     def handle_return(self, key, focus, mark, **a):
         "handle:K:Enter"
         focus.call("doc:email:select", mark)
-        if focus.call("doc:get-attr", mark, "email:visible", ret='str') != "none":
+        return 1
+
+    def handle_toggle_vis(self, key, focus, mark, **a):
+        "handle-list/Mouse-Activate:email-1/email:select:hide"
+        v = focus.call("doc:get-attr", mark, "email:visible", ret='str')
+        self.parent.call("email:select:hide", focus, mark)
+        v2 = focus.call("doc:get-attr", mark, "email:visible", ret='str')
+        if v == "none" and v2 != "none":
             # when making visible, move point to start
             focus.call("doc:step-part", mark, -1)
         return 1
 
-    def handle_toggle_vis(self, key, focus, mark, **a):
-        "handle:Mouse-Activate:email-1"
-        focus.call("doc:email:select", mark)
-        if focus.call("doc:get-attr", mark, "email:visible", ret='str') != "none":
-            # when making visible, move point to start
-            focus.call("doc:step-part", mark, -1)
+    def handle_save(self, key, focus, mark, **a):
+        "handle-list/Mouse-Activate:email-2/:email:select:save"
+        edlib.LOG("save!")
         return 1
 
     def handle_map_attr(self, key, focus, mark, str, str2, comm2, **a):

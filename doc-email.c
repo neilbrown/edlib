@@ -234,7 +234,7 @@ DEF_CMD(email_select)
 {
 	/* If mark is on a button, press it... */
 	struct mark *m = ci->mark;
-	char *a;
+	char *a, *e, *cmd = NULL;
 	wint_t ch;
 	int p;
 	int b;
@@ -257,14 +257,31 @@ DEF_CMD(email_select)
 			a += 1;
 		b -= 1;
 	}
-	if (a && is_attr("hide", a)) {
-		int vis = 1;
-		a = pane_mark_attr(ci->focus, m, "email:visible");
-		if (a && strcmp(a, "none") == 0)
-			vis = 0;
-		call("doc:set-attr", ci->focus, 1, m, "email:visible", 0, NULL,
-		     vis ? "none" : "preferred");
-	}
+	if (!a)
+		return 1;
+	e = strchr(a, ':');
+	if (!e)
+		e = a + strlen(a);
+	asprintf(&cmd, "email:select:%.*s", (int)(e-a), a);
+	if (!cmd)
+		return Efail;
+	return call(cmd, ci->focus, 0, m);
+}
+
+DEF_CMD(email_select_hide)
+{
+	int vis = 1;
+	char *a;
+	struct mark *m = ci->mark;
+
+	if (!m)
+		return Enoarg;
+
+	a = pane_mark_attr(ci->focus, m, "email:visible");
+	if (a && strcmp(a, "none") == 0)
+		vis = 0;
+	call("doc:set-attr", ci->focus, 1, m, "email:visible", 0, NULL,
+	     vis ? "none" : "preferred");
 	return 1;
 }
 
@@ -970,6 +987,7 @@ static void email_init_map(void)
 	key_add(email_view_map, "doc:email:render-spacer", &email_spacer);
 	key_add(email_view_map, "doc:email:render-image", &email_image);
 	key_add(email_view_map, "doc:email:select", &email_select);
+	key_add(email_view_map, "email:select:hide", &email_select_hide);
 }
 
 void edlib_init(struct pane *ed safe)
