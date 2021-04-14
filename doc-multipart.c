@@ -360,12 +360,14 @@ DEF_CMD(mp_step_part)
 	struct mark *m = ci->mark;
 	const char *vis = ci->str && (int)strlen(ci->str) >= mpi->nparts ?
 		ci->str : NULL;
+	int start;
 	int n;
 
 	if (!m)
 		return Enoarg;
 	pre_move(m);
-	n = m->ref.docnum;
+	start = m->ref.docnum;
+	n = start;
 	if (ci->num > 0) {
 		/* Forward - start of next part */
 		n += 1;
@@ -384,7 +386,15 @@ DEF_CMD(mp_step_part)
 
 	/* If this part is empty, need to move to next visible part */
 	mp_normalize(mpi, m, vis);
+	while (ci->num < 0 && m->ref.docnum == start && n > 0) {
+		/* didn't move - must have an empty part, try further */
+		n -= 1;
+		change_part(mpi, m, n, 0);
+		mp_normalize(mpi, m, vis);
+	}
 	post_move(m);
+	if (start == m->ref.docnum)
+		return Efail;
 	return m->ref.docnum + 1;
 }
 
