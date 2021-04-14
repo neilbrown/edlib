@@ -79,6 +79,7 @@
  */
 
 #define	MARK_DATA_PTR struct pane
+#define _GNU_SOURCE /*  for asprintf */
 #include "core.h"
 #include "misc.h"
 #include <stdio.h> /* snprintf */
@@ -1264,9 +1265,14 @@ DEF_CMD(render_lines_set_cursor)
 		if (ci->num == 1) { /* Mouse click */
 			xyattr = pane_attr_get(m->mdata, "xyattr");
 			tag = get_active_tag(xyattr);
-			if (tag)
-				call("Mouse-Activate", focus, 0, m2, tag,
-				     0, ci->mark, xyattr);
+			if (tag) {
+				char *c = NULL;
+				asprintf(&c, "Mouse-Activate:%s", tag);
+				if (c)
+					call(c, focus, 0, m2, tag,
+					     0, ci->mark, xyattr);
+				free(c);
+			}
 		}
 		m = m2;
 	} else {
