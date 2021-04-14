@@ -18,8 +18,12 @@ def pdf_to_text(key, home, focus, comm2, **a):
     if err:
         edlib.LOG("pdftotext:", err.decode("utf-8"))
 
-    doc = focus.call("doc:from-text", "pdf-document", out.decode("utf-8"),
-                     ret='focus')
+    if out:
+        doc = focus.call("doc:from-text", "pdf-document", out.decode("utf-8"),
+                         ret='focus')
+    else:
+        doc = focus.call("doc:from-text", "pdf-document", "PDF conversion failed\n",
+                         ret='focus')
     comm2("cb", doc)
     return 1
 
