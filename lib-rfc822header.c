@@ -387,6 +387,7 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 	 * MIME-Version and Content-type.
 	 */
 	struct mark *m;
+	int sol = 0;
 	int found = 0;
 	struct buf buf;
 	wint_t ch;
@@ -401,6 +402,16 @@ static char *extract_header(struct pane *p safe, struct mark *start safe,
 		}
 		if (!found)
 			continue;
+		if (ch < ' ' && ch != '\t') {
+			sol = 1;
+			continue;
+		}
+		if (sol && (ch == ' ' || ch == '\t'))
+			continue;
+		if (sol) {
+			buf_append(&buf, ' ');
+			sol = 0;
+		}
 		if (ch == '=' && doc_following(p, m) == '?') {
 			char *b = charset_word(p, m);
 			buf_concat(&buf, b);
