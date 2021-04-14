@@ -478,6 +478,10 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 		transformed = call_ret(pane, "html-to-text", h);
 	if (ctype && strcmp(ctype, "application/pdf") == 0)
 		transformed = call_ret(pane, "pdf-to-text", h);
+	if (ctype && strcmp(ctype, "application/octet-stream") == 0 &&
+	    fname && (strstr(fname, ".pdf") == NULL ||
+		      strstr(fname, ".PDF") == NULL))
+		transformed = call_ret(pane, "pdf-to-text", h);
 	if (ctype && strncmp(ctype, "image/", 6) == 0) {
 		struct mark *m;
 		transformed = call_ret(pane, "doc:from-text", h,
@@ -514,10 +518,7 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 		free(ctype);
 	} else
 		attr_set_str(&h->attrs, "email:content-type", "text/plain");
-	if (major && tok_matches(major, majlen, "text"))
-		attr_set_str(&transformed->attrs, "email:actions", "hide:save");
-	else
-		attr_set_str(&transformed->attrs, "email:actions", "hide:open");
+	attr_set_str(&transformed->attrs, "email:actions", "hide:save");
 	attr_set_str(&transformed->attrs, "email:path", path);
 	attr_set_str(&transformed->attrs, "email:which", "transformed");
 	if (charset)
