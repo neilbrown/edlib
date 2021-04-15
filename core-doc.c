@@ -734,8 +734,8 @@ DEF_CMD(doc_insert_char)
 {
 	const char *str = ksuffix(ci, "doc:char-");
 
-	return home_call(ci->home, "doc:replace", ci->focus, 1, NULL, str,
-			 ci->num2, ci->mark);
+	return call("doc:replace", ci->focus, 1, NULL, str, ci->num2,
+		    ci->mark);
 }
 
 struct getstr {
@@ -994,9 +994,9 @@ DEF_CMD(doc_dup_point)
 DEF_CMD(doc_replace)
 {
 	struct doc_data *dd = ci->home->data;
-	return home_call(dd->doc, "doc:replace", ci->focus,
-			 1, ci->mark, ci->str,
-			 ci->num2, dd->point, ci->str2);
+	return call("doc:replace", ci->focus,
+		    1, ci->mark, ci->str,
+		    ci->num2, dd->point, ci->str2);
 }
 
 DEF_CMD(doc_handle_get_attr)
