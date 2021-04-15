@@ -123,11 +123,17 @@
  *
  *
  * Other extensions:
- * (?:    - a group that will never be saved
- * (?nnn:- a group of precisely nnn literal match chars
- * (?isl:  - a group with matches case [i]nsensitive, case [s]ensitive
- *           and/or [l]ax.  multi lower-case flags are supported, is two
- *           conflict, last one wins.  's' clears 'l'.
+ * ?:    - a group that will never be captured
+ * ?|    - don't capture, and within each branch any caputuring uses
+ *         same numbering
+ * ?0    - all remainder is literal
+ * ?nnn:- a group of precisely nnn literal match chars
+ * ?isLn-isLn:  - flags before any optional '-' are set. Flags after
+ *         are cleared.
+ *         i - ignore case
+ *         L - lax matching for space and hyphen
+ *         s - single line, '.' matches newline
+ *         n - no capture in subgroups either
  *
  */
 
@@ -1436,7 +1442,7 @@ static unsigned short add_class_set(struct parse_state *st safe,
 	st->set += 3;
 	return REC_SET | (st->set - 3);
 }
-static bool parse_re(struct parse_state *st safe);
+static bool parse_re(struct parse_state *st safe, int capture);
 static bool parse_atom(struct parse_state *st safe)
 {
 	/* parse out an atom: one of:
@@ -1465,7 +1471,7 @@ static bool parse_atom(struct parse_state *st safe)
 	}
 	if (*st->patn == '(') {
 		st->patn++;
-		if (!parse_re(st))
+		if (!parse_re(st, 0))
 			return False;
 		if (*st->patn != ')')
 			return False;
@@ -1739,27 +1745,33 @@ static int parse_prefix(struct parse_state *st safe)
 {
 	/* A prefix to an re starts with '?' and 1 or more
 	 * chars depending on what the next char is.
-	 * Generally a () group that starts '?' isn't captured. Some
-	 * flags can change this.
-	 * ?:  don't capture this group
-	 * ?|  don't capture, and each branch uses same capture numbering
+	 * A () group that starts '?' is never captured.
+	 *
+	 * ?:  no-op.  Only effect is to disable capture  This applies
+	 *     recursively.
+	 * ?|  groups in each branch use same capture numbering
 	 * ?0  All chars to end of pattern are literal matches.  This cannot
 	 *     be used inside ()
 	 * ?N..: where N is a digit 1-9, it and all digits upto ':' give the
 	 *       number of chars for literal pattern.  This must be the whole re,
 	 *       so either ) follows, or end-of-pattern.
-	 * ?ilsn-ilsn:
+	 * ?iLsn-iLsn:
 	 *     Each letter represents a flag which is set if it appears before
 	 *     '-' and cleared if it appears after.  The '-' is optional, but
 	 *     the ':' isn't.
-	 *   i  ignore case
-	 *   L  lax matching for space and hyphen
-	 *   s  single-line.  '.' matches newline
-	 *   n  no capture. This is default: negate to enable.
+	 *   i  ignore case in this group
+	 *   L  lax matching for space and hyphen in this group
+	 *   s  single-line.  '.' matches newline in this group
+	 *   n  no capture in subgroups unless 'n' is explicitly re-enabled.
+	 *      So if 'n' is already disabled, you need
+	 *       (?n:(regexp))
+	 *      to create a captured group
+	 *   any other flag before the ':' causes an error
 	 *
 	 * Return:
-	 * 0  bad prefix
-	 * 1  good prefix or no prefix, st->mod updated if needed.
+	 * -1  bad prefix
+	 * 0  no prefix
+	 * 1  good prefix, st->mod updated if needed.
 	 * 2  literal parsed, don't parse further for this re.
 	 */
 	const char *s;
@@ -1768,13 +1780,12 @@ static int parse_prefix(struct parse_state *st safe)
 	bool neg = False;
 
 	if (*st->patn != '?')
-		return 1;
+		return 0;
 	s = st->patn + 1;
 	switch (*s) {
 	default:
-		return 0;
+		return -1;
 	case ':':
-		st->mod &= ~DoCapture;
 		break;
 	case '|':
 		st->mod |= CapturePerBranch;
@@ -1808,29 +1819,29 @@ static int parse_prefix(struct parse_state *st safe)
 					st->mod &= ~SingleLine;
 				break;
 			case 'n':
-				st->mod &= DoCapture;
+				st->mod &= ~DoCapture;
 				if (neg)
 					st->mod |= DoCapture;
 				break;
 			case ':':
 				break;
 			default:
-				return 0;
+				return -1;
 			}
 		if (*s != ':')
-			return 0;
+			return -1;
 		break;
 	case '1' ... '9':
 		verblen = strtoul(s, &ve, 10);
 		if (!ve || *ve != ':')
-			return 0;
+			return -1;
 		s = ve;
 		break;
 	}
 	s += 1;
 	st->patn = s;
 	if (verblen == 0)
-		return True;
+		return 1;
 	while (verblen && *s) {
 		wint_t ch;
 		if (*s & 0x80) {
@@ -1846,7 +1857,7 @@ static int parse_prefix(struct parse_state *st safe)
 	return 2;
 }
 
-static bool parse_re(struct parse_state *st safe)
+static bool parse_re(struct parse_state *st safe, int capture_flag)
 {
 	int re_start = st->next;
 	int start = re_start;
@@ -1854,15 +1865,30 @@ static bool parse_re(struct parse_state *st safe)
 	int ret;
 	int capture = st->capture;
 	int capture_start, capture_max;
+	int do_capture = st->mod & DoCapture;
 
 	switch (parse_prefix(st)) {
-	case 0: /* error */
+	case -1: /* error */
 		return False;
+	case 0:
+		break;
+	case 1:
+		/* Don't capture if inside () */
+		do_capture = capture_flag;
+		break;
 	case 2:
 		/* Fully parsed - no more is permitted */
 		return True;
 	}
-	if (st->mod & DoCapture) {
+	if ((st->mod ^ save_mod) & IgnoreCase) {
+		/* change of ignore-case status */
+		if (st->mod & IgnoreCase)
+			add_cmd(st, REC_IGNCASE);
+		else
+			add_cmd(st, REC_USECASE);
+	}
+
+	if (do_capture) {
 		add_cmd(st, REC_CAPTURE | capture);
 		st->capture += 1;
 	}
@@ -1892,8 +1918,15 @@ static bool parse_re(struct parse_state *st safe)
 	}
 	if (st->mod & CapturePerBranch && st->capture < capture_max)
 		st->capture = capture_max;
-	if (st->mod & DoCapture)
+	if (do_capture)
 		add_cmd(st, REC_CAPTURED | capture);
+	if ((st->mod ^ save_mod) & IgnoreCase) {
+		/* restore from char of ignore-case status */
+		if (save_mod & IgnoreCase)
+			add_cmd(st, REC_IGNCASE);
+		else
+			add_cmd(st, REC_USECASE);
+	}
 	st->mod = save_mod;
 	return ret;
 }
@@ -1911,7 +1944,7 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	st.capture = 0;
 	if (nocase)
 		add_cmd(&st, REC_IGNCASE);
-	if (!parse_re(&st) || *st.patn != '\0') {
+	if (!parse_re(&st, DoCapture) || *st.patn != '\0') {
 		if (lenp)
 			*lenp = st.patn - patn;
 		return NULL;
@@ -1928,7 +1961,7 @@ unsigned short *rxl_parse(const char *patn safe, int *lenp, int nocase)
 	st.capture = 0;
 	if (nocase)
 		add_cmd(&st, REC_IGNCASE);
-	if (!parse_re(&st))
+	if (!parse_re(&st, DoCapture))
 		abort();
 	add_cmd(&st, REC_MATCH);
 	return st.rxl;
@@ -2257,6 +2290,8 @@ static struct test {
 	{ "?L:1 2", "hello 1 \t\n 2", 0, 6, 6},
 	{ "?s:a.c", "a\nc abc", 0, 0, 3},
 	{ "?-s:a.c", "a\nc abc", 0, 4, 3},
+	//case insensitive
+	{ "?i:(from|to|cc|subject|in-reply-to):", "From: bob", 0, 0, 5 },
 	// Inverting set of multiple classes
 	{ "[^\\A\\a]", "a", 0, -1, -1},
 	// Search for start of a C function: non-label at start of line
@@ -2340,11 +2375,12 @@ static void run_tests(bool trace)
 					printf("Parse error as expected\n\n");
 				continue;
 			}
-			printf("test %d: Parse error at %d\n", i, len);
+			printf("test %d(%s): Parse error at %d\n",
+			       i, patn, len);
 			exit(1);
 		}
 		if (f & F_PERR) {
-			printf("test %d: No parse error found\n", i);
+			printf("test %d(%s): No parse error found\n", i, patn);
 			exit (1);
 		}
 
@@ -2384,13 +2420,14 @@ static void run_tests(bool trace)
 		if ((f & F_BACKTRACK) && !alg) {
 			/* This is only expected to work for backtracking */
 			if (mstart != -1 || mlen != -1) {
-				printf("test %d %s: succeeded unexpectedly %d/%d\n",
-				       i, "parallel",
+				printf("test %d(%s) %s: succeeded unexpectedly %d/%d\n",
+				       i, patn, "parallel",
 				       mstart, mlen);
 			}
 		} else if (tests[i].start != mstart ||
 			   tests[i].len != mlen) {
-			printf("test %d %s: found %d/%d instead of %d/%d\n", i,
+			printf("test %d(%s) %s: found %d/%d instead of %d/%d\n",
+			       i, patn,
 			       alg ? "backtracking" : "parallel",
 			       mstart, mlen, tests[i].start, tests[i].len);
 			exit(1);
@@ -2407,7 +2444,8 @@ static void run_tests(bool trace)
 			}
 			new = rxl_interp(st, tests[i].form);
 			if (!new || strcmp(new, tests[i].replacement) != 0) {
-				printf("test %d replace is <%s>, not <%s>\n", i,
+				printf("test %d(%s) replace is <%s>, not <%s>\n",
+				       i, patn,
 				       new, tests[i].replacement);
 				exit(1);
 			}
