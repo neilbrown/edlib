@@ -601,16 +601,16 @@ Module features
 
 ### Notmuch composition
 
-- [ ] design backend for posting
+- [X] design backend for posting
 - [ ] Support compose/reply/follow-up/forward
 - [ ] "post" passes to "notmuch insert -new -unread +outbox --folder=sent"
         add 'sent' to new.ignore??
 - [ ] "post" adds message-id, date
 - [ ] "post" checks for non-asci and uses quoted-printable if needed.
-- [ ] fill-mode, and highlight white-space?  Header line fill with a prefix
+- [X] fill-mode, and highlight white-space?  Header line fill with a prefix
 - [ ] spell-checker
 - [ ] If attachments are requested, set mime-version etc
-- [ ] put marks around instructions for attachments and don't let them be editted
+- [X] put marks around instructions for attachments and don't let them be editted
 - [ ] inline images get displayed
 - [ ] attach files - with type and disposition
 - [ ] attach email message: message/rfc
@@ -618,7 +618,7 @@ Module features
 - [ ] 'from' can cycle around options from config
 - [ ] 'reply' creates references and in-reply-to
 - [ ] 'reply' copies 'from' to 'to', and to/cc to cc
-- [ ] headers have suitable highlighting.
+- [X] headers have suitable highlighting.
 - [ ] reply to copy text content with '> '
 - [ ] auto-insert signature... like an attachment?
 
