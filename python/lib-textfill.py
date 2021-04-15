@@ -129,10 +129,12 @@ def reformat(lines, lln,  width, tostrip, prefix):
 def find_start(focus, mark):
     mark = mark.dup()
     m = mark.dup()
+    re = focus.call("doc:get-attr", mark, "fill:start-re", ret='str')
+    if not re:
+        re = "^[^a-zA-Z0-9\n]*$"
     focus.call("Move-EOL", -100, m)
     try:
-        leng = focus.call("text-search", "^[^a-zA-Z0-9\n]*$",
-                          mark, m, 1, 1)
+        leng = focus.call("text-search", re, mark, m, 1, 1)
         # leng is length + 1, we want +1 to kill '\n'
         focus.call("Move-Char", leng, mark)
     except edlib.commandfailed:
@@ -153,9 +155,11 @@ def find_start(focus, mark):
 def find_end(focus, mark):
     m = mark.dup()
     focus.call("Move-EOL", 100, m)
+    re = focus.call("doc:get-attr", mark, "fill:end-re", ret='str')
+    if not re:
+        re = "^[^a-zA-Z0-9\n]*$"
     try:
-        leng = focus.call("text-search", "^[^a-zA-Z0-9\n]*$",
-                          mark, m, 1)
+        leng = focus.call("text-search", re, mark, m, 1)
         focus.call("Move-Char", -leng, mark)
     except edlib.commandfailed:
         if focus.following(m) != None:
@@ -176,12 +180,15 @@ def get_prefixes(focus, mark, lines):
 
     if len(lines) == 1:
         # only one line, so prefix is all spaces but based on first line
-        prefix = ""
-        for c in p0:
-            if c == '\t':
-                prefix += c
-            else:
-                prefix += ' '
+        prefix = focus.call("doc:get-attr", "fill:default-prefix",
+                                 m, ret='str')
+        if not prefix:
+            prefix = ""
+            for c in p0:
+                if c == '\t':
+                    prefix += c
+                else:
+                    prefix += ' '
     else:
         prefix = span(lines[1], p0 + ' \t')
     return (p0, prefix)

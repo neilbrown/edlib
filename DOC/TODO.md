@@ -25,6 +25,8 @@ Bugs to be fixed
 - [ ] use iconv(3) for charset conversion
 - [ ] When visiting a file which is found to a link to a different name,
       the file isn't reloaded if it has changed.
+      Also, following a patch goes to wrong line - by one.  If file
+      isn't already displayed
 - [X] Text containg </> is a problem.  If cursor is just after, it is drawn
       at start-of-line... oh, I think I know why.
 - [ ] search matches aren't highlighted where there is other highlighting
