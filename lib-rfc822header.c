@@ -462,6 +462,28 @@ DEF_CMD(header_get)
 	return t ? 1 : 2;
 }
 
+DEF_CMD(header_list)
+{
+	/* Call comm2 for each header matching str */
+	struct header_info *hi = ci->home->data;
+	struct mark *m, *n;
+
+	if (!ci->str || !ci->comm2)
+		return Enoarg;
+	for (m = vmark_first(ci->home, hi->vnum, ci->home); m; m = n) {
+		char *h = attr_find(m->attrs, "header");
+		n = vmark_next(m);
+		if (n && h && strcasecmp(h, ci->str) == 0) {
+			h = extract_header(ci->home, m, n);
+			if (comm_call(ci->comm2, "cb", ci->focus,
+				      0, NULL, h) <= 0)
+				n = NULL;
+			free(h);
+		}
+	}
+	return 1;
+}
+
 DEF_CMD(header_clip)
 {
 	struct header_info *hi = ci->home->data;
@@ -478,6 +500,7 @@ static void header_init_map(void)
 	key_add(header_map, "Close", &header_close);
 	key_add(header_map, "Free", &edlib_do_free);
 	key_add(header_map, "get-header", &header_get);
+	key_add(header_map, "list-headers", &header_list);
 	key_add(header_map, "Notify:clip", &header_clip);
 }
 
