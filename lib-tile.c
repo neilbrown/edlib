@@ -900,6 +900,13 @@ DEF_CMD(tile_other)
 	struct tileinfo *ti2;
 	int horiz, after;
 
+	if (ci->str || ti->group) {
+		if (!ci->str || !ti->group)
+			return Efallthrough;
+		if (strcmp(ci->str, ti->group) != 0)
+			return Efallthrough;
+		/* same group - continue */
+	}
 	if (!ti->leaf) {
 		/* probably coming from a pop-up. Just use first tile */
 		ti2 = tile_first(ti);
@@ -908,13 +915,6 @@ DEF_CMD(tile_other)
 		if (ci->str2 && ti2->name && strcmp(ci->str2, ti2->name) == 0)
 			return Einval;
 		return comm_call(ci->comm2, "callback:pane", ti2->p);
-	}
-	if (ci->str || ti->group) {
-		if (!ci->str || !ti->group)
-			return Efallthrough;
-		if (strcmp(ci->str, ti->group) != 0)
-			return Efallthrough;
-		/* same group - continue */
 	}
 	if (ci->str2 && ti->name && strcmp(ci->str2, ti->name) == 0)
 		return Einval;
