@@ -602,24 +602,25 @@ Module features
 ### Notmuch composition
 
 - [X] design backend for posting
-- [ ] Support compose/reply/follow-up/forward
+- [X] Support compose/reply/follow-up/forward
+- [ ] reply to copy text content with '> ' - suppress with '-' prefix
+- [ ] 'reply' creates references and in-reply-to
+- [ ] 'to' and 'cc' fields to support address completion
+- [ ] 'from' can cycle around options from config
+- [ ] attach files - with type and disposition
+- [ ] spell-checker
+- [ ] be smart about quoting displayname before <addr>
 - [ ] "post" passes to "notmuch insert -new -unread +outbox --folder=sent"
         add 'sent' to new.ignore??
 - [ ] "post" adds message-id, date
 - [ ] "post" checks for non-asci and uses quoted-printable if needed.
 - [X] fill-mode, and highlight white-space?  Header line fill with a prefix
-- [ ] spell-checker
 - [ ] If attachments are requested, set mime-version etc
 - [X] put marks around instructions for attachments and don't let them be editted
 - [ ] inline images get displayed
-- [ ] attach files - with type and disposition
 - [ ] attach email message: message/rfc
-- [ ] 'to' and 'cc' fields to support address completion
-- [ ] 'from' can cycle around options from config
-- [ ] 'reply' creates references and in-reply-to
-- [ ] 'reply' copies 'from' to 'to', and to/cc to cc
+- [X] 'reply' copies 'from' to 'to', and to/cc to cc
 - [X] headers have suitable highlighting.
-- [ ] reply to copy text content with '> '
 - [ ] auto-insert signature... like an attachment?
 
 ### Presenter

@@ -1539,8 +1539,7 @@ class notmuch_master_view(edlib.Pane):
             return 1
         return 1
 
-    def handle_new_mail(self, key, focus, **a):
-        "handle:doc:char-m"
+    def make_composition(self, focus):
         m = focus.call("doc:from-text", "*New mail message*", "\n\n",
                        ret = 'focus')
         m['view-default'] = 'compose-email'
@@ -1548,20 +1547,44 @@ class notmuch_master_view(edlib.Pane):
         name = self.list_pane['config:user.name']
         mainfrom = self.list_pane['config:user.primary_email']
         altfrom = self.list_pane['config:user.other_email']
+        altfrom2 = self.list_pane['config:user.other_email_deprecated']
         if name:
             m['email:name'] = name
         if mainfrom:
             m['email:from'] = mainfrom
         if altfrom:
             m['email:altfrom'] = altfrom
-
+        if altfrom2:
+            m['email:deprecated_from'] = altfrom2
         p = focus.call("OtherPane", ret='focus')
         if not p:
             return edlib.Efail
         v = m.call("doc:attach-view", p, 1, ret='focus')
         if v:
-            v.call("compose-email:empty-headers")
             v.take_focus()
+        return v
+
+    def handle_new_mail(self, key, focus, **a):
+        "handle:doc:char-m"
+        v = self.make_composition(focus)
+        if v:
+            v.call("compose-email:empty-headers")
+        return 1
+
+    def handle_reply(self, key, focus, **a):
+        "handle-list/doc:char-r/doc:char-R/doc:char-F"
+        if not self.message_pane:
+            focus.call("Message", "Can only reply when a message is open")
+            return edlib.Efail
+        v = self.make_composition(focus)
+        if key[-1] == 'F':
+            mode = "forward"
+        elif key[-1] == 'R':
+            mode = "reply-all"
+        else:
+            mode = "reply"
+        if v:
+            v.call("compose-email:copy-headers", self.message_pane, mode)
         return 1
 
     def tag_ok(self, t):

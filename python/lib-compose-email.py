@@ -23,6 +23,8 @@
 # combined in a multipart/mixed.
 #
 
+from email.utils import getaddresses
+
 class compose_email(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
@@ -45,16 +47,117 @@ class compose_email(edlib.Pane):
         if fr:
             nm = focus['email:name']
             if nm:
-                fr = "%s <%s>" %(nm.replace('"',"'"), fr)
+                fr = "\"%s\" <%s>" %(nm, fr)
         if fr:
             self.check_header("From", fr)
-        self.check_header("Subject", "")
-        self.check_header("To", "")
-        self.check_header("Cc", "")
+        self.check_header("Subject")
+        self.check_header("To")
+        self.check_header("Cc")
         m = edlib.Mark(self)
         self.find_empty_header(m)
         self.call("Move-to", m)
         return 1
+
+    def copy_headers(self, key, focus, str, **a):
+        "handle:compose-email:copy-headers"
+        self.cclist = []
+        self.myaddr = None
+        # need to collect addresses even if I don't use them
+        # so that I can pick the right "from" address
+        focus.call("doc:multipart-0-list-headers", "to", self.copy_cc)
+        focus.call("doc:multipart-0-list-headers", "cc", self.copy_cc)
+        addrs = self.filter_cc(self.cclist)
+        if str != "reply-all":
+            addrs = None
+        me = self.myaddr
+        if not me:
+            me = self['email:from']
+        if me:
+            nm = self['email:name']
+            if nm:
+                me = "\"%s\" <%s>" %(nm, me)
+            self.check_header("From", me)
+        if str != "forward":
+            focus.call("doc:multipart-0-list-headers", "from", self.copy_to)
+        self.pfx = "Re"
+        if str == "forward":
+            self.pfx = "Fwd"
+        self.check_header("To")
+        if addrs:
+            self.add_addr_header("Cc", addrs)
+        focus.call("doc:multipart-0-list-headers", "subject", self.copy_subject)
+        self.check_header("Cc")
+        m = edlib.Mark(self)
+        self.find_empty_header(m)
+        self.call("Move-to", m)
+        return 1
+
+    def copy_to(self, key, focus, str, **a):
+        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        if m2:
+            self.call("doc:replace", m2, m2, "To: " + str.strip() + "\n")
+        return edlib.Efalse
+
+    def copy_cc(self, key, focus, str, **a):
+        addr = getaddresses([str])
+        self.cclist.extend(addr)
+        return 1
+
+    def copy_subject(self, key, focus, str, **a):
+        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        if m2:
+            self.call("doc:replace", m2, m2, ("Subject: "+ self.pfx +": "
+                                              + str.strip() + "\n"))
+        return edlib.Efalse
+
+    def filter_cc(self, list):
+        # every unique address in list that isn't my address gets added
+        # to the new list
+        addrs = []
+        me = []
+        f = self['email:from']
+        if f:
+            me.append(f)
+        af = self['email:altfrom']
+        if af:
+            for a in af.strip().split("\n"):
+                me.append(a.strip())
+        dme = []
+        af = self['email:deprecated_from']
+        if af:
+            for a in af.strip().split("\n"):
+                dme.append(a.strip())
+        ret = []
+        for name,addr in list:
+            if addr in me:
+                if not self.myaddr:
+                    self.myaddr = addr
+            elif addr not in addrs and addr not in dme:
+                addrs.append(addr)
+                ret.append((name, addr))
+        return ret
+
+    def add_addr_header(self, hdr, addr):
+        line = ""
+        sep = ""
+        hdr += ": "
+        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        if not m2:
+            return
+        for n,a in addr:
+            if n:
+                na = "\"%s\" <%s>" %(n, a)
+            else:
+                na = a
+            if line and len(hdr) + len(line) + len(sep) + len(na) > 72:
+                self.call("doc:replace", m2, m2, hdr + line + sep.strip() + "\n")
+                sep = ''
+                line = ''
+                hdr = "   "
+            line += sep + na
+            sep = ', '
+        if line:
+            self.call("doc:replace", m2, m2, hdr + line + "\n")
 
     def find_empty_header(self, m):
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
@@ -111,7 +214,7 @@ class compose_email(edlib.Pane):
                          "/markup:func=compose:markup-header/")
         m2['compose-type'] = 'headers'
 
-    def check_header(self, header, content):
+    def check_header(self, header, content = ""):
         # if header doesn't already exist, at it at end
         m1 = edlib.Mark(self)
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
