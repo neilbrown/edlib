@@ -416,13 +416,24 @@ class notmuch_main(edlib.Doc):
 
     def handle_get_attr(self, key, focus, str, comm2, **a):
         "handle:get-attr"
-        if comm2:
-            if str == "doc-type":
-                comm2("callback", focus, "notmuch")
-                return 1
-            if str == "notmuch:max-search-len":
-                comm2("callback", focus, "%d" % self.searches.maxlen)
-                return 1
+        if not comm2 or not str:
+            return edlib.Enoarg
+        if str == "doc-type":
+            comm2("callback", focus, "notmuch")
+            return 1
+        if str == "notmuch:max-search-len":
+            comm2("callback", focus, "%d" % self.searches.maxlen)
+            return 1
+        if str.startswith('config:'):
+            p = subprocess.Popen(['/usr/bin/notmuch', 'config', 'get', str[7:]],
+                                 close_fds = True,
+                                 stderr = subprocess.PIPE,
+                                 stdout = subprocess.PIPE)
+            out,err = p.communicate()
+            p.wait()
+            if out:
+                comm2("callback", focus, out.decode().strip(), str)
+            return 1
         return edlib.Efallthrough
 
     def handle_request_notify(self, key, focus, **a):
@@ -1526,6 +1537,31 @@ class notmuch_master_view(edlib.Pane):
                 # Message was displayed, so display this one
                 focus.call("notmuch:select", m, 0)
             return 1
+        return 1
+
+    def handle_new_mail(self, key, focus, **a):
+        "handle:doc:char-m"
+        m = focus.call("doc:from-text", "*New mail message*", "\n\n",
+                       ret = 'focus')
+        m['view-default'] = 'compose-email'
+        # fixme: add this to a list?
+        name = self.list_pane['config:user.name']
+        mainfrom = self.list_pane['config:user.primary_email']
+        altfrom = self.list_pane['config:user.other_email']
+        if name:
+            m['email:name'] = name
+        if mainfrom:
+            m['email:from'] = mainfrom
+        if altfrom:
+            m['email:altfrom'] = altfrom
+
+        p = focus.call("OtherPane", ret='focus')
+        if not p:
+            return edlib.Efail
+        v = m.call("doc:attach-view", p, 1, ret='focus')
+        if v:
+            v.call("compose-email:empty-headers")
+            v.take_focus()
         return 1
 
     def tag_ok(self, t):

@@ -31,6 +31,51 @@ class compose_email(edlib.Pane):
         m = self.call("doc:vmark-get", self.view, ret='mark')
         if not m:
             self.insert_header_mark()
+        st = edlib.Mark(self)
+        m = focus.call("doc:point", ret='mark')
+        if m == st:
+            # At start of file - find a better place.
+            # If there is an empty header, go there, else after headers.
+            if not self.find_empty_header(m):
+                self.to_body(m)
+
+    def add_headers_new(self, key, focus, **a):
+        "handle:compose-email:empty-headers"
+        fr = focus['email:from']
+        if fr:
+            nm = focus['email:name']
+            if nm:
+                fr = "%s <%s>" %(nm.replace('"',"'"), fr)
+        if fr:
+            self.check_header("From", fr)
+        self.check_header("Subject", "")
+        self.check_header("To", "")
+        self.check_header("Cc", "")
+        m = edlib.Mark(self)
+        self.find_empty_header(m)
+        self.call("Move-to", m)
+        return 1
+
+    def find_empty_header(self, m):
+        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        try:
+            self.call("text-search", "^[!-9;-~]+\\s*:\\s*$", m, m2)
+            return True
+        except:
+            return False
+    def find_any_header(self, m):
+        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        try:
+            self.call("text-search", "^[!-9;-~]+\\s*:\\s*", m, m2)
+            return True
+        except:
+            return False
+    def to_body(self, m):
+        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        if m2:
+            m2 = m2.next()
+        if m2:
+            m.to_mark(m2)
 
     def find_markers(self):
         m = edlib.Mark(self)
@@ -65,6 +110,15 @@ class compose_email(edlib.Pane):
         self.parent.call("doc:replace", m2, m, "@#!compose:headers\n",
                          "/markup:func=compose:markup-header/")
         m2['compose-type'] = 'headers'
+
+    def check_header(self, header, content):
+        # if header doesn't already exist, at it at end
+        m1 = edlib.Mark(self)
+        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        try:
+            self.call("text-search", "^(?i:%s)\\s*:" % header, m1, m2)
+        except:
+            self.call("doc:replace", m2, m2, header + ': ' + content+'\n')
 
     def markup_header(self, key, focus, num, mark, mark2, comm2, **a):
         "handle:compose:markup-header"
@@ -210,13 +264,41 @@ class compose_email(edlib.Pane):
             comm2("cb", focus, mark, "^($|[^\\s])", str)
             return 1
 
-def compose_mode_activate(key, focus, **a):
+    def handle_tab(self, key, focus, mark, **a):
+        "handle:K:Tab"
+        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        if mark <= m2:
+            # in headers, TAB goes to next header, or body
+            if not self.find_any_header(mark):
+                self.to_body(mark)
+            return 1
+        return edlib.Efallthrough
+    def handle_s_tab(self, key, focus, mark, **a):
+        "handle:K:S:Tab"
+        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        if mark > m2:
+            # After header, S:Tab goes to last header
+            m = edlib.Mark(self)
+            mark.to_mark(m)
+            while self.find_any_header(m):
+                mark.to_mark(m)
+            return 1
+        # in headers, go to previous header
+        m = edlib.Mark(self)
+        m2 = mark.dup()
+        while self.find_any_header(m) and m < m2:
+            mark.to_mark(m)
+        return 1
+
+
+def compose_mode_attach(key, focus, comm2, **a):
     focus['fill-width'] = '72'
     p = focus.call("attach-textfill", ret='focus')
     if not p:
         p = focus
-    compose_email(p)
+    p = compose_email(p)
+    if comm2:
+        comm2("cb", p)
     return 1
 
-editor.call("global-set-command", "interactive-cmd-compose-mode",
-            compose_mode_activate)
+editor.call("global-set-command", "attach-compose-email", compose_mode_attach)
