@@ -202,6 +202,13 @@ class FillMode(edlib.Pane):
                 cols = int(cols)
         self.cols = cols
 
+    def handle_clone(self, key, focus, **a):
+        "handle:Clone"
+        focus['fill-width'] = self['fill-width']
+        p = FillMode(focus, 72)
+        self.clone_children(p)
+        return 1
+
     def do_fill(self, key, focus, num, mark, mark2, **a):
         "handle:fill-paragraph"
         if not mark or not mark2:
