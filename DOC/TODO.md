@@ -775,6 +775,37 @@ Possibly some of these will end up being features in other modules.
 New Modules - more complex
 -------------------------
 
+### remote editing ideas
+A good model for remote editing is to have a proxy at some point in the stack,
+so that edlib runs on both ends, but at some point a pane is a proxy for a remote
+pane (though maybe not 'pane' exactly) which connects over the network.
+But what point?
+
+- raw-display: this might have just ncurses on the client and everything else on
+  the server.  client could send keystroke, mouse events, resize/refresh request,
+  selection-request, selection-content, and maybe file content
+  server could send "panel" create/resize/reposition, panel clear,
+  draw text with attributes, selection-request, selection-content, file-content
+  run-command request (e.g. to run a local viewer for attachments)
+- generic-display:  This could be a full pane, but would need to proxy
+  text-size measurement requests which might be slow
+- doc-view:  This would be a proxying core-doc view (doc_handle) where all
+  the viewing panes are local, and all the doc-side panes are remote.
+  This seems most elegant, but managing updates to marks and handling all
+  callback might be awkward
+- specific docs:  Some documents would explicitly support proxying.
+  e.g. text, dir, docs.  Any doc filtering (e.g. charset, crop etc) would
+  happen locally.  The proxy would use a lease to cache content locally
+  and would treat a lease timeout like on-disk file change.
+- filesystem: this is little more than an sshfs mount.  Probably too low level.
+
+One outcome of these musings is that edlib programs should run external
+commands and access file through a specific pane - either a doc pane or
+a display pane.  This might result in them running on different hosts.
+
+The protocol over then should be QUIC if possible as they seems to allow
+mobility nicely.  I'd need to look at how it handles network breaks.
+
 ### threaded-panes
 
 An import characteristic of a good editor is low latency.  While you can
