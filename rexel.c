@@ -1366,7 +1366,7 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 			case 'a': add_class(st, plane, wctype("lower")); break;
 			case 'A': add_class(st, plane, wctype("upper")); break;
 			case 'p': add_class(st, plane, wctype("punct")); break;
-			case 's': add_class(st, plane, wctype("space")); break;
+			case 's': add_class(st, plane, wctype("blank")); break;
 			case 'w': add_class(st, plane, wctype("alpha")); break;
 			}
 			p += 1;
@@ -1581,8 +1581,8 @@ static bool parse_atom(struct parse_state *st safe)
 			break;
 		case 'd': ch = add_class_set(st, "digit", 1); break;
 		case 'D': ch = add_class_set(st, "digit", 0); break;
-		case 's': ch = add_class_set(st, "space", 1); break;
-		case 'S': ch = add_class_set(st, "space", 0); break;
+		case 's': ch = add_class_set(st, "blank", 1); break;
+		case 'S': ch = add_class_set(st, "blank", 0); break;
 		case 'w': ch = add_class_set(st, "alpha", 1); break;
 		case 'W': ch = add_class_set(st, "alpha", 0); break;
 		case 'p': ch = add_class_set(st, "punct", 1); break;
@@ -2340,6 +2340,8 @@ static struct test {
 	{ "(.?)[a-e]*f", "abcdef", 0, 0, 6, "\\1", "a"},
 	{ "(.?""?)[a-e]*f", "abcdef", 0, 0, 6, "\\1", ""},
 	{ "diff|(stg|git).*show", "git diff", 0, 4, 4},
+	// \s matches space but not newline
+	{ "spa\\sce", "spa\nce spa ce", 0, 7, 6},
 };
 
 static void run_tests(bool trace)
