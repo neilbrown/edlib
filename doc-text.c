@@ -2115,7 +2115,7 @@ DEF_CMD(text_replace)
 			;
 		text_check_consistent(t);
 	}
-	if (end)
+	if (end && end != pm)
 		early = end;
 	else
 		early = mark_dup(pm);
