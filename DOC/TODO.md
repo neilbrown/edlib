@@ -24,6 +24,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] doc-docs can get confused when I kill buffers from within the view
 - [ ] use iconv(3) for charset conversion
 - [ ] When visiting a file which is found to a link to a different name,
       the file isn't reloaded if it has changed.

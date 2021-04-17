@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <ctype.h>
+#include <wctype.h>
 
 #include <stdio.h>
 
@@ -2202,6 +2203,8 @@ struct bb {
 	struct buf b;
 	struct command c;
 	bool first;
+	int start;
+	int count;
 };
 DEF_CB(get_suggestion)
 {
@@ -2210,11 +2213,13 @@ DEF_CB(get_suggestion)
 	if (!ci->str)
 		return Enoarg;
 
-	if (b->first)
+	if (b->first) {
 		buf_concat(&b->b, " - possibly ");
-	else
+		b->start = b->b.len;
+	} else
 		buf_concat(&b->b, ", ");
 	b->first = False;
+	b->count += 1;
 	buf_concat(&b->b, ci->str);
 	return 1;
 }
@@ -2225,6 +2230,7 @@ DEF_CMD(emacs_spell)
 	char *word;
 	int ret;
 	wint_t ch;
+	char *last;
 	int rpt = RPT_NUM(ci);
 
 	if (!ci->mark)
@@ -2235,32 +2241,110 @@ DEF_CMD(emacs_spell)
 		rpt = 1000000;
 
 	ch = doc_prior(ci->focus, ci->mark);
+	last = attr_find(ci->mark->attrs, "spell:prev-error");
+	if (last) {
+		/* looks like we already have a correction here, which might
+		 * be multiple words, so need to check.
+		 */
+		int l = strlen(last); // FIXME utf8 ??
+		st = mark_dup(ci->mark);
+		while (l > 0 && (ch = doc_prev(ci->focus, st)) == (wint_t)last[l-1])
+			l -= 1;
+		if (l == 0) {
+			ed = mark_dup(ci->mark);
+			goto found;
+		}
+		mark_free(st);
+	}
 again:
 	if (ch == WEOF || !isalnum(ch)) {
 		/* Previous char is not in a word, so move to next word */
+		if (doc_following(ci->focus, ci->mark) == WEOF) {
+			call("Message", ci->focus, 0, NULL,
+			     "spell check reached end-of-file");
+			return 1;
+		}
 		call("Move-WORD", ci->focus, 1, ci->mark);
 		call("Move-Char", ci->focus, 1, ci->mark);
 	}
-	ch = WEOF;
 	st = mark_dup(ci->mark);
 	call("Move-WORD", ci->focus, -1, st);
 	ed = mark_dup(st);
 	call("Move-WORD", ci->focus, 1, ed);
+	while (st->seq < ed->seq && !mark_same(st, ed) &&
+	       (ch = doc_following(ci->focus, st)) != WEOF &&
+	       !iswalpha(ch))
+		// ignore leading punctuation
+		doc_next(ci->focus, st);
+	while (ed->seq > st->seq && !mark_same(ed, st) &&
+	       (ch = doc_prior(ci->focus, ed)) != WEOF &&
+	       !iswalpha(ch))
+		// ignore trailing punctuation
+		doc_prev(ci->focus, ed);
+found:
 	word = call_ret(str, "doc:get-str", ci->focus, 0, st, NULL, 0, ed);
-	mark_free(st);
-	mark_free(ed);
+	ch = WEOF;
 
 	if (!word || !*word) {
 		free(word);
+		mark_free(st);
+		mark_free(ed);
+		rpt -= 1;
+		if (rpt > 0 && doc_following(ci->focus, ci->mark) != WEOF)
+			goto again;
 		call("Message", ci->focus, 0, NULL,
 		     "No word found for spell check");
+		attr_set_str(&ci->focus->attrs, "spell:last-error", NULL);
 		return 1;
 	}
+	last = attr_find(ci->focus->attrs, "spell:last-error");
+	if (ci->num == NO_NUMERIC && last && strcmp(word, last) == 0) {
+		/* already checked this one, try a suggestion */
+		char *suggest = attr_find(ci->focus->attrs,
+					  "spell:suggestions");
+		int next = attr_find_int(ci->focus->attrs,
+					 "spell:next");
+		int i;
+		char *s;
+		char *msg = NULL;
+
+		if (!suggest)
+			return 1;
+		s = suggest;
+		for (i = 0; i < next && s; i++) {
+			s = strchr(s, ',');
+			if (s)
+				s += 1;
+		}
+		if (s)
+			suggest = s;
+		while (*suggest == ' ')
+			suggest += 1;
+		s = strchr(suggest, ',');
+		if (s)
+			suggest = strnsave(ci->focus, suggest, s - suggest);
+		call("doc:replace", ci->focus, 0, st, suggest, 0, ed);
+		asprintf(&msg, "Trying spelling suggestion %d of %d.",
+			 next+1, attr_find_int(ci->focus->attrs, "spell:count"));
+		call("Message", ci->focus, 0, NULL, msg);
+		free(msg);
+		attr_set_int(&ci->focus->attrs, "spell:next", next+1);
+		attr_set_str(&ci->focus->attrs, "spell:last-error", suggest);
+		attr_set_str(&ci->mark->attrs, "spell:prev-error", suggest);
+		mark_to_mark(ci->mark, ed);
+		mark_free(st);
+		mark_free(ed);
+		return 1;
+	}
+	attr_set_str(&ci->focus->attrs, "spell:last-error", NULL);
 	ret = call("SpellCheck", ci->focus, 0, NULL, word);
 	if (ret > 0) {
 		rpt -= 1;
-		if (rpt > 0)
+		if (rpt > 0) {
+			mark_free(st);
+			mark_free(ed);
 			goto again;
+		}
 		call("Message", ci->focus, 0, NULL,
 		     strconcat(ci->focus, "\"", word,
 			       "\" is a correct spelling."));
@@ -2270,12 +2354,23 @@ again:
 		buf_concat(&b.b, "\"");
 		buf_concat(&b.b, word);
 		buf_concat(&b.b, "\" is NOT correct");
+		b.count = 0;
 		b.first = True;
 		b.c = get_suggestion;
 		call_comm("SpellSuggest", ci->focus, &b.c,
 			  0, NULL, word);
 		if (b.first)
 			buf_concat(&b.b, " ... no suggestions");
+		else {
+			attr_set_str(&ci->focus->attrs, "spell:last-error",
+				     word);
+			attr_set_str(&ci->focus->attrs, "spell:suggestions",
+				     buf_final(&b.b) + b.start);
+			attr_set_int(&ci->focus->attrs, "spell:next", 0);
+			attr_set_int(&ci->focus->attrs, "spell:count", b.count);
+			attr_set_str(&ci->mark->attrs, "spell:prev-error", word);
+		}
+		mark_to_mark(ci->mark, ed);
 		call("Message", ci->focus, 0, NULL, buf_final(&b.b));
 		free(buf_final(&b.b));
 	} else if (ret == Efail) {
@@ -2290,6 +2385,8 @@ again:
 		call("Message", ci->focus, 0, NULL,
 		     strconcat(ci->focus, "Spell check failed for \"", word,
 			       "\""));
+	mark_free(st);
+	mark_free(ed);
 	return 1;
 }
 
