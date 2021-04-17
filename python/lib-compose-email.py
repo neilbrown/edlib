@@ -149,26 +149,30 @@ class compose_email(edlib.Pane):
         return ret
 
     def add_addr_header(self, hdr, addr):
-        line = ""
-        sep = ""
-        hdr += ": "
+        prefix = hdr + ": "
+        wrap = False
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
         if not m2:
             return
+        # Note that we must call doc:replace on parent else
+        # we might be caught trying to insert a non-newline immediately
+        # before a marker.  We do eventuall insert a newline, so it is safe.
         for n,a in addr:
             if n:
                 na = "\"%s\" <%s>" %(n, a)
             else:
                 na = a
-            if line and len(hdr) + len(line) + len(sep) + len(na) > 72:
-                self.call("doc:replace", m2, m2, hdr + line + sep.strip() + "\n")
-                sep = ''
-                line = ''
-                hdr = "   "
-            line += sep + na
-            sep = ', '
-        if line:
-            self.call("doc:replace", m2, m2, hdr + line + "\n")
+            if wrap:
+                self.parent.call("doc:replace", m2, m2, prefix,
+                                 ",render:rfc822header-wrap=%d"%len(prefix))
+            else:
+                self.parent.call("doc:replace", m2, m2, prefix)
+            wrap = True
+            prefix = ", "
+            self.parent.call("doc:replace", m2, m2, na)
+        if wrap:
+            # we wrote a header, so write a newline
+            self.parent.call("doc:replace", m2, m2, "\n")
 
     def find_empty_header(self, m):
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
@@ -292,14 +296,19 @@ class compose_email(edlib.Pane):
             m = self.call("doc:vmark-get", self.view, ret='mark')
         self.call("doc:del-view", self.view)
 
-    def map_attr(self, key, focus, str, mark, comm2, **a):
+    def map_attr(self, key, focus, str, str2, mark, comm2, **a):
         "handle:map-attr"
         if not str or not mark or not comm2:
             return edlib.Enoarg
+
+        if str == "render:rfc822header-wrap":
+            comm2("attr:callback", focus, int(str2), mark, "wrap", 20)
+            return 1
+
         # get previous mark and see if it is here
         m = self.call("doc:vmark-get", self.view, 3, mark, ret='mark2')
         if not m and str == "start-of-line":
-            # start of a header line - set colour for tag and header
+            # start of a header line - set colour for tag and header, and wrap info
             rv = self.call("text-match", "(\\s+|[!-9;-~]+\\s*:)", mark.dup())
             if rv > 0:
                 # make space or tag light blue, and body dark blue
@@ -314,6 +323,7 @@ class compose_email(edlib.Pane):
             else:
                 # make whole line red
                 comm2("cb", focus, mark, 100000, "bg:red+50,fg:red-50", 2)
+            comm2("cb", focus, mark, 10000, "wrap-tail: ,wrap-head:    ", 20)
         return edlib.Efallthrough
 
     def handle_replace(self, key, focus, mark, mark2, str, **a):

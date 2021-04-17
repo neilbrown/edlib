@@ -612,6 +612,7 @@ Module features
 - [ ] attach files - with type and disposition
 - [ ] spell-checker
 - [ ] be smart about quoting displayname before <addr>
+- [ ] capture editting of to/cc and mark ',' as a wrap point.
 - [ ] "post" passes to "notmuch insert -new -unread +outbox --folder=sent"
         add 'sent' to new.ignore??
 - [ ] "post" adds message-id, date
