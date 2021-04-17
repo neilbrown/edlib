@@ -133,10 +133,7 @@ class compose_email(edlib.Pane):
                                               + str.strip() + "\n"))
         return edlib.Efalse
 
-    def filter_cc(self, list):
-        # every unique address in list that isn't my address gets added
-        # to the new list
-        addrs = []
+    def from_lists(self):
         me = []
         f = self['email:from']
         if f:
@@ -144,13 +141,24 @@ class compose_email(edlib.Pane):
         af = self['email:altfrom']
         if af:
             for a in af.strip().split("\n"):
-                me.append(a.strip())
+                a = a.strip()
+                if a not in me:
+                    me.append(a.strip())
         dme = []
         af = self['email:deprecated_from']
         if af:
             for a in af.strip().split("\n"):
-                dme.append(a.strip())
+                a = a.strip()
+                if a not in dme:
+                    dme.append(a.strip())
+        return (me, dme)
+
+    def filter_cc(self, list):
+        # every unique address in list that isn't my address gets added
+        # to the new list
+        addrs = []
         ret = []
+        me, dme = self.from_lists()
         for name,addr in list:
             if addr in me:
                 if not self.myaddr:
@@ -431,7 +439,7 @@ class compose_email(edlib.Pane):
             return 1
 
     def try_address_complete(self, m):
-        this = self.this_header(m)
+        this = self.this_header(m.dup())
         if not this or this not in ["to","cc"]:
             return False
         st = m.dup()
@@ -476,18 +484,56 @@ class compose_email(edlib.Pane):
             self.complete_end.step(0)
         return True
 
-    def this_header(self, mark):
-        mark = mark.dup()
+    def try_cycle_from(self, m):
+        start = m.dup()
+        end = m.dup()
+        this = self.this_header(start, end)
+        if not this or this != "from":
+            return False
+        current = self.call("doc:get-str", start, end, ret='str')
+        name, addr = email.utils.parseaddr(current)
+        me, dme = self.from_lists()
+        if not me:
+            self.call("Message", "No From addresses declared")
+            return True
+        try:
+            i = me.index(addr) + 1
+        except ValueError:
+            i = 0
+        if i < 0 or i >= len(me):
+            addr = me[0]
+        else:
+            addr = me[i]
+        self.call("doc:replace", start, end,
+                  "%s <%s>" % (name, addr))
+        m.to_mark(end)
+        return True
+
+    def this_header(self, mark, end = None):
         try:
             l = self.call("text-search", "^[!-9;-~]+\\s*:", 0, 1, mark)
-            m2 = mark.dup()
+            m1 = mark.dup()
             while l > 2:
                 l -= 1
-                self.next(m2)
-            s = self.call("doc:get-str", mark, m2, ret='str')
-            return s.strip().lower()
+                self.next(mark)
+            s = self.call("doc:get-str", m1, mark, ret='str')
+            self.next(mark)
+            while self.following(mark) == ' ':
+                self.next(mark)
+            ret = s.strip().lower()
         except edlib.commandfailed:
             return None
+        if not end:
+            return ret
+        # Now find the body - mark is at the start
+        end.to_mark(mark)
+        mbody = self.call("doc:vmark-get", self.view, ret='mark')
+        try:
+            self.call("text-search", "^[!-9;-~]", end, mbody)
+        except:
+            end.to_mark(mbody)
+        self.call("Move-EOL", -1, 1, end)
+        return ret
 
     def prev_addr(self, m):
         # if previous char is not a space, collect everything
@@ -516,6 +562,7 @@ class compose_email(edlib.Pane):
         # Otherwise goes to next header if there is one, else to
         # the body
         if (not self.try_address_complete(mark) and
+            not self.try_cycle_from(mark) and
             not self.find_any_header(mark)):
             self.to_body(mark)
         return 1

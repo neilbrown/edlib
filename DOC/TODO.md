@@ -608,7 +608,7 @@ Module features
 - [X] reply to copy text content with '> ' - suppress with '-' prefix
 - [X] 'reply' creates references and in-reply-to
 - [X] 'to' and 'cc' fields to support address completion
-- [ ] 'from' can cycle around options from config
+- [X] 'from' can cycle around options from config
 - [ ] attach files - with type and disposition
 - [ ] spell-checker
 - [ ] be smart about quoting displayname before <addr>
