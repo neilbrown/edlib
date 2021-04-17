@@ -30,6 +30,7 @@ class compose_email(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
         self.view = focus.call("doc:add-view", self) - 1
+        self.complete_start = None
         self.find_markers()
         m = self.call("doc:vmark-get", self.view, ret='mark')
         if not m:
@@ -342,6 +343,9 @@ class compose_email(edlib.Pane):
 
     def handle_replace(self, key, focus, mark, mark2, str, **a):
         "handle:doc:replace"
+        self.complete_start = None
+        self.complete_end = None
+        self.complete_list = None
         if not mark:
             mark = focus.call("doc:point", ret='mark')
         if not mark2:
@@ -426,15 +430,95 @@ class compose_email(edlib.Pane):
             comm2("cb", focus, mark, "^($|[^\\s])", str)
             return 1
 
+    def try_address_complete(self, m):
+        this = self.this_header(m)
+        if not this or this not in ["to","cc"]:
+            return False
+        st = m.dup()
+        word = self.prev_addr(st)
+        if not word:
+            return False
+        if self.complete_start and self.complete_end == m:
+            self.parent.call("doc:replace", self.complete_start, m,
+                             self.complete_list[self.complete_next])
+            self.complete_end.step(0)
+            self.complete_next += 1
+            if self.complete_next >= len(self.complete_list):
+                self.call("Message", "last completion - will cycle around")
+                self.complete_next = 0
+            return True
+        if ('@' in word and '.' in word and
+            ('>' in word or '<' not in word)):
+            # looks convincing
+            return False
+        p = subprocess.Popen(["notmuch-addr", word],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out,err = p.communicate()
+        if not out:
+            if err:
+                self.call("Message", "Address expansion gave error: %s" % err.decode())
+                return True
+            self.call("Message", "No completions found for address %s" % word)
+            return True
+        self.complete_start = None
+        self.complete_list = out.decode().strip().split("\n")
+        if len(self.complete_list) > 1:
+            self.call("Message", "%d completions found for address %s"
+                      % (len(self.complete_list), word))
+            self.complete_start = st
+            self.complete_end = m.dup()
+            self.complete_next = 1
+        else:
+            self.call("Message", "only 1 completion found for address %s"
+                      % word)
+        self.parent.call("doc:replace", st, m, self.complete_list[0])
+        if self.complete_start:
+            self.complete_end.step(0)
+        return True
+
+    def this_header(self, mark):
+        mark = mark.dup()
+        try:
+            l = self.call("text-search", "^[!-9;-~]+\\s*:", 0, 1, mark)
+            m2 = mark.dup()
+            while l > 2:
+                l -= 1
+                self.next(m2)
+            s = self.call("doc:get-str", mark, m2, ret='str')
+            return s.strip().lower()
+        except edlib.commandfailed:
+            return None
+
+    def prev_addr(self, m):
+        # if previous char is not a space, collect everything
+        # back to , or : or \n and return 1
+        c = self.prev(m)
+        if not c or c in " \n":
+            return None
+        a = ''
+        while c and c not in ",:\n":
+            a = c + a
+            c = self.prev(m)
+        while c and c in ",: \n":
+            c = self.next(m)
+        if c:
+            self.prev(m)
+        return a.strip()
+
     def handle_tab(self, key, focus, mark, **a):
         "handle:K:Tab"
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
-        if mark <= m2:
-            # in headers, TAB goes to next header, or body
-            if not self.find_any_header(mark):
-                self.to_body(mark)
-            return 1
-        return edlib.Efallthrough
+        if mark > m2:
+            return edlib.Efallthrough
+        # in headers, TAB does various things:
+        # In 'to' or 'cc' this preceeding word looks like an
+        # incomplete address, then address completion is tried.
+        # Otherwise goes to next header if there is one, else to
+        # the body
+        if (not self.try_address_complete(mark) and
+            not self.find_any_header(mark)):
+            self.to_body(mark)
+        return 1
     def handle_s_tab(self, key, focus, mark, **a):
         "handle:K:S:Tab"
         m2 = self.call("doc:vmark-get", self.view, ret='mark')

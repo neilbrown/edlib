@@ -565,7 +565,7 @@ Module features
     redraw gets confused and point goes off-screen, which seems
     to leave it confused.
 - [ ] in text/plain, wrap long lines on 'space'. - make this a config in lib-markup
-- [ ] allow view of all headers, and of "more" than default
+- [ ] allow view of all headers, and of "more" than default (including file names)
 - [ ] maybe hide signature, unless small
 - [X] need to resolve how charsets are handled.  Maybe an attribute to
    query to see if there is a need for a utf-8 layer on email
@@ -607,7 +607,7 @@ Module features
 - [X] Support compose/reply/follow-up/forward
 - [X] reply to copy text content with '> ' - suppress with '-' prefix
 - [X] 'reply' creates references and in-reply-to
-- [ ] 'to' and 'cc' fields to support address completion
+- [X] 'to' and 'cc' fields to support address completion
 - [ ] 'from' can cycle around options from config
 - [ ] attach files - with type and disposition
 - [ ] spell-checker
@@ -625,6 +625,7 @@ Module features
 - [X] 'reply' copies 'from' to 'to', and to/cc to cc
 - [X] headers have suitable highlighting.
 - [ ] auto-insert signature... like an attachment?
+- [ ] address-completion should be referred to module, not assumed to be notmuch
 
 ### Presenter
 
