@@ -1571,7 +1571,7 @@ class notmuch_master_view(edlib.Pane):
             v.call("compose-email:empty-headers")
         return 1
 
-    def handle_reply(self, key, focus, **a):
+    def handle_reply(self, key, focus, num, **a):
         "handle-list/doc:char-r/doc:char-R/doc:char-F"
         if not self.message_pane:
             focus.call("Message", "Can only reply when a message is open")
@@ -1585,6 +1585,38 @@ class notmuch_master_view(edlib.Pane):
             mode = "reply"
         if v:
             v.call("compose-email:copy-headers", self.message_pane, mode)
+            if num >= 0:
+                # find first text part and copy it
+                msg = self.message_pane
+                m = edlib.Mark(msg)
+                while True:
+                    msg.call("doc:step-part", m, 1)
+                    which = msg.call("doc:get-attr",
+                                     "multipart-this:email:which",
+                                     m, ret='str')
+                    if not which:
+                        break
+                    if which != "spacer":
+                        continue
+                    type = msg.call("doc:get-attr",
+                                    "multipart-prev:email:content-type",
+                                    m, ret='str')
+                    if (not type or not type.startswith("text/") or
+                        type == "text/rfc822-headers"):
+                        continue
+                    part = msg.call("doc:get-attr", m,
+                                    "multipart:part-num", ret='str')
+                    # try transformed first
+                    c = msg.call("doc:multipart-%d-doc:get-str" % (int(part) - 1),
+                                 ret = 'str')
+                    if not c or not c.strip():
+                        c = msg.call("doc:multipart-%d-doc:get-str" % (int(part) - 2),
+                                     ret = 'str')
+                    if c and c.strip():
+                        break
+
+                if c:
+                    v.call("compose-email:quote-content", c)
         return 1
 
     def tag_ok(self, t):
@@ -2216,9 +2248,9 @@ class notmuch_message_view(edlib.Pane):
         # If alternative:[1-9] is found, or type isn't "text*", make it
         # invisible.
         p = 0
-        m = edlib.Mark(focus)
         focus.call("doc:notmuch:request:Notify:Tag", self)
         self.handle_notify_tag("Notify:Tag")
+        m = edlib.Mark(focus)
         while True:
             self.call("doc:step-part", m, 1)
             which = focus.call("doc:get-attr", "multipart-this:email:which",

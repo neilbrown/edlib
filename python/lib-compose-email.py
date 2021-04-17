@@ -23,7 +23,8 @@
 # combined in a multipart/mixed.
 #
 
-from email.utils import getaddresses
+import email.utils
+from datetime import date
 
 class compose_email(edlib.Pane):
     def __init__(self, focus):
@@ -62,6 +63,8 @@ class compose_email(edlib.Pane):
         "handle:compose-email:copy-headers"
         self.cclist = []
         self.myaddr = None
+        # get date - it might be useful
+        focus.call("doc:multipart-0-list-headers", "date", self.copy_date)
         # need to collect addresses even if I don't use them
         # so that I can pick the right "from" address
         focus.call("doc:multipart-0-list-headers", "to", self.copy_cc)
@@ -92,14 +95,22 @@ class compose_email(edlib.Pane):
         self.call("Move-to", m)
         return 1
 
+    def copy_date(self, key, focus, str, **a):
+        self['date-str'] = str
+        d = email.utils.parsedate_tz(str)
+        if d:
+            self['date-seconds'] = "%d" % email.utils.mktime_tz(d)
+        return edlib.Efalse
+
     def copy_to(self, key, focus, str, **a):
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
         if m2:
             self.call("doc:replace", m2, m2, "To: " + str.strip() + "\n")
+        self['reply-author'] = str.strip()
         return edlib.Efalse
 
     def copy_cc(self, key, focus, str, **a):
-        addr = getaddresses([str])
+        addr = email.utils.getaddresses([str])
         self.cclist.extend(addr)
         return 1
 
@@ -179,6 +190,29 @@ class compose_email(edlib.Pane):
             m2 = m2.next()
         if m2:
             m.to_mark(m2)
+
+    def handle_quote_content(self, key, focus, str, **a):
+        "handle:compose-email:quote-content"
+        m = edlib.Mark(self)
+        self.to_body(m)
+        who = email.utils.getaddresses([self['reply-author']])
+        if who and who[0][0]:
+            who = who[0][0]
+        elif who and who[0][1]:
+            who = who[0][1]
+        else:
+            who = "someone"
+        n = self['date-seconds']
+        if n:
+            d = date.fromtimestamp(int(n))
+            when = d.strftime("%a, %d %b %Y")
+        else:
+            when = 'a recent day'
+        q = "On %s, %s wrote:\n" % (when, who)
+        for l in str.split("\n"):
+            q += '> ' + l + '\n'
+        self.call("doc:replace", m, m, q)
+        return 1
 
     def find_markers(self):
         m = edlib.Mark(self)

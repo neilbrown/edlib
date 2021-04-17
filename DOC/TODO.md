@@ -4,6 +4,8 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] provide a way for ncurses to switch out of display mode
+      and to show a url (or similar) which can be copied from terminal
 - [ ] fix bugs
 - [ ] make notmuch useable
 - [ ] make spell-check useful
@@ -603,7 +605,7 @@ Module features
 
 - [X] design backend for posting
 - [X] Support compose/reply/follow-up/forward
-- [ ] reply to copy text content with '> ' - suppress with '-' prefix
+- [X] reply to copy text content with '> ' - suppress with '-' prefix
 - [ ] 'reply' creates references and in-reply-to
 - [ ] 'to' and 'cc' fields to support address completion
 - [ ] 'from' can cycle around options from config
