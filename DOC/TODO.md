@@ -606,7 +606,7 @@ Module features
 - [X] design backend for posting
 - [X] Support compose/reply/follow-up/forward
 - [X] reply to copy text content with '> ' - suppress with '-' prefix
-- [ ] 'reply' creates references and in-reply-to
+- [X] 'reply' creates references and in-reply-to
 - [ ] 'to' and 'cc' fields to support address completion
 - [ ] 'from' can cycle around options from config
 - [ ] attach files - with type and disposition

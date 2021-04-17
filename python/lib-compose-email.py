@@ -61,15 +61,15 @@ class compose_email(edlib.Pane):
 
     def copy_headers(self, key, focus, str, **a):
         "handle:compose-email:copy-headers"
-        self.cclist = []
         self.myaddr = None
         # get date - it might be useful
         focus.call("doc:multipart-0-list-headers", "date", self.copy_date)
         # need to collect addresses even if I don't use them
         # so that I can pick the right "from" address
-        focus.call("doc:multipart-0-list-headers", "to", self.copy_cc)
-        focus.call("doc:multipart-0-list-headers", "cc", self.copy_cc)
-        addrs = self.filter_cc(self.cclist)
+        self.addrlist = []
+        focus.call("doc:multipart-0-list-headers", "to", self.copy_addrs)
+        focus.call("doc:multipart-0-list-headers", "cc", self.copy_addrs)
+        addrs = self.filter_cc(self.addrlist)
         if str != "reply-all":
             addrs = None
         me = self.myaddr
@@ -90,6 +90,17 @@ class compose_email(edlib.Pane):
             self.add_addr_header("Cc", addrs)
         focus.call("doc:multipart-0-list-headers", "subject", self.copy_subject)
         self.check_header("Cc")
+
+        self.addrlist = []
+        focus.call("doc:multipart-0-list-headers", "references", self.copy_addrs)
+        if not self.addrlist:
+            focus.call("doc:multipart-0-list-headers", "in-reply-to", self.copy_addrs)
+        l = len(self.addrlist)
+        focus.call("doc:multipart-0-list-headers", "message-id", self.copy_addrs)
+        if l < len(self.addrlist):
+            self.add_addr_header("In-reply-to", self.addrlist[l:], True)
+        self.add_addr_header("References", self.addrlist, True)
+
         m = edlib.Mark(self)
         self.find_empty_header(m)
         self.call("Move-to", m)
@@ -109,9 +120,9 @@ class compose_email(edlib.Pane):
         self['reply-author'] = str.strip()
         return edlib.Efalse
 
-    def copy_cc(self, key, focus, str, **a):
+    def copy_addrs(self, key, focus, str, **a):
         addr = email.utils.getaddresses([str])
-        self.cclist.extend(addr)
+        self.addrlist.extend(addr)
         return 1
 
     def copy_subject(self, key, focus, str, **a):
@@ -148,7 +159,7 @@ class compose_email(edlib.Pane):
                 ret.append((name, addr))
         return ret
 
-    def add_addr_header(self, hdr, addr):
+    def add_addr_header(self, hdr, addr, need_angle = False):
         prefix = hdr + ": "
         wrap = False
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
@@ -160,6 +171,8 @@ class compose_email(edlib.Pane):
         for n,a in addr:
             if n:
                 na = "\"%s\" <%s>" %(n, a)
+            elif need_angle:
+                na = "<%s>" % a
             else:
                 na = a
             if wrap:
@@ -314,7 +327,8 @@ class compose_email(edlib.Pane):
                 # make space or tag light blue, and body dark blue
                 # If tag is unknown, make it grey
                 rv2 = self.call("text-match",
-                                "?i:(from|to|cc|subject|in-reply-to):", mark.dup())
+                                "?i:(from|to|cc|subject|in-reply-to|references):",
+                                mark.dup())
                 if rv2 > 0:
                     comm2("cb", focus, mark, rv-1, "fg:blue+30", 2)
                 else:
