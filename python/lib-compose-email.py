@@ -239,8 +239,9 @@ class compose_email(edlib.Pane):
     def insert_header_mark(self):
         # insert header at first blank line, or end of file
         m = edlib.Mark(self, self.view)
-        r = self.call("text-search", "^$", m)
-        if r <= 0:
+        try:
+            self.call("text-search", "^$", m)
+        except:
             self.call("doc:set-ref", 0, m)
         m2 = edlib.Mark(orig=m)
         m2.step(0)

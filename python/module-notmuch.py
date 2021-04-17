@@ -1540,7 +1540,7 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def make_composition(self, focus):
-        m = focus.call("doc:from-text", "*New mail message*", "\n\n",
+        m = focus.call("doc:from-text", "*New mail message*", "",
                        ret = 'focus')
         m['view-default'] = 'compose-email'
         # fixme: add this to a list?
