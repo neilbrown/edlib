@@ -188,7 +188,7 @@ class MakePane(edlib.Pane):
             elif ch == '\n':
                 ln -= 1
         if ln == 1:
-            mk = d.call("doc:vmark-get", self, v, lm, 3, ret='mark')
+            mk = d.call("doc:vmark-get", self, v, lm, 3, ret='mark2')
             if not mk or mk['line'] != lineno:
                 mk = edlib.Mark(d, v, owner=self)
                 mk.to_mark(lm)
