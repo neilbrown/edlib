@@ -81,7 +81,7 @@ Requirements for a v1.0 release
 - [ ] nano mode(?)
 - [ ] introspection
 - [ ] markdown editor with PDF output
-- [ ] spell checking
+- [X] spell checking
 - [ ] non-line-based render, such as a tabular render for spreadsheet.
 - [ ] documentation reader
 - [ ] block-dev (mmap) doc type, and some hex-mode support
@@ -160,7 +160,7 @@ Core features
 - [ ] support $SUBST in file-open path names ??
 - [ ] Need a debug mode where every mark usage is checked for validity.
       also check the setref sets up all linkages.
-- [ ] remove all FIXMEs (there are 55) ... and any HACKs (5).
+- [ ] remove all FIXMEs (there are 72) ... and any HACKs (2).
 - [ ] Replace asserts with warnings where possible.
 - [ ] hide view-num inside pane so number cannot be misused.
      i.e. each view is owned by a pane and can only be used by that pane.
@@ -182,6 +182,8 @@ Module features
 
 
 ### rexel
+
+- [ ] move to separate git repo and document well.
 
 
 ### popup
@@ -634,6 +636,9 @@ Module features
 - [X] headers have suitable highlighting.
 - [ ] auto-insert signature... like an attachment?
 - [ ] address-completion should be referred to module, not assumed to be notmuch
+- [ ] support address book and allow completion from there
+- [ ] markdown mode that creats HTML?
+- [ ] encryption and signing
 
 ### Presenter
 
@@ -714,7 +719,7 @@ Module features
 - [ ] the 'back' option doesn't work.  Need to discard current
       expansion first.
 
-### spell checker
+### spell-checker
 - [ ] extract words better. e.g. '-' and '/' separate words.
       Maybe have a regexp which defaults [A-Za-z.']+ ??
 - [ ] Split out add-range and del-range code
@@ -749,7 +754,7 @@ Module features
 New Modules - simple
 --------------------
 
-- [ ] move charset support? Next in my popularity list from my email database
+- [ ] more charset support? Next in my popularity list from my email database
      are: is0-8859-15  gb2312 iso-8859-2 iso-2022-jp gbk ansi_x3
 
 Possibly some of these will end up being features in other modules.
@@ -923,21 +928,6 @@ matter where in the function I am editing, and as many of the
 variables as possible.  If I am in an “if” statement in a “for” look,
 then the loop header and the if condition would be displayed if at all
 possible.
-
-### email composition
-
-There a several parts to composing an email message:
-
-- Adding addresses - with auto-completion from address book or recent
-  correspondents.
-- adding text, possibly with mark-up (maybe to be converted to HTML).
-- General text-edit support: wrap, auto-indent, spell-check
-- adding attachments - with MIME-type and inline/attachment flags
-- encrypt and sign
-- sending the email
-
-Some of this would be left to external tools, other bits would need help
-from external tools.
 
 ### git-mode
 
