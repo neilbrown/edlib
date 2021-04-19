@@ -24,6 +24,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] if I remove the unneed ->repositioned=1 in render-lines, search stops
+      refreshing properly.
 - [ ] doc-docs can get confused when I kill buffers from within the view
 - [ ] use iconv(3) for charset conversion
 - [ ] When visiting a file which is found to a link to a different name,

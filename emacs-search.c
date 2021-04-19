@@ -106,7 +106,9 @@ DEF_CMD(search_forward)
 	esi->start = newstart;
 	/* Trigger notification so isearch watcher searches again */
 	call("Replace", ci->home, 1, NULL, "");
-
+	// FIXME should ensure a render-reposition is generated.
+	// currently the Move-View-Pos in emacs_search_highlight
+	// does this, but we need to be more explicit.
 	if (!esi->matched && strcmp(ci->key, "search:again") == 0)
 		return Efail;
 	return 1;

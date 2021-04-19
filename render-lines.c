@@ -507,6 +507,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	start = vmark_new(focus, rl->typenum, p);
 	if (!start)
 		goto abort;
+	rl->repositioned = 1;
 	mark_to_mark(start, pm);
 	start = call_render_line_prev(focus, start, 0, &rl->top_sol);
 	if (!start)
@@ -998,8 +999,11 @@ DEF_CMD(render_lines_revise)
 			rl->tail_height = 0;
 		if (m) {
 			vmark_clear(m);
-			while ((m2 = vmark_next(m)) != NULL)
+			while ((m2 = vmark_next(m)) != NULL) {
+				/* end of view has clearly changed */
+				rl->repositioned = 1;
 				vmark_free(m2);
+			}
 		}
 		if (!pm || on_screen) {
 			if (rl->repositioned) {
@@ -1314,6 +1318,9 @@ DEF_CMD(render_lines_move_pos)
 		/* pos not displayed */
 		find_lines(pm, p, focus, NO_NUMERIC);
 	pane_damaged(p, DAMAGED_REFRESH);
+	/* FIXME this should only be done in the above find_lines(), but
+	 * search currently depends on this incorrect behaviour
+	 */
 	rl->repositioned = 1;
 	return 1;
 }
@@ -1338,7 +1345,6 @@ DEF_CMD(render_lines_view_line)
 	rl->ignore_point = 1;
 	find_lines(pm, p, focus, line);
 	pane_damaged(p, DAMAGED_REFRESH);
-	rl->repositioned = 1;
 	return 1;
 }
 
@@ -1403,6 +1409,11 @@ DEF_CMD(render_lines_move_line)
 		rl->i_moved = 0;
 		return 1;
 	}
+	if (vmark_first(focus, rl->typenum, p) == start) {
+		/* New first mark, so view will have changed */
+		rl->repositioned = 1;
+	}
+
 	if (rl->target_x == 0 && rl->target_y == 0) {
 		/* No need to move to target column - already there.
 		 * This simplifies life for render-complete which is
