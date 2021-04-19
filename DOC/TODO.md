@@ -4,11 +4,12 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] spell-checker refinements
 - [ ] provide a way for ncurses to switch out of display mode
       and to show a url (or similar) which can be copied from terminal
 - [ ] fix bugs
-- [ ] make notmuch useable
-- [ ] make spell-check useful
+- [ ] make notmuch usable
+- [X] make spell-check useful
 - [ ] markdown viewer and editor
 - [ ] lib-diff improvements
 - [ ] lib-mergeview improvements
@@ -26,8 +27,10 @@ Bugs to be fixed
 
 - [ ] if I remove the unneed ->repositioned=1 in render-lines, search stops
       refreshing properly.
+- [ ] at top of just-viewed doc, C-space, eof only highlights last line,
+      when whole fits in the page.
 - [ ] doc-docs can get confused when I kill buffers from within the view
-- [ ] use iconv(3) for charset conversion
+- [ ] use iconv(3) for char-set conversion
 - [ ] When visiting a file which is found to a link to a different name,
       the file isn't reloaded if it has changed.
       Also, following a patch goes to wrong line - by one.  If file
@@ -103,7 +106,7 @@ Core features
 - [ ] give a name to every pane for easier reporting.
 - [ ] reconsider all 'return comm_call()' calls.  Do we every really
       care if the callback succeeded?
-- [X] all function that return 0 or 1 should probably be bool
+- [X] all function that return 0 or 1 should probably be Bool
 - [ ] Change Efallthough to -1 so I can return '0' meaningfully.
       Efalse probably becomes 0.
 - [X] Make it easier for Move-EOL to move to start of next line
@@ -130,7 +133,7 @@ Core features
       running.  For a call handler it does.  This inconsistency is awkward for
       messageline_msg which wants to allow fallthrough, but needs to acknowledge.
       How can I resolve this? Use Efallthrough as -1.
-- [ ] make a doc read-only if dir doesn't exist or isn't writeable
+- [ ] make a doc read-only if dir doesn't exist or isn't writable
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
 - [ ] graceful failure when closing doc that still has views.
@@ -587,6 +590,7 @@ Module features
 - [ ] Open-with always,  Open only if a handler is known
 - [ ] "save" to copy to buffer
 - [ ] save function - doc:save-file given file name or fd
+- [ ] wiggle-highlight patches found in email
 - [X] brief summary of part type in button line
 - [ ] open function
 - [ ] make URLs clickable
@@ -613,8 +617,9 @@ Module features
 - [X] 'to' and 'cc' fields to support address completion
 - [X] 'from' can cycle around options from config
 - [ ] attach files - with type and disposition
-- [ ] spell-checker
+- [X] spell-checker
 - [ ] be smart about quoting displayname before <addr>
+- [ ] highlight interpolated text - red?
 - [ ] capture editting of to/cc and mark ',' as a wrap point.
 - [ ] "post" passes to "notmuch insert -new -unread +outbox --folder=sent"
         add 'sent' to new.ignore??
@@ -712,13 +717,16 @@ Module features
 ### spell checker
 - [ ] extract words better. e.g. '-' and '/' separate words.
       Maybe have a regexp which defaults [A-Za-z.']+ ??
+- [ ] Split out add-range and del-range code
+- [ ] split pane: one attaches to doc and does all spell checking for all viewers,
+      other attaches to view and sends spell-check requests.
 - [ ] mode-specific so latex can ignore \foo
 - [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
-- [ ] auto-spell checking on display
-- [ ] record what has been checked and what hasn't.  When content is changed, remove
+- [X] auto-spell checking on display
+- [X] record what has been checked and what hasn't.  When content is changed, remove
       'is checked' indication for whole line.
-- [ ] mark individual words that are mis-spelled.
-- [ ] command to cycle between options.- maybe similar to Alt-/
+- [X] mark individual words that are mis-spelled.
+- [X] command to cycle between options.- maybe similar to Alt-/
 - [ ] drop-down with options
 - [ ] command to add word to per-document list, or personal list
 

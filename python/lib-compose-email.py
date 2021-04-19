@@ -587,9 +587,12 @@ class compose_email(edlib.Pane):
 def compose_mode_attach(key, focus, comm2, **a):
     focus['fill-width'] = '72'
     p = focus.call("attach-textfill", ret='focus')
-    if not p:
-        p = focus
-    p = compose_email(p)
+    if p:
+        focus = p
+    p = focus.call("attach-autospell", ret='focus')
+    if p:
+        focus = p
+    p = compose_email(focus)
     if comm2:
         comm2("cb", p)
     return 1
