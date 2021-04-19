@@ -45,8 +45,8 @@ Bugs to be fixed
       and do a selection.  x,y location need to be stored too??
 - [X] mouse selection cannot select wrapped section of a line
 - [ ] save-all dialogue sometimes puts cursor at bottom and cannot move up.
-- [ ] 'fill' setting doesn't stick to document
-- [ ] white-space and others cannot be set manually.
+- [X] 'fill' setting doesn't stick to document
+- [X] white-space and others cannot be set manually.
 - [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
      g_main_loop_run->poll
 - [ ] end of file jumps around last few lines of display

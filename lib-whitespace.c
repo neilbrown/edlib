@@ -15,8 +15,10 @@
  * there is one.
  */
 
+#define _GNU_SOURCE /*  for asprintf */
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <wchar.h>
 #include "core.h"
@@ -194,6 +196,23 @@ DEF_CMD(whitespace_attach)
 
 }
 
+DEF_CMD(whitespace_activate)
+{
+	struct pane *p;
+	char *v, *vn = NULL;
+
+	p = call_ret(pane, "attach-whitespace", ci->focus);
+	if (!p)
+		return Efail;
+	v = pane_attr_get(p, "view-default");
+	asprintf(&vn, "%s%swhitespace", v?:"", v?",":"");
+	if (vn) {
+		call("doc:set:view-default", p, 0, NULL, vn);
+		free(vn);
+	}
+	return 1;
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	ws_map = key_alloc();
@@ -204,5 +223,8 @@ void edlib_init(struct pane *ed safe)
 	key_add(ws_map, "Clone", &ws_clone);
 	call_comm("global-set-command", ed, &whitespace_attach,
 		  0, NULL, "attach-whitespace");
+	call_comm("global-set-command", ed, &whitespace_activate,
+		  0, NULL, "interactive-cmd-whitespace-mode");
+
 }
 

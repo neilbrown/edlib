@@ -194,12 +194,15 @@ def get_prefixes(focus, mark, lines):
     return (p0, prefix)
 
 class FillMode(edlib.Pane):
-    def __init__(self, focus, cols=None):
+    def __init__(self, focus, colsarg=None):
         edlib.Pane.__init__(self, focus)
-        if not cols:
-            cols = focus['fill-width']
-            if cols:
-                cols = int(cols)
+        cols = focus['fill-width']
+        if cols:
+            cols = int(cols)
+        elif colsarg:
+            cols = colsarg
+        else:
+            cols = None
         self.cols = cols
 
     def handle_clone(self, key, focus, **a):
@@ -323,6 +326,13 @@ def fill_mode_attach(key, focus, comm2, **a):
 
 def fill_mode_activate(key, focus, comm2, **a):
     FillMode(focus, 72)
+
+    v = focus['view-default']
+    if v:
+        v = v + ',textfill'
+    else:
+        v = 'textfill'
+    focus.call("doc:set:view-default", v)
     return 1
 
 editor.call("global-set-command", "attach-textfill", fill_mode_attach)

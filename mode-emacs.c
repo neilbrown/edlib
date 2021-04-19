@@ -1495,18 +1495,22 @@ DEF_CMD(emacs_command)
 
 DEF_CMD(emacs_do_command)
 {
-	char cmd[30];
+	char *cmd = NULL;
 	int ret;
 
-	snprintf(cmd, sizeof(cmd), "interactive-cmd-%s", ci->str);
+	asprintf(&cmd, "interactive-cmd-%s", ci->str);
+	if (!cmd)
+		return Efail;
 	ret = call(cmd, ci->focus, 0, ci->mark);
+	free(cmd); cmd = NULL;
 	if (ret == 0) {
-		snprintf(cmd, sizeof(cmd), "Command %s not found", ci->str);
+		asprintf(&cmd, "Command %s not found", ci->str);
 		call("Message", ci->focus, 0, NULL, cmd);
 	} else if (ret < 0) {
-		snprintf(cmd, sizeof(cmd), "Command %s Failed", ci->str);
+		asprintf(&cmd, "Command %s Failed", ci->str);
 		call("Message", ci->focus, 0, NULL, cmd);
 	}
+	free(cmd);
 	return 1;
 }
 

@@ -207,6 +207,14 @@ def autospell_attach(key, focus, comm2, **a):
 
 def autospell_activate(key, focus, comm2, **a):
     autospell(focus)
+
+    v = focus['view-default']
+    if v:
+        v = v + ',autospell'
+    else:
+        v = 'autospell'
+    focus.call("doc:set:view-default", v)
+
     return 1
 
 editor.call("global-set-command", "attach-autospell", autospell_attach)
