@@ -93,6 +93,10 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] make Move-Word/WORD/EOL into doc:word/WORD/eol in doc_defaults
+- [ ] change doc:step to accept a count. Returns char after or before final location
+- [ ] separate various doc:vmark-get functions and/or make them easily available
+      from python
 - [ ] 'log' should handle utf8 correctly.
 - [ ] doc_write_file should use doc:content
 - [ ] guard against mark seq number over-flowing.
@@ -675,6 +679,8 @@ Module features
 - [ ] configuration: use only spaces for bracket-alignment indents - or tabs as well.
 - [ ] python-mode: when changing indent, make same change to the whole block.
       Not sure how to handle 'else:' which looks like the next block.
+- [ ] in python mode, a comment at the end of an 'if' block confuses indenting.
+      next line cannot go back one level
 
 ### lang-python
 
@@ -722,11 +728,12 @@ Module features
 ### spell-checker
 - [ ] extract words better. e.g. '-' and '/' separate words.
       Maybe have a regexp which defaults [A-Za-z.']+ ??
-- [ ] Split out add-range and del-range code
+- [X] Split out add-range and del-range code
 - [ ] split pane: one attaches to doc and does all spell checking for all viewers,
       other attaches to view and sends spell-check requests.
 - [ ] mode-specific so latex can ignore \foo
 - [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
+- [ ] after alt-; lists option, allow 0,1,2 etc to choose options, a to add etc.
 - [X] auto-spell checking on display
 - [X] record what has been checked and what hasn't.  When content is changed, remove
       'is checked' indication for whole line.

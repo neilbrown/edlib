@@ -6,8 +6,131 @@
 #    those that aren't in a dictionary
 #
 
-# Fix me: we aren't spell-checking the word immediately after a change
-#     or new text as typed, though sometimes it works
+# We keep a list of marks which alternate between the start and end
+# of a "checked" section of text.  The 'start' marks have an attribute
+# ('spell:start') set.  The 'end' marks do not.
+# We remove ranges from this list when the document is changed.  This
+# might require splitting a 'checked' section, or removing some completely.
+# We add ranges when a word is checked.  This might merge with existing
+# ranges.
+# We need to find an unchecked section in some range to start checking.
+# This is all managed by:
+#   remove_range(focus, viewnum, attr, start, end)
+#   add_range(focus, viewnum, attr, start, end)
+#   choose_range(focus, viewnum, attr, start, end) - changes start and end to be
+#    a contiguous unchecked section in the range
+
+def remove_range(focus, viewnum, attr, start, end):
+    m = focus.call("doc:vmark-get", viewnum, start, 3, ret='mark2')
+    if m and not m[attr]:
+        # immediately after start is not active, so the earlist we might need
+        # to remove is the next mark, or possibly the very first
+        if m:
+            m = m.next()
+        else:
+            m = focus.call("doc:vmark-get", viewnum, ret='mark')
+        if not m or m > end:
+            # Nothing to remove
+            return
+    else:
+        # from m to start are in a range and should stay there.
+        # split the range from 'm' at 'start'
+        m = edlib.Mark(focus, view = viewnum)
+        m.to_mark(start)
+        m = edlib.Mark(orig=m, owner = focus)
+        # ensure the m is after the previous one
+        m.step(1)
+        m[attr] = 'yes'
+    # m is now the start of an active section that is within start-end
+    # and should be removed
+    m2 = focus.call("doc:vmark-get", viewnum, end, 3, ret='mark2')
+    if m2 and m2 == end and m2[attr]:
+        # this section is entirely after end, so not interesting
+        m2 = m2.prev()
+    if m2 and m2[attr]:
+        # end is within an active section that needs to be split
+        m2 = edlib.Mark(focus, view = viewnum)
+        m2.to_mark(end)
+        m2[attr] = 'yes'
+        m2 = edlib.Mark(orig=m2, owner=focus)
+        m2.step(0)
+    # m2 is now the end of an active section tht needs to be
+    # discarded
+    while m < m2:
+        old = m
+        m = m.next()
+        old.release()
+    m2.release()
+    return
+
+def add_range(focus, viewnum, attr, start, end):
+    m1 = focus.call("doc:vmark-get", viewnum, start, 3, ret='mark2')
+    if m1 and m1[attr]:
+        m1 = m1.next()
+        # can move m1 down as needed
+    elif m1 and m1 == start:
+        # can move m1 down
+        pass
+    else:
+        m1 = None
+        # must create new mark, or move a later mark up
+    m2 = focus.call("doc:vmark-get", viewnum, end, 3, ret='mark2')
+    if m2 and not m2[attr]:
+        if m2 == end:
+             m2 = m2.prev()
+             # can move m2 earlier
+        else:
+            # end not in range, must create mark or move earlier up
+            m2 = None
+    # if m2, then can move it backwards.  No need to create
+    if not m1 and not m2:
+        # no overlaps, create new region
+        m1 = edlib.Mark(focus, viewnum)
+        m1.to_mark(start)
+        m2 = edlib.Mark(orig=m1, owner=focus)
+        m2.to_mark(end)
+        m1[attr] = 'yes'
+    elif m1 and not m2:
+        # can move m1 down to end, removing anything in the way
+        m = m1.next()
+        while m and m <= end:
+            m.release()
+            m = m1.next()
+        m1.to_mark(end)
+    elif not m1 and m2:
+        # can move m2 up to start, removing things
+        m = m2.prev()
+        while m and m >= start:
+            m.release()
+            m = m2.prev()
+        m2.to_mark(start)
+    else:
+        # can remove all from m1 to m2 inclusive
+        while m1 < m2:
+            m = m1.next()
+            m1.release()
+            m1 = m
+        m2.release()
+
+def choose_range(focus, viewnum, attr, start, end):
+    # contract start-end so that none of it is in-range
+    m1 = focus.call("doc:vmark-get", viewnum, start, 3, ret='mark2')
+    if m1 and not m1[attr]:
+        m2 = m1.next()
+        # start not in-range, end must not exceed m1
+    elif m1 and m1[attr]:
+        # start is in range - move it forward
+        m1 = m1.next()
+        if m1:
+            start.to_mark(m1)
+            m2 = m1.next()
+        else:
+            # error
+            m2 = start
+    else:
+        m2 = focus.call("doc:vmark-get", viewnum, ret='mark')
+    if m2 and m2 < end:
+        end.to_mark(m2)
 
 class autospell(edlib.Pane):
     def __init__(self, focus):
@@ -78,24 +201,21 @@ class autospell(edlib.Pane):
         if done:
             if done['spell:start']:
                 done = done.next()
-        if not done or done < self.vstart:
-            # vstart not within a 'done' region, so create a new
-            # empty region and extend the 'end' forward
-            done = edlib.Mark(focus, view = self.view, owner=self)
-            done.to_mark(self.vstart)
-            done['spell:start'] = 'yes'
-            done = edlib.Mark(orig=done, owner=self)
-            done.step(1)
-        # 'done' is now an end-of-done-region marker that is not before vstart
+        start = self.vstart.dup()
+        end = self.vend.dup()
+        choose_range(self, self.view, 'spell:start', start, end)
+        if start >= end:
+            # nothing to do
+            return edlib.Efail
+
         remain = 20
         ch = None
-        next_done = done.next()
-        while done < self.vend and (not next_done or
-                                    done <= next_done) and remain > 0:
+        while start < end and remain > 0:
             remain -= 1
-            focus.call("Move-WORD", done, 1)
-            focus.call("Move-Char", done, 1)
-            st = done.dup()
+            m = start.dup()
+            focus.call("Move-WORD", m, 1)
+            focus.call("Move-Char", m, 1)
+            st = m.dup()
             focus.call("Move-WORD", st, -1)
             ed = st.dup()
             focus.call("Move-WORD", ed, 1)
@@ -113,9 +233,11 @@ class autospell(edlib.Pane):
             # are good, periods might be good.  Hyphens are probably
             # bad.  Need to clean this up more. FIXME
             word = focus.call("doc:get-str", st, ed, ret='str')
-            if ed > done:
-                done.to_mark(ed)
-            ch = focus.next(done)
+            if ed > m:
+                m.to_mark(ed)
+            ch = focus.next(m)
+            add_range(self, self.view, 'spell:start', start, m)
+            start = m
             if ch == None:
                 remain = 0
             if word:
@@ -127,14 +249,7 @@ class autospell(edlib.Pane):
                 else:
                     focus.call("doc:set-attr", st, "render:spell-incorrect",
                                None);
-        if next_done and next_done <= done:
-            # joined with next "done" region
-            next_done.release()
-            done.release()
-            done = None
-            self.sched()
-        elif done <= self.vend and ch:
-            self.sched()
+        self.sched()
         return edlib.Efail
 
     def handle_replace(self, key, focus, mark, mark2, num2, **a):
@@ -156,46 +271,8 @@ class autospell(edlib.Pane):
         mark2 = mark2.dup()
         focus.next(mark2)
 
-        d = self.call("doc:vmark-get", self.view, mark, 3, ret='mark2')
-        if not d or not d['spell:start']:
-            # just after 'mark' is not done so the earliest we might need
-            # to clear is the next or first mark
-            if d:
-                d = d.next()
-            else:
-                d = self.call("doc:vmark-get", self.view, ret='mark')
-            if not d or d > mark2:
-                # nothing to clear
-                return 1
-            # d is now the start of a 'done' section that in within mark-mark2
-            # and should should be cleared
-        else:
-            # from d to mark are done and should stay that way.
-            d = edlib.Mark(focus, view = self.view, owner=self)
-            d.to_mark(mark)
-            d = edlib.Mark(orig=d, owner=self)
-            d.step(1)
-            d['spell:start'] = 'yes'
-            # d is start of a newly-split 'done' that must be cleared
-        d2 = self.call("doc:vmark-get", self.view, mark2, 3, ret='mark2')
-        if d2 and d2 == mark2 and d2['spell:start']:
-            # this done section is entirely after mark2, so not interesting
-            d2 = d2.prev()
-        if d2 and d2['spell:start']:
-            # mark2 is within a 'done' region that needs to be split
-            d2 = edlib.Mark(focus, view = self.view, owner=self)
-            d2.to_mark(mark2)
-            d2['spell:start'] = 'yes'
-            d2 = edlib.Mark(orig=d2, owner=self)
-            d2.step(0)
+        remove_range(self, self.view, "spell:start", mark, mark2)
 
-        # d2 is now the end of a done region that needs to be discarded
-        done = self.call("doc:vmark-get", self.view, ret='mark')
-        while d < d2:
-            o = d
-            d = d.next()
-            o.release()
-        d2.release()
         self.sched()
         return 1
 
