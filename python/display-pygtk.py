@@ -27,7 +27,8 @@ class EdDisplay(edlib.Pane):
         self.win.set_title("EDLIB")
         self.win.connect('destroy', self.close_win)
         self.create_ui()
-        self["scale:A"] = "%dx%d" % (self.charwidth, self.lineheight)
+        # report approximate size of an "M"
+        self["scale:M"] = "%dx%d" % (self.charwidth, self.lineheight)
         self.w = int(self.charwidth * 80.0)
         self.h = int(self.lineheight * 24.0)
         self.call("editor:request:all-displays")

@@ -967,8 +967,11 @@ struct xy pane_scale(struct pane *p safe)
 	 * scale.x should be passed to text-size and and Draw:text to get
 	 * correctly sized text
 	 *
+	 * "scale:M" is provided by the display module and reports
+	 * the size of a captial M in default fond - width and height in pixels
+	 *
 	 */
-	char *scM = pane_attr_get(p, "scale:A");
+	char *scM = pane_attr_get(p, "scale:M");
 	char *sc;
 	struct xy xy;
 	int w,h;
