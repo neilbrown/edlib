@@ -989,17 +989,13 @@ struct xy pane_scale(struct pane *p safe)
 	sc = pane_attr_get(p, "scale");
 	if (sc == NULL)
 		scale = 1000;
-	else if (sscanf(sc, "x:%d,y:%d", &w, &h) == 2 ||
-		 sscanf(sc, "%dx%d", &w, &h) == 2) {
+	else if (sscanf(sc, "%dx%d", &w, &h) == 2) {
 		/* choose scale so w,h point fits in pane */
 		int xscale, yscale;
 		if (w <= 0) w = 1;
 		if (h <= 0) h = 1;
 		xscale = 1000 * p->w * 10 / mw / w;
 		yscale = 1000 * p->h * 10 / mh / h;
-		if (sc[0] == 'x')
-			/* Old style where 'y' was in 'width' units... */
-			yscale *= 2;
 		scale = (xscale < yscale) ? xscale :  yscale;
 	} else if (sscanf(sc, "%d", &scale) != 1)
 		scale = 1000;
