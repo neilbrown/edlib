@@ -962,8 +962,8 @@ struct xy pane_mapxy(struct pane *p safe, struct pane *target safe,
 struct xy pane_scale(struct pane *p safe)
 {
 	/* "scale" is roughly pixels-per-point * 1000
-	 * So 10*scale.x is the width of a typical character in default font.
-	 * 10*scale.y is the height.
+	 * So 10*scale.x/100 is the width of a typical character in default font.
+	 * 10*scale.y/100 is the height.
 	 * scale.x should be passed to text-size and and Draw:text to get
 	 * correctly sized text
 	 *
@@ -986,6 +986,15 @@ struct xy pane_scale(struct pane *p safe)
 		xy.y = 100;
 		return xy;
 	}
+	/* "scale" is a request to change from the default.
+	 * It can be a simple number, in which case it is 1000 times a scale
+	 * factor, so "500" would be half of default size.
+	 * It can be an x,y pair, e.g. "800x240".
+	 * This chooses a scale so that the given number of points, (1/10 of
+	 * size of default "M") will fit in the pane.  If the pane is resized,
+	 * the scale will automatically adjust to fit the requested number
+	 * of characters.
+	 */
 	sc = pane_attr_get(p, "scale");
 	if (sc == NULL)
 		scale = 1000;
