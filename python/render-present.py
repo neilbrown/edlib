@@ -25,12 +25,19 @@
 #
 # Within text *word* becomes bold (b), _word_ is italic (i) `word` is monospaced (m)
 #
-# attributes can be defined for paragraph types (H1,h2,I,L1,L2,C,P) and text types
-# (b,i,m).  Possible attributes for para or text are:
-#  normal oblique italic bold small-caps large NN family:fontfamily fg:colour bg:colour inverse
+# attributes can be defined for paragraph types (H1,h2,I,L1,L1c,L2,L2c,C,P,BL) and
+# text types ('bold','italic','mono','bullet').  Possible attributes for para or
+# text are:
+#  normal oblique italic bold small-caps large NN family:fontfamily
+#  fg:colour bg:colour inverse bullet:char
 # Possible attributes for para only:
 #   left:size right:size centre space-after:size space-before:size
 #
+# L1c and L2c are continuation paragraphs of a list item.  They typically
+# don't specify a bullet.  The text type "bullet" adds attrs to the bullet
+# character chosen for the paragraph type.
+#
+# THIS IS NOT TRUE
 # All the above can also be given for "default" and apply before other defaults and
 # global/local setting.  "default" can also be given:
 #   xscale:size yscale:size
@@ -38,9 +45,10 @@
 # All sizes are in "points".  A "point" is either the height of the window divided by
 # the yscale size, or the width divided by xscale size, whichever is smaller.
 #
-# global defaults are:
+# global defaults are NOT (see "defaults =" below):
 
-default_attrs = "normal 10 family:sans fg:black bg:white left:5 space-after:1 space-before:1 xscale:10 yscale:40"
+
+default_attrs = "normal 10 family:sans fg:black bg:white left:5 space-after:1 space-before:1 scale:400x200"
 
 # We keep two sets of marks in document for guiding the presentation view.
 # self.pageview provides a mark at the start of each page.  Each mark has two attributes
@@ -149,7 +157,7 @@ class PresenterPane(edlib.Pane):
     def check_start(self, start):
         # This was the start of a page, but might not be any more.  Must check.
         # Following lines must be ":attr:" or "# ".
-        # Preceeding line, if any must not be ":attr:"
+        # Preceding line, if any must not be ":attr:"
         # and must end at 'start'
         m = start.dup()
         l = self.get_line_at(m)
@@ -526,8 +534,8 @@ class PresenterPane(edlib.Pane):
                 line = line[len(prefix):]
             v = self.get_attr(mark, mode, page)
 
-            # leading spaces will confuse 'centre', and using spaces for formating
-            # is to be discourged.  Hard spaces can still be used when needed.
+            # leading spaces will confuse 'centre', and using spaces for formatting
+            # is to be discouraged.  Hard spaces can still be used when needed.
             line = line.strip(' ')
             if mode == 'IM':
                 width=200; height=100
