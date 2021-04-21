@@ -12,7 +12,7 @@ def config_appeared(key, focus, **a):
     p = focus['filename']
 
     if p and ("COMMIT_EDITMSG" in p or "/.stgit" in p):
-        focus.call("doc:set:view-default", "textfill,whitespace")
+        focus.call("doc:set:view-default", "textfill,whitespace,autospell")
         focus.call("doc:set:fill-width", "72")
         if "/git/lustre-release/" in p:
             # looks like a lustre commit, need to limit line width
