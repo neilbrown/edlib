@@ -132,20 +132,17 @@ def choose_range(focus, viewnum, attr, start, end):
     if m2 and m2 < end:
         end.to_mark(m2)
 
-class autospell(edlib.Pane):
+class autospell_monitor(edlib.Pane):
+    # autospell_monitor attaches to a document and track ranges
+    # that have been spell-checked.  Sends notifications when there
+    # is a change, so viewers can do the checking.  Only views know
+    # mode-specific details
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
-        # visible region
-        self.vstart = None
-        self.vend = None
-        # checked marks
         self.view = self.call("doc:add-view") - 1
         self.call("doc:request:doc:replaced")
-        self.scheduled = False
-        # trigger render-lines refresh notification
-        pt = focus.call("doc:point", ret='mark')
-        # This hack causes render:reposition to be resent.
-        focus.call("Move-View-Pos", pt)
+        self.call("doc:request:spell:mark-checked")
+        self.call("doc:request:spell:choose-range")
 
     def handle_close(self, key, **a):
         "handle:Close"
@@ -154,91 +151,11 @@ class autospell(edlib.Pane):
             m.release()
             m = self.call("doc:vmark-get", self.view, ret='mark')
         self.call("doc:del-view", self.view)
-        self.vstart = None
-        self.vend = None
 
-    def handle_clone(self, key, focus, **a):
-        "handle:Clone"
-        p = autospell(focus)
-        self.clone_children(p)
-        return 1
-
-    def handle_clip(self, key, mark, mark2, num, **a):
-        "handle:Notify:clip"
-        self.clip(self.view, mark, mark2, num)
-        if self.vstart:
-            self.vstart.clip(mark, mark2)
-        if self.vend:
-            self.vend.clip(mark, mark2)
-        return edlib.Efallthrough
-
-    def map_attr(self, key, focus, str, str2, mark, comm2, **a):
-        "handle:map-attr"
-        if not str or not mark or not comm2:
-            return edlib.Enoarg
-        if str == "render:spell-incorrect":
-            comm2("cb", focus, int(str2), mark, "fg:red-80,underline", 100)
-        return edlib.Efallthrough
-
-    def reposition(self, key, mark, mark2, **a):
-        "handle:render:reposition"
-        if mark and mark2:
-            self.vstart = mark.dup()
-            self.vend = mark2.dup()
-            self.sched()
-        return edlib.Efallthrough
-
-    def sched(self):
-        if not self.scheduled:
-            self.scheduled = True
-            self.call("event:timer", 10, self.rescan)
-
-    def rescan(self, key, focus, **a):
-        self.scheduled = False
-        if not self.vstart or not self.vend:
-            return edlib.Efalse
-        done = self.call("doc:vmark-get", self.vstart, self.view, 3, ret='mark2')
-        if done:
-            if done['spell:start']:
-                done = done.next()
-        start = self.vstart.dup()
-        end = self.vend.dup()
-        choose_range(self, self.view, 'spell:start', start, end)
-        if start >= end:
-            # nothing to do
-            return edlib.Efail
-
-        remain = 20
-        ch = None
-        while start < end and remain > 0:
-            remain -= 1
-            ed = start.dup()
-            focus.call("Spell:NextWord", ed)
-            st = ed.dup()
-            word = focus.call("Spell:ThisWord", ed, st, ret='str')
-            edlib.LOG("this=",word)
-
-            add_range(self, self.view, 'spell:start', start, ed)
-            start = ed
-            if word:
-                ret = focus.call("Spell:Check", word)
-                if ret < 0:
-                    # definite error: mark it
-                    focus.call("doc:set-attr", st, "render:spell-incorrect",
-                               "%d" % len(word))
-                else:
-                    focus.call("doc:set-attr", st, "render:spell-incorrect",
-                               None);
-            else:
-                remain = -1
-        if remain >= 0:
-            self.sched()
-        return edlib.Efail
-
-    def handle_replace(self, key, focus, mark, mark2, num2, **a):
+    def doc_replace(self, key, focus, mark, mark2, num2, **a):
         "handle:doc:replaced"
         if num2:
-            # only atts changed
+            # only attrs changed
             return 1
         if not mark or not mark2:
             # Should I clean up completely?
@@ -256,17 +173,126 @@ class autospell(edlib.Pane):
 
         remove_range(self, self.view, "spell:start", mark, mark2)
 
-        self.sched()
+        self.call("doc:notify:spell:recheck")
         return 1
 
+    def handle_checked(self, key, mark, mark2, **a):
+        "handle:spell:mark-checked"
+        if mark and mark2:
+            add_range(self, self.view, 'spell:start', mark, mark2)
+        return 1
+
+    def handle_choose(self, key, mark, mark2, **a):
+        "handle:spell:choose-range"
+        if mark and mark2:
+            choose_range(self, self.view, 'spell:start', mark, mark2)
+        return 1
+
+class autospell_view(edlib.Pane):
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus)
+        self.scheduled = False
+        self.helper_attached = False
+        # visible region
+        self.vstart = None
+        self.vend = None
+        self.call("doc:request:spell:recheck")
+        # trigger render-lines refresh notification
+        pt = focus.call("doc:point", ret='mark')
+        # This hack causes render:reposition to be resent.
+        focus.call("Move-View-Pos", pt)
+
+    def handle_clone(self, key, focus, **a):
+        "handle:Clone"
+        p = autospell_view(focus)
+        self.clone_children(p)
+        return 1
+
+    def handle_clip(self, key, mark, mark2, num, **a):
+        "handle:Notify:clip"
+        if self.vstart:
+            self.vstart.clip(mark, mark2)
+        if self.vend:
+            self.vend.clip(mark, mark2)
+        return edlib.Efallthrough
+
+    def map_attr(self, key, focus, str, str2, mark, comm2, **a):
+        "handle:map-attr"
+        if not str or not mark or not comm2:
+            return edlib.Enoarg
+        if str == "render:spell-incorrect":
+            comm2("cb", focus, int(str2), mark, "fg:red-80,underline", 100)
+        return edlib.Efallthrough
+
+    def handle_recheck(self, key, **a):
+        "handle:spell:recheck"
+        self.sched()
+
+    def reposition(self, key, mark, mark2, **a):
+        "handle:render:reposition"
+        if mark and mark2:
+            self.vstart = mark.dup()
+            self.vend = mark2.dup()
+            if (not self.helper_attached and
+                not self.call("doc:notify:doc:spell:mark-checked")):
+                self.call("doc:attach-helper", autospell_attach_helper)
+                self.helper_attached = True
+            self.sched()
+        return edlib.Efallthrough
+
+    def sched(self):
+        if not self.scheduled:
+            self.scheduled = True
+            self.call("event:timer", 10, self.rescan)
+
+    def rescan(self, key, focus, **a):
+        self.scheduled = False
+        if not self.vstart or not self.vend:
+            return edlib.Efalse
+        start = self.vstart.dup()
+        end = self.vend.dup()
+        self.call("doc:notify:spell:choose-range", start, end)
+        if start >= end:
+            # nothing to do
+            return edlib.Efail
+
+        remain = 20
+        ch = None
+        while start < end and remain > 0:
+            remain -= 1
+            ed = start.dup()
+            focus.call("Spell:NextWord", ed)
+            st = ed.dup()
+            word = focus.call("Spell:ThisWord", ed, st, ret='str')
+            self.call("doc:notify:spell:mark-checked", start, ed)
+            start = ed
+            if type(word) == type("str"):
+                ret = focus.call("Spell:Check", word)
+                if ret < 0:
+                    # definite error: mark it
+                    focus.call("doc:set-attr", st, "render:spell-incorrect",
+                               "%d" % len(word))
+                else:
+                    focus.call("doc:set-attr", st, "render:spell-incorrect",
+                               None);
+            else:
+                remain = -1
+        if remain >= 0:
+            self.sched()
+        return edlib.Efail
+
 def autospell_attach(key, focus, comm2, **a):
-    p = autospell(focus)
+    p = autospell_view(focus)
     if comm2:
         comm2("callback", p)
     return 1
 
+def autospell_attach_helper(key, focus, **a):
+    p = autospell_monitor(focus)
+    return 1;
+
 def autospell_activate(key, focus, comm2, **a):
-    autospell(focus)
+    autospell_view(focus)
 
     v = focus['view-default']
     if v:

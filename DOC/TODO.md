@@ -729,7 +729,7 @@ Module features
 - [X] extract words better. e.g. '-' and '/' separate words.
       Maybe have a regexp which defaults [A-Za-z.']+ ??
 - [X] Split out add-range and del-range code
-- [ ] split pane: one attaches to doc and does all spell checking for all viewers,
+- [X] split pane: one attaches to doc and does all spell checking for all viewers,
       other attaches to view and sends spell-check requests.
 - [ ] mode-specific so latex can ignore \foo
 - [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
