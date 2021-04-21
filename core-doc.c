@@ -557,10 +557,10 @@ DEF_CMD(doc_request_notify)
 DEF_CMD(doc_notify)
 {
 	/* Key is "doc:notify:..." */
-	int ret = home_pane_notify(ci->home, ksuffix(ci, "doc:notify:"),
-				   ci->home,
-				   ci->num, ci->mark, ci->str,
-				   ci->num2, ci->mark2, ci->str2, ci->comm2);
+	int ret = pane_notify(ksuffix(ci, "doc:notify:"),
+			      ci->home,
+			      ci->num, ci->mark, ci->str,
+			      ci->num2, ci->mark2, ci->str2, ci->comm2);
 	return ret;
 }
 
@@ -1165,6 +1165,16 @@ out:
 	return 1;
 }
 
+DEF_CMD(doc_attach_helper)
+{
+	if (!ci->comm2)
+		return Enoarg;
+
+	comm_call(ci->comm2, "attach", ci->home, ci->num, NULL, ci->str,
+		  ci->num2, NULL, ci->str2);
+	return 1;
+}
+
 DEF_CMD(doc_abort)
 {
 	struct doc_data *dd = ci->home->data;
@@ -1226,6 +1236,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:push-point", &doc_push_point);
 	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
 	key_add(doc_default_cmd, "doc:attach-view", &doc_attach_view);
+	key_add(doc_default_cmd, "doc:attach-helper", &doc_attach_helper);
 
 	key_add_prefix(doc_default_cmd, "doc:char-", &doc_insert_char);
 	key_add_prefix(doc_default_cmd, "doc:request:",
