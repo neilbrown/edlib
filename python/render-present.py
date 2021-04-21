@@ -706,6 +706,12 @@ class MarkdownPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
 
+    def handle_clone(self, key, focus, **a):
+        "handle:Clone"
+        p = MarkdownPane(focus)
+        self.clone_children(p)
+        return 1
+
     def handle_refresh(self, key, focus, mark, **a):
         "handle:Display:refresh"
         # Refresh causes presentation page to recenter
