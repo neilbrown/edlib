@@ -2249,7 +2249,7 @@ DEF_CMD(emacs_spell)
 		/* looks like we already have a correction here, which might
 		 * be multiple words, so need to check.
 		 */
-		int l = strlen(last); // FIXME utf8 ??
+		int l = utf8_strlen(last);
 		st = mark_dup(ci->mark);
 		while (l > 0 && (ch = doc_prev(ci->focus, st)) == (wint_t)last[l-1])
 			l -= 1;

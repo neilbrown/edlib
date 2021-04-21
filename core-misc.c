@@ -458,3 +458,15 @@ char *safe put_utf8(char *buf safe, wchar_t ch)
 	buf[l] = 0;
 	return buf;
 }
+
+int utf8_strlen(char *s safe)
+{
+	int cnt = 0;
+
+	while (*s) {
+		if ((*s & 0xc0) != 0x80)
+			cnt += 1;
+		s += 1;
+	}
+	return cnt;
+}

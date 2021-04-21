@@ -18,6 +18,7 @@ typedef _Bool bool;
 #define WERR (0xfffffffeu)
 wint_t get_utf8(const char **cpp safe, const char *end);
 char *safe put_utf8(char *buf safe, wchar_t ch);
+int utf8_strlen(char *s safe);
 
 struct buf {
 	char *b safe;
