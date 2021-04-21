@@ -212,36 +212,16 @@ class autospell(edlib.Pane):
         ch = None
         while start < end and remain > 0:
             remain -= 1
-            m = start.dup()
-            focus.call("Move-WORD", m, 1)
-            focus.call("Move-Char", m, 1)
-            st = m.dup()
-            focus.call("Move-WORD", st, -1)
-            ed = st.dup()
-            focus.call("Move-WORD", ed, 1)
-            # discard non-alpha before and after
-            ch = focus.following(st)
-            while st < ed and ch and not ch.isalpha():
-                focus.next(st)
-                ch = focus.following(st)
-            ch = focus.prior(ed)
-            while ed > st and ch and not ch.isalpha():
-                focus.prev(ed)
-                ch = focus.prior(ed)
-            # get the word.  If not empty, this starts and ends
-            # with alpha and might contain puctuation.  Apostrophies
-            # are good, periods might be good.  Hyphens are probably
-            # bad.  Need to clean this up more. FIXME
-            word = focus.call("doc:get-str", st, ed, ret='str')
-            if ed > m:
-                m.to_mark(ed)
-            ch = focus.next(m)
-            add_range(self, self.view, 'spell:start', start, m)
-            start = m
-            if ch == None:
-                remain = 0
+            ed = start.dup()
+            focus.call("Spell:NextWord", ed)
+            st = ed.dup()
+            word = focus.call("Spell:ThisWord", ed, st, ret='str')
+            edlib.LOG("this=",word)
+
+            add_range(self, self.view, 'spell:start', start, ed)
+            start = ed
             if word:
-                ret = focus.call("SpellCheck", word)
+                ret = focus.call("Spell:Check", word)
                 if ret < 0:
                     # definite error: mark it
                     focus.call("doc:set-attr", st, "render:spell-incorrect",
@@ -249,7 +229,10 @@ class autospell(edlib.Pane):
                 else:
                     focus.call("doc:set-attr", st, "render:spell-incorrect",
                                None);
-        self.sched()
+            else:
+                remain = -1
+        if remain >= 0:
+            self.sched()
         return edlib.Efail
 
     def handle_replace(self, key, focus, mark, mark2, num2, **a):

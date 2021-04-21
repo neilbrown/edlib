@@ -89,6 +89,91 @@ DEF_CMD(spell_suggest)
 	return 1;
 }
 
+static inline bool is_word_body(wint_t ch)
+{
+	/* alphabetics, appostrophies */
+	return iswalpha(ch) || ch == '\'';
+}
+
+static inline bool is_word_initial(wint_t ch)
+{
+	/* Word must start with an alphabetic */
+	return iswalpha(ch);
+}
+
+static inline bool is_word_final(wint_t ch)
+{
+	/* Word must end with an alphabetic */
+	return iswalpha(ch);
+}
+
+
+DEF_CMD(spell_this)
+{
+	/* Find a word "here" to spell. It must include the first
+	 * permitted character after '->mark'.
+	 * '->mark' is moved to the end and if ->mark2 is available, it
+	 * is moved to the start.
+	 * If ->comm2 is available, the word is returned as a string.
+	 * This command should ignore any view-specific or doc-specific rules
+	 * about where words are allowed, but should honour any rules about
+	 * what characters can constitute a word.
+	 */
+	wint_t ch;
+	struct mark *m2;
+
+	if (!ci->mark)
+		return Enoarg;
+	while ((ch = doc_next(ci->focus, ci->mark)) != WEOF &&
+	       !is_word_initial(ch))
+		;
+	if (ch == WEOF)
+		return Efalse;
+	if (ci->mark2) {
+		m2 = ci->mark2;
+		mark_to_mark(m2, ci->mark);
+	} else
+		m2 = mark_dup(ci->mark);
+	while ((ch = doc_following(ci->focus, ci->mark)) != WEOF &&
+	       is_word_body(ch))
+		doc_next(ci->focus, ci->mark);
+	while ((ch = doc_prior(ci->focus, ci->mark)) != WEOF &&
+	       !is_word_final(ch))
+		doc_prev(ci->focus, ci->mark);
+
+	while ((ch = doc_prior(ci->focus, m2)) != WEOF &&
+	       is_word_body(ch))
+		doc_prev(ci->focus, m2);
+	while ((ch = doc_following(ci->focus, m2)) != WEOF &&
+	       !is_word_initial(ch))
+		doc_next(ci->focus, m2);
+	if (ci->comm2)
+		call_comm("doc:get-str", ci->focus, ci->comm2,
+			  0, m2, NULL, 0, ci->mark);
+	if (m2 != ci->mark2)
+		mark_free(m2);
+	return 1;
+}
+
+DEF_CMD(spell_next)
+{
+	/* Find the next word-start after ->mark.
+	 * A view or doc might over-ride this to skip over
+	 * content that shouldn't be spell-checked.
+	 */
+	wint_t ch;
+
+	if (!ci->mark)
+		return Enoarg;
+	while ((ch = doc_next(ci->focus, ci->mark)) != WEOF &&
+	       !is_word_initial(ch))
+		;
+	if (ch == WEOF)
+		return Efalse;
+	doc_prev(ci->focus, ci->mark);
+	return 1;
+}
+
 void edlib_init(struct pane *ed safe)
 {
 	spell_config = new_aspell_config();
@@ -98,7 +183,11 @@ void edlib_init(struct pane *ed safe)
 	make_speller(ed);
 
 	call_comm("global-set-command", ed, &spell_check,
-		  0, NULL, "SpellCheck");
+		  0, NULL, "Spell:Check");
 	call_comm("global-set-command", ed, &spell_suggest,
-		  0, NULL, "SpellSuggest");
+		  0, NULL, "Spell:Suggest");
+	call_comm("global-set-command", ed, &spell_this,
+		  0, NULL, "Spell:ThisWord");
+	call_comm("global-set-command", ed, &spell_next,
+		  0, NULL, "Spell:NextWord");
 }

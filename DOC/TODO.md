@@ -35,7 +35,7 @@ Bugs to be fixed
       the file isn't reloaded if it has changed.
       Also, following a patch goes to wrong line - by one.  If file
       isn't already displayed
-- [X] Text containg </> is a problem.  If cursor is just after, it is drawn
+- [X] Text containing </> is a problem.  If cursor is just after, it is drawn
       at start-of-line... oh, I think I know why.
 - [ ] search matches aren't highlighted where there is other highlighting
       like line-too-long or diff colouring
@@ -127,7 +127,7 @@ Core features
       pointer separate to 'focus'?  Maybe panes could have optional
       'child' method which returns main child - pane_leaf() calls that.
       Maybe pane_leaf() find a pane with z=0 and matching w,h ??
-- [ ] maybe generalize search and select somehow, so a line-based filter can
+- [ ] maybe generalise search and select somehow, so a line-based filter can
       detect and highlight the selection, rather than major-mode being fully
       in control  Similarly search might be handled by a render pane.
 - [ ] should pane_clone_children() copy attrs too?
@@ -236,7 +236,7 @@ Module features
           conflicts: red
           in text, space conflicts get underline, no inverse
 - [ ] merge-mode command to select one of the three "this only".
-       "discard" keeps first, or "apply" doest wiggle
+       "discard" keeps first, or "apply" does wiggle
        A-- A-m  to discard, A-1 A-m to apply
 - [ ] merge-mode automatic detect, enable, goto-first
        I'm not sure I want this, but probably try it and see
@@ -546,8 +546,8 @@ Module features
       Use this for emacs, and for saving attachments
 - [ ] when unhiding for a alternate part, hide any others.
 - [ ] separate measuring and drawing images
-- [ ] allow images to be full width, and less thant half height
-- [ ] allow cursor movment in image: maybe 9x9 positions
+- [ ] allow images to be full width, and less than half height
+- [ ] allow cursor movement in image: maybe 9x9 positions
 - [ ] ensure multipart ends each part with an eol.
 - [ ] next part/prev part button on spacer
 - [ ] handle calendar attachments.
@@ -626,14 +626,14 @@ Module features
 - [X] spell-checker
 - [ ] be smart about quoting displayname before <addr>
 - [ ] highlight interpolated text - red?
-- [ ] capture editting of to/cc and mark ',' as a wrap point.
+- [ ] capture editing of to/cc and mark ',' as a wrap point.
 - [ ] "post" passes to "notmuch insert -new -unread +outbox --folder=sent"
         add 'sent' to new.ignore??
 - [ ] "post" adds message-id, date
-- [ ] "post" checks for non-asci and uses quoted-printable if needed.
+- [ ] "post" checks for non-ASCII and uses quoted-printable if needed.
 - [X] fill-mode, and highlight white-space?  Header line fill with a prefix
 - [ ] If attachments are requested, set mime-version etc
-- [X] put marks around instructions for attachments and don't let them be editted
+- [X] put marks around instructions for attachments and don't let them be edited
 - [ ] inline images get displayed
 - [ ] attach email message: message/rfc
 - [X] 'reply' copies 'from' to 'to', and to/cc to cc
@@ -641,7 +641,7 @@ Module features
 - [ ] auto-insert signature... like an attachment?
 - [ ] address-completion should be referred to module, not assumed to be notmuch
 - [ ] support address book and allow completion from there
-- [ ] markdown mode that creats HTML?
+- [ ] markdown mode that creates HTML?
 - [ ] encryption and signing
 
 ### Presenter
@@ -726,7 +726,7 @@ Module features
       expansion first.
 
 ### spell-checker
-- [ ] extract words better. e.g. '-' and '/' separate words.
+- [X] extract words better. e.g. '-' and '/' separate words.
       Maybe have a regexp which defaults [A-Za-z.']+ ??
 - [X] Split out add-range and del-range code
 - [ ] split pane: one attaches to doc and does all spell checking for all viewers,
@@ -745,7 +745,7 @@ Module features
 ### calculator
 - [X] names values are stored in the view pane, not the doc.
       Should I just move them to the doc?  Should I then cache them in the pane?
-      attr lookup on a doc isn't optimized...
+      attr lookup on a doc isn't optimised...
 - [ ] regression test
 - [ ] calc-replace should leave result in selection. - or only in the selection.
 - [ ] calc-replace could cycle through bases.
