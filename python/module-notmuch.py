@@ -28,10 +28,12 @@
 from subprocess import Popen, PIPE, DEVNULL
 import re
 import os
+import os.path
 import notmuch
 import json
 import time
 import fcntl
+import mimetypes
 
 class notmuch_db():
     # This class is designed to be used with "with ... as" and provides
@@ -2235,13 +2237,6 @@ class notmuch_query_view(edlib.Pane):
             focus.call("doc:notmuch:remember-seen-msg", i)
         return edlib.Efallthrough
 
-viewers = {
-    'application/pdf' : "/usr/bin/evince",
-    'image' : "/usr/bin/ristretto",
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
-        '/usr/bin/lowriter',
-}
-
 class notmuch_message_view(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
@@ -2264,9 +2259,14 @@ class notmuch_message_view(edlib.Pane):
                 continue
             path = focus.call("doc:get-attr", "multipart-prev:email:path", m, ret='str')
             type = focus.call("doc:get-attr", "multipart-prev:email:content-type", m, ret='str')
-            global viewers
-            major = type.split('/')[0]
-            if type in viewers or major in viewers:
+            fname = focus.call("doc:get-attr", "multipart-prev:email:filename", m, ret='str')
+            if not fname and type:
+                ext = mimetypes.guess_extension(type)
+                if ext:
+                    fname = "tmp" + ext
+            if fname:
+                # if there is an fname, we can pass to xdg-open, so maybe
+                # there is an external viewer
                 focus.call("doc:set-attr", "multipart-prev:email:actions", m,
                            "hide:save:external view");
             vis = True
@@ -2369,28 +2369,33 @@ class notmuch_message_view(edlib.Pane):
 
     def handle_external(self, key, focus, mark, **a):
         "handle-list/Mouse-Activate:email-external view/email:select:external view"
-        global viewers
         type = focus.call("doc:get-attr", "multipart-prev:email:content-type", mark, ret='str')
         file = focus.call("doc:get-attr", "multipart-prev:email:filename", mark, ret='str')
+        if file:
+            base = os.path.basename(file)
+        elif type:
+            ext = mimetypes.guess_extension(type)
+            if ext:
+                base = "temp" + ext
         if not file:
             file = "temp-file"
-        p = file.split('/')
-        b = p[-1]
-        major = type.split('/')[0]
-        if type in viewers:
-            viewer = viewers[type]
-        elif major in viewers:
-            viewer = viewers[major]
+
+        if '.' in file:
+            p = file.split('.')
+            suffix = '.' + p[-1]
+            prefix = '.'.join(p[:-1])
         else:
-            return Efail
+            prefix = file
+            suffix = None
+
         part = focus.call("doc:get-attr", mark, "multipart:part-num", ret='str')
         part = int(part)-2
-        f = open("/tmp/.edlib-" + b, "w")
+
         content = focus.call("doc:multipart-%d-doc:get-bytes" % part, ret = 'bytes')
-        f.buffer.write(content)
-        f.close()
-        subprocess.Popen([viewer, "/tmp/.edlib-" + b],
-                         stderr = DEVNULL)
+        fd, path = tempfile.mkstemp(suffix, prefix)
+        os.write(fd, content)
+        os.close(fd)
+        subprocess.Popen(["xdg-open", path], stderr = DEVNULL)
         return 1
 
     def handle_map_attr(self, key, focus, mark, str, str2, comm2, **a):
