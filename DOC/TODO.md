@@ -25,6 +25,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] fill-mode is wierd.  Sometimes explicitly giving a fill-width sticks,
+      sometimes not.  What do I really want?
 - [ ] if I remove the unneed ->repositioned=1 in render-lines, search stops
       refreshing properly.
 - [ ] at top of just-viewed doc, C-space, eof only highlights last line,
