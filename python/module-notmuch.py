@@ -25,7 +25,7 @@
 # "saved.misc-list" is a subset of current-list for which saved:current should not
 # be assumed.
 
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, DEVNULL
 import re
 import os
 import notmuch
@@ -108,9 +108,8 @@ class counter:
             return False
         q = self.queue.pop(0)
         self.pending = q
-        # /dev/null is to avoid warning when out-of-date data is reported.
         self.p = Popen("/usr/bin/notmuch count --batch", shell=True, stdin=PIPE,
-                       stdout = PIPE, stderr = open("/dev/null", 'w'))
+                       stdout = PIPE, stderr = DEVNULL)
         try:
             self.p.stdin.write((self.make_search(q) + "\n").encode("utf-8"))
             self.p.stdin.write((self.make_search(q, 'unread') + "\n").encode("utf-8"))
@@ -749,7 +748,7 @@ class notmuch_query(edlib.Doc):
         elif self.age:
             cmd += [ "date:-%dmonths.. AND " % self.age]
         cmd += [ "( %s )" % self.query ]
-        self.p = Popen(cmd, shell=False, stdout=PIPE, stderr = open("/dev/null"))
+        self.p = Popen(cmd, shell=False, stdout=PIPE, stderr = DEVNULL)
         self.call("event:read", self.p.stdout.fileno(), self.get_threads)
 
     def move_marks(self, tid, new):
@@ -2390,8 +2389,8 @@ class notmuch_message_view(edlib.Pane):
         content = focus.call("doc:multipart-%d-doc:get-bytes" % part, ret = 'bytes')
         f.buffer.write(content)
         f.close()
-        null = open(os.devnull, "w")
-        subprocess.Popen([viewer, "/tmp/.edlib-" + b], stderr = null)
+        subprocess.Popen([viewer, "/tmp/.edlib-" + b],
+                         stderr = DEVNULL)
         return 1
 
     def handle_map_attr(self, key, focus, mark, str, str2, comm2, **a):

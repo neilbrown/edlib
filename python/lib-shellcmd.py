@@ -28,7 +28,6 @@ class ShellPane(edlib.Pane):
         cmd = str
         cwd = str2
         header = num != 0
-        FNULL = open(os.devnull, 'r')
         if not cwd:
             cwd=self['dirname']
         if not cwd:
@@ -43,10 +42,9 @@ class ShellPane(edlib.Pane):
                                          start_new_session=True,
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.STDOUT,
-                                         stdin = FNULL)
+                                         stdin =subprocess.DEVNULL)
         except:
             self.pipe = None
-        FNULL.close()
         if not self.pipe:
             return False
         self.call("doc:set:doc-status", "Running")
