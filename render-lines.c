@@ -493,6 +493,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	short lines_above = 0, lines_below = 0;
 	short offset;
 	int found_start = 0, found_end = 0;
+	bool ignore_top = True, ignore_bot = True;
 	short y_pre = 0, y_post = 0;
 	short line_height_pre = 1, line_height_post = 1;
 
@@ -557,17 +558,15 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	 * y_pre + y + y_post vertial space.
 	 */
 
-	if (bot && !mark_ordered_or_same(bot, start))
-		/* already before 'bot', so will never "cross over" bot, so
-		 * ignore 'bot'
-		 */
-		bot = NULL;
-	if (top && (!end || !mark_ordered_or_same(end, top)))
-		top = NULL;
+	if (bot && mark_ordered_or_same(bot, start))
+		/* could cross bot, don't don't ignore it */
+		ignore_bot = False;
+	if (top && end && mark_ordered_or_same(end, top))
+		ignore_top = False;
 	if (vline != NO_NUMERIC) {
 		/* ignore current position - top/bot irrelevant */
-		top = NULL;
-		bot = NULL;
+		ignore_top = True;
+		ignore_bot = True;
 	}
 
 	while ((!found_start || !found_end) && y < p->h) {
@@ -583,13 +582,14 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			found_start = step_back(p, focus, &start, &end,
 						&y_pre, &line_height_pre);
 
-		if (found_end && y_post && bot && mark_ordered_or_same(start, bot))
+		if (found_end && y_post && bot && !ignore_bot &&
+		    mark_ordered_or_same(start, bot))
 			/* Extra vertical space gets inserted after EOF when
 			 * there is a long jump to get there, but if we it 'bot'
 			 * soon when searching back, we discard any unused space.
 			 */
 			y_post = 0;
-		if (!found_end && bot &&
+		if (!found_end && bot && !ignore_bot &&
 		    mark_ordered_or_same(start, bot) &&
 		    (!mark_same(start, bot) || y_pre - rl->skip_height >= y_post))
 			/* FIXME: this needs some explanation */
@@ -599,7 +599,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			/* step forwards */
 			found_end = step_fore(p, focus, &start, &end,
 					      &y_post, &line_height_post);
-		if (!found_start && top && end &&
+		if (!found_start && top && end && !ignore_top &&
 		    mark_ordered_or_same(top, end) &&
 		    (!mark_same(top, end) || y_post - rl->tail_height >= y_pre))
 			found_start = 1;
@@ -649,6 +649,12 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		y += hp->h;
 	}
 	pane_damaged(p, DAMAGED_REFRESH);
+	m = vmark_first(focus, rl->typenum, p);
+	if (!m || !top || !mark_same(m, top))
+		rl->repositioned = 1;
+	m = vmark_last(focus, rl->typenum, p);
+	if (!m || !bot || !mark_same(m, bot))
+		rl->repositioned = 1;
 
 abort:
 	mark_free(top);
