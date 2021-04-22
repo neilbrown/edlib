@@ -2207,9 +2207,10 @@ struct bb {
 	struct buf b;
 	struct command c;
 	bool first;
-	int start;
 	int count;
 };
+static const char spell_choices[] =
+	"0123456789-=;,/ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 DEF_CB(get_suggestion)
 {
 	struct bb *b = container_of(ci->comm, struct bb, c);
@@ -2217,12 +2218,16 @@ DEF_CB(get_suggestion)
 	if (!ci->str)
 		return Enoarg;
 
-	if (b->first) {
-		buf_concat(&b->b, " - possibly ");
-		b->start = b->b.len;
-	} else
+	if (b->first)
+		buf_concat(&b->b, " - (a)ccept, (i)nsert - ");
+	else
 		buf_concat(&b->b, ", ");
 	b->first = False;
+	if (b->count < (int)sizeof(spell_choices)-1) {
+		buf_append(&b->b, '(');
+		buf_append(&b->b, spell_choices[b->count]);
+		buf_append(&b->b, ')');
+	}
 	b->count += 1;
 	buf_concat(&b->b, ci->str);
 	return 1;
@@ -2233,44 +2238,22 @@ DEF_CMD(emacs_spell)
 	struct mark *st;
 	char *word;
 	int ret;
-	wint_t ch;
-	char *last;
 	int rpt = RPT_NUM(ci);
 
 	if (!ci->mark)
 		return Enoarg;
 
-	if (rpt < 0)
-		/* '-' means 'forever */
-		rpt = 10000000;
-
-	last = attr_find(ci->mark->attrs, "spell:prev-error");
-	if (last) {
-		/* looks like we already have a correction here, which might
-		 * be multiple words, so need to check.
-		 */
-		int l = utf8_strlen(last);
-		st = mark_dup(ci->mark);
-		while (l > 0 && (ch = doc_prev(ci->focus, st)) == (wint_t)last[l-1])
-			l -= 1;
-		if (l == 0) {
-			word = strdup(last);
-			goto found;
-		}
-		mark_free(st);
-	}
 	/* We always find a word that is partly *after* the given
 	 * make, but we want to find the word before point, so step
 	 * back.
 	 */
 	doc_prev(ci->focus, ci->mark);
 again:
-	if (ci->num == NO_NUMERIC)
+	if (ci->num != NO_NUMERIC)
 		/* As a repeat-count was given, only look at intersting words */
 		call("Spell:NextWord", ci->focus, 0, ci->mark);
 	st = mark_dup(ci->mark);
 	word = call_ret(str, "Spell:ThisWord", ci->focus, 0, ci->mark, NULL, 0, st);
-	LOG("this is <%s>", word);
 	if (!word || !*word) {
 		/* No word found */
 		call("Message", ci->focus, 0, NULL,
@@ -2279,50 +2262,11 @@ again:
 		mark_free(st);
 		return 1;
 	}
-	last = attr_find(ci->focus->attrs, "spell:last-error");
-found:
-	if (ci->num == NO_NUMERIC && last && strcmp(word, last) == 0) {
-		/* already checked this one, try a suggestion */
-		char *suggest = attr_find(ci->focus->attrs,
-					  "spell:suggestions");
-		int next = attr_find_int(ci->focus->attrs,
-					 "spell:next");
-		int i;
-		char *s;
-		char *msg = NULL;
-
-		if (!suggest)
-			return 1;
-		s = suggest;
-		for (i = 0; i < next && s; i++) {
-			s = strchr(s, ',');
-			if (s)
-				s += 1;
-		}
-		if (s)
-			suggest = s;
-		while (*suggest == ' ')
-			suggest += 1;
-		s = strchr(suggest, ',');
-		if (s)
-			suggest = strnsave(ci->focus, suggest, s - suggest);
-		call("doc:replace", ci->focus, 0, st, suggest, 0, ci->mark);
-		asprintf(&msg, "Trying spelling suggestion %d of %d.",
-			 next+1, attr_find_int(ci->focus->attrs, "spell:count"));
-		call("Message", ci->focus, 0, NULL, msg);
-		free(msg);
-		attr_set_int(&ci->focus->attrs, "spell:next", next+1);
-		attr_set_str(&ci->focus->attrs, "spell:last-error", suggest);
-		attr_set_str(&ci->mark->attrs, "spell:prev-error", suggest);
-		mark_free(st);
-		return 1;
-	}
-	attr_set_str(&ci->focus->attrs, "spell:last-error", NULL);
 	ret = call("Spell:Check", ci->focus, 0, NULL, word);
 	if (ret > 0) {
 		rpt -= 1;
 		mark_free(st);
-		if (rpt > 0)
+		if (rpt)
 			goto again;
 		call("Message", ci->focus, 0, NULL,
 		     strconcat(ci->focus, "\"", word,
@@ -2348,16 +2292,15 @@ found:
 			attr_set_str(&ci->focus->attrs, "spell:last-error",
 				     word);
 			attr_set_str(&ci->focus->attrs, "spell:suggestions",
-				     buf_final(&b.b) + b.start);
-			attr_set_int(&ci->focus->attrs, "spell:next", 0);
-			attr_set_int(&ci->focus->attrs, "spell:count", b.count);
-			attr_set_str(&ci->mark->attrs, "spell:prev-error", word);
+				     buf_final(&b.b));
+			attr_set_int(&ci->focus->attrs, "spell:offset", 0);
 		}
-		call("Message", ci->focus, 0, NULL, buf_final(&b.b));
+		call("Mode:set-all", ci->focus, rpt-1, NULL, ":Spell");
+		call("Message:modal", ci->focus, 0, NULL, buf_final(&b.b));
 		free(buf_final(&b.b));
 	} else if (ret == Efail) {
 		rpt -= 1;
-		if (rpt > 0)
+		if (rpt)
 			goto again;
 
 		call("Message", ci->focus, 0, NULL,
@@ -2370,6 +2313,104 @@ found:
 	mark_free(st);
 	return 1;
 }
+
+DEF_CMD(emacs_spell_choose)
+{
+	const char *k = ksuffix(ci, "K:Spell-");
+	char match[4] = "( )";
+	char *suggest = attr_find(ci->focus->attrs,
+				  "spell:suggestions");
+	char *last = attr_find(ci->focus->attrs,
+			       "spell:last-error");
+	char *cp, *ep;
+	struct mark *m;
+	int i;
+
+	if (!*k || !suggest || !last || !ci->mark)
+		return 1;
+	match[1] = *k;
+	cp = strstr(suggest, match);
+	if (!cp)
+		return 1;
+	cp += 3;
+	ep = strchr(cp, ',');
+	if (ep)
+		cp = strnsave(ci->focus, cp, ep-cp);
+
+	m = mark_dup(ci->mark);
+	i = utf8_strlen(last);
+	while (i > 0) {
+		doc_prev(ci->focus, m);
+		i -= 1;
+	}
+	call("doc:replace", ci->focus, 0, m, cp, 0, ci->mark);
+	attr_set_str(&ci->focus->attrs, "spell:suggestions", NULL);
+	attr_set_str(&ci->focus->attrs, "spell:last-error", NULL);
+
+	doc_next(ci->focus, ci->mark);
+	if (ci->num)
+		home_call(ci->home, "emacs:respell", ci->focus,
+			  ci->num, ci->mark, NULL,
+			  ci->num2, ci->mark2);
+
+	return 1;
+}
+
+DEF_CMD(emacs_spell_abort)
+{
+	return 1;
+}
+
+DEF_CMD(emacs_spell_skip)
+{
+	doc_next(ci->focus, ci->mark);
+	if (ci->num)
+		home_call(ci->home, "emacs:respell", ci->focus,
+			  ci->num, ci->mark, NULL,
+			  ci->num2, ci->mark2);
+	return 1;
+}
+
+DEF_CMD(emacs_spell_insert)
+{
+	return 1;
+}
+
+DEF_CMD(emacs_spell_accept)
+{
+	return 1;
+}
+
+static int spell_shift(struct pane *focus safe, int num, int inc)
+{
+	int o = pane_attr_get_int(focus, "spell:offset", 0);
+	int i;
+	char *msg;
+	char *c;
+
+	o += inc;
+	msg = pane_attr_get(focus, "spell:suggestions");
+	if (!msg)
+		return 1;
+	for (i = 0; i < o && (c = strchr(msg, ',')) != NULL; i++)
+		msg = c+1;
+	attr_set_int(&focus->attrs, "spell:offset", i);
+
+	call("Mode:set-all", focus, num, NULL, ":Spell");
+	call("Message:modal", focus, 0, NULL, msg);
+	return 1;
+}
+
+DEF_CMD(emacs_spell_left)
+{
+	return spell_shift(ci->focus, ci->num, -1);
+}
+
+DEF_CMD(emacs_spell_right)
+{
+	return spell_shift(ci->focus, ci->num, 1);
+}
+
 
 DEF_PFX_CMD(alt_cmd, ":A");
 DEF_PFX_CMD(cx_cmd, ":CX");
@@ -2502,6 +2543,17 @@ static void emacs_init(void)
 	key_add(m, "K:A:C-Q", &emacs_fill);
 	key_add(m, "K:A-/", &emacs_abbrev);
 	key_add(m, "K:A-;", &emacs_spell);
+	key_add(m, "emacs:respell", &emacs_spell);
+	key_add_prefix(m, "K:Spell-", &emacs_spell_choose);
+	key_add(m, "K:Spell-a", &emacs_spell_accept);
+	key_add(m, "K:Spell-i", &emacs_spell_insert);
+	key_add(m, "K:Spell- ", &emacs_spell_skip);
+	key_add(m, "K:Spell:Enter", &emacs_spell_abort);
+	key_add(m, "K:Spell:ESC", &emacs_spell_abort);
+	key_add(m, "K:Spell:Left", &emacs_spell_left);
+	key_add(m, "K:Spell:C-B", &emacs_spell_left);
+	key_add(m, "K:Spell:Right", &emacs_spell_right);
+	key_add(m, "K:Spell:C-F", &emacs_spell_right);
 
 	key_add(m, "K:Help-l", &emacs_showinput);
 

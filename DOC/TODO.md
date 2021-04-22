@@ -6,7 +6,7 @@ Current priorities
 
 - [ ] spell-checker refinements
 - [ ] provide a way for ncurses to switch out of display mode
-      and to show a url (or similar) which can be copied from terminal
+      and to show a URL (or similar) which can be copied from terminal
 - [ ] fix bugs
 - [ ] make notmuch usable
 - [X] make spell-check useful
@@ -25,9 +25,9 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] fill-mode is wierd.  Sometimes explicitly giving a fill-width sticks,
+- [ ] fill-mode is weird.  Sometimes explicitly giving a fill-width sticks,
       sometimes not.  What do I really want?
-- [ ] if I remove the unneed ->repositioned=1 in render-lines, search stops
+- [ ] if I remove the unneeded ->repositioned=1 in render-lines, search stops
       refreshing properly.
 - [ ] at top of just-viewed doc, C-space, eof only highlights last line,
       when whole fits in the page.
@@ -64,7 +64,7 @@ Bugs to be fixed
 - [X] When cursor is off-screen pygtk cursor gets drawn on background and
       stays there.  I think pygtk needs to know about an off-screen cursor
       and draw that explicitly in 'refresh()'.  For that to work, render-lines
-      need to explicitly tell it that this is offscreen, so that it can be ignored
+      need to explicitly tell it that this is off-screen, so that it can be ignored
       when not in-focus, or drawn if it is.
       Similar thing happens with ncurses.  scroll-wheel in non-focus pane and _ appears
       at bottom-right, and doesn't go away when cursor re-appears
@@ -161,7 +161,7 @@ Core features
 - [ ] Make it possible to unload C modules when refcount on all commands
       reaches zero
 - [ ] Make it possible to unload Python modules
-- [ ] malloc anti-fail policy.  Small allocations don't fail but use pre-allocated.
+- [ ] Mellon anti-fail policy.  Small allocations don't fail but use pre-allocated.
       large allocations use different API and can fail.
 - [ ] support $SUBST in file-open path names ??
 - [ ] Need a debug mode where every mark usage is checked for validity.
@@ -292,10 +292,10 @@ Module features
 ### ncurses
 
 - [ ] add full list of colour names (to lib-colourmap)
-- [ ] allow a pane to require 'true-color' and discover number of colours available
+- [ ] allow a pane to require 'true-colour' and discover number of colours available
       Colour map gets changed when it becomes the focus.
 - [ ] merge 'catpic' code to draw low-res images.
-- [ ] When only 16 colors, maybe add underline when insufficient contrast available.
+- [ ] When only 16 colours, maybe add underline when insufficient contrast available.
 - [ ] automatically ensure the fg colour contrasts with bg, unless explicitly disabled.
       If bg is bright, reduce fg brightness.  If bg is dark, reduce saturation.
 
@@ -309,15 +309,15 @@ Module features
       Particularly an ssh connection to an ncurses display.
       The problem is the x11selection X connection. When it is closed, the
       whole app dies!
-      ARRG.  This is a gtk bug that emacs wants fixed too.  I guess maybe
-      I need something other than gtk... I wonder if I can tollerate tk??
+      ARRG.  This is a gtk bug that Emacs wants fixed too.  I guess maybe
+      I need something other than gtk... I wonder if I can tolerate tk??
       or PyFLTK or WxWidgets .... or XCB??
       Or maybe run any gtk code in a separate process... or task?
 
 ### render-lines
 
 - [ ] improve 'margin' to permit cursor in margin at start of file
-- [ ] improve 'margin' to honor previous view of doc
+- [ ] improve 'margin' to honour previous view of doc
 - [ ] update_line_height should handle TAB (and any control) - cannot expect
       text-size to handle it.
 - [ ] adding 10% height at e-o-f doesn't make sense with a one-line display
@@ -346,7 +346,7 @@ Module features
 
 ### lib-macro
 
-- [ ] detect errors includng Abort and search failure etc. Abort capture or
+- [ ] detect errors including Abort and search failure etc. Abort capture or
       replay on error
 - [ ] 'capturing' state should be visible in status line.
 - [ ] Possibly wait for a shell-command etc to complete before continuing.
@@ -360,7 +360,7 @@ Module features
 
 ### doc-text
 
-- [ ] use larger buffers for adding text - especialy when filling from pipe.
+- [ ] use larger buffers for adding text - especially when filling from pipe.
       e.g. new buffer doubles each time??
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
@@ -387,7 +387,7 @@ Module features
 
 ### lib-view
 
-- [ ] easy way for minor-modes to report existance in status bar
+- [ ] easy way for minor-modes to report existence in status bar
 - [ ] review use of line-drawing chars for window boarders
 - [ ] improve scroll bars
 - [ ] make (trailing) space/tab in doc name visible
@@ -482,7 +482,7 @@ Module features
 - [ ] rel_date could report how long until display would change, and
    we could set a timer for the minimum.
 - [ ] allow re-ordering of saved-search list click-drag? +/-?
-- [ ] allow editting of saved searches, including deletion
+- [ ] allow editing of saved searches, including deletion
       must support undo. % for replace?
 - [ ] make sure doc cleans up when closed. processes must be killed
       and query docs must be closed
@@ -530,7 +530,7 @@ Module features
 ###  Notmuch message display
 
 - [ ] application/octet-stream with name "foo.pdf" is a PDF.
-      use mimetypes to intuit type from name?
+      use mime-types to intuit type from name?
 - [ ] support mailcap ???
 - [ ] make it practical for 'text' documents to contain non-utf8 so that
       "Save" can copy to a buffer.
@@ -545,7 +545,7 @@ Module features
 - [ ] detect char-width and suppress images if 1 or 2
 - [ ] create general choose-file pane which can seek an existing, or
       non-existing file.  Allow a default dir which can be remembered.
-      Use this for emacs, and for saving attachments
+      Use this for Emacs, and for saving attachments
 - [ ] when unhiding for a alternate part, hide any others.
 - [ ] separate measuring and drawing images
 - [ ] allow images to be full width, and less than half height
@@ -614,7 +614,7 @@ Module features
 - [ ] Allow any selection to be added to a saved search.
 - [ ] verify signature if present
 - [ ] decrypt if needed
-- [ ] treat message/rfc822 much like multipart
+- [ ] treat message/RFC822 much like multipart
 
 ### Notmuch composition
 
@@ -993,7 +993,7 @@ I want a pane which shows me the structure of all panes, with parent/focus
 links, with notification chains, and with other ad-hoc connections.
 
 I'd also like to be able to follow a command as it moves through the panes.
-This probably needs to be recored, then played back for me.
+This probably needs to be recorded, then played back for me.
 
 ### calendar/diary/planner
 
@@ -1033,7 +1033,7 @@ Non-module functionality
  Both user-documentation and developer documentation, extracted from
  literate programming comments, and viewable using markdown mode.  This
  would include links to other files with more content.  Maybe
- documentation from a given file could be parsed out and displated
+ documentation from a given file could be parsed out and displayed
  interactively by a doc pane.
 
 ### IDE
@@ -1074,7 +1074,7 @@ What needs to be configured?  How is that done?
 - fill mode and with
 - default make command, and dir to run in
 - preferred white-space options, and width
-- unintereting file names for find-file. .git-ignore??
+- uninteresting file names for find-file. .git-ignore??
 
 I want different configs in different trees.
 Either the single config file identifies path, or we put
