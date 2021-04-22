@@ -1548,6 +1548,7 @@ class notmuch_master_view(edlib.Pane):
         mainfrom = self.list_pane['config:user.primary_email']
         altfrom = self.list_pane['config:user.other_email']
         altfrom2 = self.list_pane['config:user.other_email_deprecated']
+        host_address = self.list_pane['config:user.host_address']
         if name:
             m['email:name'] = name
         if mainfrom:
@@ -1556,6 +1557,8 @@ class notmuch_master_view(edlib.Pane):
             m['email:altfrom'] = altfrom
         if altfrom2:
             m['email:deprecated_from'] = altfrom2
+        if host_address:
+            m['email:host-address'] = host_address
         p = focus.call("OtherPane", ret='focus')
         if not p:
             return edlib.Efail
