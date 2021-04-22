@@ -583,6 +583,19 @@ class compose_email(edlib.Pane):
             mark.to_mark(m)
         return 1
 
+    def handle_spell(self, key, focus, mark, **a):
+        "handle:Spell:NextWord"
+        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        if not mark or not m2 or not m2.next() or mark > m2:
+            return edlib.Efallthrough
+        found_end = False
+        while not found_end:
+            h = self.this_header(mark.dup())
+            if h and h.lower() in ["subject"]:
+                return edlib.Efallthrough
+            found_end = not self.find_any_header(mark)
+        mark.to_mark(m2.next())
+        return edlib.Efallthrough
 
 def compose_mode_attach(key, focus, comm2, **a):
     focus['fill-width'] = '72'
