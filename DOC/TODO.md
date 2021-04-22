@@ -25,6 +25,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] 'm' in notmuch opens a compose window which isn't refreshed properly.
+      If I add "pane_damaged(p, DAMAGED_VIEW)" in render_lines_refresh,
+      it works.  But that is surely too heavy-handed.
+      What is going on?
 - [ ] fill-mode is weird.  Sometimes explicitly giving a fill-width sticks,
       sometimes not.  What do I really want?
 - [ ] if I remove the unneeded ->repositioned=1 in render-lines, search stops

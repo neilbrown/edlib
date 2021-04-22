@@ -1048,6 +1048,7 @@ DEF_CMD(render_lines_refresh)
 	struct rl_data *rl = p->data;
 	struct mark *m, *pm = NULL;
 
+	//pane_damaged(p, DAMAGED_VIEW);
 
 	pm = call_ret(mark, "doc:point", focus);
 
