@@ -24,6 +24,8 @@
 #
 
 import email.utils
+import email.message
+import tempfile
 from datetime import date
 
 class compose_email(edlib.Pane):
@@ -345,7 +347,7 @@ class compose_email(edlib.Pane):
                 # make space or tag light blue, and body dark blue
                 # If tag is unknown, make it grey
                 rv2 = self.call("text-match",
-                                "?i:(from|to|cc|subject|in-reply-to|references):",
+                                "?i:(from|to|cc|subject|in-reply-to|references|date|message-id):",
                                 mark.dup())
                 if rv2 > 0:
                     comm2("cb", focus, mark, rv-1, "fg:blue+30", 2)
@@ -518,7 +520,7 @@ class compose_email(edlib.Pane):
         m.to_mark(end)
         return True
 
-    def this_header(self, mark, end = None):
+    def this_header(self, mark, end = None, downcase = True):
         try:
             l = self.call("text-search", "^[!-9;-~]+\\s*:", 0, 1, mark)
             m1 = mark.dup()
@@ -529,7 +531,10 @@ class compose_email(edlib.Pane):
             self.next(mark)
             while self.following(mark) == ' ':
                 self.next(mark)
-            ret = s.strip().lower()
+            if downcase:
+                ret = s.strip().lower()
+            else:
+                ret = s.strip()
         except edlib.commandfailed:
             return None
         if not end:
@@ -590,6 +595,77 @@ class compose_email(edlib.Pane):
         m2 = mark.dup()
         while self.find_any_header(m) and m < m2:
             mark.to_mark(m)
+        return 1
+
+    def handle_commit(self, key, focus, **a):
+        "handle:Commit"
+        msg = email.message.EmailMessage()
+        m = self.call("doc:vmark-get", self.view, ret='mark')
+        if m:
+            m = m.next()
+        else:
+            return edlib.Efail
+        if m.next():
+            m2 = m.next()
+        else:
+            m2 = m.dup()
+            focus.call("Move-File", 1, m2)
+        txt = focus.call("doc:get-str", m, m2, ret='str')
+        msg.set_content(txt)
+        self.check_header("Date", email.utils.formatdate(localtime=True))
+        self.check_header("Message-id",
+                          email.utils.make_msgid(
+                              domain=focus['email:host-address']))
+        h = edlib.Mark(focus)
+        while self.find_empty_header(h):
+            focus.call("Move-EOL", -1, h)
+            h2 = h.dup()
+            focus.call("Move-EOL", 1, 1, h)
+            focus.call("doc:replace", h, h2)
+
+
+        h = edlib.Mark(focus)
+        whoto = None
+        while self.find_any_header(h):
+            he = h.dup()
+            nm = self.this_header(h, he, downcase=False)
+            if not nm:
+                break
+            bdy = focus.call("doc:get-str", h, he, ret='str')
+            bdy = bdy.strip()
+            if bdy:
+                msg[nm] = bdy
+            if nm.lower() == "to" and not whoto:
+                try:
+                    n,a = email.utils.parseaddr(bdy)
+                    if n:
+                        whoto = n
+                    else:
+                        whoto = a
+                except:
+                    pass
+
+        s = msg.as_string()
+        tf = tempfile.TemporaryFile()
+        tf.write(s.encode())
+        tf.seek(0)
+        sendmail = focus['email:sendmail']
+        if not sendmail:
+            sendmail = "/sbin/sendmail -i"
+        p = subprocess.Popen(sendmail.split(),
+                             stdin = tf.fileno(),
+                             stdout = subprocess.PIPE,
+                             stderr = subprocess.PIPE)
+        out, err = p.communicate()
+        if out:
+            edlib.LOG("notmuch-insert says:", out.decode())
+        if err:
+            focus.call("Message", "notmuch-insert gives err: " + err.decode())
+        if not whoto:
+            whoto = "someone"
+        focus.call("doc:set-name", "*Sent message to %s*" % whoto)
+        focus.call("Message", "Email message to %s queued." % whoto)
+
         return 1
 
     def handle_spell(self, key, focus, mark, **a):

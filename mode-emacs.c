@@ -538,6 +538,7 @@ static struct simple_command {
 	{CMD(emacs_simple), "NOP", "K:CX:C-G"},
 	{CMD(emacs_simple), "NOP", "K:CX4:C-G"},
 	{CMD(emacs_simple), "doc:save-file", "K:CX:C-S"},
+	{CMD(emacs_simple), "Commit", "K:CC:C-C"},
 	/* one day, this will be "find definition", now it is same as "find any" */
 	{CMD(emacs_simple_num), "interactive-cmd-git-grep", "K:CX:A-."},
 	{CMD(emacs_simple_str), "interactive-cmd-git-grep", "K:A-."},

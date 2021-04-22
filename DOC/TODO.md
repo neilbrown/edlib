@@ -629,10 +629,10 @@ Module features
 - [ ] be smart about quoting displayname before <addr>
 - [ ] highlight interpolated text - red?
 - [ ] capture editing of to/cc and mark ',' as a wrap point.
-- [ ] "post" passes to "notmuch insert -new -unread +outbox --folder=sent"
+- [X] "post" passes to "notmuch insert -new -unread +outbox --folder=sent"
         add 'sent' to new.ignore??
-- [ ] "post" adds message-id, date
-- [ ] "post" checks for non-ASCII and uses quoted-printable if needed.
+- [X] "post" adds message-id, date
+- [X] "post" checks for non-ASCII and uses quoted-printable if needed.
 - [X] fill-mode, and highlight white-space?  Header line fill with a prefix
 - [ ] If attachments are requested, set mime-version etc
 - [X] put marks around instructions for attachments and don't let them be edited

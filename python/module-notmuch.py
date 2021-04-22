@@ -1559,6 +1559,7 @@ class notmuch_master_view(edlib.Pane):
             m['email:deprecated_from'] = altfrom2
         if host_address:
             m['email:host-address'] = host_address
+        m['email:sendmail'] = "/usr/bin/notmuch insert --folder=sent --create-folder -new -unread +outbox"
         p = focus.call("OtherPane", ret='focus')
         if not p:
             return edlib.Efail
