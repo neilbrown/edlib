@@ -36,7 +36,6 @@ class events(edlib.Pane):
         return ev
 
     def read(self, key, focus, comm2, num, **a):
-        self.active = True
         ev = self.add_ev(focus, comm2, 'event:read', num)
         gev = GLib.io_add_watch(num, GLib.IO_IN | GLib.IO_HUP,
                                 self.doread, comm2, focus, num, ev)
@@ -84,7 +83,6 @@ class events(edlib.Pane):
         return False
 
     def timer(self, key, focus, comm2, num, **a):
-        self.active = True
         ev = self.add_ev(focus, comm2, 'event:timer', num)
         gev = GLib.timeout_add(num, self.dotimeout, comm2, focus, ev)
         self.events[ev].append(gev)
