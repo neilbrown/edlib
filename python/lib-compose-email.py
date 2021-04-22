@@ -52,9 +52,9 @@ class compose_email(edlib.Pane):
                 fr = "\"%s\" <%s>" %(nm, fr)
         if fr:
             self.check_header("From", fr)
-        self.check_header("Subject")
         self.check_header("To")
         self.check_header("Cc")
+        self.check_header("Subject")
         m = edlib.Mark(self)
         self.find_empty_header(m)
         self.call("Move-to", m)
@@ -91,8 +91,8 @@ class compose_email(edlib.Pane):
         self.check_header("To")
         if addrs:
             self.add_addr_header("Cc", addrs)
-        focus.call("doc:multipart-0-list-headers", "subject", self.copy_subject)
         self.check_header("Cc")
+        focus.call("doc:multipart-0-list-headers", "subject", self.copy_subject)
 
         self.addrlist = []
         focus.call("doc:multipart-0-list-headers", "references", self.copy_addrs)
