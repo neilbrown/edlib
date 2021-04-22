@@ -83,6 +83,8 @@ class compose_email(edlib.Pane):
             self.check_header("From", me)
         if str != "forward":
             focus.call("doc:multipart-0-list-headers", "from", self.copy_to)
+        else:
+            focus.call("doc:multipart-0-list-headers", "from", self.save_to)
         self.pfx = "Re"
         if str == "forward":
             self.pfx = "Fwd"
@@ -118,6 +120,10 @@ class compose_email(edlib.Pane):
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
         if m2:
             self.call("doc:replace", m2, m2, "To: " + str.strip() + "\n")
+        self['reply-author'] = str.strip()
+        return edlib.Efalse
+
+    def save_to(self, key, focus, str, **a):
         self['reply-author'] = str.strip()
         return edlib.Efalse
 
@@ -221,7 +227,10 @@ class compose_email(edlib.Pane):
         "handle:compose-email:quote-content"
         m = edlib.Mark(self)
         self.to_body(m)
-        who = email.utils.getaddresses([self['reply-author']])
+        try:
+            who = email.utils.getaddresses([self['reply-author']])
+        except:
+            who = None
         if who and who[0][0]:
             who = who[0][0]
         elif who and who[0][1]:
