@@ -256,6 +256,8 @@ class autospell_view(edlib.Pane):
             # nothing to do
             return edlib.Efail
 
+        focus = focus.leaf
+
         remain = 20
         ch = None
         while start < end and remain > 0:
