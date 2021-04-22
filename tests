@@ -41,6 +41,9 @@ runtest()
 	view ) EDLIB_REPLAY=$2 \
 		screen -m sh -c 'stty rows 30 cols 80; ./edlib $TEST_DIR'
 	;;
+	extend ) EDLIB_RECORD=$2 EDLIB_REPLAY=$3 \
+		screen -m sh -c 'stty rows 30 cols 80; ./edlib $TEST_DIR'
+	;;
 	esac
 }
 
@@ -90,6 +93,31 @@ new_test() {
     exit 0
 }
 
+extend_test() {
+    if [ $# -ne 1 ]; then
+	echo >&2 "$0: please provide name for test to extend"
+	exit 1
+    fi
+    t=$1
+    tt=tests.d/$t
+    if [ ! -e "$tt" ]; then
+	echo >&2 "$0: test $t doesn't exist"
+	exit 1
+    fi
+    rm -f tests.d/.tmp tests.d/.tmp2
+    sed -e '/^Close/d' $tt > tests.d/.tmp2
+    runtest extend tests.d/.tmp tests.d/.tmp2
+    if ! grep -s '^Close' tests.d/.tmp > /dev/null ; then
+	echo >&2 "$0: test file not Closed - probably crash"
+	exit 1
+    fi
+    mv tests.d/.tmp2 $tt
+    setup_test_dir
+    runtest run $tt tests.d/.tmp
+    diff -u tests.d/.tmp $tt
+    #rm tests.d/.tmp
+    exit 0
+}
 run_one_test() {
     if [ ! -f "tests.d/$1" ]; then
 	echo "$cmd: test $1 doesn't exist"
@@ -197,11 +225,13 @@ case $cmd in
 	run) setup_test_dir; run_tests ${1+"$@"};;
 	refresh) setup_test_dir; refresh_tests ${1+"$@"};;
 	view ) setup_test_dir; view_test ${1+"$@"};;
+	extend ) setup_test_dir; extend_test ${1+"$@"};;
 	* )
 		echo >&2 "Usage: $0 new test-name"
 		echo >&2 "       $0 run [test-name|-a]"
 		echo >&2 "       $0 refresh [test-name]"
 		echo >&2 "       $0 view test-name [lines [delay-ms]]"
+		echo >&2 "       $0 extent test-name"
 		exit 1;
 esac
 exit 0

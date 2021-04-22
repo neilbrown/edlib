@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] spell-checker refinements
+- [X] spell-checker refinements
 - [ ] provide a way for ncurses to switch out of display mode
       and to show a URL (or similar) which can be copied from terminal
 - [ ] fix bugs
@@ -735,7 +735,7 @@ Module features
       other attaches to view and sends spell-check requests.
 - [ ] mode-specific so latex can ignore \foo
 - [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
-- [ ] after alt-; lists option, allow 0,1,2 etc to choose options, a to add etc.
+- [X] after alt-; lists option, allow 0,1,2 etc to choose options, a to add etc.
 - [X] auto-spell checking on display
 - [X] record what has been checked and what hasn't.  When content is changed, remove
       'is checked' indication for whole line.
