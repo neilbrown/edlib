@@ -2278,6 +2278,13 @@ class notmuch_message_view(edlib.Pane):
             if type.startswith("image/"):
                 vis = True
             self.set_vis(focus, m, vis)
+            if type.startswith("text/"):
+                v = focus.call("doc:get-attr", m, "email:visible", ret='str')
+                start = m.dup()
+                # go to start of previous visible part, and mark urls.
+                self.prev(start)
+                self.call("doc:step-part", start, 0)
+                self.mark_urls(start, m)
 
     def set_vis(self, focus, m, vis):
         if vis:
@@ -2288,6 +2295,27 @@ class notmuch_message_view(edlib.Pane):
                 focus.call("doc:set-attr", "email:visible", m, "orig")
         else:
             focus.call("doc:set-attr", "email:visible", m, "none")
+
+    def mark_urls(self, ms, me):
+        while ms < me:
+            try:
+                len = self.call("text-search",
+                                "(http|https|ftp|mail):[^][ \n\":;<>]+", ms, me)
+                len -= 1
+            except:
+                return
+            # People sometimes put a period at the end of a URL.
+            while self.prior(ms) in '.':
+                self.prev(ms)
+                len -= 1
+            m1 = ms.dup()
+            i = 0
+            while i < len:
+                self.prev(m1)
+                i += 1
+            url = self.call("doc:get-str", m1, ms, ret='str')
+            self.call("doc:set-attr", 1, m1, "render:url", "%d" % len)
+            self.call("doc:set-attr", 1, m1, "url", url)
 
     def handle_notify_tag(self, key, **a):
         "handle:Notify:Tag"
@@ -2413,6 +2441,28 @@ class notmuch_message_view(edlib.Pane):
         if str == "render:rfc822header-to":
             comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 20)
             return 1
+        if str == "render:url":
+            comm2("attr:callback", focus, int(str2), mark, "fg:cyan-60,underline,active-tag:url,url-len="+str2, 20)
+
+    def handle_click(self, key, focus, mark, str2, **a):
+        "handle:Mouse-Activate:url"
+        a = str2.split(',')
+        leng = 0
+        for w in a:
+            if w.startswith("url-len="):
+                leng = int(w[8:])
+        if not leng:
+            return 1
+        i = 0
+        m = mark.dup()
+        while i < leng and not focus.call("doc:get-attr", m, "render:url", ret='str'):
+            i += 1
+            focus.prev(m)
+
+        url = focus.call("doc:get-attr", m, "url", ret='str')
+        focus.call("Message", "Opening url <%s>" % url)
+        subprocess.Popen(["xdg-open", url], stderr = DEVNULL)
+        return 1
 
 def notmuch_doc(key, home, focus, comm2, **a):
     # Create the root notmuch document
