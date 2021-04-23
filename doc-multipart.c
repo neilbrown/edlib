@@ -393,7 +393,7 @@ DEF_CMD(mp_step_part)
 		mp_normalize(mpi, m, vis);
 	}
 	post_move(m);
-	if (start == m->ref.docnum)
+	if (ci->num && start == m->ref.docnum)
 		return Efail;
 	return m->ref.docnum + 1;
 }
