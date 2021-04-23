@@ -5,7 +5,7 @@ Current priorities
 ------------------
 
 - [X] spell-checker refinements
-- [ ] provide a way for ncurses to switch out of display mode
+- [X] provide a way for ncurses to switch out of display mode
       and to show a URL (or similar) which can be copied from terminal
 - [ ] fix bugs
 - [ ] make notmuch usable
@@ -295,6 +295,7 @@ Module features
 
 ### ncurses
 
+- [ ] external-viewer for different host could output file in base64 for copy/paste??
 - [ ] add full list of colour names (to lib-colourmap)
 - [ ] allow a pane to require 'true-colour' and discover number of colours available
       Colour map gets changed when it becomes the focus.
@@ -604,10 +605,10 @@ Module features
 - [ ] save function - doc:save-file given file name or fd
 - [ ] wiggle-highlight patches found in email
 - [X] brief summary of part type in button line
-- [ ] open function
-- [ ] make URLs clickable
+- [X] open function
+- [X] make URLs clickable
 - [ ] detect and hide cited text
-- [ ] detect and highlight links
+- [X] detect and highlight links
 - [ ] Make long to/cc headers truncate unless selected.
 - [X] select parts from multipart
 - [X] buttons for non-displayable

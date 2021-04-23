@@ -58,7 +58,7 @@ struct display_data {
 	int			report_position;
 	long			last_event;
 
-	char			*rs1, *rs2, *rs3;
+	char			*rs1, *rs2, *rs3, *clear;
 	char			attr_buf[1024];
 	#ifdef RECORD_REPLAY
 	FILE			*log;
@@ -441,6 +441,62 @@ static int nc_putc(int ch)
 {
 	if (current_dd)
 		fputc(ch, current_dd->scr_file);
+	return 1;
+}
+
+DEF_CMD(nc_external_viewer)
+{
+	struct pane *p = ci->home;
+	struct display_data *dd = p->data;
+	char *disp = pane_attr_get(p, "DISPLAY");
+	int pid;
+	char buf[100];
+	int n;
+
+	if (!ci->str)
+		return Enoarg;
+	if (disp && *disp) {
+		switch (pid = fork()) {
+		case -1:
+			return Efail;
+		case 0: /* Child */
+			setenv("DISPLAY", disp, 1);
+			/* FIXME reopen stderr etc */
+			execlp("xdg-open", "xdg-open", ci->str, NULL);
+			exit(1);
+		default: /* parent */
+			/* FIXME record pid?? */
+			break;
+		}
+		return 1;
+	}
+	/* handle no-display case */
+	set_screen(p);
+	n = 0;
+	ioctl(fileno(dd->scr_file), FIONREAD, &n);
+	if (n)
+		n -= read(fileno(dd->scr_file), buf,
+			  n <= (int)sizeof(buf) ? n : (int)sizeof(buf));
+	endwin();
+
+	/* Endwin doesn't seem to reset properly, at least on xfce-terminal.
+	 * So do it manually
+	 */
+	if (dd->rs1)
+		tputs(dd->rs1, 1, nc_putc);
+	if (dd->rs2)
+		tputs(dd->rs2, 1, nc_putc);
+	if (dd->rs3)
+		tputs(dd->rs3, 1, nc_putc);
+	if (dd->clear)
+		tputs(dd->clear, 1, nc_putc);
+	fflush(dd->scr_file);
+
+	fprintf(dd->scr_file, "# Consider copy-pasting following\n");
+	fprintf(dd->scr_file, "xdg-open %s\n", ci->str);
+	fprintf(dd->scr_file, "# Press Enter to continue\n");
+	n = read(fileno(dd->scr_file), buf, sizeof(buf));
+	doupdate();
 	return 1;
 }
 
@@ -957,6 +1013,7 @@ static struct pane *ncurses_init(struct pane *ed,
 	dd->rs3 = tgetstr("rs3", &area);
 	if (!dd->rs3)
 		dd->rs3 = tgetstr("is3", &area);
+	dd->clear = tgetstr("clear", &area);
 
 	call("editor:request:all-displays", p);
 	if (!prepare_recrep(p)) {
@@ -1282,6 +1339,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(nc_map, "Display:refresh", &force_redraw);
 	key_add(nc_map, "Display:close", &nc_close_display);
 	key_add(nc_map, "Display:set-noclose", &nc_set_noclose);
+	key_add(nc_map, "Display:external-viewer", &nc_external_viewer);
 	key_add(nc_map, "Close", &nc_close);
 	key_add(nc_map, "Free", &edlib_do_free);
 	key_add(nc_map, "pane-clear", &nc_clear);

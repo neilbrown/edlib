@@ -2423,7 +2423,7 @@ class notmuch_message_view(edlib.Pane):
         fd, path = tempfile.mkstemp(suffix, prefix)
         os.write(fd, content)
         os.close(fd)
-        subprocess.Popen(["xdg-open", path], stderr = DEVNULL)
+        focus.call("Display:external-viewer", path)
         return 1
 
     def handle_map_attr(self, key, focus, mark, str, str2, comm2, **a):
@@ -2461,7 +2461,7 @@ class notmuch_message_view(edlib.Pane):
 
         url = focus.call("doc:get-attr", m, "url", ret='str')
         focus.call("Message", "Opening url <%s>" % url)
-        subprocess.Popen(["xdg-open", url], stderr = DEVNULL)
+        focus.call("Display:external-viewer", url)
         return 1
 
 def notmuch_doc(key, home, focus, comm2, **a):

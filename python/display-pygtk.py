@@ -73,13 +73,25 @@ class EdDisplay(edlib.Pane):
             self.win.unfullscreen()
         return 1
 
-    def handle_new(self, key, home, **a):
+    def handle_new(self, key, **a):
         "handle:Display:new"
         global editor
         p = editor.call("attach-input", ret='focus')
         p['DISPLAY'] = self['DISPLAY']
         newdisp = EdDisplay(p)
-        home.clone_children(newdisp)
+        self.clone_children(newdisp)
+        return 1
+
+    def handle_external(self, key, str, **a):
+        "handle:Display:external-viewer"
+        disp = self['DISPLAY']
+        if not str or not disp:
+            return edlib.Enoarg
+        env = os.environ.copy()
+        env['DISPLAY'] = disp
+
+        subprocess.Popen(["xdg-open", str], env=env,
+                         stderr = subprocess.DEVNULL)
         return 1
 
     def handle_close(self, key, **a):
