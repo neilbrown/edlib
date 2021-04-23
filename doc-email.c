@@ -835,7 +835,7 @@ DEF_CMD(email_step)
 		}
 	} else {
 		ret = home_call(p->parent, ci->key, ci->focus,
-				ci->num, ci->mark, evi->invis, 1);
+				ci->num, ci->mark, evi->invis, ci->num2);
 		n = get_part(p->parent, ci->mark);
 		if (is_spacer(n) && ci->num2 &&
 		    ret != CHAR_RET(WEOF) && iswdigit(ret & 0x1fffff)) {
