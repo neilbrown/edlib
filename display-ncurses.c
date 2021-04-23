@@ -31,6 +31,7 @@
 #include <ctype.h>
 #include <signal.h>
 #include <sys/ioctl.h>
+#include <term.h>
 
 #include "core.h"
 
@@ -56,6 +57,9 @@ struct display_data {
 	struct col_hash		*col_hash;
 	int			report_position;
 	long			last_event;
+
+	char			*rs1, *rs2, *rs3;
+	char			attr_buf[1024];
 	#ifdef RECORD_REPLAY
 	FILE			*log;
 	FILE			*input;
@@ -77,6 +81,7 @@ DEF_CMD(handle_winch);
 static struct map *nc_map;
 DEF_LOOKUP_CMD(ncurses_handle, nc_map);
 
+static struct display_data *current_dd;
 static void set_screen(struct pane *p)
 {
 	struct display_data *dd;
@@ -91,6 +96,7 @@ static void set_screen(struct pane *p)
 		return;
 	}
 	dd = p->data;
+	current_dd = dd;
 	if (!dd)
 		return;
 	if (dd->scr == current_screen)
@@ -431,12 +437,28 @@ DEF_CMD(nc_set_noclose)
 	return 1;
 }
 
+static int nc_putc(int ch)
+{
+	if (current_dd)
+		fputc(ch, current_dd->scr_file);
+	return 1;
+}
+
 static void ncurses_end(struct pane *p safe)
 {
+	struct display_data *dd = p->data;
+
 	set_screen(p);
 	close_recrep(p);
 	nl();
 	endwin();
+	if (dd->rs1)
+		tputs(dd->rs1, 1, nc_putc);
+	if (dd->rs2)
+		tputs(dd->rs2, 1, nc_putc);
+	if (dd->rs3)
+		tputs(dd->rs3, 1, nc_putc);
+	fflush(dd->scr_file);
 }
 
 /*
@@ -878,6 +900,7 @@ static struct pane *ncurses_init(struct pane *ed,
 	struct pane *p;
 	struct display_data *dd;
 	int rows, cols;
+	char *area;
 	FILE *f;
 
 	set_screen(NULL);
@@ -923,6 +946,17 @@ static struct pane *ncurses_init(struct pane *ed,
 
 	getmaxyx(stdscr, rows, cols);
 	pane_resize(p, 0, 0, cols, rows);
+
+	area = dd->attr_buf;
+	dd->rs1 = tgetstr("rs1", &area);
+	if (!dd->rs1)
+		dd->rs1 = tgetstr("is1", &area);
+	dd->rs2 = tgetstr("rs2", &area);
+	if (!dd->rs2)
+		dd->rs2 = tgetstr("is2", &area);
+	dd->rs3 = tgetstr("rs3", &area);
+	if (!dd->rs3)
+		dd->rs3 = tgetstr("is3", &area);
 
 	call("editor:request:all-displays", p);
 	if (!prepare_recrep(p)) {
