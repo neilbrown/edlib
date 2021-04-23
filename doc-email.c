@@ -853,6 +853,25 @@ DEF_CMD(email_step)
 	return ret;
 }
 
+DEF_CMD(email_content)
+{
+	/* Call the multipart doc:content telling in
+	 * what is invisible, marking all spacers as invisible
+	 */
+	struct pane *p = ci->home;
+	struct email_view *evi = p->data;
+	char *invis2 = strsave(p, evi->invis);
+	int i;
+
+	for (i = 0; invis2 && invis2[i]; i++)
+		if (is_spacer(i))
+			invis2[i] = 'i';
+	return home_call(p->parent, ci->key, ci->focus,
+			 ci->num, ci->mark, invis2,
+			 ci->num2, ci->mark2, ci->str2,
+			 ci->x, ci->y, ci->comm2);
+}
+
 DEF_CMD(email_set_ref)
 {
 	struct pane *p = ci->home;
@@ -983,6 +1002,7 @@ static void email_init_map(void)
 	email_view_map = key_alloc();
 	key_add(email_view_map, "Free", &email_view_free);
 	key_add(email_view_map, "doc:step", &email_step);
+	key_add(email_view_map, "doc:content", &email_content);
 	key_add(email_view_map, "doc:set-ref", &email_set_ref);
 	key_add(email_view_map, "doc:set-attr", &email_view_set_attr);
 	key_add(email_view_map, "doc:get-attr", &email_view_get_attr);

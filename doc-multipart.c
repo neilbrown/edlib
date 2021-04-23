@@ -398,6 +398,86 @@ DEF_CMD(mp_step_part)
 	return m->ref.docnum + 1;
 }
 
+struct mp_cb {
+	struct command c;
+	struct command *cb;
+	struct pane *p safe;
+	struct mark *m safe;
+	int last_ret;
+};
+
+DEF_CB(mp_content_cb)
+{
+	struct mp_cb *c = container_of(ci->comm, struct mp_cb, c);
+	struct mark *m1 = NULL;
+
+	if (ci->mark) {
+		m1 = c->m;
+		pre_move(m1);
+		if (m1->ref.m)
+			mark_to_mark(m1->ref.m, ci->mark);
+		post_move(m1);
+	}
+
+	c->last_ret = comm_call(c->cb, ci->key, c->p,
+				ci->num, m1, ci->str,
+				ci->num2, NULL, ci->str2,
+				ci->x, ci->y);
+	return c->last_ret;
+}
+
+DEF_CMD(mp_content)
+{
+	/* Call doc:content on any visible docs in the range.
+	 * Callback must re-wrap any marks
+	 */
+	struct mp_info *mpi = ci->home->data;
+	struct mp_cb cb;
+	struct mark *m, *m2;
+	const char *invis = ci->str;
+
+	if (!ci->mark || !ci->comm2)
+		return Enoarg;
+	m = ci->mark;
+	m2 = ci->mark2;
+	cb.last_ret = 1;
+	while (cb.last_ret > 0 && m->ref.docnum < mpi->nparts &&
+	       (!m2 || m->ref.docnum <= m2->ref.docnum)) {
+		/* Need to call doc:content on this document */
+		int n = m->ref.docnum;
+		int ret = 0;
+		if ((!invis || invis[n] != 'i') && m->ref.m) {
+			struct mark *m2a = NULL;
+			struct mark *mtmp = NULL;
+			cb.c = mp_content_cb;
+			cb.cb = ci->comm2;
+			cb.p = ci->focus;
+			cb.m = m;
+
+			if (m->ref.m)
+				mtmp = mark_dup(m->ref.m);
+			if (m2 && m2->ref.docnum == n) {
+				pre_move(m2);
+				m2a = m2->ref.m;
+			}
+			ret = call_comm(ci->key, mpi->parts[n].pane, &cb.c,
+					ci->num, mtmp, NULL,
+					ci->num2, m2a);
+			if (m2a)
+				post_move(m2);
+			mark_free(mtmp);
+			if (ret <= 0 && cb.last_ret > 0)
+				cb.last_ret = ret;
+		}
+		if (cb.last_ret > 0) {
+			pre_move(m);
+			change_part(mpi, m, n+1, 0);
+			post_move(m);
+		}
+	}
+	return cb.last_ret;
+}
+
 DEF_CMD(mp_attr)
 {
 	struct mp_info *mpi = ci->home->data;
@@ -630,6 +710,7 @@ static void mp_init_map(void)
 	key_add_chain(mp_map, doc_default_cmd);
 	key_add(mp_map, "doc:set-ref", &mp_set_ref);
 	key_add(mp_map, "doc:step", &mp_step);
+	key_add(mp_map, "doc:content", &mp_content);
 	key_add(mp_map, "doc:get-attr", &mp_attr);
 	key_add(mp_map, "doc:set-attr", &mp_set_attr);
 	key_add(mp_map, "doc:step-part", &mp_step_part);
