@@ -1356,8 +1356,11 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 			p += 1;
 			ch2 = get_utf8(&p, NULL);
 			if (ch2 >= WERR ||
-			    !add_range(st, ch, ch2,
-				       plane, &planes, &newplane))
+			    !add_range(st, ch, ch2, plane, &planes, &newplane))
+				return -1;
+		} else if (p[0] == ']' && (p == st->patn ||
+					   (invert && p == st->patn+1))) {
+			if (!add_range(st, ch, ch, plane, &planes, &newplane))
 				return -1;
 		} else if (ch == '\\' && p[0] > 0 && p[0] < 0x7f && p[1] != '-'
 			   && strchr("daApsw", p[0]) != NULL) {
@@ -1371,8 +1374,7 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 			}
 			p += 1;
 		} else if (ch) {
-			if (!add_range(st, ch, ch,
-				       plane, &planes, &newplane))
+			if (!add_range(st, ch, ch, plane, &planes, &newplane))
 				return -1;
 		}
 	} while (*p != ']');
@@ -2290,6 +2292,7 @@ static struct test {
 	{ "?L:1 2", "hello 1 \t\n 2", 0, 6, 6},
 	{ "?s:a.c", "a\nc abc", 0, 0, 3},
 	{ "?-s:a.c", "a\nc abc", 0, 4, 3},
+	{ "ab[]^-]*cd", "xyab-^^]-cd", 0, 2, 9},
 	//case insensitive
 	{ "?i:(from|to|cc|subject|in-reply-to):", "From: bob", 0, 0, 5 },
 	// Inverting set of multiple classes
