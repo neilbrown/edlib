@@ -14,8 +14,11 @@ def html_to_text(key, home, focus, comm2, **a):
     h = html2text.HTML2Text()
     h.inline_links = False
     h.wrap_links = False
+    # automatic links get wrapped despite above,
+    # so don't use them.
+    h.use_automatic_links = False
     h.ul_style_dash = True
-    h.body_width = 72
+    h.body_width = 80
     h.mark_code = True
     try:
         h.pad_tables = True
