@@ -264,7 +264,7 @@ class searches:
         self.cb(self.worker.pending != None and
                 self.slow_worker.pending != None)
 
-    patn = "\\bsaved:([-_A-Za-z0-9:]*)\\b"
+    patn = "\\bsaved:([-_A-Za-z0-9]*)\\b"
     def map_search(self, query):
         m = re.search(self.patn, query)
         while m:
@@ -280,9 +280,9 @@ class searches:
         return query
 
     def make_search(self, name, extra = None):
-        s = "saved:" + name
+        s = '(' + self.slist[name] + ')'
         if name not in self.misc:
-            s = s + " saved:current"
+            s = s + " AND saved:current"
         if extra:
             s = s + " AND saved:" + extra
         return self.map_search(s)
