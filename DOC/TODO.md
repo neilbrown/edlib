@@ -478,7 +478,7 @@ Module features
 - [ ] make min top/bottom margin configurable, set for message list
 - [ ] search in thread list - use 'format2' after fixing bug
 - [ ] display counts of current thread somewhere, so I know where I'm up to. - new/unread/matched in status line
-- [ ] dynamic search - 's' popups up dialog to create new query "tmp%d"
+- [X] dynamic search - 's' popups up dialog to create new query "tmp%d"
 - [ ] dynamic limit - 'l' popups up dialog which adds extra limit.
       'q' removes it.  Pruned v.quickly
 - [X] command to skip over whole thread N/P

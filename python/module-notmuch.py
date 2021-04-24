@@ -220,6 +220,10 @@ class searches:
         self.current = self.searches_from("current-list")
         self.misc = self.searches_from("misc-list")
 
+        self.slist["-ad hoc-"] = ""
+        self.current.append("-ad hoc-")
+        self.misc.append("-ad hoc-")
+
         for t in self.tags:
             tt = "tag:" + t
             if tt not in self.slist:
@@ -241,6 +245,9 @@ class searches:
 
     def update(self):
         for i in self.current:
+            if not self.slist[i]:
+                # probably an empty -ad hoc-
+                continue
             if i in self.slow:
                 self.slow_worker.enqueue(i)
             else:
@@ -248,6 +255,8 @@ class searches:
         return self.worker.pending != None and self.slow_worker.pending != None
 
     def update_one(self, search):
+        if not self.slist[search]:
+            return
         if search in self.slow:
             self.slow_worker.enqueue(search, True)
         else:
@@ -648,6 +657,14 @@ class notmuch_main(edlib.Doc):
                 self.notify("Notify:Tag", id)
             for id in todel:
                 del self.seen_threads[id]
+        return 1
+
+    def handle_set_adhoc(self, key, focus, str, **a):
+        "handle:doc:notmuch:set-adhoc"
+        if str:
+            self.searches.slist["-ad hoc-"] = str
+        else:
+            self.searches.slist["-ad hoc-"] = ""
         return 1
 
     def tick(self, key, **a):
@@ -1298,8 +1315,18 @@ class tag_popup(edlib.Pane):
         focus.call("popup:close", str)
         return 1
 
+class query_popup(edlib.Pane):
+    def __init__(self, focus):
+        edlib.Pane.__init__(self, focus)
+
+    def handle_enter(self, key, focus, **a):
+        "handle:K:Enter"
+        str = focus.call("doc:get-str", ret='str')
+        focus.call("popup:close", str)
+        return 1
+
 #
-# There are 4 viewer
+# There are 4 viewers
 #  notmuch_master_view  manages multiple notmuch tiles.  When the notmuch_main
 #       is displayed, this gets gets attached *under* (closer to root) the
 #       doc-view pane together with a tiling window.  One tile is used to
@@ -1425,6 +1452,28 @@ class notmuch_master_view(edlib.Pane):
         "handle:K:Enter"
         # select thing under point, and enter it
         focus.call("notmuch:select", mark, 1)
+        return 1
+
+    def handle_search(self, key, focus, **a):
+        "handle:doc:char-s"
+        pup = focus.call("PopupTile", "3", "", ret='focus')
+        if not pup:
+            return edlib.Efail
+        pup['done-key'] = "notmuch-do-ad hoc"
+        pup['prompt'] = "Ad hoc query"
+        pup.call("doc:set-name", "Ad hoc query")
+        p = pup.call("attach-history", "*Query History*",
+                     "popup:close", ret='focus')
+        if p:
+            pup = p
+        query_popup(pup)
+        return 1
+
+    def do_search(self, key, focus, str, **a):
+        "handle:notmuch-do-ad hoc"
+        if str:
+            self.list_pane.call("doc:notmuch:set-adhoc", str)
+            self.list_pane.call("notmuch:select-adhoc", 1)
         return 1
 
     def handle_space(self, key, mark, **a):
@@ -1878,6 +1927,11 @@ class notmuch_list_view(edlib.Pane):
         s = focus.call("doc:get-attr", "query", mark, ret='str')
         if s:
             focus.call("notmuch:select-query", s, num)
+        return 1
+
+    def handle_select_adhoc(self, key, focus, mark, num, **a):
+        "handle:notmuch:select-adhoc"
+        focus.call("notmuch:select-query", "-ad hoc-", num)
         return 1
 
 ##################
