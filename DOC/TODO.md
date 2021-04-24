@@ -8,7 +8,7 @@ Current priorities
 - [X] provide a way for ncurses to switch out of display mode
       and to show a URL (or similar) which can be copied from terminal
 - [ ] fix bugs
-- [ ] make notmuch usable
+- [X] make notmuch usable
 - [X] make spell-check useful
 - [ ] markdown viewer and editor
 - [ ] lib-diff improvements
@@ -93,7 +93,7 @@ Requirements for a v1.0 release
 - [ ] block-dev (mmap) doc type, and some hex-mode support
 - [ ] user documentation
 - [ ] developer documentation
-- [ ] notmuch
+- [X] notmuch
 - [ ] some git support
 
 Core features
@@ -479,7 +479,7 @@ Module features
 - [ ] search in thread list - use 'format2' after fixing bug
 - [ ] display counts of current thread somewhere, so I know where I'm up to. - new/unread/matched in status line
 - [X] dynamic search - 's' popups up dialog to create new query "tmp%d"
-- [ ] dynamic limit - 'l' popups up dialog which adds extra limit.
+- [X] dynamic limit - 'l' popups up dialog which adds extra limit.
       'q' removes it.  Pruned v.quickly
 - [X] command to skip over whole thread N/P
 - [ ] use NOTMUCH_CONFIG consistently - drop locking

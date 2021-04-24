@@ -392,7 +392,10 @@ class notmuch_main(edlib.Doc):
                 else:
                     val = "fg:grey"
                 if focus['qname'] == s:
-                    val = "bg:pink,"+val
+                    if focus['filter']:
+                        val = "bg:red+60,"+val
+                    else:
+                        val = "bg:yellow+20,"+val
             elif attr == 'name':
                 val = s
             elif attr == 'count':
@@ -712,8 +715,10 @@ class notmuch_query(edlib.Doc):
         self.db = notmuch_db()
         self.maindoc = focus
         self.query = query
+        self.filter = ""
         self['qname'] = qname
         self['query'] = query
+        self['filter'] = ""
         self['last-refresh'] = "%d" % int(time.time())
         self.threadids = []
         self.threads = {}
@@ -724,6 +729,19 @@ class notmuch_query(edlib.Doc):
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")
         self.load_full()
+
+    def set_filter(self, key, focus, str, **a):
+        "handle:doc:notmuch:set-filter"
+        if not str:
+            str = ""
+        if self.filter == str:
+            return 1
+        self.filter = str
+        self['filter'] = str
+        self.load_full()
+        self.notify("doc:replaced")
+        self.maindoc.notify("doc:replaced", 1)
+        return 1
 
     def setpos(self, mark, thread, msgnum = 0):
         if thread is None:
@@ -766,6 +784,8 @@ class notmuch_query(edlib.Doc):
             cmd += [ "date:-1day.. AND " ]
         elif self.age:
             cmd += [ "date:-%dmonths.. AND " % self.age]
+        if self.filter:
+            cmd += [ "( %s ) AND " % self.filter ]
         cmd += [ "( %s )" % self.query ]
         self.p = Popen(cmd, shell=False, stdout=PIPE, stderr = DEVNULL)
         self.call("event:read", self.p.stdout.fileno(), self.get_threads)
@@ -1400,7 +1420,9 @@ class notmuch_master_view(edlib.Pane):
         "handle:get-attr"
         if comm2:
             val = None
-            if str in ["qname","query"] and self.query_pane:
+            if str in ["qname","query","filter"] and self.query_pane:
+                # WARNING these must always be set in the query doc,
+                # otherwise we can recurse infinitely.
                 val = self.query_pane[str]
             if val:
                 comm2("callback", focus, val, str)
@@ -1462,7 +1484,7 @@ class notmuch_master_view(edlib.Pane):
         pup['done-key'] = "notmuch-do-ad hoc"
         pup['prompt'] = "Ad hoc query"
         pup.call("doc:set-name", "Ad hoc query")
-        p = pup.call("attach-history", "*Query History*",
+        p = pup.call("attach-history", "*Notmuch Query History*",
                      "popup:close", ret='focus')
         if p:
             pup = p
@@ -1474,6 +1496,32 @@ class notmuch_master_view(edlib.Pane):
         if str:
             self.list_pane.call("doc:notmuch:set-adhoc", str)
             self.list_pane.call("notmuch:select-adhoc", 1)
+        return 1
+
+    def handle_filter(self, key, focus, **a):
+        "handle:doc:char-f"
+        if not self.query_pane:
+            return 1
+        f = focus['filter']
+        if not f:
+            f = ""
+        pup = focus.call("PopupTile", "3", f, ret='focus')
+        if not pup:
+            return edlib.Efail
+        pup['done-key'] = "notmuch-do-filter"
+        pup['prompt'] = "Query filter"
+        pup.call("doc:set-name", "*Query filter for %s*" % focus['qname'])
+        p = pup.call("attach-history", "*Notmuch Filter History*",
+                     "popup:close", ret='focus')
+        if p:
+            pup = p
+        query_popup(pup)
+        return 1
+
+    def do_filter(self, key, focus, str, **a):
+        "handle:notmuch-do-filter"
+        if self.query_pane:
+            self.query_pane.call("doc:notmuch:set-filter", str)
         return 1
 
     def handle_space(self, key, mark, **a):
@@ -1784,6 +1832,9 @@ class notmuch_master_view(edlib.Pane):
         elif self.query_pane:
             if self.query_pane.call("notmuch:close-whole-thread") == 1:
                 return 1
+            if self.query_pane['filter']:
+                self.query_pane.call("doc:notmuch:set-filter")
+                return 1
             if key != "doc:char-x":
                 self.query_pane.call("doc:notmuch:mark-seen")
             p = self.query_pane
@@ -1920,7 +1971,7 @@ class notmuch_list_view(edlib.Pane):
     def handle_notify_replace(self, key, **a):
         "handle:doc:replaced"
         # FIXME do I need to do anything here? - of not, why not
-        return 0
+        return edlib.Efallthrough
 
     def handle_select(self, key, focus, mark, num, **a):
         "handle:notmuch:select"
@@ -1963,7 +2014,11 @@ class notmuch_query_view(edlib.Pane):
         self.seen_threads = {}
         self.seen_msgs = {}
 
-        self['doc-status'] = "query: %s" % self['qname']
+        if self['filter']:
+            self['doc-status'] = "query: %s filter: %s" % (
+                self['qname'], self['filter'])
+        else:
+            self['doc-status'] = "query: %s" % self['qname']
         # thread_start and thread_end are marks which deliniate
         # the 'current' thread. thread_end is the start of the next
         # thread (if there is one).
@@ -1993,7 +2048,12 @@ class notmuch_query_view(edlib.Pane):
     def handle_notify_replace(self, key, **a):
         "handle:doc:replaced"
         self.leaf.call("view:changed")
-        return 1
+        if self['filter']:
+            self['doc-status'] = "query: %s filter: %s" % (
+                self['qname'], self['filter'])
+        else:
+            self['doc-status'] = "query: %s" % self['qname']
+        return edlib.Efallthrough
 
     def close_thread(self, gone = False):
         if not self.selected:
