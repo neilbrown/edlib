@@ -1672,7 +1672,7 @@ class notmuch_master_view(edlib.Pane):
         if msid:
             done += " " + msid
         pup['done-key'] = done
-        pup['prompt'] = "[+/-]Tags: "
+        pup['prompt'] = "[+/-]Tags"
         pup.call("doc:set-name", "Tag changes")
         tag_popup(pup)
         return 1
