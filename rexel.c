@@ -1560,17 +1560,17 @@ static bool parse_atom(struct parse_state *st safe)
 			st->patn -= 1;
 			break;
 		case 'x': ch = cvt_hex(st->patn+1, 2);
-			if (ch == WERR)
+			if (ch >= WERR)
 				return False;
 			st->patn += 2;
 			break;
 		case 'u': ch = cvt_hex(st->patn+1, 4);
-			if (ch == WERR)
+			if (ch >= WERR)
 				return False;
 			st->patn += 4;
 			break;
 		case 'U': ch = cvt_hex(st->patn+1, 8);
-			if (ch == WERR)
+			if (ch >= WERR)
 				return False;
 			st->patn += 8;
 			break;

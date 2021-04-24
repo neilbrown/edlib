@@ -770,6 +770,8 @@ New Modules - simple
 
 - [ ] more charset support? Next in my popularity list from my email database
      are: is0-8859-15  gb2312 iso-8859-2 iso-2022-jp gbk ansi_x3
+     kc_c_5601-1987 is a korean with 2-byte encoding when firt is >=0x80.
+     I don't think it can be parsed backwards..
 
 Possibly some of these will end up being features in other modules.
 

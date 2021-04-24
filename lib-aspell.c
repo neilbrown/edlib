@@ -32,14 +32,14 @@ static int trim(const char *safe *wordp safe)
 	wint_t ch;
 
 	start = wp;
-	while (*wp && (ch = get_utf8(&wp, NULL)) != WEOF &&
+	while (*wp && (ch = get_utf8(&wp, NULL)) < WERR &&
 	       !iswalpha(ch))
 		start = wp;
 	if (!*start)
 		return 0;
 	len = 1;
 	/* start is the first alphabetic, wp points beyond it */
-	while (*wp && (ch = get_utf8(&wp, NULL)) != WEOF) {
+	while (*wp && (ch = get_utf8(&wp, NULL)) < WERR) {
 		if (iswalpha(ch))
 			len = wp - start;
 	}

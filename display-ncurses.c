@@ -813,7 +813,7 @@ DEF_CMD(nc_text_size)
 	while (str[0] != 0) {
 		wint_t wc = get_utf8(&str, NULL);
 		int width;
-		if (wc == WEOF || wc == WERR)
+		if (wc >= WERR)
 			break;
 		width = wcwidth(wc);
 		if (width < 0)

@@ -188,6 +188,8 @@ DEF_CMD(log_content)
 				wc = *s2++;
 			else
 				wc = get_utf8(&s2, s2+ln);
+			if (wc >= WERR)
+				break;
 
 			while ((m2 = mark_next(m)) &&
 			       m2->ref.b == m->ref.b &&

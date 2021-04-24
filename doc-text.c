@@ -1799,8 +1799,11 @@ DEF_CMD(text_content)
 
 			if (bytes)
 				wc = *s2++;
-			else
+			else {
 				wc = get_utf8(&s2, s2+ln);
+				if (wc >= WERR)
+					wc = *s2++;
+			}
 
 			while ((m2 = mark_next(m)) &&
 			       m2->ref.c == m->ref.c &&

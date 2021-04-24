@@ -22,8 +22,7 @@ static bool has_nonspace(const char *s, int len)
 	wint_t ch;
 	const char *end = s+len;
 
-	while ((ch = get_utf8(&s, end)) != WEOF &&
-	       ch != WERR &&
+	while ((ch = get_utf8(&s, end)) < WERR &&
 	       iswspace(ch))
 		;
 	return ch != WEOF;
@@ -147,7 +146,8 @@ static void add_markup(struct pane *p, struct mark *start,
 		if (is_eol(ch))
 			doskip(p, m, NULL, skip, choose);
 		while (pos < startp) {
-			get_utf8(&pos, NULL);
+			if (get_utf8(&pos, NULL) >= WERR)
+				pos += 1;
 			ch = doc_next(p, m);
 			if (is_eol(ch))
 				doskip(p, m, NULL, skip, choose);
@@ -155,7 +155,8 @@ static void add_markup(struct pane *p, struct mark *start,
 		/* Convert csl->len in bytes to len in codepoints. */
 		len = 0;
 		while (pos < endp) {
-			get_utf8(&pos, NULL);
+			if (get_utf8(&pos, NULL) >= WERR)
+				pos += 1;
 			len += 1;
 		}
 		pos = startp;
@@ -163,7 +164,8 @@ static void add_markup(struct pane *p, struct mark *start,
 		call("doc:set-attr", p, 0, m, attr, 0, NULL, buf);
 		ch = ' ';
 		while (pos < endp) {
-			get_utf8(&pos, NULL);
+			if (get_utf8(&pos, NULL) >= WERR)
+				pos += 1;
 			if (is_eol(ch)) {
 				doskip(p, m, NULL, skip, choose);
 				snprintf(buf, sizeof(buf), "%d %d", len, which);
@@ -422,7 +424,7 @@ static void add_merge_markup(struct pane *p safe,
 		endcp = f.list[pos+len-1].start + f.list[pos+len-1].len;
 		pos += len;
 		chars = 0;
-		while (get_utf8(&cp, endcp) != WEOF)
+		while (get_utf8(&cp, endcp) < WERR)
 			chars += 1;
 
 		snprintf(buf, sizeof(buf), "%d %s", chars, typenames[m->type]);
