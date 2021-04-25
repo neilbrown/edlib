@@ -83,9 +83,15 @@ static struct mark *vmark_or_point_prev(struct mark *m safe, int view);
  * after etc until we find a seq already above the target, or reach
  * gap size of 64. In later case we continue with fixed gap size.
  */
-static void assign_seq(struct mark *m safe, int prev)
+static void assign_seq(struct mark *m safe)
 {
+	int prev = 0;
+	struct mark *p;
 	int gap = 256;
+
+	p = mark_prev(m);
+	if (p)
+		prev = p->seq;
 
 	while (m->all.next) {
 		struct mark *mn = hlist_next_entry(m, all);
@@ -182,7 +188,7 @@ static void dup_mark(struct mark *orig safe, struct mark *new safe)
 	hlist_add_after(&orig->all, &new->all);
 	INIT_TLIST_HEAD(&new->view, GRP_MARK);
 	new->attrs= NULL;
-	assign_seq(new, orig->seq);
+	assign_seq(new);
 	mark_ref_copy(new, orig);
 }
 
@@ -327,7 +333,6 @@ void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
 {
 	struct doc *d = p->data;
 	int i;
-	int seq = 0;
 	struct point_links *lnk;
 
 	ASSERT(m->owner == p);
@@ -342,12 +347,11 @@ void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
 							      struct mark, all);
 			while (last->all.next)
 				last = hlist_next_entry(last, all);
-			seq = last->seq;
 			hlist_add_after(&last->all, &m->all);
 		}
 	} else
 		hlist_add_head(&m->all, &d->marks);
-	assign_seq(m, seq);
+	assign_seq(m);
 
 	if (m->viewnum == MARK_UNGROUPED)
 		return;
@@ -542,7 +546,7 @@ static void point_forward_to_mark(struct mark *p safe, struct mark *m safe)
 	/* finally move in the overall list */
 	hlist_del(&p->all);
 	hlist_add_after(&m->all, &p->all);
-	assign_seq(p, m->seq);
+	assign_seq(p);
 }
 
 static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
@@ -597,7 +601,7 @@ static void point_backward_to_mark(struct mark *p safe, struct mark *m safe)
 	/* finally move in the overall list */
 	hlist_del(&p->all);
 	hlist_add_before(&p->all, &m->all);
-	assign_seq(p, m->seq);
+	assign_seq(p);
 }
 
 void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
@@ -640,12 +644,12 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 		if (m->seq < target->seq) {
 			hlist_del(&m->all);
 			hlist_add_after(&target->all, &m->all);
-			assign_seq(m, target->seq);
+			assign_seq(m);
 		} else {
 			hlist_del(&m->all);
 			hlist_add_before(&m->all, &target->all);
 			m->seq = target->seq;
-			assign_seq(target, m->seq);
+			assign_seq(target);
 		}
 		return;
 	}
@@ -656,14 +660,14 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 			hlist_add_after(&target->all, &m->all);
 			tlist_del(&m->view);
 			tlist_add(&m->view, GRP_MARK, &target->view);
-			assign_seq(m, target->seq);
+			assign_seq(m);
 		} else {
 			hlist_del(&m->all);
 			hlist_add_before(&m->all, &target->all);
 			tlist_del(&m->view);
 			tlist_add_tail(&m->view, GRP_MARK, &target->view);
 			m->seq = target->seq;
-			assign_seq(target, m->seq);
+			assign_seq(target);
 		}
 		return;
 	}
@@ -676,7 +680,7 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 			hlist_add_after(&target->all, &m->all);
 			tlist_del(&m->view);
 			tlist_add(&m->view, GRP_MARK, &lnks->lists[m->viewnum]);
-			assign_seq(m, target->seq);
+			assign_seq(m);
 		} else {
 			hlist_del(&m->all);
 			hlist_add_before(&m->all, &target->all);
@@ -684,7 +688,7 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 			tlist_add_tail(&m->view, GRP_MARK,
 				       &lnks->lists[m->viewnum]);
 			m->seq = target->seq;
-			assign_seq(target, m->seq);
+			assign_seq(target);
 		}
 		return;
 	}
@@ -708,7 +712,7 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 		}
 		hlist_del(&m->all);
 		hlist_add_after(&target->all, &m->all);
-		assign_seq(m, target->seq);
+		assign_seq(m);
 	} else {
 		struct mark *m1 = m, *n;
 		while ((n = vmark_or_point_prev(m1, m->viewnum)) != NULL &&
@@ -726,7 +730,7 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 		hlist_del(&m->all);
 		hlist_add_before(&m->all, &target->all);
 		m->seq = target->seq;
-		assign_seq(target, m->seq);
+		assign_seq(target);
 	}
 }
 
