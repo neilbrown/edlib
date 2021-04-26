@@ -2320,6 +2320,7 @@ class notmuch_query_view(edlib.Pane):
             if s and s2:
                 focus.call("notmuch:select-message", s2, s)
                 self.selmsg = s2
+                self.call("view:changed")
         return 1
 
     def handle_reposition(self, key, focus, mark, mark2, **a):
