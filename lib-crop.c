@@ -114,6 +114,25 @@ DEF_CMD(crop_clip)
 	return Efallthrough;
 }
 
+DEF_CMD(crop_content)
+{
+	struct crop_data *cd = ci->home->data;
+	struct mark *m2;
+	int ret;
+
+	crop(ci->mark, cd);
+	crop(ci->mark2, cd);
+	if (ci->mark2)
+		m2 = ci->mark2;
+	else
+		m2 = mark_dup(cd->end);
+	ret = home_call_comm(ci->home->parent, ci->key, ci->focus,
+			     ci->comm2, 0, ci->mark, NULL, 0, m2);
+	if (m2 != ci->mark2)
+		mark_free(m2);
+	return ret;
+}
+
 DEF_CMD(crop_generic)
 {
 	struct pane *p = ci->home->parent;
@@ -172,5 +191,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(crop_map, "Free", &edlib_do_free);
 	key_add(crop_map, "doc:write_file", &crop_write);
 	key_add(crop_map, "doc:step", &crop_step);
+	key_add(crop_map, "doc:content", &crop_content);
 	key_add(crop_map, "Notify:clip", &crop_clip);
 }
