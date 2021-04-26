@@ -74,6 +74,7 @@ DEF_CMD(utf8_content_cb)
 {
 	struct utf8cb *c = container_of(ci->comm, struct utf8cb, c);
 	wint_t wc = ci->num;
+	int ret = 1;
 
 	if (ci->x)
 		c->size = ci->x;
@@ -82,10 +83,10 @@ DEF_CMD(utf8_content_cb)
 		/* 7bit char - easy */
 		if (c->expect)
 			c->expect = c->have = 0;
-		comm_call(c->cb, ci->key, c->p, wc, ci->mark, NULL,
-			  0, NULL, NULL, c->size, 0);
+		ret = comm_call(c->cb, ci->key, c->p, wc, ci->mark, NULL,
+				0, NULL, NULL, c->size, 0);
 		c->size = 0;
-		return 1;
+		return ret;
 	}
 	if ((wc & 0xc0) == 0x80) {
 		/* Continuation char */
@@ -97,11 +98,12 @@ DEF_CMD(utf8_content_cb)
 			const char *b = c->b;
 			wc = get_utf8(&b, b+c->have);
 			c->expect = 0;
-			comm_call(c->cb, ci->key, c->p, wc, ci->mark, NULL,
-				  0, NULL, NULL, c->size, 0);
+			ret = comm_call(c->cb, ci->key, c->p,
+					wc, ci->mark, NULL,
+					0, NULL, NULL, c->size, 0);
 			c->size = 0;
 		}
-		return 1;
+		return ret;
 	}
 	/* First char of multi-byte */
 	c->have = 1;

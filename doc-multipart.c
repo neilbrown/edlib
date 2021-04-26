@@ -435,6 +435,7 @@ DEF_CMD(mp_content)
 	struct mp_cb cb;
 	struct mark *m, *m2;
 	const char *invis = ci->str;
+	int ret = 1;
 
 	if (!ci->mark || !ci->comm2)
 		return Enoarg;
@@ -445,7 +446,6 @@ DEF_CMD(mp_content)
 	       (!m2 || m->ref.docnum <= m2->ref.docnum)) {
 		/* Need to call doc:content on this document */
 		int n = m->ref.docnum;
-		int ret = 0;
 		if ((!invis || invis[n] != 'i') && m->ref.m) {
 			struct mark *m2a = NULL;
 			struct mark *mtmp = NULL;
@@ -466,8 +466,8 @@ DEF_CMD(mp_content)
 			if (m2a)
 				post_move(m2);
 			mark_free(mtmp);
-			if (ret <= 0 && cb.last_ret > 0)
-				cb.last_ret = ret;
+			if (ret < 0)
+				break;
 		}
 		if (cb.last_ret > 0) {
 			pre_move(m);
@@ -475,7 +475,7 @@ DEF_CMD(mp_content)
 			post_move(m);
 		}
 	}
-	return cb.last_ret;
+	return ret;
 }
 
 DEF_CMD(mp_attr)

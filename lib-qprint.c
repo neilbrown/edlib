@@ -189,26 +189,30 @@ struct qpcb {
 	struct buf lws;
 };
 
-static void qpflush(struct qpcb *c safe, const struct cmd_info *ci, wint_t ch)
+static int qpflush(struct qpcb *c safe, const struct cmd_info *ci, wint_t ch)
 {
 	char *lws = buf_final(&c->lws);
+	int ret = 1;
 
-	while (*lws) {
-		comm_call(c->cb, ci->key, c->p, *lws, ci->mark, NULL,
-			  0, NULL, NULL, c->size, 0);
+	while (ret > 0 && *lws) {
+		ret = comm_call(c->cb, ci->key, c->p, *lws, ci->mark, NULL,
+				0, NULL, NULL, c->size, 0);
 		c->size = 0;
 		lws += 1;
 	}
 	buf_reinit(&c->lws);
-	comm_call(c->cb, ci->key, c->p, ch, ci->mark, NULL,
-		  0, NULL, NULL, c->size, 0);
+	if (ret > 0)
+		ret = comm_call(c->cb, ci->key, c->p, ch, ci->mark, NULL,
+				0, NULL, NULL, c->size, 0);
 	c->size = 0;
+	return ret;
 }
 
 DEF_CMD(qp_content_cb)
 {
 	struct qpcb *c = container_of(ci->comm, struct qpcb, c);
 	wint_t wc = ci->num;
+	int ret = 1;
 
 	if (ci->x)
 		c->size = ci->x;
@@ -217,49 +221,53 @@ DEF_CMD(qp_content_cb)
 		/* Must see a hexit */
 		int h = hex(wc);
 		if (h >= 0) {
-			qpflush(c, ci,  (hex(c->state) << 4) | h);
+			ret = qpflush(c, ci,  (hex(c->state) << 4) | h);
 			c->state = 0;
-			return 1;
+			return ret;
 		}
 		/* Pass first 2 literally */
-		qpflush(c, ci, '=');
-		qpflush(c, ci, c->state);
+		ret = qpflush(c, ci, '=');
+		if (ret > 0)
+			ret = qpflush(c, ci, c->state);
 		c->state = 0;
 	}
 
 	if (wc == '\r')
 		/* Always skip \r */
-		return 1;
+		return ret;
 	if (!c->state) {
 		if (wc == '=') {
 			c->state = wc;
-			return 1;
+			return ret;
 		}
 		if (wc == ' ' || wc == '\t') {
 			buf_append(&c->lws, wc);
-			return 1;
+			return ret;
 		}
 		if (wc == '\n')
 			/* drop any trailing space */
 			buf_reinit(&c->lws);
-		qpflush(c, ci, wc);
-		return 1;
+		if (ret > 0)
+			ret = qpflush(c, ci, wc);
+		return ret;
 	}
 	/* Previous was '='. */
 	if (hex(wc) >= 0) {
 		c->state = wc;
-		return 1;
+		return ret;
 	}
 	if (wc == ' ' || wc == '\t')
 		/* Ignore space after =, incase at eol */
-		return 1;
+		return ret;
 	c->state = 0;
 	if (wc == '\n')
 		/* The '=' was hiding the \n */
-		return 1;
-	qpflush(c, ci, '=');
-	qpflush(c, ci, wc);
-	return 1;
+		return ret;
+	if (ret > 0)
+		ret = qpflush(c, ci, '=');
+	if (ret > 0)
+		ret = qpflush(c, ci, wc);
+	return ret;
 }
 
 DEF_CMD(qp_content)

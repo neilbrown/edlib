@@ -226,6 +226,7 @@ DEF_CMD(base64_content_cb)
 	wint_t wc = ci->num;
 	char c2;
 	wint_t b;
+	int ret;
 
 	if (ci->x)
 		c->size = ci->x;
@@ -240,7 +241,7 @@ DEF_CMD(base64_content_cb)
 	}
 	if (c->c1 == 64 || c2 == 64)
 		/* We've found a padding '=', that's all folks. */
-		return 0;
+		return Efalse;
 
 	/* Have 2 b64 chars, can report one char */
 	switch(c->pos) {
@@ -258,10 +259,10 @@ DEF_CMD(base64_content_cb)
 	}
 	c->pos += 1;
 	c->c1 = c2;
-	comm_call(c->cb, ci->key, c->p, b, ci->mark, NULL,
-		  0, NULL, NULL, c->size, 0);
+	ret = comm_call(c->cb, ci->key, c->p, b, ci->mark, NULL,
+			0, NULL, NULL, c->size, 0);
 	c->size = 0;
-	return 1;
+	return ret;
 }
 
 DEF_CMD(base64_content)

@@ -112,10 +112,10 @@ DEF_CB(search_test)
 				doc_next(ci->home, ss->endmark);
 		}
 		if (ss->end && ci->mark &&  ci->mark->seq >= ss->end->seq)
-			return 0;
+			return Efalse;
 		if (found == RXL_DONE)
 			/* No match here */
-			return 0;
+			return Efalse;
 		ss->prev_ch = wch;
 		return 1;
 	}
@@ -364,11 +364,11 @@ DEF_CB(equal_test)
 	wint_t have, want;
 
 	if (!te->text[0])
-		return 0;
+		return Efalse;
 	have = ci->num & 0xFFFFF;
 	want = get_utf8(&te->text, NULL);
 	if (have != want)
-		return 0;
+		return Efalse;
 	if (!te->text[0])
 		te->matched = True;
 	return 1;

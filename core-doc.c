@@ -749,18 +749,18 @@ DEF_CB(get_str_callback)
 {
 	/* First char will be in ci->num, and some chars might be in
 	 * ->str (for ->num2).  If ->x, then expect that many bytes (at least).
-	 * Return 0 to stop, 1 if char was consumed, ->num2 if all ->str
+	 * Return Efalse to stop, 1 if char was consumed, ->num2 if all ->str
 	 * was consumed.
 	 */
 	wint_t wch = ci->num & 0xFFFFF;
 	struct getstr *g = container_of(ci->comm, struct getstr, c);
 
 	if (!ci->mark)
-		return 0;
+		return Enoarg;
 	if (ci->x)
 		buf_resize(&g->b, ci->x);
 	if (g->end && ci->mark->seq >= g->end->seq)
-		return 0;
+		return Efalse;
 	if (ci->str && ci->num2 > 0) {
 		/* This could over-run ->end, but we assume it doesn't */
 		buf_concat_len(&g->b, ci->str, ci->num2);

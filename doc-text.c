@@ -1820,8 +1820,11 @@ DEF_CMD(text_content)
 			} else if (rv > 0) {
 				s += rv;
 				ln -= rv;
-			} else
+			} else {
+				/* Time to stop */
 				ln = 0;
+				c = last;
+			}
 		}
 		if (c == last)
 			break;
