@@ -456,16 +456,14 @@ DEF_CMD(mp_content)
 
 			if (m->ref.m)
 				mtmp = mark_dup(m->ref.m);
-			if (m2 && m2->ref.docnum == n) {
-				pre_move(m2);
-				m2a = m2->ref.m;
-			}
+			if (m2 && m2->ref.docnum == n && m2->ref.m)
+				m2a = mark_dup(m2->ref.m);
+
 			ret = home_call_comm(mpi->parts[n].pane,
 					     ci->key, ci->home, &cb.c,
 					     ci->num, mtmp, NULL,
 					     ci->num2, m2a);
-			if (m2a)
-				post_move(m2);
+			mark_free(m2a);
 			mark_free(mtmp);
 			if (ret < 0)
 				break;
