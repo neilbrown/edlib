@@ -198,6 +198,9 @@ Module features
 
 ### popup
 
+- [ ] the calculation for borders use "-2" and "-1" which mean quite
+      different things for ncurses and gtk.
+- [ ] Support Cx-1 in (some) popups so they can take-over.
 - [ ] I need a way to move the pop-up window to an existing pane.
        Maybe just flag it so C-x-# chooses it first.
        Maybe C-x-4-0 ??

@@ -1658,7 +1658,12 @@ class notmuch_master_view(edlib.Pane):
         if host_address:
             m['email:host-address'] = host_address
         m['email:sendmail'] = "/usr/bin/notmuch insert --folder=sent --create-folder -new -unread +outbox"
-        p = focus.call("OtherPane", ret='focus')
+        # NOTE this cannot be in ThisPane, else the pane we want to copy
+        # content from will disappear.
+        # I think Popuptile is best, with maybe an option to expand it
+        # after the copy is done.
+        #p = focus.call("OtherPane", ret='focus')
+        p = focus.call("PopupTile", "MD3tsa", ret='focus')
         if not p:
             return edlib.Efail
         v = m.call("doc:attach-view", p, 1, ret='focus')
