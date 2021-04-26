@@ -460,9 +460,10 @@ DEF_CMD(mp_content)
 				pre_move(m2);
 				m2a = m2->ref.m;
 			}
-			ret = call_comm(ci->key, mpi->parts[n].pane, &cb.c,
-					ci->num, mtmp, NULL,
-					ci->num2, m2a);
+			ret = home_call_comm(mpi->parts[n].pane,
+					     ci->key, ci->home, &cb.c,
+					     ci->num, mtmp, NULL,
+					     ci->num2, m2a);
 			if (m2a)
 				post_move(m2);
 			mark_free(mtmp);

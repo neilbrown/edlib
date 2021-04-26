@@ -135,7 +135,7 @@ DEF_CMD(utf8_content)
 	c.p = ci->focus;
 	c.size = 0;
 	c.expect = 0;
-	return home_call_comm(ci->home->parent, ci->key, ci->focus,
+	return home_call_comm(ci->home->parent, ci->key, ci->home,
 			      &c.c, 1, ci->mark, NULL, 0, ci->mark2);
 }
 

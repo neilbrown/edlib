@@ -866,7 +866,7 @@ DEF_CMD(email_content)
 	for (i = 0; invis2 && invis2[i]; i++)
 		if (is_spacer(i))
 			invis2[i] = 'i';
-	return home_call(p->parent, ci->key, ci->focus,
+	return home_call(p->parent, ci->key, p,
 			 ci->num, ci->mark, invis2,
 			 ci->num2, ci->mark2, ci->str2,
 			 ci->x, ci->y, ci->comm2);

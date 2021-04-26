@@ -198,7 +198,7 @@ static int qpflush(struct qpcb *c safe, const struct cmd_info *ci, wint_t ch)
 	while (ret > 0 && *lws && c->lws_start) {
 		ret = comm_call(c->cb, ci->key, c->p, *lws, c->lws_start, NULL,
 				0, NULL, NULL, c->size, 0);
-		doc_next(c->p, c->lws_start);
+		doc_next(ci->home, c->lws_start);
 		c->size = 0;
 		lws += 1;
 	}
@@ -304,7 +304,7 @@ DEF_CMD(qp_content)
 	c.state = 0;
 	buf_init(&c.lws);
 	c.lws_start = NULL;
-	ret = home_call_comm(ci->home->parent, ci->key, ci->focus,
+	ret = home_call_comm(ci->home->parent, ci->key, ci->home,
 			     &c.c, 0, ci->mark, NULL, 0, ci->mark2);
 	free(c.lws.b);
 	mark_free(c.lws_start);

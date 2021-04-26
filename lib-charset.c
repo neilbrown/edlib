@@ -1358,7 +1358,7 @@ DEF_CMD(charset_content)
 	c.cb = ci->comm2;
 	c.p = ci->focus;
 	c.tbl = tbl;
-	return home_call_comm(ci->home->parent, ci->key, ci->focus,
+	return home_call_comm(ci->home->parent, ci->key, ci->home,
 			      &c.c, 0, ci->mark, NULL, 0, ci->mark2);
 }
 

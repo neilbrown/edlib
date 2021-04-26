@@ -126,7 +126,7 @@ DEF_CMD(crop_content)
 		m2 = ci->mark2;
 	else
 		m2 = mark_dup(cd->end);
-	ret = home_call_comm(ci->home->parent, ci->key, ci->focus,
+	ret = home_call_comm(ci->home->parent, ci->key, ci->home,
 			     ci->comm2, 0, ci->mark, NULL, 0, m2);
 	if (m2 != ci->mark2)
 		mark_free(m2);
