@@ -70,13 +70,18 @@ static int get_b64_x(struct pane *p safe, struct mark *m safe)
 static int get_b64(struct pane *p safe, struct mark *m safe)
 {
 	wint_t c;
+	int ret;
 
 	do {
 		c = doc_next(p, m);
 	} while (c != WEOF && !is_b64(c));
 	if (c == WEOF)
 		return WEOF;
-	return from_b64(c);
+	/* Need to leave mark immediately before a b64 char */
+	ret = from_b64(c);
+	while ((c = doc_following(p, m)) != WEOF && !is_b64(c))
+		doc_next(p, m);
+	return ret;
 }
 
 static int get_b64_rev(struct pane *p safe, struct mark *m safe)
