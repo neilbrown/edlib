@@ -71,10 +71,16 @@ class compose_email(edlib.Pane):
         # so that I can pick the right "from" address
         self.addrlist = []
         focus.call("doc:multipart-0-list-headers", "to", self.copy_addrs)
+        to_addrs = self.filter_cc(self.addrlist)
+        self.addrlist = []
         focus.call("doc:multipart-0-list-headers", "cc", self.copy_addrs)
-        addrs = self.filter_cc(self.addrlist)
+        cc_addrs = self.filter_cc(self.addrlist)
+        self.addrlist = []
+        focus.call("doc:multipart-0-list-headers", "from", self.copy_addrs)
+        from_addrs = self.filter_cc(self.addrlist)
         if str != "reply-all":
-            addrs = None
+            to_addrs = None
+            cc_addrs = None
         me = self.myaddr
         if not me:
             me = self['email:from']
@@ -83,16 +89,22 @@ class compose_email(edlib.Pane):
             if nm:
                 me = "\"%s\" <%s>" %(nm, me)
             self.check_header("From", me)
+        if from_addrs:
+            n,a = from_addrs[0]
+            self['reply-author'] = n if n else a
+
         if str != "forward":
-            focus.call("doc:multipart-0-list-headers", "from", self.copy_to)
-        else:
-            focus.call("doc:multipart-0-list-headers", "from", self.save_to)
+            if from_addrs:
+                self.add_addr_header("To", from_addrs)
+                self.add_addr_header("Cc", to_addrs)
+            else:
+                self.add_addr_header("To", to_addrs)
+            self.add_addr_header("Cc", cc_addrs)
+
         self.pfx = "Re"
         if str == "forward":
             self.pfx = "Fwd"
         self.check_header("To")
-        if addrs:
-            self.add_addr_header("Cc", addrs)
         self.check_header("Cc")
         focus.call("doc:multipart-0-list-headers", "subject", self.copy_subject)
 
@@ -116,17 +128,6 @@ class compose_email(edlib.Pane):
         d = email.utils.parsedate_tz(str)
         if d:
             self['date-seconds'] = "%d" % email.utils.mktime_tz(d)
-        return edlib.Efalse
-
-    def copy_to(self, key, focus, str, **a):
-        m2 = self.call("doc:vmark-get", self.view, ret='mark')
-        if m2:
-            self.call("doc:replace", m2, m2, "To: " + str.strip() + "\n")
-        self['reply-author'] = str.strip()
-        return edlib.Efalse
-
-    def save_to(self, key, focus, str, **a):
-        self['reply-author'] = str.strip()
         return edlib.Efalse
 
     def copy_addrs(self, key, focus, str, **a):
@@ -182,6 +183,8 @@ class compose_email(edlib.Pane):
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
         if not m2:
             return
+        if not addr:
+            return
         # Note that we must call doc:replace on parent else
         # we might be caught trying to insert a non-newline immediately
         # before a marker.  We do eventuall insert a newline, so it is safe.
@@ -229,15 +232,8 @@ class compose_email(edlib.Pane):
         "handle:compose-email:quote-content"
         m = edlib.Mark(self)
         self.to_body(m)
-        try:
-            who = email.utils.getaddresses([self['reply-author']])
-        except:
-            who = None
-        if who and who[0][0]:
-            who = who[0][0]
-        elif who and who[0][1]:
-            who = who[0][1]
-        else:
+        who = self['reply-author']
+        if not who:
             who = "someone"
         n = self['date-seconds']
         if n:
