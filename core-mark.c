@@ -85,30 +85,82 @@ static struct mark *vmark_or_point_prev(struct mark *m safe, int view);
  */
 static void assign_seq(struct mark *m safe)
 {
-	int prev = 0;
-	struct mark *p;
+	struct mark *p, *n;
 	int gap = 256;
 
+	n = mark_next(m);
 	p = mark_prev(m);
-	if (p)
-		prev = p->seq;
-
-	while (m->all.next) {
-		struct mark *mn = hlist_next_entry(m, all);
-		if (prev+1 < mn->seq) {
-			m->seq = (prev + mn->seq) / 2;
+	if (!n && !p) {
+		/* First mark: start in the middle */
+		m->seq = INT_MAX/2;
+		return;
+	}
+	while (--gap >= 2) {
+		if (n && p && n->seq - p->seq >= 2) {
+			/* There is room here, so insert */
+			m->seq = p->seq + (n->seq - p->seq)/2;
 			return;
 		}
-		/* Doesn't fit, make a gap */
-		m->seq = prev+gap;
-		if (gap > 64)
-			gap -= 1;
-		prev = m->seq;
-		m = mn;
+		if (!n && p->seq < INT_MAX - 1) {
+			if (INT_MAX - p->seq < gap)
+				gap = INT_MAX - p->seq;
+			m->seq = p->seq + gap / 2;
+			return;
+		}
+		if (!p && n->seq > 1) {
+			if (n->seq < gap)
+				gap = n->seq;
+			m->seq = n->seq - gap / 2;
+			return;
+		}
+
+		/* We are between two marks with no room for a seq number,
+		 * need to reshuffle and try to find space somewhere.
+		 * Try to spread out the current marks more so there is
+		 * 'gap' space between them, but let 'gap' decrease as we
+		 * go to avoid pushing too hard.
+		 */
+		if (p && n && p->seq > INT_MAX / 2) {
+			while (p && n->seq - p->seq < gap) {
+				/* step back to 'p' and leave 'm' with a larger
+				 * gap.
+				 */
+				if (n->seq > gap)
+					m->seq = n->seq - gap;
+				else if (n->seq > 0)
+					m->seq = n->seq - 1;
+				else
+					m->seq = 0; /* Ouch! */
+				n = m;
+				m = p;
+				p = mark_prev(p);
+				if (gap > 4)
+					gap -= 1;
+			}
+		} else if (p) {
+			while (n && n->seq - p->seq < gap) {
+				if (INT_MAX - p->seq > gap)
+					m->seq = p->seq + gap;
+				else if (p->seq < INT_MAX)
+					m->seq = p->seq + 1;
+				else
+					m->seq = INT_MAX; /* Ouch! */
+				p = m;
+				m = n;
+				n = mark_next(n);
+				if (gap > 4)
+					gap -= 1;
+			}
+		}
+		/* NOTE: p->seq may now exceed n->seq, and
+		 * there might be adjacent seq numbers if we hit 0 or INT_MAX.
+		 * These will be fixed up on next loop through.
+		 */
 	}
-	/* We've come to the end */
-	m->seq = prev + 128;
-	ASSERT(m->seq >= 0);
+	/* We must have scanned all the way to one end, and all the way to the
+	 * other, and found no space, so 4 billion marks.  Seems unlikely.
+	 */
+	abort();
 }
 
 static void mark_delete(struct mark *m safe)
