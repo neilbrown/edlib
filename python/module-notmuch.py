@@ -1692,7 +1692,7 @@ class notmuch_master_view(edlib.Pane):
             mode = "reply"
         if v:
             v.call("compose-email:copy-headers", self.message_pane, mode)
-            if num >= 0:
+            if num == edlib.NO_NUMERIC:
                 # find first text part and copy it
                 msg = self.message_pane
                 m = edlib.Mark(msg)
