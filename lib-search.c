@@ -55,7 +55,7 @@ static int is_word(wint_t ch)
 /*
  * 'search_test' together with 'stuct search_state' encapsulates
  * a parsed regexp and some matching state.  If called as 'consume'
- * (or anything starting 'c') it processes on char into the match
+ * (or anything starting 'c') it processes one char into the match
  * and returns 1 if it is worth providing more characters.
  * Other options for ci->key are:
  * - reinit - state is re-initialised with flags from ->num, end and
@@ -76,7 +76,7 @@ DEF_CB(search_test)
 		int maxlen, since_start;
 		enum rxl_found found;
 
-		if ((unsigned int)(ci->num & 0xffffffff) == WEOF) {
+		if ((unsigned int)ci->num == WEOF) {
 			wch = 0;
 			flags |= RXL_EOD;
 		}
@@ -99,19 +99,20 @@ DEF_CB(search_test)
 		}
 		if (is_eol(wch))
 			flags |= RXL_EOL;
-		if (ss->point && ci->mark && mark_same(ss->point, ci->mark))
-			flags |= RXL_POINT;
 
 		found = rxl_advance(ss->st, wch | flags);
+		if (ss->point && ci->mark && mark_same(ss->point, ci->mark))
+			found = rxl_advance(ss->st, RXL_POINT);
 		rxl_info(ss->st, &maxlen, NULL, NULL, &since_start);
 
 		if (found >= RXL_MATCH && ss->endmark && ci->mark &&
 		    since_start - maxlen <= 1) {
 			mark_to_mark(ss->endmark, ci->mark);
-			if (found == RXL_MATCH)
-				doc_next(ci->home, ss->endmark);
+			if (found == RXL_MATCH_FLAG)
+				doc_prev(ci->home, ss->endmark);
 		}
-		if (ss->end && ci->mark &&  ci->mark->seq >= ss->end->seq)
+		if (ss->end && ci->mark &&
+		    (ci->mark->seq > ss->end->seq || mark_same(ss->end, ci->mark)))
 			return Efalse;
 		if (found == RXL_DONE)
 			/* No match here */

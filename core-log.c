@@ -179,15 +179,15 @@ DEF_CMD(log_content)
 			m->ref.b = b;
 			m->ref.o = 0;
 		}
-		while (ln) {
+		while (ln > 0) {
 			int rv;
-			const char *s2 = s;
+			const char *ss = s;
 			wint_t wc;
 
 			if (ci->num2)
-				wc = *s2++;
+				wc = *s++;
 			else
-				wc = get_utf8(&s2, s2+ln);
+				wc = get_utf8(&s, s+ln);
 			if (wc >= WERR)
 				break;
 
@@ -197,17 +197,18 @@ DEF_CMD(log_content)
 				mark_to_mark(m, m2);
 			m->ref.o = s - b->text;
 
+			ln -= s - ss;
 			rv = comm_call(ci->comm2, "consume", ci->focus,
 				       wc, m, s, ln, NULL, NULL, size, 0);
 			size = 0;
-			if (rv == 1) {
-				ln -= s2 - s;
-				s = s2;
-			} else if (rv > 0) {
-				s += rv;
-				ln -= rv;
-			} else
+			if (rv <= 0 || rv > ln + 1) {
 				ln = 0;
+				b = last;
+			}
+			if (rv > 1) {
+				s += rv - 1;
+				ln -= rv - 1;
+			}
 		}
 		head = 0;
 		if (b == last)

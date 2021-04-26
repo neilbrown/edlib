@@ -720,12 +720,10 @@ DEF_CMD(doc_default_content)
 	if (ci->num)
 		cmd = "doc:step-bytes";
 
-	nxt = ccall(&dstep, cmd, ci->home, 1, m);
+	nxt = ccall(&dstep, cmd, ci->home, 1, m, NULL, 1);
 	while (nxt > 0 && nxt != CHAR_RET(WEOF) &&
-	       comm_call(ci->comm2, "consume", ci->home, nxt, m) > 0) {
-		ccall(&dstep, cmd, ci->home, 1, m, NULL, 1);
-		nxt = ccall(&dstep, cmd, ci->home, 1, m);
-	}
+	       comm_call(ci->comm2, "consume", ci->home, nxt, m) > 0)
+		nxt = ccall(&dstep, cmd, ci->home, 1, m, NULL, 1);
 
 	return nxt < 0 ? nxt : 1;
 }
@@ -747,10 +745,11 @@ struct getstr {
 
 DEF_CB(get_str_callback)
 {
-	/* First char will be in ci->num, and some chars might be in
-	 * ->str (for ->num2).  If ->x, then expect that many bytes (at least).
-	 * Return Efalse to stop, 1 if char was consumed, ->num2 if all ->str
-	 * was consumed.
+	/* First char will be in ci->num and ->mark will be *after* that char.
+	 * Some more chars might be in ->str (for ->num2 bytes).
+	 * If ->x, then expect that many bytes (approximately).
+	 * Return Efalse to stop, 1 if char was consumed,
+	 * 1+N (N <= ->num2) if N bytes from ->str were consumed.
 	 */
 	wint_t wch = ci->num & 0xFFFFF;
 	struct getstr *g = container_of(ci->comm, struct getstr, c);
@@ -759,18 +758,19 @@ DEF_CB(get_str_callback)
 		return Enoarg;
 	if (ci->x)
 		buf_resize(&g->b, ci->x);
-	if (g->end && ci->mark->seq >= g->end->seq)
-		return Efalse;
-	if (ci->str && ci->num2 > 0) {
-		/* This could over-run ->end, but we assume it doesn't */
-		buf_concat_len(&g->b, ci->str, ci->num2);
-		return ci->num2;
-	}
 	if (g->bytes)
 		buf_append_byte(&g->b, ci->num & 0xff);
 	else
 		buf_append(&g->b, wch);
-	return 1;
+	if (g->end && (ci->mark->seq >= g->end->seq ||
+		       mark_same(ci->mark, g->end)))
+		return Efalse;
+	if (!ci->str || ci->num2 <= 0)
+		return 1;
+
+	/* This could over-run ->end, but we assume it doesn't */
+	buf_concat_len(&g->b, ci->str, ci->num2);
+	return 1 + ci->num2;
 }
 
 DEF_CMD(doc_get_str)

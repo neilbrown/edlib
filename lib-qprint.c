@@ -187,6 +187,7 @@ struct qpcb {
 	char state; /* \0 or '=' or hexit */
 	int size;
 	struct buf lws;
+	struct mark *lws_start; /* after first lws char */
 };
 
 static int qpflush(struct qpcb *c safe, const struct cmd_info *ci, wint_t ch)
@@ -194,13 +195,18 @@ static int qpflush(struct qpcb *c safe, const struct cmd_info *ci, wint_t ch)
 	char *lws = buf_final(&c->lws);
 	int ret = 1;
 
-	while (ret > 0 && *lws) {
-		ret = comm_call(c->cb, ci->key, c->p, *lws, ci->mark, NULL,
+	while (ret > 0 && *lws && c->lws_start) {
+		ret = comm_call(c->cb, ci->key, c->p, *lws, c->lws_start, NULL,
 				0, NULL, NULL, c->size, 0);
+		doc_next(c->p, c->lws_start);
 		c->size = 0;
 		lws += 1;
 	}
 	buf_reinit(&c->lws);
+	mark_free(c->lws_start);
+	c->lws_start = NULL;
+	if (!ch)
+		return ret;
 	if (ret > 0)
 		ret = comm_call(c->cb, ci->key, c->p, ch, ci->mark, NULL,
 				0, NULL, NULL, c->size, 0);
@@ -214,6 +220,8 @@ DEF_CMD(qp_content_cb)
 	wint_t wc = ci->num;
 	int ret = 1;
 
+	if (!ci->mark)
+		return Enoarg;
 	if (ci->x)
 		c->size = ci->x;
 
@@ -237,16 +245,24 @@ DEF_CMD(qp_content_cb)
 		return ret;
 	if (!c->state) {
 		if (wc == '=') {
+			/* flush lws even if this turns out to be "=\n    \n" */
+			if (ret)
+				ret = qpflush(c, ci, 0);
 			c->state = wc;
 			return ret;
 		}
 		if (wc == ' ' || wc == '\t') {
+			if (!c->lws_start)
+				c->lws_start = mark_dup(ci->mark);
 			buf_append(&c->lws, wc);
 			return ret;
 		}
-		if (wc == '\n')
+		if (wc == '\n') {
 			/* drop any trailing space */
 			buf_reinit(&c->lws);
+			mark_free(c->lws_start);
+			c->lws_start = NULL;
+		}
 		if (ret > 0)
 			ret = qpflush(c, ci, wc);
 		return ret;
@@ -287,9 +303,11 @@ DEF_CMD(qp_content)
 	c.size = 0;
 	c.state = 0;
 	buf_init(&c.lws);
+	c.lws_start = NULL;
 	ret = home_call_comm(ci->home->parent, ci->key, ci->focus,
 			     &c.c, 0, ci->mark, NULL, 0, ci->mark2);
 	free(c.lws.b);
+	mark_free(c.lws_start);
 	return ret;
 }
 

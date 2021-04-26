@@ -199,11 +199,9 @@ retry:
 	default:
 		b = 0;
 	}
-	if (forward) {
-		pos = (pos + 1) % 3;
-		if (pos)
-			doc_prev(p, m);
-	}
+	if (forward && pos < 2 && move)
+		/* Step back to look at the last char read */
+		doc_prev(p, m);
 	if (move)
 		mark_to_mark(ci->mark, m);
 
@@ -215,6 +213,7 @@ struct b64c {
 	struct command c;
 	struct command *cb;
 	struct pane *p safe;
+	struct mark *m safe; /* trails 1 b64 char behind main mark */
 	int pos;
 	int size;
 	char c1;
@@ -228,6 +227,8 @@ DEF_CMD(base64_content_cb)
 	wint_t b;
 	int ret;
 
+	if (!ci->mark)
+		return Enoarg;
 	if (ci->x)
 		c->size = ci->x;
 
@@ -259,8 +260,9 @@ DEF_CMD(base64_content_cb)
 	}
 	c->pos += 1;
 	c->c1 = c2;
-	ret = comm_call(c->cb, ci->key, c->p, b, ci->mark, NULL,
+	ret = comm_call(c->cb, ci->key, c->p, b, c->m, NULL,
 			0, NULL, NULL, c->size, 0);
+	mark_to_mark(c->m, ci->mark);
 	c->size = 0;
 	return ret;
 }
@@ -269,6 +271,7 @@ DEF_CMD(base64_content)
 {
 	struct b64c c;
 	struct b64info *bi = ci->home->data;
+	int ret;
 
 	if (!ci->comm2 || !ci->mark)
 		return Enoarg;
@@ -281,8 +284,11 @@ DEF_CMD(base64_content)
 	c.p = ci->focus;
 	c.pos = locate_mark(ci->home->parent, ci->home, bi->view, ci->mark);
 	c.size = 0;
-	return home_call_comm(ci->home->parent, ci->key, ci->focus, &c.c,
-			      0, ci->mark, NULL, 0, ci->mark2);
+	c.m = mark_dup(ci->mark);
+	ret = home_call_comm(ci->home->parent, ci->key, ci->home, &c.c,
+			     0, ci->mark, NULL, 0, ci->mark2);
+	mark_free(c.m);
+	return ret;
 }
 
 DEF_CMD(b64_close)

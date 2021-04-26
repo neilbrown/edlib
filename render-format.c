@@ -162,6 +162,7 @@ DEF_CMD(format_content)
 		l = do_format(ci->focus, ci->mark, NULL, -1, 0);
 		if (!l)
 			break;
+		doc_next(ci->focus, ci->mark);
 		c = l;
 		while (*c) {
 			w = get_utf8(&c, NULL);
@@ -173,7 +174,6 @@ DEF_CMD(format_content)
 		free((void*)l);
 		if (*c)
 			break;
-		doc_next(ci->focus, ci->mark);
 	}
 	return 1;
 }
@@ -352,8 +352,6 @@ DEF_CMD(format_content2)
 	 * content.  So for a directory listing, it is the listing, not
 	 * one newline per file.
 	 * This is used for 'search' and 'copy'.
-	 * This default version calls doc:step and is used when the actual
-	 * and apparent content are the same.
 	 *
 	 * .mark is 'location': to start.  This is moved forwards
 	 * .comm2 is 'consume': pass char mark and report if finished.
@@ -369,12 +367,10 @@ DEF_CMD(format_content2)
 		/* Cannot handle bytes */
 		return Einval;
 
-	nxt = ccall(&dstep, "doc:step", ci->home, 1, m);
+	nxt = ccall(&dstep, "doc:step", ci->home, 1, m, NULL, 1);
 	while (nxt != CHAR_RET(WEOF) &&
-	       comm_call(ci->comm2, "consume", ci->home, nxt, m) > 0) {
-		ccall(&dstep, "doc:step", ci->home, 1, m, NULL, 1);
-		nxt = ccall(&dstep, "doc:step", ci->home, 1, m);
-	}
+	       comm_call(ci->comm2, "consume", ci->home, nxt, m) > 0)
+		nxt = ccall(&dstep, "doc:step", ci->home, 1, m, NULL, 1);
 
 	return 1;
 }

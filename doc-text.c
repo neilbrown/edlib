@@ -1792,17 +1792,17 @@ DEF_CMD(text_content)
 			m->ref.c = c;
 			m->ref.o = c->start;
 		}
-		while (ln) {
+		while (ln > 0) {
 			int rv;
-			const char *s2 = s;
+			const char *ss = s;
 			wint_t wc;
 
 			if (bytes)
-				wc = *s2++;
+				wc = *s++;
 			else {
-				wc = get_utf8(&s2, s2+ln);
+				wc = get_utf8(&s, s+ln);
 				if (wc >= WERR)
-					wc = *s2++;
+					wc = *s++;
 			}
 
 			while ((m2 = mark_next(m)) &&
@@ -1811,19 +1811,18 @@ DEF_CMD(text_content)
 				mark_to_mark(m, m2);
 			m->ref.o = s - c->txt;
 
+			ln -= s - ss;
 			rv = comm_call(ci->comm2, "consume", ci->focus,
 				       wc, m, s, ln, NULL, NULL, size, 0);
 			size = 0;
-			if (rv == 1) {
-				ln -= (s2 - s);
-				s = s2;
-			} else if (rv > 0) {
-				s += rv;
-				ln -= rv;
-			} else {
+			if (rv <= 0 || rv > ln + 1) {
 				/* Time to stop */
 				ln = 0;
 				c = last;
+			} else if (rv > 1) {
+				/* consumed (some of) str */
+				s += rv - 1;
+				ln -= rv - 1;
 			}
 		}
 		if (c == last)
