@@ -2561,6 +2561,22 @@ class notmuch_message_view(edlib.Pane):
             return 1
         if str == "render:url":
             comm2("attr:callback", focus, int(str2), mark, "fg:cyan-60,underline,active-tag:url,url-len="+str2, 20)
+        if str == 'start-of-line':
+            # if line starts '>', give it some colour
+            if focus.following(mark) == '>':
+                colours = ['red', 'red-60', 'green-60', 'magenta-60']
+                m = mark.dup()
+                cnt = 0
+                c = focus.next(m)
+                while c and c in ' >':
+                    if c == '>':
+                        cnt += 1
+                    c = focus.next(m)
+
+                if cnt >= len(colours):
+                    cnt = len(colours)
+                comm2("cb", focus, mark, 10000, "fg:"+colours[cnt-1], 2)
+            return edlib.Efallthrough
 
     def handle_click(self, key, focus, mark, str2, **a):
         "handle:Mouse-Activate:url"

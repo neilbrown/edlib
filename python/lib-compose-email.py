@@ -354,6 +354,24 @@ class compose_email(edlib.Pane):
                 # make whole line red
                 comm2("cb", focus, mark, 100000, "bg:red+50,fg:red-50", 2)
             comm2("cb", focus, mark, 10000, "wrap-tail: ,wrap-head:    ", 20)
+            return edlib.Efallthrough
+        if m and str == 'start-of-line':
+            # if line starts '>', give it some colour
+            if focus.following(mark) == '>':
+                colours = ['red', 'red-60', 'green-60', 'magenta-60']
+                m = mark.dup()
+                cnt = 0
+                c = focus.next(m)
+                while c and c in ' >':
+                    if c == '>':
+                        cnt += 1
+                    c = focus.next(m)
+
+                if cnt >= len(colours):
+                    cnt = len(colours)
+                comm2("cb", focus, mark, 10000, "fg:"+colours[cnt-1], 2)
+            return edlib.Efallthrough
+
         return edlib.Efallthrough
 
     def handle_replace(self, key, focus, mark, mark2, str, **a):

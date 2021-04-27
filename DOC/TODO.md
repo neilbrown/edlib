@@ -644,7 +644,7 @@ Module features
 - [ ] attach files - with type and disposition
 - [X] spell-checker
 - [ ] be smart about quoting displayname before <addr>
-- [ ] highlight interpolated text - red?
+- [X] highlight interpolated text - red?
 - [ ] capture editing of to/cc and mark ',' as a wrap point.
 - [X] "post" passes to "notmuch insert -new -unread +outbox --folder=sent"
         add 'sent' to new.ignore??
