@@ -725,7 +725,7 @@ class notmuch_query(edlib.Doc):
         self.messageids = {}
         self.threadinfo = {}
         self["render-default"] = "notmuch:threads"
-        self["line-format"] = "<%BG><%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<tab:450><%TM-hilite>%TM-subject</></>                      "
+        self["line-format"] = "<%BG><%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<tab:450><%TM-hilite><fg:red,large>%TM-flag</> %TM-subject</></>                      "
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")
         self.load_full()
@@ -1203,7 +1203,7 @@ class notmuch_query(edlib.Doc):
             val = tid
         elif attr == "T-hilite":
             if "inbox" not in t["tags"]:
-                # FIXME this test is wrong once we have generic searches
+                # FIXME maybe I should test 'current' ??
                 val = "fg:grey"
             elif "new" in t["tags"] and "unread" in t["tags"]:
                 val = "fg:red,bold"
@@ -1211,6 +1211,15 @@ class notmuch_query(edlib.Doc):
                 val = "fg:blue"
             else:
                 val = "fg:black"
+        elif attr == "T-flag":
+            if 'flagged' in t["tags"]:
+                val = "★"
+            elif 'newspam' in t["tags"]:
+                val = "✘"
+            elif 'notspam' in t["tags"]:
+                val = "✔"
+            else:
+                val = " "
         elif attr == "T-date_relative":
             val = self.rel_date(t['timestamp'])
         elif attr == "T-threadinfo":
@@ -1230,8 +1239,8 @@ class notmuch_query(edlib.Doc):
         elif attr == "tags":
             val = ','.join(tags)
         elif attr == "M-hilite":
-            # FIXME this inbox test is wrong once we allow generic searches
             if not matched or "inbox" not in tags:
+                # FIXME maybe I should test 'current' rather than inbox?
                 val = "fg:grey"
                 if "new" in tags and "unread" in tags:
                     val = "fg:pink"
@@ -1241,6 +1250,15 @@ class notmuch_query(edlib.Doc):
                 val = "fg:blue"
             else:
                 val = "fg:black"
+        elif attr == "M-flag":
+            if 'flagged' in tags:
+                val = "★"
+            elif 'newspam' in tags:
+                val = "✘"
+            elif 'notspam' in tags:
+                val = "✔"
+            else:
+                val = " "
         elif attr == "M-date_relative":
             val = self.rel_date(dt)
         elif attr == "M-authors":

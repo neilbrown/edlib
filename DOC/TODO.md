@@ -480,7 +480,7 @@ Module features
 - [ ] support selection messages and applying tags
 - [ ] command to mark whole thread as Archived - 'A' ? or 'K'?
 - [ ] 'd' to add "deleted' flag
-- [ ] highlight for 'flagged' - and 'spam'
+- [X] highlight for 'flagged' - and 'spam'
 - [X] cannot move down to last message in search
 - [X] leave cursor in query (not message) by default.
 - [X] When there are 'new' items in a thread, entering from top
