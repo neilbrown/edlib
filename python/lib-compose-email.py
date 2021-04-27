@@ -210,14 +210,14 @@ class compose_email(edlib.Pane):
     def find_empty_header(self, m):
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
         try:
-            self.call("text-search", "^[!-9;-~]+\\s*:\\s*$", m, m2)
+            self.call("text-search", "^[!-9;-~]+\\h*:\\h*$", m, m2)
             return True
         except:
             return False
     def find_any_header(self, m):
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
         try:
-            self.call("text-search", "^[!-9;-~]+\\s*:\\s*", m, m2)
+            self.call("text-search", "^[!-9;-~]+\\h*:\\h*", m, m2)
             return True
         except:
             return False
@@ -287,7 +287,7 @@ class compose_email(edlib.Pane):
         m1 = edlib.Mark(self)
         m2 = self.call("doc:vmark-get", self.view, ret='mark')
         try:
-            self.call("text-search", "^(?i:%s)\\s*:" % header, m1, m2)
+            self.call("text-search", "^(?i:%s)\\h*:" % header, m1, m2)
         except:
             self.call("doc:replace", m2, m2, header + ': ' + content+'\n')
 
@@ -338,7 +338,7 @@ class compose_email(edlib.Pane):
         m = self.call("doc:vmark-get", self.view, 3, mark, ret='mark2')
         if not m and str == "start-of-line":
             # start of a header line - set colour for tag and header, and wrap info
-            rv = self.call("text-match", "(\\s+|[!-9;-~]+\\s*:)", mark.dup())
+            rv = self.call("text-match", "(\\h+|[!-9;-~]+\\h*:)", mark.dup())
             if rv > 0:
                 # make space or tag light blue, and body dark blue
                 # If tag is unknown, make it grey
@@ -518,7 +518,7 @@ class compose_email(edlib.Pane):
 
     def this_header(self, mark, end = None, downcase = True):
         try:
-            l = self.call("text-search", "^[!-9;-~]+\\s*:", 0, 1, mark)
+            l = self.call("text-search", "^[!-9;-~]+\\h*:", 0, 1, mark)
             m1 = mark.dup()
             while l > 2:
                 l -= 1
