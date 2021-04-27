@@ -1593,15 +1593,7 @@ class notmuch_master_view(edlib.Pane):
         # H - ham: remove newspam and add notspam
         # * - add flagged
         # ! - add unread,inbox remove newspam,notspam,flagged
-        in_message = False
-        in_query = False
-        in_main = False
-        if self.message_pane and self.mychild(focus) == self.mychild(self.message_pane):
-            in_message = True
-        elif self.query_pane and self.mychild(focus) == self.mychild(self.query_pane):
-            in_query = True
-        else:
-            in_main = True
+        which = focus['notmuch:pane']
 
         adds = []; removes = []
         if key[-1] == 'a':
@@ -1617,13 +1609,13 @@ class notmuch_master_view(edlib.Pane):
             adds = ['unread','inbox']
             removes = ['newspam','notspam','flagged']
 
-        if in_message:
+        if which == "message":
             mp = self.message_pane
             if mp.cmid and mp.ctid:
                 self.do_update(mp.ctid, mp.cmid, adds, removes)
             self.call("doc:char-n")
             return 1
-        if in_query:
+        if which == "query":
             thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
             msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
             self.do_update(thid, msid, adds, removes)
@@ -1962,6 +1954,7 @@ class notmuch_list_view(edlib.Pane):
     # This pane provides view on the search-list document.
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
+        self['notmuch:pane'] = 'main'
         self['render-wrap'] = 'no'
         self['background'] = 'color:#A0FFFF'
         self['line-format'] = '<%fmt>%count%space%name</>'
@@ -2020,6 +2013,7 @@ class notmuch_query_view(edlib.Pane):
         self.whole_thread = False
         self.seen_threads = {}
         self.seen_msgs = {}
+        self['notmuch:pane'] = 'query'
 
         if self['filter']:
             self['doc-status'] = "query: %s filter: %s" % (
@@ -2368,6 +2362,7 @@ class notmuch_message_view(edlib.Pane):
         # which is a spacer, we look at email:path and email:content-type.
         # If alternative:[1-9] is found, or type isn't "text*", make it
         # invisible.
+        self['notmuch:pane'] = 'message'
         p = 0
         focus.call("doc:notmuch:request:Notify:Tag", self)
         self.handle_notify_tag("Notify:Tag")

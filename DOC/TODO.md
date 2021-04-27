@@ -469,7 +469,7 @@ Module features
 - [ ] 'a' on a thread only works if there is just one message
 - [X] 'q' command to close thread if it is open
 - [ ] 'k' to kill the message and all replies - but not rest of thread
-- [ ] Chr-a should affect thing under cursor, not current thing
+- [X] Chr-a should affect thing under cursor, not current thing
 - [ ] support selection messages and applying tags
 - [ ] command to mark whole thread as Archived - 'A' ?
 - [ ] highlight for 'flagged' - and 'spam'
