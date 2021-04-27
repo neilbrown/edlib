@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] remote external-viewer: display scp command
+- [X] remote external-viewer: display scp command
 - [X] spell-checker refinements
 - [X] provide a way for ncurses to switch out of display mode
       and to show a URL (or similar) which can be copied from terminal

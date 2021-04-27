@@ -33,6 +33,7 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <term.h>
+#include <netdb.h>
 
 #include "core.h"
 
@@ -450,12 +451,15 @@ DEF_CMD(nc_external_viewer)
 	struct pane *p = ci->home;
 	struct display_data *dd = p->data;
 	char *disp = pane_attr_get(p, "DISPLAY");
+	char *remote = pane_attr_get(p, "REMOTE_SESSION");
+	char *fqdn = NULL;
+	const char *path = ci->str;
 	int pid;
 	char buf[100];
 	int n;
 	int fd;
 
-	if (!ci->str)
+	if (!path)
 		return Enoarg;
 	if (disp && *disp) {
 		switch (pid = fork()) {
@@ -471,7 +475,7 @@ DEF_CMD(nc_external_viewer)
 				if (fd > 2)
 					close(fd);
 			}
-			execlp("xdg-open", "xdg-open", ci->str, NULL);
+			execlp("xdg-open", "xdg-open", path, NULL);
 			exit(1);
 		default: /* parent */
 			/* FIXME record pid?? */
@@ -480,6 +484,18 @@ DEF_CMD(nc_external_viewer)
 		return 1;
 	}
 	/* handle no-display case */
+	if (remote && strcmp(remote, "yes") == 0 &&
+	    path[0] == '/' &&
+	    gethostname(buf, sizeof(buf)) == 0) {
+		struct addrinfo *res;
+		const struct addrinfo hints = {
+			.ai_flags = AI_CANONNAME,
+		};
+		if (getaddrinfo(buf, NULL, &hints, &res) == 0 &&
+		    res && res->ai_canonname)
+			fqdn = strdup(res->ai_canonname);
+		freeaddrinfo(res);
+	}
 	set_screen(p);
 	n = 0;
 	ioctl(fileno(dd->scr_file), FIONREAD, &n);
@@ -502,9 +518,19 @@ DEF_CMD(nc_external_viewer)
 	fflush(dd->scr_file);
 
 	fprintf(dd->scr_file, "# Consider copy-pasting following\n");
-	fprintf(dd->scr_file, "xdg-open %s\n", ci->str);
+	if (fqdn && path[0] == '/') {
+		/* File will not be local for the user, so help them copy it. */
+		const char *tmp=ci->str2;
+		if (!tmp)
+			tmp = "XXXXXXX";
+		fprintf(dd->scr_file, "f=`mktemp --tmpdir %s`; scp %s:%s $f ; ",
+			tmp, fqdn, ci->str);
+		path = "$f";
+	}
+	fprintf(dd->scr_file, "xdg-open %s\n", path);
 	fprintf(dd->scr_file, "# Press Enter to continue\n");
 	n = read(fileno(dd->scr_file), buf, sizeof(buf));
+	free(fqdn);
 	doupdate();
 	return 1;
 }

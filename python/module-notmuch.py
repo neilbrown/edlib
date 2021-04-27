@@ -2541,7 +2541,7 @@ class notmuch_message_view(edlib.Pane):
         fd, path = tempfile.mkstemp(suffix, prefix)
         os.write(fd, content)
         os.close(fd)
-        focus.call("Display:external-viewer", path)
+        focus.call("Display:external-viewer", path, prefix+"XXXXX"+suffix)
         return 1
 
     def handle_map_attr(self, key, focus, mark, str, str2, comm2, **a):

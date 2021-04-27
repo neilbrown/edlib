@@ -99,7 +99,9 @@ try:
 
                     for v in w[2:]:
                         vw = v.split(b'=')
-                        if len(vw) == 2 and vw[0] in [b'TERM',b'DISPLAY']:
+                        if len(vw) == 2 and vw[0] in [b'TERM',
+                                                      b'DISPLAY',
+                                                      b'REMOTE_SESSION']:
                             p[vw[0].decode("utf-8")] = vw[1].decode("utf-8")
 
                     p = p.call("attach-display-ncurses", path, ret="focus")
@@ -208,6 +210,8 @@ if is_client:
             for i in ['TERM','DISPLAY']:
                 if i in os.environ:
                     m.append(i + "=" + os.environ[i])
+            if 'SSH_CONNECTION' in os.environ:
+                m.append("REMOTE_SESSION=yes")
 
             s.send(' '.join(m).encode('utf-8'))
             ret = s.recv(100)
