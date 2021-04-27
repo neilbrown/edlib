@@ -23,6 +23,7 @@
 #endif
 
 #include <stdlib.h>
+#include <fcntl.h>
 #include <time.h>
 #include <curses.h>
 #include <panel.h>
@@ -452,6 +453,7 @@ DEF_CMD(nc_external_viewer)
 	int pid;
 	char buf[100];
 	int n;
+	int fd;
 
 	if (!ci->str)
 		return Enoarg;
@@ -461,7 +463,14 @@ DEF_CMD(nc_external_viewer)
 			return Efail;
 		case 0: /* Child */
 			setenv("DISPLAY", disp, 1);
-			/* FIXME reopen stderr etc */
+			fd = open("/dev/null", O_RDWR);
+			if (fd) {
+				dup2(fd, 0);
+				dup2(fd, 1);
+				dup2(fd, 2);
+				if (fd > 2)
+					close(fd);
+			}
 			execlp("xdg-open", "xdg-open", ci->str, NULL);
 			exit(1);
 		default: /* parent */

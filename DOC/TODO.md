@@ -4,6 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] remote external-viewer: display scp command
 - [X] spell-checker refinements
 - [X] provide a way for ncurses to switch out of display mode
       and to show a URL (or similar) which can be copied from terminal
@@ -466,12 +467,18 @@ Module features
 
 ### Notmuch - overview
 
-- [ ] 'a' on a thread only works if there is just one message
+- [ ] add counter and colour for 'flagged'
+- [ ] 'a' on a message, moves to next thread and opens it but DOESN'T display
+      the chosen message.
+- [ ] if no 'saved:current' use "not exclude_tags"
+- [ ] change from "saved:" to "query:" after re-organizing my queries.
+- [X] 'a' on a thread only works if there is just one message
 - [X] 'q' command to close thread if it is open
 - [ ] 'k' to kill the message and all replies - but not rest of thread
 - [X] Chr-a should affect thing under cursor, not current thing
 - [ ] support selection messages and applying tags
-- [ ] command to mark whole thread as Archived - 'A' ?
+- [ ] command to mark whole thread as Archived - 'A' ? or 'K'?
+- [ ] 'd' to add "deleted' flag
 - [ ] highlight for 'flagged' - and 'spam'
 - [X] cannot move down to last message in search
 - [X] leave cursor in query (not message) by default.
@@ -627,6 +634,7 @@ Module features
 
 ### Notmuch composition
 
+- [ ] close window after posting
 - [X] design backend for posting
 - [X] Support compose/reply/follow-up/forward
 - [X] reply to copy text content with '> ' - suppress with '-' prefix
