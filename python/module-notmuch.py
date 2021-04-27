@@ -1837,6 +1837,8 @@ class notmuch_master_view(edlib.Pane):
         elif self.query_pane:
             if self.query_pane.call("notmuch:close-whole-thread") == 1:
                 return 1
+            if self.query_pane.call("notmuch:close-thread") == 1:
+                return 1
             if self.query_pane['filter']:
                 self.query_pane.call("doc:notmuch:set-filter")
                 return 1
@@ -2062,7 +2064,7 @@ class notmuch_query_view(edlib.Pane):
 
     def close_thread(self, gone = False):
         if not self.selected:
-            return
+            return None
         # old thread is disappearing.
         self.leaf.call("Notify:clip", self.thread_start, self.thread_end,
                        0 if gone else 1)
@@ -2265,8 +2267,9 @@ class notmuch_query_view(edlib.Pane):
 
     def handle_close_thread(self, key, focus, **a):
         "handle:notmuch:close-thread"
-        self.close_thread()
-        return 1
+        if self.close_thread():
+            return 1
+        return edlib.Efalse
 
     def handle_select(self, key, focus, mark, num, num2, str, **a):
         "handle:notmuch:select"

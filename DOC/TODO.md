@@ -467,7 +467,9 @@ Module features
 ### Notmuch - overview
 
 - [ ] 'a' on a thread only works if there is just one message
-- [ ] 'q' command to close thread if it is open
+- [X] 'q' command to close thread if it is open
+- [ ] 'k' to kill the message and all replies - but not rest of thread
+- [ ] Chr-a should affect thing under cursor, not current thing
 - [ ] support selection messages and applying tags
 - [ ] command to mark whole thread as Archived - 'A' ?
 - [ ] highlight for 'flagged' - and 'spam'
@@ -517,7 +519,6 @@ Module features
 - [X] better feedback to 'g' - e.g flag that update is happening
 - [X] I don't think summary updates correctly
      when count notices a difference, it should trigger a refresh
-- [X] Chr-a should affect thing under cursor, not current thing
 - [X] improve update of message list... sometimes disappears
 - [X] when I 'read' a message at top of summary and move to next, summary 
       refreshes with 'next' at the top, so  I don't see the old message change colour.
