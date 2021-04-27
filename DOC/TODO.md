@@ -469,7 +469,7 @@ Module features
 ### Notmuch - overview
 
 - [ ] add counter and colour for 'flagged'
-- [ ] 'a' on a message, moves to next thread and opens it but DOESN'T display
+- [X] 'a' on a message, moves to next thread and opens it but DOESN'T display
       the chosen message.
 - [ ] if no 'saved:current' use "not exclude_tags"
 - [ ] change from "saved:" to "query:" after re-organizing my queries.
@@ -491,6 +491,7 @@ Module features
 - [ ] make min top/bottom margin configurable, set for message list
 - [ ] search in thread list - use 'format2' after fixing bug
 - [ ] display counts of current thread somewhere, so I know where I'm up to. - new/unread/matched in status line
+- [ ] review highlight on query when the message selected isn't the message displayed
 - [X] dynamic search - 's' popups up dialog to create new query "tmp%d"
 - [X] dynamic limit - 'l' popups up dialog which adds extra limit.
       'q' removes it.  Pruned v.quickly

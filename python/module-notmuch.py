@@ -1619,13 +1619,17 @@ class notmuch_master_view(edlib.Pane):
             thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
             msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
             self.do_update(thid, msid, adds, removes)
-            # Move to next message.
+            # Move to next message.  Open it if the thing we just updated was
+            # displayed.
             m = focus.call("doc:dup-point", 0, -2, ret='mark')
             if focus.call("Move-Line", 1, m) == 1:
                 focus.call("Move-to", m)
             if self.message_pane:
-                # Message was displayed, so display this one
-                focus.call("notmuch:select", m, 0)
+                # Message was displayed, so open thread, and possibly display
+                if msid and self.message_pane['notmuch:id'] == msid:
+                    focus.call("notmuch:select", m, 1)
+                else:
+                    focus.call("notmuch:select", m, 0)
             return 1
         return 1
 
@@ -2267,7 +2271,11 @@ class notmuch_query_view(edlib.Pane):
 
     def handle_select(self, key, focus, mark, num, num2, str, **a):
         "handle:notmuch:select"
+        # num = 0 - open thread but don't show message
+        # num > 0 - open thread and do show message
+        # num < 0 - open thread, go to last message, and show
         s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
+        edlib.LOG("Called select:", s, self.selected)
         if s and s != self.selected:
             self.close_thread()
 
