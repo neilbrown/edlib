@@ -679,6 +679,7 @@ class compose_email(edlib.Pane):
             whoto = "someone"
         focus.call("doc:set-name", "*Sent message to %s*" % whoto)
         focus.call("Message", "Email message to %s queued." % whoto)
+        focus.call("Window:bury")
 
         return 1
 

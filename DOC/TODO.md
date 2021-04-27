@@ -26,6 +26,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] windows-1250 charset can fail
 - [ ] 'm' in notmuch opens a compose window which isn't refreshed properly.
       If I add "pane_damaged(p, DAMAGED_VIEW)" in render_lines_refresh,
       it works.  But that is surely too heavy-handed.
@@ -634,7 +635,10 @@ Module features
 
 ### Notmuch composition
 
-- [ ] close window after posting
+- [ ] sanity check message:
+      - body/subject/to not empty
+      - word 'attach' without attachments
+- [X] close window after posting
 - [X] design backend for posting
 - [X] Support compose/reply/follow-up/forward
 - [X] reply to copy text content with '> ' - suppress with '-' prefix
@@ -784,6 +788,8 @@ New Modules - simple
      are: is0-8859-15  gb2312 iso-8859-2 iso-2022-jp gbk ansi_x3
      kc_c_5601-1987 is a korean with 2-byte encoding when firt is >=0x80.
      I don't think it can be parsed backwards..
+     windows-1250 is needed - or at least a reliable fall-back
+        AM6PR04MB6328CFDD9A91D3F0125D1A1491809@AM6PR04MB6328.eurprd04.prod.outlook.com
 
 Possibly some of these will end up being features in other modules.
 
