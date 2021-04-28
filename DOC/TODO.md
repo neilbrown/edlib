@@ -709,6 +709,8 @@ Module features
 
 ### lang-python
 
+- [ ] ret='mark' doesn't take a ref, so if the caller drops the mark... what then?
+     Should this be illegal?
 - [ ] should Efallthrough be an exception?
 - [X] Print error name when there is a python error
 - [X] edlib.LOG can crash if there are '%' if the buffer.

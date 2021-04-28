@@ -1177,6 +1177,55 @@ class notmuch_query(edlib.Doc):
             ret = self.step(m, forward, 1)
         return ret
 
+    def handle_to_thread(self, key, mark, str, **a):
+        "handle:doc:notmuch:to-thread"
+        # move to first message of given thread.
+        if not mark or not str:
+            return edlib.Enoarg
+        if str not in self.threadids:
+            return edlib.Efalse
+        if not mark.pos or self.threadids.index(mark.pos[0]) > self.threadids.index(str):
+            # step backward
+            self.call("doc:step-thread", 0, 1, mark)
+            while (self.prev(mark) and
+                   self.call("doc:step-thread", 0, 1, mark, ret='char')  and
+                   mark.pos and
+                   self.threadids.index(mark.pos[0]) > self.threadids.index(str)):
+                # keep going
+                pass
+            return 1
+        elif self.threadids.index(mark.pos[0]) < self.threadids.index(str):
+            # step forward
+            while (self.call("doc:step-thread", 1, 1, mark, ret='char') and
+                   mark.pos and
+                   self.threadids.index(mark.pos[0]) < self.threadids.index(str)):
+                # keep going
+                pass
+            return 1
+        else:
+            # start of thread
+            self.call("doc:step-thread", 0, 1, mark)
+        return 1
+
+    def handle_to_message(self, key, mark, str, **a):
+        "handle:doc:notmuch:to-message"
+        # move to given message in current thread
+        if not mark or not str:
+            return edlib.Enoarg
+        if not mark.pos or mark.pos[0] not in self.messageids:
+            return edlib.Efalse
+        mlist = self.messageids[mark.pos[0]]
+        if str not in mlist:
+            return edlib.Efalse
+        i = mlist.index(str)
+        while mark.pos and mark.pos[1] and mlist.index(mark.pos[1]) > i and self.prev(mark):
+            # keep going back
+            pass
+        while mark.pos and mark.pos[1] and mlist.index(mark.pos[1]) < i and self.next(mark):
+            # keep going forward
+            pass
+        return 1 if mark.pos and mark.pos[1] == str else edlib.Efalse
+
     def handle_doc_get_attr(self, key, mark, focus, str, comm2, **a):
         "handle:doc:get-attr"
         attr = str
@@ -1640,46 +1689,35 @@ class notmuch_master_view(edlib.Pane):
             removes = ['newspam','notspam','flagged']
 
         if which == "message":
-            mp = self.message_pane
-            if mp.cmid and mp.ctid:
-                if wholethread:
-                    # only mark messages which had already arrived
-                    mids = self.query_pane.call("doc:notmuch-query:matched-mids",
-                                                mp.ctid, ret='str')
-                    # if we haven't seen the thread, this might return a number,
-                    # which we treat as None - mark everthing
-                    if type(mids) == int:
-                        mids = None
-                else:
-                    # thread isn't selected any more, so only do one message
-                    mids = mp.cmid
-                self.do_update(mp.ctid, mids, adds, removes)
-            if wholethread:
-                self.call("doc:char-N")
-            else:
-                self.call("doc:char-n")
-            return 1
-        if which == "query":
+            thid = self.message_pane.ctid
+            msid = self.message_pane.cmid
+        elif which == "query":
             thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
             msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
-            if wholethread:
-                mids = self.query_pane.call("doc:notmuch-query:matched-mids",
-                                            thid, ret='str')
-            self.do_update(thid, msid, adds, removes)
-            if wholethread:
-                focus.call("notmuch:close-thread")
-            # Move to next message.  Open it if the thing we just updated was
-            # displayed.
-            m = focus.call("doc:dup-point", 0, -2, ret='mark')
-            if focus.call("Move-Line", 1, m) == 1:
-                focus.call("Move-to", m)
-            if self.message_pane:
-                # Message was displayed, so open thread, and possibly display
-                if msid and self.message_pane['notmuch:id'] == msid:
-                    focus.call("notmuch:select", m, 1)
-                else:
-                    focus.call("notmuch:select", m, 0)
+        else:
             return 1
+
+        if wholethread:
+            mids = self.query_pane.call("doc:notmuch-query:matched-mids",
+                                    thid, ret='str')
+        else:
+            mids = msid
+        self.do_update(thid, mids, adds, removes)
+        if mids:
+            mid = mids.split("\n")[-1]
+        else:
+            mid = None
+        m = edlib.Mark(self.query_pane)
+        self.query_pane.call("notmuch:find-message", thid, mid, m)
+        if m:
+            self.query_pane.call("Move-to", m)
+        self.query_pane.call("Move-Line", 1)
+        if self.message_pane:
+            # open the thread, and maybe the message, if the msid was open
+            if msid and self.message_pane['notmuch:id'] == msid:
+                self.query_pane.call("notmuch:select", mark, 1)
+            else:
+                self.query_pane.call("notmuch:select", mark, 0)
         return 1
 
     def make_composition(self, focus):
@@ -2139,6 +2177,18 @@ class notmuch_query_view(edlib.Pane):
         self.thread_end = self.thread_start.dup()
         self.call("doc:step-thread", self.thread_end, 1, 1)
         self.leaf.call("view:changed", self.thread_start, self.thread_end)
+        return 1
+
+    def find_message(self, key, focus, mark, str, str2, **a):
+        "handle:notmuch:find-message"
+        if not str or not mark:
+            return edlib.Enoarg
+        if not self.selected or self.selected != str:
+            str2 = None
+        if self.call("doc:notmuch:to-thread", mark, str) <= 0:
+            return edlib.Efalse
+        if str2 and self.call("doc:notmuch:to-message", mark, str2) <= 0:
+            return edlib.Efalse
         return 1
 
     def trim_thread(self):
