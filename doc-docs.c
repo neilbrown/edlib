@@ -379,7 +379,7 @@ DEF_CMD(docs_callback_modified)
 	/* Don't want to inherit position from some earlier instance,
 	 * always move to the start.
 	 */
-	call("Move-File", p, -1);
+	call("doc:file", p, -1);
 	return 1;
 }
 

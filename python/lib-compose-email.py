@@ -257,13 +257,13 @@ class compose_email(edlib.Pane):
             if r <= 0:
                 break
 
-            self.parent.call("Move-EOL", -1, m)
+            self.parent.call("doc:EOL", -1, m)
             m1 = edlib.Mark(self, self.view)
             m1.to_mark(m)
             self.parent.call("doc:set-attr", m,
                              "markup:func", "compose:markup-header")
             m2 = edlib.Mark(orig=m1)
-            self.parent.call("Move-EOL", 1, m2, 1)
+            self.parent.call("doc:EOL", 1, m2, 1)
             s = self.parent.call("doc:get-str", m1, m2, ret='str')
             s = s[11:].strip()
             m1['compose-type'] = s.split(' ')[0]
@@ -298,7 +298,7 @@ class compose_email(edlib.Pane):
             # appear at the start of the line
             return comm2("cb", focus, "<fg:red>")
         # at least go to end of line
-        self.parent.call("Move-EOL", 1, mark)
+        self.parent.call("doc:EOL", 1, mark)
         m = self.call("doc:vmark-get", self.view, mark, 3, ret='mark2')
         type = m['compose-type']
         if type == "headers":
@@ -424,7 +424,7 @@ class compose_email(edlib.Pane):
                 if num > 0:
                     # forward
                     if num2:
-                        self.parent.call("Move-EOL", 1, mark)
+                        self.parent.call("doc:EOL", 1, mark)
                     return ' '
                 else:
                     # backward
@@ -439,13 +439,13 @@ class compose_email(edlib.Pane):
         if num > 0:
             #forward, return newline
             if num2:
-                self.parent.call("Move-EOL", 1, mark)
+                self.parent.call("doc:EOL", 1, mark)
                 self.parent.next(mark)
             return '\n'
         else:
             # backward, return space
             if num2:
-                self.parent.call("Move-EOL", -1, mark)
+                self.parent.call("doc:EOL", -1, mark)
             return ' '
 
     def handle_doc_get_attr(self, key, focus, mark, str, comm2, **a):
@@ -560,7 +560,7 @@ class compose_email(edlib.Pane):
             self.call("text-search", "^[!-9;-~]", end, mbody)
         except:
             end.to_mark(mbody)
-        self.call("Move-EOL", -1, 1, end)
+        self.call("doc:EOL", -1, 1, end)
         return ret
 
     def prev_addr(self, m):
@@ -623,7 +623,7 @@ class compose_email(edlib.Pane):
             m2 = m.next()
         else:
             m2 = m.dup()
-            focus.call("Move-File", 1, m2)
+            focus.call("doc:file", 1, m2)
         txt = focus.call("doc:get-str", m, m2, ret='str')
         msg.set_content(txt)
         self.check_header("Date", email.utils.formatdate(localtime=True))
@@ -632,9 +632,9 @@ class compose_email(edlib.Pane):
                               domain=focus['email:host-address']))
         h = edlib.Mark(focus)
         while self.find_empty_header(h):
-            focus.call("Move-EOL", -1, h)
+            focus.call("doc:EOL", -1, h)
             h2 = h.dup()
-            focus.call("Move-EOL", 1, 1, h)
+            focus.call("doc:EOL", 1, 1, h)
             focus.call("doc:replace", h, h2)
 
 

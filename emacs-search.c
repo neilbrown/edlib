@@ -100,7 +100,7 @@ DEF_CMD(search_forward)
 	if (!newstart) {
 		newstart = mark_dup(s->m);
 		esi->wrapped = 1;
-		call("Move-File", esi->target, esi->backwards ? 1 : -1,
+		call("doc:file", esi->target, esi->backwards ? 1 : -1,
 		     newstart);
 	}
 	esi->start = newstart;
@@ -183,12 +183,12 @@ DEF_CMD(search_add)
 		     !esi->case_sensitive, addpos, str);
 	m = mark_dup(addpos);
 	if (strcmp(ci->key, "K:C-W")==0)
-		call("Move-Word", esi->target, 1, m);
+		call("doc:word", esi->target, 1, m);
 	else
 		call("Move-Char", esi->target, 1, m);
 
 	/* Move cursor to end of search string */
-	call("Move-File", ci->focus, 1);
+	call("doc:file", ci->focus, 1);
 	while (esi->matched
 	       && addpos->seq < m->seq && !mark_same(addpos, m)) {
 		int slash = 0;

@@ -101,6 +101,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] review all use of 'bytes' for doc:content.  Maybe doc:content-bytes
 - [ ] make Move-Word/WORD/EOL into doc:word/WORD/eol in doc_defaults
 - [ ] change doc:step to accept a count. Returns char after or before final location
 - [ ] separate various doc:vmark-get functions and/or make them easily available
@@ -468,6 +469,8 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] when re-visit, open up the same panes
+- [ ] make sure Clone actually works for all panes - or remove it
 - [ ] add counter and colour for 'flagged'
 - [X] 'a' on a message, moves to next thread and opens it but DOESN'T display
       the chosen message.
@@ -549,6 +552,7 @@ Module features
 
 ###  Notmuch message display
 
+- [ ] notmuch calls external-viewer sometimes with no prefix
 - [ ] application/octet-stream with name "foo.pdf" is a PDF.
       use mime-types to intuit type from name?
 - [ ] support mailcap ???
@@ -992,7 +996,10 @@ Somethings that the editor can help with:
 
 A view on "git log" would only show the first page until you scroll down.  Then
 more would be requested and displayed.  So we don't generate thousands of commits
-unless that are actually wanted.
+unless that are actually wanted. i.e. "git log --max-count=100 --skip=N"
+This could collect but hide the commit message, and allow them to be seen later.
+The commit-ids could be marked edit, reword, etc and then rebase run.
+Would be useful to limit to certain files.
 
 ### vi mode
 

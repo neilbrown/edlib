@@ -370,12 +370,12 @@ class CModePane(edlib.Pane):
         #  But don't accept a match on this line
         m = mark.dup()
 
-        p.call("Move-EOL", m, -1, 1)
+        p.call("doc:EOL", m, -1, 1)
         try:
             p.call("text-search", 1, 1, m,
                    "^([^\\s\\a\\A\\d#/}]|[\\A\\a\\d_]+[\\s]*[^:\\s\\A\\a\\d_]|[\\A\\a\\d_]+[\\s]+[^:\\s])")
         except edlib.commandfailed:
-            p.call("Move-File", m, -1)
+            p.call("doc:file", m, -1)
 
         tab = self.spaces
         if not tab:
@@ -501,7 +501,7 @@ class CModePane(edlib.Pane):
             if c == '\n':
                 saw_nl = True
             c = p.prev(m1)
-        p.call("Move-EOL", -1, m1)
+        p.call("doc:EOL", -1, m1)
         sol = m1.dup()
         c = p.next(m1)
         while c in ' \t':
@@ -556,7 +556,7 @@ class CModePane(edlib.Pane):
         while ret == 1 and not at_sol(p, m1):
             ret = p.call("Move-Expr", -1, m1)
         # This is the starting line.
-        p.call("Move-EOL", -1, m1)
+        p.call("doc:EOL", -1, m1)
 
         line_start = m1.dup()
         if sol:
@@ -623,7 +623,7 @@ class CModePane(edlib.Pane):
             # probably readonly
             return edlib.Efallthrough
         m = mark.dup()
-        focus.call("Move-EOL", m, -1)
+        focus.call("doc:EOL", m, -1)
         if focus.call("text-match", m.dup(), "^[\\s]*[])}{]") > 0:
             self.handle_tab(key, focus, m, 1)
         return 1
@@ -641,7 +641,7 @@ class CModePane(edlib.Pane):
             # probably readonly
             return edlib.Efallthrough
         m = mark.dup()
-        focus.call("Move-EOL", m, -1)
+        focus.call("doc:EOL", m, -1)
         if focus.call("text-match", m.dup(),
                       '^[ \t]*(case\\s[^:\n]*|default[^\\A\\a\\d:\n]*|[_\\A\\a\\d]+):') > 0:
             self.handle_tab(key, focus, m, 1)
@@ -661,7 +661,7 @@ class CModePane(edlib.Pane):
             # probably read-only
             return edlib.Efallthrough
         m = mark.dup()
-        focus.call("Move-EOL", m, -1)
+        focus.call("doc:EOL", m, -1)
         self.handle_tab(key, focus, m, 1)
         return 1
 
@@ -708,7 +708,7 @@ class CModePane(edlib.Pane):
         # if num is 0, go to start of line and 'tab'
         m = mark.dup()
         if num <= 0:
-            focus.call("Move-EOL", -1, m)
+            focus.call("doc:EOL", -1, m)
             c = focus.following(m)
             while c and c in ' \t':
                 focus.next(m)
@@ -797,7 +797,7 @@ class CModePane(edlib.Pane):
         "handle:K:S:Tab"
         # like tab-at-start-of-line, anywhere in line
         m = mark.dup()
-        focus.call("Move-EOL", -1, m)
+        focus.call("doc:EOL", -1, m)
         self.handle_tab(key, focus, m, 1)
 
     def handle_bs(self, key, focus, mark, **a):
@@ -860,7 +860,7 @@ class CModePane(edlib.Pane):
         else:
             m2 = mark.dup()
             e = mark.dup()
-            focus.call("Move-EOL", 1, e)
+            focus.call("doc:EOL", 1, e)
             while m2 < e:
                 m3 = m2.dup()
                 if focus.call("Move-Expr", 1, m3) <= 0:
@@ -872,7 +872,7 @@ class CModePane(edlib.Pane):
         # now call handle_tab() on each line from mark to m2
         while mark < m2:
             self.handle_tab("Reindent", focus, mark, 0)
-            if focus.call("Move-EOL", 1, mark, 1) <= 0:
+            if focus.call("doc:EOL", 1, mark, 1) <= 0:
                 break
 
         return 1

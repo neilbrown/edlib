@@ -204,7 +204,7 @@ static void render_hex_register_map(void)
 {
 	he_map = key_alloc();
 
-	key_add(he_map, "Move-EOL", &render_hex_eol);
+	key_add(he_map, "doc:EOL", &render_hex_eol);
 	key_add(he_map, "doc:step", &hex_step);
 
 	key_add(he_map, "doc:render-line-prev", &render_line_prev);

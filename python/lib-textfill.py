@@ -132,7 +132,7 @@ def find_start(focus, mark):
     re = focus.call("doc:get-attr", mark, "fill:start-re", ret='str')
     if not re:
         re = "^[^a-zA-Z0-9\n]*$"
-    focus.call("Move-EOL", -100, m)
+    focus.call("doc:EOL", -100, m)
     try:
         leng = focus.call("text-search", re, mark, m, 1, 1)
         # leng is length + 1, we want +1 to kill '\n'
@@ -154,7 +154,7 @@ def find_start(focus, mark):
 
 def find_end(focus, mark):
     m = mark.dup()
-    focus.call("Move-EOL", 100, m)
+    focus.call("doc:EOL", 100, m)
     re = focus.call("doc:get-attr", mark, "fill:end-re", ret='str')
     if not re:
         re = "^[^a-zA-Z0-9\n]*$"
@@ -175,7 +175,7 @@ def get_prefixes(focus, mark, lines):
     # converted to space.
 
     m = mark.dup()
-    focus.call("Move-EOL", -1, m)
+    focus.call("doc:EOL", -1, m)
     p0 = focus.call("doc:get-str", m, mark, ret='str')
 
     if len(lines) == 1:
@@ -276,7 +276,7 @@ class FillMode(edlib.Pane):
             # not at end-of-line or end-of-file, don't auto-fill
             return edlib.Efallthrough
         m = mark.dup()
-        focus.call("Move-EOL", -1, m)
+        focus.call("doc:EOL", -1, m)
         line = focus.call("doc:get-str", m, mark, ret='str')
         if textwidth(line) < self.cols:
             return edlib.Efallthrough

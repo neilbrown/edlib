@@ -126,7 +126,7 @@ DEF_CMD(calc_replace)
 		}
 		p = home_call_ret(pane, doc, "doc:attach-view", p, 1);
 		if (p)
-			call("Move-File", p, 1);
+			call("doc:file", p, 1);
 		return 1;
 	}
 
@@ -134,9 +134,9 @@ DEF_CMD(calc_replace)
 		if (!ci->mark)
 			return Enoarg;
 		/* Try to find a WORD */
-		call("Move-WORD", ci->focus, -1, ci->mark);
+		call("doc:WORD", ci->focus, -1, ci->mark);
 		m2 = mark_dup(ci->mark);
-		call("Move-WORD", ci->focus, 1, m2);
+		call("doc:WORD", ci->focus, 1, m2);
 		expr = call_ret(strsave, "doc:get-str", ci->focus, 0, ci->mark, NULL,
 				0, m2);
 		if (!expr || !*expr)

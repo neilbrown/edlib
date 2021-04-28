@@ -493,10 +493,10 @@ class MakePane(edlib.Pane):
         else:
             # either no mark, or the mark has moved to start of doc, probably
             # due to a reload
-            par.call("Move-File", -1)
+            par.call("doc:file", -1)
             lineno = int(lineno)
             if lineno > 1:
-                par.call("Move-EOL", lineno-1, 1)
+                par.call("doc:EOL", lineno-1, 1)
 
         if not in_popup and where in ['AnyPane', 'OtherPane']:
             docpane = par.call("DocPane", self, ret='focus')

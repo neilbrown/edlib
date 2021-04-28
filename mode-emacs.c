@@ -118,9 +118,9 @@ static struct move_command {
 	 "K:C-F", "K:Right", NULL},
 	{CMD(emacs_move), "Move-Char", -1, 0,
 	 "K:C-B", "K:Left", NULL},
-	{CMD(emacs_move), "Move-Word", 1, 0,
+	{CMD(emacs_move), "doc:word", 1, 0,
 	 "K:A-f", "K:A:Right", NULL},
-	{CMD(emacs_move), "Move-Word", -1, 0,
+	{CMD(emacs_move), "doc:word", -1, 0,
 	 "K:A-b", "K:A:Left", NULL},
 	{CMD(emacs_move), "Move-Expr", 1, 0,
 	 "K:A:C-F", NULL, NULL},
@@ -130,21 +130,21 @@ static struct move_command {
 	 "K:A:C-U", NULL, NULL},
 	{CMD(emacs_move), "Move-Expr", 1, 1,
 	 "K:A:C-D", NULL, NULL},
-	{CMD(emacs_move), "Move-WORD", 1, 0,
+	{CMD(emacs_move), "doc:WORD", 1, 0,
 	 "K:A-F", NULL, NULL},
-	{CMD(emacs_move), "Move-WORD", -1, 0,
+	{CMD(emacs_move), "doc:WORD", -1, 0,
 	 "K:A-B", NULL, NULL},
-	{CMD(emacs_move), "Move-EOL", 1, 0,
+	{CMD(emacs_move), "doc:EOL", 1, 0,
 	 "K:C-E", "K:End", NULL},
-	{CMD(emacs_move), "Move-EOL", -1, 0,
+	{CMD(emacs_move), "doc:EOL", -1, 0,
 	 "K:C-A", "K:Home", NULL},
 	{CMD(emacs_move), "Move-Line", -1, 0,
 	 "K:C-P", "K:Up", NULL},
 	{CMD(emacs_move), "Move-Line", 1, 0,
 	 "K:C-N", "K:Down", NULL},
-	{CMD(emacs_move), "Move-File", 1, 0,
+	{CMD(emacs_move), "doc:file", 1, 0,
 	 "K:A->", "K:S:End", NULL},
-	{CMD(emacs_move), "Move-File", -1, 0,
+	{CMD(emacs_move), "doc:file", -1, 0,
 	 "K:A-<", "K:S:Home", NULL},
 	{CMD(emacs_move), "Move-View-Large", 1, 0,
 	 "K:Next", "K:C-V", "emacs-move-large-other"},
@@ -160,29 +160,29 @@ static struct move_command {
 	 "K:C-D", "K:Del", "del"},
 	{CMD(emacs_delete), "Move-Char", -1, 0,
 	 "K:C-H", "K:Backspace", "K:Delete"},
-	{CMD(emacs_delete), "Move-Word", 1, 0,
+	{CMD(emacs_delete), "doc:word", 1, 0,
 	 "K:A-d", NULL, NULL},
-	{CMD(emacs_delete), "Move-Word", -1, 0,
+	{CMD(emacs_delete), "doc:word", -1, 0,
 	 "K:A:C-H", "K:A:Backspace", NULL},
-	{CMD(emacs_kill), "Move-EOL", 1, 0,
+	{CMD(emacs_kill), "doc:EOL", 1, 0,
 	 "K:C-K", NULL, NULL},
 	{CMD(emacs_kill), "Move-Expr", 1, 0,
 	 "K:A:C-K", NULL, NULL},
 
-	{CMD(emacs_case), "LMove-Word", 1, 0,
+	{CMD(emacs_case), "Ldoc:word", 1, 0,
 	 "K:A-l", "K:A-L", NULL},
-	{CMD(emacs_case), "UMove-Word", 1, 0,
+	{CMD(emacs_case), "Udoc:word", 1, 0,
 	 "K:A-u", "K:A-U", NULL},
-	{CMD(emacs_case), "CMove-Word", 1, 0,
+	{CMD(emacs_case), "Cdoc:word", 1, 0,
 	 "K:A-c", "K:A-C", NULL},
 	{CMD(emacs_case), "TMove-Char", 1, 0,
 	 "K:A-`", NULL, NULL},
 
 	{CMD(emacs_swap), "Move-Char", 1, 0,
 	 "K:C-T", NULL, NULL},
-	{CMD(emacs_swap), "Move-Word", 1, 0,
+	{CMD(emacs_swap), "doc:word", 1, 0,
 	 "K:A-t", NULL, NULL},
-	{CMD(emacs_swap), "Move-WORD", 1, 0,
+	{CMD(emacs_swap), "doc:WORD", 1, 0,
 	 "K:A-T", NULL, NULL},
 };
 
@@ -196,8 +196,8 @@ REDEF_CMD(emacs_move)
 	if (!ci->mark)
 		return Enoarg;
 
-	/* if Move-File, leave inactive mark behind */
-	if (strcmp(mv->type, "Move-File") == 0) {
+	/* if doc:file, leave inactive mark behind */
+	if (strcmp(mv->type, "doc:file") == 0) {
 		mk = call_ret(mark2, "doc:point", ci->focus);
 		if (mk)
 			/* Don't change emacs:active */
@@ -269,7 +269,7 @@ REDEF_CMD(emacs_kill)
 
 	m = mark_dup(ci->mark);
 
-	if (strcmp(mv->type, "Move-EOL") == 0 &&
+	if (strcmp(mv->type, "doc:EOL") == 0 &&
 	    mv->direction == 1 && RPT_NUM(ci) == 1 &&
 	    is_eol(doc_following(ci->focus, m)))
 		ret = call("Move-Char", ci->focus, mv->direction * RPT_NUM(ci), m);
@@ -919,8 +919,8 @@ DEF_CMD(find_prevnext)
 		attr_set_str(&ci->home->attrs, "find-doc", name);
 		m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 		m2 = m ? mark_dup(m) : NULL;
-		call("Move-File", ci->focus, -1, m);
-		call("Move-File", ci->focus, 1, m2);
+		call("doc:file", ci->focus, -1, m);
+		call("doc:file", ci->focus, 1, m2);
 		call("Replace", ci->focus, 1, m, name, 0, m2);
 		mark_free(m);
 		mark_free(m2);
@@ -1857,12 +1857,12 @@ static void update_sel(struct pane *p safe,
 			mlast = pt;
 		}
 		if (strcmp(type, "word") == 0) {
-			call("Move-Word", p, -1,  mfirst);
-			call("Move-Word", p, 1, mlast);
+			call("doc:word", p, -1,  mfirst);
+			call("doc:word", p, 1, mlast);
 		} else {
-			call("Move-EOL", p, -1,  mfirst);
+			call("doc:EOL", p, -1,  mfirst);
 			/* Include trailing newline */
-			call("Move-EOL", p, 1, mlast, NULL, 1);
+			call("doc:EOL", p, 1, mlast, NULL, 1);
 		}
 	}
 
@@ -2150,7 +2150,7 @@ DEF_CMD(emacs_showinput)
 	if (p) {
 		p = home_call_ret(pane, doc, "doc:attach-view", p, 1);
 		if (p)
-			call("Move-File", p, 1);
+			call("doc:file", p, 1);
 	}
 	return 1;
 }

@@ -1362,7 +1362,7 @@ DEF_CMD(render_lines_move_line)
 	 * For now just content lines.
 	 * target_x and target_y are the target location in a line
 	 * relative to the start of line.
-	 * We use Move-EOL to find a suitable start of line, then
+	 * We use doc:EOL to find a suitable start of line, then
 	 * render that line and find the last location not after x,y
 	 */
 	struct pane *p = ci->home;
@@ -1392,13 +1392,13 @@ DEF_CMD(render_lines_move_line)
 		num -= 1;
 	else
 		num += 1;
-	if (!call("Move-EOL", ci->focus, num, m)) {
+	if (!call("doc:EOL", ci->focus, num, m)) {
 		rl->i_moved = 0;
 		return Efail;
 	}
 	if (RPT_NUM(ci) > 0) {
 		/* at end of target line, move to start */
-		if (!call("Move-EOL", ci->focus, -1, m)) {
+		if (!call("doc:EOL", ci->focus, -1, m)) {
 			rl->i_moved = 0;
 			return Efail;
 		}

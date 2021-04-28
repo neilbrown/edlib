@@ -84,7 +84,7 @@ DEF_CMD(history_save)
 	if (prev && line && strcmp(prev, line) == 0)
 		return 1;
 
-	call("Move-File", hi->history, 1);
+	call("doc:file", hi->history, 1);
 	call("Replace", hi->history, 1, NULL, line);
 	call("Replace", hi->history, 1, NULL, "\n", 1);
 	return 1;
@@ -117,11 +117,11 @@ DEF_CMD(history_move)
 		return Enoarg;
 	if (*suffix == 'p') {
 		m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
-		call("Move-EOL", hi->history, -2);
+		call("doc:EOL", hi->history, -2);
 	} else {
-		call("Move-EOL", hi->history, 1, NULL, NULL, 1);
+		call("doc:EOL", hi->history, 1, NULL, NULL, 1);
 		m = mark_at_point(hi->history, NULL, MARK_UNGROUPED);
-		call("Move-EOL", hi->history, 1, m, NULL, 1);
+		call("doc:EOL", hi->history, 1, m, NULL, 1);
 	}
 	l = call_ret(str, "doc:get-str", hi->history, 0, NULL, NULL, 0, m);
 	if (!l || !*l) {
@@ -138,9 +138,9 @@ DEF_CMD(history_move)
 		if (e)
 			*e = 0;
 	}
-	call("Move-EOL", ci->focus, -1, ci->mark);
+	call("doc:EOL", ci->focus, -1, ci->mark);
 	m = mark_dup(ci->mark);
-	call("Move-EOL", ci->focus, 1, m);
+	call("doc:EOL", ci->focus, 1, m);
 	if (hi->changed) {
 		if (l != hi->saved)
 			free(hi->saved);
@@ -182,7 +182,7 @@ DEF_CMD(history_attach)
 	hi->history = call_ret(pane, "doc:attach-view", p, -1, NULL, "invisible");
 	if (!hi->history)
 		return Efail;
-	call("Move-File", hi->history, 1);
+	call("doc:file", hi->history, 1);
 	buf_init(&hi->search);
 	p = pane_register(ci->focus, 0, &hi->handle.c, hi);
 	if (!p)

@@ -25,7 +25,7 @@ class MergePane(edlib.Pane):
         m = m.dup()
         try:
             if self.call("text-search", m, end, "^(?4:"+ptn+")") > 1:
-                self.call("Move-EOL", -1, m)
+                self.call("doc:EOL", -1, m)
                 return m
         except edlib.commandfailed:
             pass
@@ -48,15 +48,15 @@ class MergePane(edlib.Pane):
 
         cmd = self.call("MakeWiggle", ret='comm')
         t = start.dup()
-        self.call("Move-EOL", 1, t, 1)
+        self.call("doc:EOL", 1, t, 1)
         cmd("orig", self, t, m1)
 
         t = m1.dup()
-        self.call("Move-EOL", 1, t, 1)
+        self.call("doc:EOL", 1, t, 1)
         cmd("before", self, t, m2)
 
         t = m2.dup()
-        self.call("Move-EOL", 1, t, 1)
+        self.call("doc:EOL", 1, t, 1)
         cmd("after", self, t, m3)
 
         ret = cmd("set-wiggle", self, "render:merge-same")
@@ -78,10 +78,10 @@ class MergePane(edlib.Pane):
         if not mark:
             return
         m = mark.dup()
-        focus.call("Move-EOL", -1, m)
+        focus.call("doc:EOL", -1, m)
         try:
             focus.call("text-search", m, "^(<<<<|>>>>)")
-            focus.call("Move-EOL", -1, m)
+            focus.call("doc:EOL", -1, m)
         except edlib.commandfailed:
             self.call("Message:modal", "Cannot find a merge mark")
             return edlib.Efalse
@@ -94,13 +94,13 @@ class MergePane(edlib.Pane):
                 # weird, no start,  I guess we give up
                 self.call("Message:modal", "Cannot find a merge mark")
                 return edlib.Efalse
-            focus.call("Move-EOL", -1, m)
+            focus.call("doc:EOL", -1, m)
         # must be at the start.
         try:
             end = m.dup()
-            focus.call("Move-EOL", 1, end)
+            focus.call("doc:EOL", 1, end)
             focus.call("text-search", end, "^(<<<<|>>>>)")
-            focus.call("Move-EOL", -1, end)
+            focus.call("doc:EOL", -1, end)
         except edlib.commandfailed:
             # There is no end
             return edlib.Efalse
@@ -114,7 +114,7 @@ class MergePane(edlib.Pane):
         m2 = self.fore(m1, end, "====")
         m3 = end
         if m3:
-            self.call("Move-EOL", 1, m3, 1)
+            self.call("doc:EOL", 1, m3, 1)
             self.mark(m, m3)
             mark.to_mark(m3)
         return 1
@@ -122,7 +122,7 @@ class MergePane(edlib.Pane):
     def remark(self, key, **a):
         if self.marks:
             m = self.marks[3].dup()
-            self.call("Move-EOL", 1, m, 1)
+            self.call("doc:EOL", 1, m, 1)
             self.mark(self.marks[0], m)
         return edlib.Efalse
 

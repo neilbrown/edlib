@@ -19,7 +19,7 @@ class CalcView(edlib.Pane):
         if not mark:
             return edlib.Enoarg
         m = mark.dup()
-        focus.call("Move-EOL", -1, m)
+        focus.call("doc:EOL", -1, m)
         c = focus.following(m)
         if c == '?':
             if key == "K:A:Enter":
@@ -53,8 +53,8 @@ class CalcView(edlib.Pane):
 
     def calc(self, focus, mark):
         m = mark.dup()
-        focus.call("Move-EOL", -1, m)
-        focus.call("Move-EOL", 1, mark)
+        focus.call("doc:EOL", -1, m)
+        focus.call("doc:EOL", 1, mark)
         s = focus.call("doc:get-str", m, mark, ret='str')
         if s[0] == '?':
             s = s[1:]
@@ -90,7 +90,7 @@ class CalcView(edlib.Pane):
                     focus.call("doc:content", m.dup(), self.getvar)
                     nm = self.getvar("interp", focus, "\\1", ret='str')
                     # replace this line
-                    focus.call("Move-EOL", 1, m)
+                    focus.call("doc:EOL", 1, m)
                 else:
                     m = mark.dup()
             else:
@@ -106,7 +106,7 @@ class CalcView(edlib.Pane):
             else:
                 c = focus.following(mark)
                 if c and c == '?':
-                    focus.call("Move-EOL", 1, mark)
+                    focus.call("doc:EOL", 1, mark)
                     # keep going
                     return True
                 else:
@@ -138,7 +138,7 @@ class CalcView(edlib.Pane):
 
     def add_expr(self, focus, mark):
         # add new expression line after this line
-        focus.call("Move-EOL", 1, mark)
+        focus.call("doc:EOL", 1, mark)
         c = focus.next(mark)
         if not c:
             # No EOL char

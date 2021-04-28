@@ -138,12 +138,12 @@ class DiffPane(edlib.Pane):
         mark = mark.dup()
         found = False
 
-        focus.call("Move-EOL", mark, -1)
+        focus.call("doc:EOL", mark, -1)
         ch = focus.following(mark)
         m = mark.dup()
         while ch in '-+':
             mark.to_mark(m)
-            if focus.call("Move-EOL", m, -2) <= 0:
+            if focus.call("doc:EOL", m, -2) <= 0:
                 break
             ch = focus.following(m)
 
@@ -152,13 +152,13 @@ class DiffPane(edlib.Pane):
         starta = mark.dup()
         ch = focus.following(mark)
         while ch and ch == '-':
-            if focus.call("Move-EOL", mark, 1, 1) <= 0:
+            if focus.call("doc:EOL", mark, 1, 1) <= 0:
                 break
             ch = focus.following(mark)
         startb = mark.dup()
         ch = focus.following(mark)
         while ch and ch == '+':
-            if focus.call("Move-EOL", mark, 1, 1) <= 0:
+            if focus.call("doc:EOL", mark, 1, 1) <= 0:
                 break
             ch = focus.following(mark)
 
@@ -218,7 +218,7 @@ class DiffPane(edlib.Pane):
     def handle_enter(self, key, focus, mark, **a):
         "handle:K:Enter"
         m = mark.dup()
-        focus.call("Move-EOL", -1, m)
+        focus.call("doc:EOL", -1, m)
 
         ptn = "^(@@+)( -([\\d]+),([\\d]+))+ \\+([\\d]+),([\\d]+)"
         try:
@@ -243,7 +243,7 @@ class DiffPane(edlib.Pane):
         wcmd = focus.call("MakeWiggle", ret='comm')
         if not wcmd:
             return edlib.Efail
-        focus.call("Move-EOL", 1, m2, 1)
+        focus.call("doc:EOL", 1, m2, 1)
         if self.which == 0 or self.which >= f:
             wcmd("after", focus, m2, mark, f-1, f)
         else:
@@ -264,7 +264,7 @@ class DiffPane(edlib.Pane):
             focus.call("Message", "Not on a diff hunk! No +++ line found")
             return 1
         ms = m.dup()
-        focus.call("Move-EOL", 1, m)
+        focus.call("doc:EOL", 1, m)
         fname = focus.call("doc:get-str", ms, m, ret='str')
         fname = fname.lstrip('+ ')
 
@@ -295,16 +295,16 @@ class DiffPane(edlib.Pane):
                 return edlib.Efail
             par = d.call("doc:attach-view", par, 1, ret='focus')
         par.take_focus()
-        par.call("Move-File", -1)
+        par.call("doc:file", -1)
         if lineno > 1:
-            par.call("Move-EOL", lineno - 1, 1)
+            par.call("doc:EOL", lineno - 1, 1)
             m = par.call("doc:dup-point", 0, -2, ret='mark')
             try:
                 fuzz = wcmd("find", "after", 5, 200, par, m)
                 from_start -= (fuzz - 1)
                 par.call("Move-to", m)
                 if from_start > 0:
-                    par.call("Move-EOL", from_start, 1)
+                    par.call("doc:EOL", from_start, 1)
                 if fuzz > 1:
                     focus.call("Message", "Match found with fuzz of %d" % (fuzz-1))
             except edlib.commandfailed:

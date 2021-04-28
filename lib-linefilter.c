@@ -326,7 +326,7 @@ DEF_CMD(filter_changed)
 		/* mark2 is first */
 		mark_to_mark(start, ci->mark2);
 	else if (strcmp(ci->key, "Filter:set") == 0)
-		call("Move-File", ci->focus, -1, start);
+		call("doc:file", ci->focus, -1, start);
 	else {
 		struct mark *m2;
 		m = start;
@@ -347,7 +347,7 @@ DEF_CMD(filter_changed)
 		/* mark2 is last */
 		mark_to_mark(end, ci->mark2);
 	else if (strcmp(ci->key, "Filter:set") == 0)
-		call("Move-File", ci->focus, 1, end);
+		call("doc:file", ci->focus, 1, end);
 	else {
 		struct mark *m2;
 		m = end;
@@ -396,7 +396,7 @@ DEF_CMD(filter_changed)
 
 DEF_CMD(filter_nomove)
 {
-	if (strcmp(ci->key, "Move-File") == 0)
+	if (strcmp(ci->key, "doc:file") == 0)
 		return Efallthrough;
 	if (strcmp(ci->key, "Move-to") == 0)
 		return Efallthrough;
@@ -474,7 +474,7 @@ static void filter_register_map(void)
 	key_add(filter_map, "Free", &edlib_do_free);
 	key_add(filter_map, "Clone", &filter_clone);
 	key_add_prefix(filter_map, "Move-", &filter_nomove);
-	key_add(filter_map, "Move-EOL", &filter_eol);
+	key_add(filter_map, "doc:EOL", &filter_eol);
 	key_add(filter_map, "Filter:set", &filter_changed);
 	key_add(filter_map, "view:changed", &filter_damaged);
 	key_add(filter_map, "doc:replaced", &filter_damaged);

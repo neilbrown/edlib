@@ -105,15 +105,18 @@ DEF_CMD(doc_char)
 
 DEF_CMD(doc_word)
 {
+	/* Step to the Nth word boundary in appropriate
+	 * direction.  If N is 0, don't move.
+	 * Return 1 if succeeded before EOF, else Efalse.
+	 */
 	struct pane *f = ci->focus;
-	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
-	int dir;
+	wint_t wi = 0;
 
 	if (!m)
-		m = dd->point;
-	/* Move-word should finish at a word boundary, which usually
+		return Enoarg;
+	/* doc:word should finish at a word boundary, which usually
 	 * means an alphanum (possibly including '_' depending on doc
 	 * attributes?).  However it should never cross two different
 	 * sets of spaces or punctuation.  So if we cross space and
@@ -122,25 +125,32 @@ DEF_CMD(doc_word)
 	 * So skip spaces, then punct, then alphanum.
 	 * Same in either direction.
 	 */
-	dir = rpt > 0 ? 1 : 0;
-	while (rpt != 0) {
-		wint_t wi;
 
-		while ((wi = doc_step(f, m, dir, 0)) != WEOF && iswspace(wi))
-			doc_step(f, m, dir, 1);
-
-		while ((wi=doc_step(f, m, dir, 0)) != WEOF &&
+	while (rpt > 0 && wi != WEOF) {
+		while ((wi = doc_following(f, m)) != WEOF &&
+		       iswspace(wi))
+			doc_next(f, m);
+		while ((wi = doc_following(f, m)) != WEOF &&
 		       !iswspace(wi) && !iswalnum(wi))
-			doc_step(f, m, dir, 1);
-
-		while ((wi = doc_step(f, m, dir, 0)) != WEOF &&
+			doc_next(f, m);
+		while ((wi = doc_following(f, m)) != WEOF &&
 		       iswalnum(wi))
-			doc_step(f, m, dir, 1);
-
-		rpt -= dir * 2 - 1;
+			doc_next(f, m);
+		rpt -= 1;
 	}
-
-	return 1;
+	while (rpt < 0 && wi != WEOF) {
+		while ((wi = doc_prior(f, m)) != WEOF &&
+		       iswspace(wi))
+			doc_prev(f, m);
+		while ((wi = doc_prior(f, m)) != WEOF &&
+		       !iswspace(wi) && !iswalnum(wi))
+			doc_prev(f, m);
+		while ((wi = doc_prior(f, m)) != WEOF &&
+		       iswalnum(wi))
+			doc_prev(f, m);
+		rpt += 1;
+	}
+	return rpt == 0 ? 1 : Efalse;
 }
 
 static bool check_slosh(struct pane *p safe, struct mark *m safe)
@@ -281,22 +291,28 @@ DEF_CMD(doc_expr)
 
 DEF_CMD(doc_WORD)
 {
+	/* Step to the Nth word boundary in appropriate
+	 * direction.  For this function, puctuation is treated the
+	 * same as alphanum.  Only space separates words.
+	 * If N is 0, don't move.
+	 * Return 1 if succeeded before EOF, else Efalse.
+	 */
 	struct pane *f = ci->focus;
-	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
 
 	if (!m)
-		m = dd->point;
+		return Enoarg;
 
 	/* We skip spaces, then non-spaces */
 	while (rpt > 0) {
 		wint_t wi;
 
-		while ((wi = doc_following(f, m)) != WEOF && iswspace(wi))
+		while ((wi = doc_following(f, m)) != WEOF &&
+		       iswspace(wi))
 			doc_next(f,m);
 
-		while ((wi=doc_following(f, m)) != WEOF &&
+		while ((wi = doc_following(f, m)) != WEOF &&
 		       !iswspace(wi))
 			doc_next(f,m);
 		rpt -= 1;
@@ -313,20 +329,19 @@ DEF_CMD(doc_WORD)
 		rpt += 1;
 	}
 
-	return 1;
+	return rpt == 0 ? 1 : Efalse;
 }
 
 DEF_CMD(doc_eol)
 {
 	struct pane *f = ci->focus;
-	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	wint_t ch = 1;
 	int rpt = RPT_NUM(ci);
 	bool one_more = ci->num2 > 0;
 
 	if (!m)
-		m = dd->point;
+		return Enoarg;
 
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = doc_next(f, m)) != WEOF &&
@@ -346,19 +361,18 @@ DEF_CMD(doc_eol)
 		else if (RPT_NUM(ci) < 0)
 			doc_next(f, m);
 	}
-	return 1;
+	return rpt == 0 ? 1 : Efalse;
 }
 
 DEF_CMD(doc_file)
 {
-	struct doc_data *dd = ci->home->data;
 	int rpt = RPT_NUM(ci);
 	struct mark *m = ci->mark;
 
 	if (!m)
-		m = dd->point;
+		return Enoarg;
 
-	call("doc:set-ref", ci->focus, (rpt <= 0), m);
+	call("doc:set-ref", ci->focus, (rpt < 0), m);
 
 	return 1;
 }
@@ -1197,11 +1211,7 @@ static void init_doc_cmds(void)
 	key_add_prefix(doc_handle_cmd, "doc:", &doc_pass_on);
 
 	key_add(doc_handle_cmd, "Move-Char", &doc_char);
-	key_add(doc_handle_cmd, "Move-Word", &doc_word);
 	key_add(doc_handle_cmd, "Move-Expr", &doc_expr);
-	key_add(doc_handle_cmd, "Move-WORD", &doc_WORD);
-	key_add(doc_handle_cmd, "Move-EOL", &doc_eol);
-	key_add(doc_handle_cmd, "Move-File", &doc_file);
 	key_add(doc_handle_cmd, "Move-Line", &doc_line);
 	key_add(doc_handle_cmd, "Move-Paragraph", &doc_para);
 	key_add(doc_handle_cmd, "Move-View-Large", &doc_page);
@@ -1237,6 +1247,11 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
 	key_add(doc_default_cmd, "doc:attach-view", &doc_attach_view);
 	key_add(doc_default_cmd, "doc:attach-helper", &doc_attach_helper);
+
+	key_add(doc_default_cmd, "doc:word", &doc_word);
+	key_add(doc_default_cmd, "doc:WORD", &doc_WORD);
+	key_add(doc_default_cmd, "doc:EOL", &doc_eol);
+	key_add(doc_default_cmd, "doc:file", &doc_file);
 
 	key_add_prefix(doc_default_cmd, "doc:char-", &doc_insert_char);
 	key_add_prefix(doc_default_cmd, "doc:request:",
