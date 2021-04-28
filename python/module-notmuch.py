@@ -1004,6 +1004,33 @@ class notmuch_query(edlib.Doc):
                 # this message matches, or viewing all messages
                 ret.append(mid)
         comm2("cb", focus, '\n'.join(ret))
+
+    def get_replies(self, key, focus, num, str, str2, comm2, **a):
+        "handle:doc:notmuch-query:matched-replies"
+        if str not in self.threadinfo:
+            return edlib.Efalse
+        ti = self.threadinfo[str]
+        mi = self.messageids[str]
+        if str2 not in mi:
+            return edlib.Efalse
+        i = mi.index(str2)
+        d = ti[str2][3]
+        dpos = len(d) - 1
+        # d[ppos] will be 1 if there are more replies.
+        ret = [str2]
+        i += 1
+        while i < len(mi) and dpos < len(d) and d[dpos]:
+            mti = ti[mi[i]]
+            if num or mti[2]:
+                # is a match
+                ret.append(mi[i])
+            d = ti[mi[i]][3]
+            i += 1
+            while dpos < len(d) and d[dpos] == 0:
+                # no more children at this level, but maybe below
+                dpos += 1
+
+        comm2("cb", focus, '\n'.join(ret))
         return 1
 
     def rel_date(self, sec):
@@ -1654,10 +1681,11 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_A(self, key, focus, num, mark, str, **a):
-        "handle-list/doc:char-a/doc:char-A/doc:char-S/doc:char-H/doc:char-*/doc:char-!/"
+        "handle-list/doc:char-a/doc:char-A/doc:char-k/doc:char-S/doc:char-H/doc:char-*/doc:char-!/"
         # adjust flags for this message or thread, and move to next
         # a - remove inbox
         # A - remove inbox from entire thread
+        # k - remove inbox from this message and replies
         # S - add newspam
         # H - ham: remove newspam and add notspam
         # * - add flagged
@@ -1668,6 +1696,7 @@ class notmuch_master_view(edlib.Pane):
             return 1
 
         wholethread = False
+        replies = False
         if num != edlib.NO_NUMERIC:
             wholethread = True
 
@@ -1677,6 +1706,9 @@ class notmuch_master_view(edlib.Pane):
         if key[-1] == 'A':
             removes = ['inbox']
             wholethread = True
+        if key[-1] == 'k':
+            removes = ['inbox']
+            replies = True
         if key[-1] == 'S':
             adds = ['newspam']
         if key[-1] == 'H':
@@ -1700,6 +1732,10 @@ class notmuch_master_view(edlib.Pane):
         if wholethread:
             mids = self.query_pane.call("doc:notmuch-query:matched-mids",
                                     thid, ret='str')
+        elif replies:
+            # only mark messages which are replies to msid
+            mids = self.query_pane.call("doc:notmuch-query:matched-replies",
+                                        thid, msid, ret='str')
         else:
             mids = msid
         self.do_update(thid, mids, adds, removes)
@@ -2137,11 +2173,11 @@ class notmuch_query_view(edlib.Pane):
         self.clone_children(focus.focus)
         return 1
 
-    def handle_matched_mids(self, key, focus, str, comm2, **a):
-        "handle:doc:notmuch-query:matched-mids"
+    def handle_matched_mids(self, key, focus, str, str2, comm2, **a):
+        "handle-prefix:doc:notmuch-query:matched-"
         # if whole_thread, everything should be considered matched.
         if str and str == self.selected and self.whole_thread:
-            return self.parent.call(key, focus, str, 1, comm2)
+            return self.parent.call(key, focus, str, str2, 1, comm2)
         return edlib.Efallthrough
 
     def handle_notify_replace(self, key, **a):

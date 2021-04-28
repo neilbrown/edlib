@@ -475,11 +475,12 @@ Module features
 - [ ] change from "saved:" to "query:" after re-organizing my queries.
 - [X] 'a' on a thread only works if there is just one message
 - [X] 'q' command to close thread if it is open
-- [ ] 'k' to kill the message and all replies - but not rest of thread
+- [X] 'k' to kill the message and all replies - but not rest of thread
 - [X] Chr-a should affect thing under cursor, not current thing
 - [ ] support selection messages and applying tags
 - [X] command to mark whole thread as Archived - 'A' ?
 - [ ] 'd' to add "deleted' flag
+- [ ] different highlight colour for "not matched" and "not inbox"
 - [X] highlight for 'flagged' - and 'spam'
 - [X] cannot move down to last message in search
 - [X] leave cursor in query (not message) by default.
