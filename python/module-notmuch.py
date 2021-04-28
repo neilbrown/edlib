@@ -577,22 +577,21 @@ class notmuch_main(edlib.Doc):
             return Enoarg
         with self.db.get_write() as db:
             if str2:
-                # adjust just 1 message
-                m = db.find_message(str2)
-                if m:
-                    t = list(m.get_tags())
-                    if add:
-                        if tag not in t:
-                            m.add_tag(tag)
-                            self.notify("Notify:Tag", str, str2)
-                    else:
-                        if tag in t:
-                            m.remove_tag(tag)
-                            self.notify("Notify:Tag", str, str2)
+                # adjust a list of messages
+                for id in str2.split("\n"):
+                    m = db.find_message(id)
+                    if m:
+                        t = list(m.get_tags())
+                        if add:
+                            if tag not in t:
+                                m.add_tag(tag)
+                                self.notify("Notify:Tag", str, id)
+                        else:
+                            if tag in t:
+                                m.remove_tag(tag)
+                                self.notify("Notify:Tag", str, id)
             else:
                 # adjust whole thread
-                # FIXME This should be the thread as last seen, not as
-                # is now in the database - which might be different.
                 q = db.create_query("thread:%s" % str)
                 changed = False
                 for t in q.search_threads():
@@ -993,6 +992,19 @@ class notmuch_query(edlib.Doc):
                         ind = mi
                 m = m.next_any()
             self.notify("notmuch:thread-changed", tid, 2)
+
+    def get_matched(self, key, focus, num, str, comm2, **a):
+        "handle:doc:notmuch-query:matched-mids"
+        if str not in self.threadinfo:
+            return edlib.Efalse
+        ti = self.threadinfo[str]
+        ret = []
+        for mid in ti:
+            if num or ti[mid][2]:
+                # this message matches, or viewing all messages
+                ret.append(mid)
+        comm2("cb", focus, '\n'.join(ret))
+        return 1
 
     def rel_date(self, sec):
         then = time.localtime(sec)
@@ -1603,6 +1615,9 @@ class notmuch_master_view(edlib.Pane):
         # ! - add unread,inbox remove newspam,notspam,flagged
         # If num is not NO_NUMERIC, apply to whole thread
         which = focus['notmuch:pane']
+        if which not in ['message', 'query']:
+            return 1
+
         wholethread = False
         if num != edlib.NO_NUMERIC:
             wholethread = True
@@ -1628,9 +1643,17 @@ class notmuch_master_view(edlib.Pane):
             mp = self.message_pane
             if mp.cmid and mp.ctid:
                 if wholethread:
-                    self.do_update(mp.ctid, None, adds, removes)
+                    # only mark messages which had already arrived
+                    mids = self.query_pane.call("doc:notmuch-query:matched-mids",
+                                                mp.ctid, ret='str')
+                    # if we haven't seen the thread, this might return a number,
+                    # which we treat as None - mark everthing
+                    if type(mids) == int:
+                        mids = None
                 else:
-                    self.do_update(mp.ctid, mp.cmid, adds, removes)
+                    # thread isn't selected any more, so only do one message
+                    mids = mp.cmid
+                self.do_update(mp.ctid, mids, adds, removes)
             if wholethread:
                 self.call("doc:char-N")
             else:
@@ -1640,7 +1663,8 @@ class notmuch_master_view(edlib.Pane):
             thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
             msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
             if wholethread:
-                msid = None
+                mids = self.query_pane.call("doc:notmuch-query:matched-mids",
+                                            thid, ret='str')
             self.do_update(thid, msid, adds, removes)
             if wholethread:
                 focus.call("notmuch:close-thread")
@@ -2075,6 +2099,13 @@ class notmuch_query_view(edlib.Pane):
         self.clone_children(focus.focus)
         return 1
 
+    def handle_matched_mids(self, key, focus, str, comm2, **a):
+        "handle:doc:notmuch-query:matched-mids"
+        # if whole_thread, everything should be considered matched.
+        if str and str == self.selected and self.whole_thread:
+            return self.parent.call(key, focus, str, 1, comm2)
+        return edlib.Efallthrough
+
     def handle_notify_replace(self, key, **a):
         "handle:doc:replaced"
         self.leaf.call("view:changed")
@@ -2300,7 +2331,6 @@ class notmuch_query_view(edlib.Pane):
         # num > 0 - open thread and do show message
         # num < 0 - open thread, go to last message, and show
         s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
-        edlib.LOG("Called select:", s, self.selected)
         if s and s != self.selected:
             self.close_thread()
 
