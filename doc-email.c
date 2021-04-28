@@ -457,6 +457,12 @@ static bool handle_text(struct pane *p safe, char *type, char *xfer,
 		if (c)
 			hx = call_ret(pane, c, h);
 		free(c);
+		if (!hx)
+			/* windows-1251 is safer than utf-8 as the latter
+			 * rejects some byte sequences, and iso-8859-* has
+			 * lots of control characters.
+			 */
+			hx = call_ret(pane, "attach-charset-windows-1251", h);
 		if (hx)
 			h = hx;
 	}

@@ -26,7 +26,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] windows-1250 charset can fail
+- [X] windows-1250 charset can fail
 - [ ] 'm' in notmuch opens a compose window which isn't refreshed properly.
       If I add "pane_damaged(p, DAMAGED_VIEW)" in render_lines_refresh,
       it works.  But that is surely too heavy-handed.
