@@ -1603,19 +1603,27 @@ class notmuch_master_view(edlib.Pane):
         p.call("notmuch:select", m, direction)
         return 1
 
-    def handle_A(self, key, focus, mark, str, **a):
-        "handle-list/doc:char-a/doc:char-S/doc:char-H/doc:char-*/doc:char-!/"
+    def handle_A(self, key, focus, num, mark, str, **a):
+        "handle-list/doc:char-a/doc:char-A/doc:char-S/doc:char-H/doc:char-*/doc:char-!/"
         # adjust flags for this message or thread, and move to next
         # a - remove inbox
+        # A - remove inbox from entire thread
         # S - add newspam
         # H - ham: remove newspam and add notspam
         # * - add flagged
         # ! - add unread,inbox remove newspam,notspam,flagged
+        # If num is not NO_NUMERIC, apply to whole thread
         which = focus['notmuch:pane']
+        wholethread = False
+        if num != edlib.NO_NUMERIC:
+            wholethread = True
 
         adds = []; removes = []
         if key[-1] == 'a':
             removes = ['inbox']
+        if key[-1] == 'A':
+            removes = ['inbox']
+            wholethread = True
         if key[-1] == 'S':
             adds = ['newspam']
         if key[-1] == 'H':
@@ -1630,13 +1638,23 @@ class notmuch_master_view(edlib.Pane):
         if which == "message":
             mp = self.message_pane
             if mp.cmid and mp.ctid:
-                self.do_update(mp.ctid, mp.cmid, adds, removes)
-            self.call("doc:char-n")
+                if wholethread:
+                    self.do_update(mp.ctid, None, adds, removes)
+                else:
+                    self.do_update(mp.ctid, mp.cmid, adds, removes)
+            if wholethread:
+                self.call("doc:char-N")
+            else:
+                self.call("doc:char-n")
             return 1
         if which == "query":
             thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
             msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
+            if wholethread:
+                msid = None
             self.do_update(thid, msid, adds, removes)
+            if wholethread:
+                focus.call("notmuch:close-thread")
             # Move to next message.  Open it if the thing we just updated was
             # displayed.
             m = focus.call("doc:dup-point", 0, -2, ret='mark')

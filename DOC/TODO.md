@@ -478,7 +478,7 @@ Module features
 - [ ] 'k' to kill the message and all replies - but not rest of thread
 - [X] Chr-a should affect thing under cursor, not current thing
 - [ ] support selection messages and applying tags
-- [ ] command to mark whole thread as Archived - 'A' ? or 'K'?
+- [X] command to mark whole thread as Archived - 'A' ?
 - [ ] 'd' to add "deleted' flag
 - [X] highlight for 'flagged' - and 'spam'
 - [X] cannot move down to last message in search
@@ -505,6 +505,7 @@ Module features
       must support undo. % for replace?
 - [ ] make sure doc cleans up when closed. processes must be killed
       and query docs must be closed
+- [ ] Can I implement "undo" for large-scale tag changes?
 - [X] 'q' while in whole-thread mode should return to all-threads
 - [X] use db.get_all_tags() to add list of tags to end of list of queries.
 - [X] if a message arrives for a thread while the thread is open, the thread gets
