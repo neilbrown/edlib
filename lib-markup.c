@@ -362,6 +362,11 @@ DEF_CMD(render_line)
 			buf_concat(&b, "</>");
 		} else if (ch == 0x7f) {
 			buf_concat(&b, "<fg:red>^?</>");
+		} else if (ch >= 0x80 && iswcntrl(ch)) {
+			/* Extra unicode control */
+			buf_concat(&b, "<fg:magenta>^");
+			buf_append(&b, 96 + (ch & 0x1f));
+			buf_concat(&b, "</>");
 		} else
 			buf_append(&b, ch);
 		chars++;
