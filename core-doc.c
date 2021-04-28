@@ -180,7 +180,6 @@ DEF_CMD(doc_expr)
 	 * 'str' can be set to extra chars that should be included in words.
 	 */
 	struct pane *f = ci->focus;
-	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
 	int enter_leave = ci->num2;
@@ -191,7 +190,7 @@ DEF_CMD(doc_expr)
 	const char *special safe = "[](){}'\"";
 
 	if (!m)
-		m = dd->point;
+		return Enoarg;
 	dir = rpt > 0 ? 1 : 0;
 	if (dir) {
 		open = "([{"; close = ")]}";
@@ -411,7 +410,6 @@ DEF_CMD(doc_para)
 	 * If moving backward, stop before the first one.
 	 */
 	struct pane *p = ci->focus;
-	struct doc_data *dd = ci->home->data;
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
 	wint_t ch = 0;
@@ -419,7 +417,7 @@ DEF_CMD(doc_para)
 	int forwards = rpt > 0 ? 1 : 0;
 
 	if (!m)
-		m = dd->point;
+		return Enoarg;
 
 	while (!forwards && is_eol(doc_prior(p, m)))
 		doc_prev(p, m);
@@ -1211,9 +1209,7 @@ static void init_doc_cmds(void)
 	key_add_prefix(doc_handle_cmd, "doc:", &doc_pass_on);
 
 	key_add(doc_handle_cmd, "Move-Char", &doc_char);
-	key_add(doc_handle_cmd, "Move-Expr", &doc_expr);
 	key_add(doc_handle_cmd, "Move-Line", &doc_line);
-	key_add(doc_handle_cmd, "Move-Paragraph", &doc_para);
 	key_add(doc_handle_cmd, "Move-View-Large", &doc_page);
 	key_add(doc_handle_cmd, "doc:point", &doc_get_point);
 
@@ -1252,6 +1248,8 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:WORD", &doc_WORD);
 	key_add(doc_default_cmd, "doc:EOL", &doc_eol);
 	key_add(doc_default_cmd, "doc:file", &doc_file);
+	key_add(doc_default_cmd, "doc:expr", &doc_expr);
+	key_add(doc_default_cmd, "doc:paragraph", &doc_para);
 
 	key_add_prefix(doc_default_cmd, "doc:char-", &doc_insert_char);
 	key_add_prefix(doc_default_cmd, "doc:request:",

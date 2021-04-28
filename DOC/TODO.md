@@ -102,7 +102,7 @@ Core features
 -------------
 
 - [ ] review all use of 'bytes' for doc:content.  Maybe doc:content-bytes
-- [ ] make Move-Word/WORD/EOL into doc:word/WORD/eol in doc_defaults
+- [X] make Move-Word/WORD/EOL into doc:word/WORD/eol in doc_defaults
 - [ ] change doc:step to accept a count. Returns char after or before final location
 - [ ] separate various doc:vmark-get functions and/or make them easily available
       from python

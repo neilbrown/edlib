@@ -551,10 +551,10 @@ class CModePane(edlib.Pane):
         # parentheses w.r.t. here.  If we hit an unbalanced open, or a line
         # break - that is the line we want.
         # Make up a depth list from the leading tabs/spaces.
-        ret = p.call("Move-Expr", -1, m1)
+        ret = p.call("doc:expr", -1, m1)
 
         while ret == 1 and not at_sol(p, m1):
-            ret = p.call("Move-Expr", -1, m1)
+            ret = p.call("doc:expr", -1, m1)
         # This is the starting line.
         p.call("doc:EOL", -1, m1)
 
@@ -591,7 +591,7 @@ class CModePane(edlib.Pane):
             r.append(r[-1])
             return r, ''
         expr = m.dup()
-        ret = p.call("Move-Expr", -1, 1, expr)
+        ret = p.call("doc:expr", -1, 1, expr)
         if ret == 1 and expr >= indent_end:
             p.next(expr)
             if p.following(expr) == '\n':
@@ -863,10 +863,10 @@ class CModePane(edlib.Pane):
             focus.call("doc:EOL", 1, e)
             while m2 < e:
                 m3 = m2.dup()
-                if focus.call("Move-Expr", 1, m3) <= 0:
+                if focus.call("doc:expr", 1, m3) <= 0:
                     break
                 if m3 <= m2:
-                    # Move-Expr sometimes doesn't move at all
+                    # doc:expr sometimes doesn't move at all
                     break
                 m2 = m3
         # now call handle_tab() on each line from mark to m2
@@ -928,7 +928,7 @@ class CModePane(edlib.Pane):
                 m2 = point.dup()
                 focus.prev(m2)
                 m1 = point.dup()
-                focus.call("Move-Expr", m1, -1)
+                focus.call("doc:expr", m1, -1)
                 c2 = focus.following(m1)
                 if c2+c in "(){}[]":
                     m1['render:paren'] = "open"
@@ -944,7 +944,7 @@ class CModePane(edlib.Pane):
             if c and c in '({[':
                 m1 = point.dup()
                 m2 = point.dup()
-                focus.call("Move-Expr", m2, 1)
+                focus.call("doc:expr", m2, 1)
                 focus.prev(m2)
                 c2 = focus.following(m2)
                 if c+c2 in "(){}[]":
@@ -970,7 +970,7 @@ class CModePane(edlib.Pane):
             comm2("cb", focus, "bg:red+50,bold", 1)
 
     def handle_para(self, key, focus, mark, num, **a):
-        "handle:Move-Paragraph"
+        "handle:doc:paragraph"
         # A "Paragraph" is a function, which starts with a line that has no
         # indent, but does have a '('
         backward = 1
@@ -997,7 +997,7 @@ class CModePane(edlib.Pane):
 
         return 1
     def handle_expr(self, key, focus, mark, num, num2, **a):
-        "handle:Move-Expr"
+        "handle:doc:expr"
         # Add '_' to list for word chars
         return self.parent.call(key, focus, mark, num, num2, "_")
 
