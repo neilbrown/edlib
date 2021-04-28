@@ -566,57 +566,46 @@ class notmuch_main(edlib.Doc):
         return 1
 
     def handle_notmuch_remove_tag(self, key, str, str2, **a):
-        "handle-prefix:doc:notmuch:remove-tag-"
-        tag = key[23:]
+        "handle-prefix:doc:notmuch:tag-"
+        if key.startswith("doc:notmuch:tag-add-"):
+            add = True
+            tag = key[20:]
+        elif key.startswith("doc:notmuch:tag-remove-"):
+            add = False
+            tag = key[23:]
+        else:
+            return Enoarg
         with self.db.get_write() as db:
             if str2:
-                # remove just from 1 message
+                # adjust just 1 message
                 m = db.find_message(str2)
                 if m:
                     t = list(m.get_tags())
-                    if tag in t:
-                        m.remove_tag(tag)
-                        self.notify("Notify:Tag", str, str2)
-            else:
-                # remove from whole thread
-                # FIXME This should be the thread as last seen, not as
-                # is now in the database - which might be different.
-                q = db.create_query("thread:%s" % str)
-                changed = False
-                for t in q.search_threads():
-                    ml = t.get_messages()
-                    for m in ml:
-                        if tag in m.get_tags():
-                            m.remove_tag(tag)
-                            changed = True
-                if changed:
-                    self.notify("Notify:Tag", str)
-        return 1
-
-    def handle_notmuch_add_tag(self, key, str, str2, **a):
-        "handle-prefix:doc:notmuch:add-tag-"
-        tag = key[20:]
-        with self.db.get_write() as db:
-            if str2:
-                # add just to 1 message
-                m = db.find_message(str2)
-                if m:
-                    t = list(m.get_tags())
-                    if tag not in t:
-                        m.add_tag(tag)
-                        self.notify("Notify:Tag", str, str2)
-            else:
-                # add to whole thread
-                # FIXME This should be the thread as last seen, not as
-                # is now in the database - which might be different.
-                q = db.create_query("thread:%s" % str)
-                changed = False
-                for t in q.search_threads():
-                    ml = t.get_messages()
-                    for m in ml:
-                        if tag not in m.get_tags():
+                    if add:
+                        if tag not in t:
                             m.add_tag(tag)
-                            changed = True
+                            self.notify("Notify:Tag", str, str2)
+                    else:
+                        if tag in t:
+                            m.remove_tag(tag)
+                            self.notify("Notify:Tag", str, str2)
+            else:
+                # adjust whole thread
+                # FIXME This should be the thread as last seen, not as
+                # is now in the database - which might be different.
+                q = db.create_query("thread:%s" % str)
+                changed = False
+                for t in q.search_threads():
+                    ml = t.get_messages()
+                    for m in ml:
+                        if add:
+                            if tag not in m.get_tags():
+                                m.add_tag(tag)
+                                changed = True
+                        else:
+                            if tag in m.get_tags():
+                                m.remove_tag(tag)
+                                changed = True
                 if changed:
                     self.notify("Notify:Tag", str)
         return 1
@@ -1768,12 +1757,12 @@ class notmuch_master_view(edlib.Pane):
         skipped = []
         for t in adds:
             if self.tag_ok(t):
-                self.list_pane.call("doc:notmuch:add-tag-%s" % t, tid, mid)
+                self.list_pane.call("doc:notmuch:tag-add-%s" % t, tid, mid)
             else:
                 skipped.append(t)
         for t in removes:
             if self.tag_ok(t):
-                self.list_pane.call("doc:notmuch:remove-tag-%s" % t, tid, mid)
+                self.list_pane.call("doc:notmuch:tag-remove-%s" % t, tid, mid)
             else:
                 skipped.append(t)
         if skipped:
