@@ -552,10 +552,10 @@ Module features
 
 ###  Notmuch message display
 
-- [ ] notmuch calls external-viewer sometimes with no prefix
-- [ ] application/octet-stream with name "foo.pdf" is a PDF.
+- [X] notmuch calls external-viewer sometimes with no prefix
+- [X] application/octet-stream with name "foo.pdf" is a PDF.
       use mime-types to intuit type from name?
-- [ ] support mailcap ???
+- [X] support mailcap ???
 - [ ] make it practical for 'text' documents to contain non-utf8 so that
       "Save" can copy to a buffer.
 - [ ] error check 'external viewer' code

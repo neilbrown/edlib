@@ -2527,13 +2527,21 @@ class notmuch_message_view(edlib.Pane):
             path = focus.call("doc:get-attr", "multipart-prev:email:path", m, ret='str')
             type = focus.call("doc:get-attr", "multipart-prev:email:content-type", m, ret='str')
             fname = focus.call("doc:get-attr", "multipart-prev:email:filename", m, ret='str')
-            if not fname and type:
+            ext = None
+            if fname and '/' in fname:
+                fname = os.path.basename(prefix)
+            prefix = fname
+            if fname and '.' in fname:
+                d = fname.rindex('.')
+                ext = fname[d:]
+                prefix = fname[:d]
+            if not ext and type:
                 ext = mimetypes.guess_extension(type)
-                if ext:
-                    fname = "tmp" + ext
-            if fname:
-                # if there is an fname, we can pass to xdg-open, so maybe
+            if ext:
+                # if there is an extension, we can pass to xdg-open, so maybe
                 # there is an external viewer
+                focus.call("doc:set-attr", "multipart-prev:email:ext", m, ext)
+                focus.call("doc:set-attr", "multipart-prev:email:prefix", m, prefix)
                 focus.call("doc:set-attr", "multipart-prev:email:actions", m,
                            "hide:save:external view");
             vis = True
@@ -2665,32 +2673,21 @@ class notmuch_message_view(edlib.Pane):
     def handle_external(self, key, focus, mark, **a):
         "handle-list/Mouse-Activate:email-external view/email:select:external view"
         type = focus.call("doc:get-attr", "multipart-prev:email:content-type", mark, ret='str')
-        file = focus.call("doc:get-attr", "multipart-prev:email:filename", mark, ret='str')
-        if file:
-            base = os.path.basename(file)
-        elif type:
-            ext = mimetypes.guess_extension(type)
-            if ext:
-                base = "temp" + ext
-        if not file:
-            file = "temp-file"
-
-        if '.' in file:
-            p = file.split('.')
-            suffix = '.' + p[-1]
-            prefix = '.'.join(p[:-1])
-        else:
-            prefix = file
-            suffix = None
+        prefix = focus.call("doc:get-attr", "multipart-prev:email:prefix", mark, ret='str')
+        ext = focus.call("doc:get-attr", "multipart-prev:email:ext", mark, ret='str')
+        if not ext:
+            ext = ""
+        if not prefix:
+            prefix = "tempfile"
 
         part = focus.call("doc:get-attr", mark, "multipart:part-num", ret='str')
         part = int(part)-2
 
         content = focus.call("doc:multipart-%d-doc:get-bytes" % part, ret = 'bytes')
-        fd, path = tempfile.mkstemp(suffix, prefix)
+        fd, path = tempfile.mkstemp(ext, prefix)
         os.write(fd, content)
         os.close(fd)
-        focus.call("Display:external-viewer", path, prefix+"XXXXX"+suffix)
+        focus.call("Display:external-viewer", path, prefix+"XXXXX"+ext)
         return 1
 
     def handle_map_attr(self, key, focus, mark, str, str2, comm2, **a):
