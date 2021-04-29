@@ -470,3 +470,35 @@ int utf8_strlen(char *s safe)
 	}
 	return cnt;
 }
+
+/*
+ * When walking backwards through a string, we need to round a point
+ * down to the start of a code-point.
+ * When reading a file into allocated chunks of memory, we want each chunk
+ * to hold a whole number of code points.
+ * For both of these needs, we have utf8_round_len which tries to reduce
+ * the given length to a code-point boundary, if possible.
+*
+ * We only adjust the length if we can find a start-of-code-point in
+ * the last 4 bytes. (longest UTF-8 encoding of 21bit unicode is 4 bytes).
+ * A start of codepoint starts with 0b0 or 0b11, not 0b10.
+ */
+int utf8_round_len(const char *text safe, int len)
+{
+	/* The string at 'text' is *longer* than 'len', or
+	 * at least text[len] is defined - it can be nul.  If
+	 * [len] isn't the start of a new codepoint, and there
+	 * is a start marker in the previous 4 bytes,
+	 * move back to there.
+	 */
+	int i = 0;
+	while (i <= len && i <=4)
+		if ((text[len-i] & 0xC0) == 0x80)
+			/* next byte is inside a UTF-8 code point, so
+			 * this isn't a good spot to end. Try further
+			 * back */
+			i += 1;
+		else
+			return len-i;
+	return len;
+}

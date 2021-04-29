@@ -195,34 +195,6 @@ static void text_cleanout(struct text *t safe);
 static MEMPOOL(text);
 static MEMPOOL(undo);
 static struct map *text_map;
-/*
- * A text will mostly hold utf-8 so we try to align chunk breaks with
- * Unicode points.  This particularly affects adding new strings to
- * allocations.
- * There is no guarantee that a byte string is UTF-8 though, so
- * We only adjust the length if we can find a start-of-code-point in
- * the last 4 bytes. (longest UTF-8 encoding of 21bit unicode is 4 bytes).
- * A start of codepoint starts with 0b0 or 0b11, not 0b10.
- */
-static int text_round_len(const char *text safe, int len)
-{
-	/* The string at 'text' is *longer* than 'len', or
-	 * at least text[len] is defined - it can be nul.  If
-	 * [len] isn't the start of a new codepoint, and there
-	 * is a start marker in the previous 4 bytes,
-	 * move back to there.
-	 */
-	int i = 0;
-	while (i <= len && i <=4)
-		if ((text[len-i] & 0xC0) == 0x80)
-			/* next byte is inside a UTF-8 code point, so
-			 * this isn't a good spot to end. Try further
-			 * back */
-			i += 1;
-		else
-			return len-i;
-	return len;
-}
 
 static struct text_alloc *safe
 text_new_alloc(struct text *t safe, int size)
@@ -833,7 +805,7 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe,
 	if (pos->c && pos->o == pos->c->end &&
 	    pos->c->txt + pos->o == a->text + a->free &&
 	    (a->size - a->free >= len ||
-	     (len2 = text_round_len(str, a->size - a->free)) > 0)) {
+	     (len2 = utf8_round_len(str, a->size - a->free)) > 0)) {
 		/* Some of this ('len2') can be added to the current chunk */
 		memcpy(a->text+a->free, str, len2);
 		a->free += len2;
@@ -898,11 +870,11 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe,
 		/* Make sure we have some space in 'a' */
 		len2 = len;
 		if (a->size - a->free < len &&
-		    (len2 = text_round_len(str, a->size - a->free)) == 0) {
+		    (len2 = utf8_round_len(str, a->size - a->free)) == 0) {
 			a = text_new_alloc(t, 0);
 			len2 = len;
 			if (len2 > a->size)
-				len2 = text_round_len(str, a->size);
+				len2 = utf8_round_len(str, a->size);
 		}
 		pos->c->txt = a->text + a->free;
 		pos->c->end = len2;
@@ -1563,7 +1535,7 @@ static wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
 		r->o -= 1;
 	else {
 		r->o = r->c->start +
-			text_round_len(r->c->txt+r->c->start,
+			utf8_round_len(r->c->txt+r->c->start,
 				       r->o - r->c->start - 1);
 		c = r->c->txt + r->o;
 		ret = get_utf8(&c, r->c->txt + r->c->end);
