@@ -91,8 +91,8 @@ DEF_CMD(search_forward)
 		newstart = mark_dup(esi->end);
 		if (esi->matched == 1)
 			/* zero length match */
-			if (doc_step(esi->target, newstart,
-					   !esi->backwards, 1) == WEOF) {
+			if (doc_move(esi->target, newstart,
+				     esi->backwards ? -1 : 1) == WEOF) {
 				mark_free(newstart);
 				newstart = NULL;
 			}

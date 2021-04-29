@@ -16,7 +16,7 @@ DEF_LOOKUP_CMD(utf8_handle, utf8_map);
 
 DEF_CMD(utf8_step)
 {
-	int forward = ci->num;
+	int dir = ci->num ? 1 : -1;
 	int move = ci->num2;
 	struct pane *p = ci->home->parent;
 	wint_t ch;
@@ -29,14 +29,14 @@ DEF_CMD(utf8_step)
 	if (!m)
 		return Enoarg;
 
-	ch = doc_step(p, m, forward, move);
+	ch = doc_step(p, m, dir, move);
 	if (ch == WEOF || (ch & 0x7f) == ch)
 		return CHAR_RET(ch);
 	if (!move) {
 		m = mark_dup(m);
-		doc_step(p, m, forward, 1);
+		doc_move(p, m, dir);
 	}
-	if (forward) {
+	if (dir > 0) {
 		i = 0;
 		buf[i++] = ch;
 		while ((ch = doc_following(p, m)) != WEOF &&

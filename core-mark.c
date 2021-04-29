@@ -528,7 +528,7 @@ wint_t doc_step(struct pane *p safe, struct mark *m,
 {
 	int ret;
 
-	ret = call("doc:step", p, forward, m, NULL, move);
+	ret = call("doc:step", p, forward > 0, m, NULL, move);
 
 	if (ret <= 0)
 		return WEOF;

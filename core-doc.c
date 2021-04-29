@@ -183,7 +183,7 @@ DEF_CMD(doc_expr)
 	struct mark *m = ci->mark;
 	int rpt = RPT_NUM(ci);
 	int enter_leave = ci->num2;
-	int dir;
+	int dir = rpt > 0 ? 1 : -1;
 	char *open;
 	char *close;
 	const char *wordchars = ci->str ?: "";
@@ -191,8 +191,7 @@ DEF_CMD(doc_expr)
 
 	if (!m)
 		return Enoarg;
-	dir = rpt > 0 ? 1 : 0;
-	if (dir) {
+	if (dir > 0) {
 		open = "([{"; close = ")]}";
 	} else {
 		open = ")]}"; close = "([{";
@@ -202,17 +201,17 @@ DEF_CMD(doc_expr)
 
 		while ((wi = doc_step(f, m, dir, 0)) != WEOF
 		       && iswspace(wi))
-			doc_step(f, m, dir, 1);
+			doc_move(f, m, dir);
 
 		while ((wi = doc_step(f, m, dir, 0)) != WEOF &&
 		       !iswspace(wi) && !iswalnum(wi) &&
 		       (wi > 255 || (strchr(special, wi) == NULL &&
 				     strchr(wordchars, wi) == NULL)))
-			doc_step(f, m, dir, 1);
+			doc_move(f, m, dir);
 
 		if (strchr(close, wi)) {
-			if (!dir && enter_leave) {
-				doc_step(f, m, dir, 1);
+			if (dir < 0 && enter_leave) {
+				doc_prev(f, m);
 				rpt += 1;
 			} else
 				/* hit a close */
@@ -222,30 +221,30 @@ DEF_CMD(doc_expr)
 			int depth = 1;
 			wint_t q = 0;
 
-			doc_step(f, m, dir, 1);
-			if (enter_leave && dir)
+			doc_move(f, m, dir);
+			if (enter_leave && dir > 0)
 				/* Just entered the expression */
 				rpt -= 1;
 			else while (depth > 0 &&
-				    (wi = doc_step(f, m, dir, 1)) != WEOF) {
+				    (wi = doc_move(f, m, dir)) != WEOF) {
 					if (q) {
-						if (dir)
+						if (dir > 0)
 							doc_prev(f,m);
 						if ((!check_slosh(f, m) && wi == q) ||
 						    is_eol(wi))
 							q = 0;
-						if (dir)
+						if (dir > 0)
 							doc_next(f,m);
 					} else if (strchr(open, wi))
 						depth += 1;
 					else if (strchr(close, wi))
 						depth -= 1;
 					else if (wi == '"' || wi == '\'') {
-						if (dir)
+						if (dir > 0)
 							doc_prev(f,m);
 						if (!check_slosh(f, m))
 							q = wi;
-						if (dir)
+						if (dir > 0)
 							doc_next(f,m);
 					}
 				}
@@ -253,22 +252,22 @@ DEF_CMD(doc_expr)
 			/* skip quoted or to EOL */
 			wint_t q = wi;
 			bool slosh = False;
-			if (dir) {
+			if (dir > 0) {
 				slosh = check_slosh(f, m);
-				doc_step(f, m, dir, 1);
+				doc_move(f, m, dir);
 			} else {
-				doc_step(f, m, dir, 1);
+				doc_move(f, m, dir);
 				slosh = check_slosh(f, m);
 			}
 			if (!slosh) {
 				while (((wi = doc_step(f, m, dir, 0))
 					!= WEOF) &&
 				       !is_eol(wi)) {
-					if (dir) {
+					if (dir > 0) {
 						slosh = check_slosh(f, m);
-						doc_step(f, m, dir, 1);
+						doc_next(f, m);
 					} else {
-						doc_step(f, m, dir, 1);
+						doc_prev(f, m);
 						slosh = check_slosh(f, m);
 					}
 					if (wi == q && !slosh)
@@ -278,10 +277,10 @@ DEF_CMD(doc_expr)
 		} else while (((wi=doc_step(f, m, dir, 0)) != WEOF && iswalnum(wi)) ||
 			      (wi > 0 && wi <= 255 &&
 			       strchr(wordchars, wi) != NULL))
-				doc_step(f, m, dir, 1);
+				doc_move(f, m, dir);
 
 		if (!enter_leave)
-			rpt -= dir * 2 - 1;
+			rpt -= dir;
 		if (wi == WEOF)
 			break;
 	}
@@ -414,31 +413,31 @@ DEF_CMD(doc_para)
 	int rpt = RPT_NUM(ci);
 	wint_t ch = 0;
 	int nlcnt = 0;
-	int forwards = rpt > 0 ? 1 : 0;
+	int dir = rpt > 0 ? 1 : -1;
 
 	if (!m)
 		return Enoarg;
 
-	while (!forwards && is_eol(doc_prior(p, m)))
+	while (dir < 0 && is_eol(doc_prior(p, m)))
 		doc_prev(p, m);
 
 	while (rpt && ch != WEOF) {
 		nlcnt = 0;
 		while (ch != WEOF) {
-			ch = doc_step(p, m, forwards, 1);
+			ch = doc_move(p, m, dir);
 			if (is_eol(ch))
 				nlcnt += 1;
 			else if (nlcnt < 2)
 				nlcnt = 0;
 			else {
-				doc_step(p, m, !forwards, 1);
+				doc_move(p, m, -dir);
 				break;
 			}
 		}
-		rpt += forwards ? -1 : 1;
+		rpt += dir;
 	}
 
-	while (!forwards && nlcnt-- > 0)
+	while (dir < 0 && nlcnt-- > 0)
 		doc_next(p, m);
 	return 1;
 }

@@ -509,6 +509,19 @@ static inline wint_t doc_prior(struct pane *p safe, struct mark *m)
 	return doc_step(p, m, 0, 0);
 }
 
+static inline wint_t doc_move(struct pane *p safe, struct mark *m, int n)
+{
+	/* Move 'n' chars (backwards if negative) returning last character
+	 * stepped over
+	 */
+	wint_t wc = WEOF;
+	while (n < 0 && (wc = doc_prev(p, m)) != WEOF)
+		n += 1;
+	while (n > 0 && (wc = doc_next(p, m)) != WEOF)
+		n -= 1;
+	return wc;
+}
+
 struct call_return {
 	struct command c;
 	struct mark *m, *m2;
