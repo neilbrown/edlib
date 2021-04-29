@@ -298,7 +298,7 @@ class DiffPane(edlib.Pane):
         par.call("doc:file", -1)
         if lineno > 1:
             par.call("doc:EOL", lineno - 1, 1)
-            m = par.call("doc:dup-point", 0, -2, ret='mark')
+            m = par.call("doc:dup-point", 0, edlib.MARK_UNGROUPED, ret='mark')
             try:
                 fuzz = wcmd("find", "after", 5, 200, par, m)
                 from_start -= (fuzz - 1)

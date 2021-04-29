@@ -1655,7 +1655,7 @@ class notmuch_master_view(edlib.Pane):
             # secondary window exists so move, otherwise just select
             # Need to get point as 'mark' might be in the wrong pane
             p.call("Move-Line", direction)
-            m = p.call("doc:dup-point", 0, -2, ret='mark')
+            m = p.call("doc:dup-point", 0, edlib.MARK_UNGROUPED, ret='mark')
 
         p.call("notmuch:select", m, direction)
         return 1
@@ -1673,7 +1673,7 @@ class notmuch_master_view(edlib.Pane):
             # Need to get point as 'mark' might be in the wrong pane
             self.query_pane.call("notmuch:close-thread")
             self.query_pane.call("Move-Line", direction)
-            m = p.call("doc:dup-point", 0, -2, ret='mark')
+            m = p.call("doc:dup-point", 0, edlib.MARK_UNGROUPED, ret='mark')
         else:
             m = mark
 
@@ -2425,7 +2425,8 @@ class notmuch_query_view(edlib.Pane):
                 if mark:
                     self.thread_start = mark.dup()
                 else:
-                    self.thread_start = focus.call("doc:dup-point", 0, -2, ret='mark')
+                    self.thread_start = focus.call("doc:dup-point", 0,
+                                                   edlib.MARK_UNGROUPED, ret='mark')
                 focus.call("doc:step-thread", 0, 1, self.thread_start)
                 self.thread_end = self.thread_start.dup()
                 focus.call("doc:step-thread", 1, 1, self.thread_end)
