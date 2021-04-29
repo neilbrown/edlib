@@ -980,8 +980,7 @@ struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe,
 
 struct mark *vmark_new(struct pane *p safe, int view, struct pane *owner)
 {
-	return home_call_ret(mark2, p, "doc:vmark-get", owner?:p, view,
-			     NULL, NULL, 2);
+	return home_call_ret(mark, p, "doc:vmark-new", owner?:p, view);
 }
 
 struct mark *vmark_matching(struct mark *m safe)
