@@ -106,7 +106,7 @@ Core features
 - [ ] change doc:step to accept a count. Returns char after or before final location
 - [ ] separate various doc:vmark-get functions and/or make them easily available
       from python
-- [ ] 'log' should handle utf8 correctly.
+- [X] 'log' should handle utf8 correctly.
 - [ ] doc_write_file should use doc:content
 - [ ] guard against mark seq number over-flowing.
 - [ ] use the time-keeping stack to allow an edlib stack-trace to be reported

@@ -253,8 +253,10 @@ DEF_CMD(log_step)
 		if (!ref.b)
 			ret = WEOF;
 		else {
-			ret = ref.b->text[ref.o];
-			ref.o += 1;
+			const char *s = &ref.b->text[ref.o];
+
+			ret = get_utf8(&s, ref.b->text + ref.b->end);
+			ref.o = s - ref.b->text;
 			if (ref.o >= ref.b->end) {
 				if (ref.b == list_last_entry(&log->log,
 							     struct logbuf, h))
@@ -269,18 +271,21 @@ DEF_CMD(log_step)
 			ret = WEOF;
 		else if (!ref.b) {
 			ref.b = list_last_entry(&log->log, struct logbuf, h);
-			ref.o = ref.b->end - 1;
+			ref.o = utf8_round_len(ref.b->text, ref.b->end - 1);
 		} else if (ref.o == 0) {
 			if (ref.b != list_first_entry(&log->log,
 						      struct logbuf, h)) {
 				ref.b = list_prev_entry(ref.b, h);
-				ref.o = ref.b->end - 1;
+				ref.o = utf8_round_len(ref.b->text,
+						       ref.b->end - 1);
 			} else
 				ret = WEOF;
 		} else
-			ref.o -= 1;
-		if ((ref.b != m->ref.b || ref.o != m->ref.o) && ref.b)
-			ret = ref.b->text[ref.o];
+			ref.o = utf8_round_len(ref.b->text, ref.o - 1);
+		if ((ref.b != m->ref.b || ref.o != m->ref.o) && ref.b) {
+			const char *s = ref.b->text + ref.o;
+			ret = get_utf8(&s, ref.b->text + ref.b->end);
+		}
 	}
 	if (move) {
 		mark_step(m, forward);
@@ -373,5 +378,5 @@ void log_setup(struct pane *ed safe)
 		  "interactive-cmd-view-log");
 	call_comm("global-set-command", ed, &log_new, 0, NULL,
 		  "log:create");
-	LOG("log: testing 1 %d 3", 2);
+	LOG("log: testing 1 %d 3 Α Β Ψ α β γ", 2);
 }
