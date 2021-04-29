@@ -522,6 +522,16 @@ static inline wint_t doc_move(struct pane *p safe, struct mark *m, int n)
 	return wc;
 }
 
+static inline wint_t doc_pending(struct pane *p safe, struct mark *m, int n)
+{
+	/* n must be <0 or >0.  Return the next char in that direction */
+	if (n > 0)
+		return doc_following(p, m);
+	if (n < 0)
+		return doc_prior(p, m);
+	return WEOF;
+}
+
 struct call_return {
 	struct command c;
 	struct mark *m, *m2;

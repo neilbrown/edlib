@@ -199,11 +199,11 @@ DEF_CMD(doc_expr)
 	while (rpt != 0) {
 		wint_t wi;
 
-		while ((wi = doc_step(f, m, dir, 0)) != WEOF
+		while ((wi = doc_pending(f, m, dir)) != WEOF
 		       && iswspace(wi))
 			doc_move(f, m, dir);
 
-		while ((wi = doc_step(f, m, dir, 0)) != WEOF &&
+		while ((wi = doc_pending(f, m, dir)) != WEOF &&
 		       !iswspace(wi) && !iswalnum(wi) &&
 		       (wi > 255 || (strchr(special, wi) == NULL &&
 				     strchr(wordchars, wi) == NULL)))
@@ -260,7 +260,7 @@ DEF_CMD(doc_expr)
 				slosh = check_slosh(f, m);
 			}
 			if (!slosh) {
-				while (((wi = doc_step(f, m, dir, 0))
+				while (((wi = doc_pending(f, m, dir))
 					!= WEOF) &&
 				       !is_eol(wi)) {
 					if (dir > 0) {
@@ -274,7 +274,7 @@ DEF_CMD(doc_expr)
 						break;
 				}
 			}
-		} else while (((wi=doc_step(f, m, dir, 0)) != WEOF && iswalnum(wi)) ||
+		} else while (((wi=doc_pending(f, m, dir)) != WEOF && iswalnum(wi)) ||
 			      (wi > 0 && wi <= 255 &&
 			       strchr(wordchars, wi) != NULL))
 				doc_move(f, m, dir);

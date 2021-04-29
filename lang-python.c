@@ -1284,7 +1284,10 @@ static PyObject *Pane_step(Pane *self safe, PyObject *args, int dir, int move)
 		return NULL;
 	}
 
-	wch = doc_step(self->pane, m->mark, dir, move);
+	if (move)
+		wch = doc_move(self->pane, m->mark, dir);
+	else
+		wch = doc_pending(self->pane, m->mark, dir);
 	if (wch == WEOF) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -1299,7 +1302,7 @@ static PyObject *Pane_step_next(Pane *self safe, PyObject *args)
 
 static PyObject *Pane_step_prev(Pane *self safe, PyObject *args)
 {
-	return Pane_step(self, args, 0, 1);
+	return Pane_step(self, args, -1, 1);
 }
 
 static PyObject *Pane_step_following(Pane *self safe, PyObject *args)
@@ -1309,7 +1312,7 @@ static PyObject *Pane_step_following(Pane *self safe, PyObject *args)
 
 static PyObject *Pane_step_prior(Pane *self safe, PyObject *args)
 {
-	return Pane_step(self, args, 0, 0);
+	return Pane_step(self, args, -1, 0);
 }
 
 static PyMethodDef pane_methods[] = {

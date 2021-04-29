@@ -521,6 +521,8 @@ struct mark *doc_new_mark(struct pane *p safe, int view, struct pane *owner)
  * Points can step fore/back like marks.  They can jump to another
  * point easily but to move to mark they must walk one mark at a time.
  *
+ * Note that 'm' isn't 'safe' - A NULL mark will be step to point
+ * by the doc redirector.
  */
 
 wint_t doc_step(struct pane *p safe, struct mark *m,
