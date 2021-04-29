@@ -874,7 +874,13 @@ DEF_CB(take_mark)
 		return Einval;
 	if (!ci->mark)
 		return Efallthrough;
-	pr->ret = Mark_Frommark(ci->mark);
+	if (ci->mark->viewnum == MARK_UNGROUPED) {
+		/* Cannot rely on this mark persisting, take a copy */
+		struct mark *m = mark_dup(ci->mark);
+		pr->ret = Mark_Frommark(m);
+		m->mtype = (void*)pr->ret;
+	} else
+		pr->ret = Mark_Frommark(ci->mark);
 	return 1;
 }
 
