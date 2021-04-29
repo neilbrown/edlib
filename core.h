@@ -242,8 +242,6 @@ struct mark *vmark_matching(struct mark *m safe);
 struct mark *vmark_first(struct pane *p safe, int view,
 			 struct pane *owner safe);
 struct mark *vmark_last(struct pane *p safe, int view, struct pane *owner safe);
-struct mark *vmark_at_point(struct pane *p safe, int view,
-			    struct pane *owner safe);
 struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe,
 				int view, struct pane *owner);
 struct mark *vmark_new(struct pane *p safe, int view, struct pane *owner);

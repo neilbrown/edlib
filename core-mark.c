@@ -964,13 +964,6 @@ struct mark *vmark_last(struct pane *p safe, int view, struct pane *owner safe)
 	return home_call_ret(mark2, p, "doc:vmark-get", owner, view);
 }
 
-struct mark *vmark_at_point(struct pane *p safe, int view,
-			    struct pane *owner safe)
-{
-	return home_call_ret(mark2, p, "doc:vmark-get", owner, view,
-			     NULL, NULL, 1);
-}
-
 struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe,
 				int view, struct pane *owner)
 {
@@ -994,35 +987,6 @@ struct mark *vmark_matching(struct mark *m safe)
 	m2 = vmark_next(m);
 	if (m2 && mark_same(m, m2))
 		return m2;
-	return NULL;
-}
-
-struct mark *do_vmark_at_point(struct doc *d safe,
-			       struct mark *pt safe,
-			       int view, struct pane *owner safe)
-{
-	struct tlist_head *tl;
-	struct mark *m;
-	struct point_links *lnk = safe_cast pt->mdata;
-
-	if (pt->owner->data != d) {
-		LOG("vmark_to_point called with incorrect owner");
-		return NULL;
-	}
-
-	if (view < 0 || view >= d->nviews || d->views == NULL)
-		return NULL;
-	if (d->views[view].owner != owner)
-		return NULL;
-
-	tl = &lnk->lists[view];
-	m = __vmark_prev(tl);
-	if (m && mark_same(m, pt))
-		return m;
-	tl = &lnk->lists[view];
-	m = __vmark_next(tl);
-	if (m && mark_same(m, pt))
-		return m;
 	return NULL;
 }
 

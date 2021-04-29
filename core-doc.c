@@ -638,9 +638,6 @@ DEF_CMD(doc_vmarkget)
 	struct mark *m, *m2;
 	m = do_vmark_first(ci->home->data, ci->num, ci->focus);
 	m2 = do_vmark_last(ci->home->data, ci->num, ci->focus);
-	if (ci->num2 == 1 && ci->mark)
-		m2 = do_vmark_at_point(ci->home->data, ci->mark,
-				       ci->num, ci->focus);
 	return comm_call(ci->comm2, "callback:vmark", ci->focus,
 			 0, m, NULL, 0, m2) ?: 1;
 }
