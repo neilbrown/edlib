@@ -29,7 +29,10 @@ DEF_CMD(utf8_step)
 	if (!m)
 		return Enoarg;
 
-	ch = doc_step(p, m, dir, move);
+	if (move)
+		ch = doc_move(p, m, dir);
+	else
+		ch = doc_pending(p, m, dir);
 	if (ch == WEOF || (ch & 0x7f) == ch)
 		return CHAR_RET(ch);
 	if (!move) {

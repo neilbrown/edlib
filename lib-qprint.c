@@ -49,7 +49,10 @@ DEF_CMD(qp_step)
 
 retry:
 	if (forward) {
-		ch = doc_step(p, m, 1, move);
+		if (move)
+			ch = doc_next(p, m);
+		else
+			ch = doc_following(p, m);
 		if (ch != '=' && ch != ' ' && ch != '\t' && ch != '\r') {
 			if (m != ci->mark) {
 				if (move)
@@ -59,7 +62,7 @@ retry:
 			goto normalize;
 		}
 		if (ch == '\r') {
-			/* assume CR-LF */
+			/* assume CR-LF - skip an extra char */
 			if (move)
 				doc_next(p, m);
 			if (m != ci->mark) {
@@ -127,7 +130,10 @@ retry:
 		mark_free(m);
 		goto normalize_more;
 	} else {
-		ch = doc_step(p, m, 0, move);
+		if (move)
+			ch = doc_prev(p, m);
+		else
+			ch = doc_prior(p, m);
 		if (ch == '\n') {
 			if (m == ci->mark)
 				m = mark_dup(m);

@@ -525,8 +525,8 @@ struct mark *doc_new_mark(struct pane *p safe, int view, struct pane *owner)
  * by the doc redirector.
  */
 
-wint_t doc_step(struct pane *p safe, struct mark *m,
-		      int forward, int move)
+wint_t __doc_step(struct pane *p safe, struct mark *m,
+		  int forward, int move)
 {
 	int ret;
 
