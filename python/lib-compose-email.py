@@ -299,7 +299,7 @@ class compose_email(edlib.Pane):
             return comm2("cb", focus, "<fg:red>")
         # at least go to end of line
         self.parent.call("doc:EOL", 1, mark)
-        m = self.call("doc:vmark-get", self.view, mark, 3, ret='mark2')
+        m = self.call("doc:vmark-prev", self.view, mark, ret='mark')
         type = m['compose-type']
         if type == "headers":
             markup =  "<fg:red>Headers above, content below"
@@ -335,7 +335,7 @@ class compose_email(edlib.Pane):
             return 1
 
         # get previous mark and see if it is here
-        m = self.call("doc:vmark-get", self.view, 3, mark, ret='mark2')
+        m = self.call("doc:vmark-prev", self.view, mark, ret='mark')
         if not m and str == "start-of-line":
             # start of a header line - set colour for tag and header, and wrap info
             rv = self.call("text-match", "(\\h+|[!-9;-~]+\\h*:)", mark.dup())
@@ -390,7 +390,7 @@ class compose_email(edlib.Pane):
         if mark2 < mark:
             mark, mark2 = mark2, mark
 
-        m = self.call("doc:vmark-get", self.view, 3, mark, ret='mark2')
+        m = self.call("doc:vmark-prev", self.view, mark, ret='mark')
         if m and m['compose-type']:
             # must not edit a marker, but can insert a "\n" before
             if mark == mark2 and mark == m and str and str[-1] == '\n':
@@ -403,7 +403,7 @@ class compose_email(edlib.Pane):
             if m:
                 m.step(0)
             return edlib.Efallthrough
-        m2 = self.call("doc:vmark-get", self.view, 3, mark2, ret='mark2')
+        m2 = self.call("doc:vmark-prev", self.view, mark2, ret='mark')
         if m2 != m:
             # not completely within a part, so fail
             return 1
@@ -417,7 +417,7 @@ class compose_email(edlib.Pane):
         # if in a marker, only allow a space and newline to be seen
         if not mark:
             return edlib.Enoarg
-        m = self.call("doc:vmark-get", self.view, 3, mark, ret='mark2')
+        m = self.call("doc:vmark-prev", self.view, mark, ret='mark')
         if mark == m:
             if m['compose-type']:
                 # at start of marker
@@ -452,7 +452,7 @@ class compose_email(edlib.Pane):
         "handle:doc:get-attr"
         if not mark or not str or not comm2 or not str.startswith("fill:"):
             return edlib.Efallthrough
-        m = self.call("doc:vmark-get", self.view, 3, mark, ret='mark2')
+        m = self.call("doc:vmark-prev", self.view, mark, ret='mark')
         if m:
             return edlib.Efallthrough
         # in headers, need a min-prefix and start-re for fill

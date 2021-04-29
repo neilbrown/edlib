@@ -81,10 +81,10 @@ class PresenterPane(edlib.Pane):
         return self.call("doc:vmark-get", self.attrview, ret= 'mark')
 
     def prev_page(self, m):
-        return self.call("doc:vmark-get", self.pageview, 3, m, ret = 'mark2')
+        return self.call("doc:vmark-prev", self.pageview, m, ret = 'mark')
 
     def prev_line(self, m):
-        return self.call("doc:vmark-get", self.attrview, 3, m, ret = 'mark2')
+        return self.call("doc:vmark-prev", self.attrview, m, ret = 'mark')
 
     def get_line_at(self, m):
         # call render-line at m

@@ -90,7 +90,7 @@ class DiffPane(edlib.Pane):
                 return edlib.Efallthrough
 
             # check if we have highlighted the words
-            m = focus.call("doc:vmark-get", self, self.viewnum, 3, mark, ret='mark2')
+            m = focus.call("doc:vmark-prev", self, self.viewnum, mark, ret='mark')
             if m:
                 st = int(m['start'])
             else:

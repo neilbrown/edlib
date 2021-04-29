@@ -21,7 +21,7 @@
 #    a contiguous unchecked section in the range
 
 def remove_range(focus, viewnum, attr, start, end):
-    m = focus.call("doc:vmark-get", viewnum, start, 3, ret='mark2')
+    m = focus.call("doc:vmark-prev", viewnum, start, ret='mark')
     if m and not m[attr]:
         # immediately after start is not active, so the earlist we might need
         # to remove is the next mark, or possibly the very first
@@ -43,7 +43,7 @@ def remove_range(focus, viewnum, attr, start, end):
         m[attr] = 'yes'
     # m is now the start of an active section that is within start-end
     # and should be removed
-    m2 = focus.call("doc:vmark-get", viewnum, end, 3, ret='mark2')
+    m2 = focus.call("doc:vmark-prev", viewnum, end, ret='mark')
     if m2 and m2 == end and m2[attr]:
         # this section is entirely after end, so not interesting
         m2 = m2.prev()
@@ -64,7 +64,7 @@ def remove_range(focus, viewnum, attr, start, end):
     return
 
 def add_range(focus, viewnum, attr, start, end):
-    m1 = focus.call("doc:vmark-get", viewnum, start, 3, ret='mark2')
+    m1 = focus.call("doc:vmark-prev", viewnum, start, ret='mark')
     if m1 and m1[attr]:
         m1 = m1.next()
         # can move m1 down as needed
@@ -74,7 +74,7 @@ def add_range(focus, viewnum, attr, start, end):
     else:
         m1 = None
         # must create new mark, or move a later mark up
-    m2 = focus.call("doc:vmark-get", viewnum, end, 3, ret='mark2')
+    m2 = focus.call("doc:vmark-prev", viewnum, end, ret='mark')
     if m2 and not m2[attr]:
         if m2 == end:
              m2 = m2.prev()
@@ -114,7 +114,7 @@ def add_range(focus, viewnum, attr, start, end):
 
 def choose_range(focus, viewnum, attr, start, end):
     # contract start-end so that none of it is in-range
-    m1 = focus.call("doc:vmark-get", viewnum, start, 3, ret='mark2')
+    m1 = focus.call("doc:vmark-prev", viewnum, start, ret='mark')
     if m1 and not m1[attr]:
         m2 = m1.next()
         # start not in-range, end must not exceed m1

@@ -643,11 +643,18 @@ DEF_CMD(doc_vmarkget)
 				       ci->num, ci->focus);
 	if (ci->num2 == 2)
 		m2 = doc_new_mark(ci->home, ci->num, ci->focus);
-	if (ci->num2 == 3 && ci->mark)
-		m2 = do_vmark_at_or_before(ci->home->data, ci->mark,
-					   ci->num, ci->focus);
 	return comm_call(ci->comm2, "callback:vmark", ci->focus,
 			 0, m, NULL, 0, m2) ?: 1;
+}
+
+DEF_CMD(doc_vmarkprev)
+{
+	struct mark *m = NULL;
+	if (ci->mark)
+		m = do_vmark_at_or_before(ci->home->data, ci->mark,
+					   ci->num, ci->focus);
+	comm_call(ci->comm2, "callback:vmark", ci->focus, 0, m);
+	return 1;
 }
 
 DEF_CMD(doc_drop_cache)
@@ -1229,6 +1236,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
 	key_add(doc_default_cmd, "doc:del-view", &doc_delview);
 	key_add(doc_default_cmd, "doc:vmark-get", &doc_vmarkget);
+	key_add(doc_default_cmd, "doc:vmark-prev", &doc_vmarkprev);
 	key_add(doc_default_cmd, "get-attr", &doc_get_attr);
 	key_add(doc_default_cmd, "doc:set-name", &doc_set_name);
 	key_add(doc_default_cmd, "doc:destroy", &doc_do_destroy);

@@ -974,8 +974,8 @@ struct mark *vmark_at_point(struct pane *p safe, int view,
 struct mark *vmark_at_or_before(struct pane *p safe, struct mark *m safe,
 				int view, struct pane *owner)
 {
-	return home_call_ret(mark2, p, "doc:vmark-get", owner?:p,
-			     view, m, NULL, 3);
+	return home_call_ret(mark, p, "doc:vmark-prev", owner?:p,
+			     view, m);
 }
 
 struct mark *vmark_new(struct pane *p safe, int view, struct pane *owner)

@@ -188,7 +188,7 @@ class MakePane(edlib.Pane):
             elif ch == '\n':
                 ln -= 1
         if ln == 1:
-            mk = d.call("doc:vmark-get", self, v, lm, 3, ret='mark2')
+            mk = d.call("doc:vmark-prev", self, v, lm, ret='mark')
             if not mk or mk['line'] != lineno:
                 mk = edlib.Mark(d, v, owner=self)
                 mk.to_mark(lm)
@@ -515,7 +515,7 @@ class MakePane(edlib.Pane):
 
         self.point = None
         self.note_ok = "First"
-        p = self.call("doc:vmark-get", self.viewnum, mark, 3, ret='mark2')
+        p = self.call("doc:vmark-prev", self.viewnum, mark, ret='mark')
         if p:
             self.point = p.prev()
 
