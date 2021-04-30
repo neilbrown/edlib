@@ -3,7 +3,7 @@
  * May be distributed under terms of GPLv2 - see file:COPYING
  *
  * This module provides render-line and render-line-prev, making use of
- * the chars returned by doc:step.
+ * the chars returned by doc:char.
  * A line is normally text ending with a newline.  However if no newline
  * is found in a long distance, we drop a mark and use that as the start
  * of a line.

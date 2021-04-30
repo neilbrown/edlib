@@ -8,7 +8,7 @@
  *
  * We create our own set of marks and place them at the start of
  * quartets of base64 chars (which means start of triplets of visible chars)
- * We intercept doc:step.
+ * We intercept doc:char.
  * To find how to interpret a given position, we find the previous mark,
  * and move forward, counting chars, until we reach the position.
  * Every MAX_QUAD we create a new mark.

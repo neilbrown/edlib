@@ -1960,7 +1960,7 @@ static PyObject *Mark_clip(Mark *self safe, PyObject *args)
 
 static PyObject *Mark_step(Mark *self safe, PyObject *args)
 {
-	/* Convenience function to help implement doc:step */
+	/* Convenience function to help implement doc:char */
 	int forward = 1;
 	int ret = PyArg_ParseTuple(args, "i", &forward);
 

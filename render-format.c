@@ -358,7 +358,7 @@ DEF_CMD(format_content2)
 	 *
 	 */
 	struct mark *m = ci->mark;
-	struct commcache dstep = CCINIT;
+	struct commcache dchar = CCINIT;
 	int nxt;
 
 	if (!m || !ci->comm2)
@@ -367,10 +367,10 @@ DEF_CMD(format_content2)
 		/* Cannot handle bytes */
 		return Einval;
 
-	nxt = ccall(&dstep, "doc:step", ci->home, 1, m, NULL, 1);
+	nxt = ccall(&dchar, "doc:char", ci->home, 1, m);
 	while (nxt != CHAR_RET(WEOF) &&
 	       comm_call(ci->comm2, "consume", ci->home, nxt, m) > 0)
-		nxt = ccall(&dstep, "doc:step", ci->home, 1, m, NULL, 1);
+		nxt = ccall(&dchar, "doc:char", ci->home, 1, m);
 
 	return 1;
 }

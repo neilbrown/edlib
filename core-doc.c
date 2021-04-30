@@ -725,7 +725,7 @@ DEF_CMD(doc_default_content)
 	 * content.  So for a directory listing, it is the listing, not
 	 * one newline per file.
 	 * This is used for 'search' and 'copy'.
-	 * This default version calls doc:step and is used when the actual
+	 * This default version calls doc:char and is used when the actual
 	 * and apparent content are the same.
 	 *
 	 * .mark is 'location': to start.  This is moved forwards
@@ -733,19 +733,19 @@ DEF_CMD(doc_default_content)
 	 *
 	 */
 	struct mark *m = ci->mark;
-	struct commcache dstep = CCINIT;
+	struct commcache dchar = CCINIT;
 	int nxt;
-	char *cmd = "doc:step";
+	char *cmd = "doc:char";
 
 	if (!m || !ci->comm2)
 		return Enoarg;
 	if (ci->num)
-		cmd = "doc:step-bytes";
+		cmd = "doc:byte";
 
-	nxt = ccall(&dstep, cmd, ci->home, 1, m, NULL, 1);
+	nxt = ccall(&dchar, cmd, ci->home, 1, m);
 	while (nxt > 0 && nxt != CHAR_RET(WEOF) &&
 	       comm_call(ci->comm2, "consume", ci->home, nxt, m) > 0)
-		nxt = ccall(&dstep, cmd, ci->home, 1, m, NULL, 1);
+		nxt = ccall(&dchar, cmd, ci->home, 1, m);
 
 	return nxt < 0 ? nxt : 1;
 }
