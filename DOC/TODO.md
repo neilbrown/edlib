@@ -108,7 +108,7 @@ Core features
 - [X] separate various doc:vmark-get functions and/or make them easily available
       from python
 - [X] 'log' should handle utf8 correctly.
-- [ ] doc_write_file should use doc:content
+- [X] doc_write_file should use doc:content
 - [ ] guard against mark seq number over-flowing.
 - [ ] use the time-keeping stack to allow an edlib stack-trace to be reported
       Or provide linkage from one call() to the next which can be walked and
@@ -561,7 +561,8 @@ Module features
       use mime-types to intuit type from name?
 - [X] support mailcap ???
 - [ ] make it practical for 'text' documents to contain non-utf8 so that
-      "Save" can copy to a buffer.
+      "Save" can copy to a buffer.  There is some support for a charset
+      to be "8bit" (hex-mode only).  Maybe that is part of the answer.
 - [ ] error check 'external viewer' code
 - [ ] add module for external-view which creates a unique temp file and
       removes it when the viewer is done.
