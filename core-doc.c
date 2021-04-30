@@ -773,7 +773,7 @@ DEF_CB(get_str_callback)
 	 * Return Efalse to stop, 1 if char was consumed,
 	 * 1+N (N <= ->num2) if N bytes from ->str were consumed.
 	 */
-	wint_t wch = ci->num & 0xFFFFF;
+	wint_t wch = ci->num & 0x1FFFFF;
 	struct getstr *g = container_of(ci->comm, struct getstr, c);
 
 	if (!ci->mark)

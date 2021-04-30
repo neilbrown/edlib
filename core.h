@@ -159,7 +159,7 @@ extern struct map *doc_default_cmd safe;
 void doc_setup(struct pane *ed safe);
 void log_setup(struct pane *ed safe);
 
-#define CHAR_RET(_c) ((_c & 0xFFFFF) | 0x100000)
+#define CHAR_RET(_c) ((_c & 0x1FFFFF) | 0x200000)
 
 #define is_eol(c) ({int __c = c; __c == '\n' || __c == '\v' || __c == '\f'; })
 

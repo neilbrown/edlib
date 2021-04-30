@@ -534,10 +534,10 @@ wint_t __doc_step(struct pane *p safe, struct mark *m,
 
 	if (ret <= 0)
 		return WEOF;
-	if (ret >= 0x1fffff)
+	if ((unsigned)ret >= CHAR_RET(WEOF))
 		return WEOF;
 	else
-		return ret & 0xfffff;
+		return ret & 0x1fffff;
 }
 
 /* Move the point so it is at the same location as the mark, both in the

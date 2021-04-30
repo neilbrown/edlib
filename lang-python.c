@@ -1036,7 +1036,7 @@ static PyObject *choose_ret(int rv, struct pyret *pr safe)
 			Py_INCREF(Py_None);
 			return Py_None;
 		}
-		return PyUnicode_FromFormat("%c", rv & 0xFFFFF);
+		return PyUnicode_FromFormat("%c", rv & 0x1FFFFF);
 	}
 	return PyLong_FromLong(rv);
 }
@@ -2745,7 +2745,7 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, MARK_UNGROUPED);
 	PyModule_AddIntMacro(m, MARK_POINT);
 
-	PyModule_AddIntConstant(m, "WEOF", 0x1FFFFF);
+	PyModule_AddIntConstant(m, "WEOF", 0x3FFFFF);
 	call_comm("global-set-command", ed, &python_load, 0, NULL, "python-load");
 	call_comm("global-set-command", ed, &python_load_module,
 		  0, NULL, "global-load-modules:python");
