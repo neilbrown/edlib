@@ -365,6 +365,50 @@ struct command *key_lookup_cmd(struct map *m safe, const char *c safe)
 	return NULL;
 }
 
+/* FIXME this makes lots of things non re-entrant */
+static struct backtrace {
+	struct command *comm safe;
+	const struct cmd_info *ci safe;
+	struct backtrace *prev;
+} *backtrace;
+
+void LOG_BT(void)
+{
+	struct backtrace *bt;
+	LOG("Start Backtrace:");
+	for (bt = backtrace; bt; bt = bt->prev) {
+		const struct cmd_info *ci = bt->ci;
+		LOG(" %p \"%s\" %p %d %p \"%s\" %d %p \"%s\" (%d,%d) %p",
+		    ci->home, ci->key, ci->focus,
+		    ci->num, ci->mark, ci->str,
+		    ci->num2, ci->mark2, ci->str2,
+		    ci->x, ci->y, ci->comm2);
+	}
+	LOG("End Backtrace");
+}
+
+static int do_comm_call(struct command *comm safe,
+			const struct cmd_info *ci safe)
+{
+	struct backtrace bt;
+	int ret;
+
+	/* FIXME I need a better way to skip lookup functions, such as
+	 * python_pane_call.
+	 * Also I need to catch callbacks more directly I think.
+	 */
+	if (comm->func == key_lookup_cmd_func ||
+	    comm->func == key_handle)
+		return comm->func(ci);
+	bt.comm = comm;
+	bt.ci = ci;
+	bt.prev = backtrace;
+	backtrace = &bt;
+	ret = comm->func(ci);
+	backtrace = bt.prev;
+	return ret;
+}
+
 int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 {
 	struct command *comm;
@@ -385,7 +429,7 @@ int key_lookup(struct map *m safe, const struct cmd_info *ci safe)
 		if (comm->func == keymap_list_func)
 			((struct cmd_info*)ci)->comm = (struct command *safe)m;
 
-		return comm->func(ci);
+		return do_comm_call(comm, ci);
 	}
 }
 
@@ -403,7 +447,7 @@ int key_lookup_prefix(struct map *m safe, const struct cmd_info *ci safe)
 		if (comm && comm != prev) {
 			((struct cmd_info*)ci)->comm = comm;
 			((struct cmd_info*)ci)->key = m->keys[pos];
-			ret = comm->func(ci);
+			ret = do_comm_call(comm, ci);
 			ASSERT(ret >= 0 || ret < Eunused);
 			prev = comm;
 		}
@@ -436,7 +480,7 @@ int key_handle(const struct cmd_info *ci safe)
 
 	time_start_key(ci->key);
 	if ((void*) ci->comm) {
-		int ret = ci->comm->func(ci);
+		int ret = do_comm_call(ci->comm, ci);
 		time_stop_key(ci->key);
 		return ret;
 	}
@@ -456,7 +500,7 @@ int key_handle(const struct cmd_info *ci safe)
 		if (p->handle && !(p->damaged & DAMAGED_DEAD)) {
 			vci->home = p;
 			vci->comm = p->handle;
-			ret = p->handle->func(ci);
+			ret = do_comm_call(p->handle, ci);
 		}
 		if (ret != Efallthrough) {
 			time_stop_key(ci->key);

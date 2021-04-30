@@ -2736,6 +2736,13 @@ static PyObject *py_LOG(PyObject *self, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *py_LOG_BT(PyObject *self, PyObject *args)
+{
+	LOG_BT();
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef edlib_methods[] = {
 	{"time_start", py_time_start, METH_VARARGS,
 	 "Record start time"},
@@ -2743,6 +2750,8 @@ static PyMethodDef edlib_methods[] = {
 	 "Record stop time"},
 	{"LOG", py_LOG, METH_VARARGS,
 	 "Generate log message"},
+	{"LOG_BT", py_LOG_BT, METH_NOARGS,
+	 "Generate backtrace message"},
 	{NULL, NULL, 0, NULL}
 };
 

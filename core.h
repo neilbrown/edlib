@@ -51,6 +51,7 @@ struct generic_doc_ref {
 };
 
 void LOG(char *fmt, ...);
+void LOG_BT(void);
 
 /* The 'editor' contains (by reference) everything else.
  * This captures and documents the global states, and allows
