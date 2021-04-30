@@ -329,7 +329,7 @@ DEF_CMD(qp_content)
 
 	if (!ci->comm2 || !ci->mark)
 		return Enoarg;
-	/* No need to check ->num as providing bytes as chars
+	/* No need to check ->key as providing bytes as chars
 	 * is close enough.
 	 */
 
@@ -366,6 +366,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(qp_map, "doc:char", &qp_char);
 	key_add(qp_map, "doc:byte", &qp_char);
 	key_add(qp_map, "doc:content", &qp_content);
+	key_add(qp_map, "doc:content-bytes", &qp_content);
 
 	call_comm("global-set-command", ed, &qp_attach, 0, NULL, "attach-quoted_printable");
 	call_comm("global-set-command", ed, &qp_attach, 0, NULL, "attach-qprint");

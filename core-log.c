@@ -138,6 +138,7 @@ DEF_CMD(log_content)
 	struct logbuf *b, *first, *last;
 	int head, tail;
 	int size = 0;
+	int bytes = strcmp(ci->key, "doc:content-bytes") == 0;
 
 	if (!from)
 		return Enoarg;
@@ -184,7 +185,7 @@ DEF_CMD(log_content)
 			const char *ss = s;
 			wint_t wc;
 
-			if (ci->num2)
+			if (bytes)
 				wc = *s++;
 			else
 				wc = get_utf8(&s, s+ln);
@@ -394,6 +395,7 @@ void log_setup(struct pane *ed safe)
 
 	key_add_chain(log_map, doc_default_cmd);
 	key_add(log_map, "doc:content", &log_content);
+	key_add(log_map, "doc:content-bytes", &log_content);
 	key_add(log_map, "doc:set-ref", &log_set_ref);
 	key_add(log_map, "doc:char", &log_char);
 	key_add(log_map, "doc:destroy", &log_destroy);

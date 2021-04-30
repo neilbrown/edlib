@@ -721,12 +721,11 @@ DEF_CMD(doc_get_point)
 DEF_CMD(doc_default_content)
 {
 	/* doc:content delivers one char at a time to a callback.
-	 * The chars are the apparent content, rather than the actual
-	 * content.  So for a directory listing, it is the listing, not
-	 * one newline per file.
 	 * This is used for 'search' and 'copy'.
-	 * This default version calls doc:char and is used when the actual
-	 * and apparent content are the same.
+	 * This default version calls doc:char which is simple, but might
+	 * be slow.
+	 *
+	 * If called as doc:content-bytes: return bytes, not chars
 	 *
 	 * .mark is 'location': to start.  This is moved forwards
 	 * .comm2 is 'consume': pass char mark and report if finished.
@@ -739,7 +738,7 @@ DEF_CMD(doc_default_content)
 
 	if (!m || !ci->comm2)
 		return Enoarg;
-	if (ci->num)
+	if (strcmp(ci->key, "doc:content-bytes") == 0)
 		cmd = "doc:byte";
 
 	nxt = ccall(&dchar, cmd, ci->home, 1, m);
@@ -830,8 +829,8 @@ DEF_CMD(doc_get_str)
 		if (to)
 			call("doc:set-ref", ci->focus, 0, to);
 	}
-	call_comm("doc:content", ci->focus, &g.c, bytes, m, NULL,
-		  0, to);
+	call_comm(bytes ? "doc:content-bytes" : "doc:content",
+		  ci->focus, &g.c, 0, m, NULL, 0, to);
 	mark_free(m);
 	if (to != ci->mark && to != ci->mark2)
 		mark_free(to);
@@ -1251,6 +1250,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:get-bytes", &doc_get_str);
 	key_add(doc_default_cmd, "doc:write-file", &doc_write_file);
 	key_add(doc_default_cmd, "doc:content", &doc_default_content);
+	key_add(doc_default_cmd, "doc:content-bytes", &doc_default_content);
 	key_add(doc_default_cmd, "doc:push-point", &doc_push_point);
 	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
 	key_add(doc_default_cmd, "doc:attach-view", &doc_attach_view);

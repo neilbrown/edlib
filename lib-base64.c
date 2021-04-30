@@ -309,7 +309,7 @@ DEF_CMD(base64_content)
 
 	if (!ci->comm2 || !ci->mark)
 		return Enoarg;
-	/* No need to check ->num as providing bytes as chars
+	/* No need to check ->key as providing bytes as chars
 	 * is close enough.
 	 */
 
@@ -368,6 +368,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(b64_map, "doc:char", &base64_char);
 	key_add(b64_map, "doc:byte", &base64_char);
 	key_add(b64_map, "doc:content", &base64_content);
+	key_add(b64_map, "doc:content-bytes", &base64_content);
 	key_add(b64_map, "Close", &b64_close);
 	key_add(b64_map, "Free", &edlib_do_free);
 	key_add(b64_map, "Notify:clip", &b64_clip);

@@ -1771,7 +1771,7 @@ DEF_CMD(text_content)
 	struct mark *m;
 	struct text *t = container_of(d, struct text, doc);
 	struct text_chunk *c, *first, *last;
-	int bytes = ci->num2;
+	int bytes = strcmp(ci->key, "doc:content-bytes") == 0;
 	int l = 0, head, tail;
 	int size = 0;
 
@@ -2522,6 +2522,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:load-file", &text_load_file);
 	key_add(text_map, "doc:same-file", &text_same_file);
 	key_add(text_map, "doc:content", &text_content);
+	key_add(text_map, "doc:content-bytes", &text_content);
 	key_add(text_map, "doc:set-ref", &text_set_ref);
 	key_add(text_map, "doc:save-file", &text_save_file);
 	key_add(text_map, "doc:write-file", &text_write_file);

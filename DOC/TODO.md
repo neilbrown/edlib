@@ -102,7 +102,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
-- [ ] review all use of 'bytes' for doc:content.  Maybe doc:content-bytes
+- [X] review all use of 'bytes' for doc:content.  Maybe doc:content-bytes
 - [X] make Move-Word/WORD/EOL into doc:word/WORD/eol in doc_defaults
 - [X] change doc:step to accept a count. Returns char after or before final location
 - [ ] separate various doc:vmark-get functions and/or make them easily available

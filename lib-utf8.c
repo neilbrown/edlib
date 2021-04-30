@@ -187,6 +187,7 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(utf8_map, "doc:char", &utf8_char);
 	key_add(utf8_map, "doc:content", &utf8_content);
+	/* No doc:content-bytes, that wouldn't make sense */
 
 	call_comm("global-set-command", ed, &utf8_attach, 0, NULL, "attach-charset-utf-8");
 	call_comm("global-set-command", ed, &utf8_attach, 0, NULL, "attach-utf8");

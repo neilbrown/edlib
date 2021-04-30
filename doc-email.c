@@ -1040,6 +1040,7 @@ static void email_init_map(void)
 	key_add(email_view_map, "Free", &email_view_free);
 	key_add(email_view_map, "doc:char", &email_char);
 	key_add(email_view_map, "doc:content", &email_content);
+	key_add(email_view_map, "doc:content-bytes", &email_content);
 	key_add(email_view_map, "doc:set-ref", &email_set_ref);
 	key_add(email_view_map, "doc:set-attr", &email_view_set_attr);
 	key_add(email_view_map, "doc:get-attr", &email_view_get_attr);

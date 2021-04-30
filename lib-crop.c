@@ -220,5 +220,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(crop_map, "doc:write_file", &crop_write);
 	key_add(crop_map, "doc:char", &crop_char);
 	key_add(crop_map, "doc:content", &crop_content);
+	key_add(crop_map, "doc:content-bytes", &crop_content);
 	key_add(crop_map, "Notify:clip", &crop_clip);
 }

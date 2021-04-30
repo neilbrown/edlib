@@ -1472,6 +1472,7 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(charset_map, "doc:char", &charset_char);
 	key_add(charset_map, "doc:content", &charset_content);
+	/* No doc:content-bytes - that wouldn't make sense */
 
 	call_comm("global-set-command", ed, &win1251_attach, 0, NULL,
 		"attach-charset-windows-1251");

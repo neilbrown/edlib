@@ -740,6 +740,7 @@ static void mp_init_map(void)
 	key_add(mp_map, "doc:set-ref", &mp_set_ref);
 	key_add(mp_map, "doc:char", &mp_char);
 	key_add(mp_map, "doc:content", &mp_content);
+	key_add(mp_map, "doc:content-bytes", &mp_content);
 	key_add(mp_map, "doc:get-attr", &mp_attr);
 	key_add(mp_map, "doc:set-attr", &mp_set_attr);
 	key_add(mp_map, "doc:step-part", &mp_step_part);
