@@ -1634,6 +1634,35 @@ DEF_CMD(text_step_bytes)
 	return CHAR_RET(ret);
 }
 
+DEF_CMD(text_byte)
+{
+	struct mark *m = ci->mark;
+	struct mark *end = ci->mark2;
+	int steps = ci->num;
+	int forward = steps > 0;
+	int ret = Einval;
+
+	if (!m)
+		return Enoarg;
+	if (end && mark_same(m, end))
+		return 1;
+	if (end && (end->seq < m->seq) != (steps < 0))
+		/* Can never cross 'end' */
+		return Einval;
+	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+		ret = comm_call(&text_step_bytes, "", ci->home, forward, m, NULL, 1);
+		steps -= forward*2 - 1;
+	}
+	if (end)
+		return 1 + (forward ? ci->num - steps : steps - ci->num);
+	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
+		return ret;
+	if (ci->num && (ci->num2 < 0) == forward)
+		return ret;
+	/* Want the 'next' char */
+	return comm_call(&text_step_bytes, "", ci->home, ci->num2 > 0, m, NULL, 0);
+}
+
 static bool _text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
 			   struct doc_ref *r2 safe)
 {
@@ -2504,6 +2533,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:step", &text_step);
 	key_add(text_map, "doc:char", &text_char);
 	key_add(text_map, "doc:step-bytes", &text_step_bytes);
+	key_add(text_map, "doc:byte", &text_byte);
 	key_add(text_map, "doc:modified", &text_modified);
 	key_add(text_map, "doc:set:readonly", &text_readonly);
 	key_add(text_map, "doc:notify:doc:revisit", &text_revisited);
