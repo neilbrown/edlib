@@ -346,6 +346,35 @@ DEF_CMD(mp_step)
 	return ret == -1 ? (int)CHAR_RET(WEOF) : ret;
 }
 
+DEF_CMD(mp_char)
+{
+	struct mark *m = ci->mark;
+	struct mark *end = ci->mark2;
+	int steps = ci->num;
+	int forward = steps > 0;
+	int ret = Einval;
+
+	if (!m)
+		return Enoarg;
+	if (end && mark_same(m, end))
+		return 1;
+	if (end && (end->seq < m->seq) != (steps < 0))
+		/* Can never cross 'end' */
+		return Einval;
+	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+		ret = comm_call(&mp_step, "doc:step", ci->home, forward, m, ci->str, 1);
+		steps -= forward*2 - 1;
+	}
+	if (end)
+		return 1 + (forward ? ci->num - steps : steps - ci->num);
+	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
+		return ret;
+	if (ci->num && (ci->num2 < 0) == forward)
+		return ret;
+	/* Want the 'next' char */
+	return comm_call(&mp_step, "doc:step", ci->home, ci->num2 > 0, m, ci->str, 0);
+}
+
 DEF_CMD(mp_step_part)
 {
 	/* Step forward or backward to part boundary.
@@ -709,6 +738,7 @@ static void mp_init_map(void)
 	key_add_chain(mp_map, doc_default_cmd);
 	key_add(mp_map, "doc:set-ref", &mp_set_ref);
 	key_add(mp_map, "doc:step", &mp_step);
+	key_add(mp_map, "doc:char", &mp_char);
 	key_add(mp_map, "doc:content", &mp_content);
 	key_add(mp_map, "doc:get-attr", &mp_attr);
 	key_add(mp_map, "doc:set-attr", &mp_set_attr);

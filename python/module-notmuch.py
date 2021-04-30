@@ -353,6 +353,31 @@ class notmuch_main(edlib.Doc):
             mark.offset = len(self.searches.current)
         return 1
 
+    def handle_doc_char(self, key, focus, mark, num, num2, mark2, **a):
+        "handle:doc:char"
+        if not mark:
+            return edlib.Enoarg
+        end = mark2
+        steps = num
+        forward = 1 if steps > 0 else 0
+        if end and end == mark:
+            return 1
+        if end and (end < mark) != (steps < 0):
+            # can never cross 'end'
+            return edlib.Einval
+        ret = edlib.Einval
+        while steps and ret != edlib.WEOF and (not end or mark == end):
+            ret = self.handle_step(key, mark, forward, 1)
+            steps -= forward * 2 - 1
+        if end:
+            return 1 + (num - steps if forward else steps - num)
+        if ret == edlib.WEOF or num2 == 0:
+            return ret
+        if num and (num2 < 0) == (num > 0):
+            return ret
+        # want the next character
+        return self.handle_step(key, mark, 1 if num2 > 0 else 0, 0)
+
     def handle_step(self, key, mark, num, num2, **a):
         "handle:doc:step"
         forward = num
@@ -1140,6 +1165,31 @@ class notmuch_query(edlib.Doc):
             self.setpos(mark, self.threadids[0], 0)
         mark.offset = 0
         return 1
+
+    def handle_doc_char(self, key, focus, mark, num, num2, mark2, **a):
+        "handle:doc:char"
+        if not mark:
+            return edlib.Enoarg
+        end = mark2
+        steps = num
+        forward = 1 if steps > 0 else 0
+        if end and end == mark:
+            return 1
+        if end and (end < mark) != (steps < 0):
+            # can never cross 'end'
+            return edlib.Einval
+        ret = edlib.Einval
+        while steps and ret != edlib.WEOF and (not end or mark == end):
+            ret = self.handle_step(key, mark, forward, 1)
+            steps -= forward * 2 - 1
+        if end:
+            return 1 + (num - steps if forward else steps - num)
+        if ret == edlib.WEOF or num2 == 0:
+            return ret
+        if num and (num2 < 0) == (num > 0):
+            return ret
+        # want the next character
+        return self.handle_step(key, mark, 1 if num2 > 0 else 0, 0)
 
     def handle_step(self, key, mark, num, num2, **a):
         "handle:doc:step"
@@ -2271,6 +2321,31 @@ class notmuch_query_view(edlib.Pane):
                 return 1
         # otherwise fall-through to real start or end
         return edlib.Efallthrough
+
+    def handle_doc_char(self, key, focus, mark, num, num2, mark2, **a):
+        "handle:doc:char"
+        if not mark:
+            return edlib.Enoarg
+        end = mark2
+        steps = num
+        forward = 1 if steps > 0 else 0
+        if end and end == mark:
+            return 1
+        if end and (end < mark) != (steps < 0):
+            # can never cross 'end'
+            return edlib.Einval
+        ret = edlib.Einval
+        while steps and ret != edlib.WEOF and (not end or mark == end):
+            ret = self.handle_step(key,focus, mark, forward, 1)
+            steps -= forward * 2 - 1
+        if end:
+            return 1 + (num - steps if forward else steps - num)
+        if ret == edlib.WEOF or num2 == 0:
+            return ret
+        if num and (num2 < 0) == (num > 0):
+            return ret
+        # want the next character
+        return self.handle_step(key, focus, mark, 1 if num2 > 0 else 0, 0)
 
     def handle_step(self, key, focus, mark, num, num2, **a):
         "handle:doc:step"

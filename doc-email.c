@@ -859,6 +859,36 @@ DEF_CMD(email_step)
 	return ret;
 }
 
+DEF_CMD(email_char)
+{
+	struct mark *m = ci->mark;
+	struct mark *end = ci->mark2;
+	int steps = ci->num;
+	int forward = steps > 0;
+	int ret = Einval;
+
+	if (!m)
+		return Enoarg;
+	if (end && mark_same(m, end))
+		return 1;
+	if (end && (end->seq < m->seq) != (steps < 0))
+		/* Can never cross 'end' */
+		return Einval;
+	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+		ret = comm_call(&email_step, "doc:step", ci->home,
+				forward, m, NULL, 1);
+		steps -= forward*2 - 1;
+	}
+	if (end)
+		return 1 + (forward ? ci->num - steps : steps - ci->num);
+	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
+		return ret;
+	if (ci->num &&(ci->num2 < 0) == forward)
+		return ret;
+	/* Want the 'next' char */
+	return comm_call(&email_step, "doc:step", ci->home, ci->num2 > 0, m, NULL, 0);
+}
+
 DEF_CMD(email_content)
 {
 	/* Call the multipart doc:content telling in
@@ -1008,6 +1038,7 @@ static void email_init_map(void)
 	email_view_map = key_alloc();
 	key_add(email_view_map, "Free", &email_view_free);
 	key_add(email_view_map, "doc:step", &email_step);
+	key_add(email_view_map, "doc:char", &email_char);
 	key_add(email_view_map, "doc:content", &email_content);
 	key_add(email_view_map, "doc:set-ref", &email_set_ref);
 	key_add(email_view_map, "doc:set-attr", &email_view_set_attr);

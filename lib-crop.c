@@ -105,6 +105,35 @@ DEF_CMD(crop_step)
 	return ret;
 }
 
+DEF_CMD(crop_char)
+{
+	struct mark *m = ci->mark;
+	struct mark *end = ci->mark2;
+	int steps = ci->num;
+	int forward = steps > 0;
+	int ret = Einval;
+
+	if (!m)
+		return Enoarg;
+	if (end && mark_same(m, end))
+		return 1;
+	if (end && (end->seq < m->seq) != (steps < 0))
+		/* Can never cross 'end' */
+		return Einval;
+	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+		ret = comm_call(&crop_step, "doc:step", ci->home, forward, m, NULL, 1);
+		steps -= forward*2 - 1;
+	}
+	if (end)
+		return 1 + (forward ? ci->num - steps : steps - ci->num);
+	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
+		return ret;
+	if (ci->num && (ci->num2 < 0) == forward)
+		return ret;
+	/* Want the 'next' char */
+	return comm_call(&crop_step, "doc:step", ci->home, ci->num2 > 0, m, NULL, 0);
+}
+
 DEF_CMD(crop_clip)
 {
 	struct crop_data *cd = ci->home->data;
@@ -191,6 +220,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(crop_map, "Free", &edlib_do_free);
 	key_add(crop_map, "doc:write_file", &crop_write);
 	key_add(crop_map, "doc:step", &crop_step);
+	key_add(crop_map, "doc:char", &crop_char);
 	key_add(crop_map, "doc:content", &crop_content);
 	key_add(crop_map, "Notify:clip", &crop_clip);
 }

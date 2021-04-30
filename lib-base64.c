@@ -214,6 +214,35 @@ retry:
 	return CHAR_RET(b);
 }
 
+DEF_CMD(base64_char)
+{
+	struct mark *m = ci->mark;
+	struct mark *end = ci->mark2;
+	int steps = ci->num;
+	int forward = steps > 0;
+	int ret = Einval;
+
+	if (!m)
+		return Enoarg;
+	if (end && mark_same(m, end))
+		return 1;
+	if (end && (end->seq < m->seq) != (steps < 0))
+		/* Can never cross 'end' */
+		return Einval;
+	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+		ret = comm_call(&base64_step, "", ci->home, forward, m, NULL, 1);
+		steps -= forward*2 - 1;
+	}
+	if (end)
+		return 1 + (forward ? ci->num - steps : steps - ci->num);
+	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
+		return ret;
+	if (ci->num && (ci->num2 < 0) == forward)
+		return ret;
+	/* Want the 'next' char */
+	return comm_call(&base64_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+}
+
 struct b64c {
 	struct command c;
 	struct command *cb;
@@ -337,6 +366,7 @@ void edlib_init(struct pane *ed safe)
 	b64_map = key_alloc();
 
 	key_add(b64_map, "doc:step", &base64_step);
+	key_add(b64_map, "doc:char", &base64_char);
 	key_add(b64_map, "doc:step-bytes", &base64_step);
 	key_add(b64_map, "doc:content", &base64_content);
 	key_add(b64_map, "Close", &b64_close);

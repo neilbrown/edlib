@@ -294,6 +294,35 @@ DEF_CMD(log_step)
 	return CHAR_RET(ret);
 }
 
+DEF_CMD(log_char)
+{
+	struct mark *m = ci->mark;
+	struct mark *end = ci->mark2;
+	int steps = ci->num;
+	int forward = steps > 0;
+	int ret = Einval;
+
+	if (!m)
+		return Enoarg;
+	if (end && mark_same(m, end))
+		return 1;
+	if (end && (end->seq < m->seq) != (steps < 0))
+		/* Can never cross 'end' */
+		return Einval;
+	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+		ret = comm_call(&log_step, "", ci->home, forward, m, NULL, 1);
+		steps -= forward*2 - 1;
+	}
+	if (end)
+		return 1 + (forward ? ci->num - steps : steps - ci->num);
+	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
+		return ret;
+	if (ci->num && (ci->num2 < 0) == forward)
+		return ret;
+	/* Want the 'next' char */
+	return comm_call(&log_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+}
+
 DEF_CMD(log_destroy)
 {
 	/* Not allowed to destroy this document
@@ -370,6 +399,7 @@ void log_setup(struct pane *ed safe)
 	key_add(log_map, "doc:content", &log_content);
 	key_add(log_map, "doc:set-ref", &log_set_ref);
 	key_add(log_map, "doc:step", &log_step);
+	key_add(log_map, "doc:char", &log_char);
 	key_add(log_map, "doc:destroy", &log_destroy);
 	key_add(log_map, "doc:log:append", &log_append);
 

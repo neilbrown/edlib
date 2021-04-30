@@ -186,6 +186,35 @@ retry:
 	}
 }
 
+DEF_CMD(qp_char)
+{
+	struct mark *m = ci->mark;
+	struct mark *end = ci->mark2;
+	int steps = ci->num;
+	int forward = steps > 0;
+	int ret = Einval;
+
+	if (!m)
+		return Enoarg;
+	if (end && mark_same(m, end))
+		return 1;
+	if (end && (end->seq < m->seq) != (steps < 0))
+		/* Can never cross 'end' */
+		return Einval;
+	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+		ret = comm_call(&qp_step, "", ci->home, forward, m, NULL, 1);
+		steps -= forward*2 - 1;
+	}
+	if (end)
+		return 1 + (forward ? ci->num - steps : steps - ci->num);
+	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
+		return ret;
+	if (ci->num && (ci->num2 < 0) == forward)
+		return ret;
+	/* Want the 'next' char */
+	return comm_call(&qp_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+}
+
 struct qpcb {
 	struct command c;
 	struct command *cb safe;
@@ -334,6 +363,7 @@ void edlib_init(struct pane *ed safe)
 	qp_map = key_alloc();
 
 	key_add(qp_map, "doc:step", &qp_step);
+	key_add(qp_map, "doc:char", &qp_char);
 	key_add(qp_map, "doc:step-bytes", &qp_step);
 	key_add(qp_map, "doc:content", &qp_content);
 

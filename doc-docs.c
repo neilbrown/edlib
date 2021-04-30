@@ -493,6 +493,35 @@ DEF_CMD(docs_step)
 	return CHAR_RET(ret);
 }
 
+DEF_CMD(docs_char)
+{
+	struct mark *m = ci->mark;
+	struct mark *end = ci->mark2;
+	int steps = ci->num;
+	int forward = steps > 0;
+	int ret = Einval;
+
+	if (!m)
+		return Enoarg;
+	if (end && mark_same(m, end))
+		return 1;
+	if (end && (end->seq < m->seq) != (steps < 0))
+		/* Can never cross 'end' */
+		return Einval;
+	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
+		ret = comm_call(&docs_step, "", ci->home, forward, m, NULL, 1);
+		steps -= forward*2 - 1;
+	}
+	if (end)
+		return 1 + (forward ? ci->num - steps : steps - ci->num);
+	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
+		return ret;
+	if (ci->num && (ci->num2 < 0) == forward)
+		return ret;
+	/* Want the 'next' char */
+	return comm_call(&docs_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+}
+
 DEF_CMD(docs_set_ref)
 {
 	struct doc *dc = ci->home->data;
@@ -764,6 +793,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:set-ref", &docs_set_ref);
 	key_add(docs_map, "doc:get-attr", &docs_doc_get_attr);
 	key_add(docs_map, "doc:step", &docs_step);
+	key_add(docs_map, "doc:char", &docs_char);
 	key_add(docs_map, "doc:destroy", &docs_destroy);
 	key_add(docs_map, "doc:cmd-f", &docs_do_open);
 	key_add(docs_map, "doc:cmd-\n", &docs_do_open);

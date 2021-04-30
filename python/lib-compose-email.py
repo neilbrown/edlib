@@ -412,6 +412,31 @@ class compose_email(edlib.Pane):
             m.step(0)
         return edlib.Efallthrough
 
+    def handle_doc_char(self, key, focus, mark, num, num2, mark2, **a):
+        "handle:doc:char"
+        if not mark:
+            return edlib.Enoarg
+        end = mark2
+        steps = num
+        forward = 1 if steps > 0 else 0
+        if end and end == mark:
+            return 1
+        if end and (end < mark) != (steps < 0):
+            # can never cross 'end'
+            return edlib.Einval
+        ret = edlib.Einval
+        while steps and ret != edlib.WEOF and (not end or mark == end):
+            ret = self.handle_doc_step(key, focus, mark, forward, 1)
+            steps -= forward * 2 - 1
+        if end:
+            return 1 + (num - steps if forward else steps - num)
+        if ret == edlib.WEOF or num2 == 0:
+            return ret
+        if num and (num2 < 0) == (num > 0):
+            return ret
+        # want the next character
+        return self.handle_doc_step(key, focus, mark, 1 if num2 > 0 else 0, 0)
+
     def handle_doc_step(self, key, focus, mark, num, num2, **a):
         "handle:doc:step"
         # if in a marker, only allow a space and newline to be seen
@@ -428,13 +453,13 @@ class compose_email(edlib.Pane):
                     return ' '
                 else:
                     # backward
-                    return edlib.Efallthrough
+                    return self.parent.call("doc:step", focus, mark, num, num2)
             else:
                 # at end of marker
-                return edlib.Efallthrough
+                return self.parent.call("doc:step", focus, mark, num, num2)
         if not m or not m['compose-type']:
             # not in a marker
-            return edlib.Efallthrough
+            return self.parent.call("doc:step", focus, mark, num, num2)
         # should be just before newline
         if num > 0:
             #forward, return newline
