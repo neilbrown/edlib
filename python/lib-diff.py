@@ -52,10 +52,10 @@ class DiffPane(edlib.Pane):
 
     def handle_close(self, key, focus, **a):
         "handle:Close"
-        m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+        m, l = self.vmarks(self.viewnum)
         while m:
             m.release()
-            m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+            m, l = self.vmarks(self.viewnum)
         self.call("doc:del-view", self.viewnum)
 
     def handle_next(self, key, focus, mark, **a):
@@ -90,7 +90,7 @@ class DiffPane(edlib.Pane):
                 return edlib.Efallthrough
 
             # check if we have highlighted the words
-            m = focus.call("doc:vmark-prev", self, self.viewnum, mark, ret='mark')
+            m = focus.vmark_at_or_before(self.viewnum, mark, self)
             if m:
                 st = int(m['start'])
             else:

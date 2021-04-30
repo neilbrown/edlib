@@ -105,7 +105,7 @@ Core features
 - [X] review all use of 'bytes' for doc:content.  Maybe doc:content-bytes
 - [X] make Move-Word/WORD/EOL into doc:word/WORD/eol in doc_defaults
 - [X] change doc:step to accept a count. Returns char after or before final location
-- [ ] separate various doc:vmark-get functions and/or make them easily available
+- [X] separate various doc:vmark-get functions and/or make them easily available
       from python
 - [X] 'log' should handle utf8 correctly.
 - [ ] doc_write_file should use doc:content
@@ -631,6 +631,7 @@ Module features
 - [X] open function
 - [X] make URLs clickable
 - [ ] detect and hide cited text
+- [ ] maybe detect "-----Original Message-----" as indicating cited text
 - [X] detect and highlight links
 - [ ] Make long to/cc headers truncate unless selected.
 - [X] select parts from multipart

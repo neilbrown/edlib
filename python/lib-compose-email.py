@@ -34,7 +34,7 @@ class compose_email(edlib.Pane):
         self.view = focus.call("doc:add-view", self) - 1
         self.complete_start = None
         self.find_markers()
-        m = self.call("doc:vmark-get", self.view, ret='mark')
+        m, l = self.vmarks(self.view)
         if not m:
             self.insert_header_mark()
         st = edlib.Mark(self)
@@ -136,7 +136,7 @@ class compose_email(edlib.Pane):
         return 1
 
     def copy_subject(self, key, focus, str, **a):
-        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        m2, l = self.vmarks(self.view)
         if m2:
             self.call("doc:replace", m2, m2, ("Subject: "+ self.pfx +": "
                                               + str.strip() + "\n"))
@@ -180,7 +180,7 @@ class compose_email(edlib.Pane):
     def add_addr_header(self, hdr, addr, need_angle = False):
         prefix = hdr + ": "
         wrap = False
-        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        m2, l = self.vmarks(self.view)
         if not m2:
             return
         if not addr:
@@ -208,21 +208,21 @@ class compose_email(edlib.Pane):
             self.parent.call("doc:replace", m2, m2, "\n")
 
     def find_empty_header(self, m):
-        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        m2,l = self.vmarks(self.view)
         try:
             self.call("text-search", "^[!-9;-~]+\\h*:\\h*$", m, m2)
             return True
         except:
             return False
     def find_any_header(self, m):
-        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        m2, l = self.vmarks(self.view)
         try:
             self.call("text-search", "^[!-9;-~]+\\h*:\\h*", m, m2)
             return True
         except:
             return False
     def to_body(self, m):
-        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        m2, l = self.vmarks(self.view)
         if m2:
             m2 = m2.next()
         if m2:
@@ -285,7 +285,7 @@ class compose_email(edlib.Pane):
     def check_header(self, header, content = ""):
         # if header doesn't already exist, at it at end
         m1 = edlib.Mark(self)
-        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        m2, l = self.vmarks(self.view)
         try:
             self.call("text-search", "^(?i:%s)\\h*:" % header, m1, m2)
         except:
@@ -299,7 +299,7 @@ class compose_email(edlib.Pane):
             return comm2("cb", focus, "<fg:red>")
         # at least go to end of line
         self.parent.call("doc:EOL", 1, mark)
-        m = self.call("doc:vmark-prev", self.view, mark, ret='mark')
+        m = self.vmark_at_or_before(self.view, mark)
         type = m['compose-type']
         if type == "headers":
             markup =  "<fg:red>Headers above, content below"
@@ -319,10 +319,10 @@ class compose_email(edlib.Pane):
 
     def handle_close(self, key, focus, **a):
         "handle:Close"
-        m = self.call("doc:vmark-get", self.view, ret='mark')
+        m, l = self.vmarks(self.view)
         while m:
             m.release()
-            m = self.call("doc:vmark-get", self.view, ret='mark')
+            m, l = self.vmarks(self.view)
         self.call("doc:del-view", self.view)
 
     def map_attr(self, key, focus, str, str2, mark, comm2, **a):
@@ -335,7 +335,7 @@ class compose_email(edlib.Pane):
             return 1
 
         # get previous mark and see if it is here
-        m = self.call("doc:vmark-prev", self.view, mark, ret='mark')
+        m = self.vmark_at_or_before(self.view, mark)
         if not m and str == "start-of-line":
             # start of a header line - set colour for tag and header, and wrap info
             rv = self.call("text-match", "(\\h+|[!-9;-~]+\\h*:)", mark.dup())
@@ -390,7 +390,7 @@ class compose_email(edlib.Pane):
         if mark2 < mark:
             mark, mark2 = mark2, mark
 
-        m = self.call("doc:vmark-prev", self.view, mark, ret='mark')
+        m = self.vmark_at_or_before(self.view, mark)
         if m and m['compose-type']:
             # must not edit a marker, but can insert a "\n" before
             if mark == mark2 and mark == m and str and str[-1] == '\n':
@@ -403,7 +403,7 @@ class compose_email(edlib.Pane):
             if m:
                 m.step(0)
             return edlib.Efallthrough
-        m2 = self.call("doc:vmark-prev", self.view, mark2, ret='mark')
+        m2 = self.vmark_at_or_before(self.view, mark2)
         if m2 != m:
             # not completely within a part, so fail
             return 1
@@ -441,7 +441,7 @@ class compose_email(edlib.Pane):
         # if in a marker, only allow a space and newline to be seen
         if not mark:
             return edlib.Enoarg
-        m = self.call("doc:vmark-prev", self.view, mark, ret='mark')
+        m = self.vmark_at_or_before(self.view, mark)
         if mark == m:
             if m['compose-type']:
                 # at start of marker
@@ -488,7 +488,7 @@ class compose_email(edlib.Pane):
         "handle:doc:get-attr"
         if not mark or not str or not comm2 or not str.startswith("fill:"):
             return edlib.Efallthrough
-        m = self.call("doc:vmark-prev", self.view, mark, ret='mark')
+        m = self.vmark_at_or_before(self.view, mark)
         if m:
             return edlib.Efallthrough
         # in headers, need a min-prefix and start-re for fill
@@ -591,7 +591,7 @@ class compose_email(edlib.Pane):
             return ret
         # Now find the body - mark is at the start
         end.to_mark(mark)
-        mbody = self.call("doc:vmark-get", self.view, ret='mark')
+        mbody, l = self.vmarks(self.view)
         try:
             self.call("text-search", "^[!-9;-~]", end, mbody)
         except:
@@ -617,7 +617,7 @@ class compose_email(edlib.Pane):
 
     def handle_tab(self, key, focus, mark, **a):
         "handle:K:Tab"
-        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        m2, l = self.vmarks(self.view)
         if mark > m2:
             return edlib.Efallthrough
         # in headers, TAB does various things:
@@ -632,7 +632,7 @@ class compose_email(edlib.Pane):
         return 1
     def handle_s_tab(self, key, focus, mark, **a):
         "handle:K:S:Tab"
-        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        m2, l = self.vmarks(self.view)
         if mark > m2:
             # After header, S:Tab goes to last header
             m = edlib.Mark(self)
@@ -650,7 +650,7 @@ class compose_email(edlib.Pane):
     def handle_commit(self, key, focus, **a):
         "handle:Commit"
         msg = email.message.EmailMessage()
-        m = self.call("doc:vmark-get", self.view, ret='mark')
+        m, l = self.vmarks(self.view)
         if m:
             m = m.next()
         else:
@@ -721,7 +721,7 @@ class compose_email(edlib.Pane):
 
     def handle_spell(self, key, focus, mark, **a):
         "handle:Spell:NextWord"
-        m2 = self.call("doc:vmark-get", self.view, ret='mark')
+        m2, l = self.vmarks(self.view)
         if not mark or not m2 or not m2.next() or mark > m2:
             return edlib.Efallthrough
         found_end = False

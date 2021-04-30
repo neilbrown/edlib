@@ -174,7 +174,7 @@ class MakePane(edlib.Pane):
         (d,v) = self.files[fname]
         lm = edlib.Mark(d)
         ln = int(lineno)
-        last = d.call("doc:vmark-get", v, self, ret='mark2')
+        first, last = d.vmarks(v, self)
         while last and int(last['line']) > ln:
             last = last.prev()
         if last:
@@ -188,7 +188,7 @@ class MakePane(edlib.Pane):
             elif ch == '\n':
                 ln -= 1
         if ln == 1:
-            mk = d.call("doc:vmark-prev", self, v, lm, ret='mark')
+            mk = d.vmark_at_or_before(v, lm, self)
             if not mk or mk['line'] != lineno:
                 mk = edlib.Mark(d, v, owner=self)
                 mk.to_mark(lm)
@@ -201,10 +201,10 @@ class MakePane(edlib.Pane):
             (d,v) = self.files[fn]
             if d != focus:
                 continue
-            m = d.call("doc:vmark-get", self, v, ret='mark')
+            m, l = d.vmarks(v, self)
             while m:
                 m.release()
-                m = d.call("doc:vmark-get", self, v, ret='mark')
+                m, l = d.vmarks(v, self)
             d.call("doc:del-view", v, self)
             del self.files[fn]
             break
@@ -241,7 +241,7 @@ class MakePane(edlib.Pane):
                 else:
                     p = None
             else:
-                p = self.call("doc:vmark-get", self.viewnum, ret='mark')
+                p, l = self.vmarks(self.viewnum)
             if p:
                 # p is the next note to show
                 self.point = p
@@ -252,7 +252,7 @@ class MakePane(edlib.Pane):
         if self.point:
             p = self.clear_render()
         else:
-            p = self.call("doc:vmark-get", self.viewnum, ret='mark')
+            p, l = self.vmarks(self.viewnum)
         if not p:
             return None
         self.point = None
@@ -351,10 +351,10 @@ class MakePane(edlib.Pane):
             self.backwards = False
         elif num > 0:
             # clear marks so that we parse again
-            m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+            m, l = self.vmarks(self.viewnum)
             while m:
                 m.release()
-                m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+                m, l = self.vmarks(self.viewnum)
             self.map = []
             self.last = None
             self.pos = None
@@ -421,7 +421,7 @@ class MakePane(edlib.Pane):
         (fname, lineno) = n
         if fname in self.files:
             (d,v) = self.files[fname]
-            mk = d.call("doc:vmark-get", self, v, ret='mark')
+            mk, l = d.vmarks(v, self)
             while mk and int(mk['line']) < int(lineno):
                 mk = mk.next()
             if mk and int(mk['line']) == int(lineno):
@@ -515,7 +515,7 @@ class MakePane(edlib.Pane):
 
         self.point = None
         self.note_ok = "First"
-        p = self.call("doc:vmark-prev", self.viewnum, mark, ret='mark')
+        p = self.vmark_at_or_before(self.viewnum, mark)
         if p:
             self.point = p.prev()
 
@@ -537,20 +537,20 @@ class MakePane(edlib.Pane):
 
     def handle_close(self, key, **a):
         "handle:Close"
-        m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+        m, l = self.vmarks(self.viewnum)
         while m:
             m.release()
-            m = self.call("doc:vmark-get", self.viewnum, ret='mark')
+            m, l = self.vmarks(self.viewnum)
         self.call("doc:del-view", self.viewnum)
         self.point = None
         self.pos = None
 
         for fn in self.files:
             (d,v) = self.files[fn]
-            m = d.call("doc:vmark-get", self, v, ret='mark')
+            m, l = d.vmarks(v, self)
             while m:
                 m.release()
-                m = d.call("doc:vmark-get", self, v, ret='mark')
+                m, l = d.vmarks(v, self)
             d.call("doc:del-view", v, self)
         del self.files
 

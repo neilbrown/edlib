@@ -75,16 +75,16 @@ class PresenterPane(edlib.Pane):
         self.lines_damaged = True
 
     def first_page(self):
-        return self.call("doc:vmark-get", self.pageview, ret = 'mark')
+        return self.vmarks(self.pageview)[0]
 
     def first_line(self):
-        return self.call("doc:vmark-get", self.attrview, ret= 'mark')
+        return self.vmarks(self.attrview)[0]
 
     def prev_page(self, m):
-        return self.call("doc:vmark-prev", self.pageview, m, ret = 'mark')
+        return self.vmark_at_or_before(self.pageview, m)
 
     def prev_line(self, m):
-        return self.call("doc:vmark-prev", self.attrview, m, ret = 'mark')
+        return self.vmark_at_or_before(self.attrview, m)
 
     def get_line_at(self, m):
         # call render-line at m

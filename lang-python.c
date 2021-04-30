@@ -896,6 +896,30 @@ DEF_CB(take_mark2)
 	return 1;
 }
 
+DEF_CB(take_2_marks)
+{
+	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
+	PyObject *m1, *m2;
+
+	if (pr->ret)
+		return Einval;
+	if (ci->mark)
+		m1 = Mark_Frommark(ci->mark);
+	else
+		m1 = Py_None;
+	if (ci->mark2)
+		m2 = Mark_Frommark(ci->mark2);
+	else
+		m2 = Py_None;
+
+	pr->ret = Py_BuildValue("OO", m1, m2);
+	if (ci->mark)
+		Py_DECREF(m1);
+	if (ci->mark2)
+		Py_DECREF(m2);
+	return 1;
+}
+
 DEF_CB(take_str)
 {
 	struct pyret *pr = container_of(ci->comm, struct pyret, comm);
@@ -940,6 +964,8 @@ static struct command *map_ret(char *ret safe)
 		return &take_mark;
 	if (strcmp(ret, "mark2") == 0)
 		return &take_mark2;
+	if (strcmp(ret, "mark2") == 0)
+		return &take_2_marks;
 	if (strcmp(ret, "str") == 0)
 		return &take_str;
 	if (strcmp(ret, "bytes") == 0)
@@ -1321,6 +1347,59 @@ static PyObject *Pane_step_prior(Pane *self safe, PyObject *args)
 	return Pane_step(self, args, -1, 0);
 }
 
+static PyObject *Pane_get_vmarks(Pane *self safe, PyObject *args)
+{
+	struct pyret pr;
+	Pane *owner = NULL;
+	int view = -1;
+	int ret;
+
+	if (!pane_valid(self))
+		return NULL;
+	ret = PyArg_ParseTuple(args, "i|O!", &view, &PaneType, &owner);
+	if (ret <= 0 || view < 0 || (owner && !pane_valid(owner))) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	memset(&pr, 0, sizeof(pr));
+	pr.comm = take_2_marks;
+	home_call_comm(self->pane, "doc:vmark-get",
+		       owner ? owner->pane : self->pane,
+		       &pr.comm, view);
+	if (pr.ret)
+		return pr.ret;
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyObject *Pane_vmark_at_or_before(Pane *self safe, PyObject *args)
+{
+	Mark *m = NULL;
+	Pane *owner = NULL;
+	struct pyret pr;
+	int view = -1;
+	int ret;
+
+	if (!pane_valid(self))
+		return NULL;
+	ret = PyArg_ParseTuple(args, "iO!|O!", &view, &MarkType, &m,
+			       &PaneType, &owner);
+	if (ret <= 0 || view < 0 || !m || !m->mark ||
+	    (owner && !pane_valid(owner))) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	}
+	memset(&pr, 0, sizeof(pr));
+	pr.comm = take_mark;
+	home_call_comm(self->pane, "doc:vmark-prev",
+		       owner ? owner->pane : self->pane,
+		       &pr.comm, view, m->mark);
+	if (pr.ret)
+		return pr.ret;
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyMethodDef pane_methods[] = {
 	{"close", (PyCFunction)Pane_close, METH_NOARGS,
 	 "close the pane"},
@@ -1366,6 +1445,10 @@ static PyMethodDef pane_methods[] = {
 	 "returning the character after mark"},
 	{"prior", (PyCFunction)Pane_step_prior, METH_VARARGS,
 	 "returning the character before mark"},
+	{"vmarks", (PyCFunction)Pane_get_vmarks, METH_VARARGS,
+	 "return first and last vmark given view number"},
+	{"vmark_at_or_before", (PyCFunction)Pane_vmark_at_or_before, METH_VARARGS,
+	 "return vmark at-or-before given mark"},
 	{NULL}
 };
 
