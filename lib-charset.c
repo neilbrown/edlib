@@ -1321,9 +1321,11 @@ DEF_CMD(charset_step)
 	wint_t ret;
 	wchar_t *tbl = ci->home->data;
 
-	ret = home_call(ci->home->parent, ci->key, ci->focus,
-			ci->num, ci->mark, ci->str,
-			ci->num2, ci->mark2, ci->str2);
+	ret = home_call(ci->home->parent, "doc:char", ci->focus,
+			ci->num2 ? (ci->num ? 1 : -1) : 0,
+			ci->mark, ci->str,
+			ci->num2 ? 0 : (ci->num ? 1 : -1),
+			ci->mark2, ci->str2);
 	if (ret <= 0 || ret == CHAR_RET(WEOF))
 		return ret;
 	return CHAR_RET(tbl[ret & 0xff]);
@@ -1345,7 +1347,7 @@ DEF_CMD(charset_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&charset_step, "doc:step", ci->home, forward, m, NULL, 1);
+		ret = comm_call(&charset_step, "", ci->home, forward, m, NULL, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -1355,7 +1357,7 @@ DEF_CMD(charset_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&charset_step, "doc:step", ci->home, ci->num2 > 0, m, NULL, 0);
+	return comm_call(&charset_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
 }
 
 struct win1251cb {

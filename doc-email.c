@@ -824,9 +824,10 @@ DEF_CMD(email_step)
 	if (!ci->mark)
 		return Enoarg;
 	if (ci->num) {
-		ret = home_call(p->parent, ci->key, ci->focus,
-				ci->num, ci->mark, evi->invis,
-				ci->num2);
+		ret = home_call(p->parent, "doc:char", ci->focus,
+				ci->num2 ? 1 : 0,
+				ci->mark, evi->invis,
+				ci->num2 ? 0 : 1);
 		n = get_part(p->parent, ci->mark);
 		if (ci->num2 && is_spacer(n)) {
 			/* Moving in a spacer, If after valid buttons,
@@ -840,8 +841,10 @@ DEF_CMD(email_step)
 					doc_next(p->parent, ci->mark);
 		}
 	} else {
-		ret = home_call(p->parent, ci->key, ci->focus,
-				ci->num, ci->mark, evi->invis, ci->num2);
+		ret = home_call(p->parent, "doc:char", ci->focus,
+				ci->num2 ? -1 : 0,
+				ci->mark, evi->invis,
+				ci->num2 ? 0 : -1);
 		n = get_part(p->parent, ci->mark);
 		if (is_spacer(n) && ci->num2 &&
 		    ret != CHAR_RET(WEOF) && iswdigit(ret & 0x1fffff)) {
@@ -875,7 +878,7 @@ DEF_CMD(email_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&email_step, "doc:step", ci->home,
+		ret = comm_call(&email_step, "", ci->home,
 				forward, m, NULL, 1);
 		steps -= forward*2 - 1;
 	}
@@ -886,7 +889,7 @@ DEF_CMD(email_char)
 	if (ci->num &&(ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&email_step, "doc:step", ci->home, ci->num2 > 0, m, NULL, 0);
+	return comm_call(&email_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
 }
 
 DEF_CMD(email_content)

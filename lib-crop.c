@@ -88,8 +88,11 @@ DEF_CMD(crop_step)
 	crop(ci->mark, cd);
 	crop(ci->mark2, cd);
 
-	ret = home_call(p, ci->key, ci->focus, ci->num,
-			ci->mark, ci->str, ci->num2, ci->mark2, ci->str2, 0,0, ci->comm2);
+	ret = home_call(p, "doc:char", ci->focus,
+			ci->num2 ? (ci->num ? 1 : -1) : 0,
+			ci->mark, ci->str,
+			ci->num2 ? 0 : (ci->num ? 1 : -1),
+			ci->mark2, ci->str2, 0,0, ci->comm2);
 	if (crop(ci->mark, cd) || crop(ci->mark2, cd))
 		ret = CHAR_RET(WEOF);
 
@@ -121,7 +124,7 @@ DEF_CMD(crop_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&crop_step, "doc:step", ci->home, forward, m, NULL, 1);
+		ret = comm_call(&crop_step, "", ci->home, forward, m, NULL, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -131,7 +134,7 @@ DEF_CMD(crop_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&crop_step, "doc:step", ci->home, ci->num2 > 0, m, NULL, 0);
+	return comm_call(&crop_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
 }
 
 DEF_CMD(crop_clip)

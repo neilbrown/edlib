@@ -453,13 +453,25 @@ class compose_email(edlib.Pane):
                     return ' '
                 else:
                     # backward
-                    return self.parent.call("doc:step", focus, mark, num, num2)
+                    return self.parent.call("doc:char", focus, mark,
+                                            -1 if num2 else 0, 0 if num2 else -1)
             else:
                 # at end of marker
-                return self.parent.call("doc:step", focus, mark, num, num2)
+                if num > 0:
+                    return self.parent.call("doc:char", focus, mark,
+                                            1 if num2 else 0, 0 if num2 else 1)
+                else:
+                    return self.parent.call("doc:char", focus, mark,
+                                            -1 if num2 else 0, 0 if num2 else -1)
         if not m or not m['compose-type']:
             # not in a marker
-            return self.parent.call("doc:step", focus, mark, num, num2)
+            if num > 0:
+                return self.parent.call("doc:char", focus, mark,
+                                        1 if num2 else 0, 0 if num2 else 1)
+            else:
+                return self.parent.call("doc:char", focus, mark,
+                                        -1 if num2 else 0, 0 if num2 else -1)
+
         # should be just before newline
         if num > 0:
             #forward, return newline

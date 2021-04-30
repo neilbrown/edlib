@@ -198,9 +198,11 @@ DEF_CMD(hex_step)
 				 ci->num, ci->mark, ci->str,
 				 ci->num2, ci->mark2, ci->str2);
 	else
-		return home_call(ci->home->parent, "doc:step", ci->focus,
-				 ci->num, ci->mark, ci->str,
-				 ci->num2, ci->mark2, ci->str2);
+		return home_call(ci->home->parent, "doc:char", ci->focus,
+				 ci->num2 ? (ci->num ? 1 : -1) : 0,
+				 ci->mark, ci->str,
+				 ci->num2 ? 0 : (ci->num ? 1 : -1),
+				 ci->mark2, ci->str2);
 }
 
 DEF_CMD(hex_char)

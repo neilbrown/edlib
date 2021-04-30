@@ -2359,7 +2359,8 @@ class notmuch_query_view(edlib.Pane):
                 if mark >= self.thread_end:
                     ret = edlib.WEOF
                 else:
-                    ret = self.parent.call("doc:step", focus, forward, move, mark)
+                    ret = self.parent.call("doc:char", focus, mark,
+                                           1 if move else 0, 0 if move else 1)
             else:
                 if mark <= self.thread_start:
                     # at start already
@@ -2367,7 +2368,8 @@ class notmuch_query_view(edlib.Pane):
                 else:
                     if mark > self.thread_end:
                         mark.to_mark(self.thread_end)
-                    ret = self.parent.call("doc:step", focus, forward, move, mark)
+                    ret = self.parent.call("doc:char", focus, mark,
+                                           -1 if move else 0, 0 if move else -1)
             return ret
         else:
             # if between thread_start/thread_end, move one message,
@@ -2407,7 +2409,8 @@ class notmuch_query_view(edlib.Pane):
                 else:
                     # make sure we are at the start of the thread
                     self.parent.call("doc:step-thread", focus, mark, forward, 1)
-                    ret = self.parent.call("doc:step", focus, mark, forward, move)
+                    ret = self.parent.call("doc:char", focus, mark,
+                                           -1 if move else 0, 0 if move else -1)
                     if move and ret != edlib.WEOF:
                         focus.call("doc:step-thread", focus, mark, forward, move)
                 return ret

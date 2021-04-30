@@ -301,8 +301,11 @@ DEF_CMD(mp_step)
 		ret = -1;
 	else
 		ret = home_call(mpi->parts[m->ref.docnum].pane,
-				ci->key, ci->focus, ci->num, m1, ci->str,
-				ci->num2, NULL, ci->str2, 0,0, ci->comm2);
+				"doc:char", ci->focus,
+				ci->num2 ? (ci->num ? 1 : -1) : 0,
+				m1, ci->str,
+				ci->num2 ? 0 : (ci->num ? 1 : -1),
+				NULL, ci->str2, 0,0, ci->comm2);
 	while (ret == CHAR_RET(WEOF) || ret == -1) {
 		if (!ci->num2 && m == ci->mark) {
 			/* don't change ci->mark when not moving */
@@ -329,9 +332,11 @@ DEF_CMD(mp_step)
 			ret = -1;
 		else
 			ret = home_call(mpi->parts[m->ref.docnum].pane,
-					ci->key, ci->focus,
-					ci->num, m1, ci->str,
-					ci->num2, NULL, ci->str2,
+					"doc:char", ci->focus,
+					ci->num2 ? (ci->num ? 1 : -1) : 0,
+					m1, ci->str,
+					ci->num2 ? 0 : (ci->num ? 1 : -1),
+					NULL, ci->str2,
 					0,0, ci->comm2);
 	}
 	if (ci->num2) {
@@ -362,7 +367,7 @@ DEF_CMD(mp_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&mp_step, "doc:step", ci->home, forward, m, ci->str, 1);
+		ret = comm_call(&mp_step, "", ci->home, forward, m, ci->str, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -372,7 +377,7 @@ DEF_CMD(mp_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&mp_step, "doc:step", ci->home, ci->num2 > 0, m, ci->str, 0);
+	return comm_call(&mp_step, "", ci->home, ci->num2 > 0, m, ci->str, 0);
 }
 
 DEF_CMD(mp_step_part)
