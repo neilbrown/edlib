@@ -205,31 +205,16 @@ DEF_CMD(hex_step)
 
 DEF_CMD(hex_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
+	struct he_data *he = ci->home->data;
 
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&hex_step, "doc:step", ci->home, forward, m, NULL, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return comm_call(&hex_step, "doc:step", ci->home, ci->num2 > 0, m, NULL, 0);
+	if (he->bytes)
+		return home_call(ci->home->parent, "doc:byte", ci->focus,
+				 ci->num, ci->mark, ci->str,
+				 ci->num2, ci->mark2, ci->str2);
+	else
+		return home_call(ci->home->parent, "doc:char", ci->focus,
+				 ci->num, ci->mark, ci->str,
+				 ci->num2, ci->mark2, ci->str2);
 }
 
 static void render_hex_register_map(void)
