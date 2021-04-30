@@ -471,7 +471,8 @@ Module features
 
 ### Notmuch - overview
 
-- [ ] when 'a' or movement is done in message view, new message isn't displayed
+- [ ] TESTS
+- [X] when 'a' or movement is done in message view, new message isn't displayed
 - [ ] when re-visit, open up the same panes
 - [ ] make sure Clone actually works for all panes - or remove it
 - [ ] add counter and colour for 'flagged'

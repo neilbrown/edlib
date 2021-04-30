@@ -1798,10 +1798,12 @@ class notmuch_master_view(edlib.Pane):
         self.query_pane.call("Move-Line", 1)
         if self.message_pane:
             # open the thread, and maybe the message, if the msid was open
+            m = self.query_pane.call("doc:dup-point", 0,
+                                     edlib.MARK_UNGROUPED, ret='mark')
             if msid and self.message_pane['notmuch:id'] == msid:
-                self.query_pane.call("notmuch:select", mark, 1)
+                self.query_pane.call("notmuch:select", m, 1)
             else:
-                self.query_pane.call("notmuch:select", mark, 0)
+                self.query_pane.call("notmuch:select", m, 0)
         return 1
 
     def make_composition(self, focus):
