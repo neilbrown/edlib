@@ -1316,48 +1316,18 @@ static const wchar_t ISO_8859_15_UNICODE_TABLE[] = {
 static struct map *charset_map safe;
 DEF_LOOKUP_CMD(charset_handle, charset_map);
 
-static int charset_step(struct pane *home safe, struct mark *mark safe,
-			int num, int num2)
-{
-	wint_t ret;
-	wchar_t *tbl = home->data;
-
-	ret = home_call(home->parent, "doc:char", home,
-			num2 ? (num ? 1 : -1) : 0,
-			mark, NULL,
-			num2 ? 0 : (num ? 1 : -1));
-	if (ret <= 0 || ret == CHAR_RET(WEOF))
-		return ret;
-	return CHAR_RET(tbl[ret & 0xff]);
-}
-
 DEF_CMD(charset_char)
 {
-	struct mark *m = ci->mark;
-	struct mark *end = ci->mark2;
-	int steps = ci->num;
-	int forward = steps > 0;
-	int ret = Einval;
+	wint_t ret;
+	wchar_t *tbl = ci->home->data;
 
-	if (!m)
-		return Enoarg;
-	if (end && mark_same(m, end))
-		return 1;
-	if (end && (end->seq < m->seq) != (steps < 0))
-		/* Can never cross 'end' */
-		return Einval;
-	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = charset_step(ci->home, m, forward, 1);
-		steps -= forward*2 - 1;
-	}
-	if (end)
-		return 1 + (forward ? ci->num - steps : steps - ci->num);
-	if (ret == CHAR_RET(WEOF) || ci->num2 == 0)
-		return ret;
-	if (ci->num && (ci->num2 < 0) == forward)
-		return ret;
-	/* Want the 'next' char */
-	return charset_step(ci->home, m, ci->num2 > 0, 0);
+	ret = home_call(ci->home->parent, "doc:char", ci->focus,
+			ci->num, ci->mark, NULL,
+			ci->num2, ci->mark2);
+
+	if (!ci->mark2 && ret != CHAR_RET(WEOF) && ret >0)
+		ret = CHAR_RET(tbl[ret & 0xff]);
+	return ret;
 }
 
 struct win1251cb {

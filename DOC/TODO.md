@@ -22,6 +22,7 @@ Current priorities
 - [ ] file in pop-up window in 'view' mode by default
       From 'grep' this is probably OK.  For Cx-44, it isn't.
 - [X] Cx-44 to open doc/file in pop-up.
+- [ ] review all doc:char implementations for simplification.
 
 Bugs to be fixed
 ----------------
@@ -103,7 +104,7 @@ Core features
 
 - [ ] review all use of 'bytes' for doc:content.  Maybe doc:content-bytes
 - [X] make Move-Word/WORD/EOL into doc:word/WORD/eol in doc_defaults
-- [ ] change doc:step to accept a count. Returns char after or before final location
+- [X] change doc:step to accept a count. Returns char after or before final location
 - [ ] separate various doc:vmark-get functions and/or make them easily available
       from python
 - [X] 'log' should handle utf8 correctly.
