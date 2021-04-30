@@ -2628,14 +2628,14 @@ class notmuch_message_view(edlib.Pane):
                 vis = False
             if type.startswith("image/"):
                 vis = True
-            self.set_vis(focus, m, vis)
             if type.startswith("text/"):
-                v = focus.call("doc:get-attr", m, "email:visible", ret='str')
+                self.set_vis(focus, m, True)
                 start = m.dup()
                 # go to start of previous visible part, and mark urls.
                 self.prev(start)
                 self.call("doc:step-part", start, 0)
                 self.mark_urls(start, m)
+            self.set_vis(focus, m, vis)
 
     def set_vis(self, focus, m, vis):
         if vis:

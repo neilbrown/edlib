@@ -471,7 +471,7 @@ Module features
 
 ### Notmuch - overview
 
-- [ ] when a or movement is don't in message view, new message isn't displayed
+- [ ] when 'a' or movement is done in message view, new message isn't displayed
 - [ ] when re-visit, open up the same panes
 - [ ] make sure Clone actually works for all panes - or remove it
 - [ ] add counter and colour for 'flagged'
@@ -555,7 +555,7 @@ Module features
 
 ###  Notmuch message display
 
-- [ ] urls in hidden html don't get marked-up
+- [X] urls in hidden html don't get marked-up
 - [X] notmuch calls external-viewer sometimes with no prefix
 - [X] application/octet-stream with name "foo.pdf" is a PDF.
       use mime-types to intuit type from name?
