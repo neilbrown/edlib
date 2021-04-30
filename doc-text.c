@@ -1547,20 +1547,18 @@ static wint_t text_prev(struct text *t safe, struct doc_ref *r safe, bool bytes)
 	return ret;
 }
 
-DEF_CMD(text_step)
+static int text_step(struct pane *home safe, struct mark *mark safe,
+		     int num, int num2)
 {
-	struct doc *d = ci->home->data;
-	struct mark *m = ci->mark;
-	bool forward = ci->num;
-	bool move = ci->num2;
+	struct doc *d = home->data;
+	struct mark *m = mark;
+	bool forward = num;
+	bool move = num2;
 	struct text *t = container_of(d, struct text, doc);
 	struct doc_ref r;
 	wint_t ret;
 
-	if (!m)
-		return Enoarg;
-
-	ASSERT(m->owner == ci->home);
+	ASSERT(m->owner == home);
 
 	r = m->ref;
 	if (forward)
@@ -1592,7 +1590,7 @@ DEF_CMD(text_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&text_step, "", ci->home, forward, m, NULL, 1);
+		ret = text_step(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -1602,15 +1600,16 @@ DEF_CMD(text_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&text_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+	return text_step(ci->home, m, ci->num2 > 0, 0);
 }
 
-DEF_CMD(text_step_bytes)
+static int text_step_bytes(struct pane *home safe, struct mark *mark safe,
+			   int num, int num2)
 {
-	struct doc *d = ci->home->data;
-	struct mark *m = ci->mark;
-	bool forward = ci->num;
-	bool move = ci->num2;
+	struct doc *d = home->data;
+	struct mark *m = mark;
+	bool forward = num;
+	bool move = num2;
 	struct text *t = container_of(d, struct text, doc);
 	struct doc_ref r;
 	wint_t ret;
@@ -1618,7 +1617,7 @@ DEF_CMD(text_step_bytes)
 	if (!m)
 		return Enoarg;
 
-	ASSERT(m->owner == ci->home);
+	ASSERT(m->owner == home);
 
 	r = m->ref;
 	if (forward)
@@ -1650,7 +1649,7 @@ DEF_CMD(text_byte)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&text_step_bytes, "", ci->home, forward, m, NULL, 1);
+		ret = text_step_bytes(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -1660,7 +1659,7 @@ DEF_CMD(text_byte)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&text_step_bytes, "", ci->home, ci->num2 > 0, m, NULL, 0);
+	return text_step_bytes(ci->home, m, ci->num2 > 0, 0);
 }
 
 static bool _text_ref_same(struct text *t safe, struct doc_ref *r1 safe,
@@ -2530,9 +2529,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:set-attr", &text_set_attr);
 	key_add(text_map, "doc:get-attr", &text_doc_get_attr);
 	key_add(text_map, "doc:replace", &text_replace);
-	key_add(text_map, "doc:step", &text_step);
 	key_add(text_map, "doc:char", &text_char);
-	key_add(text_map, "doc:step-bytes", &text_step_bytes);
 	key_add(text_map, "doc:byte", &text_byte);
 	key_add(text_map, "doc:modified", &text_modified);
 	key_add(text_map, "doc:set:readonly", &text_readonly);

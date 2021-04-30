@@ -189,22 +189,6 @@ DEF_CMD(render_line_prev)
 	return 1;
 }
 
-DEF_CMD(hex_step)
-{
-	struct he_data *he = ci->home->data;
-
-	if (he->bytes)
-		return home_call(ci->home->parent, "doc:step-bytes", ci->focus,
-				 ci->num, ci->mark, ci->str,
-				 ci->num2, ci->mark2, ci->str2);
-	else
-		return home_call(ci->home->parent, "doc:char", ci->focus,
-				 ci->num2 ? (ci->num ? 1 : -1) : 0,
-				 ci->mark, ci->str,
-				 ci->num2 ? 0 : (ci->num ? 1 : -1),
-				 ci->mark2, ci->str2);
-}
-
 DEF_CMD(hex_char)
 {
 	struct he_data *he = ci->home->data;
@@ -224,7 +208,6 @@ static void render_hex_register_map(void)
 	he_map = key_alloc();
 
 	key_add(he_map, "doc:EOL", &render_hex_eol);
-	key_add(he_map, "doc:step", &hex_step);
 	key_add(he_map, "doc:char", &hex_char);
 
 	key_add(he_map, "doc:render-line-prev", &render_line_prev);

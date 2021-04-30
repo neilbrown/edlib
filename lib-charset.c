@@ -1316,16 +1316,16 @@ static const wchar_t ISO_8859_15_UNICODE_TABLE[] = {
 static struct map *charset_map safe;
 DEF_LOOKUP_CMD(charset_handle, charset_map);
 
-DEF_CMD(charset_step)
+static int charset_step(struct pane *home safe, struct mark *mark safe,
+			int num, int num2)
 {
 	wint_t ret;
-	wchar_t *tbl = ci->home->data;
+	wchar_t *tbl = home->data;
 
-	ret = home_call(ci->home->parent, "doc:char", ci->focus,
-			ci->num2 ? (ci->num ? 1 : -1) : 0,
-			ci->mark, ci->str,
-			ci->num2 ? 0 : (ci->num ? 1 : -1),
-			ci->mark2, ci->str2);
+	ret = home_call(home->parent, "doc:char", home,
+			num2 ? (num ? 1 : -1) : 0,
+			mark, NULL,
+			num2 ? 0 : (num ? 1 : -1));
 	if (ret <= 0 || ret == CHAR_RET(WEOF))
 		return ret;
 	return CHAR_RET(tbl[ret & 0xff]);
@@ -1347,7 +1347,7 @@ DEF_CMD(charset_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&charset_step, "", ci->home, forward, m, NULL, 1);
+		ret = charset_step(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -1357,7 +1357,7 @@ DEF_CMD(charset_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&charset_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+	return charset_step(ci->home, m, ci->num2 > 0, 0);
 }
 
 struct win1251cb {
@@ -1500,7 +1500,6 @@ void edlib_init(struct pane *ed safe)
 {
 	charset_map = key_alloc();
 
-	key_add(charset_map, "doc:step", &charset_step);
 	key_add(charset_map, "doc:char", &charset_char);
 	key_add(charset_map, "doc:content", &charset_content);
 

@@ -814,48 +814,47 @@ static int count_buttons(struct pane *p safe, struct mark *m safe)
 	return cnt;
 }
 
-DEF_CMD(email_step)
+static int email_step(struct pane *home safe, struct mark *mark safe,
+		      int num, int num2)
 {
-	struct pane *p = ci->home;
+	struct pane *p = home;
 	struct email_view *evi = p->data;
 	wint_t ret;
 	int n = -1;
 
-	if (!ci->mark)
-		return Enoarg;
-	if (ci->num) {
-		ret = home_call(p->parent, "doc:char", ci->focus,
-				ci->num2 ? 1 : 0,
-				ci->mark, evi->invis,
-				ci->num2 ? 0 : 1);
-		n = get_part(p->parent, ci->mark);
-		if (ci->num2 && is_spacer(n)) {
+	if (num) {
+		ret = home_call(p->parent, "doc:char", home,
+				num2 ? 1 : 0,
+				mark, evi->invis,
+				num2 ? 0 : 1);
+		n = get_part(p->parent, mark);
+		if (num2 && is_spacer(n)) {
 			/* Moving in a spacer, If after valid buttons,
 			 * move to end
 			 */
 			wint_t c;
 			unsigned int buttons;
-			buttons = count_buttons(p, ci->mark);
-			while ((c = doc_following(p->parent, ci->mark)) != WEOF
+			buttons = count_buttons(p, mark);
+			while ((c = doc_following(p->parent, mark)) != WEOF
 			       && iswdigit(c) && (c - '0') >= buttons)
-					doc_next(p->parent, ci->mark);
+					doc_next(p->parent, mark);
 		}
 	} else {
-		ret = home_call(p->parent, "doc:char", ci->focus,
-				ci->num2 ? -1 : 0,
-				ci->mark, evi->invis,
-				ci->num2 ? 0 : -1);
-		n = get_part(p->parent, ci->mark);
-		if (is_spacer(n) && ci->num2 &&
+		ret = home_call(p->parent, "doc:char", home,
+				num2 ? -1 : 0,
+				mark, evi->invis,
+				num2 ? 0 : -1);
+		n = get_part(p->parent, mark);
+		if (is_spacer(n) && num2 &&
 		    ret != CHAR_RET(WEOF) && iswdigit(ret & 0x1fffff)) {
 			/* Just stepped back over the 9 at the end of a spacer,
 			 * Maybe step further if there aren't 10 buttons.
 			 */
-			unsigned int buttons = count_buttons(p, ci->mark);
+			unsigned int buttons = count_buttons(p, mark);
 			wint_t c = ret & 0x1fffff;
 
 			while (c != WEOF && iswdigit(c) && c - '0' >= buttons)
-				c = doc_prev(p->parent, ci->mark);
+				c = doc_prev(p->parent, mark);
 			ret = CHAR_RET(c);
 		}
 	}
@@ -878,8 +877,7 @@ DEF_CMD(email_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&email_step, "", ci->home,
-				forward, m, NULL, 1);
+		ret = email_step(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -889,7 +887,7 @@ DEF_CMD(email_char)
 	if (ci->num &&(ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&email_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+	return email_step(ci->home, m, ci->num2 > 0, 0);
 }
 
 DEF_CMD(email_content)
@@ -1040,7 +1038,6 @@ static void email_init_map(void)
 {
 	email_view_map = key_alloc();
 	key_add(email_view_map, "Free", &email_view_free);
-	key_add(email_view_map, "doc:step", &email_step);
 	key_add(email_view_map, "doc:char", &email_char);
 	key_add(email_view_map, "doc:content", &email_content);
 	key_add(email_view_map, "doc:set-ref", &email_set_ref);

@@ -493,13 +493,15 @@ static void next_line(struct pane *home safe, struct mark *m safe)
 	mark_step(m, 1);
 }
 
-DEF_CMD(format_step)
+static int format_step(struct pane *home safe, struct pane *focus safe,
+		       struct mark *mark safe,
+		       int num, int num2)
 {
-	struct rf_data *rd = ci->home->data;
+	struct rf_data *rd = home->data;
 	struct rf_field *rf;
-	struct mark *m = ci->mark;
-	int forward = ci->num;
-	int move = ci->num2;
+	struct mark *m = mark;
+	int forward = num;
+	int move = num2;
 	int f, o;
 	int margin;
 	int fsize;
@@ -507,24 +509,21 @@ DEF_CMD(format_step)
 	char *val = NULL;
 	int index;
 
-	if (!m)
-		return Enoarg;
-
-	set_format(ci->focus, rd);
+	set_format(focus, rd);
 
 	if (!forward) {
-		index = normalize(ci->home, m, -1);
+		index = normalize(home, m, -1);
 		if (index < 0) {
-			if (doc_prior(ci->home->parent, m) == WEOF)
+			if (doc_prior(home->parent, m) == WEOF)
 				return CHAR_RET(WEOF);
 			if (move)
-				prev_line(ci->home, m);
+				prev_line(home, m);
 			return CHAR_RET('\n');
 		}
 	} else {
 		if (m->ref.p == NULL)
 			return CHAR_RET(WEOF);
-		index = normalize(ci->home, m, 0);
+		index = normalize(home, m, 0);
 		if (index < 0)
 			/* Should be impossible */
 			return CHAR_RET(WEOF);
@@ -534,18 +533,18 @@ DEF_CMD(format_step)
 
 	if (f >= rd->nfields) {
 		if (move)
-			next_line(ci->home, m);
+			next_line(home, m);
 		return CHAR_RET('\n');
 	}
 	rf = &rd->fields[f];
-	fsize = field_size(ci->home, m, f, &val);
+	fsize = field_size(home, m, f, &val);
 	if (val)
 		len = strlen(val);
 	if (move && forward) {
 		mark_step(m, forward);
-		index = normalize(ci->home, m, 1);
+		index = normalize(home, m, 1);
 		if (index < 0) {
-			next_line(ci->home, m);
+			next_line(home, m);
 			return CHAR_RET('\n');
 		}
 		m->ref.i = index;
@@ -603,7 +602,7 @@ DEF_CMD(format_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&format_step, "", ci->home, forward, m, NULL, 1);
+		ret = format_step(ci->home, ci->focus, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -613,7 +612,7 @@ DEF_CMD(format_char)
 	if (ci->num &&(ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&format_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+	return format_step(ci->home, ci->focus, m, ci->num2 > 0, 0);
 }
 
 DEF_CMD(format_attr)
@@ -781,7 +780,6 @@ static void render_format_register_map(void)
 
 	rf2_map = key_alloc();
 
-	key_add(rf2_map, "doc:step", &format_step);
 	key_add(rf2_map, "doc:char", &format_char);
 	key_add(rf2_map, "doc:get-attr", &format_attr);
 	key_add(rf2_map, "map-attr", &format_map);

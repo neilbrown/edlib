@@ -14,20 +14,18 @@
 static struct map *utf8_map safe;
 DEF_LOOKUP_CMD(utf8_handle, utf8_map);
 
-DEF_CMD(utf8_step)
+static int utf8_step(struct pane *home safe, struct mark *mark safe,
+		     int num, int num2)
 {
-	int dir = ci->num ? 1 : -1;
-	int move = ci->num2;
-	struct pane *p = ci->home->parent;
+	int dir = num ? 1 : -1;
+	int move = num2;
+	struct pane *p = home->parent;
 	wint_t ch;
-	struct mark *m = ci->mark;
+	struct mark *m = mark;
 	char buf[10];
 	const char *b;
 	int i;
 	wint_t ret;
-
-	if (!m)
-		return Enoarg;
 
 	if (move)
 		ch = doc_move(p, m, dir);
@@ -80,7 +78,7 @@ DEF_CMD(utf8_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&utf8_step, "", ci->home, forward, m, NULL, 1);
+		ret = utf8_step(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -90,7 +88,7 @@ DEF_CMD(utf8_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&utf8_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+	return utf8_step(ci->home, m, ci->num2 > 0, 0);
 }
 
 struct utf8cb {
@@ -187,7 +185,6 @@ void edlib_init(struct pane *ed safe)
 
 	utf8_map = key_alloc();
 
-	key_add(utf8_map, "doc:step", &utf8_step);
 	key_add(utf8_map, "doc:char", &utf8_char);
 	key_add(utf8_map, "doc:content", &utf8_content);
 

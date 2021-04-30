@@ -235,18 +235,15 @@ DEF_CMD(log_set_ref)
 	return 1;
 }
 
-DEF_CMD(log_step)
+static int log_step(struct pane *home safe, struct mark *mark safe, int num, int num2)
 {
-	struct doc *d = ci->home->data;
+	struct doc *d = home->data;
 	struct log *log = container_of(d, struct log, doc);
-	struct mark *m = ci->mark;
-	bool forward = ci->num;
-	bool move = ci->num2;
+	struct mark *m = mark;
+	bool forward = num;
+	bool move = num2;
 	struct doc_ref ref;
 	wint_t ret;
-
-	if (!m)
-		return Enoarg;
 
 	ref = m->ref;
 	if (forward) {
@@ -310,7 +307,7 @@ DEF_CMD(log_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&log_step, "", ci->home, forward, m, NULL, 1);
+		ret = log_step(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -320,7 +317,7 @@ DEF_CMD(log_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&log_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+	return log_step(ci->home, m, ci->num2 > 0, 0);
 }
 
 DEF_CMD(log_destroy)
@@ -398,7 +395,6 @@ void log_setup(struct pane *ed safe)
 	key_add_chain(log_map, doc_default_cmd);
 	key_add(log_map, "doc:content", &log_content);
 	key_add(log_map, "doc:set-ref", &log_set_ref);
-	key_add(log_map, "doc:step", &log_step);
 	key_add(log_map, "doc:char", &log_char);
 	key_add(log_map, "doc:destroy", &log_destroy);
 	key_add(log_map, "doc:log:append", &log_append);

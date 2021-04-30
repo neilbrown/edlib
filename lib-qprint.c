@@ -36,13 +36,14 @@ static int hex(wint_t c)
 	return -1;
 }
 
-DEF_CMD(qp_step)
+static int qp_step(struct pane *home safe, struct mark *mark safe,
+		   int num, int num2)
 {
-	int forward = ci->num;
-	int move = ci->num2;
-	struct pane *p = ci->home->parent;
+	int forward = num;
+	int move = num2;
+	struct pane *p = home->parent;
 	wint_t ch, c2, c3;
-	struct mark *m = ci->mark;
+	struct mark *m = mark;
 
 	if (!m)
 		return Enoarg;
@@ -54,9 +55,9 @@ retry:
 		else
 			ch = doc_following(p, m);
 		if (ch != '=' && ch != ' ' && ch != '\t' && ch != '\r') {
-			if (m != ci->mark) {
+			if (m != mark) {
 				if (move)
-					mark_to_mark(ci->mark, m);
+					mark_to_mark(mark, m);
 				mark_free(m);
 			}
 			goto normalize;
@@ -65,15 +66,15 @@ retry:
 			/* assume CR-LF - skip an extra char */
 			if (move)
 				doc_next(p, m);
-			if (m != ci->mark) {
+			if (m != mark) {
 				if (move)
-					mark_to_mark(ci->mark, m);
+					mark_to_mark(mark, m);
 				mark_free(m);
 			}
 			ch = '\n';
 			goto normalize;
 		}
-		if (m == ci->mark)
+		if (m == mark)
 			m = mark_dup(m);
 		if (!move)
 			doc_next(p, m);
@@ -88,14 +89,14 @@ retry:
 			if (hex(c2) >= 0 && hex(c3) >= 0) {
 				ch = hex(c2)*16 + hex(c3);
 				if (move)
-					mark_to_mark(ci->mark, m);
+					mark_to_mark(mark, m);
 			}
 			mark_free(m);
 			goto normalize;
 		}
 		/* Whitespace, ignore if at eol */
 		if (move)
-			mark_to_mark(ci->mark, m);
+			mark_to_mark(mark, m);
 		while ((c2 = doc_next(p, m)) == ' ' || c2 == '\t')
 			;
 		if (c2 == '\r')
@@ -112,11 +113,11 @@ retry:
 		if (!move)
 			return CHAR_RET(ch);
 	normalize_more:
-		m = ci->mark;
+		m = mark;
 		/* If next is "=\n" we need to skip over it. */
 		if (doc_following(p, m) != '=')
 			return CHAR_RET(ch);
-		m = mark_dup(ci->mark);
+		m = mark_dup(mark);
 		doc_next(p, m);
 		while ((c2 = doc_next(p, m)) == ' ' ||
 		       c2 == '\t' || c2 == '\r')
@@ -126,7 +127,7 @@ retry:
 			mark_free(m);
 			return CHAR_RET(ch);
 		}
-		mark_to_mark(ci->mark, m);
+		mark_to_mark(mark, m);
 		mark_free(m);
 		goto normalize_more;
 	} else {
@@ -135,7 +136,7 @@ retry:
 		else
 			ch = doc_prior(p, m);
 		if (ch == '\n') {
-			if (m == ci->mark)
+			if (m == mark)
 				m = mark_dup(m);
 			if (!move)
 				doc_prev(p, m);
@@ -148,22 +149,22 @@ retry:
 				goto retry;
 			}
 			if (move)
-				mark_to_mark(ci->mark, m);
+				mark_to_mark(mark, m);
 			mark_free(m);
 			return CHAR_RET('\n');
 		}
 		if (hex(ch) < 0) {
-			if (m != ci->mark) {
+			if (m != mark) {
 				if (move)
-					mark_to_mark(ci->mark, m);
+					mark_to_mark(mark, m);
 				mark_free(m);
 			}
 			return CHAR_RET(ch);
 		}
-		if (m == ci->mark)
+		if (m == mark)
 			m = mark_dup(m);
 		else if (move)
-			mark_to_mark(ci->mark, m);
+			mark_to_mark(mark, m);
 		if (!move)
 			doc_prev(p, m);
 
@@ -176,7 +177,7 @@ retry:
 				/* =HH */
 				ch = hex(c2)*16 + hex(c3);
 				if (move)
-					mark_to_mark(ci->mark, m);
+					mark_to_mark(mark, m);
 				mark_free(m);
 				return CHAR_RET(ch);
 			}
@@ -202,7 +203,7 @@ DEF_CMD(qp_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&qp_step, "", ci->home, forward, m, NULL, 1);
+		ret = qp_step(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -212,7 +213,7 @@ DEF_CMD(qp_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&qp_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+	return qp_step(ci->home, m, ci->num2 > 0, 0);
 }
 
 struct qpcb {
@@ -362,9 +363,7 @@ void edlib_init(struct pane *ed safe)
 
 	qp_map = key_alloc();
 
-	key_add(qp_map, "doc:step", &qp_step);
 	key_add(qp_map, "doc:char", &qp_char);
-	key_add(qp_map, "doc:step-bytes", &qp_step);
 	key_add(qp_map, "doc:byte", &qp_char);
 	key_add(qp_map, "doc:content", &qp_content);
 

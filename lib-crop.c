@@ -75,33 +75,29 @@ DEF_CMD(crop_write)
 			 0,0, ci->comm2);
 }
 
-DEF_CMD(crop_step)
+static int crop_step(struct pane *home safe, struct mark *mark safe,
+		     int num, int num2)
 {
-	struct pane *p = ci->home->parent;
-	struct crop_data *cd = ci->home->data;
+	struct pane *p = home->parent;
+	struct crop_data *cd = home->data;
 	int ret;
 
-	if (!ci->mark && !ci->mark2)
-		return Enoarg;
-
 	/* Always force marks to be in range */
-	crop(ci->mark, cd);
-	crop(ci->mark2, cd);
+	crop(mark, cd);
 
-	ret = home_call(p, "doc:char", ci->focus,
-			ci->num2 ? (ci->num ? 1 : -1) : 0,
-			ci->mark, ci->str,
-			ci->num2 ? 0 : (ci->num ? 1 : -1),
-			ci->mark2, ci->str2, 0,0, ci->comm2);
-	if (crop(ci->mark, cd) || crop(ci->mark2, cd))
+	ret = home_call(p, "doc:char", home,
+			num2 ? (num ? 1 : -1) : 0,
+			mark, NULL,
+			num2 ? 0 : (num ? 1 : -1));
+	if (crop(mark, cd))
 		ret = CHAR_RET(WEOF);
 
-	if (ci->num2 == 0 && ci->mark) {
-		if (ci->num) {
-			if (mark_same(ci->mark, cd->end))
+	if (num2 == 0) {
+		if (num) {
+			if (mark_same(mark, cd->end))
 				ret = CHAR_RET(WEOF);
 		} else {
-			if (mark_same(ci->mark, cd->start))
+			if (mark_same(mark, cd->start))
 				ret = CHAR_RET(WEOF);
 		}
 	}
@@ -124,7 +120,7 @@ DEF_CMD(crop_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&crop_step, "", ci->home, forward, m, NULL, 1);
+		ret = crop_step(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -134,7 +130,7 @@ DEF_CMD(crop_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&crop_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+	return crop_step(ci->home, m, ci->num2 > 0, 0);
 }
 
 DEF_CMD(crop_clip)
@@ -222,7 +218,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(crop_map, "Close", &crop_close);
 	key_add(crop_map, "Free", &edlib_do_free);
 	key_add(crop_map, "doc:write_file", &crop_write);
-	key_add(crop_map, "doc:step", &crop_step);
 	key_add(crop_map, "doc:char", &crop_char);
 	key_add(crop_map, "doc:content", &crop_content);
 	key_add(crop_map, "Notify:clip", &crop_clip);

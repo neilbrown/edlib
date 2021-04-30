@@ -378,8 +378,7 @@ class notmuch_main(edlib.Doc):
         # want the next character
         return self.handle_step(key, mark, 1 if num2 > 0 else 0, 0)
 
-    def handle_step(self, key, mark, num, num2, **a):
-        "handle:doc:step"
+    def handle_step(self, key, mark, num, num2):
         forward = num
         move = num2
         ret = edlib.WEOF
@@ -1191,8 +1190,7 @@ class notmuch_query(edlib.Doc):
         # want the next character
         return self.handle_step(key, mark, 1 if num2 > 0 else 0, 0)
 
-    def handle_step(self, key, mark, num, num2, **a):
-        "handle:doc:step"
+    def handle_step(self, key, mark, num, num2):
         forward = num
         move = num2
         return self.step(mark, forward, move)
@@ -2347,8 +2345,7 @@ class notmuch_query_view(edlib.Pane):
         # want the next character
         return self.handle_step(key, focus, mark, 1 if num2 > 0 else 0, 0)
 
-    def handle_step(self, key, focus, mark, num, num2, **a):
-        "handle:doc:step"
+    def handle_step(self, key, focus, mark, num, num2):
         forward = num
         move = num2
         if self.whole_thread:

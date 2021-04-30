@@ -380,18 +380,17 @@ DEF_CMD(dir_same_file)
 	return 1;
 }
 
-DEF_CMD(dir_step)
+static int dir_step(struct pane *home safe, struct mark *mark safe,
+		    int num, int num2)
 {
-	struct doc *doc = ci->home->data;
-	struct mark *m = ci->mark;
-	bool forward = ci->num;
-	bool move = ci->num2;
+	struct doc *doc = home->data;
+	struct mark *m = mark;
+	bool forward = num;
+	bool move = num2;
 	struct directory *dr = container_of(doc, struct directory, doc);
 	struct dir_ent *d;
 	wint_t ret = '\n';
 
-	if (!m)
-		return Enoarg;
 	d = m->ref.d;
 	if (forward) {
 		if (d == NULL)
@@ -439,7 +438,7 @@ DEF_CMD(dir_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&dir_step, "", ci->home, forward, m, NULL, 1);
+		ret = dir_step(ci->home, m, forward, 1);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -449,7 +448,7 @@ DEF_CMD(dir_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&dir_step, "", ci->home, ci->num2 > 0, m, NULL, 0);
+	return dir_step(ci->home, m, ci->num2 > 0, 0);
 }
 
 DEF_CMD(dir_set_ref)
@@ -939,7 +938,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:same-file", &dir_same_file);
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
 	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
-	key_add(doc_map, "doc:step", &dir_step);
 	key_add(doc_map, "doc:char", &dir_char);
 	key_add(doc_map, "doc:cmd-f", &dir_do_open);
 	key_add(doc_map, "doc:cmd-o", &dir_do_open_other);

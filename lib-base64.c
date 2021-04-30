@@ -365,9 +365,7 @@ void edlib_init(struct pane *ed safe)
 
 	b64_map = key_alloc();
 
-	key_add(b64_map, "doc:step", &base64_step);
 	key_add(b64_map, "doc:char", &base64_char);
-	key_add(b64_map, "doc:step-bytes", &base64_step);
 	key_add(b64_map, "doc:byte", &base64_char);
 	key_add(b64_map, "doc:content", &base64_content);
 	key_add(b64_map, "Close", &b64_close);

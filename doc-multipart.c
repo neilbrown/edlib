@@ -269,13 +269,14 @@ DEF_CMD(mp_set_ref)
 	return ret;
 }
 
-DEF_CMD(mp_step)
+static int mp_step(struct pane *home safe, struct mark *mark safe,
+		   int num, int num2, const char *str)
 {
-	struct mp_info *mpi = ci->home->data;
+	struct mp_info *mpi = home->data;
 	struct mark *m1 = NULL;
-	struct mark *m = ci->mark;
-	const char *vis = ci->str && (int)strlen(ci->str) >= mpi->nparts ?
-		ci->str : NULL;
+	struct mark *m = mark;
+	const char *vis = str && (int)strlen(str) >= mpi->nparts ?
+		str : NULL;
 	int n;
 	int ret;
 
@@ -284,14 +285,11 @@ DEF_CMD(mp_step)
 	 * calls the document.  Then make sure the marks are still in
 	 * order.
 	 */
-	mp_check_consistent(mpi);
-	if (!m)
-		return Enoarg;
 
 	mp_check_consistent(mpi);
 
-	if (ci->num2) {
-		mark_step(m, ci->num);
+	if (num2) {
+		mark_step(m, num);
 		pre_move(m);
 	}
 
@@ -301,18 +299,18 @@ DEF_CMD(mp_step)
 		ret = -1;
 	else
 		ret = home_call(mpi->parts[m->ref.docnum].pane,
-				"doc:char", ci->focus,
-				ci->num2 ? (ci->num ? 1 : -1) : 0,
-				m1, ci->str,
-				ci->num2 ? 0 : (ci->num ? 1 : -1),
-				NULL, ci->str2, 0,0, ci->comm2);
+				"doc:char", home,
+				num2 ? (num ? 1 : -1) : 0,
+				m1, str,
+				num2 ? 0 : (num ? 1 : -1),
+				NULL, NULL);
 	while (ret == CHAR_RET(WEOF) || ret == -1) {
-		if (!ci->num2 && m == ci->mark) {
-			/* don't change ci->mark when not moving */
+		if (!num2 && m == mark) {
+			/* don't change mark when not moving */
 			m = mark_dup(m);
 			pre_move(m);
 		}
-		if (ci->num) {
+		if (num) {
 			if (m->ref.docnum >= mpi->nparts)
 				break;
 			n = m->ref.docnum + 1;
@@ -332,19 +330,17 @@ DEF_CMD(mp_step)
 			ret = -1;
 		else
 			ret = home_call(mpi->parts[m->ref.docnum].pane,
-					"doc:char", ci->focus,
-					ci->num2 ? (ci->num ? 1 : -1) : 0,
-					m1, ci->str,
-					ci->num2 ? 0 : (ci->num ? 1 : -1),
-					NULL, ci->str2,
-					0,0, ci->comm2);
+					"doc:char", home,
+					num2 ? (num ? 1 : -1) : 0,
+					m1, str,
+					num2 ? 0 : (num ? 1 : -1));
 	}
-	if (ci->num2) {
-		mp_normalize(mpi, ci->mark, vis);
-		post_move(ci->mark);
+	if (num2) {
+		mp_normalize(mpi, mark, vis);
+		post_move(mark);
 	}
 
-	if (m != ci->mark)
+	if (m != mark)
 		mark_free(m);
 
 	mp_check_consistent(mpi);
@@ -367,7 +363,7 @@ DEF_CMD(mp_char)
 		/* Can never cross 'end' */
 		return Einval;
 	while (steps && ret != CHAR_RET(WEOF) && (!end || mark_same(m, end))) {
-		ret = comm_call(&mp_step, "", ci->home, forward, m, ci->str, 1);
+		ret = mp_step(ci->home, m, forward, 1, ci->str);
 		steps -= forward*2 - 1;
 	}
 	if (end)
@@ -377,7 +373,7 @@ DEF_CMD(mp_char)
 	if (ci->num && (ci->num2 < 0) == forward)
 		return ret;
 	/* Want the 'next' char */
-	return comm_call(&mp_step, "", ci->home, ci->num2 > 0, m, ci->str, 0);
+	return mp_step(ci->home, m, ci->num2 > 0, 0, ci->str);
 }
 
 DEF_CMD(mp_step_part)
@@ -742,7 +738,6 @@ static void mp_init_map(void)
 	mp_map = key_alloc();
 	key_add_chain(mp_map, doc_default_cmd);
 	key_add(mp_map, "doc:set-ref", &mp_set_ref);
-	key_add(mp_map, "doc:step", &mp_step);
 	key_add(mp_map, "doc:char", &mp_char);
 	key_add(mp_map, "doc:content", &mp_content);
 	key_add(mp_map, "doc:get-attr", &mp_attr);

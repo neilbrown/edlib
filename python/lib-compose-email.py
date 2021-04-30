@@ -426,7 +426,7 @@ class compose_email(edlib.Pane):
             return edlib.Einval
         ret = edlib.Einval
         while steps and ret != edlib.WEOF and (not end or mark == end):
-            ret = self.handle_doc_step(key, focus, mark, forward, 1)
+            ret = self.handle_doc_step(key, mark, forward, 1)
             steps -= forward * 2 - 1
         if end:
             return 1 + (num - steps if forward else steps - num)
@@ -435,10 +435,9 @@ class compose_email(edlib.Pane):
         if num and (num2 < 0) == (num > 0):
             return ret
         # want the next character
-        return self.handle_doc_step(key, focus, mark, 1 if num2 > 0 else 0, 0)
+        return self.handle_doc_step(key, mark, 1 if num2 > 0 else 0, 0)
 
-    def handle_doc_step(self, key, focus, mark, num, num2, **a):
-        "handle:doc:step"
+    def handle_doc_step(self, key, mark, num, num2):
         # if in a marker, only allow a space and newline to be seen
         if not mark:
             return edlib.Enoarg
@@ -453,23 +452,23 @@ class compose_email(edlib.Pane):
                     return ' '
                 else:
                     # backward
-                    return self.parent.call("doc:char", focus, mark,
+                    return self.parent.call("doc:char", mark,
                                             -1 if num2 else 0, 0 if num2 else -1)
             else:
                 # at end of marker
                 if num > 0:
-                    return self.parent.call("doc:char", focus, mark,
+                    return self.parent.call("doc:char", mark,
                                             1 if num2 else 0, 0 if num2 else 1)
                 else:
-                    return self.parent.call("doc:char", focus, mark,
+                    return self.parent.call("doc:char", mark,
                                             -1 if num2 else 0, 0 if num2 else -1)
         if not m or not m['compose-type']:
             # not in a marker
             if num > 0:
-                return self.parent.call("doc:char", focus, mark,
+                return self.parent.call("doc:char", mark,
                                         1 if num2 else 0, 0 if num2 else 1)
             else:
-                return self.parent.call("doc:char", focus, mark,
+                return self.parent.call("doc:char", mark,
                                         -1 if num2 else 0, 0 if num2 else -1)
 
         # should be just before newline

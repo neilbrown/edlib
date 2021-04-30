@@ -371,6 +371,7 @@ Module features
 
 ### doc-text
 
+- [ ] a single undo should never cross a save point!
 - [ ] use larger buffers for adding text - especially when filling from pipe.
       e.g. new buffer doubles each time??
 - [ ] support disable of undo in text, e.g. for copybuf document.
