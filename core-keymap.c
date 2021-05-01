@@ -379,9 +379,11 @@ void LOG_BT(void)
 	for (bt = backtrace; bt; bt = bt->prev) {
 		const struct cmd_info *ci = bt->ci;
 		struct command *h = ci->home->handle;
-		LOG(" %s(%p) \"%s\" %p %d %p \"%s\" %d %p \"%s\" (%d,%d) %s",
-		    h ? h->name : "?", ci->home,
-		    ci->key, ci->focus,
+		struct command *f = ci->focus->handle;
+		LOG(" H:%s \"%s\" F:%s: %d %p \"%s\" %d %p \"%s\" (%d,%d) %s",
+		    h ? h->name : "?",
+		    ci->key,
+		    f ? f->name : "?",
 		    ci->num, ci->mark, ci->str,
 		    ci->num2, ci->mark2, ci->str2,
 		    ci->x, ci->y, ci->comm2 ? ci->comm2->name : "");
