@@ -61,6 +61,7 @@ void LOG_BT(void);
  * pane tree.
  */
 struct pane {
+	const char		*name; /* For easy discovery in gdb */
 	struct pane		*parent safe;
 	struct list_head	siblings;
 	struct list_head	children;
@@ -85,6 +86,7 @@ struct command {
 	int	(*func)(const struct cmd_info *ci safe);
 	int	refcnt; /* only if 'free' is not NULL */
 	void	(*free)(struct command *c safe);
+	const char *name;
 };
 
 enum edlib_errors {
@@ -294,8 +296,17 @@ struct lookup_cmd {
 	struct map	**m safe;
 };
 
-#define CMD(_name) {_name ## _func , 0, NULL}
-#define CB(_name) {_name ## _func , 0, NULL}
+#define CMD(_name) {.func = _name ## _func ,		\
+		    .refcnt = 0,			\
+		    .free = NULL,			\
+		    .name = # _name,			\
+	}
+#define CB(_name) {.func = _name ## _func ,		\
+		   .refcnt = 0,				\
+		   .free = NULL,			\
+		   .name = # _name,			\
+	}
+
 #define DEF_CMD(_name) \
 	static int _name ## _func(const struct cmd_info *ci safe); \
 	static struct command _name = CMD(_name);	\
@@ -317,8 +328,13 @@ struct lookup_cmd {
 
 
 #define DEF_LOOKUP_CMD(_name, _map) \
-	static struct lookup_cmd _name = { { key_lookup_cmd_func, 0, NULL }, \
-					  &_map}
+	static struct lookup_cmd _name = {		\
+		.c.func = key_lookup_cmd_func,		\
+		.c.refcnt = 0,				\
+		.c.free = NULL,				\
+		.c.name = #_name,			\
+		.m = &_map,				\
+	}
 
 DECL_EXTERN_CMD(edlib_do_free);
 
@@ -331,8 +347,14 @@ struct pfx_cmd {
 
 int key_pfx_func(const struct cmd_info *ci safe);
 
-#define DEF_PFX_CMD(_name, _pfx)	\
-	static struct pfx_cmd _name = { { key_pfx_func, 0, NULL}, _pfx};
+#define DEF_PFX_CMD(_name, _pfx)			\
+	static struct pfx_cmd _name = {			\
+		.c.func = key_pfx_func,			\
+		.c.refcnt = 0,				\
+		.c.free = NULL,				\
+		.c.name = "prefix" #_pfx,		\
+		.pfx = _pfx,				\
+	};
 
 #define	ARRAY_SIZE(ra) (sizeof(ra) / sizeof(ra[0]))
 

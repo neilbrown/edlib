@@ -669,13 +669,13 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 		PyErr_SetString(PyExc_TypeError, "Pane already initialised");
 		return -1;
 	}
-	/* Pane(parent, handler, data, z=0 */
 	if (in_pane_frompane)
 		/* An internal Pane_Frompane call - it will set .pane,
 		 * and we don't want a .handler.
 		 */
 		return 0;
 
+	/* Pane(parent=None, z=0) */
 	ret = PyArg_ParseTupleAndKeywords(args, kwds, "|Oi", keywords,
 					  &parent, zp);
 	if (ret <= 0)
@@ -694,6 +694,8 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 	self->map = key_alloc();
 	self->cmd = python_pane_call;
 	self->cmd.free = python_pane_free;
+	if (self->ob_base.ob_type)
+		self->cmd.name = self->ob_base.ob_type->tp_name;
 
 	return 1;
 }

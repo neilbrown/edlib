@@ -148,6 +148,7 @@ struct pane *__pane_register(struct pane *parent, short z,
 	else
 		p->data = data;
 	p->data_size = data_size;
+	p->name = handle->name;
 	if (z >= 0) {
 		if (parent && parent->focus == NULL)
 			parent->focus = p;

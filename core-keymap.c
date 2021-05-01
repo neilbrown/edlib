@@ -378,11 +378,13 @@ void LOG_BT(void)
 	LOG("Start Backtrace:");
 	for (bt = backtrace; bt; bt = bt->prev) {
 		const struct cmd_info *ci = bt->ci;
-		LOG(" %p \"%s\" %p %d %p \"%s\" %d %p \"%s\" (%d,%d) %p",
-		    ci->home, ci->key, ci->focus,
+		struct command *h = ci->home->handle;
+		LOG(" %s(%p) \"%s\" %p %d %p \"%s\" %d %p \"%s\" (%d,%d) %s",
+		    h ? h->name : "?", ci->home,
+		    ci->key, ci->focus,
 		    ci->num, ci->mark, ci->str,
 		    ci->num2, ci->mark2, ci->str2,
-		    ci->x, ci->y, ci->comm2);
+		    ci->x, ci->y, ci->comm2 ? ci->comm2->name : "");
 	}
 	LOG("End Backtrace");
 }
@@ -393,13 +395,6 @@ static int do_comm_call(struct command *comm safe,
 	struct backtrace bt;
 	int ret;
 
-	/* FIXME I need a better way to skip lookup functions, such as
-	 * python_pane_call.
-	 * Also I need to catch callbacks more directly I think.
-	 */
-	if (comm->func == key_lookup_cmd_func ||
-	    comm->func == key_handle)
-		return comm->func(ci);
 	bt.comm = comm;
 	bt.ci = ci;
 	bt.prev = backtrace;
@@ -500,7 +495,11 @@ int key_handle(const struct cmd_info *ci safe)
 		if (p->handle && !(p->damaged & DAMAGED_DEAD)) {
 			vci->home = p;
 			vci->comm = p->handle;
-			ret = do_comm_call(p->handle, ci);
+			/* Don't add this to the call stack as it
+			 * should simple call the desired function and
+			 * that will appear on the call stack.
+			 */
+			ret = p->handle->func(ci);
 		}
 		if (ret != Efallthrough) {
 			time_stop_key(ci->key);

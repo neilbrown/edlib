@@ -110,14 +110,14 @@ Core features
 - [X] 'log' should handle utf8 correctly.
 - [X] doc_write_file should use doc:content
 - [X] guard against mark seq number over-flowing.
-- [ ] use the time-keeping stack to allow an edlib stack-trace to be reported
+- [X] use the time-keeping stack to allow an edlib stack-trace to be reported
       Or provide linkage from one call() to the next which can be walked and
       ci reported.
 - [ ] have standard way for reporting marks, and slow testing of order
 - [ ] have a debug mode where mark consistency is checked v.often
 - [ ] improve timeout.  Set timer once, then set a flag so that all commands fails
       until some top-level clears the flag.
-- [ ] give a name to every pane for easier reporting.
+- [X] give a name to every pane for easier reporting.
 - [ ] reconsider all 'return comm_call()' calls.  Do we every really
       care if the callback succeeded?
 - [X] all function that return 0 or 1 should probably be Bool
