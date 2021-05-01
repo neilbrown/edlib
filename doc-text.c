@@ -1861,6 +1861,40 @@ DEF_CMD(text_content)
 	return 1;
 }
 
+DEF_CMD(text_debug_mark)
+{
+	char *ret = NULL;
+	struct text_chunk *c;
+	struct mark *m = ci->mark;
+
+	if (!m || m->owner != ci->home || !ci->comm2)
+		return Enoarg;
+	c = ci->mark->ref.c;
+	if (!c)
+		ret = strdup("M:EOF");
+	else {
+		int len = c->end - c->start;
+		int o = ci->mark->ref.o;
+
+		if (o <= c->start + 4 || len <= 8) {
+			if (len > 8)
+				len = 8;
+			asprintf(&ret, "M:(%.*s[%d])", len,
+				 c->txt + c->start, m->ref.o);
+		} else {
+			len = c->end - m->ref.o;
+			if (len > 4)
+				len = 4;
+			asprintf(&ret, "M:(%.4s..[%d]%.*s)",
+				 c->txt + c->start,
+				 m->ref.o, len, c->txt + m->ref.o);
+		}
+	}
+	comm_call(ci->comm2, "cb", ci->focus, 0, NULL, ret);
+	free(ret);
+	return 1;
+}
+
 DEF_CMD(text_set_ref)
 {
 	struct doc *d = ci->home->data;
@@ -2537,6 +2571,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:notify:doc:revisit", &text_revisited);
 	key_add(text_map, "doc:clear", &text_clear);
 	key_add(text_map, "doc:autosave-delete", &text_autosave_delete);
+	key_add(text_map, "doc:debug:mark", &text_debug_mark);
 
 	key_add(text_map, "Close", &text_destroy);
 	key_add(text_map, "Free", &text_free);

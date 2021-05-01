@@ -126,7 +126,8 @@ Core features
 - [X] use the time-keeping stack to allow an edlib stack-trace to be reported
       Or provide linkage from one call() to the next which can be walked and
       ci reported.
-- [ ] have standard way for reporting marks, and slow testing of order
+- [X] have standard way for reporting marks
+- [ ] have standard way for slow testing of order of marks
 - [ ] have a debug mode where mark consistency is checked v.often
 - [ ] improve timeout.  Set timer once, then set a flag so that all commands fail
       until some top-level clears the flag.
