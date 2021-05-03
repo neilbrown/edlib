@@ -25,8 +25,18 @@
 
 import email.utils
 import email.message
+import email.policy
+import email.headerregistry
 import tempfile
 from datetime import date
+
+# The default email message policy declares that there can
+# only be one Cc header and rfc5322 agrees!
+# I don't agree (for now).
+
+MultiCCHeader = email.headerregistry.HeaderRegistry()
+MultiCCHeader.registry['cc'] = email.headerregistry.AddressHeader
+MultiCC = email.policy.default.clone(header_factory = MultiCCHeader)
 
 class compose_email(edlib.Pane):
     def __init__(self, focus):
@@ -649,7 +659,7 @@ class compose_email(edlib.Pane):
 
     def handle_commit(self, key, focus, **a):
         "handle:Commit"
-        msg = email.message.EmailMessage()
+        msg = email.message.EmailMessage(policy = MultiCC)
         m, l = self.vmarks(self.view)
         if m:
             m = m.next()
