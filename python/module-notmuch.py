@@ -1776,6 +1776,8 @@ class notmuch_master_view(edlib.Pane):
             msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
         else:
             return 1
+        if not thid:
+            return 1
 
         if wholethread:
             mids = self.query_pane.call("doc:notmuch-query:matched-mids",
@@ -1935,6 +1937,10 @@ class notmuch_master_view(edlib.Pane):
         else:
             thid = self.message_pane['thread-id']
             msid = self.message_pane['message-id']
+        if not thid:
+            # FIXME maybe warn that there is no message here.
+            # Might be at EOF
+            return 1
 
         pup = focus.call("PopupTile", "2", key[-1:], ret='focus')
         if not pup:
