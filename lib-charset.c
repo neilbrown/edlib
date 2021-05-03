@@ -1474,15 +1474,31 @@ void edlib_init(struct pane *ed safe)
 	key_add(charset_map, "doc:content", &charset_content);
 	/* No doc:content-bytes - that wouldn't make sense */
 
+	/* Use 1251 for any unknown 'windows' charset */
 	call_comm("global-set-command", ed, &win1251_attach, 0, NULL,
-		"attach-charset-windows-1251");
+		  "attach-charset-windows-", 0, NULL,
+		  "attach-charset-windows.");
 	call_comm("global-set-command", ed, &win1251_to_utf8, 0, NULL,
-		"charset-to-utf8-windows-1251");
+		  "charset-to-utf8-windows-", 0, NULL,
+		  "charset-to-utf8-windows.");
 
 	call_comm("global-set-command", ed, &win1252_attach, 0, NULL,
 		"attach-charset-windows-1252");
 	call_comm("global-set-command", ed, &win1252_to_utf8, 0, NULL,
 		"charset-to-utf8-windows-1252");
+
+	/* Use iso-8859-15 for any unknown iso-8859, and for ascii */
+	call_comm("global-set-command", ed, &iso8859_15_attach, 0, NULL,
+		  "attach-charset-iso-8859-", 0, NULL,
+		  "attach-charset-iso-8859.");
+	call_comm("global-set-command", ed, &iso8859_15_to_utf8, 0, NULL,
+		  "charset-to-utf8-iso-8859-", 0, NULL,
+		  "charset-to-utf8-iso-8859.");
+
+	call_comm("global-set-command", ed, &iso8859_15_attach, 0, NULL,
+		"attach-charset-us-ascii");
+	call_comm("global-set-command", ed, &iso8859_15_to_utf8, 0, NULL,
+		"charset-to-utf8-us-ascii");
 
 	call_comm("global-set-command", ed, &iso8859_1_attach, 0, NULL,
 		"attach-charset-iso-8859-1");
@@ -1493,10 +1509,5 @@ void edlib_init(struct pane *ed safe)
 		"attach-charset-iso-8859-2");
 	call_comm("global-set-command", ed, &iso8859_2_to_utf8, 0, NULL,
 		"charset-to-utf8-iso-8859-2");
-
-	call_comm("global-set-command", ed, &iso8859_15_attach, 0, NULL,
-		"attach-charset-iso-8859-15");
-	call_comm("global-set-command", ed, &iso8859_15_to_utf8, 0, NULL,
-		"charset-to-utf8-iso-8859-15");
 
 }
