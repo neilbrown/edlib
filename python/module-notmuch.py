@@ -1438,32 +1438,33 @@ class notmuch_query(edlib.Doc):
 
     def handle_mark_read(self, key, str, str2, **a):
         "handle:doc:notmuch:mark-read"
-        if str not in self.threadinfo:
-            edlib.LOG("notmuch:mark-read cannot find %s" % str)
-            return edlib.Efail
-        ti = self.threadinfo[str]
-        m = ti[str2]
-        tags = m[6]
-        if "unread" not in tags and "new" not in tags:
-            return
-        if "unread" in tags:
-            tags.remove("unread")
-        if "new" in tags:
-            tags.remove("new")
-        is_unread = False
-        for mid in ti:
-            if "unread" in ti[mid][6]:
-                # still has unread messages
-                is_unread = True
-                break
-        if not is_unread:
-            # thread is no longer 'unread'
-            j = self.threads[str]
-            t = j["tags"]
-            if "unread" in t:
-                t.remove("unread")
-        self.notify("doc:replaced")
-        # Cached info is updates, pass down to
+        # Note that the thread might already have been pruned,
+        # in which case there is no cached info to update.
+        # In that case we just pass the request down to the db.
+        if str in self.threadinfo:
+            ti = self.threadinfo[str]
+            m = ti[str2]
+            tags = m[6]
+            if "unread" not in tags and "new" not in tags:
+                return
+            if "unread" in tags:
+                tags.remove("unread")
+            if "new" in tags:
+                tags.remove("new")
+            is_unread = False
+            for mid in ti:
+                if "unread" in ti[mid][6]:
+                    # still has unread messages
+                    is_unread = True
+                    break
+            if not is_unread and str in self.threads:
+                # thread is no longer 'unread'
+                j = self.threads[str]
+                t = j["tags"]
+                if "unread" in t:
+                    t.remove("unread")
+            self.notify("doc:replaced")
+        # Cached info is updated, pass down to
         # database document for permanent change
         self.maindoc.call(key, str, str2)
         return 1
