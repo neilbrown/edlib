@@ -1769,8 +1769,8 @@ class notmuch_master_view(edlib.Pane):
             removes = ['newspam','notspam','flagged']
 
         if which == "message":
-            thid = self.message_pane.ctid
-            msid = self.message_pane.cmid
+            thid = self.message_pane['thread-id']
+            msid = self.message_pane['message-id']
         elif which == "query":
             thid = focus.call("doc:get-attr", "thread-id", mark, ret = 'str')
             msid = focus.call("doc:get-attr", "message-id", mark, ret = 'str')
@@ -1933,8 +1933,8 @@ class notmuch_master_view(edlib.Pane):
             thid = focus.call("doc:get-attr", "thread-id", mark, ret='str')
             msid = focus.call("doc:get-attr", "message-id", mark, ret='str')
         else:
-            thid = self.message_pane.ctid
-            msid = self.message_pane.cmid
+            thid = self.message_pane['thread-id']
+            msid = self.message_pane['message-id']
 
         pup = focus.call("PopupTile", "2", key[-1:], ret='focus')
         if not pup:
@@ -2112,9 +2112,9 @@ class notmuch_master_view(edlib.Pane):
         # hasn't been anchored yet so if they are the same, we lose.
         # Need a better way to anchor a document.
         #p0.call("doc:set:autoclose", 1)
-        p = self.message_pane = p3
-        p.ctid = str2
-        p.cmid = str
+        p3['thread-id'] = str2
+        p3['message-id'] = str
+        self.message_pane = p3
         if num:
             self.message_pane.take_focus()
         self.resize()
@@ -2125,7 +2125,8 @@ class notmuch_master_view(edlib.Pane):
         if not p:
             return
         if self.query_pane:
-            self.query_pane.call("doc:notmuch:mark-read", p.ctid, p.cmid)
+            self.query_pane.call("doc:notmuch:mark-read",
+                                 p['thread-id'], p['message-id'])
 
 class notmuch_list_view(edlib.Pane):
     # This pane provides view on the search-list document.
