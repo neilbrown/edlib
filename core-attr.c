@@ -42,6 +42,11 @@ struct attrset {
 	char		attrs[0];
 };
 
+/* NOTE: this MAX is the largest sized allocation which
+ * can be shared by multiple attrs.  The size is the sum
+ * of keys and values including nul terminator.
+ * If an attr is larger, it gets an attrset all of its own.
+ */
 #if defined(TEST_ATTR_ADD_DEL)
 #define MAX_ATTR_SIZE (64 - sizeof(struct attrset))
 #else
@@ -322,11 +327,14 @@ int attr_set_str_key(struct attrset **setp safe,
 	} else
 		nkey[0] = 0;
 	len = nkeylen + strlen(key) + 1 + strlen(val) + 1;
-	if (set == NULL || set->len + len > set->size) {
+	while (set == NULL || set->len + len > set->size) {
 		/* Need to re-alloc or alloc new */
-		if (!set) {
-			set = newattr(NULL, len);
-			*setp = set;
+		if (!set || (offset == 0 && len + set->len > MAX_ATTR_SIZE)) {
+			/* Create a new set - which may exceed MAX_ATTR_SIZE */
+			struct attrset *new = newattr(NULL, len);
+			new->next = set;
+			*setp = new;
+			set = new;
 		} else if (set->len + len <= MAX_ATTR_SIZE) {
 			/* Just make this block bigger */
 			set = newattr(set, set->len + len);
@@ -334,7 +342,6 @@ int attr_set_str_key(struct attrset **setp safe,
 		} else if (offset + len <= MAX_ATTR_SIZE) {
 			/* split following entries in separate block */
 			struct attrset *new = newattr(NULL, set->len - offset);
-
 			new->next = set->next;
 			set->next = new;
 			new->len = set->len - offset;
@@ -342,9 +349,11 @@ int attr_set_str_key(struct attrset **setp safe,
 			memcpy(new->attrs, set->attrs + offset,
 			       new->len);
 		} else {
-			/* Split follow in entries and store new entry there */
+			/* offset must be > 0.
+			 * Split off following entries and try again there.
+			 */
 			struct attrset *new = newattr(NULL,
-						      set->len - offset + len);
+						      set->len - offset);
 
 			new->next = set->next;
 			set->next = new;
@@ -352,6 +361,7 @@ int attr_set_str_key(struct attrset **setp safe,
 			set->len = offset;
 			memcpy(new->attrs, set->attrs + offset,
 			       new->len);
+			setp = &set->next;
 			set = new;
 			offset = 0;
 		}
