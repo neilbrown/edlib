@@ -799,6 +799,9 @@ DEF_CMD(doc_get_str)
 	/* doc:get-str
 	 * uses doc:content to collect the content
 	 * into a buf.
+	 * If mark and mark2 are both set, they are end points.
+	 * If only mark is set we ignore it.  It is likely
+	 * 'point' provided by default.
 	 */
 	int bytes = strcmp(ci->key, "doc:get-bytes") == 0;
 	struct getstr g;
