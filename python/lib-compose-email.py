@@ -30,6 +30,12 @@ import email.headerregistry
 import tempfile
 from datetime import date
 
+def read_status(p, key, focus, **a):
+    out, err = p.communicate()
+    focus.call("Message", "Email submission complete")
+    edlib.LOG("Email submission reported: " + out.decode() + err.decode())
+    return edlib.Efalse
+
 class compose_email(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
@@ -704,18 +710,34 @@ class compose_email(edlib.Pane):
         sendmail = focus['email:sendmail']
         if not sendmail:
             sendmail = "/sbin/sendmail -i"
-        p = subprocess.Popen(sendmail.split(),
-                             stdin = tf.fileno(),
-                             stdout = subprocess.PIPE,
-                             stderr = subprocess.PIPE)
-        out, err = p.communicate()
-        if out:
-            edlib.LOG("notmuch-insert says:", out.decode())
-        if err:
-            focus.call("Message", "notmuch-insert gives err: " + err.decode())
+        try:
+            p = subprocess.Popen(sendmail.split(),
+                                 stdin = tf.fileno(),
+                                 stdout = subprocess.PIPE,
+                                 stderr = subprocess.PIPE)
+        except:
+            p = None
+        if not p:
+            focus.call("Message", "Failed to run sendmail command")
+            edlib.LOG("%s failed", sendmail)
+            return 1
         if not whoto:
             whoto = "someone"
         focus.call("doc:set-name", "*Sent message to %s*" % whoto)
+        root = self.call("RootPane", ret='focus')
+        if root:
+            root.call("event:read", p.stdout.fileno(),
+                      lambda key, **a: read_status(p, key, **a))
+            focus.call("Message", "Queueing message to %s." % whoto)
+            focus.call("Window:bury")
+            return 1
+
+        # Cannot find pane to report status on, so do it sync
+        out, err = p.communicate()
+        if out:
+            edlib.LOG("Email submission says:", out.decode())
+        if err:
+            focus.call("Message", "Email submission gives err: " + err.decode())
         focus.call("Message", "Email message to %s queued." % whoto)
         focus.call("Window:bury")
 

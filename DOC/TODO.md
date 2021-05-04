@@ -11,10 +11,17 @@ Current priorities
 - [ ] fix bugs
 - [X] make notmuch usable
 - [X] make spell-check useful
+- [ ] core features
 - [ ] markdown viewer and editor
+- [ ] git log view with rebase and reword options
+- [ ] git-commit command which presents the patch and allows it to be
+      editted (with consistency checks and number updates). On :Commit
+      the patch is applied with "git apply --cached" an if successful
+      the message is added with "| git commit -F"
+- [ ] Add menu/menu-bar support
+- [ ] remote ncurses pane
 - [ ] lib-diff improvements
 - [ ] lib-mergeview improvements
-- [ ] Add menu/menu-bar support
 - [ ] use common UI for dynamic abbrev and spell (and more?)
 - [ ] Finish render-lines rewrite
 
@@ -27,6 +34,12 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] Mouse-event :Motion (x,y) 0 3 from pygtk gets Enoarg
+- [ ] c-mode 'TAB' in a comment can insert a '*'
+- [ ] 'click' should happen on 'release' if 'press' was ignored (and no movement)
+- [ ] copy/paste is unreliable
+- [ ] email: not all urls get displayed if there are several
+- [ ] clicking twice (double-click?) in notmuch_list_view moves to eof
 - [X] windows-1250 charset can fail
 - [ ] 'm' in notmuch opens a compose window which isn't refreshed properly.
       If I add "pane_damaged(p, DAMAGED_VIEW)" in render_lines_refresh,
@@ -115,7 +128,7 @@ Core features
       ci reported.
 - [ ] have standard way for reporting marks, and slow testing of order
 - [ ] have a debug mode where mark consistency is checked v.often
-- [ ] improve timeout.  Set timer once, then set a flag so that all commands fails
+- [ ] improve timeout.  Set timer once, then set a flag so that all commands fail
       until some top-level clears the flag.
 - [X] give a name to every pane for easier reporting.
 - [ ] reconsider all 'return comm_call()' calls.  Do we every really
@@ -163,6 +176,11 @@ Core features
       marks exactly? start and end of range.  Verify all clients and providers
 - [ ] revise and document behaviour of doc:open etc, particularly for
        reloading and filenames etc.
+- [ ] review all aspects of mark lifetime.  ->owner must be set for
+      points and vmarks.  A non-owner may never hold onto a mark beyond
+      the call which gave access to it, unless it registers for
+      notifications from the owner, and that probably only applies to
+      points.
 
 ### Longer term
 
@@ -220,6 +238,7 @@ Module features
 
 ### lib-diff
 
+- [ ] highlight white-space errors.
 - [X] diff-mode keystrokes for 'next diff', prev, etc
 - [X] When only add or only delete, highlight in same way as when there are both.
 - [X] allow inversion so 'enter' looks for the '-' not the '+'
@@ -434,6 +453,9 @@ Module features
 
 ### message-line
 
+- [ ] a modal message like ":CX" can obscure an async message like
+      "email submission complete".  Maybe the non-modal message
+      comes back when the modal message is gone?
 - [ ] messages gets too much noise but doesn't get 'version'. 'log' gets messages..
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
 
@@ -654,6 +676,7 @@ Module features
       - only 1 'to' or 'cc'
       - provide 'sender' if multiple 'from'
       - word 'attach' without attachments
+      - message has already been sent
 - [ ] catch exceptions from email.message creation.
        particularly adding headers can complain
 - [X] close window after posting
@@ -684,6 +707,15 @@ Module features
 - [ ] support address book and allow completion from there
 - [ ] markdown mode that creates HTML?
 - [ ] encryption and signing
+      gpg --no-tty --pinentry-mode=loopback .....
+       will cause an error "gpg: Sorry, no terminal at all requested - can't get input"
+       if it needs to prompt for a passphrase.
+      If that happens then
+       DISPLAY= GPG_TTY=/dev/whatever gpg .....
+      will use the tty to ask for a password.
+      But need to specifiy a suitable pinentry program via
+       ~/.config/systemd/user.control.gpg-agent.server.d/pinentry.conf
+          [Service] \ ExecStart= \ ExecStart=/usr/bin/gpg-agent --supervised --pinenty-program ...
 
 ### Presenter
 
@@ -844,7 +876,7 @@ Possibly some of these will end up being features in other modules.
       into a filesystem access module.
 - [ ] Create compress-access module that layers compression over fs access
 - [ ] Create gpg-access module that layers encryption and decryption over fs access
-- [ ] Create ssh-access module that uses ssh/scp to access files
+- [ ] Create ssh-access module that uses ssh/scp to access files - maybe use python paramiko
 
 New Modules - more complex
 -------------------------

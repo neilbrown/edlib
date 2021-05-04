@@ -3,7 +3,7 @@
 # May be distributed under terms of GPLv2 - see file:COPYING
 #
 
-import subprocess, os, fcntl, signal
+import os, fcntl, signal
 
 class MakePane(edlib.Pane):
     # This pane over-sees the running of "make" or "grep" command,
