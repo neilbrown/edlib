@@ -651,7 +651,11 @@ Module features
 
 - [ ] sanity check message:
       - body/subject/to not empty
+      - only 1 'to' or 'cc'
+      - provide 'sender' if multiple 'from'
       - word 'attach' without attachments
+- [ ] catch exceptions from email.message creation.
+       particularly adding headers can complain
 - [X] close window after posting
 - [X] design backend for posting
 - [X] Support compose/reply/follow-up/forward

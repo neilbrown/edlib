@@ -30,14 +30,6 @@ import email.headerregistry
 import tempfile
 from datetime import date
 
-# The default email message policy declares that there can
-# only be one Cc header and rfc5322 agrees!
-# I don't agree (for now).
-
-MultiCCHeader = email.headerregistry.HeaderRegistry()
-MultiCCHeader.registry['cc'] = email.headerregistry.AddressHeader
-MultiCC = email.policy.default.clone(header_factory = MultiCCHeader)
-
 class compose_email(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)
@@ -106,10 +98,10 @@ class compose_email(edlib.Pane):
         if str != "forward":
             if from_addrs:
                 self.add_addr_header("To", from_addrs)
-                self.add_addr_header("Cc", to_addrs)
+                self.add_addr_header("Cc", to_addrs + cc_addrs)
             else:
                 self.add_addr_header("To", to_addrs)
-            self.add_addr_header("Cc", cc_addrs)
+                self.add_addr_header("Cc", cc_addrs)
 
         self.pfx = "Re"
         if str == "forward":
@@ -659,7 +651,7 @@ class compose_email(edlib.Pane):
 
     def handle_commit(self, key, focus, **a):
         "handle:Commit"
-        msg = email.message.EmailMessage(policy = MultiCC)
+        msg = email.message.EmailMessage()
         m, l = self.vmarks(self.view)
         if m:
             m = m.next()
