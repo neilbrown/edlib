@@ -774,6 +774,9 @@ class CModePane(edlib.Pane):
             return 1
 
         if new != current:
+            if prefix and focus.following(mark) == prefix[0]:
+                # Don't at an extra prefix
+                prefix = ""
             try:
                 return focus.call("doc:replace", 1, m, mark, new+prefix)
             except edlib.commandfailed:
