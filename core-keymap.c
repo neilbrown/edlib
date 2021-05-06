@@ -40,9 +40,11 @@
  *
  */
 
+#define _GNU_SOURCE /*  for asprintf */
 #include <unistd.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <stdio.h>
 
 #include "core.h"
 #include "misc.h"
@@ -372,6 +374,23 @@ static struct backtrace {
 	struct backtrace *prev;
 } *backtrace;
 
+static char *mark_info(struct mark *m)
+{
+	char *ret = NULL;
+
+	if (!m) {
+		asprintf(&ret, "M-");
+		return ret;
+	}
+	ret = pane_call_ret(str, m->owner, "doc:debug:mark",
+			    m->owner, 0, m);
+	if (ret)
+		return ret;
+
+	asprintf(&ret, "M:%x<%p>", m->seq, m);
+	return ret;
+}
+
 void LOG_BT(void)
 {
 	struct backtrace *bt;
@@ -380,13 +399,19 @@ void LOG_BT(void)
 		const struct cmd_info *ci = bt->ci;
 		struct command *h = ci->home->handle;
 		struct command *f = ci->focus->handle;
-		LOG(" H:%s \"%s\" F:%s: %d %p \"%s\" %d %p \"%s\" (%d,%d) %s",
+		char *m1 = mark_info(ci->mark);
+		char *m2 = mark_info(ci->mark2);
+
+		LOG(" H:%s \"%s\" F:%s: %d %s \"%s\" %d %s \"%s\" (%d,%d) %s",
 		    h ? h->name : "?",
 		    ci->key,
 		    f ? f->name : "?",
-		    ci->num, ci->mark, ci->str,
-		    ci->num2, ci->mark2, ci->str2,
-		    ci->x, ci->y, ci->comm2 ? ci->comm2->name : "");
+		    ci->num, m1, ci->str,
+		    ci->num2, m2, ci->str2,
+		    ci->x, ci->y,
+		    ci->comm2 ? ci->comm2->name : "");
+		free(m1);
+		free(m2);
 	}
 	LOG("End Backtrace");
 }
