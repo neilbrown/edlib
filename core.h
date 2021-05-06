@@ -189,13 +189,15 @@ struct mark {
 	struct attrset		*attrs;
 	int			seq;
 	short			viewnum;
-	unsigned short		refs;	/* create of mark can use this for
+	unsigned short		refs;	/* creator of mark can use this for
 					 * e.g. refcounting
 					 */
 	MARK_DATA_PTR		*mdata;
 	void			*mtype;	/* can be used to validate
 					 * type of mdata */
-	struct pane		*owner safe;
+	struct pane		*owner safe; /* document pane which
+					      * understands .ref
+					      */
 };
 
 /* A point uses this for the mdata */

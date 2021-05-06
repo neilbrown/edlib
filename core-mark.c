@@ -24,12 +24,7 @@
  * things can happen.  Text can be added or removed, marks can
  * be created or destroyed, only at a 'point'.
  * A 'point' is on all lists.  This allows nearby marks on any list to be
- * found quickly.  A cost is that a point will be reallocated when
- * a new list is created.  So stable refs to a point are not possible.
- * Each point has one reference from a window/pane (where it is the cursor)
- * or some other object (for background updates) and that can be found
- * through the ->owner link.
- * Each point knows which document it points to - a mark doesn't.
+ * found quickly.
  *
  * As the 'group' lists can hold either marks or points, and with a
  * different anchor in each, we use 'tlist_head'.  Pointers in a
