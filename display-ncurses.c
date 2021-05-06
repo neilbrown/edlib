@@ -1255,7 +1255,7 @@ static void do_send_mouse(struct pane *p safe, int x, int y, char *cmd safe,
 			fflush(dd->scr_file);
 		}
 		dd->report_position = 1;
-	} else if (type == 3 && !ret) {
+	} else if (type == 3 && ret <= 0) {
 		if (dd->is_xterm) {
 			fprintf(dd->scr_file, "\033[?1002l");
 			fflush(dd->scr_file);

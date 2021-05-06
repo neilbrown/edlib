@@ -34,7 +34,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] Mouse-event :Motion (x,y) 0 3 from pygtk gets Enoarg
+- [X] Mouse-event :Motion (x,y) 0 3 from pygtk gets Enoarg
 - [ ] c-mode 'TAB' in a comment can insert a '*'
 - [ ] 'click' should happen on 'release' if 'press' was ignored (and no movement)
 - [ ] copy/paste is unreliable

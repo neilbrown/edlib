@@ -553,8 +553,11 @@ class EdDisplay(edlib.Pane):
         edlib.time_start(edlib.TIME_KEY)
         x = int(event.x)
         y = int(event.y)
-        ret = self.call("Mouse-event", ":Motion", (x,y), 0, 3)
-        if not ret:
+        try:
+            ret = self.call("Mouse-event", ":Motion", (x,y), 0, 3)
+        except edlib.commandfailed:
+            ret = -1
+        if ret <= 0:
             self.block_motion()
 
     def scroll(self, c, event):
