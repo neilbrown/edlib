@@ -40,7 +40,7 @@ Bugs to be fixed
 - [ ] 'click' should happen on 'release' if 'press' was ignored (and no movement)
 - [ ] copy/paste is unreliable
 - [X] email: not all urls get displayed if there are several
-- [ ] clicking twice (double-click?) in notmuch_list_view moves to eof
+- [X] clicking twice (double-click?) in notmuch_list_view moves to eof
 - [X] windows-1250 charset can fail
 - [ ] 'm' in notmuch opens a compose window which isn't refreshed properly.
       If I add "pane_damaged(p, DAMAGED_VIEW)" in render_lines_refresh,

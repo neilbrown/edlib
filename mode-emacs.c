@@ -1857,8 +1857,16 @@ static void update_sel(struct pane *p safe,
 			mlast = pt;
 		}
 		if (strcmp(type, "word") == 0) {
-			call("doc:word", p, -1,  mfirst);
-			call("doc:word", p, 1, mlast);
+			wint_t wch = doc_prior(p, mfirst);
+			/* never move back over spaces */
+			if (wch != WEOF && !iswspace(wch))
+				call("doc:word", p, -1,  mfirst);
+			wch = doc_following(p, mlast);
+			/* For forward over a single space is OK */
+			if (wch != WEOF && iswspace(wch))
+				doc_next(p, mlast);
+			else
+				call("doc:word", p, 1, mlast);
 		} else {
 			call("doc:EOL", p, -1,  mfirst);
 			/* Include trailing newline */
