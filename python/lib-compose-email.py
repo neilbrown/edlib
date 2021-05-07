@@ -104,7 +104,11 @@ class compose_email(edlib.Pane):
         if str != "forward":
             if from_addrs:
                 self.add_addr_header("To", from_addrs)
-                self.add_addr_header("Cc", to_addrs + cc_addrs)
+                if not to_addrs:
+                    to_addrs = cc_addrs
+                elif cc_addrs:
+                    to_addrs += cc_addrs
+                self.add_addr_header("Cc", to_addrs)
             else:
                 self.add_addr_header("To", to_addrs)
                 self.add_addr_header("Cc", cc_addrs)
