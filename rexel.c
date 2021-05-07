@@ -1308,12 +1308,16 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 	}
 	do {
 		ch = get_utf8(&p, NULL);
-		if (ch == '\\' && p[0] && strchr("0xuU", p[0]) != NULL) {
+		if (ch == '\\' && p[0] && strchr("0xuUnrft", p[0]) != NULL) {
 			switch (*p++) {
 			case '0': ch = cvt_oct(&p, 3);  break;
 			case 'x': ch = cvt_hex(p, 2); p += 2; break;
 			case 'u': ch = cvt_hex(p, 4); p += 4; break;
 			case 'U': ch = cvt_hex(p, 8); p += 8; break;
+			case 't': ch = '\t'; break;
+			case 'n': ch = '\n'; break;
+			case 'r': ch = '\r'; break;
+			case 'f': ch = '\f'; break;
 			}
 			if (ch == WEOF)
 				return -1;
@@ -1557,6 +1561,8 @@ static bool parse_atom(struct parse_state *st safe)
 		case 'B': ch = REC_NOWBRK; break;
 		case 't': ch = '\t'; break;
 		case 'n': ch = '\n'; break;
+		case 'r': ch = '\r'; break;
+		case 'f': ch = '\f'; break;
 		case '0': ch = cvt_oct(&st->patn, 4);
 			st->patn -= 1;
 			break;
@@ -2321,6 +2327,8 @@ static struct test {
 	// octal chars
 	{ "[\\0101\\0102\\x43\\u0064]*", "ABCddCBA1234", 0, 0, 8},
 	{ "\\011", "a\tb", 0, 1, 1},
+	// special controls
+	{ "[\t\r\f\n]*\t\r\f\n", "trfn\t\r\f\n\t\r\f\n", 0, 4, 8},
 	// backref for backtracking only
 	{ "(.(.).)\\1", "123123", F_BACKTRACK, 0, 6},
 	// backre must skip partial match
