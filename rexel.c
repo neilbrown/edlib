@@ -1308,12 +1308,12 @@ static int do_parse_set(struct parse_state *st safe, int plane)
 	}
 	do {
 		ch = get_utf8(&p, NULL);
-		if (ch == '\\' && p[0] && strchr("0xXU", p[0]) != NULL) {
-			switch (p[0]) {
-			case '0': ch = cvt_oct(&p, 4); p-=1; break;
-			case 'x': ch = cvt_hex(p+1, 2); p += 2; break;
-			case 'X': ch = cvt_hex(p+1, 4); p += 4; break;
-			case 'U': ch = cvt_hex(p+1, 8); p += 8; break;
+		if (ch == '\\' && p[0] && strchr("0xuU", p[0]) != NULL) {
+			switch (*p++) {
+			case '0': ch = cvt_oct(&p, 3);  break;
+			case 'x': ch = cvt_hex(p, 2); p += 2; break;
+			case 'u': ch = cvt_hex(p, 4); p += 4; break;
+			case 'U': ch = cvt_hex(p, 8); p += 8; break;
 			}
 			if (ch == WEOF)
 				return -1;
@@ -2319,6 +2319,7 @@ static struct test {
 	{ "[0-9].\\Bab", "012+ab 45abc", 0, 7, 4},
 	{ "[\\060-\\x09].\\Bab", "012+ab 45abc", 0, 7, 4},
 	// octal chars
+	{ "[\\0101\\0102\\x43\\u0064]*", "ABCddCBA1234", 0, 0, 8},
 	{ "\\011", "a\tb", 0, 1, 1},
 	// backref for backtracking only
 	{ "(.(.).)\\1", "123123", F_BACKTRACK, 0, 6},
