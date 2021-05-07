@@ -1273,7 +1273,7 @@ DEF_CMD(render_lines_set_cursor)
 	if (m2) {
 		char *tag, *xyattr;
 
-		if (ci->num == 1) { /* Mouse click */
+		if (ci->num == 2) { /* Mouse release */
 			xyattr = pane_attr_get(m->mdata, "xyattr");
 			tag = get_active_tag(xyattr);
 			if (tag) {

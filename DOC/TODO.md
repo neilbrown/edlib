@@ -37,7 +37,7 @@ Bugs to be fixed
 - [X] compose-email joins to_addrs with cc_addrs even if one is None
 - [X] Mouse-event :Motion (x,y) 0 3 from pygtk gets Enoarg
 - [X] c-mode 'TAB' in a comment can insert a '*'
-- [ ] 'click' should happen on 'release' if 'press' was ignored (and no movement)
+- [X] 'click' should happen on 'release' if 'press' was ignored (and no movement)
 - [ ] copy/paste is unreliable
 - [X] email: not all urls get displayed if there are several
 - [X] clicking twice (double-click?) in notmuch_list_view moves to eof

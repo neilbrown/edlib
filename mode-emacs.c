@@ -1942,9 +1942,8 @@ DEF_CMD(emacs_release)
 	moved = prev_pos != (1 + ci->x * 10000 + ci->y);
 	attr_set_int(&m2->attrs, "emacs:track-selection", 0);
 
-	if (moved)
-		call("Move-CursorXY", ci->focus,
-		     2, NULL, NULL, 0, NULL, NULL, ci->x, ci->y);
+	call("Move-CursorXY", ci->focus,
+	     2, NULL, NULL, moved, NULL, NULL, ci->x, ci->y);
 
 	if (!moved || mark_same(p, m2)) {
 		/* No movement, so no selection */

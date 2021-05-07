@@ -54,7 +54,8 @@ struct input_mode {
 		struct timespec	last_up;
 		int		last_x, last_y;
 		int		click_count;
-		int		ignore_up;
+		int		click_on_up;
+		char		*mod;
 	} buttons[3];
 
 	char		*log[LOGSIZE];
@@ -257,8 +258,10 @@ DEF_CMD(mouse_event)
 	struct timespec now;
 	unsigned int b;
 	int press;
+	int r;
 	const char *mode;
-	const char *mod = ci->str2; /* :A:C:S modifiers - optional */
+	const char *cmd;
+	char *mod; /* :A:C:S modifiers - optional */
 	struct mouse_state *ms = NULL;
 
 	clock_gettime(CLOCK_MONOTONIC, &now);
@@ -294,7 +297,15 @@ DEF_CMD(mouse_event)
 		if (tspec_diff_ms(&now, &ms->last_up) <= 500 &&
 		    (abs(ci->x - ms->last_x) +
 		     abs(ci->y - ms->last_y)) <= 2)
+			/* FIXME should I let 'release' know that
+			 * it was close to the 'press'??
+			 */
 			repeat = True;
+		else
+			/* Too much time or space has elapsed.
+			 * This cannot be a click.
+			 */
+			ms->click_on_up = 0;
 
 		if (press) {
 			if (!repeat)
@@ -304,11 +315,6 @@ DEF_CMD(mouse_event)
 		} else {
 			ms->last_up = now;
 			ms->last_x = ci->x; ms->last_y = ci->y;
-
-			if (ms->ignore_up) {
-				ms->ignore_up = 0;
-				return 1;
-			}
 		}
 	}
 
@@ -351,68 +357,56 @@ DEF_CMD(mouse_event)
 			    xy.x, xy.y);
 	}
 	if (press) {
-		/* Try nPress :nClick :(n-1)Press :(n-1)Click until something
-		 * gets a result. 'n' is T (triple) or D(double) or ""(Single).
-		 * If a Click got a result, suppress subsequent release
-		 */
-		int r;
-
-		if (!mod) {
+		/* identify and save modifiers */
+		free(ms->mod);
+		if (ci->str2)
+			mod = strdup(ci->str2);
+		else {
 			char *c = strrchr(ci->str, ':');
 			if (c)
-				mod = strnsave(ci->home, ci->str, c - ci->str);
+				mod = strndup(ci->str, c - ci->str);
 			else
-				mod = "";
+				mod = strdup("");
 		}
+		ms->mod = mod;
+	}
 
-		ms->ignore_up = 1;
-		for (r = ms->click_count; r >= 1 ; r--) {
-			int ret;
-			char *mult = "\0\0D\0T" + (r-1)*2;
-			char n[2];
-			n[0] = '1' + b;
-			n[1] = 0;
-			key = strconcat(ci->home, "M", mode, mod, ":", mult,
-					"Press-", n);
-			ret = call(key, focus, num, NULL, NULL, ex,
-				   NULL, NULL, xy.x, xy.y);
+	if (press)
+		cmd = "Press-";
+	else if (ms->click_on_up)
+		cmd = "Click-";
+	else
+		cmd = "Release-";
 
-			if (ret) {
-				/* Only get a Release if you respond to a
-				 * Press
-				 */
-				ms->ignore_up = 0;
-				return ret;
-			}
+	/* Try :nPress :(n-1)Press ... (or :nRelease or :nClick)
+	 * until something gets a result.
+	 * 'n' is T (triple) or D(double) or ""(Single).
+	 * If nothing got a result for a Press,, register for
+	 * 'click' on release.
+	 */
+	ms->click_on_up = 1;
+	for (r = ms->click_count; r >= 1 ; r--) {
+		int ret;
+		char *mult = "\0\0D\0T" + (r-1)*2;
+		char n[2];
 
-			key = strconcat(ci->home, "M", mode, mod, ":", mult,
-					"Click-", n);
-			ret = call(key, focus, num, NULL, NULL, ex,
-				   NULL, NULL, xy.x, xy.y);
+		n[0] = '1' + b;
+		n[1] = 0;
+		key = strconcat(ci->home, "M", mode, ms->mod, ":", mult,
+				cmd, n);
+		ret = call(key, focus, num, NULL, NULL, ex,
+			   NULL, NULL, xy.x, xy.y);
 
-			if (ret)
-				return ret;
-		}
-	} else {
-		/* Try nRelease (n-1)Release etc */
-		int r;
-		for (r = ms->click_count; r >= 1 ; r--) {
-			int ret;
-			char *mult = "\0\0D\0T" + (r-1)*2;
-			char n[2];
-			n[0] = '1' + b;
-			n[1] = 0;
-
-			key = strconcat(ci->home, "M", mode, ":", mult,
-					"Release-", n);
-			ret = call(key, focus, num, NULL, NULL, ex,
-				   NULL, NULL, xy.x, xy.y);
-
-			if (ret)
-				return ret;
+		if (ret > 0) {
+			/* If this is 'press', then don't want
+			 * click_on_up.  If this is release, it
+			 * don't matter what we set.
+			 */
+			ms->click_on_up = 0;
+			return ret;
 		}
 	}
-	return Efallthrough;
+	return Efalse;
 }
 
 DEF_CMD(request_notify)
@@ -501,6 +495,16 @@ DEF_CMD(selection_discard)
 	return 1;
 }
 
+DEF_CMD(input_free)
+{
+	struct input_mode *im = ci->home->data;
+	int i;
+
+	for (i = 0; i < 3; i++)
+		free(im->buttons[i].mod);
+	unalloc(im, pane);
+	return 1;
+}
 
 static struct map *im_map;
 static void register_map(void)
@@ -519,7 +523,7 @@ static void register_map(void)
 	key_add(im_map, "input:log", &log_input);
 	key_add_prefix(im_map, "window:request:", &request_notify);
 	key_add_prefix(im_map, "window:notify:", &send_notify);
-	key_add(im_map, "Free", &edlib_do_free);
+	key_add(im_map, "Free", &input_free);
 
 	key_add(im_map, "selection:claim", &selection_claim);
 	key_add(im_map, "selection:commit", &selection_commit);
