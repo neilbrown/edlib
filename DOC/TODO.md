@@ -34,6 +34,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] compose-email joins to_addrs with cc_addrs even if one is None
 - [X] Mouse-event :Motion (x,y) 0 3 from pygtk gets Enoarg
 - [X] c-mode 'TAB' in a comment can insert a '*'
 - [ ] 'click' should happen on 'release' if 'press' was ignored (and no movement)
@@ -516,6 +517,7 @@ Module features
 - [X] leave cursor in query (not message) by default.
 - [X] When there are 'new' items in a thread, entering from top
       goes to first.  If only unread, go there.  Else start at top.
+- [ ] When visiting pre-existing query, move to first New .. optional?
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.
 - [ ] show a summary line at end of search result which says how far back has been searched.

@@ -15,8 +15,8 @@
  * of copies, if they are exist, are not owned by us and only consider CLIPBOARD
  * if it is different to PRIMARY.
  *
- * We also claim the selection at startup on behalf of whichever application
- * owns it.  If it is claimed from us, we claim ownership of PRIMARY.
+ * We also claim the edlib selection at startup on behalf of whichever X11
+ * application owns it.  If it is claimed from us, we claim ownership of PRIMARY.
  * If it is committed, we ask for text from the owner of PRIMARY and save that.
  * If we lose ownership of the PRIMARY, we reclaim the selection.
  */
@@ -71,6 +71,9 @@ struct xs_info {
 	struct pane		*self safe;
 	GdkDisplay		*display;
 	struct cb {
+		/* 'data' is allocated space that stores a pointer to this
+		 * xs_info.  Data is given the gtk has a handle.
+		 */
 		struct xs_info	**data;
 		int		saved;
 		GtkClipboard	*cb;
@@ -82,6 +85,7 @@ struct xs_info {
 static void do_get(GtkClipboard *cb, GtkSelectionData *sd,
 		   guint info, gpointer vdata safe)
 {
+	/* Another X11 application has asked for clipboard data */
 	struct xs_info **data = vdata;
 	struct xs_info *xsi = *data;
 	char *s;
@@ -89,6 +93,9 @@ static void do_get(GtkClipboard *cb, GtkSelectionData *sd,
 	if (!xsi)
 		return;
 	if (cb == xsi->primary.cb)
+		/* If there is an active selection, now if the time for
+		 * the content to be copied.
+		 */
 		call("selection:commit", xsi->self);
 
 	s = call_ret(strsave, "copy:get", xsi->self);
@@ -104,8 +111,13 @@ static void do_clear(GtkClipboard *cb, gpointer vdata safe)
 
 	if (!xsi)
 		return;
-	/* Someone else wants the clipboard */
+	/* Some other X11 application wants us to release ownership
+	 * of the clipboard.
+	 */
 	if (data == xsi->primary.data) {
+		/* This means some other application now has a "selection",
+		 * so we claim it on their behalf.
+		 */
 		xsi->primary.data = NULL;
 		call("selection:claim", xsi->self);
 	}
@@ -153,6 +165,9 @@ DEF_CMD(xs_copy_save)
 	struct xs_info *xsi = ci->home->data;
 
 	claim_both(xsi);
+	/* Some edlib pane own the selection, so we renounce any ownership
+	 * by any X11 application.
+	 */
 	call("selection:discard", ci->home);
 	return Efallthrough;
 }

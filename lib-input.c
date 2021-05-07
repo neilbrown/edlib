@@ -16,13 +16,13 @@
  * X11 "PRIMARY" clipboard.
  * When a selection is made in any pane it claims "the selection".
  * When a mouse-based paste request is made, the receiving pane can ask for
- * the selection to be "commited", and the acces the most recent copy-buffer.
+ * the selection to be "commited", and then access the most recent copy-buffer.
  * The owner of a selection will, if the selection is still valid, call
  * copy:save to save the selected content.
  * When a "paste" request is made where the location is based on the "point"
  * (current cursor) it is unlikely that a selection in the same pane should be
  * used - if there is one it is more likely to be intended to receive the paste.
- * So the target pane can first "discard" the selection, the "commit", then call
+ * So the target pane can first "discard" the selection, then "commit", then call
  * "copy:get".  If the selection is in this pane, the "discard" will succeed,
  * the "commit" will be a no-op, and the top copy buf will be used.
  * If the selection is in another pane (or another app via X11), the "discard"
