@@ -39,7 +39,7 @@ Bugs to be fixed
 - [X] c-mode 'TAB' in a comment can insert a '*'
 - [ ] 'click' should happen on 'release' if 'press' was ignored (and no movement)
 - [ ] copy/paste is unreliable
-- [ ] email: not all urls get displayed if there are several
+- [X] email: not all urls get displayed if there are several
 - [ ] clicking twice (double-click?) in notmuch_list_view moves to eof
 - [X] windows-1250 charset can fail
 - [ ] 'm' in notmuch opens a compose window which isn't refreshed properly.

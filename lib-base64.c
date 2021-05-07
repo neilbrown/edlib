@@ -18,6 +18,7 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <wctype.h>
 
 #include "core.h"
 
@@ -269,14 +270,24 @@ DEF_CMD(base64_content_cb)
 	if (!is_b64(wc))
 		return 1;
 	c2 = from_b64(wc);
+	if (c2 == 64) {
+		/* We've found a padding '=', that's all folks. */
+		c->c1 = 64;
+		return Efalse;
+	}
 	if (c->pos <= 0 || c->pos > 3) {
 		c->c1 = c2;
 		c->pos = 1;
+		mark_to_mark(c->m, ci->mark);
 		return 1;
 	}
-	if (c->c1 == 64 || c2 == 64)
-		/* We've found a padding '=', that's all folks. */
-		return Efalse;
+	if (c->c1 == 64) {
+		/* This is first b64 */
+		c->c1 = c2;
+		c->pos = (c->pos + 1) % 4;
+		mark_to_mark(c->m, ci->mark);
+		return 1;
+	}
 
 	/* Have 2 b64 chars, can report one char */
 	switch(c->pos) {
@@ -294,10 +305,15 @@ DEF_CMD(base64_content_cb)
 	}
 	c->pos += 1;
 	c->c1 = c2;
+	if (c->pos == 4)
+		mark_to_mark(c->m, ci->mark);
 	ret = comm_call(c->cb, ci->key, c->p, b, c->m, NULL,
 			0, NULL, NULL, c->size, 0);
-	mark_to_mark(c->m, ci->mark);
+	if (c->pos != 4)
+		mark_to_mark(c->m, ci->mark);
 	c->size = 0;
+	if (ret == Efalse)
+		c->c1 = 64;
 	return ret;
 }
 
@@ -319,8 +335,21 @@ DEF_CMD(base64_content)
 	c.pos = locate_mark(ci->home->parent, ci->home, bi->view, ci->mark);
 	c.size = 0;
 	c.m = mark_dup(ci->mark);
+	c.c1 = 64;
 	ret = home_call_comm(ci->home->parent, ci->key, ci->home, &c.c,
 			     0, ci->mark, NULL, 0, ci->mark2);
+	if (c.c1 != 64 && (c.pos % 4) > 0 && ci->mark2) {
+		/* We must have reached mark2, but need one more
+		 * b64 char.  Skip space if needed to find it.
+		 */
+		wint_t c2;
+		while ((c2 = doc_next(ci->home->parent, c.m)) != WEOF &&
+		       iswspace(c2))
+			;
+		if (c2 != WEOF)
+			comm_call(&c.c, "cb", ci->home->parent,
+				  c2, ci->mark2);
+	}
 	mark_free(c.m);
 	return ret;
 }
