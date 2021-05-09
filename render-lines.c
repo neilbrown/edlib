@@ -361,23 +361,23 @@ static int call_render_line_to_point(struct pane *p safe, struct mark *pm safe,
  *    backward movement, a negative restricts forwards movement.
  */
 
-static int step_back(struct pane *p safe, struct pane *focus safe,
-		     struct mark **startp safe, struct mark **endp,
-		     short *y_pre safe, short *line_height_pre safe)
+static bool step_back(struct pane *p safe, struct pane *focus safe,
+		      struct mark **startp safe, struct mark **endp,
+		      short *y_pre safe, short *line_height_pre safe)
 {
 	/* step backwards moving start */
 	struct rl_data *rl = p->data;
 	struct mark *m;
-	int found_start = 0;
+	bool found_start = False;
 	struct mark *start = *startp;
 
 	if (!start)
-		return 1;
+		return True;
 	m = call_render_line_prev(focus, mark_dup_view(start),
 				  1, &rl->top_sol);
 	if (!m) {
 		/* no text before 'start' */
-		found_start = 1;
+		found_start = True;
 	} else {
 		short h = 0;
 		start = m;
@@ -391,21 +391,21 @@ static int step_back(struct pane *p safe, struct pane *focus safe,
 				attr_find_int(start->mdata->attrs,
 					      "line-height");
 		} else
-			found_start = 1;
+			found_start = True;
 	}
 	*startp = start;
 	return found_start;
 }
 
-static int step_fore(struct pane *p safe, struct pane *focus safe,
-		     struct mark **startp safe, struct mark **endp safe,
-		     short *y_post safe, short *line_height_post safe)
+static bool step_fore(struct pane *p safe, struct pane *focus safe,
+		      struct mark **startp safe, struct mark **endp safe,
+		      short *y_post safe, short *line_height_post safe)
 {
 	struct mark *end = *endp;
-	int found_end = 0;
+	bool found_end = False;
 
 	if (!end)
-		return 1;
+		return True;
 	if (!vmark_is_valid(end))
 		call_render_line(p, focus, end, startp);
 	found_end = measure_line(p, focus, end, -1);
@@ -492,7 +492,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	short y = 0;
 	short lines_above = 0, lines_below = 0;
 	short offset;
-	int found_start = 0, found_end = 0;
+	bool found_start = False, found_end = False;
 	bool ignore_top = True, ignore_bot = True;
 	short y_pre = 0, y_post = 0;
 	short line_height_pre = 1, line_height_post = 1;
@@ -547,7 +547,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		y_post = 0;
 	}
 	if (!end) {
-		found_end = 1;
+		found_end = True;
 		y_post += p->h / 10;
 	}
 	y = 0;
@@ -573,10 +573,10 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		if (vline != NO_NUMERIC) {
 			if (!found_start && vline > 0 &&
 			    lines_above >= vline-1)
-				found_start = 1;
+				found_start = True;
 			if (!found_end && vline < 0 &&
 			    lines_below >= -vline-1)
-				found_end = 1;
+				found_end = True;
 		}
 		if (!found_start && y_pre <= 0)
 			found_start = step_back(p, focus, &start, &end,
@@ -593,7 +593,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		    mark_ordered_or_same(start, bot) &&
 		    (!mark_same(start, bot) || y_pre - rl->skip_height >= y_post))
 			/* FIXME: this needs some explanation */
-			found_end = 1;
+			found_end = True;
 
 		if (!found_end && y_post <= 0)
 			/* step forwards */
@@ -602,7 +602,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		if (!found_start && top && end && !ignore_top &&
 		    mark_ordered_or_same(top, end) &&
 		    (!mark_same(top, end) || y_post - rl->tail_height >= y_pre))
-			found_start = 1;
+			found_start = True;
 
 		y = consume_space(p, y, &y_pre, &y_post,
 				  &lines_above, &lines_below,
