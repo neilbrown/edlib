@@ -140,8 +140,12 @@ int main(int argc, char *argv[])
 		struct pane *disp = NULL;
 		p = call_ret(pane, "attach-input", ed);
 		if (p) {
+			char *e;
 			attr_set_str(&p->attrs, "TERM", getenv("TERM"));
 			attr_set_str(&p->attrs, "DISPLAY", getenv("DISPLAY"));
+			e = getenv("SSH_CONNECTION");
+			if (e && *e)
+				attr_set_str(&p->attrs, "REMOTE_SESSION", "yes");
 			disp = call_ret(pane, "attach-display-ncurses",
 					p);
 		}

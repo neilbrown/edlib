@@ -34,6 +34,10 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] auto-fill should happen if there is space are cursor, as
+      well as newline
+- [ ] sometimes auto-spell stop working.  Maybe marks are moving 
+      around.
 - [X] compose-email joins to_addrs with cc_addrs even if one is None
 - [X] Mouse-event :Motion (x,y) 0 3 from pygtk gets Enoarg
 - [X] c-mode 'TAB' in a comment can insert a '*'
@@ -760,6 +764,8 @@ Module features
 
 ### lang-python
 
+- [ ] allow (even prefer) str1 for str, as str is predefined
+- [ ] use new doc:debug:mark when printing marks
 - [X] ret='mark' doesn't take a ref, so if the caller drops the mark... what then?
      Should this be illegal?
 - [ ] should Efallthrough be an exception?
