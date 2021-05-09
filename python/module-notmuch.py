@@ -2411,7 +2411,8 @@ class notmuch_query_view(edlib.Pane):
                 # move one thread
                 if forward:
                     ret = focus.call("doc:step-thread", focus, mark, forward, move)
-                    if self.thread_start and mark == self.thread_start:
+                    if (self.thread_matched and
+                        self.thread_start and mark == self.thread_start):
                         mark.to_mark(self.thread_matched)
                 else:
                     # make sure we are at the start of the thread
@@ -2454,14 +2455,17 @@ class notmuch_query_view(edlib.Pane):
         if self.whole_thread:
             # all non-match messages in this thread are about to
             # disappear, we need to clip them.
-            mk = self.thread_start.dup()
-            mt = self.thread_matched.dup()
-            while mk < self.thread_end:
-                if mk < mt:
-                    focus.call("Notify:clip", mk, mt)
-                mk.to_mark(mt)
-                self.parent.call("doc:step-matched", mt, 1, 1)
-                self.parent.next(mk)
+            if self.thread_matched:
+                mk = self.thread_start.dup()
+                mt = self.thread_matched.dup()
+                while mk < self.thread_end:
+                    if mk < mt:
+                        focus.call("Notify:clip", mk, mt)
+                    mk.to_mark(mt)
+                    self.parent.call("doc:step-matched", mt, 1, 1)
+                    self.parent.next(mk)
+            else:
+                focus.call("Notify:clip", self.thread_start, self.thread_end)
             self['doc-status'] = "Query: %s" % self['qname']
         else:
             # everything before the thread, and after the thread disappears
