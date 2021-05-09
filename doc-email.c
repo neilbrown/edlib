@@ -127,7 +127,7 @@ DEF_CMD(email_spacer)
 		 */
 		cp = 0;
 		pm = mark_dup(pm);
-		while (pm->seq > m->seq && !mark_same(pm, m)) {
+		while (!mark_ordered_or_same(pm, m)) {
 			doc_prev(ci->focus, pm);
 			cp += 1;
 		}

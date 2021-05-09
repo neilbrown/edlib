@@ -336,7 +336,7 @@ static void copy_header(struct pane *doc safe,
 		 * as they might have been hiding in quoted words.
 		 */
 		struct mark *m2 = mark_dup(hstart);
-		while (m2->seq < point->seq && !mark_same(m2, point)) {
+		while (mark_ordered_not_same(m2, point)) {
 			struct mark *ms;
 			int cnt = 1;
 			int c = doc_next(p, m2);

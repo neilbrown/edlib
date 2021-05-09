@@ -190,7 +190,7 @@ DEF_CMD(search_add)
 	/* Move cursor to end of search string */
 	call("doc:file", ci->focus, 1);
 	while (esi->matched
-	       && addpos->seq < m->seq && !mark_same(addpos, m)) {
+	       && mark_ordered_not_same(addpos, m)) {
 		int slash = 0;
 		if (limit-- <= 0)
 			break;

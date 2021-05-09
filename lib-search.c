@@ -112,7 +112,7 @@ DEF_CB(search_test)
 				doc_prev(ci->home, ss->endmark);
 		}
 		if (ss->end && ci->mark &&
-		    (ci->mark->seq > ss->end->seq || mark_same(ss->end, ci->mark)))
+		    (mark_ordered_or_same(ss->end, ci->mark)))
 			return Efalse;
 		if (found == RXL_DONE)
 			/* No match here */

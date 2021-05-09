@@ -1041,7 +1041,7 @@ struct mark *do_vmark_at_or_before(struct doc *d safe,
 		       mark_same(vm, m))
 			vm = vm2;
 	}
-	while (vm && vm->seq > m->seq && !mark_same(vm, m))
+	while (vm && !mark_ordered_or_same(vm, m))
 		vm = vmark_prev(vm);
 
 	return vm;
@@ -1056,9 +1056,9 @@ void mark_clip(struct mark *m safe, struct mark *start, struct mark *end,
 	 */
 	if (!start || !end)
 		return;
-	if (m->seq < start->seq && !mark_same(m, start))
+	if (!mark_ordered_or_same(start, m))
 		return;
-	if (m->seq > end->seq || mark_same(m, end))
+	if (!mark_ordered_not_same(m, end))
 		return;
 
 	if (tostart)
@@ -1079,10 +1079,10 @@ void marks_clip(struct pane *p safe, struct mark *start, struct mark *end,
 		m = vmark_at_or_before(p, start, view, owner);
 		while (m && (m2=vmark_prev(m)) && mark_same(start, m2))
 			m = m2;
-		while (m && m->seq <= start->seq && !mark_same(m, start))
+		while (m && !mark_ordered_or_same(start, m))
 			m = vmark_next(m);
 
-		while (m && m->seq < end->seq && !mark_same(m, end)) {
+		while (m && !mark_ordered_or_same(end, m)) {
 			m2 = vmark_next(m);
 			mark_clip(m, start, end, tostart);
 			m = m2;
@@ -1091,10 +1091,10 @@ void marks_clip(struct pane *p safe, struct mark *start, struct mark *end,
 		m = vmark_at_or_before(p, end, view, owner);
 		while (m && (m2=vmark_next(m)) && mark_same(end,m2))
 			m = m2;
-		while (m && (m->seq >= end->seq || mark_same(m, end)))
+		while (m && !mark_ordered_not_same(m, end))
 			m = vmark_prev(m);
 
-		while (m && (m->seq > start->seq || mark_same(m, start))) {
+		while (m && !mark_ordered_not_same(m, start)) {
 			m2 = vmark_prev(m);
 			mark_clip(m, start, end, tostart);
 			m = m2;

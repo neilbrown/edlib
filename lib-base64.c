@@ -116,7 +116,7 @@ static int locate_mark(struct pane *p safe, struct pane *owner,
 	if (!tmp)
 		return 0;
 	while ((ch = get_b64_x(p, tmp)) != WEOF) {
-		if (tmp->seq >= m->seq || mark_same(tmp, m))
+		if (mark_ordered_or_same(m, tmp))
 			break;
 		if ((pos %4) == 0 && pos/4 >= MAX_QUAD) {
 			struct mark *m2 = vmark_new(p, view, owner);
