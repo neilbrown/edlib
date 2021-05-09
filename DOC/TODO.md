@@ -34,7 +34,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] auto-fill should happen if there is space are cursor, as
+- [X] auto-fill should happen if there is space after cursor, as
       well as newline
 - [ ] sometimes auto-spell stop working.  Maybe marks are moving 
       around.

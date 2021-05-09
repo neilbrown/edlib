@@ -272,8 +272,8 @@ class FillMode(edlib.Pane):
         if not mark:
             return edlib.Efallthrough
         next = focus.following(mark)
-        if next and  next != '\n':
-            # not at end-of-line or end-of-file, don't auto-fill
+        if next and next not in ['\n','\t', ' ', '\f']:
+            # not at end-of-word, don't auto-fill
             return edlib.Efallthrough
         m = mark.dup()
         focus.call("doc:EOL", -1, m)
