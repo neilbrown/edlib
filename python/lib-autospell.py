@@ -268,7 +268,7 @@ class autospell_view(edlib.Pane):
             word = focus.call("Spell:ThisWord", ed, st, ret='str')
             self.call("doc:notify:spell:mark-checked", start, ed)
             start = ed
-            if type(word) == type("str"):
+            if word:
                 ret = focus.call("Spell:Check", word)
                 if ret < 0:
                     # definite error: mark it

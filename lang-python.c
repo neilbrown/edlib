@@ -1044,7 +1044,7 @@ static void set_err(int rv)
 
 static PyObject *choose_ret(int rv, struct pyret *pr safe)
 {
-	if (pr->comm.func && rv >= 0) {
+	if (pr->comm.func && rv >= Efalse) {
 		if (pr->ret)
 			return pr->ret;
 		Py_INCREF(Py_None);
