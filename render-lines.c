@@ -810,16 +810,180 @@ DEF_CMD(render_lines_point_moving)
 	return 1;
 }
 
+static int revalidate_start(struct rl_data *rl safe,
+			    struct pane *p safe, struct pane *focus safe,
+			    struct mark *start safe, struct mark *pm,
+			    bool refresh_all)
+{
+	int y;
+	bool on_screen = False;
+	struct mark *m, *m2;
+	bool found_end = False;
+
+	if (pm && !rl->do_wrap) {
+		int prefix_len;
+		int curs_width;
+		/* Need to check if side-shift is needed on cursor line */
+		m2 = mark_dup(pm);
+		call("doc:render-line-prev", focus, 0, m2);
+
+		m = vmark_at_or_before(focus, m2, rl->typenum, p);
+		mark_free(m2);
+
+		if (m && m->mdata &&
+		    (!vmark_is_valid(m) || refresh_all)) {
+			pane_damaged(p, DAMAGED_REFRESH);
+			call("doc:render-line-prev", focus, 0, m);
+			call_render_line(p, focus, m, &start);
+		}
+		if (m && m->mdata) {
+			struct pane *hp = m->mdata;
+			int offset = call_render_line_to_point(focus,
+							       pm, m);
+			measure_line(p, focus, m, offset);
+			prefix_len = pane_attr_get_int(
+				m->mdata, "prefix_len", -1);
+			curs_width = pane_attr_get_int(
+				m->mdata, "curs_width", 1);
+
+			while (hp->cx + curs_width >= p->w) {
+				int shift = 8 * curs_width;
+				if (shift > hp->cx)
+					shift = hp->cx;
+				rl->shift_left += shift;
+				measure_line(p, focus, m, offset);
+				refresh_all = 1;
+			}
+			while (hp->cx < prefix_len &&
+			       rl->shift_left > 0 &&
+			       hp->cx + curs_width * 8*curs_width < p->w) {
+				int shift = 8 * curs_width;
+				if (shift > rl->shift_left)
+					shift = rl->shift_left;
+				rl->shift_left -= shift;
+				measure_line(p, focus, m, offset);
+				refresh_all = 1;
+			}
+		}
+	}
+	y = 0;
+	if (rl->header) {
+		struct pane *hp = rl->header->mdata;
+		if (refresh_all) {
+			measure_line(p, focus, rl->header, -1);
+			if (hp)
+				pane_resize(hp, hp->x, y, hp->w, hp->h);
+		}
+		if (hp)
+			y = hp->h;
+	}
+	y -= rl->skip_height;
+	for (m = start; m && !found_end && y < p->h; m = vmark_next(m)) {
+		struct pane *hp;
+		if (refresh_all || !vmark_is_valid(m)) {
+			pane_damaged(p, DAMAGED_REFRESH);
+			call_render_line(p, focus, m, NULL);
+		}
+		found_end = measure_line(p, focus, m, -1);
+		hp = m->mdata;
+		if (!hp)
+			break;
+
+		if (y != hp->y) {
+			pane_damaged(p, DAMAGED_REFRESH);
+			pane_resize(hp, hp->x, y, hp->w, hp->h);
+		}
+		y += hp->h;
+		m2 = vmark_next(m);
+		if (pm && m == start && rl->skip_height > 0 && m2 &&
+		    mark_ordered_not_same(pm, m2)) {
+			/* Point might be in this line, but off top
+			 * of the screen
+			 */
+			int offset = call_render_line_to_point(focus,
+							       pm, m);
+			if (offset >= 0) {
+				measure_line(p, focus, m, offset);
+				if (hp->cy >= rl->skip_height + rl->margin)
+					/* Cursor is visible on this line */
+					on_screen = True;
+			}
+		} else if (pm && y >= p->h && m->seq < pm->seq) {
+			/* point might be in this line, but off end
+			 * of the screen
+			 */
+			int offset = call_render_line_to_point(focus,
+							       pm, m);
+			if (offset > 0) {
+				int lh;
+				measure_line(p, focus, m, offset);
+				lh = attr_find_int(hp->attrs,
+						   "line-height");
+				if (lh <= 0)
+					lh = 1;
+				if (y - hp->h + hp->cy <= p->h - lh - rl->margin) {
+					/* Cursor is on screen */
+					on_screen = True;
+				}
+			}
+		} else if (pm && mark_ordered_or_same(m, pm) && m2 &&
+			   mark_ordered_or_same(pm, m2)) {
+			if (rl->margin == 0)
+				on_screen = True;
+			else {
+				int offset = call_render_line_to_point(
+					focus, pm, m);
+				if (offset > 0) {
+					int lh;
+					int cy;
+					measure_line(p, focus, m, offset);
+					lh = attr_find_int(hp->attrs,
+							   "line-height");
+					cy = y - hp->h + hp->cy;
+					if (cy >= rl->margin && cy <= p->h - rl->margin - lh)
+						/* Cursor at least margin from edge */
+						on_screen = True;
+				}
+			}
+		}
+	}
+	if (y >= p->h)
+		rl->tail_height = p->h - y;
+	else
+		rl->tail_height = 0;
+	if (m) {
+		vmark_clear(m);
+		while ((m2 = vmark_next(m)) != NULL) {
+			/* end of view has clearly changed */
+			rl->repositioned = 1;
+			vmark_free(m2);
+		}
+	}
+	if (!pm || on_screen) {
+		if (rl->repositioned) {
+			rl->repositioned = 0;
+			call("render:reposition", focus,
+			     rl->lines, vmark_first(focus,
+						    rl->typenum,
+						    p), NULL,
+			     rl->cols, vmark_last(focus,
+						  rl->typenum,
+						  p), NULL,
+			     p->cx, p->cy);
+		}
+		return 1;
+	}
+	return 0;
+}
+
 DEF_CMD(render_lines_revise)
 {
 	struct pane *p = ci->home;
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
-	struct mark *m, *pm = NULL;
+	struct mark *pm = NULL;
 	struct mark *m1, *m2;
 	bool refresh_all = False;
-	bool found_end = False;
-	int y;
 	char *hdr;
 	char *a;
 
@@ -870,161 +1034,8 @@ DEF_CMD(render_lines_revise)
 		 * So check all sub-panes are still valid and properly
 		 * positioned
 		 */
-		bool on_screen = False;
-
-		if (pm && !rl->do_wrap) {
-			int prefix_len;
-			int curs_width;
-			/* Need to check if side-shift is needed on cursor line */
-			m2 = mark_dup(pm);
-			call("doc:render-line-prev", focus, 0, m2);
-
-			m = vmark_at_or_before(focus, m2, rl->typenum, p);
-			mark_free(m2);
-
-			if (m && m->mdata &&
-			    (!vmark_is_valid(m) || refresh_all)) {
-				pane_damaged(p, DAMAGED_REFRESH);
-				call("doc:render-line-prev", focus, 0, m);
-				call_render_line(p, focus, m, &m1);
-			}
-			if (m && m->mdata) {
-				struct pane *hp = m->mdata;
-				int offset = call_render_line_to_point(focus,
-								       pm, m);
-				measure_line(p, focus, m, offset);
-				prefix_len = pane_attr_get_int(
-					m->mdata, "prefix_len", -1);
-				curs_width = pane_attr_get_int(
-					m->mdata, "curs_width", 1);
-
-				while (hp->cx + curs_width >= p->w) {
-					int shift = 8 * curs_width;
-					if (shift > hp->cx)
-						shift = hp->cx;
-					rl->shift_left += shift;
-					measure_line(p, focus, m, offset);
-					refresh_all = 1;
-				}
-				while (hp->cx < prefix_len &&
-				       rl->shift_left > 0 &&
-				       hp->cx + curs_width * 8*curs_width < p->w) {
-					int shift = 8 * curs_width;
-					if (shift > rl->shift_left)
-						shift = rl->shift_left;
-					rl->shift_left -= shift;
-					measure_line(p, focus, m, offset);
-					refresh_all = 1;
-				}
-			}
-		}
-		y = 0;
-		if (rl->header) {
-			struct pane *hp = rl->header->mdata;
-			if (refresh_all) {
-				measure_line(p, focus, rl->header, -1);
-				if (hp)
-					pane_resize(hp, hp->x, y, hp->w, hp->h);
-			}
-			if (hp)
-				y = hp->h;
-		}
-		y -= rl->skip_height;
-		for (m = m1; m && !found_end && y < p->h; m = vmark_next(m)) {
-			struct pane *hp;
-			if (refresh_all || !vmark_is_valid(m)) {
-				pane_damaged(p, DAMAGED_REFRESH);
-				call_render_line(p, focus, m, NULL);
-			}
-			found_end = measure_line(p, focus, m, -1);
-			hp = m->mdata;
-			if (!hp)
-				break;
-
-			if (y != hp->y) {
-				pane_damaged(p, DAMAGED_REFRESH);
-				pane_resize(hp, hp->x, y, hp->w, hp->h);
-			}
-			y += hp->h;
-			m2 = vmark_next(m);
-			if (pm && m == m1 && rl->skip_height > 0 && m2 &&
-			    mark_ordered_not_same(pm, m2)) {
-				/* Point might be in this line, but off top
-				 * of the screen
-				 */
-				int offset = call_render_line_to_point(focus,
-								       pm, m);
-				if (offset >= 0) {
-					measure_line(p, focus, m, offset);
-					if (hp->cy >= rl->skip_height + rl->margin)
-						/* Cursor is visible on this line */
-						on_screen = True;
-				}
-			} else if (pm && y >= p->h && m->seq < pm->seq) {
-				/* point might be in this line, but off end
-				 * of the screen
-				 */
-				int offset = call_render_line_to_point(focus,
-								       pm, m);
-				if (offset > 0) {
-					int lh;
-					measure_line(p, focus, m, offset);
-					lh = attr_find_int(hp->attrs,
-							   "line-height");
-					if (lh <= 0)
-						lh = 1;
-					if (y - hp->h + hp->cy <= p->h - lh - rl->margin) {
-						/* Cursor is on screen */
-						on_screen = True;
-					}
-				}
-			} else if (pm && mark_ordered_or_same(m, pm) && m2 &&
-				   mark_ordered_or_same(pm, m2)) {
-				if (rl->margin == 0)
-					on_screen = True;
-				else {
-					int offset = call_render_line_to_point(
-						focus, pm, m);
-					if (offset > 0) {
-						int lh;
-						int cy;
-						measure_line(p, focus, m, offset);
-						lh = attr_find_int(hp->attrs,
-								   "line-height");
-						cy = y - hp->h + hp->cy;
-						if (cy >= rl->margin && cy <= p->h - rl->margin - lh)
-							/* Cursor at least margin from edge */
-							on_screen = True;
-					}
-				}
-			}
-		}
-		if (y >= p->h)
-			rl->tail_height = p->h - y;
-		else
-			rl->tail_height = 0;
-		if (m) {
-			vmark_clear(m);
-			while ((m2 = vmark_next(m)) != NULL) {
-				/* end of view has clearly changed */
-				rl->repositioned = 1;
-				vmark_free(m2);
-			}
-		}
-		if (!pm || on_screen) {
-			if (rl->repositioned) {
-				rl->repositioned = 0;
-				call("render:reposition", focus,
-				     rl->lines, vmark_first(focus,
-							    rl->typenum,
-							    p), NULL,
-				     rl->cols, vmark_last(focus,
-							  rl->typenum,
-							  p), NULL,
-				     p->cx, p->cy);
-			}
+		if (revalidate_start(rl, p, focus, m1, pm, refresh_all))
 			return 1;
-		}
 	}
 	/* Need to find a new top-of-display */
 	if (!pm)
