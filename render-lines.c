@@ -596,18 +596,30 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			 */
 			y_post = 0;
 		if (!found_end && bot &&
-		    mark_ordered_or_same(start, bot) &&
-		    (!mark_same(start, bot) || y_pre - rl->skip_height >= y_post))
-			/* FIXME: this needs some explanation */
+		    mark_ordered_not_same(start, bot))
+			/* Overlap original from below, so prefer to
+			 * maximize that overlap.
+			 */
+			found_end = True;
+
+		if (!found_end && bot && mark_same(start, bot) &&
+		    y_pre - rl->skip_height >= y_post)
+			/* No overlap in marks yet, but over-lap in space,
+			 * so same result as above.
+			 */
 			found_end = True;
 
 		if (!found_end && y_post <= 0)
 			/* step forwards */
 			found_end = step_fore(p, focus, &start, &end,
 					      &y_post, &line_height_post);
+
 		if (!found_start && top && end &&
-		    mark_ordered_or_same(top, end) &&
-		    (!mark_same(top, end) || y_post - rl->tail_height >= y_pre))
+		    mark_ordered_not_same(top, end))
+			found_start = True;
+
+		if (!found_start && top && end && mark_same(top, end)
+		    && y_post - rl->tail_height >= y_pre)
 			found_start = True;
 
 		y = consume_space(p, y, &y_pre, &y_post,
