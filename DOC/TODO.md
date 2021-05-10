@@ -46,7 +46,7 @@ Bugs to be fixed
 - [X] email: not all urls get displayed if there are several
 - [X] clicking twice (double-click?) in notmuch_list_view moves to eof
 - [X] windows-1250 charset can fail
-- [ ] 'm' in notmuch opens a compose window which isn't refreshed properly.
+- [X] 'm' in notmuch opens a compose window which isn't refreshed properly.
       If I add "pane_damaged(p, DAMAGED_VIEW)" in render_lines_refresh,
       it works.  But that is surely too heavy-handed.
       What is going on?
@@ -499,6 +499,9 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] When active query changes, highlight on list view doesn't immediately
+      follow
+- [ ] negative arg to '*' etc clears inverts the change
 - [ ] TESTS
 - [X] when 'a' or movement is done in message view, new message isn't displayed
 - [ ] when re-visit, open up the same panes

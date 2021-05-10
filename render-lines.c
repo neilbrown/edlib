@@ -628,6 +628,20 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				  line_height_pre, line_height_post);
 	}
 
+	/* We might need to continue downwards even after found_end
+	 * if there is more content and more room.
+	 */
+	found_end = end == NULL;
+	while (!found_end && y < p->h) {
+		if (y_post <= 0)
+			found_end = step_fore(p, focus, &start, &end,
+					      &y_post, &line_height_post);
+		y = consume_space(p, y, &y_pre, &y_post,
+				  &lines_above, &lines_below,
+				  found_start, found_end,
+				  line_height_pre, line_height_post);
+	}
+
 	if (start->mdata && start->mdata->h <= y_pre) {
 		y_pre = 0;
 		m = vmark_next(start);
