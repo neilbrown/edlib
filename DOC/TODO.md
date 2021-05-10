@@ -357,8 +357,8 @@ Module features
 - [ ] improve 'margin' to honour previous view of doc
 - [ ] update_line_height should handle TAB (and any control) - cannot expect
       text-size to handle it.
-- [ ] adding 10% height at e-o-f doesn't make sense with a one-line display
-      and certainly must not push the cursor line of the screen as it currently does.
+- [X] adding 10% height at e-o-f doesn't make sense with a one-line display
+      and certainly must not push the cursor line off the screen as it currently does.
 - [ ] Give lib-renderline a Refresh:view which calls something in the render-line
       pane which does call_render_line().  Use pane_damaged() to mark panes as invalid
       and pane_refresh() to update them.

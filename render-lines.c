@@ -421,7 +421,8 @@ static bool step_fore(struct pane *p safe, struct pane *focus safe,
 		end = vmark_next(end);
 	if (!end) {
 		found_end = 1;
-		*y_post = p->h / 10;
+		if (p->h >= *line_height_post *2)
+			*y_post = p->h / 10;
 	}
 
 	*endp = end;
@@ -548,7 +549,11 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	}
 	if (!end) {
 		found_end = True;
-		y_post += p->h / 10;
+		if (p->h > line_height_pre * 2)
+			y_post += p->h / 10;
+		else
+			/* Small display, no space at EOF */
+			y_post = 0;
 	}
 	y = 0;
 	if (rl->header && rl->header->mdata)
