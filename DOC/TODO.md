@@ -52,7 +52,7 @@ Bugs to be fixed
       What is going on?
 - [ ] fill-mode is weird.  Sometimes explicitly giving a fill-width sticks,
       sometimes not.  What do I really want?
-- [ ] if I remove the unneeded ->repositioned=1 in render-lines, search stops
+- [X] if I remove the unneeded ->repositioned=1 in render-lines, search stops
       refreshing properly.
 - [X] at top of just-viewed doc, C-space, eof only highlights last line,
       when whole fits in the page.

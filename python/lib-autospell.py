@@ -207,8 +207,7 @@ class autospell_view(edlib.Pane):
         self.call("doc:request:spell:recheck")
         # trigger render-lines refresh notification
         pt = focus.call("doc:point", ret='mark')
-        # This hack causes render:reposition to be resent.
-        focus.call("Move-View-Pos", pt)
+        focus.call("render:request:reposition", pt)
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"

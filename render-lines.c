@@ -1395,10 +1395,6 @@ DEF_CMD(render_lines_move_pos)
 		/* pos not displayed */
 		find_lines(pm, p, focus, NO_NUMERIC);
 	pane_damaged(p, DAMAGED_REFRESH);
-	/* FIXME this should only be done in the above find_lines(), but
-	 * search currently depends on this incorrect behaviour
-	 */
-	rl->repositioned = 1;
 	return 1;
 }
 
@@ -1648,6 +1644,18 @@ DEF_CMD(render_lines_resize)
 	return 0;
 }
 
+DEF_CMD(render_send_reposition)
+{
+	/* Some (probably new) pane wants to know the extend of the
+	 * view, so resent render:resposition.
+	 */
+	struct pane *p = ci->home;
+	struct rl_data *rl = p->data;
+
+	rl->repositioned = 1;
+	return Efallthrough;
+}
+
 static struct map *rl_map;
 
 DEF_LOOKUP_CMD(render_lines_handle, rl_map);
@@ -1680,6 +1688,7 @@ static void render_lines_register_map(void)
 	/* view:changed is sent to a tile when the display might need
 	 * to change, even though the doc may not have*/
 	key_add(rl_map, "view:changed", &render_lines_notify_replace);
+	key_add(rl_map, "render:request:reposition", &render_send_reposition);
 }
 
 REDEF_CMD(render_lines_attach)
