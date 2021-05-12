@@ -203,6 +203,7 @@ class AbbrevPane(edlib.Pane):
         self.active = True
         self.call("Replace", "", self.prefix_end)
         self.active = False
+        self.call("view:changed", self.prefix_start, self.prefix_end)
         self.close()
         return 1
 

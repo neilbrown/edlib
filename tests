@@ -231,7 +231,7 @@ case $cmd in
 		echo >&2 "       $0 run [test-name|-a]"
 		echo >&2 "       $0 refresh [test-name]"
 		echo >&2 "       $0 view test-name [lines [delay-ms]]"
-		echo >&2 "       $0 extent test-name"
+		echo >&2 "       $0 extend test-name"
 		exit 1;
 esac
 exit 0
