@@ -30,11 +30,11 @@ Bugs to be fixed
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
 - [ ] notmuch mode keeps lots of email messages permanently open
 - [ ] copy/paste is unreliable
-- [ ] fill-mode is weird.  Sometimes explicitly giving a fill-width sticks,
+- [X] fill-mode is weird.  Sometimes explicitly giving a fill-width sticks,
       sometimes not.  What do I really want?
 - [ ] doc-docs can get confused when I kill buffers from within the view
 - [ ] use iconv(3) for char-set conversion
-- [ ] When visiting a file which is found to a link to a different name,
+- [ ] When visiting a file which is found to be a link to a different name,
       the file isn't reloaded if it has changed.
       Also, following a patch goes to wrong line - by one.  If file
       isn't already displayed

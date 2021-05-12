@@ -2111,7 +2111,7 @@ DEF_CMD(emacs_fill)
 
 	if (strcmp(ci->key, "K:A-q") == 0) {
 		if (call("fill-paragraph", ci->focus, ci->num, p, NULL,
-			 0, mk) == 0) {
+			 0, mk) == Efallthrough) {
 			p2 = call_ret(pane, "attach-textfill", ci->focus);
 			if (p2)
 				call("fill-paragraph", p2, ci->num, p, NULL,

@@ -9,13 +9,13 @@
 # - it support a fill-paragraph function to reformat a paragraph to
 #   fit a given width.
 #
-# If two marks are provided and the text between them is re-filled.  Any
+# If two marks are provided the text between them is re-filled.  Any
 # text between the first mark and the start of that line is used to supply
 # characters for a prefix.  Any characters in that prefix, and any white
 # space, are striped from the start of every other line.  If there is a
 # second line, the text stripped from there is prefixed to all lines of
-# the reformatted paragraph.  if there is no second line, then prefix
-# provides is the prefix of the first line with all non-tabs replaced with
+# the reformatted paragraph.  If there is no second line, then prefix
+# provided is the prefix of the first line with all non-tabs replaced with
 # spaces.
 #
 # If only one mark is provided, a paragraph is found bounded by
@@ -198,17 +198,20 @@ class FillMode(edlib.Pane):
         edlib.Pane.__init__(self, focus)
         cols = focus['fill-width']
         if cols:
+            # auto-fill requested
             cols = int(cols)
         elif colsarg:
+            # auto-fill explicitly requested
             cols = colsarg
         else:
+            # don't auto-fill
             cols = None
         self.cols = cols
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
         focus['fill-width'] = self['fill-width']
-        p = FillMode(focus, 72)
+        p = FillMode(focus, self.cols)
         self.clone_children(p)
         return 1
 
@@ -231,6 +234,7 @@ class FillMode(edlib.Pane):
         if num != edlib.NO_NUMERIC and num > 8:
             width = num
             if self.cols:
+                # if auto-filling, save new col width
                 self.cols = num
         else:
             width = 72
@@ -261,7 +265,16 @@ class FillMode(edlib.Pane):
 
     def enable_fill(self, key, focus, num, **a):
         "handle:interactive-cmd-fill-mode"
-        self.cols = 72
+        v = focus['view-default']
+        if not self.cols:
+            self.cols = 72
+        if v and 'textfill'in v:
+            return 1
+        elif v:
+            v = v + ',textfill'
+        else:
+            v = 'textfill'
+        focus.call("doc:set:view-default", v)
         return 1
 
     def handle_space(self, key, focus, mark, **a):
@@ -319,12 +332,14 @@ class FillMode(edlib.Pane):
         return edlib.Efallthrough
 
 def fill_mode_attach(key, focus, comm2, **a):
+    # enable fill-paragraph, but don't auto-fill
     p = FillMode(focus)
     if comm2:
         comm2("callback", p)
     return 1
 
 def fill_mode_activate(key, focus, comm2, **a):
+    # enable fill-paragraph and auto-fill at col 72
     FillMode(focus, 72)
 
     v = focus['view-default']
