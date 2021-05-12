@@ -45,11 +45,7 @@ class AbbrevPane(edlib.Pane):
         m = self.prefix_start.dup()
         self.next(m)
         again = True
-        patn = "\\<"
-        for c in self.prefix:
-            if c in "\\()|[.*^$":
-                patn += "\\"
-            patn += c
+        patn = "\\<(?%d:%s)" % (len(self.prefix), self.prefix)
         # prefer matches just after point - skip forward 100 chars
         self.call("Move-Char", m, 100)
         start = m.dup()
