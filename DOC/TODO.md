@@ -106,6 +106,7 @@ Requirements for a v1.0 release
 - [ ] vi mode
 - [ ] office mode
 - [ ] nano mode(?)
+- [ ] multiple front ends: elvi, elma, elnm, eled?
 - [ ] introspection
 - [ ] markdown editor with PDF output
 - [X] spell checking
@@ -499,6 +500,7 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] option to wrap subjects onto next line
 - [ ] When active query changes, highlight on list view doesn't immediately
       follow
 - [ ] negative arg to '*' etc clears inverts the change
@@ -809,7 +811,7 @@ Module features
 ### dynamic completion
 
 - [ ] provide a drop-down menu with options
-- [ ] the 'back' option doesn't work.  Need to discard current
+- [X] the 'back' option doesn't work.  Need to discard current
       expansion first.
 
 ### spell-checker

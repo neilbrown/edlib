@@ -129,13 +129,15 @@ class AbbrevPane(edlib.Pane):
         self.gather_completions(focus, None)
         return 0
 
-
-
     def next_completion(self, dir):
         if self.current < 0:
             self.get_completions()
         if not self.completions:
             self.complete_len = 0
+            # remove any previous completion
+            self.active = True
+            self.call("Replace", self.prefix_end)
+            self.active = False
         else:
             self.current += dir
             if self.current < 0:
