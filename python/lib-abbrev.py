@@ -60,9 +60,7 @@ class AbbrevPane(edlib.Pane):
                 again = False
             if again and m != self.prefix_start:
                 e = m.dup()
-                while l > 0:
-                    self.next(e)
-                    l -= 1
+                self.call("Move-Char", e, l)
                 try:
                     self.call("text-search", "\\>", e)
                 except edlib.commandfailed:
@@ -103,9 +101,7 @@ class AbbrevPane(edlib.Pane):
                 again = False
             if again:
                 e = m.dup()
-                while l > 0:
-                    p.prev(m)
-                    l -= 1
+                p.call("Move-Char", -l, m)
                 try:
                     p.call("text-search", "\\>", e)
                 except edlib.commandfailed:
