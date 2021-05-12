@@ -4,13 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [X] remote external-viewer: display scp command
-- [X] spell-checker refinements
-- [X] provide a way for ncurses to switch out of display mode
-      and to show a URL (or similar) which can be copied from terminal
 - [ ] fix bugs
-- [X] make notmuch usable
-- [X] make spell-check useful
 - [ ] core features
 - [ ] markdown viewer and editor
 - [ ] git log view with rebase and reword options
@@ -28,55 +22,27 @@ Current priorities
 - [ ] switch-buffer in pop-up window - shouldn't kill the popup
 - [ ] file in pop-up window in 'view' mode by default
       From 'grep' this is probably OK.  For Cx-44, it isn't.
-- [X] Cx-44 to open doc/file in pop-up.
 - [ ] review all doc:char implementations for simplification.
 
 Bugs to be fixed
 ----------------
 
-- [X] auto-fill should happen if there is space after cursor, as
-      well as newline
-- [X] sometimes auto-spell stop working.  Maybe marks are moving 
-      around.
-- [X] compose-email joins to_addrs with cc_addrs even if one is None
-- [X] Mouse-event :Motion (x,y) 0 3 from pygtk gets Enoarg
-- [X] c-mode 'TAB' in a comment can insert a '*'
-- [X] 'click' should happen on 'release' if 'press' was ignored (and no movement)
 - [ ] copy/paste is unreliable
-- [X] email: not all urls get displayed if there are several
-- [X] clicking twice (double-click?) in notmuch_list_view moves to eof
-- [X] windows-1250 charset can fail
-- [X] 'm' in notmuch opens a compose window which isn't refreshed properly.
-      If I add "pane_damaged(p, DAMAGED_VIEW)" in render_lines_refresh,
-      it works.  But that is surely too heavy-handed.
-      What is going on?
 - [ ] fill-mode is weird.  Sometimes explicitly giving a fill-width sticks,
       sometimes not.  What do I really want?
-- [X] if I remove the unneeded ->repositioned=1 in render-lines, search stops
-      refreshing properly.
-- [X] at top of just-viewed doc, C-space, eof only highlights last line,
-      when whole fits in the page.
 - [ ] doc-docs can get confused when I kill buffers from within the view
 - [ ] use iconv(3) for char-set conversion
 - [ ] When visiting a file which is found to a link to a different name,
       the file isn't reloaded if it has changed.
       Also, following a patch goes to wrong line - by one.  If file
       isn't already displayed
-- [X] Text containing </> is a problem.  If cursor is just after, it is drawn
-      at start-of-line... oh, I think I know why.
 - [ ] search matches aren't highlighted where there is other highlighting
       like line-too-long or diff colouring
 - [ ] Add Close handler for doc-docs.c???
 - [ ] backward search sometimes doesn't work.
-- [X] if display changes between 'press' and 'release' we think there is a movement
-      and do a selection.  x,y location need to be stored too??
-- [X] mouse selection cannot select wrapped section of a line
 - [ ] save-all dialogue sometimes puts cursor at bottom and cannot move up.
-- [X] 'fill' setting doesn't stick to document
-- [X] white-space and others cannot be set manually.
 - [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
      g_main_loop_run->poll
-- [X] end of file jumps around last few lines of display
 - [ ] 'make' sometimes chooses an info over an error line - both in C file
 - [ ] make sometimes doesn't follow end-of-file
 - [ ] make uses too much CPU on large output
@@ -84,18 +50,6 @@ Bugs to be fixed
       to edit at end-of-file
 - [ ] When viewing a diff which pages of "+" (at the end), refresh is quite slow
 - [ ] repeated alarm(10)/alarm(0) calls slow things down
-- [X] sometimes when press 'enter' at end-of-file, page refreshes to move
-      cursor closer to end of pane .... but not always.
-- [X] When cursor is off-screen pygtk cursor gets drawn on background and
-      stays there.  I think pygtk needs to know about an off-screen cursor
-      and draw that explicitly in 'refresh()'.  For that to work, render-lines
-      need to explicitly tell it that this is off-screen, so that it can be ignored
-      when not in-focus, or drawn if it is.
-      Similar thing happens with ncurses.  scroll-wheel in non-focus pane and _ appears
-      at bottom-right, and doesn't go away when cursor re-appears
-- [X] When select line from grep/make results should replace any current results pane
-      i.e. when in pop-up, press 'enter' and if there is another make result present
-      after the popup disappears, that would be confusing.
 
 Requirements for a v1.0 release
 -------------------------------
@@ -121,29 +75,14 @@ Requirements for a v1.0 release
 Core features
 -------------
 
-- [X] review all use of 'bytes' for doc:content.  Maybe doc:content-bytes
-- [X] make Move-Word/WORD/EOL into doc:word/WORD/eol in doc_defaults
-- [X] change doc:step to accept a count. Returns char after or before final location
-- [X] separate various doc:vmark-get functions and/or make them easily available
-      from python
-- [X] 'log' should handle utf8 correctly.
-- [X] doc_write_file should use doc:content
-- [X] guard against mark seq number over-flowing.
-- [X] use the time-keeping stack to allow an edlib stack-trace to be reported
-      Or provide linkage from one call() to the next which can be walked and
-      ci reported.
-- [X] have standard way for reporting marks
 - [ ] have standard way for slow testing of order of marks
 - [ ] have a debug mode where mark consistency is checked v.often
 - [ ] improve timeout.  Set timer once, then set a flag so that all commands fail
       until some top-level clears the flag.
-- [X] give a name to every pane for easier reporting.
 - [ ] reconsider all 'return comm_call()' calls.  Do we every really
       care if the callback succeeded?
-- [X] all function that return 0 or 1 should probably be Bool
 - [ ] Change Efallthough to -1 so I can return '0' meaningfully.
       Efalse probably becomes 0.
-- [X] Make it easier for Move-EOL to move to start of next line
 - [ ] key_add_prefix() doesn't work if there is no punctuation.
 - [ ] send warning message when recursive notification is prohibited.
        editor:notify:Message:broadcast
@@ -151,7 +90,6 @@ Core features
       Each call creates a frame, and each pane has a link to recent frame
       If a call happens on a frame with a link, we check that the same
       'key' isn't already active.
-- [X] Change naming from "Meta" to "Alt"
 - [ ] Make DEF_CB really different from DEF_CMD and ensure it is used properly.
 - [ ] is DocLeaf really a good idea?  Maybe panes should have 'leafward'
       pointer separate to 'focus'?  Maybe panes could have optional
@@ -247,11 +185,6 @@ Module features
 ### lib-diff
 
 - [ ] highlight white-space errors.
-- [X] diff-mode keystrokes for 'next diff', prev, etc
-- [X] When only add or only delete, highlight in same way as when there are both.
-- [X] allow inversion so 'enter' looks for the '-' not the '+'
-- [X] status-line entry to indicate if inverted or not.
-- [X] Add code to check alignment and search for nearby match.
 - [ ] command to apply a hunk to a given document - or to reverse it.
       How much of a hunk?  Selection?  How to record which hunks are done?
       How to identify document?  Maybe I want a generic "Other" document where
@@ -285,7 +218,6 @@ Module features
 
 ### emacs
 
-- [X] find-file/buffer in popup.  Cx-44??
 - [ ] make-directory command
       pop-up like find-file, offering current dir.
 - [ ] semi-auto make-dir on save to nonexistent
@@ -308,13 +240,9 @@ Module features
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 - [ ] compare two panes somehow - new lib-compare function??
 - [ ] pipe doc or selection to a command, optionally capture to replace with output.
-- [X] history for each entry. find find, doc, cmd, shellcmd, grep, make, search, replace
-       I think this is done
 
 ##### needs design work
 
-- [X] invent a way to reserve 'extra' values for command sets
-      do I need this across panes ?? probably. I think I have enough of this.
 - [ ] search/replace should support undo somehow
       I can already step out, undo, step back.  What more?  Maybe Alt-U (uppercase)?
 - [ ] search/replace should make it easy to revisit previous changes.
@@ -343,7 +271,6 @@ Module features
 - [ ] interactive command to open pygtk window even from ncurses.  displayname can be given
 - [ ] make sure pixmap handling in optimal - I want the per-pane images to be server-side
       See cairo_xcb_surface_create.
-- [X] allow 'pane-clear' to use content from lower-level image.
 - [ ] If a net connection to a display goes away, we can block on IO to that display.
       Particularly an ssh connection to an ncurses display.
       The problem is the x11selection X connection. When it is closed, the
@@ -359,15 +286,12 @@ Module features
 - [ ] improve 'margin' to honour previous view of doc
 - [ ] update_line_height should handle TAB (and any control) - cannot expect
       text-size to handle it.
-- [X] adding 10% height at e-o-f doesn't make sense with a one-line display
-      and certainly must not push the cursor line off the screen as it currently does.
 - [ ] Give lib-renderline a Refresh:view which calls something in the render-line
       pane which does call_render_line().  Use pane_damaged() to mark panes as invalid
       and pane_refresh() to update them.
 - [ ] revise render_lines_move
 - [ ] revise render_lines_move_line
 - [ ] revise render_lines_view_line
-- [X] click in a wrapped line always goes to first line.
 - [ ] Replace <attr> text </> in markup with SOH attr STX text ETX
       This also affects lib-markup and others.
 - [ ] I regularly hit problems because ->mdata is not up to date and we render
@@ -506,27 +430,14 @@ Module features
       follow
 - [ ] negative arg to '*' etc clears inverts the change
 - [ ] TESTS
-- [X] when 'a' or movement is done in message view, new message isn't displayed
 - [ ] when re-visit, open up the same panes
 - [ ] make sure Clone actually works for all panes - or remove it
 - [ ] add counter and colour for 'flagged'
-- [X] 'a' on a message, moves to next thread and opens it but DOESN'T display
-      the chosen message.
 - [ ] if no 'saved:current' use "not exclude_tags"
 - [ ] change from "saved:" to "query:" after re-organizing my queries.
-- [X] 'a' on a thread only works if there is just one message
-- [X] 'q' command to close thread if it is open
-- [X] 'k' to kill the message and all replies - but not rest of thread
-- [X] Chr-a should affect thing under cursor, not current thing
 - [ ] support selection messages and applying tags
-- [X] command to mark whole thread as Archived - 'A' ?
 - [ ] 'd' to add "deleted' flag
 - [ ] different highlight colour for "not matched" and "not inbox"
-- [X] highlight for 'flagged' - and 'spam'
-- [X] cannot move down to last message in search
-- [X] leave cursor in query (not message) by default.
-- [X] When there are 'new' items in a thread, entering from top
-      goes to first.  If only unread, go there.  Else start at top.
 - [ ] When visiting pre-existing query, move to first New .. optional?
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.
@@ -535,10 +446,6 @@ Module features
 - [ ] search in thread list - use 'format2' after fixing bug
 - [ ] display counts of current thread somewhere, so I know where I'm up to. - new/unread/matched in status line
 - [ ] review highlight on query when the message selected isn't the message displayed
-- [X] dynamic search - 's' popups up dialog to create new query "tmp%d"
-- [X] dynamic limit - 'l' popups up dialog which adds extra limit.
-      'q' removes it.  Pruned v.quickly
-- [X] command to skip over whole thread N/P
 - [ ] use NOTMUCH_CONFIG consistently - drop locking
 - [ ] fix bugs in stored-query!! query: is slow and (I think) buggy
 - [ ] rel_date could report how long until display would change, and
@@ -549,53 +456,9 @@ Module features
 - [ ] make sure doc cleans up when closed. processes must be killed
       and query docs must be closed
 - [ ] Can I implement "undo" for large-scale tag changes?
-- [X] 'q' while in whole-thread mode should return to all-threads
-- [X] use db.get_all_tags() to add list of tags to end of list of queries.
-- [X] if a message arrives for a thread while the thread is open, the thread gets
-       relocated and the start_thread/end_thread marks get broken.
-- [X] 'n' at end of 'whole-thread' moves to next thread
-- [X] remember how long it takes to count a query, and if longer than
-      5 second, do future updates in a 'slow' thread
-- [X] change Move-Char  in notmuch_master_View back to Move-Line
-- [X] when entering a thread from below, go to last message, not first
-- [X] 'Z' should work in email-view window, not just summary window
-- [X] background colour for current message/thread
-- [X] background colour for current search
-- [X] currently opening a thread goes to first in thread, even if it didn't
-       match search term.
-- [X] doc:notmuch:search-maxlen should be attribute, not command.
-- [X] re-arrange notmuch code so doc are first, then viewers, then commands
-- [X] '+' or '-' to change flags,
-- [X] S marks newspam N notspam ! unread,inbox
-- [X] encourage current message to be visible when list is auto updated
-- [X] point in summary list should stay close to middle
-- [X] better feedback to 'g' - e.g flag that update is happening
-- [X] I don't think summary updates correctly
-     when count notices a difference, it should trigger a refresh
-- [X] improve update of message list... sometimes disappears
-- [X] when I 'read' a message at top of summary and move to next, summary 
-      refreshes with 'next' at the top, so  I don't see the old message change colour.
-- [X] Chr-= in search/message window should remove non-matching entries from
-     search.
-- [X] archived messages never disappear from the list
-- [X] search documents don't disappear when unused
-- [X]   They, at least, should refresh and clean when visited.
-- [X] error check Popen of notmuch - don't want EPIPE when we write.
-- [X] allow refresh of current search, especially when re-visit
-- [X] refresh thread list
-- [X] 'class searches' should be given callback on creation??
-- [X] We *must* not change order or messages when reloading, without fixing all marks
-   that refer to anything that moved in order.
-- [X] simplify thread,mesg ordering by using maxint instead of -1 ??
-- [X] prune old unused threads
 
 ###  Notmuch message display
 
-- [X] urls in hidden html don't get marked-up
-- [X] notmuch calls external-viewer sometimes with no prefix
-- [X] application/octet-stream with name "foo.pdf" is a PDF.
-      use mime-types to intuit type from name?
-- [X] support mailcap ???
 - [ ] make it practical for 'text' documents to contain non-utf8 so that
       "Save" can copy to a buffer.  There is some support for a charset
       to be "8bit" (hex-mode only).  Maybe that is part of the answer.
@@ -618,23 +481,15 @@ Module features
 - [ ] ensure multipart ends each part with an eol.
 - [ ] next part/prev part button on spacer
 - [ ] handle calendar attachments.
-- [X] Display suggested filename for attachments
 - [ ] closing a large section pushed cursor to top of display, which
       isn't really what I want.  I'd rather the cursor stayed still.
-- [X] invisible pdfs still slow things down a bit.
 - [ ] in notmuch I searched in a message (mimepart), then enter to choose,
    then 'q' and crash.
 - [ ] A multipart still had an active view.
-- [X] allow cursor on spacer buttons, so 'enter' can select them
-- [X] why does stepping from htmlpart to hidden pdf part go v.slowly
-- [X] When 'show'ing a part, ensure start of part is visible
-- [X] Let=92s in Quoted-printable Windows-1252 part causes weirdness.
 - [ ] make base64 much more efficient.  Stepping back from EOF can sync
       by counting ='s.  There are always 4n chars. So last for are
       xxxx or xxx= or xx==. RFC2045 guarantees the == with be there.
       Also possibly increase MAX_QUAD a bit - 30?
-- [X] use python html2text to create markdown view
-      import html2text ; content=html2text.html2text("html")
 - [ ] linecount is spinning somewhere.
       Doc is multipart, chars are garbage. underlying is b64
       Email has large attachments
@@ -646,34 +501,18 @@ Module features
 - [ ] in text/plain, wrap long lines on 'space'. - make this a config in lib-markup
 - [ ] allow view of all headers, and of "more" than default (including file names)
 - [ ] maybe hide signature, unless small
-- [X] need to resolve how charsets are handled.  Maybe an attribute to
-   query to see if there is a need for a utf-8 layer on email
-- [X] in quoted-printable, line ends "=\n" doesn't always join as it should. (cannot reproduce)
-   See email about Mobile number
 - [ ] When click on first char in tagged range, I don't see the tag and
    don't get a Mouse-Activate event.
 - [ ] line wrap in header should not appear as space??
-- [X] if a subject line in wrapped in the email, the summary line look weird
 - [ ] handle all Unicode newline chars.
-- [X] should multipart/visible be per-view somehow?
-- [X] Handle \r\n e-o-l and display sensibly
-- [X] I need a more structured/extensible way to decide which button was pressed
-- [X] I need key-click to work reliably somehow. Click on selected button?
 - [ ] Auto-hide depending on type - with extensible table
 - [ ] Open-with always,  Open only if a handler is known
 - [ ] "save" to copy to buffer
 - [ ] save function - doc:save-file given file name or fd
 - [ ] wiggle-highlight patches found in email
-- [X] brief summary of part type in button line
-- [X] open function
-- [X] make URLs clickable
 - [ ] detect and hide cited text
 - [ ] maybe detect "-----Original Message-----" as indicating cited text
-- [X] detect and highlight links
 - [ ] Make long to/cc headers truncate unless selected.
-- [X] select parts from multipart
-- [X] buttons for non-displayable
-- [X] display image on gtk,
 - [ ] display image on ncurses.
 - [ ] Make addresses active (menu?) to allow adding to a saved search
       with options and/or/andnot.  Also "mail to" or "save"..
@@ -692,29 +531,12 @@ Module features
       - message has already been sent
 - [ ] catch exceptions from email.message creation.
        particularly adding headers can complain
-- [X] close window after posting
-- [X] design backend for posting
-- [X] Support compose/reply/follow-up/forward
-- [X] reply to copy text content with '> ' - suppress with '-' prefix
-- [X] 'reply' creates references and in-reply-to
-- [X] 'to' and 'cc' fields to support address completion
-- [X] 'from' can cycle around options from config
 - [ ] attach files - with type and disposition
-- [X] spell-checker
 - [ ] be smart about quoting displayname before <addr>
-- [X] highlight interpolated text - red?
 - [ ] capture editing of to/cc and mark ',' as a wrap point.
-- [X] "post" passes to "notmuch insert -new -unread +outbox --folder=sent"
-        add 'sent' to new.ignore??
-- [X] "post" adds message-id, date
-- [X] "post" checks for non-ASCII and uses quoted-printable if needed.
-- [X] fill-mode, and highlight white-space?  Header line fill with a prefix
 - [ ] If attachments are requested, set mime-version etc
-- [X] put marks around instructions for attachments and don't let them be edited
 - [ ] inline images get displayed
 - [ ] attach email message: message/rfc
-- [X] 'reply' copies 'from' to 'to', and to/cc to cc
-- [X] headers have suitable highlighting.
 - [ ] auto-insert signature... like an attachment?
 - [ ] address-completion should be referred to module, not assumed to be notmuch
 - [ ] support address book and allow completion from there
@@ -743,7 +565,6 @@ Module features
 - [ ] word-wrap.  Interesting task for centring
 - [ ] force x:scale to be maximum width of any line - to avoid surprises
 - [ ] proportional vertical space ??
-- [X] right:0 and right:1 don't do what I expect
 - [ ] thumbnails for easy select?
 - [ ] \_  etc to escape special chars
 - [ ] boiler-plate, like page numbers
@@ -772,14 +593,8 @@ Module features
 
 - [ ] allow (even prefer) str1 for str, as str is predefined
 - [ ] use new doc:debug:mark when printing marks
-- [X] ret='mark' doesn't take a ref, so if the caller drops the mark... what then?
-     Should this be illegal?
 - [ ] should Efallthrough be an exception?
-- [X] Print error name when there is a python error
-- [X] edlib.LOG can crash if there are '%' if the buffer.
-- [X] expose rexel constants
 - [ ] report error if release mark which isn't ours.
-- [X] create a library of support functions like doc_next, doc_prev etc.
 - [ ] Log loading of modules - Can I provide version info?
 - [ ] we aren't catching errors from functions called from .connect()
        Maybe use sys.excepthook(typ,val,tb)
@@ -812,30 +627,14 @@ Module features
 ### dynamic completion
 
 - [ ] provide a drop-down menu with options
-- [X] the 'back' option doesn't work.  Need to discard current
-      expansion first.
 
 ### spell-checker
-- [X] extract words better. e.g. '-' and '/' separate words.
-      Maybe have a regexp which defaults [A-Za-z.']+ ??
-- [X] Split out add-range and del-range code
-- [X] split pane: one attaches to doc and does all spell checking for all viewers,
-      other attaches to view and sends spell-check requests.
 - [ ] mode-specific so latex can ignore \foo
 - [ ] Some way for 'c-mode' to report where comments are so they can be spell-checked
-- [X] after alt-; lists option, allow 0,1,2 etc to choose options, a to add etc.
-- [X] auto-spell checking on display
-- [X] record what has been checked and what hasn't.  When content is changed, remove
-      'is checked' indication for whole line.
-- [X] mark individual words that are mis-spelled.
-- [X] command to cycle between options.- maybe similar to Alt-/
 - [ ] drop-down with options
 - [ ] command to add word to per-document list, or personal list
 
 ### calculator
-- [X] names values are stored in the view pane, not the doc.
-      Should I just move them to the doc?  Should I then cache them in the pane?
-      attr lookup on a doc isn't optimised...
 - [ ] regression test
 - [ ] calc-replace should leave result in selection. - or only in the selection.
 - [ ] calc-replace could cycle through bases.
