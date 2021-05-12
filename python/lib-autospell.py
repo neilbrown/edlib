@@ -20,6 +20,14 @@
 #   choose_range(focus, viewnum, attr, start, end) - changes start and end to be
 #    a contiguous unchecked section in the range
 
+def show_range(action, focus, viewnum, attr):
+    edlib.LOG("range:", attr, action)
+    f,l = focus.vmarks(viewnum)
+    while f:
+        edlib.LOG("  ", f, f[attr])
+        f = f.next()
+    edlib.LOG("done", action)
+
 def remove_range(focus, viewnum, attr, start, end):
     m = focus.vmark_at_or_before(viewnum, start)
     if m and not m[attr]:
@@ -234,7 +242,7 @@ class autospell_view(edlib.Pane):
             self.vstart = mark.dup()
             self.vend = mark2.dup()
             if (not self.helper_attached and
-                not self.call("doc:notify:doc:spell:mark-checked")):
+                not self.call("doc:notify:spell:mark-checked")):
                 self.call("doc:attach-helper", autospell_attach_helper)
                 self.helper_attached = True
             self.sched()

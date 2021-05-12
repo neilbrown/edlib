@@ -36,7 +36,7 @@ Bugs to be fixed
 
 - [X] auto-fill should happen if there is space after cursor, as
       well as newline
-- [ ] sometimes auto-spell stop working.  Maybe marks are moving 
+- [X] sometimes auto-spell stop working.  Maybe marks are moving 
       around.
 - [X] compose-email joins to_addrs with cc_addrs even if one is None
 - [X] Mouse-event :Motion (x,y) 0 3 from pygtk gets Enoarg
