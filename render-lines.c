@@ -1087,16 +1087,11 @@ DEF_CMD(render_lines_revise)
 		call("doc:render-line-prev", focus, 0, m1);
 	// FIXME double check that we invalidate line before any change...
 
-	/* If m2->mdata is NULL, then it was the end-of-file so
-	 * there could be blank space on display the new text can fill.
-	 * In that case we don't require pm to be before m2.
-	 */
 	if (m1 && m2 &&
-	    (!pm || (mark_ordered_or_same(m1,pm) &&
-		     (m2->mdata == NULL || mark_ordered_or_same(pm,m2))))) {
+	    (!pm || (mark_ordered_or_same(m1,pm)))) {
 		/* We maybe be able to keep m1 as start, if things work out.
 		 * So check all sub-panes are still valid and properly
-		 * positioned
+		 * positioned.
 		 */
 		if (revalidate_start(rl, p, focus, m1, pm, refresh_all))
 			return 1;

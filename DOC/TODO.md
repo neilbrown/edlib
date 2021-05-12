@@ -76,7 +76,7 @@ Bugs to be fixed
 - [X] white-space and others cannot be set manually.
 - [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
      g_main_loop_run->poll
-- [ ] end of file jumps around last few lines of display
+- [X] end of file jumps around last few lines of display
 - [ ] 'make' sometimes chooses an info over an error line - both in C file
 - [ ] make sometimes doesn't follow end-of-file
 - [ ] make uses too much CPU on large output
