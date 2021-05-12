@@ -482,19 +482,48 @@ static int consume_space(struct pane *p safe, int y,
 	return y;
 }
 
+/*
+ * Choose new start/end to be displayed in the given pane.
+ * 'pm' must be displayed, and if vline is not NO_NUMERIC,
+ * pm should be displayed on that line of the display, where
+ * negative numbers count from the bottom of the page.
+ * Otherwise pm should be at least pm->margin from top and bottom.
+ * In no case should start-of-file be *after* top of display.
+ * If there is an existing display, move the display as little as
+ * possible while complying with the above.
+ *
+ * We start at 'pm' and move both forward and backward one line at a
+ * time measuring each line and assessing space used.
+ * - If the space above pm reaches positive vline, that will be top.
+ * - If the space below reaches negative vline, that will likely be bottom
+ * - If pm was before old top and we reach the old top going down,
+ *    and if space measured before pm has reached ->margin, we stop
+ *    moving upward.
+ * - If pm was after old bottom and we reach the old bottom going up
+ *    and if space measured after pm has reached ->margin, we stop
+ *    moving downward
+ *
+ * If we decide to stop moving in both directions, but have not
+ * reached EOF or full height of display, keep moving downwards.
+ */
 static void find_lines(struct mark *pm safe, struct pane *p safe,
 		       struct pane *focus safe,
 		       int vline)
 {
 	struct rl_data *rl = p->data;
 	struct mark *orig_top, *orig_bot;
-	struct mark *top, *bot;
+	struct mark *top, *bot;  // boundary of previous display
 	struct mark *m;
-	struct mark *start, *end;
+	struct mark *start, *end; // current estimate for new display
 	short y = 0;
-	short lines_above = 0, lines_below = 0;
-	short offset;
+	short lines_above = 0, lines_below = 0; /* distance from start/end
+						 * to pm.
+						 */
+	short offset; // pos of pm in rendering of that line
 	bool found_start = False, found_end = False;
+	/* y_pre and y_post are measurement from start/end that
+	 * haven't yet been included into lines_above/lines_below.
+	 */
 	short y_pre = 0, y_post = 0;
 	short line_height_pre = 1, line_height_post = 1;
 
@@ -518,7 +547,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (!vmark_is_valid(start))
 		call_render_line(p, focus, start, NULL);
 	end = vmark_next(start);
-	/* Note: 'end' might be NULL is 'start' is end-of-file */
+	/* Note: 'end' might be NULL if 'start' is end-of-file, otherwise
+	 * call_render_line() will have created 'end' if it didn't exist.
+	 */
 
 	rl->shift_left = 0;
 
@@ -559,8 +590,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (rl->header && rl->header->mdata)
 		y = rl->header->mdata->h;
 
-	/* We have start/end of the focus line.  When rendered this would use
-	 * y_pre + y + y_post vertial space.
+	/* We have start/end of the focus line.  When rendered this,
+	 * plus header and eof-footed would use y_pre + y + y_post
+	 * vertical space.
 	 */
 
 	top = bot = NULL;
@@ -591,10 +623,11 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 		if (found_end && y_post && bot &&
 		    mark_ordered_or_same(start, bot))
 			/* Extra vertical space gets inserted after EOF when
-			 * there is a long jump to get there, but if we it 'bot'
+			 * there is a long jump to get there, but if we hit 'bot'
 			 * soon when searching back, we discard any unused space.
 			 */
 			y_post = 0;
+
 		if (!found_end && bot &&
 		    mark_ordered_not_same(start, bot))
 			/* Overlap original from below, so prefer to
@@ -627,9 +660,8 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 				  found_start, found_end,
 				  line_height_pre, line_height_post);
 	}
-
 	/* We might need to continue downwards even after found_end
-	 * if there is more content and more room.
+	 * if there is more space.
 	 */
 	found_end = end == NULL;
 	while (!found_end && y < p->h) {
