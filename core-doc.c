@@ -1228,9 +1228,12 @@ static void do_doc_assign(struct pane *p safe, struct pane *doc safe)
 static struct pane *doc_attach(struct pane *parent)
 {
 	struct doc_data *dd;
+	struct pane *p;
 
 	alloc(dd, pane);
-	return pane_register(parent, 0, &doc_handle.c, dd);
+	p = pane_register(parent, 0, &doc_handle.c, dd);
+	pane_damaged(p, DAMAGED_VIEW);
+	return p;
 }
 
 static void simplify_path(const char *path safe, char *buf safe)

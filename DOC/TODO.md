@@ -54,7 +54,7 @@ Bugs to be fixed
       sometimes not.  What do I really want?
 - [ ] if I remove the unneeded ->repositioned=1 in render-lines, search stops
       refreshing properly.
-- [ ] at top of just-viewed doc, C-space, eof only highlights last line,
+- [X] at top of just-viewed doc, C-space, eof only highlights last line,
       when whole fits in the page.
 - [ ] doc-docs can get confused when I kill buffers from within the view
 - [ ] use iconv(3) for char-set conversion
