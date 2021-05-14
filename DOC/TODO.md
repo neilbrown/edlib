@@ -27,6 +27,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] ctrl-z in elc doesn't ask edlib to release the terminal
+- [ ] notmuch mode keeps lots of email messages permanently open
 - [ ] copy/paste is unreliable
 - [ ] fill-mode is weird.  Sometimes explicitly giving a fill-width sticks,
       sometimes not.  What do I really want?
