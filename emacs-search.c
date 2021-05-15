@@ -33,6 +33,7 @@ struct es_info {
 		unsigned int len; /* current length of search string */
 		short wrapped;
 		short case_sensitive;
+		short backwards;
 	} *s;
 	struct mark *start safe; /* where searching starts */
 	struct mark *end safe; /* where last success ended */
@@ -62,10 +63,12 @@ DEF_CMD(search_forward)
 		esi->backwards = suffix[0] == 'R';
 
 	if (esi->s && mark_same(esi->s->m, esi->end)) {
-		if (esi->s->case_sensitive == esi->case_sensitive)
+		if (esi->s->case_sensitive == esi->case_sensitive &&
+		    esi->s->backwards == esi->backwards)
 			/* already pushed and didn't find anything new */
 			return 1;
 		esi->s->case_sensitive = esi->case_sensitive;
+		esi->s->backwards = esi->backwards;
 	}
 	str = call_ret(str, "doc:get-str", ci->focus);
 	if (!str || !*str) {
@@ -83,6 +86,7 @@ DEF_CMD(search_forward)
 	s->len = strlen(str);
 	s->wrapped = esi->wrapped;
 	s->case_sensitive = esi->case_sensitive;
+	s->backwards = -1;
 	free(str);
 	s->next = esi->s;
 	esi->s = s;

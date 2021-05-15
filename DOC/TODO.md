@@ -45,7 +45,9 @@ Bugs to be fixed
       like line-too-long or diff colouring
       CANNOT REPRODUCE
 - [X] Add Close handler for doc-docs.c???
-- [ ] backward search sometimes doesn't work.
+- [X] backward search sometimes doesn't work.  If there has been a recent
+      search and point is at start of a match then C-s C-s C-r C-r C-r never 
+      moves backwards or loops.
 - [ ] save-all dialogue sometimes puts cursor at bottom and cannot move up.
       MY GUESS IS doc:EOL in linefilter is calling doc:render-line-prev
       and getting an error - maybe from doc:render-line-prev on parent.
