@@ -778,6 +778,20 @@ DEF_CMD(docs_shares_ref)
 	return 1;
 }
 
+DEF_CMD(docs_close)
+{
+	struct docs *docs = ci->home->data;
+
+	call_comm("global-set-command", ci->home, &edlib_noop,
+		  0, NULL, "docs:",
+		  0, NULL, "docs;");
+	call_comm("global-set-command", ci->home, &edlib_noop,
+		  0, NULL, "doc:appeared-docs-register");
+	pane_close(docs->collection);
+	doc_free(&docs->doc);
+	return 1;
+}
+
 static void docs_init_map(void)
 {
 	if (docs_map)
@@ -805,6 +819,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:shares-ref", &docs_shares_ref);
 
 	key_add(docs_map, "get-attr", &docs_get_attr);
+	key_add(docs_map, "Close", &docs_close);
 	key_add(docs_map, "Free", &edlib_do_free);
 
 	key_add(docs_aux_map, "doc:revisit", &doc_revisit);

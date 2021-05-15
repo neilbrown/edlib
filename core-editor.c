@@ -277,6 +277,14 @@ DEF_EXTERN_CMD(edlib_do_free)
 	return 1;
 }
 
+/* FIXME I should be able to remove things from a keymap, not
+ * replace with this.
+ */
+DEF_EXTERN_CMD(edlib_noop)
+{
+	return Efallthrough;
+}
+
 DEF_CMD(editor_on_idle)
 {
 	/* register comm2 to be called when next idle. */

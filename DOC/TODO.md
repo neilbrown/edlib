@@ -44,7 +44,7 @@ Bugs to be fixed
 - [ ] search matches aren't highlighted where there is other highlighting
       like line-too-long or diff colouring
       CANNOT REPRODUCE
-- [ ] Add Close handler for doc-docs.c???
+- [X] Add Close handler for doc-docs.c???
 - [ ] backward search sometimes doesn't work.
 - [ ] save-all dialogue sometimes puts cursor at bottom and cannot move up.
       MY GUESS IS doc:EOL in linefilter is calling doc:render-line-prev
