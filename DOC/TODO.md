@@ -220,6 +220,7 @@ Module features
 
 ### emacs
 
+- [ ] :C-q to allow entering unicode hex etc.
 - [ ] make-directory command
       pop-up like find-file, offering current dir.
 - [ ] semi-auto make-dir on save to nonexistent
@@ -439,7 +440,7 @@ Module features
 - [ ] change from "saved:" to "query:" after re-organizing my queries.
 - [ ] support selection messages and applying tags
 - [X] 'd' to add "deleted' flag
-- [ ] different highlight colour for "not matched" and "not inbox"
+- [X] different highlight colour for "not matched" and "not inbox"
 - [ ] When visiting pre-existing query, move to first New .. optional?
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.

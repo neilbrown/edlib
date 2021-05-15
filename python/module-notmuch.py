@@ -1366,8 +1366,7 @@ class notmuch_query(edlib.Doc):
         elif attr == "tags":
             val = ','.join(tags)
         elif attr == "M-hilite":
-            if not matched or "inbox" not in tags:
-                # FIXME maybe I should test 'current' rather than inbox?
+            if "inbox" not in tags:
                 val = "fg:grey"
                 if "new" in tags and "unread" in tags:
                     val = "fg:pink"
@@ -2455,6 +2454,11 @@ class notmuch_query_view(edlib.Pane):
             if tid == self.selected and comm2:
                 if mid == self.selmsg:
                     comm2("cb", focus, "bg:magenta+60", mark, attr)
+                elif self.whole_thread:
+                    # only delete background for matched messages
+                    mt = self.call("doc:get-attr", mark, "matched", ret='str')
+                    if mt and mt == "True":
+                        comm2("cb", focus, "bg:yellow+60", mark, attr)
                 else:
                     comm2("cb", focus, "bg:yellow+60", mark, attr)
             return 1
