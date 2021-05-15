@@ -2467,6 +2467,11 @@ class notmuch_query_view(edlib.Pane):
                 return self.parent.call("doc:get-attr", focus, num, num2, mark, "M-" + str[3:], comm2)
             else:
                 return self.parent.call("doc:get-attr", focus, num, num2, mark, "T-" + str[3:], comm2)
+        if attr == "message-id":
+            # high message-id when thread isn't open
+            if not self.selected or not mark.pos or mark.pos[0] != self.selected:
+                return 1
+
         return edlib.Efallthrough
 
     def handle_Z(self, key, focus, **a):
