@@ -170,14 +170,14 @@ static const char *safe ctrl_map[][2] = {
 	{ ":Enter",	":C-M" },
 	{ ":ESC",	":C-[" },
 	{ ":LF",	":C-J" },
-	{ ":TAB",	":C-I" },
-	{ ":DELETE",	":C-?" },
+	{ ":Tab",	":C-I" },
+	{ ":Del",	":C-?" },
 	{ ":A:Backspace",":A:C-H" },
 	{ ":A:Enter",	":A:C-M" },
 	{ ":A:ESC",	":A:C-[" },
 	{ ":A:LF",	":A:C-J" },
-	{ ":A:TAB",	":A:C-I" },
-	{ ":A:DELETE",	":A:C-?" },
+	{ ":A:Tab",	":A:C-I" },
+	{ ":A:Del",	":A:C-?" },
 };
 
 static const char *map_key(const char *key safe)

@@ -65,7 +65,7 @@ CFLAGS= -g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG) $(VCFL
 #CFLAGS= -pg -fno-pie -fno-PIC -g -Wall -Wstrict-prototypes -Wextra -Wno-unused-parameter $(DBG) $(VCFLAGS)
 #Doesn't work :-( -fsanitize=address
 
-all: edlib checksym lib shared
+all: edlib checksym lib shared NamesList.txt
 test: edlib lib shared test-rexel
 	./tests run
 
@@ -226,6 +226,9 @@ rexel: rexel.c rexel.h core-misc.c
 
 test-rexel: rexel
 	./rexel -T
+
+NamesList.txt:
+	wget http://www.unicode.org/Public/UCD/latest/ucd/NamesList.txt
 
 checksym: edlib
 	@nm edlib  | awk '$$2 == "T" {print $$3}' | while read a; do grep $$a *.h > /dev/null || echo  $$a; done | grep -vE '^(_.*|main)$$' ||:

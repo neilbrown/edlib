@@ -1338,13 +1338,13 @@ class notmuch_query(edlib.Doc):
                 val = "fg:black"
         elif attr == "T-flag":
             if 'deleted' in t["tags"]:
-                val = "🗑"
+                val = "🗑"  # WASTEBASKET     #1f5d1
             elif 'flagged' in t["tags"]:
-                val = "★"
+                val = "★"  # BLACK STAR       #2605
             elif 'newspam' in t["tags"]:
-                val = "✘"
+                val = "✘"  # HEAVY BALLOT X   #2718
             elif 'notspam' in t["tags"]:
-                val = "✔"
+                val = "✔"  # HEAVY CHECK MARK #2714
             else:
                 val = " "
         elif attr == "T-date_relative":
@@ -1378,13 +1378,13 @@ class notmuch_query(edlib.Doc):
                 val = "fg:black"
         elif attr == "M-flag":
             if 'deleted' in tags:
-                val = "🗑"
+                val = "🗑"  # WASTEBASKET     #1f5d1
             elif 'flagged' in tags:
-                val = "★"
+                val = "★"  # BLACK STAR       #2605
             elif 'newspam' in tags:
-                val = "✘"
+                val = "✘"  # HEAVY BALLOT X   #2718
             elif 'notspam' in tags:
-                val = "✔"
+                val = "✔"  # HEAVY CHECK MARK #2714
             else:
                 val = " "
         elif attr == "M-date_relative":

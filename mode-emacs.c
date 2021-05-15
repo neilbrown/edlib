@@ -2419,6 +2419,34 @@ DEF_CMD(emacs_spell_right)
 	return spell_shift(ci->focus, ci->num, 1);
 }
 
+DEF_CMD(emacs_quote)
+{
+	char b[6];
+	wint_t wch = WEOF;
+	char *str = NULL;
+	struct mark *mk = NULL;
+
+	if (ci->num >= 0 && ci->num < NO_NUMERIC)
+		wch = ci->num;
+	else if (ci->mark &&
+		 (mk = call_ret(mark2, "doc:point", ci->focus)) != NULL &&
+		 clear_selection(ci->focus, NULL, mk, 0) &&
+		 (str = call_ret(strsave, "doc:get-str", ci->focus,
+				 0, NULL, NULL, 0, mk)) != NULL) {
+		int x;
+		if (*str == '#')
+			str ++;
+		if (sscanf(str, "%x", &x) == 1)
+			wch = x;
+	}
+	if (wch == WEOF) {
+		call("Mode:set-all", ci->focus, ci->num, NULL, ":CQ", ci->num2);
+		return 1;
+	}
+	call("Replace", ci->focus, 0, mk, put_utf8(b, wch));
+	return 1;
+}
+
 
 DEF_PFX_CMD(alt_cmd, ":A");
 DEF_PFX_CMD(cx_cmd, ":CX");
@@ -2426,7 +2454,6 @@ DEF_PFX_CMD(cx4_cmd, ":CX4");
 DEF_PFX_CMD(cx5_cmd, ":CX5");
 DEF_PFX_CMD(cx44_cmd, ":CX44");
 DEF_PFX_CMD(cc_cmd, ":CC");
-DEF_PFX_CMD(quote_cmd, ":CQ");
 DEF_PFX_CMD(help_cmd, ":Help");
 
 static void emacs_init(void)
@@ -2446,8 +2473,9 @@ static void emacs_init(void)
 	key_add(m, "K:CX4-4", &cx44_cmd.c);
 	key_add(m, "K:CX4:C-\\", &cx44_cmd.c);
 	key_add(m, "K:C-C", &cc_cmd.c);
-	key_add(m, "K:C-Q", &quote_cmd.c);
 	key_add(m, "K:F1", &help_cmd.c);
+
+	key_add(m, "K:C-Q", &emacs_quote);
 
 	for (i = 0; i < ARRAY_SIZE(move_commands); i++) {
 		struct move_command *mc = &move_commands[i];

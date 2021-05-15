@@ -27,6 +27,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] Searching for \U0001f5d1 crashes, [\U0001f5d1] fails.
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
 - [X] notmuch mode keeps lots of email messages permanently open
 - [ ] copy/paste is unreliable
@@ -220,7 +221,9 @@ Module features
 
 ### emacs
 
-- [ ] :C-q to allow entering unicode hex etc.
+- [X] :C-q to allow entering unicode hex etc.
+- [ ] :C-q to recognize names of unicode chars: e.g. WASTEBASKET
+       Possibly matches a list which continued :C-q cycles through
 - [ ] make-directory command
       pop-up like find-file, offering current dir.
 - [ ] semi-auto make-dir on save to nonexistent
