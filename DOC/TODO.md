@@ -34,13 +34,16 @@ Bugs to be fixed
 - [X] fill-mode is weird.  Sometimes explicitly giving a fill-width sticks,
       sometimes not.  What do I really want?
 - [ ] doc-docs can get confused when I kill buffers from within the view
+      CANNOT REPRODUCE
 - [ ] use iconv(3) for char-set conversion
 - [ ] When visiting a file which is found to be a link to a different name,
       the file isn't reloaded if it has changed.
+      CANNOT REPRODUCE
       Also, following a patch goes to wrong line - by one.  If file
       isn't already displayed
 - [ ] search matches aren't highlighted where there is other highlighting
       like line-too-long or diff colouring
+      CANNOT REPRODUCE
 - [ ] Add Close handler for doc-docs.c???
 - [ ] backward search sometimes doesn't work.
 - [ ] save-all dialogue sometimes puts cursor at bottom and cannot move up.

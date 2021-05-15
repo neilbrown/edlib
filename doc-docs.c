@@ -60,7 +60,7 @@ struct docs {
 
 static void docs_demark(struct pane *d safe, struct pane *p safe)
 {
-	/* This document is about to be moved in the list.
+	/* This document (p) is about to be moved in the list (d->collection).
 	 * Any mark pointing at it is moved forward
 	 */
 	struct docs *doc = container_of(d->data, struct docs, doc);
@@ -190,7 +190,7 @@ static void doc_checkname(struct pane *p safe, struct pane *d safe, int n)
 /*
  * Interactive saving of files, particularly as happens when the editor
  * is exiting, pops up a document-list window which only display
- * documents which need saving.  The can be saved or killed, both of which
+ * documents which need saving.  They can be saved or killed, both of which
  * actions removes them from the list.  When the list is empty an event can be
  * sent back to the pane that requested the popup.
  */
@@ -309,8 +309,9 @@ DEF_CMD(docs_callback_choose)
 	struct pane *choice = NULL, *last = NULL;
 	struct pane *p;
 
-	/* Choose a documents with no notifiees or no pointer,
-	 * but ignore 'deleting' */
+	/* Choose a document with no notifiees or no pointer,
+	 * but ignore 'CLOSED'
+	 */
 
 	list_for_each_entry(p, &doc->collection->children, siblings) {
 		struct doc *d = p->data;
@@ -336,7 +337,6 @@ DEF_CMD(docs_callback_choose)
 
 DEF_CMD(docs_callback_saveall)
 {
-
 	struct docs *doc = ci->home->data;
 	struct pane *p;
 	int dirlen = ci->str ? (int)strlen(ci->str) : -1;
@@ -348,7 +348,9 @@ DEF_CMD(docs_callback_saveall)
 				continue;
 		}
 		if (doc_save(p, p, ci->num2))
-			/* Something needs to be saved */
+			/* Something needs to be saved, we were only asked
+			 * to test.
+			 */
 			return 2;
 	}
 	return 1;
@@ -382,7 +384,6 @@ DEF_CMD(docs_callback_modified)
 	call("doc:file", p, -1);
 	return 1;
 }
-
 
 DEF_CMD(docs_callback_appeared)
 {
@@ -553,6 +554,7 @@ DEF_CMD(docs_doc_get_attr)
 		return Efallthrough;
 
 	val = pane_attr_get(m->ref.p, attr);
+	/* use 'while' instead of 'if' to allow 'break' */
 	while (!val && strcmp(attr, "doc-can-save") == 0) {
 		char *mod, *fl, *dir;
 		val = "no";
@@ -562,7 +564,7 @@ DEF_CMD(docs_doc_get_attr)
 		fl = pane_attr_get(m->ref.p, "filename");
 		if (!fl || !*fl)
 			break;
-		dir = pane_attr_get(m->ref.p, "only-here");
+		dir = pane_attr_get(ci->focus, "only-here");
 		if (!dir || strncmp(dir, fl, strlen(dir)) == 0)
 			val = "yes";
 	}
