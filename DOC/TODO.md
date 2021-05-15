@@ -52,7 +52,7 @@ Bugs to be fixed
       MY GUESS IS doc:EOL in linefilter is calling doc:render-line-prev
       and getting an error - maybe from doc:render-line-prev on parent.
       I need to try when next it happens.
-- [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
+- [X] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
      g_main_loop_run->poll
 - [ ] 'make' sometimes chooses an info over an error line - both in C file
 - [ ] make sometimes doesn't follow end-of-file

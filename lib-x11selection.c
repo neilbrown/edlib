@@ -180,9 +180,12 @@ DEF_CMD(xs_copy_get)
 	if (xsi->clipboard.data == NULL) {
 		if (num == 0) {
 			/* Return CLIPBOARD if it exists */
-			gchar *s;
+			gchar *s = NULL;
 
-			s = gtk_clipboard_wait_for_text(xsi->clipboard.cb);
+			if (gtk_clipboard_wait_is_text_available(
+				    xsi->clipboard.cb))
+				s = gtk_clipboard_wait_for_text(
+					xsi->clipboard.cb);
 			if (s && *s) {
 				comm_call(ci->comm2, "cb", ci->focus,
 					  0, NULL, s);
@@ -236,7 +239,10 @@ DEF_CMD(xs_sel_commit)
 		/* get the clipboard first - to make sure it is available
 		 * as second saved text.
 		 */
-		s = gtk_clipboard_wait_for_text(xsi->clipboard.cb);
+		s = NULL;
+		if (gtk_clipboard_wait_is_text_available(
+			    xsi->clipboard.cb))
+			s = gtk_clipboard_wait_for_text(xsi->clipboard.cb);
 		if (s && *s) {
 			call("copy:save", ci->home->parent,
 			     0, NULL, s);
@@ -244,7 +250,9 @@ DEF_CMD(xs_sel_commit)
 		}
 		g_free(s);
 	}
-	s = gtk_clipboard_wait_for_text(xsi->primary.cb);
+	s = NULL;
+	if (gtk_clipboard_wait_is_text_available(xsi->primary.cb))
+		s = gtk_clipboard_wait_for_text(xsi->primary.cb);
 	if (s && *s) {
 		call("copy:save", ci->home->parent,
 		     0, NULL, s);
