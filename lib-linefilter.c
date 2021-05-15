@@ -9,7 +9,7 @@
  * of the line.
  *
  * This module doesn't hold any marks on any document.  The marks
- * held by the rendered should be sufficient.
+ * held by the renderer should be sufficient.
  */
 
 #define _GNU_SOURCE for strcasestr
@@ -56,7 +56,7 @@ DEF_CB(rlcb)
 	else if (cb->fd->at_start && cb->fd->ignore_case)
 		cb->cmp = strncasecmp(c, cb->fd->match, cb->fd->match_len);
 	else if (cb->fd->at_start)
-		cb->cmp = strncasecmp(c, cb->fd->match, cb->fd->match_len);
+		cb->cmp = strncmp(c, cb->fd->match, cb->fd->match_len);
 	else if (cb->fd->ignore_case)
 		cb->cmp = strcasestr(c, cb->fd->match) ? 0 : 1;
 	else
@@ -401,6 +401,10 @@ DEF_CMD(filter_nomove)
 	if (strcmp(ci->key, "Move-to") == 0)
 		return Efallthrough;
 	if (strcmp(ci->key, "Move-Line") == 0)
+		return Efallthrough;
+	if (strncmp(ci->key, "Move-View-", 10) == 0)
+		return Efallthrough;
+	if (strcmp(ci->key, "Move-CursorXY") == 0)
 		return Efallthrough;
 	return 1;
 }

@@ -47,6 +47,9 @@ Bugs to be fixed
 - [ ] Add Close handler for doc-docs.c???
 - [ ] backward search sometimes doesn't work.
 - [ ] save-all dialogue sometimes puts cursor at bottom and cannot move up.
+      MY GUESS IS doc:EOL in linefilter is calling doc:render-line-prev
+      and getting an error - maybe from doc:render-line-prev on parent.
+      I need to try when next it happens.
 - [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
      g_main_loop_run->poll
 - [ ] 'make' sometimes chooses an info over an error line - both in C file
@@ -353,7 +356,7 @@ Module features
 
 - [ ] When 'delete' and there is only the original
       entry of the prefix stack, just delete one character.
-- [ ] mouse selection should work in completion pane
+- [X] mouse selection should work in completion pane
 - [ ] filename completion should work for earlier component of path.
 - [ ] The “complete” popup should be positioned above/below the file name,
       not over the top of it.
