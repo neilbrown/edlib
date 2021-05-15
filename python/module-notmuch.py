@@ -1337,7 +1337,9 @@ class notmuch_query(edlib.Doc):
             else:
                 val = "fg:black"
         elif attr == "T-flag":
-            if 'flagged' in t["tags"]:
+            if 'deleted' in t["tags"]:
+                val = "🗑"
+            elif 'flagged' in t["tags"]:
                 val = "★"
             elif 'newspam' in t["tags"]:
                 val = "✘"
@@ -1376,7 +1378,9 @@ class notmuch_query(edlib.Doc):
             else:
                 val = "fg:black"
         elif attr == "M-flag":
-            if 'flagged' in tags:
+            if 'deleted' in tags:
+                val = "🗑"
+            elif 'flagged' in tags:
                 val = "★"
             elif 'newspam' in tags:
                 val = "✘"
@@ -1730,23 +1734,26 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_A(self, key, focus, num, mark, str, **a):
-        "handle-list/doc:char-a/doc:char-A/doc:char-k/doc:char-S/doc:char-H/doc:char-*/doc:char-!/"
+        "handle-list/doc:char-a/doc:char-A/doc:char-k/doc:char-S/doc:char-H/doc:char-*/doc:char-!/doc:char-d/doc:char-D/"
         # adjust flags for this message or thread, and move to next
         # a - remove inbox
         # A - remove inbox from entire thread
         # k - remove inbox from this message and replies
+        # d - remove inbox, add deleted
+        # D - as D, for entire thread
         # S - add newspam
         # H - ham: remove newspam and add notspam
         # * - add flagged
-        # ! - add unread,inbox remove newspam,notspam,flagged
-        # If num is not NO_NUMERIC, apply to whole thread
+        # ! - add unread,inbox remove newspam,notspam,flagged,deleted
+        # If num is negative reverse the change (except for !)
+        # If num is not +/-NO_NUMERIC, apply to whole thread
         which = focus['notmuch:pane']
         if which not in ['message', 'query']:
             return 1
 
         wholethread = False
         replies = False
-        if num != edlib.NO_NUMERIC:
+        if num != edlib.NO_NUMERIC and num != -edlib.NO_NUMERIC:
             wholethread = True
 
         adds = []; removes = []
@@ -1754,6 +1761,13 @@ class notmuch_master_view(edlib.Pane):
             removes = ['inbox']
         if key[-1] == 'A':
             removes = ['inbox']
+            wholethread = True
+        if key[-1] == 'd':
+            removes = ['inbox']
+            adds = ['deleted']
+        if key[-1] == 'D':
+            removes = ['inbox']
+            adds = ['deleted']
             wholethread = True
         if key[-1] == 'k':
             removes = ['inbox']
@@ -1767,7 +1781,10 @@ class notmuch_master_view(edlib.Pane):
             adds = ['flagged']
         if key[-1] == '!':
             adds = ['unread','inbox']
-            removes = ['newspam','notspam','flagged']
+            removes = ['newspam','notspam','flagged','deleted']
+
+        if num < 0 and key[-1] != '!':
+            adds, removes = removes, adds
 
         if which == "message":
             thid = self.message_pane['thread-id']

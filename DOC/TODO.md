@@ -430,7 +430,7 @@ Module features
 - [ ] option to wrap subjects onto next line
 - [ ] When active query changes, highlight on list view doesn't immediately
       follow
-- [ ] negative arg to '*' etc clears inverts the change
+- [X] negative arg to '*' etc clears inverts the change
 - [ ] TESTS
 - [ ] when re-visit, open up the same panes
 - [ ] make sure Clone actually works for all panes - or remove it
@@ -438,7 +438,7 @@ Module features
 - [ ] if no 'saved:current' use "not exclude_tags"
 - [ ] change from "saved:" to "query:" after re-organizing my queries.
 - [ ] support selection messages and applying tags
-- [ ] 'd' to add "deleted' flag
+- [X] 'd' to add "deleted' flag
 - [ ] different highlight colour for "not matched" and "not inbox"
 - [ ] When visiting pre-existing query, move to first New .. optional?
 - [ ] When changing any tag in a thread, or when opening the thread,
