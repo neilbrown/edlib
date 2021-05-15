@@ -696,12 +696,17 @@ DEF_CMD(open_email)
 	    strncmp(ci->str, "email:", 6) != 0)
 		return Efallthrough;
 	fd = open(ci->str+6, O_RDONLY);
+	if (fd < 0)
+		return Efallthrough;
 	p = call_ret(pane, "doc:open", ci->focus, fd, NULL, ci->str + 6, 1);
+	close(fd);
 	if (!p)
 		return Efallthrough;
 	start = vmark_new(p, MARK_UNGROUPED, NULL);
-	if (!start)
+	if (!start) {
+		pane_close(p);
 		return Efallthrough;
+	}
 	end = mark_dup(start);
 	call("doc:set-ref", p, 0, end);
 
