@@ -39,8 +39,8 @@ Bugs to be fixed
 - [ ] When visiting a file which is found to be a link to a different name,
       the file isn't reloaded if it has changed.
       CANNOT REPRODUCE
-      Also, following a patch goes to wrong line - by one.  If file
-      isn't already displayed
+- [X] While cursor not at start of line, following a patch goes to wrong line
+      - by one.  (not: If file isn't already displayed)
 - [ ] search matches aren't highlighted where there is other highlighting
       like line-too-long or diff colouring
       CANNOT REPRODUCE

@@ -270,7 +270,7 @@ DEF_CMD(wiggle_text)
 	wd->texts[which].start = NULL;
 	mark_free(wd->texts[which].end);
 	wd->texts[which].end = NULL;
-	/* It isn't possible to drop individual notificartion links.
+	/* It isn't possible to drop individual notification links.
 	 * We will lose them all on close, and ignore any before that.
 	 */
 	wd->texts[which].text = NULL;

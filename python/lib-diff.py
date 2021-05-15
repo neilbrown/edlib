@@ -244,15 +244,21 @@ class DiffPane(edlib.Pane):
         if not wcmd:
             return edlib.Efail
         focus.call("doc:EOL", 1, m2, 1)
+        m3 = mark.dup()
+        focus.call("doc:EOL", -1, m3)
         if self.which == 0 or self.which >= f:
-            wcmd("after", focus, m2, mark, f-1, f)
+            wcmd("after", focus, m2, m3, f-1, f)
         else:
-            wcmd("after", focus, m2, mark, f-1, self.which)
+            wcmd("after", focus, m2, m3, f-1, self.which)
         prefix = wcmd("extract", focus, "after", ret='str')
         if self.which == 0 or self.which >= f:
             wcmd("after", focus, m2, lines, f-1, f)
         else:
             wcmd("after", focus, m2, lines, f-1, self.which)
+
+        lprefix = focus.call("doc:get-str", m3, mark, ret='str')
+        if f > 1:
+            lprefix = lprefix[f-1:]
 
         from_start = len(prefix.splitlines())
 
@@ -310,6 +316,8 @@ class DiffPane(edlib.Pane):
             except edlib.commandfailed:
                 focus.call("Message", "Couldn't find exact match")
                 pass
+            if len(lprefix):
+                par.call("doc:char", len(lprefix))
 
         return 1
 
