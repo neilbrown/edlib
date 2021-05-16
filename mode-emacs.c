@@ -1945,8 +1945,10 @@ DEF_CMD(emacs_release)
 	call("Move-CursorXY", ci->focus,
 	     2, NULL, NULL, moved, NULL, NULL, ci->x, ci->y);
 
-	if (!moved || mark_same(p, m2)) {
-		/* No movement, so no selection */
+	if (!moved && !mark_same(p, m2)) {
+		/* No mouse movement but doc moved underneath us,
+		 * so no selection.
+		 */
 		call("Move-to", ci->focus, -1);
 		return 1;
 	}
