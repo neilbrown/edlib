@@ -1942,8 +1942,14 @@ DEF_CMD(emacs_release)
 	moved = prev_pos != (1 + ci->x * 10000 + ci->y);
 	attr_set_int(&m2->attrs, "emacs:track-selection", 0);
 
-	call("Move-CursorXY", ci->focus,
-	     2, NULL, NULL, moved, NULL, NULL, ci->x, ci->y);
+	if (moved)
+		/* Move the mouse, so new location is point */
+		call("Move-CursorXY", ci->focus,
+		     2, NULL, NULL, moved, NULL, NULL, ci->x, ci->y);
+	else
+		/* Didn't move cursor so ignore old location */
+		call("Move-CursorXY", ci->focus,
+		     2, m2, NULL, moved, NULL, NULL, ci->x, ci->y);
 
 	if (!moved && !mark_same(p, m2)) {
 		/* No mouse movement but doc moved underneath us,
