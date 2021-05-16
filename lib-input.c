@@ -51,7 +51,7 @@ struct input_mode {
 	struct pane	*focus, *source;
 	struct mark	*point;
 	struct mouse_state {
-		struct timespec	last_up;
+		struct timespec	last_action;
 		int		last_x, last_y;
 		int		click_count;
 		int		click_on_up;
@@ -294,7 +294,7 @@ DEF_CMD(mouse_event)
 		/* FIXME the max movement for a double-click should be
 		 * about a char width - maybe something based on scale
 		 */
-		if (tspec_diff_ms(&now, &ms->last_up) <= 500 &&
+		if (tspec_diff_ms(&now, &ms->last_action) <= 500 &&
 		    (abs(ci->x - ms->last_x) +
 		     abs(ci->y - ms->last_y)) <= 2)
 			/* FIXME should I let 'release' know that
@@ -312,10 +312,9 @@ DEF_CMD(mouse_event)
 				ms->click_count = 1;
 			else if (ms->click_count < 3)
 				ms->click_count += 1;
-		} else {
-			ms->last_up = now;
-			ms->last_x = ci->x; ms->last_y = ci->y;
 		}
+		ms->last_action = now;
+		ms->last_x = ci->x; ms->last_y = ci->y;
 	}
 
 	focus = ci->focus;
