@@ -124,7 +124,7 @@ class MakePane(edlib.Pane):
             fname = self.call("doc:get-str", m, e, ret="str")
             self.pos = e.dup()
             if self.first_match:
-                self.call("doc:notify:make-set-match", m, 1)
+                self.call("doc:notify:make-set-match", m)
                 self.first_match = False
             if self.record_line(fname, lineno, m, is_note):
                 # new file - stop here
@@ -577,10 +577,11 @@ class MakeViewerPane(edlib.Pane):
         self.call("doc:request:make-set-match")
         self.may_follow = True
 
-    def handle_set_match(self, key, num, mark, **a):
+    def handle_set_match(self, key, mark, **a):
         "handle:make-set-match"
         self.call("Move-to", mark, 0, 1)
-        self.may_follow = num == 0
+        # suppress following the next update
+        self.may_follow = False
         return 1
 
     def handle_enter(self, key, focus, mark, **a):
@@ -622,9 +623,13 @@ class MakeViewerPane(edlib.Pane):
         self.call("doc:destroy")
         return 1
 
-    def handle_replace(self, key, focus, mark, mark2, **a):
+    def handle_replace(self, key, focus, mark, mark2, num2, **a):
         "handle:doc:replaced"
-        if not mark or not mark2 or not self.may_follow:
+        if not mark or not mark2 or num2:
+            return 1
+        if not self.may_follow:
+            # only suppress one update
+            self.may_follow = True
             return 1
         p = self.call("doc:point", ret='mark')
         if p and p == mark:

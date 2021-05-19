@@ -27,6 +27,11 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] file names created for attachments need spaces etc translated
+      for scp to work well ... at least when ncurses wants to use scp.
+- [ ] cannot easily delete blank line at end of headers when composing message
+- [ ] email messages being composed cannot be saved as drafts, and aren't
+      autosaved
 - [ ] Searching for \U0001f5d1 crashes, [\U0001f5d1] fails.
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
 - [X] notmuch mode keeps lots of email messages permanently open
@@ -55,7 +60,11 @@ Bugs to be fixed
 - [X] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
      g_main_loop_run->poll
 - [ ] 'make' sometimes chooses an info over an error line - both in C file
-- [ ] make sometimes doesn't follow end-of-file
+      *I think you mean 'note' line (not 'info'), and yes - it is supposed to.
+       It chooses the last 'note' line, preferring ".c" files over others.
+       I guess if I don't like a result next time, I should document the
+       complete result that I didn't like.
+- [X] make sometimes doesn't follow end-of-file
 - [ ] make uses too much CPU on large output
 - [ ] When viewing diff or merge can get into infinite loop.  Possibly due
       to edit at end-of-file
