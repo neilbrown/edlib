@@ -239,7 +239,7 @@ Module features
 
 ### emacs
 
-- [ ] Support grab of mouse when pressed so motion and release go to
+- [X] Support grab of mouse when pressed so motion and release go to
       corrent window.
 - [X] :C-q to allow entering unicode hex etc.
 - [ ] :C-q to recognize names of unicode chars: e.g. WASTEBASKET

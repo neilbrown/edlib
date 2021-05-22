@@ -1319,7 +1319,7 @@ DEF_CMD(render_lines_set_cursor)
 
 	cih = pane_mapxy(ci->focus, ci->home,
 			 ci->x >= 0 ? ci->x : p->cx >= 0 ? p->cx : 0,
-			 ci->y >= 0 ? ci->y : p->cy >= 0 ? p->cx : 0,
+			 ci->y >= 0 ? ci->y : p->cy >= 0 ? p->cy : 0,
 			 False);
 
 	m = vmark_first(p, rl->typenum, p);

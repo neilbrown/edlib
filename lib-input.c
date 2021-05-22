@@ -48,7 +48,7 @@
 struct input_mode {
 	const char	*mode safe;
 	int		num, num2;
-	struct pane	*focus, *source;
+	struct pane	*focus, *source, *grab;
 	struct mark	*point;
 	struct mouse_state {
 		struct timespec	last_action;
@@ -283,7 +283,7 @@ DEF_CMD(mouse_event)
 		b = ci->num - 1;
 	} else {
 		/* 3 is Motion */
-		press = 1;
+		press = 0;
 		b = 100;
 	}
 	if (b < 3) {
@@ -329,25 +329,37 @@ DEF_CMD(mouse_event)
 	im->num = NO_NUMERIC;
 	im->num2 = 0;
 
-	while (1) {
-		struct pane *t, *chld = NULL;
+	if (im->grab && !press) {
+		/* Release and Motion should go to the same
+		 * place as Press went.
+		 */
+		focus = im->grab;
+		xy = pane_mapxy(focus, ci->focus, 0, 0, False);
+		xy.x = ci->x - xy.x;
+		xy.y = ci->y - xy.y;
+	} else while (1) {
+			struct pane *t, *chld = NULL;
 
-		list_for_each_entry(t, &focus->children, siblings) {
-			if (t->z < 0)
-				continue;
-			if (xy.x < t->x || xy.x >= t->x + t->w)
-				continue;
-			if (xy.y < t->y || xy.y >= t->y + t->h)
-				continue;
-			if (chld == NULL || t->z > chld->z)
-				chld = t;
+			list_for_each_entry(t, &focus->children, siblings) {
+				if (t->z < 0)
+					continue;
+				if (xy.x < t->x || xy.x >= t->x + t->w)
+					continue;
+				if (xy.y < t->y || xy.y >= t->y + t->h)
+					continue;
+				if (chld == NULL || t->z > chld->z)
+					chld = t;
+			}
+			/* descend into chld */
+			if (!chld)
+				break;
+			xy.x -= chld->x;
+			xy.y -= chld->y;
+			focus = chld;
 		}
-		/* descend into chld */
-		if (!chld)
-			break;
-		xy.x -= chld->x;
-		xy.y -= chld->y;
-		focus = chld;
+	if (im->grab != focus) {
+		im->grab = focus;
+		pane_add_notify(ci->home, focus, "Notify:Close");
 	}
 
 	if (!ms) {
@@ -445,6 +457,9 @@ DEF_CMD(close_focus)
 
 	if (im->sel_owner == ci->focus)
 		im->sel_owner = NULL;
+
+	if (im->grab == ci->focus)
+		im->grab = NULL;
 	return 1;
 }
 
