@@ -1826,8 +1826,19 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def make_composition(self, focus):
-        m = focus.call("doc:from-text", "*New mail message*", "",
-                       ret = 'focus')
+        dir = self.list_pane['config:database.path']
+        if not dir:
+            dir = "/tmp"
+        drafts = os.path.join(dir, "Drafts")
+        try:
+            os.mkdir(drafts)
+        except FileExistsError:
+            pass
+
+        fd, fname = tempfile.mkstemp(dir=drafts)
+        os.close(fd)
+        m = focus.call("doc:open", fname, -1, ret = 'focus')
+        m.call("doc:set-name", "*Unsent mail message*")
         m['view-default'] = 'compose-email'
         # fixme: add this to a list?
         name = self.list_pane['config:user.name']

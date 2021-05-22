@@ -735,6 +735,12 @@ class compose_email(edlib.Pane):
         if not whoto:
             whoto = "someone"
         focus.call("doc:set-name", "*Sent message to %s*" % whoto)
+
+        focus.call("doc:modified", -1)
+        fn = self['filename']
+        if fn and fn.startswith('/'):
+            os.unlink(fn)
+
         root = self.call("RootPane", ret='focus')
         if root:
             root.call("event:read", p.stdout.fileno(),

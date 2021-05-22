@@ -31,7 +31,7 @@ Bugs to be fixed
 - [X] file names created for attachments need spaces etc translated
       for scp to work well ... at least when ncurses wants to use scp.
 - [X] cannot easily delete blank line at end of headers when composing message
-- [ ] email messages being composed cannot be saved as drafts, and aren't
+- [X] email messages being composed cannot be saved as drafts, and aren't
       autosaved
 - [ ] Searching for \U0001f5d1 crashes, [\U0001f5d1] fails.
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
@@ -453,6 +453,10 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] handle errors better.  e.g. file reported by notmuch might not
+      exist, or not be readable
+- [ ] allow opening drafts in composer on restart.
+- [ ] allow deleting of drafts without posting.  Maybe just 'delete'..
 - [ ] option to wrap subjects onto next line
 - [ ] When active query changes, highlight on list view doesn't immediately
       follow

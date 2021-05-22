@@ -2411,13 +2411,16 @@ DEF_CMD(text_modified)
 	struct text *t = container_of(d, struct text, doc);
 
 	if (ci->num == 0) {
+		/* toggle status */
 		if (t->saved == t->undo)
 			t->saved = NULL;
 		else
 			t->saved = t->undo;
-	} else if (ci->num > 1)
+	} else if (ci->num > 0)
+		/* Set "is modified" */
 		t->saved = NULL;
 	else
+		/* Clear "is modified" */
 		t->saved = t->undo;
 	text_check_autosave(ci->home);
 	call("doc:notify:doc:status-changed", ci->home);
