@@ -418,6 +418,11 @@ class compose_email(edlib.Pane):
                 m.step(0)
             return edlib.Efallthrough
         m2 = self.vmark_at_or_before(self.view, mark2)
+        if m2 and m2.prev() == m and mark2 == m2:
+            # deleting text just before a marker is OK as long as we will have
+            # a newline before the marker
+            if (str and str[-1] == '\n') or focus.prior(mark) == '\n':
+                return edlib.Efallthrough
         if m2 != m:
             # not completely within a part, so fail
             return 1

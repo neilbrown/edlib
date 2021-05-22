@@ -30,7 +30,7 @@ Bugs to be fixed
 - [X] handle reply-to header when replying to emails
 - [X] file names created for attachments need spaces etc translated
       for scp to work well ... at least when ncurses wants to use scp.
-- [ ] cannot easily delete blank line at end of headers when composing message
+- [X] cannot easily delete blank line at end of headers when composing message
 - [ ] email messages being composed cannot be saved as drafts, and aren't
       autosaved
 - [ ] Searching for \U0001f5d1 crashes, [\U0001f5d1] fails.
