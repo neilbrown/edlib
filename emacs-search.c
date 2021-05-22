@@ -818,7 +818,7 @@ DEF_CMD(emacs_hl_attrs)
 	if (strcmp(ci->str, "render:search") == 0) {
 		/* Current search match -  "20" is a priority */
 		if (hi->view >= 0 && ci->mark && ci->mark->viewnum == hi->view) {
-			int  len = atoi(ci->str2);
+			int len = atoi(ci->str2) ?: 1;
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
 					 ci->mark, "fg:red,inverse,focus,vis-nl", 20);
 		}
@@ -826,7 +826,7 @@ DEF_CMD(emacs_hl_attrs)
 	if (strcmp(ci->str, "render:search2") == 0) {
 		/* alternate matches in current view */
 		if (hi->view >= 0 && ci->mark && ci->mark->viewnum == hi->view) {
-			int len = atoi(ci->str2);
+			int len = atoi(ci->str2) ?: 1;
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
 					 ci->mark, "fg:blue,inverse,vis-nl", 20);
 		}
@@ -835,7 +835,7 @@ DEF_CMD(emacs_hl_attrs)
 		/* Replacement -  "20" is a priority */
 		if (hi->replace_view >= 0 && ci->mark &&
 		    ci->mark->viewnum == hi->replace_view) {
-			int  len = atoi(ci->str2);
+			int len = atoi(ci->str2) ?: 1;
 			return comm_call(ci->comm2, "attr:callback", ci->focus, len,
 					 ci->mark, "fg:green-40,inverse,vis-nl", 20);
 		}

@@ -253,7 +253,7 @@ Module features
        an array first, then qsort()
 - [ ] filename completion should ignore uninteresting files like ".o"
       Maybe use .gitignore, or have config module understand that.
-- [ ] search highlight doesn't report empty match (eol)...
+- [X] search highlight doesn't report empty match (eol)...
       I need to place a cursor - maybe blue?
 - [ ] emacs highlight should get close notification from popup,
       instead of catching abort.???
