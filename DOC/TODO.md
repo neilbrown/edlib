@@ -27,6 +27,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] handle reply-to header when replying to emails
 - [ ] file names created for attachments need spaces etc translated
       for scp to work well ... at least when ncurses wants to use scp.
 - [ ] cannot easily delete blank line at end of headers when composing message
@@ -437,6 +438,8 @@ Module features
 - [ ] always track time for a run and report it - or at least make it available
 
 ###  edlibclient
+- [ ] client needs to pass XAUTHORITY as well as DISPLAY, and these must be
+      used correctly.
 - [ ] run edlib directly if no socket
 - [ ] option to create a new frame
 - [ ] more work on server mode:

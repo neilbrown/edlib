@@ -1033,7 +1033,7 @@ static struct pane *ncurses_init(struct pane *ed,
 		  BUTTON5_PRESSED | BUTTON5_RELEASED |
 		  BUTTON_CTRL | BUTTON_SHIFT | BUTTON_ALT |
 		  REPORT_MOUSE_POSITION, NULL);
-	mouseinterval(10);
+	mouseinterval(0);
 
 	getmaxyx(stdscr, rows, cols);
 	pane_resize(p, 0, 0, cols, rows);
