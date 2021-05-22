@@ -307,7 +307,7 @@ int attr_set_str_key(struct attrset **setp safe,
 	int offset = 0;
 	int cmp;
 	struct attrset *set;
-	unsigned int len;
+	unsigned int len, keylen, vallen;
 	char nkey[22];
 	int nkeylen = 0;
 
@@ -326,7 +326,9 @@ int attr_set_str_key(struct attrset **setp safe,
 		nkeylen = strlen(nkey);
 	} else
 		nkey[0] = 0;
-	len = nkeylen + strlen(key) + 1 + strlen(val) + 1;
+	keylen = strlen(key);
+	vallen = strlen(val);
+	len = nkeylen + keylen + 1 + vallen + 1;
 	while (set == NULL || set->len + len > set->size) {
 		/* Need to re-alloc or alloc new */
 		if (!set || (offset == 0 && len + set->len > MAX_ATTR_SIZE)) {
@@ -368,13 +370,9 @@ int attr_set_str_key(struct attrset **setp safe,
 	}
 	memmove(set->attrs + offset + len, set->attrs + offset,
 		set->len - offset);
-#pragma GCC diagnostic push
-// GCC really doesn't like the games I"m playing here.
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-	strcpy(set->attrs + offset, nkey);
-	strcpy(set->attrs + offset + nkeylen, key);
-	strcpy(set->attrs + offset + nkeylen + strlen(key) + 1, val);
-#pragma GCC diagnostic pop
+	memcpy(set->attrs + offset, nkey, nkeylen);
+	memcpy(set->attrs + offset + nkeylen, key, keylen + 1);
+	memcpy(set->attrs + offset + nkeylen + keylen + 1, val, vallen + 1);
 	set->len += len;
 	return cmp;
 }
