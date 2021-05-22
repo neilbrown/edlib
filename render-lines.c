@@ -1324,7 +1324,8 @@ DEF_CMD(render_lines_set_cursor)
 
 	m = vmark_first(p, rl->typenum, p);
 
-	while (m && m->mdata && m->mdata->y + m->mdata->h <= cih.y)
+	while (m && m->mdata && m->mdata->y + m->mdata->h <= cih.y &&
+	       vmark_next(m))
 		m = vmark_next(m);
 
 	if (!m)
