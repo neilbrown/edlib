@@ -1881,18 +1881,25 @@ static void update_sel(struct pane *p safe,
 
 DEF_CMD(emacs_press)
 {
+	/* The second mark (managed by core-doc) is used to record the
+	 * selected starting point.  When double- or triple- click
+	 * asks for word or line selection, the actually start, which
+	 * is stored in the first mark, may be different.
+	 * That selected starting point will record the current unit
+	 * siez in the emacs:selection-type attribute.
+	 */
 	struct mark *pt = call_ret(mark, "doc:point", ci->focus);
 	struct mark *mk = call_ret(mark2, "doc:point", ci->focus);
 	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
 	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	char *type;
 
-	if (!m || !pt)
+	if (!m || !pt) {
 		/* Not in document, not my problem */
+		mark_free(m);
 		return Efallthrough;
-	/* NOTE must find new location before tw reports that the
-	 * view has changed.
-	 */
+	}
+	/* NOTE must find new location before view changes. */
 	call("Move-CursorXY", ci->focus,
 	     1, m, NULL, 0, NULL, NULL, ci->x, ci->y);
 
@@ -1919,10 +1926,12 @@ DEF_CMD(emacs_press)
 			attr_set_str(&m2->attrs, "emacs:selection-type", type);
 	}
 	if (m2) {
+		/* Record co-ordinate of start so we can tell if the mouse moved. */
 		attr_set_int(&m2->attrs, "emacs:track-selection",
 			     1 + ci->x * 10000 + ci->y);
 		update_sel(ci->focus, pt, m2, type);
 	}
+	mark_free(m);
 
 	return 1;
 }
@@ -1931,35 +1940,29 @@ DEF_CMD(emacs_release)
 {
 	struct mark *p = call_ret(mark, "doc:point", ci->focus);
 	struct mark *m2 = call_ret(mark2, "doc:point", ci->focus, 2);
+	struct mark *m = vmark_new(ci->focus, MARK_UNGROUPED, NULL);
 	int prev_pos;
 	int moved;
 
-	if (!p || !m2)
-		/* Not in a document - not my problem */
+	if (!p || !m2 || !m) {
+		/* Not in a document or no selection start - not my problem */
+		mark_free(m);
 		return Efallthrough;
+	}
 
 	prev_pos = attr_find_int(m2->attrs, "emacs:track-selection");
 	moved = prev_pos != (1 + ci->x * 10000 + ci->y);
 	attr_set_int(&m2->attrs, "emacs:track-selection", 0);
 
-	if (moved)
-		/* Move the mouse, so new location is point */
-		call("Move-CursorXY", ci->focus,
-		     2, NULL, NULL, moved, NULL, NULL, ci->x, ci->y);
-	else
-		/* Didn't move cursor so ignore old location */
-		call("Move-CursorXY", ci->focus,
-		     2, m2, NULL, moved, NULL, NULL, ci->x, ci->y);
+	call("Move-CursorXY", ci->focus,
+	     2, m, NULL, moved, NULL, NULL, ci->x, ci->y);
 
-	if (!moved && !mark_same(p, m2)) {
-		/* No mouse movement but doc moved underneath us,
-		 * so no selection.
-		 */
-		clear_selection(ci->focus, p, m2, 0);
-		return 1;
-	}
+	if (moved)
+		/* Moved the mouse, so new location is point */
+		call("Move-to", ci->focus, 0, m);
 
 	update_sel(ci->focus, p, m2, NULL);
+	mark_free(m);
 
 	return 1;
 }

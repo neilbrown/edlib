@@ -36,7 +36,7 @@ Bugs to be fixed
 - [ ] Searching for \U0001f5d1 crashes, [\U0001f5d1] fails.
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
 - [X] notmuch mode keeps lots of email messages permanently open
-- [ ] copy/paste is unreliable
+- [X] copy/paste is unreliable
 - [X] fill-mode is weird.  Sometimes explicitly giving a fill-width sticks,
       sometimes not.  What do I really want?
 - [ ] doc-docs can get confused when I kill buffers from within the view
@@ -239,6 +239,8 @@ Module features
 
 ### emacs
 
+- [ ] Support grab of mouse when pressed so motion and release go to
+      corrent window.
 - [X] :C-q to allow entering unicode hex etc.
 - [ ] :C-q to recognize names of unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
