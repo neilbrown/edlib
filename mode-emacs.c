@@ -1955,7 +1955,7 @@ DEF_CMD(emacs_release)
 		/* No mouse movement but doc moved underneath us,
 		 * so no selection.
 		 */
-		call("Move-to", ci->focus, -1);
+		clear_selection(ci->focus, p, m2, 0);
 		return 1;
 	}
 
