@@ -446,6 +446,19 @@ static int nc_putc(int ch)
 	return 1;
 }
 
+static char *fnormalize(struct pane *p safe, const char *str) safe
+{
+	char *ret = strsave(p, str);
+	char *cp;
+
+	for (cp = ret ; cp && *cp ; cp++)
+		if (!isalnum(*cp) &&
+		    !strchr("/_-+=.,@#", *cp))
+			/* Don't like this char */
+			*cp = '_';
+	return ret ?: "_";
+}
+
 DEF_CMD(nc_external_viewer)
 {
 	struct pane *p = ci->home;
@@ -520,11 +533,14 @@ DEF_CMD(nc_external_viewer)
 	fprintf(dd->scr_file, "# Consider copy-pasting following\n");
 	if (fqdn && path[0] == '/') {
 		/* File will not be local for the user, so help them copy it. */
-		const char *tmp=ci->str2;
-		if (!tmp)
-			tmp = "XXXXXXX";
+		const char *tmp = fnormalize(p, ci->str2 ?: "XXXXXX");
+		const char *fname = fnormalize(p, ci->str);
+
+		if (strcmp(fname, ci->str) != 0)
+			/* file name had unusuable chars, need to create safe name */
+			link(ci->str, fname);
 		fprintf(dd->scr_file, "f=`mktemp --tmpdir %s`; scp %s:%s $f ; ",
-			tmp, fqdn, ci->str);
+			tmp, fqdn, fname);
 		path = "$f";
 	}
 	fprintf(dd->scr_file, "xdg-open %s\n", path);

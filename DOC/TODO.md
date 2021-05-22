@@ -28,7 +28,7 @@ Bugs to be fixed
 ----------------
 
 - [X] handle reply-to header when replying to emails
-- [ ] file names created for attachments need spaces etc translated
+- [X] file names created for attachments need spaces etc translated
       for scp to work well ... at least when ncurses wants to use scp.
 - [ ] cannot easily delete blank line at end of headers when composing message
 - [ ] email messages being composed cannot be saved as drafts, and aren't
