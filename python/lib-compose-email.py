@@ -84,7 +84,9 @@ class compose_email(edlib.Pane):
         focus.call("doc:multipart-0-list-headers", "cc", self.copy_addrs)
         cc_addrs = self.filter_cc(self.addrlist)
         self.addrlist = []
-        focus.call("doc:multipart-0-list-headers", "from", self.copy_addrs)
+        focus.call("doc:multipart-0-list-headers", "reply-to", self.copy_addrs)
+        if not self.addrlist:
+            focus.call("doc:multipart-0-list-headers", "from", self.copy_addrs)
         from_addrs = self.filter_cc(self.addrlist)
         if str != "reply-all":
             to_addrs = None

@@ -27,7 +27,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] handle reply-to header when replying to emails
+- [X] handle reply-to header when replying to emails
 - [ ] file names created for attachments need spaces etc translated
       for scp to work well ... at least when ncurses wants to use scp.
 - [ ] cannot easily delete blank line at end of headers when composing message
