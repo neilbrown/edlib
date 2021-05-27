@@ -27,6 +27,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] x11selection doesn't work properly on second ncurses display
+      except when it does...
 - [X] multipart should use ->mdata, not ->refs, which should go
 - [X] introduce per-pane timestamp so code can easily tell if it has run too long
 - [ ] teach input to allow a repeat command to be registered so that e.g.

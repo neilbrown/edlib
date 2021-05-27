@@ -1960,6 +1960,11 @@ DEF_CMD(emacs_release)
 	if (moved)
 		/* Moved the mouse, so new location is point */
 		call("Move-to", ci->focus, 0, m);
+	else
+		/* Otherwise use the old location.  Point might not
+		 * be there exactly if it was moved to end of word/line
+		 */
+		call("Move-to", ci->focus, 0, m2);
 
 	update_sel(ci->focus, p, m2, NULL);
 	mark_free(m);
