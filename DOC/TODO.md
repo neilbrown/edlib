@@ -28,7 +28,7 @@ Bugs to be fixed
 ----------------
 
 - [X] multipart should use ->mdata, not ->refs, which should go
-- [ ] introduce per-pane timestamp so code can easily tell if it has run too long
+- [X] introduce per-pane timestamp so code can easily tell if it has run too long
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input can cancel this on suitable input.

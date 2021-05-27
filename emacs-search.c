@@ -547,8 +547,10 @@ DEF_CMD(replace_all)
 	int replaced = 0;
 
 	new = call_ret(str, "doc:get-str", ci->focus);
+	pane_set_time(ci->home);
 	while (call("search:replace", sp, 0, NULL, new) > 0 &&
-	       call("search:again", sp) > 0)
+	       call("search:again", sp) > 0 &&
+	       !pane_too_long(ci->home))
 		replaced = 1;
 	if (replaced)
 		call("history:save", ci->focus, 0, NULL, new);

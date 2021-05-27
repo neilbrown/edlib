@@ -58,7 +58,8 @@ class MakePane(edlib.Pane):
             m = edlib.Mark(self)
 
         done = 0
-        while done < 30:
+        self.set_time()
+        while done < 100 and not self.too_long():
             # Look for one of:
             # filename:linenum:.....
             # filename:linenum ....

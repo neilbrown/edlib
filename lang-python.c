@@ -1248,6 +1248,28 @@ static PyObject *Pane_get_scale(Pane *self safe, PyObject *args)
 	return Py_BuildValue("ii", xy.x, xy.y);
 }
 
+static PyObject *Pane_set_time(Pane *self safe, PyObject *args)
+{
+	struct pane *p = self->pane;
+	if (p)
+		pane_set_time(p);
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyObject *Pane_too_long(Pane *self safe, PyObject *args)
+{
+	struct pane *p = self->pane;
+
+	if (!p || pane_too_long(p)) {
+		Py_INCREF(Py_True);
+		return Py_True;
+	} else {
+		Py_INCREF(Py_False);
+		return Py_False;
+	}
+}
+
 static PyObject *Pane_mychild(Pane *self safe, PyObject *args)
 {
 	Pane *child = NULL;
@@ -1451,6 +1473,10 @@ static PyMethodDef pane_methods[] = {
 	 "return first and last vmark given view number"},
 	{"vmark_at_or_before", (PyCFunction)Pane_vmark_at_or_before, METH_VARARGS,
 	 "return vmark at-or-before given mark"},
+	{"set_time", (PyCFunction)Pane_set_time, METH_NOARGS,
+	 "Set start time for long running operation"},
+	{"too_long", (PyCFunction)Pane_too_long, METH_NOARGS,
+	 "Check if command in pane has been running for too long"},
 	{NULL}
 };
 

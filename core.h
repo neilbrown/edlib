@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "safe.h"
 #include "misc.h"
 
@@ -74,13 +75,41 @@ struct pane {
 	short			damaged;
 	short			data_size;	/* only needed by edlib_do_free */
 
-	int marks;
+	int			marks;
+
+	/* timestamp is low bits of time in milliseconds when some
+	 * command started.  This makes it easy to check when we
+	 * have done too much work
+	 */
+	unsigned int		timestamp;
 
 	struct command		*handle;
 	void			*data safe;
 	struct attrset		*attrs;
 	struct list_head	notifiers, notifiees;
 };
+
+static inline unsigned int ts_to_ms(struct timespec *ts safe)
+{
+	return ts->tv_nsec / 1000 / 1000 + ts->tv_sec * 1000;
+}
+
+static inline bool pane_too_long(struct pane *p safe)
+{
+	struct timespec ts;
+	unsigned int duration;
+	clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
+	duration = ts_to_ms(&ts) - p->timestamp;
+	return (duration > 500);
+}
+
+static inline void pane_set_time(struct pane *p safe)
+{
+	struct timespec ts;
+
+	clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
+	p->timestamp = ts_to_ms(&ts);
+}
 
 struct command {
 	int	(*func)(const struct cmd_info *ci safe);
