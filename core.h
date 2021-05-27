@@ -189,9 +189,6 @@ struct mark {
 	struct attrset		*attrs;
 	int			seq;
 	short			viewnum;
-	unsigned short		refs;	/* creator of mark can use this for
-					 * e.g. refcounting
-					 */
 	MARK_DATA_PTR		*mdata;
 	void			*mtype;	/* can be used to validate
 					 * type of mdata */
