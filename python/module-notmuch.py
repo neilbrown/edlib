@@ -740,6 +740,7 @@ class notmuch_query(edlib.Doc):
         self["line-format"] = "<%BG><%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<tab:450><%TM-hilite><fg:red,large>%TM-flag</> %TM-subject</></>                      "
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")
+        self.p = None
         self.load_full()
 
     def set_filter(self, key, focus, str, **a):
@@ -767,6 +768,9 @@ class notmuch_query(edlib.Doc):
         mark.offset = 0
 
     def load_full(self):
+        if self.p:
+            # busy, don't reload just now
+            return
         self.partial = False
         self.age = 1
 
@@ -780,6 +784,10 @@ class notmuch_query(edlib.Doc):
         self.start_load()
 
     def load_update(self):
+        if self.p:
+            # busy, don't reload just now
+            return
+
         self.partial = True
         self.age = None
 
