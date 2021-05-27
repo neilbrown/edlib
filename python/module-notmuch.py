@@ -32,17 +32,13 @@ import os.path
 import notmuch
 import json
 import time
-import fcntl
 import mimetypes
 
 class notmuch_db():
-    # This class is designed to be used with "with ... as" and provides
-    # locking within the body of the clause.
+    # This class is designed to be used with "with ... as"
 
     def __init__(self):
-        self.lock_path = os.environ["HOME"]+"/.notmuch-config"
         self.want_write = False
-        self.fd = None
         self.nest = 0
 
     def get_write(self):
@@ -56,13 +52,10 @@ class notmuch_db():
         if self.nest:
             self.nest += 1
             return self.db
-        self.fd = open(self.lock_path)
         self.nest = 1
         if self.want_write:
-            fcntl.flock(self.fd.fileno(), fcntl.LOCK_EX)
             self.db = notmuch.Database(mode = notmuch.Database.MODE.READ_WRITE)
         else:
-            fcntl.flock(self.fd.fileno(), fcntl.LOCK_SH)
             self.db = notmuch.Database()
         return self.db
 
@@ -71,9 +64,7 @@ class notmuch_db():
         if self.nest:
             return
         self.db.close()
-        self.fd.close()
         self.db = None
-        self.fd = None
 
 class counter:
     # manage a queue of queries that need to be counted.
