@@ -203,13 +203,13 @@ static inline PyObject *safe Mark_Frommark(struct mark *m safe)
 {
 	Mark *mark;
 
-	if (m->mtype == &MarkType && m->mdata) {
+	if (mark_valid(m) && m->mtype == &MarkType && m->mdata) {
 		/* This is a vmark, re-use the PyObject */
 		Py_INCREF(m->mdata);
 		return m->mdata;
 	}
 	mark = (Mark *)PyObject_CallObject((PyObject*)&MarkType, NULL);
-	if (mark)
+	if (mark && mark_valid(m))
 		mark->mark = m;
 	return (PyObject*)mark;
 }
@@ -874,7 +874,7 @@ DEF_CB(take_mark)
 
 	if (pr->ret)
 		return Einval;
-	if (!ci->mark)
+	if (!mark_valid(ci->mark))
 		return Efallthrough;
 	if (ci->mark->viewnum == MARK_UNGROUPED) {
 		/* Cannot rely on this mark persisting, take a copy */
@@ -892,7 +892,7 @@ DEF_CB(take_mark2)
 
 	if (pr->ret)
 		return Einval;
-	if (!ci->mark2)
+	if (!mark_valid(ci->mark2))
 		return Efallthrough;
 	pr->ret = Mark_Frommark(ci->mark2);
 	return 1;
@@ -905,19 +905,19 @@ DEF_CB(take_2_marks)
 
 	if (pr->ret)
 		return Einval;
-	if (ci->mark)
+	if (mark_valid(ci->mark))
 		m1 = Mark_Frommark(ci->mark);
 	else
 		m1 = Py_None;
-	if (ci->mark2)
+	if (mark_valid(ci->mark2))
 		m2 = Mark_Frommark(ci->mark2);
 	else
 		m2 = Py_None;
 
 	pr->ret = Py_BuildValue("OO", m1, m2);
-	if (ci->mark)
+	if (mark_valid(ci->mark))
 		Py_DECREF(m1);
-	if (ci->mark2)
+	if (mark_valid(ci->mark2))
 		Py_DECREF(m2);
 	return 1;
 }
@@ -1313,7 +1313,7 @@ static PyObject *Pane_step(Pane *self safe, PyObject *args, int dir, int move)
 
 	if (!pane_valid(self))
 		return NULL;
-	if (ret <= 0 || !m) {
+	if (ret <= 0 || !m || !mark_valid(m->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Arg must be a mark");
 		return NULL;
 	}
@@ -1386,7 +1386,7 @@ static PyObject *Pane_vmark_at_or_before(Pane *self safe, PyObject *args)
 		return NULL;
 	ret = PyArg_ParseTuple(args, "iO!|O!", &view, &MarkType, &m,
 			       &PaneType, &owner);
-	if (ret <= 0 || view < 0 || !m || !m->mark ||
+	if (ret <= 0 || view < 0 || !m || !mark_valid(m->mark) ||
 	    (owner && !pane_valid(owner))) {
 		Py_INCREF(Py_None);
 		return Py_None;
@@ -1722,7 +1722,7 @@ static PyObject *to_end(Doc *self safe, PyObject *args)
 		return NULL;
 
 	ret = PyArg_ParseTuple(args, "O!i", &MarkType, &mark, &end);
-	if (ret <= 0 || !mark || !mark->mark) {
+	if (ret <= 0 || !mark || !mark_valid(mark->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark undefined or uninitialized");
 		return NULL;
 	}
@@ -1757,7 +1757,7 @@ static PyTypeObject DocType = {
 static PyObject *mark_getoffset(Mark *m safe, void *x)
 {
 	struct doc *d;
-	if (m->mark == NULL) {
+	if (!mark_valid(m->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
@@ -1772,7 +1772,7 @@ static int mark_setoffset(Mark *m safe, PyObject *v safe, void *x)
 	struct doc *d;
 	long val;
 
-	if (m->mark == NULL) {
+	if (!mark_valid(m->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return -1;
 	}
@@ -1791,7 +1791,7 @@ static int mark_setoffset(Mark *m safe, PyObject *v safe, void *x)
 
 static PyObject *mark_getseq(Mark *m safe, void *x)
 {
-	if (m->mark == NULL) {
+	if (!mark_valid(m->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
@@ -1821,7 +1821,7 @@ static void mark_refcnt(struct mark *m safe, int inc)
 static PyObject *mark_getpos(Mark *m safe, void *x)
 {
 	struct doc *d;
-	if (m->mark == NULL) {
+	if (!mark_valid(m->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
@@ -1840,7 +1840,7 @@ static int mark_setpos(Mark *m safe, PyObject *v, void *x)
 	struct mark *m2;
 	struct doc *d;
 
-	if (m->mark == NULL) {
+	if (!mark_valid(m->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return -1;
 	}
@@ -1871,7 +1871,7 @@ static int mark_setpos(Mark *m safe, PyObject *v, void *x)
 
 static PyObject *mark_getview(Mark *m safe, void *x)
 {
-	if (m->mark == NULL) {
+	if (!mark_valid(m->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
@@ -1894,7 +1894,7 @@ static PyObject *mark_compare(Mark *a safe, Mark *b safe, int op)
 		 PyObject_TypeCheck(b, &MarkType) == 0) {
 		PyErr_SetString(PyExc_TypeError, "Mark compared with non-Mark");
 		return NULL;
-	} else if (!a->mark || !b->mark)
+	} else if (!mark_valid(a->mark) || !mark_valid(b->mark))
 		return NULL;
 	else {
 		int cmp = a->mark->seq - b->mark->seq;
@@ -1968,7 +1968,7 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 		if (!op)
 			op = p;
 		self->mark = vmark_new(p, view, op);
-	} else if (orig && orig->mark) {
+	} else if (orig && mark_valid(orig->mark)) {
 		self->mark = mark_dup_view(orig->mark);
 	}
 	if (!self->mark) {
@@ -1993,7 +1993,7 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 
 static void mark_dealloc(Mark *self safe)
 {
-	if (self->mark && self->mark->mtype == (void*)self) {
+	if (mark_valid(self->mark) && self->mark->mtype == (void*)self) {
 		/* Python allocated this mark, so can free it. */
 		struct mark *m = self->mark;
 		self->mark = NULL;
@@ -2008,7 +2008,8 @@ static PyObject *Mark_to_mark(Mark *self safe, PyObject *args)
 {
 	Mark *other = NULL;
 	int ret = PyArg_ParseTuple(args, "O!", &MarkType, &other);
-	if (ret <= 0 || !other || !self->mark || !other->mark)
+	if (ret <= 0 || !other ||
+	    !mark_valid(self->mark) || !mark_valid(other->mark))
 		return NULL;
 	mark_to_mark(self->mark, other->mark);
 
@@ -2020,7 +2021,8 @@ static PyObject *Mark_to_mark_noref(Mark *self safe, PyObject *args)
 {
 	Mark *other = NULL;
 	int ret = PyArg_ParseTuple(args, "O!", &MarkType, &other);
-	if (ret <= 0 || !other || !self->mark || !other->mark)
+	if (ret <= 0 || !other ||
+	    !mark_valid(self->mark) || !mark_valid(other->mark))
 		return NULL;
 	mark_to_mark_noref(self->mark, other->mark);
 
@@ -2035,8 +2037,8 @@ static PyObject *Mark_clip(Mark *self safe, PyObject *args)
 	int ret = PyArg_ParseTuple(args, "O!O!|i", &MarkType, &start,
 				   &MarkType, &end, &tostart);
 
-	if (ret > 0 && start && end && self->mark &&
-	    start->mark && end->mark)
+	if (ret > 0 && start && end && mark_valid(self->mark) &&
+	    mark_valid(start->mark) && mark_valid(end->mark))
 		mark_clip(self->mark, start->mark, end->mark, !!tostart);
 
 	Py_INCREF(Py_None);
@@ -2059,7 +2061,7 @@ static PyObject *Mark_step(Mark *self safe, PyObject *args)
 static PyObject *Mark_next(Mark *self safe, PyObject *args)
 {
 	struct mark *next;
-	if (!self->mark) {
+	if (!mark_valid(self->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
@@ -2076,7 +2078,7 @@ static PyObject *Mark_next(Mark *self safe, PyObject *args)
 static PyObject *Mark_prev(Mark *self safe, PyObject *args)
 {
 	struct mark *prev;
-	if (!self->mark) {
+	if (!mark_valid(self->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
@@ -2093,7 +2095,7 @@ static PyObject *Mark_prev(Mark *self safe, PyObject *args)
 static PyObject *Mark_next_any(Mark *self safe, PyObject *args)
 {
 	struct mark *next;
-	if (!self->mark) {
+	if (!mark_valid(self->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
@@ -2107,7 +2109,7 @@ static PyObject *Mark_next_any(Mark *self safe, PyObject *args)
 static PyObject *Mark_prev_any(Mark *self safe, PyObject *args)
 {
 	struct mark *prev;
-	if (!self->mark) {
+	if (!mark_valid(self->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
@@ -2121,7 +2123,7 @@ static PyObject *Mark_prev_any(Mark *self safe, PyObject *args)
 static PyObject *Mark_dup(Mark *self safe, PyObject *args)
 {
 	struct mark *new;
-	if (!self->mark) {
+	if (!mark_valid(self->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
@@ -2143,7 +2145,7 @@ static PyObject *Mark_release(Mark *self safe, PyObject *args)
 {
 	struct mark *m = self->mark;
 
-	if (!m) {
+	if (!mark_valid(m)) {
 		PyErr_SetString(PyExc_TypeError, "Mark has been freed");
 		return NULL;
 	}
@@ -2170,7 +2172,7 @@ static PyObject *Mark_ack(Mark *self safe, PyObject *args)
 {
 	struct mark *m = self->mark;
 
-	if (!m) {
+	if (!mark_valid(m)) {
 		PyErr_SetString(PyExc_TypeError, "Mark has been freed");
 		return NULL;
 	}
@@ -2210,7 +2212,7 @@ static PyObject *mark_get_item(Mark *self safe, PyObject *key safe)
 	char *k, *v;
 	PyObject *t1 = NULL;
 
-	if (!self->mark) {
+	if (!mark_valid(self->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return NULL;
 	}
@@ -2231,7 +2233,7 @@ static int mark_set_item(Mark *self safe, PyObject *key safe, PyObject *val safe
 {
 	char *k, *v;
 	PyObject *t1 = NULL, *t2 = NULL;
-	if (!self->mark) {
+	if (!mark_valid(self->mark)) {
 		PyErr_SetString(PyExc_TypeError, "Mark is NULL");
 		return -1;
 	}
@@ -2257,10 +2259,12 @@ static PyObject *mark_repr(Mark *self safe)
 	char *s = NULL;
 	PyObject *ret;
 
-	if (self->mark)
+	if (mark_valid(self->mark))
 		asprintf(&s, "<edlib.Mark seq=%d v=%d i=%d %p>",
 			 self->mark->seq, self->mark->viewnum,
 			 self->mark->ref.o, self->mark);
+	else if (self->mark)
+		asprintf(&s, "<edlib.Mark FREED %p>", self);
 	else
 		asprintf(&s, "<edlib.Mark NULL %p>", self);
 	ret = Py_BuildValue("s", s);

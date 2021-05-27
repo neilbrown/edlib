@@ -158,14 +158,6 @@ static void assign_seq(struct mark *m safe)
 	abort();
 }
 
-static void mark_delete(struct mark *m safe)
-{
-	hlist_del_init(&m->all);
-	if (m->viewnum != MARK_UNGROUPED)
-		tlist_del_init(&m->view);
-	attr_free(&m->attrs);
-}
-
 static void point_free(struct mark *p safe)
 {
 	int i;
@@ -196,12 +188,17 @@ void mark_free(struct mark *m)
 	/* mark might have already been freed by the
 	 * pane getting closed.
 	 */
-	if (!m || m->attrs == (void*)(unsigned long)-1)
+	if (!mark_valid(m))
 		return;
 	if (m->viewnum == MARK_POINT)
 		point_free(m);
 	ASSERT(m->mdata == NULL);
-	mark_delete(m);
+
+	hlist_del_init(&m->all);
+	if (m->viewnum != MARK_UNGROUPED)
+		tlist_del_init(&m->view);
+	attr_free(&m->attrs);
+
 	mark_refcnt(m, -1);
 	owner = m->owner;
 	memset(m, 0xff, sizeof(*m));
@@ -213,6 +210,9 @@ void mark_free(struct mark *m)
 
 static void mark_ref_copy(struct mark *to safe, struct mark *from safe)
 {
+	if (!mark_valid(to) || !mark_valid(from))
+		return;
+
 	if ((void*)to->owner && to->owner != from->owner) {
 		LOG("mark_ref_copy given marks with different owners");
 		return;
@@ -328,6 +328,9 @@ struct mark *safe mark_dup(struct mark *m safe)
 {
 	struct mark *ret;
 
+	if (!mark_valid(m))
+		return m;
+
 	alloc(ret, mark);
 	dup_mark(m, ret);
 	ret->viewnum = MARK_UNGROUPED;
@@ -338,6 +341,9 @@ struct mark *safe mark_dup(struct mark *m safe)
 struct mark *safe mark_dup_view(struct mark *m safe)
 {
 	struct mark *ret;
+
+	if (!mark_valid(m))
+		return m;
 
 	if (m->viewnum == MARK_POINT)
 		return point_dup(m);
@@ -381,6 +387,9 @@ void mark_to_end(struct pane *p safe, struct mark *m safe, int end)
 	struct doc *d = p->data;
 	int i;
 	struct point_links *lnk;
+
+	if (!mark_valid(m))
+		return;
 
 	ASSERT(m->owner == p);
 	notify_point_moving(m);
@@ -436,6 +445,9 @@ void mark_reset(struct pane *p safe, struct mark *m safe, int end)
 {
 	ASSERT((void*)m->owner == NULL || m->owner == p);
 
+	if (!mark_valid(m))
+		return;
+
 	if (!(void*)m->owner) {
 		p->marks += 1;
 		ASSERT(p->marks < 20000000);
@@ -453,14 +465,14 @@ struct mark *mark_first(struct doc *d safe)
 
 struct mark *mark_next(struct mark *m safe)
 {
-	if (m->all.next)
+	if (mark_valid(m) && m->all.next)
 		return hlist_next_entry(m, all);
 	return NULL;
 }
 
 struct mark *mark_prev(struct mark *m safe)
 {
-	if (!HLIST_IS_HEAD(m->all.pprev))
+	if (mark_valid(m) && !HLIST_IS_HEAD(m->all.pprev))
 		return hlist_prev_entry(m, all);
 	return NULL;
 }
@@ -660,6 +672,9 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe)
 {
 	/* DEBUG: Make sure they are on same list */
 	struct mark *a = m, *b = target;
+
+	if (!mark_valid(m) || !mark_valid(target))
+		return;
 	if (a->owner != b->owner)
 		LOG("mark_to_mark: marks have different owners");
 	else {
@@ -838,6 +853,9 @@ struct mark *vmark_next(struct mark *m safe)
 {
 	struct tlist_head *tl;
 
+	if (!mark_valid(m))
+		return NULL;
+
 	tl = TLIST_PTR(m->view.next);
 	return __vmark_next(tl);
 }
@@ -881,6 +899,9 @@ static struct mark *__vmark_prev(struct tlist_head *tl safe)
 struct mark *vmark_prev(struct mark *m safe)
 {
 	struct tlist_head *tl;
+
+	if (!mark_valid(m))
+		return NULL;
 
 	tl = TLIST_PTR(m->view.prev);
 	return __vmark_prev(tl);
@@ -979,6 +1000,9 @@ struct mark *vmark_matching(struct mark *m safe)
 	/* Find a nearby mark in the same view with the same ref */
 	struct mark *m2;
 
+	if (!mark_valid(m))
+		return NULL;
+
 	m2 = vmark_prev(m);
 	if (m2 && mark_same(m, m2))
 		return m2;
@@ -997,6 +1021,9 @@ struct mark *do_vmark_at_or_before(struct doc *d safe,
 	 * Return NULL if all 'view' marks are after 'm' in the document.
 	 */
 	struct mark *vm = m;
+
+	if (!mark_valid(m))
+		return NULL;
 
 	if (m->owner->data != d) {
 		LOG("vmark_at_or_before called with incorrect mark");
@@ -1054,7 +1081,7 @@ void mark_clip(struct mark *m safe, struct mark *start, struct mark *end,
 	 * the loop should move forward when tostart,
 	 * and backward when !tostart.
 	 */
-	if (!start || !end)
+	if (!mark_valid(m) || !mark_valid(start) || !mark_valid(end))
 		return;
 	if (!mark_ordered_or_same(start, m))
 		return;
@@ -1072,7 +1099,7 @@ void marks_clip(struct pane *p safe, struct mark *start, struct mark *end,
 {
 	struct mark *m, *m2;
 
-	if (!start || !end)
+	if (!mark_valid(start) || !mark_valid(end))
 		return;
 
 	if (tostart) {

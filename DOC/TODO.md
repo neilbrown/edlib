@@ -27,6 +27,11 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] multipart should use ->mdata, not ->refs, which should go
+- [ ] introduce per-pane timestamp so code can easily tell if it has run too long
+- [ ] teach input to allow a repeat command to be registered so that e.g.
+      search/replace and do a bit of work, then ask to be called again.
+      input can cancel this on suitable input.
 - [X] handle reply-to header when replying to emails
 - [X] file names created for attachments need spaces etc translated
       for scp to work well ... at least when ncurses wants to use scp.

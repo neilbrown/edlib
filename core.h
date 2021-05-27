@@ -200,6 +200,15 @@ struct mark {
 					      */
 };
 
+static inline bool mark_valid(struct mark *m)
+{
+	/* When marks are freed, most fields including ->attrs are
+	 * set to all 1's.  The memory isn't released until an
+	 * idle time.
+	 */
+	return m && m->attrs != (void*)~0UL;
+}
+
 /* A point uses this for the mdata */
 struct point_links {
 	unsigned int		size:31;

@@ -802,16 +802,6 @@ class notmuch_query(edlib.Doc):
         self.p = Popen(cmd, shell=False, stdout=PIPE, stderr = DEVNULL)
         self.call("event:read", self.p.stdout.fileno(), self.get_threads)
 
-    def move_marks(self, tid, new):
-        # Thread 'tid' is being removed, or relocated.
-        # Move all marks that point to it to the next thread, which
-        # might be None
-        m = self.first_mark()
-        while m and m.pos:
-            if m.pos[0] == tid:
-                self.setpos(m, new, 0)
-            m = m.next_any()
-
     def get_threads(self, key, **a):
         found = 0
         was_empty = not self.threadids
@@ -876,7 +866,7 @@ class notmuch_query(edlib.Doc):
                 if self.pos.pos and self.pos.pos[0] == tid:
                     self.load_thread(self.pos)
                 else:
-                    # might previous thread thread
+                    # might be previous thread
                     m = self.pos.dup()
                     self.prev(m)
                     self.call("doc:step-thread", m, 0, 1)
