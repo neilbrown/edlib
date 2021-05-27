@@ -242,6 +242,8 @@ static void PyErr_LOG(void)
 
 	PyErr_Fetch(&exc_typ, &exc_val, &exc_tb);
 	PyErr_NormalizeException(&exc_typ, &exc_val, &exc_tb);
+	if (exc_tb)
+		PyException_SetTraceback(exc_val, exc_tb);
 
 	/* Import the modules we need - StringIO and traceback */
 	errorMsg = "Can't import io";
@@ -740,9 +742,38 @@ static inline void do_free(PyObject *ob safe)
 		ob->ob_type->tp_free(ob);
 }
 
+DEF_CMD(python_null_call)
+{
+	return 1;
+}
+
+static void python_pane_free_final(struct command *c safe)
+{
+	Pane *p = container_of(c, Pane, cmd);
+
+	python_pane_free(c);
+	do_free((PyObject*safe)p);
+}
+
 static void pane_dealloc(Pane *self safe)
 {
-	do_free((PyObject*safe)self);
+	struct pane *p = self->pane;
+
+	/* if initialization failed, then dealloc happens before the
+	 * pane gets closed.  In that case we need to modify the
+	 * free sequence so do_free() gets called after the close.
+	 */
+
+	if (p && p->handle && p->handle->func == python_pane_call.func) {
+		p->handle = &python_null_call;
+		p->handle->free = python_pane_free_final;
+		pane_close(p);
+	} else if (p && p->handle && p->handle->func == python_doc_call.func) {
+		p->handle = &python_null_call;
+		p->handle->free = python_pane_free_final;
+		pane_close(p);
+	} else
+		do_free((PyObject*safe)self);
 }
 
 static PyObject *pane_children(Pane *self safe, PyObject *args)
