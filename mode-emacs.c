@@ -2295,8 +2295,6 @@ again:
 		call("Message", ci->focus, 0, NULL,
 		     strconcat(ci->focus, "\"", word,
 			       "\" is a correct spelling."));
-		/* Must move *After* to avoid repeat-spelling the same word */
-		doc_next(ci->focus, ci->mark);
 	} else if (ret == Efalse) {
 		struct bb b;
 		buf_init(&b.b);
@@ -2310,8 +2308,6 @@ again:
 			  0, NULL, word);
 		if (b.first) {
 			buf_concat(&b.b, " ... no suggestions");
-			/* No point saying here as nothing to replace */
-			doc_next(ci->focus, ci->mark);
 		} else {
 			attr_set_str(&ci->focus->attrs, "spell:last-error",
 				     word);
@@ -2371,11 +2367,12 @@ DEF_CMD(emacs_spell_choose)
 	attr_set_str(&ci->focus->attrs, "spell:suggestions", NULL);
 	attr_set_str(&ci->focus->attrs, "spell:last-error", NULL);
 
-	doc_next(ci->focus, ci->mark);
-	if (ci->num)
+	if (ci->num) {
+		doc_next(ci->focus, ci->mark);
 		home_call(ci->home, "emacs:respell", ci->focus,
 			  ci->num, ci->mark, NULL,
 			  ci->num2, ci->mark2);
+	}
 
 	return 1;
 }
@@ -2387,11 +2384,12 @@ DEF_CMD(emacs_spell_abort)
 
 DEF_CMD(emacs_spell_skip)
 {
-	doc_next(ci->focus, ci->mark);
-	if (ci->num)
+	if (ci->num) {
+		doc_next(ci->focus, ci->mark);
 		home_call(ci->home, "emacs:respell", ci->focus,
 			  ci->num, ci->mark, NULL,
 			  ci->num2, ci->mark2);
+	}
 	return 1;
 }
 
