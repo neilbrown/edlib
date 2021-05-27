@@ -2243,7 +2243,7 @@ DEF_CB(get_suggestion)
 		return Enoarg;
 
 	if (b->first)
-		buf_concat(&b->b, " - (a)ccept, (i)nsert - ");
+		buf_concat(&b->b, " - (a)ccept, (i)nsert -     ");
 	else
 		buf_concat(&b->b, ", ");
 	b->first = False;
