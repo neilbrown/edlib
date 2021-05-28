@@ -729,14 +729,17 @@ char *pane_mark_attr(struct pane *p safe, struct mark *m safe,
 
 void pane_clone_children(struct pane *from, struct pane *to)
 {
-	/* "to" is a clone of "from", but has no children.
-	 * Clone all the children of "from" to "to"
+	/* "to" is a clone of "from", but has no children or attributes.
+	 * Copy the attributes and
+	 * clone all the children of "from" to "to"
 	 * Ignore z>0 children
 	 */
 	struct pane *c;
 
 	if (!from || !to)
 		return;
+	if (from->attrs && !to->attrs)
+		to->attrs = attr_copy(from->attrs);
 	list_for_each_entry(c, &from->children, siblings)
 		c->damaged |= DAMAGED_NOT_HANDLED;
 restart:

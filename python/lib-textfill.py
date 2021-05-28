@@ -210,7 +210,6 @@ class FillMode(edlib.Pane):
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
-        focus['fill-width'] = self['fill-width']
         p = FillMode(focus, self.cols)
         self.clone_children(p)
         return 1

@@ -573,6 +573,23 @@ struct attrset *attr_copy_tail(struct attrset *set, int nkey)
 	return newset;
 }
 
+/* make a copy of 'set' */
+struct attrset *attr_copy(struct attrset *set)
+{
+	struct attrset *newset, **ep = &newset;
+
+	for (; set ; set = set->next) {
+		struct attrset *n = newattr(NULL, set->size);
+		memcpy(n->attrs, set->attrs, set->len);
+		n->len = set->len;
+		*ep = n;
+		ep = &n->next;
+	}
+	*ep = NULL;
+
+	return newset;
+}
+
 /* Collect the attributes in effect at a given pos and return
  * a new set with the new alternate numeric prefix, or nothing if '-1'
  */

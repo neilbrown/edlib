@@ -127,7 +127,7 @@ Core features
 - [ ] maybe generalise search and select somehow, so a line-based filter can
       detect and highlight the selection, rather than major-mode being fully
       in control  Similarly search might be handled by a render pane.
-- [Y] should pane_clone_children() copy attrs too?
+- [X] should pane_clone_children() copy attrs too?
 - [ ] support text-replace as easy as text-insert (doc:char...)
 - [ ] for doc:cmd transformation,  what about :Enter and BS TAB ESC ???
 - [ ] For a notify handler, returning non-zero doesn't stop other handlers
