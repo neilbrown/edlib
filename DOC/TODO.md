@@ -406,7 +406,7 @@ Module features
 
 ### grep/make
 
-- [Y] When I visit from grep in a popup, I think I want a 'view' at first.
+- [X] When I visit from grep in a popup, I think I want a 'view' at first.
       so 'q' works.
 - [ ] Need keystroke to step through different grep/make windows
 - [ ] if file isn't already loaded, wait until it is wanted, or something

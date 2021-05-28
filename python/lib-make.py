@@ -484,6 +484,10 @@ class MakePane(edlib.Pane):
             return edlib.Efail
         if not par:
             par = d.call("doc:attach-view", pane, 1, ret='focus')
+            if (in_popup and where == 'ThisPane') or where == 'PopupPane':
+                p2 = par.call("attach-viewer", par, ret='focus')
+                if p2:
+                    par = p2;
         if not par:
             d.close()
             focus.call("Message", "Failed to open pane")
