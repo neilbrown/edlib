@@ -373,8 +373,8 @@ Module features
 
 ### completion
 
-- [Y] When 'delete' and there is only the original
-      entry of the prefix stack, just delete one character.
+- [X] When 'delete' and there is only the original
+      entry on the prefix stack, just delete one character.
 - [X] mouse selection should work in completion pane
 - [ ] filename completion should work for earlier component of path.
 - [ ] The “complete” popup should be positioned above/below the file name,

@@ -188,13 +188,19 @@ DEF_CMD(complete_bs)
 {
 	struct complete_data *cd = ci->home->data;
 	struct stk *stk = cd->stk;
+	char *old = NULL;
 
 	if (!stk->prev)
 		return 1;
-	cd->stk = stk->prev;
-	free((void*)stk->substr);
-	free(stk);
-	call("Complete:prefix", ci->home);
+	if (stk->substr[0] && !stk->prev->substr[0]) {
+		old = (void*)stk->substr;
+		old[strlen(old)-1] = 0;
+	} else {
+		cd->stk = stk->prev;
+		free((void*)stk->substr);
+		free(stk);
+	}
+	call("Complete:prefix", ci->home, 0, NULL, NULL, 1);
 	return 1;
 }
 
@@ -330,6 +336,8 @@ DEF_CMD(complete_set_prefix)
 	 * If there is no match, return -1.
 	 * Otherwise return number of matches in ->num2 and
 	 * the longest common prefix in ->str.
+	 * If ci->num with ->str, allow substrings, else prefix-only
+	 * if ci->num2, don't autocomplete, just display matches
 	 */
 	struct pane *p = ci->home;
 	struct complete_data *cd = p->data;
@@ -369,7 +377,8 @@ DEF_CMD(complete_set_prefix)
 	mark_free(m);
 
 	if (cb.common_pre && cb.common && cb.cnt && ci->str) {
-		strcat(cb.common_pre, cb.common);
+		if (ci->num2 == 0)
+			strcat(cb.common_pre, cb.common);
 		stk = malloc(sizeof(*stk));
 		stk->substr = cb.common_pre;
 		stk->prev = cd->stk;
