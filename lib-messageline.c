@@ -6,6 +6,16 @@
  * to go there.  They disappear on the next keystroke.
  *
  * Later it might be good to allow boarderless popups to appear here.
+ *
+ * The message displayed is:
+ *  a 'modal' message until a keystroke, or
+ *  a normal message which remains until it has been visible without a modal for
+ *     seven seconds with keystrokes, or 30 seconds without keystrokes, or
+ *  a 'default' message ... which is hardly used, or
+ *  a the current time
+ *
+ * Refreshed about every 15 seconds, so timestamp can be a little out of date
+ * but not much.
  */
 
 #include <unistd.h>
@@ -18,7 +28,7 @@
 
 struct mlinfo {
 	char *message;
-	int modal;	/* message displays a mode, and must
+	char *modal;	/* message displays a mode, and must
 			 * remain exactly until a keystroke
 			 */
 	struct pane *line safe, *child;
@@ -68,16 +78,21 @@ DEF_CMD(messageline_msg)
 			call("window:request:Keystroke-notify", ci->home);
 			call("window:request:Mouse-event-notify", ci->home);
 		}
-		free(mli->message);
-		mli->message = strdup(ci->str);
-		mli->modal = strcmp(ci->key, "Message:modal") == 0;
+		if (strcmp(ci->key, "Message:modal") == 0) {
+			free(mli->modal);
+			mli->modal = strdup(ci->str);
+		} else {
+			free(mli->message);
+			mli->message = strdup(ci->str);
+			/* x==0 check ensures we only append message once when
+			 * it comes in via a broadcast notification
+			 */
+			if (ci->x == 0 && mli->log)
+				call("doc:log:append", mli->log,
+				     0, NULL, ci->str);
+		}
 		time(&mli->last_message);
 		pane_damaged(mli->line, DAMAGED_REFRESH);
-		/* x==0 check ensures we only append message once when
-		 * it comes in via a broadcast notification
-		 */
-		if (ci->x == 0 && mli->log && !mli->modal)
-			call("doc:log:append", mli->log, 0, NULL, ci->str);
 	}
 	if (strcmp(ci->key, "Message:broadcast") == 0)
 		return 1; /* Acknowledge message */
@@ -95,7 +110,8 @@ DEF_CMD(messageline_abort)
 	}
 	free(mli->message);
 	mli->message = strdup("ABORTED");
-	mli->modal = 0;
+	free(mli->modal);
+	mli->modal = NULL;
 	time(&mli->last_message);
 	pane_damaged(mli->line, DAMAGED_REFRESH);
 	return Efallthrough;
@@ -144,13 +160,22 @@ DEF_CMD(messageline_notify)
 	/* Keystroke notification clears the message line */
 	struct mlinfo *mli = ci->home->data;
 
+	if (mli->modal) {
+		free(mli->modal);
+		mli->modal = NULL;
+		if (mli->message)
+			mli->last_message = time(NULL);
+		pane_damaged(mli->line, DAMAGED_REFRESH);
+	}
 	if (mli->message &&
-	    (mli->modal || time(NULL) >= mli->last_message + 7)) {
+	    time(NULL) >= mli->last_message + 7) {
 		free(mli->message);
 		mli->message = NULL;
+		pane_damaged(mli->line, DAMAGED_REFRESH);
+	}
+	if (!mli->message && !mli->modal) {
 		pane_drop_notifiers(ci->home, "Keystroke-notify");
 		pane_drop_notifiers(ci->home, "Mouse-event-notify");
-		pane_damaged(mli->line, DAMAGED_REFRESH);
 	}
 	return 1;
 }
@@ -167,7 +192,10 @@ DEF_CMD(messageline_line_refresh)
 		pane_drop_notifiers(ci->home, "Keystroke-notify");
 		pane_drop_notifiers(ci->home, "Mouse-event-notify");
 	}
-	if (mli->message)
+	if (mli->modal)
+		pane_str(mli->line, mli->modal, "bold,fg:magenta-60,bg:white",
+			 0, 0 + mli->ascent);
+	else if (mli->message)
 		pane_str(mli->line, mli->message, "bold,fg:red,bg:cyan",
 			 0, 0 + mli->ascent);
 	else {
