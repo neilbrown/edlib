@@ -76,7 +76,7 @@ DEF_CMD(messageline_msg)
 		/* x==0 check ensures we only append message once when
 		 * it comes in via a broadcast notification
 		 */
-		if (ci->x == 0 && mli->log)
+		if (ci->x == 0 && mli->log && !mli->modal)
 			call("doc:log:append", mli->log, 0, NULL, ci->str);
 	}
 	if (strcmp(ci->key, "Message:broadcast") == 0)

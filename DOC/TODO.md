@@ -419,7 +419,7 @@ Module features
 - [Y] a modal message like ":CX" can obscure an async message like
       "email submission complete".  Maybe the non-modal message
       comes back when the modal message is gone?
-- [Y] messages gets too much noise but doesn't get 'version'. 'log' gets messages..
+- [X] messages gets too much noise but doesn't get 'version'. 'log' gets messages..
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
 
 ### docs
