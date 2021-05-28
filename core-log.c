@@ -115,7 +115,7 @@ DEF_CMD(log_append)
 
 	if (b->end != 0 && len >= LBSIZE - b->end - 1) {
 		/* Doesn't fit, allocate new buf */
-		b = get_new_buf(log_doc);
+		b = get_new_buf(l);
 		if (len >= LBSIZE-1)
 			len = LBSIZE-2;
 	}
