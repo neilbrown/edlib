@@ -4,6 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
+- [ ] anything marked [Y]
 - [ ] fix bugs
 - [ ] core features
 - [ ] markdown viewer and editor
@@ -126,7 +127,7 @@ Core features
 - [ ] maybe generalise search and select somehow, so a line-based filter can
       detect and highlight the selection, rather than major-mode being fully
       in control  Similarly search might be handled by a render pane.
-- [ ] should pane_clone_children() copy attrs too?
+- [Y] should pane_clone_children() copy attrs too?
 - [ ] support text-replace as easy as text-insert (doc:char...)
 - [ ] for doc:cmd transformation,  what about :Enter and BS TAB ESC ???
 - [ ] For a notify handler, returning non-zero doesn't stop other handlers
@@ -136,11 +137,11 @@ Core features
 - [ ] make a doc read-only if dir doesn't exist or isn't writable
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
-- [ ] graceful failure when closing doc that still has views.
+- [Y] graceful failure when closing doc that still has views.
       Then call doc_free() internally so the module doesn't need to.
       Also if there are still ungrouped marks with ->mdata.  There shouldn't be, but
       coding errors can cause that.
-- [ ] marks should not be auto-freed on close as there could still be a pointer
+- [Y] marks should not be auto-freed on close as there could still be a pointer
       somewhere from the owner.  Rather they should be disconnected and tracked
       so that a 'free' can work, but nothing else does anything useful.
 - [ ] When I call DocPane I normally doc:attach-view a doc there. But it is
@@ -194,13 +195,13 @@ Module features
 
 ### popup
 
-- [ ] the calculation for borders use "-2" and "-1" which mean quite
+- [Y] the calculation for borders use "-2" and "-1" which mean quite
       different things for ncurses and gtk.
-- [ ] Support Cx-1 in (some) popups so they can take-over.
+- [Y] Support Cx-1 in (some) popups so they can take-over.
 - [ ] I need a way to move the pop-up window to an existing pane.
        Maybe just flag it so C-x-# chooses it first.
        Maybe C-x-4-0 ??
-- [ ] if 'focus' is a temp pane, it might disappear (lib-abbrev) which
+- [Y] if 'focus' is a temp pane, it might disappear (lib-abbrev) which
       closes the popup.  I need to some how indicate a more stable pane
       for replies to go to
       Maybe lib-abbrev should catch ChildRegistered and call pane_subsume
@@ -251,9 +252,9 @@ Module features
 - [X] :C-q to allow entering unicode hex etc.
 - [ ] :C-q to recognize names of unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
-- [ ] make-directory command
+- [Y] make-directory command
       pop-up like find-file, offering current dir.
-- [ ] semi-auto make-dir on save to nonexistent
+- [Y] semi-auto make-dir on save to nonexistent
        alt-Enter is required.
 - [ ] sort the command names for command-completion?
        Currently lines are inserted into buffer.  I need to store in
@@ -262,10 +263,10 @@ Module features
       Maybe use .gitignore, or have config module understand that.
 - [X] search highlight doesn't report empty match (eol)...
       I need to place a cursor - maybe blue?
-- [ ] emacs highlight should get close notification from popup,
+- [Y] emacs highlight should get close notification from popup,
       instead of catching abort.???
-- [ ] ask before killing modified buffer - or refuse without numeric prefix
-       Complain and refuse!
+- [Y] ask before killing modified buffer - or refuse without numeric prefix
+      Complain and refuse!
 - [ ] maybe alt-, does c-x` if that is the recent search?
 - [ ] Support write-file (providing a file name) - currently I only save
       to the file I loaded from.
@@ -301,7 +302,8 @@ Module features
 
 ### pygtk
 
-- [ ] interactive command to open pygtk window even from ncurses.  displayname can be given
+- [Y] interactive command to open pygtk window even from ncurses.  displayname can be given
+- [ ] can we capture the substates of character composition, and give feed-back?
 - [ ] make sure pixmap handling in optimal - I want the per-pane images to be server-side
       See cairo_xcb_surface_create.
 - [ ] If a net connection to a display goes away, we can block on IO to that display.
@@ -336,10 +338,6 @@ Module features
 - [ ] render-lines should always re-render the line containing point, so
       the location of “point” can affect the rendering.
 
-### lib-input
-
-- [ ] can we capture the substates of character composition, and give feed-back?
-
 ### lib-macro
 
 - [ ] detect errors including Abort and search failure etc. Abort capture or
@@ -352,12 +350,12 @@ Module features
 - [ ] allow setting a pattern, as alternate to substr, for 'complete' viewer.
 - [ ] how to change sort order of a directory listing.  I think this requires
       a separate dir document, which borrows state from the main one.
-- [ ] chown/chmod/unlink/rename etc
+- [Y] chown/chmod/unlink/rename etc
 
 ### doc-text
 
-- [ ] a single undo should never cross a save point!
-- [ ] use larger buffers for adding text - especially when filling from pipe.
+- [Y] a single undo should never cross a save point!
+- [Y] use larger buffers for adding text - especially when filling from pipe.
       e.g. new buffer doubles each time??
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
@@ -375,7 +373,7 @@ Module features
 
 ### completion
 
-- [ ] When 'delete' and there is only the original
+- [Y] When 'delete' and there is only the original
       entry of the prefix stack, just delete one character.
 - [X] mouse selection should work in completion pane
 - [ ] filename completion should work for earlier component of path.
@@ -408,7 +406,7 @@ Module features
 
 ### grep/make
 
-- [ ] When I visit from grep in a popup, I think I want a 'view' at first.
+- [Y] When I visit from grep in a popup, I think I want a 'view' at first.
       so 'q' works.
 - [ ] Need keystroke to step through different grep/make windows
 - [ ] if file isn't already loaded, wait until it is wanted, or something
@@ -418,10 +416,10 @@ Module features
 
 ### message-line
 
-- [ ] a modal message like ":CX" can obscure an async message like
+- [Y] a modal message like ":CX" can obscure an async message like
       "email submission complete".  Maybe the non-modal message
       comes back when the modal message is gone?
-- [ ] messages gets too much noise but doesn't get 'version'. 'log' gets messages..
+- [Y] messages gets too much noise but doesn't get 'version'. 'log' gets messages..
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
 
 ### docs
@@ -463,13 +461,14 @@ Module features
 - [ ] handle errors better.  e.g. file reported by notmuch might not
       exist, or not be readable
 - [ ] allow opening drafts in composer on restart.
+- [Y] 'c' to continue an unsent message
 - [ ] allow deleting of drafts without posting.  Maybe just 'delete'..
 - [ ] option to wrap subjects onto next line
 - [ ] When active query changes, highlight on list view doesn't immediately
       follow
 - [X] negative arg to '*' etc clears inverts the change
 - [ ] TESTS
-- [ ] when re-visit, open up the same panes
+- [Y] when re-visit, open up the same panes
 - [ ] make sure Clone actually works for all panes - or remove it
 - [ ] add counter and colour for 'flagged'
 - [ ] if no 'saved:current' use "not exclude_tags"
@@ -477,16 +476,18 @@ Module features
 - [ ] support selection messages and applying tags
 - [X] 'd' to add "deleted' flag
 - [X] different highlight colour for "not matched" and "not inbox"
-- [ ] When visiting pre-existing query, move to first New .. optional?
+- [Y] When visiting pre-existing query, move to first New .. optional?
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.
+- [Y] show doc status for query whether search is still going
 - [ ] show a summary line at end of search result which says how far back has been searched.
 - [ ] make min top/bottom margin configurable, set for message list
 - [ ] search in thread list - use 'format2' after fixing bug
 - [ ] display counts of current thread somewhere, so I know where I'm up to. - new/unread/matched in status line
 - [ ] review highlight on query when the message selected isn't the message displayed
-- [ ] use NOTMUCH_CONFIG consistently - drop locking
+- [Y] use NOTMUCH_CONFIG consistently - drop locking
 - [ ] fix bugs in stored-query!! query: is slow and (I think) buggy
+- [Y] uses stored-query to store querys even if I don't use it for lookup
 - [ ] rel_date could report how long until display would change, and
    we could set a timer for the minimum.
 - [ ] allow re-ordering of saved-search list click-drag? +/-?
@@ -595,7 +596,7 @@ Module features
 
 - [ ] split into lower pane which parse markdown and upper which handles presentation.
 - [ ] command to immediately change current pane in to presenter view
-- [ ] add viewer pane so cannot accidentally edit - and space pages down.
+- [Y] add viewer pane so cannot accidentally edit - and space pages down.
 - [ ] translucent bg colour for paragraphs
 - [ ] partial-view-points. Only render beyond here if mark here or beyond.
     page-down goes to next such point
@@ -630,10 +631,10 @@ Module features
 
 ### lang-python
 
-- [ ] allow (even prefer) str1 for str, as str is predefined
-- [ ] use new doc:debug:mark when printing marks
+- [Y] allow (even prefer) str1 for str, as str is predefined
+- [Y] use new doc:debug:mark when printing marks
 - [ ] should Efallthrough be an exception?
-- [ ] report error if release mark which isn't ours.
+- [Y] report error if release mark which isn't ours.
 - [ ] Log loading of modules - Can I provide version info?
 - [ ] we aren't catching errors from functions called from .connect()
        Maybe use sys.excepthook(typ,val,tb)
@@ -685,7 +686,7 @@ Module features
 - [ ] alt-p to interpolate previous expression
 - [ ] fix Make dependencies so changing calc.mdc only requires one 'make'.
 - [ ] Don't always show fraction - maybe request it like with '@' for octal
-- [ ] if calculation produces same result as it present, don't modify doc.
+- [ ] if calculation produces same result as is present, don't modify doc.
 
 New Modules - simple
 --------------------
