@@ -138,7 +138,7 @@ Core features
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
 - [X] graceful failure when closing doc that still has views.
-- [Y] Then call doc_free() internally so the module doesn't need to.
+- [X] Then call doc_free() internally so the module doesn't need to.
       Also if there are still ungrouped marks with ->mdata.  There shouldn't be, but
       coding errors can cause that.
 - [X] marks should not be auto-freed on close as there could still be a pointer

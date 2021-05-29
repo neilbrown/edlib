@@ -788,8 +788,7 @@ DEF_CMD(docs_close)
 	call_comm("global-set-command", ci->home, &edlib_noop,
 		  0, NULL, "doc:appeared-docs-register");
 	pane_close(docs->collection);
-	doc_free(&docs->doc, ci->home);
-	return 1;
+	return Efallthrough;
 }
 
 static void docs_init_map(void)

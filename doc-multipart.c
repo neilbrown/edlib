@@ -218,8 +218,7 @@ DEF_CMD(mp_close)
 		}
 	for (i = 0; i < mpi->nparts; i++)
 		call("doc:closed", mpi->parts[i].pane);
-	doc_free(&mpi->doc, ci->home);
-	return 1;
+	return Efallthrough;
 }
 
 DEF_CMD(mp_free)

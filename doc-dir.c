@@ -778,8 +778,7 @@ DEF_CMD(dir_destroy)
 		list_del(&de->lst);
 		free(de);
 	}
-	doc_free(d, ci->home);
-	return 1;
+	return Efallthrough;
 }
 
 static int dir_open(struct pane *home safe, struct pane *focus safe,

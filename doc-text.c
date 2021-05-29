@@ -2511,8 +2511,7 @@ DEF_CMD(text_destroy)
 	struct text *t = container_of(d, struct text, doc);
 
 	text_cleanout(t);
-	doc_free(d, ci->home);
-	return 1;
+	return Efallthrough;
 }
 
 DEF_CMD(text_clear)

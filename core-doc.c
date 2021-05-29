@@ -662,6 +662,13 @@ DEF_CMD(doc_addview)
 	return 1 + ret;
 }
 
+DEF_CMD(doc_close_doc)
+{
+	struct doc *d = ci->home->data;
+	doc_free(d, ci->home);
+	return 1;
+}
+
 DEF_CMD(doc_view_close)
 {
 	/* A pane which once held a view is closing.  We must discard
@@ -1232,6 +1239,7 @@ static void init_doc_cmds(void)
 	key_add(doc_default_cmd, "doc:pop-point", &doc_pop_point);
 	key_add(doc_default_cmd, "doc:attach-view", &doc_attach_view);
 	key_add(doc_default_cmd, "doc:attach-helper", &doc_attach_helper);
+	key_add(doc_default_cmd, "Close", &doc_close_doc);
 
 	key_add(doc_default_cmd, "doc:word", &doc_word);
 	key_add(doc_default_cmd, "doc:WORD", &doc_WORD);
@@ -1458,6 +1466,10 @@ DEF_CMD(doc_from_text)
 
 void doc_free(struct doc *d safe, struct pane *root safe)
 {
+	/* NOTE: this must be idempotent as both it can be called
+	 * twice, once from doc_default_cmd, once deliberately by the
+	 * pane.
+	 */
 	unsigned int i;
 	bool warned = False;
 
@@ -1470,6 +1482,7 @@ void doc_free(struct doc *d safe, struct pane *root safe)
 			do_del_view(d, i, d->views[i].owner);
 	unalloc_buf(d->views, sizeof(d->views[0]) * d->nviews, pane);
 	free(d->name);
+	d->name = NULL;
 	while (!hlist_empty(&d->marks)) {
 		struct mark *m = hlist_first_entry(&d->marks, struct mark, all);
 		if (m->viewnum == MARK_UNGROUPED && m->mdata) {
