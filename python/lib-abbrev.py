@@ -20,18 +20,21 @@ class AbbrevPane(edlib.Pane):
 
         self.call("doc:request:doc:replaced")
         self.call("doc:request:point:moving")
+        self.activate()
+
+    def activate(self):
         self.active = False
-        p = focus.call("doc:point", ret='mark')
+        p = self.call("doc:point", ret='mark')
         self.prefix_end = p.dup()
         m = p.dup()
-        focus.prev(m)
+        self.prev(m)
         try:
-            focus.call("text-search", 0, 1, "\\<", m)
+            self.call("text-search", 0, 1, "\\<", m)
         except edlib.commandfailed:
             pass
 
         self.prefix_start = m
-        self.prefix = focus.call("doc:get-str", m, p, ret='str')
+        self.prefix = self.call("doc:get-str", m, p, ret='str')
         self.prefix_len = len(self.prefix)
 
         self.prefix_start['render:abbrev'] = 'prefix'
@@ -153,7 +156,7 @@ class AbbrevPane(edlib.Pane):
 
     def handle_highlight(self, key, focus, mark, str, str2, comm2, **a):
         "handle:map-attr"
-        if not comm2:
+        if not comm2 or not self.prefix_start:
             return
         if str == "render:abbrev" and str2 == 'prefix' and mark == self.prefix_start:
             comm2("cb", focus, mark, "bg:yellow", self.prefix_len)
@@ -164,11 +167,17 @@ class AbbrevPane(edlib.Pane):
 
     def repeat(self, key, focus, **a):
         "handle:attach-abbrev"
-        self.next_completion(1)
+        if not self.prefix_start:
+            self.activate()
+        else:
+            self.next_completion(1)
         return 1
 
     def left_right(self, key, focus, mark, **a):
         "handle-list/K:Left/K:Right"
+        if not self.prefix_start:
+            return edlib.Efallthrough
+
         m = self.prefix_start.dup()
         try:
             if key == "K:Left":
@@ -191,6 +200,8 @@ class AbbrevPane(edlib.Pane):
 
     def up_down(self, key, focus, mark, **a):
         "handle-list/K:Up/K:Down"
+        if not self.prefix_start:
+            return edlib.Efallthrough
         if key == "K:Up":
             self.next_completion(-1)
         else:
@@ -199,24 +210,25 @@ class AbbrevPane(edlib.Pane):
 
     def handle_escape(self, key, focus, mark, **a):
         "handle:K:ESC"
+        if not self.prefix_start:
+            return edlib.Efallthrough
         # remove current completion, and abort
         self.active = True
         self.call("Replace", "", self.prefix_end)
         self.active = False
         self.call("view:changed", self.prefix_start, self.prefix_end)
-        self.close()
-        return 1
-
-    def delayed_close(self, key, **a):
-        # FIXME this should be automatic
-        self.close()
+        self.prefix_start = None
+        self.prefix_end = None
+        self.call("Message", "")
         return 1
 
     def handle_activity(self, key, focus, **a):
         "handle-list/doc:replaced/point:moving/pane:defocus"
-        if not self.active:
+        if not self.active and self.prefix_start:
             self.call("view:changed", self.prefix_start, self.prefix_end)
-            self.call("editor-on-idle", self.delayed_close)
+            self.prefix_start = None
+            self.prefix_end = None
+            self.call("Message", "")
         return edlib.Efallthrough
 
 
