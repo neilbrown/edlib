@@ -201,7 +201,7 @@ Module features
 - [ ] I need a way to move the pop-up window to an existing pane.
        Maybe just flag it so C-x-# chooses it first.
        Maybe C-x-4-0 ??
-- [Y] if 'focus' is a temp pane, it might disappear (lib-abbrev) which
+- [X] if 'focus' is a temp pane, it might disappear (lib-abbrev) which
       closes the popup.  I need to some how indicate a more stable pane
       for replies to go to
       Maybe lib-abbrev should catch ChildRegistered and call pane_subsume
@@ -210,6 +210,7 @@ Module features
       no children, then it disappears.
       Same problem with 'viewer' disappearing on K-E.
       I think they should disable themselves and capture re-enablement.
+- [ ] emacs search highlight window should disable itself rather than close
 
 ### lib-diff
 

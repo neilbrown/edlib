@@ -21,9 +21,17 @@
 static struct map *viewer_map safe;
 DEF_LOOKUP_CMD(viewer_handle, viewer_map);
 
+struct viewer_data {
+	bool active;
+};
+
 static struct pane *safe do_viewer_attach(struct pane *par)
 {
-	return pane_register(par, 0, &viewer_handle.c);
+	struct viewer_data *vd;
+
+	alloc(vd, pane);
+	vd->active = True;
+	return pane_register(par, 0, &viewer_handle.c, vd);
 }
 
 DEF_CMD(viewer_attach)
@@ -33,7 +41,11 @@ DEF_CMD(viewer_attach)
 
 DEF_CMD(no_replace)
 {
-	/* FIXME message? */
+	struct viewer_data *vd = ci->home->data;
+
+	if (!vd->active)
+		return Efallthrough;
+	call("Message:modal", ci->focus, 0, NULL, "Cannot modify document in viewer mode");
 	return 1;
 }
 
@@ -42,6 +54,10 @@ DEF_CMD(viewer_cmd)
 	/* Send command to the document */
 	char cmd[40];
 	const char *s;
+	struct viewer_data *vd = ci->home->data;
+
+	if (!vd->active)
+		return Efallthrough;
 
 	if ((s=ksuffix(ci, "K:"))[0] ||
 	    (s=ksuffix(ci, "doc:char-"))[0]) {
@@ -67,12 +83,20 @@ DEF_CMD(viewer_cmd)
 
 DEF_CMD(viewer_page_down)
 {
+	struct viewer_data *vd = ci->home->data;
+
+	if (!vd->active)
+		return Efallthrough;
 	call("K:Next", ci->focus, ci->num, ci->mark);
 	return 1;
 }
 
 DEF_CMD(viewer_page_up)
 {
+	struct viewer_data *vd = ci->home->data;
+
+	if (!vd->active)
+		return Efallthrough;
 	call("K:Prior", ci->focus, ci->num, ci->mark);
 	return 1;
 }
@@ -81,6 +105,10 @@ DEF_CMD(viewer_bury)
 {
 	/* First see if doc wants to handle 'q' */
 	int ret;
+	struct viewer_data *vd = ci->home->data;
+
+	if (!vd->active)
+		return Efallthrough;
 
 	ret = call("doc:cmd-q", ci->focus, ci->num, ci->mark);
 	switch (ret) {
@@ -97,16 +125,33 @@ DEF_CMD(viewer_bury)
 	return 1;
 }
 
-DEF_CMD(viewer_close)
+DEF_CMD(viewer_deactivate)
 {
-	pane_close(ci->home);
+	struct viewer_data *vd = ci->home->data;
+
+	if (!vd->active)
+		return Efallthrough;
+	vd->active = False;
+	return 1;
+}
+
+DEF_CMD(viewer_activate)
+{
+	struct viewer_data *vd = ci->home->data;
+
+	vd->active = True;
 	return 1;
 }
 
 DEF_CMD(viewer_clone)
 {
 	struct pane *p;
-	p = do_viewer_attach(ci->focus);
+	struct viewer_data *vd = ci->home->data;
+
+	if (vd->active)
+		p = do_viewer_attach(ci->focus);
+	else
+		p = ci->focus;
 	pane_clone_children(ci->home, p);
 	return 1;
 }
@@ -131,11 +176,16 @@ void edlib_init(struct pane *ed safe)
 	key_add(viewer_map, "K:Backspace", &viewer_page_up);
 	key_add(viewer_map, "K:Del", &viewer_page_up);
 	key_add(viewer_map, "doc:char-q", &viewer_bury);
-	key_add(viewer_map, "doc:char-E", &viewer_close);
+	key_add(viewer_map, "doc:char-E", &viewer_deactivate);
 	key_add(viewer_map, "Clone", &viewer_clone);
+	key_add(viewer_map, "Free", &edlib_do_free);
+	key_add(viewer_map, "attach-viewer", &viewer_activate);
 
-	call_comm("global-set-command", ed, &viewer_attach, 0, NULL, "attach-viewer");
-	call_comm("global-set-command", ed, &viewer_appeared, 0, NULL, "doc:appeared-viewer");
+	call_comm("global-set-command", ed, &viewer_attach, 0, NULL,
+		  "attach-viewer");
+	call_comm("global-set-command", ed, &viewer_appeared, 0, NULL,
+		  "doc:appeared-viewer");
+
 	/* FIXME this doesn't seem quite right...
 	 * The goal is that if 'viewer' is requested of doc:attach-pane,
 	 * this pane gets attached, in place of any default.
