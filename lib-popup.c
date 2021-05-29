@@ -275,6 +275,21 @@ DEF_CMD(popup_ignore)
 	return 1;
 }
 
+DEF_CMD(popup_close_others)
+{
+	/* For some popups, like search or find-file, it doesn't make sense
+	 * to maximize the popup.  For others line email-compose it does.
+	 * For now, allow it on multi-line popups.
+	 */
+	struct popup_info *ppi = ci->home->data;
+
+	if (strchr(ppi->style, 'M') == NULL)
+		return 1;
+	if (ci->home->focus)
+		home_call(ci->home->focus, "doc:attach-view", ci->home->parent);
+	return 1;
+}
+
 DEF_CMD(popup_set_callback)
 {
 	struct popup_info *ppi = ci->home->data;
@@ -535,7 +550,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(popup_map, "Window:x-", &popup_ignore);
 	key_add(popup_map, "Window:y+", &popup_ignore);
 	key_add(popup_map, "Window:y-", &popup_ignore);
-	key_add(popup_map, "Window:close-others", &popup_ignore);
+	key_add(popup_map, "Window:close-others", &popup_close_others);
 	key_add(popup_map, "Window:scale-relative", &popup_scale_relative);
 	key_add(popup_map, "pane:defocus", &popup_defocus);
 }
