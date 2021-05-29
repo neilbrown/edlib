@@ -687,21 +687,6 @@ class PresenterPane(edlib.Pane):
                 return 1
         return 2
 
-    def handle_close(self, key, **a):
-        "handle:Close"
-        m = self.first_page()
-        while m:
-            m.release()
-            m = self.first_page()
-        self.call("doc:del-view", self.pageview)
-        m = self.first_line()
-        while m:
-            m.release()
-            m = self.first_line()
-        self.call("doc:del-view", self.attrview)
-
-        return 1
-
 class MarkdownPane(edlib.Pane):
     def __init__(self, focus):
         edlib.Pane.__init__(self, focus)

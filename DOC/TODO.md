@@ -137,11 +137,11 @@ Core features
 - [ ] make a doc read-only if dir doesn't exist or isn't writable
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
-- [Y] graceful failure when closing doc that still has views.
-      Then call doc_free() internally so the module doesn't need to.
+- [X] graceful failure when closing doc that still has views.
+- [Y] Then call doc_free() internally so the module doesn't need to.
       Also if there are still ungrouped marks with ->mdata.  There shouldn't be, but
       coding errors can cause that.
-- [Y] marks should not be auto-freed on close as there could still be a pointer
+- [X] marks should not be auto-freed on close as there could still be a pointer
       somewhere from the owner.  Rather they should be disconnected and tracked
       so that a 'free' can work, but nothing else does anything useful.
 - [ ] When I call DocPane I normally doc:attach-view a doc there. But it is

@@ -50,14 +50,6 @@ class DiffPane(edlib.Pane):
         self['doc-status'] = st
         self.call("view:changed")
 
-    def handle_close(self, key, focus, **a):
-        "handle:Close"
-        m, l = self.vmarks(self.viewnum)
-        while m:
-            m.release()
-            m, l = self.vmarks(self.viewnum)
-        self.call("doc:del-view", self.viewnum)
-
     def handle_next(self, key, focus, mark, **a):
         "handle-list/K:A-p/K:Prior"
         # Find previous diff hunk

@@ -152,14 +152,6 @@ class autospell_monitor(edlib.Pane):
         self.call("doc:request:spell:mark-checked")
         self.call("doc:request:spell:choose-range")
 
-    def handle_close(self, key, **a):
-        "handle:Close"
-        m, l = self.vmarks(self.view)
-        while m:
-            m.release()
-            m, l = self.vmarks(self.view)
-        self.call("doc:del-view", self.view)
-
     def doc_replace(self, key, focus, mark, mark2, num2, **a):
         "handle:doc:replaced"
         if num2:

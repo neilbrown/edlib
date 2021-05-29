@@ -200,15 +200,9 @@ class MakePane(edlib.Pane):
         "handle:Notify:Close"
         for fn in self.files:
             (d,v) = self.files[fn]
-            if d != focus:
-                continue
-            m, l = d.vmarks(v, self)
-            while m:
-                m.release()
-                m, l = d.vmarks(v, self)
-            d.call("doc:del-view", v, self)
-            del self.files[fn]
-            break
+            if d == focus:
+                del self.files[fn]
+                break
 
     def clear_render(self):
         if not self.point:
@@ -538,27 +532,6 @@ class MakePane(edlib.Pane):
             return 2
         # close the shellcmd handler, and that will close us
         self.parent.close()
-        return 1
-
-    def handle_close(self, key, **a):
-        "handle:Close"
-        m, l = self.vmarks(self.viewnum)
-        while m:
-            m.release()
-            m, l = self.vmarks(self.viewnum)
-        self.call("doc:del-view", self.viewnum)
-        self.point = None
-        self.pos = None
-
-        for fn in self.files:
-            (d,v) = self.files[fn]
-            m, l = d.vmarks(v, self)
-            while m:
-                m.release()
-                m, l = d.vmarks(v, self)
-            d.call("doc:del-view", v, self)
-        del self.files
-
         return 1
 
 def make_attach(key, focus, comm2, str, str2, **a):

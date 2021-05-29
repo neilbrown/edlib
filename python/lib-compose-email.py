@@ -331,14 +331,6 @@ class compose_email(edlib.Pane):
         self.clone_children(p)
         return 1
 
-    def handle_close(self, key, focus, **a):
-        "handle:Close"
-        m, l = self.vmarks(self.view)
-        while m:
-            m.release()
-            m, l = self.vmarks(self.view)
-        self.call("doc:del-view", self.view)
-
     def map_attr(self, key, focus, str, str2, mark, comm2, **a):
         "handle:map-attr"
         if not str or not mark or not comm2:

@@ -515,6 +515,7 @@ void pane_close(struct pane *p safe)
 	struct pane *c;
 	struct pane *ed;
 	bool infocus;
+	bool again;
 
 	if (p->damaged & DAMAGED_CLOSED)
 		return;
@@ -523,25 +524,40 @@ void pane_close(struct pane *p safe)
 
 	ed = pane_root(p);
 
-	pane_drop_notifiers(p, NULL);
+	/* Lots of panes might need to be notified of our closing.
+	 * We try to notify the more "distant" first, so children are
+	 * last and those registered for notification are first.
+	 * Parent comes beween.
+	 */
+	pane_notify_close(p);
 
 	if (!(p->parent->damaged & DAMAGED_CLOSED))
 		pane_call(p->parent, "ChildClosed", p);
 	list_del_init(&p->siblings);
 
-restart:
-	list_for_each_entry(c, &p->children, siblings) {
-		if (c->damaged & DAMAGED_CLOSED)
-			continue;
-		pane_close(c);
-		goto restart;
-	}
+	do {
+		again = False;
+		list_for_each_entry(c, &p->children, siblings) {
+			if (c->damaged & DAMAGED_CLOSED)
+				continue;
+			pane_close(c);
+			again = True;
+			break;
+		}
+	} while (again);
+
+	/* It is important not to drop notifiers until after all dependant
+	 * panes are closed, as their closing might send a notification back
+	 * to this pane.  That happens with documents when the holder of
+	 * a mark-view is closed.
+	 */
+	pane_drop_notifiers(p, NULL);
 
 	infocus = pane_has_focus(p);
-	if (p->parent->focus == p)
+	if (!(p->parent->damaged & DAMAGED_CLOSED) &&
+	    p->parent->focus == p)
 		pane_refocus(p->parent);
 
-	pane_notify_close(p);
 	pane_call(p, "Close", p, infocus);
 
 	/* If a child has not yet had "Close" called, we need to leave

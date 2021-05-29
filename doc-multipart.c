@@ -218,7 +218,7 @@ DEF_CMD(mp_close)
 		}
 	for (i = 0; i < mpi->nparts; i++)
 		call("doc:closed", mpi->parts[i].pane);
-	doc_free(&mpi->doc);
+	doc_free(&mpi->doc, ci->home);
 	return 1;
 }
 
@@ -616,8 +616,19 @@ DEF_CMD(mp_notify_close)
 	/* sub-document has been closed.
 	 * Can we survive? or should we just shut down?
 	 */
-	pane_close(ci->home);
-	return 1;
+	struct mp_info *mpi = ci->home->data;
+	int i;
+
+	for (i = 0; i < mpi->nparts; i++)
+		if (mpi->parts[i].pane == ci->focus) {
+			/* sub-document has been closed.
+			 * Can we survive? or should we just shut down?
+			 */
+			pane_close(ci->home);
+			return 1;
+		}
+	/* Not a sub-pane, maybe an owner for vmarks */
+	return Efallthrough;
 }
 
 DEF_CMD(mp_notify_viewers)

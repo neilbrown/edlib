@@ -434,17 +434,6 @@ DEF_CMD(mu_clip)
 	return Efallthrough;
 }
 
-DEF_CMD(mu_close)
-{
-	struct pane *p = ci->home;
-	struct mu_info *mu = p->data;
-	struct mark *m;
-	while ((m = vmark_first(p, mu->view, p)) != NULL)
-		mark_free(m);
-	call("doc:del-view", p, mu->view);
-	return 1;
-}
-
 void edlib_init(struct pane *ed safe)
 {
 	mu_map = key_alloc();
@@ -452,7 +441,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(mu_map, "doc:render-line", &render_line);
 	key_add(mu_map, "doc:render-line-prev", &render_prev);
 	key_add(mu_map, "Clone", &mu_clone);
-	key_add(mu_map, "Close", &mu_close);
 	key_add(mu_map, "Free", &edlib_do_free);
 	key_add(mu_map, "Notify:clip", &mu_clip);
 

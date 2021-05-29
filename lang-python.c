@@ -56,7 +56,8 @@ int PyType_HasFeature(PyTypeObject *type, unsigned long feature);
 #else
 #include <Python.h>
 #endif
-#define MARK_DATA_PTR PyObject
+struct Mark;
+#define MARK_DATA_PTR struct Mark
 #define PRIVATE_DOC_REF
 
 struct doc_ref {
@@ -145,7 +146,7 @@ typedef struct {
 } Doc;
 static PyTypeObject DocType;
 
-typedef struct {
+typedef struct Mark {
 	PyObject_HEAD;
 	struct mark	*mark;
 } Mark;
@@ -206,7 +207,7 @@ static inline PyObject *safe Mark_Frommark(struct mark *m safe)
 	if (mark_valid(m) && m->mtype == &MarkType && m->mdata) {
 		/* This is a vmark, re-use the PyObject */
 		Py_INCREF(m->mdata);
-		return m->mdata;
+		return (PyObject*)m->mdata;
 	}
 	mark = (Mark *)PyObject_CallObject((PyObject*)&MarkType, NULL);
 	if (mark && mark_valid(m))
@@ -647,6 +648,7 @@ static Doc *Doc_new(PyTypeObject *type safe, PyObject *args, PyObject *kwds)
 static void python_pane_free(struct command *c safe)
 {
 	Pane *p = container_of(c, Pane, cmd);
+	struct pane *pn = p->pane;
 	/* pane has been closed */
 	p->pane = NULL;
 	if (p->map)
@@ -654,9 +656,23 @@ static void python_pane_free(struct command *c safe)
 	p->map = NULL;
 	if (PyObject_TypeCheck(p, &DocType)) {
 		Doc *d = (Doc*)p;
-		doc_free(&d->doc);
+		doc_free(&d->doc, safe_cast pn);
 	}
 	Py_DECREF(p);
+}
+
+DEF_CMD(python_close_mark)
+{
+	struct mark *m = ci->mark;
+
+	if (m && m->viewnum >= 0 && m->mtype == &MarkType && m->mdata) {
+		Mark *M = m->mdata;
+		m->mdata = NULL;
+		m->mtype = NULL;
+		M->mark = NULL;
+		Py_DECREF(M);
+	}
+	return 1;
 }
 
 static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
@@ -694,6 +710,7 @@ static int __Pane_init(Pane *self safe, PyObject *args, PyObject *kwds,
 	*parentp = parent;
 
 	self->map = key_alloc();
+	key_add(self->map, "Close:mark", &python_close_mark);
 	self->cmd = python_pane_call;
 	self->cmd.free = python_pane_free;
 	if (self->ob_base.ob_type)
@@ -2037,7 +2054,7 @@ static int Mark_init(Mark *self safe, PyObject *args safe, PyObject *kwds)
 		 * explicitly released.
 		 */
 		self->mark->mtype = &MarkType;
-		self->mark->mdata = (PyObject*)self;
+		self->mark->mdata = self;
 		Py_INCREF(self);
 	} else {
 		/* Other marks cannot use mdata and get freed when
@@ -2213,11 +2230,11 @@ static PyObject *Mark_release(Mark *self safe, PyObject *args)
 	}
 	if (m->mtype == &MarkType) {
 		/* We are dropping this mark - there cannot be any other ref */
-		ASSERT(m->mdata == (PyObject*)self);
+		ASSERT(m->mdata == self);
+		self->mark = NULL;
 		Py_DECREF(self);
 		m->mdata = NULL;
 		m->mtype = NULL;
-		self->mark = NULL;
 		mark_free(m);
 	}
 

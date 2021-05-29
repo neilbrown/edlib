@@ -575,26 +575,55 @@ DEF_CMD(doc_notify)
 	return ret;
 }
 
-DEF_CMD(doc_delview)
+static int do_del_view(struct doc *d safe, int v,
+		       struct pane *owner)
 {
-	struct doc *d = ci->home->data;
-	int i = ci->num;
-
+	bool warned = False;
 	/* This view should only have points on the list, not typed
 	 * marks.  Just delete everything and clear the 'notify' pointer
 	 */
-	if (i < 0 || i >= d->nviews || d->views == NULL)
+	if (v < 0 || v >= d->nviews || d->views == NULL ||
+	    !owner || d->views[v].owner != owner)
 		return Einval;
-	if (d->views[i].owner != ci->focus) abort();
-	d->views[i].owner = NULL;
-	while (!tlist_empty(&d->views[i].head)) {
-		struct tlist_head *tl = d->views[i].head.next;
-		if (TLIST_TYPE(tl) != GRP_LIST)
-			abort();
-		tlist_del_init(tl);
-	}
 
+	d->views[v].owner = NULL;
+	while (!tlist_empty(&d->views[v].head)) {
+		struct mark *m;
+		struct tlist_head *tl = d->views[v].head.next;
+
+		switch (TLIST_TYPE(tl)) {
+		case GRP_LIST: /* A point */
+			tlist_del_init(tl);
+			break;
+		case GRP_MARK: /* a vmark */
+			m = container_of(tl, struct mark, view);
+			if (m->mdata)
+				pane_call(owner, "Close:mark", owner, 0, m);
+			if (tl == d->views[v].head.next) {
+				/* It hasn't been freed */
+				if (m->mdata && !warned) {
+					call("editor:notify:Message:broadcast",
+					     owner, 0, NULL,
+					     "WARNING mark not freed by Close:mark");
+					LOG("WARNING Mark not freed by Close:mark");
+					warned = True;
+				}
+				m->mdata = NULL;
+				mark_free(m);
+			}
+			break;
+		default: /* impossible */
+			abort();
+		}
+	}
 	return 1;
+}
+
+DEF_CMD(doc_delview)
+{
+	struct doc *d = ci->home->data;
+
+	return do_del_view(d, ci->num, ci->focus);
 }
 
 DEF_CMD(doc_addview)
@@ -628,9 +657,22 @@ DEF_CMD(doc_addview)
 	if (d->views /* FIXME always true */) {
 		points_attach(d, ret);
 		d->views[ret].owner = ci->focus;
-		// FIXME get close notificiation
+		pane_add_notify(ci->home, ci->focus, "Notify:Close");
 	}
 	return 1 + ret;
+}
+
+DEF_CMD(doc_view_close)
+{
+	/* A pane which once held a view is closing.  We must discard
+	 * that view if it still exists.
+	 */
+	struct doc *d = ci->home->data;
+	int v;
+
+	for (v = 0 ; d->views && v < d->nviews; v++)
+		do_del_view(d, v, ci->focus);
+	return 1;
 }
 
 DEF_CMD(doc_vmarkget)
@@ -1173,6 +1215,7 @@ static void init_doc_cmds(void)
 
 	key_add(doc_default_cmd, "doc:add-view", &doc_addview);
 	key_add(doc_default_cmd, "doc:del-view", &doc_delview);
+	key_add(doc_default_cmd, "Notify:Close", &doc_view_close);
 	key_add(doc_default_cmd, "doc:vmark-get", &doc_vmarkget);
 	key_add(doc_default_cmd, "doc:vmark-prev", &doc_vmarkprev);
 	key_add(doc_default_cmd, "doc:vmark-new", &doc_vmarknew);
@@ -1413,20 +1456,33 @@ DEF_CMD(doc_from_text)
 	return comm_call(ci->comm2, "callback", p) ?: 1;
 }
 
-void doc_free(struct doc *d safe)
+void doc_free(struct doc *d safe, struct pane *root safe)
 {
 	unsigned int i;
+	bool warned = False;
 
 	for (i = 0; i < ARRAY_SIZE(d->recent_points); i++) {
 		mark_free(d->recent_points[i]);
 		d->recent_points[i] = NULL;
 	}
 	for (i = 0; i < (unsigned int)d->nviews; i++)
-		ASSERT(d->views && !d->views[i].owner);
+		if (d->views)
+			do_del_view(d, i, d->views[i].owner);
 	unalloc_buf(d->views, sizeof(d->views[0]) * d->nviews, pane);
 	free(d->name);
 	while (!hlist_empty(&d->marks)) {
 		struct mark *m = hlist_first_entry(&d->marks, struct mark, all);
+		if (m->viewnum == MARK_UNGROUPED && m->mdata) {
+			/* we cannot free this, so warn and discard */
+			if (!warned) {
+				call("editor:notify:Message:broadcast",
+				     root, 0, NULL,
+				     "WARNING mark with data not freed");
+				LOG("WARNING Mark with data no freed");
+			}
+			warned = True;
+			m->mdata = NULL;
+		}
 		if (m->viewnum == MARK_POINT || m->viewnum == MARK_UNGROUPED)
 			mark_free(m);
 		else

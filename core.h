@@ -186,7 +186,7 @@ struct doc {
 	bool			readonly;
 };
 
-void doc_free(struct doc *d safe);
+void doc_free(struct doc *d safe, struct pane *root safe);
 extern struct map *doc_default_cmd safe;
 void doc_setup(struct pane *ed safe);
 void log_setup(struct pane *ed safe);

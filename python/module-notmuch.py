@@ -1139,11 +1139,13 @@ class notmuch_query(edlib.Doc):
         self.notify("doc:replaced")
         return 1
 
-    def handle_notify_close(self, **a):
+    def handle_notify_close(self, key, focus, **a):
         "handle:Notify:Close"
-        # Main doc is closing, so must we
-        self.close()
-        return 1
+        if focus == self.maindoc:
+            # Main doc is closing, so must we
+            self.close()
+            return 1
+        return edlib.Efallthrough
 
     def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"

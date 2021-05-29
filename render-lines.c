@@ -1135,17 +1135,21 @@ DEF_CMD(render_lines_refresh)
 
 DEF_CMD(render_lines_close)
 {
-	struct pane *p = ci->home;
-	struct rl_data *rl = p->data;
-	struct mark *m;
+	struct rl_data *rl = ci->home->data;
 
-	while ((m = vmark_first(p, rl->typenum, p)) != NULL)
-		vmark_free(m);
 	if (rl->header)
 		vmark_free(rl->header);
 	rl->header = NULL;
 
-	call("doc:del-view", p, rl->typenum);
+	return 1;
+}
+
+DEF_CMD(render_lines_close_mark)
+{
+	struct mark *m = ci->mark;
+
+	if (m)
+		vmark_clear(m);
 	return 1;
 }
 
@@ -1677,6 +1681,7 @@ static void render_lines_register_map(void)
 	key_add(rl_map, "Abort", &render_lines_abort);
 
 	key_add(rl_map, "Close", &render_lines_close);
+	key_add(rl_map, "Close:mark", &render_lines_close_mark);
 	key_add(rl_map, "Free", &edlib_do_free);
 	key_add(rl_map, "Clone", &render_lines_clone);
 	key_add(rl_map, "Refresh", &render_lines_refresh);

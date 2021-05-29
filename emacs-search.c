@@ -983,21 +983,6 @@ DEF_CMD(emacs_highlight_close)
 	struct highlight_info *hi = ci->home->data;
 
 	free(hi->patn);
-	if (hi->view >= 0) {
-		struct mark *m;
-
-		while ((m = vmark_first(ci->focus, hi->view, ci->home)) != NULL)
-			mark_free(m);
-		call("doc:del-view", ci->home, hi->view);
-	}
-	if (hi->replace_view >= 0) {
-		struct mark *m;
-
-		while ((m = vmark_first(ci->focus, hi->replace_view,
-					ci->home)) != NULL)
-			mark_free(m);
-		call("doc:del-view", ci->home, hi->replace_view);
-	}
 	mark_free(hi->start);
 	mark_free(hi->end);
 	mark_free(hi->match);

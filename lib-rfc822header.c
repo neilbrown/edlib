@@ -37,18 +37,6 @@ struct header_info {
 	int vnum;
 };
 
-DEF_CMD(header_close)
-{
-	struct pane *p = ci->home;
-	struct header_info *hi = p->data;
-	struct mark *m;
-
-	while ((m = vmark_first(p, hi->vnum, p)) != NULL)
-		mark_free(m);
-	call("doc:del-view", p, hi->vnum);
-	return 1;
-}
-
 static char *get_hname(struct pane *p safe, struct mark *m safe)
 {
 	char hdr[80];
@@ -497,7 +485,6 @@ static struct map *header_map safe;
 static void header_init_map(void)
 {
 	header_map = key_alloc();
-	key_add(header_map, "Close", &header_close);
 	key_add(header_map, "Free", &edlib_do_free);
 	key_add(header_map, "get-header", &header_get);
 	key_add(header_map, "list-headers", &header_list);

@@ -354,17 +354,6 @@ DEF_CMD(base64_content)
 	return ret;
 }
 
-DEF_CMD(b64_close)
-{
-	struct b64info *bi = ci->home->data;
-	struct mark *m;
-
-	while ((m = vmark_first(ci->home, bi->view, ci->home)) != NULL)
-		mark_free(m);
-	call("doc:del-view", ci->home, bi->view);
-	return 1;
-}
-
 DEF_CMD(b64_clip)
 {
 	struct b64info *bi = ci->home->data;
@@ -398,7 +387,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(b64_map, "doc:byte", &base64_char);
 	key_add(b64_map, "doc:content", &base64_content);
 	key_add(b64_map, "doc:content-bytes", &base64_content);
-	key_add(b64_map, "Close", &b64_close);
 	key_add(b64_map, "Free", &edlib_do_free);
 	key_add(b64_map, "Notify:clip", &b64_clip);
 
