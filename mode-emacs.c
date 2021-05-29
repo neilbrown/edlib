@@ -926,7 +926,58 @@ DEF_CMD(find_prevnext)
 		mark_free(m2);
 	}
 	return 1;
+}
 
+DEF_CMD(find_attr)
+{
+	char *type = ci->home->data;
+	int plen;
+
+	if (!ci->str)
+		return Enoarg;
+
+	if (strcmp(type, "file") != 0)
+		return 1;
+
+	if (strcmp(ci->str, "start-of-line") == 0) {
+		plen = attr_find_int(ci->home->attrs, "ignore_len");
+		if (plen < 0)
+			plen = 0;
+
+		if (plen) {
+			comm_call(ci->comm2, "cb", ci->focus, plen, ci->mark,
+				  "fg:grey+20", 2);
+			comm_call(ci->comm2, "cb", ci->focus, 10000, ci->mark,
+				  "fg:black", 1);
+		}
+	}
+	return 1;
+}
+
+DEF_CMD(find_check_replace)
+{
+	char *str, *ss, *cp;
+	char *type = ci->home->data;
+	int plen;
+
+	if (strcmp(type, "file") != 0)
+		return Efallthrough;
+
+	home_call(ci->home->parent, ci->key, ci->focus,
+		  ci->num, ci->mark, ci->str,
+		  ci->num2, ci->mark2, ci->str2);
+
+	str = call_ret(str, "doc:get-str", ci->focus);
+	cp = str;
+	while ((ss = strstr(cp, "//")) != NULL ||
+	       (ss = strstr(cp, "/~")) != NULL)
+		cp = ss + 1;
+	plen = attr_find_int(ci->home->attrs, "ignore_len");
+	if (plen < 0)
+		plen = 0;
+	if (plen != (cp - str))
+		attr_set_int(&ci->home->attrs, "ignore_len", cp - str);
+	return 1;
 }
 
 static struct map *fh_map;
@@ -942,6 +993,8 @@ static void findmap_init(void)
 	key_add(fh_map, "K:A:Enter", &find_done);
 	key_add(fh_map, "K:A-p", &find_prevnext);
 	key_add(fh_map, "K:A-n", &find_prevnext);
+	key_add(fh_map, "map-attr", &find_attr);
+	key_add(fh_map, "doc:replace", &find_check_replace);
 }
 
 static const char * safe file_normalize(struct pane *p safe,
