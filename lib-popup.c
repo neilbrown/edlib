@@ -72,8 +72,8 @@ static void popup_resize(struct pane *p safe, const char *style safe)
 {
 	struct popup_info *ppi = p->data;
 	int x,y,w,h;
-	int lh, bh = 0;
-	char *bhs;
+	int lh, bh = 0, bw = 0;
+	char *bhs, *bws;
 	struct xy xyscale = pane_scale(p);
 
 	/* First find the size */
@@ -83,8 +83,13 @@ static void popup_resize(struct pane *p safe, const char *style safe)
 		bh = atoi(bhs);
 	if (bh <= 0)
 		bh = line_height(p, 0); /* border height */
+	bws = pane_attr_get(pane_leaf(p), "border-width");
+	if (bws)
+		bw = atoi(bhs);
+	if (bw <= 0)
+		bw = bh;
 	if (strchr(style, 'M')) {
-		h = p->parent->h/2 + 1;
+		h = p->parent->h/2 + bh;
 		attr_set_str(&p->attrs, "render-one-line", "no");
 	} else {
 		h = bh + lh + bh;
@@ -96,13 +101,18 @@ static void popup_resize(struct pane *p safe, const char *style safe)
 		x = ppi->parent_popup->x;
 		y = ppi->parent_popup->y + ppi->parent_popup->h;
 	} else {
-		w = p->parent->w/2;
-		if (strchr(style, '1')) w = (p->parent->w-2)/4 + 1;
-		if (strchr(style, '3')) w = 3 * (p->parent->w-2)/4;
-		if (strchr(style, '4')) w = p->parent->w-2;
-		/* Now position */
-		x = p->parent->w/2 - w/2 - 1;
-		y = p->parent->h/2 - h/2 - 1;
+		w = p->parent->w - 2*bw;
+		if (strchr(style, '1'))
+			w = w / 4;
+		else if (strchr(style, '3'))
+			w = 3 * w / 4;
+		else if (strchr(style, '4'))
+			w = w;
+		else
+			w = w / 2;
+
+		x = p->parent->w/2 - w/2 - bw;
+		y = p->parent->h/2 - h/2 - bh;
 		if (strchr(style, 'T')) { y = 0; h -= bh; }
 		if (strchr(style, 'B')) { h -= bh; y = p->parent->h - h; }
 		if (strchr(style, 'L')) x = 0;

@@ -195,7 +195,7 @@ Module features
 
 ### popup
 
-- [Y] the calculation for borders use "-2" and "-1" which mean quite
+- [X] the calculation for borders use "-2" and "-1" which mean quite
       different things for ncurses and gtk.
 - [Y] Support Cx-1 in (some) popups so they can take-over.
 - [ ] I need a way to move the pop-up window to an existing pane.
@@ -406,6 +406,7 @@ Module features
 
 ### grep/make
 
+- [Y] CX-` moves cursor to end of output, but it doesn't follow.
 - [X] When I visit from grep in a popup, I think I want a 'view' at first.
       so 'q' works.
 - [ ] Need keystroke to step through different grep/make windows
