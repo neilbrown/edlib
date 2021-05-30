@@ -826,8 +826,8 @@ DEF_CMD(find_done)
 	}
 	if (strcmp(type, "file") == 0 &&
 	    strcmp(ci->key, "K:Enter") == 0 &&
-	    stat(file_normalize(ci->focus, str, pane_attr_get(ci->focus,
-							      "initial_path")),
+	    stat(file_normalize(ci->focus, str,
+				attr_find(ci->home->attrs, "initial_path")),
 		 &stb) != 0) {
 		call("Message:modal", ci->focus, 0, NULL,
 		     "File not found - use Alt-Enter to create");
@@ -956,9 +956,11 @@ DEF_CMD(find_attr)
 
 DEF_CMD(find_check_replace)
 {
-	char *str, *ss, *cp;
+	char *str, *cp;
 	char *type = ci->home->data;
 	int plen;
+	char *initial_path;
+	int ipl, iplu; // Initial Path Len, also utf-8 len
 
 	if (strcmp(type, "file") != 0)
 		return Efallthrough;
@@ -967,16 +969,27 @@ DEF_CMD(find_check_replace)
 		  ci->num, ci->mark, ci->str,
 		  ci->num2, ci->mark2, ci->str2);
 
+	initial_path = attr_find(ci->home->attrs, "initial_path");
+
 	str = call_ret(str, "doc:get-str", ci->focus);
+	if (!str || !initial_path)
+		return 1;
+	ipl = strlen(initial_path);
 	cp = str;
-	while ((ss = strstr(cp, "//")) != NULL ||
-	       (ss = strstr(cp, "/~")) != NULL)
-		cp = ss + 1;
+	if (strncmp(str, initial_path, ipl) == 0 &&
+	    (str[ipl] == '/' || (str[ipl] == '~' &&
+				(str[ipl+1] == '/' ||
+				 str[ipl+1] == 0))))
+		cp = str + ipl;
+	*cp = 0;
+	iplu = utf8_strlen(str);
+	free(str);
+
 	plen = attr_find_int(ci->home->attrs, "ignore_len");
 	if (plen < 0)
 		plen = 0;
-	if (plen != (cp - str))
-		attr_set_int(&ci->home->attrs, "ignore_len", cp - str);
+	if (plen != iplu)
+		attr_set_int(&ci->home->attrs, "ignore_len", iplu);
 	return 1;
 }
 
