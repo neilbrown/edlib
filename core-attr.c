@@ -350,6 +350,11 @@ int attr_set_str_key(struct attrset **setp safe,
 			set->len = offset;
 			memcpy(new->attrs, set->attrs + offset,
 			       new->len);
+		} else if (offset == set->len) {
+			/* Need to add after here */
+			setp = &set->next;
+			set = *setp;
+			offset = 0;
 		} else {
 			/* offset must be > 0.
 			 * Split off following entries and try again there.
