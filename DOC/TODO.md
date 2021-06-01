@@ -253,9 +253,9 @@ Module features
 - [X] :C-q to allow entering unicode hex etc.
 - [ ] :C-q to recognize names of unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
-- [Y] make-directory command
+- [X] make-directory command
       pop-up like find-file, offering current dir.
-- [Y] semi-auto make-dir on save to nonexistent
+- [X] semi-auto make-dir on save to nonexistent
        alt-Enter is required.
 - [ ] sort the command names for command-completion?
        Currently lines are inserted into buffer.  I need to store in

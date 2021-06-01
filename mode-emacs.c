@@ -824,6 +824,53 @@ DEF_CMD(find_done)
 		call("Message:modal", ci->focus, 0, NULL, "Document not found");
 		return 1;
 	}
+	if (strcmp(type, "file") == 0) {
+		const char *s = file_normalize(ci->focus, str,
+					       attr_find(ci->home->attrs,
+							 "initial_path"));
+		char *sl = strrchr(s, '/');
+		bool can_create = True;
+		bool can_create_dir = True;
+		while (sl && sl > s) {
+			/* Need to check directories exist. */
+			*sl = 0;
+			stb.st_mode = 0;
+			stat(s, &stb);
+			if ((stb.st_mode & S_IFMT) == S_IFDIR)
+				break;
+			if (stb.st_mode)
+				can_create_dir = False;
+			can_create = False;
+			sl = strrchr(s, '/');
+		}
+		if (sl)
+			*sl = '/';
+		if (!can_create_dir) {
+			call("Message:modal", ci->focus, 0, NULL,
+			     strconcat(ci->focus, s, " is not a directory!!"));
+			return 1;
+		}
+		if (!can_create) {
+			/* Need to create directory first */
+			if (strcmp(ci->key, "K:A:Enter") == 0) {
+				char *m = "Cannot create directory: ";
+				if (mkdir(s, 0777) == 0) {
+					m = "Created directory: ";
+					attr_set_str(&ci->home->attrs,
+						     "prev_dir", NULL);
+					/* Trigger recalc on replace */
+					call("doc:replace", ci->focus, 0, NULL, "");
+				}
+				call("Message:modal", ci->focus, 0, NULL,
+				     strconcat(ci->focus, m, s));
+				return 1;
+			}
+			call("Message:modal", ci->focus, 0, NULL,
+			     strconcat(ci->focus,
+				       "Use Alt-Enter to create directory ", s));
+			return 1;
+		}
+	}
 	if (strcmp(type, "file") == 0 &&
 	    strcmp(ci->key, "K:Enter") == 0 &&
 	    stat(file_normalize(ci->focus, str,
