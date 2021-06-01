@@ -931,7 +931,6 @@ DEF_CMD(find_prevnext)
 DEF_CMD(find_attr)
 {
 	char *type = ci->home->data;
-	int plen;
 
 	if (!ci->str)
 		return Enoarg;
@@ -940,27 +939,41 @@ DEF_CMD(find_attr)
 		return 1;
 
 	if (strcmp(ci->str, "start-of-line") == 0) {
-		plen = attr_find_int(ci->home->attrs, "ignore_len");
-		if (plen < 0)
-			plen = 0;
+		char *lens = attr_find(ci->home->attrs, "path_lengths");
+		int dir_start = 0, dir_end = 0, nondir_end = 0,
+			basename_start = 0;
+		if (lens)
+			sscanf(lens, "%d %d %d %d", &dir_start, &dir_end,
+			       &nondir_end, &basename_start);
 
-		if (plen) {
-			comm_call(ci->comm2, "cb", ci->focus, plen, ci->mark,
-				  "fg:grey+20", 2);
-			comm_call(ci->comm2, "cb", ci->focus, 10000, ci->mark,
-				  "fg:black", 1);
-		}
+		if (dir_start > 0)
+			comm_call(ci->comm2, "cb", ci->focus, dir_start,
+				  ci->mark, "fg:grey+20,nobold,noinverse", 5);
+		if (dir_end > dir_start)
+			comm_call(ci->comm2, "cb", ci->focus, dir_end,
+				  ci->mark, "fg:black,nobold,noinverse", 4);
+		if (nondir_end > dir_end)
+			comm_call(ci->comm2, "cb", ci->focus, nondir_end,
+				  ci->mark, "fg:red-80,bold,inverse", 3);
+		if (basename_start > nondir_end)
+			comm_call(ci->comm2, "cb", ci->focus, basename_start,
+				  ci->mark, "fg:magenta", 2);
+		comm_call(ci->comm2, "cb", ci->focus, 10000, ci->mark,
+			  "fg:black", 1);
 	}
 	return 1;
 }
 
 DEF_CMD(find_check_replace)
 {
-	char *str, *cp;
+	char *str, *cp, *sl;
 	char *type = ci->home->data;
-	int plen;
 	char *initial_path;
-	int ipl, iplu; // Initial Path Len, also utf-8 len
+	char *prev_dir;
+	struct stat stb;
+	int ipl; // Initial Path Len
+	int dir_start, dir_end, nondir_end, basename_start;
+	char nbuf[4 * (10+1) + 1], *lens;
 
 	if (strcmp(type, "file") != 0)
 		return Efallthrough;
@@ -969,10 +982,41 @@ DEF_CMD(find_check_replace)
 		  ci->num, ci->mark, ci->str,
 		  ci->num2, ci->mark2, ci->str2);
 
-	initial_path = attr_find(ci->home->attrs, "initial_path");
+	/* The doc content can have 5 different sections that might
+	 * be different colours.
+	 *  - ignored prefix: grey - This inital_path followed by something
+	 *          that looks like another path. "/" or "~/"
+	 *  - True directories: black - directory part of the path that
+	 *          exists and is a directory
+	 *  - non-directory-in-path: red - directory part that exists but
+	 *          is not a directory.  At most one component.
+	 *  - non-existant name: magenta - directory path that doesn't exist.
+	 *  - basename: black, whether it exists or not.
+	 * These are found as:
+	 *  - dir_start
+	 *  - dir_end
+	 *  - nondir_end
+	 *  - basename_start
+	 * These are all lengths from start of path.  They are all stored
+	 * in a single attribute: "path_lengths".
+	 */
 
 	str = call_ret(str, "doc:get-str", ci->focus);
-	if (!str || !initial_path)
+	if (!str)
+		return 1;
+	sl = strrchr(str, '/');
+	if (!sl)
+		sl = str;
+
+	prev_dir = attr_find(ci->home->attrs, "prev_dir");
+	if (prev_dir && strlen(prev_dir) == (size_t)(sl - str + 1) &&
+	    strncmp(prev_dir, str, sl - str + 1) == 0)
+		/* No change before last '/' */
+		return 1;
+
+	initial_path = attr_find(ci->home->attrs, "initial_path");
+
+	if (!initial_path)
 		return 1;
 	ipl = strlen(initial_path);
 	cp = str;
@@ -981,15 +1025,45 @@ DEF_CMD(find_check_replace)
 				(str[ipl+1] == '/' ||
 				 str[ipl+1] == 0))))
 		cp = str + ipl;
-	*cp = 0;
-	iplu = utf8_strlen(str);
-	free(str);
 
-	plen = attr_find_int(ci->home->attrs, "ignore_len");
-	if (plen < 0)
-		plen = 0;
-	if (plen != iplu)
-		attr_set_int(&ci->home->attrs, "ignore_len", iplu);
+	dir_start = utf8_strnlen(str, cp - str);
+
+	basename_start = utf8_strnlen(str, sl - str + 1);
+	stb.st_mode = 0;
+	if (sl < cp)
+		sl = cp;
+	while (sl > cp) {
+		const char *path;
+		*sl = 0;
+		path = file_normalize(ci->focus, str, initial_path);
+		stat(path, &stb);
+		*sl = '/';
+		if (stb.st_mode)
+			break;
+		sl -= 1;
+		while (sl > cp && *sl != '/')
+			sl -= 1;
+	}
+	nondir_end = utf8_strnlen(str, sl - str + 1);
+	dir_end = nondir_end;
+	if (stb.st_mode != 0 &&
+	    (stb.st_mode & S_IFMT) != S_IFDIR) {
+		/* There is a non-dir on the path */
+		while (sl > cp && sl[-1] != '/')
+			sl -= 1;
+		/* This must actually be a dir */
+		dir_end = utf8_strnlen(str, sl - str);
+	}
+	snprintf(nbuf, sizeof(nbuf), "%d %d %d %d",
+		 dir_start, dir_end, nondir_end, basename_start);
+	lens = attr_find(ci->home->attrs, "path_lengths");
+	if (!lens || strcmp(lens, nbuf) != 0)
+		attr_set_str(&ci->home->attrs, "path_lengths", nbuf);
+	sl = strrchr(str, '/');
+	if (sl) {
+		sl[1] = 0;
+		attr_set_str(&ci->home->attrs, "prev_dir", str);
+	}
 	return 1;
 }
 

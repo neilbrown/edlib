@@ -471,6 +471,19 @@ int utf8_strlen(char *s safe)
 	return cnt;
 }
 
+int utf8_strnlen(char *s safe, int n)
+{
+	int cnt = 0;
+
+	while (*s && n > 0) {
+		if ((*s & 0xc0) != 0x80)
+			cnt += 1;
+		s += 1;
+		n -= 1;
+	}
+	return cnt;
+}
+
 /*
  * When walking backwards through a string, we need to round a point
  * down to the start of a code-point.
