@@ -1870,7 +1870,9 @@ DEF_CMD(text_debug_mark)
 	if (!m || m->owner != ci->home || !ci->comm2)
 		return Enoarg;
 	c = ci->mark->ref.c;
-	if (!c)
+	if (!mark_valid(m))
+		ret = strdup("M:FREED");
+	else if (!c)
 		ret = strdup("M:EOF");
 	else {
 		int len = c->end - c->start;

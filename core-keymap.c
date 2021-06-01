@@ -382,6 +382,10 @@ static char *mark_info(struct mark *m)
 		asprintf(&ret, "M-");
 		return ret;
 	}
+	if (!mark_valid(m)) {
+		asprintf(&ret, "M-FREED");
+		return ret;
+	}
 	ret = pane_call_ret(str, m->owner, "doc:debug:mark",
 			    m->owner, 0, m);
 	if (ret)
