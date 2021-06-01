@@ -264,7 +264,7 @@ Module features
       Maybe use .gitignore, or have config module understand that.
 - [X] search highlight doesn't report empty match (eol)...
       I need to place a cursor - maybe blue?
-- [Y] emacs highlight should get close notification from popup,
+- [X] emacs highlight should get close notification from popup,
       instead of catching abort.???
 - [Y] ask before killing modified buffer - or refuse without numeric prefix
       Complain and refuse!

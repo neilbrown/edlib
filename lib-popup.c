@@ -154,14 +154,32 @@ DEF_CMD(popup_notify_close)
 	return 1;
 }
 
-DEF_CMD(popup_abort)
+static void popup_finished(struct pane *focus safe, struct pane *home safe,
+			   const char *result)
 {
-	struct popup_info *ppi = ci->home->data;
+	struct popup_info *ppi = home->data;
 	struct pane *target = ppi->target;
+	const char *key;
+	struct command *done = ppi->done;
 
 	pane_focus(target);
-	call("Abort", target);
-	pane_close(ci->home);
+	key = pane_attr_get(focus, "done-key");
+	if (!key)
+		key = "PopupDone";
+
+	ppi->done = NULL;
+	pane_close(home);
+	/* home is now closed, so ppi cannot be touched */
+	if (done)
+		comm_call(done, key, target, 1, NULL, result);
+	else
+		call(key, target, 1, NULL, result);
+}
+
+DEF_CMD(popup_abort)
+{
+	/* A NULL 'result' signals the aboort */
+	popup_finished(ci->focus, ci->home, NULL);
 	return 1;
 }
 
@@ -408,28 +426,14 @@ DEF_CMD(popup_scale_relative)
 
 DEF_CMD(popup_do_close)
 {
-	struct popup_info *ppi = ci->home->data;
-	const char *key, *str;
-	struct pane *target = ppi->target;
-	struct command *done;
+	const char *str;
 
-	pane_focus(target);
-	key = pane_attr_get(ci->focus, "done-key");
-	if (!key)
-		key = "PopupDone";
 	str = ci->str;
 	if (!str || !str[0])
 		str = pane_attr_get(ci->focus, "default");
 	if (!str)
 		str = "";
-	done = ppi->done;
-	ppi->done = NULL;
-	pane_close(ci->home);;
-	/* This pane is closed now, ppi is gone. Be careful */
-	if (done)
-		comm_call(done, key, target, 1, NULL, str);
-	else
-		call(key, target, 1, NULL, str);
+	popup_finished(ci->focus, ci->home, str);
 	return 1;
 }
 
