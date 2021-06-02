@@ -104,6 +104,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] centralize handling of the creation of a pane stack for a new display.
 - [ ] have standard way for slow testing of order of marks
 - [ ] have a debug mode where mark consistency is checked v.often
 - [ ] improve timeout.  Set timer once, then set a flag so that all commands fail
@@ -303,7 +304,7 @@ Module features
 
 ### pygtk
 
-- [Y] interactive command to open pygtk window even from ncurses.  displayname can be given
+- [X] interactive command to open pygtk window even from ncurses.  displayname can be given
 - [ ] can we capture the substates of character composition, and give feed-back?
 - [ ] make sure pixmap handling in optimal - I want the per-pane images to be server-side
       See cairo_xcb_surface_create.

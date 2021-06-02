@@ -678,6 +678,37 @@ def new_display(key, focus, comm2, **a):
     comm2('callback', p)
     return 1
 
+def new_display2(key, focus, **a):
+    if not 'DISPLAY' in os.environ:
+        return None
+    if not os.environ['DISPLAY']:
+        return None
+    p = focus.root
+    p.call("attach-glibevents")
+    p = p.call("attach-input", ret='focus')
+
+    if 'SCALE' in os.environ:
+        sc = int(os.environ['SCALE'])
+        s = Gtk.settings_get_default()
+        s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
+
+    disp = EdDisplay(p)
+    disp['DISPLAY'] = os.environ['DISPLAY']
+    p = disp.call("attach-x11selection", ret='focus')
+    if p:
+        p = p.call("attach-messageline", ret='focus')
+    if p:
+        p = p.call("attach-global-keymap", ret='focus')
+    if p:
+        p.call("attach-mode-emacs")
+    if p:
+        p = p.call("attach-tile", ret='focus')
+    if p:
+        p = focus.call("doc:attach-view", p, 1, ret='focus');
+    if p:
+        p.take_focus()
+    return 1
 
 editor.call("global-set-command", "attach-display-pygtk", new_display)
+editor.call("global-set-command", "interactive-cmd-x11window", new_display2)
 
