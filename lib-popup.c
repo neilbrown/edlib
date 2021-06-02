@@ -54,7 +54,7 @@ static struct map *popup_map;
 DEF_LOOKUP_CMD(popup_handle, popup_map);
 
 struct popup_info {
-	struct pane	*target safe, *handle;
+	struct pane	*target safe;
 	struct pane	*parent_popup;
 	char		*style safe;
 	struct command	*done;
@@ -259,21 +259,20 @@ DEF_CMD(popup_refresh_size)
 {
 	struct popup_info *ppi = ci->home->data;
 	char *prompt, *dflt, *prefix;
+	struct pane *focus = pane_leaf(ci->home);
 
-	if (!ppi->handle)
-		return 0;
-	prefix = attr_find(ppi->handle->attrs, "prefix");
-	prompt = attr_find(ppi->handle->attrs, "prompt");
+	prefix = pane_attr_get(focus, "prefix");
+	prompt = pane_attr_get(focus, "prompt");
 	if (!prefix && prompt) {
 		char *t = NULL;
-		dflt = attr_find(ppi->handle->attrs, "default");
+		dflt = pane_attr_get(focus, "default");
 		if (!prompt)
 			prompt = "";
 		if (dflt)
 			asprintf(&t, "%s(%s): ", prompt, dflt);
 		else
 			asprintf(&t, "%s: ", prompt);
-		attr_set_str(&ppi->handle->attrs, "prefix", t);
+		attr_set_str(&focus->attrs, "prefix", t);
 		free(t);
 	}
 
@@ -518,7 +517,7 @@ DEF_CMD(popup_attach)
 
 	if (!p)
 		return Efail;
-	ppi->handle = p;
+
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 
