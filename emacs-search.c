@@ -4,7 +4,8 @@
  *
  * Minor mode for emacs incremental search.
  *
- * emacs-search creates a popup search box and the attaches this mode.
+ * emacs search attaches emacs-search-highlight to the document stack,
+ * then adds a popup search box and attaches emacs-search over it.
  * We send a popup-get-target message to collect the target pane.
  * We have a stack of "string,pos" for repeated search requests.
  * We capture "Replace" to repeat search.
@@ -734,7 +735,7 @@ DEF_CMD(emacs_search_highlight)
 	struct mark *m, *start;
 	struct highlight_info *hi = ci->home->data;
 
-	if (hi->view < 0)
+	if (hi->view < 0 || !hi->popup)
 		return Efail;
 
 	while ((start = vmark_first(ci->focus, hi->view, ci->home)) != NULL)
@@ -784,7 +785,7 @@ DEF_CMD(emacs_replace_highlight)
 	struct mark *m;
 	struct highlight_info *hi = ci->home->data;
 
-	if (hi->replace_view < 0)
+	if (hi->replace_view < 0 || !hi->replace_popup)
 		return Efail;
 
 	if (!ci->mark || !ci->mark2)
@@ -815,6 +816,8 @@ DEF_CMD(emacs_hl_attrs)
 	struct highlight_info *hi = ci->home->data;
 
 	if (!ci->str)
+		return Efallthrough;
+	if (!hi->popup)
 		return Efallthrough;
 
 	if (strcmp(ci->str, "render:search") == 0) {
@@ -957,7 +960,7 @@ DEF_CMD(emacs_search_reposition)
 	struct mark *end = ci->mark2;
 	struct mark *m;
 
-	if (hi->view < 0 || hi->patn == NULL || !start || !end)
+	if (hi->view < 0 || hi->patn == NULL || !start || !end || !hi->popup)
 		return Efallthrough;
 
 	while ((m = vmark_first(ci->focus, hi->view, ci->home)) != NULL &&
@@ -992,18 +995,45 @@ DEF_CMD(emacs_highlight_close)
 	return 1;
 }
 
+static void free_marks(struct pane *home safe)
+{
+	struct highlight_info *hi = home->data;
+	struct mark *m;
+
+	while ((m = vmark_first(home, hi->view, home)) != NULL)
+		mark_free(m);
+	while ((m = vmark_first(home, hi->replace_view, home)) != NULL)
+		mark_free(m);
+}
+
 DEF_CMD(emacs_search_done)
 {
+	struct highlight_info *hi = ci->home->data;
+
 	if (ci->str && ci->str[0])
 		call("history:save", ci->focus, 0, NULL, ci->str);
 
-	pane_close(ci->home);
+	hi->popup = NULL;
+	hi->replace_popup = NULL;
+	free_marks(ci->home);
 	return 1;
 }
 
 DEF_CMD(emacs_highlight_abort)
 {
-	pane_close(ci->home);
+	struct highlight_info *hi = ci->home->data;
+	struct pane *p;
+
+	p = hi->replace_popup;
+	hi->replace_popup = NULL;
+	if (p)
+		call("popup:close", p, 0, NULL, "");
+	p = hi->popup;
+	hi->popup = NULL;
+	if (p)
+		call("popup:close", p, 0, NULL, "");
+	free_marks(ci->home);
+
 	return Efallthrough;
 }
 
@@ -1029,6 +1059,12 @@ DEF_CMD(emacs_highlight_set_popup)
 	return 1;
 }
 
+DEF_CMD(emacs_highlight_reattach)
+{
+	comm_call(ci->comm2, "cb", ci->home);
+	return 1;
+}
+
 static struct map *hl_map;
 DEF_LOOKUP_CMD(highlight_handle, hl_map);
 
@@ -1048,6 +1084,7 @@ static void emacs_highlight_init_map(void)
 	key_add(m, "Abort", &emacs_highlight_abort);
 	key_add(m, "Notify:clip", &emacs_highlight_clip);
 	key_add(m, "highlight:set-popup", &emacs_highlight_set_popup);
+	key_add(m, "attach-emacs-search-highlight", &emacs_highlight_reattach);
 	hl_map = m;
 }
 
