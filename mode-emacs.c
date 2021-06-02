@@ -1576,6 +1576,15 @@ DEF_CMD(emacs_prefix)
 
 DEF_CMD(emacs_kill_doc)
 {
+	if (ci->num <= 0 || ci->num == NO_NUMERIC) {
+		/* Check if modified. */
+		char *m = pane_attr_get(ci->focus, "doc-modified");
+		if (m && strcmp(m, "yes") == 0) {
+			call("Message:modal", ci->focus, 0, NULL,
+			     "Document is modified - please save or give prefix arg");
+			return 1;
+		}
+	}
 	return call("doc:destroy", ci->focus);
 }
 

@@ -266,7 +266,7 @@ Module features
       I need to place a cursor - maybe blue?
 - [X] emacs highlight should get close notification from popup,
       instead of catching abort.???
-- [Y] ask before killing modified buffer - or refuse without numeric prefix
+- [X] ask before killing modified buffer - or refuse without numeric prefix
       Complain and refuse!
 - [ ] maybe alt-, does c-x` if that is the recent search?
 - [ ] Support write-file (providing a file name) - currently I only save
