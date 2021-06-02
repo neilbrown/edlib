@@ -738,6 +738,10 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 	if (len == 0)
 		return;
 
+	if (t->saved == t->undo)
+		/* Must never merge undo entries across a save point */
+		*first = 1;
+
 	if (t->redo) {
 		/* Cannot add an edit before some redo edits, as they
 		 * will get confused.  We need to record the redo history
