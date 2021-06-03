@@ -655,6 +655,8 @@ Module features
 
 ### white-space
 
+- [Y] rethink approach of specifying attributes for a single char at a time.
+      This seems inefficient
 - [ ] support highlight suitable for diff: a space is first character is allowed,
       even if EOL or followed by space.
 - [ ] support highlight of spaces-for-indent

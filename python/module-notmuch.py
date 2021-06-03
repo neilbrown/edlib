@@ -2012,7 +2012,8 @@ class notmuch_master_view(edlib.Pane):
         t = self.parse_tags(str)
         if t is None:
             focus.call("Message", "Tags list must start with + or -")
-        self.do_update(thid, msid, t[0], t[1])
+        else:
+            self.do_update(thid, msid, t[0], t[1])
         return 1
 
     def handle_close_message(self, key, **a):
