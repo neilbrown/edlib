@@ -86,7 +86,7 @@ DEF_CMD(render_prev)
  * To change an attribute (normally add or delete) we pop it and any attributes
  * above it in the stack and push them onto tmpst, which is then in
  * reverse priority order.  As we do that, we count them in 'popped'.
- * Changes can be made in the secondard stack.
+ * Changes can be made in the secondary stack.
  * When all change have been made, we add 'popped' "</>" marked to the output,
  * then process everything in 'tmpst', either discarding it if end<=chars, or
  * outputting the attributes and pushing back on 'ast'.
@@ -325,13 +325,15 @@ DEF_CMD(render_line)
 		ar.chars = chars;
 		call_comm("doc:get-attr", focus, &ar.fwd, 0, m, "render:", 1);
 
-		/* find all marks "here" - they might be fore or aft */
-		for (m2 = mark_prev(m); m2 && mark_same(m, m2);
-		     m2 = mark_prev(m2))
+		/* find all marks "here". They might get moved when we call map_mark,
+		 * so move 'm' among them
+		 */
+		mark_step(m, 0);
+		while ((m2 = mark_next(m)) != NULL &&
+		       mark_same(m, m2)) {
+			mark_to_mark_noref(m, m2);
 			call_map_mark(focus, m2, &ar);
-		for (m2 = mark_next(m); m2 && mark_same(m, m2);
-		     m2 = mark_next(m2))
-			call_map_mark(focus, m2, &ar);
+		}
 
 		as_repush(&ar, &b);
 

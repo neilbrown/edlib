@@ -28,6 +28,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [Y] notmuch compose adds 'Re:' if it already exists
 - [ ] x11selection doesn't work properly on second ncurses display
       except when it does...
 - [X] multipart should use ->mdata, not ->refs, which should go
@@ -55,9 +56,14 @@ Bugs to be fixed
       CANNOT REPRODUCE
 - [X] While cursor not at start of line, following a patch goes to wrong line
       - by one.  (not: If file isn't already displayed)
-- [ ] search matches aren't highlighted where there is other highlighting
+- [X] search matches aren't highlighted where there is other highlighting
       like line-too-long or diff colouring
       CANNOT REPRODUCE
+      Reproduced with line-too-long in C files.  lib-whitespace uses prio of 10 for
+      bg, emacs-search-highlight uses 20 for inverse and fg.
+      Ahhh.. lib-whitespace sets attrs on each char invidivudally.  I wonder why.
+      ...because it wants to move the mark as the rendering happens.  And
+      it is the moving of the mark that causes the problem
 - [X] Add Close handler for doc-docs.c???
 - [X] backward search sometimes doesn't work.  If there has been a recent
       search and point is at start of a match then C-s C-s C-r C-r C-r never 
@@ -461,6 +467,10 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] updating tags can take long when 100s.  Enable background queuing of these.
+- [ ] Don't display query entries that have a 0 match count.??
+- [ ] update counts more often when a query is being changed.  e.g. when any change happens
+      while a query is open, schedule an update in 2 minutes.
 - [ ] handle errors better.  e.g. file reported by notmuch might not
       exist, or not be readable
 - [ ] allow opening drafts in composer on restart.
