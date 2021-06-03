@@ -28,7 +28,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [Y] notmuch compose adds 'Re:' if it already exists
+- [X] notmuch compose adds 'Re:' if it already exists
 - [ ] x11selection doesn't work properly on second ncurses display
       except when it does...
 - [X] multipart should use ->mdata, not ->refs, which should go

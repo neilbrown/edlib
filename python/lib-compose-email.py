@@ -152,8 +152,10 @@ class compose_email(edlib.Pane):
     def copy_subject(self, key, focus, str, **a):
         m2, l = self.vmarks(self.view)
         if m2:
-            self.call("doc:replace", m2, m2, ("Subject: "+ self.pfx +": "
-                                              + str.strip() + "\n"))
+            subj = str.strip()
+            if not subj.lower().startswith(self.pfx.lower() + ':'):
+                subj = self.pfx + ': ' + subj
+            self.call("doc:replace", m2, m2, ("Subject: "+ subj + "\n"))
         return edlib.Efalse
 
     def from_lists(self):
