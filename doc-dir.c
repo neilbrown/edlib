@@ -732,6 +732,21 @@ DEF_CMD(dir_doc_get_attr)
 	return 1;
 }
 
+DEF_CMD(dir_doc_set_attr)
+{
+	struct mark *m = ci->mark;
+	const char *attr = ci->str;
+	const char *val = ci->str2;
+
+	if (!m || !attr)
+		return Enoarg;
+	if (!m->ref.d)
+		return Einval;
+	attr_set_str(&m->ref.d->attrs, attr, val);
+	pane_notify("doc:replaced", ci->home, 1, ci->mark, NULL, 1);
+	return 1;
+}
+
 DEF_CMD(dir_get_attr)
 {
 	struct doc *d = ci->home->data;
@@ -937,6 +952,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:same-file", &dir_same_file);
 	key_add(doc_map, "doc:set-ref", &dir_set_ref);
 	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
+	key_add(doc_map, "doc:set-attr", &dir_doc_set_attr);
 	key_add(doc_map, "doc:char", &dir_char);
 	key_add(doc_map, "doc:cmd-f", &dir_do_open);
 	key_add(doc_map, "doc:cmd-o", &dir_do_open_other);
