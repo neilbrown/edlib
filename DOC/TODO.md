@@ -110,6 +110,7 @@ Requirements for a v1.0 release
 Core features
 -------------
 
+- [ ] design a way for a keystroke to interrupt a long-running function.
 - [ ] centralize handling of the creation of a pane stack for a new display.
 - [ ] have standard way for slow testing of order of marks
 - [ ] have a debug mode where mark consistency is checked v.often
@@ -255,6 +256,7 @@ Module features
 
 ### emacs
 
+- [ ] put time limit on searches.  Backwards is quite slow.
 - [X] Support grab of mouse when pressed so motion and release go to
       corrent window.
 - [X] :C-q to allow entering unicode hex etc.
@@ -467,6 +469,7 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] purge old entries from query when updates but not being viewed
 - [ ] updating tags can take long when 100s.  Enable background queuing of these.
 - [ ] Don't display query entries that have a 0 match count.??
 - [ ] update counts more often when a query is being changed.  e.g. when any change happens

@@ -222,6 +222,7 @@ static int search_backward(struct pane *p safe,
 	ss.point = point;
 	ss.c = search_test;
 
+	pane_set_time(p);
 	do {
 
 		ss.st = rxl_prepare(rxl, RXL_ANCHORED);
@@ -235,6 +236,15 @@ static int search_backward(struct pane *p safe,
 		if (maxlen >= 0)
 			/* found a match */
 			break;
+		if (pane_too_long(p)) {
+			/* FIXME returning success is wrong if we timed out
+			 * But I want to move the point, and this is easiest.
+			 * What do I really want here?
+			 * Do I just need to make reverse search faster?
+			 */
+			maxlen = 0;
+			break;
+		}
 	} while((!m2 || m2->seq < m->seq) &&
 		(doc_prev(p, m) != WEOF));
 	mark_to_mark(endmark, m);
