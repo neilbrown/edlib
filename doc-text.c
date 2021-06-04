@@ -96,7 +96,8 @@ struct text_alloc {
 	char text[];
 };
 
-#define DEFAULT_SIZE (4096 - sizeof(struct text_alloc))
+#define DEFAULT_SIZE ((int)(4096 - sizeof(struct text_alloc)))
+#define MAX_SIZE ((int)((1<<20) - sizeof(struct text_alloc)))
 
 /* The text document is a list of text_chunk.
  * The 'txt' pointer is within the text[] of a text_alloc.
@@ -202,10 +203,12 @@ text_new_alloc(struct text *t safe, int size)
 	struct text_alloc *new;
 	if (size == 0)
 		size = DEFAULT_SIZE;
-	new = alloc_buf(size + sizeof(struct text_alloc), text);
+	size += sizeof(struct text_alloc);
+	size = ((size-1) | 255) + 1;
+	new = alloc_buf(size, text);
 	new->prev = t->alloc;
 	t->alloc = new;
-	new->size = size;
+	new->size = size - sizeof(struct text_alloc);
 	new->free = 0;
 	return new;
 }
@@ -801,6 +804,7 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe,
 	struct text_alloc *a = t->alloc;
 	int len = strlen(str);
 	int len2;
+	int orig_len = len;
 
 	if (start)
 		*start = *pos;
@@ -875,7 +879,15 @@ static void text_add_str(struct text *t safe, struct doc_ref *pos safe,
 		len2 = len;
 		if (a->size - a->free < len &&
 		    (len2 = utf8_round_len(str, a->size - a->free)) == 0) {
-			a = text_new_alloc(t, 0);
+			if (orig_len < 128 ||
+			    t->alloc->size < DEFAULT_SIZE)
+				a = text_new_alloc(t, DEFAULT_SIZE);
+			else if (len > DEFAULT_SIZE && len > t->alloc->size)
+				a = text_new_alloc(t, ((len +256) | 4095) + 1 - 256);
+			else if (t->alloc->size * 2 < MAX_SIZE)
+				a = text_new_alloc(t, t->alloc->size * 2);
+			else
+				a = text_new_alloc(t, MAX_SIZE);
 			len2 = len;
 			if (len2 > a->size)
 				len2 = utf8_round_len(str, a->size);
