@@ -119,7 +119,7 @@ static char *do_format(struct pane *focus safe,
 			else if (w == 0 && *n == '-')
 				adjust = 1;
 			else break;
-			n+= 1;
+			n += 1;
 		}
 		l = strlen(val);
 		while (adjust && w > l) {
@@ -646,10 +646,8 @@ DEF_CMD(format_attr)
 	previ = normalize(ci->home, m, -1);
 	if (previ < 0)
 		f0 = 0;
-	else if (FIELD_OFFSET(previ) > 0)
-		f0 = FIELD_NUM(previ)+1;
 	else
-		f0 = FIELD_NUM(previ);
+		f0 = FIELD_NUM(previ)+1;
 	for(f = f0; f <= FIELD_NUM(m->ref.i); f++) {
 		if (f < rd->nfields) {
 			if (rd->fields[f].attr_end > FIELD_NUM(m->ref.i) ||
@@ -674,27 +672,26 @@ DEF_CMD(format_map)
 	int previ;
 	int f0, f;
 
-	if (!ci->mark || !ci->str)
+	if (!m || !ci->str)
 		return Enoarg;
 	if (strcmp(ci->str, "render:format") != 0)
 		return Efallthrough;
-	if (ci->mark->ref.p == NULL)
+	if (m->ref.p == NULL)
 		return Efallthrough;
 	if (FIELD_OFFSET(m->ref.i) > 0)
 		/* attribute changes only happen at start of a field */
 		return 1;
-	f = FIELD_NUM(ci->mark->ref.i);
+	f = FIELD_NUM(m->ref.i);
+
 	/* There may be several previous fields that are empty.
-	 * We need consider the possibility that any of those
+	 * We need to consider the possibility that any of those
 	 * change the attributes.
 	 */
 	previ = normalize(ci->home, m, -1);
 	if (previ < 0)
 		f0 = 0;
-	else if (FIELD_OFFSET(previ) > 0)
-		f0 = FIELD_NUM(previ)+1;
 	else
-		f0 = FIELD_NUM(previ);
+		f0 = FIELD_NUM(previ)+1;
 	for(f = f0; f <= FIELD_NUM(m->ref.i); f++) {
 		if (f >= rd->nfields)
 			continue;
@@ -705,12 +702,12 @@ DEF_CMD(format_map)
 		if (rd->fields[f].attr_start < f0) {
 			struct rf_field *st =
 				&rd->fields[rd->fields[f].attr_start];
-			comm_call(ci->comm2, "", ci->focus, -1, ci->mark,
+			comm_call(ci->comm2, "", ci->focus, -1, m,
 				  st->attr, 20 + st->attr_depth);
 		}
 		if (rd->fields[f].attr_end > FIELD_NUM(m->ref.i)) {
 			struct rf_field *st = &rd->fields[f];
-			comm_call(ci->comm2, "", ci->focus, 32768, ci->mark,
+			comm_call(ci->comm2, "", ci->focus, 32768, m,
 				  st->attr, 20 + st->attr_depth);
 		}
 	}
