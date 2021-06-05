@@ -99,6 +99,7 @@ static char *format_status(char *status safe,
 			attr = pane_attr_get(focus, f);
 		if (!attr)
 			attr = "";
+		if (strcmp(attr, "dirview") == 0) attr = "viewer";
 		switch (type) {
 		case ':':
 			/* Format in a field */

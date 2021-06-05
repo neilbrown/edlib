@@ -67,7 +67,7 @@ struct directory {
 	char			*fname;
 };
 
-static struct map *doc_map;
+
 static void get_stat(struct directory *dr safe, struct dir_ent *de safe);
 
 #define nm(le) (list_entry(le, struct dir_ent, lst)->name)
@@ -187,7 +187,8 @@ static void load_dir(struct list_head *lst safe, int fd)
 	closedir(dir);
 }
 
-DEF_LOOKUP_CMD(doc_handle, doc_map);
+static struct map *dir_map;
+DEF_LOOKUP_CMD(dir_handle, dir_map);
 
 DEF_CMD(dir_new)
 {
@@ -197,7 +198,7 @@ DEF_CMD(dir_new)
 	alloc(dr, pane);
 	INIT_LIST_HEAD(&dr->ents);
 	dr->fname = NULL;
-	p = doc_register(ci->home, &doc_handle.c, dr);
+	p = doc_register(ci->home, &dir_handle.c, dr);
 	if (p)
 		return comm_call(ci->comm2, "callback:doc", p);
 	return Efail;
@@ -760,17 +761,17 @@ DEF_CMD(dir_get_attr)
 	if ((val = attr_find(ci->home->attrs, attr)) != NULL)
 		;
 	else if (strcmp(attr, "heading") == 0)
-		val = "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      Size   File Name</>";
+		val = "File Name";
 	else if (strcmp(attr, "render-default") == 0)
 		val = "format2";
 	else if (strcmp(attr, "render-simple") == 0)
 		val = "format";
 	else if (strcmp(attr, "view-default") == 0)
-		val = "viewer";
+		val = "dirview";
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "dir";
 	else if (strcmp(attr, "line-format") == 0)
-		val = "<fg:green-40>%dir-cmd:1</><fg:red>%perms</> %mdate:13 %user:10 %group:10%hsize:-6  <fg:blue>%name%suffix</>%arrow<fg:green-30>%target</>";
+		val = "%name";
 	else if (strcmp(attr, "filename") == 0)
 		val = dr->fname;
 	else
@@ -796,28 +797,37 @@ DEF_CMD(dir_destroy)
 	return Efallthrough;
 }
 
-static int dir_open(struct pane *home safe, struct pane *focus safe,
+DEF_CMD(dir_shares_ref)
+{
+	return 1;
+}
+
+static struct map *dirview_map;
+DEF_LOOKUP_CMD(dirview_handle, dirview_map);
+
+static int dir_open(struct pane *focus safe,
 		    struct mark *m, bool other, bool follow)
 {
-	struct doc *d = home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
-	struct dir_ent *de;
+	/* close this pane, open the given file. */
+
 	struct pane *par, *p;
 	int fd;
+	char *dirname, *basename, *type;
 	char *fname = NULL;
 
 	if (!m)
 		return Enoarg;
-	de = m->ref.d;
-	/* close this pane, open the given file. */
-	if (de == NULL)
+	dirname = pane_attr_get(focus, "filename");
+	basename = pane_mark_attr(focus, m, "name");
+	type = pane_mark_attr(focus, m, "type");
+	if (!dirname || !basename || !type)
 		return Efail;
 
-	asprintf(&fname, "%s/%s", dr->fname, de->name);
+	asprintf(&fname, "%s/%s", dirname, basename);
 	if (!fname)
 		return Efail;
 
-	if (follow && (de->ch == 'l' || de->ch == 'L')) {
+	if (follow && (type[0] == 'l' || type[0] == 'L')) {
 		/* Fname is a symlink.  Read it and open
 		 * that directly.  Only follow this step once.
 		 */
@@ -830,7 +840,7 @@ static int dir_open(struct pane *home safe, struct pane *focus safe,
 			if (fname[0] == '/')
 				asprintf(&fname, "%s", path);
 			else
-				asprintf(&fname, "%s/%s", dr->fname, path);
+				asprintf(&fname, "%s/%s", dirname, path);
 			if (!fname)
 				return Efail;
 		}
@@ -858,49 +868,51 @@ static int dir_open(struct pane *home safe, struct pane *focus safe,
 	return 1;
 }
 
-static int dir_open_alt(struct pane *home safe, struct pane *focus safe,
+static int dir_open_alt(struct pane *focus safe,
 			struct mark *m, char cmd)
 {
-	struct doc *d = home->data;
-	struct directory *dr = container_of(d, struct directory, doc);
-	struct dir_ent *de;
-	struct pane *p = home,  *par = home->parent;
+	/* close this pane, open the given file. */
+	struct pane *p;
 	int fd;
+	char *dirname, *basename;
 	char *fname = NULL;
 	char buf[100];
 
 	if (!m)
 		return Enoarg;
-	de = m->ref.d;
-	/* close this pane, open the given file. */
-	if (de == NULL)
+	dirname = pane_attr_get(focus, "filename");
+	basename = pane_mark_attr(focus, m, "name");
+	if (!dirname || !basename)
 		return Efail;
-	asprintf(&fname, "%s/%s", dr->fname, de->name);
+
+	asprintf(&fname, "%s/%s", dirname, basename);
+	if (!fname)
+		return Efail;
 	fd = open(fname, O_RDONLY);
 
 	if (fd >= 0) {
-		struct pane *new = call_ret(pane, "doc:open", home,
+		struct pane *new = call_ret(pane, "doc:open", focus,
 					    fd, NULL, fname);
-		if (new) {
-			snprintf(buf, sizeof(buf), "cmd-%c", cmd);
-			par = call_ret(pane, "ThisPane", focus);
-			if (!par)
-				return Efail;
-
-			p = home_call_ret(pane, new, "doc:attach-view", par,
-					  1, NULL, buf);
-		}
 		close(fd);
+		if (!new)
+			return Efail;
+		snprintf(buf, sizeof(buf), "cmd-%c", cmd);
+		p = call_ret(pane, "ThisPane", focus);
+		if (!p)
+			return Efail;
+
+		p = home_call_ret(pane, new, "doc:attach-view", p,
+				  1, NULL, buf);
 	} else {
-		struct pane *doc = call_ret(pane, "doc:from-text", par,
+		struct pane *doc = call_ret(pane, "doc:from-text", focus,
 					    0, NULL, fname,
 					    0, NULL, "File not found\n");
 		if (!doc)
 			return Efail;
-		par = call_ret(pane, "ThisPane", focus);
-		if (!par)
+		p = call_ret(pane, "ThisPane", focus);
+		if (!p)
 			return Efail;
-		p = home_call_ret(pane, doc, "doc:attach-view", par, 1);
+		p = home_call_ret(pane, doc, "doc:attach-view", p, 1);
 	}
 	free(fname);
 	pane_focus(p);
@@ -909,18 +921,17 @@ static int dir_open_alt(struct pane *home safe, struct pane *focus safe,
 
 DEF_CMD(dir_do_open)
 {
-	return dir_open(ci->home, ci->focus, ci->mark, False, ci->num == 1);
+	return dir_open(ci->focus, ci->mark, False, ci->num == 1);
 }
 
 DEF_CMD(dir_do_open_other)
 {
-	return dir_open(ci->home, ci->focus, ci->mark, True, ci->num == 1);
+	return dir_open(ci->focus, ci->mark, True, ci->num == 1);
 }
 
 DEF_CMD(dir_do_reload)
 {
-	return home_call(ci->home, "doc:load-file", ci->focus,
-			 0, NULL, NULL, -1);
+	return call("doc:load-file", ci->focus, 0, NULL, NULL, -1);
 }
 
 DEF_CMD(dir_do_mark_del)
@@ -956,11 +967,35 @@ DEF_CMD(dir_do_special)
 {
 	const char *c = ksuffix(ci, "doc:cmd-");
 
-	return dir_open_alt(ci->home, ci->focus, ci->mark, c[0]);
+	return dir_open_alt(ci->focus, ci->mark, c[0]);
 }
 
-DEF_CMD(dir_shares_ref)
+DEF_CMD(dirview_attach)
 {
+	struct pane *p, *p2;
+
+	p = pane_register(ci->focus, 0, &dirview_handle.c);
+	if (!p)
+		return Efail;
+	attr_set_str(&p->attrs, "line-format",
+		     "<fg:green-40>%dir-cmd:1</><fg:red>%perms</> %mdate:13 %user:10 %group:10%hsize:-6  <fg:blue>%name%suffix</>%arrow<fg:green-30>%target</>");
+	attr_set_str(&p->attrs, "heading",
+		     "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      Size   File Name</>");
+
+	p2 = call_ret(pane, "attach-viewer", p);
+	if (p2)
+		p = p2;
+	comm_call(ci->comm2, "cb", p);
+	return 1;
+}
+
+DEF_CMD(dirview_clone)
+{
+	struct pane *p;
+
+	p = pane_register(ci->focus, 0, &dirview_handle.c);
+	if (p)
+		pane_clone_children(ci->home, p);
 	return 1;
 }
 
@@ -969,30 +1004,37 @@ void edlib_init(struct pane *ed safe)
 	call_comm("global-set-command", ed, &dir_new, 0, NULL, "attach-doc-dir");
 	call_comm("global-set-command", ed, &dir_new2, 0, NULL, "open-doc-dir");
 
-	doc_map = key_alloc();
-	key_add_chain(doc_map, doc_default_cmd);
+	dir_map = key_alloc();
+	key_add_chain(dir_map, doc_default_cmd);
 
-	key_add(doc_map, "doc:load-file", &dir_load_file);
-	key_add(doc_map, "doc:same-file", &dir_same_file);
-	key_add(doc_map, "doc:set-ref", &dir_set_ref);
-	key_add(doc_map, "doc:get-attr", &dir_doc_get_attr);
-	key_add(doc_map, "doc:set-attr", &dir_doc_set_attr);
-	key_add(doc_map, "doc:char", &dir_char);
-	key_add(doc_map, "doc:cmd-f", &dir_do_open);
-	key_add(doc_map, "doc:cmd-o", &dir_do_open_other);
-	key_add(doc_map, "doc:cmd-\n", &dir_do_open);
-	key_add(doc_map, "doc:cmd:Enter", &dir_do_open);
-	key_add(doc_map, "doc:cmd-g", &dir_do_reload);
-	key_add(doc_map, "doc:cmd-q", &dir_do_quit);
-	key_add(doc_map, "doc:cmd-d", &dir_do_mark_del);
-	key_add(doc_map, "doc:cmd-m", &dir_do_mark);
-	key_add(doc_map, "doc:cmd-u", &dir_un_mark);
-	key_add_range(doc_map, "doc:cmd-A", "doc:cmd-Z", &dir_do_special);
-	key_add(doc_map, "doc:notify:doc:revisit", &dir_revisited);
+	key_add(dir_map, "doc:load-file", &dir_load_file);
+	key_add(dir_map, "doc:same-file", &dir_same_file);
+	key_add(dir_map, "doc:set-ref", &dir_set_ref);
+	key_add(dir_map, "doc:get-attr", &dir_doc_get_attr);
+	key_add(dir_map, "doc:set-attr", &dir_doc_set_attr);
+	key_add(dir_map, "doc:char", &dir_char);
+	key_add(dir_map, "doc:notify:doc:revisit", &dir_revisited);
 
-	key_add(doc_map, "doc:shares-ref", &dir_shares_ref);
+	key_add(dir_map, "doc:shares-ref", &dir_shares_ref);
 
-	key_add(doc_map, "get-attr", &dir_get_attr);
-	key_add(doc_map, "Close", &dir_destroy);
-	key_add(doc_map, "Free", &edlib_do_free);
+	key_add(dir_map, "get-attr", &dir_get_attr);
+	key_add(dir_map, "Close", &dir_destroy);
+	key_add(dir_map, "Free", &edlib_do_free);
+
+
+	call_comm("global-set-command", ed, &dirview_attach, 0, NULL,
+		  "attach-dirview");
+
+	dirview_map = key_alloc();
+	key_add(dirview_map, "doc:cmd-f", &dir_do_open);
+	key_add(dirview_map, "doc:cmd-o", &dir_do_open_other);
+	key_add(dirview_map, "doc:cmd-\n", &dir_do_open);
+	key_add(dirview_map, "doc:cmd:Enter", &dir_do_open);
+	key_add(dirview_map, "doc:cmd-g", &dir_do_reload);
+	key_add(dirview_map, "doc:cmd-q", &dir_do_quit);
+	key_add(dirview_map, "doc:cmd-d", &dir_do_mark_del);
+	key_add(dirview_map, "doc:cmd-m", &dir_do_mark);
+	key_add(dirview_map, "doc:cmd-u", &dir_un_mark);
+	key_add_range(dirview_map, "doc:cmd-A", "doc:cmd-Z", &dir_do_special);
+	key_add(dirview_map, "Clone", &dirview_clone);
 }
