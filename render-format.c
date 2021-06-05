@@ -167,7 +167,7 @@ DEF_CMD(format_content)
 		while (*c) {
 			w = get_utf8(&c, NULL);
 			if (w >= WERR ||
-			    comm_call(ci->comm2, "consume", ci->home, w, ci->mark) <= 0)
+			    comm_call(ci->comm2, "consume", ci->focus, w, ci->mark) <= 0)
 				/* Finished */
 				break;
 		}
@@ -367,18 +367,19 @@ DEF_CMD(format_content2)
 		/* Cannot handle bytes */
 		return Einval;
 
-	nxt = ccall(&dchar, "doc:char", ci->home, 1, m);
-	while (nxt != CHAR_RET(WEOF) &&
-	       comm_call(ci->comm2, "consume", ci->home, nxt, m) > 0)
-		nxt = ccall(&dchar, "doc:char", ci->home, 1, m);
+	nxt = ccall(&dchar, "doc:char", ci->focus, 1, m);
+	while (nxt > 0 && nxt != CHAR_RET(WEOF) &&
+	       comm_call(ci->comm2, "consume", ci->focus, nxt, m) > 0)
+		nxt = ccall(&dchar, "doc:char", ci->focus, 1, m);
 
 	return 1;
 }
 
-static int field_size(struct pane *p safe, struct mark *m safe, int field,
+static int field_size(struct pane *home safe, struct pane *focus safe,
+		      struct mark *m safe, int field,
 		      char **valp safe)
 {
-	struct rf_data *rd = p->data;
+	struct rf_data *rd = home->data;
 	struct rf_field *rf;
 	char *val;
 	int l;
@@ -400,7 +401,7 @@ static int field_size(struct pane *p safe, struct mark *m safe, int field,
 		b[79] = 0;
 		if (rf->val_len < 80)
 			b[rf->val_len] = 0;
-		val = pane_mark_attr(p, m, b);
+		val = pane_mark_attr(focus, m, b);
 		if (!val)
 			val = "-";
 		*valp = val;
@@ -412,7 +413,8 @@ static int field_size(struct pane *p safe, struct mark *m safe, int field,
 		return l;
 }
 
-static int normalize(struct pane *home safe, struct mark *m safe, int inc)
+static int normalize(struct pane *home safe, struct pane *focus safe,
+		     struct mark *m safe, int inc)
 {
 	struct rf_data *rd = home->data;
 	int index = m->ref.i;
@@ -423,7 +425,7 @@ static int normalize(struct pane *home safe, struct mark *m safe, int inc)
 		char *val = NULL;
 		int len;
 
-		len = field_size(home, m, f, &val);
+		len = field_size(home, focus, m, f, &val);
 		if (o > len) {
 			if (inc < 0)
 				o = len;
@@ -458,7 +460,7 @@ static int normalize(struct pane *home safe, struct mark *m safe, int inc)
 			continue;
 		}
 		/* inc == 0 */
-		if (len == 0) {
+		if (o == len) {
 			if (f >= rd->nfields)
 				return -1;
 			/* Try next field */
@@ -485,11 +487,12 @@ static void prev_line(struct pane *home safe, struct mark *m safe)
 	mark_step(m, 0);
 }
 
-static void next_line(struct pane *home safe, struct mark *m safe)
+static void next_line(struct pane *home safe, struct pane *focus safe,
+		      struct mark *m safe)
 {
 	doc_next(home->parent, m);
 	m->ref.i = MAKE_INDEX(0, 0);
-	m->ref.i = normalize(home, m, 0);
+	m->ref.i = normalize(home, focus, m, 0);
 	mark_step(m, 1);
 }
 
@@ -512,7 +515,7 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 	set_format(focus, rd);
 
 	if (!forward) {
-		index = normalize(home, m, -1);
+		index = normalize(home, focus, m, -1);
 		if (index < 0) {
 			if (doc_prior(home->parent, m) == WEOF)
 				return CHAR_RET(WEOF);
@@ -523,7 +526,7 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 	} else {
 		if (m->ref.p == NULL)
 			return CHAR_RET(WEOF);
-		index = normalize(home, m, 0);
+		index = normalize(home, focus, m, 0);
 		if (index < 0)
 			/* Should be impossible */
 			return CHAR_RET(WEOF);
@@ -533,18 +536,18 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 
 	if (f >= rd->nfields) {
 		if (move)
-			next_line(home, m);
+			next_line(home, focus, m);
 		return CHAR_RET('\n');
 	}
 	rf = &rd->fields[f];
-	fsize = field_size(home, m, f, &val);
+	fsize = field_size(home, focus, m, f, &val);
 	if (val)
 		len = strlen(val);
 	if (move && forward) {
 		mark_step(m, forward);
-		index = normalize(home, m, 1);
+		index = normalize(home, focus, m, 1);
 		if (index < 0) {
-			next_line(home, m);
+			next_line(home, focus, m);
 			return CHAR_RET('\n');
 		}
 		m->ref.i = index;
@@ -643,7 +646,7 @@ DEF_CMD(format_attr)
 	 * We need consider the possibility that any of those
 	 * change the attributes.
 	 */
-	previ = normalize(ci->home, m, -1);
+	previ = normalize(ci->home, ci->focus, m, -1);
 	if (previ < 0)
 		f0 = 0;
 	else
@@ -687,7 +690,7 @@ DEF_CMD(format_map)
 	 * We need to consider the possibility that any of those
 	 * change the attributes.
 	 */
-	previ = normalize(ci->home, m, -1);
+	previ = normalize(ci->home, ci->focus, m, -1);
 	if (previ < 0)
 		f0 = 0;
 	else
