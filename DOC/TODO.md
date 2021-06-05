@@ -416,7 +416,7 @@ Module features
 
 ### grep/make
 
-- [Y] CX-` moves cursor to end of output, but it doesn't follow.
+- [X] CX-` moves cursor to end of output, but it doesn't follow.
 - [X] When I visit from grep in a popup, I think I want a 'view' at first.
       so 'q' works.
 - [ ] Need keystroke to step through different grep/make windows

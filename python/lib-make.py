@@ -388,7 +388,7 @@ class MakePane(edlib.Pane):
                 self.first_match = True
                 p = edlib.Mark(self)
                 self.call("doc:set-ref", p)
-                self.call("doc:notify:make-set-match", p)
+                self.call("doc:notify:make-set-match", p, 1)
                 if num2 or self['doc-status'] == 'Running' or not first_match:
                     # 'num2' means we are using a simple repeat-last-command
                     # 'doc-status' means this make/grep is still running.
@@ -555,11 +555,11 @@ class MakeViewerPane(edlib.Pane):
         self.call("doc:request:make-set-match")
         self.may_follow = True
 
-    def handle_set_match(self, key, mark, **a):
+    def handle_set_match(self, key, mark, num, **a):
         "handle:make-set-match"
         self.call("Move-to", mark, 0, 1)
         # suppress following the next update
-        self.may_follow = False
+        self.may_follow = (num == 1)
         return 1
 
     def handle_enter(self, key, focus, mark, **a):
