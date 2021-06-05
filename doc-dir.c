@@ -770,7 +770,7 @@ DEF_CMD(dir_get_attr)
 	else if (strcmp(attr, "doc-type") == 0)
 		val = "dir";
 	else if (strcmp(attr, "line-format") == 0)
-		val = " <fg:red>%perms</> %mdate:13 %user:10 %group:10%hsize:-6  <fg:blue>%name%suffix</>%arrow<fg:green-30>%target</>";
+		val = "<fg:green-40>%dir-cmd:1</><fg:red>%perms</> %mdate:13 %user:10 %group:10%hsize:-6  <fg:blue>%name%suffix</>%arrow<fg:green-30>%target</>";
 	else if (strcmp(attr, "filename") == 0)
 		val = dr->fname;
 	else
@@ -923,6 +923,30 @@ DEF_CMD(dir_do_reload)
 			 0, NULL, NULL, -1);
 }
 
+DEF_CMD(dir_do_mark_del)
+{
+	call("doc:set-attr", ci->focus, 0, ci->mark, "dir-cmd",
+	     0, NULL, "D");
+	call("doc:EOL", ci->focus, 1, ci->mark, NULL, 1);
+	return 1;
+}
+
+DEF_CMD(dir_do_mark)
+{
+	call("doc:set-attr", ci->focus, 0, ci->mark, "dir-cmd",
+	     0, NULL, "*");
+	call("doc:EOL", ci->focus, 1, ci->mark, NULL, 1);
+	return 1;
+}
+
+DEF_CMD(dir_un_mark)
+{
+	call("doc:set-attr", ci->focus, 0, ci->mark, "dir-cmd",
+	     0, NULL, NULL);
+	call("doc:EOL", ci->focus, 1, ci->mark, NULL, 1);
+	return 1;
+}
+
 DEF_CMD(dir_do_quit)
 {
 	return call("doc:destroy", ci->home);
@@ -960,6 +984,9 @@ void edlib_init(struct pane *ed safe)
 	key_add(doc_map, "doc:cmd:Enter", &dir_do_open);
 	key_add(doc_map, "doc:cmd-g", &dir_do_reload);
 	key_add(doc_map, "doc:cmd-q", &dir_do_quit);
+	key_add(doc_map, "doc:cmd-d", &dir_do_mark_del);
+	key_add(doc_map, "doc:cmd-m", &dir_do_mark);
+	key_add(doc_map, "doc:cmd-u", &dir_un_mark);
 	key_add_range(doc_map, "doc:cmd-A", "doc:cmd-Z", &dir_do_special);
 	key_add(doc_map, "doc:notify:doc:revisit", &dir_revisited);
 
