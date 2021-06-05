@@ -833,6 +833,32 @@ void mark_step(struct mark *m safe, int forward)
 	mark_to_mark_noref(m, target);
 }
 
+void mark_step_sharesref(struct mark *m safe, int forward)
+{
+	/* step mark forward, or backward, over all marks with same
+	 * ref, ignoring the .i
+	 */
+	struct mark *m2, *target = m;
+
+	/* This is called after .ref has been updated, so we can
+	 * assume the point really is moving.
+	 */
+	notify_point_moving(m);
+
+	if (forward) {
+		for (m2 = mark_next(m);
+		     m2 && m->ref.p == m2->ref.p;
+		     m2 = mark_next(m2))
+			target = m2;
+	} else {
+		for (m2 = mark_prev(m);
+		     m2 && m->ref.p == m2->ref.p;
+		     m2 = mark_prev(m2))
+			target = m2;
+	}
+	mark_to_mark_noref(m, target);
+}
+
 /* A 'vmark' is a mark in a particular view.  We can walk around those
  * silently skipping over the points.
  */

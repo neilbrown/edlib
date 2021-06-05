@@ -300,7 +300,7 @@ DEF_CMD(dir_load_file)
 				prev = NULL;
 			}
 			doc_next(ci->home, m);
-			mark_step(m,0);
+			mark_step_sharesref(m,0);
 
 			list_del(&de2->lst);
 			attr_free(&de2->attrs);
@@ -416,7 +416,7 @@ static int dir_step(struct pane *home safe, struct mark *mark safe,
 		}
 	}
 	if (move) {
-		mark_step(m, forward);
+		mark_step_sharesref(m, forward);
 		m->ref.d = d;
 	}
 	/* return value must be +ve, so use high bits to ensure this. */

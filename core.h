@@ -259,6 +259,7 @@ void mark_to_mark_noref(struct mark *m safe, struct mark *target safe);
 wint_t __doc_step(struct pane *p safe, struct mark *m,
 		  int forward, int move);
 void mark_step(struct mark *m safe, int forward);
+void mark_step_sharesref(struct mark *m safe, int forward);
 
 static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
 {

@@ -480,7 +480,7 @@ static int docs_step(struct pane *home safe, struct mark *mark safe,
 			next = p;
 	}
 	if (move) {
-		mark_step(m, forward);
+		mark_step_sharesref(m, forward);
 		m->ref.p = next;
 	}
 
