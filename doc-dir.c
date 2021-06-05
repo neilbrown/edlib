@@ -978,9 +978,9 @@ DEF_CMD(dirview_attach)
 	if (!p)
 		return Efail;
 	attr_set_str(&p->attrs, "line-format",
-		     "<fg:green-40>%dir-cmd:1</><fg:red>%perms</> %mdate:13 %user:10 %group:10%hsize:-6  <fg:blue>%name%suffix</>%arrow<fg:green-30>%target</>");
+		     "<fg:green-40>%flag</> <fg:red>%perms</> %mdate:13 %user:10 %group:10%hsize:-6  <fg:blue>%name%suffix</>%arrow<fg:green-30>%target</>");
 	attr_set_str(&p->attrs, "heading",
-		     "<bold,fg:blue,underline>  Perms       Mtime       Owner      Group      Size   File Name</>");
+		     "<bold,fg:blue,underline>  Perms      Mtime         Owner      Group      Size   File Name</>");
 
 	p2 = call_ret(pane, "attach-viewer", p);
 	if (p2)
@@ -996,6 +996,23 @@ DEF_CMD(dirview_clone)
 	p = pane_register(ci->focus, 0, &dirview_handle.c);
 	if (p)
 		pane_clone_children(ci->home, p);
+	return 1;
+}
+
+DEF_CMD(dirview_doc_get_attr)
+{
+	struct mark *m = ci->mark;
+	const char *attr = ci->str;
+	const char *val;
+
+	if (!m || !attr)
+		return Enoarg;
+	if (strcmp(attr, "flag") != 0)
+		return Efallthrough;
+	val = pane_mark_attr(ci->home->parent, m, "dir-cmd");
+	if (!val)
+		val = " ";
+	comm_call(ci->comm2, "cb", ci->focus, 0, m, val, 0, NULL, attr);
 	return 1;
 }
 
@@ -1036,5 +1053,6 @@ void edlib_init(struct pane *ed safe)
 	key_add(dirview_map, "doc:cmd-m", &dir_do_mark);
 	key_add(dirview_map, "doc:cmd-u", &dir_un_mark);
 	key_add_range(dirview_map, "doc:cmd-A", "doc:cmd-Z", &dir_do_special);
+	key_add(dirview_map, "doc:get-attr", &dirview_doc_get_attr);
 	key_add(dirview_map, "Clone", &dirview_clone);
 }
