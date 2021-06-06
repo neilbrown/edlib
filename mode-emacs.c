@@ -1494,7 +1494,8 @@ DEF_CMD(emacs_shell)
 	if (strcmp(ci->key, "Shell Command") != 0) {
 		char *dirname;
 
-		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL, "");
+		p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2", 0, NULL,
+			     ci->str ?: "");
 		if (!p)
 			return Efail;
 		dirname = call_ret(strsave, "get-attr", ci->focus, 0, NULL, "dirname");
@@ -1504,7 +1505,13 @@ DEF_CMD(emacs_shell)
 		call("doc:set-name", p, 0, NULL, "Shell Command", -1);
 		p = call_ret(pane, "attach-history", p, 0, NULL, "*Shell History*",
 			     0, NULL, "popup:close");
-		pane_register(p, 0, &find_handle.c, "shellcmd");
+		p = pane_register(p, 0, &find_handle.c, "shellcmd");
+		if (p && ci->comm2)
+			comm_call(ci->comm2, "cb", p);
+		return 1;
+	}
+	if (!ci->str) {
+		call("Message", ci->focus, 0, NULL, "Shell command aborted");
 		return 1;
 	}
 	path = pane_attr_get(ci->focus, "dirname");
@@ -2852,6 +2859,7 @@ void edlib_init(struct pane *ed safe)
 	findmap_init();
 	call_comm("global-set-command", ed, &attach_mode_emacs, 0, NULL, "attach-mode-emacs");
 	call_comm("global-set-command", ed, &attach_file_entry, 0, NULL, "attach-file-entry");
+	call_comm("global-set-command", ed, &emacs_shell, 0, NULL, "attach-shell-prompt");
 
 	call("global-load-module", ed, 0, NULL, "emacs-search");
 	call("global-load-module", ed, 0, NULL, "lib-macro");
