@@ -978,7 +978,28 @@ DEF_CMD(dir_do_special)
 	return dir_open_alt(ci->focus, ci->mark, c[0]);
 }
 
-static char *collect_names(struct pane *p safe, char *type safe)
+static void add_name(struct buf *b safe, char *name safe)
+{
+	if (strchr(name, '\'') == NULL) {
+		buf_append(b, ' ');
+		buf_append(b, '\'');
+		buf_concat(b, name);
+		buf_append(b, '\'');
+	} else {
+		buf_append(b, ' ');
+		buf_append(b, '"');
+		while (*name) {
+			if (strchr("\"$`\\", *name))
+				buf_append(b, '\\');
+			buf_append_byte(b, *name);
+			name += 1;
+		}
+		buf_append(b, '"');
+	}
+}
+
+static char *collect_names(struct pane *p safe, char *type safe,
+			   struct mark *mark)
 {
 	struct mark *m = vmark_new(p, MARK_UNGROUPED, NULL);
 	struct buf b;
@@ -998,24 +1019,14 @@ static char *collect_names(struct pane *p safe, char *type safe)
 		doc_next(p, m);
 		if (!name)
 			continue;
-		if (strchr(name, '\'') == NULL) {
-			buf_append(&b, ' ');
-			buf_append(&b, '\'');
-			buf_concat(&b, name);
-			buf_append(&b, '\'');
-		} else {
-			buf_append(&b, ' ');
-			buf_append(&b, '"');
-			while (*name) {
-				if (strchr("\"$`\\", *name))
-					buf_append(&b, '\\');
-				buf_append_byte(&b, *name);
-				name += 1;
-			}
-			buf_append(&b, '"');
-		}
+		add_name(&b, name);
 	}
 	mark_free(m);
+	if (!b.len && mark) {
+		char *name = pane_mark_attr(p, mark, "name");
+		if (name)
+			add_name(&b, name);
+	}
 	return buf_final(&b);
 }
 
@@ -1024,7 +1035,7 @@ DEF_CMD(dir_expunge)
 	char *names, *cmd;
 	struct pane *p;
 
-	names = collect_names(ci->focus, "D");
+	names = collect_names(ci->focus, "D", NULL);
 
 	if (!names || !names[0]) {
 		free(names);
@@ -1040,7 +1051,35 @@ DEF_CMD(dir_expunge)
 		call("doc:char", p, 5);
 		pane_add_notify(ci->home, p, "Notify:Close");
 	}
-	// FIXME how can I catch the update to refresh the dir?
+	free(names);
+	return 1;
+}
+
+DEF_CMD(dir_chmodown)
+{
+	char *names, *cmd;
+	struct pane *p;
+	char *which;
+
+	if (strcmp(ci->key, "K:A-o") == 0)
+		which = "chown";
+	else
+		which = "chmod";
+
+	names = collect_names(ci->focus, "*", ci->mark);
+	if (!names || !*names) {
+		free(names);
+		call("Message:modal", ci->focus, 0, NULL,
+		     strconcat(ci->focus, "No file for ", which));
+		return Efail;
+	}
+	cmd = strconcat(ci->focus, which, " ", names);
+	p = call_ret(pane, "attach-shell-prompt", ci->focus, 0, NULL, cmd);
+	if (p) {
+		call("doc:file", p, -1);
+		call("doc:char", p, strlen(which) + 1);
+		pane_add_notify(ci->home, p, "Notify:Close");
+	}
 	free(names);
 	return 1;
 }
@@ -1140,6 +1179,8 @@ void edlib_init(struct pane *ed safe)
 	key_add(dirview_map, "doc:cmd-m", &dir_do_mark);
 	key_add(dirview_map, "doc:cmd-u", &dir_un_mark);
 	key_add(dirview_map, "doc:cmd-x", &dir_expunge);
+	key_add(dirview_map, "K:A-o", &dir_chmodown);
+	key_add(dirview_map, "K:A-m", &dir_chmodown);
 	key_add(dirview_map, "K:Del", &dir_un_mark_back);
 	key_add_range(dirview_map, "doc:cmd-A", "doc:cmd-Z", &dir_do_special);
 	key_add(dirview_map, "doc:get-attr", &dirview_doc_get_attr);
