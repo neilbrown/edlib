@@ -958,6 +958,14 @@ DEF_CMD(dir_un_mark)
 	return 1;
 }
 
+DEF_CMD(dir_un_mark_back)
+{
+	call("doc:EOL", ci->focus, -2, ci->mark);
+	call("doc:set-attr", ci->focus, 0, ci->mark, "dir-cmd",
+	     0, NULL, NULL);
+	return 1;
+}
+
 DEF_CMD(dir_do_quit)
 {
 	return call("doc:destroy", ci->home);
@@ -970,11 +978,81 @@ DEF_CMD(dir_do_special)
 	return dir_open_alt(ci->focus, ci->mark, c[0]);
 }
 
+static char *collect_names(struct pane *p safe, char *type safe)
+{
+	struct mark *m = vmark_new(p, MARK_UNGROUPED, NULL);
+	struct buf b;
+
+	if (!m)
+		return NULL;
+	buf_init(&b);
+	while (doc_following(p, m) != WEOF) {
+		char *t, *name;
+		t = pane_mark_attr(p, m, "dir-cmd");
+		if (!t  || strcmp(t, type) != 0) {
+			doc_next(p, m);
+			continue;
+		}
+		name = pane_mark_attr(p, m, "name");
+		call("doc:set-attr", p, 0, m, "dir-cmd");
+		doc_next(p, m);
+		if (!name)
+			continue;
+		if (strchr(name, '\'') == NULL) {
+			buf_append(&b, ' ');
+			buf_append(&b, '\'');
+			buf_concat(&b, name);
+			buf_append(&b, '\'');
+		} else {
+			buf_append(&b, ' ');
+			buf_append(&b, '"');
+			while (*name) {
+				if (strchr("\"$`\\", *name))
+					buf_append(&b, '\\');
+				buf_append_byte(&b, *name);
+				name += 1;
+			}
+			buf_append(&b, '"');
+		}
+	}
+	mark_free(m);
+	return buf_final(&b);
+}
+
+DEF_CMD(dir_expunge)
+{
+	char *names, *cmd;
+	struct pane *p;
+
+	names = collect_names(ci->focus, "D");
+
+	if (!names || !names[0]) {
+		free(names);
+		call("Message:modal", ci->focus, 0, NULL,
+		     "No files marked for deletion");
+		return Efail;
+	}
+	cmd = strconcat(ci->focus, "rm -f ", names);
+	p = call_ret(pane, "attach-shell-prompt", ci->focus, 0, NULL, cmd);
+	if (p) {
+		// put cursor after the "-f"
+		call("doc:file", p, -1);
+		call("doc:char", p, 5);
+		pane_add_notify(ci->home, p, "Notify:Close");
+	}
+	// FIXME how can I catch the update to refresh the dir?
+	free(names);
+	return 1;
+}
+
 DEF_CMD(dirview_attach)
 {
-	struct pane *p, *p2;
+	struct pane *p;
 
-	p = pane_register(ci->focus, 0, &dirview_handle.c);
+	p = call_ret(pane, "attach-viewer", ci->focus);
+	if (!p)
+		p = ci->focus;
+	p = pane_register(p, 0, &dirview_handle.c);
 	if (!p)
 		return Efail;
 	attr_set_str(&p->attrs, "line-format",
@@ -982,9 +1060,6 @@ DEF_CMD(dirview_attach)
 	attr_set_str(&p->attrs, "heading",
 		     "<bold,fg:blue,underline>  Perms      Mtime         Owner      Group      Size   File Name</>");
 
-	p2 = call_ret(pane, "attach-viewer", p);
-	if (p2)
-		p = p2;
 	comm_call(ci->comm2, "cb", p);
 	return 1;
 }
@@ -1013,6 +1088,18 @@ DEF_CMD(dirview_doc_get_attr)
 	if (!val)
 		val = " ";
 	comm_call(ci->comm2, "cb", ci->focus, 0, m, val, 0, NULL, attr);
+	return 1;
+}
+
+DEF_CMD(dirview_close_notify)
+{
+	/* shell window closed, maybe something was changed - check */
+	if (ci->key[0] == 'c') {
+		/* the callback */
+		call("doc:notify:doc:revisit", ci->focus, 1);
+		return 1;
+	}
+	call_comm("event:timer", ci->home, &dirview_close_notify, 500);
 	return 1;
 }
 
@@ -1052,7 +1139,10 @@ void edlib_init(struct pane *ed safe)
 	key_add(dirview_map, "doc:cmd-d", &dir_do_mark_del);
 	key_add(dirview_map, "doc:cmd-m", &dir_do_mark);
 	key_add(dirview_map, "doc:cmd-u", &dir_un_mark);
+	key_add(dirview_map, "doc:cmd-x", &dir_expunge);
+	key_add(dirview_map, "K:Del", &dir_un_mark_back);
 	key_add_range(dirview_map, "doc:cmd-A", "doc:cmd-Z", &dir_do_special);
 	key_add(dirview_map, "doc:get-attr", &dirview_doc_get_attr);
 	key_add(dirview_map, "Clone", &dirview_clone);
+	key_add(dirview_map, "Notify:Close", &dirview_close_notify);
 }
