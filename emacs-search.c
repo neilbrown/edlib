@@ -976,7 +976,7 @@ DEF_CMD(emacs_search_reposition)
 	hi->start = mark_dup(start);
 	hi->end = mark_dup(end);
 
-	queue_highlight_refresh(ci->focus);
+	queue_highlight_refresh(ci->home);
 	return Efallthrough;
 }
 
