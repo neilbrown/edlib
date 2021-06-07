@@ -998,7 +998,7 @@ static void add_name(struct buf *b safe, char *name safe)
 	}
 }
 
-static char *collect_names(struct pane *p safe, char *type safe,
+static char *collect_names(struct pane *p safe, char *type,
 			   struct mark *mark)
 {
 	struct mark *m = vmark_new(p, MARK_UNGROUPED, NULL);
@@ -1007,7 +1007,7 @@ static char *collect_names(struct pane *p safe, char *type safe,
 	if (!m)
 		return NULL;
 	buf_init(&b);
-	while (doc_following(p, m) != WEOF) {
+	while (type && doc_following(p, m) != WEOF) {
 		char *t, *name;
 		t = pane_mark_attr(p, m, "dir-cmd");
 		if (!t  || strcmp(t, type) != 0) {
@@ -1078,6 +1078,43 @@ DEF_CMD(dir_chmodown)
 	if (p) {
 		call("doc:file", p, -1);
 		call("doc:char", p, strlen(which) + 1);
+		pane_add_notify(ci->home, p, "Notify:Close");
+	}
+	free(names);
+	return 1;
+}
+
+DEF_CMD(dir_rename)
+{
+	char *names, *cmd;
+	struct pane *p;
+	char *dirname = pane_attr_get(ci->focus, "dirname");
+	int prefix;
+
+	if (!dirname)
+		dirname = ".";
+
+	names = collect_names(ci->focus, "*", NULL);
+	if (names && *names) {
+		cmd = strconcat(ci->focus, "mv --target-directory ",
+				dirname, names);
+		prefix = strlen(cmd) - strlen(names);
+	} else {
+		free(names);
+		names = collect_names(ci->focus, NULL, ci->mark);
+		if (!names || !*names) {
+			free(names);
+			call("Message:modal", ci->focus, 0, NULL,
+			     "No file for rename");
+			return Efail;
+		}
+		cmd = strconcat(ci->focus, "mv", names, " ", dirname);
+		prefix = strlen(cmd);
+	}
+	p = call_ret(pane, "attach-shell-prompt", ci->focus, 0, NULL, cmd);
+	if (p) {
+		call("doc:file", p, -1);
+		call("doc:char", p, prefix);
 		pane_add_notify(ci->home, p, "Notify:Close");
 	}
 	free(names);
@@ -1179,6 +1216,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(dirview_map, "doc:cmd-m", &dir_do_mark);
 	key_add(dirview_map, "doc:cmd-u", &dir_un_mark);
 	key_add(dirview_map, "doc:cmd-x", &dir_expunge);
+	key_add(dirview_map, "doc:cmd-r", &dir_rename);
 	key_add(dirview_map, "K:A-o", &dir_chmodown);
 	key_add(dirview_map, "K:A-m", &dir_chmodown);
 	key_add(dirview_map, "K:Del", &dir_un_mark_back);

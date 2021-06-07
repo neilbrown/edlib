@@ -360,7 +360,7 @@ Module features
 - [ ] allow setting a pattern, as alternate to substr, for 'complete' viewer.
 - [ ] how to change sort order of a directory listing.  I think this requires
       a separate dir document, which borrows state from the main one.
-- [Y] chown/chmod/unlink/rename etc
+- [X] chown/chmod/unlink/rename etc
 
 ### doc-text
 
