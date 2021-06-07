@@ -477,7 +477,7 @@ Module features
 - [ ] handle errors better.  e.g. file reported by notmuch might not
       exist, or not be readable
 - [ ] allow opening drafts in composer on restart.
-- [Y] 'c' to continue an unsent message
+- [X] 'c' to continue an unsent message
 - [ ] allow deleting of drafts without posting.  Maybe just 'delete'..
 - [ ] option to wrap subjects onto next line
 - [ ] When active query changes, highlight on list view doesn't immediately

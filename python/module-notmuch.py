@@ -1629,6 +1629,26 @@ class notmuch_master_view(edlib.Pane):
         query_popup(pup)
         return 1
 
+    def handle_compose(self, key, focus, **a):
+        "handle:doc:char-c"
+        choice = []
+        def choose(choice, a):
+            focus = a['focus']
+            if focus['email-sent'] == 'no':
+                choice.append(focus)
+                return 1
+            return 0
+        focus.call("docs:byeach", lambda key,**a:choose(choice, a))
+        if len(choice):
+            par = focus.call("PopupTile", "MD3tsa", ret='focus')
+            if par:
+                par = choice[0].call("doc:attach-view", par, 1, ret='focus')
+                par.take_focus()
+        else:
+            focus.call("Message:modal",
+                       "No active email composition documents found.")
+        return 1
+
     def do_search(self, key, focus, str, **a):
         "handle:notmuch-do-ad hoc"
         if str:
@@ -1831,7 +1851,7 @@ class notmuch_master_view(edlib.Pane):
         m = focus.call("doc:open", fname, -1, ret = 'focus')
         m.call("doc:set-name", "*Unsent mail message*")
         m['view-default'] = 'compose-email'
-        # fixme: add this to a list?
+        m['email-sent'] = 'no'
         name = self.list_pane['config:user.name']
         mainfrom = self.list_pane['config:user.primary_email']
         altfrom = self.list_pane['config:user.other_email']

@@ -729,7 +729,7 @@ class compose_email(edlib.Pane):
         if not whoto:
             whoto = "someone"
         focus.call("doc:set-name", "*Sent message to %s*" % whoto)
-
+        focus.call("doc:set:email-sent", "yes")
         focus.call("doc:modified", -1)
         fn = self['filename']
         if fn and fn.startswith('/'):
