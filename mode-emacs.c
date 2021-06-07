@@ -1273,11 +1273,16 @@ REDEF_CMD(emacs_file_complete)
 	char *type = ci->home->data;
 	char *initial = attr_find(ci->home->attrs, "initial_path");
 	int wholebuf = strcmp(type, "file") == 0;
+	struct mark *st;
 
 	if (!ci->mark)
 		return Enoarg;
 
-	str = call_ret(strsave, "doc:get-str", ci->focus);
+	st = mark_dup(ci->mark);
+	call("doc:file", ci->focus, -1, st);
+
+	str = call_ret(strsave, "doc:get-str", ci->focus, 0, st, NULL,
+		       0, ci->mark);
 	if (!str)
 		return Einval;
 	if (wholebuf) {
@@ -1328,7 +1333,7 @@ REDEF_CMD(emacs_file_complete)
 		struct mark *start;
 
 		start = mark_dup(ci->mark);
-		call("Move-Char", ci->focus, -strlen(b), start);
+		call("doc:char", ci->focus, -strlen(b), start);
 		call("Replace", ci->focus, 1, start);
 		mark_free(start);
 
@@ -1339,7 +1344,7 @@ REDEF_CMD(emacs_file_complete)
 		struct mark *start;
 
 		start = mark_dup(ci->mark);
-		call("Move-Char", ci->focus, -strlen(b), start);
+		call("doc:char", ci->focus, -strlen(b), start);
 		call("Replace", ci->focus, 1, start, cr.s);
 		mark_free(start);
 	}
