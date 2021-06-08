@@ -299,11 +299,15 @@ DEF_CMD(popup_close_others)
 	 * For now, allow it on multi-line popups.
 	 */
 	struct popup_info *ppi = ci->home->data;
+	struct pane *p;
 
 	if (strchr(ppi->style, 'M') == NULL)
 		return 1;
-	if (ci->home->focus)
-		home_call(ci->home->focus, "doc:attach-view", ci->home->parent);
+	p = call_ret(pane, "OtherPane", ci->focus);
+	if (p) {
+		home_call(ci->home->focus, "doc:attach-view", p);
+		pane_focus(p);
+	}
 	return 1;
 }
 
