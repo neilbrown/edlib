@@ -953,14 +953,22 @@ DEF_CMD(tile_other)
 DEF_CMD(tile_this)
 {
 	struct tileinfo *ti = ci->home->data;
-	if (!ti->leaf)
-		return Efallthrough;
+
 	if (ci->str || ti->group) {
 		if (!ci->str || !ti->group)
 			return Efallthrough;
 		if (strcmp(ci->str, ti->group) != 0)
 			return Efallthrough;
 		/* same group - continue */
+	}
+	if (!ti->leaf) {
+		/* There is no clear 'This', use first. */
+		ti = tile_first(ti);
+		if (!ti)
+			return Einval;
+		if (ci->str2 && ti->name && strcmp(ci->str2, ti->name) == 0)
+			return Einval;
+		return comm_call(ci->comm2, "callback:pane", ti->p);
 	}
 	return comm_call(ci->comm2, "callback:pane", ci->home, 0,
 			 NULL, ti->name);
