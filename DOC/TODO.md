@@ -30,6 +30,8 @@ Bugs to be fixed
 
 - [X] lib-renderline in a 1x1 pane spins.  Happens if I 'elc' while cursor
       is in a search popup.
+- [Y] modified document which cannot be written also cannot be killed!
+- [ ] initial draw of a pane sometime stops halfway down the pane - particularly email.
 - [X] notmuch compose adds 'Re:' if it already exists
 - [ ] x11selection doesn't work properly on second ncurses display
       except when it does...
@@ -471,6 +473,10 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] if a thread matched query and so is still cached, but no
+      individual messages match any more, then whole thread is shown.
+      This is confusing.  Maybe we report an error when open is attempted,
+      but somehow allow 'Z' to still work.
 - [ ] purge old entries from query when updates but not being viewed
 - [ ] updating tags can take long when 100s.  Enable background queuing of these.
 - [ ] Don't display query entries that have a 0 match count.??

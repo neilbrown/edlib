@@ -63,11 +63,19 @@ try:
                     if self.destpane:
                         p = self.destpane.leaf
                         self.destpane = None
-                        p = p.call("PopupTile", "MD3tsa", ret='focus')
-                        #p = p.call("ThisPane", ret='focus')
-                        d.call("doc:attach-view", p, 1, ret='focus')
-                        p.take_focus()
-                        self.sock.send(b"OK")
+                        # Need to avoid transient popups
+                        if p:
+                            p = p.call("ThisPane", ret='focus')
+                        if p:
+                            p2 = p.call("PopupTile", "MD3tsa", ret='focus')
+                            if p2:
+                                p = p2
+                        if p:
+                            d.call("doc:attach-view", p, 1, ret='focus')
+                            p.take_focus()
+                            self.sock.send(b"OK")
+                        else:
+                            self.sock.send(b"No Cannot create pane")
                     else:
                         self.sock.send(b"No Display!")
                     return 1
