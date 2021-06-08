@@ -370,20 +370,21 @@ DEF_CMD(popup_other)
 DEF_CMD(popup_child_registered)
 {
 	/* Anything that reponds to ThisPane needs to discard
-	 * only children when new are registered.
+	 * any children when new are registered.
 	 */
 	struct pane *p = ci->home;
 	struct pane *c = ci->focus;
 	struct pane *old;
 
 	if (c->z != 0)
-		return 0;
+		return 1;
 restart:
 	list_for_each_entry(old, &p->children, siblings)
 		if (c->z == 0 && old != c) {
 			pane_close(old);
 			goto restart;
 		}
+	p->focus = c;
 	return 1;
 }
 

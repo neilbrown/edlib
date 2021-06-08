@@ -152,11 +152,12 @@ struct pane *__pane_register(struct pane *parent, short z,
 	if (z >= 0) {
 		if (parent && parent->focus == NULL)
 			parent->focus = p;
-		pane_call(parent, "ChildRegistered", p);
-		if (p->damaged & DAMAGED_CLOSED)
+		if (pane_call(parent, "ChildRegistered", p) < 0 ||
+		    p->damaged & DAMAGED_CLOSED) {
 			/* ChildRegistered objected */
+			pane_close(p);
 			p = NULL;
-		else
+		} else
 			/* Need to set size of child */
 			pane_damaged(parent, DAMAGED_SIZE);
 	}

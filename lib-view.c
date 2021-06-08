@@ -279,7 +279,13 @@ DEF_CMD(view_child_registered)
 {
 	struct pane *p = ci->home;
 	struct view_data *vd = p->data;
+
+	if (ci->focus->z)
+		return 1;
+	if (vd->child)
+		pane_close(vd->child);
 	vd->child = ci->focus;
+	p->focus = ci->focus;
 	return 1;
 }
 

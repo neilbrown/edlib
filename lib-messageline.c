@@ -150,8 +150,13 @@ DEF_CMD(messageline_refresh_size)
 DEF_CMD(messageline_child_registered)
 {
 	struct mlinfo *mli = ci->home->data;
+	if (ci->focus->z)
+		/* Ignore */
+		return 1;
+	if (mli->child)
+		pane_close(mli->child);
 	mli->child = ci->focus;
-	pane_focus(ci->focus);
+	ci->home->focus = ci->focus;
 	return 1;
 }
 
