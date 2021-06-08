@@ -1117,6 +1117,15 @@ DEF_CMD(doc_attach_view)
 	char *s;
 	const char *type = ci->str ?: "default";
 
+	if (strcmp(type, "invisible") != 0) {
+		if (doc == focus)
+			/* caller is confused. */
+			return Einval;
+		/* Double check the focus can display things */
+		if (call("Draw:text", focus) == Efallthrough)
+			return Einval;
+	}
+
 	p = doc_attach(focus);
 	if (!p)
 		return Efail;
