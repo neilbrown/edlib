@@ -28,7 +28,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [ ] lib-renderline in a 1x1 pane spins.  Happens if I 'elc' while cursor
+- [X] lib-renderline in a 1x1 pane spins.  Happens if I 'elc' while cursor
       is in a search popup.
 - [X] notmuch compose adds 'Re:' if it already exists
 - [ ] x11selection doesn't work properly on second ncurses display
@@ -37,7 +37,7 @@ Bugs to be fixed
 - [X] introduce per-pane timestamp so code can easily tell if it has run too long
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
-      input can cancel this on suitable input.
+      input pboard_waican cancel this on suitable input.
 - [X] handle reply-to header when replying to emails
 - [X] file names created for attachments need spaces etc translated
       for scp to work well ... at least when ncurses wants to use scp.

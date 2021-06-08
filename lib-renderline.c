@@ -524,6 +524,9 @@ DEF_CMD(renderline)
 	update_line_height(p, focus, &line_height, &ascent, &twidth, &center,
 			   line, scale);
 
+	if (line_height <= 0)
+		return Einval;
+
 	if (!wrap)
 		x -= shift_left;
 	else
