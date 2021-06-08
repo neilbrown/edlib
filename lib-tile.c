@@ -53,6 +53,11 @@ static void tile_avail(struct pane *p safe, struct pane *ignore);
 static int tile_destroy(struct pane *p safe);
 DEF_LOOKUP_CMD(tile_handle, tile_map);
 
+static inline bool mine(struct pane *t safe)
+{
+	return t->z == 0 && t->handle == &tile_handle.c;
+}
+
 
 DEF_CMD(tile_close)
 {
@@ -407,7 +412,7 @@ static void tile_avail(struct pane *p safe, struct pane *ignore)
 		struct tileinfo *ti2;
 		int sum = 0, min = -1;
 		list_for_each_entry(t, &p->children, siblings) {
-			if (t == ignore || t->z)
+			if (t == ignore || !mine(t))
 				continue;
 			tile_avail(t, NULL);
 			ti2 = t->data;
@@ -445,7 +450,7 @@ static void tile_adjust(struct pane *p safe)
 
 	list_for_each_entry(t, &p->children, siblings) {
 
-		if (t->z)
+		if (!mine(t))
 			continue;
 		ti = t->data;
 		if (ti->direction == Horiz) {
@@ -472,7 +477,7 @@ static void tile_adjust(struct pane *p safe)
 			struct tileinfo *ti2 = t->data;
 			int diff;
 			int mysize;
-			if (t->z)
+			if (!mine(t))
 				continue;
 			if (!remain)
 				break;
@@ -516,7 +521,7 @@ static void tile_adjust(struct pane *p safe)
 	pos = 0;
 	list_for_each_entry(t, &p->children, siblings) {
 		struct tileinfo *ti2 = t->data;
-		if (t->z)
+		if (!mine(t))
 			continue;
 		if (ti2->direction == Horiz) {
 			pane_resize(t, pos, t->y, t->w, t->h);
@@ -568,7 +573,7 @@ static bool tile_grow(struct pane *p safe, int horiz, int size)
 		struct pane *t;
 		int p_found = 0;
 		list_for_each_entry(t, &p->parent->children, siblings) {
-			if (t->z)
+			if (!mine(t))
 				continue;
 			if (t == p)
 				p_found = 1;
@@ -623,7 +628,7 @@ static struct pane *next_child(struct pane *parent, struct pane *prev, bool popu
 		}
 		if (prev)
 			continue;
-		if ((p2->z != 0) != popup)
+		if (mine(p2) == popup)
 			continue;
 		return p2;
 	}

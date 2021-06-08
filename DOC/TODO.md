@@ -28,6 +28,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] lib-renderline in a 1x1 pane spins.  Happens if I 'elc' while cursor
+      is in a search popup.
 - [X] notmuch compose adds 'Re:' if it already exists
 - [ ] x11selection doesn't work properly on second ncurses display
       except when it does...
