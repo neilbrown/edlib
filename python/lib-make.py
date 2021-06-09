@@ -554,6 +554,9 @@ class MakeViewerPane(edlib.Pane):
         self.call("doc:request:doc:replaced")
         self.call("doc:request:make-set-match")
         self.may_follow = True
+        # I think I want to start following, but if there are already matches,
+        # I really want to go to one of those...  let's try this.
+        focus.call("doc:file", 1)
 
     def handle_set_match(self, key, mark, num, **a):
         "handle:make-set-match"

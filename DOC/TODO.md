@@ -28,6 +28,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] 'bury' doesn't work in notmuch window
 - [X] lib-renderline in a 1x1 pane spins.  Happens if I 'elc' while cursor
       is in a search popup.
 - [Y] modified document which cannot be written also cannot be killed!
@@ -638,6 +639,7 @@ Module features
 
 ### C-mode
 
+- [Y] allow {} inside 'case' without increasing indent level
 - [ ]  auto-indent enhancements
 
      +   py: after "return" de-indent
