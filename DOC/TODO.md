@@ -31,7 +31,7 @@ Bugs to be fixed
 - [ ] 'bury' doesn't work in notmuch window
 - [X] lib-renderline in a 1x1 pane spins.  Happens if I 'elc' while cursor
       is in a search popup.
-- [Y] modified document which cannot be written also cannot be killed!
+- [X] modified document which cannot be written also cannot be killed!
 - [ ] initial draw of a pane sometime stops halfway down the pane - particularly email.
 - [X] notmuch compose adds 'Re:' if it already exists
 - [ ] x11selection doesn't work properly on second ncurses display

@@ -1591,7 +1591,10 @@ DEF_CMD(emacs_kill_doc)
 	if (ci->num <= 0 || ci->num == NO_NUMERIC) {
 		/* Check if modified. */
 		char *m = pane_attr_get(ci->focus, "doc-modified");
-		if (m && strcmp(m, "yes") == 0) {
+		char *f = NULL;
+		if (m && strcmp(m, "yes") == 0)
+			f = pane_attr_get(ci->focus, "filename");
+		if (f) {
 			call("Message:modal", ci->focus, 0, NULL,
 			     "Document is modified - please save or give prefix arg");
 			return 1;
