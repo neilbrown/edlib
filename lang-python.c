@@ -2241,15 +2241,19 @@ static PyObject *Mark_release(Mark *self safe, PyObject *args)
 				"Cannot release ungrouped marks or points");
 		return NULL;
 	}
-	if (m->mtype == &MarkType) {
-		/* We are dropping this mark - there cannot be any other ref */
-		ASSERT(m->mdata == self);
-		self->mark = NULL;
-		Py_DECREF(self);
-		m->mdata = NULL;
-		m->mtype = NULL;
-		mark_free(m);
+	if (m->mtype != &MarkType) {
+		PyErr_SetString(PyExc_TypeError,
+				"Mark is not managed by python, and cannot be released");
+		return NULL;
 	}
+
+	/* We are dropping this mark - there cannot be any other ref */
+	ASSERT(m->mdata == self);
+	self->mark = NULL;
+	Py_DECREF(self);
+	m->mdata = NULL;
+	m->mtype = NULL;
+	mark_free(m);
 
 	Py_INCREF(Py_None);
 	return Py_None;

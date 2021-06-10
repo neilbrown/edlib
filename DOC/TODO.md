@@ -664,7 +664,7 @@ Module features
 - [X] allow (even prefer) str1 for str, as str is predefined
 - [X] use new doc:debug:mark when printing marks
 - [ ] should Efallthrough be an exception?
-- [Y] report error if release mark which isn't ours.
+- [X] report error if release mark which isn't ours.
 - [ ] Log loading of modules - Can I provide version info?
 - [ ] we aren't catching errors from functions called from .connect()
        Maybe use sys.excepthook(typ,val,tb)
