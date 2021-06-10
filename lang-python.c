@@ -2343,17 +2343,22 @@ static int mark_set_item(Mark *self safe, PyObject *key safe, PyObject *val safe
 
 static PyObject *mark_repr(Mark *self safe)
 {
-	char *s = NULL;
+	char *s = NULL, *dm;
 	PyObject *ret;
 
-	if (mark_valid(self->mark))
+	if (!self->mark)
+		asprintf(&s, "<edlib.Mark NULL %p>", self);
+	else if (!mark_valid(self->mark))
+		asprintf(&s, "<edlib.Mark FREED %p>", self);
+	else if ((dm = call_ret(str, "doc:debug:mark", self->mark->owner))
+		 != NULL)
+		asprintf(&s, "<edlib.Mark seq=%d v=%d %s>",
+			 self->mark->seq, self->mark->viewnum, dm);
+	else
 		asprintf(&s, "<edlib.Mark seq=%d v=%d i=%d %p>",
 			 self->mark->seq, self->mark->viewnum,
 			 self->mark->ref.o, self->mark);
-	else if (self->mark)
-		asprintf(&s, "<edlib.Mark FREED %p>", self);
-	else
-		asprintf(&s, "<edlib.Mark NULL %p>", self);
+
 	ret = Py_BuildValue("s", s);
 	free(s);
 	return ret;
