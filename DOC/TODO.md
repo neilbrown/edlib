@@ -474,6 +474,9 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] add command to go to first new message? 'N'?
+- [ ] saved queries that are not mentioned in any other query should get
+      presented in the search list. ... except maybe current/unread/new ???
 - [ ] if a thread matched query and so is still cached, but no
       individual messages match any more, then whole thread is shown.
       This is confusing.  Maybe we report an error when open is attempted,
@@ -510,9 +513,9 @@ Module features
 - [ ] search in thread list - use 'format2' after fixing bug
 - [ ] display counts of current thread somewhere, so I know where I'm up to. - new/unread/matched in status line
 - [ ] review highlight on query when the message selected isn't the message displayed
-- [Y] use NOTMUCH_CONFIG consistently - drop locking
+- [X] use NOTMUCH_CONFIG consistently - drop locking
 - [ ] fix bugs in stored-query!! query: is slow and (I think) buggy
-- [Y] uses stored-query to store querys even if I don't use it for lookup
+- [X] uses stored-query to store querys even if I don't use it for lookup
 - [ ] rel_date could report how long until display would change, and
    we could set a timer for the minimum.
 - [ ] allow re-ordering of saved-search list click-drag? +/-?

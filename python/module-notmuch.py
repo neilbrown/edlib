@@ -16,13 +16,16 @@
 # These can be all in with one pane, with sub-panes, or can sometimes
 # have a pane to themselves.
 #
-# saved search are stored in config file as "saved.foo". Some are special.
-# "saved.current" selects messages that have not been archived, and are not spam
-# "saved.unread" selects messages that should be highlighted. It is normally "tag:unread"
-# "saved.new" selects new messages. Normally "tag:new not tag:unread"
-# "saved.current-list" should be a conjunction of "saved:" searches.  They are listed
+# saved search are stored in config file as "saved.foo" or in the database
+# as "query.foo". Some are special.  They are treated identically and we will
+# assume "query." below.
+# "query.current" selects messages that have not been archived, and are not spam
+# "query.unread" selects messages that should be highlighted. It is normally
+# "tag:unread"
+# "query.new" selects new messages. Normally "tag:new not tag:unread"
+# "query.current-list" should be a conjunction of "query:" searches.  They are listed
 #  in the "search list" together with a count of 'current' and 'current/new' messages.
-# "saved.misc-list" is a subset of current-list for which saved:current should not
+# "query.misc-list" is a subset of current-list for which query:current should not
 # be assumed.
 
 from subprocess import Popen, PIPE, DEVNULL
@@ -182,7 +185,7 @@ class searches:
         self.slist = {}
         for line in p.stdout:
             line = line.decode("utf-8")
-            if line[:6] != "saved.":
+            if not line.startswith('saved.') and not line.startswith('query.'):
                 continue
             w = line[6:].strip().split("=", 1)
             self.slist[w[0]] = w[1]
@@ -193,12 +196,12 @@ class searches:
         except IOError:
             pass
         if "current-list" not in self.slist:
-            self.slist["current-list"] = "saved:inbox saved:unread"
+            self.slist["current-list"] = "query:inbox query:unread"
             if "current" not in self.slist:
-                self.slist["misc-list"] = "saved:inbox saved:unread"
+                self.slist["misc-list"] = "query:inbox query:unread"
             if "inbox" not in self.slist:
                 self.slist["inbox"] = "tag:inbox"
-            if "saved:unread" not in self.slist:
+            if "unread" not in self.slist:
                 self.slist["unread"] = "tag:inbox AND tag:unread"
 
         if "misc-list" not in self.slist:
@@ -264,34 +267,34 @@ class searches:
         self.cb(self.worker.pending != None and
                 self.slow_worker.pending != None)
 
-    patn = "\\bsaved:([-_A-Za-z0-9]*)\\b"
+    patn = "\\b(saved|query):([-_A-Za-z0-9]*)\\b"
     def map_search(self, query):
         m = re.search(self.patn, query)
         while m:
-            s = m.group(1)
+            s = m.group(2)
             if s in self.slist:
                 q = self.slist[s]
-                query = re.sub('saved:' + s,
+                query = re.sub('\\b(saved|query):' + s + '\\b',
                                '(' + q + ')', query)
             else:
-                query = re.sub('saved:' + s,
-                               'saved-'+s, query)
+                query = re.sub('\\b(saved|query):' + s + '\\b',
+                               'query-'+s, query)
             m = re.search(self.patn, query)
         return query
 
     def make_search(self, name, extra = None):
         s = '(' + self.slist[name] + ')'
         if name not in self.misc:
-            s = s + " AND saved:current"
+            s = s + " AND query:current"
         if extra:
-            s = s + " AND saved:" + extra
+            s = s + " AND query:" + extra
         return self.map_search(s)
 
     def searches_from(self, n):
         ret = []
         if n in self.slist:
             for s in self.slist[n].split(" "):
-                if s[:6] == "saved:":
+                if s.startswith('saved:') or s.startswith('query:'):
                     ret.append(s[6:])
         return ret
 
