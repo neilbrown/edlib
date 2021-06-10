@@ -305,12 +305,12 @@ class MakePane(edlib.Pane):
             self.doc.close()
             return 0
 
-    def make_next(self, key, focus, num, num2, str, str2, xy, comm2, **a):
+    def make_next(self, key, focus, num, num2, str1, str2, xy, comm2, **a):
         "handle:make:match-docs"
         prevret = xy[1]
-        if str == "close-idle":
+        if str1 == "close-idle":
             return self.close_idle(xy[0])
-        if str == "choose-make":
+        if str1 == "choose-make":
             if self['cmd'] != 'make':
                 return 0
             if prevret > 0:
@@ -327,7 +327,7 @@ class MakePane(edlib.Pane):
             # some other pane has already responded
             return 0
 
-        if str == "find-visible":
+        if str1 == "find-visible":
             # If this doc is visible from 'focus', return the pane
             # it is visible in.
             docpane = focus.call("DocPane", self.doc, ret='focus')
@@ -337,7 +337,7 @@ class MakePane(edlib.Pane):
                 comm2("cb", docpane)
             return 1
 
-        if str != "next-match":
+        if str1 != "next-match":
             return 0
 
         if num < 0:
@@ -534,8 +534,8 @@ class MakePane(edlib.Pane):
         self.parent.close()
         return 1
 
-def make_attach(key, focus, comm2, str, str2, **a):
-    p = focus.call("attach-shellcmd", 1, str, str2, ret='focus')
+def make_attach(key, focus, comm2, str1, str2, **a):
+    p = focus.call("attach-shellcmd", 1, str1, str2, ret='focus')
     if not p:
         return edlib.Efail
     focus['view-default'] = 'make-viewer'
@@ -624,14 +624,14 @@ class MakeViewerPane(edlib.Pane):
         p = MakeViewerPane(focus)
         home.clone_children(p)
 
-    def handle_highlight(self, key, focus, str, str2, mark, comm2, **a):
+    def handle_highlight(self, key, focus, str1, str2, mark, comm2, **a):
         "handle:map-attr"
         if not comm2:
             return
-        if str == "render:make-line" and str2 == "other":
+        if str1 == "render:make-line" and str2 == "other":
             comm2("attr:callback", focus, mark, "bg:cyan+80", 10000, 2)
             return 1
-        if str == "render:make-line" and str2 == "best":
+        if str1 == "render:make-line" and str2 == "best":
             comm2("attr:callback", focus, mark, "bg:magenta+80", 10000, 2)
             return 1
 
@@ -652,8 +652,8 @@ class makeprompt(edlib.Pane):
 
     def enter(self, key, focus, **a):
         "handle:K:Enter"
-        str = focus.call("doc:get-str", ret="str")
-        return focus.call("popup:close", str)
+        str1 = focus.call("doc:get-str", ret="str")
+        return focus.call("popup:close", str1)
 
     def up(self, key, focus, **a):
         "handle:K:Up"
@@ -691,7 +691,7 @@ class makeprompt(edlib.Pane):
 def isword(c):
     return c and c.isalnum() or c == '_'
 
-def run_make(key, focus, str, **a):
+def run_make(key, focus, str1, **a):
     # key is X:a:mode:dir
     # Where 'X' is 'Y' if save-all has been attepted, else 'N'
     #  'a' is 1 if save-all should be unconditional (auto), else 0
@@ -708,7 +708,7 @@ def run_make(key, focus, str, **a):
         if focus.call("docs:save-all", 0, testonly, dir) != 1:
             p = focus.call("PopupTile", "DM", ret='focus')
             p['done-key'] = 'Y:' + key[2:]
-            p['default'] = str
+            p['default'] = str1
             p['only-here'] = dir
             p.call("popup:set-callback", run_make)
             p.call("docs:show-modified")
@@ -748,7 +748,7 @@ def run_make(key, focus, str, **a):
 
     doc['dirname'] = dir
     doc['view-default'] = 'make-viewer'
-    doc['make-command'] = str
+    doc['make-command'] = str1
     pd = None; p = None
     if cmd == "make":
         pd = focus.call("DocPane", doc, ret='focus')
@@ -762,12 +762,12 @@ def run_make(key, focus, str, **a):
         doc.call("doc:attach-view", p, 1, ret='focus')
 
     if not still_running:
-        p = doc.call("attach-makecmd", str, dir, ret='focus')
+        p = doc.call("attach-makecmd", str1, dir, ret='focus')
         if p:
             p['cmd'] = cmd
     return 1
 
-def make_request(key, focus, num, num2, str, mark, **a):
+def make_request(key, focus, num, num2, str1, mark, **a):
     history = None
     dflt_arg = ''
 
@@ -815,7 +815,7 @@ def make_request(key, focus, num, num2, str, mark, **a):
             mark = focus.call("doc:point", ret='mark')
     if cmd != "make" and focus['doc-type'] == "text" and mark:
         # choose the word under the cursor
-        if not str:
+        if not str1:
             m1 = mark.dup()
             c = focus.prior(m1)
             while isword(c):
@@ -826,14 +826,14 @@ def make_request(key, focus, num, num2, str, mark, **a):
             while isword(c):
                 focus.next(m2)
                 c = focus.following(m2)
-            str = focus.call("doc:get-str", m1, m2, ret='str')
-        if str and not ('\n' in str):
-            if not "'" in str:
-                dflt_arg = "'" + str + "'"
-            elif not '"' in str:
-                dflt_arg = '"' + str + '"'
+            str1 = focus.call("doc:get-str", m1, m2, ret='str')
+        if str1 and not ('\n' in str1):
+            if not "'" in str1:
+                dflt_arg = "'" + str1 + "'"
+            elif not '"' in str1:
+                dflt_arg = '"' + str1 + '"'
             else:
-                dflt_arg = str
+                dflt_arg = str1
 
     autosave = 1 if num > 0 and num != edlib.NO_NUMERIC else 0
     if cmd == "make" and num2:
@@ -878,7 +878,7 @@ def make_request(key, focus, num, num2, str, mark, **a):
     makeprompt(p)
     return 1
 
-def next_match(key, focus, num, str, num2, **a):
+def next_match(key, focus, num, str1, num2, **a):
     if num == edlib.NO_NUMERIC:
         restart = 0
     elif num < 0:
@@ -886,7 +886,7 @@ def next_match(key, focus, num, str, num2, **a):
     else:
         restart = 1
     if not focus.call("editor:notify:make:match-docs", "next-match",
-                      str, restart, num2):
+                      str1, restart, num2):
         focus.call("Message", "No next-match found")
 
     return 1

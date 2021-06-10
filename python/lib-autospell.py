@@ -215,11 +215,11 @@ class autospell_view(edlib.Pane):
             self.vend.clip(mark, mark2)
         return edlib.Efallthrough
 
-    def map_attr(self, key, focus, str, str2, mark, comm2, **a):
+    def map_attr(self, key, focus, str1, str2, mark, comm2, **a):
         "handle:map-attr"
-        if not str or not mark or not comm2:
+        if not str1 or not mark or not comm2:
             return edlib.Enoarg
-        if str == "render:spell-incorrect":
+        if str1 == "render:spell-incorrect":
             comm2("cb", focus, int(str2), mark, "fg:red-80,underline", 100)
         return edlib.Efallthrough
 

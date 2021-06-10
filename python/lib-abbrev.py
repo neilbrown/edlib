@@ -154,14 +154,14 @@ class AbbrevPane(edlib.Pane):
             self.complete_len = len(c)
         self.call("view:changed", self.prefix_start, self.prefix_end)
 
-    def handle_highlight(self, key, focus, mark, str, str2, comm2, **a):
+    def handle_highlight(self, key, focus, mark, str1, str2, comm2, **a):
         "handle:map-attr"
         if not comm2 or not self.prefix_start:
             return
-        if str == "render:abbrev" and str2 == 'prefix' and mark == self.prefix_start:
+        if str1 == "render:abbrev" and str2 == 'prefix' and mark == self.prefix_start:
             comm2("cb", focus, mark, "bg:yellow", self.prefix_len)
             return 1
-        if str == "render:abbrev" and str2 == 'completion' and mark == self.prefix_end:
+        if str1 == "render:abbrev" and str2 == 'completion' and mark == self.prefix_end:
             comm2("cb", focus, mark, "bg:cyan", self.complete_len)
             return 1
 

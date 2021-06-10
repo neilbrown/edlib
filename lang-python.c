@@ -438,7 +438,7 @@ static void python_interrupt(int sig)
 REDEF_CB(python_call)
 {
 	struct python_command *pc = container_of(ci->comm, struct python_command, c);
-	PyObject *ret = NULL, *args, *kwds;
+	PyObject *ret = NULL, *args, *kwds, *str;
 	int rv = 1;
 
 	args = safe_cast Py_BuildValue("(s)", ci->key);
@@ -452,9 +452,22 @@ REDEF_CB(python_call)
 	rv = rv && dict_add(kwds, "mark2",
 			    ci->mark2 ? Mark_Frommark(ci->mark2):
 			    (Py_INCREF(Py_None), Py_None));
-	rv = rv && dict_add(kwds, "str",
-			    ci->str ? python_string(ci->str):
-			    (Py_INCREF(Py_None), safe_cast Py_None));
+
+	if (ci->str)
+		str = python_string(ci->str);
+	else {
+		str = Py_None;
+		Py_INCREF(Py_None);
+	}
+	if (str) {
+		dict_add(kwds, "str", str);
+		dict_add(kwds, "str1", str);
+		Py_INCREF(str);
+	} else {
+		rv = 1;
+		Py_DECREF(str);
+	}
+
 	rv = rv && dict_add(kwds, "str2",
 			    ci->str2 ? python_string(ci->str2):
 			    (Py_INCREF(Py_None), safe_cast Py_None));
@@ -2583,7 +2596,9 @@ static bool get_cmd_info(struct cmd_info *ci safe, PyObject *args safe, PyObject
 		}
 	}
 	if (kwds && PyDict_Check(kwds)) {
-		a = PyDict_GetItemString(kwds, "str");
+		a = PyDict_GetItemString(kwds, "str1");
+		if (!a || a == Py_None)
+			a = PyDict_GetItemString(kwds, "str");
 		if (a && a != Py_None) {
 			if (*s1 || ci->str) {
 				PyErr_SetString(PyExc_TypeError,

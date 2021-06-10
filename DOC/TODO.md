@@ -661,7 +661,7 @@ Module features
 
 ### lang-python
 
-- [Y] allow (even prefer) str1 for str, as str is predefined
+- [X] allow (even prefer) str1 for str, as str is predefined
 - [Y] use new doc:debug:mark when printing marks
 - [ ] should Efallthrough be an exception?
 - [Y] report error if release mark which isn't ours.
