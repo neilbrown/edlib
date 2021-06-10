@@ -73,6 +73,12 @@ class PresenterPane(edlib.Pane):
         self.borderless = False
         self.first_valid = False
         self.lines_damaged = True
+        self.call("doc:request:doc:replaced")
+        self.call("doc:request:doc:Recentre")
+
+        self['render-wrap'] = 'no'
+        self['background'] = 'color:yellow'
+        self['hide-cursor'] = 'yes'
 
     def first_page(self):
         return self.vmarks(self.pageview)[0]
@@ -720,13 +726,13 @@ class MarkdownPane(edlib.Pane):
 
 def present_attach(key, focus, comm2, **a):
     p = PresenterPane(focus)
-    p['render-wrap'] = 'no'
-    p['background'] = 'color:yellow'
-    p['hide-cursor'] = 'yes'
 
-    p.call("doc:request:doc:replaced")
-    p.call("doc:request:doc:Recentre")
-    comm2("callback", p)
+    if p:
+        p2 = p.call("attach-viewer")
+        if p2:
+            p = p2
+    if p:
+        comm2("callback", p)
     return 1
 
 def markdown_attach(key, focus, comm2, **a):

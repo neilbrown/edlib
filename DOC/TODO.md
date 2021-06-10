@@ -28,6 +28,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] understand why the 'grep' test isn't consistent, and fix it
 - [ ] 'bury' doesn't work in notmuch window
 - [X] lib-renderline in a 1x1 pane spins.  Happens if I 'elc' while cursor
       is in a search popup.
@@ -624,7 +625,7 @@ Module features
 
 - [ ] split into lower pane which parse markdown and upper which handles presentation.
 - [ ] command to immediately change current pane in to presenter view
-- [Y] add viewer pane so cannot accidentally edit - and space pages down.
+- [X] add viewer pane so cannot accidentally edit - and space pages down.
 - [ ] translucent bg colour for paragraphs
 - [ ] partial-view-points. Only render beyond here if mark here or beyond.
     page-down goes to next such point
