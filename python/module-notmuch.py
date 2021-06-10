@@ -531,7 +531,7 @@ class notmuch_main(edlib.Doc):
         with self.db as db:
             m = db.find_message(str)
             fn = m.get_filename() + ""
-        doc = focus.call("doc:open", "email:"+fn, -2, ret='focus')
+        doc = focus.call("doc:open", "email:"+fn, -2, ret='pane')
         if doc:
             doc['notmuch:id'] = str
             comm2("callback", doc)
@@ -1538,7 +1538,7 @@ class notmuch_master_view(edlib.Pane):
                     self.maxlen = int(m)
                 else:
                     self.maxlen = 20
-            tile = self.list_pane.call("ThisPane", "notmuch", ret='focus')
+            tile = self.list_pane.call("ThisPane", "notmuch", ret='pane')
             space = self.w
             ch,ln = tile.scale()
             max = 5 + 1 + self.maxlen + 1
@@ -1551,7 +1551,7 @@ class notmuch_master_view(edlib.Pane):
         if self.query_pane and self.message_pane:
             # query_pane must be at least 4 lines, else 1/4 height
             # but never more than 1/2 the height
-            tile = self.query_pane.call("ThisPane", "notmuch", ret='focus')
+            tile = self.query_pane.call("ThisPane", "notmuch", ret='pane')
             ch,ln = tile.scale()
             space = self.h
             min = 4
@@ -1585,8 +1585,8 @@ class notmuch_master_view(edlib.Pane):
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
         main = notmuch_master_view(focus)
-        p = main.call("attach-tile", "notmuch", "main", ret='focus')
-        frm = self.list_pane.call("ThisPane", "notmuch", ret='focus')
+        p = main.call("attach-tile", "notmuch", "main", ret='pane')
+        frm = self.list_pane.call("ThisPane", "notmuch", ret='pane')
         frm.clone_children(p)
         return 1
 
@@ -1626,14 +1626,14 @@ class notmuch_master_view(edlib.Pane):
 
     def handle_search(self, key, focus, **a):
         "handle:doc:char-s"
-        pup = focus.call("PopupTile", "3", "", ret='focus')
+        pup = focus.call("PopupTile", "3", "", ret='pane')
         if not pup:
             return edlib.Efail
         pup['done-key'] = "notmuch-do-ad hoc"
         pup['prompt'] = "Ad hoc query"
         pup.call("doc:set-name", "Ad hoc query")
         p = pup.call("attach-history", "*Notmuch Query History*",
-                     "popup:close", ret='focus')
+                     "popup:close", ret='pane')
         if p:
             pup = p
         query_popup(pup)
@@ -1650,9 +1650,9 @@ class notmuch_master_view(edlib.Pane):
             return 0
         focus.call("docs:byeach", lambda key,**a:choose(choice, a))
         if len(choice):
-            par = focus.call("PopupTile", "MD3tsa", ret='focus')
+            par = focus.call("PopupTile", "MD3tsa", ret='pane')
             if par:
-                par = choice[0].call("doc:attach-view", par, 1, ret='focus')
+                par = choice[0].call("doc:attach-view", par, 1, ret='pane')
                 par.take_focus()
         else:
             focus.call("Message:modal",
@@ -1673,14 +1673,14 @@ class notmuch_master_view(edlib.Pane):
         f = focus['filter']
         if not f:
             f = ""
-        pup = focus.call("PopupTile", "3", f, ret='focus')
+        pup = focus.call("PopupTile", "3", f, ret='pane')
         if not pup:
             return edlib.Efail
         pup['done-key'] = "notmuch-do-filter"
         pup['prompt'] = "Query filter"
         pup.call("doc:set-name", "*Query filter for %s*" % focus['qname'])
         p = pup.call("attach-history", "*Notmuch Filter History*",
-                     "popup:close", ret='focus')
+                     "popup:close", ret='pane')
         if p:
             pup = p
         query_popup(pup)
@@ -1858,7 +1858,7 @@ class notmuch_master_view(edlib.Pane):
 
         fd, fname = tempfile.mkstemp(dir=drafts)
         os.close(fd)
-        m = focus.call("doc:open", fname, -1, ret = 'focus')
+        m = focus.call("doc:open", fname, -1, ret='pane')
         m.call("doc:set-name", "*Unsent mail message*")
         m['view-default'] = 'compose-email'
         m['email-sent'] = 'no'
@@ -1882,11 +1882,11 @@ class notmuch_master_view(edlib.Pane):
         # content from will disappear.
         # I think Popuptile is best, with maybe an option to expand it
         # after the copy is done.
-        #p = focus.call("OtherPane", ret='focus')
-        p = focus.call("PopupTile", "MD3tsa", ret='focus')
+        #p = focus.call("OtherPane", ret='pane')
+        p = focus.call("PopupTile", "MD3tsa", ret='pane')
         if not p:
             return edlib.Efail
-        v = m.call("doc:attach-view", p, 1, ret='focus')
+        v = m.call("doc:attach-view", p, 1, ret='pane')
         if v:
             v.take_focus()
         return v
@@ -1991,7 +1991,7 @@ class notmuch_master_view(edlib.Pane):
             # Might be at EOF
             return 1
 
-        pup = focus.call("PopupTile", "2", key[-1:], ret='focus')
+        pup = focus.call("PopupTile", "2", key[-1:], ret='pane')
         if not pup:
             return edlib.Fail
         done = "notmuch-do-tags-%s" % thid
@@ -2078,7 +2078,7 @@ class notmuch_master_view(edlib.Pane):
 
             p.call("Window:close", "notmuch")
         else:
-            p = self.call("ThisPane", ret='focus')
+            p = self.call("ThisPane", ret='pane')
             if p and p.focus:
                 p.focus.close()
         return 1
@@ -2089,11 +2089,11 @@ class notmuch_master_view(edlib.Pane):
         if not self.message_pane:
             return 1
         p2 = self.call("doc:open", self.message_pane["filename"], -1,
-                       ret = 'focus')
+                       ret='pane')
         p2.call("doc:set:autoclose", 1)
-        p0 = self.call("DocPane", p2, ret='focus')
+        p0 = self.call("DocPane", p2, ret='pane')
         if not p0:
-            p0 = self.call("OtherPane", ret = 'focus')
+            p0 = self.call("OtherPane", ret='pane')
         if not p0:
             return 1
         p2.call("doc:attach-view", p0, 1, "viewer")
@@ -2137,10 +2137,10 @@ class notmuch_master_view(edlib.Pane):
             if s:
                 self.list_pane.call("doc:notmuch:update-one", s)
 
-        p0 = self.list_pane.call("doc:notmuch:query", str, ret='focus')
+        p0 = self.list_pane.call("doc:notmuch:query", str, ret='pane')
         p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 15,
-                                 ret = 'focus')
-        self.query_pane = p0.call("doc:attach-view", p1, ret='focus')
+                                 ret='pane')
+        self.query_pane = p0.call("doc:attach-view", p1, ret='pane')
         if num:
             self.query_pane.take_focus()
         self.resize()
@@ -2152,16 +2152,16 @@ class notmuch_master_view(edlib.Pane):
         # Find the file and display it in a 'message' pane
         self.mark_read()
 
-        p0 = self.list_pane.call("doc:notmuch:byid", str, ret='focus')
+        p0 = self.list_pane.call("doc:notmuch:byid", str, ret='pane')
         if not p0:
             focus.call("Message", "Failed to find message")
             return edlib.Efail
         p0['notmuch:tid'] = str2
 
         p1 = self.query_pane.call("OtherPane", "notmuch", "message", 13,
-                                  ret='focus')
-        p3 = p0.call("doc:attach-view", p1, ret='focus')
-        p3 = p3.call("attach-render-notmuch:message", ret='focus')
+                                  ret='pane')
+        p3 = p0.call("doc:attach-view", p1, ret='pane')
+        p3 = p3.call("attach-render-notmuch:message", ret='pane')
 
         # FIXME This still doesn't work: there are races: attaching a doc to
         # the pane causes the current doc to be closed.  But the new doc
@@ -2913,14 +2913,14 @@ def notmuch_doc(key, home, focus, comm2, **a):
     return 1
 
 def render_query_attach(key, focus, comm2, **a):
-    p = focus.call("attach-render-format", ret='focus')
+    p = focus.call("attach-render-format", ret='pane')
     p = notmuch_query_view(p)
     if comm2:
         comm2("callback", p)
     return 1
 
 def render_message_attach(key, focus, comm2, **a):
-    p = focus.call("attach-email-view", ret='focus')
+    p = focus.call("attach-email-view", ret='pane')
     p = notmuch_message_view(p)
     if comm2:
         comm2("callback", p)
@@ -2937,9 +2937,9 @@ def render_master_view_attach(key, focus, comm2, **a):
     doc = focus.parent
     main = notmuch_master_view()
     doc.reparent(main)
-    p = main.call("attach-tile", "notmuch", "main", ret='focus')
+    p = main.call("attach-tile", "notmuch", "main", ret='pane')
     doc.reparent(p)
-    p = focus.call("attach-render-format", ret='focus')
+    p = focus.call("attach-render-format", ret='pane')
     p = notmuch_list_view(p)
     main.list_pane = p
     p.take_focus()
@@ -2947,11 +2947,11 @@ def render_master_view_attach(key, focus, comm2, **a):
     return 1
 
 def notmuch_mode(key, home, focus, **a):
-    p0 = focus.call("ThisPane", ret = 'focus')
+    p0 = focus.call("ThisPane", ret='pane')
     try:
-        p1 = home.call("docs:byname", "*Notmuch*", ret='focus')
+        p1 = home.call("docs:byname", "*Notmuch*", ret='pane')
     except edlib.commandfailed:
-        p1 = home.call("attach-doc-notmuch", ret='focus')
+        p1 = home.call("attach-doc-notmuch", ret='pane')
     if not p1:
         return edlib.Efail
     p1.call("doc:attach-view", p0)

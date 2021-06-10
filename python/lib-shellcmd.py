@@ -152,7 +152,7 @@ def shell_attach(key, focus, comm2, num, str, str2, **a):
     return 1
 
 def shell_view_attach(key, focus, comm2, **a):
-    p = focus.call("attach-viewer", ret='focus')
+    p = focus.call("attach-viewer", ret='pane')
     p = ShellViewer(p)
 
     if not p:

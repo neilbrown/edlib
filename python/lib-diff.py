@@ -278,20 +278,20 @@ class DiffPane(edlib.Pane):
             fname = djoin(focus['dirname'], fname)
         lineno = int(lineno) + from_start
         try:
-            d = focus.call("doc:open", -1, 8, fname, ret='focus')
+            d = focus.call("doc:open", -1, 8, fname, ret='pane')
         except edlib.commandfailed:
             d = None
         if not d:
             focus.call("Message", "File %s not found" % fname)
             return edlib.Efail
 
-        par = focus.call("DocLeaf", d, ret='focus')
+        par = focus.call("DocLeaf", d, ret='pane')
         if not par:
-            par = focus.call("OtherPane", d, ret='focus')
+            par = focus.call("OtherPane", d, ret='pane')
             if not par:
                 focus.call("Message", "Failed to open pane")
                 return edlib.Efail
-            par = d.call("doc:attach-view", par, 1, ret='focus')
+            par = d.call("doc:attach-view", par, 1, ret='pane')
         par.take_focus()
         par.call("doc:file", -1)
         if lineno > 1:
@@ -314,7 +314,7 @@ class DiffPane(edlib.Pane):
         return 1
 
 def diff_view_attach(key, focus, comm2, **a):
-    p = focus.call("attach-viewer", ret='focus')
+    p = focus.call("attach-viewer", ret='pane')
     p = DiffPane(p)
     if not p:
         return edlib.Efail

@@ -45,7 +45,7 @@ try:
                     path = msg[5:].decode("utf-8")
                     try:
                         # 8==reload
-                        d = editor.call("doc:open", -1, 8, path, ret = "focus")
+                        d = editor.call("doc:open", -1, 8, path, ret='pane')
                     except edlib.commandfailed:
                         d = None
                     if not d:
@@ -53,7 +53,7 @@ try:
                         return 1
                     if self.term:
                         d.call("doc:attach-view", self.term, 1,
-                               ret='focus')
+                               ret='pane')
                         self.term.take_focus()
                         self.sock.send(b"OK")
                         return 1
@@ -65,13 +65,13 @@ try:
                         self.destpane = None
                         # Need to avoid transient popups
                         if p:
-                            p = p.call("ThisPane", ret='focus')
+                            p = p.call("ThisPane", ret='pane')
                         if p:
-                            p2 = p.call("PopupTile", "MD3tsa", ret='focus')
+                            p2 = p.call("PopupTile", "MD3tsa", ret='pane')
                             if p2:
                                 p = p2
                         if p:
-                            d.call("doc:attach-view", p, 1, ret='focus')
+                            d.call("doc:attach-view", p, 1, ret='pane')
                             p.take_focus()
                             self.sock.send(b"OK")
                         else:
@@ -81,7 +81,7 @@ try:
                     return 1
                 if msg[:21] == b"doc:request:doc:done:":
                     path = msg[21:].decode("utf-8")
-                    d = editor.call("doc:open", -1, path, ret="focus")
+                    d = editor.call("doc:open", -1, path, ret='pane')
                     if not d:
                         self.sock.send(b"FAIL")
                         return 1
@@ -103,7 +103,7 @@ try:
                 if msg.startswith(b"term "):
                     w = msg.split(b' ')
                     path = w[1].decode("utf-8")
-                    p = editor.call("attach-input", ret='focus')
+                    p = editor.call("attach-input", ret='pane')
 
                     for v in w[2:]:
                         vw = v.split(b'=')
@@ -112,12 +112,12 @@ try:
                                                       b'REMOTE_SESSION']:
                             p[vw[0].decode("utf-8")] = vw[1].decode("utf-8")
 
-                    p = p.call("attach-display-ncurses", path, ret="focus")
+                    p = p.call("attach-display-ncurses", path, ret='pane')
                     self.disp = p
-                    p = p.call("attach-messageline", ret='focus')
-                    p = p.call("attach-global-keymap", ret='focus')
+                    p = p.call("attach-messageline", ret='pane')
+                    p = p.call("attach-global-keymap", ret='pane')
                     p.call("attach-mode-emacs")
-                    p = p.call("attach-tile", ret='focus')
+                    p = p.call("attach-tile", ret='pane')
                     p.take_focus()
                     self.term = p
                     self.add_notify(self.disp, "Notify:Close")
@@ -304,9 +304,9 @@ else:
                 return 0
             focus.call("docs:byeach", lambda key,**a:chose(choice, a))
             if len(choice):
-                par = focus.call("ThisPane", ret='focus')
+                par = focus.call("ThisPane", ret='pane')
                 if par:
-                    par = choice[0].call("doc:attach-view", par, 1, ret='focus')
+                    par = choice[0].call("doc:attach-view", par, 1, ret='pane')
                     par.take_focus()
 
         return 1

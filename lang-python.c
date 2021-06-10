@@ -1021,13 +1021,13 @@ DEF_CB(take_comm)
 
 static struct command *map_ret(char *ret safe)
 {
-	if (strcmp(ret, "focus") == 0)
+	if (strcmp(ret, "pane") == 0)
 		return &take_focus;
 	if (strcmp(ret, "mark") == 0)
 		return &take_mark;
 	if (strcmp(ret, "mark2") == 0)
 		return &take_mark2;
-	if (strcmp(ret, "mark2") == 0)
+	if (strcmp(ret, "marks") == 0)
 		return &take_2_marks;
 	if (strcmp(ret, "str") == 0)
 		return &take_str;

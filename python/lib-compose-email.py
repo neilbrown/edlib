@@ -735,7 +735,7 @@ class compose_email(edlib.Pane):
         if fn and fn.startswith('/'):
             os.unlink(fn)
 
-        root = self.call("RootPane", ret='focus')
+        root = self.call("RootPane", ret='pane')
         if root:
             root.call("event:read", p.stdout.fileno(),
                       lambda key, **a: read_status(p, key, **a))
@@ -770,10 +770,10 @@ class compose_email(edlib.Pane):
 
 def compose_mode_attach(key, focus, comm2, **a):
     focus['fill-width'] = '72'
-    p = focus.call("attach-textfill", ret='focus')
+    p = focus.call("attach-textfill", ret='pane')
     if p:
         focus = p
-    p = focus.call("attach-autospell", ret='focus')
+    p = focus.call("attach-autospell", ret='pane')
     if p:
         focus = p
     p = compose_email(focus)

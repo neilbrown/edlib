@@ -20,11 +20,11 @@ def pdf_to_text(key, home, focus, comm2, **a):
 
     if out:
         doc = focus.call("doc:from-text", "pdf-document", out.decode("utf-8"),
-                         ret='focus')
+                         ret='pane')
     else:
         doc = focus.call("doc:from-text", "pdf-document",
                          "PDF conversion failed\n" + err.decode(),
-                         ret='focus')
+                         ret='pane')
     comm2("cb", doc)
     return 1
 

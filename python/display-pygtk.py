@@ -76,7 +76,7 @@ class EdDisplay(edlib.Pane):
     def handle_new(self, key, **a):
         "handle:Display:new"
         global editor
-        p = editor.call("attach-input", ret='focus')
+        p = editor.call("attach-input", ret='pane')
         p['DISPLAY'] = self['DISPLAY']
         newdisp = EdDisplay(p)
         self.clone_children(newdisp)
@@ -672,7 +672,7 @@ def new_display(key, focus, comm2, **a):
 
     disp = EdDisplay(focus)
     disp['DISPLAY'] = os.environ['DISPLAY']
-    p = disp.call("attach-x11selection", ret='focus')
+    p = disp.call("attach-x11selection", ret='pane')
     if not p:
         p = disp
     comm2('callback', p)
@@ -685,7 +685,7 @@ def new_display2(key, focus, **a):
         return None
     p = focus.root
     p.call("attach-glibevents")
-    p = p.call("attach-input", ret='focus')
+    p = p.call("attach-input", ret='pane')
 
     if 'SCALE' in os.environ:
         sc = int(os.environ['SCALE'])
@@ -694,17 +694,17 @@ def new_display2(key, focus, **a):
 
     disp = EdDisplay(p)
     disp['DISPLAY'] = os.environ['DISPLAY']
-    p = disp.call("attach-x11selection", ret='focus')
+    p = disp.call("attach-x11selection", ret='pane')
     if p:
-        p = p.call("attach-messageline", ret='focus')
+        p = p.call("attach-messageline", ret='pane')
     if p:
-        p = p.call("attach-global-keymap", ret='focus')
+        p = p.call("attach-global-keymap", ret='pane')
     if p:
         p.call("attach-mode-emacs")
     if p:
-        p = p.call("attach-tile", ret='focus')
+        p = p.call("attach-tile", ret='pane')
     if p:
-        p = focus.call("doc:attach-view", p, 1, ret='focus');
+        p = focus.call("doc:attach-view", p, 1, ret='pane');
     if p:
         p.take_focus()
     return 1

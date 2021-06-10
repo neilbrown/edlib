@@ -163,7 +163,7 @@ class MakePane(edlib.Pane):
                         dir = d
                         break
             try:
-                d = self.call("doc:open", -1, 8, dir+fname, ret='focus')
+                d = self.call("doc:open", -1, 8, dir+fname, ret='pane')
             except edlib.commandfailed:
                 d = None
             if not d:
@@ -330,7 +330,7 @@ class MakePane(edlib.Pane):
         if str1 == "find-visible":
             # If this doc is visible from 'focus', return the pane
             # it is visible in.
-            docpane = focus.call("DocPane", self.doc, ret='focus')
+            docpane = focus.call("DocPane", self.doc, ret='pane')
             if not docpane:
                 return 0
             if comm2:
@@ -433,7 +433,7 @@ class MakePane(edlib.Pane):
                     break
         try:
             # 8 means reload
-            d = focus.call("doc:open", -1, 8, dir+fname, ret='focus')
+            d = focus.call("doc:open", -1, 8, dir+fname, ret='pane')
         except edlib.commandfailed:
             d = None
         if not d:
@@ -451,24 +451,24 @@ class MakePane(edlib.Pane):
         # unless we were in a popup
         par = None; pane = None
 
-        if focus.call("ThisPopup", ret='focus') == None:
+        if focus.call("ThisPopup", ret='pane') == None:
             in_popup = False
         else:
             in_popup = True
         if where in ['OtherPane', 'AnyPane']:
-            par = focus.call("DocLeaf", d, ret='focus')
+            par = focus.call("DocLeaf", d, ret='pane')
             if par:
                 pass
             elif where == 'OtherPane':
-                pane = focus.call(where, ret='focus')
+                pane = focus.call(where, ret='pane')
             else:
-                pane = focus.call('ThisPane', ret='focus')
+                pane = focus.call('ThisPane', ret='pane')
         elif where == 'ThisPane':
-            pane = focus.call(where, ret='focus')
+            pane = focus.call(where, ret='pane')
         elif where == 'PopupPane':
-            pane = focus.call('ThisPopup', ret='focus')
+            pane = focus.call('ThisPopup', ret='pane')
             if not pane:
-                pane = focus.call("PopupTile", "MD3ta", ret='focus')
+                pane = focus.call("PopupTile", "MD3ta", ret='pane')
         else:
             return edlib.Enoarg
 
@@ -477,9 +477,9 @@ class MakePane(edlib.Pane):
             focus.call("Message", "Failed to open pane")
             return edlib.Efail
         if not par:
-            par = d.call("doc:attach-view", pane, 1, ret='focus')
+            par = d.call("doc:attach-view", pane, 1, ret='pane')
             if (in_popup and where == 'ThisPane') or where == 'PopupPane':
-                p2 = par.call("attach-viewer", par, ret='focus')
+                p2 = par.call("attach-viewer", par, ret='pane')
                 if p2:
                     par = p2;
         if not par:
@@ -498,9 +498,9 @@ class MakePane(edlib.Pane):
                 par.call("doc:EOL", lineno-1, 1)
 
         if not in_popup and where in ['AnyPane', 'OtherPane']:
-            docpane = par.call("DocPane", self, ret='focus')
+            docpane = par.call("DocPane", self, ret='pane')
             if not docpane:
-                docpane = par.call("OtherPane", ret='focus')
+                docpane = par.call("OtherPane", ret='pane')
                 if docpane:
                     self.call("doc:attach-view", docpane)
         return 1
@@ -535,7 +535,7 @@ class MakePane(edlib.Pane):
         return 1
 
 def make_attach(key, focus, comm2, str1, str2, **a):
-    p = focus.call("attach-shellcmd", 1, str1, str2, ret='focus')
+    p = focus.call("attach-shellcmd", 1, str1, str2, ret='pane')
     if not p:
         return edlib.Efail
     focus['view-default'] = 'make-viewer'
@@ -568,8 +568,8 @@ class MakeViewerPane(edlib.Pane):
     def handle_enter(self, key, focus, mark, **a):
         "handle-list/K:Enter/K-o"
         dname = focus["doc-name"]
-        doc = focus.call("docs:byname", dname, ret='focus')
-        root = focus.call("RootPane", ret='focus')
+        doc = focus.call("docs:byname", dname, ret='pane')
+        root = focus.call("RootPane", ret='pane')
 
         focus.call("doc:notify:doc:make-revisit", mark)
         next_match("interactive-cmd-next-match", focus,
@@ -577,10 +577,10 @@ class MakeViewerPane(edlib.Pane):
         # If this doc no longer visible but some other match doc
         # is, replace that doc with this one, to avoid confusion
         if doc and root:
-            other = root.call("DocPane", doc, ret='focus')
+            other = root.call("DocPane", doc, ret='pane')
             if not other:
                 other = root.call("editor:notify:make:match-docs",
-                                  "find-visible", ret='focus')
+                                  "find-visible", ret='pane')
                 if other:
                     doc.call("doc:attach-view", other)
         return 1
@@ -636,7 +636,7 @@ class MakeViewerPane(edlib.Pane):
             return 1
 
 def make_view_attach(key, focus, comm2, **a):
-    p = focus.call("attach-viewer", ret='focus')
+    p = focus.call("attach-viewer", ret='pane')
     p = MakeViewerPane(p)
 
     if not p:
@@ -706,7 +706,7 @@ def run_make(key, focus, str1, **a):
     if key.startswith('N:'):
         testonly = 1 if key[2] == '0' else 0
         if focus.call("docs:save-all", 0, testonly, dir) != 1:
-            p = focus.call("PopupTile", "DM", ret='focus')
+            p = focus.call("PopupTile", "DM", ret='pane')
             p['done-key'] = 'Y:' + key[2:]
             p['default'] = str1
             p['only-here'] = dir
@@ -728,7 +728,7 @@ def run_make(key, focus, str1, **a):
     if cmd == "make":
         # try to reuse old document
         doc = focus.call("editor:notify:make:match-docs", "choose-make", dir,
-                         ret='focus')
+                         ret='pane')
         if doc:
             if doc.notify("make-close") > 1:
                 # make is still running
@@ -742,7 +742,7 @@ def run_make(key, focus, str1, **a):
         focus.call("editor:notify:make:match-docs", "close-idle")
     if not doc:
         # If doing 'grep', or if there is no make output doc, create new one.
-        doc = focus.call("doc:from-text", docname, "", ret='focus')
+        doc = focus.call("doc:from-text", docname, "", ret='pane')
         if not doc:
             return edlib.Efail
 
@@ -751,18 +751,18 @@ def run_make(key, focus, str1, **a):
     doc['make-command'] = str1
     pd = None; p = None
     if cmd == "make":
-        pd = focus.call("DocPane", doc, ret='focus')
+        pd = focus.call("DocPane", doc, ret='pane')
         if not pd:
-            p = focus.call("OtherPane", doc, ret='focus')
+            p = focus.call("OtherPane", doc, ret='pane')
     else:
-        p = focus.call("PopupTile", "MD3ta", ret='focus')
+        p = focus.call("PopupTile", "MD3ta", ret='pane')
     if not p and not pd:
         return edlib.Efail
     if not pd:
-        doc.call("doc:attach-view", p, 1, ret='focus')
+        doc.call("doc:attach-view", p, 1, ret='pane')
 
     if not still_running:
-        p = doc.call("attach-makecmd", str1, dir, ret='focus')
+        p = doc.call("attach-makecmd", str1, dir, ret='pane')
         if p:
             p['cmd'] = cmd
     return 1
@@ -840,14 +840,14 @@ def make_request(key, focus, num, num2, str1, mark, **a):
         # re-use previous run if directory is compatible
         make_cmd = None
         doc = focus.call("editor:notify:make:match-docs", "choose-make", dir,
-                         ret='focus')
+                         ret='pane')
         if not doc:
             rdir = os.path.realpath(dir)
             if len(rdir) > 1:
                 rdir += "/"
             if rdir != dir:
                 doc = focus.call("editor:notify:make:match-docs",
-                                 "choose-make", rdir, ret='focus')
+                                 "choose-make", rdir, ret='pane')
         if doc:
             dir = doc['dirname']
             make_cmd = doc['make-command']
@@ -855,7 +855,7 @@ def make_request(key, focus, num, num2, str1, mark, **a):
             return 1
 
     # Create a popup to ask for make command
-    p = focus.call("PopupTile", "D2", dflt, ret="focus")
+    p = focus.call("PopupTile", "D2", dflt, ret='pane')
     if not p:
         return edlib.Efail
     if dflt_arg:
@@ -871,7 +871,7 @@ def make_request(key, focus, num, num2, str1, mark, **a):
     p['cmd'] = cmd
     p['mode'] = mode
     if history:
-        p = p.call("attach-history", history, "popup:close", ret='focus')
+        p = p.call("attach-history", history, "popup:close", ret='pane')
     if dir:
         p["dirname"] = dir
     p['orig-dirname'] = focus['dirname']

@@ -31,7 +31,7 @@ def html_to_text(key, home, focus, comm2, **a):
         h.ignore_tables = True
         content = h.handle(html)
 
-    doc = focus.call("doc:from-text", "html-document", content, ret='focus')
+    doc = focus.call("doc:from-text", "html-document", content, ret='pane')
     comm2("cb", doc)
     return 1
 
