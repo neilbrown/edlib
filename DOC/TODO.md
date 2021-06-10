@@ -504,7 +504,7 @@ Module features
 - [X] When visiting pre-existing query, move to first New .. optional?
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.
-- [Y] show doc status for query whether search is still going
+- [X] show doc status for query whether search is still going
 - [ ] show a summary line at end of search result which says how far back has been searched.
 - [ ] make min top/bottom margin configurable, set for message list
 - [ ] search in thread list - use 'format2' after fixing bug

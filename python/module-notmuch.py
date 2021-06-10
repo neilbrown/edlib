@@ -731,6 +731,7 @@ class notmuch_query(edlib.Doc):
         self["line-format"] = "<%BG><%TM-hilite>%TM-date_relative</><tab:130></> <fg:blue>%TM-authors</><tab:350>%TM-threadinfo<tab:450><%TM-hilite><fg:red,large>%TM-flag</> %TM-subject</></>                      "
         self.add_notify(self.maindoc, "Notify:Tag")
         self.add_notify(self.maindoc, "Notify:Close")
+        self['doc-status'] = ""
         self.p = None
         self.load_full()
 
@@ -798,6 +799,8 @@ class notmuch_query(edlib.Doc):
         if self.filter:
             cmd += [ "( %s ) AND " % self.filter ]
         cmd += [ "( %s )" % self.query ]
+        self['doc-status'] = "Loading..."
+        self.notify("doc:status-changed")
         self.p = Popen(cmd, shell=False, stdout=PIPE, stderr = DEVNULL)
         self.call("event:read", self.p.stdout.fileno(), self.get_threads)
 
@@ -875,6 +878,8 @@ class notmuch_query(edlib.Doc):
         tl = None
         if self.p:
             self.p.wait()
+        self['doc-status'] = ""
+        self.notify("doc:status-changed")
         self.p = None
         if was_empty and self.threadids:
             # first insertion, all marks other than self.pos must be at start
@@ -2241,11 +2246,6 @@ class notmuch_query_view(edlib.Pane):
         self.seen_msgs = {}
         self['notmuch:pane'] = 'query'
 
-        if self['filter']:
-            self['doc-status'] = "query: %s filter: %s" % (
-                self['qname'], self['filter'])
-        else:
-            self['doc-status'] = "query: %s" % self['qname']
         # thread_start and thread_end are marks which deliniate
         # the 'current' thread. thread_end is the start of the next
         # thread (if there is one).
@@ -2273,6 +2273,16 @@ class notmuch_query_view(edlib.Pane):
         self.call("doc:request:doc:replaced")
         self.call("doc:request:notmuch:thread-changed")
 
+    def handle_getattr(self, key, focus, str, comm2, **a):
+        if comm2 and str == "doc:status":
+            if self['filter']:
+                val = "query: %s filter: %s %s" % (
+                    self['qname'], self['filter'],
+                    self.parent['doc:status'])
+            else:
+                self['doc-status'] = "query: %s %s" % (
+                    self['qname'], self.parent['doc:status'])
+
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
         p = notmuch_query_view(focus)
@@ -2289,11 +2299,7 @@ class notmuch_query_view(edlib.Pane):
     def handle_notify_replace(self, key, **a):
         "handle:doc:replaced"
         self.leaf.call("view:changed")
-        if self['filter']:
-            self['doc-status'] = "query: %s filter: %s" % (
-                self['qname'], self['filter'])
-        else:
-            self['doc-status'] = "query: %s" % self['qname']
+        self.call("doc:notify:doc:status-changed")
         return edlib.Efallthrough
 
     def close_thread(self, gone = False):
