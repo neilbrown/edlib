@@ -501,7 +501,7 @@ Module features
 - [ ] support selection messages and applying tags
 - [X] 'd' to add "deleted' flag
 - [X] different highlight colour for "not matched" and "not inbox"
-- [Y] When visiting pre-existing query, move to first New .. optional?
+- [X] When visiting pre-existing query, move to first New .. optional?
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.
 - [Y] show doc status for query whether search is still going

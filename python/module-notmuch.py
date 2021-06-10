@@ -1346,6 +1346,8 @@ class notmuch_query(edlib.Doc):
             val = t[attr[2:]]
             if type(val) == int:
                 val = "%d" % val
+            elif type(val) == list:
+                val = ','.join(val)
             else:
                 # Some mailers use ?Q to insert =0A (newline) in a subject!!
                 val = t[attr[2:]].replace('\n',' ')
@@ -1354,7 +1356,7 @@ class notmuch_query(edlib.Doc):
 
         elif attr == "matched":
             val = "True" if matched else "False"
-        elif attr == "tags":
+        elif attr == "tags" or attr == "M-tags":
             val = ','.join(tags)
         elif attr == "M-hilite":
             if "inbox" not in tags:
@@ -2261,6 +2263,13 @@ class notmuch_query_view(edlib.Pane):
             lh = 1
         # fixme adjust for pane size
         self['render-vmargin'] = "%d" % (4 * lh)
+
+        # if first thread is new, move to it.
+        m = edlib.Mark(self)
+        t = self.call("doc:get-attr", m, "T-tags", ret='str')
+        if t and 'new' in t.split(','):
+            self.call("Move-to", m)
+
         self.call("doc:request:doc:replaced")
         self.call("doc:request:notmuch:thread-changed")
 
