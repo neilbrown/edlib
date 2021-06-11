@@ -182,8 +182,9 @@ class parse_state:
                 if ('=' in seen or 'enum' in seen or
                     'define' in seen or 'define-body' in seen):
                     self.comma_ends = True
-            self.d = self.column+1
-            self.last_was_open = True
+            if 'case' not in seen:
+                self.d = self.column+1
+                self.last_was_open = True
             return
         self.last_was_open = False
         if c in ')]}':
@@ -241,6 +242,10 @@ class parse_state:
             self.seen.append("if")
         if ss and c == 'e' and p.call("text-match", m.dup(), "num\\b") > 0:
             self.seen.append("enum")
+        if ss and c == 'c' and p.call("text-match", m.dup(), "ase\\b") > 0:
+            self.seen.append("case")
+        if ss and c == 'd' and p.call("text-match", m.dup(), "efault\\b") > 0:
+            self.seen.append("case")
         if ss and ((c == 'd' and p.call("text-match", m.dup(), "o\\b") > 0) or
                    (c == 'e' and p.call("text-match", m.dup(), "lse\\b") > 0)):
             # do or else start a new statement, like if() does

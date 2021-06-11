@@ -643,7 +643,7 @@ Module features
 
 ### C-mode
 
-- [Y] allow {} inside 'case' without increasing indent level
+- [X] allow {} inside 'case' without increasing indent level
 - [ ]  auto-indent enhancements
 
      +   py: after "return" de-indent
