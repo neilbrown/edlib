@@ -124,7 +124,6 @@ static void set_screen(struct pane *p)
 
 #ifdef RECORD_REPLAY
 DEF_CMD(next_evt);
-DEF_CMD(abort_replay);
 
 static bool parse_event(struct pane *p safe);
 static bool prepare_recrep(struct pane *p safe)
@@ -233,7 +232,7 @@ static void record_screen(struct pane *p safe)
 		fprintf(dd->log, "\n");
 	}
 	if (dd->input && dd->next_event == DoCheck) {
-		call_comm("event:free", p, &abort_replay);
+		call_comm("event:free", p, &next_evt);
 //		if (strcmp(dd->last_screen, dd->next_screen) != 0)
 //			dd->next_event = DoClose;
 		call_comm("editor-on-idle", p, &next_evt);
@@ -292,14 +291,6 @@ static char *get_hash(char *line safe, hash_t hash safe)
 	return line;
 }
 
-REDEF_CMD(abort_replay)
-{
-	struct display_data *dd = ci->home->data;
-
-	dd->next_event = DoClose;
-	return next_evt_func(ci);
-}
-
 static bool parse_event(struct pane *p safe)
 {
 	struct display_data *dd = p->data;
@@ -336,7 +327,7 @@ static bool parse_event(struct pane *p safe)
 	if (dd->next_event != DoCheck)
 		call_comm("editor-on-idle", p, &next_evt);
 	else
-		call_comm("event:timer", p, &abort_replay, 10*1000);
+		call_comm("event:timer", p, &next_evt, 10*1000);
 	return True;
 }
 
