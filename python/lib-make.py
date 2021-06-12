@@ -59,7 +59,8 @@ class MakePane(edlib.Pane):
 
         done = 0
         self.set_time()
-        while done < 100 and not self.too_long():
+        testing = 'EDLIB_TESTING' in os.environ
+        while testing or (done < 100 and not self.too_long()):
             # Look for one of:
             # filename:linenum:.....
             # filename:linenum ....
