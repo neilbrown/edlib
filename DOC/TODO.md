@@ -672,14 +672,14 @@ Module features
 
 ### white-space
 
-- [Y] rethink approach of specifying attributes for a single char at a time.
+- [X] rethink approach of specifying attributes for a single char at a time.
       This seems inefficient
 - [ ] support highlight suitable for diff: a space is first character is allowed,
       even if EOL or followed by space.
 - [ ] support highlight of spaces-for-indent
 - [ ] support highlight of tabs-for-indent
 - [ ] make set of highlights, and colors, configurable
-- [ ] support highlight for hard spaces
+- [X] support highlight for hard spaces
 - [ ] support for blank lines near blanklines or start/end of file
 - [ ] support highlight for 8spaces after a tab
 

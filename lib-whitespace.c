@@ -4,10 +4,15 @@
  *
  * This module provides highlighting of interesting white-space,
  * and possibly other spacing-related issues.
- * Initially:
- *  tabs are in a different color
- *  space at EOL are READ
- *  space TAB after space are READ
+ * Currently:
+ *  tabs are in a different colour (yellow-80+80)
+ *  unicode spaces a different colour (red+80-80)
+ *  space at EOL are RED (red)
+ *  TAB after space are RED (red-80)
+ *  anything beyond configured line length is RED (red-80+50 "whitespace-width" or 80)
+ *  non-space as first char RED if configured ("whitespace-intent-space")
+ *  >=8 spaces RED if configured ("whitespace-max-spaces")
+ *  blank line adjacent to blank or start/end of file if configured ("whitespace-single-blank-lines")
  *
  * This is achieved by capturing the "start-of-line" attribute request,
  * reporting attributes that apply to leading chars, and placing a
@@ -21,108 +26,139 @@
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
+#include <wctype.h>
 #include "core.h"
 
 struct ws_info {
 	struct mark *mymark;
 	int mycol;
 	int warn_width;
+	int max_spaces;
+	bool indent_space;
+	bool single_blanks;
 };
 
-static void choose_next(struct pane *focus safe, struct mark *pm safe,
-			struct ws_info *ws safe)
-{
-	struct mark *m;
+/* a0 and 2007 are non-breaking an not in iswblank, but I want them. */
+#define ISWBLANK(c) ((c) == 0xa0 || (c) == 0x2007 || iswblank(c))
 
-	if (ws->mymark == NULL) {
+static void choose_next(struct pane *focus safe, struct mark *pm safe,
+			struct ws_info *ws safe, int skip)
+{
+	struct mark *m = ws->mymark;
+
+	if (m == NULL) {
 		m = mark_dup(pm);
 		ws->mymark = m;
-	} else {
+	} else
+		mark_to_mark(m, pm);
+	while (skip > 0) {
 		/* Need to look beyond the current location */
 		wint_t ch;
-		m = ws->mymark;
-		mark_to_mark(m, pm);
 		ch = doc_next(focus, m);
+		skip -= 1;
 		if (ch == '\t')
 			ws->mycol = (ws->mycol | 7) + 1;
-		else
+		else if (ch != WEOF && !is_eol(ch))
 			ws->mycol += 1;
+		else
+			skip = 0;
 	}
 
 	while(1) {
+		int cnt, rewind, rewindcol, col;
 		wint_t ch = doc_following(focus, m);
+		wint_t ch2;
+
 		if (ch == WEOF || is_eol(ch))
 			break;
 		if (ws->mycol >= ws->warn_width) {
+			/* everything from here is an error */
 			attr_set_str(&m->attrs, "render:whitespace",
 				     "bg:red-80+50");
+			attr_set_int(&m->attrs, "attr-len", INT_MAX);
 			return;
 		}
-		if (ch == ' ' || ch == '\t') {
-			/* If only spaces/tabs until EOL, then RED,
-			 * else keep looking
-			 */
-			int cnt = 0;
-			int rewind = 1000;
-			int rewindcol = 0;
-			int col = ws->mycol;
-			while ((ch = doc_next(focus, m)) == ' ' ||
-			       ch == '\t') {
-				if (ch == '\t' && cnt < rewind) {
-					rewind = cnt;
-					rewindcol = col;
-				}
-				if (ch == '\t')
-					col = (ws->mycol|7)+1;
-				else
-					col += 1;
-				cnt += 1;
-			}
-			if (ch != WEOF)
-				doc_prev(focus, m);
-			/*
-			 * 'm' is just after last spc/tab.  - ch is next
-			 * char.  'cnt' is the number of chars, including first,
-			 * all spc or tab rewind is distance from start where
-			 * first tab seen.
-			 */
-			if (ch == WEOF || is_eol(ch)) {
-				struct mark *p = call_ret(mark, "doc:point",
-							  focus);
-				if (p && mark_same(m, p))
-					ch = 'x';
-			}
-			if (ch == WEOF || is_eol(ch)) {
-				while (cnt--)
-					doc_prev(focus, m);
-				/* Set the first space/tab to red */
-				attr_set_str(&m->attrs, "render:whitespace",
-					     "bg:red");
-				return;
-			}
-			if (rewind > cnt) {
-				/* no tabs, don't check all the spaces again */
-				ws->mycol = col;
-				continue;
-			}
+		if (!ISWBLANK(ch)) {
+			/* Nothing to highlight here, move forward */
+			doc_next(focus, m);
+			ws->mycol++;
+			continue;
+		}
+		/* If only spaces/tabs until EOL, then RED,
+		 * else keep looking
+		 */
 
-			while (cnt-- > rewind) {
-				doc_prev(focus, m);
+		cnt = 0;
+		rewind = INT_MAX;
+		rewindcol = 0;
+		col = ws->mycol;
+		while ((ch = doc_next(focus, m)) != WEOF &&
+		       ISWBLANK(ch)) {
+			if (ch != ' ' && cnt < rewind) {
+				/* This may be different colours depending on
+				 * what we find, so remember this location.
+				 */
+				rewind = cnt;
+				rewindcol = col;
 			}
-			ws->mycol = rewindcol;
-
-			/* handle tab */
-			/* If previous is space, then RED, else YELLOW */
-			if (doc_prior(focus, m) == ' ')
-				attr_set_str(&m->attrs, "render:whitespace",
-					     "bg:red-80");
+			if (ch == '\t')
+				col = (ws->mycol|7)+1;
 			else
-				attr_set_str(&m->attrs, "render:whitespace",
-					     "bg:yellow-80+80");
+				col += 1;
+			cnt += 1;
+		}
+		if (ch != WEOF)
+			doc_prev(focus, m);
+		/*
+		 * 'm' is just after last blank. ch is next (non-blank)
+		 * char.  'cnt' is the number of blanks.
+		 * 'rewind' is distance from start where first non-space seen.
+		 */
+		if (ch == WEOF || is_eol(ch)) {
+			/* Blanks all the way to EOL.  This is highlighted unless
+			 * point is at EOL
+			 */
+			struct mark *p = call_ret(mark, "doc:point",
+						  focus);
+			if (p && mark_same(m, p))
+				ch = 'x';
+		}
+		if (ch == WEOF || is_eol(ch)) {
+			doc_move(focus, m, -cnt);
+			/* Set the blanks at EOL to red */
+			attr_set_str(&m->attrs, "render:whitespace",
+				     "bg:red");
+			attr_set_int(&m->attrs, "attr-len", cnt);
 			return;
 		}
-		doc_next(focus, m);
-		ws->mycol++;
+		if (rewind > cnt) {
+			/* no non-space, nothing to do here */
+			ws->mycol = col;
+			continue;
+		}
+
+		/* That first blank is no RED, set normal colour */
+		doc_move(focus, m, rewind - cnt);
+		ws->mycol = rewindcol;
+
+		/* handle tab */
+		/* If previous is non-tab, then RED, else YELLOW */
+		ch = doc_prior(focus, m);
+		ch2 = doc_following(focus, m);
+		if (ch2 == '\t' && ch != WEOF && ch != '\t' && ISWBLANK(ch))
+			/* Tab after non-tab blank - bad */
+			attr_set_str(&m->attrs, "render:whitespace",
+				     "bg:red-80");
+		else if (ch2 == '\t')
+			attr_set_str(&m->attrs, "render:whitespace",
+				     "bg:yellow-80+80");
+		else
+			/* non-space or tab, must be unicode blank of some sort */
+			attr_set_str(&m->attrs, "render:whitespace",
+				     "bg:red-80+80");
+		attr_set_int(&m->attrs, "attr-len", 1);
+
+		return;
 	}
 	attr_set_str(&m->attrs, "render:whitespace", NULL);
 }
@@ -138,14 +174,17 @@ DEF_CMD(ws_attrs)
 			mark_free(ws->mymark);
 		ws->mymark = NULL;
 		ws->mycol = 0;
-		choose_next(ci->focus, ci->mark, ws);
+		choose_next(ci->focus, ci->mark, ws, 0);
 		return Efallthrough;
 	}
 	if (ci->mark == ws->mymark &&
 	    strcmp(ci->str, "render:whitespace") == 0) {
 		char *s = strsave(ci->focus, ci->str2);
-		choose_next(ci->focus, ci->mark, ws);
-		return comm_call(ci->comm2, "attr:callback", ci->focus, 1,
+		int len = attr_find_int(ci->mark->attrs, "attr-len");
+		if (len <= 0)
+			len = 1;
+		choose_next(ci->focus, ci->mark, ws, len);
+		return comm_call(ci->comm2, "attr:callback", ci->focus, len,
 				 ci->mark, s, 10);
 	}
 	return Efallthrough;
@@ -163,33 +202,58 @@ DEF_CMD(ws_close)
 static struct map *ws_map safe;
 DEF_LOOKUP_CMD(whitespace_handle, ws_map);
 
-DEF_CMD(ws_clone)
-{
-	struct ws_info *oldws = ci->home->data;
-	struct ws_info *ws;
-	struct pane *p;
-
-	alloc(ws, pane);
-	ws->warn_width = oldws->warn_width;
-	p = pane_register(ci->focus, 0, &whitespace_handle.c, ws);
-	pane_clone_children(ci->home, p);
-	return 1;
-}
-
-DEF_CMD(whitespace_attach)
+static struct pane *ws_attach(struct pane *f safe)
 {
 	struct ws_info *ws;
 	struct pane *p;
 	char *w;
 
 	alloc(ws, pane);
-	w = pane_attr_get(ci->focus, "whitespace-width");
-	if (w)
+
+	w = pane_attr_get(f, "whitespace-width");
+	if (w) {
 		ws->warn_width = atoi(w);
-	if (ws->warn_width < 8)
+		if (ws->warn_width < 8)
+			ws->warn_width = INT_MAX;
+	} else
 		ws->warn_width = 80;
 
-	p = pane_register(ci->focus, 0, &whitespace_handle.c, ws);
+	w = pane_attr_get(f, "whitespace-indent-space");
+	if (w && strcasecmp(w, "no") != 0)
+		ws->indent_space = True;
+	w = pane_attr_get(f, "whitespace-max-spaces");
+	if (w) {
+		ws->max_spaces = atoi(w);
+		if (ws->max_spaces < 1)
+			ws->max_spaces = 7;
+	} else
+		ws->max_spaces = INT_MAX;
+
+	w = pane_attr_get(f, "whitespace-single-blank-lines");
+	if (w && strcasecmp(w, "no") != 0)
+		ws->single_blanks = True;
+
+	p = pane_register(f, 0, &whitespace_handle.c, ws);
+	if (!p)
+		unalloc(ws, pane);
+	return p;
+}
+
+DEF_CMD(ws_clone)
+{
+	struct pane *p;
+
+	p = ws_attach(ci->focus);
+	if (p)
+		pane_clone_children(ci->home, p);
+	return 1;
+}
+
+DEF_CMD(whitespace_attach)
+{
+	struct pane *p;
+
+	p = ws_attach(ci->focus);
 	if (!p)
 		return Efail;
 	return comm_call(ci->comm2, "callback:attach", p);
