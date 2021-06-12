@@ -29,7 +29,7 @@ Bugs to be fixed
 ----------------
 
 - [X] understand why the 'grep' test isn't consistent, and fix it
-- [ ] 'bury' doesn't work in notmuch window
+- [X] 'bury' doesn't work in notmuch window
 - [X] lib-renderline in a 1x1 pane spins.  Happens if I 'elc' while cursor
       is in a search popup.
 - [X] modified document which cannot be written also cannot be killed!

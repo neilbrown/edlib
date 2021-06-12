@@ -829,10 +829,13 @@ DEF_CMD(tile_window_bury)
 	 */
 	struct pane *doc;
 
+	if (wrong_pane(ci))
+		return Efallthrough;
+
 	/* First, push the doc to the end of the 'recently used' list */
 	call("doc:notify:doc:revisit", ci->focus, -1);
 	/* Now choose a replacement */
-	doc = call_ret(pane, "docs:choose", ci->focus);
+	doc = call_ret(pane, "docs:choose", ci->home);
 	if (doc)
 		/* display that doc in this pane */
 		home_call(doc, "doc:attach-view", ci->home);

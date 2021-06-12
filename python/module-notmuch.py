@@ -1579,7 +1579,9 @@ class notmuch_master_view(edlib.Pane):
 
     def handle_choose(self, key, **a):
         "handle:docs:choose"
-        # don't choose anything  FIXME when is this helpful?
+        # If a notmuch tile needs to find a new doc, e.g. because
+        # a message doc was killed, reject the request so that the
+        # pane will be closed.
         return 1
 
     def handle_clone(self, key, focus, **a):
