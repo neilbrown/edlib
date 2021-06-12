@@ -346,6 +346,9 @@ class MakePane(edlib.Pane):
             self.backwards = False
         elif num > 0:
             # clear marks so that we parse again
+            if self.timer_set:
+                self.call("event:free", self.tick)
+                self.timer_set = False
             m, l = self.vmarks(self.viewnum)
             while m:
                 m.release()
