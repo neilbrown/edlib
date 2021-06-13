@@ -2283,6 +2283,11 @@ class notmuch_query_view(edlib.Pane):
         t = self.call("doc:get-attr", m, "T-tags", ret='str')
         if t and 'new' in t.split(','):
             self.call("Move-to", m)
+        else:
+            # otherwise restore old state
+            pt = self.call("doc:point", ret='mark')
+            if pt and pt['notmuch:selected']:
+                self("notmuch:select", pt['notmuch:selected'])
 
         self.call("doc:request:doc:replaced")
         self.call("doc:request:notmuch:thread-changed")
@@ -2578,12 +2583,15 @@ class notmuch_query_view(edlib.Pane):
             return 1
         return edlib.Efalse
 
-    def handle_select(self, key, focus, mark, num, num2, str, **a):
+    def handle_select(self, key, focus, mark, num, num2, str1, **a):
         "handle:notmuch:select"
         # num = 0 - open thread but don't show message
         # num > 0 - open thread and do show message
         # num < 0 - open thread, go to last message, and show
-        s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
+        if str1:
+            s = str1
+        else:
+            s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
         if s and s != self.selected:
             self.close_thread()
 
@@ -2631,6 +2639,9 @@ class notmuch_query_view(edlib.Pane):
                 focus.call("Notify:clip", self.thread_start, m)
                 if mark:
                     mark.clip(self.thread_start, m)
+                pnt = self.call("doc:point", ret='mark')
+                if pnt:
+                    pnt['notmuch:selected'] = s
         if num != 0:
             # thread-id shouldn't have changed, but it some corner-cases
             # it can, so get both ids before loading the message.
