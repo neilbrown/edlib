@@ -150,6 +150,16 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 			attr_set_int(&m->attrs, "attr-len", cnt);
 			return;
 		}
+		if (cnt > ws->max_spaces && rewind > ws->max_spaces) {
+			/* Too many spaces - not too loud a highlight*/
+			doc_move(focus, m, -cnt);
+			if (rewind < cnt)
+				cnt = rewind;
+			attr_set_str(&m->attrs, "render:whitespace",
+				     "bg:red+60");
+			attr_set_int(&m->attrs, "attr-len", cnt);
+			return;
+		}
 		/*
 		 * 'm' is just after last blank. ch is next (non-blank)
 		 * char.  'cnt' is the number of blanks.

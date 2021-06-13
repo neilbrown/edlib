@@ -1013,6 +1013,7 @@ def c_mode_attach(key, focus, comm2, **a):
     p = CModePane(focus)
     p.indent_type = 'C'
     p['whitespace-single-blank-lines'] = 'yes'
+    p['whitespace-max-spaces'] = '7'
     p2 = p.call("attach-whitespace", ret='pane')
     if p2:
         p = p2

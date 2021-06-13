@@ -676,12 +676,12 @@ Module features
       This seems inefficient
 - [ ] support highlight suitable for diff: a space is first character is allowed,
       even if EOL or followed by space.
-- [ ] support highlight of spaces-for-indent
+- [X] support highlight of spaces-for-indent
 - [X] support highlight of tabs-for-indent
 - [ ] make set of highlights, and colors, configurable
 - [X] support highlight for hard spaces
 - [X] support for blank lines near blanklines or start/end of file
-- [ ] support highlight for 8spaces after a tab
+- [X] support highlight for 8spaces after a tab
 
 ### test suite
 
