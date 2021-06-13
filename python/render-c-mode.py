@@ -1022,6 +1022,7 @@ def py_mode_attach(key, focus, comm2, **a):
     p = CModePane(focus)
     p.spaces = 4
     p.indent_type = 'python'
+    p['whitespace-indent-space'] = 'yes'
     p2 = p.call("attach-whitespace", ret='pane')
     if p2:
         p = p2

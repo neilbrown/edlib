@@ -677,7 +677,7 @@ Module features
 - [ ] support highlight suitable for diff: a space is first character is allowed,
       even if EOL or followed by space.
 - [ ] support highlight of spaces-for-indent
-- [ ] support highlight of tabs-for-indent
+- [X] support highlight of tabs-for-indent
 - [ ] make set of highlights, and colors, configurable
 - [X] support highlight for hard spaces
 - [ ] support for blank lines near blanklines or start/end of file

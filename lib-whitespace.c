@@ -109,6 +109,16 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 		}
 		if (ch != WEOF)
 			doc_prev(focus, m);
+		if (ws->mycol == 0 && ws->indent_space && rewind == 0) {
+			/* Indents must be space, but this is something else,
+			 * so highlight all the indent
+			 */
+			doc_move(focus, m, -cnt);
+			attr_set_str(&m->attrs, "render:whitespace",
+				     "bg:red");
+			attr_set_int(&m->attrs, "attr-len", cnt);
+			return;
+		}
 		/*
 		 * 'm' is just after last blank. ch is next (non-blank)
 		 * char.  'cnt' is the number of blanks.
