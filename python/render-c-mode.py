@@ -1012,6 +1012,7 @@ class CModePane(edlib.Pane):
 def c_mode_attach(key, focus, comm2, **a):
     p = CModePane(focus)
     p.indent_type = 'C'
+    p['whitespace-single-blank-lines'] = 'yes'
     p2 = p.call("attach-whitespace", ret='pane')
     if p2:
         p = p2
@@ -1023,6 +1024,7 @@ def py_mode_attach(key, focus, comm2, **a):
     p.spaces = 4
     p.indent_type = 'python'
     p['whitespace-indent-space'] = 'yes'
+    p['whitespace-single-blank-lines'] = 'yes'
     p2 = p.call("attach-whitespace", ret='pane')
     if p2:
         p = p2

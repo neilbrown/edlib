@@ -69,8 +69,39 @@ static void choose_next(struct pane *focus safe, struct mark *pm safe,
 		wint_t ch = doc_following(focus, m);
 		wint_t ch2;
 
-		if (ch == WEOF || is_eol(ch))
-			break;
+		if (ch == WEOF || is_eol(ch)) {
+			if (ws->mycol > 0)
+				break;
+			if (ch == WEOF || !ws->single_blanks)
+				break;
+			/* A blank line must not be preceeded or followed
+			 * by EOF of a blank line.
+			 */
+			doc_next(focus, m);
+			ch = doc_following(focus, m);
+			doc_prev(focus, m);
+			if (ch != WEOF && !is_eol(ch)) {
+				/* Next line isn't blank. need to check behind */
+				ch = doc_prev(focus, m);
+				if (ch == WEOF) {
+					/* blank line at start of file */
+				} else if (!is_eol(ch)) {
+					/* should be impossible, so ignore */
+					doc_next(focus, m);
+					break;
+				} else {
+					ch = doc_prior(focus, m);
+					doc_next(focus, m);
+					if (ch != WEOF && ch != '\n')
+						/* previous line not blank either */
+						break;
+				}
+			}
+			attr_set_str(&m->attrs, "render:whitespace",
+				     "bg:red,vis-nl");
+			attr_set_int(&m->attrs, "attr-len", 1);
+			return;
+		}
 		if (ws->mycol >= ws->warn_width) {
 			/* everything from here is an error */
 			attr_set_str(&m->attrs, "render:whitespace",

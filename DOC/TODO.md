@@ -680,7 +680,7 @@ Module features
 - [X] support highlight of tabs-for-indent
 - [ ] make set of highlights, and colors, configurable
 - [X] support highlight for hard spaces
-- [ ] support for blank lines near blanklines or start/end of file
+- [X] support for blank lines near blanklines or start/end of file
 - [ ] support highlight for 8spaces after a tab
 
 ### test suite
