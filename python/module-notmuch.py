@@ -2073,6 +2073,8 @@ class notmuch_master_view(edlib.Pane):
                 self.query_pane.call("doc:notmuch:mark-seen")
             p = self.query_pane
             self.query_pane = None
+            pnt = self.list_pane.call("doc:point", ret='mark')
+            pnt['notmuch:query-name'] = ""
 
             s = p.call("get-attr", "qname", 1, ret='str')
             if s:
@@ -2143,6 +2145,10 @@ class notmuch_master_view(edlib.Pane):
         p1 = self.list_pane.call("OtherPane", "notmuch", "threads", 15,
                                  ret='pane')
         self.query_pane = p0.call("doc:attach-view", p1, ret='pane')
+
+        pnt = self.list_pane.call("doc:point", ret='mark')
+        pnt['notmuch:query-name'] = str
+
         if num:
             self.query_pane.take_focus()
         self.resize()
@@ -2197,6 +2203,9 @@ class notmuch_list_view(edlib.Pane):
         self.call("notmuch:set_list_pane")
         self.call("doc:request:doc:replaced")
         self.selected = None
+        pnt = self.call("doc:point", ret='mark')
+        if pnt and pnt['notmuch:query-name']:
+            self.call("notmuch:select-query", pnt['notmuch:query-name'])
 
     def handle_clone(self, key, focus, **a):
         "handle:Clone"
