@@ -1081,13 +1081,16 @@ DEF_CMD(doc_push_point)
 {
 	struct doc *d = ci->home->data;
 	int n = ARRAY_SIZE(d->recent_points);
+	struct mark *m;
 	if (!ci->mark)
 		return Enoarg;
 	mark_free(d->recent_points[n-1]);
 	memmove(&d->recent_points[1],
 		&d->recent_points[0],
 		(n-1)*sizeof(d->recent_points[0]));
-	d->recent_points[0] = mark_dup(ci->mark);
+	m = mark_dup(ci->mark);
+	m->attrs = attr_copy(ci->mark->attrs);
+	d->recent_points[0] = m;
 	return 1;
 }
 
@@ -1101,6 +1104,10 @@ DEF_CMD(doc_pop_point)
 	if (!d->recent_points[0])
 		return Efail;
 	mark_to_mark(ci->mark, d->recent_points[0]);
+	if (!ci->mark->attrs) {
+		ci->mark->attrs = d->recent_points[0]->attrs;
+		d->recent_points[0]->attrs = NULL;
+	}
 	mark_free(d->recent_points[0]);
 	memmove(&d->recent_points[0],
 		&d->recent_points[1],
