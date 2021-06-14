@@ -206,7 +206,7 @@ DEF_CMD(docs_mod_next)
 	if (!ci->mark)
 		return Enoarg;
 	m = mark_dup(ci->mark);
-	doc_next(ci->home->parent, m);
+	call("doc:EOL", ci->home->parent, 1, m, NULL, 1);
 	if (call("doc:render-line", ci->focus, 0, m) < 0 ||
 	    m->ref.p == NULL) {
 		mark_free(m);
