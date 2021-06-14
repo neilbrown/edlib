@@ -706,12 +706,12 @@ DEF_CMD(format_map)
 			struct rf_field *st =
 				&rd->fields[rd->fields[f].attr_start];
 			comm_call(ci->comm2, "", ci->focus, -1, m,
-				  st->attr, 20 + st->attr_depth);
+				  st->attr, 1 + st->attr_depth);
 		}
 		if (rd->fields[f].attr_end > FIELD_NUM(m->ref.i)) {
 			struct rf_field *st = &rd->fields[f];
 			comm_call(ci->comm2, "", ci->focus, 32768, m,
-				  st->attr, 20 + st->attr_depth);
+				  st->attr, 1 + st->attr_depth);
 		}
 	}
 	return 0;

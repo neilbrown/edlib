@@ -2891,20 +2891,22 @@ class notmuch_message_view(edlib.Pane):
     def handle_map_attr(self, key, focus, mark, str, str2, comm2, **a):
         "handle:map-attr"
         if str == "render:rfc822header":
-            comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed", 21)
-            comm2("attr:callback", focus, 10000, mark, "wrap-tail: ,wrap-head:    ", 19)
+            comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed", 121)
+            comm2("attr:callback", focus, 10000, mark, "wrap-tail: ,wrap-head:    ",
+                  119)
             return 1
         if str == "render:rfc822header-wrap":
-            comm2("attr:callback", focus, int(str2), mark, "wrap", 20)
+            comm2("attr:callback", focus, int(str2), mark, "wrap", 120)
             return 1
         if str == "render:rfc822header-subject":
-            comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 20)
+            comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 120)
             return 1
         if str == "render:rfc822header-to":
-            comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 20)
+            comm2("attr:callback", focus, int(str2), mark, "fg:blue,bold", 120)
             return 1
         if str == "render:url":
-            comm2("attr:callback", focus, int(str2), mark, "fg:cyan-60,underline,active-tag:url,url-len="+str2, 20)
+            comm2("attr:callback", focus, int(str2), mark,
+                  "fg:cyan-60,underline,active-tag:url,url-len="+str2, 120)
         if str == 'start-of-line':
             # if line starts '>', give it some colour
             if focus.following(mark) == '>':
@@ -2919,7 +2921,7 @@ class notmuch_message_view(edlib.Pane):
 
                 if cnt >= len(colours):
                     cnt = len(colours)
-                comm2("cb", focus, mark, 10000, "fg:"+colours[cnt-1], 2)
+                comm2("cb", focus, mark, 10000, "fg:"+colours[cnt-1], 102)
             return edlib.Efallthrough
 
     def handle_click(self, key, focus, mark, str2, **a):

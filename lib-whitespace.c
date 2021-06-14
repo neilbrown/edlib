@@ -236,7 +236,7 @@ DEF_CMD(ws_attrs)
 			len = 1;
 		choose_next(ci->focus, ci->mark, ws, len);
 		return comm_call(ci->comm2, "attr:callback", ci->focus, len,
-				 ci->mark, s, 10);
+				 ci->mark, s, 110);
 	}
 	return Efallthrough;
 }

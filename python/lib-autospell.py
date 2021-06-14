@@ -220,7 +220,7 @@ class autospell_view(edlib.Pane):
         if not str1 or not mark or not comm2:
             return edlib.Enoarg
         if str1 == "render:spell-incorrect":
-            comm2("cb", focus, int(str2), mark, "fg:red-80,underline", 100)
+            comm2("cb", focus, int(str2), mark, "fg:red-80,underline", 120)
         return edlib.Efallthrough
 
     def handle_recheck(self, key, **a):

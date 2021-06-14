@@ -78,6 +78,17 @@ When "map-attr" calls the comm2 callback, it should pass:
           apply to, or '-1' meaning the attributes should be cancelled
 - 'num2' - priority for these attributes.  If multiple conflicting attributes are 
           requested for the one piece of text, the higher priority value will take effect.
+	Priorities 1-99 are for stable properties of the document, like color
+           to highlight dirs in a file listing
+	Priorities 100-199 are for fairly stable results of analysing doc, like
+           spelling errors
+        Priorities 200-299 are for less stable results like search results or
+           a selection.
+        Results likely to be larger have lower priority, so selection is lower than
+           search.
+
+        Importantly any attribute which affects spacing, like 'tab' or 'centre'
+        and which cannot be closed and re-openned must have priority of 0.
 - 'str2' - a string to be inserted with the given attributes.  This is not currently
            implmented.
 

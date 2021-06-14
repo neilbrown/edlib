@@ -339,7 +339,7 @@ class compose_email(edlib.Pane):
             return edlib.Enoarg
 
         if str == "render:rfc822header-wrap":
-            comm2("attr:callback", focus, int(str2), mark, "wrap", 20)
+            comm2("attr:callback", focus, int(str2), mark, "wrap", 30)
             return 1
 
         # get previous mark and see if it is here
@@ -354,14 +354,14 @@ class compose_email(edlib.Pane):
                                 "?i:(from|to|cc|subject|in-reply-to|references|date|message-id):",
                                 mark.dup())
                 if rv2 > 0:
-                    comm2("cb", focus, mark, rv-1, "fg:blue+30", 2)
+                    comm2("cb", focus, mark, rv-1, "fg:blue+30", 20)
                 else:
-                    comm2("cb", focus, mark, rv-1, "fg:black+30", 2)
-                comm2("cb", focus, mark, 100000, "fg:blue-70,bold", 1)
+                    comm2("cb", focus, mark, rv-1, "fg:black+30", 20)
+                comm2("cb", focus, mark, 100000, "fg:blue-70,bold", 10)
             else:
                 # make whole line red
-                comm2("cb", focus, mark, 100000, "bg:red+50,fg:red-50", 2)
-            comm2("cb", focus, mark, 10000, "wrap-tail: ,wrap-head:    ", 20)
+                comm2("cb", focus, mark, 100000, "bg:red+50,fg:red-50", 20)
+            comm2("cb", focus, mark, 10000, "wrap-tail: ,wrap-head:    ", 1)
             return edlib.Efallthrough
         if m and str == 'start-of-line':
             # if line starts '>', give it some colour
@@ -377,7 +377,7 @@ class compose_email(edlib.Pane):
 
                 if cnt >= len(colours):
                     cnt = len(colours)
-                comm2("cb", focus, mark, 10000, "fg:"+colours[cnt-1], 2)
+                comm2("cb", focus, mark, 10000, "fg:"+colours[cnt-1], 20)
             return edlib.Efallthrough
 
         return edlib.Efallthrough

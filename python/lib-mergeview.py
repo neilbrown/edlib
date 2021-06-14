@@ -154,32 +154,32 @@ class MergePane(edlib.Pane):
             if mark == o or mark == b or mark == a or mark == e:
                 if self.conflicts:
                     comm2("attr:cb", focus, mark, "fg:red-40",
-                          10000, 2)
+                          10000, 102)
                 else:
                     comm2("attr:cb", focus, mark, "fg:green-40",
-                          10000, 2)
+                          10000, 102)
             return edlib.Efallthrough
 
         if str == "render:merge-same":
             w = str2.split()
             len = int(w[0])
             if w[1] == "Unmatched":
-                comm2("attr:cb", focus, mark, "fg:blue-80,bg:cyan+20", len, 3)
+                comm2("attr:cb", focus, mark, "fg:blue-80,bg:cyan+20", len, 103)
             if w[1] == "Extraneous":
-                comm2("attr:cb", focus, mark, "fg:cyan-60,bg:yellow", len, 3)
+                comm2("attr:cb", focus, mark, "fg:cyan-60,bg:yellow", len, 103)
             if w[1] == "Changed":
                 if mark < a:
-                    comm2("attr:cb", focus, mark, "fg:red-60", len, 3)
+                    comm2("attr:cb", focus, mark, "fg:red-60", len, 103)
                 else:
-                    comm2("attr:cb", focus, mark, "fg:green-60", len, 3)
+                    comm2("attr:cb", focus, mark, "fg:green-60", len, 103)
             if w[1] == "Conflict":
-                comm2("attr:cb", focus, mark, "fg:red-60,inverse", len, 3)
+                comm2("attr:cb", focus, mark, "fg:red-60,inverse", len, 103)
             if w[1] == "AlreadyApplied":
                 if mark > b and mark < a:
                     # This part is 'before' - mosly irrelevant
-                    comm2("attr:cb", focus, mark, "fg:cyan-60", len, 3)
+                    comm2("attr:cb", focus, mark, "fg:cyan-60", len, 103)
                 else:
-                    comm2("attr:cb", focus, mark, "fg:cyan-60,inverse", len, 3)
+                    comm2("attr:cb", focus, mark, "fg:cyan-60,inverse", len, 103)
 
             return edlib.Efallthrough
 

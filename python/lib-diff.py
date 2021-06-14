@@ -91,14 +91,14 @@ class DiffPane(edlib.Pane):
             if st <= 0:
                 if c == '+':
                     comm2("attr:cb", focus, mark,
-                          "fg:green-60,bg:white,nobold", 1, 5)
+                          "fg:green-60,bg:white,nobold", 1, 105)
                     comm2("attr:cb", focus, mark,
-                          "fg:green-60,bg:cyan+90,bold", 10000, 2)
+                          "fg:green-60,bg:cyan+90,bold", 10000, 102)
                 else:
                     comm2("attr:cb", focus, mark,
-                          "fg:red-60,bg:white,nobold", 1, 5)
+                          "fg:red-60,bg:white,nobold", 1, 105)
                     comm2("attr:cb", focus, mark,
-                          "fg:red-60,bg:magenta+90,bold", 10000, 2)
+                          "fg:red-60,bg:magenta+90,bold", 10000, 102)
                 if st == 0:
                     self.handle_wordwise('auto', focus, mark)
                 return edlib.Efallthrough
@@ -106,11 +106,15 @@ class DiffPane(edlib.Pane):
             # Set attr for leading '+' with length 1 and high prio
             # Set attr for differing text with length LARGE and lower prio
             if c == '+':
-                comm2("attr:cb", focus, mark, "fg:green-60,bg:white,nobold", 1, 5)
-                comm2("attr:cb", focus, mark, "fg:green-60,bg:cyan+90,bold", 10000, 2)
+                comm2("attr:cb", focus, mark, "fg:green-60,bg:white,nobold",
+                      1, 105)
+                comm2("attr:cb", focus, mark, "fg:green-60,bg:cyan+90,bold",
+                      10000, 102)
             elif c == '-':
-                comm2("attr:cb", focus, mark, "fg:red-60,bg:white,nobold", 1, 5)
-                comm2("attr:cb", focus, mark, "fg:red-60,bg:magenta+90,bold", 10000, 2)
+                comm2("attr:cb", focus, mark, "fg:red-60,bg:white,nobold",
+                      1, 105)
+                comm2("attr:cb", focus, mark, "fg:red-60,bg:magenta+90,bold",
+                      10000, 102)
 
             return edlib.Efallthrough
         if str == "render:diff-same":
@@ -118,9 +122,11 @@ class DiffPane(edlib.Pane):
             len = int(w[0])
             if w[1] == '1':
                 # This is the '+' section
-                comm2("attr:cb", focus, mark, "fg:green-60,bg:white,nobold", len, 3)
+                comm2("attr:cb", focus, mark, "fg:green-60,bg:white,nobold",
+                      len, 103)
             else:
-                comm2("attr:cb", focus, mark, "fg:red-60,bg:white,nobold", len, 3)
+                comm2("attr:cb", focus, mark, "fg:red-60,bg:white,nobold",
+                      len, 103)
             return 1
 
     def handle_wordwise(self, key, focus, mark, **a):

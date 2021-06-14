@@ -969,13 +969,13 @@ class CModePane(edlib.Pane):
     def handle_map_attr(self, key, focus, mark, str, comm2, **a):
         "handle:map-attr"
         if str == "render:paren" and self.pre_paren and (mark in self.pre_paren):
-            comm2("cb", focus, "bg:blue+50,bold", 1)
+            comm2("cb", focus, "bg:blue+50,bold", 1, 201)
         if str == "render:paren" and self.post_paren and (mark in self.post_paren):
-            comm2("cb", focus, "bg:blue+50,bold", 1)
+            comm2("cb", focus, "bg:blue+50,bold", 1, 201)
         if str == "render:paren-mismatch" and self.pre_paren and (mark in self.pre_paren):
-            comm2("cb", focus, "bg:red+50,bold", 1)
+            comm2("cb", focus, "bg:red+50,bold", 1, 201)
         if str == "render:paren-mismatch" and self.post_paren and (mark in self.post_paren):
-            comm2("cb", focus, "bg:red+50,bold", 1)
+            comm2("cb", focus, "bg:red+50,bold", 1, 201)
 
     def handle_para(self, key, focus, mark, num, **a):
         "handle:doc:paragraph"

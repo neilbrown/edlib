@@ -995,18 +995,18 @@ DEF_CMD(find_attr)
 
 		if (dir_start > 0)
 			comm_call(ci->comm2, "cb", ci->focus, dir_start,
-				  ci->mark, "fg:grey+20,nobold,noinverse", 5);
+				  ci->mark, "fg:grey+20,nobold,noinverse", 115);
 		if (dir_end > dir_start)
 			comm_call(ci->comm2, "cb", ci->focus, dir_end,
-				  ci->mark, "fg:black,nobold,noinverse", 4);
+				  ci->mark, "fg:black,nobold,noinverse", 114);
 		if (nondir_end > dir_end)
 			comm_call(ci->comm2, "cb", ci->focus, nondir_end,
-				  ci->mark, "fg:red-80,bold,inverse", 3);
+				  ci->mark, "fg:red-80,bold,inverse", 113);
 		if (basename_start > nondir_end)
 			comm_call(ci->comm2, "cb", ci->focus, basename_start,
-				  ci->mark, "fg:magenta", 2);
+				  ci->mark, "fg:magenta", 112);
 		comm_call(ci->comm2, "cb", ci->focus, 10000, ci->mark,
-			  "fg:black", 1);
+			  "fg:black", 111);
 	}
 	return 1;
 }
@@ -1985,18 +1985,18 @@ DEF_CMD(emacs_attrs)
 	if (strcmp(ci->str, "render:interactive-mark") == 0) {
 		if (ci->mark == cr.m2 && cr.m2->seq < cr.m->seq)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, 2000000,
-					 ci->mark, selection, 2);
+					 ci->mark, selection, 210);
 		if (ci->mark == cr.m2)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-					 ci->mark, selection, 2);
+					 ci->mark, selection, 210);
 	}
 	if (strcmp(ci->str, "render:interactive-point") == 0) {
 		if (cr.m == ci->mark && cr.m->seq < cr.m2->seq)
 			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
-					 ci->mark, selection, 2);
+					 ci->mark, selection, 210);
 		if (cr.m == ci->mark)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
-					 ci->mark, selection, 2);
+					 ci->mark, selection, 210);
 	}
 	if (strcmp(ci->str, "start-of-line") == 0) {
 		if ((cr.m->seq < ci->mark->seq && ci->mark->seq < cr.m2->seq &&
@@ -2004,7 +2004,7 @@ DEF_CMD(emacs_attrs)
 		    (cr.m2->seq < ci->mark->seq && ci->mark->seq < cr.m->seq &&
 		     !mark_same(ci->mark, cr.m)))
 			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
-					 ci->mark, selection, 2);
+					 ci->mark, selection, 210);
 	}
 	return Efallthrough;
 }

@@ -159,10 +159,10 @@ class AbbrevPane(edlib.Pane):
         if not comm2 or not self.prefix_start:
             return
         if str1 == "render:abbrev" and str2 == 'prefix' and mark == self.prefix_start:
-            comm2("cb", focus, mark, "bg:yellow", self.prefix_len)
+            comm2("cb", focus, mark, "bg:yellow", self.prefix_len, 250)
             return 1
         if str1 == "render:abbrev" and str2 == 'completion' and mark == self.prefix_end:
-            comm2("cb", focus, mark, "bg:cyan", self.complete_len)
+            comm2("cb", focus, mark, "bg:cyan", self.complete_len, 250)
             return 1
 
     def repeat(self, key, focus, **a):
