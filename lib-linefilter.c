@@ -419,32 +419,49 @@ DEF_CMD(filter_eol)
 {
 	struct filter_data *fd = ci->home->data;
 	int rpt = RPT_NUM(ci);
+	bool one_more = ci->num2 > 0;
+	int line;
 
 	check_settings(ci->focus, fd);
 
 	if (!ci->mark)
 		return Enoarg;
-	if (rpt >= -1 && rpt <= 1)
-		/* movement within the line */
+	if (rpt < 0)
+		line = rpt + 1 - one_more;
+	else
+		line = rpt - 1 + one_more;
+	/* 'line' is which line to go to relative to here */
+	if (line == 0) {
+		if (rpt < 0)
+			/* Start of line */
+			call("doc:EOL", ci->home->parent, -1, ci->mark);
+		else
+			/* End of line */
+			call("doc:EOL", ci->home->parent, 1, ci->mark);
 		return 1;
-	while (rpt < -1) {
+	}
+	while (line < 0) {
 		int ret;
 		ret = do_filter_line_prev(fd, ci->mark,
 					  ci->home->parent, ci->focus, 1, NULL);
 		if (ret < 0)
-			rpt = -1;
+			line = 0;
 		if (ret > 0)
-			rpt += 1;
+			line += 1;
 	}
-	while (rpt > 1) {
+	while (line > 0) {
 		struct call_return cr;
 		cr.c = eol_cb;
 		if (home_call(ci->home, "doc:render-line",
 			      ci->focus, NO_NUMERIC, ci->mark, NULL,
 			      0, NULL, NULL, 0,0, &cr.c) <= 0)
-			rpt = 1;
-		rpt -= 1;
+			line = 1;
+		line -= 1;
 	}
+	if ((rpt < 0 && !one_more) || (rpt > 0 && one_more))
+		/* Target was start of a line, so we are there */
+		return 1;
+	call("doc:EOL", ci->home->parent, 1, ci->mark);
 	return 1;
 }
 
