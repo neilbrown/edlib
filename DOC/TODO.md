@@ -4,7 +4,7 @@ To-do list for edlib
 Current priorities
 ------------------
 
-- [ ] anything marked [Y]
+- [ ] anything marked [1]
 - [ ] fix bugs
 - [ ] core features
 - [ ] markdown viewer and editor
@@ -28,64 +28,29 @@ Current priorities
 Bugs to be fixed
 ----------------
 
-- [X] understand why the 'grep' test isn't consistent, and fix it
-- [X] 'bury' doesn't work in notmuch window
-- [X] lib-renderline in a 1x1 pane spins.  Happens if I 'elc' while cursor
-      is in a search popup.
-- [X] modified document which cannot be written also cannot be killed!
 - [ ] initial draw of a pane sometime stops halfway down the pane - particularly email.
-- [X] notmuch compose adds 'Re:' if it already exists
 - [ ] x11selection doesn't work properly on second ncurses display
       except when it does...
-- [X] multipart should use ->mdata, not ->refs, which should go
-- [X] introduce per-pane timestamp so code can easily tell if it has run too long
 - [ ] teach input to allow a repeat command to be registered so that e.g.
       search/replace and do a bit of work, then ask to be called again.
       input pboard_waican cancel this on suitable input.
-- [X] handle reply-to header when replying to emails
-- [X] file names created for attachments need spaces etc translated
-      for scp to work well ... at least when ncurses wants to use scp.
-- [X] cannot easily delete blank line at end of headers when composing message
-- [X] email messages being composed cannot be saved as drafts, and aren't
-      autosaved
 - [ ] Searching for \U0001f5d1 crashes, [\U0001f5d1] fails.
 - [ ] ctrl-z in elc doesn't ask edlib to release the terminal
-- [X] notmuch mode keeps lots of email messages permanently open
-- [X] copy/paste is unreliable
-- [X] fill-mode is weird.  Sometimes explicitly giving a fill-width sticks,
-      sometimes not.  What do I really want?
-- [ ] doc-docs can get confused when I kill buffers from within the view
-      CANNOT REPRODUCE
 - [ ] use iconv(3) for char-set conversion
 - [ ] When visiting a file which is found to be a link to a different name,
       the file isn't reloaded if it has changed.
       CANNOT REPRODUCE
-- [X] While cursor not at start of line, following a patch goes to wrong line
-      - by one.  (not: If file isn't already displayed)
-- [X] search matches aren't highlighted where there is other highlighting
-      like line-too-long or diff colouring
-      CANNOT REPRODUCE
-      Reproduced with line-too-long in C files.  lib-whitespace uses prio of 10 for
-      bg, emacs-search-highlight uses 20 for inverse and fg.
-      Ahhh.. lib-whitespace sets attrs on each char invidivudally.  I wonder why.
-      ...because it wants to move the mark as the rendering happens.  And
-      it is the moving of the mark that causes the problem
-- [X] Add Close handler for doc-docs.c???
-- [X] backward search sometimes doesn't work.  If there has been a recent
-      search and point is at start of a match then C-s C-s C-r C-r C-r never 
-      moves backwards or loops.
 - [ ] save-all dialogue sometimes puts cursor at bottom and cannot move up.
       MY GUESS IS doc:EOL in linefilter is calling doc:render-line-prev
       and getting an error - maybe from doc:render-line-prev on parent.
       I need to try when next it happens.
-- [X] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
+- [ ] "copy:get" can hang: xs_copy_get_func->gtk_clipboard_wait_for_text->
      g_main_loop_run->poll
 - [ ] 'make' sometimes chooses an info over an error line - both in C file
       *I think you mean 'note' line (not 'info'), and yes - it is supposed to.
        It chooses the last 'note' line, preferring ".c" files over others.
        I guess if I don't like a result next time, I should document the
        complete result that I didn't like.
-- [X] make sometimes doesn't follow end-of-file
 - [ ] make uses too much CPU on large output
 - [ ] When viewing diff or merge can get into infinite loop.  Possibly due
       to edit at end-of-file
@@ -117,16 +82,16 @@ Core features
 -------------
 
 - [ ] design a way for a keystroke to interrupt a long-running function.
-- [ ] centralize handling of the creation of a pane stack for a new display.
-- [ ] have standard way for slow testing of order of marks
-- [ ] have a debug mode where mark consistency is checked v.often
-- [ ] improve timeout.  Set timer once, then set a flag so that all commands fail
+- [1] centralize handling of the creation of a pane stack for a new display.
+- [1] have standard way for slow testing of order of marks
+- [1] have a debug mode where mark consistency is checked v.often
+- [1] improve timeout.  Set timer once, then set a flag so that all commands fail
       until some top-level clears the flag.
 - [ ] reconsider all 'return comm_call()' calls.  Do we every really
       care if the callback succeeded?
 - [ ] Change Efallthough to -1 so I can return '0' meaningfully.
       Efalse probably becomes 0.
-- [ ] key_add_prefix() doesn't work if there is no punctuation.
+- [1] key_add_prefix() doesn't work if there is no punctuation.
 - [ ] send warning message when recursive notification is prohibited.
        editor:notify:Message:broadcast
 - [ ] detect and limit recursion.
@@ -141,24 +106,16 @@ Core features
 - [ ] maybe generalise search and select somehow, so a line-based filter can
       detect and highlight the selection, rather than major-mode being fully
       in control  Similarly search might be handled by a render pane.
-- [X] should pane_clone_children() copy attrs too?
 - [ ] support text-replace as easy as text-insert (doc:char...)
 - [ ] for doc:cmd transformation,  what about :Enter and BS TAB ESC ???
 - [ ] For a notify handler, returning non-zero doesn't stop other handlers
       running.  For a call handler it does.  This inconsistency is awkward for
       messageline_msg which wants to allow fallthrough, but needs to acknowledge.
       How can I resolve this? Use Efallthrough as -1.
-- [ ] make a doc read-only if dir doesn't exist or isn't writable
+- [1] make a doc read-only if dir doesn't exist or isn't writable
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
-- [X] graceful failure when closing doc that still has views.
-- [X] Then call doc_free() internally so the module doesn't need to.
-      Also if there are still ungrouped marks with ->mdata.  There shouldn't be, but
-      coding errors can cause that.
-- [X] marks should not be auto-freed on close as there could still be a pointer
-      somewhere from the owner.  Rather they should be disconnected and tracked
-      so that a 'free' can work, but nothing else does anything useful.
-- [ ] When I call DocPane I normally doc:attach-view a doc there. But it is
+- [1] When I call DocPane I normally doc:attach-view a doc there. But it is
       the same doc, so pointless.  Can I optimise that somehow?
 - [ ] document the use of doc:replaced.  What are the two
       marks exactly? start and end of range.  Verify all clients and providers
@@ -175,12 +132,12 @@ Core features
 - [ ] Make it possible to unload C modules when refcount on all commands
       reaches zero
 - [ ] Make it possible to unload Python modules
-- [ ] Mellon anti-fail policy.  Small allocations don't fail but use pre-allocated.
+- [ ] Malloc anti-fail policy.  Small allocations don't fail but use pre-allocated.
       large allocations use different API and can fail.
 - [ ] support $SUBST in file-open path names ??
 - [ ] Need a debug mode where every mark usage is checked for validity.
       also check the setref sets up all linkages.
-- [ ] remove all FIXMEs (there are 72) ... and any HACKs (2).
+- [ ] remove all FIXMEs (there are 65) ... and any HACKs (2).
 - [ ] Replace asserts with warnings where possible.
 - [ ] hide view-num inside pane so number cannot be misused.
      i.e. each view is owned by a pane and can only be used by that pane.
@@ -208,23 +165,6 @@ Module features
       returned if a flag allowed a match, but the char didn't.
 
 ### popup
-
-- [X] the calculation for borders use "-2" and "-1" which mean quite
-      different things for ncurses and gtk.
-- [X] Support Cx-1 in (some) popups so they can take-over.
-- [ ] I need a way to move the pop-up window to an existing pane.
-       Maybe just flag it so C-x-# chooses it first.
-       Maybe C-x-4-0 ??
-- [X] if 'focus' is a temp pane, it might disappear (lib-abbrev) which
-      closes the popup.  I need to some how indicate a more stable pane
-      for replies to go to
-      Maybe lib-abbrev should catch ChildRegistered and call pane_subsume
-      to get out of the way ... or similar....
-      Or maybe lib-abbrev just stays there ignoring commands until it has
-      no children, then it disappears.
-      Same problem with 'viewer' disappearing on K-E.
-      I think they should disable themselves and capture re-enablement.
-- [ ] emacs search highlight window should disable itself rather than close
 
 ### lib-diff
 
@@ -262,40 +202,26 @@ Module features
 
 ### emacs
 
-- [ ] put time limit on searches.  Backwards is quite slow.
-- [X] Support grab of mouse when pressed so motion and release go to
-      corrent window.
-- [X] :C-q to allow entering unicode hex etc.
 - [ ] :C-q to recognize names of unicode chars: e.g. WASTEBASKET
        Possibly matches a list which continued :C-q cycles through
-- [X] make-directory command
-      pop-up like find-file, offering current dir.
-- [X] semi-auto make-dir on save to nonexistent
-       alt-Enter is required.
 - [ ] sort the command names for command-completion?
        Currently lines are inserted into buffer.  I need to store in
        an array first, then qsort()
 - [ ] filename completion should ignore uninteresting files like ".o"
       Maybe use .gitignore, or have config module understand that.
-- [X] search highlight doesn't report empty match (eol)...
-      I need to place a cursor - maybe blue?
-- [X] emacs highlight should get close notification from popup,
-      instead of catching abort.???
-- [X] ask before killing modified buffer - or refuse without numeric prefix
-      Complain and refuse!
 - [ ] maybe alt-, does c-x` if that is the recent search?
-- [ ] Support write-file (providing a file name) - currently I only save
+- [1] Support write-file (providing a file name) - currently I only save
       to the file I loaded from.
-- [ ] Support include-file (C-x i) to load contents of a file at point.
+- [1] Support include-file (C-x i) to load contents of a file at point.
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 - [ ] compare two panes somehow - new lib-compare function??
-- [ ] pipe doc or selection to a command, optionally capture to replace with output.
+- [1] pipe doc or selection to a command, optionally capture to replace with output.
 
 ##### needs design work
 
 - [ ] search/replace should support undo somehow
       I can already step out, undo, step back.  What more?  Maybe Alt-U (uppercase)?
-- [ ] search/replace should make it easy to revisit previous changes.
+- [1] search/replace should make it easy to revisit previous changes.
        Backspace cannot work.  Alt-P might
 - [ ] What should be passed to M-x commands?  prefix arg?  selection string?  point?
        Surely everything.  Prefix if present, string if active, point always.
@@ -307,7 +233,6 @@ Module features
 
 ### ncurses
 
-- [ ] external-viewer for different host could output file in base64 for copy/paste??
 - [ ] add full list of colour names (to lib-colourmap)
 - [ ] allow a pane to require 'true-colour' and discover number of colours available
       Colour map gets changed when it becomes the focus.
@@ -318,9 +243,8 @@ Module features
 
 ### pygtk
 
-- [X] interactive command to open pygtk window even from ncurses.  displayname can be given
 - [ ] can we capture the substates of character composition, and give feed-back?
-- [ ] make sure pixmap handling in optimal - I want the per-pane images to be server-side
+- [1] make sure pixmap handling in optimal - I want the per-pane images to be server-side
       See cairo_xcb_surface_create.
 - [ ] If a net connection to a display goes away, we can block on IO to that display.
       Particularly an ssh connection to an ncurses display.
@@ -333,32 +257,32 @@ Module features
 
 ### render-lines
 
-- [ ] improve 'margin' to permit cursor in margin at start of file
-- [ ] improve 'margin' to honour previous view of doc
+- [1] improve 'margin' to permit cursor in margin at start of file
+- [1] improve 'margin' to honour previous view of doc
 - [ ] update_line_height should handle TAB (and any control) - cannot expect
       text-size to handle it.
-- [ ] Give lib-renderline a Refresh:view which calls something in the render-line
+- [1] Give lib-renderline a Refresh:view which calls something in the render-line
       pane which does call_render_line().  Use pane_damaged() to mark panes as invalid
       and pane_refresh() to update them.
-- [ ] revise render_lines_move
-- [ ] revise render_lines_move_line
-- [ ] revise render_lines_view_line
+- [1] revise render_lines_move
+- [1] revise render_lines_move_line
+- [1] revise render_lines_view_line
 - [ ] Replace <attr> text </> in markup with SOH attr STX text ETX
       This also affects lib-markup and others.
 - [ ] I regularly hit problems because ->mdata is not up to date and we render
       to find a cursor and compare with ->mdata and get confusion.  How can I avoid this?
 - [ ] view:changed shouldn't destroy the view, else Move-CursorXY
       gets confused.
-- [ ] make renderlines "refresh everything when point moves" optional.
+- [1] make renderlines "refresh everything when point moves" optional.
 - [ ] if flush_line from render_line() keeps returning zero, abort
-- [ ] render-lines should always re-render the line containing point, so
+- [1] render-lines should always re-render the line containing point, so
       the location of “point” can affect the rendering.
 
 ### lib-macro
 
 - [ ] detect errors including Abort and search failure etc. Abort capture or
       replay on error
-- [ ] 'capturing' state should be visible in status line.
+- [1] 'capturing' state should be visible in status line.
 - [ ] Possibly wait for a shell-command etc to complete before continuing.
 
 ### doc-dir
@@ -366,13 +290,9 @@ Module features
 - [ ] allow setting a pattern, as alternate to substr, for 'complete' viewer.
 - [ ] how to change sort order of a directory listing.  I think this requires
       a separate dir document, which borrows state from the main one.
-- [X] chown/chmod/unlink/rename etc
 
 ### doc-text
 
-- [X] a single undo should never cross a save point!
-- [X] use larger buffers for adding text - especially when filling from pipe.
-      e.g. new buffer doubles each time??
 - [ ] support disable of undo in text, e.g. for copybuf document.
       I think this is a completely different doc type
 - [ ] Possibly move read-only handling to core-doc, once docs/dir
@@ -389,19 +309,15 @@ Module features
 
 ### completion
 
-- [X] When 'delete' and there is only the original
-      entry on the prefix stack, just delete one character.
-- [X] mouse selection should work in completion pane
-- [X] filename completion should work for earlier component of path.
 - [ ] The “complete” popup should be positioned above/below the file name,
       not over the top of it.
 
 ### lib-view
 
-- [ ] easy way for minor-modes to report existence in status bar
+- [1] easy way for minor-modes to report existence in status bar
 - [ ] review use of line-drawing chars for window boarders
 - [ ] improve scroll bars
-- [ ] make (trailing) space/tab in doc name visible
+- [1] make (trailing) space/tab in doc name visible
 - [ ] review decision about that to do when high < 3*border-height.
       Current (disabled) code makes a mess when differing scales causes
       borders to be shorter than content.
@@ -422,9 +338,6 @@ Module features
 
 ### grep/make
 
-- [X] CX-` moves cursor to end of output, but it doesn't follow.
-- [X] When I visit from grep in a popup, I think I want a 'view' at first.
-      so 'q' works.
 - [ ] Need keystroke to step through different grep/make windows
 - [ ] if file isn't already loaded, wait until it is wanted, or something
       else loads it.
@@ -433,10 +346,6 @@ Module features
 
 ### message-line
 
-- [X] a modal message like ":CX" can obscure an async message like
-      "email submission complete".  Maybe the non-modal message
-      comes back when the modal message is gone?
-- [X] messages gets too much noise but doesn't get 'version'. 'log' gets messages..
 - [ ] Differentiate warnings from info, and blink-screen for warnings.
 
 ### docs
@@ -448,9 +357,9 @@ Module features
 
 ### shell mode
 
-- [ ] If current directory doesn't exist, cope somehow
-- [ ] make sure CWD env var doesn't end '/'.
-- [ ] 'shell-command' should try to use same pane even though it
+- [1] If current directory doesn't exist, cope somehow
+- [1] make sure CWD env var doesn't end '/'.
+- [1] 'shell-command' should try to use same pane even though it
       kills the old document and creates a new one
 - [ ]  Use pattern-match on command to optionally choose an overlay
        which can highlight output and allow actions.
@@ -475,14 +384,16 @@ Module features
 
 ### Notmuch - overview
 
-- [ ] add command to go to first new message? 'N'?
+- [1] messages shouldn't disappear from open thread when background refresh happens.
+- [1] archived threads SHOULD disappear when a query is closed.
+- [1] add command to go to first new message? 'N'?
 - [ ] saved queries that are not mentioned in any other query should get
       presented in the search list. ... except maybe current/unread/new ???
 - [ ] if a thread matched query and so is still cached, but no
       individual messages match any more, then whole thread is shown.
       This is confusing.  Maybe we report an error when open is attempted,
       but somehow allow 'Z' to still work.
-- [ ] purge old entries from query when updates but not being viewed
+- [1] purge old entries from query when updates but not being viewed
 - [ ] updating tags can take long when 100s.  Enable background queuing of these.
 - [ ] Don't display query entries that have a 0 match count.??
 - [ ] update counts more often when a query is being changed.  e.g. when any change happens
@@ -490,33 +401,23 @@ Module features
 - [ ] handle errors better.  e.g. file reported by notmuch might not
       exist, or not be readable
 - [ ] allow opening drafts in composer on restart.
-- [X] 'c' to continue an unsent message
 - [ ] allow deleting of drafts without posting.  Maybe just 'delete'..
-- [ ] option to wrap subjects onto next line
+- [1] option to wrap subjects onto next line
 - [ ] When active query changes, highlight on list view doesn't immediately
       follow
-- [X] negative arg to '*' etc clears inverts the change
 - [ ] TESTS
-- [X] when re-visit, open up the same panes
 - [ ] make sure Clone actually works for all panes - or remove it
 - [ ] add counter and colour for 'flagged'
 - [ ] if no 'saved:current' use "not exclude_tags"
-- [ ] change from "saved:" to "query:" after re-organizing my queries.
+- [1] change from "saved:" to "query:" after re-organizing my queries.
 - [ ] support selection messages and applying tags
-- [X] 'd' to add "deleted' flag
-- [X] different highlight colour for "not matched" and "not inbox"
-- [X] When visiting pre-existing query, move to first New .. optional?
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.
-- [X] show doc status for query whether search is still going
-- [ ] show a summary line at end of search result which says how far back has been searched.
 - [ ] make min top/bottom margin configurable, set for message list
-- [ ] search in thread list - use 'format2' after fixing bug
+- [1] search in thread list - use 'format2' after fixing bug
 - [ ] display counts of current thread somewhere, so I know where I'm up to. - new/unread/matched in status line
 - [ ] review highlight on query when the message selected isn't the message displayed
-- [X] use NOTMUCH_CONFIG consistently - drop locking
 - [ ] fix bugs in stored-query!! query: is slow and (I think) buggy
-- [X] uses stored-query to store querys even if I don't use it for lookup
 - [ ] rel_date could report how long until display would change, and
    we could set a timer for the minimum.
 - [ ] allow re-ordering of saved-search list click-drag? +/-?
@@ -525,6 +426,7 @@ Module features
 - [ ] make sure doc cleans up when closed. processes must be killed
       and query docs must be closed
 - [ ] Can I implement "undo" for large-scale tag changes?
+      Maybe don't write them to the DB immediately??
 
 ###  Notmuch message display
 
@@ -544,10 +446,10 @@ Module features
       non-existing file.  Allow a default dir which can be remembered.
       Use this for Emacs, and for saving attachments
 - [ ] when unhiding for a alternate part, hide any others.
-- [ ] separate measuring and drawing images
-- [ ] allow images to be full width, and less than half height
-- [ ] allow cursor movement in image: maybe 9x9 positions
-- [ ] ensure multipart ends each part with an eol.
+- [1] separate measuring and drawing images
+- [1] allow images to be full width, and less than half height
+- [1] allow cursor movement in image: maybe 9x9 positions
+- [1] ensure multipart ends each part with an eol.
 - [ ] next part/prev part button on spacer
 - [ ] handle calendar attachments.
 - [ ] closing a large section pushed cursor to top of display, which
@@ -568,7 +470,7 @@ Module features
     redraw gets confused and point goes off-screen, which seems
     to leave it confused.
 - [ ] in text/plain, wrap long lines on 'space'. - make this a config in lib-markup
-- [ ] allow view of all headers, and of "more" than default (including file names)
+- [1] allow view of all headers, and of "more" than default (including file names)
 - [ ] maybe hide signature, unless small
 - [ ] When click on first char in tagged range, I don't see the tag and
    don't get a Mouse-Activate event.
@@ -623,9 +525,8 @@ Module features
 
 ### Presenter
 
-- [ ] split into lower pane which parse markdown and upper which handles presentation.
-- [ ] command to immediately change current pane in to presenter view
-- [X] add viewer pane so cannot accidentally edit - and space pages down.
+- [1] split into lower pane which parse markdown and upper which handles presentation.
+- [1] command to immediately change current pane in to presenter view
 - [ ] translucent bg colour for paragraphs
 - [ ] partial-view-points. Only render beyond here if mark here or beyond.
     page-down goes to next such point
@@ -643,14 +544,10 @@ Module features
 
 ### C-mode
 
-- [X] allow {} inside 'case' without increasing indent level
-- [ ]  auto-indent enhancements
-
-     +   py: after "return" de-indent
-     -  if statement is assignment, align to '='
-     -   Should '/' see if at start of comment line following '* ', and discard space?
-     -   A line after one ending ; or } or : or unindented is assumed to be
-         correctly indented.
+- [ ] auto-indent enhancements: '/' should see if at start of comment line 
+       following '* ', and discard space?
+- [ ] A line after one ending ; or } or : or unindented is assumed to be
+         correctly indented.??
 
 - [ ] configuration: use tabs or spaces for indent
 - [ ] configuration: use only spaces for bracket-alignment indents - or tabs as well.
@@ -661,10 +558,7 @@ Module features
 
 ### lang-python
 
-- [X] allow (even prefer) str1 for str, as str is predefined
-- [X] use new doc:debug:mark when printing marks
 - [ ] should Efallthrough be an exception?
-- [X] report error if release mark which isn't ours.
 - [ ] Log loading of modules - Can I provide version info?
 - [ ] we aren't catching errors from functions called from .connect()
        Maybe use sys.excepthook(typ,val,tb)
@@ -672,16 +566,9 @@ Module features
 
 ### white-space
 
-- [X] rethink approach of specifying attributes for a single char at a time.
-      This seems inefficient
 - [ ] support highlight suitable for diff: a space is first character is allowed,
       even if EOL or followed by space.
-- [X] support highlight of spaces-for-indent
-- [X] support highlight of tabs-for-indent
 - [ ] make set of highlights, and colors, configurable
-- [X] support highlight for hard spaces
-- [X] support for blank lines near blanklines or start/end of file
-- [X] support highlight for 8spaces after a tab
 
 ### test suite
 
