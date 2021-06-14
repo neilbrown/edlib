@@ -2048,9 +2048,14 @@ class notmuch_master_view(edlib.Pane):
             self.do_update(thid, msid, t[0], t[1])
         return 1
 
-    def handle_close_message(self, key, **a):
+    def handle_close_message(self, key, num, **a):
         "handle:notmuch-close-message"
         self.message_pane = None
+        if num and self.query_pane:
+            pnt = self.query_pane.call("doc:point", ret='mark')
+            if pnt:
+                pnt['notmuch:current-message'] = ''
+                pnt['notmuch:current-thread'] = ''
         return 1
 
     def handle_xq(self, key, **a):
@@ -2059,7 +2064,7 @@ class notmuch_master_view(edlib.Pane):
             if key != "doc:char-x":
                 self.mark_read()
             p = self.message_pane
-            self.message_pane = None
+            self("notmuch-close-message", 1)
             p.call("Window:close", "notmuch")
         elif self.query_pane:
             if self.query_pane.call("notmuch:close-whole-thread") == 1:
@@ -2131,7 +2136,7 @@ class notmuch_master_view(edlib.Pane):
         # message window and open a threads window.
         if self.message_pane:
             p = self.message_pane
-            self.message_pane = None
+            self("notmuch-close-message", 1)
             p.call("Window:close", "notmuch")
         if self.query_pane:
             self.query_pane.call("doc:notmuch:mark-seen")
@@ -2154,19 +2159,22 @@ class notmuch_master_view(edlib.Pane):
         self.resize()
         return 1
 
-    def handle_select_message(self, key, focus, num, str, str2, **a):
+    def handle_select_message(self, key, focus, num, str1, str2, **a):
         "handle:notmuch:select-message"
-        # a thread or message was selected. id in 'str'. threadid in str2
+        # a thread or message was selected. id in 'str1'. threadid in str2
         # Find the file and display it in a 'message' pane
         self.mark_read()
 
-        p0 = self.list_pane.call("doc:notmuch:byid", str, ret='pane')
+        p0 = self.list_pane.call("doc:notmuch:byid", str1, ret='pane')
         if not p0:
             focus.call("Message", "Failed to find message")
             return edlib.Efail
         p0['notmuch:tid'] = str2
 
-        p1 = self.query_pane.call("OtherPane", "notmuch", "message", 13,
+        qp = self.query_pane
+        if not qp:
+            qp = focus
+        p1 = focus.call("OtherPane", "notmuch", "message", 13,
                                   ret='pane')
         p3 = p0.call("doc:attach-view", p1, ret='pane')
         p3 = p3.call("attach-render-notmuch:message", ret='pane')
@@ -2177,8 +2185,13 @@ class notmuch_master_view(edlib.Pane):
         # Need a better way to anchor a document.
         #p0.call("doc:set:autoclose", 1)
         p3['thread-id'] = str2
-        p3['message-id'] = str
+        p3['message-id'] = str1
         self.message_pane = p3
+        if self.query_pane:
+            pnt = self.query_pane.call("doc:point", ret='mark')
+            if pnt:
+                pnt['notmuch:current-thread'] = str2
+                pnt['notmuch:current-message'] = str1
         if num:
             self.message_pane.take_focus()
         self.resize()
@@ -2286,8 +2299,14 @@ class notmuch_query_view(edlib.Pane):
         else:
             # otherwise restore old state
             pt = self.call("doc:point", ret='mark')
-            if pt and pt['notmuch:selected']:
-                self("notmuch:select", pt['notmuch:selected'])
+            if pt:
+                if pt['notmuch:selected']:
+                    self("notmuch:select", pt['notmuch:selected'])
+                mid = pt['notmuch:current-message']
+                tid = pt['notmuch:current-thread']
+                if mid and tid:
+                    self.call("notmuch:select-message", mid, tid)
+                    self.selmsg = mid
 
         self.call("doc:request:doc:replaced")
         self.call("doc:request:notmuch:thread-changed")

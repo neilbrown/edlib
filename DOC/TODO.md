@@ -497,7 +497,7 @@ Module features
       follow
 - [X] negative arg to '*' etc clears inverts the change
 - [ ] TESTS
-- [Y] when re-visit, open up the same panes
+- [X] when re-visit, open up the same panes
 - [ ] make sure Clone actually works for all panes - or remove it
 - [ ] add counter and colour for 'flagged'
 - [ ] if no 'saved:current' use "not exclude_tags"
