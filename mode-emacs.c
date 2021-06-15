@@ -983,7 +983,7 @@ DEF_CMD(find_attr)
 		return Enoarg;
 
 	if (strcmp(type, "file") != 0)
-		return 1;
+		return Efallthrough;
 
 	if (strcmp(ci->str, "start-of-line") == 0) {
 		char *lens = attr_find(ci->home->attrs, "path_lengths");
