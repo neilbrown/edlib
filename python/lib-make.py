@@ -701,6 +701,9 @@ def run_make(key, focus, str1, **a):
     #  'a' is 1 if save-all should be unconditional (auto), else 0
     #  mode is git or grep or make
     #  dir is directory to run in.
+    if not str1:
+        # popup aborted
+        return edlib.Efail
     k = key[4:]
     c = k.index(':')
     dir = k[c+1:]

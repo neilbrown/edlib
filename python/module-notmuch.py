@@ -1688,10 +1688,10 @@ class notmuch_master_view(edlib.Pane):
         query_popup(pup)
         return 1
 
-    def do_filter(self, key, focus, str, **a):
+    def do_filter(self, key, focus, str1, **a):
         "handle:notmuch-do-filter"
-        if self.query_pane:
-            self.query_pane.call("doc:notmuch:set-filter", str)
+        if self.query_pane and str1:
+            self.query_pane.call("doc:notmuch:set-filter", str1)
         return 1
 
     def handle_space(self, key, mark, **a):
@@ -2032,8 +2032,10 @@ class notmuch_master_view(edlib.Pane):
                 removes.append(tg)
         return (adds, removes)
 
-    def do_tags(self, key, focus, str, **a):
+    def do_tags(self, key, focus, str1, **a):
         "handle-prefix:notmuch-do-tags-"
+        if not str1:
+            return edlib.Efail
         suffix = key[16:]
         ids = suffix.split(' ', 1)
         thid = ids[0]
@@ -2041,7 +2043,7 @@ class notmuch_master_view(edlib.Pane):
             msid = ids[1]
         else:
             msid = None
-        t = self.parse_tags(str)
+        t = self.parse_tags(str1)
         if t is None:
             focus.call("Message", "Tags list must start with + or -")
         else:

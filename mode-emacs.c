@@ -612,6 +612,14 @@ DEF_CB(cnt_disp)
 	return 1;
 }
 
+DEF_CMD(emacs_deactivate)
+{
+	/* close-all popup has closed, see if it aborted */
+	if (ci->str)
+		call("event:deactivate", ci->focus);
+	return 1;
+}
+
 DEF_CMD(emacs_exit)
 {
 	struct call_return cr;
@@ -633,7 +641,7 @@ DEF_CMD(emacs_exit)
 		// FIXME if called from a popup, this fails.
 		if (!p)
 			return Efail;
-		attr_set_str(&p->attrs, "done-key", "event:deactivate");
+		attr_set_str(&p->attrs, "done-key", "emacs:deactivate");
 		return call("docs:show-modified", p);
 	} else
 		call("event:deactivate", ci->focus);
@@ -1217,6 +1225,9 @@ DEF_CMD(emacs_findfile)
 		     0, NULL, "popup:close");
 		return 1;
 	}
+	if (!ci->str)
+		/* Aborted */
+		return Efail;
 
 	path = file_normalize(ci->focus, ci->str, path);
 
@@ -1392,6 +1403,10 @@ DEF_CMD(emacs_finddoc)
 		pane_register(p, 0, &find_handle.c, "doc");
 		return 1;
 	}
+
+	if (!ci->str)
+		/* Aborted */
+		return Efail;
 
 	p = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
 	if (!p)
@@ -1710,6 +1725,9 @@ DEF_CMD(emacs_do_command)
 	char *cmd = NULL;
 	int ret;
 
+	if (!ci->str)
+		/* Aborted */
+		return Efail;
 	asprintf(&cmd, "interactive-cmd-%s", ci->str);
 	if (!cmd)
 		return Efail;
@@ -2762,6 +2780,7 @@ static void emacs_init(void)
 	key_add(m, "render:reposition", &emacs_reposition);
 
 	key_add(m, "K:CX:C-C", &emacs_exit);
+	key_add(m, "emacs:deactivate", &emacs_deactivate);
 
 	key_add(m, "K:C-U", &emacs_prefix);
 
