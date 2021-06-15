@@ -24,8 +24,8 @@ struct rf_data {
 		/* 'field' can end at most one attribute, start at most one,
 		 * can contain one text source, wither var or literal.
 		 */
-		char *val safe;	/* pointer into 'format' */
-		char *attr;	/* pointer into 'format', or NULL */
+		const char *val safe;	/* pointer into 'format' */
+		const char *attr;	/* pointer into 'format', or NULL */
 		unsigned short attr_end;/* field where this attr ends */
 		unsigned short attr_start;/* starting field for attr which ends here */
 		unsigned short val_len;	/* length in 'format' */
@@ -296,8 +296,8 @@ static char *rf_add_field(struct rf_data *rd safe, char *str safe)
 			rf->val_len = 1;
 		}
 		while (str[0] && str[0] != '<' && str[0] != '%') {
+			get_utf8((const char **)&str, NULL);
 			rf->val_len += 1;
-			str += 1;
 		}
 		return str;
 	}
@@ -555,8 +555,13 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 	}
 
 	if (!rf->var) {
-		/* FIXME UTF-8 ?? */
-		return CHAR_RET(rf->val[o]);
+		val = rf->val;
+		while (o > 0 && get_utf8(&val, NULL) < WERR) {
+			o -= 1;
+			if (val[-1] == '%' || val[-1] == '<')
+				val += 1;
+		}
+		return CHAR_RET(get_utf8(&val, NULL));
 	}
 	if (!val)
 		return ' ';
