@@ -544,7 +544,7 @@ Module features
 
 ### C-mode
 
-- [ ] auto-indent enhancements: '/' should see if at start of comment line 
+- [ ] auto-indent enhancements: '/' should see if at start of comment line
        following '* ', and discard space?
 - [ ] A line after one ending ; or } or : or unindented is assumed to be
          correctly indented.??
@@ -566,6 +566,7 @@ Module features
 
 ### white-space
 
+- [ ] highlight of adjacent blank lines isn't removed if first has text added
 - [ ] support highlight suitable for diff: a space is first character is allowed,
       even if EOL or followed by space.
 - [ ] make set of highlights, and colors, configurable
@@ -575,7 +576,7 @@ Module features
 - [ ] tests for double-click and drag.
 - [ ] test for recent search improvements
 - [ ] Add mechanism to easily run a command with pre-canned output.
-- [ ] Add one test case, and arrange for auto-testing on commit. 
+- [ ] Add one test case, and arrange for auto-testing on commit.
 - [ ] allow single-step testing?
 - [ ] Allow testing gtk as well an ncurses
 - [ ] Allow testing of server/client accesses
@@ -827,7 +828,7 @@ separate from the functionality.
 
 ### office mode
 
-- C-c for copy, C-x for cut, C-v for paste, 
+- C-c for copy, C-x for cut, C-v for paste,
 - Shift-arrows to select C-arrows for word-movement
 - C-bs C-del delete word
 - C-a select all

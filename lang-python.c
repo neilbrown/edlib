@@ -2145,6 +2145,19 @@ static PyObject *Mark_step(Mark *self safe, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *Mark_step_sharesref(Mark *self safe, PyObject *args)
+{
+	/* Convenience function to help implement doc:char */
+	int forward = 1;
+	int ret = PyArg_ParseTuple(args, "i", &forward);
+
+	if (ret > 0 && self->mark)
+		mark_step_sharesref(self->mark, forward);
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
 static PyObject *Mark_next(Mark *self safe, PyObject *args)
 {
 	struct mark *next;
@@ -2294,6 +2307,8 @@ static PyMethodDef mark_methods[] = {
 	{"ack", (PyCFunction)Mark_ack, METH_NOARGS,
 	 "acknowledge movement of a point - allow further notifications"},
 	{"step", (PyCFunction)Mark_step, METH_VARARGS,
+	 "Move mark over any adjacent marks with same reference"},
+	{"step_sharesref", (PyCFunction)Mark_step_sharesref, METH_VARARGS,
 	 "Move mark over any adjacent marks with same reference"},
 	{NULL}
 };
