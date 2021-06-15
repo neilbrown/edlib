@@ -377,11 +377,11 @@ DEF_CMD(format_content2)
 
 static int field_size(struct pane *home safe, struct pane *focus safe,
 		      struct mark *m safe, int field,
-		      char **valp safe)
+		      const char **valp safe)
 {
 	struct rf_data *rd = home->data;
 	struct rf_field *rf;
-	char *val;
+	const char *val;
 	int l;
 
 	if (field < 0 || field > rd->nfields)
@@ -406,7 +406,7 @@ static int field_size(struct pane *home safe, struct pane *focus safe,
 			val = "-";
 		*valp = val;
 	}
-	l = strlen(val);
+	l = utf8_strlen(val);
 	if (l < rf->width)
 		return rf->width;
 	else
@@ -422,7 +422,7 @@ static int normalize(struct pane *home safe, struct pane *focus safe,
 	unsigned short o = FIELD_OFFSET(index);
 
 	while (1) {
-		char *val = NULL;
+		const char *val = NULL;
 		int len;
 
 		len = field_size(home, focus, m, f, &val);
@@ -509,7 +509,7 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 	int margin;
 	int fsize;
 	int len = 0;
-	char *val = NULL;
+	const char *val = NULL;
 	int index;
 
 	set_format(focus, rd);
@@ -541,8 +541,6 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 	}
 	rf = &rd->fields[f];
 	fsize = field_size(home, focus, m, f, &val);
-	if (val)
-		len = strlen(val);
 	if (move && forward) {
 		mark_step(m, forward);
 		index = normalize(home, focus, m, 1);
@@ -563,11 +561,12 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 	if (!val)
 		return ' ';
 
+	len = utf8_strlen(val);
 	switch (rf->align) {
 	case 'l':
 	default:
 		if (o < len)
-			return CHAR_RET(val[o]);
+			break;
 		else
 			return ' ';
 	case 'c':
@@ -576,17 +575,22 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 			margin = 0;
 		if (o < margin)
 			return ' ';
-		if (o < margin + len)
-			return CHAR_RET(val[o-margin]);
-		return ' ';
+		if (o >= margin + len)
+			return ' ';
+		o -= margin;
+		break;
 	case 'r':
 		margin = fsize - len;
 		if (margin < 0)
 			margin = 0;
 		if (o < margin)
 			return ' ';
-		return CHAR_RET(val[o-margin]);
+		o -= margin;
+		break;
 	}
+	while (o > 0 && get_utf8(&val, NULL) < WERR)
+		o -= 1;
+	return CHAR_RET(get_utf8(&val, NULL));
 }
 
 DEF_CMD(format_char)
