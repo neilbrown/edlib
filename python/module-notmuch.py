@@ -751,6 +751,10 @@ class notmuch_query(edlib.Doc):
         self.maindoc.notify("doc:replaced", 1)
         return 1
 
+    def handle_shares_ref(self, key, **a):
+        "handle:doc:shares-ref"
+        return 1
+
     def setpos(self, mark, thread, msgnum = 0):
         if thread is None:
             mark.pos = None
@@ -853,7 +857,7 @@ class notmuch_query(edlib.Doc):
                 while (m and m.pos and m.pos[0] != tid and
                        self.threadids.index(m.pos[0]) < old):
                     m = m.next_any()
-                self.pos.step(0)
+                self.pos.step_sharesref(0)
                 mp = self.pos.prev_any()
                 if mp and mp.pos and mp.pos[0] == tid:
                     # All marks for tid are already immediately before self.pos
@@ -890,7 +894,7 @@ class notmuch_query(edlib.Doc):
             while m and m.pos is None:
                 m2 = m.next_any()
                 if m.seq != self.pos.seq:
-                    m.step(0)
+                    m.step_sharesref(0)
                     self.setpos(m, self.threadids[0])
                 m = m2
         self.notify("doc:replaced")
@@ -926,7 +930,7 @@ class notmuch_query(edlib.Doc):
                 self.notify("notmuch:thread-changed", tid)
                 del self.threads[tid]
                 self.threadids.remove(tid)
-                m.step(0)
+                m.step_sharesref(0)
                 while m < m2:
                     m.pos = m2.pos
                     m = m.next_any()
@@ -1088,7 +1092,7 @@ class notmuch_query(edlib.Doc):
             if not move:
                 return '\n'
             (tid,mid) = mark.pos
-            mark.step(1)
+            mark.step_sharesref(1)
             i = self.threadids.index(tid)
             if mid:
                 j = self.messageids[tid].index(mid) + 1
@@ -1099,7 +1103,7 @@ class notmuch_query(edlib.Doc):
                 self.setpos(mark, tid, 0)
             else:
                 self.setpos(mark, None)
-            mark.step(1)
+            mark.step_sharesref(1)
             return '\n'
         else:
             j = 0
@@ -1114,7 +1118,7 @@ class notmuch_query(edlib.Doc):
                 return edlib.WEOF
             if not move:
                 return '\n'
-            mark.step(0)
+            mark.step_sharesref(0)
 
             if j == 0:
                 i -= 1
@@ -1125,7 +1129,7 @@ class notmuch_query(edlib.Doc):
                     j = 1
             j -= 1
             self.setpos(mark, tid, j)
-            mark.step(0)
+            mark.step_sharesref(0)
 
             return '\n'
 
