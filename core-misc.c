@@ -459,7 +459,7 @@ char *safe put_utf8(char *buf safe, wchar_t ch)
 	return buf;
 }
 
-int utf8_strlen(char *s safe)
+int utf8_strlen(const char *s safe)
 {
 	int cnt = 0;
 
@@ -471,7 +471,7 @@ int utf8_strlen(char *s safe)
 	return cnt;
 }
 
-int utf8_strnlen(char *s safe, int n)
+int utf8_strnlen(const char *s safe, int n)
 {
 	int cnt = 0;
 
