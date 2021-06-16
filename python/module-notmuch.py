@@ -2962,8 +2962,8 @@ def notmuch_doc(key, home, focus, comm2, **a):
     return 1
 
 def render_query_attach(key, focus, comm2, **a):
-    p = focus.call("attach-render-format", ret='pane')
-    p = notmuch_query_view(p)
+    p = notmuch_query_view(focus)
+    p = p.call("attach-render-format", ret='pane')
     if comm2:
         comm2("callback", p)
     return 1
@@ -2988,8 +2988,8 @@ def render_master_view_attach(key, focus, comm2, **a):
     doc.reparent(main)
     p = main.call("attach-tile", "notmuch", "main", ret='pane')
     doc.reparent(p)
-    p = focus.call("attach-render-format", ret='pane')
-    p = notmuch_list_view(p)
+    p = notmuch_list_view(focus)
+    p = p.call("attach-render-format", ret='pane')
     main.list_pane = p
     p.take_focus()
     comm2("callback", p)
