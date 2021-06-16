@@ -752,24 +752,22 @@ DEF_CMD(render_line_prev2)
 	return 1;
 }
 
-static struct pane *do_render_format_attach(struct pane *parent safe,
-					    int nolines);
+static struct pane *do_render_format_attach(struct pane *parent safe);
 DEF_CMD(format_clone)
 {
 	struct pane *p;
 
-	p = do_render_format_attach(ci->focus, 0);
+	p = do_render_format_attach(ci->focus);
 	pane_clone_children(ci->home, p);
 	return 1;
 }
 
-static struct pane *do_render_format2_attach(struct pane *parent safe,
-					     int nolines);
+static struct pane *do_render_format2_attach(struct pane *parent safe);
 DEF_CMD(format_clone2)
 {
 	struct pane *p;
 
-	p = do_render_format2_attach(ci->focus, 1);
+	p = do_render_format2_attach(ci->focus);
 	pane_clone_children(ci->home, p);
 	return 1;
 }
@@ -805,8 +803,7 @@ static void render_format_register_map(void)
 DEF_LOOKUP_CMD(render_format_handle, rf_map);
 DEF_LOOKUP_CMD(render_format2_handle, rf2_map);
 
-static struct pane *do_render_format_attach(struct pane *parent safe,
-					    int nolines)
+static struct pane *do_render_format_attach(struct pane *parent safe)
 {
 	struct pane *p;
 
@@ -817,8 +814,6 @@ static struct pane *do_render_format_attach(struct pane *parent safe,
 	if (!p)
 		return NULL;
 	attr_set_str(&p->attrs, "render-wrap", "no");
-	if (nolines)
-		return p;
 	return call_ret(pane, "attach-render-lines", p);
 }
 
@@ -826,14 +821,13 @@ DEF_CMD(render_format_attach)
 {
 	struct pane *p;
 
-	p = do_render_format_attach(ci->focus, ci->num);
+	p = do_render_format_attach(ci->focus);
 	if (!p)
 		return Efail;
 	return comm_call(ci->comm2, "callback:attach", p);
 }
 
-static struct pane *do_render_format2_attach(struct pane *parent safe,
-					     int nolines)
+static struct pane *do_render_format2_attach(struct pane *parent safe)
 {
 	struct pane *p;
 	struct rf_data *rf;
@@ -849,16 +843,17 @@ static struct pane *do_render_format2_attach(struct pane *parent safe,
 	if (!p)
 		return NULL;
 	attr_set_str(&p->attrs, "render-wrap", "no");
-	if (nolines)
-		return p;
-	return call_ret(pane, "attach-render-text", p);
+	return p;
 }
 
 DEF_CMD(render_format2_attach)
 {
 	struct pane *p;
 
-	p = do_render_format2_attach(ci->focus, ci->num);
+	p = do_render_format2_attach(ci->focus);
+	if (!p)
+		return Efail;
+	p = call_ret(pane, "attach-render-text", p);
 	if (!p)
 		return Efail;
 	return comm_call(ci->comm2, "callback:attach", p);
