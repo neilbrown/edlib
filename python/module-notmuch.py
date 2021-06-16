@@ -333,6 +333,10 @@ class notmuch_main(edlib.Doc):
         self.container = edlib.Pane(self.root)
         self.db = notmuch_db()
 
+    def handle_shares_ref(self, key, **a):
+        "handle:doc:shares-ref"
+        return 1
+
     def handle_close(self, key, **a):
         "handle:Close"
         self.container.close()
@@ -342,9 +346,12 @@ class notmuch_main(edlib.Doc):
         "handle:doc:set-ref"
         self.to_end(mark, num == 0)
         if num == 1:
-            mark.offset = 0
+            mark.pos = 0
         else:
-            mark.offset = len(self.searches.current)
+            mark.pos = len(self.searches.current)
+        if mark.pos == len(self.searches.current):
+            mark.pos = None
+        mark.offset = 0
         return 1
 
     def handle_doc_char(self, key, focus, mark, num, num2, mark2, **a):
@@ -377,16 +384,24 @@ class notmuch_main(edlib.Doc):
         move = num2
         ret = edlib.WEOF
         target = mark
-        if forward and mark.offset < len(self.searches.current):
+        if mark.pos is None:
+            pos = len(self.searches.current)
+        else:
+            pos = mark.pos
+        if forward and not mark.pos is None:
             ret = '\n'
             if move:
-                mark.step(forward)
-                mark.offset = mark.offset + 1
-        if not forward and mark.offset > 0:
+                mark.step_sharesref(forward)
+                mark.pos = pos + 1
+                mark.offset = 0
+                if mark.pos == len(self.searches.current):
+                    mark.pos = None
+        if not forward and pos > 0:
             ret = '\n'
             if move:
-                mark.step(forward)
-                mark.offset = mark.offset - 1
+                mark.step_sharesref(forward)
+                mark.pos = pos - 1
+                mark.offset = 0
         return ret
 
     def handle_doc_get_attr(self, key, focus, mark, str, comm2, **a):
@@ -394,9 +409,9 @@ class notmuch_main(edlib.Doc):
         # This must support the line-format used in notmuch_list_view
 
         attr = str
-        o = mark.offset
+        o = mark.pos
         val = None
-        if o >= 0 and o < len(self.searches.current):
+        if not o is None and o >= 0:
             s = self.searches.current[o]
             if attr == 'query':
                 val = s
