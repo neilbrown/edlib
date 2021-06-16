@@ -707,7 +707,7 @@ DEF_CMD(format_map)
 	for(f = f0; f <= FIELD_NUM(m->ref.i); f++) {
 		if (f >= rd->nfields)
 			continue;
-		/* Each depth gets a priority level from 20 up.
+		/* Each depth gets a priority level from 0 up.
 		 * When starting, set length to v.large.  When ending, set
 		 * length to -1.
 		 */
@@ -715,12 +715,15 @@ DEF_CMD(format_map)
 			struct rf_field *st =
 				&rd->fields[rd->fields[f].attr_start];
 			comm_call(ci->comm2, "", ci->focus, -1, m,
-				  st->attr, 1 + st->attr_depth);
+				  NULL, st->attr_depth);
 		}
 		if (rd->fields[f].attr_end > FIELD_NUM(m->ref.i)) {
 			struct rf_field *st = &rd->fields[f];
-			comm_call(ci->comm2, "", ci->focus, 32768, m,
-				  st->attr, 1 + st->attr_depth);
+			const char *attr = st->attr;
+			if (attr && attr[0] == '%')
+				attr = pane_mark_attr(ci->focus, m, attr+1);
+			comm_call(ci->comm2, "", ci->focus, INT_MAX, m,
+				  attr, st->attr_depth);
 		}
 	}
 	return 0;
