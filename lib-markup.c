@@ -192,7 +192,7 @@ static void as_add(struct attr_return *ar safe,
 	new = calloc(1, sizeof(*new));
 	new->next = *here;
 	new->attr = strdup(attr);
-	if (INT_MAX - end <= ar->chars)
+	if (end == 0 || INT_MAX - end <= ar->chars)
 		end = INT_MAX - 1 - ar->chars;
 	new->end = ar->chars + end;
 	new->priority = prio;
@@ -200,7 +200,7 @@ static void as_add(struct attr_return *ar safe,
 }
 
 static void as_clear(struct attr_return *ar safe,
-		     int prio, const char *attr safe)
+		     int prio, const char *attr)
 {
 	struct attr_stack *st;
 
@@ -208,7 +208,8 @@ static void as_clear(struct attr_return *ar safe,
 		as_pop(ar, 1);
 
 	for (st = ar->tmpst; st && st->priority <= prio; st = st->next)
-		if (st->priority == prio && strcmp(st->attr, attr) == 0)
+		if (st->priority == prio &&
+		    (attr == NULL || strcmp(st->attr, attr) == 0))
 			st->end = ar->chars;
 }
 
@@ -223,12 +224,13 @@ DEF_CB(text_attr_forward)
 
 DEF_CB(text_attr_callback)
 {
-	struct attr_return *ar = container_of(ci->comm, struct attr_return, rtn);
-	if (!ci->str)
-		return Enoarg;
-	if (ci->num >= 0)
+	struct attr_return *ar = container_of(ci->comm, struct attr_return,
+					      rtn);
+	if (ci->num >= 0) {
+		if (!ci->str)
+			return Enoarg;
 		as_add(ar, ci->num, ci->num2, ci->str);
-	else
+	} else
 		as_clear(ar, ci->num2, ci->str);
 	// FIXME ->str2 should be inserted
 	return 1;
