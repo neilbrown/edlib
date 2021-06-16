@@ -272,7 +272,7 @@ DEF_CMD(attach_asview)
 {
 	struct pane *p;
 
-	p = call_ret(pane, "attach-render-format", ci->focus);
+	p = call_ret(pane, "attach-dirview", ci->focus);
 	if (!p)
 		return Efail;
 	p = pane_register(p, 0, &autosavedir_handle.c);
@@ -285,9 +285,7 @@ DEF_CMD(attach_asview)
 	if (p) {
 		attr_set_str(&p->attrs, "filter:attr", "arrow");
 		attr_set_str(&p->attrs, "filter:match", " -> ");
-		p = call_ret(pane, "attach-viewer", p);
-		if (p)
-			comm_call(ci->comm2, "cb", p);
+		comm_call(ci->comm2, "cb", p);
 	}
 	return 1;
 }

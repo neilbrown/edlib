@@ -816,6 +816,8 @@ static int dir_open(struct pane *focus safe,
 	char *fname = NULL;
 
 	if (!m)
+		m = call_ret(mark, "doc:point", focus);
+	if (!m)
 		return Enoarg;
 	dirname = pane_attr_get(focus, "filename");
 	basename = pane_mark_attr(focus, m, "name");
