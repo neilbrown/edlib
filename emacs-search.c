@@ -850,10 +850,10 @@ DEF_CMD(emacs_hl_attrs)
 		if (m && mark_same(m, ci->mark))
 			m = NULL;
 		if (m && attr_find_int(m->attrs, "render:search") > 0)
-			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
+			return comm_call(ci->comm2, "attr:callback", ci->focus, 0,
 					 ci->mark, "fg:red,inverse,vis-nl", 20);
 		if (m && attr_find_int(m->attrs, "render:search2") > 0)
-			return comm_call(ci->comm2, "attr:callback", ci->focus, 5000,
+			return comm_call(ci->comm2, "attr:callback", ci->focus, 0,
 					 ci->mark, "fg:blue,inverse,vis-nl", 20);
 	}
 	if (strcmp(ci->str, "render:search-end") ==0) {

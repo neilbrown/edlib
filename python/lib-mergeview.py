@@ -154,10 +154,10 @@ class MergePane(edlib.Pane):
             if mark == o or mark == b or mark == a or mark == e:
                 if self.conflicts:
                     comm2("attr:cb", focus, mark, "fg:red-40",
-                          10000, 102)
+                          0, 102)
                 else:
                     comm2("attr:cb", focus, mark, "fg:green-40",
-                          10000, 102)
+                          0, 102)
             return edlib.Efallthrough
 
         if str == "render:merge-same":

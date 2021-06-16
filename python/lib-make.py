@@ -633,10 +633,10 @@ class MakeViewerPane(edlib.Pane):
         if not comm2:
             return
         if str1 == "render:make-line" and str2 == "other":
-            comm2("attr:callback", focus, mark, "bg:cyan+80", 10000, 202)
+            comm2("attr:callback", focus, mark, "bg:cyan+80", 0, 202)
             return 1
         if str1 == "render:make-line" and str2 == "best":
-            comm2("attr:callback", focus, mark, "bg:magenta+80", 10000, 202)
+            comm2("attr:callback", focus, mark, "bg:magenta+80", 0, 202)
             return 1
 
 def make_view_attach(key, focus, comm2, **a):

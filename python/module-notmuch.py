@@ -2898,7 +2898,7 @@ class notmuch_message_view(edlib.Pane):
         "handle:map-attr"
         if str == "render:rfc822header":
             comm2("attr:callback", focus, int(str2), mark, "fg:#6495ed", 121)
-            comm2("attr:callback", focus, 10000, mark, "wrap-tail: ,wrap-head:    ",
+            comm2("attr:callback", focus, 0, mark, "wrap-tail: ,wrap-head:    ",
                   119)
             return 1
         if str == "render:rfc822header-wrap":
@@ -2927,7 +2927,7 @@ class notmuch_message_view(edlib.Pane):
 
                 if cnt >= len(colours):
                     cnt = len(colours)
-                comm2("cb", focus, mark, 10000, "fg:"+colours[cnt-1], 102)
+                comm2("cb", focus, mark, 0, "fg:"+colours[cnt-1], 102)
             return edlib.Efallthrough
 
     def handle_click(self, key, focus, mark, str2, **a):

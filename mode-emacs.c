@@ -2002,7 +2002,7 @@ DEF_CMD(emacs_attrs)
 		return 1;
 	if (strcmp(ci->str, "render:interactive-mark") == 0) {
 		if (ci->mark == cr.m2 && cr.m2->seq < cr.m->seq)
-			return comm_call(ci->comm2, "attr:callback", ci->focus, 2000000,
+			return comm_call(ci->comm2, "attr:callback", ci->focus, 0,
 					 ci->mark, selection, 210);
 		if (ci->mark == cr.m2)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
@@ -2010,7 +2010,7 @@ DEF_CMD(emacs_attrs)
 	}
 	if (strcmp(ci->str, "render:interactive-point") == 0) {
 		if (cr.m == ci->mark && cr.m->seq < cr.m2->seq)
-			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
+			return comm_call(ci->comm2, "attr:cb", ci->focus, 0,
 					 ci->mark, selection, 210);
 		if (cr.m == ci->mark)
 			return comm_call(ci->comm2, "attr:callback", ci->focus, -1,
@@ -2021,7 +2021,7 @@ DEF_CMD(emacs_attrs)
 		     !mark_same(ci->mark, cr.m2)) ||
 		    (cr.m2->seq < ci->mark->seq && ci->mark->seq < cr.m->seq &&
 		     !mark_same(ci->mark, cr.m)))
-			return comm_call(ci->comm2, "attr:cb", ci->focus, 2000000,
+			return comm_call(ci->comm2, "attr:cb", ci->focus, 0,
 					 ci->mark, selection, 210);
 	}
 	return Efallthrough;

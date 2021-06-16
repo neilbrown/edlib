@@ -722,7 +722,7 @@ DEF_CMD(format_map)
 			const char *attr = st->attr;
 			if (attr && attr[0] == '%')
 				attr = pane_mark_attr(ci->focus, m, attr+1);
-			comm_call(ci->comm2, "", ci->focus, INT_MAX, m,
+			comm_call(ci->comm2, "", ci->focus, 0, m,
 				  attr, st->attr_depth);
 		}
 	}

@@ -93,12 +93,12 @@ class DiffPane(edlib.Pane):
                     comm2("attr:cb", focus, mark,
                           "fg:green-60,bg:white,nobold", 1, 105)
                     comm2("attr:cb", focus, mark,
-                          "fg:green-60,bg:cyan+90,bold", 10000, 102)
+                          "fg:green-60,bg:cyan+90,bold", 0, 102)
                 else:
                     comm2("attr:cb", focus, mark,
                           "fg:red-60,bg:white,nobold", 1, 105)
                     comm2("attr:cb", focus, mark,
-                          "fg:red-60,bg:magenta+90,bold", 10000, 102)
+                          "fg:red-60,bg:magenta+90,bold", 0, 102)
                 if st == 0:
                     self.handle_wordwise('auto', focus, mark)
                 return edlib.Efallthrough
@@ -109,12 +109,12 @@ class DiffPane(edlib.Pane):
                 comm2("attr:cb", focus, mark, "fg:green-60,bg:white,nobold",
                       1, 105)
                 comm2("attr:cb", focus, mark, "fg:green-60,bg:cyan+90,bold",
-                      10000, 102)
+                      0, 102)
             elif c == '-':
                 comm2("attr:cb", focus, mark, "fg:red-60,bg:white,nobold",
                       1, 105)
                 comm2("attr:cb", focus, mark, "fg:red-60,bg:magenta+90,bold",
-                      10000, 102)
+                      0, 102)
 
             return edlib.Efallthrough
         if str == "render:diff-same":

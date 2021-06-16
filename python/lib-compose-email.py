@@ -357,11 +357,11 @@ class compose_email(edlib.Pane):
                     comm2("cb", focus, mark, rv-1, "fg:blue+30", 20)
                 else:
                     comm2("cb", focus, mark, rv-1, "fg:black+30", 20)
-                comm2("cb", focus, mark, 100000, "fg:blue-70,bold", 10)
+                comm2("cb", focus, mark, 0, "fg:blue-70,bold", 10)
             else:
                 # make whole line red
-                comm2("cb", focus, mark, 100000, "bg:red+50,fg:red-50", 20)
-            comm2("cb", focus, mark, 10000, "wrap-tail: ,wrap-head:    ", 1)
+                comm2("cb", focus, mark, 0, "bg:red+50,fg:red-50", 20)
+            comm2("cb", focus, mark, 0, "wrap-tail: ,wrap-head:    ", 1)
             return edlib.Efallthrough
         if m and str == 'start-of-line':
             # if line starts '>', give it some colour
@@ -377,7 +377,7 @@ class compose_email(edlib.Pane):
 
                 if cnt >= len(colours):
                     cnt = len(colours)
-                comm2("cb", focus, mark, 10000, "fg:"+colours[cnt-1], 20)
+                comm2("cb", focus, mark, 0, "fg:"+colours[cnt-1], 20)
             return edlib.Efallthrough
 
         return edlib.Efallthrough
