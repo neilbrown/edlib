@@ -1937,17 +1937,19 @@ static int mark_setpos(Mark *m safe, PyObject *v, void *x)
 		return -1;
 	}
 	d->refcnt(m->mark, -1);
+	if (v == Py_None)
+		v = NULL;
 	/* If an adjacent mark has a ref.c with a matching value
 	 * use that instead, so that mark_same() works.
 	 */
 	if ((m2 = mark_next(m->mark)) != NULL &&
 	    ((struct doc *safe)m2->owner->data)->refcnt == mark_refcnt &&
-	    m2->ref.c != NULL &&
+	    m2->ref.c != NULL && v != NULL &&
 	    PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
 		m->mark->ref.c = m2->ref.c;
 	else if ((m2 = mark_prev(m->mark)) != NULL &&
 		 ((struct doc *safe)m2->owner->data)->refcnt == mark_refcnt &&
-		 m2->ref.c != NULL &&
+		 m2->ref.c != NULL && v != NULL &&
 		 PyObject_RichCompareBool(v, m2->ref.c, Py_EQ) == 1)
 		m->mark->ref.c = m2->ref.c;
 	else
