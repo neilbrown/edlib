@@ -337,7 +337,7 @@ static void set_format(struct pane *focus safe, struct rf_data *rd safe)
 	while (str && *str)
 		str = rf_add_field(rd, str);
 
-	for (f = 0; f < rd->nfields; f++) {
+	for (f = rd->nfields - 1; f >= 0; f--) {
 		struct rf_field *rf = &rd->fields[f];
 
 		if (rf->attr && rf->attr_end == 0)
