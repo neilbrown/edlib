@@ -371,6 +371,7 @@ Module features
 - [ ] always track time for a run and report it - or at least make it available
 
 ###  edlibclient
+- [ ] Catch broken-pipe in all sock.send calls
 - [ ] client needs to pass XAUTHORITY as well as DISPLAY, and these must be
       used correctly.
 - [ ] run edlib directly if no socket
@@ -384,6 +385,8 @@ Module features
 
 ### Notmuch - overview
 
+- [X] don't use '-' for tag removal, use it for numeric prefix instead.  Maybe
+      '--' can do tag removal.
 - [1] messages shouldn't disappear from open thread when background refresh happens.
 - [1] archived threads SHOULD disappear when a query is closed.
 - [1] add command to go to first new message? 'N'?
@@ -430,6 +433,7 @@ Module features
 
 ###  Notmuch message display
 
+- [ ] check for Efail errors from doc:open
 - [ ] make it practical for 'text' documents to contain non-utf8 so that
       "Save" can copy to a buffer.  There is some support for a charset
       to be "8bit" (hex-mode only).  Maybe that is part of the answer.
@@ -558,6 +562,7 @@ Module features
 
 ### lang-python
 
+- [ ] should be able to test if a mark is NULL or Freed
 - [ ] should Efallthrough be an exception?
 - [ ] Log loading of modules - Can I provide version info?
 - [ ] we aren't catching errors from functions called from .connect()

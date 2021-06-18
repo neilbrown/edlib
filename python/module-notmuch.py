@@ -1988,8 +1988,8 @@ class notmuch_master_view(edlib.Pane):
         if skipped:
             self.list_pane.call("Message", "Skipped illegal tags:" + ','.join(skipped))
 
-    def handle_tags(self, key, focus, mark, **a):
-        "handle-list/doc:char--/doc:char-+"
+    def handle_tags(self, key, focus, mark, num, **a):
+        "handle-list/doc:char-+"
         # add or remove flags, prompting for names
 
         if self.message_pane and self.mychild(focus) == self.mychild(self.message_pane):
@@ -2012,7 +2012,7 @@ class notmuch_master_view(edlib.Pane):
             # Might be at EOF
             return 1
 
-        pup = focus.call("PopupTile", "2", key[-1:], ret='pane')
+        pup = focus.call("PopupTile", "2", '-' if num < 0 else '+', ret='pane')
         if not pup:
             return edlib.Fail
         done = "notmuch-do-tags-%s" % thid
@@ -2022,6 +2022,15 @@ class notmuch_master_view(edlib.Pane):
         pup['prompt'] = "[+/-]Tags"
         pup.call("doc:set-name", "Tag changes")
         tag_popup(pup)
+        return 1
+
+    def handle_neg(self, key, focus, num, mark, **a):
+        "handle:doc:char--"
+        if num < 0:
+            # double negative is 'tags'
+            return self.handle_tags(key, focus, mark, num)
+        # else negative prefix arg
+        focus.call("Mode:set-num", -num)
         return 1
 
     def parse_tags(self, tags):
