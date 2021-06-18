@@ -35,6 +35,9 @@ struct rf_data {
 		bool var;	/* else constant */
 		char align;	/* l,r,c */
 	} *fields safe;
+	char *attr_cache;
+	void *cache_pos;
+	int cache_field;
 };
 
 static inline short FIELD_NUM(int i) { return i >> 16; }
@@ -220,11 +223,11 @@ DEF_CMD(render_line_prev)
 	return 1;
 }
 
-
 DEF_CMD(format_free)
 {
 	struct rf_data *rf = ci->home->data;
 
+	free(rf->attr_cache);
 	free(rf->fields);
 	free(rf->format);
 	unalloc(rf, pane);
@@ -395,7 +398,13 @@ static int field_size(struct pane *home safe, struct pane *focus safe,
 	if (!rf->var)
 		return rf->val_len;
 	val = *valp;
-	if (!val) {
+	if (val)
+		;
+	else if (rd->attr_cache && rd->cache_field == field &&
+		 rd->cache_pos == m->ref.p) {
+		val = rd->attr_cache;
+		*valp = strsave(home, val);
+	} else {
 		char b[80];
 		strncpy(b, rf->val, 80);
 		b[79] = 0;
@@ -405,6 +414,11 @@ static int field_size(struct pane *home safe, struct pane *focus safe,
 		if (!val)
 			val = "-";
 		*valp = val;
+		if (rd->attr_cache)
+			free(rd->attr_cache);
+		rd->attr_cache = strdup(val);
+		rd->cache_field = field;
+		rd->cache_pos = m->ref.p;
 	}
 	l = utf8_strlen(val);
 	if (l < rf->width)
