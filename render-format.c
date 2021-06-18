@@ -348,36 +348,6 @@ static void set_format(struct pane *focus safe, struct rf_data *rd safe)
 	}
 }
 
-DEF_CMD(format_content2)
-{
-	/* doc:content delivers one char at a time to a callback.
-	 * The chars are the apparent content, rather than the actual
-	 * content.  So for a directory listing, it is the listing, not
-	 * one newline per file.
-	 * This is used for 'search' and 'copy'.
-	 *
-	 * .mark is 'location': to start.  This is moved forwards
-	 * .comm2 is 'consume': pass char mark and report if finished.
-	 *
-	 */
-	struct mark *m = ci->mark;
-	struct commcache dchar = CCINIT;
-	int nxt;
-
-	if (!m || !ci->comm2)
-		return Enoarg;
-	if (ci->num)
-		/* Cannot handle bytes */
-		return Einval;
-
-	nxt = ccall(&dchar, "doc:char", ci->focus, 1, m);
-	while (nxt > 0 && nxt != CHAR_RET(WEOF) &&
-	       comm_call(ci->comm2, "consume", ci->focus, nxt, m) > 0)
-		nxt = ccall(&dchar, "doc:char", ci->focus, 1, m);
-
-	return 1;
-}
-
 static int field_size(struct pane *home safe, struct pane *focus safe,
 		      struct mark *m safe, int field,
 		      const char **valp safe)
@@ -639,6 +609,136 @@ DEF_CMD(format_char)
 		return ret;
 	/* Want the 'next' char */
 	return format_step(ci->home, ci->focus, m, ci->num2 > 0, 0);
+}
+
+DEF_CMD(format_content2)
+{
+	/* doc:content delivers one char at a time to a callback.
+	 * This is used e.g. for 'search' and 'copy'.
+	 *
+	 * .mark is 'location': to start.  This is moved forwards
+	 * .mark if set is a location to stop
+	 * .comm2 is 'consume': pass char mark and report if finished.
+	 *
+	 */
+	struct pane *home = ci->home;
+	struct pane *focus = ci->focus;
+	struct rf_data *rd = home->data;
+	struct rf_field *rf;
+	struct mark *m = ci->mark;
+	struct mark *end = ci->mark2;
+	wint_t nxt, prev;
+	int len, index, f, o, fsize, margin;
+	const char *val;
+	int i;
+
+	if (!m || !ci->comm2)
+		return Enoarg;
+	if (ci->num)
+		/* Cannot handle bytes */
+		return Einval;
+	set_format(focus, rd);
+
+	do {
+		if (m->ref.p == NULL)
+			break;
+		index = normalize(home, focus, m, 0);
+		if (index < 0)
+			break;
+
+		f = FIELD_NUM(index);
+		o = FIELD_OFFSET(index);
+
+		if (f >= rd->nfields) {
+			next_line(home, focus, m);
+			nxt = '\n';
+			continue;
+		}
+		rf = &rd->fields[f];
+		val = NULL;
+		fsize = field_size(home, focus, m, f, &val);
+		mark_step(m, 1);
+		index = normalize(home, focus, m, 1);
+		if (index < 0) {
+			next_line(home, focus, m);
+			nxt = '\n';
+			continue;
+		}
+		m->ref.i = index;
+
+		if (!rf->var) {
+			const char *vend = rf->val + rf->val_len;
+			prev = WEOF;
+			val = rf->val;
+			i = 0;
+			while ((nxt = get_utf8(&val, vend)) < WERR) {
+				if (nxt == '%' || nxt == '<')
+					val += 1;
+				if (o <= i &&
+				    (!end || mark_ordered_not_same(m, end))) {
+					if (prev != WEOF) {
+						if (comm_call(ci->comm2,
+							      "consume", focus,
+							      prev, m) <= 0)
+							break;
+						mark_step(m, 1);
+						m->ref.i = MAKE_INDEX(f, i+1);
+					}
+					prev = nxt;
+				}
+				i += 1;
+			}
+			nxt = prev;
+			continue;
+		}
+		if (!val) {
+			nxt = ' ';
+			continue;
+		}
+		len = utf8_strlen(val);
+		switch (rf->align) {
+		case 'l':
+		default:
+			margin = 0;
+			break;
+		case 'c':
+			margin = (fsize - len) / 2;
+			if (margin < 0)
+				margin = 0;
+			break;
+		case 'r':
+			margin = fsize - len;
+			if (margin < 0)
+				margin = 0;
+			break;
+		}
+		prev = nxt = WEOF;
+		for (i = 0; i < fsize; i++) {
+			if ((rf->align == 'c' &&
+			     (i < margin || i >= margin + len)) ||
+			    (rf->align == 'r' && i < margin) ||
+			     (rf->align != 'c' && rf->align != 'r' &&
+			      i >= len))
+				nxt = ' ';
+			else
+				nxt = get_utf8(&val, NULL);
+			if (i >= o) {
+				if (prev != WEOF) {
+					if (comm_call(ci->comm2,
+						      "consume", focus,
+						      prev, m) <= 0)
+						break;
+					mark_step(m, 1);
+					m->ref.i = MAKE_INDEX(f, i+1);
+				}
+				prev = nxt;
+			}
+		}
+	} while (nxt > 0 && nxt != WEOF &&
+		 (!end || mark_ordered_not_same(m, end)) &&
+		 comm_call(ci->comm2, "consume", ci->focus, nxt, m) > 0);
+
+	return 1;
 }
 
 DEF_CMD(format_attr)

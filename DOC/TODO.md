@@ -548,6 +548,7 @@ Module features
 
 ### C-mode
 
+- [ ] if .. else switch adds into to the switch.  Should it?
 - [ ] auto-indent enhancements: '/' should see if at start of comment line
        following '* ', and discard space?
 - [ ] A line after one ending ; or } or : or unindented is assumed to be
