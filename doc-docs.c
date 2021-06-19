@@ -591,7 +591,7 @@ DEF_CMD(docs_get_attr)
 	else if (strcmp(attr, "line-format") == 0)
 		val = " %doc-modified:3 %doc-name:20 %filename";
 	else if (strcmp(attr, "render-default") == 0)
-		val = "format2";
+		val = "format";
 	else if (strcmp(attr, "render-simple") == 0)
 		val = "format";
 	else if (strcmp(attr, "view-default") == 0)

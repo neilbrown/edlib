@@ -145,6 +145,11 @@ Core features
 Module features
 ---------------
 
+### render-format
+
+- [ ] improve caching of attributes
+- [ ] profile performance to find opporunities for optimisation.
+
 ### lib-search
 
 - [ ] make it easy for a make-search command to search backwards
@@ -324,7 +329,7 @@ Module features
 
 ### doc-rendering
 
-- [ ] create alternative to doc-rendering which *knows* that the int of mark.ref
+- [X] create alternative to doc-rendering which *knows* that the int of mark.ref
       is unused and puts a line-offset in there.  Then mark is safe for use in doc.
       Content is extracted (e.g. with lib-format) and doc:step and doc:content are
       implemented in an overlay which detects markup and presents it as attributes:
@@ -332,9 +337,6 @@ Module features
       Rather than formatting to a string with markup, we could format to a list
       of attr/text pairs.  lib-format returns these via a callback and we use some
       bits to index the list and some to index a char.
-
-- [ ] doesn't support highlights from marks
-- [ ] maybe should highlight whole line that has cursor.
 
 ### grep/make
 
@@ -417,7 +419,7 @@ Module features
 - [ ] When changing any tag in a thread, or when opening the thread,
       assess thread tags by looking at all matched messages.
 - [ ] make min top/bottom margin configurable, set for message list
-- [1] search in thread list - use 'format2' after fixing bug
+- [X] search in thread list - use 'format2' after fixing bug
 - [ ] display counts of current thread somewhere, so I know where I'm up to. - new/unread/matched in status line
 - [ ] review highlight on query when the message selected isn't the message displayed
 - [ ] fix bugs in stored-query!! query: is slow and (I think) buggy

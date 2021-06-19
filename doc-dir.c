@@ -763,7 +763,7 @@ DEF_CMD(dir_get_attr)
 	else if (strcmp(attr, "heading") == 0)
 		val = "File Name";
 	else if (strcmp(attr, "render-default") == 0)
-		val = "format2";
+		val = "format";
 	else if (strcmp(attr, "render-simple") == 0)
 		val = "format";
 	else if (strcmp(attr, "view-default") == 0)

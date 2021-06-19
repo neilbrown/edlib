@@ -876,16 +876,6 @@ DEF_CMD(format_clone)
 	return 1;
 }
 
-static struct pane *do_render_format2_attach(struct pane *parent safe);
-DEF_CMD(format_clone2)
-{
-	struct pane *p;
-
-	p = do_render_format2_attach(ci->focus);
-	pane_clone_children(ci->home, p);
-	return 1;
-}
-
 DEF_CMD(format_noshare_ref)
 {
 	return Efalse;
@@ -908,7 +898,7 @@ static void render_format_register_map(void)
 	key_add(rf2_map, "doc:get-attr", &format_attr);
 	key_add(rf2_map, "map-attr", &format_map);
 	key_add(rf2_map, "doc:render-line-prev", &render_line_prev2);
-	key_add(rf2_map, "Clone", &format_clone2);
+	key_add(rf2_map, "Clone", &format_clone);
 	key_add(rf2_map, "doc:content", &format_content2);
 	key_add(rf2_map, "Free", &format_free);
 	key_add(rf2_map, "doc:shares-ref", &format_noshare_ref);
@@ -920,15 +910,24 @@ DEF_LOOKUP_CMD(render_format2_handle, rf2_map);
 static struct pane *do_render_format_attach(struct pane *parent safe)
 {
 	struct pane *p;
+	struct rf_data *rf;
 
-	if (!rf_map)
-		render_format_register_map();
+	if (call("doc:shares-ref", parent) != 1) {
+		if (!rf_map)
+			render_format_register_map();
 
-	p = pane_register(parent, 0, &render_format_handle.c);
+		p = pane_register(parent, 0, &render_format_handle.c);
+	} else {
+		if (!rf2_map)
+			render_format_register_map();
+
+		alloc(rf, pane);
+		p = pane_register(parent, 0, &render_format2_handle.c, rf);
+	}
 	if (!p)
 		return NULL;
 	attr_set_str(&p->attrs, "render-wrap", "no");
-	return call_ret(pane, "attach-render-lines", p);
+	return p;
 }
 
 DEF_CMD(render_format_attach)
@@ -938,36 +937,10 @@ DEF_CMD(render_format_attach)
 	p = do_render_format_attach(ci->focus);
 	if (!p)
 		return Efail;
-	return comm_call(ci->comm2, "callback:attach", p);
-}
-
-static struct pane *do_render_format2_attach(struct pane *parent safe)
-{
-	struct pane *p;
-	struct rf_data *rf;
-
-	if (!rf2_map)
-		render_format_register_map();
-
-	if (call("doc:shares-ref", parent) != 1)
-		return NULL;
-
-	alloc(rf, pane);
-	p = pane_register(parent, 0, &render_format2_handle.c, rf);
-	if (!p)
-		return NULL;
-	attr_set_str(&p->attrs, "render-wrap", "no");
-	return p;
-}
-
-DEF_CMD(render_format2_attach)
-{
-	struct pane *p;
-
-	p = do_render_format2_attach(ci->focus);
-	if (!p)
-		return Efail;
-	p = call_ret(pane, "attach-render-text", p);
+	if (p->handle == &render_format_handle.c)
+		p = call_ret(pane, "attach-render-lines", p);
+	else
+		p = call_ret(pane, "attach-render-text", p);
 	if (!p)
 		return Efail;
 	return comm_call(ci->comm2, "callback:attach", p);
@@ -976,5 +949,4 @@ DEF_CMD(render_format2_attach)
 void edlib_init(struct pane *ed safe)
 {
 	call_comm("global-set-command", ed, &render_format_attach, 0, NULL, "attach-render-format");
-	call_comm("global-set-command", ed, &render_format2_attach, 0, NULL, "attach-render-format2");
 }
