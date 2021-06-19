@@ -192,6 +192,11 @@ static int text_locate(struct text *t safe, struct doc_ref *r safe,
 static void text_check_consistent(struct text *t safe);
 static void text_normalize(struct text *t safe, struct doc_ref *r safe);
 static void text_cleanout(struct text *t safe);
+static void text_add_str(struct text *t safe, struct mark *pm safe,
+			 const char *str safe, off_t size,
+			 bool *first_edit safe);
+static void text_check_autosave(struct pane *p safe);
+static bool check_readonly(const struct cmd_info *ci safe);
 
 static MEMPOOL(text);
 static MEMPOOL(undo);
@@ -376,6 +381,52 @@ err:
 	if (fd != ci->num2)
 		close(fd);
 	return Efallthrough;
+}
+
+DEF_CMD(text_insert_file)
+{
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+	struct mark *pm = ci->mark, *early;
+	struct text_alloc *a;
+	int len;
+	int fd = ci->num;
+	off_t size, start;
+	bool first = True;
+	bool status_changes = (t->undo == t->saved);
+
+	if (check_readonly(ci))
+		return Efail;
+	if (!pm || fd < 0 || fd == NO_NUMERIC)
+		return Enoarg;
+	size = lseek(fd, 0, SEEK_END);
+	lseek(fd, 0, SEEK_SET);
+	if (size < 0)
+		return Efail;
+	a = t->alloc;
+	if (a->size - a->free < size)
+		a = text_new_alloc(t, size);
+	if (!a)
+		return Efail;
+
+	early = mark_dup(pm);
+	mark_step(early, 0);
+
+	start = a->free;
+	while (a->free < start + size &&
+	       (len = read(fd, a->text + a->free, start + size - a->free)) > 0)
+		a->free += len;
+	text_add_str(t, pm, a->text + start, size, &first);
+
+	text_check_consistent(t);
+	text_check_autosave(ci->home);
+	if (status_changes)
+		call("doc:notify:doc:status-changed", ci->home);
+	pane_notify("doc:replaced", ci->home, 0, early, NULL,
+		    0, pm);
+	mark_free(early);
+
+	return 1;
 }
 
 static bool do_text_output_file(struct pane *p safe, struct doc_ref *start,
@@ -786,7 +837,7 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 }
 
 static void _text_add_str(struct text *t safe, struct doc_ref *pos safe,
-			  const char *str safe,
+			  const char *str safe, off_t len,
 			  struct doc_ref *start, bool *first_edit safe)
 {
 	/* Text is added to the end of the referenced chunk, or
@@ -803,16 +854,19 @@ static void _text_add_str(struct text *t safe, struct doc_ref *pos safe,
 	 * which is the last chunk in the current allocation.
 	 */
 	struct text_alloc *a = t->alloc;
-	int len = strlen(str);
-	int len2;
-	int orig_len = len;
+	off_t len2;
+	off_t orig_len;
 
+	if (len < 0)
+		len = strlen(str);
+	orig_len = len;
 	if (start)
 		*start = *pos;
 
 	len2 = len;
 	if (pos->c && pos->o == pos->c->end &&
 	    pos->c->txt + pos->o == a->text + a->free &&
+	    str != a->text + a->free &&
 	    (a->size - a->free >= len ||
 	     (len2 = utf8_round_len(str, a->size - a->free)) > 0)) {
 		/* Some of this ('len2') can be added to the current chunk */
@@ -896,7 +950,8 @@ static void _text_add_str(struct text *t safe, struct doc_ref *pos safe,
 		pos->c->txt = a->text + a->free;
 		pos->c->end = len2;
 		pos->o = len2;
-		memcpy(pos->c->txt, str, len2);
+		if (str != pos->c->txt)
+			memcpy(pos->c->txt, str, len2);
 		text_add_edit(t, pos->c, first_edit, 0, len2);
 		a->free += len2;
 		str += len2;
@@ -1512,13 +1567,13 @@ static void text_denormalize(struct text *t safe, struct doc_ref *r safe)
 }
 
 static void text_add_str(struct text *t safe, struct mark *pm safe,
-			 const char *str safe, bool *first safe)
+			 const char *str safe, off_t size, bool *first safe)
 {
 	struct doc_ref start;
 	struct mark *m;
 
 	text_denormalize(t, &pm->ref);
-	_text_add_str(t, &pm->ref, str, &start, first);
+	_text_add_str(t, &pm->ref, str, size, &start, first);
 	text_normalize(t, &pm->ref);
 	for (m = mark_prev(pm);
 	     m && text_update_prior_after_change(t, &m->ref,
@@ -2237,7 +2292,7 @@ DEF_CMD(text_replace)
 		if (t->undo == t->saved)
 			status_change = 1;
 
-		text_add_str(t, pm, str, &first);
+		text_add_str(t, pm, str, -1, &first);
 		if (newattrs && early->ref.c)
 			text_add_attrs(&early->ref.c->attrs, newattrs,
 				       early->ref.o);
@@ -2582,6 +2637,7 @@ void edlib_init(struct pane *ed safe)
 
 	key_add_chain(text_map, doc_default_cmd);
 	key_add(text_map, "doc:load-file", &text_load_file);
+	key_add(text_map, "doc:insert-file", &text_insert_file);
 	key_add(text_map, "doc:same-file", &text_same_file);
 	key_add(text_map, "doc:content", &text_content);
 	key_add(text_map, "doc:content-bytes", &text_content);

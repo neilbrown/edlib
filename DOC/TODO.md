@@ -217,7 +217,7 @@ Module features
 - [ ] maybe alt-, does c-x` if that is the recent search?
 - [X] Support write-file (providing a file name) - currently I only save
       to the file I loaded from.
-- [1] Support include-file (C-x i) to load contents of a file at point.
+- [X] Support include-file (C-x i) to load contents of a file at point.
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs
 - [ ] compare two panes somehow - new lib-compare function??
 - [1] pipe doc or selection to a command, optionally capture to replace with output.

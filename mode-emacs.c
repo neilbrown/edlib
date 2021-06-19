@@ -1348,6 +1348,92 @@ DEF_CMD(emacs_do_writefile)
 	return 1;
 }
 
+DEF_CMD(emacs_insertfile)
+{
+	/* Request to insert content of a file at point */
+	struct pane *p;
+	const char *path;
+	char buf[PATH_MAX];
+	char *e;
+	int ret;
+
+	ret = call("doc:insert-file", ci->focus, NO_NUMERIC);
+	if (ret != Enoarg) {
+		const char *doc;
+		if (ret == Efail)
+			/* Message already given */
+			return ret;
+		doc = pane_attr_get(ci->focus, "doc-name");
+		if (doc)
+			call("Message", ci->focus, 0, NULL,
+			     strconcat(ci->focus, "Document ", doc,
+				       " cannot receive insertions"));
+		else
+			call("Message", ci->focus, 0, NULL,
+			     "This document cannot receive insertions");
+		return Efail;
+	}
+	path = pane_attr_get(ci->focus, "dirname");
+	if (path) {
+		strcpy(buf, path);
+		path = buf;
+	}
+	if (!path) {
+		strcpy(buf, "/");
+		path = buf;
+	}
+	e = buf + strlen(buf);
+	if (e < buf + sizeof(buf)-1 && e > buf && e[-1] != '/') {
+		*e++ = '/';
+		*e++ = '\0';
+	}
+
+	p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2",
+		     0, NULL, path);
+	if (!p)
+		return Efail;
+	attr_set_str(&p->attrs, "prompt", "Insert File");
+	attr_set_str(&p->attrs, "done-key",
+		     strconcat(p, "emacs:insert_file:", path));
+	call("doc:set-name", p, 0, NULL, "Insert File");
+	p = pane_register(p, 0, &find_handle.c, "file");
+	if (!p)
+		return Efail;
+	attr_set_str(&p->attrs, "initial_path", path);
+	call("attach-history", p, 0, NULL, "*File History*",
+	     0, NULL, "popup:close");
+	return 1;
+}
+
+DEF_CMD(emacs_do_insertfile)
+{
+	const char *path = ksuffix(ci, "emacs:insert_file:");
+	int fd;
+
+	if (!ci->str || !path)
+		return Efail;
+
+	path = file_normalize(ci->focus, ci->str, path);
+	if (!path)
+		return Efail;
+	fd = open(path, O_RDONLY);
+	if (fd >= 0) {
+		if (call("doc:insert-file", ci->focus, fd) <= 0) {
+			close(fd);
+			call("Message", ci->focus, 0, NULL,
+			     strconcat(ci->focus, "Failed to insert ", path));
+			return Efail;
+		}
+		close(fd);
+		return 1;
+	} else {
+		char *m = strconcat(ci->focus,
+				    "Failed to inser file: ", path);
+		call("Message", ci->focus, 0, NULL, m);
+		return Efail;
+	}
+}
+
 REDEF_CMD(emacs_file_complete)
 {
 	/* Extract a directory name and a basename from the document.
@@ -2836,6 +2922,9 @@ static void emacs_init(void)
 
 	key_add(m, "K:CX:C-W", &emacs_writefile);
 	key_add_prefix(m, "emacs:write_file:", &emacs_do_writefile);
+
+	key_add(m, "K:CX-i", &emacs_insertfile);
+	key_add_prefix(m, "emacs:insert_file:", &emacs_do_insertfile);
 
 	key_add(m, "K:CX-b", &emacs_finddoc);
 	key_add(m, "K:CX4-b", &emacs_finddoc);
