@@ -215,7 +215,7 @@ Module features
 - [ ] filename completion should ignore uninteresting files like ".o"
       Maybe use .gitignore, or have config module understand that.
 - [ ] maybe alt-, does c-x` if that is the recent search?
-- [1] Support write-file (providing a file name) - currently I only save
+- [X] Support write-file (providing a file name) - currently I only save
       to the file I loaded from.
 - [1] Support include-file (C-x i) to load contents of a file at point.
 - [ ] C-uC-xC-v prompts for file name, like C-xC-v in emacs

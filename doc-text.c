@@ -684,18 +684,19 @@ DEF_CMD(text_save_file)
 DEF_CMD(text_write_file)
 {
 	int ret;
+	bool use_marks = ci->mark && ci->mark2;
 
 	if (ci->str) {
 		ret = do_text_write_file(ci->home,
-					 ci->mark ? &ci->mark->ref: NULL,
-					 ci->mark2 ? &ci->mark2->ref: NULL,
+					 use_marks ? &ci->mark->ref: NULL,
+					 use_marks ? &ci->mark2->ref: NULL,
 					 ci->str);
 		return ret ? 1 : Efail;
 	}
 	if (ci->num >= 0 && ci->num != NO_NUMERIC) {
 		ret = do_text_output_file(ci->home,
-					  ci->mark ? &ci->mark->ref: NULL,
-					  ci->mark2 ? &ci->mark2->ref: NULL,
+					  use_marks ? &ci->mark->ref: NULL,
+					  use_marks ? &ci->mark2->ref: NULL,
 					  ci->num);
 		return ret ? 1 : Efail;
 	}

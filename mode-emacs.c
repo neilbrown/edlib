@@ -806,7 +806,7 @@ DEF_CMD(find_complete)
 {
 	char *type = ci->home->data;
 
-	if (strcmp(type, "file") == 0)
+	if (strncmp(type, "file", 4) == 0)
 		return emacs_file_complete_func(ci);
 	if (strcmp(type, "shellcmd") == 0)
 		return emacs_file_complete_func(ci);
@@ -832,7 +832,7 @@ DEF_CMD(find_done)
 		call("Message:modal", ci->focus, 0, NULL, "Document not found");
 		return 1;
 	}
-	if (strcmp(type, "file") == 0) {
+	if (strncmp(type, "file", 4) == 0) {
 		const char *s = file_normalize(ci->focus, str,
 					       attr_find(ci->home->attrs,
 							 "initial_path"));
@@ -886,6 +886,15 @@ DEF_CMD(find_done)
 		 &stb) != 0) {
 		call("Message:modal", ci->focus, 0, NULL,
 		     "File not found - use Alt-Enter to create");
+		return 1;
+	}
+	if (strcmp(type, "file write") == 0 &&
+	    strcmp(ci->key, "K:Enter") == 0 &&
+	    stat(file_normalize(ci->focus, str,
+				attr_find(ci->home->attrs, "initial_path")),
+		 &stb) == 0) {
+		call("Message:modal", ci->focus, 0, NULL,
+		     "File exists - use Alt-Enter to overwrite");
 		return 1;
 	}
 	ret = call("popup:close", ci->focus, 0, NULL, str);
@@ -1268,6 +1277,75 @@ DEF_CMD(emacs_findfile)
 		pane_focus(p);
 
 	return p ? 1 : Efail;
+}
+
+DEF_CMD(emacs_writefile)
+{
+	/* Request to write to a different file */
+	struct pane *p;
+	const char *path;
+	char buf[PATH_MAX];
+	char *e;
+
+	if (call("doc:write-file", ci->focus, NO_NUMERIC) >= 0) {
+		/* It should have been an error ! */
+		const char *doc = pane_attr_get(ci->focus, "doc-name");
+		if (doc)
+			call("Message", ci->focus, 0, NULL,
+			     strconcat(ci->focus, "Document ", doc,
+				       " cannot be written"));
+		else
+			call("Message", ci->focus, 0, NULL,
+			     "This document cannot be written");
+		return Efail;
+	}
+	path = pane_attr_get(ci->focus, "dirname");
+	if (path) {
+		strcpy(buf, path);
+		path = buf;
+	}
+	if (!path) {
+		strcpy(buf, "/");
+		path = buf;
+	}
+	e = buf + strlen(buf);
+	if (e < buf + sizeof(buf)-1 && e > buf && e[-1] != '/') {
+		*e++ = '/';
+		*e++ = '\0';
+	}
+
+	p = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "D2",
+		     0, NULL, path);
+	if (!p)
+		return Efail;
+	attr_set_str(&p->attrs, "prompt", "Write File");
+	attr_set_str(&p->attrs, "done-key",
+		     strconcat(p, "emacs:write_file:", path));
+	call("doc:set-name", p, 0, NULL, "Write File");
+	p = pane_register(p, 0, &find_handle.c, "file write");
+	if (!p)
+		return Efail;
+	attr_set_str(&p->attrs, "initial_path", path);
+	call("attach-history", p, 0, NULL, "*File History*",
+	     0, NULL, "popup:close");
+	return 1;
+}
+
+DEF_CMD(emacs_do_writefile)
+{
+	const char *path = ksuffix(ci, "emacs:write_file:");
+	if (!ci->str || !path)
+		return Efail;
+
+	path = file_normalize(ci->focus, ci->str, path);
+	if (!path)
+		return Efail;
+	if (call("doc:write-file", ci->focus, NO_NUMERIC, NULL, path) <= 0) {
+		call("Message", ci->focus, 0, NULL,
+		     strconcat(ci->focus, "Failed to write to ", path));
+		return Efail;
+	}
+	return 1;
 }
 
 REDEF_CMD(emacs_file_complete)
@@ -2755,6 +2833,9 @@ static void emacs_init(void)
 	key_add(m, "K:CX4-f", &emacs_findfile);
 	key_add(m, "K:CX44-f", &emacs_findfile);
 	key_add_prefix(m, "File Found:", &emacs_findfile);
+
+	key_add(m, "K:CX:C-W", &emacs_writefile);
+	key_add_prefix(m, "emacs:write_file:", &emacs_do_writefile);
 
 	key_add(m, "K:CX-b", &emacs_finddoc);
 	key_add(m, "K:CX4-b", &emacs_finddoc);
