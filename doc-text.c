@@ -785,9 +785,9 @@ static void text_add_edit(struct text *t safe, struct text_chunk *target safe,
 	}
 }
 
-static void text_add_str(struct text *t safe, struct doc_ref *pos safe,
-			 const char *str safe,
-			 struct doc_ref *start, bool *first_edit safe)
+static void _text_add_str(struct text *t safe, struct doc_ref *pos safe,
+			  const char *str safe,
+			  struct doc_ref *start, bool *first_edit safe)
 {
 	/* Text is added to the end of the referenced chunk, or
 	 * in new chunks which are added afterwards.  This allows
@@ -1511,6 +1511,27 @@ static void text_denormalize(struct text *t safe, struct doc_ref *r safe)
 	r->o = r->c->end;
 }
 
+static void text_add_str(struct text *t safe, struct mark *pm safe,
+			 const char *str safe, bool *first safe)
+{
+	struct doc_ref start;
+	struct mark *m;
+
+	text_denormalize(t, &pm->ref);
+	_text_add_str(t, &pm->ref, str, &start, first);
+	text_normalize(t, &pm->ref);
+	for (m = mark_prev(pm);
+	     m && text_update_prior_after_change(t, &m->ref,
+						 &start, &pm->ref);
+	     m = mark_prev(m))
+		;
+	for (m = mark_next(pm);
+	     m && text_update_following_after_change(t, &m->ref,
+						     &start, &pm->ref);
+	     m = mark_next(m))
+		;
+}
+
 static wint_t text_next(struct text *t safe, struct doc_ref *r safe, bool bytes)
 {
 	wint_t ret;
@@ -2212,28 +2233,14 @@ DEF_CMD(text_replace)
 	 */
 	mark_step(early, 0);
 
-	if (str) {
-		struct doc_ref start;
-		struct mark *m;
-
+	if (str && *str) {
 		if (t->undo == t->saved)
 			status_change = 1;
 
-		text_denormalize(t, &pm->ref);
-		text_add_str(t, &pm->ref, str, &start, &first);
-		text_normalize(t, &pm->ref);
-		for (m = mark_prev(pm);
-		     m && text_update_prior_after_change(t, &m->ref,
-							 &start, &pm->ref);
-		     m = mark_prev(m))
-			;
-		for (m = mark_next(pm);
-		     m && text_update_following_after_change(t, &m->ref,
-							     &start, &pm->ref);
-		     m = mark_next(m))
-			;
-		if (newattrs && start.c)
-			text_add_attrs(&start.c->attrs, newattrs, start.o);
+		text_add_str(t, pm, str, &first);
+		if (newattrs && early->ref.c)
+			text_add_attrs(&early->ref.c->attrs, newattrs,
+				       early->ref.o);
 		text_check_consistent(t);
 
 	}
