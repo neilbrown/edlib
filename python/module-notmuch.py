@@ -2720,7 +2720,7 @@ class notmuch_query_view(edlib.Pane):
                     del self.seen_threads[i1]
                 if i2 not in self.seen_msgs:
                     self.seen_msgs[i2] = True
-            if focus.next(m) is None:
+            if self.next(m) is None:
                 break
 
     def handle_mark_seen(self, key, focus, mark, mark2, str, **a):
