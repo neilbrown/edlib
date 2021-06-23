@@ -1464,13 +1464,13 @@ DEF_CMD(render_lines_move_line)
 		num -= 1;
 	else
 		num += 1;
-	if (!call("doc:EOL", ci->focus, num, m)) {
+	if (call("doc:EOL", ci->focus, num, m) <= 0) {
 		rl->i_moved = 0;
 		return Efail;
 	}
 	if (RPT_NUM(ci) > 0) {
 		/* at end of target line, move to start */
-		if (!call("doc:EOL", ci->focus, -1, m)) {
+		if (call("doc:EOL", ci->focus, -1, m) <= 0) {
 			rl->i_moved = 0;
 			return Efail;
 		}
