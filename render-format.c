@@ -411,10 +411,10 @@ static int normalize(struct pane *home safe, struct pane *focus safe,
 
 		len = field_size(home, focus, m, f, &val);
 		if (o > len) {
+			if (inc == 0)
+				return -1;
 			if (inc < 0)
 				o = len;
-			else
-				return -1;
 		}
 
 		if (inc < 0) {
@@ -444,7 +444,7 @@ static int normalize(struct pane *home safe, struct pane *focus safe,
 			continue;
 		}
 		/* inc == 0 */
-		if (o == len) {
+		if (o >= len) {
 			if (f >= rd->nfields)
 				return -1;
 			/* Try next field */
