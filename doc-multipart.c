@@ -297,7 +297,7 @@ static int mp_step(struct pane *home safe, struct mark *mark safe,
 
 	m1 = m->ref.m;
 
-	if (m->ref.docnum == mpi->nparts)
+	if (m->ref.docnum >= mpi->nparts)
 		ret = -1;
 	else
 		ret = home_call(mpi->parts[m->ref.docnum].pane,
@@ -328,7 +328,7 @@ static int mp_step(struct pane *home safe, struct mark *mark safe,
 			change_part(mpi, m, n, 1);
 		}
 		m1 = m->ref.m;
-		if (m->ref.docnum == mpi->nparts)
+		if (m->ref.docnum >= mpi->nparts)
 			ret = -1;
 		else
 			ret = home_call(mpi->parts[m->ref.docnum].pane,
