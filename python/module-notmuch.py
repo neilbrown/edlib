@@ -1713,27 +1713,33 @@ class notmuch_master_view(edlib.Pane):
             self.query_pane.call("doc:notmuch:set-filter", str1)
         return 1
 
-    def handle_space(self, key, mark, **a):
+    def handle_space(self, key, **a):
         "handle:doc:char- "
         if self.message_pane:
-            self.message_pane.call(key, mark)
+            m = self.message_pane.call("doc:point", ret='mark')
+            self.message_pane.call(key, m)
         elif self.query_pane:
-            self.query_pane.call("K:Enter", mark)
+            m = self.query_pane.call("doc:point", ret='mark')
+            self.query_pane.call("K:Enter", m)
         else:
-            self.list_pane.call("K:Enter", mark)
+            m = self.list_pane.call("doc:point", ret='mark')
+            self.list_pane.call("K:Enter", m)
         return 1
 
-    def handle_bs(self, key, mark, **a):
+    def handle_bs(self, key, **a):
         "handle:K:Backspace"
         if self.message_pane:
-            self.message_pane.call(key, mark)
+            m = self.message_pane.call("doc:point", ret='mark')
+            self.message_pane.call(key, m)
         elif self.query_pane:
-            self.query_pane.call("doc:char-p", mark)
+            m = self.query_pane.call("doc:point", ret='mark')
+            self.query_pane.call("doc:char-p", m)
         else:
-            self.list_pane.call("K:A-p", mark)
+            m = self.list_pane.call("doc:point", ret='mark')
+            self.list_pane.call("K:A-p", m)
         return 1
 
-    def handle_move(self, key, mark, **a):
+    def handle_move(self, key, **a):
         "handle-list/K:A-n/K:A-p/doc:char-n/doc:char-p"
         if key.startswith("K:A-") or not self.query_pane:
             p = self.list_pane
@@ -1743,18 +1749,17 @@ class notmuch_master_view(edlib.Pane):
             op = self.message_pane
         if not p:
             return 1
-        m = mark
+
         direction = 1 if key[-1] in "na" else -1
         if op:
             # secondary window exists so move, otherwise just select
-            # Need to get point as 'mark' might be in the wrong pane
             p.call("Move-Line", direction)
-            m = p.call("doc:dup-point", 0, edlib.MARK_UNGROUPED, ret='mark')
 
+        m = p.call("doc:dup-point", 0, edlib.MARK_UNGROUPED, ret='mark')
         p.call("notmuch:select", m, direction)
         return 1
 
-    def handle_move_thread(self, key, mark, **a):
+    def handle_move_thread(self, key, **a):
         "handle-list/doc:char-N/doc:char-P"
         p = self.query_pane
         op = self.message_pane
@@ -1764,13 +1769,10 @@ class notmuch_master_view(edlib.Pane):
         direction = 1 if key[-1] in "N" else -1
         if self.message_pane:
             # message window exists so move, otherwise just select
-            # Need to get point as 'mark' might be in the wrong pane
             self.query_pane.call("notmuch:close-thread")
             self.query_pane.call("Move-Line", direction)
-            m = p.call("doc:dup-point", 0, edlib.MARK_UNGROUPED, ret='mark')
-        else:
-            m = mark
 
+        m = p.call("doc:dup-point", 0, edlib.MARK_UNGROUPED, ret='mark')
         p.call("notmuch:select", m, direction)
         return 1
 

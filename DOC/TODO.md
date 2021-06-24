@@ -387,6 +387,10 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] all shares-ref docs must be careful about comparing marks ... or else
+      we need to compare ignoring offset?  Best to compare <, not <=??
+- [ ] If I open a search but there are no messages (yet) I get a python
+      error that select-message failed
 - [X] don't use '-' for tag removal, use it for numeric prefix instead.  Maybe
       '--' can do tag removal.
 - [1] messages shouldn't disappear from open thread when background refresh happens.
@@ -499,6 +503,16 @@ Module features
 - [ ] treat message/RFC822 much like multipart
 
 ### Notmuch composition
+
+- [ ] when I reply to myself it say "someone said"
+- [ ] should I look for Delivered-to headers. Even;
+         1. To, Cc, Bcc, Reply-To, From
+         2. Envelope-To
+         3. X-Original-To
+         4. Delivered-To
+         5. Received (for)
+         6. Received (by)
+         7. configured primary address
 
 - [ ] sanity check message:
       - body/subject/to not empty
