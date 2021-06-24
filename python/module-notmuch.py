@@ -2333,7 +2333,7 @@ class notmuch_query_view(edlib.Pane):
             pt = self.call("doc:point", ret='mark')
             if pt:
                 if pt['notmuch:selected']:
-                    self("notmuch:select", pt['notmuch:selected'])
+                    self("notmuch:select", 1, pt, pt['notmuch:selected'])
                 mid = pt['notmuch:current-message']
                 tid = pt['notmuch:current-thread']
                 if mid and tid:
@@ -2639,10 +2639,15 @@ class notmuch_query_view(edlib.Pane):
         # num = 0 - open thread but don't show message
         # num > 0 - open thread and do show message
         # num < 0 - open thread, go to last message, and show
+        # if 'str1' and that thread exists, go there instead of mark
+        if not mark:
+            return edlib.Efail
         if str1:
-            s = str1
-        else:
-            s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
+            m = mark.dup()
+            if self.call("notmuch:find-message", m, str1) > 0:
+                mark.to_mark(m)
+
+        s = focus.call("doc:get-attr", "thread-id", mark, ret='str')
         if s and s != self.selected:
             self.close_thread()
 
