@@ -836,7 +836,8 @@ void mark_step(struct mark *m safe, int forward)
 void mark_step_sharesref(struct mark *m safe, int forward)
 {
 	/* step mark forward, or backward, over all marks with same
-	 * ref, ignoring the .i
+	 * ref, ignoring the .i, and sets '.' to a safe value wrt the
+	 * last mark stepped over.
 	 */
 	struct mark *m2, *target = m;
 
@@ -857,6 +858,7 @@ void mark_step_sharesref(struct mark *m safe, int forward)
 			target = m2;
 	}
 	mark_to_mark_noref(m, target);
+	m->ref.i = target->ref.i;
 }
 
 /* A 'vmark' is a mark in a particular view.  We can walk around those
