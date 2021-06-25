@@ -149,6 +149,10 @@ Module features
 
 - [ ] improve caching of attributes
 - [ ] profile performance to find opporunities for optimisation.
+- [ ] ensure doc_refs can be stable.  '0' must always be valid.
+      Allow mark to be a start of any val or var field, even var
+      field that might be empty.  Maybe normalize marks if var size
+      appears to change - probably won't matter in practice.
 
 ### lib-search
 

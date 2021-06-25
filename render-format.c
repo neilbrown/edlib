@@ -457,6 +457,28 @@ static int normalize(struct pane *home safe, struct pane *focus safe,
 	return MAKE_INDEX(f, o);
 }
 
+static void update_offset(struct mark *m safe, unsigned int o)
+{
+	struct mark *m2 = m;
+	struct mark *target = m;
+
+	if (m->ref.i == o)
+		return;
+	if (o > m->ref.i) {
+		while (m2 && m2->ref.p == m->ref.p && m2->ref.i <= o) {
+			target = m2;
+			m2 = mark_next(m2);
+		}
+	} else {
+		while (m2 && m2->ref.p == m->ref.p && m2->ref.i >= o) {
+			target = m2;
+			m2 = mark_prev(m2);
+		}
+	}
+	mark_to_mark_noref(m, target);
+	m->ref.i = o;
+}
+
 static void prev_line(struct pane *home safe, struct mark *m safe)
 {
 	struct rf_data *rd = home->data;
@@ -464,10 +486,10 @@ static void prev_line(struct pane *home safe, struct mark *m safe)
 	/* Move m to end of previous line, just before the newline */
 	if (doc_prev(home->parent, m) == WEOF) {
 		/* At the start already */
-		m->ref.i = 0;
+		update_offset(m, 0);
 		return;
 	}
-	m->ref.i = MAKE_INDEX(rd->nfields, 0);
+	update_offset(m, MAKE_INDEX(rd->nfields, 0));
 	mark_step(m, 0);
 }
 
@@ -475,8 +497,8 @@ static void next_line(struct pane *home safe, struct pane *focus safe,
 		      struct mark *m safe)
 {
 	doc_next(home->parent, m);
-	m->ref.i = MAKE_INDEX(0, 0);
-	m->ref.i = normalize(home, focus, m, 0);
+	update_offset(m, MAKE_INDEX(0, 0));
+	update_offset(m, normalize(home, focus, m, 0));
 	mark_step(m, 1);
 }
 
@@ -532,10 +554,10 @@ static int format_step(struct pane *home safe, struct pane *focus safe,
 			next_line(home, focus, m);
 			return CHAR_RET('\n');
 		}
-		m->ref.i = index;
+		update_offset(m, index);
 	} else if (move && !forward) {
 		mark_step(m, forward);
-		m->ref.i = index;
+		update_offset(m, index);
 	}
 
 	if (!rf->var) {
@@ -664,7 +686,7 @@ DEF_CMD(format_content2)
 			nxt = '\n';
 			continue;
 		}
-		m->ref.i = index;
+		update_offset(m, index);
 
 		if (!rf->var) {
 			const char *vend = rf->val + rf->val_len;
@@ -682,7 +704,7 @@ DEF_CMD(format_content2)
 							      prev, m) <= 0)
 							break;
 						mark_step(m, 1);
-						m->ref.i = MAKE_INDEX(f, i+1);
+						update_offset(m, MAKE_INDEX(f, i+1));
 					}
 					prev = nxt;
 				}
@@ -729,7 +751,7 @@ DEF_CMD(format_content2)
 						      prev, m) <= 0)
 						break;
 					mark_step(m, 1);
-					m->ref.i = MAKE_INDEX(f, i+1);
+					update_offset(m, MAKE_INDEX(f, i+1));
 				}
 				prev = nxt;
 			}
@@ -861,7 +883,7 @@ DEF_CMD(render_line_prev2)
 	       mn->ref.i > 0)
 		m2 = mn;
 	mark_to_mark(m, m2);
-	m->ref.i = 0;
+	update_offset(m, 0);
 
 	return 1;
 }
