@@ -76,7 +76,7 @@
 
 struct doc_ref {
 	struct text_chunk *c;
-	int o;
+	unsigned int o;
 };
 
 #include "core.h"
@@ -109,8 +109,8 @@ struct text_alloc {
  */
 struct text_chunk {
 	char			*txt safe;
-	int			start;
-	int			end;
+	unsigned int		start;
+	unsigned int		end;
 	struct list_head	lst;
 	struct attrset		*attrs;
 };
@@ -1090,8 +1090,8 @@ static int text_update_following_after_change(struct text *t safe,
 	return ret;
 }
 
-static void text_del(struct text *t safe, struct doc_ref *pos safe, int len,
-		     bool *first_edit safe)
+static void text_del(struct text *t safe, struct doc_ref *pos safe,
+		     unsigned int len, bool *first_edit safe)
 {
 	while (len) {
 		struct text_chunk *c = pos->c;
@@ -1968,8 +1968,8 @@ DEF_CMD(text_debug_mark)
 	else if (!c)
 		ret = strdup("M:EOF");
 	else {
-		int len = c->end - c->start;
-		int o = ci->mark->ref.o;
+		unsigned int len = c->end - c->start;
+		unsigned int o = ci->mark->ref.o;
 
 		if (o <= c->start + 4 || len <= 8) {
 			if (len > 8)
@@ -2157,8 +2157,6 @@ static void text_check_consistent(struct text *t safe)
 		check_allocated(t, c->txt, c->end);
 		if (c->start >= c->end)
 			abort();
-		if (c->start < 0)
-			abort();
 	}
 	list_for_each_entry(c, &t->text, lst) {
 		struct text_chunk *c2;
@@ -2317,7 +2315,7 @@ static struct attrset *text_attrset(struct doc *d safe, struct mark *m safe,
 {
 	struct text_chunk *c;
 	struct text *t = container_of(d, struct text, doc);
-	int o;
+	unsigned int o;
 
 	c = m->ref.c;
 	o = m->ref.o;
@@ -2447,7 +2445,7 @@ DEF_CMD(text_set_attr)
 	struct text_chunk *c, *c2;
 	struct doc *d = ci->home->data;
 	struct text *t = container_of(d, struct text, doc);
-	int o, o2;
+	unsigned int o, o2;
 
 	if (!attr)
 		return Enoarg;

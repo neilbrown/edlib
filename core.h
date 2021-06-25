@@ -42,13 +42,13 @@ extern MEMPOOL_DECL(pane);
 
 #ifndef PRIVATE_DOC_REF
 struct doc_ref {
-	void	*p;
-	int	i;
+	void		*p;
+	unsigned int	i;
 };
 #endif
 struct generic_doc_ref {
-	void	*p;
-	int	i;
+	void		*p;
+	unsigned int	i;
 };
 
 void LOG(char *fmt, ...);
