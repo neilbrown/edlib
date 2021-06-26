@@ -17,8 +17,9 @@ gi.require_foreign("cairo")
 from gi.repository import Gtk, Gdk, Pango, PangoCairo, GdkPixbuf, Gio
 
 class EdDisplay(edlib.Pane):
-    def __init__(self, focus):
+    def __init__(self, focus, display):
         edlib.Pane.__init__(self, focus, z=1)
+        self['DISPLAY'] = display
         self.win = Gtk.Window()
         # panes[] is a mapping from edlib.Pane objects to cairo surface objects.
         # Where a pane has the same size as its parent, only the parent can have
@@ -77,8 +78,7 @@ class EdDisplay(edlib.Pane):
         "handle:Display:new"
         global editor
         p = editor.call("attach-input", ret='pane')
-        p['DISPLAY'] = self['DISPLAY']
-        newdisp = EdDisplay(p)
+        newdisp = EdDisplay(p, self['DISPLAY'])
         self.clone_children(newdisp)
         return 1
 
@@ -658,10 +658,8 @@ class EdDisplay(edlib.Pane):
         cr.rectangle(0,0,pm.get_width(), pm.get_height())
         cr.fill()
 
-def new_display(key, focus, comm2, **a):
-    if not 'DISPLAY' in os.environ:
-        return None
-    if not os.environ['DISPLAY']:
+def new_display(key, focus, comm2, str1, **a):
+    if not str1:
         return None
     focus.call("attach-glibevents")
 
@@ -670,8 +668,7 @@ def new_display(key, focus, comm2, **a):
         s = Gtk.settings_get_default()
         s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
 
-    disp = EdDisplay(focus)
-    disp['DISPLAY'] = os.environ['DISPLAY']
+    disp = EdDisplay(focus, str1)
     p = disp.call("attach-x11selection", ret='pane')
     if not p:
         p = disp
@@ -679,9 +676,8 @@ def new_display(key, focus, comm2, **a):
     return 1
 
 def new_display2(key, focus, **a):
-    if not 'DISPLAY' in os.environ:
-        return None
-    if not os.environ['DISPLAY']:
+    display = focus['DISPLAY']
+    if not display:
         return None
     p = focus.root
     p.call("attach-glibevents")
@@ -692,8 +688,7 @@ def new_display2(key, focus, **a):
         s = Gtk.settings_get_default()
         s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
 
-    disp = EdDisplay(p)
-    disp['DISPLAY'] = os.environ['DISPLAY']
+    disp = EdDisplay(p, display)
     p = disp.call("attach-x11selection", ret='pane')
     if p:
         p = p.call("attach-messageline", ret='pane')

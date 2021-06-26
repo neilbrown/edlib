@@ -142,7 +142,6 @@ int main(int argc, char *argv[])
 		if (p) {
 			char *e;
 			attr_set_str(&p->attrs, "TERM", getenv("TERM"));
-			attr_set_str(&p->attrs, "DISPLAY", getenv("DISPLAY"));
 			e = getenv("SSH_CONNECTION");
 			if (e && *e)
 				attr_set_str(&p->attrs, "REMOTE_SESSION", "yes");
@@ -150,6 +149,7 @@ int main(int argc, char *argv[])
 					p);
 		}
 		if (disp) {
+			attr_set_str(&disp->attrs, "DISPLAY", getenv("DISPLAY"));
 			p = make_stack(disp, doc);
 			if (p && !first_window)
 				first_window = p;
@@ -160,11 +160,9 @@ int main(int argc, char *argv[])
 	if (gtk) {
 		struct pane *disp = NULL;
 		p = call_ret(pane, "attach-input", ed);
-		if (p) {
-			attr_set_str(&p->attrs, "DISPLAY", getenv("DISPLAY"));
+		if (p)
 			disp = call_ret(pane, "attach-display-pygtk",
-					p);
-		}
+					p, 0, NULL, getenv("DISPLAY"));
 		if (disp) {
 			p = make_stack(disp, doc);
 			if (p && !first_window)
