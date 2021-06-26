@@ -48,15 +48,6 @@ static char WelcomeText[] =
 
 static char shortopt[] = "gt";
 
-static struct pane *make_stack(struct pane *p, struct pane *doc)
-{
-	if (p)
-		p = call_ret(pane, "editor:activate-display", p);
-	if (p && doc)
-		p = home_call_ret(pane, doc, "doc:attach-view", p, 1);
-	return p;
-}
-
 int main(int argc, char *argv[])
 {
 	struct pane *ed = editor_new();
@@ -84,7 +75,6 @@ int main(int argc, char *argv[])
 
 	setlocale(LC_ALL, "");
 	setlocale(LC_CTYPE, "enUS.UTF-8");
-
 
 	call("attach-doc-docs", ed);
 	call("global-load-module", ed, 0, NULL, "lib-linecount");
@@ -129,40 +119,45 @@ int main(int argc, char *argv[])
 	if (!doc)
 		doc = call_ret(pane, "doc:from-text", ed, 0, NULL,
 			       "*Welcome*", 0, NULL, WelcomeText);
+	if (!doc) {
+		fprintf(stderr, "edlib: cannot create default document.\n");
+		exit(1);
+	}
 
 	if (term) {
-		struct pane *disp = NULL;
-		p = ed;
+		char *TERM = getenv("TERM");
+
+		p = call_ret(pane, "attach-display-ncurses", ed,
+			     0, NULL, "-", 0, NULL, TERM);
 		if (p) {
-			char *TERM = getenv("TERM");
-			disp = call_ret(pane, "attach-display-ncurses", p,
-					0, NULL, "-", 0, NULL, TERM);
-		}
-		if (disp) {
 			char *e;
 			e = getenv("SSH_CONNECTION");
 			if (e && *e)
-				attr_set_str(&disp->attrs, "REMOTE_SESSION", "yes");
+				attr_set_str(&p->attrs, "REMOTE_SESSION", "yes");
 
-			attr_set_str(&disp->attrs, "DISPLAY", getenv("DISPLAY"));
-			p = make_stack(disp, doc);
-			if (p && !first_window)
-				first_window = p;
-			call("Display:set-noclose", disp, 1, NULL,
-			     "Cannot close primary display");
+			attr_set_str(&p->attrs, "DISPLAY", getenv("DISPLAY"));
+			p = call_ret(pane, "editor:activate-display", p);
 		}
-	}
-	if (gtk) {
-		struct pane *disp = NULL;
-		p = ed;
 		if (p)
-			disp = call_ret(pane, "attach-display-pygtk",
-					p, 0, NULL, getenv("DISPLAY"));
-		if (disp) {
-			p = make_stack(disp, doc);
-			if (p && !first_window)
-				first_window = p;
-		}
+			p = home_call_ret(pane, doc, "doc:attach-view",
+					  p, 1);
+		if (!first_window)
+			first_window = p;
+		if (p)
+			call("Display:set-noclose", p, 1, NULL,
+			     "Cannot close primary display");
+	}
+
+	if (gtk) {
+		p = call_ret(pane, "attach-display-pygtk",
+			     ed, 0, NULL, getenv("DISPLAY"));
+		if (p)
+			p = call_ret(pane, "editor:activate-display", p);
+		if (p)
+			p = home_call_ret(pane, doc, "doc:attach-view",
+					  p, 1);
+		if (!first_window)
+			first_window = p;
 	}
 
 	if (first_window) {
@@ -178,7 +173,8 @@ int main(int argc, char *argv[])
 			pane_refresh(ed);
 			time_stop(TIME_REFRESH);
 		}
-	}
+	} else
+		fprintf(stderr, "edlib: cannot create a display\n");
 	pane_close(ed);
 	exit(0);
 }
