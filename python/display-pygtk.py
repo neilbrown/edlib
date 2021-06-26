@@ -669,10 +669,7 @@ def new_display(key, focus, comm2, str1, **a):
         s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
 
     disp = EdDisplay(focus, str1)
-    p = disp.call("attach-x11selection", ret='pane')
-    if not p:
-        p = disp
-    comm2('callback', p)
+    comm2('callback', disp)
     return 1
 
 def new_display2(key, focus, **a):
@@ -706,4 +703,3 @@ def new_display2(key, focus, **a):
 
 editor.call("global-set-command", "attach-display-pygtk", new_display)
 editor.call("global-set-command", "interactive-cmd-x11window", new_display2)
-

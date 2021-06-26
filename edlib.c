@@ -51,6 +51,8 @@ static char shortopt[] = "gt";
 static struct pane *make_stack(struct pane *p, struct pane *doc)
 {
 	if (p)
+		p = call_ret(pane, "attach-x11selection", p);
+	if (p)
 		p = call_ret(pane, "attach-messageline", p);
 	if (p)
 		p = call_ret(pane, "attach-global-keymap", p);

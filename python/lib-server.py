@@ -118,6 +118,7 @@ try:
                     for v in env:
                         p[v] = env[v]
                     self.disp = p
+                    p = p.call("attach-x11selection", ret='pane')
                     p = p.call("attach-messageline", ret='pane')
                     p = p.call("attach-global-keymap", ret='pane')
                     p.call("attach-mode-emacs")

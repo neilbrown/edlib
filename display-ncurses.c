@@ -1361,12 +1361,9 @@ DEF_CMD(display_ncurses)
 		term = "xterm-256color";
 
 	p = ncurses_init(ci->focus, tty, term);
-	if (p) {
-		struct pane *p2 = call_ret(pane, "attach-x11selection", p);
-		if (p2)
-			p = p2;
+	if (p)
 		return comm_call(ci->comm2, "callback:display", p);
-	}
+
 	return Efail;
 }
 
