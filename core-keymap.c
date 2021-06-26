@@ -56,7 +56,8 @@ inline static int qhash(char key, unsigned int start)
 
 struct map {
 	unsigned long	bloom[256 / (sizeof(unsigned long)*8) ];
-	short		changed;
+	bool		changed;
+	bool		check_all;
 	short		size;
 	struct map	*chain;
 	char		* safe *keys safe;
@@ -124,20 +125,24 @@ void key_free(struct map *m safe)
 	free(m);
 }
 
-static void hash_str(const char *key safe, int len, unsigned int *hashes safe)
+static bool hash_str(const char *key safe, int len, unsigned int *hashes safe)
 {
 	int i;
 	int h = 0;
+	bool prefix = False;
 
 	for (i = 0; (len < 0 || i < len) && key[i]; i++) {
 		h = qhash(key[i], h);
-		if (key[i] == '-' || key[i] == ':')
+		if (key[i] == '-' || key[i] == ':') {
+			prefix = True;
 			break;
+		}
 	}
 	hashes[1] = h;
 	for (; (len < 0 || i < len) && key[i]; i++)
 		h = qhash(key[i], h);
 	hashes[0] = h;
+	return prefix;
 }
 
 inline static void set_bit(unsigned long *set safe, int bit)
@@ -156,10 +161,13 @@ static bool key_present(struct map *map safe, unsigned int *hashes safe)
 {
 	if (map->changed) {
 		int i;
+		map->check_all = False;
 		for (i = 0; i < map->size; i++) {
 			unsigned int h[2];
-			hash_str(map->keys[i], -1, h);
+			bool prefix = hash_str(map->keys[i], -1, h);
 			if (IS_RANGE(map->comms[i])) {
+				if (!prefix)
+					map->check_all = True;
 				set_bit(map->bloom, h[1]&0xff);
 				set_bit(map->bloom, (h[1]>>8)&0xff);
 				set_bit(map->bloom, (h[1]>>16)&0xff);
@@ -169,8 +177,10 @@ static bool key_present(struct map *map safe, unsigned int *hashes safe)
 				set_bit(map->bloom, (h[0]>>16)&0xff);
 			}
 		}
-		map->changed = 0;
+		map->changed = False;
 	}
+	if (map->check_all)
+		return True;
 
 	if (test_bit(map->bloom, hashes[0]&0xff) &&
 	    test_bit(map->bloom, (hashes[0]>>8)&0xff) &&
@@ -263,7 +273,7 @@ void key_add(struct map *map safe, const char *k safe, struct command *comm)
 		map->comms[pos+1] = SET_RANGE(command_get(GETCOMM(comm2)));
 	}
 	map->size += ins_cnt;
-	map->changed = 1;
+	map->changed = True;
 }
 
 void key_add_range(struct map *map safe,
@@ -314,7 +324,7 @@ void key_add_range(struct map *map safe,
 	map->keys[pos+1] = strdup(last);
 	map->comms[pos+1] = command_get(comm);
 	map->size += move_size;
-	map->changed = 1;
+	map->changed = True;
 }
 
 void key_add_chain(struct map *map safe, struct map *chain)
@@ -339,7 +349,7 @@ void key_del(struct map *map, wint_t k)
 	memmove(map->comms+pos, map->comms+pos+1,
 		(map->size-pos-1) * sizeof(struct command *));
 	map->size -= 1;
-	map->changed = 1;
+	map->changed = True;
 }
 #endif
 

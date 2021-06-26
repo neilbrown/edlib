@@ -91,7 +91,7 @@ Core features
       care if the callback succeeded?
 - [ ] Change Efallthough to -1 so I can return '0' meaningfully.
       Efalse probably becomes 0.
-- [1] key_add_prefix() doesn't work if there is no punctuation.
+- [X] key_add_prefix() doesn't work if there is no punctuation.
 - [ ] send warning message when recursive notification is prohibited.
        editor:notify:Message:broadcast
 - [ ] detect and limit recursion.
