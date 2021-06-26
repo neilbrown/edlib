@@ -32,6 +32,9 @@ class ShellPane(edlib.Pane):
             cwd=self['dirname']
         if not cwd:
             cwd = '/'
+        while cwd and cwd != '/' and cwd[-1] == '/':
+            # don't want a trailing slash
+            cwd = cwd[:-1]
         if header:
             self.call("doc:replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
         env = os.environ.copy()

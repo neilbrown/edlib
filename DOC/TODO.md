@@ -364,7 +364,7 @@ Module features
 ### shell mode
 
 - [1] If current directory doesn't exist, cope somehow
-- [1] make sure CWD env var doesn't end '/'.
+- [X] make sure PWD env var doesn't end '/'.
 - [1] 'shell-command' should try to use same pane even though it
       kills the old document and creates a new one
 - [ ]  Use pattern-match on command to optionally choose an overlay
