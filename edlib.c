@@ -51,15 +51,7 @@ static char shortopt[] = "gt";
 static struct pane *make_stack(struct pane *p, struct pane *doc)
 {
 	if (p)
-		p = call_ret(pane, "attach-x11selection", p);
-	if (p)
-		p = call_ret(pane, "attach-messageline", p);
-	if (p)
-		p = call_ret(pane, "attach-global-keymap", p);
-	if (p)
-		call("attach-mode-emacs", p);
-	if (p)
-		p = call_ret(pane, "attach-tile", p);
+		p = call_ret(pane, "editor:activate-display", p);
 	if (p && doc)
 		p = home_call_ret(pane, doc, "doc:attach-view", p, 1);
 	return p;
@@ -140,7 +132,7 @@ int main(int argc, char *argv[])
 
 	if (term) {
 		struct pane *disp = NULL;
-		p = call_ret(pane, "attach-input", ed);
+		p = ed;
 		if (p) {
 			char *TERM = getenv("TERM");
 			disp = call_ret(pane, "attach-display-ncurses", p,
@@ -162,7 +154,7 @@ int main(int argc, char *argv[])
 	}
 	if (gtk) {
 		struct pane *disp = NULL;
-		p = call_ret(pane, "attach-input", ed);
+		p = ed;
 		if (p)
 			disp = call_ret(pane, "attach-display-pygtk",
 					p, 0, NULL, getenv("DISPLAY"));

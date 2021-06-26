@@ -74,12 +74,13 @@ class EdDisplay(edlib.Pane):
             self.win.unfullscreen()
         return 1
 
-    def handle_new(self, key, **a):
+    def handle_new(self, key, focus, **a):
         "handle:Display:new"
         global editor
-        p = editor.call("attach-input", ret='pane')
-        newdisp = EdDisplay(p, self['DISPLAY'])
-        self.clone_children(newdisp)
+        newdisp = EdDisplay(editor, self['DISPLAY'])
+        p = newdisp.call("editor:activate-display", ret='pane')
+        if p:
+            focus.call("doc:attach-view", p, 1)
         return 1
 
     def handle_external(self, key, str, **a):
@@ -678,7 +679,6 @@ def new_display2(key, focus, **a):
         return None
     p = focus.root
     p.call("attach-glibevents")
-    p = p.call("attach-input", ret='pane')
 
     if 'SCALE' in os.environ:
         sc = int(os.environ['SCALE'])
@@ -686,19 +686,9 @@ def new_display2(key, focus, **a):
         s.set_long_property("Gtk-xft-dpi",sc*Pango.SCALE, "code")
 
     disp = EdDisplay(p, display)
-    p = disp.call("attach-x11selection", ret='pane')
+    p = disp.call("editor:activate-display", ret='pane')
     if p:
-        p = p.call("attach-messageline", ret='pane')
-    if p:
-        p = p.call("attach-global-keymap", ret='pane')
-    if p:
-        p.call("attach-mode-emacs")
-    if p:
-        p = p.call("attach-tile", ret='pane')
-    if p:
-        p = focus.call("doc:attach-view", p, 1, ret='pane');
-    if p:
-        p.take_focus()
+        focus.call("doc:attach-view", p, 1);
     return 1
 
 editor.call("global-set-command", "attach-display-pygtk", new_display)

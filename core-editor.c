@@ -201,6 +201,40 @@ DEF_CMD(editor_auto_event)
 	return key_lookup_prefix(map, ci);
 }
 
+static const char *initial_panes[] = {
+	"attach-x11selection",
+	"attach-messageline",
+	"attach-global-keymap",
+	"attach-mode-emacs",
+	"attach-tile",
+	NULL
+};
+
+DEF_CMD(editor_activate_display)
+{
+	/* Given a display attached to the root, integrate it
+	 * into a full initial stack of panes.
+	 */
+	struct pane *disp = ci->focus;
+	struct pane *p, *p2;
+	int i;
+
+	p = pane_root(ci->focus);
+	p2 = call_ret(pane, "attach-input", p);
+	if (p2)
+		pane_reparent(disp, p2);
+	p = disp;
+	for (i = 0; initial_panes[i]; i++) {
+		const char *cmd = initial_panes[i];
+		if (cmd)
+			p2 = call_ret(pane, cmd, p);
+		if (p2)
+			p = p2;
+	}
+	comm_call(ci->comm2, "cb", p);
+	return 1;
+}
+
 DEF_CMD(editor_multicall)
 {
 	struct ed_info *ei = ci->home->data;
@@ -457,6 +491,8 @@ struct pane *editor_new(void)
 			       &editor_request_notify);
 		key_add_prefix(ed_map, "editor:notify:",
 			       &editor_send_notify);
+		key_add(ed_map, "editor:activate-display",
+			&editor_activate_display);
 		key_add(ed_map, "Close", &editor_close);
 		key_add(ed_map, "Free", &editor_free);
 		key_add(ed_map, "Notify:Close", &editor_notify_close);

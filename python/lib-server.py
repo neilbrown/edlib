@@ -103,7 +103,7 @@ try:
                 if msg.startswith(b"term "):
                     w = msg.split(b' ')
                     path = w[1].decode("utf-8")
-                    p = editor.call("attach-input", ret='pane')
+                    p = editor
 
                     env={}
                     for v in w[2:]:
@@ -118,13 +118,7 @@ try:
                     for v in env:
                         p[v] = env[v]
                     self.disp = p
-                    p = p.call("attach-x11selection", ret='pane')
-                    p = p.call("attach-messageline", ret='pane')
-                    p = p.call("attach-global-keymap", ret='pane')
-                    p.call("attach-mode-emacs")
-                    p = p.call("attach-tile", ret='pane')
-                    p.take_focus()
-                    self.term = p
+                    self.term = self.disp.call("editor:activate-display", ret='pane')
                     self.add_notify(self.disp, "Notify:Close")
                     self.sock.send(b"OK")
                     return 1

@@ -82,7 +82,7 @@ Core features
 -------------
 
 - [ ] design a way for a keystroke to interrupt a long-running function.
-- [1] centralize handling of the creation of a pane stack for a new display.
+- [X] centralize handling of the creation of a pane stack for a new display.
 - [1] have standard way for slow testing of order of marks
 - [1] have a debug mode where mark consistency is checked v.often
 - [1] improve timeout.  Set timer once, then set a flag so that all commands fail
