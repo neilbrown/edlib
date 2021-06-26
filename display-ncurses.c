@@ -1002,7 +1002,7 @@ static struct pane *ncurses_init(struct pane *ed,
 	FILE *f;
 
 	set_screen(NULL);
-	if (tty)
+	if (tty && strcmp(tty, "-") != 0)
 		f = fopen(tty, "r+");
 	else
 		f = fdopen(1, "r+");
@@ -1354,15 +1354,13 @@ REDEF_CMD(input_handle)
 DEF_CMD(display_ncurses)
 {
 	struct pane *p;
-	char *term;
+	const char *tty = ci->str;
+	const char *term = ci->str2;
 
-	term = pane_attr_get(ci->focus, "TERM");
-	if (!term)
-		term = getenv("TERM");
 	if (!term)
 		term = "xterm-256color";
 
-	p = ncurses_init(ci->focus, ci->str, term);
+	p = ncurses_init(ci->focus, tty, term);
 	if (p) {
 		struct pane *p2 = call_ret(pane, "attach-x11selection", p);
 		if (p2)

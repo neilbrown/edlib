@@ -105,14 +105,18 @@ try:
                     path = w[1].decode("utf-8")
                     p = editor.call("attach-input", ret='pane')
 
+                    env={}
                     for v in w[2:]:
                         vw = v.split(b'=')
                         if len(vw) == 2 and vw[0] in [b'TERM',
                                                       b'DISPLAY',
                                                       b'REMOTE_SESSION']:
-                            p[vw[0].decode("utf-8")] = vw[1].decode("utf-8")
+                            env[vw[0].decode("utf-8")] = vw[1].decode("utf-8")
 
-                    p = p.call("attach-display-ncurses", path, ret='pane')
+                    p = p.call("attach-display-ncurses", path, env['TERM'],
+                               ret='pane')
+                    for v in env:
+                        p[v] = env[v]
                     self.disp = p
                     p = p.call("attach-messageline", ret='pane')
                     p = p.call("attach-global-keymap", ret='pane')
