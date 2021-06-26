@@ -1990,6 +1990,47 @@ DEF_CMD(text_debug_mark)
 	return 1;
 }
 
+DEF_CMD(text_val_marks)
+{
+	struct doc *d = ci->home->data;
+	struct text *t = container_of(d, struct text, doc);
+	struct text_chunk *c;
+	int found;
+
+	if (!ci->mark || !ci->mark2)
+		return Enoarg;
+
+	if (ci->mark->ref.c == ci->mark2->ref.c) {
+		if (ci->mark->ref.o < ci->mark2->ref.o)
+			return 1;
+		LOG("text_val_marks: same buf, bad offset: %u, %u",
+		    ci->mark->ref.o, ci->mark2->ref.o);
+		return Efalse;
+	}
+	found = 0;
+	list_for_each_entry(c, &t->text, lst) {
+		if (ci->mark->ref.c == c)
+			found = 1;
+		if (ci->mark2->ref.c == c) {
+			if (found == 1)
+				return 1;
+			LOG("text_val_marks: mark2.c found before mark1");
+			return Efalse;
+		}
+	}
+	if (ci->mark2->ref.c == NULL) {
+		if (found == 1)
+			return 1;
+		LOG("text_val_marks: mark2.c (NULL) found before mark1");
+		return Efalse;
+	}
+	if (found == 0)
+		LOG("text_val_marks: Neither mark found in chunk list");
+	if (found == 1)
+		LOG("text_val_marks: mark2 not found in chunk list");
+	return Efalse;
+}
+
 DEF_CMD(text_set_ref)
 {
 	struct doc *d = ci->home->data;
@@ -2654,6 +2695,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(text_map, "doc:clear", &text_clear);
 	key_add(text_map, "doc:autosave-delete", &text_autosave_delete);
 	key_add(text_map, "doc:debug:mark", &text_debug_mark);
+	key_add(text_map, "debug:validate-marks", &text_val_marks);
 
 	key_add(text_map, "Close", &text_destroy);
 	key_add(text_map, "Free", &text_free);

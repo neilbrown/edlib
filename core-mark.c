@@ -536,12 +536,21 @@ wint_t __doc_step(struct pane *p safe, struct mark *m,
 		  int forward, int move)
 {
 	int ret;
+	static int dodebug = -1;
+	static int count;
+
+	if (dodebug < 0)
+		dodebug = atoi(getenv("EDLIB_DEBUG_MARKS")?:"10000");
+
+	if (m && dodebug && count++ >= dodebug) {
+		count = 0;
+		doc_check_consistent(m->owner->data);
+	}
 
 	if (move)
 		ret = call("doc:char", p, forward ? 1 : -1, m);
 	else
 		ret = call("doc:char", p, 0, m, NULL, forward ? 1 : -1);
-
 	if (ret <= 0)
 		return WEOF;
 	if ((unsigned)ret >= CHAR_RET(WEOF))
@@ -1164,14 +1173,23 @@ void doc_check_consistent(struct doc *d safe)
 	 * - all marks are in seq order
 	 * - all view lists are in seq order
 	 */
-	struct mark *m;
+	struct mark *m, *m2 = NULL;
 	int seq = 0;
 	int i;
+	static bool warned = False;
 
 	hlist_for_each_entry(m, &d->marks, all) {
 		ASSERT(m->seq >= seq);
 		ASSERT(m->owner->data == d);
 		seq = m->seq + 1;
+		if (m2 && !marks_validate(m2, m) && !warned) {
+			LOG_BT();
+			call("editor:notify:Message:broadcast",
+			     m->owner, 0, NULL,
+			     "WARNING: mark inconsistency, check log");
+			warned = True;
+		}
+		m2 = m;
 	}
 	for (i = 0; d->views && i < d->nviews; i++)
 		if (d->views[i].owner == NULL) {
@@ -1199,4 +1217,36 @@ void doc_check_consistent(struct doc *d safe)
 				seq = m->seq + 1;
 			}
 		}
+}
+
+bool marks_validate(struct mark *m1 safe, struct mark *m2 safe)
+{
+	struct mark *m;
+	struct doc *d = m1->owner->data;
+	int found = 0;
+	int ret;
+
+	if (m1 == m2) {
+		for (m = mark_first(d); m; m = mark_next(m))
+			if (m1 == m)
+				return True;
+		LOG("marks_validate: marks not found");
+		return False;
+	}
+	if (m1->seq >= m2->seq) {
+		m = m1; m1 = m2; m2 = m;
+	}
+
+	for (m = mark_first(d); m; m = mark_next(m))
+		if (m == m1 || m == m2)
+			found += 1;
+	if (found != 2) {
+		LOG("log_val_marks not both found, only %d", found);
+		return False;
+	}
+	if (mark_same(m1, m2))
+		return True;
+	ret = pane_call(m1->owner, "debug:validate-marks", m1->owner,
+			0, m1, NULL, 0, m2);
+	return (ret > 0 || ret == Efallthrough);
 }

@@ -321,6 +321,52 @@ DEF_CMD(log_char)
 	return log_step(ci->home, m, ci->num2 > 0, 0);
 }
 
+DEF_CMD(log_val_marks)
+{
+	/* mark1 and mark2 must be on the list, and must be correctly ordered */
+	struct doc *d = ci->home->data;
+	struct log *log = container_of(d, struct log, doc);
+	struct logbuf *b;
+	int found = 0;
+
+	if (!ci->mark || !ci->mark2)
+		return Enoarg;
+
+	if (ci->mark->ref.b == ci->mark2->ref.b) {
+		if (ci->mark->ref.o < ci->mark2->ref.o)
+			return 1;
+		LOG("log_val_marks: same buf, bad offset: %d, %d",
+		    ci->mark->ref.o, ci->mark2->ref.o);
+		return Efalse;
+	}
+	if (ci->mark->ref.b == NULL) {
+		LOG("log_val_marks: mark.b is NULL");
+		return Efalse;
+	}
+	found = 0;
+	list_for_each_entry(b, &log->log, h) {
+		if (ci->mark->ref.b == b)
+			found = 1;
+		if (ci->mark2->ref.b == b) {
+			if (found == 1)
+				return 1;
+			LOG("log_val_marks: mark2.b found before mark1");
+			return Efalse;
+		}
+	}
+	if (ci->mark2->ref.b == NULL) {
+		if (found == 1)
+			return 1;
+		LOG("log_val_marks: mark2.b (NULL) found before mark1");
+		return Efalse;
+	}
+	if (found == 0)
+		LOG("log_val_marks: Neither mark found in buf list");
+	if (found == 1)
+		LOG("log_val_marks: mark2 not found in buf list");
+	return Efalse;
+}
+
 DEF_CMD(log_destroy)
 {
 	/* Not allowed to destroy this document
@@ -400,6 +446,7 @@ void log_setup(struct pane *ed safe)
 	key_add(log_map, "doc:char", &log_char);
 	key_add(log_map, "doc:destroy", &log_destroy);
 	key_add(log_map, "doc:log:append", &log_append);
+	key_add(log_map, "debug:validate-marks", &log_val_marks);
 
 	log_init(ed);
 	call_comm("global-set-command", ed, &log_view, 0, NULL,

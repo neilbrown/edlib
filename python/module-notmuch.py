@@ -342,6 +342,27 @@ class notmuch_main(edlib.Doc):
         self.container.close()
         return 1
 
+    def handle_val_mark(self, key, mark, mark2, **a):
+        "handle:debug:validate-mark"
+        if not mark or not mark2:
+            return edlib.Enoarg
+        if mark.pos == mark2.pos:
+            if mark.index < mark2.index:
+                return 1
+            edlib.LOG("notmuch_main val_marks: same pos, bad index:",
+                      mark.index, mark2.index)
+            return edlib.Efalse
+        if mark.pos is None:
+            edlib.LOG("notmuch_main val_mark: mark.pos is None")
+            return edlib.Efalse
+        if mark2.pos is None:
+            return 1
+        if mark.pos < mark2.pos:
+            return 1
+        edlib.LOG("notmuch_main val_mark: pos in wrong order:",
+                  mark.pos, mark2.pos)
+        return edlib.Efalse
+
     def handle_set_ref(self, key, mark, num, **a):
         "handle:doc:set-ref"
         self.to_end(mark, num == 0)
@@ -769,6 +790,41 @@ class notmuch_query(edlib.Doc):
     def handle_shares_ref(self, key, **a):
         "handle:doc:shares-ref"
         return 1
+
+    def handle_val_mark(self, key, mark, mark2, **a):
+        "handle:debug:validate-mark"
+        if not mark or not mark2:
+            return edlib.Enoarg
+        if mark.pos == mark2.pos:
+            if mark.index < mark2.index:
+                return 1
+            edlib.LOG("notmuch_query val_marks: same pos, bad index:",
+                      mark.index, mark2.index)
+            return edlib.Efalse
+        if mark.pos is None:
+            edlib.LOG("notmuch_query val_mark: mark.pos is None")
+            return edlib.Efalse
+        if mark2.pos is None:
+            return 1
+        t1,m1 = mark.pos
+        t2,m2 = mark2.pos
+        if self.threadids.index(t1) < self.threadids.index(t2):
+            return 1
+        if t1 == t2:
+            if m1 is None:
+                edlib.LOG("notmuch_query val_mark: m1 mid is None",
+                          mark.pos, mark2.pos)
+                return edlib.Efalse
+            if m2 is None:
+                return 1
+            if self.messageids[t1].index(m1) < self.messageids[t1].index(m2):
+                return 1
+            edlib.LOG("notmuch_query val_mark: messages in wrong order",
+                      mark.pos, mark2.pos)
+            return edlib.Efalse
+        edlib.LOG("notmuch_query val_mark: pos in wrong order:",
+                  mark.pos, mark2.pos)
+        return edlib.Efalse
 
     def setpos(self, mark, thread, msgnum = 0):
         if thread is None:

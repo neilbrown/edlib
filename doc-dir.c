@@ -45,7 +45,7 @@
 #define PRIVATE_DOC_REF
 struct doc_ref {
 	struct dir_ent	*d;
-	int ignore;
+	unsigned int	ignore;
 };
 
 #include "core.h"
@@ -66,7 +66,6 @@ struct directory {
 	struct stat		stat;
 	char			*fname;
 };
-
 
 static void get_stat(struct directory *dr safe, struct dir_ent *de safe);
 
@@ -780,6 +779,51 @@ DEF_CMD(dir_get_attr)
 	return 1;
 }
 
+DEF_CMD(dir_val_marks)
+{
+	struct doc *d = ci->home->data;
+	struct directory *dr = container_of(d, struct directory, doc);
+	struct dir_ent *de;
+	int found;
+
+	if (!ci->mark || !ci->mark2)
+		return Enoarg;
+
+	if (ci->mark->ref.d == ci->mark2->ref.d) {
+		if (ci->mark->ref.ignore < ci->mark2->ref.ignore)
+			return 1;
+		LOG("dir_val_marks: same buf, bad offset: %u, %u",
+		    ci->mark->ref.ignore, ci->mark2->ref.ignore);
+		return Efalse;
+	}
+	if (ci->mark->ref.d == NULL) {
+		LOG("dir_val_marks: mark.d is NULL");
+		return Efalse;
+	}
+	found = 0;
+	list_for_each_entry(de, &dr->ents, lst) {
+		if (ci->mark->ref.d == de)
+			found = 1;
+		if (ci->mark2->ref.d == de) {
+			if (found == 1)
+				return 1;
+			LOG("dir_val_marks: mark2.d found before mark1");
+			return Efalse;
+		}
+	}
+	if (ci->mark2->ref.d == NULL) {
+		if (found == 1)
+			return 1;
+		LOG("dir_val_marks: mark2.d (NULL) found before mark1");
+		return Efalse;
+	}
+	if (found == 0)
+		LOG("dir_val_marks: Neither mark found in de list");
+	if (found == 1)
+		LOG("dir_val_marks: mark2 not found in de list");
+	return Efalse;
+}
+
 DEF_CMD(dir_destroy)
 {
 	struct doc *d = ci->home->data;
@@ -1202,7 +1246,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(dir_map, "get-attr", &dir_get_attr);
 	key_add(dir_map, "Close", &dir_destroy);
 	key_add(dir_map, "Free", &edlib_do_free);
-
+	key_add(dir_map, "debug:validate-marks", &dir_val_marks);
 
 	call_comm("global-set-command", ed, &dirview_attach, 0, NULL,
 		  "attach-dirview");

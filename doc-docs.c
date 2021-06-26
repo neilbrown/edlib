@@ -41,7 +41,7 @@
 #define PRIVATE_DOC_REF
 struct doc_ref {
 	struct pane	*p;
-	int		ignore;
+	unsigned int	ignore;
 };
 #include "core.h"
 
@@ -778,6 +778,51 @@ DEF_CMD(docs_shares_ref)
 	return 1;
 }
 
+DEF_CMD(docs_val_marks)
+{
+	struct doc *dc = ci->home->data;
+	struct docs *d = container_of(dc, struct docs, doc);
+	struct pane *p;
+	int found;
+
+	if (!ci->mark || !ci->mark2)
+		return Enoarg;
+
+	if (ci->mark->ref.p == ci->mark2->ref.p) {
+		if (ci->mark->ref.ignore < ci->mark2->ref.ignore)
+			return 1;
+		LOG("docs_val_marks: same buf, bad offset: %u, %u",
+		    ci->mark->ref.ignore, ci->mark2->ref.ignore);
+		return Efalse;
+	}
+	if (ci->mark->ref.p == NULL) {
+		LOG("docs_val_marks: mark.p is NULL");
+		return Efalse;
+	}
+	found = 0;
+	list_for_each_entry(p, &d->collection->children, siblings) {
+		if (ci->mark->ref.p == p)
+			found = 1;
+		if (ci->mark2->ref.p == p) {
+			if (found == 1)
+				return 1;
+			LOG("docs_val_marks: mark2.p found before mark1");
+			return Efalse;
+		}
+	}
+	if (ci->mark2->ref.p == NULL) {
+		if (found == 1)
+			return 1;
+		LOG("docs_val_marks: mark2.p (NULL) found before mark1");
+		return Efalse;
+	}
+	if (found == 0)
+		LOG("docsval_marks: Neither mark found in pane list");
+	if (found == 1)
+		LOG("docs_val_marks: mark2 not found in pane list");
+	return Efalse;
+}
+
 DEF_CMD(docs_close)
 {
 	struct docs *docs = ci->home->data;
@@ -816,6 +861,7 @@ static void docs_init_map(void)
 	key_add(docs_map, "doc:cmd-k", &docs_do_kill);
 	key_add_range(docs_map, "doc:cmd-A", "doc:cmd-Z", &docs_do_open_alt);
 	key_add(docs_map, "doc:shares-ref", &docs_shares_ref);
+	key_add(docs_map, "debug:validate-marks", &docs_val_marks);
 
 	key_add(docs_map, "get-attr", &docs_get_attr);
 	key_add(docs_map, "Close", &docs_close);

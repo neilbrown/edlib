@@ -260,6 +260,7 @@ wint_t __doc_step(struct pane *p safe, struct mark *m,
 		  int forward, int move);
 void mark_step(struct mark *m safe, int forward);
 void mark_step_sharesref(struct mark *m safe, int forward);
+bool marks_validate(struct mark *m1 safe, struct mark *m2 safe);
 
 static inline int mark_same(struct mark *m1 safe, struct mark *m2 safe)
 {

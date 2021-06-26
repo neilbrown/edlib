@@ -746,6 +746,31 @@ DEF_CMD(mp_forward)
 		    ci->num2, NULL, ci->str2, 0,0, ci->comm2);
 }
 
+DEF_CMD(mp_val_marks)
+{
+	struct mark *m1, *m2;
+
+	if (!ci->mark || !ci->mark2)
+		return Enoarg;
+
+	if (ci->mark->ref.docnum < ci->mark2->ref.docnum)
+		return 1;
+	if (ci->mark->ref.docnum > ci->mark2->ref.docnum) {
+		LOG("mp_val_marks: docs not in order");
+		return Efalse;
+	}
+
+	m1 = ci->mark->ref.m;
+	m2 = ci->mark->ref.m;
+	if (m1 && (!m2 || marks_validate(m1, m2)))
+		return 1;
+	if (m1 == m2)
+		LOG("mp_val_marks: marks are the same!");
+	else if (!m1)
+		LOG("mp_val_marks: m1 is NULL");
+	return Efalse;
+}
+
 static void mp_init_map(void)
 {
 	mp_map = key_alloc();
@@ -762,6 +787,7 @@ static void mp_init_map(void)
 	key_add(mp_map, "Notify:Close", &mp_notify_close);
 	key_add(mp_map, "doc:notify-viewers", &mp_notify_viewers);
 	key_add(mp_map, "multipart-add", &mp_add);
+	key_add(mp_map, "debug:validate-marks", &mp_val_marks);
 	key_add_prefix(mp_map, "multipart-this:", &mp_forward);
 	key_add_prefix(mp_map, "multipart-next:", &mp_forward);
 	key_add_prefix(mp_map, "multipart-prev:", &mp_forward);
