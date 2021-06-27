@@ -1669,11 +1669,33 @@ DEF_CMD(emacs_viewdocs)
 	return !!p;
 }
 
+struct pcb {
+	struct command c;
+	struct pane *doc safe;
+	struct pane *p;
+};
+
+DEF_CMD(choose_pane)
+{
+	struct pcb *cb = container_of(ci->comm, struct pcb, c);
+	struct pane *d;
+
+	if (cb->p || !ci->str)
+		return 1;
+	d = call_ret(pane, "docs:byname", ci->focus, 0, NULL, ci->str);
+	if (d)
+		cb->p = home_call_ret(pane, ci->focus, "DocPane", d);
+	if (cb->p)
+		home_call(cb->doc, "doc:attach-view", cb->p, 1);
+	return 1;
+}
+
 DEF_CMD(emacs_shell)
 {
 	char *name = "*Shell Command Output*";
 	struct pane *p, *doc, *par;
 	char *path;
+	struct pcb cb;
 
 	if (strcmp(ci->key, "Shell Command") != 0) {
 		char *dirname;
@@ -1698,14 +1720,19 @@ DEF_CMD(emacs_shell)
 		call("Message", ci->focus, 0, NULL, "Shell command aborted");
 		return 1;
 	}
-	path = pane_attr_get(ci->focus, "dirname");
-	/* Close old shell docs and create a new one */
-	call("editor:notify:shell-reuse", ci->focus);
 	doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
 	if (!doc)
 		return Efail;
+	/* Close old shell docs, but if one is visible in current frame, replace
+	 * it with doc
+	 */
+	cb.c = choose_pane;
+	cb.doc = doc;
+	cb.p = NULL;
+	call_comm("editor:notify:shell-reuse", ci->focus, &cb.c);
+	path = pane_attr_get(ci->focus, "dirname");
 	attr_set_str(&doc->attrs, "dirname", path);
-	par = home_call_ret(pane, ci->focus, "DocPane", doc);
+	par = cb.p;
 	if (!par)
 		par = call_ret(pane, "OtherPane", ci->focus);
 	if (!par)
@@ -1723,7 +1750,9 @@ DEF_CMD(emacs_shell)
 		 0, NULL, ci->str) > 0)
 		attr_set_str(&doc->attrs, "view-default", "diff");
 
-	home_call(doc, "doc:attach-view", par, 1);
+	if (!cb.p)
+		/* choose_pane didn't attach, so we do it here */
+		home_call(doc, "doc:attach-view", par, 1);
 
 	return 1;
 }

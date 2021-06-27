@@ -14,12 +14,12 @@ class ShellPane(edlib.Pane):
         if reusable:
             self.call("editor:request:shell-reuse")
 
-    def check_reuse(self, key, comm2, **a):
+    def check_reuse(self, key, focus, comm2, **a):
         "handle:shell-reuse"
         if self.pipe:
             return 0
         if comm2:
-            comm2("cb", self["doc-name"])
+            comm2("cb", focus, self["doc-name"])
         self.call("doc:destroy")
         return 1
 
