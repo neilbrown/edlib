@@ -508,7 +508,7 @@ Module features
 
 ### Notmuch composition
 
-- [ ] when I reply to myself it say "someone said"
+- [X] when I reply to myself it say "someone said"
 - [ ] should I look for Delivered-to headers. Even;
          1. To, Cc, Bcc, Reply-To, From
          2. Envelope-To

@@ -99,8 +99,8 @@ class compose_email(edlib.Pane):
             if nm:
                 me = "\"%s\" <%s>" %(nm, me)
             self.check_header("From", me)
-        if from_addrs:
-            n,a = from_addrs[0]
+        if self.addrlist:
+            n,a = self.addrlist[0]
             self['reply-author'] = n if n else a
 
         if str != "forward":
