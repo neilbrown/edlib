@@ -23,7 +23,7 @@ class ShellPane(edlib.Pane):
         self.call("doc:destroy")
         return 1
 
-    def run(self, key, num, str, str2, **a):
+    def run(self, key, focus, num, str, str2, **a):
         "handle:shell-run"
         cmd = str
         cwd = str2
@@ -35,6 +35,11 @@ class ShellPane(edlib.Pane):
         while cwd and cwd != '/' and cwd[-1] == '/':
             # don't want a trailing slash
             cwd = cwd[:-1]
+        if not os.path.isdir(cwd):
+            self.call("doc:replace",
+                       "Directory \"%s\" doesn't exist: cannot run shell command\n"
+                       % cwd)
+            return edlib.Efail
         if header:
             self.call("doc:replace", "Cmd: %s\nCwd: %s\n\n" % (cmd,cwd))
         env = os.environ.copy()
@@ -49,7 +54,7 @@ class ShellPane(edlib.Pane):
         except:
             self.pipe = None
         if not self.pipe:
-            return False
+            return edlib.Efail
         self.call("doc:set:doc-status", "Running")
         self.call("doc:notify:doc:status-changed")
         fd = self.pipe.stdout.fileno()

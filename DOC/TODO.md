@@ -363,7 +363,7 @@ Module features
 
 ### shell mode
 
-- [1] If current directory doesn't exist, cope somehow
+- [X] If current directory doesn't exist, cope somehow
 - [X] make sure PWD env var doesn't end '/'.
 - [X] 'shell-command' should try to use same pane even though it
       kills the old document and creates a new one
