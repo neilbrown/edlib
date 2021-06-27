@@ -156,6 +156,10 @@ class EdDisplay(edlib.Pane):
 
     def handle_draw_text(self, key, num, num2, focus, str, str2, xy, **a):
         "handle:Draw:text"
+
+        if str is None:
+            return edlib.Enoarg
+
         self.damaged(edlib.DAMAGED_POSTORDER)
 
         (x,y) = xy
@@ -170,7 +174,10 @@ class EdDisplay(edlib.Pane):
 
         fg, bg, ul = self.get_colours(attr)
 
-        pm, xo, yo = self.find_pixmap(focus)
+        pm = self.find_pixmap(focus)
+        if pm is None:
+            return edlib.Einval
+        pm, xo, yo = pm
         x += xo; y += yo
         cr = cairo.Context(pm)
         pl = PangoCairo.create_layout(cr)
