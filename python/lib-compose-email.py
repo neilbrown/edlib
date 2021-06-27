@@ -65,6 +65,8 @@ class compose_email(edlib.Pane):
         self.check_header("To")
         self.check_header("Cc")
         self.check_header("Subject")
+        # mark the document as unmodified
+        self.call("doc:modified", -1)
         m = edlib.Mark(self)
         self.find_empty_header(m)
         self.call("Move-to", m)
@@ -131,6 +133,8 @@ class compose_email(edlib.Pane):
         if l < len(self.addrlist):
             self.add_addr_header("In-reply-to", self.addrlist[l:], True)
         self.add_addr_header("References", self.addrlist, True)
+        # mark the document as unmodified
+        self.call("doc:modified", -1)
 
         m = edlib.Mark(self)
         self.find_empty_header(m)
@@ -261,6 +265,8 @@ class compose_email(edlib.Pane):
         for l in str.split("\n"):
             q += '> ' + l + '\n'
         self.call("doc:replace", m, m, q)
+        # mark the document as unmodified
+        self.call("doc:modified", -1)
         return 1
 
     def find_markers(self):
