@@ -609,7 +609,7 @@ DEF_CMD(docs_get_attr)
 static int docs_open(struct pane *home safe, struct pane *focus safe,
 		     struct mark *m, bool other)
 {
-	struct pane *p;
+	struct pane *p = NULL;
 	struct pane *dp;
 	struct pane *par;
 
@@ -622,13 +622,15 @@ static int docs_open(struct pane *home safe, struct pane *focus safe,
 
 	if (other) {
 		par = home_call_ret(pane, focus, "DocPane", dp);
-		if (!par)
-			par = call_ret(pane, "OtherPane", focus);
+		if (par) {
+			pane_focus(par);
+			return 1;
+		}
+		par = call_ret(pane, "OtherPane", focus);
 	} else
 		par = call_ret(pane, "ThisPane", focus);
-	if (!par)
-		return Efail;
-	p = home_call_ret(pane, dp, "doc:attach-view", par, 1);
+	if (par)
+		p = home_call_ret(pane, dp, "doc:attach-view", par, 1);
 	if (p) {
 		pane_focus(p);
 		return 1;

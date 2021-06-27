@@ -2189,11 +2189,12 @@ class notmuch_master_view(edlib.Pane):
                        ret='pane')
         p2.call("doc:set:autoclose", 1)
         p0 = self.call("DocPane", p2, ret='pane')
-        if not p0:
-            p0 = self.call("OtherPane", ret='pane')
-        if not p0:
+        if p0:
+            p0.take_focus()
             return 1
-        p2.call("doc:attach-view", p0, 1, "viewer")
+        p0 = self.call("OtherPane", ret='pane')
+        if p0:
+            p2.call("doc:attach-view", p0, 1, "viewer")
         return 1
 
     def handle_o(self, key, focus, **a):

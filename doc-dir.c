@@ -903,8 +903,11 @@ static int dir_open(struct pane *focus safe,
 		return Efail;
 	if (other) {
 		par = home_call_ret(pane, focus, "DocPane", p);
-		if (!par)
-			par = call_ret(pane, "OtherPane", focus);
+		if (par) {
+			pane_focus(par);
+			return 1;
+		}
+		par = call_ret(pane, "OtherPane", focus);
 	} else
 		par = call_ret(pane, "ThisPane", focus);
 	if (par) {

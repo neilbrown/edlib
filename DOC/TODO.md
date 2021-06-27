@@ -115,7 +115,7 @@ Core features
 - [1] make a doc read-only if dir doesn't exist or isn't writable
 - [ ] account all mem allocation types separately, and (optionally) report
       stats regularly
-- [1] When I call DocPane I normally doc:attach-view a doc there. But it is
+- [X] When I call DocPane I normally doc:attach-view a doc there. But it is
       the same doc, so pointless.  Can I optimise that somehow?
 - [ ] document the use of doc:replaced.  What are the two
       marks exactly? start and end of range.  Verify all clients and providers

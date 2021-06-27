@@ -1260,8 +1260,11 @@ DEF_CMD(emacs_findfile)
 	if (strcmp(ci->key, "File Found:Other Window") == 0) {
 		struct pane *this = call_ret(pane, "ThisPane", ci->focus);
 		par = home_call_ret(pane, ci->focus, "DocPane", p);
-		if (!par || par == this)
-			par = call_ret(pane, "OtherPane", ci->focus);
+		if (par && par != this) {
+			pane_focus(par);
+			return 1;
+		}
+		par = call_ret(pane, "OtherPane", ci->focus);
 	} else if (strcmp(ci->key, "File Found:Popup") == 0) {
 		par = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "MD3tsa");
 	} else
@@ -1579,8 +1582,11 @@ DEF_CMD(emacs_finddoc)
 	if (strcmp(ci->key, "Doc Found:Other Window") == 0) {
 		struct pane *this = call_ret(pane, "ThisPane", ci->focus);
 		par = home_call_ret(pane, ci->focus, "DocPane", p);
-		if (!par || par == this)
-			par = call_ret(pane, "OtherPane", ci->focus);
+		if (par && par != this) {
+			pane_focus(par);
+			return 1;
+		}
+		par = call_ret(pane, "OtherPane", ci->focus);
 	} else if (strcmp(ci->key, "Doc Found:Popup") == 0) {
 		par = call_ret(pane, "PopupTile", ci->focus, 0, NULL, "MD3tsa");
 	} else
@@ -1656,8 +1662,11 @@ DEF_CMD(emacs_viewdocs)
 	} else if (ksuffix(ci, "K:CX4")[0]) {
 		struct pane *this = call_ret(pane, "ThisPane", ci->focus);
 		par = home_call_ret(pane, ci->focus, "DocPane", docs);
-		if (!par || par == this)
-			par = call_ret(pane, "OtherPane", ci->focus);
+		if (par && par != this) {
+			pane_focus(par);
+			return 1;
+		}
+		par = call_ret(pane, "OtherPane", ci->focus);
 	} else {
 		par = call_ret(pane, "ThisPane", ci->focus);
 	}
