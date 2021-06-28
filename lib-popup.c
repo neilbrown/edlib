@@ -356,14 +356,22 @@ DEF_CMD(popup_defocus)
 {
 	struct popup_info *ppi = ci->home->data;
 
+	if (strchr(ppi->style, 't') == NULL) {
+		/* Not interested, target might be though */
+		home_call(ppi->target, "pane:defocus", ci->focus);
+		return Efallthrough;
+	}
+
 	if (pane_has_focus(ci->home))
 		/* We are still on the focal-path from display
 		 * Maybe we focussed in to a sub-popup
 		 */
-		return 1;
+		return Efallthrough;
+	if (call_ret(pane, "ThisPopup", ci->focus))
+		/* New focus is a popup, so stay for now */
+		return Efallthrough;
 
-	if (strchr(ppi->style, 't'))
-		call_comm("editor-on-idle", ci->home, &popup_delayed_close);
+	call_comm("editor-on-idle", ci->home, &popup_delayed_close);
 
 	return Efallthrough;
 }

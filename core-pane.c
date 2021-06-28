@@ -700,7 +700,7 @@ void pane_focus(struct pane *focus)
 			old = pane_leaf(old);
 			pt = call_ret(mark, "doc:point", old);
 			call("view:changed", old, 0, pt);
-			call("pane:defocus", old);
+			home_call(old, "pane:defocus", focus);
 		}
 	}
 	pt = call_ret(mark, "doc:point", pane_leaf(focus));

@@ -511,6 +511,8 @@ Module features
 
 ### Notmuch composition
 
+- [ ] when aborting email composition, unlink the file if it is
+      empty.  Probably dispose of autosave too.
 - [X] when I reply to myself it say "someone said"
 - [ ] should I look for Delivered-to headers. Even;
          1. To, Cc, Bcc, Reply-To, From
