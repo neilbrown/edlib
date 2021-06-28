@@ -298,6 +298,52 @@ class searches:
                     ret.append(s[6:])
         return ret
 
+def make_composition(db, focus, which = "PopupTile", how = "MD3tsa"):
+    dir = db['config:database.path']
+    if not dir:
+        dir = "/tmp"
+    drafts = os.path.join(dir, "Drafts")
+    try:
+        os.mkdir(drafts)
+    except FileExistsError:
+        pass
+
+    fd, fname = tempfile.mkstemp(dir=drafts)
+    os.close(fd)
+    m = focus.call("doc:open", fname, -1, ret='pane')
+    m.call("doc:set-name", "*Unsent mail message*")
+    m['view-default'] = 'compose-email'
+    m['email-sent'] = 'no'
+    name = db['config:user.name']
+    mainfrom = db['config:user.primary_email']
+    altfrom = db['config:user.other_email']
+    altfrom2 = db['config:user.other_email_deprecated']
+    host_address = db['config:user.host_address']
+    if name:
+        m['email:name'] = name
+    if mainfrom:
+        m['email:from'] = mainfrom
+    if altfrom:
+        m['email:altfrom'] = altfrom
+    if altfrom2:
+        m['email:deprecated_from'] = altfrom2
+    if host_address:
+        m['email:host-address'] = host_address
+    m['email:sendmail'] = "/usr/bin/notmuch insert --folder=sent --create-folder -new -unread +outbox"
+    # NOTE this cannot be in ThisPane, else the pane we want to copy
+    # content from will disappear.
+    # I think Popuptile is best, with maybe an option to expand it
+    # after the copy is done.
+    if which != "PopupTile":
+        how = None
+    p = focus.call(which, how, ret='pane')
+    if not p:
+        return edlib.Efail
+    v = m.call("doc:attach-view", p, 1, ret='pane')
+    if v:
+        v.take_focus()
+    return v
+
 # There are two document types.
 #   notmuch_main presents all the saved searches, and also represents the database
 #      of all messages.  There is only one of these.
@@ -1925,54 +1971,9 @@ class notmuch_master_view(edlib.Pane):
                 self.query_pane.call("notmuch:select", m, 0)
         return 1
 
-    def make_composition(self, focus):
-        dir = self.list_pane['config:database.path']
-        if not dir:
-            dir = "/tmp"
-        drafts = os.path.join(dir, "Drafts")
-        try:
-            os.mkdir(drafts)
-        except FileExistsError:
-            pass
-
-        fd, fname = tempfile.mkstemp(dir=drafts)
-        os.close(fd)
-        m = focus.call("doc:open", fname, -1, ret='pane')
-        m.call("doc:set-name", "*Unsent mail message*")
-        m['view-default'] = 'compose-email'
-        m['email-sent'] = 'no'
-        name = self.list_pane['config:user.name']
-        mainfrom = self.list_pane['config:user.primary_email']
-        altfrom = self.list_pane['config:user.other_email']
-        altfrom2 = self.list_pane['config:user.other_email_deprecated']
-        host_address = self.list_pane['config:user.host_address']
-        if name:
-            m['email:name'] = name
-        if mainfrom:
-            m['email:from'] = mainfrom
-        if altfrom:
-            m['email:altfrom'] = altfrom
-        if altfrom2:
-            m['email:deprecated_from'] = altfrom2
-        if host_address:
-            m['email:host-address'] = host_address
-        m['email:sendmail'] = "/usr/bin/notmuch insert --folder=sent --create-folder -new -unread +outbox"
-        # NOTE this cannot be in ThisPane, else the pane we want to copy
-        # content from will disappear.
-        # I think Popuptile is best, with maybe an option to expand it
-        # after the copy is done.
-        #p = focus.call("OtherPane", ret='pane')
-        p = focus.call("PopupTile", "MD3tsa", ret='pane')
-        if not p:
-            return edlib.Efail
-        v = m.call("doc:attach-view", p, 1, ret='pane')
-        if v:
-            v.take_focus()
-        return v
-
     def handle_new_mail(self, key, focus, **a):
         "handle:doc:char-m"
-        v = self.make_composition(focus)
+        v = make_composition(self.list_pane, focus)
         if v:
             v.call("compose-email:empty-headers")
         return 1
@@ -1982,7 +1983,7 @@ class notmuch_master_view(edlib.Pane):
         if not self.message_pane:
             focus.call("Message", "Can only reply when a message is open")
             return edlib.Efail
-        v = self.make_composition(focus)
+        v = make_composition(self.list_pane, focus)
         if key[-1] == 'F':
             mode = "forward"
         elif key[-1] == 'R':
@@ -3083,15 +3084,39 @@ def render_master_view_attach(key, focus, comm2, **a):
     comm2("callback", p)
     return 1
 
-def notmuch_mode(key, home, focus, **a):
+def notmuch_mode(key, focus, **a):
     p0 = focus.call("ThisPane", ret='pane')
     try:
-        p1 = home.call("docs:byname", "*Notmuch*", ret='pane')
+        p1 = focus.call("docs:byname", "*Notmuch*", ret='pane')
     except edlib.commandfailed:
-        p1 = home.call("attach-doc-notmuch", ret='pane')
+        p1 = focus.call("attach-doc-notmuch", ret='pane')
     if not p1:
         return edlib.Efail
     p1.call("doc:attach-view", p0)
+    return 1
+
+def notmuch_compose(key, focus, **a):
+    choice = []
+    def choose(choice, a):
+        focus = a['focus']
+        if focus['email-sent'] == 'no':
+            choice.append(focus)
+            return 1
+        return 0
+    focus.call("docs:byeach", lambda key,**a:choose(choice, a))
+    if len(choice):
+        par = focus.call("ThisPane", ret='pane')
+        if par:
+            par = choice[0].call("doc:attach-view", par, 1, ret='pane')
+            par.take_focus()
+    else:
+        try:
+            db = focus.call("docs:byname", "*Notmuch*", ret='pane')
+        except edlib.commandfailed:
+            db = focus.call("attach-doc-notmuch", ret='pane')
+        v = make_composition(db, focus, "ThisPane")
+        if v:
+            v.call("compose-email:empty-headers")
     return 1
 
 if "editor" in globals():
@@ -3103,3 +3128,4 @@ if "editor" in globals():
     editor.call("global-set-command", "attach-render-notmuch:message",
                 render_message_attach)
     editor.call("global-set-command", "interactive-cmd-nm", notmuch_mode)
+    editor.call("global-set-command", "interactive-cmd-nmc", notmuch_compose)
