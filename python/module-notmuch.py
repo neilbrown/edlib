@@ -3084,16 +3084,20 @@ def render_master_view_attach(key, focus, comm2, **a):
     comm2("callback", p)
     return 1
 
-def notmuch_mode(key, focus, **a):
+def notmuch_pane(focus):
     p0 = focus.call("ThisPane", ret='pane')
     try:
         p1 = focus.call("docs:byname", "*Notmuch*", ret='pane')
     except edlib.commandfailed:
         p1 = focus.call("attach-doc-notmuch", ret='pane')
     if not p1:
-        return edlib.Efail
-    p1.call("doc:attach-view", p0)
-    return 1
+        return None
+    return p1.call("doc:attach-view", p0, ret='pane')
+
+def notmuch_mode(key, focus, **a):
+    if notmuch_pane(focus):
+        return 1
+    return edlib.Edfail
 
 def notmuch_compose(key, focus, **a):
     choice = []
@@ -3119,6 +3123,12 @@ def notmuch_compose(key, focus, **a):
             v.call("compose-email:empty-headers")
     return 1
 
+def notmuch_search(key, focus, **a):
+    p = notmuch_pane(focus)
+    if p:
+        p.call("doc:char-s")
+    return 1
+
 if "editor" in globals():
     editor.call("global-set-command", "attach-doc-notmuch", notmuch_doc)
     editor.call("global-set-command", "attach-render-notmuch:master-view",
@@ -3129,3 +3139,4 @@ if "editor" in globals():
                 render_message_attach)
     editor.call("global-set-command", "interactive-cmd-nm", notmuch_mode)
     editor.call("global-set-command", "interactive-cmd-nmc", notmuch_compose)
+    editor.call("global-set-command", "interactive-cmd-nms", notmuch_search)
