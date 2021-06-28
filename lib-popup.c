@@ -311,6 +311,28 @@ DEF_CMD(popup_close_others)
 	return 1;
 }
 
+DEF_CMD(popup_split)
+{
+	/* Rather than 'split', this moves the popup to an 'other' pane.
+	 * For some popups, like search or find-file, it doesn't make sense
+	 * to allow this.  For others line email-compose it does.
+	 * For now, allow it on multi-line popups.
+	 */
+	struct popup_info *ppi = ci->home->data;
+	struct pane *p;
+
+	if (strchr(ppi->style, 'M') == NULL)
+		return 1;
+	p = call_ret(pane, "OtherPane", ci->focus);
+	if (p)
+		p = call_ret(pane, "OtherPane", p);
+	if (p) {
+		home_call(ci->home->focus, "doc:attach-view", p);
+		pane_focus(p);
+	}
+	return 1;
+}
+
 DEF_CMD(popup_set_callback)
 {
 	struct popup_info *ppi = ci->home->data;
@@ -552,8 +574,8 @@ void edlib_init(struct pane *ed safe)
 
 	key_add(popup_map, "Window:bury", &popup_do_close);
 	key_add(popup_map, "Window:close", &popup_abort);
-	key_add(popup_map, "Window:split-x", &popup_ignore);
-	key_add(popup_map, "Window:split-y", &popup_ignore);
+	key_add(popup_map, "Window:split-x", &popup_split);
+	key_add(popup_map, "Window:split-y", &popup_split);
 	key_add(popup_map, "Window:x+", &popup_ignore);
 	key_add(popup_map, "Window:x-", &popup_ignore);
 	key_add(popup_map, "Window:y+", &popup_ignore);
