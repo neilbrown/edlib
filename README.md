@@ -53,7 +53,7 @@ a coordinate pair (“x”, “y”) and two commands (“comm1” and “comm2�
 Extra result values can be effected by passing them to a call to
 the “comm2” argument - i.e the command can be used as a callback.
 
-Each “pane” has a dedicate command which handles messages sent to
+Each “pane” has a dedicated command which handles messages sent to
 the pane, as will be described later.  Commands can also be passed
 to other commands, which can either call them directly (like the
 callback mentioned above) or store them for later use, or
@@ -78,13 +78,14 @@ structure containing a pointer to the function being called.  This
 structure can be embedded is some other data structure which contains
 context for the command.  This context might be read-only, to refine
 the behaviour of the command, or read/write to provide storage for the
-command to use.  For example, the call-back commands described earlier
+command to use.  For example, the call-back commands mentioned earlier
 are normally embedded in a data structure that can store the extra
 values to return.
 
-Apart from the return value of zero which indicates “command not
-understood”, a command can return a positive result on success or a
-negative result indicating lack of success.  Known error codes include:
+Apart from the return value of zero (Efallthrough) which indicates
+“command not understood”, a command can return a positive result on
+success or a negative result indicating lack of success.  Known error
+codes include:
 
 - Enoarg : missing argument
 - Einval : something is wrong with the context of the request
@@ -117,10 +118,10 @@ pane tree usually have more generic panes closer to the root and more
 special-purpose panes near the leaves.
 
 It is quite normal for there to be panes in the tree that are not
-directly involves in displaying anything - these are just useful
+directly involved in displaying anything - these are just useful
 containers for data and functionality.  Documents, described below,
 exist as panes that are not directly displayed.  Instead there are
-display pane which link to the document and display its content.
+display panes which link to the document and display its content.
 
 As well as a dedicated command (the “handler”) and private data, each
 pane has:
@@ -211,7 +212,7 @@ other lists of grouped marks.  This is achieved by using the external
 reference to hold an auxiliary data structure which is linked in to
 all of the lists.  Every document-display pane owns a point.  This
 point is usually where changes to the document happen.  When the
-notification mechanism mentioned earlier tells other panes of a chance
+notification mechanism mentioned earlier tells other panes of a change
 to the document, the point where the change happened is also reported.
 From this point it is easy to find and update nearby marks of any
 mark-group.
@@ -263,19 +264,19 @@ Now that we have plenty of context, it is time to revisit commands to
 discuss how they are called.  It is possible to invoke a specific
 command directly if you have a reference to it but most often a more
 general mechanism is used to find the appropriate command.  The most
-common mechanism is to pass and "Event" (i.e. a set of arguments) to a
+common mechanism is to pass an “Event” (i.e.  a set of arguments) to a
 “home” pane.  The handler for that pane and each ancestor will be tried
-in turn until a handler returns a non-zero value (i.e. it accepts the event),
-or until the root pane has been tried.  Very often the starting home pane
-will also be the focus pane so when the two are the same it is not necessary
-to specify both.
+in turn until a handler returns a non-zero (non-Efallthrough) value
+(i.e.  it accepts the event), or until the root pane has been tried.
+Very often the starting home pane will also be the focus pane so when
+the two are the same it is not necessary to specify both.
 
 The other common mechanism is a “notification event” which follows the
-"notifier" chain from a pane.  This chain lists a number of panes which
-have requested notifications.  When calling notifiers, all target panes have their
-handler called and if any return a non-zero value, the over-all return
-value will be non-zero.  More precisely it will be the value returned
-which has the largest absolute value.
+“notifier” chain from a pane.  This chain lists a number of panes which
+have requested notifications.  When calling notifiers, all target panes
+have their handler called and if any return a non-zero value, the
+over-all return value will be non-zero.  More precisely it will be the
+value returned which has the largest absolute value.
 
 Each handler can perform further lookup however it likes.  It may
 just compare the “key” against a number of supported keys, or it might
@@ -313,11 +314,11 @@ Text Document
 -------------
 
 A text document stores text in various linked data structures designed
-to make simple edits easy and to support unlimited undo/redo.  There
-are a number of allocations, and a list of “chunks” which each
-identify a start and end in one of those allocations.  Edits can
-add text to the last allocation, can change the endpoints of a chuck,
-and can insert new chunks or delete old chunks.
+to make simple edits easy and to support unlimited undo/redo.  There are
+a number of allocations for text, and a list of “chunks” which each
+identify a start and end in one of those allocations.  Edits can add
+text to the last allocation, can change the endpoints of a chuck, and
+can insert new chunks or delete old chunks.
 
 Each chunk has a list of attributes each with an offset into the allocation,
 so they each apply to a single character, though are often interpreted
@@ -334,42 +335,26 @@ the document.
 Documents Document
 ------------------
 
-There is typically one pane of this type and it registers an
-“doc:appeared-” handler with the root pane to get notified when documents
-are created.  It will reparent the document so that it becomes a
-child of a separate “collection” pane.  Then all documents can be found in the
-list of children.
+There is typically one pane of this type and it registers a
+“doc:appeared-” handler with the root pane to get notified when
+documents are created.  It will reparent the document so that it becomes
+a child of a separate “collection” pane.  Then all documents can be
+found in the list of children.
 
 The “documents” pane presents as a document which can be viewed and
 appears as a list of document names.  Various keystroke events allow
 documents to be opened, deleted, etc.
 
-Rendering virtual document
---------------------------
-
-Working directory with the "directory" or "documents" document is sometimes
-a bit awkward as a mark can only point to a while directory entry or
-document.  When these are displayed one-per-line it isn't possible to move 
-the cursor within that line, which can feel strange, particularly if the line
-is wider than that display pane.  Also selecting  an copying
-text cannot select part of a line.
-
-To overcome these problems, a "rendering" document can be layered over
-the main document.  It presents a virtual document which contains
-all the character that are use to display (to render) the underlying
-document.  This then "feels" more like a regular document and can respond
-to select and copy just like a text document.
-
-Multipart document, and "crop" filter
+Multipart document, and “crop” filter
 -------------------------------------
 
-Multipart is another virtual document, which appears to contain
-the content of a sequence of other documents.  This allows a sequence
-of documents to appear to be combined into one.  This can co-operate
-with the "crop" filter which limits access to a given document to the
-section between two marks.  By combining multipart and crop,
-one document can be divided up and re-assembled in any order, or
-parts of multiple documents can be merged.
+Multipart is a virtual document, which appears to contain the content of
+a sequence of other documents.  This allows a sequence of documents to
+appear to be combined into one.  This can co-operate with the “crop”
+filter which limits access to a given document to the section between
+two marks.  By combining multipart and crop, one document can be divided
+up and re-assembled in any order, or parts of multiple documents can be
+merged.
 
 Email document; base64, qprint, utf8, rfc822header filters
 ----------------------------------------------------------
@@ -382,27 +367,27 @@ and cropped out with appropriate filters attached.
 Notmuch email reader
 --------------------
 
-"notmuch" as a email indexing and management tools.    The notmuch
-email reader provides one document which displays various
-saved searches with a count of the number of items, and another
-document type which can show a summary line for each message
-found by a given search.  They work with the email document
-pane to allow reading and managing an e-mail mailbox.
+“notmuch” as a email indexing and management tools.  The notmuch email
+reader provides one document which displays various saved searches with
+a count of the number of items, and another document type which can show
+a summary line for each message found by a given search.  They work with
+the email document pane to allow reading and managing an e-mail mailbox.
 
 Ncurses Display
 ---------------
 
 The “ncurses” display can draw text on a terminal window and can set
 various attributes such as colour, bold, underline etc.  It also
-receives keyboard and mouse input and sends “Mouse-event” or
-“Keystroke” command up to the input manage.
+receives keyboard and mouse input and sends “Mouse-event” or “Keystroke”
+command up to the input manage.
 
-There can be multiple ncurses displays, each attached to a different terminal.
+There can be multiple ncurses displays, each attached to a different
+terminal.
 
 Pygtk Display
 -------------
 
-This is a display module written in python and using pygtk for
+This is a display module written in python and using python-gtk for
 drawing.
 
 When a “text” or “clear” request is made on a pane, the module
@@ -433,15 +418,27 @@ line with markup which the line renderer understands.
 Attribute Format Renderer
 -------------------------
 
-The attribute formatter is given a format for each line into which it
-interpolates attributes from each element in the document.  These
-lines are provided in response to “render-line” requests so that if
-the line-render and the attribute formatter are both stacked on a
-document, then the attributes of elements in the document can be
-easily displayed.
+The attribute formatter assumes each element in the document should be
+displayed as a line, and it is given a format description which
+describes which attributes of that element are used to create the
+desired line.  These lines of provided in a way that “render-line” can
+access and display them.
+
+There are two modes.  On the simple mode, each line appears to be a
+single object and it is not possible to move the cursor within that line
+or highlight arbitrary substrings such as with selections or search.
+
+The second mode is more functional but only available if the underlying
+document is written to collaborate by sharing reference information.  In
+this case the document uses just a pointer to identify each element, and
+the format rendered can use an "offset" field that is in every mark to
+allow marks to be positioned with the formatted line.  The net results
+if that it is possible to move around character in a line, and to select
+or search, even though these characters are not strictly part of the
+document.
 
 The format specification is found by requesting the attribute
-“Line-format” from panes starting at the focus and moving towards the root.
+“line-format” from panes starting at the focus and moving towards the root.
 
 Completion Render
 -----------------
@@ -471,15 +468,15 @@ rendered line starts with the byte offset of the start of the line.
 Presentation renderer
 ---------------------
 
-The presentation rendering accepts a text document and interprets
-it as describing pages of a presentation in a language similar
-to MarkDown.  It generates a marked-up rendering the various
-lines of text which are given to the lines renderer to produce
-a single page of the presentation.
+The presentation rendering accepts a text document and interprets it as
+describing pages of a presentation in a language similar to MarkDown.
+It generates a marked-up rendering the various lines of text which are
+given to the lines renderer to produce a single page of the
+presentation.
 
-There is a partner "markdown" mode which interacts with a presentation
-pane and can ask it to move forward or backward one page, or  to
-redraw some other arbitrary page.
+There is a partner “markdown” mode which interacts with a presentation
+pane and can ask it to move forward or backward one page, or to redraw
+some other arbitrary page.
 
 Tiler
 -----
@@ -527,10 +524,9 @@ the document pane.
 Keymap
 ------
 
-“Keymap” pane allows both global and local keys (or arbitrary
-commands) to be defined.  The global mappings are handled at a pane
-which must be stacked before the tiler.  A pane to handle local
-mappings is added on demand at the current focus pane.
+“Keymap” pane allows global keys or arbitrary commands to be defined.
+The global mappings are handled at a pane which must be stacked before
+the tiler.
 
 Search
 ------
@@ -541,9 +537,12 @@ can perform a reg-ex search through a document.
 Messageline
 -----------
 
-“Messageline” trims the bottom line off a pane (providing a pane which is
-slightly smaller) and will display messages in this pane until the
-next keyboard command.
+“Messageline” trims the bottom line off a pane (providing a pane which
+is slightly smaller) and will display messages in this pane.  They can
+be “modal” messages which disappear on the next keystroke, normal
+messages which remain for a period of time and recorded in a
+“*Messages*” document, or broadcast messages which are like normal
+messages, but are sent to all active Messageline panes.
 
 Input
 -----
@@ -570,9 +569,9 @@ any other document.
 make/grep
 ---------
 
-This allows make or grep to be running with the output captured and parsed.
-A simple keystroke then causes the editor to open a file mentioned
-in the output, and to go to the identified line.
+This allows “make” or “grep” to be run with the output captured and
+parsed.  A simple keystroke then causes the editor to open a file
+mentioned in the output, and to go to the identified line.
 
 Viewer
 ------
@@ -593,31 +592,30 @@ command or an editor command selected by name.
 copybuf
 -------
 
-Similar in principle to "history", a copybuf pane can store a series
+Similar in principle to “history”, a copybuf pane can store a series
 of arbitrary slabs of text.  It is used to provide copy/paste functionality.
 
 server
 ------
 
-The server pane listens on a socket for request to open a file,
-or to create an ncurses pane on the current terminal.
-It also reports to the request when the file has been edited,
-or when the ncurses pane is closed.
+The server pane listens on a socket for request to open a file, or to
+create an ncurses pane on the current terminal.
+It also reports to the requester when the file has been edited, or when
+the ncurses pane is closed.
 
 Emacs Mode
 ----------
 
-This provides a set of named commands which can be given to “keymap”
-as a global key map.  In provides a number of Emacs-like bindings.
+This provides a set of named commands which can be given to “keymap” as
+a global key map.  In provides a number of Emacs-like bindings.
 
 
 C/Python mode
 -------------
 
-This pane capture various editing command and tailors them
-to suite editing C or Python code.  It helps with correct
-indenting, highlight matching brackets, and will eventually do
-a lot more.
+This pane capture various editing command and tailors them to suite
+editing C or Python code.  It helps with correct indenting, highlight
+matching brackets, and will eventually do a lot more.
 
 Python Interface
 ----------------

@@ -60,6 +60,7 @@ Bugs to be fixed
 Requirements for a v1.0 release
 -------------------------------
 
+- [ ] logo!!! to use as icon in X11 for example.  Building blocks? Window pane?
 - [ ] efficient refresh using separate lib-renderline for each line
 - [ ] efficient X11 drawing using server-side surfaces
 - [ ] configuration
@@ -296,6 +297,8 @@ Module features
 
 ### doc-dir
 
+- [ ] if fstatat() fails for an entry, zero out the stat buf, and possibly
+      schedule a reload of the directory (but not too often).
 - [ ] allow setting a pattern, as alternate to substr, for 'complete' viewer.
 - [ ] how to change sort order of a directory listing.  I think this requires
       a separate dir document, which borrows state from the main one.
