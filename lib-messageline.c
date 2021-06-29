@@ -189,7 +189,7 @@ DEF_CMD(messageline_line_refresh)
 {
 	struct mlinfo *mli = ci->home->data;
 
-	call("pane-clear", mli->line, 0, NULL, "bg:white");
+	call("Draw:clear", mli->line, 0, NULL, "bg:white");
 	if (mli->message && !mli->modal &&
 	    time(NULL) >= mli->last_message + 30) {
 		free(mli->message);

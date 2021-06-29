@@ -235,7 +235,7 @@ Displays
 --------
 
 A “display” is just a pane which can create an image somehow, and
-responds to commands like “pane-clear”, “text-display”, and
+responds to commands like “Draw:clear”, “text-display”, and
 “image-display”.  Displays are typically quite close to the root of the
 “pane” tree, but this is not a requirement.
 

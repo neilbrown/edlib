@@ -100,11 +100,9 @@ class EdDisplay(edlib.Pane):
         self.win.destroy()
         return True
 
-    def handle_clear(self, key, focus, str, str2, **a):
-        "handle:pane-clear"
-        attr = str2
-        if attr is None:
-            attr = str
+    def handle_clear(self, key, focus, str1, **a):
+        "handle:Draw:clear"
+        attr = str1
         if attr is not None:
             fg, bg, ul = self.get_colours(attr)
         else:

@@ -507,7 +507,7 @@ DEF_CMD(renderline)
 	start = line_start = line;
 
 	if (dodraw)
-		home_call(focus, "pane-clear", p);
+		home_call(focus, "Draw:clear", p);
 
 	if (strncmp(line, "<image:",7) == 0) {
 		/* For now an <image> must be on a line by itself.

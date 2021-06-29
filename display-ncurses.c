@@ -696,7 +696,6 @@ static int to_pair(struct display_data *dd safe, int fg, int bg)
 	return c->content;
 }
 
-
 static int cvt_attrs(struct pane *p safe, struct pane *home safe,
 		     const char *attrs)
 {
@@ -821,7 +820,7 @@ static PANEL * safe pane_panel(struct pane *p safe, struct pane *home)
 DEF_CMD(nc_clear)
 {
 	struct pane *p = ci->home;
-	int attr = cvt_attrs(ci->focus, p, ci->str2?:ci->str);
+	int attr = cvt_attrs(ci->focus, p, ci->str);
 	PANEL *panel;
 	WINDOW *win;
 	int w, h;
@@ -1379,7 +1378,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(nc_map, "Display:external-viewer", &nc_external_viewer);
 	key_add(nc_map, "Close", &nc_close);
 	key_add(nc_map, "Free", &edlib_do_free);
-	key_add(nc_map, "pane-clear", &nc_clear);
+	key_add(nc_map, "Draw:clear", &nc_clear);
 	key_add(nc_map, "text-size", &nc_text_size);
 	key_add(nc_map, "Draw:text", &nc_draw_text);
 	key_add(nc_map, "Refresh:size", &nc_refresh_size);

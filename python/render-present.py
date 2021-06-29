@@ -452,7 +452,7 @@ class PresenterPane(edlib.Pane):
         for c in cmds:
             rv = None
             if c[:6] == 'color:':
-                rv = focus.call('pane-clear', c[6:])
+                rv = focus.call('Draw:clear', 'bg:' + c[6:])
             if c[:14] == "image-stretch:":
                 rv = focus.call('Draw:image', 1, "file:" + self.pathto(c[14:]))
             if c[:6] == "image:":

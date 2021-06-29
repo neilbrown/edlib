@@ -750,23 +750,23 @@ static int render(struct mark *pm, struct pane *p safe,
 	m = vmark_first(focus, rl->typenum, p);
 	s = pane_attr_get(focus, "background");
 	if (s && strncmp(s, "call:", 5) == 0) {
-		home_call(focus, "pane-clear", p);
+		home_call(focus, "Draw:clear", p);
 		home_call(focus, s+5, p, 0, m);
 	} else if (rl->background_drawn)
 		;
 	else if (!s)
-		home_call(focus, "pane-clear", p);
+		home_call(focus, "Draw:clear", p);
 	else if (strncmp(s, "color:", 6) == 0) {
 		char *a = strdup(s);
 		strcpy(a, "bg:");
 		strcpy(a+3, s+6);
-		home_call(focus, "pane-clear", p, 0, NULL, a);
+		home_call(focus, "Draw:clear", p, 0, NULL, a);
 		free(a);
 	} else if (strncmp(s, "image:", 6) == 0) {
-		home_call(focus, "pane-clear", p);
+		home_call(focus, "Draw:clear", p);
 		home_call(focus, "Draw:image", p, 1, NULL, s+6);
 	} else
-		home_call(focus, "pane-clear", p);
+		home_call(focus, "Draw:clear", p);
 	rl->background_drawn = True;
 
 	if (rl->header && vmark_is_valid(rl->header)) {
@@ -832,7 +832,7 @@ static int render(struct mark *pm, struct pane *p safe,
 				    p->h - lineheight,
 				    mwidth, lineheight);
 
-			home_call(focus, "pane-clear", cp);
+			home_call(focus, "Draw:clear", cp);
 			home_call(focus, "Draw:text", cp, 0, NULL, " ",
 				  scale.x, NULL, "",
 				  0, lineheight-1);

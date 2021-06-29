@@ -1,6 +1,6 @@
 :H1:center,20,fg:blue,space-above:15,family:sans
 :H2:center,15,fg:darkblue
-:background:color:bg:#b8c5cd,image-stretch:back.jpg,page-local
+:background:color:#b8c5cd,image-stretch:back.jpg,page-local
 :scale:590x200
 :P:left:30,12,family:sans
 :bullet:fg:red,13

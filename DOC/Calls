@@ -58,3 +58,18 @@ Known notifications include:
 
 - Keystroke-notify - string is the key name
 - Mouse-event-notify - string is the event name
+
+# Displays
+
+A display pane provides linkage to keyboard/pointer input, and visual output.
+It will generate Keystroke and Mouse-event events for its parent, and expect
+various Draw: event from children.
+
+## Draw:clear
+
+Draw:clear will allocation a display image for the focus pane and clear it.
+"str1" can be attributes for the background, typically a background colour
+such as "bg:cyan". If no attributes are given and there is another pane
+close to the root which has been cleared, the appropriate section of the
+image for that pane is copied it the image for 'focus'.  If ther is no
+image to copy from, the pane is cleared to "bg:white".
