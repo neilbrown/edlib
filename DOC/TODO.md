@@ -146,6 +146,10 @@ Core features
 Module features
 ---------------
 
+### lib-textfill
+- [ ] when indenting a new line, copy indent from previous line, not from
+      first.
+
 ### render-format
 
 - [ ] improve caching of attributes
@@ -270,7 +274,7 @@ Module features
 - [1] improve 'margin' to permit cursor in margin at start of file
 - [1] improve 'margin' to honour previous view of doc
 - [ ] update_line_height should handle TAB (and any control) - cannot expect
-      text-size to handle it.
+      Draw:text-size to handle it.
 - [1] Give lib-renderline a Refresh:view which calls something in the render-line
       pane which does call_render_line().  Use pane_damaged() to mark panes as invalid
       and pane_refresh() to update them.
@@ -700,7 +704,7 @@ But what point?
   draw text with attributes, selection-request, selection-content, file-content
   run-command request (e.g. to run a local viewer for attachments)
 - generic-display:  This could be a full pane, but would need to proxy
-  text-size measurement requests which might be slow
+  Draw:text-size measurement requests which might be slow
 - doc-view:  This would be a proxying core-doc view (doc_handle) where all
   the viewing panes are local, and all the doc-side panes are remote.
   This seems most elegant, but managing updates to marks and handling all
@@ -957,7 +961,7 @@ Interaction with gdb would be nice too - things like
 
 What needs to be configured?  How is that done?
 
-- fill mode and with
+- fill mode and width
 - default make command, and dir to run in
 - preferred white-space options, and width
 - uninteresting file names for find-file. .git-ignore??

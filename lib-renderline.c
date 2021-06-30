@@ -102,7 +102,8 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 	}
 
 	rl = calloc(1, sizeof(*rl));
-	cr = home_call_ret(all, focus, "text-size", p, rmargin - *x, NULL, str,
+	cr = home_call_ret(all, focus, "Draw:text-size", p,
+			   rmargin - *x, NULL, str,
 			   scale, NULL, attr);
 	max = cr.i;
 	if (max == 0 && ret == XYPOS) {
@@ -110,7 +111,7 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 		rl->xypos = start;
 		ret = WRAP;
 		rmargin = p->w - margin;
-		cr = home_call_ret(all, focus, "text-size", p,
+		cr = home_call_ret(all, focus, "Draw:text-size", p,
 				   rmargin - *x, NULL, str,
 				   scale, NULL, attr);
 		max = cr.i;
@@ -121,7 +122,7 @@ static int draw_some(struct pane *p safe, struct pane *focus safe,
 		 * I don't know what we expect to be different the second time..
 		 */
 		str[max] = 0;
-		cr = home_call_ret(all, focus, "text-size", p,
+		cr = home_call_ret(all, focus, "Draw:text-size", p,
 				   rmargin - *x, NULL, str,
 				   scale, NULL, attr);
 	}
@@ -264,7 +265,7 @@ static int flush_line(struct pane *p safe, struct pane *focus safe, int dodraw,
 	if (wrap_pos && last_rl &&
 	    (head = get_last_attr(last_rl->attr, "wrap-head"))) {
 		struct call_return cr =
-			home_call_ret(all, focus, "text-size", p,
+			home_call_ret(all, focus, "Draw:text-size", p,
 				      p->w, NULL, head,
 				      scale, NULL, last_rl->attr);
 		rl = calloc(1, sizeof(*rl));
@@ -300,7 +301,7 @@ static void update_line_height_attr(struct pane *p safe,
 				    int *a safe,int *w, char *attr safe,
 				    char *str safe, int scale)
 {
-	struct call_return cr = home_call_ret(all, focus, "text-size", p,
+	struct call_return cr = home_call_ret(all, focus, "Draw:text-size", p,
 					      -1, NULL, str,
 					      scale, NULL, attr);
 	if (cr.y > *h)
@@ -440,7 +441,7 @@ static void set_xypos(struct render_list *rlst,
 			rlst->xypos = rlst->text_orig;
 		else {
 			struct call_return cr =
-				home_call_ret(all, focus, "text-size", p,
+				home_call_ret(all, focus, "Draw:text-size", p,
 					      posx - rlst->x, NULL, rlst->text,
 					      scale, NULL, rlst->attr);
 			rlst->xypos = rlst->text_orig + cr.i;
@@ -571,7 +572,7 @@ DEF_CMD(renderline)
 		if (mwidth <= 0) {
 			/* mwidth is recalculated whenever attrs change */
 			struct call_return cr = home_call_ret(all, focus,
-							      "text-size", p,
+							      "Draw:text-size", p,
 							      -1, NULL, "M",
 							      scale, NULL,
 							      buf_final(&attr));

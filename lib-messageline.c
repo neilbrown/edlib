@@ -122,7 +122,7 @@ DEF_CMD(messageline_refresh_size)
 	struct mlinfo *mli = ci->home->data;
 	if (mli->height == 0) {
 		struct call_return cr =
-			call_ret(all, "text-size", ci->home, -1, NULL, "M",
+			call_ret(all, "Draw:text-size", ci->home, -1, NULL, "M",
 				 0, NULL, "bold");
 		mli->height = cr.y;
 		mli->ascent = cr.i2;

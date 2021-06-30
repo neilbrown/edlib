@@ -302,7 +302,7 @@ DEF_CMD(view_refresh_size)
 	b = vd->border < 0 ? 0 : vd->border;
 	if (vd->line_height < 0) {
 		/* FIXME should use scale */
-		struct call_return cr = call_ret(all, "text-size", ci->home,
+		struct call_return cr = call_ret(all, "Draw:text-size", ci->home,
 						 -1, NULL, "M",
 						 0, NULL, "bold");
 		if (cr.ret == 0) {

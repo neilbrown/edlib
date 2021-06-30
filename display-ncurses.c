@@ -1379,7 +1379,7 @@ void edlib_init(struct pane *ed safe)
 	key_add(nc_map, "Close", &nc_close);
 	key_add(nc_map, "Free", &edlib_do_free);
 	key_add(nc_map, "Draw:clear", &nc_clear);
-	key_add(nc_map, "text-size", &nc_text_size);
+	key_add(nc_map, "Draw:text-size", &nc_text_size);
 	key_add(nc_map, "Draw:text", &nc_draw_text);
 	key_add(nc_map, "Refresh:size", &nc_refresh_size);
 	key_add(nc_map, "Refresh:postorder", &nc_refresh_post);

@@ -73,3 +73,41 @@ such as "bg:cyan". If no attributes are given and there is another pane
 close to the root which has been cleared, the appropriate section of the
 image for that pane is copied it the image for 'focus'.  If ther is no
 image to copy from, the pane is cleared to "bg:white".
+
+## Draw:text
+
+This requests that text be drawn on the display.  If text already exists
+at the same location it may be replaced or it may be blended.
+
+- str1 is the text to draw.  Control characters should be avoided.
+- (x,y) give the position for the top-left corner of the text
+- str2 is attributes to apply to the text
+- num, if non-negative, is a byte offset in str1 where a cursor should
+  be placed.  The character following str1+num will be highlighted to
+  indicate that presence of the cursor before it.  If num is the length
+  of str1, then a cursor-on-space will appear after the drawn text.
+- num2 is a scale to apply to the text.  1000 is the default (used if
+  num2==0)  It is roughly "pixels per point * 1000"
+
+## Draw:text-size
+
+This request measures the size of 'str1'.  The result is returned using
+comm2 as the (x,y) pair.
+
+- str1 is the string to measure
+- str2 is the attributes
+- num, if non-negative, is a pixel offset to the right of the left edge
+  The byte-position in the resulting image which would be drawn at the
+  offset is reported
+- num2 is a scale, as with Draw:text
+- comm2 is called with the results of the measurement:
+    - num is the byte offset corresponding to the requested pixel offset
+    - num2 is the "ascent" for the text - pixel distance from baseline
+      to top. This is typically used to determine where the "Top" left
+      of the image should go when calling Draw:text
+    - (x,y) is the width and height of the drawing of the text.
+
+
+ 
+
+  

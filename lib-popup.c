@@ -63,7 +63,7 @@ struct popup_info {
 static int line_height(struct pane *p safe, int scale)
 {
 	struct call_return cr =
-		call_ret(all, "text-size", p, -1, NULL, "x",
+		call_ret(all, "Draw:text-size", p, -1, NULL, "x",
 			 scale, NULL, "");
 	return cr.y;
 }

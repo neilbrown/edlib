@@ -2372,7 +2372,7 @@ class notmuch_query_view(edlib.Pane):
         self.thread_matched = None
         (xs,ys) = self.scale()
         ret = []
-        self.call("text-size", "M", -1, ys,
+        self.call("Draw:text-size", "M", -1, ys,
                   lambda key, **a: ret.append(a))
         if ret:
             lh = ret[0]['xy'][1]

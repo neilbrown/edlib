@@ -985,7 +985,7 @@ struct xy pane_scale(struct pane *p safe)
 	/* "scale" is roughly pixels-per-point * 1000
 	 * So 10*scale.x/100 is the width of a typical character in default font.
 	 * 10*scale.y/100 is the height.
-	 * scale.x should be passed to text-size and and Draw:text to get
+	 * scale.x should be passed to Draw:text-size and and Draw:text to get
 	 * correctly sized text
 	 *
 	 * "scale:M" is provided by the display module and reports

@@ -124,7 +124,7 @@ class EdDisplay(edlib.Pane):
         return True
 
     def handle_text_size(self, key, num, num2, focus, str, str2, comm2, **a):
-        "handle:text-size"
+        "handle:Draw:text-size"
         attr=""
         if str2 is not None:
             attr = str2
@@ -204,6 +204,7 @@ class EdDisplay(edlib.Pane):
         if num >= 0:
             # draw a cursor - outline box if not in-focus,
             # inverse-video if it is.
+            # FIXME num is a byte-offset, not a char offset!!!
             c = pl.index_to_pos(num)
             cx = c.x; cy=c.y; cw=c.width; ch=c.height
             if cw <= 0:
