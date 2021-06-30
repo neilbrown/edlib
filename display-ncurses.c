@@ -71,6 +71,8 @@ struct display_data {
 	enum { DoNil, DoMouse, DoKey, DoCheck, DoClose} next_event;
 	char			event_info[30];
 	struct xy		event_pos;
+
+	int			clears; /* counts of Draw:clear events */
 	#endif
 };
 
@@ -151,7 +153,7 @@ static void close_recrep(struct pane *p safe)
 	struct display_data *dd = p->data;
 
 	if (dd->log) {
-		fprintf(dd->log, "Close\n");
+		fprintf(dd->log, "Close %d\n", dd->clears);
 		fclose(dd->log);
 	}
 }
@@ -820,6 +822,7 @@ static PANEL * safe pane_panel(struct pane *p safe, struct pane *home)
 DEF_CMD(nc_clear)
 {
 	struct pane *p = ci->home;
+	struct display_data *dd = p->data;
 	int attr = cvt_attrs(ci->focus, p, ci->str);
 	PANEL *panel;
 	WINDOW *win;
@@ -837,6 +840,7 @@ DEF_CMD(nc_clear)
 	}
 	wbkgdset(win, attr);
 	werase(win);
+	dd->clears += 1;
 
 	pane_damaged(p, DAMAGED_POSTORDER);
 	return 1;
