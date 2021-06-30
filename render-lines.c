@@ -143,7 +143,7 @@ static void vmark_free(struct mark *m safe)
 	mark_free(m);
 }
 
-static void vmark_set(struct pane *p safe, struct mark *m safe, char *line)
+static void vmark_set(struct pane *p safe, struct mark *m safe, char *line safe)
 {
 	if (!m->mdata)
 		m->mdata = call_ret(pane, "attach-renderline", p);
@@ -154,14 +154,12 @@ static void vmark_set(struct pane *p safe, struct mark *m safe, char *line)
 static void vmark_invalidate(struct mark *m safe)
 {
 	if (m->mdata)
-		pane_call(m->mdata, "render-line:invalidate", m->mdata);
+		pane_damaged(m->mdata, DAMAGED_VIEW);
 }
 
 static bool vmark_is_valid(struct mark *m safe)
 {
-	if (!m->mdata)
-		return False;
-	return pane_attr_get_int(m->mdata, "render-line:valid", 0) == 1;
+	return m->mdata && !(m->mdata->damaged & DAMAGED_VIEW);
 }
 
 /* Returns 'true' at end-of-page */
@@ -262,7 +260,8 @@ static void call_render_line(struct pane *home safe, struct pane *p safe,
 	} else
 		s = call_ret(strsave, "doc:render-line", p, NO_NUMERIC, m);
 
-	vmark_set(home, start, s);
+	if (s)
+		vmark_set(home, start, s);
 
 	m2 = vmark_matching(m);
 	if (m2)
