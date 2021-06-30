@@ -64,7 +64,6 @@ void buf_append_byte(struct buf *b safe, char c)
 	buf_concat_len(b, &c, 1);
 }
 
-
 /*
  * performance measurements
  */

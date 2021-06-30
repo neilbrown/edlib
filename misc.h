@@ -44,7 +44,6 @@ static inline void buf_reinit(struct buf *b safe)
 	b->len = 0;
 }
 
-
 /* Performance measurements.
  * 1/ timers.
  */

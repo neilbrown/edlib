@@ -98,7 +98,6 @@
  * relative to the focus pane 'p'.
  */
 
-
 struct rl_data {
 	int		top_sol; /* true when first mark is at a start-of-line */
 	int		ignore_point;

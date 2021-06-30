@@ -96,7 +96,6 @@ DEF_CMD(history_done)
 	return Efallthrough;
 }
 
-
 DEF_CMD(history_notify_replace)
 {
 	struct history_info *hi = ci->home->data;

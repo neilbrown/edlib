@@ -2350,7 +2350,6 @@ DEF_CMD(text_replace)
 	return first ? 1 : 2;
 }
 
-
 static struct attrset *text_attrset(struct doc *d safe, struct mark *m safe,
 				    int *op safe)
 {

@@ -107,7 +107,6 @@ static inline bool is_word_final(wint_t ch)
 	return iswalpha(ch);
 }
 
-
 DEF_CMD(spell_this)
 {
 	/* Find a word "here" to spell. It must include the first

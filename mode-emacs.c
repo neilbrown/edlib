@@ -2892,7 +2892,6 @@ DEF_CMD(emacs_quote)
 	return 1;
 }
 
-
 DEF_PFX_CMD(alt_cmd, ":A");
 DEF_PFX_CMD(cx_cmd, ":CX");
 DEF_PFX_CMD(cx4_cmd, ":CX4");

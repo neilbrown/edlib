@@ -1204,7 +1204,6 @@ DEF_CMD(doc_abort)
 	return Efallthrough;
 }
 
-
 struct map *doc_default_cmd safe;
 static struct map *doc_handle_cmd safe;
 

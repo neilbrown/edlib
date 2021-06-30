@@ -37,7 +37,6 @@ struct ed_info {
 
 DEF_LOOKUP_CMD(ed_handle, ed_map);
 
-
 DEF_CMD(global_set_attr)
 {
 	if (!ci->str)

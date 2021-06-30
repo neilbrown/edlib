@@ -334,7 +334,6 @@ void key_add_chain(struct map *map safe, struct map *chain)
 	map->chain = chain;
 }
 
-
 #if 0
 void key_del(struct map *map, wint_t k)
 {

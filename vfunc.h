@@ -1,8 +1,5 @@
-
 #ifndef __VFUNC_H__
 #define __VFUNC_H__
-
-
 
 /* Macro magic taken from
  * https://stackoverflow.com/questions/11761703/overloading-macro-on-number-of-arguments

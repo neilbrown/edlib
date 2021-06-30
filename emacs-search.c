@@ -810,7 +810,6 @@ DEF_CMD(emacs_replace_highlight)
 	return 1;
 }
 
-
 DEF_CMD(emacs_hl_attrs)
 {
 	struct highlight_info *hi = ci->home->data;
@@ -908,7 +907,6 @@ DEF_CMD(highlight_draw)
 	}
 	return Efallthrough;
 }
-
 
 DEF_CMD(emacs_search_reposition_delayed)
 {
@@ -1105,7 +1103,6 @@ DEF_CMD(emacs_search_attach_highlight)
 	}
 	return 1;
 }
-
 
 void edlib_init(struct pane *ed safe)
 {

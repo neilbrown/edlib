@@ -342,4 +342,3 @@ void edlib_init(struct pane *ed safe)
 		  0, NULL, "interactive-cmd-whitespace-mode");
 
 }
-

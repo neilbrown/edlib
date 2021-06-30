@@ -122,7 +122,6 @@ DEF_CMD(complete_free)
 	return 1;
 }
 
-
 static struct pane *complete_pane(struct pane *focus)
 {
 	struct pane *complete;

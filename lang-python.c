@@ -39,7 +39,6 @@
 #define __x86_64__
 #define __LP64__
 
-
 //#define PyType_HasFeature __PyType_HasFeature
 #include <Python.h>
 #undef PyType_HasFeature __PyType_HasFeature

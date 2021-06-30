@@ -366,7 +366,6 @@ struct lookup_cmd {
 #define REDEF_CB(_name) \
 	static int _name ## _func(const struct cmd_info *ci safe)
 
-
 #define DEF_LOOKUP_CMD(_name, _map) \
 	static struct lookup_cmd _name = {		\
 		.c.func = key_lookup_cmd_func,		\
@@ -473,7 +472,6 @@ enum {
 
 	DAMAGED_POSTORDER	= BIT(7), /* Pane wants to be called again */
 	DAMAGED_POSTORDER_CHILD	= BIT(8), /* Child pane wants to be called again */
-
 
 	DAMAGED_CLOSED		= BIT(15),
 	DAMAGED_DEAD		= BIT(14), /* Fully closed, but not freed yet */

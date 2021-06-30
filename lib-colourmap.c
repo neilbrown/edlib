@@ -99,7 +99,6 @@ static void add_sat(char *n, int rgb[])
 		rgb[i] = 1000 - ( (99 - scale) * (1000 - rgb[i]) / 99);
 }
 
-
 DEF_CMD(colour_map)
 {
 	char *col;
