@@ -244,6 +244,9 @@ static void call_render_line(struct pane *home safe, struct pane *p safe,
 	struct mark *m, *m2;
 	char *s;
 
+	if (vmark_is_valid(start))
+		return;
+	pane_damaged(home, DAMAGED_REFRESH);
 	m = mark_dup_view(start);
 	if (doc_following(p, m) == WEOF) {
 		/* We only create a subpane for EOF when it is at start
@@ -362,8 +365,7 @@ static bool step_back(struct pane *p safe, struct pane *focus safe,
 	} else {
 		short h = 0;
 		start = m;
-		if (!vmark_is_valid(start))
-			call_render_line(p, focus, start, endp);
+		call_render_line(p, focus, start, endp);
 		measure_line(p, focus, start, -1);
 		h = start->mdata ? start->mdata->h : 0;
 		if (h) {
@@ -387,8 +389,7 @@ static bool step_fore(struct pane *p safe, struct pane *focus safe,
 
 	if (!end)
 		return True;
-	if (!vmark_is_valid(end))
-		call_render_line(p, focus, end, startp);
+	call_render_line(p, focus, end, startp);
 	found_end = measure_line(p, focus, end, -1);
 	if (end->mdata)
 		*y_post = end->mdata->h;
@@ -525,8 +526,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	if (!start)
 		goto abort;
 	offset = call_render_line_to_point(focus, pm, start);
-	if (!vmark_is_valid(start))
-		call_render_line(p, focus, start, NULL);
+	call_render_line(p, focus, start, NULL);
 	end = vmark_next(start);
 	/* Note: 'end' might be NULL if 'start' is end-of-file, otherwise
 	 * call_render_line() will have created 'end' if it didn't exist.
@@ -891,8 +891,9 @@ static int revalidate_start(struct rl_data *rl safe,
 		m = vmark_at_or_before(focus, m2, rl->typenum, p);
 		mark_free(m2);
 
-		if (m && m->mdata &&
-		    (!vmark_is_valid(m) || refresh_all)) {
+		if (m && refresh_all)
+			vmark_invalidate(m);
+		if (m && m->mdata && !vmark_is_valid(m)) {
 			pane_damaged(p, DAMAGED_REFRESH);
 			call("doc:render-line-prev", focus, 0, m);
 			call_render_line(p, focus, m, &start);
@@ -941,10 +942,9 @@ static int revalidate_start(struct rl_data *rl safe,
 	y -= rl->skip_height;
 	for (m = start; m && !found_end && y < p->h; m = vmark_next(m)) {
 		struct pane *hp;
-		if (refresh_all || !vmark_is_valid(m)) {
-			pane_damaged(p, DAMAGED_REFRESH);
-			call_render_line(p, focus, m, NULL);
-		}
+		if (refresh_all)
+			vmark_invalidate(m);
+		call_render_line(p, focus, m, NULL);
 		found_end = measure_line(p, focus, m, -1);
 		hp = m->mdata;
 		if (!hp)
@@ -1230,8 +1230,7 @@ DEF_CMD(render_lines_move)
 			m = top;
 			while (m && m->seq < prevtop->seq &&
 			       !mark_same(m, prevtop)) {
-				if (!vmark_is_valid(m))
-					call_render_line(p, focus, m, NULL);
+				call_render_line(p, focus, m, NULL);
 				if (m->mdata == NULL) {
 					rpt = 0;
 					break;
@@ -1245,8 +1244,7 @@ DEF_CMD(render_lines_move)
 		}
 	} else {
 		/* Need to remove lines from top */
-		if (!vmark_is_valid(top))
-			call_render_line(p, focus, top, NULL);
+		call_render_line(p, focus, top, NULL);
 		measure_line(p, focus, top, -1);
 		while (top && top->mdata && rpt > 0) {
 			short y = 0;
@@ -1261,8 +1259,7 @@ DEF_CMD(render_lines_move)
 			top = vmark_next(top);
 			if (!top)
 				break;
-			if (!vmark_is_valid(top))
-				call_render_line(p, focus, top, NULL);
+			call_render_line(p, focus, top, NULL);
 			measure_line(p, focus, top, -1);
 		}
 		if (top && top->mdata) {
@@ -1500,6 +1497,7 @@ DEF_CMD(render_lines_move_line)
 	/* FIXME only do this if point is active/volatile, or
 	 * if start->mdata is NULL
 	 */
+	vmark_invalidate(start);
 	call_render_line(p, focus, start, NULL);
 	if (start->mdata)
 		xypos = find_xy_line(p, focus, start, rl->target_x,
