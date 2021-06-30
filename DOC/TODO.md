@@ -275,9 +275,15 @@ Module features
 - [1] improve 'margin' to honour previous view of doc
 - [ ] update_line_height should handle TAB (and any control) - cannot expect
       Draw:text-size to handle it.
-- [1] Give lib-renderline a Refresh:view which calls something in the render-line
+- [X] Give lib-renderline a Refresh:view which calls something in the render-line
       pane which does call_render_line().  Use pane_damaged() to mark panes as invalid
       and pane_refresh() to update them.
+- [ ] If a renderline pane moves the background might not be correct:
+- [ ] ... it might have been partly off-screen, so background wasn't copied
+- [ ] ... the background that was copied might be non-uniform
+- [ ] the background "call:" option should report if background was changed.
+      An attribute could store chosen information for comparison.
+      Would need a 'force' flag.
 - [1] revise render_lines_move
 - [1] revise render_lines_move_line
 - [1] revise render_lines_view_line

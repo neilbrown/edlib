@@ -112,6 +112,7 @@ struct rl_data {
 					 */
 	int		do_wrap;
 	short		shift_left;
+	short		shift_left_last_refresh;
 	struct mark	*header;
 	int		typenum;
 	int		repositioned; /* send "render:reposition" when we know
@@ -197,12 +198,15 @@ static int find_xy_line(struct pane *p safe, struct pane *focus safe,
 }
 
 static void draw_line(struct pane *p safe, struct pane *focus safe,
-		      struct mark *mk safe, short offset)
+		      struct mark *mk safe, short offset, bool refresh_all)
 {
 	struct pane *hp = mk->mdata;
 
-	if (hp)
+	if (hp &&
+	    (refresh_all || hp->damaged & DAMAGED_REFRESH)) {
+		hp->damaged &= ~DAMAGED_REFRESH;
 		pane_call(hp, "render-line:draw", focus, offset);
+	}
 }
 
 static struct mark *call_render_line_prev(struct pane *p safe,
@@ -246,7 +250,7 @@ static void call_render_line(struct pane *home safe, struct pane *p safe,
 
 	if (vmark_is_valid(start))
 		return;
-	pane_damaged(home, DAMAGED_REFRESH);
+
 	m = mark_dup_view(start);
 	if (doc_following(p, m) == WEOF) {
 		/* We only create a subpane for EOF when it is at start
@@ -722,17 +726,22 @@ static int render(struct mark *pm, struct pane *p safe,
 	char *s;
 	int hide_cursor = 0;
 	int cursor_drawn = 0;
+	bool refresh_all = rl->shift_left != rl->shift_left_last_refresh;
 
+	rl->shift_left_last_refresh = rl->shift_left;
 	s = pane_attr_get(focus, "hide-cursor");
 	if (s && strcmp(s, "yes") == 0)
 		hide_cursor = 1;
 
 	rl->cols = 0;
 	m = vmark_first(focus, rl->typenum, p);
+	if (!rl->background_drawn)
+		refresh_all = True;
 	s = pane_attr_get(focus, "background");
 	if (s && strncmp(s, "call:", 5) == 0) {
 		home_call(focus, "Draw:clear", p);
 		home_call(focus, s+5, p, 0, m);
+		refresh_all = True;
 	} else if (rl->background_drawn)
 		;
 	else if (!s)
@@ -752,7 +761,7 @@ static int render(struct mark *pm, struct pane *p safe,
 
 	if (rl->header && vmark_is_valid(rl->header)) {
 		struct pane *hp = rl->header->mdata;
-		draw_line(p, focus, rl->header, -1);
+		draw_line(p, focus, rl->header, -1, refresh_all);
 		y = hp->h;
 		rl->cols = hp->x + hp->w;
 	}
@@ -771,7 +780,7 @@ static int render(struct mark *pm, struct pane *p safe,
 			struct pane *hp = m->mdata;
 			short len = call_render_line_to_point(focus, pm,
 							      m);
-			draw_line(p, focus, m, len);
+			draw_line(p, focus, m, len, True);
 			rl->cursor_line = hp->y + hp->cy;
 			curs = pane_mapxy(hp, p, hp->cx, hp->cy, False);
 			if (hp->cx < 0) {
@@ -783,7 +792,7 @@ static int render(struct mark *pm, struct pane *p safe,
 			}
 			cursor_drawn = 1;
 		} else {
-			draw_line(p, focus, m, -1);
+			draw_line(p, focus, m, -1, refresh_all);
 		}
 		if (m->mdata) {
 			int cols = m->mdata->x + m->mdata->w;
@@ -860,14 +869,20 @@ DEF_CMD(render_lines_point_moving)
 	struct pane *p = ci->home;
 	struct rl_data *rl = p->data;
 	struct mark *pt = call_ret(mark, "doc:point", ci->home);
+	struct mark *m;
 
-	if (ci->mark != pt)
+	if (!pt || ci->mark != pt)
 		return 1;
 	/* Stop igoring point, because it is probably relevant now */
 	rl->ignore_point = 0;
 	if (!rl->i_moved)
 		/* Someone else moved the point, so reset target column */
 		rl->target_x = -1;
+	m = vmark_at_or_before(ci->focus, pt, rl->typenum, p);
+	if (m && vmark_is_valid(m)) {
+		pane_damaged(m->mdata, DAMAGED_REFRESH);
+		pane_damaged(m->mdata->parent, DAMAGED_REFRESH);
+	}
 	return 1;
 }
 
@@ -1539,6 +1554,10 @@ DEF_CMD(render_lines_notify_replace)
 			rl->ignore_point = 0;
 	}
 
+	if (strcmp(ci->key, "view:changed") == 0)
+		/* Cursor possibly moved, so need to refresh */
+		pane_damaged(ci->home, DAMAGED_REFRESH);
+
 	if (!start && !end) {
 		/* No marks given - assume everything changed */
 		struct mark *m;
@@ -1635,8 +1654,10 @@ DEF_CMD(render_lines_resize)
 
 	for (m = vmark_first(p, rl->typenum, p);
 	     m;
-	     m = vmark_next(m))
+	     m = vmark_next(m)) {
 		vmark_invalidate(m);
+		pane_damaged(m->mdata, DAMAGED_REFRESH);
+	}
 	rl->background_drawn = False;
 	pane_damaged(p, DAMAGED_VIEW);
 

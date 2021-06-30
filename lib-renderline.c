@@ -857,12 +857,17 @@ DEF_CMD(renderline_get)
 DEF_CMD(renderline_set)
 {
 	struct rline_data *rd = ci->home->data;
+	const char *old = rd->line;
 
-	free((void*)rd->line);
 	if (ci->str)
 		rd->line = strdup(ci->str);
 	else
 		rd->line = NULL;
+	if (strcmp(rd->line ?:"", old ?:"") != 0) {
+		pane_damaged(ci->home, DAMAGED_REFRESH);
+		pane_damaged(ci->home->parent, DAMAGED_REFRESH);
+	}
+	free((void*)old);
 	ci->home->damaged &= ~DAMAGED_VIEW;
 	return 1;
 }
