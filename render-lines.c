@@ -199,30 +199,13 @@ static int find_xy_line(struct pane *p safe, struct pane *focus safe,
 	return ret > 0 ? (ret - 1) : -1;
 }
 
-static bool draw_line(struct pane *p safe, struct pane *focus safe,
+static void draw_line(struct pane *p safe, struct pane *focus safe,
 		      struct mark *mk safe, short offset)
 {
-	struct rl_data *rl = p->data;
 	struct pane *hp = mk->mdata;
-	int ret = 0;
 
-	if (hp) {
-		ret = pane_call(hp, "render-line:draw", focus, offset);
-		if (offset >= 0) {
-			struct xy curs = pane_mapxy(hp, p,
-						    hp->cx, hp->cy, False);
-			if (hp->cx < 0) {
-				p->cx = -1;
-				p->cy = -1;
-			} else {
-				p->cx = curs.x;
-				p->cy = curs.y;
-			}
-		}
-		if (hp->x + hp->w > rl->cols)
-			rl->cols = hp->x + hp->w;
-	}
-	return ret == 2;
+	if (hp)
+		pane_call(hp, "render-line:draw", focus, offset);
 }
 
 static struct mark *call_render_line_prev(struct pane *p safe,
@@ -770,8 +753,10 @@ static int render(struct mark *pm, struct pane *p safe,
 	rl->background_drawn = True;
 
 	if (rl->header && vmark_is_valid(rl->header)) {
+		struct pane *hp = rl->header->mdata;
 		draw_line(p, focus, rl->header, -1);
-		y = rl->header->mdata->h;
+		y = hp->h;
+		rl->cols = hp->x + hp->w;
 	}
 	y -= rl->skip_height;
 
@@ -784,17 +769,30 @@ static int render(struct mark *pm, struct pane *p safe,
 		    mark_ordered_or_same(m, pm) &&
 		    (!(m2 && doc_following(focus, m2) != WEOF) ||
 		     mark_ordered_not_same(pm, m2))) {
+			struct xy curs;
+			struct pane *hp = m->mdata;
 			short len = call_render_line_to_point(focus, pm,
 							      m);
 			draw_line(p, focus, m, len);
-			rl->cursor_line = m->mdata->y + m->mdata->cy;
-
+			rl->cursor_line = hp->y + hp->cy;
+			curs = pane_mapxy(hp, p, hp->cx, hp->cy, False);
+			if (hp->cx < 0) {
+				p->cx = -1;
+				p->cy = -1;
+			} else {
+				p->cx = curs.x;
+				p->cy = curs.y;
+			}
 			cursor_drawn = 1;
 		} else {
 			draw_line(p, focus, m, -1);
 		}
-		if (m->mdata)
+		if (m->mdata) {
+			int cols = m->mdata->x + m->mdata->w;
+			if (cols > rl->cols)
+				rl->cols = cols;
 			y = m->mdata->y + m->mdata->h;
+		}
 		m = m2;
 	}
 	if (!cursor_drawn && !hide_cursor) {
