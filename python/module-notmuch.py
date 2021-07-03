@@ -917,9 +917,9 @@ class notmuch_query(edlib.Doc):
         cmd = ["/usr/bin/notmuch", "search", "--output=summary",
                "--format=json", "--limit=100", "--offset=%d" % self.offset ]
         if self.partial:
-            cmd += [ "date:-1day.. AND " ]
+            cmd += [ "date:-24hours.. AND " ]
         elif self.age:
-            cmd += [ "date:-%dmonths.. AND " % self.age]
+            cmd += [ "date:-%ddays.. AND " % (self.age * 30)]
         if self.filter:
             cmd += [ "( %s ) AND " % self.filter ]
         cmd += [ "( %s )" % self.query ]

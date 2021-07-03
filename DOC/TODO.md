@@ -406,8 +406,10 @@ Module features
 
 ### Notmuch - overview
 
-- [ ] "date:-months" doesn't do what I thought.  It start from beginning
+- [X] "date:-months" doesn't do what I thought.  It start from beginning
       of this month, not one month ago.  So use a number of days.
+- [ ] When main_doc notices counts increase, it should ensure the next
+      visit of the search triggers a refresh.
 - [ ] all shares-ref docs must be careful about comparing marks ... or else
       we need to compare ignoring offset?  Best to compare <, not <=??
 - [ ] If I open a search but there are no messages (yet) I get a python
