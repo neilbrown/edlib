@@ -473,8 +473,8 @@ static int consume_space(struct pane *p safe, int y,
  * 'pm' must be displayed, and if vline is not NO_NUMERIC,
  * pm should be displayed on that line of the display, where
  * negative numbers count from the bottom of the page.
- * Otherwise pm should be at least pm->margin from top and bottom.
- * In no case should start-of-file be *after* top of display.
+ * Otherwise pm should be at least rl->margin from top and bottom,
+ * but in no case should start-of-file be *after* top of display.
  * If there is an existing display, move the display as little as
  * possible while complying with the above.
  *
@@ -614,19 +614,17 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			 */
 			y_post = 0;
 
-		if (!found_end && bot &&
-		    mark_ordered_not_same(start, bot))
-			/* Overlap original from below, so prefer to
-			 * maximize that overlap.
-			 */
-			found_end = True;
-
-		if (!found_end && bot && mark_same(start, bot) &&
-		    y_pre - rl->skip_height >= y_post)
-			/* No overlap in marks yet, but over-lap in space,
-			 * so same result as above.
-			 */
-			found_end = True;
+		if (!found_end && bot && lines_below >= rl->margin)
+			if (mark_ordered_not_same(start, bot) ||
+			    /* Overlap original from below, so prefer to
+			     * maximize that overlap.
+			     */
+			    (mark_same(start, bot) &&
+			     y_pre - rl->skip_height >= y_post))
+				/* No overlap in marks yet, but over-lap in
+				 * space, so same result as above.
+				 */
+				found_end = True;
 
 		if (!found_end && y_post <= 0)
 			/* step forwards */
@@ -634,12 +632,11 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 					      &y_post, &line_height_post);
 
 		if (!found_start && top && end &&
-		    mark_ordered_not_same(top, end))
-			found_start = True;
-
-		if (!found_start && top && end && mark_same(top, end)
-		    && y_post - rl->tail_height >= y_pre)
-			found_start = True;
+		    lines_above >= rl->margin)
+			if (mark_ordered_not_same(top, end) ||
+			    (mark_same(top, end) &&
+			     y_post - rl->tail_height >= y_pre))
+				found_start = True;
 
 		y = consume_space(p, y, &y_pre, &y_post,
 				  &lines_above, &lines_below,
@@ -895,6 +892,7 @@ static int revalidate_start(struct rl_data *rl safe,
 	bool on_screen = False;
 	struct mark *m, *m2;
 	bool found_end = False;
+	bool start_of_file;
 
 	if (pm && !rl->do_wrap) {
 		int prefix_len;
@@ -955,6 +953,7 @@ static int revalidate_start(struct rl_data *rl safe,
 			y = hp->h;
 	}
 	y -= rl->skip_height;
+	start_of_file = doc_prior(focus, start) == WEOF;
 	for (m = start; m && !found_end && y < p->h; m = vmark_next(m)) {
 		struct pane *hp;
 		if (refresh_all)
@@ -981,7 +980,12 @@ static int revalidate_start(struct rl_data *rl safe,
 			if (offset >= 0) {
 				measure_line(p, focus, m, offset);
 				if (hp->cy >= rl->skip_height + rl->margin)
-					/* Cursor is visible on this line */
+					/* Cursor is visible on this line
+					 * and after margin from top.
+					 */
+					on_screen = True;
+				else if (start_of_file && rl->skip_height == 0)
+					/* Cannot make more margin space */
 					on_screen = True;
 			}
 		} else if (pm && y >= p->h && m->seq < pm->seq) {
@@ -1016,7 +1020,8 @@ static int revalidate_start(struct rl_data *rl safe,
 					lh = attr_find_int(hp->attrs,
 							   "line-height");
 					cy = y - hp->h + hp->cy;
-					if (cy >= rl->margin && cy <= p->h - rl->margin - lh)
+					if (cy >= rl->margin &&
+					    cy <= p->h - rl->margin - lh)
 						/* Cursor at least margin from edge */
 						on_screen = True;
 				}
@@ -1071,7 +1076,7 @@ DEF_CMD(render_lines_revise)
 
 	rl->margin = pane_attr_get_int(focus, "render-vmargin", 0);
 	if (rl->margin >= p->h/2)
-		rl->margin= p->h/2;
+		rl->margin = p->h/2;
 
 	hdr = pane_attr_get(focus, "heading");
 	if (hdr && !*hdr)

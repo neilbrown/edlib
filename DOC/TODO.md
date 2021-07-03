@@ -271,7 +271,7 @@ Module features
 
 ### render-lines
 
-- [1] improve 'margin' to permit cursor in margin at start of file
+- [X] improve 'margin' to permit cursor in margin at start of file
 - [1] improve 'margin' to honour previous view of doc
 - [ ] update_line_height should handle TAB (and any control) - cannot expect
       Draw:text-size to handle it.
@@ -727,6 +727,32 @@ a display pane.  This might result in them running on different hosts.
 
 The protocol over then should be QUIC if possible as they seems to allow
 mobility nicely.  I'd need to look at how it handles network breaks.
+
+### Remote display
+
+I don't think I'll go with QUIC.  I'll make something focussed, like
+mosh and wireguard do.
+ssh will be used to request a key and 2 nounces - requested over the
+server socket.  Using this key, messages are secured with the "secretbox"
+module of libsodium and sent via UDP - client can send from anywhere and
+server replies to there.
+
+Client sends keystrokes, mouse-action, size report.  Each have an event
+sequence number.
+
+Server sends pane reset/create/destroy/clear/update/done messages.
+These have sequence numbers with a history stored and updates are resent
+if a client message has an old seq number.  If the client seq is too
+old, the server can send a reset, then create and fill each pane.
+
+The client acknowleges server messages with a 'size' update, and also
+reports the size every 5 seconds as a ping.  Server replies with any
+un-acked updates, or with a new 'done' message.
+
+Some day I might need "measure" requests fromt the server which the
+client can reply to, so texts can be measured for variable-sized fonts.
+Server would need to cache results for performance, and would need to
+know if a font is constant-width, so a single measurement will suffice.
 
 ### threaded-panes
 
