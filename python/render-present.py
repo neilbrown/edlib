@@ -47,7 +47,6 @@
 #
 # global defaults are NOT (see "defaults =" below):
 
-
 default_attrs = "normal 10 family:sans fg:black bg:white left:5 space-after:1 space-before:1 scale:400x200"
 
 # We keep two sets of marks in document for guiding the presentation view.

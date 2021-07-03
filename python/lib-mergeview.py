@@ -126,7 +126,6 @@ class MergePane(edlib.Pane):
             self.mark(self.marks[0], m)
         return edlib.Efalse
 
-
     def handle_update(self, key, focus, mark, mark2, num, num2, **a):
         "handle:doc:replaced"
         if num2:
@@ -182,7 +181,6 @@ class MergePane(edlib.Pane):
                     comm2("attr:cb", focus, mark, "fg:cyan-60,inverse", len, 103)
 
             return edlib.Efallthrough
-
 
 def merge_view_attach(key, focus, comm2, **a):
     p = MergePane(focus)

@@ -9,7 +9,6 @@
 
 import os.path
 
-
 def djoin(dir, tail):
     # 'tail' might not exist at 'dir', but might exist below some
     # prefix of dir.  We want to find that prefix and add it.
@@ -334,7 +333,6 @@ def add_diff(key, focus, **a):
         p.call("view:changed")
     focus.call("doc:set:view-default", "diff")
     return 1
-
 
 editor.call("global-set-command", "attach-diff", diff_view_attach)
 editor.call("global-set-command", "interactive-cmd-diff-mode", add_diff)

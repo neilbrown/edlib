@@ -692,7 +692,6 @@ class compose_email(edlib.Pane):
             focus.call("doc:EOL", 1, 1, h)
             focus.call("doc:replace", h, h2)
 
-
         h = edlib.Mark(focus)
         whoto = None
         while self.find_any_header(h):

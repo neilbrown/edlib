@@ -231,7 +231,6 @@ class AbbrevPane(edlib.Pane):
             self.call("Message", "")
         return edlib.Efallthrough
 
-
 def abbrev_attach(key, focus, comm2, **a):
     p = AbbrevPane(focus)
     if not p:

@@ -1,4 +1,3 @@
-
 import notmuch
 
 def do(m, indent):

@@ -20,7 +20,6 @@ def config_appeared(key, focus, **a):
             focus.call("doc:set:whitespace-width", "60")
     return edlib.Efallthrough
 
-
 editor.call("global-set-command", "doc:appeared-config", config_appeared)
 
 # Some modules I want auto-loaded.

@@ -37,7 +37,6 @@ class EdDisplay(edlib.Pane):
         self.last_event = 0
         self.win.show()
 
-
     def handle_notify_displays(self, key, comm2, **a):
         "handle:all-displays"
         comm2("callback:display", self, self.last_event)
@@ -304,7 +303,6 @@ class EdDisplay(edlib.Pane):
             del self.panes[focus]
             self.damaged(edlib.DAMAGED_POSTORDER)
         return True
-
 
     styles=["oblique","italic","bold","small-caps"]
 

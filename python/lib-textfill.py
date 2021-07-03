@@ -23,7 +23,6 @@
 # is then chosen as the maximal set of non-alphanumerics non-quote
 # characters.
 
-
 import re
 
 def span(line, chars):
@@ -42,7 +41,6 @@ def textwidth(line):
             w = w | 7
         w += 1
     return w
-
 
 def do_replace(focus, start, end, new, strip):
     # text between 'start' and 'end' matches 'new' except for

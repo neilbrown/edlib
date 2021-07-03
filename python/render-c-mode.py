@@ -262,7 +262,6 @@ class parse_state:
                 # otherwise increase depth one tabstop
                 self.d += self.tab
 
-
     def end_statement(self, p, m):
         see_else = p.call("text-match", m.dup(), " else\\b", 1) > 0
         self.else_indent = -1
@@ -669,7 +668,6 @@ class CModePane(edlib.Pane):
         focus.call("doc:EOL", m, -1)
         self.handle_tab(key, focus, m, 1)
         return 1
-
 
     def handle_enter(self, key, focus, mark, num2, **a):
         "handle:K:Enter"
