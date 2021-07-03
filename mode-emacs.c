@@ -146,9 +146,9 @@ static struct move_command {
 	 "K:A->", "K:S:End", NULL},
 	{CMD(emacs_move), "doc:file", -1, 0,
 	 "K:A-<", "K:S:Home", NULL},
-	{CMD(emacs_move), "Move-View-Large", 1, 0,
+	{CMD(emacs_move), "Move-View", 900, 0,
 	 "K:Next", "K:C-V", "emacs-move-large-other"},
-	{CMD(emacs_move), "Move-View-Large", -1, 0,
+	{CMD(emacs_move), "Move-View", -900, 0,
 	 "K:Prior", "K:A-v", NULL},
 
 	{CMD(emacs_move), "doc:paragraph", -1, 0,
@@ -213,7 +213,7 @@ REDEF_CMD(emacs_move)
 	if (ret <= 0)
 		return ret;
 
-	if (strcmp(mv->type, "Move-View-Large") == 0)
+	if (strcmp(mv->type, "Move-View") == 0)
 		attr_set_int(&cursor_pane->attrs, "emacs-repoint",
 			     mv->direction*2);
 

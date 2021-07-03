@@ -1183,7 +1183,7 @@ DEF_CMD(render_lines_abort)
 	return Efallthrough;
 }
 
-DEF_CMD(render_lines_move)
+DEF_CMD(render_lines_move_view)
 {
 	/*
 	 * Find a new 'top' for the displayed region so that render()
@@ -1200,16 +1200,14 @@ DEF_CMD(render_lines_move)
 	int rpt = RPT_NUM(ci);
 	struct rl_data *rl = p->data;
 	struct mark *top, *old_top;
-	int pagesize = p->h / 10;
 
 	top = vmark_first(focus, rl->typenum, p);
 	if (!top)
 		return Efallthrough;
 
 	old_top = mark_dup(top);
-	if (strcmp(ci->key, "Move-View-Large") == 0)
-		pagesize = p->h * 9 / 10;
-	rpt *= pagesize ?: 1;
+	rpt *= p->h ?: 1;
+	rpt /= 1000;
 
 	rl->ignore_point = 1;
 
@@ -1239,7 +1237,7 @@ DEF_CMD(render_lines_move)
 			top = call_render_line_prev(focus, m,
 						    1, &rl->top_sol);
 			if (!top && doc_prior(focus, prevtop) != WEOF) {
-				/* Double check - maybe a soft top-of-file */
+				/* Double check - maybe a soft top-of-file - Ctrl-L*/
 				m = mark_dup(prevtop);
 				doc_prev(focus, m);
 				top = call_render_line_prev(focus, m,
@@ -1690,8 +1688,7 @@ static void render_lines_register_map(void)
 {
 	rl_map = key_alloc();
 
-	key_add(rl_map, "Move-View-Small", &render_lines_move);
-	key_add(rl_map, "Move-View-Large", &render_lines_move);
+	key_add(rl_map, "Move-View", &render_lines_move_view);
 	key_add(rl_map, "Move-View-Pos", &render_lines_move_pos);
 	key_add(rl_map, "Move-View-Line", &render_lines_view_line);
 	key_add(rl_map, "Move-CursorXY", &render_lines_set_cursor);

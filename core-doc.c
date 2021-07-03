@@ -455,6 +455,8 @@ DEF_CMD(doc_page)
 	old = mark_dup(m);
 
 	rpt *= p->h-2;
+	/* repeat count is in 1000th of the pane */
+	rpt /= 1000;
 	while (rpt > 0 && ch != WEOF) {
 		while ((ch = doc_next(p, m)) != WEOF &&
 		       !is_eol(ch))
@@ -1218,7 +1220,7 @@ static void init_doc_cmds(void)
 
 	key_add(doc_handle_cmd, "Move-Char", &doc_char);
 	key_add(doc_handle_cmd, "Move-Line", &doc_line);
-	key_add(doc_handle_cmd, "Move-View-Large", &doc_page);
+	key_add(doc_handle_cmd, "Move-View", &doc_page);
 	key_add(doc_handle_cmd, "doc:point", &doc_get_point);
 
 	key_add(doc_handle_cmd, "doc:notify-viewers", &doc_notify_viewers);

@@ -438,8 +438,8 @@ DEF_CMD(view_click)
 	struct view_data *vd = p->data;
 	int mid = vd->scroll_bar_y;
 	int lh = vd->line_height;
-	char *key;
 	int num;
+	int scale;
 	struct xy cih;
 
 	cih = pane_mapxy(ci->focus, ci->home, ci->x, ci->y, False);
@@ -449,13 +449,13 @@ DEF_CMD(view_click)
 	if (p->h <= 4)
 		return Efallthrough;
 
-	key = "Move-View-Small";
+	scale = 100; /* 10% for small movements */
 	num = RPT_NUM(ci);
 
 	if (cih.y < mid - lh) {
 		/* big scroll up */
 		num = -num;
-		key = "Move-View-Large";
+		scale = 900;
 	} else if (cih.y <= mid) {
 		/* scroll up */
 		num = -num;
@@ -463,18 +463,18 @@ DEF_CMD(view_click)
 		/* scroll down */
 	} else {
 		/* big scroll down */
-		key = "Move-View-Large";
+		scale = 900;
 	}
-	call(key, pane_leaf(ci->focus), num);
+	call("Move-View", pane_leaf(ci->focus), num * scale);
 	return 1;
 }
 
 DEF_CMD(view_scroll)
 {
 	if (strcmp(ci->key, "M:Press-4") == 0)
-		call("Move-View-Small", pane_leaf(ci->focus), -2);
+		call("Move-View", pane_leaf(ci->focus), -200);
 	else
-		call("Move-View-Small", pane_leaf(ci->focus), 2);
+		call("Move-View", pane_leaf(ci->focus), 200);
 	return 1;
 }
 

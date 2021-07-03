@@ -286,7 +286,7 @@ Module features
 - [ ] the background "call:" option should report if background was changed.
       An attribute could store chosen information for comparison.
       Would need a 'force' flag.
-- [1] revise render_lines_move
+- [X] revise render_lines_move (Cannot find anything to revise now)
 - [1] revise render_lines_move_line
 - [1] revise render_lines_view_line
 - [ ] Replace <attr> text </> in markup with SOH attr STX text ETX

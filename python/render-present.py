@@ -678,10 +678,10 @@ class PresenterPane(edlib.Pane):
         return 1
 
     def handle_mvl(self, key, focus, mark, num, **a):
-        "handle:Move-View-Large"
+        "handle:Move-View"
         # If mark isn't set, the movement might come
         # from scroll-bar or similar, ignore that.
-        if mark:
+        if mark and (num < 500 or num > -500):
             page = self.find_pages(mark)
             if num < 0:
                 page = page.prev()
@@ -711,13 +711,13 @@ class MarkdownPane(edlib.Pane):
         return edlib.Efallthrough
 
     def handle_mvl(self, key, focus, mark, num, **a):
-        "handle:Move-View-Large"
-        if num >= 0 and mark:
+        "handle:Move-View"
+        if num >= 500 and mark:
             m2 = mark.dup()
             if focus.call("doc:notify:doc:Recentre", m2, 2,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
                 return 1
-        if num < 0 and mark:
+        if num < 500 and mark:
             m2 = mark.dup()
             if focus.call("doc:notify:doc:Recentre", m2, 3,
                           lambda key, **a: mark.to_mark(a['mark'])) > 0:
