@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright Neil Brown (c)2018-2020 <neil@brown.name>
+# Copyright Neil Brown (c)2018-2021 <neil@brown.name>
 # May be distributed under terms of GPLv2 - see file:COPYING
 
 def textwidth(line, w=0):
