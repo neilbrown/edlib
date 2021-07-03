@@ -287,8 +287,8 @@ Module features
       An attribute could store chosen information for comparison.
       Would need a 'force' flag.
 - [X] revise render_lines_move (Cannot find anything to revise now)
-- [1] revise render_lines_move_line
-- [1] revise render_lines_view_line
+- [X] revise render_lines_move_line
+- [X] revise render_lines_view_line
 - [ ] Replace <attr> text </> in markup with SOH attr STX text ETX
       This also affects lib-markup and others.
 - [ ] I regularly hit problems because ->mdata is not up to date and we render

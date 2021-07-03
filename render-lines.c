@@ -1421,16 +1421,12 @@ DEF_CMD(render_lines_view_line)
 	struct pane *focus = ci->focus;
 	struct rl_data *rl = p->data;
 	struct mark *pm = ci->mark;
-	struct mark *top;
 	int line = ci->num;
 
 	if (!pm)
 		return Enoarg;
 	if (line == NO_NUMERIC)
 		return Einval;
-
-	while ((top = vmark_first(focus, rl->typenum, p)) != NULL)
-		vmark_free(top);
 
 	rl->ignore_point = 1;
 	find_lines(pm, p, focus, line);
