@@ -28,6 +28,8 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] Num-C-l doesn't work if it would require part of a wrapped line
+      off top of screen
 - [ ] initial draw of a pane sometime stops halfway down the pane - particularly email.
 - [ ] x11selection doesn't work properly on second ncurses display
       except when it does...
@@ -272,7 +274,7 @@ Module features
 ### render-lines
 
 - [X] improve 'margin' to permit cursor in margin at start of file
-- [1] improve 'margin' to honour previous view of doc
+- [X] improve 'margin' to honour previous view of doc
 - [ ] update_line_height should handle TAB (and any control) - cannot expect
       Draw:text-size to handle it.
 - [X] Give lib-renderline a Refresh:view which calls something in the render-line
@@ -404,6 +406,8 @@ Module features
 
 ### Notmuch - overview
 
+- [ ] "date:-months" doesn't do what I thought.  It start from beginning
+      of this month, not one month ago.  So use a number of days.
 - [ ] all shares-ref docs must be careful about comparing marks ... or else
       we need to compare ignoring offset?  Best to compare <, not <=??
 - [ ] If I open a search but there are no messages (yet) I get a python

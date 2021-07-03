@@ -581,16 +581,13 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 	 * vertical space.
 	 */
 
-	top = bot = NULL;
-	if (orig_bot && mark_ordered_or_same(orig_bot, start))
-		/* could cross bot, so don't ignore it */
-		bot = orig_bot;
-	if (orig_top && end && mark_ordered_or_same(end, orig_top))
-		top = orig_top;
 	if (vline != NO_NUMERIC) {
 		/* ignore current position - top/bot irrelevant */
 		top = NULL;
 		bot = NULL;
+	} else {
+		top = orig_top;
+		bot = orig_bot;
 	}
 
 	while ((!found_start || !found_end) && y < p->h) {
@@ -614,7 +611,9 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 			 */
 			y_post = 0;
 
-		if (!found_end && bot && lines_below >= rl->margin)
+		if (!found_end && bot &&
+		    (!end || mark_ordered_or_same(bot, end)) &&
+		    lines_below >= rl->margin)
 			if (mark_ordered_not_same(start, bot) ||
 			    /* Overlap original from below, so prefer to
 			     * maximize that overlap.
@@ -632,6 +631,7 @@ static void find_lines(struct mark *pm safe, struct pane *p safe,
 					      &y_post, &line_height_post);
 
 		if (!found_start && top && end &&
+		    mark_ordered_or_same(start, top) &&
 		    lines_above >= rl->margin)
 			if (mark_ordered_not_same(top, end) ||
 			    (mark_same(top, end) &&
