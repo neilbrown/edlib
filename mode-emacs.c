@@ -1732,20 +1732,10 @@ DEF_CMD(emacs_shell)
 	doc = call_ret(pane, "doc:from-text", ci->focus, 0, NULL, name, 0, NULL, "");
 	if (!doc)
 		return Efail;
-	/* Close old shell docs, but if one is visible in current frame, replace
-	 * it with doc
-	 */
-	cb.c = choose_pane;
-	cb.doc = doc;
-	cb.p = NULL;
-	call_comm("editor:notify:shell-reuse", ci->focus, &cb.c);
+
 	path = pane_attr_get(ci->focus, "dirname");
 	attr_set_str(&doc->attrs, "dirname", path);
-	par = cb.p;
-	if (!par)
-		par = call_ret(pane, "OtherPane", ci->focus);
-	if (!par)
-		return Efail;
+
 	/* shellcmd is attached directly to the document, not in the view
 	 * stack.  It is go-between for document and external command.
 	 * We don't need a doc attachment as no point is needed - we
@@ -1754,15 +1744,24 @@ DEF_CMD(emacs_shell)
 	if (call("attach-shellcmd", doc, 4, NULL, ci->str, 0, NULL, path) < 0)
 		call("doc:replace", doc, 0, NULL,
 		     "Failed to run command - sorry\n");
-
 	if (call("text-search", doc, 0, NULL, "diff|(stg|git).*show",
 		 0, NULL, ci->str) > 0)
 		attr_set_str(&doc->attrs, "view-default", "diff");
 
-	if (!cb.p)
+	/* Close old shell docs, but if one is visible in current frame, replace
+	 * it with doc
+	 */
+	cb.c = choose_pane;
+	cb.doc = doc;
+	cb.p = NULL;
+	call_comm("editor:notify:shell-reuse", ci->focus, &cb.c);
+	if (!cb.p) {
 		/* choose_pane didn't attach, so we do it here */
+		par = call_ret(pane, "OtherPane", ci->focus);
+		if (!par)
+			return Efail;
 		home_call(doc, "doc:attach-view", par, 1);
-
+	}
 	return 1;
 }
 
