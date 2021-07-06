@@ -661,7 +661,10 @@ DEF_CMD(format_content2)
 		return Einval;
 	set_format(focus, rd);
 
+	pane_set_time(home);
 	do {
+		if (pane_too_long(home))
+			break;
 		if (m->ref.p == NULL)
 			break;
 		index = normalize(home, focus, m, 0);
