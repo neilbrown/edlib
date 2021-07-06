@@ -8,6 +8,7 @@ Current priorities
 - [ ] fix bugs
 - [ ] core features
 - [ ] markdown viewer and editor
+- [ ] display-xcb ??
 - [ ] git log view with rebase and reword options
 - [ ] git-commit command which presents the patch and allows it to be
       editted (with consistency checks and number updates). On :Commit
@@ -85,6 +86,8 @@ Core features
 -------------
 
 - [ ] design a way for a keystroke to interrupt a long-running function.
+- [ ] extend Draw:measure protocol to allow constant-width-fonts to
+      cannot-scale displays can be detected and measurement optimised for.
 - [X] centralize handling of the creation of a pane stack for a new display.
 - [X] have standard way for slow testing of order of marks
 - [X] have a debug mode where mark consistency is checked v.often
@@ -703,6 +706,23 @@ Possibly some of these will end up being features in other modules.
 New Modules - more complex
 -------------------------
 
+### display-xcb
+
+My py-gtk display doesn't really make much use of gtk.  No widgets...
+Maybe I should use xcb.  Cairo can draw pango fonts onto xcb pixmaps, which is
+what I want.  xcb can use any event loop, and multiple connections.
+
+Compose characters might be interesting.  libxkbcommon apparently
+handles this.  I would need it for input handling anyway I think.
+
+I use "Gtk-xft-dpi" ... Maybe get that directly from X
+
+GdkPixbuf.Pixbuf.new_from_file() - That is a separate library.. maybe I can use it.
+Or use Image Macgick
+
+Managing the clipboard/selection also needs to be re-done.  xsel uses
+Xlib.  It has a useful README.  xclip might also be useful.
+
 ### remote editing ideas
 A good model for remote editing is to have a proxy at some point in the stack,
 so that edlib runs on both ends, but at some point a pane is a proxy for a remote
@@ -755,10 +775,14 @@ The client acknowleges server messages with a 'size' update, and also
 reports the size every 5 seconds as a ping.  Server replies with any
 un-acked updates, or with a new 'done' message.
 
-Some day I might need "measure" requests fromt the server which the
+Some day I might need "measure" requests from the server which the
 client can reply to, so texts can be measured for variable-sized fonts.
 Server would need to cache results for performance, and would need to
 know if a font is constant-width, so a single measurement will suffice.
+
+I also need basic file transfer - particularly from server to client
+so that an external viewer can be run.  May as well make it bi-di so
+that an external editor can be requested.
 
 ### threaded-panes
 
