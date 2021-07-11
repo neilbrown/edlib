@@ -158,9 +158,9 @@ struct xcbc_info {
 	// targets??
 };
 
-static void collect_sel(struct xcbc_info *xci, enum my_atoms sel);
-static void claim_sel(struct xcbc_info *xci, enum my_atoms sel);
-static struct command *xcb_register(struct pane *p, char *display);
+static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel);
+static void claim_sel(struct xcbc_info *xci safe, enum my_atoms sel);
+static struct command *xcb_register(struct pane *p safe, char *display safe);
 
 struct xcbd_info {
 	struct command		*c safe;
@@ -234,7 +234,7 @@ DEF_CMD(xcbc_close)
 	call_comm("global-set-command", ci->home, &edlib_noop,
 		  0, NULL, cn);
 	xcb_disconnect(xci->conn);
-	unalloc(xci->display, pane);
+	free(xci->display);
 	free(xci->saved);
 	free(xci->pending_content);
 	while (xci->head) {
@@ -337,7 +337,7 @@ static void xcbc_free_cmd(struct command *c safe)
 	pane_close(xci->p);
 }
 
-static void primary_lost(struct xcbc_info *xci)
+static void primary_lost(struct xcbc_info *xci safe)
 {
 	// FIXME if ->saved came from primary, maybe should free it.
 	//free(xci->saved);
@@ -346,19 +346,19 @@ static void primary_lost(struct xcbc_info *xci)
 	pane_notify("Notify:xcb-claim", xci->p);
 }
 
-static void clipboard_lost(struct xcbc_info *xci)
+static void clipboard_lost(struct xcbc_info *xci safe)
 {
 	free(xci->saved);
 	xci->saved = NULL;
 	xci->have_clipboard = False;
 }
 
-static char *clipboard_fetch(struct xcbc_info *xci)
+static char *clipboard_fetch(struct xcbc_info *xci safe)
 {
 	return call_ret(str, "copy:get", xci->p);
 }
 
-static char *primary_fetch(struct xcbc_info *xci)
+static char *primary_fetch(struct xcbc_info *xci safe)
 {
 	pane_notify("Notify:xcb-commit", xci->p);
 	return call_ret(str, "copy:get", xci->p);
@@ -408,8 +408,8 @@ static void handle_property_notify(struct xcbc_info *xci,
 	return;
 }
 
-static void handle_selection_clear(struct xcbc_info *xci,
-				   xcb_selection_clear_event_t *sce)
+static void handle_selection_clear(struct xcbc_info *xci safe,
+				   xcb_selection_clear_event_t *sce safe)
 {
 	if (sce->selection == xci->atoms[a_PRIMARY])
 		primary_lost(xci);
@@ -418,8 +418,8 @@ static void handle_selection_clear(struct xcbc_info *xci,
 	return;
 }
 
-static void handle_selection_request(struct xcbc_info *xci,
-				     xcb_selection_request_event_t *sre)
+static void handle_selection_request(struct xcbc_info *xci safe,
+				     xcb_selection_request_event_t *sre safe)
 {
 	int a;
 	xcb_selection_notify_event_t sne = {};
@@ -446,6 +446,7 @@ static void handle_selection_request(struct xcbc_info *xci,
 	} else if (a >= a_TEXT) {
 		LOG("Request for text");
 		free(xci->pending_content);
+		xci->pending_content = NULL;
 		if (sre->selection == xci->atoms[a_PRIMARY])
 			xci->pending_content = primary_fetch(xci);
 		if (sre->selection == xci->atoms[a_CLIPBOARD])
@@ -489,13 +490,15 @@ static void handle_selection_request(struct xcbc_info *xci,
 #define Msec (1000 * 1000)
 
 static xcb_generic_event_t *__xcb_wait_for_event_timeo(
-	xcb_connection_t *conn safe, unsigned int request,
+	xcb_connection_t *conn, unsigned int request,
 	xcb_generic_error_t **e, int msecs)
 {
 	struct timespec now, delay, deadline;
 	struct pollfd pfd;
 	xcb_generic_event_t *ev;
 
+	if (!conn)
+		return NULL;
 	clock_gettime(CLOCK_MONOTONIC_COARSE, &deadline);
 	deadline.tv_nsec += msecs * Msec;
 	if (deadline.tv_nsec >= Sec) {
@@ -559,7 +562,7 @@ DECL_REPLY_TIMEO(get_property)
 DECL_REPLY_TIMEO(get_selection_owner)
 DECL_REPLY_TIMEO(intern_atom)
 
-static xcb_generic_event_t *wait_for(struct xcbc_info *xci,
+static xcb_generic_event_t *wait_for(struct xcbc_info *xci safe,
 				     uint8_t type)
 {
 	struct evlist *evl;
@@ -582,7 +585,7 @@ static xcb_generic_event_t *wait_for(struct xcbc_info *xci,
 	return NULL;
 }
 
-static xcb_generic_event_t *next_event(struct xcbc_info *xci)
+static xcb_generic_event_t *next_event(struct xcbc_info *xci safe)
 {
 	if (xci->head) {
 		struct evlist *evl = xci->head;
@@ -631,7 +634,7 @@ DEF_CMD(xcbc_input)
 	return 1;
 }
 
-static void get_timestamp(struct xcbc_info *xci)
+static void get_timestamp(struct xcbc_info *xci safe)
 {
 	/* We need a timestamp - use property change which appends
 	 * nothing to WM_NAME to get it.  This will cause a
@@ -651,7 +654,7 @@ static void get_timestamp(struct xcbc_info *xci)
 	free(ev);
 }
 
-static void claim_sel(struct xcbc_info *xci, enum my_atoms sel)
+static void claim_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 {
 	/* Always get primary, maybe get clipboard */
 	xcb_get_selection_owner_cookie_t pck, cck;
@@ -678,7 +681,7 @@ static void claim_sel(struct xcbc_info *xci, enum my_atoms sel)
 	}
 }
 
-static char *collect_incr(struct xcbc_info *xci,
+static char *collect_incr(struct xcbc_info *xci safe,
 			  xcb_atom_t self, int size_est)
 {
 	// FIXME;
@@ -686,7 +689,8 @@ static char *collect_incr(struct xcbc_info *xci,
 	return NULL;
 }
 
-static xcb_timestamp_t collect_sel_stamp(struct xcbc_info *xci, xcb_atom_t sel)
+static xcb_timestamp_t collect_sel_stamp(struct xcbc_info *xci safe,
+					 xcb_atom_t sel)
 {
 	xcb_generic_event_t *ev;
 	xcb_selection_notify_event_t *nev;
@@ -725,7 +729,7 @@ static xcb_timestamp_t collect_sel_stamp(struct xcbc_info *xci, xcb_atom_t sel)
 	return ret;
 }
 
-static char *collect_sel_type(struct xcbc_info *xci,
+static char *collect_sel_type(struct xcbc_info *xci safe,
 			      xcb_atom_t sel, xcb_atom_t target)
 {
 	xcb_generic_event_t *ev;
@@ -759,7 +763,7 @@ static char *collect_sel_type(struct xcbc_info *xci,
 	}
 	val = xcb_get_property_value(gpr);
 	len = xcb_get_property_value_length(gpr);
-	if (gpr->type == xci->atoms[a_INCR] && len >= sizeof(uint32_t)) {
+	if (gpr->type == xci->atoms[a_INCR] && len >= sizeof(uint32_t) && val) {
 		ret = collect_incr(xci, sel, *(uint32_t*)val);
 		free(gpr);
 		free(ev);
@@ -768,14 +772,15 @@ static char *collect_sel_type(struct xcbc_info *xci,
 	if (gpr->type == xci->atoms[a_STRING] ||
 	    gpr->type == xci->atoms[a_UTF8_STRING] ||
 	    gpr->type == xci->atoms[a_COMPOUND_TEXT])
-		ret = strndup(val, len);
+		if (val)
+			ret = strndup(val, len);
 	xcb_delete_property(xci->conn, xci->win, xci->atoms[a_XSEL_DATA]);
 	free(gpr);
 	free(ev);
 	return ret;
 }
 
-static void collect_sel(struct xcbc_info *xci, enum my_atoms sel)
+static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 {
 	/* If selection exists and is new than ->saved, save it. */
 	char *ret;
@@ -803,7 +808,7 @@ static void collect_sel(struct xcbc_info *xci, enum my_atoms sel)
 	}
 }
 
-static struct command *xcb_register(struct pane *p, char *display)
+static struct command *xcb_register(struct pane *p safe, char *display safe)
 {
 	struct xcbc_info *xci;
 	struct pane *p2;
@@ -822,16 +827,19 @@ static struct command *xcb_register(struct pane *p, char *display)
 
 	xci->conn = conn;
 	xci->display = strdup(display);
-	xci->setup = xcb_get_setup(conn);
+	xci->setup = safe_cast xcb_get_setup(conn);
 	xci->maxlen = xci->setup->maximum_request_length;
 	iter = xcb_setup_roots_iterator(xci->setup);
 	for (i = 0; i < screen; i++)
 		xcb_screen_next(&iter);
-	xci->screen = iter.data;
+	xci->screen = safe_cast iter.data;
 
-	for (i = 0; i < NR_ATOMS; i++)
-		cookies[i] = xcb_intern_atom(conn, 0, strlen(atom_names[i]),
-					     atom_names[i]);
+	for (i = 0; i < NR_ATOMS; i++) {
+		char *n = atom_names[i];
+		if (!n)
+			continue;
+		cookies[i] = xcb_intern_atom(conn, 0, strlen(n), n);
+	}
 	/* Need a dedicate (invisible) window to getting events */
 	xci->win = xcb_generate_id(conn);
 	valwin[0] = XCB_EVENT_MASK_PROPERTY_CHANGE;
