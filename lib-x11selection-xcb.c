@@ -152,8 +152,8 @@ struct xcbc_info {
 	xcb_window_t		win;
 	char			*saved;
 	xcb_timestamp_t		saved_time;
-	xcb_timestamp_t		timestamp; // FIXME one each?
-	bool			have_primary, have_clipboard;
+	xcb_timestamp_t		timestamp; // "now"
+	xcb_timestamp_t		have_primary, have_clipboard;
 	char			*pending_content;
 	// targets??
 };
@@ -342,7 +342,7 @@ static void primary_lost(struct xcbc_info *xci safe)
 	// FIXME if ->saved came from primary, maybe should free it.
 	//free(xci->saved);
 	//xci->saved = NULL;
-	xci->have_primary = False;
+	xci->have_primary = XCB_CURRENT_TIME;
 	pane_notify("Notify:xcb-claim", xci->p);
 }
 
@@ -350,7 +350,7 @@ static void clipboard_lost(struct xcbc_info *xci safe)
 {
 	free(xci->saved);
 	xci->saved = NULL;
-	xci->have_clipboard = False;
+	xci->have_clipboard = XCB_CURRENT_TIME;
 }
 
 static char *clipboard_fetch(struct xcbc_info *xci safe)
@@ -423,9 +423,8 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 {
 	int a;
 	xcb_selection_notify_event_t sne = {};
+	xcb_timestamp_t when = XCB_CURRENT_TIME;
 	// FIXME
-	// check timestamp is valid
-	// respond depending on target
 	// convert to iso-8859-15 for COMPOUND_TEXT and may for
 	// TEXT
 	LOG("sel request %d", sre->target);
@@ -440,7 +439,19 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 	for (a = 0; a < NR_TARGETS; a++)
 		if (xci->atoms[a] == sre->target)
 			break;
-	if (a >= NR_TARGETS) {
+
+	if (sre->selection == xci->atoms[a_PRIMARY])
+		when = xci->have_primary;
+	if (sre->selection == xci->atoms[a_CLIPBOARD])
+		when = xci->have_clipboard;
+
+	if (when == XCB_CURRENT_TIME ||
+	    (sre->time != XCB_CURRENT_TIME &&
+	     sre->time < when)) {
+		LOG("request for selection not held %d %d %d",
+		    sre->selection, when, sre->time);
+		sne.property = XCB_ATOM_NONE;
+	} else if (a >= NR_TARGETS) {
 		LOG("unknown target %d", sre->target);
 		sne.property = XCB_ATOM_NONE;
 	} else if (a >= a_TEXT) {
@@ -465,7 +476,7 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 		xcb_change_property(xci->conn,
 				    XCB_PROP_MODE_REPLACE, sre->requestor,
 				    sre->property, XCB_ATOM_INTEGER, 32,
-				    1, &xci->timestamp);
+				    1, &when);
 	} else if (a == a_TARGETS) {
 		LOG("Sending targets to %d", sre->requestor);
 		xcb_change_property(xci->conn,
@@ -671,12 +682,18 @@ static void claim_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 		cck = xcb_get_selection_owner(xci->conn,
 					      xci->atoms[sel]);
 	rep = xcb_get_selection_owner_reply_timeo(xci->conn, pck, NULL);
-	xci->have_primary = (rep && rep->owner == xci->win);
+	if (rep && rep->owner == xci->win)
+		xci->have_primary = xci->timestamp;
+	else
+		xci->have_primary = XCB_CURRENT_TIME;
 	free(rep);
 	if (sel != a_PRIMARY) {
 		rep = xcb_get_selection_owner_reply_timeo(xci->conn, cck,
 							  NULL);
-		xci->have_clipboard = (rep && rep->owner == xci->win);
+		if (rep && rep->owner == xci->win)
+			xci->have_clipboard = xci->timestamp;
+		else
+			xci->have_clipboard = XCB_CURRENT_TIME;
 		free(rep);
 	}
 }

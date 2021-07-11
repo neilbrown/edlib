@@ -161,8 +161,15 @@ Module features
       to reconnect occasionally.
 - [ ] use iso-8859-15 for some of the text formats.
 - [ ] test very large copy/paste
-- [ ] resolve timestamps.  I think we are supposed to store a timestamp
+- [X] resolve timestamps.  I think we are supposed to store a timestamp
       when the content that we provide was created.
+	- Need something to return for TIMESTAMP conversion
+	- Need event time to declare when setting ownership
+	- Need something to compare timestamp in selection_request_event
+        - Possible record when we lost it via selection_clear
+        - need to know current time to request a selection conversion
+      So: yes.  Whenever I own a selection, I need a timestamp for it.
+- [ ] need a queue of pending selection requests
 
 ### lib-textfill
 - [ ] when indenting a new line, copy indent from previous line, not from
