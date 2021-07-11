@@ -151,6 +151,19 @@ Core features
 Module features
 ---------------
 
+### lib-x11selection-xcb
+- [ ] will need to listen for property-change-event on requestor to know
+      when result has been deleted
+- [ ] Need to append large selection a bit at a time(?)
+- [ ] if too big, or alloc error, switch to INCR more for sending
+- [ ] support INCR mode for receiving
+- [ ] detect error state and avoid doing anything silly.  Maybe try
+      to reconnect occasionally.
+- [ ] use iso-8859-15 for some of the text formats.
+- [ ] test very large copy/paste
+- [ ] resolve timestamps.  I think we are supposed to store a timestamp
+      when the content that we provide was created.
+
 ### lib-textfill
 - [ ] when indenting a new line, copy indent from previous line, not from
       first.

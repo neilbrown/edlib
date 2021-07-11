@@ -96,6 +96,7 @@
 #include <poll.h>
 #include <string.h>
 #include <xcb/xcb.h>
+#include <xcb/xcbext.h>
 
 #include "core.h"
 
@@ -486,8 +487,10 @@ static void handle_selection_request(struct xcbc_info *xci,
 
 #define Sec (1000 * 1000 * 1000)
 #define Msec (1000 * 1000)
-static xcb_generic_event_t *xcb_wait_for_event_timeo(xcb_connection_t *conn safe,
-						     int msecs)
+
+static xcb_generic_event_t *__xcb_wait_for_event_timeo(
+	xcb_connection_t *conn safe, unsigned int request,
+	xcb_generic_error_t **e, int msecs)
 {
 	struct timespec now, delay, deadline;
 	struct pollfd pfd;
@@ -499,10 +502,17 @@ static xcb_generic_event_t *xcb_wait_for_event_timeo(xcb_connection_t *conn safe
 		deadline.tv_sec += 1;
 		deadline.tv_nsec -= Sec;
 	}
+	if (request)
+		xcb_flush(conn);
 	while (1) {
-		ev = xcb_poll_for_event(conn);
-		if (ev)
-			return ev;
+		if (request) {
+			if (xcb_poll_for_reply(conn, request, (void**)&ev, e))
+				return ev;
+		} else {
+			ev = xcb_poll_for_event(conn);
+			if (ev)
+				return ev;
+		}
 		pfd.fd = xcb_get_file_descriptor(conn);
 		pfd.events = POLLIN;
 		pfd.revents = 0;
@@ -519,10 +529,35 @@ static xcb_generic_event_t *xcb_wait_for_event_timeo(xcb_connection_t *conn safe
 			delay.tv_sec -= 1;
 			delay.tv_nsec = Sec + deadline.tv_nsec - now.tv_nsec;
 		}
+		if (delay.tv_sec == 0 && delay.tv_nsec < Msec)
+			/* Assume coarse granularity is at least 1ms */
+			return NULL;
 		if (ppoll(&pfd, 1, &delay, NULL) < 0)
 			return NULL;
 	}
 }
+
+#define xcb_wait_for_event_timeo(c, ms)		\
+	__xcb_wait_for_event_timeo(c, 0, NULL, ms)
+#define xcb_wait_for_reply_timeo(c, rq, e, ms)		\
+	__xcb_wait_for_event_timeo(c, rq, e, ms)
+
+#define REPLY_TIMEO 50
+
+#define DECL_REPLY_TIMEO(req)						\
+	static inline xcb_##req##_reply_t *				\
+	xcb_##req##_reply_timeo(xcb_connection_t *c,			\
+				xcb_##req##_cookie_t cookie,		\
+				xcb_generic_error_t **e)		\
+	{								\
+		return (xcb_##req##_reply_t *)				\
+			xcb_wait_for_reply_timeo(c, cookie.sequence,	\
+						 e, REPLY_TIMEO);	\
+	}
+
+DECL_REPLY_TIMEO(get_property)
+DECL_REPLY_TIMEO(get_selection_owner)
+DECL_REPLY_TIMEO(intern_atom)
 
 static xcb_generic_event_t *wait_for(struct xcbc_info *xci,
 				     uint8_t type)
@@ -616,12 +651,6 @@ static void get_timestamp(struct xcbc_info *xci)
 	free(ev);
 }
 
-/* FIXME
- * Rather than xcb_get_selection_owner_reply (And similar),
- * write a function that polls for a timeout using
- * poll_for_reply to see if the reply is available in time.
- * If not, abort.
- */
 static void claim_sel(struct xcbc_info *xci, enum my_atoms sel)
 {
 	/* Always get primary, maybe get clipboard */
@@ -638,11 +667,12 @@ static void claim_sel(struct xcbc_info *xci, enum my_atoms sel)
 	if (sel != a_PRIMARY)
 		cck = xcb_get_selection_owner(xci->conn,
 					      xci->atoms[sel]);
-	rep = xcb_get_selection_owner_reply(xci->conn, pck, NULL);
+	rep = xcb_get_selection_owner_reply_timeo(xci->conn, pck, NULL);
 	xci->have_primary = (rep && rep->owner == xci->win);
 	free(rep);
 	if (sel != a_PRIMARY) {
-		rep = xcb_get_selection_owner_reply(xci->conn, cck, NULL);
+		rep = xcb_get_selection_owner_reply_timeo(xci->conn, cck,
+							  NULL);
 		xci->have_clipboard = (rep && rep->owner == xci->win);
 		free(rep);
 	}
@@ -680,8 +710,7 @@ static xcb_timestamp_t collect_sel_stamp(struct xcbc_info *xci, xcb_atom_t sel)
 	}
 	gpc = xcb_get_property(xci->conn, 0, xci->win, nev->property,
 			       XCB_ATOM_ANY, 0, 4);
-	/*FIXME timeout*/
-	gpr = xcb_get_property_reply(xci->conn, gpc, NULL);
+	gpr = xcb_get_property_reply_timeo(xci->conn, gpc, NULL);
 	if (!gpr) {
 		free(ev);
 		return ret;
@@ -722,8 +751,7 @@ static char *collect_sel_type(struct xcbc_info *xci,
 	}
 	gpc = xcb_get_property(xci->conn, 0, xci->win, nev->property,
 			       XCB_ATOM_ANY, 0, xci->maxlen);
-	/*FIXME timeout*/
-	gpr = xcb_get_property_reply(xci->conn, gpc, NULL);
+	gpr = xcb_get_property_reply_timeo(xci->conn, gpc, NULL);
 	if (!gpr) {
 		LOG("get property reply failed");
 		free(ev);
@@ -817,7 +845,7 @@ static struct command *xcb_register(struct pane *p, char *display)
 	/* Now resolve all those cookies */
 	for (i = 0; i < NR_ATOMS; i++) {
 		xcb_intern_atom_reply_t *r;
-		r = xcb_intern_atom_reply(conn, cookies[i], NULL);
+		r = xcb_intern_atom_reply_timeo(conn, cookies[i], NULL);
 		if (!r)
 			goto abort;
 		xci->atoms[i] = r->atom;
