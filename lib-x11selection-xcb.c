@@ -90,8 +90,10 @@
  * Thanks Conrad Parker <conrad@vergenet.net> !!
  *
  */
+#define _GNU_SOURCE for ppoll
 #include <unistd.h>
 #include <stdlib.h>
+#include <poll.h>
 #include <string.h>
 #include <xcb/xcb.h>
 
@@ -482,6 +484,46 @@ static void handle_selection_request(struct xcbc_info *xci,
 	return;
 }
 
+#define Sec (1000 * 1000 * 1000)
+#define Msec (1000 * 1000)
+static xcb_generic_event_t *xcb_wait_for_event_timeo(xcb_connection_t *conn safe,
+						     int msecs)
+{
+	struct timespec now, delay, deadline;
+	struct pollfd pfd;
+	xcb_generic_event_t *ev;
+
+	clock_gettime(CLOCK_MONOTONIC_COARSE, &deadline);
+	deadline.tv_nsec += msecs * Msec;
+	if (deadline.tv_nsec >= Sec) {
+		deadline.tv_sec += 1;
+		deadline.tv_nsec -= Sec;
+	}
+	while (1) {
+		ev = xcb_poll_for_event(conn);
+		if (ev)
+			return ev;
+		pfd.fd = xcb_get_file_descriptor(conn);
+		pfd.events = POLLIN;
+		pfd.revents = 0;
+		clock_gettime(CLOCK_MONOTONIC_COARSE, &now);
+		if (now.tv_sec > deadline.tv_sec)
+			return NULL;
+		if (now.tv_sec == deadline.tv_sec &&
+		    now.tv_nsec >= deadline.tv_nsec)
+			return NULL;
+		delay.tv_sec = deadline.tv_sec - now.tv_sec;
+		if (deadline.tv_nsec >= now.tv_nsec)
+			delay.tv_nsec = deadline.tv_nsec - now.tv_nsec;
+		else {
+			delay.tv_sec -= 1;
+			delay.tv_nsec = Sec + deadline.tv_nsec - now.tv_nsec;
+		}
+		if (ppoll(&pfd, 1, &delay, NULL) < 0)
+			return NULL;
+	}
+}
+
 static xcb_generic_event_t *wait_for(struct xcbc_info *xci,
 				     uint8_t type)
 {
@@ -489,9 +531,7 @@ static xcb_generic_event_t *wait_for(struct xcbc_info *xci,
 	xcb_generic_event_t *ev;
 
 	xcb_flush(xci->conn);
-	// FIXME timeout
-	usleep(20*1000);
-	while ((ev = xcb_poll_for_event(xci->conn)) != NULL) {
+	while ((ev = xcb_wait_for_event_timeo(xci->conn, 500)) != NULL) {
 		if ((ev->response_type & 0x7f) == type)
 			return ev;
 		LOG("Got %x wanted %x", ev->response_type & 0x7f, type);
