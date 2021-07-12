@@ -467,7 +467,7 @@ DEF_CMD(selection_claim)
 {
 	struct input_mode *im = ci->home->data;
 
-	if (im->sel_owner) {
+	if (im->sel_owner && im->sel_owner != ci->focus) {
 		call("Notify:selection:claimed", im->sel_owner);
 		//pane_drop_notifiers(ci->home, "Notify:Close", im->sel_owner);
 	}
