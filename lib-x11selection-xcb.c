@@ -397,7 +397,7 @@ DEF_CMD(xcbd_attach)
 		return Efail;
 	}
 	comm_call(c, "register", p);
-	call("selection:claim", p);
+	call("selection:claim", p, 1);
 	comm_call(ci->comm2, "cb", p);
 	return 1;
 }

@@ -153,7 +153,7 @@ Module features
 
 ### lib-x11selection-xcb
 
-- [ ] need to be fall-back selection owner so if some pane calls selection:discard,
+- [X] need to be fall-back selection owner so if some pane calls selection:discard,
       we get it.
 - [ ] need to control whether selection:commit sets sel_committed, as Xserver's
       selection might refresh without us being explicitly told.

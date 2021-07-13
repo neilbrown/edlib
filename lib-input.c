@@ -63,6 +63,7 @@ struct input_mode {
 
 	struct pane	*sel_owner;
 	int		sel_committed;
+	struct pane	*sel_owner_fallback;
 };
 
 /* 'head' is 1 more than the last key added. */
@@ -455,8 +456,11 @@ DEF_CMD(close_focus)
 		im->source = NULL;
 	}
 
+	if (im->sel_owner_fallback == ci->focus)
+		im->sel_owner_fallback = NULL;
+
 	if (im->sel_owner == ci->focus)
-		im->sel_owner = NULL;
+		im->sel_owner = im->sel_owner_fallback;
 
 	if (im->grab == ci->focus)
 		im->grab = NULL;
@@ -472,6 +476,8 @@ DEF_CMD(selection_claim)
 		//pane_drop_notifiers(ci->home, "Notify:Close", im->sel_owner);
 	}
 	im->sel_owner = ci->focus;
+	if (ci->num == 1)
+		im->sel_owner_fallback = ci->focus;
 	im->sel_committed = 0;
 	pane_add_notify(ci->home, ci->focus, "Notify:Close");
 	return 1;
@@ -495,16 +501,17 @@ DEF_CMD(selection_discard)
 
 	if (!im->sel_owner)
 		return Efalse;
-	/* Don't require exactly same pane, but ensure they
-	 * have the same focus
+	if (im->sel_owner_fallback == ci->focus)
+		im->sel_owner_fallback = NULL;
+	/* Don't require exactly same pane for sel_owner,
+	 * but ensure they have the same focus.
 	 */
 	op = pane_leaf(im->sel_owner);
 	fp = pane_leaf(ci->focus);
 	if (fp != op)
 		return Efalse;
 
-	//pane_drop_notifiers(cyi->pane, "Notify:Close", im->sel_owner);
-	im->sel_owner = NULL;
+	im->sel_owner = im->sel_owner_fallback;
 	im->sel_committed = 0;
 	return 1;
 }
