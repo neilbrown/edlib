@@ -209,8 +209,10 @@ DEF_CMD(xcbc_get)
 {
 	struct xcbc_info *xci = ci->home->data;
 
-	if (xci->saved)
+	if (xci->saved) {
 		comm_call(ci->comm2, "cb", ci->focus, 0, NULL, xci->saved);
+		return 1;
+	}
 	if (xci->have_clipboard)
 		return 2;
 	collect_sel(xci, a_CLIPBOARD);

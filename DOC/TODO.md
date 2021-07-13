@@ -152,6 +152,11 @@ Module features
 ---------------
 
 ### lib-x11selection-xcb
+
+- [ ] need to be fall-back selection owner so if some pane calls selection:discard,
+      we get it.
+- [ ] need to control whether selection:commit sets sel_committed, as Xserver's
+      selection might refresh without us being explicitly told.
 - [ ] will need to listen for property-change-event on requestor to know
       when result has been deleted
 - [ ] Need to append large selection a bit at a time(?)
