@@ -155,7 +155,7 @@ Module features
 
 - [X] need to be fall-back selection owner so if some pane calls selection:discard,
       we get it.
-- [ ] need to control whether selection:commit sets sel_committed, as Xserver's
+- [X] need to control whether selection:commit sets sel_committed, as Xserver's
       selection might refresh without us being explicitly told.
 - [ ] will need to listen for property-change-event on requestor to know
       when result has been deleted

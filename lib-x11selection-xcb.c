@@ -48,7 +48,7 @@
  * - copy:get  - check if xcb-common can get clipboard content
  * - Notify:selection:claimed  - tell xcb-common that this display has
  *				 claimed selection
- * - Notify:selection:commit   - check is xcb-common can get selection
+ * - Notify:selection:commit   - check if xcb-common can get selection
  *				 content
  *
  * When a mouse selection happens, the UI pane calls "selection:claim"
@@ -293,9 +293,18 @@ DEF_CMD(xcbd_sel_commit)
 {
 	struct xcbd_info *xdi = ci->home->data;
 
+	if (ci->focus != ci->home)
+		/* Wasn't explicitly addressed to me, some must be for
+		 * some other pane (probably mode-emacs will handle it)
+		 * so just fall through
+		 */
+		return Efallthrough;
 	if (!xdi->committing)
 		comm_call(xdi->c, "selection-commit", ci->home);
-	return Efallthrough;
+	/* '2' means 'call me again if someone else commits, I won't refresh
+	 * my ownership.
+	 */
+	return 2;
 }
 
 DEF_CMD(xcbd_do_claim)

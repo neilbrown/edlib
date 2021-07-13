@@ -488,8 +488,8 @@ DEF_CMD(selection_commit)
 	struct input_mode *im = ci->home->data;
 
 	if (im->sel_owner && !im->sel_committed) {
-		call("Notify:selection:commit", im->sel_owner);
-		im->sel_committed = 1;
+		if (call("Notify:selection:commit", im->sel_owner) != 2)
+			im->sel_committed = 1;
 	}
 	return 1;
 }
