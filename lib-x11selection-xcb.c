@@ -9,40 +9,43 @@
  * content to other applications, and to use what is provided by those
  * applications to satisfy internal requests.
  *
- * We overload copy:save to claim both PRIMARY and CLIPBOARD so other apps will
- * ask us for content.  When asked we call copy:get to get the content, but see
- * selections below.
- * We overload copy:get to interpolate PRIMARY or CLIPBOARD into the list
- * of copies, if they are exist, and are not owned by us.  PRIMARY is used
- * if we received a selection-commit since last losing ownership of PRIMARY.
+ * "PRIMARY" represents a selection which only gets copied when a paste
+ * request is made in another window.  "CLIPBOARD" represents content
+ * that has already been copied.
+ *
+ * - If we don't own either PRIMARY or CLIPBOARD (as is initially the case),
+ *   copy:get checks the timestamp on both (or whichever aren't owned) and
+ *   compares with anything we previously collected.  If one is newer than
+ *   newest, we collect it and copy:save it before falling through to let
+ *   it be returned.
+ * - If a local pane claims the selection, we claim PRIMARY.
+ * - If a local pane creates a copy with copy:save, we claim PRIMARY and
+ *   CLIPBOARD.
+ * - If CLIPBOARD is requested while we own it, the result of "copy:get"
+ *   is provided.
+ * - If PRIMARY or CLIPBOARD is requested while we own it, we ask for the
+ *   selection to be committed, then return the result of "copy:get".
+ *   The commit happens for TIMESTAMP or content, but not for TARGETS.
+ * - If copy:save is called locally (on this $DISPLAY) we claim both
+ *   PRIMARY and CLIPBOARD.
+ *
  *
  * We also claim the edlib selection at startup on behalf of whichever X11
- * application owns it.  If it is claimed from us, we claim ownership of PRIMARY.
- * If instead it is committed, we ask for text from the owner of PRIMARY and
- * save that. If we lose ownership of the PRIMARY, we reclaim the selection.
+ * application owns it.
  *
  * As multiple display panes could use the same X11 display, and it only
  * really makes sense to have a single selection manager per display,
  * the code that talks to X11 does not live in the pane stack.  We
- * create a global command "xcb-selection-$DISPLAY" (the "DISPLAY
- * command" below) which handles the display, and any display-stack on
- * that DISPLAY gets an xcb_display pane (the "per-display pane") which
- * communicates with it.  The per-display selection becomes shared among
- * all displays with the same DISPLAY.  The xcb-common command (which
- * has a private pane for sending notifications) sits between all the
- * different displays and the X11 display and when any claims the
- * selection, it will claim from all the others.  When any requests the
- * selection be committed, it will notify the current owner which will
- * copy:save it.
+ * create a global command "xcb-selection-$DISPLAY" which handles the
+ * display, and any display-stack on that DISPLAY gets an xcb_display
+ * pane which communicates with it.  The per-display selection becomes
+ * shared among all displays with the same DISPLAY.  The xcb-common
+ * command (which has a private pane for sending notifications) sits
+ * between all the different displays and the X11 display and when any
+ * claims the selection, it will claim from all the others.  When any
+ * requests the selection be committed, it will notify the current owner
+ * which will copy:save it.
  *
- * xcb-common may hold a single copied datum if it has requested either
- * PRIMARY or CLIPBOARD content.  If asked to commit-selection, we
- * collect the content of PRIMARY.  If asked to clip-get and we don't
- * own CLIPBOARD, we check if the content we have is newer than the
- * current CLIPBOARD content, and then report the newest.
- *
- * If any display sees copy:save, the CLIPBOARD is claimed, and the top (global)
- * copy is use to fill requests.
  * per-display pane handles:
  * - copy:save - ask xcb-common to claim both
  * - copy:get  - check if xcb-common can get clipboard content
@@ -161,8 +164,7 @@ struct xcbc_info {
 	int			maxlen;
 	xcb_atom_t		atoms[NR_ATOMS];
 	xcb_window_t		win;
-	char			*saved;
-	xcb_timestamp_t		saved_time;
+	xcb_timestamp_t		last_save;
 	xcb_timestamp_t		timestamp; // "now"
 	xcb_timestamp_t		have_primary, have_clipboard;
 	char			*pending_content;
@@ -170,13 +172,14 @@ struct xcbc_info {
 };
 
 static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel);
+static xcb_timestamp_t collect_sel_stamp(struct xcbc_info *xci safe,
+					 xcb_atom_t sel);
 static void claim_sel(struct xcbc_info *xci safe, enum my_atoms sel);
 static struct command *xcb_register(struct pane *p safe, char *display safe);
 
 struct xcbd_info {
 	struct command		*c safe;
 	bool			committing;
-	bool			remote_exists;
 };
 
 DEF_CMD(xcbc_commit)
@@ -184,11 +187,7 @@ DEF_CMD(xcbc_commit)
 	/* Commit the selection - make it available for copy:get */
 	struct xcbc_info *xci = ci->home->data;
 
-	if (xci->have_primary)
-		return 2;
-	free(xci->saved);
-	xci->saved = NULL;
-	collect_sel(xci, a_PRIMARY);
+	pane_notify("Notify:xcb-commit", xci->p);
 	return 1;
 }
 
@@ -209,26 +208,35 @@ DEF_CMD(xcbc_set)
 	/* Claim the clipboard, because we just copied something to it */
 	struct xcbc_info *xci = ci->home->data;
 
-	free(xci->saved);
-	xci->saved = NULL;
-
 	claim_sel(xci, a_CLIPBOARD); // and primary
 	return 1;
 }
 
 DEF_CMD(xcbc_get)
 {
+	/* If either PRIMARY or CLIPBOARD is newer than 'last_save',
+	 * save it with "copy:save"
+	 */
 	struct xcbc_info *xci = ci->home->data;
+	enum my_atoms best = a_NULL;
+	xcb_timestamp_t ts;
 
-	if (xci->saved) {
-		comm_call(ci->comm2, "cb", ci->focus, 0, NULL, xci->saved);
-		return 1;
+	if (!xci->have_primary) {
+		ts = collect_sel_stamp(xci, xci->atoms[a_PRIMARY]);
+		if (ts > xci->last_save) {
+			xci->last_save = ts;
+			best = a_PRIMARY;
+		}
 	}
-	if (xci->have_clipboard)
-		return 2;
-	collect_sel(xci, a_CLIPBOARD);
-	if (xci->saved)
-		comm_call(ci->comm2, "cb", ci->focus, 0, NULL, xci->saved);
+	if (!xci->have_clipboard) {
+		ts = collect_sel_stamp(xci, xci->atoms[a_CLIPBOARD]);
+		if (ts > xci->last_save) {
+			xci->last_save = ts;
+			best = a_CLIPBOARD;
+		}
+	}
+	if (best != a_NULL)
+		collect_sel(xci, best);
 	return 1;
 }
 
@@ -248,7 +256,6 @@ DEF_CMD(xcbc_close)
 		  0, NULL, cn);
 	xcb_disconnect(xci->conn);
 	free(xci->display);
-	free(xci->saved);
 	free(xci->pending_content);
 	while (xci->head) {
 		struct evlist *evl = xci->head;
@@ -271,21 +278,10 @@ DEF_CMD(xcbd_copy_save)
 DEF_CMD(xcbd_copy_get)
 {
 	struct xcbd_info *xdi = ci->home->data;
-	char *s;
 
-	if (ci->num > 0) {
-		if (!xdi->remote_exists)
-			return Efallthrough;
-		/* Need to pass num-1 to parent */
-		return call_comm(ci->key, ci->home->parent, ci->comm2,
-				 ci->num - 1);
-	}
-	s = comm_call_ret(strsave, xdi->c, "clip-get", ci->home);
-	xdi->remote_exists = !!s;
-	if (!xdi->remote_exists)
-		return Efallthrough;
-	comm_call(ci->comm2, "cb", ci->focus, 0, NULL, s);
-	return 1;
+	if (ci->num == 0)
+		comm_call_ret(strsave, xdi->c, "clip-get", ci->home);
+	return Efallthrough;
 }
 
 DEF_CMD(xcbd_sel_claimed)
@@ -359,33 +355,6 @@ static void xcbc_free_cmd(struct command *c safe)
 	pane_close(xci->p);
 }
 
-static void primary_lost(struct xcbc_info *xci safe)
-{
-	// FIXME if ->saved came from primary, maybe should free it.
-	//free(xci->saved);
-	//xci->saved = NULL;
-	xci->have_primary = XCB_CURRENT_TIME;
-	pane_notify("Notify:xcb-claim", xci->p);
-}
-
-static void clipboard_lost(struct xcbc_info *xci safe)
-{
-	free(xci->saved);
-	xci->saved = NULL;
-	xci->have_clipboard = XCB_CURRENT_TIME;
-}
-
-static char *clipboard_fetch(struct xcbc_info *xci safe)
-{
-	return call_ret(str, "copy:get", xci->p);
-}
-
-static char *primary_fetch(struct xcbc_info *xci safe)
-{
-	pane_notify("Notify:xcb-commit", xci->p);
-	return call_ret(str, "copy:get", xci->p);
-}
-
 DEF_CMD(xcbd_attach)
 {
 	struct xcbd_info *xdi;
@@ -433,10 +402,12 @@ static void handle_property_notify(struct xcbc_info *xci,
 static void handle_selection_clear(struct xcbc_info *xci safe,
 				   xcb_selection_clear_event_t *sce safe)
 {
-	if (sce->selection == xci->atoms[a_PRIMARY])
-		primary_lost(xci);
+	if (sce->selection == xci->atoms[a_PRIMARY]) {
+		xci->have_primary = XCB_CURRENT_TIME;
+		pane_notify("Notify:xcb-claim", xci->p);
+	}
 	if (sce->selection == xci->atoms[a_CLIPBOARD])
-		clipboard_lost(xci);
+		xci->have_clipboard = XCB_CURRENT_TIME;
 	return;
 }
 
@@ -480,10 +451,14 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 		LOG("Request for text");
 		free(xci->pending_content);
 		xci->pending_content = NULL;
-		if (sre->selection == xci->atoms[a_PRIMARY])
-			xci->pending_content = primary_fetch(xci);
-		if (sre->selection == xci->atoms[a_CLIPBOARD])
-			xci->pending_content = clipboard_fetch(xci);
+		if ((sre->selection == xci->atoms[a_PRIMARY] &&
+		     xci->have_primary) ||
+		    (sre->selection == xci->atoms[a_CLIPBOARD] &&
+		     xci->have_clipboard)) {
+			pane_notify("Notify:xcb-commit", xci->p);
+			xci->pending_content =
+				call_ret(str, "copy:get", xci->p);
+		}
 		LOG("...pending content now %s", xci->pending_content);
 		if (xci->pending_content)
 			xcb_change_property(xci->conn,
@@ -495,6 +470,10 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 			sne.property = XCB_ATOM_NONE;
 	} else if (a == a_TIMESTAMP) {
 		LOG("Sending timestamp");
+		/* If there is a new selection, this will reclaim and update
+		 * timestamp.
+		 */
+		pane_notify("Notify:xcb-commit", xci->p);
 		xcb_change_property(xci->conn,
 				    XCB_PROP_MODE_REPLACE, sre->requestor,
 				    sre->property, XCB_ATOM_INTEGER, 32,
@@ -821,30 +800,17 @@ static char *collect_sel_type(struct xcbc_info *xci safe,
 
 static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 {
-	/* If selection exists and is new than ->saved, save it. */
+	/* If 'sel' can be fetched, copy:save it. */
 	char *ret = NULL;
-	xcb_timestamp_t t;
 	enum my_atoms a;
 
 	get_timestamp(xci);
-	t = collect_sel_stamp(xci, xci->atoms[sel]);
-	if (t != XCB_CURRENT_TIME && xci->saved &&
-	    xci->saved_time != XCB_CURRENT_TIME &&
-	    t <= xci->saved_time) {
-		/* Already have best result */
-		LOG("Already have latest content");
-		return;
-	}
-
 	/* FIXME get TARGETS and filter against that */
 	for (a = NR_TARGETS - 1; !ret && a >= a_TEXT; a -= 1)
 		ret = collect_sel_type(xci, xci->atoms[sel], xci->atoms[a]);
 	if (ret) {
-		free(xci->saved);
-		xci->saved = ret;
-		if (t == XCB_CURRENT_TIME)
-			t = xci->timestamp;
-		xci->saved_time = t;
+		call("copy:save", xci->p, 0, NULL, ret);
+		free(ret);
 	}
 }
 

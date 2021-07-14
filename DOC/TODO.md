@@ -291,7 +291,7 @@ Module features
 - [ ] can we capture the substates of character composition, and give feed-back?
 - [1] make sure pixmap handling in optimal - I want the per-pane images to be server-side
       See cairo_xcb_surface_create.
-- [ ] If a net connection to a display goes away, we can block on IO to that display.
+- [X] If a net connection to a display goes away, we can block on IO to that display.
       Particularly an ssh connection to an ncurses display.
       The problem is the x11selection X connection. When it is closed, the
       whole app dies!
@@ -746,8 +746,8 @@ I use "Gtk-xft-dpi" ... Maybe get that directly from X
 GdkPixbuf.Pixbuf.new_from_file() - That is a separate library.. maybe I can use it.
 Or use Image Macgick
 
-Managing the clipboard/selection also needs to be re-done.  xsel uses
-Xlib.  It has a useful README.  xclip might also be useful.
+- [X] Managing the clipboard/selection also needs to be re-done.  xsel uses
+      Xlib.  It has a useful README.  xclip might also be useful.
 
 ### remote editing ideas
 A good model for remote editing is to have a proxy at some point in the stack,
