@@ -2148,7 +2148,7 @@ class notmuch_master_view(edlib.Pane):
         return 1
 
     def handle_xq(self, key, **a):
-        "handle-list/doc:char-x/doc:char-q"
+        "handle-list/doc:char-x/doc:char-q/doc:char-Q"
         if self.message_pane:
             if key != "doc:char-x":
                 self.mark_read()
@@ -2156,13 +2156,16 @@ class notmuch_master_view(edlib.Pane):
             self("notmuch-close-message", 1)
             p.call("Window:close", "notmuch")
         elif self.query_pane:
-            if self.query_pane.call("notmuch:close-whole-thread") == 1:
+            if (self.query_pane.call("notmuch:close-whole-thread") == 1 and
+                key != "doc:char-Q"):
                 return 1
-            if self.query_pane.call("notmuch:close-thread") == 1:
+            if (self.query_pane.call("notmuch:close-thread") == 1 and
+                key != "doc:char-Q"):
                 return 1
             if self.query_pane['filter']:
                 self.query_pane.call("doc:notmuch:set-filter")
-                return 1
+                if key != "doc:char-Q":
+                    return 1
             if key != "doc:char-x":
                 self.query_pane.call("doc:notmuch:mark-seen")
             p = self.query_pane
@@ -2175,7 +2178,7 @@ class notmuch_master_view(edlib.Pane):
                 p.call("doc:notmuch:update-one", s)
 
             p.call("Window:close", "notmuch")
-        else:
+        elif key == "doc:char-Q":
             p = self.call("ThisPane", ret='pane')
             if p and p.focus:
                 p.focus.close()
