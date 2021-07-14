@@ -29,6 +29,7 @@ Current priorities
 Bugs to be fixed
 ----------------
 
+- [ ] don't allow starting macro inside a macro
 - [ ] Num-C-l doesn't work if it would require part of a wrapped line
       off top of screen
 - [ ] initial draw of a pane sometime stops halfway down the pane - particularly email.

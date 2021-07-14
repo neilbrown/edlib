@@ -102,8 +102,11 @@
 
 enum my_atoms {
 	a_TIMESTAMP, a_TARGETS, a_MULTIPLE, a_INCR,
-	a_TEXT, a_STRING, a_UTF8_STRING,
-	a_COMPOUND_TEXT, a_text, a_textplain, a_utf8, a_UTF8,
+	a_TEXT, a_STRING,
+	a_text, a_textplain,
+	a_COMPOUND_TEXT,
+	a_UTF8_STRING,
+	a_utf8, a_UTF8,
 	a_NULL,
 	a_CLIPBOARD, a_PRIMARY,
 	a_XSEL_DATA,
@@ -111,14 +114,22 @@ enum my_atoms {
 	NR_TARGETS = a_NULL,
 };
 static char *atom_names[NR_ATOMS] = {
-	"TIMESTAMP", "TARGETS", "MULTIPLE", "INCR",
-	"TEXT", "STRING", "UTF8_STRING",
-	"COMPOUND_TEXT", "text", "text/plain",
-	"text/plain;charset=utf-8",
-	"text/plain;charset=UTF-8",
-	"NULL",
-	"CLIPBOARD", "PRIMARY",
-	"XSEL_DATA",
+	[a_TIMESTAMP]		= "TIMESTAMP",
+	[a_TARGETS]		= "TARGETS",
+	[a_MULTIPLE]		= "MULTIPLE",
+	[a_INCR]		= "INCR",
+	[a_TEXT]		= "TEXT",
+	[a_STRING]		= "STRING",
+	[a_UTF8_STRING]		= "UTF8_STRING",
+	[a_COMPOUND_TEXT]	= "COMPOUND_TEXT",
+	[a_text]		= "text",
+	[a_textplain]		= "text/plain",
+	[a_utf8]		= "text/plain;charset=utf-8",
+	[a_UTF8]		= "text/plain;charset=UTF-8",
+	[a_NULL]		= "NULL",
+	[a_CLIPBOARD]		= "CLIPBOARD",
+	[a_PRIMARY]		= "PRIMARY",
+	[a_XSEL_DATA]		= "XSEL_DATA",
 };
 
 /* There are two different command maps.
@@ -811,8 +822,9 @@ static char *collect_sel_type(struct xcbc_info *xci safe,
 static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 {
 	/* If selection exists and is new than ->saved, save it. */
-	char *ret;
+	char *ret = NULL;
 	xcb_timestamp_t t;
+	enum my_atoms a;
 
 	get_timestamp(xci);
 	t = collect_sel_stamp(xci, xci->atoms[sel]);
@@ -824,9 +836,9 @@ static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 		return;
 	}
 
-	ret = collect_sel_type(xci, xci->atoms[sel], xci->atoms[a_UTF8_STRING]);
-	if (!ret)
-		ret = collect_sel_type(xci, xci->atoms[sel], xci->atoms[a_STRING]);
+	/* FIXME get TARGETS and filter against that */
+	for (a = NR_TARGETS - 1; !ret && a >= a_TEXT; a -= 1)
+		ret = collect_sel_type(xci, xci->atoms[sel], xci->atoms[a]);
 	if (ret) {
 		free(xci->saved);
 		xci->saved = ret;
