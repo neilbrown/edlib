@@ -411,6 +411,56 @@ static void handle_selection_clear(struct xcbc_info *xci safe,
 	return;
 }
 
+static void store_content(struct xcbc_info *xci safe, xcb_window_t requestor,
+			  xcb_atom_t prop, xcb_atom_t target,
+			  char *content safe)
+{
+	int len = strlen(content);
+	int pos = 0;
+	int send;
+	int max = (xci->maxlen+1)/2;
+	xcb_void_cookie_t c;
+	xcb_generic_error_t *ret = NULL;
+
+	send = len;
+	if (send > max)
+		send = max;
+
+	c = xcb_change_property_checked(xci->conn,
+					XCB_PROP_MODE_REPLACE, requestor,
+					prop, target,
+					8, send,
+					content + pos);
+	ret = xcb_request_check(xci->conn, c);
+	while ((!ret || ret->error_code == 0) && pos+send < len) {
+		/* Need to send some more */
+		pos += send;
+		send = len - pos;
+		if (send > max)
+			send = max;
+		c = xcb_change_property_checked(
+			xci->conn,
+			XCB_PROP_MODE_APPEND, requestor,
+			prop, target,
+			8, send,
+			content + pos);
+		free(ret);
+		ret = xcb_request_check(xci->conn, c);
+	}
+	if (!ret || ret->error_code != XCB_ALLOC) {
+		free(ret);
+		free(content);
+		return;
+	}
+	/* Got an ALLOC error, need to do INCR sent */
+	/* Possibly shoul do INCR much earlier.  Don't want too much
+	 * wastage.  But then... I can send 2M without INCR,
+	 * maybe there isn't a limit?
+	 */
+	LOG("Need to do INCR send after %d", pos);
+	free(content);
+}
+
 static void handle_selection_request(struct xcbc_info *xci safe,
 				     xcb_selection_request_event_t *sre safe)
 {
@@ -448,24 +498,19 @@ static void handle_selection_request(struct xcbc_info *xci safe,
 		LOG("unknown target %d", sre->target);
 		sne.property = XCB_ATOM_NONE;
 	} else if (a >= a_TEXT) {
+		char *content = NULL;
 		LOG("Request for text");
-		free(xci->pending_content);
-		xci->pending_content = NULL;
 		if ((sre->selection == xci->atoms[a_PRIMARY] &&
 		     xci->have_primary) ||
 		    (sre->selection == xci->atoms[a_CLIPBOARD] &&
 		     xci->have_clipboard)) {
 			pane_notify("Notify:xcb-commit", xci->p);
-			xci->pending_content =
-				call_ret(str, "copy:get", xci->p);
+			content = call_ret(str, "copy:get", xci->p);
 		}
-		LOG("...pending content now %s", xci->pending_content);
-		if (xci->pending_content)
-			xcb_change_property(xci->conn,
-					    XCB_PROP_MODE_REPLACE, sre->requestor,
-					    sre->property, sre->target,
-					    8, strlen(xci->pending_content),
-					    xci->pending_content);
+		LOG("...returning content: %s", content);
+		if (content)
+			store_content(xci, sre->requestor, sre->property,
+				      sre->target, content);
 		else
 			sne.property = XCB_ATOM_NONE;
 	} else if (a == a_TIMESTAMP) {

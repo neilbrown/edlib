@@ -159,12 +159,15 @@ Module features
 - [X] need to control whether selection:commit sets sel_committed, as Xserver's
       selection might refresh without us being explicitly told.
 - [ ] will need to listen for property-change-event on requestor to know
-      when result has been deleted
-- [ ] Need to append large selection a bit at a time(?)
+      when result has been deleted to handle INCR.
+- [X] Need to append large selection a bit at a time(?)
 - [ ] if too big, or alloc error, switch to INCR more for sending
 - [ ] support INCR mode for receiving
 - [ ] detect error state and avoid doing anything silly.  Maybe try
       to reconnect occasionally.
+      Actually, reconnect is probably pointless.  Instead, delete the
+      command and reject all requests until things get freed.  Most
+      likely situation is that the display is gone.
 - [ ] use iso-8859-15 for some of the text formats.
 - [ ] test very large copy/paste
 - [X] resolve timestamps.  I think we are supposed to store a timestamp
