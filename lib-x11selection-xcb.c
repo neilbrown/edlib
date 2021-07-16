@@ -731,7 +731,7 @@ static xcb_timestamp_t collect_sel_stamp(struct xcbc_info *xci safe,
 		return ret;
 	}
 	gpc = xcb_get_property(xci->conn, 0, xci->win, nev->property,
-			       XCB_ATOM_ANY, 0, 4);
+			       XCB_ATOM_INTEGER, 0, 4);
 	gpr = xcb_get_property_reply_timeo(xci->conn, gpc, NULL);
 	if (!gpr) {
 		free(ev);
@@ -753,10 +753,12 @@ static char *collect_sel_type(struct xcbc_info *xci safe,
 	xcb_generic_event_t *ev;
 	xcb_selection_notify_event_t *nev;
 	xcb_get_property_cookie_t gpc;
-	xcb_get_property_reply_t *gpr;
+	xcb_get_property_reply_t *gpr = NULL;
 	void *val;
 	unsigned int len;
 	char *ret = NULL;
+	int start = 0;
+	unsigned int total;
 
 	xcb_convert_selection(xci->conn, xci->win, sel, target,
 			      xci->atoms[a_XSEL_DATA], xci->timestamp);
@@ -772,12 +774,12 @@ static char *collect_sel_type(struct xcbc_info *xci safe,
 		return NULL;
 	}
 	gpc = xcb_get_property(xci->conn, 0, xci->win, nev->property,
-			       XCB_ATOM_ANY, 0, xci->maxlen);
+			       XCB_GET_PROPERTY_TYPE_ANY, start/4,
+			       xci->maxlen/4/2);
 	gpr = xcb_get_property_reply_timeo(xci->conn, gpc, NULL);
 	if (!gpr) {
 		LOG("get property reply failed");
-		free(ev);
-		return NULL;
+		goto abort;
 	}
 	val = xcb_get_property_value(gpr);
 	len = xcb_get_property_value_length(gpr);
@@ -787,15 +789,41 @@ static char *collect_sel_type(struct xcbc_info *xci safe,
 		free(ev);
 		return ret;
 	}
-	if (gpr->type == xci->atoms[a_STRING] ||
-	    gpr->type == xci->atoms[a_UTF8_STRING] ||
-	    gpr->type == xci->atoms[a_COMPOUND_TEXT])
-		if (val)
-			ret = strndup(val, len);
+	if (gpr->format != 8) {
+		LOG("get_propery_value reported unsupported type: %d",
+		    gpr->format);
+		free(gpr);
+		goto abort;
+	}
+	total = len + gpr->bytes_after + 1;
+	ret = malloc(total);
+	memcpy(ret+start, val, len);
+	while (len && gpr->bytes_after > 0) {
+		start += len;
+		gpc = xcb_get_property(xci->conn, 0, xci->win, nev->property,
+				       gpr->type, start/4, xci->maxlen/4/2);
+		free(gpr);
+		gpr = xcb_get_property_reply_timeo(xci->conn, gpc, NULL);
+		if (!gpr) {
+			LOG("get property reply failed");
+			goto abort;
+		}
+		val = xcb_get_property_value(gpr);
+		len = xcb_get_property_value_length(gpr);
+		if (start + len >= total)
+			len = total - 1 - start;
+		memcpy(ret+start, val, len);
+	}
+	ret[start + len] = '\0';
+
 	xcb_delete_property(xci->conn, xci->win, xci->atoms[a_XSEL_DATA]);
 	free(gpr);
 	free(ev);
 	return ret;
+abort:
+	free(ev);
+	free(ret);
+	return NULL;
 }
 
 static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel)
