@@ -176,6 +176,7 @@ static xcb_timestamp_t collect_sel_stamp(struct xcbc_info *xci safe,
 					 xcb_atom_t sel);
 static void claim_sel(struct xcbc_info *xci safe, enum my_atoms sel);
 static struct command *xcb_register(struct pane *p safe, char *display safe);
+static void get_timestamp(struct xcbc_info *xci safe);
 
 struct xcbd_info {
 	struct command		*c safe;
@@ -221,6 +222,7 @@ DEF_CMD(xcbc_get)
 	enum my_atoms best = a_NULL;
 	xcb_timestamp_t ts;
 
+	get_timestamp(xci);
 	if (!xci->have_primary) {
 		ts = collect_sel_stamp(xci, xci->atoms[a_PRIMARY]);
 		if (ts > xci->last_save) {
@@ -882,7 +884,6 @@ static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 	int ntargets;
 	int i;
 
-	get_timestamp(xci);
 	xcb_convert_selection(xci->conn, xci->win, xci->atoms[sel],
 			      xci->atoms[a_TARGETS],
 			      xci->atoms[a_XSEL_DATA], xci->timestamp);
