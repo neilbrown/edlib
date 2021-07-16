@@ -831,15 +831,50 @@ static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 	/* If 'sel' can be fetched, copy:save it. */
 	char *ret = NULL;
 	enum my_atoms a;
+	xcb_selection_notify_event_t *nev;
+	xcb_get_property_reply_t *gpr = NULL;
+	xcb_atom_t *targets, dflt[] = {XCB_ATOM_STRING, xci->atoms[a_TEXT]};
+	int ntargets;
+	int i;
 
 	get_timestamp(xci);
-	/* FIXME get TARGETS and filter against that */
-	for (a = NR_TARGETS - 1; !ret && a >= a_TEXT; a -= 1)
-		ret = collect_sel_type(xci, xci->atoms[sel], xci->atoms[a]);
+	xcb_convert_selection(xci->conn, xci->win, xci->atoms[sel],
+			      xci->atoms[a_TARGETS],
+			      xci->atoms[a_XSEL_DATA], xci->timestamp);
+	nev = (void*)wait_for(xci, XCB_SELECTION_NOTIFY);
+	if (nev && nev->requestor == xci->win &&
+	    nev->selection == xci->atoms[sel] &&
+	    nev->property != XCB_ATOM_NONE) {
+		xcb_get_property_cookie_t gpc;
+		gpc = xcb_get_property(xci->conn, 0, xci->win, nev->property,
+				       XCB_ATOM_ATOM, 0,
+				       xci->maxlen/4/2);
+		gpr = xcb_get_property_reply_timeo(xci->conn, gpc, NULL);
+		if (gpr && gpr->type == XCB_ATOM_ATOM && gpr->format == 32) {
+			targets = (void*) xcb_get_property_value(gpr);
+			ntargets = gpr->value_len;
+		}
+	}
+	if (!targets) {
+		targets = dflt;
+		ntargets = ARRAY_SIZE(dflt);
+	}
+
+	for (a = NR_TARGETS - 1; !ret && a >= a_TEXT; a -= 1) {
+		for (i = 0; i < ntargets; i++)
+			if (targets[i] == xci->atoms[a])
+				/* This one please */
+				break;
+		if (i < ntargets)
+			ret = collect_sel_type(xci, xci->atoms[sel],
+					       targets[i]);
+	}
 	if (ret) {
 		call("copy:save", xci->p, 0, NULL, ret);
 		free(ret);
 	}
+	free(gpr);
+	free(nev);
 }
 
 static struct command *xcb_register(struct pane *p safe, char *display safe)
