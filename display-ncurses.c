@@ -1063,7 +1063,7 @@ static struct pane *ncurses_init(struct pane *ed,
 	call("editor:request:all-displays", p);
 	if (!prepare_recrep(p)) {
 		call_comm("event:read", p, &input_handle, fileno(f));
-		if (!tty)
+		if (!tty || strcmp(tty, "-") == 0)
 			call_comm("event:signal", p, &handle_winch, SIGWINCH);
 	}
 	return p;
