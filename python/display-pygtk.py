@@ -695,5 +695,5 @@ def new_display2(key, focus, **a):
         focus.call("doc:attach-view", p, 1);
     return 1
 
-editor.call("global-set-command", "attach-display-pygtk", new_display)
-editor.call("global-set-command", "interactive-cmd-x11window", new_display2)
+editor.call("global-set-command", "attach-display-gtk", new_display)
+editor.call("global-set-command", "interactive-cmd-gtkwindow", new_display2)

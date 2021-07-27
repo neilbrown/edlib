@@ -955,7 +955,7 @@ static struct command *xcb_register(struct pane *p safe, char *display safe)
 			continue;
 		cookies[i] = xcb_intern_atom(conn, 0, strlen(n), n);
 	}
-	/* Need a dedicate (invisible) window to getting events */
+	/* Need a dedicated (invisible) window to getting events */
 	xci->win = xcb_generate_id(conn);
 	valwin[0] = XCB_EVENT_MASK_PROPERTY_CHANGE;
 	xcb_create_window(conn, XCB_COPY_FROM_PARENT, xci->win,

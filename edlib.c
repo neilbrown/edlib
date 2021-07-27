@@ -45,14 +45,14 @@ static char WelcomeText[] =
 	"Mouse clicks move the cursor, and clicking on the scroll bar scrolls\n"
 	;
 
-static char shortopt[] = "gt";
+static char shortopt[] = "gtx";
 
 int main(int argc, char *argv[])
 {
 	struct pane *ed = editor_new();
 	struct pane *first_window = NULL;
 	struct pane *p, *doc = NULL;
-	bool gtk = False, term = False;
+	bool gtk = False, term = False, x11 = False;
 	int opt;
 
 	if (!ed)
@@ -64,12 +64,14 @@ int main(int argc, char *argv[])
 			break;
 		case 't': term = True;
 			break;
+		case 'x': x11 = True;
+			break;
 		default:
 			fprintf(stderr, "Usage: edlib [-g] [-t] [file ...]\n");
 			exit(2);
 		}
 	}
-	if (!gtk && !term)
+	if (!gtk && !term && !x11)
 		term = 1;
 
 	setlocale(LC_ALL, "");
@@ -148,7 +150,19 @@ int main(int argc, char *argv[])
 	}
 
 	if (gtk) {
-		p = call_ret(pane, "attach-display-pygtk",
+		p = call_ret(pane, "attach-display-gtk",
+			     ed, 0, NULL, getenv("DISPLAY"));
+		if (p)
+			p = call_ret(pane, "editor:activate-display", p);
+		if (p)
+			p = home_call_ret(pane, doc, "doc:attach-view",
+					  p, 1);
+		if (!first_window)
+			first_window = p;
+	}
+
+	if (x11) {
+		p = call_ret(pane, "attach-display-x11",
 			     ed, 0, NULL, getenv("DISPLAY"));
 		if (p)
 			p = call_ret(pane, "editor:activate-display", p);

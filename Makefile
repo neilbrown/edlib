@@ -84,7 +84,7 @@ SHOBJ = O/doc-text.o O/doc-dir.o O/doc-docs.o \
 	O/lib-charset.o \
 	O/lib-copybuf.o O/lib-whitespace.o O/lib-colourmap.o \
 	O/lib-renderline.o O/lib-x11selection-gtk.o O/lib-autosave.o \
-	O/lib-x11selection-xcb.o \
+	O/lib-x11selection-xcb.o O/display-x11-xcb.o \
 	O/lib-linefilter.o O/lib-wiggle.o O/lib-aspell.o O/lib-calc.o \
 	O/lang-python.o \
 	O/mode-emacs.o O/emacs-search.o \
@@ -109,6 +109,9 @@ LIBS-lib-x11selection-gtk = $(shell pkg-config --libs gtk+-3.0)
 INC-lib-x11selection-gtk = $(shell pkg-config --cflags gtk+-3.0)
 
 LIBS-lib-x11selection-xcb = $(shell pkg-config --libs xcb)
+
+LIBS-display-x11-xcb = $(shell pkg-config --libs xcb pango cairo pangocairo)
+INC-display-x11-xcb = $(shell pkg-config --cflags xcb pango cairo pangocairo)
 
 LIBS-lib-calc = -licuuc -lgmp
 O/libcalc.a : calc-dir
