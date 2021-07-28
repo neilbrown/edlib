@@ -54,11 +54,12 @@ int pango_font_metrics_get_descent(PangoFontMetrics *);
 void pango_font_metrics_unref(PangoFontMetrics *);
 PangoContext* pango_layout_get_context(PangoLayout *);
 int pango_layout_get_baseline(PangoLayout *);
+void pango_layout_get_extents(PangoLayout *, PangoRectangle *, PangoRectangle *);
 void pango_layout_get_pixel_extents(PangoLayout *, PangoRectangle *, PangoRectangle *);
 void pango_layout_set_font_description(PangoLayout *, PangoFontDescription *);
 void pango_layout_set_text(PangoLayout*, const char *, int);
 void pango_layout_xy_to_index(PangoLayout*, int, int, int*, int*);
-
+void pango_layout_index_to_pos(PangoLayout*, int, PangoRectangle*);
 #endif
 
 //#include <xkbcommon/xkbcommon.h>
@@ -517,6 +518,52 @@ DEF_CMD(xcb_draw_text)
 		/* draw a cursor - outline box if not in-focus,
 		 * inverse-video if it is.
 		 */
+		PangoRectangle curs;
+		bool in_focus = xd->in_focus;
+		struct pane *f = ci->focus;
+
+		pango_layout_index_to_pos(layout, ci->num, &curs);
+		if (curs.width <= 0) {
+			/* EOL?*/
+			pango_layout_set_text(layout, "M", 1);
+			pango_layout_get_extents(layout, NULL, &log);
+			curs.width = log.width;
+		}
+		cairo_rectangle(ctx, x+curs.x/PANGO_SCALE, y-baseline+curs.y/PANGO_SCALE,
+				(curs.width - PANGO_SCALE/2) / PANGO_SCALE,
+				(curs.height - PANGO_SCALE/2) / PANGO_SCALE);
+		cairo_set_line_width(ctx, 1.0);
+		cairo_stroke(ctx);
+
+		while (in_focus && f->parent->parent != f &&
+		       f->parent != ci->home) {
+			if (f->parent->focus != f && f->z >= 0)
+				in_focus = False;
+			f = f->parent;
+		}
+		if (in_focus) {
+			if (fg.g >= 0)
+				cairo_set_source_rgb(ctx, fg.r, fg.g, fg.b);
+			cairo_rectangle(ctx, x+curs.x/PANGO_SCALE,
+					y-baseline+curs.y/PANGO_SCALE,
+					curs.width / PANGO_SCALE,
+					curs.height / PANGO_SCALE);
+			cairo_fill(ctx);
+			if (ci->num < (int)strlen(str)) {
+				const char *cp = str + ci->num;
+				get_utf8(&cp, NULL);
+				pango_layout_set_text(layout, str + ci->num,
+						      cp - (str + ci->num));
+				if (bg.g >= 0)
+					cairo_set_source_rgb(ctx, bg.r, bg.g, bg.b);
+				else
+					cairo_set_source_rgb(ctx, 1.0, 1.0, 1.0);
+				cairo_move_to(ctx,
+					      x + curs.x / PANGO_SCALE,
+					      y - baseline + curs.y / PANGO_SCALE);
+				pango_cairo_show_layout(ctx, layout);
+			}
+		}
 	}
 	pango_font_description_free(fd);
 	g_object_unref(layout);
@@ -715,6 +762,7 @@ static void handle_focus(struct pane *home safe, xcb_focus_in_event_t *fie safe)
 static void handle_key(struct pane *home safe, xcb_key_press_event_t *kpe safe)
 {
 	//struct xcb_data *xd = home->data;
+	bool press = (kpe->response_type & 0x7f) == XCB_KEY_PRESS;
 #ifdef USE_XKB
 	xcb_key_press_event_t		*kpe;
 	xkb_keysym_t			keysym;
@@ -729,6 +777,9 @@ static void handle_key(struct pane *home safe, xcb_key_press_event_t *kpe safe)
 #endif
 	if (kpe->detail == 24)
 		call("event:deactivate", home);
+	else if (kpe->detail == 65 && press)
+		call("Keystroke", home, 0, NULL, "- ");
+	else LOG("key %d", kpe->detail);
 	//XKeyEvent xke;
 	//KeySym keysym;
 	//char buf[40];
@@ -848,6 +899,7 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 		     XCB_EVENT_MASK_BUTTON_RELEASE |
 		     // XCB_EVENT_MASK_ENTER_WINDOW |
 		     // XCB_EVENT_MASK_LEAVE_WINDOW |
+		     XCB_EVENT_MASK_FOCUS_CHANGE |
 		     XCB_EVENT_MASK_STRUCTURE_NOTIFY |
 		     XCB_EVENT_MASK_EXPOSURE |
 		     XCB_EVENT_MASK_POINTER_MOTION |
