@@ -20,6 +20,12 @@
 #include <cairo.h>
 #include <cairo-xcb.h>
 
+#include <wand/MagickWand.h>
+#ifdef __CHECKER__
+// enums confuse sparse...
+#define MagickBooleanType int
+#endif
+
 #ifndef __CHECKER__
 #include <pango/pango.h>
 #include <pango/pangocairo.h>
@@ -572,8 +578,109 @@ DEF_CMD(xcb_draw_text)
 
 DEF_CMD(xcb_draw_image)
 {
-	//struct xcb_data *xd = ci->home->data;
-	//FIXME
+	/* 'str' identifies the image. Options are:
+	 *     file:filename  - load file from fs
+	 *     comm:command   - run command collecting bytes
+	 * 'num' is '1' if image should be stretched to fill pane
+	 * if 'num is '0', then 'num2' is 'or' of
+	 *   0,1,2 for left/middle/right in x direction
+	 *   0,4,8 for top/middle/bottom in y direction
+	 * only one of these can be used as image will fill pane in other direction.
+	 */
+	struct xcb_data *xd = ci->home->data;
+	bool stretch = ci->num == 1;
+	int pos = ci->num2;
+	int w = ci->focus->w, h = ci->focus->h;
+	int x = 0, y = 0;
+	int xo, yo;
+	int stride;
+	struct panes *ps;
+	MagickBooleanType status;
+	MagickWand *wd;
+	int fmt[2];
+	unsigned char *buf;
+	cairo_surface_t *surface;
+
+	if (!ci->str)
+		return Enoarg;
+	ps = find_pixmap(xd, ci->focus, &xo, &yo);
+	if (!ps)
+		return Einval;
+	if (strncmp(ci->str, "file:", 5) == 0) {
+		wd = NewMagickWand();
+		status = MagickReadImage(wd, ci->str + 5);
+		if (status == MagickFalse) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+	} else if (strncmp(ci->str, "comm:", 5) == 0) {
+		struct call_return cr;
+		wd = NewMagickWand();
+		cr = call_ret(bytes, ci->str+5, ci->focus, 0, NULL, ci->str2);
+		if (!cr.s) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+		status = MagickReadImageBlob(wd, cr.s, cr.i);
+		free(cr.s);
+		if (status == MagickFalse) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+	} else
+		return Einval;
+
+	MagickAutoOrientImage(wd);
+	if (!stretch) {
+		int ih = MagickGetImageHeight(wd);
+		int iw = MagickGetImageWidth(wd);
+
+		if (iw <= 0 || iw <= 0) {
+			DestroyMagickWand(wd);
+			return Efail;
+		}
+		if (iw * h > ih * w) {
+			/* Image is wider than space, use less height */
+			ih = ih * w / iw;
+			switch(pos & (8+4)) {
+			case 4: /* center */
+				y = (h - ih) / 2; break;
+			case 8: /* bottom */
+				y = h - ih; break;
+			}
+			h = ih;
+		} else {
+			/* image is too tall, use less width */
+			iw = iw * h / ih;
+			switch (pos & (1+2)) {
+			case 1: /* center */
+				x = (w - iw) / 2; break;
+			case 2: /* right */
+				x = w - iw ; break;
+			}
+			w = iw;
+		}
+	}
+	MagickAdaptiveResizeImage(wd, w, h);
+	stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, w);
+	buf = malloc(h * stride);
+	// Cairo expects 32bit values with A in the high byte, then RGB.
+	// Magick provides 8bit values in the order requests.
+	// So depending on byte order, a different string is needed
+	
+	fmt[0] = ('A'<<24) | ('R' << 16) | ('G' << 8) | ('B' << 0);
+	fmt[1] = 0;
+	MagickExportImagePixels(wd, 0, 0, w, h, (char*)fmt, CharPixel, buf);
+	surface = cairo_image_surface_create_for_data(buf, CAIRO_FORMAT_ARGB32,
+						      w, h, stride);
+	cairo_set_source_surface(ps->ctx, surface, x + xo, y + yo);
+	cairo_paint(ps->ctx);
+	cairo_surface_destroy(surface);
+	free(buf);
+	DestroyMagickWand(wd);
+
+	pane_damaged(ci->home, DAMAGED_POSTORDER);
+
 	return 1;
 }
 

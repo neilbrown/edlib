@@ -110,8 +110,9 @@ INC-lib-x11selection-gtk = $(shell pkg-config --cflags gtk+-3.0)
 
 LIBS-lib-x11selection-xcb = $(shell pkg-config --libs xcb)
 
-LIBS-display-x11-xcb = $(shell pkg-config --libs xcb pango cairo pangocairo)
-INC-display-x11-xcb = $(shell pkg-config --cflags xcb pango cairo pangocairo)
+LIBS-display-x11-xcb = $(shell pkg-config --libs xcb pango cairo pangocairo MagickWand)
+# magickwand include file contains a non-strict-prototype!
+INC-display-x11-xcb = $(shell pkg-config --cflags xcb pango cairo pangocairo MagickWand) -Wno-strict-prototypes
 
 LIBS-lib-calc = -licuuc -lgmp
 O/libcalc.a : calc-dir
@@ -145,12 +146,12 @@ $(OBJ) $(SHOBJ) $(LIBOBJ) $(XOBJ) $(STATICOBJ) : $(H) O/.exists
 $(LIBOBJ) : internal.h
 
 $(OBJ) : O/%.o : %.c
-	$(QUIET_CC)$(CC) $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
+	$(QUIET_CC)$(CC) $(CPPFLAGS) $(CFLAGS) $(INC-$*) -c -o $@ $<
 	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
 	$(QUIET_SMATCH) $(CPPFLAGS) $(INC-$*) $<
 
 $(SHOBJ) $(LIBOBJ) $(XOBJ) : O/%.o : %.c
-	$(QUIET_CC)$(CC) -fPIC $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
+	$(QUIET_CC)$(CC) -fPIC $(CPPFLAGS) $(CFLAGS) $(INC-$*) -c -o $@ $<
 	$(QUIET_CHECK)sparse $(CPPFLAGS) $(INC-$*) $(SPARSEFLAGS) $<
 	$(QUIET_SMATCH) $(CPPFLAGS) $(INC-$*) $<
 
@@ -173,7 +174,7 @@ calc-dir:
 
 
 $(STATICOBJ) : O/%-static.o : %.c
-	$(QUIET_CCSTATIC)$(CC) -Dedlib_init=$(subst -,_,$*)_edlib_init $(CPPFLAGS) $(INC-$*) $(CFLAGS) -c -o $@ $<
+	$(QUIET_CCSTATIC)$(CC) -Dedlib_init=$(subst -,_,$*)_edlib_init $(CPPFLAGS) $(CFLAGS) $(INC-$*) -c -o $@ $<
 
 .PHONY: TAGS
 TAGS :
