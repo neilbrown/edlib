@@ -652,6 +652,13 @@ char *do_call_str(enum target_type type, struct pane *home,
 		  int num2, struct mark *m2, const char *str2,
 		  int x, int y, struct command *comm2b,
 		  struct commcache *cache);
+struct call_return do_call_bytes(enum target_type type, struct pane *home,
+				 struct command *comm2a,
+				 const char *key safe, struct pane *focus safe,
+				 int num,  struct mark *m,  const char *str,
+				 int num2, struct mark *m2, const char *str2,
+				 int x, int y, struct command *comm2b,
+				 struct commcache *cache);
 char *do_call_strsave(enum target_type type, struct pane *home,
 		      struct command *comm2a,
 		      const char *key safe, struct pane *focus safe,

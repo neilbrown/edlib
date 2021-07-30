@@ -816,6 +816,19 @@ DEF_CB(take_comm)
 	return 1;
 }
 
+DEF_CMD(take_bytes)
+{
+	struct call_return *cr = container_of(ci->comm, struct call_return, c);
+
+	if (!ci->str || ci->num < 0 || ci->num > 1000*1000*1000)
+		return Enoarg;
+	cr->s = malloc(ci->num);
+	cr->i = ci->num;
+	if (cr->s)
+		memcpy(cr->s, ci->str, ci->num);
+	return 1;
+}
+
 struct pane *do_call_pane(enum target_type type, struct pane *home,
 			  struct command *comm2a,
 			  const char *key safe, struct pane *focus safe,
@@ -938,6 +951,26 @@ char *do_call_str(enum target_type type, struct pane *home,
 		return NULL;
 	}
 	return cr.s;
+}
+
+struct call_return do_call_bytes(enum target_type type, struct pane *home,
+				 struct command *comm2a,
+				 const char *key safe, struct pane *focus safe,
+				 int num,  struct mark *m,  const char *str,
+				 int num2, struct mark *m2, const char *str2,
+				 int x, int y, struct command *comm2b,
+				 struct commcache *ccache)
+{
+	struct call_return cr = {};
+
+	cr.c = take_bytes;
+	cr.ret = do_call_val(type, home, comm2a, key, focus, num, m, str,
+			     num2, m2, str2, x, y, &cr.c, ccache);
+	if (cr.ret < 0) {
+		free(cr.s);
+		cr.s = NULL;
+	}
+	return cr;
 }
 
 struct xy pane_mapxy(struct pane *p safe, struct pane *target safe,
