@@ -110,9 +110,9 @@ INC-lib-x11selection-gtk = $(shell pkg-config --cflags gtk+-3.0)
 
 LIBS-lib-x11selection-xcb = $(shell pkg-config --libs xcb)
 
-LIBS-display-x11-xcb = $(shell pkg-config --libs xcb pango cairo pangocairo MagickWand)
+LIBS-display-x11-xcb = $(shell pkg-config --libs xcb pango cairo pangocairo MagickWand xkbcommon xkbcommon-x11)
 # magickwand include file contains a non-strict-prototype!
-INC-display-x11-xcb = $(shell pkg-config --cflags xcb pango cairo pangocairo MagickWand) -Wno-strict-prototypes
+INC-display-x11-xcb = $(shell pkg-config --cflags xcb pango cairo pangocairo MagickWand xkbcommon xkbcommon-x11) -Wno-strict-prototypes
 
 LIBS-lib-calc = -licuuc -lgmp
 O/libcalc.a : calc-dir

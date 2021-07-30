@@ -13,9 +13,73 @@
 #include <stdio.h>
 #include <string.h>
 #include <xcb/xcb.h>
+#ifndef __CHECKER__
+#include <xcb/xkb.h>
+#else
+/* xkb.h has a 'long' in an enum :-( */
+enum {
+	XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY,
+	XCB_XKB_EVENT_TYPE_MAP_NOTIFY,
+	XCB_XKB_NEW_KEYBOARD_NOTIFY,
+	XCB_XKB_EVENT_TYPE_STATE_NOTIFY,
+	XCB_XKB_MAP_PART_MODIFIER_MAP,
+	XCB_XKB_STATE_PART_MODIFIER_LOCK,
+	XCB_XKB_MAP_PART_EXPLICIT_COMPONENTS,
+	XCB_XKB_STATE_PART_GROUP_BASE,
+	XCB_XKB_MAP_PART_KEY_ACTIONS,
+	XCB_XKB_STATE_PART_GROUP_LATCH,
+	XCB_XKB_MAP_PART_VIRTUAL_MODS,
+	XCB_XKB_STATE_PART_GROUP_LOCK,
+	XCB_XKB_MAP_PART_VIRTUAL_MOD_MAP,
+	XCB_XKB_NKN_DETAIL_KEYCODES,
+	XCB_XKB_MAP_PART_KEY_TYPES,
+	XCB_XKB_MAP_PART_KEY_SYMS,
+	XCB_XKB_STATE_PART_MODIFIER_BASE,
+	XCB_XKB_STATE_PART_MODIFIER_LATCH,
+	XCB_XKB_MAP_NOTIFY,
+	XCB_XKB_STATE_NOTIFY,
+};
+typedef uint16_t xcb_xkb_device_spec_t;
+typedef struct xcb_xkb_select_events_details_t {
+	uint16_t affectNewKeyboard;
+	uint16_t newKeyboardDetails;
+	uint16_t affectState;
+	uint16_t stateDetails;
+	/* and other fields */
+} xcb_xkb_select_events_details_t;
+typedef struct xcb_xkb_new_keyboard_notify_event_t {
+	uint8_t		deviceID;
+	uint16_t	changed;
+	/* and other fields */
+} xcb_xkb_new_keyboard_notify_event_t;
+typedef struct xcb_xkb_state_notify_event_t {
+	uint8_t		deviceID;
+	uint8_t		baseMods;
+	uint8_t		latchedMods;
+	uint8_t		lockedMods;
+	int16_t		baseGroup;
+	int16_t		latchedGroup;
+	uint8_t		lockedGroup;
+	/* and other fields */
+} xcb_xkb_state_notify_event_t;
+typedef struct xcb_xkb_map_notify_event_t {
+	uint8_t		deviceID;
+} xcb_xkb_map_notify_event_t;
+xcb_void_cookie_t
+xcb_xkb_select_events_aux_checked(xcb_connection_t		*c,
+				  xcb_xkb_device_spec_t		deviceSpec,
+				  uint16_t			affectWhich,
+				  uint16_t			clear,
+				  uint16_t			selectAll,
+				  uint16_t			affectMap,
+				  uint16_t			map,
+				  const xcb_xkb_select_events_details_t *details);
+
+#endif
 #include <xcb/xcbext.h>
 #include <ctype.h>
 #include <math.h>
+#include <locale.h>
 
 #include <cairo.h>
 #include <cairo-xcb.h>
@@ -68,8 +132,9 @@ void pango_layout_xy_to_index(PangoLayout*, int, int, int*, int*);
 void pango_layout_index_to_pos(PangoLayout*, int, PangoRectangle*);
 #endif
 
-//#include <xkbcommon/xkbcommon.h>
-//#include <xkbcommon/xkbcommon-x11.h>
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-compose.h>
+#include <xkbcommon/xkbcommon-x11.h>
 
 #undef True
 #undef False
@@ -106,11 +171,13 @@ struct xcb_data {
 	bool			motion_blocked;
 	bool			in_focus;
 
-#ifdef USE_XKB
 	struct xkb_context	*xkb;
+	uint8_t			first_xkb_event;
 	int32_t			xkb_device_id;
 	struct xkb_state	*xkb_state;
-#endif
+	struct xkb_compose_state *compose_state;
+	struct xkb_compose_table *compose_table;
+	struct xkb_keymap	*xkb_keymap;
 
 	/* FIXME use hash?? */
 	struct panes {
@@ -866,31 +933,307 @@ static void handle_focus(struct pane *home safe, xcb_focus_in_event_t *fie safe)
 		call("pane:refocus", home);
 }
 
-static void handle_key(struct pane *home safe, xcb_key_press_event_t *kpe safe)
+static bool select_xkb_events_for_device(xcb_connection_t *conn,
+					 int32_t device_id)
 {
-	//struct xcb_data *xd = home->data;
-	bool press = (kpe->response_type & 0x7f) == XCB_KEY_PRESS;
-#ifdef USE_XKB
-	xcb_key_press_event_t		*kpe;
-	xkb_keysym_t			keysym;
-	char				name[64];
-	xkb_state_update_key(xd->xkb_state, kpe->keycode,
-			     XKB_KEY_DOWN);
+	xcb_generic_error_t *error;
+	xcb_void_cookie_t cookie;
+
+	enum {
+		required_events =
+			(XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY |
+			 XCB_XKB_EVENT_TYPE_MAP_NOTIFY |
+			 XCB_XKB_EVENT_TYPE_STATE_NOTIFY),
+
+		required_nkn_details =
+			(XCB_XKB_NKN_DETAIL_KEYCODES),
+
+		required_map_parts =
+			(XCB_XKB_MAP_PART_KEY_TYPES |
+			 XCB_XKB_MAP_PART_KEY_SYMS |
+			 XCB_XKB_MAP_PART_MODIFIER_MAP |
+			 XCB_XKB_MAP_PART_EXPLICIT_COMPONENTS |
+			 XCB_XKB_MAP_PART_KEY_ACTIONS |
+			 XCB_XKB_MAP_PART_VIRTUAL_MODS |
+			 XCB_XKB_MAP_PART_VIRTUAL_MOD_MAP),
+
+		required_state_details =
+			(XCB_XKB_STATE_PART_MODIFIER_BASE |
+			 XCB_XKB_STATE_PART_MODIFIER_LATCH |
+			 XCB_XKB_STATE_PART_MODIFIER_LOCK |
+			 XCB_XKB_STATE_PART_GROUP_BASE |
+			 XCB_XKB_STATE_PART_GROUP_LATCH |
+			 XCB_XKB_STATE_PART_GROUP_LOCK),
+	};
+
+	static const xcb_xkb_select_events_details_t details = {
+		.affectNewKeyboard = required_nkn_details,
+		.newKeyboardDetails = required_nkn_details,
+		.affectState = required_state_details,
+		.stateDetails = required_state_details,
+	};
+
+	cookie = xcb_xkb_select_events_aux_checked(
+		conn,
+		device_id,
+		required_events,	/* affectWhich */
+		0,			/* clear */
+		0,			/* selectAll */
+		required_map_parts,	/* affectMap */
+		required_map_parts,	/* map */
+		&details);		/* details */
+
+	error = xcb_request_check(conn, cookie);
+	if (error) {
+		free(error);
+		return False;
+	}
+
+	return True;
+}
+
+static bool update_keymap(struct xcb_data *xd safe)
+{
+	struct xkb_keymap *new_keymap;
+	struct xkb_state *new_state;
+
+	new_keymap = xkb_x11_keymap_new_from_device(xd->xkb, xd->conn,
+						    xd->xkb_device_id,
+						    XKB_KEYMAP_COMPILE_NO_FLAGS);
+	if (!new_keymap)
+		return False;
+
+	new_state = xkb_x11_state_new_from_device(new_keymap, xd->conn,
+						  xd->xkb_device_id);
+	if (!new_state) {
+		xkb_keymap_unref(new_keymap);
+		return False;
+	}
+
+	xkb_state_unref(xd->xkb_state);
+	xkb_keymap_unref(xd->xkb_keymap);
+	xd->xkb_keymap = new_keymap;
+	xd->xkb_state = new_state;
+	return True;
+}
+
+static bool kbd_setup(struct xcb_data *xd safe)
+{
+	int ret;
+	const char *locale;
+
+	ret = xkb_x11_setup_xkb_extension(xd->conn,
+					  XKB_X11_MIN_MAJOR_XKB_VERSION,
+					  XKB_X11_MIN_MINOR_XKB_VERSION,
+					  XKB_X11_SETUP_XKB_EXTENSION_NO_FLAGS,
+					  NULL, NULL, &xd->first_xkb_event,
+					  NULL);
+
+	if (!ret)
+		return False;
+	xd->xkb = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	if (!xd->xkb)
+		return False;
+	xd->xkb_device_id = xkb_x11_get_core_keyboard_device_id(xd->conn);
+	if (xd->xkb_device_id == -1)
+		return False;
+
+	if (!update_keymap(xd))
+		return False;
+
+	if (!select_xkb_events_for_device(xd->conn, xd->xkb_device_id))
+		return False;
+
+	locale = setlocale(LC_CTYPE, NULL);
+	xd->compose_table =
+		xkb_compose_table_new_from_locale(xd->xkb, locale,
+						  XKB_COMPOSE_COMPILE_NO_FLAGS);
+	if (xd->compose_table)
+		xd->compose_state =
+			xkb_compose_state_new(xd->compose_table,
+					      XKB_COMPOSE_STATE_NO_FLAGS);
+	return True;
+}
+
+static void kbd_free(struct xcb_data *xd safe)
+{
+	if (xd->compose_table)
+		xkb_compose_table_unref(xd->compose_table);
+	if (xd->xkb_keymap)
+		xkb_keymap_unref(xd->xkb_keymap);
+	if (xd->xkb)
+		xkb_context_unref(xd->xkb);
+}
+
+static struct {
+	char *from safe, *to safe;
+} key_map[] = {
+	{ "Return",	 ":Enter"},
+	{ "Tab",	 ":Tab"},
+	{ "ISO_Left_Tab",":Tab"},
+	{ "Escape",	 ":ESC"},
+	{ "Linefeed",	 ":LF"},
+	{ "Down",	 ":Down"},
+	{ "Up",		 ":Up"},
+	{ "Left",	 ":Left"},
+	{ "Right",	 ":Right"},
+	{ "Home",	 ":Home"},
+	{ "End",	 ":End"},
+	{ "BackSpace",	 ":Backspace"},
+	{ "Delete",	 ":Del"},
+	{ "Insert",	 ":Ins"},
+	{ "Next",	 ":Prior"},
+	{ "Prior",	 ":Next"},
+	{ "F1",		 ":F1"},
+	{ "F2",		 ":F2"},
+	{ "F3",		 ":F3"},
+	{ "F4",		 ":F4"},
+	{ "F5",		 ":F5"},
+	{ "F6",		 ":F6"},
+	{ "F7",		 ":F7"},
+	{ "F8",		 ":F8"},
+	{ "F9",		 ":F9"},
+	{ "F10",	 ":F11"},
+	{ "F11",	 ":F11"},
+	{ "F12",	 ":F12"},
+};
+
+static void handle_key_press(struct pane *home safe,
+			     xcb_key_press_event_t *kpe safe)
+{
+	struct xcb_data			*xd = home->data;
+	xkb_keycode_t			keycode = kpe->detail;
+	xcb_keysym_t			keysym;
+	xkb_keysym_t			sym;
+	const xkb_keysym_t		*syms;
+	int				nsyms;
+	enum xkb_compose_status		status;
+	xkb_mod_index_t			mod;
+	char				s[16];
+	char				key[16];
+	char				mods[32];
+	bool				shift=False, ctrl=False, alt=False;
+
 	keysym = xkb_state_key_get_one_sym(xd->xkb_state,
-					   kpe->keycode);
-	xkb_keysym_get_name(keysym, name, sizeof(name));
-	xkb_state_key_get_utf8(xd->xkb_state, kpe->keycode,
-			       name, sizeof(name));
-#endif
-	if (kpe->detail == 24)
-		call("event:deactivate", home);
-	else if (kpe->detail == 65 && press)
-		call("Keystroke", home, 0, NULL, "- ");
-	else LOG("key %d", kpe->detail);
-	//XKeyEvent xke;
-	//KeySym keysym;
-	//char buf[40];
-	//XLookupString(&xke, &buf, sizeof(buf), &keysym, NULL);
+					   keycode);
+	if (xd->compose_state)
+		xkb_compose_state_feed(xd->compose_state, keysym);
+	nsyms = xkb_state_key_get_syms(xd->xkb_state, keycode,
+				       &syms);
+	if (nsyms <= 0)
+		return;
+	status = XKB_COMPOSE_NOTHING;
+	if (xd->compose_state)
+		status = xkb_compose_state_get_status(xd->compose_state);
+	if (status == XKB_COMPOSE_COMPOSING ||
+	    status == XKB_COMPOSE_CANCELLED)
+		return;
+
+	for (mod = 0; mod < xkb_keymap_num_mods(xd->xkb_keymap); mod++) {
+		const char *n;
+		if (xkb_state_mod_index_is_active(
+			    xd->xkb_state, mod,
+			    XKB_STATE_MODS_EFFECTIVE) <= 0)
+			continue;
+		/* This does tells me "shift" is consumed for :C:S-l ...
+		if (xkb_state_mod_index_is_consumed2(
+			    xd->xkb_state, keycode, mod,
+			    XKB_CONSUMED_MODE_XKB))
+			continue;
+		 */
+		n = xkb_keymap_mod_get_name(xd->xkb_keymap, mod);
+		if (n && strcmp(n, "Shift") == 0)
+			shift = True;
+		if (n && strcmp(n, "Control") == 0)
+			ctrl = True;
+		if (n && strcmp(n, "Mod1") == 0)
+			alt = True;
+	}
+
+	if (status == XKB_COMPOSE_COMPOSED) {
+		sym = xkb_compose_state_get_one_sym(xd->compose_state);
+		syms = &sym;
+		nsyms = 1;
+		s[0] = '-';
+		xkb_compose_state_get_utf8(xd->compose_state,
+					   s+1, sizeof(s)-1);
+		key[0] = 0;
+		shift = False;
+		ctrl = False;
+		/* Mod1 can still apply to a composed char */
+	} else if (nsyms == 1) {
+		unsigned int i;
+		sym = xkb_state_key_get_one_sym(xd->xkb_state, keycode);
+		syms = &sym;
+		s[0] = '-';
+		xkb_state_key_get_utf8(xd->xkb_state, keycode,
+				       s+1, sizeof(s)-1);
+		xkb_keysym_get_name(syms[0], key, sizeof(key));
+		for (i = 0; i < ARRAY_SIZE(key_map); i++) {
+			if (strcmp(key, key_map[i].from) == 0) {
+				strcpy(s, key_map[i].to);
+				break;
+			}
+		}
+		if (s[0] == '-' && s[1] >= ' ' && s[1] < 0x7f)
+			/* Shift is included */
+			shift = False;
+		if (s[0] == '-' && s[1] && (unsigned char)(s[1]) < ' ') {
+			ctrl = True;
+			s[1] += '@';
+		}
+	}
+
+	if (xd->compose_state &&
+	    (status == XKB_COMPOSE_CANCELLED ||
+	     status == XKB_COMPOSE_COMPOSED))
+		xkb_compose_state_reset(xd->compose_state);
+
+	if (s[1]) {
+		mods[0] = 0;
+		if (alt)
+			strcat(mods, ":A");
+		if (ctrl)
+			strcat(mods, ":C");
+		if (shift)
+			strcat(mods, ":S");
+		strcat(mods, s);
+		call("Keystroke", home, 0, NULL, mods);
+	}
+}
+
+static void handle_xkb_event(struct pane *home safe,
+			     xcb_generic_event_t *ev safe)
+{
+	struct xcb_data *xd = home->data;
+
+	switch (ev->pad0) {
+		xcb_xkb_new_keyboard_notify_event_t	*nkne;
+		xcb_xkb_state_notify_event_t		*sne;
+		xcb_xkb_map_notify_event_t		*mne;
+	case XCB_XKB_NEW_KEYBOARD_NOTIFY:
+		nkne = (void*)ev;
+		if (nkne->deviceID == xd->xkb_device_id &&
+		    nkne->changed & XCB_XKB_NKN_DETAIL_KEYCODES)
+			update_keymap(xd);
+		break;
+	case XCB_XKB_MAP_NOTIFY:
+		mne = (void*)ev;
+		if (mne->deviceID == xd->xkb_device_id)
+			update_keymap(xd);
+		break;
+	case XCB_XKB_STATE_NOTIFY:
+		sne = (void*)ev;
+		if (sne->deviceID == xd->xkb_device_id)
+			xkb_state_update_mask(xd->xkb_state,
+					      sne->baseMods,
+					      sne->latchedMods,
+					      sne->lockedMods,
+					      sne->baseGroup,
+					      sne->latchedGroup,
+					      sne->lockedGroup);
+		break;
+	}
 }
 
 static void handle_configure(struct pane *home safe,
@@ -910,10 +1253,12 @@ DEF_CMD(xcb_input)
 	while ((ev = xcb_poll_for_event(xd->conn)) != NULL) {
 		switch (ev->response_type & 0x7f) {
 		case XCB_KEY_PRESS:
-		case XCB_KEY_RELEASE:
 			time_start(TIME_KEY);
-			handle_key(ci->home, safe_cast (void*)ev);
+			handle_key_press(ci->home, safe_cast (void*)ev);
 			time_stop(TIME_KEY);
+			break;
+		case XCB_KEY_RELEASE:
+			/* Ignore for now */
 			break;
 		case XCB_BUTTON_PRESS:
 		case XCB_BUTTON_RELEASE:
@@ -940,7 +1285,19 @@ DEF_CMD(xcb_input)
 			handle_configure(ci->home, (void*)ev);
 			time_stop(TIME_WINDOW);
 			break;
+		case XCB_REPARENT_NOTIFY:
+			/* Not interested */
+			break;
+		case XCB_MAP_NOTIFY:
+		case XCB_UNMAP_NOTIFY:
+			/* FIXME what to do?? */
+			break;
 		default:
+			if ((ev->response_type & 0x7f) ==
+			    xd->first_xkb_event) {
+				handle_xkb_event(ci->home, ev);
+				break;
+			}
 			LOG("ignored %x", ev->response_type);
 		}
 		xcb_flush(xd->conn);
@@ -1022,6 +1379,7 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 			  XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
 			  valwin);
 	xcb_flush(conn);
+	kbd_setup(xd);
 
 	surface = cairo_xcb_surface_create(
 		conn, xd->win, xd->visual, 100, 100);
@@ -1064,12 +1422,6 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 		free(r);
 	}
 
-#ifdef USE_XKB
-	xd->xkb = safe_cast xkb_context_new(XCB_CONTEXT_NO_FLAGS);
-	xd->xkb_device_id = xkb_x11_get_core_keyboard_device_id(conn);
-	xd->xkb_state = xkb_x11_state_new_from_device(xd->xkb_keymap, conn,
-						      xd->xkb_device_id);
-#endif
 	/* FIXME set:
 	 * WM_NAME
 	 * WM_PROTOCOLS WM_DELETE_WINDOW WM_TAKE_FOCUS _NET_WM_PING  _NET_WM_SYN_REQUEST??
@@ -1089,6 +1441,7 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 	//attr_set_int(&p->attrs, "scale", 2000);
 	return p;
 abort:
+	kbd_free(xd);
 	cairo_destroy(xd->cairo);
 	cairo_surface_destroy(xd->surface);
 	xcb_disconnect(conn);
