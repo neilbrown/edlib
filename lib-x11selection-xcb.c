@@ -880,7 +880,8 @@ static void collect_sel(struct xcbc_info *xci safe, enum my_atoms sel)
 	enum my_atoms a;
 	xcb_selection_notify_event_t *nev;
 	xcb_get_property_reply_t *gpr = NULL;
-	xcb_atom_t *targets, dflt[] = {XCB_ATOM_STRING, xci->atoms[a_TEXT]};
+	xcb_atom_t *targets = NULL,
+		dflt[] = {XCB_ATOM_STRING, xci->atoms[a_TEXT]};
 	int ntargets;
 	int i;
 
