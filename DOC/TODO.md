@@ -303,6 +303,23 @@ Module features
       or PyFLTK or WxWidgets .... or XCB??
       Or maybe run any gtk code in a separate process... or task?
 
+### display-x11-xcb
+
+- [ ] C-_ isn't recognized
+- [ ] clip backing-image size against parents so it gets redrawn when no-longer
+      clipped
+- [ ] window doesn't redraw immediately after full-screen
+- [ ] always do SOURCE drawing to  server-side pixmaps.  So keep a client-side
+      pixmap for assembling image
+- [ ] set window name and woth _NET_WM things
+- [ ] would GraphicsMagick be better than ImageMagick?
+- [ ] When email with images scolls, the images aren't cleared first.
+- [ ] is connection-close handled properly?
+- [ ] share connections among multiple windows
+- [ ] always poll for input before waiting on fd.  Need new "event:poll".
+- [ ] Check that cursor is always removed when focus changes.  Sometimes
+      it gets left behind.
+
 ### render-lines
 
 - [X] improve 'margin' to permit cursor in margin at start of file
@@ -734,23 +751,6 @@ Possibly some of these will end up being features in other modules.
 
 New Modules - more complex
 -------------------------
-
-### display-xcb
-
-My py-gtk display doesn't really make much use of gtk.  No widgets...
-Maybe I should use xcb.  Cairo can draw pango fonts onto xcb pixmaps, which is
-what I want.  xcb can use any event loop, and multiple connections.
-
-Compose characters might be interesting.  libxkbcommon apparently
-handles this.  I would need it for input handling anyway I think.
-
-I use "Gtk-xft-dpi" ... Maybe get that directly from X
-
-GdkPixbuf.Pixbuf.new_from_file() - That is a separate library.. maybe I can use it.
-Or use Image Macgick
-
-- [X] Managing the clipboard/selection also needs to be re-done.  xsel uses
-      Xlib.  It has a useful README.  xclip might also be useful.
 
 ### remote editing ideas
 A good model for remote editing is to have a proxy at some point in the stack,

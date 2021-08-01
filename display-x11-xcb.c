@@ -141,13 +141,11 @@ void pango_layout_index_to_pos(PangoLayout*, int, PangoRectangle*);
 #include "core.h"
 
 enum my_atoms {
-	a_WM_STATE, a_STATE_ADD, a_STATE_REMOVE, a_STATE_FULLSCREEN,
+	a_WM_STATE, a_STATE_FULLSCREEN,
 	NR_ATOMS
 };
 static char *atom_names[NR_ATOMS] = {
 	[a_WM_STATE]		= "_NET_WM_STATE",
-	[a_STATE_ADD]		= "_NET_WM_STATE_ADD",
-	[a_STATE_REMOVE]	= "_NET_WM_STATE_REMOVE",
 	[a_STATE_FULLSCREEN]	= "_NET_WM_STATE_FULLSCREEN",
 };
 
@@ -434,9 +432,9 @@ DEF_CMD(xcb_fullscreen)
 	msg.window = xd->win;
 	msg.type = xd->atoms[a_WM_STATE];
 	if (ci->num > 0)
-		msg.data.data32[0] = xd->atoms[a_STATE_ADD];
+		msg.data.data32[0] = 1; /* ADD */
 	else
-		msg.data.data32[0] = xd->atoms[a_STATE_REMOVE];
+		msg.data.data32[0] = 0; /* REMOVE */
 	msg.data.data32[1] = xd->atoms[a_STATE_FULLSCREEN];
 	msg.data.data32[2] = 0;
 	msg.data.data32[3] = 1; /* source indicator */
@@ -444,8 +442,8 @@ DEF_CMD(xcb_fullscreen)
 	xcb_send_event(xd->conn, 0, xd->screen->root,
 		       XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
 		       XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT,
-		       (void*)msg.data.data8);
-
+		       (void*)&msg);
+	xcb_flush(xd->conn);
 	return 1;
 }
 
@@ -1438,7 +1436,7 @@ static struct pane *xcb_display_init(const char *d safe, struct pane *focus safe
 	attr_set_str(&p->attrs, "DISPLAY", d);
 	snprintf(scale, sizeof(scale), "%dx%d", xd->charwidth, xd->lineheight);
 	attr_set_str(&p->attrs, "scale:M", scale);
-	//attr_set_int(&p->attrs, "scale", 2000);
+	call("editor:request:all-displays", p);
 	return p;
 abort:
 	kbd_free(xd);
