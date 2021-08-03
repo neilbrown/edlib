@@ -114,8 +114,10 @@ class EdDisplay(edlib.Pane):
         pm = self.get_pixmap(focus)
         if src:
             (pm2, x, y) = src
+            x += focus.x
+            y += focus.y
             cr = cairo.Context(pm)
-            cr.set_source_surface(pm2, -x-focus.x, -y-focus.y)
+            cr.set_source_surface(pm2, -x, -y)
             cr.paint()
         else:
             self.do_clear(pm, bg)
@@ -135,20 +137,18 @@ class EdDisplay(edlib.Pane):
         # If we use an empty string, line height is wrong
         layout = self.text.create_pango_layout(str if str else "M")
         layout.set_font_description(fd)
-        ctx = layout.get_context()
-        metric = ctx.get_metrics(fd)
         ink,l = layout.get_pixel_extents()
-        ascent = metric.get_ascent() / Pango.SCALE
+        baseline = int(layout.get_baseline() / Pango.SCALE)
         if num >= 0:
             if not str or l.width <= num:
                 max_bytes = len(str.encode("utf-8"))
             else:
                 inside, max_chars,extra = layout.xy_to_index(Pango.SCALE*num,
-                                                     metric.get_ascent())
+                                                             baseline)
                 max_bytes = len(str[:max_chars].encode("utf-8"))
         else:
             max_bytes = 0
-        return comm2("callback:size", focus, max_bytes, int(ascent),
+        return comm2("callback:size", focus, max_bytes, baseline,
                      (l.width if str else 0, l.height))
 
     def handle_draw_text(self, key, num, num2, focus, str, str2, xy, **a):
@@ -184,19 +184,19 @@ class EdDisplay(edlib.Pane):
         fontmap = PangoCairo.font_map_get_default()
         font = fontmap.load_font(fontmap.create_context(), fd)
         metric = font.get_metrics()
-        ascent = metric.get_ascent() / Pango.SCALE
+        baseline = pl.get_baseline() / Pango.SCALE
         ink, log = pl.get_pixel_extents()
         lx = log.x; ly = log.y
         width = log.width; height = log.height
 
         if bg:
             cr.set_source_rgb(bg.red, bg.green, bg.blue)
-            cr.rectangle(x+lx, y-ascent+ly, width, height)
+            cr.rectangle(x+lx, y-baseline+ly, width, height)
             cr.fill()
         cr.set_source_rgb(fg.red, fg.green, fg.blue)
         if ul:
             cr.rectangle(x+lx, y+ly+2, width, 1); cr.fill()
-        cr.move_to(x, y-ascent)
+        cr.move_to(x, y-baseline)
         PangoCairo.show_layout(cr, pl)
         cr.stroke()
 
@@ -207,13 +207,15 @@ class EdDisplay(edlib.Pane):
             c = pl.index_to_pos(num)
             cx = c.x; cy=c.y; cw=c.width; ch=c.height
             if cw <= 0:
-                cw = metric.get_approximate_char_width()
+                pl.set_text("M")
+                ink,log = pl.get_extents()
+                cw = log.width
             cx /= Pango.SCALE
             cy /= Pango.SCALE
             cw /= Pango.SCALE
             ch /= Pango.SCALE
 
-            cr.rectangle(x+cx, y-ascent+cy, cw-1, ch-1)
+            cr.rectangle(x+cx, y-baseline+cy, cw-1, ch-1)
             cr.set_line_width(1)
             cr.stroke()
 
@@ -227,7 +229,7 @@ class EdDisplay(edlib.Pane):
                 if fg:
                     cr.set_source_rgb(fg.red, fg.green, fg.blue)
 
-                cr.rectangle(x+cx, y-ascent+cy, cw, ch)
+                cr.rectangle(x+cx, y-baseline+cy, cw, ch)
                 cr.fill()
                 if num < len(str):
                     pl2 = PangoCairo.create_layout(cr)
@@ -236,7 +238,7 @@ class EdDisplay(edlib.Pane):
                     fg, bg, ul = self.get_colours(attr+",inverse")
                     if fg:
                         cr.set_source_rgb(fg.red, fg.green, fg.blue)
-                    cr.move_to(x+cx, y-ascent+cy)
+                    cr.move_to(x+cx, y-baseline+cy)
                     PangoCairo.show_layout(cr, pl2)
                     cr.stroke()
 
@@ -426,11 +428,11 @@ class EdDisplay(edlib.Pane):
         self.win.add(text)
         text.show()
         self.fd = Pango.FontDescription("mono 10")
-        #text.modify_font(self.fd)
-        ctx = text.get_pango_context()
-        metric = ctx.get_metrics(self.fd)
-        self.lineheight = (metric.get_ascent() + metric.get_descent()) / Pango.SCALE
-        self.charwidth = metric.get_approximate_char_width() / Pango.SCALE
+        layout = self.text.create_pango_layout("M")
+        layout.set_font_description(self.fd)
+        ink, log = layout.get_pixel_extents()
+        self.lineheight = log.height
+        self.charwidth = log.width
         self.win.set_default_size(self.charwidth * 80, self.lineheight * 24)
 
         self.im = Gtk.IMContextSimple()
@@ -482,14 +484,9 @@ class EdDisplay(edlib.Pane):
             hix,hiy = self.clipxy(p, p.w, p.h)
             # FIXME draw on surface or GdkPixbuf
             ctx.save()
-            ctx.move_to(lox,loy)
-            ctx.line_to(hix,loy)
-            ctx.line_to(hix,hiy)
-            ctx.line_to(lox,hiy)
-            ctx.close_path()
-            ctx.clip()
+            ctx.rectangle(lox, loy, hix-lox, hiy-loy)
             ctx.set_source_surface(pm, rx, ry)
-            ctx.paint()
+            ctx.fill()
             ctx.restore()
         edlib.time_stop(edlib.TIME_WINDOW)
 
@@ -526,7 +523,6 @@ class EdDisplay(edlib.Pane):
             #maybe GDK_2BUTTON_PRESS - don't want that.
             return
         edlib.time_start(edlib.TIME_KEY)
-        c.grab_focus()
         self.unblock_motion()
         x = int(event.x)
         y = int(event.y)
@@ -545,7 +541,6 @@ class EdDisplay(edlib.Pane):
 
     def release(self, c, event):
         edlib.time_start(edlib.TIME_KEY)
-        c.grab_focus()
         x = int(event.x)
         y = int(event.y)
         s = ":Release-" + ("%d"%event.button)
