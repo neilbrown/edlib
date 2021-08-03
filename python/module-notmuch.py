@@ -560,8 +560,11 @@ class notmuch_main(edlib.Doc):
             self.timer_set = True
             self.call("event:timer", 5*60*1000, self.tick)
         with self.db as db:
-            tags = db.get_all_tags()
-            self.searches.set_tags(tags)
+            try:
+                tags = db.get_all_tags()
+                self.searches.set_tags(tags)
+            except notmuch.NotmuchError:
+                pass
         if self.searches.load(False):
             # there are (possibly) new searches, trigger a refresh
             self.notify("doc:replaced")
@@ -611,8 +614,11 @@ class notmuch_main(edlib.Doc):
         # Return a document for the email message.
         # This is a global document.
         with self.db as db:
-            m = db.find_message(str)
-            fn = m.get_filename() + ""
+            try:
+                m = db.find_message(str)
+                fn = m.get_filename() + ""
+            except:
+                return edlib.Efalse
         doc = focus.call("doc:open", "email:"+fn, -2, ret='pane')
         if doc:
             doc['notmuch:id'] = str
@@ -622,24 +628,30 @@ class notmuch_main(edlib.Doc):
     def handle_notmuch_byid_tags(self, key, focus, num2, str, comm2, **a):
         "handle:doc:notmuch:byid:tags"
         # return a string with tags of message
-        with self.db as db:
-            m = db.find_message(str)
-            tags = ",".join(m.get_tags())
-        comm2("callback", focus, tags)
+        try:
+            with self.db as db:
+                m = db.find_message(str)
+                tags = ",".join(m.get_tags())
+            comm2("callback", focus, tags)
+        except:
+            return edlib.Efalse
         return 1
 
     def handle_notmuch_bythread_tags(self, key, focus, str, comm2, **a):
         "handle:doc:notmuch:bythread:tags"
         # return a string with tags of all messages in thread
-        with self.db as db:
-            q = db.create_query("thread:%s" % str)
-            tg = []
-            for t in q.search_threads():
-                ml = t.get_messages()
-                for m in ml:
-                    tg.extend(m.get_tags())
-        tags = ",".join(set(tg))
-        comm2("callback", focus, tags)
+        try:
+            with self.db as db:
+                q = db.create_query("thread:%s" % str)
+                tg = []
+                for t in q.search_threads():
+                    ml = t.get_messages()
+                    for m in ml:
+                        tg.extend(m.get_tags())
+            tags = ",".join(set(tg))
+            comm2("callback", focus, tags)
+        except:
+            return edlib.Efalse
         return 1
 
     def handle_notmuch_query_updated(self, key, **a):
@@ -651,7 +663,10 @@ class notmuch_main(edlib.Doc):
     def handle_notmuch_mark_read(self, key, str, str2, **a):
         "handle:doc:notmuch:mark-read"
         with self.db.get_write() as db:
-            m = db.find_message(str2)
+            try:
+                m = db.find_message(str2)
+            except:
+                m = None
             if m:
                 changed=False
                 t = list(m.get_tags())
@@ -679,7 +694,10 @@ class notmuch_main(edlib.Doc):
             if str2:
                 # adjust a list of messages
                 for id in str2.split("\n"):
-                    m = db.find_message(id)
+                    try:
+                        m = db.find_message(id)
+                    except:
+                        m = None
                     if m:
                         t = list(m.get_tags())
                         if add:
@@ -692,7 +710,10 @@ class notmuch_main(edlib.Doc):
                                 self.notify("Notify:Tag", str, id)
             else:
                 # adjust whole thread
-                q = db.create_query("thread:%s" % str)
+                try:
+                    q = db.create_query("thread:%s" % str)
+                except:
+                    return edlib.Efalse
                 changed = False
                 for t in q.search_threads():
                     ml = t.get_messages()
@@ -727,7 +748,10 @@ class notmuch_main(edlib.Doc):
             todel = []
             for id in self.seen_msgs:
                 if self.seen_msgs[id] == focus:
-                    m = db.find_message(id)
+                    try:
+                        m = db.find_message(id)
+                    except:
+                        m = None
                     if m and "new" in m.get_tags():
                         m.remove_tag("new")
                         self.notify("Notify:Tag", m.get_thread_id(), id)
@@ -737,7 +761,10 @@ class notmuch_main(edlib.Doc):
             todel = []
             for id in self.seen_threads:
                 if self.seen_threads[id] == focus:
-                    q = db.create_query("thread:%s" % id)
+                    try:
+                        q = db.create_query("thread:%s" % id)
+                    except:
+                        return edlib.Efalse
                     for t in q.search_threads():
                         ml = t.get_messages()
                         for m in ml:
@@ -1085,11 +1112,14 @@ class notmuch_query(edlib.Doc):
     def load_thread(self, mark):
         (tid, mid) = mark.pos
         with self.db as db:
-            q = notmuch.Query(db, "thread:%s and (%s)" % (tid, self.query))
-            tl = list(q.search_threads())
-            if not tl:
-                q = notmuch.Query(db, "thread:%s" % (tid))
+            try:
+                q = notmuch.Query(db, "thread:%s and (%s)" % (tid, self.query))
                 tl = list(q.search_threads())
+                if not tl:
+                    q = notmuch.Query(db, "thread:%s" % (tid))
+                    tl = list(q.search_threads())
+            except:
+                tl = None
             if not tl:
                 return
             thread = tl[0]
