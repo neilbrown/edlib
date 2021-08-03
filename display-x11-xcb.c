@@ -469,6 +469,8 @@ DEF_CMD(xcb_clear)
 		parse_attrs(ci->home, attr, PANGO_SCALE, NULL, &bg, NULL, NULL);
 	else {
 		src = find_pixmap(xd, ci->focus->parent, &x, &y);
+		x += ci->focus->x;
+		y += ci->focus->y;
 		bg.r = bg.g = bg.b = 1.0;
 	}
 
@@ -476,8 +478,7 @@ DEF_CMD(xcb_clear)
 	if (!pm)
 		return 1;
 	if (src) {
-		cairo_set_source_surface(pm, src->surface, -x - ci->focus->x,
-					 -y - ci->focus->y);
+		cairo_set_source_surface(pm, src->surface, -x, -y);
 		cairo_paint(pm);
 	} else {
 		cairo_set_source_rgb(pm, bg.r, bg.g, bg.b);
