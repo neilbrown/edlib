@@ -1193,6 +1193,13 @@ static void handle_key_press(struct pane *home safe,
 		if (s[0] == '-' && s[1] && (unsigned char)(s[1]) < ' ') {
 			ctrl = True;
 			s[1] += '@';
+			if (s[1] < 'A' || s[1] > 'Z')
+				shift = False;
+		} else if (s[0] == '-' && !s[1]) {
+			/* 'nul' becomes "C- " (ctrl-space) */
+			ctrl = True;
+			s[1] = ' ';
+			s[2] = 0;
 		}
 	}
 
