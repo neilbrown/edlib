@@ -38,6 +38,7 @@ struct rline_data {
 	short		prefix_len;
 	const char	*xyattr;
 	short		curs_width;
+	int		scale;
 	const char	*line;
 };
 
@@ -506,6 +507,8 @@ DEF_CMD(renderline)
 	 */
 	start = line_start = line;
 
+	rd->scale = scale;
+
 	if (dodraw)
 		home_call(focus, "Draw:clear", p);
 
@@ -858,12 +861,14 @@ DEF_CMD(renderline_set)
 {
 	struct rline_data *rd = ci->home->data;
 	const char *old = rd->line;
+	struct xy xyscale = pane_scale(ci->focus);
 
 	if (ci->str)
 		rd->line = strdup(ci->str);
 	else
 		rd->line = NULL;
-	if (strcmp(rd->line ?:"", old ?:"") != 0) {
+	if (strcmp(rd->line ?:"", old ?:"") != 0 ||
+	    (old && xyscale.x != rd->scale)) {
 		pane_damaged(ci->home, DAMAGED_REFRESH);
 		pane_damaged(ci->home->parent, DAMAGED_REFRESH);
 	}
