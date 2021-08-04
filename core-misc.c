@@ -89,6 +89,7 @@ static char *tnames[] = {
 	[TIME_TIMER]   = "TIMER",
 	[TIME_IDLE]    = "IDLE",
 	[TIME_REFRESH] = "REFRESH",
+	[TIME_MISC]    = "MISC",
 };
 
 #define NSEC 1000000000

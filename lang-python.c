@@ -2950,6 +2950,7 @@ void edlib_init(struct pane *ed safe)
 	PyModule_AddIntMacro(m, TIME_TIMER);
 	PyModule_AddIntMacro(m, TIME_IDLE);
 	PyModule_AddIntMacro(m, TIME_REFRESH);
+	PyModule_AddIntMacro(m, TIME_MISC);
 
 	PyModule_AddIntMacro(m, RXL_ANCHORED);
 	PyModule_AddIntMacro(m, RXL_BACKTRACK);

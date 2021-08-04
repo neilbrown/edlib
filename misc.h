@@ -55,6 +55,7 @@ enum timetype {
 	TIME_TIMER,
 	TIME_IDLE,
 	TIME_REFRESH,
+	TIME_MISC,
 	__TIME_COUNT,
 };
 void time_start(enum timetype);
